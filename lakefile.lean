@@ -2,5 +2,8 @@ import Lake
 open Lake DSL
 
 package «iris-lean» {
-  -- add configuration options here
+  defaultFacet := .oleans,
+  srcDir := "./src/",
+  libRoots := #[ "Iris" ],
+  libName := "Iris"
 }
