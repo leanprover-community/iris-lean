@@ -1,7 +1,7 @@
 import Iris.Std.Classes
 
-namespace Iris.BI.Interface
-open Iris.Std.Classes
+namespace Iris.BI
+open Iris.Std
 open Lean
 
 class BIBase (car : Type) extends Equiv car where
@@ -11,8 +11,8 @@ class BIBase (car : Type) extends Equiv car where
   and : car → car → car
   or : car → car → car
   impl : car → car → car
-  «forall» : (A → car) → car
-  «exists» : (A → car) → car
+  «forall» : (α → car) → car
+  «exists» : (α → car) → car
   sep : car → car → car
   wand : car → car → car
 
@@ -27,13 +27,11 @@ macro:25 P:iprop:29 " ⊢ " Q:iprop:26 : term => `(BIBase.entails `[iprop| $P] `
 syntax:max ident : iprop
 syntax:max "(" iprop ")" : iprop
 syntax:arg iprop:arg colGt iprop:max : iprop
-syntax:arg (priority := low) iprop:arg colGt term:max : iprop
 
 macro_rules
-  | `(`[iprop| $id:ident]) => `($id)
-  | `(`[iprop| ($P)])  => `(`[iprop| $P])
+  | `(`[iprop| $id:ident])   => `($id)
+  | `(`[iprop| ($P)])        => `(`[iprop| $P])
   | `(`[iprop| $P $Q:iprop]) => `(`[iprop| $P] `[iprop| $Q])
-  | `(`[iprop| $P $Q:term]) => `(`[iprop| $P] $Q)
 
 syntax "⌜" term "⌝" : iprop
 syntax:35 iprop:36 " ∧ " iprop:35 : iprop
@@ -45,10 +43,7 @@ syntax:35 iprop:36 " ∗ " iprop:35 : iprop
 syntax:27 iprop:28 " -∗ " iprop:27 : iprop
 
 macro_rules
-  | `(`[iprop| $id:ident]) =>
-    match id.getId.eraseMacroScopes with
-    | `emp => `(BIBase.emp)
-    | _ => Macro.throwUnsupported
+  | `(`[iprop| emp])       => `(BIBase.emp)
   | `(`[iprop| ⌜$φ⌝])      => `(BIBase.pure $φ)
   | `(`[iprop| $P ∧ $Q])   => `(BIBase.and `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| $P ∨ $Q])   => `(BIBase.or `[iprop| $P] `[iprop| $Q])
@@ -61,12 +56,9 @@ macro_rules
 syntax:max "¬" iprop:40 : iprop
 
 macro_rules
-  | `(`[iprop| $id:ident]) =>
-    match id.getId.eraseMacroScopes with
-    | `True  => `(BIBase.pure True)
-    | `False => `(BIBase.pure False)
-    | _ => Macro.throwUnsupported
-  | `(`[iprop| ¬$P]) => `(`[iprop| $P → False])
+  | `(`[iprop| True])  => `(BIBase.pure True)
+  | `(`[iprop| False]) => `(BIBase.pure False)
+  | `(`[iprop| ¬$P])   => `(`[iprop| $P → False])
 
 end Syntax
 
@@ -89,11 +81,11 @@ class BI (car : Type) extends BIBase car where
   impl_intro_r (P Q R : car) : (P ∧ Q ⊢ R) → P ⊢ Q → R
   impl_elim_l' (P Q R : car) : (P ⊢ Q → R) → P ∧ Q ⊢ R
 
-  forall_intro (P : car) (Ψ : A → car) : (∀ a, P ⊢ Ψ a) → P ⊢ ∀ a, Ψ a
-  forall_elim {Ψ : A → car} (a : A) : (∀ a, Ψ a) ⊢ Ψ a
+  forall_intro (P : car) (Ψ : α → car) : (∀ a, P ⊢ Ψ a) → P ⊢ ∀ a, Ψ a
+  forall_elim {Ψ : α → car} (a : α) : (∀ a, Ψ a) ⊢ Ψ a
 
-  exist_intro {Ψ : A → car} (a : A) : Ψ a ⊢ ∃ a, Ψ a
-  exist_elim (Φ : A → car) (Q : car) : (∀ a, Φ a ⊢ Q) → (∃ a, Φ a) ⊢ Q
+  exist_intro {Ψ : α → car} (a : α) : Ψ a ⊢ ∃ a, Ψ a
+  exist_elim (Φ : α → car) (Q : car) : (∀ a, Φ a ⊢ Q) → (∃ a, Φ a) ⊢ Q
 
   sep_mono (P P' Q Q' : car) : (P ⊢ Q) → (P' ⊢ Q') → P ∗ P' ⊢ Q ∗ Q'
   emp_sep_1 (P : car) : P ⊢ emp ∗ P
@@ -103,4 +95,4 @@ class BI (car : Type) extends BIBase car where
   wand_intro_r (P Q R : car) : (P ∗ Q ⊢ R) → P ⊢ Q -∗ R
   wand_elim_l' (P Q R : car) : (P ⊢ Q -∗ R) → P ∗ Q ⊢ R
 
-end Iris.BI.Interface
+end Iris.BI

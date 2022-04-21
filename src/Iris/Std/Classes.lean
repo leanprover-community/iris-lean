@@ -1,18 +1,18 @@
-namespace Iris.Std.Classes
+namespace Iris.Std
 
-abbrev relation (A : Type) := A → A → Prop
+abbrev Relation (α : Type) := α → α → Prop
 
-class Equiv (A : Type) where
-  equiv : relation A
+class Equiv (α : Type) where
+  equiv : Relation α
 
 infix:50 " ≡ " => Equiv.equiv
 
-class Reflexive (R : relation A) where
-  reflexivity : ∀ x : A, R x x
+class Reflexive (R : Relation α) where
+  reflexivity : ∀ x : α, R x x
 
-class Transitive (R : relation A) where
+class Transitive (R : Relation α) where
   transitivity : ∀ {x y z}, R x y → R y z → R x z
 
-class PreOrder (R : relation A) extends Reflexive R, Transitive R
+class PreOrder (R : Relation α) extends Reflexive R, Transitive R
 
-end Iris.Std.Classes
+end Iris.Std
