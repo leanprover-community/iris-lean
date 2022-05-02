@@ -13,7 +13,7 @@ syntax "Iris Proof Mode" : envs_display_line
 syntax "─"+ : envs_display_line
 syntax "─"+ " □" : envs_display_line
 syntax "─"+ " ∗" : envs_display_line
-syntax (ident)? " : " iprop : envs_display_line
+syntax (ident)? " : " term : envs_display_line
 
 abbrev delab := Lean.PrettyPrinter.delab
 

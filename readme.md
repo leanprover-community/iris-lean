@@ -11,6 +11,7 @@ Coq formalization of Iris: https://gitlab.mpi-sws.org/iris/iris/
 Most of the unicode characters used in Iris can be written with the Lean extension replacement, e.g. `\ast` will automatically be replaced with `∗`. To add additional replacements, edit the Lean extension setting `lean4.input.customTranslations`. Suggested additional replacements are listed below.
 
 ```json
+"sep": "∗",
 "wand": "-∗"
 ```
 

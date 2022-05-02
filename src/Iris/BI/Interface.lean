@@ -19,29 +19,31 @@ class BIBase (car : Type) extends Equiv car where
 
 section Syntax
 
-declare_syntax_cat iprop
+-- define `iprop` embedding in `term`
+syntax:max "`[iprop| " term "]" : term
+syntax:max "`[term| " term "]" : term
 
-syntax:max "`[iprop| " iprop "]" : term
-macro:25 P:iprop:29 " ⊢ " Q:iprop:26 : term => `(BIBase.entails `[iprop| $P] `[iprop| $Q])
+macro:25 P:term:29 " ⊢ " Q:term:25 : term => `(BIBase.entails `[iprop| $P] `[iprop| $Q])
 
-syntax:max ident : iprop
-syntax:max "(" iprop ")" : iprop
-syntax:arg iprop:arg colGt iprop:max : iprop
-
+-- allow fallback to `term`
 macro_rules
-  | `(`[iprop| $id:ident])   => `($id)
-  | `(`[iprop| ($P)])        => `(`[iprop| $P])
-  | `(`[iprop| $P $Q:iprop]) => `(`[iprop| $P] `[iprop| $Q])
+  | `(`[iprop| `[term| $t]]) => `($t)
+  | `(`[iprop| $t])          => `($t)
 
-syntax "⌜" term "⌝" : iprop
-syntax:35 iprop:36 " ∧ " iprop:35 : iprop
-syntax:30 iprop:31 " ∨ " iprop:30 : iprop
-syntax:27 iprop:28 " → " iprop:27 : iprop
-syntax:26 "∀ " explicitBinders ", " iprop:26 : iprop
-syntax:26 "∃ " explicitBinders ", " iprop:26 : iprop
-syntax:35 iprop:36 " ∗ " iprop:35 : iprop
-syntax:27 iprop:28 " -∗ " iprop:27 : iprop
+-- carry `iprop` over some `term` constructs
+macro_rules
+  | `(`[iprop| ($P)])  => `(`[iprop| $P])
+  | `(`[iprop| $P $Q]) => `(`[iprop| $P] `[iprop| $Q])
 
+-- define new `iprop` syntax
+syntax "⌜" term "⌝" : term
+syntax:35 term:36 " ∗ " term:35 : term
+syntax:27 term:28 " -∗ " term:27 : term
+
+-- overload syntax where necessary
+syntax:26 "∀ " explicitBinders ", " term:26 : term
+
+-- define `iprop` syntax interpretation
 macro_rules
   | `(`[iprop| emp])       => `(BIBase.emp)
   | `(`[iprop| ⌜$φ⌝])      => `(BIBase.pure $φ)
@@ -53,8 +55,7 @@ macro_rules
   | `(`[iprop| $P ∗ $Q])   => `(BIBase.sep `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| $P -∗ $Q])  => `(BIBase.wand `[iprop| $P] `[iprop| $Q])
 
-syntax:max "¬" iprop:40 : iprop
-
+-- define additional `iprop` syntax interpretation
 macro_rules
   | `(`[iprop| True])  => `(BIBase.pure True)
   | `(`[iprop| False]) => `(BIBase.pure False)
