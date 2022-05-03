@@ -15,6 +15,7 @@ class BIBase (car : Type) extends Equiv car where
   «exists» : (α → car) → car
   sep : car → car → car
   wand : car → car → car
+  persistently : car → car
 
 
 section Syntax
@@ -34,11 +35,13 @@ macro_rules
 macro_rules
   | `(`[iprop| ($P)])  => `(`[iprop| $P])
   | `(`[iprop| $P $Q]) => `(`[iprop| $P] `[iprop| $Q])
+  | `(`[iprop| if $c then $t else $e]) => `(if $c then `[iprop| $t] else `[iprop| $e])
 
 -- define new `iprop` syntax
 syntax "⌜" term "⌝" : term
 syntax:35 term:36 " ∗ " term:35 : term
 syntax:27 term:28 " -∗ " term:27 : term
+syntax:max "<pers> " term:40 : term
 
 -- overload syntax where necessary
 syntax:26 "∀ " explicitBinders ", " term:26 : term
@@ -54,6 +57,7 @@ macro_rules
   | `(`[iprop| ∃ $xs, $Ψ]) => do expandExplicitBinders ``BIBase.exists xs (← `(`[iprop| $Ψ]))
   | `(`[iprop| $P ∗ $Q])   => `(BIBase.sep `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| $P -∗ $Q])  => `(BIBase.wand `[iprop| $P] `[iprop| $Q])
+  | `(`[iprop| <pers> $P]) => `(BIBase.persistently `[iprop| $P])
 
 -- define additional `iprop` syntax interpretation
 macro_rules
@@ -93,7 +97,16 @@ class BI (car : Type) extends BIBase car where
   emp_sep_2 (P : car) : emp ∗ P ⊢ P
   sep_comm' (P Q : car) : P ∗ Q ⊢ Q ∗ P
   sep_assoc' (P Q R : car) : (P ∗ Q) ∗ R ⊢ P ∗ (Q ∗ R)
+
   wand_intro_r (P Q R : car) : (P ∗ Q ⊢ R) → P ⊢ Q -∗ R
   wand_elim_l' (P Q R : car) : (P ⊢ Q -∗ R) → P ∗ Q ⊢ R
+
+  persistently_mono (P Q : car) : (P ⊢ Q) → <pers> P ⊢ <pers> Q
+  persistently_idemp_2 (P : car) : <pers> P ⊢ <pers> <pers> P
+  persistently_emp_2 : (emp : car) ⊢ <pers> emp
+  persistently_and_2 (P Q : car) : (<pers> P) ∧ (<pers> Q) ⊢ <pers> (P ∧ Q)
+  persistently_exist_1 (Ψ : α → car) : <pers> (∃ a, Ψ a) ⊢ ∃ a, <pers> (Ψ a)
+  persistently_absorbing (P Q : car) : <pers> P ∗ Q ⊢ <pers> P
+  persistently_and_sep_elim (P Q : car) : <pers> P ∧ Q ⊢ P ∗ Q
 
 end Iris.BI

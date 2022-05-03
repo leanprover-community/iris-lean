@@ -16,9 +16,9 @@ inductive HypothesisType | intuitionistic | spatial
 def of_envs [BI PROP] (Γₚ Γₛ : List PROP) : PROP :=
   match Γₚ, Γₛ with
   | [], [] => `[iprop| emp]
-  | _, []  => `[iprop| [∧] Γₚ]
+  | _, []  => `[iprop| □ [∧] Γₚ]
   | [], _  => `[iprop| [∗] Γₛ]
-  | _, _   => `[iprop| [∧] Γₚ ∗ [∗] Γₛ]
+  | _, _   => `[iprop| □ [∧] Γₚ ∗ [∗] Γₛ]
 
 def envs_entails [BI PROP] (Δ : Envs PROP) (Q : PROP) : Prop :=
   of_envs Δ.intuitionistic Δ.spatial ⊢ Q
