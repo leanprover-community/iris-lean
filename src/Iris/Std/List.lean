@@ -1,5 +1,10 @@
 namespace List
 
+@[reducible]
+def isEmptyR : List α → Bool
+  | []     => true
+  | _ :: _ => false
+
 @[specialize]
 def foldl1 {α} (f : α → α → α) (alt : Unit → α) : List α → α
   | []     => alt ()
