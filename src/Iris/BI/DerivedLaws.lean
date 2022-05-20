@@ -1,5 +1,6 @@
 import Iris.BI.Classes
 import Iris.BI.DerivedConnectives
+import Iris.BI.Extensions
 import Iris.BI.Interface
 
 namespace Iris.BI
@@ -15,7 +16,6 @@ instance and_persistent (P Q : PROP) [Persistent P] [Persistent Q] : Persistent 
   persistent := sorry
 instance or_persistent (P Q : PROP) [Persistent P] [Persistent Q] : Persistent `[iprop| P ∨ Q] where
   persistent := sorry
--- TODO `forall_persistent` if `BiPersistentlyForall`
 instance exist_persistent (Ψ : α → PROP) (h : ∀ x, Persistent (Ψ x)) : Persistent `[iprop| ∃ x, Ψ x] where
   persistent := sorry
 
@@ -34,7 +34,6 @@ instance absorbingly_persistent (P : PROP) [Persistent P] : Persistent `[iprop| 
   persistent := sorry
 instance absorbingly_if_persistent (p : Bool) (P : PROP) [Persistent P] : Persistent `[iprop| <absorb>?p P] where
   persistent := sorry
--- TODO add `from_option_persistent`
 
 -- Affine instances
 instance emp_affine : Affine (PROP := PROP) `[iprop| emp] where
@@ -94,5 +93,14 @@ instance persistently_absorbing (P : PROP) : Absorbing `[iprop| <pers> P] where
   absorbing := sorry
 instance persistently_if_absorbing (P : PROP) (p : Bool) [Absorbing P] : Absorbing `[iprop| <pers>?p P] where
   absorbing := sorry
+
+section Affine
+
+variable [BIAffine PROP]
+
+instance bi_affine_absorbing (P : PROP) : Absorbing P where
+  absorbing := sorry
+
+end Affine
 
 end Iris.BI

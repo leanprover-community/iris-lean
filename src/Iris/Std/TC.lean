@@ -19,12 +19,12 @@ instance [t : T] : TCOr T U := @TCOr.l T U t
 instance [u : U] : TCOr T U := @TCOr.r T U u
 
 
-/-- Type class instances search requires `c` to be fully reduced. -/
-class inductive TCIte (c : Bool) (T U : Sort _)
-  | t : (_ : c = true) → [T] → TCIte c T U
-  | e : (_ : c = false) → [U] → TCIte c T U
+/-- Type class instances search requires the condition to be fully reduced. -/
+class inductive TCIte : Bool → Sort u → Sort v → Sort (max (u + 1) (v + 1))
+  | t [t : T] : TCIte true T U
+  | e [u : U] : TCIte false T U
 
-instance [t : T] : TCIte true T U := @TCIte.t true T U (by rfl) t
-instance [u : U] : TCIte false T U := @TCIte.e false T U (by rfl) u
+instance [t : T] : TCIte true T U := TCIte.t (t := t)
+instance [u : U] : TCIte false T U := TCIte.e (u := u)
 
 end Iris.Std
