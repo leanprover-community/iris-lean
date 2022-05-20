@@ -1,9 +1,11 @@
+import Iris.BI.Notation
 import Iris.Std.Classes
 
 namespace Iris.BI
 open Iris.Std
 open Lean
 
+-- interface with basic `BI` functions
 class BIBase (car : Type) extends Equiv car where
   entails : car → car → Prop
   emp : car
@@ -20,33 +22,19 @@ class BIBase (car : Type) extends Equiv car where
 
 section Syntax
 
--- define `iprop` embedding in `term`
-syntax:max "`[iprop| " term "]" : term
-syntax:max "`[term| " term "]" : term
-
+-- `iprop` embedding in `term`
 macro:25 P:term:29 " ⊢ " Q:term:25 : term => `(BIBase.entails `[iprop| $P] `[iprop| $Q])
 
--- allow fallback to `term`
-macro_rules
-  | `(`[iprop| `[term| $t]]) => `($t)
-  | `(`[iprop| $t])          => `($t)
-
--- carry `iprop` over some `term` constructs
-macro_rules
-  | `(`[iprop| ($P)])  => `(`[iprop| $P])
-  | `(`[iprop| $P $Q]) => `(`[iprop| $P] `[iprop| $Q])
-  | `(`[iprop| if $c then $t else $e]) => `(if $c then `[iprop| $t] else `[iprop| $e])
-
--- define new `iprop` syntax
+-- `iprop` syntax
 syntax "⌜" term "⌝" : term
 syntax:35 term:36 " ∗ " term:35 : term
 syntax:27 term:28 " -∗ " term:27 : term
 syntax:max "<pers> " term:40 : term
 
--- overload syntax where necessary
+-- syntax overloading where necessary
 syntax:26 "∀ " explicitBinders ", " term:26 : term
 
--- define `iprop` syntax interpretation
+-- `iprop` syntax interpretation
 macro_rules
   | `(`[iprop| emp])       => `(BIBase.emp)
   | `(`[iprop| ⌜$φ⌝])      => `(BIBase.pure $φ)
@@ -59,7 +47,7 @@ macro_rules
   | `(`[iprop| $P -∗ $Q])  => `(BIBase.wand `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| <pers> $P]) => `(BIBase.persistently `[iprop| $P])
 
--- define additional `iprop` syntax interpretation
+-- additional `iprop` syntax interpretation
 macro_rules
   | `(`[iprop| True])  => `(BIBase.pure True)
   | `(`[iprop| False]) => `(BIBase.pure False)
@@ -68,6 +56,43 @@ macro_rules
 end Syntax
 
 
+-- delaboration rules
+section Delab
+
+delab_rule BIBase.entails
+  | `(BIBase.entails $P $Q) => do `($(← unpackIprop P) ⊢ $(← unpackIprop Q))
+
+delab_rule BIBase.emp
+  | `(BIBase.emp) => `(`[iprop| $(mkIdent `emp)])
+delab_rule BIBase.pure
+  | `(BIBase.pure $φ) => `(`[iprop| ⌜$φ⌝])
+delab_rule BIBase.and
+  | `(BIBase.and $P $Q) => do `(`[iprop| $(← unpackIprop P) ∧ $(← unpackIprop Q)])
+delab_rule BIBase.or
+  | `(BIBase.or $P $Q) => do `(`[iprop| $(← unpackIprop P) ∨ $(← unpackIprop Q)])
+delab_rule BIBase.impl
+  | `(BIBase.impl $P $Q) => do `(`[iprop| $(← unpackIprop P) → $(← unpackIprop Q)])
+delab_rule BIBase.forall
+  | `(BIBase.forall fun $x => $Ψ) => do `(`[iprop| ∀ $x:ident, $(← unpackIprop Ψ)])
+delab_rule BIBase.exists
+  | `(BIBase.exists fun $x => $Ψ) => do `(`[iprop| ∃ $x:ident, $(← unpackIprop Ψ)])
+delab_rule BIBase.sep
+  | `(BIBase.sep $P $Q) => do `(`[iprop| $(← unpackIprop P) ∗ $(← unpackIprop Q)])
+delab_rule BIBase.wand
+  | `(BIBase.wand $P $Q) => do `(`[iprop| $(← unpackIprop P) -∗ $(← unpackIprop Q)])
+delab_rule BIBase.persistently
+  | `(BIBase.persistently $P) => do `(`[iprop| <pers> $(← unpackIprop P)])
+
+delab_rule BIBase.pure
+  | `(BIBase.pure True) => `(`[iprop| $(mkIdent `True)])
+  | `(BIBase.pure False) => `(`[iprop| $(mkIdent `False)])
+delab_rule BIBase.impl
+  | `(BIBase.impl $P `[iprop| False]) => do `(`[iprop| ¬$(← unpackIprop P)])
+
+end Delab
+
+
+-- axioms that must hold for every `BI` interface
 class BI (car : Type) extends BIBase car where
   entails_po : PreOrder entails
   equiv_entails (P Q : car) : (P ≡ Q) ↔ (P ⊢ Q) ∧ (Q ⊢ P)

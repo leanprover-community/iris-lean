@@ -1,8 +1,10 @@
+import Iris.BI.Notation
 import Iris.Proofmode.Environments
 
 import Lean.PrettyPrinter.Delaborator
 
 namespace Iris.Proofmode
+open Iris.BI
 open Lean Lean.Expr Lean.Meta Lean.PrettyPrinter.Delaborator Lean.PrettyPrinter.Delaborator.SubExpr
 
 declare_syntax_cat envs_display
@@ -23,18 +25,18 @@ def delabEnvsEntails : Delab := do
 
   -- extract environment
   let some (Γₚ, Γₛ, P) := extractEnvsEntails? expr
-    | throwError "ill-formed proof environment"
+    | failure
 
   let some Γₚ := extractHypotheses? Γₚ
-    | throwError "ill-formed proof environment"
+    | failure
   let some Γₛ := extractHypotheses? Γₛ
-    | throwError "ill-formed proof environment"
+    | failure
 
   -- delaborate
   let Γₚ ← delabHypotheses Γₚ
   let Γₛ ← delabHypotheses Γₛ
 
-  let P ← delab P
+  let P ← unpackIprop (← delab P)
 
   -- build syntax
   `(envs_display| Iris Proof Mode
@@ -50,7 +52,7 @@ where
 
   delabHypotheses (Γ : Array $ Option Name × Expr) : DelabM $ Array Syntax :=
     Γ.mapM fun (name?, h) => do
-      let h ← delab h
+      let h ← unpackIprop (← delab h)
       if let some name := name? then
         let name := mkIdent name
         `(envs_display_line| $name:ident : $h)
