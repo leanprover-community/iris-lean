@@ -9,7 +9,7 @@ def appM? (e : Expr) (fName : Name) : Option (Array Expr) :=
   else
     none
 
-def modifyAppOptM (e : Expr) (args : Array (Option Expr)) : Expr :=
+def modifyAppOptM (e : Expr) (args : Array <| Option Expr) : Expr :=
   mkAppN e.getAppFn <| e.getAppArgs.zipWith args (fun a b => if let some b := b then b else a)
 
 partial def asListExpr_any? (list : Expr) (pred : Expr → Bool) : Option Bool :=
@@ -26,23 +26,25 @@ partial def asListExpr_findIndexM? [Monad M] (list : Expr) (pred : Expr → M Bo
 where
   go (list : Expr) (idx : Nat) : M <| Option Nat := do
     if let some (_, a, list') := app3? list `List.cons then
-      if (← pred a) then pure <| some idx
+      if ← pred a then pure <| some idx
       else go list' (idx + 1)
     else
       pure none
 
-partial def asListExpr_findIndex? (list : Expr) (pred : Expr → Bool) : Option Nat := Id.run <| do
+partial def asListExpr_findIndex? (list : Expr) (pred : Expr → Bool) : Option Nat := Id.run do
   asListExpr_findIndexM? list pred
 
 def asListExpr_get? (list : Expr) : Nat → Option Expr
-  | 0 => Id.run <| do
-    let some (_, a, _) := app3? list `List.cons
-      | none
-    return a
-  | n + 1 => Id.run <| do
-    let some (_, _, list') := app3? list `List.cons
-      | none
-    return asListExpr_get? list' n
+  | 0 =>
+    if let some (_, a, _) := app3? list `List.cons then
+      some a
+    else
+      none
+  | n + 1 =>
+    if let some (_, _, list') := app3? list `List.cons then
+      asListExpr_get? list' n
+    else
+      none
 
 partial def asListExpr_length? (list : Expr) : Option Nat :=
   go list 0
@@ -56,26 +58,26 @@ where
       none
 
 def asListExpr_set? (list : Expr) (e : Expr) : Nat → Option Expr
-  | 0 => Id.run <| do
+  | 0 => Id.run do
     let some (_, a, _) := app3? list `List.cons
       | none
-    return modifyAppOptM list #[none, e, none]
-  | n + 1 => Id.run <| do
+    some <| modifyAppOptM list #[none, e, none]
+  | n + 1 => Id.run do
     let some (_, _, list') := app3? list `List.cons
       | none
     let some list' := asListExpr_set? list' e n
       | none
-    return modifyAppOptM list #[none, none, list']
+    some <| modifyAppOptM list #[none, none, list']
 
-partial def asListExpr_toList? (list : Expr) : Option (List Expr) := Id.run <| do
+partial def asListExpr_toList? (list : Expr) : Option <| List Expr :=
   if let some (_, a, list') := app3? list `List.cons then
-    return asListExpr_toList? list' |>.map (a :: ·)
+    asListExpr_toList? list' |>.map (a :: ·)
   else if let some _ := app1? list `List.nil then
-    return some []
+    some []
   else
-    return none
+    none
 
-def getMDataName? (e : Expr) : Option Name := match e with
+def getMDataName? : Expr → Option Name
   | Expr.mdata md _ _ => md.get? "name"
   | _ => none
 

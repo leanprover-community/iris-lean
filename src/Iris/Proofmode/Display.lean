@@ -47,10 +47,10 @@ def delabEnvsEntails : Delab := do
                   ───────────────────────────────────── ∗
                   $P)
 where
-  extractHypotheses? (Γ : Expr) : Option $ Array $ Option Name × Expr :=
-    Γ.asListExpr_toList?.map (· |>.map (fun h => (getMDataName? h, h)) |>.toArray)
+  extractHypotheses? (Γ : Expr) : Option <| Array <| Option Name × Expr :=
+    Γ.asListExpr_toList?.map (· |>.map (fun h => (h.getMDataName?, h)) |>.toArray)
 
-  delabHypotheses (Γ : Array $ Option Name × Expr) : DelabM $ Array Syntax :=
+  delabHypotheses (Γ : Array <| Option Name × Expr) : DelabM <| Array Syntax :=
     Γ.mapM fun (name?, h) => do
       let h ← unpackIprop (← delab h)
       if let some name := name? then
