@@ -78,4 +78,71 @@ instance (priority := default - 10) from_affinely_intuitionistically (P : PROP) 
 where
   from_affinely := sorry
 
+-- FromAssumption
+instance (priority := default + 100) from_assumption_exact (p : Bool) (P : PROP) :
+  FromAssumption p P P
+where
+  from_assumption := sorry
+
+instance (priority := default + 30) from_assumption_persistently_r (P Q : PROP) :
+  [FromAssumption true P Q] →
+  FromAssumption true P `[iprop| <pers> Q]
+where
+  from_assumption := sorry
+
+instance (priority := default + 30) from_assumption_affinely_r (P Q : PROP) :
+  [FromAssumption true P Q] →
+  FromAssumption true P `[iprop| <affine> Q]
+where
+  from_assumption := sorry
+
+instance (priority := default + 30) from_assumption_intuitionistically_r (P Q : PROP) :
+  [FromAssumption true P Q] →
+  FromAssumption true P `[iprop| □ Q]
+where
+  from_assumption := sorry
+
+instance (priority := default + 20) from_assumption_absorbingly_r (p : Bool) (P Q : PROP) :
+  [FromAssumption p P Q] →
+  FromAssumption p P `[iprop| <absorb> Q]
+where
+  from_assumption := sorry
+
+instance (priority := default + 20) from_assumption_intuitionistically_l (p : Bool) (P Q : PROP) :
+  [FromAssumption true P Q] →
+  FromAssumption p `[iprop| □ P] Q
+where
+  from_assumption := sorry
+
+instance (priority := default + 20) from_assumption_intuitionistically_l_true (p : Bool) (P Q : PROP) :
+  [FromAssumption p P Q] →
+  FromAssumption p `[iprop| □ P] Q
+where
+  from_assumption := sorry
+
+instance (priority := default + 30) from_assumption_persistently_l_true (P Q : PROP) :
+  [FromAssumption true P Q] →
+  FromAssumption true `[iprop| <pers> P] Q
+where
+  from_assumption := sorry
+
+instance (priority := default + 30) from_assumption_persistently_l_false (P Q : PROP) :
+  [BIAffine PROP] →
+  [FromAssumption true P Q] →
+  FromAssumption false `[iprop| <pers> P] Q
+where
+  from_assumption := sorry
+
+instance (priority := default + 20) from_assumption_affinely_l (p : Bool) (P Q : PROP) :
+  [FromAssumption p P Q] →
+  FromAssumption p `[iprop| <affine> P] Q
+where
+  from_assumption := sorry
+
+instance (priority := default + 10) from_assumption_forall (p : Bool) (Φ : α → PROP) (x : α) (Q : PROP) :
+  [FromAssumption p (Φ x) Q] →
+  FromAssumption p `[iprop| ∀ x, Φ x] Q
+where
+  from_assumption := sorry
+
 end Iris.Proofmode

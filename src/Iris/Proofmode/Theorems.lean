@@ -45,4 +45,24 @@ theorem tac_wand_intro_intuitionistic {Γₚ Γₛ : List PROP} {P P' Q : PROP} 
   envs_entails ⟨Γₚ, Γₛ⟩ R
 := sorry
 
+-- assumptions
+theorem tac_assumption {Γₚ Γₛ : List PROP} (i : EnvsIndex Γₚ.length Γₛ.length) (Q : PROP) :
+  let (p, i, P) : Bool × Nat × PROP := match i with
+    | .p i => (true, i, Γₚ.getR i)
+    | .s i => (false, i, Γₛ.getR i)
+  [FromAssumption p P Q] →
+  let Γₛ' := Γₛ.eraseIdxR i
+  [TCIte Γₛ'.isEmptyR TCTrue (AffineEnv Γₛ')] →
+  envs_entails ⟨Γₚ, Γₛ⟩ Q
+:= sorry
+
+-- false
+theorem tac_false_destruct {Γₚ Γₛ : List PROP} (i : EnvsIndex Γₚ.length Γₛ.length) (Q : PROP) :
+  let P := match i with
+    | .p i => Γₚ.getR i
+    | .s i => Γₛ.getR i
+  P = `[iprop| False] →
+  envs_entails ⟨Γₚ, Γₛ⟩ Q
+:= sorry
+
 end Iris.Proofmode

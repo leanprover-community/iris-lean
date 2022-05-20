@@ -35,4 +35,8 @@ class IntoPersistent (p : Bool) [BI PROP] (P : PROP) (Q : outParam PROP) where
 class FromAffinely [BI PROP] (P : outParam PROP) (Q : PROP) where
   from_affinely : <affine> Q ⊢ P
 
+
+class FromAssumption (p : Bool) [BI PROP] (P Q : PROP) where
+  from_assumption : □?p P ⊢ Q
+
 end Iris.Proofmode

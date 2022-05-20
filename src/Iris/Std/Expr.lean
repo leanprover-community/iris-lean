@@ -21,6 +21,19 @@ partial def asListExpr_any? (list : Expr) (pred : Expr → Bool) : Option Bool :
   else
     none
 
+partial def asListExpr_findIndexM? [Monad M] (list : Expr) (pred : Expr → M Bool) : M <| Option Nat :=
+  go list 0
+where
+  go (list : Expr) (idx : Nat) : M <| Option Nat := do
+    if let some (_, a, list') := app3? list `List.cons then
+      if (← pred a) then pure <| some idx
+      else go list' (idx + 1)
+    else
+      pure none
+
+partial def asListExpr_findIndex? (list : Expr) (pred : Expr → Bool) : Option Nat := Id.run <| do
+  asListExpr_findIndexM? list pred
+
 def asListExpr_get? (list : Expr) : Nat → Option Expr
   | 0 => Id.run <| do
     let some (_, a, _) := app3? list `List.cons

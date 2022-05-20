@@ -1,7 +1,6 @@
 import Iris.Proofmode.Environments
 import Iris.Proofmode.Reduction
 import Iris.Proofmode.Theorems
-import Iris.Std.Syntax
 
 import Lean.Elab
 
@@ -57,7 +56,7 @@ scoped elab "iRename " categ:(&"p" <|> &"s") idx:num name:ident : tactic => do
     | _  => none
   let some categ := categ
     | throwUnsupportedSyntax
-  let some idx := idx.getAtomValFromNode? `num String.toNat?
+  let some idx := idx.isNatLit?
     | throwUnsupportedSyntax
   let name := name.getId
   if name.isAnonymous then
@@ -169,5 +168,68 @@ elab "iIntro " colGt "#" colGt name:ident : tactic => do
     pmReduce ;
     iRename p $(quote p_length) $name
   ))
+
+
+elab "iExact " colGt name:ident : tactic => do
+  -- parse syntax
+  let name := name.getId
+  if name.isAnonymous then
+    throwUnsupportedSyntax
+
+  -- extract environment
+  let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal?
+
+  let [some lₚ, some lₛ] := [Γₚ, Γₛ].map Lean.Expr.asListExpr_length?
+    | throwError "ill-formed proof environment"
+
+  -- find hypothesis index
+  let envsIndex ←
+    if let some i := Γₚ.asListExpr_findIndex? (·.getMDataName?.isEqSome name) then
+      `(EnvsIndex.p ⟨$(quote i), by show $(quote i) < $(quote lₚ) ; decide⟩)
+    else if let some i := Γₛ.asListExpr_findIndex? (·.getMDataName?.isEqSome name) then
+      `(EnvsIndex.s ⟨$(quote i), by show $(quote i) < $(quote lₛ) ; decide⟩)
+    else
+      throwError "unknown hypothesis"
+
+  -- try to solve the goal with the found hypothesis
+  try evalTactic (← `(tactic|
+    first
+    | refine tac_assumption $envsIndex _
+    | fail
+  ))
+  catch _ => throwError "failed to use the hypothesis to close the goal"
+
+elab "iAssumption" : tactic => do
+  -- extract environment
+  let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal?
+
+  let [some lₚ, some lₛ] := [Γₚ, Γₛ].map Lean.Expr.asListExpr_length?
+    | throwError "ill-formed proof environment"
+
+  -- try to close the goal
+  let tryCloseGoal (envsIndex : Syntax) : TacticM Bool := do
+    try
+      evalTactic (← `(tactic|
+        first
+        | refine tac_assumption $envsIndex _
+        | refine tac_false_destruct $envsIndex _ (by rfl)
+        | fail
+      ))
+      pure true
+    catch _ => pure false
+
+  -- try all available hypotheses
+  for i in List.range lₚ do
+    let envsIndex ← `(EnvsIndex.p ⟨$(quote i), by show $(quote i) < $(quote lₚ) ; decide⟩)
+    if ← tryCloseGoal envsIndex then
+      return ()
+
+  for i in List.range lₛ do
+    let envsIndex ← `(EnvsIndex.s ⟨$(quote i), by show $(quote i) < $(quote lₛ) ; decide⟩)
+    if ← tryCloseGoal envsIndex then
+      return ()
+
+  -- fail if none succeeded
+  throwError "no matching hypothesis found or remaining environment cannot be cleared"
 
 end Iris.Proofmode
