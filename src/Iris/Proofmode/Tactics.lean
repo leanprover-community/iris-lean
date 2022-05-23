@@ -50,12 +50,10 @@ namespace Internal
 
 scoped elab "iRename " categ:(&"p" <|> &"s") idx:num name:ident : tactic => do
   -- parse syntax
-  let categ : Option HypothesisType := match categ.getKind with
-    | `p => some .intuitionistic
-    | `s => some .spatial
-    | _  => none
-  let some categ := categ
-    | throwUnsupportedSyntax
+  let categ ← match categ.getKind with
+    | `p => pure HypothesisType.intuitionistic
+    | `s => pure HypothesisType.spatial
+    | _  => throwUnsupportedSyntax
   let some idx := idx.isNatLit?
     | throwUnsupportedSyntax
   let name := name.getId
@@ -231,5 +229,63 @@ elab "iAssumption" : tactic => do
 
   -- fail if none succeeded
   throwError "no matching hypothesis found or remaining environment cannot be cleared"
+
+
+elab "iSplit" : tactic => do
+  -- start proof mode if not already
+  evalTactic (← `(tactic|
+    iStartProof
+  ))
+
+  -- split conjunction
+  try evalTactic (← `(tactic|
+    first
+    | refine tac_and_split _ ?And.left ?And.right
+    | fail
+  ))
+  catch _ => throwError "unable to split conjunction"
+
+namespace Internal
+
+elab "iSplit" side:(&"L" <|> &"R") "[" names:sepBy(ident, ",") "]" : tactic => do
+  -- parse syntax
+  let splitRight ← match side.getKind with
+    | `L => pure false
+    | `R => pure true
+    | _  => throwUnsupportedSyntax
+  let names ← names.getElems.mapM (fun name => do
+    let name := name.getId
+    if name.isAnonymous then
+      throwUnsupportedSyntax
+    pure name
+  )
+
+  -- extract environment
+  let (_, Γₛ, _) ← extractEnvsEntailsFromGoal? true
+
+  -- find indices
+  let indices ← names.mapM (fun name => do
+    let some index := Γₛ.asListExpr_findIndex? (·.getMDataName?.isEqSome name)
+      | throwError "unknown spatial hypothesis"
+    pure index
+  )
+  let indices := indices |>.qsort (· < ·) |>.toList
+
+  -- split conjunction
+  try evalTactic (← `(tactic|
+    first
+    | refine tac_sep_split $(quote indices) $(quote splitRight) _ ?Sep.left ?Sep.right
+      <;> pmReduce
+    | fail
+  ))
+  catch _ => throwError "unable to split separating conjunction"
+
+end Internal
+
+macro "iSplitL" "[" names:sepBy(ident, ",") "]" : tactic => `(tactic| iSplit L [$[$names:ident],*])
+macro "iSplitR" "[" names:sepBy(ident, ",") "]" : tactic => `(tactic| iSplit R [$[$names:ident],*])
+
+macro "iSplitL" : tactic => `(tactic| iSplit R [])
+macro "iSplitR" : tactic => `(tactic| iSplit L [])
 
 end Iris.Proofmode

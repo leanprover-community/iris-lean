@@ -1,8 +1,9 @@
 import Iris.BI
 import Iris.Proofmode.Classes
+import Iris.Std.TC
 
 namespace Iris.Proofmode
-open Iris.BI
+open Iris.BI Iris.Std
 
 -- AsEmpValid
 instance (priority := default + 10) as_emp_valid_emp_valid [bi : BI PROP] (P : PROP) :
@@ -34,6 +35,85 @@ instance from_wand_wand [BI PROP] (P1 P2 : PROP) :
   FromWand `[iprop| P1 -∗ P2] P1 P2
 where
   from_wand := sorry
+
+-- FromAnd
+instance (priority := default - 10) from_and_and [BI PROP] (P1 P2 : PROP) :
+  FromAnd `[iprop| P1 ∧ P2] P1 P2
+where
+  from_and := sorry
+
+instance (priority := default + 30) from_and_sep_persistent_l [BI PROP] (P1 P1' P2 : PROP) :
+  [Persistent P1] →
+  [IntoAbsorbingly P1' P1] →
+  FromAnd `[iprop| P1 ∗ P2] P1' P2
+where
+  from_and := sorry
+
+instance (priority := default + 20) from_and_sep_persistent_r [BI PROP] (P1 P2 P2' : PROP) :
+  [Persistent P2] →
+  [IntoAbsorbingly P2' P2] →
+  FromAnd `[iprop| P1 ∗ P2] P1 P2'
+where
+  from_and := sorry
+
+instance (priority := default + 50) from_and_pure (φ ψ : Prop) [BI PROP] :
+  FromAnd (PROP := PROP) `[iprop| ⌜φ ∧ ψ⌝] `[iprop| ⌜φ⌝] `[iprop| ⌜ψ⌝]
+where
+  from_and := sorry
+
+instance (priority := default + 40) from_and_persistently [BI PROP] (P Q1 Q2 : PROP) :
+  [FromAnd P Q1 Q2] →
+  FromAnd `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+where
+  from_and := sorry
+
+instance (priority := default + 10) from_and_persistently_sep [BI PROP] (P Q1 Q2 : PROP) :
+  [FromSep P Q1 Q2] →
+  FromAnd `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+where
+  from_and := sorry
+
+-- FromSep
+instance (priority := default - 10) from_sep_sep [BI PROP] (P1 P2 : PROP) :
+  FromSep `[iprop| P1 ∗ P2] P1 P2
+where
+  from_sep := sorry
+
+instance (priority := default - 20) from_sep_and [BI PROP] (P1 P2 : PROP) :
+  [TCOr (Affine P1) (Absorbing P2)] →
+  [TCOr (Absorbing P1) (Affine P2)] →
+  FromSep `[iprop| P1 ∧ P2] P1 P2
+where
+  from_sep := sorry
+
+instance (priority := default + 20) from_sep_pure (φ ψ : Prop) [BI PROP] :
+  FromSep (PROP := PROP) `[iprop| ⌜φ ∧ ψ⌝] `[iprop| ⌜φ⌝] `[iprop| ⌜ψ⌝]
+where
+  from_sep := sorry
+
+instance (priority := default + 10) from_sep_affinely [BI PROP] (P Q1 Q2 : PROP) :
+  [FromSep P Q1 Q2] →
+  FromSep `[iprop| <affine> P] `[iprop| <affine> Q1] `[iprop| <affine> Q2]
+where
+  from_sep := sorry
+
+instance (priority := default + 10) from_sep_intuitionistically [BI PROP] (P Q1 Q2 : PROP) :
+  [FromSep P Q1 Q2] →
+  FromSep `[iprop| □ P] `[iprop| □ Q1] `[iprop| □ Q2]
+where
+  from_sep := sorry
+
+instance (priority := default + 10) from_sep_absorbingly [BI PROP] (P Q1 Q2 : PROP) :
+  [FromSep P Q1 Q2] →
+  FromSep `[iprop| <absorb> P] `[iprop| <absorb> Q1] `[iprop| <absorb> Q2]
+where
+  from_sep := sorry
+
+instance (priority := default + 10) from_sep_persistently [BI PROP] (P Q1 Q2 : PROP) :
+  [FromSep P Q1 Q2] →
+  FromSep `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+where
+  from_sep := sorry
 
 -- IntoPersistent
 instance (priority := default + 20) into_persistent_persistently (p : Bool) [BI PROP] (P Q : PROP) :
@@ -81,6 +161,28 @@ instance (priority := default - 10) from_affinely_intuitionistically [BI PROP] (
   FromAffinely `[iprop| □ P] `[iprop| <pers> P] -- always <affine> <pers> P ⊢ □ P
 where
   from_affinely := sorry
+
+-- IntoAbsorbingly
+instance (priority := default + 30) into_absorbingly_True [BI PROP] :
+  IntoAbsorbingly (PROP := PROP) `[iprop| True] `[iprop| emp]
+where
+  into_absorbingly := sorry
+
+instance (priority := default + 20) into_absorbingly_absorbing [BI PROP] (P : PROP) :
+  [Absorbing P] →
+  IntoAbsorbingly P P
+where
+  into_absorbingly := sorry
+
+instance (priority := default + 10) into_absorbingly_intuitionistically [BI PROP] (P : PROP) :
+  IntoAbsorbingly `[iprop| <pers> P] `[iprop| □ P]
+where
+  into_absorbingly := sorry
+
+instance (priority := default - 10) into_absorbingly_default [BI PROP] (P : PROP) :
+  IntoAbsorbingly `[iprop| <absorb> P] P
+where
+  into_absorbingly := sorry
 
 -- FromAssumption
 instance (priority := default + 100) from_assumption_exact (p : Bool) [BI PROP] (P : PROP) :

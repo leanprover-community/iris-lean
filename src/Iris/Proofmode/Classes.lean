@@ -28,12 +28,21 @@ class FromImpl [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
 class FromWand [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_wand : (Q1 -∗ Q2) ⊢ P
 
+class FromAnd [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+  from_and : Q1 ∧ Q2 ⊢ P
+
+class FromSep [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+  from_sep : Q1 ∗ Q2 ⊢ P
+
 
 class IntoPersistent (p : Bool) [BI PROP] (P : PROP) (Q : outParam PROP) where
   into_persistent : <pers>?p P ⊢ <pers> Q
 
 class FromAffinely [BI PROP] (P : outParam PROP) (Q : PROP) where
   from_affinely : <affine> Q ⊢ P
+
+class IntoAbsorbingly [BI PROP] (P : outParam PROP) (Q : PROP) where
+  into_absorbingly : P ⊢ <absorb> Q
 
 
 class FromAssumption (p : Bool) [BI PROP] (P Q : PROP) where
