@@ -6,10 +6,9 @@ def isEmptyR : List α → Bool
   | _ :: _ => false
 
 @[reducible]
-def eraseIdxR : List α → Nat → List α
-  | [], _          => []
-  | _ :: as, 0     => as
-  | a :: as, n + 1 => a :: eraseIdxR as n
+def eraseIdxR : (as : List α) → Fin as.length → List α
+  | _ :: as, ⟨0, _⟩     => as
+  | a :: as, ⟨i + 1, h⟩ => a :: eraseIdxR as ⟨i, Nat.le_of_succ_le_succ h⟩
 
 @[specialize]
 def foldl1 {α} (f : α → α → α) (alt : Unit → α) : List α → α
@@ -24,8 +23,8 @@ def foldr1 {α} (f : α → α → α) (alt : Unit → α) : List α → α
 
 @[reducible]
 def getR : (as : List α) → Fin as.length → α
-  | a :: as, ⟨0, _⟩ => a
-  | a :: as, ⟨Nat.succ i, h⟩ => getR as ⟨i, Nat.le_of_succ_le_succ h⟩
+  | a :: _ , ⟨0, _⟩     => a
+  | a :: as, ⟨i + 1, h⟩ => getR as ⟨i, Nat.le_of_succ_le_succ h⟩
 
 def splitWithSortedIndices (as : List α) (is : List Nat) : List α × List α :=
   go as is 0
