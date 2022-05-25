@@ -15,7 +15,7 @@ macro_rules
 -- carry `iprop` over some `term` constructs
 macro_rules
   | `(`[iprop| ($P)])  => `((`[iprop| $P]))
-  | `(`[iprop| $P $Q]) => `(`[iprop| $P] `[iprop| $Q])
+  | `(`[iprop| $P $[ $Q]*]) => `(`[iprop| $P] $[ `[iprop| $Q]]*)
   | `(`[iprop| if $c then $t else $e]) => `(if $c then `[iprop| $t] else `[iprop| $e])
   | `(`[iprop| ($P : $t)]) => `((`[iprop| $P] : $t))
 
@@ -24,7 +24,7 @@ partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : Syntax → m
   | `(`[iprop| $P])          => `($P)
   | `($P:ident)              => `($P)
   | `(($P))                  => do `(($(← unpackIprop P)))
-  | `($P $Q)                 => do `($(← unpackIprop P) $(← unpackIprop Q))
+  | `($P $[ $Q]*)            => do `($(← unpackIprop P) $[ $(← Q.mapM unpackIprop)]*)
   | `(if $c then $t else $e) => do `(if $c then $(← unpackIprop t) else $(← unpackIprop e))
   | `(($P : $t))             => do `(($(← unpackIprop P) : $t))
   | `(`[term| $t])           => `(`[term| $t])

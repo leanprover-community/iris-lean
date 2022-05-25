@@ -73,7 +73,7 @@ theorem tac_and_split [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP) :
 
 theorem tac_sep_split [BI PROP] {Γₚ Γₛ : List PROP} {Q1 Q2 : PROP} (sortedIndices : List Nat) (splitRight : Bool) (P : PROP) :
   [FromSep P Q1 Q2] →
-  let (Γₛ₁, Γₛ₂) := Γₛ.splitWithSortedIndices sortedIndices
+  let (Γₛ₁, Γₛ₂) := Γₛ.partitionIndices (sortedIndices.contains ·)
   let (Γₛ₁, Γₛ₂) := if splitRight then (Γₛ₂, Γₛ₁) else (Γₛ₁, Γₛ₂)
   envs_entails ⟨Γₚ, Γₛ₁⟩ Q1 →
   envs_entails ⟨Γₚ, Γₛ₂⟩ Q2 →

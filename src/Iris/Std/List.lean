@@ -26,19 +26,18 @@ def getR : (as : List α) → Fin as.length → α
   | a :: _ , ⟨0, _⟩     => a
   | a :: as, ⟨i + 1, h⟩ => getR as ⟨i, Nat.le_of_succ_le_succ h⟩
 
-def splitWithSortedIndices (as : List α) (is : List Nat) : List α × List α :=
-  go as is 0
+@[specialize]
+def partitionIndices (as : List α) (p : Nat → Bool) : List α × List α :=
+  go as 0
 where
-  go (as : List α) (is : List Nat) (idx : Nat) : List α × List α :=
+  go (as : List α) (idx : Nat) : List α × List α :=
     match as with
+    | []      => ([], [])
     | a :: as =>
-      match is with
-      | i :: is =>
-        if i == idx then
-          go as is (idx + 1) |>.map (a :: ·) (·)
-        else
-          go as (i :: is) (idx + 1) |>.map (·) (a :: ·)
-      | [] => ([], a :: as)
-    | [] => ([], [])
+      let as' := go as (idx + 1)
+      if p idx then
+        as'.map (a :: ·) (·)
+      else
+        as'.map (·) (a :: ·)
 
 end List

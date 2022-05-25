@@ -15,9 +15,10 @@ attribute [pm_simp] ite_true
 attribute [pm_simp] List.concat
 attribute [pm_simp] List.foldl1
 attribute [pm_simp] List.foldr1
+attribute [pm_simp] List.partitionIndices.go
 
 attribute [pm_simp] Prod.map
 
-macro "pmReduce" : tactic => `(tactic| simp only [pm_simp, List.splitWithSortedIndices.go])
+macro "pmReduce" : tactic => `(tactic| simp only [pm_simp])
 
 end Iris.Proofmode

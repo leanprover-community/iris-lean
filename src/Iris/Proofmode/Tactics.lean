@@ -269,12 +269,11 @@ elab "iSplit" side:(&"L" <|> &"R") "[" names:sepBy(ident, ",") "]" : tactic => d
       | throwError "unknown spatial hypothesis"
     pure index
   )
-  let indices := indices |>.qsort (· < ·) |>.toList
 
   -- split conjunction
   try evalTactic (← `(tactic|
     first
-    | refine tac_sep_split $(quote indices) $(quote splitRight) _ ?Sep.left ?Sep.right
+    | refine tac_sep_split $(quote indices.toList) $(quote splitRight) _ ?Sep.left ?Sep.right
       <;> pmReduce
     | fail
   ))
