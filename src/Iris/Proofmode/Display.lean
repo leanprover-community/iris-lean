@@ -1,5 +1,6 @@
 import Iris.BI.Notation
 import Iris.Proofmode.Environments
+import Iris.Proofmode.Expr
 
 import Lean.PrettyPrinter.Delaborator
 

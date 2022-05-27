@@ -44,6 +44,13 @@ theorem tac_wand_intro_intuitionistic [BI PROP] {Γₚ Γₛ : List PROP} {P P' 
 := sorry
 
 -- assumptions
+theorem tac_assumption_lean [BI PROP] {Γₚ Γₛ : List PROP} {P : PROP} (Q : PROP) :
+  (⊢ P) →
+  [FromAssumption true P Q] →
+  [TCIte Γₛ.isEmptyR TCTrue (TCOr (Absorbing Q) (AffineEnv Γₛ))] →
+  envs_entails ⟨Γₚ, Γₛ⟩ Q
+:= sorry
+
 theorem tac_assumption [BI PROP] {Γₚ Γₛ : List PROP} (i : EnvsIndex Γₚ.length Γₛ.length) (Q : PROP) :
   let (p, P) : Bool × PROP := match i with
     | .p i => (true, Γₚ.getR i)

@@ -1,4 +1,5 @@
 import Iris.Proofmode.Environments
+import Iris.Proofmode.Expr
 import Iris.Proofmode.Reduction
 import Iris.Proofmode.Theorems
 
@@ -197,6 +198,26 @@ elab "iExact " colGt name:ident : tactic => do
   ))
   catch _ => throwError "failed to use the hypothesis to close the goal"
 
+elab "iAssumptionLean" : tactic => do
+  -- try all hypotheses from the local context
+  let hs ← getLCtx
+  for h in ← getLCtx do
+    -- match on `⊢ Q`
+    let some (P, _) := extractEntails? h.type
+      | continue
+    if !isEmp P then
+      continue
+
+    -- try to solve the goal
+    try
+      evalTactic (← `(tactic|
+        refine tac_assumption_lean _ $(mkIdent h.userName)
+      ))
+      return
+    catch _ => continue
+
+  throwError "no matching hypothesis found or remaining environment cannot be cleared"
+
 elab "iAssumption" : tactic => do
   -- extract environment
   let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal?
@@ -227,8 +248,13 @@ elab "iAssumption" : tactic => do
     if ← tryCloseGoal envsIndex then
       return ()
 
-  -- fail if none succeeded
-  throwError "no matching hypothesis found or remaining environment cannot be cleared"
+  -- try all hypotheses from the Lean context
+  try evalTactic (← `(tactic|
+    first
+    | iAssumptionLean
+    | fail
+  ))
+  catch _ => throwError "no matching hypothesis found or remaining environment cannot be cleared"
 
 
 elab "iSplit" : tactic => do

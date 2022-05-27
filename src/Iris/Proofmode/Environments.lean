@@ -1,11 +1,7 @@
 import Iris.BI
-import Iris.Std.Expr
-
-import Lean.Expr
 
 namespace Iris.Proofmode
 open Iris.BI
-open Lean Lean.Expr
 
 structure Envs (PROP : Type) [BI PROP] where
   intuitionistic : List PROP
@@ -48,24 +44,5 @@ instance (priority := default + 10) affine_env_bi [BIAffine PROP] (Γ : List PRO
   AffineEnv Γ
 where
   affine_env := sorry
-
-
-def isEnvsEntails (expr : Expr) : Bool := expr.isAppOfArity ``envs_entails 4
-
-def extractEnvsEntails? (expr : Expr) : Option (Expr × Expr × Expr) := Id.run do
-  let some #[_, _, envs, P] := appM? expr ``envs_entails
-    | none
-  let some #[_, _, Γₚ, Γₛ] := appM? envs ``Envs.mk
-    | none
-  some (Γₚ, Γₛ, P)
-
-def modifyEnvsEntails? (expr : Expr) (Γₚ Γₛ P : Option Expr) : Option Expr := Id.run do
-  let some #[_, _, envs, _] := appM? expr ``envs_entails
-    | none
-  let some #[_, _, _, _] := appM? envs ``Envs.mk
-    | none
-  let envs := modifyAppOptM envs #[none, none, Γₚ, Γₛ]
-  let expr := modifyAppOptM expr #[none, none, envs, P]
-  some expr
 
 end Iris.Proofmode
