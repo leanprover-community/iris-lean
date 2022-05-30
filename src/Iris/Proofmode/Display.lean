@@ -28,9 +28,9 @@ def delabEnvsEntails : Delab := do
   let some (Γₚ, Γₛ, P) := extractEnvsEntails? expr
     | failure
 
-  let some Γₚ := extractHypotheses? Γₚ
+  let some Γₚ ← extractHypotheses? Γₚ
     | failure
-  let some Γₛ := extractHypotheses? Γₛ
+  let some Γₛ ← extractHypotheses? Γₛ
     | failure
 
   -- delaborate
@@ -48,8 +48,8 @@ def delabEnvsEntails : Delab := do
                   ───────────────────────────────────── ∗
                   $P)
 where
-  extractHypotheses? (Γ : Expr) : Option <| Array <| Option Name × Expr :=
-    Γ.asListExpr_toList?.map (· |>.map (fun h => (h.getMDataName?, h)) |>.toArray)
+  extractHypotheses? (Γ : Expr) : MetaM <| Option <| Array <| Option Name × Expr := do
+    return (← Γ.asListExpr_toList?).map (· |>.map (fun h => (h.getMDataName?, h)) |>.toArray)
 
   delabHypotheses (Γ : Array <| Option Name × Expr) : DelabM <| Array Syntax :=
     Γ.mapM fun (name?, h) => do
