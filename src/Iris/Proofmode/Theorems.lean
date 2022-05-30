@@ -13,6 +13,15 @@ theorem tac_start [BI PROP] (P : PROP) :
   ⊢ P
 := sorry
 
+theorem tac_clear [BI PROP] {Γₚ Γₛ : List PROP} (i : EnvsIndex Γₚ.length Γₛ.length) (Q : PROP) :
+  let (p, P, Γₚ', Γₛ') := match i with
+    | .p i => (true, Γₚ.getR i, Γₚ.eraseIdxR i, Γₛ)
+    | .s i => (false, Γₛ.getR i, Γₚ, Γₛ.eraseIdxR i)
+  [TCIte p TCTrue (TCOr (Affine P) (Absorbing Q))] →
+  envs_entails ⟨Γₚ', Γₛ'⟩ Q →
+  envs_entails ⟨Γₚ, Γₛ⟩ Q
+:= sorry
+
 -- implication and wand
 theorem tac_impl_intro [BI PROP] {Γₚ Γₛ : List PROP} {P Q : PROP} (R : PROP) :
   [FromImpl R P Q] →
@@ -52,7 +61,7 @@ theorem tac_assumption_lean [BI PROP] {Γₚ Γₛ : List PROP} {P : PROP} (Q : 
 := sorry
 
 theorem tac_assumption [BI PROP] {Γₚ Γₛ : List PROP} (i : EnvsIndex Γₚ.length Γₛ.length) (Q : PROP) :
-  let (p, P) : Bool × PROP := match i with
+  let (p, P) := match i with
     | .p i => (true, Γₚ.getR i)
     | .s i => (false, Γₛ.getR i)
   [FromAssumption p P Q] →
