@@ -14,7 +14,7 @@ namespace Internal
 end Internal
 open Internal
 
-elab "iStartProof" : tactic => do
+elab "istart_proof" : tactic => do
   -- parse goal
   let goal :: _ ← getUnsolvedGoals
     | throwNoGoalsToBeSolved
@@ -31,7 +31,7 @@ elab "iStartProof" : tactic => do
   ))
   catch _ => throwError "unable to start proof mode"
 
-elab "iStopProof" : tactic => do
+elab "istop_proof" : tactic => do
   -- parse goal
   let goal :: _ ← getUnsolvedGoals
     | throwNoGoalsToBeSolved
@@ -52,7 +52,7 @@ elab "iStopProof" : tactic => do
 private def extractEnvsEntailsFromGoal? (startProofMode : Bool := false) : TacticM <| Expr × Expr × Expr := do
   if startProofMode then
     evalTactic (← `(tactic|
-      iStartProof
+      istart_proof
     ))
 
   let goal :: _ ← getUnsolvedGoals
@@ -75,7 +75,7 @@ private def findHypothesis? (name : Name) (Γₚ Γₛ : Expr) : TacticM <| Hypo
 
 namespace Internal
 
-scoped elab "iRename " categ:(&"p" <|> &"s") idx:num colGt name:ident : tactic => do
+scoped elab "irename_core " categ:(&"p" <|> &"s") idx:num colGt name:ident : tactic => do
   -- parse syntax
   let categ ← match categ.getKind with
     | `p => pure HypothesisType.intuitionistic
@@ -123,7 +123,7 @@ scoped elab "iRename " categ:(&"p" <|> &"s") idx:num colGt name:ident : tactic =
 
 end Internal
 
-elab "iRename " colGt nameFrom:ident " into " colGt nameTo:ident : tactic => do
+elab "irename " colGt nameFrom:ident " into " colGt nameTo:ident : tactic => do
   -- parse syntax
   if nameFrom.getId.isAnonymous then
     throwUnsupportedSyntax
@@ -135,11 +135,11 @@ elab "iRename " colGt nameFrom:ident " into " colGt nameTo:ident : tactic => do
 
   -- find hypothesis index and rename hypothesis
   match ← findHypothesis? nameFrom.getId Γₚ Γₛ with
-    | (.intuitionistic, i) => evalTactic (← `(tactic| iRename p $(quote i) $nameTo))
-    | (.spatial, i)        => evalTactic (← `(tactic| iRename s $(quote i) $nameTo))
+    | (.intuitionistic, i) => evalTactic (← `(tactic| irename_core p $(quote i) $nameTo))
+    | (.spatial, i)        => evalTactic (← `(tactic| irename_core s $(quote i) $nameTo))
 
 
-elab "iClear" colGt name:ident : tactic => do
+elab "iclear" colGt name:ident : tactic => do
   -- parse syntax
   let name := name.getId
   if name.isAnonymous then
@@ -165,7 +165,7 @@ elab "iClear" colGt name:ident : tactic => do
   catch _ => throwError "failed to clear the hypothesis"
 
 
-elab "iIntro " colGt name:ident : tactic => do
+elab "iintro " colGt name:ident : tactic => do
   -- parse syntax
   if name.getId.isAnonymous then
     throwUnsupportedSyntax
@@ -188,10 +188,10 @@ elab "iIntro " colGt name:ident : tactic => do
 
   -- name hypothesis
   evalTactic (← `(tactic|
-    iRename s $(quote s_length) $name
+    irename_core s $(quote s_length) $name
   ))
 
-elab "iIntro " colGt "#" colGt name:ident : tactic => do
+elab "iintro " colGt "#" colGt name:ident : tactic => do
   -- parse syntax
   if name.getId.isAnonymous then
     throwUnsupportedSyntax
@@ -214,11 +214,11 @@ elab "iIntro " colGt "#" colGt name:ident : tactic => do
 
   -- name hypothesis
   evalTactic (← `(tactic|
-    iRename p $(quote p_length) $name
+    irename_core p $(quote p_length) $name
   ))
 
 
-elab "iExact " colGt name:ident : tactic => do
+elab "iexact " colGt name:ident : tactic => do
   -- parse syntax
   let name := name.getId
   if name.isAnonymous then
@@ -243,7 +243,7 @@ elab "iExact " colGt name:ident : tactic => do
   ))
   catch _ => throwError "failed to use the hypothesis to close the goal"
 
-elab "iAssumptionLean" : tactic => do
+elab "iassumption_lean" : tactic => do
   -- try all hypotheses from the local context
   let hs ← getLCtx
   for h in ← getLCtx do
@@ -263,7 +263,7 @@ elab "iAssumptionLean" : tactic => do
 
   throwError "no matching hypothesis found or remaining environment cannot be cleared"
 
-elab "iAssumption" : tactic => do
+elab "iassumption" : tactic => do
   -- extract environment
   let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal?
 
@@ -296,16 +296,16 @@ elab "iAssumption" : tactic => do
   -- try all hypotheses from the Lean context
   try evalTactic (← `(tactic|
     first
-    | iAssumptionLean
+    | iassumption_lean
     | fail
   ))
   catch _ => throwError "no matching hypothesis found or remaining environment cannot be cleared"
 
 
-elab "iSplit" : tactic => do
+elab "isplit" : tactic => do
   -- start proof mode if not already
   evalTactic (← `(tactic|
-    iStartProof
+    istart_proof
   ))
 
   -- split conjunction
@@ -318,11 +318,11 @@ elab "iSplit" : tactic => do
 
 namespace Internal
 
-scoped elab "iSplit" side:(&"L" <|> &"R") "[" names:sepBy(ident, ",") "]" : tactic => do
+scoped elab "isplit" side:(&"l" <|> &"r") "[" names:ident,* "]" : tactic => do
   -- parse syntax
   let splitRight ← match side.getKind with
-    | `L => pure false
-    | `R => pure true
+    | `l => pure false
+    | `r => pure true
     | _  => throwUnsupportedSyntax
   let names ← names.getElems.mapM (fun name => do
     let name := name.getId
@@ -352,10 +352,10 @@ scoped elab "iSplit" side:(&"L" <|> &"R") "[" names:sepBy(ident, ",") "]" : tact
 
 end Internal
 
-macro "iSplitL" "[" names:sepBy(ident, ",") "]" : tactic => `(tactic| iSplit L [$[$names:ident],*])
-macro "iSplitR" "[" names:sepBy(ident, ",") "]" : tactic => `(tactic| iSplit R [$[$names:ident],*])
+macro "isplit_l" "[" names:ident,* "]" : tactic => `(tactic| isplit l [$[$names:ident],*])
+macro "isplit_r" "[" names:ident,* "]" : tactic => `(tactic| isplit r [$[$names:ident],*])
 
-macro "iSplitL" : tactic => `(tactic| iSplit R [])
-macro "iSplitR" : tactic => `(tactic| iSplit L [])
+macro "isplit_l" : tactic => `(tactic| isplit r [])
+macro "isplit_r" : tactic => `(tactic| isplit l [])
 
 end Iris.Proofmode
