@@ -73,10 +73,10 @@ delab_rule BIBase.or
 delab_rule BIBase.impl
   | `(BIBase.impl $P $Q) => do `(`[iprop| $(← unpackIprop P) → $(← unpackIprop Q)])
 delab_rule BIBase.forall
-  | `(BIBase.forall fun $x:ident => `[iprop| ∀ $y:ident $[ $z:ident]*, $Ψ]) => do `(`[iprop| ∀ $x:ident $y:ident $[ $z:ident]*, $Ψ])
+  | `(BIBase.forall fun $x:ident => `[iprop| ∀ $y:ident $[$z:ident]*, $Ψ]) => do `(`[iprop| ∀ $x:ident $y:ident $[$z:ident]*, $Ψ])
   | `(BIBase.forall fun $x:ident => $Ψ) => do `(`[iprop| ∀ $x:ident, $(← unpackIprop Ψ)])
 delab_rule BIBase.exists
-  | `(BIBase.exists fun $x:ident => `[iprop| ∃ $y:ident $[ $z:ident]*, $Ψ]) => do `(`[iprop| ∃ $x:ident $y:ident $[ $z:ident]*, $Ψ])
+  | `(BIBase.exists fun $x:ident => `[iprop| ∃ $y:ident $[$z:ident]*, $Ψ]) => do `(`[iprop| ∃ $x:ident $y:ident $[$z:ident]*, $Ψ])
   | `(BIBase.exists fun $x:ident => $Ψ) => do `(`[iprop| ∃ $x:ident, $(← unpackIprop Ψ)])
 delab_rule BIBase.sep
   | `(BIBase.sep $P $Q) => do `(`[iprop| $(← unpackIprop P) ∗ $(← unpackIprop Q)])
