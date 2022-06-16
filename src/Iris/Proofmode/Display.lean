@@ -49,7 +49,14 @@ def delabEnvsEntails : Delab := do
                   $P)
 where
   extractHypotheses? (Γ : Expr) : MetaM <| Option <| Array <| Option Name × Expr := do
-    return (← Γ.asListExpr_toList?).map (· |>.map (fun h => (h.getMDataName?, h)) |>.toArray)
+    let hs? ← Γ.asListExpr_toList?
+    let hs? ←
+      hs?.mapM fun hs =>
+      hs.mapM fun h => do
+        let name := h.getMDataName?
+        let h ← withTransparency (mode := .reducible) <| reduce h
+        return (name, h)
+    return hs?.map (·.toArray)
 
   delabHypotheses (Γ : Array <| Option Name × Expr) : DelabM <| Array Syntax :=
     Γ.mapM fun (name?, h) => do
