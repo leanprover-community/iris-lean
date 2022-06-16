@@ -79,6 +79,45 @@ theorem tac_false_destruct [BI PROP] {Γₚ Γₛ : List PROP} (i : EnvsIndex Γ
   envs_entails ⟨Γₚ, Γₛ⟩ Q
 := sorry
 
+-- moving between contexts
+theorem tac_pure [BI PROP] {Γₚ Γₛ : List PROP} {φ : Prop} (i : EnvsIndex Γₚ.length Γₛ.length) (Q : PROP) :
+   let (p, P) := match i with
+    | .p i => (true, Γₚ.getR i)
+    | .s i => (false, Γₛ.getR i)
+  [IntoPure P φ] →
+  [TCIte p TCTrue (TCOr (Affine P) (Absorbing Q))] →
+   let (Γₚ', Γₛ') := match i with
+    | .p i => (Γₚ.eraseIdxR i, Γₛ)
+    | .s i => (Γₚ, Γₛ.eraseIdxR i)
+  (φ → envs_entails ⟨Γₚ', Γₛ'⟩ Q) →
+  envs_entails ⟨Γₚ, Γₛ⟩ Q
+:= sorry
+
+theorem tac_intuitionistic [BI PROP] {Γₚ Γₛ : List PROP} {P' : PROP} (i : EnvsIndex Γₚ.length Γₛ.length) (Q : PROP) :
+  let (p, P) := match i with
+    | .p i => (true, Γₚ.getR i)
+    | .s i => (false, Γₛ.getR i)
+  [IntoPersistent p P P'] →
+  [TCIte p TCTrue (TCOr (Affine P) (Absorbing Q))] →
+  let (Γₚ', Γₛ') := match i with
+    | .p i => (Γₚ |>.eraseIdxR i |>.concat P', Γₛ)
+    | .s i => (Γₚ.concat P', Γₛ.eraseIdxR i)
+  envs_entails ⟨Γₚ', Γₛ'⟩ Q →
+  envs_entails ⟨Γₚ, Γₛ⟩ Q
+:= sorry
+
+theorem tac_spatial [BI PROP] {Γₚ Γₛ : List PROP} {P' : PROP} (i : EnvsIndex Γₚ.length Γₛ.length) (Q : PROP) :
+  let (p, P) := match i with
+    | .p i => (true, Γₚ.getR i)
+    | .s i => (false, Γₛ.getR i)
+  [FromAffinely P' P p] →
+  let (Γₚ', Γₛ') := match i with
+    | .p i => (Γₚ.eraseIdxR i, Γₛ.concat P')
+    | .s i => (Γₚ, Γₛ |>.eraseIdxR i |>.concat P')
+  envs_entails ⟨Γₚ', Γₛ'⟩ Q →
+  envs_entails ⟨Γₚ, Γₛ⟩ Q
+:= sorry
+
 -- (separating) conjunction splitting
 theorem tac_and_split [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP) :
   [FromAnd P Q1 Q2] →

@@ -277,6 +277,71 @@ elab "iassumption" : tactic => do
   catch _ => throwError "no matching hypothesis found or remaining environment cannot be cleared"
 
 
+elab "ipure" name:ident : tactic => do
+  -- parse syntax
+  if name.getId.isAnonymous then
+    throwUnsupportedSyntax
+
+  -- find hypothesis index
+  let hypIndex ← findHypothesis name.getId
+
+  -- move hypothesis
+  try evalTactic (← `(tactic|
+    first
+    | refine tac_pure $(← hypIndex.quoteAsEnvsIndex) _ ?_
+      intro $name
+    | fail
+  )) catch _ => throwError "could not move hypothesis to the Lean context"
+
+elab "iintuitionistic" name:ident : tactic => do
+  -- parse syntax
+  let name := name.getId
+  if name.isAnonymous then
+    throwUnsupportedSyntax
+
+  -- find hypothesis index
+  let hypIndex ← findHypothesis name
+
+  -- move hypothesis
+  try evalTactic (← `(tactic|
+    first
+    | refine tac_intuitionistic $(← hypIndex.quoteAsEnvsIndex) _ ?_
+    | fail
+  )) catch _ => throwError "could not move hypothesis to the intuitionistic context"
+
+  -- extract environment
+  let (Γₚ, _, _) ← extractEnvsEntailsFromGoal
+  let some lₚ ← Γₚ.asListExpr_length?
+    | throwError "ill-formed proof environment"
+
+  -- re-name hypothesis
+  irenameCore ⟨.intuitionistic, lₚ - 1, lₚ⟩ name
+
+elab "ispatial" name:ident : tactic => do
+  -- parse syntax
+  let name := name.getId
+  if name.isAnonymous then
+    throwUnsupportedSyntax
+
+  -- find hypothesis index
+  let hypIndex ← findHypothesis name
+
+  -- move hypothesis
+  try evalTactic (← `(tactic|
+    first
+    | refine tac_spatial $(← hypIndex.quoteAsEnvsIndex) _ ?_
+    | fail
+  )) catch _ => throwError "could not move hypothesis to the spatial context"
+
+  -- extract environment
+  let (_, Γₛ, _) ← extractEnvsEntailsFromGoal
+  let some lₛ ← Γₛ.asListExpr_length?
+    | throwError "ill-formed proof environment"
+
+  -- re-name hypothesis
+  irenameCore ⟨.spatial, lₛ - 1, lₛ⟩ name
+
+
 elab "isplit" : tactic => do
   -- start proof mode if not already
   evalTactic (← `(tactic|

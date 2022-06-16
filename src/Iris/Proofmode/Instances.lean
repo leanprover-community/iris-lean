@@ -147,18 +147,23 @@ where
 
 -- FromAffinely
 instance from_affinely_affine [BI PROP] (P : PROP) :
-  [Affine P] →                                  -- if P is affine
-  FromAffinely P P                              -- then <affine> P ⊢ P
+  [Affine P] →                                        -- if P is affine
+  FromAffinely P P true                               -- then <affine> P ⊢ P
 where
   from_affinely := sorry
 
 instance (priority := default - 10) from_affinely_default [BI PROP] (P : PROP) :
-  FromAffinely `[iprop| <affine> P] P           -- always <affine> P ⊢ <affine> P
+  FromAffinely `[iprop| <affine> P] P true            -- always <affine> P ⊢ <affine> P
 where
   from_affinely := sorry
 
 instance (priority := default - 10) from_affinely_intuitionistically [BI PROP] (P : PROP) :
-  FromAffinely `[iprop| □ P] `[iprop| <pers> P] -- always <affine> <pers> P ⊢ □ P
+  FromAffinely `[iprop| □ P] `[iprop| <pers> P] true  -- always <affine> <pers> P ⊢ □ P
+where
+  from_affinely := sorry
+
+instance from_affinely_id [BI PROP] (P : PROP) :
+  FromAffinely P P false                              -- always P ⊢ P
 where
   from_affinely := sorry
 
@@ -250,5 +255,62 @@ instance (priority := default + 10) from_assumption_forall (p : Bool) [BI PROP] 
   FromAssumption p `[iprop| ∀ x, Φ x] Q
 where
   from_assumption := sorry
+
+-- IntoPure
+instance into_pure_pure (φ : Prop) [BI PROP] :
+  IntoPure (PROP := PROP) `[iprop| ⌜φ⌝] φ
+where
+  into_pure := sorry
+
+instance into_pure_pure_and (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
+  [IntoPure P1 φ1] →
+  [IntoPure P2 φ2] →
+  IntoPure `[iprop| P1 ∧ P2] (φ1 ∧ φ2)
+where
+  into_pure := sorry
+
+instance into_pure_pure_or (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
+  [IntoPure P1 φ1] →
+  [IntoPure P2 φ2] →
+  IntoPure `[iprop| P1 ∨ P2] (φ1 ∨ φ2)
+where
+  into_pure := sorry
+
+instance into_pure_exist [BI PROP] (Φ : α → PROP) (φ : α → Prop) :
+  [∀ x, IntoPure (Φ x) (φ x)] →
+  IntoPure `[iprop| ∃ x, Φ x] (∃ x, φ x)
+where
+  into_pure := sorry
+
+instance into_pure_pure_sep (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
+  [IntoPure P1 φ1] →
+  [IntoPure P2 φ2] →
+  IntoPure `[iprop| P1 ∗ P2] (φ1 ∧ φ2)
+where
+  into_pure := sorry
+
+instance into_pure_affinely [BI PROP] (P : PROP) (φ : Prop) :
+  [IntoPure P φ] →
+  IntoPure `[iprop| <affine> P] φ
+where
+  into_pure := sorry
+
+instance into_pure_intuitionistically [BI PROP] (P : PROP) (φ : Prop) :
+  [IntoPure P φ] →
+  IntoPure `[iprop| □ P] φ
+where
+  into_pure := sorry
+
+instance into_pure_absorbingly [BI PROP] (P : PROP) (φ : Prop) :
+  [IntoPure P φ] →
+  IntoPure `[iprop| <absorb> P] φ
+where
+  into_pure := sorry
+
+instance into_pure_persistently [BI PROP] (P : PROP) (φ : Prop) :
+  [IntoPure P φ] →
+  IntoPure `[iprop| <pers> P] φ
+where
+  into_pure := sorry
 
 end Iris.Proofmode

@@ -38,8 +38,8 @@ class FromSep [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
 class IntoPersistent (p : Bool) [BI PROP] (P : PROP) (Q : outParam PROP) where
   into_persistent : <pers>?p P ⊢ <pers> Q
 
-class FromAffinely [BI PROP] (P : outParam PROP) (Q : PROP) where
-  from_affinely : <affine> Q ⊢ P
+class FromAffinely [BI PROP] (P : outParam PROP) (Q : PROP) (p : Bool := true) where
+  from_affinely : <affine>?p Q ⊢ P
 
 class IntoAbsorbingly [BI PROP] (P : outParam PROP) (Q : PROP) where
   into_absorbingly : P ⊢ <absorb> Q
@@ -47,5 +47,8 @@ class IntoAbsorbingly [BI PROP] (P : outParam PROP) (Q : PROP) where
 
 class FromAssumption (p : Bool) [BI PROP] (P Q : PROP) where
   from_assumption : □?p P ⊢ Q
+
+class IntoPure [BI PROP] (P : PROP) (φ : outParam Prop) where
+  into_pure : P ⊢ ⌜φ⌝
 
 end Iris.Proofmode

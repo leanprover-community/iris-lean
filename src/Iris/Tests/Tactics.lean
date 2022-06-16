@@ -91,6 +91,81 @@ theorem false [BI PROP] (Q : PROP) : False ⊢ Q := by
 
 end assumption
 
+-- pure
+namespace pure
+
+theorem move [BI PROP] (Q : PROP) : <affine> ⌜φ⌝ ⊢ Q -∗ Q := by
+  iintro Hφ
+  iintro HQ
+  ipure Hφ
+  iexact HQ
+
+theorem moveMultiple [BI PROP] (Q : PROP) : <affine> ⌜φ1⌝ ⊢ <affine> ⌜φ2⌝ -∗ Q -∗ Q := by
+  iintro Hφ1
+  iintro Hφ2
+  iintro HQ
+  ipure Hφ1
+  ipure Hφ2
+  iexact HQ
+
+theorem moveConjunction [BI PROP] (Q : PROP) : (⌜φ1⌝ ∧ <affine> ⌜φ2⌝) ⊢ Q -∗ Q := by
+  iintro Hφ
+  iintro HQ
+  ipure Hφ
+  iexact HQ
+
+end pure
+
+-- intuitionistic
+namespace intuitionistic
+
+theorem move [BI PROP] (P : PROP) : □ P ⊢ Q -∗ Q := by
+  iintro HP
+  iintro HQ
+  iintuitionistic HP
+  iexact HQ
+
+theorem moveMultiple [BI PROP] (P : PROP) : □ P ⊢ □ Q -∗ Q := by
+  iintro HP
+  iintro HQ
+  iintuitionistic HP
+  iintuitionistic HQ
+  iexact HQ
+
+theorem moveTwice [BI PROP] (P : PROP) : □ P ⊢ Q -∗ Q := by
+  iintro HP
+  iintro HQ
+  iintuitionistic HP
+  iintuitionistic HP
+  iexact HQ
+
+end intuitionistic
+
+-- spatial
+namespace spatial
+
+theorem move [BI PROP] (P : PROP) : □ P ⊢ □ Q -∗ Q := by
+  iintro #HP
+  iintro #HQ
+  ispatial HP
+  iexact HQ
+
+theorem moveMultiple [BI PROP] (P : PROP) : □ P ⊢ □ Q -∗ Q := by
+  iintro #HP
+  iintro #HQ
+  ispatial HP
+  ispatial HQ
+  iexact HQ
+
+theorem moveTwice [BI PROP] (P : PROP) : □ P ⊢ □ Q -∗ Q := by
+  iintro #HP
+  iintro #HQ
+  ispatial HP
+  ispatial HP
+  iexact HQ
+
+end spatial
+
 -- split
 namespace split
 
