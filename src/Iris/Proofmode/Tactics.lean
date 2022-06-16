@@ -49,7 +49,7 @@ elab "istop_proof" : tactic => do
   catch _ => throwError "unable to stop proof mode"
 
 
-private def extractEnvsEntailsFromGoal? (startProofMode : Bool := false) : TacticM <| Expr × Expr × Expr := do
+private def extractEnvsEntailsFromGoal (startProofMode : Bool := false) : TacticM <| Expr × Expr × Expr := do
   if startProofMode then
     evalTactic (← `(tactic|
       istart_proof
@@ -64,29 +64,21 @@ private def extractEnvsEntailsFromGoal? (startProofMode : Bool := false) : Tacti
 
   return envsEntails
 
-private def findHypothesis? (name : Name) (Γₚ Γₛ : Expr) : TacticM <| HypothesisType × Nat := do
+private def findHypothesis (name : Name) : TacticM HypothesisIndex := do
+  let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal
   if let some i ← Γₚ.asListExpr_findIndex? (·.getMDataName?.isEqSome name) then
-    return (.intuitionistic, i)
+    let some l ← Γₚ.asListExpr_length?
+      | throwError "ill-formed proof environment"
+    return ⟨.intuitionistic, i, l⟩
   else if let some i ← Γₛ.asListExpr_findIndex? (·.getMDataName?.isEqSome name) then
-    return (.spatial, i)
+    let some l ← Γₛ.asListExpr_length?
+      | throwError "ill-formed proof environment"
+    return ⟨.spatial, i, l⟩
   else
     throwError "unknown hypothesis"
 
 
-namespace Internal
-
-scoped elab "irename_core " categ:(&"p" <|> &"s") idx:num colGt name:ident : tactic => do
-  -- parse syntax
-  let categ ← match categ.getKind with
-    | `p => pure HypothesisType.intuitionistic
-    | `s => pure HypothesisType.spatial
-    | _  => throwUnsupportedSyntax
-  let some idx := idx.isNatLit?
-    | throwUnsupportedSyntax
-  let name := name.getId
-  if name.isAnonymous then
-    throwUnsupportedSyntax
-
+def Internal.irenameCore (hypIndex : HypothesisIndex) (name : Name) : TacticM Unit := do
   -- parse goal
   let goal :: _ ← getUnsolvedGoals
     | throwNoGoalsToBeSolved
@@ -95,25 +87,32 @@ scoped elab "irename_core " categ:(&"p" <|> &"s") idx:num colGt name:ident : tac
   let some (Γₚ, Γₛ, _) := extractEnvsEntails? expr
     | throwError "not in proof mode"
 
-  -- check for unique hypothesis name
-  if ← [Γₚ, Γₛ].anyM (fun Γ => do return (← Γ.asListExpr_any? (·.getMDataName?.isEqSome name)) matches some true) then
-    throwError "name is already used for another hypothesis"
+  let modifyHypothesis (Γ : Expr) (idx : Nat) : TacticM Expr := do
+    -- find hypothesis
+    let some h ← Γ.asListExpr_get? idx
+      | throwError "invalid index or ill-formed proof environment"
 
-  -- find hypothesis
-  let Γ := match categ with
-    | .intuitionistic => Γₚ
-    | .spatial        => Γₛ
-  let some h ← Γ.asListExpr_get? idx
-    | throwError "invalid index or ill-formed proof environment"
+    -- check for unique (or equal) hypothesis name
+    let nameFrom? := h.getMDataName?
+    if nameFrom? |>.map (· != name) |>.getD true then
+      if ← [Γₚ, Γₛ].anyM (fun Γ => do return (← Γ.asListExpr_any? (·.getMDataName?.isEqSome name)) matches some true) then
+        throwError "name is already used for another hypothesis"
 
-  -- rename
-  let h := h.setMDataName? name
+    -- rename hypothesis
+    let h := h.setMDataName? name
 
-  -- insert modified hypothesis
-  let some Γ ← Γ.asListExpr_set? h idx
-    | throwError "invalid index or ill-formed proof environment"
-  let Γₚ := if categ matches .intuitionistic then Γ else Γₚ
-  let Γₛ := if categ matches .spatial        then Γ else Γₛ
+    -- re-insert hypothesis
+    let some Γ ← Γ.asListExpr_set? h idx
+      | throwError "invalid index or ill-formed proof environment"
+
+    return Γ
+
+  -- modify environment
+  let (Γₚ, Γₛ) ← match hypIndex with
+    | ⟨.intuitionistic, index, _⟩ => do
+      pure (← modifyHypothesis Γₚ index, Γₛ)
+    | ⟨.spatial, index, _⟩ => do
+      pure (Γₚ, ← modifyHypothesis Γₛ index)
 
   -- update goal
   let some expr := modifyEnvsEntails? expr Γₚ Γₛ none
@@ -121,22 +120,16 @@ scoped elab "irename_core " categ:(&"p" <|> &"s") idx:num colGt name:ident : tac
 
   setMVarType goal expr
 
-end Internal
-
 elab "irename " colGt nameFrom:ident " into " colGt nameTo:ident : tactic => do
   -- parse syntax
   if nameFrom.getId.isAnonymous then
     throwUnsupportedSyntax
-  if nameTo.getId.isAnonymous then
+  let nameTo := nameTo.getId
+  if nameTo.isAnonymous then
     throwUnsupportedSyntax
 
-  -- extract environment
-  let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal? true
-
-  -- find hypothesis index and rename hypothesis
-  match ← findHypothesis? nameFrom.getId Γₚ Γₛ with
-    | (.intuitionistic, i) => evalTactic (← `(tactic| irename_core p $(quote i) $nameTo))
-    | (.spatial, i)        => evalTactic (← `(tactic| irename_core s $(quote i) $nameTo))
+  -- find and rename hypothesis
+  irenameCore (← findHypothesis nameFrom.getId) nameTo
 
 
 elab "iclear" colGt name:ident : tactic => do
@@ -145,21 +138,13 @@ elab "iclear" colGt name:ident : tactic => do
   if name.isAnonymous then
     throwUnsupportedSyntax
 
-  -- extract environment
-  let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal? true
-
-  let (some lₚ, some lₛ) ← (Γₚ, Γₛ).mapAllM (M := MetaM) Lean.Expr.asListExpr_length?
-    | throwError "ill-formed proof environment"
-
   -- find hypothesis index
-  let envsIndex ← match ← findHypothesis? name Γₚ Γₛ with
-    | (.intuitionistic, i) => `(EnvsIndex.p ⟨$(quote i), by show $(quote i) < $(quote lₚ) ; decide⟩)
-    | (.spatial,        i) => `(EnvsIndex.s ⟨$(quote i), by show $(quote i) < $(quote lₛ) ; decide⟩)
+  let hypIndex ← findHypothesis name
 
   -- clear hypothesis
   try evalTactic (← `(tactic|
     first
-    | refine tac_clear $envsIndex _ ?_
+    | refine tac_clear $(← hypIndex.quoteAsEnvsIndex) _ ?_
     | fail
   ))
   catch _ => throwError "failed to clear the hypothesis"
@@ -167,14 +152,15 @@ elab "iclear" colGt name:ident : tactic => do
 
 elab "iintro " colGt name:ident : tactic => do
   -- parse syntax
-  if name.getId.isAnonymous then
+  let name := name.getId
+  if name.isAnonymous then
     throwUnsupportedSyntax
 
   -- extract environment
-  let (_, Γₛ, _) ← extractEnvsEntailsFromGoal? true
+  let (_, Γₛ, _) ← extractEnvsEntailsFromGoal true
 
   -- determine hypothesis list length
-  let some s_length ← Γₛ.asListExpr_length?
+  let some lₛ ← Γₛ.asListExpr_length?
     | throwError "ill-formed proof environment"
 
   -- introduce hypothesis
@@ -187,20 +173,19 @@ elab "iintro " colGt name:ident : tactic => do
   catch _ => throwError "failed to introduce hypothesis"
 
   -- name hypothesis
-  evalTactic (← `(tactic|
-    irename_core s $(quote s_length) $name
-  ))
+  irenameCore ⟨.spatial, lₛ, lₛ + 1⟩ name
 
 elab "iintro " colGt "#" colGt name:ident : tactic => do
   -- parse syntax
-  if name.getId.isAnonymous then
+  let name := name.getId
+  if name.isAnonymous then
     throwUnsupportedSyntax
 
   -- extract environment
-  let (Γₚ, _, _) ← extractEnvsEntailsFromGoal? true
+  let (Γₚ, _, _) ← extractEnvsEntailsFromGoal true
 
   -- determine hypothesis list length
-  let some p_length ← Γₚ.asListExpr_length?
+  let some lₚ ← Γₚ.asListExpr_length?
     | throwError "ill-formed proof environment"
 
   -- introduce hypothesis
@@ -213,9 +198,7 @@ elab "iintro " colGt "#" colGt name:ident : tactic => do
   catch _ => throwError "failed to introduce hypothesis"
 
   -- name hypothesis
-  evalTactic (← `(tactic|
-    irename_core p $(quote p_length) $name
-  ))
+  irenameCore ⟨.intuitionistic, lₚ, lₚ + 1⟩ name
 
 
 elab "iexact " colGt name:ident : tactic => do
@@ -224,21 +207,13 @@ elab "iexact " colGt name:ident : tactic => do
   if name.isAnonymous then
     throwUnsupportedSyntax
 
-  -- extract environment
-  let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal?
-
-  let (some lₚ, some lₛ) ← (Γₚ, Γₛ).mapAllM (M := MetaM) Lean.Expr.asListExpr_length?
-    | throwError "ill-formed proof environment"
-
   -- find hypothesis index
-  let envsIndex ← match ← findHypothesis? name Γₚ Γₛ with
-    | (.intuitionistic, i) => `(EnvsIndex.p ⟨$(quote i), by show $(quote i) < $(quote lₚ) ; decide⟩)
-    | (.spatial,        i) => `(EnvsIndex.s ⟨$(quote i), by show $(quote i) < $(quote lₛ) ; decide⟩)
+  let hypIndex ← findHypothesis name
 
   -- try to solve the goal with the found hypothesis
   try evalTactic (← `(tactic|
     first
-    | refine tac_assumption $envsIndex _
+    | refine tac_assumption $(← hypIndex.quoteAsEnvsIndex) _
     | fail
   ))
   catch _ => throwError "failed to use the hypothesis to close the goal"
@@ -265,7 +240,7 @@ elab "iassumption_lean" : tactic => do
 
 elab "iassumption" : tactic => do
   -- extract environment
-  let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal?
+  let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal
 
   let (some lₚ, some lₛ) ← (Γₚ, Γₛ).mapAllM (M := MetaM) Lean.Expr.asListExpr_length?
     | throwError "ill-formed proof environment"
@@ -284,13 +259,13 @@ elab "iassumption" : tactic => do
 
   -- try all available hypotheses
   for i in List.range lₚ do
-    let envsIndex ← `(EnvsIndex.p ⟨$(quote i), by show $(quote i) < $(quote lₚ) ; decide⟩)
-    if ← tryCloseGoal envsIndex then
+    let hypIndex : HypothesisIndex := ⟨.intuitionistic, i, lₚ⟩
+    if ← tryCloseGoal (← hypIndex.quoteAsEnvsIndex) then
       return ()
 
   for i in List.range lₛ do
-    let envsIndex ← `(EnvsIndex.s ⟨$(quote i), by show $(quote i) < $(quote lₛ) ; decide⟩)
-    if ← tryCloseGoal envsIndex then
+    let hypIndex : HypothesisIndex := ⟨.spatial, i, lₛ⟩
+    if ← tryCloseGoal (← hypIndex.quoteAsEnvsIndex) then
       return ()
 
   -- try all hypotheses from the Lean context
@@ -316,9 +291,7 @@ elab "isplit" : tactic => do
   ))
   catch _ => throwError "unable to split conjunction"
 
-namespace Internal
-
-scoped elab "isplit" side:(&"l" <|> &"r") "[" names:ident,* "]" : tactic => do
+elab "isplit" side:(&"l" <|> &"r") "[" names:ident,* "]" : tactic => do
   -- parse syntax
   let splitRight ← match side.getKind with
     | `l => pure false
@@ -332,7 +305,7 @@ scoped elab "isplit" side:(&"l" <|> &"r") "[" names:ident,* "]" : tactic => do
   )
 
   -- extract environment
-  let (_, Γₛ, _) ← extractEnvsEntailsFromGoal? true
+  let (_, Γₛ, _) ← extractEnvsEntailsFromGoal true
 
   -- find indices
   let indices ← names.mapM (fun name => do
@@ -350,12 +323,7 @@ scoped elab "isplit" side:(&"l" <|> &"r") "[" names:ident,* "]" : tactic => do
   ))
   catch _ => throwError "unable to split separating conjunction"
 
-end Internal
-
-macro "isplit_l" "[" names:ident,* "]" : tactic => `(tactic| isplit l [$[$names:ident],*])
-macro "isplit_r" "[" names:ident,* "]" : tactic => `(tactic| isplit r [$[$names:ident],*])
-
-macro "isplit_l" : tactic => `(tactic| isplit r [])
-macro "isplit_r" : tactic => `(tactic| isplit l [])
+macro "isplit" &"l" : tactic => `(tactic| isplit r [])
+macro "isplit" &"r" : tactic => `(tactic| isplit l [])
 
 end Iris.Proofmode
