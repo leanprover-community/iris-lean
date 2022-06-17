@@ -135,4 +135,54 @@ theorem tac_sep_split [BI PROP] {Γₚ Γₛ : List PROP} {Q1 Q2 : PROP} (sorted
   envs_entails ⟨Γₚ, Γₛ⟩ P
 := sorry
 
+-- destruction
+class inductive IntoConjunction [BI PROP] (P : PROP) (P1 P2 : outParam PROP) : Bool → Type
+  | and : [IntoAnd true P P1 P2] → IntoConjunction P P1 P2 true
+  | sep : [IntoSep P P1 P2] → IntoConjunction P P1 P2 false
+
+attribute [instance] IntoConjunction.and
+attribute [instance] IntoConjunction.sep
+
+theorem tac_conjunction_destruct [BI PROP] {Γₚ Γₛ : List PROP} {P1 P2 : PROP} (i : EnvsIndex Γₚ.length Γₛ.length) (Q : PROP) :
+  let (p, P) := match i with
+    | .p i => (true, Γₚ.getR i)
+    | .s i => (false, Γₛ.getR i)
+  [IntoConjunction P P1 P2 p] →
+  let (Γₚ', Γₛ') := match i with
+    | .p i => (Γₚ |>.eraseIdxR i |>.concat P1 |>.concat P2, Γₛ)
+    | .s i => (Γₚ, Γₛ |>.eraseIdxR i |>.concat P1 |>.concat P2)
+  envs_entails ⟨Γₚ', Γₛ'⟩ Q →
+  envs_entails ⟨Γₚ, Γₛ⟩ Q
+:= sorry
+
+theorem tac_conjunction_destruct_choice [BI PROP] {Γₚ Γₛ : List PROP} {P1 P2 : PROP} (i : EnvsIndex Γₚ.length Γₛ.length) (d : Bool) (Q : PROP) :
+  let (p, P) := match i with
+    | .p i => (true, Γₚ.getR i)
+    | .s i => (false, Γₛ.getR i)
+  [IntoAnd p P P1 P2] →
+  let P' := if d then P1 else P2
+  let (Γₚ', Γₛ') := match i with
+    | .p i => (Γₚ |>.eraseIdxR i |>.concat P', Γₛ)
+    | .s i => (Γₚ, Γₛ |>.eraseIdxR i |>.concat P')
+  envs_entails ⟨Γₚ', Γₛ'⟩ Q →
+  envs_entails ⟨Γₚ, Γₛ⟩ Q
+:= sorry
+
+theorem tac_disjunction_destruct [BI PROP] {Γₚ Γₛ : List PROP} {P1 P2 : PROP} (i : EnvsIndex Γₚ.length Γₛ.length) (Q : PROP) :
+  let P := match i with
+    | .p i => Γₚ.getR i
+    | .s i => Γₛ.getR i
+  [IntoOr P P1 P2] →
+  let (Γₚₗ, Γₚᵣ, Γₛₗ, Γₛᵣ) := match i with
+    | .p i => (
+      Γₚ |>.eraseIdxR i |>.concat P1, Γₚ |>.eraseIdxR i |>.concat P2,
+      Γₛ, Γₛ)
+    | .s i => (
+      Γₚ, Γₚ,
+      Γₛ |>.eraseIdxR i |>.concat P1, Γₛ |>.eraseIdxR i |>.concat P2)
+  envs_entails ⟨Γₚₗ, Γₛₗ⟩ Q →
+  envs_entails ⟨Γₚᵣ, Γₛᵣ⟩ Q →
+  envs_entails ⟨Γₚ, Γₛ⟩ Q
+:= sorry
+
 end Iris.Proofmode

@@ -208,4 +208,154 @@ theorem sepRightAll [BIAffine PROP] (Q : PROP) : ⊢ □ P -∗ Q -∗ R -∗ P 
 
 end split
 
+-- cases
+namespace cases
+
+theorem rename [BI PROP] (P : PROP) : P ⊢ P := by
+  iintro HP
+  icases HP with H
+  iexact H
+
+theorem clear [BI PROP] (P Q : PROP) : ⊢ P -∗ <affine> Q -∗ P := by
+  iintro HP
+  iintro HQ
+  icases HQ with _
+  iexact HP
+
+theorem and [BI PROP] (Q : PROP) : □ (P1 ∧ P2 ∧ Q) ⊢ Q := by
+  iintro #HP
+  icases HP with ⟨HP1, HP2, HQ⟩
+  iexact HQ
+
+theorem andIntuitionistic [BI PROP] (Q : PROP) : □ P ∧ Q ⊢ Q := by
+  iintro HPQ
+  icases HPQ with ⟨HP, HQ⟩
+  iexact HQ
+
+theorem andPersistentLeft [BI PROP] (Q : PROP) : <pers> Q ∧ <affine> P ⊢ Q := by
+  iintro HQP
+  icases HQP with ⟨#HQ, HP⟩
+  iexact HQ
+
+theorem andPersistentRight [BI PROP] (Q : PROP) : Q ∧ <pers> P ⊢ Q := by
+  iintro HQP
+  icases HQP with ⟨HQ, HP⟩
+  iexact HQ
+
+theorem sep [BIAffine PROP] (Q : PROP) : P1 ∗ P2 ∗ Q ⊢ Q := by
+  iintro HPQ
+  icases HPQ with ⟨HP1, HP2, HQ⟩
+  iexact HQ
+
+theorem disjunction [BI PROP] (Q : PROP) : Q ⊢ <affine> (P1 ∨ P2 ∨ P3) -∗ Q := by
+  iintro HQ
+  iintro HP
+  icases HP with (HP1 | HP2 | HP3)
+  <;> iexact HQ
+
+theorem conjunctionAndDisjunction [BIAffine PROP] (Q : PROP) : (P11 ∨ P12 ∨ P13) ∗ P2 ∗ (P31 ∨ P32 ∨ P33) ∗ Q ⊢ Q := by
+  iintro HP
+  icases HP with ⟨HP11 | HP12 | HP13, HP2, HP31 | HP32 | HP33, HQ⟩
+  <;> iexact HQ
+
+theorem moveToPure [BI PROP] (Q : PROP) : ⊢ <affine> ⌜φ⌝ -∗ Q -∗ Q := by
+  iintro Hφ
+  iintro HQ
+  icases Hφ with %Hφ
+  iexact HQ
+
+theorem moveToIntuitionistic [BI PROP] (Q : PROP) : ⊢ □ Q -∗ Q := by
+  iintro HQ
+  icases HQ with #HQ
+  iexact HQ
+
+theorem moveToSpatial [BI PROP] (Q : PROP) : ⊢ □ Q -∗ Q := by
+  iintro #HQ
+  icases HQ with -#HQ
+  iexact HQ
+
+theorem moveToPureConjunction [BI PROP] (Q : PROP) : ⊢ <affine> ⌜φ⌝ ∗ Q -∗ Q := by
+  iintro HφQ
+  icases HφQ with ⟨%Hφ, HQ⟩
+  iexact HQ
+
+theorem moveToPureDisjunction [BI PROP] (Q : PROP) : ⊢ <affine> ⌜φ1⌝ ∨ <affine> ⌜φ2⌝ -∗ Q -∗ Q := by
+  iintro Hφ
+  iintro HQ
+  icases Hφ with (%Hφ1 | %Hφ2)
+  <;> iexact HQ
+
+theorem moveToIntuitionisticConjunction [BI PROP] (Q : PROP) : ⊢ □ P ∗ Q -∗ Q := by
+  iintro HPQ
+  icases HPQ with ⟨#HP, HQ⟩
+  iexact HQ
+
+theorem moveToIntuitionisticDisjunction [BI PROP] (Q : PROP) : ⊢ □ Q ∨ Q -∗ Q := by
+  iintro HQQ
+  icases HQQ with (#HQ | HQ)
+  <;> iexact HQ
+
+theorem moveToSpatialConjunction [BI PROP] (Q : PROP) : ⊢ □ (P ∧ Q) -∗ Q := by
+  iintro #HPQ
+  icases HPQ with ⟨HP, -#HQ⟩
+  iexact HQ
+
+theorem moveToSpatialDisjunction [BI PROP] (Q : PROP) : ⊢ □ (Q ∨ Q) -∗ Q := by
+  iintro #HPQ
+  icases HPQ with (HQ | -#HQ)
+  <;> iexact HQ
+
+theorem moveToIntuitionisticAndBackConjunction [BI PROP] (Q : PROP) : ⊢ □ (P ∧ Q) -∗ Q := by
+  iintro HPQ
+  icases HPQ with #⟨HP, -#HQ⟩
+  iexact HQ
+
+theorem moveToIntuitionisticAndBackDisjunction [BI PROP] (Q : PROP) : ⊢ □ (Q ∨ Q) -∗ Q := by
+  iintro HPQ
+  icases HPQ with #(HQ | -#HQ)
+  <;> iexact HQ
+
+theorem conjunctionClear [BIAffine PROP] (Q : PROP) : Q ∗ P ⊢ Q := by
+  iintro HQP
+  icases HQP with ⟨HQ, _⟩
+  <;> iexact HQ
+
+theorem disjunctionClear [BIAffine PROP] (Q : PROP) : Q ⊢ P1 ∨ P2 -∗ Q := by
+  iintro HQ
+  iintro HP
+  icases HP with (_ | HP2)
+  <;> iexact HQ
+
+theorem andDestructSpatialRight [BI PROP] (Q : PROP) : P ∧ Q ⊢ Q := by
+  iintro HPQ
+  icases HPQ with ⟨_, HQ⟩
+  iexact HQ
+
+theorem andDestructSpatialLeft [BI PROP] (Q : PROP) : Q ∧ P ⊢ Q := by
+  iintro HQP
+  icases HQP with ⟨HQ, _⟩
+  iexact HQ
+
+theorem andClearSpatialMultiple [BI PROP] (Q : PROP) : P1 ∧ P2 ∧ Q ∧ P3 ⊢ Q := by
+  iintro HPQ
+  icases HPQ with ⟨_, _, HQ, _⟩
+  iexact HQ
+
+theorem andDestructIntuitionisticRight [BI PROP] (Q : PROP) : □ (P ∧ Q) ⊢ Q := by
+  iintro #HPQ
+  icases HPQ with ⟨_, HQ⟩
+  iexact HQ
+
+theorem andDestructIntuitionisticLeft [BI PROP] (Q : PROP) : □ (Q ∧ P) ⊢ Q := by
+  iintro #HQP
+  icases HQP with ⟨HQ, _⟩
+  iexact HQ
+
+theorem andClearIntuitionisticMultiple [BI PROP] (Q : PROP) : □ (P1 ∧ P2 ∧ Q ∧ P3) ⊢ Q := by
+  iintro #HPQ
+  icases HPQ with ⟨_, _, HQ, _⟩
+  iexact HQ
+
+end cases
+
 end Iris.Tests

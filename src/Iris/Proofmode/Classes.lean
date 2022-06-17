@@ -31,8 +31,20 @@ class FromWand [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
 class FromAnd [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_and : Q1 ∧ Q2 ⊢ P
 
+class IntoAnd (p : Bool) [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+  into_and : □?p P ⊢ □?p (Q1 ∧ Q2)
+
 class FromSep [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_sep : Q1 ∗ Q2 ⊢ P
+
+class IntoSep [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) :=
+  into_sep : P ⊢ Q1 ∗ Q2
+
+class FromOr [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+  from_or : Q1 ∨ Q2 ⊢ P
+
+class IntoOr [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+  into_or : P ⊢ Q1 ∨ Q2
 
 
 class IntoPersistent (p : Bool) [BI PROP] (P : PROP) (Q : outParam PROP) where

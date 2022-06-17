@@ -73,6 +73,56 @@ instance (priority := default + 10) from_and_persistently_sep [BI PROP] (P Q1 Q2
 where
   from_and := sorry
 
+-- IntoAnd
+instance (priority := default - 10) into_and_and (p : Bool) [BI PROP] (P Q : PROP) :
+  IntoAnd p `[iprop| P ∧ Q] P Q
+where
+  into_and := sorry
+
+instance into_and_and_affine_l [BI PROP] (P Q Q' : PROP) :
+  [Affine P] →
+  [FromAffinely Q' Q] →
+  IntoAnd false `[iprop| P ∧ Q] P Q'
+where
+  into_and := sorry
+
+instance into_and_and_affine_r [BI PROP] (P P' Q : PROP) :
+  [Affine Q] →
+  [FromAffinely P' P] →
+  IntoAnd false `[iprop| P ∧ Q] P' Q
+where
+  into_and := sorry
+
+instance into_and_sep_affine (p : Bool) [BI PROP] (P Q : PROP) :
+  [TCOr (Affine P) (Absorbing Q)] →
+  [TCOr (Absorbing P) (Affine Q)] →
+  IntoAnd p `[iprop| P ∗ Q] P Q
+where
+  into_and := sorry
+
+instance into_and_pure (p : Bool) (φ ψ : Prop) [BI PROP] :
+  IntoAnd (PROP := PROP) p `[iprop| ⌜φ ∧ ψ⌝] `[iprop| ⌜φ⌝] `[iprop| ⌜ψ⌝]
+where
+  into_and := sorry
+
+instance into_and_affinely (p : Bool) [BI PROP] (P Q1 Q2 : PROP) :
+  [IntoAnd p P Q1 Q2] →
+  IntoAnd p `[iprop| <affine> P] `[iprop| <affine> Q1] `[iprop| <affine> Q2]
+where
+  into_and := sorry
+
+instance into_and_intuitionistically (p : Bool) [BI PROP] (P Q1 Q2 : PROP) :
+  [IntoAnd p P Q1 Q2] →
+  IntoAnd p `[iprop| □ P] `[iprop| □ Q1] `[iprop| □ Q2]
+where
+  into_and := sorry
+
+instance into_and_persistently (p : Bool) [BI PROP] (P Q1 Q2 : PROP) :
+  [IntoAnd p P Q1 Q2] →
+  IntoAnd p `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+where
+  into_and := sorry
+
 -- FromSep
 instance (priority := default - 10) from_sep_sep [BI PROP] (P1 P2 : PROP) :
   FromSep `[iprop| P1 ∗ P2] P1 P2
@@ -114,6 +164,139 @@ instance (priority := default + 10) from_sep_persistently [BI PROP] (P Q1 Q2 : P
   FromSep `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
 where
   from_sep := sorry
+
+-- AndIntoSep (private)
+private class AndIntoSep [BI PROP] (P Q : PROP) (P' Q' : outParam PROP) where
+  and_into_sep : P' ∗ Q' ⊢ P ∧ Q
+
+instance (priority := default + 10) and_into_sep_affine [BI PROP] (P Q Q' : PROP) :
+  [Affine P] →
+  [FromAffinely Q' Q] →
+  AndIntoSep P Q P Q'
+where
+  and_into_sep := sorry
+
+instance and_into_sep [BI PROP] (P Q : PROP) :
+  AndIntoSep P Q `[iprop| <affine> P] Q
+where
+  and_into_sep := sorry
+
+-- IntoSep
+instance into_sep_sep [BI PROP] (P Q : PROP) :
+  IntoSep `[iprop| P ∗ Q] P Q
+where
+  into_sep := sorry
+
+instance into_sep_and_persistent_l [BI PROP] (P Q P' Q' : PROP) :
+  [Persistent P] →
+  [AndIntoSep P Q P' Q'] →
+  IntoSep `[iprop| P ∧ Q] P' Q'
+where
+  into_sep := sorry
+
+instance into_sep_and_persistent_r [BI PROP] (P Q P' Q' : PROP) :
+  [Persistent Q] →
+  [AndIntoSep Q P Q' P'] →
+  IntoSep `[iprop| P ∧ Q] P' Q'
+where
+  into_sep := sorry
+
+instance into_sep_pure (φ ψ : Prop) [BI PROP] :
+  IntoSep (PROP := PROP) `[iprop| ⌜φ ∧ ψ⌝] `[iprop| ⌜φ⌝] `[iprop| ⌜ψ⌝]
+where
+  into_sep := sorry
+
+instance (priority := default - 10) into_sep_affinely_trim [BI PROP] (P Q1 Q2 : PROP) :
+  [IntoSep P Q1 Q2] →
+  IntoSep `[iprop| <affine> P] Q1 Q2
+where
+  into_sep := sorry
+
+instance into_sep_persistently_affine [BI PROP] (P Q1 Q2 : PROP) :
+  [IntoSep P Q1 Q2] →
+  [TCOr (Affine Q1) (Absorbing Q2)] →
+  [TCOr (Absorbing Q1) (Affine Q2)] →
+  IntoSep `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+where
+  into_sep := sorry
+
+instance into_sep_intuitionistically_affine [BI PROP] (P Q1 Q2 : PROP) :
+  [IntoSep P Q1 Q2] →
+  [TCOr (Affine Q1) (Absorbing Q2)] →
+  [TCOr (Absorbing Q1) (Affine Q2)] →
+  IntoSep `[iprop| □ P] `[iprop| □ Q1] `[iprop| □ Q2]
+where
+  into_sep := sorry
+
+-- FromOr
+instance from_or_or [BI PROP] (P1 P2 : PROP) :
+  FromOr `[iprop| P1 ∨ P2] P1 P2
+where
+  from_or := sorry
+
+instance from_or_pure (φ ψ : Prop) [BI PROP] :
+  FromOr (PROP := PROP) `[iprop| ⌜φ ∨ ψ⌝] `[iprop| ⌜φ⌝] `[iprop| ⌜ψ⌝]
+where
+  from_or := sorry
+
+instance from_or_affinely [BI PROP] (P Q1 Q2 : PROP) :
+  [FromOr P Q1 Q2] →
+  FromOr `[iprop| <affine> P] `[iprop| <affine> Q1] `[iprop| <affine> Q2]
+where
+  from_or := sorry
+
+instance from_or_intuitionistically [BI PROP] (P Q1 Q2 : PROP) :
+  [FromOr P Q1 Q2] →
+  FromOr `[iprop| □ P] `[iprop| □ Q1] `[iprop| □ Q2]
+where
+  from_or := sorry
+
+instance from_or_absorbingly [BI PROP] (P Q1 Q2 : PROP) :
+  [FromOr P Q1 Q2] →
+  FromOr `[iprop| <absorb> P] `[iprop| <absorb> Q1] `[iprop| <absorb> Q2]
+where
+  from_or := sorry
+
+instance from_or_persistently [BI PROP] (P Q1 Q2 : PROP) :
+  [FromOr P Q1 Q2] →
+  FromOr `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+where
+  from_or := sorry
+
+-- IntoOr
+instance into_or_or [BI PROP] (P Q : PROP) :
+  IntoOr `[iprop| P ∨ Q] P Q
+where
+  into_or := sorry
+
+instance into_or_pure (φ ψ : Prop) [BI PROP] :
+  IntoOr (PROP := PROP) `[iprop| ⌜φ ∨ ψ⌝] `[iprop| ⌜φ⌝] `[iprop| ⌜ψ⌝]
+where
+  into_or := sorry
+
+instance into_or_affinely [BI PROP] (P Q1 Q2 : PROP) :
+  [IntoOr P Q1 Q2] →
+  IntoOr `[iprop| <affine> P] `[iprop| <affine> Q1] `[iprop| <affine> Q2]
+where
+  into_or := sorry
+
+instance into_or_intuitionistically [BI PROP] (P Q1 Q2 : PROP) :
+  [IntoOr P Q1 Q2] →
+  IntoOr `[iprop| □ P] `[iprop| □ Q1] `[iprop| □ Q2]
+where
+  into_or := sorry
+
+instance into_or_absorbingly [BI PROP] (P Q1 Q2 : PROP) :
+  [IntoOr P Q1 Q2] →
+  IntoOr `[iprop| <absorb> P] `[iprop| <absorb> Q1] `[iprop| <absorb> Q2]
+where
+  into_or := sorry
+
+instance into_or_persistently [BI PROP] (P Q1 Q2 : PROP) :
+  [IntoOr P Q1 Q2] →
+  IntoOr `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+where
+  into_or := sorry
 
 -- IntoPersistent
 instance (priority := default + 20) into_persistent_persistently (p : Bool) [BI PROP] (P Q : PROP) :
