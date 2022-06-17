@@ -121,7 +121,7 @@ def Internal.irenameCore (hypIndex : HypothesisIndex) (name : Name) : TacticM Un
 
   setMVarType goal expr
 
-elab "irename " colGt nameFrom:ident " into " colGt nameTo:ident : tactic => do
+elab "irename" colGt nameFrom:ident "into" colGt nameTo:ident : tactic => do
   -- parse syntax
   if nameFrom.getId.isAnonymous then
     throwUnsupportedSyntax
@@ -151,7 +151,7 @@ elab "iclear" colGt name:ident : tactic => do
   catch _ => throwError "failed to clear the hypothesis"
 
 
-elab "iintro " colGt name:ident : tactic => do
+elab "iintro" colGt name:ident : tactic => do
   -- parse syntax
   let name := name.getId
   if name.isAnonymous then
@@ -176,7 +176,7 @@ elab "iintro " colGt name:ident : tactic => do
   -- name hypothesis
   irenameCore ⟨.spatial, lₛ, lₛ + 1⟩ name
 
-elab "iintro " colGt "#" colGt name:ident : tactic => do
+elab "iintro" colGt "#" colGt name:ident : tactic => do
   -- parse syntax
   let name := name.getId
   if name.isAnonymous then
@@ -202,7 +202,7 @@ elab "iintro " colGt "#" colGt name:ident : tactic => do
   irenameCore ⟨.intuitionistic, lₚ, lₚ + 1⟩ name
 
 
-elab "iexact " colGt name:ident : tactic => do
+elab "iexact" colGt name:ident : tactic => do
   -- parse syntax
   let name := name.getId
   if name.isAnonymous then
@@ -611,7 +611,7 @@ mutual
     setGoals <| (← getUnsolvedGoals) ++ remainingGoals
 end
 
-elab "icases " colGt name:ident " with " colGt pat:icasesPat : tactic => do
+elab "icases" colGt name:ident "with" colGt pat:icasesPat : tactic => do
   -- parse syntax
   let name := name.getId
   if name.isAnonymous then
