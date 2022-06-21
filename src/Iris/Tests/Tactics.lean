@@ -49,6 +49,52 @@ theorem ispatial [BI PROP] (Q : PROP) : <affine> P ⊢ Q -∗ Q := by
 
 end clear
 
+-- intro
+namespace intro
+
+theorem spatial [BI PROP] (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iexact HQ
+
+theorem intuitionistic [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
+  iintro #HQ
+  iexact HQ
+
+theorem drop [BI PROP] (Q : PROP) : ⊢ (P → Q -∗ Q) := by
+  iintro _ HQ
+  iexact HQ
+
+theorem dropAfter [BI PROP] (Q : PROP) : ⊢ Q -∗ (P → Q) := by
+  iintro HQ _
+  iexact HQ
+
+theorem «forall» [BI PROP] : ⊢ ∀ x, (⌜x = 0⌝ → ⌜x = 0⌝ : PROP) := by
+  iintro %x
+  iintro H
+  iexact H
+
+theorem pure [BIAffine PROP] (Q : PROP) : ⊢ ⌜φ⌝ -∗ Q -∗ Q := by
+  iintro %Hφ HQ
+  iexact HQ
+
+theorem pattern [BI PROP] (Q : PROP) : □ (P1 ∨ P2) ∗ Q ⊢ Q := by
+  iintro ⟨#(HP1 | HP2), HQ⟩
+  <;> iexact HQ
+
+theorem multipleSpatial [BI PROP] (Q : PROP) : ⊢ <affine> P -∗ Q -∗ Q := by
+  iintro HP HQ
+  iexact HQ
+
+theorem multipleIntuitionistic [BI PROP] (Q : PROP) : ⊢ □ P -∗ □ Q -∗ Q := by
+  iintro #HP #HQ
+  iexact HQ
+
+theorem multiplePatterns [BI PROP] (Q : PROP) : ⊢ □ (P1 ∧ P2) -∗ Q ∨ Q -∗ Q := by
+  iintro #⟨HP1, -#HP2⟩ (HQ | HQ)
+  <;> iexact HQ
+
+end intro
+
 -- exact
 namespace exact
 

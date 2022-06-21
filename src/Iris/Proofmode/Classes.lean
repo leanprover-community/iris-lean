@@ -28,6 +28,9 @@ class FromImpl [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
 class FromWand [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_wand : (Q1 -∗ Q2) ⊢ P
 
+class FromForall [BI PROP] (P : PROP) {α : outParam Type} (Ψ : outParam <| α → PROP) where
+  from_forall : (∀ x, Ψ x) ⊢ P
+
 class FromAnd [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_and : Q1 ∧ Q2 ⊢ P
 

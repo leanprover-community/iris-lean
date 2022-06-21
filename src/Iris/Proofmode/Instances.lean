@@ -36,6 +36,12 @@ instance from_wand_wand [BI PROP] (P1 P2 : PROP) :
 where
   from_wand := sorry
 
+-- FromForall
+instance from_forall_forall [BI PROP] (Φ : α → PROP) :
+  FromForall (BIBase.forall Φ) Φ
+where
+  from_forall := sorry
+
 -- FromAnd
 instance (priority := default - 10) from_and_and [BI PROP] (P1 P2 : PROP) :
   FromAnd `[iprop| P1 ∧ P2] P1 P2

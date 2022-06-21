@@ -38,6 +38,12 @@ theorem tac_impl_intro_intuitionistic [BI PROP] {Γₚ Γₛ : List PROP} {P P' 
   envs_entails ⟨Γₚ, Γₛ⟩ R
 := sorry
 
+theorem tac_impl_intro_drop [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
+  [FromImpl R P Q] →
+  envs_entails Δ Q →
+  envs_entails Δ R
+:= sorry
+
 theorem tac_wand_intro [BI PROP] {Γₚ Γₛ : List PROP} {P Q : PROP} (R : PROP) :
   [FromWand R P Q] →
   envs_entails ⟨Γₚ, Γₛ.concat P⟩ Q →
@@ -50,6 +56,12 @@ theorem tac_wand_intro_intuitionistic [BI PROP] {Γₚ Γₛ : List PROP} {P P' 
   [TCOr (Affine P) (Absorbing Q)] →
   envs_entails ⟨Γₚ.concat P', Γₛ⟩ Q →
   envs_entails ⟨Γₚ, Γₛ⟩ R
+:= sorry
+
+theorem tac_forall_intro [BI PROP] {Δ : Envs PROP} {Ψ : α → PROP} (Q : PROP) :
+  [FromForall Q Ψ] →
+  (∀ a, envs_entails Δ `[iprop| Ψ a]) →
+  envs_entails Δ Q
 := sorry
 
 -- assumptions

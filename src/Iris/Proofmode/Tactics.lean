@@ -1,7 +1,7 @@
 import Iris.BI
 import Iris.Proofmode.Environments
 import Iris.Proofmode.Expr
-import Iris.Proofmode.IntroPatterns
+import Iris.Proofmode.InputPatterns
 import Iris.Proofmode.Theorems
 import Iris.Std
 
@@ -151,55 +151,59 @@ elab "iclear" colGt name:ident : tactic => do
   catch _ => throwError "failed to clear the hypothesis"
 
 
-elab "iintro" colGt name:ident : tactic => do
-  -- parse syntax
-  let name := name.getId
-  if name.isAnonymous then
-    throwUnsupportedSyntax
-
+def Internal.iintroCore (type : HypothesisType) (name : Name) : TacticM Unit := do
   -- extract environment
-  let (_, Γₛ, _) ← extractEnvsEntailsFromGoal true
+  let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal true
 
   -- determine hypothesis list length
-  let some lₛ ← Γₛ.asListExpr_length?
+  let (some lₚ, some lₛ) ← (Γₚ, Γₛ).mapAllM (·.asListExpr_length?)
     | throwError "ill-formed proof environment"
 
-  -- introduce hypothesis
+  match type with
+  | .intuitionistic =>
+    -- introduce hypothesis
+    try evalTactic (← `(tactic|
+      first
+      | refine tac_impl_intro_intuitionistic _ ?_
+      | refine tac_wand_intro_intuitionistic _ ?_
+      | fail
+    ))
+    catch _ => throwError "failed to introduce hypothesis"
+
+    -- name hypothesis
+    irenameCore ⟨.intuitionistic, lₚ, lₚ + 1⟩ name
+  | .spatial =>
+    -- introduce hypothesis
+    try evalTactic (← `(tactic|
+      first
+      | refine tac_impl_intro _ ?_
+      | refine tac_wand_intro _ ?_
+      | fail
+    ))
+    catch _ => throwError "failed to introduce hypothesis"
+
+    -- name hypothesis
+    irenameCore ⟨.spatial, lₛ, lₛ + 1⟩ name
+
+def Internal.iintroCoreClear : TacticM Unit := do
+  -- drop implication premise
   try evalTactic (← `(tactic|
     first
-    | refine tac_impl_intro _ ?_
-    | refine tac_wand_intro _ ?_
+    | istart_proof
+      refine tac_impl_intro_drop _ ?_
     | fail
-  ))
-  catch _ => throwError "failed to introduce hypothesis"
+  )) catch _ => throwError "failed to drop implication hypothesis"
 
-  -- name hypothesis
-  irenameCore ⟨.spatial, lₛ, lₛ + 1⟩ name
-
-elab "iintro" colGt "#" colGt name:ident : tactic => do
-  -- parse syntax
-  let name := name.getId
-  if name.isAnonymous then
-    throwUnsupportedSyntax
-
-  -- extract environment
-  let (Γₚ, _, _) ← extractEnvsEntailsFromGoal true
-
-  -- determine hypothesis list length
-  let some lₚ ← Γₚ.asListExpr_length?
-    | throwError "ill-formed proof environment"
-
-  -- introduce hypothesis
+def Internal.iintroCoreForall (name : Name) : TacticM Unit := do
+  -- introduce universally bound variable
   try evalTactic (← `(tactic|
     first
-    | refine tac_impl_intro_intuitionistic _ ?_
-    | refine tac_wand_intro_intuitionistic _ ?_
+    | istart_proof
+      refine tac_forall_intro _ ?_
+      intro $(mkIdent name)
     | fail
   ))
-  catch _ => throwError "failed to introduce hypothesis"
-
-  -- name hypothesis
-  irenameCore ⟨.intuitionistic, lₚ, lₚ + 1⟩ name
+  catch _ => throwError "failed to introduce universally bound variable"
 
 
 elab "iexact" colGt name:ident : tactic => do
@@ -621,5 +625,37 @@ elab "icases" colGt name:ident "with" colGt pat:icasesPat : tactic => do
 
   -- process pattern
   icasesCore name pat
+
+
+elab "iintro" pats:(colGt icasesPat)* : tactic => do
+  -- parse syntax
+  let some pats := pats
+    |>.map iCasesPat.parse
+    |>.sequenceMap id
+    | throwUnsupportedSyntax
+
+  for pat in pats do
+    let tmpName ← mkFreshUserName `i
+
+    -- introduce hypothesis and determine remaining pattern
+    let mut pat? := some pat
+    if pat matches .clear then
+      iintroCoreClear
+      pat? := none
+    else if let .pure (.one name) := pat then
+      try
+        iintroCoreForall name
+        pat? := none
+      catch _ =>
+        iintroCore .spatial tmpName
+    else if pat matches .intuitionistic pat then
+      iintroCore .intuitionistic tmpName
+      pat? := some pat
+    else
+      iintroCore .spatial tmpName
+
+    -- process pattern
+    if let some pat := pat? then
+      icasesCore tmpName pat
 
 end Iris.Proofmode
