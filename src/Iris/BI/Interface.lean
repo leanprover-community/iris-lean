@@ -28,11 +28,11 @@ macro:25 P:term:29 " ⊢ " Q:term:25 : term => `(BIBase.entails `[iprop| $P] `[i
 -- `iprop` syntax
 syntax "⌜" term "⌝" : term
 syntax:35 term:36 " ∗ " term:35 : term
-syntax:27 term:28 " -∗ " term:27 : term
+syntax:25 term:26 " -∗ " term:25 : term
 syntax:max "<pers> " term:40 : term
 
 -- syntax overloading where necessary
-syntax:26 "∀ " explicitBinders ", " term:26 : term
+syntax:25 "∀ " explicitBinders ", " term:25 : term
 
 -- `iprop` syntax interpretation
 macro_rules

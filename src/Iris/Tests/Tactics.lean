@@ -68,7 +68,7 @@ theorem dropAfter [BI PROP] (Q : PROP) : ⊢ Q -∗ (P → Q) := by
   iintro HQ _
   iexact HQ
 
-theorem «forall» [BI PROP] : ⊢ ∀ x, (⌜x = 0⌝ → ⌜x = 0⌝ : PROP) := by
+theorem «forall» [BI PROP] : ⊢ ∀ x, ⌜x = 0⌝ → (⌜x = 0⌝ : PROP) := by
   iintro %x
   iintro H
   iexact H
