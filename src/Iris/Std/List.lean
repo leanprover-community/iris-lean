@@ -24,7 +24,7 @@ def foldr1 {α} (f : α → α → α) (alt : Unit → α) : List α → α
 @[reducible]
 def getR : (as : List α) → Fin as.length → α
   | a :: _ , ⟨0, _⟩     => a
-  | a :: as, ⟨i + 1, h⟩ => getR as ⟨i, Nat.le_of_succ_le_succ h⟩
+  | _ :: as, ⟨i + 1, h⟩ => getR as ⟨i, Nat.le_of_succ_le_succ h⟩
 
 @[specialize]
 def partitionIndices (as : List α) (p : Nat → Bool) : List α × List α :=

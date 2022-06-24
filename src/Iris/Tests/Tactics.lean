@@ -60,11 +60,11 @@ theorem intuitionistic [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
   iintro #HQ
   iexact HQ
 
-theorem drop [BI PROP] (Q : PROP) : ⊢ (P → Q -∗ Q) := by
+theorem drop [BI PROP] (Q : PROP) : ⊢ P → Q -∗ Q := by
   iintro _ HQ
   iexact HQ
 
-theorem dropAfter [BI PROP] (Q : PROP) : ⊢ Q -∗ (P → Q) := by
+theorem dropAfter [BI PROP] (Q : PROP) : ⊢ Q -∗ P → Q := by
   iintro HQ _
   iexact HQ
 

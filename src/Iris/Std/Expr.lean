@@ -69,7 +69,7 @@ def asListExpr_set? (list : Expr) (e : Expr) (i : Nat) : MetaM <| Option Expr :=
   let list ← whnf list
   match i with
   | 0 => do
-    let some (_, a, _) := app3? list `List.cons
+    let some _ := app3? list `List.cons
       | pure none
     return modifyAppOptM list #[none, e, none]
   | i + 1 => do

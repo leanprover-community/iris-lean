@@ -282,7 +282,7 @@ elab "iassumption" : tactic => do
   catch _ => throwError "no matching hypothesis found or remaining environment cannot be cleared"
 
 
-elab "ipure" name:ident : tactic => do
+elab "ipure" colGt name:ident : tactic => do
   -- parse syntax
   if name.getId.isAnonymous then
     throwUnsupportedSyntax
@@ -294,11 +294,11 @@ elab "ipure" name:ident : tactic => do
   try evalTactic (← `(tactic|
     first
     | refine tac_pure $(← hypIndex.quoteAsEnvsIndex) _ ?_
-      intro $name
+      intro $(mkIdent name.getId)
     | fail
   )) catch _ => throwError "could not move hypothesis to the Lean context"
 
-elab "iintuitionistic" name:ident : tactic => do
+elab "iintuitionistic" colGt name:ident : tactic => do
   -- parse syntax
   let name := name.getId
   if name.isAnonymous then
@@ -322,7 +322,7 @@ elab "iintuitionistic" name:ident : tactic => do
   -- re-name hypothesis
   irenameCore ⟨.intuitionistic, lₚ - 1, lₚ⟩ name
 
-elab "ispatial" name:ident : tactic => do
+elab "ispatial" colGt name:ident : tactic => do
   -- parse syntax
   let name := name.getId
   if name.isAnonymous then
@@ -409,10 +409,10 @@ mutual
       -- destruct hypothesis and clear one side if requested
       let (h, ra) ← (do
         if args[i] matches .clear then
-          if let some result ← destructRight hypIndex args[i] args[i + 1] then
+          if let some result ← destructRight hypIndex args[i + 1] then
             return result
         else if i + 1 == args.size - 1 && args[i + 1] matches .clear then
-          if let some result ← destructLeft hypIndex args[i] args[i + 1] then
+          if let some result ← destructLeft hypIndex args[i] then
             return result
 
         let some result ← destruct hypIndex args[i] args[i + 1]
@@ -437,7 +437,7 @@ mutual
       -- restore all introduced goals
       setGoals goals
   where
-    destructRight (hypIndex : HypothesisIndex) (argL argR : iCasesPat) : TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
+    destructRight (hypIndex : HypothesisIndex) (argR : iCasesPat) : TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
       -- destruct hypothesis
       try evalTactic (← `(tactic|
         first
@@ -456,7 +456,7 @@ mutual
       -- return new hypothesis index and remaining arguments
       return (hypIndex, #[(name, argR)])
 
-    destructLeft (hypIndex : HypothesisIndex) (argL argR : iCasesPat) : TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
+    destructLeft (hypIndex : HypothesisIndex) (argL : iCasesPat) : TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
       -- destruct hypothesis
       try evalTactic (← `(tactic|
         first
@@ -648,7 +648,7 @@ elab "iintro" pats:(colGt icasesPat)* : tactic => do
         pat? := none
       catch _ =>
         iintroCore .spatial tmpName
-    else if pat matches .intuitionistic pat then
+    else if let .intuitionistic pat := pat then
       iintroCore .intuitionistic tmpName
       pat? := some pat
     else
