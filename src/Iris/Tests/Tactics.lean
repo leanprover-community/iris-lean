@@ -131,6 +131,10 @@ theorem lean [BI PROP] (Q : PROP) (H : ⊢ Q) : <affine> P ⊢ Q := by
   iintro HP
   iassumption
 
+theorem leanPure [BI PROP] (Q : PROP) : <affine> ⌜⊢ Q⌝ ⊢ Q := by
+  iintro %H
+  iassumption
+
 theorem false [BI PROP] (Q : PROP) : False ⊢ Q := by
   iintro H
   iassumption

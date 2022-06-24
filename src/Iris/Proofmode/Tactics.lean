@@ -224,11 +224,16 @@ elab "iexact" colGt name:ident : tactic => do
   catch _ => throwError "failed to use the hypothesis to close the goal"
 
 elab "iassumption_lean" : tactic => do
+  -- retrieve goal mvar declaration
+  let some decl := (← getMCtx).findDecl? (← getMainGoal)
+    | throwError "ill-formed proof environment"
+
   -- try all hypotheses from the local context
-  let hs ← getLCtx
-  for h in ← getLCtx do
+  for h in decl.lctx do
+    let (name, type) := (h.userName, ← instantiateMVars h.type)
+
     -- match on `⊢ Q`
-    let some (P, _) := extractEntails? h.type
+    let some (P, _) := extractEntails? type
       | continue
     if !isEmp P then
       continue
@@ -236,7 +241,7 @@ elab "iassumption_lean" : tactic => do
     -- try to solve the goal
     try
       evalTactic (← `(tactic|
-        refine tac_assumption_lean _ $(mkIdent h.userName)
+        refine tac_assumption_lean _ $(mkIdent name)
       ))
       return
     catch _ => continue
