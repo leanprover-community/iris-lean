@@ -38,23 +38,23 @@ def HypothesisIndex.quoteAsEnvsIndex : HypothesisIndex → MetaM Syntax
 
 
 class AffineEnv [BI PROP] (Γ : List PROP) where
-  affine_env : ∀ p, p ∈ Γ → Affine p
+  affineEnv : ∀ p, p ∈ Γ → Affine p
 
-instance affine_env_nil [BI PROP] :
+instance affineEnvNil [BI PROP] :
   AffineEnv (PROP := PROP) []
 where
-  affine_env := sorry
+  affineEnv := sorry
 
-instance affine_env_cons [BI PROP] (P : PROP) (Γ : List PROP) :
+instance affineEnvCons [BI PROP] (P : PROP) (Γ : List PROP) :
   [Affine P] →
   [AffineEnv Γ] →
   AffineEnv (P :: Γ)
 where
-  affine_env := sorry
+  affineEnv := sorry
 
-instance (priority := default + 10) affine_env_bi [BIAffine PROP] (Γ : List PROP) :
+instance (priority := default + 10) affineEnvBi [BIAffine PROP] (Γ : List PROP) :
   AffineEnv Γ
 where
-  affine_env := sorry
+  affineEnv := sorry
 
 end Iris.Proofmode

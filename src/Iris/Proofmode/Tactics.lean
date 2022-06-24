@@ -45,7 +45,7 @@ elab "istop_proof" : tactic => do
   -- reduce proof mode definitions
   try evalTactic (← `(tactic|
     simp only [envs_entails, of_envs] ;
-    simp only [bigOp, List.foldr1]
+    simp only [big_op, List.foldr1]
   ))
   catch _ => throwError "unable to stop proof mode"
 

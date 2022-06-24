@@ -8,15 +8,15 @@ namespace Iris.Proofmode
 open Iris.BI
 open Lean Lean.Expr Lean.Meta Lean.PrettyPrinter.Delaborator Lean.PrettyPrinter.Delaborator.SubExpr
 
-declare_syntax_cat envs_display
-declare_syntax_cat envs_display_line
+declare_syntax_cat envsDisplay
+declare_syntax_cat envsDisplayLine
 
-syntax envs_display_line ppDedent(ppLine envs_display_line)* : envs_display
-syntax "Iris Proof Mode" : envs_display_line
-syntax "─"+ : envs_display_line
-syntax "─"+ " □" : envs_display_line
-syntax "─"+ " ∗" : envs_display_line
-syntax (ident)? " : " term : envs_display_line
+syntax envsDisplayLine ppDedent(ppLine envsDisplayLine)* : envsDisplay
+syntax "Iris Proof Mode" : envsDisplayLine
+syntax "─"+ : envsDisplayLine
+syntax "─"+ " □" : envsDisplayLine
+syntax "─"+ " ∗" : envsDisplayLine
+syntax (ident)? " : " term : envsDisplayLine
 
 abbrev delab := Lean.PrettyPrinter.delab
 
@@ -40,13 +40,13 @@ def delabEnvsEntails : Delab := do
   let P ← unpackIprop (← delab P)
 
   -- build syntax
-  `(envs_display| Iris Proof Mode
-                  ─────────────────────────────────────
-                  $Γₚ:envs_display_line*
-                  ───────────────────────────────────── □
-                  $Γₛ:envs_display_line*
-                  ───────────────────────────────────── ∗
-                  $P)
+  `(envsDisplay| Iris Proof Mode
+                 ─────────────────────────────────────
+                 $Γₚ:envsDisplayLine*
+                 ───────────────────────────────────── □
+                 $Γₛ:envsDisplayLine*
+                 ───────────────────────────────────── ∗
+                 $P)
 where
   extractHypotheses? (Γ : Expr) : MetaM <| Option <| Array <| Option Name × Expr := do
     let hs? ← Γ.asListExpr_toList?
@@ -63,8 +63,8 @@ where
       let h ← unpackIprop (← delab h)
       if let some name := name? then
         let name := mkIdent name
-        `(envs_display_line| $name:ident : $h)
+        `(envsDisplayLine| $name:ident : $h)
       else
-        `(envs_display_line| : $h)
+        `(envsDisplayLine| : $h)
 
 end Iris.Proofmode

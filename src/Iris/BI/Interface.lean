@@ -96,7 +96,8 @@ end Delab
 
 -- axioms that must hold for every `BI` interface
 class BI (car : Type) extends BIBase car where
-  entails_po : PreOrder entails
+  entailsPreOrder : PreOrder entails
+
   equiv_entails (P Q : car) : (P ≡ Q) ↔ (P ⊢ Q) ∧ (Q ⊢ P)
 
   pure_intro (φ : Prop) (P : car) : φ → P ⊢ ⌜φ⌝
