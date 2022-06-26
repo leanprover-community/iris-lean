@@ -49,7 +49,7 @@ def delabEnvsEntails : Delab := do
                  $P)
 where
   extractHypotheses? (Γ : Expr) : MetaM <| Option <| Array <| Option Name × Expr := do
-    let hs? ← Γ.asListExpr_toList?
+    let hs? := (← EnvExpr.toEnv? Γ).map (·.toList)
     let hs? ←
       hs?.mapM fun hs =>
       hs.mapM fun h => do

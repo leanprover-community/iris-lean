@@ -67,12 +67,12 @@ private def extractEnvsEntailsFromGoal (startProofMode : Bool := false) : Tactic
 
 private def findHypothesis (name : Name) : TacticM HypothesisIndex := do
   let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal
-  if let some i ← Γₚ.asListExpr_findIndex? (·.getMDataName?.isEqSome name) then
-    let some l ← Γₚ.asListExpr_length?
+  if let some i ← EnvExpr.findIndex? Γₚ (·.getMDataName?.isEqSome name) then
+    let some l ← EnvExpr.length? Γₚ
       | throwError "ill-formed proof environment"
     return ⟨.intuitionistic, i, l⟩
-  else if let some i ← Γₛ.asListExpr_findIndex? (·.getMDataName?.isEqSome name) then
-    let some l ← Γₛ.asListExpr_length?
+  else if let some i ← EnvExpr.findIndex? Γₛ (·.getMDataName?.isEqSome name) then
+    let some l ← EnvExpr.length? Γₛ
       | throwError "ill-formed proof environment"
     return ⟨.spatial, i, l⟩
   else
@@ -90,20 +90,20 @@ def Internal.irenameCore (hypIndex : HypothesisIndex) (name : Name) : TacticM Un
 
   let modifyHypothesis (Γ : Expr) (idx : Nat) : TacticM Expr := do
     -- find hypothesis
-    let some h ← Γ.asListExpr_get? idx
+    let some h ← EnvExpr.get? Γ idx
       | throwError "invalid index or ill-formed proof environment"
 
     -- check for unique (or equal) hypothesis name
     let nameFrom? := h.getMDataName?
     if nameFrom? |>.map (· != name) |>.getD true then
-      if ← [Γₚ, Γₛ].anyM (fun Γ => do return (← Γ.asListExpr_any? (·.getMDataName?.isEqSome name)) matches some true) then
+      if ← [Γₚ, Γₛ].anyM (fun Γ => do return (← EnvExpr.any? Γ (·.getMDataName?.isEqSome name)) matches some true) then
         throwError "name is already used for another hypothesis"
 
     -- rename hypothesis
     let h := h.setMDataName? name
 
     -- re-insert hypothesis
-    let some Γ ← Γ.asListExpr_set? h idx
+    let some Γ ← EnvExpr.set? Γ h idx
       | throwError "invalid index or ill-formed proof environment"
 
     return Γ
@@ -155,8 +155,7 @@ def Internal.iintroCore (type : HypothesisType) (name : Name) : TacticM Unit := 
   -- extract environment
   let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal true
 
-  -- determine hypothesis list length
-  let (some lₚ, some lₛ) ← (Γₚ, Γₛ).mapAllM (·.asListExpr_length?)
+  let (some lₚ, some lₛ) ← (Γₚ, Γₛ).mapAllM (EnvExpr.length? ·)
     | throwError "ill-formed proof environment"
 
   match type with
@@ -252,7 +251,7 @@ elab "iassumption" : tactic => do
   -- extract environment
   let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal
 
-  let (some lₚ, some lₛ) ← (Γₚ, Γₛ).mapAllM (M := MetaM) Lean.Expr.asListExpr_length?
+  let (some lₚ, some lₛ) ← (Γₚ, Γₛ).mapAllM (M := MetaM) (EnvExpr.length? ·)
     | throwError "ill-formed proof environment"
 
   -- try to close the goal
@@ -321,7 +320,8 @@ elab "iintuitionistic" colGt name:ident : tactic => do
 
   -- extract environment
   let (Γₚ, _, _) ← extractEnvsEntailsFromGoal
-  let some lₚ ← Γₚ.asListExpr_length?
+
+  let some lₚ ← EnvExpr.length? Γₚ
     | throwError "ill-formed proof environment"
 
   -- re-name hypothesis
@@ -345,7 +345,8 @@ elab "ispatial" colGt name:ident : tactic => do
 
   -- extract environment
   let (_, Γₛ, _) ← extractEnvsEntailsFromGoal
-  let some lₛ ← Γₛ.asListExpr_length?
+
+  let some lₛ ← EnvExpr.length? Γₛ
     | throwError "ill-formed proof environment"
 
   -- re-name hypothesis
@@ -382,18 +383,24 @@ elab "isplit" side:(&"l" <|> &"r") "[" names:ident,* "]" : tactic => do
   -- extract environment
   let (_, Γₛ, _) ← extractEnvsEntailsFromGoal true
 
-  -- find indices
-  let indices ← names.mapM (fun name => do
-    let some index ← Γₛ.asListExpr_findIndex? (·.getMDataName?.isEqSome name)
+  let some lₛ ← EnvExpr.length? Γₛ
+    | throwError "ill-formed proof environment"
+
+  -- construct hypothesis mask
+  let mut mask := List.replicate lₛ false
+  for name in names do
+    let some index ← EnvExpr.findIndex? Γₛ (·.getMDataName?.isEqSome name)
       | throwError "unknown spatial hypothesis"
-    pure index
-  )
+
+    mask := mask.set index true
+
+  if splitRight then
+    mask := mask.map (!·)
 
   -- split conjunction
   try evalTactic (← `(tactic|
     first
-    | refine tac_sep_split $(quote indices.toList) $(quote splitRight) _ ?Sep.left ?Sep.right
-      <;> simp only [List.partitionIndices, List.partitionIndices.go, Prod.map, ite_true, ite_false]
+    | refine tac_sep_split $(quote mask) _ ?Sep.left ?Sep.right
     | fail
   ))
   catch _ => throwError "unable to split separating conjunction"
@@ -447,7 +454,7 @@ mutual
       try evalTactic (← `(tactic|
         first
         | refine tac_conjunction_destruct_choice $(← hypIndex.quoteAsEnvsIndex) false _ ?_
-          simp only [List.concat, ite_true, ite_false]
+          simp only [ite_true, ite_false]
         | fail
       )) catch _ => return none
 
@@ -466,7 +473,7 @@ mutual
       try evalTactic (← `(tactic|
         first
         | refine tac_conjunction_destruct_choice $(← hypIndex.quoteAsEnvsIndex) true _ ?_
-          simp only [List.concat, ite_true, ite_false]
+          simp only [ite_true, ite_false]
         | fail
       )) catch _ => return none
 
@@ -485,7 +492,6 @@ mutual
       try evalTactic (← `(tactic|
         first
         | refine tac_conjunction_destruct $(← hypIndex.quoteAsEnvsIndex) _ ?_
-          simp only [List.concat]
         | fail
       ))
       catch _ => return none
@@ -523,7 +529,6 @@ mutual
         | refine tac_disjunction_destruct $(← hypIndex.quoteAsEnvsIndex) _
             ?$(mkIdent <| tagL):ident
             ?$(mkIdent <| tagR):ident
-          <;> simp only [List.concat]
         | fail
       ))
       catch _ => throwError "failed to destruct disjunction"
