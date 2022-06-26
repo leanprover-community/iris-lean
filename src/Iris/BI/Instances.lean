@@ -5,7 +5,7 @@ import Iris.BI.Interface
 
 namespace Iris.BI
 
--- Persistent instances
+-- Persistent
 instance purePersistent (φ : Prop) [BI PROP] :
   Persistent (PROP := PROP) `[iprop| ⌜φ⌝]
 where
@@ -76,7 +76,7 @@ instance absorbinglyIfPersistent (p : Bool) [BI PROP] (P : PROP) :
 where
   persistent := sorry
 
--- Affine instances
+-- Affine
 instance empAffine [BI PROP] :
   Affine (PROP := PROP) `[iprop| emp]
 where
@@ -147,7 +147,7 @@ instance intuitionisticallyIfAffine (p : Bool) [BI PROP] (P : PROP) :
 where
   affine := sorry
 
--- Absorbing instances
+-- Absorbing
 instance pureAbsorbing (φ : Prop) [BI PROP] :
   Absorbing (PROP := PROP) `[iprop| ⌜φ⌝]
 where
@@ -235,5 +235,4 @@ where
   absorbing := sorry
 
 end Affine
-
 end Iris.BI
