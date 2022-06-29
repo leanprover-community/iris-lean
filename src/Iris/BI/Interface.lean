@@ -13,8 +13,8 @@ class BIBase (car : Type) extends Equiv car where
   and : car → car → car
   or : car → car → car
   impl : car → car → car
-  «forall» : (α → car) → car
-  «exists» : (α → car) → car
+  «forall» {α : Type} : (α → car) → car
+  «exists» {α : Type} : (α → car) → car
   sep : car → car → car
   wand : car → car → car
   persistently : car → car
