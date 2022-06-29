@@ -58,7 +58,7 @@ def toList : Env α → List α
 
 inductive Mem : α → Env α → Prop
   | head (a : α) (as : Env α)         : Mem a (.cons a as)
-  | tail (a : α) (as : Env α) {b : α} : Mem b as → Mem b (.cons a as)
+  | tail (a : α) {b : α} (as : Env α) : Mem b as → Mem b (.cons a as)
 
 instance : Membership α (Env α) where
   mem := Mem
@@ -114,18 +114,29 @@ class AffineEnv [BI PROP] (Γ : Env PROP) where
 instance affineEnvNil [BI PROP] :
   AffineEnv (PROP := PROP) .nil
 where
-  affineEnv := sorry
+  affineEnv := by
+    intro _ h
+    cases h
 
-instance affineEnvConcat [BI PROP] (P : PROP) (Γ : Env PROP) :
-  [Affine P] →
-  [AffineEnv Γ] →
+instance affineEnvConcat [BI PROP] (P : PROP) (Γ : Env PROP)
+  [instP : Affine P]
+  [instΓ : AffineEnv Γ] :
   AffineEnv (.cons P Γ)
 where
-  affineEnv := sorry
+  affineEnv := by
+    intro P h
+    cases h
+    case head =>
+      exact ⟨instP.affine⟩
+    case tail h =>
+      exact instΓ.affineEnv P h
 
-instance (priority := default + 10) affineEnvBi [BIAffine PROP] (Γ : Env PROP) :
+instance (priority := default + 10) affineEnvBi (Γ : Env PROP)
+  [inst : BIAffine PROP] :
   AffineEnv Γ
 where
-  affineEnv := sorry
+  affineEnv := by
+    intro P _
+    exact inst.affine P
 
 end Iris.Proofmode
