@@ -286,6 +286,15 @@ elab "iassumption" : tactic => do
   catch _ => throwError "no matching hypothesis found or remaining environment cannot be cleared"
 
 
+elab "iex_falso" : tactic => do
+  -- change goal to `False`
+  try evalTactic (← `(tactic|
+    first
+    | refine tac_ex_falso _ ?_
+    | fail
+  )) catch _ => throwError "could not turn goal into False"
+
+
 elab "ipure" colGt name:ident : tactic => do
   -- parse syntax
   if name.getId.isAnonymous then
@@ -353,6 +362,16 @@ elab "ispatial" colGt name:ident : tactic => do
   irenameCore ⟨.spatial, lₛ - 1, lₛ⟩ name
 
 
+elab "ipure_intro" : tactic => do
+  -- change into Lean goal
+  try evalTactic (← `(tactic|
+    first
+    | istart_proof
+      refine tac_pure_intro _ ?_
+    | fail
+  )) catch _ => throwError "goal is not pure"
+
+
 elab "isplit" : tactic => do
   -- start proof mode if not already
   evalTactic (← `(tactic|
@@ -407,6 +426,23 @@ elab "isplit" side:(&"l" <|> &"r") "[" names:ident,* "]" : tactic => do
 
 macro "isplit" &"l" : tactic => `(tactic| isplit r [])
 macro "isplit" &"r" : tactic => `(tactic| isplit l [])
+
+
+elab "ileft" : tactic => do
+  -- choose left side of disjunction
+  try evalTactic (← `(tactic|
+    first
+    | refine tac_disjunction_l _ ?_
+    | fail
+  )) catch _ => throwError "goal is not a disjunction"
+
+elab "iright" : tactic => do
+  -- choose right side of disjunction
+  try evalTactic (← `(tactic|
+    first
+    | refine tac_disjunction_r _ ?_
+    | fail
+  )) catch _ => throwError "goal is not a disjunction"
 
 
 mutual

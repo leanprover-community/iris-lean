@@ -21,6 +21,14 @@ theorem tac_clear [BI PROP] {Γₚ Γₛ : Env PROP} (i : EnvsIndex Γₚ.length
   envs_entails ⟨Γₚ, Γₛ⟩ Q
 := sorry
 
+-- pure
+theorem tac_pure_intro [BI PROP] {Γₚ Γₛ : Env PROP} {a : Bool} {φ : Prop} (Q : PROP) :
+  [FromPure a Q φ] →
+  [TCIte a (AffineEnv Γₛ) TCTrue] →
+  φ →
+  envs_entails ⟨Γₚ, Γₛ⟩ Q
+:= sorry
+
 -- implication and wand
 theorem tac_impl_intro [BI PROP] {Γₚ Γₛ : Env PROP} {P Q : PROP} (R : PROP) :
   [FromImpl R P Q] →
@@ -82,6 +90,11 @@ theorem tac_assumption [BI PROP] {Γₚ Γₛ : Env PROP} (i : EnvsIndex Γₚ.l
 := sorry
 
 -- false
+theorem tac_ex_falso [BI PROP] {Δ : Envs PROP} (Q : PROP) :
+  envs_entails Δ `[iprop| False] →
+  envs_entails Δ Q
+:= sorry
+
 theorem tac_false_destruct [BI PROP] {Γₚ Γₛ : Env PROP} (i : EnvsIndex Γₚ.length Γₛ.length) (Q : PROP) :
   let P := match i with
     | .p i => Γₚ.get i
@@ -143,6 +156,19 @@ theorem tac_sep_split [BI PROP] {Γₚ Γₛ : Env PROP} {Q1 Q2 : PROP} (mask : 
   envs_entails ⟨Γₚ, Γₛ₁⟩ Q1 →
   envs_entails ⟨Γₚ, Γₛ₂⟩ Q2 →
   envs_entails ⟨Γₚ, Γₛ⟩ P
+:= sorry
+
+-- disjunction selection
+theorem tac_disjunction_l [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP) :
+  [FromOr P Q1 Q2] →
+  envs_entails Δ Q1 →
+  envs_entails Δ P
+:= sorry
+
+theorem tac_disjunction_r [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP) :
+  [FromOr P Q1 Q2] →
+  envs_entails Δ Q2 →
+  envs_entails Δ P
 := sorry
 
 -- destruction

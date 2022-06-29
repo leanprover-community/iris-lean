@@ -66,4 +66,7 @@ class FromAssumption (p : Bool) [BI PROP] (P Q : PROP) where
 class IntoPure [BI PROP] (P : PROP) (φ : outParam Prop) where
   into_pure : P ⊢ ⌜φ⌝
 
+class FromPure [BI PROP] (a : outParam Bool) (P : PROP) (φ : outParam Prop) where
+  from_pure : <affine>?a ⌜φ⌝ ⊢ P
+
 end Iris.Proofmode

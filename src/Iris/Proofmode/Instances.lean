@@ -502,4 +502,87 @@ instance intoPurePersistently [BI PROP] (P : PROP) (φ : Prop) :
 where
   into_pure := sorry
 
+-- FromPure
+instance fromPureEmp [BI PROP] :
+  FromPure (PROP := PROP) true `[iprop| emp] True
+where
+  from_pure := sorry
+
+instance fromPurePure [BI PROP] (φ : Prop) :
+  FromPure (PROP := PROP) false `[iprop| ⌜φ⌝] φ
+where
+  from_pure := sorry
+
+instance fromPurePureAnd (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
+  [FromPure a1 P1 φ1] →
+  [FromPure a2 P2 φ2] →
+  FromPure (a1 || a2) `[iprop| P1 ∧ P2] (φ1 ∧ φ2)
+where
+  from_pure := sorry
+
+instance fromPurePureOr (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
+  [FromPure a1 P1 φ1] →
+  [FromPure a2 P2 φ2] →
+  FromPure (a1 || a2) `[iprop| P1 ∨ P2] (φ1 ∨ φ2)
+where
+  from_pure := sorry
+
+instance fromPurePureImpl (a : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
+  [IntoPure P1 φ1] →
+  [FromPure a P2 φ2] →
+  FromPure a `[iprop| P1 → P2] (φ1 → φ2)
+where
+  from_pure := sorry
+
+instance fromPureExist (a : Bool) [BI PROP] (Φ : α → PROP) (φ : α → Prop) :
+  [∀ x, FromPure a `[iprop| Φ x] (φ x)] →
+  FromPure a `[iprop| ∃ x, Φ x] (∃ x, φ x)
+where
+  from_pure := sorry
+
+instance fromPureForall (a : Bool) [BI PROP] (Φ : α → PROP) (φ : α → Prop) :
+  [∀ x, FromPure a `[iprop| Φ x] (φ x)] →
+  FromPure a `[iprop| ∀ x, Φ x] (∀ x, φ x)
+where
+  from_pure := sorry
+
+instance fromPurePureSepTrue (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
+  [FromPure a1 P1 φ1] →
+  [FromPure a2 P2 φ2] →
+  FromPure (a1 && a2) `[iprop| P1 ∗ P2] (φ1 ∧ φ2)
+where
+  from_pure := sorry
+
+instance fromPurePureWand (a : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
+  [IntoPure P1 φ1] →
+  [FromPure a P2 φ2] →
+  [TCIte a (Affine P1) TCTrue] →
+  FromPure a `[iprop| P1 -∗ P2] (φ1 → φ2)
+where
+  from_pure := sorry
+
+instance fromPurePersistently [BI PROP] (P : PROP) (a : Bool) (φ : Prop) :
+  [FromPure true P φ] →
+  FromPure a `[iprop| <pers> P] φ
+where
+  from_pure := sorry
+
+instance fromPureAffinelyTrue (a : Bool) [BI PROP] (P : PROP) (φ : Prop) :
+  [FromPure a P φ] →
+  FromPure true `[iprop| <affine> P] φ
+where
+  from_pure := sorry
+
+instance fromPureIntuitionisticallyTrue (a : Bool) [BI PROP] (P : PROP) (φ : Prop) :
+  [FromPure a P φ] →
+  FromPure true `[iprop| □ P] φ
+where
+  from_pure := sorry
+
+instance fromPureAbsorbingly (a : Bool) [BI PROP] (P : PROP) (φ : Prop) :
+  [FromPure a P φ] →
+  FromPure false `[iprop| <absorb> P] φ
+where
+  from_pure := sorry
+
 end Iris.Proofmode

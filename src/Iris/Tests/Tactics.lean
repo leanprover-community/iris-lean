@@ -141,6 +141,22 @@ theorem false [BI PROP] (Q : PROP) : False ⊢ Q := by
 
 end assumption
 
+-- ex falso
+namespace exfalso
+
+theorem false [BI PROP] (P : PROP) : □ P ⊢ False -∗ Q := by
+  iintro HP HF
+  iex_falso
+  iexact HF
+
+theorem pure [BI PROP] (P : PROP) (HF : False) : ⊢ P := by
+  istart_proof
+  iex_falso
+  ipure_intro
+  exact HF
+
+end exfalso
+
 -- pure
 namespace pure
 
@@ -216,6 +232,24 @@ theorem moveTwice [BI PROP] (P : PROP) : □ P ⊢ □ Q -∗ Q := by
 
 end spatial
 
+-- pure intro
+namespace pureintro
+
+theorem simple [BI PROP] : ⊢ (⌜True⌝ : PROP) := by
+  ipure_intro
+  exact True.intro
+
+theorem or [BI PROP] : ⊢ True ∨ (False : PROP) := by
+  ipure_intro
+  apply Or.inl True.intro
+
+theorem withProof [BI PROP] (H : A → B) (P Q : PROP) : <affine> P ⊢ <pers> Q → ⌜A⌝ → ⌜B⌝ := by
+  iintro HP #HQ
+  ipure_intro
+  exact H
+
+end pureintro
+
 -- split
 namespace split
 
@@ -257,6 +291,29 @@ theorem sepRightAll [BIAffine PROP] (Q : PROP) : ⊢ □ P -∗ Q -∗ R -∗ P 
   · iexact HQ
 
 end split
+
+-- left / right
+namespace leftright
+
+theorem left [BI PROP] (P : PROP) : P ⊢ P ∨ Q := by
+  iintro HP
+  ileft
+  iexact HP
+
+theorem right [BI PROP] (Q : PROP) : Q ⊢ P ∨ Q := by
+  iintro HQ
+  iright
+  iexact HQ
+
+theorem complex [BI PROP] (P Q : PROP) : ⊢ P -∗ Q -∗ P ∗ (R ∨ Q ∨ R) := by
+  iintro HP HQ
+  isplit l [HP]
+  · iassumption
+  iright
+  ileft
+  iexact HQ
+
+end leftright
 
 -- cases
 namespace cases
@@ -407,5 +464,4 @@ theorem andClearIntuitionisticMultiple [BI PROP] (Q : PROP) : □ (P1 ∧ P2 ∧
   iexact HQ
 
 end cases
-
 end Iris.Tests
