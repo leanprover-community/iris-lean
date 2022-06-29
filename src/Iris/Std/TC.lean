@@ -24,7 +24,17 @@ class inductive TCIte : Bool → Sort u → Sort v → Sort (max (u + 1) (v + 1)
   | t [t : T] : TCIte true T U
   | e [u : U] : TCIte false T U
 
-instance [t : T] : TCIte true T U := TCIte.t (t := t)
-instance [u : U] : TCIte false T U := TCIte.e (u := u)
+-- `no_index` and the `unif_hint`s are a workaround for non-reducible boolean operations
+instance [t : T] : TCIte (no_index true) T U := TCIte.t (t := t)
+instance [u : U] : TCIte (no_index false) T U := TCIte.e (u := u)
+
+unif_hint (b : Bool) where
+  |- false || b ≟ b
+unif_hint (b : Bool) where
+  |- true || b ≟ true
+unif_hint (b : Bool) where
+  |- false && b ≟ false
+unif_hint (b : Bool) where
+  |- true && b ≟ b
 
 end Iris.Std
