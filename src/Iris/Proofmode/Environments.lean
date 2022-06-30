@@ -100,7 +100,7 @@ inductive EnvsIndex (lₚ lₛ : Nat)
   | p : Fin lₚ → EnvsIndex lₚ lₛ
   | s : Fin lₛ → EnvsIndex lₚ lₛ
 
-def HypothesisIndex.quoteAsEnvsIndex : HypothesisIndex → MetaM Syntax
+def HypothesisIndex.quoteAsEnvsIndex : HypothesisIndex → MetaM (TSyntax `term)
   | ⟨.intuitionistic, index, length⟩ =>
     `(EnvsIndex.p ⟨$(quote index), by show $(quote index) < $(quote length) ; decide⟩)
   | ⟨.spatial, index, length⟩ =>

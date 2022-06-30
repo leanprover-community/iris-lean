@@ -20,7 +20,7 @@ macro_rules
   | `(`[iprop| ($P : $t)]) => `((`[iprop| $P] : $t))
 
 -- define functions and macros for delaboration
-partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : Syntax → m Syntax
+partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : TSyntax `term → m (TSyntax `term)
   | `(`[iprop| $P])          => `($P)
   | `($P:ident)              => `($P)
   | `(($P))                  => do `(($(← unpackIprop P)))

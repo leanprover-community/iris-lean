@@ -11,7 +11,7 @@ open Lean Lean.Expr Lean.Meta Lean.PrettyPrinter.Delaborator Lean.PrettyPrinter.
 declare_syntax_cat envsDisplay
 declare_syntax_cat envsDisplayLine
 
-syntax envsDisplayLine ppDedent(ppLine envsDisplayLine)* : envsDisplay
+syntax envsDisplayLine ppDedent(ppLine envsDisplayLine)* ppDedent(ppLine term) : envsDisplay
 syntax "Iris Proof Mode" : envsDisplayLine
 syntax "─"+ : envsDisplayLine
 syntax "─"+ " □" : envsDisplayLine
@@ -40,13 +40,17 @@ def delabEnvsEntails : Delab := do
   let P ← unpackIprop (← delab P)
 
   -- build syntax
-  `(envsDisplay| Iris Proof Mode
-                 ─────────────────────────────────────
-                 $Γₚ:envsDisplayLine*
-                 ───────────────────────────────────── □
-                 $Γₛ:envsDisplayLine*
-                 ───────────────────────────────────── ∗
-                 $P)
+  let display ← `(envsDisplay|
+    Iris Proof Mode
+    ─────────────────────────────────────
+    $Γₚ:envsDisplayLine*
+    ───────────────────────────────────── □
+    $Γₛ:envsDisplayLine*
+    ───────────────────────────────────── ∗
+    $P:term)
+  
+  -- return term
+  return TSyntax.mk display
 where
   extractHypotheses? (Γ : Expr) : MetaM <| Option <| Array <| Option Name × Expr := do
     let hs? := (← EnvExpr.toEnv? Γ).map (·.toList)
@@ -58,7 +62,7 @@ where
         return (name, h)
     return hs?.map (·.toArray)
 
-  delabHypotheses (Γ : Array <| Option Name × Expr) : DelabM <| Array Syntax :=
+  delabHypotheses (Γ : Array <| Option Name × Expr) : DelabM <| Array <| TSyntax `envsDisplayLine :=
     Γ.mapM fun (name?, h) => do
       let h ← unpackIprop (← delab h)
       if let some name := name? then

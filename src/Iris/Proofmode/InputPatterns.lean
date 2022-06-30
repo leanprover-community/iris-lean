@@ -23,7 +23,7 @@ inductive iCasesPat
   | spatial        (pat : iCasesPat)
   deriving Repr, Inhabited
 
-partial def iCasesPat.parse : Syntax → Option iCasesPat
+partial def iCasesPat.parse : TSyntax icasesPat → Option iCasesPat
   | `(icasesPat| $name:ident) =>
     let name := name.getId
     if name.isAnonymous then
