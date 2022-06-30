@@ -205,6 +205,17 @@ def Internal.iintroCoreForall (name : Name) : TacticM Unit := do
   catch _ => throwError "failed to introduce universally bound variable"
 
 
+elab "iexists" x:term : tactic => do
+  -- resolve existential quantifier with the given argument
+  try evalTactic (← `(tactic|
+    first
+    | istart_proof
+      refine tac_exist _ ?_
+      apply Exists.intro $x
+    | fail
+  )) catch _ => throwError "could not resolve existential quantifier"
+
+
 elab "iexact" colGt name:ident : tactic => do
   -- parse syntax
   let name := name.getId

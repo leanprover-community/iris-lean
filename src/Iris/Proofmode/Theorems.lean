@@ -65,10 +65,18 @@ theorem tac_wand_intro_intuitionistic [BI PROP] {Γₚ Γₛ : Env PROP} {P P' Q
   envs_entails ⟨Γₚ, Γₛ⟩ R
 := sorry
 
+-- forall
 theorem tac_forall_intro [BI PROP] {Δ : Envs PROP} {Ψ : α → PROP} (Q : PROP) :
   [FromForall Q Ψ] →
   (∀ a, envs_entails Δ `[iprop| Ψ a]) →
   envs_entails Δ Q
+:= sorry
+
+-- exist
+theorem tac_exist [BI PROP] {Δ : Envs PROP} {Φ : α → PROP} (P : PROP) :
+  [FromExist P Φ] →
+  (∃ a, envs_entails Δ `[iprop| Φ a]) →
+  envs_entails Δ P
 := sorry
 
 -- assumptions

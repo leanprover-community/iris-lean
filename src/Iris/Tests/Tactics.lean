@@ -95,6 +95,27 @@ theorem multiplePatterns [BI PROP] (Q : PROP) : ⊢ □ (P1 ∧ P2) -∗ Q ∨ Q
 
 end intro
 
+-- exist
+namespace exist
+
+theorem id [BI PROP] : ⊢ (∃ x, x : PROP) := by
+  iexists `[iprop| True]
+  ipure_intro
+  exact True.intro
+
+theorem f [BI PROP] : ⊢ (∃ (_x : Nat), True ∨ False : PROP) := by
+  iexists 42
+  ileft
+  ipure_intro
+  exact True.intro
+
+theorem pure [BI PROP] : ⊢ (⌜∃ x, x ∨ False⌝ : PROP) := by
+  iexists True
+  ipure_intro
+  exact Or.inl True.intro
+
+end exist
+
 -- exact
 namespace exact
 
