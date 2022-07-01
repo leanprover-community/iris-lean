@@ -120,6 +120,11 @@ theorem or_intro_r' [BI PROP] {P Q R : PROP} : (P ⊢ R) → P ⊢ Q ∨ R := by
   apply transitivity H ?_
   exact or_intro_r
 
+theorem False_elim [BI PROP] {P : PROP} : False ⊢ P := by
+  apply pure_elim'
+  intro H
+  exact False.elim H
+
 theorem and_mono [BI PROP] {P P' Q Q' : PROP} : (P ⊢ Q) → (P' ⊢ Q') → P ∧ P' ⊢ Q ∧ Q' := by
   intro H1 H2
   apply and_intro

@@ -80,12 +80,9 @@ where
   persistent := by
     simp only [bi_affinely_if]
     cases p
-    case false =>
-      simp only [ite_false]
-      exact instP.persistent
-    case true =>
-      simp only [ite_true]
-      exact (affinelyPersistent _).persistent
+    <;> simp only [ite_true, ite_false]
+    · exact instP.persistent
+    · exact (affinelyPersistent _).persistent
 
 instance intuitionisticallyPersistent [BI PROP] (P : PROP) :
   Persistent `[iprop| □ P]
@@ -107,83 +104,110 @@ where
   persistent := by
     simp only [bi_absorbingly_if]
     cases p
-    case false =>
-      simp only [ite_false]
-      exact instP.persistent
-    case true =>
-      simp only [ite_true]
-      exact (absorbinglyPersistent _).persistent
+    <;> simp only [ite_true, ite_false]
+    · exact instP.persistent
+    · exact (absorbinglyPersistent _).persistent
 
 -- Affine
 instance empAffine [BI PROP] :
   Affine (PROP := PROP) `[iprop| emp]
 where
-  affine := sorry
+  affine := by
+    exact reflexivity
 
 instance falseAffine [BI PROP] :
   Affine (PROP := PROP) `[iprop| False]
 where
-  affine := sorry
+  affine := by
+    exact False_elim
 
-instance andAffineL [BI PROP] (P Q : PROP) :
-  [Affine P] →
+instance andAffineL [BI PROP] (P Q : PROP)
+  [instP : Affine P] :
   Affine `[iprop| P ∧ Q]
 where
-  affine := sorry
+  affine := by
+    trans_rw instP.affine using and_mono ?_ reflexivity
+    exact and_elim_l
 
-instance andAffineR [BI PROP] (P Q : PROP) :
-  [Affine Q] →
+instance andAffineR [BI PROP] (P Q : PROP)
+  [instQ : Affine Q] :
   Affine `[iprop| P ∧ Q]
 where
-  affine := sorry
+  affine := by
+    trans_rw instQ.affine using and_mono reflexivity ?_
+    exact and_elim_r
 
-instance orAffine [BI PROP] (P Q : PROP) :
-  [Affine P] →
-  [Affine Q] →
+instance orAffine [BI PROP] (P Q : PROP)
+  [instP : Affine P]
+  [instQ : Affine Q] :
   Affine `[iprop| P ∨ Q]
 where
-  affine := sorry
+  affine := by
+    apply or_elim
+    · exact instP.affine
+    · exact instQ.affine
 
-instance forallAffine [Inhabited α] [BI PROP] (Φ : α → PROP) :
-  [∀ x, Affine (Φ x)] →
+instance forallAffine [inhab : Inhabited α] [BI PROP] (Φ : α → PROP)
+  [inst : ∀ x, Affine (Φ x)] :
   Affine `[iprop| ∀ x, Φ x]
 where
-  affine := sorry
+  affine := by
+    apply transitivity ?_ (inst inhab.default).affine
+    exact forall_elim inhab.default
 
-instance existAffine [BI PROP] (Φ : α → PROP) :
-  [∀ x, Affine (Φ x)] →
+instance existAffine [BI PROP] (Φ : α → PROP)
+  [inst : ∀ x, Affine (Φ x)] :
   Affine `[iprop| ∃ x, Φ x]
 where
-  affine := sorry
+  affine := by
+    apply exist_elim
+    intro a
+    exact (inst a).affine
 
-instance sepAffine [BI PROP] (P Q : PROP) :
-  [Affine P] →
-  [Affine Q] →
+instance sepAffine [BI PROP] (P Q : PROP)
+  [instP : Affine P]
+  [instQ : Affine Q] :
   Affine `[iprop| P ∗ Q]
 where
-  affine := sorry
+  affine := by
+    trans_rw instP.affine using sep_mono ?_ reflexivity
+    rw [(left_id : emp ∗ Q ⊣⊢ _)]
+    exact instQ.affine
 
 instance affinelyAffine [BI PROP] (P : PROP) :
   Affine `[iprop| <affine> P]
 where
-  affine := sorry
+  affine := by
+    exact (andAffineL _ _).affine
 
-instance affinelyIfAffine (p : Bool) [BI PROP] (P : PROP) :
-  [Affine P] →
+instance affinelyIfAffine (p : Bool) [BI PROP] (P : PROP)
+  [instP : Affine P] :
   Affine `[iprop| <affine>?p P]
 where
-  affine := sorry
+  affine := by
+    simp only [bi_affinely_if]
+    cases p
+    <;> simp only [ite_true, ite_false]
+    · exact instP.affine
+    · exact (affinelyAffine _).affine
 
 instance intuitionisticallyAffine [BI PROP] (P : PROP) :
   Affine `[iprop| □ P]
 where
-  affine := sorry
+  affine := by
+    simp only [bi_intuitionistically]
+    exact (affinelyAffine _ ).affine
 
-instance intuitionisticallyIfAffine (p : Bool) [BI PROP] (P : PROP) :
-  [Affine P] →
+instance intuitionisticallyIfAffine (p : Bool) [BI PROP] (P : PROP)
+  [instP : Affine P] :
   Affine `[iprop| □?p P]
 where
-  affine := sorry
+  affine := by
+    simp only [bi_intuitionistically_if]
+    cases p
+    <;> simp only [ite_true, ite_false]
+    · exact instP.affine
+    · exact (intuitionisticallyAffine _).affine
 
 -- Absorbing
 instance pureAbsorbing (φ : Prop) [BI PROP] :
