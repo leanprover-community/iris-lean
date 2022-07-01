@@ -12,7 +12,9 @@ Most of the unicode characters used in Iris can be written with the Lean extensi
 
 ```json
 "sep": "∗",
-"wand": "-∗"
+"wand": "-∗",
+"pure": "⌜⌝",
+"bientails": "⊣⊢"
 ```
 
 # Development

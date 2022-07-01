@@ -4,7 +4,7 @@ namespace Iris.BI
 
 -- entailment
 macro:25 "⊢ " P:term:25 : term => `(`[iprop| emp] ⊢ `[iprop| $P])
-macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => `(`[iprop| $P] ≡ `[iprop| $Q])
+macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => `(`[iprop| $P] = `[iprop| $Q])
 
 delab_rule BIBase.entails
   | `(BIBase.entails `[iprop| emp] $P) => do `(⊢ $(← unpackIprop P))

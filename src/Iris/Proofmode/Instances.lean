@@ -19,7 +19,7 @@ where
   as_emp_valid := sorry
 
 instance asEmpValidEquiv [bi : BI PROP] (P Q : PROP) :
-  AsEmpValid (P ≡ Q) `[iprop| P ∗-∗ Q]
+  AsEmpValid (P ⊣⊢ Q) `[iprop| P ∗-∗ Q]
 where
   bi := bi
   as_emp_valid := sorry

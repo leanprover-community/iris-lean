@@ -1,80 +1,118 @@
 import Iris.BI.Classes
 import Iris.BI.DerivedConnectives
+import Iris.BI.DerivedLaws
 import Iris.BI.Extensions
 import Iris.BI.Interface
+import Iris.Std.Classes
 
 namespace Iris.BI
+open Iris.Std
+open BI
 
 -- Persistent
 instance purePersistent (φ : Prop) [BI PROP] :
   Persistent (PROP := PROP) `[iprop| ⌜φ⌝]
 where
-  persistent := sorry
+  persistent := by
+    apply equiv_entails_1_2
+    exact persistently_pure
 
 instance empPersistent [BI PROP] :
   Persistent (PROP := PROP) `[iprop| emp]
 where
-  persistent := sorry
+  persistent := by
+    exact persistently_emp_intro
 
-instance andPersistent [BI PROP] (P Q : PROP) :
-  [Persistent P] →
-  [Persistent Q] →
+instance andPersistent [BI PROP] (P Q : PROP)
+  [instP : Persistent P]
+  [instQ : Persistent Q] :
   Persistent `[iprop| P ∧ Q]
 where
-  persistent := sorry
+  persistent := by
+    rw [persistently_and]
+    exact and_mono instP.persistent instQ.persistent
 
-instance orPersistent [BI PROP] (P Q : PROP) :
-  [Persistent P] →
-  [Persistent Q] →
+instance orPersistent [BI PROP] (P Q : PROP)
+  [instP : Persistent P]
+  [instQ : Persistent Q] :
   Persistent `[iprop| P ∨ Q]
 where
-  persistent := sorry
+  persistent := by
+    rw [persistently_or]
+    exact or_mono instP.persistent instQ.persistent
 
-instance existPersistent [BI PROP] (Ψ : α → PROP) (h : ∀ x, Persistent (Ψ x)) :
+instance existPersistent [BI PROP] (Ψ : α → PROP)
+  (h : ∀ x, Persistent (Ψ x)) :
   Persistent `[iprop| ∃ x, Ψ x]
 where
-  persistent := sorry
+  persistent := by
+    rw [persistently_exist]
+    apply exist_mono
+    intro x
+    exact (h x).persistent
 
-instance sepPersistent [BI PROP] (P Q : PROP) :
-  [Persistent P] →
-  [Persistent Q] →
+instance sepPersistent [BI PROP] (P Q : PROP)
+  [instP : Persistent P]
+  [instQ : Persistent Q] :
   Persistent `[iprop| P ∗ Q]
 where
-  persistent := sorry
+  persistent := by
+    apply transitivity ?_ persistently_sep_2
+    exact sep_mono instP.persistent instQ.persistent
 
 instance persistentlyPersistent [BI PROP] (P : PROP) :
   Persistent `[iprop| <pers> P]
 where
-  persistent := sorry
+  persistent := by
+    exact BI.persistently_idemp_2
 
-instance affinelyPersistent [BI PROP] (P : PROP) :
-  [Persistent P] →
+instance affinelyPersistent [BI PROP] (P : PROP)
+  [Persistent P] :
   Persistent `[iprop| <affine> P]
 where
-  persistent := sorry
+  persistent := by
+    exact (andPersistent _ _).persistent
 
-instance affinelyIfPersistent (p : Bool) [BI PROP] (P : PROP) :
-  [Persistent P] →
+instance affinelyIfPersistent (p : Bool) [BI PROP] (P : PROP)
+  [instP : Persistent P] :
   Persistent `[iprop| <affine>?p P]
 where
-  persistent := sorry
+  persistent := by
+    simp only [bi_affinely_if]
+    cases p
+    case false =>
+      simp only [ite_false]
+      exact instP.persistent
+    case true =>
+      simp only [ite_true]
+      exact (affinelyPersistent _).persistent
 
 instance intuitionisticallyPersistent [BI PROP] (P : PROP) :
   Persistent `[iprop| □ P]
 where
-  persistent := sorry
+  persistent := by
+    exact (affinelyPersistent _).persistent
 
-instance absorbinglyPersistent [BI PROP] (P : PROP) :
-  [Persistent P] →
+instance absorbinglyPersistent [BI PROP] (P : PROP)
+  [Persistent P] :
   Persistent `[iprop| <absorb> P]
 where
-  persistent := sorry
+  persistent := by
+    exact (sepPersistent _ _).persistent
 
-instance absorbinglyIfPersistent (p : Bool) [BI PROP] (P : PROP) :
-  [Persistent P] →
+instance absorbinglyIfPersistent (p : Bool) [BI PROP] (P : PROP)
+  [instP : Persistent P] :
   Persistent `[iprop| <absorb>?p P]
 where
-  persistent := sorry
+  persistent := by
+    simp only [bi_absorbingly_if]
+    cases p
+    case false =>
+      simp only [ite_false]
+      exact instP.persistent
+    case true =>
+      simp only [ite_true]
+      exact (absorbinglyPersistent _).persistent
 
 -- Affine
 instance empAffine [BI PROP] :
