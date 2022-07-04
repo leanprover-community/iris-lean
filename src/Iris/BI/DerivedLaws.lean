@@ -6,7 +6,7 @@ namespace Iris.BI
 open Iris.Std
 open BI
 
--- # Macros
+-- MACROS
 syntax "trans_rw" term "using" colGt term : tactic
 macro_rules
   | `(tactic| trans_rw $rule using $mono) => `(tactic|
@@ -16,7 +16,7 @@ macro_rules
       ) ?_
     )
 
--- # Entails
+-- Entails
 instance entails_anti_symm [BI PROP] : AntiSymm (α := PROP) (· ⊣⊢ ·) (· ⊢ ·) where
   anti_symm := by
     intro _ _ H1 H2
@@ -38,8 +38,8 @@ theorem equiv_entails_2 [BI PROP] {P Q : PROP} : (P ⊢ Q) → (Q ⊢ P) → (P 
   apply equiv_entails.mpr
   exact And.intro h1 h2
 
--- # Instances
--- ## And
+-- INSTANCES
+-- And
 instance and_comm [BI PROP] : Comm (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∧ ·]) where
   comm := by
     intros
@@ -75,7 +75,7 @@ instance and_True [BI PROP] : RightId (α := PROP) (· ⊣⊢ ·) `[iprop| True]
       apply pure_intro
       exact True.intro
 
--- ## Sep
+-- Sep
 instance sep_comm [BI PROP] : Comm (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∗ ·]) where
   comm := by
     intros
@@ -108,8 +108,8 @@ instance sep_emp [BI PROP] : RightId (α := PROP) (· ⊣⊢ ·) `[iprop| emp] (
     rw [(comm : `[iprop| x ∗ emp] ⊣⊢ _)]
     exact left_id
 
--- # Theorems
--- ## Logic
+-- THEOREMS
+-- Logic
 theorem or_intro_l' [BI PROP] {P Q R : PROP} : (P ⊢ Q) → P ⊢ Q ∨ R := by
   intro H
   apply transitivity H ?_
@@ -167,7 +167,7 @@ theorem or_alt [BI PROP] {P Q : PROP} : P ∨ Q ⊣⊢ ∃ (b : Bool), if b then
     · simp only [ite_true]
       exact or_intro_l
 
--- ## Sep
+-- BI
 theorem sep_mono_l [BI PROP] {P P' Q : PROP} : (P ⊢ Q) → P ∗ P' ⊢ Q ∗ P' := by
   intro H
   exact sep_mono H reflexivity
@@ -182,7 +182,6 @@ theorem True_sep_2 [BI PROP] {P : PROP} : P ⊢ True ∗ P := by
   apply pure_intro
   exact True.intro
 
--- ## Wand
 theorem wand_intro_l [BI PROP] {P Q R : PROP} : (Q ∗ P ⊢ R) → P ⊢ Q -∗ R := by
   rw [(comm : Q ∗ P ⊣⊢ _)]
   exact wand_intro_r
@@ -200,7 +199,7 @@ theorem wand_elim_r' [BI PROP] {P Q R : PROP} : (Q ⊢ P -∗ R) → P ∗ Q ⊢
   trans_rw H using sep_mono_r
   exact wand_elim_r
 
--- ## Absorbing
+-- Absorbing
 theorem absorbingly_intro [BI PROP] {P : PROP} : P ⊢ <absorb> P := by
   exact True_sep_2
 
@@ -216,7 +215,7 @@ theorem absorbingly_pure {φ : Prop} [BI PROP] : <absorb> ⌜φ⌝ ⊣⊢ (⌜φ
   case right =>
     exact absorbingly_intro
 
--- ## Persistent
+-- Persistent
 theorem absorbingly_elim_persistently [BI PROP] {P : PROP} : <absorb> <pers> P ⊣⊢ <pers> P := by
   apply anti_symm PROP
   case left =>
@@ -233,13 +232,13 @@ theorem persistently_exist [BI PROP] {Ψ : α → PROP} : <pers> (∃ a, Ψ a) �
   case right =>
     apply exist_elim
     intros
-    apply persistently_mono ?_
+    apply persistently_mono
     exact exist_intro _
 
 theorem persistently_and [BI PROP] {P Q : PROP} : <pers> (P ∧ Q) ⊣⊢ <pers> P ∧ <pers> Q := by
   apply anti_symm PROP
   case left =>
-    apply and_intro ?_ ?_
+    apply and_intro
     <;> apply persistently_mono
     · exact and_elim_l
     · exact and_elim_r
@@ -276,7 +275,7 @@ theorem persistently_True_emp [BI PROP] : <pers> True ⊣⊢ <pers> (emp : PROP)
   case left =>
     exact persistently_emp_intro
   case right =>
-    apply persistently_mono ?_
+    apply persistently_mono
     apply pure_intro
     exact True.intro
 
@@ -291,7 +290,7 @@ theorem persistently_and_emp [BI PROP] {P : PROP} : <pers> P ⊣⊢ <pers> (emp 
     apply and_intro ?_ reflexivity
     exact persistently_emp_intro
   case right =>
-    apply persistently_mono ?_
+    apply persistently_mono
     exact and_elim_r
 
 theorem persistently_and_sep_elim_emp [BI PROP] {P Q : PROP} : <pers> P ∧ Q ⊢ (emp ∧ P) ∗ Q := by
