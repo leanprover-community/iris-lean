@@ -213,88 +213,139 @@ where
 instance pureAbsorbing (φ : Prop) [BI PROP] :
   Absorbing (PROP := PROP) `[iprop| ⌜φ⌝]
 where
-  absorbing := sorry
+  absorbing := by
+    exact equiv_entails_1_1 absorbingly_pure
 
-instance andAbsorbing [BI PROP] (P Q : PROP) :
-  [Absorbing P] →
-  [Absorbing Q] →
+instance andAbsorbing [BI PROP] (P Q : PROP)
+  [instP : Absorbing P]
+  [instQ : Absorbing Q] :
   Absorbing `[iprop| P ∧ Q]
 where
-  absorbing := sorry
+  absorbing := by
+    apply transitivity absorbingly_and_1 ?_
+    apply and_mono
+    · exact instP.absorbing
+    · exact instQ.absorbing
 
-instance orAbsorbing [BI PROP] (P Q : PROP) :
-  [Absorbing P] →
-  [Absorbing Q] →
+instance orAbsorbing [BI PROP] (P Q : PROP)
+  [instP : Absorbing P]
+  [instQ : Absorbing Q] :
   Absorbing `[iprop| P ∨ Q]
 where
-  absorbing := sorry
+  absorbing := by
+    apply transitivity (equiv_entails_1_1 absorbingly_or) ?_
+    apply or_mono
+    · exact instP.absorbing
+    · exact instQ.absorbing
 
-instance forallAbsorbing [BI PROP] (Φ : α → PROP) :
-  [∀ x, Absorbing (Φ x)] →
+instance forallAbsorbing [BI PROP] (Φ : α → PROP)
+  [inst : ∀ x, Absorbing (Φ x)] :
   Absorbing `[iprop| ∀ x, Φ x]
 where
-  absorbing := sorry
+  absorbing := by
+    apply transitivity (absorbingly_forall Φ) ?_
+    apply forall_mono
+    intro a
+    exact (inst a).absorbing
 
-instance existAbsorbing [BI PROP] (Φ : α → PROP) :
-  [∀ x, Absorbing (Φ x)] →
+instance existAbsorbing [BI PROP] (Φ : α → PROP)
+  [inst : ∀ x, Absorbing (Φ x)] :
   Absorbing `[iprop| ∃ x, Φ x]
 where
-  absorbing := sorry
+  absorbing := by
+    apply transitivity (equiv_entails_1_1 (absorbingly_exist Φ)) ?_
+    apply exist_mono
+    intro a
+    exact (inst a).absorbing
 
-instance implAbsorbing [BI PROP] (P Q : PROP) :
-  [Persistent P] →
-  [Absorbing P] →
-  [Absorbing Q] →
+instance implAbsorbing [BI PROP] (P Q : PROP)
+  [Persistent P]
+  [Absorbing P]
+  [instQ : Absorbing Q] :
   Absorbing `[iprop| P → Q]
 where
-  absorbing := sorry
+  absorbing := by
+    apply impl_intro_l ?_
+    apply transitivity persistent_and_affinely_sep_l_1 ?_
+    rw [absorbingly_sep_r]
+    rw [← persistent_and_affinely_sep_l]
+    trans_rw impl_elim_r using absorbingly_mono
+    exact instQ.absorbing
 
-instance sepAbsorbingL [BI PROP] (P Q : PROP) :
-  [Absorbing P] →
+instance sepAbsorbingL [BI PROP] (P Q : PROP)
+  [instP : Absorbing P] :
   Absorbing `[iprop| P ∗ Q]
 where
-  absorbing := sorry
+  absorbing := by
+    rw [← absorbingly_sep_l]
+    trans_rw instP.absorbing using sep_mono ?_ reflexivity
+    exact reflexivity
 
-instance sepAbsorbingR [BI PROP] (P Q : PROP) :
-  [Absorbing Q] →
+instance sepAbsorbingR [BI PROP] (P Q : PROP)
+  [instQ : Absorbing Q] :
   Absorbing `[iprop| P ∗ Q]
 where
-  absorbing := sorry
+  absorbing := by
+    rw [← absorbingly_sep_r]
+    trans_rw instQ.absorbing using sep_mono reflexivity ?_
+    exact reflexivity
 
-instance wandAbsorbingL [BI PROP] (P Q : PROP) :
-  [Absorbing P] →
+instance wandAbsorbingL [BI PROP] (P Q : PROP)
+  [Absorbing P] :
   Absorbing `[iprop| P -∗ Q]
 where
-  absorbing := sorry
+  absorbing := by
+    simp only [bi_absorbingly]
+    apply wand_intro_l
+    rw [(assoc : P ∗ True ∗ (P -∗ Q) ⊣⊢ _)]
+    trans_rw sep_elim_l using sep_mono ?_ reflexivity
+    exact wand_elim_r
 
-instance wandAbsorbingR [BI PROP] (P Q : PROP) :
-  [Absorbing Q] →
+instance wandAbsorbingR [BI PROP] (P Q : PROP)
+  [instQ : Absorbing Q] :
   Absorbing `[iprop| P -∗ Q]
 where
-  absorbing := sorry
+  absorbing := by
+    apply transitivity absorbingly_wand ?_
+    trans_rw instQ.absorbing using wand_mono reflexivity ?_
+    trans_rw absorbingly_intro using wand_mono ?_ reflexivity
+    exact reflexivity
 
 instance absorbinglyAbsorbing [BI PROP] (P : PROP) :
   Absorbing `[iprop| <absorb> P]
 where
-  absorbing := sorry
+  absorbing := by
+    exact equiv_entails_1_1 absorbingly_idemp
 
 instance persistentlyAbsorbing [BI PROP] (P : PROP) :
   Absorbing `[iprop| <pers> P]
 where
-  absorbing := sorry
+  absorbing := by
+    exact equiv_entails_1_1 absorbingly_elim_persistently
 
-instance persistentlyIfAbsorbing [BI PROP] (P : PROP) (p : Bool) :
-  [Absorbing P] →
+instance persistentlyIfAbsorbing [BI PROP] (P : PROP) (p : Bool)
+  [instP : Absorbing P] :
   Absorbing `[iprop| <pers>?p P]
 where
-  absorbing := sorry
+  absorbing := by
+    simp only [bi_persistently_if]
+    cases p
+    <;> simp only [ite_true, ite_false]
+    case false =>
+      exact instP.absorbing
+    case true =>
+      exact (persistentlyAbsorbing _).absorbing
 
 section Affine
 
-instance biAffineAbsorbing [BIAffine PROP] (P : PROP) :
+instance (priority := default + 10) biAffineAbsorbing [inst : BIAffine PROP] (P : PROP) :
   Absorbing P
 where
-  absorbing := sorry
+  absorbing := by
+    simp only [bi_absorbingly]
+    trans_rw (inst.affine `[iprop| True]).affine using sep_mono ?_ reflexivity
+    rw [(left_id : emp ∗ P ⊣⊢ _)]
+    exact reflexivity
 
 end Affine
 end Iris.BI
