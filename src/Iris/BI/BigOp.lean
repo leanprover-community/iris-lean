@@ -17,8 +17,8 @@ macro_rules
   | `(`[iprop| [∗] $Ps]) => `(big_op `[iprop| $Ps] BIBase.sep `[iprop| emp])
 
 delab_rule big_op
-  | `(big_op $Ps BIBase.and `[iprop| True])  => do `(`[iprop| [∧] $(← unpackIprop Ps)])
-  | `(big_op $Ps BIBase.or  `[iprop| False]) => do `(`[iprop| [∨] $(← unpackIprop Ps)])
-  | `(big_op $Ps BIBase.sep `[iprop| emp])   => do `(`[iprop| [∗] $(← unpackIprop Ps)])
+  | `($_ $Ps BIBase.and `[iprop| True])  => do `(`[iprop| [∧] $(← unpackIprop Ps)])
+  | `($_ $Ps BIBase.or  `[iprop| False]) => do `(`[iprop| [∨] $(← unpackIprop Ps)])
+  | `($_ $Ps BIBase.sep `[iprop| emp])   => do `(`[iprop| [∗] $(← unpackIprop Ps)])
 
 end Iris.BI

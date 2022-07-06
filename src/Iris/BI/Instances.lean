@@ -64,7 +64,7 @@ instance persistentlyPersistent [BI PROP] (P : PROP) :
   Persistent `[iprop| <pers> P]
 where
   persistent := by
-    exact BI.persistently_idemp_2
+    exact persistently_idemp_2
 
 instance affinelyPersistent [BI PROP] (P : PROP)
   [Persistent P] :

@@ -7,7 +7,7 @@ macro:25 "⊢ " P:term:25 : term => `(`[iprop| emp] ⊢ `[iprop| $P])
 macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => `(`[iprop| $P] = `[iprop| $Q])
 
 delab_rule BIBase.entails
-  | `(BIBase.entails `[iprop| emp] $P) => do `(⊢ $(← unpackIprop P))
+  | `($_ `[iprop| emp] $P) => do `(⊢ $(← unpackIprop P))
 
 -- iff and wand iff
 syntax:27 term:28 " ↔ " term:28 : term
@@ -26,9 +26,9 @@ unif_hint [BIBase PROP] (P Q : PROP) where
   |- `[iprop| P ∗-∗ Q] ≟ `[iprop| (P -∗ Q) ∧ (Q -∗ P)]
 
 delab_rule bi_iff
-  | `(bi_iff $P $Q) => do `(`[iprop| $(← unpackIprop P) ↔ $(← unpackIprop Q)])
+  | `($_ $P $Q) => do `(`[iprop| $(← unpackIprop P) ↔ $(← unpackIprop Q)])
 delab_rule bi_wand_iff
-  | `(bi_wand_iff $P $Q) => do `(`[iprop| $(← unpackIprop P) ∗-∗ $(← unpackIprop Q)])
+  | `($_ $P $Q) => do `(`[iprop| $(← unpackIprop P) ∗-∗ $(← unpackIprop Q)])
 
 -- affine and absorb
 syntax:max "<affine> " term:40 : term
@@ -47,9 +47,9 @@ unif_hint [BIBase PROP] (P : PROP) where
   |- `[iprop| <absorb> P] ≟ `[iprop| True ∗ P]
 
 delab_rule bi_affinely
-  | `(bi_affinely $P) => do `(`[iprop| <affine> $(← unpackIprop P)])
+  | `($_ $P) => do `(`[iprop| <affine> $(← unpackIprop P)])
 delab_rule bi_absorbingly
-  | `(bi_absorbingly $P) => do `(`[iprop| <absorb> $(← unpackIprop P)])
+  | `($_ $P) => do `(`[iprop| <absorb> $(← unpackIprop P)])
 
 -- intuitionistic
 syntax:max "□ " term:40 : term
@@ -63,7 +63,7 @@ unif_hint [BIBase PROP] (P : PROP) where
   |- `[iprop| □ P] ≟ `[iprop| <affine> <pers> P]
 
 delab_rule bi_intuitionistically
-  | `(bi_intuitionistically $P) => do `(`[iprop| □ $(← unpackIprop P)])
+  | `($_ $P) => do `(`[iprop| □ $(← unpackIprop P)])
 
 -- conditional modalities
 syntax:max "<pers>?"   term:max term:40 : term
@@ -83,12 +83,12 @@ macro_rules
   | `(`[iprop| □?$p $P])        => `(bi_intuitionistically_if $p `[iprop| $P])
 
 delab_rule bi_persistently_if
-  | `(bi_persistently_if $p $P) => do `(`[iprop| <pers>?$p $(← unpackIprop P)])
+  | `($_ $p $P) => do `(`[iprop| <pers>?$p $(← unpackIprop P)])
 delab_rule bi_affinely_if
-  | `(bi_affinely_if $p $P) => do `(`[iprop| <affine>?$p $(← unpackIprop P)])
+  | `($_ $p $P) => do `(`[iprop| <affine>?$p $(← unpackIprop P)])
 delab_rule bi_absorbingly_if
-  | `(bi_absorbingly_if $p $P) => do `(`[iprop| <absorb>?$p $(← unpackIprop P)])
+  | `($_ $p $P) => do `(`[iprop| <absorb>?$p $(← unpackIprop P)])
 delab_rule bi_intuitionistically_if
-  | `(bi_intuitionistically_if $p $P) => do `(`[iprop| □?$p $(← unpackIprop P)])
+  | `($_ $p $P) => do `(`[iprop| □?$p $(← unpackIprop P)])
 
 end Iris.BI

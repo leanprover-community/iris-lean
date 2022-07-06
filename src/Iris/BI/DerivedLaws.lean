@@ -9,14 +9,12 @@ open Iris.Std
 open BI
 
 -- MACROS
-syntax "trans_rw" term "using" colGt term : tactic
-macro_rules
-  | `(tactic| trans_rw $rule using $mono) => `(tactic|
-      apply transitivity (by
-        apply $mono
-        <;> try exact $rule
-      ) ?_
-    )
+macro "trans_rw" rule:term "using" colGt mono:term : tactic => `(
+  apply transitivity ?rw ?_ ;
+  case rw =>
+    apply $mono
+    <;> try exact $rule
+)
 
 -- Entails
 instance entails_anti_symm [BI PROP] : AntiSymm (α := PROP) (· ⊣⊢ ·) (· ⊢ ·) where
