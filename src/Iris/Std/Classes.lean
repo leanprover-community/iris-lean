@@ -34,4 +34,20 @@ class AntiSymm (R S : Relation α) : Prop where
   anti_symm {x y : α} : S x y → S y x → R x y
 export AntiSymm (anti_symm)
 
+class MonotonicUnary (R : Relation α) (f : α → α) : Prop where
+  monotonicity_unary {x y : α} : R x y → R (f x) (f y)
+export MonotonicUnary (monotonicity_unary)
+
+class MonotonicPointwiseUnary (R : Relation α) (f : (β → α) → α) : Prop where
+  monotonicity_pointwise_unary {x y : β → α} : ((b : β) → R (x b) (y b)) → R (f x) (f y)
+export MonotonicPointwiseUnary (monotonicity_pointwise_unary)
+
+class MonotonicBinary (R : Relation α) (f : α → α → α) : Prop where
+  monotonicity_binary {x1 y1 x2 y2 : α} : R x1 y1 → R x2 y2 → R (f x1 x2) (f y1 y2)
+export MonotonicBinary (monotonicity_binary)
+
+class MonotonicLeftContravariantBinary (R : Relation α) (f : α → α → α) : Prop where
+  monotonicity_left_contravariant_binary {x1 y1 x2 y2 : α} : R y1 x1 → R x2 y2 → R (f x1 x2) (f y1 y2)
+export MonotonicLeftContravariantBinary (monotonicity_left_contravariant_binary)
+
 end Iris.Std
