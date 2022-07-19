@@ -108,7 +108,7 @@ where
   go (rule : TSyntax `term) : TacticM Bool := do
     -- try to rewrite with the given rule
     try
-      evalTactic (← `(tactic|
+      withoutRecover <| evalTactic (← `(tactic|
         exact $rule
       ))
       return true

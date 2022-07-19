@@ -6,6 +6,7 @@ abbrev Relation (α : Type) := α → α → Prop
 class Reflexive (R : Relation α) where
   reflexivity {x : α} : R x x
 export Reflexive (reflexivity)
+attribute [simp] reflexivity
 
 class Transitive (R : Relation α) where
   transitivity {x y z : α} : R x y → R y z → R x z
