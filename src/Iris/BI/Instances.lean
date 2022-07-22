@@ -231,7 +231,7 @@ instance implAbsorbing [BI PROP] (P Q : PROP) :
   Absorbing `[iprop| P → Q]
 where
   absorbing := by
-    apply impl_intro_l ?_
+    apply impl_intro_l
     rw' [
       persistent_and_affinely_sep_l,
       absorbingly_sep_r,

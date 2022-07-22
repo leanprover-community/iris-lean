@@ -31,8 +31,8 @@ class Assoc (R : Relation α) (f : α → α → α) : Prop where
   assoc {x y z : α} : R (f x (f y z)) (f (f x y) z)
 export Assoc (assoc)
 
-class AntiSymm (R S : Relation α) : Prop where
-  anti_symm {x y : α} : S x y → S y x → R x y
+class AntiSymm (R : Relation α) (S : outParam <| Relation α) : Prop where
+  anti_symm {x y : α} : (left : S x y) → (right : S y x) → R x y
 export AntiSymm (anti_symm)
 
 class MonotonicUnary (R : Relation α) (f : α → α) : Prop where

@@ -16,14 +16,12 @@ instance entails_anti_symm [BI PROP] : AntiSymm (α := PROP) (· ⊣⊢ ·) (· 
     rw' [equiv_entails]
     exact And.intro H1 H2
 
-scoped macro "anti_symm" colGt PROP:term : term => `(anti_symm (α := $PROP) (R := (· ⊣⊢ ·)) (S := (· ⊢ ·)) ?left ?right)
-
 -- INSTANCES
 -- And
 instance and_comm [BI PROP] : Comm (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∧ ·]) where
   comm := by
     intros
-    apply anti_symm PROP
+    apply anti_symm
     case left =>
       apply and_intro
       · exact and_elim_r
@@ -36,7 +34,7 @@ instance and_comm [BI PROP] : Comm (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∧ 
 instance True_and [BI PROP] : LeftId (α := PROP) (· ⊣⊢ ·) `[iprop| True] (`[iprop| · ∧ ·]) where
   left_id := by
     intros
-    apply anti_symm PROP
+    apply anti_symm
     case left =>
       exact and_elim_r
     case right =>
@@ -47,7 +45,7 @@ instance True_and [BI PROP] : LeftId (α := PROP) (· ⊣⊢ ·) `[iprop| True] 
 instance and_True [BI PROP] : RightId (α := PROP) (· ⊣⊢ ·) `[iprop| True] (`[iprop| · ∧ ·]) where
   right_id := by
     intros
-    apply anti_symm PROP
+    apply anti_symm
     case left =>
       exact and_elim_l
     case right =>
@@ -59,13 +57,13 @@ instance and_True [BI PROP] : RightId (α := PROP) (· ⊣⊢ ·) `[iprop| True]
 instance sep_comm [BI PROP] : Comm (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∗ ·]) where
   comm := by
     intros
-    apply anti_symm PROP
+    apply anti_symm
     <;> exact sep_comm'
 
 instance sep_assoc [BI PROP] : Assoc (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∗ ·]) where
   assoc := by
     intros P Q R
-    apply anti_symm PROP
+    apply anti_symm
     case left =>
       rw' [
         (comm : P ∗ (Q ∗ R) ⊣⊢ _),
@@ -79,7 +77,7 @@ instance sep_assoc [BI PROP] : Assoc (α := PROP) (· ⊣⊢ ·) (`[iprop| · �
 instance emp_sep [BI PROP] : LeftId (α := PROP) (· ⊣⊢ ·) `[iprop| emp] (`[iprop| · ∗ ·]) where
   left_id := by
     intros
-    apply anti_symm PROP
+    apply anti_symm
     · exact emp_sep_2
     · exact emp_sep_1
 
@@ -170,9 +168,9 @@ instance exist_mono' [BI PROP] : MonotonicPointwiseUnary (α := PROP) (β := β)
     rw' [Hφ a, exist_intro _]
 
 theorem or_alt [BI PROP] {P Q : PROP} : P ∨ Q ⊣⊢ ∃ (b : Bool), if b then P else Q := by
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
-    apply or_elim ?left ?right
+    apply or_elim
     · rw' [← exist_intro true]
     · rw' [← exist_intro false]
   case right =>
@@ -213,7 +211,7 @@ theorem wand_elim_r' [BI PROP] {P Q R : PROP} : (Q ⊢ P -∗ R) → P ∗ Q ⊢
   rw' [H, wand_elim_r]
 
 theorem sep_or_l [BI PROP] {P Q R : PROP} : P ∗ (Q ∨ R) ⊣⊢ (P ∗ Q) ∨ (P ∗ R) := by
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
     apply wand_elim_r'
     apply or_elim
@@ -225,8 +223,8 @@ theorem sep_or_l [BI PROP] {P Q R : PROP} : P ∗ (Q ∨ R) ⊣⊢ (P ∗ Q) ∨
     · rw' [← or_intro_l]
     · rw' [← or_intro_r]
 
-theorem sep_exist_l [BI PROP] {P : PROP} (Ψ : A → PROP) : P ∗ (∃ a, Ψ a) ⊣⊢ ∃ a, P ∗ Ψ a := by
-  apply anti_symm PROP
+theorem sep_exist_l [BI PROP] {P : PROP} {Ψ : α → PROP} : P ∗ (∃ a, Ψ a) ⊣⊢ ∃ a, P ∗ Ψ a := by
+  apply anti_symm
   case left =>
     apply wand_elim_r'
     apply exist_elim
@@ -261,7 +259,7 @@ instance absorbingly_mono' [BI PROP] : MonotonicUnary (α := PROP) (· ⊢ ·) (
     rw' [H]
 
 theorem absorbingly_idemp [BI PROP] {P : PROP} : <absorb> <absorb> P ⊣⊢ <absorb> P := by
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
     simp only [bi_absorbingly]
     rw' [(assoc : True ∗ True ∗ P ⊣⊢ _)]
@@ -272,7 +270,7 @@ theorem absorbingly_idemp [BI PROP] {P : PROP} : <absorb> <absorb> P ⊣⊢ <abs
     rw' [← absorbingly_intro]
 
 theorem absorbingly_pure {φ : Prop} [BI PROP] : <absorb> ⌜φ⌝ ⊣⊢ (⌜φ⌝ : PROP) := by
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
     apply wand_elim_r'
     apply pure_elim'
@@ -333,7 +331,7 @@ theorem sep_elim_l [BI PROP] {P Q : PROP} [instQP : TCOr (Affine Q) (Absorbing P
 
 -- Persistent
 theorem absorbingly_elim_persistently [BI PROP] {P : PROP} : <absorb> <pers> P ⊣⊢ <pers> P := by
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
     simp only [bi_absorbingly]
     rw' [(comm : `[iprop| True ∗ <pers> P] ⊣⊢ _), persistently_absorbing]
@@ -341,7 +339,7 @@ theorem absorbingly_elim_persistently [BI PROP] {P : PROP} : <absorb> <pers> P �
     exact absorbingly_intro
 
 theorem persistently_exist [BI PROP] {Ψ : α → PROP} : <pers> (∃ a, Ψ a) ⊣⊢ ∃ a, <pers> (Ψ a) := by
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
     exact persistently_exist_1
   case right =>
@@ -350,7 +348,7 @@ theorem persistently_exist [BI PROP] {Ψ : α → PROP} : <pers> (∃ a, Ψ a) �
     rw' [exist_intro a]
 
 theorem persistently_and [BI PROP] {P Q : PROP} : <pers> (P ∧ Q) ⊣⊢ <pers> P ∧ <pers> Q := by
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
     apply and_intro
     · rw' [and_elim_l]
@@ -366,7 +364,7 @@ theorem persistently_if {p : Bool} [BI PROP] {P Q : PROP} :
 
 theorem persistently_or [BI PROP] {P Q : PROP} : <pers> (P ∨ Q) ⊣⊢ <pers> P ∨ <pers> Q := by
   rw' [!or_alt, persistently_exist]
-  apply anti_symm PROP
+  apply anti_symm
   <;> apply exist_elim
   <;> intro a
   <;> rw' [← exist_intro a, persistently_if]
@@ -379,7 +377,7 @@ theorem persistently_emp_intro [BI PROP] {P : PROP} : P ⊢ <pers> emp := by
   rw' [persistently_emp_2]
 
 theorem persistently_True_emp [BI PROP] : <pers> True ⊣⊢ <pers> (emp : PROP) := by
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
     exact persistently_emp_intro
   case right =>
@@ -391,7 +389,7 @@ theorem persistently_True [BI PROP] : True ⊢ <pers> (True : PROP) := by
   rw' [persistently_True_emp, persistently_emp_intro]
 
 theorem persistently_and_emp [BI PROP] {P : PROP} : <pers> P ⊣⊢ <pers> (emp ∧ P) := by
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
     rw' [persistently_and]
     apply and_intro ?_ reflexivity
@@ -403,7 +401,7 @@ theorem persistently_and_sep_elim_emp [BI PROP] {P Q : PROP} : <pers> P ∧ Q �
   rw' [persistently_and_emp, persistently_and_sep_elim]
 
 theorem persistently_and_sep_assoc [BI PROP] {P Q R : PROP} : <pers> P ∧ (Q ∗ R) ⊣⊢ (<pers> P ∧ Q) ∗ R := by
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
     rw' [
       persistently_idemp_2,
@@ -438,12 +436,12 @@ theorem persistently_elim [BI PROP] {P : PROP} [Absorbing P] : <pers> P ⊢ P :=
   rw' [persistently_into_absorbingly, absorbing]
 
 theorem persistently_idemp [BI PROP] {P : PROP} : <pers> <pers> P ⊣⊢ <pers> P := by
-  apply anti_symm PROP
+  apply anti_symm
   · rw' [persistently_into_absorbingly, absorbingly_elim_persistently]
   · exact persistently_idemp_2
 
 theorem persistently_pure {φ : Prop} [BI PROP] : <pers> ⌜φ⌝ ⊣⊢ (⌜φ⌝ : PROP) := by
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
     rw' [persistently_into_absorbingly, absorbingly_pure]
   case right =>
@@ -471,7 +469,7 @@ theorem persistently_and_sep [BI PROP] {P Q : PROP} : <pers> (P ∧ Q) ⊢ <pers
     persistently_and_emp_elim]
 
 theorem and_sep_persistently [BI PROP] {P Q : PROP} : <pers> P ∧ <pers> Q ⊣⊢ <pers> P ∗ <pers> Q := by
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
     exact persistently_and_sep_l_1
   case right =>
@@ -491,7 +489,7 @@ theorem intuitionistically_affinely [BI PROP] {P : PROP} : □ P ⊢ <affine> P 
 
 theorem persistently_and_intuitionistically_sep_l [BI PROP] {P Q : PROP} : <pers> P ∧ Q ⊣⊢ □ P ∗ Q := by
   simp only [bi_intuitionistically]
-  apply anti_symm PROP
+  apply anti_symm
   case left =>
     simp only [bi_affinely]
     rw' [
@@ -507,7 +505,7 @@ theorem persistently_and_intuitionistically_sep_l [BI PROP] {P Q : PROP} : <pers
 theorem persistent_and_affinely_sep_l [BI PROP] {P Q : PROP} [Persistent P] [Absorbing P] :
   P ∧ Q ⊣⊢ <affine> P ∗ Q
 := by
-  apply anti_symm PROP
+  apply anti_symm
   <;> rw' [persistent, ← persistently_elim, persistently_and_intuitionistically_sep_l]
 
 end Iris.BI
