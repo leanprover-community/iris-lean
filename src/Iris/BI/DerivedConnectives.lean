@@ -66,10 +66,10 @@ delab_rule bi_intuitionistically
   | `($_ $P) => do `(`[iprop| □ $(← unpackIprop P)])
 
 -- conditional modalities
-syntax:max "<pers>?"   term:max term:40 : term
-syntax:max "<affine>?" term:max term:40 : term
-syntax:max "<absorb>?" term:max term:40 : term
-syntax:max "□?"        term:max term:40 : term
+syntax:max "<pers>?"   term:max ppHardSpace term:40 : term
+syntax:max "<affine>?" term:max ppHardSpace term:40 : term
+syntax:max "<absorb>?" term:max ppHardSpace term:40 : term
+syntax:max "□?"        term:max ppHardSpace term:40 : term
 
 def bi_persistently_if       [BIBase PROP] (p : Bool) (P : PROP) : PROP := `[iprop| if p then <pers> P else P]
 def bi_affinely_if           [BIBase PROP] (p : Bool) (P : PROP) : PROP := `[iprop| if p then <affine> P else P]
