@@ -506,7 +506,7 @@ instance (priority := default + 10) intoPersistentHere [BI PROP] (P : PROP) :
   IntoPersistent true P P
 where
   into_persistent := by
-    simp [bi_persistently_if]
+    simp
 
 instance (priority := default - 10) intoPersistentPersistent [BI PROP] (P : PROP) :
   [Persistent P] →
@@ -527,7 +527,7 @@ instance (priority := default - 10) fromAffinelyDefault [BI PROP] (P : PROP) :
   FromAffinely `[iprop| <affine> P] P true
 where
   from_affinely := by
-    simp [bi_affinely_if]
+    simp
 
 instance (priority := default - 10) fromAffinelyIntuitionistically [BI PROP] (P : PROP) :
   FromAffinely `[iprop| □ P] `[iprop| <pers> P] true
@@ -539,7 +539,7 @@ instance fromAffinelyId [BI PROP] (P : PROP) :
   FromAffinely P P false
 where
   from_affinely := by
-    simp [bi_affinely_if]
+    simp
 
 -- IntoAbsorbingly
 instance (priority := default + 30) intoAbsorbinglyTrue [BI PROP] :
@@ -753,7 +753,7 @@ instance fromPurePure [BI PROP] (φ : Prop) :
   FromPure (PROP := PROP) false `[iprop| ⌜φ⌝] φ
 where
   from_pure := by
-    simp [bi_affinely_if]
+    simp
 
 instance fromPurePureAnd (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
   [FromPure a1 P1 φ1] →
@@ -862,11 +862,11 @@ instance fromPurePersistently [BI PROP] (P : PROP) (a : Bool) (φ : Prop) :
   FromPure a `[iprop| <pers> P] φ
 where
   from_pure := by
-    rw' [← FromPure.from_pure]
-    conv =>
-      rhs
-      simp only [bi_affinely_if, ite_true]
-    rw' [persistently_affinely_elim, affinely_if_elim, persistently_pure]
+    rw' [
+      ← FromPure.from_pure,
+      persistently_affinely_elim,
+      affinely_if_elim,
+      persistently_pure]
 
 instance fromPureAffinelyTrue (a : Bool) [BI PROP] (P : PROP) (φ : Prop) :
   [FromPure a P φ] →

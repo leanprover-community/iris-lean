@@ -69,9 +69,8 @@ instance affinelyIfPersistent (p : Bool) [BI PROP] (P : PROP) :
   Persistent `[iprop| <affine>?p P]
 where
   persistent := by
-    simp only [bi_affinely_if]
     cases p
-    <;> simp [persistent]
+    <;> simp [bi_affinely_if, persistent]
 
 instance intuitionisticallyPersistent [BI PROP] (P : PROP) :
   Persistent `[iprop| □ P]
@@ -91,9 +90,8 @@ instance absorbinglyIfPersistent (p : Bool) [BI PROP] (P : PROP) :
   Persistent `[iprop| <absorb>?p P]
 where
   persistent := by
-    simp only [bi_absorbingly_if]
     cases p
-    <;> simp [persistent]
+    <;> simp [bi_absorbingly_if, persistent]
 
 -- Affine
 instance empAffine [BI PROP] :
@@ -168,9 +166,8 @@ instance affinelyIfAffine (p : Bool) [BI PROP] (P : PROP) :
   Affine `[iprop| <affine>?p P]
 where
   affine := by
-    simp only [bi_affinely_if]
     cases p
-    <;> simp [affine]
+    <;> simp [bi_affinely_if, affine]
 
 instance intuitionisticallyAffine [BI PROP] (P : PROP) :
   Affine `[iprop| □ P]
@@ -183,9 +180,8 @@ instance intuitionisticallyIfAffine (p : Bool) [BI PROP] (P : PROP) :
   Affine `[iprop| □?p P]
 where
   affine := by
-    simp only [bi_intuitionistically_if]
     cases p
-    <;> simp [affine]
+    <;> simp [bi_intuitionistically_if, affine]
 
 -- Absorbing
 instance pureAbsorbing (φ : Prop) [BI PROP] :
@@ -289,9 +285,8 @@ instance persistentlyIfAbsorbing [BI PROP] (P : PROP) (p : Bool) :
   Absorbing `[iprop| <pers>?p P]
 where
   absorbing := by
-    simp only [bi_persistently_if]
     cases p
-    <;> simp [absorbing]
+    <;> simp [bi_persistently_if, absorbing]
 
 section Affine
 

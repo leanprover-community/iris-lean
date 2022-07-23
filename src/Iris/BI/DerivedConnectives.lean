@@ -82,6 +82,23 @@ macro_rules
   | `(`[iprop| <absorb>?$p $P]) => `(bi_absorbingly_if $p `[iprop| $P])
   | `(`[iprop| □?$p $P])        => `(bi_intuitionistically_if $p `[iprop| $P])
 
+unif_hint [BIBase PROP] (P : PROP) where
+  |- `[iprop| <pers>?false P] ≟ `[iprop| P]
+unif_hint [BIBase PROP] (P : PROP) where
+  |- `[iprop| <pers>?true P] ≟ `[iprop| <pers> P]
+unif_hint [BIBase PROP] (P : PROP) where
+  |- `[iprop| <affine>?false P] ≟ `[iprop| P]
+unif_hint [BIBase PROP] (P : PROP) where
+  |- `[iprop| <affine>?true P] ≟ `[iprop| <affine> P]
+unif_hint [BIBase PROP] (P : PROP) where
+  |- `[iprop| <absorb>?false P] ≟ `[iprop| P]
+unif_hint [BIBase PROP] (P : PROP) where
+  |- `[iprop| <absorb>?true P] ≟ `[iprop| <absorb> P]
+unif_hint [BIBase PROP] (P : PROP) where
+  |- `[iprop| □?false P] ≟ `[iprop| P]
+unif_hint [BIBase PROP] (P : PROP) where
+  |- `[iprop| □?true P] ≟ `[iprop| □ P]
+
 delab_rule bi_persistently_if
   | `($_ $p $P) => do `(`[iprop| <pers>?$p $(← unpackIprop P)])
 delab_rule bi_affinely_if
