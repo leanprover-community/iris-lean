@@ -418,9 +418,7 @@ theorem pure_exist [inst : BI PROP] {φ : α → Prop} : ⌜∃ x, φ x⌝ ⊣�
   case left =>
     apply pure_elim'
     intro ⟨x, H⟩
-    apply transitivity (α := PROP) (R := (`[iprop| · ⊢ ·])) ?_ ?_1
-    case _1 =>
-      exact exist_intro x
+    rw' [← exist_intro x]
     apply pure_mono
     intro _
     exact H

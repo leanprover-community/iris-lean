@@ -466,19 +466,19 @@ mutual
       throwError "conjunction must contain at least two elements"
 
     -- destruct hypothesis with multiple conjunctions
-    let mut remainingArguments := #[(.anonymous, args[0])]
+    let mut remainingArguments := #[(.anonymous, args[0]!)]
     let mut hypIndex := hypIndex
     for i in [:args.size - 1] do
       -- destruct hypothesis and clear one side if requested
       let (h, ra) ← (do
-        if args[i] matches .clear then
-          if let some result ← destructRight hypIndex args[i + 1] then
+        if args[i]! matches .clear then
+          if let some result ← destructRight hypIndex args[i + 1]! then
             return result
-        else if i + 1 == args.size - 1 && args[i + 1] matches .clear then
-          if let some result ← destructLeft hypIndex args[i] then
+        else if i + 1 == args.size - 1 && args[i + 1]! matches .clear then
+          if let some result ← destructLeft hypIndex args[i]! then
             return result
 
-        let some result ← destruct hypIndex args[i] args[i + 1]
+        let some result ← destruct hypIndex args[i]! args[i + 1]!
           | throwError "failed to destruct conjunction"
         return result)
 

@@ -15,11 +15,11 @@ def modifyAppOptM (e : Expr) (args : Array <| Option Expr) : Expr :=
 
 
 def getMDataName? : Expr → Option Name
-  | Expr.mdata md _ _ => md.get? "name"
+  | Expr.mdata md _ => md.get? "name"
   | _ => none
 
 def setMDataName? (e : Expr) (name : Name) : Expr := match e with
-  | Expr.mdata md e _ =>
+  | Expr.mdata md e =>
     mkMData (md.insert "name" name) e
   | e =>
     mkMData (KVMap.empty.insert "name" name) e
