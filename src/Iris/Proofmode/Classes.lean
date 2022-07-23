@@ -18,8 +18,10 @@ class AsEmpValid (φ : Prop) {PROP : Type} (P : PROP) extends
   AsEmpValid1 φ P,
   AsEmpValid2 φ P
 
-theorem as_emp_valid_1 [BI PROP] (P : PROP) [AsEmpValid1 φ P] : φ → ⊢ P := sorry
-theorem as_emp_valid_2 (φ : Prop) [AsEmpValid2 φ P] : (⊢ P) → φ := sorry
+theorem as_emp_valid_1 (P : PROP) [AsEmpValid1 φ P] : φ → ⊢ P :=
+  AsEmpValid1.as_emp_valid.mp
+theorem as_emp_valid_2 (φ : Prop) [AsEmpValid2 φ P] : (⊢ P) → φ :=
+  AsEmpValid2.as_emp_valid.mpr
 
 
 class FromImpl [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where

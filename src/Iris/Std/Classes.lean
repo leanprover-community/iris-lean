@@ -15,6 +15,10 @@ export Transitive (transitivity)
 class PreOrder (R : Relation α) extends Reflexive R, Transitive R
 
 
+class Idemp (R : Relation α) (f : α → α → α) : Prop where
+  idemp {x : α} : R (f x x) x
+export Idemp (idemp)
+
 class Comm (R : Relation α) (f : β → β → α) : Prop where
   comm {x y : β} : R (f x y) (f y x)
 export Comm (comm)
