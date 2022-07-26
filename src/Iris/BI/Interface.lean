@@ -1,5 +1,6 @@
 import Iris.BI.Notation
 import Iris.Std.Classes
+import Iris.Std.Rewrite
 
 namespace Iris.BI
 open Iris.Std
@@ -138,5 +139,8 @@ class BI (car : Type) extends BIBase car where
   persistently_and_sep_elim {P Q : car} : <pers> P ∧ Q ⊢ P ∗ Q
 
 attribute [instance] BI.entailsPreOrder
+
+attribute [rwMonoRule] BI.sep_mono
+attribute [rwMonoRule] BI.persistently_mono
 
 end Iris.BI

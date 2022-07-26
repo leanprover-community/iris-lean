@@ -1,5 +1,4 @@
 import Iris.Std.Classes
-import Iris.Std.Prod
 import Iris.Std.Tactic
 
 import Lean.Elab.Tactic
@@ -30,6 +29,22 @@ private def parseRewriteRule (rule : TSyntax ``rwRule) : TacticM <| RewriteDirec
   | _ => throwUnsupportedSyntax
 
 
+initialize monoRulesExt : SimplePersistentEnvExtension Name NameSet ← registerSimplePersistentEnvExtension {
+  name := `rwMonoRules,
+  addEntryFn := NameSet.insert,
+  addImportedFn := fun es => mkStateFromImportedEntries NameSet.insert {} es
+}
+
+initialize registerBuiltinAttribute {
+  name := `rwMonoRule,
+  descr := "monotonicity rule used to destruct terms during rewriting",
+  add := fun name _ kind => do
+    if !kind matches .global then
+      throwError "only global definitions are allowed as monotonicity rules"
+    setEnv <| monoRulesExt.addEntry (← getEnv) name
+}
+
+
 private def normalizeGoal (goal : MVarId) : TacticM MVarId := do
   if (← getMVarType goal).isForall then
     let (_, goal) ← intro goal `_
@@ -37,25 +52,8 @@ private def normalizeGoal (goal : MVarId) : TacticM MVarId := do
   else
     return goal
 
--- TODO use attribute instead
 private def getMonotonicityRules : TacticM <| Array Name := do
-  return #[
-    `Iris.BI.and_mono,
-    `Iris.BI.or_mono,
-    `Iris.BI.impl_mono,
-    `Iris.BI.forall_mono,
-    `Iris.BI.exist_mono,
-    `Iris.BI.BI.sep_mono,
-    `Iris.BI.wand_mono,
-    `Iris.BI.affinely_mono,
-    `Iris.BI.affinely_if_mono,
-    `Iris.BI.absorbingly_mono,
-    `Iris.BI.absorbingly_if_mono,
-    `Iris.BI.BI.persistently_mono,
-    `Iris.BI.persistently_if_mono,
-    `Iris.BI.intuitionistically_mono,
-    `Iris.BI.intuitionistically_if_mono
-  ]
+  return monoRulesExt.getState (← getEnv) |>.toArray
 
 
 private def rewriteConventional (rule : TSyntax ``rwRule) : TacticM Bool := do
