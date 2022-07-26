@@ -20,11 +20,6 @@ macro_rules
   | `(`[iprop| $P ↔ $Q])   => `(bi_iff `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| $P ∗-∗ $Q]) => `(bi_wand_iff `[iprop| $P] `[iprop| $Q])
 
-unif_hint [BIBase PROP] (P Q : PROP) where
-  |- `[iprop| P ↔ Q] ≟ `[iprop| (P → Q) ∧ (Q → P)]
-unif_hint [BIBase PROP] (P Q : PROP) where
-  |- `[iprop| P ∗-∗ Q] ≟ `[iprop| (P -∗ Q) ∧ (Q -∗ P)]
-
 delab_rule bi_iff
   | `($_ $P $Q) => do `(`[iprop| $(← unpackIprop P) ↔ $(← unpackIprop Q)])
 delab_rule bi_wand_iff
@@ -41,11 +36,6 @@ macro_rules
   | `(`[iprop| <affine> $P]) => `(bi_affinely `[iprop| $P])
   | `(`[iprop| <absorb> $P]) => `(bi_absorbingly `[iprop| $P])
 
-unif_hint [BIBase PROP] (P : PROP) where
-  |- `[iprop| <affine> P] ≟ `[iprop| emp ∧ P]
-unif_hint [BIBase PROP] (P : PROP) where
-  |- `[iprop| <absorb> P] ≟ `[iprop| True ∗ P]
-
 delab_rule bi_affinely
   | `($_ $P) => do `(`[iprop| <affine> $(← unpackIprop P)])
 delab_rule bi_absorbingly
@@ -58,9 +48,6 @@ def bi_intuitionistically [BIBase PROP] (P : PROP) : PROP := `[iprop| <affine> <
 
 macro_rules
   | `(`[iprop| □ $P]) => `(bi_intuitionistically `[iprop| $P])
-
-unif_hint [BIBase PROP] (P : PROP) where
-  |- `[iprop| □ P] ≟ `[iprop| <affine> <pers> P]
 
 delab_rule bi_intuitionistically
   | `($_ $P) => do `(`[iprop| □ $(← unpackIprop P)])
@@ -81,23 +68,6 @@ macro_rules
   | `(`[iprop| <affine>?$p $P]) => `(bi_affinely_if $p `[iprop| $P])
   | `(`[iprop| <absorb>?$p $P]) => `(bi_absorbingly_if $p `[iprop| $P])
   | `(`[iprop| □?$p $P])        => `(bi_intuitionistically_if $p `[iprop| $P])
-
-unif_hint [BIBase PROP] (P : PROP) where
-  |- `[iprop| <pers>?false P] ≟ `[iprop| P]
-unif_hint [BIBase PROP] (P : PROP) where
-  |- `[iprop| <pers>?true P] ≟ `[iprop| <pers> P]
-unif_hint [BIBase PROP] (P : PROP) where
-  |- `[iprop| <affine>?false P] ≟ `[iprop| P]
-unif_hint [BIBase PROP] (P : PROP) where
-  |- `[iprop| <affine>?true P] ≟ `[iprop| <affine> P]
-unif_hint [BIBase PROP] (P : PROP) where
-  |- `[iprop| <absorb>?false P] ≟ `[iprop| P]
-unif_hint [BIBase PROP] (P : PROP) where
-  |- `[iprop| <absorb>?true P] ≟ `[iprop| <absorb> P]
-unif_hint [BIBase PROP] (P : PROP) where
-  |- `[iprop| □?false P] ≟ `[iprop| P]
-unif_hint [BIBase PROP] (P : PROP) where
-  |- `[iprop| □?true P] ≟ `[iprop| □ P]
 
 delab_rule bi_persistently_if
   | `($_ $p $P) => do `(`[iprop| <pers>?$p $(← unpackIprop P)])

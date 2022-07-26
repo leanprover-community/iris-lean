@@ -67,43 +67,42 @@ theorem True_intro [BI PROP] {P : PROP} : P ⊢ True := by
   apply pure_intro
   simp
 
-instance and_mono' [BI PROP] : MonotonicBinary (α := PROP) (· ⊢ ·) (`[iprop| · ∧ ·]) where
-  monotonicity_binary := by
-    intro _ _ _ _ H1 H2
-    apply and_intro
-    · rw' [← H1, and_elim_l]
-    · rw' [← H2, and_elim_r]
+theorem and_mono [BI PROP] {P P' Q Q' : PROP} : (P ⊢ Q) → (P' ⊢ Q') → P ∧ P' ⊢ Q ∧ Q' := by
+  intro H1 H2
+  apply and_intro
+  · rw' [← H1, and_elim_l]
+  · rw' [← H2, and_elim_r]
 
-instance or_mono' [BI PROP] : MonotonicBinary (α := PROP) (· ⊢ ·) (`[iprop| · ∨ ·]) where
-  monotonicity_binary := by
-    intro _ _ _ _ H1 H2
-    apply or_elim
-    · apply or_intro_l'
-      exact H1
-    · apply or_intro_r'
-      exact H2
+theorem or_mono [BI PROP] {P P' Q Q' : PROP} : (P ⊢ Q) → (P' ⊢ Q') → P ∨ P' ⊢ Q ∨ Q' := by
+  intro H1 H2
+  apply or_elim
+  · apply or_intro_l'
+    exact H1
+  · apply or_intro_r'
+    exact H2
 
-instance impl_mono' [BI PROP] : MonotonicLeftContravariantBinary (α := PROP) (· ⊢ ·) (`[iprop| · → ·]) where
-  monotonicity_left_contravariant_binary := by
-    intro _ _ _ _ HP HQ
-    apply impl_intro_r
-    rw' [HP, ← HQ]
-    apply impl_elim_l'
-    simp
+theorem impl_mono [BI PROP] {P P' Q Q' : PROP} : (Q ⊢ P) → (P' ⊢ Q') → (P → P') ⊢ Q → Q' := by
+  intro HP HQ
+  apply impl_intro_r
+  rw' [HP, ← HQ]
+  apply impl_elim_l'
+  simp
 
-instance forall_mono' [BI PROP] : MonotonicPointwiseUnary (α := PROP) (β := β) (· ⊢ ·) BIBase.forall where
-  monotonicity_pointwise_unary := by
-    intro _ _ Hφ
-    apply forall_intro
-    intro a
-    rw' [← Hφ a, ← forall_elim _]
+theorem forall_mono [BI PROP] {Φ Ψ : α → PROP} :
+  (∀ a, Φ a ⊢ Ψ a) → (∀ a, Φ a) ⊢ ∀ a, Ψ a
+:= by
+  intro Hφ
+  apply forall_intro
+  intro a
+  rw' [← Hφ a, ← forall_elim _]
 
-instance exist_mono' [BI PROP] : MonotonicPointwiseUnary (α := PROP) (β := β) (· ⊢ ·) BIBase.exists where
-  monotonicity_pointwise_unary := by
-    intro _ _ Hφ
-    apply exist_elim
-    intro a
-    rw' [Hφ a, exist_intro _]
+theorem exist_mono [BI PROP] {Φ Ψ : α → PROP} :
+  (∀ a, Φ a ⊢ Ψ a) → (∃ a, Φ a) ⊢ ∃ a, Ψ a
+:= by
+  intro Hφ
+  apply exist_elim
+  intro a
+  rw' [Hφ a, exist_intro _]
 
 instance and_idemp [BI PROP] : Idemp (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∧ ·]) where
   idemp := by
@@ -220,16 +219,12 @@ theorem or_alt [BI PROP] {P Q : PROP} : P ∨ Q ⊣⊢ ∃ (b : Bool), if b then
     · rw' [← or_intro_l]
 
 -- BI
-instance sep_mono' [BI PROP] : MonotonicBinary (α := PROP) (· ⊢ ·) (`[iprop| · ∗ ·]) where
-  monotonicity_binary := sep_mono
-
-instance wand_mono' [BI PROP] : MonotonicLeftContravariantBinary (α := PROP) (· ⊢ ·) (`[iprop| · -∗ ·]) where
-  monotonicity_left_contravariant_binary := by
-    intro _ _ _ _ HP HQ
-    apply wand_intro_r
-    rw' [HP, ← HQ]
-    apply wand_elim_l'
-    simp
+theorem wand_mono [BI PROP] {P P' Q Q' : PROP} : (Q ⊢ P) → (P' ⊢ Q') → (P -∗ P') ⊢ Q -∗ Q' := by
+  intro HP HQ
+  apply wand_intro_r
+  rw' [HP, ← HQ]
+  apply wand_elim_l'
+  simp
 
 instance sep_comm [BI PROP] : Comm (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∗ ·]) where
   comm := by
@@ -265,7 +260,7 @@ instance sep_emp [BI PROP] : RightId (α := PROP) (· ⊣⊢ ·) `[iprop| emp] (
 
 theorem True_sep_2 [BI PROP] {P : PROP} : P ⊢ True ∗ P := by
   rw' [emp_sep_1]
-  apply monotonicity_binary ?_ reflexivity
+  apply sep_mono ?_ reflexivity
   apply pure_intro
   simp
 
@@ -336,7 +331,7 @@ theorem wand_iff_equiv [BI PROP] {P Q : PROP} : (⊢ P ∗-∗ Q) → (P ⊣⊢ 
   apply anti_symm
   <;> apply wand_entails
   <;> rw' [HPQ]
-  <;> simp only [bi_wand_iff, and_elim_l, and_elim_r]
+  <;> simp [bi_wand_iff, and_elim_l, and_elim_r]
 
 -- Pure
 theorem pure_elim (φ : Prop) [BI PROP] {Q R : PROP} : (Q ⊢ ⌜φ⌝) → (φ → Q ⊢ R) → Q ⊢ R := by
@@ -423,18 +418,17 @@ theorem affinely_elim_emp [BI PROP] {P : PROP} : <affine> P ⊢ emp := by
 theorem affinely_elim [BI PROP] {P : PROP} : <affine> P ⊢ P := by
   simp [bi_affinely, and_elim_r]
 
-instance affinely_mono' [BI PROP] : MonotonicUnary (α := PROP) (· ⊢ ·) (`[iprop| <affine> ·]) where
-  monotonicity_unary := by
-    intro _ _ H
-    rw' [H]
+theorem affinely_mono [BI PROP] {P Q : PROP} : (P ⊢ Q) → <affine> P ⊢ <affine> Q := by
+  intro H
+  simp only [bi_affinely]
+  rw' [H]
 
-instance affinely_if_mono' (p : Bool) [BI PROP] : MonotonicUnary (α := PROP) (· ⊢ ·) (`[iprop| <affine>?p ·]) where
-  monotonicity_unary := by
-    intro _ _ H
-    cases p
-    <;> simp [bi_affinely_if, H]
-    revert H
-    exact monotonicity_unary
+theorem affinely_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <affine>?p P ⊢ <affine>?p Q := by
+  intro H
+  cases p
+  <;> simp [bi_affinely_if, H]
+  revert H
+  exact affinely_mono
 
 theorem affinely_idemp [BI PROP] {P : PROP} : <affine> <affine> P ⊣⊢ <affine> P := by
   simp only [bi_affinely]
@@ -443,8 +437,7 @@ theorem affinely_idemp [BI PROP] {P : PROP} : <affine> <affine> P ⊣⊢ <affine
     (idemp : emp ∧ emp ⊣⊢ _)]
 
 theorem affinely_or [BI PROP] {P Q : PROP} : <affine> (P ∨ Q) ⊣⊢ <affine> P ∨ <affine> Q := by
-  simp only [bi_affinely]
-  rw' [and_or_l]
+  exact and_or_l
 
 theorem affinely_and [BI PROP] {P Q : PROP} : <affine> (P ∧ Q) ⊣⊢ <affine> P ∧ <affine> Q := by
   rw' [
@@ -470,8 +463,7 @@ theorem affinely_forall [BI PROP] {Φ : α → PROP} : <affine> (∀ a, Φ a) �
   rw' [forall_elim a]
 
 theorem affinely_exist [BI PROP] {Φ : α → PROP} : <affine> (∃ a, Φ a) ⊣⊢ ∃ a, <affine> (Φ a) := by
-  simp only [bi_affinely]
-  rw' [and_exist_l]
+  exact and_exist_l
 
 theorem affinely_and_l [BI PROP] {P Q : PROP} : <affine> P ∧ Q ⊣⊢ <affine> (P ∧ Q) := by
   simp only [bi_affinely]
@@ -491,25 +483,24 @@ theorem affinely_and_lr [BI PROP] {P Q : PROP} : <affine> P ∧ Q ⊣⊢ P ∧ <
 theorem absorbingly_intro [BI PROP] {P : PROP} : P ⊢ <absorb> P := by
   exact True_sep_2
 
-instance absorbingly_mono' [BI PROP] : MonotonicUnary (α := PROP) (· ⊢ ·) (`[iprop| <absorb> ·]) where
-  monotonicity_unary := by
-    intro _ _ H
-    rw' [H]
+theorem absorbingly_mono [BI PROP] {P Q : PROP} : (P ⊢ Q) → <absorb> P ⊢ <absorb> Q := by
+  intro H
+  simp only [bi_absorbingly]
+  rw' [H]
 
-instance absorbingly_if_mono' (p : Bool) [BI PROP] : MonotonicUnary (α := PROP) (· ⊢ ·) (`[iprop| <absorb>?p ·]) where
-  monotonicity_unary := by
-    intro _ _ H
-    cases p
-    <;> simp [bi_absorbingly_if, H]
-    revert H
-    exact monotonicity_unary
+theorem absorbingly_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <absorb>?p P ⊢ <absorb>?p Q := by
+  intro H
+  cases p
+  <;> simp [bi_absorbingly_if, H]
+  revert H
+  exact absorbingly_mono
 
 theorem absorbingly_idemp [BI PROP] {P : PROP} : <absorb> <absorb> P ⊣⊢ <absorb> P := by
   apply anti_symm
   case left =>
     simp only [bi_absorbingly]
     rw' [(assoc : True ∗ True ∗ P ⊣⊢ _)]
-    apply monotonicity_binary ?_ reflexivity
+    apply sep_mono ?_ reflexivity
     apply pure_intro
     simp
   case right =>
@@ -605,22 +596,20 @@ theorem sep_and [BI PROP] {P Q : PROP} [inst1 : TCOr (Affine P) (Absorbing Q)] [
   <;> first | exact sep_elim_l | exact sep_elim_r
 
 -- Persistent
-instance persistently_mono' [BI PROP] : MonotonicUnary (α := PROP) (· ⊢ ·) (`[iprop| <pers> ·]) where
-  monotonicity_unary := persistently_mono
-
-instance persistently_if_mono' (p : Bool) [BI PROP] : MonotonicUnary (α := PROP) (· ⊢ ·) (`[iprop| <pers>?p ·]) where
-  monotonicity_unary := by
-    intro _ _ H
-    cases p
-    <;> simp [bi_persistently_if, H]
-    revert H
-    exact monotonicity_unary
+theorem persistently_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <pers>?p P ⊢ <pers>?p Q := by
+  intro H
+  cases p
+  <;> simp [bi_persistently_if, H]
+  revert H
+  exact persistently_mono
 
 theorem absorbingly_elim_persistently [BI PROP] {P : PROP} : <absorb> <pers> P ⊣⊢ <pers> P := by
   apply anti_symm
   case left =>
     simp only [bi_absorbingly]
-    rw' [(comm : `[iprop| True ∗ <pers> P] ⊣⊢ _), persistently_absorbing]
+    rw' [
+      (comm : `[iprop| True ∗ <pers> P] ⊣⊢ _),
+      persistently_absorbing]
   case right =>
     exact absorbingly_intro
 
@@ -667,7 +656,7 @@ theorem persistently_True_emp [BI PROP] : <pers> True ⊣⊢ <pers> (emp : PROP)
   case left =>
     exact persistently_emp_intro
   case right =>
-    apply monotonicity_unary
+    apply persistently_mono
     apply pure_intro
     simp
 
@@ -693,7 +682,7 @@ theorem persistently_and_sep_assoc [BI PROP] {P Q R : PROP} : <pers> P ∧ (Q �
       persistently_idemp_2,
       persistently_and_sep_elim_emp,
       (assoc : (emp ∧ <pers> P) ∗ Q ∗ R ⊣⊢ _)]
-    apply monotonicity_binary ?_ reflexivity
+    apply sep_mono ?_ reflexivity
     apply and_intro
     · rw' [and_elim_r, persistently_absorbing]
     · rw' [and_elim_l, (left_id : emp ∗ Q ⊣⊢ _)]
@@ -734,7 +723,7 @@ theorem persistently_pure {φ : Prop} [BI PROP] : <pers> ⌜φ⌝ ⊣⊢ (⌜φ�
     apply pure_elim'
     intro Hφ
     rw' [persistently_True]
-    apply monotonicity_unary
+    apply persistently_mono
     apply pure_intro
     exact Hφ
 
@@ -793,18 +782,17 @@ theorem intuitionistically_exist [BI PROP] {Φ : α → PROP} : □ (∃ x, Φ x
 theorem intuitionistically_sep_2 [BI PROP] {P Q : PROP} : □ P ∗ □ Q ⊢ □ (P ∗ Q) := by
   rw' [affinely_sep_2, persistently_sep_2]
 
-instance intuitionistically_mono [BI PROP] : MonotonicUnary (α := PROP) (· ⊢ ·) (`[iprop| □ ·]) where
-  monotonicity_unary := by
-    intro _ _ H
-    rw' [H]
+theorem intuitionistically_mono [BI PROP] {P Q : PROP} : (P ⊢ Q) → □ P ⊢ □ Q := by
+  intro H
+  simp only [bi_intuitionistically]
+  rw' [H]
 
-instance intuitionistically_if_mono' (p : Bool) [BI PROP] : MonotonicUnary (α := PROP) (· ⊢ ·) (`[iprop| □?p ·]) where
-  monotonicity_unary := by
-    intro _ _ H
-    cases p
-    <;> simp [bi_intuitionistically_if, H]
-    revert H
-    exact monotonicity_unary
+theorem intuitionistically_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → □?p P ⊢ □?p Q := by
+  intro H
+  cases p
+  <;> simp [bi_intuitionistically_if, H]
+  revert H
+  exact intuitionistically_mono
 
 theorem intuitionistically_idemp [BI PROP] {P : PROP} : □ □ P ⊣⊢ □ P := by
   simp only [bi_intuitionistically]
@@ -836,10 +824,9 @@ theorem intuitionistically_affinely_elim [BI PROP] {P : PROP} : □ <affine> P �
   rw' [persistently_affinely_elim]
 
 theorem persistently_and_intuitionistically_sep_l [BI PROP] {P Q : PROP} : <pers> P ∧ Q ⊣⊢ □ P ∗ Q := by
-  simp only [bi_intuitionistically]
   apply anti_symm
   case left =>
-    simp only [bi_affinely]
+    simp only [bi_intuitionistically, bi_affinely]
     rw' [
       (comm : emp ∧ <pers> P ⊣⊢ _),
       ← persistently_and_sep_assoc,
@@ -854,15 +841,13 @@ theorem persistently_and_intuitionistically_sep_r [BI PROP] {P Q : PROP} : P ∧
   exact persistently_and_intuitionistically_sep_l
 
 theorem and_sep_intuitionistically [BI PROP] {P Q : PROP} : □ P ∧ □ Q ⊣⊢ □ P ∗ □ Q := by
-  rw' [
-    ← persistently_and_intuitionistically_sep_l,
-    ← affinely_and,
-    affinely_and_r]
+  rw' [← persistently_and_intuitionistically_sep_l]
+  simp only [bi_intuitionistically]
+  rw'[← affinely_and, affinely_and_r]
 
 -- Intuitionistic Affine
 theorem intuitionistically_into_persistently [BIAffine PROP] {P : PROP} : □ P ⊣⊢ <pers> P := by
-  simp only [bi_intuitionistically]
-  rw' [affine_affinely]
+  exact affine_affinely
 
 -- Conditional Affine
 theorem affinely_if_flag_mono {p q : Bool} [BI PROP] {P : PROP} : (q → p) → <affine>?p P ⊢ <affine>?q P := by
@@ -876,7 +861,7 @@ theorem affinely_if_elim {p : Bool} [BI PROP] {P : PROP} : <affine>?p P ⊢ P :=
 
 theorem affinely_affinely_if {p : Bool} [BI PROP] {P : PROP} : <affine> P ⊢ <affine>?p P := by
   cases p
-  <;> simp [affinely_elim]
+  <;> simp [bi_affinely_if, affinely_elim]
 
 theorem affinely_if_and {p : Bool} [BI PROP] {P Q : PROP} : <affine>?p (P ∧ Q) ⊣⊢ <affine>?p P ∧ <affine>?p Q := by
   cases p
@@ -931,9 +916,8 @@ theorem persistent_and_affinely_sep_r [BI PROP] {P Q : PROP} [Persistent Q] [Abs
       ← persistently_elim,
       persistently_and_intuitionistically_sep_r]
   case right =>
-    rw' [persistent]
-    show P ∗ <affine> <pers> Q ⊢ P ∧ Q
     rw' [
+      persistent,
       ← persistently_elim,
       persistently_and_intuitionistically_sep_r]
 
@@ -949,9 +933,9 @@ theorem absorbingly_intuitionistically_into_persistently [BI PROP] {P : PROP} :
 := by
   apply anti_symm
   case left =>
-    rw' [intuitionistically_into_persistently_1]
-    show <absorb> <pers> P ⊢ <pers> P
-    rw' [absorbingly_elim_persistently]
+    rw' [
+      intuitionistically_into_persistently_1,
+      absorbingly_elim_persistently]
   case right =>
     rw' [
       ← (idemp : <pers> P ∧ _ ⊣⊢ _),

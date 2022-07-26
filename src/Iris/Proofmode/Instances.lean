@@ -109,9 +109,7 @@ where
     rw' [
       (IntoAbsorbingly.into_absorbingly : _ ⊢ <absorb> P1),
       persistent_and_affinely_sep_l,
-      (persistent : P1 ⊢ _)]
-    show <affine> <absorb> <pers> P1 ∗ P2 ⊢ P1 ∗ P2
-    rw' [
+      (persistent : P1 ⊢ _),
       absorbingly_elim_persistently,
       intuitionistically_elim]
 
@@ -124,9 +122,7 @@ where
     rw' [
       (IntoAbsorbingly.into_absorbingly : _ ⊢ <absorb> P2),
       persistent_and_affinely_sep_r,
-      (persistent : P2 ⊢ _)]
-    show P1 ∗ <affine> <absorb> <pers> P2 ⊢ P1 ∗ P2
-    rw' [
+      (persistent : P2 ⊢ _),
       absorbingly_elim_persistently,
       intuitionistically_elim]
 
@@ -290,9 +286,7 @@ instance (priority := default + 10) fromSepAbsorbingly [BI PROP] (P Q1 Q2 : PROP
   FromSep `[iprop| <absorb> P] `[iprop| <absorb> Q1] `[iprop| <absorb> Q2]
 where
   from_sep := by
-    rw' [← FromSep.from_sep]
-    show <absorb> Q1 ∗ <absorb> Q2 ⊢ <absorb> (Q1 ∗ Q2)
-    rw' [absorbingly_sep]
+    rw' [← FromSep.from_sep, absorbingly_sep]
 
 instance (priority := default + 10) fromSepPersistently [BI PROP] (P Q1 Q2 : PROP) :
   [FromSep P Q1 Q2] →
@@ -379,9 +373,11 @@ instance intoSepIntuitionisticallyAffine [BI PROP] (P Q1 Q2 : PROP) :
   IntoSep `[iprop| □ P] `[iprop| □ Q1] `[iprop| □ Q2]
 where
   into_sep := by
-    rw' [IntoSep.into_sep, persistently_sep_2, sep_and]
-    show □ (Q1 ∧ Q2) ⊢ □ Q1 ∗ □ Q2
-    rw' [intuitionistically_and, and_sep_intuitionistically]
+    rw' [
+      IntoSep.into_sep,
+      sep_and,
+      intuitionistically_and,
+      and_sep_intuitionistically]
 
 -- FromOr
 instance fromOrOr [BI PROP] (P1 P2 : PROP) :
@@ -475,10 +471,9 @@ where
     case false =>
       exact (IntoPersistent.into_persistent : <pers>?true P ⊢ _)
     case true =>
-      show <pers> <pers> P ⊢ <pers> Q
-      rw' [
-        (IntoPersistent.into_persistent : <pers>?true P ⊢ _),
-        persistently_idemp]
+      rw' [(IntoPersistent.into_persistent : <pers>?true P ⊢ _)]
+      simp only [bi_persistently_if]
+      rw' [persistently_idemp]
 
 instance (priority := default + 20) intoPersistentAffinely (p : Bool) [BI PROP] (P Q : PROP) :
   [IntoPersistent p P Q] →
@@ -499,14 +494,14 @@ where
     case false =>
       exact intuitionistically_into_persistently_1
     case true =>
-      apply monotonicity_unary
+      apply persistently_if_mono
       exact intuitionistically_elim
 
 instance (priority := default + 10) intoPersistentHere [BI PROP] (P : PROP) :
   IntoPersistent true P P
 where
   into_persistent := by
-    simp
+    simp [bi_persistently_if]
 
 instance (priority := default - 10) intoPersistentPersistent [BI PROP] (P : PROP) :
   [Persistent P] →
@@ -527,19 +522,19 @@ instance (priority := default - 10) fromAffinelyDefault [BI PROP] (P : PROP) :
   FromAffinely `[iprop| <affine> P] P true
 where
   from_affinely := by
-    simp
+    simp [bi_affinely_if]
 
 instance (priority := default - 10) fromAffinelyIntuitionistically [BI PROP] (P : PROP) :
   FromAffinely `[iprop| □ P] `[iprop| <pers> P] true
 where
   from_affinely := by
-    simp [bi_affinely_if]
+    simp [bi_affinely_if, bi_intuitionistically]
 
 instance fromAffinelyId [BI PROP] (P : PROP) :
   FromAffinely P P false
 where
   from_affinely := by
-    simp
+    simp [bi_affinely_if]
 
 -- IntoAbsorbingly
 instance (priority := default + 30) intoAbsorbinglyTrue [BI PROP] :
@@ -589,7 +584,7 @@ instance (priority := default + 30) fromAssumptionAffinelyR [BI PROP] (P Q : PRO
 where
   from_assumption := by
     rw' [← (FromAssumption.from_assumption : □?true P ⊢ Q)]
-    show □ P ⊢ <affine> □ P
+    simp only [bi_intuitionistically_if, ite_true, bi_intuitionistically]
     rw' [affinely_idemp]
 
 instance (priority := default + 30) fromAssumptionIntuitionisticallyR [BI PROP] (P Q : PROP) :
@@ -598,7 +593,7 @@ instance (priority := default + 30) fromAssumptionIntuitionisticallyR [BI PROP] 
 where
   from_assumption := by
     rw' [← (FromAssumption.from_assumption : □?true P ⊢ Q)]
-    show □ P ⊢ □ □ P
+    simp only [bi_intuitionistically_if, ite_true]
     rw' [intuitionistically_idemp]
 
 instance (priority := default + 20) fromAssumptionAbsorbinglyR (p : Bool) [BI PROP] (P Q : PROP) :
@@ -632,9 +627,10 @@ instance (priority := default + 30) FromAssumptionPersistentlyLTrue [BI PROP] (P
   FromAssumption true `[iprop| <pers> P] Q
 where
   from_assumption := by
-    rw' [← (FromAssumption.from_assumption : □?true P ⊢ Q)]
     simp only [bi_intuitionistically_if]
-    rw' [intuitionistically_persistently_elim]
+    rw' [
+      ← (FromAssumption.from_assumption : □?true P ⊢ Q),
+      intuitionistically_persistently_elim]
 
 instance (priority := default + 30) fromAssumptionPersistentlyLFalse [BIAffine PROP] (P Q : PROP) :
   [FromAssumption true P Q] →
@@ -730,9 +726,7 @@ instance intoPureAbsorbingly [BI PROP] (P : PROP) (φ : Prop) :
   IntoPure `[iprop| <absorb> P] φ
 where
   into_pure := by
-    rw' [(IntoPure.into_pure : P ⊢ _)]
-    show <absorb> ⌜φ⌝ ⊢ ⌜φ⌝
-    rw' [absorbingly_pure]
+    rw' [(IntoPure.into_pure : P ⊢ _), absorbingly_pure]
 
 instance intoPurePersistently [BI PROP] (P : PROP) (φ : Prop) :
   [IntoPure P φ] →
@@ -753,7 +747,7 @@ instance fromPurePure [BI PROP] (φ : Prop) :
   FromPure (PROP := PROP) false `[iprop| ⌜φ⌝] φ
 where
   from_pure := by
-    simp
+    simp [bi_affinely_if]
 
 instance fromPurePureAnd (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
   [FromPure a1 P1 φ1] →
@@ -766,7 +760,7 @@ where
       ← (FromPure.from_pure : _ ⊢ P1),
       ← (FromPure.from_pure : _ ⊢ P2),
       affinely_if_and]
-    apply monotonicity_binary
+    apply and_mono
     <;> apply affinely_if_flag_mono
     <;> simp_all
 
@@ -781,7 +775,7 @@ where
       ← (FromPure.from_pure : _ ⊢ P1),
       ← (FromPure.from_pure : _ ⊢ P2),
       affinely_if_or]
-    apply monotonicity_binary
+    apply or_mono
     <;> apply affinely_if_flag_mono
     <;> simp_all
 
@@ -862,8 +856,11 @@ instance fromPurePersistently [BI PROP] (P : PROP) (a : Bool) (φ : Prop) :
   FromPure a `[iprop| <pers> P] φ
 where
   from_pure := by
+    rw' [← FromPure.from_pure]
+    conv =>
+      rhs
+      simp only [bi_affinely_if, ite_true]
     rw' [
-      ← FromPure.from_pure,
       persistently_affinely_elim,
       affinely_if_elim,
       persistently_pure]
@@ -875,20 +872,20 @@ where
   from_pure := by
     rw' [
       ← (FromPure.from_pure : _ ⊢ P),
-      ← affinely_affinely_if]
-    show <affine> ⌜φ⌝ ⊢ <affine> <affine> ⌜φ⌝
-    rw' [affinely_idemp]
+      ← affinely_affinely_if,
+      affinely_idemp]
 
 instance fromPureIntuitionisticallyTrue (a : Bool) [BI PROP] (P : PROP) (φ : Prop) :
   [FromPure a P φ] →
   FromPure true `[iprop| □ P] φ
 where
   from_pure := by
-    rw' [← (FromPure.from_pure : _ ⊢ P)]
-    show <affine> ⌜φ⌝ ⊢ □ <affine>?a ⌜φ⌝
-    rw' [← intuitionistically_affinely_elim, ← affinely_affinely_if]
-    show <affine> ⌜φ⌝ ⊢ □ (<affine> <affine> ⌜φ⌝)
-    rw' [affinely_idemp, intuitionistic_intuitionistically]
+    rw' [
+      ← (FromPure.from_pure : _ ⊢ P),
+      ← intuitionistically_affinely_elim,
+      ← affinely_affinely_if,
+      affinely_idemp,
+      intuitionistic_intuitionistically]
 
 instance fromPureAbsorbingly (a : Bool) [BI PROP] (P : PROP) (φ : Prop) :
   [FromPure a P φ] →
