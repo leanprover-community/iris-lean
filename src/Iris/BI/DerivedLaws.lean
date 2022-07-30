@@ -1,3 +1,4 @@
+import Iris.BI.BigOp
 import Iris.BI.Classes
 import Iris.BI.Extensions
 import Iris.BI.Interface
@@ -298,6 +299,9 @@ theorem sep_or_l [BI PROP] {P Q R : PROP} : P ∗ (Q ∨ R) ⊣⊢ (P ∗ Q) ∨
     · rw' [← or_intro_l]
     · rw' [← or_intro_r]
 
+theorem sep_or_r [BI PROP] {P Q R : PROP} : (P ∨ Q) ∗ R ⊣⊢ (P ∗ R) ∨ (Q ∗ R) := by
+  rw' [!(comm : _ ∗ R ⊣⊢ _), sep_or_l]
+
 theorem sep_exist_l [BI PROP] {P : PROP} {Ψ : α → PROP} : P ∗ (∃ a, Ψ a) ⊣⊢ ∃ a, P ∗ Ψ a := by
   apply anti_symm
   case left =>
@@ -356,6 +360,24 @@ theorem pure_mono {φ1 φ2 : Prop} [BI PROP] : (φ1 → φ2) → ⌜φ1⌝ ⊢ (
   intro H1
   apply pure_intro
   exact H12 H1
+
+theorem pure_elim_l {φ : Prop} [BI PROP] {Q R : PROP} : (φ → Q ⊢ R) → ⌜φ⌝ ∧ Q ⊢ R := by
+  intro H
+  apply pure_elim φ
+  · exact and_elim_l
+  · intro Hφ
+    rw' [H Hφ]
+    exact and_elim_r
+
+theorem pure_True {φ : Prop} [BI PROP] : φ → ⌜φ⌝ ⊣⊢ (True : PROP) := by
+  intro Hφ
+  apply anti_symm
+  case left =>
+    apply pure_intro
+    exact True.intro
+  case right =>
+    apply pure_intro
+    exact Hφ
 
 theorem pure_and {φ1 φ2 : Prop} [BI PROP] : ⌜φ1 ∧ φ2⌝ ⊣⊢ ⌜φ1⌝ ∧ (⌜φ2⌝ : PROP) := by
   apply anti_symm
@@ -436,6 +458,10 @@ theorem affinely_idemp [BI PROP] {P : PROP} : <affine> <affine> P ⊣⊢ <affine
     (assoc : emp ∧ emp ∧ _ ⊣⊢ _),
     (idemp : emp ∧ emp ⊣⊢ _)]
 
+theorem affinely_emp [BI PROP] : <affine> emp ⊣⊢ (emp : PROP) := by
+  simp only [bi_affinely]
+  exact idemp
+
 theorem affinely_or [BI PROP] {P Q : PROP} : <affine> (P ∨ Q) ⊣⊢ <affine> P ∨ <affine> Q := by
   exact and_or_l
 
@@ -464,6 +490,14 @@ theorem affinely_forall [BI PROP] {Φ : α → PROP} : <affine> (∀ a, Φ a) �
 
 theorem affinely_exist [BI PROP] {Φ : α → PROP} : <affine> (∃ a, Φ a) ⊣⊢ ∃ a, <affine> (Φ a) := by
   exact and_exist_l
+
+theorem affinely_True_emp [BI PROP] : <affine> True ⊣⊢ <affine> (emp : PROP) := by
+  apply anti_symm
+  <;> simp only [bi_affinely]
+  · apply and_intro
+    <;> exact and_elim_l
+  · rw' [(right_id : _ ∧ True ⊣⊢ _)]
+    exact and_elim_l
 
 theorem affinely_and_l [BI PROP] {P Q : PROP} : <affine> P ∧ Q ⊣⊢ <affine> (P ∧ Q) := by
   simp only [bi_affinely]
@@ -553,6 +587,9 @@ theorem absorbingly_sep_l [BI PROP] {P Q : PROP} : <absorb> P ∗ Q ⊣⊢ <abso
 theorem absorbingly_sep_r [BI PROP] {P Q : PROP} : P ∗ <absorb> Q ⊣⊢ <absorb> (P ∗ Q) := by
   simp only [bi_absorbingly]
   rw' [!(assoc : _ ⊣⊢ _ ∗ Q), (comm : P ∗ True ⊣⊢ _)]
+
+theorem absorbingly_sep_lr [BI PROP] {P Q : PROP} : <absorb> P ∗ Q ⊣⊢ P ∗ <absorb> Q := by
+  rw' [absorbingly_sep_l, absorbingly_sep_r]
 
 -- Affine / Absorbing Propositions
 theorem affine_affinely [BI PROP] {P : PROP} [Affine P] : <affine> P ⊣⊢ P := by
@@ -754,6 +791,19 @@ theorem persistently_sep_2 [BI PROP] {P Q : PROP} : <pers> P ∗ <pers> Q ⊢ <p
 theorem intuitionistically_elim [BI PROP] {P : PROP} : □ P ⊢ P := by
   exact persistently_and_emp_elim
 
+theorem intuitionistically_emp [BI PROP] : □ emp ⊣⊢ (emp : PROP) := by
+  simp only [bi_intuitionistically]
+  rw' [
+    ← persistently_True_emp,
+    persistently_pure,
+    affinely_True_emp,
+    affinely_emp]
+
+theorem intuitionistically_True_emp [BI PROP] : □ True ⊣⊢ (emp : PROP) := by
+  rw' [← intuitionistically_emp]
+  simp only [bi_intuitionistically]
+  rw' [persistently_True_emp]
+
 theorem intuitionistically_and [BI PROP] {P Q : PROP} : □ (P ∧ Q) ⊣⊢ □ P ∧ □ Q := by
   simp only [bi_intuitionistically]
   rw' [persistently_and, affinely_and]
@@ -864,6 +914,12 @@ theorem affinely_if_exist {p : Bool} [BI PROP] {Ψ : α → PROP} : <affine>?p (
   cases p
   <;> simp [bi_affinely_if, affinely_exist]
 
+theorem affinely_if_intro_False [BI PROP] (P : PROP) : P ⊣⊢ <affine>?false P := by
+  simp [bi_affinely_if]
+
+theorem affinely_if_intro_True [BI PROP] (P : PROP) : <affine> P ⊣⊢ <affine>?true P := by
+  simp [bi_affinely_if]
+
 -- Conditional Absorbing
 @[rwMonoRule]
 theorem absorbingly_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <absorb>?p P ⊢ <absorb>?p Q := by
@@ -882,6 +938,12 @@ theorem persistently_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <
   revert H
   exact persistently_mono
 
+theorem persistently_if_intro_False [BI PROP] (P : PROP) : P ⊣⊢ <pers>?false P := by
+  simp [bi_persistently_if]
+
+theorem persistently_if_intro_True [BI PROP] (P : PROP) : <pers> P ⊣⊢ <pers>?true P := by
+  simp [bi_persistently_if]
+
 -- Conditional Intuitionistic
 @[rwMonoRule]
 theorem intuitionistically_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → □?p P ⊢ □?p Q := by
@@ -898,6 +960,14 @@ theorem intuitionistically_if_elim {p : Bool} [BI PROP] {P : PROP} : □?p P ⊢
 theorem intuitionistically_if_and {p : Bool} [BI PROP] {P Q : PROP} : □?p (P ∧ Q) ⊣⊢ □?p P ∧ □?p Q := by
   cases p
   <;> simp [bi_intuitionistically_if, intuitionistically_and]
+
+theorem intuitionistically_if_or (p : Bool) [BI PROP] {P Q : PROP} : □?p (P ∨ Q) ⊣⊢ □?p P ∨ □?p Q := by
+  cases p
+  <;> simp [bi_intuitionistically_if]
+  rw' [intuitionistically_or]
+
+theorem intuitionistically_if_intro_True [BI PROP] (P : PROP) : □ P ⊣⊢ □?true P := by
+  simp [bi_intuitionistically_if]
 
 -- Persistent Propositions
 theorem persistent_persistently_2 [BI PROP] {P : PROP} [Persistent P] : P ⊢ <pers> P := by
@@ -962,5 +1032,18 @@ theorem persistent_absorbingly_affinely_2 [BI PROP] {P : PROP} [Persistent P] : 
     persistent,
     ← absorbingly_intuitionistically_into_persistently,
     intuitionistically_affinely]
+
+-- Big Op
+theorem big_sepL_nil [BI PROP] : [∗] `[term| []] ⊣⊢ (emp : PROP) := by
+  simp only [big_op, List.foldr1]
+
+theorem big_sepL_cons [BI PROP] {P : PROP} {Ps : List PROP} : [∗] `[term| P :: Ps] ⊣⊢ P ∗ [∗] `[term| Ps] := by
+  simp only [big_op]
+  cases Ps
+  case nil =>
+    simp only [List.foldr1]
+    rw' [(right_id : _ ∗ emp ⊣⊢ _)]
+  case cons =>
+    rfl
 
 end Iris.BI

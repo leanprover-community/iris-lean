@@ -44,7 +44,7 @@ elab "istop_proof" : tactic => do
 
   -- reduce proof mode definitions
   try evalTactic (← `(tactic|
-    simp only [envs_entails, of_envs] ;
+    refine tac_stop _ ?_ ;
     simp only [big_op, List.foldr1]
   ))
   catch _ => throwError "unable to stop proof mode"
@@ -432,9 +432,10 @@ elab "isplit" side:splitSide "[" names:ident,* "]" : tactic => do
     mask := mask.map (!·)
 
   -- split conjunction
+  let h_length_eq ← `(by show $(quote mask.length) = $(quote lₛ) ; decide)
   try evalTactic (← `(tactic|
     first
-    | refine tac_sep_split $(quote mask) _ ?Sep.left ?Sep.right
+    | refine tac_sep_split $(quote mask) $h_length_eq _ ?Sep.left ?Sep.right
     | fail
   ))
   catch _ => throwError "unable to split separating conjunction"
