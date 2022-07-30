@@ -1,20 +1,21 @@
 import Iris.BI.Interface
 import Iris.BI.Notation
-import Iris.Std.List
 
 namespace Iris.BI
 
-def big_op [BIBase PROP] (ps : List PROP) (f : PROP → PROP → PROP) (unit : PROP) : PROP :=
-  ps.foldr1 f (fun _ => unit)
+def big_op [BIBase PROP] (f : PROP → PROP → PROP) (unit : PROP) : List PROP → PROP
+  | []      => unit
+  | [P]     => P
+  | P :: Ps => f P (big_op f unit Ps)
 
 syntax:40 "[∧] " term:max : term
 syntax:40 "[∨] " term:max : term
 syntax:40 "[∗] " term:max : term
 
 macro_rules
-  | `(`[iprop| [∧] $Ps]) => `(big_op `[iprop| $Ps] BIBase.and `[iprop| True])
-  | `(`[iprop| [∨] $Ps]) => `(big_op `[iprop| $Ps] BIBase.or `[iprop| False])
-  | `(`[iprop| [∗] $Ps]) => `(big_op `[iprop| $Ps] BIBase.sep `[iprop| emp])
+  | `(`[iprop| [∧] $Ps]) => `(big_op BIBase.and `[iprop| True] `[iprop| $Ps])
+  | `(`[iprop| [∨] $Ps]) => `(big_op BIBase.or `[iprop| False] `[iprop| $Ps])
+  | `(`[iprop| [∗] $Ps]) => `(big_op BIBase.sep `[iprop| emp] `[iprop| $Ps])
 
 delab_rule big_op
   | `($_ $Ps BIBase.and `[iprop| True])  => do `(`[iprop| [∧] $(← unpackIprop Ps)])

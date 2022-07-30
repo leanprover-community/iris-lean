@@ -18,7 +18,7 @@ theorem tac_start [BI PROP] (P : PROP) :
   envs_entails ⟨.nil, .nil⟩ P →
   ⊢ P
 := by
-  simp only [envs_entails, of_envs, big_op, List.foldr1]
+  simp only [envs_entails, of_envs, big_op]
   rw' [intuitionistically_True_emp, (left_id : emp ∗ _ ⊣⊢ _)]
   intro h
   exact h
@@ -35,7 +35,7 @@ theorem tac_stop [BI PROP] {Γₚ Γₛ : Env PROP} (P : PROP) :
   cases Γₚ
   <;> cases Γₛ
   all_goals
-    simp [envs_entails, of_envs, big_op, List.foldr1]
+    simp [envs_entails, of_envs, big_op]
     intro Ps
     rw' [Ps]
   case cons.nil =>

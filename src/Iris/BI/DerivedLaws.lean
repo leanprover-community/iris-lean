@@ -1035,15 +1035,11 @@ theorem persistent_absorbingly_affinely_2 [BI PROP] {P : PROP} [Persistent P] : 
 
 -- Big Op
 theorem big_sepL_nil [BI PROP] : [∗] `[term| []] ⊣⊢ (emp : PROP) := by
-  simp only [big_op, List.foldr1]
+  simp only [big_op]
 
 theorem big_sepL_cons [BI PROP] {P : PROP} {Ps : List PROP} : [∗] `[term| P :: Ps] ⊣⊢ P ∗ [∗] `[term| Ps] := by
-  simp only [big_op]
   cases Ps
-  case nil =>
-    simp only [List.foldr1]
-    rw' [(right_id : _ ∗ emp ⊣⊢ _)]
-  case cons =>
-    rfl
+  <;> simp only [big_op]
+  rw' [(right_id : _ ∗ emp ⊣⊢ _)]
 
 end Iris.BI
