@@ -22,10 +22,10 @@ abbrev delab := Lean.PrettyPrinter.delab
 
 @[delab app.Iris.Proofmode.envs_entails]
 def delabEnvsEntails : Delab := do
-  let expr ← (← getExpr) |> instantiateMVars
+  let expr ← instantiateMVars <| ← getExpr
 
   -- extract environment
-  let some (Γₚ, Γₛ, P) := extractEnvsEntails? expr
+  let some (Γₚ, Γₛ, P) ← extractEnvsEntails? expr
     | failure
 
   let some Γₚ ← extractHypotheses? Γₚ
@@ -58,7 +58,7 @@ where
       hs?.mapM fun hs =>
       hs.mapM fun h => do
         let name := h.getMDataName?
-        let h ← withTransparency (mode := .reducible) <| reduce h
+        let h ← withReducible <| reduce h
         return (name, h)
     return hs?.map (·.toArray)
 

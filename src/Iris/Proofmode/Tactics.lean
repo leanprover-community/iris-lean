@@ -19,10 +19,10 @@ elab "istart_proof" : tactic => do
   -- parse goal
   let goal :: _ ← getUnsolvedGoals
     | throwNoGoalsToBeSolved
-  let expr ← (← getMVarType goal) |> instantiateMVars
+  let expr ← instantiateMVars <| ← getMVarType goal
 
   -- check if already in proof mode
-  if isEnvsEntails expr then
+  if ← isEnvsEntails expr then
     return ()
 
   -- create environment
@@ -36,10 +36,10 @@ elab "istop_proof" : tactic => do
   -- parse goal
   let goal :: _ ← getUnsolvedGoals
     | throwNoGoalsToBeSolved
-  let expr ← (← getMVarType goal) |> instantiateMVars
+  let expr ← instantiateMVars <| ← getMVarType goal
 
   -- check if already in proof mode
-  if !isEnvsEntails expr then
+  if !(← isEnvsEntails expr) then
     throwError "not in proof mode"
 
   -- reduce proof mode definitions
@@ -58,9 +58,9 @@ private def extractEnvsEntailsFromGoal (startProofMode : Bool := false) : Tactic
 
   let goal :: _ ← getUnsolvedGoals
     | throwNoGoalsToBeSolved
-  let expr ← (← getMVarType goal) |> instantiateMVars
+  let expr ← instantiateMVars <| ← getMVarType goal
 
-  let some envsEntails := extractEnvsEntails? expr
+  let some envsEntails ← extractEnvsEntails? expr
     | throwError "not in proof mode"
 
   return envsEntails
@@ -83,9 +83,9 @@ def Internal.irenameCore (hypIndex : HypothesisIndex) (name : Name) : TacticM Un
   -- parse goal
   let goal :: _ ← getUnsolvedGoals
     | throwNoGoalsToBeSolved
-  let expr ← (← getMVarType goal) |> instantiateMVars
+  let expr ← instantiateMVars <| ← getMVarType goal
 
-  let some (Γₚ, Γₛ, _) := extractEnvsEntails? expr
+  let some (Γₚ, Γₛ, _) ← extractEnvsEntails? expr
     | throwError "not in proof mode"
 
   let modifyHypothesis (Γ : Expr) (idx : Nat) : TacticM Expr := do
@@ -116,7 +116,7 @@ def Internal.irenameCore (hypIndex : HypothesisIndex) (name : Name) : TacticM Un
       pure (Γₚ, ← modifyHypothesis Γₛ index)
 
   -- update goal
-  let some expr := modifyEnvsEntails? expr Γₚ Γₛ none
+  let some expr ← modifyEnvsEntails? expr Γₚ Γₛ none
     | throwError "ill-formed proof environment"
 
   setMVarType goal expr
@@ -243,9 +243,9 @@ elab "iassumption_lean" : tactic => do
     let (name, type) := (h.userName, ← instantiateMVars h.type)
 
     -- match on `⊢ Q`
-    let some (P, _) := extractEntails? type
+    let some (P, _) ← extractEntails? type
       | continue
-    if !isEmp P then
+    if !(← isEmp P) then
       continue
 
     -- try to solve the goal
