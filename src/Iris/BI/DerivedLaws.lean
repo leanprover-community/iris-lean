@@ -430,14 +430,6 @@ theorem affinely_mono [BI PROP] {P Q : PROP} : (P ⊢ Q) → <affine> P ⊢ <aff
   simp only [bi_affinely]
   rw' [H]
 
-@[rwMonoRule]
-theorem affinely_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <affine>?p P ⊢ <affine>?p Q := by
-  intro H
-  cases p
-  <;> simp [bi_affinely_if, H]
-  revert H
-  exact affinely_mono
-
 theorem affinely_idemp [BI PROP] {P : PROP} : <affine> <affine> P ⊣⊢ <affine> P := by
   simp only [bi_affinely]
   rw' [
@@ -496,14 +488,6 @@ theorem absorbingly_mono [BI PROP] {P Q : PROP} : (P ⊢ Q) → <absorb> P ⊢ <
   intro H
   simp only [bi_absorbingly]
   rw' [H]
-
-@[rwMonoRule]
-theorem absorbingly_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <absorb>?p P ⊢ <absorb>?p Q := by
-  intro H
-  cases p
-  <;> simp [bi_absorbingly_if, H]
-  revert H
-  exact absorbingly_mono
 
 theorem absorbingly_idemp [BI PROP] {P : PROP} : <absorb> <absorb> P ⊣⊢ <absorb> P := by
   apply anti_symm
@@ -606,14 +590,6 @@ theorem sep_and [BI PROP] {P Q : PROP} [inst1 : TCOr (Affine P) (Absorbing Q)] [
   <;> first | exact sep_elim_l | exact sep_elim_r
 
 -- Persistent
-@[rwMonoRule]
-theorem persistently_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <pers>?p P ⊢ <pers>?p Q := by
-  intro H
-  cases p
-  <;> simp [bi_persistently_if, H]
-  revert H
-  exact persistently_mono
-
 theorem absorbingly_elim_persistently [BI PROP] {P : PROP} : <absorb> <pers> P ⊣⊢ <pers> P := by
   apply anti_symm
   case left =>
@@ -799,14 +775,6 @@ theorem intuitionistically_mono [BI PROP] {P Q : PROP} : (P ⊢ Q) → □ P ⊢
   simp only [bi_intuitionistically]
   rw' [H]
 
-@[rwMonoRule]
-theorem intuitionistically_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → □?p P ⊢ □?p Q := by
-  intro H
-  cases p
-  <;> simp [bi_intuitionistically_if, H]
-  revert H
-  exact intuitionistically_mono
-
 theorem intuitionistically_idemp [BI PROP] {P : PROP} : □ □ P ⊣⊢ □ P := by
   simp only [bi_intuitionistically]
   rw' [persistently_affinely_elim, persistently_idemp]
@@ -858,11 +826,19 @@ theorem and_sep_intuitionistically [BI PROP] {P Q : PROP} : □ P ∧ □ Q ⊣�
   simp only [bi_intuitionistically]
   rw'[← affinely_and, affinely_and_r]
 
--- Intuitionistic Affine
+-- Intuitionistic BIAffine
 theorem intuitionistically_into_persistently [BIAffine PROP] {P : PROP} : □ P ⊣⊢ <pers> P := by
   exact affine_affinely
 
 -- Conditional Affine
+@[rwMonoRule]
+theorem affinely_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <affine>?p P ⊢ <affine>?p Q := by
+  intro H
+  cases p
+  <;> simp [bi_affinely_if, H]
+  revert H
+  exact affinely_mono
+
 theorem affinely_if_flag_mono {p q : Bool} [BI PROP] {P : PROP} : (q → p) → <affine>?p P ⊢ <affine>?q P := by
   cases p
   <;> cases q
@@ -888,7 +864,33 @@ theorem affinely_if_exist {p : Bool} [BI PROP] {Ψ : α → PROP} : <affine>?p (
   cases p
   <;> simp [bi_affinely_if, affinely_exist]
 
+-- Conditional Absorbing
+@[rwMonoRule]
+theorem absorbingly_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <absorb>?p P ⊢ <absorb>?p Q := by
+  intro H
+  cases p
+  <;> simp [bi_absorbingly_if, H]
+  revert H
+  exact absorbingly_mono
+
+-- Conditional Persistent
+@[rwMonoRule]
+theorem persistently_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <pers>?p P ⊢ <pers>?p Q := by
+  intro H
+  cases p
+  <;> simp [bi_persistently_if, H]
+  revert H
+  exact persistently_mono
+
 -- Conditional Intuitionistic
+@[rwMonoRule]
+theorem intuitionistically_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → □?p P ⊢ □?p Q := by
+  intro H
+  cases p
+  <;> simp [bi_intuitionistically_if, H]
+  revert H
+  exact intuitionistically_mono
+
 theorem intuitionistically_if_elim {p : Bool} [BI PROP] {P : PROP} : □?p P ⊢ P := by
   cases p
   <;> simp [bi_intuitionistically_if, intuitionistically_elim]
