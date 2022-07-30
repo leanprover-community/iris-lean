@@ -65,6 +65,7 @@ private def rewriteConventional (rule : TSyntax ``rwRule) : TacticM Bool := do
 
 private partial def rewriteTMR (direction : RewriteDirection) (rule : TSyntax `term) : TacticM Bool := do
   let goal ← getMainGoal
+  let tag ← getMVarTag goal
 
   -- apply transitivity
   let some (goalL, goalR) ← applyTransitivity goal
@@ -73,10 +74,10 @@ private partial def rewriteTMR (direction : RewriteDirection) (rule : TSyntax `t
   -- select the correct goal based on the rewrite direction
   let goal ← match direction with
     | .forward => do
-      setMVarTag goalR .anonymous
+      setMVarTag goalR tag
       pure goalL
     | .reverse => do
-      setMVarTag goalL .anonymous
+      setMVarTag goalL tag
       pure goalR
 
   -- try to rewrite with the given rule
