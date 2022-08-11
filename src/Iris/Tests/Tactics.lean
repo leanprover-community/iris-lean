@@ -484,5 +484,17 @@ theorem andClearIntuitionisticMultiple [BI PROP] (Q : PROP) : □ (P1 ∧ P2 ∧
   icases HPQ with ⟨_, _, HQ, _⟩
   iexact HQ
 
+theorem exist [BI PROP] (Q : Nat → PROP) : (∃ x, Q x) ⊢ ∃ x, Q x ∨ False := by
+  iintro ⟨x, H⟩
+  iexists x
+  ileft
+  iexact H
+
+theorem exist_intuitionistic [BI PROP] (Q : Nat → PROP) : □ (∃ x, Q x) ⊢ ∃ x, □ Q x ∨ False := by
+  iintro ⟨x, #H⟩
+  iexists x
+  ileft
+  iexact H
+
 end cases
 end Iris.Tests

@@ -462,6 +462,22 @@ elab "iright" : tactic => do
 
 
 mutual
+  private partial def Internal.icasesCoreExist (hypIndex : HypothesisIndex) (var : Name) (f : iCasesPat) : TacticM Unit := do
+    -- destruct existential quantifier
+    try evalTactic (← `(tactic|
+      first
+      | refine tac_exist_destruct $(← hypIndex.quoteAsEnvsIndex) _ ?_
+        intro $(mkIdent var):ident
+      | fail
+    )) catch _ => throwError "failed to destruct existential quantifier"
+
+    -- temporarily name hypothesis
+    let name ← mkFreshUserName `f
+    irenameCore { hypIndex with index := hypIndex.length - 1 } name
+
+    -- process pattern recursively
+    icasesCore name f
+
   private partial def Internal.icasesCoreConjunction (hypIndex : HypothesisIndex) (args : Array iCasesPat) : TacticM Unit := do
     if args.size < 2 then
       throwError "conjunction must contain at least two elements"
@@ -638,6 +654,10 @@ mutual
         throwError "empty constructor is not a valid icases pattern"
       else if let #[arg] := args then
         return ← icasesCore nameFrom arg
+      else if let #[.one var, f] := args then
+        try
+          return ← icasesCoreExist hypIndex var f
+        catch _ => pure ()
 
       icasesCoreConjunction hypIndex args
 

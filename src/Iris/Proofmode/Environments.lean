@@ -163,6 +163,10 @@ theorem envs_lookup_replace_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of �
   of_envs Δ ⊢ □?p P ∗ (□?q Q -∗ of_envs (Δ.replace i q Q))
 := sorry
 
+theorem envs_replace_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ} (p : Bool) (Q : PROP) :
+  of_envs (Δ.delete true i) ⊢ □?p Q -∗ of_envs (Δ.replace i p Q)
+:= sorry
+
 theorem envs_split_sound [BI PROP] {Δ Δ₁ Δ₂ : Envs PROP} {mask : List Bool} {h : mask.length = Δ.spatial.length} :
   Δ.split mask h = (Δ₁, Δ₂) →
   of_envs Δ ⊢ of_envs Δ₁ ∗ of_envs Δ₂

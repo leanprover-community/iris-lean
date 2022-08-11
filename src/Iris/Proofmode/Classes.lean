@@ -40,6 +40,10 @@ class FromExist [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α �
   from_exist : (∃ x, Φ x) ⊢ P
 export FromExist (from_exist)
 
+class IntoExist [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) where
+  into_exist : P ⊢ ∃ x, Φ x
+export IntoExist (into_exist)
+
 class FromAnd [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_and : Q1 ∧ Q2 ⊢ P
 export FromAnd (from_and)

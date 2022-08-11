@@ -210,6 +210,27 @@ theorem tac_exist [BI PROP] {Δ : Envs PROP} {Φ : α → PROP} (P : PROP) :
   intro _ ⟨a, h_entails⟩
   rw' [← from_exist, ← exist_intro a, h_entails]
 
+theorem tac_exist_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) {Φ : α → PROP} (Q : PROP) :
+  let (p, P) := Δ.lookup i
+  [IntoExist P Φ] →
+  (∀ a, envs_entails (Δ.replace i p (Φ a)) Q) →
+  envs_entails Δ Q
+:= by
+  intro_let p P h_lookup
+  simp only [envs_entails]
+  intro _ h_entails
+  rw' [
+    envs_lookup_delete_sound h_lookup,
+    into_exist,
+    intuitionistically_if_exist,
+    sep_exist_r] ; simp only
+  apply exist_elim
+  intro a
+  rw' [
+    envs_replace_sound p (Φ a),
+    wand_elim_r,
+    h_entails a]
+
 -- assumptions
 theorem tac_assumption_lean [BI PROP] {Δ : Envs PROP} {P : PROP} (Q : PROP) :
   (⊢ P) →

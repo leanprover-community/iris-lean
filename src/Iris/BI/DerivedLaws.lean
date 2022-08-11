@@ -315,6 +315,14 @@ theorem sep_exist_l [BI PROP] {P : PROP} {Ψ : α → PROP} : P ∗ (∃ a, Ψ a
     intro a
     rw' [(exist_intro _ : Ψ a ⊢ _)]
 
+theorem sep_exist_r [BI PROP] {Φ : α → PROP} {Q : PROP} : (∃ a, Φ a) ∗ Q ⊣⊢ ∃ a, Φ a ∗ Q := by
+  apply anti_symm
+  all_goals
+    rw' [(comm : _ ∗ Q ⊣⊢ _), sep_exist_l]
+    apply exist_mono
+    intro _
+    rw' [(comm : Q ∗ _ ⊣⊢ _)]
+
 theorem wand_iff_refl [BI PROP] {P : PROP} : ⊢ P ∗-∗ P := by
   apply and_intro
   <;> apply wand_intro_l
@@ -965,6 +973,10 @@ theorem intuitionistically_if_or (p : Bool) [BI PROP] {P Q : PROP} : □?p (P �
   cases p
   <;> simp [bi_intuitionistically_if]
   rw' [intuitionistically_or]
+
+theorem intuitionistically_if_exist {p : Bool} [BI PROP] {Ψ : α → PROP} : (□?p ∃ a, Ψ a) ⊣⊢ ∃ a, □?p Ψ a := by
+  cases p
+  <;> simp [bi_intuitionistically_if, intuitionistically_exist]
 
 theorem intuitionistically_if_intro_True [BI PROP] (P : PROP) : □ P ⊣⊢ □?true P := by
   simp [bi_intuitionistically_if]

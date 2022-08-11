@@ -93,6 +93,47 @@ where
   from_exist := by
     rw' [← FromExist.from_exist, ← persistently_exist]
 
+-- IntoExist
+instance into_exist_exist [BI PROP] (Φ : α → PROP) :
+  IntoExist (BIBase.exists Φ) Φ
+where
+  into_exist := by
+    simp
+
+instance into_exist_pure (φ : α → Prop) [BI PROP] :
+  IntoExist (PROP := PROP) `[iprop| ⌜∃ x, φ x⌝] (fun a => `[iprop| ⌜φ a⌝])
+where
+  into_exist := by
+    rw' [pure_exist]
+
+instance into_exist_affinely [BI PROP] (P : PROP) (Φ : α → PROP) :
+  [IntoExist P Φ] →
+  IntoExist `[iprop| <affine> P] (fun a => `[iprop| <affine> (Φ a)])
+where
+  into_exist := by
+    rw' [← affinely_exist, into_exist]
+
+instance into_exist_intuitionistically [BI PROP] (P : PROP) (Φ : α → PROP) :
+  [IntoExist P Φ] →
+  IntoExist `[iprop| □ P] (fun a => `[iprop| □ (Φ a)])
+where
+  into_exist := by
+    rw' [← intuitionistically_exist, into_exist]
+
+instance into_exist_absorbingly [BI PROP] (P : PROP) (Φ : α → PROP) :
+  [IntoExist P Φ] →
+  IntoExist `[iprop| <absorb> P] (fun a => `[iprop| <absorb> (Φ a)])
+where
+  into_exist := by
+    rw' [← absorbingly_exist, into_exist]
+
+instance into_exist_persistently [BI PROP] {P : PROP} (Φ : α → PROP) :
+  [IntoExist P Φ] →
+  IntoExist `[iprop| <pers> P] (fun a => `[iprop| <pers> (Φ a)])
+where
+  into_exist := by
+    rw' [← persistently_exist, into_exist]
+
 -- FromAnd
 instance (priority := default - 10) fromAndAnd [BI PROP] (P1 P2 : PROP) :
   FromAnd `[iprop| P1 ∧ P2] P1 P2
