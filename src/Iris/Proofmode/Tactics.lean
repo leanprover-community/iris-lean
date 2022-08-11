@@ -479,25 +479,20 @@ mutual
     icasesCore name f
 
   private partial def Internal.icasesCoreConjunction (hypIndex : HypothesisIndex) (args : Array iCasesPat) : TacticM Unit := do
-    if args.size < 2 then
+    if h : args.size < 2 then
       throwError "conjunction must contain at least two elements"
+    else
+    -- proof that `args` is non-empty
+    have : 0 < args.size := by
+      rw [Nat.not_lt_eq] at h
+      let h := Nat.lt_of_succ_le h
+      exact Nat.zero_lt_of_lt h
 
     -- destruct hypothesis with multiple conjunctions
-    let mut remainingArguments := #[(.anonymous, args[0]!)]
+    let mut remainingArguments := #[(.anonymous, args[0])]
     let mut hypIndex := hypIndex
-    for i in [:args.size - 1] do
-      -- destruct hypothesis and clear one side if requested
-      let (h, ra) ← (do
-        if args[i]! matches .clear then
-          if let some result ← destructRight hypIndex args[i + 1]! then
-            return result
-        else if i + 1 == args.size - 1 && args[i + 1]! matches .clear then
-          if let some result ← destructLeft hypIndex args[i]! then
-            return result
-
-        let some result ← destruct hypIndex args[i]! args[i + 1]!
-          | throwError "failed to destruct conjunction"
-        return result)
+    for h : i in [:args.size - 1] do
+      let (h, ra) ← destructChoice hypIndex args ⟨i, h.upper⟩
 
       -- update hypothesis index and collect remaining arguments
       hypIndex := h
@@ -517,6 +512,22 @@ mutual
       -- restore all introduced goals
       setGoals goals
   where
+    destructChoice (hypIndex : HypothesisIndex) (args : Array iCasesPat) (i : Fin (args.size - 1)) : TacticM <| HypothesisIndex × (Array <| Name × iCasesPat) := do
+      have : i + 1 < args.size := Nat.add_lt_of_lt_sub i.isLt
+      have : i     < args.size := Nat.lt_of_succ_lt this
+
+      -- destruct hypothesis and clear one side if requested
+      if args[i] matches .clear then
+        if let some result ← destructRight hypIndex args[i.val + 1] then
+          return result
+      else if i + 1 == args.size - 1 && args[i.val + 1] matches .clear then
+        if let some result ← destructLeft hypIndex args[i] then
+          return result
+
+      let some result ← destruct hypIndex args[i] args[i.val + 1]
+        | throwError "failed to destruct conjunction"
+      return result
+
     destructRight (hypIndex : HypothesisIndex) (argR : iCasesPat) : TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
       -- destruct hypothesis
       try evalTactic (← `(tactic|
