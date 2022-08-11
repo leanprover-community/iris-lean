@@ -95,7 +95,7 @@ where
 
 -- IntoExist
 instance into_exist_exist [BI PROP] (Φ : α → PROP) :
-  IntoExist (BIBase.exists Φ) Φ
+  IntoExist (BIBase.exist Φ) Φ
 where
   into_exist := by
     simp

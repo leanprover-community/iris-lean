@@ -15,7 +15,7 @@ class BIBase (car : Type) where
   or : car → car → car
   impl : car → car → car
   «forall» {α : Type} : (α → car) → car
-  «exists» {α : Type} : (α → car) → car
+  exist {α : Type} : (α → car) → car
   sep : car → car → car
   wand : car → car → car
   persistently : car → car
@@ -43,7 +43,7 @@ macro_rules
   | `(`[iprop| $P ∨ $Q])   => `(BIBase.or `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| $P → $Q])   => `(BIBase.impl `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| ∀ $xs, $Ψ]) => do expandExplicitBinders ``BIBase.forall xs (← `(`[iprop| $Ψ]))
-  | `(`[iprop| ∃ $xs, $Ψ]) => do expandExplicitBinders ``BIBase.exists xs (← `(`[iprop| $Ψ]))
+  | `(`[iprop| ∃ $xs, $Ψ]) => do expandExplicitBinders ``BIBase.exist xs (← `(`[iprop| $Ψ]))
   | `(`[iprop| $P ∗ $Q])   => `(BIBase.sep `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| $P -∗ $Q])  => `(BIBase.wand `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| <pers> $P]) => `(BIBase.persistently `[iprop| $P])
@@ -76,7 +76,7 @@ delab_rule BIBase.impl
 delab_rule BIBase.forall
   | `($_ fun $x:ident => `[iprop| ∀ $y:ident $[$z:ident]*, $Ψ]) => do `(`[iprop| ∀ $x:ident $y:ident $[$z:ident]*, $Ψ])
   | `($_ fun $x:ident => $Ψ) => do `(`[iprop| ∀ $x:ident, $(← unpackIprop Ψ)])
-delab_rule BIBase.exists
+delab_rule BIBase.exist
   | `($_ fun $x:ident => `[iprop| ∃ $y:ident $[$z:ident]*, $Ψ]) => do `(`[iprop| ∃ $x:ident $y:ident $[$z:ident]*, $Ψ])
   | `($_ fun $x:ident => $Ψ) => do `(`[iprop| ∃ $x:ident, $(← unpackIprop Ψ)])
 delab_rule BIBase.sep
