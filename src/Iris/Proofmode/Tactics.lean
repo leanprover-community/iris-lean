@@ -17,7 +17,7 @@ namespace Internal
 end Internal
 open Internal
 
-elab "istart_proof" : tactic => do
+elab "istart" : tactic => do
   -- parse goal
   let goal :: _ ← getUnsolvedGoals
     | throwNoGoalsToBeSolved
@@ -34,7 +34,7 @@ elab "istart_proof" : tactic => do
   ))
   catch _ => throwError "unable to start proof mode"
 
-elab "istop_proof" : tactic => do
+elab "istop" : tactic => do
   -- parse goal
   let goal :: _ ← getUnsolvedGoals
     | throwNoGoalsToBeSolved
@@ -55,7 +55,7 @@ elab "istop_proof" : tactic => do
 private def extractEnvsEntailsFromGoal (startProofMode : Bool := false) : TacticM <| Expr × Expr × Expr := do
   if startProofMode then
     evalTactic (← `(tactic|
-      istart_proof
+      istart
     ))
 
   let goal :: _ ← getUnsolvedGoals
@@ -148,7 +148,7 @@ def Internal.iintroCoreClear : TacticM Unit := do
   -- drop implication premise
   try evalTactic (← `(tactic|
     first
-    | istart_proof
+    | istart
       refine tac_impl_intro_drop _ ?_
     | fail
   )) catch _ => throwError "failed to drop implication hypothesis"
@@ -157,7 +157,7 @@ def Internal.iintroCoreForall (name : Name) : TacticM Unit := do
   -- introduce universally bound variable
   try evalTactic (← `(tactic|
     first
-    | istart_proof
+    | istart
       refine tac_forall_intro _ ?_
       intro $(mkIdent name):ident
     | fail
@@ -168,9 +168,9 @@ def Internal.iintroCoreForall (name : Name) : TacticM Unit := do
 elab "iexists" x:term : tactic => do
   -- resolve existential quantifier with the given argument
   try evalTactic (← `(tactic|
+    istart ;
     first
-    | istart_proof
-      refine tac_exist _ ?_
+    | refine tac_exist _ ?_
       apply Exists.intro $x
     | fail
   )) catch _ => throwError "could not resolve existential quantifier"
@@ -336,9 +336,9 @@ elab "ispatial" colGt name:ident : tactic => do
 elab "ipure_intro" : tactic => do
   -- change into Lean goal
   try evalTactic (← `(tactic|
+    istart ;
     first
-    | istart_proof
-      refine tac_pure_intro _ ?_
+    | refine tac_pure_intro _ ?_
     | fail
   )) catch _ => throwError "goal is not pure"
 
@@ -346,7 +346,7 @@ elab "ipure_intro" : tactic => do
 elab "isplit" : tactic => do
   -- start proof mode if not already
   evalTactic (← `(tactic|
-    istart_proof
+    istart
   ))
 
   -- split conjunction
@@ -407,6 +407,7 @@ macro "isplit" &"r" : tactic => `(tactic| isplit l [])
 elab "ileft" : tactic => do
   -- choose left side of disjunction
   try evalTactic (← `(tactic|
+    istart ;
     first
     | refine tac_disjunction_l _ ?_
     | fail
@@ -415,6 +416,7 @@ elab "ileft" : tactic => do
 elab "iright" : tactic => do
   -- choose right side of disjunction
   try evalTactic (← `(tactic|
+    istart ;
     first
     | refine tac_disjunction_r _ ?_
     | fail

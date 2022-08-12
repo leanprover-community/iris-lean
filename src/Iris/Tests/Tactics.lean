@@ -6,9 +6,9 @@ open Iris.BI
 
 -- start stop
 theorem startStop [BI PROP] (Q : PROP) (H : Q ⊢ Q) : Q ⊢ Q := by
-  istart_proof
+  istart
   iintro HQ
-  istop_proof
+  istop
   exact H
 
 -- rename
@@ -171,7 +171,7 @@ theorem false [BI PROP] (P : PROP) : □ P ⊢ False -∗ Q := by
   iexact HF
 
 theorem pure [BI PROP] (P : PROP) (HF : False) : ⊢ P := by
-  istart_proof
+  istart
   iex_falso
   ipure_intro
   exact HF
