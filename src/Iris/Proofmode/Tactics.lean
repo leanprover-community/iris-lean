@@ -333,6 +333,15 @@ elab "ispatial" colGt name:ident : tactic => do
   irenameCore ⟨.spatial, lₛ - 1, lₛ⟩ name
 
 
+elab "iemp_intro" : tactic => do
+  -- solve `emp`
+  try evalTactic (← `(tactic|
+    istart ;
+    first
+    | refine tac_emp_intro
+    | fail
+  )) catch _ => throwError "goal is not `emp` or spatial context is not affine"
+
 elab "ipure_intro" : tactic => do
   -- change into Lean goal
   try evalTactic (← `(tactic|

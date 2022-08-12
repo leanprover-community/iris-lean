@@ -231,6 +231,18 @@ theorem tac_exist_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) {Φ 
     wand_elim_r,
     h_entails a]
 
+-- emp
+theorem tac_emp_intro [BI PROP] {Γₚ Γₛ : Env PROP} :
+  [AffineEnv Γₛ] →
+  envs_entails ⟨Γₚ, Γₛ⟩ `[iprop| emp]
+:= by
+  intro _
+  simp only [envs_entails, of_envs]
+  rw' [
+    affinely_elim_emp,
+    (affine : [∗] Γₛ.toList ⊢ emp),
+    (left_id : emp ∗ _ ⊣⊢ _)]
+
 -- assumptions
 theorem tac_assumption_lean [BI PROP] {Δ : Envs PROP} {P : PROP} (Q : PROP) :
   (⊢ P) →

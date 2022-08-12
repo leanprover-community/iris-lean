@@ -253,6 +253,18 @@ theorem moveTwice [BI PROP] (P : PROP) : □ P ⊢ □ Q -∗ Q := by
 
 end spatial
 
+-- emp intro
+namespace empintro
+
+theorem simple [BI PROP] : ⊢ (emp : PROP) := by
+  iemp_intro
+
+theorem affineEnv [BI PROP] (P : PROP) : <affine> P ⊢ emp := by
+  iintro HP
+  iemp_intro
+
+end empintro
+
 -- pure intro
 namespace pureintro
 
