@@ -114,9 +114,9 @@ abbrev EnvsIndex.of [BI PROP] (Δ : Envs PROP) := EnvsIndex Δ.intuitionistic.le
 
 def HypothesisIndex.quoteAsEnvsIndex : HypothesisIndex → MetaM (TSyntax `term)
   | ⟨.intuitionistic, index, length⟩ =>
-    `(EnvsIndex.p ⟨$(quote index), by show $(quote index) < $(quote length) ; decide⟩)
+    ``(EnvsIndex.p ⟨$(quote index), by show $(quote index) < $(quote length) ; decide⟩)
   | ⟨.spatial, index, length⟩ =>
-    `(EnvsIndex.s ⟨$(quote index), by show $(quote index) < $(quote length) ; decide⟩)
+    ``(EnvsIndex.s ⟨$(quote index), by show $(quote index) < $(quote length) ; decide⟩)
 
 namespace Envs
 

@@ -24,7 +24,7 @@ class BIBase (car : Type) where
 section Syntax
 
 -- `iprop` embedding in `term`
-macro:25 P:term:29 " ⊢ " Q:term:25 : term => `(BIBase.entails `[iprop| $P] `[iprop| $Q])
+macro:25 P:term:29 " ⊢ " Q:term:25 : term => ``(BIBase.entails `[iprop| $P] `[iprop| $Q])
 
 -- `iprop` syntax
 syntax "⌜" term "⌝" : term
@@ -37,22 +37,22 @@ syntax:25 "∀ " explicitBinders ", " term:25 : term
 
 -- `iprop` syntax interpretation
 macro_rules
-  | `(`[iprop| emp])       => `(BIBase.emp)
-  | `(`[iprop| ⌜$φ⌝])      => `(BIBase.pure $φ)
-  | `(`[iprop| $P ∧ $Q])   => `(BIBase.and `[iprop| $P] `[iprop| $Q])
-  | `(`[iprop| $P ∨ $Q])   => `(BIBase.or `[iprop| $P] `[iprop| $Q])
-  | `(`[iprop| $P → $Q])   => `(BIBase.impl `[iprop| $P] `[iprop| $Q])
-  | `(`[iprop| ∀ $xs, $Ψ]) => do expandExplicitBinders ``BIBase.forall xs (← `(`[iprop| $Ψ]))
-  | `(`[iprop| ∃ $xs, $Ψ]) => do expandExplicitBinders ``BIBase.exist xs (← `(`[iprop| $Ψ]))
-  | `(`[iprop| $P ∗ $Q])   => `(BIBase.sep `[iprop| $P] `[iprop| $Q])
-  | `(`[iprop| $P -∗ $Q])  => `(BIBase.wand `[iprop| $P] `[iprop| $Q])
-  | `(`[iprop| <pers> $P]) => `(BIBase.persistently `[iprop| $P])
+  | `(`[iprop| emp])       => ``(BIBase.emp)
+  | `(`[iprop| ⌜$φ⌝])      => ``(BIBase.pure $φ)
+  | `(`[iprop| $P ∧ $Q])   => ``(BIBase.and `[iprop| $P] `[iprop| $Q])
+  | `(`[iprop| $P ∨ $Q])   => ``(BIBase.or `[iprop| $P] `[iprop| $Q])
+  | `(`[iprop| $P → $Q])   => ``(BIBase.impl `[iprop| $P] `[iprop| $Q])
+  | `(`[iprop| ∀ $xs, $Ψ]) => do expandExplicitBinders ``BIBase.forall xs (← ``(`[iprop| $Ψ]))
+  | `(`[iprop| ∃ $xs, $Ψ]) => do expandExplicitBinders ``BIBase.exist xs (← ``(`[iprop| $Ψ]))
+  | `(`[iprop| $P ∗ $Q])   => ``(BIBase.sep `[iprop| $P] `[iprop| $Q])
+  | `(`[iprop| $P -∗ $Q])  => ``(BIBase.wand `[iprop| $P] `[iprop| $Q])
+  | `(`[iprop| <pers> $P]) => ``(BIBase.persistently `[iprop| $P])
 
 -- additional `iprop` syntax interpretation
 macro_rules
-  | `(`[iprop| True])  => `(BIBase.pure True)
-  | `(`[iprop| False]) => `(BIBase.pure False)
-  | `(`[iprop| ¬$P])   => `(`[iprop| $P → False])
+  | `(`[iprop| True])  => ``(BIBase.pure True)
+  | `(`[iprop| False]) => ``(BIBase.pure False)
+  | `(`[iprop| ¬$P])   => ``(`[iprop| $P → False])
 
 end Syntax
 
@@ -61,36 +61,36 @@ end Syntax
 section Delab
 
 delab_rule BIBase.entails
-  | `($_ $P $Q) => do `($(← unpackIprop P) ⊢ $(← unpackIprop Q))
+  | `($_ $P $Q) => do ``($(← unpackIprop P) ⊢ $(← unpackIprop Q))
 
 delab_rule BIBase.emp
-  | `($_) => `(`[iprop| $(mkIdent `emp)])
+  | `($_) => ``(`[iprop| $(mkIdent `emp)])
 delab_rule BIBase.pure
-  | `($_ $φ) => `(`[iprop| ⌜$φ⌝])
+  | `($_ $φ) => ``(`[iprop| ⌜$φ⌝])
 delab_rule BIBase.and
-  | `($_ $P $Q) => do `(`[iprop| $(← unpackIprop P) ∧ $(← unpackIprop Q)])
+  | `($_ $P $Q) => do ``(`[iprop| $(← unpackIprop P) ∧ $(← unpackIprop Q)])
 delab_rule BIBase.or
-  | `($_ $P $Q) => do `(`[iprop| $(← unpackIprop P) ∨ $(← unpackIprop Q)])
+  | `($_ $P $Q) => do ``(`[iprop| $(← unpackIprop P) ∨ $(← unpackIprop Q)])
 delab_rule BIBase.impl
-  | `($_ $P $Q) => do `(`[iprop| $(← unpackIprop P) → $(← unpackIprop Q)])
+  | `($_ $P $Q) => do ``(`[iprop| $(← unpackIprop P) → $(← unpackIprop Q)])
 delab_rule BIBase.forall
-  | `($_ fun $x:ident => `[iprop| ∀ $y:ident $[$z:ident]*, $Ψ]) => do `(`[iprop| ∀ $x:ident $y:ident $[$z:ident]*, $Ψ])
-  | `($_ fun $x:ident => $Ψ) => do `(`[iprop| ∀ $x:ident, $(← unpackIprop Ψ)])
+  | `($_ fun $x:ident => `[iprop| ∀ $y:ident $[$z:ident]*, $Ψ]) => do ``(`[iprop| ∀ $x:ident $y:ident $[$z:ident]*, $Ψ])
+  | `($_ fun $x:ident => $Ψ) => do ``(`[iprop| ∀ $x:ident, $(← unpackIprop Ψ)])
 delab_rule BIBase.exist
-  | `($_ fun $x:ident => `[iprop| ∃ $y:ident $[$z:ident]*, $Ψ]) => do `(`[iprop| ∃ $x:ident $y:ident $[$z:ident]*, $Ψ])
-  | `($_ fun $x:ident => $Ψ) => do `(`[iprop| ∃ $x:ident, $(← unpackIprop Ψ)])
+  | `($_ fun $x:ident => `[iprop| ∃ $y:ident $[$z:ident]*, $Ψ]) => do ``(`[iprop| ∃ $x:ident $y:ident $[$z:ident]*, $Ψ])
+  | `($_ fun $x:ident => $Ψ) => do ``(`[iprop| ∃ $x:ident, $(← unpackIprop Ψ)])
 delab_rule BIBase.sep
-  | `($_ $P $Q) => do `(`[iprop| $(← unpackIprop P) ∗ $(← unpackIprop Q)])
+  | `($_ $P $Q) => do ``(`[iprop| $(← unpackIprop P) ∗ $(← unpackIprop Q)])
 delab_rule BIBase.wand
-  | `($_ $P $Q) => do `(`[iprop| $(← unpackIprop P) -∗ $(← unpackIprop Q)])
+  | `($_ $P $Q) => do ``(`[iprop| $(← unpackIprop P) -∗ $(← unpackIprop Q)])
 delab_rule BIBase.persistently
-  | `($_ $P) => do `(`[iprop| <pers> $(← unpackIprop P)])
+  | `($_ $P) => do ``(`[iprop| <pers> $(← unpackIprop P)])
 
 delab_rule BIBase.pure
-  | `($_ True) => `(`[iprop| $(mkIdent `True)])
-  | `($_ False) => `(`[iprop| $(mkIdent `False)])
+  | `($_ True) => ``(`[iprop| $(mkIdent `True)])
+  | `($_ False) => ``(`[iprop| $(mkIdent `False)])
 delab_rule BIBase.impl
-  | `($_ $P `[iprop| False]) => do `(`[iprop| ¬$(← unpackIprop P)])
+  | `($_ $P `[iprop| False]) => do ``(`[iprop| ¬$(← unpackIprop P)])
 
 end Delab
 

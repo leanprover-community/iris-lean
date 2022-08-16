@@ -401,7 +401,7 @@ elab "isplit" side:splitSide "[" names:ident,* "]" : tactic => do
     mask := mask.map (!·)
 
   -- split conjunction
-  let h_length_eq ← `(by show $(quote mask.length) = $(quote lₛ) ; decide)
+  let h_length_eq ← ``(by show $(quote mask.length) = $(quote lₛ) ; decide)
   try evalTactic (← `(tactic|
     first
     | refine tac_sep_split $(quote mask) $h_length_eq _ ?Sep.left ?Sep.right
