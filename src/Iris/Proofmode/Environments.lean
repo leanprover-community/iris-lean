@@ -1,7 +1,8 @@
 import Iris.BI
+import Iris.Std
 
 namespace Iris.Proofmode
-open Iris.BI
+open Iris.BI Iris.Std
 open Lean
 
 -- Env
@@ -32,17 +33,17 @@ theorem length_cons_list_cons {a : α} {as : List α} {b : β} {bs : Env β} :
 := by
   intro h
   simp only [length, List.length] at h
-  rw [Nat.add_right_cancel h]
+  rw' [Nat.add_right_cancel h]
 
 @[reducible]
 def eraseIdx : (Γ : Env α) → Fin (Γ.length) → Env α
   | .cons _ as, ⟨0    , _⟩ => as
-  | .cons a as, ⟨i + 1, h⟩ => .cons a <| as.eraseIdx ⟨i, Nat.le_of_succ_le_succ h⟩
+  | .cons a as, ⟨i + 1, h⟩ => .cons a <| as.eraseIdx ⟨i, Nat.lt_of_succ_lt_succ h⟩
 
 @[reducible]
 def get : (Γ : Env α) → Fin (Γ.length) → α
   | .cons a _ , ⟨0    , _⟩ => a
-  | .cons _ as, ⟨i + 1, h⟩ => as.get ⟨i, Nat.le_of_succ_le_succ h⟩
+  | .cons _ as, ⟨i + 1, h⟩ => as.get ⟨i, Nat.lt_of_succ_lt_succ h⟩
 
 @[reducible]
 def split (Γ : Env α) (mask : List Bool) (h : mask.length = Γ.length) : Env α × Env α :=
@@ -86,6 +87,110 @@ theorem env_mem_cons_2 [BI PROP] {P Q : PROP} {Ps : Env PROP} : P ∈ Ps → P �
   intro h_Ps
   apply Env.Mem.tail
   exact h_Ps
+
+theorem env_erase_idx_cons [BI PROP] {P : PROP} {Ps : Env PROP} {i : Nat} {h : i + 1 < (Env.cons P Ps).length} :
+  (Env.cons P Ps).eraseIdx ⟨i + 1, h⟩ = (Env.cons P <| Ps.eraseIdx ⟨i, Nat.lt_of_succ_lt_succ h⟩)
+:= by
+  rw' [Env.eraseIdx]
+  · exact P
+  · exact Nat.zero_lt_succ _
+
+theorem env_get_cons [BI PROP] {P : PROP} {Ps : Env PROP} {i : Nat} {h : i + 1 < (Env.cons P Ps).length} :
+  (Env.cons P Ps).get ⟨i + 1, h⟩ = Ps.get ⟨i, Nat.lt_of_succ_lt_succ h⟩
+:= by
+  rw' [Env.get]
+  · exact Ps
+  · exact Nat.zero_lt_succ _
+
+theorem env_big_op_sep_concat [BI PROP] {Γ : Env PROP} {P : PROP} : [∗] (Γ.concat P) ⊣⊢ [∗] Γ ∗ P := by
+  induction Γ
+  <;> simp only [Env.concat, Env.toList]
+  case nil =>
+    simp only [big_op]
+    rw' [(left_id : emp ∗ _ ⊣⊢ _)]
+  case cons P' _ h_ind =>
+    rw' [
+      !big_op_sep_cons,
+      h_ind,
+      ← (assoc : _ ⊣⊢ (P' ∗ _) ∗ P)]
+
+theorem env_big_op_and_concat [BI PROP] {Γ : Env PROP} {P : PROP} : □ [∧] (Γ.concat P) ⊣⊢ □ [∧] Γ ∗ □ P := by
+  induction Γ
+  <;> simp only [Env.concat, Env.toList]
+  case nil =>
+    simp only [big_op]
+    rw' [
+      intuitionistically_True_emp,
+      (left_id : emp ∗ _ ⊣⊢ _)]
+  case cons P' _ h_ind =>
+    rw' [
+      !big_op_and_cons,
+      !intuitionistically_and,
+      !and_sep_intuitionistically,
+      h_ind,
+      ← (assoc : _ ⊣⊢ (□ P' ∗ _) ∗ □ P)]
+
+theorem env_big_op_sep_erase_idx_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) :
+  [∗] Γ ⊣⊢ [∗] (Γ.eraseIdx i) ∗ (Γ.get i)
+:= by
+  let ⟨val, is_lt⟩ := i
+  induction val generalizing Γ
+  case zero =>
+    cases Γ
+    case nil =>
+      contradiction
+    case cons P' _ =>
+      rw' [Env.eraseIdx, Env.get]
+      simp only [Env.toList]
+      rw' [
+        big_op_sep_cons,
+        (comm : P' ∗ _ ⊣⊢ _)]
+  case succ val h_ind =>
+    cases Γ
+    case nil =>
+      contradiction
+    case cons P' _ =>
+      let is_lt := Nat.lt_of_succ_lt_succ is_lt
+      let h_ind := h_ind ⟨val, is_lt⟩ is_lt
+      rw' [env_erase_idx_cons, env_get_cons]
+      simp only [Env.toList]
+      rw' [
+        !big_op_sep_cons,
+        ← (assoc : _ ⊣⊢ (P' ∗ _) ∗ _),
+        ← h_ind]
+
+theorem env_big_op_and_erase_idx_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) :
+  □ [∧] Γ ⊣⊢ □ [∧] (Γ.eraseIdx i) ∗ □ (Γ.get i)
+:= by
+  let ⟨val, is_lt⟩ := i
+  induction val generalizing Γ
+  case zero =>
+    cases Γ
+    case nil =>
+      contradiction
+    case cons P' _ =>
+      rw' [Env.eraseIdx, Env.get]
+      simp only [Env.toList]
+      rw' [
+        big_op_and_cons,
+        intuitionistically_and,
+        and_sep_intuitionistically,
+        (comm : □ P' ∗ _ ⊣⊢ _)]
+  case succ val h_ind =>
+    cases Γ
+    case nil =>
+      contradiction
+    case cons P' _ =>
+      let is_lt := Nat.lt_of_succ_lt_succ is_lt
+      let h_ind := h_ind ⟨val, is_lt⟩ is_lt
+      rw' [env_erase_idx_cons, env_get_cons]
+      simp only [Env.toList]
+      rw' [
+        !big_op_and_cons,
+        !intuitionistically_and,
+        !and_sep_intuitionistically,
+        ← (assoc : _ ⊣⊢ (□ P' ∗ _) ∗ _),
+        ← h_ind]
 
 -- Envs
 structure Envs (PROP : Type) [BI PROP] where
@@ -151,21 +256,61 @@ end Envs
 -- Envs Theorems
 theorem envs_concat_sound [BI PROP] {Δ : Envs PROP} (p : Bool) (Q : PROP) :
   of_envs Δ ⊢ □?p Q -∗ of_envs (Δ.concat p Q)
-:= sorry
+:= by
+  apply wand_intro_l ?_
+  cases p
+  <;> simp only [bi_intuitionistically_if, ite_true, ite_false, of_envs]
+  case false =>
+    rw' [
+      env_big_op_sep_concat,
+      (assoc : _ ∗ (_ ∗ Q) ⊣⊢ _),
+      (comm : _ ∗ Q ⊣⊢ _)]
+  case true =>
+    rw' [
+      env_big_op_and_concat,
+      (comm : _ ∗ □ Q ⊣⊢ _),
+      ← (assoc : _ ⊣⊢ (□ Q ∗ _) ∗ _)]
 
-theorem envs_lookup_delete_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ} {p : Bool} {P : PROP} :
+theorem envs_lookup_delete_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ} {p : Bool} {P : PROP} (rp : Bool) :
   Δ.lookup i = (p, P) →
-  of_envs Δ ⊢ □?p P ∗ of_envs (Δ.delete true i)
-:= sorry
+  of_envs Δ ⊢ □?p P ∗ of_envs (Δ.delete rp i)
+:= by
+  cases i
+  all_goals
+    simp only [Envs.lookup]
+    intro h_lookup
+    cases h_lookup
+    simp only [Envs.delete, of_envs, bi_intuitionistically_if, ite_true, ite_false]
+  case s i =>
+    rw' [
+      (comm : Δ.spatial.get i ∗ _ ⊣⊢ _),
+      ← (assoc : _ ⊣⊢ _ ∗ _),
+      ← env_big_op_sep_erase_idx_get]
+  case p i =>
+    cases rp
+    <;> simp only
+    case true =>
+      rw' [
+        (assoc : _ ∗ _ ⊣⊢ _),
+        (comm : □ Δ.intuitionistic.get i ∗ _ ⊣⊢ _),
+        ← env_big_op_and_erase_idx_get i]
+    case false =>
+      rw' [
+        (assoc : _ ∗ _ ⊣⊢ _),
+        (comm : □ Δ.intuitionistic.get i ∗ _ ⊣⊢ _),
+        env_big_op_and_erase_idx_get i,
+        ← (assoc : _ ⊣⊢ (_ ∗ _) ∗ □ Δ.intuitionistic.get i),
+        ← intuitionistically_sep_dup]
 
 theorem envs_lookup_replace_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ} {p : Bool} {P : PROP} (q : Bool) (Q : PROP) :
   Δ.lookup i = (p, P) →
   of_envs Δ ⊢ □?p P ∗ (□?q Q -∗ of_envs (Δ.replace i q Q))
-:= sorry
-
-theorem envs_replace_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ} (p : Bool) (Q : PROP) :
-  of_envs (Δ.delete true i) ⊢ □?p Q -∗ of_envs (Δ.replace i p Q)
-:= sorry
+:= by
+  intro h_lookup
+  simp only [Envs.replace]
+  rw' [
+    ← envs_concat_sound q Q,
+    ← envs_lookup_delete_sound true h_lookup]
 
 theorem envs_split_sound [BI PROP] {Δ Δ₁ Δ₂ : Envs PROP} {mask : List Bool} {h : mask.length = Δ.spatial.length} :
   Δ.split mask h = (Δ₁, Δ₂) →
@@ -173,8 +318,15 @@ theorem envs_split_sound [BI PROP] {Δ Δ₁ Δ₂ : Envs PROP} {mask : List Boo
 := sorry
 
 theorem envs_spatial_is_empty_intuitionistically [BI PROP] {Δ : Envs PROP} :
-  Δ.spatial.isEmpty = true → of_envs Δ ⊢ □ of_envs Δ
-:= sorry
+  Δ.spatial.isEmpty = true →
+  of_envs Δ ⊢ □ of_envs Δ
+:= by
+  simp only [Env.isEmpty, of_envs]
+  cases Δ.spatial
+  <;> simp [big_op]
+  rw' [
+    (right_id : _ ∗ emp ⊣⊢ _),
+    intuitionistically_idemp]
 
 -- AffineEnv
 class AffineEnv [BI PROP] (Γ : Env PROP) where
@@ -216,12 +368,12 @@ where
   affine := by
     induction Γ generalizing inst
     case nil =>
-      rw' [big_sepL_nil]
+      rw' [big_op_sep_nil]
     case cons P Ps h_ind =>
       have : AffineEnv Ps := ⟨by
         intro P h_Ps
         exact inst.affineEnv P (env_mem_cons_2 h_Ps)⟩
       have : Affine P := inst.affineEnv P env_mem_cons_1
-      rw' [big_sepL_cons, h_ind, affine]
+      rw' [big_op_sep_cons, h_ind, affine]
 
 end Iris.Proofmode

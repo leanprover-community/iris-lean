@@ -1,7 +1,7 @@
 import Iris.BI
 import Iris.Proofmode.Classes
 import Iris.Proofmode.Environments
-import Iris.Std.TC
+import Iris.Std
 
 namespace Iris.Proofmode
 open Iris.BI Iris.Std
@@ -56,7 +56,7 @@ theorem tac_clear [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
     cases inst_affine_absorbing
     simp only [envs_entails]
     intro h_entails
-    rw' [envs_lookup_delete_sound h_lookup, h_entails]
+    rw' [envs_lookup_delete_sound true h_lookup, h_entails]
     simp only [bi_intuitionistically_if, ite_true, ite_false]
     rw' [sep_elim_r]
 
@@ -217,17 +217,17 @@ theorem tac_exist_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) {Φ 
   envs_entails Δ Q
 := by
   intro_let p P h_lookup
-  simp only [envs_entails]
+  simp only [envs_entails, Envs.replace]
   intro _ h_entails
   rw' [
-    envs_lookup_delete_sound h_lookup,
+    envs_lookup_delete_sound true h_lookup,
     into_exist,
     intuitionistically_if_exist,
     sep_exist_r] ; simp only
   apply exist_elim
   intro a
   rw' [
-    envs_replace_sound p (Φ a),
+    envs_concat_sound p (Φ a),
     wand_elim_r,
     h_entails a]
 
@@ -276,7 +276,7 @@ theorem tac_assumption [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) (Q : PRO
   intro_let p P h_lookup
   simp only [envs_entails]
   intro _ inst_absorbing_affine_env
-  rw' [envs_lookup_delete_sound h_lookup]
+  rw' [envs_lookup_delete_sound true h_lookup]
   cases h_empty : (Δ.delete true i).spatial.isEmpty
   <;> rw [h_empty] at inst_absorbing_affine_env
   <;> cases inst_absorbing_affine_env
@@ -307,7 +307,7 @@ theorem tac_false_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) (Q :
   simp only [envs_entails]
   intro h_false
   rw' [
-    envs_lookup_delete_sound h_lookup,
+    envs_lookup_delete_sound true h_lookup,
     intuitionistically_if_elim,
     h_false,
     sep_elim_l]
@@ -324,7 +324,7 @@ theorem tac_pure [BI PROP] {Δ : Envs PROP} {φ : Prop} (i : EnvsIndex.of Δ) (Q
   intro_let p P h_lookup
   simp only [envs_entails]
   intro _ inst_affine_absorbing h_entails
-  rw' [envs_lookup_delete_sound h_lookup]
+  rw' [envs_lookup_delete_sound true h_lookup]
   cases p
   <;> simp only [bi_intuitionistically_if, ite_true, ite_false]
   <;> cases inst_affine_absorbing
@@ -495,7 +495,7 @@ theorem tac_conjunction_destruct [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : 
   simp only [envs_entails]
   intro inst_conjunction h_entails
   rw' [
-    envs_lookup_delete_sound h_lookup,
+    envs_lookup_delete_sound true h_lookup,
     envs_concat_sound p P1,
     envs_concat_sound p P2] ; simp only
   cases p
@@ -556,7 +556,7 @@ theorem tac_disjunction_destruct [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : 
   intro_let p P h_lookup
   simp only [envs_entails]
   intro _ h_entails_1 h_entails_2
-  rw' [envs_lookup_delete_sound h_lookup] ; simp only
+  rw' [envs_lookup_delete_sound true h_lookup] ; simp only
   simp only [Envs.replace] at h_entails_1
   simp only [Envs.replace] at h_entails_2
   rw' [into_or, intuitionistically_if_or, sep_or_r]

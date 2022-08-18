@@ -884,6 +884,13 @@ theorem and_sep_intuitionistically [BI PROP] {P Q : PROP} : □ P ∧ □ Q ⊣�
   simp only [bi_intuitionistically]
   rw'[← affinely_and, affinely_and_r]
 
+theorem intuitionistically_sep_dup [BI PROP] {P : PROP} : □ P ⊣⊢ □ P ∗ □ P := by
+  rw' [← persistently_and_intuitionistically_sep_l]
+  simp only [bi_intuitionistically]
+  rw' [
+    affinely_and_r,
+    (idemp : _ ∧ _ ⊣⊢ _)]
+
 -- Intuitionistic BIAffine
 theorem intuitionistically_into_persistently [BIAffine PROP] {P : PROP} : □ P ⊣⊢ <pers> P := by
   exact affine_affinely
@@ -1046,12 +1053,20 @@ theorem persistent_absorbingly_affinely_2 [BI PROP] {P : PROP} [Persistent P] : 
     intuitionistically_affinely]
 
 -- Big Op
-theorem big_sepL_nil [BI PROP] : [∗] `[term| []] ⊣⊢ (emp : PROP) := by
+theorem big_op_sep_nil [BI PROP] : [∗] `[term| []] ⊣⊢ (emp : PROP) := by
   simp only [big_op]
 
-theorem big_sepL_cons [BI PROP] {P : PROP} {Ps : List PROP} : [∗] `[term| P :: Ps] ⊣⊢ P ∗ [∗] `[term| Ps] := by
+theorem big_op_and_nil [BI PROP] : [∧] `[term| []] ⊣⊢ (True : PROP) := by
+  simp only [big_op]
+
+theorem big_op_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} : [∗] `[term| P :: Ps] ⊣⊢ P ∗ [∗] `[term| Ps] := by
   cases Ps
   <;> simp only [big_op]
   rw' [(right_id : _ ∗ emp ⊣⊢ _)]
+
+theorem big_op_and_cons [BI PROP] {P : PROP} {Ps : List PROP} : [∧] `[term| P :: Ps] ⊣⊢ P ∧ [∧] `[term| Ps] := by
+  cases Ps
+  <;> simp only [big_op]
+  rw' [(right_id : _ ∧ True ⊣⊢ _)]
 
 end Iris.BI
