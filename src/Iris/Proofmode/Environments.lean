@@ -46,17 +46,13 @@ def get : (Γ : Env α) → Fin (Γ.length) → α
   | .cons _ as, ⟨i + 1, h⟩ => as.get ⟨i, Nat.lt_of_succ_lt_succ h⟩
 
 @[reducible]
-def split (Γ : Env α) (mask : List Bool) (h : mask.length = Γ.length) : Env α × Env α :=
-  go Γ mask h
-where
-  @[reducible]
-  go : (Γ : Env α) → (mask : List Bool) → (mask.length = Γ.length) → Env α × Env α
+def split : (Γ : Env α) → (mask : List Bool) → (mask.length = Γ.length) → Env α × Env α
   | .nil, .nil, _ => (.nil, nil)
   | .cons a as, true :: bs, h =>
-    let (ls, rs) := go as bs (length_cons_list_cons h)
+    let (ls, rs) := split as bs (length_cons_list_cons h)
     (.cons a ls, rs)
   | .cons a as, false :: bs, h =>
-    let (ls, rs) := go as bs (length_cons_list_cons h)
+    let (ls, rs) := split as bs (length_cons_list_cons h)
     (ls, .cons a rs)
 
 @[reducible]
@@ -192,6 +188,74 @@ theorem env_big_op_and_erase_idx_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.lengt
         ← (assoc : _ ⊣⊢ (□ P' ∗ _) ∗ _),
         ← h_ind]
 
+theorem env_split_cons_false [BI PROP] {P : PROP} {Ps : Env PROP} {bs : List Bool} {Γ₁ Γ₂ : Env PROP} {h : (false :: bs).length = (Env.cons P Ps).length} :
+  (Γ₁, Γ₂) = (Env.cons P Ps).split (false :: bs) h →
+  ∃ (Γ₂' : Env PROP), Γ₂ = Env.cons P Γ₂' ∧
+  ∃ (h' : bs.length = Ps.length), (Γ₁, Γ₂') = Ps.split bs h'
+:= by
+  intro h_split
+  simp only [Env.split] at h_split
+  cases h_split
+  apply Exists.intro _
+  apply And.intro rfl ?_
+  apply Exists.intro (Env.length_cons_list_cons h)
+  simp
+
+theorem env_split_cons_true [BI PROP] {P : PROP} {Ps : Env PROP} {bs : List Bool} {Γ₁ Γ₂ : Env PROP} {h : (true :: bs).length = (Env.cons P Ps).length} :
+  (Γ₁, Γ₂) = (Env.cons P Ps).split (true :: bs) h →
+  ∃ (Γ₁' : Env PROP), Γ₁ = Env.cons P Γ₁' ∧
+  ∃ (h' : bs.length = Ps.length), (Γ₁', Γ₂) = Ps.split bs h'
+:= by
+  intro h_split
+  simp only [Env.split] at h_split
+  cases h_split
+  apply Exists.intro _
+  apply And.intro rfl ?_
+  apply Exists.intro (Env.length_cons_list_cons h)
+  simp
+
+theorem env_big_op_sep_split [BI PROP] {Γ Γ₁ Γ₂ : Env PROP} {mask : List Bool} {h : mask.length = Γ.length} :
+  (Γ₁, Γ₂) = Γ.split mask h →
+  ([∗] Γ : PROP) ⊢ [∗] Γ₁ ∗ [∗] Γ₂
+:= by
+  intro h_split
+  induction Γ generalizing mask Γ₁ Γ₂
+  case nil =>
+    cases mask
+    case nil =>
+      simp only [Env.split] at h_split
+      cases h_split
+      simp only [big_op]
+      rw' [(left_id : emp ∗ _ ⊣⊢ _)]
+    case cons =>
+      simp only [List.length, Env.length] at h
+      contradiction
+  case cons P Ps h_ind =>
+    cases mask
+    case nil =>
+      simp only [List.length, Env.length] at h
+      contradiction
+    case cons b bs =>
+      cases b
+      case false =>
+        let ⟨_, h_split_P, _, h_split_Ps⟩ := env_split_cons_false h_split
+        rw' [h_split_P]
+        simp only [Env.toList]
+        rw' [
+          !big_op_sep_cons,
+          (assoc : _ ∗ (P ∗ _) ⊣⊢ _),
+          (comm : _ ∗ P ⊣⊢ _),
+          ← (assoc : _ ⊣⊢ (P ∗ _) ∗ _),
+          h_ind h_split_Ps]
+      case true =>
+        let ⟨_, h_split_P, _, h_split_Ps⟩ := env_split_cons_true h_split
+        rw' [h_split_P]
+        simp only [Env.toList]
+        rw' [
+          !big_op_sep_cons,
+          ← (assoc : _ ⊣⊢ (P ∗ _) ∗ _),
+          h_ind h_split_Ps]
+
 -- Envs
 structure Envs (PROP : Type) [BI PROP] where
   intuitionistic : Env PROP
@@ -312,10 +376,33 @@ theorem envs_lookup_replace_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of �
     ← envs_concat_sound q Q,
     ← envs_lookup_delete_sound true h_lookup]
 
+theorem envs_split_env_spatial_split [BI PROP] {Δ Δ₁ Δ₂ : Envs PROP} {mask : List Bool} {h : mask.length = Δ.spatial.length} :
+  Envs.split Δ mask h = (Δ₁, Δ₂) →
+  Δ₁.intuitionistic = Δ.intuitionistic ∧
+  Δ₂.intuitionistic = Δ.intuitionistic ∧
+  (Δ₁.spatial, Δ₂.spatial) = Env.split Δ.spatial mask h
+:= by
+  simp only [Envs.split]
+  intro h_split
+  cases h_split
+  <;> simp
+
 theorem envs_split_sound [BI PROP] {Δ Δ₁ Δ₂ : Envs PROP} {mask : List Bool} {h : mask.length = Δ.spatial.length} :
   Δ.split mask h = (Δ₁, Δ₂) →
   of_envs Δ ⊢ of_envs Δ₁ ∗ of_envs Δ₂
-:= sorry
+:= by
+  intro h_split_Δ
+  let ⟨h_split_Γₚ₁, h_split_Γₚ₂, h_split_Γₛ⟩ := envs_split_env_spatial_split h_split_Δ
+  simp only [of_envs]
+  rw' [
+    h_split_Γₚ₁,
+    h_split_Γₚ₂,
+    env_big_op_sep_split h_split_Γₛ,
+    (assoc : _ ∗ (□ _ ∗ _) ⊣⊢ _),
+    (comm : _ ∗ □ _ ⊣⊢ _),
+    (assoc : □ _ ∗ (□ _ ∗ _) ⊣⊢ _),
+    ← intuitionistically_sep_dup,
+    ← (assoc : _ ⊣⊢ (_ ∗ _) ∗ _)]
 
 theorem envs_spatial_is_empty_intuitionistically [BI PROP] {Δ : Envs PROP} :
   Δ.spatial.isEmpty = true →
