@@ -40,7 +40,7 @@ macro_rules
     if f.isAnonymous then
       throwUnsupported
     let f ← match ← Macro.resolveGlobalName f with
-      | [(name, _)] => pure name
+      | [(name, [])] => pure name
       | _           => throwUnsupported
 
     `(@[appUnexpander $(mkIdent f)]
