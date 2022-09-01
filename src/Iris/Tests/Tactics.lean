@@ -41,7 +41,7 @@ theorem intuitionistic [BI PROP] (Q : PROP) : □ P ⊢ Q -∗ Q := by
   iclear HP
   iexact HQ
 
-theorem ispatial [BI PROP] (Q : PROP) : <affine> P ⊢ Q -∗ Q := by
+theorem spatial [BI PROP] (Q : PROP) : <affine> P ⊢ Q -∗ Q := by
   iintro HP
   iintro HQ
   iclear HP

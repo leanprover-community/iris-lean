@@ -10,12 +10,8 @@ import Iris.Std
 import Lean.Elab
 
 namespace Iris.Proofmode
-open Iris.BI Iris.Std
+open Iris.BI Iris.Std Internal
 open Lean Lean.Elab Lean.Elab.Tactic Lean.Meta
-
-namespace Internal
-end Internal
-open Internal
 
 elab "istart" : tactic => do
   -- parse goal
@@ -29,8 +25,8 @@ elab "istart" : tactic => do
 
   -- create environment
   try evalTactic (← `(tactic|
-    refine (as_emp_valid_2 _ ?_) ;
-    refine (tac_start _ ?_)
+    refine as_emp_valid_2 _ ?_ ;
+    refine tac_start _ ?_
   ))
   catch _ => throwError "unable to start proof mode"
 

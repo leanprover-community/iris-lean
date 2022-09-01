@@ -306,7 +306,7 @@ def lookup [BI PROP] : (Δ : Envs PROP) → EnvsIndex.of Δ → Bool × PROP
   | ⟨_, Γₛ⟩, .s i => (false, Γₛ.get i)
 
 @[reducible]
-def replace [BI PROP] (Δ : Envs PROP) (i : EnvsIndex.of Δ) (p : Bool) (P : PROP) :=
+def replace [BI PROP] (Δ : Envs PROP) (i : EnvsIndex.of Δ) (p : Bool) (P : PROP) : Envs PROP :=
   Δ.delete true i |>.concat p P
 
 @[reducible]
