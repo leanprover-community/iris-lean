@@ -77,7 +77,7 @@ private def findHypothesis (name : Name) : TacticM HypothesisIndex := do
     throwError "unknown hypothesis"
 
 
-elab "irename" colGt nameFrom:ident "into" colGt nameTo:ident : tactic => do
+elab "irename" colGt nameFrom:ident "to" colGt nameTo:ident : tactic => do
   -- parse syntax
   if nameFrom.getId.isAnonymous then
     throwUnsupportedSyntax
@@ -89,9 +89,9 @@ elab "irename" colGt nameFrom:ident "into" colGt nameTo:ident : tactic => do
   irenameCore (← findHypothesis nameFrom.getId) nameTo
 
 
-elab "iclear" colGt name:ident : tactic => do
+elab "iclear" colGt hyp:ident : tactic => do
   -- parse syntax
-  let name := name.getId
+  let name := hyp.getId
   if name.isAnonymous then
     throwUnsupportedSyntax
 
@@ -172,9 +172,9 @@ elab "iexists" x:term : tactic => do
   )) catch _ => throwError "could not resolve existential quantifier"
 
 
-elab "iexact" colGt name:ident : tactic => do
+elab "iexact" colGt hyp:ident : tactic => do
   -- parse syntax
-  let name := name.getId
+  let name := hyp.getId
   if name.isAnonymous then
     throwUnsupportedSyntax
 
@@ -262,25 +262,26 @@ elab "iex_falso" : tactic => do
   )) catch _ => throwError "could not turn goal into False"
 
 
-elab "ipure" colGt name:ident : tactic => do
+elab "ipure" colGt hyp:ident : tactic => do
   -- parse syntax
-  if name.getId.isAnonymous then
+  let name := hyp.getId
+  if name.isAnonymous then
     throwUnsupportedSyntax
 
   -- find hypothesis index
-  let hypIndex ← findHypothesis name.getId
+  let hypIndex ← findHypothesis name
 
   -- move hypothesis
   try evalTactic (← `(tactic|
     first
     | refine tac_pure $(← hypIndex.quoteAsEnvsIndex) _ ?_
-      intro $(mkIdent name.getId):ident
+      intro $(mkIdent name):ident
     | fail
   )) catch _ => throwError "could not move hypothesis to the Lean context"
 
-elab "iintuitionistic" colGt name:ident : tactic => do
+elab "iintuitionistic" colGt hyp:ident : tactic => do
   -- parse syntax
-  let name := name.getId
+  let name := hyp.getId
   if name.isAnonymous then
     throwUnsupportedSyntax
 
@@ -303,9 +304,9 @@ elab "iintuitionistic" colGt name:ident : tactic => do
   -- re-name hypothesis
   irenameCore ⟨.intuitionistic, lₚ - 1, lₚ⟩ name
 
-elab "ispatial" colGt name:ident : tactic => do
+elab "ispatial" colGt hyp:ident : tactic => do
   -- parse syntax
-  let name := name.getId
+  let name := hyp.getId
   if name.isAnonymous then
     throwUnsupportedSyntax
 
@@ -366,13 +367,13 @@ declare_syntax_cat splitSide
 syntax "l" : splitSide
 syntax "r" : splitSide
 
-elab "isplit" side:splitSide "[" names:ident,* "]" : tactic => do
+elab "isplit" side:splitSide "[" hyps:ident,* "]" : tactic => do
   -- parse syntax
   let splitRight ← match side with
     | `(splitSide| l) => pure false
     | `(splitSide| r) => pure true
     | _  => throwUnsupportedSyntax
-  let names ← names.getElems.mapM (fun name => do
+  let names ← hyps.getElems.mapM (fun name => do
     let name := name.getId
     if name.isAnonymous then
       throwUnsupportedSyntax
@@ -515,9 +516,9 @@ where
 
     icasesCore nameFrom pat
 
-elab "icases" colGt name:ident "with" colGt pat:icasesPat : tactic => do
+elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
   -- parse syntax
-  let name := name.getId
+  let name := hyp.getId
   if name.isAnonymous then
     throwUnsupportedSyntax
   let some pat := iCasesPat.parse pat

@@ -16,18 +16,18 @@ namespace rename
 
 theorem rename [BI PROP] (Q : PROP) : Q ⊢ Q := by
   iintro HQ
-  irename HQ into H
+  irename HQ to H
   iexact H
 
 theorem renameTwice [BI PROP] (Q : PROP) : Q ⊢ Q := by
   iintro HQ
-  irename HQ into H
-  irename H into HQ
+  irename HQ to H
+  irename H to HQ
   iexact HQ
 
 theorem renameId [BI PROP] (Q : PROP) : Q ⊢ Q := by
   iintro HQ
-  irename HQ into HQ
+  irename HQ to HQ
   iexact HQ
 
 end rename
