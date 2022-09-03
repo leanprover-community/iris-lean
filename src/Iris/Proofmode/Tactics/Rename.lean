@@ -14,6 +14,10 @@ def irenameCore (hypIndex : HypothesisIndex) (name : Name) : TacticM Unit := do
   let some (Γₚ, Γₛ, _) ← extractEnvsEntails? expr
     | throwError "not in proof mode"
 
+  -- retrieve goal mvar declaration
+  let some decl := (← getMCtx).findDecl? goal
+    | throwError "ill-formed proof environment"
+
   let modifyHypothesis (Γ : Expr) (idx : Nat) : TacticM Expr := do
     -- find hypothesis
     let some h ← EnvExpr.get? Γ idx
@@ -24,6 +28,9 @@ def irenameCore (hypIndex : HypothesisIndex) (name : Name) : TacticM Unit := do
     if nameFrom? |>.map (· != name) |>.getD true then
       if ← [Γₚ, Γₛ].anyM (fun Γ => do return (← EnvExpr.any? Γ (·.getMDataName?.isEqSome name)) matches some true) then
         throwError "name is already used for another hypothesis"
+
+      if decl.lctx.any (·.userName == name) then
+        throwError "name is already used for a Lean hypothesis"
 
     -- rename hypothesis
     let h := h.setMDataName? name
