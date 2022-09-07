@@ -70,6 +70,9 @@ instance : Membership α (Env α) where
 instance : Coe (Env α) (List α) where
   coe := toList
 
+delab_rule toList
+  | `($_ $env) => `($env)
+
 instance [ToString α] : ToString <| Env α where
   toString e := e.toList.toString
 
