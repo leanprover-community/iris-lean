@@ -185,13 +185,17 @@ elab "iexact" colGt hyp:ident : tactic => do
   try evalTactic (← `(tactic|
     first
     | refine tac_assumption $(← hypIndex.quoteAsEnvsIndex) _
+      done
     | fail
   ))
   catch _ => throwError "failed to use the hypothesis to close the goal"
 
 elab "iassumption_lean" : tactic => do
   -- retrieve goal mvar declaration
-  let some decl := (← getMCtx).findDecl? (← getMainGoal)
+  let goal :: _ ← getUnsolvedGoals
+    | throwNoGoalsToBeSolved
+
+  let some decl := (← getMCtx).findDecl? goal
     | throwError "ill-formed proof environment"
 
   -- try all hypotheses from the local context
@@ -207,7 +211,10 @@ elab "iassumption_lean" : tactic => do
     -- try to solve the goal
     try
       evalTactic (← `(tactic|
-        refine tac_assumption_lean _ $(mkIdent name)
+        first
+        | refine tac_assumption_lean _ $(mkIdent name)
+          done
+        | fail
       ))
       return
     catch _ => continue
@@ -227,7 +234,9 @@ elab "iassumption" : tactic => do
       evalTactic (← `(tactic|
         first
         | refine tac_assumption $envsIndex _
+          done
         | refine tac_false_destruct $envsIndex _ (by rfl)
+          done
         | fail
       ))
       pure true
@@ -246,9 +255,7 @@ elab "iassumption" : tactic => do
 
   -- try all hypotheses from the Lean context
   try evalTactic (← `(tactic|
-    first
-    | iassumption_lean
-    | fail
+    iassumption_lean
   ))
   catch _ => throwError "no matching hypothesis found or remaining environment cannot be cleared"
 
@@ -336,6 +343,7 @@ elab "iemp_intro" : tactic => do
     istart ;
     first
     | refine tac_emp_intro
+      done
     | fail
   )) catch _ => throwError "goal is not `emp` or spatial context is not affine"
 
@@ -398,6 +406,7 @@ elab "isplit" side:splitSide "[" hyps:ident,* "]" : tactic => do
     mask := mask.map (!·)
 
   -- split conjunction
+  -- TODO we can't inline this for now -> see lean4/#1415
   let h_length_eq ← ``(by show $(quote mask.length) = $(quote lₛ) ; decide)
   try evalTactic (← `(tactic|
     first
