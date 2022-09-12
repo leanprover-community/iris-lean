@@ -88,7 +88,7 @@ theorem tac_impl_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
   [FromImpl R P Q] →
   [TCIte Δ.spatial.isEmpty TCTrue (Persistent P)] →
   [FromAffinely P' P] →
-  envs_entails (Δ.concat false P') Q →
+  envs_entails (Δ.append false P') Q →
   envs_entails Δ R
 := by
   simp only [envs_entails]
@@ -100,7 +100,7 @@ theorem tac_impl_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
   case false =>
     apply impl_intro_l
     rw' [
-      envs_concat_sound false P',
+      envs_append_sound false P',
       (from_affinely : <affine>?true P ⊢ _),
       persistent_and_affinely_sep_l_1,
       wand_elim_r,
@@ -109,7 +109,7 @@ theorem tac_impl_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
     rw' [envs_spatial_is_empty_intuitionistically h_empty]
     apply impl_intro_l
     rw' [
-      envs_concat_sound false P',
+      envs_append_sound false P',
       (from_affinely : <affine>?true P ⊢ _)]
     simp only [bi_intuitionistically]
     rw' [
@@ -122,12 +122,12 @@ theorem tac_impl_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
 theorem tac_impl_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP} (R : PROP) :
   [FromImpl R P Q] →
   [IntoPersistent false P P'] →
-  envs_entails (Δ.concat true P') Q →
+  envs_entails (Δ.append true P') Q →
   envs_entails Δ R
 := by
   simp only [envs_entails]
   intro _ _ h_entails
-  rw' [← from_impl, envs_concat_sound true P'] ; simp only
+  rw' [← from_impl, envs_append_sound true P'] ; simp only
   apply impl_intro_l
   rw' [
     persistently_if_intro_False P,
@@ -149,26 +149,26 @@ theorem tac_impl_intro_drop [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
 
 theorem tac_wand_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
   [FromWand R P Q] →
-  envs_entails (Δ.concat false P) Q →
+  envs_entails (Δ.append false P) Q →
   envs_entails Δ R
 := by
   simp only [envs_entails]
   intro _ h_entails
   rw' [
     ← from_wand,
-    envs_concat_sound false P,
+    envs_append_sound false P,
     h_entails]
 
 theorem tac_wand_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP} (R : PROP) :
   [FromWand R P Q] →
   [IntoPersistent false P P'] →
   [TCOr (Affine P) (Absorbing Q)] →
-  envs_entails (Δ.concat true P') Q →
+  envs_entails (Δ.append true P') Q →
   envs_entails Δ R
 := by
   simp only [envs_entails]
   intro _ _ inst_affine_absorbing h_entails
-  rw' [← from_wand, envs_concat_sound true P'] ; simp only
+  rw' [← from_wand, envs_append_sound true P'] ; simp only
   apply wand_intro_l
   cases inst_affine_absorbing
   case a.l =>
@@ -227,7 +227,7 @@ theorem tac_exist_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) {Φ 
   apply exist_elim
   intro a
   rw' [
-    envs_concat_sound p (Φ a),
+    envs_append_sound p (Φ a),
     wand_elim_r,
     h_entails a]
 
@@ -488,7 +488,7 @@ attribute [instance] IntoConjunction.sep
 theorem tac_conjunction_destruct [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (p, P) := Δ.lookup i
   [IntoConjunction P P1 P2 p] →
-  envs_entails (Δ |>.delete true i |>.concat p P1 |>.concat p P2) Q →
+  envs_entails (Δ |>.delete true i |>.append p P1 |>.append p P2) Q →
   envs_entails Δ Q
 := by
   intro_let p P h_lookup
@@ -496,8 +496,8 @@ theorem tac_conjunction_destruct [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : 
   intro inst_conjunction h_entails
   rw' [
     envs_lookup_delete_sound true h_lookup,
-    envs_concat_sound p P1,
-    envs_concat_sound p P2] ; simp only
+    envs_append_sound p P1,
+    envs_append_sound p P2] ; simp only
   cases p
   <;> simp only [bi_intuitionistically_if, ite_true, ite_false]
   <;> cases inst_conjunction
@@ -561,7 +561,7 @@ theorem tac_disjunction_destruct [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : 
   simp only [Envs.replace] at h_entails_2
   rw' [into_or, intuitionistically_if_or, sep_or_r]
   apply or_elim
-  · rw' [envs_concat_sound p P1, wand_elim_r, h_entails_1]
-  · rw' [envs_concat_sound p P2, wand_elim_r, h_entails_2]
+  · rw' [envs_append_sound p P1, wand_elim_r, h_entails_1]
+  · rw' [envs_append_sound p P2, wand_elim_r, h_entails_2]
 
 end Iris.Proofmode

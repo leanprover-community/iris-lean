@@ -13,9 +13,9 @@ inductive Env (α : Type)
 namespace Env
 
 @[reducible]
-def concat : Env α → α → Env α
+def append : Env α → α → Env α
   | .nil, b       => .cons b .nil
-  | .cons a as, b => .cons a <| as.concat b
+  | .cons a as, b => .cons a <| as.append b
 
 @[reducible]
 def isEmpty : Env α → Bool
@@ -101,9 +101,9 @@ theorem env_get_cons [BI PROP] {P : PROP} {Ps : Env PROP} {i : Nat} {h : i + 1 <
   · exact Ps
   · exact Nat.zero_lt_succ _
 
-theorem env_big_op_sep_concat [BI PROP] {Γ : Env PROP} {P : PROP} : [∗] (Γ.concat P) ⊣⊢ [∗] Γ ∗ P := by
+theorem env_big_op_sep_append [BI PROP] {Γ : Env PROP} {P : PROP} : [∗] (Γ.append P) ⊣⊢ [∗] Γ ∗ P := by
   induction Γ
-  <;> simp only [Env.concat, Env.toList]
+  <;> simp only [Env.append, Env.toList]
   case nil =>
     simp only [big_op]
     rw' [(left_id : emp ∗ _ ⊣⊢ _)]
@@ -113,9 +113,9 @@ theorem env_big_op_sep_concat [BI PROP] {Γ : Env PROP} {P : PROP} : [∗] (Γ.c
       h_ind,
       ← (assoc : _ ⊣⊢ (P' ∗ _) ∗ P)]
 
-theorem env_big_op_and_concat [BI PROP] {Γ : Env PROP} {P : PROP} : □ [∧] (Γ.concat P) ⊣⊢ □ [∧] Γ ∗ □ P := by
+theorem env_big_op_and_append [BI PROP] {Γ : Env PROP} {P : PROP} : □ [∧] (Γ.append P) ⊣⊢ □ [∧] Γ ∗ □ P := by
   induction Γ
-  <;> simp only [Env.concat, Env.toList]
+  <;> simp only [Env.append, Env.toList]
   case nil =>
     simp only [big_op]
     rw' [
@@ -293,9 +293,9 @@ def HypothesisIndex.quoteAsEnvsIndex : HypothesisIndex → MetaM (TSyntax `term)
 namespace Envs
 
 @[reducible]
-def concat [BI PROP] : Bool → PROP → Envs PROP → Envs PROP
-  | true,  P, ⟨Γₚ, Γₛ⟩ => ⟨Γₚ.concat P, Γₛ⟩
-  | false, P, ⟨Γₚ, Γₛ⟩ => ⟨Γₚ, Γₛ.concat P⟩
+def append [BI PROP] : Bool → PROP → Envs PROP → Envs PROP
+  | true,  P, ⟨Γₚ, Γₛ⟩ => ⟨Γₚ.append P, Γₛ⟩
+  | false, P, ⟨Γₚ, Γₛ⟩ => ⟨Γₚ, Γₛ.append P⟩
 
 @[reducible]
 def delete [BI PROP] : Bool → (Δ : Envs PROP) → EnvsIndex.of Δ → Envs PROP
@@ -310,7 +310,7 @@ def lookup [BI PROP] : (Δ : Envs PROP) → EnvsIndex.of Δ → Bool × PROP
 
 @[reducible]
 def replace [BI PROP] (Δ : Envs PROP) (i : EnvsIndex.of Δ) (p : Bool) (P : PROP) : Envs PROP :=
-  Δ.delete true i |>.concat p P
+  Δ.delete true i |>.append p P
 
 @[reducible]
 def split [BI PROP] : (Δ : Envs PROP) → (mask : List Bool) → (mask.length = Δ.spatial.length) → Envs PROP × Envs PROP
@@ -321,20 +321,20 @@ def split [BI PROP] : (Δ : Envs PROP) → (mask : List Bool) → (mask.length =
 end Envs
 
 -- Envs Theorems
-theorem envs_concat_sound [BI PROP] {Δ : Envs PROP} (p : Bool) (Q : PROP) :
-  of_envs Δ ⊢ □?p Q -∗ of_envs (Δ.concat p Q)
+theorem envs_append_sound [BI PROP] {Δ : Envs PROP} (p : Bool) (Q : PROP) :
+  of_envs Δ ⊢ □?p Q -∗ of_envs (Δ.append p Q)
 := by
   apply wand_intro_l ?_
   cases p
   <;> simp only [bi_intuitionistically_if, ite_true, ite_false, of_envs]
   case false =>
     rw' [
-      env_big_op_sep_concat,
+      env_big_op_sep_append,
       (assoc : _ ∗ (_ ∗ Q) ⊣⊢ _),
       (comm : _ ∗ Q ⊣⊢ _)]
   case true =>
     rw' [
-      env_big_op_and_concat,
+      env_big_op_and_append,
       (comm : _ ∗ □ Q ⊣⊢ _),
       ← (assoc : _ ⊣⊢ (□ Q ∗ _) ∗ _)]
 
@@ -376,7 +376,7 @@ theorem envs_lookup_replace_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of �
   intro h_lookup
   simp only [Envs.replace]
   rw' [
-    ← envs_concat_sound q Q,
+    ← envs_append_sound q Q,
     ← envs_lookup_delete_sound true h_lookup]
 
 theorem envs_split_env_spatial_split [BI PROP] {Δ Δ₁ Δ₂ : Envs PROP} {mask : List Bool} {h : mask.length = Δ.spatial.length} :
