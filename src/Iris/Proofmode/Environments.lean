@@ -36,9 +36,9 @@ theorem length_cons_list_cons {a : α} {as : List α} {b : β} {bs : Env β} :
   rw' [Nat.add_right_cancel h]
 
 @[reducible]
-def eraseIdx : (Γ : Env α) → Fin (Γ.length) → Env α
+def delete : (Γ : Env α) → Fin (Γ.length) → Env α
   | .cons _ as, ⟨0    , _⟩ => as
-  | .cons a as, ⟨i + 1, h⟩ => .cons a <| as.eraseIdx ⟨i, Nat.lt_of_succ_lt_succ h⟩
+  | .cons a as, ⟨i + 1, h⟩ => .cons a <| as.delete ⟨i, Nat.lt_of_succ_lt_succ h⟩
 
 @[reducible]
 def get : (Γ : Env α) → Fin (Γ.length) → α
@@ -87,10 +87,10 @@ theorem env_mem_cons_2 [BI PROP] {P Q : PROP} {Ps : Env PROP} : P ∈ Ps → P �
   apply Env.Mem.tail
   exact h_Ps
 
-theorem env_erase_idx_cons [BI PROP] {P : PROP} {Ps : Env PROP} {i : Nat} {h : i + 1 < (Env.cons P Ps).length} :
-  (Env.cons P Ps).eraseIdx ⟨i + 1, h⟩ = (Env.cons P <| Ps.eraseIdx ⟨i, Nat.lt_of_succ_lt_succ h⟩)
+theorem env_delete_cons [BI PROP] {P : PROP} {Ps : Env PROP} {i : Nat} {h : i + 1 < (Env.cons P Ps).length} :
+  (Env.cons P Ps).delete ⟨i + 1, h⟩ = (Env.cons P <| Ps.delete ⟨i, Nat.lt_of_succ_lt_succ h⟩)
 := by
-  rw' [Env.eraseIdx]
+  rw' [Env.delete]
   · exact P
   · exact Nat.zero_lt_succ _
 
@@ -129,67 +129,68 @@ theorem env_big_op_and_append [BI PROP] {Γ : Env PROP} {P : PROP} : □ [∧] (
       h_ind,
       ← (assoc : _ ⊣⊢ (□ P' ∗ _) ∗ □ P)]
 
-theorem env_big_op_sep_erase_idx_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) :
-  [∗] Γ ⊣⊢ [∗] (Γ.eraseIdx i) ∗ (Γ.get i)
+theorem env_idx_rec [BI PROP] (P : (Γ : Env PROP) → Fin Γ.length → Prop)
+  (zero : ∀ {P'} {Γ'} {is_lt}, P (.cons P' Γ') ⟨0, is_lt⟩)
+  (succ : ∀ {P'} {Γ'} {val} {is_lt} {is_lt'}, P Γ' ⟨val, is_lt⟩ → P (.cons P' Γ') ⟨Nat.succ val, is_lt'⟩) :
+  ∀ Γ i, P Γ i
 := by
+  intro Γ i
   let ⟨val, is_lt⟩ := i
   induction val generalizing Γ
   case zero =>
-    cases Γ
-    case nil =>
+    cases Γ with
+    | nil =>
       contradiction
-    case cons P' _ =>
-      rw' [Env.eraseIdx, Env.get]
-      simp only [Env.toList]
-      rw' [
-        big_op_sep_cons,
-        (comm : P' ∗ _ ⊣⊢ _)]
+    | cons P' Γ' =>
+      exact zero
   case succ val h_ind =>
-    cases Γ
-    case nil =>
+    cases Γ with
+    | nil =>
       contradiction
-    case cons P' _ =>
+    | cons P' Γ' =>
       let is_lt := Nat.lt_of_succ_lt_succ is_lt
-      let h_ind := h_ind ⟨val, is_lt⟩ is_lt
-      rw' [env_erase_idx_cons, env_get_cons]
-      simp only [Env.toList]
-      rw' [
-        !big_op_sep_cons,
-        ← (assoc : _ ⊣⊢ (P' ∗ _) ∗ _),
-        ← h_ind]
+      let h_ind := h_ind Γ' ⟨val, is_lt⟩ is_lt
+      exact succ h_ind
 
-theorem env_big_op_and_erase_idx_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) :
-  □ [∧] Γ ⊣⊢ □ [∧] (Γ.eraseIdx i) ∗ □ (Γ.get i)
+theorem env_big_op_sep_delete_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) :
+  [∗] Γ ⊣⊢ [∗] (Γ.delete i) ∗ (Γ.get i)
 := by
-  let ⟨val, is_lt⟩ := i
-  induction val generalizing Γ
-  case zero =>
-    cases Γ
-    case nil =>
-      contradiction
-    case cons P' _ =>
-      rw' [Env.eraseIdx, Env.get]
-      simp only [Env.toList]
-      rw' [
-        big_op_and_cons,
-        intuitionistically_and,
-        and_sep_intuitionistically,
-        (comm : □ P' ∗ _ ⊣⊢ _)]
-  case succ val h_ind =>
-    cases Γ
-    case nil =>
-      contradiction
-    case cons P' _ =>
-      let is_lt := Nat.lt_of_succ_lt_succ is_lt
-      let h_ind := h_ind ⟨val, is_lt⟩ is_lt
-      rw' [env_erase_idx_cons, env_get_cons]
-      simp only [Env.toList]
-      rw' [
-        !big_op_and_cons,
-        !intuitionistically_and,
-        !and_sep_intuitionistically,
-        ← (assoc : _ ⊣⊢ (□ P' ∗ _) ∗ _),
-        ← h_ind]
+  induction Γ, i using env_idx_rec
+  case zero P' _ _ =>
+    rw' [
+      Env.delete,
+      Env.get,
+      big_op_sep_cons,
+      (comm : P' ∗ _ ⊣⊢ _)]
+  case succ P' _ _ _ _ h_ind =>
+    rw' [
+      env_delete_cons,
+      env_get_cons,
+      !big_op_sep_cons,
+      ← (assoc : _ ⊣⊢ (P' ∗ _) ∗ _),
+      ← h_ind]
+
+theorem env_big_op_and_delete_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) :
+  □ [∧] Γ ⊣⊢ □ [∧] (Γ.delete i) ∗ □ (Γ.get i)
+:= by
+  induction Γ, i using env_idx_rec
+  case zero P' _ _ =>
+    rw' [
+      Env.delete,
+      Env.get,
+      big_op_and_cons,
+      intuitionistically_and,
+      and_sep_intuitionistically,
+      (comm : □ P' ∗ _ ⊣⊢ _)]
+  case succ P' _ _ _ _ h_ind =>
+    rw' [
+      env_delete_cons,
+      env_get_cons,
+      !big_op_and_cons,
+      !intuitionistically_and,
+      !and_sep_intuitionistically,
+      ← (assoc : _ ⊣⊢ (□ P' ∗ _) ∗ _),
+      ← h_ind]
 
 theorem env_split_cons_false [BI PROP] {P : PROP} {Ps : Env PROP} {bs : List Bool} {Γ₁ Γ₂ : Env PROP} {h : (false :: bs).length = (Env.cons P Ps).length} :
   (Γ₁, Γ₂) = (Env.cons P Ps).split (false :: bs) h →
@@ -299,9 +300,9 @@ def append [BI PROP] : Bool → PROP → Envs PROP → Envs PROP
 
 @[reducible]
 def delete [BI PROP] : Bool → (Δ : Envs PROP) → EnvsIndex.of Δ → Envs PROP
-  | true , ⟨Γₚ, Γₛ⟩, .p i => ⟨Γₚ.eraseIdx i, Γₛ⟩
+  | true , ⟨Γₚ, Γₛ⟩, .p i => ⟨Γₚ.delete i, Γₛ⟩
   | false, ⟨Γₚ, Γₛ⟩, .p _ => ⟨Γₚ, Γₛ⟩
-  | _    , ⟨Γₚ, Γₛ⟩, .s i => ⟨Γₚ, Γₛ.eraseIdx i⟩
+  | _    , ⟨Γₚ, Γₛ⟩, .s i => ⟨Γₚ, Γₛ.delete i⟩
 
 @[reducible]
 def lookup [BI PROP] : (Δ : Envs PROP) → EnvsIndex.of Δ → Bool × PROP
@@ -352,7 +353,7 @@ theorem envs_lookup_delete_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ
     rw' [
       (comm : Δ.spatial.get i ∗ _ ⊣⊢ _),
       ← (assoc : _ ⊣⊢ _ ∗ _),
-      ← env_big_op_sep_erase_idx_get]
+      ← env_big_op_sep_delete_get]
   case p i =>
     cases rp
     <;> simp only
@@ -360,12 +361,12 @@ theorem envs_lookup_delete_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ
       rw' [
         (assoc : _ ∗ _ ⊣⊢ _),
         (comm : □ Δ.intuitionistic.get i ∗ _ ⊣⊢ _),
-        ← env_big_op_and_erase_idx_get i]
+        ← env_big_op_and_delete_get i]
     case false =>
       rw' [
         (assoc : _ ∗ _ ⊣⊢ _),
         (comm : □ Δ.intuitionistic.get i ∗ _ ⊣⊢ _),
-        env_big_op_and_erase_idx_get i,
+        env_big_op_and_delete_get i,
         ← (assoc : _ ⊣⊢ (_ ∗ _) ∗ □ Δ.intuitionistic.get i),
         ← intuitionistically_sep_dup]
 
