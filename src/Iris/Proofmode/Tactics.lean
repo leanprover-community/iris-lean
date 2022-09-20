@@ -1,7 +1,7 @@
 import Iris.BI
 import Iris.Proofmode.Environments
 import Iris.Proofmode.Expr
-import Iris.Proofmode.InputPatterns
+import Iris.Proofmode.Patterns
 import Iris.Proofmode.Theorems
 import Iris.Proofmode.Tactics.Cases
 import Iris.Proofmode.Tactics.Rename

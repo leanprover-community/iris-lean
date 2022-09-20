@@ -1,4 +1,4 @@
-import Iris.Proofmode.InputPatterns
+import Iris.Proofmode.Patterns.CasesPattern
 import Iris.Proofmode.Theorems
 import Iris.Proofmode.Tactics.Rename
 import Iris.Std
