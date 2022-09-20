@@ -60,6 +60,14 @@ theorem intuitionistic [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
   iintro #HQ
   iexact HQ
 
+theorem as_intuitionistic [BI PROP] (Q : PROP) : <affine> <pers> Q ⊢ Q := by
+  iintro #HQ
+  iexact HQ
+
+theorem as_intuitionistic_in_spatial [BI PROP] (Q : PROP) : ⊢ <pers> Q → Q := by
+  iintro HQ
+  iexact HQ
+
 theorem drop [BI PROP] (Q : PROP) : ⊢ P → Q -∗ Q := by
   iintro _ HQ
   iexact HQ

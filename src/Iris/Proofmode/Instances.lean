@@ -730,7 +730,7 @@ where
   from_affinely := by
     rw' [affinely_elim]
 
-instance (priority := default - 10) fromAffinelyDefault [BI PROP] (P : PROP) :
+instance (priority := default - 50) fromAffinelyDefault [BI PROP] (P : PROP) :
   FromAffinely `[iprop| <affine> P] P true
 where
   from_affinely := by
