@@ -63,18 +63,28 @@ private def extractEnvsEntailsFromGoal (startProofMode : Bool := false) : Tactic
 
   return envsEntails
 
-private def findHypothesis (name : Name) : TacticM HypothesisIndex := do
+private def findHypothesis? (name : Name) : TacticM <| Option HypothesisIndex := do
   let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal
   if let some i ← EnvExpr.findIndex? Γₚ (·.getMDataName?.isEqSome name) then
     let some l ← EnvExpr.length? Γₚ
       | throwError "ill-formed proof environment"
-    return ⟨.intuitionistic, i, l⟩
+    return some ⟨.intuitionistic, i, l⟩
   else if let some i ← EnvExpr.findIndex? Γₛ (·.getMDataName?.isEqSome name) then
     let some l ← EnvExpr.length? Γₛ
       | throwError "ill-formed proof environment"
-    return ⟨.spatial, i, l⟩
+    return some ⟨.spatial, i, l⟩
   else
-    throwError "unknown hypothesis"
+    return none
+
+private def envLength (type : HypothesisType) : TacticM Nat := do
+  let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal
+  let Γ := match type with
+    | .intuitionistic => Γₚ
+    | .spatial        => Γₛ
+  
+  let some l ← EnvExpr.length? Γ
+    | throwError "ill-formed proof environment"
+  return l
 
 
 elab "irename" colGt nameFrom:ident "to" colGt nameTo:ident : tactic => do
@@ -85,8 +95,12 @@ elab "irename" colGt nameFrom:ident "to" colGt nameTo:ident : tactic => do
   if nameTo.isAnonymous then
     throwUnsupportedSyntax
 
+  -- find hypothesis index
+  let some hypIndex ← findHypothesis? nameFrom.getId
+    | throwError "unknown hypothesis"
+
   -- find and rename hypothesis
-  irenameCore (← findHypothesis nameFrom.getId) nameTo
+  irenameCore hypIndex nameTo
 
 
 elab "iclear" colGt hyp:ident : tactic => do
@@ -96,7 +110,8 @@ elab "iclear" colGt hyp:ident : tactic => do
     throwUnsupportedSyntax
 
   -- find hypothesis index
-  let hypIndex ← findHypothesis name
+  let some hypIndex ← findHypothesis? name
+    | throwError "unknown hypothesis"
 
   -- clear hypothesis
   try evalTactic (← `(tactic|
@@ -143,18 +158,18 @@ def Internal.iintroCore (type : HypothesisType) (name : Name) : TacticM Unit := 
 def Internal.iintroCoreClear : TacticM Unit := do
   -- drop implication premise
   try evalTactic (← `(tactic|
+    istart ;
     first
-    | istart
-      refine tac_impl_intro_drop _ ?_
+    | refine tac_impl_intro_drop _ ?_
     | fail
   )) catch _ => throwError "failed to drop implication hypothesis"
 
 def Internal.iintroCoreForall (name : Name) : TacticM Unit := do
   -- introduce universally bound variable
   try evalTactic (← `(tactic|
+    istart ;
     first
-    | istart
-      refine tac_forall_intro _ ?_
+    | refine tac_forall_intro _ ?_
       intro $(mkIdent name):ident
     | fail
   ))
@@ -179,7 +194,8 @@ elab "iexact" colGt hyp:ident : tactic => do
     throwUnsupportedSyntax
 
   -- find hypothesis index
-  let hypIndex ← findHypothesis name
+  let some hypIndex ← findHypothesis? name
+    | throwError "unknown hypothesis"
 
   -- try to solve the goal with the found hypothesis
   try evalTactic (← `(tactic|
@@ -222,11 +238,8 @@ elab "iassumption_lean" : tactic => do
   throwError "no matching hypothesis found or remaining environment cannot be cleared"
 
 elab "iassumption" : tactic => do
-  -- extract environment
-  let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal
-
-  let (some lₚ, some lₛ) ← (Γₚ, Γₛ).mapAllM (M := MetaM) (EnvExpr.length? ·)
-    | throwError "ill-formed proof environment"
+  -- extract environment lengths
+  let (lₚ, lₛ) ← (.intuitionistic, .spatial).mapAllM envLength
 
   -- try to close the goal
   let tryCloseGoal (envsIndex : TSyntax `term) : TacticM Bool := do
@@ -276,7 +289,8 @@ elab "ipure" colGt hyp:ident : tactic => do
     throwUnsupportedSyntax
 
   -- find hypothesis index
-  let hypIndex ← findHypothesis name
+  let some hypIndex ← findHypothesis? name
+    | throwError "unknown hypothesis"
 
   -- move hypothesis
   try evalTactic (← `(tactic|
@@ -293,7 +307,8 @@ elab "iintuitionistic" colGt hyp:ident : tactic => do
     throwUnsupportedSyntax
 
   -- find hypothesis index
-  let hypIndex ← findHypothesis name
+  let some hypIndex ← findHypothesis? name
+    | throwError "unknown hypothesis"
 
   -- move hypothesis
   try evalTactic (← `(tactic|
@@ -302,13 +317,8 @@ elab "iintuitionistic" colGt hyp:ident : tactic => do
     | fail
   )) catch _ => throwError "could not move hypothesis to the intuitionistic context"
 
-  -- extract environment
-  let (Γₚ, _, _) ← extractEnvsEntailsFromGoal
-
-  let some lₚ ← EnvExpr.length? Γₚ
-    | throwError "ill-formed proof environment"
-
   -- re-name hypothesis
+  let lₚ ← envLength .intuitionistic
   irenameCore ⟨.intuitionistic, lₚ - 1, lₚ⟩ name
 
 elab "ispatial" colGt hyp:ident : tactic => do
@@ -318,7 +328,8 @@ elab "ispatial" colGt hyp:ident : tactic => do
     throwUnsupportedSyntax
 
   -- find hypothesis index
-  let hypIndex ← findHypothesis name
+  let some hypIndex ← findHypothesis? name
+    | throwError "unknown hypothesis"
 
   -- move hypothesis
   try evalTactic (← `(tactic|
@@ -327,13 +338,8 @@ elab "ispatial" colGt hyp:ident : tactic => do
     | fail
   )) catch _ => throwError "could not move hypothesis to the spatial context"
 
-  -- extract environment
-  let (_, Γₛ, _) ← extractEnvsEntailsFromGoal
-
-  let some lₛ ← EnvExpr.length? Γₛ
-    | throwError "ill-formed proof environment"
-
   -- re-name hypothesis
+  let lₛ ← envLength .spatial
   irenameCore ⟨.spatial, lₛ - 1, lₛ⟩ name
 
 
@@ -358,13 +364,9 @@ elab "ipure_intro" : tactic => do
 
 
 elab "isplit" : tactic => do
-  -- start proof mode if not already
-  evalTactic (← `(tactic|
-    istart
-  ))
-
   -- split conjunction
   try evalTactic (← `(tactic|
+    istart ;
     first
     | refine tac_and_split _ ?And.left ?And.right
     | fail
@@ -445,7 +447,8 @@ partial def Internal.icasesCore (nameFrom : Name) (pat : iCasesPat) : TacticM Un
   setGoals [mainGoal]
 
   -- find hypothesis index
-  let hypIndex ← findHypothesis nameFrom
+  let some hypIndex ← findHypothesis? nameFrom
+    | throwError "unknown hypothesis"
 
   -- process pattern
   processPattern hypIndex pat

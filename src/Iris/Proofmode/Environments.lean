@@ -10,6 +10,7 @@ inductive Env (α : Type)
   | nil  : Env α
   | cons : α → Env α → Env α
 
+-- Env Operations
 namespace Env
 
 @[reducible]
@@ -271,7 +272,7 @@ def of_envs [BI PROP] : Envs PROP → PROP
 def envs_entails [BI PROP] (Δ : Envs PROP) (Q : PROP) : Prop :=
   of_envs Δ ⊢ Q
 
--- HypothesisIndex
+-- HypothesisIndex / EnvsIndex
 inductive HypothesisType | intuitionistic | spatial
 
 structure HypothesisIndex where
@@ -291,6 +292,7 @@ def HypothesisIndex.quoteAsEnvsIndex : HypothesisIndex → MetaM (TSyntax `term)
   | ⟨.spatial, index, length⟩ =>
     ``(EnvsIndex.s ⟨$(quote index), by show $(quote index) < $(quote length) ; decide⟩)
 
+-- Envs Operations
 namespace Envs
 
 @[reducible]

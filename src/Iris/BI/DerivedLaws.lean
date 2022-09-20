@@ -600,7 +600,7 @@ theorem absorbingly_sep_lr [BI PROP] {P Q : PROP} : <absorb> P ∗ Q ⊣⊢ P �
   rw' [absorbingly_sep_l, absorbingly_sep_r]
 
 -- Affine / Absorbing Propositions
-theorem affine_affinely [BI PROP] {P : PROP} [Affine P] : <affine> P ⊣⊢ P := by
+theorem affine_affinely [BI PROP] (P : PROP) [Affine P] : <affine> P ⊣⊢ P := by
   apply anti_symm
   <;> simp only [bi_affinely]
   · exact and_elim_r
@@ -849,7 +849,7 @@ theorem intuitionistic_intuitionistically [BI PROP] {P : PROP} [Affine P] [Persi
   · exact intuitionistically_elim
   conv =>
     lhs
-    rw [← (affine_affinely : _ ⊣⊢ P)]
+    rw [← affine_affinely P]
   rw' [persistent]
 
 theorem intuitionistically_affinely [BI PROP] {P : PROP} : □ P ⊢ <affine> P := by
@@ -893,7 +893,7 @@ theorem intuitionistically_sep_dup [BI PROP] {P : PROP} : □ P ⊣⊢ □ P ∗
 
 -- Intuitionistic BIAffine
 theorem intuitionistically_into_persistently [BIAffine PROP] {P : PROP} : □ P ⊣⊢ <pers> P := by
-  exact affine_affinely
+  exact affine_affinely _
 
 -- Conditional Affine
 @[rwMonoRule]

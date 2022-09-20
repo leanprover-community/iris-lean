@@ -173,7 +173,7 @@ theorem tac_wand_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP}
   cases inst_affine_absorbing
   case a.l =>
     rw' [
-      ← (affine_affinely : _ ⊣⊢ P),
+      ← affine_affinely P,
       persistently_if_intro_False P,
       into_persistent,
       wand_elim_r,
@@ -332,7 +332,7 @@ theorem tac_pure [BI PROP] {Δ : Envs PROP} {φ : Prop} (i : EnvsIndex.of Δ) (Q
     cases inst_affine_absorbing
     case l =>
       rw' [
-        ← (affine_affinely : _ ⊣⊢ P),
+        ← affine_affinely P,
         into_pure,
         ← persistent_and_affinely_sep_l]
       apply pure_elim φ
@@ -375,7 +375,7 @@ theorem tac_intuitionistic [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex
     cases inst_affine_absorbing
     case l =>
       rw' [
-        ← (affine_affinely : _ ⊣⊢ P),
+        ← affine_affinely P,
         persistently_if_intro_False P,
         into_persistent,
         wand_elim_r,

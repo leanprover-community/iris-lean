@@ -30,7 +30,7 @@ def irenameCore (hypIndex : HypothesisIndex) (name : Name) : TacticM Unit := do
         throwError "name is already used for another hypothesis"
 
       if decl.lctx.any (·.userName == name) then
-        throwError "name is already used for a Lean hypothesis"
+        throwError "name is already used in the Lean context"
 
     -- rename hypothesis
     let h := h.setMDataName? name

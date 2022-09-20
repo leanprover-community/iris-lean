@@ -204,7 +204,7 @@ instance intoAndAndAffineL [BI PROP] (P Q Q' : PROP) :
 where
   into_and := by
     rw' [
-      ← (affine_affinely : _ ⊣⊢ P),
+      ← affine_affinely P,
       affinely_and_l,
       affinely_and,
       ← (FromAffinely.from_affinely : <affine>?true Q ⊢ _)]
@@ -216,7 +216,7 @@ instance intoAndAndAffineR [BI PROP] (P P' Q : PROP) :
 where
   into_and := by
     rw' [
-      ← (affine_affinely : _ ⊣⊢ Q),
+      ← affine_affinely Q,
       affinely_and_r,
       affinely_and,
       ← (FromAffinely.from_affinely : <affine>?true P ⊢ _)]
@@ -362,7 +362,7 @@ where
     case and_into_sep_affine =>
       rw' [
         ← (FromAffinely.from_affinely : <affine>?true Q ⊢ _),
-        ← (affine_affinely : _ ⊣⊢ P),
+        ← affine_affinely P,
         affinely_and_lr,
         persistent_and_affinely_sep_l_1]
     case and_into_sep =>
@@ -378,7 +378,7 @@ where
     case and_into_sep_affine =>
       rw' [
         ← (FromAffinely.from_affinely : <affine>?true P ⊢ _),
-        ← (affine_affinely : _ ⊣⊢ Q),
+        ← affine_affinely Q,
         ← affinely_and_lr,
         persistent_and_affinely_sep_r_1]
     case and_into_sep =>
@@ -886,7 +886,7 @@ where
     case a.true.t =>
       rw' [
         ← persistent_and_affinely_sep_r,
-        ← (affine_affinely : _ ⊣⊢ P1),
+        ← affine_affinely P1,
         (IntoPure.into_pure : P1 ⊢ _),
         affinely_and_l,
         pure_impl_1,
