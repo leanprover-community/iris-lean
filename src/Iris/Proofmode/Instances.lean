@@ -45,12 +45,183 @@ where
   from_wand := by
     simp
 
+-- IntoWand
+instance intoWandWand (p q : Bool) [BI PROP] (P Q P' : PROP) :
+  [FromAssumption q P P'] →
+  IntoWand p q `[iprop| P' -∗ Q] P Q
+where
+  into_wand := by
+    rw' [(FromAssumption.from_assumption : □?q P ⊢ P'), intuitionistically_if_elim]
+
+instance intoWandImplFalseFalse [BI PROP] (P Q P' : PROP) :
+  [Absorbing P'] →
+  [Absorbing `[iprop| P' → Q]] →
+  [FromAssumption false P P'] →
+  IntoWand false false `[iprop| P' → Q] P Q
+where
+  into_wand := by
+    rw' [← (FromAssumption.from_assumption : □?false P ⊢ P')]
+    simp only [bi_intuitionistically_if, ite_false]
+    apply BI.wand_intro_r
+    rw' [sep_and, impl_elim_l]
+
+instance intoWandImplFalseTrue [BI PROP] (P Q P' : PROP) :
+  [Absorbing P'] →
+  [FromAssumption true P P'] →
+  IntoWand false true `[iprop| P' → Q] P Q
+where
+  into_wand := by
+    simp only [bi_intuitionistically_if, ite_true, ite_false]
+    apply wand_intro_l
+    rw' [
+      ← intuitionistically_idemp,
+      (FromAssumption.from_assumption : □?true P ⊢ P'),
+      ← persistently_and_intuitionistically_sep_l,
+      persistently_elim,
+      impl_elim_r]
+
+instance intoWandImplTrueFalse [BI PROP] (P Q P' : PROP) :
+  [Affine P'] →
+  [FromAssumption false P P'] →
+  IntoWand true false `[iprop| P' → Q] P Q
+where
+  into_wand := by
+    simp only [bi_intuitionistically_if, ite_true, ite_false]
+    rw' [← (FromAssumption.from_assumption : □?false P ⊢ P')]
+    apply BI.wand_intro_r
+    rw' [sep_and, intuitionistically_elim, impl_elim_l]
+
+instance intoWandImplTrueTrue [BI PROP] (P Q P' : PROP) :
+  [FromAssumption true P P'] →
+  IntoWand true true `[iprop| P' → Q] P Q
+where
+  into_wand := by
+    rw' [(FromAssumption.from_assumption : □?true P ⊢ P')]
+    simp only [bi_intuitionistically_if, ite_true, ite_false]
+    apply wand_intro_l
+    rw' [
+      sep_and,
+      (intuitionistically_elim : □ (□ P → _) ⊢ _),
+      impl_elim_r]
+
+instance intoWandAndL (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP) :
+  [IntoWand p q R1 P' Q'] →
+  IntoWand p q `[iprop| R1 ∧ R2] P' Q'
+where
+  into_wand := by
+    rw' [BI.and_elim_l]
+    exact IntoWand.into_wand
+
+instance intoWandAndR (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP) :
+  [IntoWand p q R2 Q' P'] →
+  IntoWand p q `[iprop| R1 ∧ R2] Q' P'
+where
+  into_wand := by
+    rw' [BI.and_elim_r]
+    exact IntoWand.into_wand
+
+instance intoWandForall (p q : Bool) [BI PROP] (Φ : α → PROP) (P Q : PROP) (x : α)
+  [inst : IntoWand p q (Φ x) P Q] :
+  IntoWand p q `[iprop| ∀ x, Φ x] P Q
+where
+  into_wand := by
+    rw' [← (IntoWand.into_wand : □?p Φ x ⊢ □?q P -∗ Q), BI.forall_elim x]
+
+instance intoWandAffine (p q : Bool) [BI  PROP] (R P Q : PROP) :
+  [IntoWand p q R P Q] →
+  IntoWand p q `[iprop| <affine> R] `[iprop| <affine> P] `[iprop| <affine> Q]
+where
+  into_wand := by
+    apply BI.wand_intro_r ?_
+    cases p
+    case false =>
+      cases q
+      case false =>
+        rw' [(IntoWand.into_wand : □?false R ⊢ □?false P -∗ Q)]
+        simp only [bi_intuitionistically_if, ite_false]
+        rw' [affinely_sep_2, wand_elim_l]
+      case true =>
+        rw' [
+          (affinely_elim : _ ⊢ P),
+          (IntoWand.into_wand : □?false R ⊢ □?true P -∗ Q)]
+        simp only [bi_intuitionistically_if, ite_true, ite_false]
+        conv =>
+          lhs
+          rhs
+          rw [← affine_affinely `[iprop| □ P]]
+        rw' [affinely_sep_2, wand_elim_l]
+    case true =>
+      rw' [
+        (affinely_elim : <affine> R ⊢ _),
+        ← intuitionistically_if_intro_True,
+        ← affine_affinely `[iprop| □ R]]
+      cases q
+      case false =>
+        rw' [
+          (IntoWand.into_wand : □?true R ⊢ □?false P -∗ Q),
+          affinely_sep_2,
+          wand_elim_l]
+      case true =>
+        simp only [bi_intuitionistically_if, ite_true]
+        rw' [
+          (affinely_elim : <affine> P ⊢ _),
+          ← affine_affinely `[iprop| □ P],
+          (IntoWand.into_wand : □?true R ⊢ □?true P -∗ Q),
+          affinely_sep_2,
+          wand_elim_l]
+
+instance intoWandIntuitionistically (p q : Bool) [BI PROP] (R P Q : PROP) :
+  [IntoWand true q R P Q] →
+  IntoWand p q `[iprop| □ R] P Q
+where
+  into_wand := by
+    rw' [(IntoWand.into_wand : □?true R ⊢ □?q P -∗ Q), intuitionistically_if_elim]
+
+instance intoWandPersistentlyTrue (q : Bool) [BI PROP] (R P Q : PROP) :
+  [IntoWand true q R P Q] →
+  IntoWand true q `[iprop| <pers> R] P Q
+where
+  into_wand := by
+    rw' [
+      ← intuitionistically_if_intro_True,
+      intuitionistically_persistently_elim,
+      (IntoWand.into_wand : □?true R ⊢ □?q P -∗ Q)]
+
+instance intoWandPersistentlyFalse (q : Bool) [BI PROP] (R P Q : PROP) :
+  [Absorbing R] →
+  [IntoWand false q R P Q] →
+  IntoWand false q `[iprop| <pers> R] P Q
+where
+  into_wand := by
+    rw' [persistently_elim, (IntoWand.into_wand : □?false R ⊢ □?q P -∗ Q)]
+
 -- FromForall
 instance fromForallForall [BI PROP] (Φ : α → PROP) :
   FromForall (BIBase.forall Φ) Φ
 where
   from_forall := by
     simp
+
+-- IntoForall
+instance intoForallForall [BI PROP] (Φ : α → PROP) :
+  IntoForall `[iprop| ∀ a, Φ a] Φ
+where
+  into_forall := by
+    simp
+
+instance intoForallAffinely [BI PROP] (P : PROP) (Φ : α → PROP) :
+  [IntoForall P Φ] →
+  IntoForall `[iprop| <affine> P] (fun a => `[iprop| <affine> (Φ a)])
+where
+  into_forall := by
+    rw' [IntoForall.into_forall, affinely_forall]
+
+instance intoForallIntuitionistically [BI PROP] (P : PROP) (Φ : α → PROP) :
+  [IntoForall P Φ] →
+  IntoForall `[iprop| □ P] (fun a => `[iprop| □ (Φ a)])
+where
+  into_forall := by
+    rw' [IntoForall.into_forall, intuitionistically_forall]
 
 -- FromExist
 instance (priority := default + 10) fromExistExist [BI PROP] (Φ : α → PROP) :

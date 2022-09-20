@@ -56,6 +56,10 @@ theorem impl_elim_r' [BI PROP] {P Q R : PROP} : (Q ⊢ P → R) → P ∧ Q ⊢ 
   · rw' [and_elim_r, H]
   · rw' [and_elim_l]
 
+theorem impl_elim_l [BI PROP] {P Q : PROP} : (P → Q) ∧ P ⊢ Q := by
+  apply impl_elim_l'
+  simp
+
 theorem impl_elim_r [BI PROP] {P Q : PROP} : P ∧ (P → Q) ⊢ Q := by
   apply impl_elim_r'
   simp
@@ -645,6 +649,11 @@ theorem absorbingly_elim_persistently [BI PROP] {P : PROP} : <absorb> <pers> P �
   case right =>
     exact absorbingly_intro
 
+theorem persistently_forall_1 [BI PROP] {Ψ : α → PROP} : <pers> (∀ a, Ψ a) ⊢ ∀ a, <pers> (Ψ a) := by
+  apply forall_intro
+  intro x
+  rw' [forall_elim x]
+
 theorem persistently_exist [BI PROP] {Ψ : α → PROP} : <pers> (∃ a, Ψ a) ⊣⊢ ∃ a, <pers> (Ψ a) := by
   apply anti_symm
   case left =>
@@ -816,6 +825,10 @@ theorem intuitionistically_and [BI PROP] {P Q : PROP} : □ (P ∧ Q) ⊣⊢ □
   simp only [bi_intuitionistically]
   rw' [persistently_and, affinely_and]
 
+theorem intuitionistically_forall [BI PROP] {Φ : α → PROP} : □ (∀ x, Φ x) ⊢ ∀ x, □ Φ x := by
+  simp only [bi_intuitionistically]
+  rw' [persistently_forall_1, affinely_forall]
+
 theorem intuitionistically_or [BI PROP] {P Q : PROP} : □ (P ∨ Q) ⊣⊢ □ P ∨ □ Q := by
   simp only [bi_intuitionistically]
   rw' [persistently_or, affinely_or]
@@ -972,6 +985,11 @@ theorem intuitionistically_if_elim {p : Bool} [BI PROP] {P : PROP} : □?p P ⊢
   cases p
   <;> simp [bi_intuitionistically_if, intuitionistically_elim]
 
+theorem intuitionistically_intuitionistically_if (p : Bool) [BI PROP] {P : PROP} : □ P ⊢ □?p P := by
+  cases p
+  <;> simp [bi_intuitionistically_if]
+  · exact intuitionistically_elim
+
 theorem intuitionistically_if_and {p : Bool} [BI PROP] {P Q : PROP} : □?p (P ∧ Q) ⊣⊢ □?p P ∧ □?p Q := by
   cases p
   <;> simp [bi_intuitionistically_if, intuitionistically_and]
@@ -984,6 +1002,16 @@ theorem intuitionistically_if_or (p : Bool) [BI PROP] {P Q : PROP} : □?p (P �
 theorem intuitionistically_if_exist {p : Bool} [BI PROP] {Ψ : α → PROP} : (□?p ∃ a, Ψ a) ⊣⊢ ∃ a, □?p Ψ a := by
   cases p
   <;> simp [bi_intuitionistically_if, intuitionistically_exist]
+
+theorem intuitionistically_if_sep_2 {p : Bool} [BI PROP] {P Q : PROP} : □?p P ∗ □?p Q ⊢ □?p (P ∗ Q) := by
+  cases p
+  <;> simp [bi_intuitionistically_if]
+  · exact intuitionistically_sep_2
+
+theorem intuitionistically_if_idemp {p : Bool} [BI PROP] {P : PROP} : □?p □?p P ⊣⊢ □?p P := by
+  cases p
+  <;> simp [bi_intuitionistically_if]
+  · exact intuitionistically_idemp
 
 theorem intuitionistically_if_intro_True [BI PROP] (P : PROP) : □ P ⊣⊢ □?true P := by
   simp [bi_intuitionistically_if]

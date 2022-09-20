@@ -32,9 +32,17 @@ class FromWand [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_wand : (Q1 -∗ Q2) ⊢ P
 export FromWand (from_wand)
 
+class IntoWand [BI PROP] (p q : Bool) (R P : PROP) (Q : outParam PROP) where
+  into_wand : □?p R ⊢ □?q P -∗ Q
+export IntoWand (into_wand)
+
 class FromForall [BI PROP] (P : PROP) {α : outParam Type} (Ψ : outParam <| α → PROP) where
   from_forall : (∀ x, Ψ x) ⊢ P
 export FromForall (from_forall)
+
+class IntoForall [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) where
+  into_forall : P ⊢ ∀ x, Φ x
+export IntoForall (into_forall)
 
 class FromExist [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) where
   from_exist : (∃ x, Φ x) ⊢ P

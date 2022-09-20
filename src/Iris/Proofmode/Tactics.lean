@@ -363,6 +363,75 @@ elab "ipure_intro" : tactic => do
   )) catch _ => throwError "goal is not pure"
 
 
+elab "ispecialize" hyp:ident args:ident* "as" name:ident : tactic => do
+  -- parse syntax
+  let nameFrom := hyp.getId
+  if nameFrom.isAnonymous then
+    throwUnsupportedSyntax
+
+  let nameArgs := args.map (·.getId)
+  if nameArgs.any (·.isAnonymous) then
+    throwUnsupportedSyntax
+
+  let nameTo := name.getId
+  if nameTo.isAnonymous then
+    throwUnsupportedSyntax
+
+  -- find hypothesis index
+  let some hypIndex ← findHypothesis? nameFrom
+    | throwError "unknown hypothesis"
+  let mut hypIndex := hypIndex
+
+  -- specialize hypothesis
+  for (i, nameArg) in nameArgs.mapIdx (·, ·) do
+    -- remove temporary intuitionistic hypotheses and original hypothesis if new name is equal
+    let rpHyp := i.val != 0 || nameFrom == nameTo
+
+    if let some argIndex ← findHypothesis? nameArg then
+      -- check that the argument is not equal to the hypothesis
+      if hypIndex == argIndex then
+        throwError "cannot specialize hypothesis with itself"
+
+      -- if the argument is a hypothesis then specialize the wand
+      try evalTactic (← `(tactic|
+        first
+        | refine tac_specialize false $(quote rpHyp) $(← argIndex.quoteAsEnvsIndex) $(← hypIndex.quoteAsEnvsIndex) (by simp [EnvsIndex.type, EnvsIndex.val]) _ ?_
+          simp only [Bool.and_self, Bool.and_true, Bool.and_false]
+        | fail
+      ))
+      catch _ => throwError "unable to specialize hypothesis"
+
+      -- update hypothesis index
+      hypIndex ← match hypIndex, argIndex with
+        | ⟨.intuitionistic, _, _⟩, ⟨.intuitionistic, _, _⟩ => do
+          let lₚ ← envLength .intuitionistic
+          pure ⟨.intuitionistic, lₚ - 1, lₚ⟩
+        | _, _ => do
+          let lₛ ← envLength .spatial
+          pure ⟨.spatial, lₛ - 1, lₛ⟩
+    else
+      -- if the argument is a variable then specialize the universal quantifier
+      try evalTactic (← `(tactic|
+        first
+        | refine tac_specialize_forall $(quote rpHyp) $(← hypIndex.quoteAsEnvsIndex) _ ?_
+          apply Exists.intro $(mkIdent nameArg)
+        | fail
+      ))
+      catch _ => throwError "unable to specialize hypothesis"
+
+      -- update hypothesis index
+      hypIndex ← match hypIndex with
+        | ⟨.intuitionistic, _, _⟩ => do
+          let lₚ ← envLength .intuitionistic
+          pure ⟨.intuitionistic, lₚ - 1, lₚ⟩
+        | ⟨.spatial, _, _⟩ => do
+          let lₛ ← envLength .spatial
+          pure ⟨.spatial, lₛ - 1, lₛ⟩
+
+  -- name resulting hypothesis
+  irenameCore hypIndex nameTo
+
+
 elab "isplit" : tactic => do
   -- split conjunction
   try evalTactic (← `(tactic|

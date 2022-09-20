@@ -193,6 +193,45 @@ theorem env_big_op_and_delete_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) 
       ← (assoc : _ ⊣⊢ (□ P' ∗ _) ∗ _),
       ← h_ind]
 
+theorem env_delete_length [BI PROP] {Γ : Env PROP} {i : Fin Γ.length} : (Γ.delete i).length = Γ.length - 1 := by
+  induction Γ, i using env_idx_rec
+  case zero =>
+    rw [Env.delete, Env.length, Nat.add_sub_cancel]
+  case succ _ _ is_lt _ h_ind =>
+    rw [
+      env_delete_cons,
+      Env.length,
+      h_ind,
+      Env.length,
+      Nat.add_sub_cancel,
+      Nat.sub_add_cancel ?_]
+    · apply Nat.succ_le_of_lt
+      exact Nat.zero_lt_of_lt is_lt
+
+theorem env_delete_idx_length [BI PROP] {Γ : Env PROP} {i : Fin Γ.length} : i ≤ (Γ.delete i).length := by
+  let ⟨val, is_lt⟩ := i
+  rw [env_delete_length]
+  apply Nat.le_of_lt_succ
+  rw [Nat.succ_eq_add_one, Nat.sub_add_cancel ?_]
+  exact is_lt
+  · apply Nat.succ_le_of_lt
+    exact Nat.zero_lt_of_lt is_lt
+
+theorem env_delete_idx_length_of_lt [BI PROP] {Γ : Env PROP} {i : Fin Γ.length} {j : Nat} : j < i → j < (Γ.delete i).length := by
+  intro h
+  apply Nat.lt_of_lt_of_le h ?_
+  exact env_delete_idx_length
+
+theorem env_delete_idx_pred_length [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) (h : 0 < i.val) : ∀ {j}, (i - 1) < (Γ.delete j).length := by
+  intro j
+  let ⟨val, is_lt⟩ := i
+  rw [env_delete_length]
+  apply Nat.lt_sub_of_add_lt
+  rw [Nat.sub_add_cancel]
+  exact is_lt
+  · apply Nat.succ_le_of_lt
+    exact h
+
 theorem env_split_cons_false [BI PROP] {P : PROP} {Ps : Env PROP} {bs : List Bool} {Γ₁ Γ₂ : Env PROP} {h : (false :: bs).length = (Env.cons P Ps).length} :
   (Γ₁, Γ₂) = (Env.cons P Ps).split (false :: bs) h →
   ∃ (Γ₂' : Env PROP), Γ₂ = Env.cons P Γ₂' ∧
@@ -273,16 +312,29 @@ def envs_entails [BI PROP] (Δ : Envs PROP) (Q : PROP) : Prop :=
   of_envs Δ ⊢ Q
 
 -- HypothesisIndex / EnvsIndex
-inductive HypothesisType | intuitionistic | spatial
+inductive HypothesisType
+  | intuitionistic | spatial
+  deriving BEq
 
 structure HypothesisIndex where
   type : HypothesisType
   index : Nat
   length : Nat
+  deriving BEq
 
 inductive EnvsIndex (lₚ lₛ : Nat)
   | p : Fin lₚ → EnvsIndex lₚ lₛ
   | s : Fin lₛ → EnvsIndex lₚ lₛ
+
+@[reducible]
+def EnvsIndex.type : EnvsIndex lₚ lₛ → HypothesisType
+  | .p _ => .intuitionistic
+  | .s _ => .spatial
+
+@[reducible]
+def EnvsIndex.val : EnvsIndex lₚ lₛ → Nat
+  | .p ⟨val, _⟩ => val
+  | .s ⟨val, _⟩ => val
 
 abbrev EnvsIndex.of [BI PROP] (Δ : Envs PROP) := EnvsIndex Δ.intuitionistic.length Δ.spatial.length
 
@@ -312,14 +364,42 @@ def lookup [BI PROP] : (Δ : Envs PROP) → EnvsIndex.of Δ → Bool × PROP
   | ⟨_, Γₛ⟩, .s i => (false, Γₛ.get i)
 
 @[reducible]
-def replace [BI PROP] (Δ : Envs PROP) (i : EnvsIndex.of Δ) (p : Bool) (P : PROP) : Envs PROP :=
-  Δ.delete true i |>.append p P
+def replace [BI PROP] (Δ : Envs PROP) (rp : Bool) (i : EnvsIndex.of Δ) (p : Bool) (P : PROP) : Envs PROP :=
+  Δ.delete rp i |>.append p P
 
 @[reducible]
 def split [BI PROP] : (Δ : Envs PROP) → (mask : List Bool) → (mask.length = Δ.spatial.length) → Envs PROP × Envs PROP
   | ⟨Γₚ, Γₛ⟩, mask, h =>
     let ⟨Γₛ₁, Γₛ₂⟩ := Γₛ.split mask h
     (⟨Γₚ, Γₛ₁⟩, ⟨Γₚ, Γₛ₂⟩)
+
+
+@[reducible]
+def updateIndexAfterDelete [BI PROP] (Δ : Envs PROP) : (rp : Bool) → (i : EnvsIndex.of Δ) → (j : EnvsIndex.of Δ) → (i.type = j.type → i.val ≠ j.val) → EnvsIndex.of (Δ.delete rp i)
+  | rp, .p i, .s ⟨val, is_lt⟩, _ =>
+    .s ⟨val, by cases rp <;> simp [is_lt]⟩
+  | _, .s i, .p ⟨val, is_lt⟩, _ =>
+    .p ⟨val, by simp [delete, is_lt]⟩
+  | false, .p _, .p ⟨val, is_lt⟩, _ =>
+    .p ⟨val, by simp [delete, is_lt]⟩
+  | true, .p ⟨val_d, is_lt_d⟩, .p ⟨val, is_lt⟩, h_ne =>
+    if h_lt : val < val_d then
+      EnvsIndex.p ⟨val, env_delete_idx_length_of_lt h_lt⟩
+    else if h_gt : val_d < val then
+      EnvsIndex.p ⟨val - 1, env_delete_idx_pred_length ⟨val, is_lt⟩ (Nat.zero_lt_of_lt h_gt)⟩
+    else by
+      let h_ne := h_ne (by simp)
+      let h_eq := Nat.eq_of_not_lt_not_lt h_gt h_lt
+      contradiction
+  | rp, .s ⟨val_d, is_lt_d⟩, .s ⟨val, is_lt⟩, h_ne =>
+    if h_lt : val < val_d then
+      EnvsIndex.s ⟨val, by simp only [delete] ; exact env_delete_idx_length_of_lt h_lt⟩
+    else if h_gt : val_d < val then
+      EnvsIndex.s ⟨val - 1, by simp only [delete] ; exact env_delete_idx_pred_length ⟨val, is_lt⟩ (Nat.zero_lt_of_lt h_gt)⟩
+    else by
+      let h_ne := h_ne (by simp)
+      let h_eq := Nat.eq_of_not_lt_not_lt h_gt h_lt
+      contradiction
 
 end Envs
 
@@ -372,15 +452,15 @@ theorem envs_lookup_delete_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ
         ← (assoc : _ ⊣⊢ (_ ∗ _) ∗ □ Δ.intuitionistic.get i),
         ← intuitionistically_sep_dup]
 
-theorem envs_lookup_replace_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ} {p : Bool} {P : PROP} (q : Bool) (Q : PROP) :
+theorem envs_lookup_replace_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ} {p : Bool} {P : PROP} (rp : Bool) (q : Bool) (Q : PROP) :
   Δ.lookup i = (p, P) →
-  of_envs Δ ⊢ □?p P ∗ (□?q Q -∗ of_envs (Δ.replace i q Q))
+  of_envs Δ ⊢ □?p P ∗ (□?q Q -∗ of_envs (Δ.replace rp i q Q))
 := by
   intro h_lookup
   simp only [Envs.replace]
   rw' [
     ← envs_append_sound q Q,
-    ← envs_lookup_delete_sound true h_lookup]
+    ← envs_lookup_delete_sound rp h_lookup]
 
 theorem envs_split_env_spatial_split [BI PROP] {Δ Δ₁ Δ₂ : Envs PROP} {mask : List Bool} {h : mask.length = Δ.spatial.length} :
   Envs.split Δ mask h = (Δ₁, Δ₂) →

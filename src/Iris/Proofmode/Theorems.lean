@@ -188,6 +188,57 @@ theorem tac_wand_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP}
       h_entails,
       absorbing]
 
+-- specialize
+theorem tac_specialize [BI PROP] {Δ : Envs PROP} (rpPremise rpWand : Bool) (i j : EnvsIndex.of Δ) (h_ne : i.type = j.type → i.val ≠ j.val) {P2 : PROP} (R : PROP) :
+  let (p, P1) := Δ.lookup i
+  let Δ' := Δ.delete rpPremise i
+  let j' := Δ.updateIndexAfterDelete rpPremise i j h_ne
+  let (q, Q) := Δ'.lookup j'
+  [IntoWand q p Q P1 P2] →
+  envs_entails (Δ'.replace rpWand j' (p && q) P2) R →
+  envs_entails Δ R
+:= by
+  intro_let p P1 h_lookup_i
+  intro Δ' j'
+  intro_let q Q h_lookup_j'
+  simp only [envs_entails]
+  intro _ h_entails
+  rw' [
+    envs_lookup_delete_sound rpPremise h_lookup_i,
+    envs_lookup_replace_sound rpWand (p && q) P2 h_lookup_j']
+  cases p
+  case false =>
+    rw' [(IntoWand.into_wand : □?q Q ⊢ □?false P1 -∗ P2)]
+    simp only [bi_intuitionistically_if, Bool.false_and, ite_false]
+    rw' [(assoc : P1 ∗ _ ⊣⊢ _), !wand_elim_r, h_entails]
+  case true =>
+    simp only [Bool.true_and, ← intuitionistically_if_intro_True]
+    rw' [
+      ← intuitionistically_idemp,
+      ← intuitionistically_if_idemp,
+      intuitionistically_intuitionistically_if q,
+      (IntoWand.into_wand : □?q Q ⊢ □?true P1 -∗ P2),
+      (assoc : □?q □ P1 ∗ _ ⊣⊢ _),
+      intuitionistically_if_sep_2,
+      !wand_elim_r,
+      h_entails]
+
+theorem tac_specialize_forall [BI PROP] {Δ : Envs PROP} (rpWand : Bool) (i : EnvsIndex.of Δ) {Φ : α → PROP} (Q : PROP) :
+  let (p, P) := Δ.lookup i
+  [IntoForall P Φ] →
+  (∃ x, envs_entails (Δ.replace rpWand i p (Φ x)) Q) →
+  envs_entails Δ Q
+:= by
+  intro_let p P h_lookup
+  simp only [envs_entails]
+  intro _ ⟨x, h_entails⟩
+  rw' [
+    envs_lookup_replace_sound rpWand p (Φ x) h_lookup,
+    IntoForall.into_forall,
+    forall_elim x,
+    wand_elim_r,
+    h_entails]
+
 -- forall
 theorem tac_forall_intro [BI PROP] {Δ : Envs PROP} {Ψ : α → PROP} (Q : PROP) :
   [FromForall Q Ψ] →
@@ -213,7 +264,7 @@ theorem tac_exist [BI PROP] {Δ : Envs PROP} {Φ : α → PROP} (P : PROP) :
 theorem tac_exist_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) {Φ : α → PROP} (Q : PROP) :
   let (p, P) := Δ.lookup i
   [IntoExist P Φ] →
-  (∀ a, envs_entails (Δ.replace i p (Φ a)) Q) →
+  (∀ a, envs_entails (Δ.replace true i p (Φ a)) Q) →
   envs_entails Δ Q
 := by
   intro_let p P h_lookup
@@ -361,13 +412,13 @@ theorem tac_intuitionistic [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex
   let (p, P) := Δ.lookup i
   [IntoPersistent p P P'] →
   [TCIte p TCTrue (TCOr (Affine P) (Absorbing Q))] →
-  envs_entails (Δ.replace i true P') Q →
+  envs_entails (Δ.replace true i true P') Q →
   envs_entails Δ Q
 := by
   intro_let p P h_lookup
   simp only [envs_entails]
   intro _ inst_affine_absorbing h_entails
-  rw' [envs_lookup_replace_sound true P' h_lookup]
+  rw' [envs_lookup_replace_sound true true P' h_lookup]
   cases p
   <;> simp only [bi_intuitionistically_if, ite_true, ite_false, bi_intuitionistically]
   <;> cases inst_affine_absorbing
@@ -401,13 +452,13 @@ theorem tac_intuitionistic [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex
 theorem tac_spatial [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (p, P) := Δ.lookup i
   [FromAffinely P' P p] →
-  envs_entails (Δ.replace i false P') Q →
+  envs_entails (Δ.replace true i false P') Q →
   envs_entails Δ Q
 := by
   intro_let p P h_lookup
   simp only [envs_entails]
   intro _ h_entails
-  rw' [envs_lookup_replace_sound false P' h_lookup]
+  rw' [envs_lookup_replace_sound true false P' h_lookup]
   cases p
   <;> simp only [bi_intuitionistically_if, ite_true, ite_false]
   case false =>
@@ -524,7 +575,7 @@ theorem tac_conjunction_destruct [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : 
 theorem tac_conjunction_destruct_choice [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : EnvsIndex.of Δ) (d : Bool) (Q : PROP) :
   let (p, P) := Δ.lookup i
   [IntoAnd p P P1 P2] →
-  envs_entails (if d then Δ.replace i p P1 else Δ.replace i p P2) Q →
+  envs_entails (if d then Δ.replace true i p P1 else Δ.replace true i p P2) Q →
   envs_entails Δ Q
 := by
   intro_let p P h_lookup
@@ -533,14 +584,14 @@ theorem tac_conjunction_destruct_choice [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP
   cases d
   case false =>
     rw' [
-      envs_lookup_replace_sound p P2 h_lookup,
+      envs_lookup_replace_sound true p P2 h_lookup,
       into_and,
       and_elim_r,
       wand_elim_r,
       h_entails]
   case true =>
     rw' [
-      envs_lookup_replace_sound p P1 h_lookup,
+      envs_lookup_replace_sound true p P1 h_lookup,
       into_and,
       and_elim_l,
       wand_elim_r,
@@ -549,8 +600,8 @@ theorem tac_conjunction_destruct_choice [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP
 theorem tac_disjunction_destruct [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (p, P) := Δ.lookup i
   [IntoOr P P1 P2] →
-  envs_entails (Δ.replace i p P1) Q →
-  envs_entails (Δ.replace i p P2) Q →
+  envs_entails (Δ.replace true i p P1) Q →
+  envs_entails (Δ.replace true i p P2) Q →
   envs_entails Δ Q
 := by
   intro_let p P h_lookup

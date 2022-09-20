@@ -283,6 +283,101 @@ theorem withProof [BI PROP] (H : A → B) (P Q : PROP) : <affine> P ⊢ <pers> Q
 
 end pureintro
 
+-- specialize
+namespace specialize
+
+theorem wandSpatial [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
+  iintro HP HPQ
+  ispecialize HPQ HP as HQ
+  iexact HQ
+
+theorem wandIntuitionistic [BI PROP] (Q : PROP) : □ P ⊢ □ (P -∗ Q) -∗ □ Q := by
+  iintro #HP #HPQ
+  ispecialize HPQ HP as HQ
+  iexact HQ
+
+theorem wandIntuitionisticOverwrite [BI PROP] (Q : PROP) : □ P ⊢ □ (□ P -∗ Q) -∗ □ Q := by
+  iintro #HP #HPQ
+  ispecialize HPQ HP as HPQ
+  iexact HPQ
+
+theorem wandIntuitionisticRequired [BI PROP] (Q : PROP) : □ P ⊢ □ (□ P -∗ Q) -∗ □ Q := by
+  iintro #HP #HPQ
+  ispecialize HPQ HP as HQ
+  iexact HQ
+
+theorem wandIntuitionisticSpatial [BI PROP] (Q : PROP) : □ P ⊢ (P -∗ Q) -∗ Q := by
+  iintro #HP HPQ
+  ispecialize HPQ HP as HQ
+  iexact HQ
+
+theorem wandIntuitionisticRequiredSpatial [BI PROP] (Q : PROP) : □ P ⊢ (□ P -∗ Q) -∗ Q := by
+  iintro #HP HPQ
+  ispecialize HPQ HP as HQ
+  iexact HQ
+
+theorem wandSpatialIntuitionistic [BI PROP] (Q : PROP) : P ⊢ □ (P -∗ Q) -∗ Q := by
+  iintro HP #HPQ
+  ispecialize HPQ HP as HQ
+  iexact HQ
+
+theorem wandSpatialMultiple [BI PROP] (Q : PROP) : ⊢ P1 -∗ P2 -∗ (P1 -∗ P2 -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HPQ
+  ispecialize HPQ HP1 HP2 as HQ
+  iexact HQ
+
+theorem wandIntuitionisticMultiple [BI PROP] (Q : PROP) : ⊢ □ P1 -∗ □ P2 -∗ □ (P1 -∗ □ P2 -∗ Q) -∗ □ Q := by
+  iintro #HP1 #HP2 #HPQ
+  ispecialize HPQ HP1 HP2 as HQ
+  iexact HQ
+
+theorem wandMultiple [BI PROP] (Q : PROP) : ⊢ P1 -∗ □ P2 -∗ P3 -∗ □ (P1 -∗ P2 -∗ P3 -∗ Q) -∗ Q := by
+  iintro HP1 #HP2 HP3 HPQ
+  ispecialize HPQ HP1 HP2 HP3 as HQ
+  iexact HQ
+
+theorem forallSpatial [BI PROP] (Q : Nat → PROP) : ⊢ (∀ x, Q x) -∗ Q y := by
+  iintro HQ
+  ispecialize HQ y as HQ
+  iexact HQ
+
+theorem forallIntuitionistic [BI PROP] (Q : Nat → PROP) : ⊢ □ (∀ x, Q x) -∗ □ Q y := by
+  iintro #HQ
+  ispecialize HQ y as HQ'
+  iexact HQ'
+
+theorem forallIntuitionisticOverwrite [BI PROP] (Q : Nat → PROP) : ⊢ □ (∀ x, Q x) -∗ □ Q y := by
+  iintro #HQ
+  ispecialize HQ y as HQ
+  iexact HQ
+
+theorem forallSpatialIntuitionistic [BI PROP] (Q : Nat → PROP) : ⊢ (∀ x, □ Q x) -∗ □ Q y := by
+  iintro HQ
+  ispecialize HQ y as HQ
+  iexact HQ
+
+theorem forallSpatialMultiple [BI PROP] (Q : Nat → Nat → PROP) : ⊢ (∀ x, ∀ y, Q x y) -∗ Q x y := by
+  iintro HQ
+  ispecialize HQ x y as HQ'
+  iexact HQ'
+
+theorem forallIntuitionisticMultiple [BI PROP] (Q : Nat → Nat → PROP) : ⊢ □ (∀ x, ∀ y, Q x y) -∗ □ Q x y := by
+  iintro #HQ
+  ispecialize HQ x y as HQ'
+  iexact HQ'
+
+theorem forallMultiple [BI PROP] (Q : Nat → Nat → PROP) : ⊢ (∀ x, □ (∀ y, Q x y)) -∗ □ Q x y := by
+  iintro HQ
+  ispecialize HQ x y as HQ'
+  iexact HQ'
+
+theorem multiple [BI PROP] (Q : Nat → PROP) : ⊢ □ P1 -∗ P2 -∗ (□ P1 -∗ (∀ x, P2 -∗ Q x)) -∗ Q y := by
+  iintro #HP1 HP2 HPQ
+  ispecialize HPQ HP1 y HP2 as HQ
+  iexact HQ
+
+end specialize
+
 -- split
 namespace split
 
