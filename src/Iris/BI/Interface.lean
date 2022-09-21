@@ -32,9 +32,6 @@ syntax:35 term:36 " ∗ " term:35 : term
 syntax:25 term:26 " -∗ " term:25 : term
 syntax:max "<pers> " term:40 : term
 
--- syntax overloading where necessary
-syntax:25 "∀ " explicitBinders ", " term:25 : term
-
 -- `iprop` syntax interpretation
 macro_rules
   | `(`[iprop| emp])       => ``(BIBase.emp)
@@ -42,11 +39,23 @@ macro_rules
   | `(`[iprop| $P ∧ $Q])   => ``(BIBase.and `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| $P ∨ $Q])   => ``(BIBase.or `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| $P → $Q])   => ``(BIBase.impl `[iprop| $P] `[iprop| $Q])
-  | `(`[iprop| ∀ $xs, $Ψ]) => do expandExplicitBinders ``BIBase.forall xs (← ``(`[iprop| $Ψ]))
   | `(`[iprop| ∃ $xs, $Ψ]) => do expandExplicitBinders ``BIBase.exist xs (← ``(`[iprop| $Ψ]))
   | `(`[iprop| $P ∗ $Q])   => ``(BIBase.sep `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| $P -∗ $Q])  => ``(BIBase.wand `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| <pers> $P]) => ``(BIBase.persistently `[iprop| $P])
+
+macro_rules
+  | `(`[iprop| ∀ _, $Ψ])                    => ``(BIBase.forall (fun _         => `[iprop| $Ψ]))
+  | `(`[iprop| ∀ $x:ident, $Ψ])             => ``(BIBase.forall (fun $x        => `[iprop| $Ψ]))
+  | `(`[iprop| ∀ (_ : $t), $Ψ])             => ``(BIBase.forall (fun (_ : $t)  => `[iprop| $Ψ]))
+  | `(`[iprop| ∀ (_ $xs* : $t), $Ψ])        => ``(BIBase.forall (fun (_ : $t)  => `[iprop| ∀ ($xs* : $t), $Ψ]))
+  | `(`[iprop| ∀ ($x:ident : $t), $Ψ])      => ``(BIBase.forall (fun ($x : $t) => `[iprop| $Ψ]))
+  | `(`[iprop| ∀ ($x:ident $xs* : $t), $Ψ]) => ``(BIBase.forall (fun ($x : $t) => `[iprop| ∀ ($xs* : $t), $Ψ]))
+  | `(`[iprop| ∀ {_ : $t}, $Ψ])             => ``(BIBase.forall (fun {_ : $t}  => `[iprop| $Ψ]))
+  | `(`[iprop| ∀ {_ $xs* : $t}, $Ψ])        => ``(BIBase.forall (fun {_ : $t}  => `[iprop| ∀ {$xs* : $t}, $Ψ]))
+  | `(`[iprop| ∀ {$x:ident : $t}, $Ψ])      => ``(BIBase.forall (fun ($x : $t) => `[iprop| $Ψ]))
+  | `(`[iprop| ∀ {$x:ident $xs* : $t}, $Ψ]) => ``(BIBase.forall (fun ($x : $t) => `[iprop| ∀ {$xs* : $t}, $Ψ]))
+  | `(`[iprop| ∀ $x $xs*, $Ψ])              => ``(`[iprop| ∀ $x, ∀ $xs*, $Ψ])
 
 -- additional `iprop` syntax interpretation
 macro_rules
