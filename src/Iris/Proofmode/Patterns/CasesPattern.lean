@@ -9,9 +9,9 @@ syntax ident : icasesPat
 syntax "_" : icasesPat
 syntax "⟨" icasesPatAlts,* "⟩" : icasesPat
 syntax "(" icasesPatAlts ")" : icasesPat
-syntax "%" icasesPat : icasesPat
-syntax "#" icasesPat : icasesPat
-syntax "-#" icasesPat : icasesPat
+syntax "⌜" icasesPat "⌝" : icasesPat
+syntax "□" icasesPat : icasesPat
+syntax "-□" icasesPat : icasesPat
 
 inductive iCasesPat
   | one (name : Name)
@@ -38,11 +38,11 @@ partial def iCasesPat.parse : TSyntax icasesPat → Option iCasesPat
     match args with
     | #[arg] => parse arg
     | args   => args.sequenceMap parse |>.map .disjunction
-  | `(icasesPat| %$pat) =>
+  | `(icasesPat| ⌜$pat⌝) =>
     parse pat |>.map .pure
-  | `(icasesPat| #$pat) =>
+  | `(icasesPat| □$pat) =>
     parse pat |>.map .intuitionistic
-  | `(icasesPat| -#$pat) =>
+  | `(icasesPat| -□$pat) =>
     parse pat |>.map .spatial
   | `(icasesPat| ($pat)) =>
     parse pat
