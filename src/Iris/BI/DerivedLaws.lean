@@ -169,18 +169,12 @@ instance and_assoc [BI PROP] : Assoc (α := PROP) (· ⊣⊢ ·) (`[iprop| · �
   assoc := by
     intro _ _ _
     apply anti_symm
-    <;> repeat apply and_intro
-    <;> repeat apply and_intro
-    · exact and_elim_l
-    · apply and_elim_r'
-      exact and_elim_l
-    · apply and_elim_r'
-      exact and_elim_r
-    · apply and_elim_l'
-      exact and_elim_l
-    · apply and_elim_l'
-      exact and_elim_r
-    · exact and_elim_r
+    <;> apply and_intro
+    <;> try apply and_intro
+    all_goals
+      simp [and_elim_l, and_elim_r]
+      try { apply and_elim_l' ; simp [and_elim_l, and_elim_r] }
+      try { apply and_elim_r' ; simp [and_elim_l, and_elim_r] }
 
 theorem and_or_l [BI PROP] {P Q R : PROP} : P ∧ (Q ∨ R) ⊣⊢ P ∧ Q ∨ P ∧ R := by
   apply anti_symm
@@ -942,10 +936,10 @@ theorem affinely_if_exist {p : Bool} [BI PROP] {Ψ : α → PROP} : <affine>?p (
   cases p
   <;> simp [bi_affinely_if, affinely_exist]
 
-theorem affinely_if_intro_False [BI PROP] (P : PROP) : P ⊣⊢ <affine>?false P := by
+theorem affinely_if_intro_false [BI PROP] (P : PROP) : P ⊣⊢ <affine>?false P := by
   simp [bi_affinely_if]
 
-theorem affinely_if_intro_True [BI PROP] (P : PROP) : <affine> P ⊣⊢ <affine>?true P := by
+theorem affinely_if_intro_true [BI PROP] (P : PROP) : <affine> P ⊣⊢ <affine>?true P := by
   simp [bi_affinely_if]
 
 -- Conditional Absorbing
@@ -966,10 +960,10 @@ theorem persistently_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <
   revert H
   exact persistently_mono
 
-theorem persistently_if_intro_False [BI PROP] (P : PROP) : P ⊣⊢ <pers>?false P := by
+theorem persistently_if_intro_false [BI PROP] (P : PROP) : P ⊣⊢ <pers>?false P := by
   simp [bi_persistently_if]
 
-theorem persistently_if_intro_True [BI PROP] (P : PROP) : <pers> P ⊣⊢ <pers>?true P := by
+theorem persistently_if_intro_true [BI PROP] (P : PROP) : <pers> P ⊣⊢ <pers>?true P := by
   simp [bi_persistently_if]
 
 -- Conditional Intuitionistic
@@ -1013,7 +1007,7 @@ theorem intuitionistically_if_idemp {p : Bool} [BI PROP] {P : PROP} : □?p □?
   <;> simp [bi_intuitionistically_if]
   · exact intuitionistically_idemp
 
-theorem intuitionistically_if_intro_True [BI PROP] (P : PROP) : □ P ⊣⊢ □?true P := by
+theorem intuitionistically_if_intro_true [BI PROP] (P : PROP) : □ P ⊣⊢ □?true P := by
   simp [bi_intuitionistically_if]
 
 -- Persistent Propositions

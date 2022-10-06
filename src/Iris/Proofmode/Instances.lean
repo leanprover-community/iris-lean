@@ -153,7 +153,7 @@ where
     case true =>
       rw' [
         (affinely_elim : <affine> R ⊢ _),
-        ← intuitionistically_if_intro_True,
+        ← intuitionistically_if_intro_true,
         ← affine_affinely `[iprop| □ R]]
       cases q
       case false =>
@@ -183,7 +183,7 @@ instance intoWandPersistentlyTrue (q : Bool) [BI PROP] (R P Q : PROP) :
 where
   into_wand := by
     rw' [
-      ← intuitionistically_if_intro_True,
+      ← intuitionistically_if_intro_true,
       intuitionistically_persistently_elim,
       (IntoWand.into_wand : □?true R ⊢ □?q P -∗ Q)]
 

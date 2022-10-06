@@ -130,7 +130,7 @@ theorem tac_impl_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP}
   rw' [← from_impl, envs_append_sound true P'] ; simp only
   apply impl_intro_l
   rw' [
-    persistently_if_intro_False P,
+    persistently_if_intro_false P,
     into_persistent,
     persistently_and_intuitionistically_sep_l,
     wand_elim_r,
@@ -174,13 +174,13 @@ theorem tac_wand_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP}
   case a.l =>
     rw' [
       ← affine_affinely P,
-      persistently_if_intro_False P,
+      persistently_if_intro_false P,
       into_persistent,
       wand_elim_r,
       h_entails]
   case a.r =>
     rw' [
-      persistently_if_intro_False P,
+      persistently_if_intro_false P,
       into_persistent,
       ← absorbingly_intuitionistically_into_persistently,
       absorbingly_sep_l,
@@ -212,7 +212,7 @@ theorem tac_specialize [BI PROP] {Δ : Envs PROP} (rpPremise rpWand : Bool) (i j
     simp only [bi_intuitionistically_if, Bool.false_and, ite_false]
     rw' [(assoc : P1 ∗ _ ⊣⊢ _), !wand_elim_r, h_entails]
   case true =>
-    simp only [Bool.true_and, ← intuitionistically_if_intro_True]
+    simp only [Bool.true_and, ← intuitionistically_if_intro_true]
     rw' [
       ← intuitionistically_idemp,
       ← intuitionistically_if_idemp,
@@ -427,12 +427,12 @@ theorem tac_intuitionistic [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex
     case l =>
       rw' [
         ← affine_affinely P,
-        persistently_if_intro_False P,
+        persistently_if_intro_false P,
         into_persistent,
         wand_elim_r,
         h_entails]
     case r =>
-      rw' [persistently_if_intro_False P, into_persistent]
+      rw' [persistently_if_intro_false P, into_persistent]
       conv =>
         lhs
         lhs
@@ -444,7 +444,7 @@ theorem tac_intuitionistic [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex
         absorbing]
   case true =>
     rw' [
-      persistently_if_intro_True P,
+      persistently_if_intro_true P,
       into_persistent,
       wand_elim_r,
       h_entails]
@@ -463,14 +463,14 @@ theorem tac_spatial [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex.of Δ)
   <;> simp only [bi_intuitionistically_if, ite_true, ite_false]
   case false =>
     rw' [
-      affinely_if_intro_False P,
+      affinely_if_intro_false P,
       from_affinely,
       wand_elim_r,
       h_entails]
   case true =>
     rw' [
       intuitionistically_affinely,
-      affinely_if_intro_True P,
+      affinely_if_intro_true P,
       from_affinely,
       wand_elim_r,
       h_entails]
@@ -561,7 +561,7 @@ theorem tac_conjunction_destruct [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : 
       wand_elim_r,
       h_entails]
   case true.and =>
-    rw' [intuitionistically_if_intro_True P, into_and]
+    rw' [intuitionistically_if_intro_true P, into_and]
     simp only [bi_intuitionistically_if, ite_true]
     rw' [
       intuitionistically_and,

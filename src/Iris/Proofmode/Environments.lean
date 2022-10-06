@@ -48,13 +48,10 @@ def get : (Γ : Env α) → Fin (Γ.length) → α
 
 @[reducible]
 def split : (Γ : Env α) → (mask : List Bool) → (mask.length = Γ.length) → Env α × Env α
-  | .nil, .nil, _ => (.nil, nil)
-  | .cons a as, true :: bs, h =>
+  | .nil, .nil, _ => (.nil, .nil)
+  | .cons a as, b :: bs, h =>
     let (ls, rs) := split as bs (length_cons_list_cons h)
-    (.cons a ls, rs)
-  | .cons a as, false :: bs, h =>
-    let (ls, rs) := split as bs (length_cons_list_cons h)
-    (ls, .cons a rs)
+    if b then (.cons a ls, rs) else (ls, .cons a rs)
 
 @[reducible]
 def toList : Env α → List α
@@ -150,7 +147,7 @@ theorem env_idx_rec [BI PROP] (P : (Γ : Env PROP) → Fin Γ.length → Prop)
       contradiction
     | cons P' Γ' =>
       let is_lt := Nat.lt_of_succ_lt_succ is_lt
-      let h_ind := h_ind Γ' ⟨val, is_lt⟩ is_lt
+      specialize h_ind Γ' ⟨val, is_lt⟩ is_lt
       exact succ h_ind
 
 theorem env_big_op_sep_delete_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) :
