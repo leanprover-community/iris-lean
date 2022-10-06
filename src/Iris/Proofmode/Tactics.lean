@@ -602,7 +602,7 @@ elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
   let name := hyp.getId
   if name.isAnonymous then
     throwUnsupportedSyntax
-  let some pat := iCasesPat.parse pat
+  let some pat ← liftMacroM <| iCasesPat.parse pat
     | throwUnsupportedSyntax
 
   -- process pattern
@@ -611,9 +611,8 @@ elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
 
 elab "iintro" pats:(colGt icasesPat)* : tactic => do
   -- parse syntax
-  let some pats := pats
-    |>.map iCasesPat.parse
-    |>.sequenceMap id
+  let pats ← liftMacroM <| pats.mapM <| iCasesPat.parse
+  let some pats := pats.sequenceMap id
     | throwUnsupportedSyntax
 
   for pat in pats do

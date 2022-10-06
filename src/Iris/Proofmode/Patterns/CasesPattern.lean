@@ -13,6 +13,10 @@ syntax "⌜" icasesPat "⌝" : icasesPat
 syntax "□" icasesPat : icasesPat
 syntax "-□" icasesPat : icasesPat
 
+macro "%" pat:icasesPat : icasesPat => `(⌜$pat⌝)
+macro "#" pat:icasesPat : icasesPat => `(□ $pat)
+macro "-#" pat:icasesPat : icasesPat => `(-□ $pat)
+
 inductive iCasesPat
   | one (name : Name)
   | clear
@@ -23,8 +27,9 @@ inductive iCasesPat
   | spatial        (pat : iCasesPat)
   deriving Repr, Inhabited
 
-partial def iCasesPat.parse (pat : TSyntax `icasesPat) : Option iCasesPat :=
-  go pat
+partial def iCasesPat.parse (pat : TSyntax `icasesPat) : MacroM <| Option iCasesPat := do
+  let pat ← expandMacros pat
+  return go <| TSyntax.mk pat
 where
   go : TSyntax `icasesPat → Option iCasesPat
   | `(icasesPat| $name:ident) =>

@@ -501,20 +501,36 @@ theorem conjunction_and_disjunction [BIAffine PROP] (Q : PROP) : (P11 ∨ P12 �
   icases HP with ⟨HP11 | HP12 | HP13, HP2, HP31 | HP32 | HP33, HQ⟩
   <;> iexact HQ
 
-theorem move_to_pure [BI PROP] (Q : PROP) : ⊢ <affine> ⌜φ⌝ -∗ Q -∗ Q := by
-  iintro Hφ
+theorem move_to_pure [BI PROP] (Q : PROP) : ⊢ <affine> ⌜⊢ Q⌝ -∗ Q := by
   iintro HQ
-  icases Hφ with ⌜Hφ⌝
-  iexact HQ
+  icases HQ with ⌜HQ⌝
+  istop
+  exact HQ
+
+theorem move_to_pure_ascii [BI PROP] (Q : PROP) : ⊢ <affine> ⌜⊢ Q⌝ -∗ Q := by
+  iintro HQ
+  icases HQ with %HQ
+  istop
+  exact HQ
 
 theorem move_to_intuitionistic [BI PROP] (Q : PROP) : ⊢ □ Q -∗ Q := by
   iintro HQ
   icases HQ with □HQ
   iexact HQ
 
+theorem move_to_intuitionistic_ascii [BI PROP] (Q : PROP) : ⊢ □ Q -∗ Q := by
+  iintro HQ
+  icases HQ with #HQ
+  iexact HQ
+
 theorem move_to_spatial [BI PROP] (Q : PROP) : ⊢ □ Q -∗ Q := by
   iintro □HQ
   icases HQ with -□HQ
+  iexact HQ
+
+theorem move_to_spatial_ascii [BI PROP] (Q : PROP) : ⊢ □ Q -∗ Q := by
+  iintro □HQ
+  icases HQ with -#HQ
   iexact HQ
 
 theorem move_to_pure_conjunction [BI PROP] (Q : PROP) : ⊢ <affine> ⌜φ⌝ ∗ Q -∗ Q := by
