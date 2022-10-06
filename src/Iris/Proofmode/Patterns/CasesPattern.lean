@@ -23,7 +23,10 @@ inductive iCasesPat
   | spatial        (pat : iCasesPat)
   deriving Repr, Inhabited
 
-partial def iCasesPat.parse : TSyntax icasesPat → Option iCasesPat
+partial def iCasesPat.parse (pat : TSyntax `icasesPat) : Option iCasesPat :=
+  go pat
+where
+  go : TSyntax `icasesPat → Option iCasesPat
   | `(icasesPat| $name:ident) =>
     let name := name.getId
     if name.isAnonymous then
@@ -33,19 +36,21 @@ partial def iCasesPat.parse : TSyntax icasesPat → Option iCasesPat
   | `(icasesPat| _) =>
     some <| .clear
   | `(icasesPat| ⟨$[$args],*⟩) =>
-    args.sequenceMap parse |>.map .conjunction
+    args.sequenceMap goAlts |>.map .conjunction
+  | `(icasesPat| ⌜$pat⌝) =>
+    go pat |>.map .pure
+  | `(icasesPat| □$pat) =>
+    go pat |>.map .intuitionistic
+  | `(icasesPat| -□$pat) =>
+    go pat |>.map .spatial
+  | `(icasesPat| ($pat)) =>
+    goAlts pat
+  | _ => none
+  goAlts : TSyntax ``icasesPatAlts → Option iCasesPat
   | `(icasesPatAlts| $[$args]|*) =>
     match args with
-    | #[arg] => parse arg
-    | args   => args.sequenceMap parse |>.map .disjunction
-  | `(icasesPat| ⌜$pat⌝) =>
-    parse pat |>.map .pure
-  | `(icasesPat| □$pat) =>
-    parse pat |>.map .intuitionistic
-  | `(icasesPat| -□$pat) =>
-    parse pat |>.map .spatial
-  | `(icasesPat| ($pat)) =>
-    parse pat
+    | #[arg] => go arg
+    | args   => args.sequenceMap go |>.map .disjunction
   | _ => none
 
 end Iris.Proofmode
