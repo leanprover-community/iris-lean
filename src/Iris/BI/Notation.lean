@@ -43,9 +43,15 @@ macro_rules
       | [(name, [])] => pure name
       | _           => throwUnsupported
 
-    `(@[appUnexpander $(mkIdent f)]
-      def unexpand : Lean.PrettyPrinter.Unexpander
-        $[| $p => $s]*
+    let (p : TSyntaxArray `term) := p
+    if p.any (· matches `(`($$_))) then
+      `(@[appUnexpander $(mkIdent f)]
+        def unexpand : Lean.PrettyPrinter.Unexpander
+          $[| $p => $s]*)
+    else
+      `(@[appUnexpander $(mkIdent f)]
+        def unexpand : Lean.PrettyPrinter.Unexpander
+          $[| $p => $s]*
           | _ => throw ())
 
 end Iris.BI
