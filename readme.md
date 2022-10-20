@@ -97,7 +97,7 @@ instance (Val : Type) : BIAffine (AffineHeapProp Val) where
 
 ### 4. Writing Separation Logic Proofs
 
-Writing a separation logic proofs starts with an ordinary `theorem`, except that the statement to prove is a separation logic proposition `P ⊢ Q` or `P ⊣⊢ Q` where `P` and `Q` are separation logic propositions. It is not necessary to use `iprop` quotations for the propositions here. Separation logic proofs are performed in the *Iris Proof Mode*, which is enabled by the tactic `istart`. When the proof mode is enabled, two additional contexts appear in the Lean tactic state display beneath the Lean context. It is often not necessary to explicitely write the call to `istart`, as it is automatically called by most separation logic tactics. Inside the proof mode, the other separation logic tactics (e.g. `iintro`) can be used to complete the proof. The tactic names follow the Lean conventions and start with an `i` to distinguish them from the exisiting Lean tactics.
+Writing a separation logic proofs starts with an ordinary `theorem`, except that the statement to prove is a separation logic proposition `P ⊢ Q` or `P ⊣⊢ Q` where `P` and `Q` are separation logic propositions. It is not necessary to use `iprop` quotations for the propositions here. Separation logic proofs are performed in the *Iris Proof Mode*, which is enabled by the tactic `istart`. When the proof mode is enabled, two additional contexts appear in the Lean tactic state display beneath the Lean context. It is often not necessary to explicitely write the call to `istart`, as it is automatically called by most separation logic tactics. Inside the proof mode, the other separation logic tactics (e.g. `iintro`) can be used to complete the proof. The tactic names follow the Lean conventions and start with an `i` to distinguish them from the exisiting Lean tactics. A list of all available tactics can be found in `tactics.md`.
 
 Example: Proof of a separation logic statement for all separation logics `PROP`
 ```lean
@@ -152,7 +152,7 @@ The structure of the project mostly follows the implementation of MoSeL. The mai
 
 ## Tactics
 
-The tactics are implemented in `Tactics.lean` as functions in the `TacticM` monad using the `elab` macro as usual. The monadic functions take care of processing the argument syntax and manipulating the Lean goals. The separation logic goal and contexts, however, are accessed using the tactic theorems in `Theorems.lean`. Besides having proof that the changes are valid, this allows verifying the resulting separation logic proofs within Lean's kernel.
+The tactics in `Tactics.lean` are implemented as functions in the `TacticM` monad using the `elab` macro as usual. The monadic functions take care of processing the argument syntax and manipulating the Lean goals. The separation logic goal and contexts, however, are accessed using the tactic theorems in `Theorems.lean`. Besides having proof that the changes are valid, this allows verifying the resulting separation logic proofs within Lean's kernel.
 
 Since the separation logic context types `Envs` and `Env` (defined in `Environments.lean`) reference hypothesis in the context using `Fin` indices (as `EnvsIndex`), the monadic tactic functions have to translate the user names of the hypotheses to indices. This is usually done using the function `findHypothesis?` and requires parsing `Expr`s manually. Helpful functions for this are located in `Proofmode/Expr.lean` and `Std/Expr.lean`.
 
