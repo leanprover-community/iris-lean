@@ -477,7 +477,6 @@ elab "isplit" side:splitSide "[" hyps:ident,* "]" : tactic => do
     mask := mask.map (!·)
 
   -- split conjunction
-  -- TODO we can't inline this for now -> see lean4/#1415
   let h_length_eq ← ``(by show $(quote mask.length) = $(quote lₛ) ; decide)
   try evalTactic (← `(tactic|
     first
