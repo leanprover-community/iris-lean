@@ -15,12 +15,10 @@ open Lean Lean.Elab Lean.Elab.Tactic Lean.Meta
 
 elab "istart" : tactic => do
   -- parse goal
-  let goal :: _ ← getUnsolvedGoals
-    | throwNoGoalsToBeSolved
-  let expr ← instantiateMVars <| ← getMVarType goal
+  let goal ← instantiateMVars <| ← (← getMainGoal).getType
 
   -- check if already in proof mode
-  if ← isEnvsEntails expr then
+  if ← isEnvsEntails goal then
     return ()
 
   -- create environment
@@ -32,12 +30,10 @@ elab "istart" : tactic => do
 
 elab "istop" : tactic => do
   -- parse goal
-  let goal :: _ ← getUnsolvedGoals
-    | throwNoGoalsToBeSolved
-  let expr ← instantiateMVars <| ← getMVarType goal
+  let goal ← instantiateMVars <| ← (← getMainGoal).getType
 
   -- check if already in proof mode
-  if !(← isEnvsEntails expr) then
+  if !(← isEnvsEntails goal) then
     throwError "not in proof mode"
 
   -- reduce proof mode definitions
@@ -54,11 +50,8 @@ private def extractEnvsEntailsFromGoal (startProofMode : Bool := false) : Tactic
       istart
     ))
 
-  let goal :: _ ← getUnsolvedGoals
-    | throwNoGoalsToBeSolved
-  let expr ← instantiateMVars <| ← getMVarType goal
-
-  let some envsEntails ← extractEnvsEntails? expr
+  let goal ← instantiateMVars <| ← (← getMainGoal).getType
+  let some envsEntails ← extractEnvsEntails? goal
     | throwError "not in proof mode"
 
   return envsEntails
@@ -208,10 +201,7 @@ elab "iexact" colGt hyp:ident : tactic => do
 
 elab "iassumption_lean" : tactic => do
   -- retrieve goal mvar declaration
-  let goal :: _ ← getUnsolvedGoals
-    | throwNoGoalsToBeSolved
-
-  let some decl := (← getMCtx).findDecl? goal
+  let some decl := (← getMCtx).findDecl? (← getMainGoal)
     | throwError "ill-formed proof environment"
 
   -- try all hypotheses from the local context

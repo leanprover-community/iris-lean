@@ -7,9 +7,8 @@ open Lean Lean.Elab.Tactic Lean.Meta
 
 def irenameCore (hypIndex : HypothesisIndex) (name : Name) : TacticM Unit := do
   -- parse goal
-  let goal :: _ ← getUnsolvedGoals
-    | throwNoGoalsToBeSolved
-  let expr ← instantiateMVars <| ← getMVarType goal
+  let goal ← getMainGoal
+  let expr ← instantiateMVars <| ← goal.getType
 
   let some (Γₚ, Γₛ, _) ← extractEnvsEntails? expr
     | throwError "not in proof mode"
@@ -52,6 +51,6 @@ def irenameCore (hypIndex : HypothesisIndex) (name : Name) : TacticM Unit := do
   let some expr ← modifyEnvsEntails? expr Γₚ Γₛ none
     | throwError "ill-formed proof environment"
 
-  setMVarType goal expr
+  goal.setType expr
 
 end Iris.Proofmode.Internal

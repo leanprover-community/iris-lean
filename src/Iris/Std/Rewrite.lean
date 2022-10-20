@@ -46,8 +46,8 @@ initialize registerBuiltinAttribute {
 
 
 private def normalizeGoal (goal : MVarId) : TacticM MVarId := do
-  if (← getMVarType goal).isForall then
-    let (_, goal) ← intro goal `_
+  if (← goal.getType).isForall then
+    let (_, goal) ← goal.intro `_
     return goal
   else
     return goal
@@ -65,7 +65,7 @@ private def rewriteConventional (rule : TSyntax ``rwRule) : TacticM Bool := do
 
 private partial def rewriteTMR (direction : RewriteDirection) (rule : TSyntax `term) : TacticM Bool := do
   let goal ← getMainGoal
-  let tag ← getMVarTag goal
+  let tag ← goal.getTag
 
   -- apply transitivity
   let some (goalL, goalR) ← applyTransitivity goal
@@ -74,10 +74,10 @@ private partial def rewriteTMR (direction : RewriteDirection) (rule : TSyntax `t
   -- select the correct goal based on the rewrite direction
   let goal ← match direction with
     | .forward => do
-      setMVarTag goalR tag
+      goalR.setTag tag
       pure goalL
     | .reverse => do
-      setMVarTag goalL tag
+      goalL.setTag tag
       pure goalR
 
   -- try to rewrite with the given rule

@@ -124,7 +124,7 @@ where
 
 def icasesCoreDisjunction (hypIndex : HypothesisIndex) (args : Array iCasesPat) (mainGoal : MVarId) : TacticM <| Array <| MVarId × Name × iCasesPat := do
   -- find main goal tag
-  let tag ← getMVarTag mainGoal
+  let tag ← mainGoal.getTag
 
   let mut goalsInd := #[mainGoal]
   let mut hypIndex := hypIndex

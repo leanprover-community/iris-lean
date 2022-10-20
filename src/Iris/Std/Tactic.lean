@@ -10,12 +10,12 @@ def apply' (goal : MVarId) (name : Name) : TacticM <| Option <| List MVarId := d
   let some value := ci.value?
     | return none
 
-  let goals ← withoutRecover <| withReducible <| apply goal value ⟨.nonDependentOnly⟩
+  let goals ← withoutRecover <| withReducible <| goal.apply value ⟨.nonDependentOnly⟩
   setGoals <| goals ++ (← getUnsolvedGoals)
   return goals
 
 def findGoalFromTag? (tag : Name) : TacticM <| Option MVarId := do
-  (← getUnsolvedGoals).findM? fun goal => do return (← getMVarTag goal) == tag
+  (← getUnsolvedGoals).findM? fun goal => do return (← goal.getTag) == tag
 
 def withFocus (goal : MVarId) (f : TacticM α) : TacticM α := do
   let goals ← getUnsolvedGoals
