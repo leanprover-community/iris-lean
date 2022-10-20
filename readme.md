@@ -82,9 +82,9 @@ Example:
 ```lean
 -- Every proposition with the modality `<foo>` is affine.
 instance fooAffine [BI PROP] (P : PROP) :
-  Affine `[iprop| <foo> P] →
+  Affine `[iprop| <foo> P]
 where
-  persistent := by ...
+  affine := by ...
 ```
 
 There are also typeclasses that can be instantiated for an entire separation logic. The proven properties of the logic are then automatically available in all proofs of statements in this separation logic.
