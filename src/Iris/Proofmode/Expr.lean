@@ -6,20 +6,25 @@ namespace Iris.Proofmode
 open Iris.BI
 open Lean Lean.Expr Lean.Meta
 
+/-- Return whether `expr` is an application of `BIBase.emp`. -/
 def isEmp (expr : Expr) : MetaM Bool := do
   let expr ← withReducible <| whnf expr
   return expr.isAppOfArity ``BIBase.emp 2
 
+/-- Return whether `expr` is an application of `envs_entails`. -/
 def isEnvsEntails (expr : Expr) : MetaM Bool := do
   let expr ← withReducible <| whnf expr
   return expr.isAppOfArity ``envs_entails 4
 
+/-- Extract the premise and conclusion from an application of `BIBase.entails`. -/
 def extractEntails? (expr : Expr) : MetaM <| Option <| Expr × Expr := do
   let expr ← withReducible <| whnf expr
   let some #[_, _, P, Q] := appM? expr ``BIBase.entails
     | return none
   return some (P, Q)
 
+/-- Extract the intuitionistic and spatial context, as well as the goal from an application
+of `envs_entails`. -/
 def extractEnvsEntails? (expr : Expr) : MetaM <| Option <| Expr × Expr × Expr := do
   let expr ← withReducible <| whnf expr
   let some #[_, _, envs, P] := appM? expr ``envs_entails
@@ -29,6 +34,9 @@ def extractEnvsEntails? (expr : Expr) : MetaM <| Option <| Expr × Expr × Expr 
     | return none
   return some (Γₚ, Γₛ, P)
 
+/-- Update an application of `envs_entails` with a new intuitionistic (`Γₚ`) and spatial (`Γₛ`)
+context, as well as with a new goal (`P`). If any part is `none`, the value from the original
+expression `expr` is used instead. -/
 def modifyEnvsEntails? (expr : Expr) (Γₚ Γₛ P : Option Expr) : MetaM <| Option Expr := do
   let expr ← withReducible <| whnf expr
   let some #[_, _, envs, _] := appM? expr ``envs_entails
@@ -43,6 +51,8 @@ def modifyEnvsEntails? (expr : Expr) (Γₚ Γₛ P : Option Expr) : MetaM <| Op
 
 namespace EnvExpr
 
+/-- Return `true` iff any expression in the environment represented by `env` fulfills the predicate
+`pred`. The function returns `none` if `env` is not an application of `Env.cons` and `Env.nil`. -/
 partial def any? (env : Expr) (pred : Expr → Bool) : MetaM <| Option Bool := do
   let env ← whnf env
   if let some (_, a, env') := app3? env ``Env.cons then
@@ -53,6 +63,9 @@ partial def any? (env : Expr) (pred : Expr → Bool) : MetaM <| Option Bool := d
   else
     return none
 
+/-- Find the index of the first hypothesis in the environment represented by `env` which fulfills
+the predicate `pred`. The function returns `none` if `env` is not an application of `Env.cons`
+and `Env.nil` or no hypothesis fulfills the predicate `pred`. -/
 partial def findIndexM? [Monad M] [MonadLift MetaM M] (env : Expr) (pred : Expr → M Bool) : M <| Option Nat :=
   go env 0
 where
@@ -64,10 +77,16 @@ where
     else
       pure none
 
+/-- Find the index of the first hypothesis in the environment represented by `env` which fulfills
+the predicate `pred`. The function returns `none` if `env` is not an application of `Env.cons`
+and `Env.nil` or no hypothesis fulfills the predicate `pred`. -/
 partial def findIndex? (env : Expr) (pred : Expr → Bool) : MetaM <| Option Nat := do
   have : MonadLift MetaM MetaM := { monadLift := id }
   findIndexM? env (return pred ·)
 
+/-- Return the expression representing the hypothesis at index `i` in the environment represented
+by `env`. The function returns `none` if `env` is not an application of `Env.cons` and `Env.nil` or
+the index is invalid. -/
 def get? (env : Expr) (i : Nat) : MetaM <| Option Expr := do
   let env ← whnf env
   match i with
@@ -82,6 +101,8 @@ def get? (env : Expr) (i : Nat) : MetaM <| Option Expr := do
     else
       return none
 
+/-- Return the length of the environment represented by `env`. The function returns `none` if `env`
+is not an application of `Env.cons` and `Env.nil`. -/
 partial def length? (env : Expr) : MetaM <| Option Nat :=
   go env 0
 where
@@ -94,6 +115,9 @@ where
     else
       return none
 
+/-- Set the hypothesis represented by `e` at index `i` in the environment represented by `env`. The
+function returns `none` if `env` is not an application of `Env.cons` and `Env.nil` or the index
+is invalid. -/
 def set? (env : Expr) (e : Expr) (i : Nat) : MetaM <| Option Expr := do
   let env ← whnf env
   match i with
@@ -108,6 +132,9 @@ def set? (env : Expr) (e : Expr) (i : Nat) : MetaM <| Option Expr := do
       | pure none
     return modifyAppOptM env #[none, none, env']
 
+/-- Turn the representation `env` of an environment with any hypothesis type into an actual
+environment with hypotheses of type `Expr`. The hypothesis representations in the returned
+environment are the same as in the original representation `env`. -/
 partial def toEnv? (env : Expr) : MetaM <| Option <| Env Expr := do
   let env ← whnf env
   if let some (_, a, env') := app3? env ``Env.cons then

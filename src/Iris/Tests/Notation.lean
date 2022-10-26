@@ -3,6 +3,8 @@ import Iris.BI
 namespace Iris.Tests
 open Iris.BI
 
+/- This file contains tests for the predefined separation logic notations. -/
+
 variable (p : Bool) (φ : Prop)
 variable [BI PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → PROP)
 

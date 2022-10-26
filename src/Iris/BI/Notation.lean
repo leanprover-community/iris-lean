@@ -19,7 +19,7 @@ macro_rules
   | `(`[iprop| if $c then $t else $e]) => ``(if $c then `[iprop| $t] else `[iprop| $e])
   | `(`[iprop| ($P : $t)])             => ``((`[iprop| $P] : $t))
 
--- define functions and macros for delaboration
+/-- Remove an `iprop` quotation from a `term` syntax object. -/
 partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : TSyntax `term → m (TSyntax `term)
   | `(`[iprop| $P])          => ``($P)
   | `($P:ident)              => ``($P)
@@ -30,6 +30,7 @@ partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : TSyntax `ter
   | `(`[term| $t])           => ``(`[term| $t])
   | `($t)                    => ``(`[term| $t])
 
+-- macro for adding unexpanders for function applications
 open Lean.Parser.Term in
 private def matchAlts' := leading_parser matchAlts
 

@@ -2,6 +2,7 @@ import Iris.Instances.Data.SetNotation
 
 namespace Iris.Instances.Data
 
+/-- Result of an operation on `State`. -/
 inductive StateResult (α : Type)
   | unknown
   | result (x : α)
@@ -10,6 +11,8 @@ export StateResult (unknown)
 export StateResult (result)
 export StateResult (conflict)
 
+/-- Implementation of a state datatype as a map from `Nat` to a `StateResult` with a value
+from `Val`. -/
 abbrev State (Val : Type) := Nat → StateResult Val
 
 instance : EmptyCollection (State Val) where

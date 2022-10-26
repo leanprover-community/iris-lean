@@ -2,15 +2,17 @@ import Iris.BI.Interface
 
 namespace Iris.BI
 
--- entailment
+/-- Entailment on separation logic propositions with an empty context. -/
 macro:25 "⊢ " P:term:25 : term => ``(`[iprop| emp] ⊢ `[iprop| $P])
+/-- Bidirectional entailment on separation logic propositions. -/
 macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(`[iprop| $P] = `[iprop| $Q])
 
 delab_rule BIBase.entails
   | `($_ `[iprop| emp] $P) => do ``(⊢ $(← unpackIprop P))
 
--- iff and wand iff
+/-- Bidirectional implication on separation logic propositions. -/
 syntax:27 term:28 " ↔ " term:28 : term
+/-- Bidrectional separating implication on separation logic propositions. -/
 syntax:27 term:28 " ∗-∗ " term:28 : term
 
 def bi_iff      [BIBase PROP] (P Q : PROP) : PROP := `[iprop| (P → Q) ∧ (Q → P)]
@@ -25,8 +27,9 @@ delab_rule bi_iff
 delab_rule bi_wand_iff
   | `($_ $P $Q) => do ``(`[iprop| $(← unpackIprop P) ∗-∗ $(← unpackIprop Q)])
 
--- affine and absorb
+/-- Affine modality. -/
 syntax:max "<affine> " term:40 : term
+/-- Absorbing modality. -/
 syntax:max "<absorb> " term:40 : term
 
 def bi_affinely    [BIBase PROP] (P : PROP) : PROP := `[iprop| emp ∧ P]
@@ -41,7 +44,7 @@ delab_rule bi_affinely
 delab_rule bi_absorbingly
   | `($_ $P) => do ``(`[iprop| <absorb> $(← unpackIprop P)])
 
--- intuitionistic
+/-- Intuitionistic modality. -/
 syntax:max "□ " term:40 : term
 
 def bi_intuitionistically [BIBase PROP] (P : PROP) : PROP := `[iprop| <affine> <pers> P]
@@ -52,10 +55,13 @@ macro_rules
 delab_rule bi_intuitionistically
   | `($_ $P) => do ``(`[iprop| □ $(← unpackIprop P)])
 
--- conditional modalities
+/-- Conditional persistency modality. -/
 syntax:max "<pers>?"   term:max ppHardSpace term:40 : term
+/-- Conditional affine modality. -/
 syntax:max "<affine>?" term:max ppHardSpace term:40 : term
+/-- Conditional absorbing modality. -/
 syntax:max "<absorb>?" term:max ppHardSpace term:40 : term
+/-- Conditional intuitionistic modality. -/
 syntax:max "□?"        term:max ppHardSpace term:40 : term
 
 def bi_persistently_if       [BIBase PROP] (p : Bool) (P : PROP) : PROP := `[iprop| if p then <pers> P else P]

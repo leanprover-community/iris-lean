@@ -8,6 +8,12 @@ namespace Iris.Proofmode
 open Iris.BI
 open Lean Lean.Expr Lean.Meta Lean.PrettyPrinter.Delaborator Lean.PrettyPrinter.Delaborator.SubExpr
 
+/- This file generates the state display for the Iris Proof Mode. It is implemented as a
+delaborator for the function `envs_entails`. An application of this function contains a separation
+logic context as an object of `Envs` and a separation logic goal. The resulting display contains
+the two separation logic contexts (intuitionistic and spatial), as well as the separation
+logic goal. -/
+
 declare_syntax_cat envsDisplay
 declare_syntax_cat envsDisplayLine
 

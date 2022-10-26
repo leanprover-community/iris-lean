@@ -4,6 +4,8 @@ import Iris.Instances.Data
 namespace Iris.Instances.Classical
 open Iris.BI Iris.Instances.Data
 
+/- Instance of `BIBase` and `BI` for classical (non-affine) separation logic. -/
+
 abbrev HeapProp (Val : Type) := State Val → Prop
 
 instance : BIBase (HeapProp Val) where

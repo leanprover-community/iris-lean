@@ -4,6 +4,8 @@ import Iris.Proofmode
 namespace Iris.Tests
 open Iris.BI
 
+/- This file contains tests with various scenarios for all available tactics. -/
+
 -- start stop
 theorem start_stop [BI PROP] (Q : PROP) (H : Q ⊢ Q) : Q ⊢ Q := by
   istart

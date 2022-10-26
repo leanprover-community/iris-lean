@@ -4,6 +4,11 @@ import Iris.Instances.Data
 namespace Iris.Examples
 open Iris.BI Iris.Instances.Data
 
+/- This file shows how to instantiate the type class `BIBase` with a setoid / quotient type. The
+separation logic in this example is classical separation logic, even though setoids are not
+required here. For an example instance of `BIBase` and `BI` for classical separation logic without
+setoids see `Iris/Instances/Classical`. -/
+
 abbrev HeapProp (Val : Type) := State Val → Prop
 
 instance heapPropSetoid (Val : Type) : Setoid (HeapProp Val) where

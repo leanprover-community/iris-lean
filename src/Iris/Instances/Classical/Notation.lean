@@ -6,6 +6,7 @@ open Iris.Instances.Data
 def maps_to (l : Nat) (v : Val) : HeapProp Val :=
   fun state => state l = result v
 
+/-- State that a heap cell contains a certain value. -/
 syntax:52 term:53 " ↦ " term:53 : term
 
 macro_rules

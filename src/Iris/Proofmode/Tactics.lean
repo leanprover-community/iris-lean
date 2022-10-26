@@ -13,6 +13,8 @@ namespace Iris.Proofmode
 open Iris.BI Iris.Std Internal
 open Lean Lean.Elab Lean.Elab.Tactic Lean.Meta
 
+/- A description of the tactics can be found in `tactics.md`. -/
+
 elab "istart" : tactic => do
   -- parse goal
   let goal ← instantiateMVars <| ← (← getMainGoal).getType
@@ -44,6 +46,8 @@ elab "istop" : tactic => do
   catch _ => throwError "unable to stop proof mode"
 
 
+/-- Extract the intuitionistic and spatial context, as well as the separation logic goal from the
+Lean goal. If the proof is not in Iris Proof Mode, an error is thrown. -/
 private def extractEnvsEntailsFromGoal (startProofMode : Bool := false) : TacticM <| Expr × Expr × Expr := do
   if startProofMode then
     evalTactic (← `(tactic|
@@ -56,6 +60,9 @@ private def extractEnvsEntailsFromGoal (startProofMode : Bool := false) : Tactic
 
   return envsEntails
 
+/-- Return the hypothesis with the name `name` from the intuitionistic or spatial context. The
+function returns `none` if no context contains a hypothesis with the name `name`. If the proof is
+not in Iris Proof Mode, an error is thrown. -/
 private def findHypothesis? (name : Name) : TacticM <| Option HypothesisIndex := do
   let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal
   if let some i ← EnvExpr.findIndex? Γₚ (·.getMDataName?.isEqSome name) then
@@ -69,6 +76,8 @@ private def findHypothesis? (name : Name) : TacticM <| Option HypothesisIndex :=
   else
     return none
 
+/-- Return the length of a separation logic context. The argument `type` indicates of which context
+the length should be returned. If the proof is not in Iris Proof Mode, an error is thrown. -/
 private def envLength (type : HypothesisType) : TacticM Nat := do
   let (Γₚ, Γₛ, _) ← extractEnvsEntailsFromGoal
   let Γ := match type with

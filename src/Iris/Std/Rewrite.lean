@@ -6,22 +6,33 @@ import Lean.Elab.Tactic
 namespace Iris.Std
 open Lean Lean.Elab Lean.Elab.Tactic Lean.Meta Lean.Parser.Tactic
 
+/- This file implements a rewriting tactic for preorders with monotone rules on how to
+destruct operators. -/
+
+/-- Rewrite rules for `rw'` have the same structure as for `rw`, except they allow an additional
+`!` prefix to indicate that a rewrite rule should be used as often as possible. -/
 syntax rwRule' := "!"? rwRule
 
+/-- Modifier for a rewrite rule to indicate how often is should be used. -/
 inductive RewriteModifier
   | single
   | all
 
+/-- Parse a `rwRule'` syntax object and return its `RewriteModifier` together with the contained
+`rwRule` syntax object. -/
 private def parseRewriteRule' (rule : TSyntax ``rwRule') : TacticM <| RewriteModifier × TSyntax ``rwRule := do
   match rule with
   | `(rwRule'| !$rule)       => pure (.all, rule)
   | `(rwRule'| $rule:rwRule) => pure (.single, rule)
   | _ => throwUnsupportedSyntax
 
+/-- Rewrite direction of a `rwRule`. -/
 inductive RewriteDirection
   | forward
   | reverse
 
+/-- Parse a `rwRule` and return its `RewriteDirection` together with the contained `term`
+syntax object. -/
 private def parseRewriteRule (rule : TSyntax ``rwRule) : TacticM <| RewriteDirection × TSyntax `term := do
   match rule with
   | `(rwRule| ← $rule)    => pure (.reverse, rule)
@@ -29,12 +40,19 @@ private def parseRewriteRule (rule : TSyntax ``rwRule) : TacticM <| RewriteDirec
   | _ => throwUnsupportedSyntax
 
 
+/-- Register an environment extension to hold all operator destruction rules. -/
 initialize monoRulesExt : SimplePersistentEnvExtension Name NameSet ← registerSimplePersistentEnvExtension {
   name := `rwMonoRules,
   addEntryFn := NameSet.insert,
   addImportedFn := fun es => mkStateFromImportedEntries NameSet.insert {} es
 }
 
+/-- Return all operator destruction rules from the environment extension `rwMonoRules`. -/
+private def getMonotonicityRules : TacticM <| Array Name := do
+  return monoRulesExt.getState (← getEnv) |>.toArray
+
+/-- Register the attribute `rwMonoRule` for adding theorems to the environment
+extension `rwMonoRules`. -/
 initialize registerBuiltinAttribute {
   name := `rwMonoRule,
   descr := "monotonicity rule used to destruct terms during rewriting",
@@ -45,6 +63,7 @@ initialize registerBuiltinAttribute {
 }
 
 
+/-- Normalize a goal by, e.g., introducing all universally-bound variables. -/
 private def normalizeGoal (goal : MVarId) : TacticM MVarId := do
   if (← goal.getType).isForall then
     let (_, goal) ← goal.intro `_
@@ -52,10 +71,9 @@ private def normalizeGoal (goal : MVarId) : TacticM MVarId := do
   else
     return goal
 
-private def getMonotonicityRules : TacticM <| Array Name := do
-  return monoRulesExt.getState (← getEnv) |>.toArray
 
-
+/-- Rewrite the rule `rule` with the tactic `rewrite` and return whether the operation
+was successful. -/
 private def rewriteConventional (rule : TSyntax ``rwRule) : TacticM Bool := do
   try
     evalTactic (← `(tactic| rewrite [$rule]))
@@ -63,6 +81,9 @@ private def rewriteConventional (rule : TSyntax ``rwRule) : TacticM Bool := do
   catch _ =>
     return false
 
+/-- Rewrite the rule `rule` in the rewrite direction `direction` using the transitivity and
+reflexivity of the preorder in the goal and `rule`, as well as the monotonicity of the registered
+operator destruction rules. -/
 private partial def rewriteTMR (direction : RewriteDirection) (rule : TSyntax `term) : TacticM Bool := do
   let goal ← getMainGoal
   let tag ← goal.getTag

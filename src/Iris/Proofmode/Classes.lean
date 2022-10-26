@@ -3,6 +3,12 @@ import Iris.BI
 namespace Iris.Proofmode
 open Iris.BI
 
+/- The two type classes `AsEmpValid1` and `AsEmpValid2` are necessary since type class instance
+search is used in both directions in `as_emp_valid_1` and `as_emp_valid_2`. When type class
+instance search is supposed to generate `φ` based on `P`, `AsEmpValid1` is used, since `φ` is declared as an
+`outParam`. Consequently, if type class instance search is supposed to generate `P`, `AsEmpValid2`
+is used. -/
+
 class AsEmpValid1 (φ : outParam Prop) {PROP : Type} (P : PROP) where
   [bi : BI PROP]
   as_emp_valid : φ ↔ ⊢ P
@@ -23,6 +29,12 @@ theorem as_emp_valid_1 (P : PROP) [AsEmpValid1 φ P] : φ → ⊢ P :=
 theorem as_emp_valid_2 (φ : Prop) [AsEmpValid2 φ P] : (⊢ P) → φ :=
   AsEmpValid2.as_emp_valid.mpr
 
+
+/- Depending on the use case, type classes with the prefix `From` or `Into` are used. Type classes
+with the prefix `From` are used to generate one or more propositions *from* which the original
+proposition can be derived. Type classes with the prefix `Into` are used to generate propositions
+*into* which the original proposition can be turned by derivation. Additional boolean flags are
+used to indicate that certain propositions should be intuitionistic. -/
 
 class FromImpl [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_impl : (Q1 → Q2) ⊢ P

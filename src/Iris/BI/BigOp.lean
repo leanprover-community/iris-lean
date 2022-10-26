@@ -3,13 +3,17 @@ import Iris.BI.Notation
 
 namespace Iris.BI
 
+/-- Fold a binary operator `f` over a list of `PROP`s. If the list is empty, `unit` is returned. -/
 def big_op [BIBase PROP] (f : PROP → PROP → PROP) (unit : PROP) : List PROP → PROP
   | []      => unit
   | [P]     => P
   | P :: Ps => f P (big_op f unit Ps)
 
+/-- Fold the conjunction `∧` over a list of separation logic propositions. -/
 syntax:40 "[∧] " term:max : term
+/-- Fold the disjunction `∨` over a list of separation logic propositions. -/
 syntax:40 "[∨] " term:max : term
+/-- Fold the separating conjunction `∗` over a list of separation logic propositions. -/
 syntax:40 "[∗] " term:max : term
 
 macro_rules

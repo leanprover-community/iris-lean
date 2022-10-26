@@ -6,7 +6,7 @@ namespace Iris.BI
 open Iris.Std
 open Lean
 
--- interface with basic `BI` functions
+/-- Require the definitions of the separation logic connectives and units on a carrier type `car`. -/
 class BIBase (car : Type) where
   entails : car → car → Prop
   emp : car
@@ -23,13 +23,16 @@ class BIBase (car : Type) where
 
 section Syntax
 
--- `iprop` embedding in `term`
+/-- Entailment on separation logic propositions. -/
 macro:25 P:term:29 " ⊢ " Q:term:25 : term => ``(BIBase.entails `[iprop| $P] `[iprop| $Q])
 
--- `iprop` syntax
+/-- Embedding of pure Lean proposition as separation logic proposition. -/
 syntax "⌜" term "⌝" : term
+/-- Separating conjunction. -/
 syntax:35 term:36 " ∗ " term:35 : term
+/-- Separating implication. -/
 syntax:25 term:26 " -∗ " term:25 : term
+/-- Persistency modality. -/
 syntax:max "<pers> " term:40 : term
 
 -- `iprop` syntax interpretation
@@ -44,6 +47,8 @@ macro_rules
   | `(`[iprop| $P -∗ $Q])  => ``(BIBase.wand `[iprop| $P] `[iprop| $Q])
   | `(`[iprop| <pers> $P]) => ``(BIBase.persistently `[iprop| $P])
 
+/- This is necessary since the `∀` syntax is not defined using `explicitBinders` and we can
+therefore not use `expandExplicitBinders` as for `∃`. -/
 macro_rules
   | `(`[iprop| ∀ _, $Ψ])                    => ``(BIBase.forall (fun _         => `[iprop| $Ψ]))
   | `(`[iprop| ∀ $x:ident, $Ψ])             => ``(BIBase.forall (fun $x        => `[iprop| $Ψ]))
@@ -57,7 +62,7 @@ macro_rules
   | `(`[iprop| ∀ {$x:ident $xs* : $t}, $Ψ]) => ``(BIBase.forall (fun ($x : $t) => `[iprop| ∀ {$xs* : $t}, $Ψ]))
   | `(`[iprop| ∀ $x $xs*, $Ψ])              => ``(`[iprop| ∀ $x, ∀ $xs*, $Ψ])
 
--- additional `iprop` syntax interpretation
+-- `iprop` macros
 macro_rules
   | `(`[iprop| True])  => ``(BIBase.pure True)
   | `(`[iprop| False]) => ``(BIBase.pure False)
@@ -104,7 +109,7 @@ delab_rule BIBase.impl
 end Delab
 
 
--- axioms that must hold for every `BI` interface
+/-- Require that a separation logic with carrier type `car` fulfills all necessary axioms. -/
 class BI (car : Type) extends BIBase car where
   entailsPreOrder : PreOrder entails
 

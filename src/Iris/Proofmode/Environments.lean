@@ -5,7 +5,8 @@ namespace Iris.Proofmode
 open Iris.BI Iris.Std
 open Lean
 
--- Env
+/-- Single separation logic context, implemented as a list of hypotheses. A custom datatype is used
+instead of the standard `List` to ensure that all operations are `reducible`. -/
 inductive Env (α : Type)
   | nil  : Env α
   | cons : α → Env α → Env α
@@ -13,16 +14,19 @@ inductive Env (α : Type)
 -- Env Operations
 namespace Env
 
+/-- Append a hypothesis to the end of the environment. -/
 @[reducible]
 def append : Env α → α → Env α
   | .nil, b       => .cons b .nil
   | .cons a as, b => .cons a <| as.append b
 
+/-- Return whether the environment is empty, i.e. it contains no hypotheses. -/
 @[reducible]
 def isEmpty : Env α → Bool
   | .nil      => true
   | .cons _ _ => false
 
+/-- Return the length of the environment, i.e. the number of contained hypotheses. -/
 @[reducible]
 def length : Env α → Nat
   | .nil       => 0
@@ -36,16 +40,22 @@ theorem length_cons_list_cons {a : α} {as : List α} {b : β} {bs : Env β} :
   simp only [length, List.length] at h
   rw' [Nat.add_right_cancel h]
 
+/-- Delete the hypothesis at the given index. -/
 @[reducible]
 def delete : (Γ : Env α) → Fin (Γ.length) → Env α
   | .cons _ as, ⟨0    , _⟩ => as
   | .cons a as, ⟨i + 1, h⟩ => .cons a <| as.delete ⟨i, Nat.lt_of_succ_lt_succ h⟩
 
+/-- Return the hypothesis at a given index without removing it. -/
 @[reducible]
 def get : (Γ : Env α) → Fin (Γ.length) → α
   | .cons a _ , ⟨0    , _⟩ => a
   | .cons _ as, ⟨i + 1, h⟩ => as.get ⟨i, Nat.lt_of_succ_lt_succ h⟩
 
+/-- Split the environment into two disjoint environments. The given boolean mask must have the same
+length as the environment. If the boolean mask contains the value `true` at a given index, the
+hypothesis at the same index in the original environment is contained in the left environment in
+the result. If the value is `false`, the hypothesis is contained in the right environment. -/
 @[reducible]
 def split : (Γ : Env α) → (mask : List Bool) → (mask.length = Γ.length) → Env α × Env α
   | .nil, .nil, _ => (.nil, .nil)
@@ -53,11 +63,14 @@ def split : (Γ : Env α) → (mask : List Bool) → (mask.length = Γ.length) �
     let (ls, rs) := split as bs (length_cons_list_cons h)
     if b then (.cons a ls, rs) else (ls, .cons a rs)
 
+/-- Return a list with exactly the hypotheses from the environment in the same order as in
+the environment. -/
 @[reducible]
 def toList : Env α → List α
   | .nil       => []
   | .cons a as => a :: toList as
 
+/-- Proposition of membership for an hypothesis in an environment. -/
 inductive Mem : α → Env α → Prop
   | head (a : α) (as : Env α)         : Mem a (.cons a as)
   | tail (a : α) {b : α} (as : Env α) : Mem b as → Mem b (.cons a as)
@@ -297,44 +310,64 @@ theorem env_big_op_sep_split [BI PROP] {Γ Γ₁ Γ₂ : Env PROP} {mask : List 
           ← (assoc : _ ⊣⊢ (P ∗ _) ∗ _),
           h_ind h_split_Ps]
 
--- Envs
+
+/-- Combined separation logic context with two `Env` objects for the intuitionistic and
+spatial context. -/
 structure Envs (PROP : Type) [BI PROP] where
   intuitionistic : Env PROP
   spatial        : Env PROP
 
+/-- Embedding of a separation logic context in form of an `Envs` object in a separation
+logic proposition. -/
 def of_envs [BI PROP] : Envs PROP → PROP
   | ⟨Γₚ, Γₛ⟩ => `[iprop| □ [∧] Γₚ ∗ [∗] Γₛ]
 
+/-- Embedding of a separation logic context in form of an `Envs` object together with a separation
+logic proposition in one separation logic proposition. This embedding is used in the Iris Proof
+Mode where the embedded proposition is the goal of the proof. -/
 def envs_entails [BI PROP] (Δ : Envs PROP) (Q : PROP) : Prop :=
   of_envs Δ ⊢ Q
 
--- HypothesisIndex / EnvsIndex
+/-- Types of hypotheses. -/
 inductive HypothesisType
   | intuitionistic | spatial
   deriving BEq
 
+/-- Unbounded index of a hypothesis in a combined separation logic context.
+
+This datatype is used for convenience on the meta level only - environment operations and theorems
+use the bounded dataype `EnvsIndex` instead. -/
 structure HypothesisIndex where
   type : HypothesisType
   index : Nat
   length : Nat
   deriving BEq
 
+/-- Bounded index of a hypothesis in a combined separation logic context.
+
+The lengths of the individual contexts are used as type arguments instead of an `Envs` object to
+allow for an easier syntax generation on the meta level. -/
 inductive EnvsIndex (lₚ lₛ : Nat)
   | p : Fin lₚ → EnvsIndex lₚ lₛ
   | s : Fin lₛ → EnvsIndex lₚ lₛ
 
+/-- Return the hypothesis type of the hypothesis referenced by the given index. -/
 @[reducible]
 def EnvsIndex.type : EnvsIndex lₚ lₛ → HypothesisType
   | .p _ => .intuitionistic
   | .s _ => .spatial
 
+/-- Return the unbounded index value of the given index. -/
 @[reducible]
 def EnvsIndex.val : EnvsIndex lₚ lₛ → Nat
   | .p ⟨val, _⟩ => val
   | .s ⟨val, _⟩ => val
 
+/-- `EnvsIndex` type for the given `Envs` object. -/
 abbrev EnvsIndex.of [BI PROP] (Δ : Envs PROP) := EnvsIndex Δ.intuitionistic.length Δ.spatial.length
 
+/-- Generate the syntax of a (bounded) `EnvsIndex` object based on an unbounded `HypothesisIndex`.
+The proofs of the index bounds are generated using the tactic `decide`. -/
 def HypothesisIndex.quoteAsEnvsIndex : HypothesisIndex → MetaM (TSyntax `term)
   | ⟨.intuitionistic, index, length⟩ =>
     ``(EnvsIndex.p ⟨$(quote index), by show $(quote index) < $(quote length) ; decide⟩)
@@ -344,33 +377,47 @@ def HypothesisIndex.quoteAsEnvsIndex : HypothesisIndex → MetaM (TSyntax `term)
 -- Envs Operations
 namespace Envs
 
+/-- Append a hypothesis to the end of one of the separation logic contexts. The boolean flag
+indicates whether the hypothesis should be appended to the intuitionistic (`true`) or spatial
+(`false`) context. -/
 @[reducible]
 def append [BI PROP] : Bool → PROP → Envs PROP → Envs PROP
   | true,  P, ⟨Γₚ, Γₛ⟩ => ⟨Γₚ.append P, Γₛ⟩
   | false, P, ⟨Γₚ, Γₛ⟩ => ⟨Γₚ, Γₛ.append P⟩
 
+/-- Delete the hypothesis at the given (combined) index. The boolean flag indicates whether the
+hypothesis should be deleted even if it is part of the intuitionistic context. -/
 @[reducible]
 def delete [BI PROP] : Bool → (Δ : Envs PROP) → EnvsIndex.of Δ → Envs PROP
   | true , ⟨Γₚ, Γₛ⟩, .p i => ⟨Γₚ.delete i, Γₛ⟩
   | false, ⟨Γₚ, Γₛ⟩, .p _ => ⟨Γₚ, Γₛ⟩
   | _    , ⟨Γₚ, Γₛ⟩, .s i => ⟨Γₚ, Γₛ.delete i⟩
 
+/-- Return the hypothesis at the given index. -/
 @[reducible]
 def lookup [BI PROP] : (Δ : Envs PROP) → EnvsIndex.of Δ → Bool × PROP
   | ⟨Γₚ, _⟩, .p i => (true, Γₚ.get i)
   | ⟨_, Γₛ⟩, .s i => (false, Γₛ.get i)
 
+/-- Replace the hypothesis at index `i` with the hypothesis `P`. The boolean flag `p` indicates
+whether the new hypothesis should be placed in the intuitionistic (`true`) or spatial (`false`)
+context. If the boolean flag `rp` is set, the original hypothesis is removed even if it is part of
+the intuitionistic context. If it is not set, the original hypothesis is kept. The new hypothesis
+is added in both cases. -/
 @[reducible]
 def replace [BI PROP] (Δ : Envs PROP) (rp : Bool) (i : EnvsIndex.of Δ) (p : Bool) (P : PROP) : Envs PROP :=
   Δ.delete rp i |>.append p P
 
+/-- Split the spatial context into two disjoint parts. See `Env.split` for details. -/
 @[reducible]
 def split [BI PROP] : (Δ : Envs PROP) → (mask : List Bool) → (mask.length = Δ.spatial.length) → Envs PROP × Envs PROP
   | ⟨Γₚ, Γₛ⟩, mask, h =>
     let ⟨Γₛ₁, Γₛ₂⟩ := Γₛ.split mask h
     (⟨Γₚ, Γₛ₁⟩, ⟨Γₚ, Γₛ₂⟩)
 
-
+/-- Update an index `j` of `Δ` to reference the same hypothesis in `Δ.delete rp i`, i.e. after the
+hypothesis at index `i` has been deleted. The indices `i` and `j` must reference
+different hypotheses. -/
 @[reducible]
 def updateIndexAfterDelete [BI PROP] (Δ : Envs PROP) : (rp : Bool) → (i : EnvsIndex.of Δ) → (j : EnvsIndex.of Δ) → (i.type = j.type → i.val ≠ j.val) → EnvsIndex.of (Δ.delete rp i)
   | rp, .p i, .s ⟨val, is_lt⟩, _ =>

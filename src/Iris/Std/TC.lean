@@ -2,15 +2,19 @@ namespace Iris.Std
 
 set_option checkBinderAnnotations false
 
+/-- Type class version of `False`, i.e. a type class with no instances. -/
 class inductive TCFalse
 
 
+/-- Type class version of `True`, i.e. a type class with a trivial instance without arguments. -/
 class inductive TCTrue
   | t
 
 instance : TCTrue := TCTrue.t
 
 
+/-- Type class version of `Or`, i.e. a type class for which an instance exists if an instance of any
+of the listed type classes is present. -/
 class inductive TCOr (T U : Sort _)
   | l : [T] → TCOr T U
   | r : [U] → TCOr T U
@@ -19,7 +23,11 @@ instance [t : T] : TCOr T U := @TCOr.l T U t
 instance [u : U] : TCOr T U := @TCOr.r T U u
 
 
-/-- Type class instances search requires the condition to be fully reduced. -/
+/-- Type class version of `Ite`, i.e. a type class for which an instance exists if the boolean
+condition is `true` and an instance of `T` is present or the condition is `false` and an instance
+of `U` is present.
+
+Note that type class instance search requires the condition to be fully reduced. -/
 class inductive TCIte : Bool → Sort u → Sort v → Sort (max (u + 1) (v + 1))
   | t [t : T] : TCIte true T U
   | e [u : U] : TCIte false T U

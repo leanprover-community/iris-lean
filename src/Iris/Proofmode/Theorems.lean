@@ -7,6 +7,7 @@ namespace Iris.Proofmode
 open Iris.BI Iris.Std
 open BI
 
+/-- Introduce one or multiple let-bound variables. -/
 scoped macro "intro_let " names:(colGt Lean.binderIdent)* : tactic => `(
   intro _ ;
   split ;

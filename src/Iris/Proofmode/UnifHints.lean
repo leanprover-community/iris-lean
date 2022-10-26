@@ -3,6 +3,9 @@ import Iris.BI
 namespace Iris.Proofmode
 open Iris.BI
 
+/- Importing these unification hints makes some proofs more convenient for the user of the
+proof interface. -/
+
 unif_hint [BIBase PROP] (P Q : PROP) where
   |- `[iprop| P ↔ Q] ≟ `[iprop| (P → Q) ∧ (Q → P)]
 unif_hint [BIBase PROP] (P Q : PROP) where
