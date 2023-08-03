@@ -8,17 +8,12 @@ open Iris.BI Iris.Std
 open BI
 
 /-- Introduce one or multiple let-bound variables. -/
-scoped macro "intro_let " names:(colGt Lean.binderIdent)* : tactic => `(
-  intro _ ;
-  split ;
-  rename_i $[$names]*
-)
+scoped macro "intro_let " names:(colGt Lean.binderIdent)* : tactic =>
+  `(tactic| (split; rename_i $[$names]*))
 
 -- proof mode
 theorem tac_start [BI PROP] (P : PROP) :
-  envs_entails ⟨.nil, .nil⟩ P →
-  ⊢ P
-:= by
+    envs_entails ⟨.nil, .nil⟩ P → ⊢ P := by
   simp only [envs_entails, of_envs, big_op]
   rw' [intuitionistically_True_emp, (left_id : emp ∗ _ ⊣⊢ _)]
   intro h

@@ -49,18 +49,17 @@ macro_rules
 
 /- This is necessary since the `∀` syntax is not defined using `explicitBinders` and we can
 therefore not use `expandExplicitBinders` as for `∃`. -/
-macro_rules
-  | `(`[iprop| ∀ _, $Ψ])                    => ``(BIBase.forall (fun _         => `[iprop| $Ψ]))
-  | `(`[iprop| ∀ $x:ident, $Ψ])             => ``(BIBase.forall (fun $x        => `[iprop| $Ψ]))
-  | `(`[iprop| ∀ (_ : $t), $Ψ])             => ``(BIBase.forall (fun (_ : $t)  => `[iprop| $Ψ]))
-  | `(`[iprop| ∀ (_ $xs* : $t), $Ψ])        => ``(BIBase.forall (fun (_ : $t)  => `[iprop| ∀ ($xs* : $t), $Ψ]))
-  | `(`[iprop| ∀ ($x:ident : $t), $Ψ])      => ``(BIBase.forall (fun ($x : $t) => `[iprop| $Ψ]))
-  | `(`[iprop| ∀ ($x:ident $xs* : $t), $Ψ]) => ``(BIBase.forall (fun ($x : $t) => `[iprop| ∀ ($xs* : $t), $Ψ]))
-  | `(`[iprop| ∀ {_ : $t}, $Ψ])             => ``(BIBase.forall (fun {_ : $t}  => `[iprop| $Ψ]))
-  | `(`[iprop| ∀ {_ $xs* : $t}, $Ψ])        => ``(BIBase.forall (fun {_ : $t}  => `[iprop| ∀ {$xs* : $t}, $Ψ]))
-  | `(`[iprop| ∀ {$x:ident : $t}, $Ψ])      => ``(BIBase.forall (fun ($x : $t) => `[iprop| $Ψ]))
-  | `(`[iprop| ∀ {$x:ident $xs* : $t}, $Ψ]) => ``(BIBase.forall (fun ($x : $t) => `[iprop| ∀ {$xs* : $t}, $Ψ]))
-  | `(`[iprop| ∀ $x $xs*, $Ψ])              => ``(`[iprop| ∀ $x, ∀ $xs*, $Ψ])
+macro_rules | `(`[iprop| ∀ _, $Ψ])                    => ``(BIBase.forall (fun _         => `[iprop| $Ψ]))
+macro_rules | `(`[iprop| ∀ $x:ident, $Ψ])             => ``(BIBase.forall (fun $x        => `[iprop| $Ψ]))
+macro_rules | `(`[iprop| ∀ (_ : $t), $Ψ])             => ``(BIBase.forall (fun (_ : $t)  => `[iprop| $Ψ]))
+macro_rules | `(`[iprop| ∀ (_ $xs* : $t), $Ψ])        => ``(BIBase.forall (fun (_ : $t)  => `[iprop| ∀ ($xs* : $t), $Ψ]))
+macro_rules | `(`[iprop| ∀ ($x:ident : $t), $Ψ])      => ``(BIBase.forall (fun ($x : $t) => `[iprop| $Ψ]))
+macro_rules | `(`[iprop| ∀ ($x:ident $xs* : $t), $Ψ]) => ``(BIBase.forall (fun ($x : $t) => `[iprop| ∀ ($xs* : $t), $Ψ]))
+macro_rules | `(`[iprop| ∀ {_ : $t}, $Ψ])             => ``(BIBase.forall (fun {_ : $t}  => `[iprop| $Ψ]))
+macro_rules | `(`[iprop| ∀ {_ $xs* : $t}, $Ψ])        => ``(BIBase.forall (fun {_ : $t}  => `[iprop| ∀ {$xs* : $t}, $Ψ]))
+macro_rules | `(`[iprop| ∀ {$x:ident : $t}, $Ψ])      => ``(BIBase.forall (fun ($x : $t) => `[iprop| $Ψ]))
+macro_rules | `(`[iprop| ∀ {$x:ident $xs* : $t}, $Ψ]) => ``(BIBase.forall (fun ($x : $t) => `[iprop| ∀ {$xs* : $t}, $Ψ]))
+macro_rules | `(`[iprop| ∀ $x $y $xs*, $Ψ])           => ``(`[iprop| ∀ $x, ∀ $y $xs*, $Ψ])
 
 -- `iprop` macros
 macro_rules
@@ -107,7 +106,6 @@ delab_rule BIBase.impl
   | `($_ $P `[iprop| False]) => do ``(`[iprop| ¬$(← unpackIprop P)])
 
 end Delab
-
 
 /-- Require that a separation logic with carrier type `car` fulfills all necessary axioms. -/
 class BI (car : Type) extends BIBase car where

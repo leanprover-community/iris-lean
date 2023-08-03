@@ -6,30 +6,33 @@ namespace Iris.Proofmode
 open Iris.BI Iris.Std
 
 -- AsEmpValid
-instance (priority := default + 10) asEmpValidEmpValid [bi : BI PROP] (P : PROP) :
-  AsEmpValid (⊢ P) P
-where
-  bi := bi
-  as_emp_valid := by
-    simp
+instance (priority := default - 10) asEmpValidEmpValid1
+    [BI PROP] (P : PROP) : AsEmpValid1 (⊢ P) P := ⟨by simp⟩
+instance (priority := default + 10) asEmpValidEmpValid2
+    [BI PROP] (P : PROP) : AsEmpValid2 (⊢ P) P := AsEmpValid1.to2
 
-instance asEmpValidEntails [bi : BI PROP] (P Q : PROP) :
-  AsEmpValid (P ⊢ Q) `[iprop| P -∗ Q]
+instance asEmpValidEntails1 [bi : BI PROP] (P Q : PROP) :
+  AsEmpValid1 (P ⊢ Q) `[iprop| P -∗ Q]
 where
-  bi := bi
   as_emp_valid := by
     constructor
     · exact entails_wand
     · exact wand_entails
+instance asEmpValidEntails2 [BI PROP] (P Q : PROP) :
+  AsEmpValid2 (P ⊢ Q) `[iprop| P -∗ Q] := AsEmpValid1.to2
+example [BI PROP] (Q : PROP) :=
+  have : AsEmpValid2 (Q ⊢ Q) _ := inferInstance
+  trivial
 
-instance asEmpValidEquiv [bi : BI PROP] (P Q : PROP) :
-  AsEmpValid (P ⊣⊢ Q) `[iprop| P ∗-∗ Q]
+instance asEmpValidEquiv1 [BI PROP] (P Q : PROP) :
+  AsEmpValid1 (P ⊣⊢ Q) `[iprop| P ∗-∗ Q]
 where
-  bi := bi
   as_emp_valid := by
     constructor
     · exact equiv_wand_iff
     · exact wand_iff_equiv
+instance asEmpValidEquiv2 [BI PROP] (P Q : PROP) :
+  AsEmpValid2 (P ⊣⊢ Q) `[iprop| P ∗-∗ Q] := AsEmpValid1.to2
 
 -- FromImpl
 instance fromImplImpl [BI PROP] (P1 P2 : PROP) :
@@ -120,6 +123,7 @@ where
     rw' [BI.and_elim_r]
     exact IntoWand.into_wand
 
+set_option synthInstance.checkSynthOrder false in
 instance intoWandForall (p q : Bool) [BI PROP] (Φ : α → PROP) (P Q : PROP) (x : α)
   [inst : IntoWand p q (Φ x) P Q] :
   IntoWand p q `[iprop| ∀ x, Φ x] P Q
@@ -523,6 +527,7 @@ where
   into_sep := by
     simp
 
+set_option synthInstance.checkSynthOrder false in
 instance intoSepAndPersistentL [BI PROP] (P Q P' Q' : PROP)
   [Persistent P]
   [inst : AndIntoSep P P' Q Q'] :
@@ -539,6 +544,7 @@ where
     case and_into_sep =>
       rw' [persistent_and_affinely_sep_l_1]
 
+set_option synthInstance.checkSynthOrder false in
 instance intoSepAndPersistentR [BI PROP] (P Q P' Q' : PROP)
   [Persistent Q]
   [inst : AndIntoSep Q Q' P P'] :
@@ -862,6 +868,7 @@ where
       ← (FromAssumption.from_assumption : □?p P ⊢ Q),
       affinely_elim]
 
+set_option synthInstance.checkSynthOrder false in
 instance (priority := default + 10) fromAssumptionForall (p : Bool) [BI PROP] (Φ : α → PROP) (x : α) (Q : PROP) :
   [FromAssumption p (Φ x) Q] →
   FromAssumption p `[iprop| ∀ x, Φ x] Q
@@ -1063,6 +1070,7 @@ where
         pure_impl_1,
         impl_elim_r]
 
+set_option synthInstance.checkSynthOrder false in
 instance fromPurePersistently [BI PROP] (P : PROP) (a : Bool) (φ : Prop) :
   [FromPure true P φ] →
   FromPure a `[iprop| <pers> P] φ

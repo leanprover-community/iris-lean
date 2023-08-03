@@ -24,10 +24,10 @@ elab "istart" : tactic => do
     return ()
 
   -- create environment
-  try evalTactic (← `(tactic|
+  try evalTactic (← `(tactic| (
     refine as_emp_valid_2 _ ?_ ;
     refine tac_start _ ?_
-  ))
+  )))
   catch _ => throwError "unable to start proof mode"
 
 elab "istop" : tactic => do
@@ -39,10 +39,10 @@ elab "istop" : tactic => do
     throwError "not in proof mode"
 
   -- reduce proof mode definitions
-  try evalTactic (← `(tactic|
+  try evalTactic (← `(tactic| (
     refine tac_stop _ ?_ ;
     simp only [big_op]
-  ))
+  )))
   catch _ => throwError "unable to stop proof mode"
 
 
@@ -83,7 +83,7 @@ private def envLength (type : HypothesisType) : TacticM Nat := do
   let Γ := match type with
     | .intuitionistic => Γₚ
     | .spatial        => Γₛ
-  
+
   let some l ← EnvExpr.length? Γ
     | throwError "ill-formed proof environment"
   return l
@@ -389,7 +389,7 @@ elab "ispecialize" hyp:ident args:ident* "as" name:ident : tactic => do
     if let some argIndex ← findHypothesis? nameArg then
       -- check that the argument is not equal to the hypothesis
       if hypIndex == argIndex then
-        throwError "cannot specialize hypothesis with itself"
+        throwError "cannot specialize hypothesis {nameArg} with itself"
 
       -- if the argument is a hypothesis then specialize the wand
       try evalTactic (← `(tactic|
@@ -398,7 +398,7 @@ elab "ispecialize" hyp:ident args:ident* "as" name:ident : tactic => do
           simp only [Bool.and_self, Bool.and_true, Bool.and_false]
         | fail
       ))
-      catch _ => throwError "unable to specialize hypothesis"
+      catch _ => throwError "unable to specialize hypothesis {nameArg}"
 
       -- update hypothesis index
       hypIndex ← match hypIndex, argIndex with
@@ -416,7 +416,7 @@ elab "ispecialize" hyp:ident args:ident* "as" name:ident : tactic => do
           apply Exists.intro $(mkIdent nameArg)
         | fail
       ))
-      catch _ => throwError "unable to specialize hypothesis"
+      catch _ => throwError "unable to specialize hypothesis {nameArg}"
 
       -- update hypothesis index
       hypIndex ← match hypIndex with

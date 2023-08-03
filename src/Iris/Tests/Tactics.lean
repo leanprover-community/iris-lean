@@ -579,7 +579,7 @@ theorem move_to_intuitionistic_and_back_disjunction [BI PROP] (Q : PROP) : ⊢ �
 theorem conjunction_clear [BIAffine PROP] (Q : PROP) : Q ∗ P ⊢ Q := by
   iintro HQP
   icases HQP with ⟨HQ, _⟩
-  <;> iexact HQ
+  iexact HQ
 
 theorem disjunction_clear [BIAffine PROP] (Q : PROP) : Q ⊢ P1 ∨ P2 -∗ Q := by
   iintro HQ
