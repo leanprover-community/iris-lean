@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2022 Lars König. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Lars König
+-/
 import Iris.Proofmode.Patterns.CasesPattern
 import Iris.Proofmode.Theorems
 import Iris.Proofmode.Tactics.Rename

@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2022 Lars König. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Lars König
+-/
 namespace Nat
 
 theorem eq_of_not_lt_not_lt {a b : Nat} : ¬(a < b) → ¬(b < a) → a = b := by
