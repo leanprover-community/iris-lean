@@ -18,9 +18,9 @@ syntax "⌜" icasesPat "⌝" : icasesPat
 syntax "□" icasesPat : icasesPat
 syntax "-□" icasesPat : icasesPat
 
-macro "%" pat:icasesPat : icasesPat => `(⌜$pat⌝)
-macro "#" pat:icasesPat : icasesPat => `(□ $pat)
-macro "-#" pat:icasesPat : icasesPat => `(-□ $pat)
+macro "%" pat:icasesPat : icasesPat => `(icasesPat| ⌜$pat⌝)
+macro "#" pat:icasesPat : icasesPat => `(icasesPat| □ $pat)
+macro "-#" pat:icasesPat : icasesPat => `(icasesPat| -□ $pat)
 
 inductive iCasesPat
   | one (name : Name)

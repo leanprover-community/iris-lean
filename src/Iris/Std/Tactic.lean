@@ -18,7 +18,7 @@ def apply' (goal : MVarId) (name : Name) : TacticM <| Option <| List MVarId := d
   let some value := ci.value?
     | return none
 
-  let goals ← withoutRecover <| withReducible <| goal.apply value ⟨.nonDependentOnly⟩
+  let goals ← withoutRecover <| withReducible <| goal.apply value { newGoals := .nonDependentOnly }
   setGoals <| goals ++ (← getUnsolvedGoals)
   return goals
 
