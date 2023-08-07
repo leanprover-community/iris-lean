@@ -14,24 +14,21 @@ instance search is supposed to generate `φ` based on `P`, `AsEmpValid1` is used
 `outParam`. Consequently, if type class instance search is supposed to generate `P`, `AsEmpValid2`
 is used. -/
 
-class AsEmpValid1 (φ : outParam Prop) {PROP : Type} (P : PROP) where
-  [bi : BI PROP]
+class AsEmpValid1 (φ : outParam Prop) {PROP : Type} (P : PROP) [BI PROP] where
   as_emp_valid : φ ↔ ⊢ P
 
-class AsEmpValid2 (φ : Prop) {PROP : outParam Type} (P : outParam PROP) where
-  [bi : BI PROP]
+class AsEmpValid2 (φ : Prop) {PROP : outParam Type} (P : outParam PROP) [BI PROP] where
   as_emp_valid : φ ↔ ⊢ P
 
-attribute [instance (default - 100)] AsEmpValid1.bi
-attribute [instance (default - 100)] AsEmpValid2.bi
+def AsEmpValid1.to2 {φ : Prop} {PROP : Type} {P : PROP} [BI PROP]
+    [AsEmpValid1 φ P] : AsEmpValid2 φ P := ⟨AsEmpValid1.as_emp_valid⟩
 
-class AsEmpValid (φ : Prop) {PROP : Type} (P : PROP) extends
-  AsEmpValid1 φ P,
-  AsEmpValid2 φ P
+def AsEmpValid2.to1 {φ : Prop} {PROP : Type} {P : PROP} [BI PROP]
+    [AsEmpValid2 φ P] : AsEmpValid1 φ P := ⟨AsEmpValid2.as_emp_valid⟩
 
-theorem as_emp_valid_1 (P : PROP) [AsEmpValid1 φ P] : φ → ⊢ P :=
+theorem as_emp_valid_1 [BI PROP] (P : PROP) [AsEmpValid1 φ P] : φ → ⊢ P :=
   AsEmpValid1.as_emp_valid.mp
-theorem as_emp_valid_2 (φ : Prop) [AsEmpValid2 φ P] : (⊢ P) → φ :=
+theorem as_emp_valid_2 [BI PROP] (φ : Prop) [AsEmpValid2 φ (P : PROP)] : (⊢ P) → φ :=
   AsEmpValid2.as_emp_valid.mpr
 
 

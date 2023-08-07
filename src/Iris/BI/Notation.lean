@@ -51,11 +51,11 @@ macro_rules
 
     let (p : TSyntaxArray `term) := p
     if p.any (· matches `(`($$_))) then
-      `(@[appUnexpander $(mkIdent f)]
+      `(@[app_unexpander $(mkIdent f)]
         def unexpand : Lean.PrettyPrinter.Unexpander
           $[| $p => $s]*)
     else
-      `(@[appUnexpander $(mkIdent f)]
+      `(@[app_unexpander $(mkIdent f)]
         def unexpand : Lean.PrettyPrinter.Unexpander
           $[| $p => $s]*
           | _ => throw ())

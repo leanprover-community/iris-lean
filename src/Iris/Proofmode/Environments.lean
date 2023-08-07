@@ -66,7 +66,7 @@ def split : (Γ : Env α) → (mask : List Bool) → (mask.length = Γ.length) �
   | .nil, .nil, _ => (.nil, .nil)
   | .cons a as, b :: bs, h =>
     let (ls, rs) := split as bs (length_cons_list_cons h)
-    if b then (.cons a ls, rs) else (ls, .cons a rs)
+    match b with | true => (.cons a ls, rs) | false => (ls, .cons a rs)
 
 /-- Return a list with exactly the hypotheses from the environment in the same order as in
 the environment. -/
@@ -420,6 +420,37 @@ def split [BI PROP] : (Δ : Envs PROP) → (mask : List Bool) → (mask.length =
     let ⟨Γₛ₁, Γₛ₂⟩ := Γₛ.split mask h
     (⟨Γₚ, Γₛ₁⟩, ⟨Γₚ, Γₛ₂⟩)
 
+@[reducible]
+def natPred : Nat → Nat
+  | .zero => .zero
+  | .succ n => n
+
+@[reducible]
+def natCmp : Nat → Nat → Ordering
+  | .zero, .zero => .eq
+  | .succ _, .zero => .gt
+  | .zero, .succ _ => .lt
+  | .succ m, .succ n => natCmp m n
+
+theorem natCmp_lt : ∀ {m n}, natCmp m n = .lt ↔ m < n
+  | 0, 0 | 0, .succ _ => by simp [Nat.succ_pos]
+  | .succ _, 0 => by rw [natCmp]; simp [Nat.not_lt_zero]
+  | .succ _, .succ _ => by rw [natCmp, natCmp_lt]; exact ⟨Nat.succ_lt_succ, Nat.lt_of_succ_lt_succ⟩
+
+theorem natCmp_gt : ∀ {m n}, natCmp m n = .gt ↔ n < m
+  | 0, 0 | .succ _, 0 => by simp [Nat.succ_pos]
+  | 0, .succ _ => by rw [natCmp]; simp [Nat.not_lt_zero]
+  | .succ _, .succ _ => by rw [natCmp, natCmp_gt]; exact ⟨Nat.succ_lt_succ, Nat.lt_of_succ_lt_succ⟩
+
+theorem natCmp_eq {m n} : natCmp m n = .eq ↔ n = m :=
+  match h : natCmp m n with
+  | .lt => by simp [(Nat.ne_of_lt (natCmp_lt.1 h)).symm]
+  | .gt => by simp [Nat.ne_of_lt (natCmp_gt.1 h)]
+  | .eq => by
+    simp; apply Nat.eq_of_not_lt_not_lt
+    · simp [← natCmp_gt, h]
+    · simp [← natCmp_lt, h]
+
 /-- Update an index `j` of `Δ` to reference the same hypothesis in `Δ.delete rp i`, i.e. after the
 hypothesis at index `i` has been deleted. The indices `i` and `j` must reference
 different hypotheses. -/
@@ -432,23 +463,15 @@ def updateIndexAfterDelete [BI PROP] (Δ : Envs PROP) : (rp : Bool) → (i : Env
   | false, .p _, .p ⟨val, is_lt⟩, _ =>
     .p ⟨val, by simp [delete, is_lt]⟩
   | true, .p ⟨val_d, is_lt_d⟩, .p ⟨val, is_lt⟩, h_ne =>
-    if h_lt : val < val_d then
-      EnvsIndex.p ⟨val, env_delete_idx_length_of_lt h_lt⟩
-    else if h_gt : val_d < val then
-      EnvsIndex.p ⟨val - 1, env_delete_idx_pred_length ⟨val, is_lt⟩ (Nat.zero_lt_of_lt h_gt)⟩
-    else by
-      let h_ne := h_ne (by simp)
-      let h_eq := Nat.eq_of_not_lt_not_lt h_gt h_lt
-      contradiction
+    match h_cmp : natCmp val val_d with
+    | .lt => EnvsIndex.p ⟨val, env_delete_idx_length_of_lt (natCmp_lt.1 h_cmp)⟩
+    | .gt => EnvsIndex.p ⟨natPred val, env_delete_idx_pred_length ⟨val, is_lt⟩ (Nat.zero_lt_of_lt (natCmp_gt.1 h_cmp))⟩
+    | .eq => False.elim <| h_ne (by simp) (natCmp_eq.1 h_cmp)
   | rp, .s ⟨val_d, is_lt_d⟩, .s ⟨val, is_lt⟩, h_ne =>
-    if h_lt : val < val_d then
-      EnvsIndex.s ⟨val, by simp only [delete] ; exact env_delete_idx_length_of_lt h_lt⟩
-    else if h_gt : val_d < val then
-      EnvsIndex.s ⟨val - 1, by simp only [delete] ; exact env_delete_idx_pred_length ⟨val, is_lt⟩ (Nat.zero_lt_of_lt h_gt)⟩
-    else by
-      let h_ne := h_ne (by simp)
-      let h_eq := Nat.eq_of_not_lt_not_lt h_gt h_lt
-      contradiction
+    match h_cmp : natCmp val val_d with
+    | .lt => EnvsIndex.s ⟨val, by simp only [delete]; exact env_delete_idx_length_of_lt (natCmp_lt.1 h_cmp)⟩
+    | .gt => EnvsIndex.s ⟨natPred val, by simp only [delete]; exact env_delete_idx_pred_length ⟨val, is_lt⟩ (Nat.zero_lt_of_lt (natCmp_gt.1 h_cmp))⟩
+    | .eq => False.elim <| h_ne (by simp) (natCmp_eq.1 h_cmp)
 
 end Envs
 

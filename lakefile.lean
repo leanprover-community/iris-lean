@@ -4,5 +4,5 @@ open Lake DSL
 package iris where
   srcDir := "./src/"
 
-@[defaultTarget]
+@[default_target]
 lean_lib iris
