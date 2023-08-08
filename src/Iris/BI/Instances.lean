@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
 import Iris.BI.Classes
-import Iris.BI.DerivedConnectives
 import Iris.BI.DerivedLaws
 import Iris.BI.Extensions
 import Iris.BI.BI
