@@ -5,6 +5,7 @@ Authors: Lars König
 -/
 import Iris.BI.Notation
 import Iris.Std.Classes
+import Iris.Std.DelabRule
 import Iris.Std.Rewrite
 
 namespace Iris.BI
