@@ -119,7 +119,7 @@ theorem exist_mono [BI PROP] {Φ Ψ : α → PROP} :
   intro a
   rw' [Hφ a, exist_intro _]
 
-instance and_idemp [BI PROP] : Idemp (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∧ ·]) where
+instance and_idemp [BI PROP] : Idemp (α := PROP) (· ⊣⊢ ·) (iprop(· ∧ ·)) where
   idemp := by
     intro _
     apply anti_symm
@@ -127,7 +127,7 @@ instance and_idemp [BI PROP] : Idemp (α := PROP) (· ⊣⊢ ·) (`[iprop| · �
     · apply and_intro
       <;> simp
 
-instance or_idemp [BI PROP] : Idemp (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∨ ·]) where
+instance or_idemp [BI PROP] : Idemp (α := PROP) (· ⊣⊢ ·) (iprop(· ∨ ·)) where
   idemp := by
     intro _
     apply anti_symm
@@ -135,7 +135,7 @@ instance or_idemp [BI PROP] : Idemp (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∨
       <;> simp
     · exact or_intro_l
 
-instance and_comm [BI PROP] : Comm (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∧ ·]) where
+instance and_comm [BI PROP] : Comm (α := PROP) (· ⊣⊢ ·) (iprop(· ∧ ·)) where
   comm := by
     intros
     apply anti_symm
@@ -148,7 +148,7 @@ instance and_comm [BI PROP] : Comm (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∧ 
       · exact and_elim_r
       · exact and_elim_l
 
-instance True_and [BI PROP] : LeftId (α := PROP) (· ⊣⊢ ·) `[iprop| True] (`[iprop| · ∧ ·]) where
+instance True_and [BI PROP] : LeftId (α := PROP) (· ⊣⊢ ·) iprop(True) (iprop(· ∧ ·)) where
   left_id := by
     intros
     apply anti_symm
@@ -159,7 +159,7 @@ instance True_and [BI PROP] : LeftId (α := PROP) (· ⊣⊢ ·) `[iprop| True] 
       apply pure_intro
       simp
 
-instance and_True [BI PROP] : RightId (α := PROP) (· ⊣⊢ ·) `[iprop| True] (`[iprop| · ∧ ·]) where
+instance and_True [BI PROP] : RightId (α := PROP) (· ⊣⊢ ·) iprop(True) (iprop(· ∧ ·)) where
   right_id := by
     intros
     apply anti_symm
@@ -170,7 +170,7 @@ instance and_True [BI PROP] : RightId (α := PROP) (· ⊣⊢ ·) `[iprop| True]
       apply pure_intro
       simp
 
-instance and_assoc [BI PROP] : Assoc (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∧ ·]) where
+instance and_assoc [BI PROP] : Assoc (α := PROP) (· ⊣⊢ ·) (iprop(· ∧ ·)) where
   assoc := by
     intro _ _ _
     apply anti_symm
@@ -236,13 +236,13 @@ theorem wand_mono [BI PROP] {P P' Q Q' : PROP} : (Q ⊢ P) → (P' ⊢ Q') → (
   apply wand_elim_l'
   simp
 
-instance sep_comm [BI PROP] : Comm (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∗ ·]) where
+instance sep_comm [BI PROP] : Comm (α := PROP) (· ⊣⊢ ·) (iprop(· ∗ ·)) where
   comm := by
     intros
     apply anti_symm
     <;> exact sep_comm'
 
-instance sep_assoc [BI PROP] : Assoc (α := PROP) (· ⊣⊢ ·) (`[iprop| · ∗ ·]) where
+instance sep_assoc [BI PROP] : Assoc (α := PROP) (· ⊣⊢ ·) (iprop(· ∗ ·)) where
   assoc := by
     intros P Q R
     apply anti_symm
@@ -256,17 +256,17 @@ instance sep_assoc [BI PROP] : Assoc (α := PROP) (· ⊣⊢ ·) (`[iprop| · �
     case right =>
       exact sep_assoc'
 
-instance emp_sep [BI PROP] : LeftId (α := PROP) (· ⊣⊢ ·) `[iprop| emp] (`[iprop| · ∗ ·]) where
+instance emp_sep [BI PROP] : LeftId (α := PROP) (· ⊣⊢ ·) iprop(emp) (iprop(· ∗ ·)) where
   left_id := by
     intros
     apply anti_symm
     · exact emp_sep_2
     · exact emp_sep_1
 
-instance sep_emp [BI PROP] : RightId (α := PROP) (· ⊣⊢ ·) `[iprop| emp] (`[iprop| · ∗ ·]) where
+instance sep_emp [BI PROP] : RightId (α := PROP) (· ⊣⊢ ·) iprop(emp) (iprop(· ∗ ·)) where
   right_id := by
     intro x
-    rw' [(comm : `[iprop| x ∗ emp] ⊣⊢ _), (left_id : emp ∗ x ⊣⊢ _)]
+    rw' [(comm : iprop(x ∗ emp) ⊣⊢ _), (left_id : emp ∗ x ⊣⊢ _)]
 
 theorem True_sep_2 [BI PROP] {P : PROP} : P ⊢ True ∗ P := by
   rw' [emp_sep_1]
@@ -643,7 +643,7 @@ theorem absorbingly_elim_persistently [BI PROP] {P : PROP} : <absorb> <pers> P �
   case left =>
     simp only [bi_absorbingly]
     rw' [
-      (comm : `[iprop| True ∗ <pers> P] ⊣⊢ _),
+      (comm : iprop(True ∗ <pers> P) ⊣⊢ _),
       persistently_absorbing]
   case right =>
     exact absorbingly_intro
@@ -743,9 +743,9 @@ theorem persistently_into_absorbingly [BI PROP] {P : PROP} : <pers> P ⊢ <absor
     ← (right_id : <pers> P ∧ True ⊣⊢ _),
     ← (left_id : emp ∗ True ⊣⊢ _),
     persistently_and_sep_assoc,
-    (comm : `[iprop| <pers> P ∧ emp] ⊣⊢ _),
+    (comm : iprop(<pers> P ∧ emp) ⊣⊢ _),
     persistently_and_emp_elim,
-    (comm : `[iprop| P ∗ True] ⊣⊢ _)]
+    (comm : iprop(P ∗ True) ⊣⊢ _)]
 
 theorem persistently_elim [BI PROP] {P : PROP} [Absorbing P] : <pers> P ⊢ P := by
   rw' [persistently_into_absorbingly, absorbing]
@@ -770,7 +770,7 @@ theorem persistently_pure {φ : Prop} [BI PROP] : <pers> ⌜φ⌝ ⊣⊢ (⌜φ�
 theorem persistently_and_sep_l_1 [BI PROP] {P Q : PROP} : <pers> P ∧ Q ⊢ <pers> P ∗ Q := by
   conv =>
     lhs
-    rw [← (left_id : `[iprop| emp ∗ Q] ⊣⊢ _)]
+    rw [← (left_id : iprop(emp ∗ Q) ⊣⊢ _)]
   rw' [persistently_and_sep_assoc, and_elim_l]
 
 theorem persistently_and_sep [BI PROP] {P Q : PROP} : <pers> (P ∧ Q) ⊢ <pers> (P ∗ Q) := by
@@ -798,7 +798,7 @@ theorem and_sep_persistently [BI PROP] {P Q : PROP} : <pers> P ∧ <pers> Q ⊣�
   case right =>
     apply and_intro
     · exact persistently_absorbing
-    · rw' [(comm : `[iprop| <pers> P ∗ <pers> Q ⊣⊢ _]), persistently_absorbing]
+    · rw' [(comm : iprop(<pers> P ∗ <pers> Q ⊣⊢ _)), persistently_absorbing]
 
 theorem persistently_sep_2 [BI PROP] {P Q : PROP} : <pers> P ∗ <pers> Q ⊢ <pers> (P ∗ Q) := by
   rw' [← persistently_and_sep, persistently_and, ← and_sep_persistently]
@@ -1080,18 +1080,18 @@ theorem persistent_absorbingly_affinely_2 [BI PROP] {P : PROP} [Persistent P] : 
     intuitionistically_affinely]
 
 -- Big Op
-theorem big_op_sep_nil [BI PROP] : [∗] `[term| []] ⊣⊢ (emp : PROP) := by
+theorem big_op_sep_nil [BI PROP] : [∗] term([]) ⊣⊢ (emp : PROP) := by
   simp only [big_op]
 
-theorem big_op_and_nil [BI PROP] : [∧] `[term| []] ⊣⊢ (True : PROP) := by
+theorem big_op_and_nil [BI PROP] : [∧] term([]) ⊣⊢ (True : PROP) := by
   simp only [big_op]
 
-theorem big_op_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} : [∗] `[term| P :: Ps] ⊣⊢ P ∗ [∗] `[term| Ps] := by
+theorem big_op_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} : [∗] term(P :: Ps) ⊣⊢ P ∗ [∗] term(Ps) := by
   cases Ps
   <;> simp only [big_op]
   rw' [(right_id : _ ∗ emp ⊣⊢ _)]
 
-theorem big_op_and_cons [BI PROP] {P : PROP} {Ps : List PROP} : [∧] `[term| P :: Ps] ⊣⊢ P ∧ [∧] `[term| Ps] := by
+theorem big_op_and_cons [BI PROP] {P : PROP} {Ps : List PROP} : [∧] term(P :: Ps) ⊣⊢ P ∧ [∧] term(Ps) := by
   cases Ps
   <;> simp only [big_op]
   rw' [(right_id : _ ∧ True ⊣⊢ _)]

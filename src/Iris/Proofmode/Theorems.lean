@@ -26,10 +26,10 @@ theorem tac_start [BI PROP] (P : PROP) :
 
 theorem tac_stop [BI PROP] {Γₚ Γₛ : Env PROP} (P : PROP) :
   let Ps := match Γₚ, Γₛ with
-    | .nil, .nil => `[iprop| emp]
-    | _   , .nil => `[iprop| □ [∧] Γₚ]
-    | .nil, _    => `[iprop| [∗] Γₛ]
-    | _   , _    => `[iprop| □ [∧] Γₚ ∗ [∗] Γₛ]
+    | .nil, .nil => iprop(emp)
+    | _   , .nil => iprop(□ [∧] Γₚ)
+    | .nil, _    => iprop([∗] Γₛ)
+    | _   , _    => iprop(□ [∧] Γₚ ∗ [∗] Γₛ)
   (Ps ⊢ P) →
   envs_entails ⟨Γₚ, Γₛ⟩ P
 := by
@@ -243,7 +243,7 @@ theorem tac_specialize_forall [BI PROP] {Δ : Envs PROP} (rpWand : Bool) (i : En
 -- forall
 theorem tac_forall_intro [BI PROP] {Δ : Envs PROP} {Ψ : α → PROP} (Q : PROP) :
   [FromForall Q Ψ] →
-  (∀ a, envs_entails Δ `[iprop| Ψ a]) →
+  (∀ a, envs_entails Δ iprop(Ψ a)) →
   envs_entails Δ Q
 := by
   simp only [envs_entails]
@@ -255,7 +255,7 @@ theorem tac_forall_intro [BI PROP] {Δ : Envs PROP} {Ψ : α → PROP} (Q : PROP
 -- exist
 theorem tac_exist [BI PROP] {Δ : Envs PROP} {Φ : α → PROP} (P : PROP) :
   [FromExist P Φ] →
-  (∃ a, envs_entails Δ `[iprop| Φ a]) →
+  (∃ a, envs_entails Δ iprop(Φ a)) →
   envs_entails Δ P
 := by
   simp only [envs_entails]
@@ -286,7 +286,7 @@ theorem tac_exist_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) {Φ 
 -- emp
 theorem tac_emp_intro [BI PROP] {Γₚ Γₛ : Env PROP} :
   [AffineEnv Γₛ] →
-  envs_entails ⟨Γₚ, Γₛ⟩ `[iprop| emp]
+  envs_entails ⟨Γₚ, Γₛ⟩ iprop(emp)
 := by
   intro _
   simp only [envs_entails, of_envs]
@@ -342,7 +342,7 @@ theorem tac_assumption [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) (Q : PRO
 
 -- false
 theorem tac_ex_falso [BI PROP] {Δ : Envs PROP} (Q : PROP) :
-  envs_entails Δ `[iprop| False] →
+  envs_entails Δ iprop(False) →
   envs_entails Δ Q
 := by
   simp only [envs_entails]
@@ -352,7 +352,7 @@ theorem tac_ex_falso [BI PROP] {Δ : Envs PROP} (Q : PROP) :
 
 theorem tac_false_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (_, P) := Δ.lookup i
-  P = `[iprop| False] →
+  P = iprop(False) →
   envs_entails Δ Q
 := by
   intro_let p P h_lookup

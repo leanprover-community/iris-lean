@@ -17,38 +17,38 @@ instance (priority := default + 10) asEmpValidEmpValid2
     [BI PROP] (P : PROP) : AsEmpValid2 (⊢ P) P := AsEmpValid1.to2
 
 instance asEmpValidEntails1 [bi : BI PROP] (P Q : PROP) :
-  AsEmpValid1 (P ⊢ Q) `[iprop| P -∗ Q]
+  AsEmpValid1 (P ⊢ Q) iprop(P -∗ Q)
 where
   as_emp_valid := by
     constructor
     · exact entails_wand
     · exact wand_entails
 instance asEmpValidEntails2 [BI PROP] (P Q : PROP) :
-  AsEmpValid2 (P ⊢ Q) `[iprop| P -∗ Q] := AsEmpValid1.to2
+  AsEmpValid2 (P ⊢ Q) iprop(P -∗ Q) := AsEmpValid1.to2
 example [BI PROP] (Q : PROP) :=
   have : AsEmpValid2 (Q ⊢ Q) _ := inferInstance
   trivial
 
 instance asEmpValidEquiv1 [BI PROP] (P Q : PROP) :
-  AsEmpValid1 (P ⊣⊢ Q) `[iprop| P ∗-∗ Q]
+  AsEmpValid1 (P ⊣⊢ Q) iprop(P ∗-∗ Q)
 where
   as_emp_valid := by
     constructor
     · exact equiv_wand_iff
     · exact wand_iff_equiv
 instance asEmpValidEquiv2 [BI PROP] (P Q : PROP) :
-  AsEmpValid2 (P ⊣⊢ Q) `[iprop| P ∗-∗ Q] := AsEmpValid1.to2
+  AsEmpValid2 (P ⊣⊢ Q) iprop(P ∗-∗ Q) := AsEmpValid1.to2
 
 -- FromImpl
 instance fromImplImpl [BI PROP] (P1 P2 : PROP) :
-  FromImpl `[iprop| P1 → P2] P1 P2
+  FromImpl iprop(P1 → P2) P1 P2
 where
   from_impl := by
     simp
 
 -- FromWand
 instance fromWandWand [BI PROP] (P1 P2 : PROP) :
-  FromWand `[iprop| P1 -∗ P2] P1 P2
+  FromWand iprop(P1 -∗ P2) P1 P2
 where
   from_wand := by
     simp
@@ -56,16 +56,16 @@ where
 -- IntoWand
 instance intoWandWand (p q : Bool) [BI PROP] (P Q P' : PROP) :
   [FromAssumption q P P'] →
-  IntoWand p q `[iprop| P' -∗ Q] P Q
+  IntoWand p q iprop(P' -∗ Q) P Q
 where
   into_wand := by
     rw' [(FromAssumption.from_assumption : □?q P ⊢ P'), intuitionistically_if_elim]
 
 instance intoWandImplFalseFalse [BI PROP] (P Q P' : PROP) :
   [Absorbing P'] →
-  [Absorbing `[iprop| P' → Q]] →
+  [Absorbing iprop(P' → Q)] →
   [FromAssumption false P P'] →
-  IntoWand false false `[iprop| P' → Q] P Q
+  IntoWand false false iprop(P' → Q) P Q
 where
   into_wand := by
     rw' [← (FromAssumption.from_assumption : □?false P ⊢ P')]
@@ -76,7 +76,7 @@ where
 instance intoWandImplFalseTrue [BI PROP] (P Q P' : PROP) :
   [Absorbing P'] →
   [FromAssumption true P P'] →
-  IntoWand false true `[iprop| P' → Q] P Q
+  IntoWand false true iprop(P' → Q) P Q
 where
   into_wand := by
     simp only [bi_intuitionistically_if, ite_true, ite_false]
@@ -91,7 +91,7 @@ where
 instance intoWandImplTrueFalse [BI PROP] (P Q P' : PROP) :
   [Affine P'] →
   [FromAssumption false P P'] →
-  IntoWand true false `[iprop| P' → Q] P Q
+  IntoWand true false iprop(P' → Q) P Q
 where
   into_wand := by
     simp only [bi_intuitionistically_if, ite_true, ite_false]
@@ -101,7 +101,7 @@ where
 
 instance intoWandImplTrueTrue [BI PROP] (P Q P' : PROP) :
   [FromAssumption true P P'] →
-  IntoWand true true `[iprop| P' → Q] P Q
+  IntoWand true true iprop(P' → Q) P Q
 where
   into_wand := by
     rw' [(FromAssumption.from_assumption : □?true P ⊢ P')]
@@ -114,7 +114,7 @@ where
 
 instance intoWandAndL (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP) :
   [IntoWand p q R1 P' Q'] →
-  IntoWand p q `[iprop| R1 ∧ R2] P' Q'
+  IntoWand p q iprop(R1 ∧ R2) P' Q'
 where
   into_wand := by
     rw' [BI.and_elim_l]
@@ -122,7 +122,7 @@ where
 
 instance intoWandAndR (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP) :
   [IntoWand p q R2 Q' P'] →
-  IntoWand p q `[iprop| R1 ∧ R2] Q' P'
+  IntoWand p q iprop(R1 ∧ R2) Q' P'
 where
   into_wand := by
     rw' [BI.and_elim_r]
@@ -131,14 +131,14 @@ where
 set_option synthInstance.checkSynthOrder false in
 instance intoWandForall (p q : Bool) [BI PROP] (Φ : α → PROP) (P Q : PROP) (x : α)
   [inst : IntoWand p q (Φ x) P Q] :
-  IntoWand p q `[iprop| ∀ x, Φ x] P Q
+  IntoWand p q iprop(∀ x, Φ x) P Q
 where
   into_wand := by
     rw' [← (IntoWand.into_wand : □?p Φ x ⊢ □?q P -∗ Q), BI.forall_elim x]
 
 instance intoWandAffine (p q : Bool) [BI  PROP] (R P Q : PROP) :
   [IntoWand p q R P Q] →
-  IntoWand p q `[iprop| <affine> R] `[iprop| <affine> P] `[iprop| <affine> Q]
+  IntoWand p q iprop(<affine> R) iprop(<affine> P) iprop(<affine> Q)
 where
   into_wand := by
     apply BI.wand_intro_r ?_
@@ -157,13 +157,13 @@ where
         conv =>
           lhs
           rhs
-          rw [← affine_affinely `[iprop| □ P]]
+          rw [← affine_affinely iprop(□ P)]
         rw' [affinely_sep_2, wand_elim_l]
     case true =>
       rw' [
         (affinely_elim : <affine> R ⊢ _),
         ← intuitionistically_if_intro_true,
-        ← affine_affinely `[iprop| □ R]]
+        ← affine_affinely iprop(□ R)]
       cases q
       case false =>
         rw' [
@@ -174,21 +174,21 @@ where
         simp only [bi_intuitionistically_if, ite_true]
         rw' [
           (affinely_elim : <affine> P ⊢ _),
-          ← affine_affinely `[iprop| □ P],
+          ← affine_affinely iprop(□ P),
           (IntoWand.into_wand : □?true R ⊢ □?true P -∗ Q),
           affinely_sep_2,
           wand_elim_l]
 
 instance intoWandIntuitionistically (p q : Bool) [BI PROP] (R P Q : PROP) :
   [IntoWand true q R P Q] →
-  IntoWand p q `[iprop| □ R] P Q
+  IntoWand p q iprop(□ R) P Q
 where
   into_wand := by
     rw' [(IntoWand.into_wand : □?true R ⊢ □?q P -∗ Q), intuitionistically_if_elim]
 
 instance intoWandPersistentlyTrue (q : Bool) [BI PROP] (R P Q : PROP) :
   [IntoWand true q R P Q] →
-  IntoWand true q `[iprop| <pers> R] P Q
+  IntoWand true q iprop(<pers> R) P Q
 where
   into_wand := by
     rw' [
@@ -199,7 +199,7 @@ where
 instance intoWandPersistentlyFalse (q : Bool) [BI PROP] (R P Q : PROP) :
   [Absorbing R] →
   [IntoWand false q R P Q] →
-  IntoWand false q `[iprop| <pers> R] P Q
+  IntoWand false q iprop(<pers> R) P Q
 where
   into_wand := by
     rw' [persistently_elim, (IntoWand.into_wand : □?false R ⊢ □?q P -∗ Q)]
@@ -213,62 +213,62 @@ where
 
 -- IntoForall
 instance intoForallForall [BI PROP] (Φ : α → PROP) :
-  IntoForall `[iprop| ∀ a, Φ a] Φ
+  IntoForall iprop(∀ a, Φ a) Φ
 where
   into_forall := by
     simp
 
 instance intoForallAffinely [BI PROP] (P : PROP) (Φ : α → PROP) :
   [IntoForall P Φ] →
-  IntoForall `[iprop| <affine> P] (fun a => `[iprop| <affine> (Φ a)])
+  IntoForall iprop(<affine> P) (fun a => iprop(<affine> (Φ a)))
 where
   into_forall := by
     rw' [IntoForall.into_forall, affinely_forall]
 
 instance intoForallIntuitionistically [BI PROP] (P : PROP) (Φ : α → PROP) :
   [IntoForall P Φ] →
-  IntoForall `[iprop| □ P] (fun a => `[iprop| □ (Φ a)])
+  IntoForall iprop(□ P) (fun a => iprop(□ (Φ a)))
 where
   into_forall := by
     rw' [IntoForall.into_forall, intuitionistically_forall]
 
 -- FromExist
 instance (priority := default + 10) fromExistExist [BI PROP] (Φ : α → PROP) :
-  FromExist `[iprop| ∃ a, Φ a] Φ
+  FromExist iprop(∃ a, Φ a) Φ
 where
   from_exist := by
     simp
 
 instance fromExistPure (φ : α → Prop) [BI PROP] :
-  FromExist (PROP := PROP) `[iprop| ⌜∃ x, φ x⌝] (fun a => `[iprop| ⌜φ a⌝])
+  FromExist (PROP := PROP) iprop(⌜∃ x, φ x⌝) (fun a => iprop(⌜φ a⌝))
 where
   from_exist := by
     rw' [pure_exist]
 
 instance fromExistAffinely [BI PROP] (P : PROP) (Φ : α → PROP) :
   [FromExist P Φ] →
-  FromExist `[iprop| <affine> P] (fun a => `[iprop| <affine> (Φ a)])
+  FromExist iprop(<affine> P) (fun a => iprop(<affine> (Φ a)))
 where
   from_exist := by
     rw' [← FromExist.from_exist, ← affinely_exist]
 
 instance fromExistIntuitionistically [BI PROP] (P : PROP) (Φ : α → PROP) :
   [FromExist P Φ] →
-  FromExist `[iprop| □ P] (fun a => `[iprop| □ (Φ a)])
+  FromExist iprop(□ P) (fun a => iprop(□ (Φ a)))
 where
   from_exist := by
     rw' [← FromExist.from_exist, ← intuitionistically_exist]
 
 instance fromExistAbsorbingly [BI PROP] (P : PROP) (Φ : α → PROP) :
   [FromExist P Φ] →
-  FromExist `[iprop| <absorb> P] (fun a => `[iprop| <absorb> (Φ a)])
+  FromExist iprop(<absorb> P) (fun a => iprop(<absorb> (Φ a)))
 where
   from_exist := by
     rw' [← FromExist.from_exist, ← absorbingly_exist]
 
 instance from_exist_persistently [BI PROP] (P : PROP) (Φ : α → PROP) :
   [FromExist P Φ] →
-  FromExist `[iprop| <pers> P] (fun a => `[iprop| <pers> (Φ a)])
+  FromExist iprop(<pers> P) (fun a => iprop(<pers> (Φ a)))
 where
   from_exist := by
     rw' [← FromExist.from_exist, ← persistently_exist]
@@ -281,42 +281,42 @@ where
     simp
 
 instance into_exist_pure (φ : α → Prop) [BI PROP] :
-  IntoExist (PROP := PROP) `[iprop| ⌜∃ x, φ x⌝] (fun a => `[iprop| ⌜φ a⌝])
+  IntoExist (PROP := PROP) iprop(⌜∃ x, φ x⌝) (fun a => iprop(⌜φ a⌝))
 where
   into_exist := by
     rw' [pure_exist]
 
 instance into_exist_affinely [BI PROP] (P : PROP) (Φ : α → PROP) :
   [IntoExist P Φ] →
-  IntoExist `[iprop| <affine> P] (fun a => `[iprop| <affine> (Φ a)])
+  IntoExist iprop(<affine> P) (fun a => iprop(<affine> (Φ a)))
 where
   into_exist := by
     rw' [← affinely_exist, into_exist]
 
 instance into_exist_intuitionistically [BI PROP] (P : PROP) (Φ : α → PROP) :
   [IntoExist P Φ] →
-  IntoExist `[iprop| □ P] (fun a => `[iprop| □ (Φ a)])
+  IntoExist iprop(□ P) (fun a => iprop(□ (Φ a)))
 where
   into_exist := by
     rw' [← intuitionistically_exist, into_exist]
 
 instance into_exist_absorbingly [BI PROP] (P : PROP) (Φ : α → PROP) :
   [IntoExist P Φ] →
-  IntoExist `[iprop| <absorb> P] (fun a => `[iprop| <absorb> (Φ a)])
+  IntoExist iprop(<absorb> P) (fun a => iprop(<absorb> (Φ a)))
 where
   into_exist := by
     rw' [← absorbingly_exist, into_exist]
 
 instance into_exist_persistently [BI PROP] {P : PROP} (Φ : α → PROP) :
   [IntoExist P Φ] →
-  IntoExist `[iprop| <pers> P] (fun a => `[iprop| <pers> (Φ a)])
+  IntoExist iprop(<pers> P) (fun a => iprop(<pers> (Φ a)))
 where
   into_exist := by
     rw' [← persistently_exist, into_exist]
 
 -- FromAnd
 instance (priority := default - 10) fromAndAnd [BI PROP] (P1 P2 : PROP) :
-  FromAnd `[iprop| P1 ∧ P2] P1 P2
+  FromAnd iprop(P1 ∧ P2) P1 P2
 where
   from_and := by
     simp
@@ -324,7 +324,7 @@ where
 instance (priority := default + 30) fromAndSepPersistentL [BI PROP] (P1 P1' P2 : PROP) :
   [Persistent P1] →
   [IntoAbsorbingly P1' P1] →
-  FromAnd `[iprop| P1 ∗ P2] P1' P2
+  FromAnd iprop(P1 ∗ P2) P1' P2
 where
   from_and := by
     rw' [
@@ -337,7 +337,7 @@ where
 instance (priority := default + 20) fromAndSepPersistentR [BI PROP] (P1 P2 P2' : PROP) :
   [Persistent P2] →
   [IntoAbsorbingly P2' P2] →
-  FromAnd `[iprop| P1 ∗ P2] P1 P2'
+  FromAnd iprop(P1 ∗ P2) P1 P2'
 where
   from_and := by
     rw' [
@@ -348,21 +348,21 @@ where
       intuitionistically_elim]
 
 instance (priority := default + 50) fromAndPure (φ ψ : Prop) [BI PROP] :
-  FromAnd (PROP := PROP) `[iprop| ⌜φ ∧ ψ⌝] `[iprop| ⌜φ⌝] `[iprop| ⌜ψ⌝]
+  FromAnd (PROP := PROP) iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝)
 where
   from_and := by
     rw' [pure_and]
 
 instance (priority := default + 40) fromAndPersistently [BI PROP] (P Q1 Q2 : PROP) :
   [FromAnd P Q1 Q2] →
-  FromAnd `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+  FromAnd iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2)
 where
   from_and := by
     rw' [← FromAnd.from_and, persistently_and]
 
 instance (priority := default + 10) fromAndPersistentlySep [BI PROP] (P Q1 Q2 : PROP) :
   [FromSep P Q1 Q2] →
-  FromAnd `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+  FromAnd iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2)
 where
   from_and := by
     rw' [
@@ -372,7 +372,7 @@ where
 
 -- IntoAnd
 instance (priority := default - 10) intoAndAnd (p : Bool) [BI PROP] (P Q : PROP) :
-  IntoAnd p `[iprop| P ∧ Q] P Q
+  IntoAnd p iprop(P ∧ Q) P Q
 where
   into_and := by
     rw' [intuitionistically_if_and]
@@ -380,7 +380,7 @@ where
 instance intoAndAndAffineL [BI PROP] (P Q Q' : PROP) :
   [Affine P] →
   [FromAffinely Q' Q] →
-  IntoAnd false `[iprop| P ∧ Q] P Q'
+  IntoAnd false iprop(P ∧ Q) P Q'
 where
   into_and := by
     rw' [
@@ -392,7 +392,7 @@ where
 instance intoAndAndAffineR [BI PROP] (P P' Q : PROP) :
   [Affine Q] →
   [FromAffinely P' P] →
-  IntoAnd false `[iprop| P ∧ Q] P' Q
+  IntoAnd false iprop(P ∧ Q) P' Q
 where
   into_and := by
     rw' [
@@ -404,21 +404,21 @@ where
 instance intoAndSepAffine (p : Bool) [BI PROP] (P Q : PROP) :
   [TCOr (Affine P) (Absorbing Q)] →
   [TCOr (Absorbing P) (Affine Q)] →
-  IntoAnd p `[iprop| P ∗ Q] P Q
+  IntoAnd p iprop(P ∗ Q) P Q
 where
   into_and := by
     cases p
     <;> rw' [sep_and]
 
 instance intoAndPure (p : Bool) (φ ψ : Prop) [BI PROP] :
-  IntoAnd (PROP := PROP) p `[iprop| ⌜φ ∧ ψ⌝] `[iprop| ⌜φ⌝] `[iprop| ⌜ψ⌝]
+  IntoAnd (PROP := PROP) p iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝)
 where
   into_and := by
     rw' [pure_and]
 
 instance intoAndAffinely (p : Bool) [BI PROP] (P Q1 Q2 : PROP) :
   [IntoAnd p P Q1 Q2] →
-  IntoAnd p `[iprop| <affine> P] `[iprop| <affine> Q1] `[iprop| <affine> Q2]
+  IntoAnd p iprop(<affine> P) iprop(<affine> Q1) iprop(<affine> Q2)
 where
   into_and := by
     cases p
@@ -435,7 +435,7 @@ where
 
 instance intoAndIntuitionistically (p : Bool) [BI PROP] (P Q1 Q2 : PROP) :
   [IntoAnd p P Q1 Q2] →
-  IntoAnd p `[iprop| □ P] `[iprop| □ Q1] `[iprop| □ Q2]
+  IntoAnd p iprop(□ P) iprop(□ Q1) iprop(□ Q2)
 where
   into_and := by
     cases p
@@ -453,7 +453,7 @@ where
 
 instance intoAndPersistently (p : Bool) [BI PROP] (P Q1 Q2 : PROP) :
   [IntoAnd p P Q1 Q2] →
-  IntoAnd p `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+  IntoAnd p iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2)
 where
   into_and := by
     cases p
@@ -470,7 +470,7 @@ where
 
 -- FromSep
 instance (priority := default - 10) fromSepSep [BI PROP] (P1 P2 : PROP) :
-  FromSep `[iprop| P1 ∗ P2] P1 P2
+  FromSep iprop(P1 ∗ P2) P1 P2
 where
   from_sep := by
     simp
@@ -478,40 +478,40 @@ where
 instance (priority := default - 20) fromSepAnd [BI PROP] (P1 P2 : PROP) :
   [TCOr (Affine P1) (Absorbing P2)] →
   [TCOr (Absorbing P1) (Affine P2)] →
-  FromSep `[iprop| P1 ∧ P2] P1 P2
+  FromSep iprop(P1 ∧ P2) P1 P2
 where
   from_sep := sep_and
 
 instance (priority := default + 20) fromSepPure (φ ψ : Prop) [BI PROP] :
-  FromSep (PROP := PROP) `[iprop| ⌜φ ∧ ψ⌝] `[iprop| ⌜φ⌝] `[iprop| ⌜ψ⌝]
+  FromSep (PROP := PROP) iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝)
 where
   from_sep := by
     rw' [pure_and, sep_and]
 
 instance (priority := default + 10) fromSepAffinely [BI PROP] (P Q1 Q2 : PROP) :
   [FromSep P Q1 Q2] →
-  FromSep `[iprop| <affine> P] `[iprop| <affine> Q1] `[iprop| <affine> Q2]
+  FromSep iprop(<affine> P) iprop(<affine> Q1) iprop(<affine> Q2)
 where
   from_sep := by
     rw' [← FromSep.from_sep, affinely_sep_2]
 
 instance (priority := default + 10) fromSepIntuitionistically [BI PROP] (P Q1 Q2 : PROP) :
   [FromSep P Q1 Q2] →
-  FromSep `[iprop| □ P] `[iprop| □ Q1] `[iprop| □ Q2]
+  FromSep iprop(□ P) iprop(□ Q1) iprop(□ Q2)
 where
   from_sep := by
     rw' [← FromSep.from_sep, intuitionistically_sep_2]
 
 instance (priority := default + 10) fromSepAbsorbingly [BI PROP] (P Q1 Q2 : PROP) :
   [FromSep P Q1 Q2] →
-  FromSep `[iprop| <absorb> P] `[iprop| <absorb> Q1] `[iprop| <absorb> Q2]
+  FromSep iprop(<absorb> P) iprop(<absorb> Q1) iprop(<absorb> Q2)
 where
   from_sep := by
     rw' [← FromSep.from_sep, absorbingly_sep]
 
 instance (priority := default + 10) fromSepPersistently [BI PROP] (P Q1 Q2 : PROP) :
   [FromSep P Q1 Q2] →
-  FromSep `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+  FromSep iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2)
 where
   from_sep := by
     rw' [← FromSep.from_sep, persistently_sep_2]
@@ -519,7 +519,7 @@ where
 -- AndIntoSep
 inductive AndIntoSep [BI PROP] : PROP → PROP → PROP → PROP → Prop
   | and_into_sep_affine (P Q Q' : PROP) : Affine P → FromAffinely Q' Q → AndIntoSep P P Q Q'
-  | and_into_sep (P Q : PROP) : AndIntoSep P `[iprop| <affine> P] Q Q
+  | and_into_sep (P Q : PROP) : AndIntoSep P iprop(<affine> P) Q Q
 
 attribute [class] AndIntoSep
 attribute [instance] AndIntoSep.and_into_sep_affine
@@ -527,7 +527,7 @@ attribute [instance] AndIntoSep.and_into_sep
 
 -- IntoSep
 instance intoSepSep [BI PROP] (P Q : PROP) :
-  IntoSep `[iprop| P ∗ Q] P Q
+  IntoSep iprop(P ∗ Q) P Q
 where
   into_sep := by
     simp
@@ -536,7 +536,7 @@ set_option synthInstance.checkSynthOrder false in
 instance intoSepAndPersistentL [BI PROP] (P Q P' Q' : PROP)
   [Persistent P]
   [inst : AndIntoSep P P' Q Q'] :
-  IntoSep `[iprop| P ∧ Q] P' Q'
+  IntoSep iprop(P ∧ Q) P' Q'
 where
   into_sep := by
     cases inst
@@ -553,7 +553,7 @@ set_option synthInstance.checkSynthOrder false in
 instance intoSepAndPersistentR [BI PROP] (P Q P' Q' : PROP)
   [Persistent Q]
   [inst : AndIntoSep Q Q' P P'] :
-  IntoSep `[iprop| P ∧ Q] P' Q'
+  IntoSep iprop(P ∧ Q) P' Q'
 where
   into_sep := by
     cases inst
@@ -567,7 +567,7 @@ where
       rw' [persistent_and_affinely_sep_r_1]
 
 instance intoSepPure (φ ψ : Prop) [BI PROP] :
-  IntoSep (PROP := PROP) `[iprop| ⌜φ ∧ ψ⌝] `[iprop| ⌜φ⌝] `[iprop| ⌜ψ⌝]
+  IntoSep (PROP := PROP) iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝)
 where
   into_sep := by
     rw' [pure_and, persistent_and_sep_1]
@@ -575,7 +575,7 @@ where
 -- Coq: This instance is kind of strange, it just gets rid of the bi_affinely.
 instance (priority := default - 10) intoSepAffinelyTrim [BI PROP] (P Q1 Q2 : PROP) :
   [IntoSep P Q1 Q2] →
-  IntoSep `[iprop| <affine> P] Q1 Q2
+  IntoSep iprop(<affine> P) Q1 Q2
 where
   into_sep := by
     rw' [IntoSep.into_sep, affinely_elim]
@@ -584,7 +584,7 @@ instance intoSepPersistentlyAffine [BI PROP] (P Q1 Q2 : PROP) :
   [IntoSep P Q1 Q2] →
   [TCOr (Affine Q1) (Absorbing Q2)] →
   [TCOr (Absorbing Q1) (Affine Q2)] →
-  IntoSep `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+  IntoSep iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2)
 where
   into_sep := by
     rw' [IntoSep.into_sep, sep_and, persistently_and, persistently_and_sep_l_1]
@@ -593,7 +593,7 @@ instance intoSepIntuitionisticallyAffine [BI PROP] (P Q1 Q2 : PROP) :
   [IntoSep P Q1 Q2] →
   [TCOr (Affine Q1) (Absorbing Q2)] →
   [TCOr (Absorbing Q1) (Affine Q2)] →
-  IntoSep `[iprop| □ P] `[iprop| □ Q1] `[iprop| □ Q2]
+  IntoSep iprop(□ P) iprop(□ Q1) iprop(□ Q2)
 where
   into_sep := by
     rw' [
@@ -604,82 +604,82 @@ where
 
 -- FromOr
 instance fromOrOr [BI PROP] (P1 P2 : PROP) :
-  FromOr `[iprop| P1 ∨ P2] P1 P2
+  FromOr iprop(P1 ∨ P2) P1 P2
 where
   from_or := by
     simp
 
 instance fromOrPure (φ ψ : Prop) [BI PROP] :
-  FromOr (PROP := PROP) `[iprop| ⌜φ ∨ ψ⌝] `[iprop| ⌜φ⌝] `[iprop| ⌜ψ⌝]
+  FromOr (PROP := PROP) iprop(⌜φ ∨ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝)
 where
   from_or := by
     rw' [pure_or]
 
 instance fromOrAffinely [BI PROP] (P Q1 Q2 : PROP) :
   [FromOr P Q1 Q2] →
-  FromOr `[iprop| <affine> P] `[iprop| <affine> Q1] `[iprop| <affine> Q2]
+  FromOr iprop(<affine> P) iprop(<affine> Q1) iprop(<affine> Q2)
 where
   from_or := by
     rw' [← FromOr.from_or, ← affinely_or]
 
 instance fromOrIntuitionistically [BI PROP] (P Q1 Q2 : PROP) :
   [FromOr P Q1 Q2] →
-  FromOr `[iprop| □ P] `[iprop| □ Q1] `[iprop| □ Q2]
+  FromOr iprop(□ P) iprop(□ Q1) iprop(□ Q2)
 where
   from_or := by
     rw' [← FromOr.from_or, ← intuitionistically_or]
 
 instance fromOrAbsorbingly [BI PROP] (P Q1 Q2 : PROP) :
   [FromOr P Q1 Q2] →
-  FromOr `[iprop| <absorb> P] `[iprop| <absorb> Q1] `[iprop| <absorb> Q2]
+  FromOr iprop(<absorb> P) iprop(<absorb> Q1) iprop(<absorb> Q2)
 where
   from_or := by
     rw' [← FromOr.from_or, ← absorbingly_or]
 
 instance fromOrPersistently [BI PROP] (P Q1 Q2 : PROP) :
   [FromOr P Q1 Q2] →
-  FromOr `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+  FromOr iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2)
 where
   from_or := by
     rw' [← FromOr.from_or, ← persistently_or]
 
 -- IntoOr
 instance intoOrOr [BI PROP] (P Q : PROP) :
-  IntoOr `[iprop| P ∨ Q] P Q
+  IntoOr iprop(P ∨ Q) P Q
 where
   into_or := by
     simp
 
 instance intoOrPure (φ ψ : Prop) [BI PROP] :
-  IntoOr (PROP := PROP) `[iprop| ⌜φ ∨ ψ⌝] `[iprop| ⌜φ⌝] `[iprop| ⌜ψ⌝]
+  IntoOr (PROP := PROP) iprop(⌜φ ∨ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝)
 where
   into_or := by
     rw' [pure_or]
 
 instance intoOrAffinely [BI PROP] (P Q1 Q2 : PROP) :
   [IntoOr P Q1 Q2] →
-  IntoOr `[iprop| <affine> P] `[iprop| <affine> Q1] `[iprop| <affine> Q2]
+  IntoOr iprop(<affine> P) iprop(<affine> Q1) iprop(<affine> Q2)
 where
   into_or := by
     rw' [IntoOr.into_or, ← affinely_or]
 
 instance intoOrIntuitionistically [BI PROP] (P Q1 Q2 : PROP) :
   [IntoOr P Q1 Q2] →
-  IntoOr `[iprop| □ P] `[iprop| □ Q1] `[iprop| □ Q2]
+  IntoOr iprop(□ P) iprop(□ Q1) iprop(□ Q2)
 where
   into_or := by
     rw' [IntoOr.into_or, ← intuitionistically_or]
 
 instance intoOrAbsorbingly [BI PROP] (P Q1 Q2 : PROP) :
   [IntoOr P Q1 Q2] →
-  IntoOr `[iprop| <absorb> P] `[iprop| <absorb> Q1] `[iprop| <absorb> Q2]
+  IntoOr iprop(<absorb> P) iprop(<absorb> Q1) iprop(<absorb> Q2)
 where
   into_or := by
     rw' [IntoOr.into_or, ← absorbingly_or]
 
 instance intoOrPersistently [BI PROP] (P Q1 Q2 : PROP) :
   [IntoOr P Q1 Q2] →
-  IntoOr `[iprop| <pers> P] `[iprop| <pers> Q1] `[iprop| <pers> Q2]
+  IntoOr iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2)
 where
   into_or := by
     rw' [IntoOr.into_or, ← persistently_or]
@@ -687,7 +687,7 @@ where
 -- IntoPersistent
 instance (priority := default + 20) intoPersistentPersistently (p : Bool) [BI PROP] (P Q : PROP) :
   [IntoPersistent true P Q] →
-  IntoPersistent p `[iprop| <pers> P] Q
+  IntoPersistent p iprop(<pers> P) Q
 where
   into_persistent := by
     cases p
@@ -700,7 +700,7 @@ where
 
 instance (priority := default + 20) intoPersistentAffinely (p : Bool) [BI PROP] (P Q : PROP) :
   [IntoPersistent p P Q] →
-  IntoPersistent p `[iprop| <affine> P] Q
+  IntoPersistent p iprop(<affine> P) Q
 where
   into_persistent := by
     rw' [
@@ -709,7 +709,7 @@ where
 
 instance (priority := default + 20) intoPersistentIntuitionistically (p : Bool) [BI PROP] (P Q : PROP) :
   [IntoPersistent true P Q] →
-  IntoPersistent p `[iprop| □ P] Q
+  IntoPersistent p iprop(□ P) Q
 where
   into_persistent := by
     rw' [← (IntoPersistent.into_persistent : <pers>?true P ⊢ _)]
@@ -742,13 +742,13 @@ where
     rw' [affinely_elim]
 
 instance (priority := default - 50) fromAffinelyDefault [BI PROP] (P : PROP) :
-  FromAffinely `[iprop| <affine> P] P true
+  FromAffinely iprop(<affine> P) P true
 where
   from_affinely := by
     simp [bi_affinely_if]
 
 instance (priority := default - 10) fromAffinelyIntuitionistically [BI PROP] (P : PROP) :
-  FromAffinely `[iprop| □ P] `[iprop| <pers> P] true
+  FromAffinely iprop(□ P) iprop(<pers> P) true
 where
   from_affinely := by
     simp [bi_affinely_if, bi_intuitionistically]
@@ -761,7 +761,7 @@ where
 
 -- IntoAbsorbingly
 instance (priority := default + 30) intoAbsorbinglyTrue [BI PROP] :
-  IntoAbsorbingly (PROP := PROP) `[iprop| True] `[iprop| emp]
+  IntoAbsorbingly (PROP := PROP) iprop(True) iprop(emp)
 where
   into_absorbingly := by
     rw' [← absorbingly_True_emp, absorbingly_pure]
@@ -774,13 +774,13 @@ where
     rw' [absorbing_absorbingly]
 
 instance (priority := default + 10) intoAbsorbinglyIntuitionistically [BI PROP] (P : PROP) :
-  IntoAbsorbingly `[iprop| <pers> P] `[iprop| □ P]
+  IntoAbsorbingly iprop(<pers> P) iprop(□ P)
 where
   into_absorbingly := by
     rw' [← absorbingly_intuitionistically_into_persistently]
 
 instance (priority := default - 10) intoAbsorbinglyDefault [BI PROP] (P : PROP) :
-  IntoAbsorbingly `[iprop| <absorb> P] P
+  IntoAbsorbingly iprop(<absorb> P) P
 where
   into_absorbingly := by
     simp
@@ -795,7 +795,7 @@ where
 
 instance (priority := default + 30) fromAssumptionPersistentlyR [BI PROP] (P Q : PROP) :
   [FromAssumption true P Q] →
-  FromAssumption true P `[iprop| <pers> Q]
+  FromAssumption true P iprop(<pers> Q)
 where
   from_assumption := by
     rw' [← (FromAssumption.from_assumption : □?true P ⊢ Q)]
@@ -803,7 +803,7 @@ where
 
 instance (priority := default + 30) fromAssumptionAffinelyR [BI PROP] (P Q : PROP) :
   [FromAssumption true P Q] →
-  FromAssumption true P `[iprop| <affine> Q]
+  FromAssumption true P iprop(<affine> Q)
 where
   from_assumption := by
     rw' [← (FromAssumption.from_assumption : □?true P ⊢ Q)]
@@ -812,7 +812,7 @@ where
 
 instance (priority := default + 30) fromAssumptionIntuitionisticallyR [BI PROP] (P Q : PROP) :
   [FromAssumption true P Q] →
-  FromAssumption true P `[iprop| □ Q]
+  FromAssumption true P iprop(□ Q)
 where
   from_assumption := by
     rw' [← (FromAssumption.from_assumption : □?true P ⊢ Q)]
@@ -821,7 +821,7 @@ where
 
 instance (priority := default + 20) fromAssumptionAbsorbinglyR (p : Bool) [BI PROP] (P Q : PROP) :
   [FromAssumption p P Q] →
-  FromAssumption p P `[iprop| <absorb> Q]
+  FromAssumption p P iprop(<absorb> Q)
 where
   from_assumption := by
     rw' [← (FromAssumption.from_assumption : □?p P ⊢ Q)]
@@ -829,7 +829,7 @@ where
 
 instance (priority := default + 20) fromAssumptionIntuitionisticallyL (p : Bool) [BI PROP] (P Q : PROP) :
   [FromAssumption true P Q] →
-  FromAssumption p `[iprop| □ P] Q
+  FromAssumption p iprop(□ P) Q
 where
   from_assumption := by
     rw' [
@@ -838,7 +838,7 @@ where
 
 instance (priority := default + 20) fromAssumptionIntuitionisticallyLTrue (p : Bool) [BI PROP] (P Q : PROP) :
   [FromAssumption p P Q] →
-  FromAssumption p `[iprop| □ P] Q
+  FromAssumption p iprop(□ P) Q
 where
   from_assumption := by
     rw' [
@@ -847,7 +847,7 @@ where
 
 instance (priority := default + 30) FromAssumptionPersistentlyLTrue [BI PROP] (P Q : PROP) :
   [FromAssumption true P Q] →
-  FromAssumption true `[iprop| <pers> P] Q
+  FromAssumption true iprop(<pers> P) Q
 where
   from_assumption := by
     simp only [bi_intuitionistically_if]
@@ -857,7 +857,7 @@ where
 
 instance (priority := default + 30) fromAssumptionPersistentlyLFalse [BIAffine PROP] (P Q : PROP) :
   [FromAssumption true P Q] →
-  FromAssumption false `[iprop| <pers> P] Q
+  FromAssumption false iprop(<pers> P) Q
 where
   from_assumption := by
     rw' [← (FromAssumption.from_assumption : □?true P ⊢ Q)]
@@ -866,7 +866,7 @@ where
 
 instance (priority := default + 20) fromAssumptionAffinelyL (p : Bool) [BI PROP] (P Q : PROP) :
   [FromAssumption p P Q] →
-  FromAssumption p `[iprop| <affine> P] Q
+  FromAssumption p iprop(<affine> P) Q
 where
   from_assumption := by
     rw' [
@@ -876,7 +876,7 @@ where
 set_option synthInstance.checkSynthOrder false in
 instance (priority := default + 10) fromAssumptionForall (p : Bool) [BI PROP] (Φ : α → PROP) (x : α) (Q : PROP) :
   [FromAssumption p (Φ x) Q] →
-  FromAssumption p `[iprop| ∀ x, Φ x] Q
+  FromAssumption p iprop(∀ x, Φ x) Q
 where
   from_assumption := by
     rw' [
@@ -885,7 +885,7 @@ where
 
 -- IntoPure
 instance intoPurePure (φ : Prop) [BI PROP] :
-  IntoPure (PROP := PROP) `[iprop| ⌜φ⌝] φ
+  IntoPure (PROP := PROP) iprop(⌜φ⌝) φ
 where
   into_pure := by
     simp
@@ -893,7 +893,7 @@ where
 instance intoPurePureAnd (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
   [IntoPure P1 φ1] →
   [IntoPure P2 φ2] →
-  IntoPure `[iprop| P1 ∧ P2] (φ1 ∧ φ2)
+  IntoPure iprop(P1 ∧ P2) (φ1 ∧ φ2)
 where
   into_pure := by
     rw' [
@@ -904,7 +904,7 @@ where
 instance intoPurePureOr (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
   [IntoPure P1 φ1] →
   [IntoPure P2 φ2] →
-  IntoPure `[iprop| P1 ∨ P2] (φ1 ∨ φ2)
+  IntoPure iprop(P1 ∨ P2) (φ1 ∨ φ2)
 where
   into_pure := by
     rw' [
@@ -914,7 +914,7 @@ where
 
 instance intoPureExist [BI PROP] (Φ : α → PROP) (φ : α → Prop) :
   [∀ x, IntoPure (Φ x) (φ x)] →
-  IntoPure `[iprop| ∃ x, Φ x] (∃ x, φ x)
+  IntoPure iprop(∃ x, Φ x) (∃ x, φ x)
 where
   into_pure := by
     rw' [IntoPure.into_pure, pure_exist]
@@ -922,7 +922,7 @@ where
 instance intoPurePureSep (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
   [IntoPure P1 φ1] →
   [IntoPure P2 φ2] →
-  IntoPure `[iprop| P1 ∗ P2] (φ1 ∧ φ2)
+  IntoPure iprop(P1 ∗ P2) (φ1 ∧ φ2)
 where
   into_pure := by
     rw' [
@@ -933,42 +933,42 @@ where
 
 instance intoPureAffinely [BI PROP] (P : PROP) (φ : Prop) :
   [IntoPure P φ] →
-  IntoPure `[iprop| <affine> P] φ
+  IntoPure iprop(<affine> P) φ
 where
   into_pure := by
     rw' [IntoPure.into_pure, affinely_elim]
 
 instance intoPureIntuitionistically [BI PROP] (P : PROP) (φ : Prop) :
   [IntoPure P φ] →
-  IntoPure `[iprop| □ P] φ
+  IntoPure iprop(□ P) φ
 where
   into_pure := by
     rw' [IntoPure.into_pure, intuitionistically_elim]
 
 instance intoPureAbsorbingly [BI PROP] (P : PROP) (φ : Prop) :
   [IntoPure P φ] →
-  IntoPure `[iprop| <absorb> P] φ
+  IntoPure iprop(<absorb> P) φ
 where
   into_pure := by
     rw' [(IntoPure.into_pure : P ⊢ _), absorbingly_pure]
 
 instance intoPurePersistently [BI PROP] (P : PROP) (φ : Prop) :
   [IntoPure P φ] →
-  IntoPure `[iprop| <pers> P] φ
+  IntoPure iprop(<pers> P) φ
 where
   into_pure := by
     rw' [IntoPure.into_pure, persistently_elim]
 
 -- FromPure
 instance fromPureEmp [BI PROP] :
-  FromPure (PROP := PROP) true `[iprop| emp] True
+  FromPure (PROP := PROP) true iprop(emp) True
 where
   from_pure := by
     simp only [bi_affinely_if, ite_true]
     rw' [affine]
 
 instance fromPurePure [BI PROP] (φ : Prop) :
-  FromPure (PROP := PROP) false `[iprop| ⌜φ⌝] φ
+  FromPure (PROP := PROP) false iprop(⌜φ⌝) φ
 where
   from_pure := by
     simp [bi_affinely_if]
@@ -976,7 +976,7 @@ where
 instance fromPurePureAnd (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
   [FromPure a1 P1 φ1] →
   [FromPure a2 P2 φ2] →
-  FromPure (a1 || a2) `[iprop| P1 ∧ P2] (φ1 ∧ φ2)
+  FromPure (a1 || a2) iprop(P1 ∧ P2) (φ1 ∧ φ2)
 where
   from_pure := by
     rw' [
@@ -991,7 +991,7 @@ where
 instance fromPurePureOr (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
   [FromPure a1 P1 φ1] →
   [FromPure a2 P2 φ2] →
-  FromPure (a1 || a2) `[iprop| P1 ∨ P2] (φ1 ∨ φ2)
+  FromPure (a1 || a2) iprop(P1 ∨ P2) (φ1 ∨ φ2)
 where
   from_pure := by
     rw' [
@@ -1006,7 +1006,7 @@ where
 instance fromPurePureImpl (a : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
   [IntoPure P1 φ1] →
   [FromPure a P2 φ2] →
-  FromPure a `[iprop| P1 → P2] (φ1 → φ2)
+  FromPure a iprop(P1 → P2) (φ1 → φ2)
 where
   from_pure := by
     rw' [
@@ -1019,15 +1019,15 @@ where
     rw' [affinely_and_r, BI.impl_elim_r]
 
 instance fromPureExist (a : Bool) [BI PROP] (Φ : α → PROP) (φ : α → Prop) :
-  [∀ x, FromPure a `[iprop| Φ x] (φ x)] →
-  FromPure a `[iprop| ∃ x, Φ x] (∃ x, φ x)
+  [∀ x, FromPure a iprop(Φ x) (φ x)] →
+  FromPure a iprop(∃ x, Φ x) (∃ x, φ x)
 where
   from_pure := by
     rw' [← FromPure.from_pure, pure_exist, affinely_if_exist]
 
 instance fromPureForall (a : Bool) [BI PROP] (Φ : α → PROP) (φ : α → Prop) :
-  [∀ x, FromPure a `[iprop| Φ x] (φ x)] →
-  FromPure a `[iprop| ∀ x, Φ x] (∀ x, φ x)
+  [∀ x, FromPure a iprop(Φ x) (φ x)] →
+  FromPure a iprop(∀ x, Φ x) (∀ x, φ x)
 where
   from_pure := by
     rw' [← FromPure.from_pure, pure_forall_1]
@@ -1037,7 +1037,7 @@ where
 instance fromPurePureSepTrue (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP) :
   [FromPure a1 P1 φ1] →
   [FromPure a2 P2 φ2] →
-  FromPure (a1 && a2) `[iprop| P1 ∗ P2] (φ1 ∧ φ2)
+  FromPure (a1 && a2) iprop(P1 ∗ P2) (φ1 ∧ φ2)
 where
   from_pure := by
     rw' [
@@ -1056,7 +1056,7 @@ instance fromPurePureWand (a : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
   [IntoPure P1 φ1]
   [FromPure a P2 φ2]
   [inst : TCIte a (Affine P1) TCTrue] :
-  FromPure a `[iprop| P1 -∗ P2] (φ1 → φ2)
+  FromPure a iprop(P1 -∗ P2) (φ1 → φ2)
 where
   from_pure := by
     rw' [← FromPure.from_pure]
@@ -1078,7 +1078,7 @@ where
 set_option synthInstance.checkSynthOrder false in
 instance fromPurePersistently [BI PROP] (P : PROP) (a : Bool) (φ : Prop) :
   [FromPure true P φ] →
-  FromPure a `[iprop| <pers> P] φ
+  FromPure a iprop(<pers> P) φ
 where
   from_pure := by
     rw' [← FromPure.from_pure]
@@ -1092,7 +1092,7 @@ where
 
 instance fromPureAffinelyTrue (a : Bool) [BI PROP] (P : PROP) (φ : Prop) :
   [FromPure a P φ] →
-  FromPure true `[iprop| <affine> P] φ
+  FromPure true iprop(<affine> P) φ
 where
   from_pure := by
     rw' [
@@ -1102,7 +1102,7 @@ where
 
 instance fromPureIntuitionisticallyTrue (a : Bool) [BI PROP] (P : PROP) (φ : Prop) :
   [FromPure a P φ] →
-  FromPure true `[iprop| □ P] φ
+  FromPure true iprop(□ P) φ
 where
   from_pure := by
     rw' [
@@ -1114,7 +1114,7 @@ where
 
 instance fromPureAbsorbingly (a : Bool) [BI PROP] (P : PROP) (φ : Prop) :
   [FromPure a P φ] →
-  FromPure false `[iprop| <absorb> P] φ
+  FromPure false iprop(<absorb> P) φ
 where
   from_pure := by
     rw' [

@@ -63,7 +63,7 @@ Example:
 ```lean
 syntax term " ~ " term : term
 macro_rules
-  | `(`[iprop| $P ~ $Q]) => `(foo `[iprop| $P] `[iprop| $Q])
+  | `(iprop($P ~ $Q)) => `(foo iprop($P) iprop($Q))
 ```
 
 The macro `delab_rule` can be used to provide delaborators for functions with a custom notation. The syntax `$_` in the example below is used in place of the function name, since the delaborator can be applied on function applications where the function names have different scopes. The call to `unpackIprop` is necessary since `P` and `Q` on the left side of `=>` might be wrapped in an `iprop` quotation, which is not required on the right side (since the entire separation logic proposition is wrapped in an `iprop` quotation) and should therefore not be printed.
@@ -71,7 +71,7 @@ The macro `delab_rule` can be used to provide delaborators for functions with a 
 Example:
 ```lean
 delab_rule BIBase.and
-  | `($_ $P $Q) => do ``(`[iprop| $(← unpackIprop P) ∧ $(← unpackIprop Q)])
+  | `($_ $P $Q) => do ``(iprop($(← unpackIprop P) ∧ $(← unpackIprop Q)))
 ```
 
 ### 3. Instantiating Existing Typeclasses
@@ -82,7 +82,7 @@ Example:
 ```lean
 -- Every proposition with the modality `<foo>` is affine.
 instance fooAffine [BI PROP] (P : PROP) :
-  Affine `[iprop| <foo> P]
+  Affine iprop(<foo> P)
 where
   affine := by ...
 ```
@@ -199,7 +199,7 @@ class FromImpl [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_impl : (Q1 → Q2) ⊢ P
 
 instance fromImplImpl [BI PROP] (P1 P2 : PROP) :
-  FromImpl `[iprop| P1 → P2] P1 P2
+  FromImpl iprop(P1 → P2) P1 P2
 where
   from_impl := by ...
 ```

@@ -325,7 +325,7 @@ structure Envs (PROP : Type) [BI PROP] where
 /-- Embedding of a separation logic context in form of an `Envs` object in a separation
 logic proposition. -/
 def of_envs [BI PROP] : Envs PROP → PROP
-  | ⟨Γₚ, Γₛ⟩ => `[iprop| □ [∧] Γₚ ∗ [∗] Γₛ]
+  | ⟨Γₚ, Γₛ⟩ => iprop(□ [∧] Γₚ ∗ [∗] Γₛ)
 
 /-- Embedding of a separation logic context in form of an `Envs` object together with a separation
 logic proposition in one separation logic proposition. This embedding is used in the Iris Proof
@@ -608,7 +608,7 @@ where
 
 scoped instance affineEnvSpatial [BI PROP] (Γ : Env PROP)
   [inst : AffineEnv Γ] :
-  Affine (`[iprop| [∗] Γ] : PROP)
+  Affine (iprop([∗] Γ) : PROP)
 where
   affine := by
     induction Γ generalizing inst

@@ -114,7 +114,7 @@ end intro
 namespace exist
 
 theorem id [BI PROP] : ⊢ (∃ x, x : PROP) := by
-  iexists `[iprop| True]
+  iexists iprop(True)
   ipure_intro
   exact True.intro
 
