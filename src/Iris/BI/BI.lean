@@ -61,5 +61,5 @@ export BIBase (
   bi_iff bi_wand_iff bi_affinely bi_absorbingly bi_intuitionistically
   bi_persistently_if bi_affinely_if bi_absorbingly_if bi_intuitionistically_if)
 
-attribute [rwMonoRule] BI.sep_mono
-attribute [rwMonoRule] BI.persistently_mono
+attribute [rw_mono_rule] BI.sep_mono
+attribute [rw_mono_rule] BI.persistently_mono

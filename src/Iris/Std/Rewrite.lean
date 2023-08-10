@@ -56,10 +56,10 @@ initialize monoRulesExt : SimplePersistentEnvExtension Name NameSet ← register
 private def getMonotonicityRules : TacticM <| Array Name := do
   return monoRulesExt.getState (← getEnv) |>.toArray
 
-/-- Register the attribute `rwMonoRule` for adding theorems to the environment
+/-- Register the attribute `rw_mono_rule` for adding theorems to the environment
 extension `rwMonoRules`. -/
 initialize registerBuiltinAttribute {
-  name := `rwMonoRule,
+  name := `rw_mono_rule,
   descr := "monotonicity rule used to destruct terms during rewriting",
   add := fun name _ kind => do
     if !kind matches .global then

@@ -75,14 +75,14 @@ theorem True_intro [BI PROP] {P : PROP} : P ⊢ True := by
   apply pure_intro
   simp
 
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem and_mono [BI PROP] {P P' Q Q' : PROP} : (P ⊢ Q) → (P' ⊢ Q') → P ∧ P' ⊢ Q ∧ Q' := by
   intro H1 H2
   apply and_intro
   · rw' [← H1, and_elim_l]
   · rw' [← H2, and_elim_r]
 
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem or_mono [BI PROP] {P P' Q Q' : PROP} : (P ⊢ Q) → (P' ⊢ Q') → P ∨ P' ⊢ Q ∨ Q' := by
   intro H1 H2
   apply or_elim
@@ -91,7 +91,7 @@ theorem or_mono [BI PROP] {P P' Q Q' : PROP} : (P ⊢ Q) → (P' ⊢ Q') → P �
   · apply or_intro_r'
     exact H2
 
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem impl_mono [BI PROP] {P P' Q Q' : PROP} : (Q ⊢ P) → (P' ⊢ Q') → (P → P') ⊢ Q → Q' := by
   intro HP HQ
   apply impl_intro_r
@@ -99,7 +99,7 @@ theorem impl_mono [BI PROP] {P P' Q Q' : PROP} : (Q ⊢ P) → (P' ⊢ Q') → (
   apply impl_elim_l'
   simp
 
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem forall_mono [BI PROP] {Φ Ψ : α → PROP} :
   (∀ a, Φ a ⊢ Ψ a) → (∀ a, Φ a) ⊢ ∀ a, Ψ a
 := by
@@ -108,7 +108,7 @@ theorem forall_mono [BI PROP] {Φ Ψ : α → PROP} :
   intro a
   rw' [← Hφ a, ← forall_elim _]
 
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem exist_mono [BI PROP] {Φ Ψ : α → PROP} :
   (∀ a, Φ a ⊢ Ψ a) → (∃ a, Φ a) ⊢ ∃ a, Ψ a
 := by
@@ -226,7 +226,7 @@ theorem or_alt [BI PROP] {P Q : PROP} : P ∨ Q ⊣⊢ ∃ (b : Bool), if b then
     · rw' [← or_intro_l]
 
 -- BI
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem wand_mono [BI PROP] {P P' Q Q' : PROP} : (Q ⊢ P) → (P' ⊢ Q') → (P -∗ P') ⊢ Q -∗ Q' := by
   intro HP HQ
   apply wand_intro_r
@@ -455,7 +455,7 @@ theorem affinely_elim_emp [BI PROP] {P : PROP} : <affine> P ⊢ emp := by
 theorem affinely_elim [BI PROP] {P : PROP} : <affine> P ⊢ P := by
   simp [bi_affinely, and_elim_r]
 
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem affinely_mono [BI PROP] {P Q : PROP} : (P ⊢ Q) → <affine> P ⊢ <affine> Q := by
   intro H
   simp only [bi_affinely]
@@ -526,7 +526,7 @@ theorem affinely_and_lr [BI PROP] {P Q : PROP} : <affine> P ∧ Q ⊣⊢ P ∧ <
 theorem absorbingly_intro [BI PROP] {P : PROP} : P ⊢ <absorb> P := by
   exact True_sep_2
 
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem absorbingly_mono [BI PROP] {P Q : PROP} : (P ⊢ Q) → <absorb> P ⊢ <absorb> Q := by
   intro H
   simp only [bi_absorbingly]
@@ -837,7 +837,7 @@ theorem intuitionistically_exist [BI PROP] {Φ : α → PROP} : □ (∃ x, Φ x
 theorem intuitionistically_sep_2 [BI PROP] {P Q : PROP} : □ P ∗ □ Q ⊢ □ (P ∗ Q) := by
   rw' [affinely_sep_2, persistently_sep_2]
 
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem intuitionistically_mono [BI PROP] {P Q : PROP} : (P ⊢ Q) → □ P ⊢ □ Q := by
   intro H
   simp only [bi_intuitionistically]
@@ -906,7 +906,7 @@ theorem intuitionistically_into_persistently [BIAffine PROP] {P : PROP} : □ P 
   exact affine_affinely _
 
 -- Conditional Affine
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem affinely_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <affine>?p P ⊢ <affine>?p Q := by
   intro H
   cases p
@@ -946,7 +946,7 @@ theorem affinely_if_intro_true [BI PROP] (P : PROP) : <affine> P ⊣⊢ <affine>
   simp [bi_affinely_if]
 
 -- Conditional Absorbing
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem absorbingly_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <absorb>?p P ⊢ <absorb>?p Q := by
   intro H
   cases p
@@ -955,7 +955,7 @@ theorem absorbingly_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <a
   exact absorbingly_mono
 
 -- Conditional Persistent
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem persistently_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → <pers>?p P ⊢ <pers>?p Q := by
   intro H
   cases p
@@ -970,7 +970,7 @@ theorem persistently_if_intro_true [BI PROP] (P : PROP) : <pers> P ⊣⊢ <pers>
   simp [bi_persistently_if]
 
 -- Conditional Intuitionistic
-@[rwMonoRule]
+@[rw_mono_rule]
 theorem intuitionistically_if_mono {p : Bool} [BI PROP] {P Q : PROP} : (P ⊢ Q) → □?p P ⊢ □?p Q := by
   intro H
   cases p
