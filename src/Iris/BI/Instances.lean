@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Mario Carneiro
 -/
 import Iris.BI.Classes
 import Iris.BI.DerivedLaws
@@ -14,294 +14,134 @@ open Iris.Std
 open BI
 
 -- Persistent
-instance pure_persistent (φ : Prop) [BI PROP] :
-  Persistent (PROP := PROP) iprop(⌜φ⌝)
-where
-  persistent := by
-    rw' [persistently_pure]
+instance pure_persistent (φ : Prop) [BI PROP] : Persistent (PROP := PROP) iprop(⌜φ⌝) where
+  persistent := persistently_pure.2
 
-instance emp_persistent [BI PROP] :
-  Persistent (PROP := PROP) iprop(emp)
-where
+instance emp_persistent [BI PROP] : Persistent (PROP := PROP) iprop(emp) where
   persistent := persistently_emp_intro
 
-instance and_persistent [BI PROP] (P Q : PROP) :
-  [Persistent P] →
-  [Persistent Q] →
-  Persistent iprop(P ∧ Q)
-where
-  persistent := by
-    rw' [persistently_and, !← persistent]
+instance and_persistent [BI PROP] (P Q : PROP) [Persistent P] [Persistent Q] :
+    Persistent iprop(P ∧ Q) where
+  persistent := (and_mono persistent persistent).trans persistently_and.2
 
-instance or_persistent [BI PROP] (P Q : PROP) :
-  [Persistent P] →
-  [Persistent Q] →
-  Persistent iprop(P ∨ Q)
-where
-  persistent := by
-    rw' [persistently_or, !← persistent]
+instance or_persistent [BI PROP] (P Q : PROP) [Persistent P] [Persistent Q] :
+    Persistent iprop(P ∨ Q) where
+  persistent := (or_mono persistent persistent).trans persistently_or.2
 
-instance exists_persistent [BI PROP] (Ψ : α → PROP) :
-  [∀ x, Persistent (Ψ x)] →
-  Persistent iprop(∃ x, Ψ x)
-where
-  persistent := by
-    rw' [persistently_exists, ← persistent]
+instance exists_persistent [BI PROP] (Ψ : α → PROP) [∀ x, Persistent (Ψ x)] :
+    Persistent iprop(∃ x, Ψ x) where
+  persistent := (exists_mono fun _ => persistent).trans persistently_exists.2
 
-instance sep_persistent [BI PROP] (P Q : PROP) :
-  [Persistent P] →
-  [Persistent Q] →
-  Persistent iprop(P ∗ Q)
-where
-  persistent := by
-    rw' [← persistently_sep_2, !← persistent]
+instance sep_persistent [BI PROP] (P Q : PROP) [Persistent P] [Persistent Q] :
+    Persistent iprop(P ∗ Q) where
+  persistent := (sep_mono persistent persistent).trans persistently_sep_2
 
-instance persistently_persistent [BI PROP] (P : PROP) :
-  Persistent iprop(<pers> P)
-where
+instance persistently_persistent [BI PROP] (P : PROP) : Persistent iprop(<pers> P) where
   persistent := persistently_idem_2
 
-instance affinely_persistent [BI PROP] (P : PROP) :
-  [Persistent P] →
-  Persistent iprop(<affine> P)
-where
-  persistent := by
-    simp [affinely, persistent]
+instance affinely_persistent [BI PROP] (P : PROP) [Persistent P] : Persistent iprop(<affine> P) :=
+  inferInstanceAs (Persistent iprop(_ ∧ _))
 
-instance affinelyIf_persistent (p : Bool) [BI PROP] (P : PROP) :
-  [Persistent P] →
-  Persistent iprop(<affine>?p P)
-where
-  persistent := by
-    cases p
-    <;> simp [affinelyIf, persistent]
+instance affinelyIf_persistent (p : Bool) [BI PROP] (P : PROP) [Persistent P] :
+    Persistent iprop(<affine>?p P) := by
+  cases p <;> simp [affinelyIf] <;> infer_instance
 
-instance intuitionistically_persistent [BI PROP] (P : PROP) :
-  Persistent iprop(□ P)
-where
-  persistent := by
-    simp [intuitionistically, persistent]
+instance intuitionistically_persistent [BI PROP] (P : PROP) : Persistent iprop(□ P) :=
+  inferInstanceAs (Persistent iprop(<affine> _))
 
-instance absorbingly_persistent [BI PROP] (P : PROP) :
-  [Persistent P] →
-  Persistent iprop(<absorb> P)
-where
-  persistent := by
-    simp [absorbingly, persistent]
+instance absorbingly_persistent [BI PROP] (P : PROP) [Persistent P] : Persistent iprop(<absorb> P) :=
+  inferInstanceAs (Persistent iprop(_ ∗ _))
 
-instance absorbinglyIf_persistent (p : Bool) [BI PROP] (P : PROP) :
-  [Persistent P] →
-  Persistent iprop(<absorb>?p P)
-where
-  persistent := by
-    cases p
-    <;> simp [absorbinglyIf, persistent]
+instance absorbinglyIf_persistent (p : Bool) [BI PROP] (P : PROP) [Persistent P] :
+    Persistent iprop(<absorb>?p P) := by
+  cases p <;> simp [absorbinglyIf] <;> infer_instance
 
 -- Affine
-instance emp_affine [BI PROP] :
-  Affine (PROP := PROP) iprop(emp)
-where
-  affine := by
-    simp
+instance emp_affine [BI PROP] : Affine (PROP := PROP) iprop(emp) where
+  affine := .rfl
 
-instance false_affine [BI PROP] :
-  Affine (PROP := PROP) iprop(False)
-where
+theorem affine_mono [BI PROP] (h : (P : PROP) ⊢ Q) [Affine Q] : Affine P where
+  affine := h.trans affine
+
+instance false_affine [BI PROP] : Affine (PROP := PROP) iprop(False) where
   affine := false_elim
 
-instance and_affine_l [BI PROP] (P Q : PROP) :
-  [Affine P] →
-  Affine iprop(P ∧ Q)
-where
-  affine := by
-    rw' [affine, and_elim_l]
+instance and_affine_l [BI PROP] (P Q : PROP) [Affine P] : Affine iprop(P ∧ Q) where
+  affine := and_elim_l.trans affine
 
-instance and_affine_r [BI PROP] (P Q : PROP) :
-  [Affine Q] →
-  Affine iprop(P ∧ Q)
-where
-  affine := by
-    rw' [affine, and_elim_r]
+instance and_affine_r [BI PROP] (P Q : PROP) [Affine Q] : Affine iprop(P ∧ Q) where
+  affine := and_elim_r.trans affine
 
-instance or_affine [BI PROP] (P Q : PROP) :
-  [Affine P] →
-  [Affine Q] →
-  Affine iprop(P ∨ Q)
-where
-  affine := by
-    apply or_elim
-    <;> exact affine
+instance or_affine [BI PROP] (P Q : PROP) [Affine P] [Affine Q] : Affine iprop(P ∨ Q) where
+  affine := or_elim affine affine
 
-instance forall_affine [Inhabited α] [BI PROP] (Φ : α → PROP) :
-  [∀ x, Affine (Φ x)] →
-  Affine iprop(∀ x, Φ x)
-where
-  affine := by
-    rw' [← affine (P := Φ default), forall_elim default]
+instance forall_affine [Inhabited α] [BI PROP] (Φ : α → PROP) [∀ x, Affine (Φ x)] :
+    Affine iprop(∀ x, Φ x) where
+  affine := (forall_elim default).trans affine
 
-instance exists_affine [BI PROP] (Φ : α → PROP) :
-  [∀ x, Affine (Φ x)] →
-  Affine iprop(∃ x, Φ x)
-where
-  affine := by
-    apply exists_elim
-    intro a
-    exact affine
+instance exists_affine [BI PROP] (Φ : α → PROP) [∀ x, Affine (Φ x)] : Affine iprop(∃ x, Φ x) where
+  affine := exists_elim fun _ => affine
 
-instance sep_affine [BI PROP] (P Q : PROP) :
-  [Affine P] →
-  [Affine Q] →
-  Affine iprop(P ∗ Q)
-where
-  affine := by
-    rw' [
-      affine,
-      (left_id : emp ∗ Q ⊣⊢ _),
-      affine]
+instance sep_affine [BI PROP] (P Q : PROP) [Affine P] [Affine Q] : Affine iprop(P ∗ Q) where
+  affine := (sep_mono affine affine).trans sep_emp.1
 
-instance affinely_affine [BI PROP] (P : PROP) :
-  Affine iprop(<affine> P)
-where
-  affine := by
-    simp [affinely, affine]
+instance affinely_affine [BI PROP] (P : PROP) : Affine iprop(<affine> P) where
+  affine := affinely_elim_emp
 
-instance affinelyIf_affine (p : Bool) [BI PROP] (P : PROP) :
-  [Affine P] →
-  Affine iprop(<affine>?p P)
-where
-  affine := by
-    cases p
-    <;> simp [affinelyIf, affine]
+instance affinelyIf_affine (p : Bool) [BI PROP] (P : PROP) [Affine P] :
+    Affine iprop(<affine>?p P) := by
+  cases p <;> simp [affinelyIf] <;> infer_instance
 
-instance intuitionistically_affine [BI PROP] (P : PROP) :
-  Affine iprop(□ P)
-where
-  affine := by
-    simp [intuitionistically, affine]
+instance intuitionistically_affine [BI PROP] (P : PROP) : Affine iprop(□ P) :=
+  inferInstanceAs (Affine iprop(<affine> _))
 
-instance intuitionisticallyIf_affine (p : Bool) [BI PROP] (P : PROP) :
-  [Affine P] →
-  Affine iprop(□?p P)
-where
-  affine := by
-    cases p
-    <;> simp [intuitionisticallyIf, affine]
+instance intuitionisticallyIf_affine (p : Bool) [BI PROP] (P : PROP) [Affine P] :
+    Affine iprop(□?p P) := by
+  cases p <;> simp [intuitionisticallyIf] <;> infer_instance
 
 -- Absorbing
-instance pure_absorbing (φ : Prop) [BI PROP] :
-  Absorbing (PROP := PROP) iprop(⌜φ⌝)
-where
-  absorbing := by
-    rw' [absorbingly_pure]
+instance and_absorbing [BI PROP] (P Q : PROP) [Absorbing P] [Absorbing Q] :
+    Absorbing iprop(P ∧ Q) where
+  absorbing := absorbingly_and_1.trans (and_mono absorbing absorbing)
 
-instance and_absorbing [BI PROP] (P Q : PROP) :
-  [Absorbing P] →
-  [Absorbing Q] →
-  Absorbing iprop(P ∧ Q)
-where
-  absorbing := by
-    rw' [absorbingly_and_1, !absorbing]
+instance or_absorbing [BI PROP] (P Q : PROP) [Absorbing P] [Absorbing Q] :
+    Absorbing iprop(P ∨ Q) where
+  absorbing := absorbingly_or.1.trans (or_mono absorbing absorbing)
 
-instance or_absorbing [BI PROP] (P Q : PROP) :
-  [Absorbing P] →
-  [Absorbing Q] →
-  Absorbing iprop(P ∨ Q)
-where
-  absorbing := by
-    rw' [absorbingly_or, !absorbing]
+instance forall_absorbing [BI PROP] (Φ : α → PROP) [∀ x, Absorbing (Φ x)] :
+    Absorbing iprop(∀ x, Φ x) where
+  absorbing := absorbingly_forall.trans (forall_mono fun _ => absorbing)
 
-instance forall_absorbing [BI PROP] (Φ : α → PROP) :
-  [∀ x, Absorbing (Φ x)] →
-  Absorbing iprop(∀ x, Φ x)
-where
-  absorbing := by
-    rw' [absorbingly_forall Φ, absorbing]
+instance exists_absorbing [BI PROP] (Φ : α → PROP) [∀ x, Absorbing (Φ x)] :
+    Absorbing iprop(∃ x, Φ x) where
+  absorbing := absorbingly_exists.1.trans (exists_mono fun _ => absorbing)
 
-instance exists_absorbing [BI PROP] (Φ : α → PROP) :
-  [∀ x, Absorbing (Φ x)] →
-  Absorbing iprop(∃ x, Φ x)
-where
-  absorbing := by
-    rw' [absorbingly_exists Φ, absorbing]
+instance imp_absorbing [BI PROP] (P Q : PROP) [Persistent P] [Absorbing P] [Absorbing Q] :
+    Absorbing iprop(P → Q) where
+  absorbing := imp_intro' <| persistent_and_affinely_sep_l.1.trans <| absorbingly_sep_r.1.trans <|
+    (absorbingly_mono <| persistent_and_affinely_sep_l.2.trans imp_elim_r).trans absorbing
 
-instance imp_absorbing [BI PROP] (P Q : PROP) :
-  [Persistent P] →
-  [Absorbing P] →
-  [Absorbing Q] →
-  Absorbing iprop(P → Q)
-where
-  absorbing := by
-    apply imp_intro'
-    rw' [
-      persistent_and_affinely_sep_l,
-      absorbingly_sep_r,
-      ← persistent_and_affinely_sep_l,
-      imp_elim_r,
-      absorbing]
+instance sep_absorbing_l [BI PROP] (P Q : PROP) [Absorbing P] : Absorbing iprop(P ∗ Q) where
+  absorbing := absorbingly_sep_l.2.trans (sep_mono_l absorbing)
 
-instance sep_absorbing_l [BI PROP] (P Q : PROP) :
-  [Absorbing P] →
-  Absorbing iprop(P ∗ Q)
-where
-  absorbing := by
-    rw' [← absorbingly_sep_l, absorbing]
+instance sep_absorbing_r [BI PROP] (P Q : PROP) [Absorbing Q] : Absorbing iprop(P ∗ Q) where
+  absorbing := absorbingly_sep_r.2.trans (sep_mono_r absorbing)
 
-instance sep_absorbing_r [BI PROP] (P Q : PROP) :
-  [Absorbing Q] →
-  Absorbing iprop(P ∗ Q)
-where
-  absorbing := by
-    rw' [← absorbingly_sep_r, absorbing]
+instance wand_absorbing_l [BI PROP] (P Q : PROP) [Absorbing P] : Absorbing iprop(P -∗ Q) where
+  absorbing := wand_intro' <| sep_assoc.2.trans <| (sep_mono_l sep_elim_l).trans wand_elim_r
 
-instance wand_absorbing_l [BI PROP] (P Q : PROP) :
-  [Absorbing P] →
-  Absorbing iprop(P -∗ Q)
-where
-  absorbing := by
-    simp only [absorbingly]
-    apply wand_intro'
-    rw' [
-      (assoc : P ∗ True ∗ (P -∗ Q) ⊣⊢ _),
-      (sep_elim_l : P ∗ True ⊢ _),
-      wand_elim_r]
+instance wand_absorbing_r [BI PROP] (P Q : PROP) [Absorbing Q] : Absorbing iprop(P -∗ Q) where
+  absorbing := absorbingly_wand.trans (wand_mono absorbingly_intro absorbing)
 
-instance wand_absorbing_r [BI PROP] (P Q : PROP) :
-  [Absorbing Q] →
-  Absorbing iprop(P -∗ Q)
-where
-  absorbing := by
-    rw' [absorbingly_wand, (absorbing : _ ⊢ Q), (absorbingly_intro : _ ⊢ <absorb> P)]
+instance absorbingly_absorbing [BI PROP] (P : PROP) : Absorbing iprop(<absorb> P) where
+  absorbing := absorbingly_idem.1
 
-instance absorbingly_absorbing [BI PROP] (P : PROP) :
-  Absorbing iprop(<absorb> P)
-where
-  absorbing := by
-    rw' [absorbingly_idem]
+instance persistently_absorbing [BI PROP] (P : PROP) : Absorbing iprop(<pers> P) where
+  absorbing := absorbingly_persistently.1
 
-instance persistently_absorbing [BI PROP] (P : PROP) :
-  Absorbing iprop(<pers> P)
-where
-  absorbing := by
-    rw' [absorbingly_persistently]
+instance persistentlyIf_absorbing [BI PROP] (P : PROP) (p : Bool) [Absorbing P] :
+    Absorbing iprop(<pers>?p P) := by
+  cases p <;> simp [persistentlyIf] <;> infer_instance
 
-instance persistentlyIf_absorbing [BI PROP] (P : PROP) (p : Bool) :
-  [Absorbing P] →
-  Absorbing iprop(<pers>?p P)
-where
-  absorbing := by
-    cases p
-    <;> simp [persistentlyIf, absorbing]
-
-section Affine
-
-instance (priority := default + 10) biAffine_absorbing [BIAffine PROP] (P : PROP) :
-  Absorbing P
-where
-  absorbing := by
-    simp only [absorbingly]
-    rw' [
-      (affine : (True : PROP) ⊢ _),
-      (left_id : emp ∗ P ⊣⊢ _)]
-
-end Affine
-end Iris.BI
+instance (priority := default + 10) biAffineAbsorbing [BIAffine PROP] (P : PROP) : Absorbing P where
+  absorbing := (sep_mono_l affine).trans emp_sep.1

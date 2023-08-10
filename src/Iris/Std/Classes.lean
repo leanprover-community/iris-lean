@@ -46,7 +46,7 @@ export RightId (right_id)
 
 /-- Require that a binary function `f` on `α` is associative in a relation `R` on `α`. -/
 class Associative (R : Relation α) (f : α → α → α) : Prop where
-  assoc {x y z : α} : R (f x (f y z)) (f (f x y) z)
+  assoc {x y z : α} : R (f (f x y) z) (f x (f y z))
 export Associative (assoc)
 
 /-- Require that a relation `S` on `α` is antisymmetrical with `R` as its equivalence relation. -/

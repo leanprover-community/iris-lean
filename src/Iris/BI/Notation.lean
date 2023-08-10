@@ -14,25 +14,25 @@ syntax:max "term(" term ")" : term
 
 -- allow fallback to `term`
 macro_rules
-  | `(iprop(term($t))) => ``($t)
-  | `(iprop($t))          => ``($t)
+  | `(iprop(term($t))) => pure t
+  | `(iprop($t))       => pure t
 
 -- carry `iprop` over some `term` constructs
 macro_rules
   | `(iprop(($P)))                  => ``((iprop($P)))
-  | `(iprop($P $[ $Q]*))            => ``(iprop($P) $[ iprop($Q)]*)
+  | `(iprop($P $[ $Q]*))            => ``($P $[ $Q]*)
   | `(iprop(if $c then $t else $e)) => ``(if $c then iprop($t) else iprop($e))
   | `(iprop(($P : $t)))             => ``((iprop($P) : $t))
 
 /-- Remove an `iprop` quotation from a `term` syntax object. -/
-partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : TSyntax `term → m (TSyntax `term)
-  | `(iprop($P))          => ``($P)
-  | `($P:ident)              => ``($P)
-  | `(($P))                  => do ``(($(← unpackIprop P)))
-  | `($P $[ $Q]*)            => do ``($(← unpackIprop P) $[ $(← Q.mapM unpackIprop)]*)
-  | `(if $c then $t else $e) => do ``(if $c then $(← unpackIprop t) else $(← unpackIprop e))
+partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : Term → m Term
+  | `(iprop($P))             => do `($P)
+  | `($P:ident)              => do `($P)
+  | `(?$P:ident)             => do `(?$P)
+  | `(($P))                  => do `(($(← unpackIprop P)))
+  | `($P $[ $Q]*)            => do ``($P $[ $Q]*)
+  | `(if $c then $t else $e) => do `(if $c then $(← unpackIprop t) else $(← unpackIprop e))
   | `(($P : $t))             => do ``(($(← unpackIprop P) : $t))
-  | `(term($t))           => ``(term($t))
-  | `($t)                    => ``(term($t))
+  | `($t)                    => `($t:term)
 
 end Iris.BI

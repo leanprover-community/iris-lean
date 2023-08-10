@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Mario Carneiro
 -/
 import Iris.BI.Notation
 import Iris.Std.Classes
@@ -15,7 +15,7 @@ open Lean
 
 /-- Require the definitions of the separation logic connectives and units on a carrier type `PROP`. -/
 class BIBase (PROP : Type) where
-  entails : PROP → PROP → Prop
+  Entails : PROP → PROP → Prop
   emp : PROP
   pure : Prop → PROP
   and : PROP → PROP → PROP
@@ -29,10 +29,11 @@ class BIBase (PROP : Type) where
 
 namespace BIBase
 
-section Syntax
-
 /-- Entailment on separation logic propositions. -/
-macro:25 P:term:29 " ⊢ " Q:term:25 : term => ``(BIBase.entails iprop($P) iprop($Q))
+macro:25 P:term:29 " ⊢ " Q:term:25 : term => ``(BIBase.Entails iprop($P) iprop($Q))
+
+delab_rule BIBase.Entails
+  | `($_ $P $Q) => do ``($(← unpackIprop P) ⊢ $(← unpackIprop Q))
 
 /-- Embedding of pure Lean proposition as separation logic proposition. -/
 syntax "⌜" term "⌝" : term
@@ -40,8 +41,17 @@ syntax "⌜" term "⌝" : term
 syntax:35 term:36 " ∗ " term:35 : term
 /-- Separating implication. -/
 syntax:25 term:26 " -∗ " term:25 : term
-/-- Persistency modality. -/
+/-- Persistency modality. `persistently` is a primitive of BI. -/
 syntax:max "<pers> " term:40 : term
+
+/-- Bidirectional implication on separation logic propositions. -/
+syntax:27 term:28 " ↔ " term:28 : term
+/-- Bidrectional separating implication on separation logic propositions. -/
+syntax:27 term:28 " ∗-∗ " term:28 : term
+
+/-- Existential quantification on separation logic propositions. -/
+macro "∃" xs:explicitBinders ", " b:term : term => do
+  return ⟨← expandExplicitBinders ``BIBase.exists xs b⟩
 
 -- `iprop` syntax interpretation
 macro_rules
@@ -54,35 +64,6 @@ macro_rules
   | `(iprop($P ∗ $Q))   => ``(BIBase.sep iprop($P) iprop($Q))
   | `(iprop($P -∗ $Q))  => ``(BIBase.wand iprop($P) iprop($Q))
   | `(iprop(<pers> $P)) => ``(BIBase.persistently iprop($P))
-
-/- This is necessary since the `∀` syntax is not defined using `explicitBinders` and we can
-therefore not use `expandExplicitBinders` as for `∃`. -/
-macro_rules | `(iprop(∀ _, $Ψ))                    => ``(BIBase.forall (fun _         => iprop($Ψ)))
-macro_rules | `(iprop(∀ $x:ident, $Ψ))             => ``(BIBase.forall (fun $x        => iprop($Ψ)))
-macro_rules | `(iprop(∀ (_ : $t), $Ψ))             => ``(BIBase.forall (fun (_ : $t)  => iprop($Ψ)))
-macro_rules | `(iprop(∀ (_ $xs* : $t), $Ψ))        => ``(BIBase.forall (fun (_ : $t)  => iprop(∀ ($xs* : $t), $Ψ)))
-macro_rules | `(iprop(∀ ($x:ident : $t), $Ψ))      => ``(BIBase.forall (fun ($x : $t) => iprop($Ψ)))
-macro_rules | `(iprop(∀ ($x:ident $xs* : $t), $Ψ)) => ``(BIBase.forall (fun ($x : $t) => iprop(∀ ($xs* : $t), $Ψ)))
-macro_rules | `(iprop(∀ {_ : $t}, $Ψ))             => ``(BIBase.forall (fun {_ : $t}  => iprop($Ψ)))
-macro_rules | `(iprop(∀ {_ $xs* : $t}, $Ψ))        => ``(BIBase.forall (fun {_ : $t}  => iprop(∀ {$xs* : $t}, $Ψ)))
-macro_rules | `(iprop(∀ {$x:ident : $t}, $Ψ))      => ``(BIBase.forall (fun ($x : $t) => iprop($Ψ)))
-macro_rules | `(iprop(∀ {$x:ident $xs* : $t}, $Ψ)) => ``(BIBase.forall (fun ($x : $t) => iprop(∀ {$xs* : $t}, $Ψ)))
-macro_rules | `(iprop(∀ $x $y $xs*, $Ψ))           => ``(iprop(∀ $x, ∀ $y $xs*, $Ψ))
-
--- `iprop` macros
-macro_rules
-  | `(iprop(True))  => ``(BIBase.pure True)
-  | `(iprop(False)) => ``(BIBase.pure False)
-  | `(iprop(¬$P))   => ``(iprop($P → False))
-
-end Syntax
-
-
--- delaboration rules
-section Delab
-
-delab_rule BIBase.entails
-  | `($_ $P $Q) => do ``($(← unpackIprop P) ⊢ $(← unpackIprop Q))
 
 delab_rule BIBase.emp
   | `($_) => ``(iprop($(mkIdent `emp)))
@@ -113,20 +94,25 @@ delab_rule BIBase.pure
 delab_rule BIBase.imp
   | `($_ $P iprop(False)) => do ``(iprop(¬$(← unpackIprop P)))
 
-end Delab
+/- This is necessary since the `∀` syntax is not defined using `explicitBinders` and we can
+therefore not use `expandExplicitBinders` as for `∃`. -/
+macro_rules | `(iprop(∀ _, $Ψ))                    => ``(BIBase.forall (fun _         => iprop($Ψ)))
+macro_rules | `(iprop(∀ $x:ident, $Ψ))             => ``(BIBase.forall (fun $x        => iprop($Ψ)))
+macro_rules | `(iprop(∀ (_ : $t), $Ψ))             => ``(BIBase.forall (fun (_ : $t)  => iprop($Ψ)))
+macro_rules | `(iprop(∀ (_ $xs* : $t), $Ψ))        => ``(BIBase.forall (fun (_ : $t)  => iprop(∀ ($xs* : $t), $Ψ)))
+macro_rules | `(iprop(∀ ($x:ident : $t), $Ψ))      => ``(BIBase.forall (fun ($x : $t) => iprop($Ψ)))
+macro_rules | `(iprop(∀ ($x:ident $xs* : $t), $Ψ)) => ``(BIBase.forall (fun ($x : $t) => iprop(∀ ($xs* : $t), $Ψ)))
+macro_rules | `(iprop(∀ {_ : $t}, $Ψ))             => ``(BIBase.forall (fun {_ : $t}  => iprop($Ψ)))
+macro_rules | `(iprop(∀ {_ $xs* : $t}, $Ψ))        => ``(BIBase.forall (fun {_ : $t}  => iprop(∀ {$xs* : $t}, $Ψ)))
+macro_rules | `(iprop(∀ {$x:ident : $t}, $Ψ))      => ``(BIBase.forall (fun ($x : $t) => iprop($Ψ)))
+macro_rules | `(iprop(∀ {$x:ident $xs* : $t}, $Ψ)) => ``(BIBase.forall (fun ($x : $t) => iprop(∀ {$xs* : $t}, $Ψ)))
+macro_rules | `(iprop(∀ $x $y $xs*, $Ψ))           => ``(iprop(∀ $x, ∀ $y $xs*, $Ψ))
 
-/-- Entailment on separation logic propositions with an empty context. -/
-macro:25 "⊢ " P:term:25 : term => ``(iprop(emp) ⊢ iprop($P))
-/-- Bidirectional entailment on separation logic propositions. -/
-macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(iprop($P) = iprop($Q))
-
-delab_rule BIBase.entails
-  | `($_ iprop(emp) $P) => do ``(⊢ $(← unpackIprop P))
-
-/-- Bidirectional implication on separation logic propositions. -/
-syntax:27 term:28 " ↔ " term:28 : term
-/-- Bidrectional separating implication on separation logic propositions. -/
-syntax:27 term:28 " ∗-∗ " term:28 : term
+-- `iprop` macros
+macro_rules
+  | `(iprop(True))  => ``(BIBase.pure True)
+  | `(iprop(False)) => ``(BIBase.pure False)
+  | `(iprop(¬$P))   => ``(iprop($P → False))
 
 def iff     [BIBase PROP] (P Q : PROP) : PROP := iprop((P → Q) ∧ (Q → P))
 def wandIff [BIBase PROP] (P Q : PROP) : PROP := iprop((P -∗ Q) ∧ (Q -∗ P))
@@ -140,13 +126,36 @@ delab_rule iff
 delab_rule wandIff
   | `($_ $P $Q) => do ``(iprop($(← unpackIprop P) ∗-∗ $(← unpackIprop Q)))
 
-/-- Affine modality. -/
+/-- Affine modality.
+```
+def affinely (P) := emp ∧ P
+```
+-/
 syntax:max "<affine> " term:40 : term
-/-- Absorbing modality. -/
+/-- Absorbing modality, `absorbingly`.
+```
+def absorbingly (P) := True ∗ P
+```
+-/
 syntax:max "<absorb> " term:40 : term
 
 def affinely    [BIBase PROP] (P : PROP) : PROP := iprop(emp ∧ P)
 def absorbingly [BIBase PROP] (P : PROP) : PROP := iprop(True ∗ P)
+
+structure BiEntails [BIBase PROP] (P Q : PROP) : Prop where
+  mp : P ⊢ Q
+  mpr : Q ⊢ P
+
+/-- Entailment on separation logic propositions with an empty context. -/
+macro:25 "⊢ " P:term:25 : term => ``(emp ⊢ $P)
+/-- Bidirectional entailment on separation logic propositions. -/
+macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(BiEntails iprop($P) iprop($Q))
+
+delab_rule BIBase.Entails
+  | `($_ iprop(emp) $P) => do ``(⊢ $(← unpackIprop P))
+
+delab_rule BIBase.BiEntails
+  | `($_ $P $Q) => do ``($(← unpackIprop P) ⊣⊢ $(← unpackIprop Q))
 
 macro_rules
   | `(iprop(<affine> $P)) => ``(affinely iprop($P))
@@ -157,7 +166,11 @@ delab_rule affinely
 delab_rule absorbingly
   | `($_ $P) => do ``(iprop(<absorb> $(← unpackIprop P)))
 
-/-- Intuitionistic modality. -/
+/-- Intuitionistic modality.
+```
+def intuitionistically (P) := <affine> <pers> P
+```
+-/
 syntax:max "□ " term:40 : term
 
 def intuitionistically [BIBase PROP] (P : PROP) : PROP := iprop(<affine> <pers> P)
@@ -168,13 +181,29 @@ macro_rules
 delab_rule intuitionistically
   | `($_ $P) => do ``(iprop(□ $(← unpackIprop P)))
 
-/-- Conditional persistency modality. -/
+/-- Conditional persistency modality.
+```
+def persistentlyIf (p : Bool) (P : PROP) := if p then <pers> P else P
+```
+-/
 syntax:max "<pers>?"   term:max ppHardSpace term:40 : term
-/-- Conditional affine modality. -/
+/-- Conditional affine modality.
+```
+def affinelyIf (p : Bool) (P : PROP) := if p then <affine> P else P
+```
+-/
 syntax:max "<affine>?" term:max ppHardSpace term:40 : term
-/-- Conditional absorbing modality. -/
+/-- Conditional absorbing modality.
+```
+def absorbinglyIf (p : Bool) (P : PROP) := if p then <absorb> P else P
+```
+-/
 syntax:max "<absorb>?" term:max ppHardSpace term:40 : term
-/-- Conditional intuitionistic modality. -/
+/-- Conditional intuitionistic modality.
+```
+def intuitionisticallyIf (p : Bool) (P : PROP) := if p then □ P else P
+```
+-/
 syntax:max "□?"        term:max ppHardSpace term:40 : term
 
 def persistentlyIf       [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <pers> P else P)
@@ -198,18 +227,12 @@ delab_rule intuitionisticallyIf
   | `($_ $p $P) => do ``(iprop(□?$p $(← unpackIprop P)))
 
 /-- Fold the conjunction `∧` over a list of separation logic propositions. -/
-syntax:40 "[∧] " term:max : term
+def bigAnd [BIBase PROP] (Ps : List PROP) : PROP := bigOp and iprop(True) Ps
 /-- Fold the disjunction `∨` over a list of separation logic propositions. -/
-syntax:40 "[∨] " term:max : term
+def bigOr [BIBase PROP] (Ps : List PROP) : PROP := bigOp or iprop(False) Ps
 /-- Fold the separating conjunction `∗` over a list of separation logic propositions. -/
-syntax:40 "[∗] " term:max : term
+def bigSep [BIBase PROP] (Ps : List PROP) : PROP := bigOp sep iprop(emp) Ps
 
-macro_rules
-  | `(iprop([∧] $Ps)) => ``(bigOp BIBase.and iprop(True) iprop($Ps))
-  | `(iprop([∨] $Ps)) => ``(bigOp BIBase.or iprop(False) iprop($Ps))
-  | `(iprop([∗] $Ps)) => ``(bigOp BIBase.sep iprop(emp) iprop($Ps))
-
-delab_rule bigOp
-  | `($_ BIBase.and iprop(True)  $Ps) => do ``(iprop([∧] $(← unpackIprop Ps)))
-  | `($_ BIBase.or  iprop(False) $Ps) => do ``(iprop([∨] $(← unpackIprop Ps)))
-  | `($_ BIBase.sep iprop(emp)   $Ps) => do ``(iprop([∗] $(← unpackIprop Ps)))
+notation:40 "[∧] " Ps:max => bigAnd Ps
+notation:40 "[∨] " Ps:max => bigOr Ps
+notation:40 "[∗] " Ps:max => bigSep Ps

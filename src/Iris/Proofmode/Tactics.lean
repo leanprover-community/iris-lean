@@ -26,7 +26,7 @@ elab "istart" : tactic => do
 
   -- check if already in proof mode
   if ← isEnvsEntails goal then
-    return ()
+    return
 
   -- create environment
   try evalTactic (← `(tactic| (

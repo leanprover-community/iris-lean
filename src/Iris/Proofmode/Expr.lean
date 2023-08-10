@@ -24,7 +24,7 @@ def isEnvsEntails (expr : Expr) : MetaM Bool := do
 /-- Extract the premise and conclusion from an application of `BIBase.entails`. -/
 def extractEntails? (expr : Expr) : MetaM <| Option <| Expr × Expr := do
   let expr ← withReducible <| whnf expr
-  let some #[_, _, P, Q] := appM? expr ``BIBase.entails
+  let some #[_, _, P, Q] := appM? expr ``Entails
     | return none
   return some (P, Q)
 

@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Mario Carneiro
 -/
 import Iris.BI.BIBase
 
@@ -11,9 +11,7 @@ open Lean
 
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
 class BI (PROP : Type) extends BI.BIBase PROP where
-  entails_preorder : Preorder entails
-
-  equiv_entails {P Q : PROP} : (P = Q) ↔ (P ⊢ Q) ∧ (Q ⊢ P)
+  entails_preorder : Preorder Entails
 
   pure_intro {φ : Prop} {P : PROP} : φ → P ⊢ ⌜φ⌝
   pure_elim' {φ : Prop} {P : PROP} : (φ → True ⊢ P) → ⌜φ⌝ ⊢ P
@@ -56,10 +54,27 @@ namespace BI
 
 attribute [instance] BI.entails_preorder
 
+theorem BIBase.Entails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q) (h2 : Q ⊢ R) : P ⊢ R :=
+  Transitive.trans h1 h2
+
+@[simp] theorem BIBase.Entails.rfl [BI PROP] {P : PROP} : P ⊢ P := refl
+
+theorem BIBase.Entails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊢ Q := h ▸ .rfl
+
+@[simp] theorem BIBase.BiEntails.rfl [BI PROP] {P : PROP} : P ⊣⊢ P := ⟨.rfl, .rfl⟩
+
+theorem BIBase.BiEntails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
+
+theorem BIBase.BiEntails.symm [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : Q ⊣⊢ P := ⟨h.2, h.1⟩
+
+theorem BIBase.BiEntails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊣⊢ Q) (h2 : Q ⊣⊢ R) : P ⊣⊢ R :=
+  ⟨h1.1.trans h2.1, h2.2.trans h1.2⟩
+
 export BIBase (
-  entails emp pure and or imp «forall» «exists» sep wand persistently
-  iff wandIff affinely absorbingly intuitionistically
-  persistentlyIf affinelyIf absorbinglyIf intuitionisticallyIf)
+  Entails emp pure and or imp «forall» «exists» sep wand persistently
+  BiEntails iff wandIff affinely absorbingly intuitionistically
+  persistentlyIf affinelyIf absorbinglyIf intuitionisticallyIf
+  bigAnd bigOr bigSep Entails.trans BiEntails.trans)
 
 attribute [rw_mono_rule] BI.sep_mono
 attribute [rw_mono_rule] BI.persistently_mono
