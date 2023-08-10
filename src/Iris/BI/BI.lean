@@ -5,12 +5,12 @@ Authors: Lars König
 -/
 import Iris.BI.BIBase
 
-namespace Iris.BI
+namespace Iris
 open Iris.Std
 open Lean
 
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
-class BI (PROP : Type) extends BIBase PROP where
+class BI (PROP : Type) extends BI.BIBase PROP where
   entailsPreOrder : PreOrder entails
 
   equiv_entails {P Q : PROP} : (P = Q) ↔ (P ⊢ Q) ∧ (Q ⊢ P)
@@ -52,9 +52,14 @@ class BI (PROP : Type) extends BIBase PROP where
   persistently_absorbing {P Q : PROP} : <pers> P ∗ Q ⊢ <pers> P
   persistently_and_sep_elim {P Q : PROP} : <pers> P ∧ Q ⊢ P ∗ Q
 
+namespace BI
+
 attribute [instance] BI.entailsPreOrder
+
+export BIBase (
+  entails emp pure and or impl «forall» exist sep wand persistently
+  bi_iff bi_wand_iff bi_affinely bi_absorbingly bi_intuitionistically
+  bi_persistently_if bi_affinely_if bi_absorbingly_if bi_intuitionistically_if)
 
 attribute [rwMonoRule] BI.sep_mono
 attribute [rwMonoRule] BI.persistently_mono
-
-end Iris.BI

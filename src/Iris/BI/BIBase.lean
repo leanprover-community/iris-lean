@@ -27,6 +27,7 @@ class BIBase (PROP : Type) where
   wand : PROP → PROP → PROP
   persistently : PROP → PROP
 
+namespace BIBase
 
 section Syntax
 
@@ -212,5 +213,3 @@ delab_rule big_op
   | `($_ BIBase.and iprop(True)  $Ps) => do ``(iprop([∧] $(← unpackIprop Ps)))
   | `($_ BIBase.or  iprop(False) $Ps) => do ``(iprop([∨] $(← unpackIprop Ps)))
   | `($_ BIBase.sep iprop(emp)   $Ps) => do ``(iprop([∗] $(← unpackIprop Ps)))
-
-end Iris.BI
