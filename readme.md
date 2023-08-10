@@ -177,14 +177,14 @@ elab "iclear" colGt hyp:ident : tactic => do
   catch _ => throwError "failed to clear the hypothesis"
 ```
 
-The tactic theorems justify the modification to the separation logic goal and contexts. They are formulated as implications between the embeddings of a separation logic context and a goal. The embedding of a separation logic context and a goal is defined in the function `envs_entails`. The theorems use typeclasses to require specific properties of separation logic propositions. Most of the used typeclasses also support destructing the given separation logic proposition using `outParam`s (e.g. returning the premise and conclusion of an implication).
+The tactic theorems justify the modification to the separation logic goal and contexts. They are formulated as implications between the embeddings of a separation logic context and a goal. The embedding of a separation logic context and a goal is defined in the function `EnvsEntails`. The theorems use typeclasses to require specific properties of separation logic propositions. Most of the used typeclasses also support destructing the given separation logic proposition using `outParam`s (e.g. returning the premise and conclusion of an implication).
 
 Example:
 ```lean
 theorem tac_wand_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
   [FromWand R P Q] →
-  envs_entails (Δ.append false P) Q →
-  envs_entails Δ R
+  EnvsEntails (Δ.append false P) Q →
+  EnvsEntails Δ R
 ```
 
 ## Type Classes

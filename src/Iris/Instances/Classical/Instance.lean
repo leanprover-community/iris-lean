@@ -145,6 +145,13 @@ instance : BI (HeapProp Val) where
     constructor
     · exact h_PQ σ₁ h_P
     · exact h_P'Q' σ₂ h_P'
+  emp_sep_1 := by
+    simp only [BIBase.entails, BIBase.sep, BIBase.emp]
+    intro _ _ ⟨σ₁, σ₂, h_union, _, h_emp, h_P⟩
+    rw [h_emp] at h_union
+    rw [← empty_union] at h_union
+    rw [h_union]
+    exact h_P
   emp_sep_2 := by
     simp only [BIBase.entails, BIBase.sep, BIBase.emp]
     intro _ σ h_P
@@ -157,13 +164,6 @@ instance : BI (HeapProp Val) where
     constructor
     · rfl
     · exact h_P
-  emp_sep_1 := by
-    simp only [BIBase.entails, BIBase.sep, BIBase.emp]
-    intro _ _ ⟨σ₁, σ₂, h_union, _, h_emp, h_P⟩
-    rw [h_emp] at h_union
-    rw [← empty_union] at h_union
-    rw [h_union]
-    exact h_P
   sep_symm := by
     simp only [BIBase.entails, BIBase.sep]
     intro _ _ _ ⟨σ₁, σ₂, h_union, h_disjoint, h_P, h_Q⟩

@@ -281,7 +281,7 @@ elab "iex_falso" : tactic => do
   -- change goal to `False`
   try evalTactic (← `(tactic|
     first
-    | refine tac_ex_falso _ ?_
+    | refine tac_exfalso _ ?_
     | fail
   )) catch _ => throwError "could not turn goal into False"
 

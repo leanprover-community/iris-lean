@@ -324,14 +324,14 @@ structure Envs (PROP : Type) [BI PROP] where
 
 /-- Embedding of a separation logic context in form of an `Envs` object in a separation
 logic proposition. -/
-def of_envs [BI PROP] : Envs PROP → PROP
+def ofEnvs [BI PROP] : Envs PROP → PROP
   | ⟨Γₚ, Γₛ⟩ => iprop(□ [∧] Γₚ ∗ [∗] Γₛ)
 
 /-- Embedding of a separation logic context in form of an `Envs` object together with a separation
 logic proposition in one separation logic proposition. This embedding is used in the Iris Proof
 Mode where the embedded proposition is the goal of the proof. -/
-def envs_entails [BI PROP] (Δ : Envs PROP) (Q : PROP) : Prop :=
-  of_envs Δ ⊢ Q
+def EnvsEntails [BI PROP] (Δ : Envs PROP) (Q : PROP) : Prop :=
+  ofEnvs Δ ⊢ Q
 
 /-- Types of hypotheses. -/
 inductive HypothesisType
@@ -477,11 +477,11 @@ end Envs
 
 -- Envs Theorems
 theorem envs_append_sound [BI PROP] {Δ : Envs PROP} (p : Bool) (Q : PROP) :
-  of_envs Δ ⊢ □?p Q -∗ of_envs (Δ.append p Q)
+  ofEnvs Δ ⊢ □?p Q -∗ ofEnvs (Δ.append p Q)
 := by
   apply wand_intro' ?_
   cases p
-  <;> simp only [intuitionisticallyIf, ite_true, ite_false, of_envs]
+  <;> simp only [intuitionisticallyIf, ite_true, ite_false, ofEnvs]
   case false =>
     rw' [
       env_bigOp_sep_append,
@@ -495,14 +495,14 @@ theorem envs_append_sound [BI PROP] {Δ : Envs PROP} (p : Bool) (Q : PROP) :
 
 theorem envs_lookup_delete_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ} {p : Bool} {P : PROP} (rp : Bool) :
   Δ.lookup i = (p, P) →
-  of_envs Δ ⊢ □?p P ∗ of_envs (Δ.delete rp i)
+  ofEnvs Δ ⊢ □?p P ∗ ofEnvs (Δ.delete rp i)
 := by
   cases i
   all_goals
     simp only [Envs.lookup]
     intro h_lookup
     cases h_lookup
-    simp only [Envs.delete, of_envs, intuitionisticallyIf, ite_true, ite_false]
+    simp only [Envs.delete, ofEnvs, intuitionisticallyIf, ite_true, ite_false]
   case s i =>
     rw' [
       (comm : Δ.spatial.get i ∗ _ ⊣⊢ _),
@@ -526,7 +526,7 @@ theorem envs_lookup_delete_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ
 
 theorem envs_lookup_replace_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ} {p : Bool} {P : PROP} (rp : Bool) (q : Bool) (Q : PROP) :
   Δ.lookup i = (p, P) →
-  of_envs Δ ⊢ □?p P ∗ (□?q Q -∗ of_envs (Δ.replace rp i q Q))
+  ofEnvs Δ ⊢ □?p P ∗ (□?q Q -∗ ofEnvs (Δ.replace rp i q Q))
 := by
   intro h_lookup
   simp only [Envs.replace]
@@ -547,11 +547,11 @@ theorem envs_split_env_spatial_split [BI PROP] {Δ Δ₁ Δ₂ : Envs PROP} {mas
 
 theorem envs_split_sound [BI PROP] {Δ Δ₁ Δ₂ : Envs PROP} {mask : List Bool} {h : mask.length = Δ.spatial.length} :
   Δ.split mask h = (Δ₁, Δ₂) →
-  of_envs Δ ⊢ of_envs Δ₁ ∗ of_envs Δ₂
+  ofEnvs Δ ⊢ ofEnvs Δ₁ ∗ ofEnvs Δ₂
 := by
   intro h_split_Δ
   let ⟨h_split_Γₚ₁, h_split_Γₚ₂, h_split_Γₛ⟩ := envs_split_env_spatial_split h_split_Δ
-  simp only [of_envs]
+  simp only [ofEnvs]
   rw' [
     h_split_Γₚ₁,
     h_split_Γₚ₂,
@@ -562,11 +562,11 @@ theorem envs_split_sound [BI PROP] {Δ Δ₁ Δ₂ : Envs PROP} {mask : List Boo
     ← intuitionistically_sep_dup,
     ← (assoc : _ ⊣⊢ (_ ∗ _) ∗ _)]
 
-theorem envs_spatial_is_empty_intuitionistically [BI PROP] {Δ : Envs PROP} :
+theorem envs_spatial_isEmpty_intuitionistically [BI PROP] {Δ : Envs PROP} :
   Δ.spatial.isEmpty = true →
-  of_envs Δ ⊢ □ of_envs Δ
+  ofEnvs Δ ⊢ □ ofEnvs Δ
 := by
-  simp only [Env.isEmpty, of_envs]
+  simp only [Env.isEmpty, ofEnvs]
   cases Δ.spatial
   <;> simp [bigOp]
   rw' [
@@ -574,39 +574,39 @@ theorem envs_spatial_is_empty_intuitionistically [BI PROP] {Δ : Envs PROP} :
     intuitionistically_idem]
 
 -- AffineEnv
-class AffineEnv [BI PROP] (Γ : Env PROP) where
-  affineEnv : ∀ P, P ∈ Γ → Affine P
-export AffineEnv (affineEnv)
+class AffineEnv [BI PROP] (Γ : Env PROP) : Prop where
+  affine_env : ∀ P, P ∈ Γ → Affine P
+export AffineEnv (affine_env)
 
-instance affineEnvNil [BI PROP] :
+instance affineEnv_nil [BI PROP] :
   AffineEnv (PROP := PROP) .nil
 where
-  affineEnv := by
+  affine_env := by
     intro _ h
     cases h
 
-instance affineEnvConcat [BI PROP] (P : PROP) (Γ : Env PROP) :
+instance affineEnv_concat [BI PROP] (P : PROP) (Γ : Env PROP) :
   [Affine P] →
   [AffineEnv Γ] →
   AffineEnv (.cons P Γ)
 where
-  affineEnv := by
+  affine_env := by
     intro P h
     cases h
     case head =>
       exact ⟨affine⟩
     case tail h =>
-      exact affineEnv P h
+      exact affine_env P h
 
-instance (priority := default + 10) affineEnvBi (Γ : Env PROP) :
+instance (priority := default + 10) affineEnv_bi (Γ : Env PROP) :
   [BIAffine PROP] →
   AffineEnv Γ
 where
-  affineEnv := by
+  affine_env := by
     intro P _
     exact BIAffine.affine P
 
-scoped instance affineEnvSpatial [BI PROP] (Γ : Env PROP)
+scoped instance affineEnv_spatial [BI PROP] (Γ : Env PROP)
   [inst : AffineEnv Γ] :
   Affine (iprop([∗] Γ) : PROP)
 where
@@ -617,8 +617,8 @@ where
     case cons P Ps h_ind =>
       have : AffineEnv Ps := ⟨by
         intro P h_Ps
-        exact inst.affineEnv P (env_mem_cons_2 h_Ps)⟩
-      have : Affine P := inst.affineEnv P env_mem_cons_1
+        exact inst.affine_env P (env_mem_cons_2 h_Ps)⟩
+      have : Affine P := inst.affine_env P env_mem_cons_1
       rw' [bigOp_sep_cons, h_ind, affine]
 
 end Iris.Proofmode

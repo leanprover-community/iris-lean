@@ -14,7 +14,7 @@ open Iris.BI
 open Lean Lean.Expr Lean.Meta Lean.PrettyPrinter.Delaborator Lean.PrettyPrinter.Delaborator.SubExpr
 
 /- This file generates the state display for the Iris Proof Mode. It is implemented as a
-delaborator for the function `envs_entails`. An application of this function contains a separation
+delaborator for the function `EnvsEntails`. An application of this function contains a separation
 logic context as an object of `Envs` and a separation logic goal. The resulting display contains
 the two separation logic contexts (intuitionistic and spatial), as well as the separation
 logic goal. -/
@@ -31,7 +31,7 @@ syntax (ident)? " : " term : envsDisplayLine
 
 abbrev delab := Lean.PrettyPrinter.delab
 
-@[delab app.Iris.Proofmode.envs_entails]
+@[delab app.Iris.Proofmode.EnvsEntails]
 def delabEnvsEntails : Delab := do
   let expr ← instantiateMVars <| ← getExpr
 
@@ -59,7 +59,7 @@ def delabEnvsEntails : Delab := do
     $Γₛ:envsDisplayLine*
     ───────────────────────────────────── ∗
     $P:term)
-  
+
   -- return term
   return TSyntax.mk display
 where

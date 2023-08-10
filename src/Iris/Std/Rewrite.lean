@@ -46,11 +46,11 @@ private def parseRewriteRule (rule : TSyntax ``rwRule) : TacticM <| RewriteDirec
 
 
 /-- Register an environment extension to hold all operator destruction rules. -/
-initialize monoRulesExt : SimplePersistentEnvExtension Name NameSet ← registerSimplePersistentEnvExtension {
-  name := `rwMonoRules,
-  addEntryFn := NameSet.insert,
-  addImportedFn := fun es => mkStateFromImportedEntries NameSet.insert {} es
-}
+initialize monoRulesExt : SimplePersistentEnvExtension Name NameSet ←
+  registerSimplePersistentEnvExtension {
+    addEntryFn := NameSet.insert
+    addImportedFn := fun es => mkStateFromImportedEntries NameSet.insert {} es
+  }
 
 /-- Return all operator destruction rules from the environment extension `rwMonoRules`. -/
 private def getMonotonicityRules : TacticM <| Array Name := do
@@ -59,8 +59,8 @@ private def getMonotonicityRules : TacticM <| Array Name := do
 /-- Register the attribute `rw_mono_rule` for adding theorems to the environment
 extension `rwMonoRules`. -/
 initialize registerBuiltinAttribute {
-  name := `rw_mono_rule,
-  descr := "monotonicity rule used to destruct terms during rewriting",
+  name := `rw_mono_rule
+  descr := "monotonicity rule used to destruct terms during rewriting"
   add := fun name _ kind => do
     if !kind matches .global then
       throwError "only global definitions are allowed as monotonicity rules"
@@ -86,14 +86,15 @@ private def rewriteConventional (rule : TSyntax ``rwRule) : TacticM Bool := do
   catch _ =>
     return false
 
-/-- Rewrite the rule `rule` in the rewrite direction `direction` using the trans and
-refl of the preorder in the goal and `rule`, as well as the monotonicity of the registered
+/-- Rewrite the rule `rule` in the rewrite direction `direction` using the transitivity and
+reflexivity of the preorder in the goal and `rule`, as well as the monotonicity of the registered
 operator destruction rules. -/
-private partial def rewriteTMR (direction : RewriteDirection) (rule : TSyntax `term) : TacticM Bool := do
+private partial def rewriteTMR
+    (direction : RewriteDirection) (rule : TSyntax `term) : TacticM Bool := do
   let goal ← getMainGoal
   let tag ← goal.getTag
 
-  -- apply trans
+  -- apply transitivity
   let some (goalL, goalR) ← applyTransitivity goal
     | return false
 
@@ -183,7 +184,7 @@ elab "rw' " "[" rules:rwRule',*,? "]" : tactic => do
       else if ← rewriteTMR direction term then continue
       else throwError s!"could not rewrite `{rule'.raw.prettyPrint}`"
 
-  -- try to close the goal using refl
+  -- try to close the goal using reflexivity
   withoutRecover <| evalTactic (← `(tactic|
     try first
     | rfl

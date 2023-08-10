@@ -16,10 +16,10 @@ def isEmp (expr : Expr) : MetaM Bool := do
   let expr ← withReducible <| whnf expr
   return expr.isAppOfArity ``BIBase.emp 2
 
-/-- Return whether `expr` is an application of `envs_entails`. -/
+/-- Return whether `expr` is an application of `EnvsEntails`. -/
 def isEnvsEntails (expr : Expr) : MetaM Bool := do
   let expr ← withReducible <| whnf expr
-  return expr.isAppOfArity ``envs_entails 4
+  return expr.isAppOfArity ``EnvsEntails 4
 
 /-- Extract the premise and conclusion from an application of `BIBase.entails`. -/
 def extractEntails? (expr : Expr) : MetaM <| Option <| Expr × Expr := do
@@ -29,22 +29,22 @@ def extractEntails? (expr : Expr) : MetaM <| Option <| Expr × Expr := do
   return some (P, Q)
 
 /-- Extract the intuitionistic and spatial context, as well as the goal from an application
-of `envs_entails`. -/
+of `EnvsEntails`. -/
 def extractEnvsEntails? (expr : Expr) : MetaM <| Option <| Expr × Expr × Expr := do
   let expr ← withReducible <| whnf expr
-  let some #[_, _, envs, P] := appM? expr ``envs_entails
+  let some #[_, _, envs, P] := appM? expr ``EnvsEntails
     | return none
   let envs ← withReducible <| whnf envs
   let some #[_, _, Γₚ, Γₛ] := appM? envs ``Envs.mk
     | return none
   return some (Γₚ, Γₛ, P)
 
-/-- Update an application of `envs_entails` with a new intuitionistic (`Γₚ`) and spatial (`Γₛ`)
+/-- Update an application of `EnvsEntails` with a new intuitionistic (`Γₚ`) and spatial (`Γₛ`)
 context, as well as with a new goal (`P`). If any part is `none`, the value from the original
 expression `expr` is used instead. -/
 def modifyEnvsEntails? (expr : Expr) (Γₚ Γₛ P : Option Expr) : MetaM <| Option Expr := do
   let expr ← withReducible <| whnf expr
-  let some #[_, _, envs, _] := appM? expr ``envs_entails
+  let some #[_, _, envs, _] := appM? expr ``EnvsEntails
     | return none
   let envs ← withReducible <| whnf envs
   let some #[_, _, _, _] := appM? envs ``Envs.mk

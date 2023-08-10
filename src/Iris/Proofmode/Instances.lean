@@ -16,18 +16,15 @@ instance (priority := default - 10) asEmpValidEmpValid1
 instance (priority := default + 10) asEmpValidEmpValid2
     [BI PROP] (P : PROP) : AsEmpValid2 (⊢ P) P := AsEmpValid1.to2
 
-instance [bi : BI PROP] (P Q : PROP) :
+instance asEmpValid1_entails [bi : BI PROP] (P Q : PROP) :
   AsEmpValid1 (P ⊢ Q) iprop(P -∗ Q)
 where
   as_emp_valid := by
     constructor
     · exact entails_wand
     · exact wand_entails
-instance [BI PROP] (P Q : PROP) :
+instance asEmpValid2_entails [BI PROP] (P Q : PROP) :
   AsEmpValid2 (P ⊢ Q) iprop(P -∗ Q) := AsEmpValid1.to2
-example [BI PROP] (Q : PROP) :=
-  have : AsEmpValid2 (Q ⊢ Q) _ := inferInstance
-  trivial
 
 instance asEmpValid1_equiv [BI PROP] (P Q : PROP) :
   AsEmpValid1 (P ⊣⊢ Q) iprop(P ∗-∗ Q)

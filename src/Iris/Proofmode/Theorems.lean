@@ -18,8 +18,8 @@ scoped macro "intro_let " names:(colGt Lean.binderIdent)* : tactic =>
 
 -- proof mode
 theorem tac_start [BI PROP] (P : PROP) :
-    envs_entails ⟨.nil, .nil⟩ P → ⊢ P := by
-  simp only [envs_entails, of_envs, bigOp]
+    EnvsEntails ⟨.nil, .nil⟩ P → ⊢ P := by
+  simp only [EnvsEntails, ofEnvs, bigOp]
   rw' [intuitionistically_true, (left_id : emp ∗ _ ⊣⊢ _)]
   intro h
   exact h
@@ -31,12 +31,12 @@ theorem tac_stop [BI PROP] {Γₚ Γₛ : Env PROP} (P : PROP) :
     | .nil, _    => iprop([∗] Γₛ)
     | _   , _    => iprop(□ [∧] Γₚ ∗ [∗] Γₛ)
   (Ps ⊢ P) →
-  envs_entails ⟨Γₚ, Γₛ⟩ P
+  EnvsEntails ⟨Γₚ, Γₛ⟩ P
 := by
   cases Γₚ
   <;> cases Γₛ
   all_goals
-    simp [envs_entails, of_envs, bigOp]
+    simp [EnvsEntails, ofEnvs, bigOp]
     intro Ps
     rw' [Ps]
   case cons.nil =>
@@ -47,15 +47,15 @@ theorem tac_stop [BI PROP] {Γₚ Γₛ : Env PROP} (P : PROP) :
 theorem tac_clear [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (p, P) := Δ.lookup i
   [TCIte p TCTrue (TCOr (Affine P) (Absorbing Q))] →
-  envs_entails (Δ.delete true i) Q →
-  envs_entails Δ Q
+  EnvsEntails (Δ.delete true i) Q →
+  EnvsEntails Δ Q
 := by
   intro_let p P h_lookup
   intro inst_affine_absorbing
   cases p
   all_goals
     cases inst_affine_absorbing
-    simp only [envs_entails]
+    simp only [EnvsEntails]
     intro h_entails
     rw' [envs_lookup_delete_sound true h_lookup, h_entails]
     simp only [intuitionisticallyIf, ite_true, ite_false]
@@ -66,9 +66,9 @@ theorem tac_pure_intro [BI PROP] {Δ : Envs PROP} {a : Bool} {φ : Prop} (Q : PR
   [FromPure a Q φ] →
   [TCIte a (AffineEnv Δ.spatial) TCTrue] →
   φ →
-  envs_entails Δ Q
+  EnvsEntails Δ Q
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ inst_affine_env hφ
   rw' [← from_pure]
   cases a
@@ -77,7 +77,7 @@ theorem tac_pure_intro [BI PROP] {Δ : Envs PROP} {a : Bool} {φ : Prop} (Q : PR
     exact hφ
   case true =>
     cases inst_affine_env
-    simp only [of_envs, affinelyIf]
+    simp only [ofEnvs, affinelyIf]
     rw' [
       affine,
       pure_true hφ,
@@ -89,10 +89,10 @@ theorem tac_imp_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
   [FromImp R P Q] →
   [TCIte Δ.spatial.isEmpty TCTrue (Persistent P)] →
   [FromAffinely P' P] →
-  envs_entails (Δ.append false P') Q →
-  envs_entails Δ R
+  EnvsEntails (Δ.append false P') Q →
+  EnvsEntails Δ R
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ inst_pers _ h_entails
   rw' [← from_imp]
   cases h_empty : Δ.spatial.isEmpty
@@ -107,7 +107,7 @@ theorem tac_imp_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
       wand_elim_r,
       h_entails]
   case true =>
-    rw' [envs_spatial_is_empty_intuitionistically h_empty]
+    rw' [envs_spatial_isEmpty_intuitionistically h_empty]
     apply imp_intro'
     rw' [
       envs_append_sound false P',
@@ -123,10 +123,10 @@ theorem tac_imp_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
 theorem tac_imp_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP} (R : PROP) :
   [FromImp R P Q] →
   [IntoPersistently false P P'] →
-  envs_entails (Δ.append true P') Q →
-  envs_entails Δ R
+  EnvsEntails (Δ.append true P') Q →
+  EnvsEntails Δ R
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ _ h_entails
   rw' [← from_imp, envs_append_sound true P'] ; simp only
   apply imp_intro'
@@ -139,10 +139,10 @@ theorem tac_imp_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP} 
 
 theorem tac_imp_intro_drop [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
   [FromImp R P Q] →
-  envs_entails Δ Q →
-  envs_entails Δ R
+  EnvsEntails Δ Q →
+  EnvsEntails Δ R
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ h_entails
   rw' [← from_imp]
   apply imp_intro'
@@ -150,10 +150,10 @@ theorem tac_imp_intro_drop [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
 
 theorem tac_wand_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
   [FromWand R P Q] →
-  envs_entails (Δ.append false P) Q →
-  envs_entails Δ R
+  EnvsEntails (Δ.append false P) Q →
+  EnvsEntails Δ R
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ h_entails
   rw' [
     ← from_wand,
@@ -164,10 +164,10 @@ theorem tac_wand_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP}
   [FromWand R P Q] →
   [IntoPersistently false P P'] →
   [TCOr (Affine P) (Absorbing Q)] →
-  envs_entails (Δ.append true P') Q →
-  envs_entails Δ R
+  EnvsEntails (Δ.append true P') Q →
+  EnvsEntails Δ R
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ _ inst_affine_absorbing h_entails
   rw' [← from_wand, envs_append_sound true P'] ; simp only
   apply wand_intro'
@@ -196,13 +196,13 @@ theorem tac_specialize [BI PROP] {Δ : Envs PROP} (rpPremise rpWand : Bool) (i j
   let j' := Δ.updateIndexAfterDelete rpPremise i j h_ne
   let (q, Q) := Δ'.lookup j'
   [IntoWand q p Q P1 P2] →
-  envs_entails (Δ'.replace rpWand j' (p && q) P2) R →
-  envs_entails Δ R
+  EnvsEntails (Δ'.replace rpWand j' (p && q) P2) R →
+  EnvsEntails Δ R
 := by
   intro_let p P1 h_lookup_i
   intro Δ' j'
   intro_let q Q h_lookup_j'
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ h_entails
   rw' [
     envs_lookup_delete_sound rpPremise h_lookup_i,
@@ -227,11 +227,11 @@ theorem tac_specialize [BI PROP] {Δ : Envs PROP} (rpPremise rpWand : Bool) (i j
 theorem tac_specialize_forall [BI PROP] {Δ : Envs PROP} (rpWand : Bool) (i : EnvsIndex.of Δ) {Φ : α → PROP} (Q : PROP) :
   let (p, P) := Δ.lookup i
   [IntoForall P Φ] →
-  (∃ x, envs_entails (Δ.replace rpWand i p (Φ x)) Q) →
-  envs_entails Δ Q
+  (∃ x, EnvsEntails (Δ.replace rpWand i p (Φ x)) Q) →
+  EnvsEntails Δ Q
 := by
   intro_let p P h_lookup
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ ⟨x, h_entails⟩
   rw' [
     envs_lookup_replace_sound rpWand p (Φ x) h_lookup,
@@ -243,10 +243,10 @@ theorem tac_specialize_forall [BI PROP] {Δ : Envs PROP} (rpWand : Bool) (i : En
 -- forall
 theorem tac_forall_intro [BI PROP] {Δ : Envs PROP} {Ψ : α → PROP} (Q : PROP) :
   [FromForall Q Ψ] →
-  (∀ a, envs_entails Δ iprop(Ψ a)) →
-  envs_entails Δ Q
+  (∀ a, EnvsEntails Δ iprop(Ψ a)) →
+  EnvsEntails Δ Q
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ h_entails
   rw' [← from_forall]
   apply forall_intro
@@ -255,21 +255,21 @@ theorem tac_forall_intro [BI PROP] {Δ : Envs PROP} {Ψ : α → PROP} (Q : PROP
 -- exists
 theorem tac_exists [BI PROP] {Δ : Envs PROP} {Φ : α → PROP} (P : PROP) :
   [FromExists P Φ] →
-  (∃ a, envs_entails Δ iprop(Φ a)) →
-  envs_entails Δ P
+  (∃ a, EnvsEntails Δ iprop(Φ a)) →
+  EnvsEntails Δ P
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ ⟨a, h_entails⟩
   rw' [← from_exists, ← exists_intro a, h_entails]
 
 theorem tac_exists_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) {Φ : α → PROP} (Q : PROP) :
   let (p, P) := Δ.lookup i
   [IntoExists P Φ] →
-  (∀ a, envs_entails (Δ.replace true i p (Φ a)) Q) →
-  envs_entails Δ Q
+  (∀ a, EnvsEntails (Δ.replace true i p (Φ a)) Q) →
+  EnvsEntails Δ Q
 := by
   intro_let p P h_lookup
-  simp only [envs_entails, Envs.replace]
+  simp only [EnvsEntails, Envs.replace]
   intro _ h_entails
   rw' [
     envs_lookup_delete_sound true h_lookup,
@@ -286,10 +286,10 @@ theorem tac_exists_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) {Φ
 -- emp
 theorem tac_emp_intro [BI PROP] {Γₚ Γₛ : Env PROP} :
   [AffineEnv Γₛ] →
-  envs_entails ⟨Γₚ, Γₛ⟩ iprop(emp)
+  EnvsEntails ⟨Γₚ, Γₛ⟩ iprop(emp)
 := by
   intro _
-  simp only [envs_entails, of_envs]
+  simp only [EnvsEntails, ofEnvs]
   rw' [
     affinely_elim_emp,
     (affine : [∗] Γₛ.toList ⊢ emp),
@@ -300,12 +300,12 @@ theorem tac_assumption_lean [BI PROP] {Δ : Envs PROP} {P : PROP} (Q : PROP) :
   (⊢ P) →
   [FromAssumption true P Q] →
   [TCIte Δ.spatial.isEmpty TCTrue (TCOr (Absorbing Q) (AffineEnv Δ.spatial))] →
-  envs_entails Δ Q
+  EnvsEntails Δ Q
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro h_P _ inst_absorbing_affine_env
   rw' [
-    ← (left_id : emp ∗ of_envs Δ ⊣⊢ _),
+    ← (left_id : emp ∗ ofEnvs Δ ⊣⊢ _),
     ← intuitionistically_emp,
     h_P,
     (from_assumption : □?true P ⊢ Q)]
@@ -316,17 +316,17 @@ theorem tac_assumption_lean [BI PROP] {Δ : Envs PROP} {P : PROP} (Q : PROP) :
     cases inst_absorbing_affine_env
     <;> rw' [!sep_elim_l]
   case true.t =>
-    rw' [envs_spatial_is_empty_intuitionistically h_empty, sep_elim_l]
+    rw' [envs_spatial_isEmpty_intuitionistically h_empty, sep_elim_l]
 
 theorem tac_assumption [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (p, P) := Δ.lookup i
   [FromAssumption p P Q] →
   let Δ' := Δ.delete true i
   [TCIte Δ'.spatial.isEmpty TCTrue (TCOr (Absorbing Q) (AffineEnv Δ'.spatial))] →
-  envs_entails Δ Q
+  EnvsEntails Δ Q
 := by
   intro_let p P h_lookup
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ inst_absorbing_affine_env
   rw' [envs_lookup_delete_sound true h_lookup]
   cases h_empty : (Δ.delete true i).spatial.isEmpty
@@ -337,15 +337,15 @@ theorem tac_assumption [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) (Q : PRO
     cases inst_absorbing_affine_env
     <;> rw' [!sep_elim_l]
   case true.t =>
-    rw' [envs_spatial_is_empty_intuitionistically h_empty, sep_elim_l]
+    rw' [envs_spatial_isEmpty_intuitionistically h_empty, sep_elim_l]
     exact from_assumption
 
 -- false
-theorem tac_ex_falso [BI PROP] {Δ : Envs PROP} (Q : PROP) :
-  envs_entails Δ iprop(False) →
-  envs_entails Δ Q
+theorem tac_exfalso [BI PROP] {Δ : Envs PROP} (Q : PROP) :
+  EnvsEntails Δ iprop(False) →
+  EnvsEntails Δ Q
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro h_entails
   rw' [h_entails]
   exact false_elim
@@ -353,10 +353,10 @@ theorem tac_ex_falso [BI PROP] {Δ : Envs PROP} (Q : PROP) :
 theorem tac_false_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (_, P) := Δ.lookup i
   P = iprop(False) →
-  envs_entails Δ Q
+  EnvsEntails Δ Q
 := by
   intro_let p P h_lookup
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro h_false
   rw' [
     envs_lookup_delete_sound true h_lookup,
@@ -370,11 +370,11 @@ theorem tac_pure [BI PROP] {Δ : Envs PROP} {φ : Prop} (i : EnvsIndex.of Δ) (Q
    let (p, P) := Δ.lookup i
   [IntoPure P φ] →
   [TCIte p TCTrue (TCOr (Affine P) (Absorbing Q))] →
-  (φ → envs_entails (Δ.delete true i) Q) →
-  envs_entails Δ Q
+  (φ → EnvsEntails (Δ.delete true i) Q) →
+  EnvsEntails Δ Q
 := by
   intro_let p P h_lookup
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ inst_affine_absorbing h_entails
   rw' [envs_lookup_delete_sound true h_lookup]
   cases p
@@ -413,11 +413,11 @@ theorem tac_intuitionistic [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex
   let (p, P) := Δ.lookup i
   [IntoPersistently p P P'] →
   [TCIte p TCTrue (TCOr (Affine P) (Absorbing Q))] →
-  envs_entails (Δ.replace true i true P') Q →
-  envs_entails Δ Q
+  EnvsEntails (Δ.replace true i true P') Q →
+  EnvsEntails Δ Q
 := by
   intro_let p P h_lookup
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ inst_affine_absorbing h_entails
   rw' [envs_lookup_replace_sound true true P' h_lookup]
   cases p
@@ -453,11 +453,11 @@ theorem tac_intuitionistic [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex
 theorem tac_spatial [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (p, P) := Δ.lookup i
   [FromAffinely P' P p] →
-  envs_entails (Δ.replace true i false P') Q →
-  envs_entails Δ Q
+  EnvsEntails (Δ.replace true i false P') Q →
+  EnvsEntails Δ Q
 := by
   intro_let p P h_lookup
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ h_entails
   rw' [envs_lookup_replace_sound true false P' h_lookup]
   cases p
@@ -479,11 +479,11 @@ theorem tac_spatial [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex.of Δ)
 -- (separating) conjunction splitting
 theorem tac_and_split [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP) :
   [FromAnd P Q1 Q2] →
-  envs_entails Δ Q1 →
-  envs_entails Δ Q2 →
-  envs_entails Δ P
+  EnvsEntails Δ Q1 →
+  EnvsEntails Δ Q2 →
+  EnvsEntails Δ P
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ h_entails_1 h_entails_2
   rw' [← from_and]
   apply and_intro
@@ -493,12 +493,12 @@ theorem tac_and_split [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP) :
 theorem tac_sep_split [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (mask : List Bool) (h : mask.length = Δ.spatial.length) (P : PROP) :
   let (Δ₁, Δ₂) := Δ.split mask h
   [FromSep P Q1 Q2] →
-  envs_entails Δ₁ Q1 →
-  envs_entails Δ₂ Q2 →
-  envs_entails Δ P
+  EnvsEntails Δ₁ Q1 →
+  EnvsEntails Δ₂ Q2 →
+  EnvsEntails Δ P
 := by
   intro_let Δ₁ Δ₂ h_split
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ h_entails_1 h_entails_2
   rw' [
     envs_split_sound h_split,
@@ -509,10 +509,10 @@ theorem tac_sep_split [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (mask : List Boo
 -- disjunction selection
 theorem tac_disjunction_l [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP) :
   [FromOr P Q1 Q2] →
-  envs_entails Δ Q1 →
-  envs_entails Δ P
+  EnvsEntails Δ Q1 →
+  EnvsEntails Δ P
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ h_entails
   rw' [← from_or]
   apply or_intro_l'
@@ -520,10 +520,10 @@ theorem tac_disjunction_l [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP) :
 
 theorem tac_disjunction_r [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP) :
   [FromOr P Q1 Q2] →
-  envs_entails Δ Q2 →
-  envs_entails Δ P
+  EnvsEntails Δ Q2 →
+  EnvsEntails Δ P
 := by
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ h_entails
   rw' [← from_or]
   apply or_intro_r'
@@ -540,11 +540,11 @@ attribute [instance] IntoConjunction.sep
 theorem tac_conjunction_destruct [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (p, P) := Δ.lookup i
   [IntoConjunction P P1 P2 p] →
-  envs_entails (Δ |>.delete true i |>.append p P1 |>.append p P2) Q →
-  envs_entails Δ Q
+  EnvsEntails (Δ |>.delete true i |>.append p P1 |>.append p P2) Q →
+  EnvsEntails Δ Q
 := by
   intro_let p P h_lookup
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro inst_conjunction h_entails
   rw' [
     envs_lookup_delete_sound true h_lookup,
@@ -576,11 +576,11 @@ theorem tac_conjunction_destruct [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : 
 theorem tac_conjunction_destruct_choice [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : EnvsIndex.of Δ) (d : Bool) (Q : PROP) :
   let (p, P) := Δ.lookup i
   [IntoAnd p P P1 P2] →
-  envs_entails (if d then Δ.replace true i p P1 else Δ.replace true i p P2) Q →
-  envs_entails Δ Q
+  EnvsEntails (if d then Δ.replace true i p P1 else Δ.replace true i p P2) Q →
+  EnvsEntails Δ Q
 := by
   intro_let p P h_lookup
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ h_entails
   cases d
   case false =>
@@ -601,12 +601,12 @@ theorem tac_conjunction_destruct_choice [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP
 theorem tac_disjunction_destruct [BI PROP] {Δ : Envs PROP} {P1 P2 : PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (p, P) := Δ.lookup i
   [IntoOr P P1 P2] →
-  envs_entails (Δ.replace true i p P1) Q →
-  envs_entails (Δ.replace true i p P2) Q →
-  envs_entails Δ Q
+  EnvsEntails (Δ.replace true i p P1) Q →
+  EnvsEntails (Δ.replace true i p P2) Q →
+  EnvsEntails Δ Q
 := by
   intro_let p P h_lookup
-  simp only [envs_entails]
+  simp only [EnvsEntails]
   intro _ h_entails_1 h_entails_2
   rw' [envs_lookup_delete_sound true h_lookup] ; simp only
   simp only [Envs.replace] at h_entails_1
