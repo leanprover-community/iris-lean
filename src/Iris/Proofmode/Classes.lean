@@ -14,10 +14,10 @@ instance search is supposed to generate `φ` based on `P`, `AsEmpValid1` is used
 `outParam`. Consequently, if type class instance search is supposed to generate `P`, `AsEmpValid2`
 is used. -/
 
-class AsEmpValid1 (φ : outParam Prop) {PROP : Type} (P : PROP) [BI PROP] where
+class AsEmpValid1 (φ : outParam Prop) {PROP : Type} (P : PROP) [BI PROP] : Prop where
   as_emp_valid : φ ↔ ⊢ P
 
-class AsEmpValid2 (φ : Prop) {PROP : outParam Type} (P : outParam PROP) [BI PROP] where
+class AsEmpValid2 (φ : Prop) {PROP : outParam Type} (P : outParam PROP) [BI PROP] : Prop where
   as_emp_valid : φ ↔ ⊢ P
 
 def AsEmpValid1.to2 {φ : Prop} {PROP : Type} {P : PROP} [BI PROP]
@@ -38,81 +38,81 @@ proposition can be derived. Type classes with the prefix `Into` are used to gene
 *into* which the original proposition can be turned by derivation. Additional boolean flags are
 used to indicate that certain propositions should be intuitionistic. -/
 
-class FromImp [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+class FromImp [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) : Prop where
   from_imp : (Q1 → Q2) ⊢ P
 export FromImp (from_imp)
 
-class FromWand [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+class FromWand [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) : Prop where
   from_wand : (Q1 -∗ Q2) ⊢ P
 export FromWand (from_wand)
 
-class IntoWand [BI PROP] (p q : Bool) (R P : PROP) (Q : outParam PROP) where
+class IntoWand [BI PROP] (p q : Bool) (R P : PROP) (Q : outParam PROP) : Prop where
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
 
-class FromForall [BI PROP] (P : PROP) {α : outParam Type} (Ψ : outParam <| α → PROP) where
+class FromForall [BI PROP] (P : PROP) {α : outParam Type} (Ψ : outParam <| α → PROP) : Prop where
   from_forall : (∀ x, Ψ x) ⊢ P
 export FromForall (from_forall)
 
-class IntoForall [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) where
+class IntoForall [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) : Prop where
   into_forall : P ⊢ ∀ x, Φ x
 export IntoForall (into_forall)
 
-class FromExists [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) where
+class FromExists [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) : Prop where
   from_exists : (∃ x, Φ x) ⊢ P
 export FromExists (from_exists)
 
-class IntoExists [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) where
+class IntoExists [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) : Prop where
   into_exists : P ⊢ ∃ x, Φ x
 export IntoExists (into_exists)
 
-class FromAnd [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+class FromAnd [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) : Prop where
   from_and : Q1 ∧ Q2 ⊢ P
 export FromAnd (from_and)
 
-class IntoAnd (p : Bool) [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+class IntoAnd (p : Bool) [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) : Prop where
   into_and : □?p P ⊢ □?p (Q1 ∧ Q2)
 export IntoAnd (into_and)
 
-class FromSep [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+class FromSep [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) : Prop where
   from_sep : Q1 ∗ Q2 ⊢ P
 export FromSep (from_sep)
 
-class IntoSep [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) :=
+class IntoSep [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) : Prop where
   into_sep : P ⊢ Q1 ∗ Q2
 export IntoSep (into_sep)
 
-class FromOr [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+class FromOr [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) : Prop where
   from_or : Q1 ∨ Q2 ⊢ P
 export FromOr (from_or)
 
-class IntoOr [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+class IntoOr [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) : Prop where
   into_or : P ⊢ Q1 ∨ Q2
 export IntoOr (into_or)
 
 
-class IntoPersistent (p : Bool) [BI PROP] (P : PROP) (Q : outParam PROP) where
+class IntoPersistent (p : Bool) [BI PROP] (P : PROP) (Q : outParam PROP) : Prop where
   into_persistent : <pers>?p P ⊢ <pers> Q
 export IntoPersistent (into_persistent)
 
-class FromAffinely [BI PROP] (P : outParam PROP) (Q : PROP) (p : Bool := true) where
+class FromAffinely [BI PROP] (P : outParam PROP) (Q : PROP) (p : Bool := true) : Prop where
   from_affinely : <affine>?p Q ⊢ P
 export FromAffinely (from_affinely)
 
-class IntoAbsorbingly [BI PROP] (P : outParam PROP) (Q : PROP) where
+class IntoAbsorbingly [BI PROP] (P : outParam PROP) (Q : PROP) : Prop where
   into_absorbingly : P ⊢ <absorb> Q
 export IntoAbsorbingly (into_absorbingly)
 
 
-class FromAssumption (p : Bool) [BI PROP] (P Q : PROP) where
+class FromAssumption (p : Bool) [BI PROP] (P Q : PROP) : Prop where
   from_assumption : □?p P ⊢ Q
 export FromAssumption (from_assumption)
 
-class IntoPure [BI PROP] (P : PROP) (φ : outParam Prop) where
+class IntoPure [BI PROP] (P : PROP) (φ : outParam Prop) : Prop where
   into_pure : P ⊢ ⌜φ⌝
 export IntoPure (into_pure)
 
-class FromPure [BI PROP] (a : outParam Bool) (P : PROP) (φ : outParam Prop) where
+class FromPure [BI PROP] (a : outParam Bool) (P : PROP) (φ : outParam Prop) : Prop where
   from_pure : <affine>?a ⌜φ⌝ ⊢ P
 export FromPure (from_pure)
 
