@@ -48,7 +48,7 @@ instance (Val : Type) : BIBase (Quotient (heapPropSetoid Val)) where
     simp only [HasEquiv.Equiv, Setoid.r]
     intro _ _ _ _ h₁ h₂
     rw [h₁ σ, h₂ σ])
-  impl P Q := Quotient.mk _ fun σ => Quotient.liftOn₂ P Q (fun P Q => P σ → Q σ) (by
+  imp P Q := Quotient.mk _ fun σ => Quotient.liftOn₂ P Q (fun P Q => P σ → Q σ) (by
     simp only [HasEquiv.Equiv, Setoid.r]
     intro _ _ _ _ h₁ h₂
     rw [h₁ σ, h₂ σ])
@@ -56,7 +56,7 @@ instance (Val : Type) : BIBase (Quotient (heapPropSetoid Val)) where
     simp only [HasEquiv.Equiv, Setoid.r]
     intro _ _ h
     rw [h σ])
-  exist Ψ := Quotient.mk _ fun σ => ∃ a, Quotient.liftOn (Ψ a) (fun P => P σ) (by
+  «exists» Ψ := Quotient.mk _ fun σ => ∃ a, Quotient.liftOn (Ψ a) (fun P => P σ) (by
     simp only [HasEquiv.Equiv, Setoid.r]
     intro _ _ h
     rw [h σ])

@@ -7,7 +7,7 @@ Authors: Lars König
 namespace Iris.Std
 
 /-- Fold a binary operator `f` over a list of `PROP`s. If the list is empty, `unit` is returned. -/
-def big_op (f : PROP → PROP → PROP) (unit : PROP) : List PROP → PROP
+def bigOp (f : PROP → PROP → PROP) (unit : PROP) : List PROP → PROP
   | []      => unit
   | [P]     => P
-  | P :: Ps => f P (big_op f unit Ps)
+  | P :: Ps => f P (bigOp f unit Ps)

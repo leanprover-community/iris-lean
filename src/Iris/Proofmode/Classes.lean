@@ -38,9 +38,9 @@ proposition can be derived. Type classes with the prefix `Into` are used to gene
 *into* which the original proposition can be turned by derivation. Additional boolean flags are
 used to indicate that certain propositions should be intuitionistic. -/
 
-class FromImpl [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
-  from_impl : (Q1 → Q2) ⊢ P
-export FromImpl (from_impl)
+class FromImp [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+  from_imp : (Q1 → Q2) ⊢ P
+export FromImp (from_imp)
 
 class FromWand [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_wand : (Q1 -∗ Q2) ⊢ P
@@ -58,13 +58,13 @@ class IntoForall [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α 
   into_forall : P ⊢ ∀ x, Φ x
 export IntoForall (into_forall)
 
-class FromExist [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) where
-  from_exist : (∃ x, Φ x) ⊢ P
-export FromExist (from_exist)
+class FromExists [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) where
+  from_exists : (∃ x, Φ x) ⊢ P
+export FromExists (from_exists)
 
-class IntoExist [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) where
-  into_exist : P ⊢ ∃ x, Φ x
-export IntoExist (into_exist)
+class IntoExists [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) where
+  into_exists : P ⊢ ∃ x, Φ x
+export IntoExists (into_exists)
 
 class FromAnd [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_and : Q1 ∧ Q2 ⊢ P

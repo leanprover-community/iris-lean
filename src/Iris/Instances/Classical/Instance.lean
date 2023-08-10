@@ -19,9 +19,9 @@ instance : BIBase (HeapProp Val) where
   pure φ         := fun _ => φ
   and P Q        := fun σ => P σ ∧ Q σ
   or P Q         := fun σ => P σ ∨ Q σ
-  impl P Q       := fun σ => P σ → Q σ
+  imp P Q        := fun σ => P σ → Q σ
   «forall» Ψ     := fun σ => ∀ a, Ψ a σ
-  exist Ψ        := fun σ => ∃ a, Ψ a σ
+  «exists» Ψ     := fun σ => ∃ a, Ψ a σ
   sep P Q        := fun σ => ∃ σ1 σ2 , σ = σ1 ∪ σ2 ∧ σ1 || σ2 ∧ P σ1 ∧ Q σ2
   wand P Q       := fun σ => ∀ σ', σ || σ' → P σ' → Q (σ ∪ σ')
   persistently P := fun _ => P ∅
@@ -105,12 +105,12 @@ instance : BI (HeapProp Val) where
     case inr h_Q =>
       exact h_QR σ h_Q
 
-  impl_intro_r := by
-    simp only [BIBase.entails, BIBase.impl, BIBase.and]
+  imp_intro := by
+    simp only [BIBase.entails, BIBase.imp, BIBase.and]
     intro _ _ _ h_PQR σ h_P h_Q
     exact h_PQR σ ⟨h_P, h_Q⟩
-  impl_elim_l' := by
-    simp only [BIBase.entails, BIBase.impl, BIBase.and]
+  imp_elim := by
+    simp only [BIBase.entails, BIBase.imp, BIBase.and]
     intro _ _ _ h_PQR σ ⟨h_P, h_Q⟩
     exact h_PQR σ h_P h_Q
 
@@ -123,13 +123,13 @@ instance : BI (HeapProp Val) where
     intro _ _ a _ h_Ψ
     exact h_Ψ a
 
-  exist_intro := by
-    simp only [BIBase.entails, BIBase.exist]
+  exists_intro := by
+    simp only [BIBase.entails, BIBase.exists]
     intro _ _ a _ Ψ
     apply Exists.intro a
     exact Ψ
-  exist_elim := by
-    simp only [BIBase.entails, BIBase.exist]
+  exists_elim := by
+    simp only [BIBase.entails, BIBase.exists]
     intro _ _ _ h_ΦQ σ ⟨a, h_Φ⟩
     exact h_ΦQ a σ h_Φ
 
@@ -145,7 +145,7 @@ instance : BI (HeapProp Val) where
     constructor
     · exact h_PQ σ₁ h_P
     · exact h_P'Q' σ₂ h_P'
-  emp_sep_1 := by
+  emp_sep_2 := by
     simp only [BIBase.entails, BIBase.sep, BIBase.emp]
     intro _ σ h_P
     apply Exists.intro ∅
@@ -157,14 +157,14 @@ instance : BI (HeapProp Val) where
     constructor
     · rfl
     · exact h_P
-  emp_sep_2 := by
+  emp_sep_1 := by
     simp only [BIBase.entails, BIBase.sep, BIBase.emp]
     intro _ _ ⟨σ₁, σ₂, h_union, _, h_emp, h_P⟩
     rw [h_emp] at h_union
     rw [← empty_union] at h_union
     rw [h_union]
     exact h_P
-  sep_comm' := by
+  sep_symm := by
     simp only [BIBase.entails, BIBase.sep]
     intro _ _ _ ⟨σ₁, σ₂, h_union, h_disjoint, h_P, h_Q⟩
     apply Exists.intro σ₂
@@ -176,7 +176,7 @@ instance : BI (HeapProp Val) where
     constructor
     · exact h_Q
     · exact h_P
-  sep_assoc' := by
+  sep_assoc_l := by
     simp only [BIBase.entails, BIBase.sep]
     intro _ _ _ _ ⟨σ₁, σ₂, h_union₁₂, h_disjoint₁₂, ⟨σ₃, σ₄, h_union₃₄, h_disjoint₃₄, h_P, h_Q⟩, h_R⟩
     apply Exists.intro σ₃
@@ -205,7 +205,7 @@ instance : BI (HeapProp Val) where
     · exact h_Q
     · exact h_R
 
-  wand_intro_r := by
+  wand_intro := by
     simp only [BIBase.entails, BIBase.wand, BIBase.sep]
     intro _ _ _ h_PQR σ h_P σ' h_disjoint h_Q
     apply h_PQR (σ ∪ σ')
@@ -218,7 +218,7 @@ instance : BI (HeapProp Val) where
     constructor
     · exact h_P
     · exact h_Q
-  wand_elim_l' := by
+  wand_elim := by
     simp only [BIBase.entails, BIBase.wand, BIBase.sep]
     intro _ _ _ h_PQR _ ⟨σ, σ', h_union, h_disjoint, h_P, h_Q⟩
     rw [h_union]
@@ -228,7 +228,7 @@ instance : BI (HeapProp Val) where
     simp only [BIBase.entails, BIBase.persistently]
     intro _ _ h_PQ _ h_P
     exact h_PQ ∅ h_P
-  persistently_idemp_2 := by
+  persistently_idem_2 := by
     simp only [BIBase.entails, BIBase.persistently]
     intro _ _ h
     exact h
@@ -240,15 +240,15 @@ instance : BI (HeapProp Val) where
     simp only [BIBase.entails, BIBase.persistently, BIBase.and]
     intro _ _ _ h
     exact h
-  persistently_exist_1 := by
-    simp only [BIBase.entails, BIBase.persistently, BIBase.exist]
+  persistently_exists_1 := by
+    simp only [BIBase.entails, BIBase.persistently, BIBase.exists]
     intro _ _ _ h
     exact h
-  persistently_absorbing := by
+  persistently_absorb_l := by
     simp only [BIBase.entails, BIBase.persistently, BIBase.sep]
     intro _ _ _ ⟨_, _, _, _, h_P, _⟩
     exact h_P
-  persistently_and_sep_elim := by
+  persistently_and_l := by
     simp only [BIBase.entails, BIBase.persistently, BIBase.and, BIBase.sep]
     intro _ _ σ ⟨h_P, h_Q⟩
     apply Exists.intro ∅

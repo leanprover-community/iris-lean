@@ -46,7 +46,7 @@ instance existPersistent [BI PROP] (Ψ : α → PROP) :
   Persistent iprop(∃ x, Ψ x)
 where
   persistent := by
-    rw' [persistently_exist, ← persistent]
+    rw' [persistently_exists, ← persistent]
 
 instance sepPersistent [BI PROP] (P Q : PROP) :
   [Persistent P] →
@@ -59,14 +59,14 @@ where
 instance persistentlyPersistent [BI PROP] (P : PROP) :
   Persistent iprop(<pers> P)
 where
-  persistent := persistently_idemp_2
+  persistent := persistently_idem_2
 
 instance affinelyPersistent [BI PROP] (P : PROP) :
   [Persistent P] →
   Persistent iprop(<affine> P)
 where
   persistent := by
-    simp [bi_affinely, persistent]
+    simp [affinely, persistent]
 
 instance affinelyIfPersistent (p : Bool) [BI PROP] (P : PROP) :
   [Persistent P] →
@@ -74,20 +74,20 @@ instance affinelyIfPersistent (p : Bool) [BI PROP] (P : PROP) :
 where
   persistent := by
     cases p
-    <;> simp [bi_affinely_if, persistent]
+    <;> simp [affinelyIf, persistent]
 
 instance intuitionisticallyPersistent [BI PROP] (P : PROP) :
   Persistent iprop(□ P)
 where
   persistent := by
-    simp [bi_intuitionistically, persistent]
+    simp [intuitionistically, persistent]
 
 instance absorbinglyPersistent [BI PROP] (P : PROP) :
   [Persistent P] →
   Persistent iprop(<absorb> P)
 where
   persistent := by
-    simp [bi_absorbingly, persistent]
+    simp [absorbingly, persistent]
 
 instance absorbinglyIfPersistent (p : Bool) [BI PROP] (P : PROP) :
   [Persistent P] →
@@ -95,7 +95,7 @@ instance absorbinglyIfPersistent (p : Bool) [BI PROP] (P : PROP) :
 where
   persistent := by
     cases p
-    <;> simp [bi_absorbingly_if, persistent]
+    <;> simp [absorbinglyIf, persistent]
 
 -- Affine
 instance empAffine [BI PROP] :
@@ -144,7 +144,7 @@ instance existAffine [BI PROP] (Φ : α → PROP) :
   Affine iprop(∃ x, Φ x)
 where
   affine := by
-    apply exist_elim
+    apply exists_elim
     intro a
     exact affine
 
@@ -163,7 +163,7 @@ instance affinelyAffine [BI PROP] (P : PROP) :
   Affine iprop(<affine> P)
 where
   affine := by
-    simp [bi_affinely, affine]
+    simp [affinely, affine]
 
 instance affinelyIfAffine (p : Bool) [BI PROP] (P : PROP) :
   [Affine P] →
@@ -171,13 +171,13 @@ instance affinelyIfAffine (p : Bool) [BI PROP] (P : PROP) :
 where
   affine := by
     cases p
-    <;> simp [bi_affinely_if, affine]
+    <;> simp [affinelyIf, affine]
 
 instance intuitionisticallyAffine [BI PROP] (P : PROP) :
   Affine iprop(□ P)
 where
   affine := by
-    simp [bi_intuitionistically, affine]
+    simp [intuitionistically, affine]
 
 instance intuitionisticallyIfAffine (p : Bool) [BI PROP] (P : PROP) :
   [Affine P] →
@@ -185,7 +185,7 @@ instance intuitionisticallyIfAffine (p : Bool) [BI PROP] (P : PROP) :
 where
   affine := by
     cases p
-    <;> simp [bi_intuitionistically_if, affine]
+    <;> simp [intuitionisticallyIf, affine]
 
 -- Absorbing
 instance pureAbsorbing (φ : Prop) [BI PROP] :
@@ -222,7 +222,7 @@ instance existAbsorbing [BI PROP] (Φ : α → PROP) :
   Absorbing iprop(∃ x, Φ x)
 where
   absorbing := by
-    rw' [absorbingly_exist Φ, absorbing]
+    rw' [absorbingly_exists Φ, absorbing]
 
 instance implAbsorbing [BI PROP] (P Q : PROP) :
   [Persistent P] →
@@ -231,12 +231,12 @@ instance implAbsorbing [BI PROP] (P Q : PROP) :
   Absorbing iprop(P → Q)
 where
   absorbing := by
-    apply impl_intro_l
+    apply imp_intro_l
     rw' [
       persistent_and_affinely_sep_l,
       absorbingly_sep_r,
       ← persistent_and_affinely_sep_l,
-      impl_elim_r,
+      imp_elim_r,
       absorbing]
 
 instance sepAbsorbingL [BI PROP] (P Q : PROP) :
@@ -258,7 +258,7 @@ instance wandAbsorbingL [BI PROP] (P Q : PROP) :
   Absorbing iprop(P -∗ Q)
 where
   absorbing := by
-    simp only [bi_absorbingly]
+    simp only [absorbingly]
     apply wand_intro_l
     rw' [
       (assoc : P ∗ True ∗ (P -∗ Q) ⊣⊢ _),
@@ -276,7 +276,7 @@ instance absorbinglyAbsorbing [BI PROP] (P : PROP) :
   Absorbing iprop(<absorb> P)
 where
   absorbing := by
-    rw' [absorbingly_idemp]
+    rw' [absorbingly_idem]
 
 instance persistentlyAbsorbing [BI PROP] (P : PROP) :
   Absorbing iprop(<pers> P)
@@ -290,7 +290,7 @@ instance persistentlyIfAbsorbing [BI PROP] (P : PROP) (p : Bool) :
 where
   absorbing := by
     cases p
-    <;> simp [bi_persistently_if, absorbing]
+    <;> simp [persistentlyIf, absorbing]
 
 section Affine
 
@@ -298,7 +298,7 @@ instance (priority := default + 10) biAffineAbsorbing [BIAffine PROP] (P : PROP)
   Absorbing P
 where
   absorbing := by
-    simp only [bi_absorbingly]
+    simp only [absorbingly]
     rw' [
       (affine : (True : PROP) ⊢ _),
       (left_id : emp ∗ P ⊣⊢ _)]

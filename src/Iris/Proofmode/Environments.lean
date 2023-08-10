@@ -117,29 +117,29 @@ theorem env_get_cons [BI PROP] {P : PROP} {Ps : Env PROP} {i : Nat} {h : i + 1 <
   · exact Ps
   · exact Nat.zero_lt_succ _
 
-theorem env_big_op_sep_append [BI PROP] {Γ : Env PROP} {P : PROP} : [∗] (Γ.append P) ⊣⊢ [∗] Γ ∗ P := by
+theorem env_bigOp_sep_append [BI PROP] {Γ : Env PROP} {P : PROP} : [∗] (Γ.append P) ⊣⊢ [∗] Γ ∗ P := by
   induction Γ
   <;> simp only [Env.append, Env.toList]
   case nil =>
-    simp only [big_op]
+    simp only [bigOp]
     rw' [(left_id : emp ∗ _ ⊣⊢ _)]
   case cons P' _ h_ind =>
     rw' [
-      !big_op_sep_cons,
+      !bigOp_sep_cons,
       h_ind,
       ← (assoc : _ ⊣⊢ (P' ∗ _) ∗ P)]
 
-theorem env_big_op_and_append [BI PROP] {Γ : Env PROP} {P : PROP} : □ [∧] (Γ.append P) ⊣⊢ □ [∧] Γ ∗ □ P := by
+theorem env_bigOp_and_append [BI PROP] {Γ : Env PROP} {P : PROP} : □ [∧] (Γ.append P) ⊣⊢ □ [∧] Γ ∗ □ P := by
   induction Γ
   <;> simp only [Env.append, Env.toList]
   case nil =>
-    simp only [big_op]
+    simp only [bigOp]
     rw' [
       intuitionistically_True_emp,
       (left_id : emp ∗ _ ⊣⊢ _)]
   case cons P' _ h_ind =>
     rw' [
-      !big_op_and_cons,
+      !bigOp_and_cons,
       !intuitionistically_and,
       !and_sep_intuitionistically,
       h_ind,
@@ -168,7 +168,7 @@ theorem env_idx_rec [BI PROP] (P : (Γ : Env PROP) → Fin Γ.length → Prop)
       specialize h_ind Γ' ⟨val, is_lt⟩ is_lt
       exact succ h_ind
 
-theorem env_big_op_sep_delete_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) :
+theorem env_bigOp_sep_delete_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) :
   [∗] Γ ⊣⊢ [∗] (Γ.delete i) ∗ (Γ.get i)
 := by
   induction Γ, i using env_idx_rec
@@ -176,17 +176,17 @@ theorem env_big_op_sep_delete_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) 
     rw' [
       Env.delete,
       Env.get,
-      big_op_sep_cons,
+      bigOp_sep_cons,
       (comm : P' ∗ _ ⊣⊢ _)]
   case succ P' _ _ _ _ h_ind =>
     rw' [
       env_delete_cons,
       env_get_cons,
-      !big_op_sep_cons,
+      !bigOp_sep_cons,
       ← (assoc : _ ⊣⊢ (P' ∗ _) ∗ _),
       ← h_ind]
 
-theorem env_big_op_and_delete_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) :
+theorem env_bigOp_and_delete_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) :
   □ [∧] Γ ⊣⊢ □ [∧] (Γ.delete i) ∗ □ (Γ.get i)
 := by
   induction Γ, i using env_idx_rec
@@ -194,7 +194,7 @@ theorem env_big_op_and_delete_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) 
     rw' [
       Env.delete,
       Env.get,
-      big_op_and_cons,
+      bigOp_and_cons,
       intuitionistically_and,
       and_sep_intuitionistically,
       (comm : □ P' ∗ _ ⊣⊢ _)]
@@ -202,7 +202,7 @@ theorem env_big_op_and_delete_get [BI PROP] {Γ : Env PROP} (i : Fin Γ.length) 
     rw' [
       env_delete_cons,
       env_get_cons,
-      !big_op_and_cons,
+      !bigOp_and_cons,
       !intuitionistically_and,
       !and_sep_intuitionistically,
       ← (assoc : _ ⊣⊢ (□ P' ∗ _) ∗ _),
@@ -273,7 +273,7 @@ theorem env_split_cons_true [BI PROP] {P : PROP} {Ps : Env PROP} {bs : List Bool
   apply Exists.intro (Env.length_cons_list_cons h)
   simp
 
-theorem env_big_op_sep_split [BI PROP] {Γ Γ₁ Γ₂ : Env PROP} {mask : List Bool} {h : mask.length = Γ.length} :
+theorem env_bigOp_sep_split [BI PROP] {Γ Γ₁ Γ₂ : Env PROP} {mask : List Bool} {h : mask.length = Γ.length} :
   (Γ₁, Γ₂) = Γ.split mask h →
   ([∗] Γ : PROP) ⊢ [∗] Γ₁ ∗ [∗] Γ₂
 := by
@@ -284,7 +284,7 @@ theorem env_big_op_sep_split [BI PROP] {Γ Γ₁ Γ₂ : Env PROP} {mask : List 
     case nil =>
       simp only [Env.split] at h_split
       cases h_split
-      simp only [big_op]
+      simp only [bigOp]
       rw' [(left_id : emp ∗ _ ⊣⊢ _)]
     case cons =>
       simp only [List.length, Env.length] at h
@@ -301,7 +301,7 @@ theorem env_big_op_sep_split [BI PROP] {Γ Γ₁ Γ₂ : Env PROP} {mask : List 
         rw' [h_split_P]
         simp only [Env.toList]
         rw' [
-          !big_op_sep_cons,
+          !bigOp_sep_cons,
           (assoc : _ ∗ (P ∗ _) ⊣⊢ _),
           (comm : _ ∗ P ⊣⊢ _),
           ← (assoc : _ ⊣⊢ (P ∗ _) ∗ _),
@@ -311,7 +311,7 @@ theorem env_big_op_sep_split [BI PROP] {Γ Γ₁ Γ₂ : Env PROP} {mask : List 
         rw' [h_split_P]
         simp only [Env.toList]
         rw' [
-          !big_op_sep_cons,
+          !bigOp_sep_cons,
           ← (assoc : _ ⊣⊢ (P ∗ _) ∗ _),
           h_ind h_split_Ps]
 
@@ -481,15 +481,15 @@ theorem envs_append_sound [BI PROP] {Δ : Envs PROP} (p : Bool) (Q : PROP) :
 := by
   apply wand_intro_l ?_
   cases p
-  <;> simp only [bi_intuitionistically_if, ite_true, ite_false, of_envs]
+  <;> simp only [intuitionisticallyIf, ite_true, ite_false, of_envs]
   case false =>
     rw' [
-      env_big_op_sep_append,
+      env_bigOp_sep_append,
       (assoc : _ ∗ (_ ∗ Q) ⊣⊢ _),
       (comm : _ ∗ Q ⊣⊢ _)]
   case true =>
     rw' [
-      env_big_op_and_append,
+      env_bigOp_and_append,
       (comm : _ ∗ □ Q ⊣⊢ _),
       ← (assoc : _ ⊣⊢ (□ Q ∗ _) ∗ _)]
 
@@ -502,12 +502,12 @@ theorem envs_lookup_delete_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ
     simp only [Envs.lookup]
     intro h_lookup
     cases h_lookup
-    simp only [Envs.delete, of_envs, bi_intuitionistically_if, ite_true, ite_false]
+    simp only [Envs.delete, of_envs, intuitionisticallyIf, ite_true, ite_false]
   case s i =>
     rw' [
       (comm : Δ.spatial.get i ∗ _ ⊣⊢ _),
       ← (assoc : _ ⊣⊢ _ ∗ _),
-      ← env_big_op_sep_delete_get]
+      ← env_bigOp_sep_delete_get]
   case p i =>
     cases rp
     <;> simp only
@@ -515,12 +515,12 @@ theorem envs_lookup_delete_sound [BI PROP] {Δ : Envs PROP} {i : EnvsIndex.of Δ
       rw' [
         (assoc : _ ∗ _ ⊣⊢ _),
         (comm : □ Δ.intuitionistic.get i ∗ _ ⊣⊢ _),
-        ← env_big_op_and_delete_get i]
+        ← env_bigOp_and_delete_get i]
     case false =>
       rw' [
         (assoc : _ ∗ _ ⊣⊢ _),
         (comm : □ Δ.intuitionistic.get i ∗ _ ⊣⊢ _),
-        env_big_op_and_delete_get i,
+        env_bigOp_and_delete_get i,
         ← (assoc : _ ⊣⊢ (_ ∗ _) ∗ □ Δ.intuitionistic.get i),
         ← intuitionistically_sep_dup]
 
@@ -555,7 +555,7 @@ theorem envs_split_sound [BI PROP] {Δ Δ₁ Δ₂ : Envs PROP} {mask : List Boo
   rw' [
     h_split_Γₚ₁,
     h_split_Γₚ₂,
-    env_big_op_sep_split h_split_Γₛ,
+    env_bigOp_sep_split h_split_Γₛ,
     (assoc : _ ∗ (□ _ ∗ _) ⊣⊢ _),
     (comm : _ ∗ □ _ ⊣⊢ _),
     (assoc : □ _ ∗ (□ _ ∗ _) ⊣⊢ _),
@@ -568,10 +568,10 @@ theorem envs_spatial_is_empty_intuitionistically [BI PROP] {Δ : Envs PROP} :
 := by
   simp only [Env.isEmpty, of_envs]
   cases Δ.spatial
-  <;> simp [big_op]
+  <;> simp [bigOp]
   rw' [
     (right_id : _ ∗ emp ⊣⊢ _),
-    intuitionistically_idemp]
+    intuitionistically_idem]
 
 -- AffineEnv
 class AffineEnv [BI PROP] (Γ : Env PROP) where
@@ -613,12 +613,12 @@ where
   affine := by
     induction Γ generalizing inst
     case nil =>
-      rw' [big_op_sep_nil]
+      rw' [bigOp_sep_nil]
     case cons P Ps h_ind =>
       have : AffineEnv Ps := ⟨by
         intro P h_Ps
         exact inst.affineEnv P (env_mem_cons_2 h_Ps)⟩
       have : Affine P := inst.affineEnv P env_mem_cons_1
-      rw' [big_op_sep_cons, h_ind, affine]
+      rw' [bigOp_sep_cons, h_ind, affine]
 
 end Iris.Proofmode

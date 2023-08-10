@@ -46,7 +46,7 @@ elab "istop" : tactic => do
   -- reduce proof mode definitions
   try evalTactic (← `(tactic| (
     refine tac_stop _ ?_ ;
-    simp only [big_op]
+    simp only [bigOp]
   )))
   catch _ => throwError "unable to stop proof mode"
 
@@ -141,7 +141,7 @@ def Internal.iintroCore (type : HypothesisType) (name : Name) : TacticM Unit := 
     -- introduce hypothesis
     try evalTactic (← `(tactic|
       first
-      | refine tac_impl_intro_intuitionistic _ ?_
+      | refine tac_imp_intro_intuitionistic _ ?_
       | refine tac_wand_intro_intuitionistic _ ?_
       | fail
     ))
@@ -153,7 +153,7 @@ def Internal.iintroCore (type : HypothesisType) (name : Name) : TacticM Unit := 
     -- introduce hypothesis
     try evalTactic (← `(tactic|
       first
-      | refine tac_impl_intro _ ?_
+      | refine tac_imp_intro _ ?_
       | refine tac_wand_intro _ ?_
       | fail
     ))
@@ -167,7 +167,7 @@ def Internal.iintroCoreClear : TacticM Unit := do
   try evalTactic (← `(tactic|
     istart ;
     first
-    | refine tac_impl_intro_drop _ ?_
+    | refine tac_imp_intro_drop _ ?_
     | fail
   )) catch _ => throwError "failed to drop implication hypothesis"
 
@@ -188,7 +188,7 @@ elab "iexists" x:term : tactic => do
   try evalTactic (← `(tactic|
     istart ;
     first
-    | refine tac_exist _ ?_
+    | refine tac_exists _ ?_
       apply Exists.intro $x
     | fail
   )) catch _ => throwError "could not resolve existential quantifier"
@@ -543,7 +543,7 @@ where
     else if let #[arg] := args then
       return ← icasesCore nameFrom arg
     else if let #[.one var, f] := args then
-      if let some (name, arg) ← icasesCoreExist hypIndex var f then
+      if let some (name, arg) ← icasesCoreExists hypIndex var f then
         return ← icasesCore name arg
 
     let remainingArguments ← icasesCoreConjunction hypIndex args

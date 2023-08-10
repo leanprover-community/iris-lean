@@ -110,8 +110,8 @@ theorem multiple_patterns [BI PROP] (Q : PROP) : ⊢ □ (P1 ∧ P2) -∗ Q ∨ 
 
 end intro
 
--- exist
-namespace exist
+-- exists
+namespace «exists»
 
 theorem id [BI PROP] : ⊢ (∃ x, x : PROP) := by
   iexists iprop(True)
@@ -129,7 +129,7 @@ theorem pure [BI PROP] : ⊢ (⌜∃ x, x ∨ False⌝ : PROP) := by
   ipure_intro
   exact Or.inl True.intro
 
-end exist
+end «exists»
 
 -- exact
 namespace exact
@@ -622,13 +622,13 @@ theorem and_clear_intuitionistic_multiple [BI PROP] (Q : PROP) : □ (P1 ∧ P2 
   icases HPQ with ⟨_, _, HQ, _⟩
   iexact HQ
 
-theorem exist [BI PROP] (Q : Nat → PROP) : (∃ x, Q x) ⊢ ∃ x, Q x ∨ False := by
+theorem «exists» [BI PROP] (Q : Nat → PROP) : (∃ x, Q x) ⊢ ∃ x, Q x ∨ False := by
   iintro ⟨x, H⟩
   iexists x
   ileft
   iexact H
 
-theorem exist_intuitionistic [BI PROP] (Q : Nat → PROP) : □ (∃ x, Q x) ⊢ ∃ x, □ Q x ∨ False := by
+theorem exists_intuitionistic [BI PROP] (Q : Nat → PROP) : □ (∃ x, Q x) ⊢ ∃ x, □ Q x ∨ False := by
   iintro ⟨x, □H⟩
   iexists x
   ileft

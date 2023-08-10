@@ -12,11 +12,11 @@ namespace Iris.Proofmode.Internal
 open Iris.Std
 open Lean Lean.Elab.Tactic Lean.Meta
 
-def icasesCoreExist (hypIndex : HypothesisIndex) (var : Name) (f : iCasesPat) : TacticM <| Option <| Name × iCasesPat := do
+def icasesCoreExists (hypIndex : HypothesisIndex) (var : Name) (f : iCasesPat) : TacticM <| Option <| Name × iCasesPat := do
   -- destruct existential quantifier
   try evalTactic (← `(tactic|
     first
-    | refine tac_exist_destruct $(← hypIndex.quoteAsEnvsIndex) _ ?_
+    | refine tac_exists_destruct $(← hypIndex.quoteAsEnvsIndex) _ ?_
       intro $(mkIdent var):ident
     | fail
   )) catch _ => return none

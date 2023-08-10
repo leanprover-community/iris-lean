@@ -24,10 +24,10 @@ export Transitive (transitivity)
 class PreOrder (R : Relation α) extends Reflexive R, Transitive R
 
 
-/-- Require that a binary function `f` on `α` is idempotent in a relation `R` on `α`. -/
+/-- Require that a binary function `f` on `α` is idemotent in a relation `R` on `α`. -/
 class Idemp (R : Relation α) (f : α → α → α) : Prop where
-  idemp {x : α} : R (f x x) x
-export Idemp (idemp)
+  idem {x : α} : R (f x x) x
+export Idemp (idem)
 
 /-- Require that a binary function `f` from `β` to `α` is commutative in a relation `R` on `α`. -/
 class Comm (R : Relation α) (f : β → β → α) : Prop where

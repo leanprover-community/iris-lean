@@ -195,13 +195,13 @@ This separation logic framework comes with default instances for many separation
 
 Example:
 ```
-class FromImpl [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
-  from_impl : (Q1 → Q2) ⊢ P
+class FromImp [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
+  from_imp : (Q1 → Q2) ⊢ P
 
-instance fromImplImpl [BI PROP] (P1 P2 : PROP) :
-  FromImpl iprop(P1 → P2) P1 P2
+instance fromImplImp [BI PROP] (P1 P2 : PROP) :
+  FromImp iprop(P1 → P2) P1 P2
 where
-  from_impl := by ...
+  from_imp := by ...
 ```
 
 ## Proofs
