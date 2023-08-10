@@ -8,9 +8,9 @@ import Iris.BI.BI
 
 namespace Iris.BI
 
-/-- Require that a separation logic with the carrier type `car` is an affine separation logic. -/
-class BIAffine (car : Type) extends BI car where
-  affine (P : car) : Affine P
+/-- Require that a separation logic with the carrier type `PROP` is an affine separation logic. -/
+class BIAffine (PROP : Type) extends BI PROP where
+  affine (P : PROP) : Affine P
 
 attribute [instance (default + 100)] BIAffine.affine
 

@@ -13,19 +13,19 @@ namespace Iris.BI
 open Iris.Std
 open Lean
 
-/-- Require the definitions of the separation logic connectives and units on a carrier type `car`. -/
-class BIBase (car : Type) where
-  entails : car → car → Prop
-  emp : car
-  pure : Prop → car
-  and : car → car → car
-  or : car → car → car
-  impl : car → car → car
-  «forall» {α : Type} : (α → car) → car
-  exist {α : Type} : (α → car) → car
-  sep : car → car → car
-  wand : car → car → car
-  persistently : car → car
+/-- Require the definitions of the separation logic connectives and units on a carrier type `PROP`. -/
+class BIBase (PROP : Type) where
+  entails : PROP → PROP → Prop
+  emp : PROP
+  pure : Prop → PROP
+  and : PROP → PROP → PROP
+  or : PROP → PROP → PROP
+  impl : PROP → PROP → PROP
+  «forall» {α : Type} : (α → PROP) → PROP
+  exist {α : Type} : (α → PROP) → PROP
+  sep : PROP → PROP → PROP
+  wand : PROP → PROP → PROP
+  persistently : PROP → PROP
 
 
 section Syntax

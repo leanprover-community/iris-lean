@@ -9,48 +9,48 @@ namespace Iris.BI
 open Iris.Std
 open Lean
 
-/-- Require that a separation logic with carrier type `car` fulfills all necessary axioms. -/
-class BI (car : Type) extends BIBase car where
+/-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
+class BI (PROP : Type) extends BIBase PROP where
   entailsPreOrder : PreOrder entails
 
-  equiv_entails {P Q : car} : (P = Q) ↔ (P ⊢ Q) ∧ (Q ⊢ P)
+  equiv_entails {P Q : PROP} : (P = Q) ↔ (P ⊢ Q) ∧ (Q ⊢ P)
 
-  pure_intro {φ : Prop} {P : car} : φ → P ⊢ ⌜φ⌝
-  pure_elim' {φ : Prop} {P : car} : (φ → True ⊢ P) → ⌜φ⌝ ⊢ P
+  pure_intro {φ : Prop} {P : PROP} : φ → P ⊢ ⌜φ⌝
+  pure_elim' {φ : Prop} {P : PROP} : (φ → True ⊢ P) → ⌜φ⌝ ⊢ P
 
-  and_elim_l {P Q : car} : P ∧ Q ⊢ P
-  and_elim_r {P Q : car} : P ∧ Q ⊢ Q
-  and_intro {P Q R : car} : (P ⊢ Q) → (P ⊢ R) → P ⊢ Q ∧ R
+  and_elim_l {P Q : PROP} : P ∧ Q ⊢ P
+  and_elim_r {P Q : PROP} : P ∧ Q ⊢ Q
+  and_intro {P Q R : PROP} : (P ⊢ Q) → (P ⊢ R) → P ⊢ Q ∧ R
 
-  or_intro_l {P Q : car} : P ⊢ P ∨ Q
-  or_intro_r {P Q : car} : Q ⊢ P ∨ Q
-  or_elim {P Q R : car} : (P ⊢ R) → (Q ⊢ R) → P ∨ Q ⊢ R
+  or_intro_l {P Q : PROP} : P ⊢ P ∨ Q
+  or_intro_r {P Q : PROP} : Q ⊢ P ∨ Q
+  or_elim {P Q R : PROP} : (P ⊢ R) → (Q ⊢ R) → P ∨ Q ⊢ R
 
-  impl_intro_r {P Q R : car} : (P ∧ Q ⊢ R) → P ⊢ Q → R
-  impl_elim_l' {P Q R : car} : (P ⊢ Q → R) → P ∧ Q ⊢ R
+  impl_intro_r {P Q R : PROP} : (P ∧ Q ⊢ R) → P ⊢ Q → R
+  impl_elim_l' {P Q R : PROP} : (P ⊢ Q → R) → P ∧ Q ⊢ R
 
-  forall_intro {P : car} {Ψ : α → car} : (∀ a, P ⊢ Ψ a) → P ⊢ ∀ a, Ψ a
-  forall_elim {Ψ : α → car} (a : α) : (∀ a, Ψ a) ⊢ Ψ a
+  forall_intro {P : PROP} {Ψ : α → PROP} : (∀ a, P ⊢ Ψ a) → P ⊢ ∀ a, Ψ a
+  forall_elim {Ψ : α → PROP} (a : α) : (∀ a, Ψ a) ⊢ Ψ a
 
-  exist_intro {Ψ : α → car} (a : α) : Ψ a ⊢ ∃ a, Ψ a
-  exist_elim {Φ : α → car} {Q : car} : (∀ a, Φ a ⊢ Q) → (∃ a, Φ a) ⊢ Q
+  exist_intro {Ψ : α → PROP} (a : α) : Ψ a ⊢ ∃ a, Ψ a
+  exist_elim {Φ : α → PROP} {Q : PROP} : (∀ a, Φ a ⊢ Q) → (∃ a, Φ a) ⊢ Q
 
-  sep_mono {P P' Q Q' : car} : (P ⊢ Q) → (P' ⊢ Q') → P ∗ P' ⊢ Q ∗ Q'
-  emp_sep_1 {P : car} : P ⊢ emp ∗ P
-  emp_sep_2 {P : car} : emp ∗ P ⊢ P
-  sep_comm' {P Q : car} : P ∗ Q ⊢ Q ∗ P
-  sep_assoc' {P Q R : car} : (P ∗ Q) ∗ R ⊢ P ∗ (Q ∗ R)
+  sep_mono {P P' Q Q' : PROP} : (P ⊢ Q) → (P' ⊢ Q') → P ∗ P' ⊢ Q ∗ Q'
+  emp_sep_1 {P : PROP} : P ⊢ emp ∗ P
+  emp_sep_2 {P : PROP} : emp ∗ P ⊢ P
+  sep_comm' {P Q : PROP} : P ∗ Q ⊢ Q ∗ P
+  sep_assoc' {P Q R : PROP} : (P ∗ Q) ∗ R ⊢ P ∗ (Q ∗ R)
 
-  wand_intro_r {P Q R : car} : (P ∗ Q ⊢ R) → P ⊢ Q -∗ R
-  wand_elim_l' {P Q R : car} : (P ⊢ Q -∗ R) → P ∗ Q ⊢ R
+  wand_intro_r {P Q R : PROP} : (P ∗ Q ⊢ R) → P ⊢ Q -∗ R
+  wand_elim_l' {P Q R : PROP} : (P ⊢ Q -∗ R) → P ∗ Q ⊢ R
 
-  persistently_mono {P Q : car} : (P ⊢ Q) → <pers> P ⊢ <pers> Q
-  persistently_idemp_2 {P : car} : <pers> P ⊢ <pers> <pers> P
-  persistently_emp_2 : (emp : car) ⊢ <pers> emp
-  persistently_and_2 {P Q : car} : (<pers> P) ∧ (<pers> Q) ⊢ <pers> (P ∧ Q)
-  persistently_exist_1 {Ψ : α → car} : <pers> (∃ a, Ψ a) ⊢ ∃ a, <pers> (Ψ a)
-  persistently_absorbing {P Q : car} : <pers> P ∗ Q ⊢ <pers> P
-  persistently_and_sep_elim {P Q : car} : <pers> P ∧ Q ⊢ P ∗ Q
+  persistently_mono {P Q : PROP} : (P ⊢ Q) → <pers> P ⊢ <pers> Q
+  persistently_idemp_2 {P : PROP} : <pers> P ⊢ <pers> <pers> P
+  persistently_emp_2 : (emp : PROP) ⊢ <pers> emp
+  persistently_and_2 {P Q : PROP} : (<pers> P) ∧ (<pers> Q) ⊢ <pers> (P ∧ Q)
+  persistently_exist_1 {Ψ : α → PROP} : <pers> (∃ a, Ψ a) ⊢ ∃ a, <pers> (Ψ a)
+  persistently_absorbing {P Q : PROP} : <pers> P ∗ Q ⊢ <pers> P
+  persistently_and_sep_elim {P Q : PROP} : <pers> P ∧ Q ⊢ P ∗ Q
 
 attribute [instance] BI.entailsPreOrder
 
