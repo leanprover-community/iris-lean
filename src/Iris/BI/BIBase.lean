@@ -7,6 +7,7 @@ import Iris.BI.Notation
 import Iris.Std.Classes
 import Iris.Std.DelabRule
 import Iris.Std.Rewrite
+import Iris.Std.BigOp
 
 namespace Iris.BI
 open Iris.Std
@@ -194,5 +195,22 @@ delab_rule bi_absorbingly_if
   | `($_ $p $P) => do ``(iprop(<absorb>?$p $(← unpackIprop P)))
 delab_rule bi_intuitionistically_if
   | `($_ $p $P) => do ``(iprop(□?$p $(← unpackIprop P)))
+
+/-- Fold the conjunction `∧` over a list of separation logic propositions. -/
+syntax:40 "[∧] " term:max : term
+/-- Fold the disjunction `∨` over a list of separation logic propositions. -/
+syntax:40 "[∨] " term:max : term
+/-- Fold the separating conjunction `∗` over a list of separation logic propositions. -/
+syntax:40 "[∗] " term:max : term
+
+macro_rules
+  | `(iprop([∧] $Ps)) => ``(big_op BIBase.and iprop(True) iprop($Ps))
+  | `(iprop([∨] $Ps)) => ``(big_op BIBase.or iprop(False) iprop($Ps))
+  | `(iprop([∗] $Ps)) => ``(big_op BIBase.sep iprop(emp) iprop($Ps))
+
+delab_rule big_op
+  | `($_ BIBase.and iprop(True)  $Ps) => do ``(iprop([∧] $(← unpackIprop Ps)))
+  | `($_ BIBase.or  iprop(False) $Ps) => do ``(iprop([∨] $(← unpackIprop Ps)))
+  | `($_ BIBase.sep iprop(emp)   $Ps) => do ``(iprop([∗] $(← unpackIprop Ps)))
 
 end Iris.BI
