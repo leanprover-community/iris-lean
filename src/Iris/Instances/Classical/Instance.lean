@@ -28,11 +28,11 @@ instance : BIBase (HeapProp Val) where
 
 instance : BI (HeapProp Val) where
   entailsPreOrder := {
-    reflexivity := by
+    refl := by
       simp only [BIBase.entails]
       intro _ _ h
       exact h
-    transitivity := by
+    trans := by
       simp only [BIBase.entails]
       intro _ _ _ h_xy h_yz σ h_x
       apply h_yz σ

@@ -86,14 +86,14 @@ private def rewriteConventional (rule : TSyntax ``rwRule) : TacticM Bool := do
   catch _ =>
     return false
 
-/-- Rewrite the rule `rule` in the rewrite direction `direction` using the transitivity and
-reflexivity of the preorder in the goal and `rule`, as well as the monotonicity of the registered
+/-- Rewrite the rule `rule` in the rewrite direction `direction` using the trans and
+refl of the preorder in the goal and `rule`, as well as the monotonicity of the registered
 operator destruction rules. -/
 private partial def rewriteTMR (direction : RewriteDirection) (rule : TSyntax `term) : TacticM Bool := do
   let goal ← getMainGoal
   let tag ← goal.getTag
 
-  -- apply transitivity
+  -- apply trans
   let some (goalL, goalR) ← applyTransitivity goal
     | return false
 
@@ -111,7 +111,7 @@ private partial def rewriteTMR (direction : RewriteDirection) (rule : TSyntax `t
 where
   applyTransitivity (goal : MVarId) : TacticM <| Option <| MVarId × MVarId := do
     try
-      let some <| goalL :: goalR :: [] ← apply' goal ``transitivity
+      let some <| goalL :: goalR :: [] ← apply' goal ``trans
         | return none
       return some (goalL, goalR)
     catch _ =>
@@ -128,7 +128,7 @@ where
 
   applyReflexivity (goal : MVarId) : TacticM Unit := do
     try
-      discard <| apply' goal ``reflexivity
+      discard <| apply' goal ``refl
     catch _ => pure ()
 
   go (goal : MVarId) (rule : TSyntax `term) : TacticM Bool := do
@@ -183,11 +183,11 @@ elab "rw' " "[" rules:rwRule',*,? "]" : tactic => do
       else if ← rewriteTMR direction term then continue
       else throwError s!"could not rewrite `{rule'.raw.prettyPrint}`"
 
-  -- try to close the goal using reflexivity
+  -- try to close the goal using refl
   withoutRecover <| evalTactic (← `(tactic|
     try first
     | rfl
-    | exact reflexivity
+    | exact refl
   ))
 
 end Iris.Std

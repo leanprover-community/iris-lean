@@ -135,7 +135,7 @@ theorem env_bigOp_and_append [BI PROP] {Γ : Env PROP} {P : PROP} : □ [∧] (�
   case nil =>
     simp only [bigOp]
     rw' [
-      intuitionistically_True_emp,
+      intuitionistically_true,
       (left_id : emp ∗ _ ⊣⊢ _)]
   case cons P' _ h_ind =>
     rw' [
@@ -479,7 +479,7 @@ end Envs
 theorem envs_append_sound [BI PROP] {Δ : Envs PROP} (p : Bool) (Q : PROP) :
   of_envs Δ ⊢ □?p Q -∗ of_envs (Δ.append p Q)
 := by
-  apply wand_intro_l ?_
+  apply wand_intro' ?_
   cases p
   <;> simp only [intuitionisticallyIf, ite_true, ite_false, of_envs]
   case false =>

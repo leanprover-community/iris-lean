@@ -107,7 +107,7 @@ where
 instance falseAffine [BI PROP] :
   Affine (PROP := PROP) iprop(False)
 where
-  affine := False_elim
+  affine := false_elim
 
 instance andAffineL [BI PROP] (P Q : PROP) :
   [Affine P] →
@@ -231,7 +231,7 @@ instance implAbsorbing [BI PROP] (P Q : PROP) :
   Absorbing iprop(P → Q)
 where
   absorbing := by
-    apply imp_intro_l
+    apply imp_intro'
     rw' [
       persistent_and_affinely_sep_l,
       absorbingly_sep_r,
@@ -259,7 +259,7 @@ instance wandAbsorbingL [BI PROP] (P Q : PROP) :
 where
   absorbing := by
     simp only [absorbingly]
-    apply wand_intro_l
+    apply wand_intro'
     rw' [
       (assoc : P ∗ True ∗ (P -∗ Q) ⊣⊢ _),
       (sep_elim_l : P ∗ True ⊢ _),
@@ -282,7 +282,7 @@ instance persistentlyAbsorbing [BI PROP] (P : PROP) :
   Absorbing iprop(<pers> P)
 where
   absorbing := by
-    rw' [absorbingly_elim_persistently]
+    rw' [absorbingly_persistently]
 
 instance persistentlyIfAbsorbing [BI PROP] (P : PROP) (p : Bool) :
   [Absorbing P] →

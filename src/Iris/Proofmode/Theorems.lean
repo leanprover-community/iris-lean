@@ -20,7 +20,7 @@ scoped macro "intro_let " names:(colGt Lean.binderIdent)* : tactic =>
 theorem tac_start [BI PROP] (P : PROP) :
     envs_entails ⟨.nil, .nil⟩ P → ⊢ P := by
   simp only [envs_entails, of_envs, bigOp]
-  rw' [intuitionistically_True_emp, (left_id : emp ∗ _ ⊣⊢ _)]
+  rw' [intuitionistically_true, (left_id : emp ∗ _ ⊣⊢ _)]
   intro h
   exact h
 
@@ -42,7 +42,7 @@ theorem tac_stop [BI PROP] {Γₚ Γₛ : Env PROP} (P : PROP) :
   case cons.nil =>
     rw' [(right_id : _ ∗ emp ⊣⊢ _)]
   all_goals
-    rw' [intuitionistically_True_emp, (left_id : emp ∗ _ ⊣⊢ _)]
+    rw' [intuitionistically_true, (left_id : emp ∗ _ ⊣⊢ _)]
 
 theorem tac_clear [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (p, P) := Δ.lookup i
@@ -80,8 +80,8 @@ theorem tac_pure_intro [BI PROP] {Δ : Envs PROP} {a : Bool} {φ : Prop} (Q : PR
     simp only [of_envs, affinelyIf]
     rw' [
       affine,
-      pure_True hφ,
-      affinely_True_emp,
+      pure_true hφ,
+      affinely_true_emp,
       affinely_emp]
 
 -- implication and wand
@@ -99,7 +99,7 @@ theorem tac_imp_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
   <;> rw [h_empty] at inst_pers
   <;> cases inst_pers
   case false =>
-    apply imp_intro_l
+    apply imp_intro'
     rw' [
       envs_append_sound false P',
       (from_affinely : <affine>?true P ⊢ _),
@@ -108,7 +108,7 @@ theorem tac_imp_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
       h_entails]
   case true =>
     rw' [envs_spatial_is_empty_intuitionistically h_empty]
-    apply imp_intro_l
+    apply imp_intro'
     rw' [
       envs_append_sound false P',
       (from_affinely : <affine>?true P ⊢ _)]
@@ -129,7 +129,7 @@ theorem tac_imp_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP} 
   simp only [envs_entails]
   intro _ _ h_entails
   rw' [← from_imp, envs_append_sound true P'] ; simp only
-  apply imp_intro_l
+  apply imp_intro'
   rw' [
     persistentlyIf_intro_false P,
     into_persistent,
@@ -145,7 +145,7 @@ theorem tac_imp_intro_drop [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
   simp only [envs_entails]
   intro _ h_entails
   rw' [← from_imp]
-  apply imp_intro_l
+  apply imp_intro'
   rw' [and_elim_r, h_entails]
 
 theorem tac_wand_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
@@ -170,7 +170,7 @@ theorem tac_wand_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP}
   simp only [envs_entails]
   intro _ _ inst_affine_absorbing h_entails
   rw' [← from_wand, envs_append_sound true P'] ; simp only
-  apply wand_intro_l
+  apply wand_intro'
   cases inst_affine_absorbing
   case a.l =>
     rw' [
@@ -183,7 +183,7 @@ theorem tac_wand_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP}
     rw' [
       persistentlyIf_intro_false P,
       into_persistent,
-      ← absorbingly_intuitionistically_into_persistently,
+      ← absorbingly_intuitionistically,
       absorbingly_sep_l,
       wand_elim_r,
       h_entails,
@@ -217,7 +217,7 @@ theorem tac_specialize [BI PROP] {Δ : Envs PROP} (rpPremise rpWand : Bool) (i j
     rw' [
       ← intuitionistically_idem,
       ← intuitionisticallyIf_idem,
-      intuitionistically_intuitionisticallyIf q,
+      intuitionisticallyIf_of_intuitionistically q,
       (IntoWand.into_wand : □?q Q ⊢ □?true P1 -∗ P2),
       (assoc : □?q □ P1 ∗ _ ⊣⊢ _),
       intuitionisticallyIf_sep_2,
@@ -348,7 +348,7 @@ theorem tac_ex_falso [BI PROP] {Δ : Envs PROP} (Q : PROP) :
   simp only [envs_entails]
   intro h_entails
   rw' [h_entails]
-  exact False_elim
+  exact false_elim
 
 theorem tac_false_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (_, P) := Δ.lookup i
@@ -363,7 +363,7 @@ theorem tac_false_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) (Q :
     intuitionisticallyIf_elim,
     h_false,
     sep_elim_l]
-  exact False_elim
+  exact false_elim
 
 -- moving between contexts
 theorem tac_pure [BI PROP] {Δ : Envs PROP} {φ : Prop} (i : EnvsIndex.of Δ) (Q : PROP) :
@@ -394,7 +394,7 @@ theorem tac_pure [BI PROP] {Δ : Envs PROP} {φ : Prop} (i : EnvsIndex.of Δ) (Q
     case r =>
       rw' [
         into_pure,
-        persistent_absorbingly_affinely_2,
+        absorbingly_affinely_intro_of_persistent,
         absorbingly_sep_lr,
         ← persistent_and_affinely_sep_l]
       apply pure_elim_l
@@ -437,7 +437,7 @@ theorem tac_intuitionistic [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex
       conv =>
         lhs
         lhs
-        rw [← absorbingly_intuitionistically_into_persistently]
+        rw [← absorbingly_intuitionistically]
       rw' [
         absorbingly_sep_l,
         wand_elim_r,
@@ -470,7 +470,7 @@ theorem tac_spatial [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex.of Δ)
       h_entails]
   case true =>
     rw' [
-      intuitionistically_affinely,
+      affinely_of_intuitionistically,
       affinelyIf_intro_true P,
       from_affinely,
       wand_elim_r,
