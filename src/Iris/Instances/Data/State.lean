@@ -23,8 +23,8 @@ abbrev State (Val : Type) := Nat → StateResult Val
 instance : EmptyCollection (State Val) where
   emptyCollection := fun _ => unknown
 
-instance : Subset (State Val) where
-  subset a b := ∀ i x, a i = result x → b i = result x
+instance : HasSubset (State Val) where
+  Subset a b := ∀ i x, a i = result x → b i = result x
 
 instance : Union (State Val) where
   union a b := fun i =>
