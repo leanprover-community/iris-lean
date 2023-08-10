@@ -91,9 +91,9 @@ class IntoOr [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) : Prop where
 export IntoOr (into_or)
 
 
-class IntoPersistent (p : Bool) [BI PROP] (P : PROP) (Q : outParam PROP) : Prop where
-  into_persistent : <pers>?p P ⊢ <pers> Q
-export IntoPersistent (into_persistent)
+class IntoPersistently (p : Bool) [BI PROP] (P : PROP) (Q : outParam PROP) : Prop where
+  into_persistently : <pers>?p P ⊢ <pers> Q
+export IntoPersistently (into_persistently)
 
 class FromAffinely [BI PROP] (P : outParam PROP) (Q : PROP) (p : Bool := true) : Prop where
   from_affinely : <affine>?p Q ⊢ P

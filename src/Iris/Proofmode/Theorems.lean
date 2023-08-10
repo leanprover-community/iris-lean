@@ -122,7 +122,7 @@ theorem tac_imp_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
 
 theorem tac_imp_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP} (R : PROP) :
   [FromImp R P Q] →
-  [IntoPersistent false P P'] →
+  [IntoPersistently false P P'] →
   envs_entails (Δ.append true P') Q →
   envs_entails Δ R
 := by
@@ -132,7 +132,7 @@ theorem tac_imp_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP} 
   apply imp_intro'
   rw' [
     persistentlyIf_intro_false P,
-    into_persistent,
+    into_persistently,
     persistently_and_intuitionistically_sep_l,
     wand_elim_r,
     h_entails]
@@ -162,7 +162,7 @@ theorem tac_wand_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
 
 theorem tac_wand_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP} (R : PROP) :
   [FromWand R P Q] →
-  [IntoPersistent false P P'] →
+  [IntoPersistently false P P'] →
   [TCOr (Affine P) (Absorbing Q)] →
   envs_entails (Δ.append true P') Q →
   envs_entails Δ R
@@ -176,13 +176,13 @@ theorem tac_wand_intro_intuitionistic [BI PROP] {Δ : Envs PROP} {P P' Q : PROP}
     rw' [
       ← affine_affinely P,
       persistentlyIf_intro_false P,
-      into_persistent,
+      into_persistently,
       wand_elim_r,
       h_entails]
   case a.r =>
     rw' [
       persistentlyIf_intro_false P,
-      into_persistent,
+      into_persistently,
       ← absorbingly_intuitionistically,
       absorbingly_sep_l,
       wand_elim_r,
@@ -411,7 +411,7 @@ theorem tac_pure [BI PROP] {Δ : Envs PROP} {φ : Prop} (i : EnvsIndex.of Δ) (Q
 
 theorem tac_intuitionistic [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex.of Δ) (Q : PROP) :
   let (p, P) := Δ.lookup i
-  [IntoPersistent p P P'] →
+  [IntoPersistently p P P'] →
   [TCIte p TCTrue (TCOr (Affine P) (Absorbing Q))] →
   envs_entails (Δ.replace true i true P') Q →
   envs_entails Δ Q
@@ -429,11 +429,11 @@ theorem tac_intuitionistic [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex
       rw' [
         ← affine_affinely P,
         persistentlyIf_intro_false P,
-        into_persistent,
+        into_persistently,
         wand_elim_r,
         h_entails]
     case r =>
-      rw' [persistentlyIf_intro_false P, into_persistent]
+      rw' [persistentlyIf_intro_false P, into_persistently]
       conv =>
         lhs
         lhs
@@ -446,7 +446,7 @@ theorem tac_intuitionistic [BI PROP] {Δ : Envs PROP} {P' : PROP} (i : EnvsIndex
   case true =>
     rw' [
       persistentlyIf_intro_true P,
-      into_persistent,
+      into_persistently,
       wand_elim_r,
       h_entails]
 

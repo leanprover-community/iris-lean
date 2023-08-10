@@ -46,10 +46,10 @@ instance : BIBase (HeapProp Val) where
   ...
 
 instance : BI (HeapProp Val) where
-  entailsPreOrder := { ... }
-  and_elim_l      := by ...
-  and_elim_r      := by ...
-  and_intro       := by ...
+  entails_preorder := { ... }
+  and_elim_l       := by ...
+  and_elim_r       := by ...
+  and_intro        := by ...
   ...
 ```
 
@@ -81,7 +81,7 @@ The separation logic framework contains a number of typeclasses used to require 
 Example:
 ```lean
 -- Every proposition with the modality `<foo>` is affine.
-instance fooAffine [BI PROP] (P : PROP) :
+instance foo_affine [BI PROP] (P : PROP) :
   Affine iprop(<foo> P)
 where
   affine := by ...
@@ -191,14 +191,14 @@ theorem tac_wand_intro [BI PROP] {Δ : Envs PROP} {P Q : PROP} (R : PROP) :
 
 The separation logic framework uses a complex system of typeclasses to require that a separation logic, proposition or connective possesses certain properties. The relevant typeclasses usually contain a single field of the type `Prop`, which requires a proof of the specified property when the typeclass is instantiated. The typeclasses in `Proofmode/Classes.lean` in addition support destructing separation logic propositions, e.g., returning the premise and conclusion of an implication when a typeclass instance is required. This is done using `outParam`s, which are parameters that are not required to start the typeclass instance search, but determined by the found instance.
 
-This separation logic framework comes with default instances for many separation logic propositions and users can easily extend them with instances for custom separation logic constructs. Some typeclasses come in different versions indicating the directory of the required entailment, e.g. `FromImpl` requires that a separation logic propositions `P` must be deductable *from* an implication `Q1 → Q2`. Other typeclasses require instance priorities in order to fulfill the intended purpose (e.g. `FromAssumption`). This is a common source of failure and must be tuned carefully.
+This separation logic framework comes with default instances for many separation logic propositions and users can easily extend them with instances for custom separation logic constructs. Some typeclasses come in different versions indicating the directory of the required entailment, e.g. `FromImp` requires that a separation logic propositions `P` must be deductable *from* an implication `Q1 → Q2`. Other typeclasses require instance priorities in order to fulfill the intended purpose (e.g. `FromAssumption`). This is a common source of failure and must be tuned carefully.
 
 Example:
 ```
 class FromImp [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_imp : (Q1 → Q2) ⊢ P
 
-instance fromImplImp [BI PROP] (P1 P2 : PROP) :
+instance fromImp_imp [BI PROP] (P1 P2 : PROP) :
   FromImp iprop(P1 → P2) P1 P2
 where
   from_imp := by ...

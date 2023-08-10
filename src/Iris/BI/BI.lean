@@ -11,7 +11,7 @@ open Lean
 
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
 class BI (PROP : Type) extends BI.BIBase PROP where
-  entailsPreOrder : PreOrder entails
+  entails_preorder : Preorder entails
 
   equiv_entails {P Q : PROP} : (P = Q) ↔ (P ⊢ Q) ∧ (Q ⊢ P)
 
@@ -54,7 +54,7 @@ class BI (PROP : Type) extends BI.BIBase PROP where
 
 namespace BI
 
-attribute [instance] BI.entailsPreOrder
+attribute [instance] BI.entails_preorder
 
 export BIBase (
   entails emp pure and or imp «forall» «exists» sep wand persistently

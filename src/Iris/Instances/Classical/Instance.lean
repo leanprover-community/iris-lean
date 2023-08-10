@@ -27,7 +27,7 @@ instance : BIBase (HeapProp Val) where
   persistently P := fun _ => P ∅
 
 instance : BI (HeapProp Val) where
-  entailsPreOrder := {
+  entails_preorder := {
     refl := by
       simp only [BIBase.entails]
       intro _ _ h
