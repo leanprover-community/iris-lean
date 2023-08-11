@@ -156,7 +156,8 @@ instance : BI (HeapProp Val) where
     · exact h_P
   sep_assoc_l := by
     simp only [BI.Entails, BI.sep]
-    intro _ _ _ _ ⟨σ₁, σ₂, h_union₁₂, h_disjoint₁₂, ⟨σ₃, σ₄, h_union₃₄, h_disjoint₃₄, h_P, h_Q⟩, h_R⟩
+    intro _ _ _ _
+      ⟨σ₁, σ₂, h_union₁₂, h_disjoint₁₂, ⟨σ₃, σ₄, h_union₃₄, h_disjoint₃₄, h_P, h_Q⟩, h_R⟩
     apply Exists.intro σ₃
     apply Exists.intro (σ₄ ∪ σ₂)
     constructor

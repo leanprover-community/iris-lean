@@ -30,7 +30,9 @@ def irenameCore (hypIndex : HypothesisIndex) (name : Name) : TacticM Unit := do
     -- check for unique (or equal) hypothesis name
     let nameFrom? := h.getMDataName?
     if nameFrom? |>.map (· != name) |>.getD true then
-      if ← [Γₚ, Γₛ].anyM (fun Γ => do return (← EnvExpr.any? Γ (·.getMDataName?.isEqSome name)) matches some true) then
+      if ← [Γₚ, Γₛ].anyM fun Γ =>
+        return (← EnvExpr.any? Γ (·.getMDataName?.isEqSome name)) matches some true
+      then
         throwError "name is already used for another hypothesis"
 
       if decl.lctx.any (·.userName == name) then

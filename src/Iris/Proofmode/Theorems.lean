@@ -138,7 +138,8 @@ theorem tac_exists [BI PROP] {Δ : Envs PROP} {Φ : α → PROP} (P : PROP) [ins
     (∃ a, EnvsEntails Δ iprop(Φ a)) → EnvsEntails Δ P
   | ⟨a, h_entails⟩ => h_entails.trans <| (exists_intro a).trans inst.1
 
-theorem tac_exists_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ) {Φ : α → PROP} (Q : PROP) :
+theorem tac_exists_destruct [BI PROP] {Δ : Envs PROP} (i : EnvsIndex.of Δ)
+    {Φ : α → PROP} (Q : PROP) :
     let (p, P) := Δ.lookup i
     [IntoExists P Φ] →
     (∀ a, EnvsEntails (Δ.replace true i p (Φ a)) Q) → EnvsEntails Δ Q := by
@@ -235,7 +236,8 @@ theorem tac_and_split [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP) [inst
     (h1 : EnvsEntails Δ Q1) (h2 : EnvsEntails Δ Q2) : EnvsEntails Δ P :=
   (and_intro h1 h2).trans inst.1
 
-theorem tac_sep_split [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (mask : List Bool) (h : mask.length = Δ.spatial.length) (P : PROP) :
+theorem tac_sep_split [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (mask : List Bool)
+    (h : mask.length = Δ.spatial.length) (P : PROP) :
     let (Δ₁, Δ₂) := Δ.split mask h
     [FromSep P Q1 Q2] →
     EnvsEntails Δ₁ Q1 → EnvsEntails Δ₂ Q2 → EnvsEntails Δ P := by
@@ -243,11 +245,11 @@ theorem tac_sep_split [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (mask : List Boo
   exact (envs_split_sound h_split).1.trans <| (sep_mono h1 h2).trans inst.1
 
 -- disjunction selection
-theorem tac_disjunction_l [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP) [inst : FromOr P Q1 Q2]
-    (h : EnvsEntails Δ Q1) : EnvsEntails Δ P := (or_intro_l' h).trans inst.1
+theorem tac_disjunction_l [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP)
+    [inst : FromOr P Q1 Q2] (h : EnvsEntails Δ Q1) : EnvsEntails Δ P := (or_intro_l' h).trans inst.1
 
-theorem tac_disjunction_r [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP) [inst : FromOr P Q1 Q2]
-    (h : EnvsEntails Δ Q2) : EnvsEntails Δ P := (or_intro_r' h).trans inst.1
+theorem tac_disjunction_r [BI PROP] {Δ : Envs PROP} {Q1 Q2 : PROP} (P : PROP)
+    [inst : FromOr P Q1 Q2] (h : EnvsEntails Δ Q2) : EnvsEntails Δ P := (or_intro_r' h).trans inst.1
 
 -- destruction
 class inductive IntoConjunction [BI PROP] (P : PROP) (P1 P2 : outParam PROP) : Bool → Type

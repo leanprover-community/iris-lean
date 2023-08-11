@@ -71,8 +71,8 @@ partial def any? (env : Expr) (pred : Expr → Bool) : MetaM <| Option Bool := d
 /-- Find the index of the first hypothesis in the environment represented by `env` which fulfills
 the predicate `pred`. The function returns `none` if `env` is not an application of `Env.cons`
 and `Env.nil` or no hypothesis fulfills the predicate `pred`. -/
-partial def findIndexM? [Monad M] [MonadLift MetaM M] (env : Expr) (pred : Expr → M Bool) : M <| Option Nat :=
-  go env 0
+partial def findIndexM? [Monad M] [MonadLift MetaM M] (env : Expr) (pred : Expr → M Bool) :
+    M <| Option Nat := go env 0
 where
   go (env : Expr) (idx : Nat) : M <| Option Nat := do
     let env ← whnf env

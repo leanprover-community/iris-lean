@@ -53,7 +53,8 @@ elab "istop" : tactic => do
 
 /-- Extract the intuitionistic and spatial context, as well as the separation logic goal from the
 Lean goal. If the proof is not in Iris Proof Mode, an error is thrown. -/
-private def extractEnvsEntailsFromGoal (startProofMode : Bool := false) : TacticM <| Expr × Expr × Expr := do
+private def extractEnvsEntailsFromGoal (startProofMode : Bool := false) :
+    TacticM <| Expr × Expr × Expr := do
   if startProofMode then
     evalTactic (← `(tactic|
       istart
@@ -399,7 +400,8 @@ elab "ispecialize" hyp:ident args:ident* "as" name:ident : tactic => do
       -- if the argument is a hypothesis then specialize the wand
       try evalTactic (← `(tactic|
         first
-        | refine tac_specialize false $(quote rpHyp) $(← argIndex.quoteAsEnvsIndex) $(← hypIndex.quoteAsEnvsIndex) (by simp [EnvsIndex.type, EnvsIndex.val]) _ ?_
+        | refine tac_specialize false $(quote rpHyp) $(← argIndex.quoteAsEnvsIndex)
+            $(← hypIndex.quoteAsEnvsIndex) (by simp [EnvsIndex.type, EnvsIndex.val]) _ ?_
           simp only [Bool.and_self, Bool.and_true, Bool.and_false]
         | fail
       ))

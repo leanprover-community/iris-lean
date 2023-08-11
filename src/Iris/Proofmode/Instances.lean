@@ -343,8 +343,8 @@ instance (priority := default + 20) intoPersistently_affinely (p : Bool) [BI PRO
     [h : IntoPersistently p P Q] : IntoPersistently p iprop(<affine> P) Q where
   into_persistently := (persistentlyIf_mono affinely_elim).trans h.1
 
-instance (priority := default + 20) intoPersistently_intuitionistically (p : Bool) [BI PROP] (P Q : PROP)
-    [h : IntoPersistently true P Q] : IntoPersistently p iprop(□ P) Q where
+instance (priority := default + 20) intoPersistently_intuitionistically (p : Bool) [BI PROP]
+    (P Q : PROP) [h : IntoPersistently true P Q] : IntoPersistently p iprop(□ P) Q where
   into_persistently := persistentlyIf_intutitionistically.trans h.1
 
 instance (priority := default + 10) intoPersistently_self [BI PROP] (P : PROP) :
@@ -403,12 +403,12 @@ instance (priority := default + 20) fromAssumption_absorbingly_r (p : Bool) [BI 
     [h : FromAssumption p P Q] : FromAssumption p P iprop(<absorb> Q) where
   from_assumption := absorbingly_intro.trans <| absorbingly_mono h.1
 
-instance (priority := default + 20) fromAssumption_intuitionistically_l (p : Bool) [BI PROP] (P Q : PROP)
-    [h : FromAssumption true P Q] : FromAssumption p iprop(□ P) Q where
+instance (priority := default + 20) fromAssumption_intuitionistically_l (p : Bool) [BI PROP]
+    (P Q : PROP) [h : FromAssumption true P Q] : FromAssumption p iprop(□ P) Q where
   from_assumption := intuitionisticallyIf_intutitionistically.1.trans h.1
 
-instance (priority := default + 20) fromAssumption_intuitionistically_l_true (p : Bool) [BI PROP] (P Q : PROP)
-    [h : FromAssumption p P Q] : FromAssumption p iprop(□ P) Q where
+instance (priority := default + 20) fromAssumption_intuitionistically_l_true (p : Bool) [BI PROP]
+    (P Q : PROP) [h : FromAssumption p P Q] : FromAssumption p iprop(□ P) Q where
   from_assumption := (intuitionisticallyIf_comm (q := true)).1.trans <|
     intuitionistically_elim.trans h.1
 
@@ -425,8 +425,8 @@ instance (priority := default + 20) fromAssumption_affinely_l (p : Bool) [BI PRO
   from_assumption := (intuitionisticallyIf_mono affinely_elim).trans h.1
 
 set_option synthInstance.checkSynthOrder false in
-instance (priority := default + 10) fromAssumption_forall (p : Bool) [BI PROP] (Φ : α → PROP) (x : α) (Q : PROP)
-    [h : FromAssumption p (Φ x) Q] : FromAssumption p iprop(∀ x, Φ x) Q where
+instance (priority := default + 10) fromAssumption_forall (p : Bool) [BI PROP] (Φ : α → PROP)
+    (x : α) (Q : PROP) [h : FromAssumption p (Φ x) Q] : FromAssumption p iprop(∀ x, Φ x) Q where
   from_assumption := (intuitionisticallyIf_mono <| forall_elim x).trans h.1
 
 -- IntoPure

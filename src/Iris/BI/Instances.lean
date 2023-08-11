@@ -49,7 +49,8 @@ instance affinelyIf_persistent (p : Bool) [BI PROP] (P : PROP) [Persistent P] :
 instance intuitionistically_persistent [BI PROP] (P : PROP) : Persistent iprop(□ P) :=
   inferInstanceAs (Persistent iprop(<affine> _))
 
-instance absorbingly_persistent [BI PROP] (P : PROP) [Persistent P] : Persistent iprop(<absorb> P) :=
+instance absorbingly_persistent [BI PROP] (P : PROP) [Persistent P] :
+    Persistent iprop(<absorb> P) :=
   inferInstanceAs (Persistent iprop(_ ∗ _))
 
 instance absorbinglyIf_persistent (p : Bool) [BI PROP] (P : PROP) [Persistent P] :

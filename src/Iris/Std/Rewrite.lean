@@ -25,7 +25,8 @@ inductive RewriteModifier
 
 /-- Parse a `rwRule'` syntax object and return its `RewriteModifier` together with the contained
 `rwRule` syntax object. -/
-private def parseRewriteRule' (rule : TSyntax ``rwRule') : TacticM <| RewriteModifier × TSyntax ``rwRule := do
+private def parseRewriteRule' (rule : TSyntax ``rwRule') :
+    TacticM <| RewriteModifier × TSyntax ``rwRule := do
   match rule with
   | `(rwRule'| !$rule)       => pure (.all, rule)
   | `(rwRule'| $rule:rwRule) => pure (.single, rule)
@@ -38,7 +39,8 @@ inductive RewriteDirection
 
 /-- Parse a `rwRule` and return its `RewriteDirection` together with the contained `term`
 syntax object. -/
-private def parseRewriteRule (rule : TSyntax ``rwRule) : TacticM <| RewriteDirection × TSyntax `term := do
+private def parseRewriteRule (rule : TSyntax ``rwRule) :
+    TacticM <| RewriteDirection × TSyntax `term := do
   match rule with
   | `(rwRule| ← $rule)    => pure (.reverse, rule)
   | `(rwRule| $rule:term) => pure (.forward, rule)

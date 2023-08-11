@@ -13,7 +13,9 @@ namespace Iris.BI
 open Iris.Std
 open Lean
 
-/-- Require the definitions of the separation logic connectives and units on a carrier type `PROP`. -/
+/--
+Require the definitions of the separation logic connectives and units on a carrier type `PROP`.
+-/
 class BIBase (PROP : Type) where
   Entails : PROP → PROP → Prop
   emp : PROP
@@ -76,10 +78,12 @@ delab_rule BIBase.or
 delab_rule BIBase.imp
   | `($_ $P $Q) => do ``(iprop($(← unpackIprop P) → $(← unpackIprop Q)))
 delab_rule BIBase.forall
-  | `($_ fun $x:ident => iprop(∀ $y:ident $[$z:ident]*, $Ψ)) => do ``(iprop(∀ $x:ident $y:ident $[$z:ident]*, $Ψ))
+  | `($_ fun $x:ident => iprop(∀ $y:ident $[$z:ident]*, $Ψ)) => do
+    ``(iprop(∀ $x:ident $y:ident $[$z:ident]*, $Ψ))
   | `($_ fun $x:ident => $Ψ) => do ``(iprop(∀ $x:ident, $(← unpackIprop Ψ)))
 delab_rule BIBase.exists
-  | `($_ fun $x:ident => iprop(∃ $y:ident $[$z:ident]*, $Ψ)) => do ``(iprop(∃ $x:ident $y:ident $[$z:ident]*, $Ψ))
+  | `($_ fun $x:ident => iprop(∃ $y:ident $[$z:ident]*, $Ψ)) => do
+    ``(iprop(∃ $x:ident $y:ident $[$z:ident]*, $Ψ))
   | `($_ fun $x:ident => $Ψ) => do ``(iprop(∃ $x:ident, $(← unpackIprop Ψ)))
 delab_rule BIBase.sep
   | `($_ $P $Q) => do ``(iprop($(← unpackIprop P) ∗ $(← unpackIprop Q)))
@@ -96,17 +100,34 @@ delab_rule BIBase.imp
 
 /- This is necessary since the `∀` syntax is not defined using `explicitBinders` and we can
 therefore not use `expandExplicitBinders` as for `∃`. -/
-macro_rules | `(iprop(∀ _, $Ψ))                    => ``(BIBase.forall (fun _         => iprop($Ψ)))
-macro_rules | `(iprop(∀ $x:ident, $Ψ))             => ``(BIBase.forall (fun $x        => iprop($Ψ)))
-macro_rules | `(iprop(∀ (_ : $t), $Ψ))             => ``(BIBase.forall (fun (_ : $t)  => iprop($Ψ)))
-macro_rules | `(iprop(∀ (_ $xs* : $t), $Ψ))        => ``(BIBase.forall (fun (_ : $t)  => iprop(∀ ($xs* : $t), $Ψ)))
-macro_rules | `(iprop(∀ ($x:ident : $t), $Ψ))      => ``(BIBase.forall (fun ($x : $t) => iprop($Ψ)))
-macro_rules | `(iprop(∀ ($x:ident $xs* : $t), $Ψ)) => ``(BIBase.forall (fun ($x : $t) => iprop(∀ ($xs* : $t), $Ψ)))
-macro_rules | `(iprop(∀ {_ : $t}, $Ψ))             => ``(BIBase.forall (fun {_ : $t}  => iprop($Ψ)))
-macro_rules | `(iprop(∀ {_ $xs* : $t}, $Ψ))        => ``(BIBase.forall (fun {_ : $t}  => iprop(∀ {$xs* : $t}, $Ψ)))
-macro_rules | `(iprop(∀ {$x:ident : $t}, $Ψ))      => ``(BIBase.forall (fun ($x : $t) => iprop($Ψ)))
-macro_rules | `(iprop(∀ {$x:ident $xs* : $t}, $Ψ)) => ``(BIBase.forall (fun ($x : $t) => iprop(∀ {$xs* : $t}, $Ψ)))
-macro_rules | `(iprop(∀ $x $y $xs*, $Ψ))           => ``(iprop(∀ $x, ∀ $y $xs*, $Ψ))
+macro_rules
+  | `(iprop(∀ _%$tk, $Ψ)) => ``(BIBase.forall (fun _%$tk => iprop($Ψ)))
+macro_rules
+  | `(iprop(∀ $x:ident, $Ψ)) => ``(BIBase.forall (fun $x => iprop($Ψ)))
+macro_rules
+  | `(iprop(∀ (_%$tk : $t), $Ψ)) => ``(BIBase.forall (fun (_%$tk : $t) => iprop($Ψ)))
+macro_rules
+  | `(iprop(∀ (_%$tk $xs* : $t), $Ψ)) =>
+    ``(BIBase.forall (fun (_%$tk : $t) => iprop(∀ ($xs* : $t), $Ψ)))
+macro_rules
+  | `(iprop(∀ ($x:ident : $t), $Ψ)) => ``(BIBase.forall (fun ($x : $t) => iprop($Ψ)))
+macro_rules
+  | `(iprop(∀ ($x:ident $xs* : $t), $Ψ)) =>
+    ``(BIBase.forall (fun ($x : $t) => iprop(∀ ($xs* : $t), $Ψ)))
+macro_rules
+  | `(iprop(∀ {_%$tk : $t}, $Ψ)) =>
+    ``(BIBase.forall (fun {_%$tk : $t}  => iprop($Ψ)))
+macro_rules
+  | `(iprop(∀ {_%$tk $xs* : $t}, $Ψ)) =>
+    ``(BIBase.forall (fun {_%$tk : $t}  => iprop(∀ {$xs* : $t}, $Ψ)))
+macro_rules
+  | `(iprop(∀ {$x:ident : $t}, $Ψ)) =>
+    ``(BIBase.forall (fun ($x : $t) => iprop($Ψ)))
+macro_rules
+  | `(iprop(∀ {$x:ident $xs* : $t}, $Ψ)) =>
+    ``(BIBase.forall (fun ($x : $t) => iprop(∀ {$xs* : $t}, $Ψ)))
+macro_rules
+  | `(iprop(∀ $x $y $xs*, $Ψ)) => ``(iprop(∀ $x, ∀ $y $xs*, $Ψ))
 
 -- `iprop` macros
 macro_rules
@@ -206,9 +227,9 @@ def intuitionisticallyIf (p : Bool) (P : PROP) := if p then □ P else P
 -/
 syntax:max "□?"        term:max ppHardSpace term:40 : term
 
-def persistentlyIf       [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <pers> P else P)
-def affinelyIf           [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <affine> P else P)
-def absorbinglyIf        [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <absorb> P else P)
+def persistentlyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <pers> P else P)
+def affinelyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <affine> P else P)
+def absorbinglyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <absorb> P else P)
 def intuitionisticallyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then □ P else P)
 
 macro_rules

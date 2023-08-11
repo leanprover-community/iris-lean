@@ -12,7 +12,8 @@ namespace Iris.Proofmode.Internal
 open Iris.Std
 open Lean Lean.Elab.Tactic Lean.Meta
 
-def icasesCoreExists (hypIndex : HypothesisIndex) (var : Name) (f : iCasesPat) : TacticM <| Option <| Name × iCasesPat := do
+def icasesCoreExists (hypIndex : HypothesisIndex) (var : Name) (f : iCasesPat) :
+    TacticM <| Option <| Name × iCasesPat := do
   -- destruct existential quantifier
   try evalTactic (← `(tactic|
     first
@@ -28,7 +29,8 @@ def icasesCoreExists (hypIndex : HypothesisIndex) (var : Name) (f : iCasesPat) :
   -- return remainig argument
   return (name, f)
 
-def icasesCoreConjunction (hypIndex : HypothesisIndex) (args : Array iCasesPat) : TacticM <| Array <| Name × iCasesPat := do
+def icasesCoreConjunction (hypIndex : HypothesisIndex) (args : Array iCasesPat) :
+    TacticM <| Array <| Name × iCasesPat := do
   if h : args.size < 2 then
     throwError "conjunction must contain at least two elements"
   else
@@ -51,7 +53,8 @@ def icasesCoreConjunction (hypIndex : HypothesisIndex) (args : Array iCasesPat) 
   -- return remaining arguments
   return remainingArguments
 where
-  destructChoice (hypIndex : HypothesisIndex) (args : Array iCasesPat) (i : Fin (args.size - 1)) : TacticM <| HypothesisIndex × (Array <| Name × iCasesPat) := do
+  destructChoice (hypIndex : HypothesisIndex) (args : Array iCasesPat) (i : Fin (args.size - 1)) :
+      TacticM <| HypothesisIndex × (Array <| Name × iCasesPat) := do
     have : i + 1 < args.size := Nat.add_lt_of_lt_sub i.isLt
     have : i     < args.size := Nat.lt_of_succ_lt this
 
@@ -67,7 +70,8 @@ where
       | throwError "failed to destruct conjunction"
     return result
 
-  destructRight (hypIndex : HypothesisIndex) (argR : iCasesPat) : TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
+  destructRight (hypIndex : HypothesisIndex) (argR : iCasesPat) :
+      TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
     -- destruct hypothesis
     try evalTactic (← `(tactic|
       first
@@ -86,7 +90,8 @@ where
     -- return new hypothesis index and remaining arguments
     return (hypIndex, #[(name, argR)])
 
-  destructLeft (hypIndex : HypothesisIndex) (argL : iCasesPat) : TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
+  destructLeft (hypIndex : HypothesisIndex) (argL : iCasesPat) :
+      TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
     -- destruct hypothesis
     try evalTactic (← `(tactic|
       first
@@ -105,7 +110,8 @@ where
     -- return new hypothesis index and remaining arguments
     return (hypIndex, #[(name, argL)])
 
-  destruct (hypIndex : HypothesisIndex) (argL argR : iCasesPat) : TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
+  destruct (hypIndex : HypothesisIndex) (argL argR : iCasesPat) :
+      TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
     -- destruct hypothesis
     try evalTactic (← `(tactic|
       first
@@ -127,7 +133,9 @@ where
     -- return new hypothesis index and remaining arguments
     return (hypIndex, #[(nameL, argL), (nameR, argR)])
 
-def icasesCoreDisjunction (hypIndex : HypothesisIndex) (args : Array iCasesPat) (mainGoal : MVarId) : TacticM <| Array <| MVarId × Name × iCasesPat := do
+def icasesCoreDisjunction
+    (hypIndex : HypothesisIndex) (args : Array iCasesPat) (mainGoal : MVarId) :
+    TacticM <| Array <| MVarId × Name × iCasesPat := do
   -- find main goal tag
   let tag ← mainGoal.getTag
 

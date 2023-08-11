@@ -341,12 +341,14 @@ theorem wand_spatial_multiple [BI PROP] (Q : PROP) : ⊢ P1 -∗ P2 -∗ (P1 -�
   ispecialize HPQ HP1 HP2 as HQ
   iexact HQ
 
-theorem wand_intuitionistic_multiple [BI PROP] (Q : PROP) : ⊢ □ P1 -∗ □ P2 -∗ □ (P1 -∗ □ P2 -∗ Q) -∗ □ Q := by
+theorem wand_intuitionistic_multiple [BI PROP] (Q : PROP) :
+    ⊢ □ P1 -∗ □ P2 -∗ □ (P1 -∗ □ P2 -∗ Q) -∗ □ Q := by
   iintro □HP1 □HP2 □HPQ
   ispecialize HPQ HP1 HP2 as HQ
   iexact HQ
 
-theorem wand_multiple [BI PROP] (Q : PROP) : ⊢ P1 -∗ □ P2 -∗ P3 -∗ □ (P1 -∗ P2 -∗ P3 -∗ Q) -∗ Q := by
+theorem wand_multiple [BI PROP] (Q : PROP) :
+    ⊢ P1 -∗ □ P2 -∗ P3 -∗ □ (P1 -∗ P2 -∗ P3 -∗ Q) -∗ Q := by
   iintro HP1 □HP2 HP3 HPQ
   ispecialize HPQ HP1 HP2 HP3 as HQ
   iexact HQ
@@ -371,12 +373,14 @@ theorem forall_spatial_intuitionistic [BI PROP] (Q : Nat → PROP) : ⊢ (∀ x,
   ispecialize HQ y as HQ
   iexact HQ
 
-theorem forall_spatial_multiple [BI PROP] (Q : Nat → Nat → PROP) : ⊢ (∀ x, ∀ y, Q x y) -∗ Q x y := by
+theorem forall_spatial_multiple [BI PROP] (Q : Nat → Nat → PROP) :
+    ⊢ (∀ x, ∀ y, Q x y) -∗ Q x y := by
   iintro HQ
   ispecialize HQ x y as HQ'
   iexact HQ'
 
-theorem forall_intuitionistic_multiple [BI PROP] (Q : Nat → Nat → PROP) : ⊢ □ (∀ x, ∀ y, Q x y) -∗ □ Q x y := by
+theorem forall_intuitionistic_multiple [BI PROP] (Q : Nat → Nat → PROP) :
+    ⊢ □ (∀ x, ∀ y, Q x y) -∗ □ Q x y := by
   iintro □HQ
   ispecialize HQ x y as HQ'
   iexact HQ'
@@ -386,7 +390,8 @@ theorem forall_multiple [BI PROP] (Q : Nat → Nat → PROP) : ⊢ (∀ x, □ (
   ispecialize HQ x y as HQ'
   iexact HQ'
 
-theorem multiple [BI PROP] (Q : Nat → PROP) : ⊢ □ P1 -∗ P2 -∗ (□ P1 -∗ (∀ x, P2 -∗ Q x)) -∗ Q y := by
+theorem multiple [BI PROP] (Q : Nat → PROP) :
+    ⊢ □ P1 -∗ P2 -∗ (□ P1 -∗ (∀ x, P2 -∗ Q x)) -∗ Q y := by
   iintro □HP1 HP2 HPQ
   ispecialize HPQ HP1 y HP2 as HQ
   iexact HQ
@@ -503,7 +508,8 @@ theorem disjunction [BI PROP] (Q : PROP) : Q ⊢ <affine> (P1 ∨ P2 ∨ P3) -�
   icases HP with (HP1 | HP2 | HP3)
   <;> iexact HQ
 
-theorem conjunction_and_disjunction [BIAffine PROP] (Q : PROP) : (P11 ∨ P12 ∨ P13) ∗ P2 ∗ (P31 ∨ P32 ∨ P33) ∗ Q ⊢ Q := by
+theorem conjunction_and_disjunction [BIAffine PROP] (Q : PROP) :
+    (P11 ∨ P12 ∨ P13) ∗ P2 ∗ (P31 ∨ P32 ∨ P33) ∗ Q ⊢ Q := by
   iintro HP
   icases HP with ⟨HP11 | HP12 | HP13, HP2, HP31 | HP32 | HP33, HQ⟩
   <;> iexact HQ
@@ -545,7 +551,8 @@ theorem move_to_pure_conjunction [BI PROP] (Q : PROP) : ⊢ <affine> ⌜φ⌝ �
   icases HφQ with ⟨⌜Hφ⌝, HQ⟩
   iexact HQ
 
-theorem move_to_pure_disjunction [BI PROP] (Q : PROP) : ⊢ <affine> ⌜φ1⌝ ∨ <affine> ⌜φ2⌝ -∗ Q -∗ Q := by
+theorem move_to_pure_disjunction [BI PROP] (Q : PROP) :
+    ⊢ <affine> ⌜φ1⌝ ∨ <affine> ⌜φ2⌝ -∗ Q -∗ Q := by
   iintro Hφ
   iintro HQ
   icases Hφ with (⌜Hφ1⌝ | ⌜Hφ2⌝)

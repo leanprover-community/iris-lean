@@ -8,11 +8,13 @@ import Iris.BI
 namespace Iris.Proofmode
 open Iris.BI
 
-/- The two type classes `AsEmpValid1` and `AsEmpValid2` are necessary since type class instance
+/-
+The two type classes `AsEmpValid1` and `AsEmpValid2` are necessary since type class instance
 search is used in both directions in `as_emp_valid_1` and `as_emp_valid_2`. When type class
-instance search is supposed to generate `φ` based on `P`, `AsEmpValid1` is used, since `φ` is declared as an
-`outParam`. Consequently, if type class instance search is supposed to generate `P`, `AsEmpValid2`
-is used. -/
+instance search is supposed to generate `φ` based on `P`, `AsEmpValid1` is used, since `φ` is
+declared as an `outParam`. Consequently, if type class instance search is supposed to generate `P`,
+`AsEmpValid2` is used.
+-/
 
 class AsEmpValid1 (φ : outParam Prop) {PROP : Type} (P : PROP) [BI PROP] : Prop where
   as_emp_valid : φ ↔ ⊢ P

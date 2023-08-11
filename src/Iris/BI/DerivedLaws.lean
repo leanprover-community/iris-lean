@@ -93,12 +93,15 @@ theorem imp_mono_l [BI PROP] {P P' Q : PROP} (h : P' ⊢ P) : (P → Q) ⊢ (P' 
 theorem imp_mono_r [BI PROP] {P Q Q' : PROP} (h : Q ⊢ Q') : (P → Q) ⊢ (P → Q') := imp_mono .rfl h
 
 @[rw_mono_rule]
-theorem imp_congr [BI PROP] {P P' Q Q' : PROP} (h1 : P ⊣⊢ Q) (h2 : P' ⊣⊢ Q') : (P → P') ⊣⊢ (Q → Q') :=
+theorem imp_congr [BI PROP] {P P' Q Q' : PROP}
+    (h1 : P ⊣⊢ Q) (h2 : P' ⊣⊢ Q') : (P → P') ⊣⊢ (Q → Q') :=
   ⟨imp_mono h1.2 h2.1, imp_mono h1.1 h2.2⟩
 
-theorem imp_congr_l [BI PROP] {P P' Q : PROP} (h : P ⊣⊢ P') : (P → Q) ⊣⊢ (P' → Q) := imp_congr h .rfl
+theorem imp_congr_l [BI PROP] {P P' Q : PROP} (h : P ⊣⊢ P') : (P → Q) ⊣⊢ (P' → Q) :=
+  imp_congr h .rfl
 
-theorem imp_congr_r [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P → Q) ⊣⊢ (P → Q') := imp_congr .rfl h
+theorem imp_congr_r [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P → Q) ⊣⊢ (P → Q') :=
+  imp_congr .rfl h
 
 @[rw_mono_rule]
 theorem forall_mono [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ⊢ Ψ a) : (∀ a, Φ a) ⊢ ∀ a, Ψ a :=
@@ -195,9 +198,11 @@ theorem wand_mono_r [BI PROP] {P Q Q' : PROP} (h : Q ⊢ Q') : (P -∗ Q) ⊢ P 
 theorem wand_congr [BI PROP] {P P' Q Q' : PROP} (h1 : P ⊣⊢ Q) (h2 : P' ⊣⊢ Q') :
     (P -∗ P') ⊣⊢ (Q -∗ Q') := ⟨wand_mono h1.2 h2.1, wand_mono h1.1 h2.2⟩
 
-theorem wand_congr_l [BI PROP] {P P' Q : PROP} (h : P ⊣⊢ P') : (P -∗ Q) ⊣⊢ (P' -∗ Q) := wand_congr h .rfl
+theorem wand_congr_l [BI PROP] {P P' Q : PROP} (h : P ⊣⊢ P') : (P -∗ Q) ⊣⊢ (P' -∗ Q) :=
+  wand_congr h .rfl
 
-theorem wand_congr_r [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P -∗ Q) ⊣⊢ (P -∗ Q') := wand_congr .rfl h
+theorem wand_congr_r [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P -∗ Q) ⊣⊢ (P -∗ Q') :=
+  wand_congr .rfl h
 
 theorem sep_comm [BI PROP] {P Q : PROP} : P ∗ Q ⊣⊢ Q ∗ P := ⟨sep_symm, sep_symm⟩
 instance [BI PROP] : Commutative (α := PROP) BiEntails sep := ⟨sep_comm⟩
@@ -261,9 +266,11 @@ theorem wand_rfl [BI PROP] {P : PROP} : ⊢ P -∗ P := wand_intro emp_sep_1
 theorem wandIff_congr [BI PROP] {P P' Q Q' : PROP} (h1 : P ⊣⊢ Q) (h2 : P' ⊣⊢ Q') :
     (P ∗-∗ P') ⊣⊢ (Q ∗-∗ Q') := and_congr (wand_congr h1 h2) (wand_congr h2 h1)
 
-theorem wandIff_congr_l [BI PROP] {P P' Q : PROP} (h : P ⊣⊢ P') : (P ∗-∗ Q) ⊣⊢ (P' ∗-∗ Q) := wandIff_congr h .rfl
+theorem wandIff_congr_l [BI PROP] {P P' Q : PROP} (h : P ⊣⊢ P') : (P ∗-∗ Q) ⊣⊢ (P' ∗-∗ Q) :=
+  wandIff_congr h .rfl
 
-theorem wandIff_congr_r [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P ∗-∗ Q) ⊣⊢ (P ∗-∗ Q') := wandIff_congr .rfl h
+theorem wandIff_congr_r [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P ∗-∗ Q) ⊣⊢ (P ∗-∗ Q') :=
+  wandIff_congr .rfl h
 
 theorem wandIff_refl [BI PROP] {P : PROP} : ⊢ P ∗-∗ P := and_intro wand_rfl wand_rfl
 
@@ -610,7 +617,8 @@ theorem intuitionistically_iff_persistently [BIAffine PROP] {P : PROP} : □ P �
 
 -- Conditional Affine
 @[simp] theorem affinelyIf_false [BI PROP] (P : PROP) : iprop(<affine>?false P) = P := rfl
-@[simp] theorem affinelyIf_true [BI PROP] (P : PROP) : iprop(<affine>?true P) = iprop(<affine> P) := rfl
+@[simp] theorem affinelyIf_true [BI PROP] (P : PROP) :
+    iprop(<affine>?true P) = iprop(<affine> P) := rfl
 
 @[rw_mono_rule]
 theorem affinelyIf_mono {p : Bool} [BI PROP] {P Q : PROP}
@@ -620,10 +628,12 @@ theorem affinelyIf_mono {p : Bool} [BI PROP] {P Q : PROP}
   | false => h
 
 @[rw_mono_rule]
-theorem affinelyIf_congr {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : <affine>?p P ⊣⊢ <affine>?p Q :=
+theorem affinelyIf_congr {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) :
+    <affine>?p P ⊣⊢ <affine>?p Q :=
   ⟨affinelyIf_mono h.1, affinelyIf_mono h.2⟩
 
-theorem affinelyIf_flag_mono {p q : Bool} [BI PROP] {P : PROP} (h : q → p) : <affine>?p P ⊢ <affine>?q P :=
+theorem affinelyIf_flag_mono {p q : Bool} [BI PROP] {P : PROP} (h : q → p) :
+    <affine>?p P ⊢ <affine>?q P :=
   match p, q with
   | true, true | false, false => .rfl
   | true, false => affinely_elim
@@ -639,70 +649,84 @@ theorem affinely_affinelyIf {p : Bool} [BI PROP] {P : PROP} : <affine> P ⊢ <af
   | true => .rfl
   | false => affinely_elim
 
-theorem affinelyIf_and {p : Bool} [BI PROP] {P Q : PROP} : <affine>?p (P ∧ Q) ⊣⊢ <affine>?p P ∧ <affine>?p Q :=
+theorem affinelyIf_and {p : Bool} [BI PROP] {P Q : PROP} :
+    <affine>?p (P ∧ Q) ⊣⊢ <affine>?p P ∧ <affine>?p Q :=
   match p with
   | false => .rfl
   | true => affinely_and
 
-theorem affinelyIf_and_l {p : Bool} [BI PROP] {P Q : PROP} : <affine>?p P ∧ Q ⊣⊢ <affine>?p (P ∧ Q) :=
+theorem affinelyIf_and_l {p : Bool} [BI PROP] {P Q : PROP} :
+    <affine>?p P ∧ Q ⊣⊢ <affine>?p (P ∧ Q) :=
   match p with
   | false => .rfl
   | true => affinely_and_l
 
-theorem affinelyIf_and_r {p : Bool} [BI PROP] {P Q : PROP} : P ∧ <affine>?p Q ⊣⊢ <affine>?p (P ∧ Q) :=
+theorem affinelyIf_and_r {p : Bool} [BI PROP] {P Q : PROP} :
+    P ∧ <affine>?p Q ⊣⊢ <affine>?p (P ∧ Q) :=
   match p with
   | false => .rfl
   | true => affinely_and_r
 
-theorem affinelyIf_or {p : Bool} [BI PROP] {P Q : PROP} : <affine>?p (P ∨ Q) ⊣⊢ <affine>?p P ∨ <affine>?p Q :=
+theorem affinelyIf_or {p : Bool} [BI PROP] {P Q : PROP} :
+    <affine>?p (P ∨ Q) ⊣⊢ <affine>?p P ∨ <affine>?p Q :=
   match p with
   | false => .rfl
   | true => affinely_or
 
-theorem affinelyIf_exists {p : Bool} [BI PROP] {Ψ : α → PROP} : <affine>?p (∃ a, Ψ a) ⊣⊢ ∃ a, <affine>?p (Ψ a) :=
+theorem affinelyIf_exists {p : Bool} [BI PROP] {Ψ : α → PROP} :
+    <affine>?p (∃ a, Ψ a) ⊣⊢ ∃ a, <affine>?p (Ψ a) :=
   match p with
   | false => .rfl
   | true => affinely_exists
 
-theorem affinelyIf_forall {p : Bool} [BI PROP] {Ψ : α → PROP} : <affine>?p (∀ a, Ψ a) ⊢ ∀ a, <affine>?p (Ψ a) :=
+theorem affinelyIf_forall {p : Bool} [BI PROP] {Ψ : α → PROP} :
+    <affine>?p (∀ a, Ψ a) ⊢ ∀ a, <affine>?p (Ψ a) :=
   match p with
   | false => .rfl
   | true => affinely_forall
 
 -- Conditional Absorbing
 @[simp] theorem absorbinglyIf_false [BI PROP] (P : PROP) : iprop(<absorb>?false P) = P := rfl
-@[simp] theorem absorbinglyIf_true [BI PROP] (P : PROP) : iprop(<absorb>?true P) = iprop(<absorb> P) := rfl
+@[simp] theorem absorbinglyIf_true [BI PROP] (P : PROP) :
+    iprop(<absorb>?true P) = iprop(<absorb> P) := rfl
 
 @[rw_mono_rule]
-theorem absorbinglyIf_mono {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊢ Q) : <absorb>?p P ⊢ <absorb>?p Q :=
+theorem absorbinglyIf_mono {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊢ Q) :
+    <absorb>?p P ⊢ <absorb>?p Q :=
   match p with
   | false => h
   | true => absorbingly_mono h
 
 @[rw_mono_rule]
-theorem absorbinglyIf_congr {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : <absorb>?p P ⊣⊢ <absorb>?p Q :=
+theorem absorbinglyIf_congr {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) :
+    <absorb>?p P ⊣⊢ <absorb>?p Q :=
   ⟨absorbinglyIf_mono h.1, absorbinglyIf_mono h.2⟩
 
 -- Conditional Persistent
 @[simp] theorem persistentlyIf_false [BI PROP] (P : PROP) : iprop(<pers>?false P) = P := rfl
-@[simp] theorem persistentlyIf_true [BI PROP] (P : PROP) : iprop(<pers>?true P) = iprop(<pers> P) := rfl
+@[simp] theorem persistentlyIf_true [BI PROP] (P : PROP) :
+    iprop(<pers>?true P) = iprop(<pers> P) := rfl
 
 @[rw_mono_rule]
-theorem persistentlyIf_mono {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊢ Q) : <pers>?p P ⊢ <pers>?p Q :=
+theorem persistentlyIf_mono {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊢ Q) :
+    <pers>?p P ⊢ <pers>?p Q :=
   match p with
   | false => h
   | true => persistently_mono h
 
 @[rw_mono_rule]
-theorem persistentlyIf_congr {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : <pers>?p P ⊣⊢ <pers>?p Q :=
+theorem persistentlyIf_congr {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) :
+    <pers>?p P ⊣⊢ <pers>?p Q :=
   ⟨persistentlyIf_mono h.1, persistentlyIf_mono h.2⟩
 
-theorem persistentlyIf_persistently {p : Bool} [BI PROP] {P : PROP} : <pers>?p <pers> P ⊣⊢ <pers> P :=
+theorem persistentlyIf_persistently {p : Bool} [BI PROP] {P : PROP} :
+    <pers>?p <pers> P ⊣⊢ <pers> P :=
   match p with
   | false => .rfl
   | true => persistently_idem
 
-theorem persistentlyIf_intutitionistically {p : Bool} [BI PROP] {P : PROP} : <pers>?p □ P ⊢ <pers> P :=
+theorem persistentlyIf_intutitionistically {p : Bool} [BI PROP] {P : PROP} :
+    <pers>?p □ P ⊢ <pers> P :=
   match p with
   | false => persistently_of_intuitionistically
   | true => persistently_mono intuitionistically_elim
@@ -718,7 +742,8 @@ theorem intuitionisticallyIf_mono {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊢ Q
   | true => intuitionistically_mono h
 
 @[rw_mono_rule]
-theorem intuitionisticallyIf_congr {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : □?p P ⊣⊢ □?p Q :=
+theorem intuitionisticallyIf_congr {p : Bool} [BI PROP] {P Q : PROP}
+    (h : P ⊣⊢ Q) : □?p P ⊣⊢ □?p Q :=
   ⟨intuitionisticallyIf_mono h.1, intuitionisticallyIf_mono h.2⟩
 
 theorem intuitionisticallyIf_elim {p : Bool} [BI PROP] {P : PROP} : □?p P ⊢ P :=
@@ -751,12 +776,14 @@ theorem intuitionisticallyIf_or (p : Bool) [BI PROP] {P Q : PROP} : □?p (P ∨
   | false => .rfl
   | true => intuitionistically_or
 
-theorem intuitionisticallyIf_exists {p : Bool} [BI PROP] {Ψ : α → PROP} : (□?p ∃ a, Ψ a) ⊣⊢ ∃ a, □?p Ψ a :=
+theorem intuitionisticallyIf_exists {p : Bool} [BI PROP] {Ψ : α → PROP} :
+    (□?p ∃ a, Ψ a) ⊣⊢ ∃ a, □?p Ψ a :=
   match p with
   | false => .rfl
   | true => intuitionistically_exists
 
-theorem intuitionisticallyIf_sep_2 {p : Bool} [BI PROP] {P Q : PROP} : □?p P ∗ □?p Q ⊢ □?p (P ∗ Q) :=
+theorem intuitionisticallyIf_sep_2 {p : Bool} [BI PROP] {P Q : PROP} :
+    □?p P ∗ □?p Q ⊢ □?p (P ∗ Q) :=
   match p with
   | false => .rfl
   | true => intuitionistically_sep_2

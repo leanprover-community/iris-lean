@@ -103,16 +103,16 @@ theorem env_mem_cons_2 [BI PROP] {P Q : PROP} {Ps : Env PROP} : P ∈ Ps → P �
   apply Env.Mem.tail
   exact h_Ps
 
-theorem env_delete_cons [BI PROP] {P : PROP} {Ps : Env PROP} {i : Nat} {h : i + 1 < (Env.cons P Ps).length} :
-  (Env.cons P Ps).delete ⟨i + 1, h⟩ = (Env.cons P <| Ps.delete ⟨i, Nat.lt_of_succ_lt_succ h⟩)
-:= by
+theorem env_delete_cons [BI PROP] {P : PROP} {Ps : Env PROP}
+    {i : Nat} {h : i + 1 < (Env.cons P Ps).length} :
+    (Env.cons P Ps).delete ⟨i + 1, h⟩ = Env.cons P (Ps.delete ⟨i, Nat.lt_of_succ_lt_succ h⟩) := by
   rw' [Env.delete]
   · exact P
   · exact Nat.zero_lt_succ _
 
-theorem env_get_cons [BI PROP] {P : PROP} {Ps : Env PROP} {i : Nat} {h : i + 1 < (Env.cons P Ps).length} :
-  (Env.cons P Ps).get ⟨i + 1, h⟩ = Ps.get ⟨i, Nat.lt_of_succ_lt_succ h⟩
-:= by
+theorem env_get_cons [BI PROP] {P : PROP} {Ps : Env PROP}
+    {i : Nat} {h : i + 1 < (Env.cons P Ps).length} :
+    (Env.cons P Ps).get ⟨i + 1, h⟩ = Ps.get ⟨i, Nat.lt_of_succ_lt_succ h⟩ := by
   rw' [Env.get]
   · exact Ps
   · exact Nat.zero_lt_succ _
@@ -133,11 +133,9 @@ theorem env_bigOp_and_append [BI PROP] {Γ : Env PROP} {P : PROP} :
   (intuitionistically_congr env_bigOp_append).trans intuitionistically_and_sep
 
 theorem env_idx_rec [BI PROP] (P : (Γ : Env PROP) → Fin Γ.length → Prop)
-  (zero : ∀ {P'} {Γ'} {is_lt}, P (.cons P' Γ') ⟨0, is_lt⟩)
-  (succ : ∀ {P'} {Γ'} {val} {is_lt} {is_lt'}, P Γ' ⟨val, is_lt⟩ → P (.cons P' Γ') ⟨Nat.succ val, is_lt'⟩) :
-  ∀ Γ i, P Γ i
-:= by
-  intro Γ i
+    (zero : ∀ {P' Γ' is_lt}, P (.cons P' Γ') ⟨0, is_lt⟩)
+    (succ : ∀ {P' Γ' val is_lt is_lt'}, P Γ' ⟨val, is_lt⟩ → P (.cons P' Γ') ⟨Nat.succ val, is_lt'⟩)
+    (Γ i) : P Γ i := by
   let ⟨val, is_lt⟩ := i
   induction val generalizing Γ
   case zero =>
@@ -350,12 +348,13 @@ context. If the boolean flag `rp` is set, the original hypothesis is removed eve
 the intuitionistic context. If it is not set, the original hypothesis is kept. The new hypothesis
 is added in both cases. -/
 @[reducible]
-def replace [BI PROP] (Δ : Envs PROP) (rp : Bool) (i : EnvsIndex.of Δ) (p : Bool) (P : PROP) : Envs PROP :=
-  Δ.delete rp i |>.append p P
+def replace [BI PROP] (Δ : Envs PROP) (rp : Bool) (i : EnvsIndex.of Δ) (p : Bool) (P : PROP) :
+    Envs PROP := Δ.delete rp i |>.append p P
 
 /-- Split the spatial context into two disjoint parts. See `Env.split` for details. -/
 @[reducible]
-def split [BI PROP] : (Δ : Envs PROP) → (mask : List Bool) → (mask.length = Δ.spatial.length) → Envs PROP × Envs PROP
+def split [BI PROP] :
+    (Δ : Envs PROP) → (mask : List Bool) → mask.length = Δ.spatial.length → Envs PROP × Envs PROP
   | ⟨Γₚ, Γₛ⟩, mask, h =>
     let ⟨Γₛ₁, Γₛ₂⟩ := Γₛ.split mask h
     (⟨Γₚ, Γₛ₁⟩, ⟨Γₚ, Γₛ₂⟩)
@@ -395,7 +394,9 @@ theorem natCmp_eq {m n} : natCmp m n = .eq ↔ n = m :=
 hypothesis at index `i` has been deleted. The indices `i` and `j` must reference
 different hypotheses. -/
 @[reducible]
-def updateIndexAfterDelete [BI PROP] (Δ : Envs PROP) : (rp : Bool) → (i : EnvsIndex.of Δ) → (j : EnvsIndex.of Δ) → (i.type = j.type → i.val ≠ j.val) → EnvsIndex.of (Δ.delete rp i)
+def updateIndexAfterDelete [BI PROP] (Δ : Envs PROP) :
+    (rp : Bool) → (i : EnvsIndex.of Δ) → (j : EnvsIndex.of Δ) →
+    (i.type = j.type → i.val ≠ j.val) → EnvsIndex.of (Δ.delete rp i)
   | rp, .p i, .s ⟨val, is_lt⟩, _ =>
     .s ⟨val, by cases rp <;> simp [is_lt]⟩
   | _, .s i, .p ⟨val, is_lt⟩, _ =>
@@ -405,12 +406,16 @@ def updateIndexAfterDelete [BI PROP] (Δ : Envs PROP) : (rp : Bool) → (i : Env
   | true, .p ⟨val_d, is_lt_d⟩, .p ⟨val, is_lt⟩, h_ne =>
     match h_cmp : natCmp val val_d with
     | .lt => EnvsIndex.p ⟨val, env_delete_idx_length_of_lt (natCmp_lt.1 h_cmp)⟩
-    | .gt => EnvsIndex.p ⟨natPred val, env_delete_idx_pred_length ⟨val, is_lt⟩ (Nat.zero_lt_of_lt (natCmp_gt.1 h_cmp))⟩
+    | .gt => EnvsIndex.p ⟨natPred val,
+      env_delete_idx_pred_length ⟨val, is_lt⟩ (Nat.zero_lt_of_lt (natCmp_gt.1 h_cmp))⟩
     | .eq => False.elim <| h_ne (by simp) (natCmp_eq.1 h_cmp)
   | rp, .s ⟨val_d, is_lt_d⟩, .s ⟨val, is_lt⟩, h_ne =>
     match h_cmp : natCmp val val_d with
-    | .lt => EnvsIndex.s ⟨val, by simp only [delete]; exact env_delete_idx_length_of_lt (natCmp_lt.1 h_cmp)⟩
-    | .gt => EnvsIndex.s ⟨natPred val, by simp only [delete]; exact env_delete_idx_pred_length ⟨val, is_lt⟩ (Nat.zero_lt_of_lt (natCmp_gt.1 h_cmp))⟩
+    | .lt => EnvsIndex.s ⟨val, by
+      simp only [delete]; exact env_delete_idx_length_of_lt (natCmp_lt.1 h_cmp)⟩
+    | .gt => EnvsIndex.s ⟨natPred val, by
+      simp only [delete]
+      exact env_delete_idx_pred_length ⟨val, is_lt⟩ (Nat.zero_lt_of_lt (natCmp_gt.1 h_cmp))⟩
     | .eq => False.elim <| h_ne (by simp) (natCmp_eq.1 h_cmp)
 
 end Envs

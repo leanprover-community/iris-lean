@@ -34,12 +34,14 @@ class Commutative (R : Relation α) (f : β → β → α) : Prop where
   comm {x y : β} : R (f x y) (f y x)
 export Commutative (comm)
 
-/-- Require that an element `i` of `α` is the left unit of a binary function `f` on `α` in a relation `R` on `α`. -/
+/-- Require that an element `i` of `α` is the left unit of a binary function `f` on `α` in a
+relation `R` on `α`. -/
 class LeftId (R : Relation α) (i : α) (f : α → α → α) : Prop where
   left_id {x : α} : R (f i x) x
 export LeftId (left_id)
 
-/-- Require that an element `i` of `α` is the right unit of a binary function `f` on `α` in a relation `R` on `α`. -/
+/-- Require that an element `i` of `α` is the right unit of a binary function `f` on `α` in a
+relation `R` on `α`. -/
 class RightId (R : Relation α) (i : α) (f : α → α → α) : Prop where
   right_id {x : α} : R (f x i) x
 export RightId (right_id)
