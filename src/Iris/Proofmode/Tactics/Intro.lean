@@ -45,9 +45,9 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
 
 variable {prop : Q(Type)} (bi : Q(BI $prop)) in
 partial def iIntroCore
-    (hyps : Hyps prop) (Q : Q($prop)) (pats : List iCasesPat)
-    (k : (hyps : Hyps prop) → (Q : Q($prop)) → MetaM Q($hyps.strip ⊢ $Q)) :
-    MetaM (Q($hyps.strip ⊢ $Q)) := do
+    {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List iCasesPat)
+    (k : ∀ {P}, Hyps bi P → (Q : Q($prop)) → MetaM Q($P ⊢ $Q)) :
+    MetaM (Q($P ⊢ $Q)) := do
   match pats with
   | [] => k hyps Q
   | pat :: pats =>
@@ -68,7 +68,7 @@ partial def iIntroCore
       withLocalDeclDQ (← getFreshName n) α fun x => do
         have B : Q($prop) := Expr.headBeta q($Φ $x)
         have : $B =Q $Φ $x := ⟨⟩
-        let pf : Q(∀ x, $hyps.strip ⊢ $Φ x) ← mkLambdaFVars #[x] <|← iIntroCore hyps B pats k
+        let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← iIntroCore hyps B pats k
         return q(from_forall_intro (Q := $Q) $pf)
     else
     let B ← mkFreshExprMVarQ q($prop)
@@ -85,7 +85,7 @@ partial def iIntroCore
       return q(wand_intro_intuitionistic (Q := $Q) $pf)
     | _, some _ =>
       let _ ← synthInstanceQ q(FromAffinely $B $A1)
-      let _ ← synthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $hyps.strip))
+      let _ ← synthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
       let pf ← iCasesCore bi hyps A2 q(false) B B ⟨⟩ pat (iIntroCore · A2 pats k)
       return q(imp_intro_spatial (Q := $Q) $pf)
     | _, none =>
@@ -103,8 +103,8 @@ elab "iintro" pats:(colGt icasesPat)* : tactic => do
 
   -- process patterns
   let goals ← IO.mkRef #[]
-  let pf ← iIntroCore bi hyps goal pats.toList fun hyps goal => do
-    let m : Q($hyps.strip ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
+  let pf ← iIntroCore bi hyps goal pats.toList fun {P} hyps goal => do
+    let m : Q($P ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
       IrisGoal.toExpr { prop, bi, hyps, goal }
     goals.modify (·.push m.mvarId!)
     pure m

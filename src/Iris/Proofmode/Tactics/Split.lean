@@ -14,16 +14,15 @@ theorem from_and_intro [BI PROP] {P Q A1 A2 : PROP} [inst : FromAnd Q A1 A2]
   (and_intro h1 h2).trans inst.1
 
 elab "isplit" : tactic => do
-  let (mvar, { prop, bi, hyps, goal }) ← istart (← getMainGoal)
+  let (mvar, { prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
-  have ehyps := hyps.strip
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
   let _ ← synthInstanceQ q(FromAnd $goal $A1 $A2)
-  let m1 : Q($ehyps ⊢ $A1) ← mkFreshExprSyntheticOpaqueMVar <|
+  let m1 : Q($e ⊢ $A1) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps, goal := A1 }
-  let m2 : Q($ehyps ⊢ $A2) ← mkFreshExprSyntheticOpaqueMVar <|
+  let m2 : Q($e ⊢ $A2) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps, goal := A2 }
   mvar.assign q(from_and_intro (Q := $goal) $m1 $m2)
   replaceMainGoal [m1.mvarId!, m2.mvarId!]
@@ -45,50 +44,45 @@ theorem split_ss [BI PROP] {P Q P1 P2 Q1 Q2 : PROP}
     (h1 : P ⊣⊢ P1 ∗ P2) (h2 : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ (P1 ∗ Q1) ∗ (P2 ∗ Q2) :=
   (sep_congr h1 h2).trans sep_sep_sep_comm
 
-inductive SplitResult (prop : Q(Type)) (bi : Q(BI $prop)) (e : Q($prop)) where
+inductive SplitResult {prop : Q(Type)} (bi : Q(BI $prop)) (e : Q($prop)) where
   | emp (_ : $e =Q BI.emp)
   | left
   | right
-  | split (lhs rhs : Hyps prop) (elhs erhs : Q($prop)) (pf : Q($e ⊣⊢ $elhs ∗ $erhs))
+  | split {elhs erhs : Q($prop)} (lhs : Hyps bi elhs) (rhs : Hyps bi erhs)
+          (pf : Q($e ⊣⊢ $elhs ∗ $erhs))
 
-variable (prop : Q(Type)) (bi : Q(BI $prop)) (toRight : Name → Bool) in
-def Hyps.splitCore : (h : Hyps prop) → SplitResult prop bi h.strip
-  | .emp _ => .emp ⟨⟩
-  | h@(.hyp _ ehyp .intuitionistic _ ty) =>
-    have : $ehyp =Q iprop(□ $ty) := ⟨⟩
-    .split h h ehyp ehyp q(intuitionistically_sep_dup)
-  | .hyp _ _ .spatial name _ => if toRight name then .right else .left
-  | .sep _ ehyp lhs rhs =>
-    let resl := lhs.splitCore; let elhs := lhs.strip
-    let resr := rhs.splitCore; let erhs := rhs.strip
-    have : iprop($elhs ∗ $erhs) =Q $ehyp := ⟨⟩
+variable {prop : Q(Type)} (bi : Q(BI $prop)) (toRight : Name → Bool) in
+def Hyps.splitCore : ∀ {e}, Hyps bi e → SplitResult bi e
+  | _, .emp _ => .emp ⟨⟩
+  | ehyp, h@(.hyp _ name b ty _) =>
+    match matchBool b with
+    | .inl _ =>
+      have : $ehyp =Q iprop(□ $ty) := ⟨⟩
+      .split h h q(intuitionistically_sep_dup)
+    | .inr _ => if toRight name then .right else .left
+  | _, .sep _ _ _ _ lhs rhs =>
+    let resl := lhs.splitCore
+    let resr := rhs.splitCore
     match resl, resr with
     | .emp _, .emp _ | .left, .emp _ | .emp _, .left | .left, .left => .left
     | .right, .emp _ | .emp _, .right | .right, .right => .right
-    | .left, .right => .split lhs rhs elhs erhs q(.rfl)
-    | .right, .left => .split rhs lhs erhs elhs q(sep_comm)
-    | .emp _, .split r1 r2 er1 er2 rpf => .split r1 r2 er1 er2 q(split_es $rpf)
-    | .left, .split r1 r2 er1 er2 rpf =>
-      .split (lhs.mkSep bi r1) r2 q(iprop($elhs ∗ $er1)) er2 q(split_ls $rpf)
-    | .right, .split r1 r2 er1 er2 rpf =>
-      .split r1 (lhs.mkSep bi r2) er1 q(iprop($elhs ∗ $er2)) q(split_rs $rpf)
-    | .split l1 l2 el1 el2 lpf, .emp _ => .split l1 l2 el1 el2 q(split_se $lpf)
-    | .split l1 l2 el1 el2 lpf, .left =>
-      .split (l1.mkSep bi rhs) l2 q(iprop($el1 ∗ $erhs)) el2 q(split_sl $lpf)
-    | .split l1 l2 el1 el2 lpf, .right =>
-      .split l1 (l2.mkSep bi rhs) el1 q(iprop($el2 ∗ $erhs)) q(split_sr $lpf)
-    | .split l1 l2 el1 el2 lpf, .split r1 r2 er1 er2 rpf =>
-      .split (l1.mkSep bi r1) (l2.mkSep bi r2) q(iprop($el1 ∗ $er1)) q(iprop($el2 ∗ $er2))
-        q(split_ss $lpf $rpf)
+    | .left, .right => .split lhs rhs q(.rfl)
+    | .right, .left => .split rhs lhs q(sep_comm)
+    | .emp _, .split r1 r2 rpf => .split r1 r2 q(split_es $rpf)
+    | .left, .split r1 r2 rpf => .split (lhs.mkSep r1) r2 q(split_ls $rpf)
+    | .right, .split r1 r2 rpf => .split r1 (lhs.mkSep r2) q(split_rs $rpf)
+    | .split l1 l2 lpf, .emp _ => .split l1 l2 q(split_se $lpf)
+    | .split l1 l2 lpf, .left => .split (l1.mkSep rhs) l2 q(split_sl $lpf)
+    | .split l1 l2 lpf, .right => .split l1 (l2.mkSep rhs) q(split_sr $lpf)
+    | .split l1 l2 lpf, .split r1 r2 rpf => .split (l1.mkSep r1) (l2.mkSep r2) q(split_ss $lpf $rpf)
 
-def Hyps.split (prop : Q(Type)) (bi : Q(BI $prop)) (toRight : Name → Bool) (hyps : Hyps prop) :
-    (_lhs _rhs : Hyps prop) × (elhs erhs : Q($prop)) × Q($(hyps.strip) ⊣⊢ $elhs ∗ $erhs) :=
-  let ehyps := hyps.strip
-  match hyps.splitCore prop bi toRight with
-  | .emp _ => ⟨hyps, hyps, ehyps, ehyps, q(sep_emp_rev)⟩
-  | .left => ⟨hyps, .mkEmp bi, ehyps, q(BI.emp), q(sep_emp_rev)⟩
-  | .right => ⟨.mkEmp bi, hyps, q(BI.emp), ehyps, q(emp_sep_rev)⟩
-  | .split lhs rhs el er pf => ⟨lhs, rhs, el, er, pf⟩
+def Hyps.split {prop : Q(Type)} (bi : Q(BI $prop)) (toRight : Name → Bool) {e} (hyps : Hyps bi e) :
+    (elhs erhs : Q($prop)) × Hyps bi elhs × Hyps bi erhs × Q($e ⊣⊢ $elhs ∗ $erhs) :=
+  match hyps.splitCore bi toRight with
+  | .emp _ => ⟨_, _, hyps, hyps, q(sep_emp_rev)⟩
+  | .left => ⟨_, _, hyps, .mkEmp bi, q(sep_emp_rev)⟩
+  | .right => ⟨_, _, .mkEmp bi, hyps, q(emp_sep_rev)⟩
+  | .split lhs rhs pf => ⟨_, _, lhs, rhs, pf⟩
 
 theorem sep_split [BI PROP] {P P1 P2 Q Q1 Q2 : PROP} [inst : FromSep Q Q1 Q2]
     (h : P ⊣⊢ P1 ∗ P2) (h1 : P1 ⊢ Q1) (h2 : P2 ⊢ Q2) : P ⊢ Q :=
@@ -119,7 +113,7 @@ elab "isplit" side:splitSide "[" hyps:ident,* "]" : tactic => do
   let _ ← synthInstanceQ q(FromSep $goal $Q1 $Q2)
 
   -- split conjunction
-  let ⟨lhs, rhs, el, er, pf⟩ := hyps.split prop bi (names.contains · == splitRight)
+  let ⟨el, er, lhs, rhs, pf⟩ := hyps.split bi (names.contains · == splitRight)
 
   let m1 : Q($el ⊢ $Q1) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps := lhs, goal := Q1 }

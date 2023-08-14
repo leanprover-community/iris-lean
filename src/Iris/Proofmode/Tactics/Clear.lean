@@ -34,10 +34,9 @@ elab "iclear" colGt hyp:ident : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
+  let some { prop, bi, e, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
 
-  let some ⟨hyps', out, _, _, _, pf⟩ := hyps.remove bi true name | throwError "unknown hypothesis"
-  let e := hyps.strip; let e' := hyps'.strip
+  let some ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true name | throwError "unknown hypothesis"
 
   let m : Q($e' ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps := hyps', goal }

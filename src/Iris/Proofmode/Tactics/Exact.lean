@@ -19,11 +19,11 @@ elab "iexact" colGt hyp:ident : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
-  let some { bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
-  let some ⟨hyps', _, out, p, _, pf⟩ := hyps.remove bi true name | throwError "unknown hypothesis"
+  let some { hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+  let some ⟨e', _, _, out, p, _, pf⟩ := hyps.remove true name | throwError "unknown hypothesis"
 
   let _ ← synthInstanceQ q(FromAssumption $p $out $goal)
-  let _ ← synthInstanceQ q(TCOr (Affine $hyps'.strip) (Absorbing $goal))
+  let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
 
   mvar.assign q(assumption (Q := $goal) $pf)
   replaceMainGoal []

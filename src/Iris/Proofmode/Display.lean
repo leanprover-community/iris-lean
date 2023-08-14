@@ -9,7 +9,7 @@ import Iris.Proofmode.Expr
 import Lean.PrettyPrinter.Delaborator
 
 namespace Iris.Proofmode
-open Iris.BI
+open Iris.BI Qq
 open Lean Lean.Expr Lean.Meta Lean.PrettyPrinter.Delaborator Lean.PrettyPrinter.Delaborator.SubExpr
 
 /- This file generates the state display for the Iris Proof Mode. It is implemented as a
@@ -38,14 +38,15 @@ def delabIrisGoal : Delab := do
   -- build syntax
   return ⟨← `(irisGoalStx| $hyps* ⊢ $goal:term)⟩
 where
-  delabHypotheses {prop} (hyps : Hyps prop)
+  delabHypotheses {prop bi s} (hyps : @Hyps prop bi s)
       (acc : Array (TSyntax ``irisHyp)) : DelabM (Array (TSyntax ``irisHyp)) := do
     match hyps with
     | .emp _ => pure acc
-    | .hyp _ _ .spatial name ty =>
-      acc.push <$> `(irisHyp| ∗$(mkIdent name) : $(← unpackIprop (← delab ty)))
-    | .hyp _ _ .intuitionistic name ty =>
-      acc.push <$> `(irisHyp| □$(mkIdent name) : $(← unpackIprop (← delab ty)))
-    | .sep _ _ lhs rhs => delabHypotheses rhs (← delabHypotheses lhs acc)
+    | .hyp _ name p ty _ =>
+      if isTrue p then
+        acc.push <$> `(irisHyp| □$(mkIdent name) : $(← unpackIprop (← delab ty)))
+      else
+        acc.push <$> `(irisHyp| ∗$(mkIdent name) : $(← unpackIprop (← delab ty)))
+    | .sep _ _ _ _ lhs rhs => delabHypotheses rhs (← delabHypotheses lhs acc)
 
 end Iris.Proofmode

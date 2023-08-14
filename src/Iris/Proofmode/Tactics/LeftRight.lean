@@ -13,15 +13,14 @@ theorem from_or_l [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
   (or_intro_l' h1).trans inst.1
 
 elab "ileft" : tactic => do
-  let (mvar, { prop, bi, hyps, goal }) ← istart (← getMainGoal)
+  let (mvar, { prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
   -- choose left side of disjunction
-  have ehyps := hyps.strip
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
   let _ ← synthInstanceQ q(FromOr $goal $A1 $A2)
-  let m : Q($ehyps ⊢ $A1) ← mkFreshExprSyntheticOpaqueMVar <|
+  let m : Q($e ⊢ $A1) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps, goal := A1 }
   mvar.assign q(from_or_l (Q := $goal) $m)
   replaceMainGoal [m.mvarId!]
@@ -31,15 +30,14 @@ theorem from_or_r [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
   (or_intro_r' h1).trans inst.1
 
 elab "iright" : tactic => do
-  let (mvar, { prop, bi, hyps, goal }) ← istart (← getMainGoal)
+  let (mvar, { prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
   -- choose right side of disjunction
-  have ehyps := hyps.strip
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
   let _ ← synthInstanceQ q(FromOr $goal $A1 $A2)
-  let m : Q($ehyps ⊢ $A2) ← mkFreshExprSyntheticOpaqueMVar <|
+  let m : Q($e ⊢ $A2) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps, goal := A2 }
   mvar.assign q(from_or_r (Q := $goal) $m)
   replaceMainGoal [m.mvarId!]

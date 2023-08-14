@@ -59,10 +59,9 @@ elab "ipure" colGt hyp:ident : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
+  let some { prop, bi, e, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
 
-  let some ⟨hyps', out, _, _, _, pf⟩ := hyps.remove bi true name | throwError "unknown hypothesis"
-  let e := hyps.strip; let e' := hyps'.strip
+  let some ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true name | throwError "unknown hypothesis"
 
   let (m, pf) ← ipureCore bi e e' out goal name pf fun _ _ => do
     let m ← mkFreshExprSyntheticOpaqueMVar <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
@@ -72,13 +71,12 @@ elab "ipure" colGt hyp:ident : tactic => do
   replaceMainGoal [m.mvarId!]
 
 elab "iemp_intro" : tactic => do
-  let (mvar, { prop, hyps, goal, .. }) ← istart (← getMainGoal)
+  let (mvar, { prop, e, goal, .. }) ← istart (← getMainGoal)
   mvar.withContext do
 
   let .true ← isDefEq goal q(emp : $prop) | throwError "goal is not `emp`"
-  have ehyps := hyps.strip
-  let _ ← synthInstanceQ q(Affine $ehyps)
-  mvar.assign q(affine (P := $ehyps))
+  let _ ← synthInstanceQ q(Affine $e)
+  mvar.assign q(affine (P := $e))
   replaceMainGoal []
 
 theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
@@ -90,10 +88,9 @@ theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
   (pure_intro hφ).trans h.1
 
 elab "ipure_intro" : tactic => do
-  let (mvar, { hyps, goal, .. }) ← istart (← getMainGoal)
+  let (mvar, { e, goal, .. }) ← istart (← getMainGoal)
   mvar.withContext do
 
-  have ehyps := hyps.strip
   let b ← mkFreshExprMVarQ q(Bool)
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let _ ← synthInstanceQ q(FromPure $b $goal $φ)
@@ -102,10 +99,10 @@ elab "ipure_intro" : tactic => do
   match ← whnf b with
   | .const ``true _ =>
     have : $b =Q true := ⟨⟩
-    let _ ← synthInstanceQ q(Affine $ehyps)
-    mvar.assign q(pure_intro_affine (P := $ehyps) (Q := $goal) $m)
+    let _ ← synthInstanceQ q(Affine $e)
+    mvar.assign q(pure_intro_affine (P := $e) (Q := $goal) $m)
   | .const ``false _ =>
     have : $b =Q false := ⟨⟩
-    mvar.assign q(pure_intro_spatial (P := $ehyps) (Q := $goal) $m)
+    mvar.assign q(pure_intro_spatial (P := $e) (Q := $goal) $m)
   | _ => throwError "failed to prove `FromPure _ {goal} _`"
   replaceMainGoal [m.mvarId!]

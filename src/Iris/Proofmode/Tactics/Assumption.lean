@@ -38,8 +38,8 @@ elab "iassumption_lean" : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
-  let some { bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
-  assumptionLean bi hyps.strip goal mvar
+  let some { bi, e, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+  assumptionLean bi e goal mvar
   replaceMainGoal []
 
 inductive AssumptionFastPath (prop : Q(Type)) (bi : Q(BI $prop)) (Q : Q($prop)) where
@@ -48,12 +48,9 @@ inductive AssumptionFastPath (prop : Q(Type)) (bi : Q(BI $prop)) (Q : Q($prop)) 
 
 variable {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop))
   (fastPath : AssumptionFastPath prop bi Q) in
-def assumptionFast (hyps : Hyps prop) : MetaM Q($hyps.strip ⊢ $Q) := do
-  let some ⟨inst, _, out, ty, b, _, pf⟩ ←
-    hyps.removeG bi true fun kind _ ty => try? do
-      let b := match kind with
-      | .intuitionistic => q(true)
-      | .spatial => q(false)
+def assumptionFast {e} (hyps : Hyps bi e) : MetaM Q($e ⊢ $Q) := do
+  let some ⟨inst, _, _, out, ty, b, _, pf⟩ ←
+    hyps.removeG true fun _ b ty => try? do
       synthInstance q(FromAssumption $b $ty $Q)
     | failure
   let (_ : Q(FromAssumption $b $ty $Q)) := inst
@@ -65,7 +62,7 @@ def assumptionFast (hyps : Hyps prop) : MetaM Q($hyps.strip ⊢ $Q) := do
     have : @BIAffine.toBI _ $s =Q $bi := ⟨⟩
     return q(assumption (Q := $Q) $pf)
 
-inductive AssumptionSlow (prop : Q(Type)) (bi : Q(BI $prop)) (Q e : Q($prop)) where
+inductive AssumptionSlow {prop : Q(Type)} (bi : Q(BI $prop)) (Q e : Q($prop)) where
   | none
   | affine (pf : Q(Affine $e))
   | main (pf : Q($e ⊢ $Q)) (pf : Option Q(Affine $e))
@@ -77,15 +74,10 @@ theorem assumption_r [BI PROP] {P Q R : PROP} [Affine P] (h : Q ⊢ R) : P ∗ Q
 
 variable {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop)) in
 def assumptionSlow (assume : Bool) :
-    (hyps : Hyps prop) → MetaM (AssumptionSlow prop bi Q hyps.strip)
-  | .emp s =>
-    have : $s =Q emp := ⟨⟩
+    ∀ {e}, Hyps bi e → MetaM (AssumptionSlow bi Q e)
+  | _, .emp _ =>
     Pure.pure (.affine q(emp_affine))
-  | .hyp _ out kind _ ty => do
-    let b := match kind with
-    | .intuitionistic => q(true)
-    | .spatial => q(false)
-    have : $out =Q iprop(□?$b $ty) := ⟨⟩
+  | out, .hyp _ _ b ty _ => do
     let fromAssum (_:Unit) := do
       let _ ← synthInstanceQ q(FromAssumption $b $ty $Q)
       let inst ← try? (synthInstanceQ q(Affine $out))
@@ -95,47 +87,27 @@ def assumptionSlow (assume : Bool) :
       try fromAssum () catch _ => try affine () catch _ => return .none
     else
       try affine () catch _ => try fromAssum () catch _ => return .none
-  | .sep _ s lhs rhs => do
-    let elhs := lhs.strip
-    let erhs := rhs.strip
+  | _, .sep _ elhs erhs _ lhs rhs => do
     match ← assumptionSlow assume rhs with
     | .none => return .none
-    | .affine hr =>
+    | .affine _ =>
       match ← assumptionSlow assume lhs with
       | .none => return .none
-      | .affine _ =>
-        have : $s =Q iprop($elhs ∗ $erhs) := ⟨⟩
-        return .affine q(sep_affine ..)
-      | .main lpf (linst : Option Q(Affine $elhs)) =>
-        let linst := linst.map fun hl =>
-          -- FIXME: these haves should not be necessary
-          have elhs := elhs; have erhs := erhs
-          have : Q(Affine $elhs) := hl; have : Q(Affine $erhs) := hr
-          have : $s =Q iprop($elhs ∗ $erhs) := ⟨⟩
-          q(sep_affine $elhs $erhs)
-        have : $s =Q iprop($elhs ∗ $erhs) := ⟨⟩
-        return .main q(assumption_l $lpf) linst
+      | .affine _ => return .affine q(sep_affine ..)
+      | .main lpf linst =>
+        return .main q(assumption_l $lpf) <| linst.map fun _ => q(sep_affine $elhs $erhs)
     | .main rpf rinst =>
       match ← assumptionSlow false lhs, rinst with
       | .none, _ | .main _ none, none => return .none
-      | .affine hl, rinst | .main _ (some hl), rinst =>
-        let rinst := rinst.map fun hr =>
-          -- FIXME: these haves should not be necessary
-          have elhs := elhs; have erhs := erhs
-          have : Q(Affine $elhs) := hl; have : Q(Affine $erhs) := hr
-          have : $s =Q iprop($elhs ∗ $erhs) := ⟨⟩
-          q(sep_affine $elhs $erhs)
-        have : $s =Q iprop($elhs ∗ $erhs) := ⟨⟩
-        return .main q(assumption_r $rpf) rinst
-      | .main lpf none, some _ =>
-        have : $s =Q iprop($elhs ∗ $erhs) := ⟨⟩
-        return .main q(assumption_l $lpf) none
+      | .affine _, rinst | .main _ (some _), rinst =>
+        return .main q(assumption_r $rpf) <| rinst.map fun _ => q(sep_affine $elhs $erhs)
+      | .main lpf none, some _ => return .main q(assumption_l $lpf) none
 
 elab "iassumption" : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
+  let some { prop, bi, e, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
 
   let inst : Option (AssumptionFastPath prop bi goal) ← try
     pure (some (.biAffine (← synthInstanceQ q(BIAffine $prop))))
@@ -149,5 +121,5 @@ elab "iassumption" : tactic => do
       pure pf
     mvar.assign pf
   catch _ =>
-    assumptionLean bi hyps.strip goal mvar
+    assumptionLean bi e goal mvar
   replaceMainGoal []

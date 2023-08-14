@@ -22,10 +22,10 @@ theorem sep_emp_intro_spatial [BI PROP] {P Q : PROP} (h : P ⊢ Q) : P ∗ emp �
 theorem sep_emp_intro_intuitionistic [BI PROP] {P Q : PROP}
     (h : P ⊢ Q) : P ∗ □ emp ⊢ Q := (sep_mono_r intuitionistically_emp.1).trans <| sep_emp.1.trans h
 
-def iCasesEmptyConj {prop : Q(Type)} (_bi : Q(BI $prop))
-    (hyps : Hyps prop) (Q A' : Q($prop)) (p : Q(Bool))
-    (k : (hyps : Hyps prop) → MetaM Q($hyps.strip ⊢ $Q)) :
-    MetaM (Q($hyps.strip ∗ □?$p $A' ⊢ $Q)) := do
+def iCasesEmptyConj {prop : Q(Type)} (bi : Q(BI $prop))
+    {P} (hyps : Hyps bi P) (Q A' : Q($prop)) (p : Q(Bool))
+    (k : ∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q)) :
+    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   try
     let ⟨_⟩ ← assertDefEqQ A' q(iprop(False))
     if p.constName! == ``true then
@@ -109,13 +109,13 @@ theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd t
   (sep_mono_r <| inst.1.trans intuitionistically_and_sep.1).trans <|
   sep_assoc.2.trans <| wand_elim h
 
-def iCasesSep {prop : Q(Type)} (_bi : Q(BI $prop))
-    (hyps : Hyps prop) (Q A' A1 A2 : Q($prop)) (p : Q(Bool))
+def iCasesSep {prop : Q(Type)} (bi : Q(BI $prop))
+    {P} (hyps : Hyps bi P) (Q A' A1 A2 : Q($prop)) (p : Q(Bool))
     (inst : Option Q(IntoAnd $p $A' $A1 $A2))
-    (k : (hyps : Hyps prop) → MetaM Q($hyps.strip ⊢ $Q))
-    (k1 k2 : (hyps : Hyps prop) → (Q B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) →
-      ((hyps : Hyps prop) → MetaM Q($hyps.strip ⊢ $Q)) → MetaM Q($hyps.strip ∗ $B ⊢ $Q)) :
-    MetaM (Q($hyps.strip ∗ □?$p $A' ⊢ $Q)) := do
+    (k : ∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q))
+    (k1 k2 : ∀ {P}, Hyps bi P → (Q B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) →
+      (∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q)) → MetaM Q($P ∗ $B ⊢ $Q)) :
+    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   if p.constName! == ``true then
     let some _ := inst | _ ← synthInstanceQ q(IntoAnd $p $A' $A1 $A2); unreachable!
     have : $p =Q true := ⟨⟩
@@ -199,23 +199,20 @@ theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp
 
 variable {prop : Q(Type)} (bi : Q(BI $prop)) in
 partial def iCasesCore
-    (hyps : Hyps prop) (Q : Q($prop)) (p : Q(Bool)) (A A' : Q($prop)) (_ : $A =Q iprop(□?$p $A'))
+    {P} (hyps : Hyps bi P) (Q : Q($prop)) (p : Q(Bool)) (A A' : Q($prop)) (_ : $A =Q iprop(□?$p $A'))
     (pat : iCasesPat)
-    (k : (hyps : Hyps prop) → MetaM Q($hyps.strip ⊢ $Q)) :
-    MetaM (Q($hyps.strip ∗ $A ⊢ $Q)) :=
+    (k : ∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q)) :
+    MetaM (Q($P ∗ $A ⊢ $Q)) :=
   match pat with
   | .one name => do
-    let kind := if p.constName! == ``true then .intuitionistic else .spatial
-    let hyp := .mkHyp bi kind (← getFreshName name) A'
-    if let .emp s := hyps then
-      have : $s =Q emp := ⟨⟩
+    let hyp := .mkHyp bi (← getFreshName name) p A' A
+    if let .emp _ := hyps then
       let pf : Q($A ⊢ $Q) ← k hyp
       pure q(of_emp_sep $pf)
     else
-      k (.mkSep bi hyps hyp)
+      k (.mkSep hyps hyp)
 
   | .clear => do
-    let P := hyps.strip
     let pf ← clearCore bi q(iprop($P ∗ $A)) P A Q q(.rfl)
     pure q($pf $(← k hyps))
 
@@ -232,7 +229,7 @@ partial def iCasesCore
       let Φ ← mkFreshExprMVarQ q($α → $prop)
       Pure.pure ⟨n, α, Φ, ← synthInstanceQ q(IntoExists $A' $Φ)⟩
     if let some ⟨n, α, Φ, inst⟩ := exres then
-      iCasesExists bi hyps.strip Q A' p n α Φ inst
+      iCasesExists bi P Q A' p n α Φ inst
         (iCasesCore hyps Q p · · · (.conjunction args) k)
     else
       let A1 ← mkFreshExprMVarQ q($prop)
@@ -241,10 +238,10 @@ partial def iCasesCore
         unless arg matches .clear || args matches [.clear] || p.constName! == ``true do failure
         synthInstanceQ q(IntoAnd $p $A' $A1 $A2)
       if let (.clear, some inst) := (arg, inst) then
-        iCasesAndLR bi hyps.strip Q A' A1 A2 p inst (right := true) fun B B' h =>
+        iCasesAndLR bi P Q A' A1 A2 p inst (right := true) fun B B' h =>
           iCasesCore hyps Q p B B' h (.conjunction args) @k
       else if let ([.clear], some inst) := (args, inst) then
-        iCasesAndLR bi hyps.strip Q A' A1 A2 p inst (right := false) fun B B' h =>
+        iCasesAndLR bi P Q A' A1 A2 p inst (right := false) fun B B' h =>
           iCasesCore hyps Q p B B' h arg @k
       else
         iCasesSep bi hyps Q A' A1 A2 p inst @k
@@ -252,23 +249,22 @@ partial def iCasesCore
           (iCasesCore · · p · · · (.conjunction args))
 
   | .disjunction (arg :: args) =>
-    iCasesOr bi hyps.strip Q A' p
+    iCasesOr bi P Q A' p
       (iCasesCore hyps Q p · · · arg @k)
       (iCasesCore hyps Q p · · · (.disjunction args) @k)
 
   | .pure arg => do
     let .one n := arg
       | throwError "cannot further destruct a hypothesis after moving it to the Lean context"
-    let P := hyps.strip
     (·.2) <$> ipureCore bi q(iprop($P ∗ $A)) P A Q (← getFreshName n) q(.rfl) fun _ _ =>
       ((), ·) <$> k hyps
 
   | .intuitionistic arg =>
-    iCasesIntuitionistic bi hyps.strip Q A' p fun B' =>
+    iCasesIntuitionistic bi P Q A' p fun B' =>
       iCasesCore hyps Q q(true) q(iprop(□ $B')) B' ⟨⟩ arg @k
 
   | .spatial arg =>
-    iCasesSpatial bi hyps.strip Q A' p fun B' =>
+    iCasesSpatial bi P Q A' p fun B' =>
       iCasesCore hyps Q q(false) B' B' ⟨⟩ arg @k
 
 elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
@@ -278,15 +274,15 @@ elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
     throwUnsupportedSyntax
   let pat ← liftMacroM <| iCasesPat.parse pat
 
-  let (mvar, { prop, bi, hyps, goal }) ← istart (← getMainGoal)
+  let (mvar, { prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
-  let some ⟨hyps', A, A', b, h, pf⟩ := hyps.remove bi true name | throwError "unknown hypothesis"
+  let some ⟨_, hyps', A, A', b, h, pf⟩ := hyps.remove true name | throwError "unknown hypothesis"
 
   -- process pattern
   let goals ← IO.mkRef #[]
   let pf2 ← iCasesCore bi hyps' goal b A A' h pat fun hyps => do
-    let m : Q($hyps.strip ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
+    let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
       IrisGoal.toExpr { prop, bi, hyps, goal }
     goals.modify (·.push m.mvarId!)
     pure m

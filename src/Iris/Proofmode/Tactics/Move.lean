@@ -24,37 +24,35 @@ theorem Replaces.apply [BI PROP] {P P' Q : PROP}
     (h : Replaces Q P P') (h_entails : P' ⊢ Q) : P ⊢ Q :=
   wand_entails <| (entails_wand h_entails).trans h
 
-inductive ReplaceHyp (prop : Q(Type)) (bi : Q(BI $prop)) (Q : Q($prop)) where
+inductive ReplaceHyp {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop)) where
   | none
-  | unchanged (hyps' : Hyps prop)
-  | main (hyps' : Hyps prop) (e e' : Q($prop)) (pf : Q(Replaces $Q $e $e'))
+  | unchanged (ehyps') (hyps' : Hyps bi ehyps')
+  | main (e e' : Q($prop)) (hyps' : Hyps bi e') (pf : Q(Replaces $Q $e $e'))
 
 variable [Monad m] {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop))
-  (name : Name) (repl : HypothesisKind → Q($prop) → MetaM (ReplaceHyp prop bi Q)) in
-def Hyps.replace : Hyps prop → MetaM (ReplaceHyp prop bi Q)
-  | .emp _ => pure .none
-  | .hyp _ _ kind name' ty => do
+  (name : Name) (repl : Q(Bool) → Q($prop) → MetaM (ReplaceHyp bi Q)) in
+def Hyps.replace : ∀ {e}, Hyps bi e → MetaM (ReplaceHyp bi Q)
+  | _, .emp _ => pure .none
+  | _, .hyp _ name' p ty _ => do
     if name == name' then
-      let res ← repl kind ty
-      if let .main hyps' e e' _ := res then
+      let res ← repl p ty
+      if let .main e e' hyps' _ := res then
         let e' ← instantiateMVarsQ e'
         if e == e' then
-          return .unchanged hyps'
+          return .unchanged _ hyps'
       return res
     else return .none
-  | .sep _ _ lhs rhs => do
+  | _, .sep _ elhs erhs _ lhs rhs => do
     match ← rhs.replace with
-    | .unchanged rhs' => return .unchanged (.mkSep bi lhs rhs')
-    | .main rhs' erhs' e' pf =>
-      have elhs := lhs.strip
-      let hyps' := .mkSep bi lhs rhs'
-      return .main hyps' q(iprop($elhs ∗ $erhs')) q(iprop($elhs ∗ $e')) q(replaces_r $pf)
+    | .unchanged _ rhs' => return .unchanged _ (.mkSep lhs rhs')
+    | .main erhs₀ _ rhs' pf =>
+      let hyps' := .mkSep lhs rhs'
+      return .main q(iprop($elhs ∗ $erhs₀)) _ hyps' q(replaces_r $pf)
     | .none => match ← lhs.replace with
-      | .unchanged lhs' => return .unchanged (.mkSep bi lhs' rhs)
-      | .main lhs' elhs' e' pf =>
-        have erhs := rhs.strip
-        let hyps' := .mkSep bi lhs' rhs
-        return .main hyps' q(iprop($elhs' ∗ $erhs)) q(iprop($e' ∗ $erhs)) q(replaces_l $pf)
+      | .unchanged _ lhs' => return .unchanged _ (.mkSep lhs' rhs)
+      | .main elhs₀ _ lhs' pf =>
+        let hyps' := .mkSep lhs' rhs
+        return .main q(iprop($elhs₀ ∗ $erhs)) _ hyps' q(replaces_l $pf)
       | .none => pure .none
 
 theorem to_persistent_spatial [BI PROP] {P P' Q : PROP}
@@ -81,22 +79,21 @@ elab "iintuitionistic" colGt hyp:ident : tactic => do
   let g ← instantiateMVars <| ← mvar.getType
   let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
 
-  match ← hyps.replace bi goal name fun kind ty => do
+  match ← hyps.replace bi goal name fun p ty => do
     let P' ← mkFreshExprMVarQ prop
-    match kind with
-    | .intuitionistic =>
-      let _ ← synthInstanceQ q(IntoPersistently true $ty $P')
-      return .main (.mkHyp bi .intuitionistic name P')
-        q(iprop(□ $ty)) q(iprop(□ $P')) q(to_persistent_intuitionistic)
-    | .spatial =>
-      let _ ← synthInstanceQ q(IntoPersistently false $ty $P')
+    let _ ← synthInstanceQ q(IntoPersistently $p $ty $P')
+    match matchBool p with
+    | .inl _ =>
+      return .main q(iprop(□ $ty)) q(iprop(□ $P')) (.mkHyp bi name p P' _)
+        q(to_persistent_intuitionistic)
+    | .inr _ =>
       let _ ← synthInstanceQ q(TCOr (Affine $ty) (Absorbing $goal))
-      return .main (.mkHyp bi .intuitionistic name P') ty q(iprop(□ $P')) q(to_persistent_spatial)
+      return .main ty q(iprop(□ $P')) (.mkHyp bi name q(true) P' _) q(to_persistent_spatial)
   with
   | .none => throwError "unknown hypothesis"
-  | .unchanged hyps' =>
+  | .unchanged _ hyps' =>
     mvar.setType <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
-  | .main hyps' _e e' pf =>
+  | .main _e e' hyps' pf =>
     let m : Q($e' ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
       IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
     mvar.assign q(Replaces.apply $pf $m)
@@ -117,20 +114,20 @@ elab "ispatial" colGt hyp:ident : tactic => do
   let g ← instantiateMVars <| ← mvar.getType
   let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
 
-  match ← hyps.replace bi goal name fun kind ty => do
+  match ← hyps.replace bi goal name fun p ty => do
     let P' ← mkFreshExprMVarQ prop
-    match kind with
-    | .intuitionistic =>
+    match matchBool p with
+    | .inl _ =>
       let _ ← synthInstanceQ q(FromAffinely $P' $ty true)
-      return .main (.mkHyp bi .spatial name P') q(iprop(□ $ty)) P' q(from_affine (p := true))
-    | .spatial =>
+      return .main q(iprop(□ $ty)) P' (.mkHyp bi name q(false) P' _) q(from_affine (p := true))
+    | .inr _ =>
       let _ ← synthInstanceQ q(FromAffinely $P' $ty false)
-      return .main (.mkHyp bi .spatial name P') ty P' q(from_affine (p := false))
+      return .main ty P' (.mkHyp bi name p P' _) q(from_affine (p := false))
   with
   | .none => throwError "unknown hypothesis"
-  | .unchanged hyps' =>
+  | .unchanged _ hyps' =>
     mvar.setType <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
-  | .main hyps' _e e' pf =>
+  | .main _e e' hyps' pf =>
     let m : Q($e' ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
       IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
     mvar.assign q(Replaces.apply $pf $m)

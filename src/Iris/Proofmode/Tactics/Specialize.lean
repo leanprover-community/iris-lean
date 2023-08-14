@@ -9,9 +9,9 @@ import Iris.Proofmode.Tactics.Remove
 namespace Iris.Proofmode
 open Lean Elab Tactic Meta Qq BI Std
 
-structure SpecializeState (prop : Q(Type)) (bi : Q(BI $prop)) (orig : Q($prop)) where
-  (hyps : Hyps prop) (out : Q($prop)) (b : Q(Bool))
-  pf : Q($orig ⊢ $hyps.strip ∗ □?$b $out)
+structure SpecializeState {prop : Q(Type)} (bi : Q(BI $prop)) (orig : Q($prop)) where
+  (e : Q($prop)) (hyps : Hyps bi e) (b : Q(Bool)) (out : Q($prop))
+  pf : Q($orig ⊢ $e ∗ □?$b $out)
 
 theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊣⊢ A3 ∗ □?p P1)
@@ -28,11 +28,11 @@ theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Type} {Φ 
   refine h.trans <| sep_mono_r <| intuitionisticallyIf_mono <| inst.1.trans (forall_elim a)
 
 def SpecializeState.process1 :
-    SpecializeState prop bi orig → Term → TermElabM (SpecializeState prop bi orig)
+    @SpecializeState prop bi orig → Term → TermElabM (SpecializeState bi orig)
   | { hyps, b, out, pf }, arg => do
     let name := arg.raw.getId
-    if let some ⟨hyps', out₁, out₁', b1, _, pf'⟩ :=
-      if name.isAnonymous then none else hyps.remove bi false arg.raw.getId
+    if let some ⟨_, hyps', out₁, out₁', b1, _, pf'⟩ :=
+      if name.isAnonymous then none else hyps.remove false arg.raw.getId
     then
       -- if the argument is a hypothesis then specialize the wand
       let b2 := if b1.constName! == ``true then b else q(false)
@@ -63,24 +63,21 @@ elab "ispecialize" hyp:ident args:(colGt term:max)* " as " name:ident : tactic =
   if nameTo.isAnonymous then
     throwUnsupportedSyntax
 
-  let (mvar, { prop, bi, hyps, goal }) ← istart (← getMainGoal)
+  let (mvar, { prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
   -- find hypothesis index
-  let some ⟨hyps', _, out', b, _, pf⟩ := hyps.remove bi (nameFrom == nameTo) nameFrom
+  let some ⟨_, hyps', _, out', b, _, pf⟩ := hyps.remove (nameFrom == nameTo) nameFrom
     | throwError "unknown hypothesis"
-  let e := hyps.strip
 
   let state := { hyps := hyps', out := out', b, pf := q(($pf).1) }
 
   -- specialize hypothesis
-  let { hyps, out, b, pf } ← liftM <| args.foldlM SpecializeState.process1 state
-  let ehyps := hyps.strip
+  let { e := ehyps, hyps, out, b, pf } ← liftM <| args.foldlM SpecializeState.process1 state
 
-  let kind := if b.constName! == ``true then .intuitionistic else .spatial
-  let hyp1 := .mkHyp bi kind nameTo out
-  let hyps' := hyps.mkSep bi hyp1
-  let ehyp1 := hyp1.strip
+  let ⟨ehyp1, _⟩ := mkIntuitionisticIf bi b out
+  let hyp1 := .mkHyp bi nameTo b out ehyp1
+  let hyps' := hyps.mkSep hyp1
   have pf : Q($e ⊢ $ehyps ∗ $ehyp1) := pf
   let m : Q($ehyps ∗ $ehyp1 ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
