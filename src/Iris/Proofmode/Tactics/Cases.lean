@@ -1,187 +1,295 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Mario Carneiro
 -/
+import Iris.Proofmode.Instances
 import Iris.Proofmode.Patterns.CasesPattern
-import Iris.Proofmode.Theorems
-import Iris.Proofmode.Tactics.Rename
-import Iris.Std
+import Iris.Proofmode.Tactics.Clear
+import Iris.Proofmode.Tactics.Move
+import Iris.Proofmode.Tactics.Pure
 
-namespace Iris.Proofmode.Internal
-open Iris.Std
-open Lean Lean.Elab.Tactic Lean.Meta
+namespace Iris.Proofmode
+open Lean Elab Tactic Meta Qq BI Std
 
-def icasesCoreExists (hypIndex : HypothesisIndex) (var : Name) (f : iCasesPat) :
-    TacticM <| Option <| Name × iCasesPat := do
-  -- destruct existential quantifier
-  try evalTactic (← `(tactic|
-    first
-    | refine tac_exists_destruct $(← hypIndex.quoteAsEnvsIndex) _ ?_
-      intro $(mkIdent var):ident
-    | fail
-  )) catch _ => return none
+theorem false_elim_spatial [BI PROP] {P Q : PROP} : P ∗ False ⊢ Q := wand_elim' false_elim
 
-  -- temporarily name hypothesis
-  let name ← mkFreshUserName `f
-  irenameCore { hypIndex with index := hypIndex.length - 1 } name
+theorem false_elim_intuitionistic [BI PROP] {P Q : PROP} : P ∗ □ False ⊢ Q :=
+  wand_elim' <| intuitionistically_elim.trans false_elim
 
-  -- return remainig argument
-  return (name, f)
+theorem sep_emp_intro_spatial [BI PROP] {P Q : PROP} (h : P ⊢ Q) : P ∗ emp ⊢ Q := sep_emp.1.trans h
 
-def icasesCoreConjunction (hypIndex : HypothesisIndex) (args : Array iCasesPat) :
-    TacticM <| Array <| Name × iCasesPat := do
-  if h : args.size < 2 then
-    throwError "conjunction must contain at least two elements"
-  else
-  -- proof that `args` is non-empty
-  have : 0 < args.size := by
-    rw [Nat.not_lt_eq] at h
-    let h := Nat.lt_of_succ_le h
-    exact Nat.zero_lt_of_lt h
+theorem sep_emp_intro_intuitionistic [BI PROP] {P Q : PROP}
+    (h : P ⊢ Q) : P ∗ □ emp ⊢ Q := (sep_mono_r intuitionistically_emp.1).trans <| sep_emp.1.trans h
 
-  -- destruct hypothesis with multiple conjunctions
-  let mut remainingArguments := #[(.anonymous, args[0])]
-  let mut hypIndex := hypIndex
-  for h : i in [:args.size - 1] do
-    let (h, ra) ← destructChoice hypIndex args ⟨i, h.upper⟩
-
-    -- update hypothesis index and collect remaining arguments
-    hypIndex := h
-    remainingArguments := remainingArguments |>.pop |>.append ra
-
-  -- return remaining arguments
-  return remainingArguments
-where
-  destructChoice (hypIndex : HypothesisIndex) (args : Array iCasesPat) (i : Fin (args.size - 1)) :
-      TacticM <| HypothesisIndex × (Array <| Name × iCasesPat) := do
-    have : i + 1 < args.size := Nat.add_lt_of_lt_sub i.isLt
-    have : i     < args.size := Nat.lt_of_succ_lt this
-
-    -- destruct hypothesis and clear one side if requested
-    if args[i] matches .clear then
-      if let some result ← destructRight hypIndex args[i.val + 1] then
-        return result
-    else if i + 1 == args.size - 1 && args[i.val + 1] matches .clear then
-      if let some result ← destructLeft hypIndex args[i] then
-        return result
-
-    let some result ← destruct hypIndex args[i] args[i.val + 1]
-      | throwError "failed to destruct conjunction"
-    return result
-
-  destructRight (hypIndex : HypothesisIndex) (argR : iCasesPat) :
-      TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
-    -- destruct hypothesis
-    try evalTactic (← `(tactic|
-      first
-      | refine tac_conjunction_destruct_choice $(← hypIndex.quoteAsEnvsIndex) false _ ?_
-        simp only [ite_true, ite_false]
-      | fail
-    )) catch _ => return none
-
-    -- update hypothesis index
-    let hypIndex := { hypIndex with index := hypIndex.length - 1 }
-
-    -- temporarily name hypothesis
-    let name ← mkFreshUserName `i
-    irenameCore hypIndex name
-
-    -- return new hypothesis index and remaining arguments
-    return (hypIndex, #[(name, argR)])
-
-  destructLeft (hypIndex : HypothesisIndex) (argL : iCasesPat) :
-      TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
-    -- destruct hypothesis
-    try evalTactic (← `(tactic|
-      first
-      | refine tac_conjunction_destruct_choice $(← hypIndex.quoteAsEnvsIndex) true _ ?_
-        simp only [ite_true, ite_false]
-      | fail
-    )) catch _ => return none
-
-    -- update hypothesis index
-    let hypIndex := { hypIndex with index := hypIndex.length - 1 }
-
-    -- temporarily name hypothesis
-    let name ← mkFreshUserName `i
-    irenameCore hypIndex name
-
-    -- return new hypothesis index and remaining arguments
-    return (hypIndex, #[(name, argL)])
-
-  destruct (hypIndex : HypothesisIndex) (argL argR : iCasesPat) :
-      TacticM <| Option <| HypothesisIndex × (Array <| Name × iCasesPat) := do
-    -- destruct hypothesis
-    try evalTactic (← `(tactic|
-      first
-      | refine tac_conjunction_destruct $(← hypIndex.quoteAsEnvsIndex) _ ?_
-      | fail
-    ))
-    catch _ => return none
-
-    -- update hypothesis index
-    let hypIndex := { hypIndex with index := hypIndex.length, length := hypIndex.length + 1 }
-
-    -- temporarily name hypotheses
-    let nameL ← mkFreshUserName `i
-    let nameR ← mkFreshUserName `i
-
-    irenameCore { hypIndex with index := hypIndex.length - 2 } nameL
-    irenameCore { hypIndex with index := hypIndex.length - 1 } nameR
-
-    -- return new hypothesis index and remaining arguments
-    return (hypIndex, #[(nameL, argL), (nameR, argR)])
-
-def icasesCoreDisjunction
-    (hypIndex : HypothesisIndex) (args : Array iCasesPat) (mainGoal : MVarId) :
-    TacticM <| Array <| MVarId × Name × iCasesPat := do
-  -- find main goal tag
-  let tag ← mainGoal.getTag
-
-  let mut goalsInd := #[mainGoal]
-  let mut hypIndex := hypIndex
-  for i in [1:args.size] do
-    -- assemble new goal tags
-    let tagL := tag ++ s!"Ind_{i}".toName
-    let tagR := if i < args.size - 1 then
-      tag ++ s!"Ind_{i + 1}_tmp".toName
+def iCasesEmptyConj {prop : Q(Type)} (_bi : Q(BI $prop))
+    (hyps : Hyps prop) (Q A' : Q($prop)) (p : Q(Bool))
+    (k : (hyps : Hyps prop) → MetaM Q($hyps.strip ⊢ $Q)) :
+    MetaM (Q($hyps.strip ∗ □?$p $A' ⊢ $Q)) := do
+  try
+    let ⟨_⟩ ← assertDefEqQ A' q(iprop(False))
+    if p.constName! == ``true then
+      have : $p =Q true := ⟨⟩; return q(false_elim_intuitionistic)
     else
-      tag ++ s!"Ind_{i + 1}".toName
+      have : $p =Q false := ⟨⟩; return q(false_elim_spatial)
+  catch _ =>
+    let ⟨_⟩ ← assertDefEqQ A' q(iprop(emp))
+    if p.constName! == ``true then
+      have : $p =Q true := ⟨⟩; return q(sep_emp_intro_intuitionistic $(← k hyps))
+    else
+      have : $p =Q false := ⟨⟩; return q(sep_emp_intro_spatial $(← k hyps))
 
-    -- destruct hypothesis
-    try evalTactic (← `(tactic|
-      first
-      | refine tac_disjunction_destruct $(← hypIndex.quoteAsEnvsIndex) _
-          ?$(mkIdent <| tagL):ident
-          ?$(mkIdent <| tagR):ident
-      | fail
-    ))
-    catch _ => throwError "failed to destruct disjunction"
 
-    -- update hypothesis index for new goals
-    hypIndex := { hypIndex with index := hypIndex.length - 1 }
+theorem exists_elim_spatial [BI PROP] {P A Q : PROP} {Φ : α → PROP} [inst : IntoExists A Φ]
+    (h : ∀ a, P ∗ Φ a ⊢ Q) : P ∗ A ⊢ Q :=
+  (sep_mono_r inst.1).trans <| sep_exists_l.1.trans (exists_elim h)
 
-    -- save new goals
-    let (some goalL, some goalR) ← (tagL, tagR).mapAllM findGoalFromTag?
-      | throwError "goal tag assignment failed"
-    goalsInd := goalsInd |>.pop |>.push goalL |>.push goalR
+theorem exists_elim_intuitionistic [BI PROP] {P A Q : PROP} {Φ : α → PROP} [IntoExists A Φ]
+    (h : ∀ a, P ∗ □ Φ a ⊢ Q) : P ∗ □ A ⊢ Q := exists_elim_spatial h
 
-    -- switch to right new goal
-    setGoals [goalR]
+def iCasesExists {prop : Q(Type)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
+    (name : Option Name) (α : Q(Type)) (Φ : Q(«$α» → «$prop»)) (_inst : Q(IntoExists «$A'» «$Φ»))
+    (k : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → MetaM Q($P ∗ $B ⊢ $Q)) :
+    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
+  withLocalDeclDQ (← getFreshName name) α fun x => do
+    have B' : Q($prop) := Expr.headBeta q($Φ $x)
+    have : $B' =Q $Φ $x := ⟨⟩
+    if p.constName! == ``true then
+      have : $p =Q true := ⟨⟩
+      let pf : Q(∀ x, $P ∗ □ $Φ x ⊢ $Q) ← mkLambdaFVars #[x] <|← k q(iprop(□ $B')) B' ⟨⟩
+      return q(exists_elim_intuitionistic (A := $A') $pf)
+    else
+      have : $p =Q false := ⟨⟩
+      let pf : Q(∀ x, $P ∗ $Φ x ⊢ $Q) ← mkLambdaFVars #[x] <|← k B' B' ⟨⟩
+      return q(exists_elim_spatial (A := $A') $pf)
 
-  -- temporarily name hypotheses and construct remaining arguments
-  let remainingArguments ← args |>.zip goalsInd |>.mapM fun (arg, goal) => do
-    let name ← mkFreshUserName `i
+theorem sep_and_elim_l [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
+    (h : P ∗ □?p A1 ⊢ Q) : P ∗ □?p A ⊢ Q :=
+  (sep_mono_r <| inst.1.trans <| intuitionisticallyIf_mono and_elim_l).trans h
 
-    setGoals [goal]
-    irenameCore { hypIndex with index := hypIndex.length - 1 } name
-    return (goal, name, arg)
+theorem and_elim_l_spatial [BI PROP] {P A Q A1 A2 : PROP} [IntoAnd false A A1 A2]
+    (h : P ∗ A1 ⊢ Q) : P ∗ A ⊢ Q := sep_and_elim_l (p := false) h
 
-  -- restore all new goals
-  setGoals goalsInd.toList
+theorem and_elim_l_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [IntoAnd true A A1 A2]
+    (h : P ∗ □ A1 ⊢ Q) : P ∗ □ A ⊢ Q := sep_and_elim_l (p := true) h
 
-  -- return remaining arguments
-  return remainingArguments
+theorem sep_and_elim_r [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
+    (h : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
+  (sep_mono_r <| inst.1.trans <| intuitionisticallyIf_mono and_elim_r).trans h
 
-end Iris.Proofmode.Internal
+theorem and_elim_r_spatial [BI PROP] {P A Q A1 A2 : PROP} [IntoAnd false A A1 A2]
+    (h : P ∗ A2 ⊢ Q) : P ∗ A ⊢ Q := sep_and_elim_r (p := false) h
+
+theorem and_elim_r_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [IntoAnd true A A1 A2]
+    (h : P ∗ □ A2 ⊢ Q) : P ∗ □ A ⊢ Q := sep_and_elim_r (p := true) h
+
+def iCasesAndLR {prop : Q(Type)} (_bi : Q(BI $prop)) (P Q A' A1 A2 : Q($prop)) (p : Q(Bool))
+    (_inst : Q(IntoAnd $p $A' $A1 $A2)) (right : Bool)
+    (k : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → MetaM Q($P ∗ $B ⊢ $Q)) :
+    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
+  if p.constName! == ``true then
+    have : $p =Q true := ⟨⟩
+    if right then
+      return q(and_elim_r_intuitionistic (A := $A') $(← k q(iprop(□ $A2)) A2 ⟨⟩))
+    else
+      return q(and_elim_l_intuitionistic (A := $A') $(← k q(iprop(□ $A1)) A1 ⟨⟩))
+  else
+    have : $p =Q false := ⟨⟩
+    if right then
+      return q(and_elim_r_spatial (A := $A') $(← k A2 A2 ⟨⟩))
+    else
+      return q(and_elim_l_spatial (A := $A') $(← k A1 A1 ⟨⟩))
+
+theorem sep_elim_spatial [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoSep A A1 A2]
+    (h : P ∗ A1 ⊢ A2 -∗ Q) : P ∗ A ⊢ Q :=
+  (sep_mono_r inst.1).trans <| sep_assoc.2.trans <| wand_elim h
+
+theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd true A A1 A2]
+    (h : P ∗ □ A1 ⊢ □ A2 -∗ Q) : P ∗ □ A ⊢ Q :=
+  (sep_mono_r <| inst.1.trans intuitionistically_and_sep.1).trans <|
+  sep_assoc.2.trans <| wand_elim h
+
+def iCasesSep {prop : Q(Type)} (_bi : Q(BI $prop))
+    (hyps : Hyps prop) (Q A' A1 A2 : Q($prop)) (p : Q(Bool))
+    (inst : Option Q(IntoAnd $p $A' $A1 $A2))
+    (k : (hyps : Hyps prop) → MetaM Q($hyps.strip ⊢ $Q))
+    (k1 k2 : (hyps : Hyps prop) → (Q B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) →
+      ((hyps : Hyps prop) → MetaM Q($hyps.strip ⊢ $Q)) → MetaM Q($hyps.strip ∗ $B ⊢ $Q)) :
+    MetaM (Q($hyps.strip ∗ □?$p $A' ⊢ $Q)) := do
+  if p.constName! == ``true then
+    let some _ := inst | _ ← synthInstanceQ q(IntoAnd $p $A' $A1 $A2); unreachable!
+    have : $p =Q true := ⟨⟩
+    let Q' := q(iprop(□ $A2 -∗ $Q))
+    let pf ← k1 hyps Q' q(iprop(□ $A1)) A1 ⟨⟩ fun hyps => do
+      let pf ← k2 hyps Q q(iprop(□ $A2)) A2 ⟨⟩ k
+      return q(wand_intro $pf)
+    return q(and_elim_intuitionistic (A := $A') $pf)
+  else
+    let _ ← synthInstanceQ q(IntoSep $A' $A1 $A2)
+    have : $p =Q false := ⟨⟩
+    let Q' := q(iprop($A2 -∗ $Q))
+    let pf ← k1 hyps Q' A1 A1 ⟨⟩ fun hyps => do
+      let pf ← k2 hyps Q A2 A2 ⟨⟩ k
+      return q(wand_intro $pf)
+    return q(sep_elim_spatial (A := $A') $pf)
+
+theorem or_elim_spatial [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
+    (h1 : P ∗ A1 ⊢ Q) (h2 : P ∗ A2 ⊢ Q) : P ∗ A ⊢ Q :=
+  (sep_mono_r inst.1).trans <| BI.sep_or_l.1.trans <| or_elim h1 h2
+
+theorem or_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [IntoOr A A1 A2]
+    (h1 : P ∗ □ A1 ⊢ Q) (h2 : P ∗ □ A2 ⊢ Q) : P ∗ □ A ⊢ Q := or_elim_spatial h1 h2
+
+def iCasesOr {prop : Q(Type)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
+    (k1 k2 : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → MetaM Q($P ∗ $B ⊢ $Q)) :
+    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
+  let A1 ← mkFreshExprMVarQ q($prop)
+  let A2 ← mkFreshExprMVarQ q($prop)
+  let _ ← synthInstanceQ q(IntoOr $A' $A1 $A2)
+  if p.constName! == ``true then
+    have : $p =Q true := ⟨⟩
+    let pf1 ← k1 q(iprop(□ $A1)) A1 ⟨⟩
+    let pf2 ← k2 q(iprop(□ $A2)) A2 ⟨⟩
+    return q(or_elim_intuitionistic (A := $A') $pf1 $pf2)
+  else
+    have : $p =Q false := ⟨⟩
+    let pf1 ← k1 A1 A1 ⟨⟩
+    let pf2 ← k2 A2 A2 ⟨⟩
+    return q(or_elim_spatial (A := $A') $pf1 $pf2)
+
+theorem intuitionistic_elim_spatial [BI PROP] {A A' Q : PROP}
+    [IntoPersistently false A A'] [TCOr (Affine A) (Absorbing Q)]
+    (h : P ∗ □ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_r to_persistent_spatial).apply h
+
+theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP} [IntoPersistently true A A']
+    (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q := intuitionistic_elim_spatial h
+
+def iCasesIntuitionistic {prop : Q(Type)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
+    (k : (B' : Q($prop)) → MetaM Q($P ∗ □ $B' ⊢ $Q)) :
+    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
+  let B' ← mkFreshExprMVarQ q($prop)
+  let _ ← synthInstanceQ q(IntoPersistently $p $A' $B')
+  if p.constName! == ``true then
+    have : $p =Q true := ⟨⟩
+    return q(intuitionistic_elim_intuitionistic $(← k B'))
+  else
+    have : $p =Q false := ⟨⟩
+    let _ ← synthInstanceQ q(TCOr (Affine $A') (Absorbing $Q))
+    return q(intuitionistic_elim_spatial (A := $A') $(← k B'))
+
+theorem spatial_elim_spatial [BI PROP] {A A' Q : PROP} [FromAffinely A' A false]
+    (h : P ∗ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_r (from_affine (p := false))).apply h
+
+theorem spatial_elim_intuitionistic [BI PROP] {A A' Q : PROP} [FromAffinely A' A true]
+    (h : P ∗ A' ⊢ Q) : P ∗ □ A ⊢ Q := (replaces_r (from_affine (p := true))).apply h
+
+def iCasesSpatial {prop : Q(Type)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
+    (k : (B' : Q($prop)) → MetaM Q($P ∗ $B' ⊢ $Q)) :
+    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
+  let B' ← mkFreshExprMVarQ q($prop)
+  let _ ← synthInstanceQ q(FromAffinely $B' $A' $p)
+  if p.constName! == ``true then
+    have : $p =Q true := ⟨⟩
+    return q(spatial_elim_intuitionistic $(← k B'))
+  else
+    have : $p =Q false := ⟨⟩
+    return q(spatial_elim_spatial (A := $A') $(← k B'))
+
+theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
+
+variable {prop : Q(Type)} (bi : Q(BI $prop)) in
+partial def iCasesCore
+    (hyps : Hyps prop) (Q : Q($prop)) (p : Q(Bool)) (A A' : Q($prop)) (_ : $A =Q iprop(□?$p $A'))
+    (pat : iCasesPat)
+    (k : (hyps : Hyps prop) → MetaM Q($hyps.strip ⊢ $Q)) :
+    MetaM (Q($hyps.strip ∗ $A ⊢ $Q)) :=
+  match pat with
+  | .one name => do
+    let kind := if p.constName! == ``true then .intuitionistic else .spatial
+    let hyp := .mkHyp bi kind (← getFreshName name) A'
+    if let .emp s := hyps then
+      have : $s =Q emp := ⟨⟩
+      let pf : Q($A ⊢ $Q) ← k hyp
+      pure q(of_emp_sep $pf)
+    else
+      k (.mkSep bi hyps hyp)
+
+  | .clear => do
+    let P := hyps.strip
+    let pf ← clearCore bi q(iprop($P ∗ $A)) P A Q q(.rfl)
+    pure q($pf $(← k hyps))
+
+  | .conjunction [arg] | .disjunction [arg] => iCasesCore hyps Q p A A' ⟨⟩ arg @k
+
+  | .disjunction [] => throwUnsupportedSyntax
+
+  | .conjunction [] => iCasesEmptyConj bi hyps Q A' p @k
+
+  | .conjunction (arg :: args) => do
+    let exres ← try? (α := _ × (α : Q(Type)) × (Φ : Q($α → $prop)) × Q(IntoExists $A' $Φ)) do
+      let .one n := arg | failure
+      let α ← mkFreshExprMVarQ q(Type)
+      let Φ ← mkFreshExprMVarQ q($α → $prop)
+      Pure.pure ⟨n, α, Φ, ← synthInstanceQ q(IntoExists $A' $Φ)⟩
+    if let some ⟨n, α, Φ, inst⟩ := exres then
+      iCasesExists bi hyps.strip Q A' p n α Φ inst
+        (iCasesCore hyps Q p · · · (.conjunction args) k)
+    else
+      let A1 ← mkFreshExprMVarQ q($prop)
+      let A2 ← mkFreshExprMVarQ q($prop)
+      let inst ← try? (α := Q(IntoAnd $p $A' $A1 $A2)) do
+        unless arg matches .clear || args matches [.clear] || p.constName! == ``true do failure
+        synthInstanceQ q(IntoAnd $p $A' $A1 $A2)
+      if let (.clear, some inst) := (arg, inst) then
+        iCasesAndLR bi hyps.strip Q A' A1 A2 p inst (right := true) fun B B' h =>
+          iCasesCore hyps Q p B B' h (.conjunction args) @k
+      else if let ([.clear], some inst) := (args, inst) then
+        iCasesAndLR bi hyps.strip Q A' A1 A2 p inst (right := false) fun B B' h =>
+          iCasesCore hyps Q p B B' h arg @k
+      else
+        iCasesSep bi hyps Q A' A1 A2 p inst @k
+          (iCasesCore · · p · · · arg)
+          (iCasesCore · · p · · · (.conjunction args))
+
+  | .disjunction (arg :: args) =>
+    iCasesOr bi hyps.strip Q A' p
+      (iCasesCore hyps Q p · · · arg @k)
+      (iCasesCore hyps Q p · · · (.disjunction args) @k)
+
+  | .pure arg => do
+    let .one n := arg
+      | throwError "cannot further destruct a hypothesis after moving it to the Lean context"
+    let P := hyps.strip
+    (·.2) <$> ipureCore bi q(iprop($P ∗ $A)) P A Q (← getFreshName n) q(.rfl) fun _ _ =>
+      ((), ·) <$> k hyps
+
+  | .intuitionistic arg =>
+    iCasesIntuitionistic bi hyps.strip Q A' p fun B' =>
+      iCasesCore hyps Q q(true) q(iprop(□ $B')) B' ⟨⟩ arg @k
+
+  | .spatial arg =>
+    iCasesSpatial bi hyps.strip Q A' p fun B' =>
+      iCasesCore hyps Q q(false) B' B' ⟨⟩ arg @k
+
+elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
+  -- parse syntax
+  let name := hyp.getId
+  if name.isAnonymous then
+    throwUnsupportedSyntax
+  let pat ← liftMacroM <| iCasesPat.parse pat
+
+  let (mvar, { prop, bi, hyps, goal }) ← istart (← getMainGoal)
+  mvar.withContext do
+
+  let some ⟨hyps', A, A', b, h, pf⟩ := hyps.remove bi true name | throwError "unknown hypothesis"
+
+  -- process pattern
+  let goals ← IO.mkRef #[]
+  let pf2 ← iCasesCore bi hyps' goal b A A' h pat fun hyps => do
+    let m : Q($hyps.strip ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
+      IrisGoal.toExpr { prop, bi, hyps, goal }
+    goals.modify (·.push m.mvarId!)
+    pure m
+
+  mvar.assign q(($pf).1.trans $pf2)
+  replaceMainGoal (← goals.get).toList

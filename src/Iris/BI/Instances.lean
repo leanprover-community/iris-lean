@@ -146,3 +146,26 @@ instance persistentlyIf_absorbing [BI PROP] (P : PROP) (p : Bool) [Absorbing P] 
 
 instance (priority := default + 10) biAffineAbsorbing [BIAffine PROP] (P : PROP) : Absorbing P where
   absorbing := (sep_mono_l affine).trans emp_sep.1
+
+-- Intuitionistic
+instance emp_intuitionistic [BI PROP] : Intuitionistic iprop((emp : PROP)) where
+  intuitionistic := intuitionistically_emp.2
+
+instance and_intuitionistic [BI PROP] (P Q : PROP) [Intuitionistic P] [Intuitionistic Q] :
+    Intuitionistic iprop(P ∧ Q) where
+  intuitionistic := (and_mono intuitionistic intuitionistic).trans intuitionistically_and.2
+
+instance or_intuitionistic [BI PROP] (P Q : PROP) [Intuitionistic P] [Intuitionistic Q] :
+    Intuitionistic iprop(P ∨ Q) where
+  intuitionistic := (or_mono intuitionistic intuitionistic).trans intuitionistically_or.2
+
+instance exists_intuitionistic [BI PROP] (Φ : α → PROP) [∀ x, Intuitionistic (Φ x)] :
+    Intuitionistic iprop(∃ x, Φ x) where
+  intuitionistic := (exists_mono fun _ => intuitionistic).trans intuitionistically_exists.2
+
+instance sep_intuitionistic [BI PROP] (P Q : PROP) [Intuitionistic P] [Intuitionistic Q] :
+    Intuitionistic iprop(P ∗ Q) where
+  intuitionistic := (sep_mono intuitionistic intuitionistic).trans intuitionistically_sep_2
+
+instance intuitionistically_intuitionistic [BI PROP] (P : PROP) : Intuitionistic iprop(□ P) where
+  intuitionistic := intuitionistically_idem.2

@@ -21,8 +21,8 @@ instance : TCTrue := TCTrue.t
 /-- Type class version of `Or`, i.e. a type class for which an instance exists if an instance of any
 of the listed type classes is present. -/
 class inductive TCOr (T U : Sort _)
-  | l : [T] → TCOr T U
-  | r : [U] → TCOr T U
+  | l [t : T] : TCOr T U
+  | r [u : U] : TCOr T U
 
 instance [t : T] : TCOr T U := @TCOr.l T U t
 instance [u : U] : TCOr T U := @TCOr.r T U u

@@ -1,153 +1,103 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Mario Carneiro
 -/
+import Qq
 import Iris.BI
-import Iris.Proofmode.Environments
 import Iris.Std.Expr
 
 namespace Iris.Proofmode
 open Iris.BI
-open Lean Lean.Expr Lean.Meta
+open Lean Lean.Expr Lean.Meta Qq
 
-/-- Return whether `expr` is an application of `BIBase.emp`. -/
-def isEmp (expr : Expr) : MetaM Bool := do
-  let expr ← withReducible <| whnf expr
-  return expr.isAppOfArity ``BIBase.emp 2
+def nameAnnotation := `name
 
-/-- Return whether `expr` is an application of `EnvsEntails`. -/
-def isEnvsEntails (expr : Expr) : MetaM Bool := do
-  let expr ← withReducible <| whnf expr
-  return expr.isAppOfArity ``EnvsEntails 4
+def parseName? : Expr → Option (Name × Expr)
+  | .mdata d e => do
+    let .true := d.size == 1 | none
+    let some (DataValue.ofName v) := d.find nameAnnotation | none
+    some (v, e)
+  | _ => none
 
-/-- Extract the premise and conclusion from an application of `BIBase.entails`. -/
-def extractEntails? (expr : Expr) : MetaM <| Option <| Expr × Expr := do
-  let expr ← withReducible <| whnf expr
-  let some #[_, _, P, Q] := appM? expr ``Entails
-    | return none
-  return some (P, Q)
+def mkNameAnnotation (name : Name) (e : Expr) : Expr :=
+  .mdata ⟨[(nameAnnotation, .ofName name)]⟩ e
 
-/-- Extract the intuitionistic and spatial context, as well as the goal from an application
-of `EnvsEntails`. -/
-def extractEnvsEntails? (expr : Expr) : MetaM <| Option <| Expr × Expr × Expr := do
-  let expr ← withReducible <| whnf expr
-  let some #[_, _, envs, P] := appM? expr ``EnvsEntails
-    | return none
-  let envs ← withReducible <| whnf envs
-  let some #[_, _, Γₚ, Γₛ] := appM? envs ``Envs.mk
-    | return none
-  return some (Γₚ, Γₛ, P)
+/-- Kind of hypotheses. -/
+inductive HypothesisKind where
+  | intuitionistic | spatial
+  deriving BEq
 
-/-- Update an application of `EnvsEntails` with a new intuitionistic (`Γₚ`) and spatial (`Γₛ`)
-context, as well as with a new goal (`P`). If any part is `none`, the value from the original
-expression `expr` is used instead. -/
-def modifyEnvsEntails? (expr : Expr) (Γₚ Γₛ P : Option Expr) : MetaM <| Option Expr := do
-  let expr ← withReducible <| whnf expr
-  let some #[_, _, envs, _] := appM? expr ``EnvsEntails
-    | return none
-  let envs ← withReducible <| whnf envs
-  let some #[_, _, _, _] := appM? envs ``Envs.mk
-    | return none
-  let envs := modifyAppOptM envs #[none, none, Γₚ, Γₛ]
-  let expr := modifyAppOptM expr #[none, none, envs, P]
-  return some expr
+inductive Hyps (prop : Q(Type)) where
+  | emp (tm : Q($prop))
+  | sep (tm strip : Q($prop)) (lhs rhs : Hyps prop)
+  | hyp (tm strip : Q($prop)) (kind : HypothesisKind) (name : Name) (ty : Q($prop))
 
+def Hyps.tm : Hyps prop → Q($prop)
+  | .emp tm | .sep tm .. | .hyp tm .. => tm
 
-namespace EnvExpr
+def Hyps.strip {prop : Q(Type)} : Hyps prop → Q($prop)
+  | .emp tm | .sep _ tm .. | .hyp _ tm .. => tm
 
-/-- Return `true` iff any expression in the environment represented by `env` fulfills the predicate
-`pred`. The function returns `none` if `env` is not an application of `Env.cons` and `Env.nil`. -/
-partial def any? (env : Expr) (pred : Expr → Bool) : MetaM <| Option Bool := do
-  let env ← whnf env
-  if let some (_, a, env') := app3? env ``Env.cons then
-    if pred a then return true
-    else any? env' pred
-  else if let some _ := app1? env ``Env.nil then
-    return false
+inductive PathElem | left | right
+
+def Hyps.mkEmp {prop : Q(Type)} (_bi : Q(BI $prop)) : Hyps prop :=
+  .emp q(BI.emp : $prop)
+
+def Hyps.mkSep {prop : Q(Type)} (_bi : Q(BI $prop)) (lhs rhs : Hyps prop) : Hyps prop :=
+  .sep q(BI.sep $(lhs.tm) $(rhs.tm) : $prop) q(BI.sep $(lhs.strip) $(rhs.strip) : $prop) lhs rhs
+
+def Hyps.mkHyp {prop : Q(Type)} (_bi : Q(BI $prop))
+    (kind : HypothesisKind) (name : Name) (ty : Q($prop)) : Hyps prop :=
+  have e : Q($prop) := mkNameAnnotation name ty
+  match kind with
+  | .intuitionistic =>
+    .hyp q(iprop(□ $e)) q(iprop(□ $ty)) kind name ty
+  | .spatial => .hyp e ty kind name ty
+
+def Hyps.find? (name : Name) : Hyps prop → Option (List PathElem × HypothesisKind × Q($prop))
+  | .emp _ => none
+  | .sep _ _ lhs rhs =>
+    match rhs.find? name with
+    | some (ctx, r) => some (.right :: ctx, r)
+    | none => match lhs.find? name with
+      | some (ctx, r) => some (.left :: ctx, r)
+      | none => none
+  | .hyp _ _ kind name' ty => if name == name' then some ([], kind, ty) else none
+
+partial def parseHyps? (prop : Q(Type)) (expr : Expr) : Option <| Hyps prop := do
+  if let some #[_, (_ : Q(BIBase $prop)), P, Q] := appM? expr ``sep then
+    let lhs ← parseHyps? prop P
+    let rhs ← parseHyps? prop Q
+    some (.sep expr q(BI.sep $(lhs.strip) $(rhs.strip) : $prop) lhs rhs)
+  else if expr.isAppOfArity ``emp 2 then
+    some (.emp expr)
+  else if let some #[_, (_ : Q(BIBase $prop)), P] := appM? expr ``intuitionistically then
+    let (name, (ty : Q($prop))) ← parseName? P
+    some (.hyp expr q(iprop(□ $ty)) .intuitionistic name ty)
   else
-    return none
+    let (name, ty) ← parseName? expr
+    some (.hyp expr ty .spatial name ty)
 
-/-- Find the index of the first hypothesis in the environment represented by `env` which fulfills
-the predicate `pred`. The function returns `none` if `env` is not an application of `Env.cons`
-and `Env.nil` or no hypothesis fulfills the predicate `pred`. -/
-partial def findIndexM? [Monad M] [MonadLift MetaM M] (env : Expr) (pred : Expr → M Bool) :
-    M <| Option Nat := go env 0
-where
-  go (env : Expr) (idx : Nat) : M <| Option Nat := do
-    let env ← whnf env
-    if let some (_, a, env') := app3? env ``Env.cons then
-      if ← pred a then pure <| some idx
-      else go env' (idx + 1)
-    else
-      pure none
+/-- This is the same as `Entails`, but it takes a `BI` instead.
+This constant is used to detect iris proof goals. -/
+abbrev Entails' [BI PROP] : PROP → PROP → Prop := Entails
 
-/-- Find the index of the first hypothesis in the environment represented by `env` which fulfills
-the predicate `pred`. The function returns `none` if `env` is not an application of `Env.cons`
-and `Env.nil` or no hypothesis fulfills the predicate `pred`. -/
-partial def findIndex? (env : Expr) (pred : Expr → Bool) : MetaM <| Option Nat := do
-  have : MonadLift MetaM MetaM := { monadLift := id }
-  findIndexM? env (return pred ·)
+structure IrisGoal where
+  prop : Q(Type)
+  bi : Q(BI $prop)
+  hyps : Hyps prop
+  goal : Q($prop)
 
-/-- Return the expression representing the hypothesis at index `i` in the environment represented
-by `env`. The function returns `none` if `env` is not an application of `Env.cons` and `Env.nil` or
-the index is invalid. -/
-def get? (env : Expr) (i : Nat) : MetaM <| Option Expr := do
-  let env ← whnf env
-  match i with
-  | 0 =>
-    if let some (_, a, _) := app3? env ``Env.cons then
-      return a
-    else
-      return none
-  | i + 1 =>
-    if let some (_, _, env') := app3? env ``Env.cons then
-      get? env' i
-    else
-      return none
+def isIrisGoal (expr : Expr) : Bool := isAppOfArity expr ``Entails' 4
 
-/-- Return the length of the environment represented by `env`. The function returns `none` if `env`
-is not an application of `Env.cons` and `Env.nil`. -/
-partial def length? (env : Expr) : MetaM <| Option Nat :=
-  go env 0
-where
-  go (env : Expr) (length : Nat) : MetaM <| Option Nat := do
-    let env ← whnf env
-    if let some (_, _, env') := app3? env ``Env.cons then
-      go env' (length + 1)
-    else if let some _ := app1? env ``Env.nil then
-      return length
-    else
-      return none
+def parseIrisGoal? (expr : Expr) : Option IrisGoal := do
+  let some #[prop, bi, P, goal] := expr.appM? ``Entails' | none
+  let hyps ← parseHyps? prop P
+  some { prop, bi, hyps, goal }
 
-/-- Set the hypothesis represented by `e` at index `i` in the environment represented by `env`. The
-function returns `none` if `env` is not an application of `Env.cons` and `Env.nil` or the index
-is invalid. -/
-def set? (env : Expr) (e : Expr) (i : Nat) : MetaM <| Option Expr := do
-  let env ← whnf env
-  match i with
-  | 0 => do
-    let some _ := app3? env ``Env.cons
-      | pure none
-    return modifyAppOptM env #[none, e, none]
-  | i + 1 => do
-    let some (_, _, env') := app3? env ``Env.cons
-      | pure none
-    let some env' ← set? env' e i
-      | pure none
-    return modifyAppOptM env #[none, none, env']
+def IrisGoal.toExpr : IrisGoal → Expr
+  | { hyps, goal, .. } => q(Entails' $(hyps.tm) $goal)
 
-/-- Turn the representation `env` of an environment with any hypothesis type into an actual
-environment with hypotheses of type `Expr`. The hypothesis representations in the returned
-environment are the same as in the original representation `env`. -/
-partial def toEnv? (env : Expr) : MetaM <| Option <| Env Expr := do
-  let env ← whnf env
-  if let some (_, a, env') := app3? env ``Env.cons then
-    return (← toEnv? env') |>.map (.cons a ·)
-  else if let some _ := app1? env ``Env.nil then
-    return some .nil
-  else
-    return none
-
-end EnvExpr
-end Iris.Proofmode
+def IrisGoal.strip : IrisGoal → Expr
+  | { hyps, goal, .. } => q(Entails $(hyps.strip) $goal)

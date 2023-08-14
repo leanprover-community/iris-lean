@@ -218,6 +218,9 @@ theorem sep_left_comm [BI PROP] {P Q R : PROP} : P ∗ Q ∗ R ⊣⊢ Q ∗ P �
 theorem sep_right_comm [BI PROP] {P Q R : PROP} : (P ∗ Q) ∗ R ⊣⊢ (P ∗ R) ∗ Q :=
   sep_assoc.trans <| (sep_congr_r sep_comm).trans sep_assoc.symm
 
+theorem sep_sep_sep_comm [BI PROP] {P Q R S : PROP} : (P ∗ Q) ∗ (R ∗ S) ⊣⊢ (P ∗ R) ∗ (Q ∗ S) :=
+  sep_assoc.trans <| (sep_congr_r sep_left_comm).trans sep_assoc.symm
+
 theorem emp_sep [BI PROP] {P : PROP} : emp ∗ P ⊣⊢ P := ⟨emp_sep_1, emp_sep_2⟩
 instance [BI PROP] : LeftId (α := PROP) BiEntails emp sep := ⟨emp_sep⟩
 

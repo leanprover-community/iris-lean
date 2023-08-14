@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Mario Carneiro
 -/
 import Iris.BI.BI
 
@@ -21,5 +21,10 @@ export Affine (affine)
 class Absorbing [BI PROP] (P : PROP) : Prop where
   absorbing : <absorb> P ⊢ P
 export Absorbing (absorbing)
+
+/-- Require that the proposition `P` is intuitionistic. -/
+class Intuitionistic [BI PROP] (P : PROP) : Prop where
+  intuitionistic : P ⊢ □ P
+export Intuitionistic (intuitionistic)
 
 end Iris.BI

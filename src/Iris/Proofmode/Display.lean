@@ -1,10 +1,9 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Mario Carneiro
 -/
 import Iris.BI.Notation
-import Iris.Proofmode.Environments
 import Iris.Proofmode.Expr
 
 import Lean.PrettyPrinter.Delaborator
@@ -19,67 +18,34 @@ logic context as an object of `Envs` and a separation logic goal. The resulting 
 the two separation logic contexts (intuitionistic and spatial), as well as the separation
 logic goal. -/
 
-declare_syntax_cat envsDisplay
-declare_syntax_cat envsDisplayLine
+syntax irisHyp := ("□" <|> "∗") ident " : " term
 
-syntax envsDisplayLine ppDedent(ppLine envsDisplayLine)* ppDedent(ppLine term) : envsDisplay
-syntax "Iris Proof Mode" : envsDisplayLine
-syntax "─"+ : envsDisplayLine
-syntax "─"+ " □" : envsDisplayLine
-syntax "─"+ " ∗" : envsDisplayLine
-syntax (ident)? " : " term : envsDisplayLine
+syntax irisGoalStx := ppDedent(ppLine irisHyp)* ppDedent(ppLine "⊢ " term)
 
 abbrev delab := Lean.PrettyPrinter.delab
 
-@[delab app.Iris.Proofmode.EnvsEntails]
-def delabEnvsEntails : Delab := do
+@[delab app.Iris.Proofmode.Entails']
+def delabIrisGoal : Delab := do
   let expr ← instantiateMVars <| ← getExpr
 
   -- extract environment
-  let some (Γₚ, Γₛ, P) ← extractEnvsEntails? expr
-    | failure
-
-  let some Γₚ ← extractHypotheses? Γₚ
-    | failure
-  let some Γₛ ← extractHypotheses? Γₛ
-    | failure
+  let some { hyps, goal, .. } := parseIrisGoal? expr | failure
 
   -- delaborate
-  let Γₚ ← delabHypotheses Γₚ
-  let Γₛ ← delabHypotheses Γₛ
-
-  let P ← unpackIprop (← delab P)
+  let hyps ← delabHypotheses hyps #[]
+  let goal ← unpackIprop (← delab goal)
 
   -- build syntax
-  let display ← `(envsDisplay|
-    Iris Proof Mode
-    ─────────────────────────────────────
-    $Γₚ:envsDisplayLine*
-    ───────────────────────────────────── □
-    $Γₛ:envsDisplayLine*
-    ───────────────────────────────────── ∗
-    $P:term)
-
-  -- return term
-  return TSyntax.mk display
+  return ⟨← `(irisGoalStx| $hyps* ⊢ $goal:term)⟩
 where
-  extractHypotheses? (Γ : Expr) : MetaM <| Option <| Array <| Option Name × Expr := do
-    let hs? := (← EnvExpr.toEnv? Γ).map (·.toList)
-    let hs? ←
-      hs?.mapM fun hs =>
-      hs.mapM fun h => do
-        let name := h.getMDataName?
-        let h ← withReducible <| reduce h
-        return (name, h)
-    return hs?.map (·.toArray)
-
-  delabHypotheses (Γ : Array <| Option Name × Expr) : DelabM <| Array <| TSyntax `envsDisplayLine :=
-    Γ.mapM fun (name?, h) => do
-      let h ← unpackIprop (← delab h)
-      if let some name := name? then
-        let name := mkIdent name
-        `(envsDisplayLine| $name:ident : $h)
-      else
-        `(envsDisplayLine| : $h)
+  delabHypotheses {prop} (hyps : Hyps prop)
+      (acc : Array (TSyntax ``irisHyp)) : DelabM (Array (TSyntax ``irisHyp)) := do
+    match hyps with
+    | .emp _ => pure acc
+    | .hyp _ _ .spatial name ty =>
+      acc.push <$> `(irisHyp| ∗$(mkIdent name) : $(← unpackIprop (← delab ty)))
+    | .hyp _ _ .intuitionistic name ty =>
+      acc.push <$> `(irisHyp| □$(mkIdent name) : $(← unpackIprop (← delab ty)))
+    | .sep _ _ lhs rhs => delabHypotheses rhs (← delabHypotheses lhs acc)
 
 end Iris.Proofmode

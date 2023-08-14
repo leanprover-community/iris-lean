@@ -10,31 +10,32 @@ open Lean
 
 declare_syntax_cat icasesPat
 syntax icasesPatAlts := sepBy1(icasesPat, " | ")
-syntax ident : icasesPat
-syntax "_" : icasesPat
+syntax binderIdent : icasesPat
+syntax "-" : icasesPat
 syntax "⟨" icasesPatAlts,* "⟩" : icasesPat
 syntax "(" icasesPatAlts ")" : icasesPat
 syntax "⌜" icasesPat "⌝" : icasesPat
 syntax "□" icasesPat : icasesPat
-syntax "-□" icasesPat : icasesPat
+syntax "∗" icasesPat : icasesPat
 
 macro "%" pat:icasesPat : icasesPat => `(icasesPat| ⌜$pat⌝)
 macro "#" pat:icasesPat : icasesPat => `(icasesPat| □ $pat)
-macro "-#" pat:icasesPat : icasesPat => `(icasesPat| -□ $pat)
+macro "*" pat:icasesPat : icasesPat => `(icasesPat| ∗ $pat)
 
 inductive iCasesPat
-  | one (name : Name)
+  | one (name : Option Name)
   | clear
-  | conjunction (args : Array iCasesPat)
-  | disjunction (args : Array iCasesPat)
+  | conjunction (args : List iCasesPat)
+  | disjunction (args : List iCasesPat)
   | pure           (pat : iCasesPat)
   | intuitionistic (pat : iCasesPat)
   | spatial        (pat : iCasesPat)
   deriving Repr, Inhabited
 
-partial def iCasesPat.parse (pat : TSyntax `icasesPat) : MacroM <| Option iCasesPat := do
-  let pat ← expandMacros pat
-  return go <| TSyntax.mk pat
+partial def iCasesPat.parse (pat : TSyntax `icasesPat) : MacroM iCasesPat := do
+  match go ⟨← expandMacros pat⟩ with
+  | none => Macro.throwUnsupported
+  | some pat => return pat
 where
   go : TSyntax `icasesPat → Option iCasesPat
   | `(icasesPat| $name:ident) =>
@@ -43,24 +44,19 @@ where
       none
     else
       some <| .one name
-  | `(icasesPat| _) =>
-    some <| .clear
-  | `(icasesPat| ⟨$[$args],*⟩) =>
-    args.sequenceMap goAlts |>.map .conjunction
-  | `(icasesPat| ⌜$pat⌝) =>
-    go pat |>.map .pure
-  | `(icasesPat| □$pat) =>
-    go pat |>.map .intuitionistic
-  | `(icasesPat| -□$pat) =>
-    go pat |>.map .spatial
-  | `(icasesPat| ($pat)) =>
-    goAlts pat
+  | `(icasesPat| _) => some <| .one none
+  | `(icasesPat| -) => some <| .clear
+  | `(icasesPat| ⟨$[$args],*⟩) => args.mapM goAlts |>.map (.conjunction ·.toList)
+  | `(icasesPat| ⌜$pat⌝) => go pat |>.map .pure
+  | `(icasesPat| □$pat) => go pat |>.map .intuitionistic
+  | `(icasesPat| ∗$pat) => go pat |>.map .spatial
+  | `(icasesPat| ($pat)) => goAlts pat
   | _ => none
   goAlts : TSyntax ``icasesPatAlts → Option iCasesPat
-  | `(icasesPatAlts| $[$args]|*) =>
-    match args with
+  | `(icasesPatAlts| $args|*) =>
+    match args.getElems with
     | #[arg] => go arg
-    | args   => args.sequenceMap go |>.map .disjunction
+    | args   => args.mapM go |>.map (.disjunction ·.toList)
   | _ => none
 
 end Iris.Proofmode
