@@ -5,7 +5,7 @@ Authors: Lars König
 -/
 import Iris.BI
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Iris.BI
 
 /-
@@ -118,4 +118,4 @@ class FromPure [BI PROP] (a : outParam Bool) (P : PROP) (φ : outParam Prop) : P
   from_pure : <affine>?a ⌜φ⌝ ⊢ P
 export FromPure (from_pure)
 
-end Iris.Proofmode
+end Iris.ProofMode

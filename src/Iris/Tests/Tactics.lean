@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
 import Iris.BI
-import Iris.Proofmode
+import Iris.ProofMode
 
 namespace Iris.Tests
 open Iris.BI

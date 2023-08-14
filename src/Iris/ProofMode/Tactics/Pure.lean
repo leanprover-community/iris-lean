@@ -3,11 +3,11 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.Proofmode.Instances
-import Iris.Proofmode.Tactics.Basic
-import Iris.Proofmode.Tactics.Remove
+import Iris.ProofMode.Instances
+import Iris.ProofMode.Tactics.Basic
+import Iris.ProofMode.Tactics.Remove
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}

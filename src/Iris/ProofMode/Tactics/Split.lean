@@ -3,10 +3,10 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.Proofmode.Tactics.Basic
-import Iris.Proofmode.Tactics.Remove
+import Iris.ProofMode.Tactics.Basic
+import Iris.ProofMode.Tactics.Remove
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI
 
 theorem from_and_intro [BI PROP] {P Q A1 A2 : PROP} [inst : FromAnd Q A1 A2]

@@ -3,13 +3,13 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.Proofmode.Instances
-import Iris.Proofmode.Patterns.CasesPattern
-import Iris.Proofmode.Tactics.Clear
-import Iris.Proofmode.Tactics.Move
-import Iris.Proofmode.Tactics.Pure
+import Iris.ProofMode.Instances
+import Iris.ProofMode.Patterns.CasesPattern
+import Iris.ProofMode.Tactics.Clear
+import Iris.ProofMode.Tactics.Move
+import Iris.ProofMode.Tactics.Pure
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 theorem false_elim_spatial [BI PROP] {P Q : PROP} : P ∗ False ⊢ Q := wand_elim' false_elim

@@ -3,9 +3,9 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.Proofmode.Expr
+import Iris.ProofMode.Expr
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Lean Elab.Tactic Meta Qq BI
 
 theorem exfalso [BI PROP] {P Q : PROP} (h : P ⊢ False) : P ⊢ Q := h.trans false_elim

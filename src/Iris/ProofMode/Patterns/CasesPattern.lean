@@ -5,7 +5,7 @@ Authors: Lars König
 -/
 import Lean.Data.Name
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Lean
 
 declare_syntax_cat icasesPat
@@ -59,4 +59,4 @@ where
     | args   => args.mapM go |>.map (.disjunction ·.toList)
   | _ => none
 
-end Iris.Proofmode
+end Iris.ProofMode

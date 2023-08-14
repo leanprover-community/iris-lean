@@ -7,7 +7,7 @@ import Qq
 import Iris.BI
 import Iris.Std.Expr
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Iris.BI
 open Lean Lean.Expr Lean.Meta Qq
 

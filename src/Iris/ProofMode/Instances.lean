@@ -4,10 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
 import Iris.BI
-import Iris.Proofmode.Classes
+import Iris.ProofMode.Classes
 import Iris.Std.TC
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Iris.BI Iris.Std
 
 -- AsEmpValid

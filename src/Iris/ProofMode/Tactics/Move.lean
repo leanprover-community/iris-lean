@@ -3,10 +3,10 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.Proofmode.Expr
-import Iris.Proofmode.Classes
+import Iris.ProofMode.Expr
+import Iris.ProofMode.Classes
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 def Replaces [BI PROP] (K A B : PROP) := (B -∗ K) ⊢ (A -∗ K)

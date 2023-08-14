@@ -4,12 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
 import Iris.BI
-import Iris.Proofmode.Expr
-import Iris.Proofmode.Classes
+import Iris.ProofMode.Expr
+import Iris.ProofMode.Classes
 import Iris.Std
 import Lean.Elab
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Lean Elab Tactic Qq
 
 variable (old new : Name) {prop : Q(Type)} {bi : Q(BI $prop)} in

@@ -3,10 +3,10 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.Proofmode.Expr
-import Iris.Proofmode.Classes
+import Iris.ProofMode.Expr
+import Iris.ProofMode.Classes
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Lean Elab.Tactic Meta Qq BI Std
 
 def istart (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withContext do
@@ -22,12 +22,12 @@ def istart (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withContext do
   let prop ← mkFreshExprMVarQ q(Type)
   let P ← mkFreshExprMVarQ q($prop)
   let bi ← mkFreshExprMVarQ q(BI $prop)
-  let _ ← synthInstanceQ q(Proofmode.AsEmpValid2 $goal $P)
+  let _ ← synthInstanceQ q(ProofMode.AsEmpValid2 $goal $P)
 
   let irisGoal := { prop, bi, hyps := .mkEmp bi, goal := P }
   let subgoal : Quoted q(⊢ $P) ←
     mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
-  mvar.assign q(Proofmode.as_emp_valid_2 $goal $subgoal)
+  mvar.assign q(ProofMode.as_emp_valid_2 $goal $subgoal)
   pure (subgoal.mvarId!, irisGoal)
 
 elab "istart" : tactic => do

@@ -3,9 +3,9 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.Proofmode.Tactics.Cases
+import Iris.ProofMode.Tactics.Cases
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 theorem imp_intro_drop [BI PROP] {P Q A1 A2 : PROP} [inst : FromImp Q A1 A2] (h : P ⊢ A2) : P ⊢ Q :=

@@ -5,7 +5,7 @@ Authors: Lars König
 -/
 import Iris.BI
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Iris.BI
 
 /- Importing these unification hints makes some proofs more convenient for the user of the
@@ -25,4 +25,4 @@ unif_hint [BIBase PROP] (P   : PROP) where |- iprop(<absorb>?true P) ≟ iprop(<
 unif_hint [BIBase PROP] (P   : PROP) where |- iprop(□?false P) ≟ iprop(P)
 unif_hint [BIBase PROP] (P   : PROP) where |- iprop(□?true P) ≟ iprop(□ P)
 
-end Iris.Proofmode
+end Iris.ProofMode

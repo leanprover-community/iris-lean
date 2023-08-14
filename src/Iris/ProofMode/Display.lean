@@ -4,11 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
 import Iris.BI.Notation
-import Iris.Proofmode.Expr
+import Iris.ProofMode.Expr
 
 import Lean.PrettyPrinter.Delaborator
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Iris.BI Qq
 open Lean Lean.Expr Lean.Meta Lean.PrettyPrinter.Delaborator Lean.PrettyPrinter.Delaborator.SubExpr
 
@@ -24,7 +24,7 @@ syntax irisGoalStx := ppDedent(ppLine irisHyp)* ppDedent(ppLine "⊢ " term)
 
 abbrev delab := Lean.PrettyPrinter.delab
 
-@[delab app.Iris.Proofmode.Entails']
+@[delab app.Iris.ProofMode.Entails']
 def delabIrisGoal : Delab := do
   let expr ← instantiateMVars <| ← getExpr
 
@@ -49,4 +49,4 @@ where
         acc.push <$> `(irisHyp| ∗$(mkIdent name) : $(← unpackIprop (← delab ty)))
     | .sep _ _ _ _ lhs rhs => delabHypotheses rhs (← delabHypotheses lhs acc)
 
-end Iris.Proofmode
+end Iris.ProofMode

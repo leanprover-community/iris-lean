@@ -3,9 +3,9 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.Proofmode.Tactics.Basic
+import Iris.ProofMode.Tactics.Basic
 
-namespace Iris.Proofmode
+namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI
 
 theorem exists_intro' [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExists Q Φ]
