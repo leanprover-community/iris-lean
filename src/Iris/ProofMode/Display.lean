@@ -32,21 +32,28 @@ def delabIrisGoal : Delab := do
   let some { hyps, goal, .. } := parseIrisGoal? expr | failure
 
   -- delaborate
-  let hyps ← delabHypotheses hyps #[]
+  let (_, hyps) ← delabHypotheses hyps ({}, #[])
   let goal ← unpackIprop (← delab goal)
 
   -- build syntax
-  return ⟨← `(irisGoalStx| $hyps* ⊢ $goal:term)⟩
+  return ⟨← `(irisGoalStx| $hyps.reverse* ⊢ $goal:term)⟩
 where
   delabHypotheses {prop bi s} (hyps : @Hyps prop bi s)
-      (acc : Array (TSyntax ``irisHyp)) : DelabM (Array (TSyntax ``irisHyp)) := do
+      (acc : NameMap Nat × Array (TSyntax ``irisHyp)) :
+      DelabM (NameMap Nat × Array (TSyntax ``irisHyp)) := do
     match hyps with
     | .emp _ => pure acc
-    | .hyp _ name p ty _ =>
-      if isTrue p then
-        acc.push <$> `(irisHyp| □$(mkIdent name) : $(← unpackIprop (← delab ty)))
+    | .hyp _ name _ p ty _ =>
+      let mut (map, acc) := acc
+      let (idx, name') ← if let some idx := map.find? name then
+        pure (idx + 1, name.appendAfter <| if idx == 0 then "✝" else "✝" ++ idx.toSuperscriptString)
       else
-        acc.push <$> `(irisHyp| ∗$(mkIdent name) : $(← unpackIprop (← delab ty)))
-    | .sep _ _ _ _ lhs rhs => delabHypotheses rhs (← delabHypotheses lhs acc)
+        pure (0, name)
+      let stx ← if isTrue p then
+        `(irisHyp| □$(mkIdent name') : $(← unpackIprop (← delab ty)))
+      else
+        `(irisHyp| ∗$(mkIdent name') : $(← unpackIprop (← delab ty)))
+      pure (map.insert name idx, acc.push stx)
+    | .sep _ _ _ _ lhs rhs => delabHypotheses lhs (← delabHypotheses rhs acc)
 
 end Iris.ProofMode

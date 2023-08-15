@@ -199,13 +199,12 @@ theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp
 
 variable {prop : Q(Type)} (bi : Q(BI $prop)) in
 partial def iCasesCore
-    {P} (hyps : Hyps bi P) (Q : Q($prop)) (p : Q(Bool)) (A A' : Q($prop)) (_ : $A =Q iprop(□?$p $A'))
-    (pat : iCasesPat)
-    (k : ∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q)) :
-    MetaM (Q($P ∗ $A ⊢ $Q)) :=
+    {P} (hyps : Hyps bi P) (Q : Q($prop)) (p : Q(Bool))
+    (A A' : Q($prop)) (_ : $A =Q iprop(□?$p $A'))
+    (pat : iCasesPat) (k : ∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q)) : MetaM (Q($P ∗ $A ⊢ $Q)) :=
   match pat with
   | .one name => do
-    let hyp := .mkHyp bi (← getFreshName name) p A' A
+    let hyp := .mkHyp bi (← getFreshName name) (← mkFreshId) p A' A
     if let .emp _ := hyps then
       let pf : Q($A ⊢ $Q) ← k hyp
       pure q(of_emp_sep $pf)

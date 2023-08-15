@@ -76,7 +76,7 @@ elab "ispecialize" hyp:ident args:(colGt term:max)* " as " name:ident : tactic =
   let { e := ehyps, hyps, out, b, pf } ← liftM <| args.foldlM SpecializeState.process1 state
 
   let ⟨ehyp1, _⟩ := mkIntuitionisticIf bi b out
-  let hyp1 := .mkHyp bi nameTo b out ehyp1
+  let hyp1 := .mkHyp bi nameTo (← mkFreshId) b out ehyp1
   let hyps' := hyps.mkSep hyp1
   have pf : Q($e ⊢ $ehyps ∗ $ehyp1) := pf
   let m : Q($ehyps ∗ $ehyp1 ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|

@@ -50,7 +50,7 @@ variable {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop))
   (fastPath : AssumptionFastPath prop bi Q) in
 def assumptionFast {e} (hyps : Hyps bi e) : MetaM Q($e ⊢ $Q) := do
   let some ⟨inst, _, _, out, ty, b, _, pf⟩ ←
-    hyps.removeG true fun _ b ty => try? do
+    hyps.removeG true fun _ _ b ty => try? do
       synthInstance q(FromAssumption $b $ty $Q)
     | failure
   let (_ : Q(FromAssumption $b $ty $Q)) := inst
@@ -77,7 +77,7 @@ def assumptionSlow (assume : Bool) :
     ∀ {e}, Hyps bi e → MetaM (AssumptionSlow bi Q e)
   | _, .emp _ =>
     Pure.pure (.affine q(emp_affine))
-  | out, .hyp _ _ b ty _ => do
+  | out, .hyp _ _ _ b ty _ => do
     let fromAssum (_:Unit) := do
       let _ ← synthInstanceQ q(FromAssumption $b $ty $Q)
       let inst ← try? (synthInstanceQ q(Affine $out))

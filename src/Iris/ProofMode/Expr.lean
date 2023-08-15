@@ -11,23 +11,22 @@ namespace Iris.ProofMode
 open Iris.BI
 open Lean Lean.Expr Lean.Meta Qq
 
-def nameAnnotation := `name
+@[match_pattern] def nameAnnotation := `name
+@[match_pattern] def uniqAnnotation := `uniq
 
-def parseName? : Expr → Option (Name × Expr)
-  | .mdata d e => do
-    let .true := d.size == 1 | none
-    let some (DataValue.ofName v) := d.find nameAnnotation | none
-    some (v, e)
+def parseName? : Expr → Option (Name × Name × Expr)
+  | .mdata ⟨[(nameAnnotation, .ofName name), (uniqAnnotation, .ofName uniq)]⟩ e => do
+    some (name, uniq, e)
   | _ => none
 
-def mkNameAnnotation (name : Name) (e : Expr) : Expr :=
-  .mdata ⟨[(nameAnnotation, .ofName name)]⟩ e
+def mkNameAnnotation (name uniq : Name) (e : Expr) : Expr :=
+  .mdata ⟨[(nameAnnotation, .ofName name), (uniqAnnotation, .ofName uniq)]⟩ e
 
 inductive Hyps {prop : Q(Type)} (bi : Q(BI $prop)) : (e : Q($prop)) → Type where
   | emp (_ : $e =Q emp) : Hyps bi e
   | sep (tm elhs erhs : Q($prop)) (_ : $e =Q iprop($elhs ∗ $erhs))
         (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) : Hyps bi e
-  | hyp (tm : Q($prop)) (name : Name) (p : Q(Bool)) (ty : Q($prop))
+  | hyp (tm : Q($prop)) (name uniq : Name) (p : Q(Bool)) (ty : Q($prop))
         (_ : $e =Q iprop(□?$p $ty)) : Hyps bi e
 
 def Hyps.tm : @Hyps prop bi s → Q($prop)
@@ -52,8 +51,8 @@ def mkIntuitionisticIf {prop : Q(Type)} (_bi : Q(BI $prop))
   | .inr _ => ⟨e, ⟨⟩⟩
 
 def Hyps.mkHyp {prop : Q(Type)} (bi : Q(BI $prop))
-    (name : Name) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) : Hyps bi e :=
-  .hyp (mkIntuitionisticIf bi p (mkNameAnnotation name ty)) name p ty ⟨⟩
+    (name uniq : Name) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) : Hyps bi e :=
+  .hyp (mkIntuitionisticIf bi p (mkNameAnnotation name uniq ty)) name uniq p ty ⟨⟩
 
 partial def parseHyps? {prop : Q(Type)} (bi : Q(BI $prop)) (expr : Expr) :
     Option ((s : Q($prop)) × Hyps bi s) := do
@@ -63,12 +62,17 @@ partial def parseHyps? {prop : Q(Type)} (bi : Q(BI $prop)) (expr : Expr) :
     some ⟨q(BI.sep $elhs $erhs), .sep expr elhs erhs ⟨⟩ lhs rhs⟩
   else if expr.isAppOfArity ``emp 2 then
     some ⟨expr, .emp ⟨⟩⟩
-  else if let some #[_, (_ : Q(BIBase $prop)), P] := appM? expr ``intuitionistically then
-    let (name, (ty : Q($prop))) ← parseName? P
-    some ⟨q(iprop(□ $ty)), .hyp expr name q(true) ty ⟨⟩⟩
+  else if let some #[_, _, P] := appM? expr ``intuitionistically then
+    let (name, uniq, (ty : Q($prop))) ← parseName? P
+    some ⟨q(iprop(□ $ty)), .hyp expr name uniq q(true) ty ⟨⟩⟩
   else
-    let (name, ty) ← parseName? expr
-    some ⟨ty, .hyp expr name q(false) ty ⟨⟩⟩
+    let (name, uniq, ty) ← parseName? expr
+    some ⟨ty, .hyp expr name uniq q(false) ty ⟨⟩⟩
+
+partial def Hyps.find? {prop bi} (name : Name) : ∀ {s}, @Hyps prop bi s → Option Name
+  | _, .emp _ => none
+  | _, .hyp _ name' uniq .. => if name == name' then uniq else none
+  | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
 
 /-- This is the same as `Entails`, but it takes a `BI` instead.
 This constant is used to detect iris proof goals. -/

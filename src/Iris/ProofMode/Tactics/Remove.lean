@@ -34,12 +34,12 @@ theorem intuitionistically_sep_dup [BI PROP] {P : PROP} : □ P ⊣⊢ □ P ∗
   intuitionistically_sep_idem.symm
 
 variable [Monad m] {prop : Q(Type)} (bi : Q(BI $prop)) (rp : Bool)
-  (check : Name → Q(Bool) → Q($prop) → m (Option α)) in
+  (check : Name → Name → Q(Bool) → Q($prop) → m (Option α)) in
 /-- If `rp` is true, the hyp will be removed even if it is in the intuitionistic context. -/
 def Hyps.removeCore : ∀ {e}, Hyps bi e → m (RemoveHypCore bi e α)
   | _, .emp _ => pure .none
-  | e, h@(.hyp _ name p ty _) => do
-    if let some a ← check name p ty then
+  | e, h@(.hyp _ name uniq p ty _) => do
+    if let some a ← check name uniq p ty then
       match matchBool p, rp with
       | .inl _, false =>
         have : $e =Q iprop(□ $ty) := ⟨⟩
@@ -68,7 +68,7 @@ theorem emp_sep_rev [BI PROP] {P : PROP} : P ⊣⊢ emp ∗ P := emp_sep.symm
 
 def Hyps.removeG [Monad m] {prop : Q(Type)} {bi : Q(BI $prop)} {e : Q(Prop)}
     (rp : Bool) (hyps : Hyps bi e)
-    (check : Name → Q(Bool) → Q($prop) → m (Option α)) :
+    (check : Name → Name → Q(Bool) → Q($prop) → m (Option α)) :
     m (Option (α × RemoveHyp bi e)) := do
   match ← hyps.removeCore bi rp check with
   | .none => return none
@@ -77,4 +77,8 @@ def Hyps.removeG [Monad m] {prop : Q(Type)} {bi : Q(BI $prop)} {e : Q(Prop)}
 
 def Hyps.remove {prop : Q(Type)} {bi : Q(BI $prop)} {e}
     (rp : Bool) (hyps : Hyps bi e) (name : Name) : Option (RemoveHyp bi e) :=
-  (·.2) <$> Id.run (hyps.removeG rp fun name' _ _ => if name == name' then some () else none)
+  (·.2) <$> Id.run (hyps.removeG rp fun name' _ _ _ => if name == name' then some () else none)
+
+def Hyps.removeUniq {prop : Q(Type)} {bi : Q(BI $prop)} {e}
+    (rp : Bool) (hyps : Hyps bi e) (uniq : Name) : Option (RemoveHyp bi e) :=
+  (·.2) <$> Id.run (hyps.removeG rp fun _ uniq' _ _ => if uniq == uniq' then some () else none)

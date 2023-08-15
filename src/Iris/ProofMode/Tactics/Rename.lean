@@ -21,7 +21,7 @@ def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
     | none => match lhs.rename with
       | some lhs' => some (.mkSep lhs' rhs _)
       | none => none
-  | _, .hyp _ name p ty _ => if old == name then some (Hyps.mkHyp bi new p ty _) else none
+  | _, .hyp _ name uniq p ty _ => if old == name then some (Hyps.mkHyp bi new uniq p ty _) else none
 
 elab "irename" colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do
   -- parse syntax

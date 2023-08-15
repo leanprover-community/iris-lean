@@ -51,15 +51,15 @@ inductive SplitResult {prop : Q(Type)} (bi : Q(BI $prop)) (e : Q($prop)) where
   | split {elhs erhs : Q($prop)} (lhs : Hyps bi elhs) (rhs : Hyps bi erhs)
           (pf : Q($e ⊣⊢ $elhs ∗ $erhs))
 
-variable {prop : Q(Type)} (bi : Q(BI $prop)) (toRight : Name → Bool) in
+variable {prop : Q(Type)} (bi : Q(BI $prop)) (toRight : Name → Name → Bool) in
 def Hyps.splitCore : ∀ {e}, Hyps bi e → SplitResult bi e
   | _, .emp _ => .emp ⟨⟩
-  | ehyp, h@(.hyp _ name b ty _) =>
+  | ehyp, h@(.hyp _ name uniq b ty _) =>
     match matchBool b with
     | .inl _ =>
       have : $ehyp =Q iprop(□ $ty) := ⟨⟩
       .split h h q(intuitionistically_sep_dup)
-    | .inr _ => if toRight name then .right else .left
+    | .inr _ => if toRight name uniq then .right else .left
   | _, .sep _ _ _ _ lhs rhs =>
     let resl := lhs.splitCore
     let resr := rhs.splitCore
@@ -76,7 +76,8 @@ def Hyps.splitCore : ∀ {e}, Hyps bi e → SplitResult bi e
     | .split l1 l2 lpf, .right => .split l1 (l2.mkSep rhs) q(split_sr $lpf)
     | .split l1 l2 lpf, .split r1 r2 rpf => .split (l1.mkSep r1) (l2.mkSep r2) q(split_ss $lpf $rpf)
 
-def Hyps.split {prop : Q(Type)} (bi : Q(BI $prop)) (toRight : Name → Bool) {e} (hyps : Hyps bi e) :
+def Hyps.split {prop : Q(Type)} (bi : Q(BI $prop)) (toRight : Name → Name → Bool)
+    {e} (hyps : Hyps bi e) :
     (elhs erhs : Q($prop)) × Hyps bi elhs × Hyps bi erhs × Q($e ⊣⊢ $elhs ∗ $erhs) :=
   match hyps.splitCore bi toRight with
   | .emp _ => ⟨_, _, hyps, hyps, q(sep_emp_rev)⟩
@@ -92,28 +93,31 @@ declare_syntax_cat splitSide
 syntax "l" : splitSide
 syntax "r" : splitSide
 
-elab "isplit" side:splitSide "[" hyps:ident,* "]" : tactic => do
+elab "isplit" side:splitSide "[" names:ident,* "]" : tactic => do
   -- parse syntax
   let splitRight ← match side with
     | `(splitSide| l) => pure false
     | `(splitSide| r) => pure true
     | _  => throwUnsupportedSyntax
-  let names ← hyps.getElems.mapM fun name => do
-    let name := name.getId
-    if name.isAnonymous then
-      throwUnsupportedSyntax
-    pure name
 
   -- extract environment
   let (mvar, { prop, bi, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
+
+  let mut uniqs : NameSet := {}
+  for name in names.getElems do
+    let n := name.getId
+    if n.isAnonymous then
+      throwUnsupportedSyntax
+    let some uniq := hyps.find? n | throwErrorAt name "unknown hypothesis {name}"
+    uniqs := uniqs.insert uniq
 
   let Q1 ← mkFreshExprMVarQ prop
   let Q2 ← mkFreshExprMVarQ prop
   let _ ← synthInstanceQ q(FromSep $goal $Q1 $Q2)
 
   -- split conjunction
-  let ⟨el, er, lhs, rhs, pf⟩ := hyps.split bi (names.contains · == splitRight)
+  let ⟨el, er, lhs, rhs, pf⟩ := hyps.split bi (fun _ uniq => uniqs.contains uniq == splitRight)
 
   let m1 : Q($el ⊢ $Q1) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps := lhs, goal := Q1 }

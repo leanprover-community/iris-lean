@@ -30,12 +30,12 @@ inductive ReplaceHyp {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop)) where
   | main (e e' : Q($prop)) (hyps' : Hyps bi e') (pf : Q(Replaces $Q $e $e'))
 
 variable [Monad m] {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop))
-  (name : Name) (repl : Q(Bool) → Q($prop) → MetaM (ReplaceHyp bi Q)) in
+  (name : Name) (repl : Name → Q(Bool) → Q($prop) → MetaM (ReplaceHyp bi Q)) in
 def Hyps.replace : ∀ {e}, Hyps bi e → MetaM (ReplaceHyp bi Q)
   | _, .emp _ => pure .none
-  | _, .hyp _ name' p ty _ => do
+  | _, .hyp _ name' uniq p ty _ => do
     if name == name' then
-      let res ← repl p ty
+      let res ← repl uniq p ty
       if let .main e e' hyps' _ := res then
         let e' ← instantiateMVarsQ e'
         if e == e' then
@@ -79,16 +79,16 @@ elab "iintuitionistic" colGt hyp:ident : tactic => do
   let g ← instantiateMVars <| ← mvar.getType
   let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
 
-  match ← hyps.replace bi goal name fun p ty => do
+  match ← hyps.replace bi goal name fun uniq p ty => do
     let P' ← mkFreshExprMVarQ prop
     let _ ← synthInstanceQ q(IntoPersistently $p $ty $P')
     match matchBool p with
     | .inl _ =>
-      return .main q(iprop(□ $ty)) q(iprop(□ $P')) (.mkHyp bi name p P' _)
+      return .main q(iprop(□ $ty)) q(iprop(□ $P')) (.mkHyp bi name uniq p P' _)
         q(to_persistent_intuitionistic)
     | .inr _ =>
       let _ ← synthInstanceQ q(TCOr (Affine $ty) (Absorbing $goal))
-      return .main ty q(iprop(□ $P')) (.mkHyp bi name q(true) P' _) q(to_persistent_spatial)
+      return .main ty q(iprop(□ $P')) (.mkHyp bi name uniq q(true) P' _) q(to_persistent_spatial)
   with
   | .none => throwError "unknown hypothesis"
   | .unchanged _ hyps' =>
@@ -114,15 +114,15 @@ elab "ispatial" colGt hyp:ident : tactic => do
   let g ← instantiateMVars <| ← mvar.getType
   let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
 
-  match ← hyps.replace bi goal name fun p ty => do
+  match ← hyps.replace bi goal name fun uniq p ty => do
     let P' ← mkFreshExprMVarQ prop
     match matchBool p with
     | .inl _ =>
       let _ ← synthInstanceQ q(FromAffinely $P' $ty true)
-      return .main q(iprop(□ $ty)) P' (.mkHyp bi name q(false) P' _) q(from_affine (p := true))
+      return .main q(iprop(□ $ty)) P' (.mkHyp bi name uniq q(false) P' _) q(from_affine (p := true))
     | .inr _ =>
       let _ ← synthInstanceQ q(FromAffinely $P' $ty false)
-      return .main ty P' (.mkHyp bi name p P' _) q(from_affine (p := false))
+      return .main ty P' (.mkHyp bi name uniq p P' _) q(from_affine (p := false))
   with
   | .none => throwError "unknown hypothesis"
   | .unchanged _ hyps' =>
