@@ -22,7 +22,7 @@ syntax irisHyp := ("□" <|> "∗") ident " : " term
 
 syntax irisGoalStx := ppDedent(ppLine irisHyp)* ppDedent(ppLine "⊢ " term)
 
-abbrev delab := Lean.PrettyPrinter.delab
+open Lean.PrettyPrinter
 
 @[delab app.Iris.ProofMode.Entails']
 def delabIrisGoal : Delab := do
@@ -56,4 +56,5 @@ where
       pure (map.insert name idx, acc.push stx)
     | .sep _ _ _ _ lhs rhs => delabHypotheses lhs (← delabHypotheses rhs acc)
 
-end Iris.ProofMode
+@[delab app.Iris.ProofMode.HypMarker]
+def delabHypMarker : Delab := do unpackIprop (← withAppArg delab)

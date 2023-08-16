@@ -14,7 +14,7 @@ theorem proof_example_1 [BI PROP] (P Q R : PROP) (Φ : α → PROP) :
 := by
   iintro ⟨HP, HQ, □HR⟩ □HRΦ
   ispecialize HRΦ HR as HΦ
-  icases HΦ with ⟨x, HΦ⟩
+  icases HΦ with ⟨x, _HΦ⟩
   iexists x
   isplit r
   · iassumption

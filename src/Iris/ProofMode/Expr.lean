@@ -29,6 +29,8 @@ inductive Hyps {prop : Q(Type)} (bi : Q(BI $prop)) : (e : Q($prop)) → Type whe
   | hyp (tm : Q($prop)) (name uniq : Name) (p : Q(Bool)) (ty : Q($prop))
         (_ : $e =Q iprop(□?$p $ty)) : Hyps bi e
 
+instance : Inhabited (Hyps bi s) := ⟨.emp ⟨⟩⟩
+
 def Hyps.tm : @Hyps prop bi s → Q($prop)
   | .emp _ => s
   | .sep tm .. | .hyp tm .. => tm
@@ -69,9 +71,9 @@ partial def parseHyps? {prop : Q(Type)} (bi : Q(BI $prop)) (expr : Expr) :
     let (name, uniq, ty) ← parseName? expr
     some ⟨ty, .hyp expr name uniq q(false) ty ⟨⟩⟩
 
-partial def Hyps.find? {prop bi} (name : Name) : ∀ {s}, @Hyps prop bi s → Option Name
+partial def Hyps.find? {prop bi} (name : Name) : ∀ {s}, @Hyps prop bi s → Option (Name × Q(Bool) × Q($prop))
   | _, .emp _ => none
-  | _, .hyp _ name' uniq .. => if name == name' then uniq else none
+  | _, .hyp _ name' uniq p ty _ => if name == name' then (uniq, p, ty) else none
   | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
 
 /-- This is the same as `Entails`, but it takes a `BI` instead.
@@ -97,3 +99,24 @@ def IrisGoal.toExpr : IrisGoal → Expr
 
 def IrisGoal.strip : IrisGoal → Expr
   | { e, goal, .. } => q(Entails $e $goal)
+
+/-- This is only used for display purposes, so that we can render context variables that appear
+to have type `A : PROP` even though `PROP` is not a type. -/
+def HypMarker {PROP : Type} (_A : PROP) : Prop := True
+
+def addLocalVarInfo (stx : Syntax) (lctx : LocalContext)
+    (expr : Expr) (expectedType? : Option Expr) (isBinder := false) : MetaM Unit := do
+  Elab.withInfoContext' (pure ()) fun _ =>
+    return Sum.inl <| Elab.Info.ofTermInfo
+      { elaborator := .anonymous, lctx, expr, stx, expectedType?, isBinder }
+
+def addHypInfo (stx : Syntax) (name uniq : Name) (prop : Q(Type)) (ty : Q($prop))
+    (isBinder := false) : MetaM Unit := do
+  let lctx ← getLCtx
+  let ty := q(HypMarker $ty)
+  addLocalVarInfo stx (lctx.mkLocalDecl ⟨uniq⟩ name ty) (.fvar ⟨uniq⟩) ty isBinder
+
+def Hyps.findWithInfo {prop bi} (hyps : @Hyps prop bi s) (name : Ident) : MetaM Name := do
+  let some (uniq, _, ty) := hyps.find? name.getId | throwError "unknown hypothesis"
+  addHypInfo name name.getId uniq prop ty
+  pure uniq

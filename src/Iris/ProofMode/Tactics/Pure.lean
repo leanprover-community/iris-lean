@@ -27,7 +27,7 @@ theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
   pure_elim_spatial h h'
 
 def ipureCore {prop : Q(Type)} (_bi : Q(BI $prop))
-    (P P' A Q : Q($prop)) (name : Name) (pf : Q($P ⊣⊢ $P' ∗ $A))
+    (P P' A Q : Q($prop)) (name : TSyntax ``binderIdent) (pf : Q($P ⊣⊢ $P' ∗ $A))
     (k : (φ : Q(Prop)) → Q($φ) → MetaM (α × Q($P' ⊢ $Q))) : MetaM (α × Q($P ⊢ $Q)) := do
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let inst ← if A.isAppOfArity ``intuitionistically 3 then
@@ -36,7 +36,9 @@ def ipureCore {prop : Q(Type)} (_bi : Q(BI $prop))
   else
     synthInstance q(IntoPure $A $φ)
 
+  let (name, ref) ← getFreshName name
   withLocalDeclDQ name φ fun p => do
+    addLocalVarInfo ref (← getLCtx) p φ
     let (a, m) ← k φ p
     let f : Q($φ → $P' ⊢ $Q) ← mkLambdaFVars #[p] m
 
@@ -51,19 +53,15 @@ def ipureCore {prop : Q(Type)} (_bi : Q(BI $prop))
       pure (a, q(pure_elim_spatial $pf $f))
 
 elab "ipure" colGt hyp:ident : tactic => do
-  -- parse syntax
-  let name := hyp.getId
-  if name.isAnonymous then
-    throwUnsupportedSyntax
-
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
   let some { prop, bi, e, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
 
-  let some ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true name | throwError "unknown hypothesis"
+  let uniq ← hyps.findWithInfo hyp
+  let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true uniq
 
-  let (m, pf) ← ipureCore bi e e' out goal name pf fun _ _ => do
+  let (m, pf) ← ipureCore bi e e' out goal (← `(binderIdent| $hyp:ident)) pf fun _ _ => do
     let m ← mkFreshExprSyntheticOpaqueMVar <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
     pure (m, m)
 

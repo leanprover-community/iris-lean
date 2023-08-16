@@ -26,17 +26,13 @@ def clearCore {prop : Q(Type)} (_bi : Q(BI $prop)) (e e' out goal : Q($prop))
     pure q(clear_spatial $pf)
 
 elab "iclear" colGt hyp:ident : tactic => do
-  -- parse syntax
-  let name := hyp.getId
-  if name.isAnonymous then
-    throwUnsupportedSyntax
-
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
   let some { prop, bi, e, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
 
-  let some ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true name | throwError "unknown hypothesis"
+  let uniq ← hyps.findWithInfo hyp
+  let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true uniq
 
   let m : Q($e' ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps := hyps', goal }

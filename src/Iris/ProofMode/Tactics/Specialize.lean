@@ -30,11 +30,12 @@ theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Type} {Φ 
 def SpecializeState.process1 :
     @SpecializeState prop bi orig → Term → TermElabM (SpecializeState bi orig)
   | { hyps, b, out, pf }, arg => do
-    let name := arg.raw.getId
-    if let some ⟨_, hyps', out₁, out₁', b1, _, pf'⟩ :=
-      if name.isAnonymous then none else hyps.remove false arg.raw.getId
-    then
+    let uniq ← match arg with
+      | `($x:ident) => try? (hyps.findWithInfo x)
+      | _ => pure none
+    if let some uniq := uniq then
       -- if the argument is a hypothesis then specialize the wand
+      let ⟨_, hyps', out₁, out₁', b1, _, pf'⟩ := hyps.remove false uniq
       let b2 := if b1.constName! == ``true then b else q(false)
       have : $out₁ =Q iprop(□?$b1 $out₁') := ⟨⟩
       have : $b2 =Q ($b1 && $b) := ⟨⟩
@@ -53,22 +54,14 @@ def SpecializeState.process1 :
       have : $out' =Q $Φ $x := ⟨⟩
       return { hyps, b, out := out', pf := q(specialize_forall $pf $x) }
 
-elab "ispecialize" hyp:ident args:(colGt term:max)* " as " name:ident : tactic => do
-  -- parse syntax
-  let nameFrom := hyp.getId
-  if nameFrom.isAnonymous then
-    throwUnsupportedSyntax
-
-  let nameTo := name.getId
-  if nameTo.isAnonymous then
-    throwUnsupportedSyntax
-
+elab "ispecialize" hyp:ident args:(colGt term:max)* " as " name:binderIdent : tactic => do
   let (mvar, { prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
   -- find hypothesis index
-  let some ⟨_, hyps', _, out', b, _, pf⟩ := hyps.remove (nameFrom == nameTo) nameFrom
-    | throwError "unknown hypothesis"
+  let uniq ← hyps.findWithInfo hyp
+  let (nameTo, nameRef) ← getFreshName name
+  let ⟨_, hyps', _, out', b, _, pf⟩ := hyps.remove (hyp.getId == nameTo) uniq
 
   let state := { hyps := hyps', out := out', b, pf := q(($pf).1) }
 
@@ -76,7 +69,9 @@ elab "ispecialize" hyp:ident args:(colGt term:max)* " as " name:ident : tactic =
   let { e := ehyps, hyps, out, b, pf } ← liftM <| args.foldlM SpecializeState.process1 state
 
   let ⟨ehyp1, _⟩ := mkIntuitionisticIf bi b out
-  let hyp1 := .mkHyp bi nameTo (← mkFreshId) b out ehyp1
+  let uniq' ← mkFreshId
+  let hyp1 := .mkHyp bi nameTo uniq' b out ehyp1
+  addHypInfo nameRef nameTo uniq' prop out (isBinder := true)
   let hyps' := hyps.mkSep hyp1
   have pf : Q($e ⊢ $ehyps ∗ $ehyp1) := pf
   let m : Q($ehyps ∗ $ehyp1 ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
@@ -85,4 +80,4 @@ elab "ispecialize" hyp:ident args:(colGt term:max)* " as " name:ident : tactic =
   replaceMainGoal [m.mvarId!]
 
 macro "ispecialize" hyp:ident args:(colGt term:max)* : tactic =>
-  `(tactic| ispecialize $hyp $args* as $hyp)
+  `(tactic| ispecialize $hyp $args* as $hyp:ident)

@@ -106,11 +106,7 @@ elab "isplit" side:splitSide "[" names:ident,* "]" : tactic => do
 
   let mut uniqs : NameSet := {}
   for name in names.getElems do
-    let n := name.getId
-    if n.isAnonymous then
-      throwUnsupportedSyntax
-    let some uniq := hyps.find? n | throwErrorAt name "unknown hypothesis {name}"
-    uniqs := uniqs.insert uniq
+    uniqs := uniqs.insert (← hyps.findWithInfo name)
 
   let Q1 ← mkFreshExprMVarQ prop
   let Q2 ← mkFreshExprMVarQ prop

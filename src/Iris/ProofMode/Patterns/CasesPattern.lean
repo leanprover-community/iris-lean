@@ -23,7 +23,7 @@ macro "#" pat:icasesPat : icasesPat => `(icasesPat| □ $pat)
 macro "*" pat:icasesPat : icasesPat => `(icasesPat| ∗ $pat)
 
 inductive iCasesPat
-  | one (name : Option Name)
+  | one (name : TSyntax ``binderIdent)
   | clear
   | conjunction (args : List iCasesPat)
   | disjunction (args : List iCasesPat)
@@ -38,13 +38,7 @@ partial def iCasesPat.parse (pat : TSyntax `icasesPat) : MacroM iCasesPat := do
   | some pat => return pat
 where
   go : TSyntax `icasesPat → Option iCasesPat
-  | `(icasesPat| $name:ident) =>
-    let name := name.getId
-    if name.isAnonymous then
-      none
-    else
-      some <| .one name
-  | `(icasesPat| _) => some <| .one none
+  | `(icasesPat| $name:binderIdent) => some <| .one name
   | `(icasesPat| -) => some <| .clear
   | `(icasesPat| ⟨$[$args],*⟩) => args.mapM goAlts |>.map (.conjunction ·.toList)
   | `(icasesPat| ⌜$pat⌝) => go pat |>.map .pure

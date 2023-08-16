@@ -48,13 +48,13 @@ theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption
   [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q :=
   h.1.trans <| (sep_mono_r inst.1).trans sep_elim_r
 
-def getFreshName : Option Name → CoreM Name
-  | none => mkFreshUserName `x
-  | some name => pure name
+def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
+  | `(binderIdent| $name:ident) => pure (name.getId, name)
+  | stx => return (← mkFreshUserName `x, stx)
 
-def selectHyp (ty : Expr) : ∀ {s}, Hyps bi s → MetaM Name
+def selectHyp (ty : Expr) : ∀ {s}, @Hyps prop bi s → MetaM (Name × Q(Bool) × Q($prop))
   | _, .emp _ => failure
-  | _, .hyp _ _ uniq _ ty' _ => do
+  | _, .hyp _ _ uniq p ty' _ => do
     let .true ← isDefEq ty ty' | failure
-    pure uniq
+    pure (uniq, p, ty')
   | _, .sep _ _ _ _ lhs rhs => try selectHyp ty rhs catch _ => selectHyp ty lhs

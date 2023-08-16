@@ -65,7 +65,9 @@ partial def iIntroCore
       let Φ ← mkFreshExprMVarQ q($α → $prop)
       Pure.pure ⟨n, α, Φ, ← synthInstanceQ q(FromForall $Q $Φ)⟩
     if let some ⟨n, α, Φ, _⟩ := alres then
-      withLocalDeclDQ (← getFreshName n) α fun x => do
+      let (n, ref) ← getFreshName n
+      withLocalDeclDQ n α fun x => do
+        addLocalVarInfo ref (← getLCtx) x α
         have B : Q($prop) := Expr.headBeta q($Φ $x)
         have : $B =Q $Φ $x := ⟨⟩
         let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← iIntroCore hyps B pats k

@@ -16,6 +16,7 @@ structure RemoveHyp {prop : Q(Type)} (bi : Q(BI $prop)) (e : Q($prop)) where
   (e' : Q($prop)) (hyps' : Hyps bi e') (out out' : Q($prop)) (p : Q(Bool))
   (eq : $out =Q iprop(□?$p $out'))
   (pf : Q($e ⊣⊢ $e' ∗ $out))
+  deriving Inhabited
 
 inductive RemoveHypCore {prop : Q(Type)} (bi : Q(BI $prop)) (e : Q($prop)) (α : Type) where
   | none
@@ -76,9 +77,7 @@ def Hyps.removeG [Monad m] {prop : Q(Type)} {bi : Q(BI $prop)} {e : Q(Prop)}
   | .main a res => return some (a, res)
 
 def Hyps.remove {prop : Q(Type)} {bi : Q(BI $prop)} {e}
-    (rp : Bool) (hyps : Hyps bi e) (name : Name) : Option (RemoveHyp bi e) :=
-  (·.2) <$> Id.run (hyps.removeG rp fun name' _ _ _ => if name == name' then some () else none)
-
-def Hyps.removeUniq {prop : Q(Type)} {bi : Q(BI $prop)} {e}
-    (rp : Bool) (hyps : Hyps bi e) (uniq : Name) : Option (RemoveHyp bi e) :=
-  (·.2) <$> Id.run (hyps.removeG rp fun _ uniq' _ _ => if uniq == uniq' then some () else none)
+    (rp : Bool) (hyps : Hyps bi e) (uniq : Name) : RemoveHyp bi e :=
+  match Id.run (hyps.removeG rp fun _ uniq' _ _ => if uniq == uniq' then some () else none) with
+  | some (_, r) => r
+  | none => panic! "variable not found"

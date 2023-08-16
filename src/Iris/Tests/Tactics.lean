@@ -14,7 +14,7 @@ open Iris.BI
 -- start stop
 theorem start_stop [BI PROP] (Q : PROP) (H : Q ⊢ Q) : Q ⊢ Q := by
   istart
-  iintro HQ
+  iintro _HQ
   istop
   exact H
 
@@ -27,7 +27,7 @@ theorem rename [BI PROP] (Q : PROP) : Q ⊢ Q := by
   iexact H
 
 theorem rename_by_type [BI PROP] (Q : PROP) : □ P ∗ Q ⊢ Q := by
-  iintro ⟨HP, HQ⟩
+  iintro ⟨_HP, HQ⟩
   irename: Q => H
   iexact H
 
@@ -98,19 +98,19 @@ theorem pure [BIAffine PROP] (Q : PROP) : ⊢ ⌜φ⌝ -∗ Q -∗ Q := by
   iexact HQ
 
 theorem pattern [BI PROP] (Q : PROP) : □ (P1 ∨ P2) ∗ Q ⊢ Q := by
-  iintro ⟨□(HP1 | HP2), HQ⟩
+  iintro ⟨□(_HP1 | _HP2), HQ⟩
   <;> iexact HQ
 
 theorem multiple_spatial [BI PROP] (Q : PROP) : ⊢ <affine> P -∗ Q -∗ Q := by
-  iintro HP HQ
+  iintro _HP HQ
   iexact HQ
 
 theorem multiple_intuitionistic [BI PROP] (Q : PROP) : ⊢ □ P -∗ □ Q -∗ Q := by
-  iintro □HP □HQ
+  iintro □_HP □HQ
   iexact HQ
 
 theorem multiple_patterns [BI PROP] (Q : PROP) : ⊢ □ (P1 ∧ P2) -∗ Q ∨ Q -∗ Q := by
-  iintro □⟨HP1, ∗HP2⟩ (HQ | HQ)
+  iintro □⟨_HP1, ∗_HP2⟩ (HQ | HQ)
   <;> iexact HQ
 
 end intro
@@ -157,19 +157,19 @@ end exact
 namespace assumption
 
 theorem exact [BI PROP] (Q : PROP) : Q ⊢ Q := by
-  iintro HQ
+  iintro _HQ
   iassumption
 
 theorem from_assumption [BI PROP] (Q : PROP) : <affine> <pers> Q ⊢ □ Q := by
-  iintro HQ
+  iintro _HQ
   iassumption
 
 theorem intuitionistic [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
-  iintro □HQ
+  iintro □_HQ
   iassumption
 
 theorem lean [BI PROP] (Q : PROP) (H : ⊢ Q) : <affine> P ⊢ Q := by
-  iintro HP
+  iintro _HP
   iassumption
 
 theorem lean_pure [BI PROP] (Q : PROP) : <affine> ⌜⊢ Q⌝ ⊢ Q := by
@@ -185,7 +185,7 @@ theorem false_intro [BI PROP] (Q : PROP) : False ⊢ Q := by
   iintro ⟨⟩
 
 theorem false [BI PROP] (P : PROP) : □ P ⊢ False -∗ Q := by
-  iintro HP HF
+  iintro _HP HF
   iexfalso
   iexact HF
 
@@ -279,7 +279,7 @@ theorem simple [BI PROP] : ⊢ (emp : PROP) := by
   iemp_intro
 
 theorem affine_env [BI PROP] (P : PROP) : <affine> P ⊢ emp := by
-  iintro HP
+  iintro _HP
   iemp_intro
 
 end empintro
@@ -296,7 +296,7 @@ theorem or [BI PROP] : ⊢ True ∨ (False : PROP) := by
   apply Or.inl True.intro
 
 theorem with_proof [BI PROP] (H : A → B) (P Q : PROP) : <affine> P ⊢ <pers> Q → ⌜A⌝ → ⌜B⌝ := by
-  iintro HP □HQ
+  iintro _HP □_HQ
   ipure_intro
   exact H
 
@@ -413,7 +413,7 @@ theorem and [BI PROP] (Q : PROP) : Q ⊢ Q ∧ Q := by
 theorem sep_left [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗ P ∗ Q := by
   iintro HP
   iintro HQ
-  iintro HR
+  iintro _HR
   isplit l [HP]
   · iexact HP
   · iexact HQ
@@ -421,7 +421,7 @@ theorem sep_left [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗ P ∗ Q :
 theorem sep_right [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗ P ∗ Q := by
   iintro HP
   iintro HQ
-  iintro HR
+  iintro _HR
   isplit r [HQ]
   · iexact HP
   · iexact HQ
@@ -429,7 +429,7 @@ theorem sep_right [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗ P ∗ Q 
 theorem sep_left_all [BIAffine PROP] (Q : PROP) : ⊢ P -∗ □ Q -∗ R -∗ P ∗ Q := by
   iintro HP
   iintro □HQ
-  iintro HR
+  iintro _HR
   isplit l
   · iexact HP
   · iexact HQ
@@ -437,7 +437,7 @@ theorem sep_left_all [BIAffine PROP] (Q : PROP) : ⊢ P -∗ □ Q -∗ R -∗ P
 theorem sep_right_all [BIAffine PROP] (Q : PROP) : ⊢ □ P -∗ Q -∗ R -∗ P ∗ Q := by
   iintro □HP
   iintro HQ
-  iintro HR
+  iintro _HR
   isplit r
   · iexact HP
   · iexact HQ
@@ -483,39 +483,39 @@ theorem clear [BI PROP] (P Q : PROP) : ⊢ P -∗ <affine> Q -∗ P := by
 
 theorem and [BI PROP] (Q : PROP) : □ (P1 ∧ P2 ∧ Q) ⊢ Q := by
   iintro □HP
-  icases HP with ⟨HP1, HP2, HQ⟩
+  icases HP with ⟨_HP1, _HP2, HQ⟩
   iexact HQ
 
 theorem and_intuitionistic [BI PROP] (Q : PROP) : □ P ∧ Q ⊢ Q := by
   iintro HPQ
-  icases HPQ with ⟨HP, HQ⟩
+  icases HPQ with ⟨_HP, HQ⟩
   iexact HQ
 
 theorem and_persistent_left [BI PROP] (Q : PROP) : <pers> Q ∧ <affine> P ⊢ Q := by
   iintro HQP
-  icases HQP with ⟨□HQ, HP⟩
+  icases HQP with ⟨□HQ, _HP⟩
   iexact HQ
 
 theorem and_persistent_right [BI PROP] (Q : PROP) : Q ∧ <pers> P ⊢ Q := by
   iintro HQP
-  icases HQP with ⟨HQ, HP⟩
+  icases HQP with ⟨HQ, _HP⟩
   iexact HQ
 
 theorem sep [BIAffine PROP] (Q : PROP) : P1 ∗ P2 ∗ Q ⊢ Q := by
   iintro HPQ
-  icases HPQ with ⟨HP1, HP2, HQ⟩
+  icases HPQ with ⟨_HP1, _HP2, HQ⟩
   iexact HQ
 
 theorem disjunction [BI PROP] (Q : PROP) : Q ⊢ <affine> (P1 ∨ P2 ∨ P3) -∗ Q := by
   iintro HQ
   iintro HP
-  icases HP with (HP1 | HP2 | HP3)
+  icases HP with (_HP1 | _HP2 | _HP3)
   <;> iexact HQ
 
 theorem conjunction_and_disjunction [BIAffine PROP] (Q : PROP) :
     (P11 ∨ P12 ∨ P13) ∗ P2 ∗ (P31 ∨ P32 ∨ P33) ∗ Q ⊢ Q := by
   iintro HP
-  icases HP with ⟨HP11 | HP12 | HP13, HP2, HP31 | HP32 | HP33, HQ⟩
+  icases HP with ⟨_HP11 | _HP12 | _HP13, HP2, HP31 | HP32 | HP33, HQ⟩
   <;> iexact HQ
 
 theorem move_to_pure [BI PROP] (Q : PROP) : ⊢ <affine> ⌜⊢ Q⌝ -∗ Q := by
@@ -564,7 +564,7 @@ theorem move_to_pure_disjunction [BI PROP] (Q : PROP) :
 
 theorem move_to_intuitionistic_conjunction [BI PROP] (Q : PROP) : ⊢ □ P ∗ Q -∗ Q := by
   iintro HPQ
-  icases HPQ with ⟨□HP, HQ⟩
+  icases HPQ with ⟨□_HP, HQ⟩
   iexact HQ
 
 theorem move_to_intuitionistic_disjunction [BI PROP] (Q : PROP) : ⊢ □ Q ∨ Q -∗ Q := by
@@ -574,7 +574,7 @@ theorem move_to_intuitionistic_disjunction [BI PROP] (Q : PROP) : ⊢ □ Q ∨ 
 
 theorem move_to_spatial_conjunction [BI PROP] (Q : PROP) : ⊢ □ (P ∧ Q) -∗ Q := by
   iintro □HPQ
-  icases HPQ with ⟨HP, ∗HQ⟩
+  icases HPQ with ⟨_HP, ∗HQ⟩
   iexact HQ
 
 theorem move_to_spatial_disjunction [BI PROP] (Q : PROP) : ⊢ □ (Q ∨ Q) -∗ Q := by
@@ -584,7 +584,7 @@ theorem move_to_spatial_disjunction [BI PROP] (Q : PROP) : ⊢ □ (Q ∨ Q) -�
 
 theorem move_to_intuitionistic_and_back_conjunction [BI PROP] (Q : PROP) : ⊢ □ (P ∧ Q) -∗ Q := by
   iintro HPQ
-  icases HPQ with □⟨HP, ∗HQ⟩
+  icases HPQ with □⟨_HP, ∗HQ⟩
   iexact HQ
 
 theorem move_to_intuitionistic_and_back_disjunction [BI PROP] (Q : PROP) : ⊢ □ (Q ∨ Q) -∗ Q := by
@@ -600,7 +600,7 @@ theorem conjunction_clear [BIAffine PROP] (Q : PROP) : Q ∗ P ⊢ Q := by
 theorem disjunction_clear [BIAffine PROP] (Q : PROP) : Q ⊢ P1 ∨ P2 -∗ Q := by
   iintro HQ
   iintro HP
-  icases HP with (- | HP2)
+  icases HP with (- | _HP2)
   <;> iexact HQ
 
 theorem and_destruct_spatial_right [BI PROP] (Q : PROP) : P ∧ Q ⊢ Q := by

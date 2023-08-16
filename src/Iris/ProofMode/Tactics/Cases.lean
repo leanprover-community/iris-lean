@@ -48,10 +48,13 @@ theorem exists_elim_intuitionistic [BI PROP] {P A Q : PROP} {Φ : α → PROP} [
     (h : ∀ a, P ∗ □ Φ a ⊢ Q) : P ∗ □ A ⊢ Q := exists_elim_spatial h
 
 def iCasesExists {prop : Q(Type)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
-    (name : Option Name) (α : Q(Type)) (Φ : Q(«$α» → «$prop»)) (_inst : Q(IntoExists «$A'» «$Φ»))
+    (name : TSyntax ``binderIdent) (α : Q(Type)) (Φ : Q(«$α» → «$prop»))
+    (_inst : Q(IntoExists «$A'» «$Φ»))
     (k : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → MetaM Q($P ∗ $B ⊢ $Q)) :
     MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
-  withLocalDeclDQ (← getFreshName name) α fun x => do
+  let (name, ref) ← getFreshName name
+  withLocalDeclDQ name α fun x => do
+    addLocalVarInfo ref (← getLCtx) x α
     have B' : Q($prop) := Expr.headBeta q($Φ $x)
     have : $B' =Q $Φ $x := ⟨⟩
     if p.constName! == ``true then
@@ -204,7 +207,10 @@ partial def iCasesCore
     (pat : iCasesPat) (k : ∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q)) : MetaM (Q($P ∗ $A ⊢ $Q)) :=
   match pat with
   | .one name => do
-    let hyp := .mkHyp bi (← getFreshName name) (← mkFreshId) p A' A
+    let (name, ref) ← getFreshName name
+    let uniq ← mkFreshId
+    addHypInfo ref name uniq prop A' (isBinder := true)
+    let hyp := .mkHyp bi name uniq p A' A
     if let .emp _ := hyps then
       let pf : Q($A ⊢ $Q) ← k hyp
       pure q(of_emp_sep $pf)
@@ -255,7 +261,7 @@ partial def iCasesCore
   | .pure arg => do
     let .one n := arg
       | throwError "cannot further destruct a hypothesis after moving it to the Lean context"
-    (·.2) <$> ipureCore bi q(iprop($P ∗ $A)) P A Q (← getFreshName n) q(.rfl) fun _ _ =>
+    (·.2) <$> ipureCore bi q(iprop($P ∗ $A)) P A Q n q(.rfl) fun _ _ =>
       ((), ·) <$> k hyps
 
   | .intuitionistic arg =>
@@ -268,15 +274,13 @@ partial def iCasesCore
 
 elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
   -- parse syntax
-  let name := hyp.getId
-  if name.isAnonymous then
-    throwUnsupportedSyntax
   let pat ← liftMacroM <| iCasesPat.parse pat
 
   let (mvar, { prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
-  let some ⟨_, hyps', A, A', b, h, pf⟩ := hyps.remove true name | throwError "unknown hypothesis"
+  let uniq ← hyps.findWithInfo hyp
+  let ⟨_, hyps', A, A', b, h, pf⟩ := hyps.remove true uniq
 
   -- process pattern
   let goals ← IO.mkRef #[]

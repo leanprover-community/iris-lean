@@ -30,12 +30,12 @@ inductive ReplaceHyp {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop)) where
   | main (e e' : Q($prop)) (hyps' : Hyps bi e') (pf : Q(Replaces $Q $e $e'))
 
 variable [Monad m] {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop))
-  (name : Name) (repl : Name → Q(Bool) → Q($prop) → MetaM (ReplaceHyp bi Q)) in
+  (uniq : Name) (repl : Name → Q(Bool) → Q($prop) → MetaM (ReplaceHyp bi Q)) in
 def Hyps.replace : ∀ {e}, Hyps bi e → MetaM (ReplaceHyp bi Q)
   | _, .emp _ => pure .none
-  | _, .hyp _ name' uniq p ty _ => do
-    if name == name' then
-      let res ← repl uniq p ty
+  | _, .hyp _ name uniq' p ty _ => do
+    if uniq == uniq' then
+      let res ← repl name p ty
       if let .main e e' hyps' _ := res then
         let e' ← instantiateMVarsQ e'
         if e == e' then
@@ -69,19 +69,16 @@ theorem to_persistent_intuitionistic [BI PROP] {P P' Q : PROP}
   wand_mono_l <| affinely_mono hP.1
 
 elab "iintuitionistic" colGt hyp:ident : tactic => do
-  -- parse syntax
-  let name := hyp.getId
-  if name.isAnonymous then
-    throwUnsupportedSyntax
-
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
   let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
 
-  match ← hyps.replace bi goal name fun uniq p ty => do
+  let uniq ← hyps.findWithInfo hyp
+  match ← hyps.replace bi goal uniq fun name p ty => do
     let P' ← mkFreshExprMVarQ prop
     let _ ← synthInstanceQ q(IntoPersistently $p $ty $P')
+    addHypInfo hyp name uniq prop P' (isBinder := true)
     match matchBool p with
     | .inl _ =>
       return .main q(iprop(□ $ty)) q(iprop(□ $P')) (.mkHyp bi name uniq p P' _)
@@ -90,7 +87,7 @@ elab "iintuitionistic" colGt hyp:ident : tactic => do
       let _ ← synthInstanceQ q(TCOr (Affine $ty) (Absorbing $goal))
       return .main ty q(iprop(□ $P')) (.mkHyp bi name uniq q(true) P' _) q(to_persistent_spatial)
   with
-  | .none => throwError "unknown hypothesis"
+  | .none => panic! "missing variable"
   | .unchanged _ hyps' =>
     mvar.setType <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
   | .main _e e' hyps' pf =>
@@ -104,27 +101,25 @@ theorem from_affine [BI PROP] {p : Bool} {P P' Q : PROP} [hP : FromAffinely P' P
   wand_mono_l <| affinelyIf_of_intuitionisticallyIf.trans hP.1
 
 elab "ispatial" colGt hyp:ident : tactic => do
-  -- parse syntax
-  let name := hyp.getId
-  if name.isAnonymous then
-    throwUnsupportedSyntax
-
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
   let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
 
-  match ← hyps.replace bi goal name fun uniq p ty => do
+  let uniq ← hyps.findWithInfo hyp
+  match ← hyps.replace bi goal uniq fun name p ty => do
     let P' ← mkFreshExprMVarQ prop
     match matchBool p with
     | .inl _ =>
       let _ ← synthInstanceQ q(FromAffinely $P' $ty true)
+      addHypInfo hyp name uniq prop P' (isBinder := true)
       return .main q(iprop(□ $ty)) P' (.mkHyp bi name uniq q(false) P' _) q(from_affine (p := true))
     | .inr _ =>
       let _ ← synthInstanceQ q(FromAffinely $P' $ty false)
+      addHypInfo hyp name uniq prop P' (isBinder := true)
       return .main ty P' (.mkHyp bi name uniq p P' _) q(from_affine (p := false))
   with
-  | .none => throwError "unknown hypothesis"
+  | .none => panic! "missing variable"
   | .unchanged _ hyps' =>
     mvar.setType <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
   | .main _e e' hyps' pf =>
