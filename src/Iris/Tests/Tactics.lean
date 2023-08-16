@@ -26,6 +26,11 @@ theorem rename [BI PROP] (Q : PROP) : Q ⊢ Q := by
   irename HQ => H
   iexact H
 
+theorem rename_by_type [BI PROP] (Q : PROP) : □ P ∗ Q ⊢ Q := by
+  iintro ⟨HP, HQ⟩
+  irename: Q => H
+  iexact H
+
 theorem rename_twice [BI PROP] (Q : PROP) : Q ⊢ Q := by
   iintro HQ
   irename HQ => H

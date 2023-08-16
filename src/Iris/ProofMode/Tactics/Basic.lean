@@ -51,3 +51,10 @@ theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption
 def getFreshName : Option Name → CoreM Name
   | none => mkFreshUserName `x
   | some name => pure name
+
+def selectHyp (ty : Expr) : ∀ {s}, Hyps bi s → MetaM Name
+  | _, .emp _ => failure
+  | _, .hyp _ _ uniq _ ty' _ => do
+    let .true ← isDefEq ty ty' | failure
+    pure uniq
+  | _, .sep _ _ _ _ lhs rhs => try selectHyp ty rhs catch _ => selectHyp ty lhs
