@@ -221,7 +221,6 @@ theorem sep_right_comm [BI PROP] {P Q R : PROP} : (P ∗ Q) ∗ R ⊣⊢ (P ∗ 
 theorem sep_sep_sep_comm [BI PROP] {P Q R S : PROP} : (P ∗ Q) ∗ (R ∗ S) ⊣⊢ (P ∗ R) ∗ (Q ∗ S) :=
   sep_assoc.trans <| (sep_congr_r sep_left_comm).trans sep_assoc.symm
 
-theorem emp_sep [BI PROP] {P : PROP} : emp ∗ P ⊣⊢ P := ⟨emp_sep_1, emp_sep_2⟩
 instance [BI PROP] : LeftId (α := PROP) BiEntails emp sep := ⟨emp_sep⟩
 
 theorem sep_emp [BI PROP] {P : PROP} : P ∗ emp ⊣⊢ P := sep_comm.trans emp_sep
@@ -236,7 +235,7 @@ instance [BI PROP] : LawfulBigOp sep (emp : PROP) BiEntails where
   left_id := emp_sep
   congr_l := sep_congr_l
 
-theorem true_sep_2 [BI PROP] {P : PROP} : P ⊢ True ∗ P := emp_sep_2.trans (sep_mono_l true_intro)
+theorem true_sep_2 [BI PROP] {P : PROP} : P ⊢ True ∗ P := emp_sep.2.trans (sep_mono_l true_intro)
 
 theorem wand_intro' [BI PROP] {P Q R : PROP} (h : Q ∗ P ⊢ R) : P ⊢ Q -∗ R :=
   wand_intro <| sep_symm.trans h
@@ -263,7 +262,7 @@ theorem sep_exists_l [BI PROP] {P : PROP} {Ψ : α → PROP} : P ∗ (∃ a, Ψ 
 theorem sep_exists_r [BI PROP] {Φ : α → PROP} {Q : PROP} : (∃ a, Φ a) ∗ Q ⊣⊢ ∃ a, Φ a ∗ Q :=
   sep_comm.trans <| sep_exists_l.trans <| exists_congr fun _ => sep_comm
 
-theorem wand_rfl [BI PROP] {P : PROP} : ⊢ P -∗ P := wand_intro emp_sep_1
+theorem wand_rfl [BI PROP] {P : PROP} : ⊢ P -∗ P := wand_intro emp_sep.1
 
 @[rw_mono_rule]
 theorem wandIff_congr [BI PROP] {P P' Q Q' : PROP} (h1 : P ⊣⊢ Q) (h2 : P' ⊣⊢ Q') :
@@ -278,10 +277,10 @@ theorem wandIff_congr_r [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P ∗-∗
 theorem wandIff_refl [BI PROP] {P : PROP} : ⊢ P ∗-∗ P := and_intro wand_rfl wand_rfl
 
 theorem wand_entails [BI PROP] {P Q : PROP} (h : ⊢ P -∗ Q) : P ⊢ Q :=
-  emp_sep_2.trans (wand_elim h)
+  emp_sep.2.trans (wand_elim h)
 
 theorem entails_wand [BI PROP] {P Q : PROP} (h : P ⊢ Q) : ⊢ P -∗ Q :=
-  wand_intro (emp_sep_1.trans h)
+  wand_intro (emp_sep.1.trans h)
 
 theorem equiv_wandIff [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : ⊢ P ∗-∗ Q :=
   wandIff_refl.trans (wandIff_congr_l h).2

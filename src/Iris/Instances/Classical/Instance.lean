@@ -3,11 +3,13 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
+import Std.Tactic.RCases
 import Iris.BI
 import Iris.Instances.Data
+import Iris.Std.Equivalence
 
 namespace Iris.Instances.Classical
-open Iris.BI Iris.Instances.Data
+open Iris.BI Iris.Instances.Data Std
 
 /- Instance of `BIBase` and `BI` for classical (non-affine) separation logic. -/
 
@@ -25,28 +27,41 @@ instance : BIBase (HeapProp Val) where
   sep P Q        σ := ∃ σ1 σ2, σ = σ1 ∪ σ2 ∧ σ1 || σ2 ∧ P σ1 ∧ Q σ2
   wand P Q       σ := ∀ σ', σ || σ' → P σ' → Q (σ ∪ σ')
   persistently P _ := P ∅
+  later P        σ := P σ
+
+instance : Std.Preorder (Entails (PROP := HeapProp Val)) where
+  refl := by
+    simp only [BI.Entails]
+    intro _ _ h
+    exact h
+  trans := by
+    simp only [BI.Entails]
+    intro _ _ _ h_xy h_yz σ h_x
+    apply h_yz σ
+    apply h_xy σ
+    exact h_x
 
 instance : BI (HeapProp Val) where
-  entails_preorder.refl := by
-      simp only [BI.Entails]
-      intro _ _ h
-      exact h
-  entails_preorder.trans := by
-      simp only [BI.Entails]
-      intro _ _ _ h_xy h_yz σ h_x
-      apply h_yz σ
-      apply h_xy σ
-      exact h_x
+  toCOFE := COFE.ofDiscrete Eq equivalence_eq
 
-  pure_intro := by
-    simp only [BI.Entails, BI.pure]
-    intro _ _ h _ _
-    exact h
-  pure_elim' := by
-    simp only [BI.Entails, BI.pure]
-    intro _ _ h_φP σ h_φ
-    apply h_φP h_φ σ
-    simp
+  entails_preorder := by infer_instance
+  equiv_iff {P Q} := ⟨
+    fun h : P = Q => h ▸ ⟨refl, refl⟩,
+    fun ⟨h₁, h₂⟩ => funext fun σ => propext ⟨h₁ σ, h₂ σ⟩
+  ⟩
+
+  and_ne          := by rintro _ _ _ rfl _ _ rfl; rfl
+  or_ne           := by rintro _ _ _ rfl _ _ rfl; rfl
+  imp_ne          := by rintro _ _ _ rfl _ _ rfl; rfl
+  sep_ne          := by rintro _ _ _ rfl _ _ rfl; rfl
+  wand_ne         := by rintro _ _ _ rfl _ _ rfl; rfl
+  persistently_ne := by rintro _ _ _ rfl; rfl
+  later_ne        := by rintro _ _ _ rfl; rfl
+  forall_ne {_ _ P Q} h := (funext h : P = Q) ▸ rfl
+  exists_ne {_ _ P Q} h := (funext h : P = Q) ▸ rfl
+
+  pure_intro h _ _ := h
+  pure_elim' h_φP σ h_φ := h_φP h_φ σ ⟨⟩
 
   and_elim_l := by
     intros
@@ -123,16 +138,16 @@ instance : BI (HeapProp Val) where
     constructor
     · exact h_PQ σ₁ h_P
     · exact h_P'Q' σ₂ h_P'
-  emp_sep_1 := by
+  emp_sep.mp := by
     simp only [BI.Entails, BI.sep, BI.emp]
-    intro _ _ ⟨σ₁, σ₂, h_union, _, h_emp, h_P⟩
+    intro _ ⟨σ₁, σ₂, h_union, _, h_emp, h_P⟩
     rw [h_emp] at h_union
     rw [← empty_union] at h_union
     rw [h_union]
     exact h_P
-  emp_sep_2 := by
+  emp_sep.mpr := by
     simp only [BI.Entails, BI.sep, BI.emp]
-    intro _ σ h_P
+    intro σ h_P
     apply Exists.intro ∅
     apply Exists.intro σ
     constructor
@@ -240,4 +255,10 @@ instance : BI (HeapProp Val) where
     · exact h_P
     · exact h_Q
 
-end Iris.Instances.Classical
+  later_mono := id
+  later_intro _ := id
+  later_forall_2 _ := id
+  later_exists_false _ h := .inr h
+  later_sep := ⟨fun _ => id, fun _ => id⟩
+  later_persistently := ⟨fun _ => id, fun _ => id⟩
+  later_false_em _ h := .inr fun _ => h

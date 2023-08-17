@@ -3,15 +3,29 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
+import Iris.Algebra.OFE
 import Iris.BI.BIBase
 
 namespace Iris
-open Iris.Std
+open Iris.Std OFE
 open Lean
 
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
-class BI (PROP : Type) extends BI.BIBase PROP where
+class BI (PROP : Type) extends COFE PROP, BI.BIBase PROP where
+  Equiv P Q := P ⊣⊢ Q
+
   entails_preorder : Preorder Entails
+  equiv_iff {P Q : PROP} : (P ≡ Q) ↔ P ⊣⊢ Q := by simp
+
+  and_ne : OFE.NonExpansive₂ and
+  or_ne : OFE.NonExpansive₂ or
+  imp_ne : OFE.NonExpansive₂ imp
+  forall_ne {P₁ P₂ : α → PROP} : (∀ x, P₁ x ≡{n}≡ P₂ x) → iprop(∀ x, P₁ x) ≡{n}≡ iprop(∀ x, P₂ x)
+  exists_ne {P₁ P₂ : α → PROP} : (∀ x, P₁ x ≡{n}≡ P₂ x) → iprop(∃ x, P₁ x) ≡{n}≡ iprop(∃ x, P₂ x)
+  sep_ne : OFE.NonExpansive₂ sep
+  wand_ne : OFE.NonExpansive₂ wand
+  persistently_ne : OFE.NonExpansive persistently
+  later_ne : OFE.NonExpansive later
 
   pure_intro {φ : Prop} {P : PROP} : φ → P ⊢ ⌜φ⌝
   pure_elim' {φ : Prop} {P : PROP} : (φ → True ⊢ P) → ⌜φ⌝ ⊢ P
@@ -34,8 +48,7 @@ class BI (PROP : Type) extends BI.BIBase PROP where
   exists_elim {Φ : α → PROP} {Q : PROP} : (∀ a, Φ a ⊢ Q) → (∃ a, Φ a) ⊢ Q
 
   sep_mono {P P' Q Q' : PROP} : (P ⊢ Q) → (P' ⊢ Q') → P ∗ P' ⊢ Q ∗ Q'
-  emp_sep_1 {P : PROP} : emp ∗ P ⊢ P
-  emp_sep_2 {P : PROP} : P ⊢ emp ∗ P
+  emp_sep {P : PROP} : emp ∗ P ⊣⊢ P
   sep_symm {P Q : PROP} : P ∗ Q ⊢ Q ∗ P
   sep_assoc_l {P Q R : PROP} : (P ∗ Q) ∗ R ⊢ P ∗ (Q ∗ R)
 
@@ -49,6 +62,15 @@ class BI (PROP : Type) extends BI.BIBase PROP where
   persistently_exists_1 {Ψ : α → PROP} : <pers> (∃ a, Ψ a) ⊢ ∃ a, <pers> (Ψ a)
   persistently_absorb_l {P Q : PROP} : <pers> P ∗ Q ⊢ <pers> P
   persistently_and_l {P Q : PROP} : <pers> P ∧ Q ⊢ P ∗ Q
+
+  later_mono {P Q : PROP} : (P ⊢ Q) → ▷ P ⊢ ▷ Q
+  later_intro {P : PROP} : P ⊢ ▷ P
+
+  later_forall_2 {Φ : α → PROP} : (∀ a, ▷ Φ a) ⊢ ▷ ∀ a, Φ a
+  later_exists_false {Φ : α → PROP} : (▷ ∃ a, Φ a) ⊢ ▷ False ∨ ∃ a, ▷ Φ a
+  later_sep {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q
+  later_persistently {P Q : PROP} : ▷ <pers> P ⊣⊢ <pers> ▷ P
+  later_false_em {P : PROP} : ▷ P ⊢ ▷ False ∨ (▷ False → P)
 
 namespace BI
 

@@ -28,6 +28,7 @@ class BIBase (PROP : Type) where
   sep : PROP → PROP → PROP
   wand : PROP → PROP → PROP
   persistently : PROP → PROP
+  later : PROP → PROP
 
 namespace BIBase
 
@@ -45,6 +46,8 @@ syntax:35 term:36 " ∗ " term:35 : term
 syntax:25 term:26 " -∗ " term:25 : term
 /-- Persistency modality. `persistently` is a primitive of BI. -/
 syntax:max "<pers> " term:40 : term
+/-- Later modality. `later` is a primitive of BI. -/
+syntax:max "▷ " term:40 : term
 
 /-- Bidirectional implication on separation logic propositions. -/
 syntax:27 term:28 " ↔ " term:28 : term
@@ -66,6 +69,7 @@ macro_rules
   | `(iprop($P ∗ $Q))   => ``(BIBase.sep iprop($P) iprop($Q))
   | `(iprop($P -∗ $Q))  => ``(BIBase.wand iprop($P) iprop($Q))
   | `(iprop(<pers> $P)) => ``(BIBase.persistently iprop($P))
+  | `(iprop(▷ $P))      => ``(BIBase.later iprop($P))
 
 delab_rule BIBase.emp
   | `($_) => ``(iprop($(mkIdent `emp)))
