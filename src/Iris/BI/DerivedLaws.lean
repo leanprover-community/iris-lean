@@ -14,7 +14,8 @@ import Iris.Std.TC
 namespace Iris.BI
 open Iris.Std BI
 
--- Entails
+/-! # Entails -/
+
 instance entails_trans [BI PROP] : Trans (α := PROP) Entails Entails Entails where
   trans h1 h2 := h1.trans h2
 instance entails_antisymm [BI PROP] : Antisymmetric (α := PROP) BiEntails Entails where
@@ -23,7 +24,8 @@ instance entails_antisymm [BI PROP] : Antisymmetric (α := PROP) BiEntails Entai
 instance equiv_trans [BI PROP] : Trans (α := PROP) BiEntails BiEntails BiEntails where
   trans h1 h2 := h1.trans h2
 
--- Logic
+/-! # Logic -/
+
 theorem and_elim_l' [BI PROP] {P Q R : PROP} (h : P ⊢ R) : P ∧ Q ⊢ R := and_elim_l.trans h
 
 theorem and_elim_r' [BI PROP] {P Q R : PROP} (h : Q ⊢ R) : P ∧ Q ⊢ R := and_elim_r.trans h
@@ -173,7 +175,8 @@ theorem or_eq_ite [BI PROP] {P Q : PROP} : P ∨ Q ⊣⊢ ∃ (b : Bool), if b t
 theorem exists_intro' [BI PROP] {Ψ : α → PROP} (a : α) (h : P ⊢ Ψ a) : P ⊢ ∃ a, Ψ a :=
   h.trans (exists_intro a)
 
--- BI
+/-! # BI -/
+
 theorem sep_mono_l [BI PROP] {P P' Q : PROP} (h : P ⊢ P') : P ∗ Q ⊢ P' ∗ Q := sep_mono h .rfl
 
 theorem sep_mono_r [BI PROP] {P Q Q' : PROP} (h : Q ⊢ Q') : P ∗ Q ⊢ P ∗ Q' := sep_mono .rfl h
@@ -288,7 +291,8 @@ theorem equiv_wandIff [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : ⊢ P ∗-∗ Q 
 theorem wandIff_equiv [BI PROP] {P Q : PROP} (h : ⊢ P ∗-∗ Q) : P ⊣⊢ Q :=
   ⟨wand_entails (h.trans and_elim_l), wand_entails (h.trans and_elim_r)⟩
 
--- Pure
+/-! # Pure -/
+
 theorem pure_elim [BI PROP] (φ : Prop) {Q R : PROP} (h1 : Q ⊢ ⌜φ⌝) (h2 : φ → Q ⊢ R) : Q ⊢ R :=
   (and_self (PROP := PROP)).2.trans <| imp_elim <| h1.trans <| pure_elim' fun h =>
     imp_intro' <| and_elim_l.trans (h2 h)
@@ -338,7 +342,8 @@ theorem pure_exists [BI PROP] {φ : α → Prop} : (∃ x, ⌜φ x⌝ : PROP) �
   ⟨exists_elim fun a => pure_mono (⟨a, ·⟩),
    pure_elim' fun ⟨x, h⟩ => (pure_intro h).trans (exists_intro' x .rfl)⟩
 
--- Affine
+/-! # Affine -/
+
 @[rw_mono_rule]
 theorem affinely_congr [BI PROP] {P P' : PROP} (h : P ⊣⊢ P') :
     <affine> P ⊣⊢ <affine> P' := and_congr_r h
@@ -382,7 +387,8 @@ theorem affinely_and_r [BI PROP] {P Q : PROP} : P ∧ <affine> Q ⊣⊢ <affine>
 theorem affinely_and_lr [BI PROP] {P Q : PROP} : <affine> P ∧ Q ⊣⊢ P ∧ <affine> Q :=
   affinely_and_l.trans affinely_and_r.symm
 
--- Absorbing
+/-! # Absorbing -/
+
 @[rw_mono_rule]
 theorem absorbingly_congr [BI PROP] {P P' : PROP} (h : P ⊣⊢ P') :
     <absorb> P ⊣⊢ <absorb> P' := sep_congr_r h
@@ -430,7 +436,8 @@ theorem absorbingly_sep_r [BI PROP] {P Q : PROP} : P ∗ <absorb> Q ⊣⊢ <abso
 theorem absorbingly_sep_lr [BI PROP] {P Q : PROP} : <absorb> P ∗ Q ⊣⊢ P ∗ <absorb> Q :=
   absorbingly_sep_l.trans absorbingly_sep_r.symm
 
--- Affine / Absorbing Propositions
+/-! # Affine / Absorbing Propositions -/
+
 theorem affine_affinely [BI PROP] (P : PROP) [Affine P] : <affine> P ⊣⊢ P :=
   ⟨affinely_elim, and_intro affine .rfl⟩
 
@@ -459,7 +466,8 @@ theorem pure_wand [BI PROP] {φ1 φ2 : Prop} : (⌜φ1⌝ -∗ (⌜φ2⌝ : PROP
   refine ⟨(imp_intro' ?_).trans pure_imp.1, pure_wand_2⟩
   exact pure_elim_l fun h => true_sep_2.trans (eq_true h ▸ wand_elim_r)
 
--- Persistent
+/-! # Persistent -/
+
 @[rw_mono_rule]
 theorem persistently_congr [BI PROP] {P P' : PROP} (h : P ⊣⊢ P') :
     <pers> P ⊣⊢ <pers> P' := ⟨persistently_mono h.1, persistently_mono h.2⟩
@@ -545,7 +553,8 @@ theorem persistently_and_persistently_sep [BI PROP] {P Q : PROP} :
 theorem persistently_sep_2 [BI PROP] {P Q : PROP} : <pers> P ∗ <pers> Q ⊢ <pers> (P ∗ Q) :=
   (persistently_and.trans persistently_and_persistently_sep).2.trans persistently_and_sep
 
--- Intuitionistic
+/-! # Intuitionistic -/
+
 theorem intuitionistically_emp [BI PROP] : □ emp ⊣⊢ (emp : PROP) :=
   (affinely_congr persistently_emp).trans affinely_true
 
@@ -613,11 +622,13 @@ theorem intuitionistically_and_sep [BI PROP] {P Q : PROP} : □ (P ∧ Q) ⊣⊢
 theorem intuitionistically_sep_idem [BI PROP] {P : PROP} : □ P ∗ □ P ⊣⊢ □ P :=
   and_sep_intuitionistically.symm.trans and_self
 
--- Intuitionistic BIAffine
-theorem intuitionistically_iff_persistently [BIAffine PROP] {P : PROP} : □ P ⊣⊢ <pers> P :=
-  affine_affinely _
+/-! # Intuitionistic BIAffine -/
 
--- Conditional Affine
+theorem intuitionistically_iff_persistently [BI PROP] [BIAffine PROP]
+    {P : PROP} : □ P ⊣⊢ <pers> P := affine_affinely _
+
+/-! # Conditional Affine -/
+
 @[simp] theorem affinelyIf_false [BI PROP] (P : PROP) : iprop(<affine>?false P) = P := rfl
 @[simp] theorem affinelyIf_true [BI PROP] (P : PROP) :
     iprop(<affine>?true P) = iprop(<affine> P) := rfl
@@ -687,7 +698,8 @@ theorem affinelyIf_forall {p : Bool} [BI PROP] {Ψ : α → PROP} :
   | false => .rfl
   | true => affinely_forall
 
--- Conditional Absorbing
+/-! # Conditional Absorbing -/
+
 @[simp] theorem absorbinglyIf_false [BI PROP] (P : PROP) : iprop(<absorb>?false P) = P := rfl
 @[simp] theorem absorbinglyIf_true [BI PROP] (P : PROP) :
     iprop(<absorb>?true P) = iprop(<absorb> P) := rfl
@@ -704,7 +716,8 @@ theorem absorbinglyIf_congr {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) :
     <absorb>?p P ⊣⊢ <absorb>?p Q :=
   ⟨absorbinglyIf_mono h.1, absorbinglyIf_mono h.2⟩
 
--- Conditional Persistent
+/-! # Conditional Persistent -/
+
 @[simp] theorem persistentlyIf_false [BI PROP] (P : PROP) : iprop(<pers>?false P) = P := rfl
 @[simp] theorem persistentlyIf_true [BI PROP] (P : PROP) :
     iprop(<pers>?true P) = iprop(<pers> P) := rfl
@@ -733,7 +746,8 @@ theorem persistentlyIf_intutitionistically {p : Bool} [BI PROP] {P : PROP} :
   | false => persistently_of_intuitionistically
   | true => persistently_mono intuitionistically_elim
 
--- Conditional Intuitionistic
+/-! # Conditional Intuitionistic -/
+
 @[simp] theorem intuitionisticallyIf_false [BI PROP] (P : PROP) : iprop(□?false P) = P := rfl
 @[simp] theorem intuitionisticallyIf_true [BI PROP] (P : PROP) : iprop(□?true P) = iprop(□ P) := rfl
 
@@ -805,7 +819,8 @@ theorem intuitionisticallyIf_affinely [BI PROP] {P : PROP} : □?p <affine> P �
     ⟨(intuitionistically_mono affinely_elim).trans (and_intro affinely_elim_emp .rfl),
      affinely_elim.trans intuitionistically_affinely.2⟩
 
--- Persistent Propositions
+/-! # Persistent Propositions -/
+
 theorem persistently_intro [BI PROP] {P : PROP} [Persistent P] : P ⊢ <pers> P := persistent
 
 theorem persistent_and_affinely_sep_l_1 [BI PROP] {P Q : PROP} [Persistent P] :

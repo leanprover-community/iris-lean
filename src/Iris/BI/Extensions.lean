@@ -9,7 +9,7 @@ import Iris.BI.BI
 namespace Iris.BI
 
 /-- Require that a separation logic with the carrier type `PROP` is an affine separation logic. -/
-class BIAffine (PROP : Type) extends BI PROP where
+class BIAffine (PROP : Type) [BI PROP] : Prop where
   affine (P : PROP) : Affine P
 
 attribute [instance (default + 100)] BIAffine.affine

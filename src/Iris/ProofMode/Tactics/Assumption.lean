@@ -56,11 +56,8 @@ def assumptionFast {e} (hyps : Hyps bi e) : MetaM Q($e ⊢ $Q) := do
   let (_ : Q(FromAssumption $b $ty $Q)) := inst
   have : $out =Q iprop(□?$b $ty) := ⟨⟩
   match fastPath with
-  | .absorbing _ =>
-    return q(assumption (Q := $Q) $pf)
-  | .biAffine s =>
-    have : @BIAffine.toBI _ $s =Q $bi := ⟨⟩
-    return q(assumption (Q := $Q) $pf)
+  | .absorbing _ => return q(assumption (Q := $Q) $pf)
+  | .biAffine _ => return q(assumption (Q := $Q) $pf)
 
 inductive AssumptionSlow {prop : Q(Type)} (bi : Q(BI $prop)) (Q e : Q($prop)) where
   | none

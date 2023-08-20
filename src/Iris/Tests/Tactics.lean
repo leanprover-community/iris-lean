@@ -93,7 +93,7 @@ theorem «forall» [BI PROP] : ⊢ ∀ x, ⌜x = 0⌝ → (⌜x = 0⌝ : PROP) :
   iintro H
   iexact H
 
-theorem pure [BIAffine PROP] (Q : PROP) : ⊢ ⌜φ⌝ -∗ Q -∗ Q := by
+theorem pure [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ ⌜φ⌝ -∗ Q -∗ Q := by
   iintro ⌜Hφ⌝ HQ
   iexact HQ
 
@@ -410,7 +410,7 @@ theorem and [BI PROP] (Q : PROP) : Q ⊢ Q ∧ Q := by
   isplit
   <;> iexact HQ
 
-theorem sep_left [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗ P ∗ Q := by
+theorem sep_left [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗ P ∗ Q := by
   iintro HP
   iintro HQ
   iintro _HR
@@ -418,7 +418,7 @@ theorem sep_left [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗ P ∗ Q :
   · iexact HP
   · iexact HQ
 
-theorem sep_right [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗ P ∗ Q := by
+theorem sep_right [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗ P ∗ Q := by
   iintro HP
   iintro HQ
   iintro _HR
@@ -426,7 +426,7 @@ theorem sep_right [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗ P ∗ Q 
   · iexact HP
   · iexact HQ
 
-theorem sep_left_all [BIAffine PROP] (Q : PROP) : ⊢ P -∗ □ Q -∗ R -∗ P ∗ Q := by
+theorem sep_left_all [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ P -∗ □ Q -∗ R -∗ P ∗ Q := by
   iintro HP
   iintro □HQ
   iintro _HR
@@ -434,7 +434,7 @@ theorem sep_left_all [BIAffine PROP] (Q : PROP) : ⊢ P -∗ □ Q -∗ R -∗ P
   · iexact HP
   · iexact HQ
 
-theorem sep_right_all [BIAffine PROP] (Q : PROP) : ⊢ □ P -∗ Q -∗ R -∗ P ∗ Q := by
+theorem sep_right_all [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ □ P -∗ Q -∗ R -∗ P ∗ Q := by
   iintro □HP
   iintro HQ
   iintro _HR
@@ -501,7 +501,7 @@ theorem and_persistent_right [BI PROP] (Q : PROP) : Q ∧ <pers> P ⊢ Q := by
   icases HQP with ⟨HQ, _HP⟩
   iexact HQ
 
-theorem sep [BIAffine PROP] (Q : PROP) : P1 ∗ P2 ∗ Q ⊢ Q := by
+theorem sep [BI PROP] [BIAffine PROP] (Q : PROP) : P1 ∗ P2 ∗ Q ⊢ Q := by
   iintro HPQ
   icases HPQ with ⟨_HP1, _HP2, HQ⟩
   iexact HQ
@@ -512,7 +512,7 @@ theorem disjunction [BI PROP] (Q : PROP) : Q ⊢ <affine> (P1 ∨ P2 ∨ P3) -�
   icases HP with (_HP1 | _HP2 | _HP3)
   <;> iexact HQ
 
-theorem conjunction_and_disjunction [BIAffine PROP] (Q : PROP) :
+theorem conjunction_and_disjunction [BI PROP] [BIAffine PROP] (Q : PROP) :
     (P11 ∨ P12 ∨ P13) ∗ P2 ∗ (P31 ∨ P32 ∨ P33) ∗ Q ⊢ Q := by
   iintro HP
   icases HP with ⟨_HP11 | _HP12 | _HP13, HP2, HP31 | HP32 | HP33, HQ⟩
@@ -592,12 +592,12 @@ theorem move_to_intuitionistic_and_back_disjunction [BI PROP] (Q : PROP) : ⊢ �
   icases HPQ with □(HQ | ∗HQ)
   <;> iexact HQ
 
-theorem conjunction_clear [BIAffine PROP] (Q : PROP) : Q ∗ P ⊢ Q := by
+theorem conjunction_clear [BI PROP] [BIAffine PROP] (Q : PROP) : Q ∗ P ⊢ Q := by
   iintro HQP
   icases HQP with ⟨HQ, -⟩
   iexact HQ
 
-theorem disjunction_clear [BIAffine PROP] (Q : PROP) : Q ⊢ P1 ∨ P2 -∗ Q := by
+theorem disjunction_clear [BI PROP] [BIAffine PROP] (Q : PROP) : Q ⊢ P1 ∨ P2 -∗ Q := by
   iintro HQ
   iintro HP
   icases HP with (- | _HP2)
@@ -644,6 +644,3 @@ theorem exists_intuitionistic [BI PROP] (Q : Nat → PROP) : □ (∃ x, Q x) �
   iexists x
   ileft
   iexact H
-
-end cases
-end Iris.Tests

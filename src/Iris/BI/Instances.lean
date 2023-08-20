@@ -144,7 +144,8 @@ instance persistentlyIf_absorbing [BI PROP] (P : PROP) (p : Bool) [Absorbing P] 
     Absorbing iprop(<pers>?p P) := by
   cases p <;> simp [persistentlyIf] <;> infer_instance
 
-instance (priority := default + 10) biAffineAbsorbing [BIAffine PROP] (P : PROP) : Absorbing P where
+instance (priority := default + 10) biAffineAbsorbing [BI PROP] [BIAffine PROP] (P : PROP) :
+    Absorbing P where
   absorbing := (sep_mono_l affine).trans emp_sep.1
 
 -- Intuitionistic

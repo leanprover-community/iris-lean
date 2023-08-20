@@ -416,8 +416,8 @@ instance (priority := default + 30) fromAssumption_persistently_l_true [BI PROP]
     [h : FromAssumption true P Q] : FromAssumption true iprop(<pers> P) Q where
   from_assumption := intuitionistically_persistently.1.trans h.1
 
-instance (priority := default + 30) fromAssumption_persistently_l_false [BIAffine PROP] (P Q : PROP)
-    [h : FromAssumption true P Q] : FromAssumption false iprop(<pers> P) Q where
+instance (priority := default + 30) fromAssumption_persistently_l_false [BI PROP] [BIAffine PROP]
+    (P Q : PROP) [h : FromAssumption true P Q] : FromAssumption false iprop(<pers> P) Q where
   from_assumption := intuitionistically_iff_persistently.2.trans h.1
 
 instance (priority := default + 20) fromAssumption_affinely_l (p : Bool) [BI PROP] (P Q : PROP)
