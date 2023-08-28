@@ -83,11 +83,11 @@ instance intoForall_forall [BI PROP] (Φ : α → PROP) : IntoForall iprop(∀ a
 
 instance intoForall_affinely [BI PROP] (P : PROP) (Φ : α → PROP) [h : IntoForall P Φ] :
     IntoForall iprop(<affine> P) (fun a => iprop(<affine> (Φ a))) where
-  into_forall := (affinely_mono h.1).trans affinely_forall
+  into_forall := (affinely_mono h.1).trans affinely_forall_1
 
 instance intoForall_intuitionistically [BI PROP] (P : PROP) (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(□ P) (fun a => iprop(□ (Φ a))) where
-  into_forall := (intuitionistically_mono h.1).trans intuitionistically_forall
+  into_forall := (intuitionistically_mono h.1).trans intuitionistically_forall_1
 
 -- FromExists
 instance (priority := default + 10) fromExists_exists [BI PROP] (Φ : α → PROP) :
@@ -196,8 +196,8 @@ instance intoAnd_affinely (p : Bool) [BI PROP] (P Q1 Q2 : PROP) [h : IntoAnd p P
 
 instance intoAnd_intuitionistically (p : Bool) [BI PROP] (P Q1 Q2 : PROP) [h : IntoAnd p P Q1 Q2] :
     IntoAnd p iprop(□ P) iprop(□ Q1) iprop(□ Q2) where
-  into_and := (intuitionisticallyIf_comm (q := true)).1.trans <|
-      (intuitionistically_mono h.1).trans <| (intuitionisticallyIf_comm (q := true)).2.trans <|
+  into_and := (intuitionisticallyIf_comm' (q := true)).1.trans <|
+      (intuitionistically_mono h.1).trans <| (intuitionisticallyIf_comm' (q := true)).2.trans <|
       intuitionisticallyIf_mono intuitionistically_and.1
 
 instance intoAnd_persistently (p : Bool) [BI PROP] (P Q1 Q2 : PROP) [h : IntoAnd p P Q1 Q2] :
@@ -409,7 +409,7 @@ instance (priority := default + 20) fromAssumption_intuitionistically_l (p : Boo
 
 instance (priority := default + 20) fromAssumption_intuitionistically_l_true (p : Bool) [BI PROP]
     (P Q : PROP) [h : FromAssumption p P Q] : FromAssumption p iprop(□ P) Q where
-  from_assumption := (intuitionisticallyIf_comm (q := true)).1.trans <|
+  from_assumption := (intuitionisticallyIf_comm' (q := true)).1.trans <|
     intuitionistically_elim.trans h.1
 
 instance (priority := default + 30) fromAssumption_persistently_l_true [BI PROP] (P Q : PROP)
@@ -498,7 +498,7 @@ instance fromPure_exists (a : Bool) [BI PROP] (Φ : α → PROP) (φ : α → Pr
 instance fromPure_forall (a : Bool) [BI PROP] (Φ : α → PROP) (φ : α → Prop)
     [h : ∀ x, FromPure a iprop(Φ x) (φ x)] : FromPure a iprop(∀ x, Φ x) (∀ x, φ x) where
   from_pure := (affinelyIf_mono pure_forall_2).trans <|
-    affinelyIf_forall.trans (forall_mono fun x => (h x).1)
+    affinelyIf_forall_1.trans (forall_mono fun x => (h x).1)
 
 instance fromPure_pure_sep_true (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     [h1 : FromPure a1 P1 φ1] [h2 : FromPure a2 P2 φ2] :

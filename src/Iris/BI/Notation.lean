@@ -24,6 +24,8 @@ macro_rules
   | `(iprop(if $c then $t else $e)) => ``(if $c then iprop($t) else iprop($e))
   | `(iprop(($P : $t)))             => ``((iprop($P) : $t))
 
+macro:max "iprop(" P:term " : " t:term ")" : term => `((iprop($P) : $t))
+
 /-- Remove an `iprop` quotation from a `term` syntax object. -/
 partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : Term → m Term
   | `(iprop($P))             => do `($P)

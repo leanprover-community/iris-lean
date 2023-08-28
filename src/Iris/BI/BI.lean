@@ -94,7 +94,7 @@ theorem BIBase.BiEntails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊣⊢ Q) (h2 : 
 
 export BIBase (
   Entails emp pure and or imp «forall» «exists» sep wand persistently
-  BiEntails iff wandIff affinely absorbingly intuitionistically
+  BiEntails iff wandIff affinely absorbingly intuitionistically later
   persistentlyIf affinelyIf absorbinglyIf intuitionisticallyIf
   bigAnd bigOr bigSep Entails.trans BiEntails.trans)
 
