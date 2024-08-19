@@ -20,7 +20,7 @@ def clearCore {prop : Q(Type)} (_bi : Q(BI $prop)) (e e' out goal : Q($prop))
   if out.isAppOfArity ``intuitionistically 3 then
     have out' : Q($prop) := out.appArg!
     have : $out =Q iprop(□ $out') := ⟨⟩
-    pure q(clear_intuitionistic $pf)
+    pure q(clear_intuitionistic (Q := $goal) $pf)
   else
     let _ ← synthInstanceQ q(TCOr (Affine $out) (Absorbing $goal))
     pure q(clear_spatial $pf)

@@ -511,7 +511,7 @@ instance fromPure_pure_sep_true (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2
     | true, false => persistent_and_affinely_sep_l.1
     | true, true => affinely_and.1.trans persistent_and_sep_1
 
-instance fromPure_pure_wand_true (a : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
+instance fromPure_pure_wand_true (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     [h1 : IntoPure P1 φ1] [h2 : FromPure true P2 φ2] [Affine P1] :
     FromPure true iprop(P1 -∗ P2) (φ1 → φ2) where
   from_pure := by
@@ -520,7 +520,7 @@ instance fromPure_pure_wand_true (a : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : 
       (and_mono_r (affine_affinely P1).2).trans <|
       affinely_and_r.1.trans <| affinely_mono <| (and_mono pure_imp_2 h1.1).trans imp_elim_l
 
-instance fromPure_pure_wand_false (a : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
+instance fromPure_pure_wand_false (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
     [h1 : IntoPure P1 φ1] [h2 : FromPure false P2 φ2] :
     FromPure false iprop(P1 -∗ P2) (φ1 → φ2) where
   from_pure := by

@@ -515,7 +515,7 @@ theorem disjunction [BI PROP] (Q : PROP) : Q ⊢ <affine> (P1 ∨ P2 ∨ P3) -�
 theorem conjunction_and_disjunction [BIAffine PROP] (Q : PROP) :
     (P11 ∨ P12 ∨ P13) ∗ P2 ∗ (P31 ∨ P32 ∨ P33) ∗ Q ⊢ Q := by
   iintro HP
-  icases HP with ⟨_HP11 | _HP12 | _HP13, HP2, HP31 | HP32 | HP33, HQ⟩
+  icases HP with ⟨_HP11 | _HP12 | _HP13, _HP2, _HP31 | _HP32 | _HP33, HQ⟩
   <;> iexact HQ
 
 theorem move_to_pure [BI PROP] (Q : PROP) : ⊢ <affine> ⌜⊢ Q⌝ -∗ Q := by

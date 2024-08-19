@@ -25,14 +25,14 @@ def modifyAppOptM (e : Expr) (args : Array <| Option Expr) : Expr :=
 
 /-- Get the `mdata` entry with the key `"name"`, if available. -/
 def getMDataName? : Expr → Option Name
-  | Expr.mdata md _ => md.get? "name"
+  | Expr.mdata md _ => md.get? `name
   | _ => none
 
 /-- Set the `mdata` entry of `e` with the key `"name"` to `name`. -/
 def setMDataName? (e : Expr) (name : Name) : Expr := match e with
   | Expr.mdata md e =>
-    mkMData (md.insert "name" name) e
+    mkMData (md.insert `name name) e
   | e =>
-    mkMData (KVMap.empty.insert "name" name) e
+    mkMData (KVMap.empty.insert `name name) e
 
 end Lean.Expr

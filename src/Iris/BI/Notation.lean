@@ -31,7 +31,10 @@ partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : Term → m T
   | `(?$P:ident)             => do `(?$P)
   | `(($P))                  => do `(($(← unpackIprop P)))
   | `($P $[ $Q]*)            => do ``($P $[ $Q]*)
-  | `(if $c then $t else $e) => do `(if $c then $(← unpackIprop t) else $(← unpackIprop e))
+  | `(if $c then $t else $e) => do
+    let t ← unpackIprop t
+    let e ← unpackIprop e
+    `(if $c then $t else $e)
   | `(($P : $t))             => do ``(($(← unpackIprop P) : $t))
   | `($t)                    => `($t:term)
 
