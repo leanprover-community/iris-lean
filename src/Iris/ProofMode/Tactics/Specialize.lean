@@ -46,8 +46,8 @@ def SpecializeState.process1 :
       return { hyps := hyps', b := b2, out := out₂, pf }
     else
       -- otherwise specialize the universal quantifier
-      let α ← mkFreshExprMVarQ q(Type)
-      let Φ ← mkFreshExprMVarQ q($α → $prop)
+      let α : Q(Type) ← mkFreshExprMVarQ q(Type)
+      let Φ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
       let _ ← synthInstanceQ q(IntoForall $out $Φ)
       let x ← elabTermEnsuringTypeQ (u := .succ .zero) arg α
       have out' : Q($prop) := Expr.headBeta q($Φ $x)

@@ -106,9 +106,11 @@ def HypMarker {PROP : Type} (_A : PROP) : Prop := True
 
 def addLocalVarInfo (stx : Syntax) (lctx : LocalContext)
     (expr : Expr) (expectedType? : Option Expr) (isBinder := false) : MetaM Unit := do
-  Elab.withInfoContext' (pure ()) fun _ =>
-    return Sum.inl <| Elab.Info.ofTermInfo
-      { elaborator := .anonymous, lctx, expr, stx, expectedType?, isBinder }
+  Elab.withInfoContext' (pure ())
+    (fun _ =>
+      return .inl <| .ofTermInfo
+        { elaborator := .anonymous, lctx, expr, stx, expectedType?, isBinder })
+    (return .ofPartialTermInfo { elaborator := .anonymous, lctx, stx, expectedType? })
 
 def addHypInfo (stx : Syntax) (name uniq : Name) (prop : Q(Type)) (ty : Q($prop))
     (isBinder := false) : MetaM Unit := do

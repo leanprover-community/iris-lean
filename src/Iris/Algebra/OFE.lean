@@ -3,7 +3,6 @@ Copyright (c) 2023 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mario Carneiro
 -/
-import Std.Logic
 
 namespace Iris
 
@@ -59,7 +58,7 @@ theorem Dist.distLater [OFE α] {n} {x y : α} (h : x ≡{n}≡ y) : DistLater n
 theorem DistLater.dist_lt [OFE α] {m n} {x y : α} (h : DistLater n x y) (hm : m < n) : x ≡{m}≡ y :=
   h _ hm
 
-theorem distLater_zero [OFE α] {x y : α} : DistLater 0 x y := fun.
+theorem distLater_zero [OFE α] {x y : α} : DistLater 0 x y := nofun
 
 theorem distLater_succ [OFE α] {n} {x y : α} : DistLater n.succ x y ↔ x ≡{n}≡ y :=
   ⟨(·.dist_lt (Nat.lt_succ_self _)), fun h1 _ h2 => h1.le (Nat.le_of_lt_succ h2)⟩

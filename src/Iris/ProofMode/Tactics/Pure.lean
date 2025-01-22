@@ -89,7 +89,7 @@ elab "ipure_intro" : tactic => do
   let (mvar, { e, goal, .. }) ← istart (← getMainGoal)
   mvar.withContext do
 
-  let b ← mkFreshExprMVarQ q(Bool)
+  let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let _ ← synthInstanceQ q(FromPure $b $goal $φ)
   let m : Q($φ) ← mkFreshExprMVar (← instantiateMVars φ)

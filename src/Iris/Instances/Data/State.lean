@@ -88,18 +88,10 @@ theorem disjoint_assoc {a b c : State Val} : a ∪ b || c → a || b → (a || c
     <;> try { apply Or.inr ; assumption }
   case left.inr.inl h_b h_ab' =>
     rw [h_b] at h_ab'
-    cases h_ai : a i
-    <;> rw [h_ai] at h_ab'
-    <;> simp only at h_ab'
-    apply Or.inl
-    simp
+    cases h_ai : a i <;> simp only [h_ai] at h_ab' <;> simp [h_ab']
   case right.inl.inl h_a h_ab' =>
     rw [h_a] at h_ab'
-    cases h_bi : b i
-    <;> rw [h_bi] at h_ab'
-    <;> simp only at h_ab'
-    apply Or.inl
-    simp
+    cases h_bi : b i <;> simp only [h_bi] at h_ab' <;> simp [h_ab']
 
 theorem disjoint_union {a b c : State Val} : a || b → a || c → a || b ∪ c := by
   simp only [Disjoint.disjoint, Union.union]
