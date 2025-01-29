@@ -105,6 +105,11 @@ theorem imp_congr_l [BI PROP] {P P' Q : PROP} (h : P ⊣⊢ P') : (P → Q) ⊣�
 theorem imp_congr_r [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P → Q) ⊣⊢ (P → Q') :=
   imp_congr .rfl h
 
+theorem forall_intro [BI PROP] {P : PROP} {Ψ : α → PROP} (h : ∀ a, P ⊢ Ψ a) : P ⊢ ∀ a, Ψ a :=
+  sForall_intro fun _ ⟨_, eq⟩ => eq ▸ h _
+
+theorem forall_elim [BI PROP] {Ψ : α → PROP} (a : α) : (∀ a, Ψ a) ⊢ Ψ a := sForall_elim ⟨_, rfl⟩
+
 @[rw_mono_rule]
 theorem forall_mono [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ⊢ Ψ a) : (∀ a, Φ a) ⊢ ∀ a, Ψ a :=
   forall_intro fun a => (forall_elim a).trans (h a)
@@ -112,6 +117,12 @@ theorem forall_mono [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ⊢ Ψ a) :
 @[rw_mono_rule]
 theorem forall_congr [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ⊣⊢ Ψ a) : (∀ a, Φ a) ⊣⊢ ∀ a, Ψ a :=
   ⟨forall_mono fun a => (h a).1, forall_mono fun a => (h a).2⟩
+
+theorem exists_intro [BI PROP] {Ψ : α → PROP} (a : α) : Ψ a ⊢ ∃ a, Ψ a :=
+  sExists_intro ⟨_, rfl⟩
+
+theorem exists_elim [BI PROP] {Φ : α → PROP} {Q : PROP} (h : ∀ a, Φ a ⊢ Q) : (∃ a, Φ a) ⊢ Q :=
+  sExists_elim fun _ ⟨_, eq⟩ => eq ▸ h _
 
 @[rw_mono_rule]
 theorem exists_mono [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ⊢ Ψ a) : (∃ a, Φ a) ⊢ ∃ a, Ψ a :=
@@ -661,10 +672,13 @@ theorem persistently_forall_1 [BI PROP] {Ψ : α → PROP} : <pers> (∀ a, Ψ a
   forall_intro fun x => persistently_mono (forall_elim x)
 
 theorem persistently_forall [BI PROP] [h : BIPersistentlyForall PROP] {Ψ : α → PROP} :
-    <pers> (∀ a, Ψ a) ⊣⊢ ∀ a, <pers> (Ψ a) := ⟨persistently_forall_1, h.1 _⟩
+    <pers> (∀ a, Ψ a) ⊣⊢ ∀ a, <pers> (Ψ a) := by
+  refine ⟨persistently_forall_1, (forall_intro fun _ => imp_intro <| pure_elim_r ?_).trans (h.1 _)⟩
+  rintro ⟨_, rfl⟩; apply forall_elim
 
-theorem persistently_exists [BI PROP] {Ψ : α → PROP} : <pers> (∃ a, Ψ a) ⊣⊢ ∃ a, <pers> (Ψ a) :=
-  ⟨persistently_exists_1, exists_elim fun a => persistently_mono (exists_intro a)⟩
+theorem persistently_exists [BI PROP] {Ψ : α → PROP} : <pers> (∃ a, Ψ a) ⊣⊢ ∃ a, <pers> (Ψ a) := by
+  refine ⟨persistently_sExists_1.trans ?_, exists_elim fun a => persistently_mono (exists_intro a)⟩
+  refine exists_elim fun _ => pure_elim_l fun ⟨_, eq⟩ => eq ▸ sExists_intro ⟨_, rfl⟩
 
 theorem persistently_and [BI PROP] {P Q : PROP} : <pers> (P ∧ Q) ⊣⊢ <pers> P ∧ <pers> Q :=
   ⟨and_intro (persistently_mono and_elim_l) (persistently_mono and_elim_r), persistently_and_2⟩
@@ -820,13 +834,22 @@ instance or_persistent [BI PROP] (P Q : PROP) [Persistent P] [Persistent Q] :
     Persistent iprop(P ∨ Q) where
   persistent := (or_mono persistent persistent).trans persistently_or.2
 
-instance forall_persistent [BI PROP] [h : BIPersistentlyForall PROP] (Ψ : α → PROP)
-    [∀ x, Persistent (Ψ x)] : Persistent iprop(∀ x, Ψ x) where
-  persistent := (forall_mono fun _ => persistent).trans (h.1 _)
+theorem sForall_persistent [BI PROP] [h : BIPersistentlyForall PROP] (Ψ : PROP → Prop)
+    (H : ∀ p, Ψ p → Persistent p) : Persistent iprop(sForall Ψ) where
+  persistent := by
+    refine (forall_intro fun _ => imp_intro ?_).trans (h.1 _)
+    exact pure_elim_r fun h => (sForall_elim h).trans (H _ h).1
 
-instance exists_persistent [BI PROP] (Ψ : α → PROP) [∀ x, Persistent (Ψ x)] :
-    Persistent iprop(∃ x, Ψ x) where
-  persistent := (exists_mono fun _ => persistent).trans persistently_exists.2
+instance forall_persistent [BI PROP] [BIPersistentlyForall PROP] (Ψ : α → PROP)
+    [h : ∀ x, Persistent (Ψ x)] : Persistent iprop(∀ x, Ψ x) :=
+  sForall_persistent _ fun _ ⟨_, eq⟩ => eq ▸ h _
+
+theorem sExists_persistent [BI PROP] (Ψ : PROP → Prop)
+    (H : ∀ p, Ψ p → Persistent p) : Persistent iprop(sExists Ψ) where
+  persistent := sExists_elim fun _ hp => (H _ hp).1.trans (persistently_mono <| sExists_intro hp)
+
+instance exists_persistent [BI PROP] (Ψ : α → PROP) [h : ∀ x, Persistent (Ψ x)] :
+    Persistent iprop(∃ x, Ψ x) := sExists_persistent _ fun _ ⟨_, eq⟩ => eq ▸ h _
 
 instance sep_persistent [BI PROP] (P Q : PROP) [Persistent P] [Persistent Q] :
     Persistent iprop(P ∗ Q) where

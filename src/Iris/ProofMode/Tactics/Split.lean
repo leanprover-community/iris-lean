@@ -44,14 +44,14 @@ theorem split_ss [BI PROP] {P Q P1 P2 Q1 Q2 : PROP}
     (h1 : P ⊣⊢ P1 ∗ P2) (h2 : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ (P1 ∗ Q1) ∗ (P2 ∗ Q2) :=
   (sep_congr h1 h2).trans sep_sep_sep_comm
 
-inductive SplitResult {prop : Q(Type)} (bi : Q(BI $prop)) (e : Q($prop)) where
+inductive SplitResult {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
   | emp (_ : $e =Q BI.emp)
   | left
   | right
   | split {elhs erhs : Q($prop)} (lhs : Hyps bi elhs) (rhs : Hyps bi erhs)
           (pf : Q($e ⊣⊢ $elhs ∗ $erhs))
 
-variable {prop : Q(Type)} (bi : Q(BI $prop)) (toRight : Name → Name → Bool) in
+variable {prop : Q(Type u)} (bi : Q(BI $prop)) (toRight : Name → Name → Bool) in
 def Hyps.splitCore : ∀ {e}, Hyps bi e → SplitResult bi e
   | _, .emp _ => .emp ⟨⟩
   | ehyp, h@(.hyp _ name uniq b ty _) =>
@@ -76,7 +76,7 @@ def Hyps.splitCore : ∀ {e}, Hyps bi e → SplitResult bi e
     | .split l1 l2 lpf, .right => .split l1 (l2.mkSep rhs) q(split_sr $lpf)
     | .split l1 l2 lpf, .split r1 r2 rpf => .split (l1.mkSep r1) (l2.mkSep r2) q(split_ss $lpf $rpf)
 
-def Hyps.split {prop : Q(Type)} (bi : Q(BI $prop)) (toRight : Name → Name → Bool)
+def Hyps.split {prop : Q(Type u)} (bi : Q(BI $prop)) (toRight : Name → Name → Bool)
     {e} (hyps : Hyps bi e) :
     (elhs erhs : Q($prop)) × Hyps bi elhs × Hyps bi erhs × Q($e ⊣⊢ $elhs ∗ $erhs) :=
   match hyps.splitCore bi toRight with
@@ -101,7 +101,7 @@ elab "isplit" side:splitSide "[" names:ident,* "]" : tactic => do
     | _  => throwUnsupportedSyntax
 
   -- extract environment
-  let (mvar, { prop, bi, hyps, goal }) ← istart (← getMainGoal)
+  let (mvar, { u, prop, bi, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
   let mut uniqs : NameSet := {}
@@ -116,9 +116,9 @@ elab "isplit" side:splitSide "[" names:ident,* "]" : tactic => do
   let ⟨el, er, lhs, rhs, pf⟩ := hyps.split bi (fun _ uniq => uniqs.contains uniq == splitRight)
 
   let m1 : Q($el ⊢ $Q1) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { prop, bi, hyps := lhs, goal := Q1 }
+    IrisGoal.toExpr { u, prop, bi, hyps := lhs, goal := Q1 }
   let m2 : Q($er ⊢ $Q2) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { prop, bi, hyps := rhs, goal := Q2 }
+    IrisGoal.toExpr { u, prop, bi, hyps := rhs, goal := Q2 }
   mvar.assign q(sep_split (Q := $goal) $pf $m1 $m2)
   replaceMainGoal [m1.mvarId!, m2.mvarId!]
 

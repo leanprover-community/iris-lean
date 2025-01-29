@@ -26,7 +26,7 @@ theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
   pure_elim_spatial h h'
 
-def ipureCore {prop : Q(Type)} (_bi : Q(BI $prop))
+def ipureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
     (P P' A Q : Q($prop)) (name : TSyntax ``binderIdent) (pf : Q($P ⊣⊢ $P' ∗ $A))
     (k : (φ : Q(Prop)) → Q($φ) → MetaM (α × Q($P' ⊢ $Q))) : MetaM (α × Q($P ⊢ $Q)) := do
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)

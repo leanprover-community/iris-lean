@@ -18,7 +18,8 @@ elab "iexists" x:term : tactic => do
   let (mvar, { prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
-  let α ← mkFreshExprMVarQ q(Type)
+  let v ← mkFreshLevelMVar
+  let α ← mkFreshExprMVarQ q(Sort v)
   let Φ ← mkFreshExprMVarQ q($α → $prop)
   let _ ← synthInstanceQ q(FromExists $goal $Φ)
   let x ← elabTermEnsuringTypeQ (u := .succ .zero) x α

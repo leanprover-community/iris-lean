@@ -9,7 +9,7 @@ import Iris.ProofMode.Tactics.Remove
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-structure SpecializeState {prop : Q(Type)} (bi : Q(BI $prop)) (orig : Q($prop)) where
+structure SpecializeState {prop : Q(Type u)} (bi : Q(BI $prop)) (orig : Q($prop)) where
   (e : Q($prop)) (hyps : Hyps bi e) (b : Q(Bool)) (out : Q($prop))
   pf : Q($orig ⊢ $e ∗ □?$b $out)
 
@@ -23,12 +23,12 @@ theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
     (sep_mono intuitionisticallyIf_intutitionistically.2 intuitionisticallyIf_idem.2).trans <|
     intuitionisticallyIf_sep_2.trans <| intuitionisticallyIf_mono <| wand_elim' inst.1
 
-theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Type} {Φ : α → PROP}
+theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     [inst : IntoForall P Φ] (h : A1 ⊢ A2 ∗ □?p P) (a : α) : A1 ⊢ A2 ∗ □?p (Φ a) := by
   refine h.trans <| sep_mono_r <| intuitionisticallyIf_mono <| inst.1.trans (forall_elim a)
 
 def SpecializeState.process1 :
-    @SpecializeState prop bi orig → Term → TermElabM (SpecializeState bi orig)
+    @SpecializeState u prop bi orig → Term → TermElabM (SpecializeState bi orig)
   | { hyps, b, out, pf }, arg => do
     let uniq ← match arg with
       | `($x:ident) => try? (hyps.findWithInfo x)
@@ -46,7 +46,8 @@ def SpecializeState.process1 :
       return { hyps := hyps', b := b2, out := out₂, pf }
     else
       -- otherwise specialize the universal quantifier
-      let α : Q(Type) ← mkFreshExprMVarQ q(Type)
+      let v ← mkFreshLevelMVar
+      let α : Q(Sort v) ← mkFreshExprMVarQ q(Sort v)
       let Φ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
       let _ ← synthInstanceQ q(IntoForall $out $Φ)
       let x ← elabTermEnsuringTypeQ (u := .succ .zero) arg α

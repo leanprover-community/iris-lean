@@ -19,12 +19,13 @@ def istart (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withContext do
 
   let some goal ← checkTypeQ goal q(Prop)
     | throwError "type mismatch\n{← mkHasTypeButIsExpectedMsg (← inferType goal) q(Prop)}"
-  let prop ← mkFreshExprMVarQ q(Type)
+  let u ← mkFreshLevelMVar
+  let prop ← mkFreshExprMVarQ q(Type u)
   let P ← mkFreshExprMVarQ q($prop)
   let bi ← mkFreshExprMVarQ q(BI $prop)
   let _ ← synthInstanceQ q(ProofMode.AsEmpValid2 $goal $P)
 
-  let irisGoal := { prop, bi, hyps := .mkEmp bi, goal := P }
+  let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P }
   let subgoal : Quoted q(⊢ $P) ←
     mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
   mvar.assign q(ProofMode.as_emp_valid_2 $goal $subgoal)
@@ -52,7 +53,7 @@ def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
   | `(binderIdent| $name:ident) => pure (name.getId, name)
   | stx => return (← mkFreshUserName `x, stx)
 
-def selectHyp (ty : Expr) : ∀ {s}, @Hyps prop bi s → MetaM (Name × Q(Bool) × Q($prop))
+def selectHyp (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (Name × Q(Bool) × Q($prop))
   | _, .emp _ => failure
   | _, .hyp _ _ uniq p ty' _ => do
     let .true ← isDefEq ty ty' | failure

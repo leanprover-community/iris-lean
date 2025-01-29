@@ -6,7 +6,7 @@ Authors: Lars König
 namespace Iris.Std
 
 /-- Represents a binary relation with two arguments of the same type `α`. -/
-abbrev Relation (α : Type) := α → α → Prop
+abbrev Relation (α : Type _) := α → α → Prop
 
 
 /-- Require that a relation `R` on `a` is reflexive. -/

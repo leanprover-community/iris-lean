@@ -16,16 +16,16 @@ declared as an `outParam`. Consequently, if type class instance search is suppos
 `AsEmpValid2` is used.
 -/
 
-class AsEmpValid1 (φ : outParam Prop) {PROP : Type} (P : PROP) [BI PROP] : Prop where
+class AsEmpValid1 (φ : outParam Prop) {PROP : Type _} (P : PROP) [BI PROP] : Prop where
   as_emp_valid : φ ↔ ⊢ P
 
-class AsEmpValid2 (φ : Prop) {PROP : outParam Type} (P : outParam PROP) [BI PROP] : Prop where
+class AsEmpValid2 (φ : Prop) {PROP : outParam (Type _)} (P : outParam PROP) [BI PROP] : Prop where
   as_emp_valid : φ ↔ ⊢ P
 
-def AsEmpValid1.to2 {φ : Prop} {PROP : Type} {P : PROP} [BI PROP]
+def AsEmpValid1.to2 {φ : Prop} {PROP : Type _} {P : PROP} [BI PROP]
     [AsEmpValid1 φ P] : AsEmpValid2 φ P := ⟨AsEmpValid1.as_emp_valid⟩
 
-def AsEmpValid2.to1 {φ : Prop} {PROP : Type} {P : PROP} [BI PROP]
+def AsEmpValid2.to1 {φ : Prop} {PROP : Type _} {P : PROP} [BI PROP]
     [AsEmpValid2 φ P] : AsEmpValid1 φ P := ⟨AsEmpValid2.as_emp_valid⟩
 
 theorem as_emp_valid_1 [BI PROP] (P : PROP) [AsEmpValid1 φ P] : φ → ⊢ P :=
@@ -52,19 +52,19 @@ class IntoWand [BI PROP] (p q : Bool) (R P : PROP) (Q : outParam PROP) : Prop wh
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
 
-class FromForall [BI PROP] (P : PROP) {α : outParam Type} (Ψ : outParam <| α → PROP) : Prop where
+class FromForall [BI PROP] (P : PROP) {α : outParam (Sort _)} (Ψ : outParam <| α → PROP) : Prop where
   from_forall : (∀ x, Ψ x) ⊢ P
 export FromForall (from_forall)
 
-class IntoForall [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) : Prop where
+class IntoForall [BI PROP] (P : PROP) {α : outParam (Sort _)} (Φ : outParam <| α → PROP) : Prop where
   into_forall : P ⊢ ∀ x, Φ x
 export IntoForall (into_forall)
 
-class FromExists [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) : Prop where
+class FromExists [BI PROP] (P : PROP) {α : outParam (Sort _)} (Φ : outParam <| α → PROP) : Prop where
   from_exists : (∃ x, Φ x) ⊢ P
 export FromExists (from_exists)
 
-class IntoExists [BI PROP] (P : PROP) {α : outParam Type} (Φ : outParam <| α → PROP) : Prop where
+class IntoExists [BI PROP] (P : PROP) {α : outParam (Sort _)} (Φ : outParam <| α → PROP) : Prop where
   into_exists : P ⊢ ∃ x, Φ x
 export IntoExists (into_exists)
 

@@ -22,7 +22,7 @@ theorem sep_emp_intro_spatial [BI PROP] {P Q : PROP} (h : P ⊢ Q) : P ∗ emp �
 theorem sep_emp_intro_intuitionistic [BI PROP] {P Q : PROP}
     (h : P ⊢ Q) : P ∗ □ emp ⊢ Q := (sep_mono_r intuitionistically_emp.1).trans <| sep_emp.1.trans h
 
-def iCasesEmptyConj {prop : Q(Type)} (bi : Q(BI $prop))
+def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
     {P} (hyps : Hyps bi P) (Q A' : Q($prop)) (p : Q(Bool))
     (k : ∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q)) :
     MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
@@ -47,8 +47,8 @@ theorem exists_elim_spatial [BI PROP] {P A Q : PROP} {Φ : α → PROP} [inst : 
 theorem exists_elim_intuitionistic [BI PROP] {P A Q : PROP} {Φ : α → PROP} [IntoExists A Φ]
     (h : ∀ a, P ∗ □ Φ a ⊢ Q) : P ∗ □ A ⊢ Q := exists_elim_spatial h
 
-def iCasesExists {prop : Q(Type)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
-    (name : TSyntax ``binderIdent) (α : Q(Type)) (Φ : Q(«$α» → «$prop»))
+def iCasesExists {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
+    (name : TSyntax ``binderIdent) (α : Q(Sort v)) (Φ : Q(«$α» → «$prop»))
     (_inst : Q(IntoExists «$A'» «$Φ»))
     (k : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → MetaM Q($P ∗ $B ⊢ $Q)) :
     MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
@@ -86,7 +86,7 @@ theorem and_elim_r_spatial [BI PROP] {P A Q A1 A2 : PROP} [IntoAnd false A A1 A2
 theorem and_elim_r_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [IntoAnd true A A1 A2]
     (h : P ∗ □ A2 ⊢ Q) : P ∗ □ A ⊢ Q := sep_and_elim_r (p := true) h
 
-def iCasesAndLR {prop : Q(Type)} (_bi : Q(BI $prop)) (P Q A' A1 A2 : Q($prop)) (p : Q(Bool))
+def iCasesAndLR {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' A1 A2 : Q($prop)) (p : Q(Bool))
     (_inst : Q(IntoAnd $p $A' $A1 $A2)) (right : Bool)
     (k : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → MetaM Q($P ∗ $B ⊢ $Q)) :
     MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
@@ -112,7 +112,7 @@ theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd t
   (sep_mono_r <| inst.1.trans intuitionistically_and_sep.1).trans <|
   sep_assoc.2.trans <| wand_elim h
 
-def iCasesSep {prop : Q(Type)} (bi : Q(BI $prop))
+def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
     {P} (hyps : Hyps bi P) (Q A' A1 A2 : Q($prop)) (p : Q(Bool))
     (inst : Option Q(IntoAnd $p $A' $A1 $A2))
     (k : ∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q))
@@ -143,7 +143,7 @@ theorem or_elim_spatial [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
 theorem or_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [IntoOr A A1 A2]
     (h1 : P ∗ □ A1 ⊢ Q) (h2 : P ∗ □ A2 ⊢ Q) : P ∗ □ A ⊢ Q := or_elim_spatial h1 h2
 
-def iCasesOr {prop : Q(Type)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
+def iCasesOr {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
     (k1 k2 : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → MetaM Q($P ∗ $B ⊢ $Q)) :
     MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   let A1 ← mkFreshExprMVarQ q($prop)
@@ -167,7 +167,7 @@ theorem intuitionistic_elim_spatial [BI PROP] {A A' Q : PROP}
 theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP} [IntoPersistently true A A']
     (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q := intuitionistic_elim_spatial h
 
-def iCasesIntuitionistic {prop : Q(Type)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
+def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
     (k : (B' : Q($prop)) → MetaM Q($P ∗ □ $B' ⊢ $Q)) :
     MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   let B' ← mkFreshExprMVarQ q($prop)
@@ -186,7 +186,7 @@ theorem spatial_elim_spatial [BI PROP] {A A' Q : PROP} [FromAffinely A' A false]
 theorem spatial_elim_intuitionistic [BI PROP] {A A' Q : PROP} [FromAffinely A' A true]
     (h : P ∗ A' ⊢ Q) : P ∗ □ A ⊢ Q := (replaces_r (from_affine (p := true))).apply h
 
-def iCasesSpatial {prop : Q(Type)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
+def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
     (k : (B' : Q($prop)) → MetaM Q($P ∗ $B' ⊢ $Q)) :
     MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   let B' ← mkFreshExprMVarQ q($prop)
@@ -200,7 +200,7 @@ def iCasesSpatial {prop : Q(Type)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : 
 
 theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
 
-variable {prop : Q(Type)} (bi : Q(BI $prop)) in
+variable {u : Level} {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iCasesCore
     {P} (hyps : Hyps bi P) (Q : Q($prop)) (p : Q(Bool))
     (A A' : Q($prop)) (_ : $A =Q iprop(□?$p $A'))
@@ -228,12 +228,14 @@ partial def iCasesCore
   | .conjunction [] => iCasesEmptyConj bi hyps Q A' p @k
 
   | .conjunction (arg :: args) => do
-    let exres ← try? (α := _ × (α : Q(Type)) × (Φ : Q($α → $prop)) × Q(IntoExists $A' $Φ)) do
+    let exres ← try? (α := _ × (v : Level) × (α : Q(Sort v)) × (Φ : Q($α → $prop)) ×
+        Q(IntoExists $A' $Φ)) do
       let .one n := arg | failure
-      let α ← mkFreshExprMVarQ q(Type)
+      let v ← mkFreshLevelMVar
+      let α ← mkFreshExprMVarQ q(Sort v)
       let Φ ← mkFreshExprMVarQ q($α → $prop)
-      Pure.pure ⟨n, α, Φ, ← synthInstanceQ q(IntoExists $A' $Φ)⟩
-    if let some ⟨n, α, Φ, inst⟩ := exres then
+      Pure.pure ⟨n, v, α, Φ, ← synthInstanceQ q(IntoExists $A' $Φ)⟩
+    if let some ⟨n, _, α, Φ, inst⟩ := exres then
       iCasesExists bi P Q A' p n α Φ inst
         (iCasesCore hyps Q p · · · (.conjunction args) k)
     else
@@ -276,7 +278,7 @@ elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
   -- parse syntax
   let pat ← liftMacroM <| iCasesPat.parse pat
 
-  let (mvar, { prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
+  let (mvar, { u, prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
   let uniq ← hyps.findWithInfo hyp
@@ -286,7 +288,7 @@ elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
   let goals ← IO.mkRef #[]
   let pf2 ← iCasesCore bi hyps' goal b A A' h pat fun hyps => do
     let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-      IrisGoal.toExpr { prop, bi, hyps, goal }
+      IrisGoal.toExpr { u, prop, bi, hyps, goal }
     goals.modify (·.push m.mvarId!)
     pure m
 

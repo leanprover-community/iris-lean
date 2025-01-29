@@ -12,13 +12,13 @@ import Lean.Elab
 namespace Iris.ProofMode
 open Lean Elab.Tactic Meta Qq BI
 
-structure RemoveHyp {prop : Q(Type)} (bi : Q(BI $prop)) (e : Q($prop)) where
+structure RemoveHyp {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
   (e' : Q($prop)) (hyps' : Hyps bi e') (out out' : Q($prop)) (p : Q(Bool))
   (eq : $out =Q iprop(□?$p $out'))
   (pf : Q($e ⊣⊢ $e' ∗ $out))
   deriving Inhabited
 
-inductive RemoveHypCore {prop : Q(Type)} (bi : Q(BI $prop)) (e : Q($prop)) (α : Type) where
+inductive RemoveHypCore {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) (α : Type) where
   | none
   | one (a : α) (out' : Q($prop)) (p : Q(Bool)) (eq : $e =Q iprop(□?$p $out'))
   | main (a : α) (_ : RemoveHyp bi e)
@@ -34,7 +34,7 @@ theorem remove_r [BI PROP] {P Q Q' R : PROP} (h : Q ⊣⊢ Q' ∗ R) :
 theorem intuitionistically_sep_dup [BI PROP] {P : PROP} : □ P ⊣⊢ □ P ∗ □ P :=
   intuitionistically_sep_idem.symm
 
-variable [Monad m] {prop : Q(Type)} (bi : Q(BI $prop)) (rp : Bool)
+variable [Monad m] {prop : Q(Type u)} (bi : Q(BI $prop)) (rp : Bool)
   (check : Name → Name → Q(Bool) → Q($prop) → m (Option α)) in
 /-- If `rp` is true, the hyp will be removed even if it is in the intuitionistic context. -/
 def Hyps.removeCore : ∀ {e}, Hyps bi e → m (RemoveHypCore bi e α)
@@ -67,7 +67,7 @@ theorem sep_emp_rev [BI PROP] {P : PROP} : P ⊣⊢ P ∗ emp := sep_emp.symm
 
 theorem emp_sep_rev [BI PROP] {P : PROP} : P ⊣⊢ emp ∗ P := emp_sep.symm
 
-def Hyps.removeG [Monad m] {prop : Q(Type)} {bi : Q(BI $prop)} {e : Q(Prop)}
+def Hyps.removeG [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q(Prop)}
     (rp : Bool) (hyps : Hyps bi e)
     (check : Name → Name → Q(Bool) → Q($prop) → m (Option α)) :
     m (Option (α × RemoveHyp bi e)) := do
@@ -76,7 +76,7 @@ def Hyps.removeG [Monad m] {prop : Q(Type)} {bi : Q(BI $prop)} {e : Q(Prop)}
   | .one a out' p h => return some ⟨a, _, .mkEmp bi, e, out', p, h, q(emp_sep_rev)⟩
   | .main a res => return some (a, res)
 
-def Hyps.remove {prop : Q(Type)} {bi : Q(BI $prop)} {e}
+def Hyps.remove {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (rp : Bool) (hyps : Hyps bi e) (uniq : Name) : RemoveHyp bi e :=
   match Id.run (hyps.removeG rp fun _ uniq' _ _ => if uniq == uniq' then some () else none) with
   | some (_, r) => r

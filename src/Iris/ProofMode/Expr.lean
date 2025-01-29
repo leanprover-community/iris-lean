@@ -22,7 +22,7 @@ def parseName? : Expr → Option (Name × Name × Expr)
 def mkNameAnnotation (name uniq : Name) (e : Expr) : Expr :=
   .mdata ⟨[(nameAnnotation, .ofName name), (uniqAnnotation, .ofName uniq)]⟩ e
 
-inductive Hyps {prop : Q(Type)} (bi : Q(BI $prop)) : (e : Q($prop)) → Type where
+inductive Hyps {prop : Q(Type u)} (bi : Q(BI $prop)) : (e : Q($prop)) → Type where
   | emp (_ : $e =Q emp) : Hyps bi e
   | sep (tm elhs erhs : Q($prop)) (_ : $e =Q iprop($elhs ∗ $erhs))
         (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) : Hyps bi e
@@ -31,13 +31,13 @@ inductive Hyps {prop : Q(Type)} (bi : Q(BI $prop)) : (e : Q($prop)) → Type whe
 
 instance : Inhabited (Hyps bi s) := ⟨.emp ⟨⟩⟩
 
-def Hyps.tm : @Hyps prop bi s → Q($prop)
+def Hyps.tm : @Hyps _ prop bi s → Q($prop)
   | .emp _ => s
   | .sep tm .. | .hyp tm .. => tm
 
-def Hyps.mkEmp {prop : Q(Type)} (bi : Q(BI $prop)) (e := q(BI.emp : $prop)) : Hyps bi e := .emp ⟨⟩
+def Hyps.mkEmp {prop : Q(Type u)} (bi : Q(BI $prop)) (e := q(BI.emp : $prop)) : Hyps bi e := .emp ⟨⟩
 
-def Hyps.mkSep {prop : Q(Type)} {bi : Q(BI $prop)} {elhs erhs}
+def Hyps.mkSep {prop : Q(Type u)} {bi : Q(BI $prop)} {elhs erhs}
     (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) (e := q(BI.sep $elhs $erhs)) : Hyps bi e :=
   .sep q(BI.sep $(lhs.tm) $(rhs.tm) : $prop) elhs erhs ⟨⟩ lhs rhs
 
@@ -46,17 +46,17 @@ def isTrue (p : Q(Bool)) : Bool := p.constName! == ``true
 def matchBool (p : Q(Bool)) : ($p =Q true) ⊕' ($p =Q false) :=
   if isTrue p then .inl ⟨⟩ else .inr ⟨⟩
 
-def mkIntuitionisticIf {prop : Q(Type)} (_bi : Q(BI $prop))
+def mkIntuitionisticIf {prop : Q(Type u)} (_bi : Q(BI $prop))
     (p : Q(Bool)) (e : Q($prop)) : {A : Q($prop) // $A =Q iprop(□?$p $e)} :=
   match matchBool p with
   | .inl _ => ⟨q(iprop(□ $e)), ⟨⟩⟩
   | .inr _ => ⟨e, ⟨⟩⟩
 
-def Hyps.mkHyp {prop : Q(Type)} (bi : Q(BI $prop))
+def Hyps.mkHyp {prop : Q(Type u)} (bi : Q(BI $prop))
     (name uniq : Name) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) : Hyps bi e :=
   .hyp (mkIntuitionisticIf bi p (mkNameAnnotation name uniq ty)) name uniq p ty ⟨⟩
 
-partial def parseHyps? {prop : Q(Type)} (bi : Q(BI $prop)) (expr : Expr) :
+partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     Option ((s : Q($prop)) × Hyps bi s) := do
   if let some #[_, _, P, Q] := appM? expr ``sep then
     let ⟨elhs, lhs⟩ ← parseHyps? bi P
@@ -71,7 +71,8 @@ partial def parseHyps? {prop : Q(Type)} (bi : Q(BI $prop)) (expr : Expr) :
     let (name, uniq, ty) ← parseName? expr
     some ⟨ty, .hyp expr name uniq q(false) ty ⟨⟩⟩
 
-partial def Hyps.find? {prop bi} (name : Name) : ∀ {s}, @Hyps prop bi s → Option (Name × Q(Bool) × Q($prop))
+partial def Hyps.find? {u prop bi} (name : Name) :
+    ∀ {s}, @Hyps u prop bi s → Option (Name × Q(Bool) × Q($prop))
   | _, .emp _ => none
   | _, .hyp _ name' uniq p ty _ => if name == name' then (uniq, p, ty) else none
   | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
@@ -81,7 +82,8 @@ This constant is used to detect iris proof goals. -/
 abbrev Entails' [BI PROP] : PROP → PROP → Prop := Entails
 
 structure IrisGoal where
-  prop : Q(Type)
+  u : Level
+  prop : Q(Type u)
   bi : Q(BI $prop)
   e : Q($prop)
   hyps : Hyps bi e
@@ -91,8 +93,9 @@ def isIrisGoal (expr : Expr) : Bool := isAppOfArity expr ``Entails' 4
 
 def parseIrisGoal? (expr : Expr) : Option IrisGoal := do
   let some #[prop, bi, P, goal] := expr.appM? ``Entails' | none
+  let u := expr.getAppFn.constLevels![0]!
   let ⟨e, hyps⟩ ← parseHyps? bi P
-  some { prop, bi, e, hyps, goal }
+  some { u, prop, bi, e, hyps, goal }
 
 def IrisGoal.toExpr : IrisGoal → Expr
   | { hyps, goal, .. } => q(Entails' $(hyps.tm) $goal)
@@ -102,7 +105,7 @@ def IrisGoal.strip : IrisGoal → Expr
 
 /-- This is only used for display purposes, so that we can render context variables that appear
 to have type `A : PROP` even though `PROP` is not a type. -/
-def HypMarker {PROP : Type} (_A : PROP) : Prop := True
+def HypMarker {PROP : Type _} (_A : PROP) : Prop := True
 
 def addLocalVarInfo (stx : Syntax) (lctx : LocalContext)
     (expr : Expr) (expectedType? : Option Expr) (isBinder := false) : MetaM Unit := do
@@ -112,13 +115,13 @@ def addLocalVarInfo (stx : Syntax) (lctx : LocalContext)
         { elaborator := .anonymous, lctx, expr, stx, expectedType?, isBinder })
     (return .ofPartialTermInfo { elaborator := .anonymous, lctx, stx, expectedType? })
 
-def addHypInfo (stx : Syntax) (name uniq : Name) (prop : Q(Type)) (ty : Q($prop))
+def addHypInfo (stx : Syntax) (name uniq : Name) (prop : Q(Type u)) (ty : Q($prop))
     (isBinder := false) : MetaM Unit := do
   let lctx ← getLCtx
   let ty := q(HypMarker $ty)
   addLocalVarInfo stx (lctx.mkLocalDecl ⟨uniq⟩ name ty) (.fvar ⟨uniq⟩) ty isBinder
 
-def Hyps.findWithInfo {prop bi} (hyps : @Hyps prop bi s) (name : Ident) : MetaM Name := do
+def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : MetaM Name := do
   let some (uniq, _, ty) := hyps.find? name.getId | throwError "unknown hypothesis"
   addHypInfo name name.getId uniq prop ty
   pure uniq

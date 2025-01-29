@@ -16,21 +16,24 @@ open Lean
 /--
 Require the definitions of the separation logic connectives and units on a carrier type `PROP`.
 -/
-class BIBase (PROP : Type) where
+class BIBase (PROP : Type u) where
   Entails : PROP → PROP → Prop
   emp : PROP
   pure : Prop → PROP
   and : PROP → PROP → PROP
   or : PROP → PROP → PROP
   imp : PROP → PROP → PROP
-  «forall» {α : Type} : (α → PROP) → PROP
-  «exists» {α : Type} : (α → PROP) → PROP
+  sForall : (PROP → Prop) → PROP
+  sExists : (PROP → Prop) → PROP
   sep : PROP → PROP → PROP
   wand : PROP → PROP → PROP
   persistently : PROP → PROP
   later : PROP → PROP
 
 namespace BIBase
+
+def «forall» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sForall fun p => ∃ a, P a = p
+def «exists» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sExists fun p => ∃ a, P a = p
 
 /-- Entailment on separation logic propositions. -/
 macro:25 P:term:29 " ⊢ " Q:term:25 : term => ``(BIBase.Entails iprop($P) iprop($Q))

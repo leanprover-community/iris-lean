@@ -38,7 +38,7 @@ def delabIrisGoal : Delab := do
   -- build syntax
   return ⟨← `(irisGoalStx| $hyps.reverse* ⊢ $goal:term)⟩
 where
-  delabHypotheses {prop bi s} (hyps : @Hyps prop bi s)
+  delabHypotheses {u prop bi s} (hyps : @Hyps u prop bi s)
       (acc : NameMap Nat × Array (TSyntax ``irisHyp)) :
       DelabM (NameMap Nat × Array (TSyntax ``irisHyp)) := do
     match hyps with

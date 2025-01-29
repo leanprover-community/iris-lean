@@ -12,7 +12,7 @@ open Iris.BI Iris.Instances.Data Std
 
 /- Instance of `BIBase` and `BI` for classical (non-affine) separation logic. -/
 
-abbrev HeapProp (Val : Type) := State Val → Prop
+abbrev HeapProp (Val : Type _) := State Val → Prop
 
 instance : BIBase (HeapProp Val) where
   Entails P Q      := ∀ σ, P σ → Q σ
@@ -21,8 +21,8 @@ instance : BIBase (HeapProp Val) where
   and P Q        σ := P σ ∧ Q σ
   or P Q         σ := P σ ∨ Q σ
   imp P Q        σ := P σ → Q σ
-  «forall» Ψ     σ := ∀ a, Ψ a σ
-  «exists» Ψ     σ := ∃ a, Ψ a σ
+  sForall Ψ      σ := ∀ p, Ψ p → p σ
+  sExists Ψ      σ := ∃ p, Ψ p ∧ p σ
   sep P Q        σ := ∃ σ1 σ2, σ = σ1 ∪ σ2 ∧ σ1 || σ2 ∧ P σ1 ∧ Q σ2
   wand P Q       σ := ∀ σ', σ || σ' → P σ' → Q (σ ∪ σ')
   persistently P _ := P ∅
@@ -56,8 +56,8 @@ instance : BI (HeapProp Val) where
   wand_ne         := ⟨by rintro _ _ _ rfl _ _ rfl; rfl⟩
   persistently_ne := ⟨by rintro _ _ _ rfl; rfl⟩
   later_ne        := ⟨by rintro _ _ _ rfl; rfl⟩
-  forall_ne {_ _ P Q} h := (funext h : P = Q) ▸ rfl
-  exists_ne {_ _ P Q} h := (funext h : P = Q) ▸ rfl
+  sForall_ne {_ P Q} h := liftRel_eq.1 h ▸ rfl
+  sExists_ne {_ P Q} h := liftRel_eq.1 h ▸ rfl
 
   pure_intro h _ _ := h
   pure_elim' h_φP σ h_φ := h_φP h_φ σ ⟨⟩
@@ -106,24 +106,23 @@ instance : BI (HeapProp Val) where
     intro _ _ _ h_PQR σ ⟨h_P, h_Q⟩
     exact h_PQR σ h_P h_Q
 
-  forall_intro := by
+  sForall_intro := by
     simp only [BI.Entails, BI.forall]
-    intro _ _ _ h_PΨ σ h_P a
-    exact h_PΨ a σ h_P
-  forall_elim := by
+    intro _ _ h_PΨ σ h_P p hp
+    exact h_PΨ p hp σ h_P
+  sForall_elim := by
     simp only [BI.Entails, BI.forall]
-    intro _ _ a _ h_Ψ
-    exact h_Ψ a
+    intro _ p hp _ h_Ψ
+    exact h_Ψ p hp
 
-  exists_intro := by
+  sExists_intro := by
     simp only [BI.Entails, BI.exists]
-    intro _ _ a _ Ψ
-    apply Exists.intro a
-    exact Ψ
-  exists_elim := by
+    intro _ p hp _ h_Ψ
+    exact ⟨p, hp, h_Ψ⟩
+  sExists_elim := by
     simp only [BI.Entails, BI.exists]
-    intro _ _ _ h_ΦQ σ ⟨a, h_Φ⟩
-    exact h_ΦQ a σ h_Φ
+    intro _ _ h_ΦQ σ ⟨p, hp, h_Φ⟩
+    exact h_ΦQ p hp σ h_Φ
 
   sep_mono := by
     simp only [BI.Entails, BI.sep]
@@ -233,10 +232,10 @@ instance : BI (HeapProp Val) where
     simp only [BI.Entails, BI.persistently, BI.and]
     intro _ _ _ h
     exact h
-  persistently_exists_1 := by
+  persistently_sExists_1 := by
     simp only [BI.Entails, BI.persistently, BI.exists]
-    intro _ _ _ h
-    exact h
+    intro _ _ ⟨p, hp, h⟩
+    exact ⟨_, ⟨_, rfl⟩, hp, h⟩
   persistently_absorb_l := by
     simp only [BI.Entails, BI.persistently, BI.sep]
     intro _ _ _ ⟨_, _, _, _, h_P, _⟩
@@ -256,8 +255,8 @@ instance : BI (HeapProp Val) where
 
   later_mono := id
   later_intro _ := id
-  later_forall_2 _ := id
-  later_exists_false _ h := .inr h
+  later_sForall_2 _ h _ hp := h _ ⟨_, rfl⟩ hp
+  later_sExists_false _ := fun ⟨p, hp⟩ => .inr ⟨_, ⟨_, rfl⟩, hp⟩
   later_sep := ⟨fun _ => id, fun _ => id⟩
   later_persistently := ⟨fun _ => id, fun _ => id⟩
   later_false_em _ h := .inr fun _ => h

@@ -13,7 +13,7 @@ import Lean.Elab
 namespace Iris.ProofMode
 open Lean Elab Tactic Qq
 
-variable (oldUniq new : Name) {prop : Q(Type)} {bi : Q(BI $prop)} in
+variable (oldUniq new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .emp _ => none
   | _, .sep _ _ _ _ lhs rhs =>

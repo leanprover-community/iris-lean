@@ -43,7 +43,7 @@ theorem imp_intro_spatial [BI PROP] {P Q A1 A2 B : PROP}
 theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
     [FromWand Q A1 A2] (h : P ∗ A1 ⊢ A2) : P ⊢ Q := (wand_intro h).trans from_wand
 
-variable {prop : Q(Type)} (bi : Q(BI $prop)) in
+variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iIntroCore
     {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List iCasesPat)
     (k : ∀ {P}, Hyps bi P → (Q : Q($prop)) → MetaM Q($P ⊢ $Q)) :
@@ -59,12 +59,14 @@ partial def iIntroCore
       let pf ← iIntroCore hyps A2 pats k
       return q(imp_intro_drop (Q := $Q) $pf)
     else
-    let alres ← try? (α := _ × (α : Q(Type)) × (Φ : Q($α → $prop)) × Q(FromForall $Q $Φ)) do
+    let alres ← try? (α := _ × (v : Level) × (α : Q(Sort v)) × (Φ : Q($α → $prop)) ×
+        Q(FromForall $Q $Φ)) do
       let .one n := pat | failure
-      let α ← mkFreshExprMVarQ q(Type)
+      let v ← mkFreshLevelMVar
+      let α ← mkFreshExprMVarQ q(Sort v)
       let Φ ← mkFreshExprMVarQ q($α → $prop)
-      Pure.pure ⟨n, α, Φ, ← synthInstanceQ q(FromForall $Q $Φ)⟩
-    if let some ⟨n, α, Φ, _⟩ := alres then
+      Pure.pure ⟨n, v, α, Φ, ← synthInstanceQ q(FromForall $Q $Φ)⟩
+    if let some ⟨n, _, α, Φ, _⟩ := alres then
       let (n, ref) ← getFreshName n
       withLocalDeclDQ n α fun x => do
         addLocalVarInfo ref (← getLCtx) x α

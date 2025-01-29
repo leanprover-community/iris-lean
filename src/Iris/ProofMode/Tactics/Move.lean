@@ -24,12 +24,12 @@ theorem Replaces.apply [BI PROP] {P P' Q : PROP}
     (h : Replaces Q P P') (h_entails : P' ⊢ Q) : P ⊢ Q :=
   wand_entails <| (entails_wand h_entails).trans h
 
-inductive ReplaceHyp {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop)) where
+inductive ReplaceHyp {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop)) where
   | none
   | unchanged (ehyps') (hyps' : Hyps bi ehyps')
   | main (e e' : Q($prop)) (hyps' : Hyps bi e') (pf : Q(Replaces $Q $e $e'))
 
-variable [Monad m] {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop))
+variable [Monad m] {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop))
   (uniq : Name) (repl : Name → Q(Bool) → Q($prop) → MetaM (ReplaceHyp bi Q)) in
 def Hyps.replace : ∀ {e}, Hyps bi e → MetaM (ReplaceHyp bi Q)
   | _, .emp _ => pure .none

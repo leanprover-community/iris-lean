@@ -7,7 +7,7 @@ Authors: Mario Carneiro
 namespace Iris
 
 /-- Ordered family of equivalences -/
-class OFE (α : Type) where
+class OFE (α : Type _) where
   Equiv : α → α → Prop
   Dist : Nat → α → α → Prop
   equiv_eqv : Equivalence Equiv
@@ -31,12 +31,12 @@ theorem Dist.rfl [OFE α] {n} {x : α} : x ≡{n}≡ x := dist_eqv.1 _
 theorem Dist.symm [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ x := dist_eqv.2
 theorem Dist.trans [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ z → x ≡{n}≡ z := dist_eqv.3
 
-class NonExpansive [OFE α] (f : α → α) : Prop where
+class NonExpansive [OFE α] [OFE β] (f : α → β) : Prop where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → f x₁ ≡{n}≡ f x₂
 
 instance id_ne [OFE α] : NonExpansive (@id α) := ⟨fun _ _ _ h => h⟩
 
-class NonExpansive₂ [OFE α] (f : α → α → α) : Prop where
+class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) : Prop where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → f x₁ y₁ ≡{n}≡ f x₂ y₂
 
 def DistLater [OFE α] (n : Nat) (x y : α) : Prop := ∀ m, m < n → x ≡{m}≡ y
@@ -90,7 +90,7 @@ def ofDiscrete (Equiv : α → α → Prop) (equiv_eqv : Equivalence Equiv) : OF
 end OFE
 
 /-- Complete ordered family of equivalences -/
-class COFE (α : Type) extends OFE α where
+class COFE (α : Type _) extends OFE α where
   compl : Chain α → α
   conv_compl {c : Chain α} : compl c ≡{n}≡ c n
 

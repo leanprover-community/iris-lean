@@ -8,7 +8,7 @@ import Iris.Instances.Data.SetNotation
 namespace Iris.Instances.Data
 
 /-- Result of an operation on `State`. -/
-inductive StateResult (α : Type)
+inductive StateResult (α : Type _)
   | unknown
   | result (x : α)
   | conflict
@@ -18,7 +18,7 @@ export StateResult (conflict)
 
 /-- Implementation of a state datatype as a map from `Nat` to a `StateResult` with a value
 from `Val`. -/
-abbrev State (Val : Type) := Nat → StateResult Val
+abbrev State (Val : Type _) := Nat → StateResult Val
 
 instance : EmptyCollection (State Val) where
   emptyCollection := fun _ => unknown

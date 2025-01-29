@@ -15,7 +15,7 @@ theorem pure_assumption [BI PROP] {P A Q : PROP} (h_P : ⊢ A)
   have := intuitionistically_emp.2.trans <| (intuitionistically_mono h_P).trans inst.1
   emp_sep.2.trans <| (sep_mono_l this).trans sep_elim_l
 
-def assumptionLean {prop : Q(Type)} (_bi : Q(BI $prop)) (ehyps goal : Q($prop))
+def assumptionLean {prop : Q(Type u)} (_bi : Q(BI $prop)) (ehyps goal : Q($prop))
     (mvar : MVarId) : MetaM Unit := do
   mvar.withContext do
     let _ ← synthInstanceQ q(TCOr (Affine $ehyps) (Absorbing $goal))
@@ -42,11 +42,11 @@ elab "iassumption_lean" : tactic => do
   assumptionLean bi e goal mvar
   replaceMainGoal []
 
-inductive AssumptionFastPath (prop : Q(Type)) (bi : Q(BI $prop)) (Q : Q($prop)) where
+inductive AssumptionFastPath (prop : Q(Type u)) (bi : Q(BI $prop)) (Q : Q($prop)) where
   | absorbing (_ : Q(Absorbing $Q))
   | biAffine (_ : Q(BIAffine $prop))
 
-variable {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop))
+variable {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop))
   (fastPath : AssumptionFastPath prop bi Q) in
 def assumptionFast {e} (hyps : Hyps bi e) : MetaM Q($e ⊢ $Q) := do
   let some ⟨inst, _, _, out, ty, b, _, pf⟩ ←
@@ -59,7 +59,7 @@ def assumptionFast {e} (hyps : Hyps bi e) : MetaM Q($e ⊢ $Q) := do
   | .absorbing _ => return q(assumption (Q := $Q) $pf)
   | .biAffine _ => return q(assumption (Q := $Q) $pf)
 
-inductive AssumptionSlow {prop : Q(Type)} (bi : Q(BI $prop)) (Q e : Q($prop)) where
+inductive AssumptionSlow {prop : Q(Type u)} (bi : Q(BI $prop)) (Q e : Q($prop)) where
   | none
   | affine (pf : Q(Affine $e))
   | main (pf : Q($e ⊢ $Q)) (pf : Option Q(Affine $e))
@@ -69,7 +69,7 @@ theorem assumption_l [BI PROP] {P Q R : PROP} [Affine Q] (h : P ⊢ R) : P ∗ Q
 theorem assumption_r [BI PROP] {P Q R : PROP} [Affine P] (h : Q ⊢ R) : P ∗ Q ⊢ R :=
   sep_elim_r.trans h
 
-variable {prop : Q(Type)} (bi : Q(BI $prop)) (Q : Q($prop)) in
+variable {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop)) in
 def assumptionSlow (assume : Bool) :
     ∀ {e}, Hyps bi e → MetaM (AssumptionSlow bi Q e)
   | _, .emp _ =>

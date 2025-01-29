@@ -10,8 +10,14 @@ namespace Iris
 open Iris.Std OFE
 open Lean
 
+def liftRel (R : α → β → Prop) (A : α → Prop) (B : β → Prop) : Prop :=
+  (∀ a, A a → ∃ b, B b ∧ R a b) ∧ (∀ b, B b → ∃ a, A a ∧ R a b)
+
+theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
+  simp [liftRel, forall_and, iff_def, funext_iff]
+
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
-class BI (PROP : Type) extends COFE PROP, BI.BIBase PROP where
+class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
   Equiv P Q := P ⊣⊢ Q
 
   entails_preorder : Preorder Entails
@@ -20,8 +26,8 @@ class BI (PROP : Type) extends COFE PROP, BI.BIBase PROP where
   and_ne : OFE.NonExpansive₂ and
   or_ne : OFE.NonExpansive₂ or
   imp_ne : OFE.NonExpansive₂ imp
-  forall_ne {P₁ P₂ : α → PROP} : (∀ x, P₁ x ≡{n}≡ P₂ x) → iprop(∀ x, P₁ x) ≡{n}≡ iprop(∀ x, P₂ x)
-  exists_ne {P₁ P₂ : α → PROP} : (∀ x, P₁ x ≡{n}≡ P₂ x) → iprop(∃ x, P₁ x) ≡{n}≡ iprop(∃ x, P₂ x)
+  sForall_ne {P₁ P₂} : liftRel (· ≡{n}≡ ·) P₁ P₂ → sForall P₁ ≡{n}≡ sForall P₂
+  sExists_ne {P₁ P₂} : liftRel (· ≡{n}≡ ·) P₁ P₂ → sExists P₁ ≡{n}≡ sExists P₂
   sep_ne : OFE.NonExpansive₂ sep
   wand_ne : OFE.NonExpansive₂ wand
   persistently_ne : OFE.NonExpansive persistently
@@ -41,11 +47,11 @@ class BI (PROP : Type) extends COFE PROP, BI.BIBase PROP where
   imp_intro {P Q R : PROP} : (P ∧ Q ⊢ R) → P ⊢ Q → R
   imp_elim {P Q R : PROP} : (P ⊢ Q → R) → P ∧ Q ⊢ R
 
-  forall_intro {P : PROP} {Ψ : α → PROP} : (∀ a, P ⊢ Ψ a) → P ⊢ ∀ a, Ψ a
-  forall_elim {Ψ : α → PROP} (a : α) : (∀ a, Ψ a) ⊢ Ψ a
+  sForall_intro {P : PROP} {Ψ : PROP → Prop} : (∀ p, Ψ p → P ⊢ p) → P ⊢ sForall Ψ
+  sForall_elim {Ψ : PROP → Prop} {p : PROP} : Ψ p → sForall Ψ ⊢ p
 
-  exists_intro {Ψ : α → PROP} (a : α) : Ψ a ⊢ ∃ a, Ψ a
-  exists_elim {Φ : α → PROP} {Q : PROP} : (∀ a, Φ a ⊢ Q) → (∃ a, Φ a) ⊢ Q
+  sExists_intro {Ψ : PROP → Prop} {p : PROP} : Ψ p → p ⊢ sExists Ψ
+  sExists_elim {Φ : PROP → Prop} {Q : PROP} : (∀ p, Φ p → p ⊢ Q) → sExists Φ ⊢ Q
 
   sep_mono {P P' Q Q' : PROP} : (P ⊢ Q) → (P' ⊢ Q') → P ∗ P' ⊢ Q ∗ Q'
   emp_sep {P : PROP} : emp ∗ P ⊣⊢ P
@@ -59,15 +65,15 @@ class BI (PROP : Type) extends COFE PROP, BI.BIBase PROP where
   persistently_idem_2 {P : PROP} : <pers> P ⊢ <pers> <pers> P
   persistently_emp_2 : (emp : PROP) ⊢ <pers> emp
   persistently_and_2 {P Q : PROP} : (<pers> P) ∧ (<pers> Q) ⊢ <pers> (P ∧ Q)
-  persistently_exists_1 {Ψ : α → PROP} : <pers> (∃ a, Ψ a) ⊢ ∃ a, <pers> (Ψ a)
+  persistently_sExists_1 {Ψ : PROP → Prop} : <pers> (sExists Ψ) ⊢ ∃ p, ⌜Ψ p⌝ ∧ <pers> p
   persistently_absorb_l {P Q : PROP} : <pers> P ∗ Q ⊢ <pers> P
   persistently_and_l {P Q : PROP} : <pers> P ∧ Q ⊢ P ∗ Q
 
   later_mono {P Q : PROP} : (P ⊢ Q) → ▷ P ⊢ ▷ Q
   later_intro {P : PROP} : P ⊢ ▷ P
 
-  later_forall_2 {Φ : α → PROP} : (∀ a, ▷ Φ a) ⊢ ▷ ∀ a, Φ a
-  later_exists_false {Φ : α → PROP} : (▷ ∃ a, Φ a) ⊢ ▷ False ∨ ∃ a, ▷ Φ a
+  later_sForall_2 {Φ : PROP → Prop} : (∀ p, ⌜Φ p⌝ → ▷ p) ⊢ ▷ sForall Φ
+  later_sExists_false {Φ : PROP → Prop} : (▷ sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p
   later_sep {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q
   later_persistently {P Q : PROP} : ▷ <pers> P ⊣⊢ <pers> ▷ P
   later_false_em {P : PROP} : ▷ P ⊢ ▷ False ∨ (▷ False → P)
@@ -93,10 +99,10 @@ theorem BIBase.BiEntails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊣⊢ Q) (h2 : 
   ⟨h1.1.trans h2.1, h2.2.trans h1.2⟩
 
 export BIBase (
-  Entails emp pure and or imp «forall» «exists» sep wand persistently
-  BiEntails iff wandIff affinely absorbingly intuitionistically later
-  persistentlyIf affinelyIf absorbinglyIf intuitionisticallyIf
-  bigAnd bigOr bigSep Entails.trans BiEntails.trans)
+  Entails emp pure and or imp sForall sExists «forall» «exists» sep wand
+  persistently BiEntails iff wandIff affinely absorbingly
+  intuitionistically later persistentlyIf affinelyIf absorbinglyIf
+  intuitionisticallyIf bigAnd bigOr bigSep Entails.trans BiEntails.trans)
 
 attribute [rw_mono_rule] BI.sep_mono
 attribute [rw_mono_rule] BI.persistently_mono
