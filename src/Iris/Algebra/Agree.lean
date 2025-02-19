@@ -93,6 +93,8 @@ theorem Agree.op_comm {x y : Agree α} :  x.op y ≡ y.op x := by
   rintro n; simp_all only [dist, op, List.mem_append]; constructor <;>
     (rintro a ha; exists a; simp_all [OFE.Dist.rfl, Or.symm])
 
+theorem Agree.op_commN {x y : Agree α} :  x.op y ≡{n}≡ y.op x := op_comm n
+
 theorem Agree.op_assoc {x y z : Agree α} :  x.op (y.op z) ≡ (x.op y).op z := by
   rintro n; simp_all only [dist, op, List.mem_append, List.append_assoc]; constructor <;>
     (rintro a ha; exists a; simp_all [OFE.Dist.rfl, Or.symm])
@@ -169,8 +171,22 @@ instance : CMRA (Agree α) where
     have heq₃ : y₁.op y₂ ≡{n}≡ y₁ := Agree.op_ne.ne heq₂.symm |>.trans (Agree.idemp n)
     exact ⟨Agree.idemp.symm, heq₁.trans heq₃, heq₁.trans heq₃ |>.trans heq₂⟩
 
-theorem Agree.included {x y : Agree α} : x ≼ y ↔ y ≡ y • x := by
-  sorry -- TODO
-
 theorem Agree.includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x := by
-  sorry -- TODO
+  constructor
+  · rintro ⟨z, h⟩
+    have hid := idemp (x := x) |>.symm
+    exact h.trans $ op_commN |>.trans
+          (op_ne.ne (hid n)) |>.trans 
+          (op_assoc n) |>.trans
+          (op_commN) |>.trans
+          (op_ne.ne (h.trans op_commN).symm) |>.trans
+          op_commN
+  · rintro h; exists y
+    exact h.trans op_commN
+
+theorem Agree.included {x y : Agree α} : x ≼ y ↔ y ≡ y • x := by
+  constructor
+  · rintro ⟨z, h⟩ n
+    apply includedN.mp ⟨z, h n⟩
+  · rintro h; exists y
+    exact h.trans op_comm
