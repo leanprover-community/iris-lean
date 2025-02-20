@@ -16,13 +16,13 @@ class CMRA (α : Type _) extends OFE α where
 
   op_ne : NonExpansive (op x)
   pcore_ne : x ≡{n}≡ y → pcore x = some cx →
-    ∃ y, pcore y = some cy ∧ cx ≡{n}≡ cy
+    ∃ cy, pcore y = some cy ∧ cx ≡{n}≡ cy
   validN_ne : x ≡{n}≡ y → validN n x → validN n y
 
   valid_validN : valid x ↔ ∀ n, validN n x
   validN_succ : validN n.succ x → validN n x
-  assoc : op x (op y z) = op (op x y) z
-  comm : op x y = op y x
+  assoc : op x (op y z) ≡ op (op x y) z
+  comm : op x y ≡ op y x
   pcore_l : pcore x = some cx → op cx x ≡ x
   pcore_idem : pcore x = some cx → pcore cx ≡ some cx
   pcore_mono' : pcore x = some cx → ∃ cy, pcore (op x y) = some (op cx cy)
@@ -37,6 +37,9 @@ infix:60 " • " => op
 
 def included (x y : α) : Prop := ∃ z, y ≡ x • z
 infix:50 " ≼ " => included
+
+def includedN (n : Nat) (x y : α) : Prop := ∃ z, y ≡{n}≡ x • z
+notation:50 x "≼{" n "}" y:51 => includedN n x y
 
 def op? [CMRA α] (x : α) : Option α → α
   | some y => x • y

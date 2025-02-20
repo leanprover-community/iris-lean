@@ -10,7 +10,6 @@ namespace Iris
 class OFE (α : Type _) where
   Equiv : α → α → Prop
   Dist : Nat → α → α → Prop
-  equiv_eqv : Equivalence Equiv
   dist_eqv : Equivalence (Dist n)
   equiv_dist : Equiv x y ↔ ∀ n, Dist n x y
   dist_lt : Dist n x y → m < n → Dist m x y
@@ -22,12 +21,6 @@ scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist n x y
 
 namespace OFE
 
-theorem Equiv.rfl [OFE α] {x : α} : x ≡ x := equiv_eqv.1 _
-theorem Equiv.symm [OFE α] {x : α} : x ≡ y → y ≡ x := equiv_eqv.2
-theorem Equiv.trans [OFE α] {x : α} : x ≡ y → y ≡ z → x ≡ z := equiv_eqv.3
-theorem Equiv.dist [OFE α] {x : α} : x ≡ y → x ≡{n}≡ y := (equiv_dist.1 · _)
-theorem Equiv.of_eq [OFE α] {x y : α} : x = y → x ≡ y := (· ▸ .rfl)
-
 theorem Dist.lt [OFE α] {m n} {x y : α} : x ≡{n}≡ y → m < n → x ≡{m}≡ y := dist_lt
 
 theorem Dist.le [OFE α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x ≡{m}≡ y :=
@@ -36,6 +29,19 @@ theorem Dist.le [OFE α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x
 theorem Dist.rfl [OFE α] {n} {x : α} : x ≡{n}≡ x := dist_eqv.1 _
 theorem Dist.symm [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ x := dist_eqv.2
 theorem Dist.trans [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ z → x ≡{n}≡ z := dist_eqv.3
+
+theorem equiv_eqv [ofe : OFE α] : Equivalence ofe.Equiv := by
+  constructor
+  · rintro x; rw [ofe.equiv_dist]; rintro n; exact Dist.rfl
+  · rintro x y; simp [ofe.equiv_dist]; rintro h n; exact Dist.symm (h n)
+  · rintro x y z; simp [ofe.equiv_dist]; rintro h₁ h₂ n; exact Dist.trans (h₁ n) (h₂ n)
+
+theorem Equiv.rfl [OFE α] {x : α} : x ≡ x := equiv_eqv.1 _
+theorem Equiv.symm [OFE α] {x : α} : x ≡ y → y ≡ x := equiv_eqv.2
+theorem Equiv.trans [OFE α] {x : α} : x ≡ y → y ≡ z → x ≡ z := equiv_eqv.3
+theorem Equiv.dist [OFE α] {x : α} : x ≡ y → x ≡{n}≡ y := (equiv_dist.1 · _)
+theorem Equiv.of_eq [OFE α] {x y : α} : x = y → x ≡ y := (· ▸ .rfl)
+
 
 class NonExpansive [OFE α] [OFE β] (f : α → β) : Prop where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → f x₁ ≡{n}≡ f x₂
@@ -90,7 +96,6 @@ theorem Contractive.succ [OFE α] [OFE β] (f : α → β) [Contractive f] {n x 
 def ofDiscrete (Equiv : α → α → Prop) (equiv_eqv : Equivalence Equiv) : OFE α where
   Equiv := Equiv
   Dist _ := Equiv
-  equiv_eqv := equiv_eqv
   dist_eqv := equiv_eqv
   equiv_dist := (forall_const _).symm
   dist_lt h _ := h
@@ -126,7 +131,6 @@ theorem InvImage.equivalence {α : Sort u} {β : Sort v}
 instance : OFE Unit where
   Equiv _ _ := True
   Dist _ _ _ := True
-  equiv_eqv := ⟨fun _ => ⟨⟩, id, fun _ => id⟩
   dist_eqv := ⟨fun _ => ⟨⟩, id, fun _ => id⟩
   equiv_dist := by simp
   dist_lt _ _ := ⟨⟩
@@ -134,7 +138,6 @@ instance : OFE Unit where
 instance [OFE α] : OFE (ULift α) where
   Equiv x y := x.down ≡ y.down
   Dist n x y := x.down ≡{n}≡ y.down
-  equiv_eqv := InvImage.equivalence equiv_eqv
   dist_eqv := InvImage.equivalence dist_eqv
   equiv_dist := equiv_dist
   dist_lt := dist_lt
@@ -161,7 +164,6 @@ theorem _root_.Option.Forall₂.equivalence {R : α → α → Prop}
 instance [OFE α] : OFE (Option α) where
   Equiv := Option.Forall₂ Equiv
   Dist n := Option.Forall₂ (Dist n)
-  equiv_eqv := Option.Forall₂.equivalence equiv_eqv
   dist_eqv := Option.Forall₂.equivalence dist_eqv
   equiv_dist {x y} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply equiv_dist
   dist_lt {_ x y _} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply dist_lt
@@ -169,11 +171,6 @@ instance [OFE α] : OFE (Option α) where
 instance [OFE α] [OFE β] : OFE (α -n> β) where
   Equiv f g := ∀ x, f x ≡ g x
   Dist n f g := ∀ x, f x ≡{n}≡ g x
-  equiv_eqv := {
-    refl _ _ := equiv_eqv.refl _
-    symm h _ := equiv_eqv.symm (h _)
-    trans h1 h2 _ := equiv_eqv.trans (h1 _) (h2 _)
-  }
   dist_eqv := {
     refl _ _ := dist_eqv.refl _
     symm h _ := dist_eqv.symm (h _)
@@ -185,11 +182,6 @@ instance [OFE α] [OFE β] : OFE (α -n> β) where
 instance [OFE α] [OFE β] : OFE (α × β) where
   Equiv a b := a.1 ≡ b.1 ∧ a.2 ≡ b.2
   Dist n a b := a.1 ≡{n}≡ b.1 ∧ a.2 ≡{n}≡ b.2
-  equiv_eqv := {
-    refl _ := ⟨equiv_eqv.refl _, equiv_eqv.refl _⟩
-    symm h := ⟨equiv_eqv.symm h.1, equiv_eqv.symm h.2⟩
-    trans h1 h2 := ⟨equiv_eqv.trans h1.1 h2.1, equiv_eqv.trans h1.2 h2.2⟩
-  }
   dist_eqv := {
     refl _ := ⟨dist_eqv.refl _, dist_eqv.refl _⟩
     symm h := ⟨dist_eqv.symm h.1, dist_eqv.symm h.2⟩
