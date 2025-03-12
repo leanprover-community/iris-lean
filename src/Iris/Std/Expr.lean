@@ -20,7 +20,7 @@ def appM? (e : Expr) (fName : Name) : Option <| Array Expr :=
 /-- Modify the arguments of the function application represented by `e`. If an element in `args` is
 `none`, then the corresponding argument in the function application remains unchanged. -/
 def modifyAppOptM (e : Expr) (args : Array <| Option Expr) : Expr :=
-  mkAppN e.getAppFn <| e.getAppArgs.zipWith (fun a b => if let some b := b then b else a) args
+  mkAppN e.getAppFn <| e.getAppArgs.zipWith args (fun a b => if let some b := b then b else a)
 
 
 /-- Get the `mdata` entry with the key `"name"`, if available. -/
