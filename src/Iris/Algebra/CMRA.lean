@@ -80,6 +80,7 @@ class UCMRA (α : Type _) extends CMRA α where
   unit_left_id : unit • x ≡ x
   pcore_unit : pcore unit ≡ some unit
 
+<<<<<<< HEAD
 namespace CMRA
 variable [CMRA α]
 
@@ -311,6 +312,7 @@ theorem incN_trans {x y z : α} : x ≼{n} y → y ≼{n} z → x ≼{n} z
       z ≡{n}≡ y • t := ht
       _ ≡{n}≡ (x • w) • t := op_left_dist _ hw
       _ ≡{n}≡ x • (w • t) := op_assocN.symm
+
 theorem IncludedN.trans : (x : α) ≼{n} y → y ≼{n} z → x ≼{n} z := incN_trans
 
 instance : Trans (IncludedN (α := α) n) (IncludedN n) (IncludedN n) where
