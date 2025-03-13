@@ -42,6 +42,12 @@ theorem Equiv.trans [OFE α] {x : α} : x ≡ y → y ≡ z → x ≡ z := equiv
 theorem Equiv.dist [OFE α] {x : α} : x ≡ y → x ≡{n}≡ y := (equiv_dist.1 · _)
 theorem Equiv.of_eq [OFE α] {x y : α} : x = y → x ≡ y := (· ▸ .rfl)
 
+instance [OFE α]: Trans OFE.Equiv OFE.Equiv (OFE.Equiv : α → α → Prop) where
+  trans := Equiv.trans
+
+instance [OFE α]{n: Nat}: Trans (OFE.Dist n) (OFE.Dist n) (OFE.Dist n : α → α → Prop) where
+  trans := Dist.trans
+
 /-- A function `f : α → β` is non-expansive if it preserves `n`-equivalence. -/
 class NonExpansive [OFE α] [OFE β] (f : α → β) : Prop where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → f x₁ ≡{n}≡ f x₂
@@ -207,6 +213,13 @@ instance [OFE α] : OFE (Option α) where
   dist_eqv := Option.Forall₂.equivalence dist_eqv
   equiv_dist {x y} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply equiv_dist
   dist_lt {_ x y _} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply dist_lt
+
+theorem OFE.equiv_some {o: Option α}{y: α}[OFE α](e: o ≡ some y)
+    : ∃z, o = some z ∧ z ≡ y := by
+  unfold OFE.Equiv instOption Option.Forall₂ at e
+  match o with
+  | .none => dsimp at e
+  | .some x => dsimp at e; exact ⟨x, rfl, e⟩
 
 instance [OFE α] [OFE β] : OFE (α -n> β) where
   Equiv f g := ∀ x, f x ≡ g x
