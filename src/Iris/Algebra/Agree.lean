@@ -148,17 +148,17 @@ instance : CMRA (Agree α) where
   pcore_ne := by simp
   validN_ne := Agree.validN_ne
 
-  valid_validN := by rfl
+  valid_iff_validN := by rfl
   validN_succ := by
     simp [Agree.validN_def]; rintro x n hsuc a ha b hb
     exact (OFE.dist_lt (hsuc a ha b hb) (by omega))
 
   assoc := Agree.op_assoc
   comm := Agree.op_comm
-  pcore_l := by simp [Agree.idemp]
+  pcore_op_left := by simp [Agree.idemp]
   pcore_idem := by simp [OFE.Equiv.rfl]
-  pcore_mono' := by simp only [Option.some.injEq]; rintro x _ y rfl; exists y
-  validN_op_l := by
+  pcore_op_mono := by simp only [Option.some.injEq]; rintro x _ y rfl; exists y
+  validN_op_left := by
     rintro n x y
     simp only [Agree.op, Agree.validN_def, List.mem_append]
     rintro h a ha b hb
