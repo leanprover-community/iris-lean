@@ -379,7 +379,6 @@ instance : COFE Unit where
   compl _ := ()
   conv_compl := ⟨⟩
 
-/-- Functors from COFEs to OFEs -/
 class OFunctor (F : Type _ → Type _ → Type _) where
   cofe [COFE α] [COFE β] : OFE (F α β)
   map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
