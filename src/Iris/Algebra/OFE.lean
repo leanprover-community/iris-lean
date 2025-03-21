@@ -29,6 +29,7 @@ theorem Dist.le [OFE α] {m n} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x
 @[simp] theorem Dist.rfl [OFE α] {n} {x : α} : x ≡{n}≡ x := dist_eqv.1 _
 theorem Dist.symm [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ x := dist_eqv.2
 theorem Dist.trans [OFE α] {n} {x : α} : x ≡{n}≡ y → y ≡{n}≡ z → x ≡{n}≡ z := dist_eqv.3
+theorem Dist.of_eq [OFE α] {x y : α} : x = y → x ≡{n}≡ y := (· ▸ .rfl)
 
 theorem equiv_eqv [ofe : OFE α] : Equivalence ofe.Equiv := by
   constructor
@@ -41,6 +42,12 @@ theorem Equiv.symm [OFE α] {x : α} : x ≡ y → y ≡ x := equiv_eqv.2
 theorem Equiv.trans [OFE α] {x : α} : x ≡ y → y ≡ z → x ≡ z := equiv_eqv.3
 theorem Equiv.dist [OFE α] {x : α} : x ≡ y → x ≡{n}≡ y := (equiv_dist.1 · _)
 theorem Equiv.of_eq [OFE α] {x y : α} : x = y → x ≡ y := (· ▸ .rfl)
+
+instance [OFE α]: Trans OFE.Equiv OFE.Equiv (OFE.Equiv : α → α → Prop) where
+  trans := Equiv.trans
+
+instance [OFE α]{n: Nat}: Trans (OFE.Dist n) (OFE.Dist n) (OFE.Dist n : α → α → Prop) where
+  trans := Dist.trans
 
 /-- A function `f : α → β` is non-expansive if it preserves `n`-equivalence. -/
 class NonExpansive [OFE α] [OFE β] (f : α → β) : Prop where
@@ -207,6 +214,25 @@ instance [OFE α] : OFE (Option α) where
   dist_eqv := Option.Forall₂.equivalence dist_eqv
   equiv_dist {x y} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply equiv_dist
   dist_lt {_ x y _} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply dist_lt
+
+theorem OFE.eqv_of_some_eqv_some [OFE α]{x y: α}(h: some x ≡ some y): x ≡ y := h
+theorem OFE.some_eqv_some_of_eqv [OFE α]{x y: α}(h: x ≡ y): some x ≡ some y := h
+
+theorem OFE.equiv_some [OFE α]{o: Option α}{y: α}(e: o ≡ some y)
+    : ∃z, o = some z ∧ z ≡ y := by
+  unfold OFE.Equiv instOption Option.Forall₂ at e
+  match o with
+  | .none => dsimp at e
+  | .some x => dsimp at e; exact ⟨x, rfl, e⟩
+
+theorem OFE.dist_some_right [OFE α]{n mx y}(h: mx ≡{n}≡ some y)
+    : ∃z: α, mx = some z ∧ y ≡{n}≡ z :=
+  suffices hh: ∀mx my y, mx ≡{n}≡ my → my = some y → ∃ t, mx = some t ∧ t ≡{n}≡ y
+  from (hh mx (some y) _ h rfl).elim (λt h ↦ ⟨t, h.left, h.right.symm⟩)
+  λmx _ y e1 e2 ↦
+    match mx with
+    | .some t => ⟨t, rfl, (e2 ▸ e1: some t ≡{n}≡ some y)⟩
+    | .none => False.elim (e2 ▸ e1 : none ≡{n}≡ some y)
 
 instance [OFE α] [OFE β] : OFE (α -n> β) where
   Equiv f g := ∀ x, f x ≡ g x
