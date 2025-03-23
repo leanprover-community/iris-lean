@@ -50,6 +50,7 @@ instance : OFE (uPred M) where
 
 def compl (c : Chain (uPred M)) : uPred M :=
   ⟨ fun n x => ∀ n', n' ≤ n -> ✓{n'} x → (c n') n' x,
+-- Depends on CMRA lemma
 --   Next Obligation.
 --     move=> /= c n1 n2 x1 x2 HP Hx12 Hn12 n3 Hn23 Hv. eapply uPred_mono.
 --     - eapply HP, cmra_validN_includedN, cmra_includedN_le=>//; lia.
@@ -58,16 +59,23 @@ def compl (c : Chain (uPred M)) : uPred M :=
 --   Qed.
     sorry ⟩
 
-
+-- FIXME cleanup
 instance uPred_IsCOFE : IsCOFE (uPred M) where
   compl := compl
   conv_compl := by
---   Next Obligation.
---     intros n c; split=>i x Hin Hv.
---     Check (chain_cauchy c i n).
---     etrans; [|by symmetry; apply (chain_cauchy c i n)]. split=>H; [by apply H|].
---     repeat intro. apply (chain_cauchy c _ i)=>//. by eapply uPred_mono.
---   Qed.
-    sorry
+    intros n c i x Hin Hv
+    apply Iff.symm
+    apply Iff.trans
+    · apply (c.cauchy Hin  _ _ (Nat.le_refl _) Hv)
+    apply Iff.symm
+    apply Iff.intro
+    · exact (· _ (Nat.le_refl _) Hv)
+    intro H n' Hn' Hv'
+    apply (c.cauchy (i := i) Hn' _ _ (Nat.le_refl _) Hv').mp
+    apply @uPred.uPred_mono
+    · apply H
+    · -- UCMRA lemma
+      sorry
+    · apply Hn'
 
 end upred
