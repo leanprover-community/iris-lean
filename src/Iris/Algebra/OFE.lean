@@ -142,6 +142,10 @@ class Discrete (α : Type _) [OFE α] : Prop where
 theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡ y) : x ≡ y :=
   Discrete.discrete_0 (OFE.Dist.le h (Nat.zero_le _))
 
+
+class Leibniz (α : Type _) [OFE α] : Prop where
+  leibniz {x y : α} : x ≡ y ↔ x = y
+
 /-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is non-expansive. -/
 @[ext] structure Hom (α β : Type _) [OFE α] [OFE β] where
   f : α → β
