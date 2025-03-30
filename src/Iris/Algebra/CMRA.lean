@@ -665,6 +665,116 @@ instance exclusive_id_Free {x : α} [CMRA.Exclusive x] : CMRA.IdFree x := sorry
 end idFreeElements
 
 
+section ucmra
+
+variable {α : Type _} [UCMRA α]
+
+theorem unit_validN n : ✓{n} (ε : α) := sorry
+--   Lemma ucmra_unit_validN n : ✓{n} (ε:A).
+--   Proof. apply cmra_valid_validN, ucmra_unit_valid. Qed.
+
+theorem incN_unit n {x : α} : ε ≼{n} x := sorry
+--   Lemma ucmra_unit_leastN n x : ε ≼{n} x.
+--   Proof. by exists x; rewrite left_id. Qed.
+
+theorem inc_unit {x : α} : ε ≼ x := sorry
+--   Lemma ucmra_unit_least x : ε ≼ x.
+--   Proof. by exists x; rewrite left_id. Qed.
+
+
+theorem unit_right_id (x : α) :  x • unit  ≡ x :=  sorry
+--   Global Instance ucmra_unit_right_id : RightId (≡) ε (@op A _).
+--   Proof. by intros x; rewrite (comm op) left_id. Qed.
+
+instance unit_CoreId : CMRA.CoreId (ε : α) := sorry
+--   Global Instance ucmra_unit_core_id : CoreId (ε:A).
+--   Proof. apply ucmra_pcore_unit. Qed.
+
+instance unit_total : CMRA.IsTotal α where
+  total := sorry
+--   Global Instance cmra_unit_cmra_total : CmraTotal A.
+--   Proof.
+--     intros x. destruct (cmra_pcore_mono' ε x ε) as (cx&->&?); [..|by eauto].
+--     - apply ucmra_unit_least.
+--     - apply (core_id _).
+--   Qed.
+
+instance empty_cancelable : CMRA.Cancelable (ε : α) := sorry
+--   Global Instance empty_cancelable : Cancelable (ε:A).
+--   Proof. intros ???. by rewrite !left_id. Qed.
+
+
+end ucmra
+
+
+section leibniz
+
+variable {α : Type _} [CMRA α] [Leibniz α]
+
+theorem assoc_L {x y z : α} : x • (y • z) ≡ (x • y) • z := sorry
+
+theorem comm_L {x y : α} : (x • y)  ≡ (y • x) := sorry
+
+theorem pcore_l_L {x cx : α} : CMRA.pcore x = some cx → cx • x = x := sorry
+--   Lemma cmra_pcore_l_L x cx : pcore x = Some cx → cx ⋅ x = x.
+--   Proof. unfold_leibniz. apply cmra_pcore_l'. Qed.
+
+theorem pcore_idemp_L {x cx : α} : CMRA.pcore x = some cx → CMRA.pcore cx = some cx := sorry
+--   Lemma cmra_pcore_idemp_L x cx : pcore x = Some cx → pcore cx = Some cx.
+--   Proof. unfold_leibniz. apply cmra_pcore_idemp'. Qed.
+
+theorem op_opM_assoc_L {x y : α} {mz} : (x • y) •? mz = x • (y •? mz) := sorry
+--   Lemma cmra_op_opM_assoc_L x y mz : (x ⋅ y) ⋅? mz = x ⋅ (y ⋅? mz).
+--   Proof. unfold_leibniz. apply cmra_op_opM_assoc. Qed.
+
+theorem pcore_r_L {x cx : α} : CMRA.pcore x = some cx → x • cx = x := sorry
+--   Lemma cmra_pcore_r_L x cx : pcore x = Some cx → x ⋅ cx = x.
+--   Proof. unfold_leibniz. apply cmra_pcore_r'. Qed.
+
+theorem pcore_dup_L {x cx : α} : CMRA.pcore x = some cx → cx • cx = cx := sorry
+--   Lemma cmra_pcore_dup_L x cx : pcore x = Some cx → cx = cx ⋅ cx.
+--   Proof. unfold_leibniz. apply cmra_pcore_dup'. Qed.
+
+theorem core_id_dup_L {x : α} [CMRA.CoreId x] : x = x • x := sorry
+--   Lemma core_id_dup_L x `{!CoreId x} : x = x ⋅ x.
+--   Proof. unfold_leibniz. by apply core_id_dup. Qed.
+
+theorem core_r_L {x : α} [CMRA.IsTotal α] : x • CMRA.core x = x := sorry
+--     Lemma cmra_core_r_L x : x ⋅ core x = x.
+--     Proof. unfold_leibniz. apply cmra_core_r. Qed.
+
+theorem core_l_L {x : α} [CMRA.IsTotal α] : CMRA.core x • x = x := sorry
+--     Lemma cmra_core_l_L x : core x ⋅ x = x.
+--     Proof. unfold_leibniz. apply cmra_core_l. Qed.
+
+theorem core_idemp_L {x : α} [CMRA.IsTotal α] : CMRA.core (CMRA.core x) = CMRA.core x := sorry
+--     Lemma cmra_core_idemp_L x : core (core x) = core x.
+--     Proof. unfold_leibniz. apply cmra_core_idemp. Qed.
+
+theorem core_dup_L {x : α} [CMRA.IsTotal α] : CMRA.core x = CMRA.core x • CMRA.core x := sorry
+--     Lemma cmra_core_dup_L x : core x = core x ⋅ core x.
+--     Proof. unfold_leibniz. apply cmra_core_dup. Qed.
+
+theorem core_id_total_L {x : α} [CMRA.IsTotal α] : CMRA.CoreId x ↔ CMRA.core x = x := sorry
+--     Lemma core_id_total_L x : CoreId x ↔ core x = x.
+--     Proof. unfold_leibniz. apply core_id_total. Qed.
+
+theorem core_id_core_L {x : α} [CMRA.IsTotal α] [CMRA.CoreId x] : CMRA.core x = x := sorry
+--     Lemma core_id_core_L x `{!CoreId x} : core x = x.
+--     Proof. by apply core_id_total_L. Qed.
+
+end leibniz
+
+
+section ucmra
+
+variable {α : Type _} [UCMRA α] [Leibniz α]
+
+theorem ucmra_unit_left_id_L {x : α} : ε • x = x := sorry
+
+theorem ucmra_unit_right_id_L {x : α} : x • ε = x := sorry
+
+end ucmra
 
 
 
