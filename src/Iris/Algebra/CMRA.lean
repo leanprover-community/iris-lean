@@ -103,7 +103,8 @@ instance : NonExpansive (pcore (α := α)) where
       cases hw.symm ▸ ex
     | .none, .none => rw [ex, ey]; trivial
 
--- Op
+/-! ## Op -/
+
 theorem op_right_eqv (x : α) {y z : α} (e : y ≡ z) : x • y ≡ x • z := op_ne.eqv e
 
 theorem op_right_dist (x : α) {y z : α} (e : y ≡{n}≡ z) : x • y ≡{n}≡ x • z :=
@@ -151,8 +152,8 @@ theorem valid_op_right (x y : α) : ✓ (x • y) → ✓ y :=
 theorem valid_op_left {x y : α} : ✓ (x • y) → ✓ x :=
   fun v => valid_op_right y x (valid_of_eqv comm v)
 
+/-! ## Core -/
 
--- Core
 theorem pcore_proper {x y : α} (cx : α) (e : x ≡ y) (ps : pcore x = some cx)
     : ∃ cy, pcore y = some cy ∧ cx ≡ cy := by
   let ⟨cy, hcy, ecy⟩ := pcore_ne (OFE.equiv_dist.mp e 0) ps
@@ -208,8 +209,8 @@ theorem pcore_validN {n} {x : α} {cx} : pcore x = some cx → ✓{n} x → ✓{
 theorem pcore_valid {x : α} {cx} : pcore x = some cx → ✓ x → ✓ cx :=
   fun e => valid_mapN fun _ => pcore_validN e
 
+/-! ## Exclusive elements -/
 
--- Exclusive elements
 theorem not_valid_exclN_op_left {n} {x : α} [Exclusive x] {y} : ¬✓{n} (x • y) :=
   n.recOn Exclusive.exclusive0_l (fun _ ih => ih ∘ validN_succ)
 
@@ -238,8 +239,8 @@ theorem not_valid_of_excl_inc {x : α} [Exclusive x] {y} (le : x ≼ y) : ¬✓ 
   have : ✓{0}x • z := validN_of_eqv hz (valid_iff_validN.mp v 0)
   exact Exclusive.exclusive0_l this
 
+/-! ## Order -/
 
--- Order
 instance : Trans Equiv (included (α := α)) included where
   trans | e, ⟨t, et⟩ => ⟨t, et.trans (op_left_eqv _ e.symm)⟩
 
@@ -252,7 +253,7 @@ instance {n : Nat} : Trans (includedN (α := α) n) (Dist n) (includedN n) where
 instance {n : Nat} : Trans (Dist (α := α) n) (includedN n) (includedN n) where
   trans | e, ⟨t, et⟩ => ⟨t, et.trans (op_left_dist _ e.symm)⟩
 
-theorem incN_of_inc n {x y : α} : x ≼ y → x ≼{n} y
+theorem incN_of_inc (n) {x y : α} : x ≼ y → x ≼{n} y
   | ⟨z, hz⟩ => ⟨z, Equiv.dist hz⟩
 
 theorem inc_trans {x y z : α} : x ≼ y → y ≼ z → x ≼ z
@@ -409,7 +410,7 @@ theorem pcore_eq_core (x : α) : pcore x = some (core x) := by
 
 theorem op_core (x : α) : x • core x ≡ x := pcore_op_right (pcore_eq_core x)
 
-theorem core_op_core  {x : α} : core x • core x ≡ core x :=
+theorem core_op_core {x : α} : core x • core x ≡ core x :=
   (pcore_op_dup (pcore_eq_core x)).symm
 theorem validN_core {n} {x : α} (v : ✓{n} x) : ✓{n} core x := pcore_validN (pcore_eq_core x) v
 theorem valid_core {x : α} (v : ✓ x) : ✓ core x := pcore_valid (pcore_eq_core x) v
