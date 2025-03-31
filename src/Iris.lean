@@ -5,4 +5,4 @@ import Iris.Instances
 import Iris.ProofMode
 import Iris.Std
 import Iris.Tests
-import Iris.Algebra.gFunctors
+import Iris.Algebra.iProp

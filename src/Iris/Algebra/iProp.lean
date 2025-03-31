@@ -7,6 +7,7 @@ Authors: Markus de Medeiros
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
 import Iris.Algebra.uPred
+import Iris.Algebra.COFESolver
 
 import Init.Data.Vector
 
@@ -19,7 +20,6 @@ structure gFunctor : Type _ where
 attribute [instance] gFunctor.functor
 
 def gFunctor.ap (F : gFunctor) (A : Type _) [COFE A] : Type _ := F.F A A
-
 
 -- gFunctors: thin wrapper around Array to make working with it less painful
 
@@ -55,6 +55,7 @@ theorem subG_refl (FF : gFunctors) : subG FF FF := sorry
 theorem subG_aop_R (FF₁ FF₂ FF₃ : gFunctors) (H : subG FF₁ FF₂) : (subG FF₁ (FF₂.app FF₃)) := sorry
 
 
+
 -- TODO: Using this instaed of gmap, find the right type
 section gen_map
 
@@ -66,9 +67,33 @@ instance [CMRA V] : UCMRA (gen_map K V) := sorry
 end gen_map
 
 
+def iResF (FF : gFunctors) : (Type _ -> Type -> Type _) := sorry
+-- TODO: Figure out how to define O/R/UR functors in such a way that we can keep the
+--  Type _ -> Type _ -> Type _ definitions and have the TC's infer.
+-- discrete_funURF (λ i, gmapURF gname (gFunctors_lookup Σ i)).
+
+instance (FF : gFunctors) : URFunctor (iResF FF) := by sorry
 
 section iProp
 
+def X (FF : gFunctors) := uPredOF (iResF FF)
+
+instance (FF : gFunctors) : COFE.OFunctor (X FF) := by
+  apply uPredOF_oFunctor
+
+def iPropResult (FF : gFunctors) := @COFE.OFunctor.Fix (X FF) sorry sorry sorry
+
+instance (FF: gFunctors) : Inhabited (X FF (ULift Unit) (ULift Unit)) := sorry
+
+instance (FF : gFunctors) : COFE (iPropResult FF) := by
+  unfold iPropResult
+  have W := @COFE.OFunctor.fix_COFE (X FF) sorry sorry sorry
+  sorry
+
+-- variable (FF0 : gFunctors)
+-- #synth COFE.OFunctor (X FF0)
+
+/-
 variable (iPrePropO : gFunctors -> Type _)
 variable [∀ g, COFE (iPrePropO g)]
 
@@ -85,6 +110,7 @@ instance (FF : gFunctors) : UCMRA (iResUR iPrePropO FF) := by
 
 
 -- Need uPred oFunctor to finish definintion of iProp
+-/
 
 
 end iProp
