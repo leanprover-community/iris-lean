@@ -54,11 +54,6 @@ instance : CoeFun (Tower F) (fun _ => ∀ k, A F k) := ⟨Tower.val⟩
 instance : OFE (Tower F) where
   Equiv f g := ∀ k, f k ≡ g k
   Dist n f g := ∀ k, f k ≡{n}≡ g k
-  equiv_eqv := {
-    refl _ _ := equiv_eqv.refl _
-    symm h _ := equiv_eqv.symm (h _)
-    trans h1 h2 _ := equiv_eqv.trans (h1 _) (h2 _)
-  }
   dist_eqv := {
     refl _ _ := dist_eqv.refl _
     symm h _ := dist_eqv.symm (h _)
