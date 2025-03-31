@@ -857,6 +857,8 @@ class RFunctorContractive (F : Type _ → Type _ → Type _) extends RFunctor F 
   map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
+def RFunctor.ap [RFunctor F] T := F T T
+
 attribute [instance] RFunctor.cmra
 
 instance RFunctor.toOFunctor [RFunctor F] : COFE.OFunctor F where
@@ -906,5 +908,53 @@ instance URFunctorContractive.toRFunctorContractive [URFunctorContractive F] : R
   map_contractive := URFunctorContractive.map_contractive
 
 end urFunctor
+
+
+section DiscreteFun
+
+variable {α : Type _}
+
+-- FIXME: Not really sure how to encide this hierarhcy into typeclasses
+-- how are discrete_fun and discrete_funU related>
+structure discrete_funU (F : α → Type _) : Type _ where
+  f : (x : α) -> F x
+  ofe {x : α} : UCMRA (F x)
+
+instance discrete_funU_ucmra (F : α → Type _) : UCMRA (discrete_funU F) where
+  toOFE := sorry
+  pcore := sorry
+  op := sorry
+  ValidN := sorry
+  Valid := sorry
+  op_ne := sorry
+  pcore_ne := sorry
+  validN_ne := sorry
+  valid_iff_validN := sorry
+  validN_succ := sorry
+  validN_op_left := sorry
+  assoc := sorry
+  comm := sorry
+  pcore_op_left := sorry
+  pcore_idem := sorry
+  pcore_op_mono := sorry
+  extend := sorry
+  unit := sorry
+  unit_valid := sorry
+  unit_left_id := sorry
+  pcore_unit := sorry
+
+abbrev nondep_discrete_fun (α β : Type _) [UCMRA β] : Type _ :=
+  discrete_funU (fun (_ : α) => β)
+
+infixr:25 " -d> " => nondep_discrete_fun
+
+def nondep_discrete_fun.mk {α β : Type _} [U : UCMRA β] (f : α -> β) : α -d> β where
+  f := f
+  ofe {_} := U
+
+end DiscreteFun
+
+
+
 
 end Iris
