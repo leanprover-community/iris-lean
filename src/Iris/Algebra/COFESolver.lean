@@ -256,7 +256,7 @@ variable (F) in
 def Fix : Type u := Tower F
 
 instance : Inhabited (Fix F) := inferInstanceAs (Inhabited (Tower F))
-instance : COFE (Fix F) := inferInstanceAs (COFE (Tower F))
+instance fix_COFE : COFE (Fix F) := inferInstanceAs (COFE (Tower F)) -- FIXME: Remove name
 
 def Fix.iso : OFE.Iso (F (Fix F) (Fix F)) (Fix F) := Tower.iso
 
