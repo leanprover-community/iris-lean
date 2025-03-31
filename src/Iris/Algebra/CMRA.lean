@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mario Carneiro, Сухарик (@suhr)
+Authors: Mario Carneiro, Markus de Medeiros
 -/
 import Iris.Algebra.OFE
 
@@ -780,11 +780,15 @@ end ucmra
 
 section CmraMorphism
 
-/-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is non-expansive. -/
-@[ext] structure Hom (α β : Type _) [CMRA α] [CMRA β] extends OFE.Hom α β where
+structure isCmraMor {α β : Type _} [CMRA α] [CMRA β] (f : α -> β) : Prop where
   morphism_validN n x : ✓{n} x -> ✓{n} (f x)
   morphism_pcore x : f <$> CMRA.pcore x ≡ CMRA.pcore (f x)
   morphism_op x y : f (x • y) ≡ f x • f y
+
+
+/-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is non-expansive. -/
+@[ext] structure Hom (α β : Type _) [CMRA α] [CMRA β] extends OFE.Hom α β where
+  mor : isCmraMor f
 
 @[inherit_doc]
 infixr:25 " -C> " => Hom
@@ -793,18 +797,99 @@ instance [CMRA α] [CMRA β] : CoeFun (α -C> β) (fun _ => α → β) := ⟨ fu
 
 protected def Hom.id [CMRA α] : α -C> α where
   toHom := OFE.Hom.id
-  morphism_validN := sorry
-  morphism_pcore := sorry
-  morphism_op := sorry
+  mor := ⟨ sorry, sorry, sorry ⟩
 
 protected def Hom.comp [CMRA α] [CMRA β] [CMRA γ] (g : β -C> γ) (f : α -C> β) : α -C> γ where
   toHom := OFE.Hom.comp g.toHom f.toHom
-  morphism_validN := sorry
-  morphism_pcore := sorry
-  morphism_op := sorry
+  mor := ⟨ sorry, sorry, sorry ⟩
+
+def morphism_proper [CMRA α] [CMRA β] (f : α -C> β) {x₁ x₂ : α} (X : x₁ ≡ x₂) : f x₁ ≡ f x₂ :=
+  sorry
+
+def morphism_core [CMRA α] [CMRA β] (f : α -C> β) {x : α} : CMRA.core (f x) ≡ f (CMRA.core x) :=
+  sorry
+
+def morphism_mono [CMRA α] [CMRA β] (f : α -C> β) {x₁ x₂ : α} (H : x₁ ≼ x₂) : f x₁ ≼ f x₂ :=
+  sorry
+
+def morphism_monoN [CMRA α] [CMRA β] (f : α -C> β) n {x₁ x₂ : α} (H : x₁ ≼{n} x₂) : f x₁ ≼{n} f x₂ :=
+  sorry
+
+def morphism_valid [CMRA α] [CMRA β] (f : α -C> β) {x : α} (H : ✓ x) : ✓ f x :=
+  sorry
+
 
 end CmraMorphism
 
 end CMRA
+
+section rFunctor
+
+class RFunctor (F : Type _ → Type _ → Type _) where
+  cmra [COFE α] [COFE β] : CMRA (F α β)
+  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+    (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -n> F α₂ β₂
+  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+    NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
+  map_id [COFE α] [COFE β] : map (@Hom.id α _) (@Hom.id β _) x ≡ x
+  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
+    (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
+    map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
+  mor [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] (f : α₂ -n> α₁) (g : β₁ -n> β₂) :
+    CMRA.isCmraMor (map f g)
+
+class RFunctorContractive (F : Type _ → Type _ → Type _) extends RFunctor F where
+  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+    Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
+
+attribute [instance] RFunctor.cmra
+
+instance RFunctor.toOFunctor [RFunctor F] : COFE.OFunctor F where
+  cofe {α β} := (@RFunctor.cmra F _ α β).toOFE
+  map f g    := RFunctor.map f g
+  map_ne     := RFunctor.map_ne
+  map_id     := RFunctor.map_id
+  map_comp   := RFunctor.map_comp
+
+instance RFunctorContractive.toOFunctorContractive [RFunctorContractive F] : COFE.OFunctorContractive F where
+  toOFunctor      := RFunctor.toOFunctor
+  map_contractive := RFunctorContractive.map_contractive
+
+end rFunctor
+
+section urFunctor
+
+class URFunctor (F : Type _ → Type _ → Type _) where
+  cmra [COFE α] [COFE β] : UCMRA (F α β)
+  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+    (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -n> F α₂ β₂
+  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+    NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
+  map_id [COFE α] [COFE β] : map (@Hom.id α _) (@Hom.id β _) x ≡ x
+  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
+    (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
+    map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
+  mor [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] (f : α₂ -n> α₁) (g : β₁ -n> β₂) :
+    CMRA.isCmraMor (map f g)
+
+class URFunctorContractive (F : Type _ → Type _ → Type _) extends URFunctor F where
+  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+    Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
+
+attribute [instance] URFunctor.cmra
+
+instance URFunctor.toRFunctor [URFunctor F] : RFunctor F where
+  cmra {α β} := (@URFunctor.cmra F _ α β).toCMRA
+  map f g    := URFunctor.map f g
+  map_ne     := URFunctor.map_ne
+  map_id     := URFunctor.map_id
+  map_comp   := URFunctor.map_comp
+  mor        := URFunctor.mor
+
+instance URFunctorContractive.toRFunctorContractive [URFunctorContractive F] : RFunctorContractive F where
+  toRFunctor      := URFunctor.toRFunctor
+  map_contractive := URFunctorContractive.map_contractive
+
+end urFunctor
 
 end Iris
