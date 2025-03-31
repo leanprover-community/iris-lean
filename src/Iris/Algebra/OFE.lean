@@ -142,9 +142,9 @@ class Discrete (α : Type _) [OFE α] : Prop where
 theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡ y) : x ≡ y :=
   Discrete.discrete_0 (OFE.Dist.le h (Nat.zero_le _))
 
-
 class Leibniz (α : Type _) [OFE α] : Prop where
   leibniz {x y : α} : x ≡ y ↔ x = y
+
 
 /-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is non-expansive. -/
 @[ext] structure Hom (α β : Type _) [OFE α] [OFE β] where
@@ -445,3 +445,36 @@ class OFunctorContractive (F : ∀ α β [OFE α] [OFE β], Type _) extends OFun
 attribute [instance] OFunctor.cofe
 
 end COFE
+
+
+section Leibniz
+
+structure LeibnizO (T : Type _) : Type _ where
+  car : T
+
+instance : OFE (LeibnizO T) where
+  Equiv := sorry
+  Dist := sorry
+  dist_eqv := sorry
+  equiv_dist := sorry
+  dist_lt := sorry
+
+instance : IsCOFE (LeibnizO T) where
+  compl := sorry
+  conv_compl := sorry
+
+end Leibniz
+
+section DiscreteFun
+
+variable {α : Type _}
+
+structure discrete_fun (F : α → Type _) : Type _ where
+  f : ∀ (x : α), F x
+  ofe {x : α} : OFE (F x)
+
+attribute [instance] discrete_fun.ofe
+
+end DiscreteFun
+
+
