@@ -105,6 +105,10 @@ theorem imp_congr_l [BI PROP] {P P' Q : PROP} (h : P ⊣⊢ P') : (P → Q) ⊣�
 theorem imp_congr_r [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P → Q) ⊣⊢ (P → Q') :=
   imp_congr .rfl h
 
+theorem forall_ne [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ≡{n}≡ Ψ a) :
+    iprop(∀ a, Φ a) ≡{n}≡ iprop(∀ a, Ψ a) := sForall_ne $ by
+  constructor <;> rintro _ ⟨a, rfl⟩ <;> exact ⟨_, ⟨a, rfl⟩, h _⟩
+
 theorem forall_intro [BI PROP] {P : PROP} {Ψ : α → PROP} (h : ∀ a, P ⊢ Ψ a) : P ⊢ ∀ a, Ψ a :=
   sForall_intro fun _ ⟨_, eq⟩ => eq ▸ h _
 
@@ -117,6 +121,10 @@ theorem forall_mono [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ⊢ Ψ a) :
 @[rw_mono_rule]
 theorem forall_congr [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ⊣⊢ Ψ a) : (∀ a, Φ a) ⊣⊢ ∀ a, Ψ a :=
   ⟨forall_mono fun a => (h a).1, forall_mono fun a => (h a).2⟩
+
+theorem exists_ne [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ≡{n}≡ Ψ a) :
+    iprop(∃ a, Φ a) ≡{n}≡ iprop(∃ a, Ψ a) := sExists_ne $ by
+  constructor <;> rintro _ ⟨a, rfl⟩ <;> exact ⟨_, ⟨a, rfl⟩, h _⟩
 
 theorem exists_intro [BI PROP] {Ψ : α → PROP} (a : α) : Ψ a ⊢ ∃ a, Ψ a :=
   sExists_intro ⟨_, rfl⟩
