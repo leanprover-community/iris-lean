@@ -1,3 +1,4 @@
+import Iris.Algebra
 import Iris.BI
 import Iris.Examples
 import Iris.Instances

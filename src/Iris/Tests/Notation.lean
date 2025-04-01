@@ -3,7 +3,7 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
-import Iris.BI
+import Iris.BI.BIBase
 
 namespace Iris.Tests
 open Iris.BI
@@ -11,7 +11,7 @@ open Iris.BI
 /- This file contains tests for the predefined separation logic notations. -/
 
 variable (p : Bool) (φ : Prop)
-variable [BI PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → PROP)
+variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → PROP)
 
 -- Interface
 #check P ⊢ Q
@@ -62,7 +62,7 @@ variable [BI PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → PROP
 #check iprop((¬P) ∧ Q)
 
 -- Term
-#check iprop(Ψ term(1 + 1))
+#check iprop(if true then term(Ψ 1) else False)
 #check iprop(Ψ (1 + 1))
 
 #check iprop(if p then □ P else P)
