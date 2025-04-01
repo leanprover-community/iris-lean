@@ -56,13 +56,13 @@ class CoreId (x : α) : Prop where
   core_id : pcore x ≡ some x
 
 class Exclusive (x : α) : Prop where
-  exclusive0_l : ¬✓{0} x • y
+  exclusive0_l y : ¬✓{0} x • y
 
 class Cancelable (x : α) : Prop where
   cancelableN : ✓{n} x • y → x • y ≡{n}≡ x • z → y ≡{n}≡ z
 
 class IdFree (x : α) : Prop where
-  id_free0_r : ✓{0} x → ¬x • y ≡{0}≡ x
+  id_free0_r y : ✓{0} x → ¬x • y ≡{0}≡ x
 
 class IsTotal (α : Type _) [CMRA α] where
   total (x : α) : ∃ cx, pcore x = some cx
@@ -105,20 +105,14 @@ instance : NonExpansive (pcore (α := α)) where
 
 /-! ## Op -/
 
-theorem CoreID_proper (x₁ x₂ : α) (H1 : x₁ ≡ x₂) : CMRA.CoreId x₁ ↔ CMRA.CoreId x₂ :=
-  sorry
+theorem CoreID_of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CMRA.CoreId x₁) : CMRA.CoreId x₂ where
+  core_id := calc
+    pcore x₂ ≡ pcore x₁ := NonExpansive.eqv e.symm
+    _        ≡ some x₁  := h.core_id
+    _        ≡ some x₂  := e
 
-theorem Exclusive_proper (x₁ x₂ : α) (H1 : x₁ ≡ x₂) : CMRA.Exclusive x₁ ↔ CMRA.Exclusive x₂ :=
-  sorry
-
-theorem Cancelable_proper (x₁ x₂ : α) (H1 : x₁ ≡ x₂) : CMRA.Cancelable x₁ ↔ CMRA.Cancelable x₂ :=
-  sorry
-
-theorem IdFree_proper (x₁ x₂ : α) (H1 : x₁ ≡ x₂) : CMRA.IdFree x₁ ↔ CMRA.IdFree x₂ :=
-  sorry
-
-theorem IdFree_ne (x₁ x₂ : α) n (H1 : x₁ ≡{n}≡ x₂) : CMRA.IdFree x₁ ↔ CMRA.IdFree x₂ :=
-  sorry
+theorem CoreID_iff {x₁ x₂ : α} (e : x₁ ≡ x₂): CMRA.CoreId x₁ ↔ CMRA.CoreId x₂ :=
+  ⟨CoreID_of_eqv e, CoreID_of_eqv e.symm⟩
 
 -- Op
 
@@ -146,17 +140,19 @@ theorem op_eqv {x x' y y' : α} (ex : x ≡ x') (ey : y ≡ y') : x • y ≡ x'
   ex.op_l.trans ey.op_r
 theorem _root_.Iris.OFE.Equiv.op : (x : α) ≡ x' → y ≡ y' → x • y ≡ x' • y' := op_eqv
 
-theorem op_ne2 (x₁ x₂ y₁ y₂ : α) n  (H1 : x₁ ≡{n}≡ x₂) (H2 : y₁ ≡{n}≡ y₂) : x₁ • y₁ ≡{n}≡ x₂ • y₂ :=
-  sorry
+theorem op_ne2 {x₁ x₂ y₁ y₂ : α} {n} (H1 : x₁ ≡{n}≡ x₂) (H2 : y₁ ≡{n}≡ y₂) : x₁ • y₁ ≡{n}≡ x₂ • y₂ :=
+  (Dist.op_l H1).trans (op_right_dist x₂ H2)
 
-theorem op_proper2 (x₁ x₂ y₁ y₂ : α) (H1 : x₁ ≡ x₂) (H2 : y₁ ≡ y₂) : x₁ • y₁ ≡ x₂ • y₂ :=
-  sorry
+theorem op_proper2 {x₁ x₂ y₁ y₂ : α} (H1 : x₁ ≡ x₂) (H2 : y₁ ≡ y₂) : x₁ • y₁ ≡ x₂ • y₂ :=
+  (Equiv.op_l H1).trans (op_right_eqv x₂ H2)
 
-theorem opM_ne2 (x₁ x₂ y₁ y₂ : α) n (H1 : x₁ ≡{n}≡ x₂) (H2 : y₁ ≡{n}≡ y₂) : x₁ •? y₁ ≡{n}≡ x₂ •? y₂ :=
-  sorry
+theorem opM_ne2 {x₁ x₂ y₁ y₂ : α} {n} (H1 : x₁ ≡{n}≡ x₂) (H2 : y₁ ≡{n}≡ y₂) : x₁ •? y₁ ≡{n}≡ x₂ •? y₂ := by
+  unfold op?
+  simp [op_ne2 H1 H2]
 
-theorem opM_proper2 (x₁ x₂ y₁ y₂ : α) (H1 : x₁ ≡ x₂) (H2 : y₁ ≡ y₂) : x₁ •? y₁ ≡ x₂ •? y₂ :=
-  sorry
+theorem opM_proper2 {x₁ x₂ y₁ y₂ : α} (H1 : x₁ ≡ x₂) (H2 : y₁ ≡ y₂) : x₁ •? y₁ ≡ x₂ •? y₂ := by
+  unfold op?
+  simp [Equiv.op H1 H2]
 
 -- Validity
 
@@ -183,16 +179,10 @@ theorem valid_of_eqv {x y : α} : x ≡ y → ✓ x → ✓ y :=
 -- theorem validN_ne (x₁ x₂ : α) n (H : x₁ ≡{n}≡ x₂) : ✓{n} x₁ ↔ ✓{n} x₂ :=
 --   sorry
 
-theorem validN_proper (x₁ x₂ : α) n (H : x₁ ≡ x₂) : ✓{n} x₁ ↔ ✓{n} x₂ :=
-  sorry
-
-theorem valid_proper (x₁ x₂ : α) (H : x₁ ≡ x₂) : ✓ x₁ ↔ ✓ x₂ :=
-  sorry
-
 theorem valid_iff {x y : α} (e : x ≡ y) : ✓ x ↔ ✓ y := ⟨valid_of_eqv e, valid_of_eqv e.symm⟩
 theorem _root_.Iris.OFE.Equiv.valid : (x : α) ≡ y → (✓ x ↔ ✓ y) := valid_iff
 
-theorem validN_of_le n n' {x : α} : n' ≤ n → ✓{n} x → ✓{n'} x :=
+theorem validN_of_le {n n'} {x : α} : n' ≤ n → ✓{n} x → ✓{n'} x :=
   fun le => le.recOn id fun  _ ih vs => ih (CMRA.validN_succ vs)
 
 theorem validN_op_right {n} {x y : α} : ✓{n} (x • y) → ✓{n} y :=
@@ -258,13 +248,13 @@ theorem pcore_valid {x : α} {cx} (e : pcore x = some cx) : ✓ x → ✓ cx :=
 /-! ## Exclusive elements -/
 
 theorem not_valid_exclN_op_left {n} {x : α} [Exclusive x] {y} : ¬✓{n} (x • y) :=
-  n.recOn Exclusive.exclusive0_l fun _ ih => ih ∘ validN_succ
+  n.recOn (Exclusive.exclusive0_l _) fun _ ih => ih ∘ validN_succ
 
 theorem not_valid_exclN_op_right {n} {x : α} [Exclusive x] {y} : ¬✓{n} (y • x) :=
   fun v => not_valid_exclN_op_left (validN_of_eqv comm v)
 
 theorem not_valid_excl_op_left {x : α} [Exclusive x] {y} : ¬✓ (x • y) :=
-  fun v => Exclusive.exclusive0_l v.validN
+  fun v => Exclusive.exclusive0_l _ v.validN
 
 theorem not_excl_op_right {x : α} [Exclusive x] {y} : ¬✓ (y • x) :=
   fun v => not_valid_excl_op_left (valid_of_eqv comm v)
@@ -276,16 +266,13 @@ theorem not_valid_of_exclN_inc {n} {x : α} [Exclusive x] {y} : x ≼{n} y → �
   | ⟨_, hz⟩, v => not_valid_exclN_op_left (validN_ne hz v)
 
 theorem not_valid_of_excl_inc {x : α} [Exclusive x] {y} : x ≼ y → ¬✓ y
-  | ⟨_, hz⟩, v => Exclusive.exclusive0_l <| validN_of_eqv hz v.validN
+  | ⟨_, hz⟩, v => Exclusive.exclusive0_l _ <| validN_of_eqv hz v.validN
 
-theorem incN_ne2 (x₁ x₂ y₁ y₂ : α) n (H1 : x₁ ≡{n}≡ x₂) (H2 : y₁ ≡{n}≡ y₂) : x₁ ≼{n} y₁ ↔ x₂ ≼{n} y₂ :=
-  sorry
+theorem Exclusive_of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CMRA.Exclusive x₁) : CMRA.Exclusive x₂ where
+  exclusive0_l y := (h.exclusive0_l y) ∘ (validN_of_eqv (Equiv.op_l e.symm))
 
-theorem incN_proper2 (x₁ x₂ y₁ y₂ : α) n (H1 : x₁ ≡ x₂) (H2 : y₁ ≡ y₂) : x₁ ≼{n} y₁ ↔ x₂ ≼{n} y₂ :=
-  sorry
-
-theorem inc_proper2 (x₁ x₂ y₁ y₂ : α) (H1 : x₁ ≡ x₂) (H2 : y₁ ≡ y₂) : x₁ ≼ y₁ ↔ x₂ ≼ y₂ :=
-  sorry
+theorem Exclusive_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : CMRA.Exclusive x₁ ↔ CMRA.Exclusive x₂ :=
+  ⟨Exclusive_of_eqv e, Exclusive_of_eqv e.symm⟩
 
 /-! ## Order -/
 
@@ -391,6 +378,27 @@ theorem inc_op_right (x y : α) : y ≼ x • y := ⟨x, comm⟩
 theorem incN_op_right (n) (x y : α) : y ≼{n} x • y :=
   (inc_op_right x y).elim fun z hz => ⟨z, Equiv.dist hz⟩
 
+theorem incN_ne2 (x₁ x₂ y₁ y₂ : α) n (H1 : x₁ ≡{n}≡ x₂) (H2 : y₁ ≡{n}≡ y₂) : x₁ ≼{n} y₁ → x₂ ≼{n} y₂ :=
+  fun inc =>
+    calc
+      x₂ ≡{n}≡ x₁ := H1.symm
+      x₁ ≼{n} y₁ := inc
+      y₁ ≡{n}≡ y₂ := H2
+
+theorem incN_proper2 (x₁ x₂ y₁ y₂ : α) n (H1 : x₁ ≡ x₂) (H2 : y₁ ≡ y₂) : x₁ ≼{n} y₁ → x₂ ≼{n} y₂ :=
+  fun inc =>
+    calc
+      x₂ ≡{n}≡ x₁ := H1.dist.symm
+      x₁ ≼{n} y₁ := inc
+      y₁ ≡{n}≡ y₂ := H2.dist
+
+theorem inc_proper2 (x₁ x₂ y₁ y₂ : α) (H1 : x₁ ≡ x₂) (H2 : y₁ ≡ y₂) : x₁ ≼ y₁ → x₂ ≼ y₂ :=
+  fun inc =>
+    calc
+      x₂ ≡ x₁ := H1.symm
+      x₁ ≼ y₁ := inc
+      y₁ ≡ y₂ := H2
+
 theorem pcore_mono {x y : α} : x ≼ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ cy
   | ⟨_, hw⟩, e =>
     have ⟨z, hz⟩ := pcore_op_mono _ e
@@ -444,14 +452,27 @@ theorem op_self (x : α) [CoreId x] : x • x ≡ x := pcore_op_self' CoreId.cor
 theorem op_core_right_of_inc {x y : α} [CoreId x] : x ≼ y → x • y ≡ y
   | ⟨_, hz⟩ => hz.op_r.trans <| assoc.trans <| (op_self _).op_l.trans hz.symm
 
-theorem included_dist_l n (x1 x2 x1' : α) : x1 ≼ x2 → x1' ≡{n}≡ x1 → ∃ x2', x1' ≼ x2' ∧ x2' ≡{n}≡ x2 := by
-  sorry
+theorem included_dist_l n (x1 x2 x1' : α) : x1 ≼ x2 → x1' ≡{n}≡ x1 → ∃ x2', x1' ≼ x2' ∧ x2' ≡{n}≡ x2 :=
+  fun ⟨y, hy⟩ e =>
+    suffices h : x1' • y ≡{n}≡ x2 from ⟨x1' • y, inc_op_left x1' y, h⟩
+    calc
+      x1' • y ≡{n}≡ x1 • y := Dist.op_l e
+      _       ≡{n}≡ x2 := hy.symm.dist
 
 theorem op_core_left_of_inc {x y : α} [CoreId x] (le : x ≼ y) : y • x ≡ y :=
   comm.trans (op_core_right_of_inc le)
 
 theorem CoreId.of_pcore_eq_some {x y : α} (e : pcore x = some y) : CoreId y where
   core_id := pcore_idem e
+
+theorem cmra_pcore_core_id {x y : α} (H : pcore x = some y) : CMRA.CoreId y where
+  core_id := pcore_idem H
+
+-- instance : CMRA.CoreId (core y) := cmra_pcore_core_id (pcore_eq_core _)
+
+-- What's the best way to port these?
+-- Global Instance cmra_includedN_preorder n : PreOrder (@includedN A _ _ n).
+-- Global Instance cmra_included_preorder : PreOrder (@included A _ _).
 
 section total
 variable [IsTotal α]
@@ -469,12 +490,21 @@ theorem core_op_core {x : α} : core x • core x ≡ core x :=
 theorem validN_core {n} {x : α} (v : ✓{n} x) : ✓{n} core x := pcore_validN (pcore_eq_core x) v
 theorem valid_core {x : α} (v : ✓ x) : ✓ core x := pcore_valid (pcore_eq_core x) v
 
-theorem pcore_idemp (x : α) : core (core x) ≡ core x := by
- sorry
+theorem core_idemp (x : α) : core (core x) ≡ core x := by
+  unfold core
+  have ⟨cx, e⟩ := IsTotal.total x
+  have ⟨z, hz, ez⟩ := OFE.equiv_some (pcore_idem e)
+  simp [e, hz, ez]
 
-theorem tot_core_ne {x₁ x₂ : α} n (H : x₁ ≡{n}≡ x₂) : core x₁ ≡{n}≡ core x₂ := sorry
+theorem tot_core_ne {x₁ x₂ : α} n (H : x₁ ≡{n}≡ x₂) : core x₁ ≡{n}≡ core x₂ := by
+  show some (core x₁) ≡{n}≡ some (core x₂)
+  rw [←pcore_eq_core, ←pcore_eq_core]
+  exact NonExpansive.ne H
 
-theorem tot_core_proper {x₁ x₂ : α} (H : x₁ ≡x₂) : core x₁ ≡ core x₂ := sorry
+theorem tot_core_proper {x₁ x₂ : α} (H : x₁ ≡ x₂) : core x₁ ≡ core x₂ := by
+  show some (core x₁) ≡ some (core x₂)
+  rw [←pcore_eq_core, ←pcore_eq_core]
+  exact pcore_proper' H
 
 theorem core_eqv_self (x : α) [CoreId x] : core (x : α) ≡ x :=
   show some (core x) ≡ some x from pcore_eq_core x ▸ CoreId.core_id
@@ -494,15 +524,6 @@ theorem core_incN_core {n} {x y : α} (inc : x ≼{n} y) : core x ≼{n} core y 
   cases (pcore_eq_core _).symm.trans hcy
   exact icy
 
-theorem cmra_pcore_core_id {x y : α} (H : pcore x = some y) : CMRA.CoreId y :=  by
-  sorry
-
--- instance : CMRA.CoreId (core y) := cmra_pcore_core_id (pcore_eq_core _)
-
--- What's the best way to port these?
--- Global Instance cmra_includedN_preorder n : PreOrder (@includedN A _ _ n).
--- Global Instance cmra_included_preorder : PreOrder (@included A _ _).
-
 theorem core_mono {x y : α} (Hinc : x ≼ y) : core x ≼ core y := by
   have: CMRA.pcore x ≡ some (core x) :=
     by rw [pcore_eq_core x]; exact Equiv.rfl
@@ -519,29 +540,22 @@ section discreteElements
 variable {α : Type _} [CMRA α]
 
 theorem discrete_inc_l {x y : α} (HD : DiscreteE x) (Hv : ✓{0} y) (Hle : x ≼{0} y) : x ≼ y :=
-  sorry
--- Lemma cmra_discrete_included_l x y : Discrete x → ✓{0} y → x ≼{0} y → x ≼ y.
--- Proof.
---   intros ?? [x' ?].
---   destruct (cmra_extend 0 y x x') as (z&z'&Hy&Hz&Hz'); auto; simpl in *.
---   by exists z'; rewrite Hy (discrete_0 x z).
--- Qed.
+  have ⟨_, hz⟩ := Hle
+  let ⟨_, t, wt, wx, _⟩ := extend Hv hz
+  ⟨t, wt.trans (Equiv.op_l (HD wx.symm).symm)⟩
 
-theorem discrete_inc_r {x y : α} (HD : DiscreteE y) (Hv : ✓{0} y) (Hle : x ≼{0} y) : x ≼ y :=
-  sorry
--- Lemma cmra_discrete_included_r x y : Discrete y → x ≼{0} y → x ≼ y.
--- Proof. intros ? [x' ?]. exists x'. by apply (discrete_0 y). Qed.
+theorem discrete_inc_r {x y : α} (HD : DiscreteE y) (_ : ✓{0} y) (Hle : x ≼{0} y) : x ≼ y :=
+  have ⟨z, hz⟩ := Hle
+  ⟨z, HD hz⟩
 
-theorem discrete_op {x y : α} (Hx : DiscreteE x) (Hy : DiscreteE y) : DiscreteE (x • y) := by
-  sorry
--- Lemma cmra_op_discrete x1 x2 :
---   ✓{0} (x1 ⋅ x2) → Discrete x1 → Discrete x2 → Discrete (x1 ⋅ x2).
--- Proof.
---   intros ??? z Hz.
---   destruct (cmra_extend 0 z x1 x2) as (y1&y2&Hz'&?&?); auto; simpl in *.
---   { rewrite -?Hz. done. }
---   by rewrite Hz' (discrete_0 x1 y1) // (discrete_0 x2 y2).
--- Qed.
+theorem discrete_op {x y : α} (Hv : ✓{0} x • y) (Hx : DiscreteE x) (Hy : DiscreteE y)
+    : DiscreteE (x • y) :=
+  fun {z} h =>
+    let ⟨w, t, wt, wx, ty⟩ := CMRA.extend ((Dist.validN h).mp Hv) h.symm
+    calc
+      x • y ≡ w • y := Equiv.op_l (Hx wx.symm)
+      _     ≡ w • t := op_right_eqv w (Hy ty.symm)
+      _     ≡ z     := wt.symm
 
 end discreteElements
 
@@ -549,27 +563,17 @@ section discreteCMRA
 
 variable {α : Type _} [CMRA α]
 
-theorem discrete_valid_iff [CMRA.Discrete α] n {x : α} : ✓ x ↔ ✓{n} x := by sorry
--- Lemma cmra_discrete_valid_iff `{!CmraDiscrete A} n x : ✓ x ↔ ✓{n} x.
--- Proof.
---   split; first by rewrite cmra_valid_validN.
---   eauto using cmra_discrete_valid, cmra_validN_le with lia.
--- Qed.
+theorem discrete_valid_iff [d: CMRA.Discrete α] n {x : α} : ✓ x ↔ ✓{n} x :=
+  ⟨Valid.validN, fun v => d.discrete_valid $ validN_of_le (Nat.zero_le n) v⟩
 
-theorem discrete_valid_iff_0 [CMRA.Discrete α] n {x : α} : ✓{0} x ↔ ✓{n} x := by sorry
--- Lemma cmra_discrete_valid_iff_0 `{!CmraDiscrete A} n x : ✓{0} x ↔ ✓{n} x.
--- Proof. by rewrite -!cmra_discrete_valid_iff. Qed.
+theorem discrete_valid_iff_0 [d: CMRA.Discrete α] n {x : α} : ✓{0} x ↔ ✓{n} x :=
+  ⟨Valid.validN ∘ d.discrete_valid, validN_of_le (Nat.zero_le n)⟩
 
-theorem discrete_included_iff [Discrete α] n {x y : α} : x ≼ y ↔ x ≼{n} y := by sorry
--- Lemma cmra_discrete_included_iff `{!OfeDiscrete A} n x y : x ≼ y ↔ x ≼{n} y.
--- Proof.
---   split; first by apply cmra_included_includedN.
---   intros [z ->%(discrete_iff _ _)]; eauto using cmra_included_l.
--- Qed.
+theorem discrete_included_iff [d: Discrete α] n {x y : α} : x ≼ y ↔ x ≼{n} y :=
+  ⟨incN_of_inc _, fun ⟨z, hz⟩ => ⟨z, d.discrete_n hz⟩⟩
 
-theorem discrete_included_iff_0 [Discrete α] n {x y : α} : x ≼{0} y ↔ x ≼{n} y := by sorry
--- Lemma cmra_discrete_included_iff_0 `{!OfeDiscrete A} n x y : x ≼{0} y ↔ x ≼{n} y.
--- Proof. by rewrite -!cmra_discrete_included_iff. Qed.
+theorem discrete_included_iff_0 [d: OFE.Discrete α] n {x y : α} : x ≼{0} y ↔ x ≼{n} y :=
+  ⟨fun ⟨z, hz⟩ => ⟨z, (d.discrete_n hz).dist⟩, fun a => incN_of_incN_le (Nat.zero_le n) a⟩
 
 end discreteCMRA
 
@@ -580,34 +584,38 @@ variable {α : Type _} [CMRA α]
 -- Global Instance cancelable_proper : Proper (equiv ==> iff) (@Cancelable A).
 -- Proof. unfold Cancelable. intros x x' EQ. by setoid_rewrite EQ. Qed.
 
-theorem cancelable {x y z : α} [CMRA.Cancelable x] : ✓(x • y) → x • y ≡ x • z → y ≡ z :=
-  sorry
--- Lemma cancelable x `{!Cancelable x} y z :
--- Proof. rewrite !equiv_dist cmra_valid_validN. intros. by apply (cancelableN x). Qed.
+theorem cancelable {x y z : α} [CMRA.Cancelable x] (v : ✓(x • y)) (e : x • y ≡ x • z) : y ≡ z :=
+  suffices h: ∀n, y ≡{n}≡ z from equiv_dist.mpr h
+  fun n => Cancelable.cancelableN (valid_iff_validN.mp v n) (equiv_dist.mp e n)
 
+theorem discrete_cancelable {x : α} [d: CMRA.Discrete α]
+    (H : ∀ {y z : α}, ✓(x • y) → x • y ≡ x • z → y ≡ z) : CMRA.Cancelable x where
+  cancelableN {n} {_ _} v e := (H ((discrete_valid_iff n).mpr v) (d.discrete_n e)).dist
 
-theorem discrete_cancelable {x : α} [CMRA.Discrete α] (H : ∀ {y z : α}, ✓(x • y) → x •  y ≡ x • z → y ≡ z) :
-    CMRA.Cancelable x :=
-  sorry
--- Lemma discrete_cancelable x `{!CmraDiscrete A}:
---   (∀ y z, ✓(x ⋅ y) → x ⋅ y ≡ x ⋅ z → y ≡ z) → Cancelable x.
--- Proof. intros ????. rewrite -!discrete_iff -cmra_discrete_valid_iff. auto. Qed.
+instance cancelable_op {x y : α} [cx: CMRA.Cancelable x] [cy: CMRA.Cancelable y] : CMRA.Cancelable (x • y) where
+  cancelableN {n w t} v e :=
+    have v1: ✓{n} x • (y • w) := validN_ne op_assocN.symm v
+    have v2 := validN_op_right v1
+    have := calc
+      x • (y • w) ≡{n}≡ (x • y) • w := op_assocN
+      _           ≡{n}≡ (x • y) • t := e
+      _           ≡{n}≡ x • (y • t) := op_assocN.symm
+    cy.cancelableN v2 (cx.cancelableN v1 this)
 
-instance cancelable_op {x y : α} [CMRA.Cancelable x] [CMRA.Cancelable y] : CMRA.Cancelable (x • y) :=
-  sorry
--- Global Instance cancelable_op x y :
---   Cancelable x → Cancelable y → Cancelable (x ⋅ y).
--- Proof.
---   intros ?? n z z' ??. apply (cancelableN y), (cancelableN x).
---   - eapply cmra_validN_op_r. by rewrite assoc.
---   - by rewrite assoc.
---   - by rewrite !assoc.
--- Qed.
+instance exclusive_cancelable {x : α} [CMRA.Exclusive x] : CMRA.Cancelable x where
+  cancelableN v _ := absurd v not_valid_exclN_op_left
 
-instance exclusive_cancelable {x : α} [CMRA.Exclusive x] : CMRA.Cancelable x := by
-  sorry
--- Global Instance exclusive_cancelable (x : A) : Exclusive x → Cancelable x.
--- Proof. intros ? n z z' []%(exclusiveN_l _ x). Qed.
+theorem Cancelable_of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CMRA.Cancelable x₁) : CMRA.Cancelable x₂ where
+  cancelableN {n w t} v ee :=
+    have v_xw : ✓{n} x₁ • w := validN_of_eqv (Equiv.op_l e.symm) v
+    have : x₁ • w ≡{n}≡ x₁ • t := calc
+      x₁ • w ≡{n}≡ x₂ • w := Dist.op_l e.dist
+      _      ≡{n}≡ x₂ • t := ee
+      _      ≡{n}≡ x₁ • t := Dist.op_l e.symm.dist
+    h.cancelableN v_xw this
+
+theorem Cancelable_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : CMRA.Cancelable x₁ ↔ CMRA.Cancelable x₂ :=
+  ⟨Cancelable_of_eqv e, Cancelable_of_eqv e.symm⟩
 
 end cancelableElements
 
@@ -624,155 +632,143 @@ variable {α : Type _} [CMRA α]
 -- Global Instance id_free_proper : Proper (equiv ==> iff) (@IdFree A).
 -- Proof. by move=> P Q /equiv_dist /(_ 0)=> ->. Qed.
 
-theorem id_freeN_r n n' {x : α} [CMRA.IdFree x] {y} : ✓{n}x → ¬ (x • y ≡{n'}≡ x)  := sorry
--- Lemma id_freeN_r n n' x `{!IdFree x} y : ✓{n}x → x ⋅ y ≡{n'}≡ x → False.
--- Proof. eauto using cmra_validN_le, dist_le with lia. Qed.
+theorem IdFree_of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CMRA.IdFree x₁) : CMRA.IdFree x₂ where
+  id_free0_r z v := fun h₂ =>
+    have := calc
+      x₁ • z ≡{0}≡ x₂ • z := op_left_dist z e.dist
+      _      ≡{0}≡ x₂ := h₂
+      _      ≡{0}≡ x₁ := e.dist.symm
+    h.id_free0_r _ ((validN_iff e.dist).mpr v) this
 
-theorem id_freeN_l n n' {x : α} [CMRA.IdFree x] {y} : ✓{n}x → ¬ (y • x ≡{n'}≡ x)  := sorry
--- Lemma id_freeN_l n n' x `{!IdFree x} y : ✓{n}x → y ⋅ x ≡{n'}≡ x → False.
--- Proof. rewrite comm. eauto using id_freeN_r. Qed.
+theorem IdFree_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : CMRA.IdFree x₁ ↔ CMRA.IdFree x₂ :=
+  ⟨IdFree_of_eqv e, IdFree_of_eqv e.symm⟩
 
-theorem id_free_r {x : α} [CMRA.IdFree x] {y} : ✓x → ¬ (x • y ≡ x)  := sorry
--- Lemma id_free_r x `{!IdFree x} y : ✓x → x ⋅ y ≡ x → False.
--- Proof. move=> /cmra_valid_validN ? /equiv_dist. eauto. Qed.
+theorem IdFree_ne {x₁ x₂ : α} {n} (e : x₁ ≡{n}≡ x₂) (h : CMRA.IdFree x₁) : CMRA.IdFree x₂ where
+  id_free0_r z v := fun h₂ =>
+    have ee := Dist.le e (Nat.zero_le _)
+    have := calc
+      x₁ • z ≡{0}≡ x₂ • z := op_left_dist z ee
+      _      ≡{0}≡ x₂ := h₂
+      _      ≡{0}≡ x₁ := ee.symm
+    h.id_free0_r _ ((validN_iff ee).mpr v) this
 
-theorem id_free_l {x : α} [CMRA.IdFree x] {y} : ✓x → ¬ (y • x ≡ x)  := sorry
--- Lemma id_free_l x `{!IdFree x} y : ✓x → y ⋅ x ≡ x → False.
--- Proof. rewrite comm. eauto using id_free_r. Qed.
+theorem id_freeN_r n n' {x : α} [CMRA.IdFree x] {y} : ✓{n}x → ¬ (x • y ≡{n'}≡ x) :=
+  fun v =>
+    have : ¬x • y ≡{0}≡ x := IdFree.id_free0_r _ $ validN_of_le (Nat.zero_le _) v
+    this ∘ (fun e => Dist.le e (Nat.zero_le _))
 
-theorem discrete_id_free {x : α} [CMRA.Discrete α] (H : ∀ y, ✓ x → x • y ≡ x → False) : CMRA.IdFree x := sorry
--- Lemma discrete_id_free x `{!CmraDiscrete A}:
---   (∀ y, ✓ x → x ⋅ y ≡ x → False) → IdFree x.
--- Proof.
---   intros Hx y ??. apply (Hx y), (discrete_0 _); eauto using cmra_discrete_valid.
--- Qed.
+theorem id_freeN_l n n' {x : α} [CMRA.IdFree x] {y} : ✓{n}x → ¬ (y • x ≡{n'}≡ x) :=
+  fun v => (id_freeN_r n n' v) ∘ comm.dist.trans
 
-instance id_free_op_r {x y : α} [CMRA.IdFree y] [CMRA.Cancelable x] : CMRA.IdFree (x • y) := sorry
--- Global Instance id_free_op_r x y : IdFree y → Cancelable x → IdFree (x ⋅ y).
--- Proof.
---   intros ?? z ? Hid%symmetry. revert Hid. rewrite -assoc=>/(cancelableN x) ?.
---   eapply (id_free0_r y); [by eapply cmra_validN_op_r |symmetry; eauto].
--- Qed.
+theorem id_free_r {x : α} [CMRA.IdFree x] {y} : ✓x → ¬ (x • y ≡ x) :=
+  fun v h => IdFree.id_free0_r y (valid_iff_validN.mp v 0) (h.dist)
 
-instance id_free_op_l {x y : α} [CMRA.IdFree x] [CMRA.Cancelable y] : CMRA.IdFree (x • y) := sorry
--- Global Instance id_free_op_l x y : IdFree x → Cancelable y → IdFree (x ⋅ y).
--- Proof. intros. rewrite comm. apply _. Qed.
+theorem id_free_l {x : α} [CMRA.IdFree x] {y} : ✓x → ¬ (y • x ≡ x) :=
+  fun v => (id_free_r v) ∘ comm.trans
 
-instance exclusive_id_Free {x : α} [CMRA.Exclusive x] : CMRA.IdFree x := sorry
--- Global Instance exclusive_id_free x : Exclusive x → IdFree x.
--- Proof. intros ? z ? Hid. apply (exclusiveN_l 0 x z). by rewrite Hid. Qed.
+theorem discrete_id_free {x : α} [d : CMRA.Discrete α] (H : ∀ y, ✓ x → x • y ≡ x → False)
+    : CMRA.IdFree x where
+  id_free0_r y v := fun h => H y (d.discrete_valid v) (d.discrete_0 h)
+
+instance id_free_op_r {x y : α} [iy: CMRA.IdFree y] [cx : CMRA.Cancelable x] : CMRA.IdFree (x • y) where
+  id_free0_r z v := fun h =>
+    have : ¬y • z ≡{0}≡ y := iy.id_free0_r z (validN_op_right v)
+    this (cx.cancelableN v (assoc.dist.trans h).symm).symm
+
+instance id_free_op_l {x y : α} [ix: CMRA.IdFree x] [cy: CMRA.Cancelable y] : CMRA.IdFree (x • y) :=
+  IdFree_of_eqv comm (id_free_op_r)
+
+instance exclusive_id_Free {x : α} [ex: CMRA.Exclusive x] : CMRA.IdFree x where
+  id_free0_r z v := fun h => ex.exclusive0_l z ((validN_iff h.symm).mp v)
 
 end idFreeElements
 
 
 section ucmra
 
-variable {α : Type _} [UCMRA α]
+variable {α : Type _} [u: UCMRA α]
 
-theorem unit_validN n : ✓{n} (ε : α) := sorry
---   Lemma ucmra_unit_validN n : ✓{n} (ε:A).
---   Proof. apply cmra_valid_validN, ucmra_unit_valid. Qed.
+theorem unit_validN n : ✓{n} u.unit := valid_iff_validN.mp (u.unit_valid) n
 
-theorem incN_unit n {x : α} : ε ≼{n} x := sorry
---   Lemma ucmra_unit_leastN n x : ε ≼{n} x.
---   Proof. by exists x; rewrite left_id. Qed.
+theorem incN_unit n {x : α} : u.unit ≼{n} x := ⟨x, (u.unit_left_id (x := x)).symm.dist⟩
 
-theorem inc_unit {x : α} : ε ≼ x := sorry
---   Lemma ucmra_unit_least x : ε ≼ x.
---   Proof. by exists x; rewrite left_id. Qed.
+theorem inc_unit (x : α) : u.unit ≼ x :=  ⟨x, (u.unit_left_id (x := x)).symm⟩
 
+theorem unit_right_id (x : α) : x • u.unit ≡ x := comm.trans (u.unit_left_id (x := x))
 
-theorem unit_right_id (x : α) :  x • unit  ≡ x :=  sorry
---   Global Instance ucmra_unit_right_id : RightId (≡) ε (@op A _).
---   Proof. by intros x; rewrite (comm op) left_id. Qed.
-
-instance unit_CoreId : CMRA.CoreId (ε : α) := sorry
---   Global Instance ucmra_unit_core_id : CoreId (ε:A).
---   Proof. apply ucmra_pcore_unit. Qed.
+instance unit_CoreId : CMRA.CoreId u.unit where
+  core_id := u.pcore_unit
 
 instance unit_total : CMRA.IsTotal α where
-  total := sorry
---   Global Instance cmra_unit_cmra_total : CmraTotal A.
---   Proof.
---     intros x. destruct (cmra_pcore_mono' ε x ε) as (cx&->&?); [..|by eauto].
---     - apply ucmra_unit_least.
---     - apply (core_id _).
---   Qed.
+  total x :=
+    have ⟨y, hy, _⟩ := pcore_mono' (inc_unit x) u.pcore_unit
+    ⟨y, hy⟩
 
-instance empty_cancelable : CMRA.Cancelable (ε : α) := sorry
---   Global Instance empty_cancelable : Cancelable (ε:A).
---   Proof. intros ???. by rewrite !left_id. Qed.
-
+instance empty_cancelable : CMRA.Cancelable u.unit where
+  cancelableN {n w t} _ e := calc
+    w ≡{n}≡ UCMRA.unit • w := u.unit_left_id.dist.symm
+    _ ≡{n}≡ UCMRA.unit • t := e
+    _ ≡{n}≡ t := u.unit_left_id.dist
 
 end ucmra
 
 
 section leibniz
 
-variable {α : Type _} [CMRA α] [Leibniz α]
+variable {α : Type _} [CMRA α] [lei: Leibniz α]
 
-theorem assoc_L {x y z : α} : x • (y • z) ≡ (x • y) • z := sorry
+theorem assoc_L {x y z : α} : x • (y • z) = (x • y) • z := lei.leibniz.mp assoc
 
-theorem comm_L {x y : α} : (x • y)  ≡ (y • x) := sorry
+theorem comm_L {x y : α} : (x • y) = (y • x) := lei.leibniz.mp comm
 
-theorem pcore_l_L {x cx : α} : CMRA.pcore x = some cx → cx • x = x := sorry
---   Lemma cmra_pcore_l_L x cx : pcore x = Some cx → cx ⋅ x = x.
---   Proof. unfold_leibniz. apply cmra_pcore_l'. Qed.
+theorem pcore_l_L {x cx : α} : CMRA.pcore x = some cx → cx • x = x :=
+  fun h => lei.leibniz.mp (pcore_op_left h)
 
-theorem pcore_idemp_L {x cx : α} : CMRA.pcore x = some cx → CMRA.pcore cx = some cx := sorry
---   Lemma cmra_pcore_idemp_L x cx : pcore x = Some cx → pcore cx = Some cx.
---   Proof. unfold_leibniz. apply cmra_pcore_idemp'. Qed.
+theorem pcore_idemp_L {x cx : α} : CMRA.pcore x = some cx → CMRA.pcore cx = some cx :=
+  fun h => Leibniz.leibniz.mp (pcore_idem h)
 
-theorem op_opM_assoc_L {x y : α} {mz} : (x • y) •? mz = x • (y •? mz) := sorry
---   Lemma cmra_op_opM_assoc_L x y mz : (x ⋅ y) ⋅? mz = x ⋅ (y ⋅? mz).
---   Proof. unfold_leibniz. apply cmra_op_opM_assoc. Qed.
+theorem op_opM_assoc_L {x y : α} {mz} : (x • y) •? mz = x • (y •? mz) :=
+  lei.leibniz.mp (op_opM_assoc _ _ _)
 
-theorem pcore_r_L {x cx : α} : CMRA.pcore x = some cx → x • cx = x := sorry
---   Lemma cmra_pcore_r_L x cx : pcore x = Some cx → x ⋅ cx = x.
---   Proof. unfold_leibniz. apply cmra_pcore_r'. Qed.
+theorem pcore_r_L {x cx : α} : CMRA.pcore x = some cx → x • cx = x :=
+  fun h => lei.leibniz.mp (pcore_op_right h)
 
-theorem pcore_dup_L {x cx : α} : CMRA.pcore x = some cx → cx • cx = cx := sorry
---   Lemma cmra_pcore_dup_L x cx : pcore x = Some cx → cx = cx ⋅ cx.
---   Proof. unfold_leibniz. apply cmra_pcore_dup'. Qed.
+theorem pcore_dup_L {x cx : α} : CMRA.pcore x = some cx → cx • cx = cx :=
+  fun h => lei.leibniz.mp (pcore_op_self h)
 
-theorem core_id_dup_L {x : α} [CMRA.CoreId x] : x = x • x := sorry
---   Lemma core_id_dup_L x `{!CoreId x} : x = x ⋅ x.
---   Proof. unfold_leibniz. by apply core_id_dup. Qed.
+theorem core_id_dup_L {x : α} [CMRA.CoreId x] : x = x • x :=
+  lei.leibniz.mp (op_self x).symm
 
-theorem core_r_L {x : α} [CMRA.IsTotal α] : x • CMRA.core x = x := sorry
---     Lemma cmra_core_r_L x : x ⋅ core x = x.
---     Proof. unfold_leibniz. apply cmra_core_r. Qed.
+theorem core_r_L {x : α} [CMRA.IsTotal α] : x • CMRA.core x = x :=
+  lei.leibniz.mp (op_core x)
 
-theorem core_l_L {x : α} [CMRA.IsTotal α] : CMRA.core x • x = x := sorry
---     Lemma cmra_core_l_L x : core x ⋅ x = x.
---     Proof. unfold_leibniz. apply cmra_core_l. Qed.
 
-theorem core_idemp_L {x : α} [CMRA.IsTotal α] : CMRA.core (CMRA.core x) = CMRA.core x := sorry
---     Lemma cmra_core_idemp_L x : core (core x) = core x.
---     Proof. unfold_leibniz. apply cmra_core_idemp. Qed.
+theorem core_l_L {x : α} [CMRA.IsTotal α] : CMRA.core x • x = x :=
+  lei.leibniz.mp (by exact core_op x)
 
-theorem core_dup_L {x : α} [CMRA.IsTotal α] : CMRA.core x = CMRA.core x • CMRA.core x := sorry
---     Lemma cmra_core_dup_L x : core x = core x ⋅ core x.
---     Proof. unfold_leibniz. apply cmra_core_dup. Qed.
+theorem core_idemp_L {x : α} [CMRA.IsTotal α] : CMRA.core (CMRA.core x) = CMRA.core x :=
+  lei.leibniz.mp (by exact core_idemp x)
 
-theorem core_id_total_L {x : α} [CMRA.IsTotal α] : CMRA.CoreId x ↔ CMRA.core x = x := sorry
---     Lemma core_id_total_L x : CoreId x ↔ core x = x.
---     Proof. unfold_leibniz. apply core_id_total. Qed.
+theorem core_dup_L {x : α} [CMRA.IsTotal α] : CMRA.core x = CMRA.core x • CMRA.core x :=
+  lei.leibniz.mp (core_op_core).symm
 
-theorem core_id_core_L {x : α} [CMRA.IsTotal α] [CMRA.CoreId x] : CMRA.core x = x := sorry
---     Lemma core_id_core_L x `{!CoreId x} : core x = x.
---     Proof. by apply core_id_total_L. Qed.
+theorem core_id_total_L {x : α} [CMRA.IsTotal α] : CMRA.CoreId x ↔ CMRA.core x = x := calc
+  CoreId x ↔ core x ≡ x := coreId_iff_core_eqv_self
+  _        ↔ core x = x := Leibniz.leibniz
+
+theorem core_id_core_L {x : α} [CMRA.IsTotal α] [c: CMRA.CoreId x] : CMRA.core x = x :=
+  core_id_total_L.mp c
 
 end leibniz
 
 
 section ucmra
 
-variable {α : Type _} [UCMRA α] [Leibniz α]
+variable {α : Type _} [u: UCMRA α] [lei: Leibniz α]
 
-theorem ucmra_unit_left_id_L {x : α} : ε • x = x := sorry
+theorem ucmra_unit_left_id_L {x : α} : u.unit • x = x := lei.leibniz.mp UCMRA.unit_left_id
 
-theorem ucmra_unit_right_id_L {x : α} : x • ε = x := sorry
+theorem ucmra_unit_right_id_L {x : α} : x • u.unit = x := lei.leibniz.mp (unit_right_id x)
 
 end ucmra
 
@@ -781,7 +777,7 @@ end ucmra
 section CmraMorphism
 
 structure isCmraMor {α β : Type _} [CMRA α] [CMRA β] (f : α -> β) : Prop where
-  morphism_validN n x : ✓{n} x -> ✓{n} (f x)
+  morphism_validN {n x} : ✓{n} x -> ✓{n} (f x)
   morphism_pcore x : f <$> CMRA.pcore x ≡ CMRA.pcore (f x)
   morphism_op x y : f (x • y) ≡ f x • f y
 
@@ -797,26 +793,45 @@ instance [CMRA α] [CMRA β] : CoeFun (α -C> β) (fun _ => α → β) := ⟨ fu
 
 protected def Hom.id [CMRA α] : α -C> α where
   toHom := OFE.Hom.id
-  mor := ⟨ sorry, sorry, sorry ⟩
+  mor :=
+    ⟨ fun v => v,
+      fun x =>
+        match pcore x with
+        | none => Equiv.rfl
+        | some _ => Equiv.rfl,
+      fun _ _ => Equiv.rfl ⟩
 
 protected def Hom.comp [CMRA α] [CMRA β] [CMRA γ] (g : β -C> γ) (f : α -C> β) : α -C> γ where
   toHom := OFE.Hom.comp g.toHom f.toHom
-  mor := ⟨ sorry, sorry, sorry ⟩
+  mor :=
+    ⟨ fun v => g.mor.morphism_validN (f.mor.morphism_validN v),
+      fun x => sorry,
+      fun x y => sorry ⟩
 
 def morphism_proper [CMRA α] [CMRA β] (f : α -C> β) {x₁ x₂ : α} (X : x₁ ≡ x₂) : f x₁ ≡ f x₂ :=
-  sorry
+  f.ne.eqv X
 
 def morphism_core [CMRA α] [CMRA β] (f : α -C> β) {x : α} : CMRA.core (f x) ≡ f (CMRA.core x) :=
-  sorry
+  suffices h: Option.map f.f (pcore x) ≡ pcore (f.f x) →
+    (pcore (f.f x)).getD (f.f x) ≡ f.f ((pcore x).getD x)
+  from h (f.mor.morphism_pcore x)
+  match pcore x with
+  | none => fun h => by simp [OFE.equiv_none h.symm]
+  | some cx => fun h => by
+    let ⟨s, hs, es⟩ := OFE.equiv_some h.symm
+    rw [hs]
+    exact es
 
 def morphism_mono [CMRA α] [CMRA β] (f : α -C> β) {x₁ x₂ : α} (H : x₁ ≼ x₂) : f x₁ ≼ f x₂ :=
-  sorry
+  have ⟨z, hz⟩ := H
+  ⟨f.f z, (morphism_proper f hz).trans (f.mor.morphism_op _ _)⟩
 
 def morphism_monoN [CMRA α] [CMRA β] (f : α -C> β) n {x₁ x₂ : α} (H : x₁ ≼{n} x₂) : f x₁ ≼{n} f x₂ :=
-  sorry
+  have ⟨z, hz⟩ := H
+  ⟨f.f z, (f.ne.ne hz).trans (f.mor.morphism_op _ _).dist⟩
 
 def morphism_valid [CMRA α] [CMRA β] (f : α -C> β) {x : α} (H : ✓ x) : ✓ f x :=
-  sorry
+  valid_iff_validN.mpr (fun _ => f.mor.morphism_validN H.validN)
 
 
 end CmraMorphism
