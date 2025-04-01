@@ -20,7 +20,7 @@ structure uPredPre (M : Type) : Type where
   uPred_holds : Nat -> M -> Prop
 
 structure uPred (M : Type) [CMRA M] extends uPredPre M where
-  uPred_mono n1 n2 x1 x2 : uPred_holds n1 x1 → x1 ≼{n2} x2 → n2 ≤ n1 → uPred_holds n2 x2
+  uPred_mono {n1 n2 x1 x2} : uPred_holds n1 x1 → x1 ≼{n2} x2 → n2 ≤ n1 → uPred_holds n2 x2
 
 instance [UCMRA M] : CoeFun (uPred M) (fun _ => Nat -> M → Prop) := ⟨fun x => uPredPre.uPred_holds x.touPredPre⟩
 
@@ -50,6 +50,28 @@ instance : OFE (uPred M) where
   dist_eqv := dist_equiv
   equiv_dist := equiv_dist
   dist_lt := dist_lt
+
+theorem uPred_ne (P : uPred M) n : ∀ {m₁ m₂}, m₁ ≡{n}≡ m₂ → (P n m ↔ P n m₂) := sorry
+-- Global Instance uPred_ne {M} (P : uPred M) n : Proper (dist n ==> iff) (P n).
+-- Proof.
+--   intros x1 x2 Hx; split=> ?; eapply uPred_mono; eauto; by rewrite Hx.
+-- Qed.
+
+theorem uPred_proper (P : uPred M) n : ∀ {m₁ m₂}, m₁ ≡ m₂ → (P n m ↔ P n m₂) := sorry
+-- Global Instance uPred_proper {M} (P : uPred M) n : Proper ((≡) ==> iff) (P n).
+-- Proof. by intros x1 x2 Hx; apply uPred_ne, equiv_dist. Qed.
+
+
+theorem uPred_holds_ne (P Q : uPred M) n₁ n₂ x : P ≡{n₂}≡ Q → n₂ ≤ n₁ → ✓{n2} x → Q n₁ x → P n₂ x := sorry
+-- Lemma uPred_holds_ne {M} (P Q : uPred M) n1 n2 x :
+--   P ≡{n2}≡ Q → n2 ≤ n1 → ✓{n2} x → Q n1 x → P n2 x.
+-- Proof.
+--   intros [Hne] ???. eapply Hne; try done. eauto using uPred_mono, cmra_validN_le.
+-- Qed.
+
+
+
+
 
 def compl (c : Chain (uPred M)) : uPred M :=
   ⟨ sorry,
