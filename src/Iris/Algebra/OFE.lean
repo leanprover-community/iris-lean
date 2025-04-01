@@ -130,6 +130,10 @@ def ofDiscrete (Equiv : α → α → Prop) (equiv_eqv : Equivalence Equiv) : OF
   equiv_dist := (forall_const _).symm
   dist_lt h _ := h
 
+/-- A discrete element in an OFE -/
+def DiscreteE {α : Type _} [OFE α] (x : α) : Prop :=
+  ∀ {y : α}, x ≡{0}≡ y → x ≡ y
+
 /-- A discrete OFE is one where equivalence is implied by `0`-equivalence. -/
 class Discrete (α : Type _) [OFE α] : Prop where
   discrete_0 {x y : α} : x ≡{0}≡ y → x ≡ y
@@ -137,6 +141,10 @@ class Discrete (α : Type _) [OFE α] : Prop where
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
 theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡ y) : x ≡ y :=
   Discrete.discrete_0 (OFE.Dist.le h (Nat.zero_le _))
+
+
+class Leibniz (α : Type _) [OFE α] : Prop where
+  leibniz {x y : α} : x ≡ y ↔ x = y
 
 /-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is non-expansive. -/
 @[ext] structure Hom (α β : Type _) [OFE α] [OFE β] where
@@ -225,6 +233,11 @@ theorem OFE.equiv_some [OFE α] {o : Option α} {y : α} (e : o ≡ some y) :
   | .none => dsimp at e
   | .some x => dsimp at e; exact ⟨x, rfl, e⟩
 
+theorem OFE.equiv_none [OFE α] {o : Option α} (e : o ≡ none): o = none :=
+  match o with
+  | none => rfl
+  | some _ => e.elim
+
 theorem OFE.dist_some_right [OFE α] {n mx y} (h : mx ≡{n}≡ some y) :
     ∃ z : α, mx = some z ∧ y ≡{n}≡ z :=
   suffices hh : ∀ mx my y, mx ≡{n}≡ my → my = some y → ∃ t, mx = some t ∧ t ≡{n}≡ y from
@@ -233,6 +246,15 @@ theorem OFE.dist_some_right [OFE α] {n mx y} (h : mx ≡{n}≡ some y) :
     match mx with
     | some t => ⟨t, rfl, (e2 ▸ e1 : some t ≡{n}≡ some y)⟩
     | none => False.elim (e2 ▸ e1 : none ≡{n}≡ some y)
+
+instance [OFE α] [Leibniz α] : Leibniz (Option α) where
+  leibniz {x y} :=
+    suffices h: x ≡ y → x = y from ⟨h, Equiv.of_eq⟩
+    match x, y with
+    | none, none => fun _ => rfl
+    | some _, some _ => fun h => congrArg some (Leibniz.leibniz.mp h)
+    | none, some _ => fun h => h.elim
+    | some _, none => fun h => h.elim
 
 instance [OFE α] [OFE β] : OFE (α -n> β) where
   Equiv f g := ∀ x, f x ≡ g x
