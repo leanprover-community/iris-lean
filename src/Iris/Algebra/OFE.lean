@@ -446,35 +446,63 @@ attribute [instance] OFunctor.cofe
 
 end COFE
 
-
 section Leibniz
 
-structure LeibnizO (T : Type _) : Type _ where
+structure LeibnizO (T : Type _) where
   car : T
 
-instance : OFE (LeibnizO T) where
-  Equiv := sorry
-  Dist := sorry
-  dist_eqv := sorry
-  equiv_dist := sorry
-  dist_lt := sorry
+theorem Eq_Equivalence {T : Type _} : Equivalence (@Eq T) :=
+  ⟨ congrFun rfl, (Eq.symm ·), (· ▸ ·)⟩
 
-instance : IsCOFE (LeibnizO T) where
-  compl := sorry
-  conv_compl := sorry
+instance : COFE (LeibnizO T) := COFE.ofDiscrete _ Eq_Equivalence
 
 end Leibniz
 
 section DiscreteFun
 
-variable {α : Type _}
-
-structure discrete_fun (F : α → Type _) : Type _ where
-  f : ∀ (x : α), F x
+/- A dependent function has its range contained in OFE types -/
+class IsOFEFun (F : α → Type _) where
   ofe {x : α} : OFE (F x)
 
-attribute [instance] discrete_fun.ofe
+attribute [instance] IsOFEFun.ofe
+
+variable {α : Type _} {β : α -> Type _} [IsOFEFun β]
+
+structure discrete_fun (F : α → Type _) [IsOFEFun F] : Type _ where
+  car (x : α) : F x
+
+notation:25 x:26 " -d> " y:25 => @discrete_fun x (fun _ => y)
+
+instance {α : Type _} {β : α -> Type _} [IsOFEFun β] :
+    CoeFun (@discrete_fun α β _) (fun _ => ((x : α) -> β x)) :=
+  ⟨ fun f => f.car ⟩
+
+@[simp]
+def discrete_fun.equiv (f g : discrete_fun β) : Prop := ∀ (x : α), f x ≡ g x
+
+@[simp]
+def discrete_fun.dst (n : Nat) (f g : discrete_fun β) : Prop := ∀ (x : α), f x ≡{n}≡ g x
+
+theorem discrete_fun.dst_Equiv n : Equivalence (@discrete_fun.dst α β _ n) :=
+  ⟨ by simp,
+    by simp; exact fun H x => Dist.symm (H x) ,
+    by simp; exact fun H1 H2 x => Dist.trans (H1 x) (H2 x) ⟩
+
+instance discrete_fun.OFE : OFE (discrete_fun β) where
+  Equiv := discrete_fun.equiv
+  Dist := discrete_fun.dst
+  dist_eqv {n} := discrete_fun.dst_Equiv n
+  equiv_dist :=
+    ⟨ fun H _ x => Equiv.dist (H x),
+      fun H _ => equiv_dist.mpr (H · _) ⟩
+  dist_lt := by simp; exact fun H Hn x => Dist.lt (H x) Hn
+
+def discrete_fun.chain (c : Chain (discrete_fun β)) (x : α) : Chain (β x) where
+  chain n := c n x
+  cauchy H := c.cauchy H x
+
+instance discrete_fun.IsCOFE [∀ x : α, IsCOFE (β x)] : IsCOFE (discrete_fun β) where
+  compl c := ⟨ fun x => IsCOFE.compl (discrete_fun.chain c x) ⟩
+  conv_compl _ := IsCOFE.conv_compl
 
 end DiscreteFun
-
-
