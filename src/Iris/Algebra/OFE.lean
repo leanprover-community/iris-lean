@@ -506,3 +506,60 @@ instance discrete_fun.IsCOFE [∀ x : α, IsCOFE (β x)] : IsCOFE (discrete_fun 
   conv_compl _ := IsCOFE.conv_compl
 
 end DiscreteFun
+
+
+section DiscreteFunOF
+
+variable {α : Type _} {β₁ β₂ β₃ : α -> Type _} [IsOFEFun β₁] [IsOFEFun β₂] [IsOFEFun β₃]
+
+def discrete_fun.map (f : ∀ x, β₁ x → β₂ x) (g : discrete_fun β₁) : discrete_fun β₂ :=
+  ⟨ fun x => f x (g x) ⟩
+
+theorem  discrete_fun.map.ext (f₁ f₂ : ∀ x, β₁ x → β₂ x) (g : discrete_fun β₁) :
+    (∀ x, f₁ x (g x) ≡ f₂ x (g x)) → map f₁ g ≡ map f₂ g := by
+  simp only [map]; exact id
+
+theorem discrete_fun.map.id (g : discrete_fun β₁) :
+    map (fun _ => id) g = g := by simp [map]
+
+theorem discrete_fun.map.comp (f₁ : ∀ x, β₁ x → β₂ x) (f₂: ∀ x, β₂ x → β₃  x) (g : discrete_fun β₁) :
+    map (fun x => f₂ x ∘ f₁ x) g = map f₂ (map f₁ g) := by simp [map]
+
+-- Can this be stated as NonExpansive or is using the same n everywhere important?
+theorem discrete_fun.map.ne (f : ∀ x, β₁ x → β₂ x) n :
+    (∀ (x : α) (b₁ b₂ : β₁ x), (b₁ ≡{n}≡ b₂) → (f x b₁ ≡{n}≡ f x b₂)) →
+    (∀ x₁ x₂, x₁ ≡{n}≡ x₂ → map f x₁ ≡{n}≡  map f x₂) :=
+  fun H _ _ Hne x => H x _ _ (Hne _)
+
+def discrete_fun_OF {C} (F : C → Type _ → Type _ → Type _) [∀ A B, IsOFEFun fun c => F c A B]
+    (A B : Type _) : Type _ :=
+  discrete_fun (fun c => (F c) A B)
+
+instance {α₁ β₁} [∀ A B, IsOFEFun fun c => F c A B] : OFE (discrete_fun_OF F α₁ β₁) := by
+  apply discrete_fun.OFE
+
+instance IsOFEFun_OF {C} (F : C → Type _ → Type _ → Type _)
+    [HOFE : ∀ A B, IsOFEFun fun c => F c A B]
+    [HOF : ∀ c, COFE.OFunctor (F c)] :
+    COFE.OFunctor (discrete_fun_OF F) where
+  cofe := discrete_fun.OFE
+  map f₁ f₂ :=
+    ⟨ discrete_fun.map (fun c => COFE.OFunctor.map (F := (F c)) f₁ f₂ ),
+      by
+        apply NonExpansive.mk
+        intros
+        simp
+        apply discrete_fun.map.ne
+        · intros
+          sorry
+        · trivial ⟩
+  map_ne := sorry
+  map_id := by
+    intros
+    simp [discrete_fun.map]
+    sorry
+  map_comp := sorry
+
+end DiscreteFunOF
+
+
