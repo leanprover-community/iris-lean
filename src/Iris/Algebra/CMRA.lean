@@ -910,22 +910,25 @@ instance URFunctorContractive.toRFunctorContractive [URFunctorContractive F] : R
 end urFunctor
 
 
-section DiscreteFun
+/- A dependent function has its range contained in CMRA types -/
+class IsUCMRAFun (F : α → Type _) where
+  cmra {x : α} : UCMRA (F x)
 
-variable {α : Type _}
+attribute [instance] IsUCMRAFun.cmra
 
--- FIXME: Not really sure how to encide this hierarhcy into typeclasses
--- how are discrete_fun and discrete_funU related>
-structure discrete_funU (F : α → Type _) : Type _ where
-  f : (x : α) -> F x
-  ofe {x : α} : UCMRA (F x)
+instance [IsUCMRAFun F] : IsOFEFun F where
+  ofe {x} := (@IsUCMRAFun.cmra _ F _ x).toOFE
 
-instance discrete_funU_ucmra (F : α → Type _) : UCMRA (discrete_funU F) where
-  toOFE := sorry
-  pcore := sorry
-  op := sorry
-  ValidN := sorry
-  Valid := sorry
+section DiscreteFunUCMRA
+
+variable {α : Type _} (β : α → Type _) [IsUCMRAFun β]
+
+instance discrete_fun.CMRA : UCMRA (discrete_fun β) where
+  toOFE := discrete_fun.OFE β
+  pcore f := some ⟨ fun x => CMRA.core (f x) ⟩
+  op f g := ⟨ fun x => f x • g x ⟩
+  ValidN n f := ∀ x, ✓{n} (f x)
+  Valid f := ∀ x, ✓(f x)
   op_ne := sorry
   pcore_ne := sorry
   validN_ne := sorry
@@ -938,23 +941,38 @@ instance discrete_funU_ucmra (F : α → Type _) : UCMRA (discrete_funU F) where
   pcore_idem := sorry
   pcore_op_mono := sorry
   extend := sorry
-  unit := sorry
+  unit := ⟨ fun _ => UCMRA.unit ⟩
   unit_valid := sorry
   unit_left_id := sorry
   pcore_unit := sorry
 
-abbrev nondep_discrete_fun (α β : Type _) [UCMRA β] : Type _ :=
-  discrete_funU (fun (_ : α) => β)
-
-infixr:25 " -d> " => nondep_discrete_fun
-
-def nondep_discrete_fun.mk {α β : Type _} [U : UCMRA β] (f : α -> β) : α -d> β where
-  f := f
-  ofe {_} := U
-
-end DiscreteFun
+end DiscreteFunUCMRA
 
 
+section DiscreteFunURF
+
+-- discrete_fun_OF is the action on objects
 
 
-end Iris
+-- Ensures there are no instance clashes in the UF definifion
+instance {C} (F : C → Type _ → Type _ → Type _) [HUF : ∀ c, URFunctor (F c)] :
+        ∀ A B [COFE A] [COFE B], IsUCMRAFun fun c => F c A B :=
+    fun A B _ _ => by
+        apply IsUCMRAFun.mk
+        intro c
+        apply (HUF c).cmra
+
+instance IsOFEFun_UF {C} (F : C → Type _ → Type _ → Type _) [HURF : ∀ c, URFunctor (F c)] :
+     URFunctor (discrete_fun_OF F) where
+  cmra {α β _ _ } := discrete_fun.CMRA fun c => F c α β
+  map := sorry
+  map_ne := sorry
+  map_id := sorry
+  map_comp := sorry
+  mor := sorry
+
+instance IsOFEFun_UFC {C} (F : C → Type _ → Type _ → Type _) [HURF : ∀ c, URFunctorContractive (F c)] :
+     URFunctorContractive (discrete_fun_OF F) where
+  map_contractive := sorry
+
+end DiscreteFunURF
