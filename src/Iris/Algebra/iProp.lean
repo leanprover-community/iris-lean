@@ -13,6 +13,7 @@ import Init.Data.Vector
 
 namespace Iris
 
+-- TODO: Externalize!!!
 structure gFunctor : Type _ where
   F : Type _ -> Type _ -> Type _
   functor : RFunctorContractive F
@@ -55,56 +56,53 @@ theorem subG_refl (FF : gFunctors) : subG FF FF := sorry
 theorem subG_aop_R (FF₁ FF₂ FF₃ : gFunctors) (H : subG FF₁ FF₂) : (subG FF₁ (FF₂.app FF₃)) := sorry
 
 
-
+-- FIXME : Change to equivalent
 def iResF (FF : gFunctors) : (Type _ -> Type -> Type _) :=
-  discrete_fun_OF (fun i : Bool => sorry) -- Bool is wrong here
+  discrete_fun_OF (fun i : gid FF => discrete_fun_OF (fun (_ : gname) => (gFunctors.lookup FF i).F))
 
--- TODO: Check that we can synth a URFunctor instance for iResF
+-- We need gmap so that IResF is a real URFunctor: gFunctors.lookup is an rFunctor not a urFunctor
 
--- Definition iResF (Σ : gFunctors) : urFunctor :=
---   discrete_funURF (λ i, gmapURF gname (gFunctors_lookup Σ i)).
+instance DELETEME0 (FF : gFunctors) (c : gid FF) : ∀ (_ : gname), URFunctor (FF.lookup c).F := sorry
+instance (FF : gFunctors) (c : gid FF) : URFunctor (discrete_fun_OF fun (_ : gname) => (FF.lookup c).F) :=
+  @IsOFEFun_UF _ _ (DELETEME0 FF c)
+instance DELETEME1 (x : gFunctors) : URFunctor (iResF x) := by apply @IsOFEFun_UF
 
-
-instance (FF : gFunctors) : URFunctor (iResF FF) := by sorry
 
 section iProp
 
-def X (FF : gFunctors) := uPredOF (iResF FF)
-
-instance (FF : gFunctors) : COFE.OFunctor (X FF) := by
-  apply uPredOF_oFunctor
-
-def iPropResult (FF : gFunctors) := @COFE.OFunctor.Fix (X FF) sorry sorry sorry
-
-instance (FF: gFunctors) : Inhabited (X FF (ULift Unit) (ULift Unit)) := sorry
-
-instance (FF : gFunctors) : COFE (iPropResult FF) := by
-  unfold iPropResult
-  have W := @COFE.OFunctor.fix_COFE (X FF) sorry sorry sorry
-  sorry
-
--- variable (FF0 : gFunctors)
--- #synth COFE.OFunctor (X FF0)
-
-/-
-variable (iPrePropO : gFunctors -> Type _)
-variable [∀ g, COFE (iPrePropO g)]
-
-def iResUR (FF : gFunctors) : Type _ :=
-  @discrete_funU (gid FF) (fun i => gen_map gname ((FF.lookup i).ap (iPrePropO FF)))
-
--- variable (FF0 : gFunctors)
--- #check iResUR iPrePropO FF0
--- #synth UCMRA (iResUR iPrePropO FF0)
-
-instance (FF : gFunctors) : UCMRA (iResUR iPrePropO FF) := by
-  -- FIXME why doesn't this synth?
-  apply discrete_funU_ucmra
+local instance DELETEME2 (FF : gFunctors): COFE.OFunctorContractive (uPredOF (iResF FF)) := sorry
 
 
--- Need uPred oFunctor to finish definintion of iProp
--/
+-- Should be the case for ever OFunctorContractive, and in particular for the one we're using,
+-- but this is here to make sure the right instances are inferred below
+local instance DELETEME3 (FF : gFunctors) : ∀ (α : Type) [inst : COFE α],
+      @Iris.IsCOFE.{0} (@Iris.uPredOF.{0, 0} (Iris.iResF.{0, 0} FF) (Iris.DELETEME1.{0, 0} FF) α α)
+        (@Iris.COFE.OFunctor.cofe.{0, 0, 0} (@Iris.uPredOF.{0, 0} (Iris.iResF.{0, 0} FF) (Iris.DELETEME1.{0, 0} FF))
+          (@Iris.COFE.OFunctorContractive.toOFunctor.{0, 0, 0}
+            (@Iris.uPredOF.{0, 0} (Iris.iResF.{0, 0} FF) (Iris.DELETEME1.{0, 0} FF))
+            (Iris.DELETEME2.{0} FF))
+          α α inst inst) := sorry
 
+local instance DELETEME4 (FF : gFunctors) : Inhabited (uPredOF (iResF FF) (ULift Unit) (ULift Unit)) := sorry
+-- set_option pp.all true
+
+def iPrePropO (FF : gFunctors) : Type _ := COFE.OFunctor.Fix (uPredOF (iResF FF))
+
+-- FIXME: Remove, Mario wants to remove COFE.OFunctor.fix_COFE
+instance (FF : gFunctors) : COFE (iPrePropO FF) := COFE.OFunctor.fix_COFE
+
+
+def iResUR (FF : gFunctors) : Type :=
+  discrete_fun (fun (i : gid FF) =>
+  discrete_fun (fun (_ : gname) =>                    -- FIXME : Change to gmap
+  (FF.lookup i).F (iPrePropO FF) (iPrePropO FF)))
+
+local instance DELELTEME5 : IsUCMRAFun (iResUR) := sorry -- Will be able to show this is a UCMRA after gmap change
+
+abbrev iProp (FF : gFunctors) := uPred (iResUR FF)
+
+-- variable (FF : gFunctors)
+-- #synth COFE (iProp FF)
 
 end iProp
 
