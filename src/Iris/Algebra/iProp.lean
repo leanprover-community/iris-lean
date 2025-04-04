@@ -56,21 +56,14 @@ theorem subG_aop_R (FF₁ FF₂ FF₃ : gFunctors) (H : subG FF₁ FF₂) : (sub
 
 
 
--- TODO: Using this instaed of gmap, find the right type
-section gen_map
+def iResF (FF : gFunctors) : (Type _ -> Type -> Type _) :=
+  discrete_fun_OF (fun i : Bool => sorry) -- Bool is wrong here
 
-structure gen_map (K V : Type _) : Type _ where
-  m : K → V
+-- TODO: Check that we can synth a URFunctor instance for iResF
 
-instance [CMRA V] : UCMRA (gen_map K V) := sorry
+-- Definition iResF (Σ : gFunctors) : urFunctor :=
+--   discrete_funURF (λ i, gmapURF gname (gFunctors_lookup Σ i)).
 
-end gen_map
-
-
-def iResF (FF : gFunctors) : (Type _ -> Type -> Type _) := sorry
--- TODO: Figure out how to define O/R/UR functors in such a way that we can keep the
---  Type _ -> Type _ -> Type _ definitions and have the TC's infer.
--- discrete_funURF (λ i, gmapURF gname (gFunctors_lookup Σ i)).
 
 instance (FF : gFunctors) : URFunctor (iResF FF) := by sorry
 
