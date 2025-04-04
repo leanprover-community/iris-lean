@@ -976,3 +976,9 @@ instance IsOFEFun_UFC {C} (F : C → Type _ → Type _ → Type _) [HURF : ∀ c
   map_contractive := sorry
 
 end DiscreteFunURF
+
+-- The "gmap" OFE from Iris is equivalent to (A -d> option B) with a Leibniz OFE over (option B)
+-- (ie. a Leibniz OFE over B).
+-- gmap is always unital.
+-- Therefore, we can weaken the "HURF" constraint on IsOFEFun_UF to just be an rFunctor,
+-- and similarly on IsOFEFun_UFC.
