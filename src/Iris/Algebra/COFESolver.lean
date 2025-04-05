@@ -8,20 +8,22 @@ import Iris.Algebra.OFE
 namespace Iris.COFE.OFunctor
 open OFE
 
-variable {F : Type u → Type u → Type u} [OFunctorContractive F]
+variable {F : ∀ α β [OFE α] [OFE β], Type u} [OFunctorContractive F]
 variable [∀ α [COFE α], IsCOFE (F α α)]
 variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 
 namespace Fix.Impl
 
 variable (F) in
-def A : Nat → Type u
-  | 0 => ULift Unit
-  | n+1 => F (A n) (A n)
+def A' : Nat → Σ α : Type u, COFE α
+  | 0 => ⟨ULift Unit, inferInstance⟩
+  | n+1 => let ⟨A, _⟩ := A' n; ⟨F A A, inferInstance⟩
 
-instance instA' : ∀ n, COFE (A F n)
-  | 0 => inferInstanceAs (COFE (ULift _))
-  | n+1 => haveI := instA' n; inferInstanceAs (COFE (F _ _))
+variable (F) in
+def A (n : Nat) : Type u := (A' F n).1
+
+instance instA' (n) : COFE (A' F n).1 := (A' F n).2
+instance instA (n) : COFE (A F n) := (A' F n).2
 
 variable (F) in
 mutual
@@ -36,10 +38,10 @@ end
 theorem down_up : ∀ {k} x, down F k (up F k x) ≡ x
   | 0, ⟨()⟩ => .rfl
   | _+1, _ => (map_comp ..).symm.trans <|
-    (map_ne.eqv down_up down_up _).trans map_id
+    (map_ne.eqv down_up down_up _).trans (map_id _)
 
 theorem up_down {k} (x) : up F (k+1) (down F (k+1) x) ≡{k}≡ x := by
-  refine (map_comp ..).dist.symm.trans <| .trans ?_ map_id.dist
+  refine (map_comp ..).dist.symm.trans <| .trans ?_ (map_id _).dist
   open OFunctorContractive in exact match k with
   | 0 => map_contractive.zero (x := (_, _)) (y := (_, _)) _ _
   | k+1 => map_contractive.succ (x := (_, _)) (y := (_, _)) _ ⟨up_down, up_down⟩ _
@@ -235,7 +237,7 @@ def Tower.iso : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
         apply this; clear this; revert e; generalize k+1+n = a; rintro rfl; rfl
       rintro x _ rfl
       induction n with
-      | zero => exact map_id
+      | zero => exact map_id _
       | succ n ih =>
         refine (map_comp ..).trans <| (ih (Nat.succ.inj e) _).trans ((downN ..).ne.eqv ?_)
         exact .of_eq (down_eqToHom _).symm
@@ -243,7 +245,7 @@ def Tower.iso : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
     refine (conv_compl' n.le_succ).trans ?_
     dsimp [unfoldChain]; rw [down]
     refine ((map_comp ..).trans <| (map ..).ne.eqv (map_comp ..)).dist.symm.trans ?_
-    refine (map_ne.ne (fun Y => ?_) (fun Y => ?_) _).trans map_id.dist
+    refine (map_ne.ne (fun Y => ?_) (fun Y => ?_) _).trans (map_id _).dist
     · exact ((Tower.embed _).ne.1 Y.up).trans (Y.embed_self.le (by omega))
     · exact ((Tower.embed _).ne.1 Y.down.dist).trans Y.embed_self
 
