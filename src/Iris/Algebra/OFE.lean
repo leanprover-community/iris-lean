@@ -431,18 +431,21 @@ instance : COFE Unit where
 abbrev OFunctorPre := (α : Type _) → (β : Type _) -> [OFE α] → [OFE β] → Type _
 
 class OFunctor (F : ∀ α β [OFE α] [OFE β], Type _) where
-  cofe [COFE α] [COFE β] : OFE (F α β)
-  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  -- EXPERIMENT: Replacing COFE in this definition with OFE
+  -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/OFunctor.20definition
+  -- cofe [COFE α] [COFE β] : OFE (F α β)
+  cofe [OFE α] [OFE β] : OFE (F α β)
+  map [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -n> F α₂ β₂
-  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  map_ne [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
-  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
+  map_id [OFE α] [OFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
+  map_comp [OFE α₁] [OFE α₂] [OFE α₃] [OFE β₁] [OFE β₂] [OFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
 
 class OFunctorContractive (F : ∀ α β [OFE α] [OFE β], Type _) extends OFunctor F where
-  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
 attribute [instance] OFunctor.cofe
@@ -544,10 +547,9 @@ abbrev discrete_fun_OF {C} (F : C → COFE.OFunctorPre) : COFE.OFunctorPre :=
 -- #synth OFE (discrete_fun_OF F α₁ β₁)
 
 
-
 -- This is here so that the IsOFEFun instance we get is the same as the OFunctor
 instance {C} (F : C → COFE.OFunctorPre) [HOF : ∀ c, COFE.OFunctor (F c)] :
-        ∀ A B [COFE A] [COFE B], IsOFEFun fun c => F c A B :=
+        ∀ A B [OFE A] [OFE B], IsOFEFun fun c => F c A B :=
     fun A B _ _ => by
         apply IsOFEFun.mk
         intro c
@@ -555,7 +557,7 @@ instance {C} (F : C → COFE.OFunctorPre) [HOF : ∀ c, COFE.OFunctor (F c)] :
 
 instance discrete_fun_OFunctor {C} (F : C → COFE.OFunctorPre) [HOF : ∀ c, COFE.OFunctor (F c)] :
     COFE.OFunctor (discrete_fun_OF F) where
-  cofe {α β _ _} := discrete_fun.OFE fun c => F c α β
+  cofe {α β _ _} := discrete_fun.OFE (fun c => F c α β)
   map f₁ f₂
     := ⟨ discrete_fun.map (fun c => COFE.OFunctor.map (F := (F c)) f₁ f₂),
          by
