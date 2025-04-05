@@ -844,20 +844,23 @@ end CMRA
 section rFunctor
 
 class RFunctor (F : COFE.OFunctorPre) where
-  cmra [COFE α] [COFE β] : CMRA (F α β)
-  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  -- EXPERIMENT: Replacing COFE in this definition with OFE
+  -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/OFunctor.20definition
+  -- cofe [COFE α] [COFE β] : CMRA (F α β)
+  cmra [OFE α] [OFE β] : CMRA (F α β)
+  map [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -n> F α₂ β₂
-  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  map_ne [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
-  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
+  map_id [OFE α] [OFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
+  map_comp [OFE α₁] [OFE α₂] [OFE α₃] [OFE β₁] [OFE β₂] [OFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
-  mor [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] (f : α₂ -n> α₁) (g : β₁ -n> β₂) :
+  mor [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] (f : α₂ -n> α₁) (g : β₁ -n> β₂) :
     CMRA.isCmraMor (map f g)
 
 class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
-  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
 def RFunctor.ap [RFunctor F] [OFE T] := F T T
@@ -880,20 +883,23 @@ end rFunctor
 section urFunctor
 
 class URFunctor (F : COFE.OFunctorPre) where
-  cmra [COFE α] [COFE β] : UCMRA (F α β)
-  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  -- EXPERIMENT: Replacing COFE in this definition with OFE
+  -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/OFunctor.20definition
+  -- cofe [COFE α] [COFE β] : UCMRA (F α β)
+  cmra [OFE α] [OFE β] : UCMRA (F α β)
+  map [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -n> F α₂ β₂
-  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  map_ne [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
-  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
+  map_id [OFE α] [OFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
+  map_comp [OFE α₁] [OFE α₂] [OFE α₃] [OFE β₁] [OFE β₂] [OFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
-  mor [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] (f : α₂ -n> α₁) (g : β₁ -n> β₂) :
+  mor [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] (f : α₂ -n> α₁) (g : β₁ -n> β₂) :
     CMRA.isCmraMor (map f g)
 
 class URFunctorContractive (F : COFE.OFunctorPre) extends URFunctor F where
-  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
 attribute [instance] URFunctor.cmra
@@ -961,7 +967,7 @@ section DiscreteFunURF
 
 -- Ensures there are no instance clashes in the UF definifion
 instance {C} (F : C → COFE.OFunctorPre) [HUF : ∀ c, URFunctor (F c)] :
-        ∀ A B [COFE A] [COFE B], IsUCMRAFun fun c => F c A B :=
+        ∀ A B [OFE A] [OFE B], IsUCMRAFun fun c => F c A B :=
     fun A B _ _ => by
         apply IsUCMRAFun.mk
         intro c
@@ -1017,7 +1023,7 @@ section optionOF
 variable (F : COFE.OFunctorPre)
 
 -- We always get a unital cmra
-instance OptionOFisUCMRA [COFE α] [COFE β] [RFunctor F] : UCMRA (OptionOF F α β) := by
+instance OptionOFisUCMRA [OFE α] [OFE β] [RFunctor F] : UCMRA (OptionOF F α β) := by
   unfold OptionOF
   infer_instance
 
