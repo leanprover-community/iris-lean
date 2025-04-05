@@ -755,7 +755,6 @@ theorem core_dup_L {x : α} [CMRA.IsTotal α] : CMRA.core x = CMRA.core x • CM
 theorem core_id_total_L {x : α} [CMRA.IsTotal α] : CMRA.CoreId x ↔ CMRA.core x = x := calc
   CoreId x ↔ core x ≡ x := coreId_iff_core_eqv_self
   _        ↔ core x = x := Leibniz.leibniz
-
 theorem core_id_core_L {x : α} [CMRA.IsTotal α] [c: CMRA.CoreId x] : CMRA.core x = x :=
   core_id_total_L.mp c
 
@@ -909,13 +908,15 @@ instance URFunctorContractive.toRFunctorContractive [URFunctorContractive F] : R
 
 end urFunctor
 
-
 /- A dependent function has its range contained in CMRA types -/
 class IsUCMRAFun (F : α → Type _) where
   cmra {x : α} : UCMRA (F x)
 
+instance {α β : Type _} [U : UCMRA β] : IsUCMRAFun (fun (_ : α) => β) := ⟨ U ⟩
+
 attribute [instance] IsUCMRAFun.cmra
 
+-- Instance diamond?
 instance [IsUCMRAFun F] : IsOFEFun F where
   ofe {x} := (@IsUCMRAFun.cmra _ F _ x).toOFE
 
@@ -977,8 +978,93 @@ instance IsOFEFun_UFC {C} (F : C → Type _ → Type _ → Type _) [HURF : ∀ c
 
 end DiscreteFunURF
 
--- The "gmap" OFE from Iris is equivalent to (A -d> option B) with a Leibniz OFE over (option B)
--- (ie. a Leibniz OFE over B).
--- gmap is always unital.
--- Therefore, we can weaken the "HURF" constraint on IsOFEFun_UF to just be an rFunctor,
--- and similarly on IsOFEFun_UFC.
+section option
+
+variable [CMRA A]
+
+instance : CMRA (OptionO A) where
+  pcore f := sorry
+  op f g := sorry
+  ValidN n f := sorry
+  Valid f := sorry
+  op_ne := sorry
+  pcore_ne := sorry
+  validN_ne := sorry
+  valid_iff_validN := sorry
+  validN_succ := sorry
+  validN_op_left := sorry
+  assoc := sorry
+  comm := sorry
+  pcore_op_left := sorry
+  pcore_idem := sorry
+  pcore_op_mono := sorry
+  extend := sorry
+
+instance OptionO_UCMRA [CMRA A] : UCMRA (OptionO A) where
+  unit := sorry
+  unit_valid := sorry
+  unit_left_id := sorry
+  pcore_unit := sorry
+
+end option
+
+section optionOF
+
+variable (F : Type _ → Type _ → Type _)
+
+-- We always get a unital cmra
+instance OptionOFisUCMRA [COFE α] [COFE β] [RFunctor F] : UCMRA (OptionOF F α β) := by
+  unfold OptionOF
+  infer_instance
+
+instance OptionOF_URF [RFunctor F] : URFunctor (OptionOF F) where
+  cmra := (OptionOFisUCMRA _)
+  map := sorry
+  map_ne := sorry
+  map_id := sorry
+  map_comp := sorry
+  mor := sorry
+
+-- instance [RFunctor F] : RFunctor (OptionOF F) :=
+--   URFunctor.toRFunctor
+
+instance OptionOF_URFC [RFunctorContractive F] : URFunctorContractive (OptionOF F) where
+  map_contractive := sorry
+
+end optionOF
+
+section gen_map
+
+/-
+The OFE over gmaps is eqivalent to a non-depdenent discrete function to an `Option` type with a `Leibniz` OFE.
+In this setting, the CMRA is always unital, and as a consquence the oFunctors do not require
+unitality in order to act as a `URFunctor(Contractive)`.
+-/
+
+variable (α β : Type _) [UCMRA β] [Leibniz β]
+
+abbrev gen_map := (α -d> (OptionO β))
+
+-- #synth CMRA (OptionO β)
+-- #synth CMRA (α -d> (OptionO β))
+-- #synth UCMRA (α -d> (OptionO β))
+-- The synthesized UMRA here has unit (fun x => ε) = (fun x => none).
+-- For us, this is equivalent to the Rocq-iris unit ∅.
+
+def gen_mapOF (C : Type _) (F : Type _ → Type _ → Type _) :=
+  discrete_fun_OF (fun (_ : C) => OptionOF F)
+
+instance gen_map_UF {C} (F : Type _ → Type _ → Type _) [HRF : RFunctor F] :
+    URFunctor (gen_mapOF C F) where
+  cmra := sorry
+  map := sorry
+  map_ne := sorry
+  map_id := sorry
+  map_comp := sorry
+  mor := sorry
+
+instance gen_map_RF {C} (F : Type _ → Type _ → Type _) [HRF : RFunctorContractive F] :
+     URFunctorContractive (gen_mapOF C F) where
+  map_contractive := sorry
+
+end gen_map
