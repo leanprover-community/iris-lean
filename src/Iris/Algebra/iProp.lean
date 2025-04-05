@@ -56,9 +56,8 @@ theorem subG_refl (FF : gFunctors) : subG FF FF := sorry
 theorem subG_aop_R (FF₁ FF₂ FF₃ : gFunctors) (H : subG FF₁ FF₂) : (subG FF₁ (FF₂.app FF₃)) := sorry
 
 
--- FIXME : Change to equivalent
 def iResF (FF : gFunctors) : (Type _ -> Type -> Type _) :=
-  discrete_fun_OF (fun i : gid FF => discrete_fun_OF (fun (_ : gname) => (gFunctors.lookup FF i).F))
+  discrete_fun_OF (fun i : gid FF => gen_mapOF gname (gFunctors.lookup FF i).F)
 
 -- We need gmap so that IResF is a real URFunctor: gFunctors.lookup is an rFunctor not a urFunctor
 
@@ -94,8 +93,7 @@ instance (FF : gFunctors) : COFE (iPrePropO FF) := COFE.OFunctor.fix_COFE
 
 def iResUR (FF : gFunctors) : Type :=
   discrete_fun (fun (i : gid FF) =>
-  discrete_fun (fun (_ : gname) =>                    -- FIXME : Change to gmap
-  (FF.lookup i).F (iPrePropO FF) (iPrePropO FF)))
+gen_map gname ((FF.lookup i).F (iPrePropO FF) (iPrePropO FF)))
 
 local instance DELELTEME5 : IsUCMRAFun (iResUR) := sorry -- Will be able to show this is a UCMRA after gmap change
 
