@@ -471,6 +471,8 @@ structure discrete_fun {α : Type} (F : α → Type _) : Type _ where
 /-- Non-dependent discrete function -/
 notation:25 x:26 " -d> " y:25 => @discrete_fun x (fun _ => y)
 
+instance {α β : Type _} [O : OFE β] : IsOFEFun (fun (_ : α) => β) := ⟨ O ⟩
+
 instance {α : Type _} {β : α -> Type _} : CoeFun (discrete_fun β) (fun _ => ((x : α) -> β x)) :=
   ⟨ fun f => f.car ⟩
 
@@ -564,3 +566,47 @@ instance discrete_fun_OFunctor {C} (F : C → Type _ → Type _ → Type _) [HOF
 
 end DiscreteFunOF
 
+
+
+/- Wrapper around the Option type, so that the OFE doesn't get inferred
+   for eg. partial values -/
+structure OptionO (α : Type _ )where
+  car : Option α
+
+
+section Option
+
+variable [OFE α]
+
+instance : OFE (OptionO α) where
+  Equiv := sorry
+  Dist := sorry
+  dist_eqv := sorry
+  equiv_dist := sorry
+  dist_lt := sorry
+
+instance [IsCOFE α] : IsCOFE (OptionO α) where
+  compl := sorry
+  conv_compl := sorry
+
+end Option
+
+
+def OptionOF (F : Type _ → Type _ → Type _) (A B : Type _) :=
+  OptionO (F A B)
+
+section OptionOF
+
+variable (F : Type _ → Type _ → Type _) [COFE.OFunctor F]
+
+instance : COFE.OFunctor (OptionOF F) where
+  cofe := sorry
+  map := sorry
+  map_ne := sorry
+  map_id := sorry
+  map_comp := sorry
+
+instance [COFE.OFunctorContractive F] : COFE.OFunctorContractive (OptionOF F) where
+  map_contractive := sorry
+
+end OptionOF
