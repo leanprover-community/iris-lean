@@ -115,11 +115,7 @@ instance uPredOF_oFunctor [URFunctor F] : COFE.OFunctor (uPredOF F) where
   map_id := sorry
   map_comp := sorry
 
-
--- Program Definition uPredOF (F : urFunctor) : oFunctor := {|
---   oFunctor_car A _ B _ := uPredO (urFunctor_car F B A);
---   oFunctor_map A1 _ A2 _ B1 _ B2 _ fg := uPredO_map (urFunctor_map F (fg.2, fg.1))
--- |}.
-
+instance uPredOF_oFC [URFunctorContractive F] : COFE.OFunctorContractive (uPredOF F) where
+  map_contractive := sorry
 
 end upred
