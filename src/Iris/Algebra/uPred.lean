@@ -9,20 +9,21 @@ import Iris.Algebra.OFE
 
 namespace Iris
 
+/-- The data of a uPred object is an indexed proposition over M -/
+@[ext]
+structure uPred (M : Type _) where
+  uPred_holds : Nat → M → Prop
+
+instance : CoeFun (uPred M) (fun _ => Nat -> M → Prop) :=
+  ⟨fun x => x.uPred_holds⟩
+
+/-- A uPred is monotone -/
+class IsuPred [UCMRA M] (T : uPred M) where
+  uPred_mono {n1 n2 x1 x2} : T.uPred_holds n1 x1 → x1 ≼{n2} x2 → n2 ≤ n1 → T.uPred_holds n2 x2
+
 section upred
 
 variable {M : Type} [UCMRA M]
-
-
-
-@[ext]
-structure uPredPre (M : Type) : Type where
-  uPred_holds : Nat -> M -> Prop
-
-structure uPred (M : Type) [CMRA M] extends uPredPre M where
-  uPred_mono {n1 n2 x1 x2} : uPred_holds n1 x1 → x1 ≼{n2} x2 → n2 ≤ n1 → uPred_holds n2 x2
-
-instance [UCMRA M] : CoeFun (uPred M) (fun _ => Nat -> M → Prop) := ⟨fun x => uPredPre.uPred_holds x.touPredPre⟩
 
 open uPred
 
@@ -51,6 +52,8 @@ instance : OFE (uPred M) where
   equiv_dist := equiv_dist
   dist_lt := dist_lt
 
+/- TODO: Some of these will need [IsuPred P] -/
+
 theorem uPred_ne (P : uPred M) n : ∀ {m₁ m₂}, m₁ ≡{n}≡ m₂ → (P n m ↔ P n m₂) := sorry
 -- Global Instance uPred_ne {M} (P : uPred M) n : Proper (dist n ==> iff) (P n).
 -- Proof.
@@ -69,12 +72,7 @@ theorem uPred_holds_ne (P Q : uPred M) n₁ n₂ x : P ≡{n₂}≡ Q → n₂ �
 --   intros [Hne] ???. eapply Hne; try done. eauto using uPred_mono, cmra_validN_le.
 -- Qed.
 
-
-
-
-
-def compl (c : Chain (uPred M)) : uPred M :=
-  ⟨ sorry,
+def compl (c : Chain (uPred M)) : uPred M := sorry
     -- fun n x => ∀ n', n' ≤ n -> ✓{n'} x → (c n') n' x,
 -- Depends on CMRA lemma
 --   Next Obligation.
@@ -83,7 +81,6 @@ def compl (c : Chain (uPred M)) : uPred M :=
 --     - eapply cmra_includedN_le=>//; lia.
 --     - done.
 --   Qed.
-    sorry ⟩
 
 -- FIXME cleanup
 instance uPred_IsCOFE : IsCOFE (uPred M) where
@@ -106,7 +103,7 @@ instance uPred_IsCOFE : IsCOFE (uPred M) where
     -- · apply Hn'
 
 
-def uPredOF F [URFunctor F] (A : Type _) (B : Type _) : Type _ := uPredPre (F B A)
+def uPredOF F [URFunctor F] (A : Type _) (B : Type _) : Type _ := uPred (F B A)
 
 instance uPredOF_oFunctor [URFunctor F] : COFE.OFunctor (uPredOF F) where
   cofe := sorry
