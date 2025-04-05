@@ -84,7 +84,7 @@ def iResUR : Type :=
   discrete_fun (fun (i : gid FF) => gen_map gname (FF[i] (iPrePropO FF) (iPrePropO FF)))
 
 
-local instance DELETEME3 : CMRA (iResUR FF) := by
+local instance DELETEME3 : UCMRA (iResUR FF) := by
   unfold iResUR
   sorry
 
