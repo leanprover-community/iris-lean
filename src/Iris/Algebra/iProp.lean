@@ -13,7 +13,7 @@ import Init.Data.Vector
 
 namespace Iris
 
-abbrev gFunctors := Array (Type _ → Type _ → Type _)
+abbrev gFunctors := Array COFE.OFunctorPre
 
 abbrev gFunctors.len (FF : gFunctors) := FF.size
 
@@ -53,7 +53,7 @@ end subG
 abbrev gname :=  { n : Nat // 0 < n }
 def gnameO := LeibnizO gname
 
-def iResF (FF : gFunctors) : (Type _ -> Type -> Type _) :=
+def iResF (FF : gFunctors) : COFE.OFunctorPre :=
   discrete_fun_OF (fun i : gid FF => gen_mapOF gname FF[i])
 
 -- instance (FF) [IsgFunctors FF] (c : gid FF) : URFunctor (gen_mapOF gname FF[c]) := by infer_instance

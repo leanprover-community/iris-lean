@@ -427,6 +427,9 @@ instance : COFE Unit where
   compl _ := ()
   conv_compl := ⟨⟩
 
+
+abbrev OFunctorPre := (α : Type _) → (β : Type _) -> [OFE α] → [OFE β] → Type _
+
 class OFunctor (F : ∀ α β [OFE α] [OFE β], Type _) where
   cofe [COFE α] [COFE β] : OFE (F α β)
   map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
@@ -533,23 +536,24 @@ theorem discrete_fun.map.ne [IsOFEFun β₁] [IsOFEFun β₂] (f : ∀ x, β₁ 
     (H : ∀ x, NonExpansive (f x)) : NonExpansive (discrete_fun.map f) :=
   ⟨ fun _ _ _ Hx x => by apply (H x).ne; apply Hx ⟩
 
-abbrev discrete_fun_OF {C} (F : C → Type _ → Type _ → Type _) (A B : Type _) : Type _ :=
-  discrete_fun (fun c => (F c) A B)
+abbrev discrete_fun_OF {C} (F : C → COFE.OFunctorPre) : COFE.OFunctorPre :=
+  fun A B _ _ => discrete_fun (fun (c : C) => (F c) A B)
 
 -- Works
 -- variable {α₁ β₁ C : Type _} (F : C → Type _ → Type _ → Type _) [∀ A B, IsOFEFun fun c => F c A B]
 -- #synth OFE (discrete_fun_OF F α₁ β₁)
 
 
+
 -- This is here so that the IsOFEFun instance we get is the same as the OFunctor
-instance {C} (F : C → Type _ → Type _ → Type _) [HOF : ∀ c, COFE.OFunctor (F c)] :
+instance {C} (F : C → COFE.OFunctorPre) [HOF : ∀ c, COFE.OFunctor (F c)] :
         ∀ A B [COFE A] [COFE B], IsOFEFun fun c => F c A B :=
     fun A B _ _ => by
         apply IsOFEFun.mk
         intro c
         apply (HOF c).cofe
 
-instance discrete_fun_OFunctor {C} (F : C → Type _ → Type _ → Type _) [HOF : ∀ c, COFE.OFunctor (F c)] :
+instance discrete_fun_OFunctor {C} (F : C → COFE.OFunctorPre) [HOF : ∀ c, COFE.OFunctor (F c)] :
     COFE.OFunctor (discrete_fun_OF F) where
   cofe {α β _ _} := discrete_fun.OFE fun c => F c α β
   map f₁ f₂
@@ -592,12 +596,12 @@ instance [IsCOFE α] : IsCOFE (OptionO α) where
 end Option
 
 
-def OptionOF (F : Type _ → Type _ → Type _) (A B : Type _) :=
-  OptionO (F A B)
+def OptionOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
+  fun A B _ _ => OptionO (F A B)
 
 section OptionOF
 
-variable (F : Type _ → Type _ → Type _) [COFE.OFunctor F]
+variable (F : COFE.OFunctorPre) [COFE.OFunctor F]
 
 instance : COFE.OFunctor (OptionOF F) where
   cofe := sorry
