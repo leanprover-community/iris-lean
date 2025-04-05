@@ -9,17 +9,18 @@ import Iris.Algebra.OFE
 
 namespace Iris
 
-/-- The data of a uPred object is an indexed proposition over M -/
+/-- The data of a uPred object is an indexed proposition over M (Bundled version )-/
 @[ext]
-structure uPred (M : Type _) where
+structure uPred (M : Type _) [UCMRA M] where
   uPred_holds : Nat → M → Prop
+  uPred_mono {n1 n2 x1 x2} : uPred_holds n1 x1 → x1 ≼{n2} x2 → n2 ≤ n1 → uPred_holds n2 x2
 
-instance : CoeFun (uPred M) (fun _ => Nat -> M → Prop) :=
+-- The unbundled version: separate out just the uPred_holds field and make
+-- the uPred_mono field a typeclass
+
+
+instance [UCMRA M] : CoeFun (uPred M) (fun _ => Nat -> M → Prop) :=
   ⟨fun x => x.uPred_holds⟩
-
-/-- A uPred is monotone -/
-class IsuPred [UCMRA M] (T : uPred M) where
-  uPred_mono {n1 n2 x1 x2} : T.uPred_holds n1 x1 → x1 ≼{n2} x2 → n2 ≤ n1 → T.uPred_holds n2 x2
 
 section upred
 
@@ -52,37 +53,33 @@ instance : OFE (uPred M) where
   equiv_dist := equiv_dist
   dist_lt := dist_lt
 
-/- TODO: Some of these will need [IsuPred P] -/
+theorem uPred_ne (P : uPred M) n : ∀ {m₁ m₂}, m₁ ≡{n}≡ m₂ → (P n m₁ ↔ P n m₂) := by
+  intro m₁ m₂ H
+  apply Iff.intro <;> intro H' <;> apply P.uPred_mono H' _ (Nat.le_refl _)
+  · apply CMRA.dst_incN H.symm
+  · apply CMRA.dst_incN H
 
-theorem uPred_ne (P : uPred M) n : ∀ {m₁ m₂}, m₁ ≡{n}≡ m₂ → (P n m ↔ P n m₂) := sorry
--- Global Instance uPred_ne {M} (P : uPred M) n : Proper (dist n ==> iff) (P n).
--- Proof.
---   intros x1 x2 Hx; split=> ?; eapply uPred_mono; eauto; by rewrite Hx.
--- Qed.
+theorem uPred_proper (P : uPred M) n : ∀ {m₁ m₂}, m₁ ≡ m₂ → (P n m₁ ↔ P n m₂) :=
+  fun H => uPred_ne _ _ (OFE.equiv_dist.mp H _)
 
-theorem uPred_proper (P : uPred M) n : ∀ {m₁ m₂}, m₁ ≡ m₂ → (P n m ↔ P n m₂) := sorry
--- Global Instance uPred_proper {M} (P : uPred M) n : Proper ((≡) ==> iff) (P n).
--- Proof. by intros x1 x2 Hx; apply uPred_ne, equiv_dist. Qed.
+theorem uPred_holds_ne (P Q : uPred M) n₁ n₂ x :
+    P ≡{n₂}≡ Q → n₂ ≤ n₁ → ✓{n₂} x → Q n₁ x → P n₂ x := by
+  intros HPQ Hn Hx HQ
+  apply (HPQ _ _ (Nat.le_refl _) Hx).mpr
+  apply Q.uPred_mono HQ _ Hn
+  apply CMRA.incN_refl
 
+def compl (c : Chain (uPred M)) : uPred M where
+  uPred_holds := fun n x => ∀ n', n' ≤ n → ✓{n'} x → (c n') n' x
+  uPred_mono := by
+    intros n1 n2 x1 x2 HP Hx12 Hn12 n3 Hn23 Hv
+    apply uPred_mono
+    · apply HP _ (Nat.le_trans Hn23 Hn12)
+      apply CMRA.validN_of_incN _ Hv
+      apply CMRA.incN_of_incN_le Hn23 Hx12
+    · exact CMRA.incN_of_incN_le Hn23 Hx12
+    · exact (Nat.le_refl n3)
 
-theorem uPred_holds_ne (P Q : uPred M) n₁ n₂ x : P ≡{n₂}≡ Q → n₂ ≤ n₁ → ✓{n2} x → Q n₁ x → P n₂ x := sorry
--- Lemma uPred_holds_ne {M} (P Q : uPred M) n1 n2 x :
---   P ≡{n2}≡ Q → n2 ≤ n1 → ✓{n2} x → Q n1 x → P n2 x.
--- Proof.
---   intros [Hne] ???. eapply Hne; try done. eauto using uPred_mono, cmra_validN_le.
--- Qed.
-
-def compl (c : Chain (uPred M)) : uPred M := sorry
-    -- fun n x => ∀ n', n' ≤ n -> ✓{n'} x → (c n') n' x,
--- Depends on CMRA lemma
---   Next Obligation.
---     move=> /= c n1 n2 x1 x2 HP Hx12 Hn12 n3 Hn23 Hv. eapply uPred_mono.
---     - eapply HP, cmra_validN_includedN, cmra_includedN_le=>//; lia.
---     - eapply cmra_includedN_le=>//; lia.
---     - done.
---   Qed.
-
--- FIXME cleanup
 instance uPred_IsCOFE : IsCOFE (uPred M) where
   compl := compl
   conv_compl := by
@@ -92,18 +89,23 @@ instance uPred_IsCOFE : IsCOFE (uPred M) where
     · apply (c.cauchy Hin  _ _ (Nat.le_refl _) Hv)
     apply Iff.symm
     apply Iff.intro
-    · sorry -- exact (· _ (Nat.le_refl _) Hv)
-    sorry
-    -- intro H n' Hn' Hv'
-    -- apply (c.cauchy (i := i) Hn' _ _ (Nat.le_refl _) Hv').mp
-    -- apply @uPred.uPred_mono
-    -- · apply H
-    -- · -- UCMRA lemma
-    --   sorry
-    -- · apply Hn'
+    · intro H
+      exact (H _ (Nat.le_refl _) Hv)
+    intro H n' Hn' Hv'
+    apply (c.cauchy (i := i) Hn' _ _ (Nat.le_refl _) Hv').mp
+    -- FIXME Need the chain to be all uPreds to do this!
+    -- FIXME Therefore, the uPred type has to be bundled
+    apply uPred_mono
+    · apply H
+    · exact CMRA.incN_refl x
+    · apply Hn'
 
-
-def uPredOF F [URFunctor F] (A : Type _) (B : Type _) : Type _ := uPred (F B A)
+def uPredOF F [URFunctor F] (A : Type _) (B : Type _) : Type _ :=
+  @uPred (F B A) (@URFunctor.cmra F _ B A sorry sorry)
+    -- FIXME Need uPred to be defined here?
+    -- FIXME If the uPred type is bundled, then we would need A and B to be COFE's here
+    -- FIXME Therefore, the uPred type needs to be unbunded.
+    -- FIXME What to do about this?
 
 instance uPredOF_oFunctor [URFunctor F] : COFE.OFunctor (uPredOF F) where
   cofe := sorry

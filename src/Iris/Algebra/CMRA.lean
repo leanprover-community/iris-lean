@@ -710,6 +710,9 @@ instance empty_cancelable : CMRA.Cancelable u.unit where
     _ ≡{n}≡ UCMRA.unit • t := e
     _ ≡{n}≡ t := u.unit_left_id.dist
 
+theorem dst_incN {n} {x y : α} (H : y ≡{n}≡ x) : x ≼{n} y :=
+  ⟨ u.unit, H.trans (equiv_dist.mp (unit_right_id x) n).symm ⟩
+
 end ucmra
 
 
