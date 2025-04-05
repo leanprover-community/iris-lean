@@ -56,7 +56,9 @@ def impl : uPred M where
            _ ≡{n}≡ (x₁ • m₁) • m₂   := CMRA.op_left_dist _ (OFE.Dist.le Hle Hnle)
     apply (uPred_ne _ _ Hx).mpr
     apply H
-    · exact CMRA.inc_unit
+    · let X := @CMRA.inc_unit M _  -- why was this working before lol
+      sorry
+      -- apply @CMRA.inc_unit
     · exact Nat.le_trans Hnle Hn
     · exact (OFE.Dist.validN Hx).mp Hv
     · exact (uPred_ne P n Hx).mp HP
@@ -97,7 +99,7 @@ def wand : uPred M where
     apply Q.uPred_mono _ (CMRA.op_monoN_left _ (CMRA.incN_of_incN_le Hn' Hm)) (Nat.le_refl _)
     apply H
     · exact Nat.le_trans Hn' Hn
-    · exact CMRA.unit_validN n'
+    · sorry -- exact CMRA.unit_validN n'
     · exact HP
 
 def plainly : uPred M where

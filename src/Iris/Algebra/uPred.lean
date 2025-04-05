@@ -100,8 +100,8 @@ instance uPred_IsCOFE : IsCOFE (uPred M) where
     · exact CMRA.incN_refl x
     · apply Hn'
 
-def uPredOF F [URFunctor F] (A : Type _) (B : Type _) : Type _ :=
-  @uPred (F B A) (@URFunctor.cmra F _ B A sorry sorry)
+def uPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
+  fun A B _ _ => @uPred (F B A) sorry -- (@URFunctor.cmra F _ B A sorry sorry)
     -- FIXME Need uPred to be defined here?
     -- FIXME If the uPred type is bundled, then we would need A and B to be COFE's here
     -- FIXME Therefore, the uPred type needs to be unbunded.

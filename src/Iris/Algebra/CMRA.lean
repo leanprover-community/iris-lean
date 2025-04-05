@@ -840,26 +840,27 @@ end CmraMorphism
 
 end CMRA
 
+
 section rFunctor
 
-class RFunctor (F : Type _ → Type _ → Type _) where
+class RFunctor (F : COFE.OFunctorPre) where
   cmra [COFE α] [COFE β] : CMRA (F α β)
   map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -n> F α₂ β₂
   map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [COFE α] [COFE β] : map (@Hom.id α _) (@Hom.id β _) x ≡ x
+  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
   map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
   mor [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] (f : α₂ -n> α₁) (g : β₁ -n> β₂) :
     CMRA.isCmraMor (map f g)
 
-class RFunctorContractive (F : Type _ → Type _ → Type _) extends RFunctor F where
+class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
   map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-def RFunctor.ap [RFunctor F] T := F T T
+def RFunctor.ap [RFunctor F] [OFE T] := F T T
 
 attribute [instance] RFunctor.cmra
 
@@ -878,20 +879,20 @@ end rFunctor
 
 section urFunctor
 
-class URFunctor (F : Type _ → Type _ → Type _) where
+class URFunctor (F : COFE.OFunctorPre) where
   cmra [COFE α] [COFE β] : UCMRA (F α β)
   map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -n> F α₂ β₂
   map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [COFE α] [COFE β] : map (@Hom.id α _) (@Hom.id β _) x ≡ x
+  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
   map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
   mor [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] (f : α₂ -n> α₁) (g : β₁ -n> β₂) :
     CMRA.isCmraMor (map f g)
 
-class URFunctorContractive (F : Type _ → Type _ → Type _) extends URFunctor F where
+class URFunctorContractive (F : COFE.OFunctorPre) extends URFunctor F where
   map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
@@ -959,14 +960,14 @@ section DiscreteFunURF
 
 
 -- Ensures there are no instance clashes in the UF definifion
-instance {C} (F : C → Type _ → Type _ → Type _) [HUF : ∀ c, URFunctor (F c)] :
+instance {C} (F : C → COFE.OFunctorPre) [HUF : ∀ c, URFunctor (F c)] :
         ∀ A B [COFE A] [COFE B], IsUCMRAFun fun c => F c A B :=
     fun A B _ _ => by
         apply IsUCMRAFun.mk
         intro c
         apply (HUF c).cmra
 
-instance IsOFEFun_UF {C} (F : C → Type _ → Type _ → Type _) [HURF : ∀ c, URFunctor (F c)] :
+instance IsOFEFun_UF {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctor (F c)] :
      URFunctor (discrete_fun_OF F) where
   cmra {α β _ _ } := discrete_fun.CMRA fun c => F c α β
   map := sorry
@@ -975,7 +976,7 @@ instance IsOFEFun_UF {C} (F : C → Type _ → Type _ → Type _) [HURF : ∀ c,
   map_comp := sorry
   mor := sorry
 
-instance IsOFEFun_UFC {C} (F : C → Type _ → Type _ → Type _) [HURF : ∀ c, URFunctorContractive (F c)] :
+instance IsOFEFun_UFC {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctorContractive (F c)] :
      URFunctorContractive (discrete_fun_OF F) where
   map_contractive := sorry
 
@@ -1013,7 +1014,7 @@ end option
 
 section optionOF
 
-variable (F : Type _ → Type _ → Type _)
+variable (F : COFE.OFunctorPre)
 
 -- We always get a unital cmra
 instance OptionOFisUCMRA [COFE α] [COFE β] [RFunctor F] : UCMRA (OptionOF F α β) := by
@@ -1054,10 +1055,10 @@ abbrev gen_map := (α -d> (OptionO β))
 -- The synthesized UMRA here has unit (fun x => ε) = (fun x => none).
 -- For us, this is equivalent to the Rocq-iris unit ∅.
 
-def gen_mapOF (C : Type _) (F : Type _ → Type _ → Type _) :=
+def gen_mapOF (C : Type _) (F : COFE.OFunctorPre) :=
   discrete_fun_OF (fun (_ : C) => OptionOF F)
 
-instance gen_map_UF {C} (F : Type _ → Type _ → Type _) [HRF : RFunctor F] :
+instance gen_map_UF {C} (F : COFE.OFunctorPre) [HRF : RFunctor F] :
     URFunctor (gen_mapOF C F) where
   cmra := sorry
   map := sorry
@@ -1066,7 +1067,7 @@ instance gen_map_UF {C} (F : Type _ → Type _ → Type _) [HRF : RFunctor F] :
   map_comp := sorry
   mor := sorry
 
-instance gen_map_RF {C} (F : Type _ → Type _ → Type _) [HRF : RFunctorContractive F] :
+instance gen_map_RF {C} (F : COFE.OFunctorPre) [HRF : RFunctorContractive F] :
      URFunctorContractive (gen_mapOF C F) where
   map_contractive := sorry
 
