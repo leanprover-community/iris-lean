@@ -934,28 +934,80 @@ section DiscreteFunUCMRA
 
 variable {α : Type _} (β : α → Type _) [IsUCMRAFun β]
 
+-- TODO: Cleanup
+
 instance discrete_fun.CMRA : UCMRA (discrete_fun β) where
   toOFE := discrete_fun.OFE β
   pcore f := some ⟨ fun x => CMRA.core (f x) ⟩
   op f g := ⟨ fun x => f x • g x ⟩
   ValidN n f := ∀ x, ✓{n} (f x)
   Valid f := ∀ x, ✓(f x)
-  op_ne := sorry
-  pcore_ne := sorry
-  validN_ne := sorry
-  valid_iff_validN := sorry
-  validN_succ := sorry
-  validN_op_left := sorry
-  assoc := sorry
-  comm := sorry
-  pcore_op_left := sorry
-  pcore_idem := sorry
+  op_ne := by
+    simp
+    intro f
+    constructor
+    intro n x1 x2 H y
+    simp
+    exact CMRA.op_right_dist (f.car y) (H y)
+  pcore_ne := by
+    simp
+    intros _ _ _ a
+    intro y
+    simp
+    apply CMRA.tot_core_ne _ (a y)
+  validN_ne := by
+    simp
+    intros n x y H H1 y
+    exact (Dist.validN (H y)).mp (H1 y)
+  valid_iff_validN := by
+    simp
+    intro g
+    apply Iff.intro
+    · intro H x y; exact CMRA.Valid.validN (H y)
+    · intro H x
+      rename_i I
+      -- exact CMRA.valid_iff_validN.mpr fun n => H n x
+      apply ((@I.cmra x).valid_iff_validN).mpr (fun i => H i x)
+  validN_succ := by
+    simp
+    intro x n H x'
+    rename_i I
+    apply ((@I.cmra _).validN_succ)
+    apply H
+  validN_op_left := by
+    simp
+    intros f g h H x
+    exact CMRA.validN_op_left (H x)
+  assoc := by
+    simp
+    intros f g h x
+    apply CMRA.assoc
+  comm := by
+    simp
+    intros f g x
+    apply CMRA.comm
+  pcore_op_left := by
+    simp
+    intro x y
+    exact CMRA.core_op (x.car y)
+  pcore_idem := by
+    simp
+    intro x y
+    exact CMRA.core_idemp (x.car y)
   pcore_op_mono := sorry
   extend := sorry
   unit := ⟨ fun _ => UCMRA.unit ⟩
-  unit_valid := sorry
-  unit_left_id := sorry
-  pcore_unit := sorry
+  unit_valid := by
+    simp
+    exact fun x => UCMRA.unit_valid
+  unit_left_id := by
+    simp
+    intro x y
+    exact UCMRA.unit_left_id
+  pcore_unit := by
+    simp
+    intro x
+    apply CMRA.core_eqv_self
 
 end DiscreteFunUCMRA
 
