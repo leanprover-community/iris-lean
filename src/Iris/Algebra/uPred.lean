@@ -93,22 +93,16 @@ instance uPred_IsCOFE : IsCOFE (uPred M) where
       exact (H _ (Nat.le_refl _) Hv)
     intro H n' Hn' Hv'
     apply (c.cauchy (i := i) Hn' _ _ (Nat.le_refl _) Hv').mp
-    -- FIXME Need the chain to be all uPreds to do this!
-    -- FIXME Therefore, the uPred type has to be bundled
     apply uPred_mono
     · apply H
     · exact CMRA.incN_refl x
     · apply Hn'
 
 def uPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
-  fun A B _ _ => @uPred (F B A) sorry -- (@URFunctor.cmra F _ B A sorry sorry)
-    -- FIXME Need uPred to be defined here?
-    -- FIXME If the uPred type is bundled, then we would need A and B to be COFE's here
-    -- FIXME Therefore, the uPred type needs to be unbunded.
-    -- FIXME What to do about this?
+  fun A B _ _ => uPred (F B A)
 
 instance uPredOF_oFunctor [URFunctor F] : COFE.OFunctor (uPredOF F) where
-  cofe := sorry
+  cofe := by unfold uPredOF; infer_instance
   map := sorry
   map_ne := sorry
   map_id := sorry
