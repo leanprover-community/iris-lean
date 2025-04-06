@@ -56,9 +56,9 @@ def impl : uPred M where
            _ ≡{n}≡ (x₁ • m₁) • m₂   := CMRA.op_left_dist _ (OFE.Dist.le Hle Hnle)
     apply (uPred_ne _ _ Hx).mpr
     apply H
-    · let X := @CMRA.inc_unit M _  -- why was this working before lol
-      sorry
-      -- apply @CMRA.inc_unit
+    · calc x₁ ≡ x₁ • UCMRA.unit := (CMRA.unit_right_id _).symm
+           _  ≼ x₁ • (m₁ • m₂)   := CMRA.op_mono_right _ (CMRA.inc_unit (m₁ • m₂))
+           _  ≡ (x₁ • m₁) • m₂   := CMRA.assoc
     · exact Nat.le_trans Hnle Hn
     · exact (OFE.Dist.validN Hx).mp Hv
     · exact (uPred_ne P n Hx).mp HP
@@ -73,7 +73,7 @@ def sExists : uPred M where
 
 def internal_eq : uPred M where
   uPred_holds n _ := o1 ≡{n}≡ o2
-  uPred_mono := sorry
+  uPred_mono := fun H1 _ H2 => OFE.Dist.le H1 H2
 
 def sep : uPred M where
   uPred_holds n x := ∃ x1 x2, x ≡{n}≡ x1 • x2 ∧ P n x1 ∧ Q n x2
@@ -99,7 +99,14 @@ def wand : uPred M where
     apply Q.uPred_mono _ (CMRA.op_monoN_left _ (CMRA.incN_of_incN_le Hn' Hm)) (Nat.le_refl _)
     apply H
     · exact Nat.le_trans Hn' Hn
-    · sorry -- exact CMRA.unit_validN n'
+    · apply CMRA.validN_of_incN _ Hv
+      rcases Hm with ⟨ y, Hx ⟩
+      exists y
+      apply (OFE.Dist.le _ Hn')
+      calc m₂ • x ≡{n₂}≡ (m₁ • y) • x := CMRA.op_left_dist _ Hx
+           _      ≡{n₂}≡ m₁ • (y • x) := OFE.Equiv.dist (CMRA.assoc).symm
+           _      ≡{n₂}≡ m₁ • (x • y) := CMRA.op_right_dist _ (OFE.Equiv.dist CMRA.comm)
+           _      ≡{n₂}≡ (m₁ • x) • y := OFE.Equiv.dist CMRA.assoc
     · exact HP
 
 def plainly : uPred M where
@@ -161,8 +168,36 @@ instance : Std.Preorder (Entails (PROP := uPred M)) where
 
 instance : BI (uPred M) where
   entails_preorder       := by infer_instance
-  equiv_iff              := sorry
-  and_ne                 := sorry
+
+  -- TODO: Tidy
+
+  equiv_iff {P Q}        := by
+    apply Iff.intro
+    · simp [BiEntails]
+      intro HE
+      constructor
+      · simp [Entails, entails]
+        intro n x Hv H
+        apply uPred_holds_ne _ _ n _ _ _ (Nat.le_refl _) Hv H
+        apply OFE.Dist.symm
+        apply (OFE.equiv_dist.mp HE)
+      · simp [Entails, entails]
+        intro n x Hv H
+        apply uPred_holds_ne _ _ n _ _ _ (Nat.le_refl _) Hv H
+        apply (OFE.equiv_dist.mp HE)
+    · simp [BiEntails]
+      intro HE
+      rcases HE with ⟨ HE1, HE2 ⟩
+      simp [Entails, entails] at HE1 HE2
+      simp [OFE.Equiv, equiv]
+      intro n m Hv
+      apply Iff.intro <;> intro H
+      · apply HE1 _ _ Hv H
+      · apply HE2 _ _ Hv H
+  and_ne                 := by
+    constructor
+    intro n x1 x2 H y1 y2 H' n' x' Hn' Hv'
+    sorry
   or_ne                  := sorry
   imp_ne                 := sorry
   sep_ne                 := sorry
