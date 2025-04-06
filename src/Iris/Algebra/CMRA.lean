@@ -778,6 +778,8 @@ end ucmra
 
 section CmraMorphism
 
+-- TODO: Typeclass
+
 structure isCmraMor {α β : Type _} [CMRA α] [CMRA β] (f : α -> β) : Prop where
   morphism_validN {n x} : ✓{n} x -> ✓{n} (f x)
   morphism_pcore x : f <$> CMRA.pcore x ≡ CMRA.pcore (f x)
@@ -866,6 +868,7 @@ class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
 def RFunctor.ap [RFunctor F] [OFE T] := F T T
 
 attribute [instance] RFunctor.cmra
+attribute [instance] RFunctor.mor
 
 instance RFunctor.toOFunctor [RFunctor F] : COFE.OFunctor F where
   cofe {α β} := (@RFunctor.cmra F _ α β).toOFE
@@ -903,6 +906,7 @@ class URFunctorContractive (F : COFE.OFunctorPre) extends URFunctor F where
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
 attribute [instance] URFunctor.cmra
+attribute [instance] URFunctor.mor
 
 instance URFunctor.toRFunctor [URFunctor F] : RFunctor F where
   cmra {α β} := (@URFunctor.cmra F _ α β).toCMRA

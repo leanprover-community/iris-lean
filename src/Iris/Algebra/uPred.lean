@@ -101,14 +101,68 @@ instance uPred_IsCOFE : IsCOFE (uPred M) where
 def uPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
   fun A B _ _ => uPred (F B A)
 
+def uPred_map [UCMRA α] [UCMRA β] (f : β -n> α) (Mor : CMRA.isCmraMor f) : uPred α -n> uPred β :=
+  ⟨ fun P => ⟨ fun n x => P n (f x) ,
+               by
+                 simp
+                 intro n1 n2 x1 x2 HP Hm Hn
+                 apply P.uPred_mono HP
+                 · apply (Iris.CMRA.morphism_monoN ⟨ f, Mor ⟩) _ Hm
+                 · apply Hn ⟩,
+    by
+      constructor
+      intro n x1 x2 Hx1x2 n' y Hn' Hv
+      apply Hx1x2 _ _ Hn'
+      exact Mor.morphism_validN Hv ⟩
+
+
 instance uPredOF_oFunctor [URFunctor F] : COFE.OFunctor (uPredOF F) where
   cofe := by unfold uPredOF; infer_instance
-  map := sorry
-  map_ne := sorry
-  map_id := sorry
-  map_comp := sorry
+  map f g := by apply uPred_map (URFunctor.map (F:=F) g f) (URFunctor.mor g f)
+  map_ne {α₁ α₂ β₁ β₂ _ _ _ _} := by
+    constructor
+    intros n x1 x2 Hx y1 y2 Hy z1
+    simp
+    simp [uPred_map]
+    intro n' z2 Hn Hv
+    simp
+    apply uPred_ne
+    have X := (URFunctor.map (F:=F) y1 x1).ne
+    have Y := ((@URFunctor.map_ne F  _ β₂ β₁ α₂ α₁ _ _ _ _).ne)
+    apply (@Y n' y1 y2 _ x1 x2 _ z2)
+    · exact OFE.Dist.le Hy Hn
+    · apply OFE.Dist.le Hx Hn
+  map_id {α β _ _} := by
+    simp [uPred_map]
+    intros x y
+    simp
+    intros z Hv
+    apply uPred_proper
+    exact URFunctor.map_id z
+  map_comp {α₁ α₂ α₃ β₁ β₂ β₃ _ _ _ _ _ _} := by
+    simp
+    intros f g f' g' x n
+    simp [uPred_map]
+    intros H Hv
+    apply uPred_proper
+    exact URFunctor.map_comp g' f' g f H
 
 instance uPredOF_oFC [URFunctorContractive F] : COFE.OFunctorContractive (uPredOF F) where
-  map_contractive := sorry
+  map_contractive {α₁ α₂ β₁ β₂ _ _ _ _}:= by
+    constructor
+    intro n x y HKL z
+    simp [Function.uncurry]
+    simp [COFE.OFunctor.map, uPred_map]
+    intro n'
+    intro x' Hn Hx'
+    simp
+    apply uPred_ne
+    have X := (@URFunctorContractive.map_contractive F _ β₂ β₁ α₂ α₁ _ _ _ _)
+    apply OFE.Dist.le ((@X.distLater_dist n (x.snd, x.fst) (y.snd, y.fst) _) x') Hn
+    simp [OFE.DistLater] at *
+    intro m Hm
+    constructor <;> simp only []
+    · exact (HKL m Hm).2
+    · exact (HKL m Hm).1
 
 end upred
