@@ -166,68 +166,200 @@ instance : Std.Preorder (Entails (PROP := uPred M)) where
   refl := sorry
   trans := sorry
 
+-- set_option pp.notation false
+
 instance : BI (uPred M) where
   entails_preorder       := by infer_instance
 
   -- TODO: Tidy
 
   equiv_iff {P Q}        := by
-    apply Iff.intro
-    · simp [BiEntails]
-      intro HE
-      constructor
-      · simp [Entails, entails]
-        intro n x Hv H
-        apply uPred_holds_ne _ _ n _ _ _ (Nat.le_refl _) Hv H
-        apply OFE.Dist.symm
-        apply (OFE.equiv_dist.mp HE)
-      · simp [Entails, entails]
-        intro n x Hv H
-        apply uPred_holds_ne _ _ n _ _ _ (Nat.le_refl _) Hv H
-        apply (OFE.equiv_dist.mp HE)
-    · simp [BiEntails]
-      intro HE
-      rcases HE with ⟨ HE1, HE2 ⟩
-      simp [Entails, entails] at HE1 HE2
-      simp [OFE.Equiv, equiv]
-      intro n m Hv
-      apply Iff.intro <;> intro H
-      · apply HE1 _ _ Hv H
-      · apply HE2 _ _ Hv H
+    apply Iff.intro <;> intro HE
+    · constructor <;> intro n x Hv H <;> apply (uPred_holds_ne _ _ _ _ _ _ (Nat.le_refl n) Hv H)
+      · exact fun n' x a => HE.symm n' x
+      · exact fun n' x a => HE n' x
+    · intros n m Hv
+      exact ⟨ fun H => HE.1 _ _ Hv H, fun H => HE.2 _ _ Hv H ⟩
   and_ne                 := by
     constructor
-    intro n x1 x2 H y1 y2 H' n' x' Hn' Hv'
-    sorry
-  or_ne                  := sorry
-  imp_ne                 := sorry
-  sep_ne                 := sorry
-  wand_ne                := sorry
-  persistently_ne        := sorry
-  later_ne               := sorry
+    intro _ _ _ H _ _ H' _ _ Hn' Hv'
+    apply Iff.intro <;> intro H <;> rcases H with ⟨ H1, H2 ⟩
+    · constructor
+      · exact (H _ _ Hn' Hv').mp H1
+      · exact (H' _ _ Hn' Hv').mp H2
+    · constructor
+      · exact (H.symm _ _ Hn' Hv').mp H1
+      · exact (H'.symm _ _ Hn' Hv').mp H2
+  or_ne                  := by
+    constructor
+    intros _ _ _ H _ _ H' _ _ Hn' Hv
+    apply Iff.intro <;> intro H'' <;>  rcases H'' with H'' | H''
+    · left; apply (H _ _ Hn' Hv).mp H''
+    · right; apply (H' _ _ Hn' Hv).mp H''
+    · left; apply (H.symm _ _ Hn' Hv).mp H''
+    · right; apply (H'.symm _ _ Hn' Hv).mp H''
+  imp_ne                 := by
+    constructor
+    intros _ _ _ H _ _ H' _ _ Hn' Hv
+    apply Iff.intro <;> intro Hi n' x' Hle Hn'' Hx' H''
+    · apply (H' _ _ (Nat.le_trans Hn'' Hn') Hx').mp
+      apply (Hi _ _ Hle Hn'' Hx')
+      apply (H _ _ (Nat.le_trans Hn'' Hn') Hx').mpr H''
+    · apply (H' _ _ (Nat.le_trans Hn'' Hn') Hx').mpr
+      apply (Hi _ _ Hle Hn'' Hx')
+      apply (H _ _ (Nat.le_trans Hn'' Hn') Hx').mp H''
+  sep_ne                 := by
+    constructor
+    intros _ _ _ H _ _ H' x n' Hn' Hv
+    apply Iff.intro <;> intro Hi <;> rcases Hi with ⟨ z1, z2, H1, H2, H3 ⟩
+    · have H1' : n' ≡{x}≡ z2 • z1 := by apply OFE.dist_eqv.trans H1 CMRA.op_commN
+      exists z1; exists z2;
+      apply And.intro H1
+      apply And.intro
+      · apply (H _ _ Hn' _).mp H2
+        apply (CMRA.validN_op_right (CMRA.validN_ne H1' Hv))
+      · apply (H' _ _ Hn' _).mp H3
+        apply (CMRA.validN_op_right (CMRA.validN_ne H1 Hv))
+    · have H1' : n' ≡{x}≡ z2 • z1 := by apply OFE.dist_eqv.trans H1 CMRA.op_commN
+      exists z1; exists z2
+      apply And.intro H1
+      apply And.intro
+      · apply (H _ _ Hn' _).mpr H2
+        apply (CMRA.validN_op_right (CMRA.validN_ne H1' Hv))
+      · apply (H' _ _ Hn' _).mpr H3
+        apply (CMRA.validN_op_right (CMRA.validN_ne H1 Hv))
+  wand_ne                := by
+    constructor
+    intros _ _ _ H _ _ H' _ _ Hn' Hv
+    apply Iff.intro <;> intro HE n x Hn Hv H''
+    · apply (H' _ _ (Nat.le_trans Hn Hn') Hv).mp
+      apply (HE _ _ Hn Hv _)
+      apply (H _ _ (Nat.le_trans Hn Hn') (CMRA.validN_op_right Hv)).mpr
+      apply H''
+    · apply (H' _ _ (Nat.le_trans Hn Hn') Hv).mpr
+      apply (HE _ _ Hn Hv _)
+      apply (H _ _ (Nat.le_trans Hn Hn') (CMRA.validN_op_right Hv)).mp
+      apply H''
+  persistently_ne        := by
+    constructor
+    intros _ _ _ H _ _ Hn Hx
+    simp [BI.persistently, persistently]
+    constructor
+    · intro H'; apply (H _ _ Hn (CMRA.validN_core Hx)).mp H'
+    · intro H'; apply (H _ _ Hn (CMRA.validN_core Hx)).mpr H'
+  later_ne               := sorry -- Change to contractive in BI?
   sForall_ne             := sorry
   sExists_ne             := sorry
-  pure_intro             := sorry
-  pure_elim'             := sorry
-  and_elim_l             := sorry
-  and_elim_r             := sorry
-  and_intro              := sorry
-  or_intro_l             := sorry
-  or_intro_r             := sorry
-  or_elim                := sorry
-  imp_intro              := sorry
-  imp_elim               := sorry
+  pure_intro             := by intros _ _ P _ _ _ _; exact P
+  pure_elim'             := by intros _ _ I n x a P; exact I P n x a trivial
+  and_elim_l             := by intros _ _ _ _ _ I; cases I; trivial
+  and_elim_r             := by intros _ _ _ _ _ I; cases I; trivial
+  and_intro              := by
+    intros _ _ _ H1 H2 _ _ Hv H
+    constructor
+    · apply H1 _ _ Hv H
+    · apply H2 _ _ Hv H
+  or_intro_l             := by intros _ _ _ _ Hv H; left; exact H
+  or_intro_r             := by intros _ _ _ _ Hv H; right; exact H
+  or_elim                := by
+    intros _ _ _ H1 H2 _ _ Hv H
+    rcases H with H | H
+    · apply H1 _ _ Hv H
+    · apply H2 _ _ Hv H
+  imp_intro              := by
+    intros _ _ _ I _ _ Hv H _ _ Hin Hle Hv' HQ
+    apply (I _ _ Hv')
+    constructor
+    · exact (uPred.uPred_mono _ H (CMRA.Included.incN Hin) Hle)
+    · exact HQ
+  imp_elim               := by
+    intros _ _ _ H' _ _ Hv H
+    rcases H with ⟨ HP, HQ ⟩
+    apply (H' _ _ Hv HP _ _ _ (Nat.le_refl _) Hv HQ)
+    apply CMRA.inc_refl
   sForall_intro          := sorry
   sForall_elim           := sorry
   sExists_intro          := sorry
   sExists_elim           := sorry
-  sep_mono               := sorry
-  emp_sep                := sorry
-  sep_symm               := sorry
-  sep_assoc_l            := sorry
-  wand_intro             := sorry
-  wand_elim              := sorry
-  persistently_mono      := sorry
-  persistently_idem_2    := sorry
+  sep_mono               := by
+    intro _ _ _ _ H1 H2 n x Hv H
+    rcases H with ⟨x1, x2, HE, Hx1, Hx2⟩
+    exists x1
+    exists x2
+    apply And.intro
+    · apply HE
+    apply And.intro
+    · apply (H1 _ _ _ Hx1)
+      apply CMRA.validN_op_left (CMRA.validN_ne HE Hv)
+    · apply (H2 _ _ _ Hx2)
+      apply CMRA.validN_op_right (CMRA.validN_ne HE Hv)
+  emp_sep                := by
+    intro _
+    simp [BI.sep, sep, BI.emp, emp]
+    sorry -- emp?
+    -- constructor
+    -- · intro _ _ _ H
+    --   rcases H with ⟨a, b, c, d, e ⟩
+    --   sorry
+    -- · sorry
+  sep_symm               := by
+    intros _ _ _ _ Hv H
+    rcases H with ⟨ x1, x2, HE, _, _ ⟩
+    exists x2; exists x1
+    apply And.intro
+    · apply OFE.dist_eqv.trans HE (OFE.equiv_dist.mp _ _)
+      apply CMRA.comm
+    apply And.intro
+    · trivial
+    · trivial
+  sep_assoc_l            := by
+    intros _ _ _ n x Hv H
+    rcases H with ⟨x1, x2, Hx, H, _⟩
+    rcases H with ⟨y1, y2, Hy, _, _⟩
+    exists y1
+    exists (y2 • x2)
+    apply And.intro
+    · calc x ≡{n}≡ x1 • x2 := Hx
+           _ ≡{n}≡ (y1 • y2) • x2 := OFE.Dist.op_l Hy
+           _ ≡{n}≡ y1 • (y2 • x2) := OFE.equiv_dist.mp CMRA.assoc.symm _
+    apply And.intro
+    · trivial
+    exists y2
+    exists x2
+    apply And.intro
+    · apply OFE.Dist.of_eq rfl
+    apply And.intro
+    · trivial
+    · trivial
+  wand_intro             := by
+    intros _ _ _ H n x Hv HP n' x' Hn Hv' HQ
+    apply (H _ _ Hv')
+    exists x
+    exists x'
+    apply And.intro
+    · apply OFE.Dist.of_eq rfl
+    apply And.intro
+    · apply (uPred.uPred_mono _ HP _ Hn)
+      apply CMRA.incN_refl
+    · apply HQ
+  wand_elim              := by
+    intros _ _ _ H n x Hv H
+    rcases H with ⟨y1, y2, Hy, HP, HQ⟩
+    let Hwand := @H n y1 (CMRA.validN_op_left (CMRA.validN_ne Hy Hv)) HP
+    let H' := Hwand _ y2 (Nat.le_refl _) (CMRA.validN_ne Hy Hv) HQ
+    apply uPred.uPred_mono _ H' _ (Nat.le_refl _)
+    exact CMRA.dst_incN Hy
+  persistently_mono      := by
+    simp [BI.persistently, persistently]
+    intros _ _ H n x Hv H'
+    apply (H _ _ (CMRA.validN_core Hv))
+    apply H'
+  persistently_idem_2    := by
+    intros _ _ x n H
+    simp_all [BI.persistently, persistently]
+    apply (uPred.uPred_mono _ H _ (Nat.le_refl _))
+    -- Not sure
+    sorry
   persistently_emp_2     := sorry
   persistently_and_2     := sorry
   persistently_sExists_1 := sorry
