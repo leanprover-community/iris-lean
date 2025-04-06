@@ -1048,43 +1048,109 @@ section option
 
 variable [CMRA A]
 
+
 instance : CMRA (OptionO A) where
-  pcore
-  | ⟨ some x ⟩ => some ⟨ CMRA.pcore x ⟩
-  | ⟨ none ⟩ => some ⟨ none ⟩
-  op f g :=
-    match (f, g) with
-    | (⟨ some x ⟩, ⟨ some y ⟩) => ⟨ some (x • y) ⟩
-    | _ => ⟨ none ⟩
-  ValidN n
-  | ⟨ some x ⟩ => ✓{n} x
-  | ⟨ none ⟩ => True
-  Valid
-  | ⟨ some x ⟩ => ✓ x
-  | ⟨ none ⟩ => True
+  pcore x := some ⟨ match x with | ⟨ some y ⟩ => (CMRA.pcore y) | ⟨ none ⟩ => none ⟩
+  op x y :=
+    match (x, y) with
+    | (⟨ some x' ⟩,  ⟨ some y' ⟩) => ⟨ some (CMRA.op x' y') ⟩
+    | (⟨ none ⟩,     ⟨ none ⟩)    => ⟨ none ⟩
+    | (_, ⟨ none ⟩)               => x
+    | (⟨ none ⟩, _)               => y
+  ValidN n x := match x with | ⟨ some x ⟩ => ✓{n} x | ⟨ none ⟩ => True
+  Valid x := match x with | ⟨ some x ⟩ => ✓ x | ⟨ none ⟩ => True
   op_ne := by
-    simp
     intros x
+    rcases x with ⟨ x ⟩
     constructor
     intros n x1 x2 H
+    simp [Dist]
+    rcases x1 with ⟨ x1 ⟩
+    rcases x2 with ⟨ x2 ⟩
+    rcases x1 <;> rcases x2 <;> rcases x <;> simp_all [Dist]
+    exact CMRA.op_right_dist _ H
+  pcore_ne := by
+    simp
+    intro n x y cx
+    rcases x with ⟨ x ⟩
+    rcases y with ⟨ y ⟩
+    rcases x <;> rcases y <;> simp_all [Dist]
     sorry
-  pcore_ne := sorry
-  validN_ne := sorry
-  valid_iff_validN := sorry
-  validN_succ := sorry
-  validN_op_left := sorry
-  assoc := sorry
-  comm := sorry
-  pcore_op_left := sorry
-  pcore_idem := sorry
-  pcore_op_mono := sorry
+  validN_ne := by
+    intros n x y H
+    rcases x with ⟨ x ⟩
+    rcases y with ⟨ y ⟩
+    rcases x <;> rcases y <;> simp_all [Dist]
+    intro H'
+    exact (Dist.validN H).mp H'
+  valid_iff_validN := by
+    intro x
+    rcases x with ⟨ x ⟩
+    cases x <;> simp_all [Dist]
+    exact CMRA.valid_iff_validN
+  validN_succ := by
+    intro x n
+    rcases x with ⟨ x ⟩
+    cases x <;> simp_all [Dist]
+    intro H
+    apply CMRA.validN_succ H
+  validN_op_left := by
+    intros n x y
+    rcases x with ⟨ x ⟩
+    rcases y with ⟨ y ⟩
+    cases x <;> cases y <;> simp_all [Dist]
+    apply CMRA.validN_op_left
+  assoc := by
+    intros x y z
+    rcases x with ⟨ x ⟩
+    rcases y with ⟨ y ⟩
+    rcases z with ⟨ z ⟩
+    cases x <;> cases y <;> cases z <;> simp_all [Dist, Equiv]
+    apply CMRA.assoc
+  comm := by
+    intros x y
+    rcases x with ⟨ x ⟩
+    rcases y with ⟨ y ⟩
+    cases x <;> cases y <;> simp_all [Dist, Equiv]
+    apply CMRA.comm
+  pcore_op_left := by
+    intros x cx
+    rcases x with ⟨ x ⟩
+    rcases cx with ⟨ cx ⟩
+    cases x <;> cases cx <;> simp_all [Dist, Equiv]
+    intro H
+    apply CMRA.pcore_op_left H
+  pcore_idem := by
+    intros x cx
+    rcases x with ⟨ x ⟩
+    rcases cx with ⟨ cx ⟩
+    cases x <;> cases cx <;> simp_all [Dist, Equiv, Option.Forall₂]
+    intro H
+    sorry
+  pcore_op_mono := by
+    intros x cx y
+    rcases x with ⟨ x ⟩
+    rcases y with ⟨ y ⟩
+    rcases cx with ⟨ cx ⟩
+    cases x <;> cases y <;> cases cx <;> simp_all [Dist, Equiv]
+    · exists ⟨ none ⟩
+    · sorry
+    · intro; exists ⟨ none ⟩
+    · intro; exists ⟨ none ⟩
+    · sorry
+    · sorry
   extend := sorry
 
+
+
 instance OptionO_UCMRA [CMRA A] : UCMRA (OptionO A) where
-  unit := sorry
-  unit_valid := sorry
-  unit_left_id := sorry
-  pcore_unit := sorry
+  unit := ⟨ none ⟩
+  unit_valid := by simp [CMRA.Valid]
+  unit_left_id := by
+    intro x
+    rcases x with ⟨ x ⟩
+    cases x <;> simp [Equiv]
+  pcore_unit := by simp [CMRA.pcore]
 
 end option
 

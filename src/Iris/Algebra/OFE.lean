@@ -585,9 +585,36 @@ section Option
 variable [OFE α]
 
 instance : OFE (OptionO α) where
-  Equiv := sorry
-  Dist := sorry
-  dist_eqv := sorry
+  Equiv f g :=
+    match (f, g) with
+    | ⟨ ⟨ some f' ⟩, ⟨ some g' ⟩ ⟩ => f' ≡ g'
+    | ⟨ ⟨ none ⟩, ⟨ none ⟩ ⟩ => True
+    | _ => False
+  Dist n f g :=
+    match (f, g) with
+    | ⟨ ⟨ some f' ⟩, ⟨ some g' ⟩ ⟩ => f' ≡{n}≡ g'
+    | ⟨ ⟨ none ⟩, ⟨ none ⟩ ⟩ => True
+    | _ => False
+  dist_eqv :=
+    ⟨ (by
+        intro x
+        cases x; rename_i x
+        cases x <;> simp),
+      (by
+        intro x y
+        cases x; rename_i x
+        cases y; rename_i y
+        cases x <;> cases y <;> simp
+        intro H
+        apply H.symm),
+      (by
+        intro x y z
+        cases x; rename_i x
+        cases y; rename_i y
+        cases z; rename_i z
+        cases x <;> cases y <;> cases z <;> simp
+        intro H1 H2
+        apply Dist.trans H1 H2)⟩
   equiv_dist := sorry
   dist_lt := sorry
 
