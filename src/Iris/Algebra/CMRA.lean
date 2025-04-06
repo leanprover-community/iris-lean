@@ -1045,11 +1045,25 @@ section option
 variable [CMRA A]
 
 instance : CMRA (OptionO A) where
-  pcore f := sorry
-  op f g := sorry
-  ValidN n f := sorry
-  Valid f := sorry
-  op_ne := sorry
+  pcore
+  | ⟨ some x ⟩ => some ⟨ CMRA.pcore x ⟩
+  | ⟨ none ⟩ => some ⟨ none ⟩
+  op f g :=
+    match (f, g) with
+    | (⟨ some x ⟩, ⟨ some y ⟩) => ⟨ some (x • y) ⟩
+    | _ => ⟨ none ⟩
+  ValidN n
+  | ⟨ some x ⟩ => ✓{n} x
+  | ⟨ none ⟩ => True
+  Valid
+  | ⟨ some x ⟩ => ✓ x
+  | ⟨ none ⟩ => True
+  op_ne := by
+    simp
+    intros x
+    constructor
+    intros n x1 x2 H
+    sorry
   pcore_ne := sorry
   validN_ne := sorry
   valid_iff_validN := sorry
