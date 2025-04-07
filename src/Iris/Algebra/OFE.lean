@@ -558,15 +558,20 @@ instance {C} (F : C → COFE.OFunctorPre) [HOF : ∀ c, COFE.OFunctor (F c)] :
 instance discrete_fun_OFunctor {C} (F : C → COFE.OFunctorPre) [HOF : ∀ c, COFE.OFunctor (F c)] :
     COFE.OFunctor (discrete_fun_OF F) where
   cofe {α β _ _} := discrete_fun.OFE (fun c => F c α β)
-  map f₁ f₂
-    := ⟨ discrete_fun.map (fun c => COFE.OFunctor.map (F := (F c)) f₁ f₂),
-         by
-           apply discrete_fun.map.ne
-           exact fun c => ((HOF c).map f₁ f₂).ne ⟩
-  map_ne := sorry
+  map f₁ f₂ :=
+    ⟨ discrete_fun.map (fun c => COFE.OFunctor.map (F := (F c)) f₁ f₂),
+      by
+        apply discrete_fun.map.ne
+        exact fun c => ((HOF c).map f₁ f₂).ne ⟩
+  map_ne := by
+    intros _ _ _ _ _ _ _ _
+    constructor
+    intros n x1 x2 Hx y1 y2 Hy z c
+    simp
+    sorry
   map_id := by
     intros
-    simp only [] -- [discrete_fun.map]
+    simp [discrete_fun.map]
     sorry
   map_comp := sorry
 
@@ -584,7 +589,7 @@ section Option
 
 variable [OFE α]
 
-instance : OFE (OptionO α) where
+instance OptionO_OFE : OFE (OptionO α) where
   Equiv f g :=
     match (f, g) with
     | ⟨ ⟨ some f' ⟩, ⟨ some g' ⟩ ⟩ => f' ≡ g'
@@ -618,7 +623,7 @@ instance : OFE (OptionO α) where
   equiv_dist := sorry
   dist_lt := sorry
 
-instance [IsCOFE α] : IsCOFE (OptionO α) where
+instance OptionO_COFE [IsCOFE α] : IsCOFE (OptionO α) where
   compl := sorry
   conv_compl := sorry
 
@@ -632,9 +637,13 @@ section OptionOF
 
 variable (F : COFE.OFunctorPre) [COFE.OFunctor F]
 
-instance : COFE.OFunctor (OptionOF F) where
-  cofe := sorry
-  map := sorry
+-- instance [COFE.OFunctor F] : OFE (OptionOF F α₁ β₁) := by
+--   unfold OptionOF
+--   infer_instance
+
+instance OptionO_OFunctor : COFE.OFunctor (OptionOF F) where
+  cofe := OptionO_OFE
+  map f g := sorry -- TC problems?
   map_ne := sorry
   map_id := sorry
   map_comp := sorry
