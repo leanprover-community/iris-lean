@@ -137,6 +137,7 @@ def ownM : uPred M where
          _  ≡{n₂}≡ (m • m₁) • m₂ := CMRA.op_left_dist _ (OFE.Dist.le Hm₁ Hn)
          _  ≡{n₂}≡ m • (m₁ • m₂) := OFE.Equiv.dist (OFE.Equiv.symm CMRA.assoc)
 
+/-
 def cmra_valid : uPred M where
   uPred_holds n x := ✓{n} m
   uPred_mono := sorry
@@ -144,6 +145,7 @@ def cmra_valid : uPred M where
 def bupd : uPred M where
   uPred_holds n x := ∀ k yf, k ≤ n → ✓{k} (x • yf) → ∃ x', ✓{k} (x' • yf) ∧ Q k x'
   uPred_mono := sorry
+-/
 
 end bidefs
 

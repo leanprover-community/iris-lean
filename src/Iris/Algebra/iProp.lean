@@ -27,14 +27,25 @@ attribute [instance] IsgFunctors.functor
 def subG (FF₁ FF₂ : gFunctors) : Prop :=
   ∀ i : gid FF₁, ∃ j : gid FF₂, FF₁[i] = FF₂[j]
 
+/-
 namespace subG
 
 variable (FF₁ FF₂ FF₃ : gFunctors)
 
 theorem split_L (H : subG (FF₁ ++ FF₂) FF₃) : subG FF₁ FF₃ := by
-  sorry
+  intro i
+  rcases i with ⟨ i, Hi ⟩
+  have Hi' : i < (FF₁ ++ FF₂).len := by
+    simp only [Array.length_toList, Array.size_append]
+    exact Nat.lt_add_right (Array.size FF₂) Hi
+  rcases H ⟨ i, Hi' ⟩ with ⟨ j, Hj ⟩
+  exists j
+  rw [<- Hj]
+  apply Array.getElem_append_left'
 
 theorem comm (H : subG (FF₁ ++ FF₂) FF₃) : subG (FF₂ ++ FF₁) FF₃ := by
+  intro i
+  rcases i with ⟨ i, Hi ⟩
   sorry
 
 theorem split_R (H : subG (FF₁ ++ FF₂) FF₃) : subG FF₁ FF₃ := by
@@ -47,6 +58,7 @@ theorem app_R (H : subG FF₁ FF₂) : subG FF₁ (FF₂ ++ FF₃) := by
   sorry
 
 end subG
+-/
 
 
 -- Why does Iris use positive here?
