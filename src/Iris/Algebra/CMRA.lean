@@ -805,12 +805,12 @@ protected def Hom.id [CMRA α] : α -C> α where
         | some _ => Equiv.rfl,
       fun _ _ => Equiv.rfl ⟩
 
-protected def Hom.comp [CMRA α] [CMRA β] [CMRA γ] (g : β -C> γ) (f : α -C> β) : α -C> γ where
-  toHom := OFE.Hom.comp g.toHom f.toHom
-  mor :=
-    ⟨ fun v => g.mor.morphism_validN (f.mor.morphism_validN v),
-      fun x => sorry,
-      fun x y => sorry ⟩
+-- protected def Hom.comp [CMRA α] [CMRA β] [CMRA γ] (g : β -C> γ) (f : α -C> β) : α -C> γ where
+--   toHom := OFE.Hom.comp g.toHom f.toHom
+--   mor :=
+--     ⟨ fun v => g.mor.morphism_validN (f.mor.morphism_validN v),
+--       fun x => sorry,
+--       fun x y => sorry ⟩
 
 def morphism_proper [CMRA α] [CMRA β] (f : α -C> β) {x₁ x₂ : α} (X : x₁ ≡ x₂) : f x₁ ≡ f x₂ :=
   f.ne.eqv X
@@ -988,6 +988,13 @@ instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
     intro x y
     exact CMRA.core_idemp (x.car y)
   pcore_op_mono := by
+    simp
+    intro x cx y H
+    exists y
+    rw [<- H]
+    apply funext
+    intro a
+    simp
     sorry
   extend := by
     sorry
@@ -1030,8 +1037,12 @@ instance DiscreteFunOF_URF {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFun
          simp [COFE.OFunctor.map, discrete_funO.map, CMRA.pcore]
          intro c
          simp
-         let Z := @((HURF c).mor f g).morphism_pcore
-         sorry),
+         generalize Hw : (CMRA.core ((URFunctor.map f g).f (x.car c))) = w
+         have W := CMRA.pcore_eq_core ((URFunctor.map f g).f (x.car c))
+         let Z := Hw ▸ W ▸ @((HURF c).mor f g).morphism_pcore (x.car c)
+         let Z' := CMRA.pcore_eq_core (x.car c)
+         simp [URFunctor.map, Option.map, Equiv, Option.Forall₂, Z'] at Z
+         apply Z),
       (by
          intros
          rename_i HF x
