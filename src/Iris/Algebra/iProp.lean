@@ -19,10 +19,8 @@ abbrev gFunctors.len (FF : gFunctors) := FF.size
 
 abbrev gid (FF : gFunctors) : Type _ := Fin (FF.len)
 
-class IsgFunctors (G : gFunctors) where
-  functor (i : gid G) : RFunctorContractive G[i]
 
-attribute [instance] IsgFunctors.functor
+abbrev IsGFunctors (G : gFunctors) := ∀ (i : gid G), RFunctorContractive G[i]
 
 def subG (FF₁ FF₂ : gFunctors) : Prop :=
   ∀ i : gid FF₁, ∃ j : gid FF₂, FF₁[i] = FF₂[j]
@@ -65,47 +63,32 @@ end subG
 abbrev gname :=  { n : Nat // 0 < n }
 def gnameO := LeibnizO gname
 
-def iResF (FF : gFunctors) : COFE.OFunctorPre :=
+abbrev iResF (FF : gFunctors) : COFE.OFunctorPre :=
   discrete_funOF (fun i : gid FF => gen_mapOF gname FF[i])
-
--- instance (FF) [IsgFunctors FF] (c : gid FF) : URFunctor (gen_mapOF gname FF[c]) := by infer_instance
-instance (FF) [IsgFunctors FF] : URFunctorContractive (iResF FF) := by
-  unfold iResF
-  infer_instance
 
 section iProp
 
 open COFE
 
+variable (FF : gFunctors) [IG : IsGFunctors FF]
 
-variable (FF : gFunctors) [IG : IsgFunctors FF]
--- #synth OFunctorContractive (uPredOF (iResF FF))
+local instance : Inhabited (uPredOF (iResF FF) (ULift Unit) (ULift Unit)) := ⟨ fun _ _ => True, by simp ⟩
 
-
-local instance DELETEME : Inhabited (uPredOF (iResF FF) (ULift Unit) (ULift Unit)) := sorry
-
-local instance DELETEME2 : (α : Type) → [inst : COFE α] → IsCOFE (uPredOF (iResF FF) α α) :=
-  fun α {H} => by sorry
+local instance (α : Type) [COFE α] : IsCOFE (uPredOF (iResF FF) α α) := uPred_IsCOFE
 
 def iPrePropO : Type _ := OFunctor.Fix (uPredOF (iResF FF))
 
--- FIXME: Remove, Mario wants to remove COFE.OFunctor.fix_COFE
 instance : COFE (iPrePropO FF) := COFE.OFunctor.fix_COFE
 
 def iResUR : Type :=
   discrete_funO (fun (i : gid FF) => gen_map gname (FF[i] (iPrePropO FF) (iPrePropO FF)))
 
-
-local instance DELETEME3 : UCMRA (iResUR FF) := by
-  unfold iResUR
-  sorry
+local instance : UCMRA (iResUR FF) :=
+  discrete_funO.isCMRA fun (i : gid FF) => gen_map gname (FF[i] (iPrePropO FF) (iPrePropO FF))
 
 abbrev iProp := uPred (iResUR FF)
 
-local instance : UCMRA (iResUR FF) := sorry
-
--- This was inferring before, why did it stop?
-instance : COFE (iProp FF) := by sorry
+-- #synth COFE (iProp FF)
 
 end iProp
 

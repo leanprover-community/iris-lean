@@ -1178,7 +1178,11 @@ instance OptionO_cmra : CMRA (OptionO A) where
       · sorry
       · sorry
   extend := by
-    sorry
+    intro n x y1 y2
+    rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
+    rcases y1 with ⟨ _ | ⟨ y1 ⟩ ⟩ <;>
+    rcases y2 with ⟨ _ | ⟨ y2 ⟩ ⟩ <;>
+    all_goals sorry
 
 
 
@@ -1233,24 +1237,7 @@ abbrev gen_map := (α -d> (OptionO β))
 -- The synthesized UMRA here has unit (fun x => ε) = (fun x => none).
 -- For us, this is equivalent to the Rocq-iris unit ∅.
 
-def gen_mapOF (C : Type _) (F : COFE.OFunctorPre) :=
+abbrev gen_mapOF (C : Type _) (F : COFE.OFunctorPre) :=
   discrete_funOF (fun (_ : C) => OptionOF F)
-
--- variable {C : Type _} (F : COFE.OFunctorPre) [HRD : RFunctor F]
--- #synth URFunctor (gen_mapOF C F)
-
-instance gen_map_UF {C} (F : COFE.OFunctorPre) [HRF : RFunctor F] :
-    URFunctor (gen_mapOF C F) := DiscreteFunOF_URF _
-  -- cmra := sorry
-  -- map := sorry
-  -- map_ne := sorry
-  -- map_id := sorry
-  -- map_comp := sorry
-  -- mor := sorry
-
-instance gen_map_RF {C} (F : COFE.OFunctorPre) [HRF : RFunctorContractive F] :
-     URFunctorContractive (gen_mapOF C F) := DiscreteFunOF_URFC _
-
---   map_contractive := sorry
 
 end gen_map
