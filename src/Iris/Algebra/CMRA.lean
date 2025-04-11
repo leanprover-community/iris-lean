@@ -1060,7 +1060,7 @@ section option
 variable [CMRA A]
 
 
-instance : CMRA (OptionO A) where
+instance OptionO_cmra : CMRA (OptionO A) where
   pcore x := some ⟨ match x with | ⟨ some y ⟩ => (CMRA.pcore y) | ⟨ none ⟩ => none ⟩
   op x y :=
     match (x, y) with
@@ -1083,10 +1083,20 @@ instance : CMRA (OptionO A) where
   pcore_ne := by
     simp
     intro n x y cx
-    rcases x with ⟨ x ⟩
-    rcases y with ⟨ y ⟩
-    rcases x <;> rcases y <;> simp_all [Dist]
-    sorry
+    rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
+    rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;>
+    simp_all [Dist]
+    generalize Hv : CMRA.pcore x = v
+    generalize Hv' : CMRA.pcore y = v'
+    cases v <;> cases v' <;> simp_all
+    · rcases @CMRA.pcore_ne A _ n _ _ _ cx.symm Hv' with ⟨ w, Hw1, Hw2 ⟩
+      simp_all
+    · rcases @CMRA.pcore_ne A _ n _ _ _ cx Hv with ⟨ w, Hw1, Hw2 ⟩
+      simp_all
+    · rcases @CMRA.pcore_ne A _ n _ _ _ cx.symm Hv' with ⟨ w, Hw1, Hw2 ⟩
+      rw [Hw1] at Hv
+      cases Hv
+      apply Hw2.symm
   validN_ne := by
     intros n x y H
     rcases x with ⟨ x ⟩
@@ -1137,20 +1147,38 @@ instance : CMRA (OptionO A) where
     rcases cx with ⟨ cx ⟩
     cases x <;> cases cx <;> simp_all [Dist, Equiv, Option.Forall₂]
     intro H
-    sorry
+    rename_i v0 v1
+    generalize Hv2 : CMRA.pcore v1 = v2
+    rcases v2 with ⟨ ⟨ v2 ⟩ | _ ⟩ <;> simp
+    · let Hcontr := Hv2 ▸ @CMRA.pcore_idem A _ _ _ H
+      simp [Equiv, Option.Forall₂] at Hcontr
+    · let Hinj := Hv2 ▸ @CMRA.pcore_idem A _ _ _ H
+      simp [Equiv, Option.Forall₂] at Hinj
+      trivial
   pcore_op_mono := by
     intros x cx y
-    rcases x with ⟨ x ⟩
-    rcases y with ⟨ y ⟩
-    rcases cx with ⟨ cx ⟩
-    cases x <;> cases y <;> cases cx <;> simp_all [Dist, Equiv]
-    · exists ⟨ none ⟩
-    · sorry
-    · intro; exists ⟨ none ⟩
-    · intro; exists ⟨ none ⟩
-    · sorry
-    · sorry
-  extend := sorry
+    rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
+    rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;>
+    simp_all [Dist, Equiv]
+    · intro H; rw [<- H]
+      exists ⟨ none ⟩
+    · intro H; rw [<- H]
+      generalize Hy' : CMRA.pcore y = y'
+      exists ⟨ y' ⟩
+      rcases y' with ⟨ _ | ⟨ y' ⟩ ⟩ <;> simp
+    · intro H; rw [<- H]
+      generalize Hx' : CMRA.pcore x = x'
+      exists ⟨ x' ⟩
+      rcases x' with ⟨ _ | ⟨ x' ⟩ ⟩ <;> simp
+      sorry
+    · intro H; rw [<- H]
+      generalize Hx' : CMRA.pcore x = x'
+      exists ⟨ x' ⟩
+      rcases x' with ⟨ _ | ⟨ x' ⟩ ⟩ <;> simp
+      · sorry
+      · sorry
+  extend := by
+    sorry
 
 
 
@@ -1170,23 +1198,20 @@ section optionOF
 variable (F : COFE.OFunctorPre)
 
 -- We always get a unital cmra
-instance OptionOFisUCMRA [OFE α] [OFE β] [RFunctor F] : UCMRA (OptionOF F α β) := by
-  unfold OptionOF
-  infer_instance
+-- instance OptionOFisUCMRA [OFE α] [OFE β] [RFunctor F] : UCMRA (OptionOF F α β) := by
+--   unfold OptionOF
+--   infer_instance
 
 instance OptionOF_URF [RFunctor F] : URFunctor (OptionOF F) where
-  cmra := (OptionOFisUCMRA _)
-  map := sorry
-  map_ne := sorry
-  map_id := sorry
-  map_comp := sorry
+  cmra {α β} := OptionO_UCMRA
+  map f g := COFE.OFunctor.map f g
+  map_ne := COFE.OFunctor.map_ne
+  map_id := COFE.OFunctor.map_id
+  map_comp := COFE.OFunctor.map_comp
   mor := sorry
 
--- instance [RFunctor F] : RFunctor (OptionOF F) :=
---   URFunctor.toRFunctor
-
 instance OptionOF_URFC [RFunctorContractive F] : URFunctorContractive (OptionOF F) where
-  map_contractive := sorry
+  map_contractive := COFE.OFunctorContractive.map_contractive
 
 end optionOF
 
@@ -1211,17 +1236,21 @@ abbrev gen_map := (α -d> (OptionO β))
 def gen_mapOF (C : Type _) (F : COFE.OFunctorPre) :=
   discrete_funOF (fun (_ : C) => OptionOF F)
 
+-- variable {C : Type _} (F : COFE.OFunctorPre) [HRD : RFunctor F]
+-- #synth URFunctor (gen_mapOF C F)
+
 instance gen_map_UF {C} (F : COFE.OFunctorPre) [HRF : RFunctor F] :
-    URFunctor (gen_mapOF C F) where
-  cmra := sorry
-  map := sorry
-  map_ne := sorry
-  map_id := sorry
-  map_comp := sorry
-  mor := sorry
+    URFunctor (gen_mapOF C F) := DiscreteFunOF_URF _
+  -- cmra := sorry
+  -- map := sorry
+  -- map_ne := sorry
+  -- map_id := sorry
+  -- map_comp := sorry
+  -- mor := sorry
 
 instance gen_map_RF {C} (F : COFE.OFunctorPre) [HRF : RFunctorContractive F] :
-     URFunctorContractive (gen_mapOF C F) where
-  map_contractive := sorry
+     URFunctorContractive (gen_mapOF C F) := DiscreteFunOF_URFC _
+
+--   map_contractive := sorry
 
 end gen_map
