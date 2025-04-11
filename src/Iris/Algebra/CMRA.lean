@@ -940,8 +940,8 @@ variable {α : Type _} (β : α → Type _) [IsUCMRAFun β]
 
 -- TODO: Cleanup
 
-instance discrete_fun.CMRA : UCMRA (discrete_fun β) where
-  toOFE := discrete_fun.OFE β
+instance discrete_funO.CMRA : UCMRA (discrete_funO β) where
+  toOFE := discrete_funO.OFE β
   pcore f := some ⟨ fun x => CMRA.core (f x) ⟩
   op f g := ⟨ fun x => f x • g x ⟩
   ValidN n f := ∀ x, ✓{n} (f x)
@@ -1018,7 +1018,7 @@ end DiscreteFunUCMRA
 
 section DiscreteFunURF
 
--- discrete_fun_OF is the action on objects
+-- discrete_funO_OF is the action on objects
 
 
 -- Ensures there are no instance clashes in the UF definifion
@@ -1030,8 +1030,8 @@ instance {C} (F : C → COFE.OFunctorPre) [HUF : ∀ c, URFunctor (F c)] :
         apply (HUF c).cmra
 
 instance IsOFEFun_UF {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctor (F c)] :
-     URFunctor (discrete_fun_OF F) where
-  cmra {α β _ _ } := discrete_fun.CMRA fun c => F c α β
+     URFunctor (discrete_funOF F) where
+  cmra {α β _ _ } := discrete_funO.CMRA fun c => F c α β
   map := sorry
   map_ne := sorry
   map_id := sorry
@@ -1039,7 +1039,7 @@ instance IsOFEFun_UF {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctor (
   mor := sorry
 
 instance IsOFEFun_UFC {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctorContractive (F c)] :
-     URFunctorContractive (discrete_fun_OF F) where
+     URFunctorContractive (discrete_funOF F) where
   map_contractive := sorry
 
 end DiscreteFunURF
@@ -1198,7 +1198,7 @@ abbrev gen_map := (α -d> (OptionO β))
 -- For us, this is equivalent to the Rocq-iris unit ∅.
 
 def gen_mapOF (C : Type _) (F : COFE.OFunctorPre) :=
-  discrete_fun_OF (fun (_ : C) => OptionOF F)
+  discrete_funOF (fun (_ : C) => OptionOF F)
 
 instance gen_map_UF {C} (F : COFE.OFunctorPre) [HRF : RFunctor F] :
     URFunctor (gen_mapOF C F) where

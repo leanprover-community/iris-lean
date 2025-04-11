@@ -66,7 +66,7 @@ abbrev gname :=  { n : Nat // 0 < n }
 def gnameO := LeibnizO gname
 
 def iResF (FF : gFunctors) : COFE.OFunctorPre :=
-  discrete_fun_OF (fun i : gid FF => gen_mapOF gname FF[i])
+  discrete_funOF (fun i : gid FF => gen_mapOF gname FF[i])
 
 -- instance (FF) [IsgFunctors FF] (c : gid FF) : URFunctor (gen_mapOF gname FF[c]) := by infer_instance
 instance (FF) [IsgFunctors FF] : URFunctorContractive (iResF FF) := by
@@ -93,7 +93,7 @@ def iPrePropO : Type _ := OFunctor.Fix (uPredOF (iResF FF))
 instance : COFE (iPrePropO FF) := COFE.OFunctor.fix_COFE
 
 def iResUR : Type :=
-  discrete_fun (fun (i : gid FF) => gen_map gname (FF[i] (iPrePropO FF) (iPrePropO FF)))
+  discrete_funO (fun (i : gid FF) => gen_map gname (FF[i] (iPrePropO FF) (iPrePropO FF)))
 
 
 local instance DELETEME3 : UCMRA (iResUR FF) := by
