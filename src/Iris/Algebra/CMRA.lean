@@ -931,8 +931,8 @@ instance {α β : Type _} [U : UCMRA β] : IsUCMRAFun (fun (_ : α) => β) := �
 attribute [instance] IsUCMRAFun.cmra
 
 -- Instance diamond?
-instance [IsUCMRAFun F] : IsOFEFun F where
-  ofe {x} := (@IsUCMRAFun.cmra _ F _ x).toOFE
+-- instance [IsUCMRAFun F] : IsOFEFun F where
+--   ofe {x} := (@IsUCMRAFun.cmra _ F _ x).toOFE
 
 section DiscreteFunUCMRA
 

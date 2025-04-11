@@ -464,11 +464,13 @@ instance : COFE (LeibnizO T) := COFE.ofDiscrete _ Eq_Equivalence
 
 end Leibniz
 
+/-
 /- A dependent function `F` has types ranging in OFE -/
 class IsOFEFun (F : α → Type _) where
   ofe {x : α} : OFE (F x)
 
 attribute [instance] IsOFEFun.ofe
+-/
 
 /- Type alias for a discrete function -/
 structure discrete_fun {α : Type} (F : α → Type _) : Type _ where
@@ -477,27 +479,30 @@ structure discrete_fun {α : Type} (F : α → Type _) : Type _ where
 /-- Non-dependent discrete function -/
 notation:25 x:26 " -d> " y:25 => @discrete_fun x (fun _ => y)
 
-instance {α β : Type _} [O : OFE β] : IsOFEFun (fun (_ : α) => β) := ⟨ O ⟩
+-- instance {α β : Type _} [O : OFE β] : IsOFEFun (fun (_ : α) => β) := ⟨ O ⟩
 
 instance {α : Type _} {β : α -> Type _} : CoeFun (discrete_fun β) (fun _ => ((x : α) -> β x)) :=
   ⟨ fun f => f.car ⟩
 
 section DiscreteFunCOFE
 
-variable {α : Type _} (β : α -> Type _) [IsOFEFun β]
+variable {α : Type _} (β : α -> Type _)
+
+abbrev OFEFun (β : α → Type _) := ∀ a, OFE (β a)
+abbrev IsCOFEFun (β : α -> Type _) [OFEFun β] := ∀ x : α, IsCOFE (β x)
 
 @[simp]
-def discrete_fun.equiv (f g : discrete_fun β) : Prop := ∀ (x : α), f x ≡ g x
+def discrete_fun.equiv [OFEFun β] (f g : discrete_fun β): Prop := ∀ (x : α), f x ≡ g x
 
 @[simp]
-def discrete_fun.dst (n : Nat) (f g : discrete_fun β) : Prop := ∀ (x : α), f x ≡{n}≡ g x
+def discrete_fun.dst [OFEFun β] (n : Nat) (f g : discrete_fun β) : Prop := ∀ (x : α), f x ≡{n}≡ g x
 
-theorem discrete_fun.dst_Equiv n : Equivalence (@discrete_fun.dst α β _ n) :=
+theorem discrete_fun.dst_Equiv [OFEFun β] n : Equivalence (@discrete_fun.dst α β _ n) :=
   ⟨ by simp,
     by simp; exact fun H x => Dist.symm (H x) ,
     by simp; exact fun H1 H2 x => Dist.trans (H1 x) (H2 x) ⟩
 
-instance discrete_fun.OFE : OFE (discrete_fun β) where
+instance discrete_fun.OFE [OFEFun β] : OFE (discrete_fun β) where
   Equiv := discrete_fun.equiv β
   Dist := discrete_fun.dst β
   dist_eqv {n} := discrete_fun.dst_Equiv β n
@@ -506,11 +511,11 @@ instance discrete_fun.OFE : OFE (discrete_fun β) where
       fun H _ => equiv_dist.mpr (H · _) ⟩
   dist_lt := by simp; exact fun H Hn x => Dist.lt (H x) Hn
 
-def discrete_fun.chain (c : Chain (discrete_fun β)) (x : α) : Chain (β x) where
+def discrete_fun.chain [OFEFun β] (c : Chain (discrete_fun β)) (x : α) : Chain (β x) where
   chain n := c n x
   cauchy H := c.cauchy H x
 
-instance discrete_fun.IsCOFE [∀ x : α, IsCOFE (β x)] : IsCOFE (discrete_fun β) where
+instance discrete_fun.IsCOFE [OFEFun β] [IsCOFEFun β] : IsCOFE (discrete_fun β) where
   compl c := ⟨ fun x => IsCOFE.compl (discrete_fun.chain β c x) ⟩
   conv_compl _ := IsCOFE.conv_compl
 
@@ -524,7 +529,7 @@ variable {α : Type _} {β₁ β₂ β₃ : α -> Type _} -- [IsOFEFun β₁] [I
 def discrete_fun.map (f : ∀ x, β₁ x → β₂ x) (g : discrete_fun β₁) : discrete_fun β₂ :=
   ⟨ fun x => f x (g x) ⟩
 
-theorem  discrete_fun.map.ext [IsOFEFun β₂] (f₁ f₂ : ∀ x, β₁ x → β₂ x) (g : discrete_fun β₁) :
+theorem  discrete_fun.map.ext [OFEFun β₂] (f₁ f₂ : ∀ x, β₁ x → β₂ x) (g : discrete_fun β₁) :
     (∀ x, f₁ x (g x) ≡ f₂ x (g x)) → map f₁ g ≡ map f₂ g := by
   simp only [map]; exact id
 
@@ -535,7 +540,7 @@ theorem discrete_fun.map.comp (f₁ : ∀ x, β₁ x → β₂ x) (f₂: ∀ x, 
     map (fun x => f₂ x ∘ f₁ x) g = map f₂ (map f₁ g) := by simp [map]
 
 -- Can this be stated as NonExpansive or is using the same n everywhere important?
-theorem discrete_fun.map.ne [IsOFEFun β₁] [IsOFEFun β₂] (f : ∀ x, β₁ x → β₂ x)
+theorem discrete_fun.map.ne [OFEFun β₁] [OFEFun β₂] (f : ∀ x, β₁ x → β₂ x)
     (H : ∀ x, NonExpansive (f x)) : NonExpansive (discrete_fun.map f) :=
   ⟨ fun _ _ _ Hx x => by apply (H x).ne; apply Hx ⟩
 
@@ -545,15 +550,6 @@ abbrev discrete_fun_OF {C} (F : C → COFE.OFunctorPre) : COFE.OFunctorPre :=
 -- Works
 -- variable {α₁ β₁ C : Type _} (F : C → Type _ → Type _ → Type _) [∀ A B, IsOFEFun fun c => F c A B]
 -- #synth OFE (discrete_fun_OF F α₁ β₁)
-
-
--- This is here so that the IsOFEFun instance we get is the same as the OFunctor
-instance {C} (F : C → COFE.OFunctorPre) [HOF : ∀ c, COFE.OFunctor (F c)] :
-        ∀ A B [OFE A] [OFE B], IsOFEFun fun c => F c A B :=
-    fun A B _ _ => by
-        apply IsOFEFun.mk
-        intro c
-        apply (HOF c).cofe
 
 instance discrete_fun_OFunctor {C} (F : C → COFE.OFunctorPre) [HOF : ∀ c, COFE.OFunctor (F c)] :
     COFE.OFunctor (discrete_fun_OF F) where
