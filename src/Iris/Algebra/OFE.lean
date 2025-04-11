@@ -639,8 +639,15 @@ instance OptionO_COFE [IsCOFE α] : IsCOFE (OptionO α) where
   conv_compl := by
     intro n c; simp
     generalize Hx : (c.chain 0) = x
-    have Hy := c.cauchy (Nat.zero_le n)
-    sorry
+    generalize Hy : c.chain n = y
+    have H := Hy ▸ Hx ▸ c.cauchy (Nat.zero_le n)
+    simp [Dist] at H
+    rcases x with ⟨ _ | ⟨ x' ⟩ ⟩ <;>
+    rcases y with ⟨ _ | ⟨ y' ⟩ ⟩ <;>
+    simp_all
+    simp [Dist]
+    apply OFE.dist_eqv.trans (IsCOFE.conv_compl (c := option_chain c x'))
+    simp [option_chain, Hy]
 
 def map {α β : Type _} [OFE α] [OFE β] (f : α -n> β) : OptionO α -n> OptionO β :=
   ⟨ fun x => match x with | ⟨ some x ⟩ => ⟨ some (f x) ⟩ | ⟨ none ⟩ => ⟨ none ⟩,
