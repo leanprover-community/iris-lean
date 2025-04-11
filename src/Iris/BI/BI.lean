@@ -31,7 +31,7 @@ class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
   sep_ne : OFE.NonExpansive₂ sep
   wand_ne : OFE.NonExpansive₂ wand
   persistently_ne : OFE.NonExpansive persistently
-  later_ne : OFE.NonExpansive later
+  later_ne : OFE.NonExpansive later -- TODO: Should this be contractive?
 
   pure_intro {φ : Prop} {P : PROP} : φ → P ⊢ ⌜φ⌝
   pure_elim' {φ : Prop} {P : PROP} : (φ → True ⊢ P) → ⌜φ⌝ ⊢ P
