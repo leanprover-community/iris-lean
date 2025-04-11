@@ -75,6 +75,7 @@ class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
   later_sForall_2 {Φ : PROP → Prop} : (∀ p, ⌜Φ p⌝ → ▷ p) ⊢ ▷ sForall Φ
   later_sExists_false {Φ : PROP → Prop} : (▷ sExists Φ) ⊢ ▷ False ∨ ∃ p, ⌜Φ p⌝ ∧ ▷ p
   later_sep {P Q : PROP} : ▷ (P ∗ Q) ⊣⊢ ▷ P ∗ ▷ Q
+  -- FIXME: Remove Q
   later_persistently {P Q : PROP} : ▷ <pers> P ⊣⊢ <pers> ▷ P
   later_false_em {P : PROP} : ▷ P ⊢ ▷ False ∨ (▷ False → P)
 
