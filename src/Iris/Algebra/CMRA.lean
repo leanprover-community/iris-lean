@@ -870,15 +870,16 @@ def RFunctor.ap [RFunctor F] [OFE T] := F T T
 attribute [instance] RFunctor.cmra
 attribute [instance] RFunctor.mor
 
-instance RFunctor.toOFunctor [RFunctor F] : COFE.OFunctor F where
-  cofe {α β} := (@RFunctor.cmra F _ α β).toOFE
-  map f g    := RFunctor.map f g
+
+instance RFunctor.toOFunctor [R : RFunctor F] : COFE.OFunctor F where
+  cofe {α β} := (@RFunctor.cmra F R α β).toOFE
+  map        := RFunctor.map
   map_ne     := RFunctor.map_ne
   map_id     := RFunctor.map_id
   map_comp   := RFunctor.map_comp
 
-instance RFunctorContractive.toOFunctorContractive [RFunctorContractive F] : COFE.OFunctorContractive F where
-  toOFunctor      := RFunctor.toOFunctor
+instance RFunctorContractive.toOFunctorContractive [RC : RFunctorContractive F] : COFE.OFunctorContractive F where
+  toOFunctor      := (@RFunctorContractive.toRFunctor F RC).toOFunctor -- Is this right/necessary?
   map_contractive := RFunctorContractive.map_contractive
 
 end rFunctor
@@ -908,39 +909,30 @@ class URFunctorContractive (F : COFE.OFunctorPre) extends URFunctor F where
 attribute [instance] URFunctor.cmra
 attribute [instance] URFunctor.mor
 
-instance URFunctor.toRFunctor [URFunctor F] : RFunctor F where
-  cmra {α β} := (@URFunctor.cmra F _ α β).toCMRA
+instance URFunctor.toRFunctor [UF : URFunctor F] : RFunctor F where
+  cmra {α β} := (@URFunctor.cmra F UF α β).toCMRA
   map f g    := URFunctor.map f g
   map_ne     := URFunctor.map_ne
   map_id     := URFunctor.map_id
   map_comp   := URFunctor.map_comp
   mor        := URFunctor.mor
 
-instance URFunctorContractive.toRFunctorContractive [URFunctorContractive F] : RFunctorContractive F where
-  toRFunctor      := URFunctor.toRFunctor
+instance URFunctorContractive.toRFunctorContractive [UC : URFunctorContractive F] : RFunctorContractive F where
+  toRFunctor      := (@URFunctorContractive.toURFunctor F UC).toRFunctor -- Is this right/necessary?
   map_contractive := URFunctorContractive.map_contractive
 
 end urFunctor
 
-/- A dependent function has its range contained in CMRA types -/
-class IsUCMRAFun (F : α → Type _) where
-  cmra {x : α} : UCMRA (F x)
+abbrev IsCMRAFun {α : Type _} (β : α -> Type _) := ∀ x : α, CMRA (β x)
+abbrev IsUCMRAFun {α : Type _} (β : α -> Type _) := ∀ x : α, UCMRA (β x)
 
-instance {α β : Type _} [U : UCMRA β] : IsUCMRAFun (fun (_ : α) => β) := ⟨ U ⟩
+namespace discrete_funO
 
-attribute [instance] IsUCMRAFun.cmra
-
--- Instance diamond?
--- instance [IsUCMRAFun F] : IsOFEFun F where
---   ofe {x} := (@IsUCMRAFun.cmra _ F _ x).toOFE
-
-section DiscreteFunUCMRA
-
-variable {α : Type _} (β : α → Type _) [IsUCMRAFun β]
+variable {α : Type _} (β : α → Type _)
 
 -- TODO: Cleanup
 
-instance discrete_funO.CMRA : UCMRA (discrete_funO β) where
+instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
   toOFE := discrete_funO.OFE β
   pcore f := some ⟨ fun x => CMRA.core (f x) ⟩
   op f g := ⟨ fun x => f x • g x ⟩
@@ -969,15 +961,12 @@ instance discrete_funO.CMRA : UCMRA (discrete_funO β) where
     apply Iff.intro
     · intro H x y; exact CMRA.Valid.validN (H y)
     · intro H x
-      rename_i I
-      -- exact CMRA.valid_iff_validN.mpr fun n => H n x
-      apply ((@I.cmra x).valid_iff_validN).mpr (fun i => H i x)
+      exact CMRA.valid_iff_validN.mpr fun n => H n x
   validN_succ := by
     simp
     intro x n H x'
     rename_i I
-    apply ((@I.cmra _).validN_succ)
-    apply H
+    exact CMRA.validN_succ (H x')
   validN_op_left := by
     simp
     intros f g h H x
@@ -998,8 +987,10 @@ instance discrete_funO.CMRA : UCMRA (discrete_funO β) where
     simp
     intro x y
     exact CMRA.core_idemp (x.car y)
-  pcore_op_mono := sorry
-  extend := sorry
+  pcore_op_mono := by
+    sorry
+  extend := by
+    sorry
   unit := ⟨ fun _ => UCMRA.unit ⟩
   unit_valid := by
     simp
@@ -1013,34 +1004,54 @@ instance discrete_funO.CMRA : UCMRA (discrete_funO β) where
     intro x
     apply CMRA.core_eqv_self
 
-end DiscreteFunUCMRA
+end discrete_funO
 
 
 section DiscreteFunURF
 
--- discrete_funO_OF is the action on objects
-
-
--- Ensures there are no instance clashes in the UF definifion
-instance {C} (F : C → COFE.OFunctorPre) [HUF : ∀ c, URFunctor (F c)] :
-        ∀ A B [OFE A] [OFE B], IsUCMRAFun fun c => F c A B :=
-    fun A B _ _ => by
-        apply IsUCMRAFun.mk
-        intro c
-        apply (HUF c).cmra
-
-instance IsOFEFun_UF {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctor (F c)] :
+instance DiscreteFunOF_URF {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctor (F c)] :
      URFunctor (discrete_funOF F) where
-  cmra {α β _ _ } := discrete_funO.CMRA fun c => F c α β
-  map := sorry
-  map_ne := sorry
-  map_id := sorry
-  map_comp := sorry
-  mor := sorry
+  cmra {α β _ _ } := discrete_funO.isCMRA (fun c => F c α β)
+  map := COFE.OFunctor.map
+  map_ne := COFE.OFunctor.map_ne
+  map_id := COFE.OFunctor.map_id
+  map_comp := COFE.OFunctor.map_comp
+  mor f g :=
+    ⟨ (by
+         intros
+         rename_i HF x
+         simp [COFE.OFunctor.map, discrete_funO.map, CMRA.ValidN]
+         intro c
+         apply @((HURF c).mor f g).morphism_validN
+         apply x),
+      (by
+         intros
+         rename_i HF x
+         simp [COFE.OFunctor.map, discrete_funO.map, CMRA.pcore]
+         intro c
+         simp
+         let Z := @((HURF c).mor f g).morphism_pcore
+         sorry),
+      (by
+         intros
+         rename_i HF x
+         simp [COFE.OFunctor.map, discrete_funO.map, CMRA.op]
+         intro c
+         simp
+         apply @((HURF c).mor f g).morphism_op) ⟩
 
-instance IsOFEFun_UFC {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctorContractive (F c)] :
+instance DiscreteFunOF_URFC  {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctorContractive (F c)] :
      URFunctorContractive (discrete_funOF F) where
-  map_contractive := sorry
+  map_contractive := by
+    intros
+    rename_i HF x
+    constructor
+    simp [COFE.OFunctor.map, discrete_funO.map, CMRA.op]
+    intro n f1 f2 g1 g2 _ HF c
+    let Z := @((HURF c).map_contractive).distLater_dist n (f1, f2) (g1, g2)
+    simp [Function.uncurry] at Z
+    apply Z
+    trivial
 
 end DiscreteFunURF
 
