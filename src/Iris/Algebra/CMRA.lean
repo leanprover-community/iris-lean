@@ -932,6 +932,8 @@ variable {α : Type _} (β : α → Type _)
 
 -- TODO: Cleanup
 
+-- set_option pp.notation false
+
 instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
   toOFE := discrete_funO.OFE β
   pcore f := some ⟨ fun x => CMRA.core (f x) ⟩
@@ -989,15 +991,21 @@ instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
     exact CMRA.core_idemp (x.car y)
   pcore_op_mono := by
     simp
-    intro x cx y H
-    exists y
-    rw [<- H]
-    apply funext
-    intro a
-    simp
+    intro f1 f1' f2 H
+    exists ⟨ fun x => CMRA.core (f2 x) ⟩
+    apply funext; intro x
+    simp [<- H]
+    clear H f1'
+    -- ??
     sorry
   extend := by
-    sorry
+    simp
+    intros n f f1 f2 Hv He
+    let F := fun (x : α) => @CMRA.extend (β x) _ n (f x) (f1 x) (f2 x) (Hv x) (He x)
+    exists ⟨ fun x => (F x).1 ⟩
+    exists ⟨ fun x => (F x).2.1 ⟩
+    apply And.intro (fun x => (F x).2.2.1)
+    apply And.intro (fun x => (F x).2.2.2.1) (fun x => (F x).2.2.2.2)
   unit := ⟨ fun _ => UCMRA.unit ⟩
   unit_valid := by
     simp
@@ -1170,32 +1178,36 @@ instance OptionO_cmra : CMRA (OptionO A) where
     intros x cx y
     rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
     rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;>
-    simp_all [Dist, Equiv]
-    · intro H; rw [<- H]
+    rcases cx with ⟨ _ | ⟨ cx ⟩ ⟩ <;>
+    simp_all
+    · exists ⟨ none ⟩
+    · sorry
+    · intro _
       exists ⟨ none ⟩
-    · intro H; rw [<- H]
-      generalize Hy' : CMRA.pcore y = y'
-      exists ⟨ y' ⟩
-      rcases y' with ⟨ _ | ⟨ y' ⟩ ⟩ <;> simp
-    · intro H; rw [<- H]
-      generalize Hx' : CMRA.pcore x = x'
-      exists ⟨ x' ⟩
-      rcases x' with ⟨ _ | ⟨ x' ⟩ ⟩ <;> simp
+    · intro H
+      exists ⟨ some cx ⟩
+      simp
+      -- Suspicious
       sorry
-    · intro H; rw [<- H]
-      generalize Hx' : CMRA.pcore x = x'
-      exists ⟨ x' ⟩
-      rcases x' with ⟨ _ | ⟨ x' ⟩ ⟩ <;> simp
-      · sorry
-      · sorry
+    · intro H
+      exists ⟨ none ⟩
+      simp
+      sorry
+    · intro H
+      exists ⟨ some y ⟩
+      simp
+      sorry
   extend := by
-    intro n x y1 y2
-    rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
-    rcases y1 with ⟨ _ | ⟨ y1 ⟩ ⟩ <;>
-    rcases y2 with ⟨ _ | ⟨ y2 ⟩ ⟩ <;>
-    all_goals sorry
-
-
+    intro n ma mb1 mb2
+    rcases ma with ⟨ _ | ⟨ x ⟩ ⟩ <;>
+    rcases mb1 with ⟨ _ | ⟨ mb1 ⟩ ⟩ <;>
+    rcases mb2 with ⟨ _ | ⟨ mb2 ⟩ ⟩ <;>
+    simp <;> intros Hx Hx' <;> try simp [Dist] at Hx'
+    · exists ⟨ none ⟩; exists ⟨ none ⟩
+    · exists ⟨ none ⟩; exists ⟨ some x ⟩; simp [Dist, Hx']
+    · exists ⟨ some x ⟩; exists ⟨ none ⟩; simp [Dist, Hx']
+    · rcases CMRA.extend Hx Hx' with ⟨ mc1, mc2, _, _, _ ⟩
+      exists ⟨ some mc1 ⟩ ; exists ⟨ some mc2 ⟩
 
 instance OptionO_UCMRA [CMRA A] : UCMRA (OptionO A) where
   unit := ⟨ none ⟩
@@ -1212,10 +1224,11 @@ section optionOF
 
 variable (F : COFE.OFunctorPre)
 
+-- FIXME: surely this can be removed
 -- We always get a unital cmra
--- instance OptionOFisUCMRA [OFE α] [OFE β] [RFunctor F] : UCMRA (OptionOF F α β) := by
---   unfold OptionOF
---   infer_instance
+local instance OptionOFisUCMRA [OFE α] [OFE β] [RFunctor F] : UCMRA (OptionOF F α β) := by
+  unfold OptionOF
+  infer_instance
 
 instance OptionOF_URF [RFunctor F] : URFunctor (OptionOF F) where
   cmra {α β} := OptionO_UCMRA
@@ -1223,7 +1236,29 @@ instance OptionOF_URF [RFunctor F] : URFunctor (OptionOF F) where
   map_ne := COFE.OFunctor.map_ne
   map_id := COFE.OFunctor.map_id
   map_comp := COFE.OFunctor.map_comp
-  mor := sorry
+  mor f g :=
+    ⟨ (by
+         simp [COFE.OFunctor.map, CMRA.ValidN, OptionO.map]
+         intro n x
+         rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;> simp
+         apply (RFunctor.mor (F:=F) f g).morphism_validN (n:=n) (x:=x)),
+      (by
+         simp [COFE.OFunctor.map, CMRA.pcore, OptionO.map]
+         intro x
+         rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;> simp
+         generalize Hx' : CMRA.pcore x = x'
+         have H := (RFunctor.mor (F:=F) f g).morphism_pcore x
+         rw [Hx'] at H
+         rcases x' with ⟨ _ | ⟨ x' ⟩ ⟩ <;>
+           simp_all [Equiv, Option.Forall₂] <;>
+           split <;>
+           simp_all),
+      (by
+         simp [COFE.OFunctor.map, CMRA.op, OptionO.map]
+         intro x y
+         rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
+         rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;> simp
+         apply (RFunctor.mor (F:=F) f g).morphism_op )⟩
 
 instance OptionOF_URFC [RFunctorContractive F] : URFunctorContractive (OptionOF F) where
   map_contractive := COFE.OFunctorContractive.map_contractive
