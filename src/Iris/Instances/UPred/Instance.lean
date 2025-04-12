@@ -64,12 +64,20 @@ def impl : uPred M where
     · exact (uPred_ne P n Hx).mp HP
 
 def sForall (Ψ : uPred M → Prop) : uPred M where
-  uPred_holds n x := sorry -- ∀ a, Ψ a n x
-  uPred_mono := sorry
+  uPred_holds n x := ∀ p, Ψ p → p n x
+  uPred_mono := by
+    simp
+    intro _ _ _ _ HΨ Hv Hn p Hp
+    exact p.uPred_mono (HΨ _ Hp) Hv Hn
 
 def sExists (Ψ : uPred M → Prop) : uPred M where
-  uPred_holds n x := sorry -- ∃ a, Ψ a n x
-  uPred_mono := sorry
+  uPred_holds n x := ∃ p, Ψ p ∧ p n x
+  uPred_mono := by
+    simp
+    intros n1 n2 x1 x2 p HΨ Hp Hv Hn
+    exists p
+    apply And.intro HΨ
+    exact p.uPred_mono Hp Hv Hn
 
 def internal_eq : uPred M where
   uPred_holds n _ := o1 ≡{n}≡ o2
@@ -178,11 +186,24 @@ instance : Std.Preorder (Entails (PROP := uPred M)) where
     apply H1 _ _ Hv
     apply H
 
+
+instance later_contractive : OFE.Contractive later (α := uPred M) := by
+  constructor
+  intro n x y Hl
+  cases n
+  · intro _; simp_all [later]
+  rename_i n
+  intro n' x' Hn' Hx'
+  cases n'
+  · simp [later]
+  exact Hl _ Hn' _ _ (Nat.le_refl _) (CMRA.validN_succ Hx')
+
 -- TODO: Tidy
+
+-- set_option pp.notation false
 
 instance : BI (uPred M) where
   entails_preorder := by infer_instance
-
   equiv_iff {P Q} := by
     apply Iff.intro <;> intro HE
     · constructor <;> intro n x Hv H <;> apply (uPred_holds_ne _ _ _ _ _ _ (Nat.le_refl n) Hv H)
@@ -257,16 +278,35 @@ instance : BI (uPred M) where
     constructor
     · intro H'; apply (H _ _ Hn (CMRA.validN_core Hx)).mp H'
     · intro H'; apply (H _ _ Hn (CMRA.validN_core Hx)).mpr H'
-
-  -- Change to contractive in BI?
-  -- This typeclass seems to be a fusion of BiMixin and BiLaterMixin anyways...
-  later_ne := sorry
-
-  -- TODO: Define sForall, sExists
-  sForall_ne := sorry
-  sExists_ne := sorry
-
-
+  later_ne := by apply OFE.instNonExpansiveOfContractive later
+  sForall_ne := by
+    intro n P1 P2 HR
+    rcases HR with ⟨ HR1, HR2 ⟩
+    simp [BI.sForall, sForall]
+    intro n' x' Hn' Hx'
+    simp
+    apply Iff.intro
+    · intro H p Hp
+      rcases (HR2 p Hp) with ⟨ p', Hp', Hp'eq ⟩
+      exact (@Hp'eq n' _ Hn' Hx').mp (H _ Hp')
+    · intro H p Hp
+      rcases (HR1 p Hp) with ⟨ p', Hp', Hp'eq ⟩
+      exact (@Hp'eq n' _ Hn' Hx').mpr (H _ Hp')
+  sExists_ne := by
+    intro n P1 P2 HR
+    rcases HR with ⟨ HR1, HR2 ⟩
+    simp [BI.sExists, sExists]
+    intro n' x' Hn' Hx'
+    simp
+    apply Iff.intro
+    · rintro ⟨ p, Hp, H ⟩
+      rcases (HR1 p Hp) with ⟨ p', Hp', Hp'eq ⟩
+      exists p'
+      exact And.intro Hp' ((@Hp'eq n' _ Hn' Hx').mp H)
+    · rintro ⟨ p, Hp, H ⟩
+      rcases (HR2 p Hp) with ⟨ p', Hp', Hp'eq ⟩
+      exists p'
+      exact And.intro Hp' ((@Hp'eq n' _ Hn' Hx').mpr H)
   pure_intro := by intros _ _ P _ _ _ _; exact P
   pure_elim' := by intros _ _ I n x a P; exact I P n x a trivial
   and_elim_l := by intros _ _ _ _ _ I; cases I; trivial
@@ -294,13 +334,22 @@ instance : BI (uPred M) where
     rcases H with ⟨ HP, HQ ⟩
     apply (H' _ _ Hv HP _ _ _ (Nat.le_refl _) Hv HQ)
     apply CMRA.inc_refl
-
-  -- TODO: Define sForall, sExists
-  sForall_intro := sorry
-  sForall_elim := sorry
-  sExists_intro := sorry
-  sExists_elim := sorry
-
+  sForall_intro := by
+    intros p Ψ H n x Hv Hp
+    simp [BI.sForall, sForall]
+    intros p' HΨ
+    exact H _ HΨ _ _ Hv Hp
+  sForall_elim := by
+    intros _ p HΨ
+    exact fun _ _ _ H => H p HΨ
+  sExists_intro := by
+    intros Ψ p H n x Hv Hp
+    exists p
+  sExists_elim := by
+    intros Ψ p H n x Hv
+    simp [BI.sExists, sExists]
+    intro x' HΨ H'
+    exact H x' HΨ n x Hv H'
   sep_mono := by
     intro _ _ _ _ H1 H2 n x Hv H
     rcases H with ⟨x1, x2, HE, Hx1, Hx2⟩
@@ -390,10 +439,20 @@ instance : BI (uPred M) where
     sorry
   persistently_emp_2 := by simp [BI.persistently, persistently, BI.emp, emp]
   persistently_and_2 := by simp [BI.persistently, BI.and, persistently, and]
-
-  -- Depends on exists
-  persistently_sExists_1 := sorry
-
+  persistently_sExists_1 := by
+    -- simp [BI.persistently, BI.and, persistently, and, BI.sExists, sExists, BI.pure, pure, «exists»]
+    intro Ψ n x v H
+    rcases H with ⟨ p, HΨ, H ⟩
+    simp [«exists», BI.sExists, sExists]
+    exists iprop(<pers> p) -- iprop(⌜Ψ p⌝ ∧ <pers> p)
+    simp [BI.persistently, persistently]
+    apply And.intro _ H
+    exists p
+    simp [BI.and, and, BI.pure, pure]
+    apply funext; intro n
+    apply funext; intro x'
+    apply propext
+    simp [HΨ]
   persistently_absorb_l  := by
     simp [BI.persistently, BI.and, persistently, and, BI.sep, sep]
     intros P Q _ x _ H
@@ -423,11 +482,31 @@ instance : BI (uPred M) where
     simp [BI.later, later]
     cases n <;> simp
     apply uPred.uPred_mono _ Hp (CMRA.incN_refl _) (Nat.le_add_right _ _)
-
-  -- Figure out forall and exists
-  later_sForall_2 := sorry
-  later_sExists_false := sorry
-
+  later_sForall_2 := by
+    intro Ψ n x Hx
+    simp [BI.later, later, BI.pure, pure, BI.sForall, sForall, BI.imp, impl, «forall»]
+    cases n <;> simp
+    rename_i n
+    intro H p Hp
+    have H' := H p (n + 1) x
+    apply H' (CMRA.inc_refl x) (Nat.le_refl _) Hx Hp
+  later_sExists_false := by
+    intro Ψ
+    intro n x Hx H
+    cases n
+    · left; simp_all [BI.later, later]
+    · right
+      simp [BI.later, later, BI.sExists, sExists] at H
+      rcases H with ⟨ p', Hp', H ⟩
+      exists (BI.later p')
+      simp [BI.later]
+      apply And.intro _ H
+      exists p'
+      simp [BI.later, later, BI.pure, pure, BI.and, and]
+      apply funext; intro n
+      apply funext; intro x
+      apply propext
+      simp [Hp']
   later_sep := by
     intros P Q
     simp [BI.later, later, BI.sep, sep]
@@ -470,5 +549,8 @@ instance : BI (uPred M) where
     · apply P.uPred_mono H (CMRA.Included.incN Hx'le) (Nat.zero_le _)
     intro H''
     exact False.elim H''
+
+instance : BILaterContractive (uPred M) where
+  toContractive := later_contractive
 
 end uPred
