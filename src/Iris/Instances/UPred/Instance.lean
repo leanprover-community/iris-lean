@@ -434,9 +434,10 @@ instance : BI (uPred M) where
     intros _ _ x n H
     simp_all [BI.persistently, persistently]
     apply (uPred.uPred_mono _ H _ (Nat.le_refl _))
-    -- Not sure
-    exists (CMRA.core x)
-    sorry
+    apply CMRA.incN_proper2
+    · exact OFE.Equiv.rfl
+    apply (CMRA.core_idemp x).symm
+    exact CMRA.incN_refl (CMRA.core x)
   persistently_emp_2 := by simp [BI.persistently, persistently, BI.emp, emp]
   persistently_and_2 := by simp [BI.persistently, BI.and, persistently, and]
   persistently_sExists_1 := by
