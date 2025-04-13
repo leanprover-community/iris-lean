@@ -28,7 +28,7 @@ class CMRA (α : Type _) extends OFE α where
 
   pcore_op_left : pcore x = some cx → op cx x ≡ x
   pcore_idem : pcore x = some cx → pcore cx ≡ some cx
-  pcore_op_mono y : pcore x = some cx → ∃ cy, pcore (op x y) = some (op cx cy)
+  pcore_op_mono y : pcore x = some cx → ∃ cy, pcore (op x y) ≡ some (op cx cy)
 
   extend : ValidN n x → x ≡{n}≡ op y₁ y₂ →
     Σ' z₁ z₂, x ≡ op z₁ z₂ ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂
@@ -343,7 +343,7 @@ theorem incN_op_right (n) (x y : α) : y ≼{n} x • y :=
 theorem pcore_mono {x y : α} : x ≼ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ cy
   | ⟨_, hw⟩, e =>
     have ⟨z, hz⟩ := pcore_op_mono _ e
-    let ⟨t, ht, et⟩ := OFE.equiv_some (hz ▸ NonExpansive.eqv hw)
+    let ⟨t, ht, et⟩ := OFE.equiv_some ((NonExpansive.eqv hw).trans hz)
     ⟨t, ht, z, et⟩
 
 theorem pcore_mono' {x y : α} {cx} (le : x ≼ y) (e : pcore x ≡ some cx) :
