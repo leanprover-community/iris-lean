@@ -33,6 +33,15 @@ class CMRA (α : Type _) extends OFE α where
   extend : ValidN n x → x ≡{n}≡ op y₁ y₂ →
     Σ' z₁ z₂, x ≡ op z₁ z₂ ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂
 
+/-- Reduction of `pcore_op_mono` to regular monotonicity -/
+theorem pcore_op_mono_of_core_op_mono [OFE α] (op: α → α → α) (pcore : α → Option α)
+    (h: (∀ x cx y : α, (∃ z, y ≡ op x z) → pcore x = some cx →
+      ∃ cy, pcore y = some cy ∧ ∃ z, cy ≡ op cx z)) :
+    ∀ x cx y, pcore x = some cx → ∃ cy, pcore (op x y) ≡ some (op cx cy) :=
+  λ x cx y e =>
+    have ⟨_, hcy, z, hz⟩ := h x cx (op x y) ⟨y, Equiv.rfl⟩ e
+    ⟨z, hcy.symm ▸ OFE.some_eqv_some_of_eqv hz⟩
+
 namespace CMRA
 variable [CMRA α]
 
@@ -990,13 +999,16 @@ instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
     intro x y
     exact CMRA.core_idemp (x.car y)
   pcore_op_mono := by
-    simp
-    intro f1 f1' f2 H
-    exists ⟨ fun x => CMRA.core (f2 x) ⟩
-    apply funext; intro x
-    simp [<- H]
-    clear H f1'
-    -- ??
+    -- simp
+    -- intro f1 f1' f2 H
+    -- exists ⟨ fun x => CMRA.core (f2 x) ⟩
+    -- simp [Equiv, Option.Forall₂]
+    -- intro x
+    -- rw [<- H]
+    -- simp
+
+    -- let Z := @CMRA.pcore_op_mono
+    -- apply CMRA.pcore_op_mono in H
     sorry
   extend := by
     simp
@@ -1078,17 +1090,31 @@ section option
 
 variable [CMRA A]
 
+@[simp]
+def OptionO_pcore (x : OptionO A) : Option (OptionO A) :=
+  some ⟨ match x with | ⟨ some y ⟩ => (CMRA.pcore y) | ⟨ none ⟩ => none ⟩
 
-instance OptionO_cmra : CMRA (OptionO A) where
-  pcore x := some ⟨ match x with | ⟨ some y ⟩ => (CMRA.pcore y) | ⟨ none ⟩ => none ⟩
-  op x y :=
+@[simp]
+def OptionO_op (x y  : OptionO A) : OptionO A :=
     match (x, y) with
     | (⟨ some x' ⟩,  ⟨ some y' ⟩) => ⟨ some (CMRA.op x' y') ⟩
     | (⟨ none ⟩,     ⟨ none ⟩)    => ⟨ none ⟩
     | (_, ⟨ none ⟩)               => x
     | (⟨ none ⟩, _)               => y
-  ValidN n x := match x with | ⟨ some x ⟩ => ✓{n} x | ⟨ none ⟩ => True
-  Valid x := match x with | ⟨ some x ⟩ => ✓ x | ⟨ none ⟩ => True
+
+@[simp]
+def OptionO_validN n (x : OptionO A) :=
+   match x with | ⟨ some x ⟩ => ✓{n} x | ⟨ none ⟩ => True
+
+@[simp]
+def OptionO_valid (x : OptionO A) :=
+   match x with | ⟨ some x ⟩ => ✓ x | ⟨ none ⟩ => True
+
+instance OptionO_cmra : CMRA (OptionO A) where
+  pcore := OptionO_pcore
+  op := OptionO_op
+  ValidN := OptionO_validN
+  Valid := OptionO_valid
   op_ne := by
     intros x
     rcases x with ⟨ x ⟩
@@ -1175,28 +1201,46 @@ instance OptionO_cmra : CMRA (OptionO A) where
       simp [Equiv, Option.Forall₂] at Hinj
       trivial
   pcore_op_mono := by
-    intros x cx y
-    rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
-    rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;>
-    rcases cx with ⟨ _ | ⟨ cx ⟩ ⟩ <;>
+    apply pcore_op_mono_of_core_op_mono
+    -- intro ma ca mb
+    -- rcases ma with ⟨ _ | ⟨ ma ⟩ ⟩
+    -- · intro H1 H2
+    --   simp [OptionO_pcore] at H2
+    --   sorry
+    -- · sorry
+    all_goals sorry
+    /-
+    intro ma ca mb
+    rintro ⟨ a, Hb ⟩ H
+    rcases ma with ⟨ _ | ⟨ ma ⟩ ⟩ <;>
+    rcases mb with ⟨ _ | ⟨ mb ⟩ ⟩ <;>
     simp_all
-    · exists ⟨ none ⟩
-    · sorry
-    · intro _
-      exists ⟨ none ⟩
-    · intro H
-      exists ⟨ some cx ⟩
-      simp
-      -- Suspicious
-      sorry
-    · intro H
-      exists ⟨ none ⟩
-      simp
-      sorry
-    · intro H
-      exists ⟨ some y ⟩
-      simp
-      sorry
+    · exists a
+    · subst H; exists ⟨ CMRA.pcore mb ⟩; cases CMRA.pcore mb <;> simp
+    · rcases a with ⟨ _ | ⟨ ca ⟩ ⟩ <;> simp [Equiv] at Hb
+    · exists a
+      rcases a with ⟨ _ | ⟨ a ⟩ ⟩ <;> rcases ca with ⟨ _ | ⟨ ca ⟩ ⟩ <;> simp_all
+      · simp [Equiv] at Hb
+        rw [<- H]
+        simp [Equiv]
+        sorry
+      ·
+        have Z := CMRA.pcore_idem H
+        simp [Equiv]
+        sorry
+      · sorry
+      · sorry
+    -/
+      -- · exfalso; sorry
+      -- rcases a with ⟨ _ | ⟨ a ⟩ ⟩ <;> simp at Hb
+
+      -- rcases ca with ⟨ _ | ⟨ ca ⟩ ⟩ <;> cases (CMRA.pcore mb) <;> simp
+      -- · exfalso; sorry
+      -- rcases a with ⟨ _ | ⟨ a ⟩ ⟩ <;> simp at Hb
+
+
+      -- subst H
+      -- cases (CMRA.pcore ma) <;> cases (CMRA.pcore mb) <;> simp
   extend := by
     intro n ma mb1 mb2
     rcases ma with ⟨ _ | ⟨ x ⟩ ⟩ <;>
@@ -1215,7 +1259,7 @@ instance OptionO_UCMRA [CMRA A] : UCMRA (OptionO A) where
   unit_left_id := by
     intro x
     rcases x with ⟨ x ⟩
-    cases x <;> simp [Equiv]
+    cases x <;> simp [Equiv, CMRA.op]
   pcore_unit := by simp [CMRA.pcore]
 
 end option
