@@ -541,6 +541,10 @@ theorem core_mono {x y : α} (Hinc : x ≼ y) : core x ≼ core y := by
     core x ≼ cy         := icy
     cy         = core y := Eq.symm $ Option.some_inj.mp $ (pcore_eq_core y) ▸ hcy
 
+theorem core_dup {x : α} : core x ≡ (core x) • (core x) := by
+  apply Equiv.trans _ (op_left_eqv (core x) (CMRA.core_idemp x).symm).symm
+  apply (@CMRA.core_op α _ _ _).symm
+
 end total
 
 
@@ -943,14 +947,28 @@ variable {α : Type _} (β : α → Type _)
 
 -- set_option pp.notation false
 
+abbrev discrete_fun_pcore [IsUCMRAFun β] (f : discrete_funO β) : Option (discrete_funO β) :=
+  some ⟨ fun x => CMRA.core (f x) ⟩
+
+abbrev discrete_fun_op [IsUCMRAFun β] (f g : discrete_funO β) : discrete_funO β :=
+  ⟨ fun x => f x • g x ⟩
+
+abbrev discrete_fun_validN [IsUCMRAFun β] (n : Nat) (f : discrete_funO β) : Prop :=
+ ∀ x, ✓{n} (f x)
+
+abbrev discrete_fun_valid [IsUCMRAFun β] (f : discrete_funO β) : Prop :=
+ ∀ x, ✓ (f x)
+
+abbrev discrete_fun_core [IsUCMRAFun β] (f : discrete_funO β) : discrete_funO β :=
+  (discrete_fun_pcore (β:=β) f).getD f
+
 instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
   toOFE := discrete_funO.OFE β
-  pcore f := some ⟨ fun x => CMRA.core (f x) ⟩
-  op f g := ⟨ fun x => f x • g x ⟩
-  ValidN n f := ∀ x, ✓{n} (f x)
-  Valid f := ∀ x, ✓(f x)
+  pcore := discrete_fun_pcore (β:=β)
+  op := discrete_fun_op (β:=β)
+  ValidN := discrete_fun_validN (β:=β)
+  Valid := discrete_fun_valid (β:=β)
   op_ne := by
-    simp
     intro f
     constructor
     intro n x1 x2 H y
@@ -963,11 +981,9 @@ instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
     simp
     apply CMRA.tot_core_ne _ (a y)
   validN_ne := by
-    simp
     intros n x y H H1 y
     exact (Dist.validN (H y)).mp (H1 y)
   valid_iff_validN := by
-    simp
     intro g
     apply Iff.intro
     · intro H x y; exact CMRA.Valid.validN (H y)
@@ -979,15 +995,12 @@ instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
     rename_i I
     exact CMRA.validN_succ (H x')
   validN_op_left := by
-    simp
     intros f g h H x
     exact CMRA.validN_op_left (H x)
   assoc := by
-    simp
     intros f g h x
     apply CMRA.assoc
   comm := by
-    simp
     intros f g x
     apply CMRA.comm
   pcore_op_left := by
@@ -999,19 +1012,50 @@ instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
     intro x y
     exact CMRA.core_idemp (x.car y)
   pcore_op_mono := by
-    -- simp
-    -- intro f1 f1' f2 H
-    -- exists ⟨ fun x => CMRA.core (f2 x) ⟩
-    -- simp [Equiv, Option.Forall₂]
-    -- intro x
-    -- rw [<- H]
-    -- simp
+    apply pcore_op_mono_of_core_op_mono
+    intro f1 f_core f2 Hf12 Hsome
 
-    -- let Z := @CMRA.pcore_op_mono
-    -- apply CMRA.pcore_op_mono in H
-    sorry
-  extend := by
+    -- Perform the reduction to the implementation as in Rocq-Iris
+    suffices Hreduction : ∃ z, (discrete_fun_core (β:=β) f2) ≡ (discrete_fun_op (β:=β) (discrete_fun_core (β:=β) f1) z) by
+      rcases Hreduction  with ⟨ z, Hz ⟩
+
+      exists (discrete_fun_op β (discrete_fun_core β f1) z)
+      apply And.intro
+      · simp_all [discrete_fun_op]
+        apply funext; intro x'
+        have Hz' := Hz x'
+        simp at Hz'
+        -- Need = but only have ≡
+        -- Some other proof?
+        sorry
+      · exists z; simp [discrete_fun_core, Hsome]
+
+      -- exists f_core
+      -- apply And.intro
+      -- · rw [<- Hsome]
+      --   simp [discrete_fun_pcore]
+      --   sorry
+      -- · exists z
+      --   simp [discrete_fun_core, Hsome] at Hz
+      --   apply OFE.Equiv.trans _ Hz
+      --   intro x'
+      --   sorry
+
+    exists (discrete_fun_core _ f2)
+    intro x
     simp
+    have Hf12' : f1 x ≼ f2 x := by
+      rcases Hf12 with ⟨ h, Hh ⟩
+      exists (h x)
+      apply OFE.Equiv.trans (Hh x)
+      simp
+    repeat rw [discrete_fun_lookup_core]
+    rcases (CMRA.core_mono Hf12') with ⟨ r , Hr ⟩
+    apply OFE.Equiv.trans Hr
+    apply OFE.Equiv.trans _ (CMRA.op_right_eqv _ Hr.symm)
+    apply OFE.Equiv.trans _ CMRA.assoc.symm
+    exact (CMRA.op_left_eqv r) CMRA.core_dup
+  extend := by
     intros n f f1 f2 Hv He
     let F := fun (x : α) => @CMRA.extend (β x) _ n (f x) (f1 x) (f2 x) (Hv x) (He x)
     exists ⟨ fun x => (F x).1 ⟩
@@ -1110,6 +1154,36 @@ def OptionO_validN n (x : OptionO A) :=
 def OptionO_valid (x : OptionO A) :=
    match x with | ⟨ some x ⟩ => ✓ x | ⟨ none ⟩ => True
 
+abbrev OptionO_core (f : OptionO A) : OptionO A :=
+  (OptionO_pcore f).getD f
+
+theorem OptionO_option_included :
+    ∀ (ma mb : OptionO A), (∃ z, mb ≡ OptionO_op ma z) ↔ ma = ⟨ none ⟩  ∨ ∃ a b, ma = ⟨ some a ⟩ ∧ mb = ⟨ some b ⟩ ∧ (a ≡ b ∨ a ≼ b) := by
+  intro ma mb
+  apply Iff.intro
+  · rintro ⟨ mc, Hmc ⟩
+    rcases ma with ⟨ _ | ⟨ ma ⟩ ⟩
+    · simp
+    right
+    rcases mb with ⟨ _ | ⟨ mb ⟩ ⟩
+    · rcases mc with ⟨ _ | ⟨ _ ⟩ ⟩ <;> simp [Equiv] at Hmc
+    exists ma
+    exists mb
+    rcases mc with ⟨ _ | ⟨ c ⟩ ⟩ <;> simp <;> simp [Equiv] at Hmc
+    · left; apply Hmc.symm
+    · right; exists c
+  · intro H; rcases H with  H | ⟨ a, b, Ha, Hb,  Hc | ⟨ c, Hc ⟩  ⟩
+    · exists mb
+      rcases mb with ⟨ _ | ⟨ mb ⟩ ⟩ <;> simp_all
+    · subst Ha
+      subst Hb
+      exists ⟨ none ⟩
+      simp [Equiv]
+      apply Hc.symm
+    · subst Ha
+      subst Hb
+      exists ⟨ some c ⟩
+
 instance OptionO_cmra : CMRA (OptionO A) where
   pcore := OptionO_pcore
   op := OptionO_op
@@ -1202,45 +1276,41 @@ instance OptionO_cmra : CMRA (OptionO A) where
       trivial
   pcore_op_mono := by
     apply pcore_op_mono_of_core_op_mono
-    -- intro ma ca mb
-    -- rcases ma with ⟨ _ | ⟨ ma ⟩ ⟩
-    -- · intro H1 H2
-    --   simp [OptionO_pcore] at H2
-    --   sorry
-    -- · sorry
-    all_goals sorry
-    /-
-    intro ma ca mb
-    rintro ⟨ a, Hb ⟩ H
-    rcases ma with ⟨ _ | ⟨ ma ⟩ ⟩ <;>
-    rcases mb with ⟨ _ | ⟨ mb ⟩ ⟩ <;>
-    simp_all
-    · exists a
-    · subst H; exists ⟨ CMRA.pcore mb ⟩; cases CMRA.pcore mb <;> simp
-    · rcases a with ⟨ _ | ⟨ ca ⟩ ⟩ <;> simp [Equiv] at Hb
-    · exists a
-      rcases a with ⟨ _ | ⟨ a ⟩ ⟩ <;> rcases ca with ⟨ _ | ⟨ ca ⟩ ⟩ <;> simp_all
-      · simp [Equiv] at Hb
-        rw [<- H]
-        simp [Equiv]
-        sorry
-      ·
-        have Z := CMRA.pcore_idem H
-        simp [Equiv]
-        sorry
-      · sorry
-      · sorry
-    -/
-      -- · exfalso; sorry
-      -- rcases a with ⟨ _ | ⟨ a ⟩ ⟩ <;> simp at Hb
+    intro ma ma_core mb Hle
+    suffices Hreduction : (∃ z, (OptionO_core mb) ≡ (OptionO_op (OptionO_core ma) z)) by
 
-      -- rcases ca with ⟨ _ | ⟨ ca ⟩ ⟩ <;> cases (CMRA.pcore mb) <;> simp
-      -- · exfalso; sorry
-      -- rcases a with ⟨ _ | ⟨ a ⟩ ⟩ <;> simp at Hb
-
-
-      -- subst H
-      -- cases (CMRA.pcore ma) <;> cases (CMRA.pcore mb) <;> simp
+      sorry
+    have Hle' := (OptionO_option_included _ _).mp Hle
+    apply (OptionO_option_included _ _).mpr
+    cases Hle'
+    · rename_i H; simp [H, OptionO_core]
+    · rename_i H
+      rcases H with ⟨ a, b, H1, H2, H ⟩; rw [H1, H2]
+      rcases H with H|H
+      · simp only [OptionO_core, OptionO_pcore, Option.getD_some, OptionO.mk.injEq]
+        generalize Heqo : (CMRA.pcore a) = a'
+        rcases a' with  _ | ca
+        · simp
+        · right
+          rcases (CMRA.pcore_proper (α:=A) _ H Heqo) with ⟨ cb, Hcb1, Hcb2 ⟩
+          exists ca
+          exists cb
+          apply And.intro (Eq.refl _)
+          apply And.intro Hcb1
+          left
+          apply Hcb2
+      · simp only [OptionO_core, OptionO_pcore, Option.getD_some, OptionO.mk.injEq]
+        generalize Heqo : (CMRA.pcore a) = a'
+        rcases a' with  _ | ca
+        · simp
+        · rcases CMRA.pcore_mono H Heqo with ⟨ cb, Hcb, Hle' ⟩
+          right
+          exists ca
+          exists cb
+          apply And.intro (Eq.refl _)
+          apply And.intro Hcb
+          right
+          apply Hle'
   extend := by
     intro n ma mb1 mb2
     rcases ma with ⟨ _ | ⟨ x ⟩ ⟩ <;>
