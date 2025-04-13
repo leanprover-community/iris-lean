@@ -83,7 +83,7 @@ instance : COFE (iPrePropO FF) := COFE.OFunctor.fix_COFE
 def iResUR : Type :=
   discrete_funO (fun (i : gid FF) => gen_map gname (FF[i] (iPrePropO FF) (iPrePropO FF)))
 
-local instance : UCMRA (iResUR FF) :=
+instance : UCMRA (iResUR FF) :=
   discrete_funO.isCMRA fun (i : gid FF) => gen_map gname (FF[i] (iPrePropO FF) (iPrePropO FF))
 
 abbrev iProp := uPred (iResUR FF)

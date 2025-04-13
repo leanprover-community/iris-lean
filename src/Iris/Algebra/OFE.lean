@@ -449,6 +449,18 @@ class OFunctorContractive (F : ∀ α β [OFE α] [OFE β], Type _) extends OFun
 
 attribute [instance] OFunctor.cofe
 
+abbrev OFunctor.constOF (B : Type) : OFunctorPre := fun _ _ _ _ => B
+
+instance OFunctor.constOF_OFunctor [I : OFE B] : OFunctor (OFunctor.constOF B) where
+  cofe := I
+  map _ _ := ⟨ id, id_ne ⟩
+  map_ne := by intros; constructor; simp [NonExpansive₂]
+  map_id := by simp
+  map_comp := by simp
+
+instance OFunctor.constOF_contractive [OFE B] : OFunctorContractive (OFunctor.constOF B) where
+  map_contractive := by intros; constructor; simp [map]
+
 end COFE
 
 /- Leibniz OFE structure on a type -/

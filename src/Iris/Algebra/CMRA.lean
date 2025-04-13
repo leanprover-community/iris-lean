@@ -953,6 +953,23 @@ instance URFunctorContractive.toRFunctorContractive [UC : URFunctorContractive F
 
 end urFunctor
 
+section Id
+
+instance OFunctor.constOF_RFunctor [I : CMRA B] : RFunctor (COFE.OFunctor.constOF B) where
+  cmra := I
+  map f g := COFE.OFunctor.map f g
+  map_ne := COFE.OFunctor.map_ne
+  map_id := COFE.OFunctor.map_id
+  map_comp := COFE.OFunctor.map_comp
+  mor f g := by constructor <;> intros <;> simp [COFE.OFunctor.map]; trivial
+
+instance OFunctor.constOF_RFunctorContractive [CMRA B] : RFunctorContractive (COFE.OFunctor.constOF B) where
+  map_contractive := by intros; constructor; simp [Function.uncurry, RFunctor.map, COFE.OFunctor.map]
+
+end Id
+
+
+
 abbrev IsCMRAFun {α : Type _} (β : α -> Type _) := ∀ x : α, CMRA (β x)
 abbrev IsUCMRAFun {α : Type _} (β : α -> Type _) := ∀ x : α, UCMRA (β x)
 

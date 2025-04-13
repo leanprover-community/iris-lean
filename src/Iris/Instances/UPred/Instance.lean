@@ -145,11 +145,11 @@ def ownM : uPred M where
          _  ≡{n₂}≡ (m • m₁) • m₂ := CMRA.op_left_dist _ (OFE.Dist.le Hm₁ Hn)
          _  ≡{n₂}≡ m • (m₁ • m₂) := OFE.Equiv.dist (OFE.Equiv.symm CMRA.assoc)
 
-/-
 def cmra_valid : uPred M where
   uPred_holds n x := ✓{n} m
-  uPred_mono := sorry
+  uPred_mono := by intros; apply CMRA.validN_of_le <;> trivial
 
+/-
 def bupd : uPred M where
   uPred_holds n x := ∀ k yf, k ≤ n → ✓{k} (x • yf) → ∃ x', ✓{k} (x' • yf) ∧ Q k x'
   uPred_mono := sorry
@@ -175,7 +175,7 @@ instance : BIBase (uPred M) where
   persistently := persistently
   later        := later
 
-instance : Std.Preorder (Entails (PROP := uPred M)) where
+instance uPred_entails_preorder : Std.Preorder (Entails (PROP := uPred M)) where
   refl := by
     intro P _ _ _ H
     apply H
@@ -553,5 +553,40 @@ instance : BI (uPred M) where
 
 instance : BILaterContractive (uPred M) where
   toContractive := later_contractive
+
+instance (P : uPred M) : Affine P where
+  affine _ := by simp [BI.emp, emp]
+
+theorem ownM_valid (m : M) : ownM m ⊢ cmra_valid m := by
+  simp [ownM, cmra_valid, BI.Entails, entails]
+  intros; apply CMRA.validN_of_incN <;> trivial
+
+theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ (ownM m1 ∗ ownM m2) :=
+  ⟨ by
+      intro n x Hv H; rcases H with ⟨ z, Hz ⟩
+      exists m1; exists (m2 • z)
+      apply And.intro
+      · apply OFE.Dist.trans Hz
+        apply OFE.equiv_dist.mp CMRA.assoc.symm
+      apply And.intro <;> simp [ownM]
+      · exact CMRA.incN_refl m1
+      · exact CMRA.incN_op_left n m2 z,
+    by
+      intro n x Hv H; rcases H with ⟨ y1, y2, H, ⟨ w1, Hw1 ⟩, ⟨ w2, Hw2 ⟩ ⟩
+      exists (w1 • w2)
+      calc x ≡{n}≡ (y1 • y2) := H
+           _ ≡{n}≡ (m1 • w1) • (m2 • w2) := CMRA.op_ne2 Hw1 Hw2
+           _ ≡{n}≡ m1 • (w1 • (m2 • w2)) := OFE.equiv_dist.mp CMRA.assoc.symm _
+           _ ≡{n}≡ m1 • ((m2 • w2) • w1) := OFE.equiv_dist.mp (CMRA.op_right_eqv _ CMRA.comm) _
+           _ ≡{n}≡ m1 • (m2 • (w2 • w1)) := OFE.equiv_dist.mp (CMRA.op_right_eqv _ CMRA.assoc.symm) _
+           _ ≡{n}≡ (m1 • m2) • (w2 • w1) := OFE.equiv_dist.mp CMRA.assoc _
+           _ ≡{n}≡ (m1 • m2) • (w1 • w2) := OFE.equiv_dist.mp (CMRA.op_right_eqv _ CMRA.comm) _ ⟩
+
+theorem ownM_always_invalid_elim (m : M) : (∀ n, ¬✓{n} m) → cmra_valid m ⊢ False := by
+  intro H
+  simp [ownM, cmra_valid, BI.Entails, entails]
+  intros n _ _ Hv
+  exfalso
+  apply H n Hv
 
 end uPred
