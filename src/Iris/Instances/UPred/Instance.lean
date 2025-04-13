@@ -7,7 +7,7 @@ Authors: Markus de Medeiros
 import Iris.BI
 import Iris.Algebra.OFE
 import Iris.Algebra.CMRA
-import Iris.Algebra.uPred
+import Iris.Algebra.UPred
 
 section UPredInstance
 

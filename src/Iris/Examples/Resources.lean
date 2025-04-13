@@ -5,7 +5,7 @@ Authors: Markus de Medeiros
 -/
 import Iris.BI
 import Iris.ProofMode
-import Iris.Algebra.iProp
+import Iris.Algebra.IProp
 import Iris.Instances.UPred.Instance
 import Iris.Algebra.Agree
 

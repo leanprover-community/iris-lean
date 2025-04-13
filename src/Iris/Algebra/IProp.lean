@@ -6,7 +6,7 @@ Authors: Markus de Medeiros
 
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
-import Iris.Algebra.uPred
+import Iris.Algebra.UPred
 import Iris.Algebra.COFESolver
 
 import Init.Data.Vector
