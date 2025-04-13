@@ -13,83 +13,78 @@ import Init.Data.Vector
 
 namespace Iris
 
-abbrev gFunctors := Array COFE.OFunctorPre
+def GFunctors := Array COFE.OFunctorPre
 
-abbrev gFunctors.len (FF : gFunctors) := FF.size
+def GId (FF : GFunctors) : Type _ := Fin FF.size
 
-abbrev gid (FF : gFunctors) : Type _ := Fin (FF.len)
+instance (FF : GFunctors) : GetElem GFunctors (GId FF) COFE.OFunctorPre (fun _ _ => True) where
+  getElem _ x _ := FF.get x.1 x.2
 
+abbrev IsGFunctors (G : GFunctors) := ∀ (i : GId G), RFunctorContractive G[i]
 
-abbrev IsGFunctors (G : gFunctors) := ∀ (i : gid G), RFunctorContractive G[i]
-
-def subG (FF₁ FF₂ : gFunctors) : Prop :=
-  ∀ i : gid FF₁, ∃ j : gid FF₂, FF₁[i] = FF₂[j]
+def SubG (FF₁ FF₂ : GFunctors) : Prop :=
+  ∀ i : GId FF₁, ∃ j : GId FF₂, FF₁[i] = FF₂[j]
 
 /-
-namespace subG
+namespace SubG
 
-variable (FF₁ FF₂ FF₃ : gFunctors)
+variable (FF₁ FF₂ FF₃ : GFunctors)
 
-theorem split_L (H : subG (FF₁ ++ FF₂) FF₃) : subG FF₁ FF₃ := by
+theorem split_L (H : SubG (FF₁ ++ FF₂) FF₃) : SubG FF₁ FF₃ := by
   intro i
-  rcases i with ⟨ i, Hi ⟩
+  rcases i with ⟨i, Hi⟩
   have Hi' : i < (FF₁ ++ FF₂).len := by
     simp only [Array.length_toList, Array.size_append]
     exact Nat.lt_add_right (Array.size FF₂) Hi
-  rcases H ⟨ i, Hi' ⟩ with ⟨ j, Hj ⟩
+  rcases H ⟨i, Hi'⟩ with ⟨j, Hj⟩
   exists j
   rw [<- Hj]
   apply Array.getElem_append_left'
 
-theorem comm (H : subG (FF₁ ++ FF₂) FF₃) : subG (FF₂ ++ FF₁) FF₃ := by
+theorem comm (H : SubG (FF₁ ++ FF₂) FF₃) : SubG (FF₂ ++ FF₁) FF₃ := by
   intro i
-  rcases i with ⟨ i, Hi ⟩
+  rcases i with ⟨i, Hi⟩
   sorry
 
-theorem split_R (H : subG (FF₁ ++ FF₂) FF₃) : subG FF₁ FF₃ := by
+theorem split_R (H : SubG (FF₁ ++ FF₂) FF₃) : SubG FF₁ FF₃ := by
   sorry
 
-theorem refl : subG FF₁ FF₁ := by
+theorem refl : SubG FF₁ FF₁ := by
   sorry
 
-theorem app_R (H : subG FF₁ FF₂) : subG FF₁ (FF₂ ++ FF₃) := by
+theorem app_R (H : SubG FF₁ FF₂) : SubG FF₁ (FF₂ ++ FF₃) := by
   sorry
 
-end subG
+end SubG
 -/
 
 
 -- Why does Iris use positive here?
-abbrev gname :=  { n : Nat // 0 < n }
-def gnameO := LeibnizO gname
+def GName := LeibnizO Nat
 
-abbrev iResF (FF : gFunctors) : COFE.OFunctorPre :=
-  discrete_funOF (fun i : gid FF => gen_mapOF gname FF[i])
+abbrev IResF (FF : GFunctors) : COFE.OFunctorPre :=
+  DiscreteFunOF (fun i : GId FF => gen_mapOF GName FF[i])
 
-section iProp
+section IProp
 
 open COFE
 
-variable (FF : gFunctors) [IG : IsGFunctors FF]
+variable (FF : GFunctors) [IG : IsGFunctors FF]
 
-local instance : Inhabited (uPredOF (iResF FF) (ULift Unit) (ULift Unit)) := ⟨ fun _ _ => True, by simp ⟩
-
-local instance (α : Type) [COFE α] : IsCOFE (uPredOF (iResF FF) α α) := uPred_IsCOFE
-
-def iPrePropO : Type _ := OFunctor.Fix (uPredOF (iResF FF))
+def iPrePropO : Type _ := OFunctor.Fix (UPredOF (IResF FF))
 
 instance : COFE (iPrePropO FF) := COFE.OFunctor.fix_COFE
 
-def iResUR : Type :=
-  discrete_funO (fun (i : gid FF) => gen_map gname (FF[i] (iPrePropO FF) (iPrePropO FF)))
+def IResUR : Type :=
+  DiscreteFunO (fun (i : GId FF) => GName -d> Option (FF[i] (iPrePropO FF) (iPrePropO FF)))
 
-instance : UCMRA (iResUR FF) :=
-  discrete_funO.isCMRA fun (i : gid FF) => gen_map gname (FF[i] (iPrePropO FF) (iPrePropO FF))
+instance : UCMRA (IResUR FF) :=
+  DiscreteFunO.isCMRA fun (i : GId FF) => GName -d> Option (FF[i] (iPrePropO FF) (iPrePropO FF))
 
-abbrev iProp := uPred (iResUR FF)
+abbrev IProp := UPred (IResUR FF)
 
--- #synth COFE (iProp FF)
+-- #synth COFE (IProp FF)
 
-end iProp
+end IProp
 
 end Iris

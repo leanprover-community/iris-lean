@@ -36,8 +36,8 @@ def Agree.dist (n : Nat) (x y : Agree α) : Prop :=
 theorem Agree.dist_equiv : Equivalence (dist (α := α) n) where
   refl := by
     rintro ⟨x, h⟩; constructor
-    · rintro a ha; exists a; simp_all [OFE.dist_eqv.refl]
-    · rintro b hb; exists b; simp_all [OFE.dist_eqv.refl]
+    · rintro a ha; exists a
+    · rintro b hb; exists b
   symm := by
     rintro  _ _ ⟨h₁, h₂⟩
     simp only [dist] at h₁ h₂ ⊢
@@ -90,36 +90,36 @@ def Agree.op (x y : Agree α) : Agree α :=
   ⟨x.car ++ y.car, by apply List.append_ne_nil_of_left_ne_nil; exact x.not_nil⟩
 
 theorem Agree.op_comm {x y : Agree α} :  x.op y ≡ y.op x := by
-  rintro n; simp_all only [dist, op, List.mem_append]; constructor <;>
-    (rintro a ha; exists a; simp_all [OFE.Dist.rfl, Or.symm])
+  rintro n; simp_all only [dist, op, List.mem_append]
+  constructor <;> exact fun _ ha => ⟨_, ha.symm, .rfl⟩
 
 theorem Agree.op_commN {x y : Agree α} :  x.op y ≡{n}≡ y.op x := op_comm n
 
 theorem Agree.op_assoc {x y z : Agree α} :  x.op (y.op z) ≡ (x.op y).op z := by
-  rintro n; simp_all only [dist, op, List.mem_append, List.append_assoc]; constructor <;>
-    (rintro a ha; exists a; simp_all [OFE.Dist.rfl, Or.symm])
+  rintro n; simp_all only [dist, op, List.mem_append, List.append_assoc]
+  constructor <;> (intro a ha; exists a)
 
 theorem Agree.idemp {x : Agree α} : x.op x ≡ x := by
-  rintro n; constructor <;> (rintro a ha; exists a; simp_all [op, OFE.Dist.rfl])
+  rintro n; constructor <;> (intro a ha; exists a; simp_all [op])
 
 theorem Agree.validN_ne {x y : Agree α} : x ≡{n}≡ y → x.validN n → y.validN n := by
   simp only [OFE.Dist, dist, validN_def, and_imp]
   intro h₁ h₂ hn a ha b hb
-  obtain ⟨a', ha', ha'a⟩ := h₂ _ ha
-  obtain ⟨b', hb', hb'b⟩ := h₂ _ hb
+  have ⟨a', ha', ha'a⟩ := h₂ _ ha
+  have ⟨b', hb', hb'b⟩ := h₂ _ hb
   have ha'b' := hn _ ha' _ hb'
-  exact (ha'a.symm.trans (ha'b'.trans hb'b))
+  exact ha'a.symm.trans (ha'b'.trans hb'b)
 
 theorem Agree.op_ne {x : Agree α} : OFE.NonExpansive x.op := by
   constructor; simp only [OFE.Dist, dist, op, List.mem_append, and_imp]
   intro n y₁ y₂ heq₁ heq₂; constructor
   -- This would probably be dealt with by aesop easily
   · rintro a (hx | hy)
-    · exists a; simp [OFE.Dist.rfl, hx]
+    · exists a; simp [hx]
     · obtain ⟨b, hb, heq⟩ := heq₁ _ hy
       exists b; simp_all
   · rintro a (hx | hy)
-    · exists a; simp [OFE.Dist.rfl, hx]
+    · exists a; simp [hx]
     · obtain ⟨b, hb, heq⟩ := heq₂ _ hy
       exists b; simp_all
 
@@ -157,11 +157,7 @@ instance : CMRA (Agree α) where
   comm := Agree.op_comm
   pcore_op_left := by simp [Agree.idemp]
   pcore_idem := by simp [OFE.Equiv.rfl]
-  pcore_op_mono := by
-    simp only [Option.some.injEq]
-    rintro x _ y rfl
-    exists y
-    apply OFE.Equiv.rfl
+  pcore_op_mono := by simp only [Option.some.injEq]; rintro x _ y rfl; exists y
   validN_op_left := by
     intro n x y
     simp only [Agree.op, Agree.validN_def, List.mem_append]
