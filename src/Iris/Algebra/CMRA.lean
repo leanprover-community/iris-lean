@@ -42,6 +42,23 @@ theorem pcore_op_mono_of_core_op_mono [OFE α] (op: α → α → α) (pcore : �
     have ⟨_, hcy, z, hz⟩ := h x cx (op x y) ⟨y, Equiv.rfl⟩ e
     ⟨z, hcy.symm ▸ OFE.some_eqv_some_of_eqv hz⟩
 
+theorem pcore_op_mono_of_total [OFE α] (op : α → α → α) (pcore : α → Option α)
+    (Htot : ∀ x, (pcore x).isSome) (Hcore_mono : ∀ x y, (∃ z, y ≡ op x z) → (∃ z, ((pcore y).getD y) ≡ op ((pcore x).getD x) z)) :
+    ((∀ x cx y : α, (∃ z, y ≡ op x z) → pcore x = some cx → ∃ cy, pcore y = some cy ∧ ∃ z, cy ≡ op cx z)) := by
+  intros x cx y Hxy Hx
+  have Hxy' := Hcore_mono _ _ Hxy; clear Hxy
+  rewrite [Hx] at Hxy'; simp at Hxy'
+  rcases Hxy' with ⟨ cy, Hcy ⟩
+  have Htot' := Htot y
+  generalize Hcy' : pcore y = cy'
+  rw [Hcy'] at Hcy Htot'
+  cases cy'
+  · simp at Htot'
+  rename_i cy''
+  exists cy''
+  apply And.intro (Eq.refl _)
+  exists cy
+
 namespace CMRA
 variable [CMRA α]
 
@@ -1013,34 +1030,9 @@ instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
     exact CMRA.core_idemp (x.car y)
   pcore_op_mono := by
     apply pcore_op_mono_of_core_op_mono
-    intro f1 f_core f2 Hf12 Hsome
-
-    -- Perform the reduction to the implementation as in Rocq-Iris
-    suffices Hreduction : ∃ z, (discrete_fun_core (β:=β) f2) ≡ (discrete_fun_op (β:=β) (discrete_fun_core (β:=β) f1) z) by
-      rcases Hreduction  with ⟨ z, Hz ⟩
-
-      exists (discrete_fun_op β (discrete_fun_core β f1) z)
-      apply And.intro
-      · simp_all [discrete_fun_op]
-        apply funext; intro x'
-        have Hz' := Hz x'
-        simp at Hz'
-        -- Need = but only have ≡
-        -- Some other proof?
-        sorry
-      · exists z; simp [discrete_fun_core, Hsome]
-
-      -- exists f_core
-      -- apply And.intro
-      -- · rw [<- Hsome]
-      --   simp [discrete_fun_pcore]
-      --   sorry
-      -- · exists z
-      --   simp [discrete_fun_core, Hsome] at Hz
-      --   apply OFE.Equiv.trans _ Hz
-      --   intro x'
-      --   sorry
-
+    apply pcore_op_mono_of_total
+    · intro x; simp
+    intro f1 f2 Hf12
     exists (discrete_fun_core _ f2)
     intro x
     simp
@@ -1276,10 +1268,9 @@ instance OptionO_cmra : CMRA (OptionO A) where
       trivial
   pcore_op_mono := by
     apply pcore_op_mono_of_core_op_mono
-    intro ma ma_core mb Hle
-    suffices Hreduction : (∃ z, (OptionO_core mb) ≡ (OptionO_op (OptionO_core ma) z)) by
-
-      sorry
+    apply pcore_op_mono_of_total
+    · intro x; rcases x with ⟨ _ | ⟨ _ ⟩ ⟩ <;> simp [OptionO_pcore]
+    intro ma mb Hle
     have Hle' := (OptionO_option_included _ _).mp Hle
     apply (OptionO_option_included _ _).mpr
     cases Hle'
