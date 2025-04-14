@@ -142,9 +142,9 @@ class Discrete (α : Type _) [OFE α] : Prop where
 theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡ y) : x ≡ y :=
   Discrete.discrete_0 (OFE.Dist.le h (Nat.zero_le _))
 
-
 class Leibniz (α : Type _) [OFE α] : Prop where
   leibniz {x y : α} : x ≡ y ↔ x = y
+
 
 /-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is non-expansive. -/
 @[ext] structure Hom (α β : Type _) [OFE α] [OFE β] where
@@ -427,21 +427,290 @@ instance : COFE Unit where
   compl _ := ()
   conv_compl := ⟨⟩
 
+abbrev OFunctorPre := (α : Type _) → (β : Type _) -> [OFE α] → [OFE β] → Type _
+
 class OFunctor (F : ∀ α β [OFE α] [OFE β], Type _) where
-  cofe [COFE α] [COFE β] : OFE (F α β)
-  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  -- EXPERIMENT: Replacing COFE in this definition with OFE
+  -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/OFunctor.20definition
+  -- cofe [COFE α] [COFE β] : OFE (F α β)
+  cofe [OFE α] [OFE β] : OFE (F α β)
+  map [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -n> F α₂ β₂
-  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  map_ne [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
-  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
+  map_id [OFE α] [OFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
+  map_comp [OFE α₁] [OFE α₂] [OFE α₃] [OFE β₁] [OFE β₂] [OFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
 
 class OFunctorContractive (F : ∀ α β [OFE α] [OFE β], Type _) extends OFunctor F where
-  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
+  map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
 attribute [instance] OFunctor.cofe
 
+abbrev OFunctor.constOF (B : Type) : OFunctorPre := fun _ _ _ _ => B
+
+instance OFunctor.constOF_OFunctor [I : OFE B] : OFunctor (OFunctor.constOF B) where
+  cofe := I
+  map _ _ := ⟨ id, id_ne ⟩
+  map_ne := by intros; constructor; simp [NonExpansive₂]
+  map_id := by simp
+  map_comp := by simp
+
+instance OFunctor.constOF_contractive [OFE B] : OFunctorContractive (OFunctor.constOF B) where
+  map_contractive := by intros; constructor; simp [map]
+
 end COFE
+
+/- Leibniz OFE structure on a type -/
+structure LeibnizO (T : Type _) where
+  car : T
+
+-- Move?
+theorem Eq_Equivalence {T : Type _} : Equivalence (@Eq T) :=
+  ⟨ congrFun rfl, (Eq.symm ·), (· ▸ ·)⟩
+
+instance : COFE (LeibnizO T) := COFE.ofDiscrete _ Eq_Equivalence
+
+/- Type alias for a dependent function -/
+structure discrete_funO {α : Type} (F : α → Type _) : Type _ where
+  car : (x : α) → F x
+
+/-- Non-dependent discrete function -/
+notation:25 x:26 " -d> " y:25 => @discrete_funO x (fun _ => y)
+
+instance {α : Type _} {β : α -> Type _} : CoeFun (discrete_funO β) (fun _ => ((x : α) -> β x)) :=
+  ⟨ fun f => f.car ⟩
+
+
+abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
+abbrev IsCOFEFun {α : Type _} (β : α -> Type _) [OFEFun β] := ∀ x : α, IsCOFE (β x)
+
+namespace discrete_funO
+
+variable {α : Type _} (β : α -> Type _)
+
+@[simp]
+def equiv [OFEFun β] (f g : discrete_funO β): Prop := ∀ (x : α), f x ≡ g x
+
+@[simp]
+def dst [OFEFun β] (n : Nat) (f g : discrete_funO β) : Prop := ∀ (x : α), f x ≡{n}≡ g x
+
+theorem dst_Equiv [OFEFun β] n : Equivalence (@dst α β _ n) :=
+  ⟨ by simp,
+    by simp; exact fun H x => Dist.symm (H x) ,
+    by simp; exact fun H1 H2 x => Dist.trans (H1 x) (H2 x) ⟩
+
+instance OFE [OFEFun β] : OFE (discrete_funO β) where
+  Equiv := equiv β
+  Dist := dst β
+  dist_eqv {n} := dst_Equiv β n
+  equiv_dist :=
+    ⟨ fun H _ x => Equiv.dist (H x),
+      fun H _ => equiv_dist.mpr (H · _) ⟩
+  dist_lt := by simp; exact fun H Hn x => Dist.lt (H x) Hn
+
+def chain [OFEFun β] (c : Chain (discrete_funO β)) (x : α) : Chain (β x) where
+  chain n := c n x
+  cauchy H := c.cauchy H x
+
+instance IsCOFE [OFEFun β] [IsCOFEFun β] : IsCOFE (discrete_funO β) where
+  compl c := ⟨ fun x => IsCOFE.compl (chain β c x) ⟩
+  conv_compl _ := IsCOFE.conv_compl
+
+
+def map (f : ∀ x, β₁ x → β₂ x) (g : discrete_funO β₁) : discrete_funO β₂ :=
+  ⟨ fun x => f x (g x) ⟩
+
+theorem map.ext [OFEFun β₂] (f₁ f₂ : ∀ x, β₁ x → β₂ x) (g : discrete_funO β₁) :
+    (∀ x, f₁ x (g x) ≡ f₂ x (g x)) → map f₁ g ≡ map f₂ g := by
+  simp only [map]; exact id
+
+theorem map.id (g : discrete_funO β₁) :
+    map (fun _ => id) g = g := by simp [map]
+
+theorem map.comp {β₁ β₂ β₃ : α → Type _} (f₁ : ∀ x, β₁ x → β₂ x) (f₂: ∀ x, β₂ x → β₃ x) (g : discrete_funO β₁) :
+    map (fun x => f₂ x ∘ f₁ x) g = map f₂ (map f₁ g) := by simp [map]
+
+-- Can this be stated as NonExpansive or is using the same n everywhere important?
+theorem map.ne [OFEFun β₁] [OFEFun β₂] (f : ∀ x, β₁ x → β₂ x)
+    (H : ∀ x, NonExpansive (f x)) : NonExpansive (discrete_funO.map f) :=
+  ⟨ fun _ _ _ Hx x => by apply (H x).ne; apply Hx ⟩
+
+end discrete_funO
+
+
+abbrev discrete_funOF {C} (F : C → COFE.OFunctorPre) : COFE.OFunctorPre :=
+  fun A B _ _ => discrete_funO (fun (c : C) => (F c) A B)
+
+namespace discrete_funOF
+
+open COFE
+
+variable {α : Type _} {β₁ β₂ β₃ : α -> Type _}
+
+-- -- Works
+-- variable {α₁ β₁ C : Type _} (F : C → COFE.OFunctorPre) [OFE α₁] [OFE β₁] [∀ A B [OFE A] [OFE B], OFEFun fun c => F c A B]
+-- #synth OFE (discrete_funO_OF F α₁ β₁)
+
+-- set_option pp.notation false
+
+instance discrete_funOF_OFunctor {C} (F : C → OFunctorPre) [HOF : ∀ c, OFunctor (F c)] :
+    OFunctor (discrete_funOF F) where
+  cofe {α β _ _} := discrete_funO.OFE (fun c => F c α β)
+  map f₁ f₂ :=
+    ⟨ discrete_funO.map (fun c => OFunctor.map (F := (F c)) f₁ f₂),
+      by
+        apply discrete_funO.map.ne
+        exact fun c => ((HOF c).map f₁ f₂).ne ⟩
+  map_ne := by
+    intros
+    constructor
+    intros _ _ _ Hx _ _ Hy _ _
+    apply (HOF _).map_ne.ne
+    · apply Hx
+    · apply Hy
+  map_id := by
+    intros _ _ _ _ _ _
+    apply (HOF _).map_id
+  map_comp := by
+    intros _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+    apply (HOF _).map_comp
+
+end discrete_funOF
+
+/- Option type with OFE structure  -/
+structure OptionO (α : Type _ ) where
+  car : Option α
+
+namespace OptionO
+
+variable [OFE α]
+
+@[simp]
+def eqv (x y : OptionO α) : Prop :=
+  match (x, y) with
+  | ⟨ ⟨ some x' ⟩, ⟨ some y' ⟩ ⟩ => x' ≡ y'
+  | ⟨ ⟨ none ⟩, ⟨ none ⟩ ⟩ => True
+  | _ => False
+
+@[simp]
+def dst (n : Nat) (x y : OptionO α) : Prop :=
+  match (x, y) with
+  | ⟨ ⟨ some x' ⟩, ⟨ some y' ⟩ ⟩ => x' ≡{n}≡ y'
+  | ⟨ ⟨ none ⟩, ⟨ none ⟩ ⟩ => True
+  | _ => False
+
+
+instance OptionO_OFE : OFE (OptionO α) where
+  Equiv := eqv
+  Dist := dst
+  dist_eqv :=
+    ⟨ (by intro x; rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;> simp),
+      (by
+        intro x <;> rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
+        intro y <;> rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;>
+        simp
+        exact fun a => Dist.symm a),
+      (by
+        intro x <;> rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
+        intro y <;> rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;>
+        intro z <;> rcases z with ⟨ _ | ⟨ z ⟩ ⟩ <;>
+        simp
+        exact fun H1 H2 => Dist.trans H1 H2) ⟩
+  equiv_dist := by
+    intro x <;> rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
+    intro y <;> rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;>
+    simp
+    exact equiv_dist
+  dist_lt := by
+    intro n
+    intro x <;> rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
+    intro y <;> rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;>
+    simp
+    exact fun {m} a a_1 => Dist.lt a a_1
+
+def option_chain (c : Chain (OptionO α)) (x : α) : Chain α :=
+  ⟨ fun n => match c n with | ⟨ some z ⟩ => z | ⟨ none ⟩ => x ,
+    by
+      intro n i H; simp
+      have H' := c.cauchy H
+      generalize Hx : (c.chain i) = x
+      generalize Hy : (c.chain n) = y
+      rw [Hx, Hy] at H'
+      rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
+      rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;>
+      simp_all [Dist] ⟩
+
+instance OptionO_COFE [IsCOFE α] : IsCOFE (OptionO α) where
+  compl c :=
+    match (c 0) with
+    | ⟨ some x ⟩ => ⟨ some (IsCOFE.compl (option_chain c x)) ⟩
+    | ⟨ none ⟩ => ⟨ none ⟩
+  conv_compl := by
+    intro n c; simp
+    generalize Hx : (c.chain 0) = x
+    generalize Hy : c.chain n = y
+    have H := Hy ▸ Hx ▸ c.cauchy (Nat.zero_le n)
+    simp [Dist] at H
+    rcases x with ⟨ _ | ⟨ x' ⟩ ⟩ <;>
+    rcases y with ⟨ _ | ⟨ y' ⟩ ⟩ <;>
+    simp_all
+    simp [Dist]
+    apply OFE.dist_eqv.trans (IsCOFE.conv_compl (c := option_chain c x'))
+    simp [option_chain, Hy]
+
+def map {α β : Type _} [OFE α] [OFE β] (f : α -n> β) : OptionO α -n> OptionO β :=
+  ⟨ fun x => match x with | ⟨ some x ⟩ => ⟨ some (f x) ⟩ | ⟨ none ⟩ => ⟨ none ⟩,
+    ⟨ by
+        intro n x y H
+        rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
+        rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;>
+        simp_all [Dist]
+        apply f.ne.ne H ⟩ ⟩
+
+end OptionO
+
+
+def OptionOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
+  fun A B _ _ => OptionO (F A B)
+
+section OptionOF
+
+open COFE OptionO
+
+variable (F : OFunctorPre)
+
+instance OptionO_OFunctor [OFunctor F] : OFunctor (OptionOF F) where
+  cofe := OptionO_OFE
+  map f g := map (OFunctor.map (F:=F) f g)
+  map_ne := by
+    intros
+    constructor
+    intros _ _ _ Hx _ _ Hy z
+    rcases z with ⟨ _ | ⟨ z ⟩ ⟩ <;> simp [map, Dist]
+    apply OFunctor.map_ne.ne
+    · apply Hx
+    · apply Hy
+  map_id := by
+    intros _ _ _ _ z
+    rcases z with ⟨ _ | ⟨ z ⟩ ⟩ <;> simp [map, Dist, Equiv]
+    apply OFunctor.map_id
+  map_comp := by
+    intros
+    rename_i z
+    rcases z with ⟨ _ | ⟨ z ⟩ ⟩ <;> simp [map, Dist, Equiv]
+    apply OFunctor.map_comp
+
+instance [OFunctorContractive F] : OFunctorContractive (OptionOF F) where
+  map_contractive := by
+    intros
+    constructor
+    rename_i α₁ α₂ β₁ β₂ _ _ _ _
+    intros n x y H z
+    have W := (@OFunctorContractive.map_contractive F _  α₁ α₂ β₁ β₂ _ _ _ _)
+    have W' := @W.distLater_dist n x y H
+    rcases z with ⟨ _ | ⟨ z ⟩ ⟩ <;> simp_all [map, Dist, Equiv, Function.uncurry, OFunctor.map]
+
+end OptionOF
