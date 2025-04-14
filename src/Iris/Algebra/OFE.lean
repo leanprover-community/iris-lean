@@ -223,22 +223,28 @@ instance [OFE α] : OFE (Option α) where
   equiv_dist {x y} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply equiv_dist
   dist_lt {_ x y _} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply dist_lt
 
-theorem OFE.eqv_of_some_eqv_some [OFE α] {x y : α} (h : some x ≡ some y) : x ≡ y := h
-theorem OFE.some_eqv_some_of_eqv [OFE α] {x y : α} (h : x ≡ y) : some x ≡ some y := h
+@[simp] theorem some_eqv_some [OFE α] {x y : α} : (some x ≡ some y) ↔ x ≡ y := .rfl
+@[simp] theorem not_some_eqv_none [OFE α] {x : α} : ¬some x ≡ none := id
+@[simp] theorem not_none_eqv_some [OFE α] {x : α} : ¬none ≡ some x := id
 
-theorem OFE.equiv_some [OFE α] {o : Option α} {y : α} (e : o ≡ some y) :
+@[simp] theorem some_dist_some [OFE α] {n} {x y : α} : (some x ≡{n}≡ some y) ↔ x ≡{n}≡ y := .rfl
+@[simp] theorem not_some_dist_none [OFE α] {n} {x : α} : ¬some x ≡{n}≡ none := id
+@[simp] theorem not_none_dist_some [OFE α] {n} {x : α} : ¬none ≡{n}≡ some x := id
+
+theorem equiv_some [OFE α] {o : Option α} {y : α} (e : o ≡ some y) :
     ∃ z, o = some z ∧ z ≡ y := by
-  unfold OFE.Equiv instOption Option.Forall₂ at e
+  unfold Equiv instOption Option.Forall₂ at e
   match o with
   | .none => dsimp at e
   | .some x => dsimp at e; exact ⟨x, rfl, e⟩
 
-theorem OFE.equiv_none [OFE α] {o : Option α} (e : o ≡ none) : o = none :=
+theorem equiv_none [OFE α] {o : Option α} : o ≡ none ↔ o = none := by
+  refine ⟨fun e => ?_, (· ▸ .rfl)⟩
   match o with
   | none => rfl
-  | some _ => e.elim
+  | some _ => exact e.elim
 
-theorem OFE.dist_some_right [OFE α] {n mx y} (h : mx ≡{n}≡ some y) :
+theorem dist_some [OFE α] {n mx y} (h : mx ≡{n}≡ some y) :
     ∃ z : α, mx = some z ∧ y ≡{n}≡ z :=
   suffices hh : ∀ mx my y, mx ≡{n}≡ my → my = some y → ∃ t, mx = some t ∧ t ≡{n}≡ y from
     (hh mx (some y) _ h rfl).elim (fun t h => ⟨t, h.left, h.right.symm⟩)
@@ -581,7 +587,7 @@ def optionMap {α β : Type _} [OFE α] [OFE β] (f : α -n> β) : Option α -n>
 
 end Option
 
-def OptionOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
+abbrev OptionOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => Option (F A B)
 
 section OptionOF
