@@ -690,11 +690,11 @@ variable {α : Type _} [UCMRA α]
 
 theorem unit_validN n : ✓{n} (unit : α) := valid_iff_validN.mp (unit_valid) n
 
-theorem incN_unit n {x : α} : unit ≼{n} x := ⟨x, (unit_left_id (x := x)).symm.dist⟩
+theorem incN_unit n {x : α} : unit ≼{n} x := ⟨x, unit_left_id.symm.dist⟩
 
-theorem inc_unit (x : α) : unit ≼ x :=  ⟨x, (unit_left_id (x := x)).symm⟩
+theorem inc_unit (x : α) : unit ≼ x :=  ⟨x, unit_left_id.symm⟩
 
-theorem unit_right_id (x : α) : x • unit ≡ x := comm.trans (unit_left_id (x := x))
+theorem unit_right_id (x : α) : x • unit ≡ x := comm.trans unit_left_id
 
 instance unit_CoreId : CoreId (unit : α) where
   core_id := pcore_unit
@@ -719,45 +719,45 @@ end ucmra
 section Leibniz
 variable [Leibniz α]
 
-export Leibniz (leibniz)
+export Leibniz (leibniz eq_of_eqv)
 
-theorem assoc_L {x y z : α} : x • (y • z) = (x • y) • z := leibniz.mp assoc
+theorem assoc_L {x y z : α} : x • (y • z) = (x • y) • z := eq_of_eqv assoc
 
-theorem comm_L {x y : α} : (x • y) = (y • x) := leibniz.mp comm
+theorem comm_L {x y : α} : x • y = y • x := eq_of_eqv comm
 
-theorem pcore_l_L {x cx : α} : pcore x = some cx → cx • x = x :=
-  fun h => leibniz.mp (pcore_op_left h)
+theorem pcore_l_L {x cx : α} (h : pcore x = some cx) : cx • x = x :=
+  eq_of_eqv (pcore_op_left h)
 
-theorem pcore_idemp_L {x cx : α} : pcore x = some cx → pcore cx = some cx :=
-  fun h => Leibniz.leibniz.mp (pcore_idem h)
+theorem pcore_idemp_L {x cx : α} (h : pcore x = some cx) : pcore cx = some cx :=
+  eq_of_eqv (pcore_idem h)
 
 theorem op_opM_assoc_L {x y : α} {mz} : (x • y) •? mz = x • (y •? mz) :=
-  leibniz.mp (op_opM_assoc _ _ _)
+  eq_of_eqv (op_opM_assoc _ _ _)
 
-theorem pcore_r_L {x cx : α} : pcore x = some cx → x • cx = x :=
-  fun h => leibniz.mp (pcore_op_right h)
+theorem pcore_r_L {x cx : α} (h : pcore x = some cx) : x • cx = x :=
+  eq_of_eqv (pcore_op_right h)
 
-theorem pcore_dup_L {x cx : α} : pcore x = some cx → cx • cx = cx :=
-  fun h => leibniz.mp (pcore_op_self h)
+theorem pcore_dup_L {x cx : α} (h : pcore x = some cx) : cx • cx = cx :=
+  eq_of_eqv (pcore_op_self h)
 
 theorem core_id_dup_L {x : α} [CoreId x] : x = x • x :=
-  leibniz.mp (op_self x).symm
+  eq_of_eqv (op_self x).symm
 
 theorem core_r_L {x : α} [IsTotal α] : x • core x = x :=
-  leibniz.mp (op_core x)
+  eq_of_eqv (op_core x)
 
 theorem core_l_L {x : α} [IsTotal α] : core x • x = x :=
-  leibniz.mp (core_op x)
+  eq_of_eqv (core_op x)
 
 theorem core_idemp_L {x : α} [IsTotal α] : core (core x) = core x :=
-  leibniz.mp (core_idem x)
+  eq_of_eqv (core_idem x)
 
 theorem core_dup_L {x : α} [IsTotal α] : core x = core x • core x :=
-  leibniz.mp core_op_core.symm
+  eq_of_eqv core_op_core.symm
 
 theorem core_id_total_L {x : α} [IsTotal α] : CoreId x ↔ core x = x := calc
   CoreId x ↔ core x ≡ x := coreId_iff_core_eqv_self
-  _        ↔ core x = x := Leibniz.leibniz
+  _        ↔ core x = x := leibniz
 theorem core_id_core_L {x : α} [IsTotal α] [c: CoreId x] : core x = x :=
   core_id_total_L.mp c
 
@@ -922,7 +922,6 @@ end urFunctor
 section Id
 
 instance COFE.OFunctor.constOF_RFunctor [CMRA B] : RFunctor (constOF B) where
-  cmra := inferInstance
   map f g := {
     toHom := COFE.OFunctor.map f g
     hom := by constructor <;> intros <;> simp [COFE.OFunctor.map]; trivial
@@ -932,7 +931,7 @@ instance COFE.OFunctor.constOF_RFunctor [CMRA B] : RFunctor (constOF B) where
   map_comp := COFE.OFunctor.map_comp
 
 instance OFunctor.constOF_RFunctorContractive [CMRA B] :
-    RFunctorContractive (COFE.OFunctor.constOF B) where
+    RFunctorContractive (COFE.constOF B) where
   map_contractive.1 := by simp [Function.uncurry, RFunctor.map, COFE.OFunctor.map]
 
 end Id
@@ -940,10 +939,10 @@ end Id
 section DiscreteFunO
 open CMRA
 
-instance cmraDiscreteFunO [∀ x, CMRA (β x)] [∀ x, IsTotal (β x)] : CMRA (DiscreteFunO β) where
-  toOFE := inferInstance
-  pcore f := some ⟨fun x => core (f x)⟩
-  op f g := ⟨fun x => f x • g x⟩
+instance cmraDiscreteFunO {α : Type _} (β : α → Type _)
+    [∀ x, CMRA (β x)] [∀ x, IsTotal (β x)] : CMRA (∀ x, β x) where
+  pcore f := some fun x => core (f x)
+  op f g x := f x • g x
   ValidN n f := ∀ x, ✓{n} f x
   Valid f := ∀ x, ✓ f x
   op_ne.ne _ _ _ H y := (H y).op_r
@@ -958,17 +957,16 @@ instance cmraDiscreteFunO [∀ x, CMRA (β x)] [∀ x, IsTotal (β x)] : CMRA (D
   pcore_idem := by rintro f _ ⟨⟩ x; exact core_idem (f x)
   pcore_op_mono := by
     rintro f _ ⟨⟩ g
-    refine ⟨⟨fun x => core (f x • g x)⟩, fun x => ?_⟩
+    refine ⟨fun x => core (f x • g x), fun x => ?_⟩
     have ⟨r, hr⟩ := core_op_mono (f x) (g x)
     exact hr.trans (hr.op_r.trans <| assoc.trans core_op_core.op_l).symm
   extend {n f f1 f2} Hv He := by
     let F x := extend (Hv x) (He x)
-    exact ⟨⟨fun x => (F x).1⟩, ⟨fun x => (F x).2.1⟩,
+    exact ⟨fun x => (F x).1, fun x => (F x).2.1,
       fun x => (F x).2.2.1, fun x => (F x).2.2.2.1, fun x => (F x).2.2.2.2⟩
 
-instance ucmraDiscreteFunO [∀ x, UCMRA (β x)] : UCMRA (DiscreteFunO β) where
-  toCMRA := inferInstance
-  unit := ⟨fun _ => unit⟩
+instance ucmraDiscreteFunO {α : Type _} (β : α → Type _) [∀ x, UCMRA (β x)] : UCMRA (∀ x, β x) where
+  unit _ := unit
   unit_valid _ := unit_valid
   unit_left_id _ := unit_left_id
   pcore_unit _ := core_eqv_self _
@@ -979,7 +977,6 @@ section DiscreteFunURF
 
 instance urFunctorDiscreteFunOF {C} (F : C → COFE.OFunctorPre) [∀ c, URFunctor (F c)] :
     URFunctor (DiscreteFunOF F) where
-  cmra := inferInstance
   map f g := {
     toHom := COFE.OFunctor.map f g
     hom.validN hv _ := (URFunctor.map f g).2.validN (hv _)
@@ -1129,7 +1126,7 @@ unitality in order to act as a `URFunctor(Contractive)`.
 
 variable (α β : Type _) [UCMRA β] [Leibniz β]
 
-abbrev GenMap := α -d> Option β
+abbrev GenMap := α → Option β
 
 -- #synth CMRA (Option β)
 -- #synth CMRA (α -d> (Option β))
