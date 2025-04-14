@@ -157,7 +157,7 @@ instance : CMRA (Agree α) where
   comm := Agree.op_comm
   pcore_op_left := by simp [Agree.idemp]
   pcore_idem := by simp [OFE.Equiv.rfl]
-  pcore_op_mono := by simp only [Option.some.injEq]; rintro x _ y rfl; exists y
+  pcore_op_mono := by simp only [Option.some.injEq]; rintro x _ y rfl; exists y; exact .rfl
   validN_op_left := by
     intro n x y
     simp only [Agree.op, Agree.validN_def, List.mem_append]
