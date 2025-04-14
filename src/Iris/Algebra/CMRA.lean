@@ -48,7 +48,7 @@ theorem pcore_op_mono_of_total [OFE α] (op : α → α → α) (pcore : α → 
   intros x cx y Hxy Hx
   have Hxy' := Hcore_mono _ _ Hxy; clear Hxy
   rewrite [Hx] at Hxy'; simp at Hxy'
-  rcases Hxy' with ⟨ cy, Hcy ⟩
+  rcases Hxy' with ⟨cy, Hcy⟩
   have Htot' := Htot y
   generalize Hcy' : pcore y = cy'
   rw [Hcy'] at Hcy Htot'
@@ -109,6 +109,8 @@ class UCMRA (α : Type _) extends CMRA α where
 namespace CMRA
 variable [CMRA α]
 
+export UCMRA (unit unit_valid unit_left_id pcore_unit)
+
 instance : NonExpansive (pcore (α := α)) where
   ne n x {y} e := by
     suffices ∀ ox oy, pcore x = ox → pcore y = oy → pcore x ≡{n}≡ pcore y from
@@ -127,20 +129,18 @@ instance : NonExpansive (pcore (α := α)) where
     | .none, .some b =>
       let ⟨w, hw, ew⟩ := pcore_ne e.symm ey
       cases hw.symm ▸ ex
-    | .none, .none => rw [ex, ey]; trivial
+    | .none, .none => rw [ex, ey]
 
-/-! ## Op -/
-
-theorem CoreID_of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CMRA.CoreId x₁) : CMRA.CoreId x₂ where
+theorem coreId_of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CMRA.CoreId x₁) : CMRA.CoreId x₂ where
   core_id := calc
     pcore x₂ ≡ pcore x₁ := NonExpansive.eqv e.symm
     _        ≡ some x₁  := h.core_id
     _        ≡ some x₂  := e
 
-theorem CoreID_iff {x₁ x₂ : α} (e : x₁ ≡ x₂): CMRA.CoreId x₁ ↔ CMRA.CoreId x₂ :=
-  ⟨CoreID_of_eqv e, CoreID_of_eqv e.symm⟩
+theorem coreId_iff {x₁ x₂ : α} (e : x₁ ≡ x₂): CMRA.CoreId x₁ ↔ CMRA.CoreId x₂ :=
+  ⟨coreId_of_eqv e, coreId_of_eqv e.symm⟩
 
--- Op
+/-! ## Op -/
 
 theorem op_right_eqv (x : α) {y z : α} (e : y ≡ z) : x • y ≡ x • z := op_ne.eqv e
 theorem _root_.Iris.OFE.Equiv.op_r {x y z : α} : y ≡ z → x • y ≡ x • z := op_right_eqv _
@@ -180,8 +180,6 @@ theorem opM_proper2 {x₁ x₂ y₁ y₂ : α} (H1 : x₁ ≡ x₂) (H2 : y₁ �
   unfold op?
   simp [Equiv.op H1 H2]
 
--- Validity
-
 theorem op_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz ≡ x • (y •? mz) := by
   unfold CMRA.op?; cases mz <;> simp [assoc, Equiv.symm]
 
@@ -198,12 +196,8 @@ theorem validN_of_eqv {x y : α} : x ≡ y → ✓{n} x → ✓{n} y :=
 theorem validN_iff {x y : α} (e : x ≡{n}≡ y) : ✓{n} x ↔ ✓{n} y := ⟨validN_ne e, validN_ne e.symm⟩
 theorem _root_.Iris.OFE.Dist.validN : (x : α) ≡{n}≡ y → (✓{n} x ↔ ✓{n} y) := validN_iff
 
-
 theorem valid_of_eqv {x y : α} : x ≡ y → ✓ x → ✓ y :=
   fun e => valid_mapN fun _ => validN_of_eqv e
-
--- theorem validN_ne (x₁ x₂ : α) n (H : x₁ ≡{n}≡ x₂) : ✓{n} x₁ ↔ ✓{n} x₂ :=
---   sorry
 
 theorem valid_iff {x y : α} (e : x ≡ y) : ✓ x ↔ ✓ y := ⟨valid_of_eqv e, valid_of_eqv e.symm⟩
 theorem _root_.Iris.OFE.Equiv.valid : (x : α) ≡ y → (✓ x ↔ ✓ y) := valid_iff
@@ -294,11 +288,11 @@ theorem not_valid_of_exclN_inc {n} {x : α} [Exclusive x] {y} : x ≼{n} y → �
 theorem not_valid_of_excl_inc {x : α} [Exclusive x] {y} : x ≼ y → ¬✓ y
   | ⟨_, hz⟩, v => Exclusive.exclusive0_l _ <| validN_of_eqv hz v.validN
 
-theorem Exclusive_of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CMRA.Exclusive x₁) : CMRA.Exclusive x₂ where
+theorem Exclusive.of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CMRA.Exclusive x₁) : CMRA.Exclusive x₂ where
   exclusive0_l y := (h.exclusive0_l y) ∘ (validN_of_eqv (Equiv.op_l e.symm))
 
-theorem Exclusive_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : CMRA.Exclusive x₁ ↔ CMRA.Exclusive x₂ :=
-  ⟨Exclusive_of_eqv e, Exclusive_of_eqv e.symm⟩
+theorem exclusive_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : CMRA.Exclusive x₁ ↔ CMRA.Exclusive x₂ :=
+  ⟨.of_eqv e, .of_eqv e.symm⟩
 
 /-! ## Order -/
 
@@ -374,7 +368,6 @@ theorem incN_trans {x y z : α} : x ≼{n} y → y ≼{n} z → x ≼{n} z
       z ≡{n}≡ y • t := ht
       _ ≡{n}≡ (x • w) • t := op_left_dist _ hw
       _ ≡{n}≡ x • (w • t) := op_assocN.symm
-
 theorem IncludedN.trans : (x : α) ≼{n} y → y ≼{n} z → x ≼{n} z := incN_trans
 
 instance : Trans (IncludedN (α := α) n) (IncludedN n) (IncludedN n) where
@@ -385,15 +378,19 @@ theorem valid_of_inc {x y : α} : x ≼ y → ✓ y → ✓ x
 
 theorem validN_of_incN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x
   | ⟨_, hz⟩, v => validN_op_left (validN_ne hz v)
+theorem IncludedN.validN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x := validN_of_incN
 
 theorem validN_of_inc {n} {x y : α} : x ≼ y → ✓{n} y → ✓{n} x
   | ⟨_, hz⟩, v => validN_op_left (validN_ne (equiv_dist.mp hz n) v)
+theorem Included.validN {n} {x y : α} : x ≼ y → ✓{n} y → ✓{n} x := validN_of_inc
 
 theorem incN_of_incN_le {n n'} {x y : α} (l1 : n' ≤ n) : x ≼{n} y → x ≼{n'} y
   | ⟨z, hz⟩ => ⟨z, Dist.le hz l1⟩
+theorem IncludedN.le {n n'} {x y : α} : n' ≤ n → x ≼{n} y → x ≼{n'} y := incN_of_incN_le
 
 theorem incN_of_incN_succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y :=
   incN_of_incN_le (Nat.le_succ n)
+theorem IncludedN.succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y := incN_of_incN_succ
 
 theorem incN_op_left (n) (x y : α) : x ≼{n} x • y := ⟨y, Dist.rfl⟩
 
@@ -403,13 +400,6 @@ theorem inc_op_right (x y : α) : y ≼ x • y := ⟨x, comm⟩
 
 theorem incN_op_right (n) (x y : α) : y ≼{n} x • y :=
   (inc_op_right x y).elim fun z hz => ⟨z, Equiv.dist hz⟩
-
-theorem incN_ne2 (x₁ x₂ y₁ y₂ : α) n (H1 : x₁ ≡{n}≡ x₂) (H2 : y₁ ≡{n}≡ y₂) : x₁ ≼{n} y₁ → x₂ ≼{n} y₂ :=
-  fun inc =>
-    calc
-      x₂ ≡{n}≡ x₁ := H1.symm
-      x₁ ≼{n} y₁ := inc
-      y₁ ≡{n}≡ y₂ := H2
 
 theorem incN_proper2 (x₁ x₂ y₁ y₂ : α) n (H1 : x₁ ≡ x₂) (H2 : y₁ ≡ y₂) : x₁ ≼{n} y₁ → x₂ ≼{n} y₂ :=
   fun inc =>
@@ -540,7 +530,10 @@ theorem coreId_iff_core_eqv_self : CoreId (x : α) ↔ core x ≡ x := by
   exact { core_id := pcore_eq_core x ▸ OFE.some_eqv_some_of_eqv e }
 
 theorem inc_refl (x : α) : x ≼ x := ⟨core x, (op_core _).symm⟩
+@[refl] theorem Included.rfl {x : α} : x ≼ x := inc_refl x
+
 theorem incN_refl (x : α) : x ≼{n} x := (inc_refl _).incN
+@[refl] theorem IncludedN.rfl {x : α} : x ≼{n} x := incN_refl x
 
 theorem core_inc_self {x : α} [CoreId x] : core x ≼ x :=
   ⟨x, ((core_eqv_self x).op_l.trans (op_self _)).symm⟩
@@ -551,8 +544,7 @@ theorem core_incN_core {n} {x y : α} (inc : x ≼{n} y) : core x ≼{n} core y 
   exact icy
 
 theorem core_mono {x y : α} (Hinc : x ≼ y) : core x ≼ core y := by
-  have: CMRA.pcore x ≡ some (core x) :=
-    by rw [pcore_eq_core x]; exact Equiv.rfl
+  have : CMRA.pcore x ≡ some (core x) := by rw [pcore_eq_core x]
   let ⟨cy, hcy, icy⟩ := pcore_mono' Hinc this
   calc
     core x ≼ cy         := icy
@@ -660,7 +652,7 @@ variable {α : Type _} [CMRA α]
 -- Qed.
 
 -- Global Instance id_free_proper : Proper (equiv ==> iff) (@IdFree A).
--- Proof. by move=> P Q /equiv_dist /(_ 0)=> ->. Qed.
+-- Proof. by move=> P Q /equiv_dist /(_ 0)=> →. Qed.
 
 theorem IdFree_of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CMRA.IdFree x₁) : CMRA.IdFree x₂ where
   id_free0_r z v := fun h₂ =>
@@ -716,160 +708,162 @@ end idFreeElements
 
 section ucmra
 
-variable {α : Type _} [u: UCMRA α]
+variable {α : Type _} [UCMRA α]
 
-theorem unit_validN n : ✓{n} u.unit := valid_iff_validN.mp (u.unit_valid) n
+theorem unit_validN n : ✓{n} (unit : α) := valid_iff_validN.mp (unit_valid) n
 
-theorem incN_unit n {x : α} : u.unit ≼{n} x := ⟨x, (u.unit_left_id (x := x)).symm.dist⟩
+theorem incN_unit n {x : α} : unit ≼{n} x := ⟨x, (unit_left_id (x := x)).symm.dist⟩
 
-theorem inc_unit (x : α) : u.unit ≼ x :=  ⟨x, (u.unit_left_id (x := x)).symm⟩
+theorem inc_unit (x : α) : unit ≼ x :=  ⟨x, (unit_left_id (x := x)).symm⟩
 
-theorem unit_right_id (x : α) : x • u.unit ≡ x := comm.trans (u.unit_left_id (x := x))
+theorem unit_right_id (x : α) : x • unit ≡ x := comm.trans (unit_left_id (x := x))
 
-instance unit_CoreId : CMRA.CoreId u.unit where
-  core_id := u.pcore_unit
+instance unit_CoreId : CoreId (unit : α) where
+  core_id := pcore_unit
 
-instance unit_total : CMRA.IsTotal α where
+instance unit_total : IsTotal α where
   total x :=
-    have ⟨y, hy, _⟩ := pcore_mono' (inc_unit x) u.pcore_unit
+    have ⟨y, hy, _⟩ := pcore_mono' (inc_unit x) pcore_unit
     ⟨y, hy⟩
 
-instance empty_cancelable : CMRA.Cancelable u.unit where
+instance empty_cancelable : Cancelable (unit : α) where
   cancelableN {n w t} _ e := calc
-    w ≡{n}≡ UCMRA.unit • w := u.unit_left_id.dist.symm
+    w ≡{n}≡ UCMRA.unit • w := unit_left_id.dist.symm
     _ ≡{n}≡ UCMRA.unit • t := e
-    _ ≡{n}≡ t := u.unit_left_id.dist
+    _ ≡{n}≡ t := unit_left_id.dist
 
 theorem dst_incN {n} {x y : α} (H : y ≡{n}≡ x) : x ≼{n} y :=
-  ⟨ u.unit, H.trans (equiv_dist.mp (unit_right_id x) n).symm ⟩
+  ⟨unit, H.trans (equiv_dist.mp (unit_right_id x) n).symm⟩
 
 end ucmra
 
 
-section leibniz
+section Leibniz
+variable [Leibniz α]
 
-variable {α : Type _} [CMRA α] [lei: Leibniz α]
+export Leibniz (leibniz)
 
-theorem assoc_L {x y z : α} : x • (y • z) = (x • y) • z := lei.leibniz.mp assoc
+theorem assoc_L {x y z : α} : x • (y • z) = (x • y) • z := leibniz.mp assoc
 
-theorem comm_L {x y : α} : (x • y) = (y • x) := lei.leibniz.mp comm
+theorem comm_L {x y : α} : (x • y) = (y • x) := leibniz.mp comm
 
-theorem pcore_l_L {x cx : α} : CMRA.pcore x = some cx → cx • x = x :=
-  fun h => lei.leibniz.mp (pcore_op_left h)
+theorem pcore_l_L {x cx : α} : pcore x = some cx → cx • x = x :=
+  fun h => leibniz.mp (pcore_op_left h)
 
-theorem pcore_idemp_L {x cx : α} : CMRA.pcore x = some cx → CMRA.pcore cx = some cx :=
+theorem pcore_idemp_L {x cx : α} : pcore x = some cx → pcore cx = some cx :=
   fun h => Leibniz.leibniz.mp (pcore_idem h)
 
 theorem op_opM_assoc_L {x y : α} {mz} : (x • y) •? mz = x • (y •? mz) :=
-  lei.leibniz.mp (op_opM_assoc _ _ _)
+  leibniz.mp (op_opM_assoc _ _ _)
 
-theorem pcore_r_L {x cx : α} : CMRA.pcore x = some cx → x • cx = x :=
-  fun h => lei.leibniz.mp (pcore_op_right h)
+theorem pcore_r_L {x cx : α} : pcore x = some cx → x • cx = x :=
+  fun h => leibniz.mp (pcore_op_right h)
 
-theorem pcore_dup_L {x cx : α} : CMRA.pcore x = some cx → cx • cx = cx :=
-  fun h => lei.leibniz.mp (pcore_op_self h)
+theorem pcore_dup_L {x cx : α} : pcore x = some cx → cx • cx = cx :=
+  fun h => leibniz.mp (pcore_op_self h)
 
-theorem core_id_dup_L {x : α} [CMRA.CoreId x] : x = x • x :=
-  lei.leibniz.mp (op_self x).symm
+theorem core_id_dup_L {x : α} [CoreId x] : x = x • x :=
+  leibniz.mp (op_self x).symm
 
-theorem core_r_L {x : α} [CMRA.IsTotal α] : x • CMRA.core x = x :=
-  lei.leibniz.mp (op_core x)
+theorem core_r_L {x : α} [IsTotal α] : x • core x = x :=
+  leibniz.mp (op_core x)
 
+theorem core_l_L {x : α} [IsTotal α] : core x • x = x :=
+  leibniz.mp (by exact core_op x)
 
-theorem core_l_L {x : α} [CMRA.IsTotal α] : CMRA.core x • x = x :=
-  lei.leibniz.mp (by exact core_op x)
+theorem core_idemp_L {x : α} [IsTotal α] : core (core x) = core x :=
+  leibniz.mp (by exact core_idemp x)
 
-theorem core_idemp_L {x : α} [CMRA.IsTotal α] : CMRA.core (CMRA.core x) = CMRA.core x :=
-  lei.leibniz.mp (by exact core_idemp x)
+theorem core_dup_L {x : α} [IsTotal α] : core x = core x • core x :=
+  leibniz.mp (core_op_core).symm
 
-theorem core_dup_L {x : α} [CMRA.IsTotal α] : CMRA.core x = CMRA.core x • CMRA.core x :=
-  lei.leibniz.mp (core_op_core).symm
-
-theorem core_id_total_L {x : α} [CMRA.IsTotal α] : CMRA.CoreId x ↔ CMRA.core x = x := calc
+theorem core_id_total_L {x : α} [IsTotal α] : CoreId x ↔ core x = x := calc
   CoreId x ↔ core x ≡ x := coreId_iff_core_eqv_self
   _        ↔ core x = x := Leibniz.leibniz
-theorem core_id_core_L {x : α} [CMRA.IsTotal α] [c: CMRA.CoreId x] : CMRA.core x = x :=
+theorem core_id_core_L {x : α} [IsTotal α] [c: CoreId x] : core x = x :=
   core_id_total_L.mp c
 
-end leibniz
+end Leibniz
 
 
-section ucmra
+section UCMRA
 
-variable {α : Type _} [u: UCMRA α] [lei: Leibniz α]
+variable {α : Type _} [UCMRA α] [Leibniz α]
 
-theorem ucmra_unit_left_id_L {x : α} : u.unit • x = x := lei.leibniz.mp UCMRA.unit_left_id
+theorem unit_left_id_L {x : α} : unit • x = x := leibniz.mp unit_left_id
 
-theorem ucmra_unit_right_id_L {x : α} : x • u.unit = x := lei.leibniz.mp (unit_right_id x)
+theorem unit_right_id_L {x : α} : x • unit = x := leibniz.mp (unit_right_id x)
 
-end ucmra
+end UCMRA
 
-
-
-section CmraMorphism
+section Hom
 
 -- TODO: Typeclass
 
-structure isCmraMor {α β : Type _} [CMRA α] [CMRA β] (f : α -> β) : Prop where
-  morphism_validN {n x} : ✓{n} x -> ✓{n} (f x)
-  morphism_pcore x : f <$> CMRA.pcore x ≡ CMRA.pcore (f x)
-  morphism_op x y : f (x • y) ≡ f x • f y
+structure IsHom [CMRA β] (f : α → β) : Prop where
+  validN {n x} : ✓{n} x → ✓{n} (f x)
+  pcore x : f <$> pcore x ≡ pcore (f x)
+  op x y : f (x • y) ≡ f x • f y
 
-
-/-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is non-expansive. -/
+/-- A morphism between OFEs, written `α -C> β`, is defined to be a function that is non-expansive. -/
 @[ext] structure Hom (α β : Type _) [CMRA α] [CMRA β] extends OFE.Hom α β where
-  mor : isCmraMor f
+  hom : IsHom f
 
 @[inherit_doc]
 infixr:25 " -C> " => Hom
 
-instance [CMRA α] [CMRA β] : CoeFun (α -C> β) (fun _ => α → β) := ⟨ fun F => F.f ⟩
+instance [CMRA β] : CoeFun (α -C> β) (fun _ => α → β) := ⟨fun F => F.f⟩
+
+instance [CMRA β] : OFE (α -C> β) where
+  Equiv f g := f.toHom ≡ g.toHom
+  Dist n f g := f.toHom ≡{n}≡ g.toHom
+  dist_eqv := {
+    refl _ := dist_eqv.refl _
+    symm h := dist_eqv.symm h
+    trans h1 h2 := dist_eqv.trans h1 h2
+  }
+  equiv_dist := equiv_dist
+  dist_lt := dist_lt
 
 protected def Hom.id [CMRA α] : α -C> α where
   toHom := OFE.Hom.id
-  mor :=
-    ⟨ fun v => v,
-      fun x =>
-        match pcore x with
-        | none => Equiv.rfl
-        | some _ => Equiv.rfl,
-      fun _ _ => Equiv.rfl ⟩
+  hom.validN := id
+  hom.pcore x := by dsimp; cases pcore x <;> rfl
+  hom.op _ _ := .rfl
 
 -- protected def Hom.comp [CMRA α] [CMRA β] [CMRA γ] (g : β -C> γ) (f : α -C> β) : α -C> γ where
 --   toHom := OFE.Hom.comp g.toHom f.toHom
---   mor :=
---     ⟨ fun v => g.mor.morphism_validN (f.mor.morphism_validN v),
+--   hom :=
+--     ⟨fun v => g.mor.validN (f.mor.validN v),
 --       fun x => sorry,
---       fun x y => sorry ⟩
+--       fun x y => sorry⟩
 
-def morphism_proper [CMRA α] [CMRA β] (f : α -C> β) {x₁ x₂ : α} (X : x₁ ≡ x₂) : f x₁ ≡ f x₂ :=
+theorem Hom.eqv [CMRA β] (f : α -C> β) {x₁ x₂ : α} (X : x₁ ≡ x₂) : f x₁ ≡ f x₂ :=
   f.ne.eqv X
 
-def morphism_core [CMRA α] [CMRA β] (f : α -C> β) {x : α} : CMRA.core (f x) ≡ f (CMRA.core x) :=
-  suffices h: Option.map f.f (pcore x) ≡ pcore (f.f x) →
+theorem Hom.core [CMRA β] (f : α -C> β) {x : α} : CMRA.core (f x) ≡ f (CMRA.core x) := by
+  suffices (pcore x).map f.f ≡ pcore (f.f x) →
     (pcore (f.f x)).getD (f.f x) ≡ f.f ((pcore x).getD x)
-  from h (f.mor.morphism_pcore x)
+  from this (f.hom.pcore x)
   match pcore x with
-  | none => fun h => by simp [OFE.equiv_none h.symm]
-  | some cx => fun h => by
+  | none => intro h; simp [OFE.equiv_none h.symm]
+  | some cx =>
+    intro h
     let ⟨s, hs, es⟩ := OFE.equiv_some h.symm
-    rw [hs]
-    exact es
+    rw [hs]; exact es
 
-def morphism_mono [CMRA α] [CMRA β] (f : α -C> β) {x₁ x₂ : α} (H : x₁ ≼ x₂) : f x₁ ≼ f x₂ :=
+theorem Hom.mono [CMRA β] (f : α -C> β) {x₁ x₂ : α} (H : x₁ ≼ x₂) : f x₁ ≼ f x₂ :=
   have ⟨z, hz⟩ := H
-  ⟨f.f z, (morphism_proper f hz).trans (f.mor.morphism_op _ _)⟩
+  ⟨f.f z, (f.eqv hz).trans (f.hom.op _ _)⟩
 
-def morphism_monoN [CMRA α] [CMRA β] (f : α -C> β) n {x₁ x₂ : α} (H : x₁ ≼{n} x₂) : f x₁ ≼{n} f x₂ :=
+theorem Hom.monoN [CMRA β] (f : α -C> β) n {x₁ x₂ : α} (H : x₁ ≼{n} x₂) : f x₁ ≼{n} f x₂ :=
   have ⟨z, hz⟩ := H
-  ⟨f.f z, (f.ne.ne hz).trans (f.mor.morphism_op _ _).dist⟩
+  ⟨f.f z, (f.ne.ne hz).trans (f.hom.op _ _).dist⟩
 
-def morphism_valid [CMRA α] [CMRA β] (f : α -C> β) {x : α} (H : ✓ x) : ✓ f x :=
-  valid_iff_validN.mpr (fun _ => f.mor.morphism_validN H.validN)
+theorem Hom.valid [CMRA β] (f : α -C> β) {x : α} (H : ✓ x) : ✓ f x :=
+  valid_iff_validN.mpr (fun _ => f.hom.validN H.validN)
 
-
-end CmraMorphism
-
+end Hom
 end CMRA
 
 
@@ -881,36 +875,34 @@ class RFunctor (F : COFE.OFunctorPre) where
   -- cofe [COFE α] [COFE β] : CMRA (F α β)
   cmra [OFE α] [OFE β] : CMRA (F α β)
   map [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
-    (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -n> F α₂ β₂
+    (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
   map_ne [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
   map_id [OFE α] [OFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
   map_comp [OFE α₁] [OFE α₂] [OFE α₃] [OFE β₁] [OFE β₂] [OFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
-  mor [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] (f : α₂ -n> α₁) (g : β₁ -n> β₂) :
-    CMRA.isCmraMor (map f g)
 
 class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
   map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
+variable (F T) in
 def RFunctor.ap [RFunctor F] [OFE T] := F T T
 
 attribute [instance] RFunctor.cmra
-attribute [instance] RFunctor.mor
 
 
 instance RFunctor.toOFunctor [R : RFunctor F] : COFE.OFunctor F where
-  cofe {α β} := (@RFunctor.cmra F R α β).toOFE
-  map        := RFunctor.map
-  map_ne     := RFunctor.map_ne
+  cofe       := RFunctor.cmra.toOFE
+  map a b    := (RFunctor.map a b).toHom
+  map_ne.ne  := RFunctor.map_ne.ne
   map_id     := RFunctor.map_id
   map_comp   := RFunctor.map_comp
 
-instance RFunctorContractive.toOFunctorContractive [RC : RFunctorContractive F] : COFE.OFunctorContractive F where
-  toOFunctor      := (@RFunctorContractive.toRFunctor F RC).toOFunctor -- Is this right/necessary?
-  map_contractive := RFunctorContractive.map_contractive
+instance RFunctorContractive.toOFunctorContractive
+    [RFunctorContractive F] : COFE.OFunctorContractive F where
+  map_contractive.1 := map_contractive.1
 
 end rFunctor
 
@@ -922,58 +914,55 @@ class URFunctor (F : COFE.OFunctorPre) where
   -- cofe [COFE α] [COFE β] : UCMRA (F α β)
   cmra [OFE α] [OFE β] : UCMRA (F α β)
   map [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
-    (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -n> F α₂ β₂
+    (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
   map_ne [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
   map_id [OFE α] [OFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
   map_comp [OFE α₁] [OFE α₂] [OFE α₃] [OFE β₁] [OFE β₂] [OFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
-  mor [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] (f : α₂ -n> α₁) (g : β₁ -n> β₂) :
-    CMRA.isCmraMor (map f g)
 
 class URFunctorContractive (F : COFE.OFunctorPre) extends URFunctor F where
   map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
 attribute [instance] URFunctor.cmra
-attribute [instance] URFunctor.mor
 
 instance URFunctor.toRFunctor [UF : URFunctor F] : RFunctor F where
-  cmra {α β} := (@URFunctor.cmra F UF α β).toCMRA
-  map f g    := URFunctor.map f g
-  map_ne     := URFunctor.map_ne
-  map_id     := URFunctor.map_id
-  map_comp   := URFunctor.map_comp
-  mor        := URFunctor.mor
+  cmra     := URFunctor.cmra.toCMRA
+  map f g  := URFunctor.map f g
+  map_ne   := URFunctor.map_ne
+  map_id   := URFunctor.map_id
+  map_comp := URFunctor.map_comp
 
-instance URFunctorContractive.toRFunctorContractive [UC : URFunctorContractive F] : RFunctorContractive F where
-  toRFunctor      := (@URFunctorContractive.toURFunctor F UC).toRFunctor -- Is this right/necessary?
-  map_contractive := URFunctorContractive.map_contractive
+instance URFunctorContractive.toRFunctorContractive
+    [URFunctorContractive F] : RFunctorContractive F where
+  map_contractive := map_contractive
 
 end urFunctor
 
 section Id
 
-instance OFunctor.constOF_RFunctor [I : CMRA B] : RFunctor (COFE.OFunctor.constOF B) where
-  cmra := I
-  map f g := COFE.OFunctor.map f g
-  map_ne := COFE.OFunctor.map_ne
+instance COFE.OFunctor.constOF_RFunctor [CMRA B] : RFunctor (constOF B) where
+  cmra := inferInstance
+  map f g := {
+    toHom := COFE.OFunctor.map f g
+    hom := by constructor <;> intros <;> simp [COFE.OFunctor.map]; trivial
+  }
+  map_ne.ne := COFE.OFunctor.map_ne.ne
   map_id := COFE.OFunctor.map_id
   map_comp := COFE.OFunctor.map_comp
-  mor f g := by constructor <;> intros <;> simp [COFE.OFunctor.map]; trivial
 
-instance OFunctor.constOF_RFunctorContractive [CMRA B] : RFunctorContractive (COFE.OFunctor.constOF B) where
-  map_contractive := by intros; constructor; simp [Function.uncurry, RFunctor.map, COFE.OFunctor.map]
+instance OFunctor.constOF_RFunctorContractive [CMRA B] :
+    RFunctorContractive (COFE.OFunctor.constOF B) where
+  map_contractive.1 := by simp [Function.uncurry, RFunctor.map, COFE.OFunctor.map]
 
 end Id
 
+abbrev IsCMRAFun {α : Type _} (β : α → Type _) := ∀ x : α, CMRA (β x)
+abbrev IsUCMRAFun {α : Type _} (β : α → Type _) := ∀ x : α, UCMRA (β x)
 
-
-abbrev IsCMRAFun {α : Type _} (β : α -> Type _) := ∀ x : α, CMRA (β x)
-abbrev IsUCMRAFun {α : Type _} (β : α -> Type _) := ∀ x : α, UCMRA (β x)
-
-namespace discrete_funO
+namespace DiscreteFunO
 
 variable {α : Type _} (β : α → Type _)
 
@@ -981,23 +970,23 @@ variable {α : Type _} (β : α → Type _)
 
 -- set_option pp.notation false
 
-abbrev discrete_fun_pcore [IsUCMRAFun β] (f : discrete_funO β) : Option (discrete_funO β) :=
-  some ⟨ fun x => CMRA.core (f x) ⟩
+abbrev discrete_fun_pcore [IsUCMRAFun β] (f : DiscreteFunO β) : Option (DiscreteFunO β) :=
+  some ⟨fun x => CMRA.core (f x)⟩
 
-abbrev discrete_fun_op [IsUCMRAFun β] (f g : discrete_funO β) : discrete_funO β :=
-  ⟨ fun x => f x • g x ⟩
+abbrev discrete_fun_op [IsUCMRAFun β] (f g : DiscreteFunO β) : DiscreteFunO β :=
+  ⟨fun x => f x • g x⟩
 
-abbrev discrete_fun_validN [IsUCMRAFun β] (n : Nat) (f : discrete_funO β) : Prop :=
- ∀ x, ✓{n} (f x)
+abbrev discrete_fun_validN [IsUCMRAFun β] (n : Nat) (f : DiscreteFunO β) : Prop :=
+  ∀ x, ✓{n} (f x)
 
-abbrev discrete_fun_valid [IsUCMRAFun β] (f : discrete_funO β) : Prop :=
- ∀ x, ✓ (f x)
+abbrev discrete_fun_valid [IsUCMRAFun β] (f : DiscreteFunO β) : Prop :=
+  ∀ x, ✓ (f x)
 
-abbrev discrete_fun_core [IsUCMRAFun β] (f : discrete_funO β) : discrete_funO β :=
+abbrev discrete_fun_core [IsUCMRAFun β] (f : DiscreteFunO β) : DiscreteFunO β :=
   (discrete_fun_pcore (β:=β) f).getD f
 
-instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
-  toOFE := discrete_funO.OFE β
+instance isCMRA [IsUCMRAFun β] : UCMRA (DiscreteFunO β) where
+  toOFE := DiscreteFunO.OFE β
   pcore := discrete_fun_pcore (β:=β)
   op := discrete_fun_op (β:=β)
   ValidN := discrete_fun_validN (β:=β)
@@ -1054,12 +1043,12 @@ instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
     intro x
     simp
     have Hf12' : f1 x ≼ f2 x := by
-      rcases Hf12 with ⟨ h, Hh ⟩
+      rcases Hf12 with ⟨h, Hh⟩
       exists (h x)
       apply OFE.Equiv.trans (Hh x)
       simp
     repeat rw [discrete_fun_lookup_core]
-    rcases (CMRA.core_mono Hf12') with ⟨ r , Hr ⟩
+    rcases (CMRA.core_mono Hf12') with ⟨r , Hr⟩
     apply OFE.Equiv.trans Hr
     apply OFE.Equiv.trans _ (CMRA.op_right_eqv _ Hr.symm)
     apply OFE.Equiv.trans _ CMRA.assoc.symm
@@ -1067,11 +1056,11 @@ instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
   extend := by
     intros n f f1 f2 Hv He
     let F := fun (x : α) => @CMRA.extend (β x) _ n (f x) (f1 x) (f2 x) (Hv x) (He x)
-    exists ⟨ fun x => (F x).1 ⟩
-    exists ⟨ fun x => (F x).2.1 ⟩
+    exists ⟨fun x => (F x).1⟩
+    exists ⟨fun x => (F x).2.1⟩
     apply And.intro (fun x => (F x).2.2.1)
     apply And.intro (fun x => (F x).2.2.2.1) (fun x => (F x).2.2.2.2)
-  unit := ⟨ fun _ => UCMRA.unit ⟩
+  unit := ⟨fun _ => UCMRA.unit⟩
   unit_valid := by
     simp
     exact fun x => UCMRA.unit_valid
@@ -1084,53 +1073,32 @@ instance isCMRA [IsUCMRAFun β] : UCMRA (discrete_funO β) where
     intro x
     apply CMRA.core_eqv_self
 
-end discrete_funO
+end DiscreteFunO
 
 
 section DiscreteFunURF
 
-instance DiscreteFunOF_URF {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctor (F c)] :
-     URFunctor (discrete_funOF F) where
-  cmra {α β _ _ } := discrete_funO.isCMRA (fun c => F c α β)
-  map := COFE.OFunctor.map
-  map_ne := COFE.OFunctor.map_ne
+instance urFunctor_discreteFunOF {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctor (F c)] :
+     URFunctor (DiscreteFunOF F) where
+  cmra {α β _ _ } := DiscreteFunO.isCMRA (fun c => F c α β)
+  map f g := {
+    toHom := COFE.OFunctor.map f g
+    hom.validN hv _ := (URFunctor.map f g).2.validN (hv _)
+    hom.pcore _ _ := by
+      simpa [CMRA.pcore_eq_core] using (URFunctor.map f g).2.pcore _
+    hom.op _ _ _ := (URFunctor.map f g).2.op _ _
+  }
+  map_ne.ne := COFE.OFunctor.map_ne.ne
   map_id := COFE.OFunctor.map_id
   map_comp := COFE.OFunctor.map_comp
-  mor f g :=
-    ⟨ (by
-         intros
-         rename_i HF x
-         simp [COFE.OFunctor.map, discrete_funO.map, CMRA.ValidN]
-         intro c
-         apply @((HURF c).mor f g).morphism_validN
-         apply x),
-      (by
-         intros
-         rename_i HF x
-         simp [COFE.OFunctor.map, discrete_funO.map, CMRA.pcore]
-         intro c
-         simp
-         generalize Hw : (CMRA.core ((URFunctor.map f g).f (x.car c))) = w
-         have W := CMRA.pcore_eq_core ((URFunctor.map f g).f (x.car c))
-         let Z := Hw ▸ W ▸ @((HURF c).mor f g).morphism_pcore (x.car c)
-         let Z' := CMRA.pcore_eq_core (x.car c)
-         simp [URFunctor.map, Option.map, Equiv, Option.Forall₂, Z'] at Z
-         apply Z),
-      (by
-         intros
-         rename_i HF x
-         simp [COFE.OFunctor.map, discrete_funO.map, CMRA.op]
-         intro c
-         simp
-         apply @((HURF c).mor f g).morphism_op) ⟩
 
 instance DiscreteFunOF_URFC  {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctorContractive (F c)] :
-     URFunctorContractive (discrete_funOF F) where
+     URFunctorContractive (DiscreteFunOF F) where
   map_contractive := by
     intros
     rename_i HF x
     constructor
-    simp [COFE.OFunctor.map, discrete_funO.map, CMRA.op]
+    simp [COFE.OFunctor.map, DiscreteFunO.map, CMRA.op]
     intro n f1 f2 g1 g2 _ HF c
     let Z := @((HURF c).map_contractive).distLater_dist n (f1, f2) (g1, g2)
     simp [Function.uncurry] at Z
@@ -1143,202 +1111,88 @@ section option
 
 variable [CMRA A]
 
-@[simp]
-def OptionO_pcore (x : OptionO A) : Option (OptionO A) :=
-  some ⟨ match x with | ⟨ some y ⟩ => (CMRA.pcore y) | ⟨ none ⟩ => none ⟩
+def optionCore (x : Option A) : Option A := x.bind CMRA.pcore
 
-@[simp]
-def OptionO_op (x y  : OptionO A) : OptionO A :=
-    match (x, y) with
-    | (⟨ some x' ⟩,  ⟨ some y' ⟩) => ⟨ some (CMRA.op x' y') ⟩
-    | (⟨ none ⟩,     ⟨ none ⟩)    => ⟨ none ⟩
-    | (_, ⟨ none ⟩)               => x
-    | (⟨ none ⟩, _)               => y
+def optionOp (x y : Option A) : Option A :=
+  match x, y with
+  | some x', some y' => some (CMRA.op x' y')
+  | none, _ => y
+  | _, none => x
 
-@[simp]
-def OptionO_validN n (x : OptionO A) :=
-   match x with | ⟨ some x ⟩ => ✓{n} x | ⟨ none ⟩ => True
+def optionValidN (n : Nat) : Option A → Prop
+  | some x => ✓{n} x
+  | none => True
 
-@[simp]
-def OptionO_valid (x : OptionO A) :=
-   match x with | ⟨ some x ⟩ => ✓ x | ⟨ none ⟩ => True
+def optionValid : Option A → Prop
+  | some x => ✓ x
+  | none => True
 
-abbrev OptionO_core (f : OptionO A) : OptionO A :=
-  (OptionO_pcore f).getD f
-
-theorem OptionO_option_included :
-    ∀ (ma mb : OptionO A), (∃ z, mb ≡ OptionO_op ma z) ↔ ma = ⟨ none ⟩  ∨ ∃ a b, ma = ⟨ some a ⟩ ∧ mb = ⟨ some b ⟩ ∧ (a ≡ b ∨ a ≼ b) := by
-  intro ma mb
-  apply Iff.intro
-  · rintro ⟨ mc, Hmc ⟩
-    rcases ma with ⟨ _ | ⟨ ma ⟩ ⟩
-    · simp
-    right
-    rcases mb with ⟨ _ | ⟨ mb ⟩ ⟩
-    · rcases mc with ⟨ _ | ⟨ _ ⟩ ⟩ <;> simp [Equiv] at Hmc
-    exists ma
-    exists mb
-    rcases mc with ⟨ _ | ⟨ c ⟩ ⟩ <;> simp <;> simp [Equiv] at Hmc
-    · left; apply Hmc.symm
-    · right; exists c
-  · intro H; rcases H with  H | ⟨ a, b, Ha, Hb,  Hc | ⟨ c, Hc ⟩  ⟩
-    · exists mb
-      rcases mb with ⟨ _ | ⟨ mb ⟩ ⟩ <;> simp_all
-    · subst Ha
-      subst Hb
-      exists ⟨ none ⟩
-      simp [Equiv]
-      apply Hc.symm
-    · subst Ha
-      subst Hb
-      exists ⟨ some c ⟩
-
-instance OptionO_cmra : CMRA (OptionO A) where
-  pcore := OptionO_pcore
-  op := OptionO_op
-  ValidN := OptionO_validN
-  Valid := OptionO_valid
-  op_ne := by
-    intros x
-    rcases x with ⟨ x ⟩
-    constructor
-    intros n x1 x2 H
-    simp [Dist]
-    rcases x1 with ⟨ x1 ⟩
-    rcases x2 with ⟨ x2 ⟩
-    rcases x1 <;> rcases x2 <;> rcases x <;> simp_all [Dist]
+instance cmraOption : CMRA (Option A) where
+  pcore x := some (optionCore x)
+  op := optionOp
+  ValidN := optionValidN
+  Valid := optionValid
+  op_ne.ne n x1 x2 H := by
+    rename_i x
+    cases x1 <;> cases x2 <;> cases x <;> simp_all [Dist, Option.Forall₂, optionOp]
     exact CMRA.op_right_dist _ H
-  pcore_ne := by
-    simp
-    intro n x y cx
-    rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
-    rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;>
-    simp_all [Dist]
-    generalize Hv : CMRA.pcore x = v
-    generalize Hv' : CMRA.pcore y = v'
-    cases v <;> cases v' <;> simp_all
-    · rcases @CMRA.pcore_ne A _ n _ _ _ cx.symm Hv' with ⟨ w, Hw1, Hw2 ⟩
-      simp_all
-    · rcases @CMRA.pcore_ne A _ n _ _ _ cx Hv with ⟨ w, Hw1, Hw2 ⟩
-      simp_all
-    · rcases @CMRA.pcore_ne A _ n _ _ _ cx.symm Hv' with ⟨ w, Hw1, Hw2 ⟩
-      rw [Hw1] at Hv
-      cases Hv
-      apply Hw2.symm
-  validN_ne := by
-    intros n x y H
-    rcases x with ⟨ x ⟩
-    rcases y with ⟨ y ⟩
-    rcases x <;> rcases y <;> simp_all [Dist]
-    intro H'
-    exact (Dist.validN H).mp H'
-  valid_iff_validN := by
-    intro x
-    rcases x with ⟨ x ⟩
-    cases x <;> simp_all [Dist]
+  pcore_ne {n} := by
+    simp; intro x y cx
+    rcases x with _|x <;> rcases y with _|y <;> simp_all [Dist, Option.Forall₂, optionCore]
+    cases Hv : CMRA.pcore x <;> cases Hv' : CMRA.pcore y <;> simp
+    · cases CMRA.pcore_ne cx.symm Hv'; simp_all
+    · cases CMRA.pcore_ne cx Hv; simp_all
+    · have ⟨w, Hw1, Hw2⟩ := CMRA.pcore_ne cx.symm Hv'
+      cases Hv.symm.trans Hw1; exact Hw2.symm
+  validN_ne {n} x y H := by
+    cases x <;> cases y <;> simp_all [Dist, Option.Forall₂]
+    exact (Dist.validN H).mp
+  valid_iff_validN {x} := by
+    cases x <;> simp [optionValid, optionValidN]
     exact CMRA.valid_iff_validN
-  validN_succ := by
-    intro x n
-    rcases x with ⟨ x ⟩
-    cases x <;> simp_all [Dist]
-    intro H
-    apply CMRA.validN_succ H
-  validN_op_left := by
-    intros n x y
-    rcases x with ⟨ x ⟩
-    rcases y with ⟨ y ⟩
-    cases x <;> cases y <;> simp_all [Dist]
+  validN_succ {x n} := by
+    cases x <;> simp_all [Dist, optionValidN]
+    apply CMRA.validN_succ
+  validN_op_left {n x y} := by
+    cases x <;> cases y <;> simp_all [Dist, optionOp, optionValidN]
     apply CMRA.validN_op_left
-  assoc := by
-    intros x y z
-    rcases x with ⟨ x ⟩
-    rcases y with ⟨ y ⟩
-    rcases z with ⟨ z ⟩
-    cases x <;> cases y <;> cases z <;> simp_all [Dist, Equiv]
+  assoc {x y z} := by
+    cases x <;> cases y <;> cases z <;> simp_all [Dist, Equiv, Option.Forall₂, optionOp]
     apply CMRA.assoc
-  comm := by
-    intros x y
-    rcases x with ⟨ x ⟩
-    rcases y with ⟨ y ⟩
-    cases x <;> cases y <;> simp_all [Dist, Equiv]
+  comm {x y} := by
+    cases x <;> cases y <;> simp_all [Dist, Equiv, Option.Forall₂, optionOp]
     apply CMRA.comm
-  pcore_op_left := by
-    intros x cx
-    rcases x with ⟨ x ⟩
-    rcases cx with ⟨ cx ⟩
-    cases x <;> cases cx <;> simp_all [Dist, Equiv]
-    intro H
-    apply CMRA.pcore_op_left H
+  pcore_op_left {x cx} := by
+    cases x <;> cases cx <;> simp_all [Dist, Equiv, Option.Forall₂, optionCore, optionOp]
+    apply CMRA.pcore_op_left
   pcore_idem := by
-    intros x cx
-    rcases x with ⟨ x ⟩
-    rcases cx with ⟨ cx ⟩
-    cases x <;> cases cx <;> simp_all [Dist, Equiv, Option.Forall₂]
-    intro H
-    rename_i v0 v1
-    generalize Hv2 : CMRA.pcore v1 = v2
-    rcases v2 with ⟨ ⟨ v2 ⟩ | _ ⟩ <;> simp
-    · let Hcontr := Hv2 ▸ @CMRA.pcore_idem A _ _ _ H
-      simp [Equiv, Option.Forall₂] at Hcontr
-    · let Hinj := Hv2 ▸ @CMRA.pcore_idem A _ _ _ H
-      simp [Equiv, Option.Forall₂] at Hinj
-      trivial
+    simp; rintro (_|x) <;> simp [Equiv, Option.Forall₂, optionCore]
+      <;> rcases ex : CMRA.pcore x with _|y <;> simp
+    have ⟨z, Hz1, Hz2⟩ := OFE.equiv_some (CMRA.pcore_idem ex)
+    simp [Hz1, Hz2]
   pcore_op_mono := by
-    apply pcore_op_mono_of_core_op_mono
-    apply pcore_op_mono_of_total
-    · intro x; rcases x with ⟨ _ | ⟨ _ ⟩ ⟩ <;> simp [OptionO_pcore]
-    intro ma mb Hle
-    have Hle' := (OptionO_option_included _ _).mp Hle
-    apply (OptionO_option_included _ _).mpr
-    cases Hle'
-    · rename_i H; simp [H, OptionO_core]
-    · rename_i H
-      rcases H with ⟨ a, b, H1, H2, H ⟩; rw [H1, H2]
-      rcases H with H|H
-      · simp only [OptionO_core, OptionO_pcore, Option.getD_some, OptionO.mk.injEq]
-        generalize Heqo : (CMRA.pcore a) = a'
-        rcases a' with  _ | ca
-        · simp
-        · right
-          rcases (CMRA.pcore_proper (α:=A) _ H Heqo) with ⟨ cb, Hcb1, Hcb2 ⟩
-          exists ca
-          exists cb
-          apply And.intro (Eq.refl _)
-          apply And.intro Hcb1
-          left
-          apply Hcb2
-      · simp only [OptionO_core, OptionO_pcore, Option.getD_some, OptionO.mk.injEq]
-        generalize Heqo : (CMRA.pcore a) = a'
-        rcases a' with  _ | ca
-        · simp
-        · rcases CMRA.pcore_mono H Heqo with ⟨ cb, Hcb, Hle' ⟩
-          right
-          exists ca
-          exists cb
-          apply And.intro (Eq.refl _)
-          apply And.intro Hcb
-          right
-          apply Hle'
-  extend := by
-    intro n ma mb1 mb2
-    rcases ma with ⟨ _ | ⟨ x ⟩ ⟩ <;>
-    rcases mb1 with ⟨ _ | ⟨ mb1 ⟩ ⟩ <;>
-    rcases mb2 with ⟨ _ | ⟨ mb2 ⟩ ⟩ <;>
-    simp <;> intros Hx Hx' <;> try simp [Dist] at Hx'
-    · exists ⟨ none ⟩; exists ⟨ none ⟩
-    · exists ⟨ none ⟩; exists ⟨ some x ⟩; simp [Dist, Hx']
-    · exists ⟨ some x ⟩; exists ⟨ none ⟩; simp [Dist, Hx']
-    · rcases CMRA.extend Hx Hx' with ⟨ mc1, mc2, _, _, _ ⟩
-      exists ⟨ some mc1 ⟩ ; exists ⟨ some mc2 ⟩
+    rintro (_|x) _ y ⟨⟩ <;> simp [optionOp, optionCore]
+    · exact ⟨_, .rfl⟩
+    cases ex : CMRA.pcore x
+    · simp; exact ⟨_, .rfl⟩
+    obtain _|y := y <;> simp
+    · exists none; simp [ex]
+    have ⟨cy, H⟩ := CMRA.pcore_op_mono y ex
+    exact ⟨some cy, H⟩
+  extend {n} := by
+    rintro (_|x) (_|mb1) (_|mb2) <;> simp [optionValidN, optionOp]
+      <;> intros Hx Hx' <;> try simp [Dist, Option.Forall₂] at Hx'
+    · exists none, none
+    · exists none, some x
+    · exists some x, none
+    · rcases CMRA.extend Hx Hx' with ⟨mc1, mc2, _, _, _⟩
+      exists some mc1, some mc2
 
-instance OptionO_UCMRA [CMRA A] : UCMRA (OptionO A) where
-  unit := ⟨ none ⟩
-  unit_valid := by simp [CMRA.Valid]
-  unit_left_id := by
-    intro x
-    rcases x with ⟨ x ⟩
-    cases x <;> simp [Equiv, CMRA.op]
-  pcore_unit := by simp [CMRA.pcore]
+instance ucmraOption [CMRA A] : UCMRA (Option A) where
+  unit := none
+  unit_valid := by simp [CMRA.Valid, optionValid]
+  unit_left_id := by rintro ⟨⟩ <;> rfl
+  pcore_unit := by rfl
 
 end option
 
@@ -1353,37 +1207,30 @@ local instance OptionOFisUCMRA [OFE α] [OFE β] [RFunctor F] : UCMRA (OptionOF 
   infer_instance
 
 instance OptionOF_URF [RFunctor F] : URFunctor (OptionOF F) where
-  cmra {α β} := OptionO_UCMRA
-  map f g := COFE.OFunctor.map f g
-  map_ne := COFE.OFunctor.map_ne
+  cmra {α β} := ucmraOption
+  map f g := {
+    toHom := COFE.OFunctor.map f g
+    hom := {
+      validN := by
+        simp [COFE.OFunctor.map, CMRA.ValidN, optionMap]
+        rintro n (_|x) <;> simp [optionValidN]
+        exact (RFunctor.map f g).2.validN
+      pcore := by
+        rintro (_|x) <;> simp [optionCore, CMRA.pcore, COFE.OFunctor.map, optionMap]
+        have := (RFunctor.map f g).2.pcore x; revert this
+        cases CMRA.pcore x <;> cases CMRA.pcore (RFunctor.map f g x)
+          <;> simp [Equiv, Option.Forall₂]
+      op := by
+        rintro (_|x) (_|y) <;> simp [CMRA.op, COFE.OFunctor.map, optionOp, optionMap]
+        exact (RFunctor.map f g).2.op x y
+    }
+  }
+  map_ne.ne := COFE.OFunctor.map_ne.ne
   map_id := COFE.OFunctor.map_id
   map_comp := COFE.OFunctor.map_comp
-  mor f g :=
-    ⟨ (by
-         simp [COFE.OFunctor.map, CMRA.ValidN, OptionO.map]
-         intro n x
-         rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;> simp
-         apply (RFunctor.mor (F:=F) f g).morphism_validN (n:=n) (x:=x)),
-      (by
-         simp [COFE.OFunctor.map, CMRA.pcore, OptionO.map]
-         intro x
-         rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;> simp
-         generalize Hx' : CMRA.pcore x = x'
-         have H := (RFunctor.mor (F:=F) f g).morphism_pcore x
-         rw [Hx'] at H
-         rcases x' with ⟨ _ | ⟨ x' ⟩ ⟩ <;>
-           simp_all [Equiv, Option.Forall₂] <;>
-           split <;>
-           simp_all),
-      (by
-         simp [COFE.OFunctor.map, CMRA.op, OptionO.map]
-         intro x y
-         rcases x with ⟨ _ | ⟨ x ⟩ ⟩ <;>
-         rcases y with ⟨ _ | ⟨ y ⟩ ⟩ <;> simp
-         apply (RFunctor.mor (F:=F) f g).morphism_op )⟩
 
 instance OptionOF_URFC [RFunctorContractive F] : URFunctorContractive (OptionOF F) where
-  map_contractive := COFE.OFunctorContractive.map_contractive
+  map_contractive.1 := COFE.OFunctorContractive.map_contractive.1
 
 end optionOF
 
@@ -1397,15 +1244,15 @@ unitality in order to act as a `URFunctor(Contractive)`.
 
 variable (α β : Type _) [UCMRA β] [Leibniz β]
 
-abbrev gen_map := (α -d> (OptionO β))
+abbrev gen_map := α -d> Option β
 
--- #synth CMRA (OptionO β)
--- #synth CMRA (α -d> (OptionO β))
--- #synth UCMRA (α -d> (OptionO β))
+-- #synth CMRA (Option β)
+-- #synth CMRA (α -d> (Option β))
+-- #synth UCMRA (α -d> (Option β))
 -- The synthesized UMRA here has unit (fun x => ε) = (fun x => none).
 -- For us, this is equivalent to the Rocq-iris unit ∅.
 
 abbrev gen_mapOF (C : Type _) (F : COFE.OFunctorPre) :=
-  discrete_funOF (fun (_ : C) => OptionOF F)
+  DiscreteFunOF (fun (_ : C) => OptionOF F)
 
 end gen_map
