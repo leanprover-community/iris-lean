@@ -137,16 +137,20 @@ def DiscreteE {α : Type _} [OFE α] (x : α) : Prop :=
 /-- A discrete OFE is one where equivalence is implied by `0`-equivalence. -/
 class Discrete (α : Type _) [OFE α] : Prop where
   discrete_0 {x y : α} : x ≡{0}≡ y → x ≡ y
+export OFE.Discrete (discrete_0)
 
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
 theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡ y) : x ≡ y :=
-  Discrete.discrete_0 (OFE.Dist.le h (Nat.zero_le _))
+  discrete_0 (OFE.Dist.le h (Nat.zero_le _))
+export OFE.Discrete (discrete_n)
 
 class Leibniz (α : Type _) [OFE α] : Prop where
   eq_of_eqv {x y : α} : x ≡ y → x = y
+export OFE.Leibniz (eq_of_eqv)
 
 @[simp] theorem Leibniz.leibniz [OFE α] [Leibniz α] {x y : α} : x ≡ y ↔ x = y :=
   ⟨eq_of_eqv, .of_eq⟩
+export OFE.Leibniz (leibniz)
 
 /-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is non-expansive. -/
 @[ext] structure Hom (α β : Type _) [OFE α] [OFE β] where
