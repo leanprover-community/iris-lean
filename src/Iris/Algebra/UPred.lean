@@ -16,9 +16,6 @@ structure UPred (M : Type _) [UCMRA M] where
   holds : Nat → M → Prop
   mono {n1 n2 x1 x2} : holds n1 x1 → x1 ≼{n2} x2 → n2 ≤ n1 → holds n2 x2
 
--- The unbundled version: separate out just the UPred.holds field and make
--- the UPred.mono field a typeclass
-
 instance [UCMRA M] : Inhabited (UPred M) :=
   ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
 

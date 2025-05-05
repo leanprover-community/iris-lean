@@ -198,10 +198,6 @@ instance later_contractive : OFE.Contractive later (α := UPred M) := by
   · simp [later]
   exact Hl _ Hn' _ _ (Nat.le_refl _) (CMRA.validN_succ Hx')
 
--- TODO: Tidy
-
--- set_option pp.notation false
-
 instance : BI (UPred M) where
   entails_preorder := by infer_instance
   equiv_iff {P Q} := by
@@ -421,11 +417,10 @@ instance : BI (UPred M) where
   persistently_emp_2 := by simp [BI.persistently, persistently, BI.emp, emp]
   persistently_and_2 := by simp [BI.persistently, BI.and, persistently, and]
   persistently_sExists_1 := by
-    -- simp [BI.persistently, BI.and, persistently, and, BI.sExists, sExists, BI.pure, pure, «exists»]
     intro Ψ n x v H
     rcases H with ⟨p, HΨ, H⟩
     simp [«exists», BI.sExists, sExists]
-    exists iprop(<pers> p) -- iprop(⌜Ψ p⌝ ∧ <pers> p)
+    exists iprop(<pers> p)
     simp [BI.persistently, persistently]
     apply And.intro _ H
     exists p

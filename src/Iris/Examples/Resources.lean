@@ -31,8 +31,6 @@ example (P Q : IProp FF0) : P ∗ Q ⊢ P := by
 
 end no_resources
 
-
-
 section const_agree
 
 abbrev FF1 : GFunctors := #[COFE.constOF (Agree (LeibnizO String))]
@@ -49,7 +47,7 @@ def MyR (S : String) : IResUR FF1 := fun i => fun _ => some (HγE i ▸ MyAg S)
 
 theorem MyR_always_invalid (S₁ S₂ : String) (Hne : S₁ ≠ S₂) (n : Nat) : ¬✓{n} MyR S₁ • MyR S₂ := by
 
-  simp [CMRA.op, CMRA.ValidN] -- , optionOp]
+  simp [CMRA.op, CMRA.ValidN]
   exists γ, ⟨0⟩
   rw [← HγE ⟨Nat.zero, Nat.le.refl⟩]
   simp [instIsGFunctorsFF1, CMRA.ValidN, CMRA.op, Agree.op, Agree.validN,
@@ -67,7 +65,4 @@ example : AgreeString "I <3 iris-lean!" ⊢ (AgreeString "I don't :<" -∗ False
   apply MyR_always_invalid; simp                                 -- Simplify
 
 end const_agree
-
-
-
 end Iris.Examples
