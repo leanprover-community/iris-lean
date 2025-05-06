@@ -5,7 +5,7 @@ defaultTargets = ["Iris", "IrisTest"]
 [[require]]
 name = "Qq"
 scope = "leanprover-community"
-version = "git#v4.17.0"
+version = "git#stable"
 
 [[lean_lib]]
 name = "Iris"
