@@ -65,19 +65,14 @@ def impl : UPred M where
 
 def sForall (Ψ : UPred M → Prop) : UPred M where
   holds n x := ∀ p, Ψ p → p n x
-  mono := by
-    simp
-    intro _ _ _ _ HΨ Hv Hn p Hp
-    exact p.mono (HΨ _ Hp) Hv Hn
+  mono := fun {_ _ _ _} a a_1 a_2 p a_3 => p.mono (a p a_3) a_1 a_2
 
 def sExists (Ψ : UPred M → Prop) : UPred M where
   holds n x := ∃ p, Ψ p ∧ p n x
   mono := by
     simp
     intros n1 n2 x1 x2 p HΨ Hp Hv Hn
-    exists p
-    apply And.intro HΨ
-    exact p.mono Hp Hv Hn
+    exact ⟨ p, ⟨ HΨ, p.mono Hp Hv Hn ⟩ ⟩
 
 def internal_eq : UPred M where
   holds n _ := o1 ≡{n}≡ o2
