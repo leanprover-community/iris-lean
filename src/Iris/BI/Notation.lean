@@ -20,7 +20,6 @@ macro_rules
 -- carry `iprop` over some `term` constructs
 macro_rules
   | `(iprop(($P)))                  => ``((iprop($P)))
-  | `(iprop($P $[ $Q]*))            => ``($P $[ $Q]*)
   | `(iprop(if $c then $t else $e)) => ``(if $c then iprop($t) else iprop($e))
   | `(iprop(($P : $t)))             => ``((iprop($P) : $t))
 

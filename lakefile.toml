@@ -1,6 +1,6 @@
 name = "iris"
 srcDir = "./src/"
-defaultTargets = ["Iris"]
+defaultTargets = ["Iris", "IrisTest"]
 
 [[require]]
 name = "Qq"
@@ -9,3 +9,7 @@ version = "git#stable"
 
 [[lean_lib]]
 name = "Iris"
+
+[[lean_lib]]
+name = "IrisTest"
+globs = ["Iris.*"]
