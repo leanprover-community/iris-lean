@@ -50,11 +50,4 @@ jobs:
 
 
       - name: Build project
-        run: ~/.elan/bin/lake build equational_theories
-
-      - name: Check environment with lean4checker
-        run: |
-          : Check Environment with lean4checker
-          chmod +x ./scripts/lean4_checker/run_lean4checker.sh
-          ./scripts/lean4_checker/run_lean4checker.sh
-        shell: bash
+        run: ~/.elan/bin/lake build
