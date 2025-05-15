@@ -552,10 +552,10 @@ theorem valid_0_iff_validN [Discrete α] (n) {x : α} : ✓{0} x ↔ ✓{n} x :=
   ⟨Valid.validN ∘ discrete_valid, validN_of_le (Nat.zero_le n)⟩
 
 theorem inc_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼ y ↔ x ≼{n} y :=
-  ⟨incN_of_inc _, fun ⟨z, hz⟩ => ⟨z, discrete_n hz⟩⟩
+  ⟨incN_of_inc _, fun ⟨z, hz⟩ => ⟨z, discrete hz⟩⟩
 
 theorem inc_0_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼{0} y ↔ x ≼{n} y :=
-  ⟨fun ⟨z, hz⟩ => ⟨z, (discrete_n hz).dist⟩,
+  ⟨fun ⟨z, hz⟩ => ⟨z, (discrete hz).dist⟩,
    fun a => incN_of_incN_le (Nat.zero_le n) a⟩
 
 end discreteCMRA
@@ -570,7 +570,7 @@ theorem cancelable {x y z : α} [Cancelable x] (v : ✓(x • y)) (e : x • y �
 
 theorem discrete_cancelable {x : α} [Discrete α]
     (H : ∀ {y z : α}, ✓(x • y) → x • y ≡ x • z → y ≡ z) : Cancelable x where
-  cancelableN {n} {_ _} v e := (H ((valid_iff_validN' n).mpr v) (Discrete.discrete_n e)).dist
+  cancelableN {n} {_ _} v e := (H ((valid_iff_validN' n).mpr v) (Discrete.discrete e)).dist
 
 instance cancelable_op {x y : α} [Cancelable x] [Cancelable y] : Cancelable (x • y) where
   cancelableN {n w _} v e :=
