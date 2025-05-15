@@ -1,63 +1,17 @@
-name: Compile Project
+name: Build Iris Lean
 
 on:
   push:
-    branches:
-      - master
-    paths:
-      - '**/*.lean'
-      - 'lean-toolchain'
-      - 'lakefile.toml'
-      - 'lake-manifest.json'
-  
+    branches: ["master"] # replace "main" with the default branch
   pull_request:
-    branches:
-      - master
-    paths:
-      - '**/*.lean'
-      - 'lean-toolchain'
-      - 'lakefile.toml'
-      - 'lake-manifest.json'
-  workflow_dispatch: # Allow manual triggering of the workflow from the GitHub Actions interface
-
-# Cancel previous runs if a new commit is pushed to the same PR or branch
-concurrency:
-  group: ${{ github.ref }}  # Group runs by the ref (branch or PR)
-  cancel-in-progress: true  # Cancel any ongoing runs in the same group
+    branches: ["master"]
+  workflow_dispatch:
 
 jobs:
-  build_project:
+  build:
     runs-on: ubuntu-latest
-    name: Build project
+
     steps:
-      # Add the awaiting CI label
-      - name: Add 'awaiting-CI' label
-        if: >
-          github.event_name == 'pull_request'
-        run: |
-          curl --request POST \
-            --url https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels \
-            --header 'authorization: Bearer ${{ secrets.PAT_TOKEN }}' \
-            --header 'Content-Type: application/json' \
-            --data '["awaiting-CI"]'
-
-      # Checkout the project
-      - name: Checkout project
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Fetch all history for all branches and tags
-
-      # Build the project using lean-action
-      - name : Build Project
-        uses : leanprover/lean-action
-
-      # Remove the awaiting-CI label
-      - name: Remove 'awaiting-CI' label
-        if: >
-          always() &&
-          github.event_name == 'pull_request'
-        run: |
-          curl --request DELETE \
-            --url https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels/awaiting-CI \
-            --header 'authorization: Bearer ${{ secrets.PAT_TOKEN }}' \
-            --header 'Content-Type: application/json'
+      - uses: actions/checkout@v4
+      # uses lean standard action with all default input values
+      - uses: leanprover/lean-action@v1
