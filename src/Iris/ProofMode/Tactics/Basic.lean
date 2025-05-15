@@ -25,7 +25,7 @@ def istart (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withContext do
   let bi ← mkFreshExprMVarQ q(BI $prop)
   let _ ← synthInstanceQ q(ProofMode.AsEmpValid2 $goal $P)
 
-  let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P }
+  let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P, .. }
   let subgoal : Quoted q(⊢ $P) ←
     mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
   mvar.assign q(ProofMode.as_emp_valid_2 $goal $subgoal)
