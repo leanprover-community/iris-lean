@@ -30,14 +30,14 @@ elab "irename" colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
+  let some { prop, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
   let some (uniq, _, ty) := hyps.find? nameFrom.getId | throwError "unknown hypothesis"
   addHypInfo nameFrom nameFrom.getId uniq prop ty
   let some hyps' := hyps.rename uniq nameTo.getId | unreachable!
   addHypInfo nameTo nameTo.getId uniq prop ty (isBinder := true)
 
-  mvar.setType (IrisGoal.toExpr { prop, bi, hyps := hyps', goal })
+  mvar.setType (IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. })
 
 elab "irename" ":" colGt ty:term " => " colGt nameTo:ident : tactic => do
   -- parse syntax
@@ -48,11 +48,11 @@ elab "irename" ":" colGt ty:term " => " colGt nameTo:ident : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
+  let some { prop, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
   let ty ← elabTerm ty prop
   let (uniq, _, ty) ← try selectHyp ty hyps catch _ => throwError "unknown hypothesis"
   let some hyps' := hyps.rename uniq nameTo.getId | unreachable!
   addHypInfo nameTo nameTo.getId uniq prop ty (isBinder := true)
 
-  mvar.setType (IrisGoal.toExpr { prop, bi, hyps := hyps', goal })
+  mvar.setType (IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. })

@@ -104,7 +104,7 @@ elab "iassumption" : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, e, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
+  let some { prop, bi, e, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
   let inst : Option (AssumptionFastPath prop bi goal) ← try
     pure (some (.biAffine (← synthInstanceQ q(BIAffine $prop))))
