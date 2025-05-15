@@ -30,6 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build project
     steps:
+      # Add the awaiting CI label
       - name: Add 'awaiting-CI' label
         if: >
           github.event_name == 'pull_request'
@@ -40,14 +41,23 @@ jobs:
             --header 'Content-Type: application/json' \
             --data '["awaiting-CI"]'
 
+      # Checkout the project
       - name: Checkout project
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Fetch all history for all branches and tags
 
-      - name: Install elan
-        run: curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+      # Build the project using lean-action
+      - name : Build Project
+        uses : leanprover/lean-action
 
-
-      - name: Build project
-        run: ~/.elan/bin/lake build
+      # Remove the awaiting-CI label
+      - name: Remove 'awaiting-CI' label
+        if: >
+          always() &&
+          github.event_name == 'pull_request'
+        run: |
+          curl --request DELETE \
+            --url https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels/awaiting-CI \
+            --header 'authorization: Bearer ${{ secrets.PAT_TOKEN }}' \
+            --header 'Content-Type: application/json'
