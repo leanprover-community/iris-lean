@@ -2,7 +2,7 @@ name: Build Iris Lean
 
 on:
   push:
-    branches: ["master"] # replace "main" with the default branch
+    branches: ["master"]
   pull_request:
     branches: ["master"]
   workflow_dispatch:
