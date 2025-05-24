@@ -50,7 +50,7 @@ instance [OFE α] {n : Nat} : Trans (OFE.Dist n) (OFE.Dist n) (OFE.Dist n : α �
   trans := Dist.trans
 
 /-- A function `f : α → β` is non-expansive if it preserves `n`-equivalence. -/
-class NonExpansive [OFE α] [OFE β] (f : α → β) : Prop where
+class NonExpansive [OFE α] [OFE β] (f : α → β) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → f x₁ ≡{n}≡ f x₂
 
 instance id_ne [OFE α] : NonExpansive (@id α) := ⟨fun _ _ _ h => h⟩
@@ -61,7 +61,7 @@ theorem NonExpansive.eqv [OFE α] [OFE β] {f : α → β} [NonExpansive f]
   equiv_dist.2 fun _ => ne (equiv_dist.1 h _)
 
 /-- A function `f : α → β → γ` is non-expansive if it preserves `n`-equivalence in each argument. -/
-class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) : Prop where
+class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → f x₁ y₁ ≡{n}≡ f x₂ y₂
 
 theorem NonExpansive₂.eqv [OFE α] [OFE β] [OFE γ] {f : α → β → γ} [NonExpansive₂ f]
@@ -99,7 +99,7 @@ theorem distLater_succ [OFE α] {n} {x y : α} : DistLater n.succ x y ↔ x ≡{
   ⟨(·.dist_lt (Nat.lt_succ_self _)), fun h1 _ h2 => h1.le (Nat.le_of_lt_succ h2)⟩
 
 /-- A function `f : α → β` is contractive if it sends `DistLater n`-equivalent inputs to `n`-equivalent outputs. -/
-class Contractive [OFE α] [OFE β] (f : α → β) : Prop where
+class Contractive [OFE α] [OFE β] (f : α → β) where
   distLater_dist : DistLater n x y → f x ≡{n}≡ f y
 
 @[simp] theorem Contractive.zero [OFE α] [OFE β] (f : α → β) [Contractive f] {x y} :
@@ -135,7 +135,7 @@ def DiscreteE {α : Type _} [OFE α] (x : α) : Prop :=
   ∀ {y : α}, x ≡{0}≡ y → x ≡ y
 
 /-- A discrete OFE is one where equivalence is implied by `0`-equivalence. -/
-class Discrete (α : Type _) [OFE α] : Prop where
+class Discrete (α : Type _) [OFE α] where
   discrete_0 {x y : α} : x ≡{0}≡ y → x ≡ y
 export OFE.Discrete (discrete_0)
 
@@ -144,7 +144,7 @@ theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}�
   discrete_0 (OFE.Dist.le h (Nat.zero_le _))
 export OFE.Discrete (discrete_n)
 
-class Leibniz (α : Type _) [OFE α] : Prop where
+class Leibniz (α : Type _) [OFE α] where
   eq_of_eqv {x y : α} : x ≡ y → x = y
 export OFE.Leibniz (eq_of_eqv)
 
@@ -484,6 +484,7 @@ attribute [instance] OFunctor.cofe
 abbrev constOF (B : Type) : OFunctorPre := fun _ _ _ _ => B
 
 instance oFunctorConstOF [OFE B] : OFunctor (constOF B) where
+  cofe := _
   map _ _ := ⟨id, id_ne⟩
   map_ne := by intros; constructor; simp [NonExpansive₂]
   map_id := by simp
@@ -512,6 +513,7 @@ abbrev DiscreteFunOF {C : Type _} (F : C → OFunctorPre) : OFunctorPre :=
 
 instance oFunctor_discreteFunOF {C} (F : C → OFunctorPre) [∀ c, OFunctor (F c)] :
     OFunctor (DiscreteFunOF F) where
+  cofe := _
   map f₁ f₂ := mapCodHom fun c => OFunctor.map f₁ f₂
   map_ne.ne _ _ _ Hx _ _ Hy _ _ := by apply OFunctor.map_ne.ne Hx Hy
   map_id _ _ := by apply OFunctor.map_id
@@ -530,7 +532,7 @@ def optionChain (c : Chain (Option α)) (x : α) : Chain α := by
 instance isCOFE_option [IsCOFE α] : IsCOFE (Option α) where
   compl c := (c 0).map fun x => IsCOFE.compl (optionChain c x)
   conv_compl {n} c := by
-    dsimp; have := c.cauchy (Nat.zero_le n); revert this
+    have := c.cauchy (Nat.zero_le n); revert this
     rcases c.chain 0 with _|x' <;> rcases e : c.chain n with _|y' <;> simp [Dist, Option.Forall₂]
     refine fun _ => OFE.dist_eqv.trans IsCOFE.conv_compl ?_
     simp [optionChain, e]
@@ -551,6 +553,7 @@ abbrev OptionOF (F : OFunctorPre) : OFunctorPre :=
 variable (F : OFunctorPre)
 
 instance oFunctorOption [OFunctor F] : OFunctor (OptionOF F) where
+  cofe := _
   map f g := optionMap (OFunctor.map f g)
   map_ne.ne _ _ _ Hx _ _ Hy z := by
     cases z <;> simp [optionMap, Dist, Option.Forall₂]

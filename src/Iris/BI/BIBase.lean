@@ -166,7 +166,7 @@ syntax:max "<absorb> " term:40 : term
 def affinely    [BIBase PROP] (P : PROP) : PROP := iprop(emp ∧ P)
 def absorbingly [BIBase PROP] (P : PROP) : PROP := iprop(True ∗ P)
 
-structure BiEntails [BIBase PROP] (P Q : PROP) : Prop where
+structure BiEntails [BIBase PROP] (P Q : PROP) where
   mp : P ⊢ Q
   mpr : Q ⊢ P
 

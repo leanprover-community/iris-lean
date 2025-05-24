@@ -35,7 +35,7 @@ elab "iclear" colGt hyp:ident : tactic => do
   let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true uniq
 
   let m : Q($e' ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { u, prop, bi, hyps := hyps', goal }
+    IrisGoal.toExpr { u, prop, bi, hyps := hyps', goal, .. }
 
   mvar.assign ((← clearCore bi e e' out goal pf).app m)
   replaceMainGoal [m.mvarId!]
