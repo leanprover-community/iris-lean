@@ -680,8 +680,8 @@ instance empty_cancelable : Cancelable (unit : α) where
     _ ≡{n}≡ unit • t := e
     _ ≡{n}≡ t := unit_left_id.dist
 
-theorem dst_incN {n} {x y : α} (H : y ≡{n}≡ x) : x ≼{n} y :=
-  ⟨unit, H.trans (equiv_dist.mp unit_right_id n).symm⟩
+theorem _root_.Iris.OFE.Dist.to_incN {n} {x y : α} (H : x ≡{n}≡ y) : x ≼{n} y :=
+  ⟨unit, ((equiv_dist.mp unit_right_id n).trans H).symm⟩
 
 end ucmra
 
