@@ -16,11 +16,10 @@ section no_resources
 
 abbrev FF0 : GFunctors := #[]
 
-local instance : IsGFunctors FF0 := by
-  intro i; exfalso; cases i.2
+local instance : IsGFunctors FF0 := nofun
 
 -- A proof with no resources
-example (P Q : IProp FF0) : P ∗ Q ⊢ ⌜True ⌝ := by
+example (P Q : IProp FF0) : P ∗ Q ⊢ ⌜True⌝ := by
   iintro ⟨HP, HQ⟩
   ipure_intro
   trivial
@@ -43,10 +42,9 @@ local instance : IsGFunctors FF1 := fun i => by rw [HγE i, HγLookup]; infer_in
 def MyAg (S : String) : Agree (LeibnizO String) := ⟨[⟨S⟩], by simp⟩
 
 @[simp]
-def MyR (S : String) : IResUR FF1 := fun i => fun _ => some (HγE i ▸ MyAg S)
+def MyR (S : String) : IResUR FF1 := fun i _ => some (HγE i ▸ MyAg S)
 
 theorem MyR_always_invalid (S₁ S₂ : String) (Hne : S₁ ≠ S₂) (n : Nat) : ¬✓{n} MyR S₁ • MyR S₂ := by
-
   simp [CMRA.op, CMRA.ValidN]
   exists γ, ⟨0⟩
   rw [← HγE ⟨Nat.zero, Nat.le.refl⟩]
@@ -54,15 +52,15 @@ theorem MyR_always_invalid (S₁ S₂ : String) (Hne : S₁ ≠ S₂) (n : Nat) 
         instCOFELeibnizO, COFE.ofDiscrete, OFE.ofDiscrete, optionOp, optionValidN]
   exact fun a => id (Ne.symm Hne)
 
-def AgreeString (S : String) : IProp (FF1) := UPred.ownM (MyR S)
+def AgreeString (S : String) : IProp FF1 := UPred.ownM (MyR S)
 
 example : AgreeString "I <3 iris-lean!" ⊢ (AgreeString "I don't :<" -∗ False) := by
   iintro H H2
   istop
-  apply UPred.uPred_entails_preorder.trans (UPred.ownM_op _ _).2 -- Combine ghost state
-  apply UPred.uPred_entails_preorder.trans (UPred.ownM_valid _)  -- Reduce to invalidity
-  apply UPred.ownM_always_invalid_elim                           -- The resource is invalid
-  apply MyR_always_invalid; simp                                 -- Simplify
+  apply (UPred.ownM_op _ _).2.trans    -- Combine ghost state
+  apply (UPred.ownM_valid _).trans     -- Reduce to invalidity
+  apply UPred.ownM_always_invalid_elim -- The resource is invalid
+  apply MyR_always_invalid; simp       -- Simplify
 
 end const_agree
 end Iris.Examples

@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors: Markus de Medeiros, Mario Carneiro
 -/
 
 import Iris.BI
@@ -24,125 +24,95 @@ variable {A : Type}
 variable {O : Type} [OFE O] (o1 o2 : O)
 variable (m : M)
 
-def entails : Prop := ∀ n x, ✓{n} x → P n x → Q n x
+protected def Entails : Prop := ∀ n x, ✓{n} x → P n x → Q n x
 
-def pure (p : Prop) : UPred M where
+protected def pure (p : Prop) : UPred M where
   holds _ _ := p
-  mono := by simp only; intros; trivial
+  mono h _ _ := h
 
-def and : UPred M where
+protected def and : UPred M where
   holds n x := P n x ∧ Q n x
-  mono := by
-    simp; exact fun HP HQ Hle Hn => ⟨P.mono HP Hle Hn, Q.mono HQ Hle Hn⟩
+  mono HPQ Hle Hn := ⟨P.mono HPQ.1 Hle Hn, Q.mono HPQ.2 Hle Hn⟩
 
-def or : UPred M where
+protected def or : UPred M where
   holds n x := P n x ∨ Q n x
-  mono := by
-    simp
-    intros _ _ _ _ H
-    cases H <;> rename_i H
-    · exact fun Hle Hn => Or.inl (P.mono H Hle Hn)
-    · exact fun Hle Hn => Or.inr (Q.mono H Hle Hn)
+  mono
+  | .inl H, Hle, Hn => .inl (P.mono H Hle Hn)
+  | .inr H, Hle, Hn => .inr (Q.mono H Hle Hn)
 
-def impl : UPred M where
+protected def imp : UPred M where
   holds n x := ∀ n' x', x ≼ x' → n' ≤ n → ✓{n'} x' → P n' x' → Q n' x'
-  mono := by
-    simp
-    intros n₁ n₂ x₁ x₂ H Hle Hn n x Hxle Hnle Hv HP
-    rcases Hle with ⟨m₁, Hle⟩
-    rcases Hxle with ⟨m₂, Hxle⟩
-    let Hx :=
-      calc x ≡{n}≡ x₂ • m₂          := OFE.Equiv.dist Hxle
-           _ ≡{n}≡ (x₁ • m₁) • m₂   := CMRA.op_left_dist _ (OFE.Dist.le Hle Hnle)
-    apply (uPred_ne Hx).mpr
-    apply H
+  mono {n₁ n₂ x₁ x₂} H := fun ⟨m₁, Hle⟩ Hn n x ⟨m₂, Hxle⟩ Hnle Hv HP => by
+    have Hx :=
+      calc x ≡{n}≡ x₂ • m₂        := Hxle.dist
+           _ ≡{n}≡ (x₁ • m₁) • m₂ := (Hle.le Hnle).op_l
+    refine (uPred_ne Hx).mpr (H _ _ ?_ ?_ ?_ ?_)
     · calc x₁ ≡ x₁ • UCMRA.unit  := CMRA.unit_right_id.symm
            _  ≼ x₁ • (m₁ • m₂)   := CMRA.op_mono_right _ CMRA.inc_unit
            _  ≡ (x₁ • m₁) • m₂   := CMRA.assoc
     · exact Nat.le_trans Hnle Hn
-    · exact (OFE.Dist.validN Hx).mp Hv
+    · exact Hx.validN.mp Hv
     · exact (uPred_ne Hx).mp HP
 
-def sForall (Ψ : UPred M → Prop) : UPred M where
+protected def sForall (Ψ : UPred M → Prop) : UPred M where
   holds n x := ∀ p, Ψ p → p n x
-  mono := fun {_ _ _ _} a a_1 a_2 p a_3 => p.mono (a p a_3) a_1 a_2
+  mono a a_1 a_2 p a_3 := p.mono (a p a_3) a_1 a_2
 
-def sExists (Ψ : UPred M → Prop) : UPred M where
+protected def sExists (Ψ : UPred M → Prop) : UPred M where
   holds n x := ∃ p, Ψ p ∧ p n x
-  mono := by
-    simp
-    intros n1 n2 x1 x2 p HΨ Hp Hv Hn
-    exact ⟨ p, ⟨ HΨ, p.mono Hp Hv Hn ⟩ ⟩
+  mono := fun ⟨p, HΨ, Hp⟩ Hv Hn => ⟨p, HΨ, p.mono Hp Hv Hn⟩
 
-def internal_eq : UPred M where
+protected def eq : UPred M where
   holds n _ := o1 ≡{n}≡ o2
-  mono := fun H1 _ H2 => OFE.Dist.le H1 H2
+  mono H1 _ H2 := H1.le H2
 
-def sep : UPred M where
+protected def sep : UPred M where
   holds n x := ∃ x1 x2, x ≡{n}≡ x1 • x2 ∧ P n x1 ∧ Q n x2
-  mono := by
-    simp
-    intros n₁ n₂ m₁ m₂ x₁ x₂ Hx HP HQ Hm Hn
-    rcases Hm with ⟨m, Hm⟩
-    exists x₁
-    exists (x₂ • m)
-    apply And.intro
+  mono {n₁ n₂ m₁ m₂} := fun ⟨x₁, x₂, Hx, HP, HQ⟩ ⟨m, Hm⟩ Hn => by
+    refine ⟨x₁, x₂ • m, ?_, ?_, ?_⟩
     · calc m₂ ≡{n₂}≡ m₁ • m := Hm
-           _  ≡{n₂}≡ (x₁ • x₂) • m := CMRA.op_left_dist _ (OFE.Dist.le Hx Hn)
-           _  ≡{n₂}≡ x₁ • (x₂ • m) := OFE.Equiv.dist (OFE.Equiv.symm CMRA.assoc)
-    apply And.intro
-    · apply P.mono HP (CMRA.incN_refl x₁) Hn
-    · apply Q.mono HQ (CMRA.incN_op_left n₂ x₂ m) Hn
+           _  ≡{n₂}≡ (x₁ • x₂) • m := (Hx.le Hn).op_l
+           _  ≡{n₂}≡ x₁ • (x₂ • m) := CMRA.assoc.symm.dist
+    · exact P.mono HP (CMRA.incN_refl x₁) Hn
+    · exact Q.mono HQ (CMRA.incN_op_left n₂ x₂ m) Hn
 
-def wand : UPred M where
+protected def wand : UPred M where
   holds n x := ∀ n' x', n' ≤ n → ✓{n'} (x • x') → P n' x' → Q n' (x • x')
-  mono := by
-    simp
-    intros n₁ n₂ m₁ m₂ H Hm Hn n' x Hn' Hv HP
-    apply Q.mono _ (CMRA.op_monoN_left _ (CMRA.incN_of_incN_le Hn' Hm)) (Nat.le_refl _)
-    apply H
-    · exact Nat.le_trans Hn' Hn
-    · apply CMRA.validN_of_incN _ Hv
-      rcases Hm with ⟨y, Hx⟩
-      exists y
-      apply (OFE.Dist.le _ Hn')
-      calc m₂ • x ≡{n₂}≡ (m₁ • y) • x := CMRA.op_left_dist _ Hx
-           _      ≡{n₂}≡ m₁ • (y • x) := OFE.Equiv.dist (CMRA.assoc).symm
-           _      ≡{n₂}≡ m₁ • (x • y) := CMRA.op_right_dist _ (OFE.Equiv.dist CMRA.comm)
-           _      ≡{n₂}≡ (m₁ • x) • y := OFE.Equiv.dist CMRA.assoc
-    · exact HP
+  mono {n₁ n₂ m₁ m₂} H Hm Hn n' x Hn' Hv HP := by
+    refine Q.mono ?_ (CMRA.op_monoN_left _ (CMRA.incN_of_incN_le Hn' Hm)) (Nat.le_refl _)
+    let ⟨y, Hx⟩ := Hm
+    refine H _ _ (Nat.le_trans Hn' Hn) ?_ HP
+    refine CMRA.validN_of_incN ⟨y, OFE.Dist.le ?_ Hn'⟩ Hv
+    calc m₂ • x ≡{n₂}≡ (m₁ • y) • x := Hx.op_l
+         _      ≡{n₂}≡ m₁ • (y • x) := CMRA.assoc.symm.dist
+         _      ≡{n₂}≡ m₁ • (x • y) := CMRA.comm.dist.op_r
+         _      ≡{n₂}≡ (m₁ • x) • y := CMRA.assoc.dist
 
-def plainly : UPred M where
+protected def plainly : UPred M where
   holds n _ := P n UCMRA.unit
-  mono := by
-    simp; exact fun H Hx Hn => P.mono H (CMRA.incN_refl UCMRA.unit) Hn
+  mono H _ Hn := P.mono H (CMRA.incN_refl UCMRA.unit) Hn
 
-def persistently : UPred M where
+protected def persistently : UPred M where
   holds n x := P n (CMRA.core x)
-  mono := by
-    simp; exact fun H Hx Hn => P.mono H (CMRA.core_incN_core Hx) Hn
+  mono H Hx Hn := P.mono H (CMRA.core_incN_core Hx) Hn
 
-def later : UPred M where
+protected def later : UPred M where
   holds n x := match n with | 0 => True | Nat.succ n' => P n' x
-  mono := by
-    intros n₁ n₂; cases n₁ <;> cases n₂ <;> simp
+  mono {n₁ n₂} := by
+    cases n₁ <;> cases n₂ <;> simp
     exact fun H Hx Hn => P.mono H (CMRA.incN_of_incN_succ Hx) Hn
 
 def ownM : UPred M where
   holds n x := m ≼{n} x
-  mono := by
-    simp
-    intros n₁ n₂ x₁ x₂ Hm₁ Hm₂ Hn
-    rcases Hm₁ with ⟨m₁, Hm₁⟩
-    rcases Hm₂ with ⟨m₂, Hm₂⟩
-    exists (m₁ • m₂)
+  mono {n₁ n₂ x₁ x₂} := fun ⟨m₁, Hm₁⟩ ⟨m₂, Hm₂⟩ Hn => by
+    exists m₁ • m₂
     calc x₂ ≡{n₂}≡ x₁ • m₂ := Hm₂
-         _  ≡{n₂}≡ (m • m₁) • m₂ := CMRA.op_left_dist _ (OFE.Dist.le Hm₁ Hn)
-         _  ≡{n₂}≡ m • (m₁ • m₂) := OFE.Equiv.dist (OFE.Equiv.symm CMRA.assoc)
+         _  ≡{n₂}≡ (m • m₁) • m₂ := (Hm₁.le Hn).op_l
+         _  ≡{n₂}≡ m • (m₁ • m₂) := CMRA.assoc.symm.dist
 
-def cmra_valid : UPred M where
-  holds n x := ✓{n} m
-  mono := by intros; apply CMRA.validN_of_le <;> trivial
+def cmraValid : UPred M where
+  holds n _ := ✓{n} m
+  mono hv _ le := CMRA.validN_of_le le hv
 
 /-
 def bupd : UPred M where
@@ -150,413 +120,210 @@ def bupd : UPred M where
   mono := sorry
 -/
 
-def emp : UPred M where
+protected def emp : UPred M where
   holds _ _ := True
-  mono := by simp
+  mono _ _ _ := trivial
 
 end bidefs
 
 instance : BIBase (UPred M) where
-  Entails      := entails
-  emp          := emp
-  pure         := pure
-  and          := and
-  or           := or
-  imp          := impl
-  sForall      := sForall
-  sExists      := sExists
-  sep          := sep
-  wand         := wand
-  persistently := persistently
-  later        := later
+  Entails      := UPred.Entails
+  emp          := UPred.emp
+  pure         := UPred.pure
+  and          := UPred.and
+  or           := UPred.or
+  imp          := UPred.imp
+  sForall      := UPred.sForall
+  sExists      := UPred.sExists
+  sep          := UPred.sep
+  wand         := UPred.wand
+  persistently := UPred.persistently
+  later        := UPred.later
 
 instance uPred_entails_preorder : Std.Preorder (Entails (PROP := UPred M)) where
-  refl := by
-    intro P _ _ _ H
-    apply H
-  trans := by
-    intro _ _ _ H1 H2
-    intro n x Hv H
-    apply H2 _ _ Hv
-    apply H1 _ _ Hv
-    apply H
+  refl _ _ _ H := H
+  trans H1 H2 _ _ Hv H := H2 _ _ Hv <| H1 _ _ Hv H
 
-
-instance later_contractive : OFE.Contractive later (α := UPred M) := by
-  constructor
-  intro n x y Hl
-  cases n
-  · intro _; simp_all [later]
-  rename_i n
-  intro n' x' Hn' Hx'
-  cases n'
-  · simp [later]
-  exact Hl _ Hn' _ _ (Nat.le_refl _) (CMRA.validN_succ Hx')
+instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
+  distLater_dist {n x y} Hl :=
+    match n with
+    | 0 => by intro; simp_all [UPred.later]
+    | n + 1 => fun
+      | 0 => by simp [UPred.later]
+      | n' + 1 => fun x' Hn' Hx' => Hl _ Hn' _ _ (Nat.le_refl _) (CMRA.validN_succ Hx')
 
 instance : BI (UPred M) where
-  entails_preorder := by infer_instance
+  entails_preorder := inferInstance
   equiv_iff {P Q} := by
-    apply Iff.intro <;> intro HE
-    · constructor <;> intro n x Hv H <;> apply (uPred_holds_ne _ (Nat.le_refl n) Hv H)
+    constructor <;> intro HE
+    · constructor <;> intro n x Hv H <;> apply uPred_holds_ne _ (Nat.le_refl n) Hv H
       · exact fun n' x a => HE.symm n' x
       · exact fun n' x a => HE n' x
-    · intros n m Hv
+    · intro n m Hv
       exact ⟨fun H => HE.1 _ _ Hv H, fun H => HE.2 _ _ Hv H⟩
-  and_ne := by
-    constructor
-    intro _ _ _ H _ _ H' _ _ Hn' Hv'
-    apply Iff.intro <;> intro H <;> rcases H with ⟨H1, H2⟩
+  and_ne.ne _ _ _ H _ _ H' _ _ Hn' Hv' := by
+    constructor <;> intro H <;> rcases H with ⟨H1, H2⟩
     · constructor
       · exact (H _ _ Hn' Hv').mp H1
       · exact (H' _ _ Hn' Hv').mp H2
     · constructor
       · exact (H.symm _ _ Hn' Hv').mp H1
       · exact (H'.symm _ _ Hn' Hv').mp H2
-  or_ne := by
+  or_ne.ne _ _ _ H _ _ H' _ _ Hn' Hv := by
+    constructor <;> intro H'' <;>  rcases H'' with H'' | H''
+    · left; exact (H _ _ Hn' Hv).mp H''
+    · right; exact (H' _ _ Hn' Hv).mp H''
+    · left; exact (H.symm _ _ Hn' Hv).mp H''
+    · right; exact (H'.symm _ _ Hn' Hv).mp H''
+  imp_ne.ne _ _ _ H _ _ H' _ _ Hn' Hv := by
+    constructor <;> intro Hi n' x' Hle Hn'' Hx' H''
+    · refine (H' _ _ (Nat.le_trans Hn'' Hn') Hx').mp ?_
+      refine Hi _ _ Hle Hn'' Hx' ?_
+      exact (H _ _ (Nat.le_trans Hn'' Hn') Hx').mpr H''
+    · refine (H' _ _ (Nat.le_trans Hn'' Hn') Hx').mpr ?_
+      refine Hi _ _ Hle Hn'' Hx' ?_
+      exact (H _ _ (Nat.le_trans Hn'' Hn') Hx').mp H''
+  sep_ne.ne _ _ _ H _ _ H' x n' Hn' Hv := by
+    constructor <;> intro Hi <;> rcases Hi with ⟨z1, z2, H1, H2, H3⟩
+    · refine ⟨z1, z2, H1, (H _ _ Hn' ?_).mp H2, (H' _ _ Hn' ?_).mp H3⟩
+      · exact CMRA.validN_op_right ((H1.trans CMRA.op_commN).validN.1 Hv)
+      · exact CMRA.validN_op_right (H1.validN.1 Hv)
+    · refine ⟨z1, z2, H1, (H _ _ Hn' ?_).mpr H2, (H' _ _ Hn' ?_).mpr H3⟩
+      · exact CMRA.validN_op_right ((H1.trans CMRA.op_commN).validN.1 Hv)
+      · exact CMRA.validN_op_right (H1.validN.1 Hv)
+  wand_ne.ne _ _ _ H _ _ H' _ _ Hn' Hv := by
+    constructor <;> intro HE n x Hn Hv H''
+    · refine (H' _ _ (Nat.le_trans Hn Hn') Hv).mp ?_
+      refine HE _ _ Hn Hv ?_
+      exact (H _ _ (Nat.le_trans Hn Hn') (CMRA.validN_op_right Hv)).mpr H''
+    · refine (H' _ _ (Nat.le_trans Hn Hn') Hv).mpr ?_
+      refine HE _ _ Hn Hv ?_
+      exact (H _ _ (Nat.le_trans Hn Hn') (CMRA.validN_op_right Hv)).mp H''
+  persistently_ne.ne _ _ _ H _ _ Hn Hx := H _ _ Hn (CMRA.validN_core Hx)
+  later_ne := inferInstanceAs (OFE.NonExpansive UPred.later)
+  sForall_ne := fun ⟨HR1, HR2⟩ n' x' Hn' Hx' => by
     constructor
-    intros _ _ _ H _ _ H' _ _ Hn' Hv
-    apply Iff.intro <;> intro H'' <;>  rcases H'' with H'' | H''
-    · left; apply (H _ _ Hn' Hv).mp H''
-    · right; apply (H' _ _ Hn' Hv).mp H''
-    · left; apply (H.symm _ _ Hn' Hv).mp H''
-    · right; apply (H'.symm _ _ Hn' Hv).mp H''
-  imp_ne := by
-    constructor
-    intros _ _ _ H _ _ H' _ _ Hn' Hv
-    apply Iff.intro <;> intro Hi n' x' Hle Hn'' Hx' H''
-    · apply (H' _ _ (Nat.le_trans Hn'' Hn') Hx').mp
-      apply (Hi _ _ Hle Hn'' Hx')
-      apply (H _ _ (Nat.le_trans Hn'' Hn') Hx').mpr H''
-    · apply (H' _ _ (Nat.le_trans Hn'' Hn') Hx').mpr
-      apply (Hi _ _ Hle Hn'' Hx')
-      apply (H _ _ (Nat.le_trans Hn'' Hn') Hx').mp H''
-  sep_ne := by
-    constructor
-    intros _ _ _ H _ _ H' x n' Hn' Hv
-    apply Iff.intro <;> intro Hi <;> rcases Hi with ⟨z1, z2, H1, H2, H3⟩
-    · have H1' : n' ≡{x}≡ z2 • z1 := by apply OFE.dist_eqv.trans H1 CMRA.op_commN
-      exists z1; exists z2;
-      apply And.intro H1
-      apply And.intro
-      · apply (H _ _ Hn' _).mp H2
-        apply (CMRA.validN_op_right (CMRA.validN_ne H1' Hv))
-      · apply (H' _ _ Hn' _).mp H3
-        apply (CMRA.validN_op_right (CMRA.validN_ne H1 Hv))
-    · have H1' : n' ≡{x}≡ z2 • z1 := by apply OFE.dist_eqv.trans H1 CMRA.op_commN
-      exists z1; exists z2
-      apply And.intro H1
-      apply And.intro
-      · apply (H _ _ Hn' _).mpr H2
-        apply (CMRA.validN_op_right (CMRA.validN_ne H1' Hv))
-      · apply (H' _ _ Hn' _).mpr H3
-        apply (CMRA.validN_op_right (CMRA.validN_ne H1 Hv))
-  wand_ne := by
-    constructor
-    intros _ _ _ H _ _ H' _ _ Hn' Hv
-    apply Iff.intro <;> intro HE n x Hn Hv H''
-    · apply (H' _ _ (Nat.le_trans Hn Hn') Hv).mp
-      apply (HE _ _ Hn Hv _)
-      apply (H _ _ (Nat.le_trans Hn Hn') (CMRA.validN_op_right Hv)).mpr
-      apply H''
-    · apply (H' _ _ (Nat.le_trans Hn Hn') Hv).mpr
-      apply (HE _ _ Hn Hv _)
-      apply (H _ _ (Nat.le_trans Hn Hn') (CMRA.validN_op_right Hv)).mp
-      apply H''
-  persistently_ne        := by
-    constructor
-    intros _ _ _ H _ _ Hn Hx
-    simp [BI.persistently, persistently]
-    constructor
-    · intro H'; apply (H _ _ Hn (CMRA.validN_core Hx)).mp H'
-    · intro H'; apply (H _ _ Hn (CMRA.validN_core Hx)).mpr H'
-  later_ne := by apply OFE.instNonExpansiveOfContractive later
-  sForall_ne := by
-    intro n P1 P2 HR
-    rcases HR with ⟨HR1, HR2⟩
-    simp [BI.sForall, sForall]
-    intro n' x' Hn' Hx'
-    simp
-    apply Iff.intro
     · intro H p Hp
-      rcases (HR2 p Hp) with ⟨p', Hp', Hp'eq⟩
-      exact (@Hp'eq n' _ Hn' Hx').mp (H _ Hp')
+      let ⟨p', Hp', Hp'eq⟩ := HR2 p Hp
+      exact (Hp'eq n' _ Hn' Hx').mp (H _ Hp')
     · intro H p Hp
-      rcases (HR1 p Hp) with ⟨p', Hp', Hp'eq⟩
-      exact (@Hp'eq n' _ Hn' Hx').mpr (H _ Hp')
-  sExists_ne := by
-    intro n P1 P2 HR
-    rcases HR with ⟨HR1, HR2⟩
-    simp [BI.sExists, sExists]
-    intro n' x' Hn' Hx'
-    simp
-    apply Iff.intro
-    · rintro ⟨p, Hp, H⟩
-      rcases (HR1 p Hp) with ⟨p', Hp', Hp'eq⟩
-      exists p'
-      exact And.intro Hp' ((@Hp'eq n' _ Hn' Hx').mp H)
-    · rintro ⟨p, Hp, H⟩
-      rcases (HR2 p Hp) with ⟨p', Hp', Hp'eq⟩
-      exists p'
-      exact And.intro Hp' ((@Hp'eq n' _ Hn' Hx').mpr H)
-  pure_intro := by intros _ _ P _ _ _ _; exact P
-  pure_elim' := by intros _ _ I n x a P; exact I P n x a trivial
-  and_elim_l := by intros _ _ _ _ _ I; cases I; trivial
-  and_elim_r := by intros _ _ _ _ _ I; cases I; trivial
-  and_intro := by
-    intros _ _ _ H1 H2 _ _ Hv H
+      let ⟨p', Hp', Hp'eq⟩ := HR1 p Hp
+      exact (Hp'eq n' _ Hn' Hx').mpr (H _ Hp')
+  sExists_ne := fun ⟨HR1, HR2⟩ n' x' Hn' Hx' => by
+    constructor <;> rintro ⟨p, Hp, H⟩
+    · let ⟨p', Hp', Hp'eq⟩ := HR1 p Hp
+      exact ⟨p', Hp', (Hp'eq n' _ Hn' Hx').mp H⟩
+    · let ⟨p', Hp', Hp'eq⟩ := HR2 p Hp
+      exact ⟨p', Hp', (Hp'eq n' _ Hn' Hx').mpr H⟩
+  pure_intro P _ _ _ _ := P
+  pure_elim' I n x a P := I P n x a trivial
+  and_elim_l _ _ _ I := I.1
+  and_elim_r _ _ _ I := I.2
+  and_intro H1 H2 _ _ Hv H := ⟨H1 _ _ Hv H, H2 _ _ Hv H⟩
+  or_intro_l _ _ Hv H := .inl H
+  or_intro_r _ _ Hv H := .inr H
+  or_elim H1 H2 _ _ Hv := fun
+    | .inl H => H1 _ _ Hv H
+    | .inr H => H2 _ _ Hv H
+  imp_intro I _ _ Hv H _ _ Hin Hle Hv' HQ :=
+    I _ _ Hv' ⟨UPred.mono _ H Hin.incN Hle, HQ⟩
+  imp_elim H' _ _ Hv := fun ⟨HP, HQ⟩ =>
+    H' _ _ Hv HP _ _ (CMRA.inc_refl _) (Nat.le_refl _) Hv HQ
+  sForall_intro H n x Hv Hp p' HΨ := H _ HΨ _ _ Hv Hp
+  sForall_elim HΨ _ _ _ H := H _ HΨ
+  sExists_intro H _ _ _ Hp := ⟨_, H, Hp⟩
+  sExists_elim H _ _ Hv := fun ⟨_, HΨ, H'⟩ => H _ HΨ _ _ Hv H'
+  sep_mono H1 H2 n x Hv := fun ⟨x1, x2, HE, Hx1, Hx2⟩ => by
+    refine ⟨x1, x2, HE, H1 _ _ ?_ Hx1, H2 _ _ ?_ Hx2⟩
+    · exact CMRA.validN_op_left (HE.validN.1 Hv)
+    · exact CMRA.validN_op_right (HE.validN.1 Hv)
+  emp_sep {P} := by
     constructor
-    · apply H1 _ _ Hv H
-    · apply H2 _ _ Hv H
-  or_intro_l := by intros _ _ _ _ Hv H; left; exact H
-  or_intro_r := by intros _ _ _ _ Hv H; right; exact H
-  or_elim := by
-    intros _ _ _ H1 H2 _ _ Hv H
-    rcases H with H | H
-    · apply H1 _ _ Hv H
-    · apply H2 _ _ Hv H
-  imp_intro := by
-    intros _ _ _ I _ _ Hv H _ _ Hin Hle Hv' HQ
-    apply (I _ _ Hv')
-    constructor
-    · exact (UPred.mono _ H (CMRA.Included.incN Hin) Hle)
-    · exact HQ
-  imp_elim := by
-    intros _ _ _ H' _ _ Hv H
-    rcases H with ⟨HP, HQ⟩
-    apply (H' _ _ Hv HP _ _ _ (Nat.le_refl _) Hv HQ)
-    apply CMRA.inc_refl
-  sForall_intro := by
-    intros p Ψ H n x Hv Hp
-    simp [BI.sForall, sForall]
-    intros p' HΨ
-    exact H _ HΨ _ _ Hv Hp
-  sForall_elim := by
-    intros _ p HΨ
-    exact fun _ _ _ H => H p HΨ
-  sExists_intro := by
-    intros Ψ p H n x Hv Hp
-    exists p
-  sExists_elim := by
-    intros Ψ p H n x Hv
-    simp [BI.sExists, sExists]
-    intro x' HΨ H'
-    exact H x' HΨ n x Hv H'
-  sep_mono := by
-    intro _ _ _ _ H1 H2 n x Hv H
-    rcases H with ⟨x1, x2, HE, Hx1, Hx2⟩
-    exists x1
-    exists x2
-    apply And.intro
-    · apply HE
-    apply And.intro
-    · apply (H1 _ _ _ Hx1)
-      apply CMRA.validN_op_left (CMRA.validN_ne HE Hv)
-    · apply (H2 _ _ _ Hx2)
-      apply CMRA.validN_op_right (CMRA.validN_ne HE Hv)
-  emp_sep := by
-    intro P
-    simp [BI.sep, sep, BI.emp, emp]
-    constructor
-    · intro _ _ _ H
-      simp at H
-      rcases H with ⟨x1, x2, HE1, HE2⟩
-      apply P.mono HE2 _ (Nat.le_refl _)
-      exists x1
-      apply OFE.Dist.trans HE1 CMRA.op_commN
+    · intro _ _ _ ⟨x1, x2, HE1, _, HE2⟩
+      exact P.mono HE2 ⟨x1, HE1.trans CMRA.op_commN⟩ (Nat.le_refl _)
     · intro _ x _ H
-      simp
-      exists UCMRA.unit
-      exists x
-      apply And.intro _ H
-      apply OFE.equiv_dist.mp UCMRA.unit_left_id.symm
-  sep_symm := by
-    intros _ _ _ _ Hv H
-    rcases H with ⟨x1, x2, HE, _, _⟩
-    exists x2; exists x1
-    apply And.intro
-    · apply OFE.dist_eqv.trans HE (OFE.equiv_dist.mp _ _)
-      apply CMRA.comm
-    apply And.intro
-    · trivial
-    · trivial
-  sep_assoc_l := by
-    intros _ _ _ n x Hv H
-    rcases H with ⟨x1, x2, Hx, H, h3⟩
-    rcases H with ⟨y1, y2, Hy, h1, h2⟩
+      exact ⟨_, _, UCMRA.unit_left_id.symm.dist, ⟨⟩, H⟩
+  sep_symm _ _ Hv := fun ⟨x1, x2, HE, HP, HQ⟩ => by
+    refine ⟨x2, x1, ?_, HQ, HP⟩
+    exact HE.trans CMRA.comm.dist
+  sep_assoc_l n x Hv := fun ⟨x1, x2, Hx, ⟨y1, y2, Hy, h1, h2⟩, h3⟩ => by
     refine ⟨y1, y2 • x2, ?_, h1, y2, x2, .rfl, h2, h3⟩
     calc x ≡{n}≡ x1 • x2 := Hx
-         _ ≡{n}≡ (y1 • y2) • x2 := OFE.Dist.op_l Hy
-         _ ≡{n}≡ y1 • (y2 • x2) := OFE.equiv_dist.mp CMRA.assoc.symm _
-  wand_intro := by
-    intros _ _ _ H n x Hv HP n' x' Hn Hv' HQ
-    apply (H _ _ Hv')
-    refine ⟨x, x', .rfl, UPred.mono _ HP .rfl Hn, HQ⟩
-  wand_elim := by
-    intros _ _ _ H n x Hv H
-    rcases H with ⟨y1, y2, Hy, HP, HQ⟩
-    let Hwand := @H n y1 (CMRA.validN_op_left (CMRA.validN_ne Hy Hv)) HP
-    let H' := Hwand _ y2 (Nat.le_refl _) (CMRA.validN_ne Hy Hv) HQ
-    apply UPred.mono _ H' _ (Nat.le_refl _)
-    exact CMRA.dst_incN Hy
-  persistently_mono := by
-    simp [BI.persistently, persistently]
-    intros _ _ H n x Hv H'
-    apply (H _ _ (CMRA.validN_core Hv))
-    apply H'
-  persistently_idem_2 := by
-    intros _ _ x n H
-    simp_all [BI.persistently, persistently]
-    apply (UPred.mono _ H _ (Nat.le_refl _))
-    apply (CMRA.incN_iff_right _).mpr (CMRA.incN_refl _)
-    apply OFE.equiv_dist.mp (CMRA.core_idem x)
-  persistently_emp_2 := by simp [BI.persistently, persistently, BI.emp, emp]
-  persistently_and_2 := by simp [BI.persistently, BI.and, persistently, and]
-  persistently_sExists_1 := by
-    intro Ψ n x v H
-    rcases H with ⟨p, HΨ, H⟩
-    simp [«exists», BI.sExists, sExists]
-    exists iprop(<pers> p)
-    simp [BI.persistently, persistently]
-    apply And.intro _ H
-    exists p
-    simp [BI.and, and, BI.pure, pure]
-    apply funext; intro n
-    apply funext; intro x'
-    apply propext
-    simp [HΨ]
-  persistently_absorb_l  := by
-    simp [BI.persistently, BI.and, persistently, and, BI.sep, sep]
-    intros P Q _ x _ H
-    rcases H with ⟨x1, x2, H1, H2, H3⟩
-    simp
-    apply P.mono H2 _ (Nat.le_refl _)
-    apply CMRA.core_incN_core
-    exists x2
-  persistently_and_l     := by
-    simp [BI.persistently, BI.and, persistently, and, BI.sep, sep]
-    intros P Q _ x _ H
-    simp
-    exists (CMRA.core x)
-    exists x
-    apply And.intro _ H
-    apply OFE.equiv_dist.mp
-    apply (CMRA.core_op _).symm
-  later_mono := by
-    intros P Q H n x Hv
-    simp [BI.later, later ]
-    cases n <;> simp
-    intro Hp
-    apply H _ _ _ Hp
-    exact CMRA.validN_succ Hv
-  later_intro := by
-    intros P n _ _ Hp
-    simp [BI.later, later]
-    cases n <;> simp
-    apply UPred.mono _ Hp (CMRA.incN_refl _) (Nat.le_add_right _ _)
-  later_sForall_2 := by
-    intro Ψ n x Hx
-    simp [BI.later, later, BI.pure, pure, BI.sForall, sForall, BI.imp, impl, «forall»]
-    cases n <;> simp
-    rename_i n
-    intro H p Hp
-    have H' := H p (n + 1) x
-    apply H' (CMRA.inc_refl x) (Nat.le_refl _) Hx Hp
-  later_sExists_false := by
-    intro Ψ
-    intro n x Hx H
-    cases n
-    · left; simp_all [BI.later, later]
-    · right
-      simp [BI.later, later, BI.sExists, sExists] at H
-      rcases H with ⟨p', Hp', H⟩
-      exists (BI.later p')
-      simp [BI.later]
-      apply And.intro _ H
-      exists p'
-      simp [BI.later, later, BI.pure, pure, BI.and, and]
-      apply funext; intro n
-      apply funext; intro x
-      apply propext
-      simp [Hp']
-  later_sep := by
-    intros P Q
-    simp [BI.later, later, BI.sep, sep]
-    constructor
-    · intros n x Hv H
-      cases n <;> simp_all
-      · exists UCMRA.unit
-        exists x
-        apply OFE.dist_eqv.symm
-        apply OFE.equiv_dist.mp
-        apply UCMRA.unit_left_id
-      · rcases H with ⟨x1, x2, H1, H2, H3⟩
-        rcases CMRA.extend (CMRA.validN_succ Hv) H1 with ⟨y1, y2, H1', H2', H3'⟩
-        exists y1
-        exists y2
-        apply And.intro
-        · exact OFE.Equiv.dist H1'
-        apply And.intro
-        · exact (uPred_ne H2').mpr H2
-        · exact (uPred_ne H3').mpr H3
-    · intros n x _ H
-      cases n <;> simp_all
-      rcases H with ⟨x1, x2, H1, H2, H3⟩
-      exists x1
-      exists x2
-      apply And.intro _ ⟨H2, H3⟩
-      apply OFE.Dist.lt H1 (Nat.lt_add_one _)
-  later_persistently := by
-    intro _ _
-    constructor <;> simp [BI.persistently, persistently, BI.later, later]
-  later_false_em := by
-    intro P n x Hv
-    simp [BI.later, later, BI.imp, imp, BI.or, or]
-    cases n <;> simp
-    intro H
-    right
-    intro n' x' Hx'le Hn' Hv'
-    simp
-    cases n' <;> simp
-    · apply P.mono H (CMRA.Included.incN Hx'le) (Nat.zero_le _)
-    intro H''
-    exact False.elim H''
+         _ ≡{n}≡ (y1 • y2) • x2 := Hy.op_l
+         _ ≡{n}≡ y1 • (y2 • x2) := CMRA.assoc.symm.dist
+  wand_intro H n x Hv HP n' x' Hn Hv' HQ :=
+    H _ _ Hv' ⟨x, x', .rfl, UPred.mono _ HP .rfl Hn, HQ⟩
+  wand_elim H n x Hv := fun ⟨y1, y2, Hy, HP, HQ⟩ => by
+    refine UPred.mono _ ?_ Hy.symm.to_incN (Nat.le_refl _)
+    have Hv := Hy.validN.1 Hv
+    exact H n y1 (CMRA.validN_op_left Hv) HP _ y2 (Nat.le_refl _) Hv HQ
+  persistently_mono H n x Hv H' := H _ _ (CMRA.validN_core Hv) H'
+  persistently_idem_2 {P} _ x n H := by
+    refine P.mono H ?_ (Nat.le_refl _)
+    refine (CMRA.incN_iff_right ?_).mpr (CMRA.incN_refl _)
+    exact (CMRA.core_idem x).dist
+  persistently_emp_2 := Std.refl
+  persistently_and_2 := Std.refl
+  persistently_sExists_1 n x v := fun ⟨p, HΨ, H⟩ => by
+    refine ⟨iprop(<pers> p), ⟨p, ?_⟩, H⟩
+    ext; exact and_iff_right HΨ
+  persistently_absorb_l {P Q} _ x _ := fun ⟨x1, x2, H1, H2, H3⟩ =>
+    P.mono H2 (CMRA.core_incN_core ⟨x2, H1⟩) (Nat.le_refl _)
+  persistently_and_l _ x _ H := ⟨CMRA.core x, x, (CMRA.core_op _).symm.dist, H⟩
+  later_mono H := fun
+    | 0, _, _ => id
+    | n+1, _, Hv => H _ _ (CMRA.validN_succ Hv)
+  later_intro {P} := fun
+    | 0, _, _, _ => trivial
+    | n+1, _, _, Hp => P.mono Hp (CMRA.incN_refl _) (Nat.le_add_right ..)
+  later_sForall_2 {Ψ} := fun
+    | 0, _, _, _ => trivial
+    | n+1, _, Hx, H => fun _ => H _ ⟨_, rfl⟩ _ _ (CMRA.inc_refl _) (Nat.le_refl _) Hx
+  later_sExists_false := fun
+    | 0, _, _, _ => .inl trivial
+    | n+1, x, Hx, ⟨p', Hp', H⟩ => by
+      refine .inr ⟨later p', ⟨p', ?_⟩, H⟩
+      ext n x; exact and_iff_right Hp'
+  later_sep {P Q} := by
+    constructor <;> rintro (_ | n) x Hv H
+    · exact ⟨UCMRA.unit, x, UCMRA.unit_left_id.dist.symm, trivial, trivial⟩
+    · let ⟨x1, x2, H1, H2, H3⟩ := H
+      let ⟨y1, y2, H1', H2', H3'⟩ := CMRA.extend (CMRA.validN_succ Hv) H1
+      exact ⟨y1, y2, H1'.dist, (uPred_ne H2').mpr H2, (uPred_ne H3').mpr H3⟩
+    · trivial
+    · let ⟨x1, x2, H1, H2, H3⟩ := H
+      exact ⟨x1, x2, H1.lt (Nat.lt_add_one _), H2, H3⟩
+  later_persistently := ⟨Std.refl, Std.refl⟩
+  later_false_em {P} := fun
+    | 0, _, _, _ => .inl trivial
+    | n+1, x, Hv, H => .inr fun
+      | 0, x', Hx'le, Hn', Hv', _ => P.mono H Hx'le.incN (Nat.zero_le _)
 
 instance : BILaterContractive (UPred M) where
   toContractive := later_contractive
 
 instance (P : UPred M) : Affine P where
-  affine _ := by simp [BI.emp, emp]
+  affine _ := by simp [emp, UPred.emp]
 
-theorem ownM_valid (m : M) : ownM m ⊢ cmra_valid m := by
-  simp [ownM, cmra_valid, BI.Entails, entails]
-  intros; apply CMRA.validN_of_incN ‹_› <;> trivial
+theorem ownM_valid (m : M) : ownM m ⊢ cmraValid m := fun _ _ h hp => hp.validN h
 
 theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
   constructor
-  · intro n x Hv H; rcases H with ⟨z, Hz⟩
-    exists m1; exists (m2 • z)
-    apply And.intro
-    · apply OFE.Dist.trans Hz
-      apply OFE.equiv_dist.mp CMRA.assoc.symm
-    apply And.intro <;> simp [ownM]
-    · exact CMRA.incN_refl m1
-    · exact CMRA.incN_op_left n m2 z
-  · intro n x Hv H; rcases H with ⟨y1, y2, H, ⟨w1, Hw1⟩, ⟨w2, Hw2⟩⟩
-    exists (w1 • w2)
+  · intro n x Hv ⟨z, Hz⟩
+    refine ⟨m1, m2 • z, ?_, .rfl, CMRA.incN_op_left n m2 z⟩
+    exact Hz.trans CMRA.assoc.symm.dist
+  · intro n x Hv ⟨y1, y2, H, ⟨w1, Hw1⟩, ⟨w2, Hw2⟩⟩
+    exists w1 • w2
     calc
-      x ≡{n}≡ (y1 • y2) := H
-      _ ≡{n}≡ (m1 • w1) • (m2 • w2) := OFE.Dist.op Hw1 Hw2
-      _ ≡{n}≡ m1 • (w1 • (m2 • w2)) := OFE.equiv_dist.mp CMRA.assoc.symm _
-      _ ≡{n}≡ m1 • ((m2 • w2) • w1) := OFE.equiv_dist.mp (CMRA.op_right_eqv _ CMRA.comm) _
-      _ ≡{n}≡ m1 • (m2 • (w2 • w1)) := OFE.equiv_dist.mp (CMRA.op_right_eqv _ CMRA.assoc.symm) _
-      _ ≡{n}≡ (m1 • m2) • (w2 • w1) := OFE.equiv_dist.mp CMRA.assoc _
-      _ ≡{n}≡ (m1 • m2) • (w1 • w2) := OFE.equiv_dist.mp (CMRA.op_right_eqv _ CMRA.comm) _
+      x ≡{n}≡ y1 • y2 := H
+      _ ≡{n}≡ (m1 • w1) • (m2 • w2) := Hw1.op Hw2
+      _ ≡{n}≡ m1 • (w1 • (m2 • w2)) := CMRA.assoc.symm.dist
+      _ ≡{n}≡ m1 • ((m2 • w2) • w1) := CMRA.comm.op_r.dist
+      _ ≡{n}≡ m1 • (m2 • (w2 • w1)) := CMRA.assoc.symm.op_r.dist
+      _ ≡{n}≡ (m1 • m2) • (w2 • w1) := CMRA.assoc.dist
+      _ ≡{n}≡ (m1 • m2) • (w1 • w2) := CMRA.comm.op_r.dist
 
-theorem ownM_always_invalid_elim (m : M) : (∀ n, ¬✓{n} m) → cmra_valid m ⊢ False := by
-  intro H
-  simp [ownM, cmra_valid, BI.Entails, entails]
-  intros n _ _ Hv
-  exfalso
-  apply H n Hv
+theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : cmraValid m ⊢ False :=
+  fun n _ _ => H n
 
 end UPred

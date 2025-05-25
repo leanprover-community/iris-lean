@@ -17,7 +17,7 @@ def GFunctors := Array COFE.OFunctorPre
 def GId (FF : GFunctors) : Type _ := Fin FF.size
 
 instance (FF : GFunctors) : GetElem GFunctors (GId FF) COFE.OFunctorPre (fun _ _ => True) where
-  getElem _ x _ := FF.get x.1 x.2
+  getElem _ x _ := (show Array _ from FF)[x.1]
 
 abbrev IsGFunctors (G : GFunctors) := ∀ (i : GId G), RFunctorContractive G[i]
 
@@ -36,8 +36,7 @@ variable (FF : GFunctors) [IG : IsGFunctors FF]
 
 def iPrePropO : Type _ := OFunctor.Fix (UPredOF (IResF FF))
 
--- TODO: Figure out how to remove this
-instance : COFE (iPrePropO FF) := COFE.OFunctor.fix_COFE
+instance : COFE (iPrePropO FF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
 def IResUR : Type := (i : GId FF) → GName → Option (FF[i] (iPrePropO FF) (iPrePropO FF))
 
