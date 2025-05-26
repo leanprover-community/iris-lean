@@ -52,6 +52,12 @@ class IntoWand [BI PROP] (p q : Bool) (R P : PROP) (Q : outParam PROP) where
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
 
+/-- Another version of IntoWand which treats P like an outParam, used for iapply
+where P is a metavariable. Not sure if this is a good idea yet. -/
+class InferIntoWand [BI PROP] (p q : Bool) (R : PROP) (P : outParam PROP) (Q : PROP) where
+  into_wand : □?p R ⊢ □?q P -∗ Q
+export IntoWand (into_wand)
+
 class FromForall [BI PROP] (P : PROP) {α : outParam (Sort _)} (Ψ : outParam <| α → PROP) where
   from_forall : (∀ x, Ψ x) ⊢ P
 export FromForall (from_forall)
@@ -104,7 +110,6 @@ export FromAffinely (from_affinely)
 class IntoAbsorbingly [BI PROP] (P : outParam PROP) (Q : PROP) where
   into_absorbingly : P ⊢ <absorb> Q
 export IntoAbsorbingly (into_absorbingly)
-
 
 class FromAssumption (p : Bool) [BI PROP] (P Q : PROP) where
   from_assumption : □?p P ⊢ Q
