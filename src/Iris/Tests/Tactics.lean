@@ -644,3 +644,11 @@ theorem exists_intuitionistic [BI PROP] (Q : Nat → PROP) : □ (∃ x, Q x) �
   iexists x
   ileft
   iexact H
+
+-- apply
+theorem wand_transitivity [BI PROP] (P Q R : PROP) : (P -∗ Q) ∗ (Q -∗ R) ⊢ (P -∗ R) := by
+  iintro ⟨H1, H2⟩
+  iintro H3
+  iapply H2
+  iapply H1
+  iexact H3
