@@ -140,8 +140,13 @@ class Discrete (α : Type _) [OFE α] where
 export OFE.Discrete (discrete_0)
 
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
-theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡ y) : x ≡ y :=
+theorem Discrete.discrete [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡ y) : x ≡ y :=
   discrete_0 (OFE.Dist.le h (Nat.zero_le _))
+export OFE.Discrete (discrete)
+
+/-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
+theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{0}≡ y) : x ≡{n}≡ y :=
+  Equiv.dist (discrete h)
 export OFE.Discrete (discrete_n)
 
 class Leibniz (α : Type _) [OFE α] where
