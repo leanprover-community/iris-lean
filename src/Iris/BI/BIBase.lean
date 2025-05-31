@@ -281,7 +281,7 @@ syntax:max "◇ " term:40 : term
 def except0 [BIBase PROP] (P : PROP) := iprop(▷ False ∨ P)
 
 macro_rules
-  | `(iprop(◇ $P)) => ``(except0 $P)
+  | `(iprop(◇ $P)) => ``(except0 iprop($P))
 
 delab_rule except0
   | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
