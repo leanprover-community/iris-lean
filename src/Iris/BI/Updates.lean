@@ -143,6 +143,8 @@ instance {P : PROP} [Absorbing P] : Absorbing iprop(|==> P) :=
 end BUpdLaws
 
 
+
+
 -- -- example [BI PROP] [BUpd PROP] (P Q : PROP) : ⊢ iprop(R ∗ P) := sorry
 -- example [BI PROP] [BUpd PROP] (P : PROP) : ⊢ iprop(|==> P) := sorry
 -- -- example [BI PROP] [BUpd PROP] (P : PROP) : ⊢ iprop(|==> P ∗ P) := sorry
