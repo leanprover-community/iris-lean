@@ -826,6 +826,16 @@ theorem wand_iff_exists_persistently [BI PROP] [BIAffine PROP] {P Q : PROP} :
   · exact exists_elim fun R => wand_intro' <| sep_assoc.2.trans <|
       and_persistently_iff_sep.2.trans <| (and_mono_r persistently_elim).trans imp_elim_r
 
+theorem persistently_and_emp {P : PROP} [BI PROP] : <pers> P ⊣⊢ <pers> (emp ∧ P) :=
+  ⟨(and_intro persistently_emp_intro .rfl).trans persistently_and.2,
+   (persistently_mono and_elim_r).trans .rfl⟩
+
+theorem persistently_and_sep_elim_emp {P Q : PROP} [BI PROP] : <pers> P ∧ Q ⊢ (emp ∧ P) ∗ Q :=
+  (and_mono persistently_and_emp.1 BIBase.Entails.rfl).trans persistently_and_l
+
+theorem persistently_and_emp_elim {P : PROP} [BI PROP] : emp ∧ <pers> P ⊢ P :=
+  and_comm.1.trans <| persistently_and_sep_elim_emp.trans <| sep_emp.1.trans and_elim_r
+
 /-! # Persistence instances -/
 
 instance pure_persistent (φ : Prop) [BI PROP] : Persistent (PROP := PROP) iprop(⌜φ⌝) where

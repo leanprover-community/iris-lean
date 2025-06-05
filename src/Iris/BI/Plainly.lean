@@ -66,14 +66,8 @@ open BiPlainly
 variable {PROP : Type _} [BI PROP] [BiPlainly PROP]
 variable {P Q R : PROP}
 
-
-theorem affinely_plainly_elim : <affine> ■ P ⊢ P := by
-  apply Entails.trans
-  · apply affinely_mono
-    apply elim_persistently
-  unfold affinely
-  sorry
-
+theorem affinely_plainly_elim : <affine> ■ P ⊢ P :=
+  (affinely_mono elim_persistently).trans persistently_and_emp_elim
 
 theorem persistently_elim_plainly : <pers> ■ P ⊣⊢ ■ P :=
   ⟨by sorry,
@@ -133,15 +127,32 @@ theorem plainly_intro' (H : ■ P ⊢ Q) : ■ P ⊢ ■ Q :=
 -- theorem plainly_exist_2 {A} (Ψ : A → PROP) : (∃ a, ■ (Ψ a)) ⊢ ■ (∃ a, Ψ a).
 -- theorem plainly_exist `{!BiPlainlyExist PROP} {A} (Ψ : A → PROP) : ■ (∃ a, Ψ a) ⊣⊢ ∃ a, ■ (Ψ a).
 
-theorem plainly_and : ■ (P ∧ Q) ⊣⊢ ■ P ∧ ■ Q := sorry
+theorem plainly_and : ■ (P ∧ Q) ⊣⊢ ■ P ∧ ■ Q :=
+  ⟨ by sorry, sorry ⟩
 theorem plainly_or_2 : ■ P ∨ ■ Q ⊢ ■ (P ∨ Q) := sorry
 -- theorem plainly_or `{!BiPlainlyExist PROP} P Q : ■ (P ∨ Q) ⊣⊢ ■ P ∨ ■ Q.
 theorem plainly_impl : ■ (P → Q) ⊢ ■ P → ■ Q := sorry
 -- theorem plainly_emp_2 : emp ⊢@{PROP} ■ emp.
-theorem plainly_sep_dup : ■ P ⊣⊢ ■ P ∗ ■ P := sorry
-theorem plainly_and_sep_l_1 : ■ P ∧ Q ⊢ ■ P ∗ Q := sorry
-theorem plainly_and_sep_r_1 : P ∧ ■ Q ⊢ P ∗ ■ Q := sorry
+theorem plainly_sep_dup : ■ P ⊣⊢ ■ P ∗ ■ P :=
+  ⟨ by
+      apply Entails.trans and_self.2
+      apply Entails.trans <| and_mono BIBase.Entails.rfl emp_sep.2
+      apply Entails.trans <| plainly_and_sep_assoc.1
+      apply Entails.trans <| sep_mono and_elim_l BIBase.Entails.rfl
+      apply BIBase.Entails.rfl,
+    by exact plainly_absorb ⟩
+
+theorem plainly_and_sep_l_1 : ■ P ∧ Q ⊢ ■ P ∗ Q := by
+  apply Entails.trans <| and_mono BIBase.Entails.rfl emp_sep.2
+  apply Entails.trans <| plainly_and_sep_assoc.1
+  apply Entails.trans <| sep_mono and_elim_l BIBase.Entails.rfl
+  apply BIBase.Entails.rfl
+
+theorem plainly_and_sep_r_1 : P ∧ ■ Q ⊢ P ∗ ■ Q :=
+  and_comm.1.trans <| plainly_and_sep_l_1.trans sep_symm
+
 -- theorem plainly_True_emp : ■ True ⊣⊢@{PROP} ■ emp.
+
 theorem plainly_and_sep : ■ (P ∧ Q) ⊢ ■ (P ∗ Q) := sorry
 theorem plainly_affinely_elim : ■ <affine> P ⊣⊢ ■ P := sorry
 theorem intuitionistically_plainly_elim : □ ■ P ⊢ □ P := sorry
