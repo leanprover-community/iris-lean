@@ -826,6 +826,16 @@ theorem wand_iff_exists_persistently [BI PROP] [BIAffine PROP] {P Q : PROP} :
   · exact exists_elim fun R => wand_intro' <| sep_assoc.2.trans <|
       and_persistently_iff_sep.2.trans <| (and_mono_r persistently_elim).trans imp_elim_r
 
+theorem persistently_and_emp {P : PROP} [BI PROP] : <pers> P ⊣⊢ <pers> (emp ∧ P) :=
+  ⟨(and_intro persistently_emp_intro .rfl).trans persistently_and.2,
+   (persistently_mono and_elim_r).trans .rfl⟩
+
+theorem persistently_and_sep_elim_emp {P Q : PROP} [BI PROP] : <pers> P ∧ Q ⊢ (emp ∧ P) ∗ Q :=
+  (and_mono persistently_and_emp.1 BIBase.Entails.rfl).trans persistently_and_l
+
+theorem persistently_and_emp_elim {P : PROP} [BI PROP] : emp ∧ <pers> P ⊢ P :=
+  and_comm.1.trans <| persistently_and_sep_elim_emp.trans <| sep_emp.1.trans and_elim_r
+
 /-! # Persistence instances -/
 
 instance pure_persistent (φ : Prop) [BI PROP] : Persistent (PROP := PROP) iprop(⌜φ⌝) where
@@ -1483,3 +1493,27 @@ theorem bigOp_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} :
 
 theorem bigOp_and_cons [BI PROP] {P : PROP} {Ps : List PROP} :
     [∧] (P :: Ps) ⊣⊢ P ∧ [∧] Ps := bigOp_cons
+
+
+-- TODO Where in the file should these live?
+theorem and_forall_bool [BI PROP] {P Q : PROP} : P ∧ Q ⊣⊢ «forall» (fun b : Bool => if b then P else Q) :=
+  ⟨ by
+      apply forall_intro
+      intro b; cases b
+      · apply and_elim_r
+      · apply and_elim_l,
+    and_intro (forall_elim true) (forall_elim false)⟩
+
+
+theorem or_exists_bool [BI PROP] {P Q : PROP} : P ∨ Q ⊣⊢ «exists» (fun b : Bool => if b then P else Q) :=
+  ⟨by
+     apply or_elim
+     · apply exists_intro' true
+       apply BIBase.Entails.rfl
+     · apply exists_intro' false
+       apply BIBase.Entails.rfl,
+   by
+     apply exists_elim
+     intro b; cases b
+     · exact or_intro_r
+     · exact or_intro_l⟩
