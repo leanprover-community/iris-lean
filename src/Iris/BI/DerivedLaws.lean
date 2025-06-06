@@ -1493,3 +1493,27 @@ theorem bigOp_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} :
 
 theorem bigOp_and_cons [BI PROP] {P : PROP} {Ps : List PROP} :
     [∧] (P :: Ps) ⊣⊢ P ∧ [∧] Ps := bigOp_cons
+
+
+-- TODO Where in the file should these live?
+theorem and_forall_bool [BI PROP] {P Q : PROP} : P ∧ Q ⊣⊢ «forall» (fun b : Bool => if b then P else Q) :=
+  ⟨ by
+      apply forall_intro
+      intro b; cases b
+      · apply and_elim_r
+      · apply and_elim_l,
+    and_intro (forall_elim true) (forall_elim false)⟩
+
+
+theorem or_exists_bool [BI PROP] {P Q : PROP} : P ∨ Q ⊣⊢ «exists» (fun b : Bool => if b then P else Q) :=
+  ⟨by
+     apply or_elim
+     · apply exists_intro' true
+       apply BIBase.Entails.rfl
+     · apply exists_intro' false
+       apply BIBase.Entails.rfl,
+   by
+     apply exists_elim
+     intro b; cases b
+     · exact or_intro_r
+     · exact or_intro_l⟩
