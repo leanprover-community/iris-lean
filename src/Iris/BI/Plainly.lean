@@ -41,7 +41,7 @@ class BiPlainly (PROP : Type _) [BI PROP] extends Plainly PROP where
   mono {P Q : PROP} : iprop(P ⊢ Q) → iprop(■ P ⊢ ■ Q)
   elim_persistently {P : PROP} : iprop(■ P ⊢ <pers> P)
   idemp {P : PROP} : iprop(■ P ⊢ ■ ■ P)
-  plainly_forall {A} (Ψ : A → PROP) : iprop(∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a)
+  plainly_forall {A : Type _} (Ψ : A → PROP) : iprop(∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a)
   plainly_impl_plainly {P Q : PROP} : iprop((■ P → ■ Q) ⊢ ■ (■ P → Q))
   emp_intro {P : PROP} : iprop(P ⊢ ■ emp)
   plainly_absorb {P Q : PROP} : iprop(■ P ∗ Q ⊢ ■ P)
@@ -70,12 +70,34 @@ theorem affinely_plainly_elim : <affine> ■ P ⊢ P :=
   (affinely_mono elim_persistently).trans persistently_and_emp_elim
 
 theorem persistently_elim_plainly : <pers> ■ P ⊣⊢ ■ P :=
-  ⟨by sorry,
-   by sorry⟩
+  ⟨absorbingly_of_persistently.trans <| sep_symm.trans plainly_absorb,
+   idemp.trans elim_persistently⟩
 
 theorem plainly_persistently_elim : ■ <pers> P ⊣⊢ ■ P :=
-  ⟨by sorry,
-   by sorry⟩
+  ⟨by
+    apply Entails.trans true_and.2
+    apply Entails.trans
+    · apply and_mono
+      · apply emp_intro
+      · apply BIBase.Entails.rfl
+    apply flip Entails.trans
+    · apply mono
+      apply persistently_and_emp_elim
+    apply Entails.trans and_forall_bool.1
+    apply flip Entails.trans
+    · apply mono
+      apply and_forall_bool.2
+    -- apply Entails.trans
+    -- · apply forall_mono
+    --   intro a
+    --   exact BIBase.Entails.rfl
+    apply flip Entails.trans
+    · rename_i I1 I2
+      -- Universe issue? I guess we neeed sForall
+      have H := @plainly_forall PROP I1 I2
+      sorry
+    all_goals sorry,
+   idemp.trans <| mono elim_persistently⟩
 
 theorem absorbingly_elim_plainly : <absorb> ■ P ⊣⊢ ■ P :=
   ⟨by
@@ -94,7 +116,7 @@ theorem plainly_and_sep_elim : ■ P ∧ Q ⊢ (emp ∧ P) ∗ Q := by
   · apply and_mono
     · apply elim_persistently
     · apply BIBase.Entails.rfl
-  sorry
+  apply persistently_and_sep_elim_emp
 
 theorem plainly_and_sep_assoc : ■ P ∧ (Q ∗ R) ⊣⊢ (■ P ∧ Q) ∗ R :=
   ⟨ by
@@ -108,7 +130,9 @@ theorem plainly_and_sep_assoc : ■ P ∧ (Q ∗ R) ⊣⊢ (■ P ∧ Q) ∗ R :
       · apply sep_mono (and_mono persistently_elim_plainly.2 BIBase.Entails.rfl) BIBase.Entails.rfl
       apply persistently_and_sep_assoc.2 ⟩
 
-theorem plainly_and_emp_elim : emp ∧ ■ P ⊢ P := sorry
+theorem plainly_and_emp_elim : emp ∧ ■ P ⊢ P := by
+  apply Entails.trans (and_mono BIBase.Entails.rfl elim_persistently)
+  apply persistently_and_emp_elim
 
 theorem plainly_into_absorbingly : ■ P ⊢ <absorb> P :=
   elim_persistently.trans absorbingly_of_persistently
