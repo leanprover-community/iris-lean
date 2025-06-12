@@ -172,6 +172,9 @@ theorem _root_.Iris.OFE.Equiv.opM {x₁ x₂ : α} {y₁ y₂ : Option α}
 theorem op_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz ≡ x • (y •? mz) := by
   unfold op?; cases mz <;> simp [assoc, Equiv.symm]
 
+theorem op_opM_assoc_dist (x y : α) (mz : Option α) : (x • y) •? mz ≡{n}≡ x • (y •? mz) := by
+  unfold op?; cases mz <;> simp [assoc.dist, Dist.symm]
+
 /-! ## Validity -/
 
 theorem Valid.validN : ✓ (x : α) → ✓{n} x := (valid_iff_validN.1 · _)
@@ -1042,6 +1045,11 @@ instance ucmraOption : UCMRA (Option A) where
   unit_valid := by simp [CMRA.Valid, optionValid]
   unit_left_id := by rintro ⟨⟩ <;> rfl
   pcore_unit := by rfl
+
+theorem CMRA.op_some_opM_assoc (x y : A) (mz : Option A) : (x • y) •? mz ≡ x •? (some y • mz) :=
+  match mz with
+  | none   => Equiv.rfl
+  | some _ => Equiv.symm assoc
 
 end option
 
