@@ -110,8 +110,8 @@ def ownM : UPred M where
          _  ≡{n₂}≡ (m • m₁) • m₂ := (Hm₁.le Hn).op_l
          _  ≡{n₂}≡ m • (m₁ • m₂) := CMRA.assoc.symm.dist
 
-def cmraValid : UPred M where
-  holds n _ := ✓{n} m
+def cmraValid [CMRA A] (a : A) : UPred M where
+  holds n _ := ✓{n} a
   mono hv _ le := CMRA.validN_of_le le hv
 
 /-
@@ -323,8 +323,27 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
       _ ≡{n}≡ (m1 • m2) • (w2 • w1) := CMRA.assoc.dist
       _ ≡{n}≡ (m1 • m2) • (w1 • w2) := CMRA.comm.op_r.dist
 
-theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : cmraValid m ⊢ False :=
+theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : (cmraValid m : UPred M) ⊢ False :=
   fun n _ _ => H n
+
+theorem persistently_ownM_core (m : M) : ownM m ⊢ □ ownM (CMRA.core m) :=
+  fun _ _ _ H' => ⟨trivial, CMRA.core_incN_core H'⟩
+
+theorem ownM_unit P : P ⊢ □ ownM (CMRA.unit : M) :=
+  fun _ _ _ _ => ⟨trivial, CMRA.incN_unit⟩
+
+theorem cmra_valid_intro P [CMRA A] (a : A) : ✓ a → P ⊢ (cmraValid a : UPred M) :=
+  fun Hv _ _ _ _ => CMRA.Valid.validN Hv
+
+theorem cmra_valid_elim [CMRA A] (a : A) : (cmraValid a : UPred M) ⊢ ⌜ ✓{0} a ⌝ :=
+  fun n _ _ H => CMRA.validN_of_le n.zero_le H
+
+theorem cmra_valid_weaken [CMRA A] (a b : A) : (cmraValid (a • b) : UPred M) ⊢ cmraValid a :=
+  fun _ _ _ H => CMRA.validN_op_left H
+
+theorem valid_entails [CMRA A] [CMRA B] {a : A} {b : B} (Himp : ∀ n, ✓{n} a → ✓{n} b) :
+    (cmraValid a : UPred M) ⊢ cmraValid b :=
+  fun n _ _ H => Himp n H
 
 theorem pure_soundness : iprop(True ⊢ (⌜P⌝ : UPred M)) → P :=
   (· 0 _ CMRA.unit_validN ⟨⟩)
