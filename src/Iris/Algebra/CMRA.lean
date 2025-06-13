@@ -172,6 +172,9 @@ theorem _root_.Iris.OFE.Equiv.opM {x₁ x₂ : α} {y₁ y₂ : Option α}
 theorem op_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz ≡ x • (y •? mz) := by
   unfold op?; cases mz <;> simp [assoc, Equiv.symm]
 
+theorem op_opM_assoc_dist (x y : α) (mz : Option α) : (x • y) •? mz ≡{n}≡ x • (y •? mz) := by
+  unfold op?; cases mz <;> simp [assoc.dist, Dist.symm]
+
 /-! ## Validity -/
 
 theorem Valid.validN : ✓ (x : α) → ✓{n} x := (valid_iff_validN.1 · _)
@@ -590,6 +593,12 @@ theorem cancelable_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : Cancelable x₁ �
   ⟨.of_eqv e, .of_eqv e.symm⟩
 theorem _root_.Iris.OFE.Equiv.cancelable {x₁ x₂ : α} : x₁ ≡ x₂ → (Cancelable x₁ ↔ Cancelable x₂) :=
   cancelable_iff
+
+theorem op_opM_cancel_dist {x y z: α} [Cancelable x]
+    (vxy: ✓{n} x • y) (h: x • y ≡{n}≡ (x • z) •? mw): y ≡{n}≡ z •? mw :=
+  match mw with
+  | none => cancelableN vxy h
+  | some _ => cancelableN vxy (h.trans (op_assocN.symm))
 
 end cancelableElements
 
@@ -1042,6 +1051,16 @@ instance ucmraOption : UCMRA (Option A) where
   unit_valid := by simp [CMRA.Valid, optionValid]
   unit_left_id := by rintro ⟨⟩ <;> rfl
   pcore_unit := by rfl
+
+theorem CMRA.op_some_opM_assoc (x y : A) (mz : Option A) : (x • y) •? mz ≡ x •? (some y • mz) :=
+  match mz with
+  | none   => Equiv.rfl
+  | some _ => Equiv.symm assoc
+
+theorem CMRA.op_some_opM_assoc_dist (x y : A) (mz : Option A) : (x • y) •? mz ≡{n}≡ x •? (some y • mz) :=
+  match mz with
+  | none   => Dist.rfl
+  | some _ => Dist.symm assoc.dist
 
 end option
 
