@@ -61,6 +61,9 @@ open Iris.Std BI
 class Plain {PROP: Type _}  [BI PROP] [Plainly PROP] [BiPlainly PROP] (P : PROP) where
   plain : P ⊢ ■ P
 
+instance {PROP : Type _} [BI PROP] [BiPlainly PROP] (P : PROP) : Plain iprop(■ P) :=
+  ⟨BiPlainly.idemp⟩
+
 section PlainlyLaws
 open BiPlainly
 
