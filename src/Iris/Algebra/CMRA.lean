@@ -197,6 +197,8 @@ theorem _root_.Iris.OFE.Equiv.valid : (x : α) ≡ y → (✓ x ↔ ✓ y) := va
 theorem validN_of_le {n n'} {x : α} : n' ≤ n → ✓{n} x → ✓{n'} x :=
   fun le => le.recOn id fun  _ ih vs => ih (validN_succ vs)
 
+theorem valid0_of_validN {n} {x : α} : ✓{n} x → ✓{0} x := validN_of_le (Nat.zero_le n)
+
 theorem validN_op_right {n} {x y : α} : ✓{n} (x • y) → ✓{n} y :=
   fun v => validN_op_left (validN_of_eqv comm v)
 
@@ -205,6 +207,14 @@ theorem valid_op_right (x y : α) : ✓ (x • y) → ✓ y :=
 
 theorem valid_op_left {x y : α} : ✓ (x • y) → ✓ x :=
   fun v => valid_op_right y x (valid_of_eqv comm v)
+
+theorem validN_opM {x: α}{my: Option α}: ✓{n} (x •? my) → ✓{n} x :=
+  match my with
+  | none => id  | some _ => validN_op_left
+
+theorem valid_opM {x: α}{my: Option α}: ✓ (x •? my) → ✓ x :=
+  match my with
+  | none => id  | some _ => valid_op_left
 
 /-! ## Core -/
 
@@ -380,6 +390,7 @@ theorem Included.validN {n} {x y : α} : x ≼ y → ✓{n} y → ✓{n} x := va
 
 theorem incN_of_incN_le {n n'} {x y : α} (l1 : n' ≤ n) : x ≼{n} y → x ≼{n'} y
   | ⟨z, hz⟩ => ⟨z, Dist.le hz l1⟩
+theorem inc0_of_incN {n} {x y : α} : x ≼{n} y → x ≼{0} y := incN_of_incN_le (Nat.zero_le n)
 theorem IncludedN.le {n n'} {x y : α} : n' ≤ n → x ≼{n} y → x ≼{n'} y := incN_of_incN_le
 
 theorem incN_of_incN_succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y :=
@@ -1061,6 +1072,12 @@ theorem CMRA.op_some_opM_assoc_dist (x y : A) (mz : Option A) : (x • y) •? m
   match mz with
   | none   => Dist.rfl
   | some _ => Dist.symm assoc.dist
+
+theorem CMRA.some_inc_some_of_dist_opM {x y : A} {mz : Option A} (h: x ≡{n}≡ y •? mz)
+    : some y ≼{n} some x :=
+  match mz with
+  | none   => ⟨none, h⟩
+  | some z => ⟨some z, h⟩
 
 end option
 

@@ -82,13 +82,23 @@ section CMRA
       ⟨vx, g⟩
 
   theorem local_update_discrete [CMRA.Discrete α] (x y x' y' : α) :
-    (x, y) ~l~> (x', y') ↔ ∀ (mz : α), ✓ x → x ≡ y •? mz → (✓ x' ∧ x' ≡ y' •? mz) :=
-  sorry
+      (x, y) ~l~> (x', y') ↔ ∀ mz, ✓ x → x ≡ y •? mz → (✓ x' ∧ x' ≡ y' •? mz) :=
+    Iff.intro
+      (fun h mz vx e =>
+        have ⟨vx', e⟩ := h 0 mz vx.validN e.dist
+        ⟨CMRA.Discrete.discrete_valid vx', OFE.discrete_0 e⟩)
+      (fun h n mz vx e =>
+        have ⟨vx', e'⟩ := h mz ((CMRA.valid_iff_validN' n).mpr vx) (OFE.discrete_n e)
+        ⟨CMRA.Valid.validN vx', e'.dist⟩)
 
-  theorem local_update_valid0 (x y x' y' : α) :
-    (✓{0} x → ✓{0} y → some y ≼{0} some x → (x, y) ~l~> (x', y')) →
-    (x, y) ~l~> (x', y') :=
-  sorry
+  theorem local_update_valid0 (x y x' y' : α)
+      (h: ✓{0} x → ✓{0} y → some y ≼{0} some x → (x, y) ~l~> (x', y')) :
+      (x, y) ~l~> (x', y') :=
+    fun n mz vx e =>
+      have v0y: ✓{0} y := CMRA.valid0_of_validN $ CMRA.validN_opM ((OFE.Dist.validN e).mp vx)
+      have: some y ≼{0} some x := CMRA.inc0_of_incN (CMRA.some_inc_some_of_dist_opM e)
+      have: (x, y) ~l~> (x', y') := h (CMRA.valid0_of_validN vx) v0y this
+      this n mz vx e
 
   theorem local_update_valid [CMRA.Discrete α] (x y x' y' : α) :
     (✓ x → ✓ y → some y ≼ some x → (x, y) ~l~> (x', y')) →
