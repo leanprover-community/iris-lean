@@ -114,11 +114,19 @@ def cmraValid : UPred M where
   holds n _ := ✓{n} m
   mono hv _ le := CMRA.validN_of_le le hv
 
-/-
 def bupd : UPred M where
   holds n x := ∀ k yf, k ≤ n → ✓{k} (x • yf) → ∃ x', ✓{k} (x' • yf) ∧ Q k x'
-  mono := sorry
--/
+  mono {n1 n2} {x1 x2} HQ := by
+    rintro ⟨x3, Hx⟩ Hn k yf Hk Hx0
+    have Hxy' : ✓{k} x1 • (x3 • yf) := by
+      refine CMRA.validN_ne ?_ Hx0
+      refine .trans ?_ CMRA.op_assocN.symm
+      exact CMRA.op_left_dist _ (OFE.Dist.le Hx Hk)
+    rcases HQ k (x3 • yf) (Nat.le_trans Hk Hn) Hxy' with ⟨x', Hx', HQ'⟩
+    exists (x' • x3)
+    refine ⟨CMRA.validN_ne CMRA.op_assocN Hx', ?_⟩
+    refine Q.mono HQ' ?_ k.le_refl
+    exact CMRA.incN_op_left k x' x3
 
 protected def emp : UPred M where
   holds _ _ := True
@@ -305,6 +313,177 @@ instance : BILaterContractive (UPred M) where
 instance (P : UPred M) : Affine P where
   affine _ := by simp [emp, UPred.emp]
 
+instance : OFE.NonExpansive (bupd : UPred M → UPred M) where
+  ne {n} {x1 x2} H {n' x'} Hn' Hx' := by
+    constructor
+    · intro H' k yf Hk Hv
+      rcases H' k yf Hk Hv with ⟨x'', Hx''⟩
+      refine ⟨x'',⟨Hx''.1, ?_⟩⟩
+      apply uPred_holds_ne (H.symm.le (Nat.le_trans Hk Hn')) k.le_refl (CMRA.validN_op_left Hx''.1)
+      exact Hx''.2
+    · intro H' k yf Hk Hv
+      rcases H' k yf Hk Hv with ⟨x'', Hx''⟩
+      refine ⟨x'',⟨Hx''.1, ?_⟩⟩
+      apply uPred_holds_ne (H.le (Nat.le_trans Hk Hn')) k.le_refl (CMRA.validN_op_left Hx''.1)
+      exact Hx''.2
+
+instance : Plainly (UPred M) := ⟨UPred.plainly⟩
+
+instance : OFE.NonExpansive (plainly : UPred M → UPred M) where
+  ne n P1 P2 HP n' y Hn' Hy := by
+    simp only [plainly, UPred.plainly]
+    constructor
+    · exact uPred_holds_ne (HP.symm.le Hn') n'.le_refl CMRA.unit_validN
+    · exact uPred_holds_ne (HP.le Hn') n'.le_refl CMRA.unit_validN
+
+theorem plainly_mono {P Q : UPred M} (H : P ⊢ Q) : ■ P ⊢ ■ Q :=
+  fun _ _ _ => H _ _ CMRA.unit_validN
+
+theorem plainly_elim_persistently {P : UPred M} : ■ P ⊢ <pers> P := by
+  intro n x Hx; simp [plainly, UPred.plainly]; intro H
+  refine iprop(<pers> P).mono ?_ CMRA.incN_unit n.le_refl
+  simp [intuitionistically, affinely, UPred.persistently, persistently, BIBase.and, UPred.and]
+  exact P.mono H CMRA.incN_unit n.le_refl
+
+theorem plainly_idemp_2 {P : UPred M} : ■ P ⊢ ■ ■ P :=
+  fun _ _ _ H => H
+
+theorem plainly_forall_2 {A : Type} {Ψ : A → UPred M} : (∀ a, ■ Ψ a) ⊢ (■ «forall» fun a => iprop(Ψ a)) := by
+  intro _ _ _
+  simp [plainly, UPred.plainly, BIBase.forall, sForall, UPred.sForall]
+
+theorem plainly_exist_1 {A : Type} {Ψ : A → UPred M} : (■ ∃ a, Ψ a) ⊢ («exists» fun a => iprop(■ Ψ a)) := by
+  intro n x Hx
+  simp [plainly, UPred.plainly, BIBase.exists, sExists, UPred.sExists]
+  intro a HA
+  exists iprop(■ Ψ a)
+  refine ⟨⟨a, rfl⟩, (Ψ a).mono HA CMRA.incN_unit n.le_refl⟩
+
+theorem plainly_emp_intro {P : UPred M} : P ⊢ ■ emp := fun _ _ _ _ => trivial
+
+theorem plainly_absorb {P Q : UPred M}: ■ P ∗ Q ⊢ ■ P  := sep_elim_l
+
+-- theorem plainly_impl_plainly {P Q : UPred M} : (■ P → ■ Q) ⊢ ■ (■ P → Q) := by
+
+  -- Proof.
+  --   unseal; split=> /= n x ? HPQ n' x' ????.
+  --   eapply uPred_mono with n' ε=>//; [|by apply cmra_included_includedN].
+  --   apply (HPQ n' x); eauto using cmra_validN_le.
+  -- Qed.
+
+
+--   Lemma later_persistently_1 P : ▷ □ P ⊢ □ ▷ P.
+--   Proof. by unseal. Qed.
+--   Lemma later_persistently_2 P : □ ▷ P ⊢ ▷ □ P.
+--   Proof. by unseal. Qed.
+--   Lemma later_plainly_1 P : ▷ ■ P ⊢ ■ ▷ P.
+--   Proof. by unseal. Qed.
+--   Lemma later_plainly_2 P : ■ ▷ P ⊢ ▷ ■ P.
+--   Proof. by unseal. Qed.
+
+instance : BiPlainly (UPred M) where
+  mono := plainly_mono
+  elim_persistently := plainly_elim_persistently
+  idemp := plainly_idemp_2
+  plainly_forall_2 := plainly_forall_2
+  plainly_impl_plainly := sorry
+  emp_intro := plainly_emp_intro
+  plainly_absorb := plainly_absorb
+  later_plainly_1 := sorry
+  later_plainly_2 := sorry
+
+instance : BiPlainlyExist (UPred M) where
+  plainly_exist_1 := plainly_exist_1
+
+instance : BUpd (UPred M) := ⟨bupd⟩
+
+theorem bupd_intro {P : UPred M} : P ⊢ |==> P :=
+  fun _ x _ HP _ _ Hn H => ⟨_, ⟨H, P.mono HP (CMRA.incN_refl x) Hn⟩⟩
+
+theorem bupd_mono {P Q : UPred M} : (P ⊢ Q) → (|==> P) ⊢ |==> Q := by
+  intros Himp n x Hx HP k yf Hn H
+  rcases HP k yf Hn H with ⟨x', Hx'⟩
+  refine ⟨x', ⟨Hx'.1, Himp _ _ ?_ Hx'.2⟩⟩
+  exact CMRA.validN_op_left Hx'.1
+
+theorem bupd_trans {P : UPred M} : (|==> |==> P) ⊢ |==> P := by
+  intro n x Hx H k yf Hx Hyf
+  rcases H k yf Hx Hyf with ⟨x', ⟨Hx', Hx''⟩⟩
+  exact Hx'' k yf k.le_refl Hx'
+
+theorem bupd_frame_r {P R : UPred M} : (|==> P) ∗ R ⊢ |==> (P ∗ R) := by
+  rintro n x Hx ⟨x1, x2, Hx, HP, HR⟩ k yf Hk Hyf
+  have L : ✓{k} x1 • (x2 • yf) := by
+    refine CMRA.validN_ne CMRA.op_assocN.symm ?_
+    refine CMRA.validN_ne ?_ Hyf
+    exact CMRA.op_left_dist _ (OFE.Dist.le Hx Hk)
+  rcases HP k (x2 • yf) Hk L with ⟨x', Hx'1, Hx'2⟩
+  refine ⟨x' • x2, ⟨CMRA.validN_ne CMRA.op_assocN Hx'1, ?_⟩⟩
+  refine ⟨x', ⟨x2, ⟨OFE.Dist.rfl, ⟨Hx'2, ?_⟩⟩⟩⟩
+  exact R.mono HR (CMRA.incN_refl x2) Hk
+
+ theorem bupd_plainly {P : UPred M} : (|==> ■ P) ⊢ P := by
+   intro n x Hx Hv
+   simp [bupd, plainly, UPred.plainly, UPred.bupd, BUpd.bupd] at Hv
+   have L : ✓{n} x • UCMRA.unit := CMRA.validN_ne (OFE.equiv_dist.mp CMRA.unit_right_id.symm _) Hx
+   rcases Hv n CMRA.unit n.le_refl L with ⟨x', Hx'⟩
+   apply P.mono Hx' CMRA.incN_unit n.le_refl
+
+instance : BiUpdate (UPred M) where
+  bupd_nonexpansive := by sorry
+  intro := bupd_intro
+  mono := bupd_mono
+  trans := bupd_trans
+  frame_r := bupd_frame_r
+
+instance : BiBUpdatePlainly (UPred M) where
+  bupd_plainly := sorry
+
+-- TODO
+--   (** Later *)
+--   Lemma later_mono P Q : (P ⊢ Q) → ▷ P ⊢ ▷ Q.
+--   Proof.
+--     unseal=> HP; split=>-[|n] x ??; [done|apply HP; eauto using cmra_validN_S].
+--   Qed.
+--   Lemma later_intro P : P ⊢ ▷ P.
+--   Proof.
+--     unseal; split=> -[|n] /= x ? HP; first done.
+--     apply uPred_mono with (S n) x; eauto using cmra_validN_S.
+--   Qed.
+--   Lemma later_forall_2 {A} (Φ : A → uPred M) : (∀ a, ▷ Φ a) ⊢ ▷ ∀ a, Φ a.
+--   Proof. unseal; by split=> -[|n] x. Qed.
+--   Lemma later_exist_false {A} (Φ : A → uPred M) :
+--     (▷ ∃ a, Φ a) ⊢ ▷ False ∨ (∃ a, ▷ Φ a).
+--   Proof. unseal; split=> -[|[|n]] x /=; eauto. Qed.
+--   Lemma later_sep_1 P Q : ▷ (P ∗ Q) ⊢ ▷ P ∗ ▷ Q.
+--   Proof.
+--     unseal; split=> n x ?.
+--     destruct n as [|n]; simpl.
+--     { by exists x, (core x); rewrite cmra_core_r. }
+--     intros (x1&x2&Hx&?&?); destruct (cmra_extend n x x1 x2)
+--       as (y1&y2&Hx'&Hy1&Hy2); eauto using cmra_validN_S; simpl in *.
+--     exists y1, y2; split; [by rewrite Hx'|by rewrite Hy1 Hy2].
+--   Qed.
+--   Lemma later_sep_2 P Q : ▷ P ∗ ▷ Q ⊢ ▷ (P ∗ Q).
+--   Proof.
+--     unseal; split=> n x ?.
+--     destruct n as [|n]; simpl; [done|intros (x1&x2&Hx&?&?)].
+--     exists x1, x2; eauto using dist_S.
+--   Qed.
+--
+--   Lemma later_false_em P : ▷ P ⊢ ▷ False ∨ (▷ False → P).
+--   Proof.
+--     unseal; split=> -[|n] x ? /= HP; [by left|right].
+--     intros [|n'] x' ????; eauto using uPred_mono, cmra_included_includedN.
+--   Qed.
+--
+
+
+
+-- Plainly rules
+-- TODO: bupd_ownM_updateP (needs basic updates to be defined)
+-- TODO: derived rules bupd_soundness, bupd_ownM_update
+
 theorem ownM_valid (m : M) : ownM m ⊢ cmraValid m := fun _ _ h hp => hp.validN h
 
 theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
@@ -325,5 +504,7 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
 
 theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : cmraValid m ⊢ False :=
   fun n _ _ => H n
+
+-- TODO Port remaining instances in base_logic/bi.v after
 
 end UPred
