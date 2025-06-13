@@ -9,11 +9,14 @@ import Iris.BI.BIBase
 import Iris.BI.Classes
 import Iris.BI.DerivedLaws
 import Iris.Algebra
+import Iris.BI.Plainly
 
 --TODO: Which type should we use for sets of masks?
 abbrev Set (α : Type _) := α → Prop
 abbrev setT {α : Type _} : Set α := fun _ => True
 abbrev subset (x y : Set α) : Prop := ∀ a, x a → y a
+abbrev disjoint (x y : Set α) : Prop := ∀ a, ¬(x a ∧ y a)
+abbrev union (x y : Set α) : Set α := fun a => x a ∨ y a
 
 class BUpd (PROP : Type _) where
   bupd : PROP → PROP
@@ -95,14 +98,21 @@ class BiFUpdate (PROP MASK : Type _) [BI PROP] extends FUpd PROP MASK where
     iprop((◇ |={E1, E2}=> P) ⊢ |={E1, E2}=> P)
   trans {E1 E2 E3 : Set MASK} (P : PROP) :
     iprop((|={E1, E2}=> |={E2, E3}=> P) ⊢ |={E1, E3}=> P)
-  -- What is the reason for frame_r'?
+  mask_frame_r' {E1 E2 Ef : Set MASK} (P : PROP) :
+    disjoint E1 Ef → (|={E1,E2}=> ⌜disjoint E2 Ef⌝ → P) ⊢ |={union E1 Ef, union E2 Ef}=> P
   frame_r {E1 E2 : Set MASK} (P R : PROP) :
     iprop((|={E1, E2}=> P) ∗ R ⊢ |={E1, E2}=> P ∗ R)
 
 class BiUpdateFUpdate (PROP : Type _) [BI PROP] [BiUpdate PROP] [BiFUpdate PROP MASK] where
   fupd_of_bupd (P : PROP) (E : Set MASK) : iprop(⊢ |==> P) → iprop(⊢ |={E}=> P)
 
--- TODO: Plainly updates
+class BiBUpdatePlainly (PROP : Type _) [BI PROP] [BiUpdate PROP] [BiPlainly PROP] where
+  bupd_plainly (P : PROP) : iprop((|==> ■ P)) ⊢ P
+
+class BiFUpdatePlainly (PROP MASK : Type _) [BI PROP] [BiFUpdate PROP MASK] [BiPlainly PROP] where
+  fupd_plainly_keep_l (E E' : Set MASK) (P R : PROP) : (R ={E,E'}=∗ ■ P) ∗ R ⊢ |={E}=> P ∗ R
+  fupd_plainly_later (E : Set MASK) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P
+  fupd_plainly_forall_2 (E : Set MASK) {A} (Φ : A → PROP) : (∀ x, |={E}=> ■ Φ x) ⊢ |={E}=> ∀ x, Φ x
 
 section BUpdLaws
 
