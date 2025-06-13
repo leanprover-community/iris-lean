@@ -48,21 +48,38 @@ section CMRA
       have := h n (some yf • mz) vx
       have := calc
         x ≡{n}≡ (y • yf) •? mz := e
-        _ ≡{n}≡ y •? (some yf • mz) := (CMRA.op_some_opM_assoc y yf mz).dist
+        _ ≡{n}≡ y •? (some yf • mz) := CMRA.op_some_opM_assoc_dist y yf mz
       have u := h n (some yf • mz) vx this
       have := calc
         x' ≡{n}≡ y' •? (some yf • mz) := u.2
-        _  ≡{n}≡ (y' • yf) •? mz      := (CMRA.op_some_opM_assoc y' yf mz).symm.dist
+        _  ≡{n}≡ (y' • yf) •? mz      := (CMRA.op_some_opM_assoc_dist y' yf mz).symm
       ⟨u.1, this⟩
 
   theorem cancel_local_update (x y z : α) [CMRA.Cancelable x] : (x • y, x • z) ~l~> (y, z) :=
-  sorry
+    fun _ _ vx e => ⟨CMRA.validN_op_right vx, CMRA.op_opM_cancel_dist vx e⟩
 
   theorem replace_local_update (x y : α) [CMRA.IdFree x] (h : ✓ y) : (x, x) ~l~> (y, y) :=
-  sorry
+    fun _ mz vx e =>
+      match mz with
+      | none   => ⟨CMRA.Valid.validN h, OFE.Dist.symm (OFE.Dist.of_eq rfl)⟩
+      | some _ => absurd e.symm (CMRA.id_freeN_r vx)
 
-  theorem core_id_local_update (x y z : α) [CMRA.CoreId y] (h : y ≼ x) : (x, z) ~l~> (x, z • y) :=
-  sorry
+  theorem core_id_local_update (x y z : α) [CMRA.CoreId y] (inc : y ≼ x) : (x, z) ~l~> (x, z • y) :=
+    fun n mz vx e =>
+      have g: x ≡{n}≡ (z • y) •? mz :=
+        suffices h: y • x ≡{n}≡ (z • y) •? mz
+          from (CMRA.op_core_right_of_inc inc).symm.dist.trans h
+        match mz with
+        | none =>
+          calc
+            y • x ≡{n}≡ y • z := CMRA.op_right_dist y e
+            _ ≡{n}≡ z • y := CMRA.op_commN
+        | some w =>
+          calc
+            y • x ≡{n}≡ y • (z • w) := CMRA.op_right_dist y e
+            _ ≡{n}≡ (y • z) • w := CMRA.op_assocN
+            _ ≡{n}≡ (z • y) • w := CMRA.op_left_dist w (CMRA.op_commN)
+      ⟨vx, g⟩
 
   theorem local_update_discrete [CMRA.Discrete α] (x y x' y' : α) :
     (x, y) ~l~> (x', y') ↔ ∀ (mz : α), ✓ x → x ≡ y •? mz → (✓ x' ∧ x' ≡ y' •? mz) :=
