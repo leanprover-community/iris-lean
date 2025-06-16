@@ -200,7 +200,7 @@ def exclO_map {α β} [OFE α] [OFE β] (f : α -n> β) : Excl α -C> Excl β :=
 abbrev ExclOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => Excl (F A B)
 
-instance {F} [COFE.OFunctor F] : RFunctor (fun A B _ _ => Excl (F A B)) where
+instance {F} [COFE.OFunctor F] : RFunctor (ExclOF F) where
   cmra := inferInstance
   map f g := exclO_map (COFE.OFunctor.map f g)
   map_ne.ne := by
