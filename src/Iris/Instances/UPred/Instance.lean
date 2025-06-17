@@ -524,7 +524,8 @@ theorem validInternal_entails [CMRA A] [CMRA B] {a : A} {b : B} (Hv : ∀ n, ✓
 theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : (validInternal m : UPred M) ⊢ False :=
   fun n _ _ => H n
 
--- TODO Port remaining instances in base_logic/bi.v after
--- TODO: derived rules bupd_soundness, bupd_ownM_update
+instance : BIAffine (UPred M) := ⟨by infer_instance⟩
+
+-- TODO: Port derived lemmas
 
 end UPred
