@@ -113,11 +113,11 @@ def ownM : UPred M where
 instance : OFE.NonExpansive (ownM : M → UPred M) where
   ne _ _ _ H _ _ Hn _ := OFE.Dist.incN (OFE.Dist.le H Hn) .rfl
 
-def validInternal : UPred M where
-  holds n _ := ✓{n} m
+def validInternal [CMRA A] (a : A): UPred M where
+  holds n _ := ✓{n} a
   mono hv _ le := CMRA.validN_of_le le hv
 
-instance : OFE.NonExpansive (validInternal : M → UPred M) where
+instance [CMRA A] : OFE.NonExpansive (validInternal : A → UPred M) where
   ne _ _ _ H _ _ Hn _ := OFE.Dist.validN <| H.le Hn
 
 def bupd : UPred M where
@@ -135,7 +135,7 @@ def bupd : UPred M where
     exact CMRA.incN_op_left k x' x3
 
 -- TODO: Refactor
-instance : OFE.NonExpansive (bupd : UPred M → UPred M) where
+instance bupd_ne : OFE.NonExpansive (bupd : UPred M → UPred M) where
   ne n x1 x2 Hx m y Hm Hv := by
     constructor
     · intro H k yf Hk Hyf
@@ -468,59 +468,15 @@ theorem bupd_frame_r {P R : UPred M} : (|==> P) ∗ R ⊢ |==> (P ∗ R) := by
    apply P.mono Hx' CMRA.incN_unit n.le_refl
 
 instance : BiUpdate (UPred M) where
-  bupd_nonexpansive := by sorry
+  -- FIXME: Why don't you infer?
+  bupd_nonexpansive := bupd_ne
   intro := bupd_intro
   mono := bupd_mono
   trans := bupd_trans
   frame_r := bupd_frame_r
 
 instance : BiBUpdatePlainly (UPred M) where
-  bupd_plainly := sorry
-
--- TODO
---   (** Later *)
---   Lemma later_mono P Q : (P ⊢ Q) → ▷ P ⊢ ▷ Q.
---   Proof.
---     unseal=> HP; split=>-[|n] x ??; [done|apply HP; eauto using cmra_validN_S].
---   Qed.
---   Lemma later_intro P : P ⊢ ▷ P.
---   Proof.
---     unseal; split=> -[|n] /= x ? HP; first done.
---     apply uPred_mono with (S n) x; eauto using cmra_validN_S.
---   Qed.
---   Lemma later_forall_2 {A} (Φ : A → uPred M) : (∀ a, ▷ Φ a) ⊢ ▷ ∀ a, Φ a.
---   Proof. unseal; by split=> -[|n] x. Qed.
---   Lemma later_exist_false {A} (Φ : A → uPred M) :
---     (▷ ∃ a, Φ a) ⊢ ▷ False ∨ (∃ a, ▷ Φ a).
---   Proof. unseal; split=> -[|[|n]] x /=; eauto. Qed.
---   Lemma later_sep_1 P Q : ▷ (P ∗ Q) ⊢ ▷ P ∗ ▷ Q.
---   Proof.
---     unseal; split=> n x ?.
---     destruct n as [|n]; simpl.
---     { by exists x, (core x); rewrite cmra_core_r. }
---     intros (x1&x2&Hx&?&?); destruct (cmra_extend n x x1 x2)
---       as (y1&y2&Hx'&Hy1&Hy2); eauto using cmra_validN_S; simpl in *.
---     exists y1, y2; split; [by rewrite Hx'|by rewrite Hy1 Hy2].
---   Qed.
---   Lemma later_sep_2 P Q : ▷ P ∗ ▷ Q ⊢ ▷ (P ∗ Q).
---   Proof.
---     unseal; split=> n x ?.
---     destruct n as [|n]; simpl; [done|intros (x1&x2&Hx&?&?)].
---     exists x1, x2; eauto using dist_S.
---   Qed.
---
---   Lemma later_false_em P : ▷ P ⊢ ▷ False ∨ (▷ False → P).
---   Proof.
---     unseal; split=> -[|n] x ? /= HP; [by left|right].
---     intros [|n'] x' ????; eauto using uPred_mono, cmra_included_includedN.
---   Qed.
---
-
-
-
--- Plainly rules
--- TODO: bupd_ownM_updateP (needs basic updates to be defined)
--- TODO: derived rules bupd_soundness, bupd_ownM_update
+  bupd_plainly := bupd_plainly
 
 theorem ownM_valid (m : M) : ownM m ⊢ validInternal m := fun _ _ h hp => hp.validN h
 
@@ -540,9 +496,35 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
       _ ≡{n}≡ (m1 • m2) • (w2 • w1) := CMRA.assoc.dist
       _ ≡{n}≡ (m1 • m2) • (w1 • w2) := CMRA.comm.op_r.dist
 
-theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : validInternal m ⊢ False :=
+theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (CMRA.core a) :=
+  fun _ _ _ H => CMRA.core_incN_core H
+
+theorem ownM_unit {P : UPred M} : P ⊢ ownM (UCMRA.unit : M) :=
+  fun _ x _ _ => ⟨x, OFE.equiv_dist.mp UCMRA.unit_left_id.symm _⟩
+
+-- TODO: bupd_ownM_updateP (needs basic updates to be defined)
+-- TODO: later_ownM, ownM_forall  (needs internal eq )
+
+theorem validInternal_intro [CMRA A] {P : UPred M} (a : A) (Ha : ✓ a) : P ⊢ validInternal a :=
+  fun _ _ _ _ => CMRA.Valid.validN Ha
+
+theorem validInternal_elim [CMRA A] (a : A) : (validInternal a : UPred M) ⊢ iprop(⌜ ✓{0} a ⌝) :=
+  fun n _ _ H => CMRA.validN_of_le n.zero_le H
+
+theorem plainly_cmra_validInternal_1 [CMRA A] (a : A) : (validInternal a : UPred M) ⊢ ■ validInternal a :=
+  Std.refl
+
+theorem cmra_validInternal_weaken [CMRA A] (a b : A) : (validInternal (a • b) : UPred M) ⊢ validInternal a :=
+  fun _ _ _ H => CMRA.validN_op_left H
+
+theorem validInternal_entails [CMRA A] [CMRA B] {a : A} {b : B} (Hv : ∀ n, ✓{n} a → ✓{n} b) :
+    (validInternal a : UPred M) ⊢ validInternal b :=
+  fun _ _ _ H => Hv _ H
+
+theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : (validInternal m : UPred M) ⊢ False :=
   fun n _ _ => H n
 
 -- TODO Port remaining instances in base_logic/bi.v after
+-- TODO: derived rules bupd_soundness, bupd_ownM_update
 
 end UPred
