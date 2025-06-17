@@ -134,26 +134,19 @@ def bupd : UPred M where
     refine Q.mono HQ' ?_ k.le_refl
     exact CMRA.incN_op_left k x' x3
 
--- TODO: Refactor
 instance bupd_ne : OFE.NonExpansive (bupd : UPred M → UPred M) where
   ne n x1 x2 Hx m y Hm Hv := by
     constructor
     · intro H k yf Hk Hyf
       rcases (H k yf Hk Hyf) with ⟨x', ⟨Hx'1, Hx'2⟩⟩
       refine ⟨x', ⟨Hx'1, ?_⟩⟩
-      apply uPred_holds_ne
-      · apply OFE.Dist.le Hx.symm (Nat.le_trans Hk Hm)
-      · apply k.le_refl
-      · exact CMRA.validN_op_left Hx'1
-      · apply Hx'2
+      refine uPred_holds_ne ?_ k.le_refl (CMRA.validN_op_left Hx'1) Hx'2
+      exact OFE.Dist.le Hx.symm (Nat.le_trans Hk Hm)
     · intro H k yf Hk Hyf
       rcases (H k yf Hk Hyf) with ⟨x', ⟨Hx'1, Hx'2⟩⟩
       refine ⟨x', ⟨Hx'1, ?_⟩⟩
-      apply uPred_holds_ne
-      · apply OFE.Dist.le Hx (Nat.le_trans Hk Hm)
-      · apply k.le_refl
-      · exact CMRA.validN_op_left Hx'1
-      · apply Hx'2
+      refine uPred_holds_ne ?_ k.le_refl (CMRA.validN_op_left Hx'1) Hx'2
+      exact OFE.Dist.le Hx (Nat.le_trans Hk Hm)
 
 protected def emp : UPred M where
   holds _ _ := True
@@ -179,22 +172,12 @@ instance uPred_entails_preorder : Std.Preorder (Entails (PROP := UPred M)) where
   refl _ _ _ H := H
   trans H1 H2 _ _ Hv H := H2 _ _ Hv <| H1 _ _ Hv H
 
--- TODO: Refactor
 theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
     IsCOFE.compl cP ⊢ IsCOFE.compl cQ := by
   intros n m Hv HP
-  apply uPred_holds_ne
-  case HQ =>
-    apply H
-    · apply Hv
-    · apply uPred_holds_ne
-      · apply COFE.conv_compl.symm
-      · apply n.le_refl
-      · apply Hv
-      · apply HP
-  · exact IsCOFE.conv_compl
-  · apply n.le_refl
-  · apply Hv
+  refine uPred_holds_ne IsCOFE.conv_compl n.le_refl Hv ?_
+  refine H _ _ _ Hv ?_
+  exact uPred_holds_ne IsCOFE.conv_compl.symm n.le_refl Hv HP
 
 instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
   distLater_dist {n x y} Hl :=
