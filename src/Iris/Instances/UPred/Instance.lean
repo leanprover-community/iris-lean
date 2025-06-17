@@ -110,9 +110,15 @@ def ownM : UPred M where
          _  ≡{n₂}≡ (m • m₁) • m₂ := (Hm₁.le Hn).op_l
          _  ≡{n₂}≡ m • (m₁ • m₂) := CMRA.assoc.symm.dist
 
-def cmraValid : UPred M where
+instance : OFE.NonExpansive (ownM : M → UPred M) where
+  ne _ _ _ H _ _ Hn _ := OFE.Dist.incN (OFE.Dist.le H Hn) .rfl
+
+def validInternal : UPred M where
   holds n _ := ✓{n} m
   mono hv _ le := CMRA.validN_of_le le hv
+
+instance : OFE.NonExpansive (validInternal : M → UPred M) where
+  ne _ _ _ H _ _ Hn _ := OFE.Dist.validN <| H.le Hn
 
 def bupd : UPred M where
   holds n x := ∀ k yf, k ≤ n → ✓{k} (x • yf) → ∃ x', ✓{k} (x' • yf) ∧ Q k x'
@@ -127,6 +133,27 @@ def bupd : UPred M where
     refine ⟨CMRA.validN_ne CMRA.op_assocN Hx', ?_⟩
     refine Q.mono HQ' ?_ k.le_refl
     exact CMRA.incN_op_left k x' x3
+
+-- TODO: Refactor
+instance : OFE.NonExpansive (bupd : UPred M → UPred M) where
+  ne n x1 x2 Hx m y Hm Hv := by
+    constructor
+    · intro H k yf Hk Hyf
+      rcases (H k yf Hk Hyf) with ⟨x', ⟨Hx'1, Hx'2⟩⟩
+      refine ⟨x', ⟨Hx'1, ?_⟩⟩
+      apply uPred_holds_ne
+      · apply OFE.Dist.le Hx.symm (Nat.le_trans Hk Hm)
+      · apply k.le_refl
+      · exact CMRA.validN_op_left Hx'1
+      · apply Hx'2
+    · intro H k yf Hk Hyf
+      rcases (H k yf Hk Hyf) with ⟨x', ⟨Hx'1, Hx'2⟩⟩
+      refine ⟨x', ⟨Hx'1, ?_⟩⟩
+      apply uPred_holds_ne
+      · apply OFE.Dist.le Hx (Nat.le_trans Hk Hm)
+      · apply k.le_refl
+      · exact CMRA.validN_op_left Hx'1
+      · apply Hx'2
 
 protected def emp : UPred M where
   holds _ _ := True
@@ -151,6 +178,23 @@ instance : BIBase (UPred M) where
 instance uPred_entails_preorder : Std.Preorder (Entails (PROP := UPred M)) where
   refl _ _ _ H := H
   trans H1 H2 _ _ Hv H := H2 _ _ Hv <| H1 _ _ Hv H
+
+-- TODO: Refactor
+theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
+    IsCOFE.compl cP ⊢ IsCOFE.compl cQ := by
+  intros n m Hv HP
+  apply uPred_holds_ne
+  case HQ =>
+    apply H
+    · apply Hv
+    · apply uPred_holds_ne
+      · apply COFE.conv_compl.symm
+      · apply n.le_refl
+      · apply Hv
+      · apply HP
+  · exact IsCOFE.conv_compl
+  · apply n.le_refl
+  · apply Hv
 
 instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
   distLater_dist {n x y} Hl :=
@@ -363,34 +407,28 @@ theorem plainly_emp_intro {P : UPred M} : P ⊢ ■ emp := fun _ _ _ _ => trivia
 
 theorem plainly_absorb {P Q : UPred M}: ■ P ∗ Q ⊢ ■ P  := sep_elim_l
 
--- theorem plainly_impl_plainly {P Q : UPred M} : (■ P → ■ Q) ⊢ ■ (■ P → Q) := by
-
-  -- Proof.
-  --   unseal; split=> /= n x ? HPQ n' x' ????.
-  --   eapply uPred_mono with n' ε=>//; [|by apply cmra_included_includedN].
-  --   apply (HPQ n' x); eauto using cmra_validN_le.
-  -- Qed.
+theorem persistently_impl_plainly {P Q : UPred M} : (■ P → <pers> Q) ⊢ <pers> (■ P → Q) := by
+  intro n x Hx HPQ n' x' Hx' Hn Hv H
+  apply Q.mono _ (CMRA.incN_of_inc _ Hx') n'.le_refl
+  apply HPQ _ _ CMRA.Included.rfl Hn (CMRA.validN_of_le Hn Hx)
+  exact H
 
 
---   Lemma later_persistently_1 P : ▷ □ P ⊢ □ ▷ P.
---   Proof. by unseal. Qed.
---   Lemma later_persistently_2 P : □ ▷ P ⊢ ▷ □ P.
---   Proof. by unseal. Qed.
---   Lemma later_plainly_1 P : ▷ ■ P ⊢ ■ ▷ P.
---   Proof. by unseal. Qed.
---   Lemma later_plainly_2 P : ■ ▷ P ⊢ ▷ ■ P.
---   Proof. by unseal. Qed.
+theorem plainly_impl_plainly {P Q : UPred M} : (■ P → ■ Q) ⊢ ■ (■ P → Q) := by
+  intro n x Hx HPQ n' x' Hx' Hn Hv H
+  apply Q.mono _ (CMRA.incN_of_inc _ Hx') n'.le_refl
+  apply HPQ _ _ CMRA.Included.rfl Hn (CMRA.validN_of_le Hn Hx)
+  exact H
 
 instance : BiPlainly (UPred M) where
   mono := plainly_mono
   elim_persistently := plainly_elim_persistently
   idemp := plainly_idemp_2
   plainly_forall_2 := plainly_forall_2
-  plainly_impl_plainly := sorry
+  plainly_impl_plainly := plainly_impl_plainly
   emp_intro := plainly_emp_intro
   plainly_absorb := plainly_absorb
-  later_plainly_1 := sorry
-  later_plainly_2 := sorry
+  later_plainly := ⟨Std.refl, Std.refl⟩
 
 instance : BiPlainlyExist (UPred M) where
   plainly_exist_1 := plainly_exist_1
@@ -484,7 +522,7 @@ instance : BiBUpdatePlainly (UPred M) where
 -- TODO: bupd_ownM_updateP (needs basic updates to be defined)
 -- TODO: derived rules bupd_soundness, bupd_ownM_update
 
-theorem ownM_valid (m : M) : ownM m ⊢ cmraValid m := fun _ _ h hp => hp.validN h
+theorem ownM_valid (m : M) : ownM m ⊢ validInternal m := fun _ _ h hp => hp.validN h
 
 theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
   constructor
@@ -502,7 +540,7 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
       _ ≡{n}≡ (m1 • m2) • (w2 • w1) := CMRA.assoc.dist
       _ ≡{n}≡ (m1 • m2) • (w1 • w2) := CMRA.comm.op_r.dist
 
-theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : cmraValid m ⊢ False :=
+theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : validInternal m ⊢ False :=
   fun n _ _ => H n
 
 -- TODO Port remaining instances in base_logic/bi.v after

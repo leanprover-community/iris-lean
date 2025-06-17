@@ -44,8 +44,7 @@ class BiPlainly (PROP : Type _) [Iris.BI PROP] extends Plainly PROP where
   plainly_impl_plainly {P Q : PROP} : iprop((■ P → ■ Q) ⊢ ■ (■ P → Q))
   emp_intro {P : PROP} : iprop(P ⊢ ■ emp)
   plainly_absorb {P Q : PROP} : iprop(■ P ∗ Q ⊢ ■ P)
-  later_plainly_1 (P : PROP) : iprop(▷ ■ P ⊢ ■ ▷ P)
-  later_plainly_2 (P : PROP) : iprop(■ ▷ P ⊢ ▷ ■ P)
+  later_plainly {P : PROP} : iprop(▷ ■ P ⊣⊢ ■ ▷ P)
 
 class BiPersistentlyImplPlainly (PROP : Type _) [Iris.BI PROP] [BiPlainly PROP] where
   pers_impl_plainly (P Q : PROP) : iprop((■ P → <pers> Q) ⊢ <pers> (■ P → Q))
