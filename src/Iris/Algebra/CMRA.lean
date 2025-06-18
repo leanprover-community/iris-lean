@@ -169,6 +169,14 @@ theorem _root_.Iris.OFE.Equiv.opM {x₁ x₂ : α} {y₁ y₂ : Option α}
     (H1 : x₁ ≡ x₂) (H2 : y₁ ≡ y₂) : x₁ •? y₁ ≡ x₂ •? y₂ :=
   equiv_dist.2 fun _ => H1.dist.opM H2.dist
 
+theorem opM_left_eqv {x y : α} (z : Option α) (e : x ≡ y) : x •? z ≡ y •? z := e.opM Equiv.rfl
+theorem opM_right_eqv (x : α) {y z : Option α} (e : y ≡ z) : x •? y ≡ x •? z := Equiv.rfl.opM e
+
+theorem opM_left_dist {n} {x y : α} (z : Option α) (e : x ≡{n}≡ y) : x •? z ≡{n}≡ y •? z :=
+  e.opM Dist.rfl
+theorem opM_right_dist {n} (x : α) {y z : Option α} (e : y ≡{n}≡ z) : x •? y ≡{n}≡ x •? z :=
+  Dist.rfl.opM e
+
 theorem op_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz ≡ x • (y •? mz) := by
   unfold op?; cases mz <;> simp [assoc, Equiv.symm]
 
@@ -484,6 +492,9 @@ theorem pcore_eq_core (x : α) : pcore x = some (core x) := by
 theorem op_core (x : α) : x • core x ≡ x := pcore_op_right (pcore_eq_core x)
 theorem core_op (x : α) : core x • x ≡ x := comm.trans (op_core x)
 
+theorem op_core_dist {n}(x: α) : x • core x ≡{n}≡ x := (op_core x).dist
+theorem core_op_dist {n}(x: α) : core x • x ≡{n}≡ x := (core_op x).dist
+
 theorem core_op_core {x : α} : core x • core x ≡ core x :=
   pcore_op_self (pcore_eq_core x)
 theorem validN_core {n} {x : α} (v : ✓{n} x) : ✓{n} core x := pcore_validN (pcore_eq_core x) v
@@ -684,7 +695,11 @@ theorem incN_unit {n} {x : α} : unit ≼{n} x := ⟨x, unit_left_id.symm.dist�
 
 theorem inc_unit {x : α} : unit ≼ x := ⟨x, unit_left_id.symm⟩
 
+theorem unit_left_id_dist {n} (x : α) : unit • x ≡{n}≡ x := unit_left_id.dist
+
 theorem unit_right_id {x : α} : x • unit ≡ x := comm.trans unit_left_id
+
+theorem unit_right_id_dist (x : α) : x • unit ≡{n}≡ x := comm.dist.trans (unit_left_id_dist x)
 
 instance unit_CoreId : CoreId (unit : α) where
   core_id := pcore_unit
@@ -978,25 +993,25 @@ end DiscreteFunURF
 
 section option
 
-variable [CMRA A]
+variable [CMRA α]
 
-def optionCore (x : Option A) : Option A := x.bind CMRA.pcore
+def optionCore (x : Option α) : Option α := x.bind CMRA.pcore
 
-def optionOp (x y : Option A) : Option A :=
+def optionOp (x y : Option α) : Option α :=
   match x, y with
   | some x', some y' => some (CMRA.op x' y')
   | none, _ => y
   | _, none => x
 
-def optionValidN (n : Nat) : Option A → Prop
+def optionValidN (n : Nat) : Option α → Prop
   | some x => ✓{n} x
   | none => True
 
-def optionValid : Option A → Prop
+def optionValid : Option α → Prop
   | some x => ✓ x
   | none => True
 
-instance cmraOption : CMRA (Option A) where
+instance cmraOption : CMRA (Option α) where
   pcore x := some (optionCore x)
   op := optionOp
   ValidN := optionValidN
@@ -1057,27 +1072,42 @@ instance cmraOption : CMRA (Option A) where
     · rcases CMRA.extend Hx Hx' with ⟨mc1, mc2, _, _, _⟩
       exists some mc1, some mc2
 
-instance ucmraOption : UCMRA (Option A) where
+instance ucmraOption : UCMRA (Option α) where
   unit := none
   unit_valid := by simp [CMRA.Valid, optionValid]
   unit_left_id := by rintro ⟨⟩ <;> rfl
   pcore_unit := by rfl
 
-theorem CMRA.op_some_opM_assoc (x y : A) (mz : Option A) : (x • y) •? mz ≡ x •? (some y • mz) :=
+theorem CMRA.equiv_of_some_equiv_some {x y : α} (h: some x ≡ some y): x ≡ y := h
+theorem CMRA.dist_of_some_dist_some {n} {x y : α} (h: some x ≡{n}≡ some y): x ≡{n}≡ y := h
+
+theorem CMRA.op_some_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz ≡ x •? (some y • mz) :=
   match mz with
   | none   => Equiv.rfl
   | some _ => Equiv.symm assoc
 
-theorem CMRA.op_some_opM_assoc_dist (x y : A) (mz : Option A) : (x • y) •? mz ≡{n}≡ x •? (some y • mz) :=
+theorem CMRA.op_some_opM_assoc_dist (x y : α) (mz : Option α) : (x • y) •? mz ≡{n}≡ x •? (some y • mz) :=
   match mz with
   | none   => Dist.rfl
   | some _ => Dist.symm assoc.dist
 
-theorem CMRA.some_inc_some_of_dist_opM {x y : A} {mz : Option A} (h: x ≡{n}≡ y •? mz)
+theorem CMRA.some_inc_some_of_dist_opM {x y : α} {mz : Option α} (h: x ≡{n}≡ y •? mz)
     : some y ≼{n} some x :=
   match mz with
   | none   => ⟨none, h⟩
   | some z => ⟨some z, h⟩
+
+theorem CMRA.inc_of_some_inc_some [CMRA.IsTotal α] {x y : α} (h: some y ≼ some x): y ≼ x :=
+  let ⟨mz, hmz⟩ := h
+  match mz with
+  | none => ⟨core y, (CMRA.equiv_of_some_equiv_some hmz).trans (op_core y).symm⟩
+  | some z => ⟨z, hmz⟩
+
+theorem CMRA.incN_of_some_incN_some [CMRA.IsTotal α] {x y : α} (h: some y ≼{n} some x): y ≼{n} x :=
+  let ⟨mz, hmz⟩ := h
+  match mz with
+  | none => ⟨core y, (CMRA.dist_of_some_dist_some hmz).trans (op_core_dist y).symm⟩
+  | some z => ⟨z, hmz⟩
 
 end option
 

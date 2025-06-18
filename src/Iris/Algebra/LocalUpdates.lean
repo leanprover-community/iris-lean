@@ -16,6 +16,17 @@ section CMRA
   -- Proper ((≡) ==> (≡) ==> iff) (@local_update SI A).
   -- Proof. unfold local_update. by repeat intro; setoid_subst. Qed.
 
+  theorem local_update_left_eqv {x y: α × α} (z: α × α) (h: x ≡ y) : x ~l~> z → y ~l~> z :=
+    fun u => fun n mw v e =>
+      have aaa: x.fst ≡ y.fst := sorry
+      have bbb : x.snd ≡ z.snd := sorry
+      have ccc: x.fst ≡{n}≡ y.fst := sorry
+      have ddd: x.snd ≡{n}≡ y.snd := sorry
+      have eee: x.fst ≡{n}≡ x.snd •? mw := (ccc.trans e).trans (CMRA.opM_left_dist mw ddd.symm)
+      u n mw ((OFE.Dist.validN (ccc.symm)).mp v) eee
+
+  theorem local_update_right_eqv (x: α × α) {y z: α × α} (h: y ≡ z): x ~l~> y → x ~l~> z := sorry
+
   -- Global Instance local_update_preorder : PreOrder (@local_update SI A).
   -- Proof. split; unfold local_update; red; naive_solver. Qed.
 
@@ -100,45 +111,55 @@ section CMRA
       have: (x, y) ~l~> (x', y') := h (CMRA.valid0_of_validN vx) v0y this
       this n mz vx e
 
-  theorem local_update_valid [CMRA.Discrete α] (x y x' y' : α) :
-    (✓ x → ✓ y → some y ≼ some x → (x, y) ~l~> (x', y')) →
-    (x, y) ~l~> (x', y') :=
-  sorry
+  theorem local_update_valid [CMRA.Discrete α] (x y x' y' : α)
+      (h: ✓ x → ✓ y → some y ≼ some x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
+    have h0 vx0 vy0 mz: (x, y) ~l~> (x', y') :=
+      h (CMRA.discrete_valid vx0) (CMRA.discrete_valid vy0) ((CMRA.inc_iff_incN 0).mpr mz)
+    local_update_valid0 x y x' y' h0
 
-  theorem local_update_total_valid0 [CMRA.IsTotal α] (x y x' y' : α) :
-    (✓{0} x → ✓{0} y → y ≼{0} x → (x, y) ~l~> (x', y')) →
-    (x, y) ~l~> (x', y') :=
-  sorry
+  theorem local_update_total_valid0 [CMRA.IsTotal α] (x y x' y' : α)
+      (h: ✓{0} x → ✓{0} y → y ≼{0} x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
+    have h0 (vx0: ✓{0} x) (vy0: ✓{0} y) (mz : some y ≼{0} some x) : (x, y) ~l~> (x', y') :=
+      h vx0 vy0 (CMRA.incN_of_some_incN_some mz)
+    local_update_valid0 x y x' y' h0
 
-  theorem local_update_total_valid [CMRA.IsTotal α] [CMRA.Discrete α] (x y x' y' : α) :
-    (✓ x → ✓ y → y ≼ x → (x, y) ~l~> (x', y')) →
-    (x, y) ~l~> (x', y') :=
-  sorry
+  theorem local_update_total_valid [CMRA.IsTotal α] [CMRA.Discrete α] (x y x' y' : α)
+      (h: ✓ x → ✓ y → y ≼ x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
+    have hs vx vy inc : (x, y) ~l~> (x', y') := h vx vy (CMRA.inc_of_some_inc_some inc)
+    local_update_valid x y x' y' hs
 end CMRA
-
-section UCMRA
-  variable [uc: UCMRA α]
-
-  -- the rest of the section
-end UCMRA
 
 section updates_unital
   variable [UCMRA α]
   -- variable {x y : α}
 
   theorem local_update_unital (x y x' y' : α) :
-    (x, y) ~l~> (x', y') ↔ ∀ n z,
-      ✓{n} x → x ≡{n}≡ y • z → (✓{n} x' ∧ x' ≡{n}≡ y' • z) :=
-  sorry
+      (x, y) ~l~> (x', y') ↔ ∀ n z, ✓{n} x → x ≡{n}≡ y • z → (✓{n} x' ∧ x' ≡{n}≡ y' • z) where
+    mp  h n z       := h n (some z)
+    mpr h n mz vx e :=
+      match mz with
+      | none =>
+        have := h n UCMRA.unit vx (e.trans (CMRA.unit_right_id_dist y).symm)
+        ⟨this.left, this.right.trans (CMRA.unit_right_id_dist y')⟩
+      | some z => h n z vx e
 
   theorem local_update_unital_discrete [CMRA.Discrete α] (x y x' y' : α) :
-    (x, y) ~l~> (x', y') ↔ ∀ z,
-      ✓ x → x ≡ y • z → (✓ x' ∧ x' ≡ y' • z) :=
-  sorry
+      (x, y) ~l~> (x', y') ↔ ∀ z, ✓ x → x ≡ y • z → (✓ x' ∧ x' ≡ y' • z) where
+    mp  h z vx e :=
+      have ⟨vx', e'⟩ := h 0 (some z) (CMRA.Valid.validN vx) e.dist
+      ⟨CMRA.discrete_valid vx', OFE.discrete_0 e'⟩
+    mpr h :=
+      have h' n z vnx e : (✓{n} x' ∧ x' ≡{n}≡ y' • z) :=
+        have ⟨vx', e'⟩ := h z ((CMRA.valid_iff_validN' n).mpr vnx) (OFE.discrete_n e)
+        ⟨CMRA.Valid.validN vx', OFE.Equiv.dist e'⟩
+      (local_update_unital x y x' y').mpr h'
 
   theorem cancel_local_update_unit (x y : α) [CMRA.Cancelable x] :
-    (x • y, x) ~l~> (y, unit) :=
-  sorry
+      (x • y, x) ~l~> (y, unit) :=
+    have : (x • y, x • unit) ~l~> (y, unit) := cancel_local_update x y unit
+    have e : (x • y, x • unit) ≡ (x • y, x) := sorry
+    local_update_left_eqv _ e this
+
 end updates_unital
 
 -- section updates_unit

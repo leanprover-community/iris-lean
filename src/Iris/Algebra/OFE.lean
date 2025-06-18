@@ -229,6 +229,14 @@ instance [OFE α] : OFE (Option α) where
   equiv_dist {x y} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply equiv_dist
   dist_lt {_ x y _} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply dist_lt
 
+instance [OFE α][OFE.Discrete α]: OFE.Discrete (Option α) where
+  discrete_0 {mx my} e :=
+    match mx, my with
+    | none,   none   => e
+    | none,   some _ => e
+    | some _, none   => e
+    | some x, some y => show x ≡ y from discrete_0 e
+
 @[simp] theorem some_eqv_some [OFE α] {x y : α} : (some x ≡ some y) ↔ x ≡ y := .rfl
 @[simp] theorem not_some_eqv_none [OFE α] {x : α} : ¬some x ≡ none := id
 @[simp] theorem not_none_eqv_some [OFE α] {x : α} : ¬none ≡ some x := id
