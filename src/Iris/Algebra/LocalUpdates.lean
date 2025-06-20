@@ -16,6 +16,8 @@ section CMRA
   -- Proper ((≡) ==> (≡) ==> iff) (@local_update SI A).
   -- Proof. unfold local_update. by repeat intro; setoid_subst. Qed.
 
+  theorem local_update_id (x: α × α): x ~l~> x := fun _ _ vx e => ⟨vx, e⟩
+
   theorem local_update_left_eqv {x y: α × α} (z: α × α) (h: x ≡ y) : x ~l~> z → y ~l~> z :=
     fun u => fun n mw v e =>
       have e1: x.fst ≡{n}≡ y.fst := (OFE.equiv_fst h).dist
@@ -170,49 +172,53 @@ section updates_unital
 
 end updates_unital
 
--- section updates_unit
+section updates_unit
 
---   theorem unit_local_update (x y x' y' : Unit) : (x, y) ~l~> (x', y') :=
---   sorry
--- end updates_unit
+  theorem unit_local_update (x y x' y' : Unit) : (x, y) ~l~> (x', y') :=
+    match x, y, x', y' with
+    | .unit, .unit, .unit, .unit => local_update_id ((), ())
 
--- section updates_discrete_fun
+end updates_unit
 
---   theorem discrete_fun_local_update {α : Type} {B : α → UCMRA}
---     (f g f' g' : ∀ x, B x) :
---     (∀ x : α, (f x, g x) ~l~> (f' x, g' x)) →
---     (f, g) ~l~> (f', g') :=
---   sorry
--- end updates_discrete_fun
+section updates_discrete_fun
 
--- section updates_product
+  theorem discrete_fun_local_update {α : Type} (β : α → Type _) [∀ x, UCMRA (β x)]
+    (f g f' g' : ∀ x, β x) :
+    (∀ x : α, (f x, g x) ~l~> (f' x, g' x)) →
+    (f, g) ~l~> (f', g') :=
+  sorry
 
---   theorem prod_local_update {α β : Type} [CMRA α] [CMRA β]
---     (x y x' y' : α × β) :
---     (x.1, y.1) ~l~> (x'.1, y'.1) →
---     (x.2, y.2) ~l~> (x'.2, y'.2) →
---     (x, y) ~l~> (x', y') :=
---   sorry
+end updates_discrete_fun
 
---   theorem prod_local_update' {α β : Type} [CMRA α] [CMRA β]
---     (x1 y1 x1' y1' : α) (x2 y2 x2' y2' : β) :
---     (x1, y1) ~l~> (x1', y1') →
---     (x2, y2) ~l~> (x2', y2') →
---     ((x1, x2), (y1, y2)) ~l~> ((x1', x2'), (y1', y2')) :=
---   sorry
+section updates_product
+  variable [CMRA α] [CMRA β]
 
---   theorem prod_local_update_1 {α β : Type} [CMRA α] [CMRA β]
---     (x1 y1 x1' y1' : α) (x2 y2 : β) :
---     (x1, y1) ~l~> (x1', y1') →
---     ((x1, x2), (y1, y2)) ~l~> ((x1', x2), (y1', y2)) :=
---   sorry
+  theorem prod_local_update
+    (x y x' y' : α × β) :
+    (x.1, y.1) ~l~> (x'.1, y'.1) →
+    (x.2, y.2) ~l~> (x'.2, y'.2) →
+    (x, y) ~l~> (x', y') :=
+  sorry
 
---   theorem prod_local_update_2 {α β : Type} [CMRA α] [CMRA β]
---     (x1 y1 : α) (x2 y2 x2' y2' : β) :
---     (x2, y2) ~l~> (x2', y2') →
---     ((x1, x2), (y1, y2)) ~l~> ((x1, x2'), (y1, y2')) :=
---   sorry
--- end updates_product
+  theorem prod_local_update'
+    (x1 y1 x1' y1' : α) (x2 y2 x2' y2' : β) :
+    (x1, y1) ~l~> (x1', y1') →
+    (x2, y2) ~l~> (x2', y2') →
+    ((x1, x2), (y1, y2)) ~l~> ((x1', x2'), (y1', y2')) :=
+  sorry
+
+  theorem prod_local_update_1
+    (x1 y1 x1' y1' : α) (x2 y2 : β) :
+    (x1, y1) ~l~> (x1', y1') →
+    ((x1, x2), (y1, y2)) ~l~> ((x1', x2), (y1', y2)) :=
+  sorry
+
+  theorem prod_local_update_2
+    (x1 y1 : α) (x2 y2 x2' y2' : β) :
+    (x2, y2) ~l~> (x2', y2') →
+    ((x1, x2), (y1, y2)) ~l~> ((x1, x2'), (y1, y2')) :=
+  sorry
+end updates_product
 
 section updates_option
   theorem option_local_update {α : Type} [CMRA α]

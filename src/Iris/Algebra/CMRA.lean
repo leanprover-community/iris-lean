@@ -1111,6 +1111,83 @@ theorem CMRA.incN_of_some_incN_some [CMRA.IsTotal α] {x y : α} (h: some y ≼{
 
 end option
 
+section unit
+
+instance cmraUnit : CMRA Unit where
+  pcore _ := some ()
+  op _ _ := ()
+  ValidN _ _ := True
+  Valid _ := True
+  op_ne.ne _ _ _ H := H
+  pcore_ne {_} _ _ z _ _ := match z with | .unit => ⟨(), rfl, OFE.Dist.rfl⟩
+  validN_ne {_} _ _ _ := id
+  valid_iff_validN := ⟨fun _ _ => .intro, fun _ => .intro⟩
+  validN_succ := id
+  validN_op_left := id
+  assoc := OFE.Equiv.rfl
+  comm := OFE.Equiv.rfl
+  pcore_op_left {x _} _ := match x with | .unit => OFE.Equiv.rfl
+  pcore_idem {_ cx} _ := match cx with | .unit => OFE.Equiv.rfl
+  pcore_op_mono _ _ := ⟨.unit, OFE.Equiv.rfl⟩
+  extend {_} x y z _ _ :=
+    match x, y, z with
+    | .unit, .unit, .unit => ⟨(), (), OFE.Equiv.rfl, OFE.Dist.rfl, OFE.Dist.rfl⟩
+
+end unit
+
+section prod
+
+variable [CMRA α] [CMRA β]
+
+instance cmraProd : CMRA (α × β) where
+  pcore x := do
+    let a <- CMRA.pcore x.fst
+    let b <- CMRA.pcore x.snd
+    return (a,b)
+  op x y := (x.fst • y.fst, x.snd • y.snd)
+  ValidN n x := ✓{n} x.fst ∧ ✓{n} x.snd
+  Valid x := ✓ x.fst ∧ ✓ x.snd
+  op_ne {x} :=
+    {ne n y z h := dist_prod_ext (Dist.op_r $ dist_fst h) (Dist.op_r $ dist_snd h)}
+  pcore_ne {n x y cx} h ph := by
+    simp
+    have ⟨a, ha, ho⟩ := Option.bind_eq_some.mp ph
+    have ⟨b, hb, hh⟩ := Option.bind_eq_some.mp ho
+    have := Option.some.inj hh
+    match hay: CMRA.pcore y.fst with
+    | none =>
+      simp
+      sorry
+    | some ya =>
+      match hby: CMRA.pcore y.snd with
+      | none => sorry
+      | some yb =>
+        refine ⟨ya, yb, ?_⟩
+        simp
+        sorry
+  validN_ne {n} x y H := fun ⟨vx1, vx2⟩ =>
+    ⟨ (Dist.validN $ dist_fst H).mp vx1, (Dist.validN $ dist_snd H).mp vx2 ⟩
+  valid_iff_validN {x} :=
+    ⟨ fun ⟨va, vb⟩ n => ⟨CMRA.Valid.validN va, CMRA.Valid.validN vb⟩,
+      fun h =>
+        ⟨ CMRA.valid_iff_validN.mpr fun n => (h n).left,
+          CMRA.valid_iff_validN.mpr fun n => (h n).right ⟩ ⟩
+  validN_succ {x n} := fun ⟨va, vb⟩ => ⟨CMRA.validN_succ va, CMRA.validN_succ vb⟩
+  validN_op_left {n x y} := by
+    simp
+    exact fun va vb => ⟨CMRA.validN_op_left va, CMRA.validN_op_left vb⟩
+  assoc {x y z} := ⟨CMRA.assoc, CMRA.assoc⟩
+  comm {x y} := ⟨CMRA.comm, CMRA.comm⟩
+  pcore_op_left {x cx} h :=
+    let ⟨a, ha, ho⟩ := Option.bind_eq_some.mp h
+    let ⟨b, hb, hh⟩ := Option.bind_eq_some.mp ho
+    (Option.some.inj hh) ▸ OFE.equiv_prod_ext (CMRA.pcore_op_left ha) (CMRA.pcore_op_left hb)
+  pcore_idem {x cx} h := sorry
+  pcore_op_mono := sorry
+  extend {n x y₁ y₂} := sorry
+
+end prod
+
 section optionOF
 
 variable (F : COFE.OFunctorPre)
