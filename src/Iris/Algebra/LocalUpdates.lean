@@ -18,14 +18,22 @@ section CMRA
 
   theorem local_update_left_eqv {x y: α × α} (z: α × α) (h: x ≡ y) : x ~l~> z → y ~l~> z :=
     fun u => fun n mw v e =>
-      have aaa: x.fst ≡ y.fst := sorry
-      have bbb : x.snd ≡ z.snd := sorry
-      have ccc: x.fst ≡{n}≡ y.fst := sorry
-      have ddd: x.snd ≡{n}≡ y.snd := sorry
-      have eee: x.fst ≡{n}≡ x.snd •? mw := (ccc.trans e).trans (CMRA.opM_left_dist mw ddd.symm)
-      u n mw ((OFE.Dist.validN (ccc.symm)).mp v) eee
+      have e1: x.fst ≡{n}≡ y.fst := (OFE.equiv_fst h).dist
+      have := calc
+        x.fst       ≡{n}≡ y.fst       := e1
+        y.fst       ≡{n}≡ y.snd •? mw := e
+        y.snd •? mw ≡{n}≡ x.snd •? mw := CMRA.opM_left_dist mw (OFE.equiv_snd h).dist.symm
+      u n mw ((OFE.Dist.validN e1.symm).mp v) this
 
-  theorem local_update_right_eqv (x: α × α) {y z: α × α} (h: y ≡ z): x ~l~> y → x ~l~> z := sorry
+  theorem local_update_right_eqv (x: α × α) {y z: α × α} (h: y ≡ z): x ~l~> y → x ~l~> z :=
+    fun u => fun n mw v e =>
+      let ⟨vy, e⟩ := u n mw v e
+      have e1: y.fst ≡{n}≡ z.fst := OFE.dist_fst (OFE.Equiv.dist h)
+      have := calc
+        z.fst ≡{n}≡ y.fst := e1.symm
+        _ ≡{n}≡ y.snd •? mw := e
+        _ ≡{n}≡ z.snd •? mw := CMRA.opM_left_dist mw $ OFE.dist_snd (OFE.Equiv.dist h)
+      ⟨(OFE.Dist.validN e1).mp vy, this⟩
 
   -- Global Instance local_update_preorder : PreOrder (@local_update SI A).
   -- Proof. split; unfold local_update; red; naive_solver. Qed.
@@ -155,10 +163,10 @@ section updates_unital
       (local_update_unital x y x' y').mpr h'
 
   theorem cancel_local_update_unit (x y : α) [CMRA.Cancelable x] :
-      (x • y, x) ~l~> (y, unit) :=
-    have : (x • y, x • unit) ~l~> (y, unit) := cancel_local_update x y unit
-    have e : (x • y, x • unit) ≡ (x • y, x) := sorry
-    local_update_left_eqv _ e this
+      (x • y, x) ~l~> (y, UCMRA.unit) :=
+    have e : (x • y, x • UCMRA.unit) ≡ (x • y, x) :=
+      OFE.equiv_prod_ext OFE.Equiv.rfl (CMRA.unit_right_id)
+    local_update_left_eqv _ e (cancel_local_update x y UCMRA.unit)
 
 end updates_unital
 
@@ -208,31 +216,25 @@ end updates_unital
 
 section updates_option
   theorem option_local_update {α : Type} [CMRA α]
-    (x y x' y' : α) :
-    (x, y) ~l~> (x', y') →
-    (some x, some y) ~l~> (some x', some y') :=
-  sorry
+      (x y x' y' : α) (h: (x, y) ~l~> (x', y')) : (some x, some y) ~l~> (some x', some y') := by
+    sorry
 
   theorem option_local_update_none {α : Type} [UCMRA α]
-    (x x' y' : α) :
-    (x, UCMRA.unit) ~l~> (x', y') →
-    (some x, none) ~l~> (some x', some y') :=
-  sorry
+      (x x' y' : α) (h: (x, UCMRA.unit) ~l~> (x', y')): (some x, none) ~l~> (some x', some y') :=
+    sorry
 
-  theorem alloc_option_local_update {α : Type} [CMRA α] (x : α) (y : α) :
-    ✓ x →
-    (none, y) ~l~> (some x, some x) :=
-  sorry
+  theorem alloc_option_local_update {α : Type} [CMRA α] (x : α) (y : α)
+      (vx: ✓ x): (none, y) ~l~> (some x, some x) :=
+    sorry
 
   theorem delete_option_local_update {α : Type} [CMRA α]
-    (x : Option α) (y : α) [CMRA.Exclusive y] :
-    (x, some y) ~l~> (none, none) :=
-  sorry
+      (x : Option α) (y : α) [CMRA.Exclusive y] :
+      (x, some y) ~l~> (none, none) :=
+    sorry
 
   theorem delete_option_local_update_cancelable {α : Type} [CMRA α]
-    (mx : Option α) [CMRA.Cancelable mx] :
-    (mx, mx) ~l~> (none, none) :=
-  sorry
+      (mx : Option α) [CMRA.Cancelable mx] : (mx, mx) ~l~> (none, none) :=
+    sorry
 end updates_option
 
 end LocalUpdate
