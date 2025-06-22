@@ -14,9 +14,9 @@ elab "iexfalso" : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, e, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
+  let some { u, prop, bi, e, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
 
   let m : Q($e ⊢ False) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { prop, bi, e, hyps, goal := q(iprop(False)) }
+    IrisGoal.toExpr { u, prop, bi, e, hyps, goal := q(iprop(False)) }
   mvar.assign q(exfalso (Q := $goal) $m)
   replaceMainGoal [m.mvarId!]

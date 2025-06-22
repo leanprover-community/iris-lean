@@ -15,7 +15,7 @@ theorem exists_intro' [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExis
 elab "iexists" x:term : tactic => do
   -- resolve existential quantifier with the given argument
 
-  let (mvar, { prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
+  let (mvar, { prop, bi, e, hyps, goal, .. }) ← istart (← getMainGoal)
   mvar.withContext do
 
   let v ← mkFreshLevelMVar
@@ -24,7 +24,7 @@ elab "iexists" x:term : tactic => do
   let _ ← synthInstanceQ q(FromExists $goal $Φ)
   let x ← elabTermEnsuringTypeQ (u := .succ .zero) x α
   let m : Quoted q($e ⊢ $Φ $x) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { prop, bi, hyps, goal := Expr.headBeta q($Φ $x) }
+    IrisGoal.toExpr { prop, bi, hyps, goal := Expr.headBeta q($Φ $x), .. }
 
   mvar.assign q(exists_intro' (Q := $goal) $x $m)
   replaceMainGoal [m.mvarId!]

@@ -72,7 +72,7 @@ elab "iintuitionistic" colGt hyp:ident : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
+  let some { prop, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
   let uniq ← hyps.findWithInfo hyp
   match ← hyps.replace bi goal uniq fun name p ty => do
@@ -89,10 +89,10 @@ elab "iintuitionistic" colGt hyp:ident : tactic => do
   with
   | .none => panic! "missing variable"
   | .unchanged _ hyps' =>
-    mvar.setType <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
+    mvar.setType <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. }
   | .main _e e' hyps' pf =>
     let m : Q($e' ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-      IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
+      IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. }
     mvar.assign q(Replaces.apply $pf $m)
     replaceMainGoal [m.mvarId!]
 
@@ -104,7 +104,7 @@ elab "ispatial" colGt hyp:ident : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
+  let some { prop, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
   let uniq ← hyps.findWithInfo hyp
   match ← hyps.replace bi goal uniq fun name p ty => do
@@ -121,9 +121,9 @@ elab "ispatial" colGt hyp:ident : tactic => do
   with
   | .none => panic! "missing variable"
   | .unchanged _ hyps' =>
-    mvar.setType <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
+    mvar.setType <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. }
   | .main _e e' hyps' pf =>
     let m : Q($e' ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-      IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
+      IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. }
     mvar.assign q(Replaces.apply $pf $m)
     replaceMainGoal [m.mvarId!]

@@ -56,13 +56,13 @@ elab "ipure" colGt hyp:ident : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
   let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, e, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
+  let some { prop, bi, e, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
   let uniq ← hyps.findWithInfo hyp
   let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true uniq
 
   let (m, pf) ← ipureCore bi e e' out goal (← `(binderIdent| $hyp:ident)) pf fun _ _ => do
-    let m ← mkFreshExprSyntheticOpaqueMVar <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal }
+    let m ← mkFreshExprSyntheticOpaqueMVar <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. }
     pure (m, m)
 
   mvar.assign pf

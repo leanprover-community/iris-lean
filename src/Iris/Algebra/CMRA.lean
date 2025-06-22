@@ -60,19 +60,19 @@ infix:60 " •? " => op?
 prefix:50 "✓ " => Valid
 notation:50 "✓{" n "} " x:51 => ValidN n x
 
-class CoreId (x : α) : Prop where
+class CoreId (x : α) where
   core_id : pcore x ≡ some x
 export CoreId (core_id)
 
-class Exclusive (x : α) : Prop where
+class Exclusive (x : α) where
   exclusive0_l y : ¬✓{0} x • y
 export Exclusive (exclusive0_l)
 
-class Cancelable (x : α) : Prop where
+class Cancelable (x : α) where
   cancelableN : ✓{n} x • y → x • y ≡{n}≡ x • z → y ≡{n}≡ z
 export Cancelable (cancelableN)
 
-class IdFree (x : α) : Prop where
+class IdFree (x : α) where
   id_free0_r y : ✓{0} x → ¬x • y ≡{0}≡ x
 export IdFree (id_free0_r)
 
@@ -680,8 +680,8 @@ instance empty_cancelable : Cancelable (unit : α) where
     _ ≡{n}≡ unit • t := e
     _ ≡{n}≡ t := unit_left_id.dist
 
-theorem dst_incN {n} {x y : α} (H : y ≡{n}≡ x) : x ≼{n} y :=
-  ⟨unit, H.trans (equiv_dist.mp unit_right_id n).symm⟩
+theorem _root_.Iris.OFE.Dist.to_incN {n} {x y : α} (H : x ≡{n}≡ y) : x ≼{n} y :=
+  ⟨unit, ((equiv_dist.mp unit_right_id n).trans H).symm⟩
 
 end ucmra
 
