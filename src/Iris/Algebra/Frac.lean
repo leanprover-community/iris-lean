@@ -24,15 +24,53 @@ class TotallyOrdered (α : Type _) extends LE α, LT α where
   le_antisymm : ∀ {a b : α}, a ≤ b → ¬ b ≤ a
   le_trans : ∀ {a b c : α}, a ≤ b → b ≤ c → a ≤ c
   le_total : ∀ {a b : α}, a ≤ b ∨ b ≤ a
-  lt_def_le : ∀ {a b : α}, a < b ↔ a ≤ b ∧ a ≠ b
 
 class Fractional (α : Type _) extends CommMonoid α, TotallyOrdered α where
+  lt_def : ∀ a, a < b ↔ ∃ c : α, c > 0 ∧ a + c = b
+  le_def : ∀ a b : α, a ≤ b ↔ a < b ∨ a = b
+  add_order_compat : ∀ {a b c : α}, a ≤ b → a + c ≤ b + c
+  positive  {a : α} : a ≥ 0
+  left_cancel : ∀ {a b c : α}, c + a = c + b → a = b
 
   add_le_mono  : ∀ {a b c : α}, a + b ≤ c → a ≤ c
   lt_sum : ∀ {a b : α}, a < b ↔ ∃ r, a + r = b
-  left_cancel : ∀ {a b c : α}, c + a = c + b → a = b
-  positive : ∀ {a : α}, ¬∃ (b : α), a + b ≤ a
 
+theorem right_add_order_compat [iFrac : Fractional α] :
+  ∀ a b c : α, a ≤ b → c + a ≤ c + b := by
+  intro a b c h
+  conv => lhs; rw[iFrac.comm]
+  conv => rhs; rw[iFrac.comm]
+  apply iFrac.add_order_compat h
+
+
+theorem right_cancel [iFrac : Fractional α] : ∀ a b c : α, a + c = b + c → a = b := by
+  intro a b c h
+  conv at h => lhs; rw [iFrac.comm]
+  conv at h => rhs; rw [iFrac.comm]
+  apply iFrac.left_cancel h
+
+theorem positive [iFrac : Fractional α] : ∀ {a : α}, ¬∃ (b : α), a + b < a := by
+  intro a ⟨b,hb⟩
+  rw [iFrac.lt_def] at hb
+  have ⟨c, hc_pos, hc_sum⟩ := hb
+  rw [iFrac.assoc] at hc_sum
+  conv at hc_sum =>
+    rhs
+    rw [←iFrac.id_law a]
+  replace hc_sum := iFrac.left_cancel hc_sum
+
+  sorry
+
+theorem add_le_mono [iFrac : Fractional α] : ∀ {a b c : α}, a + b ≤ c → a ≤ c := by
+  intro a b c h
+  rw[iFrac.le_def, iFrac.lt_def] at *
+  obtain (⟨d,hd⟩ | ⟨d,hd⟩) := h
+  · left
+    exists (b + d)
+    sorry
+  · right
+    
+    sorry
 
 
 namespace Iris
