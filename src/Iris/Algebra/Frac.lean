@@ -21,12 +21,12 @@ class CommMonoid (α : Type _) extends Add α, Zero α, One α where
 
 class TotallyOrdered (α : Type _) extends LE α, LT α where
   le_refl : ∀ {a : α}, a ≤ a
-  le_antisymm : ∀ {a b : α}, a ≤ b → ¬ b ≤ a
+  le_antisymm : ∀ {a b : α}, a ≤ b ∧ b ≤ a → a = b
   le_trans : ∀ {a b c : α}, a ≤ b → b ≤ c → a ≤ c
   le_total : ∀ {a b : α}, a ≤ b ∨ b ≤ a
 
 class Fractional (α : Type _) extends CommMonoid α, TotallyOrdered α where
-  lt_def : ∀ a, a < b ↔ ∃ c : α, c > 0 ∧ a + c = b
+  lt_def : ∀ a b, a < b ↔ ∃ c : α, c > 0 ∧ a + c = b
   le_def : ∀ a b : α, a ≤ b ↔ a < b ∨ a = b
   add_order_compat : ∀ {a b c : α}, a ≤ b → a + c ≤ b + c
   positive  {a : α} : a ≥ 0
@@ -34,6 +34,38 @@ class Fractional (α : Type _) extends CommMonoid α, TotallyOrdered α where
 
   add_le_mono  : ∀ {a b c : α}, a + b ≤ c → a ≤ c
   lt_sum : ∀ {a b : α}, a < b ↔ ∃ r, a + r = b
+
+theorem le_alt_def [iFrac : Fractional α] :
+  ∀ {a b : α}, a ≤ b ↔ ∃ c : α, a + c = b := by
+  intro a b
+  constructor
+  · intro h
+    rw [iFrac.le_def] at h
+    obtain (left | right) := h
+    rw [iFrac.lt_def] at left
+    obtain ⟨c, hc⟩ := left
+    exists c
+    exact hc.right
+    exists 0
+    rw [iFrac.id_law]
+    exact right
+  · intro h
+    obtain ⟨c, hc⟩ := h
+    rw [iFrac.le_def]
+    by_cases hc_zero : c > 0
+    left
+    rw [iFrac.lt_def]
+    exists c
+    right
+    have : c = 0 := by
+      have h_int : 0 < c ∨ 0 = c:= (iFrac.le_def 0 c).mp iFrac.positive
+      simp at hc_zero
+      obtain (heq | hlt) := h_int
+      exfalso
+      exact hc_zero heq
+      exact hlt.symm
+    rw [this, iFrac.id_law] at hc
+    exact hc
 
 theorem right_add_order_compat [iFrac : Fractional α] :
   ∀ a b c : α, a ≤ b → c + a ≤ c + b := by
@@ -49,6 +81,16 @@ theorem right_cancel [iFrac : Fractional α] : ∀ a b c : α, a + c = b + c →
   conv at h => rhs; rw [iFrac.comm]
   apply iFrac.left_cancel h
 
+theorem add_to_zero_is_zero [iFrac : Fractional α] :
+  ∀ {a b : α}, a + b = 0 → a = 0 ∧ b = 0 := by
+  intro a b h
+  constructor
+  · have h' := (@le_alt_def α iFrac a b).mpr
+    have h_int : ∃ c, a + c = 0 := by
+      exists b
+    have h₃ : a ≤ 0 := h' h_int
+    sorry
+  · sorry
 theorem positive [iFrac : Fractional α] : ∀ {a : α}, ¬∃ (b : α), a + b < a := by
   intro a ⟨b,hb⟩
   rw [iFrac.lt_def] at hb
@@ -68,8 +110,10 @@ theorem add_le_mono [iFrac : Fractional α] : ∀ {a b c : α}, a + b ≤ c → 
   · left
     exists (b + d)
     sorry
-  · right
-    
+  ·
+
+    left
+
     sorry
 
 
