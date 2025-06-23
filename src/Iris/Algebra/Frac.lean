@@ -20,28 +20,20 @@ class CommMonoid (α : Type _) extends Add α, Zero α, One α where
   id_law : ∀ a : α, a + 0 = a
 
 class TotallyOrdered (α : Type _) extends LE α, LT α where
-  le_refl : ∀ a : α, a ≤ a
-  le_antisymm : ∀ a b : α, a ≤ b → ¬ b ≤ a
-  le_trans : ∀ a b c : α, a ≤ b → b ≤ c → a ≤ c
-  le_total : ∀ a b : α, a ≤ b ∨ b ≤ a
-  lt_def_le : ∀ a b : α, a < b ↔ a ≤ b ∧ a ≠ b
+  le_refl : ∀ {a : α}, a ≤ a
+  le_antisymm : ∀ {a b : α}, a ≤ b → ¬ b ≤ a
+  le_trans : ∀ {a b c : α}, a ≤ b → b ≤ c → a ≤ c
+  le_total : ∀ {a b : α}, a ≤ b ∨ b ≤ a
+  lt_def_le : ∀ {a b : α}, a < b ↔ a ≤ b ∧ a ≠ b
 
 class Fractional (α : Type _) extends CommMonoid α, TotallyOrdered α where
-  le_add_equiv : ∀ a b : α, a ≤ b → ∃ c : α, a + c = b
-  left_cancel {a b c : α} : c + a = c + b → a = b
-  positive {a : α} : ¬∃ (b : α), a + b ≤ a
 
-/- A type which can be used as a a fraction. -/
-/-class Fractional (T : Type _) extends One T, Add T, LE T, LT T where
-  add_le_mono  : ∀ a b c : T, a + b ≤ c → a ≤ c
-  assoc  : ∀ a b c : T, (a + b) + c = a + (b + c)
-  comm : ∀ a b : T, a + b = b + a
-  lt_sum {a b : T} : a < b ↔ ∃ r, a + r = b
-  lt_le {a b : T} : a < b → a ≤ b
-  positive {a : T} : ¬∃ (b : T), a + b ≤ a
-  cancel {a b c : T} : c + a = c + b → a = b
-  le_refl {a : T} : a ≤ a
--/
+  add_le_mono  : ∀ {a b c : α}, a + b ≤ c → a ≤ c
+  lt_sum : ∀ {a b : α}, a < b ↔ ∃ r, a + r = b
+  left_cancel : ∀ {a b c : α}, c + a = c + b → a = b
+  positive : ∀ {a : α}, ¬∃ (b : α), a + b ≤ a
+
+
 
 namespace Iris
 
@@ -60,7 +52,7 @@ instance [Fractional T] : Coe T (Frac T) := ⟨(⟨·⟩)⟩
 
 namespace Frac
 
-variable [Fractional α]
+variable [iF : Fractional α]
 
 instance Frac_CMRA : CMRA (Frac α) where
   pcore _ := none
@@ -72,9 +64,9 @@ instance Frac_CMRA : CMRA (Frac α) where
   validN_ne := (le_of_eq_of_le ∘ OFE.Dist.symm <| ·)
   valid_iff_validN := Iff.symm (forall_const Nat)
   validN_succ := (·)
-  validN_op_left := Fractional.le_add_equiv
-  assoc := by simp [← Fractional.assoc]
-  comm := by simp [← Fractional.comm]
+  validN_op_left := Fractional.add_le_mono
+  assoc := by simp [← iF.assoc]
+  comm := by simp [← iF.comm]
   pcore_op_left := by simp
   pcore_idem := by simp
   pcore_op_mono := by simp
@@ -96,8 +88,9 @@ theorem frac_included {p q : Frac α} : p ≼ q ↔ p < q :=
       rw [Hr]
       rfl⟩
 
-theorem frac_included_weak {p q : Frac α} (H : p ≼ q) : p ≤ q :=
-  Fractional.lt_le (frac_included.mp H)
+theorem frac_included_weak {p q : Frac α} (H : p ≼ q) : p ≤ q := by
+  have h := iF.lt_def_le.mp (frac_included.mp H)
+  simp [h]
 
 instance : CMRA.Discrete (Frac α) where
   discrete_0 := id
@@ -113,7 +106,8 @@ instance {q : Frac α} : CMRA.Cancelable q where
     intro _
     suffices q + x = q + y → x = y by apply this
     intro H
-    have H' := @Fractional.cancel α _ x.car y.car q.car
+    simp at H
+    have H' := @iF.left_cancel x.car y.car q.car
     rcases x with ⟨x⟩
     rcases y with ⟨y⟩
     rcases q with ⟨q⟩
@@ -128,11 +122,11 @@ instance {q : Frac α} : CMRA.Cancelable q where
 instance {q : Frac α} : CMRA.IdFree q where
   id_free0_r y := by
     intro H H'
-    apply @Fractional.positive (T := α) (a := q)
+    apply @Fractional.positive (α) (a := q)
     exists y
     conv=>
       rhs
       rw [← H']
-    apply Fractional.le_refl
+    apply iF.le_refl
 
 end Frac
