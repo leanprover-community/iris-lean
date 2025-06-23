@@ -183,3 +183,17 @@ theorem Agree.includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x :=
 
 theorem Agree.included {x y : Agree α} : x ≼ y ↔ y ≡ y • x :=
   ⟨fun ⟨z, h⟩ n => includedN.mp ⟨z, h n⟩, fun h => ⟨y, h.trans op_comm⟩⟩
+
+open OFE OFE.Discrete in
+instance [OFE α] [OFE.Discrete α] : OFE.Discrete (Agree α) where
+  discrete_0 {x y} H := by
+    intro n
+    constructor
+    · intro a Ha
+      rcases H.1 a Ha with ⟨c, Hc⟩
+      refine ⟨c, ⟨Hc.1, ?_⟩⟩
+      apply equiv_dist.mp <| discrete_0 (Dist.le Hc.2 <| Nat.zero_le 0)
+    · intro b Hb
+      rcases H.2 b Hb with ⟨c, Hc⟩
+      refine ⟨c, ⟨Hc.1, ?_⟩⟩
+      apply equiv_dist.mp <| discrete_0 (Dist.le Hc.2 <| Nat.zero_le 0)
