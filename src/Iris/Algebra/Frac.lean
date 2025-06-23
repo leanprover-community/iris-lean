@@ -56,14 +56,29 @@ theorem lt_order_compat [iFrac : Fractional α] :
       rw[←iFrac.assoc]
       rw[hab]
 
-theorem lt_trans [iFrac : Fractional α] :
-  ∀ {a b c : α}, a < b → b < c → a < c := by
-  intro a b c hab hbc
-  rw [iFrac.lt_def] at *
-  obtain ⟨ad, had⟩ := hab
-  obtain ⟨bd, hbd⟩ := hbc
-  exists (ad + bd)
-  sorry
+
+theorem lt_alt_def [iFrac : Fractional α] :
+  ∀ {a b : α}, a < b ↔ a ≤ b ∧ a ≠ b := by
+  intro a b
+  constructor
+  · intro h
+    simp
+    constructor
+    · rw[iFrac.le_def]
+      left
+      exact h
+    · rw[iFrac.lt_def] at h
+      obtain ⟨c, hc_pos, hc_sum⟩ := h
+      intro heq
+      rw [heq] at hc_sum
+      conv at hc_sum => rhs; rw [←iFrac.id_law b]
+
+      sorry
+  ·
+    sorry
+
+
+
 theorem le_alt_def [iFrac : Fractional α] :
   ∀ {a b : α}, a ≤ b ↔ ∃ c : α, a + c = b := by
   intro a b
@@ -96,6 +111,14 @@ theorem le_alt_def [iFrac : Fractional α] :
     rw [this, iFrac.id_law] at hc
     exact hc
 
+theorem lt_trans [iFrac : Fractional α] :
+  ∀ {a b c : α}, a < b → b < c → a < c := by
+  intro a b c hab hbc
+  rw [iFrac.lt_def] at *
+  obtain ⟨ad, had⟩ := hab
+  obtain ⟨bd, hbd⟩ := hbc
+  exists (ad + bd)
+  sorry
 
 theorem right_add_order_compat [iFrac : Fractional α] :
   ∀ a b c : α, a ≤ b → c + a ≤ c + b := by
@@ -147,7 +170,8 @@ theorem add_le_mono [iFrac : Fractional α] : ∀ {a b c : α}, a + b ≤ c → 
     constructor
     · simp
 
-    sorry
+      sorry
+    · sorry
   ·
 
     left
