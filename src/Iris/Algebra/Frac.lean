@@ -39,7 +39,22 @@ class Fractional (α : Type _) extends CommMonoid α, TotallyOrdered α where
 
 theorem lt_order_compat [iFrac : Fractional α] :
   ∀ {a b c : α}, a < b → a + c < b + c := by
-  sorry
+  intro a b c
+  intro hab
+  rw [iFrac.lt_def] at *
+  obtain ⟨d, hd_pos, hab⟩ := hab
+  exists d
+  constructor
+  · exact hd_pos
+  · conv =>
+      lhs
+      rw [iFrac.assoc]
+      arg 2
+      rw [iFrac.comm]
+    conv =>
+      lhs
+      rw[←iFrac.assoc]
+      rw[hab]
 
 theorem lt_trans [iFrac : Fractional α] :
   ∀ {a b c : α}, a < b → b < c → a < c := by
