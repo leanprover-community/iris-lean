@@ -85,12 +85,18 @@ theorem add_to_zero_is_zero [iFrac : Fractional α] :
   ∀ {a b : α}, a + b = 0 → a = 0 ∧ b = 0 := by
   intro a b h
   constructor
-  · have h' := (@le_alt_def α iFrac a b).mpr
+  · have h' := (@le_alt_def α iFrac a 0).mpr
     have h_int : ∃ c, a + c = 0 := by
       exists b
     have h₃ : a ≤ 0 := h' h_int
-    sorry
-  · sorry
+    exact iFrac.le_antisymm ⟨h₃, iFrac.positive⟩
+  · rw [iFrac.comm] at h
+    have h' := (@le_alt_def α iFrac b 0).mpr
+    have h_int : ∃ c, b + c = 0 := by
+      exists a
+    have h₃ : b ≤ 0 := h' h_int
+    exact iFrac.le_antisymm ⟨h₃, iFrac.positive⟩
+
 theorem positive [iFrac : Fractional α] : ∀ {a : α}, ¬∃ (b : α), a + b < a := by
   intro a ⟨b,hb⟩
   rw [iFrac.lt_def] at hb
