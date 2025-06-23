@@ -197,3 +197,19 @@ instance [OFE α] [OFE.Discrete α] : OFE.Discrete (Agree α) where
       rcases H.2 b Hb with ⟨c, Hc⟩
       refine ⟨c, ⟨Hc.1, ?_⟩⟩
       apply equiv_dist.mp <| discrete_0 (Dist.le Hc.2 <| Nat.zero_le 0)
+
+instance toAgree.ne [OFE α] : OFE.NonExpansive (toAgree : α → Agree α) where
+  ne n x y H := by
+    simp [toAgree]
+    constructor
+    · intro a Ha; exists y
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at Ha
+      simp only [List.mem_cons, List.not_mem_nil, or_false, true_and]
+      exact Ha ▸ H
+    · intro b Hb; exists x
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at Hb
+      simp only [List.mem_cons, List.not_mem_nil, or_false, true_and]
+      exact Hb ▸ H
+
+theorem toAgree.inj {a1 a2 : α} {n} (H : toAgree a1 ≡{n}≡ toAgree a2) : a1 ≡{n}≡ a2 := by
+  rcases H.1 a1 (by simp [toAgree]) with ⟨_, ⟨_, _⟩⟩; simp_all [toAgree]

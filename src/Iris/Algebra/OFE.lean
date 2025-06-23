@@ -274,6 +274,8 @@ instance [OFE α] [Discrete α] : Discrete (Option α) where
     | none, none => H
     | some _, some _ => some_eqv_some.mpr (discrete_0 H)
 
+instance OFE.Option.some.ne [OFE α] : OFE.NonExpansive (some : α → Option α) := ⟨fun _ _ _ => id⟩
+
 abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
 
 instance [OFEFun (β : α → _)] : OFE ((x : α) → β x) where

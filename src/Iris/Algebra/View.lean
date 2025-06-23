@@ -68,9 +68,9 @@ instance : OFE (View F R) where
      fun H => ⟨OFE.equiv_dist.mpr (H · |>.1), OFE.equiv_dist.mpr (H · |>.2)⟩⟩
   dist_lt H Hn := ⟨OFE.dist_lt H.1 Hn, OFE.dist_lt H.2 Hn⟩
 
-instance : OFE.NonExpansive₂ (View.mk : _ → _ → View F R) := ⟨fun _ _ _ Ha _ _ Hb => ⟨Ha, Hb⟩⟩
-instance : OFE.NonExpansive (View.π_auth : View F R → _) := ⟨fun _ _ _ H => H.1⟩
-instance : OFE.NonExpansive (View.π_frag : View F R → _) := ⟨fun _ _ _ H => H.2⟩
+instance View.mk.ne : OFE.NonExpansive₂ (View.mk : _ → _ → View F R) := ⟨fun _ _ _ Ha _ _ Hb => ⟨Ha, Hb⟩⟩
+instance View.π_auth.ne : OFE.NonExpansive (View.π_auth : View F R → _) := ⟨fun _ _ _ H => H.1⟩
+instance View.π_frag.ne : OFE.NonExpansive (View.π_frag : View F R → _) := ⟨fun _ _ _ H => H.2⟩
 
 theorem is_discrete {ag : Option ((DFrac F) × Agree A)} (Ha : OFE.DiscreteE ag) (Hb : OFE.DiscreteE b) :
   OFE.DiscreteE (α := View F R) (View.mk ag b) := fun H => ⟨Ha H.1, Hb H.2⟩
@@ -81,9 +81,47 @@ instance [OFE.Discrete A] [OFE.Discrete B] : OFE.Discrete (View F R) where
 end ofe
 
 section cmra
+variable [DFractional F] [OFE A] [UCMRA B] {R : view_rel A B} [ViewRel R]
 
-variable [OFE A] [UCMRA B] {R : view_rel A B} [ViewRel R]
+instance {dq : DFrac F} : OFE.NonExpansive (View.auth dq : A → View F R) where
+  ne _ _ _ H := by
+    refine View.mk.ne.ne ?_ .rfl
+    refine OFE.some_dist_some.mpr ⟨.rfl, ?_⟩
+    simp only
+    exact OFE.NonExpansive.ne H
+
+instance : OFE.NonExpansive (View.frag : B → View F R) where
+  ne _ _ _ H := View.mk.ne.ne .rfl H
+
+omit [ViewRel R] [DFractional F] in
+theorem view_auth.frac_inj {q1 q2 : DFrac F} {a1 a2 : A} {n} (H : (●V{q1} a1 : View F R) ≡{n}≡ ●V{q2} a2) :
+    q1 = q2 := H.1.1
+
+omit [ViewRel R] [DFractional F] in
+theorem view_auth.ag_inj {q1 q2 : DFrac F} {a1 a2 : A} {n} (H : (●V{q1} a1 : View F R) ≡{n}≡ ●V{q2} a2) :
+    a1 ≡{n}≡ a2 := toAgree.inj H.1.2
+
+omit [ViewRel R] [DFractional F] in
+theorem view_frag.inj {b1 b2 : B} {n} (H : (◯V b1 : View F R) ≡{n}≡ ◯V b2) :
+    b1 ≡{n}≡ b2 := H.2
+
+abbrev valid (v : View F R) : Prop :=
+  match v.π_auth with
+  | some (dq, ag) => ✓ dq ∧ (∀ n, ∃ a, ag ≡{n}≡ toAgree a ∧ R n a (π_frag v))
+  | none => ∀ n, ∃ a, R n a (π_frag v)
+
+abbrev validN (n : Nat) (v : View F R) : Prop :=
+  match v.π_auth with
+  | some (dq, ag) => ✓ dq ∧ (∃ a, ag ≡{n}≡ toAgree a ∧ R n a (π_frag v))
+  | none => ∃ a, R n a (π_frag v)
+
+-- -- #synth CMRA (DFrac F × Agree A) -- Need Prod CMRA to continue, rebase over local_update PR.
+-- abbrev pcore (v : View F R) : Option (View F R) :=
+--   some (View.mk (CMRA.core (π_auth v)) sorry)
+--   --  Some (View (core (view_auth_proj x)) (core (view_frag_proj x))).
+
+
+
 
 end cmra
-
 end View
