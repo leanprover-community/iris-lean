@@ -32,6 +32,7 @@ class Fractional (α : Type _) extends CommMonoid α, TotallyOrdered α where
   positive  {a : α} : a ≥ 0
   left_cancel : ∀ {a b c : α}, c + a = c + b → a = b
 
+  -- these two are theorems. remove them after replacing them with theorems
   add_le_mono  : ∀ {a b c : α}, a + b ≤ c → a ≤ c
   lt_sum : ∀ {a b : α}, a < b ↔ ∃ r, a + r = b
 
