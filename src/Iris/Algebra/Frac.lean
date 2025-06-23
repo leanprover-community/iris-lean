@@ -14,25 +14,43 @@ import Iris.Algebra.OFE
 class One (T : Type _) where one : T
 export One(one)
 
-/-- A type which can be used as a a fraction. -/
-class Fractional (T : Type _) extends One T, Add T, LE T, LT T where
-  add_le_mono {x y z : T} : x + y ≤ z → x ≤ z
-  assoc {a b c : T} : (a + b) + c = a + (b + c)
-  comm {a b : T} : a + b = b + a
+class CommMonoid (α : Type _) extends Add α, Zero α, One α where
+  assoc  : ∀ a b c : α, (a + b) + c = a + (b + c)
+  comm : ∀ a b : α, a + b = b + a
+  id_law : ∀ a : α, a + 0 = a
+
+class TotallyOrdered (α : Type _) extends LE α, LT α where
+  le_refl : ∀ a : α, a ≤ a
+  le_antisymm : ∀ a b : α, a ≤ b → ¬ b ≤ a
+  le_trans : ∀ a b c : α, a ≤ b → b ≤ c → a ≤ c
+  le_total : ∀ a b : α, a ≤ b ∨ b ≤ a
+  lt_def_le : ∀ a b : α, a < b ↔ a ≤ b ∧ a ≠ b
+
+class Fractional (α : Type _) extends CommMonoid α, TotallyOrdered α where
+  le_add_equiv : ∀ a b : α, a ≤ b → ∃ c : α, a + c = b
+  left_cancel {a b c : α} : c + a = c + b → a = b
+  positive {a : α} : ¬∃ (b : α), a + b ≤ a
+
+/- A type which can be used as a a fraction. -/
+/-class Fractional (T : Type _) extends One T, Add T, LE T, LT T where
+  add_le_mono  : ∀ a b c : T, a + b ≤ c → a ≤ c
+  assoc  : ∀ a b c : T, (a + b) + c = a + (b + c)
+  comm : ∀ a b : T, a + b = b + a
   lt_sum {a b : T} : a < b ↔ ∃ r, a + r = b
   lt_le {a b : T} : a < b → a ≤ b
   positive {a : T} : ¬∃ (b : T), a + b ≤ a
   cancel {a b c : T} : c + a = c + b → a = b
   le_refl {a : T} : a ≤ a
+-/
 
 namespace Iris
 
-def Frac (T : Type _) [Fractional T] := LeibnizO T
+abbrev Frac (T : Type _) [Fractional T] := LeibnizO T
 
 -- TODO: How do I get rid of these instances?
 -- I definitely do not want to use an abbrev for Frac (there are many different OFE's for numerical types)
 -- so do we need to keep around all of these coercions?
-instance [Fractional T] : Coe (Frac T) T := ⟨(·.1)⟩
+instance [Fractional α] : Coe (Frac α) α := ⟨(·.car)⟩
 instance [Fractional T] : Coe T (Frac T) := ⟨(⟨·⟩)⟩
 @[simp] instance [Fractional T] : COFE (Frac T) := by unfold Frac; infer_instance
 @[simp] instance [Fractional T] : One (Frac T) := ⟨⟨One.one⟩⟩
@@ -54,7 +72,7 @@ instance Frac_CMRA : CMRA (Frac α) where
   validN_ne := (le_of_eq_of_le ∘ OFE.Dist.symm <| ·)
   valid_iff_validN := Iff.symm (forall_const Nat)
   validN_succ := (·)
-  validN_op_left := Fractional.add_le_mono
+  validN_op_left := Fractional.le_add_equiv
   assoc := by simp [← Fractional.assoc]
   comm := by simp [← Fractional.comm]
   pcore_op_left := by simp
