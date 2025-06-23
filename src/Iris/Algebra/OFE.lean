@@ -268,6 +268,12 @@ instance [OFE α] [Leibniz α] : Leibniz (Option α) where
     | none, none, _ => rfl
     | some _, some _, h => congrArg some (Leibniz.eq_of_eqv h)
 
+instance [OFE α] [Discrete α] : Discrete (Option α) where
+  discrete_0 {x y} H :=
+    match x, y with
+    | none, none => H
+    | some _, some _ => some_eqv_some.mpr (discrete_0 H)
+
 abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
 
 instance [OFEFun (β : α → _)] : OFE ((x : α) → β x) where
@@ -312,6 +318,7 @@ instance [OFE α] [OFE β] : OFE (α × β) where
   equiv_dist {_ _} := by simp [equiv_dist, forall_and]
   dist_lt h1 h2 := ⟨dist_lt h1.1 h2, dist_lt h1.2 h2⟩
 
+
 def equiv_fst [OFE α] [OFE β] {x y: α × β} (h: x ≡ y): x.fst ≡ y.fst := h.left
 def equiv_snd [OFE α] [OFE β] {x y: α × β} (h: x ≡ y): x.snd ≡ y.snd := h.right
 def equiv_prod_ext [OFE α] [OFE β] {x₁ x₂: α} {y₁ y₂: β}
@@ -321,6 +328,10 @@ def dist_fst {n} [OFE α] [OFE β] {x y: α × β} (h: x ≡{n}≡ y): x.fst ≡
 def dist_snd {n} [OFE α] [OFE β] {x y: α × β} (h: x ≡{n}≡ y): x.snd ≡{n}≡ y.snd := h.right
 def dist_prod_ext {n} [OFE α] [OFE β] {x₁ x₂: α} {y₁ y₂: β}
     (ex: x₁ ≡{n}≡ x₂) (ey: y₁ ≡{n}≡ y₂): (x₁, y₁) ≡{n}≡ (x₂, y₂) := ⟨ex, ey⟩
+
+instance [OFE α] [OFE β] [OFE.Discrete α] [OFE.Discrete β] : OFE.Discrete (α × β) where
+  discrete_0 H := ⟨discrete_0 H.1, discrete_0 H.2⟩
+
 
 /-- An isomorphism between two OFEs is a pair of morphisms whose composition is equivalent to the identity morphism. -/
 @[ext] structure Iso (α β : Type _) [OFE α] [OFE β] where
