@@ -28,6 +28,7 @@ class TotallyOrdered (α : Type _) extends LE α, LT α where
 class Fractional (α : Type _) extends CommMonoid α, TotallyOrdered α where
   lt_def : ∀ a b, a < b ↔ ∃ c : α, c > 0 ∧ a + c = b
   le_def : ∀ a b : α, a ≤ b ↔ a < b ∨ a = b
+  lt_not_eq : ∀ {a : α}, a > 0 ↔ a ≠ 0
   add_order_compat : ∀ {a b c : α}, a ≤ b → a + c ≤ b + c
   positive  {a : α} : a ≥ 0
   left_cancel : ∀ {a b c : α}, c + a = c + b → a = b
@@ -36,6 +37,18 @@ class Fractional (α : Type _) extends CommMonoid α, TotallyOrdered α where
   add_le_mono  : ∀ {a b c : α}, a + b ≤ c → a ≤ c
   lt_sum : ∀ {a b : α}, a < b ↔ ∃ r, a + r = b
 
+theorem lt_order_compat [iFrac : Fractional α] :
+  ∀ {a b c : α}, a < b → a + c < b + c := by
+  sorry
+
+theorem lt_trans [iFrac : Fractional α] :
+  ∀ {a b c : α}, a < b → b < c → a < c := by
+  intro a b c hab hbc
+  rw [iFrac.lt_def] at *
+  obtain ⟨ad, had⟩ := hab
+  obtain ⟨bd, hbd⟩ := hbc
+  exists (ad + bd)
+  sorry
 theorem le_alt_def [iFrac : Fractional α] :
   ∀ {a b : α}, a ≤ b ↔ ∃ c : α, a + c = b := by
   intro a b
@@ -67,6 +80,7 @@ theorem le_alt_def [iFrac : Fractional α] :
       exact hlt.symm
     rw [this, iFrac.id_law] at hc
     exact hc
+
 
 theorem right_add_order_compat [iFrac : Fractional α] :
   ∀ a b c : α, a ≤ b → c + a ≤ c + b := by
@@ -103,12 +117,11 @@ theorem positive [iFrac : Fractional α] : ∀ {a : α}, ¬∃ (b : α), a + b <
   rw [iFrac.lt_def] at hb
   have ⟨c, hc_pos, hc_sum⟩ := hb
   rw [iFrac.assoc] at hc_sum
-  conv at hc_sum =>
-    rhs
-    rw [←iFrac.id_law a]
+  conv at hc_sum => rhs; rw [←iFrac.id_law a]
   replace hc_sum := iFrac.left_cancel hc_sum
-
-  sorry
+  have h' := add_to_zero_is_zero hc_sum
+  simp at hc_pos
+  exact iFrac.lt_not_eq.mp hc_pos h'.right
 
 theorem add_le_mono [iFrac : Fractional α] : ∀ {a b c : α}, a + b ≤ c → a ≤ c := by
   intro a b c h
@@ -116,11 +129,13 @@ theorem add_le_mono [iFrac : Fractional α] : ∀ {a b c : α}, a + b ≤ c → 
   obtain (⟨d,hd⟩ | ⟨d,hd⟩) := h
   · left
     exists (b + d)
+    constructor
+    · simp
+
     sorry
   ·
 
     left
-
     sorry
 
 
