@@ -138,7 +138,7 @@ theorem Agree.op_invN {x y : Agree α} : (x.op y).validN n → x ≡{n}≡ y := 
     obtain ⟨b, hb⟩ := mem_of_agree x
     exists b; simp_all
 
-instance : CMRA (Agree α) where
+instance Agree_CMRA : CMRA (Agree α) where
   pcore := some
   op := Agree.op
   ValidN := Agree.validN
