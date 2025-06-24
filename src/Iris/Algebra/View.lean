@@ -45,6 +45,7 @@ def View.auth [UCMRA B] {R : view_rel A B} (dq : DFrac F) (a : A) : View F R :=
 def View.frag {R : view_rel A B} (b : B) : View F R := ⟨none, b⟩
 
 notation "●V{" dq "} " a => View.auth dq a
+notation "●V " a => View.auth (LeibnizO.mk <| DFracK.Own One.one) a
 notation "◯V " b => View.frag b
 
 namespace View
@@ -338,89 +339,131 @@ instance view_both_core_id [CMRA.CoreId b] : CMRA.CoreId ((●V{⟨DFracK.Discar
     trivial
 
 
-
+theorem view_auth_dfrac_op_invN (H :✓{n} ((●V{dq1} a1 : View F R) • ●V{dq2} a2)) : a1 ≡{n}≡ a2 := by
+  sorry
 /-
-  (** Validity *)
-  Lemma view_auth_dfrac_op_invN n dq1 a1 dq2 a2 :
-    ✓{n} (●V{dq1} a1 ⋅ ●V{dq2} a2) → a1 ≡{n}≡ a2.
   Proof.
     rewrite /op /view_op_instance /= left_id -Some_op -pair_op view_validN_eq /=.
     intros (?&?& Eq &?). apply (inj to_agree), agree_op_invN. by rewrite Eq.
   Qed.
-  Lemma view_auth_dfrac_op_inv dq1 a1 dq2 a2 : ✓ (●V{dq1} a1 ⋅ ●V{dq2} a2) → a1 ≡ a2.
+-/
+
+theorem view_auth_dfrac_op_inv : ✓ ((●V{dq1} a1 : View F R) • ●V{dq2} a2) → a1 ≡ a2 := sorry
+/-
   Proof.
     intros ?. apply equiv_dist. intros n.
     by eapply view_auth_dfrac_op_invN, cmra_valid_validN.
   Qed.
-  Lemma view_auth_dfrac_op_inv_L `{!LeibnizEquiv A} dq1 a1 dq2 a2 :
-    ✓ (●V{dq1} a1 ⋅ ●V{dq2} a2) → a1 = a2.
-  Proof. by intros ?%view_auth_dfrac_op_inv%leibniz_equiv. Qed.
+-/
 
-  Lemma view_auth_dfrac_validN n dq a : ✓{n} (●V{dq} a) ↔ ✓{n}dq ∧ rel n a ε.
+theorem view_auth_dfrac_validN : ✓{n} (●V{dq} a : View F R) ↔ ✓{n}dq ∧ R n a UCMRA.unit := sorry
+
+/-
   Proof.
     rewrite view_validN_eq /=. apply and_iff_compat_l. split; [|by eauto].
     by intros [? [->%(inj to_agree) ?]].
   Qed.
-  Lemma view_auth_validN n a : ✓{n} (●V a) ↔ rel n a ε.
-  Proof. rewrite view_auth_dfrac_validN. split; [naive_solver|done]. Qed.
+-/
 
-  Lemma view_auth_dfrac_op_validN n dq1 dq2 a1 a2 :
-    ✓{n} (●V{dq1} a1 ⋅ ●V{dq2} a2) ↔ ✓(dq1 ⋅ dq2) ∧ a1 ≡{n}≡ a2 ∧ rel n a1 ε.
+theorem view_auth_validN n a : ✓{n} (●V a : View F R) ↔ R n a UCMRA.unit := sorry
+/-
+  Lemma
+  Proof. rewrite view_auth_dfrac_validN. split; [naive_solver|done]. Qed.
+-/
+
+theorem view_auth_dfrac_op_validN :
+  ✓{n} ((●V{dq1} a1 : View F R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡{n}≡ a2 ∧ R n a1 UCMRA.unit := sorry
+/-
   Proof.
     split.
     - intros Hval. assert (a1 ≡{n}≡ a2) as Ha by eauto using view_auth_dfrac_op_invN.
       revert Hval. rewrite Ha -view_auth_dfrac_op view_auth_dfrac_validN. naive_solver.
     - intros (?&->&?). by rewrite -view_auth_dfrac_op view_auth_dfrac_validN.
   Qed.
-  Lemma view_auth_op_validN n a1 a2 : ✓{n} (●V a1 ⋅ ●V a2) ↔ False.
+-/
+
+theorem view_auth_op_validN :
+  ✓{n} ((●V a1 : View F R) • ●V a2) ↔ False := sorry
+/-
   Proof. rewrite view_auth_dfrac_op_validN. naive_solver. Qed.
+-/
 
-  Lemma view_frag_validN n b : ✓{n} (◯V b) ↔ ∃ a, rel n a b.
+theorem view_frag_validN : ✓{n} (◯V b : View F R) ↔ ∃ a, R n a b := sorry
+/-
   Proof. done. Qed.
+-/
 
-  Lemma view_both_dfrac_validN n dq a b :
-    ✓{n} (●V{dq} a ⋅ ◯V b) ↔ ✓dq ∧ rel n a b.
+theorem view_both_dfrac_validN : ✓{n} ((●V{dq} a : View F R) • ◯V b) ↔ ✓dq ∧ R n a b := sorry
+/-
   Proof.
     rewrite view_validN_eq /=. apply and_iff_compat_l.
     setoid_rewrite (left_id _ _ b). split; [|by eauto].
     by intros [?[->%(inj to_agree)]].
   Qed.
-  Lemma view_both_validN n a b : ✓{n} (●V a ⋅ ◯V b) ↔ rel n a b.
-  Proof. rewrite view_both_dfrac_validN. split; [naive_solver|done]. Qed.
+-/
 
-  Lemma view_auth_dfrac_valid dq a : ✓ (●V{dq} a) ↔ ✓dq ∧ ∀ n, rel n a ε.
+theorem view_both_validN : ✓{n} ((●V a : View F R) • ◯V b) ↔ R n a b := sorry
+/-
+  Proof. rewrite view_both_dfrac_validN. split; [naive_solver|done]. Qed.
+-/
+
+theorem view_auth_dfrac_valid : ✓ (●V{dq} a : View F R) ↔ ✓dq ∧ ∀ n, R n a ε := sorry
+
+/-
   Proof.
     rewrite view_valid_eq /=. apply and_iff_compat_l. split; [|by eauto].
     intros H n. by destruct (H n) as [? [->%(inj to_agree) ?]].
   Qed.
-  Lemma view_auth_valid a : ✓ (●V a) ↔ ∀ n, rel n a ε.
-  Proof. rewrite view_auth_dfrac_valid. split; [naive_solver|done]. Qed.
+-/
 
-  Lemma view_auth_dfrac_op_valid dq1 dq2 a1 a2 :
-    ✓ (●V{dq1} a1 ⋅ ●V{dq2} a2) ↔ ✓(dq1 ⋅ dq2) ∧ a1 ≡ a2 ∧ ∀ n, rel n a1 ε.
+theorem view_auth_valid : ✓ (●V a : View F R) ↔ ∀ n, R n a ε := sorry
+/-
+  Proof. rewrite view_auth_dfrac_valid. split; [naive_solver|done]. Qed.
+-/
+
+
+theorem view_auth_dfrac_op_valid :
+    ✓ ((●V{dq1} a1 : View F R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡ a2 ∧ ∀ n, R n a1 ε := sorry
+/-
   Proof.
     rewrite 1!cmra_valid_validN equiv_dist. setoid_rewrite view_auth_dfrac_op_validN.
     split; last naive_solver. intros Hv.
     split; last naive_solver. apply (Hv 0ᵢ).
   Qed.
-  Lemma view_auth_op_valid a1 a2 : ✓ (●V a1 ⋅ ●V a2) ↔ False.
+-/
+
+
+theorem view_auth_op_valid : ✓ ((●V a1 : View F R) • ●V a2) ↔ False := sorry
+
+/-
   Proof. rewrite view_auth_dfrac_op_valid. naive_solver. Qed.
+-/
 
-  Lemma view_frag_valid b : ✓ (◯V b) ↔ ∀ n, ∃ a, rel n a b.
+
+theorem view_frag_valid : ✓ (◯V b : View F R) ↔ ∀ n, ∃ a, R n a b := sorry
+/-
   Proof. done. Qed.
+-/
 
-  Lemma view_both_dfrac_valid dq a b : ✓ (●V{dq} a ⋅ ◯V b) ↔ ✓dq ∧ ∀ n, rel n a b.
+theorem view_both_dfrac_valid : ✓ ((●V{dq} a : View F R) • ◯V b) ↔ ✓dq ∧ ∀ n, R n a b := sorry
+/-
   Proof.
     rewrite view_valid_eq /=. apply and_iff_compat_l.
     setoid_rewrite (left_id _ _ b). split; [|by eauto].
     intros H n. by destruct (H n) as [?[->%(inj to_agree)]].
   Qed.
-  Lemma view_both_valid a b : ✓ (●V a ⋅ ◯V b) ↔ ∀ n, rel n a b.
-  Proof. rewrite view_both_dfrac_valid. split; [naive_solver|done]. Qed.
+-/
 
-  (** Inclusion *)
-  Lemma view_auth_dfrac_includedN n dq1 dq2 a1 a2 b :
-    ●V{dq1} a1 ≼{n} ●V{dq2} a2 ⋅ ◯V b ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2.
+theorem view_both_valid : ✓ ((●V a : View F R) • ◯V b) ↔ ∀ n, R n a b := sorry
+/-
+  Proof. rewrite view_both_dfrac_valid. split; [naive_solver|done]. Qed.
+-/
+
+
+
+theorem view_auth_dfrac_includedN :
+    (●V{dq1} a1 : View F R) ≼{n} ((●V{dq2} a2) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := sorry
+/-
   Proof.
     split.
     - intros [[[[dqf agf]|] bf]
@@ -431,8 +474,12 @@ instance view_both_core_id [CMRA.CoreId b] : CMRA.CoreId ((●V{⟨DFracK.Discar
       + rewrite view_auth_dfrac_op -assoc. apply cmra_includedN_l.
       + apply cmra_includedN_l.
   Qed.
-  Lemma view_auth_dfrac_included dq1 dq2 a1 a2 b :
-    ●V{dq1} a1 ≼ ●V{dq2} a2 ⋅ ◯V b ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2.
+-/
+
+
+theorem view_auth_dfrac_included :
+    ((●V{dq1} a1 : View F R) ≼ (●V{dq2} a2 : View F R) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2 := sorry
+/-
   Proof.
     intros. split.
     - split.
@@ -443,35 +490,47 @@ instance view_both_core_id [CMRA.CoreId b] : CMRA.CoreId ((●V{⟨DFracK.Discar
       + by rewrite view_auth_dfrac_op -assoc.
       + done.
   Qed.
-  Lemma view_auth_includedN n a1 a2 b :
-    ●V a1 ≼{n} ●V a2 ⋅ ◯V b ↔ a1 ≡{n}≡ a2.
-  Proof. rewrite view_auth_dfrac_includedN. naive_solver. Qed.
-  Lemma view_auth_included a1 a2 b :
-    ●V a1 ≼ ●V a2 ⋅ ◯V b ↔ a1 ≡ a2.
-  Proof. rewrite view_auth_dfrac_included. naive_solver. Qed.
+-/
 
-  Lemma view_frag_includedN n p a b1 b2 :
-    ◯V b1 ≼{n} ●V{p} a ⋅ ◯V b2 ↔ b1 ≼{n} b2.
+
+theorem view_auth_includedN : (●V a1 : View F R) ≼{n} ((●V a2) • ◯V b) ↔ a1 ≡{n}≡ a2 := sorry
+/-
+  Proof. rewrite view_auth_dfrac_includedN. naive_solver. Qed.
+-/
+
+theorem view_auth_included : (●V a1 : View F R) ≼ ((●V a2) • ◯V b) ↔ a1 ≡ a2 := sorry
+/-
+  Proof. rewrite view_auth_dfrac_included. naive_solver. Qed.
+-/
+
+
+theorem view_frag_includedN : (◯V b1 : View F R) ≼{n} ((●V{p} a) • ◯V b2) ↔ b1 ≼{n} b2 := sorry
+/-
   Proof.
     split.
     - intros [xf [_ Hb]]; simpl in *.
       revert Hb; rewrite left_id. by exists (view_frag_proj xf).
     - intros [bf ->]. rewrite comm view_frag_op -assoc. apply cmra_includedN_l.
   Qed.
-  Lemma view_frag_included p a b1 b2 :
-    ◯V b1 ≼ ●V{p} a ⋅ ◯V b2 ↔ b1 ≼ b2.
+-/
+
+theorem view_frag_included : (◯V b1 : View F R) ≼ ((●V{p} a) • ◯V b2) ↔ b1 ≼ b2 := sorry
+/-
   Proof.
     split.
     - intros [xf [_ Hb]]; simpl in *.
       revert Hb; rewrite left_id. by exists (view_frag_proj xf).
     - intros [bf ->]. by rewrite comm view_frag_op -assoc.
   Qed.
+-/
 
+
+theorem view_both_dfrac_includedN :
+    ((●V{dq1} a1 : View F R) • ◯V b1) ≼{n} ((●V{dq2} a2) • ◯V b2) ↔
+      (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2 := sorry
+/-
   (** The weaker [view_both_included] lemmas below are a consequence of the
   [view_auth_included] and [view_frag_included] lemmas above. *)
-  Lemma view_both_dfrac_includedN n dq1 dq2 a1 a2 b1 b2 :
-    ●V{dq1} a1 ⋅ ◯V b1 ≼{n} ●V{dq2} a2 ⋅ ◯V b2 ↔
-      (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2.
   Proof.
     split.
     - intros. rewrite assoc. split.
@@ -480,9 +539,11 @@ instance view_both_core_id [CMRA.CoreId b] : CMRA.CoreId ((●V{⟨DFracK.Discar
     - intros (?&->&?bf&->). rewrite (comm _ b1) view_frag_op assoc.
       by apply cmra_monoN_r, view_auth_dfrac_includedN.
   Qed.
-  Lemma view_both_dfrac_included dq1 dq2 a1 a2 b1 b2 :
-    ●V{dq1} a1 ⋅ ◯V b1 ≼ ●V{dq2} a2 ⋅ ◯V b2 ↔
-      (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2 ∧ b1 ≼ b2.
+-/
+
+theorem view_both_dfrac_included : ((●V{dq1} a1 : View F R) • ◯V b1) ≼ ((●V{dq2} a2) • ◯V b2) ↔
+      (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2 ∧ b1 ≼ b2 := sorry
+/-
   Proof.
     split.
     - intros. rewrite assoc. split.
@@ -491,13 +552,17 @@ instance view_both_core_id [CMRA.CoreId b] : CMRA.CoreId ((●V{⟨DFracK.Discar
     - intros (?&->&?bf&->). rewrite (comm _ b1) view_frag_op assoc.
       by apply cmra_mono_r, view_auth_dfrac_included.
   Qed.
-  Lemma view_both_includedN n a1 a2 b1 b2 :
-    ●V a1 ⋅ ◯V b1 ≼{n} ●V a2 ⋅ ◯V b2 ↔ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2.
-  Proof. rewrite view_both_dfrac_includedN. naive_solver. Qed.
-  Lemma view_both_included a1 a2 b1 b2 :
-    ●V a1 ⋅ ◯V b1 ≼ ●V a2 ⋅ ◯V b2 ↔ a1 ≡ a2 ∧ b1 ≼ b2.
-  Proof. rewrite view_both_dfrac_included. naive_solver. Qed.
+-/
 
+theorem view_both_includedN : ((●V a1 : View F R) • ◯V b1) ≼{n} ((●V a2) •  ◯V b2) ↔ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2 := sorry
+/-
+  Proof. rewrite view_both_dfrac_includedN. naive_solver. Qed.
+-/
+
+
+theorem view_both_included : ((●V a1 : View F R) • ◯V b1) ≼ ((●V a2) • ◯V b2) ↔ a1 ≡ a2 ∧ b1 ≼ b2 := sorry
+/-
+  Proof. rewrite view_both_dfrac_included. naive_solver. Qed.
 -/
 
 end cmra
