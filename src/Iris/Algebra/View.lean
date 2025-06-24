@@ -81,7 +81,7 @@ instance [OFE.Discrete A] [OFE.Discrete B] : OFE.Discrete (View F R) where
 end ofe
 
 section cmra
-variable [DFractional F] [OFE A] [UCMRA B] {R : view_rel A B} [ViewRel R]
+variable [DFractional F] [OFE A] [IB : UCMRA B] {R : view_rel A B} [ViewRel R]
 
 instance {dq : DFrac F} : OFE.NonExpansive (View.auth dq : A → View F R) where
   ne _ _ _ H := by
@@ -128,23 +128,130 @@ instance : CMRA (View F R) where
   op := op
   ValidN := validN
   Valid := valid
-  op_ne := sorry
-  pcore_ne := sorry
-  validN_ne := sorry
-  valid_iff_validN := sorry
-  validN_succ := sorry
-  validN_op_left := sorry
-  assoc := sorry
-  comm := sorry
-  pcore_op_left := sorry
-  pcore_idem := sorry
-  pcore_op_mono := sorry
-  extend := sorry
+  op_ne.ne n x1 x2 H := by
+    refine View.mk.ne.ne ?_ ?_
+    · refine cmraOption.op_ne.ne ?_
+      exact OFE.NonExpansive.ne H
+    · refine IB.op_ne.ne ?_
+      exact OFE.NonExpansive.ne H
+  pcore_ne {n x y} cx H := by
+    simp only [pcore, Option.some.injEq]
+    intro Hc; subst Hc
+    exists { π_auth := CMRA.core y.π_auth, π_frag := CMRA.core y.π_frag }
+    exact ⟨rfl, ⟨OFE.Dist.core H.1, OFE.Dist.core H.2⟩⟩
+  validN_ne {n x1 x2} H := by
+    simp [validN]
+    rcases H with ⟨Hl, Hr⟩
+    rcases x1 with ⟨_|⟨q1, ag1⟩, b1⟩ <;>
+    rcases x2 with ⟨_|⟨q2, ag2⟩, b2⟩ <;>
+    simp_all
+    · exact fun x h => ViewRel.rel_unit n
+    intro Hq a Hag HR
+    refine ⟨CMRA.discrete_valid <| DFrac_CMRA.validN_ne Hl.1 Hq, ?_⟩
+    refine ⟨a, ?_⟩
+    refine ⟨Hl.2.symm.trans Hag, ?_⟩
+    refine ViewRel.mono HR .rfl ?_ n.le_refl
+    exact OFE.Dist.to_incN Hr.symm
+  valid_iff_validN {x} := by
+    simp only [valid, validN]; split
+    · exact ⟨fun H n => ⟨H.1, H.2 n⟩, fun H => ⟨(H 0).1, fun n => (H n).2⟩⟩
+    · exact Eq.to_iff rfl
+  validN_succ {x n} := by
+    simp only [validN]
+    split
+    · refine fun H => ⟨H.1, ?_⟩
+      rcases H.2 with ⟨ag, Ha⟩; exists ag
+      refine ⟨OFE.Dist.le Ha.1 n.le_succ, ?_⟩
+      exact ViewRel.mono Ha.2 .rfl (CMRA.incN_refl x.π_frag) n.le_succ
+    · exact fun _ => ViewRel.rel_unit n
+  validN_op_left {n x y} := by
+    simp [op, validN]
+    rcases x with ⟨_|⟨q1, ag1⟩, b1⟩ <;>
+    rcases y with ⟨_|⟨q2, ag2⟩, b2⟩ <;>
+    simp [CMRA.op, optionOp]
+    · refine fun a Hr => ⟨a, ?_⟩
+      exact ViewRel.mono Hr .rfl (CMRA.incN_op_left n b1 b2) n.le_refl
+    · refine fun _ a _ Hr => ⟨a, ?_⟩
+      apply ViewRel.mono Hr .rfl (CMRA.incN_op_left n b1 b2) n.le_refl
+    · refine fun Hq a H Hr => ⟨Hq, ⟨a, ⟨H, ?_⟩⟩⟩
+      apply ViewRel.mono Hr .rfl (CMRA.incN_op_left n b1 b2) n.le_refl
+    · refine fun Hq a H Hr => ⟨CMRA.valid_op_left Hq, ⟨a, ?_⟩⟩
+      refine ⟨?_, ?_⟩
+      · refine .trans ?_ H
+        refine .trans Agree.idemp.symm.dist ?_
+        exact Agree_CMRA.op_ne.ne <| Agree.op_invN (Agree.validN_ne H.symm trivial)
+      · exact ViewRel.mono Hr .rfl (CMRA.incN_op_left n b1 b2) n.le_refl
+  assoc := OFE.NonExpansive₂.eqv CMRA.assoc CMRA.assoc
+  comm := OFE.NonExpansive₂.eqv CMRA.comm CMRA.comm
+  pcore_op_left {x _} := by
+    simp only [pcore, Option.some.injEq]
+    exact fun H => H ▸ OFE.NonExpansive₂.eqv (CMRA.core_op x.π_auth) (CMRA.core_op x.π_frag)
+  pcore_idem {_ cx} := by
+    simp only [pcore, Option.some.injEq, OFE.some_eqv_some]
+    rcases cx
+    simp only [mk.injEq, and_imp]
+    intro H1 H2
+    constructor
+    · simp only; exact H1 ▸ CMRA.core_idem _
+    · exact H2 ▸ CMRA.core_idem _
+  pcore_op_mono := by
+    apply pcore_op_mono_of_core_op_mono
 
+    -- A is (Option ((DFrac F) × Agree A) × B)
+    -- B is View F R
+    let f : (Option ((DFrac F) × Agree A) × B) → View F R := fun x => ⟨x.1, x.2⟩
+    let g : View F R → (Option ((DFrac F) × Agree A) × B) := fun x => (x.1, x.2)
+    let opM' (x : View F R) (y : Option (View F R)) : View F R :=
+      match y with | some y => op x y | none => x
 
+    have g_pcore_0 {y : View F R} : CMRA.pcore (g y) ≡ g <$> pcore y := by
+      rcases y with ⟨x, b⟩
+      simp only [pcore, Option.map_eq_map, Option.map, g]
+      simp [CMRA.pcore, prod.pcore, optionCore]
+      simp [CMRA.pcore_eq_core]
+      rfl
 
+    have g_pcore {y cy : View F R} : pcore y ≡ some cy ↔ CMRA.pcore (g y) ≡ some (g cy) := by
+      suffices y.pcore ≡ some cy ↔ g <$> y.pcore ≡ some (g cy) by
+        exact ⟨g_pcore_0.trans ∘ this.mp, this.mpr ∘ g_pcore_0.symm.trans⟩
+      refine Iff.trans OFE.equiv_dist (Iff.trans ?_ OFE.equiv_dist.symm)
+      exact ⟨fun H n => H n, fun H n => H n⟩
 
+    have g_opM_f {x y} : g (opM' y (f x)) ≡ CMRA.op (g y) x := by
+      simp [opM', g, f, CMRA.op, prod.op]
 
+    -- Port: Line 1921 of CMRA
+    rintro y1 cy y2 ⟨z, Hy2⟩ Hy1
+    let Lcore := (@CMRA.pcore_mono' _ _ (g y1) (g y2) (g cy) ?G1 ?G2)
+    case G1 => exists (g z)
+    case G2 => exact g_pcore.mp <| OFE.Equiv.of_eq Hy1
+    rcases Lcore with ⟨cx, Hcgy2, ⟨x, Hcx⟩⟩
+    have Hcx' : cx ≡ g (opM' cy (f x)) := Hcx
+    have Hcgy2' : CMRA.pcore (g y2) ≡ some (g (opM' cy (f x))) := by rw [Hcgy2]; exact Hcx
+    have Hcgy2'' : pcore y2 ≡ some (opM' cy (f x)) := g_pcore.mpr Hcgy2'
+    generalize HC : y2.pcore = C
+    rw [HC] at Hcgy2''
+    cases C; exact Hcgy2''.elim
+    rename_i cy'
+    refine ⟨cy', ⟨rfl, ?_⟩⟩
+    exists (f x)
+  extend {n x y1 y2} Hv He := by
+    let g : View F R → (Option ((DFrac F) × Agree A) × B) := fun x => (x.1, x.2)
+    -- let g_ne : OFE.NonExpansive g := ⟨fun _ _ _ H => ⟨H.1, H.2⟩⟩
+    have H2 := @CMRA.extend _ _ n (g x) (g y1) (g y2) ?G1 He
+    case G1 =>
+      simp_all [validN, CMRA.ValidN, prod.ValidN, g, optionValidN]
+      rcases x with ⟨_|⟨q1, ag1⟩, b1⟩ <;> simp_all only
+      · refine ⟨trivial, ?_⟩
+        rcases Hv with ⟨_, Ha⟩
+        apply ViewRel.rel_validN _ _ _ Ha
+      · rcases Hv with ⟨Hq, ⟨a, ⟨Ha1, Ha2⟩⟩⟩
+        refine ⟨⟨Hq, ?_⟩, ?_⟩
+        · exact Agree.validN_ne Ha1.symm trivial
+        · exact ViewRel.rel_validN _ _ _ Ha2
+    rcases H2 with ⟨z1, z2, Hze, Hz1, Hz2⟩
+    exists ⟨z1.1, z1.2⟩
+    exists ⟨z2.1, z2.2⟩
 
 end cmra
 end View
