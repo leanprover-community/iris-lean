@@ -181,4 +181,7 @@ theorem valid_discarded : ✓ (LeibnizO.mk Discard : DFrac F) := by simp [CMRA.V
 theorem valid_own_op_discarded {q : F} : ✓ (⟨Own q⟩ • ⟨Discard⟩ : DFrac F) ↔ (Fractional q) := by
   simp [CMRA.op, op, CMRA.Valid, valid]
 
+instance : CMRA.Discrete (DFrac F) where
+  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
+
 end dfrac

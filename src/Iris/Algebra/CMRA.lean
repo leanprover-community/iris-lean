@@ -1141,6 +1141,8 @@ theorem validN_op_unit {n} {x : Option α} (vx: ✓{n} x): ✓{n} x • CMRA.uni
   | .none => vx
   | .some _ => vx
 
+instance Some_ne : NonExpansive (some : α → Option α) := ⟨fun _ _ _ => id⟩
+
 end option
 
 section unit
