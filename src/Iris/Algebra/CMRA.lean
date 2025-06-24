@@ -1154,69 +1154,79 @@ instance cmraUnit : CMRA Unit where
 
 end unit
 
-section prod
-
-variable [CMRA α] [CMRA β]
-
-instance cmraProd : CMRA (α × β) where
-  pcore x := do
-    let a <- CMRA.pcore x.fst
-    let b <- CMRA.pcore x.snd
-    return (a,b)
-  op x y := (x.fst • y.fst, x.snd • y.snd)
-  ValidN n x := ✓{n} x.fst ∧ ✓{n} x.snd
-  Valid x := ✓ x.fst ∧ ✓ x.snd
-  op_ne {x} :=
-    {ne n y z h := dist_prod_ext (Dist.op_r $ dist_fst h) (Dist.op_r $ dist_snd h)}
-  pcore_ne {n x y cx} h ph :=
-    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some.mp ph
-    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some.mp this
-    have ⟨cy₁, hcy₁, hxy₁⟩ := CMRA.pcore_ne (dist_fst h) hcx₁
-    have ⟨cy₂, hcy₂, hxy₂⟩ := CMRA.pcore_ne (dist_snd h) hcx₂
-    suffices g: cx ≡{n}≡ (cy₁, cy₂) by simp [hcy₁, hcy₂, g]
-    calc
-      cx ≡{n}≡ (cx₁, cx₂) := Dist.of_eq (Option.some.inj hcx).symm
-      _  ≡{n}≡ (cy₁, cy₂) := dist_prod_ext hxy₁ hxy₂
-  validN_ne {n} x y H := fun ⟨vx1, vx2⟩ =>
-    ⟨ (Dist.validN $ dist_fst H).mp vx1, (Dist.validN $ dist_snd H).mp vx2 ⟩
-  valid_iff_validN {x} :=
-    ⟨ fun ⟨va, vb⟩ n => ⟨CMRA.Valid.validN va, CMRA.Valid.validN vb⟩,
-      fun h =>
-        ⟨ CMRA.valid_iff_validN.mpr fun n => (h n).left,
-          CMRA.valid_iff_validN.mpr fun n => (h n).right ⟩ ⟩
-  validN_succ {x n} := fun ⟨va, vb⟩ => ⟨CMRA.validN_succ va, CMRA.validN_succ vb⟩
-  validN_op_left {n x y} := fun ⟨va, vb⟩ => ⟨CMRA.validN_op_left va, CMRA.validN_op_left vb⟩
-  assoc {x y z} := ⟨CMRA.assoc, CMRA.assoc⟩
-  comm {x y} := ⟨CMRA.comm, CMRA.comm⟩
-  pcore_op_left {x cx} h :=
-    let ⟨a, ha, ho⟩ := Option.bind_eq_some.mp h
-    let ⟨b, hb, hh⟩ := Option.bind_eq_some.mp ho
+namespace prod                                                                                 
+                                                                                             
+variable {α β : Type _} [CMRA α] [CMRA β]                                                    
+                                                                                             
+abbrev pcore (x : α × β) : Option (α × β) :=                                                 
+  (CMRA.pcore x.fst).bind fun a =>                                                           
+  (CMRA.pcore x.snd).bind fun b =>                                                           
+  return (a,b)                                                                               
+                                                                                             
+abbrev op (x y : α × β) : α × β :=                                                           
+  (x.1 • y.1, x.2 • y.2)                                                                     
+                                                                                             
+abbrev ValidN n (x : α × β) := ✓{n} x.fst ∧ ✓{n} x.snd                                       
+                                                                                             
+abbrev Valid (x : α × β) := ✓ x.fst ∧ ✓ x.snd                                                
+                                                                                             
+instance cmraProd : CMRA (α × β) where                                                       
+  pcore := pcore                                                                             
+  op := op                                                                                   
+  ValidN := ValidN                                                                           
+  Valid := Valid                                                                             
+  op_ne {x} :=                                                                               
+    {ne n y z h := dist_prod_ext (Dist.op_r $ dist_fst h) (Dist.op_r $ dist_snd h)}          
+  pcore_ne {n x y cx} h ph := by                                                             
+    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some.mp ph                                      
+    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some.mp this                                     
+    have ⟨cy₁, hcy₁, hxy₁⟩ := CMRA.pcore_ne (dist_fst h) hcx₁                                
+    have ⟨cy₂, hcy₂, hxy₂⟩ := CMRA.pcore_ne (dist_snd h) hcx₂                                
+    suffices g: cx ≡{n}≡ (cy₁, cy₂) by simp [hcy₁, hcy₂, g, pcore]                           
+    calc                                                                                     
+      cx ≡{n}≡ (cx₁, cx₂) := Dist.of_eq (Option.some.inj hcx).symm                           
+      _  ≡{n}≡ (cy₁, cy₂) := dist_prod_ext hxy₁ hxy₂                                         
+  validN_ne {n} x y H := fun ⟨vx1, vx2⟩ =>                                                   
+    ⟨ (Dist.validN $ dist_fst H).mp vx1, (Dist.validN $ dist_snd H).mp vx2 ⟩                 
+  valid_iff_validN {x} :=                                                                    
+    ⟨ fun ⟨va, vb⟩ n => ⟨CMRA.Valid.validN va, CMRA.Valid.validN vb⟩,                        
+      fun h =>                                                                               
+        ⟨ CMRA.valid_iff_validN.mpr fun n => (h n).left,                                     
+          CMRA.valid_iff_validN.mpr fun n => (h n).right ⟩ ⟩                                 
+  validN_succ {x n} := fun ⟨va, vb⟩ => ⟨CMRA.validN_succ va, CMRA.validN_succ vb⟩            
+  validN_op_left {n x y} := fun ⟨va, vb⟩ => ⟨CMRA.validN_op_left va, CMRA.validN_op_left vb⟩ 
+  assoc {x y z} := ⟨CMRA.assoc, CMRA.assoc⟩                                                  
+  comm {x y} := ⟨CMRA.comm, CMRA.comm⟩                                                       
+  pcore_op_left {x cx} h :=                                                                  
+    let ⟨a, ha, ho⟩ := Option.bind_eq_some.mp h                                              
+    let ⟨b, hb, hh⟩ := Option.bind_eq_some.mp ho                                             
     (Option.some.inj hh) ▸ OFE.equiv_prod_ext (CMRA.pcore_op_left ha) (CMRA.pcore_op_left hb)
-  pcore_idem {x cx} h :=
-    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some.mp h
-    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some.mp this
-    have ⟨a, ha, ea⟩ := equiv_some (CMRA.pcore_idem hcx₁)
-    have ⟨b, hb, eb⟩ := equiv_some (CMRA.pcore_idem hcx₂)
-    suffices g: (a, b) ≡ (cx₁, cx₂) by
-      rw [Option.some.inj hcx.symm]
-      simp [ha, hb, g]
-    equiv_prod_ext ea eb
-  pcore_op_mono {x cx} h y := by
-    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some.mp h
-    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some.mp this
-    have ⟨cy₁, hcy₁⟩ := CMRA.pcore_op_mono hcx₁ y.fst
-    have ⟨cy₂, hcy₂⟩ := CMRA.pcore_op_mono hcx₂ y.snd
-    have ⟨a, ha, ea⟩ := equiv_some hcy₁
-    have ⟨b, hb, eb⟩ := equiv_some hcy₂
-    rw [Option.some.inj hcx.symm, ha, hb]
-    exists (cy₁, cy₂)
-  extend {n x y₁ y₂} := fun ⟨vx₁, vx₂⟩ e =>
-    let ⟨z₁, w₁, hx₁, hz₁, hw₁⟩ := CMRA.extend vx₁ (OFE.dist_fst e)
-    let ⟨z₂, w₂, hx₂, hz₂, hw₂⟩ := CMRA.extend vx₂ (OFE.dist_snd e)
-    ⟨ (z₁, z₂), (w₁, w₂), OFE.equiv_prod_ext hx₁ hx₂,
-      OFE.dist_prod_ext hz₁ hz₂, OFE.dist_prod_ext hw₁ hw₂ ⟩
-
-end prod
+  pcore_idem {x cx} h :=                                                                     
+    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some.mp h                                       
+    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some.mp this                                     
+    have ⟨a, ha, ea⟩ := equiv_some (CMRA.pcore_idem hcx₁)                                    
+    have ⟨b, hb, eb⟩ := equiv_some (CMRA.pcore_idem hcx₂)                                    
+    suffices g: (a, b) ≡ (cx₁, cx₂) by                                                       
+      rw [Option.some.inj hcx.symm]                                                          
+      simp [ha, hb, g, pcore]                                                                
+    equiv_prod_ext ea eb                                                                     
+  pcore_op_mono {x cx} h y := by                                                             
+    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some.mp h                                       
+    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some.mp this                                     
+    have ⟨cy₁, hcy₁⟩ := CMRA.pcore_op_mono hcx₁ y.fst                                        
+    have ⟨cy₂, hcy₂⟩ := CMRA.pcore_op_mono hcx₂ y.snd                                        
+    have ⟨a, ha, ea⟩ := equiv_some hcy₁                                                      
+    have ⟨b, hb, eb⟩ := equiv_some hcy₂                                                      
+    unfold pcore                                                                             
+    rw [Option.some.inj hcx.symm, ha, hb]                                                    
+    exists (cy₁, cy₂)                                                                        
+  extend {n x y₁ y₂} := fun ⟨vx₁, vx₂⟩ e =>                                                  
+    let ⟨z₁, w₁, hx₁, hz₁, hw₁⟩ := CMRA.extend vx₁ (OFE.dist_fst e)                          
+    let ⟨z₂, w₂, hx₂, hz₂, hw₂⟩ := CMRA.extend vx₂ (OFE.dist_snd e)                          
+    ⟨ (z₁, z₂), (w₁, w₂), OFE.equiv_prod_ext hx₁ hx₂,                                        
+      OFE.dist_prod_ext hz₁ hz₂, OFE.dist_prod_ext hw₁ hw₂ ⟩                                 
+                                                                                             
+end prod                                                                                     
 
 section optionOF
 
