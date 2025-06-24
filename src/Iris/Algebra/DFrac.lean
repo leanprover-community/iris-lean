@@ -184,4 +184,6 @@ theorem valid_own_op_discarded {q : F} : ✓ (⟨Own q⟩ • ⟨Discard⟩ : DF
 instance : CMRA.Discrete (DFrac F) where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 
+theorem dfrac.is_discrete {q : DFrac F} : OFE.DiscreteE q := congrArg id
+
 end dfrac
