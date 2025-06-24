@@ -115,10 +115,33 @@ abbrev validN (n : Nat) (v : View F R) : Prop :=
   | some (dq, ag) => ✓ dq ∧ (∃ a, ag ≡{n}≡ toAgree a ∧ R n a (π_frag v))
   | none => ∃ a, R n a (π_frag v)
 
--- -- #synth CMRA (DFrac F × Agree A) -- Need Prod CMRA to continue, rebase over local_update PR.
--- abbrev pcore (v : View F R) : Option (View F R) :=
---   some (View.mk (CMRA.core (π_auth v)) sorry)
---   --  Some (View (core (view_auth_proj x)) (core (view_frag_proj x))).
+def pcore (v : View F R) : Option (View F R) :=
+  let ag : Option (DFrac F × Agree A) := CMRA.core v.1
+  let b : B := CMRA.core v.2
+  some <| View.mk ag b
+
+abbrev op (v1 v2 : View F R) : View F R :=
+  View.mk (v1.1 • v2.1) (v1.2 • v2.2)
+
+instance : CMRA (View F R) where
+  pcore := pcore
+  op := op
+  ValidN := validN
+  Valid := valid
+  op_ne := sorry
+  pcore_ne := sorry
+  validN_ne := sorry
+  valid_iff_validN := sorry
+  validN_succ := sorry
+  validN_op_left := sorry
+  assoc := sorry
+  comm := sorry
+  pcore_op_left := sorry
+  pcore_idem := sorry
+  pcore_op_mono := sorry
+  extend := sorry
+
+
 
 
 
