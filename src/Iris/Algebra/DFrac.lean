@@ -186,4 +186,7 @@ instance : CMRA.Discrete (DFrac F) where
 
 theorem dfrac.is_discrete {q : DFrac F} : OFE.DiscreteE q := congrArg id
 
+instance : CMRA.Discrete (DFrac F) where
+  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
+
 end dfrac
