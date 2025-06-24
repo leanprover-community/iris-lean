@@ -167,4 +167,6 @@ theorem valid_discarded : ✓ (LeibnizO.mk Discard : DFrac F) := by simp [CMRA.V
 instance : CMRA.Discrete (DFrac F) where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 
+theorem dfrac.is_discrete {q : DFrac F} : OFE.DiscreteE q := congrArg id
+
 end dfrac

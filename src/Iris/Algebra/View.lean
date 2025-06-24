@@ -196,9 +196,6 @@ instance : CMRA (View F R) where
     · exact H2 ▸ CMRA.core_idem _
   pcore_op_mono := by
     apply pcore_op_mono_of_core_op_mono
-
-    -- A is (Option ((DFrac F) × Agree A) × B)
-    -- B is View F R
     let f : (Option ((DFrac F) × Agree A) × B) → View F R := fun x => ⟨x.1, x.2⟩
     let g : View F R → (Option ((DFrac F) × Agree A) × B) := fun x => (x.1, x.2)
     let opM' (x : View F R) (y : Option (View F R)) : View F R :=
@@ -220,7 +217,6 @@ instance : CMRA (View F R) where
     have g_opM_f {x y} : g (opM' y (f x)) ≡ CMRA.op (g y) x := by
       simp [opM', g, f, CMRA.op, prod.op]
 
-    -- Port: Line 1921 of CMRA
     rintro y1 cy y2 ⟨z, Hy2⟩ Hy1
     let Lcore := (@CMRA.pcore_mono' _ _ (g y1) (g y2) (g cy) ?G1 ?G2)
     case G1 => exists (g z)
@@ -237,7 +233,6 @@ instance : CMRA (View F R) where
     exists (f x)
   extend {n x y1 y2} Hv He := by
     let g : View F R → (Option ((DFrac F) × Agree A) × B) := fun x => (x.1, x.2)
-    -- let g_ne : OFE.NonExpansive g := ⟨fun _ _ _ H => ⟨H.1, H.2⟩⟩
     have H2 := @CMRA.extend _ _ n (g x) (g y1) (g y2) ?G1 He
     case G1 =>
       simp_all [validN, CMRA.ValidN, prod.ValidN, g, optionValidN]
@@ -252,6 +247,43 @@ instance : CMRA (View F R) where
     rcases H2 with ⟨z1, z2, Hze, Hz1, Hz2⟩
     exists ⟨z1.1, z1.2⟩
     exists ⟨z2.1, z2.2⟩
+
+omit [ViewRel R] in
+theorem view_auth_discrete {dq a} (Ha : OFE.DiscreteE a) (He : OFE.DiscreteE (UCMRA.unit : B)) :
+    OFE.DiscreteE (●V{dq} a : View F R) := by
+  refine is_discrete ?_ He
+  apply OFE.Option.some_is_discrete
+  apply OFE.prod.is_discrete dfrac.is_discrete
+  apply Agree.toAgree.is_discrete
+  exact Ha
+
+omit [DFractional F] [ViewRel R] in
+theorem view_frag_discrete {b : B} (Hb : OFE.DiscreteE b) : (OFE.DiscreteE (◯V b : View F R)) :=
+  is_discrete OFE.Option.none_is_discrete Hb
+
+instance [OFE.Discrete A] [CMRA.Discrete B] [ViewRelDiscrete R] : CMRA.Discrete (View F R) where
+  discrete_valid := by
+    simp [CMRA.ValidN, validN, CMRA.Valid, valid]
+    intro x
+    split
+    · rintro ⟨H1, ⟨a, H2, H3⟩⟩
+      refine ⟨H1, fun n => ⟨a, ⟨?_, ?_⟩⟩⟩
+      · exact OFE.equiv_dist.mp (OFE.Discrete.discrete_0 H2) _
+      · exact ViewRelDiscrete.discrete _ _ _ H3
+    · rintro ⟨a, H⟩ _
+      exact ⟨a, ViewRelDiscrete.discrete _ _ _ H⟩
+
+instance : UCMRA (View F R) where
+  unit := ⟨UCMRA.unit, UCMRA.unit⟩
+  unit_valid := by
+    simp [CMRA.Valid, valid]
+    exact ViewRel.rel_unit
+  unit_left_id := by exact ⟨UCMRA.unit_left_id, UCMRA.unit_left_id⟩
+  pcore_unit := by
+    simp [CMRA.pcore, pcore]
+    constructor <;> simp only []
+    · simp [CMRA.core, CMRA.pcore, optionCore, Option.bind, UCMRA.unit]
+    · exact CMRA.core_eqv_self UCMRA.unit
 
 end cmra
 end View

@@ -184,6 +184,18 @@ theorem Agree.includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x :=
 theorem Agree.included {x y : Agree α} : x ≼ y ↔ y ≡ y • x :=
   ⟨fun ⟨z, h⟩ n => includedN.mp ⟨z, h n⟩, fun h => ⟨y, h.trans op_comm⟩⟩
 
+theorem Agree.toAgree.is_discrete {a : α} (Ha : OFE.DiscreteE a) : OFE.DiscreteE (toAgree a) := by
+  simp [toAgree]
+  intro y Ha _
+  cases y
+  rcases Ha with ⟨Hal, Har⟩
+  constructor <;> simp_all
+  · rcases Hal with ⟨b, Hb1, Hb2⟩
+    refine ⟨b, ⟨Hb1, ?_⟩⟩
+    exact OFE.Equiv.dist (Ha (Har b Hb1))
+  · intro H Hb
+    exact OFE.Equiv.dist (Ha (Har H Hb))
+
 open OFE OFE.Discrete in
 instance [OFE α] [OFE.Discrete α] : OFE.Discrete (Agree α) where
   discrete_0 {x y} H := by
