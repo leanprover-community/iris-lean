@@ -224,6 +224,19 @@ theorem valid_opM {x: α}{my: Option α}: ✓ (x •? my) → ✓ x :=
   match my with
   | none => id  | some _ => valid_op_left
 
+theorem validN_op_opM_left {n} {x y: α} {mz: Option α} : ✓{n} (x • y) •? mz → ✓{n} x •? mz :=
+  match mz with
+  | .none => validN_op_left
+  | .some z => fun h =>
+    have := calc
+      (x • y) • z ≡{n}≡ x • (y • z) := op_assocN.symm
+      _           ≡{n}≡ x • (z • y) := op_right_dist x op_commN
+      _           ≡{n}≡ (x • z) • y := op_assocN
+    validN_op_left ((Dist.validN this).mp h)
+
+theorem validN_op_opM_right {n} {x y: α} {mz: Option α} : ✓{n} (x • y) •? mz → ✓{n} y •? mz :=
+  fun h => validN_op_opM_left (validN_ne (opM_left_dist mz op_commN) h)
+
 /-! ## Core -/
 
 theorem pcore_proper {x y : α} (cx : α) (e : x ≡ y) (ps : pcore x = some cx)
@@ -1154,7 +1167,7 @@ instance cmraUnit : CMRA Unit where
 
 end unit
 
-namespace prod
+namespace Prod
 
 variable {α β : Type _} [CMRA α] [CMRA β]
 
@@ -1226,7 +1239,13 @@ instance cmraProd : CMRA (α × β) where
     ⟨ (z₁, z₂), (w₁, w₂), OFE.equiv_prod_ext hx₁ hx₂,
       OFE.dist_prod_ext hz₁ hz₂, OFE.dist_prod_ext hw₁ hw₂ ⟩
 
-end prod
+theorem valid_fst {x : α × β} (h: ✓ x): ✓ x.fst := h.left
+theorem valid_snd {x : α × β} (h: ✓ x): ✓ x.snd := h.right
+
+theorem validN_fst {n} {x : α × β} (h: ✓{n} x): ✓{n} x.fst := h.left
+theorem validN_snd {n} {x : α × β} (h: ✓{n} x): ✓{n} x.snd := h.right
+
+end Prod
 
 section optionOF
 
