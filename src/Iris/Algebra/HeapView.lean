@@ -10,7 +10,7 @@ import Iris.Algebra.DFrac
 
 open Iris
 
-namespace heap_view
+section heap_view
 
 variable (F K V : Type _) (H : Type _ → Type _) [DFractional F] [∀ T, Heap (H T) K T] [CMRA V]
 
