@@ -11,10 +11,10 @@ open Iris
 
 /- # Datatype and CMRA for a generic heap-like structure. -/
 
-open Classical in
-/-- Update a (classical) function at a point. Used to specify the correctness of stores. -/
-noncomputable def fset {K V : Type _} (f : K → V) (k : K) (v : V) : K → V :=
-  fun k' => if (k = k') then v else f k'
+-- open Classical in
+-- /- Update a (classical) function at a point. Used to specify the correctness of stores. -/
+-- noncomputable def fset {K V : Type _} (f : K → V) (k : K) (v : V) : K → V :=
+--   fun k' => if (k = k') then v else f k'
 
 /-- `T` can store and retrieve keys and values. -/
 class StoreLike (T : Type _) (K V : outParam (Type _)) where
@@ -25,7 +25,8 @@ export StoreLike (get set)
 
 /-- `T`'s store and retrieve operations behave like a classical store. -/
 class Store (T : Type _) (K V : outParam (Type _)) extends StoreLike T K V where
-  get_set {t k v} : get (set t k v) = fset (get t : K → V) k v
+  get_set_eq {t k k' v} : k = k' → get (set t k v) k' = v
+  get_set_ne {t k k' v} : k ≠ k' → get (set t k v) k' = get t k'
   /-- One-sided inverse between get and of_fun. The other direction does not need to hold. -/
   of_fun_get {f} : get (of_fun f) = f
 
@@ -38,34 +39,48 @@ def StoreLike.map [StoreLike T1 K V1] [StoreLike T2 K V2] (t : T1) (f : V1 → V
 def StoreLike.merge [StoreLike T K V] (op : V → V → V) (t1 t2 : T) : T :=
   StoreLike.of_fun <| (fun k => op (StoreLike.get t1 k) (StoreLike.get t2 k))
 
+/-- An (index-dependent) predicate holds at every member of the store. -/
+def StoreLike.all [StoreLike T K V] (P : K → V → Prop) : T → Prop :=
+  fun t => ∀ k, P k (StoreLike.get t k)
+
+/-- Lift a predicate on store values to a predicate on heap values, which is true for undefined entries. -/
+abbrev lift_dom (P : K → V → Prop) (k : K) : Option V → Prop
+  |.some v => P k v
+  | .none => True
+
 class Alloc (T : Type _) (K : outParam (Type _)) where
   fresh : T → K
+
+class WithPoints (T : Type _) (K V : outParam (Type _)) where
+  point : K → V → T
 
 class HeapLike (T : Type _) (K V : outParam (Type _)) extends StoreLike T K (Option V)
 
 /-- A type is HeapLike when it behaves like store for Optional values -/
-class Heap (T : Type _) (K V : outParam (Type _)) extends HeapLike T K V, Alloc T K, Store T K (Option V) where
+class Heap (T : Type _) (K V : outParam (Type _))
+    extends HeapLike T K V, Alloc T K, Store T K (Option V), WithPoints T K (Option V) where
   fresh_get {t} : get t (fresh t) = none
+  point_get_eq {k k' v} : k = k' → get (point k v) k' = some v
+  point_get_ne {k k' v} : k ≠ k' → get (point k v) k' = none
 
-abbrev delete [HeapLike T K V] (t : T) (k : K) : T := StoreLike.set t k .none
-abbrev empty [HeapLike T K V] : T := StoreLike.of_fun (fun _ => .none)
-abbrev dom [HeapLike T K V] : T → K → Prop := fun t k => (StoreLike.get t k).isSome
+abbrev HeapLike.delete [HeapLike T K V] (t : T) (k : K) : T := StoreLike.set t k .none
+abbrev HeapLike.empty [HeapLike T K V] : T := StoreLike.of_fun (fun _ => .none)
+abbrev HeapLike.dom [HeapLike T K V] : T → K → Prop := fun t k => (StoreLike.get t k).isSome
 
+/-- Value-generic heap, ie. a higher-order type that is heap-like at every type.
+For heaps whose representation internalizes the type which it contains, (for example, lists,
+trees, functions) this is probably the class you want. -/
+abbrev HeapF (H : Type _ → Type _) (K : outParam (Type _)) :=
+  ∀ T : Type _, HeapLike (H T) K T
 
-namespace Store
-variable {T K V : Type _} [Store T K V]
+-- Example:
+-- abbrev FT (A B : Type _) : Type _ := A → B
+-- instance (T V : Type _) : Heap (FT T V) T V := sorry
+-- #synth HeapF (FT Nat) Nat
 
-theorem get_set_ne {m : T} (H : k ≠ k') : get (set m k v) k' = get m k' := by
-  rw [get_set]; unfold fset; rw [if_neg H]
-
-theorem get_set_eq {m : T} (H : k = k') : get (set m k v) k' = v := by
-  rw [get_set]; unfold fset; rw [if_pos H]
-
-theorem get_merge {op : V → V → V} (t1 t2 : T) (k : K) :
+theorem Store.get_merge [Store T K V] {op : V → V → V} (t1 t2 : T) (k : K) :
     StoreLike.get (StoreLike.merge op t1 t2) k = op (StoreLike.get t1 k) (StoreLike.get t2 k) := by
   unfold StoreLike.merge; rw [Store.of_fun_get]
-
-end Store
 
 theorem Store.get_map [StoreLike T1 K V1] [Store T2 K V2] {t : T1} {f : V1 → V2} {k : K} :
     StoreLike.get (StoreLike.map t f : T2) k = f (StoreLike.get t k) := by
@@ -107,10 +122,10 @@ instance [StoreLike T K V] [OFE V] (k : K) : NonExpansive (StoreO.get k : StoreO
 -- TODO: A `Proper` class could avoid the variable reordering.
 instance [Store T K V] [OFE V] (k : K) : NonExpansive₂ (StoreO.set k : V → StoreO T → StoreO T) where
   ne {n v1 v2} Hv {t1 t2} Ht k' := by
-    simp only [StoreO.set, Store.get_set, fset]
-    split
-    · exact Hv
-    · exact Ht k'
+    simp only [StoreO.set]
+    cases (Classical.em (k = k'))
+    · rename_i H; rw [Store.get_set_eq H, Store.get_set_eq H]; exact Hv
+    · rename_i H; rw [Store.get_set_ne H, Store.get_set_ne H]; exact Ht k'
 
 @[simp] def StoreO.merge [StoreLike T K V] (op : V → V → V) (s1 s2 : StoreO T) : StoreO T :=
   .mk (StoreLike.merge op s1.1 s2.1)
@@ -133,6 +148,20 @@ instance StoreO_COFE [Store T K V] [COFE V] : COFE (StoreO T) where
   conv_compl {n c} k := by
     rw [Store.of_fun_get]
     exact COFE.conv_compl (c := Chain.map StoreO.toMap c) k
+
+@[simp] def StoreO.all [StoreLike T K V] (P : K → V → Prop) : StoreO T → Prop :=
+  fun t => StoreLike.all P t.1
+
+@[simp] def StoreO.dom [HeapLike T K V] : StoreO T → K → Prop :=
+  fun t k => HeapLike.dom t.1 k
+
+@[simp] def StoreO.empty [HeapLike T K V] : StoreO T := ⟨HeapLike.empty⟩
+
+@[simp] def StoreO.delete [HeapLike T K V] : StoreO T → K → StoreO T :=
+  fun t k => .mk <| HeapLike.delete t.1 k
+
+@[simp] def StoreO.singleton [WithPoints T K V]: K → V → StoreO T :=
+  fun t k => ⟨WithPoints.point t k⟩
 
 instance [Store T K V] [COFE V] [Discrete V] : Discrete (StoreO T) where
   discrete_0 H k := discrete_0 <| H k
@@ -167,7 +196,7 @@ abbrev pcore_F : Option V → Option V
 | Option.some v => CMRA.pcore v
 | Option.none => Option.none
 abbrev store_op (s1 s2 : StoreO T) : StoreO T := StoreO.merge op_merge s1 s2
-abbrev store_unit : StoreO T := ⟨empty⟩
+abbrev store_unit : StoreO T := StoreO.empty
 abbrev store_pcore (s : StoreO T) : Option (StoreO T) := some <| StoreO.map pcore_F s
 abbrev store_valid (s : StoreO T) : Prop := ∀ k, ✓ (StoreO.get k s : Option V)
 abbrev store_validN (n : Nat) (s : StoreO T) : Prop := ∀ k, ✓{n} (StoreO.get k s : Option V)
