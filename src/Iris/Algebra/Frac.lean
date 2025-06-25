@@ -100,9 +100,9 @@ variable [iFrac : Fractional α]
 
 instance Frac_CMRA : CMRA (Frac α) where
   pcore _ := none
-  op := Add.add
-  ValidN _ x := x ≤ iFrac.one
-  Valid x := x ≤ iFrac.one
+  op := (Add.add)
+  ValidN _ x := x ≤ 1
+  Valid x := x ≤ 1
   op_ne {x} := ⟨fun _ _ _ => congrArg (Add.add x)⟩
   pcore_ne := fun _ => (exists_eq_right'.mpr ·)
   validN_ne := (le_of_eq_of_le ∘ OFE.Dist.symm <| ·)
@@ -139,8 +139,10 @@ instance : CMRA.Discrete (Frac α) where
   discrete_0 := id
   discrete_valid := id
 
-instance : CMRA.Exclusive (one : Frac α) where
-  exclusive0_l _ H := by apply @positive α
+instance : CMRA.Exclusive (1 : Frac α) where
+  exclusive0_l x H := by
+    simp [@iFrac.CMRA.op α iFrac, @Frac_CMRA.ValidN α iFrac] at H
+    apply positive ⟨_, H⟩
   --Fractional.positive ⟨_, H⟩
 
 -- TODO: Simplify
@@ -170,6 +172,9 @@ instance {q : Frac α} : CMRA.IdFree q where
     conv=>
       rhs
       rw [← H']
+    unfold CMRA.op
+    unfold Frac_CMRA.3
+
     apply @le_refl α iFrac
 
 end Frac
