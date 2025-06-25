@@ -44,7 +44,7 @@ class Alloc (T : Type _) (K : outParam (Type _)) where
 class HeapLike (T : Type _) (K V : outParam (Type _)) extends StoreLike T K (Option V)
 
 /-- A type is HeapLike when it behaves like store for Optional values -/
-class Heap (T : Type _) (K V : outParam (Type _)) extends HeapLike T K V, Alloc T K where
+class Heap (T : Type _) (K V : outParam (Type _)) extends HeapLike T K V, Alloc T K, Store T K (Option V) where
   fresh_get {t} : get t (fresh t) = none
 
 abbrev delete [HeapLike T K V] (t : T) (k : K) : T := StoreLike.set t k .none
@@ -121,6 +121,13 @@ instance [Store T K V] [OFE V] (op : V → V → V) [NonExpansive₂ op] :
     simp only [StoreO.merge, Store.get_merge]
     exact NonExpansive₂.ne (Ht k) (Hs k)
 
+@[simp] def StoreO.map [StoreLike T1 K V1] [Store T2 K V2] (f : V1 → V2) : StoreO T1 → StoreO T2 :=
+  fun t => ⟨StoreLike.map t.1 f⟩
+
+instance [StoreLike T1 K V1] [Store T2 K V2] [OFE V1] [OFE V2] (f : V1 → V2) [NonExpansive f] :
+    NonExpansive (StoreO.map f : StoreO T1 → StoreO T2) where
+  ne n {_ _} H k := by simp [StoreO.map, Store.get_map]; exact NonExpansive.ne (H k)
+
 instance StoreO_COFE [Store T K V] [COFE V] : COFE (StoreO T) where
   compl c := ⟨StoreLike.of_fun <| COFE.compl <| c.map StoreO.toMap⟩
   conv_compl {n c} k := by
@@ -146,14 +153,47 @@ end ofe
 
 section cmra
 
+open CMRA
+
 /- ## A CMRA on Heaps
 TODO: I think there may be a generic way to put a CMRA on Stores, but I'm not sure of it. -/
 
+variable [Heap T K V] [CMRA V]
 
+abbrev op_merge : Option V → Option V → Option V
+| Option.some v1, Option.some v2 => Option.some (v1 • v2)
+| _, _ => Option.none
+abbrev pcore_F : Option V → Option V
+| Option.some v => CMRA.pcore v
+| Option.none => Option.none
+abbrev store_op (s1 s2 : StoreO T) : StoreO T := StoreO.merge op_merge s1 s2
+abbrev store_unit : StoreO T := ⟨empty⟩
+abbrev store_pcore (s : StoreO T) : Option (StoreO T) := some <| StoreO.map pcore_F s
+abbrev store_valid (s : StoreO T) : Prop := ∀ k, ✓ (StoreO.get k s : Option V)
+abbrev store_validN (n : Nat) (s : StoreO T) : Prop := ∀ k, ✓{n} (StoreO.get k s : Option V)
 
+instance StoreO_CMRA : CMRA (StoreO T) where
+  pcore := store_pcore
+  op := store_op
+  ValidN := store_validN
+  Valid := store_valid
+  op_ne := sorry
+  pcore_ne := sorry
+  validN_ne := sorry
+  valid_iff_validN := sorry
+  validN_succ := sorry
+  validN_op_left := sorry
+  assoc := sorry
+  comm := sorry
+  pcore_op_left := sorry
+  pcore_idem := sorry
+  pcore_op_mono := sorry
+  extend := sorry
 
-open CMRA
-
-
+instance StoreO_UCMRA : UCMRA (StoreO T) where
+  unit := store_unit
+  unit_valid := sorry
+  unit_left_id := sorry
+  pcore_unit := sorry
 
 end cmra
