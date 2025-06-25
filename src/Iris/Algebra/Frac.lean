@@ -19,6 +19,8 @@ class Fractional (α : Type _) extends One α, Add α, LE α, LT α where
   add_comm : ∀ {a b : α}, a + b = b + a
   add_assoc : ∀ {a b c : α}, a + (b + c) = (a + b) + c
   add_left_cancel : ∀ {a b c : α}, a + b = a + c → b = c
+  halve : α → α
+  halve_add : ∀ a : α, (halve a) + (halve a) = a
   le_def : ∀ {a b : α}, a ≤ b ↔ a = b ∨ a < b
   lt_def : ∀ {a b : α}, a < b ↔ ∃ c : α, a + c = b
   lt_not_eq : ∀ {a b : α}, a < b → a ≠ b
