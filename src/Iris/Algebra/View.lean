@@ -102,6 +102,13 @@ instance auth_ne {dq : DFrac F} : OFE.NonExpansive (View.auth dq : A → View F 
     simp only
     exact OFE.NonExpansive.ne H
 
+instance auth_ne₂ : OFE.NonExpansive₂ (View.auth : DFrac F → A → View F R) where
+  ne _ _ _ Hq _ _ Hf := by
+    unfold auth
+    refine (OFE.NonExpansive₂.ne ?_ .rfl)
+    refine OFE.NonExpansive.ne ?_
+    exact OFE.dist_prod_ext Hq (OFE.NonExpansive.ne Hf)
+
 instance frag_ne : OFE.NonExpansive (View.frag : B → View F R) where
   ne _ _ _ H := View.mk.ne.ne .rfl H
 
@@ -341,19 +348,22 @@ theorem view_auth_validN n a : ✓{n} (●V a : View F R) ↔ R n a UCMRA.unit :
 
 theorem view_auth_dfrac_op_validN :
     ✓{n} ((●V{dq1} a1 : View F R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡{n}≡ a2 ∧ R n a1 UCMRA.unit := by
-  sorry
-  -- simp only [View.auth, CMRA.op, op, optionOp, prod.op, ]
-  -- refine ⟨fun H => ?_, fun H => ?_⟩
-  -- · sorry
-  -- · sorry
-/-
-  Proof.
-    split.
-    - intros Hval. assert (a1 ≡{n}≡ a2) as Ha by eauto using view_auth_dfrac_op_invN.
-      revert Hval. rewrite Ha -view_auth_dfrac_op view_auth_dfrac_validN. naive_solver.
-    - intros (?&->&?). by rewrite -view_auth_dfrac_op view_auth_dfrac_validN.
-  Qed.
--/
+  -- simp only [View.auth, CMRA.op, op, optionOp, prod.op, CMRA.ValidN, validN]
+  refine ⟨fun H => ?_, fun H => ?_⟩
+  · let Ha' : a1 ≡{n}≡ a2 := view_auth_dfrac_op_invN H
+    rcases H with ⟨Hq, _, Ha, HR⟩
+    refine ⟨Hq, Ha', ViewRel.mono HR ?_ CMRA.incN_unit n.le_refl⟩
+    refine .trans ?_ Ha'.symm
+    refine toAgree.inj ?_
+    apply Ha.symm.trans
+    apply CMRA.op_commN.trans
+    apply (CMRA.op_ne.ne (toAgree.ne.ne Ha')).trans
+    apply Agree.idemp
+  · simp [CMRA.op, CMRA.ValidN, validN, optionOp, prod.op]
+    refine ⟨H.1, a1, ?_, ?_⟩
+    · exact (CMRA.op_ne.ne <| toAgree.ne.ne H.2.1.symm).trans Agree.idemp.dist
+    · refine ViewRel.mono H.2.2 .rfl ?_ n.le_refl
+      exact OFE.Dist.to_incN <| CMRA.unit_left_id_dist UCMRA.unit
 
 theorem view_auth_op_validN : ✓{n} ((●V a1 : View F R) • ●V a2) ↔ False := by
   refine view_auth_dfrac_op_validN.trans ?_
@@ -376,15 +386,17 @@ theorem view_auth_valid : ✓ (●V a : View F R) ↔ ∀ n, R n a UCMRA.unit :=
   view_auth_dfrac_valid.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
 theorem view_auth_dfrac_op_valid : ✓ ((●V{dq1} a1 : View F R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡ a2 ∧ ∀ n, R n a1 UCMRA.unit := by
-  sorry
-/-
-  Proof.
-    rewrite 1!cmra_valid_validN equiv_dist. setoid_rewrite view_auth_dfrac_op_validN.
-    split; last naive_solver. intros Hv.
-    split; last naive_solver. apply (Hv 0ᵢ).
-  Qed.
--/
-
+  refine CMRA.valid_iff_validN.trans ?_
+  refine ⟨fun H => ?_, fun H n => ?_⟩
+  · simp [CMRA.Valid, valid, auth, CMRA.op, op, optionOp, CMRA.ValidN, validN] at H
+    let Hn (n) := view_auth_dfrac_op_invN (H n)
+    refine ⟨(H 0).1, OFE.equiv_dist.mpr Hn, fun n => ?_⟩
+    · rcases (H n) with ⟨_, _, Hl, H⟩
+      apply ViewRel.mono H ?_ CMRA.incN_unit n.le_refl
+      apply toAgree.inj
+      apply Hl.symm.trans
+      exact (CMRA.op_ne.ne <| toAgree.ne.ne (Hn _).symm).trans Agree.idemp.dist
+  · exact view_auth_dfrac_op_validN.mpr ⟨H.1, H.2.1.dist, H.2.2 n⟩
 
 theorem view_auth_op_valid : ✓ ((●V a1 : View F R) • ●V a2) ↔ False := by
   refine view_auth_dfrac_op_valid.trans ?_
@@ -399,8 +411,15 @@ theorem view_both_dfrac_valid : ✓ ((●V{dq} a : View F R) • ◯V b) ↔ ✓
 theorem view_both_valid : ✓ ((●V a : View F R) • ◯V b) ↔ ∀ n, R n a b :=
   view_both_dfrac_valid.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
-theorem view_auth_dfrac_includedN :
-    (●V{dq1} a1 : View F R) ≼{n} ((●V{dq2} a2) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := sorry
+theorem view_auth_dfrac_includedN : (●V{dq1} a1 : View F R) ≼{n} ((●V{dq2} a2) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := by
+  sorry
+  -- refine ⟨?_, fun H => ?_⟩
+  -- · simp only [auth, frag, CMRA.IncludedN, CMRA.op, op, optionOp, prod.op]
+  --   rintro ⟨(_|⟨q', a'⟩),⟨⟨x1, x2⟩, y⟩⟩
+  --   · exact ⟨Or.inr x1.symm, toAgree.inj x2.symm⟩
+  --   · simp_all only []
+  --     sorry
+  -- · sorry
 /-
   Proof.
     split.
@@ -415,8 +434,20 @@ theorem view_auth_dfrac_includedN :
 -/
 
 
-theorem view_auth_dfrac_included :
-    ((●V{dq1} a1 : View F R) ≼ (●V{dq2} a2 : View F R) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2 := sorry
+theorem view_auth_dfrac_included : ((●V{dq1} a1 : View F R) ≼ (●V{dq2} a2 : View F R) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2 := by
+  refine ⟨fun H => ⟨?_, ?_⟩, fun H => ?_⟩
+  · exact view_auth_dfrac_includedN (n := 0) |>.mp (CMRA.incN_of_inc _ H) |>.1
+  · refine OFE.equiv_dist.mpr (fun n => ?_)
+    exact view_auth_dfrac_includedN |>.mp (CMRA.incN_of_inc _ H) |>.2
+  · rcases H with ⟨(⟨q, Hq⟩|Hq), Ha⟩
+    · apply (CMRA.inc_iff_right <| ?G).mp
+      case G =>
+        apply OFE.Equiv.symm
+        apply CMRA.comm.trans
+        apply CMRA.op_ne.eqv
+        apply auth_ne₂.eqv Hq Ha.symm
+      sorry
+    · sorry
 /-
   Proof.
     intros. split.
