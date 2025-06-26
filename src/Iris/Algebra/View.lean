@@ -39,10 +39,10 @@ structure View (F : Type _) {A B : Type _} (R : view_rel A B) where
   π_auth : Option ((DFrac F) × Agree A)
   π_frag : B
 
-def View.auth [UCMRA B] {R : view_rel A B} (dq : DFrac F) (a : A) : View F R :=
+abbrev View.auth [UCMRA B] {R : view_rel A B} (dq : DFrac F) (a : A) : View F R :=
   ⟨some (dq, toAgree a), UCMRA.unit⟩
 
-def View.frag {R : view_rel A B} (b : B) : View F R := ⟨none, b⟩
+abbrev View.frag {R : view_rel A B} (b : B) : View F R := ⟨none, b⟩
 
 notation "●V{" dq "} " a => View.auth dq a
 notation "●V " a => View.auth (LeibnizO.mk <| DFracK.Own One.one) a
@@ -84,6 +84,17 @@ end ofe
 section cmra
 variable [DFractional F] [OFE A] [IB : UCMRA B] {R : view_rel A B} [ViewRel R]
 
+-- Lemma
+theorem rel_iff_agree (Hb : b' ≡{n}≡ b) :
+    (∃ a', toAgree a ≡{n}≡ toAgree a' ∧ R n a' b') ↔ R n a b := by
+  refine ⟨fun H => ?_, fun H => ?_⟩
+  · rcases H with ⟨_, HA, HR⟩
+    refine ViewRel.mono HR (toAgree.inj HA.symm) ?_ n.le_refl
+    exact OFE.Dist.to_incN Hb.symm
+  · refine ⟨a, .rfl, ?_⟩
+    refine ViewRel.mono H .rfl ?_ n.le_refl
+    exact OFE.Dist.to_incN Hb
+
 instance auth_ne {dq : DFrac F} : OFE.NonExpansive (View.auth dq : A → View F R) where
   ne _ _ _ H := by
     refine View.mk.ne.ne ?_ .rfl
@@ -113,7 +124,7 @@ abbrev valid (v : View F R) : Prop :=
 
 abbrev validN (n : Nat) (v : View F R) : Prop :=
   match v.π_auth with
-  | some (dq, ag) => ✓ dq ∧ (∃ a, ag ≡{n}≡ toAgree a ∧ R n a (π_frag v))
+  | some (dq, ag) => ✓{n} dq ∧ (∃ a, ag ≡{n}≡ toAgree a ∧ R n a (π_frag v))
   | none => ∃ a, R n a (π_frag v)
 
 def pcore (v : View F R) : Option (View F R) :=
@@ -176,7 +187,7 @@ instance : CMRA (View F R) where
       apply ViewRel.mono Hr .rfl (CMRA.incN_op_left n b1 b2) n.le_refl
     · refine fun Hq a H Hr => ⟨Hq, ⟨a, ⟨H, ?_⟩⟩⟩
       apply ViewRel.mono Hr .rfl (CMRA.incN_op_left n b1 b2) n.le_refl
-    · refine fun Hq a H Hr => ⟨CMRA.valid_op_left Hq, ⟨a, ?_⟩⟩
+    · refine fun Hq a H Hr => ⟨CMRA.validN_op_left Hq, ⟨a, ?_⟩⟩
       refine ⟨?_, ?_⟩
       · refine .trans ?_ H
         refine .trans Agree.idemp.symm.dist ?_
@@ -242,7 +253,7 @@ instance : CMRA (View F R) where
         rcases Hv with ⟨_, Ha⟩
         apply ViewRel.rel_validN _ _ _ Ha
       · rcases Hv with ⟨Hq, ⟨a, ⟨Ha1, Ha2⟩⟩⟩
-        refine ⟨⟨Hq, ?_⟩, ?_⟩
+        refine ⟨⟨trivial, ?_⟩, ?_⟩
         · exact Agree.validN_ne Ha1.symm trivial
         · exact ViewRel.rel_validN _ _ _ Ha2
     rcases H2 with ⟨z1, z2, Hze, Hz1, Hz2⟩
@@ -276,22 +287,14 @@ instance [OFE.Discrete A] [CMRA.Discrete B] [ViewRelDiscrete R] : CMRA.Discrete 
 
 instance : UCMRA (View F R) where
   unit := ⟨UCMRA.unit, UCMRA.unit⟩
-  unit_valid := by
-    simp [CMRA.Valid, valid]
-    exact ViewRel.rel_unit
-  unit_left_id := by exact ⟨UCMRA.unit_left_id, UCMRA.unit_left_id⟩
-  pcore_unit := by
-    simp [CMRA.pcore, pcore]
-    constructor <;> simp only []
-    · simp [CMRA.core, CMRA.pcore, optionCore, Option.bind, UCMRA.unit]
-    · exact CMRA.core_eqv_self UCMRA.unit
+  unit_valid := ViewRel.rel_unit
+  unit_left_id := ⟨UCMRA.unit_left_id, UCMRA.unit_left_id⟩
+  pcore_unit := ⟨by rfl, CMRA.core_eqv_self UCMRA.unit⟩
 
 theorem view_core_eq : (CMRA.core : View F R → _) = fun v => ⟨CMRA.core v.1, CMRA.core v.2⟩ := rfl
 
-theorem view_auth_dfrac_op : (●V{dq1 • dq2} a : View F R) ≡ (●V{dq1} a) • ●V{dq2} a := by
-  constructor <;> simp [View.auth, CMRA.op, optionOp, prod.op]
-  · exact ⟨rfl, Agree.idemp.symm⟩
-  · exact UCMRA.unit_left_id.symm
+theorem view_auth_dfrac_op : (●V{dq1 • dq2} a : View F R) ≡ (●V{dq1} a) • ●V{dq2} a :=
+  ⟨⟨rfl, Agree.idemp.symm⟩, UCMRA.unit_left_id.symm⟩
 
 theorem view_frag_op : (◯V (b1 • b2) : View F R) = (◯V b1) • ◯V b2 := rfl
 
@@ -303,76 +306,46 @@ theorem view_frag_mono (H : b1 ≼ b2) : (◯V b1 : View F R) ≼ ◯V b2 := by
 
 theorem view_frag_core : CMRA.core (◯V b : View F R) = ◯V (CMRA.core b) := rfl
 
-theorem view_both_core_discarded :
-    CMRA.core ((●V{⟨DFracK.Discard⟩} a) • ◯V b : View F R) ≡ (●V{⟨DFracK.Discard⟩} a) • ◯V (CMRA.core b) := by
-  simp [view_core_eq, CMRA.op, op]
-  refine ⟨.rfl, ?_⟩
-  simp [View.auth, View.frag]
-  exact (CMRA.core_ne.eqv UCMRA.unit_left_id).trans UCMRA.unit_left_id.symm
+theorem view_both_core_discarded : CMRA.core ((●V{⟨DFracK.Discard⟩} a) • ◯V b : View F R) ≡ (●V{⟨DFracK.Discard⟩} a) • ◯V (CMRA.core b) :=
+  ⟨.rfl, (CMRA.core_ne.eqv UCMRA.unit_left_id).trans UCMRA.unit_left_id.symm⟩
 
-theorem view_both_core_frac :
-    CMRA.core ((●V{⟨DFracK.Own q⟩} a) • ◯V b : View F R) ≡ ◯V (CMRA.core b) := by
-  rw [view_core_eq]
-  constructor <;> simp [view_core_eq, CMRA.op, op, View.auth, View.frag]
-  · simp [optionOp, CMRA.core, CMRA.pcore, optionCore, prod.pcore]
-  · exact CMRA.core_ne.eqv UCMRA.unit_left_id
+theorem view_both_core_frac : CMRA.core ((●V{⟨DFracK.Own q⟩} a) • ◯V b : View F R) ≡ ◯V (CMRA.core b) :=
+  ⟨trivial, CMRA.core_ne.eqv UCMRA.unit_left_id⟩
 
 instance view_auth_core_id : CMRA.CoreId (●V{⟨DFracK.Discard⟩} a : View F R) where
-  core_id := by
-    constructor <;> simp [View.auth]
-    · simp [CMRA.core, CMRA.pcore, optionCore, prod.pcore]
-    · exact CMRA.core_eqv_self UCMRA.unit
+  core_id := ⟨.rfl, CMRA.core_eqv_self UCMRA.unit⟩
 
 instance view_frag_core_id [CMRA.CoreId b] : CMRA.CoreId (◯V b : View F R) where
-  core_id := by
-    constructor <;> simp [View.frag]
-    · simp [CMRA.core, CMRA.pcore, optionCore, prod.pcore]
-    · apply CMRA.coreId_iff_core_eqv_self.mp
-      trivial
+  core_id := ⟨.rfl, CMRA.coreId_iff_core_eqv_self.mp (by trivial)⟩
 
 instance view_both_core_id [CMRA.CoreId b] : CMRA.CoreId ((●V{⟨DFracK.Discard⟩} a : View F R) • ◯V b) where
   core_id := by
     refine ⟨.rfl, ?_⟩
-    simp [View.auth, View.frag, CMRA.op, op]
-    refine (CMRA.core_ne.eqv UCMRA.unit_left_id).trans (.trans ?_ UCMRA.unit_left_id.symm)
-    apply CMRA.coreId_iff_core_eqv_self.mp
-    trivial
+    refine (CMRA.core_ne.eqv UCMRA.unit_left_id).trans ?_
+    refine (CMRA.coreId_iff_core_eqv_self.mp (by trivial)).trans ?_
+    refine UCMRA.unit_left_id.symm
 
+theorem view_auth_dfrac_op_invN (H : ✓{n} ((●V{dq1} a1 : View F R) • ●V{dq2} a2)) : a1 ≡{n}≡ a2 := by
+  rcases H with ⟨_, _, H, _⟩
+  refine toAgree.inj (Agree.op_invN ?_)
+  exact Agree.validN_ne H.symm trivial
 
-theorem view_auth_dfrac_op_invN (H :✓{n} ((●V{dq1} a1 : View F R) • ●V{dq2} a2)) : a1 ≡{n}≡ a2 := by
-  sorry
-/-
-  Proof.
-    rewrite /op /view_op_instance /= left_id -Some_op -pair_op view_validN_eq /=.
-    intros (?&?& Eq &?). apply (inj to_agree), agree_op_invN. by rewrite Eq.
-  Qed.
--/
+theorem view_auth_dfrac_op_inv (H : ✓ ((●V{dq1} a1 : View F R) • ●V{dq2} a2)) : a1 ≡ a2 :=
+  OFE.equiv_dist.mpr fun _ => view_auth_dfrac_op_invN H.validN
 
-theorem view_auth_dfrac_op_inv : ✓ ((●V{dq1} a1 : View F R) • ●V{dq2} a2) → a1 ≡ a2 := sorry
-/-
-  Proof.
-    intros ?. apply equiv_dist. intros n.
-    by eapply view_auth_dfrac_op_invN, cmra_valid_validN.
-  Qed.
--/
+theorem view_auth_dfrac_validN : ✓{n} (●V{dq} a : View F R) ↔ ✓{n}dq ∧ R n a UCMRA.unit :=
+  and_congr_right fun _ => rel_iff_agree .rfl
 
-theorem view_auth_dfrac_validN : ✓{n} (●V{dq} a : View F R) ↔ ✓{n}dq ∧ R n a UCMRA.unit := sorry
-
-/-
-  Proof.
-    rewrite view_validN_eq /=. apply and_iff_compat_l. split; [|by eauto].
-    by intros [? [->%(inj to_agree) ?]].
-  Qed.
--/
-
-theorem view_auth_validN n a : ✓{n} (●V a : View F R) ↔ R n a UCMRA.unit := sorry
-/-
-  Lemma
-  Proof. rewrite view_auth_dfrac_validN. split; [naive_solver|done]. Qed.
--/
+theorem view_auth_validN n a : ✓{n} (●V a : View F R) ↔ R n a UCMRA.unit :=
+  ⟨(view_auth_dfrac_validN.mp · |>.2), (view_auth_dfrac_validN.mpr ⟨Fractional.le_refl, ·⟩)⟩
 
 theorem view_auth_dfrac_op_validN :
-  ✓{n} ((●V{dq1} a1 : View F R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡{n}≡ a2 ∧ R n a1 UCMRA.unit := sorry
+    ✓{n} ((●V{dq1} a1 : View F R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡{n}≡ a2 ∧ R n a1 UCMRA.unit := by
+  sorry
+  -- simp only [View.auth, CMRA.op, op, optionOp, prod.op, ]
+  -- refine ⟨fun H => ?_, fun H => ?_⟩
+  -- · sorry
+  -- · sorry
 /-
   Proof.
     split.
@@ -382,48 +355,28 @@ theorem view_auth_dfrac_op_validN :
   Qed.
 -/
 
-theorem view_auth_op_validN :
-  ✓{n} ((●V a1 : View F R) • ●V a2) ↔ False := sorry
-/-
-  Proof. rewrite view_auth_dfrac_op_validN. naive_solver. Qed.
--/
+theorem view_auth_op_validN : ✓{n} ((●V a1 : View F R) • ●V a2) ↔ False := by
+  refine view_auth_dfrac_op_validN.trans ?_
+  simp [CMRA.op, op, _root_.op, CMRA.Valid]
+  intro Hk; exfalso -- DFractional lemma
+  sorry
 
-theorem view_frag_validN : ✓{n} (◯V b : View F R) ↔ ∃ a, R n a b := sorry
-/-
-  Proof. done. Qed.
--/
+theorem view_frag_validN : ✓{n} (◯V b : View F R) ↔ ∃ a, R n a b := by rfl
 
-theorem view_both_dfrac_validN : ✓{n} ((●V{dq} a : View F R) • ◯V b) ↔ ✓dq ∧ R n a b := sorry
-/-
-  Proof.
-    rewrite view_validN_eq /=. apply and_iff_compat_l.
-    setoid_rewrite (left_id _ _ b). split; [|by eauto].
-    by intros [?[->%(inj to_agree)]].
-  Qed.
--/
+theorem view_both_dfrac_validN : ✓{n} ((●V{dq} a : View F R) • ◯V b) ↔ ✓dq ∧ R n a b :=
+  and_congr_right (fun _ => rel_iff_agree <| CMRA.unit_left_id_dist b)
 
-theorem view_both_validN : ✓{n} ((●V a : View F R) • ◯V b) ↔ R n a b := sorry
-/-
-  Proof. rewrite view_both_dfrac_validN. split; [naive_solver|done]. Qed.
--/
+theorem view_both_validN : ✓{n} ((●V a : View F R) • ◯V b) ↔ R n a b :=
+  view_both_dfrac_validN.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
-theorem view_auth_dfrac_valid : ✓ (●V{dq} a : View F R) ↔ ✓dq ∧ ∀ n, R n a ε := sorry
+theorem view_auth_dfrac_valid : ✓ (●V{dq} a : View F R) ↔ ✓dq ∧ ∀ n, R n a UCMRA.unit :=
+  and_congr_right (fun _=> forall_congr' fun _ => rel_iff_agree .rfl)
 
-/-
-  Proof.
-    rewrite view_valid_eq /=. apply and_iff_compat_l. split; [|by eauto].
-    intros H n. by destruct (H n) as [? [->%(inj to_agree) ?]].
-  Qed.
--/
+theorem view_auth_valid : ✓ (●V a : View F R) ↔ ∀ n, R n a UCMRA.unit :=
+  view_auth_dfrac_valid.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
-theorem view_auth_valid : ✓ (●V a : View F R) ↔ ∀ n, R n a ε := sorry
-/-
-  Proof. rewrite view_auth_dfrac_valid. split; [naive_solver|done]. Qed.
--/
-
-
-theorem view_auth_dfrac_op_valid :
-    ✓ ((●V{dq1} a1 : View F R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡ a2 ∧ ∀ n, R n a1 ε := sorry
+theorem view_auth_dfrac_op_valid : ✓ ((●V{dq1} a1 : View F R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡ a2 ∧ ∀ n, R n a1 UCMRA.unit := by
+  sorry
 /-
   Proof.
     rewrite 1!cmra_valid_validN equiv_dist. setoid_rewrite view_auth_dfrac_op_validN.
@@ -433,33 +386,18 @@ theorem view_auth_dfrac_op_valid :
 -/
 
 
-theorem view_auth_op_valid : ✓ ((●V a1 : View F R) • ●V a2) ↔ False := sorry
+theorem view_auth_op_valid : ✓ ((●V a1 : View F R) • ●V a2) ↔ False := by
+  refine view_auth_dfrac_op_valid.trans ?_
+  simp only [CMRA.op, op, CMRA.Valid, _root_.op, _root_.valid]
+  sorry -- DFrac Lemma
 
-/-
-  Proof. rewrite view_auth_dfrac_op_valid. naive_solver. Qed.
--/
+theorem view_frag_valid : ✓ (◯V b : View F R) ↔ ∀ n, ∃ a, R n a b := by rfl
 
+theorem view_both_dfrac_valid : ✓ ((●V{dq} a : View F R) • ◯V b) ↔ ✓dq ∧ ∀ n, R n a b :=
+  and_congr_right (fun _ => forall_congr' fun _ => rel_iff_agree <| CMRA.unit_left_id_dist b)
 
-theorem view_frag_valid : ✓ (◯V b : View F R) ↔ ∀ n, ∃ a, R n a b := sorry
-/-
-  Proof. done. Qed.
--/
-
-theorem view_both_dfrac_valid : ✓ ((●V{dq} a : View F R) • ◯V b) ↔ ✓dq ∧ ∀ n, R n a b := sorry
-/-
-  Proof.
-    rewrite view_valid_eq /=. apply and_iff_compat_l.
-    setoid_rewrite (left_id _ _ b). split; [|by eauto].
-    intros H n. by destruct (H n) as [?[->%(inj to_agree)]].
-  Qed.
--/
-
-theorem view_both_valid : ✓ ((●V a : View F R) • ◯V b) ↔ ∀ n, R n a b := sorry
-/-
-  Proof. rewrite view_both_dfrac_valid. split; [naive_solver|done]. Qed.
--/
-
-
+theorem view_both_valid : ✓ ((●V a : View F R) • ◯V b) ↔ ∀ n, R n a b :=
+  view_both_dfrac_valid.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
 theorem view_auth_dfrac_includedN :
     (●V{dq1} a1 : View F R) ≼{n} ((●V{dq2} a2) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := sorry
@@ -492,17 +430,11 @@ theorem view_auth_dfrac_included :
   Qed.
 -/
 
+theorem view_auth_includedN : (●V a1 : View F R) ≼{n} ((●V a2) • ◯V b) ↔ a1 ≡{n}≡ a2 :=
+  view_auth_dfrac_includedN.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
-theorem view_auth_includedN : (●V a1 : View F R) ≼{n} ((●V a2) • ◯V b) ↔ a1 ≡{n}≡ a2 := sorry
-/-
-  Proof. rewrite view_auth_dfrac_includedN. naive_solver. Qed.
--/
-
-theorem view_auth_included : (●V a1 : View F R) ≼ ((●V a2) • ◯V b) ↔ a1 ≡ a2 := sorry
-/-
-  Proof. rewrite view_auth_dfrac_included. naive_solver. Qed.
--/
-
+theorem view_auth_included : (●V a1 : View F R) ≼ ((●V a2) • ◯V b) ↔ a1 ≡ a2 :=
+  view_auth_dfrac_included.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
 theorem view_frag_includedN : (◯V b1 : View F R) ≼{n} ((●V{p} a) • ◯V b2) ↔ b1 ≼{n} b2 := sorry
 /-
@@ -554,16 +486,11 @@ theorem view_both_dfrac_included : ((●V{dq1} a1 : View F R) • ◯V b1) ≼ (
   Qed.
 -/
 
-theorem view_both_includedN : ((●V a1 : View F R) • ◯V b1) ≼{n} ((●V a2) •  ◯V b2) ↔ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2 := sorry
-/-
-  Proof. rewrite view_both_dfrac_includedN. naive_solver. Qed.
--/
+theorem view_both_includedN : ((●V a1 : View F R) • ◯V b1) ≼{n} ((●V a2) • ◯V b2) ↔ (a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2) :=
+  view_both_dfrac_includedN.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
-
-theorem view_both_included : ((●V a1 : View F R) • ◯V b1) ≼ ((●V a2) • ◯V b2) ↔ a1 ≡ a2 ∧ b1 ≼ b2 := sorry
-/-
-  Proof. rewrite view_both_dfrac_included. naive_solver. Qed.
--/
+theorem view_both_included : ((●V a1 : View F R) • ◯V b1) ≼ ((●V a2) • ◯V b2) ↔ a1 ≡ a2 ∧ b1 ≼ b2 :=
+  view_both_dfrac_included.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
 end cmra
 end View
