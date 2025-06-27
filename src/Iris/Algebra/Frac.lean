@@ -152,25 +152,25 @@ instance : CMRA.Exclusive (1 : Frac α) where
     obtain (H | H) := H
     · exact positive ⟨x.car, H⟩
     · exact strictly_positive ⟨x.car, H⟩
-  --Fractional.positive ⟨_, H⟩
+
 
 -- TODO: Simplify
 instance {q : Frac α} : CMRA.Cancelable q where
   cancelableN {n x y} := by
-    simp_all [CMRA.ValidN, CMRA, CMRA.op, OFE.Dist]
-    intro h
+    simp [CMRA.ValidN]
+    intro _
     suffices q + x = q + y → x = y by apply this
     intro H
+    have H' := @iFrac.add_left_cancel x.car y.car q.car
     rcases x with ⟨x⟩
     rcases y with ⟨y⟩
     rcases q with ⟨q⟩
     simp_all [Add.add]
-
-    apply iFrac.add_left_cancel
-    rw [iFrac.add_left_cancel] at H
+    rw [H']
     simp [HAdd.hAdd] at H
     have H'' : ({ car := Add.add q x } : Frac α).car = ({ car := Add.add q y } : Frac α).car := by
       rw [H]
+    simp at H''
     exact H''
 
 
