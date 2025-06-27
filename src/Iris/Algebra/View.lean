@@ -194,13 +194,12 @@ instance : CMRA (View F R) where
       apply ViewRel.mono Hr .rfl (CMRA.incN_op_left n b1 b2) n.le_refl
     · refine fun Hq a H Hr => ⟨Hq, ⟨a, ⟨H, ?_⟩⟩⟩
       apply ViewRel.mono Hr .rfl (CMRA.incN_op_left n b1 b2) n.le_refl
-    · -- refine fun Hq a H Hr => ⟨CMRA.valid_op_left Hq, ⟨a, ?_⟩⟩
-      sorry
-      -- refine ⟨?_, ?_⟩
-      -- · refine .trans ?_ H
-      --   refine .trans Agree.idemp.symm.dist ?_
-      --   exact Agree_CMRA.op_ne.ne <| Agree.op_invN (Agree.validN_ne H.symm trivial)
-      -- · exact ViewRel.mono Hr .rfl (CMRA.incN_op_left n b1 b2) n.le_refl
+    · refine fun Hq a H Hr => ⟨CMRA.validN_op_left Hq, ⟨a, ?_⟩⟩
+      refine ⟨?_, ?_⟩
+      · refine .trans ?_ H
+        refine .trans Agree.idemp.symm.dist ?_
+        exact Agree_CMRA.op_ne.ne <| Agree.op_invN (Agree.validN_ne H.symm trivial)
+      · exact ViewRel.mono Hr .rfl (CMRA.incN_op_left n b1 b2) n.le_refl
   assoc := OFE.NonExpansive₂.eqv CMRA.assoc CMRA.assoc
   comm := OFE.NonExpansive₂.eqv CMRA.comm CMRA.comm
   pcore_op_left {x _} := by
@@ -487,6 +486,7 @@ theorem view_frag_included : (◯V b1 : View F R) ≼ ((●V{p} a) • ◯V b2) 
     - intros [bf ->]. by rewrite comm view_frag_op -assoc.
   Qed.
 -/
+
 
 theorem view_both_dfrac_includedN :
     ((●V{dq1} a1 : View F R) • ◯V b1) ≼{n} ((●V{dq2} a2) • ◯V b2) ↔
