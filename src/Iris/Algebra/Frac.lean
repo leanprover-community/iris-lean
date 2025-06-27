@@ -141,8 +141,7 @@ instance : CMRA.Discrete (Frac α) where
 
 instance : CMRA.Exclusive (1 : Frac α) where
   exclusive0_l x H := by
-    simp [@iFrac.CMRA.op α iFrac, @Frac_CMRA.ValidN α iFrac] at H
-    apply positive ⟨_, H⟩
+    refine positive ⟨?_, H⟩
   --Fractional.positive ⟨_, H⟩
 
 -- TODO: Simplify
@@ -163,7 +162,7 @@ instance {q : Frac α} : CMRA.Cancelable q where
       rw [H]
     exact H''
 
--- TODO: Simplify
+
 instance {q : Frac α} : CMRA.IdFree q where
   id_free0_r y := by
     intro H H'
@@ -172,9 +171,9 @@ instance {q : Frac α} : CMRA.IdFree q where
     conv=>
       rhs
       rw [← H']
-    unfold CMRA.op
-    unfold Frac_CMRA.3
+    unfold CMRA.op Frac_CMRA
+    simp
+    exact iFrac
 
-    apply @le_refl α iFrac
 
 end Frac
