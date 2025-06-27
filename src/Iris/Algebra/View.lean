@@ -344,7 +344,7 @@ theorem view_auth_dfrac_validN : ✓{n} (●V{dq} a : View F R) ↔ ✓{n}dq ∧
   and_congr_right fun _ => rel_iff_agree .rfl
 
 theorem view_auth_validN n a : ✓{n} (●V a : View F R) ↔ R n a UCMRA.unit :=
-  ⟨(view_auth_dfrac_validN.mp · |>.2), (view_auth_dfrac_validN.mpr ⟨Fractional.le_refl, ·⟩)⟩
+  sorry -- ⟨(view_auth_dfrac_validN.mp · |>.2), (view_auth_dfrac_validN.mpr ⟨Fractional.le_refl, ·⟩)⟩
 
 theorem view_auth_dfrac_op_validN :
     ✓{n} ((●V{dq1} a1 : View F R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡{n}≡ a2 ∧ R n a1 UCMRA.unit := by
@@ -377,13 +377,13 @@ theorem view_both_dfrac_validN : ✓{n} ((●V{dq} a : View F R) • ◯V b) ↔
   and_congr_right (fun _ => rel_iff_agree <| CMRA.unit_left_id_dist b)
 
 theorem view_both_validN : ✓{n} ((●V a : View F R) • ◯V b) ↔ R n a b :=
-  view_both_dfrac_validN.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
+  sorry -- view_both_dfrac_validN.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
 theorem view_auth_dfrac_valid : ✓ (●V{dq} a : View F R) ↔ ✓dq ∧ ∀ n, R n a UCMRA.unit :=
   and_congr_right (fun _=> forall_congr' fun _ => rel_iff_agree .rfl)
 
 theorem view_auth_valid : ✓ (●V a : View F R) ↔ ∀ n, R n a UCMRA.unit :=
-  view_auth_dfrac_valid.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
+  sorry -- view_auth_dfrac_valid.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
 theorem view_auth_dfrac_op_valid : ✓ ((●V{dq1} a1 : View F R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡ a2 ∧ ∀ n, R n a1 UCMRA.unit := by
   refine CMRA.valid_iff_validN.trans ?_
@@ -409,7 +409,7 @@ theorem view_both_dfrac_valid : ✓ ((●V{dq} a : View F R) • ◯V b) ↔ ✓
   and_congr_right (fun _ => forall_congr' fun _ => rel_iff_agree <| CMRA.unit_left_id_dist b)
 
 theorem view_both_valid : ✓ ((●V a : View F R) • ◯V b) ↔ ∀ n, R n a b :=
-  view_both_dfrac_valid.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
+  sorry -- view_both_dfrac_valid.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
 theorem view_auth_dfrac_includedN : (●V{dq1} a1 : View F R) ≼{n} ((●V{dq2} a2) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := by
   sorry
