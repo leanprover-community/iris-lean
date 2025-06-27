@@ -15,7 +15,7 @@ Traditionally the underlying set is assumed to be the half open interval $$(0,1]
 -/
 
 section Fractional
-class Fractional (α : Type _) extends Add α, One α where
+class Fractional (α : Type _) extends Add α where
   /-- Validity predicate on fractions. Generalizes the notion of `(· ≤ 1)` from rational fractions. -/
   proper : α → Prop
   add_comm : ∀ {a b : α}, a + b = b + a
@@ -98,8 +98,11 @@ instance [Fractional α] {a : Frac α} : CMRA.IdFree a where
 
 end Iris
 
-section NumericFractional
+/-- A type of fractions with a unique whole element. -/
+class UFractional (α : Type _) extends Fractional α, One α where
+  whole_iff_one {a : α} : whole a ↔ a = 1
 
+section NumericFractional
 
 section NumericFractional
 /-- Generic fractional instance for types with comparison and 1 operators. -/
@@ -173,13 +176,34 @@ theorem strictly_positive {a : α} : ¬ ∃ b : α, a + b < a := by
   rw [←add_assoc] at H
   exact positive ⟨c + c1, H⟩
 
-instance : Fractional α where
+instance : UFractional α where
   proper x := x ≤ 1
   add_comm := add_comm
   add_assoc := add_assoc
   add_left_cancel := add_left_cancel
   add_ne H := positive (α := α) ⟨_, add_comm.trans H.symm⟩
   proper_add_mono_left := add_le_mono
+  whole_iff_one {a} := by
+    constructor
+    · intro H
+      simp [whole] at H
+      rcases H with ⟨Hp, Hdp⟩
+      cases (le_def.mp Hp)
+      · trivial
+      · rename_i HK; exfalso
+        rcases (lt_def.mp HK) with ⟨c, Hc⟩
+        apply Hdp c
+        rw [Hc]
+        exact le_refl
+    · intro H; subst H
+      refine ⟨le_refl, ?_⟩
+      rintro ⟨b, H⟩
+      simp [Fractional.proper] at H
+      cases (le_def.mp H)
+      · rename_i H''
+        apply positive ⟨b, H''⟩
+      · rename_i H''
+        apply strictly_positive ⟨b, H''⟩
 
 theorem frac_included {p q : Frac α} : p ≼ q ↔ p < q :=
   ⟨ by rintro ⟨r, Hr⟩; exact lt_def.mpr ⟨r, Hr ▸ rfl⟩,
@@ -190,9 +214,5 @@ theorem frac_included {p q : Frac α} : p ≼ q ↔ p < q :=
 
 theorem frac_included_weak {p q : Frac α} (H : p ≼ q) : p ≤ q :=
   lt_le (frac_included.mp H)
-
-theorem one_whole : whole (1 : α) :=
-  ⟨ le_refl,
-    by rintro ⟨b, Hb⟩; exact (le_def.mp Hb).elim (positive ⟨_, ·⟩) (strictly_positive ⟨_, ·⟩)⟩
 
 end NumericFractional
