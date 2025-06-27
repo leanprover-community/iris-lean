@@ -77,6 +77,13 @@ theorem positive {a : α} : ¬ ∃ b : α, a + b = a := by
   intro hlt
   exact (iR.lt_not_eq hlt) rfl
 
+theorem strictly_positive {a : α} : ¬ ∃ b : α, a + b < a := by
+  intro ⟨c,H⟩
+  rw [iR.lt_def] at H
+  have ⟨c1, H⟩:= H
+  rw [←iR.add_assoc] at H
+  exact positive ⟨c + c1, H⟩
+
 end Fractional
 
 namespace Iris
@@ -141,22 +148,26 @@ instance : CMRA.Discrete (Frac α) where
 
 instance : CMRA.Exclusive (1 : Frac α) where
   exclusive0_l x H := by
-    refine positive ⟨?_, H⟩
+    simp [CMRA.op, Frac_CMRA, iFrac.le_def] at H
+    obtain (H | H) := H
+    · exact positive ⟨x.car, H⟩
+    · exact strictly_positive ⟨x.car, H⟩
   --Fractional.positive ⟨_, H⟩
 
 -- TODO: Simplify
 instance {q : Frac α} : CMRA.Cancelable q where
   cancelableN {n x y} := by
-    simp [CMRA.ValidN]
-    intro _
+    simp_all [CMRA.ValidN, CMRA, CMRA.op, OFE.Dist]
+    intro h
     suffices q + x = q + y → x = y by apply this
     intro H
-    have H' := @iFrac.add_left_cancel  _ x.car y.car q.car
     rcases x with ⟨x⟩
     rcases y with ⟨y⟩
     rcases q with ⟨q⟩
     simp_all [Add.add]
-    rw [H']
+
+    apply iFrac.add_left_cancel
+    rw [iFrac.add_left_cancel] at H
     simp [HAdd.hAdd] at H
     have H'' : ({ car := Add.add q x } : Frac α).car = ({ car := Add.add q y } : Frac α).car := by
       rw [H]
