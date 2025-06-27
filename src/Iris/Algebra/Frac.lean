@@ -57,7 +57,7 @@ theorem add_right_cancel {a b c : α} : b + a = c + a → b = c := by
   assumption
 
 theorem add_le_mono {a b c : α} : a + b ≤ c → a ≤ c := by
-  simp[iR.le_def, iR.lt_def]
+  simp only [iR.le_def, iR.lt_def]
   rintro (heq | ⟨d, hltd⟩)
   · right
     exists b
@@ -148,7 +148,7 @@ instance : CMRA.Discrete (Frac α) where
 
 instance : CMRA.Exclusive (1 : Frac α) where
   exclusive0_l x H := by
-    simp [CMRA.op, Frac_CMRA, iFrac.le_def] at H
+    simp only [Frac_CMRA, instCOFEFrac, id_eq, instAddFrac, instLEFrac, iFrac.le_def, CMRA.op] at H
     obtain (H | H) := H
     · exact positive ⟨x.car, H⟩
     · exact strictly_positive ⟨x.car, H⟩
@@ -165,7 +165,7 @@ instance {q : Frac α} : CMRA.Cancelable q where
     obtain ⟨x⟩ := x
     obtain ⟨y⟩ := y
     obtain ⟨q⟩ := q
-    simp_all [Add.add]
+    simp_all only [instAddFrac]
     rw [H']
     simp [HAdd.hAdd] at H
     have H'' : ({ car := Add.add q x } : Frac α).car = ({ car := Add.add q y } : Frac α).car := by
@@ -183,7 +183,7 @@ instance {q : Frac α} : CMRA.IdFree q where
       rhs
       rw [← H']
     unfold CMRA.op Frac_CMRA
-    simp
+    simp only [instAddFrac]
     exact iFrac
 
 
