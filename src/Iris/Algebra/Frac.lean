@@ -161,10 +161,10 @@ instance {q : Frac α} : CMRA.Cancelable q where
     intro _
     suffices q + x = q + y → x = y by apply this
     intro H
-    have H' := @iFrac.add_left_cancel x.car y.car q.car
-    rcases x with ⟨x⟩
-    rcases y with ⟨y⟩
-    rcases q with ⟨q⟩
+    have H' := @iFrac.add_left_cancel q.car x.car y.car
+    obtain ⟨x⟩ := x
+    obtain ⟨y⟩ := y
+    obtain ⟨q⟩ := q
     simp_all [Add.add]
     rw [H']
     simp [HAdd.hAdd] at H
