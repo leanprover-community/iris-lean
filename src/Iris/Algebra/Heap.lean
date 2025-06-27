@@ -245,13 +245,6 @@ Proof.
 Qed.
 -/
 
--- Work around a large elimination
-theorem Classical.exists_map {T U : Type _} {PT : T → Prop} {PU : U → Prop} {f : T → U}
-    (HPT : ∃ (t : T), PT t) (Hf : ∀ t : T, PT t → PU (f t)) : ∃ (u : U), PU u := by
-  exact Exists.imp' f Hf HPT
-
-
-
 instance StoreO_CMRA : CMRA (StoreO T) where
   pcore := store_pcore
   op := store_op
@@ -337,21 +330,18 @@ instance StoreO_CMRA : CMRA (StoreO T) where
       rw [HX, HZ] at Hz'
       cases X <;> cases Z <;> simp_all
 
-    have Hcore'le'2 (x y : StoreO T) :  ∀ (i : K), (StoreO.get i x ≼ StoreO.get i y) → le' x y := by
-      intro i H
-      refine Classical.exists_map (f := fun o => ⟨StoreLike.of_fun fun _ => o⟩) H ?_
-      intro t H' w
-      simp [store_op, op_merge]
-      rw [Store.get_merge]
-      simp [op_merge]
-      rw [Store.of_fun_get]
-      generalize HX : StoreLike.get x.car w = X
-      generalize HY : StoreLike.get y.car w = Y
-      unfold StoreO.get at H'
-      -- Mixup between i and w now...
+    -- Second direction: Use classical instead of countability
+    have Hcore'le'2 (x y : StoreO T) :  (∀ (i : K), (StoreO.get i x ≼ StoreO.get i y)) → le' x y := by
+      intro H
+      rcases (Classical.axiomOfChoice H) with ⟨f, Hf⟩
+      exists ⟨StoreLike.of_fun f⟩
+      intro i
+      apply (Hf i).trans
+      simp [store_op, Store.get_merge, op_merge, Store.of_fun_get]
+      generalize HX : StoreLike.get x.car i = X
+      generalize HY : f i = Y
+      cases X <;> cases Y <;> simp_all [CMRA.op, optionOp]
 
-
-      sorry
 
     suffices ∀ x y : StoreO T, le' x y → le' (core' x) (core' y) by
       rintro x cx y Hxy' Hx
@@ -360,10 +350,14 @@ instance StoreO_CMRA : CMRA (StoreO T) where
       simp [Hx] at Hxy
       simp [store_pcore]
       exact Hxy
-    intro x cx y
+    intro x y H'
+    apply Hcore'le'2
+    intro i
+    suffices (core (StoreO.get i x)) ≼ (core (StoreO.get i y)) by
+      simp_all [core', pcore_F, core, Store.get_map]
+      split <;> split <;> simp_all [pcore, optionCore]
+    exact core_mono (Hcore'le'1 x y H' i)
 
-
-    sorry
   extend := by
     intro n m y1 y2 Hm Heq
     have F (i : K) := @CMRA.extend (Option V) _ n (StoreO.get i m) (StoreO.get i y1) (StoreO.get i y2) (Hm i) ?G
