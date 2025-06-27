@@ -19,7 +19,7 @@ abbrev DFrac F := LeibnizO (DFracK F)
 
 -- TODO: Delete this class. I have it now because the Fractional class is being
 -- changed concurrently. Also I'm certain that some of these fields will be derivable.
-class DFractional (F : Type _) extends Fractional F where
+class DFractional (F : Type _) extends UFractional F where
   -- one_strict_max {y : F} : ¬(One.one + y ≤ One.one)
   -- lt_irrefl : ¬(One.one < (One.one : F))
   -- strict_pos {x y : F} : ¬(x + y = x)
