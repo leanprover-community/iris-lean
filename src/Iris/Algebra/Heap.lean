@@ -113,7 +113,7 @@ instance StoreO_OFE [StoreLike T K V] [OFE V] : OFE (StoreO T) where
   fun s => StoreLike.get s.1 k
 
 -- TODO: A `Proper` class could avoid the variable reordering.
-instance [StoreLike T K V] [OFE V] (k : K) : NonExpansive (StoreO.get k : StoreO T → V) where
+instance Store.get_ne [StoreLike T K V] [OFE V] (k : K) : NonExpansive (StoreO.get k : StoreO T → V) where
   ne {_ _ _} Ht := Ht k
 
 @[simp] def StoreO.set [StoreLike T K V] [OFE V] (k : K) : V → StoreO T → StoreO T :=
@@ -190,39 +190,208 @@ TODO: I think there may be a generic way to put a CMRA on Stores, but I'm not su
 variable [Heap T K V] [CMRA V]
 
 abbrev op_merge : Option V → Option V → Option V
-| Option.some v1, Option.some v2 => Option.some (v1 • v2)
-| _, _ => Option.none
+| .some v1, .some v2 => Option.some (v1 • v2)
+| .some v1, .none    => Option.some v1
+| .none,    .some v2 => Option.some v2
+| _,        _        => Option.none
+
+instance : OFE.NonExpansive₂ (op_merge (V := V)) where
+  ne _ x1 x2 Hx y1 y2 Hy := by
+    revert Hx Hy
+    rcases x1 <;> rcases x2 <;> rcases y1 <;> rcases y2 <;> simp
+    exact OFE.Dist.op
+
+theorem op_merge_assoc {x y z : Option V} : op_merge x (op_merge y z) ≡ op_merge (op_merge x y) z := by
+  cases x <;> cases y <;> cases z <;> simp [op_merge]
+  exact assoc
+
+theorem op_merge_comm {x y : Option V} : op_merge x y ≡ op_merge y x := by
+  cases x <;> cases y <;> simp [op_merge]
+  exact comm
+
 abbrev pcore_F : Option V → Option V
 | Option.some v => CMRA.pcore v
 | Option.none => Option.none
+
+instance : OFE.NonExpansive (pcore_F (V := V)) where
+  ne _ x1 x2 := by
+    cases x1 <;> cases x2 <;> simp [pcore_F]
+    exact (OFE.NonExpansive.ne ·)
+
 abbrev store_op (s1 s2 : StoreO T) : StoreO T := StoreO.merge op_merge s1 s2
 abbrev store_unit : StoreO T := StoreO.empty
 abbrev store_pcore (s : StoreO T) : Option (StoreO T) := some <| StoreO.map pcore_F s
 abbrev store_valid (s : StoreO T) : Prop := ∀ k, ✓ (StoreO.get k s : Option V)
 abbrev store_validN (n : Nat) (s : StoreO T) : Prop := ∀ k, ✓{n} (StoreO.get k s : Option V)
 
+
+/-
+(* [m1 ≼ m2] is not equivalent to [∀ n, m1 ≼{n} m2],
+so there is no good way to reuse the above proof. *)
+Lemma lookup_included (m1 m2 : gmap K A) : m1 ≼ m2 ↔ ∀ i, m1 !! i ≼ m2 !! i.
+Proof.
+  split; [by intros [m Hm] i; exists (m !! i); rewrite -lookup_op Hm|].
+  revert m2. induction m1 as [|i x m Hi IH] using map_ind=> m2 Hm.
+  { exists m2. by rewrite left_id. }
+  destruct (IH (delete i m2)) as [m2' Hm2'].
+  { intros j. move: (Hm j); destruct (decide (i = j)) as [->|].
+    - intros _. rewrite Hi. apply: ucmra_unit_least.
+    - rewrite lookup_insert_ne // lookup_delete_ne //. }
+  destruct (Hm i) as [my Hi']; simplify_map_eq.
+  exists (partial_alter (λ _, my) i m2')=>j; destruct (decide (i = j)) as [->|].
+  - by rewrite Hi' lookup_op lookup_insert lookup_partial_alter.
+  - move: (Hm2' j). by rewrite !lookup_op lookup_delete_ne //
+      lookup_insert_ne // lookup_partial_alter_ne.
+Qed.
+-/
+
+-- Work around a large elimination
+theorem Classical.exists_map {T U : Type _} {PT : T → Prop} {PU : U → Prop} {f : T → U}
+    (HPT : ∃ (t : T), PT t) (Hf : ∀ t : T, PT t → PU (f t)) : ∃ (u : U), PU u := by
+  exact Exists.imp' f Hf HPT
+
+
+
 instance StoreO_CMRA : CMRA (StoreO T) where
   pcore := store_pcore
   op := store_op
   ValidN := store_validN
   Valid := store_valid
-  op_ne := sorry
-  pcore_ne := sorry
-  validN_ne := sorry
-  valid_iff_validN := sorry
-  validN_succ := sorry
-  validN_op_left := sorry
-  assoc := sorry
-  comm := sorry
-  pcore_op_left := sorry
-  pcore_idem := sorry
-  pcore_op_mono := sorry
-  extend := sorry
+  op_ne := ⟨fun _ _ _ H => OFE.NonExpansive₂.ne .rfl H⟩
+  pcore_ne {n x y cx} H := by
+    simp only [store_pcore, StoreO.map, Option.some.injEq, exists_eq_left']
+    refine (· ▸ fun k => ?_)
+    simp only [Store.get_map]
+    exact OFE.NonExpansive.ne (H k)
+  validN_ne Hx H k := CMRA.validN_ne (OFE.NonExpansive.ne Hx) (H k)
+  valid_iff_validN {x} :=
+    ⟨fun H n k => valid_iff_validN.mp (H k) n, fun H k => valid_iff_validN.mpr (H · k)⟩
+  validN_succ H k := validN_succ (H k)
+  validN_op_left {n x1 x2} H k := by
+    apply CMRA.validN_op_left (y := StoreO.get k x2)
+    simp [CMRA.op, optionOp, store_validN, Store.get_merge, op_merge] at ⊢ H
+    have H' := H k
+    generalize HX : StoreLike.get x1.car k = X
+    generalize HY : StoreLike.get x2.car k = Y
+    simp_all
+    cases X <;> cases Y <;> simp_all
+  assoc := by
+    rintro ⟨x⟩ ⟨y⟩ ⟨z⟩ k
+    simp [store_op, Store.get_merge]
+    exact op_merge_assoc
+  comm := by
+    rintro ⟨x⟩ ⟨y⟩ k
+    simp [store_op, Store.get_merge]
+    exact op_merge_comm
+  pcore_op_left {x cx} := by
+    refine (fun H => ?_)
+    have H' : store_op ((store_pcore x).getD x) x ≡ x := by
+      rcases cx with ⟨cx⟩
+      intro k
+      simp [store_op, store_pcore, store_op]
+      rw [Store.get_merge]
+      simp [store_pcore] at H
+      simp [op_merge, Store.get_map]
+      unfold pcore_F
+      generalize HX : StoreLike.get x.car k = X
+      cases X <;> simp
+      rename_i v
+      generalize HY : pcore v = Y
+      cases Y <;> simp
+      exact pcore_op_left HY
+    apply (H ▸ H')
+  pcore_idem {x cx} := by
+    refine (fun H => ?_)
+    have H' : ((store_pcore ((store_pcore x).getD x)).getD ((store_pcore x).getD x)) ≡ ((store_pcore x).getD x) := by
+      intro k
+      rw [H]
+      simp only [Option.getD_some, StoreO.map]
+      rw [Store.get_map]
+      simp [store_pcore] at H
+      rw [← H]
+      simp [pcore_F, Store.get_map]
+      generalize HX : StoreLike.get x.car k = X
+      cases X <;> simp
+      rename_i v
+      generalize HY : pcore v = Y
+      cases Y <;> simp
+      exact pcore_idem HY
+    apply (H ▸ H')
+  pcore_op_mono := by
+    apply pcore_op_mono_of_core_op_mono
+    let core' (x : StoreO T) := (store_pcore x).getD x
+    let le' (x y : StoreO T) := ∃ z, y ≡ store_op x z
+
+    -- First direction, no countability used
+    have Hcore'le'1 (x y : StoreO T) : le' x y → ∀ (i : K), (StoreO.get i x ≼ StoreO.get i y) := by
+      intros H i
+      rcases H with ⟨⟨z⟩, Hz⟩
+      exists (StoreO.get i ⟨z⟩)
+      rcases x with ⟨x⟩
+      rcases y with ⟨y⟩
+      simp_all [CMRA.op, optionOp]
+      have Hz' := Hz i
+      simp [Store.get_merge, op_merge] at Hz'
+      generalize HX : StoreLike.get x i = X
+      generalize HZ : StoreLike.get z i = Z
+      rw [HX, HZ] at Hz'
+      cases X <;> cases Z <;> simp_all
+
+    have Hcore'le'2 (x y : StoreO T) :  ∀ (i : K), (StoreO.get i x ≼ StoreO.get i y) → le' x y := by
+      intro i H
+      refine Classical.exists_map (f := fun o => ⟨StoreLike.of_fun fun _ => o⟩) H ?_
+      intro t H' w
+      simp [store_op, op_merge]
+      rw [Store.get_merge]
+      simp [op_merge]
+      rw [Store.of_fun_get]
+      generalize HX : StoreLike.get x.car w = X
+      generalize HY : StoreLike.get y.car w = Y
+      unfold StoreO.get at H'
+      -- Mixup between i and w now...
+
+
+      sorry
+
+    suffices ∀ x y : StoreO T, le' x y → le' (core' x) (core' y) by
+      rintro x cx y Hxy' Hx
+      have Hxy := this x y Hxy'
+      unfold core' at Hxy
+      simp [Hx] at Hxy
+      simp [store_pcore]
+      exact Hxy
+    intro x cx y
+
+
+    sorry
+  extend := by
+    intro n m y1 y2 Hm Heq
+    have F (i : K) := @CMRA.extend (Option V) _ n (StoreO.get i m) (StoreO.get i y1) (StoreO.get i y2) (Hm i) ?G
+    case G =>
+      apply ((Store.get_ne i).ne Heq).trans
+      simp [CMRA.op, optionOp]
+      rw [Store.get_merge]
+      simp [op_merge]
+      generalize HX : StoreLike.get y1.car i = X
+      generalize HY : StoreLike.get y2.car i = Y
+      cases X <;> cases Y <;> simp
+    exists ⟨StoreLike.of_fun (F · |>.fst)⟩
+    exists ⟨StoreLike.of_fun (F · |>.snd.fst)⟩
+    refine ⟨fun i => ?_, fun i => ?_, fun i => ?_⟩
+      <;> simp [store_op, Store.get_merge, Store.of_fun_get]
+      <;> rcases (F i) with ⟨z1, z2, Hm, Hz1, Hz2⟩
+    · refine Hm.trans ?_
+      simp [CMRA.op, op_merge, optionOp]
+      cases z1 <;> cases z2 <;> simp
+    · exact Hz1
+    · exact Hz2
 
 instance StoreO_UCMRA : UCMRA (StoreO T) where
   unit := store_unit
-  unit_valid := sorry
-  unit_left_id := sorry
-  pcore_unit := sorry
-
+  unit_valid := by simp [CMRA.Valid, store_valid, optionValid, HeapLike.empty, Store.of_fun_get]
+  unit_left_id := by
+    intro x k
+    simp [CMRA.op, op_merge, HeapLike.empty, Store.get_merge, Store.of_fun_get]
+    generalize HX : StoreLike.get x.car k = X <;> cases X <;> simp
+  pcore_unit k := by simp [CMRA.pcore, Store.get_map, pcore_F, HeapLike.empty, Store.of_fun_get]
 end cmra
