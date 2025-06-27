@@ -496,7 +496,7 @@ instance OFunctor.constOF_contractive [OFE B] : OFunctorContractive (constOF B) 
 end COFE
 
 /- Leibniz OFE structure on a type -/
-structure LeibnizO (T : Type _) where
+@[ext] structure LeibnizO (T : Type _) where
   car : T
 
 -- Move?
@@ -504,6 +504,16 @@ theorem Eq_Equivalence {T : Type _} : Equivalence (@Eq T) :=
   ⟨congrFun rfl, (Eq.symm ·), (· ▸ ·)⟩
 
 instance : COFE (LeibnizO T) := COFE.ofDiscrete _ Eq_Equivalence
+
+instance {T : Type _} : OFE.Discrete (LeibnizO T) := ⟨congrArg id⟩
+instance {T : Type _} : OFE.Leibniz (LeibnizO T) := ⟨congrArg id⟩
+
+theorem LeibnizO.eqv_inj {T : Type _} {x y : T} (H : LeibnizO.mk x ≡ LeibnizO.mk y) : x = y := by
+  suffices (LeibnizO.mk x).car = (LeibnizO.mk y).car by exact this
+  exact H ▸ rfl
+
+theorem LeibnizO.dist_inj {T : Type _} {x y : T} {n} (H : LeibnizO.mk x ≡{n}≡ LeibnizO.mk y) : x = y :=
+  LeibnizO.eqv_inj <| OFE.Discrete.discrete_n H
 
 section DiscreteFunOF
 open COFE
