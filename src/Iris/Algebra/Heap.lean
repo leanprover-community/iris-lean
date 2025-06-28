@@ -155,6 +155,16 @@ instance StoreO_COFE [Store T K V] [COFE V] : COFE (StoreO T) where
 @[simp] def StoreO.dom [HeapLike T K V] : StoreO T → K → Prop :=
   fun t k => HeapLike.dom t.1 k
 
+abbrev StoreO.union_F : Option V → Option V → Option V
+| .some v1 => fun _ => v1
+| .none => id
+
+@[simp] def StoreO.union [HeapLike T K V] (t1 t2 : StoreO T) : StoreO T :=
+  let F : Option V → Option V → Option V
+  | .some v1 => fun _ => v1
+  | .none => id
+  StoreO.merge F t1 t2
+
 @[simp] def StoreO.empty [HeapLike T K V] : StoreO T := ⟨HeapLike.empty⟩
 
 @[simp] def StoreO.delete [HeapLike T K V] : StoreO T → K → StoreO T :=
@@ -228,7 +238,7 @@ abbrev store_validN (n : Nat) (s : StoreO T) : Prop := ∀ k, ✓{n} (StoreO.get
 /-
 (* [m1 ≼ m2] is not equivalent to [∀ n, m1 ≼{n} m2],
 so there is no good way to reuse the above proof. *)
-Lemma lookup_included (m1 m2 : gmap K A) : m1 ≼ m2 ↔ ∀ i, m1 !! i ≼ m2 !! i.
+theorem lookup_included (m1 m2 : gmap K A) : m1 ≼ m2 ↔ ∀ i, m1 !! i ≼ m2 !! i.
 Proof.
   split; [by intros [m Hm] i; exists (m !! i); rewrite -lookup_op Hm|].
   revert m2. induction m1 as [|i x m Hi IH] using map_ind=> m2 Hm.
@@ -389,3 +399,91 @@ instance StoreO_UCMRA : UCMRA (StoreO T) where
     generalize HX : StoreLike.get x.car k = X <;> cases X <;> simp
   pcore_unit k := by simp [CMRA.pcore, Store.get_map, pcore_F, HeapLike.empty, Store.of_fun_get]
 end cmra
+
+section heap_laws
+
+variable {T K V : Type _} [Heap T K V] [CMRA V]
+open CMRA
+
+theorem lookup_validN_Some n (m : StoreO T) i x : ✓{n} m → StoreO.get i m ≡{n}≡ some x → ✓{n} x := sorry
+
+theorem lookup_valid_Some (m : StoreO T) i x : ✓ m → StoreO.get i m ≡ some x → ✓ x := sorry
+
+theorem insert_validN n (m : StoreO T) i x : ✓{n} x → ✓{n} m → ✓{n} (StoreO.set i x m) := sorry
+
+theorem insert_valid (m : StoreO T) i x : ✓ x → ✓ m → ✓ (StoreO.set i x m) := sorry
+
+theorem singleton_valid i x : ✓ (StoreO.singleton i x : StoreO T) ↔ ✓ x := sorry
+
+theorem delete_validN n (m : StoreO T) i : ✓{n} m → ✓{n} (StoreO.delete m i) := sorry
+
+theorem delete_valid (m : StoreO T) i : ✓ m → ✓ (StoreO.delete m i) := sorry
+
+theorem insert_singleton_op (m : StoreO T) i x : StoreO.get i m = none → (StoreO.set i x m) = (StoreO.singleton i x • m) := sorry
+
+theorem singleton_core (i : K) (x : V) cx :
+  pcore x = some cx → core (StoreO.singleton i (some x) : StoreO T) = (StoreO.singleton i (some cx) : StoreO T) := sorry
+
+theorem singleton_core' (i : K) (x : V) cx :
+  pcore x ≡ some cx → core (StoreO.singleton i (some x)) ≡ (StoreO.singleton i (some cx) : StoreO T) := sorry
+
+theorem singleton_core_total [IsTotal V] (i : K) (x : V) :
+  core (StoreO.singleton i (some x) : StoreO T) = (StoreO.singleton i (some (core x))) := sorry
+
+theorem singleton_op (i : K) (x y : V) :
+ (StoreO.singleton i (some x) : StoreO T)  • (StoreO.singleton i (some y)) = (StoreO.singleton i (some (x • y))) := sorry
+
+theorem gmap_core_id (m : StoreO T) : (∀ i (x : V), (StoreO.get i m = some x) → CoreId x) → CoreId m := sorry
+
+instance gmap_core_id' (m : StoreO T) : (∀ x : V, CoreId x) → CoreId m := sorry
+
+instance gmap_singleton_core_id i (x : V) : CoreId x → CoreId (StoreO.singleton i (some v) : StoreO T) := sorry
+
+theorem singleton_includedN_l n (m : StoreO T) i x :
+  (StoreO.singleton i (some x) : StoreO T) ≼{n} m ↔ ∃ y, (StoreO.get i m  ≡{n}≡ some y) ∧ some x ≼{n} some y := sorry
+
+theorem singleton_included_l (m : StoreO T) i x :
+  (StoreO.singleton i (some x) : StoreO T) ≼ m ↔ ∃ y, (StoreO.get i m ≡ some y) ∧ some x ≼ some y := sorry
+
+theorem singleton_included_exclusive_l (m : StoreO T) i x :
+  Exclusive x → ✓ m →
+  (StoreO.singleton i (some x) : StoreO T) ≼ m ↔ (StoreO.get i m ≡ some x) := sorry
+
+theorem singleton_included i x y :
+  (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y)) ↔ some x ≼ some y := sorry
+
+theorem singleton_included_total [IsTotal V]  i x y :
+  (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y))  ↔ x ≼ y := sorry
+
+theorem singleton_included_mono i x y :
+  x ≼ y → (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y))  := sorry
+
+instance singleton_cancelable i x : Cancelable (some x) → Cancelable (StoreO.singleton i (some x) : StoreO T) := sorry
+
+instance heap_cancelable (m : StoreO T) : (∀ x : V, IdFree x) → (∀ x : V, Cancelable x) → Cancelable m := sorry
+
+theorem insert_op (m1 m2 : StoreO T) i x y : (StoreO.set i (x • y) (m1 • m2)) = (StoreO.set i x m1) • (StoreO.set i y m2) := sorry
+
+-- TODO: Reuse set theory as defined in ghost maps PR, and delete this
+def set_disjoint {X : Type _} (S1 S2 : X → Prop) : Prop := ∀ x : X, ¬(S1 x ∧ S2 x)
+def set_union {X : Type _} (S1 S2 : X → Prop) : X → Prop := fun x => S1 x ∨ S2 x
+def set_included {X : Type _} (S1 S2 : X → Prop) : Prop := ∀ x, S1 x → S2 x
+
+theorem gmap_op_union (m1 m2 : StoreO T) : set_disjoint (StoreO.dom m1) (StoreO.dom m2) → m1 • m2 = StoreO.union m1 m2 := sorry
+
+theorem gmap_op_valid0_disjoint (m1 m2 : StoreO T) :
+  ✓{0} (m1 • m2) → (∀ k x, StoreO.get k m1 = some x → Exclusive x) → set_disjoint (StoreO.dom m1) (StoreO.dom m2) := sorry
+
+theorem gmap_op_valid_disjoint (m1 m2 : StoreO T) :
+  ✓ (m1 • m2) → (∀ k x, StoreO.get k m1 = some x → Exclusive x) → set_disjoint (StoreO.dom m1) (StoreO.dom m2) := sorry
+
+theorem dom_op (m1 m2 : StoreO T) : StoreO.dom (m1 • m2) = set_union (StoreO.dom m1) (StoreO.dom m2) := sorry
+
+theorem dom_included (m1 m2 : StoreO T) : m1 ≼ m2 → set_included (StoreO.dom m1) (StoreO.dom m2) := sorry
+
+theorem StoreO.map_mono [CMRA V'] [Heap T' K V'] (f : Option V → Option V') (m1 m2 : StoreO T) :
+  (∀ v1 v2 : V, v1 ≡ v2 → f v1 ≡ f v2) →
+  (∀ x y, x ≼ y → f x ≼ f y) → m1 ≼ m2 →
+  (StoreO.map f m1 : StoreO T') ≼ StoreO.map f m2 := sorry
+
+end heap_laws
