@@ -234,26 +234,15 @@ abbrev store_pcore (s : StoreO T) : Option (StoreO T) := some <| StoreO.map pcor
 abbrev store_valid (s : StoreO T) : Prop := ∀ k, ✓ (StoreO.get k s : Option V)
 abbrev store_validN (n : Nat) (s : StoreO T) : Prop := ∀ k, ✓{n} (StoreO.get k s : Option V)
 
+theorem lookup_includedN n (m1 m2 : StoreO T) :
+  (∃ (z : StoreO T), m2 ≡{n}≡ store_op m1 z) ↔
+  ∀ i, (∃ z, (StoreO.get i m2) ≡{n}≡ (StoreO.get i m1) • z) := sorry
+-- See below
 
-/-
-(* [m1 ≼ m2] is not equivalent to [∀ n, m1 ≼{n} m2],
-so there is no good way to reuse the above proof. *)
-theorem lookup_included (m1 m2 : gmap K A) : m1 ≼ m2 ↔ ∀ i, m1 !! i ≼ m2 !! i.
-Proof.
-  split; [by intros [m Hm] i; exists (m !! i); rewrite -lookup_op Hm|].
-  revert m2. induction m1 as [|i x m Hi IH] using map_ind=> m2 Hm.
-  { exists m2. by rewrite left_id. }
-  destruct (IH (delete i m2)) as [m2' Hm2'].
-  { intros j. move: (Hm j); destruct (decide (i = j)) as [->|].
-    - intros _. rewrite Hi. apply: ucmra_unit_least.
-    - rewrite lookup_insert_ne // lookup_delete_ne //. }
-  destruct (Hm i) as [my Hi']; simplify_map_eq.
-  exists (partial_alter (λ _, my) i m2')=>j; destruct (decide (i = j)) as [->|].
-  - by rewrite Hi' lookup_op lookup_insert lookup_partial_alter.
-  - move: (Hm2' j). by rewrite !lookup_op lookup_delete_ne //
-      lookup_insert_ne // lookup_partial_alter_ne.
-Qed.
--/
+theorem lookup_included (m1 m2 : StoreO T) :
+  (∃ (z : StoreO T), m2 ≡ store_op m1 z) ↔
+  ∀ i, (∃ z, (StoreO.get i m2) ≡ (StoreO.get i m1) • z) := sorry
+-- See below
 
 instance StoreO_CMRA : CMRA (StoreO T) where
   pcore := store_pcore
