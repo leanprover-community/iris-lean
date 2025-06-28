@@ -229,6 +229,14 @@ instance [OFE α] : OFE (Option α) where
   equiv_dist {x y} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply equiv_dist
   dist_lt {_ x y _} := by cases x <;> cases y <;> simp [Option.Forall₂]; apply dist_lt
 
+instance [OFE α][OFE.Discrete α]: OFE.Discrete (Option α) where
+  discrete_0 {mx my} e :=
+    match mx, my with
+    | none,   none   => e
+    | none,   some _ => e
+    | some _, none   => e
+    | some x, some y => show x ≡ y from discrete_0 e
+
 @[simp] theorem some_eqv_some [OFE α] {x y : α} : (some x ≡ some y) ↔ x ≡ y := .rfl
 @[simp] theorem not_some_eqv_none [OFE α] {x : α} : ¬some x ≡ none := id
 @[simp] theorem not_none_eqv_some [OFE α] {x : α} : ¬none ≡ some x := id
@@ -259,6 +267,22 @@ instance [OFE α] [Leibniz α] : Leibniz (Option α) where
     match x, y, H with
     | none, none, _ => rfl
     | some _, some _, h => congrArg some (Leibniz.eq_of_eqv h)
+
+instance [OFE α] [Discrete α] : Discrete (Option α) where
+  discrete_0 {x y} H :=
+    match x, y with
+    | none, none => H
+    | some _, some _ => some_eqv_some.mpr (discrete_0 H)
+
+instance OFE.Option.some.ne [OFE α] : OFE.NonExpansive (some : α → Option α) := ⟨fun _ _ _ => id⟩
+
+theorem Option.some_is_discrete [OFE α] {a : α} (Ha : DiscreteE a) : DiscreteE (some a) := by
+  intro y H; cases y
+  · exact H
+  · exact Ha H
+
+theorem Option.none_is_discrete [OFE α] : DiscreteE (none : Option α) := by
+  intro y; cases y <;> simp
 
 abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
 
@@ -303,6 +327,24 @@ instance [OFE α] [OFE β] : OFE (α × β) where
   }
   equiv_dist {_ _} := by simp [equiv_dist, forall_and]
   dist_lt h1 h2 := ⟨dist_lt h1.1 h2, dist_lt h1.2 h2⟩
+
+
+def equiv_fst [OFE α] [OFE β] {x y: α × β} (h: x ≡ y): x.fst ≡ y.fst := h.left
+def equiv_snd [OFE α] [OFE β] {x y: α × β} (h: x ≡ y): x.snd ≡ y.snd := h.right
+def equiv_prod_ext [OFE α] [OFE β] {x₁ x₂: α} {y₁ y₂: β}
+    (ex: x₁ ≡ x₂) (ey: y₁ ≡ y₂): (x₁, y₁) ≡ (x₂, y₂) := ⟨ex, ey⟩
+
+def dist_fst {n} [OFE α] [OFE β] {x y: α × β} (h: x ≡{n}≡ y): x.fst ≡{n}≡ y.fst := h.left
+def dist_snd {n} [OFE α] [OFE β] {x y: α × β} (h: x ≡{n}≡ y): x.snd ≡{n}≡ y.snd := h.right
+def dist_prod_ext {n} [OFE α] [OFE β] {x₁ x₂: α} {y₁ y₂: β}
+    (ex: x₁ ≡{n}≡ x₂) (ey: y₁ ≡{n}≡ y₂): (x₁, y₁) ≡{n}≡ (x₂, y₂) := ⟨ex, ey⟩
+
+theorem prod.is_discrete [OFE α] [OFE β] {a : α} {b : β} (Ha : DiscreteE a) (Hb : DiscreteE b) :
+    DiscreteE (a, b) := by
+  intro y H; refine ⟨Ha H.1, Hb H.2⟩
+
+instance [OFE α] [OFE β] [OFE.Discrete α] [OFE.Discrete β] : OFE.Discrete (α × β) where
+  discrete_0 H := ⟨discrete_0 H.1, discrete_0 H.2⟩
 
 /-- An isomorphism between two OFEs is a pair of morphisms whose composition is equivalent to the identity morphism. -/
 @[ext] structure Iso (α β : Type _) [OFE α] [OFE β] where
@@ -496,7 +538,7 @@ instance OFunctor.constOF_contractive [OFE B] : OFunctorContractive (constOF B) 
 end COFE
 
 /- Leibniz OFE structure on a type -/
-structure LeibnizO (T : Type _) where
+@[ext] structure LeibnizO (T : Type _) where
   car : T
 
 -- Move?
@@ -504,6 +546,16 @@ theorem Eq_Equivalence {T : Type _} : Equivalence (@Eq T) :=
   ⟨congrFun rfl, (Eq.symm ·), (· ▸ ·)⟩
 
 instance : COFE (LeibnizO T) := COFE.ofDiscrete _ Eq_Equivalence
+
+instance {T : Type _} : OFE.Discrete (LeibnizO T) := ⟨congrArg id⟩
+instance {T : Type _} : OFE.Leibniz (LeibnizO T) := ⟨congrArg id⟩
+
+theorem LeibnizO.eqv_inj {T : Type _} {x y : T} (H : LeibnizO.mk x ≡ LeibnizO.mk y) : x = y := by
+  suffices (LeibnizO.mk x).car = (LeibnizO.mk y).car by exact this
+  exact H ▸ rfl
+
+theorem LeibnizO.dist_inj {T : Type _} {x y : T} {n} (H : LeibnizO.mk x ≡{n}≡ LeibnizO.mk y) : x = y :=
+  LeibnizO.eqv_inj <| OFE.Discrete.discrete_n H
 
 section DiscreteFunOF
 open COFE
