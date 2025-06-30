@@ -16,7 +16,8 @@ def Update [CMRA α] (x y : α) := ∀ n mz,
 infixr:50 " ~~> " => Update
 
 section updates
-variable [CMRA α]
+
+variable [CMRA α] [CMRA β] (f : α → β) (g : β → α)
 
 -- (* Global Instance cmra_updateP_proper :
 --   Proper ((≡) ==> pointwise_relation _ iff ==> iff) (@cmra_updateP SI A).
@@ -26,23 +27,23 @@ variable [CMRA α]
 --   Proper ((≡) ==> (≡) ==> iff) (@cmra_update SI A).
 -- Proof. Admitted. *)
 
-theorem UpdateP.left_eqv {P : α → Prop} {x y: α} (e: x ≡ y) (u: x ~~>: P): y ~~>: P :=
+theorem UpdateP.equiv_left {P : α → Prop} {x y: α} (e: x ≡ y) (u: x ~~>: P): y ~~>: P :=
   fun n mz v => u n mz (CMRA.validN_ne (CMRA.opM_left_dist mz e.symm.dist) v)
 
-theorem Update.left_eqv {x y z: α} (e: x ≡ y) (u: x ~~> z): y ~~> z :=
+theorem Update.equiv_left {x y z: α} (e: x ≡ y) (u: x ~~> z): y ~~> z :=
   fun n mz v => u n mz (CMRA.validN_ne (CMRA.opM_left_dist mz e.symm.dist) v)
 
-theorem Update.right_eqv {x y z: α} (e: y ≡ z) (u: x ~~> y): x ~~> z :=
+theorem Update.equiv_right {x y z: α} (e: y ≡ z) (u: x ~~> y): x ~~> z :=
   fun n mz v => CMRA.validN_ne (CMRA.opM_left_dist mz e.dist) (u n mz v)
 
 instance [CMRA α] : Trans OFE.Equiv UpdateP UpdateP (α := α) where
-  trans e u := UpdateP.left_eqv e.symm u
+  trans e u := UpdateP.equiv_left e.symm u
 
 instance [CMRA α] : Trans OFE.Equiv Update Update (α := α) where
-  trans e u := Update.left_eqv (id (OFE.Equiv.symm e)) u
+  trans e u := Update.equiv_left (id (OFE.Equiv.symm e)) u
 
 instance [CMRA α] : Trans Update OFE.Equiv Update (α := α) where
-  trans u e := Update.right_eqv e u
+  trans u e := Update.equiv_right e u
 
 
 theorem Update.of_updateP {x y: α} (h: x ~~>: (y = ·)): x ~~> y :=
@@ -145,14 +146,14 @@ theorem Update.op_l (x y : α) : x • y ~~> x := fun _ _ => CMRA.validN_op_opM_
 theorem Update.op_r (x y : α) : x • y ~~> y := fun _ _ => CMRA.validN_op_opM_right
 
 theorem Update.included (x y : α) : x ≼ y → y ~~> x :=
-  fun ⟨z, ez⟩ => Update.left_eqv ez.symm (Update.op_l x z)
+  fun ⟨z, ez⟩ => Update.equiv_left ez.symm (Update.op_l x z)
 
 theorem Update.valid0 (x y : α) : (✓{0} x → x ~~> y) → x ~~> y :=
   fun h n mz v => h (CMRA.valid0_of_validN (CMRA.validN_opM v)) n mz v
 
 -- Frame preserving updates for total and discete CMRAs
 
-theorem total_updateP [CMRA.IsTotal α] (x : α) (P : α → Prop)
+theorem UpdateP.total [CMRA.IsTotal α] (x : α) (P : α → Prop)
     : x ~~>: P ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ∃ y, P y ∧ ✓{n} (y • z) where
   mp uxp := fun n z v => uxp n (some z) v
   mpr h := fun n mz v =>
@@ -162,7 +163,7 @@ theorem total_updateP [CMRA.IsTotal α] (x : α) (P : α → Prop)
       ⟨y, py, CMRA.validN_op_opM_left vy⟩
     | .some z => h n z v
 
-theorem total_update [CMRA.IsTotal α] (x y : α)
+theorem Update.total [CMRA.IsTotal α] (x y : α)
     : x ~~> y ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
   mp uxy := fun n z v => uxy n (some z) v
   mpr h := fun n mz v =>
@@ -172,7 +173,7 @@ theorem total_update [CMRA.IsTotal α] (x y : α)
     | .some z => h n z v
 
 
-theorem discrete_updateP [CMRA.Discrete α] (x : α) (P : α → Prop)
+theorem UpdateP.discrete [CMRA.Discrete α] (x : α) (P : α → Prop)
     : x ~~>: P ↔ ∀ (mz : Option α), ✓ (x •? mz) → ∃ y, P y ∧ ✓ (y •? mz) where
   mp uxp := fun mz v =>
     let ⟨y, py, vy⟩ := uxp 0 mz (CMRA.Valid.validN v)
@@ -181,32 +182,30 @@ theorem discrete_updateP [CMRA.Discrete α] (x : α) (P : α → Prop)
     let ⟨y, py, vy⟩ := h mz ((CMRA.valid_iff_validN' n).mpr v)
     ⟨y, py, CMRA.Valid.validN vy⟩
 
-theorem discrete_update [CMRA.Discrete α] (x y : α)
+theorem Update.discrete [CMRA.Discrete α] (x y : α)
     : x ~~> y ↔ ∀ (mz : Option α), ✓ (x •? mz) → ✓ (y •? mz) where
   mp uxp := fun mz v => CMRA.discrete_valid $ uxp 0 mz (CMRA.Valid.validN v)
   mpr h := fun n mz v => CMRA.Valid.validN $ h mz ((CMRA.valid_iff_validN' n).mpr v)
 
-theorem discrete_total_updateP [CMRA.Discrete α] [CMRA.IsTotal α] (x : α) (P : α → Prop)
+theorem UpdateP.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] (x : α) (P : α → Prop)
     : x ~~>: P ↔ ∀ (z : α), ✓ (x • z) → ∃ y, P y ∧ ✓ (y • z) where
   mp uxp := fun z vz =>
-    let ⟨y, py, vy⟩ := (total_updateP x P).mp uxp 0 z (CMRA.Valid.validN vz)
+    let ⟨y, py, vy⟩ := (UpdateP.total x P).mp uxp 0 z (CMRA.Valid.validN vz)
     ⟨y, py, CMRA.discrete_valid vy⟩
   mpr h :=
     have this n z (v: ✓{n} x • z): ∃ y, P y ∧ ✓{n} (y • z) :=
       let ⟨y, py, vy⟩ := h z ((CMRA.valid_iff_validN' n).mpr v)
       ⟨y, py, CMRA.Valid.validN vy⟩
-    (total_updateP x P).mpr this
+    (UpdateP.total x P).mpr this
 
-theorem discrete_total_update [CMRA.Discrete α] [CMRA.IsTotal α] (x y : α)
+theorem Update.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] (x y : α)
     : x ~~> y ↔ ∀ (z : α), ✓ (x • z) → ✓ (y • z) where
   mp uxp := fun z vz =>
-    CMRA.discrete_valid $ (total_update x y).mp uxp 0 z (CMRA.Valid.validN vz)
+    CMRA.discrete_valid $ (Update.total x y).mp uxp 0 z (CMRA.Valid.validN vz)
   mpr h :=
     have this n z (v: ✓{n} x • z): ✓{n} (y • z) :=
       CMRA.Valid.validN $ h z ((CMRA.valid_iff_validN' n).mpr v)
-    (total_update x y).mpr this
-
-end updates
+    (Update.total x y).mpr this
 
 -- (** * Transport *)
 -- Section cmra_transport.
@@ -222,101 +221,84 @@ end updates
 
 -- End cmra_transport.
 
--- Isomorphism
-section iso_cmra
-  variable [CMRA α] [CMRA β] (f : α → β) (g : β → α)
+/-! ## Isomorphism -/
+theorem UpdateP.iso {P : β → Prop} {Q : α → Prop} {y : β}
+    (gf : ∀ x, g (f x) ≡ x)
+    (g_op : ∀ y1 y2, g (y1 • y2) ≡ g y1 • g y2)
+    (g_validN : ∀ n y, ✓{n} (g y) ↔ ✓{n} y)
+    (uyp: y ~~>: P)
+    (pq: ∀ y', P y' → Q (g y'))
+    : g y ~~>: Q :=
+  fun n mz v =>
+    have : ✓{n} y •? Option.map f mz :=
+      match mz with
+      | .none => (g_validN n _).mp v
+      | .some z =>
+        have : g y • z ≡ g (y • f z) :=
+          (CMRA.op_right_eqv _ (gf z).symm).trans (g_op y (f z)).symm
+        (g_validN n _).mp (CMRA.validN_ne this.dist v)
+    have ⟨x, px, vx⟩ := uyp n (mz.map f) this
+    have : g (x •? Option.map f mz) ≡ g x •? mz :=
+      match mz with
+      | .none => OFE.Equiv.rfl
+      | .some z => (g_op x (f z)).trans (CMRA.op_right_eqv (g x) (gf z))
+    ⟨g x, pq x px, CMRA.validN_ne this.dist ((g_validN n _).mpr vx)⟩
 
-  theorem iso_updateP {P : β → Prop} {Q : α → Prop} {y : β}
-      (gf : ∀ x, g (f x) ≡ x)
-      (g_op : ∀ y1 y2, g (y1 • y2) ≡ g y1 • g y2)
-      (g_validN : ∀ n y, ✓{n} (g y) ↔ ✓{n} y)
-      (uyp: y ~~>: P)
-      (pq: ∀ y', P y' → Q (g y'))
-      : g y ~~>: Q :=
-    fun n mz v =>
-      have : ✓{n} y •? Option.map f mz :=
-        match mz with
-        | .none => (g_validN n _).mp v
-        | .some z =>
-          have : g y • z ≡ g (y • f z) :=
-            (CMRA.op_right_eqv _ (gf z).symm).trans (g_op y (f z)).symm
-          (g_validN n _).mp (CMRA.validN_ne this.dist v)
-      have ⟨x, px, vx⟩ := uyp n (mz.map f) this
-      have : g (x •? Option.map f mz) ≡ g x •? mz :=
-        match mz with
-        | .none => OFE.Equiv.rfl
-        | .some z => (g_op x (f z)).trans (CMRA.op_right_eqv (g x) (gf z))
-      ⟨g x, pq x px, CMRA.validN_ne this.dist ((g_validN n _).mpr vx)⟩
+theorem UpdateP.iso' (P : β → Prop) (y : β)
+    (gf : ∀ x, g (f x) ≡ x)
+    (g_op : ∀ y1 y2, g (y1 • y2) ≡ g y1 • g y2)
+    (g_validN : ∀ n y, ✓{n} (g y) ↔ ✓{n} y)
+    (uyp: y ~~>: P)
+    : g y ~~>: λ x ↦ ∃ y, x = g y ∧ P y :=
+  UpdateP.iso f g gf g_op g_validN uyp (fun z pz => ⟨z, rfl, pz⟩)
 
-  theorem iso_updateP' (P : β → Prop) (y : β)
-      (gf : ∀ x, g (f x) ≡ x)
-      (g_op : ∀ y1 y2, g (y1 • y2) ≡ g y1 • g y2)
-      (g_validN : ∀ n y, ✓{n} (g y) ↔ ✓{n} y)
-      (uyp: y ~~>: P)
-      : g y ~~>: λ x ↦ ∃ y, x = g y ∧ P y :=
-    iso_updateP f g gf g_op g_validN uyp (fun z pz => ⟨z, rfl, pz⟩)
-
-end iso_cmra
-
-section update_lift_cmra
-  variable  [CMRA α] [CMRA β]
-
-  theorem Update.lift_updateP (f : β → α) (x : β) (y : β)
-    (H : ∀ P, x ~~>: P → f x ~~>: λ a' ↦ ∃ b', a' = f b' ∧ P b')
+/-! ## Lift -/
+theorem Update.lift_updateP (x y : β)
+    (H : ∀ P, x ~~>: P → g x ~~>: λ a' ↦ ∃ b', a' = g b' ∧ P b')
     (uxy: x ~~> y)
-    : f x ~~> f y :=
+    : g x ~~> g y :=
   Update.of_updateP fun n mz v =>
     have ⟨z, hz, vz⟩ := H _ (UpdateP.of_update uxy) n mz v
-    have hz : z = f y := by simp at hz ⊢; exact hz
+    have hz : z = g y := by simp at hz ⊢; exact hz
     ⟨z, hz.symm, vz⟩
 
-end update_lift_cmra
+/-! ## Product -/
+theorem UpdateP.prod {P : α → Prop} {Q : β → Prop} {R : α × β → Prop} {x : α × β}
+    (uxp: x.fst ~~>: P) (uxq: x.snd ~~>: Q) (pq: ∀ a b, P a → Q b → R (a, b))
+    : x ~~>: R :=
+  fun n mz v =>
+    match mz with
+    | .none =>
+      have ⟨y₁, py, vy₁⟩ := uxp n .none (Prod.validN_fst v)
+      have ⟨y₂, qy, vy₂⟩ := uxq n .none (Prod.validN_snd v)
+      ⟨(y₁, y₂), pq y₁ y₂ py qy, ⟨vy₁, vy₂⟩⟩
+    | .some z =>
+      have ⟨y₁, py, vy₁⟩ := uxp n (.some z.fst) (Prod.validN_fst v)
+      have ⟨y₂, qy, vy₂⟩ := uxq n (.some z.snd) (Prod.validN_snd v)
+      ⟨(y₁, y₂), pq y₁ y₂ py qy, ⟨vy₁, vy₂⟩⟩
 
-section prod
-  variable [CMRA α] [CMRA β]
+theorem UpdateP.prod' (P : α → Prop) (Q : β → Prop) (x : α × β)
+    (uxp: x.fst ~~>: P) (uxq: x.snd ~~>: Q) : x ~~>: λ y ↦ P (y.fst) ∧ Q (y.snd) :=
+  UpdateP.prod uxp uxq (fun _ _ px qy => ⟨px, qy⟩)
 
-  theorem prod_updateP {P : α → Prop} {Q : β → Prop} {R : α × β → Prop} {x : α × β}
-      (uxp: x.fst ~~>: P) (uxq: x.snd ~~>: Q) (pq: ∀ a b, P a → Q b → R (a, b))
-      : x ~~>: R :=
-    fun n mz v =>
-      match mz with
-      | .none =>
-        have ⟨y₁, py, vy₁⟩ := uxp n .none (Prod.validN_fst v)
-        have ⟨y₂, qy, vy₂⟩ := uxq n .none (Prod.validN_snd v)
-        ⟨(y₁, y₂), pq y₁ y₂ py qy, ⟨vy₁, vy₂⟩⟩
-      | .some z =>
-        have ⟨y₁, py, vy₁⟩ := uxp n (.some z.fst) (Prod.validN_fst v)
-        have ⟨y₂, qy, vy₂⟩ := uxq n (.some z.snd) (Prod.validN_snd v)
-        ⟨(y₁, y₂), pq y₁ y₂ py qy, ⟨vy₁, vy₂⟩⟩
+theorem Update.prod (x : α × β) (uxy₁: x.fst ~~> y.fst) (uxy₂: x.snd ~~> y.snd) : x ~~> y :=
+  Update.of_updateP $
+    UpdateP.prod (UpdateP.of_update uxy₁) (UpdateP.of_update uxy₂)
+      (fun _ _ ya yb => Prod.ext ya yb)
 
-  theorem prod_updateP' (P : α → Prop) (Q : β → Prop) (x : α × β)
-     (uxp: x.fst ~~>: P) (uxq: x.snd ~~>: Q) : x ~~>: λ y ↦ P (y.fst) ∧ Q (y.snd) :=
-    prod_updateP uxp uxq (fun _ _ px qy => ⟨px, qy⟩)
+/-! ## Option -/
+theorem UpdateP.option {P : α → Prop} {Q : Option α → Prop} {x : α}
+    (uxp: x ~~>: P) (pq: ∀ y, P y → Q (some y)) : some x ~~>: Q :=
+  fun n mz v =>
+    match mz with
+    | .none           => let ⟨w, pw, vw⟩ := uxp n .none v;  ⟨w, pq w pw, vw⟩
+    | .some .none     => let ⟨w, pw, vw⟩ := uxp n .none v;  ⟨w, pq w pw, vw⟩
+    | .some (.some z) => let ⟨w, pw, vw⟩ := uxp n (.some z) v;  ⟨w, pq w pw, vw⟩
 
-  theorem prod_update (x : α × β) (uxy₁: x.fst ~~> y.fst) (uxy₂: x.snd ~~> y.snd) : x ~~> y :=
-    Update.of_updateP $
-      prod_updateP (UpdateP.of_update uxy₁) (UpdateP.of_update uxy₂)
-        (fun _ _ ya yb => Prod.ext ya yb)
+theorem UpdateP.option' (P : α → Prop) (x : α) (uxp: x ~~>: P)
+    : some x ~~>: Option.rec False P :=
+  UpdateP.option uxp (fun _ py => py)
 
-end prod
-
-section option
-  variable [CMRA α]
-
-  theorem option_updateP {P : α → Prop} {Q : Option α → Prop} {x : α}
-      (uxp: x ~~>: P) (pq: ∀ y, P y → Q (some y)) : some x ~~>: Q :=
-    fun n mz v =>
-      match mz with
-      | .none           => let ⟨w, pw, vw⟩ := uxp n .none v;  ⟨w, pq w pw, vw⟩
-      | .some .none     => let ⟨w, pw, vw⟩ := uxp n .none v;  ⟨w, pq w pw, vw⟩
-      | .some (.some z) => let ⟨w, pw, vw⟩ := uxp n (.some z) v;  ⟨w, pq w pw, vw⟩
-
-  theorem option_updateP' (P : α → Prop) (x : α) (uxp: x ~~>: P)
-      : some x ~~>: Option.rec False P :=
-    option_updateP uxp (fun _ py => py)
-
-  theorem option_update (x y : α) (uxy: x ~~> y): some x ~~> some y :=
-    Update.of_updateP $
-      option_updateP (UpdateP.of_update uxy) (fun _ => congrArg some)
-
-end option
+theorem Update.option (x y : α) (uxy: x ~~> y): some x ~~> some y :=
+  Update.of_updateP $
+    UpdateP.option (UpdateP.of_update uxy) (fun _ => congrArg some)
