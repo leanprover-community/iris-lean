@@ -1,9 +1,3 @@
-/-
-Copyright (c) 2025 Markus de Medeiros. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
--/
-
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
 
@@ -28,9 +22,7 @@ class Numbers (α : Type _) extends CommMonoid α, TotallyOrdered α where
   le_def : ∀ a b : α, a ≤ b ↔ a < b ∨ a = b
   lt_not_eq : ∀ {a : α}, a > 0 ↔ a ≠ 0
   add_order_compat : ∀ {a b c : α}, a ≤ b → a + c ≤ b + c
-  positive  {a : α} : a ≥ 0
   left_cancel : ∀ {a b c : α}, c + a = c + b → a = b
-
   -- these two are theorems. remove them after replacing them with theorems
   add_le_mono  : ∀ {a b c : α}, a + b ≤ c → a ≤ c
   lt_sum : ∀ {a b : α}, a < b ↔ ∃ r, a + r = b
@@ -211,7 +203,7 @@ instance Frac_CMRA : CMRA (Numerical α) where
   comm := by simp [← iF.add_comm]
   pcore_op_left := by
     intro ⟨x⟩ ⟨y⟩ hxy
-    cases hxy 
+    cases hxy
     simp
     rw[iF.add_comm]
     simp[iF.id_law x]
