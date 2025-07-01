@@ -138,7 +138,7 @@ theorem Agree.op_invN {x y : Agree α} : (x.op y).validN n → x ≡{n}≡ y := 
     obtain ⟨b, hb⟩ := mem_of_agree x
     exists b; simp_all
 
-instance : CMRA (Agree α) where
+instance Agree_CMRA : CMRA (Agree α) where
   pcore := some
   op := Agree.op
   ValidN := Agree.validN
@@ -183,3 +183,64 @@ theorem Agree.includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x :=
 
 theorem Agree.included {x y : Agree α} : x ≼ y ↔ y ≡ y • x :=
   ⟨fun ⟨z, h⟩ n => includedN.mp ⟨z, h n⟩, fun h => ⟨y, h.trans op_comm⟩⟩
+
+theorem Agree.toAgree.is_discrete {a : α} (Ha : OFE.DiscreteE a) : OFE.DiscreteE (toAgree a) := by
+  simp [toAgree]
+  intro y Ha _
+  cases y
+  rcases Ha with ⟨Hal, Har⟩
+  constructor <;> simp_all
+  · rcases Hal with ⟨b, Hb1, Hb2⟩
+    refine ⟨b, ⟨Hb1, ?_⟩⟩
+    exact OFE.Equiv.dist (Ha (Har b Hb1))
+  · intro H Hb
+    exact OFE.Equiv.dist (Ha (Har H Hb))
+
+open OFE OFE.Discrete in
+instance [OFE α] [OFE.Discrete α] : OFE.Discrete (Agree α) where
+  discrete_0 {x y} H := by
+    intro n
+    constructor
+    · intro a Ha
+      rcases H.1 a Ha with ⟨c, Hc⟩
+      refine ⟨c, ⟨Hc.1, ?_⟩⟩
+      apply equiv_dist.mp <| discrete_0 (Dist.le Hc.2 <| Nat.zero_le 0)
+    · intro b Hb
+      rcases H.2 b Hb with ⟨c, Hc⟩
+      refine ⟨c, ⟨Hc.1, ?_⟩⟩
+      apply equiv_dist.mp <| discrete_0 (Dist.le Hc.2 <| Nat.zero_le 0)
+
+instance toAgree.ne [OFE α] : OFE.NonExpansive (toAgree : α → Agree α) where
+  ne n x y H := by
+    simp [toAgree]
+    constructor
+    · intro a Ha; exists y
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at Ha
+      simp only [List.mem_cons, List.not_mem_nil, or_false, true_and]
+      exact Ha ▸ H
+    · intro b Hb; exists x
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at Hb
+      simp only [List.mem_cons, List.not_mem_nil, or_false, true_and]
+      exact Hb ▸ H
+
+theorem toAgree.inj {a1 a2 : α} {n} (H : toAgree a1 ≡{n}≡ toAgree a2) : a1 ≡{n}≡ a2 := by
+  rcases H.1 a1 (by simp [toAgree]) with ⟨_, ⟨_, _⟩⟩; simp_all [toAgree]
+
+instance : CMRA.IsTotal (Agree α) where
+  total := by simp [CMRA.pcore]
+
+theorem agree_valid_includedN {n} {x y : Agree α} : x ≼{n} y → ✓{n} y → x ≡{n}≡ y := by
+  rintro ⟨z, Hy⟩ H
+  have H' : ✓{n} (x • z) := (OFE.Dist.validN Hy).mp H
+  refine .trans ?_ Hy.symm
+  have H'' := Agree.op_invN H'
+  refine H''.trans ?_
+  refine .trans ?_ CMRA.op_commN
+  refine .trans ?_ (CMRA.op_ne.ne H''.symm)
+  exact Agree.idemp.symm _
+
+theorem toAgree.incN {a b : α} {n} : toAgree a ≼{n} toAgree b ↔ a ≡{n}≡ b := by
+  refine ⟨?_, fun H => (CMRA.incN_iff_right <| toAgree.ne.ne H).mp <| CMRA.incN_refl _⟩
+  intro H
+  apply toAgree.inj
+  exact agree_valid_includedN H trivial
