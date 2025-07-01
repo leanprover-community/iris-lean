@@ -121,7 +121,11 @@ end Iris
 
 /-- A type of fractions with a unique whole element. -/
 class UFraction (α : Type _) extends Fraction α, One α where
-  whole_iff_one {a : α} : Fraction.Whole a ↔ a = 1
+  -- Experiment: I don't see why we need a unique One element. I wouldn't be surprised if it were
+  -- necessary somewhere, but for now we will try relaxing the constraint to just assert the
+  -- existence of a Whole element.
+  -- whole_iff_one {a : α} : Fraction.Whole a ↔ a = 1
+  one_whole : Fraction.Whole (1 : α)
 
 section NumericFraction
 
@@ -197,6 +201,12 @@ theorem strictly_positive {a : α} : ¬ ∃ b : α, a + b < a := by
   rw [←add_assoc] at H
   exact positive ⟨c + c1, H⟩
 
+theorem strictly_positive_le {a : α} : ¬ ∃ b : α, a + b ≤ a := by
+  rintro ⟨b, H⟩
+  rcases (le_def.mp H) with (H|H)
+  · apply positive (α := α); exists b
+  · apply strictly_positive (α := α); exists b
+
 instance : UFraction α where
   Proper x := x ≤ 1
   add_comm := add_comm
@@ -204,28 +214,33 @@ instance : UFraction α where
   add_left_cancel := add_left_cancel
   add_ne H := positive (α := α) ⟨_, add_comm.trans H.symm⟩
   proper_add_mono_left := add_le_mono
-  whole_iff_one {a} := by
-    constructor
-    · intro H
-      simp [Fraction.Whole] at H
-      rcases H with ⟨Hp, Hdp⟩
-      cases (le_def.mp Hp)
-      · trivial
-      · rename_i HK; exfalso
-        rcases (lt_def.mp HK) with ⟨c, Hc⟩
-        apply Hdp
-        exists c
-        rw [← Hc]
-        exact le_refl
-    · intro H; subst H
-      refine ⟨le_refl, ?_⟩
-      rintro ⟨b, H⟩
-      simp [Fraction.Proper] at H
-      cases (le_def.mp H)
-      · rename_i H''
-        apply positive ⟨b, H''⟩
-      · rename_i H''
-        apply strictly_positive ⟨b, H''⟩
+  -- whole_iff_one {a} := by
+  --   constructor
+  --   · intro H
+  --     simp [Fraction.Whole] at H
+  --     rcases H with ⟨Hp, Hdp⟩
+  --     cases (le_def.mp Hp)
+  --     · trivial
+  --     · rename_i HK; exfalso
+  --       rcases (lt_def.mp HK) with ⟨c, Hc⟩
+  --       apply Hdp
+  --       exists c
+  --       rw [← Hc]
+  --       exact le_refl
+  --   · intro H; subst H
+  --     refine ⟨le_refl, ?_⟩
+  --     rintro ⟨b, H⟩
+  --     simp [Fraction.Proper] at H
+  --     cases (le_def.mp H)
+  --     · rename_i H''
+  --       apply positive ⟨b, H''⟩
+  --     · rename_i H''
+  --       apply strictly_positive ⟨b, H''⟩
+  one_whole := by
+    simp [Fraction.Whole, Fraction.Fractional]
+    refine ⟨le_refl, fun x Hk => ?_⟩
+    apply strictly_positive_le (a := (1 : α))
+    exists x
 
 theorem frac_included {p q : Frac α} : p ≼ q ↔ p < q :=
   ⟨ by rintro ⟨r, Hr⟩; exact lt_def.mpr ⟨r, Hr ▸ rfl⟩,
