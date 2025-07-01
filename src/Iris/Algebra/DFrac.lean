@@ -23,7 +23,7 @@ abbrev DFrac F := LeibnizO (DFracK F)
 
 -- TODO: Delete this class. I have it now because the Fractional class is being
 -- changed concurrently. Also I'm certain that some of these fields will be derivable.
--- class DFractional (F : Type _) extends UFractional F where
+-- class DFractional (F : Type _) extends UFraction F where
   -- one_strict_max {y : F} : ¬(One.one + y ≤ One.one)
   -- lt_irrefl : ¬(One.one < (One.one : F))
   -- strict_pos {x y : F} : ¬(x + y = x)
@@ -33,14 +33,14 @@ section dfrac
 
 open DFracK
 
-variable {F : Type _} [UFractional F]
+variable {F : Type _} [UFraction F]
 
 instance : Inhabited (DFrac F) := ⟨⟨Discard⟩⟩
 
 abbrev valid : DFrac F → Prop
-| ⟨Own f⟩        => whole f
+| ⟨Own f⟩        => Whole f
 | ⟨Discard⟩      => True
-| ⟨OwnDiscard f⟩ => fractional f
+| ⟨OwnDiscard f⟩ => Fractional f
 
 abbrev pcore : DFrac F → Option (DFrac F)
 | ⟨Own _⟩        => none
@@ -74,14 +74,23 @@ instance DFrac_CMRA : CMRA (DFrac F) where
   valid_iff_validN := ⟨fun x _ => x, fun x => x 0⟩
   validN_succ := id
   validN_op_left {_ x y} := by
-    have Lleft {a' a : F} (H : fractional (a' + a)) : fractional a := by
+    have Lleft {a' a : F} (H : Fractional (a' + a)) : Fractional a := by
+      rcases H with ⟨b, Hb⟩
+      exists (a' + b)
+      suffices (a' + a + b) = (a + (a' + b)) by rw [←this]; exact Hb
+      refine .trans ?_ Fraction.add_assoc.symm
+      congr 1
+      apply Fraction.add_comm
+    rcases x with ⟨x|_|x⟩ <;> rcases y with ⟨y|_|y⟩ <;> simp [valid]
+    · sorry
+    · sorry
+    · sorry
+    · sorry
+    ·
 
-      sorry
-    sorry
-    -- have Lleft {a' a : F} (H : a' + a < One.one) : a' < One.one := by
     --   rcases Fractional.lt_sum.mp H with ⟨r, Hr⟩
     --   exact (Fractional.lt_sum.mpr ⟨a + r, Hr.symm ▸ Fractional.assoc.symm⟩)
-    -- rcases x with ⟨x|_|x⟩ <;> rcases y with ⟨y|_|y⟩ <;> simp
+    --
     -- · exact Fractional.add_le_mono
     -- · exact Fractional.lt_le
     -- · exact (Fractional.add_le_mono <| Fractional.lt_le ·)
