@@ -33,12 +33,14 @@ section dfrac
 
 open DFracK
 
+open Fraction
+
 variable {F : Type _} [UFraction F]
 
 instance : Inhabited (DFrac F) := ⟨⟨Discard⟩⟩
 
 abbrev valid : DFrac F → Prop
-| ⟨Own f⟩        => Whole f
+| ⟨Own f⟩        => Proper f
 | ⟨Discard⟩      => True
 | ⟨OwnDiscard f⟩ => Fractional f
 
@@ -82,29 +84,20 @@ instance DFrac_CMRA : CMRA (DFrac F) where
       congr 1
       apply Fraction.add_comm
     rcases x with ⟨x|_|x⟩ <;> rcases y with ⟨y|_|y⟩ <;> simp [valid]
-    · sorry
-    · sorry
-    · sorry
-    · sorry
-    ·
-
-    --   rcases Fractional.lt_sum.mp H with ⟨r, Hr⟩
-    --   exact (Fractional.lt_sum.mpr ⟨a + r, Hr.symm ▸ Fractional.assoc.symm⟩)
-    --
-    -- · exact Fractional.add_le_mono
-    -- · exact Fractional.lt_le
-    -- · exact (Fractional.add_le_mono <| Fractional.lt_le ·)
-    -- · exact Lleft
-    -- · exact Lleft
+    · apply proper_add_mono_left
+    · apply fractional_proper
+    · exact fractional_proper ∘ Fractional_add_left
+    · apply Fractional_add_left
+    · apply Fractional_add_left
   assoc {x y z} := by
-    sorry
-    /-
     rcases x with ⟨x|_|x⟩ <;>
     rcases y with ⟨y|_|y⟩ <;>
     rcases z with ⟨z|_|z⟩ <;>
-    simp [op, Fractional.assoc]
-    -/
-  comm {x y} := sorry -- by rcases x with ⟨x|_|x⟩ <;> rcases y with ⟨y|_|y⟩ <;> simp [op, Fractional.comm]
+    simp [op, Fraction.add_assoc]
+  comm {x y} := by
+    rcases x with ⟨x|_|x⟩ <;>
+    rcases y with ⟨y|_|y⟩ <;>
+    simp [op, Fraction.add_comm]
   pcore_op_left {x y} := by rcases x with ⟨x|_|x⟩ <;> rcases y with ⟨y|_|y⟩ <;> simp
   pcore_idem {x y} := by rcases x with ⟨x|_|x⟩ <;> rcases y with ⟨y|_|y⟩ <;> simp
   pcore_op_mono {x y} := by
@@ -136,12 +129,15 @@ instance DFrac_CMRA : CMRA (DFrac F) where
       · exists ⟨OwnDiscard x⟩; exists ⟨Discard⟩
       · exists ⟨OwnDiscard y⟩; exists ⟨OwnDiscard z⟩
 
-/-
 instance : CMRA.Exclusive (α := DFrac F) ⟨Own One.one⟩ where
   exclusive0_l y := by
     rcases y with ⟨y|_|y⟩ <;>
     simp only [CMRA.ValidN, valid]
-    · sorry -- exact DFractional.one_strict_max
+    · suffices (Whole (One.one : F)) by
+        unfold Whole at this
+
+        sorry
+      sorry -- exact DFractional.one_strict_max
     · sorry -- exact DFractional.lt_irrefl
     · sorry -- exact DFractional.one_strict_max ∘ Fractional.lt_le
 
@@ -180,4 +176,3 @@ theorem valid_discarded : ✓ (LeibnizO.mk Discard : DFrac F) := by simp [CMRA.V
 --   simp [CMRA.op, op, CMRA.Valid, valid]
 
 end dfrac
--/
