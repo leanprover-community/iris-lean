@@ -28,7 +28,7 @@ open Iris
 
 section heProp
 
-variable (F K V : Type _) (H : Type _ → Type _) [DFractional F] [∀ T, Heap (H T) K T]
+variable (F K V : Type _) (H : Type _ → Type _) [UFraction F] [∀ T, Heap (H T) K T]
 
 abbrev heProp := UPred (HeapView F K (Agree (LeibnizO V)) H)
 
