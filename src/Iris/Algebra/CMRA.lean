@@ -1178,8 +1178,8 @@ instance cmraProd : CMRA (α × β) where
   op_ne {x} :=
     {ne n y z h := dist_prod_ext (Dist.op_r $ dist_fst h) (Dist.op_r $ dist_snd h)}
   pcore_ne {n x y cx} h ph := by
-    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some.mp ph
-    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some.mp this
+    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some_iff.mp ph
+    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some_iff.mp this
     have ⟨cy₁, hcy₁, hxy₁⟩ := CMRA.pcore_ne (dist_fst h) hcx₁
     have ⟨cy₂, hcy₂, hxy₂⟩ := CMRA.pcore_ne (dist_snd h) hcx₂
     suffices g: cx ≡{n}≡ (cy₁, cy₂) by simp [hcy₁, hcy₂, g, pcore]
@@ -1198,12 +1198,12 @@ instance cmraProd : CMRA (α × β) where
   assoc {x y z} := ⟨CMRA.assoc, CMRA.assoc⟩
   comm {x y} := ⟨CMRA.comm, CMRA.comm⟩
   pcore_op_left {x cx} h :=
-    let ⟨a, ha, ho⟩ := Option.bind_eq_some.mp h
-    let ⟨b, hb, hh⟩ := Option.bind_eq_some.mp ho
+    let ⟨a, ha, ho⟩ := Option.bind_eq_some_iff.mp h
+    let ⟨b, hb, hh⟩ := Option.bind_eq_some_iff.mp ho
     (Option.some.inj hh) ▸ OFE.equiv_prod_ext (CMRA.pcore_op_left ha) (CMRA.pcore_op_left hb)
   pcore_idem {x cx} h :=
-    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some.mp h
-    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some.mp this
+    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some_iff.mp h
+    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some_iff.mp this
     have ⟨a, ha, ea⟩ := equiv_some (CMRA.pcore_idem hcx₁)
     have ⟨b, hb, eb⟩ := equiv_some (CMRA.pcore_idem hcx₂)
     suffices g: (a, b) ≡ (cx₁, cx₂) by
@@ -1211,8 +1211,8 @@ instance cmraProd : CMRA (α × β) where
       simp [ha, hb, g, pcore]
     equiv_prod_ext ea eb
   pcore_op_mono {x cx} h y := by
-    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some.mp h
-    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some.mp this
+    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some_iff.mp h
+    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some_iff.mp this
     have ⟨cy₁, hcy₁⟩ := CMRA.pcore_op_mono hcx₁ y.fst
     have ⟨cy₂, hcy₂⟩ := CMRA.pcore_op_mono hcx₂ y.snd
     have ⟨a, ha, ea⟩ := equiv_some hcy₁
