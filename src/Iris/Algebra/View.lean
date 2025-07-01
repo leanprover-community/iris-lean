@@ -224,7 +224,7 @@ instance : CMRA (View F R) where
     have g_pcore_0 {y : View F R} : CMRA.pcore (g y) ≡ g <$> pcore y := by
       rcases y with ⟨x, b⟩
       simp only [pcore, Option.map_eq_map, Option.map, g]
-      simp [CMRA.pcore, prod.pcore, optionCore]
+      simp [CMRA.pcore, Prod.pcore, optionCore]
       simp [CMRA.pcore_eq_core]
       rfl
 
@@ -235,7 +235,7 @@ instance : CMRA (View F R) where
       exact ⟨fun H n => H n, fun H n => H n⟩
 
     have g_opM_f {x y} : g (opM' y (f x)) ≡ CMRA.op (g y) x := by
-      simp [opM', g, f, CMRA.op, prod.op]
+      simp [opM', g, f, CMRA.op, Prod.op]
 
     rintro y1 cy y2 ⟨z, Hy2⟩ Hy1
     let Lcore := (@CMRA.pcore_mono' _ _ (g y1) (g y2) (g cy) ?G1 ?G2)
@@ -255,7 +255,7 @@ instance : CMRA (View F R) where
     let g : View F R → (Option ((DFrac F) × Agree A) × B) := fun x => (x.1, x.2)
     have H2 := @CMRA.extend _ _ n (g x) (g y1) (g y2) ?G1 He
     case G1 =>
-      simp_all [validN, CMRA.ValidN, prod.ValidN, g, optionValidN]
+      simp_all [validN, CMRA.ValidN, Prod.ValidN, g, optionValidN]
       rcases x with ⟨_|⟨q1, ag1⟩, b1⟩ <;> simp_all only
       · refine ⟨trivial, ?_⟩
         rcases Hv with ⟨_, Ha⟩
@@ -360,7 +360,7 @@ theorem view_auth_dfrac_op_validN :
     apply CMRA.op_commN.trans
     apply (CMRA.op_ne.ne (toAgree.ne.ne Ha')).trans
     apply Agree.idemp
-  · simp [CMRA.op, CMRA.ValidN, validN, optionOp, prod.op]
+  · simp [CMRA.op, CMRA.ValidN, validN, optionOp, Prod.op]
     refine ⟨H.1, a1, ?_, ?_⟩
     · exact (CMRA.op_ne.ne <| toAgree.ne.ne H.2.1.symm).trans Agree.idemp.dist
     · refine ViewRel.mono H.2.2 .rfl ?_ n.le_refl
