@@ -12,7 +12,7 @@ open Iris
 
 section heap_view
 
-variable (F K V : Type _) (H : Type _ → Type _) [DFractional F] [∀ T, Heap (H T) K T] [CMRA V]
+variable (F K V : Type _) (H : Type _ → Type _) [UFraction F] [∀ T, Heap (H T) K T] [CMRA V]
 
 abbrev heapR (n : Nat) (m : StoreO (H V)) (f : StoreO (H ((DFrac F) × V))) : Prop :=
   let P (k : K) (fv : DFrac F × V) : Prop :=
@@ -36,7 +36,7 @@ end heap_view
 
 section heap_view_laws
 
-variable {F K V : Type _} {H : Type _ → Type _} [DFractional F] [∀ T, Heap (H T) K T] [CMRA V]
+variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [∀ T, Heap (H T) K T] [CMRA V]
 
 def heap_view_auth (dq : DFrac F) (m : StoreO (H V)) : HeapView F K V H :=
   ●V{dq} .mk m.1
