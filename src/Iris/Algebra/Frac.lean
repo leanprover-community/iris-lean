@@ -14,7 +14,6 @@ This CMRA captures the notion of fractional ownership of another resource.
 Traditionally the underlying set is assumed to be the half open interval $$(0,1]$$.
 -/
 
-section Fractional
 class Fraction (α : Type _) extends Add α where
   /-- Validity predicate on fractions. Generalizes the notion of `(· ≤ 1)` from rational fractions. -/
   Proper : α → Prop
@@ -25,38 +24,50 @@ class Fraction (α : Type _) extends Add α where
   add_ne : ∀{a b : α}, a ≠ b + a
   proper_add_mono_left : ∀ {a b : α}, Proper (a + b) → Proper a
 
-open Fraction in
 /-- A fraction does not represent the entire resource.
 Generalizes the notion of `(· < 1)` from rational fractions. -/
-def Fractional [Fraction α] (a : α) : Prop := ∃ b, Proper (a + b)
+def Fraction.Fractional [Fraction α] (a : α) : Prop := ∃ b, Fraction.Proper (a + b)
 
-open Fraction in
 /-- A fraction that is tne entire resource.
 Generalizes the notion of `1` from rational fractions. -/
-def Whole [Fraction α] (a : α) : Prop := Proper a ∧ ¬Fractional a
+def Fraction.Whole [Fraction α] (a : α) : Prop := Fraction.Proper a ∧ ¬Fraction.Fractional a
 
-open Fraction in
-theorem Proper.fractional_or_whole [Fraction α] {a : α} (H : Proper a) :
-    Fractional a ∨ Whole a := by
+section Fractional
+
+open Fraction
+
+variable [Fraction α]
+
+theorem Proper.fractional_or_whole {a : α} (H : Proper a) : Fractional a ∨ Whole a := by
   apply (Classical.em (∃ b, Proper (a + b))).elim
   · exact (Or.intro_left _ ·)
   · exact (Or.intro_right _ ⟨H, ·⟩)
 
-open Fraction in
-theorem Proper.fractional_not_whole [Fraction α] {a : α} (H : Fractional a) : ¬Whole a :=
+theorem Proper.fractional_not_whole {a : α} (H : Fractional a) : ¬Whole a :=
   H.elim fun a' Ha' Hk => Hk.2 ⟨a', Ha'⟩
 
-open Fraction in
-theorem Proper.whole_not_fractional [Fraction α] {a : α} (H : Whole a) : ¬Fractional a :=
+theorem Proper.whole_not_fractional {a : α} (H : Whole a) : ¬Fractional a :=
   H.elim fun _ Hk1 Hk2 => Hk1 Hk2
 
-open Fraction in
-theorem add_right_cancel [Fraction α] {a b c : α} (H : b + a = c + a) : b = c :=
+theorem add_right_cancel {a b c : α} (H : b + a = c + a) : b = c :=
   add_left_cancel <| add_comm (a := c) ▸ add_comm (a := b) ▸ H
 
-open Fraction in
-theorem fractional_proper [Fraction α] {a : α} : Fractional a → Proper a :=
+theorem fractional_proper {a : α} : Fractional a → Proper a :=
   fun H => H.elim fun _ H' => Fraction.proper_add_mono_left H'
+
+theorem Fractional_add_left {a a' : α} (H : Fractional (a + a')) : Fractional a := by
+  rcases H with ⟨z, Hz⟩
+  exists (a' + z)
+  rw [add_assoc]
+  exact Hz
+
+theorem Fractional_add_right {a a' : α} (H : Fractional (a + a')) : Fractional a' := by
+  rcases H with ⟨z, Hz⟩
+  exists (a + z)
+  rw [add_assoc, add_comm (a := a')]
+  exact Hz
+
+end Fractional
 
 namespace Iris
 
@@ -110,7 +121,7 @@ end Iris
 
 /-- A type of fractions with a unique whole element. -/
 class UFraction (α : Type _) extends Fraction α, One α where
-  whole_iff_one {a : α} : Whole a ↔ a = 1
+  whole_iff_one {a : α} : Fraction.Whole a ↔ a = 1
 
 section NumericFraction
 
@@ -196,7 +207,7 @@ instance : UFraction α where
   whole_iff_one {a} := by
     constructor
     · intro H
-      simp [Whole] at H
+      simp [Fraction.Whole] at H
       rcases H with ⟨Hp, Hdp⟩
       cases (le_def.mp Hp)
       · trivial
