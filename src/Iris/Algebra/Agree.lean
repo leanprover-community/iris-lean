@@ -225,3 +225,22 @@ instance toAgree.ne [OFE α] : OFE.NonExpansive (toAgree : α → Agree α) wher
 
 theorem toAgree.inj {a1 a2 : α} {n} (H : toAgree a1 ≡{n}≡ toAgree a2) : a1 ≡{n}≡ a2 := by
   rcases H.1 a1 (by simp [toAgree]) with ⟨_, ⟨_, _⟩⟩; simp_all [toAgree]
+
+instance : CMRA.IsTotal (Agree α) where
+  total := by simp [CMRA.pcore]
+
+theorem agree_valid_includedN {n} {x y : Agree α} : x ≼{n} y → ✓{n} y → x ≡{n}≡ y := by
+  rintro ⟨z, Hy⟩ H
+  have H' : ✓{n} (x • z) := (OFE.Dist.validN Hy).mp H
+  refine .trans ?_ Hy.symm
+  have H'' := Agree.op_invN H'
+  refine H''.trans ?_
+  refine .trans ?_ CMRA.op_commN
+  refine .trans ?_ (CMRA.op_ne.ne H''.symm)
+  exact Agree.idemp.symm _
+
+theorem toAgree.incN {a b : α} {n} : toAgree a ≼{n} toAgree b ↔ a ≡{n}≡ b := by
+  refine ⟨?_, fun H => (CMRA.incN_iff_right <| toAgree.ne.ne H).mp <| CMRA.incN_refl _⟩
+  intro H
+  apply toAgree.inj
+  exact agree_valid_includedN H trivial

@@ -344,11 +344,10 @@ theorem view_auth_dfrac_validN : ✓{n} (●V{dq} a : View F R) ↔ ✓{n}dq ∧
   and_congr_right fun _ => rel_iff_agree .rfl
 
 theorem view_auth_validN n a : ✓{n} (●V a : View F R) ↔ R n a UCMRA.unit :=
-  sorry -- ⟨(view_auth_dfrac_validN.mp · |>.2), (view_auth_dfrac_validN.mpr ⟨Fractional.le_refl, ·⟩)⟩
+  ⟨(view_auth_dfrac_validN.mp · |>.2), (view_auth_dfrac_validN.mpr ⟨UFraction.one_whole.1, ·⟩)⟩
 
 theorem view_auth_dfrac_op_validN :
     ✓{n} ((●V{dq1} a1 : View F R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡{n}≡ a2 ∧ R n a1 UCMRA.unit := by
-  -- simp only [View.auth, CMRA.op, op, optionOp, prod.op, CMRA.ValidN, validN]
   refine ⟨fun H => ?_, fun H => ?_⟩
   · let Ha' : a1 ≡{n}≡ a2 := view_auth_dfrac_op_invN H
     rcases H with ⟨Hq, _, Ha, HR⟩
@@ -367,9 +366,10 @@ theorem view_auth_dfrac_op_validN :
 
 theorem view_auth_op_validN : ✓{n} ((●V a1 : View F R) • ●V a2) ↔ False := by
   refine view_auth_dfrac_op_validN.trans ?_
-  simp [CMRA.op, op, _root_.op, CMRA.Valid]
-  intro Hk; exfalso -- UFraction lemma
-  sorry
+  simp only [iff_false, not_and]
+  intro _
+  refine (UFraction.one_whole (α := F)).2 ?_ |>.elim
+  exists 1
 
 theorem view_frag_validN : ✓{n} (◯V b : View F R) ↔ ∃ a, R n a b := by rfl
 
@@ -377,13 +377,13 @@ theorem view_both_dfrac_validN : ✓{n} ((●V{dq} a : View F R) • ◯V b) ↔
   and_congr_right (fun _ => rel_iff_agree <| CMRA.unit_left_id_dist b)
 
 theorem view_both_validN : ✓{n} ((●V a : View F R) • ◯V b) ↔ R n a b :=
-  sorry -- view_both_dfrac_validN.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
+  view_both_dfrac_validN.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
 theorem view_auth_dfrac_valid : ✓ (●V{dq} a : View F R) ↔ ✓dq ∧ ∀ n, R n a UCMRA.unit :=
   and_congr_right (fun _=> forall_congr' fun _ => rel_iff_agree .rfl)
 
 theorem view_auth_valid : ✓ (●V a : View F R) ↔ ∀ n, R n a UCMRA.unit :=
-  sorry -- view_auth_dfrac_valid.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
+  view_auth_dfrac_valid.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
 theorem view_auth_dfrac_op_valid : ✓ ((●V{dq1} a1 : View F R) • ●V{dq2} a2) ↔ ✓(dq1 • dq2) ∧ a1 ≡ a2 ∧ ∀ n, R n a1 UCMRA.unit := by
   refine CMRA.valid_iff_validN.trans ?_
@@ -400,8 +400,10 @@ theorem view_auth_dfrac_op_valid : ✓ ((●V{dq1} a1 : View F R) • ●V{dq2} 
 
 theorem view_auth_op_valid : ✓ ((●V a1 : View F R) • ●V a2) ↔ False := by
   refine view_auth_dfrac_op_valid.trans ?_
-  simp only [CMRA.op, op, CMRA.Valid, _root_.op, _root_.valid]
-  sorry -- DFrac Lemma
+  simp [CMRA.op, op, CMRA.Valid, _root_.op, _root_.valid]
+  intro _
+  refine (UFraction.one_whole (α := F)).2 ?_ |>.elim
+  exists 1
 
 theorem view_frag_valid : ✓ (◯V b : View F R) ↔ ∀ n, ∃ a, R n a b := by rfl
 
@@ -409,30 +411,53 @@ theorem view_both_dfrac_valid : ✓ ((●V{dq} a : View F R) • ◯V b) ↔ ✓
   and_congr_right (fun _ => forall_congr' fun _ => rel_iff_agree <| CMRA.unit_left_id_dist b)
 
 theorem view_both_valid : ✓ ((●V a : View F R) • ◯V b) ↔ ∀ n, R n a b :=
-  sorry -- view_both_dfrac_valid.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
+  view_both_dfrac_valid.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
 theorem view_auth_dfrac_includedN : (●V{dq1} a1 : View F R) ≼{n} ((●V{dq2} a2) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := by
-  sorry
-  -- refine ⟨?_, fun H => ?_⟩
-  -- · simp only [auth, frag, CMRA.IncludedN, CMRA.op, op, optionOp, prod.op]
-  --   rintro ⟨(_|⟨q', a'⟩),⟨⟨x1, x2⟩, y⟩⟩
-  --   · exact ⟨Or.inr x1.symm, toAgree.inj x2.symm⟩
-  --   · simp_all only []
-  --     sorry
-  -- · sorry
-/-
-  Proof.
-    split.
-    - intros [[[[dqf agf]|] bf]
-        [[?%(discrete_iff _ _) ?]%(inj Some) _]]; simplify_eq/=.
-      + split; [eauto|]. apply to_agree_includedN. by exists agf.
-      + split; [right; done|]. by apply (inj to_agree).
-    - intros [[[? ->]| ->] ->].
-      + rewrite view_auth_dfrac_op -assoc. apply cmra_includedN_l.
-      + apply cmra_includedN_l.
-  Qed.
--/
-
+  refine ⟨?_, ?_⟩
+  · simp only [auth, frag, CMRA.IncludedN, CMRA.op, op, optionOp, Prod.op]
+    rintro ⟨(_|⟨dqf, af⟩),⟨⟨x1, x2⟩, y⟩⟩
+    · exact ⟨Or.inr x1.symm, toAgree.inj x2.symm⟩
+    · simp_all only []
+      apply And.intro
+      · left; exists dqf
+      · apply toAgree.incN.mp; exists af
+  · intro H
+    -- simp only [auth, frag, CMRA.IncludedN, CMRA.op, op, optionOp, Prod.op]
+    rcases H with ⟨(⟨z, HRz⟩| HRa2), HRb⟩
+    · -- have _ := @view_auth_dfrac_op
+      apply (CMRA.incN_iff_right <| ?G).mp
+      case G =>
+        apply OFE.equiv_dist.mp
+        apply CMRA.comm
+      apply (CMRA.incN_iff_right <| ?G).mp
+      case G =>
+        apply CMRA.op_ne.ne
+        apply OFE.NonExpansive₂.ne HRz.symm HRb
+      apply (CMRA.incN_iff_right <| ?G).mp
+      case G =>
+        apply CMRA.op_ne.ne
+        apply OFE.equiv_dist.mp
+        apply view_auth_dfrac_op.symm
+      apply (CMRA.incN_iff_right <| ?G).mp
+      case G =>
+        apply CMRA.op_ne.ne
+        apply OFE.equiv_dist.mp
+        apply CMRA.comm
+      apply (CMRA.incN_iff_right <| ?G).mp
+      case G =>
+        apply OFE.equiv_dist.mp
+        apply CMRA.assoc.symm
+      apply (CMRA.incN_iff_right <| ?G).mp
+      case G =>
+        apply OFE.equiv_dist.mp
+        apply CMRA.comm
+      exists ((◯V b) • ●V{z} a1)
+    · exists (◯V b)
+      refine .trans (OFE.equiv_dist.mp CMRA.comm _) (.trans ?_ (OFE.equiv_dist.mp CMRA.comm _))
+      apply CMRA.op_ne.ne
+      rw [HRa2]
+      exact OFE.NonExpansive₂.ne rfl HRb.symm
 
 theorem view_auth_dfrac_included : ((●V{dq1} a1 : View F R) ≼ (●V{dq2} a2 : View F R) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2 := by
   refine ⟨fun H => ⟨?_, ?_⟩, fun H => ?_⟩
@@ -446,20 +471,18 @@ theorem view_auth_dfrac_included : ((●V{dq1} a1 : View F R) ≼ (●V{dq2} a2 
         apply CMRA.comm.trans
         apply CMRA.op_ne.eqv
         apply auth_ne₂.eqv Hq Ha.symm
-      sorry
-    · sorry
-/-
-  Proof.
-    intros. split.
-    - split.
-      + by eapply (view_auth_dfrac_includedN 0ᵢ), cmra_included_includedN.
-      + apply equiv_dist=> n.
-        by eapply view_auth_dfrac_includedN, cmra_included_includedN.
-    - intros [[[dq ->]| ->] ->].
-      + by rewrite view_auth_dfrac_op -assoc.
-      + done.
-  Qed.
--/
+      apply (CMRA.inc_iff_right <| ?G1).mp
+      case G1 =>
+        apply CMRA.op_ne.eqv
+        apply view_auth_dfrac_op.symm
+      apply (CMRA.inc_iff_right <| CMRA.comm).mp
+      apply (CMRA.inc_iff_right <| CMRA.assoc).mp
+      exists ((●V{q} a1) • ◯V b)
+    · exists (◯V b)
+      refine .trans CMRA.comm (.trans ?_ CMRA.comm )
+      apply CMRA.op_ne.eqv
+      rw [Hq]
+      exact OFE.NonExpansive₂.eqv rfl Ha.symm
 
 theorem view_auth_includedN : (●V a1 : View F R) ≼{n} ((●V a2) • ◯V b) ↔ a1 ≡{n}≡ a2 :=
   view_auth_dfrac_includedN.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
@@ -467,55 +490,116 @@ theorem view_auth_includedN : (●V a1 : View F R) ≼{n} ((●V a2) • ◯V b)
 theorem view_auth_included : (●V a1 : View F R) ≼ ((●V a2) • ◯V b) ↔ a1 ≡ a2 :=
   view_auth_dfrac_included.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
-theorem view_frag_includedN : (◯V b1 : View F R) ≼{n} ((●V{p} a) • ◯V b2) ↔ b1 ≼{n} b2 := sorry
-/-
-  Proof.
-    split.
-    - intros [xf [_ Hb]]; simpl in *.
-      revert Hb; rewrite left_id. by exists (view_frag_proj xf).
-    - intros [bf ->]. rewrite comm view_frag_op -assoc. apply cmra_includedN_l.
-  Qed.
--/
+theorem view_frag_includedN : (◯V b1 : View F R) ≼{n} ((●V{p} a) • ◯V b2) ↔ b1 ≼{n} b2 := by
+  constructor
+  · rintro ⟨xf, ⟨_, Hb⟩⟩
+    simp [auth, frag, CMRA.op, op] at Hb
+    have Hb' : b2 ≡{n}≡ b1 • xf.π_frag := by
+      apply OFE.Dist.trans
+      apply OFE.Dist.symm
+      apply OFE.equiv_dist.mp
+      apply UCMRA.unit_left_id
+      apply Hb
+    apply (CMRA.incN_iff_right <| Hb'.symm).mp
+    exists xf.π_frag
+  · rintro ⟨bf, Hbf⟩
+    apply (CMRA.incN_iff_right <| ?G).mp
+    case G =>
+      apply CMRA.op_ne.ne
+      apply frag_ne.ne Hbf.symm
+    rw [view_frag_op]
+    apply (CMRA.incN_iff_right <| ?G).mp
+    case G =>
+      apply OFE.equiv_dist.mp
+      apply CMRA.comm
+    apply (CMRA.incN_iff_right <| ?G).mp
+    case G =>
+      apply OFE.equiv_dist.mp
+      apply CMRA.assoc
+    exists ((◯V bf) • ●V{p} a)
 
-theorem view_frag_included : (◯V b1 : View F R) ≼ ((●V{p} a) • ◯V b2) ↔ b1 ≼ b2 := sorry
-/-
-  Proof.
-    split.
-    - intros [xf [_ Hb]]; simpl in *.
-      revert Hb; rewrite left_id. by exists (view_frag_proj xf).
-    - intros [bf ->]. by rewrite comm view_frag_op -assoc.
-  Qed.
--/
-
+theorem view_frag_included : (◯V b1 : View F R) ≼ ((●V{p} a) • ◯V b2) ↔ b1 ≼ b2 := by
+  constructor
+  · rintro ⟨xf, ⟨_, Hb⟩⟩
+    simp [auth, frag, CMRA.op, op] at Hb
+    have Hb' : b2 ≡ b1 • xf.π_frag := by
+      apply OFE.Equiv.trans
+      apply OFE.Equiv.symm
+      apply UCMRA.unit_left_id
+      apply Hb
+    apply (CMRA.inc_iff_right <| Hb'.symm).mp
+    exists xf.π_frag
+  · rintro ⟨bf, Hbf⟩
+    apply (CMRA.inc_iff_right <| ?G).mp
+    case G =>
+      apply CMRA.op_ne.eqv
+      apply frag_ne.eqv Hbf.symm
+    rw [view_frag_op]
+    apply (CMRA.inc_iff_right <| ?G).mp
+    case G => apply CMRA.comm
+    apply (CMRA.inc_iff_right <| ?G).mp
+    case G =>
+      apply CMRA.assoc
+    exists ((◯V bf) • ●V{p} a)
 
 theorem view_both_dfrac_includedN :
     ((●V{dq1} a1 : View F R) • ◯V b1) ≼{n} ((●V{dq2} a2) • ◯V b2) ↔
-      (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2 := sorry
-/-
-  (** The weaker [view_both_included] lemmas below are a consequence of the
-  [view_auth_included] and [view_frag_included] lemmas above. *)
-  Proof.
-    split.
-    - intros. rewrite assoc. split.
-      + rewrite -view_auth_dfrac_includedN. by etrans; [apply cmra_includedN_l|].
-      + rewrite -view_frag_includedN. by etrans; [apply cmra_includedN_r|].
-    - intros (?&->&?bf&->). rewrite (comm _ b1) view_frag_op assoc.
-      by apply cmra_monoN_r, view_auth_dfrac_includedN.
-  Qed.
--/
+      (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2 := by
+  constructor
+  · intro H
+    rw [← and_assoc]
+    constructor
+    · apply (view_auth_dfrac_includedN (R := R)).mp
+      apply CMRA.incN_trans ?_ H
+      exact CMRA.incN_op_left n (●V{dq1} a1) (◯V b1)
+    · apply (view_frag_includedN (R := R) (F := F)).mp
+      apply CMRA.incN_trans (CMRA.incN_op_right _ _ _)
+      apply H
+  · rintro ⟨H0, H1, ⟨bf, H2⟩⟩
+    apply (CMRA.incN_iff_right <| ?G).mp
+    case G =>
+      apply CMRA.op_ne.ne
+      apply frag_ne.ne
+      apply OFE.Dist.symm
+      apply H2.trans
+      apply OFE.equiv_dist.mp
+      apply CMRA.comm
+    rewrite [view_frag_op]
+    apply (CMRA.incN_iff_right <| ?G).mp
+    case G =>
+      apply OFE.equiv_dist.mp
+      apply CMRA.assoc.symm
+    refine CMRA.op_monoN_left (◯V b1) ?_
+    apply view_auth_dfrac_includedN.mpr
+    exact ⟨H0, H1⟩
 
 theorem view_both_dfrac_included : ((●V{dq1} a1 : View F R) • ◯V b1) ≼ ((●V{dq2} a2) • ◯V b2) ↔
-      (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2 ∧ b1 ≼ b2 := sorry
-/-
-  Proof.
-    split.
-    - intros. rewrite assoc. split.
-      + rewrite -view_auth_dfrac_included. by etrans; [apply cmra_included_l|].
-      + rewrite -view_frag_included. by etrans; [apply cmra_included_r|].
-    - intros (?&->&?bf&->). rewrite (comm _ b1) view_frag_op assoc.
-      by apply cmra_mono_r, view_auth_dfrac_included.
-  Qed.
--/
+      (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2 ∧ b1 ≼ b2 := by
+  constructor
+  · intro H
+    rw [← and_assoc]
+    constructor
+    · apply (view_auth_dfrac_included (R := R)).mp
+      apply CMRA.inc_trans ?_ H
+      exact CMRA.inc_op_left (●V{dq1} a1) (◯V b1)
+    · apply (view_frag_included (R := R) (F := F)).mp
+      apply CMRA.inc_trans (CMRA.inc_op_right _ _)
+      apply H
+  · rintro ⟨H0, H1, ⟨bf, H2⟩⟩
+    apply (CMRA.inc_iff_right <| ?G).mp
+    case G =>
+      apply CMRA.op_ne.eqv
+      apply frag_ne.eqv
+      apply OFE.Equiv.symm
+      apply H2.trans
+      apply CMRA.comm
+    rewrite [view_frag_op]
+    apply (CMRA.inc_iff_right <| ?G).mp
+    case G =>
+      apply CMRA.assoc.symm
+    refine CMRA.op_mono_left (◯V b1) ?_
+    apply view_auth_dfrac_included.mpr
+    exact ⟨H0, H1⟩
 
 theorem view_both_includedN : ((●V a1 : View F R) • ◯V b1) ≼{n} ((●V a2) • ◯V b2) ↔ (a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2) :=
   view_both_dfrac_includedN.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
