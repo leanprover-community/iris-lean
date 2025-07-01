@@ -1226,6 +1226,12 @@ instance cmraProd : CMRA (α × β) where
     ⟨ (z₁, z₂), (w₁, w₂), OFE.equiv_prod_ext hx₁ hx₂,
       OFE.dist_prod_ext hz₁ hz₂, OFE.dist_prod_ext hw₁ hw₂ ⟩
 
+theorem valid_fst {x : α × β} (h: ✓ x): ✓ x.fst := h.left
+theorem valid_snd {x : α × β} (h: ✓ x): ✓ x.snd := h.right
+
+theorem validN_fst {n} {x : α × β} (h: ✓{n} x): ✓{n} x.fst := h.left
+theorem validN_snd {n} {x : α × β} (h: ✓{n} x): ✓{n} x.snd := h.right
+
 end prod
 
 section optionOF
