@@ -145,7 +145,7 @@ theorem own_whole_exclusive {w : F} (Hw : Whole w) : CMRA.Exclusive (α := DFrac
       apply Proper.whole_not_fractional Hw
 
 instance : CMRA.Exclusive (α := DFrac F) ⟨Own (1 : F)⟩ :=
-  own_whole_exclusive <| UFraction.whole_iff_one.mpr rfl
+  own_whole_exclusive <| UFraction.one_whole
 
 instance {f : F} : CMRA.Cancelable (α := DFrac F) ⟨Own f⟩ where
   cancelableN {_ x y} := by
@@ -165,20 +165,20 @@ instance {f : F} : CMRA.IdFree (α := DFrac F) ⟨Own f⟩ where
     all_goals (try have Hxyz' := LeibnizO.dist_inj Hxyz <;> simp at Hxyz')
     exact (Fraction.add_ne (Fraction.add_comm (α := F) ▸ Hxyz').symm).elim
 
-theorem valid_own_one : ✓ (LeibnizO.mk (Own (One.one : F))) :=
-  (UFraction.whole_iff_one.mpr rfl).1
+theorem valid_own_one : ✓ (LeibnizO.mk (Own (One.one : F))) := UFraction.one_whole.1
 
 theorem valid_op_own_r {dq : DFrac F} {q : F} : ✓ (dq • ⟨Own q⟩) → Fractional q := by
-  rcases dq with ⟨y|_|y⟩ <;> simp [CMRA.ValidN, CMRA.op, op, CMRA.Valid]
-  · sorry
-  · sorry
+  rcases dq with ⟨y|_|y⟩
+  · exact (⟨y, Fraction.add_comm (α := F)▸·⟩)
+  · exact id
+  · exact Fractional_add_right
 
--- theorem valid_op_own_l {dq : DFrac F} {q : F} : ✓ (⟨Own q⟩ • dq) → (q < One.one) :=
---   valid_op_own_r ∘ CMRA.valid_of_eqv (CMRA.comm (y := dq))
+theorem valid_op_own_l {dq : DFrac F} {q : F} : ✓ (⟨Own q⟩ • dq) → (Fractional q) :=
+  valid_op_own_r ∘ CMRA.valid_of_eqv (CMRA.comm (y := dq))
 
 theorem valid_discarded : ✓ (LeibnizO.mk Discard : DFrac F) := by simp [CMRA.Valid, valid]
 
--- theorem valid_own_op_discarded {q : F} : ✓ (⟨Own q⟩ • ⟨Discard⟩ : DFrac F) ↔ q < One.one := by
---   simp [CMRA.op, op, CMRA.Valid, valid]
+theorem valid_own_op_discarded {q : F} : ✓ (⟨Own q⟩ • ⟨Discard⟩ : DFrac F) ↔ (Fractional q) := by
+  simp [CMRA.op, op, CMRA.Valid, valid]
 
 end dfrac
