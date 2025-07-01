@@ -10,16 +10,20 @@ import Iris.Algebra.Frac
 
 open Iris
 
+/-- Knowledge about a discardable fraction. -/
 inductive DFracK (F : Type _) where
-| Own : F → DFracK F
+/-- Ownership of `F` plus knowledge that no fraction has been discarded. -/
+| Own (f : F) : DFracK F
+/-- Knowledge that a fraction has been discarded. -/
 | Discard : DFracK F
-| OwnDiscard : F → DFracK F
+/-- Ownership of `F` plus knowledge that a fraction has been discarded. -/
+| OwnDiscard (f : F) : DFracK F
 
 abbrev DFrac F := LeibnizO (DFracK F)
 
 -- TODO: Delete this class. I have it now because the Fractional class is being
 -- changed concurrently. Also I'm certain that some of these fields will be derivable.
-class DFractional (F : Type _) extends UFractional F where
+-- class DFractional (F : Type _) extends UFractional F where
   -- one_strict_max {y : F} : ¬(One.one + y ≤ One.one)
   -- lt_irrefl : ¬(One.one < (One.one : F))
   -- strict_pos {x y : F} : ¬(x + y = x)
@@ -29,14 +33,14 @@ section dfrac
 
 open DFracK
 
-variable {F : Type _} [DFractional F]
+variable {F : Type _} [UFractional F]
 
 instance : Inhabited (DFrac F) := ⟨⟨Discard⟩⟩
 
 abbrev valid : DFrac F → Prop
-| ⟨Own f⟩        => Fractional.proper f -- f ≤ One.one
+| ⟨Own f⟩        => whole f
 | ⟨Discard⟩      => True
-| ⟨OwnDiscard f⟩ => sorry -- Iris.fraction -- f < One.one
+| ⟨OwnDiscard f⟩ => fractional f
 
 abbrev pcore : DFrac F → Option (DFrac F)
 | ⟨Own _⟩        => none
@@ -70,18 +74,19 @@ instance DFrac_CMRA : CMRA (DFrac F) where
   valid_iff_validN := ⟨fun x _ => x, fun x => x 0⟩
   validN_succ := id
   validN_op_left {_ x y} := by
+    have Lleft {a' a : F} (H : fractional (a' + a)) : fractional a := by
+
+      sorry
     sorry
-    /-
-    have Lleft {a' a : F} (H : a' + a < one) : a' < one := by
-      rcases Fractional.lt_sum.mp H with ⟨r, Hr⟩
-      exact (Fractional.lt_sum.mpr ⟨a + r, Hr.symm ▸ Fractional.assoc.symm⟩)
-    rcases x with ⟨x|_|x⟩ <;> rcases y with ⟨y|_|y⟩ <;> simp
-    · exact Fractional.add_le_mono
-    · exact Fractional.lt_le
-    · exact (Fractional.add_le_mono <| Fractional.lt_le ·)
-    · exact Lleft
-    · exact Lleft
-    -/
+    -- have Lleft {a' a : F} (H : a' + a < One.one) : a' < One.one := by
+    --   rcases Fractional.lt_sum.mp H with ⟨r, Hr⟩
+    --   exact (Fractional.lt_sum.mpr ⟨a + r, Hr.symm ▸ Fractional.assoc.symm⟩)
+    -- rcases x with ⟨x|_|x⟩ <;> rcases y with ⟨y|_|y⟩ <;> simp
+    -- · exact Fractional.add_le_mono
+    -- · exact Fractional.lt_le
+    -- · exact (Fractional.add_le_mono <| Fractional.lt_le ·)
+    -- · exact Lleft
+    -- · exact Lleft
   assoc {x y z} := by
     sorry
     /-
@@ -122,6 +127,7 @@ instance DFrac_CMRA : CMRA (DFrac F) where
       · exists ⟨OwnDiscard x⟩; exists ⟨Discard⟩
       · exists ⟨OwnDiscard y⟩; exists ⟨OwnDiscard z⟩
 
+/-
 instance : CMRA.Exclusive (α := DFrac F) ⟨Own One.one⟩ where
   exclusive0_l y := by
     rcases y with ⟨y|_|y⟩ <;>
@@ -165,3 +171,4 @@ theorem valid_discarded : ✓ (LeibnizO.mk Discard : DFrac F) := by simp [CMRA.V
 --   simp [CMRA.op, op, CMRA.Valid, valid]
 
 end dfrac
+-/
