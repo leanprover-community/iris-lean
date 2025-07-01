@@ -1154,7 +1154,7 @@ instance cmraUnit : CMRA Unit where
 
 end unit
 
-namespace prod
+namespace Prod
 
 variable {α β : Type _} [CMRA α] [CMRA β]
 
@@ -1232,7 +1232,7 @@ theorem valid_snd {x : α × β} (h: ✓ x): ✓ x.snd := h.right
 theorem validN_fst {n} {x : α × β} (h: ✓{n} x): ✓{n} x.fst := h.left
 theorem validN_snd {n} {x : α × β} (h: ✓{n} x): ✓{n} x.snd := h.right
 
-end prod
+end Prod
 
 section optionOF
 
