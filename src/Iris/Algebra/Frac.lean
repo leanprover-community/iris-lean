@@ -15,55 +15,65 @@ Traditionally the underlying set is assumed to be the half open interval $$(0,1]
 -/
 
 section Fractional
-class Fractional (α : Type _) extends Add α where
+class Fraction (α : Type _) extends Add α where
   /-- Validity predicate on fractions. Generalizes the notion of `(· ≤ 1)` from rational fractions. -/
-  proper : α → Prop
+  Proper : α → Prop
   add_comm : ∀ {a b : α}, a + b = b + a
   add_assoc : ∀ {a b c : α}, a + (b + c) = (a + b) + c
   add_left_cancel : ∀ {a b c : α}, a + b = a + c → b = c
   /-- There does not exist a zero fraction. -/
   add_ne : ∀{a b : α}, a ≠ b + a
-  proper_add_mono_left : ∀ {a b : α}, proper (a + b) → proper a
+  proper_add_mono_left : ∀ {a b : α}, Proper (a + b) → Proper a
 
-open Fractional in
+open Fraction in
 /-- A fraction does not represent the entire resource.
 Generalizes the notion of `(· < 1)` from rational fractions. -/
-abbrev fractional [Fractional α] (a : α) : Prop :=
-  proper a ∧ ∃ b, proper (a + b)
+def Fractional [Fraction α] (a : α) : Prop := ∃ b, Proper (a + b)
 
-open Fractional in
+open Fraction in
 /-- A fraction that is tne entire resource.
 Generalizes the notion of `1` from rational fractions. -/
-abbrev whole [Fractional α] (a : α) : Prop :=
-  proper a ∧ ¬∃ b, proper (a + b)
+def Whole [Fraction α] (a : α) : Prop := Proper a ∧ ¬Fractional a
 
-open Fractional in
-theorem proper.fractional_or_whole [Fractional α] {a : α} (H : proper a) :
-    fractional a ∨ whole a := and_or_left.mp ⟨H, Classical.em _⟩
+open Fraction in
+theorem Proper.fractional_or_whole [Fraction α] {a : α} (H : Proper a) :
+    Fractional a ∨ Whole a := by
+  apply (Classical.em (∃ b, Proper (a + b))).elim
+  · exact (Or.intro_left _ ·)
+  · exact (Or.intro_right _ ⟨H, ·⟩)
 
-open Fractional in
-theorem add_right_cancel [Fractional α] {a b c : α} (H : b + a = c + a) : b = c :=
+open Fraction in
+theorem Proper.fractional_not_whole [Fraction α] {a : α} (H : Fractional a) : ¬Whole a :=
+  H.elim fun a' Ha' Hk => Hk.2 ⟨a', Ha'⟩
+
+open Fraction in
+theorem Proper.whole_not_fractional [Fraction α] {a : α} (H : Whole a) : ¬Fractional a :=
+  H.elim fun _ Hk1 Hk2 => Hk1 Hk2
+
+open Fraction in
+theorem add_right_cancel [Fraction α] {a b c : α} (H : b + a = c + a) : b = c :=
   add_left_cancel <| add_comm (a := c) ▸ add_comm (a := b) ▸ H
 
-open Fractional in
-theorem fractional_proper [Fractional α] {a : α} : fractional a → proper a := (·.1)
+open Fraction in
+theorem fractional_proper [Fraction α] {a : α} : Fractional a → Proper a :=
+  fun H => H.elim fun _ H' => Fraction.proper_add_mono_left H'
 
 namespace Iris
 
-open Fractional OFE CMRA
+open Fraction OFE CMRA
 
 abbrev Frac (α : Type _) := LeibnizO α
-instance [Fractional α] : Coe (Frac α) α := ⟨(·.1)⟩
-instance [Fractional α] : Coe α (Frac α) := ⟨(⟨·⟩)⟩
-@[simp] instance [Fractional α] : COFE (Frac α) := by unfold Frac; infer_instance
-@[simp] instance [Fractional α] : Add (Frac α) := ⟨fun x y => x.1 + y.1⟩
+instance [Fraction α] : Coe (Frac α) α := ⟨(·.1)⟩
+instance [Fraction α] : Coe α (Frac α) := ⟨(⟨·⟩)⟩
+@[simp] instance [Fraction α] : COFE (Frac α) := by unfold Frac; infer_instance
+@[simp] instance [Fraction α] : Add (Frac α) := ⟨fun x y => x.1 + y.1⟩
 instance : Leibniz (Frac α) := ⟨(·)⟩
 
-instance Frac_CMRA [Fractional α] : CMRA (Frac α) where
+instance Frac_CMRA [Fraction α] : CMRA (Frac α) where
   pcore _ := none
   op := (Add.add)
-  ValidN _ x := proper x.1
-  Valid x := proper x.1
+  ValidN _ x := Proper x.1
+  Valid x := Proper x.1
   op_ne {x} := ⟨fun _ _ _ => congrArg <| Add.add x⟩
   pcore_ne _ := (exists_eq_right'.mpr ·)
   validN_ne H Hp := H ▸ Hp
@@ -77,20 +87,20 @@ instance Frac_CMRA [Fractional α] : CMRA (Frac α) where
   pcore_op_mono := by simp
   extend {_ _ y1 y2} _ _ := by exists y1; exists y2
 
-instance [Fractional α] : CMRA.Discrete (Frac α) where
+instance [Fraction α] : CMRA.Discrete (Frac α) where
   discrete_0 := id
   discrete_valid := id
 
-instance [Fractional α] [CMRA α] {a : Frac α} (Hw : whole a.1) : Exclusive a where
+instance [Fraction α] [CMRA α] {a : Frac α} (Hw : Whole a.1) : Exclusive a where
   exclusive0_l _ Hk := (not_exists.mp Hw.2) _ Hk
 
-instance [Fractional α] {a : Frac α} : CMRA.Cancelable a where
+instance [Fraction α] {a : Frac α} : CMRA.Cancelable a where
   cancelableN {n x y} _ H := by
     refine Dist.of_eq <| LeibnizO.ext <| add_left_cancel (a := a.car) <| ?_
     suffices a • x = a • y by simp [CMRA.op] at this; exact this
     trivial
 
-instance [Fractional α] {a : Frac α} : CMRA.IdFree a where
+instance [Fraction α] {a : Frac α} : CMRA.IdFree a where
   id_free0_r b _ H := by
     suffices (b + a).car = a.car by exact add_ne this.symm
     refine LeibnizO.ext_iff.mp (Leibniz.eq_of_eqv ?_)
@@ -99,14 +109,14 @@ instance [Fractional α] {a : Frac α} : CMRA.IdFree a where
 end Iris
 
 /-- A type of fractions with a unique whole element. -/
-class UFractional (α : Type _) extends Fractional α, One α where
-  whole_iff_one {a : α} : whole a ↔ a = 1
+class UFraction (α : Type _) extends Fraction α, One α where
+  whole_iff_one {a : α} : Whole a ↔ a = 1
 
-section NumericFractional
+section NumericFraction
 
-section NumericFractional
+section NumericFraction
 /-- Generic fractional instance for types with comparison and 1 operators. -/
-class NumericFractional (α : Type _) extends One α, Add α, LE α, LT α where
+class NumericFraction (α : Type _) extends One α, Add α, LE α, LT α where
   add_comm : ∀ {a b : α}, a + b = b + a
   add_assoc : ∀ {a b c : α}, a + (b + c) = (a + b) + c
   add_left_cancel : ∀ {a b c : α}, a + b = a + c → b = c
@@ -116,13 +126,13 @@ class NumericFractional (α : Type _) extends One α, Add α, LE α, LT α where
 
 open Iris
 
-@[simp] instance [NumericFractional T] : One (Frac T) := ⟨⟨One.one⟩⟩
-@[simp] instance [NumericFractional T] : LE (Frac T) := ⟨fun x y => x.1 ≤ y.1⟩
-@[simp] instance [NumericFractional T] : LT (Frac T) := ⟨fun x y => x.1 < y.1⟩
+@[simp] instance [NumericFraction T] : One (Frac T) := ⟨⟨One.one⟩⟩
+@[simp] instance [NumericFraction T] : LE (Frac T) := ⟨fun x y => x.1 ≤ y.1⟩
+@[simp] instance [NumericFraction T] : LT (Frac T) := ⟨fun x y => x.1 < y.1⟩
 
-variable {α} [NumericFractional α]
+variable {α} [NumericFraction α]
 
-open NumericFractional Iris
+open NumericFraction Iris
 
 theorem le_refl {a : α} : a ≤ a := by
   rw [le_def]
@@ -176,8 +186,8 @@ theorem strictly_positive {a : α} : ¬ ∃ b : α, a + b < a := by
   rw [←add_assoc] at H
   exact positive ⟨c + c1, H⟩
 
-instance : UFractional α where
-  proper x := x ≤ 1
+instance : UFraction α where
+  Proper x := x ≤ 1
   add_comm := add_comm
   add_assoc := add_assoc
   add_left_cancel := add_left_cancel
@@ -186,19 +196,20 @@ instance : UFractional α where
   whole_iff_one {a} := by
     constructor
     · intro H
-      simp [whole] at H
+      simp [Whole] at H
       rcases H with ⟨Hp, Hdp⟩
       cases (le_def.mp Hp)
       · trivial
       · rename_i HK; exfalso
         rcases (lt_def.mp HK) with ⟨c, Hc⟩
-        apply Hdp c
-        rw [Hc]
+        apply Hdp
+        exists c
+        rw [← Hc]
         exact le_refl
     · intro H; subst H
       refine ⟨le_refl, ?_⟩
       rintro ⟨b, H⟩
-      simp [Fractional.proper] at H
+      simp [Fraction.Proper] at H
       cases (le_def.mp H)
       · rename_i H''
         apply positive ⟨b, H''⟩
@@ -215,4 +226,4 @@ theorem frac_included {p q : Frac α} : p ≼ q ↔ p < q :=
 theorem frac_included_weak {p q : Frac α} (H : p ≼ q) : p ≤ q :=
   lt_le (frac_included.mp H)
 
-end NumericFractional
+end NumericFraction
