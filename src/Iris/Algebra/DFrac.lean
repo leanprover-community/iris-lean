@@ -129,17 +129,20 @@ instance DFrac_CMRA : CMRA (DFrac F) where
       · exists ⟨OwnDiscard x⟩; exists ⟨Discard⟩
       · exists ⟨OwnDiscard y⟩; exists ⟨OwnDiscard z⟩
 
-instance : CMRA.Exclusive (α := DFrac F) ⟨Own One.one⟩ where
+instance {w : F} (Hw : Whole w): CMRA.Exclusive (α := DFrac F) ⟨Own w⟩ where
   exclusive0_l y := by
     rcases y with ⟨y|_|y⟩ <;>
     simp only [CMRA.ValidN, valid]
-    · suffices (Whole (One.one : F)) by
-        unfold Whole at this
-
-        sorry
-      sorry -- exact DFractional.one_strict_max
-    · sorry -- exact DFractional.lt_irrefl
-    · sorry -- exact DFractional.one_strict_max ∘ Fractional.lt_le
+    · suffices ¬(Fractional w) by
+        intro Hp
+        unfold Fractional at this
+        apply this ⟨y, Hp⟩
+      apply Proper.whole_not_fractional Hw
+    · apply Proper.whole_not_fractional Hw
+    · suffices ¬(Fractional w) by
+        intro Hk; apply this
+        exact Fractional_add_left Hk
+      apply Proper.whole_not_fractional Hw
 
 instance {f : F} : CMRA.Cancelable (α := DFrac F) ⟨Own f⟩ where
   cancelableN {_ x y} := by
