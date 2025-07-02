@@ -24,154 +24,69 @@ class TotallyOrdered (α : Type _) extends LE α, LT α where
   le_total : ∀ {a b : α}, a ≤ b ∨ b ≤ a
 
 class Numbers (α : Type _) extends CommMonoid α, TotallyOrdered α where
-  lt_def : ∀ a b, a < b ↔ ∃ c : α, c > 0 ∧ a + c = b
-  le_def : ∀ a b : α, a ≤ b ↔ a < b ∨ a = b
-  lt_not_eq : ∀ {a : α}, a > 0 ↔ a ≠ 0
+  lt_def : ∀ {a b : α}, a < b ↔ a ≤ b ∧ a ≠ b
   add_order_compat : ∀ {a b c : α}, a ≤ b → a + c ≤ b + c
-  left_cancel : ∀ {a b c : α}, c + a = c + b → a = b
+  add_left_cancel : ∀ {a b c : α}, c + a = c + b → a = b
   -- these two are theorems. remove them after replacing them with theorems
   add_le_mono  : ∀ {a b c : α}, a + b ≤ c → a ≤ c
   lt_sum : ∀ {a b : α}, a < b ↔ ∃ r, a + r = b
 
-theorem lt_order_compat [iFrac : Numbers α] :
+variable [iNum : Numbers α]
+
+theorem add_right_cancel : ∀ {a b : α}, a + c = b + c → a = b := by
+  intro a b h
+  conv at h => lhs; rw[iNum.add_comm]
+  conv at h => rhs; rw[iNum.add_comm]
+  apply iNum.add_left_cancel h
+
+theorem lt_anti_symm : ∀ {a b : α}, a < b → ¬ b < a := by
+  intro a b hlt hgt
+  have hle : a ≤ b := by
+    rw [iNum.lt_def] at hlt
+    exact hlt.left
+  have hge : b ≤ a := by
+    rw [iNum.lt_def] at hgt
+    exact hgt.left
+  have heq : a = b := by
+    apply iNum.le_antisymm
+    exact ⟨hle, hge⟩
+  simp[iNum.lt_def] at hlt
+  exact hlt.right heq
+
+theorem lt_order_compat :
   ∀ {a b c : α}, a < b → a + c < b + c := by
   intro a b c
   intro hab
-  rw [iFrac.lt_def] at *
-  obtain ⟨d, hd_pos, hab⟩ := hab
-  exists d
+  rw [iNum.lt_def] at *
+  obtain ⟨hleq, hneq⟩ := hab
   constructor
-  · exact hd_pos
-  · conv =>
-      lhs
-      rw [iFrac.add_assoc]
-      arg 2
-      rw [iFrac.add_comm]
-    conv =>
-      lhs
-      rw[←iFrac.add_assoc]
-      rw[hab]
+  · apply iNum.add_order_compat hleq
+  · simp_all only [ne_eq]
+    intro h
+    apply hneq (add_right_cancel h)
 
 
-theorem lt_alt_def [iFrac : Numbers α] :
-  ∀ {a b : α}, a < b ↔ a ≤ b ∧ a ≠ b := by
-  intro a b
-  constructor
-  · intro h
-    simp
-    constructor
-    · rw[iFrac.le_def]
-      left
-      exact h
-    · rw[iFrac.lt_def] at h
-      obtain ⟨c, hc_pos, hc_sum⟩ := h
-      intro heq
-      rw [heq] at hc_sum
-      conv at hc_sum => rhs; rw [←iFrac.id_law b]
-
-      sorry
-  ·
-    sorry
-
-
-
-theorem le_alt_def [iFrac : Numbers α] :
-  ∀ {a b : α}, a ≤ b ↔ ∃ c : α, a + c = b := by
-  intro a b
-  constructor
-  · intro h
-    rw [iFrac.le_def] at h
-    obtain (left | right) := h
-    rw [iFrac.lt_def] at left
-    obtain ⟨c, hc⟩ := left
-    exists c
-    exact hc.right
-    exists 0
-    rw [iFrac.id_law]
-    exact right
-  · intro h
-    obtain ⟨c, hc⟩ := h
-    rw [iFrac.le_def]
-    by_cases hc_zero : c > 0
-    left
-    rw [iFrac.lt_def]
-    exists c
-    right
-    have : c = 0 := by
-      have h_int : 0 < c ∨ 0 = c:= (iFrac.le_def 0 c).mp iFrac.positive
-      simp at hc_zero
-      obtain (heq | hlt) := h_int
-      exfalso
-      exact hc_zero heq
-      exact hlt.symm
-    rw [this, iFrac.id_law] at hc
-    exact hc
-
-theorem lt_trans [iFrac : Numbers α] :
+theorem lt_trans:
   ∀ {a b c : α}, a < b → b < c → a < c := by
   intro a b c hab hbc
-  rw [iFrac.lt_def] at *
-  obtain ⟨ad, had⟩ := hab
-  obtain ⟨bd, hbd⟩ := hbc
-  exists (ad + bd)
-  sorry
+  rw [iNum.lt_def] at *
+  constructor
+  · apply iNum.le_trans hab.left hbc.left
+  · intro h
+    rw [h] at hab
+    have hbc_eq : b =c := by
+      symm
+      apply iNum.le_antisymm ⟨hab.left, hbc.left⟩
+    exact hbc.right hbc_eq
 
-theorem right_add_order_compat [iFrac : Numbers α] :
+
+theorem right_add_order_compat :
   ∀ a b c : α, a ≤ b → c + a ≤ c + b := by
   intro a b c h
-  conv => lhs; rw[iFrac.add_comm]
-  conv => rhs; rw[iFrac.add_comm]
-  apply iFrac.add_order_compat h
+  conv => lhs; rw[iNum.add_comm]
+  conv => rhs; rw[iNum.add_comm]
+  apply iNum.add_order_compat h
 
-
-theorem right_cancel [iFrac : Numbers α] : ∀ a b c : α, a + c = b + c → a = b := by
-  intro a b c h
-  conv at h => lhs; rw [iFrac.add_comm]
-  conv at h => rhs; rw [iFrac.add_comm]
-  apply iFrac.left_cancel h
-
-theorem add_to_zero_is_zero [iFrac : Numbers α] :
-  ∀ {a b : α}, a + b = 0 → a = 0 ∧ b = 0 := by
-  intro a b h
-  constructor
-  · have h' := (@le_alt_def α iFrac a 0).mpr
-    have h_int : ∃ c, a + c = 0 := by
-      exists b
-    have h₃ : a ≤ 0 := h' h_int
-    exact iFrac.le_antisymm ⟨h₃, iFrac.positive⟩
-  · rw [iFrac.add_comm] at h
-    have h' := (@le_alt_def α iFrac b 0).mpr
-    have h_int : ∃ c, b + c = 0 := by
-      exists a
-    have h₃ : b ≤ 0 := h' h_int
-    exact iFrac.le_antisymm ⟨h₃, iFrac.positive⟩
-
-theorem positive [iFrac : Numbers α] : ∀ {a : α}, ¬∃ (b : α), a + b < a := by
-  intro a ⟨b,hb⟩
-  rw [iFrac.lt_def] at hb
-  have ⟨c, hc_pos, hc_sum⟩ := hb
-  rw [iFrac.add_assoc] at hc_sum
-  conv at hc_sum => rhs; rw [←iFrac.id_law a]
-  replace hc_sum := iFrac.left_cancel hc_sum
-  have h' := add_to_zero_is_zero hc_sum
-  simp at hc_pos
-  exact iFrac.lt_not_eq.mp hc_pos h'.right
-
-theorem add_le_mono [iFrac : Numbers α] : ∀ {a b c : α}, a + b ≤ c → a ≤ c := by
-  intro a b c h
-  rw[iFrac.le_def, iFrac.lt_def] at *
-  obtain (⟨d,hd⟩ | ⟨d,hd⟩) := h
-  · left
-    exists (b + d)
-    constructor
-    · simp
-
-      sorry
-    · sorry
-  ·
-
-    left
-    sorry
 
 
 namespace Iris
@@ -218,6 +133,7 @@ instance Frac_CMRA : CMRA (Numerical α) where
   extend {_ _ y1 y2} _ _ := by exists y1; exists y2
 
 -- TODO: Simplify
+omit iNum in
 theorem num_included {p q : Numerical α} : p ≼ q ↔ p < q :=
   ⟨ by
       rintro ⟨r, Hr⟩
