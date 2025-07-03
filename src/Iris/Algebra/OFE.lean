@@ -131,8 +131,8 @@ def ofDiscrete (Equiv : α → α → Prop) (equiv_eqv : Equivalence Equiv) : OF
   dist_lt h _ := h
 
 /-- A discrete element in an OFE -/
-def DiscreteE {α : Type _} [OFE α] (x : α) : Prop :=
-  ∀ {y : α}, x ≡{0}≡ y → x ≡ y
+class DiscreteE {α : Type _} [OFE α] (x : α) : Prop where
+  discrete : x ≡{0}≡ y → x ≡ y
 
 /-- A discrete OFE is one where equivalence is implied by `0`-equivalence. -/
 class Discrete (α : Type _) [OFE α] where
