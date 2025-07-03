@@ -7,6 +7,72 @@ Authors: Markus de Medeiros
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
 
+/-- A set whose complement is infinite -/
+def coinfinite (S : P → Prop) : Prop :=
+  ∃ f : Nat → P, (∀ n, S <| f n) ∧ (∀ n m : Nat, f n = f m → n = m)
+
+/-- Arbitrarily changing one element of a co-infinite set yields a co-infinite set -/
+theorem cofinite_alter_cofinite {S S' : P → Prop} (p' : P) (Ha : ∀ p, p ≠ p' → S p = S' p)
+    (Hs : coinfinite S) : coinfinite S' := by
+  rcases Hs with ⟨f, HfS, Hfinj⟩
+  -- Basically, alter f so that f never hits p'.
+  rcases (Classical.em (∃ n, f n = p')) with (⟨n, H⟩|H)
+  · exists fun n' => if n' < n then f n' else f n'.succ
+    constructor
+    · intro n'
+      simp only []
+      split
+      · rw [← Ha]
+        · apply HfS
+        · rename_i Hk'
+          intro Hk
+          exact Nat.lt_irrefl (n := n) <| (Hfinj _ _ (Hk ▸ H)) ▸ Hk'
+      · rw [← Ha]
+        · apply HfS
+        · rename_i Hk'
+          intro Hk
+          have _ := (Hfinj _ _ (Hk ▸ H)) ▸ Hk'
+          simp_all
+    · intro n' m'
+      simp only []
+      split <;> split
+      · apply Hfinj
+      · intro H
+        have Hfinj' := Hfinj _ _ H
+        exfalso
+        subst Hfinj'
+        rename_i HK HK'
+        apply HK
+        exact Nat.lt_of_succ_lt HK'
+      · intro H
+        have Hfinj' := Hfinj _ _ H
+        exfalso
+        subst Hfinj'
+        rename_i HK HK'
+        apply HK
+        exact Nat.lt_of_succ_lt HK'
+      · intro H
+        exact Nat.succ_inj.mp (Hfinj n'.succ m'.succ H)
+  · exists f
+    refine ⟨?_, Hfinj⟩
+    exact fun n => (Ha _ (H ⟨n, ·⟩)) ▸ HfS n
+
+open Classical in
+/- Update a (classical) function at a point. Used to specify the correctness of stores. -/
+noncomputable def fset {K V : Type _} (f : K → V) (k : K) (v : V) : K → V :=
+  fun k' => if (k = k') then v else f k'
+
+@[simp] def support (f : K → Option V) : K → Prop := ((· == true) ∘ Option.isSome ∘ f)
+
+theorem coinfinite_fset_coinfinite (f : K → Option V) (H : coinfinite (support f)) :
+    coinfinite (support (fset f k v)) := by
+  apply cofinite_alter_cofinite  k _ H
+  intro p Hpk
+  simp [support, fset]
+  split
+  · simp_all
+  · rfl
+
 open Iris
 
 /- # Datatype and CMRA for a generic heap-like structure. -/
@@ -44,13 +110,14 @@ abbrev lift_dom (P : K → V → Prop) (k : K) : Option V → Prop
   | .some v => P k v
   | .none => True
 
-class Alloc (T : Type _) (K : outParam (Type _)) where
-  fresh : T → K
 
 class WithPoints (T : Type _) (K V : outParam (Type _)) where
   point : K → V → T
 
 class HeapLike (T : Type _) (K V : outParam (Type _)) extends StoreLike T K (Option V)
+
+class Alloc (T : Type _) (K V : outParam (Type _)) extends HeapLike T K V where
+  fresh : coinfinite (support <| get f) → T → K
 
 /-- A type is HeapLike when it behaves like store for Optional values -/
 class Heap (T : Type _) (K V : outParam (Type _))
@@ -58,9 +125,9 @@ class Heap (T : Type _) (K V : outParam (Type _))
   point_get_eq {k k' v} : k = k' → get (point k v) k' = v
   point_get_ne {k k' v} : k ≠ k' → get (point k v) k' = none
 
-/-- A Heap which can always generate new values. -/
-class AllocHeap (T : Type _) (K V : outParam (Type _)) extends Heap T K V, Alloc T K where
-  fresh_get {t} : get t (fresh t) = none
+/-- A Heap which can generate new values. -/
+class AllocHeap (T : Type _) (K V : outParam (Type _)) extends Heap T K V, Alloc T K V where
+  fresh_get {t} (H : coinfinite (support <| get t)) : get t (fresh H t) = none
 
 abbrev HeapLike.delete [HeapLike T K V] (t : T) (k : K) : T := StoreLike.set t k .none
 abbrev HeapLike.empty [HeapLike T K V] : T := StoreLike.of_fun (fun _ => .none)
