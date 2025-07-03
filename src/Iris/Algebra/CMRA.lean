@@ -550,19 +550,19 @@ section discreteElements
 
 variable {α : Type _} [CMRA α]
 
-theorem discrete_inc_l {x y : α} (HD : DiscreteE x) (Hv : ✓{0} y) (Hle : x ≼{0} y) : x ≼ y :=
+theorem discrete_inc_l {x y : α} [HD : DiscreteE x] (Hv : ✓{0} y) (Hle : x ≼{0} y) : x ≼ y :=
   have ⟨_, hz⟩ := Hle
   let ⟨_, t, wt, wx, _⟩ := extend Hv hz
-  ⟨t, wt.trans (Equiv.op_l (HD wx.symm).symm)⟩
+  ⟨t, wt.trans (Equiv.op_l (HD.discrete wx.symm).symm)⟩
 
-theorem discrete_inc_r {x y : α} (HD : DiscreteE y) : x ≼{0} y → x ≼ y
-  | ⟨z, hz⟩ => ⟨z, HD hz⟩
+theorem discrete_inc_r {x y : α} [HD : DiscreteE y] : x ≼{0} y → x ≼ y
+  | ⟨z, hz⟩ => ⟨z, HD.discrete hz⟩
 
-theorem discrete_op {x y : α} (Hv : ✓{0} x • y) (Hx : DiscreteE x) (Hy : DiscreteE y) :
-    DiscreteE (x • y)
-  | _z, h =>
+instance discrete_op {x y : α} (Hv : ✓{0} x • y) [Hx : DiscreteE x] [Hy : DiscreteE y] :
+    DiscreteE (x • y) where
+  discrete h :=
     let ⟨_w, _t, wt, wx, ty⟩ := extend ((Dist.validN h).mp Hv) h.symm
-    ((Hx wx.symm).op (Hy ty.symm)).trans wt.symm
+    ((Hx.discrete wx.symm).op (Hy.discrete ty.symm)).trans wt.symm
 
 end discreteElements
 
@@ -577,10 +577,10 @@ theorem valid_0_iff_validN [Discrete α] (n) {x : α} : ✓{0} x ↔ ✓{n} x :=
   ⟨Valid.validN ∘ discrete_valid, validN_of_le (Nat.zero_le n)⟩
 
 theorem inc_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼ y ↔ x ≼{n} y :=
-  ⟨incN_of_inc _, fun ⟨z, hz⟩ => ⟨z, discrete_n hz⟩⟩
+  ⟨incN_of_inc _, fun ⟨z, hz⟩ => ⟨z, discrete hz⟩⟩
 
 theorem inc_0_iff_incN [OFE.Discrete α] (n) {x y : α} : x ≼{0} y ↔ x ≼{n} y :=
-  ⟨fun ⟨z, hz⟩ => ⟨z, (discrete_n hz).dist⟩,
+  ⟨fun ⟨z, hz⟩ => ⟨z, (discrete hz).dist⟩,
    fun a => incN_of_incN_le (Nat.zero_le n) a⟩
 
 end discreteCMRA
@@ -595,7 +595,7 @@ theorem cancelable {x y z : α} [Cancelable x] (v : ✓(x • y)) (e : x • y �
 
 theorem discrete_cancelable {x : α} [Discrete α]
     (H : ∀ {y z : α}, ✓(x • y) → x • y ≡ x • z → y ≡ z) : Cancelable x where
-  cancelableN {n} {_ _} v e := (H ((valid_iff_validN' n).mpr v) (Discrete.discrete_n e)).dist
+  cancelableN {n} {_ _} v e := (H ((valid_iff_validN' n).mpr v) (Discrete.discrete e)).dist
 
 instance cancelable_op {x y : α} [Cancelable x] [Cancelable y] : Cancelable (x • y) where
   cancelableN {n w _} v e :=
@@ -785,7 +785,7 @@ section Hom
 preserves `validN`, `pcore` and `op`. -/
 @[ext] structure Hom (α β : Type _) [CMRA α] [CMRA β] extends OFE.Hom α β where
   protected validN {n x} : ✓{n} x → ✓{n} (f x)
-  protected pcore x : f <$> pcore x ≡ pcore (f x)
+  protected pcore x : (pcore x).map f ≡ pcore (f x)
   protected op x y : f (x • y) ≡ f x • f y
 
 @[inherit_doc]
