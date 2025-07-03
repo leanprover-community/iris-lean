@@ -111,7 +111,7 @@ theorem Contractive.succ [OFE α] [OFE β] (f : α → β) [Contractive f] {n x 
   Contractive.distLater_dist (distLater_succ.2 h)
 
 /-- A contractive function is non-expansive. -/
-instance [OFE α] [OFE β] (f : α → β) [Contractive f] : NonExpansive f where
+instance ne_of_contractive [OFE α] [OFE β] (f : α → β) [Contractive f] : NonExpansive f where
   ne := fun _ _ _ h => Contractive.distLater_dist (Dist.distLater h)
 
 /-- A contractive function preserves equivalence. -/
@@ -140,8 +140,13 @@ class Discrete (α : Type _) [OFE α] where
 export OFE.Discrete (discrete_0)
 
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
-theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡ y) : x ≡ y :=
-  discrete_0 (OFE.Dist.le h (Nat.zero_le _))
+theorem Discrete.discrete [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡ y) : x ≡ y :=
+  discrete_0 (h.le (Nat.zero_le _))
+export OFE.Discrete (discrete)
+
+/-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
+theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{0}≡ y) : x ≡{n}≡ y :=
+  (discrete h).dist
 export OFE.Discrete (discrete_n)
 
 class Leibniz (α : Type _) [OFE α] where
@@ -182,6 +187,15 @@ protected def Hom.comp [OFE α] [OFE β] [OFE γ] (g : β -n> γ) (f : α -n> β
 
 theorem Hom.comp_assoc [OFE α] [OFE β] [OFE γ] [OFE δ]
     (h : γ -n> δ) (g : β -n> γ) (f : α -n> β) : (h.comp g).comp f = h.comp (g.comp f) := rfl
+
+@[ext] structure ContractiveHom (α β : Type _) [OFE α] [OFE β] extends Hom α β where
+  [contractive : Contractive f]
+  ne := ne_of_contractive f
+
+infixr:25 " -c> " => ContractiveHom
+
+instance [OFE α] [OFE β] : CoeFun (α -c> β) (fun _ => α → β) := ⟨fun x => x.toHom.f⟩
+instance [OFE α] [OFE β] (f : α -c> β) : Contractive f := f.contractive
 
 theorem InvImage.equivalence {α : Sort u} {β : Sort v}
     {r : β → β → Prop} {f : α → β} (H : Equivalence r) : Equivalence (InvImage r f) where
@@ -276,6 +290,17 @@ instance [OFEFun (β : α → _)] : OFE ((x : α) → β x) where
 instance [OFE α] [OFE β] : OFE (α -n> β) where
   Equiv f g := f.f ≡ g.f
   Dist n f g := f.f ≡{n}≡ g.f
+  dist_eqv := {
+    refl _ := dist_eqv.refl _
+    symm h := dist_eqv.symm h
+    trans h1 h2 := dist_eqv.trans h1 h2
+  }
+  equiv_dist := equiv_dist
+  dist_lt := dist_lt
+
+instance [OFE α] [OFE β] : OFE (α -c> β) where
+  Equiv f g := Equiv f.toHom g.toHom
+  Dist n f g := Dist n f.toHom g.toHom
   dist_eqv := {
     refl _ := dist_eqv.refl _
     symm h := dist_eqv.symm h
@@ -571,3 +596,105 @@ instance [OFunctorContractive F] : OFunctorContractive (OptionOF F) where
     cases z <;> simp_all [optionMap, Dist, Equiv, Option.Forall₂, Function.uncurry, OFunctor.map]
 
 end OptionOF
+
+section Fixpoint
+
+def LimitPreserving [COFE α] (P : α → Prop) : Prop :=
+  ∀ (c : Chain α), (∀ n, P (c n)) → P (COFE.compl c)
+
+theorem LimitPreserving.const [COFE α] {P : Prop} : LimitPreserving fun (_ : α) => P := by
+  simp [LimitPreserving]
+
+theorem LimitPreserving.discrete [COFE α] {P : α → Prop} :
+    (∀ {x y : α}, x ≡{0}≡ y → (P x → P y)) → LimitPreserving P :=
+  fun Hdisc _ H => Hdisc COFE.conv_compl.symm (H _)
+
+theorem LimitPreserving.and [COFE α] {P Q : α → Prop}  (HP : LimitPreserving P)
+    (HQ : LimitPreserving Q) : LimitPreserving fun a => P a ∧ Q a :=
+  fun _ HPQ => ⟨HP _ (fun n => (HPQ n).left), HQ _ (fun n => (HPQ n).right)⟩
+
+theorem LimitPreserving.forall [COFE α] (P : β → α → Prop) (Hlim : ∀ y, LimitPreserving (P y)) :
+    LimitPreserving (∀ y, P y ·) :=
+  fun c H y => Hlim y c (H · y)
+
+theorem LimitPreserving.impl [COFE α] (P1 P2 : α → Prop)
+    (HP1 : ∀ {x y : α}, x ≡{0}≡ y → P1 x → P1 y)
+    (Hcompl : LimitPreserving P2) :
+    LimitPreserving (fun x => P1 x → P2 x) :=
+  fun _ Hc HP1c => Hcompl _ <| fun n => Hc _ (HP1 (COFE.conv_compl' (Nat.zero_le n)) HP1c)
+
+theorem LimitPreserving.equiv [COFE α] [COFE β] (f g : α -n> β) :
+    LimitPreserving (fun x => f x ≡ g x) := by
+  intro c Hfg
+  refine equiv_dist.mpr fun n => ?_
+  apply (COFE.compl_map ..).symm.dist.trans
+  apply (COFE.conv_compl' (Nat.le_refl n)).trans
+  apply (Hfg _).dist.trans
+  exact g.ne.ne COFE.conv_compl.symm
+
+def Fixpoint.chain [OFE α] [Inhabited α] (f : α → α) [Contractive f] : Chain α where
+  chain n := Nat.repeat f (n + 1) default
+  cauchy {n} := by
+    induction n with simp [Nat.repeat] | succ n IH
+    rintro (_|i) <;> simp
+    intro H
+    apply Contractive.distLater_dist
+    intro _ Hm
+    exact (IH H).le (Nat.le_of_lt_succ Hm)
+
+/-- Fixpoints inside of a COFE -/
+def fixpoint [COFE α] [Inhabited α] (f : α → α) [Contractive f] : α :=
+  COFE.compl <| Fixpoint.chain f
+
+nonrec abbrev OFE.ContractiveHom.fixpoint [COFE α] [Inhabited α] (f : α -c> α) : α := fixpoint f.f
+
+theorem fixpoint_unfold [COFE α] [Inhabited α] (f : α -c> α) :
+    fixpoint f ≡ f (fixpoint f) := by
+  refine equiv_dist.mpr fun n => ?_
+  apply COFE.conv_compl.trans
+  refine .trans ?_ (NonExpansive.ne COFE.conv_compl.symm)
+  induction n with
+  | zero => exact Contractive.zero f.f
+  | succ _ IH => exact (Contractive.succ f.f IH.symm).symm
+
+theorem fixpoint_unique [COFE α] [Inhabited α] {f : α -c> α} {x : α} (H : x ≡ f x) :
+    x ≡ fixpoint f := by
+  refine equiv_dist.mpr fun n => ?_
+  induction n with refine H.dist.trans <| .trans ?_ (fixpoint_unfold f).dist.symm
+  | zero => exact Contractive.zero f.f
+  | succ _ IH => exact Contractive.succ f.f IH
+
+instance OFE.ContractiveHom.fixpoint_ne [COFE α] [Inhabited α] :
+    NonExpansive (ContractiveHom.fixpoint (α := α)) where
+  ne n f1 f2 H := by
+    apply COFE.conv_compl.trans
+    refine .trans ?_ COFE.conv_compl.symm
+    induction n with
+    | zero => exact H _
+    | succ _ IH => exact (H _).trans <| Contractive.succ _ <| IH <| Dist.lt H (Nat.lt_add_one _)
+
+@[elab_as_elim]
+theorem OFE.ContractiveHom.fixpoint_ind [COFE α] [Inhabited α] (f : α -c> α)
+    (P : α → Prop) (HProper : ∀ A B : α, A ≡ B → P A → P B) (x : α) (Hbase : P x)
+    (Hind : ∀ x, P x → P (f x)) (Hlim : LimitPreserving P) :
+    P f.fixpoint := by
+  let chain : Chain α := by
+    refine ⟨fun i => Nat.repeat f (i + 1) x, fun {n i} H => ?_⟩
+    induction n generalizing i with
+    | zero => simp [Nat.repeat]
+    | succ _ IH =>
+      cases i <;> simp at H
+      exact Contractive.succ _ <| IH H
+  refine HProper _ _ (fixpoint_unique (x := COFE.compl chain) ?_) ?_
+  · refine equiv_dist.mpr fun n => ?_
+    apply COFE.conv_compl.trans
+    refine .trans ?_ (f.ne.ne COFE.conv_compl).symm
+    induction n
+    · exact Contractive.zero f.f
+    · rename_i IH; apply Contractive.succ _ IH
+  · apply Hlim; intro n
+    induction n with
+    | zero => exact Hind (Nat.repeat f.f 0 x) Hbase
+    | succ _ IH => apply Hind (Nat.repeat f.f _ x) IH
+
+end Fixpoint
