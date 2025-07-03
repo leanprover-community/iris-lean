@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Oliver Soeser
+Authors: Oliver Soeser, Mario Carneiro
 -/
 
 import Iris.Algebra.CMRA
@@ -10,34 +10,28 @@ namespace Iris
 
 section excl
 
-variable {α : Type u} {β : Type v} {γ : Type w}
-variable [OFE α] [OFE β]
-
 inductive Excl α where
   | excl : α → Excl α
-  | exclInvalid : Excl α
+  | invalid : Excl α
 
-variable (x y : Excl α)
+open Excl OFE
 
-open Excl
-open OFE
-
-/- COFE -/
-@[simp] def Excl.equiv : Prop := match x, y with
+/-! ## COFE -/
+@[simp] protected def Excl.Equiv [OFE α] : Excl α → Excl α → Prop
   | excl a, excl b => a ≡ b
-  | exclInvalid, exclInvalid => True
+  | invalid, invalid => True
   | _, _ => False
 
-@[simp] def Excl.dist (n : Nat) : Excl α → Excl α → Prop
+@[simp] protected def Excl.Dist [OFE α] (n : Nat) : Excl α → Excl α → Prop
   | excl a, excl b => a ≡{n}≡ b
-  | exclInvalid, exclInvalid => True
+  | invalid, invalid => True
   | _, _ => False
 
-theorem Excl.dist_eqv {n} : Equivalence (dist (α := α) n) where
+theorem Excl.dist_eqv [OFE α] {n} : Equivalence (Excl.Dist (α := α) n) where
   refl {x} := by
     cases x with
     | excl a => exact Dist.of_eq rfl
-    | exclInvalid => trivial
+    | invalid => trivial
   symm {x y} h := by
     cases x <;> cases y <;> try trivial
     exact Dist.symm h
@@ -45,9 +39,9 @@ theorem Excl.dist_eqv {n} : Equivalence (dist (α := α) n) where
     cases x <;> cases y <;> cases z <;> try trivial
     exact Dist.trans h₁ h₂
 
-instance : OFE (Excl α) where
-  Equiv := equiv
-  Dist := dist
+instance [OFE α] : OFE (Excl α) where
+  Equiv := Excl.Equiv
+  Dist := Excl.Dist
   dist_eqv := dist_eqv
   equiv_dist {x y} := by
     constructor
@@ -61,67 +55,63 @@ instance : OFE (Excl α) where
     cases x <;> cases y <;> simp at *
     exact Dist.lt hn hlt
 
-instance : @NonExpansive α (Excl α) _ _ (excl) := by
-  exact { ne := fun ⦃n⦄ ⦃x₁ x₂⦄ a => a }
+instance [OFE α] : NonExpansive excl (α := α) where
+  ne _ _ _ a := a
 
-instance : Discrete α → Discrete (Excl α) := by
-  intro ⟨h⟩; refine { discrete_0 := ?_ }; intro x y h'
-  cases x <;> cases y <;> try exact h'
-  apply h h'
+instance [OFE α] [Discrete α] : Discrete (Excl α) where
+  discrete_0 {x y} h' := by
+    cases x <;> cases y <;> try exact h'
+    exact discrete_0 (α := α) h'
 
-instance : Leibniz α → Leibniz (Excl α) := by
-  intro ⟨h⟩; refine { eq_of_eqv := ?_ }; intro x y h'
-  cases x <;> cases y <;> try trivial
-  exact congrArg excl (h h')
+instance [OFE α] [Leibniz α] : Leibniz (Excl α) where
+  eq_of_eqv {x y} h' := by
+    cases x <;> cases y <;> try trivial
+    exact congrArg excl (eq_of_eqv h')
 
-instance {a : α} : DiscreteE a → DiscreteE (excl a) := by
-  intro h; intro x h'
-  cases x
-  · exact h h'
-  · exact h'
+instance [OFE α] {a : α} [h : DiscreteE a] : DiscreteE (excl a) where
+  discrete {x} h' := by
+    cases x
+    · exact h.discrete h'
+    · exact h'
 
-instance : DiscreteE (@exclInvalid α) := by
-  intro x h
-  cases x <;> exact h
+instance [OFE α] : DiscreteE (@invalid α) where
+  discrete {x} h := by cases x <;> exact h
 
 /- Adapted from the corresponding definitions for [Option]. -/
 /- This could be simplified if there was an isomorphism lemma for [COFE]s in [OFE.lean]. -/
-@[simp] def Excl.getD (dflt : α) : α :=
+@[simp] def Excl.getD (x : Excl α) (dflt : α) : α :=
   match x with
   | excl a => a
-  | exclInvalid => dflt
+  | invalid => dflt
 
 @[simp] def Excl.map (f : α → β) : Excl α → Excl β
   | excl a => excl (f a)
-  | exclInvalid   => exclInvalid
+  | invalid => invalid
 
-def exclChain (c : Chain (Excl α)) (a : α) : Chain α := by
+def exclChain [OFE α] (c : Chain (Excl α)) (a : α) : Chain α := by
   refine ⟨fun n => (c n).getD a, fun {n i} H => ?_⟩
   dsimp; have := c.cauchy H; revert this
   cases c.chain i <;> cases c.chain n <;> simp [Dist]
 
-instance [IsCOFE α] : IsCOFE (Excl α) where
+instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
   compl c := (c 0).map fun x => IsCOFE.compl (exclChain c x)
   conv_compl {n} c := by
     have := c.cauchy (Nat.zero_le n); revert this
-    rcases c.chain 0 with _|x' <;> rcases e : c.chain n with _|y' <;> simp [Dist]
+    obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [Dist]
     refine fun _ => dist_eqv.trans IsCOFE.conv_compl ?_
     simp [exclChain, e]
 
-/- CMRA -/
-@[simp] def Excl.pcore : Excl α → Option (Excl α) :=
-  λ _ => none
-@[simp] def Excl.op : Excl α → Excl α → Excl α :=
-  λ _ _ => Excl.exclInvalid
-@[simp] def Excl.ValidN : Nat → Excl α → Prop := λ _ x =>
-  match x with | excl _ => True | exclInvalid => False
-@[simp] def Excl.Valid : Excl α → Prop := λ x =>
-  match x with | excl _ => True | exclInvalid => False
+/-! ## CMRA -/
+@[simp] def Excl.Valid : Excl α → Prop
+  | excl _ => True
+  | invalid => False
 
-instance : CMRA (Excl α) where
-  pcore; op; ValidN; Valid;
-
-  op_ne := by exact { ne := fun ⦃n⦄ ⦃x₁ x₂⦄ a => trivial }
+instance [OFE α] : CMRA (Excl α) where
+  pcore _ := none
+  op _ _ := invalid
+  ValidN _ := Valid
+  Valid
+  op_ne.ne _ _ _ _ := trivial
   pcore_ne := by simp
   validN_ne {n x y} h₁ h₂ := by cases x <;> cases y <;> trivial
   valid_iff_validN {x} := by
@@ -129,73 +119,57 @@ instance : CMRA (Excl α) where
     · intro h n; cases x <;> trivial
     · intro h; cases x <;> simp_all
   validN_succ {x n} h := by cases x <;> trivial
-
-  assoc {x y z} := by simp
-  comm {x y} := by simp
-  pcore_op_left {x cx} := by simp
-  pcore_idem {x cx} := by simp
-  pcore_op_mono {x cx} := by simp
-  validN_op_left {n x y} := by simp
-
+  assoc := by simp
+  comm := by simp
+  pcore_op_left := by simp
+  pcore_idem := by simp
+  pcore_op_mono := by simp
+  validN_op_left := by simp
   extend {n x y₁ y₂} h₁ h₂ := by cases x <;> trivial
 
-theorem excl_included : x ≼ y ↔ y = exclInvalid := by
+theorem excl_included [OFE α] {x y : Excl α} : x ≼ y ↔ y = invalid := by
   constructor
   · intro h
     rcases h with ⟨z, hz⟩
     cases x <;> cases y <;> trivial
   · intro h
-    exists exclInvalid
+    exists invalid
     exact Equiv.of_eq h
 
-theorem excl_includedN n : x ≼{n} y ↔ y = exclInvalid := by
+theorem excl_includedN [OFE α] {x y : Excl α} (n) : x ≼{n} y ↔ y = invalid := by
   constructor
-  · intro h
-    rcases h with ⟨z, hz⟩
-    cases x <;> cases y <;> trivial
-  · intro h
-    exists exclInvalid
-    exact Dist.of_eq h
+  · intro ⟨z, hz⟩; cases x <;> cases y <;> trivial
+  · rintro rfl; exists invalid
 
-instance : CMRA.Exclusive x := { exclusive0_l := fun _ a => a }
+instance [OFE α] {x : Excl α} : CMRA.Exclusive x where exclusive0_l := fun _ a => a
 
-instance : OFE.Discrete α → CMRA.Discrete (Excl α) := by
-  intro h
-  refine { toDiscrete := ?_, discrete_valid := fun {x} a => a }
-  refine instDiscreteExcl ?_
-  exact h
+instance [OFE α] [OFE.Discrete α] : CMRA.Discrete (Excl α) where
+  discrete_valid a := a
 
-theorem exclInvalid_included ea : ea ≼ (@exclInvalid α) := by
-  exists exclInvalid
+theorem invalid_included [OFE α] (ea : Excl α) : ea ≼ invalid := by exists invalid
 
-/- Functors -/
-omit [OFE α] in
+/-! ## Functors -/
 theorem excl_map_id : map id x = x := by
   cases x <;> simp
 
-omit [OFE α] [OFE β] in
-theorem excl_map_compose (f : α → β) (g : β → γ):
-  map (g ∘ f) x = map g (map f x) := by
+theorem excl_map_compose (f : α → β) (g : β → γ) :
+    map (g ∘ f) x = map g (map f x) := by
   cases x <;> simp
 
-omit [OFE α] in
-theorem excl_map_ext (f g : α → β) :
-  (∀ x, f x ≡ g x) → map f x ≡ map g x := by
-  intro h; cases x
-  apply h _; simp
+theorem excl_map_ext [OFE α] [OFE β] (f g : α → β) (h : ∀ x, f x ≡ g x) : map f x ≡ map g x := by
+  cases x; apply h _; simp
 
-theorem excl_map_ne (f : α -n> β) : NonExpansive (map f) := ⟨by
-  intro n x₁ x₂ h
-  cases x₁ <;> cases x₂ <;> try trivial
-  have ⟨hne⟩ := f.ne
-  exact hne h
-⟩
+theorem excl_map_ne [OFE α] [OFE β] (f : α -n> β) : NonExpansive (map f) where
+  ne n x₁ x₂ h := by
+    cases x₁ <;> cases x₂ <;> try trivial
+    have ⟨hne⟩ := f.ne
+    exact hne h
 
-def exclO_map {α β} [OFE α] [OFE β] (f : α -n> β) : Excl α -C> Excl β :=
-  ⟨⟨map f, excl_map_ne f⟩,
-  by intro n x h; cases x <;> trivial,
-  by intro x; trivial,
-  by intro x y; trivial⟩
+def exclO_map [OFE α] [OFE β] (f : α -n> β) : Excl α -C> Excl β := by
+  refine ⟨⟨map f, excl_map_ne f⟩, ?_, ?_, ?_⟩
+  · intro n x h; cases x <;> trivial
+  · intro x; trivial
+  · intro x y; trivial
 
 abbrev ExclOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => Excl (F A B)
@@ -210,7 +184,7 @@ instance {F} [COFE.OFunctor F] : RFunctor (ExclOF F) where
       apply COFE.OFunctor.map_ne.ne
       exact hf
       exact hg
-    | exclInvalid => trivial
+    | invalid => trivial
   map_id {_ _} _ _ x := by
     cases x
     · apply COFE.OFunctor.map_id

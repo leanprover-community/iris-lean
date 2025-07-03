@@ -525,19 +525,19 @@ section discreteElements
 
 variable {α : Type _} [CMRA α]
 
-theorem discrete_inc_l {x y : α} (HD : DiscreteE x) (Hv : ✓{0} y) (Hle : x ≼{0} y) : x ≼ y :=
+theorem discrete_inc_l {x y : α} [HD : DiscreteE x] (Hv : ✓{0} y) (Hle : x ≼{0} y) : x ≼ y :=
   have ⟨_, hz⟩ := Hle
   let ⟨_, t, wt, wx, _⟩ := extend Hv hz
-  ⟨t, wt.trans (Equiv.op_l (HD wx.symm).symm)⟩
+  ⟨t, wt.trans (Equiv.op_l (HD.discrete wx.symm).symm)⟩
 
-theorem discrete_inc_r {x y : α} (HD : DiscreteE y) : x ≼{0} y → x ≼ y
-  | ⟨z, hz⟩ => ⟨z, HD hz⟩
+theorem discrete_inc_r {x y : α} [HD : DiscreteE y] : x ≼{0} y → x ≼ y
+  | ⟨z, hz⟩ => ⟨z, HD.discrete hz⟩
 
-theorem discrete_op {x y : α} (Hv : ✓{0} x • y) (Hx : DiscreteE x) (Hy : DiscreteE y) :
-    DiscreteE (x • y)
-  | _z, h =>
+instance discrete_op {x y : α} (Hv : ✓{0} x • y) [Hx : DiscreteE x] [Hy : DiscreteE y] :
+    DiscreteE (x • y) where
+  discrete h :=
     let ⟨_w, _t, wt, wx, ty⟩ := extend ((Dist.validN h).mp Hv) h.symm
-    ((Hx wx.symm).op (Hy ty.symm)).trans wt.symm
+    ((Hx.discrete wx.symm).op (Hy.discrete ty.symm)).trans wt.symm
 
 end discreteElements
 
@@ -750,7 +750,7 @@ section Hom
 preserves `validN`, `pcore` and `op`. -/
 @[ext] structure Hom (α β : Type _) [CMRA α] [CMRA β] extends OFE.Hom α β where
   protected validN {n x} : ✓{n} x → ✓{n} (f x)
-  protected pcore x : f <$> pcore x ≡ pcore (f x)
+  protected pcore x : (pcore x).map f ≡ pcore (f x)
   protected op x y : f (x • y) ≡ f x • f y
 
 @[inherit_doc]
