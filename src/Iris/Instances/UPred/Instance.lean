@@ -108,11 +108,11 @@ def ownM (m : M) : UPred M where
 instance : OFE.NonExpansive (ownM : M → UPred M) where
   ne _ _ _ H _ _ Hn _ := OFE.Dist.incN (OFE.Dist.le H Hn) .rfl
 
-def validInternal [CMRA A] (a : A) : UPred M where
+def cmraValid [CMRA A] (a : A) : UPred M where
   holds n _ := ✓{n} a
   mono hv _ le := CMRA.validN_of_le le hv
 
-instance [CMRA A] : OFE.NonExpansive (validInternal : A → UPred M) where
+instance [CMRA A] : OFE.NonExpansive (cmraValid : A → UPred M) where
   ne _ _ _ H _ _ Hn _ := (H.le Hn).validN
 
 def bupd (Q : UPred M) : UPred M where
@@ -404,7 +404,7 @@ instance : BIBUpdatePlainly (UPred M) where
     let ⟨x', _, Hx'⟩ := Hv n CMRA.unit n.le_refl L
     exact P.mono Hx' CMRA.incN_unit n.le_refl
 
-theorem ownM_valid (m : M) : ownM m ⊢ validInternal m := fun _ _ h hp => hp.validN h
+theorem ownM_valid (m : M) : ownM m ⊢ cmraValid m := fun _ _ h hp => hp.validN h
 
 theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
   constructor
@@ -422,35 +422,59 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
       _ ≡{n}≡ (m1 • m2) • (w2 • w1) := CMRA.assoc.dist
       _ ≡{n}≡ (m1 • m2) • (w1 • w2) := CMRA.comm.op_r.dist
 
+theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : (cmraValid m : UPred M) ⊢ False :=
+  fun n _ _ => H n
+
+theorem intuitionistically_ownM_core (m : M) : ownM m ⊢ □ ownM (CMRA.core m) :=
+  fun _ _ _ H' => ⟨trivial, CMRA.core_incN_core H'⟩
+
+theorem ownM_unit P : P ⊢ □ ownM (CMRA.unit : M) :=
+  fun _ _ _ _ => ⟨trivial, CMRA.incN_unit⟩
+
+theorem cmra_valid_intro P [CMRA A] (a : A) : ✓ a → P ⊢ (cmraValid a : UPred M) :=
+  fun Hv _ _ _ _ => CMRA.Valid.validN Hv
+
+theorem cmra_valid_elim [CMRA A] (a : A) : (cmraValid a : UPred M) ⊢ ⌜ ✓{0} a ⌝ :=
+  fun n _ _ H => CMRA.validN_of_le n.zero_le H
+
+theorem cmra_valid_weaken [CMRA A] (a b : A) : (cmraValid (a • b) : UPred M) ⊢ cmraValid a :=
+  fun _ _ _ H => CMRA.validN_op_left H
+
+theorem valid_entails [CMRA A] [CMRA B] {a : A} {b : B} (Himp : ∀ n, ✓{n} a → ✓{n} b) :
+    (cmraValid a : UPred M) ⊢ cmraValid b :=
+  fun n _ _ H => Himp n H
+
+theorem pure_soundness : iprop(True ⊢ (⌜P⌝ : UPred M)) → P :=
+  (· 0 _ CMRA.unit_validN ⟨⟩)
+
+theorem later_soundness : iprop(True ⊢ ▷ P) → iprop((True : UPred M) ⊢ P) := by
+  intro HP n x _ H
+  refine UPred.mono _ ?_ CMRA.incN_unit (Nat.le_refl _)
+  exact HP n.succ _ CMRA.unit_validN H
+
 theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (CMRA.core a) :=
   fun _ _ _ H => CMRA.core_incN_core H
-
-theorem ownM_unit {P : UPred M} : P ⊢ ownM (UCMRA.unit : M) :=
-  fun _ x _ _ => ⟨x, OFE.equiv_dist.mp UCMRA.unit_left_id.symm _⟩
 
 -- TODO: bupd_ownM_updateP (needs basic updates to be defined)
 -- TODO: later_ownM, ownM_forall  (needs internal eq )
 
-theorem validInternal_intro [CMRA A] {P : UPred M} (a : A) (Ha : ✓ a) : P ⊢ validInternal a :=
+theorem cmraValid_intro [CMRA A] {P : UPred M} (a : A) (Ha : ✓ a) : P ⊢ cmraValid a :=
   fun _ _ _ _ => CMRA.Valid.validN Ha
 
-theorem validInternal_elim [CMRA A] (a : A) : (validInternal a : UPred M) ⊢ iprop(⌜ ✓{0} a ⌝) :=
+theorem cmraValid_elim [CMRA A] (a : A) : (cmraValid a : UPred M) ⊢ iprop(⌜ ✓{0} a ⌝) :=
   fun n _ _ H => CMRA.validN_of_le n.zero_le H
 
-theorem plainly_cmra_validInternal_1 [CMRA A] (a : A) :
-    (validInternal a : UPred M) ⊢ ■ validInternal a :=
+theorem plainly_cmra_cmraValid_1 [CMRA A] (a : A) :
+    (cmraValid a : UPred M) ⊢ ■ cmraValid a :=
   Std.refl
 
-theorem cmra_validInternal_weaken [CMRA A] (a b : A) :
-    (validInternal (a • b) : UPred M) ⊢ validInternal a :=
+theorem cmra_cmraValid_weaken [CMRA A] (a b : A) :
+    (cmraValid (a • b) : UPred M) ⊢ cmraValid a :=
   fun _ _ _ H => CMRA.validN_op_left H
 
-theorem validInternal_entails [CMRA A] [CMRA B] {a : A} {b : B} (Hv : ∀ n, ✓{n} a → ✓{n} b) :
-    (validInternal a : UPred M) ⊢ validInternal b :=
+theorem cmraValid_entails [CMRA A] [CMRA B] {a : A} {b : B} (Hv : ∀ n, ✓{n} a → ✓{n} b) :
+    (cmraValid a : UPred M) ⊢ cmraValid b :=
   fun _ _ _ H => Hv _ H
-
-theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : (validInternal m : UPred M) ⊢ False :=
-  fun n _ _ => H n
 
 instance : BIAffine (UPred M) := ⟨by infer_instance⟩
 
