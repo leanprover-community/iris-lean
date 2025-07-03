@@ -571,3 +571,72 @@ instance [OFunctorContractive F] : OFunctorContractive (OptionOF F) where
     cases z <;> simp_all [optionMap, Dist, Equiv, Option.Forall₂, Function.uncurry, OFunctor.map]
 
 end OptionOF
+
+section Later
+
+structure Later (A : Type u) : Type (u+1) where
+  Next :: Later_car : A
+
+instance isOFE_later [OFE A] : OFE (Later A) where
+  Equiv x y := (Iris.Later.Later_car x) ≡ (Iris.Later.Later_car y)
+  Dist n x y := DistLater n (Iris.Later.Later_car x) (Iris.Later.Later_car y)
+  dist_eqv :=  {
+    refl _ := by intros; apply DistLater.rfl
+    symm h := by intros; simp_all [DistLater.symm]
+    trans h1 h2 := by intros; apply DistLater.trans <;> assumption
+  }
+  equiv_dist {x y} := by simp [equiv_dist]; unfold DistLater Dist; apply Iff.intro; intros Hxy n m Hm; apply Hxy; intros H n; apply (H (Nat.succ n)); simp +arith
+  dist_lt {n x y m} := by unfold DistLater; intros Hxy Ht _ Htrans; apply Hxy; apply Nat.lt_trans <;> assumption
+
+instance NextContractive {A : Type} [OFE A] : Contractive (@Iris.Later.Next A) where
+  distLater_dist {n x y} := by unfold DistLater; intros Hdist; apply Hdist
+
+def laterChain [OFE A] (c : Chain (Later A)) : Chain A where
+  chain n := Iris.Later.Later_car (c (Nat.succ n))
+  cauchy := by intros n i Hle; apply (@c.cauchy (Nat.succ n) (Nat.succ i)) <;> simp +arith [Hle]
+
+instance isCOFE_later [OFE A] [IsCOFE A] : IsCOFE (Later A) where
+  compl c := Iris.Later.Next (IsCOFE.compl (laterChain c))
+  conv_compl {n} c := by
+    rcases n with  _|n'; simp [Dist];
+    have := (@IsCOFE.conv_compl _ _ _ n' (laterChain c));
+    simp [Dist, DistLater];
+    intros m Hlt;
+    apply (Dist.le this); apply Nat.le_of_lt_succ; simp [Hlt]
+
+def laterMap [OFE A] [OFE B] (f : A -n> B)  : Later A -n> Later B := by
+  refine ⟨fun x => Iris.Later.Next (f (Iris.Later.Later_car x)), ⟨?_⟩⟩
+  rintro _ ⟨⟩ ⟨⟩ H <;> simp_all [Dist, DistLater];
+  intros m Hlt; exact f.ne.ne (H m Hlt)
+
+end Later
+
+section LaterOF
+open COFE
+
+abbrev LaterOF (F : OFunctorPre) : OFunctorPre :=
+  fun A B _ _ => Later (F A B)
+
+variable (F : OFunctorPre)
+
+instance oFunctorLater [OFunctor F] : OFunctor (LaterOF F) where
+  cofe := _
+  map f g := laterMap (OFunctor.map f g)
+  map_ne.ne _ _ _ Hx _ _ Hy z := by
+    simp [laterMap, Dist, DistLater]; intros m Hlt;
+    apply (Dist.lt _ Hlt);
+    apply OFunctor.map_ne.ne Hx Hy
+  map_id z := by
+    cases z <;> simp [optionMap, Dist, Equiv, Option.Forall₂]
+    apply OFunctor.map_id
+  map_comp _ _ _ _ z := by
+    cases z <;> simp [optionMap, Dist, Equiv, Option.Forall₂]
+    apply OFunctor.map_comp
+
+instance [OFunctorContractive F] : OFunctorContractive (LaterOF F) where
+  map_contractive.1 H z := by
+    have := (OFunctorContractive.map_contractive (F := F)).distLater_dist H;
+    simp_all [Dist, DistLater]; intros m Hlt; apply (Dist.lt _ Hlt);
+    simp_all [laterMap, Equiv, Function.uncurry, OFunctor.map]
+
+end LaterOF
