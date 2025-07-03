@@ -127,7 +127,7 @@ class Heap (T : Type _) (K V : outParam (Type _))
 
 /-- A Heap which can generate new values. -/
 class AllocHeap (T : Type _) (K V : outParam (Type _)) extends Heap T K V, Alloc T K V where
-  fresh_get {t} (H : coinfinite (support <| get t)) : get t (fresh H t) = none
+  fresh_get {t : T} (H : coinfinite (support <| get t)) : get t (fresh H t) = none
 
 abbrev HeapLike.delete [HeapLike T K V] (t : T) (k : K) : T := StoreLike.set t k .none
 abbrev HeapLike.empty [HeapLike T K V] : T := StoreLike.of_fun (fun _ => .none)
