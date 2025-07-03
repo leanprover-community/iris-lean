@@ -1516,8 +1516,7 @@ theorem later_true [BI PROP] : (▷ True ⊣⊢ (True : PROP)) := ⟨true_intro,
 theorem later_emp [BI PROP] [BIAffine PROP] : (▷ emp ⊣⊢ (emp : PROP)) :=
   ⟨affine, later_intro⟩
 
-theorem later_forall_2 [BI PROP] {α} {Φ : α → PROP} :
-    («forall» fun a => iprop(▷ Φ a)) ⊢ ▷ «forall» fun a => Φ a := by
+theorem later_forall_2 [BI PROP] {α} {Φ : α → PROP} : (∀ a, ▷ Φ a) ⊢ ▷ ∀ a, Φ a := by
   refine (forall_intro ?_).trans later_sForall_2
   intro P
   refine imp_intro' ?_
@@ -1527,15 +1526,15 @@ theorem later_forall_2 [BI PROP] {α} {Φ : α → PROP} :
   exact imp_intro' <| and_elim_l.trans <| forall_elim _
 
 theorem later_forall [BI PROP] {Φ : α → PROP} :
-    ▷ («forall» fun a => Φ a) ⊣⊢ («forall» fun a => iprop(▷ Φ a)) :=
+    ▷ (∀ a, Φ a) ⊣⊢ (∀ a, ▷ Φ a) :=
   ⟨forall_intro (later_mono <| forall_elim ·), later_forall_2⟩
 
 theorem later_exists_2 [BI PROP] {Φ : α → PROP} :
-    («exists» fun a => iprop(▷ Φ a) : PROP) ⊢ ▷ (∃ a, Φ a) :=
+    (∃ a, ▷ Φ a) ⊢ ▷ (∃ a, Φ a) :=
   exists_elim (later_mono <| exists_intro ·)
 
 theorem later_exists_false [BI PROP] {Φ : α → PROP} :
-    (▷ «exists» Φ) ⊢ (▷ False : PROP) ∨ «exists» (iprop(▷ Φ ·)) := by
+    (▷ ∃ a, Φ a) ⊢ ▷ False ∨ ∃ a, ▷ Φ a := by
   apply later_sExists_false.trans
   apply or_elim
   · apply or_intro_l
@@ -1546,9 +1545,9 @@ theorem later_exists_false [BI PROP] {Φ : α → PROP} :
     exact imp_intro' <| exists_intro' a and_elim_l
 
 theorem later_exists [BI PROP] [Inhabited α] {Φ : α → PROP} :
-   («exists» fun a => iprop(▷ Φ a) : PROP) ⊣⊢ ▷ (∃ a, Φ a) :=
-  ⟨later_exists_2,
-   later_exists_false.trans <| or_elim (exists_intro' default <| later_mono <| false_elim) .rfl⟩
+    (∃ a, ▷ Φ a) ⊣⊢ ▷ (∃ a, Φ a) := by
+  refine ⟨later_exists_2, later_exists_false.trans ?_⟩
+  exact or_elim (exists_intro' default <| later_mono <| false_elim) .rfl
 
 theorem later_and [BI PROP] {P Q : PROP} : ▷ (P ∧ Q) ⊣⊢ ▷ P ∧ ▷ Q := by
   constructor
@@ -1578,7 +1577,7 @@ theorem later_impl [BI PROP] {P Q : PROP} : ▷ (P → Q) ⊢ ▷ P → ▷ Q :=
 theorem later_wand [BI PROP] {P Q : PROP} : ▷ (P -∗ Q) ⊢ ▷ P -∗ ▷ Q :=
   wand_intro' <| later_sep.mpr.trans <| later_mono wand_elim_r
 
-theorem later_iff [BI PROP] {P Q : PROP} : ▷ (P ↔ Q) ⊢ iprop(▷ P ↔ ▷ Q) :=
+theorem later_iff [BI PROP] {P Q : PROP} : ▷ (P ↔ Q) ⊢ (▷ P ↔ ▷ Q) :=
   later_and.mp.trans <|and_intro (and_elim_l.trans later_impl) (and_elim_r.trans later_impl)
 
 theorem later_wand_iff [BI PROP] {P Q : PROP} : ▷ (P ∗-∗ Q) ⊢ ▷ P ∗-∗ ▷ Q :=
@@ -1618,7 +1617,7 @@ theorem entails_impl_true [BI PROP] {P Q : PROP} :
   ⟨imp_intro' ∘ pure_elim_r ∘ Function.const _, (and_intro .rfl true_intro).trans ∘ imp_elim'⟩
 
 theorem loeb [BI PROP] [BILoeb PROP] {P : PROP} : (▷ P → P) ⊢ P := by
-  apply entails_impl_True.mpr
+  apply entails_impl_true.mpr
   apply BILoeb.loeb_weak
   apply imp_intro
   apply (and_mono .rfl and_self.mpr).trans
@@ -1629,10 +1628,10 @@ theorem loeb [BI PROP] [BILoeb PROP] {P : PROP} : (▷ P → P) ⊢ P := by
   exact imp_elim_r
 
 theorem loeb_weak_of_strong [BI PROP] {P : PROP} (H : ∀ P : PROP, (▷ P → P) ⊢ P)
-    (H' : ▷ P ⊢ P) : True ⊢ P := (entails_impl_True.mp H').trans (H P)
+    (H' : ▷ P ⊢ P) : True ⊢ P := (entails_impl_true.mp H').trans (H P)
 
 theorem loeb_wand_intuitionistically [BI PROP] [BILoeb PROP] {P : PROP} :
-    iprop(□ (□ ▷ P -∗ P) ⊢ P) := by
+    □ (□ ▷ P -∗ P) ⊢ P := by
   refine .trans ?_ intuitionistically_elim
   refine .trans ?_ loeb
   refine imp_intro' ?_
@@ -1642,6 +1641,6 @@ theorem loeb_wand_intuitionistically [BI PROP] [BILoeb PROP] {P : PROP} :
   refine (sep_mono intuitionistically_idem.mpr .rfl).trans ?_
   exact intuitionistically_sep_2.trans (intuitionistically_mono wand_elim_r)
 
-theorem loeb_wand [BI PROP] [BILoeb PROP] {P : PROP} : iprop(□ (▷ P -∗ P) ⊢ P) :=
+theorem loeb_wand [BI PROP] [BILoeb PROP] {P : PROP} : □ (▷ P -∗ P) ⊢ P :=
   (intuitionistically_mono (wand_mono intuitionistically_elim .rfl)).trans
     loeb_wand_intuitionistically
