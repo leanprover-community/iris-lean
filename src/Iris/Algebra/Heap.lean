@@ -11,12 +11,7 @@ open Iris
 
 /- # Datatype and CMRA for a generic heap-like structure. -/
 
--- open Classical in
--- /- Update a (classical) function at a point. Used to specify the correctness of stores. -/
--- noncomputable def fset {K V : Type _} (f : K → V) (k : K) (v : V) : K → V :=
---   fun k' => if (k = k') then v else f k'
-
-/-- `T` can store and retrieve keys and values. -/
+/-- The type `T` can store and retrieve keys of type `K` and obtain values of type `V`. -/
 class StoreLike (T : Type _) (K V : outParam (Type _)) where
   get : T → K → V
   set : T → K → V → T
@@ -30,6 +25,7 @@ class Store (T : Type _) (K V : outParam (Type _)) extends StoreLike T K V where
   /-- One-sided inverse between get and of_fun. The other direction does not need to hold. -/
   of_fun_get {f} : get (of_fun f) = f
 
+/-- Each value of `T` uniquely represents a function `K → V`. -/
 class StoreIso (T : Type _) (K V : outParam (Type _)) extends Store T K V where
   get_of_fun t : of_fun (get t) = t
 
@@ -45,7 +41,7 @@ def StoreLike.all [StoreLike T K V] (P : K → V → Prop) : T → Prop :=
 
 /-- Lift a predicate on store values to a predicate on heap values, which is true for undefined entries. -/
 abbrev lift_dom (P : K → V → Prop) (k : K) : Option V → Prop
-  |.some v => P k v
+  | .some v => P k v
   | .none => True
 
 class Alloc (T : Type _) (K : outParam (Type _)) where
@@ -58,10 +54,13 @@ class HeapLike (T : Type _) (K V : outParam (Type _)) extends StoreLike T K (Opt
 
 /-- A type is HeapLike when it behaves like store for Optional values -/
 class Heap (T : Type _) (K V : outParam (Type _))
-    extends HeapLike T K V, Alloc T K, Store T K (Option V), WithPoints T K (Option V) where
-  fresh_get {t} : get t (fresh t) = none
-  point_get_eq {k k' v} : k = k' → get (point k v) k' = some v
+    extends HeapLike T K V,  Store T K (Option V), WithPoints T K (Option V) where
+  point_get_eq {k k' v} : k = k' → get (point k v) k' = v
   point_get_ne {k k' v} : k ≠ k' → get (point k v) k' = none
+
+/-- A Heap which can always generate new values. -/
+class AllocHeap (T : Type _) (K V : outParam (Type _)) extends Heap T K V, Alloc T K where
+  fresh_get {t} : get t (fresh t) = none
 
 abbrev HeapLike.delete [HeapLike T K V] (t : T) (k : K) : T := StoreLike.set t k .none
 abbrev HeapLike.empty [HeapLike T K V] : T := StoreLike.of_fun (fun _ => .none)
@@ -73,10 +72,6 @@ trees, functions) this is probably the class you want. -/
 abbrev HeapF (H : Type _ → Type _) (K : outParam (Type _)) :=
   ∀ T : Type _, HeapLike (H T) K T
 
--- Example:
--- abbrev FT (A B : Type _) : Type _ := A → B
--- instance (T V : Type _) : Heap (FT T V) T V := sorry
--- #synth HeapF (FT Nat) Nat
 
 theorem Store.get_merge [Store T K V] {op : V → V → V} (t1 t2 : T) (k : K) :
     StoreLike.get (StoreLike.merge op t1 t2) k = op (StoreLike.get t1 k) (StoreLike.get t2 k) := by
@@ -236,13 +231,55 @@ abbrev store_validN (n : Nat) (s : StoreO T) : Prop := ∀ k, ✓{n} (StoreO.get
 
 theorem lookup_includedN n (m1 m2 : StoreO T) :
   (∃ (z : StoreO T), m2 ≡{n}≡ store_op m1 z) ↔
-  ∀ i, (∃ z, (StoreO.get i m2) ≡{n}≡ (StoreO.get i m1) • z) := sorry
--- See below
+  ∀ i, (∃ z, (StoreO.get i m2) ≡{n}≡ (StoreO.get i m1) • z) := by
+  constructor
+  · intros H i
+    rcases H with ⟨⟨z⟩, Hz⟩
+    exists (StoreO.get i ⟨z⟩)
+    rcases m1 with ⟨m1⟩
+    rcases m2 with ⟨m2⟩
+    simp_all [CMRA.op, optionOp]
+    have Hz' := Hz i
+    simp [Store.get_merge, op_merge] at Hz'
+    generalize HX : StoreLike.get m1 i = X
+    generalize HZ : StoreLike.get z i = Z
+    rw [HX, HZ] at Hz'
+    cases X <;> cases Z <;> simp_all
+  · intro H
+    rcases (Classical.axiomOfChoice H) with ⟨f, Hf⟩
+    exists ⟨StoreLike.of_fun f⟩
+    intro i
+    apply (Hf i).trans
+    simp [store_op, Store.get_merge, op_merge, Store.of_fun_get]
+    generalize HX : StoreLike.get m1.car i = X
+    generalize HY : f i = Y
+    cases X <;> cases Y <;> simp_all [CMRA.op, optionOp]
 
 theorem lookup_included (m1 m2 : StoreO T) :
   (∃ (z : StoreO T), m2 ≡ store_op m1 z) ↔
-  ∀ i, (∃ z, (StoreO.get i m2) ≡ (StoreO.get i m1) • z) := sorry
--- See below
+  ∀ i, (∃ z, (StoreO.get i m2) ≡ (StoreO.get i m1) • z) := by
+  constructor
+  · intros H i
+    rcases H with ⟨⟨z⟩, Hz⟩
+    exists (StoreO.get i ⟨z⟩)
+    rcases m1 with ⟨m1⟩
+    rcases m2 with ⟨m2⟩
+    simp_all [CMRA.op, optionOp]
+    have Hz' := Hz i
+    simp [Store.get_merge, op_merge] at Hz'
+    generalize HX : StoreLike.get m1 i = X
+    generalize HZ : StoreLike.get z i = Z
+    rw [HX, HZ] at Hz'
+    cases X <;> cases Z <;> simp_all
+  · intro H
+    rcases (Classical.axiomOfChoice H) with ⟨f, Hf⟩
+    exists ⟨StoreLike.of_fun f⟩
+    intro i
+    apply (Hf i).trans
+    simp [store_op, Store.get_merge, op_merge, Store.of_fun_get]
+    generalize HX : StoreLike.get m1.car i = X
+    generalize HY : f i = Y
+    cases X <;> cases Y <;> simp_all [CMRA.op, optionOp]
 
 instance StoreO_CMRA : CMRA (StoreO T) where
   pcore := store_pcore
@@ -329,19 +366,6 @@ instance StoreO_CMRA : CMRA (StoreO T) where
       rw [HX, HZ] at Hz'
       cases X <;> cases Z <;> simp_all
 
-    -- Second direction: Use classical instead of countability
-    have Hcore'le'2 (x y : StoreO T) :  (∀ (i : K), (StoreO.get i x ≼ StoreO.get i y)) → le' x y := by
-      intro H
-      rcases (Classical.axiomOfChoice H) with ⟨f, Hf⟩
-      exists ⟨StoreLike.of_fun f⟩
-      intro i
-      apply (Hf i).trans
-      simp [store_op, Store.get_merge, op_merge, Store.of_fun_get]
-      generalize HX : StoreLike.get x.car i = X
-      generalize HY : f i = Y
-      cases X <;> cases Y <;> simp_all [CMRA.op, optionOp]
-
-
     suffices ∀ x y : StoreO T, le' x y → le' (core' x) (core' y) by
       rintro x cx y Hxy' Hx
       have Hxy := this x y Hxy'
@@ -350,11 +374,12 @@ instance StoreO_CMRA : CMRA (StoreO T) where
       simp [store_pcore]
       exact Hxy
     intro x y H'
-    apply Hcore'le'2
+    unfold le'
+    refine (lookup_included (core' x) (core' y)).mpr ?_
     intro i
     suffices (core (StoreO.get i x)) ≼ (core (StoreO.get i y)) by
       simp_all [core', pcore_F, core, Store.get_map]
-      split <;> split <;> simp_all [pcore, optionCore]
+      split <;> split <;> simp_all [pcore, optionCore, this] <;> exact this
     exact core_mono (Hcore'le'1 x y H' i)
 
   extend := by
