@@ -12,23 +12,23 @@ open Iris.BI
 
 section Modalities
 
-variable {PROP : Type _} [BI PROP]
+variable [BI PROP]
 
-instance : IsModal (PROP1 := PROP) persistently (MIEnvId rfl) MIEnvClear where
+instance : IsModal (PROP1 := PROP) persistently (.id rfl) .clear where
   spec_intuitionistic _ := persistent
   spec_spatial P := persistently_absorbing P
   emp := persistently_emp_2
   mono := (persistently_mono ·)
   sep := persistently_sep_2
 
-instance : IsModal (PROP1 := PROP) affinely (MIEnvId rfl) (MIEnvForall rfl Affine) where
+instance : IsModal (PROP1 := PROP) affinely (.id rfl) (.forall rfl Affine) where
   spec_intuitionistic _ := affinely_intro .rfl
   spec_spatial _ _ := affinely_intro .rfl
   emp := affinely_intro .rfl
   mono := (affinely_mono ·)
   sep := affinely_sep_2
 
-instance : IsModal (PROP1 := PROP) intuitionistically (MIEnvId rfl) MIEnvIsEmpty where
+instance : IsModal (PROP1 := PROP) intuitionistically (.id rfl) .isEmpty where
   spec_intuitionistic _ := intuitionistic
   spec_spatial := trivial
   emp := intuitionistic
