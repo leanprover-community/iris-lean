@@ -27,38 +27,20 @@ noncomputable def instClassicalHeap : Heap (K → Option V) K V where
   point_get_ne H := by simp [H, StoreLike.get, fset, instClassicalStore]
 
 
-abbrev CoInfiniteHeap (K V : Type _) : Type _ :=
-  { f : K → Option V // coinfinite (support f) }
+theorem coinfinte_exists_next {f : K → Option V} :
+  coinfinite (support f) → ∃ k, f k = none := by sorry
 
 
 /-- This is closer to gmap, but still a generalization. Among other things, gmap can only express
 finite maps. To support allocation, you actually only need the complement to be infinite. This construction can,
 for example, express an infinite number of pices of ghost state while retaining the ability to dynamically
 allocate new ghost state. -/
-noncomputable instance : AllocHeap (CoInfiniteHeap K V) K V where
-  get := sorry -- id
-  set f k ov := ⟨fset f.1 k ov, coinfinite_fset_coinfinite f.1 f.2⟩
-  of_fun := sorry -- id
-    -- Hm--this should actually be a coinfinite function in this case.
-  get_set_eq H := by
-    rw [H]; simp [fset]
-    sorry
-  get_set_ne H := by
-    simp_all [fset]
-    sorry
-  of_fun_get := by
-    sorry
-  point k ov := sorry -- fset (fun _ => none) k ov
-  point_get_eq H := by
-    -- simp [H, StoreLike.get, fset, instClassicalStore]
-    sorry
-  point_get_ne H := by
-    -- simp [H, StoreLike.get, fset, instClassicalStore]
-    sorry
-  fresh := sorry
-  fresh_get := sorry
+noncomputable def instClassicaAllocHeap : AllocHeap (K → Option V) K V where
+  toHeap := instClassicalHeap
+  fresh HC _ := Classical.choose (coinfinte_exists_next HC)
+  fresh_get HC := Classical.choose_spec (coinfinte_exists_next HC)
 
-
-
+-- TODO: Heaps indexed by natural numbers. Still a generalization over Iris because
+-- an infinite number of values can be givien non-default values!
 
 end instances
