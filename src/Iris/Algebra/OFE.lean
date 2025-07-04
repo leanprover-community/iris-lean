@@ -735,44 +735,34 @@ end Fixpoint
 section Later
 
 structure Later (A : Type u) : Type (u+1) where
-  Next :: car : A
+  next :: car : A
 
 instance isOFE_later [OFE A] : OFE (Later A) where
   Equiv x y := x.car ≡ y.car
   Dist n x y := DistLater n x.car y.car
-  dist_eqv :=  {
-    refl _ := by intros; apply DistLater.rfl
-    symm h := by intros; simp_all [DistLater.symm]
-    trans h1 h2 := by intros; apply DistLater.trans <;> assumption
-  }
-  equiv_dist {x y} := by
+  dist_eqv := ⟨fun _ => .rfl, .symm, .trans⟩
+  equiv_dist := by
     simp only [equiv_dist, DistLater]
-    apply Iff.intro <;> try simp +contextual
-    intros H n; apply (H (Nat.succ n) n (by simp))
-  dist_lt {n x y m} := by
-    simp only [DistLater]
-    intros Hxy Hmn k Hkm; apply Hxy;
-    refine (Nat.lt_trans Hkm Hmn)
+    exact ⟨by simp +contextual, fun H n => H (Nat.succ n) n (by simp)⟩
+  dist_lt Hxy Hmn _ Hkm := Hxy _ (Nat.lt_trans Hkm Hmn)
 
-instance NextContractive {A : Type} [OFE A] : Contractive (@Iris.Later.Next A) where
-  distLater_dist {n x y} := by simp only [DistLater]; intros Hdist; apply Hdist
+instance NextContractive {A : Type} [OFE A] : Contractive (@Later.next A) where
+  distLater_dist := id
 
 def laterChain [OFE A] (c : Chain (Later A)) : Chain A where
   chain n := (c (Nat.succ n)).car
-  cauchy := by intros n i Hle; apply (@c.cauchy (Nat.succ n) (Nat.succ i)) <;> simp +arith [Hle]
+  cauchy Hle := c.cauchy (Nat.succ_le_succ Hle) _ (Nat.lt_succ_self _)
 
 instance isCOFE_later [OFE A] [IsCOFE A] : IsCOFE (Later A) where
-  compl c := Iris.Later.Next (IsCOFE.compl (laterChain c))
+  compl c := Later.next (IsCOFE.compl (laterChain c))
   conv_compl {n} c := by
-    rcases n with  _|n'; simp [Dist];
-    have := (@IsCOFE.conv_compl _ _ _ n' (laterChain c));
-    simp only [Dist, DistLater];
-    intros m Hlt;
-    apply (Dist.le this); apply Nat.le_of_lt_succ; simp [Hlt]
+    rcases n with _|n' <;> simp [Dist, DistLater]
+    intros m Hlt
+    exact (IsCOFE.conv_compl (n := n') (c := laterChain c)).le (Nat.le_of_lt_succ Hlt)
 
 def laterMap [OFE A] [OFE B] (f : A -n> B)  : Later A -n> Later B := by
-  refine ⟨fun x => Iris.Later.Next (f x.car), ⟨?_⟩⟩
-  rintro _ ⟨⟩ ⟨⟩ H <;> simp_all only [Dist, DistLater];
+  refine ⟨fun x => Later.next (f x.car), ⟨?_⟩⟩
+  rintro _ ⟨⟩ ⟨⟩ H <;> simp_all only [Dist, DistLater]
   intros m Hlt; exact f.ne.ne (H m Hlt)
 
 end Later
@@ -788,17 +778,13 @@ variable (F : OFunctorPre)
 instance oFunctorLater [OFunctor F] : OFunctor (LaterOF F) where
   cofe := _
   map f g := laterMap (OFunctor.map f g)
-  map_ne.ne _ _ _ Hx _ _ Hy z := by
-    simp [laterMap, Dist, DistLater]; intros m Hlt;
-    apply (Dist.lt _ Hlt);
-    apply OFunctor.map_ne.ne Hx Hy
-  map_id z := by simp only [Equiv]; apply OFunctor.map_id
-  map_comp _ _ _ _ z := by simp only [Equiv]; apply OFunctor.map_comp
+  map_ne.ne _ _ _ Hx _ _ Hy _ _ := (OFunctor.map_ne.ne Hx Hy _).lt
+  map_id _ := OFunctor.map_id _
+  map_comp _ _ _ _ _ := OFunctor.map_comp ..
 
 instance [OFunctorContractive F] : OFunctorContractive (LaterOF F) where
-  map_contractive.1 H z := by
-    have := (OFunctorContractive.map_contractive (F := F)).distLater_dist H;
-    simp_all only [Dist, DistLater]; intros m Hlt; apply (Dist.lt _ Hlt);
-    simp_all only [Function.uncurry, OFunctor.map, laterMap]
+  map_contractive.1 H z m := Dist.lt <| by
+    have := (OFunctorContractive.map_contractive (F := F)).distLater_dist H
+    simp_all only [Dist, DistLater, Function.uncurry, OFunctor.map, laterMap]
 
 end LaterOF
