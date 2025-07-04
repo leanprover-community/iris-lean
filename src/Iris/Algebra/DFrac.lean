@@ -80,15 +80,15 @@ instance DFrac_CMRA : CMRA (DFrac F) where
       rcases H with ⟨b, Hb⟩
       exists (a' + b)
       suffices (a' + a + b) = (a + (a' + b)) by rw [←this]; exact Hb
-      refine .trans ?_ Fraction.add_assoc.symm
+      refine .trans ?_ (Fraction.add_assoc ..).symm
       congr 1
       apply Fraction.add_comm
     rcases x with ⟨x|_|x⟩ <;> rcases y with ⟨y|_|y⟩ <;> simp [valid]
     · apply proper_add_mono_left
-    · apply fractional_proper
-    · exact fractional_proper ∘ Fractional_add_left
-    · apply Fractional_add_left
-    · apply Fractional_add_left
+    · apply Fractional.proper
+    · exact Fractional.proper ∘ Fractional.of_add_left
+    · apply Fractional.of_add_left
+    · apply Fractional.of_add_left
   assoc {x y z} := by
     rcases x with ⟨x|_|x⟩ <;>
     rcases y with ⟨y|_|y⟩ <;>
@@ -137,12 +137,12 @@ theorem own_whole_exclusive {w : F} (Hw : Whole w) : CMRA.Exclusive (α := DFrac
         intro Hp
         unfold Fractional at this
         apply this ⟨y, Hp⟩
-      apply Proper.whole_not_fractional Hw
-    · apply Proper.whole_not_fractional Hw
+      apply Whole.not_fractional Hw
+    · apply Whole.not_fractional Hw
     · suffices ¬(Fractional w) by
         intro Hk; apply this
-        exact Fractional_add_left Hk
-      apply Proper.whole_not_fractional Hw
+        exact Fractional.of_add_left Hk
+      apply Whole.not_fractional Hw
 
 instance : CMRA.Exclusive (α := DFrac F) ⟨Own (1 : F)⟩ :=
   own_whole_exclusive <| UFraction.one_whole
@@ -155,23 +155,23 @@ instance {f : F} : CMRA.Cancelable (α := DFrac F) ⟨Own f⟩ where
     all_goals intro H Hxyz
     all_goals (try have Hxyz' := LeibnizO.dist_inj Hxyz <;> simp at Hxyz')
     · exact congrArg (LeibnizO.mk ∘ Own) <| Fraction.add_left_cancel Hxyz'
-    · exact (Fraction.add_ne (Fraction.add_comm (α := F) ▸ Hxyz')).elim
-    · exact (Fraction.add_ne (Fraction.add_comm (α := F) ▸ Hxyz').symm).elim
+    · exact (Fraction.add_ne (Fraction.add_comm (α := F) .. ▸ Hxyz')).elim
+    · exact (Fraction.add_ne (Fraction.add_comm (α := F) .. ▸ Hxyz').symm).elim
     · exact congrArg (LeibnizO.mk ∘ OwnDiscard) <| Fraction.add_left_cancel Hxyz'
 
 instance {f : F} : CMRA.IdFree (α := DFrac F) ⟨Own f⟩ where
   id_free0_r y := by
     rcases y with ⟨y|_|y⟩ <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
     all_goals (try have Hxyz' := LeibnizO.dist_inj Hxyz <;> simp at Hxyz')
-    exact (Fraction.add_ne (Fraction.add_comm (α := F) ▸ Hxyz').symm).elim
+    exact (Fraction.add_ne (Fraction.add_comm (α := F) .. ▸ Hxyz').symm).elim
 
 theorem valid_own_one : ✓ (LeibnizO.mk (Own (One.one : F))) := UFraction.one_whole.1
 
 theorem valid_op_own_r {dq : DFrac F} {q : F} : ✓ (dq • ⟨Own q⟩) → Fractional q := by
   rcases dq with ⟨y|_|y⟩
-  · exact (⟨y, Fraction.add_comm (α := F)▸·⟩)
+  · exact (⟨y, Fraction.add_comm (α := F) .. ▸ ·⟩)
   · exact id
-  · exact Fractional_add_right
+  · exact Fractional.of_add_right
 
 theorem valid_op_own_l {dq : DFrac F} {q : F} : ✓ (⟨Own q⟩ • dq) → (Fractional q) :=
   valid_op_own_r ∘ CMRA.valid_of_eqv (CMRA.comm (y := dq))
