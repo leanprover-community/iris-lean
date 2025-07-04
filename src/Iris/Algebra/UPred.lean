@@ -24,7 +24,7 @@ instance [UCMRA M] : CoeFun (UPred M) (fun _ => Nat → M → Prop) where
 
 section UPred
 
-variable {M : Type} [UCMRA M]
+variable [UCMRA M]
 
 open UPred
 
