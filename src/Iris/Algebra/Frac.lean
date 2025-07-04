@@ -14,6 +14,8 @@ This CMRA captures the notion of fractional ownership of another resource.
 Traditionally the underlying set is assumed to be the half open interval $$(0,1]$$.
 -/
 
+namespace Iris
+
 class Fraction (α : Type _) extends Add α where
   /-- Validity predicate on fractions. Generalizes the notion of `(· ≤ 1)` from rational
   fractions. -/
@@ -25,17 +27,15 @@ class Fraction (α : Type _) extends Add α where
   add_ne : ∀ {a b : α}, a ≠ b + a
   proper_add_mono_left : ∀ {a b : α}, Proper (a + b) → Proper a
 
+namespace Fraction
+
 /-- A fraction does not represent the entire resource.
 Generalizes the notion of `(· < 1)` from rational fractions. -/
-def Fraction.Fractional [Fraction α] (a : α) : Prop := ∃ b, Fraction.Proper (a + b)
+def Fractional [Fraction α] (a : α) : Prop := ∃ b, Proper (a + b)
 
 /-- A fraction that is tne entire resource.
 Generalizes the notion of `1` from rational fractions. -/
-def Fraction.Whole [Fraction α] (a : α) : Prop := Fraction.Proper a ∧ ¬Fraction.Fractional a
-
-section Fractional
-
-open Fraction
+def Whole [Fraction α] (a : α) : Prop := Proper a ∧ ¬Fractional a
 
 variable [Fraction α]
 
@@ -53,7 +53,7 @@ theorem add_right_cancel {a b c : α} (H : b + a = c + a) : b = c :=
   add_left_cancel <| add_comm c _ ▸ add_comm b _ ▸ H
 
 theorem Fractional.proper {a : α} : Fractional a → Proper a :=
-  fun H => H.elim fun _ H' => Fraction.proper_add_mono_left H'
+  fun H => H.elim fun _ H' => proper_add_mono_left H'
 
 theorem Fractional.of_add_left {a a' : α} (H : Fractional (a + a')) : Fractional a := by
   let ⟨z, Hz⟩ := H
@@ -67,9 +67,7 @@ theorem Fractional.of_add_right {a a' : α} (H : Fractional (a + a')) : Fraction
   rw [add_assoc, add_comm (a := a')]
   exact Hz
 
-end Fractional
-
-namespace Iris
+end Fraction
 
 open Fraction OFE CMRA
 
@@ -116,8 +114,6 @@ instance [Fraction α] {a : Frac α} : CMRA.IdFree a where
     refine LeibnizO.ext_iff.mp (Leibniz.eq_of_eqv (α := Frac _) ?_)
     exact CMRA.comm.trans (discrete_0 H)
 
-end Iris
-
 /-- A type of fractions with a unique whole element. -/
 class UFraction (α : Type _) extends Fraction α, One α where
   -- Experiment: I don't see why we need a unique One element. I wouldn't be surprised if it were
@@ -128,7 +124,6 @@ class UFraction (α : Type _) extends Fraction α, One α where
 
 section NumericFraction
 
-section NumericFraction
 /-- Generic fractional instance for types with comparison and 1 operators. -/
 class NumericFraction (α : Type _) extends One α, Add α, LE α, LT α where
   add_comm : ∀ a b : α, a + b = b + a
@@ -138,15 +133,13 @@ class NumericFraction (α : Type _) extends One α, Add α, LE α, LT α where
   lt_def : ∀ {a b : α}, a < b ↔ ∃ c : α, a + c = b
   lt_irrefl : ∀ {a : α}, ¬a < a
 
-open Iris
-
 @[simp] instance [NumericFraction T] : One (Frac T) := ⟨⟨One.one⟩⟩
 @[simp] instance [NumericFraction T] : LE (Frac T) := ⟨(·.1 ≤ ·.1)⟩
 @[simp] instance [NumericFraction T] : LT (Frac T) := ⟨(·.1 < ·.1)⟩
 
 variable {α} [NumericFraction α]
 
-open NumericFraction Iris
+open NumericFraction
 
 theorem le_rfl {a : α} : a ≤ a := le_def.2 (.inl rfl)
 

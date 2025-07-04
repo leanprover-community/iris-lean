@@ -554,6 +554,15 @@ instance : COFE (LeibnizO α) := COFE.ofDiscrete _ Eq_Equivalence
 
 instance : Leibniz (LeibnizO α) := ⟨(·)⟩
 
+instance {α : Type _} : OFE.Discrete (LeibnizO α) := ⟨congrArg id⟩
+instance {α : Type _} : OFE.Leibniz (LeibnizO α) := ⟨congrArg id⟩
+
+theorem LeibnizO.eqv_inj {x y : α} (H : LeibnizO.mk x ≡ LeibnizO.mk y) : x = y :=
+  show (LeibnizO.mk x).car = (LeibnizO.mk y).car from H ▸ rfl
+
+theorem LeibnizO.dist_inj {x y : α} {n} (H : LeibnizO.mk x ≡{n}≡ LeibnizO.mk y) : x = y :=
+  LeibnizO.eqv_inj <| discrete H
+
 section DiscreteFunOF
 open COFE
 
