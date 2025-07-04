@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Mario Carneiro
+Authors: Lars König, Mario Carneiro, Markus de Medeiros
 -/
 import Iris.BI.Classes
 import Iris.BI.Extensions
@@ -826,6 +826,16 @@ theorem wand_iff_exists_persistently [BI PROP] [BIAffine PROP] {P Q : PROP} :
   · exact exists_elim fun R => wand_intro' <| sep_assoc.2.trans <|
       and_persistently_iff_sep.2.trans <| (and_mono_r persistently_elim).trans imp_elim_r
 
+theorem persistently_and_emp {P : PROP} [BI PROP] : <pers> P ⊣⊢ <pers> (emp ∧ P) :=
+  ⟨(and_intro persistently_emp_intro .rfl).trans persistently_and.2,
+   (persistently_mono and_elim_r).trans .rfl⟩
+
+theorem persistently_and_sep_elim_emp {P Q : PROP} [BI PROP] : <pers> P ∧ Q ⊢ (emp ∧ P) ∗ Q :=
+  (and_mono persistently_and_emp.1 BIBase.Entails.rfl).trans persistently_and_l
+
+theorem persistently_and_emp_elim {P : PROP} [BI PROP] : emp ∧ <pers> P ⊢ P :=
+  and_comm.1.trans <| persistently_and_sep_elim_emp.trans <| sep_emp.1.trans and_elim_r
+
 /-! # Persistence instances -/
 
 instance pure_persistent (φ : Prop) [BI PROP] : Persistent (PROP := PROP) iprop(⌜φ⌝) where
@@ -1483,3 +1493,154 @@ theorem bigOp_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} :
 
 theorem bigOp_and_cons [BI PROP] {P : PROP} {Ps : List PROP} :
     [∧] (P :: Ps) ⊣⊢ P ∧ [∧] Ps := bigOp_cons
+
+/-! # Reduction to boolean comparisons -/
+
+theorem and_forall_bool [BI PROP] {P Q : PROP} :
+    P ∧ Q ⊣⊢ «forall» (fun b : Bool => if b then P else Q) :=
+  ⟨forall_intro (·.casesOn and_elim_r and_elim_l),
+   and_intro (forall_elim true) (forall_elim false)⟩
+
+theorem or_exists_bool [BI PROP] {P Q : PROP} :
+    P ∨ Q ⊣⊢ «exists» (fun b : Bool => if b then P else Q) :=
+  ⟨or_elim (exists_intro' true .rfl) (exists_intro' false .rfl),
+   exists_elim (Bool.rec or_intro_r or_intro_l ·)⟩
+
+/-! # Later -/
+
+theorem later_congr [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : ▷ P ⊣⊢ ▷ Q :=
+  ⟨later_mono h.1, later_mono h.2⟩
+
+theorem later_true [BI PROP] : (▷ True ⊣⊢ (True : PROP)) := ⟨true_intro, later_intro⟩
+
+theorem later_emp [BI PROP] [BIAffine PROP] : (▷ emp ⊣⊢ (emp : PROP)) :=
+  ⟨affine, later_intro⟩
+
+theorem later_forall_2 [BI PROP] {α} {Φ : α → PROP} : (∀ a, ▷ Φ a) ⊢ ▷ ∀ a, Φ a := by
+  refine (forall_intro ?_).trans later_sForall_2
+  intro P
+  refine imp_intro' ?_
+  refine and_comm.mp.trans <| imp_elim' <| pure_elim _ .rfl ?_
+  rintro ⟨_, Ha⟩
+  rewrite [← Ha]
+  exact imp_intro' <| and_elim_l.trans <| forall_elim _
+
+theorem later_forall [BI PROP] {Φ : α → PROP} :
+    ▷ (∀ a, Φ a) ⊣⊢ (∀ a, ▷ Φ a) :=
+  ⟨forall_intro (later_mono <| forall_elim ·), later_forall_2⟩
+
+theorem later_exists_2 [BI PROP] {Φ : α → PROP} :
+    (∃ a, ▷ Φ a) ⊢ ▷ (∃ a, Φ a) :=
+  exists_elim (later_mono <| exists_intro ·)
+
+theorem later_exists_false [BI PROP] {Φ : α → PROP} :
+    (▷ ∃ a, Φ a) ⊢ ▷ False ∨ ∃ a, ▷ Φ a := by
+  apply later_sExists_false.trans
+  apply or_elim
+  · apply or_intro_l
+  · refine or_intro_r' <| exists_elim ?_
+    intro P
+    refine imp_elim <| pure_elim' ?_
+    rintro ⟨a, rfl⟩
+    exact imp_intro' <| exists_intro' a and_elim_l
+
+theorem later_exists [BI PROP] [Inhabited α] {Φ : α → PROP} :
+    (∃ a, ▷ Φ a) ⊣⊢ ▷ (∃ a, Φ a) := by
+  refine ⟨later_exists_2, later_exists_false.trans ?_⟩
+  exact or_elim (exists_intro' default <| later_mono <| false_elim) .rfl
+
+theorem later_and [BI PROP] {P Q : PROP} : ▷ (P ∧ Q) ⊣⊢ ▷ P ∧ ▷ Q := by
+  constructor
+  · refine (later_mono and_forall_bool.mp).trans ?_
+    refine .trans ?_ and_forall_bool.mpr
+    refine (later_forall).mp.trans (forall_mono ?_)
+    exact (·.casesOn .rfl .rfl)
+  · refine .trans ?_ (later_mono and_forall_bool.mpr)
+    refine and_forall_bool.mp.trans ?_
+    refine .trans (forall_mono ?_) later_forall.mpr
+    exact (·.casesOn .rfl .rfl)
+
+theorem later_or [BI PROP] {P Q : PROP} : ▷ (P ∨ Q) ⊣⊢ ▷ P ∨ ▷ Q := by
+  constructor
+  · refine (later_mono or_exists_bool.mp).trans ?_
+    refine .trans ?_ or_exists_bool.mpr
+    refine later_exists.mpr.trans (exists_mono ?_)
+    exact (·.casesOn .rfl .rfl)
+  · refine .trans ?_ (later_mono or_exists_bool.mpr)
+    refine .trans ?_ later_exists.mp
+    refine  or_exists_bool.mp.trans (exists_mono ?_)
+    exact (·.casesOn .rfl .rfl)
+
+theorem later_impl [BI PROP] {P Q : PROP} : ▷ (P → Q) ⊢ ▷ P → ▷ Q :=
+  imp_intro' <| later_and.mpr.trans <| later_mono imp_elim_r
+
+theorem later_wand [BI PROP] {P Q : PROP} : ▷ (P -∗ Q) ⊢ ▷ P -∗ ▷ Q :=
+  wand_intro' <| later_sep.mpr.trans <| later_mono wand_elim_r
+
+theorem later_iff [BI PROP] {P Q : PROP} : ▷ (P ↔ Q) ⊢ (▷ P ↔ ▷ Q) :=
+  later_and.mp.trans <|and_intro (and_elim_l.trans later_impl) (and_elim_r.trans later_impl)
+
+theorem later_wand_iff [BI PROP] {P Q : PROP} : ▷ (P ∗-∗ Q) ⊢ ▷ P ∗-∗ ▷ Q :=
+  later_and.mp.trans <| and_intro (and_elim_l.trans later_wand) (and_elim_r.trans later_wand)
+
+theorem later_affinely_2 [BI PROP] {P : PROP} : <affine> ▷ P ⊢ ▷ <affine> P :=
+  .trans (and_mono later_intro .rfl) later_and.mpr
+
+theorem later_intuitionistically_2 [BI PROP] {P : PROP} : □ ▷ P ⊢ ▷ □ P :=
+  .trans (affinely_mono later_persistently.mpr) later_affinely_2
+
+theorem later_intuitionisticallyIf_2 [BI PROP] {P : PROP} : □?p ▷ P ⊢ ▷ □?p P :=
+  p.casesOn .rfl later_intuitionistically_2
+
+theorem later_absorbingly [BI PROP] {P : PROP} : ▷ <absorb> P ⊣⊢ <absorb> ▷ P :=
+  ⟨later_sep.mp.trans <| sep_mono true_intro .rfl, (sep_mono later_intro .rfl).trans later_sep.mpr⟩
+
+theorem later_affinely [BI PROP] [BIAffine PROP] {P : PROP} : <affine> ▷ P ⊣⊢ ▷ <affine> P :=
+  ⟨later_affinely_2, later_and.mp.trans <| .trans (and_elim_r) (affine_affinely _).mpr⟩
+
+theorem later_intuitionistically [BI PROP] [BIAffine PROP] {P : PROP} : □ ▷ P ⊣⊢ ▷ □ P := by
+  refine ⟨later_intuitionistically_2, ?_⟩
+  refine (later_mono persistently_of_intuitionistically).trans ?_
+  exact later_persistently.mp.trans intuitionistically_iff_persistently.mpr
+
+theorem later_intuitionisticallyIf [BI PROP] [BIAffine PROP] {P : PROP} : □?p ▷ P ⊣⊢ ▷ □?p P :=
+  p.casesOn (.of_eq rfl) later_intuitionistically
+
+instance later_persistent [BI PROP] {P : PROP} [Persistent P] : Persistent iprop(▷ P) where
+  persistent := (later_mono persistently_intro).trans later_persistently.mp
+
+instance later_absorbing [BI PROP] {P : PROP} [Absorbing P] : Absorbing iprop(▷ P) where
+  absorbing := later_absorbingly.mpr.trans <| later_mono absorbing
+
+theorem entails_impl_true [BI PROP] {P Q : PROP} :
+    (P ⊢ Q) ↔ iprop((True : PROP) ⊢ (P → Q)) :=
+  ⟨imp_intro' ∘ pure_elim_r ∘ Function.const _, (and_intro .rfl true_intro).trans ∘ imp_elim'⟩
+
+theorem loeb [BI PROP] [BILoeb PROP] {P : PROP} : (▷ P → P) ⊢ P := by
+  apply entails_impl_true.mpr
+  apply BILoeb.loeb_weak
+  apply imp_intro
+  apply (and_mono .rfl and_self.mpr).trans
+  apply (and_mono .rfl (and_mono later_intro .rfl)).trans
+  apply (and_mono later_impl .rfl).trans
+  apply and_assoc.mpr.trans
+  apply (and_mono imp_elim_l .rfl).trans
+  exact imp_elim_r
+
+theorem loeb_weak_of_strong [BI PROP] {P : PROP} (H : ∀ P : PROP, (▷ P → P) ⊢ P)
+    (H' : ▷ P ⊢ P) : True ⊢ P := (entails_impl_true.mp H').trans (H P)
+
+theorem loeb_wand_intuitionistically [BI PROP] [BILoeb PROP] {P : PROP} :
+    □ (□ ▷ P -∗ P) ⊢ P := by
+  refine .trans ?_ intuitionistically_elim
+  refine .trans ?_ loeb
+  refine imp_intro' ?_
+  refine (and_mono (later_mono persistently_of_intuitionistically) .rfl).trans ?_
+  refine (and_mono later_persistently.mp .rfl).trans ?_
+  refine persistently_and_intuitionistically_sep_l.mp.trans ?_
+  refine (sep_mono intuitionistically_idem.mpr .rfl).trans ?_
+  exact intuitionistically_sep_2.trans (intuitionistically_mono wand_elim_r)
+
+theorem loeb_wand [BI PROP] [BILoeb PROP] {P : PROP} : □ (▷ P -∗ P) ⊢ P :=
+  (intuitionistically_mono (wand_mono intuitionistically_elim .rfl)).trans
+    loeb_wand_intuitionistically
