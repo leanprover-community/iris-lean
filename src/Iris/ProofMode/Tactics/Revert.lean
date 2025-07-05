@@ -38,31 +38,33 @@ elab "irevert" colGt hyp:ident : tactic => do
       let f ← getFVarId hyp
       let (some ldecl) := ((← getLCtx).find? f) | throwError "unknown identifier"
 
-      let bibase := mkAppN (mkConst ``BI.toBIBase [u]) #[prop, bi]
+      let bibase : Q(BIBase $prop) := q(@BI.toBIBase $prop $bi)
 
-      let φ := ldecl.type
+      let v : Level ← Meta.getLevel ldecl.type
+      have α : Q(Sort v) := ldecl.type
+
       let (_, mvarId) ← mvar.revert #[f]
       mvarId.withContext do
-        if ← Meta.isProp φ then
-          let p := mkAppN (mkConst ``BI.pure [u]) #[prop, bibase, φ]
+        if ← Meta.isProp α then
+          have φ : Q(Prop) := α
+          let p : Q($prop) := q(@BI.pure $prop $bibase $φ)
 
-          let m ← mkFreshExprSyntheticOpaqueMVar <|
-            IrisGoal.toExpr { u, prop, bi, hyps, goal := mkAppN (mkConst ``wand [u]) #[prop, bibase, p, goal], .. }
+          let m : Q($e ⊢ $p -∗ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
+            IrisGoal.toExpr { u, prop, bi, hyps, goal := q(wand $p $goal), .. }
 
-          let pf := mkAppN (mkConst ``pure_revert [u]) #[prop, bi, e, goal, φ, m]
+          let pf : Q($φ → ($e ⊢ $goal)) := q(pure_revert $m)
 
           mvarId.assign pf
           replaceMainGoal [m.mvarId!]
         else
-          let v ← Meta.getLevel φ
-          let Φ ← mapForallTelescope' (λ t _ => do
+          let Φ : Q($α → $prop) ← mapForallTelescope' (λ t _ => do
             let (some ig) := parseIrisGoal? t | throwError "not in proof mode"
             return ig.goal
           ) (Expr.mvar mvarId)
-          let m ← mkFreshExprSyntheticOpaqueMVar <|
-            IrisGoal.toExpr { u, prop, bi, hyps, goal := mkAppN (mkConst ``BI.forall [u, v]) #[prop, bibase, φ, Φ], ..}
+          let m : Q($e ⊢ ∀ x, $Φ x) ← mkFreshExprSyntheticOpaqueMVar <|
+            IrisGoal.toExpr { u, prop, bi, hyps, goal := q(BI.forall $Φ), ..}
 
-          let pf := mkAppN (mkConst ``forall_revert [u, v]) #[prop, φ, bi, e, Φ, m]
+          let pf : Q(∀ (x : $α), $e ⊢ $Φ x) := q(forall_revert $m)
 
           mvarId.assign pf
           replaceMainGoal [m.mvarId!]
