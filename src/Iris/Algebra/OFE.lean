@@ -496,6 +496,7 @@ instance OFunctor.constOF_contractive [OFE B] : OFunctorContractive (constOF B) 
 end COFE
 
 /- Leibniz OFE structure on a type -/
+@[ext]
 structure LeibnizO (T : Type _) where
   car : T
 

@@ -25,7 +25,7 @@ class TotallyOrdered (α : Type _) extends LE α, LT α where
 
 class Numbers (α : Type _) extends CommMonoid α, TotallyOrdered α where
   lt_def : ∀ {a b : α}, a < b ↔ a ≤ b ∧ a ≠ b
-  add_order_compat : ∀ {a b c : α}, a ≤ b → a + c ≤ b + c
+  add_le_compat : ∀ {a b c : α}, a ≤ b → a + c ≤ b + c
   add_left_cancel : ∀ {a b c : α}, c + a = c + b → a = b
   -- these two are theorems. remove them after replacing them with theorems
   add_le_mono  : ∀ {a b c : α}, a + b ≤ c → a ≤ c
@@ -62,7 +62,7 @@ theorem lt_order_compat :
   rw [iNum.lt_def] at *
   obtain ⟨hleq, hneq⟩ := hab
   constructor
-  · apply iNum.add_order_compat hleq
+  · apply iNum.add_le_compat hleq
   · simp_all only [ne_eq]
     intro h
     apply hneq (add_right_cancel h)
@@ -82,16 +82,17 @@ theorem lt_trans:
     exact hbc.right hbc_eq
 
 
-theorem right_add_order_compat :
+theorem right_add_le_compat :
   ∀ a b c : α, a ≤ b → c + a ≤ c + b := by
   intro a b c h
   conv => lhs; rw[iNum.add_comm]
   conv => rhs; rw[iNum.add_comm]
-  apply iNum.add_order_compat h
+  apply iNum.add_le_compat h
 
 end NumbersAPI
 
 namespace Iris
+
 
 abbrev Numerical (α : Type _) [Numbers α] := LeibnizO α
 
@@ -114,8 +115,8 @@ namespace NumbersCMRA
 variable [iNum : Numbers α]
 
 instance Num_CMRA : CMRA (Numerical α) where
-  pcore _ := some 0
-  op := Add.add
+  pcore _ := some (instZeroNumerical.zero)
+  op := instAddNumerical.add
   ValidN _ x := True
   Valid x := True
   op_ne {x} := ⟨fun n a b => by apply congrArg (Add.add x)⟩
@@ -130,21 +131,20 @@ instance Num_CMRA : CMRA (Numerical α) where
     intro ⟨x⟩ ⟨y⟩ hxy
     cases hxy
     simp [iNum.add_comm]
-    unfold OFE.Equiv COFE.toOFE inferInstance instCOFELeibnizO
-    unfold COFE.ofDiscrete OFE.ofDiscrete
+    ext
     simp
     exact iNum.id_law x
 
 
   pcore_idem := by simp
   pcore_op_mono := by
-    intro x cx cx_eq y
-    exists 0
+    intro ⟨x⟩ ⟨cx⟩ cx_eq ⟨y⟩
+    exists ⟨0⟩
     cases cx_eq
-    unfold OFE.Equiv OFE.instOption
-    unfold Option.Forall₂
-    simp
-    rw [iNum.add_comm, iNum.id_law ?a]
+    ext
+    simp [iNum.id_law]
+
+
   extend {_ _ y1 y2} _ _ := by exists y1; exists y2
 
 -- TODO: Simplify
@@ -164,8 +164,8 @@ theorem num_included {p q : Numerical α} : p ≼ q ↔ p < q :=
       rw [Hr]
       rfl⟩
 
-theorem frac_included_weak {p q : Numerical α} (H : p ≼ q) : p ≤ q := by
-  have h := iF.lt_def_le.mp (num_included.mp H)
+theorem num_included_weak {p q : Numerical α} (H : p ≼ q) : p ≤ q := by
+  have h := iNum.lt_def.mp (num_included.mp H)
   simp [h]
 
 instance : CMRA.Discrete (Numerical α) where
@@ -173,17 +173,20 @@ instance : CMRA.Discrete (Numerical α) where
   discrete_valid := id
 
 instance : CMRA.Exclusive (one : Numerical α) where
-  exclusive0_l _ H := Numerical.positive ⟨_, H⟩
+  exclusive0_l x H := by
+    simp [CMRA.ValidN, CMRA.op] at H
+
+
 
 -- TODO: Simplify
 instance {q : Numerical α} : CMRA.Cancelable q where
   cancelableN {n x y} := by
     simp [CMRA.ValidN]
     intro _
-    suffices q + x = q + y → x = y by apply this
+    suffices q + x = q + y → x = y by {apply this}
     intro H
     simp at H
-    have H' := @iF.left_cancel x.car y.car q.car
+    have H' := @iNum.add_left_cancel x.car y.car q.car
     rcases x with ⟨x⟩
     rcases y with ⟨y⟩
     rcases q with ⟨q⟩
@@ -193,16 +196,12 @@ instance {q : Numerical α} : CMRA.Cancelable q where
     have H'' : ({ car := Add.add q x } : Numerical α).car = ({ car := Add.add q y } : Numerical α).car := by
       rw [H]
     exact H''
-
 -- TODO: Simplify
 instance {q : Numerical α} : CMRA.IdFree q where
   id_free0_r y := by
     intro H H'
-    apply @Numbers.positive (α) (a := q)
-    exists y
-    conv=>
-      rhs
-      rw [← H']
-    apply iF.le_refl
+    simp [CMRA.op, CMRA.toOFE.equiv_dist, CMRA.ValidN] at H' H
+
+
 
 end NumbersCMRA
