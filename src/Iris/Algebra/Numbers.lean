@@ -31,6 +31,8 @@ class Numbers (α : Type _) extends CommMonoid α, TotallyOrdered α where
   add_le_mono  : ∀ {a b c : α}, a + b ≤ c → a ≤ c
   lt_sum : ∀ {a b : α}, a < b ↔ ∃ r, a + r = b
 
+section NumbersAPI
+
 variable [iNum : Numbers α]
 
 theorem add_right_cancel : ∀ {a b : α}, a + c = b + c → a = b := by
@@ -87,7 +89,7 @@ theorem right_add_order_compat :
   conv => rhs; rw[iNum.add_comm]
   apply iNum.add_order_compat h
 
-
+end NumbersAPI
 
 namespace Iris
 
@@ -105,11 +107,13 @@ instance [Numbers T] : Coe T (Numerical T) := ⟨(⟨·⟩)⟩
 @[simp] instance [Numbers T] : LT (Numerical T) := ⟨fun x y => x.1 < y.1⟩
 @[simp] instance [Numbers T] : Add (Numerical T) := ⟨fun x y => x.1 + y.1⟩
 
-namespace Frac
 
-variable [iF : Numbers α]
 
-instance Frac_CMRA : CMRA (Numerical α) where
+namespace NumbersCMRA
+
+variable [iNum : Numbers α]
+
+instance Num_CMRA : CMRA (Numerical α) where
   pcore _ := some 0
   op := Add.add
   ValidN _ x := True
@@ -120,20 +124,31 @@ instance Frac_CMRA : CMRA (Numerical α) where
   valid_iff_validN := Iff.symm (forall_const Nat)
   validN_succ := (·)
   validN_op_left := by simp only [imp_self, implies_true]
-  assoc := by simp [← iF.add_assoc]
-  comm := by simp [← iF.add_comm]
+  assoc := by simp [← iNum.add_assoc]
+  comm := by simp [← iNum.add_comm]
   pcore_op_left := by
     intro ⟨x⟩ ⟨y⟩ hxy
     cases hxy
+    simp [iNum.add_comm]
+    unfold OFE.Equiv COFE.toOFE inferInstance instCOFELeibnizO
+    unfold COFE.ofDiscrete OFE.ofDiscrete
     simp
-    rw[iF.add_comm]
-    simp[iF.id_law x]
+    exact iNum.id_law x
+
+
   pcore_idem := by simp
-  pcore_op_mono := by simp
+  pcore_op_mono := by
+    intro x cx cx_eq y
+    exists 0
+    cases cx_eq
+    unfold OFE.Equiv OFE.instOption
+    unfold Option.Forall₂
+    simp
+    rw [iNum.add_comm, iNum.id_law ?a]
   extend {_ _ y1 y2} _ _ := by exists y1; exists y2
 
 -- TODO: Simplify
-omit iNum in
+
 theorem num_included {p q : Numerical α} : p ≼ q ↔ p < q :=
   ⟨ by
       rintro ⟨r, Hr⟩
@@ -145,7 +160,7 @@ theorem num_included {p q : Numerical α} : p ≼ q ↔ p < q :=
       intro H
       rcases Numbers.lt_sum.mp H with ⟨r, Hr⟩
       exists r
-      simp [Iris.Frac.Frac_CMRA]
+      simp [Iris.NumbersCMRA.Num_CMRA]
       rw [Hr]
       rfl⟩
 
@@ -190,4 +205,4 @@ instance {q : Numerical α} : CMRA.IdFree q where
       rw [← H']
     apply iF.le_refl
 
-end Frac
+end NumbersCMRA
