@@ -260,3 +260,29 @@ def bigSep [BIBase PROP] (Ps : List PROP) : PROP := bigOp sep iprop(emp) Ps
 notation:40 "[∧] " Ps:max => bigAnd Ps
 notation:40 "[∨] " Ps:max => bigOr Ps
 notation:40 "[∗] " Ps:max => bigSep Ps
+
+
+/-- Iterated later modality. -/
+syntax:max "▷^[" term:45 "]" term:40 : term
+
+def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP :=
+  match n with | .zero => P | .succ n' => later <| laterN n' P
+
+macro_rules
+  | `(iprop(▷^[$n] $P))   => ``(laterN $n iprop($P))
+
+delab_rule laterN
+  | `($_ $n $P) => do ``(iprop(▷^[$n] $(← unpackIprop P)))
+
+
+/-- Except-0 modality -/
+syntax:max "◇ " term:40 : term
+
+def except0 [BIBase PROP] (P : PROP) := iprop(▷ False ∨ P)
+
+macro_rules
+  | `(iprop(◇ $P)) => ``(except0 iprop($P))
+
+delab_rule except0
+  | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
+
