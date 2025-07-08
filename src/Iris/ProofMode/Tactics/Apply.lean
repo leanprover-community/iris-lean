@@ -11,6 +11,23 @@ open Lean Elab Tactic Meta Qq BI Std
 
 -- focus on n = 1 case for now
 
+#check assumption
+
+/-
+Lemma tac_apply Δ i p R P1 P2 :
+  envs_lookup i Δ = Some (p, R) →
+  IntoWand p false R P1 P2 →
+  envs_entails (envs_delete true i p Δ) P1 → envs_entails Δ P2.
+-/
+
+theorem apply [BI PROP] {p : Bool} {P P' Q O A1 : PROP}
+    (h1 : P ⊣⊢ P' ∗ O) [h2 : IntoWand p false O A1 A2] (h3 : P' ⊢ □?p A1) : P ⊢ Q :=
+  h1.mp.trans (wand_elim (h3.trans sorry))
+
+variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
+partial def iApplyCore {P} (hyps : Hyps bi P) (Q : Q($prop)) : MetaM (Q($P ⊢ $Q)) :=
+  sorry
+
 elab "iapply" colGt hyp:ident : tactic => do
   let mvar ← getMainGoal
 
@@ -23,26 +40,20 @@ elab "iapply" colGt hyp:ident : tactic => do
     let A1 ← mkFreshExprMVarQ prop
     let A2 ← mkFreshExprMVarQ prop
 
-    let fromWand ← try? do
+    let fromWand ← try? do -- todo: is this the correct typeclass to use?
       synthInstanceQ q(FromWand $out $A1 $A2)
 
     if let none := fromWand then
-      -- base case
-      logInfo "n = 0"
       let _ ← synthInstanceQ q(FromAssumption $p $out' $goal)
       let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
 
       mvar.assign q(assumption (Q := $goal) $pf)
       replaceMainGoal []
     else
-      -- recursive case
-      logInfo "n >= 1"
-      --let _ ← synthInstanceQ q(FromAssumption $p $out' $goal)
-      --let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
+      -- have : A1 -∗ A2 ⊢ out
 
-      --mvar.assign q(assumption (Q := $goal) $pf)
-      --replaceMainGoal []
+      let m : Q($e' ⊢ $A1) ← mkFreshExprSyntheticOpaqueMVar <|
+        IrisGoal.toExpr { u, prop, bi, e := e', hyps := hyps', goal := q($A1), .. }
 
-      --let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-      --  IrisGoal.toExpr { prop, bi, hyps, goal, .. }
-      --
+      --mvar.assign q(assumption (Q := $goal) $m)
+      replaceMainGoal [m.mvarId!]
