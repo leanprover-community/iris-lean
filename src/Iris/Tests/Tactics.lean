@@ -181,6 +181,17 @@ end assumption
 -- apply
 namespace apply
 
+-- n = 0
+theorem exact [BI PROP] (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iapply HQ
+
+-- n = 1
+theorem apply [BI PROP] (P Q : PROP) (HP : ⊢ P) : (P -∗ Q) ⊢ Q := by
+  iintro H
+  iapply H
+  exact HP
+
 end apply
 
 -- ex falso

@@ -18,19 +18,31 @@ elab "iapply" colGt hyp:ident : tactic => do
     let g ← instantiateMVars <| ← mvar.getType
     let some { u, prop, bi, e, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
     let uniq ← hyps.findWithInfo hyp
-    let ⟨e', hyps, out, out', p, eq, pf⟩ := hyps.remove true uniq
+    let ⟨e', hyps', out, out', p, eq, pf⟩ := hyps.remove true uniq
 
-    -- todo
-    --let A ← mkFreshExprMVarQ q($prop)
+    let A1 ← mkFreshExprMVarQ prop
+    let A2 ← mkFreshExprMVarQ prop
 
+    let fromWand ← try? do
+      synthInstanceQ q(FromWand $out $A1 $A2)
 
+    if let none := fromWand then
+      -- base case
+      logInfo "n = 0"
+      let _ ← synthInstanceQ q(FromAssumption $p $out' $goal)
+      let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
 
-    let _ ← synthInstanceQ q(FromAssumption $p $out' $goal)
-    let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
+      mvar.assign q(assumption (Q := $goal) $pf)
+      replaceMainGoal []
+    else
+      -- recursive case
+      logInfo "n >= 1"
+      --let _ ← synthInstanceQ q(FromAssumption $p $out' $goal)
+      --let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
 
-    --let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-    --  IrisGoal.toExpr { prop, bi, hyps, goal, .. }
-    --
+      --mvar.assign q(assumption (Q := $goal) $pf)
+      --replaceMainGoal []
 
-    mvar.assign q(assumption (Q := $goal) $pf)
-    replaceMainGoal []
+      --let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
+      --  IrisGoal.toExpr { prop, bi, hyps, goal, .. }
+      --
