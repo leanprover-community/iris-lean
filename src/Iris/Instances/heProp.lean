@@ -36,7 +36,7 @@ def heProp_auth (m : H V) : heProp F K V H :=
   UPred.ownM <| ●V StoreO.map (.lift <| toAgree ∘ .mk) ⟨m⟩
 
 def heProp_frag (m : H V) : heProp F K V H :=
-  UPred.ownM <| ◯V StoreO.map (.lift fun v => (⟨DFracK.Own One.one⟩, toAgree <| .mk v)) ⟨m⟩
+  UPred.ownM <| ◯V StoreO.map (.lift fun v => (.own One.one, toAgree <| .mk v)) ⟨m⟩
 
 def heProp_elem (k : K) (v : V) : heProp F K V H :=
   heProp_frag F K V H (WithPoints.point k (.some v))
