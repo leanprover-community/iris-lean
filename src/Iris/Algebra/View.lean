@@ -76,8 +76,17 @@ instance View.π_frag.ne : OFE.NonExpansive (View.π_frag : View F R → _) := �
 theorem is_discrete {ag : Option ((DFrac F) × Agree A)} (Ha : OFE.DiscreteE ag) (Hb : OFE.DiscreteE b) :
   OFE.DiscreteE (α := View F R) (View.mk ag b) := ⟨fun H => ⟨Ha.discrete H.1, Hb.discrete H.2⟩⟩
 
+variable [OFE X] [OFE.Discrete X]
+variable [OFE Y] [OFE.Discrete Y]
+#synth OFE.Discrete (Option X)
+#synth OFE.Discrete (X × Y)
+
 instance [OFE.Discrete A] [OFE.Discrete B] : OFE.Discrete (View F R) where
-  discrete_0 H := sorry
+  discrete_0 H := by
+    constructor
+    · apply OFE.Discrete.discrete_0 H.1
+      sorry
+    · sorry
     -- ⟨OFE.Discrete.discrete_0 H.1, OFE.Discrete.discrete_0 H.2⟩
 
 end ofe
