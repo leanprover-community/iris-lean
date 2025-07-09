@@ -20,13 +20,15 @@ Lemma tac_apply Δ i p R P1 P2 :
   envs_entails (envs_delete true i p Δ) P1 → envs_entails Δ P2.
 -/
 
-theorem apply [BI PROP] {p : Bool} {P P' Q O A1 : PROP}
-    (h1 : P ⊣⊢ P' ∗ O) [h2 : IntoWand p false O A1 A2] (h3 : P' ⊢ □?p A1) : P ⊢ Q :=
+-- New goal : P' ⊢ A1
+/-theorem apply [BI PROP] {p : Bool} {P P' Q O A1 : PROP}
+    (h1 : P ⊣⊢ P' ∗ O) [h2 : IntoWand p false O A1 A2] (h3 : P' ⊢ A1)
+    (h4 : A2 ⊢ Q) : P ⊢ Q :=
   h1.mp.trans (wand_elim (h3.trans sorry))
 
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iApplyCore {P} (hyps : Hyps bi P) (Q : Q($prop)) : MetaM (Q($P ⊢ $Q)) :=
-  sorry
+  sorry-/
 
 elab "iapply" colGt hyp:ident : tactic => do
   let mvar ← getMainGoal
