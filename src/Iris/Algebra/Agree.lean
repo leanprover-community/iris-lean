@@ -400,4 +400,9 @@ theorem Agree.agree_map_ext {g : α → β} [OFE.NonExpansive g] (heq : ∀ a, f
   · exact ⟨g a, ⟨a, ha, rfl⟩, (heq a).dist⟩
   · exact ⟨f a, ⟨a, ha, rfl⟩, (heq a).dist⟩
 
+theorem toAgree.incN {a b : α} {n} : toAgree a ≼{n} toAgree b ↔ a ≡{n}≡ b := by
+  refine ⟨?_, fun H => (CMRA.incN_iff_right <| toAgree.ne.ne H).mp <| CMRA.incN_refl _⟩
+  intro H
+  apply toAgree.inj
+  exact Agree.valid_includedN trivial H
 end agree_map

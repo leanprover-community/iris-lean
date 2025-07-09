@@ -76,18 +76,11 @@ instance View.π_frag.ne : OFE.NonExpansive (View.π_frag : View F R → _) := �
 theorem is_discrete {ag : Option ((DFrac F) × Agree A)} (Ha : OFE.DiscreteE ag) (Hb : OFE.DiscreteE b) :
   OFE.DiscreteE (α := View F R) (View.mk ag b) := ⟨fun H => ⟨Ha.discrete H.1, Hb.discrete H.2⟩⟩
 
-variable [OFE X] [OFE.Discrete X]
-variable [OFE Y] [OFE.Discrete Y]
-#synth OFE.Discrete (Option X)
-#synth OFE.Discrete (X × Y)
-
 instance [OFE.Discrete A] [OFE.Discrete B] : OFE.Discrete (View F R) where
   discrete_0 H := by
     constructor
     · apply OFE.Discrete.discrete_0 H.1
-      sorry
-    · sorry
-    -- ⟨OFE.Discrete.discrete_0 H.1, OFE.Discrete.discrete_0 H.2⟩
+    · apply OFE.Discrete.discrete_0 H.2
 
 end ofe
 
@@ -176,12 +169,11 @@ instance : CMRA (View F R) where
     simp_all
     · exact fun x h => ViewRel.rel_unit n
     intro Hq a Hag HR
-    sorry
-    -- refine ⟨CMRA.discrete_valid <| DFrac_CMRA.validN_ne Hl.1 Hq, ?_⟩
-    -- refine ⟨a, ?_⟩
-    -- refine ⟨Hl.2.symm.trans Hag, ?_⟩
-    -- refine ViewRel.mono HR .rfl ?_ n.le_refl
-    -- exact OFE.Dist.to_incN Hr.symm
+    refine ⟨CMRA.discrete_valid <| DFrac_CMRA.validN_ne Hl.1 Hq, ?_⟩
+    refine ⟨a, ?_⟩
+    refine ⟨Hl.2.symm.trans Hag, ?_⟩
+    refine ViewRel.mono HR .rfl ?_ n.le_refl
+    exact OFE.Dist.to_incN Hr.symm
   valid_iff_validN {x} := by
     simp only [valid, validN]; split
     · exact ⟨fun H n => ⟨H.1, H.2 n⟩, fun H => ⟨(H 0).1, fun n => (H n).2⟩⟩
@@ -209,7 +201,7 @@ instance : CMRA (View F R) where
       refine ⟨?_, ?_⟩
       · refine .trans ?_ H
         refine .trans Agree.idemp.symm.dist ?_
-        sorry -- exact Agree_CMRA.op_ne.ne <| Agree.op_invN (Agree.validN_ne H.symm trivial)
+        exact CMRA.op_ne.ne <| Agree.op_invN (Agree.validN_ne H.symm trivial)
       · exact ViewRel.mono Hr .rfl (CMRA.incN_op_left n b1 b2) n.le_refl
   assoc := OFE.NonExpansive₂.eqv CMRA.assoc CMRA.assoc
   comm := OFE.NonExpansive₂.eqv CMRA.comm CMRA.comm
@@ -283,10 +275,9 @@ theorem view_auth_discrete {dq a} (Ha : OFE.DiscreteE a) (He : OFE.DiscreteE (UC
     OFE.DiscreteE (●V{dq} a : View F R) := by
   refine is_discrete ?_ He
   apply OFE.Option.some_is_discrete
-  sorry
-  -- apply OFE.prod.is_discrete dfrac.is_discrete
-  -- apply Agree.toAgree.is_discrete
-  -- exact Ha
+  apply OFE.prod.is_discrete dfrac.is_discrete
+  apply Agree.toAgree.is_discrete
+  exact Ha
 
 omit [UFraction F] [ViewRel R] in
 theorem view_frag_discrete {b : B} (Hb : OFE.DiscreteE b) : (OFE.DiscreteE (◯V b : View F R)) :=
@@ -433,7 +424,7 @@ theorem view_auth_dfrac_includedN : (●V{dq1} a1 : View F R) ≼{n} ((●V{dq2}
     · simp_all only []
       apply And.intro
       · left; exists dqf
-      · sorry -- apply toAgree.incN.mp; exists af
+      · apply toAgree.incN.mp; exists af
   · intro H
     -- simp only [auth, frag, CMRA.IncludedN, CMRA.op, op, optionOp, Prod.op]
     rcases H with ⟨(⟨z, HRz⟩| HRa2), HRb⟩

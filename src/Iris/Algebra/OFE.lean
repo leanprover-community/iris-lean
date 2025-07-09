@@ -367,6 +367,19 @@ theorem dist_snd {n} [OFE α] [OFE β] {x y : α × β} (h : x ≡{n}≡ y) : x.
 theorem dist_prod_ext {n} [OFE α] [OFE β] {x₁ x₂ : α} {y₁ y₂ : β}
     (ex : x₁ ≡{n}≡ x₂) (ey : y₁ ≡{n}≡ y₂) : (x₁, y₁) ≡{n}≡ (x₂, y₂) := ⟨ex, ey⟩
 
+theorem prod.is_discrete [OFE α] [OFE β] {a : α} {b : β} (Ha : DiscreteE a) (Hb : DiscreteE b) :
+    DiscreteE (a, b) := by
+  constructor
+  intro y H; refine ⟨Ha.discrete H.1, Hb.discrete H.2⟩
+
+instance [OFE α] [OFE β] [Discrete α] [Discrete β] : Discrete (α × β) where
+  discrete_0 H := by
+    constructor
+    · apply Discrete.discrete_0
+      apply H.1
+    · apply Discrete.discrete_0
+      apply H.2
+
 /-- An isomorphism between two OFEs is a pair of morphisms whose composition is equivalent to the
 identity morphism. -/
 @[ext] structure Iso (α β : Type _) [OFE α] [OFE β] where
