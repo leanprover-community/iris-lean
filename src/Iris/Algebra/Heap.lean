@@ -7,6 +7,10 @@ Authors: Markus de Medeiros
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
 
+-- TODO: I think some of the lemmas that use StoreIso can be generalized to prove
+-- that the stores are equivalent (∀ i, t1.get i = t2.get i) not equal t1 = t2.
+-- Then we get equality by adding back in the StoreIso instance.
+
 /-- A set whose complement is infinite -/
 def coinfinite (S : P → Prop) : Prop :=
   ∃ f : Nat → P, (∀ n, S <| f n) ∧ (∀ n m : Nat, f n = f m → n = m)
@@ -92,8 +96,8 @@ class Store (T : Type _) (K V : outParam (Type _)) extends StoreLike T K V where
   of_fun_get {f} : get (of_fun f) = f
 
 /-- Each value of `T` uniquely represents a function `K → V`. -/
-class StoreIso (T : Type _) (K V : outParam (Type _)) extends Store T K V where
-  get_of_fun t : of_fun (get t) = t
+class IsStoreIso (T : Type _) (K V : outParam (Type _)) [I : Store T K V] where
+  get_of_fun t : I.toStoreLike.of_fun (get t) = t
 
 def StoreLike.map [StoreLike T1 K V1] [StoreLike T2 K V2] (t : T1) (f : V1 → V2) : T2 :=
   StoreLike.of_fun <| f ∘ StoreLike.get t
@@ -110,7 +114,6 @@ abbrev lift_dom (P : K → V → Prop) (k : K) : Option V → Prop
   | .some v => P k v
   | .none => True
 
-
 class WithPoints (T : Type _) (K V : outParam (Type _)) where
   point : K → V → T
 
@@ -121,7 +124,7 @@ class Alloc (T : Type _) (K V : outParam (Type _)) extends HeapLike T K V where
 
 /-- A type is HeapLike when it behaves like store for Optional values -/
 class Heap (T : Type _) (K V : outParam (Type _))
-    extends HeapLike T K V,  Store T K (Option V), WithPoints T K (Option V) where
+    extends HeapLike T K V, Store T K (Option V), WithPoints T K (Option V) where
   point_get_eq {k k' v} : k = k' → get (point k v) k' = v
   point_get_ne {k k' v} : k ≠ k' → get (point k v) k' = none
 
@@ -139,7 +142,6 @@ trees, functions) this is probably the class you want. -/
 abbrev HeapF (H : Type _ → Type _) (K : outParam (Type _)) :=
   ∀ T : Type _, HeapLike (H T) K T
 
-
 theorem Store.get_merge [Store T K V] {op : V → V → V} (t1 t2 : T) (k : K) :
     StoreLike.get (StoreLike.merge op t1 t2) k = op (StoreLike.get t1 k) (StoreLike.get t2 k) := by
   unfold StoreLike.merge; rw [Store.of_fun_get]
@@ -147,6 +149,9 @@ theorem Store.get_merge [Store T K V] {op : V → V → V} (t1 t2 : T) (k : K) :
 theorem Store.get_map [StoreLike T1 K V1] [Store T2 K V2] {t : T1} {f : V1 → V2} {k : K} :
     StoreLike.get (StoreLike.map t f : T2) k = f (StoreLike.get t k) := by
   unfold StoreLike.map; rw [Store.of_fun_get]; rfl
+
+theorem IsStoreIso.ext [Store T K V] [IsStoreIso T K V] {t1 t2 : T} (H : ∀ k, get t1 k = get t2 k) : t1 = t2 := by
+  rw [← IsStoreIso.get_of_fun t1, ← IsStoreIso.get_of_fun t2]; refine congrArg ?_ (funext H)
 
 /-- Wrapper type for functions with the Store OFE -/
 @[ext] structure StoreO (T : Type _) where car : T
@@ -240,10 +245,10 @@ instance [Store T K V] [COFE V] [Discrete V] : Discrete (StoreO T) where
 
 /-- We can lift a Leibniz OFE on V to a Leibniz OFE on (StoreO T) as long as
 stores uniquely represent functions. -/
-instance [StoreIso T K V] [COFE V] [Leibniz V] : Leibniz (StoreO T) where
+instance [Store T K V] [IsStoreIso T K V] [COFE V] [Leibniz V] : Leibniz (StoreO T) where
   eq_of_eqv {x y} H := by
     apply StoreO.ext
-    rewrite [← StoreIso.get_of_fun x.car, ← StoreIso.get_of_fun y.car]
+    rewrite [← IsStoreIso.get_of_fun x.car, ← IsStoreIso.get_of_fun y.car]
     congr 1
     apply funext
     intro k
@@ -486,33 +491,84 @@ section heap_laws
 variable {T K V : Type _} [Heap T K V] [CMRA V]
 open CMRA
 
-theorem lookup_validN_Some n (m : StoreO T) i x : ✓{n} m → StoreO.get i m ≡{n}≡ some x → ✓{n} x := sorry
+theorem lookup_validN_Some {m : StoreO T} : ✓{n} m → StoreO.get i m ≡{n}≡ some x → ✓{n} x := by
+  suffices ✓{n} StoreO.get i m → StoreO.get i m ≡{n}≡ some x → ✓{n} x by
+    exact fun Hv => (this (Hv i) ·)
+  simp only [ValidN, optionValidN]
+  split <;> rename_i He <;> rw [He]
+  · exact fun Hv => (·.validN |>.mp Hv)
+  · rintro _ ⟨⟩
 
-theorem lookup_valid_Some (m : StoreO T) i x : ✓ m → StoreO.get i m ≡ some x → ✓ x := sorry
+theorem lookup_valid_Some {m : StoreO T} (Hv : ✓ m) (He : StoreO.get i m ≡ some x) : ✓ x :=
+  valid_iff_validN.mpr (fun _ => lookup_validN_Some Hv.validN He.dist)
 
-theorem insert_validN n (m : StoreO T) i x : ✓{n} x → ✓{n} m → ✓{n} (StoreO.set i x m) := sorry
+theorem insert_validN {m : StoreO T} (Hx : ✓{n} x) (Hm : ✓{n} m) : ✓{n} (StoreO.set i x m) := by
+  intro k
+  simp [CMRA.Valid]
+  if He : i = k
+    then rw [Heap.get_set_eq He]; exact Hx
+    else rw [Heap.get_set_ne (He ·)]; exact Hm k
 
-theorem insert_valid (m : StoreO T) i x : ✓ x → ✓ m → ✓ (StoreO.set i x m) := sorry
+theorem insert_valid {m : StoreO T} (Hx : ✓ x) (Hm : ✓ m) : ✓ (StoreO.set i x m) :=
+  valid_iff_validN.mpr (fun _ => insert_validN Hx.validN Hm.validN)
 
-theorem singleton_valid i x : ✓ (StoreO.singleton i x : StoreO T) ↔ ✓ x := sorry
+theorem singleton_valid : ✓ (StoreO.singleton i x : StoreO T) ↔ ✓ x := by
+  simp only [StoreO.singleton, StoreO.get]
+  constructor <;> intro H
+  · have H' := H i; simp [Heap.point_get_eq rfl] at H'; exact H'
+  · intro k
+    if He : i = k
+      then simp [StoreO.get]; rw [Heap.point_get_eq He]; trivial
+      else simp [StoreO.get]; rw [Heap.point_get_ne He]; trivial
 
-theorem delete_validN n (m : StoreO T) i : ✓{n} m → ✓{n} (StoreO.delete m i) := sorry
+theorem delete_validN {m : StoreO T} (Hv : ✓{n} m) : ✓{n} (StoreO.delete m i) := by
+  intro k
+  if He : i = k
+    then simp only [StoreO.get, StoreO.delete]; rw [Store.get_set_eq He]; trivial
+    else simp only [StoreO.get, StoreO.delete]; rw [Store.get_set_ne He]; exact Hv k
 
-theorem delete_valid (m : StoreO T) i : ✓ m → ✓ (StoreO.delete m i) := sorry
+theorem delete_valid {m : StoreO T} (Hv : ✓ m) : ✓ (StoreO.delete m i) :=
+  valid_iff_validN.mpr (fun _ => delete_validN Hv.validN)
 
-theorem insert_singleton_op (m : StoreO T) i x : StoreO.get i m = none → (StoreO.set i x m) = (StoreO.singleton i x • m) := sorry
+theorem insert_singleton_op [IsStoreIso T K (Option V)] {m : StoreO T} (Hemp : StoreO.get i m = none) :
+    StoreO.set i x m = StoreO.singleton i x • m := by
+  simp_all [StoreO.singleton, StoreO.set, CMRA.op, op, StoreLike.merge, op_merge]
+  refine IsStoreIso.ext (fun k => ?_)
+  if He : i = k
+    then
+      rw [Store.get_set_eq He, Heap.of_fun_get, Heap.point_get_eq He, He.symm, Hemp]
+      split
+      · rename_i Hk; rcases Hk
+      · rfl
+      · rename_i Hk; rcases Hk
+      · (expose_names; exact Option.eq_none_iff_forall_ne_some.mpr fun a a_1 => h_1 a a_1 rfl)
+    else
+      rw [Store.get_set_ne He, Heap.of_fun_get, Heap.point_get_ne He]
+      split <;> rename_i Hk _
+      · rcases Hk
+      · rcases Hk
+      · trivial
+      · (expose_names; exact Option.eq_none_iff_forall_ne_some.mpr fun a => h_1 a rfl)
 
-theorem singleton_core (i : K) (x : V) cx :
-  pcore x = some cx → core (StoreO.singleton i (some x) : StoreO T) = (StoreO.singleton i (some cx) : StoreO T) := sorry
+theorem singleton_core {i : K} {x : V} {cx} (Hpcore : pcore x = some cx) :
+    core (StoreO.singleton i (some x) : StoreO T) = (StoreO.singleton i (some cx) : StoreO T) := by
+  simp [core, pcore]
+  rw [← Hpcore]
+  unfold StoreLike.map
+  -- Can I do this without using a StoreIso?
+  sorry
 
-theorem singleton_core' (i : K) (x : V) cx :
-  pcore x ≡ some cx → core (StoreO.singleton i (some x)) ≡ (StoreO.singleton i (some cx) : StoreO T) := sorry
+theorem singleton_core' {i : K} {x : V} {cx} (H : pcore x ≡ some cx) :
+    core (StoreO.singleton i (some x)) ≡ (StoreO.singleton i (some cx) : StoreO T) :=
+  sorry
 
-theorem singleton_core_total [IsTotal V] (i : K) (x : V) :
-  core (StoreO.singleton i (some x) : StoreO T) = (StoreO.singleton i (some (core x))) := sorry
+theorem singleton_core_total [IsTotal V] {i : K} {x : V} :
+    core (StoreO.singleton i (some x) : StoreO T) = (StoreO.singleton i (some (core x))) := by
+  sorry
 
-theorem singleton_op (i : K) (x y : V) :
- (StoreO.singleton i (some x) : StoreO T)  • (StoreO.singleton i (some y)) = (StoreO.singleton i (some (x • y))) := sorry
+theorem singleton_op {i : K} {x y : V} :
+    (StoreO.singleton i (some x) : StoreO T) • (StoreO.singleton i (some y)) = (StoreO.singleton i (some (x • y))) := by
+  sorry
 
 theorem gmap_core_id (m : StoreO T) : (∀ i (x : V), (StoreO.get i m = some x) → CoreId x) → CoreId m := sorry
 
