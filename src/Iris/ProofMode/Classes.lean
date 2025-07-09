@@ -52,6 +52,10 @@ class IntoWand [BI PROP] (p q : Bool) (R P : PROP) (Q : outParam PROP) where
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
 
+class IntoWand' [BI PROP] (p q : Bool) (R : PROP) (P Q : outParam PROP) where
+  into_wand' : □?p R ⊢ □?q P -∗ Q
+export IntoWand' (into_wand')
+
 class FromForall [BI PROP] (P : PROP) {α : outParam (Sort _)} (Ψ : outParam <| α → PROP) where
   from_forall : (∀ x, Ψ x) ⊢ P
 export FromForall (from_forall)

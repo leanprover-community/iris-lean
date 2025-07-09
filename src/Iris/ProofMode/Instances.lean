@@ -35,6 +35,10 @@ instance intoWand_wand (p q : Bool) [BI PROP] (P Q P' : PROP) [h : FromAssumptio
     IntoWand p q iprop(P' -∗ Q) P Q where
   into_wand := (intuitionisticallyIf_mono <| wand_mono_l h.1).trans intuitionisticallyIf_elim
 
+instance intoWand'_wand [BI PROP] (P Q : PROP) :
+    IntoWand' false false iprop(P -∗ Q) P Q where
+  into_wand' := .rfl
+
 instance intoWand_imp_false [BI PROP] (P Q P' : PROP) [Absorbing P'] [Absorbing iprop(P' → Q)]
     [h : FromAssumption b P P'] : IntoWand false b iprop(P' → Q) P Q where
   into_wand := wand_intro <| (sep_mono_r h.1).trans <| by dsimp; exact sep_and.trans imp_elim_l
