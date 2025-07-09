@@ -7,10 +7,6 @@ Authors: Markus de Medeiros
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
 
--- TODO: I think some of the lemmas that use StoreIso can be generalized to prove
--- that the stores are equivalent (∀ i, t1.get i = t2.get i) not equal t1 = t2.
--- Then we get equality by adding back in the StoreIso instance.
-
 /-- A set whose complement is infinite -/
 def coinfinite (S : P → Prop) : Prop :=
   ∃ f : Nat → P, (∀ n, S <| f n) ∧ (∀ n m : Nat, f n = f m → n = m)
@@ -95,6 +91,9 @@ class Store (T : Type _) (K V : outParam (Type _)) extends StoreLike T K V where
   /-- One-sided inverse between get and of_fun. The other direction does not need to hold. -/
   of_fun_get {f} : get (of_fun f) = f
 
+/-- Two stores are (pointwise) equivalent -/
+def Store.Equiv [StoreLike T K V] (t1 t2 : T) : Prop := get t1 = get t2
+
 /-- Each value of `T` uniquely represents a function `K → V`. -/
 class IsStoreIso (T : Type _) (K V : outParam (Type _)) [I : Store T K V] where
   get_of_fun t : I.toStoreLike.of_fun (get t) = t
@@ -153,6 +152,10 @@ theorem Store.get_map [StoreLike T1 K V1] [Store T2 K V2] {t : T1} {f : V1 → V
 theorem IsStoreIso.ext [Store T K V] [IsStoreIso T K V] {t1 t2 : T} (H : ∀ k, get t1 k = get t2 k) : t1 = t2 := by
   rw [← IsStoreIso.get_of_fun t1, ← IsStoreIso.get_of_fun t2]; refine congrArg ?_ (funext H)
 
+theorem IsStoreIso.equiv_iff_eq [Store T K V] [IsStoreIso T K V] {t1 t2 : T} :
+    Store.Equiv t1 t2 ↔ t1 = t2 :=
+  ⟨(IsStoreIso.ext <| fun k => congrFun · k), (·▸rfl)⟩
+
 /-- Wrapper type for functions with the Store OFE -/
 @[ext] structure StoreO (T : Type _) where car : T
 
@@ -185,6 +188,9 @@ instance Store.get_ne [StoreLike T K V] [OFE V] (k : K) : NonExpansive (StoreO.g
 
 @[simp] def StoreO.set [StoreLike T K V] [OFE V] (k : K) : V → StoreO T → StoreO T :=
   fun v s => StoreO.mk (StoreLike.set s.1 k v)
+
+@[simp] def StoreO.Equiv [StoreLike T K V] : StoreO T → StoreO T → Prop :=
+  (Store.Equiv ·.1 ·.1)
 
 -- TODO: A `Proper` class could avoid the variable reordering.
 instance [Store T K V] [OFE V] (k : K) : NonExpansive₂ (StoreO.set k : V → StoreO T → StoreO T) where
@@ -239,6 +245,10 @@ abbrev StoreO.union_F : Option V → Option V → Option V
 
 @[simp] def StoreO.singleton [WithPoints T K V]: K → V → StoreO T :=
   fun t k => ⟨WithPoints.point t k⟩
+
+theorem IsStoreIso.StoreO_Equiv_iff_eq [Store T K V] [IsStoreIso T K V] {t1 t2 : StoreO T} :
+    StoreO.Equiv t1 t2 ↔ t1 = t2 :=
+  ⟨(StoreO.ext <| IsStoreIso.equiv_iff_eq.mp ·), (·▸rfl)⟩
 
 instance [Store T K V] [COFE V] [Discrete V] : Discrete (StoreO T) where
   discrete_0 H k := discrete_0 <| H k
@@ -530,10 +540,10 @@ theorem delete_validN {m : StoreO T} (Hv : ✓{n} m) : ✓{n} (StoreO.delete m i
 theorem delete_valid {m : StoreO T} (Hv : ✓ m) : ✓ (StoreO.delete m i) :=
   valid_iff_validN.mpr (fun _ => delete_validN Hv.validN)
 
-theorem insert_singleton_op [IsStoreIso T K (Option V)] {m : StoreO T} (Hemp : StoreO.get i m = none) :
-    StoreO.set i x m = StoreO.singleton i x • m := by
-  simp_all [StoreO.singleton, StoreO.set, CMRA.op, op, StoreLike.merge, op_merge]
-  refine IsStoreIso.ext (fun k => ?_)
+theorem insert_singleton_op {m : StoreO T} (Hemp : StoreO.get i m = none) :
+    StoreO.Equiv (StoreO.set i x m) (StoreO.singleton i x • m) := by
+  simp_all [StoreO.singleton, StoreO.set, CMRA.op, op, StoreLike.merge, op_merge, Store.Equiv]
+  refine funext (fun k => ?_)
   if He : i = k
     then
       rw [Store.get_set_eq He, Heap.of_fun_get, Heap.point_get_eq He, He.symm, Hemp]
@@ -550,12 +560,16 @@ theorem insert_singleton_op [IsStoreIso T K (Option V)] {m : StoreO T} (Hemp : S
       · trivial
       · (expose_names; exact Option.eq_none_iff_forall_ne_some.mpr fun a => h_1 a rfl)
 
+theorem insert_singleton_op_eq [IsStoreIso T K (Option V)] {m : StoreO T} (Hemp : StoreO.get i m = none) :
+    StoreO.set i x m = StoreO.singleton i x • m :=
+  IsStoreIso.StoreO_Equiv_iff_eq.mp (insert_singleton_op Hemp)
+
 theorem singleton_core {i : K} {x : V} {cx} (Hpcore : pcore x = some cx) :
     core (StoreO.singleton i (some x) : StoreO T) = (StoreO.singleton i (some cx) : StoreO T) := by
   simp [core, pcore]
   rw [← Hpcore]
   unfold StoreLike.map
-  -- Can I do this without using a StoreIso?
+  -- Can I do this without using a StoreIso at all? Not sure.
   sorry
 
 theorem singleton_core' {i : K} {x : V} {cx} (H : pcore x ≡ some cx) :
