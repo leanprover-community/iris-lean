@@ -187,10 +187,10 @@ theorem exact [BI PROP] (Q : PROP) : Q ⊢ Q := by
   iapply HQ
 
 -- n = 1
-theorem apply [BI PROP] (P Q : PROP) :  ⊢ P -∗ (P -∗ Q) -∗ Q := by
+/-theorem apply [BI PROP] (P Q : PROP) :  ⊢ P -∗ (P -∗ Q) -∗ Q := by
   iintro HP H
   iapply H
-  iexact HP
+  iexact HP-/
 
 end apply
 
