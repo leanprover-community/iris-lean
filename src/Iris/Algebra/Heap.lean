@@ -7,72 +7,6 @@ Authors: Markus de Medeiros
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
 
-/-- A set whose complement is infinite -/
-def coinfinite (S : P → Prop) : Prop :=
-  ∃ f : Nat → P, (∀ n, S <| f n) ∧ (∀ n m : Nat, f n = f m → n = m)
-
-/-- Arbitrarily changing one element of a co-infinite set yields a co-infinite set -/
-theorem cofinite_alter_cofinite {S S' : P → Prop} (p' : P) (Ha : ∀ p, p ≠ p' → S p = S' p)
-    (Hs : coinfinite S) : coinfinite S' := by
-  rcases Hs with ⟨f, HfS, Hfinj⟩
-  -- Basically, alter f so that f never hits p'.
-  rcases (Classical.em (∃ n, f n = p')) with (⟨n, H⟩|H)
-  · exists fun n' => if n' < n then f n' else f n'.succ
-    constructor
-    · intro n'
-      simp only []
-      split
-      · rw [← Ha]
-        · apply HfS
-        · rename_i Hk'
-          intro Hk
-          exact Nat.lt_irrefl (n := n) <| (Hfinj _ _ (Hk ▸ H)) ▸ Hk'
-      · rw [← Ha]
-        · apply HfS
-        · rename_i Hk'
-          intro Hk
-          have _ := (Hfinj _ _ (Hk ▸ H)) ▸ Hk'
-          simp_all
-    · intro n' m'
-      simp only []
-      split <;> split
-      · apply Hfinj
-      · intro H
-        have Hfinj' := Hfinj _ _ H
-        exfalso
-        subst Hfinj'
-        rename_i HK HK'
-        apply HK
-        exact Nat.lt_of_succ_lt HK'
-      · intro H
-        have Hfinj' := Hfinj _ _ H
-        exfalso
-        subst Hfinj'
-        rename_i HK HK'
-        apply HK
-        exact Nat.lt_of_succ_lt HK'
-      · intro H
-        exact Nat.succ_inj.mp (Hfinj n'.succ m'.succ H)
-  · exists f
-    refine ⟨?_, Hfinj⟩
-    exact fun n => (Ha _ (H ⟨n, ·⟩)) ▸ HfS n
-
-open Classical in
-/- Update a (classical) function at a point. Used to specify the correctness of stores. -/
-noncomputable def fset {K V : Type _} (f : K → V) (k : K) (v : V) : K → V :=
-  fun k' => if (k = k') then v else f k'
-
-@[simp] def support (f : K → Option V) : K → Prop := ((· == true) ∘ Option.isSome ∘ f)
-
-theorem coinfinite_fset_coinfinite (f : K → Option V) (H : coinfinite (support f)) :
-    coinfinite (support (fset f k v)) := by
-  apply cofinite_alter_cofinite  k _ H
-  intro p Hpk
-  simp [support, fset]
-  split
-  · simp_all
-  · rfl
-
 open Iris
 
 /- # Datatype and CMRA for a generic heap-like structure. -/
@@ -81,35 +15,35 @@ open Iris
 class StoreLike (T : Type _) (K V : outParam (Type _)) where
   get : T → K → V
   set : T → K → V → T
-  of_fun : (K → V) → T
+  ofFun : (K → V) → T
 export StoreLike (get set)
 
 /-- `T`'s store and retrieve operations behave like a classical store. -/
 class Store (T : Type _) (K V : outParam (Type _)) extends StoreLike T K V where
   get_set_eq {t k k' v} : k = k' → get (set t k v) k' = v
   get_set_ne {t k k' v} : k ≠ k' → get (set t k v) k' = get t k'
-  /-- One-sided inverse between get and of_fun. The other direction does not need to hold. -/
-  of_fun_get {f} : get (of_fun f) = f
+  /-- One-sided inverse between get and ofFun. The other direction does not need to hold. -/
+  ofFun_get {f} : get (ofFun f) = f
 
 /-- Two stores are (pointwise) equivalent -/
 def Store.Equiv [StoreLike T K V] (t1 t2 : T) : Prop := get t1 = get t2
 
 /-- Each value of `T` uniquely represents a function `K → V`. -/
 class IsStoreIso (T : Type _) (K V : outParam (Type _)) [I : Store T K V] where
-  get_of_fun t : I.toStoreLike.of_fun (get t) = t
+  get_ofFun t : I.toStoreLike.ofFun (get t) = t
 
 def StoreLike.map [StoreLike T1 K V1] [StoreLike T2 K V2] (t : T1) (f : V1 → V2) : T2 :=
-  StoreLike.of_fun <| f ∘ StoreLike.get t
+  StoreLike.ofFun <| f ∘ StoreLike.get t
 
 def StoreLike.merge [StoreLike T K V] (op : V → V → V) (t1 t2 : T) : T :=
-  StoreLike.of_fun <| (fun k => op (StoreLike.get t1 k) (StoreLike.get t2 k))
+  StoreLike.ofFun <| (fun k => op (StoreLike.get t1 k) (StoreLike.get t2 k))
 
 /-- An (index-dependent) predicate holds at every member of the store. -/
 def StoreLike.all [StoreLike T K V] (P : K → V → Prop) : T → Prop :=
   fun t => ∀ k, P k (StoreLike.get t k)
 
 /-- Lift a predicate on store values to a predicate on heap values, which is true for undefined entries. -/
-abbrev lift_dom (P : K → V → Prop) (k : K) : Option V → Prop
+abbrev liftHeapPred (P : K → V → Prop) (k : K) : Option V → Prop
   | .some v => P k v
   | .none => True
 
@@ -118,8 +52,11 @@ class WithPoints (T : Type _) (K V : outParam (Type _)) where
 
 class HeapLike (T : Type _) (K V : outParam (Type _)) extends StoreLike T K (Option V)
 
+/-- A Heap with a partial `fresh` function -/
 class Alloc (T : Type _) (K V : outParam (Type _)) extends HeapLike T K V where
-  fresh : coinfinite (support <| get f) → T → K
+  notFull : T → Prop
+  fresh : {t : T} → notFull t → K
+  fresh_get {H : notFull t} : get t (fresh H) = none
 
 /-- A type is HeapLike when it behaves like store for Optional values -/
 class Heap (T : Type _) (K V : outParam (Type _))
@@ -127,12 +64,17 @@ class Heap (T : Type _) (K V : outParam (Type _))
   point_get_eq {k k' v} : k = k' → get (point k v) k' = v
   point_get_ne {k k' v} : k ≠ k' → get (point k v) k' = none
 
-/-- A Heap which can generate new values. -/
+/-- A Heap whose `fresh` function is total -/
 class AllocHeap (T : Type _) (K V : outParam (Type _)) extends Heap T K V, Alloc T K V where
-  fresh_get {t : T} (H : coinfinite (support <| get t)) : get t (fresh H t) = none
+  notFull_set_fresh {H : notFull t} {v} : notFull (set t (fresh H) v)
 
+/-- Delete an element from a heap by setting its value to .none -/
 abbrev HeapLike.delete [HeapLike T K V] (t : T) (k : K) : T := StoreLike.set t k .none
-abbrev HeapLike.empty [HeapLike T K V] : T := StoreLike.of_fun (fun _ => .none)
+
+/-- A heap is empty when its get function is .none. -/
+abbrev HeapLike.empty [HeapLike T K V] : T := StoreLike.ofFun (fun _ => .none)
+
+/-- The domain of a heap is the set of keys that map to .some values. -/
 abbrev HeapLike.dom [HeapLike T K V] : T → K → Prop := fun t k => (StoreLike.get t k).isSome
 
 /-- Value-generic heap, ie. a higher-order type that is heap-like at every type.
@@ -143,14 +85,14 @@ abbrev HeapF (H : Type _ → Type _) (K : outParam (Type _)) :=
 
 theorem Store.get_merge [Store T K V] {op : V → V → V} (t1 t2 : T) (k : K) :
     StoreLike.get (StoreLike.merge op t1 t2) k = op (StoreLike.get t1 k) (StoreLike.get t2 k) := by
-  unfold StoreLike.merge; rw [Store.of_fun_get]
+  unfold StoreLike.merge; rw [Store.ofFun_get]
 
 theorem Store.get_map [StoreLike T1 K V1] [Store T2 K V2] {t : T1} {f : V1 → V2} {k : K} :
     StoreLike.get (StoreLike.map t f : T2) k = f (StoreLike.get t k) := by
-  unfold StoreLike.map; rw [Store.of_fun_get]; rfl
+  unfold StoreLike.map; rw [Store.ofFun_get]; rfl
 
 theorem IsStoreIso.ext [Store T K V] [IsStoreIso T K V] {t1 t2 : T} (H : ∀ k, get t1 k = get t2 k) : t1 = t2 := by
-  rw [← IsStoreIso.get_of_fun t1, ← IsStoreIso.get_of_fun t2]; refine congrArg ?_ (funext H)
+  rw [← IsStoreIso.get_ofFun t1, ← IsStoreIso.get_ofFun t2]; refine congrArg ?_ (funext H)
 
 theorem IsStoreIso.equiv_iff_eq [Store T K V] [IsStoreIso T K V] {t1 t2 : T} :
     Store.Equiv t1 t2 ↔ t1 = t2 :=
@@ -176,8 +118,8 @@ instance StoreO_OFE [StoreLike T K V] [OFE V] : OFE (StoreO T) where
   ne.1 {_ _ _} H k := H k
 
 @[simp] def StoreO.ofMap [Store T K V] [OFE V] : (K → V) -n> (StoreO T) where
-  f x := StoreO.mk <| StoreLike.of_fun x
-  ne.1 {_ _ _} H k := by rw [Store.of_fun_get, Store.of_fun_get]; exact H k
+  f x := StoreO.mk <| StoreLike.ofFun x
+  ne.1 {_ _ _} H k := by rw [Store.ofFun_get, Store.ofFun_get]; exact H k
 
 @[simp] def StoreO.get [StoreLike T K V] (k : K) : StoreO T → V :=
   fun s => StoreLike.get s.1 k
@@ -217,9 +159,9 @@ instance [StoreLike T1 K V1] [Store T2 K V2] [OFE V1] [OFE V2] (f : V1 → V2) [
   ne n {_ _} H k := by simp [StoreO.map, Store.get_map]; exact NonExpansive.ne (H k)
 
 instance StoreO_COFE [Store T K V] [COFE V] : COFE (StoreO T) where
-  compl c := ⟨StoreLike.of_fun <| COFE.compl <| c.map StoreO.toMap⟩
+  compl c := ⟨StoreLike.ofFun <| COFE.compl <| c.map StoreO.toMap⟩
   conv_compl {n c} k := by
-    rw [Store.of_fun_get]
+    rw [Store.ofFun_get]
     exact COFE.conv_compl (c := Chain.map StoreO.toMap c) k
 
 @[simp] def StoreO.all [StoreLike T K V] (P : K → V → Prop) : StoreO T → Prop :=
@@ -258,7 +200,7 @@ stores uniquely represent functions. -/
 instance [Store T K V] [IsStoreIso T K V] [COFE V] [Leibniz V] : Leibniz (StoreO T) where
   eq_of_eqv {x y} H := by
     apply StoreO.ext
-    rewrite [← IsStoreIso.get_of_fun x.car, ← IsStoreIso.get_of_fun y.car]
+    rewrite [← IsStoreIso.get_ofFun x.car, ← IsStoreIso.get_ofFun y.car]
     congr 1
     apply funext
     intro k
@@ -329,10 +271,10 @@ theorem lookup_includedN n (m1 m2 : StoreO T) :
     cases X <;> cases Z <;> simp_all
   · intro H
     rcases (Classical.axiomOfChoice H) with ⟨f, Hf⟩
-    exists ⟨StoreLike.of_fun f⟩
+    exists ⟨StoreLike.ofFun f⟩
     intro i
     apply (Hf i).trans
-    simp [store_op, Store.get_merge, op_merge, Store.of_fun_get]
+    simp [store_op, Store.get_merge, op_merge, Store.ofFun_get]
     generalize HX : StoreLike.get m1.car i = X
     generalize HY : f i = Y
     cases X <;> cases Y <;> simp_all [CMRA.op, optionOp]
@@ -355,10 +297,10 @@ theorem lookup_included (m1 m2 : StoreO T) :
     cases X <;> cases Z <;> simp_all
   · intro H
     rcases (Classical.axiomOfChoice H) with ⟨f, Hf⟩
-    exists ⟨StoreLike.of_fun f⟩
+    exists ⟨StoreLike.ofFun f⟩
     intro i
     apply (Hf i).trans
-    simp [store_op, Store.get_merge, op_merge, Store.of_fun_get]
+    simp [store_op, Store.get_merge, op_merge, Store.ofFun_get]
     generalize HX : StoreLike.get m1.car i = X
     generalize HY : f i = Y
     cases X <;> cases Y <;> simp_all [CMRA.op, optionOp]
@@ -475,10 +417,10 @@ instance StoreO_CMRA : CMRA (StoreO T) where
       generalize HX : StoreLike.get y1.car i = X
       generalize HY : StoreLike.get y2.car i = Y
       cases X <;> cases Y <;> simp
-    exists ⟨StoreLike.of_fun (F · |>.fst)⟩
-    exists ⟨StoreLike.of_fun (F · |>.snd.fst)⟩
+    exists ⟨StoreLike.ofFun (F · |>.fst)⟩
+    exists ⟨StoreLike.ofFun (F · |>.snd.fst)⟩
     refine ⟨fun i => ?_, fun i => ?_, fun i => ?_⟩
-      <;> simp [store_op, Store.get_merge, Store.of_fun_get]
+      <;> simp [store_op, Store.get_merge, Store.ofFun_get]
       <;> rcases (F i) with ⟨z1, z2, Hm, Hz1, Hz2⟩
     · refine Hm.trans ?_
       simp [CMRA.op, op_merge, optionOp]
@@ -488,12 +430,12 @@ instance StoreO_CMRA : CMRA (StoreO T) where
 
 instance StoreO_UCMRA : UCMRA (StoreO T) where
   unit := store_unit
-  unit_valid := by simp [CMRA.Valid, store_valid, optionValid, HeapLike.empty, Store.of_fun_get]
+  unit_valid := by simp [CMRA.Valid, store_valid, optionValid, HeapLike.empty, Store.ofFun_get]
   unit_left_id := by
     intro x k
-    simp [CMRA.op, op_merge, HeapLike.empty, Store.get_merge, Store.of_fun_get]
+    simp [CMRA.op, op_merge, HeapLike.empty, Store.get_merge, Store.ofFun_get]
     generalize HX : StoreLike.get x.car k = X <;> cases X <;> simp
-  pcore_unit k := by simp [CMRA.pcore, Store.get_map, pcore_F, HeapLike.empty, Store.of_fun_get]
+  pcore_unit k := by simp [CMRA.pcore, Store.get_map, pcore_F, HeapLike.empty, Store.ofFun_get]
 end cmra
 
 section heap_laws
@@ -546,14 +488,14 @@ theorem insert_singleton_op {m : StoreO T} (Hemp : StoreO.get i m = none) :
   refine funext (fun k => ?_)
   if He : i = k
     then
-      rw [Store.get_set_eq He, Heap.of_fun_get, Heap.point_get_eq He, He.symm, Hemp]
+      rw [Store.get_set_eq He, Heap.ofFun_get, Heap.point_get_eq He, He.symm, Hemp]
       split
       · rename_i Hk; rcases Hk
       · rfl
       · rename_i Hk; rcases Hk
       · (expose_names; exact Option.eq_none_iff_forall_ne_some.mpr fun a a_1 => h_1 a a_1 rfl)
     else
-      rw [Store.get_set_ne He, Heap.of_fun_get, Heap.point_get_ne He]
+      rw [Store.get_set_ne He, Heap.ofFun_get, Heap.point_get_ne He]
       split <;> rename_i Hk _
       · rcases Hk
       · rcases Hk

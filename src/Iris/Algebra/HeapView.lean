@@ -17,11 +17,11 @@ variable (F K V : Type _) (H : Type _ → Type _) [UFraction F] [∀ T, Heap (H 
 abbrev heapR (n : Nat) (m : StoreO (H V)) (f : StoreO (H ((DFrac F) × V))) : Prop :=
   let P (k : K) (fv : DFrac F × V) : Prop :=
     ∃ (v : V) (dq : DFrac F), StoreO.get k m = .some v ∧ ✓{n} (dq, v) ∧ (some fv ≼{n} some (dq, v))
-  StoreO.all (lift_dom P) f
+  StoreO.all (liftHeapPred P) f
 
 instance : ViewRel (heapR F K V H) where
   mono {n1 n2 m1 m2 f1 f2 Hrel Hm Hf Hn k} := by
-    unfold lift_dom; split <;> try trivial
+    unfold liftHeapPred; split <;> try trivial
     rename_i dqa vk Heq
     simp only []
     sorry
