@@ -149,6 +149,9 @@ instance Store.get_ne [StoreLike T K V] [OFE V] (k : K) : NonExpansive (StoreO.g
 @[simp] def StoreO.Equiv [StoreLike T K V] : StoreO T → StoreO T → Prop :=
   (Store.Equiv ·.1 ·.1)
 
+instance StoreO.Equiv_trans [StoreLike T K V] : Trans (StoreO.Equiv : StoreO T → StoreO T → Prop) (StoreO.Equiv : StoreO T → StoreO T → Prop) (StoreO.Equiv : StoreO T → StoreO T → Prop) where
+  trans := by simp_all [Store.Equiv]
+
 -- TODO: A `Proper` class could avoid the variable reordering.
 instance [Store T K V] [OFE V] (k : K) : NonExpansive₂ (StoreO.set k : V → StoreO T → StoreO T) where
   ne {n v1 v2} Hv {t1 t2} Ht k' := by
@@ -559,8 +562,10 @@ theorem singleton_core' {i : K} {x : V} {cx} (Hpcore : pcore x ≡ some cx) :
 
 theorem singleton_core_total [IsTotal V] {i : K} {x : V} :
     StoreO.Equiv (core (StoreO.singleton i (some x) : StoreO T)) ((StoreO.singleton i (some (core x)))) := by
-  sorry
-
+  obtain ⟨xc, Hxc⟩ := total x
+  apply StoreO.Equiv_trans.trans (singleton_core Hxc)
+  simp [core, Hxc]
+  rfl
 
 theorem singleton_core_total_eq [IsTotal V] [IsStoreIso T K (Option V)] {i : K} {x : V} :
     core (StoreO.singleton i (some x) : StoreO T) = (StoreO.singleton i (some (core x))) :=
@@ -568,32 +573,124 @@ theorem singleton_core_total_eq [IsTotal V] [IsStoreIso T K (Option V)] {i : K} 
 
 theorem singleton_op {i : K} {x y : V} :
     StoreO.Equiv ((StoreO.singleton i (some x) : StoreO T) • (StoreO.singleton i (some y))) ((StoreO.singleton i (some (x • y)))) := by
-  sorry
+  unfold StoreO.Equiv
+  unfold Store.Equiv
+  apply funext
+  intro k
+  simp [op]
+  rw [Store.get_merge]
+  unfold op_merge
+  if He : i = k
+    then
+      rw [Heap.point_get_eq He]
+      rw [Heap.point_get_eq He]
+      simp only []
+      rw [Heap.point_get_eq He]
+    else
+      rw [Heap.point_get_ne He]
+      rw [Heap.point_get_ne He]
+      simp only []
+      rw [Heap.point_get_ne He]
 
 theorem singleton_op_eq [IsStoreIso T K (Option V)] {i : K} {x y : V} :
     (StoreO.singleton i (some x) : StoreO T) • (StoreO.singleton i (some y)) = (StoreO.singleton i (some (x • y))) :=
   IsStoreIso.eq_of_Equiv singleton_op
 
-theorem gmap_core_id {m : StoreO T} : (∀ i (x : V), (StoreO.get i m = some x) → CoreId x) → CoreId m := by
-  sorry
+theorem gmap_core_id {m : StoreO T} (H : ∀ i (x : V), (StoreO.get i m = some x) → CoreId x) : CoreId m := by
+  constructor
+  intro i
+  simp [StoreO.map]
+  rw [Store.get_map]
+  simp [pcore_F]
+  split
+  · rename_i H'
+    rw [H']
+    exact (H _ _ H').core_id
+  · rename_i H'
+    rw [H']
 
-instance gmap_core_id' {m : StoreO T} : (∀ x : V, CoreId x) → CoreId m := by
-  sorry
+instance gmap_core_id' {m : StoreO T} (H : ∀ x : V, CoreId x) : CoreId m := by
+  constructor
+  intro i
+  simp [StoreO.map]
+  rw [Store.get_map]
+  simp [pcore_F]
+  split
+  · rename_i H'
+    rw [H']
+    apply (H _).core_id
+  · rename_i H'
+    rw [H']
 
-instance gmap_singleton_core_id  : CoreId (x : V) → CoreId (StoreO.singleton i (some v) : StoreO T) := by
-  sorry
+instance gmap_singleton_core_id (H : CoreId (x : V)) : CoreId (StoreO.singleton i (some x) : StoreO T) := by
+  constructor
+  intro k
+  simp [Store.get_map]
+  if He : i = k
+    then
+      rw [Heap.point_get_eq He]
+      simp [pcore_F]
+      exact H.core_id
+    else
+      rw [Heap.point_get_ne He]
 
 theorem singleton_includedN_l {m : StoreO T} :
     (StoreO.singleton i (some x) : StoreO T) ≼{n} m ↔ ∃ y, (StoreO.get i m  ≡{n}≡ some y) ∧ some x ≼{n} some y := by
-  sorry
+  constructor
+  · rintro ⟨z, Hz⟩
+    have Hz' := Hz i
+    simp [CMRA.op, op] at Hz'
+    rw [Store.get_merge] at Hz'
+    simp [op_merge] at Hz'
+    rw [Heap.point_get_eq rfl] at Hz'
+    generalize Hz0 : StoreLike.get z.car i = z0
+    cases z0 <;> simp [Hz0] at Hz'
+    · exists x
+    · rename_i v
+      exists (x • v)
+      refine ⟨Hz', ?_⟩
+      exists v
+  · sorry
+    /- rintro ⟨z, Hz, z', Hz'⟩
+    cases z'
+    · exists m
+      intro k
+      simp [CMRA.op]
+      rw [Store.get_merge]
+      if He : i = k
+        then
+          rw [Heap.point_get_eq He]
+          simp [op_merge]
+          generalize Hmi : StoreLike.get m.car k = mi; cases mi <;> simp
+          · subst He; simp_all [Hmi]
+          · rename_i vmi
+            subst He; simp_all [Hmi]
+            sorry
+        else
+          rw [Heap.point_get_ne He]
+          sorry
+
+      -- simp_all [OFE.Dist, Option.Forall₂, CMRA.op, optionOp]
+      -- generalize Hz1 : StoreLike.get m.car i = z1
+      -- cases z1
+      -- · simp [Hz1] at Hz
+      -- · simp [Hz1] at Hz
+      --   sorry
+    · sorry
+    -/
 
 theorem singleton_included_l {m : StoreO T} :
     (StoreO.singleton i (some x) : StoreO T) ≼ m ↔ ∃ y, (StoreO.get i m ≡ some y) ∧ some x ≼ some y := by
-  sorry
+  constructor
+  · sorry
+  · sorry
 
-theorem singleton_included_exclusive_l {m : StoreO T} :
-  Exclusive x → ✓ m →
-  (StoreO.singleton i (some x) : StoreO T) ≼ m ↔ (StoreO.get i m ≡ some x) := sorry
+theorem singleton_included_exclusive_l {m : StoreO T} (He : Exclusive x) (Hv : ✓ m) :
+    (StoreO.singleton i (some x) : StoreO T) ≼ m ↔ (StoreO.get i m ≡ some x) := by
+  constructor
+  · rintro ⟨z, Hz⟩
+    sorry
+  · sorry
 
 theorem singleton_included :
   (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y)) ↔ some x ≼ some y := sorry
@@ -604,7 +701,12 @@ theorem singleton_included_total [IsTotal V] :
 theorem singleton_included_mono :
   x ≼ y → (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y))  := sorry
 
-instance singleton_cancelable : Cancelable (some x) → Cancelable (StoreO.singleton i (some x) : StoreO T) := sorry
+instance singleton_cancelable (H : Cancelable (some x)) : Cancelable (StoreO.singleton i (some x) : StoreO T) := by
+  constructor
+  intro n x z H Hex k
+  if He : i = k
+    then sorry
+    else sorry
 
 instance heap_cancelable {m : StoreO T} : (∀ x : V, IdFree x) → (∀ x : V, Cancelable x) → Cancelable m := sorry
 
