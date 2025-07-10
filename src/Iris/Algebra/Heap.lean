@@ -9,6 +9,21 @@ import Iris.Algebra.OFE
 
 open Iris
 
+/-! ## Generic heaps
+
+Note: There are three definitions of equivalence in this file
+
+[1] OFE.Equiv (pointwise equvalence)
+[2] StoreO.Equiv (pointwise equality of .get)
+[3] Eq (equality of representations)
+
+[3] -> [2] -> [1] always
+[1] -> [2] when the value type is Leibniz
+[2] -> [3] when the store is a StoreIso
+-/
+
+
+
 /- # Datatype and CMRA for a generic heap-like structure. -/
 
 /-- The type `T` can store and retrieve keys of type `K` and obtain values of type `V`. -/
@@ -33,7 +48,7 @@ class IsStoreIso (T : Type _) (K V : outParam (Type _)) [I : Store T K V] where
   get_ofFun t : I.toStoreLike.ofFun (get t) = t
 
 def StoreLike.map [StoreLike T1 K V1] [StoreLike T2 K V2] (t : T1) (f : V1 → V2) : T2 :=
-  StoreLike.ofFun <| f ∘ StoreLike.get t
+  StoreLike.ofFun (fun i => f <| StoreLike.get t i)
 
 def StoreLike.merge [StoreLike T K V] (op : V → V → V) (t1 t2 : T) : T :=
   StoreLike.ofFun <| (fun k => op (StoreLike.get t1 k) (StoreLike.get t2 k))
@@ -89,14 +104,14 @@ theorem Store.get_merge [Store T K V] {op : V → V → V} (t1 t2 : T) (k : K) :
 
 theorem Store.get_map [StoreLike T1 K V1] [Store T2 K V2] {t : T1} {f : V1 → V2} {k : K} :
     StoreLike.get (StoreLike.map t f : T2) k = f (StoreLike.get t k) := by
-  unfold StoreLike.map; rw [Store.ofFun_get]; rfl
+  unfold StoreLike.map; rw [Store.ofFun_get]
 
 theorem IsStoreIso.ext [Store T K V] [IsStoreIso T K V] {t1 t2 : T} (H : ∀ k, get t1 k = get t2 k) : t1 = t2 := by
   rw [← IsStoreIso.get_ofFun t1, ← IsStoreIso.get_ofFun t2]; refine congrArg ?_ (funext H)
 
-theorem IsStoreIso.equiv_iff_eq [Store T K V] [IsStoreIso T K V] {t1 t2 : T} :
-    Store.Equiv t1 t2 ↔ t1 = t2 :=
-  ⟨(IsStoreIso.ext <| fun k => congrFun · k), (·▸rfl)⟩
+theorem IsStoreIso.store_eq_of_Equiv [Store T K V] [IsStoreIso T K V] {t1 t2 : T} :
+    Store.Equiv t1 t2 → t1 = t2 :=
+  (IsStoreIso.ext <| fun k => congrFun · k)
 
 /-- Wrapper type for functions with the Store OFE -/
 @[ext] structure StoreO (T : Type _) where car : T
@@ -188,15 +203,24 @@ abbrev StoreO.union_F : Option V → Option V → Option V
 @[simp] def StoreO.singleton [WithPoints T K V]: K → V → StoreO T :=
   fun t k => ⟨WithPoints.point t k⟩
 
-theorem IsStoreIso.StoreO_Equiv_iff_eq [Store T K V] [IsStoreIso T K V] {t1 t2 : StoreO T} :
-    StoreO.Equiv t1 t2 ↔ t1 = t2 :=
-  ⟨(StoreO.ext <| IsStoreIso.equiv_iff_eq.mp ·), (·▸rfl)⟩
+/- [3] -> [2] -/
+theorem StoreO.Equiv_of_eq [Store T K V] {t1 t2 : StoreO T} (H : t1 = t2) :
+  StoreO.Equiv t1 t2 := H▸rfl
 
-instance [Store T K V] [COFE V] [Discrete V] : Discrete (StoreO T) where
-  discrete_0 H k := discrete_0 <| H k
+/- [2] -> [1] -/
+theorem StoreO.Eqv_of_Equiv [Store T K V] [OFE V] {t1 t2 : StoreO T} (H : StoreO.Equiv t1 t2) :
+    t1 ≡ t2 := fun i => Equiv.of_eq <| congrFun H i
 
-/-- We can lift a Leibniz OFE on V to a Leibniz OFE on (StoreO T) as long as
-stores uniquely represent functions. -/
+/-- When the type is a StoreIso, equality coincides with pointwise equality ([2] -> [3]). -/
+theorem IsStoreIso.eq_of_Equiv [Store T K V] [IsStoreIso T K V] {t1 t2 : StoreO T} :
+    StoreO.Equiv t1 t2 → t1 = t2 :=
+  (StoreO.ext <| store_eq_of_Equiv ·)
+
+/-- When the value is Leibniz, pointwise equality coincides with OFE equivalence. ([1] -> [2]), -/
+theorem IsStore.StoreO_Equiv_iff_leibniz [Store T K V] [OFE V] [Leibniz V] {t1 t2 : StoreO T}
+    (H : t1 ≡ t2) : StoreO.Equiv t1 t2 := funext ((forall_congr fun _ => propext leibniz).mp H ·)
+
+/-- When store is a StoreIso with Leibniz values, it is Leibniz -/
 instance [Store T K V] [IsStoreIso T K V] [COFE V] [Leibniz V] : Leibniz (StoreO T) where
   eq_of_eqv {x y} H := by
     apply StoreO.ext
@@ -206,6 +230,9 @@ instance [Store T K V] [IsStoreIso T K V] [COFE V] [Leibniz V] : Leibniz (StoreO
     intro k
     apply eq_of_eqv (H k)
 
+instance [Store T K V] [COFE V] [Discrete V] : Discrete (StoreO T) where
+  discrete_0 H k := discrete_0 <| H k
+
 end ofe
 
 
@@ -213,8 +240,7 @@ section cmra
 
 open CMRA
 
-/- ## A CMRA on Heaps
-TODO: I think there may be a generic way to put a CMRA on Stores, but I'm not sure of it. -/
+/- ## A CMRA on Heaps -/
 
 variable [Heap T K V] [CMRA V]
 
@@ -504,65 +530,102 @@ theorem insert_singleton_op {m : StoreO T} (Hemp : StoreO.get i m = none) :
 
 theorem insert_singleton_op_eq [IsStoreIso T K (Option V)] {m : StoreO T} (Hemp : StoreO.get i m = none) :
     StoreO.set i x m = StoreO.singleton i x • m :=
-  IsStoreIso.StoreO_Equiv_iff_eq.mp (insert_singleton_op Hemp)
+  IsStoreIso.eq_of_Equiv (insert_singleton_op Hemp)
 
 theorem singleton_core {i : K} {x : V} {cx} (Hpcore : pcore x = some cx) :
-    core (StoreO.singleton i (some x) : StoreO T) = (StoreO.singleton i (some cx) : StoreO T) := by
+    StoreO.Equiv (core (StoreO.singleton i (some x) : StoreO T)) ((StoreO.singleton i (some cx) : StoreO T)) := by
   simp [core, pcore]
   rw [← Hpcore]
   unfold StoreLike.map
-  -- Can I do this without using a StoreIso at all? Not sure.
-  sorry
+  unfold Store.Equiv
+  apply funext
+  intro k
+  if He : i = k
+    then rw [Heap.ofFun_get, Heap.point_get_eq He, Heap.point_get_eq He]
+    else rw [Heap.ofFun_get, Heap.point_get_ne He, Heap.point_get_ne He]
 
-theorem singleton_core' {i : K} {x : V} {cx} (H : pcore x ≡ some cx) :
-    core (StoreO.singleton i (some x)) ≡ (StoreO.singleton i (some cx) : StoreO T) :=
-  sorry
+theorem singleton_core_eq [IsStoreIso T K (Option V)] {i : K} {x : V} {cx} (Hpcore : pcore x = some cx) :
+    core (StoreO.singleton i (some x) : StoreO T) = (StoreO.singleton i (some cx) : StoreO T) :=
+  IsStoreIso.eq_of_Equiv (singleton_core Hpcore)
+
+theorem singleton_core' {i : K} {x : V} {cx} (Hpcore : pcore x ≡ some cx) :
+    core (StoreO.singleton i (some x)) ≡ (StoreO.singleton i (some cx) : StoreO T) := by
+  simp [core, pcore]
+  unfold StoreLike.map
+  intro k
+  if He : i = k
+    then rw [Heap.ofFun_get, Heap.point_get_eq He, Heap.point_get_eq He]; exact Hpcore
+    else rw [Heap.ofFun_get, Heap.point_get_ne He, Heap.point_get_ne He]
 
 theorem singleton_core_total [IsTotal V] {i : K} {x : V} :
-    core (StoreO.singleton i (some x) : StoreO T) = (StoreO.singleton i (some (core x))) := by
+    StoreO.Equiv (core (StoreO.singleton i (some x) : StoreO T)) ((StoreO.singleton i (some (core x)))) := by
   sorry
+
+
+theorem singleton_core_total_eq [IsTotal V] [IsStoreIso T K (Option V)] {i : K} {x : V} :
+    core (StoreO.singleton i (some x) : StoreO T) = (StoreO.singleton i (some (core x))) :=
+  IsStoreIso.eq_of_Equiv singleton_core_total
 
 theorem singleton_op {i : K} {x y : V} :
-    (StoreO.singleton i (some x) : StoreO T) • (StoreO.singleton i (some y)) = (StoreO.singleton i (some (x • y))) := by
+    StoreO.Equiv ((StoreO.singleton i (some x) : StoreO T) • (StoreO.singleton i (some y))) ((StoreO.singleton i (some (x • y)))) := by
   sorry
 
-theorem gmap_core_id (m : StoreO T) : (∀ i (x : V), (StoreO.get i m = some x) → CoreId x) → CoreId m := sorry
+theorem singleton_op_eq [IsStoreIso T K (Option V)] {i : K} {x y : V} :
+    (StoreO.singleton i (some x) : StoreO T) • (StoreO.singleton i (some y)) = (StoreO.singleton i (some (x • y))) :=
+  IsStoreIso.eq_of_Equiv singleton_op
 
-instance gmap_core_id' (m : StoreO T) : (∀ x : V, CoreId x) → CoreId m := sorry
+theorem gmap_core_id {m : StoreO T} : (∀ i (x : V), (StoreO.get i m = some x) → CoreId x) → CoreId m := by
+  sorry
 
-instance gmap_singleton_core_id i (x : V) : CoreId x → CoreId (StoreO.singleton i (some v) : StoreO T) := sorry
+instance gmap_core_id' {m : StoreO T} : (∀ x : V, CoreId x) → CoreId m := by
+  sorry
 
-theorem singleton_includedN_l n (m : StoreO T) i x :
-  (StoreO.singleton i (some x) : StoreO T) ≼{n} m ↔ ∃ y, (StoreO.get i m  ≡{n}≡ some y) ∧ some x ≼{n} some y := sorry
+instance gmap_singleton_core_id  : CoreId (x : V) → CoreId (StoreO.singleton i (some v) : StoreO T) := by
+  sorry
 
-theorem singleton_included_l (m : StoreO T) i x :
-  (StoreO.singleton i (some x) : StoreO T) ≼ m ↔ ∃ y, (StoreO.get i m ≡ some y) ∧ some x ≼ some y := sorry
+theorem singleton_includedN_l {m : StoreO T} :
+    (StoreO.singleton i (some x) : StoreO T) ≼{n} m ↔ ∃ y, (StoreO.get i m  ≡{n}≡ some y) ∧ some x ≼{n} some y := by
+  sorry
 
-theorem singleton_included_exclusive_l (m : StoreO T) i x :
+theorem singleton_included_l {m : StoreO T} :
+    (StoreO.singleton i (some x) : StoreO T) ≼ m ↔ ∃ y, (StoreO.get i m ≡ some y) ∧ some x ≼ some y := by
+  sorry
+
+theorem singleton_included_exclusive_l {m : StoreO T} :
   Exclusive x → ✓ m →
   (StoreO.singleton i (some x) : StoreO T) ≼ m ↔ (StoreO.get i m ≡ some x) := sorry
 
-theorem singleton_included i x y :
+theorem singleton_included :
   (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y)) ↔ some x ≼ some y := sorry
 
-theorem singleton_included_total [IsTotal V]  i x y :
+theorem singleton_included_total [IsTotal V] :
   (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y))  ↔ x ≼ y := sorry
 
-theorem singleton_included_mono i x y :
+theorem singleton_included_mono :
   x ≼ y → (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y))  := sorry
 
-instance singleton_cancelable i x : Cancelable (some x) → Cancelable (StoreO.singleton i (some x) : StoreO T) := sorry
+instance singleton_cancelable : Cancelable (some x) → Cancelable (StoreO.singleton i (some x) : StoreO T) := sorry
 
-instance heap_cancelable (m : StoreO T) : (∀ x : V, IdFree x) → (∀ x : V, Cancelable x) → Cancelable m := sorry
+instance heap_cancelable {m : StoreO T} : (∀ x : V, IdFree x) → (∀ x : V, Cancelable x) → Cancelable m := sorry
 
-theorem insert_op (m1 m2 : StoreO T) i x y : (StoreO.set i (x • y) (m1 • m2)) = (StoreO.set i x m1) • (StoreO.set i y m2) := sorry
+theorem insert_op {m1 m2 : StoreO T} :
+  StoreO.Equiv ((StoreO.set i (x • y) (m1 • m2))) ((StoreO.set i x m1) • (StoreO.set i y m2)) := sorry
+
+theorem insert_op_eq [IsStoreIso T K (Option V)] {m1 m2 : StoreO T} : (StoreO.set i (x • y) (m1 • m2)) = (StoreO.set i x m1) • (StoreO.set i y m2) :=
+  IsStoreIso.eq_of_Equiv insert_op
 
 -- TODO: Reuse set theory as defined in ghost maps PR, and delete this
 def set_disjoint {X : Type _} (S1 S2 : X → Prop) : Prop := ∀ x : X, ¬(S1 x ∧ S2 x)
 def set_union {X : Type _} (S1 S2 : X → Prop) : X → Prop := fun x => S1 x ∨ S2 x
 def set_included {X : Type _} (S1 S2 : X → Prop) : Prop := ∀ x, S1 x → S2 x
 
-theorem gmap_op_union (m1 m2 : StoreO T) : set_disjoint (StoreO.dom m1) (StoreO.dom m2) → m1 • m2 = StoreO.union m1 m2 := sorry
+theorem gmap_op_union {m1 m2 : StoreO T} : set_disjoint (StoreO.dom m1) (StoreO.dom m2) →
+  StoreO.Equiv (m1 • m2) (StoreO.union m1 m2) := sorry
+
+
+theorem gmap_op_union_eq [IsStoreIso T K (Option V)] {m1 m2 : StoreO T} (H : set_disjoint (StoreO.dom m1) (StoreO.dom m2)) :
+    m1 • m2 = StoreO.union m1 m2 :=
+  IsStoreIso.eq_of_Equiv (gmap_op_union H)
 
 theorem gmap_op_valid0_disjoint (m1 m2 : StoreO T) :
   ✓{0} (m1 • m2) → (∀ k x, StoreO.get k m1 = some x → Exclusive x) → set_disjoint (StoreO.dom m1) (StoreO.dom m2) := sorry
