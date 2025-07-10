@@ -181,23 +181,20 @@ end assumption
 -- apply
 namespace apply
 
--- n = 0
 theorem exact [BI PROP] (Q : PROP) : Q ⊢ Q := by
   iintro HQ
   iapply HQ
 
--- n = 1
 theorem apply [BI PROP] (P Q : PROP) :  ⊢ P -∗ (P -∗ Q) -∗ Q := by
   iintro HP H
   iapply H
   iexact HP
 
--- n = 2
 theorem multiple [BI PROP] (P Q R : PROP) : ⊢ P -∗ Q -∗ (P -∗ Q -∗ R) -∗ R := by
   iintro HP HQ H
   iapply H
-  iexact HP
-  iexact HQ
+  · iexact HP
+  · iexact HQ
 
 -- todo: intuitionistic modality test cases
 

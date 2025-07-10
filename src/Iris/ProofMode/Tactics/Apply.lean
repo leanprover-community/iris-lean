@@ -14,10 +14,10 @@ theorem apply [BI PROP] {P P' Q O A1 : PROP} {p : Bool}
     [h4 : FromAssumption false A2 Q] : P ⊢ Q :=
   h1.mp.trans (wand_elim (h2.trans (wand_intro ((sep_mono_r h3.1).trans (wand_elim_r.trans h4.1)))))
 
--- todo: recursion
+-- todo: hypothesis management
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iApplyCore
-    {P P'} (p : Q(Bool)) (_ : Hyps bi P) (hyps' : Hyps bi P') (Q hyp : Q($prop))
+    {P P'} (p : Q(Bool)) (hyps : Hyps bi P) (hyps' : Hyps bi P') (Q hyp : Q($prop))
     (pf : Q($P ⊣⊢ $P' ∗ □?$p $hyp)) (k : ∀ {P}, Hyps bi P → (Q : Q($prop)) → MetaM Q($P ⊢ $Q)) :
     MetaM (Q($P ⊢ $Q)) := do
   let A1 ← mkFreshExprMVarQ q($prop)
@@ -27,10 +27,19 @@ partial def iApplyCore
     synthInstanceQ q(IntoWand' $p false $hyp $A1 $A2)
 
   if let some _ := intoWand' then
-    let _ ← synthInstanceQ q(FromAssumption false $A2 $Q)
     let m ← k hyps' A1
 
-    return q(apply $pf $m)
+    let A1' ← mkFreshExprMVarQ q($prop)
+    let A2' ← mkFreshExprMVarQ q($prop)
+
+    let intoWand' ← try? do
+      synthInstanceQ q(IntoWand' $p false $A2 $A1' $A2')
+
+    if let some _ := intoWand' then
+      return ← iApplyCore p hyps hyps' Q A2 pf k
+    else
+      let _ ← synthInstanceQ q(FromAssumption false $A2 $Q)
+      return q(apply $pf $m)
   else
     let _ ← synthInstanceQ q(FromAssumption $p $hyp $Q)
     let _ ← synthInstanceQ q(TCOr (Affine $P') (Absorbing $Q))
