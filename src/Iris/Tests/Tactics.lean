@@ -192,6 +192,15 @@ theorem apply [BI PROP] (P Q : PROP) :  ⊢ P -∗ (P -∗ Q) -∗ Q := by
   iapply H
   iexact HP
 
+-- n = 2
+theorem multiple [BI PROP] (P Q R : PROP) : ⊢ P -∗ Q -∗ (P -∗ Q -∗ R) -∗ R := by
+  iintro HP HQ H
+  iapply H
+  iexact HP
+  iexact HQ
+
+-- todo: intuitionistic modality test cases
+
 end apply
 
 -- ex falso
