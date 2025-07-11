@@ -18,7 +18,8 @@ theorem apply [BI PROP] {P P' Q O A1 : PROP} {p : Bool}
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iApplyCore
     {P P'} (p : Q(Bool)) (hyps : Hyps bi P) (hyps' : Hyps bi P') (Q hyp : Q($prop))
-    (pf : Q($P ⊣⊢ $P' ∗ □?$p $hyp)) (k : ∀ {P}, Hyps bi P → (Q : Q($prop)) → MetaM Q($P ⊢ $Q)) :
+    (pf : Q($P ⊣⊢ $P' ∗ □?$p $hyp)) (ls : List (TSyntax `Lean.Parser.Term.bracketedBinder))
+    (k : ∀ {P}, Hyps bi P → (Q : Q($prop)) → MetaM Q($P ⊢ $Q)) :
     MetaM (Q($P ⊢ $Q)) := do
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
@@ -27,8 +28,6 @@ partial def iApplyCore
     synthInstanceQ q(IntoWand' $p false $hyp $A1 $A2)
 
   if let some _ := intoWand' then
-    let m ← k hyps' A1
-
     let A1' ← mkFreshExprMVarQ q($prop)
     let A2' ← mkFreshExprMVarQ q($prop)
 
@@ -36,8 +35,25 @@ partial def iApplyCore
       synthInstanceQ q(IntoWand' $p false $A2 $A1' $A2')
 
     if let some _ := intoWand' then
-      return ← iApplyCore p hyps hyps' Q A2 pf k
+      if let some bind := ls.head? then
+        let binderIdents ← match bind with
+          | `(bracketedBinder| ($ids*)) => pure ids
+          | _ => throwError "Unsupported binder format: {bind}"
+
+        let hypsToRemove ← (binderIdents.toList.map (·.raw)).mapM fun id => do
+          match id with
+          | `(ident| $name:ident) => hyps'.findWithInfo name
+          | `(Lean.Parser.Term.hole| _) => throwError "holes not supported in hypothesis binders"
+          | _ => throwError "unsupported identifier format: {id}"
+
+        -- todo: remove hypotheses
+
+        let _ ← k (.mkEmp bi) A1 -- todo: use removed hypotheses
+      else
+        let _ ← k (.mkEmp bi) A1
+      return ← iApplyCore p hyps hyps' Q A2 pf ls.tail k
     else
+      let m ← k hyps' A1
       let _ ← synthInstanceQ q(FromAssumption false $A2 $Q)
       return q(apply $pf $m)
   else
@@ -46,7 +62,8 @@ partial def iApplyCore
 
     return q(assumption $pf)
 
-elab "iapply" colGt hyp:ident : tactic => do
+-- todo: hyp is a lean lemma (later)
+elab "iapply" colGt hyp:ident ls:bracketedBinder* : tactic => do
   let mvar ← getMainGoal
 
   mvar.withContext do
@@ -57,7 +74,7 @@ elab "iapply" colGt hyp:ident : tactic => do
     let ⟨_, hyps', out, _, p, _, pf⟩ := hyps.remove true uniq
 
     let goals ← IO.mkRef #[]
-    let pf ← iApplyCore bi p hyps hyps' goal out pf fun {P} hyps goal => do
+    let pf ← iApplyCore bi p hyps hyps' goal out pf ls.toList fun {P} hyps goal => do
       let m : Q($P ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
         IrisGoal.toExpr { prop, bi, hyps, goal, .. }
       goals.modify (·.push m.mvarId!)
