@@ -69,9 +69,9 @@ class HeapLike (T : Type _) (K V : outParam (Type _)) extends StoreLike T K (Opt
 
 /-- A Heap with a partial `fresh` function -/
 class Alloc (T : Type _) (K V : outParam (Type _)) extends HeapLike T K V where
-  notFull : T → Prop
-  fresh : {t : T} → notFull t → K
-  fresh_get {H : notFull t} : get t (fresh H) = none
+  hasRoom : T → Prop
+  fresh : {t : T} → hasRoom t → K
+  fresh_get {H : hasRoom t} : get t (fresh H) = none
 
 /-- A type is HeapLike when it behaves like store for Optional values -/
 class Heap (T : Type _) (K V : outParam (Type _))
@@ -81,7 +81,7 @@ class Heap (T : Type _) (K V : outParam (Type _))
 
 /-- A Heap whose `fresh` function is total -/
 class AllocHeap (T : Type _) (K V : outParam (Type _)) extends Heap T K V, Alloc T K V where
-  notFull_set_fresh {H : notFull t} {v} : notFull (set t (fresh H) v)
+  hasRoom_set_fresh {H : hasRoom t} {v} : hasRoom (set t (fresh H) v)
 
 /-- Delete an element from a heap by setting its value to .none -/
 abbrev HeapLike.delete [HeapLike T K V] (t : T) (k : K) : T := StoreLike.set t k .none
