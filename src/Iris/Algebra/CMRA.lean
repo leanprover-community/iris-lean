@@ -1134,6 +1134,119 @@ theorem not_valid_some_exclN_op_left {n} {x : α} [CMRA.Exclusive x] {y : α} :
 theorem validN_op_unit {n} {x : Option α} (vx : ✓{n} x) : ✓{n} x • CMRA.unit := by
   cases x <;> trivial
 
+theorem option_inc_iff {ma mb : Option α} : ma ≼ mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ (a ≡ b ∨ a ≼ b) := by
+  constructor
+  · rintro ⟨mc, Hmc⟩
+    cases ma <;> cases mb <;> cases mc <;> simp_all [CMRA.op, optionOp]
+    · exact .inl Hmc.symm
+    · right; rename_i v3; exists v3
+  · rintro (H|⟨a, b, Ha, Hb, (H|⟨z, Hz⟩)⟩)
+    · subst H; exists mb; simp [CMRA.op, optionOp]
+    · subst Ha; subst Hb; exists none; simp [CMRA.op, optionOp]; exact H.symm
+    · subst Ha; subst Hb; exists some z
+
+theorem option_incN_iff {ma mb : Option α} : ma ≼{n} mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ (a ≡{n}≡ b ∨ a ≼{n} b) := by
+  constructor
+  · rintro ⟨mc, Hmc⟩
+    cases ma <;> cases mb <;> cases mc <;> simp_all [CMRA.op, optionOp]
+    · exact .inl Hmc.symm
+    · right; rename_i v3; exists v3
+  · rintro (H|⟨a, b, Ha, Hb, (H|⟨z, Hz⟩)⟩)
+    · subst H; exists mb; simp [CMRA.op, optionOp]
+    · subst Ha; subst Hb; exists none; simp [CMRA.op, optionOp]; exact H.symm
+    · subst Ha; subst Hb; exists some z
+
+theorem option_inc_total [CMRA.IsTotal α] {ma mb : Option α} :  ma ≼ mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼ b := by
+  apply option_inc_iff.trans _
+  constructor
+  · rintro (H|⟨a, b, Ha, Hb, (H|H)⟩)
+    · exact .inl H
+    · right
+      refine ⟨a, b, Ha, Hb, ?_⟩
+      exists (CMRA.core a)
+      exact H.symm.trans (CMRA.op_core a).symm
+    · exact .inr ⟨a, b, Ha, Hb, H⟩
+  · rintro (H|⟨a, b, Ha, Hb, H⟩)
+    · exact .inl H
+    · exact .inr ⟨a, b, Ha, Hb, .inr H⟩
+
+
+theorem option_incN_total [CMRA.IsTotal α] {ma mb : Option α} :  ma ≼{n} mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼{n} b := by
+  apply option_incN_iff.trans _
+  constructor
+  · rintro (H|⟨a, b, Ha, Hb, (H|H)⟩)
+    · exact .inl H
+    · right
+      refine ⟨a, b, Ha, Hb, ?_⟩
+      exists (CMRA.core a)
+      apply H.symm.trans (CMRA.op_core_dist a).symm
+    · exact .inr ⟨a, b, Ha, Hb, H⟩
+  · rintro (H|⟨a, b, Ha, Hb, H⟩)
+    · exact .inl H
+    · exact .inr ⟨a, b, Ha, Hb, .inr H⟩
+
+theorem some_incN {a b : α} : some a ≼{n} some b ↔ a ≡{n}≡ b ∨ a ≼{n} b := by
+  apply option_incN_iff.trans; simp
+
+theorem some_inc {a b : α} : some a ≼ some b ↔ a ≡ b ∨ a ≼ b := by
+  apply option_inc_iff.trans; simp
+
+theorem some_inc_exclusive [CMRA.Exclusive (a : α)] {b : α} (H : some a ≼ some b) (Hv : ✓ b) :
+     a ≡ b := by
+  rcases option_inc_iff.mp H with (H|⟨a', b', Ha, Hb, H⟩); simp at H
+  simp only [Option.some.injEq] at Ha Hb; subst Ha; subst Hb
+  rcases H with (H|H); trivial
+  exact (CMRA.not_valid_of_excl_inc H Hv).elim
+
+theorem some_incN_exclusive [CMRA.Exclusive (a : α)] {b : α} (H : some a ≼{n} some b) (Hv : ✓{n} b)  :
+    a ≡{n}≡ b := by
+  rcases option_incN_iff.mp H with (H|⟨a', b', Ha, Hb, H⟩); simp at H
+  simp only [Option.some.injEq] at Ha Hb; subst Ha; subst Hb
+  rcases H with (H|H); trivial
+  exact (CMRA.not_valid_of_exclN_inc H Hv).elim
+
+theorem some_inc_total [CMRA.IsTotal α] {a b : α} : some a ≼ some b ↔ a ≼ b := by
+  apply some_inc.trans
+  refine ⟨?_, .inr⟩
+  rintro (H|H)
+  · exists (CMRA.core a)
+    exact H.symm.trans (CMRA.op_core a).symm
+  · exact H
+
+theorem some_incN_total [CMRA.IsTotal α] {a b : α} : some a ≼{n} some b ↔ a ≼{n} b := by
+  apply some_incN.trans
+  refine ⟨?_, .inr⟩
+  rintro (H|H)
+  · exists (CMRA.core a)
+    exact H.symm.trans (CMRA.op_core_dist a).symm
+  · exact H
+
+instance cancelable_some {a : α} [Hid : CMRA.IdFree a] [Hc : CMRA.Cancelable a] : CMRA.Cancelable (some a) := by
+  constructor
+  rintro n (_|b) (_|c) _ HE
+  · trivial
+  · rename_i h
+    simp [CMRA.op, optionOp] at HE
+    exact Hid.id_free0_r c (CMRA.valid0_of_validN h) (HE.symm.le (n.zero_le))
+  · rename_i h
+    simp [CMRA.op, optionOp] at HE
+    apply Hid.id_free0_r b
+    · simp [CMRA.op, optionOp, CMRA.ValidN, optionValidN] at h
+      apply CMRA.valid0_of_validN
+      exact (Dist.validN HE).mp h
+    · apply Dist.le HE (n.zero_le)
+  · simp [OFE.Dist, Option.Forall₂]
+    apply Hc.cancelableN
+    · rename_i h; exact h
+    · apply HE
+
+instance option_cancelable (ma : Option α) [Hid : ∀ a : α, CMRA.IdFree a] [Hc : ∀ a : α, CMRA.Cancelable a] :
+    CMRA.Cancelable ma := by
+  cases ma
+  constructor
+  · simp [CMRA.op, optionOp]
+  · apply cancelable_some
+
 end option
 
 section unit
