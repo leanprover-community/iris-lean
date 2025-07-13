@@ -308,7 +308,7 @@ theorem lookup_includedN n (m1 m2 : StoreO T) :
     generalize HY : f i = Y
     cases X <;> cases Y <;> simp_all [CMRA.op, optionOp]
 
-theorem lookup_included (m1 m2 : StoreO T) :
+theorem lookup_included {m1 m2 : StoreO T} :
   (∃ (z : StoreO T), m2 ≡ store_op m1 z) ↔
   ∀ i, (∃ z, (StoreO.get i m2) ≡ (StoreO.get i m1) • z) := by
   constructor
@@ -428,7 +428,7 @@ instance StoreO_CMRA : CMRA (StoreO T) where
       exact Hxy
     intro x y H'
     unfold le'
-    refine (lookup_included (core' x) (core' y)).mpr ?_
+    refine lookup_included.mpr ?_
     intro i
     suffices (core (StoreO.get i x)) ≼ (core (StoreO.get i y)) by
       simp_all [core', pcore_F, core, Store.get_map]
@@ -471,6 +471,7 @@ section heap_laws
 
 variable {T K V : Type _} [Heap T K V] [CMRA V]
 open CMRA
+
 
 theorem lookup_validN_Some {m : StoreO T} : ✓{n} m → StoreO.get i m ≡{n}≡ some x → ✓{n} x := by
   suffices ✓{n} StoreO.get i m → StoreO.get i m ≡{n}≡ some x → ✓{n} x by
@@ -650,68 +651,152 @@ theorem singleton_includedN_l {m : StoreO T} :
       exists (x • v)
       refine ⟨Hz', ?_⟩
       exists v
-  · sorry
-    /- rintro ⟨z, Hz, z', Hz'⟩
-    cases z'
-    · exists m
-      intro k
-      simp [CMRA.op]
-      rw [Store.get_merge]
-      if He : i = k
-        then
-          rw [Heap.point_get_eq He]
-          simp [op_merge]
-          generalize Hmi : StoreLike.get m.car k = mi; cases mi <;> simp
-          · subst He; simp_all [Hmi]
-          · rename_i vmi
-            subst He; simp_all [Hmi]
-            sorry
-        else
-          rw [Heap.point_get_ne He]
-          sorry
-
-      -- simp_all [OFE.Dist, Option.Forall₂, CMRA.op, optionOp]
-      -- generalize Hz1 : StoreLike.get m.car i = z1
-      -- cases z1
-      -- · simp [Hz1] at Hz
-      -- · simp [Hz1] at Hz
-      --   sorry
-    · sorry
-    -/
+  · rintro ⟨y, Hy, z, Hz⟩
+    exists StoreO.set i z m
+    intro j
+    if He : i = j
+      then
+        simp [StoreO.singleton]
+        simp [StoreO.get, He] at Hy
+        refine Hy.trans (Hz.trans ?_)
+        simp [CMRA.op, Store.get_merge, Heap.point_get_eq He, Heap.get_set_eq He, op_merge, optionOp]
+        cases z <;> simp
+      else
+        simp [StoreO.singleton, CMRA.op]
+        rw [Store.get_merge, Heap.point_get_ne He, Heap.get_set_ne He]
+        simp [op_merge]
+        cases (StoreLike.get m.car j) <;> simp
 
 theorem singleton_included_l {m : StoreO T} :
     (StoreO.singleton i (some x) : StoreO T) ≼ m ↔ ∃ y, (StoreO.get i m ≡ some y) ∧ some x ≼ some y := by
   constructor
-  · sorry
-  · sorry
+  · rintro ⟨z, Hz⟩
+    have Hz' := Hz i
+    simp [CMRA.op, op] at Hz'
+    rw [Store.get_merge] at Hz'
+    simp [op_merge] at Hz'
+    rw [Heap.point_get_eq rfl] at Hz'
+    generalize Hz0 : StoreLike.get z.car i = z0
+    cases z0 <;> simp [Hz0] at Hz'
+    · exists x
+    · rename_i v
+      exists (x • v)
+      refine ⟨Hz', ?_⟩
+      exists v
+  · rintro ⟨y, Hy, z, Hz⟩
+    exists StoreO.set i z m
+    intro j
+    if He : i = j
+      then
+        simp [StoreO.singleton]
+        simp [StoreO.get, He] at Hy
+        refine Hy.trans (Hz.trans ?_)
+        simp [CMRA.op, Store.get_merge, Heap.point_get_eq He, Heap.get_set_eq He, op_merge, optionOp]
+        cases z <;> simp
+      else
+        simp [StoreO.singleton, CMRA.op]
+        rw [Store.get_merge, Heap.point_get_ne He, Heap.get_set_ne He]
+        simp [op_merge]
+        generalize Hx : StoreLike.get m.car j = x
+        cases x <;> simp
 
 theorem singleton_included_exclusive_l {m : StoreO T} (He : Exclusive x) (Hv : ✓ m) :
     (StoreO.singleton i (some x) : StoreO T) ≼ m ↔ (StoreO.get i m ≡ some x) := by
+  apply singleton_included_l.trans
   constructor
-  · rintro ⟨z, Hz⟩
-    sorry
-  · sorry
+  · rintro ⟨y, Hy, Hxy⟩
+    suffices x ≡ y by apply Hy.trans this.symm
+    exact some_inc_exclusive Hxy <| lookup_valid_Some Hv Hy
+  · intro _; exists x
 
 theorem singleton_included :
-  (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y)) ↔ some x ≼ some y := sorry
+    (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y)) ↔ some x ≼ some y := by
+  apply singleton_included_l.trans
+  constructor
+  · rintro ⟨z, Hz, Hxz⟩
+    simp [StoreO.get, StoreO.singleton] at Hz
+    rw [Heap.point_get_eq rfl] at Hz
+    exact inc_of_inc_of_eqv Hxz Hz.symm
+  · intro H
+    exists y
+    simp [StoreO.get, StoreO.singleton]
+    rw [Heap.point_get_eq rfl]
+    exact ⟨.rfl, H⟩
 
 theorem singleton_included_total [IsTotal V] :
-  (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y))  ↔ x ≼ y := sorry
+    (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y))  ↔ x ≼ y :=
+  singleton_included.trans <| some_inc_total.trans <| Eq.to_iff rfl
 
-theorem singleton_included_mono :
-  x ≼ y → (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y))  := sorry
+theorem singleton_included_mono (Hinc : x ≼ y) : (StoreO.singleton i (some x) : StoreO T) ≼ (StoreO.singleton i (some y)) :=
+  singleton_included.mpr <| some_inc.mpr <| .inr Hinc
 
 instance singleton_cancelable (H : Cancelable (some x)) : Cancelable (StoreO.singleton i (some x) : StoreO T) := by
   constructor
-  intro n x z H Hex k
-  if He : i = k
-    then sorry
-    else sorry
+  intro n m1 m2 Hv He j
+  have Hv' := Hv j; clear Hv
+  have He' := He j; clear He
+  simp_all [StoreO.singleton, CMRA.op, store_op, StoreO.merge, Store.get_merge]
+  if He : i = j
+    then
+      rw [Heap.point_get_eq He] at *
+      apply H.cancelableN
+      · simp [op_merge] at Hv'
+        generalize HX : StoreLike.get m1.car j = X
+        rw [HX] at Hv'
+        cases X <;> simp_all [CMRA.op, op, optionOp]
+      · generalize HX : (StoreLike.get m1.car j) = X
+        generalize HY : (StoreLike.get m2.car j) = Y
+        rw [HX, HY] at He'
+        cases X <;> cases Y <;> simp_all [op_merge, CMRA.op, optionOp]
+    else
+      rw [Heap.point_get_ne He] at *
+      simp [op_merge] at *
+      generalize HX : StoreLike.get m1.car j = X
+      generalize HY : (StoreLike.get m2.car j) = Y
+      rw [HX, HY] at He'
+      rw [HX] at Hv'
+      cases X <;> cases Y <;> simp_all [op_merge, CMRA.op, optionOp]
 
-instance heap_cancelable {m : StoreO T} : (∀ x : V, IdFree x) → (∀ x : V, Cancelable x) → Cancelable m := sorry
+instance heap_cancelable {m : StoreO T} [Hid : ∀ x : V, IdFree x] [Hc : ∀ x : V, Cancelable x] : Cancelable m := by
+  constructor
+  intro n m1 m2 Hv He i
+  apply CMRA.cancelableN (x := StoreLike.get m.car i)
+  · have Hv' := Hv i
+    simp [StoreO.get, CMRA.op, op] at Hv'
+    rw [Store.get_merge] at Hv'
+    generalize HX : (StoreLike.get m.car i) = X
+    generalize HY : (StoreLike.get m1.car i) = Y
+    simp_all [CMRA.op, op, op_merge, optionOp]
+    cases X <;> cases Y <;> simp_all
+  · have He' := He i
+    simp_all [CMRA.op, op, optionOp]
+    rw [Store.get_merge] at He'
+    simp [op_merge] at He'
+    generalize HX : (StoreLike.get m.car i) = X
+    generalize HY : (StoreLike.get m1.car i) = Y
+    generalize HZ : (StoreLike.get m2.car i) = Z
+    rw [HX, HY] at He'
+    cases X <;> cases Y <;> cases Z <;> simp_all [Store.get_merge, op_merge]
 
 theorem insert_op {m1 m2 : StoreO T} :
-  StoreO.Equiv ((StoreO.set i (x • y) (m1 • m2))) ((StoreO.set i x m1) • (StoreO.set i y m2)) := sorry
+    StoreO.Equiv ((StoreO.set i (x • y) (m1 • m2))) ((StoreO.set i x m1) • (StoreO.set i y m2)) := by
+  simp [StoreO.Equiv, Store.Equiv]
+  apply funext
+  intro j
+  if He : i = j
+    then
+      simp [CMRA.op]
+      rw [Heap.get_set_eq He, Store.get_merge]
+      simp [op_merge]
+      rw [Heap.get_set_eq He, Heap.get_set_eq He]
+      simp [optionOp]
+      cases x <;> cases y <;> simp_all
+    else
+      simp [CMRA.op]
+      rw [Heap.get_set_ne He, Store.get_merge]
+      simp [op_merge]
+      rw [Store.get_merge]
+      rw [Heap.get_set_ne He, Heap.get_set_ne He]
 
 theorem insert_op_eq [IsStoreIso T K (Option V)] {m1 m2 : StoreO T} : (StoreO.set i (x • y) (m1 • m2)) = (StoreO.set i x m1) • (StoreO.set i y m2) :=
   IsStoreIso.eq_of_Equiv insert_op
@@ -722,26 +807,83 @@ def set_union {X : Type _} (S1 S2 : X → Prop) : X → Prop := fun x => S1 x �
 def set_included {X : Type _} (S1 S2 : X → Prop) : Prop := ∀ x, S1 x → S2 x
 
 theorem gmap_op_union {m1 m2 : StoreO T} : set_disjoint (StoreO.dom m1) (StoreO.dom m2) →
-  StoreO.Equiv (m1 • m2) (StoreO.union m1 m2) := sorry
-
+    StoreO.Equiv (m1 • m2) (StoreO.union m1 m2) := by
+  intro Hd
+  simp [StoreO.Equiv, Store.Equiv]
+  apply funext
+  intro j
+  simp [CMRA.op, op, Store.get_merge, op_merge]
+  generalize HX : StoreLike.get m2.car j = X
+  generalize HY : StoreLike.get m1.car j = Y
+  cases X <;> cases Y <;> simp_all
+  exfalso
+  apply Hd j
+  simp [StoreO.dom, HeapLike.dom, HX, HY]
 
 theorem gmap_op_union_eq [IsStoreIso T K (Option V)] {m1 m2 : StoreO T} (H : set_disjoint (StoreO.dom m1) (StoreO.dom m2)) :
     m1 • m2 = StoreO.union m1 m2 :=
   IsStoreIso.eq_of_Equiv (gmap_op_union H)
 
-theorem gmap_op_valid0_disjoint (m1 m2 : StoreO T) :
-  ✓{0} (m1 • m2) → (∀ k x, StoreO.get k m1 = some x → Exclusive x) → set_disjoint (StoreO.dom m1) (StoreO.dom m2) := sorry
+theorem gmap_op_valid0_disjoint {m1 m2 : StoreO T} (Hv : ✓{0} (m1 • m2)) (H : ∀ k x, StoreO.get k m1 = some x → Exclusive x) :
+    set_disjoint (StoreO.dom m1) (StoreO.dom m2) := by
+  rintro k
+  simp [StoreO.dom, HeapLike.dom, Option.isSome]
+  generalize HX : StoreLike.get m1.car k = X
+  cases X <;> simp
+  rename_i x
+  simp [StoreO.get] at H
+  have H' := H _ _ HX
+  generalize HY : StoreLike.get m2.car k = Y
+  cases Y <;> simp_all
+  rcases H' with ⟨Hex⟩
+  rename_i xx
+  apply Hex xx
+  simp [CMRA.op, op, CMRA.ValidN, store_validN] at Hv
+  have Hv' := Hv k
+  simp [Store.get_merge, optionValidN, HX, HY] at Hv'
+  exact Hv'
 
-theorem gmap_op_valid_disjoint (m1 m2 : StoreO T) :
-  ✓ (m1 • m2) → (∀ k x, StoreO.get k m1 = some x → Exclusive x) → set_disjoint (StoreO.dom m1) (StoreO.dom m2) := sorry
+-- TODO: Redundant proof from gmap_op_valid0_disjoint
+theorem gmap_op_valid_disjoint {m1 m2 : StoreO T} (Hv : ✓ (m1 • m2)) (H : ∀ k x, StoreO.get k m1 = some x → Exclusive x) :
+    set_disjoint (StoreO.dom m1) (StoreO.dom m2) := by
+  rintro k
+  simp [StoreO.dom, HeapLike.dom, Option.isSome]
+  generalize HX : StoreLike.get m1.car k = X
+  cases X <;> simp
+  rename_i x
+  simp [StoreO.get] at H
+  have H' := H _ _ HX
+  generalize HY : StoreLike.get m2.car k = Y
+  cases Y <;> simp_all
+  rcases H' with ⟨Hex⟩
+  rename_i xx
+  apply Hex xx
+  simp [CMRA.op, op, CMRA.ValidN, store_validN] at Hv
+  have Hv' := Hv k
+  simp [Store.get_merge, optionValidN, HX, HY] at Hv'
+  exact Valid.validN Hv'
 
-theorem dom_op (m1 m2 : StoreO T) : StoreO.dom (m1 • m2) = set_union (StoreO.dom m1) (StoreO.dom m2) := sorry
+theorem dom_op (m1 m2 : StoreO T) : StoreO.dom (m1 • m2) = set_union (StoreO.dom m1) (StoreO.dom m2) := by
+  refine (funext fun k => ?_)
+  simp only [CMRA.op, op, StoreO.dom, HeapLike.dom, set_union, StoreO.merge, Store.get_merge, op_merge]
+  generalize HX : StoreLike.get m1.car k = X
+  generalize HY : StoreLike.get m2.car k = Y
+  cases X <;> cases Y <;> simp
 
-theorem dom_included (m1 m2 : StoreO T) : m1 ≼ m2 → set_included (StoreO.dom m1) (StoreO.dom m2) := sorry
+theorem dom_included {m1 m2 : StoreO T} (Hinc : m1 ≼ m2) : set_included (StoreO.dom m1) (StoreO.dom m2) := by
+  intro i
+  rcases lookup_included.mp Hinc i with ⟨z, Hz⟩
+  simp [StoreO.dom, HeapLike.dom]
+  simp [StoreO.get, OFE.Equiv, Option.Forall₂] at Hz
+  generalize HX : StoreLike.get m1.car i = X
+  generalize HY : StoreLike.get m2.car i = Y
+  cases X <;> cases Y <;> simp
+  simp [HX, HY, CMRA.op, op, optionOp] at Hz
+  cases z <;> simp at Hz
 
-theorem StoreO.map_mono [CMRA V'] [Heap T' K V'] (f : Option V → Option V') (m1 m2 : StoreO T) :
-  (∀ v1 v2 : V, v1 ≡ v2 → f v1 ≡ f v2) →
-  (∀ x y, x ≼ y → f x ≼ f y) → m1 ≼ m2 →
-  (StoreO.map f m1 : StoreO T') ≼ StoreO.map f m2 := sorry
+-- theorem StoreO.map_mono [CMRA V'] [Heap T' K V'] {f : Option V → Option V'} {m1 m2 : StoreO T}
+--     (H1 : ∀ v1 v2 : V, v1 ≡ v2 → f v1 ≡ f v2)  (H2 : ∀ x y, x ≼ y → f x ≼ f y) (H3 : m1 ≼ m2) :
+--     (StoreO.map f m1 : StoreO T') ≼ StoreO.map f m2 := by
+--   s orry
 
 end heap_laws
