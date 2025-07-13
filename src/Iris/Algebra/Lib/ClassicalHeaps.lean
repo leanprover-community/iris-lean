@@ -8,13 +8,14 @@ import Iris.Algebra.Heap
 
 -- Library functions: move me
 
-/-- A set whose complement is infinite -/
-def coinfinite (S : P → Prop) : Prop :=
+/-- A set S is infinite if there exists an injection from Nat into the set of elements
+  such that S holds. -/
+def infinite (S : P → Prop) : Prop :=
   ∃ f : Nat → P, (∀ n, S <| f n) ∧ (∀ n m : Nat, f n = f m → n = m)
 
 /-- Arbitrarily changing one element of a co-infinite set yields a co-infinite set -/
 theorem cofinite_alter_cofinite {S S' : P → Prop} (p' : P) (Ha : ∀ p, p ≠ p' → S p = S' p)
-    (Hs : coinfinite S) : coinfinite S' := by
+    (Hs : infinite S) : infinite S' := by
   rcases Hs with ⟨f, HfS, Hfinj⟩
   -- Basically, alter f so that f never hits p'.
   rcases (Classical.em (∃ n, f n = p')) with (⟨n, H⟩|H)
@@ -63,13 +64,13 @@ open Classical in
 noncomputable def fset {K V : Type _} (f : K → V) (k : K) (v : V) : K → V :=
   fun k' => if (k = k') then v else f k'
 
-@[simp] def support (f : K → Option V) : K → Prop := ((· == true) ∘ Option.isSome ∘ f)
+@[simp] def cosupport (f : K → Option V) : K → Prop := ((· == false) ∘ Option.isSome ∘ f)
 
-theorem coinfinite_fset_coinfinite (f : K → Option V) (H : coinfinite (support f)) :
-    coinfinite (support (fset f k v)) := by
+theorem coinfinite_fset_coinfinite (f : K → Option V) (H : infinite (cosupport f)) :
+    infinite (cosupport (fset f k v)) := by
   apply cofinite_alter_cofinite  k _ H
   intro p Hpk
-  simp [support, fset]
+  simp [cosupport, fset]
   split
   · simp_all
   · rfl
@@ -94,8 +95,11 @@ noncomputable def instClassicalHeap : Heap (K → Option V) K V where
 
 
 theorem coinfinte_exists_next {f : K → Option V} :
-  coinfinite (support f) → ∃ k, f k = none := by sorry
-
+    infinite (cosupport f) → ∃ k, f k = none := by
+  rintro ⟨enum, Henum, Henum_inj⟩
+  exists (enum 0)
+  simp [cosupport] at Henum
+  apply Henum
 
 /-- This is closer to gmap, but still a generalization. Among other things, gmap can only express
 finite maps. To support allocation, you actually only need the complement to be infinite. This construction can,
@@ -103,12 +107,9 @@ for example, express an infinite number of pices of ghost state while retaining 
 allocate new ghost state. -/
 noncomputable def instClassicaAllocHeap : AllocHeap (K → Option V) K V where
   toHeap := instClassicalHeap
-  notFull f := coinfinite <| support f
+  hasRoom f := infinite <| cosupport f
   fresh HC := Classical.choose (coinfinte_exists_next HC)
   fresh_get {_ HC} := Classical.choose_spec (coinfinte_exists_next HC)
-  notFull_set_fresh {_ H _} := coinfinite_fset_coinfinite _ H
-
--- TODO: Heaps indexed by natural numbers. Still a generalization over Iris because
--- an infinite number of values can be givien non-default values!
+  hasRoom_set_fresh {_ H _} := coinfinite_fset_coinfinite _ H
 
 end instances
