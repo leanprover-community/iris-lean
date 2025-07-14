@@ -56,20 +56,41 @@ theorem discrete_fun_validI [Iris.UCMRA M] {A : Type _} {B : A -> Type _} [instc
     simp [Iris.BI.forall, Iris.BI.sForall, UPred.sForall] at Hg
     apply Hg
 
-theorem singleton_validI [Iris.UCMRA M] [Iris.CMRA A] (a : A) :
-  @UPred.cmraValid _ _ _ _ (λ (γ : Iris.GName) => some a) ⊢ @UPred.cmraValid M _ _ _ a := by
-  sorry
+def instTransport [iA : Iris.UCMRA A] [i : inG FF A] :
+  Iris.UCMRA ((γ : Iris.GName) -> FF[i.id].car (Iris.iPrePropO FF) (Iris.iPrePropO FF)) := by
+  rewrite [i.prf] at iA
+  apply (@Iris.ucmraDiscreteFunO _ _ (fun _ => iA))
 
-theorem iRes_singleton_valid [Iris.UCMRA M] [iA : Iris.CMRA A] [i : inG FF A] (a : A) :
+theorem singleton_validI  [Iris.UCMRA A] [i : inG FF A] (a : A) :
+  @UPred.cmraValid _ instTransport _ _ (λ (γ : Iris.GName) => some a) ⊢
+  @UPred.cmraValid _ (@instTransport _ _ _ i) _ _ a := by
+  simp [UPred.cmraValid, Iris.BI.Entails, UPred.Entails]
+  intros n x Hx Hg
+  simp [Iris.CMRA.ValidN] at Hg
+  specialize (Hg ⟨ 0 ⟩)
+  simp [Iris.optionValidN] at Hg
+  apply Hg
+
+set_option pp.proofs true
+theorem iRes_singleton_valid [Iris.UCMRA M] [iA : Iris.UCMRA A] [i : inG FF A] (a : A) :
   @UPred.cmraValid _ _ _ _ (@iRes_singleton _ FF _ _ a) ⊢ @UPred.cmraValid M _ _ _ a := by
   unfold iRes_singleton
   apply Iris.BI.Entails.trans
   apply discrete_fun_validI'; apply i.id
   rewrite [discrete_fun_lookup_singleton]
-  apply Iris.BI.Entails.trans
-  have := (Eq.mp (cmra_transport i.prf) iA)
-  sorry
-  sorry
+  have := @singleton_validI _ _ iA i a
+  rcases i with ⟨ id, prf ⟩
+  cases prf
+  revert this
+  simp [UPred.cmraValid, Iris.BI.Entails, UPred.Entails]
+  intros Hvalid n x Hx Hg
+  simp [Iris.CMRA.ValidN, Iris.optionValidN] at Hg
+  specialize (Hvalid n (fun _ => a))
+  apply Hvalid
+  · sorry
+  simp [Iris.CMRA.ValidN, Iris.optionValidN]
+  intros x
+  try apply (Hg x)
   sorry
 
 abbrev own [Iris.CMRA A] [inG FF A] (a : A) : Iris.IProp FF :=
