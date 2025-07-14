@@ -3,6 +3,7 @@ Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser
 -/
+import Iris.ProofMode.Patterns.SpecPattern
 import Iris.ProofMode.Tactics.Basic
 import Iris.ProofMode.Tactics.Remove
 
@@ -14,7 +15,7 @@ theorem apply [BI PROP] {P P' Q O A1 : PROP} {p : Bool}
     [h4 : FromAssumption false A2 Q] : P ⊢ Q :=
   h1.mp.trans (wand_elim (h2.trans (wand_intro ((sep_mono_r h3.1).trans (wand_elim_r.trans h4.1)))))
 
--- todo: hypothesis management
+-- todo: spec patterns
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iApplyCore
     {P P'} (p : Q(Bool)) (hyps : Hyps bi P) (hyps' : Hyps bi P') (Q hyp : Q($prop))
@@ -47,8 +48,8 @@ partial def iApplyCore
 
     return q(assumption $pf)
 
--- todo: hyp is a lean lemma (later)
-elab "iapply" colGt hyp:ident : tactic => do
+-- todo: case when hyp is a lean lemma (later)
+elab "iapply" colGt hyp:ident colGt pat:specPat : tactic => do
   let mvar ← getMainGoal
 
   mvar.withContext do
