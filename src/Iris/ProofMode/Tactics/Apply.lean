@@ -14,11 +14,15 @@ theorem apply [BI PROP] {P P' Q O A1 A2 : PROP} {p : Bool}
     (h1 : P ⊣⊢ P' ∗ □?p O) (h2 : P' ⊢ A1) [h3 : IntoWand' p false O A1 A2]
     [h4 : FromAssumption false A2 Q] : P ⊢ Q :=
   h1.mp.trans (wand_elim (h2.trans (wand_intro ((sep_mono_r h3.1).trans (wand_elim_r.trans h4.1)))))
-
--- Can these two be combined into one theorem?
-theorem apply' [BI PROP] {P P' P'' hyp out : PROP} {p : Bool}
-    (h1 : P ⊣⊢ P' ∗ □?p hyp) (h2 : P' ⊣⊢ P'' ∗ out) : P ⊣⊢ P'' ∗ out ∗ □?p hyp :=
-  h1.trans ((sep_congr h2 .rfl).trans sep_assoc)
+-- Is there a theorem that does [wand_elim, trans, wand_intro]?
+-- Can apply and apply' be combined into one theorem?
+theorem apply' [BI PROP] {P P' P'' A1 A2 hyp out : PROP} {p : Bool}
+    (h1 : P ⊢ P' ∗ □?p hyp) (h2 : P' ⊢ P'' ∗ out)
+    (h3 : □?p hyp ⊢ A1 -∗ A2) (h4 : out ⊢ A1)
+    : P ⊢ P'' ∗ A2 :=
+  h1.trans (wand_elim (h2.trans (wand_intro ((sep_assoc).mp.trans (sep_mono_r (
+    wand_elim (h4.trans (wand_intro (Entails.trans (sep_comm).mp (wand_elim h3))))
+  )))))) -- todo: terrible proof, refactor required
 
 -- todo: spec patterns
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
