@@ -185,7 +185,7 @@ theorem exact [BI PROP] (Q : PROP) : Q ⊢ Q := by
   iintro HQ
   iapply HQ
 
-theorem apply [BI PROP] (P Q : PROP) :  ⊢ P -∗ (P -∗ Q) -∗ Q := by
+theorem apply [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
   iintro HP H
   iapply H
   iexact HP
