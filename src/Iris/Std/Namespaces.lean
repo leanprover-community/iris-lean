@@ -6,6 +6,15 @@ class Countable (A : Type) where
   decode : Pos -> Option A
   decode_encode x : decode (encode x) = some x
 
+instance some_inj {A} : Injective (@some A) where
+  inj := by intros x y; rintro ⟨⟩; rfl
+
+instance encode_inj [c : Countable A] : Injective (c.encode) where
+  inj := by
+    intros x y Hxy; apply some_inj.inj
+    rewrite [<- c.decode_encode x, Hxy, c.decode_encode]
+    rfl
+
 instance [Countable A] : Countable (List A) where
   encode xs := positives_flatten (List.map Countable.encode xs)
   decode p := Option.bind (positives_unflatten p)
@@ -31,14 +40,14 @@ instance : Countable Namespace := by infer_instance
 def nroot : Namespace := List.nil
 
 def ndot [Countable A] (N : Namespace) (x : A) : Namespace :=
-  Pos.ofNat (Countable.encode x) :: N
+  (Countable.encode x) :: N
 
 def nclose (N : Namespace) : CoPset :=
   CoPset.suffixes ((positives_flatten N))
 
 instance : CoeOut Namespace CoPset where coe := nclose
 
-infix:70 ".@" => ndot
+infix:60 ".@" => ndot
 
 instance ndisjoint : Disjoint Namespace where
   disjoint N1 N2 := nclose N1 ## nclose N2
@@ -50,4 +59,25 @@ theorem nclose_subseteq [Countable A] N (x : A) : (↑N.@x : CoPset) ⊆ (↑N :
   simp [nclose, ndot]
   rewrite [CoPset.elem_suffixes]; rewrite [CoPset.elem_suffixes]
   rintro ⟨ q, Heq ⟩; rewrite [Heq]
-  exists (q ++ Pos.ofNat (Countable.encode x))
+  obtain ⟨ q', Heq ⟩ :=
+    (positives_flatten_suffix N (ndot N x) (by exists [Countable.encode x]))
+  exists (q ++ q')
+  rewrite [app_assoc_l.assoc, <- Heq]
+  rfl
+
+theorem nclose_subseteq' [Countable A] E (N : Namespace) (x : A) : (↑N : CoPset) ⊆ E -> (↑(N.@x) : CoPset) ⊆ E := by
+  intro Hsubset
+  apply CoPset.subseteq_trans
+  apply nclose_subseteq
+  assumption
+
+theorem ndot_ne_disjoint [Countable A] (N : Namespace) (x y : A) :
+  x ≠ y -> Disjoint.disjoint (N.@x) (N.@y) := by
+  intros Hxy p; simp [nclose];
+  rewrite [CoPset.elem_suffixes]; rewrite [CoPset.elem_suffixes]
+  rintro ⟨ qx, Heqx ⟩; rintro ⟨ qy, Heqy ⟩
+  rewrite [Heqx] at Heqy
+  have := positives_flatten_suffix_eq qx qy (N.@x) (N.@y) (by simp [ndot, List.length]) Heqy
+  simp [ndot, Countable.encode] at this
+  have := (encode_inj.inj _ _ this)
+  exact Hxy this

@@ -232,8 +232,95 @@ theorem positives_flatten_app xs ys :
     rewrite [IH]
     simp [app_assoc_l.assoc]
 
+theorem positives_flatten_cons x xs :
+  positives_flatten (x :: xs)
+  = P1~1~0 ++ Pos.reverse (Pos.dup x) ++ positives_flatten xs := by
+  have heq : x :: xs = [x] ++ xs := rfl
+  rw [heq]
+  apply positives_flatten_app
+
 theorem positives_flatten_suffix (l k : List Pos) :
   l <:+ k -> ∃ q, positives_flatten k = q ++ positives_flatten l := by
   rintro ⟨ l', Heq ⟩; rewrite [<- Heq]
   exists (positives_flatten l')
   apply positives_flatten_app
+
+class Injective (f : A -> B) where
+  inj : ∀ (a a' : A), f a = f a' -> a = a'
+
+instance app_inj (p : Pos) : Injective (.++ p) where
+  inj := by
+    intros a a' Heq
+    induction p <;> simp_all [HAppend.hAppend, Pos.app]
+
+theorem reverse_involutive p : Pos.reverse (.reverse p) = p := by
+  induction p with
+  | xI p IH =>
+    rewrite [reverse_xI, reverse_app, IH]; rfl
+  | xO p IH =>
+    rewrite [reverse_x0, reverse_app, IH]; rfl
+  | xH => rfl
+
+instance rev_inj : Injective Pos.reverse where
+  inj := by
+    intros p q Heq
+    rewrite [<- reverse_involutive p]
+    rewrite [<- reverse_involutive q]
+    simp [Heq]
+
+theorem dup_app p q : Pos.dup (p ++ q) = .dup p ++ .dup q := by
+  induction q generalizing p <;>
+  simp_all [HAppend.hAppend, Pos.app, Pos.dup]
+
+theorem reverse_dup (p : Pos) :
+  Pos.reverse (.dup p) = .dup (.reverse p) := by
+  have hdup := dup_app
+  have hassoc := app_assoc_l.assoc
+  simp [HAppend.hAppend, Pos.app] at hdup hassoc
+  induction p with
+  | xI p IH =>
+    simp [Pos.dup]
+    simp [reverse_xI, HAppend.hAppend, Pos.app]
+    rewrite [<- hassoc, IH, hdup]
+    rfl
+  | xO p IH =>
+    simp [Pos.dup]
+    simp [reverse_x0, HAppend.hAppend, Pos.app]
+    rewrite [<- hassoc, IH, hdup]
+    rfl
+  | xH => rfl
+
+theorem dup_suffix_eq p q s1 s2 :
+  s1~1~0 ++ .dup p = s2~1~0 ++ .dup q -> p = q := by
+  induction p generalizing q with
+  | xI p IH =>
+    intros Heq
+    cases q <;> simp_all [HAppend.hAppend, Pos.app, Pos.dup] <;> rename Pos => q
+    rewrite [IH q]; rfl; simp [Heq]
+  | xO p IH =>
+    intros Heq
+    cases q <;> simp_all [HAppend.hAppend, Pos.app, Pos.dup] <;> rename Pos => q
+    rewrite [IH q]; rfl; simp [Heq]
+  | xH => cases q <;> simp [HAppend.hAppend, Pos.app, Pos.dup]
+
+theorem positives_flatten_suffix_eq p1 p2 (xs ys : List Pos) :
+  List.length xs = List.length ys ->
+  p1 ++ positives_flatten xs = p2 ++ positives_flatten ys ->
+  xs = ys := by
+  induction xs generalizing p1 p2 ys with
+  | nil => simp; intros Hlen _; grind only [→ List.eq_nil_of_length_eq_zero]
+  | cons x xs IH =>
+    rcases ys with _ | ⟨ y, ys ⟩; grind only [List.length_nil, List.length_cons, → List.eq_nil_of_length_eq_zero,
+      Array.size_empty]
+    rewrite [positives_flatten_cons]
+    rewrite [<- app_assoc_l.assoc]; rewrite [<- app_assoc_l.assoc]
+    rewrite [positives_flatten_cons]
+    rewrite [<- app_assoc_l.assoc]; rewrite [<- app_assoc_l.assoc]
+    intros Hlen Hl
+    have Heq : xs = ys := by apply IH; simp_all []; apply Hl
+    rewrite [Heq]; congr; rewrite [Heq] at Hl
+    replace Hl := (app_inj (positives_flatten ys)).inj _ _ Hl
+    rewrite [reverse_dup] at Hl
+    rewrite [reverse_dup] at Hl
+    replace Hl := (dup_suffix_eq _ _ p1 p2 Hl)
+    apply (rev_inj.inj _ _ Hl)

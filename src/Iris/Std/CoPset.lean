@@ -152,6 +152,13 @@ def complement (X : CoPset) : CoPset :=
 instance : HasSubset CoPset where
   Subset t1 t2 := ∀ (p : Pos), p ∈ t1 -> p ∈ t2
 
+theorem subseteq_trans (X Y Z : CoPset) :
+  X ⊆ Y ->
+  Y ⊆ Z ->
+  X ⊆ Z := by
+  intros Hxy Hyz p Hx
+  exact Hyz p (Hxy p Hx)
+
 def isFiniteRaw : CoPsetRaw → Bool
   | CoPsetRaw.leaf b => !b
   | CoPsetRaw.node _ l r => isFiniteRaw l && isFiniteRaw r
@@ -243,7 +250,7 @@ end CoPset
 class Disjoint (α : Type u) where
   disjoint : α -> α -> Prop
 
-infix:20 "##" => Disjoint.disjoint
+infix:70 " ## " => Disjoint.disjoint
 
 instance : Disjoint CoPset where
-  disjoint s t := s ∩ t = ∅
+  disjoint s t := ∀ p, p ∈ s -> p ∈ t -> False
