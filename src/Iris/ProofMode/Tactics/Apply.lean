@@ -13,16 +13,15 @@ open Lean Elab Tactic Meta Qq BI Std
 theorem apply [BI PROP] {P P' Q O A1 A2 : PROP} {p : Bool}
     (h1 : P ⊣⊢ P' ∗ □?p O) (h2 : P' ⊢ A1) [h3 : IntoWand' p false O A1 A2]
     [h4 : FromAssumption false A2 Q] : P ⊢ Q :=
-  h1.mp.trans (wand_elim (h2.trans (wand_intro ((sep_mono_r h3.1).trans (wand_elim_r.trans h4.1)))))
--- Is there a theorem that does [wand_elim, trans, wand_intro]?
--- Can apply and apply' be combined into one theorem?
+  h1.mp.trans <| (sep_mono_l h2).trans <| (sep_mono_r h3.1).trans <| wand_elim_r.trans h4.1
+
+-- todo: combine apply and apply'
 theorem apply' [BI PROP] {P P' P'' A1 A2 hyp out : PROP} {p : Bool}
-    (h1 : P ⊣⊢ P' ∗ □?p hyp) (h2 : P' ⊢ P'' ∗ out)
+    (h1 : P ⊣⊢ P' ∗ □?p hyp) (h2 : P' ⊣⊢ P'' ∗ out)
     [h3 : IntoWand' p false hyp A1 A2] [h4 : FromAssumption false out A1]
     : P ⊢ P'' ∗ A2 :=
-  h1.mp.trans (wand_elim (h2.trans (wand_intro ((sep_assoc).mp.trans (sep_mono_r (
-    wand_elim (h4.1.trans (wand_intro (Entails.trans (sep_comm).mp (wand_elim h3.1))))
-  )))))) -- todo: terrible proof, refactor required
+  h1.mp.trans <| (sep_mono_l h2.mp).trans <| sep_assoc.mp.trans <| sep_mono_r <|
+  (sep_mono_l h4.1).trans <| sep_comm.mp.trans (wand_elim h3.1)
 
 -- todo: spec patterns
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
@@ -53,11 +52,9 @@ partial def iApplyCore
           | _ => throwError "invalid identifier"
 
         let uniq ← hyps.findWithInfo ident
-        let ⟨P'', hyps'', out, _, p', _, h⟩ := hyps'.remove true uniq
+        let ⟨_, hyps'', out, _, p', _, h⟩ := hyps'.remove true uniq
         let _ ← k (.mkHyp bi ident.getId uniq p' out) A1
-        -- todo: pf needs to update since P' changes
-        -- we have pf : P ⊣⊢ P' ∗ □?p hyp
-        -- and h : P' ⊣⊢ P'' ∗ out
+        let _ ← synthInstanceQ q(FromAssumption false $out $A1)
         let pf' := q(apply' $pf $h)
         return ← iApplyCore p hyps hyps'' Q A2 pf' none k
       else
