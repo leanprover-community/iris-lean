@@ -16,7 +16,8 @@ syntax "[" binderIdent,* "]" : specPat
 
 inductive SpecPat
   | one (name : TSyntax ``binderIdent)
-  | list (args : List SpecPat)
+  | pats (name : TSyntax ``binderIdent) (args : List SpecPat)
+  | idents (names : List (TSyntax ``binderIdent))
   deriving Repr, Inhabited
 
 partial def SpecPat.parse (pat : TSyntax `specPat) : MacroM SpecPat := do
