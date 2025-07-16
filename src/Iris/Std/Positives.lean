@@ -308,10 +308,9 @@ theorem positives_flatten_suffix_eq p1 p2 (xs ys : List Pos) :
   p1 ++ positives_flatten xs = p2 ++ positives_flatten ys ->
   xs = ys := by
   induction xs generalizing p1 p2 ys with
-  | nil => simp; intros Hlen _; grind only [→ List.eq_nil_of_length_eq_zero]
+  | nil => simp; intros Hlen _; apply List.eq_nil_of_length_eq_zero; symm; assumption
   | cons x xs IH =>
-    rcases ys with _ | ⟨ y, ys ⟩; grind only [List.length_nil, List.length_cons, → List.eq_nil_of_length_eq_zero,
-      Array.size_empty]
+    rcases ys with _ | ⟨ y, ys ⟩; intros Hlen _; simp [List.length] at Hlen;
     rewrite [positives_flatten_cons]
     rewrite [<- app_assoc_l.assoc]; rewrite [<- app_assoc_l.assoc]
     rewrite [positives_flatten_cons]

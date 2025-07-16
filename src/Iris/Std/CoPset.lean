@@ -254,3 +254,8 @@ infix:70 " ## " => Disjoint.disjoint
 
 instance : Disjoint CoPset where
   disjoint s t := ∀ p, p ∈ s -> p ∈ t -> False
+
+@[symm]
+theorem disj_symm (E1 E2 : CoPset) :
+  E1 ## E2 -> E2 ## E1 := by
+  exact fun Hdisj p HE1 HE2 => Hdisj p HE2 HE1
