@@ -1,8 +1,19 @@
+/-- [positive] is a datatype representing the strictly positive integers
+   in a binary way. Starting from 1 (represented by [xH]), one can
+   add a new least significant digit via [xO] (digit 0) or [xI] (digit 1).
+   Numbers in [positive] will also be denoted using a decimal notation;
+   e.g. [6%positive] will abbreviate [xO (xI xH)] -/
+
 inductive Pos where
 | xI : Pos -> Pos
 | xO : Pos -> Pos
 | xH : Pos
 deriving Repr, DecidableEq
+
+/- Postfix notation for positive numbers, which allows mimicking
+    the position of bits in a big-endian representation.
+    For instance, we can write [P1~1~0] instead of [(xO (xI xH))]
+    for the number 6 (which is 110 in binary notation). -/
 
 notation "P1" => Pos.xH
 
@@ -13,36 +24,16 @@ macro_rules
   | `($p ~1) => `(Pos.xI $p)
   | `($p ~0) => `(Pos.xO $p)
 
-def Pos.toNat : Pos → Nat
-  | Pos.xH     => 1
-  | Pos.xO p   => 2 * p.toNat
-  | Pos.xI p   => 2 * p.toNat + 1
+-- Operations over positive numbers
 
-instance : CoeOut Pos Nat where coe := Pos.toNat
-
-instance : LT Pos where
-  lt a b := a.toNat < b.toNat
-
-instance : LE Pos where
-  le a b := a.toNat ≤ b.toNat
-
-def Pos.compare (a b : Pos) : Ordering :=
-  Ord.compare (a.toNat) (b.toNat)
-
+/-- Successor -/
 def Pos.succ : Pos → Pos
   | p~1     => (succ p)~0
   | p~0   => p~1
   | P1   => P1~0
 
-def Pos.ofNat (n : Nat) : Pos :=
-match n with
-| 0 => P1
-| 1 => P1
-| (n + 1) => Pos.succ (.ofNat n)
-
-instance : OfNat Pos n where ofNat := Pos.ofNat n
-
 mutual
+/-- Addition -/
 def Pos.add x y :=
   match x, y with
     | p~1, q~1 => (add_carry p q)~0
@@ -70,6 +61,7 @@ end
 
 instance : Add Pos where add := Pos.add
 
+/-- Multiplication -/
 def Pos.mul : Pos → Pos → Pos
   | P1,     q       => q
   | p~0,   q       => .xO (.mul p q)
@@ -77,6 +69,31 @@ def Pos.mul : Pos → Pos → Pos
 
 instance : Mul Pos where mul := Pos.mul
 
+
+/-- Coercions to and from Nat -/
+
+def Pos.toNat : Pos → Nat
+  | Pos.xH     => 1
+  | Pos.xO p   => 2 * p.toNat
+  | Pos.xI p   => 2 * p.toNat + 1
+
+instance : CoeOut Pos Nat where coe := Pos.toNat
+
+def Pos.compare (a b : Pos) : Ordering :=
+  Ord.compare (a.toNat) (b.toNat)
+
+def Pos.ofNat (n : Nat) : Pos :=
+match n with
+| 0 => P1
+| 1 => P1
+| (n + 1) => Pos.succ (.ofNat n)
+
+instance : OfNat Pos n where ofNat := Pos.ofNat n
+
+
+/- Since [positive] represents lists of bits, we define list operations
+  on it. These operations are in reverse, as positives are treated as snoc
+  lists instead of cons lists. -/
 def Pos.app (p1 p2 : Pos) : Pos :=
   match p2 with
   | P1 => p1
@@ -132,15 +149,30 @@ theorem reverse_x0 p : .reverse (p~0) = (P1~0) ++ .reverse p := by
 theorem reverse_xI p : .reverse (p~1) = (P1~1) ++ .reverse p := by
   apply (reverse_app p (P1~1))
 
+/-- Duplicate the bits of a positive, i.e. 1~0~1 -> 1~0~0~1~1 and
+      1~1~0~0 -> 1~1~1~0~0~0~0 -/
 def Pos.dup  : Pos -> Pos
 | P1 => P1
 | p~0 => (dup p)~0~0
 | p~1 => (dup p)~1~1
 
+/-- These next functions allow to efficiently encode lists of positives (bit
+strings) into a single positive and go in the other direction as well. This is
+for example used for the countable instance of lists and in namespaces.
+The main functions are [positives_flatten] and [positives_unflatten]. -/
+
 def positives_flatten_go (xs : List Pos) (acc : Pos) : Pos :=
   match xs with
   | [] => acc
   | x :: xs => positives_flatten_go xs (acc~1~0 ++ Pos.reverse (Pos.dup x))
+
+/-- Flatten a list of positives into a single positive by duplicating the bits
+of each element, so that:
+
+- [0 -> 00]
+- [1 -> 11]
+
+and then separating each element with [10]. -/
 def positives_flatten (xs : List Pos) : Pos :=
   positives_flatten_go xs P1
 
@@ -156,6 +188,8 @@ def positives_unflatten_go
   | p'~1~0 => positives_unflatten_go p' (acc_elm :: acc_xs) P1
   | _ => none
 
+/-- Unflatten a positive into a list of positives, assuming the encoding
+used by [positives_flatten]. -/
 def positives_unflatten (p : Pos) : Option (List Pos) :=
   positives_unflatten_go p [] P1
 
