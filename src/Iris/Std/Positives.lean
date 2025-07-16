@@ -1,3 +1,4 @@
+import Iris.Std.Classes
 /-- [positive] is a datatype representing the strictly positive integers
    in a binary way. Starting from 1 (represented by [xH]), one can
    add a new least significant digit via [xO] (digit 0) or [xI] (digit 1).
@@ -17,12 +18,22 @@ deriving Repr, DecidableEq
 
 notation "P1" => Pos.xH
 
-syntax term " ~1" : term
-syntax term " ~0" : term
+syntax term "~1" : term
+syntax term "~0" : term
 
 macro_rules
   | `($p ~1) => `(Pos.xI $p)
   | `($p ~0) => `(Pos.xO $p)
+
+@[app_unexpander Pos.xI]
+def unexpand_Pos_xI : Lean.PrettyPrinter.Unexpander
+  | `($_ $p) => `($p~1)
+  | _ => throw ()
+
+@[app_unexpander Pos.xO]
+def unexpand_Pos_x0 : Lean.PrettyPrinter.Unexpander
+  | `($_ $p) => `($p~0)
+  | _ => throw ()
 
 -- Operations over positive numbers
 
@@ -46,7 +57,7 @@ def Pos.add x y :=
     | P1, q~0 => q~1
     | P1, P1 => P1~0
 
-def add_carry x y :=
+def Pos.add_carry x y :=
   match x, y with
     | p~1, q~1 => (add_carry p q)~1
     | p~1, q~0 => (add_carry p q)~0
@@ -100,13 +111,18 @@ def Pos.app (p1 p2 : Pos) : Pos :=
   | p2~0 => (.app p1 p2)~0
   | p2~1 => (.app p1 p2)~1
 
+@[reducible]
 instance : HAppend Pos Pos Pos where hAppend := Pos.app
 
 instance app_assoc_l : @Std.Associative Pos (.++.) where
   assoc _ _ p := by induction p <;> simp_all [HAppend.hAppend, Pos.app]
 
+@[simp]
+theorem app_1_left_id (p : Pos) : Pos.app P1 p = p := by
+  induction p <;> simp [HAppend.hAppend, Pos.app] <;> assumption
+
 instance app_1_l : @Std.LawfulLeftIdentity Pos Pos (Pos.app) P1 where
-  left_id p := by induction p <;> simp [Pos.app] <;> assumption
+  left_id p := app_1_left_id p
 
 def reverse_go (p1 p2 : Pos) : Pos :=
   match p2 with
@@ -200,11 +216,8 @@ theorem positives_flatten_go_app xs acc :
   | cons x xs IH =>
     simp [positives_flatten_go]
     rewrite [IH]
-    rewrite [IH ((Pos.xI P1).xO ++ x.dup.reverse)]
-    ac_nf
-    rewrite [<- app_assoc_l.assoc]
-    rewrite [<- app_assoc_l.assoc]
-    rewrite [<- app_assoc_l.assoc]
+    rewrite [IH (P1~1~0 ++ x.dup.reverse)]
+    simp only [<- app_assoc_l.assoc]
     simp [HAppend.hAppend, Pos.app]
 
 theorem positives_unflatten_go_app (p : Pos) suffix xs acc :
@@ -214,13 +227,13 @@ theorem positives_unflatten_go_app (p : Pos) suffix xs acc :
   | xI p IH =>
     simp [Pos.dup]
     rewrite [reverse_xI]; rewrite [reverse_xI]
-    rewrite [<- app_assoc_l.assoc]; rewrite [<- app_assoc_l.assoc]
+    simp only [<- app_assoc_l.assoc]
     rewrite [IH]
     rfl
   | xO p IH =>
     simp [Pos.dup]
     rewrite [reverse_x0]; rewrite [reverse_x0]
-    rewrite [<- app_assoc_l.assoc]; rewrite [<- app_assoc_l.assoc]
+    simp only [<- app_assoc_l.assoc]
     rewrite [IH]
     rfl
   | xH => rfl
@@ -240,7 +253,6 @@ theorem positives_unflatten_flatten_go suffix xs acc :
     rewrite [<- app_assoc_l.assoc]
     rewrite [positives_unflatten_go_app]
     simp [HAppend.hAppend, Pos.app]
-    rewrite [app_1_l.left_id]
     rfl
 
 theorem positives_unflatten_flatten xs :
@@ -249,8 +261,7 @@ theorem positives_unflatten_flatten xs :
   rewrite [<- (app_1_l.left_id (positives_flatten_go xs P1))]
   have := positives_unflatten_flatten_go P1 xs []
   simp [HAppend.hAppend] at this
-  rewrite [this]
-  simp [Append.append]
+  simp [this, Append.append]
   rfl
 
 theorem positives_flatten_app xs ys :
@@ -258,8 +269,7 @@ theorem positives_flatten_app xs ys :
   unfold positives_flatten
   induction xs generalizing ys with
   | nil =>
-    simp [positives_flatten_go]; simp [HAppend.hAppend]
-    rewrite [app_1_l.left_id (positives_flatten_go ys P1)]; rfl
+    simp [positives_flatten_go, HAppend.hAppend]; rfl
   | cons x xs IH =>
     simp [positives_flatten_go]
     rewrite [positives_flatten_go_app]; rewrite [positives_flatten_go_app xs]
@@ -279,10 +289,7 @@ theorem positives_flatten_suffix (l k : List Pos) :
   exists (positives_flatten l')
   apply positives_flatten_app
 
-class Injective (f : A -> B) where
-  inj : ∀ (a a' : A), f a = f a' -> a = a'
-
-instance app_inj (p : Pos) : Injective (.++ p) where
+instance app_inj (p : Pos) : Iris.Std.Injective (.++ p) where
   inj := by
     intros a a' Heq
     induction p <;> simp_all [HAppend.hAppend, Pos.app]
@@ -295,7 +302,7 @@ theorem reverse_involutive p : Pos.reverse (.reverse p) = p := by
     rewrite [reverse_x0, reverse_app, IH]; rfl
   | xH => rfl
 
-instance rev_inj : Injective Pos.reverse where
+instance rev_inj : Iris.Std.Injective Pos.reverse where
   inj := by
     intros p q Heq
     rewrite [<- reverse_involutive p]
