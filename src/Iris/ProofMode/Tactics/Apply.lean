@@ -21,11 +21,26 @@ theorem apply' [BI PROP] {P P' P'' A1 A2 hyp out : PROP} {p : Bool}
     [h3 : IntoWand' p false hyp A1 A2] [h4 : FromAssumption false out A1]
     : P ⊢ P'' ∗ A2 :=
   h1.trans <| (sep_mono_l h2).trans <| sep_assoc.mp.trans <| sep_mono_r <|
-  (sep_mono_l h4.1).trans <| sep_comm.mp.trans (wand_elim h3.1)
+  (sep_mono_l h4.1).trans <| sep_comm.mp.trans <| wand_elim h3.1
+
+-- in progress
+theorem general_apply [BI PROP] {P P' P'' Q R O A1 A2 : PROP} {p : Bool}
+    (h1 : P ⊢ P' ∗ □?p O) (h2 : P' ⊢ P'' ∗ R) [h3 : IntoWand' p false O A1 A2]
+    [h4 : FromAssumption false R A1] [h5 : FromAssumption false A2 Q] : P ⊢ P'' ∗ Q :=
+  h1.trans <| (sep_mono_l h2).trans <| sep_assoc.mp.trans <| sep_mono_r <|
+  (sep_mono_l h4.1).trans <| sep_comm.mp.trans <| wand_elim <| h3.1.trans <| wand_mono_r h5.1
 
 theorem assumption' [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p A Q]
-  [TCOr (Affine P') (Absorbing Q)] (h : P ⊢ P' ∗ □?p A) : P ⊢ Q :=
+    [TCOr (Affine P') (Absorbing Q)] (h : P ⊢ P' ∗ □?p A) : P ⊢ Q :=
   h.trans <| (sep_mono_r inst.1).trans sep_elim_r
+
+variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
+def goHypsRemove {P e : Q($prop)} (hyps : Hyps bi P) (uniqs : List Name) :
+    RemoveHyp bi e := match uniqs with
+  | [] =>
+  let uniq := uniqs.head
+
+  return hyps.remove true uniq
 
 -- todo: complex spec patterns
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
@@ -49,18 +64,30 @@ partial def iApplyCore
 
     if let some _ := intoWand' then
       if let some pat := pat? then
-        let .one x := pat | throwError "one spec pat expected"
+        -- todo: combine these into one case
+        if let .one x := pat then
+          let ident ← match x with
+            | `(binderIdent| $name:ident) => pure name
+            | _ => throwError "invalid identifier"
 
-        let ident ← match x with
-          | `(binderIdent| $name:ident) => pure name
-          | _ => throwError "invalid identifier"
+          let uniq ← hyps.findWithInfo ident
+          let ⟨_, hyps', out, _, p', _, h⟩ := hyps'.remove true uniq
+          let _ ← k (.mkHyp bi ident.getId uniq p' out) A1
+          let _ ← synthInstanceQ q(FromAssumption false $out $A1)
+          let pf' := q(apply' $pf ($h).mp)
+          return ← iApplyCore p hyps hyps' Q A2 pf' none k
+        else
+          let .idents l := pat | throwError "unknown spec pattern"
+          logInfo "ident list spec pattern"
+          let idents ← l.mapM fun x : TSyntax ``binderIdent => match x with
+            | `(binderIdent| $name:ident) => pure name
+            | _ => throwError "invalid identifier"
 
-        let uniq ← hyps.findWithInfo ident
-        let ⟨_, hyps'', out, _, p', _, h⟩ := hyps'.remove true uniq
-        let _ ← k (.mkHyp bi ident.getId uniq p' out) A1
-        let _ ← synthInstanceQ q(FromAssumption false $out $A1)
-        let pf' := q(apply' $pf ($h).mp)
-        return ← iApplyCore p hyps hyps'' Q A2 pf' none k
+          let uniqs ← idents.mapM hyps.findWithInfo
+
+          --let ⟨_, hyps', out, _, p', _, h⟩ := goHypsRemove hyps' uniqs
+
+          return ← iApplyCore p hyps hyps' Q A2 pf none k
       else
         let _ ← k (.mkEmp bi) A1
         return ← iApplyCore p hyps hyps' Q A2 pf none k

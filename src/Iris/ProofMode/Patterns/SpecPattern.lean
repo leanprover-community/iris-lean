@@ -11,12 +11,11 @@ open Lean
 declare_syntax_cat specPat
 
 syntax binderIdent : specPat
-syntax "(" binderIdent specPat,* ")" : specPat
 syntax "[" binderIdent,* "]" : specPat
 
+-- todo: is a separate .one constructor necessary?
 inductive SpecPat
   | one (name : TSyntax ``binderIdent)
-  | pats (name : TSyntax ``binderIdent) (args : List SpecPat)
   | idents (names : List (TSyntax ``binderIdent))
   deriving Repr, Inhabited
 
@@ -27,4 +26,5 @@ partial def SpecPat.parse (pat : TSyntax `specPat) : MacroM SpecPat := do
 where
   go : TSyntax `specPat → Option SpecPat
   | `(specPat| $name:binderIdent) => some <| .one name
+  | `(specPat| [$[$names:binderIdent],*]) => some <| .idents names.toList
   | _ => none
