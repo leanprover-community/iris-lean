@@ -6,10 +6,10 @@ class Countable (A : Type) where
   decode : Pos -> Option A
   decode_encode x : decode (encode x) = some x
 
-instance some_inj {A} : Injective (@some A) where
+instance some_inj {A} : Iris.Std.Injective (@some A) where
   inj := by intros x y; rintro ⟨⟩; rfl
 
-instance encode_inj [c : Countable A] : Injective (c.encode) where
+instance encode_inj [c : Countable A] : Iris.Std.Injective (c.encode) where
   inj := by
     intros x y Hxy; apply some_inj.inj
     rewrite [<- c.decode_encode x, Hxy, c.decode_encode]
@@ -49,7 +49,7 @@ instance : CoeOut Namespace CoPset where coe := nclose
 
 infix:80 ".@" => ndot
 
-instance ndisjoint : Disjoint Namespace where
+instance ndisjoint : Iris.Std.Disjoint Namespace where
   disjoint N1 N2 := nclose N1 ## nclose N2
 
 theorem nclose_root : ↑nroot = CoPset.full := by rfl
@@ -85,7 +85,7 @@ theorem ndot_ne_disjoint [Countable A] (N : Namespace) (x y : A) :
 theorem ndot_preserve_disjoint_l [Countable A] (N : Namespace) (E : CoPset) (x : A) :
   ↑N ## E → ↑(N.@x) ## E := by
   have := nclose_subseteq N x
-  simp [Disjoint.disjoint]; simp [Subset] at this
+  simp [Iris.Std.disjoint]; simp [Subset] at this
   intros Hdisj p; exact fun a_1 => Hdisj p (this p a_1)
 
 theorem ndot_preserve_disjoint_r [Countable A] (N : Namespace) (E : CoPset) (x : A) :
