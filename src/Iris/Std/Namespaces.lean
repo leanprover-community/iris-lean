@@ -47,7 +47,7 @@ def nclose (N : Namespace) : CoPset :=
 
 instance : CoeOut Namespace CoPset where coe := nclose
 
-infix:60 ".@" => ndot
+infix:80 ".@" => ndot
 
 instance ndisjoint : Disjoint Namespace where
   disjoint N1 N2 := nclose N1 ## nclose N2
@@ -72,7 +72,7 @@ theorem nclose_subseteq' [Countable A] E (N : Namespace) (x : A) : (↑N : CoPse
   assumption
 
 theorem ndot_ne_disjoint [Countable A] (N : Namespace) (x y : A) :
-  x ≠ y -> Disjoint.disjoint (N.@x) (N.@y) := by
+  x ≠ y -> N.@x ## N.@y := by
   intros Hxy p; simp [nclose];
   rewrite [CoPset.elem_suffixes]; rewrite [CoPset.elem_suffixes]
   rintro ⟨ qx, Heqx ⟩; rintro ⟨ qy, Heqy ⟩
@@ -81,3 +81,16 @@ theorem ndot_ne_disjoint [Countable A] (N : Namespace) (x y : A) :
   simp [ndot, Countable.encode] at this
   have := (encode_inj.inj _ _ this)
   exact Hxy this
+
+theorem ndot_preserve_disjoint_l [Countable A] (N : Namespace) (E : CoPset) (x : A) :
+  ↑N ## E → ↑(N.@x) ## E := by
+  have := nclose_subseteq N x
+  simp [Disjoint.disjoint]; simp [Subset] at this
+  intros Hdisj p; exact fun a_1 => Hdisj p (this p a_1)
+
+theorem ndot_preserve_disjoint_r [Countable A] (N : Namespace) (E : CoPset) (x : A) :
+  E ## ↑N → E ## ↑(N.@x) := by
+  intros
+  symm
+  apply ndot_preserve_disjoint_l
+  symm; assumption
