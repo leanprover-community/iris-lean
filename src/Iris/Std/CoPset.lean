@@ -1,10 +1,37 @@
 import Iris.Std.Positives
 
-inductive CoPsetRaw where
+/- This file implements an abstract type [coPset] of (possibly infinite) sets
+of positive binary natural numbers ([positive]). This type supports the
+following operations:
+
+· the empty set;
+· a singleton set;
+· the full set;
+· union, intersection, and complement;
+· picking an element in an infinite set;
+· splitting a set into two disjoint subsets in such a way that if the original
+  set is infinite then both parts are infinite;
+· the (infinite) set of all numbers that have a certain suffix;
+· conversions to and from other representations of sets.
+-/
+
+/-- The raw tree data structure -/
+
+/- [coPLeaf false] is the empty set; [coPLeaf true] is the full set. -/
+/- In [coPNode b l r], the Boolean flag [b] indicates whether the number
+1 is a member of the set, while the subtrees [l] and [r] must be
+consulted to determine whether a number of the form [2i] or [2i+1]
+is a member of the set. -/
+
+private inductive CoPsetRaw where
   | leaf : Bool → CoPsetRaw
   | node : Bool → CoPsetRaw → CoPsetRaw → CoPsetRaw
 deriving DecidableEq
 
+/-- The type of raw trees (above) offers several representations of the
+empty set and several representations of the full set. In order to
+achieve extensional equality, this redundancy must be eliminated.
+This is achieved by imposing a well-formedness criterion on trees. -/
 def coPset_wf (t : CoPsetRaw) : Bool :=
   match t with
   | .leaf _ => true
@@ -19,6 +46,7 @@ theorem node_wf_r b l r : coPset_wf (.node b l r) -> coPset_wf r := by
   cases b <;> rcases l with ⟨⟨⟩⟩ | _ <;> rcases r with ⟨⟨⟩⟩ | _ <;>
   simp_all [coPset_wf]
 
+/-- The smart constructor [node'] preserves well-formedness. -/
 def CoPsetRaw.node' (b : Bool) (l r : CoPsetRaw) : CoPsetRaw :=
   match b, l, r with
   | true, .leaf true, .leaf true => .leaf true
@@ -26,13 +54,14 @@ def CoPsetRaw.node' (b : Bool) (l r : CoPsetRaw) : CoPsetRaw :=
   | _, _, _ => .node b l r
 
 theorem node'_wf b l r :
-  coPset_wf l -> coPset_wf r -> coPset_wf (.node' b l r) := by
+  coPset_wf l -> coPset_wf r -> coPset_wf (CoPsetRaw.node' b l r) := by
   cases b <;> rcases l with ⟨ ⟨⟩ ⟩ | _ <;> rcases r with ⟨ ⟨⟩ ⟩ | _ <;> simp [CoPsetRaw.node', coPset_wf]
   · exact fun a_6 a_7 => ⟨a_6, a_7⟩
   · exact fun a_6 a_7 => ⟨a_6, a_7⟩
 
 open CoPsetRaw
 
+/-- The membership test. -/
 def coPsetElemOfRaw : Pos → CoPsetRaw → Bool
   | _, leaf b => b
   | P1, node b _ _ => b
@@ -46,11 +75,14 @@ theorem elem_of_node b l r (p : Pos) :
   cases p <;> cases b <;> rcases l with ⟨⟨⟩⟩ | _ <;> rcases r with ⟨⟨⟩⟩ | _ <;>
   simp [node', coPsetElemOfRaw]
 
+
+/-- Singleton. -/
 def coPsetSingletonRaw : Pos → CoPsetRaw
   | P1 => node true (leaf false) (leaf false)
   | p~0 => node' false (coPsetSingletonRaw p) (leaf false)
   | p~1 => node' false (leaf false) (coPsetSingletonRaw p)
 
+/-- Union -/
 def coPsetUnionRaw : CoPsetRaw → CoPsetRaw → CoPsetRaw
   | leaf false, t => t
   | t, leaf false => t
@@ -60,6 +92,7 @@ def coPsetUnionRaw : CoPsetRaw → CoPsetRaw → CoPsetRaw
     node' (b1 || b2) (coPsetUnionRaw l1 l2) (coPsetUnionRaw r1 r2)
 instance : Union CoPsetRaw where union := coPsetUnionRaw
 
+/-- Intersection -/
 def coPsetIntersectionRaw : CoPsetRaw → CoPsetRaw → CoPsetRaw
   | leaf true, t => t
   | t, leaf true => t
@@ -69,9 +102,12 @@ def coPsetIntersectionRaw : CoPsetRaw → CoPsetRaw → CoPsetRaw
     node' (b1 && b2) (coPsetIntersectionRaw l1 l2) (coPsetIntersectionRaw r1 r2)
 instance : Inter CoPsetRaw where inter := coPsetIntersectionRaw
 
+/-- Complement -/
 def coPsetComplementRaw : CoPsetRaw → CoPsetRaw
   | leaf b => leaf (!b)
   | node b l r => node' (!b) (coPsetComplementRaw l) (coPsetComplementRaw r)
+
+/-- Well-formedness for the above operations -/
 
 theorem coPsetSingleton_wf p : coPset_wf (coPsetSingletonRaw p) := by
   induction p <;> simp_all [coPsetSingletonRaw, coPset_wf]
@@ -116,6 +152,8 @@ theorem coPsetComplement_wf t : coPset_wf (coPsetComplementRaw t) := by
   | node b l r => cases b <;> simp [coPsetComplementRaw, coPset_wf] <;>
     apply node'_wf <;> assumption
 
+/-- The abstract type [CoPset] -/
+/- A set is a well-formed tree. -/
 structure CoPset where
   tree : CoPsetRaw
   wf : coPset_wf tree = true
@@ -123,6 +161,8 @@ structure CoPset where
 instance : Membership Pos CoPset where mem E p := p ∈ E.tree
 
 namespace CoPset
+
+/-- All operations are refined at the level of [CoPset] -/
 
 def empty : CoPset := ⟨CoPsetRaw.leaf false, rfl⟩
 instance : EmptyCollection CoPset where emptyCollection := CoPset.empty
@@ -166,6 +206,13 @@ def isFiniteRaw : CoPsetRaw → Bool
 def isFinite (X : CoPset) : Bool :=
   isFiniteRaw X.tree
 
+/-- Picking an element out of an infinite set -/
+
+/- Provided that the set [X] is infinite, [pick X] yields an element of
+this set. Note that [pick] is implemented by depth-first search, so
+using it repeatedly to obtain elements [x] and inserting these elements
+[x] into some set [Y] will give rise to a very unbalanced tree. -/
+
 def CoPsetRaw.pickRaw : CoPsetRaw → Option Pos
   | CoPsetRaw.leaf true => some P1
   | CoPsetRaw.node true _ _ => some P1
@@ -178,10 +225,17 @@ def CoPsetRaw.pickRaw : CoPsetRaw → Option Pos
 def CoPset.pick (X : CoPset) : Pos :=
   (CoPsetRaw.pickRaw X.tree).getD P1
 
+
+-- Inverse suffix closure
+
+/-- [suffixes q] is the set of all numbers [p] such that [q] is a suffix
+of [p], when these numbers are viewed as sequences of bits. In other words, it
+is the set of all numbers that have the suffix [q]. It is always an infinite
+set. -/
 def suffixesRaw : Pos → CoPsetRaw
   | P1 => .leaf true
-  | p~0 => .node' false (suffixesRaw p) (.leaf false)
-  | p~1 => .node' false (.leaf false) (suffixesRaw p)
+  | p~0 => CoPsetRaw.node' false (suffixesRaw p) (.leaf false)
+  | p~1 => CoPsetRaw.node' false (.leaf false) (suffixesRaw p)
 
 theorem coPsetSuffixes_wf p : coPset_wf (suffixesRaw p) := by
   induction p <;> simp [suffixesRaw, coPset_wf] <;>
@@ -215,6 +269,12 @@ theorem elem_suffixes p q : p ∈ suffixes q <-> ∃ q', p = q' ++ q := by
     induction q generalizing p <;> simp [suffixesRaw] <;> try rewrite [elem_of_node] <;>
     simp_all [HAppend.hAppend, Pos.app, coPsetElemOfRaw]
     cases q' <;> simp [coPsetElemOfRaw]
+
+/-- Splitting a set -/
+
+/- Every infinite [X : CoPset] can be split into two disjoint parts, which are
+infinite sets. Use the functions [splitLeft] and [splitRight] if you
+need a constructive witness. -/
 
 def l_raw : CoPsetRaw → CoPsetRaw
   | CoPsetRaw.leaf false => CoPsetRaw.leaf false
