@@ -13,6 +13,11 @@ import Iris.Algebra.Heap
 def infinite (S : P → Prop) : Prop :=
   ∃ f : Nat → P, (∀ n, S <| f n) ∧ (∀ n m : Nat, f n = f m → n = m)
 
+class InfiniteType (T : Type _) where
+  enum : Nat → T
+  enum_inj : ∀ n m : Nat, enum n = enum m → n = m
+
+
 /-- Arbitrarily changing one element of a co-infinite set yields a co-infinite set -/
 theorem cofinite_alter_cofinite {S S' : P → Prop} (p' : P) (Ha : ∀ p, p ≠ p' → S p = S' p)
     (Hs : infinite S) : infinite S' := by
@@ -75,24 +80,22 @@ theorem coinfinite_fset_coinfinite (f : K → Option V) (H : infinite (cosupport
   · simp_all
   · rfl
 
-
--- TODO: Move do a library file?
 section instances
 
-noncomputable def instClassicalStore {K V : Type _} : Store (K → V) K V where
+noncomputable instance instClassicalStore {K V : Type _} : Store (K → V) K V where
   get := id
   set := fset
-  ofFun := id
   get_set_eq H := by rw [H]; simp [fset]
   get_set_ne H := by simp_all [fset]
-  ofFun_get := rfl
+  merge op f1 f2 k := op (f1 k) (f2 k)
+  get_merge := by simp
 
-noncomputable def instClassicalHeap : Heap (K → Option V) K V where
-  toStore := instClassicalStore
-  point k ov := fset (fun _ => none) k ov
-  point_get_eq H := by simp [H, StoreLike.get, fset, instClassicalStore]
-  point_get_ne H := by simp [H, StoreLike.get, fset, instClassicalStore]
-
+noncomputable instance instClassicalHeap : Heap (fun V => K → Option V) K where
+  hmap h f k := match f k with | none => none | some x => h k x
+  hmap_alloc := by simp [Store.get]; intro _ _ _ _ _ _ H; rw [H]
+  hmap_unalloc := by simp [Store.get]; intro _ _ _ _ _ H; rw [H]
+  empty _ _ := none
+  get_empty := by simp [Store.get]
 
 theorem coinfinte_exists_next {f : K → Option V} :
     infinite (cosupport f) → ∃ k, f k = none := by
@@ -101,15 +104,24 @@ theorem coinfinte_exists_next {f : K → Option V} :
   simp [cosupport] at Henum
   apply Henum
 
-/-- This is closer to gmap, but still a generalization. Among other things, gmap can only express
-finite maps. To support allocation, you actually only need the complement to be infinite. This construction can,
-for example, express an infinite number of pices of ghost state while retaining the ability to dynamically
-allocate new ghost state. -/
-noncomputable def instClassicaAllocHeap : AllocHeap (K → Option V) K V where
+noncomputable instance instClassicaAllocHeap : AllocHeap (fun V => K → Option V) K where
   toHeap := instClassicalHeap
-  hasRoom f := infinite <| cosupport f
+  notFull f := infinite <| cosupport f
   fresh HC := Classical.choose (coinfinte_exists_next HC)
-  fresh_get {_ HC} := Classical.choose_spec (coinfinte_exists_next HC)
-  hasRoom_set_fresh {_ H _} := coinfinite_fset_coinfinite _ H
+  get_fresh {_ _ HC} := Classical.choose_spec (coinfinte_exists_next HC)
+
+noncomputable instance [InfiniteType K] : UnboundedHeap (fun V => K → Option V) K where
+  notFull_empty := by
+    simp [notFull, empty, Function.comp, infinite]
+    exists InfiniteType.enum
+    exact fun n m a => InfiniteType.enum_inj n m a
+  notFull_set_fresh {V t v H} := by
+    simp only [notFull] at ⊢ H
+    apply cofinite_alter_cofinite (Hs := H) (p' := @fresh (fun V => K → Option V) K _ V _ H)
+    intro p
+    intro Hp
+    simp [cosupport]
+    simp [Store.set, fset]
+    split <;> simp_all
 
 end instances
