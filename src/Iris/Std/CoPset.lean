@@ -18,8 +18,8 @@ following operations:
 
 /-- The raw tree data structure -/
 
-/- [coPLeaf false] is the empty set; [coPLeaf true] is the full set. -/
-/- In [coPNode b l r], the Boolean flag [b] indicates whether the number
+/- [coPset.leaf false] is the empty set; [coPset.leaf true] is the full set. -/
+/- In [coPset.node b l r], the Boolean flag [b] indicates whether the number
 1 is a member of the set, while the subtrees [l] and [r] must be
 consulted to determine whether a number of the form [2i] or [2i+1]
 is a member of the set. -/
