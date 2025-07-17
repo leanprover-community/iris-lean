@@ -489,6 +489,40 @@ theorem map_comp [OFE α] [OFE β] [OFE γ] {f : α -n> β} {g : β -n> γ} {c :
 
 end Chain
 
+/-- If a chain of Option is ever none, is the constant none chain. -/
+theorem chain_none_const [OFE V] {c : Chain (Option V)} (H : c n = none) :
+    c = Chain.const none := by
+  rcases c with ⟨c, Hc⟩
+  congr 1; refine funext (fun k => ?_)
+  rcases Nat.le_or_ge n k with (Hnk|Hnk)
+  · suffices c k ≡{n}≡ c n by cases _ : c k <;> simp_all
+    exact Hc Hnk
+  · suffices c k ≡{k}≡ c n by cases _ : c k <;> simp_all
+    exact (Hc Hnk).symm
+
+/-- If a chain of Option is ever some, it is the lift a chain by some. -/
+def chain_option_some [OFE V] {c : Chain (Option V)} (H : c n = some v) :
+    ∃ c' : Chain V, c = Chain.map ⟨some, OFE.Option.some.ne⟩ c' := by
+  have HVc (k) : ∃ v', c k = some v' := by
+    rcases h : c.chain k with (_|v')
+    · simp [chain_none_const h] at H
+    · exists v'
+  let c' : Chain V :=
+    ⟨fun n => Classical.choose <| HVc n,
+     by
+       intro n i Hni
+       have HR := c.cauchy Hni
+       rw [Classical.choose_spec (HVc n), Classical.choose_spec (HVc i)] at HR
+       exact HR ⟩
+  exists c'
+  rcases hcc : c with ⟨cc, Hcc⟩
+  simp only [Chain.map, Chain.mk.injEq]
+  refine funext (fun i => ?_)
+  simp only [c']
+  have Hchoose := Classical.choose_spec (HVc i)
+  rw [← Hchoose]
+  simp [hcc]
+
 /-- Complete ordered family of equivalences -/
 class IsCOFE (α : Type _) [OFE α] where
   compl : Chain α → α
