@@ -16,12 +16,12 @@ instance encode_inj [c : Countable A] : Iris.Std.Injective (c.encode) where
     rfl
 
 instance [Countable A] : Countable (List A) where
-  encode xs := positives_flatten (List.map Countable.encode xs)
-  decode p := Option.bind (positives_unflatten p)
+  encode xs := Pos.flatten (List.map Countable.encode xs)
+  decode p := (Pos.unflatten p) >>=
               (fun positives => List.mapM Countable.decode positives)
   decode_encode := by
     intros xs
-    rewrite [positives_unflatten_flatten]; simp
+    rewrite [Pos.unflatten_flatten]; simp
     induction xs
     · rfl
     · simp [List.map]; rename_i a aa aaa aaaa; rewrite [aaaa];
@@ -43,7 +43,7 @@ def ndot [Countable A] (N : Namespace) (x : A) : Namespace :=
   (Countable.encode x) :: N
 
 def nclose (N : Namespace) : CoPset :=
-  CoPset.suffixes ((positives_flatten N))
+  CoPset.suffixes ((Pos.flatten N))
 
 instance : CoeOut Namespace CoPset where coe := nclose
 
@@ -60,9 +60,9 @@ theorem nclose_subseteq [Countable A] N (x : A) : (↑N.@x : CoPset) ⊆ (↑N :
   rewrite [CoPset.elem_suffixes]; rewrite [CoPset.elem_suffixes]
   rintro ⟨ q, Heq ⟩; rewrite [Heq]
   obtain ⟨ q', Heq ⟩ :=
-    (positives_flatten_suffix N (ndot N x) (by exists [Countable.encode x]))
+    (Pos.flatten_suffix N (ndot N x) (by exists [Countable.encode x]))
   exists (q ++ q')
-  rewrite [app_assoc_l.assoc, <- Heq]
+  rewrite [Pos.app_assoc_l.assoc, <- Heq]
   rfl
 
 theorem nclose_subseteq' [Countable A] E (N : Namespace) (x : A) : (↑N : CoPset) ⊆ E -> (↑(N.@x) : CoPset) ⊆ E := by
@@ -77,7 +77,7 @@ theorem ndot_ne_disjoint [Countable A] (N : Namespace) (x y : A) :
   rewrite [CoPset.elem_suffixes]; rewrite [CoPset.elem_suffixes]
   rintro ⟨ qx, Heqx ⟩; rintro ⟨ qy, Heqy ⟩
   rewrite [Heqx] at Heqy
-  have := positives_flatten_suffix_eq qx qy (N.@x) (N.@y) (by simp [ndot, List.length]) Heqy
+  have := Pos.flatten_suffix_eq qx qy (N.@x) (N.@y) (by simp [ndot, List.length]) Heqy
   simp [ndot, Countable.encode] at this
   have := (encode_inj.inj _ _ this)
   exact Hxy this
@@ -99,7 +99,6 @@ theorem CoPset.difference_difference (X1 X2 X3 Y : CoPset) :
   (X1 \ X2) \ X3 ## Y -> X1 \ (X2 ∪ X3) ## Y := by
   -- Long term, this should be solvable with one automatic tactic
   intros Hdisj p Hnin Hin
-  simp [SDiff.sdiff, CoPset.diff] at Hnin
   apply (Hdisj p _ Hin)
   obtain ⟨ HX1, HXU ⟩ := (in_diff p X1 (X2 ∪ X3)).1 Hnin
   obtain ⟨ HX2, HX3 ⟩ := (not_in_union p X2 X3).1 HXU
