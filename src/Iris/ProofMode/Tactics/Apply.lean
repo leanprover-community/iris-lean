@@ -34,13 +34,14 @@ theorem assumption' [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumptio
     [TCOr (Affine P') (Absorbing Q)] (h : P ⊢ P' ∗ □?p A) : P ⊢ Q :=
   h.trans <| (sep_mono_r inst.1).trans sep_elim_r
 
-variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
-def goHypsRemove {P e : Q($prop)} (hyps : Hyps bi P) (uniqs : List Name) :
-    RemoveHyp bi e := match uniqs with
-  | [] =>
-  let uniq := uniqs.head
-
-  return hyps.remove true uniq
+-- todo: additional outputs
+variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
+partial def removeHyps (hyps : Hyps bi P') (uniqs : List Name) :
+    MetaM (Σ e', Hyps bi e') := match uniqs with
+  | [] => Pure.pure ⟨_, hyps⟩
+  | uniq :: rest =>
+    let ⟨_, hyps', out, _, p, _, h⟩ := hyps.remove true uniq
+    removeHyps hyps' rest
 
 -- todo: complex spec patterns
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
@@ -63,6 +64,7 @@ partial def iApplyCore
       synthInstanceQ q(IntoWand' $p false $A2 $A1' $A2')
 
     if let some _ := intoWand' then
+      -- todo: empty list case instead of option
       if let some pat := pat? then
         -- todo: combine these into one case
         if let .one x := pat then
@@ -85,7 +87,7 @@ partial def iApplyCore
 
           let uniqs ← idents.mapM hyps.findWithInfo
 
-          --let ⟨_, hyps', out, _, p', _, h⟩ := goHypsRemove hyps' uniqs
+          let ⟨e', hyps'⟩ ← removeHyps hyps' uniqs
 
           return ← iApplyCore p hyps hyps' Q A2 pf none k
       else
