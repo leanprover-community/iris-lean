@@ -1,47 +1,15 @@
 import Iris.Std.CoPset
 import Iris.Std.Positives
 
-class Countable (A : Type) where
-  encode : A -> Pos
-  decode : Pos -> Option A
-  decode_encode x : decode (encode x) = some x
-
-instance some_inj {A} : Iris.Std.Injective (@some A) where
-  inj := by intros x y; rintro ⟨⟩; rfl
-
-instance encode_inj [c : Countable A] : Iris.Std.Injective (c.encode) where
-  inj := by
-    intros x y Hxy; apply some_inj.inj
-    rewrite [<- c.decode_encode x, Hxy, c.decode_encode]
-    rfl
-
-instance [Countable A] : Countable (List A) where
-  encode xs := Pos.flatten (List.map Countable.encode xs)
-  decode p := do
-    let positives ← (Pos.unflatten p);
-    List.mapM Countable.decode positives
-  decode_encode := by
-    intros xs
-    rewrite [Pos.unflatten_flatten]; simp
-    induction xs
-    · rfl
-    · simp [List.map]; rename_i a aa aaa aaaa; rewrite [aaaa];
-      rewrite [Countable.decode_encode]; simp
-
-instance : Countable Pos where
-  encode := id
-  decode := some
-  decode_encode _ := rfl
-
 abbrev Namespace := List Pos
 
 instance : DecidableEq Namespace := by infer_instance
-instance : Countable Namespace := by infer_instance
+instance : Pos.Countable Namespace := by infer_instance
 
 def nroot : Namespace := List.nil
 
-def ndot [Countable A] (N : Namespace) (x : A) : Namespace :=
-  (Countable.encode x) :: N
+def ndot [Pos.Countable A] (N : Namespace) (x : A) : Namespace :=
+  (Pos.Countable.encode x) :: N
 
 def nclose (N : Namespace) : CoPset :=
   CoPset.suffixes ((Pos.flatten N))
@@ -55,41 +23,41 @@ instance ndisjoint : Iris.Std.Disjoint Namespace where
 
 theorem nclose_root : ↑nroot = CoPset.full := by rfl
 
-theorem nclose_subseteq [Countable A] N (x : A) : (↑N.@x : CoPset) ⊆ (↑N : CoPset) := by
+theorem nclose_subseteq [Pos.Countable A] N (x : A) : (↑N.@x : CoPset) ⊆ (↑N : CoPset) := by
   intros p
   simp [nclose, ndot]
   rewrite [CoPset.elem_suffixes]; rewrite [CoPset.elem_suffixes]
   rintro ⟨ q, Heq ⟩; rewrite [Heq]
   obtain ⟨ q', Heq ⟩ :=
-    (Pos.flatten_suffix N (ndot N x) (by exists [Countable.encode x]))
+    (Pos.flatten_suffix N (ndot N x) (by exists [Pos.Countable.encode x]))
   exists (q ++ q')
   rewrite [Pos.app_assoc_l.assoc, <- Heq]
   rfl
 
-theorem nclose_subseteq' [Countable A] E (N : Namespace) (x : A) : (↑N : CoPset) ⊆ E -> (↑(N.@x) : CoPset) ⊆ E := by
+theorem nclose_subseteq' [Pos.Countable A] E (N : Namespace) (x : A) : (↑N : CoPset) ⊆ E -> (↑(N.@x) : CoPset) ⊆ E := by
   intro Hsubset
   apply CoPset.subseteq_trans
   apply nclose_subseteq
   assumption
 
-theorem ndot_ne_disjoint [Countable A] (N : Namespace) (x y : A) :
+theorem ndot_ne_disjoint [Pos.Countable A] (N : Namespace) (x y : A) :
   x ≠ y -> N.@x ## N.@y := by
   intros Hxy p; simp [nclose];
   rewrite [CoPset.elem_suffixes]; rewrite [CoPset.elem_suffixes]
   rintro ⟨ qx, Heqx ⟩; rintro ⟨ qy, Heqy ⟩
   rewrite [Heqx] at Heqy
   have := Pos.flatten_suffix_eq qx qy (N.@x) (N.@y) (by simp [ndot, List.length]) Heqy
-  simp [ndot, Countable.encode] at this
-  have := (encode_inj.inj _ _ this)
+  simp [ndot, Pos.Countable.encode] at this
+  have := (Pos.encode_inj.inj _ _ this)
   exact Hxy this
 
-theorem ndot_preserve_disjoint_l [Countable A] (N : Namespace) (E : CoPset) (x : A) :
+theorem ndot_preserve_disjoint_l [Pos.Countable A] (N : Namespace) (E : CoPset) (x : A) :
   ↑N ## E → ↑(N.@x) ## E := by
   have := nclose_subseteq N x
   simp [Iris.Std.disjoint]; simp [Subset] at this
   intros Hdisj p; exact fun a_1 => Hdisj p (this p a_1)
 
-theorem ndot_preserve_disjoint_r [Countable A] (N : Namespace) (E : CoPset) (x : A) :
+theorem ndot_preserve_disjoint_r [Pos.Countable A] (N : Namespace) (E : CoPset) (x : A) :
   E ## ↑N → E ## ↑(N.@x) := by
   intros
   symm

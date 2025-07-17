@@ -367,4 +367,37 @@ theorem flatten_suffix_eq p1 p2 (xs ys : List Pos) :
     replace Hl := (dup_suffix_eq _ _ p1 p2 Hl)
     apply (rev_inj.inj _ _ Hl)
 
+
+class Countable (A : Type) where
+  encode : A -> Pos
+  decode : Pos -> Option A
+  decode_encode x : decode (encode x) = some x
+
+instance some_inj {A} : Iris.Std.Injective (@some A) where
+  inj := by intros x y; rintro ⟨⟩; rfl
+
+instance encode_inj [c : Countable A] : Iris.Std.Injective (c.encode) where
+  inj := by
+    intros x y Hxy; apply some_inj.inj
+    rewrite [<- c.decode_encode x, Hxy, c.decode_encode]
+    rfl
+
+instance [Countable A] : Countable (List A) where
+  encode xs := Pos.flatten (List.map Countable.encode xs)
+  decode p := do
+    let positives ← (Pos.unflatten p);
+    List.mapM Countable.decode positives
+  decode_encode := by
+    intros xs
+    rewrite [Pos.unflatten_flatten]; simp
+    induction xs
+    · rfl
+    · simp [List.map]; rename_i a aa aaa aaaa; rewrite [aaaa];
+      rewrite [Countable.decode_encode]; simp
+
+instance : Countable Pos where
+  encode := id
+  decode := some
+  decode_encode _ := rfl
+
 end Pos
