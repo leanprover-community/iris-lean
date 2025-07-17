@@ -94,3 +94,13 @@ theorem ndot_preserve_disjoint_r [Countable A] (N : Namespace) (E : CoPset) (x :
   symm
   apply ndot_preserve_disjoint_l
   symm; assumption
+
+theorem CoPset.difference_difference (X1 X2 X3 Y : CoPset) :
+  (X1 \ X2) \ X3 ## Y -> X1 \ (X2 ∪ X3) ## Y := by
+  -- Long term, this should be solvable with one automatic tactic
+  intros Hdisj p Hnin Hin
+  simp [SDiff.sdiff, CoPset.diff] at Hnin
+  apply (Hdisj p _ Hin)
+  obtain ⟨ HX1, HXU ⟩ := (in_diff p X1 (X2 ∪ X3)).1 Hnin
+  obtain ⟨ HX2, HX3 ⟩ := (not_in_union p X2 X3).1 HXU
+  simp [in_diff]; simp [*]

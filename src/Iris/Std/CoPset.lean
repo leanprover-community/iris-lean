@@ -180,17 +180,136 @@ def inter (X Y : CoPset) : CoPset :=
   ⟨CoPsetRaw.Intersection X.tree Y.tree, coPsetIntersection_wf _ _ X.wf Y.wf⟩
 instance : Inter CoPset where inter := CoPset.inter
 
-def diff (X Y : CoPset) : CoPset :=
-  ⟨CoPsetRaw.Intersection X.tree (CoPsetRaw.Complement Y.tree), coPsetIntersection_wf _ _ X.wf (coPsetComplement_wf _)⟩
+def complement (X : CoPset) : CoPset :=
+  ⟨CoPsetRaw.Complement X.tree, coPsetComplement_wf _⟩
+
+def diff (X Y : CoPset) : CoPset := X ∩ (complement Y)
 
 def mem (p : Pos) (X : CoPset) : Bool :=
   CoPsetRaw.ElemOf p X.tree
 
-def complement (X : CoPset) : CoPset :=
-  ⟨CoPsetRaw.Complement X.tree, coPsetComplement_wf _⟩
-
 instance : HasSubset CoPset where
   Subset t1 t2 := ∀ (p : Pos), p ∈ t1 -> p ∈ t2
+
+instance : SDiff CoPset where
+  sdiff := CoPset.diff
+
+theorem in_inter p (X Y : CoPset) :
+  p ∈ X ∩ Y <-> p ∈ X ∧ p ∈ Y := by
+  simp [Inter.inter, inter, CoPsetRaw.Intersection]
+  simp [Membership.mem, ElemOf, CoPsetRaw.ElemOf]
+  constructor
+  · rcases X with ⟨X, xwf⟩; rcases Y with ⟨Y, ywf⟩; simp []
+    induction p generalizing X Y with
+    | xI p IH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp [Intersection] <;> intros Hnin <;>
+      try simp_all [CoPsetRaw.ElemOf]
+      apply (IH _ (node_wf_r _ _ _ xwf) _ (node_wf_r _ _ _ ywf))
+      rewrite [elem_of_node] at Hnin; simp_all [ElemOf]
+    | xO p IH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp [Intersection] <;> intros Hnin <;>
+      try simp_all [CoPsetRaw.ElemOf]
+      apply (IH _ (node_wf_l _ _ _ xwf) _ (node_wf_l _ _ _ ywf))
+      rewrite [elem_of_node] at Hnin; simp_all [ElemOf]
+    | xH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp [Intersection, ElemOf, elem_of_node]
+
+  · rcases X with ⟨X, xwf⟩; rcases Y with ⟨Y, ywf⟩; simp []
+    induction p generalizing X Y with
+    | xI p IH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp [ElemOf, elem_of_node, Intersection]
+      apply (IH _ (node_wf_r _ _ _ xwf) _ (node_wf_r _ _ _ ywf))
+    | xO p IH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp [ElemOf, elem_of_node, Intersection]
+      apply (IH _ (node_wf_l _ _ _ xwf) _ (node_wf_l _ _ _ ywf))
+    | xH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp [ElemOf, elem_of_node, Intersection]
+      exact fun a_6 a_7 => ⟨a_6, a_7⟩
+
+theorem in_complement p (X : CoPset) :
+  p ∈ complement X <-> p ∉ X := by
+  simp [complement, CoPsetRaw.Complement]
+  simp [Membership.mem, ElemOf, CoPsetRaw.ElemOf]
+  rcases X with ⟨X, xwf⟩; simp []
+  induction p generalizing X with
+    | xI p IH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;>
+      simp [CoPsetRaw.Complement, CoPsetRaw.ElemOf, elem_of_node]
+      apply IH; apply node_wf_r _ _ _ xwf
+    | xO p IH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;>
+      simp [CoPsetRaw.Complement, CoPsetRaw.ElemOf, elem_of_node]
+      apply IH; apply node_wf_l _ _ _ xwf
+    | xH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> simp [CoPsetRaw.Complement, CoPsetRaw.ElemOf, elem_of_node]
+
+theorem in_diff p (X Y : CoPset) :
+  p ∈ X \ Y <-> p ∈ X ∧ p ∉ Y := by
+  simp [SDiff.sdiff, CoPset.diff]
+  constructor
+  · intros Hnin; obtain ⟨ Hx, Hy ⟩ := (in_inter p X (complement Y)).1 Hnin
+    constructor
+    · exact Hx
+    · exact ((in_complement p Y).1 Hy)
+  · rintro ⟨ Hx, Hy ⟩
+    simp [in_inter, in_diff]
+    constructor
+    · exact Hx
+    · exact ((in_complement p Y).2 Hy)
+
+theorem in_union p (X Y : CoPset) :
+  p ∈ X ∪ Y <-> p ∈ X ∨ p ∈ Y := by
+  rcases X with ⟨X, xwf⟩; rcases Y with ⟨Y, ywf⟩
+  simp [Membership.mem, ElemOf, CoPsetRaw.ElemOf]
+  constructor
+  · induction p generalizing X Y with
+    | xI p IH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp_all [Union.union, union, CoPsetRaw.Union, ElemOf, elem_of_node] <;> intros Hin <;>
+      try simp_all [CoPsetRaw.ElemOf]
+      apply (IH _ (node_wf_r _ _ _ xwf) _ (node_wf_r _ _ _ ywf))
+      simp_all [ElemOf]
+    | xO p IH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp_all [ElemOf, Union.union, union, CoPsetRaw.Union]
+      simp_all [elem_of_node, CoPsetRaw.ElemOf]; intros Hin
+      apply (IH _ (node_wf_l _ _ _ xwf) _ (node_wf_l _ _ _ ywf))
+      simp_all [ElemOf]
+    | xH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp [Union.union, union, CoPsetRaw.Union, ElemOf, elem_of_node]
+
+  · induction p generalizing X Y with
+    | xI p IH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp_all [Union.union, union, CoPsetRaw.Union, ElemOf, elem_of_node] <;> intros Hin <;>
+      apply (IH _ (node_wf_r _ _ _ xwf) _ (node_wf_r _ _ _ ywf) Hin)
+    | xO p IH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp_all [ElemOf, Union.union, union, CoPsetRaw.Union]
+      simp_all [elem_of_node, CoPsetRaw.ElemOf]; intros Hin
+      apply (IH _ (node_wf_l _ _ _ xwf) _ (node_wf_l _ _ _ ywf) Hin)
+    | xH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp [Union.union, union, CoPsetRaw.Union, ElemOf, elem_of_node]
+
+theorem not_in_union p (X1 X2 : CoPset) :
+  ¬ p ∈ X1 ∪ X2 <-> ¬ p ∈ X1 ∧ ¬ p ∈ X2 := by
+  constructor
+  · intros Hunion; constructor <;> intro Hnin <;>
+    apply Hunion <;> simp [in_union]
+    · left; assumption
+    · right; assumption
+  · rintro ⟨ Hnin1, Hnin2 ⟩; intro Hunion; simp [in_union] at Hunion
+    cases Hunion
+    · apply Hnin1; assumption
+    · apply Hnin2; assumption
 
 theorem subseteq_trans (X Y Z : CoPset) :
   X ⊆ Y ->
@@ -250,15 +369,13 @@ theorem elem_suffixes p q : p ∈ suffixes q <-> ∃ q', p = q' ++ q := by
       simp [suffixes, CoPsetRaw.suffixesRaw]
       simp_all [Membership.mem]; rewrite [elem_of_node]
       intros Hin; cases p <;> simp [CoPsetRaw.ElemOf] at Hin
-      specialize (IH _ Hin)
-      rcases IH with ⟨ q', Heq ⟩
+      obtain ⟨ q', Heq ⟩ := (IH _ Hin)
       exists q'; rewrite [Heq]; simp [HAppend.hAppend, Pos.app]
     | xO q IH =>
       simp [suffixes, CoPsetRaw.suffixesRaw]
       simp_all [Membership.mem]; rewrite [elem_of_node]
       intros Hin; cases p <;> simp [CoPsetRaw.ElemOf] at Hin
-      specialize (IH _ Hin)
-      rcases IH with ⟨ q', Heq ⟩
+      obtain ⟨ q', Heq ⟩ := (IH _ Hin)
       exists q'; rewrite [Heq]; simp [HAppend.hAppend, Pos.app]
     | xH =>
       simp [suffixes, CoPsetRaw.suffixesRaw]

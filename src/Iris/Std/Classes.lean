@@ -59,7 +59,7 @@ export Antisymmetric (antisymm)
 class Disjoint (α : Type u) where
   disjoint : α -> α -> Prop
 export Disjoint (disjoint)
-infix:70 " ## " => Disjoint.disjoint
+infix:50 " ## " => Disjoint.disjoint
 
 class Injective (f : A -> B) where
   inj : ∀ (a a' : A), f a = f a' -> a = a'
