@@ -17,8 +17,9 @@ instance encode_inj [c : Countable A] : Iris.Std.Injective (c.encode) where
 
 instance [Countable A] : Countable (List A) where
   encode xs := Pos.flatten (List.map Countable.encode xs)
-  decode p := (Pos.unflatten p) >>=
-              (fun positives => List.mapM Countable.decode positives)
+  decode p := do
+    let positives ← (Pos.unflatten p);
+    List.mapM Countable.decode positives
   decode_encode := by
     intros xs
     rewrite [Pos.unflatten_flatten]; simp
