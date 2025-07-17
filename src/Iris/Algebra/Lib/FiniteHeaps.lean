@@ -5,51 +5,47 @@ Authors: Markus de Medeiros
 -/
 
 import Iris.Algebra.Heap
+import Iris.Algebra.Lib.ClassicalHeaps
 
--- Heaps with finite domain, represented as an association list
+/-- Heaps with intrinsically finite domain, represented as an association list.
+Keys taken to be Nat for the sake of example. -/
 
+inductive FiniteDomFunction (V : Type _)
+| empty : FiniteDomFunction V
+| set : Nat → V → FiniteDomFunction V → FiniteDomFunction V
+| remove : Nat → FiniteDomFunction V → FiniteDomFunction V
 
-inductive FiniteDomFunction (K V : Type _)
-| empty : FiniteDomFunction K V
-| set : K → V → FiniteDomFunction K V
+def FiniteDomFunction.lookup (f : FiniteDomFunction V) (k : Nat) : Option V :=
+  match f with
+  | .empty => none
+  | .set n v' rest => if n = k then some v' else rest.lookup k
+  | .remove n rest => if n = k then none else rest.lookup k
 
+def FiniteDomFunction.update (f : FiniteDomFunction V) (k : Nat) (v : Option V) : FiniteDomFunction V :=
+  match v with
+  | some v' => f.set k v'
+  | none => f.remove k
 
+instance instFiniteDomStore : Store (FiniteDomFunction V) Nat (Option V) where
+  get := FiniteDomFunction.lookup
+  set := FiniteDomFunction.update
+  merge := sorry
+  get_set_eq := sorry
+  get_set_ne := sorry
+  get_merge := sorry
 
--- noncomputable def instFiniteHeap {K V : Type _} : Heap (List (K × V)) K V where
---   ofFun := sorry
+instance instFiniteDomHeap : Heap (fun V => FiniteDomFunction V) Nat where
+  hmap h f := sorry
+  hmap_alloc := sorry
+  hmap_unalloc := sorry
+  empty _ := sorry
+  get_empty := sorry
 
-  -- get l k := l[k]
-  -- set := fset
-  -- ofFun := id
-  -- get_set_eq H := by rw [H]; simp [fset]
-  -- get_set_ne H := by simp_all [fset]
-  -- ofFun_get := rfl
+instance instFinitDomAllocHeap : AllocHeap (fun V => FiniteDomFunction V) Nat  where
+  notFull f := sorry
+  fresh HC := sorry
+  get_fresh {_ _ HC} := sorry
 
-
-/-
-noncomputable def instClassicalHeap : Heap (K → Option V) K V where
-  toStore := instClassicalStore
-  point k ov := fset (fun _ => none) k ov
-  point_get_eq H := by simp [H, StoreLike.get, fset, instClassicalStore]
-  point_get_ne H := by simp [H, StoreLike.get, fset, instClassicalStore]
-
-
-theorem coinfinte_exists_next {f : K → Option V} :
-    infinite (cosupport f) → ∃ k, f k = none := by
-  rintro ⟨enum, Henum, Henum_inj⟩
-  exists (enum 0)
-  simp [cosupport] at Henum
-  apply Henum
-
-/-- This is closer to gmap, but still a generalization. Among other things, gmap can only express
-finite maps. To support allocation, you actually only need the complement to be infinite. This construction can,
-for example, express an infinite number of pices of ghost state while retaining the ability to dynamically
-allocate new ghost state. -/
-noncomputable def instClassicaAllocHeap : AllocHeap (K → Option V) K V where
-  toHeap := instClassicalHeap
-  hasRoom f := infinite <| cosupport f
-  fresh HC := Classical.choose (coinfinte_exists_next HC)
-  fresh_get {_ HC} := Classical.choose_spec (coinfinte_exists_next HC)
-  hasRoom_set_fresh {_ H _} := coinfinite_fset_coinfinite _ H
--/
-end instances
+instance : UnboundedHeap (fun V => FiniteDomFunction V) Nat where
+  notFull_empty := by sorry
+  notFull_set_fresh {V t v H} := by sorry
