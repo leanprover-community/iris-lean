@@ -64,44 +64,15 @@ instance : ViewRel (heapR F K V H) where
     · simp only [heapR, Store.all, toHeapPred] at Hrel
       obtain ⟨v, dq, Hmval, Hvval, Hvincl⟩ := Hf ▸ Hrel k
       exact CMRA.validN_of_incN Hvincl Hvval
-  rel_unit := by
-    sorry
+  rel_unit n := by
+    exists Heap.empty
+    intro k
+    simp only [heapR, Store.all, toHeapPred, UCMRA.unit, store_unit, Heap.get_empty]
 
-/-
-  Local Lemma gmap_view_rel_exists n f :
-    (∃ m, gmap_view_rel n m f) ↔ ✓{n} f.
-  Proof.
-    split.
-    { intros [m Hrel]. eapply gmap_view_rel_raw_valid, Hrel. }
-    intros Hf.
-    cut (∃ m, gmap_view_rel n m f ∧ ∀ k, f !! k = None → m !! k = None).
-    { naive_solver. }
-    induction f as [|k [dq v] f Hk' IH] using map_ind.
-    { exists ∅. split; [|done]. apply: map_Forall_empty. }
-    move: (Hf k). rewrite lookup_insert=> -[/= ??].
-    destruct IH as (m & Hm & Hdom).
-    { intros k'. destruct (decide (k = k')) as [->|?]; [by rewrite Hk'|].
-      move: (Hf k'). by rewrite lookup_insert_ne. }
-    exists (<[k:=v]> m).
-    rewrite /gmap_view_rel /= /gmap_view_rel_raw map_Forall_insert //=. split_and!.
-    - exists v, dq. split; first by rewrite lookup_insert.
-      split; first by split. done.
-    - eapply map_Forall_impl; [apply Hm|]; simpl.
-      intros k' [dq' ag'] (v'&?&?&?). exists v'.
-      rewrite lookup_insert_ne; naive_solver.
-    - intros k'. rewrite !lookup_insert_None. naive_solver.
-  Qed.
+-- TODO: This one might need the exists trick
+theorem gmap_view_rel_exists n f : (∃ m, heapR F K V H n m f) ↔ ✓{n} f := sorry
 
-  Local Lemma gmap_view_rel_discrete :
-    CmraDiscrete V → ViewRelDiscrete gmap_view_rel.
-  Proof.
-    intros ? n m f Hrel k [df va] Hk.
-    destruct (Hrel _ _ Hk) as (v & dq & Hm & Hvval & Hvincl).
-    exists v, dq. split; first done.
-    split; first by apply cmra_discrete_valid_iff_0.
-    rewrite -cmra_discrete_included_iff_0. done.
-  Qed.
--/
+instance gmap_view_rel_discrete [CMRA.Discrete V] : ViewRelDiscrete (heapR F K V H) := sorry
 
 abbrev HeapView := View F (heapR F K V H)
 
