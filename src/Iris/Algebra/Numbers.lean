@@ -24,6 +24,7 @@ class TotallyOrdered (α : Type _) extends LE α, LT α where
   le_total : ∀ {a b : α}, a ≤ b ∨ b ≤ a
 
 class Numbers (α : Type _) extends CommMonoid α, TotallyOrdered α where
+  zero_lt_one : 0 < 1
   lt_def : ∀ {a b : α}, a < b ↔ a ≤ b ∧ a ≠ b
   add_le_compat : ∀ {a b c : α}, a ≤ b → a + c ≤ b + c
   add_left_cancel : ∀ {a b c : α}, c + a = c + b → a = b
@@ -131,8 +132,6 @@ instance Num_CMRA : CMRA (Numerical α) where
     intro ⟨x⟩ ⟨y⟩ hxy
     cases hxy
     simp [iNum.add_comm]
-    ext
-    simp
     exact iNum.id_law x
 
 
@@ -149,20 +148,19 @@ instance Num_CMRA : CMRA (Numerical α) where
 
 -- TODO: Simplify
 
-theorem num_included {p q : Numerical α} : p ≼ q ↔ p < q :=
-  ⟨ by
-      rintro ⟨r, Hr⟩
-      apply Numbers.lt_sum.mpr
-      exists r
-      rw [Hr]
-      rfl,
-    by
-      intro H
-      rcases Numbers.lt_sum.mp H with ⟨r, Hr⟩
-      exists r
-      simp [Iris.NumbersCMRA.Num_CMRA]
-      rw [Hr]
-      rfl⟩
+theorem num_included {p q : Numerical α} : p ≼ q ↔ p < q := by
+  constructor
+  · rintro ⟨r, Hr⟩
+    apply Numbers.lt_sum.mpr
+    exists r
+    rw [Hr]
+    rfl
+  · intro H
+    rcases Numbers.lt_sum.mp H with ⟨r, Hr⟩
+    exists r
+    simp [Iris.NumbersCMRA.Num_CMRA]
+    rw [Hr]
+
 
 theorem num_included_weak {p q : Numerical α} (H : p ≼ q) : p ≤ q := by
   have h := iNum.lt_def.mp (num_included.mp H)
