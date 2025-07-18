@@ -19,7 +19,7 @@ inductive SpecPat
   | idents (names : List (TSyntax ``binderIdent))
   deriving Repr, Inhabited
 
-partial def SpecPat.parse (pat : TSyntax `specPat) : MacroM SpecPat := do
+partial def SpecPat.parse (pat : Syntax) : MacroM SpecPat := do
   match go ⟨← expandMacros pat⟩ with
   | none => Macro.throwUnsupported
   | some pat => return pat
