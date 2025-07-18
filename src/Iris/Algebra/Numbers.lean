@@ -173,7 +173,7 @@ instance : CMRA.Discrete (Numerical α) where
 instance : CMRA.Exclusive (one : Numerical α) where
   exclusive0_l x H := by
     simp [CMRA.ValidN, CMRA.op] at H
-
+    sorry
 
 
 -- TODO: Simplify
@@ -181,7 +181,7 @@ instance {q : Numerical α} : CMRA.Cancelable q where
   cancelableN {n x y} := by
     simp [CMRA.ValidN]
     intro _
-    suffices q + x = q + y → x = y by {apply this}
+    suffices q + x = q + y → x = y by sorry -- {apply this}
     intro H
     simp at H
     have H' := @iNum.add_left_cancel x.car y.car q.car
@@ -199,7 +199,7 @@ instance {q : Numerical α} : CMRA.IdFree q where
   id_free0_r y := by
     intro H H'
     simp [CMRA.op, CMRA.toOFE.equiv_dist, CMRA.ValidN] at H' H
-
+    sorry
 
 
 end NumbersCMRA
