@@ -9,17 +9,15 @@ import Iris.ProofMode.Tactics.Split
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
--- todo: simplify in line with tac_apply
-theorem apply [BI PROP] {P P' Q O A1 A2 : PROP} {p : Bool}
-    (h1 : P ⊢ P' ∗ □?p O) (h2 : P' ⊢ A1) [h3 : IntoWand' p false O A1 A2]
-    [h4 : FromAssumption false A2 Q] : P ⊢ Q :=
-  h1.trans <| (sep_mono_l h2).trans <| (sep_mono_r h3.1).trans <| wand_elim_r.trans h4.1
+theorem apply [BI PROP] {R P P' P1 P2 : PROP} {p : Bool}
+    (h1 : P ⊢ P' ∗ □?p R) (h2 : P' ⊢ P1) [h3 : IntoWand' p false R P1 P2] : P ⊢ P2 :=
+  h1.trans <| (sep_mono_l h2).trans <| wand_elim' h3.1
 
 -- todo: complex spec patterns
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iApplyCore
     {P P'} (p : Q(Bool)) (hyps : Hyps bi P) (hyps' : Hyps bi P') (Q hyp : Q($prop))
-    (pf : Q($P ⊣⊢ $P' ∗ □?$p $hyp)) (pat : List SpecPat)
+    (pf : Q($P ⊣⊢ $P' ∗ □?$p $hyp)) (pats : List SpecPat)
     (k : ∀ {P}, Hyps bi P → (Q : Q($prop)) → MetaM Q($P ⊢ $Q)) :
     MetaM (Q($P ⊢ $Q)) := do
   let A1 ← mkFreshExprMVarQ q($prop)
@@ -36,12 +34,17 @@ partial def iApplyCore
       synthInstanceQ q(IntoWand' $p false $A2 $A1' $A2')
 
     if let some _ := intoWand' then
-      -- todo: use Hyps.split
-      let _ ← k (.mkEmp bi) A1
-      return ← iApplyCore p hyps hyps' Q A2 pf [] k
+      -- todo: check specPat for uniq
+      let ⟨el, er, hypsl, hypsr, h⟩ := Hyps.split bi (fun _ uniq =>
+        match pats.head? with
+        | some pat => false
+        | none => false) hyps'
+      let _ ← k hypsr A1
+      let pf' : Q($P ⊣⊢ $el ∗ □?$p ($er ∗ $hyp)) := sorry
+      return ← iApplyCore p hyps hypsl Q A2 pf' pats.tail k -- todo: update pdf with h
     else
       let m ← k hyps' A1
-      let _ ← synthInstanceQ q(FromAssumption false $A2 $Q)
+      let _ ← synthInstanceQ q(IntoWand' $p false $hyp $A1 $Q)
       return q(apply ($pf).mp $m)
   else
     let _ ← synthInstanceQ q(FromAssumption $p $hyp $Q)
