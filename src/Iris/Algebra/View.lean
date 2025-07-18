@@ -18,7 +18,7 @@ class ViewRel [OFE A] [UCMRA B] (R : view_rel A B) where
   mono {n1 n2 : Nat} {a1 a2 : A} {b1 b2 : B} :
     R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼{n2} b1 → n2 ≤ n1 → R n2 a2 b2
   rel_validN n a b : R n a b → ✓{n} b
-  rel_unit n : ∃ a, R n a ε
+  rel_unit n : ∃ a, R n a UCMRA.unit
 
 class ViewRelDiscrete [OFE A] [UCMRA B] (R : view_rel A B) extends ViewRel R where
   discrete n a b : R 0 a b → R n a b
@@ -167,7 +167,9 @@ instance : CMRA (View F R) where
     rcases x1 with ⟨_|⟨q1, ag1⟩, b1⟩ <;>
     rcases x2 with ⟨_|⟨q2, ag2⟩, b2⟩ <;>
     simp_all
-    · exact fun x h => ViewRel.rel_unit n
+    · intro x H
+      exists x
+      exact ViewRel.mono H .rfl Hr.symm.to_incN n.le_refl
     intro Hq a Hag HR
     refine ⟨CMRA.discrete_valid <| DFrac_CMRA.validN_ne Hl.1 Hq, ?_⟩
     refine ⟨a, ?_⟩
@@ -185,7 +187,9 @@ instance : CMRA (View F R) where
       rcases H.2 with ⟨ag, Ha⟩; exists ag
       refine ⟨OFE.Dist.le Ha.1 n.le_succ, ?_⟩
       exact ViewRel.mono Ha.2 .rfl (CMRA.incN_refl x.π_frag) n.le_succ
-    · exact fun _ => ViewRel.rel_unit n
+    · rintro ⟨z, HR⟩
+      exists z
+      exact ViewRel.mono HR .rfl (CMRA.incN_refl _) n.le_succ
   validN_op_left {n x y} := by
     simp [op, validN]
     rcases x with ⟨_|⟨q1, ag1⟩, b1⟩ <;>
