@@ -12,14 +12,19 @@ import Init.Data.Vector
 
 namespace Iris
 
-def GFunctors := Array COFE.OFunctorPre
+structure GFunctor where
+  car : COFE.OFunctorPre
+  rFunctor : RFunctor car
+  map_contractive : Iris.RFunctorContractive car
+
+def GFunctors := Array GFunctor
 
 def GId (FF : GFunctors) : Type _ := Fin FF.size
 
-instance (FF : GFunctors) : GetElem GFunctors (GId FF) COFE.OFunctorPre (fun _ _ => True) where
-  getElem _ x _ := (show Array _ from FF)[x.1]
+instance : DecidableEq (GId FF) := by unfold GId; infer_instance
 
-abbrev IsGFunctors (G : GFunctors) := ∀ (i : GId G), RFunctorContractive G[i]
+instance (FF : GFunctors) : GetElem GFunctors (GId FF) GFunctor (fun _ _ => True) where
+  getElem _ x _ := (show Array _ from FF)[x.1]
 
 def SubG (FF₁ FF₂ : GFunctors) : Prop :=
   ∀ i : GId FF₁, ∃ j : GId FF₂, FF₁[i] = FF₂[j]
@@ -27,21 +32,25 @@ def SubG (FF₁ FF₂ : GFunctors) : Prop :=
 def GName := LeibnizO Nat
 
 abbrev IResF (FF : GFunctors) : COFE.OFunctorPre :=
-  DiscreteFunOF (fun i : GId FF => GenMapOF GName FF[i])
+  DiscreteFunOF (fun i : GId FF =>
+    GenMapOF GName FF[i].car)
 
 section IProp
 open COFE
 
-variable (FF : GFunctors) [IG : IsGFunctors FF]
+abbrev IsGFunctors (G : GFunctors) := ∀ (i : GId G), RFunctorContractive G[i].car
+instance : IsGFunctors G := by intros i; apply G[i].map_contractive
+
+variable (FF : GFunctors)
 
 def iPrePropO : Type _ := OFunctor.Fix (UPredOF (IResF FF))
 
 instance : COFE (iPrePropO FF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
-def IResUR : Type := (i : GId FF) → GName → Option (FF[i] (iPrePropO FF) (iPrePropO FF))
+def IResUR : Type := (i : GId FF) → GName → Option (FF[i].car (iPrePropO FF) (iPrePropO FF))
 
 instance : UCMRA (IResUR FF) :=
-  ucmraDiscreteFunO (β := fun (i : GId FF) => GName → Option (FF[i] (iPrePropO FF) (iPrePropO FF)))
+  ucmraDiscreteFunO (β := fun (i : GId FF) => GName → Option (FF[i].car (iPrePropO FF) (iPrePropO FF)))
 
 abbrev IProp := UPred (IResUR FF)
 
