@@ -88,11 +88,13 @@ noncomputable instance instClassicalStore {K V : Type _} : Store (K → V) K V w
   get_set_eq H := by rw [H]; simp [fset]
   get_set_ne H := by simp_all [fset]
 
-noncomputable instance instClassicalHeap : Heap (fun V => K → Option V) K where
+noncomputable instance instClassicalHeap : Heap (K → Option V) K V where
   hmap h f k := match f k with | none => none | some x => h k x
-  hmap_alloc := by simp [Store.get]; intro _ _ _ _ _ _ H; rw [H]
-  hmap_unalloc := by simp [Store.get]; intro _ _ _ _ _ H; rw [H]
-  empty _ _ := none
+  get_hmap := by
+    intro f t k
+    simp [Store.get, Option.bind]
+    cases h1 : t k <;> simp_all
+  empty _ := none
   get_empty := by simp [Store.get]
   merge op f1 f2 k :=
     match f1 k, f2 k with
@@ -103,7 +105,7 @@ noncomputable instance instClassicalHeap : Heap (fun V => K → Option V) K wher
   get_merge := by
     simp [Store.get]
     intros
-    rfl
+    split <;> simp_all [Option.merge]
 
 theorem coinfinte_exists_next {f : K → Option V} :
     infinite (cosupport f) → ∃ k, f k = none := by
@@ -112,20 +114,20 @@ theorem coinfinte_exists_next {f : K → Option V} :
   simp [cosupport] at Henum
   apply Henum
 
-noncomputable instance instClassicaAllocHeap : AllocHeap (fun V => K → Option V) K where
+noncomputable instance instClassicaAllocHeap : AllocHeap (K → Option V) K V where
   toHeap := instClassicalHeap
   notFull f := infinite <| cosupport f
   fresh HC := Classical.choose (coinfinte_exists_next HC)
-  get_fresh {_ _ HC} := Classical.choose_spec (coinfinte_exists_next HC)
+  get_fresh {_ HC} := Classical.choose_spec (coinfinte_exists_next HC)
 
-noncomputable instance [InfiniteType K] : UnboundedHeap (fun V => K → Option V) K where
+noncomputable instance [InfiniteType K] : UnboundedHeap ( K → Option V) K V where
   notFull_empty := by
     simp [notFull, empty, Function.comp, infinite]
     exists InfiniteType.enum
     exact fun n m a => InfiniteType.enum_inj n m a
-  notFull_set_fresh {V t v H} := by
+  notFull_set_fresh {t v H} := by
     simp only [notFull] at ⊢ H
-    apply cofinite_alter_cofinite (Hs := H) (p' := @fresh (fun V => K → Option V) K _ V _ H)
+    apply cofinite_alter_cofinite (Hs := H) (p' := @fresh (K → Option V) K _ _ _ H)
     intro p
     intro Hp
     simp [cosupport]

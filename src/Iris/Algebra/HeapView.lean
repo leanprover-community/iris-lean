@@ -12,16 +12,16 @@ open Iris
 
 section heap_view
 
-variable (F K V : Type _) (H : Type _ → Type _) [UFraction F] [∀ T, Heap (H T) K T] [CMRA V]
+variable (F K V : Type _) (H : Type _ → Type _) [UFraction F] [∀ V, Heap (H V) K V] [CMRA V]
 
-abbrev heapR (n : Nat) (m : StoreO (H V)) (f : StoreO (H ((DFrac F) × V))) : Prop :=
+abbrev heapR (n : Nat) (m : H V) (f : H ((DFrac F) × V)) : Prop :=
   let P (k : K) (fv : DFrac F × V) : Prop :=
-    ∃ (v : V) (dq : DFrac F), StoreO.get k m = .some v ∧ ✓{n} (dq, v) ∧ (some fv ≼{n} some (dq, v))
-  StoreO.all (liftHeapPred P) f
+    ∃ (v : V) (dq : DFrac F), Store.get m k = .some v ∧ ✓{n} (dq, v) ∧ (some fv ≼{n} some (dq, v))
+  Store.all (toHeapPred P) f
 
 instance : ViewRel (heapR F K V H) where
   mono {n1 n2 m1 m2 f1 f2 Hrel Hm Hf Hn k} := by
-    unfold liftHeapPred; split <;> try trivial
+    unfold toHeapPred; split <;> try trivial
     rename_i dqa vk Heq
     simp only []
     sorry
@@ -30,19 +30,16 @@ instance : ViewRel (heapR F K V H) where
 
 abbrev HeapView := View F (heapR F K V H)
 
--- #synth CMRA (HeapView F K V H)
-
 end heap_view
 
 section heap_view_laws
 
-variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [∀ T, Heap (H T) K T] [CMRA V]
+variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [∀ V, Heap (H V) K V] [CMRA V]
 
-def heap_view_auth (dq : DFrac F) (m : StoreO (H V)) : HeapView F K V H :=
-  ●V{dq} .mk m.1
+def heap_view_auth (dq : DFrac F) (m : H V) : HeapView F K V H := ●V{dq} m
 
 def heap_view_frag (k : K) (dq : DFrac F) (v : V) : HeapView F K V H :=
-  ◯V .singleton k <| .some (dq, v)
+  ◯V Heap.point k <| .some (dq, v)
 
 open OFE
 
@@ -53,12 +50,11 @@ instance frag_ne : NonExpansive (heap_view_frag dq k : _ → HeapView F K V H) w
   ne := sorry
 
 theorem heap_view_rel_lookup n m k dq v :
-    heapR F K V H n m (.singleton k <| .some (dq, v)) ↔
-    ∃ (v' : V) (dq' : DFrac F), m.get k = some v' ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼{n} some (dq', v') := sorry
+    heapR F K V H n m (Heap.point k <| .some (dq, v)) ↔
+    ∃ (v' : V) (dq' : DFrac F), Store.get m k = some v' ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼{n} some (dq', v') := sorry
 
-theorem heap_view_auth_dfrac_op (dp dq : DFrac F) (m : StoreO (H V)) :
+theorem heap_view_auth_dfrac_op (dp dq : DFrac F) (m : H V) :
     (heap_view_auth (dp • dq) m) ≡ (heap_view_auth dp m) • heap_view_auth dq m := sorry
-
 
 theorem heap_view_auth_dfrac_op_invN n dp m1 dq m2 :
     (✓{n} ((heap_view_auth dp m1) : HeapView F K V H) • heap_view_auth dq m2) → m1 ≡{n}≡ m2 := sorry
@@ -104,28 +100,28 @@ theorem heap_view_frag_op_valid k dq1 dq2 v1 v2 :
 
 theorem heap_view_both_dfrac_validN n dp m k dq v :
     ✓{n} ((heap_view_auth dp m : HeapView F K V H)  • heap_view_frag k dq v) ↔
-      ∃ v' dq', ✓ dp ∧ StoreO.get k m = some v' ∧ ✓{n} (dq', v') ∧
+      ∃ v' dq', ✓ dp ∧ Store.get m k = some v' ∧ ✓{n} (dq', v') ∧
                 some (dq, v) ≼{n} some (dq', v') := sorry
 
 theorem heap_view_both_validN n dp m k v :
     ✓{n} ((heap_view_auth dp m : HeapView F K V H) • heap_view_frag k (.own One.one) v) ↔
-      ✓ dp ∧ ✓{n} v ∧ StoreO.get k m ≡{n}≡ some v := sorry
+      ✓ dp ∧ ✓{n} v ∧ Store.get m k ≡{n}≡ some v := sorry
 
 theorem heap_view_both_dfrac_validN_total [CMRA.IsTotal V] n dp m k dq v :
     ✓{n} ((heap_view_auth dp m : HeapView F K V H) • heap_view_frag k dq v) →
-    ∃ v', ✓ dp ∧ ✓ dq ∧ StoreO.get k m = some v' ∧ ✓{n} v' ∧ v ≼{n} v' := sorry
+    ∃ v', ✓ dp ∧ ✓ dq ∧ Store.get m k = some v' ∧ ✓{n} v' ∧ v ≼{n} v' := sorry
 
 theorem heap_view_both_dfrac_valid_discrete [CMRA.Discrete V] dp m k dq v :
     ✓ ((heap_view_auth dp m : HeapView F K V H) • heap_view_frag k dq v) ↔
-      ∃ v' dq', ✓ dp ∧ StoreO.get k m = some v' ∧ ✓ (dq', v') ∧ some (dq, v) ≼ some (dq', v') := sorry
+      ∃ v' dq', ✓ dp ∧ Store.get m k = some v' ∧ ✓ (dq', v') ∧ some (dq, v) ≼ some (dq', v') := sorry
 
 theorem heap_view_both_dfrac_valid_discrete_total [CMRA.IsTotal V] [CMRA.Discrete V] dp m k dq v :
     ✓ ((heap_view_auth dp m : HeapView F K V H) • heap_view_frag k dq v) →
-    ∃ v', ✓ dp ∧ ✓ dq ∧ StoreO.get k m = some v' ∧ ✓ v' ∧ v ≼ v' := sorry
+    ∃ v', ✓ dp ∧ ✓ dq ∧ Store.get m k = some v' ∧ ✓ v' ∧ v ≼ v' := sorry
 
 theorem heap_view_both_valid m dp k v :
     ✓ ((heap_view_auth dp m : HeapView F K V H)  • heap_view_frag k (.own One.one) v) ↔
-    ✓ dp ∧ ✓ v ∧ StoreO.get k m ≡ some v := sorry
+    ✓ dp ∧ ✓ v ∧ Store.get m k ≡ some v := sorry
 
 end heap_view_laws
 
@@ -136,4 +132,3 @@ section heap_updates
 section heap_updates
 
 -- TODO: Port functors
-
