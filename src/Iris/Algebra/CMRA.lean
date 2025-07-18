@@ -1378,48 +1378,6 @@ instance urFunctorContractiveOptionOF
 
 end optionOF
 
-
-section subtype
-
-/-- A set is closed under the CMRA operations -/
-class CMRAClosed [CMRA α] (P : α → Prop) where
-  pcore_closed {x : α} : P x → CMRA.pcore x = some x' → P x'
-  op_closed {x y : α} : P x → P y → P (x • y)
-
--- @[simp] def subtype_pcore [CMRA α] {P : α → Prop} : { x : α // P x } → Option α :=
-
-instance [CMRA α] {P : α → Prop} [CMRAClosed P] : CMRA { x : α // P x } where
-  pcore x :=
-    match H : CMRA.pcore x.val with
-    | .some v => .some ⟨v, CMRAClosed.pcore_closed x.property H⟩
-    | .none => .none
-  op x y := ⟨x.val • y.val, CMRAClosed.op_closed x.property y.property⟩
-  ValidN n x := ✓{n} x.val
-  Valid x := ✓ x.val
-  op_ne.ne := sorry
-  pcore_ne := sorry
-  validN_ne := sorry
-  valid_iff_validN := sorry
-  validN_succ := sorry
-  validN_op_left := sorry
-  assoc := sorry
-  comm := sorry
-  pcore_op_left := sorry
-  pcore_idem := sorry
-  pcore_op_mono  := sorry
-  extend  := sorry
-
-class UCMRAClosed [UCMRA α] (P : α → Prop) extends CMRAClosed P where
-  unit_closed : P UCMRA.unit
-
-instance [UCMRA α] {P : α → Prop} [UCMRAClosed P] : UCMRA { x : α // P x } where
-  unit := ⟨UCMRA.unit, UCMRAClosed.unit_closed⟩
-  unit_valid := sorry
-  unit_left_id := sorry
-  pcore_unit := sorry
-
-end subtype
-
 section GenMap
 
 /-
