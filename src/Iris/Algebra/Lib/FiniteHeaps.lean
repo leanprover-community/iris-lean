@@ -142,10 +142,10 @@ abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
   | none, some v2 => some v2
   | none, none => none
 
-instance FiniteDomFunction.instFiniteDomHeap : Heap (fun V => FiniteDomFunction V) Nat where
+instance FiniteDomFunction.instFiniteDomHeap : Heap (FiniteDomFunction V) Nat V where
   hmap h f := f.map h
-  hmap_alloc := by
-    intros V t k v V' f H
+  get_hmap := by
+    intros f t k
     induction t
     · simp_all [empty, Store.get, map]
     · rename_i n' v' t' IH
@@ -153,34 +153,27 @@ instance FiniteDomFunction.instFiniteDomHeap : Heap (fun V => FiniteDomFunction 
       cases h1 : f n' v' <;> simp <;> split <;> rename_i h2 <;> simp_all
     · rename_i n' t' IH
       simp_all [Store.get]
-  hmap_unalloc := by
-    intros V t k V' f H
-    induction t
-    · simp_all [empty, Store.get, map]
-    · rename_i n' v' t' IH
-      simp_all [Store.get]
-      cases h1 : f n' v' <;> simp only [lookup] <;> split <;> simp_all
-    · rename_i n' t' IH
-      simp_all [Store.get]
-  empty _ := .empty
+      split <;> simp [Option.bind]
+  empty := .empty
   get_empty := by intros; simp [Store.get]
   merge op t1 t2 := construct (fun n => op_lift op (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
   get_merge := by
-    intro V op t1 t2 k
+    intro op t1 t2 k
     simp only [Store.get]
     simp [FiniteDomFunction.construct_get]
+    simp [Option.merge, op_lift]
     split <;> rename_i h
-    · rfl
+    · cases t1.lookup k <;> cases t2.lookup k <;> simp_all
     · have Ht1 : t1.fresh ≤ k := by omega
       have Ht2 : t2.fresh ≤ k := by omega
       rw [FiniteDomFunction.fresh_lookup_ge _ _ Ht1]
       rw [FiniteDomFunction.fresh_lookup_ge _ _ Ht2]
 
-instance instFinitDomAllocHeap : AllocHeap (fun V => FiniteDomFunction V) Nat  where
+instance instFinitDomAllocHeap : AllocHeap (FiniteDomFunction V) Nat V where
   notFull _ := True
-  fresh {_ f} _ := f.fresh
-  get_fresh {_ f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
+  fresh {f} _ := f.fresh
+  get_fresh {f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
 
-instance : UnboundedHeap (fun V => FiniteDomFunction V) Nat where
+instance : UnboundedHeap (FiniteDomFunction V) Nat V where
   notFull_empty := by simp [notFull]
-  notFull_set_fresh {V t v H} := by simp [notFull]
+  notFull_set_fresh {t v H} := by simp [notFull]
