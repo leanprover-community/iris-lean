@@ -22,11 +22,86 @@ abbrev heapR (n : Nat) (m : H V) (f : H ((DFrac F) × V)) : Prop :=
 instance : ViewRel (heapR F K V H) where
   mono {n1 n2 m1 m2 f1 f2 Hrel Hm Hf Hn k} := by
     unfold toHeapPred; split <;> try trivial
-    rename_i dqa vk Heq
+    rename_i dqa vk Hk
     simp only []
+    obtain ⟨Hf'', _⟩ := lookup_includedN n2 f2 f1
+    have Hf''' := Hf'' Hf k; clear Hf Hf''
+    obtain Hf' : ∃ z, Store.get f1 k ≡{n2}≡ (some vk) • z := by
+      obtain ⟨z, Hz⟩ := Hf'''; exists z
+      apply Hz.trans
+      exact OFE.Dist.of_eq (congrFun (congrArg CMRA.op Hk) z)
+    clear Hf'''
+    cases h : Store.get f1 k
+    · exfalso
+      rw [h] at Hf'
+      obtain ⟨z, HK⟩ := Hf'
+      cases z <;> simp [CMRA.op, optionOp] at HK
+    rename_i val
+    rcases Heq : val with ⟨q', va'⟩
+    rw [h, Heq] at Hf'
+    simp only [heapR, Store.all, toHeapPred] at Hrel
+    obtain ⟨v, dq, Hm1, ⟨Hvval, Hdqval⟩, Hvincl⟩ := (Heq ▸ h ▸ Hrel k)
+    have X : ∃ y : V, get m2 k = some y ∧ v ≡{n2}≡ y := by
+      simp_all
+      have Hmm := Hm1 ▸ Hm k
+      rcases h : Store.get m2 k with (_|y) <;> simp [h] at Hmm
+      exists y
+    obtain ⟨v', Hm2, Hv⟩ := X
+    exists v'
+    exists dq
+    refine ⟨Hm2, ⟨Hvval, ?_⟩, ?_⟩
+    · exact CMRA.validN_ne Hv (CMRA.validN_of_le Hn Hdqval)
+    · suffices some vk ≼{n2} some (dq, v) by
+        apply CMRA.incN_of_incN_of_dist this
+        refine ⟨rfl, Hv⟩
+      apply CMRA.incN_trans
+      · apply Hf'
+      · exact CMRA.incN_of_incN_le Hn Hvincl
+  rel_validN := by
+    intro n m f Hrel k
+    rcases Hf : Store.get f k with (_|⟨dqa, va⟩)
+    · simp [CMRA.ValidN, optionValidN]
+    · simp only [heapR, Store.all, toHeapPred] at Hrel
+      obtain ⟨v, dq, Hmval, Hvval, Hvincl⟩ := Hf ▸ Hrel k
+      exact CMRA.validN_of_incN Hvincl Hvval
+  rel_unit := by
     sorry
-  rel_validN := sorry
-  rel_unit := sorry
+
+/-
+  Local Lemma gmap_view_rel_exists n f :
+    (∃ m, gmap_view_rel n m f) ↔ ✓{n} f.
+  Proof.
+    split.
+    { intros [m Hrel]. eapply gmap_view_rel_raw_valid, Hrel. }
+    intros Hf.
+    cut (∃ m, gmap_view_rel n m f ∧ ∀ k, f !! k = None → m !! k = None).
+    { naive_solver. }
+    induction f as [|k [dq v] f Hk' IH] using map_ind.
+    { exists ∅. split; [|done]. apply: map_Forall_empty. }
+    move: (Hf k). rewrite lookup_insert=> -[/= ??].
+    destruct IH as (m & Hm & Hdom).
+    { intros k'. destruct (decide (k = k')) as [->|?]; [by rewrite Hk'|].
+      move: (Hf k'). by rewrite lookup_insert_ne. }
+    exists (<[k:=v]> m).
+    rewrite /gmap_view_rel /= /gmap_view_rel_raw map_Forall_insert //=. split_and!.
+    - exists v, dq. split; first by rewrite lookup_insert.
+      split; first by split. done.
+    - eapply map_Forall_impl; [apply Hm|]; simpl.
+      intros k' [dq' ag'] (v'&?&?&?). exists v'.
+      rewrite lookup_insert_ne; naive_solver.
+    - intros k'. rewrite !lookup_insert_None. naive_solver.
+  Qed.
+
+  Local Lemma gmap_view_rel_discrete :
+    CmraDiscrete V → ViewRelDiscrete gmap_view_rel.
+  Proof.
+    intros ? n m f Hrel k [df va] Hk.
+    destruct (Hrel _ _ Hk) as (v & dq & Hm & Hvval & Hvincl).
+    exists v, dq. split; first done.
+    split; first by apply cmra_discrete_valid_iff_0.
+    rewrite -cmra_discrete_included_iff_0. done.
+  Qed.
+-/
 
 abbrev HeapView := View F (heapR F K V H)
 
