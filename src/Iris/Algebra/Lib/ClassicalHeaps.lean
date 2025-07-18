@@ -87,8 +87,6 @@ noncomputable instance instClassicalStore {K V : Type _} : Store (K → V) K V w
   set := fset
   get_set_eq H := by rw [H]; simp [fset]
   get_set_ne H := by simp_all [fset]
-  merge op f1 f2 k := op (f1 k) (f2 k)
-  get_merge := by simp
 
 noncomputable instance instClassicalHeap : Heap (fun V => K → Option V) K where
   hmap h f k := match f k with | none => none | some x => h k x
@@ -96,6 +94,16 @@ noncomputable instance instClassicalHeap : Heap (fun V => K → Option V) K wher
   hmap_unalloc := by simp [Store.get]; intro _ _ _ _ _ H; rw [H]
   empty _ _ := none
   get_empty := by simp [Store.get]
+  merge op f1 f2 k :=
+    match f1 k, f2 k with
+    | some v1, some v2 => some <| op v1 v2
+    | some v1, none => some v1
+    | none, some v2 => some v2
+    | none, none => none
+  get_merge := by
+    simp [Store.get]
+    intros
+    rfl
 
 theorem coinfinte_exists_next {f : K → Option V} :
     infinite (cosupport f) → ∃ k, f k = none := by
