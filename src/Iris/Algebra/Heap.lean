@@ -867,7 +867,7 @@ instance heap_cancelable {m : T} [Hid : ∀ x : V, IdFree x] [Hc : ∀ x : V, Ca
     cases X <;> cases Y <;> cases Z <;> simp_all [Heap.get_merge,  ]
 
 theorem insert_op {m1 m2 : T} :
-    Store.Equiv ((Store.set (m1 • m2) i (x • y))) ((Store.set m1 i x) • (Store.set m2 i y)) := by
+    Store.Equiv ((Store.set (m1 • m2 : T) i (x • y : Option V))) ((Store.set m1 i x) • (Store.set m2 i y) : T) := by
   simp [Store.Equiv, Store.Equiv]
   apply funext
   intro j
@@ -878,7 +878,7 @@ theorem insert_op {m1 m2 : T} :
       cases x <;> cases y <;> simp_all
     else simp [CMRA.op, get_set_ne (T := T) He, Heap.get_merge]
 
-theorem insert_op_eq [IsoFunStore (T) K (Option V)] {m1 m2 : T} : (Store.set (m1 • m2) i (x • y)) = (Store.set m1 i x) • (Store.set m2 i y) :=
+theorem insert_op_eq [IsoFunStore (T) K (Option V)] {m1 m2 : T} : (Store.set (m1 • m2) i (x • y : Option V)) = (Store.set m1 i x) • (Store.set m2 i y) :=
   IsoFunStore.store_eq_of_Equiv insert_op
 
 theorem gmap_op_union {m1 m2 : T} : set_disjoint (Heap.dom m1) (Heap.dom m2) →
