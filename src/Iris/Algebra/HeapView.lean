@@ -7,6 +7,7 @@ Authors: Markus de Medeiros
 import Iris.Algebra.Heap
 import Iris.Algebra.View
 import Iris.Algebra.DFrac
+import Iris.Algebra.Frac
 
 open Iris
 
@@ -191,63 +192,214 @@ theorem heap_view_auth_op_valid m1 m2 : ✓ ((heap_view_auth (.own One.one) m1 :
 theorem heap_view_frag_validN n k dq v : ✓{n} (heap_view_frag k dq v : HeapView F K V H) ↔ ✓ dq ∧ ✓{n} v := by
   apply View.view_frag_validN.trans
   apply (heap_view_rel_exists F K V H _ _).trans
-  have Hrw : (✓{n} (Heap.point k (some (dq, v)) : H _)) ↔ (✓ (Heap.point k (some (dq, v)) : H _)) := by
-    constructor
-    · intro H
-      apply point_valid.mpr
-      sorry
-    · exact fun a => CMRA.Valid.validN a
-  apply Iff.trans Hrw ?_
-  --
-
-  sorry
+  apply point_validN
 
 theorem heap_view_frag_valid k dq v : ✓ (heap_view_frag k dq v : HeapView F K V H) ↔ ✓ dq ∧ ✓ v := by
-  sorry
+  suffices (∀ n, ✓{n} (heap_view_frag k dq v : HeapView F K V H)) ↔ ✓ dq ∧ ✓ v by exact this
+  suffices (∀ n, ✓ dq ∧ ✓{n} v) ↔ ✓ dq ∧ ✓ v by
+    apply Iff.trans (forall_congr' (heap_view_frag_validN · k dq v)) this
+  constructor
+  · refine fun H => ⟨?_, ?_⟩
+    · apply CMRA.valid_iff_validN.mpr (H · |>.1)
+    · apply CMRA.valid_iff_validN.mpr (H · |>.2)
+  · rintro ⟨H1, H2⟩ n
+    refine ⟨?_, ?_⟩
+    · apply CMRA.valid_iff_validN.mp H1 n
+    · apply CMRA.valid_iff_validN.mp H2 n
 
 theorem heap_view_frag_op k dq1 dq2 v1 v2 :
     (heap_view_frag k (dq1 • dq2) (v1  • v2) : HeapView F K V H) ≡
       heap_view_frag k dq1 v1  • heap_view_frag k dq2 v2 := by
-  sorry
+  simp [heap_view_frag]
+  rw [← View.view_frag_op]
+  apply View.frag_ne.eqv
+  apply Store.eqv_of_Equiv
+  apply Equiv_trans.trans _ point_op.symm
+  rfl
 
 theorem heap_view_frag_add k q1 q2 v1 v2 :
     (heap_view_frag k (.own (q1 + q2)) (v1  • v2) : HeapView F K V H) ≡
       heap_view_frag k (.own q1) v1  • heap_view_frag k (.own q2) v2 := by
-  sorry
+  apply heap_view_frag_op
 
 theorem heap_view_frag_op_validN n k dq1 dq2 v1 v2 :
     ✓{n} ((heap_view_frag k dq1 v1 : HeapView F K V H) • heap_view_frag k dq2 v2) ↔
       ✓ (dq1  • dq2) ∧ ✓{n} (v1  • v2) := by
-  sorry
+  apply View.view_frag_validN.trans
+  apply (heap_view_rel_exists F K V H _ _ ).trans
+  apply Iff.trans
+  · apply CMRA.validN_iff
+    apply OFE.equiv_dist.mp
+    apply Store.eqv_of_Equiv
+    apply point_op
+  apply point_validN.trans
+  apply Eq.to_iff rfl
 
 theorem heap_view_frag_op_valid k dq1 dq2 v1 v2 :
     ✓ ((heap_view_frag k dq1 v1 : HeapView F K V H) • heap_view_frag k dq2 v2) ↔
-      ✓ (dq1  • dq2) ∧ ✓ (v1  • v2) := sorry
+      ✓ (dq1  • dq2) ∧ ✓ (v1  • v2) := by
+  apply View.view_frag_valid.trans
+  suffices (∀ (n : Nat), ✓{n} dq1 • dq2 ∧ ✓{n} v1 • v2) ↔ ✓ dq1 • dq2 ∧ ✓ v1 • v2 by
+    apply Iff.trans _ this
+    apply forall_congr'
+    intro n
+    apply (heap_view_rel_exists F K V H _ _ ).trans
+    simp [heap_view_frag]
+    apply Iff.trans
+    · apply CMRA.validN_iff
+      apply OFE.equiv_dist.mp
+      apply Store.eqv_of_Equiv
+      apply point_op
+    apply point_validN.trans
+    apply Eq.to_iff rfl
+  constructor
+  · intro H
+    refine ⟨?_, ?_⟩
+    · apply CMRA.valid_iff_validN.mpr <| fun n => (H n).1
+    · apply CMRA.valid_iff_validN.mpr <| fun n => (H n).2
+  · rintro ⟨H1, H2⟩ n
+    refine ⟨?_, ?_⟩
+    · apply CMRA.valid_iff_validN.mp H1
+    · apply CMRA.valid_iff_validN.mp H2
+
 
 theorem heap_view_both_dfrac_validN n dp m k dq v :
     ✓{n} ((heap_view_auth dp m : HeapView F K V H)  • heap_view_frag k dq v) ↔
       ∃ v' dq', ✓ dp ∧ Store.get m k = some v' ∧ ✓{n} (dq', v') ∧
-                some (dq, v) ≼{n} some (dq', v') := sorry
+                some (dq, v) ≼{n} some (dq', v') := by
+  simp [heap_view_auth, heap_view_frag]
+  apply View.view_both_dfrac_validN.trans
+  refine and_congr_right (fun H1 => ?_)
+  apply (heap_view_rel_lookup _ _ _ _ _).trans
+  refine exists_congr (fun x => ?_)
+  exact exists_and_left
 
 theorem heap_view_both_validN n dp m k v :
     ✓{n} ((heap_view_auth dp m : HeapView F K V H) • heap_view_frag k (.own One.one) v) ↔
-      ✓ dp ∧ ✓{n} v ∧ Store.get m k ≡{n}≡ some v := sorry
+      ✓ dp ∧ ✓{n} v ∧ Store.get m k ≡{n}≡ some v := by
+  apply (heap_view_both_dfrac_validN _ _ _ _ _ _).trans
+  constructor
+  · rintro ⟨Hdp, v', dq', Hlookup, Hvalid, Hincl⟩
+    have Heq : v ≡{n}≡ Hdp := by
+      have Z := @some_incN_exclusive _ _ (DFrac.own One.one, v) n ?G _ Hincl Hvalid
+      case G =>
+        -- TODO: This should be a DFrac lemma
+        constructor
+        rintro ⟨y1, y2⟩
+        simp [CMRA.ValidN, CMRA.op]
+        intro H
+        exfalso
+        cases y1 <;> simp [valid, op] at H
+        · apply (UFraction.one_whole (α := F)).2
+          rename_i f; exists f
+        · apply (UFraction.one_whole (α := F)).2 H
+        · apply (UFraction.one_whole (α := F)).2
+          exact Fraction.Fractional.of_add_left H
+      exact Z.2
+    refine ⟨dq', ?_, ?_⟩
+    · simp [CMRA.ValidN, Prod.ValidN] at Hvalid
+      apply CMRA.validN_ne Heq.symm Hvalid.2
+    · rw [Hlookup]
+      exact Heq.symm
+  · rintro ⟨Hdp, Hval, Hlookup⟩
+    rcases h : Store.get m k with (_|v'); simp [h] at Hlookup
+    exists v'; exists (DFrac.own One.one)
+    refine ⟨Hdp, rfl, ?_, ?_⟩
+    · simp [CMRA.ValidN, Prod.ValidN]
+      refine ⟨?_, ?_⟩
+      · simp [valid]
+        apply  (UFraction.one_whole (α := F)).1
+      rw [h] at Hlookup
+      exact (Dist.validN (id (Dist.symm Hlookup))).mp Hval
+    · apply some_incN.mpr ?_; left
+      apply dist_prod_ext rfl ?_
+      exact id (Dist.symm (h.symm ▸ Hlookup : some _ ≡{n}≡ some _))
 
 theorem heap_view_both_dfrac_validN_total [CMRA.IsTotal V] n dp m k dq v :
     ✓{n} ((heap_view_auth dp m : HeapView F K V H) • heap_view_frag k dq v) →
-    ∃ v', ✓ dp ∧ ✓ dq ∧ Store.get m k = some v' ∧ ✓{n} v' ∧ v ≼{n} v' := sorry
+    ∃ v', ✓ dp ∧ ✓ dq ∧ Store.get m k = some v' ∧ ✓{n} v' ∧ v ≼{n} v' := by
+  intro H; have H' := (heap_view_both_dfrac_validN _ _ _ _ _ _).mp H; clear H
+  obtain ⟨v', dq', Hdp, Hlookup, Hvalid, Hincl⟩ := H'
+  exists v'
+  refine ⟨Hdp, ?_, Hlookup, Hvalid.2, ?_⟩
+  · have _ : CMRA.IsTotal (DFrac F × V) := by sorry -- TODO: Product total, DFrac total
+    obtain ⟨⟨_, x⟩, Hx⟩ := some_incN_total.mp Hincl
+    suffices some dq ≼ some dq' by
+      sorry
+    obtain ⟨⟨x, _⟩, Hx⟩ := some_incN_total.mp Hincl
+    refine ⟨x, Hx.1⟩
+  · have _ : CMRA.IsTotal (DFrac F × V) := by sorry -- TODO: Product total, DFrac total
+    obtain ⟨⟨_, x⟩, Hx⟩ := some_incN_total.mp Hincl
+    refine ⟨x, Hx.2⟩
 
 theorem heap_view_both_dfrac_valid_discrete [CMRA.Discrete V] dp m k dq v :
     ✓ ((heap_view_auth dp m : HeapView F K V H) • heap_view_frag k dq v) ↔
-      ∃ v' dq', ✓ dp ∧ Store.get m k = some v' ∧ ✓ (dq', v') ∧ some (dq, v) ≼ some (dq', v') := sorry
+      ∃ v' dq', ✓ dp ∧ Store.get m k = some v' ∧ ✓ (dq', v') ∧ some (dq, v) ≼ some (dq', v') := by
+  apply CMRA.valid_iff_validN.trans
+  apply Iff.trans
+  · apply forall_congr'
+    intro _
+    apply heap_view_both_dfrac_validN
+  constructor
+  · intro Hvalid'
+    obtain ⟨v', dq', Hdp, Hlookup, Hvalid, Hincl⟩ := Hvalid' 0
+    exists v'; exists dq'
+    refine ⟨Hdp, Hlookup, ?_, ?_⟩
+    · have X : CMRA.Discrete (DFrac F × V) := by sorry -- TODO Product and DFrac discrete
+      exact X.discrete_valid Hvalid
+    · exact (CMRA.inc_iff_incN 0).mpr Hincl -- Wait.. does it have the right instances?
+  · rintro ⟨v', dq', Hdp, Hlookup, Hvalid, Hincl⟩ n
+    exists v'; exists dq'
+    refine ⟨Hdp, Hlookup, Hvalid.validN, (CMRA.inc_iff_incN n).mp Hincl⟩
 
 theorem heap_view_both_dfrac_valid_discrete_total [CMRA.IsTotal V] [CMRA.Discrete V] dp m k dq v :
     ✓ ((heap_view_auth dp m : HeapView F K V H) • heap_view_frag k dq v) →
-    ∃ v', ✓ dp ∧ ✓ dq ∧ Store.get m k = some v' ∧ ✓ v' ∧ v ≼ v' := sorry
+    ∃ v', ✓ dp ∧ ✓ dq ∧ Store.get m k = some v' ∧ ✓ v' ∧ v ≼ v' := by
+  intro H
+  obtain ⟨v', dq', Hdp, Hlookup, Hvalid, Hincl⟩ :=  (heap_view_both_dfrac_valid_discrete _ _ _ _ _).mp H
+  exists v'
+  refine ⟨Hdp, ?_, Hlookup , ?_, ?_⟩
+  · rcases Hincl with ⟨(_|x), Hx⟩ <;> simp [CMRA.op, optionOp, Prod.op] at Hx
+    · apply CMRA.valid_of_eqv Hx.1
+      simp [CMRA.Valid, Prod.Valid] at Hvalid
+      apply Hvalid.1
+    · suffices some dq ≼ some dq' by sorry
+      exists x.fst
+      simp [CMRA.op, optionOp]
+      have Hx' := Hx.1
+      exact Hx'
+  · exact Hvalid.2
+  · rcases Hincl with ⟨(_|x), Hx⟩ <;> simp [CMRA.op, optionOp, Prod.op] at Hx
+    · simp [OFE.Equiv] at Hx
+      apply CMRA.inc_of_inc_of_eqv (CMRA.inc_refl _)
+      exact Hx.2.symm
+    · suffices some dq ≼ some dq' by sorry
+      exists x.fst
+      simp [CMRA.op, optionOp]
+      have Hx' := Hx.1
+      exact Hx'
 
 theorem heap_view_both_valid m dp k v :
-    ✓ ((heap_view_auth dp m : HeapView F K V H)  • heap_view_frag k (.own One.one) v) ↔
-    ✓ dp ∧ ✓ v ∧ Store.get m k ≡ some v := sorry
+    ✓ ((heap_view_auth dp m : HeapView F K V H) • heap_view_frag k (.own One.one) v) ↔
+    ✓ dp ∧ ✓ v ∧ Store.get m k ≡ some v := by
+  apply CMRA.valid_iff_validN.trans
+  apply Iff.trans
+  · apply forall_congr'
+    intro _
+    apply heap_view_both_validN
+  constructor
+  · intro Hvalid
+    refine ⟨?_, ?_, ?_⟩
+    · obtain ⟨Hdp, Hv, Hl⟩ := Hvalid 0
+      exact Hdp
+    · apply CMRA.valid_iff_validN.mpr (fun n => ?_)
+      obtain ⟨Hdp, Hv, Hl⟩ := Hvalid n
+      exact Hv
+    · apply OFE.equiv_dist.mpr (fun n => ?_)
+      obtain ⟨Hdp, Hv, Hl⟩ := Hvalid n
+      exact Hl
+  · rintro ⟨Hdp, Hv, Hl⟩ n
+    refine ⟨Hdp, Hv.validN, Hl.dist⟩
 
 end heap_view_laws
 

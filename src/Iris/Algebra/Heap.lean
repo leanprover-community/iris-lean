@@ -165,6 +165,13 @@ instance [Store T K V] [OFE V] (k : K) : NonExpansive₂ (Store.set · k · : T 
     · rename_i H; rw [Store.get_set_eq H, Store.get_set_eq H]; exact Ht
     · rename_i H; rw [Store.get_set_ne H, Store.get_set_ne H]; exact Hv k'
 
+theorem Store.eqv_of_Equiv [OFE V] [Store T K V] {t1 t2 : T} :
+    Store.Equiv t1 t2 → t1 ≡ t2 := by
+  intro H
+  intro k
+  rw [H]
+
+
 -- TODO
 -- instance [Store T K V] [OFE V] (op : V → V → V) [NonExpansive₂ op] :
 --     NonExpansive₂ (Store.merge (T := T) op) where
@@ -581,6 +588,15 @@ theorem insert_valid {m : T} (Hx : ✓ x) (Hm : ✓ m) : ✓ (Store.set m i x) :
   valid_iff_validN.mpr (fun _ => insert_validN Hx.validN Hm.validN)
 
 theorem point_valid : ✓ (Heap.point i x : T) ↔ ✓ x := by
+  simp only [Heap.point, Store.get]
+  constructor <;> intro H
+  · have H' := H i; simp [Heap.point_get_eq rfl] at H'; rw [get_set_eq (T := T) rfl] at H'; exact H'
+  · intro k
+    if He : i = k
+      then rw [get_set_eq (T := T) He]; trivial
+      else rw [get_set_ne (T := T) He, Heap.get_empty]; trivial
+
+theorem point_validN : ✓{n} (Heap.point i x : T) ↔ ✓{n} x := by
   simp only [Heap.point, Store.get]
   constructor <;> intro H
   · have H' := H i; simp [Heap.point_get_eq rfl] at H'; rw [get_set_eq (T := T) rfl] at H'; exact H'
