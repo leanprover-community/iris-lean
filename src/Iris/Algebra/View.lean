@@ -310,7 +310,7 @@ theorem view_core_eq : (CMRA.core : View F R → _) = fun v => ⟨CMRA.core v.1,
 theorem view_auth_dfrac_op : (●V{dq1 • dq2} a : View F R) ≡ (●V{dq1} a) • ●V{dq2} a :=
   ⟨⟨rfl, Agree.idemp.symm⟩, UCMRA.unit_left_id.symm⟩
 
-theorem view_frag_op : (◯V (b1 • b2) : View F R) = (◯V b1) • ◯V b2 := rfl
+theorem view_frag_op : (◯V (b1 • b2) : View F R) = ((◯V b1) • ◯V b2 : View F R):= rfl
 
 theorem view_frag_mono (H : b1 ≼ b2) : (◯V b1 : View F R) ≼ ◯V b2 := by
   rcases H with ⟨c, H⟩
