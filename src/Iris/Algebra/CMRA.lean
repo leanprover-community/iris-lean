@@ -1247,6 +1247,17 @@ instance option_cancelable (ma : Option α) [Hid : ∀ a : α, CMRA.IdFree a] [H
   · simp [CMRA.op, optionOp]
   · apply cancelable_some
 
+-- Weird that replacing this proof with the #print-ed term doesn't work for some reason
+theorem option_validN_Some_includedN {a b : α} (Hv : ✓{n} a) (Hinc : some b ≼{n} some a) : ✓{n} b :=  by
+  -- exact CMRA.validN_of_incN Hinc Hv
+  apply CMRA.validN_of_incN Hinc
+  apply Hv
+
+-- Same, can't replace with #print-ed term
+theorem option_valid_Some_included {a b : α} (Hv : ✓ a) (Hinc : some b ≼ some a) : ✓ b :=  by
+  apply CMRA.valid_of_inc Hinc
+  apply Hv
+
 end option
 
 section unit
