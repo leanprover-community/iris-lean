@@ -78,6 +78,14 @@ class HasStoreMap (T1 T2 : Type _) (K V1 V2 : outParam (Type _)) [Store T1 K V1]
   get_dmap : Store.get (dmap f t) k = f k (Store.get t k)
 export HasStoreMap (dmap get_dmap)
 
+/-- Map between heaps that preserves non-allocations.
+Constructions like gmap_view need (HasHHMap T1 T2 K (DFrac F × V) V), but no maps between other types.
+TODO: Simplify this somehow -/
+class HasHHMap (T1 T2 : Type _) (K V1 V2 : outParam (Type _)) [Store T1 K (Option V1)] [Store T2 K (Option V2)] where
+  hhmap (f : K → V1 → Option V2) : T1 → T2
+  hhmap_get (f : K → V1 → Option V2) : Store.get (hhmap f t) k = (get t k).bind (f k)
+export HasHHMap (hhmap hhmap_get)
+
 def HasStoreMap.map (f : V1 → V2) [Store T1 K V1] [Store T2 K V2] [HasStoreMap T1 T2 K V1 V2] : T1 → T2 :=
   HasStoreMap.dmap (fun (_ : K) => f)
 
@@ -89,6 +97,7 @@ class Heap (T : Type _) (K V : outParam (Type _)) extends Store T K (Option V) w
   get_hmap : get (hmap f t) k = (get t k).bind (f k)
   get_merge : get (merge op t1 t2) k = Option.merge op (get t1 k) (get t2 k)
 export Heap (empty hmap merge get_empty get_hmap get_merge)
+
 
 
 theorem hmap_alloc [Heap T K V] {t : T} {k : K} {f : K → V → Option V} :
