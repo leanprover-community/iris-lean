@@ -26,9 +26,9 @@ def goalTracker {P} (goals : IO.Ref (Array MVarId)) (hyps : Hyps bi P) (goal : Q
   pure m
 
 -- todo: complex spec patterns
-variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
+variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
-    {P P'} (p : Q(Bool)) (hyps : Hyps bi P) (hyps' : Hyps bi P') (Q hyp : Q($prop))
+    {P'} (p : Q(Bool)) (P : Q($prop)) (hyps : Hyps bi P') (Q hyp : Q($prop))
     (pf : Q($P ⊣⊢ $P' ∗ □?$p $hyp)) (pats : List SpecPat)
     (k : ∀ {P}, Hyps bi P → (Q : Q($prop)) → MetaM Q($P ⊢ $Q)) :
     MetaM (Q($P ⊢ $Q)) := do
@@ -45,15 +45,16 @@ partial def iApplyCore
     let intoWand' ← try? do
       synthInstanceQ q(IntoWand' $p false $A2 $A1' $A2')
 
+    -- todo: could these cases be combined?
     if let some _ := intoWand' then
       let splitPat := fun name _ => match pats.head? with
         | some <| .idents ls => ls.any <| binderIdentHasName name | _ => false
-      let ⟨el, er, hypsl, hypsr, h⟩ := Hyps.split bi splitPat hyps'
+      let ⟨el, er, hypsl, hypsr, h⟩ := Hyps.split bi splitPat hyps
       let _ ← k hypsr A1
       --let pf' : Q($P ⊣⊢ $el ∗ □?$p $A2) := sorry
-      return ← iApplyCore p hyps hypsl Q A2 pf pats.tail k -- todo: update pf with h
+      return ← iApplyCore p P hypsl Q A2 pf pats.tail k -- todo: update pf with h
     else
-      let m ← k hyps' A1
+      let m ← k hyps A1
       let _ ← synthInstanceQ q(IntoWand' $p false $hyp $A1 $Q)
       return q(apply $pf $m)
   else
@@ -70,12 +71,12 @@ elab "iapply" colGt hyp:ident pats:specPat,* : tactic => do
 
   mvar.withContext do
     let g ← instantiateMVars <| ← mvar.getType
-    let some { bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+    let some { e, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
     -- todo: could this be moved to iApplyCore?
     let uniq ← hyps.findWithInfo hyp
     let ⟨_, hyps', out, _, p, _, pf⟩ := hyps.remove true uniq
 
     let goals ← IO.mkRef #[]
-    mvar.assign <| ← iApplyCore bi p hyps hyps' goal out pf pats <| goalTracker goals
+    mvar.assign <| ← iApplyCore p e hyps' goal out pf pats <| goalTracker goals
     replaceMainGoal (← goals.get).toList
