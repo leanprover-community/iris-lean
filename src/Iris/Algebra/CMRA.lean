@@ -224,7 +224,7 @@ theorem valid_opM {x : α} {my : Option α} : ✓ (x •? my) → ✓ x :=
   match my with
   | none => id  | some _ => valid_op_left
 
-theorem validN_op_opM_left {mz : Option α} : ✓{n} (x • y) •? mz → ✓{n} x •? mz :=
+theorem validN_op_opM_left {mz : Option α} : ✓{n} (x • y : α) •? mz → ✓{n} x •? mz :=
   match mz with
   | .none => validN_op_left
   | .some z => fun h =>
@@ -234,7 +234,7 @@ theorem validN_op_opM_left {mz : Option α} : ✓{n} (x • y) •? mz → ✓{n
       _           ≡{n}≡ (x • z) • y := op_assocN
     validN_op_left ((Dist.validN this).mp h)
 
-theorem validN_op_opM_right {mz : Option α} (h : ✓{n} (x • y) •? mz) : ✓{n} y •? mz :=
+theorem validN_op_opM_right {mz : Option α} (h : ✓{n} (x • y : α) •? mz) : ✓{n} y •? mz :=
   validN_op_opM_left (validN_ne (opM_left_dist mz op_commN) h)
 
 /-! ## Core -/

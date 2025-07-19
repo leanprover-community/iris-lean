@@ -138,4 +138,11 @@ theorem valid_discard : ✓ (discard : DFrac F) := by simp [CMRA.Valid, valid]
 theorem valid_own_op_discard {q : F} : ✓ own q • discard ↔ Fractional q := by
   simp [CMRA.op, op, CMRA.Valid, valid]
 
+instance : CMRA.Discrete (DFrac F) where
+  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
+
+theorem dfrac.is_discrete {q : DFrac F} : OFE.DiscreteE q := ⟨congrArg id⟩
+
+instance : CMRA.Discrete (DFrac F) where
+  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 end dfrac

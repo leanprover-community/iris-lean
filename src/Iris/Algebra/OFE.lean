@@ -284,6 +284,24 @@ instance [OFE α] [Leibniz α] : Leibniz (Option α) where
     | none, none, _ => rfl
     | some _, some _, h => congrArg some (Leibniz.eq_of_eqv h)
 
+instance [OFE α] [Discrete α] : Discrete (Option α) where
+  discrete_0 {x y} H :=
+    match x, y with
+    | none, none => H
+    | some _, some _ => some_eqv_some.mpr (discrete_0 H)
+
+instance OFE.Option.some.ne [OFE α] : OFE.NonExpansive (some : α → Option α) := ⟨fun _ _ _ => id⟩
+
+theorem Option.some_is_discrete [OFE α] {a : α} (Ha : DiscreteE a) : DiscreteE (some a) := by
+  constructor
+  intro y H; cases y
+  · exact H
+  · exact Ha.discrete H
+
+theorem Option.none_is_discrete [OFE α] : DiscreteE (none : Option α) := by
+  constructor
+  intro y; cases y <;> simp
+
 abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
 
 instance [OFEFun (β : α → _)] : OFE ((x : α) → β x) where
@@ -348,6 +366,19 @@ theorem dist_fst {n} [OFE α] [OFE β] {x y : α × β} (h : x ≡{n}≡ y) : x.
 theorem dist_snd {n} [OFE α] [OFE β] {x y : α × β} (h : x ≡{n}≡ y) : x.snd ≡{n}≡ y.snd := h.right
 theorem dist_prod_ext {n} [OFE α] [OFE β] {x₁ x₂ : α} {y₁ y₂ : β}
     (ex : x₁ ≡{n}≡ x₂) (ey : y₁ ≡{n}≡ y₂) : (x₁, y₁) ≡{n}≡ (x₂, y₂) := ⟨ex, ey⟩
+
+theorem prod.is_discrete [OFE α] [OFE β] {a : α} {b : β} (Ha : DiscreteE a) (Hb : DiscreteE b) :
+    DiscreteE (a, b) := by
+  constructor
+  intro y H; refine ⟨Ha.discrete H.1, Hb.discrete H.2⟩
+
+instance [OFE α] [OFE β] [Discrete α] [Discrete β] : Discrete (α × β) where
+  discrete_0 H := by
+    constructor
+    · apply Discrete.discrete_0
+      apply H.1
+    · apply Discrete.discrete_0
+      apply H.2
 
 /-- An isomorphism between two OFEs is a pair of morphisms whose composition is equivalent to the
 identity morphism. -/
