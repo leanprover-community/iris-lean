@@ -18,6 +18,13 @@ def binderIdentHasName (name : Name) (id : TSyntax ``binderIdent) : Bool :=
   | `(binderIdent| $name':ident) => name'.getId == name
   | _ => false
 
+variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
+def goalTracker {P} (goals : IO.Ref (Array MVarId)) (hyps : Hyps bi P) (goal : Q($prop)) : MetaM Q($P ⊢ $goal) := do
+  let m : Q($P ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
+    IrisGoal.toExpr { prop, bi, hyps, goal, .. }
+  goals.modify (·.push m.mvarId!)
+  pure m
+
 -- todo: complex spec patterns
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iApplyCore
@@ -63,17 +70,12 @@ elab "iapply" colGt hyp:ident pats:specPat,* : tactic => do
 
   mvar.withContext do
     let g ← instantiateMVars <| ← mvar.getType
-    let some { u, prop, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+    let some { bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
+    -- todo: could this be moved to iApplyCore?
     let uniq ← hyps.findWithInfo hyp
     let ⟨_, hyps', out, _, p, _, pf⟩ := hyps.remove true uniq
 
     let goals ← IO.mkRef #[]
-    let pf ← iApplyCore bi p hyps hyps' goal out pf pats fun {P} hyps goal => do
-      let m : Q($P ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-        IrisGoal.toExpr { prop, bi, hyps, goal, .. }
-      goals.modify (·.push m.mvarId!)
-      pure m
-
-    mvar.assign pf
+    mvar.assign <| ← iApplyCore bi p hyps hyps' goal out pf pats <| goalTracker goals
     replaceMainGoal (← goals.get).toList
