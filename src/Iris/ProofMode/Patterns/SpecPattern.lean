@@ -3,8 +3,6 @@ Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser
 -/
-import Lean.Data.Name
-
 namespace Iris.ProofMode
 open Lean
 
@@ -13,7 +11,6 @@ declare_syntax_cat specPat
 syntax binderIdent : specPat
 syntax "[" binderIdent,* "]" : specPat
 
--- todo: is a separate .one constructor necessary?
 inductive SpecPat
   | idents (names : List (TSyntax ``binderIdent))
   deriving Repr, Inhabited
