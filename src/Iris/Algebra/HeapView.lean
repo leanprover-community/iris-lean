@@ -69,15 +69,30 @@ instance : ViewRel (heapR F K V H) where
     intro k
     simp only [heapR, Store.all, toHeapPred, UCMRA.unit, store_unit, Heap.get_empty]
 
+
+theorem view_rel_unit : heapR F K V H n m UCMRA.unit := by
+  simp [heapR, Store.all, toHeapPred, UCMRA.unit, Heap.get_empty]
+
+
 -- TODO: This one might need the exists trick. Do I have to map between heaps of different types?
-theorem gmap_view_rel_exists n f : (∃ m, heapR F K V H n m f) ↔ ✓{n} f := by
+theorem heap_view_rel_exists n f : (∃ m, heapR F K V H n m f) ↔ ✓{n} f := by
   constructor
   · rintro ⟨m, Hrel⟩
     exact ViewRel.rel_validN _ _ _ Hrel
   sorry
 
 instance gmap_view_rel_discrete [CMRA.Discrete V] : ViewRelDiscrete (heapR F K V H) where
-  discrete := sorry
+  discrete n h H := by
+    simp [heapR, Store.all, toHeapPred]
+    intro H k; have H' := H k; clear H
+    split <;> try trivial
+    simp_all
+    obtain ⟨v, Hv1, ⟨x, Hx1, Hx2⟩⟩ := H'
+    refine ⟨v, Hv1, ⟨x, ?_, ?_⟩⟩
+    ·
+      -- apply CMRA.Discrete.discrete_valid
+      sorry
+    · exact (CMRA.inc_0_iff_incN n).mp Hx2
 
 abbrev HeapView := View F (heapR F K V H)
 
@@ -109,10 +124,27 @@ instance frag_ne : NonExpansive (heap_view_frag k dq : _ → HeapView F K V H) w
 
 theorem heap_view_rel_lookup n m k dq v :
     heapR F K V H n m (Heap.point k <| .some (dq, v)) ↔
-    ∃ (v' : V) (dq' : DFrac F), Store.get m k = some v' ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼{n} some (dq', v') := sorry
+    ∃ (v' : V) (dq' : DFrac F), Store.get m k = some v' ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼{n} some (dq', v') := by
+  constructor
+  · intro Hrel
+    have Hrel' := Hrel k
+    simp only [heapR, Store.all, toHeapPred, Heap.point, Store.get_set_eq] at Hrel'
+    obtain ⟨v', dq', Hlookup, Hval, Hinc⟩ := Hrel'
+    exists v'; exists dq'
+  · rintro ⟨v', dq', Hlookup, Hval, _⟩ j
+    simp only [heapR, Store.all, toHeapPred, Heap.point]
+    if h : k = j
+      then
+        simp [Store.get_set_eq h]
+        exists v'
+        refine ⟨h ▸ Hlookup, ?_⟩
+        exists dq'
+      else simp [Store.get_set_ne h, Heap.get_empty]
+
 
 theorem heap_view_auth_dfrac_op (dp dq : DFrac F) (m : H V) :
-    (heap_view_auth (dp • dq) m) ≡ (heap_view_auth dp m) • heap_view_auth dq m := sorry
+    (heap_view_auth (dp • dq) m) ≡ (heap_view_auth dp m) • heap_view_auth dq m := by
+  exact View.view_auth_dfrac_op
 
 theorem heap_view_auth_dfrac_op_invN n dp m1 dq m2 :
     (✓{n} ((heap_view_auth dp m1) : HeapView F K V H) • heap_view_auth dq m2) → m1 ≡{n}≡ m2 := by
@@ -123,25 +155,32 @@ theorem heap_view_auth_dfrac_op_inv dp m1 dq m2 : ✓ ((heap_view_auth dp m1 : H
 
 theorem heap_view_auth_dfrac_validN m n dq : ✓{n} (heap_view_auth dq m : HeapView F K V H) ↔ ✓ (dq : DFrac F) := by
   apply View.view_auth_dfrac_validN.trans
-  sorry
+  suffices ✓{n} dq ↔ ✓ dq by
+    apply and_iff_left_of_imp (fun _ => ?_)
+    apply view_rel_unit
+  exact Eq.to_iff rfl
 
 theorem heap_view_auth_dfrac_valid m dq : ✓ (heap_view_auth dq m : HeapView F K V H) ↔ ✓ dq := by
   apply View.view_auth_dfrac_valid.trans
-  sorry
+  refine and_iff_left_of_imp (fun _ n => ?_)
+  exact view_rel_unit F K V H
 
 theorem heap_view_auth_valid m : ✓ (heap_view_auth (.own One.one) m : HeapView F K V H) := by
   apply (heap_view_auth_dfrac_valid _ _).mpr valid_own_one
 
 theorem heap_view_auth_dfrac_op_validN n dq1 dq2 m1 m2 :
-    ✓{n} ((heap_view_auth dq1 m1 : HeapView F K V H) • heap_view_auth dq2 m2) ↔ ✓ (dq1 • dq2) ∧ m1 ≡{n}≡ m := by
+    ✓{n} ((heap_view_auth dq1 m1 : HeapView F K V H) • heap_view_auth dq2 m2) ↔ ✓ (dq1 • dq2) ∧ m1 ≡{n}≡ m2 := by
   apply View.view_auth_dfrac_op_validN.trans
-  refine and_congr_right ?_
-  sorry
+  refine and_congr_right (fun _ => ?_)
+  refine and_iff_left_of_imp (fun _ => ?_)
+  exact view_rel_unit F K V H
 
 theorem heap_view_auth_dfrac_op_valid dq1 dq2 m1 m2 :
     ✓ ((heap_view_auth dq1 m1 : HeapView F K V H) • heap_view_auth dq2 m2) ↔ ✓ (dq1  • dq2) ∧ m1 ≡ m2 := by
   apply View.view_auth_dfrac_op_valid.trans
-  sorry
+  refine and_congr_right (fun _ => ?_)
+  refine and_iff_left_of_imp (fun _ n => ?_)
+  exact view_rel_unit F K V H
 
 theorem heap_view_auth_op_validN n m1 m2 : ✓{n} ((heap_view_auth (.own One.one) m1 : HeapView F K V H) • (heap_view_auth (.own One.one) m2)) ↔ False := by
   apply View.view_auth_op_validN
@@ -150,6 +189,17 @@ theorem heap_view_auth_op_valid m1 m2 : ✓ ((heap_view_auth (.own One.one) m1 :
   apply View.view_auth_op_valid
 
 theorem heap_view_frag_validN n k dq v : ✓{n} (heap_view_frag k dq v : HeapView F K V H) ↔ ✓ dq ∧ ✓{n} v := by
+  apply View.view_frag_validN.trans
+  apply (heap_view_rel_exists F K V H _ _).trans
+  have Hrw : (✓{n} (Heap.point k (some (dq, v)) : H _)) ↔ (✓ (Heap.point k (some (dq, v)) : H _)) := by
+    constructor
+    · intro H
+      apply point_valid.mpr
+      sorry
+    · exact fun a => CMRA.Valid.validN a
+  apply Iff.trans Hrw ?_
+  --
+
   sorry
 
 theorem heap_view_frag_valid k dq v : ✓ (heap_view_frag k dq v : HeapView F K V H) ↔ ✓ dq ∧ ✓ v := by
