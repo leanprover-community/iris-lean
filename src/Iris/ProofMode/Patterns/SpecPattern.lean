@@ -15,7 +15,6 @@ syntax "[" binderIdent,* "]" : specPat
 
 -- todo: is a separate .one constructor necessary?
 inductive SpecPat
-  | one (name : TSyntax ``binderIdent)
   | idents (names : List (TSyntax ``binderIdent))
   deriving Repr, Inhabited
 
@@ -25,6 +24,6 @@ partial def SpecPat.parse (pat : Syntax) : MacroM SpecPat := do
   | some pat => return pat
 where
   go : TSyntax `specPat → Option SpecPat
-  | `(specPat| $name:binderIdent) => some <| .one name
+  | `(specPat| $name:binderIdent) => some <| .idents [name]
   | `(specPat| [$[$names:binderIdent],*]) => some <| .idents names.toList
   | _ => none

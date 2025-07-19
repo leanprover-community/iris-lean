@@ -12,7 +12,12 @@ open Lean Elab Tactic Meta Qq BI Std
 theorem apply [BI PROP] {R P P' P1 P2 : PROP} {p : Bool}
     (h1 : P ⊣⊢ P' ∗ □?p R) (h2 : P' ⊢ P1) [h3 : IntoWand' p false R P1 P2] : P ⊢ P2 :=
   h1.mp.trans <| (sep_mono_l h2).trans <| wand_elim' h3.1
-#check binderIdent
+
+def binderIdentHasName (name : Name) (id : TSyntax ``binderIdent) : Bool :=
+  match id with
+  | `(binderIdent| $name':ident) => name'.getId == name
+  | _ => false
+
 -- todo: complex spec patterns
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iApplyCore
@@ -34,18 +39,9 @@ partial def iApplyCore
       synthInstanceQ q(IntoWand' $p false $A2 $A1' $A2')
 
     if let some _ := intoWand' then
-      -- todo: refactor, helper functions?
-      let ⟨el, er, hypsl, hypsr, h⟩ := Hyps.split bi (fun name' _ =>
-        match pats.head? with
-        | some <| .one id =>
-          match id with
-          | `(binderIdent| $name:ident) => name.getId == name'
-          | _ => false
-        | some <| .idents ls => ls.any (fun id =>
-          match id with
-          | `(binderIdent| $name:ident) => name.getId == name'
-          | _ => false)
-        | _ => false) hyps'
+      let splitPat := fun name _ => match pats.head? with
+        | some <| .idents ls => ls.any <| binderIdentHasName name | _ => false
+      let ⟨el, er, hypsl, hypsr, h⟩ := Hyps.split bi splitPat hyps'
       let _ ← k hypsr A1
       --let pf' : Q($P ⊣⊢ $el ∗ □?$p $A2) := sorry
       return ← iApplyCore p hyps hypsl Q A2 pf pats.tail k -- todo: update pf with h
