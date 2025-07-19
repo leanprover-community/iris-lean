@@ -353,15 +353,25 @@ theorem heap_view_both_dfrac_validN_total [CMRA.IsTotal V] n dp m k dq v :
   obtain ⟨v', dq', Hdp, Hlookup, Hvalid, Hincl⟩ := H'
   exists v'
   refine ⟨Hdp, ?_, Hlookup, Hvalid.2, ?_⟩
-  · have _ : CMRA.IsTotal (DFrac F × V) := by sorry -- TODO: Product total, DFrac total
-    obtain ⟨⟨_, x⟩, Hx⟩ := some_incN_total.mp Hincl
-    suffices some dq ≼ some dq' by
-      sorry
-    obtain ⟨⟨x, _⟩, Hx⟩ := some_incN_total.mp Hincl
-    refine ⟨x, Hx.1⟩
-  · have _ : CMRA.IsTotal (DFrac F × V) := by sorry -- TODO: Product total, DFrac total
-    obtain ⟨⟨_, x⟩, Hx⟩ := some_incN_total.mp Hincl
-    refine ⟨x, Hx.2⟩
+  · suffices some dq ≼ some dq' by
+      apply option_valid_Some_included ?_ this
+      apply (CMRA.valid_iff_validN' n).mpr Hvalid.1
+    apply (CMRA.inc_iff_incN n).mpr
+    rcases Hincl with ⟨x, Hx⟩
+    rcases x with (_|x) <;> simp [CMRA.op, optionOp, Prod.op] at Hx
+    · apply CMRA.incN_of_incN_of_dist (CMRA.incN_refl _)
+      apply Hx.1.symm
+    · exists x.1
+      simp [CMRA.op, optionOp]
+      apply Hx.1
+  · suffices some v ≼{n} some v' by exact some_incN_total.mp this
+    apply some_incN_total.mpr ?_
+    rcases Hincl with ⟨x, Hx⟩
+    rcases x with (_|x) <;> simp [CMRA.op, optionOp, Prod.op] at Hx
+    · apply CMRA.incN_of_incN_of_dist (CMRA.incN_refl _)
+      apply Hx.2.symm
+    · exists x.2
+      apply Hx.2
 
 omit IHHmap in
 theorem heap_view_both_dfrac_valid_discrete [CMRA.Discrete V] dp m k dq v :
@@ -377,9 +387,12 @@ theorem heap_view_both_dfrac_valid_discrete [CMRA.Discrete V] dp m k dq v :
     obtain ⟨v', dq', Hdp, Hlookup, Hvalid, Hincl⟩ := Hvalid' 0
     exists v'; exists dq'
     refine ⟨Hdp, Hlookup, ?_, ?_⟩
-    · have X : CMRA.Discrete (DFrac F × V) := by sorry -- TODO Product and DFrac discrete
-      exact X.discrete_valid Hvalid
-    · exact (CMRA.inc_iff_incN 0).mpr Hincl -- Wait.. does it have the right instances?
+    · refine ⟨?_, ?_⟩
+      · apply CMRA.Discrete.discrete_valid
+        apply Hvalid.1
+      · apply CMRA.Discrete.discrete_valid
+        apply Hvalid.2
+    · exact (CMRA.inc_iff_incN 0).mpr Hincl
   · rintro ⟨v', dq', Hdp, Hlookup, Hvalid, Hincl⟩ n
     exists v'; exists dq'
     refine ⟨Hdp, Hlookup, Hvalid.validN, (CMRA.inc_iff_incN n).mp Hincl⟩
@@ -396,7 +409,7 @@ theorem heap_view_both_dfrac_valid_discrete_total [CMRA.IsTotal V] [CMRA.Discret
     · apply CMRA.valid_of_eqv Hx.1
       simp [CMRA.Valid, Prod.Valid] at Hvalid
       apply Hvalid.1
-    · suffices some dq ≼ some dq' by sorry
+    · suffices some dq ≼ some dq' by exact option_valid_Some_included Hvalid.1 this
       exists x.fst
       simp [CMRA.op, optionOp]
       have Hx' := Hx.1
@@ -406,10 +419,16 @@ theorem heap_view_both_dfrac_valid_discrete_total [CMRA.IsTotal V] [CMRA.Discret
     · simp [OFE.Equiv] at Hx
       apply CMRA.inc_of_inc_of_eqv (CMRA.inc_refl _)
       exact Hx.2.symm
-    · suffices some dq ≼ some dq' by sorry
-      exists x.fst
+    · suffices some v ≼ some v' by
+        rcases this with ⟨z, Hz⟩
+        rcases z with (_|z) <;> simp [CMRA.op, optionOp] at Hz
+        · apply CMRA.inc_of_inc_of_eqv
+          · apply CMRA.inc_refl
+          · apply Hz.symm
+        · exists z
+      exists x.snd
       simp [CMRA.op, optionOp]
-      have Hx' := Hx.1
+      have Hx' := Hx.2
       exact Hx'
 
 omit IHHmap in
