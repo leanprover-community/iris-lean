@@ -25,6 +25,9 @@ def goalTracker {P} (goals : IO.Ref (Array MVarId)) (hyps : Hyps bi P) (goal : Q
   goals.modify (·.push m.mvarId!)
   pure m
 
+theorem temp [BI PROP] {e' el er e out : PROP} (h : e' ⊣⊢ el ∗ er) (pf : e ⊣⊢ e' ∗ out) : e ⊣⊢ el ∗ (er ∗ out) :=
+  pf.trans <| (sep_congr_l h).trans sep_assoc
+
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (remHyp : RemoveHyp bi e) (spats : List SpecPat)
@@ -45,34 +48,17 @@ partial def iApplyCore
 
     let m ← k hypsr A1
 
-    -- the core difficulty is in constructing the new [RemoveHyp bi e] term
-    -- remaining args:
-    -- (3) combine [er] and [out]
-    -- (4) same as (3) but always without □
-    -- (5) bool indicating whether (3) has □
-    -- (6) equation describing the relationship between (3), (4), and (5)
-    -- (7) equation describing the relationship between [e], [el], and (3)
+    let newOut := q(sep $er $out)
 
-    -- (3) could be as straightforward as [er ∗ out]
-    -- (4) and (5) could be derived from (3) using an appropriate typeclass,
-    -- that being [FromAssumption (5) (4) (3)]
-    -- (6) should be trivial using isDefEq
-    -- (6) : (3) =Q □?(5) (4)
+    let p' ← mkFreshExprMVarQ q(Bool)
+    let newOut' ← mkFreshExprMVarQ q($prop)
 
-    -- how could (7) be proven?
-    -- (7) : e ⊣⊢ el ∗ (3)
-    -- the choice of (3) is closely interwoven with this
+    let _ ← synthInstanceQ q(FromAssumption $p' $newOut' $newOut)
+    let eq' := (← assertDefEqQ q($newOut) q(intuitionisticallyIf $p' $newOut')).down
 
-    -- let (3) be [er ∗ out]
-    -- thus (7) : e ⊣⊢ el ∗ (er ∗ out)
-    -- we have h : e' ⊣⊢ el ∗ er
-    -- and pf : e ⊣⊢ e' ∗ out
-    -- so, using transitivity: e
-    -- ⊣⊢ e' ∗ out (by h)
-    -- ⊣⊢ (el ∗ er) ∗ out (by monotonicity)
-    -- ⊣⊢ el ∗ (er ∗ out) (by associativity)
+    let pf' := q(temp $h $pf)
 
-    let remHyps := ⟨el, hypsl, sorry, sorry, sorry, sorry, sorry⟩
+    let remHyps := ⟨el, hypsl, newOut, newOut', p', eq', pf'⟩
 
     return ← iApplyCore hyps goal remHyps spats.tail k
   else
