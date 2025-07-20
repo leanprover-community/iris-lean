@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Oliver Soeser
 -/
 import Iris.BI
 import Iris.ProofMode
@@ -114,6 +114,43 @@ theorem multiple_patterns [BI PROP] (Q : PROP) : ⊢ □ (P1 ∧ P2) -∗ Q ∨ 
   <;> iexact HQ
 
 end intro
+
+-- revert
+namespace revert
+
+theorem spatial [BI PROP] (P : PROP) (H : ⊢ P -∗ P) : P ⊢ P := by
+  iintro HP
+  irevert HP
+  exact H
+
+theorem intuitionistic [BI PROP] (P : PROP) (H : ⊢ □ P -∗ P) : □ P ⊢ P := by
+  iintro □HP
+  irevert HP
+  exact H
+
+theorem pure [BI PROP] (P : PROP) (Hφ : φ) : ⊢ (⌜φ⌝ -∗ P) -∗ P := by
+  iintro H
+  irevert Hφ
+  iexact H
+
+theorem «forall» [BI PROP] (Φ : α → PROP) : ⊢ (∀ x, Φ x) → Φ x := by
+  iintro H
+  irevert x
+  iexact H
+
+theorem multiple_spatial [BI PROP] (P Q : PROP) :
+    ⊢ (P -∗ P) -∗ P -∗ <affine> Q -∗ P := by
+  iintro H HP HQ
+  irevert HP
+  iexact H
+
+theorem multiple_intuitionistic [BI PROP] (P Q : PROP) :
+    ⊢ (□ P -∗ P) -∗ □ P -∗ <affine> Q -∗ P := by
+  iintro H □HP HQ
+  irevert HP
+  iexact H
+
+end revert
 
 -- exists
 namespace «exists»
