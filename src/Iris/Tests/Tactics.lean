@@ -183,22 +183,22 @@ namespace apply
 
 theorem exact [BI PROP] (Q : PROP) : Q ⊢ Q := by
   iintro HQ
-  iapply HQ _
+  iapply HQ
 
 theorem apply [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
   iintro HP H
-  iapply H _
+  iapply H
   iexact HP
 
 theorem multiple [BI PROP] (P Q R : PROP) : ⊢ P -∗ Q -∗ (P -∗ Q -∗ R) -∗ R := by
   iintro HP HQ H
-  iapply H HP
+  iapply H with HP
   · iexact HP
   · iexact HQ
 
 theorem multiple' [BI PROP] (P Q R S : PROP) : ⊢ P -∗ Q -∗ R -∗ ((P ∗ Q) -∗ R -∗ S) -∗ S := by
   iintro HP HQ HR H
-  iapply H [HP, HQ]
+  iapply H with [HP, HQ]
   · sorry
   · iexact HR
 

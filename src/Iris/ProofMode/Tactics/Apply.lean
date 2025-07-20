@@ -25,45 +25,41 @@ def goalTracker {P} (goals : IO.Ref (Array MVarId)) (hyps : Hyps bi P) (goal : Q
   goals.modify (·.push m.mvarId!)
   pure m
 
--- todo: complex spec patterns
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
-    {P} (hyps : Hyps bi P) (Q : Q($prop)) (spats : List SpecPat)
-    (k : ∀ {P}, Hyps bi P → (Q : Q($prop)) → MetaM Q($P ⊢ $Q)) :
-    MetaM (Q($P ⊢ $Q)) := do
-  let _ ← synthInstanceQ q(FromAssumption $p $hyp $Q)
-  let _ ← synthInstanceQ q(TCOr (Affine $P') (Absorbing $Q))
-  return q(assumption $h)
-  /-let A1 ← mkFreshExprMVarQ q($prop)
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (remHyp : RemoveHyp bi e) (spats : List SpecPat)
+    (k : ∀ {e}, Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
+    MetaM (Q($e ⊢ $goal)) := do
+  let ⟨e', hyps', out, out', p, eq, pf⟩ := remHyp
+
+  let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
 
-  let intoWand ← try? do
-    synthInstanceQ q(IntoWand' $p false $hyp $A1 $A2)
+  if let some _ ← try? (synthInstanceQ q(IntoWand' $p false $out' $A1 $A2)) then
+    let splitPat := fun name _ => match spats.head? with
+      | some <| .idents bIdents => bIdents.any <| binderIdentHasName name
+      | none => false
 
-  if let some _ := intoWand then
-    -- todo: this is unnecessarily hacky
-    let A1' ← mkFreshExprMVarQ q($prop)
-    let A2' ← mkFreshExprMVarQ q($prop)
-    let intoWand' ← try? do
-      synthInstanceQ q(IntoWand' $p false $A2 $A1' $A2')
+    let splitHyp := Hyps.split bi splitPat hyps'
+    let ⟨el, er, hypsl, hypsr, h⟩ := splitHyp
 
-    -- todo: could these cases be combined?
-    if let some _ := intoWand' then
-      let splitPat := fun name _ => match pats.head? with
-        | some <| .idents ls => ls.any <| binderIdentHasName name | _ => false
-      let ⟨el, er, hypsl, hypsr, h⟩ := Hyps.split bi splitPat hyps
-      let _ ← k hypsr A1
-      --let pf' : Q($P ⊣⊢ $el ∗ □?$p $A2) := sorry
-      return ← iApplyCore p P hypsl Q A2 pf pats.tail k -- todo: update pf with h
-    else
-      let m ← k hyps A1
-      let _ ← synthInstanceQ q(IntoWand' $p false $hyp $A1 $Q)
-      return q(apply $pf $m)
+    let m ← k hypsr A1
+
+    -- The core difficulty is in constructing the new [RemoveHyp bi e] term
+    -- Remaining args:
+    -- (3) combine [er] and [out]
+    -- (4) same as (3) but always without □
+    -- (5) bool indicating whether (3) has □
+    -- (6) equation describing the relationship between (3), (4), and (5)
+    -- (7) equation describing the relationship between [e], [el], and (3)
+    let remHyps := ⟨el, hypsl, sorry, sorry, sorry, sorry, sorry⟩
+
+    return ← iApplyCore hyps goal remHyps spats.tail k
   else
-    let _ ← synthInstanceQ q(FromAssumption $p $hyp $Q)
-    let _ ← synthInstanceQ q(TCOr (Affine $P') (Absorbing $Q))
-
-    return q(assumption $pf)-/
+    -- iexact case
+    let _ ← synthInstanceQ q(FromAssumption $p $out' $goal)
+    let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
+    return q(assumption $pf)
 
 -- todo: case when hyp is a lean lemma (later)
 elab "iapply" colGt term:pmTerm : tactic => do
@@ -73,10 +69,8 @@ elab "iapply" colGt term:pmTerm : tactic => do
   mvar.withContext do
     let g ← instantiateMVars <| ← mvar.getType
     let some { hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
-
-    let uniq ← hyps.findWithInfo term.ident
-    let ⟨_, hyps', out, _, p, _, pf⟩ := hyps.remove true uniq
+    let remHyp := hyps.remove true <| ← hyps.findWithInfo term.ident
 
     let goals ← IO.mkRef #[]
-    mvar.assign <| ← iApplyCore hyps goal term.spats <| goalTracker goals
+    mvar.assign <| ← iApplyCore hyps goal remHyp term.spats <| goalTracker goals
     replaceMainGoal (← goals.get).toList
