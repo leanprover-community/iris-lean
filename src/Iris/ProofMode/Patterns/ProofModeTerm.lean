@@ -23,7 +23,11 @@ structure PMTerm where
 
 partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
   match ← expandMacros term with
-  | `(pmTerm| $name:binderIdent) => return ⟨name, [], []⟩
-  | `(pmTerm| $name:binderIdent with $spats,*) =>
-    return ⟨name, [], (← spats.elemsAndSeps.toList.mapM fun pat => SpecPat.parse pat)⟩
+  | `(pmTerm| $name:binderIdent) => pmt name ⟨#[]⟩ ⟨#[]⟩
+  | `(pmTerm| $name:binderIdent with $spats,*) => pmt name ⟨#[]⟩ spats
+  | `(pmTerm| $name:binderIdent $! $ts:binderIdent,*) => pmt name ts ⟨#[]⟩
+  | `(pmTerm| $name:binderIdent $! $ts:binderIdent,* with $spats,*) => pmt name ts spats
   | _ => Macro.throwUnsupported
+where
+  pmt name ts spats : MacroM PMTerm := return ⟨name, ts.getElems.toList,
+      (← spats.elemsAndSeps.toList.mapM fun pat => SpecPat.parse pat)⟩
