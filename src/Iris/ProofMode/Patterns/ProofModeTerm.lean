@@ -12,18 +12,18 @@ declare_syntax_cat pmTerm
 
 syntax binderIdent : pmTerm
 syntax binderIdent "with" specPat,+ : pmTerm
+syntax binderIdent "$!" binderIdent,+ : pmTerm
+syntax binderIdent "$!" binderIdent,+ "with" specPat,+ : pmTerm
 
-inductive PmTerm
-  | pats (ident : TSyntax ``binderIdent) (spats : List Syntax)
+structure PMTerm where
+  ident : TSyntax ``binderIdent
+  ts : List (TSyntax ``binderIdent)
+  spats : List SpecPat
   deriving Repr, Inhabited
 
-partial def PmTerm.parse (term : Syntax) : MacroM PmTerm := do
-  match go ⟨← expandMacros term⟩ with
-  | none => Macro.throwUnsupported
-  | some term => return term
-where
-  go : TSyntax `pmTerm → Option PmTerm
-  | `(pmTerm| $name:binderIdent) => some <| .pats name []
+partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
+  match ← expandMacros term with
+  | `(pmTerm| $name:binderIdent) => return ⟨name, [], []⟩
   | `(pmTerm| $name:binderIdent with $spats,*) =>
-    some <| .pats name spats.elemsAndSeps.toList
-  | _ => none
+    return ⟨name, [], (← spats.elemsAndSeps.toList.mapM fun pat => SpecPat.parse pat)⟩
+  | _ => Macro.throwUnsupported
