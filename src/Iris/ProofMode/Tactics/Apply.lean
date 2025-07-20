@@ -45,13 +45,33 @@ partial def iApplyCore
 
     let m ← k hypsr A1
 
-    -- The core difficulty is in constructing the new [RemoveHyp bi e] term
-    -- Remaining args:
+    -- the core difficulty is in constructing the new [RemoveHyp bi e] term
+    -- remaining args:
     -- (3) combine [er] and [out]
     -- (4) same as (3) but always without □
     -- (5) bool indicating whether (3) has □
     -- (6) equation describing the relationship between (3), (4), and (5)
     -- (7) equation describing the relationship between [e], [el], and (3)
+
+    -- (3) could be as straightforward as [er ∗ out]
+    -- (4) and (5) could be derived from (3) using an appropriate typeclass,
+    -- that being [FromAssumption (5) (4) (3)]
+    -- (6) should be trivial using isDefEq
+    -- (6) : (3) =Q □?(5) (4)
+
+    -- how could (7) be proven?
+    -- (7) : e ⊣⊢ el ∗ (3)
+    -- the choice of (3) is closely interwoven with this
+
+    -- let (3) be [er ∗ out]
+    -- thus (7) : e ⊣⊢ el ∗ (er ∗ out)
+    -- we have h : e' ⊣⊢ el ∗ er
+    -- and pf : e ⊣⊢ e' ∗ out
+    -- so, using transitivity: e
+    -- ⊣⊢ e' ∗ out (by h)
+    -- ⊣⊢ (el ∗ er) ∗ out (by monotonicity)
+    -- ⊣⊢ el ∗ (er ∗ out) (by associativity)
+
     let remHyps := ⟨el, hypsl, sorry, sorry, sorry, sorry, sorry⟩
 
     return ← iApplyCore hyps goal remHyps spats.tail k
