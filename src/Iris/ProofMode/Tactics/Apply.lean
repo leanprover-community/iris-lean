@@ -28,14 +28,11 @@ def goalTracker {P} (goals : IO.Ref (Array MVarId)) (hyps : Hyps bi P) (goal : Q
 -- todo: complex spec patterns
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
-    {P} (hyps : Hyps bi P) (Q : Q($prop)) (term : PMTerm)
+    {P} (hyps : Hyps bi P) (Q : Q($prop)) (spats : List SpecPat)
     (k : ∀ {P}, Hyps bi P → (Q : Q($prop)) → MetaM Q($P ⊢ $Q)) :
     MetaM (Q($P ⊢ $Q)) := do
-  /-
-    let uniq ← hyps.findWithInfo hyp
-    let ⟨_, hyps', out, _, p, _, pf⟩ := hyps.remove true uniq
-  -/
-
+  let _ ← synthInstanceQ q(FromAssumption $p $hyp $Q)
+  let _ ← synthInstanceQ q(TCOr (Affine $P') (Absorbing $Q))
   return q(assumption $h)
   /-let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
@@ -77,6 +74,9 @@ elab "iapply" colGt term:pmTerm : tactic => do
     let g ← instantiateMVars <| ← mvar.getType
     let some { hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
+    let uniq ← hyps.findWithInfo term.ident
+    let ⟨_, hyps', out, _, p, _, pf⟩ := hyps.remove true uniq
+
     let goals ← IO.mkRef #[]
-    mvar.assign <| ← iApplyCore hyps goal term <| goalTracker goals
+    mvar.assign <| ← iApplyCore hyps goal term.spats <| goalTracker goals
     replaceMainGoal (← goals.get).toList

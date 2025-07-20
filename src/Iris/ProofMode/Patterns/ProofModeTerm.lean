@@ -12,22 +12,23 @@ declare_syntax_cat pmTerm
 
 syntax binderIdent : pmTerm
 syntax binderIdent "with" specPat,+ : pmTerm
-syntax binderIdent "$!" binderIdent,+ : pmTerm
-syntax binderIdent "$!" binderIdent,+ "with" specPat,+ : pmTerm
+syntax binderIdent "$!" ident,+ : pmTerm
+syntax binderIdent "$!" ident,+ "with" specPat,+ : pmTerm
 
 structure PMTerm where
-  ident : TSyntax ``binderIdent
-  ts : List (TSyntax ``binderIdent)
+  ident : Ident
+  ts : List Ident
   spats : List SpecPat
   deriving Repr, Inhabited
 
 partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
   match ← expandMacros term with
-  | `(pmTerm| $name:binderIdent) => pmt name ⟨#[]⟩ ⟨#[]⟩
-  | `(pmTerm| $name:binderIdent with $spats,*) => pmt name ⟨#[]⟩ spats
-  | `(pmTerm| $name:binderIdent $! $ts:binderIdent,*) => pmt name ts ⟨#[]⟩
-  | `(pmTerm| $name:binderIdent $! $ts:binderIdent,* with $spats,*) => pmt name ts spats
+  | `(pmTerm| $name:ident) => return ⟨name, [], []⟩
+  | `(pmTerm| $name:ident with $spats,*) => return ⟨name, [], ← parseSpats spats⟩
+  | `(pmTerm| $name:ident $! $ts,*) => return ⟨name, ts.getElems.toList, []⟩
+  | `(pmTerm| $name:ident $! $ts,* with $spats,*) =>
+    return ⟨name, ts.getElems.toList, ← parseSpats spats⟩
   | _ => Macro.throwUnsupported
 where
-  pmt name ts spats : MacroM PMTerm := return ⟨name, ts.getElems.toList,
-      (← spats.elemsAndSeps.toList.mapM fun pat => SpecPat.parse pat)⟩
+  parseSpats (spats : Syntax.TSepArray `specPat ",") : MacroM (List SpecPat) :=
+      return (← spats.elemsAndSeps.toList.mapM fun pat => SpecPat.parse pat)
