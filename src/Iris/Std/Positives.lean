@@ -390,10 +390,10 @@ instance [Countable A] : Countable (List A) where
   decode_encode := by
     intros xs
     rewrite [Pos.unflatten_flatten]; simp
-    induction xs
-    · rfl
-    · simp [List.map]; rename_i a aa aaa aaaa; rewrite [aaaa];
-      rewrite [Countable.decode_encode]; simp
+    induction xs with
+    | nil => rfl
+    | cons x xs IH =>
+      simp [List.map]; rewrite [IH]; rewrite [Countable.decode_encode]; simp
 
 instance : Countable Pos where
   encode := id
