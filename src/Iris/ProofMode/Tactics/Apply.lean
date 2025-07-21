@@ -25,9 +25,6 @@ def goalTracker {P} (goals : IO.Ref (Array MVarId)) (hyps : Hyps bi P) (goal : Q
   goals.modify (·.push m.mvarId!)
   pure m
 
-theorem temp [BI PROP] {e' el er e out : PROP} (h : e' ⊣⊢ el ∗ er) (pf : e ⊣⊢ e' ∗ out) : e ⊣⊢ el ∗ (er ∗ out) :=
-  pf.trans <| (sep_congr_l h).trans sep_assoc
-
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (remHyp : RemoveHyp bi e) (spats : List SpecPat)
@@ -38,31 +35,24 @@ partial def iApplyCore
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
 
-  if let some _ ← try? (synthInstanceQ q(IntoWand' $p false $out' $A1 $A2)) then
+  if let some _ ← try? (synthInstanceQ q(IntoWand' $p false $out' $A1 $goal)) then
+    let m ← k hyps' A1
+    return q(apply $pf $m)
+  else if let some _ ← try? (synthInstanceQ q(IntoWand' $p false $out' $A1 $A2)) then
     let splitPat := fun name _ => match spats.head? with
       | some <| .idents bIdents => bIdents.any <| binderIdentHasName name
       | none => false
 
-    let splitHyp := Hyps.split bi splitPat hyps'
-    let ⟨el, er, hypsl, hypsr, h⟩ := splitHyp
-
+    let ⟨el, er, hypsl, hypsr, h⟩ := Hyps.split bi splitPat hyps'
     let m ← k hypsr A1
 
-    let newOut := q(sep $er $out)
+    let _pf ← mkFreshExprMVarQ q($e ⊣⊢ $el ∗ $A2) -- this metavariable is all that is needed
 
-    let p' ← mkFreshExprMVarQ q(Bool)
-    let newOut' ← mkFreshExprMVarQ q($prop)
-
-    let _ ← synthInstanceQ q(FromAssumption $p' $newOut' $newOut)
-    let eq' := (← assertDefEqQ q($newOut) q(intuitionisticallyIf $p' $newOut')).down
-
-    let pf' := q(temp $h $pf)
-
-    let remHyps := ⟨el, hypsl, newOut, newOut', p', eq', pf'⟩
+    let eq' := (← assertDefEqQ q($A2) q(intuitionisticallyIf false $A2)).down
+    let remHyps : RemoveHyp bi e := ⟨el, hypsl, A2, A2, q(false), eq', _pf⟩
 
     return ← iApplyCore hyps goal remHyps spats.tail k
   else
-    -- iexact case
     let _ ← synthInstanceQ q(FromAssumption $p $out' $goal)
     let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
     return q(assumption $pf)

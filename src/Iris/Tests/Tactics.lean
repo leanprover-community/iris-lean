@@ -196,10 +196,11 @@ theorem multiple [BI PROP] (P Q R : PROP) : ⊢ P -∗ Q -∗ (P -∗ Q -∗ R) 
   · iexact HP
   · iexact HQ
 
-theorem multiple' [BI PROP] (P Q R S : PROP) : ⊢ P -∗ Q -∗ R -∗ ((P ∗ Q) -∗ R -∗ S) -∗ S := by
-  iintro HP HQ HR H
-  iapply H with [HP, HQ]
-  · sorry
+theorem multiple' [BI PROP] (P Q R S : PROP) : ⊢ (P -∗ Q) -∗ P -∗ R -∗ (Q -∗ R -∗ S) -∗ S := by
+  iintro HPQ HP HR H
+  iapply H with [HPQ, HP]
+  · iapply HPQ
+    iexact HP
   · iexact HR
 
 -- todo: intuitionistic modality test cases
