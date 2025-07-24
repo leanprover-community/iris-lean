@@ -6,6 +6,7 @@ Authors: Markus de Medeiros, Shreyas Srinivas, Mario Carneiro
 
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
+import Batteries.Data.Rat
 
 /-!
 # The Frac CMRA
@@ -203,3 +204,62 @@ theorem Frac.le_of_inc {p q : Frac α} (H : p ≼ q) : p ≤ q :=
   lt_le (inc_iff_lt.mp H)
 
 end NumericFraction
+
+
+section PRat_instance
+
+/- ## Instance of Fractions for the positive rationals -/
+
+def PRat := { q : Rat // 0 < q.num }
+
+instance : One PRat where
+  one := ⟨1, Int.sign_eq_one_iff_pos.mp rfl⟩
+
+instance : Add PRat where
+  add x y :=
+    ⟨Rat.add x.1 y.1,
+      by
+        rcases x with ⟨⟨xn, xd⟩, Hx⟩
+        rcases y with ⟨⟨yn, yd⟩, Hy⟩
+        simp [Rat.add]
+        split <;> simp
+        · apply Int.add_pos_of_nonneg_of_pos
+          · apply Int.mul_nonneg (Int.le_of_lt Hx) (Int.natCast_nonneg yd)
+          · apply Int.mul_pos Hy
+            cases xd <;> simp_all
+            rename_i H _ _
+            simp at H
+        · apply Int.lt_ediv_of_mul_lt ?_ ?_ ?_
+          · apply Int.natCast_nonneg
+          · exact Rat.normalize.dvd_num rfl
+          · rw [Int.zero_mul]
+            apply Int.add_pos_of_nonneg_of_pos
+            · apply Int.mul_nonneg (Int.le_of_lt Hx) (Int.zero_le_ofNat _)
+            · apply Int.mul_pos Hy
+              apply Int.lt_ediv_of_mul_lt ?_ ?_ ?_
+              · apply Int.natCast_nonneg (xd.gcd yd)
+              · exact Rat.normalize.dvd_num rfl
+              · rw [Int.zero_mul]
+                cases xd
+                rename_i H _ _ <;> simp at H
+                apply Int.ofNat_succ_pos ⟩
+
+instance : LE PRat where
+  le := (·.1 ≤ ·.1)
+
+instance : LT PRat where
+  lt := (·.1 < ·.1)
+
+instance : NumericFraction PRat where
+  add_comm x y := by
+    rcases x with ⟨x, Hx⟩; rcases y with ⟨y, Hy⟩; simp [HAdd.hAdd, Add.add]
+    congr 1
+    rw [add_comm]
+    sorry
+  add_assoc := sorry
+  add_left_cancel := sorry
+  le_def := sorry
+  lt_def := sorry
+  lt_irrefl := sorry
+
+end PRat_instance
