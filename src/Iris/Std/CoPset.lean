@@ -64,7 +64,7 @@ open CoPsetRaw
 /-- The membership test. -/
 def CoPsetRaw.ElemOf : Pos → CoPsetRaw → Bool
   | _, leaf b => b
-  | P1, node b _ _ => b
+  | .xH, node b _ _ => b
   | p~0, node _ l _ => CoPsetRaw.ElemOf p l
   | p~1, node _ _ r => CoPsetRaw.ElemOf p r
 instance : Membership Pos CoPsetRaw  where
@@ -78,7 +78,7 @@ theorem elem_of_node b l r (p : Pos) :
 
 /-- Singleton. -/
 def CoPsetRaw.Singleton : Pos → CoPsetRaw
-  | P1 => node true (leaf false) (leaf false)
+  | .xH => node true (leaf false) (leaf false)
   | p~0 => node' false (Singleton p) (leaf false)
   | p~1 => node' false (leaf false) (Singleton p)
 
@@ -333,8 +333,8 @@ using it repeatedly to obtain elements [x] and inserting these elements
 [x] into some set [Y] will give rise to a very unbalanced tree. -/
 
 def CoPsetRaw.pickRaw : CoPsetRaw → Option Pos
-  | CoPsetRaw.leaf true => some P1
-  | CoPsetRaw.node true _ _ => some P1
+  | CoPsetRaw.leaf true => some Pos.P1
+  | CoPsetRaw.node true _ _ => some Pos.P1
   | CoPsetRaw.leaf false => none
   | CoPsetRaw.node false l r =>
     match pickRaw l with
@@ -342,7 +342,7 @@ def CoPsetRaw.pickRaw : CoPsetRaw → Option Pos
     | none => Option.map (λ i => i~1) (pickRaw r)
 
 def CoPset.pick (X : CoPset) : Pos :=
-  (CoPsetRaw.pickRaw X.tree).getD P1
+  (CoPsetRaw.pickRaw X.tree).getD Pos.P1
 
 
 -- Inverse suffix closure
@@ -352,7 +352,7 @@ of [p], when these numbers are viewed as sequences of bits. In other words, it
 is the set of all numbers that have the suffix [q]. It is always an infinite
 set. -/
 def CoPsetRaw.suffixesRaw : Pos → CoPsetRaw
-  | P1 => .leaf true
+  | .xH => .leaf true
   | p~0 => CoPsetRaw.node' false (suffixesRaw p) (.leaf false)
   | p~1 => CoPsetRaw.node' false (.leaf false) (suffixesRaw p)
 
