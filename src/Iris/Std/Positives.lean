@@ -16,8 +16,7 @@ namespace Pos
     For instance, we can write [P1~1~0] instead of [(xO (xI xH))]
     for the number 6 (which is 110 in binary notation). -/
 
-notation "P1" => xH
-
+abbrev P1 : Pos := xH
 syntax term "~1" : term
 syntax term "~0" : term
 
@@ -49,32 +48,32 @@ def add x y :=
   match x, y with
     | p~1, q~1 => (add_carry p q)~0
     | p~1, q~0 => (add p q)~1
-    | p~1, P1 => (succ p)~0
+    | p~1, xH => (succ p)~0
     | p~0, q~1 => (add p q)~1
     | p~0, q~0 => (add p q)~0
-    | p~0, P1 => p~1
-    | P1, q~1 => (succ q)~0
-    | P1, q~0 => q~1
-    | P1, P1 => P1~0
+    | p~0, xH => p~1
+    | xH, q~1 => (succ q)~0
+    | xH, q~0 => q~1
+    | xH, xH => P1~0
 
 def add_carry x y :=
   match x, y with
     | p~1, q~1 => (add_carry p q)~1
     | p~1, q~0 => (add_carry p q)~0
-    | p~1, P1 => (succ p)~1
+    | p~1, xH => (succ p)~1
     | p~0, q~1 => (add_carry p q)~0
     | p~0, q~0 => (add p q)~1
-    | p~0, P1 => (succ p)~0
-    | P1, q~1 => (succ q)~1
-    | P1, q~0 => (succ q)~0
-    | P1, P1 => P1~1
+    | p~0, xH => (succ p)~0
+    | xH, q~1 => (succ q)~1
+    | xH, q~0 => (succ q)~0
+    | xH, xH => P1~1
 end
 
 instance : Add Pos where add := Pos.add
 
 /-- Multiplication -/
 def mul : Pos → Pos → Pos
-  | P1,     q       => q
+  | xH,     q       => q
   | p~0,   q       => xO (mul p q)
   | p~1,   q       => add (xO (mul p q)) q
 
@@ -108,7 +107,7 @@ instance : OfNat Pos n where ofNat := Pos.ofNat n
   lists instead of cons lists. -/
 def app (p1 p2 : Pos) : Pos :=
   match p2 with
-  | P1 => p1
+  | xH => p1
   | p2~0 => (app p1 p2)~0
   | p2~1 => (app p1 p2)~1
 
@@ -127,7 +126,7 @@ instance app_1_l : @Std.LawfulLeftIdentity Pos Pos (app) P1 where
 
 def reverse_go (p1 p2 : Pos) : Pos :=
   match p2 with
-  | P1 => p1
+  | xH => p1
   | p2~0 => reverse_go (p1~0) p2
   | p2~1 => reverse_go (p1~1) p2
 def reverse : Pos → Pos := reverse_go P1
@@ -169,7 +168,7 @@ theorem reverse_xI p : reverse (p~1) = (P1~1) ++ reverse p := by
 /-- Duplicate the bits of a positive, i.e. 1~0~1 -> 1~0~0~1~1 and
       1~1~0~0 -> 1~1~1~0~0~0~0 -/
 def dup  : Pos -> Pos
-| P1 => P1
+| xH => P1
 | p~0 => (dup p)~0~0
 | p~1 => (dup p)~1~1
 
@@ -200,7 +199,7 @@ def unflatten_go
         (acc_elm : Pos)
   : Option (List Pos) :=
   match p with
-  | P1 => some acc_xs
+  | xH => some acc_xs
   | p'~0~0 => unflatten_go p' acc_xs (acc_elm~0)
   | p'~1~1 => unflatten_go p' acc_xs (acc_elm~1)
   | p'~1~0 => unflatten_go p' (acc_elm :: acc_xs) P1
