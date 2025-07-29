@@ -9,6 +9,7 @@ import Iris.Algebra.OFE
 import Iris.Algebra.Frac
 import Iris.Algebra.DFrac
 import Iris.Algebra.Agree
+import Iris.Algebra.Updates
 
 open Iris
 
@@ -615,4 +616,73 @@ theorem view_both_included : ((●V a1 : View F R) • ◯V b1) ≼ ((●V a2) �
   view_both_dfrac_included.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
 end cmra
+
+section updates
+
+variable [UFraction F] [OFE A] [IB : UCMRA B] {R : view_rel A B} [ViewRel R]
+
+theorem view_updateP {Pab : A → B → Prop}
+    (Hup : ∀ n bf, R n a (b • bf) → ∃ a' b', Pab a' b' ∧ R n a' (b' • bf)) :
+    ((●V a) • ◯V b : View F R) ~~>: fun k => ∃ a' b', k = ((●V a') • ◯V b' : View F R) ∧ Pab a' b' := by
+  refine UpdateP.total.mpr (fun n ⟨ag, bf⟩ => ?_)
+  rcases ag with (_|⟨dq, ag⟩)
+  · intro H
+    simp [CMRA.op, op, CMRA.ValidN, optionOp, validN] at H
+    obtain ⟨_, a0, He', Hrel'⟩ := H
+    have He := toAgree.inj He'; clear He'
+    have Hrel : R n a (b • bf) := by
+      apply ViewRel.mono Hrel' He.symm _ n.le_refl
+      apply Iris.OFE.Dist.to_incN
+      refine CMRA.comm.dist.trans (.trans ?_ CMRA.comm.dist)
+      refine CMRA.op_ne.ne ?_
+      exact (CMRA.unit_left_id_dist b).symm
+    obtain ⟨a', b', Hab', Hrel''⟩ := Hup _ _ Hrel
+    refine ⟨((●V a') • ◯V b'), ?_, ⟨by trivial, ?_⟩⟩
+    · exists a'; exists b'
+    · refine ⟨a', .rfl, ?_⟩
+      apply ViewRel.mono Hrel'' .rfl _ n.le_refl
+      simp [CMRA.op, op]
+      apply Iris.OFE.Dist.to_incN
+      refine CMRA.comm.dist.trans (.trans ?_ CMRA.comm.dist)
+      refine CMRA.op_ne.ne ?_
+      exact (CMRA.unit_left_id_dist b')
+  · -- FIXME: Why doesn't this synthesize?
+    have _ : CMRA.Exclusive (DFrac.own One.one : DFrac F) := by
+      apply own_whole_exclusive <| UFraction.one_whole
+    exact (CMRA.not_valid_exclN_op_left ·.1 |>.elim)
+
+theorem view_update (Hup : ∀ n bf, R n a (b • bf) → R n a' (b' • bf)) :
+    ((●V a) • ◯V b : View F R) ~~> (●V a') • ◯V b' := by
+  apply Update.of_updateP
+  apply UpdateP.weaken
+  · apply view_updateP (Pab := fun a b => a = a' ∧ b = b')
+    intro _ _ H
+    exact ⟨a', b', ⟨rfl, rfl⟩, Hup _ _ H⟩
+  · rintro y ⟨a', b', H, rfl, rfl⟩; exact H.symm
+
+theorem view_update_alloc (Hup : ∀ n bf, R n a bf → R n a' (b' • bf)) :
+    ((●V a) ~~> ((●V a' : View F R) • ◯V b')) := by
+  refine Update.equiv_left CMRA.unit_right_id ?_
+  refine view_update (fun n bf H => Hup n bf <| ViewRel.mono H .rfl ?_ n.le_refl)
+  exact CMRA.incN_op_right n UCMRA.unit bf
+
+theorem view_update_dealloc (Hup : (∀ n bf, R n a (b • bf) → R n a' bf)) :
+    ((●V a : View F R) • ◯V b) ~~> ●V a' := by
+  refine Update.equiv_right CMRA.unit_right_id ?_
+  refine view_update (fun n bf H => ?_)
+  refine ViewRel.mono (Hup n bf H) .rfl ?_ n.le_refl
+  exact Iris.OFE.Dist.to_incN (CMRA.unit_left_id_dist bf)
+
+theorem view_update_auth (Hup : ∀ n bf, R n a bf → R n a' bf) :
+    (●V a : View F R) ~~> ●V a' := by
+  refine Update.equiv_right CMRA.unit_right_id ?_
+  refine Update.equiv_left  CMRA.unit_right_id ?_
+  refine view_update (fun n bf H => ?_)
+  exact ViewRel.mono (Hup n _ H) .rfl .rfl n.le_refl
+
+
+end updates
+
+
+
 end View
