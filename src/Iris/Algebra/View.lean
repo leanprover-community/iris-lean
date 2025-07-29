@@ -78,27 +78,41 @@ instance View.π_frag.ne : OFE.NonExpansive (View.π_frag : View F R → _) := �
 theorem is_discrete {ag : Option ((DFrac F) × Agree A)} (Ha : OFE.DiscreteE ag) (Hb : OFE.DiscreteE b) :
   OFE.DiscreteE (α := View F R) (View.mk ag b) := ⟨fun H => ⟨Ha.discrete H.1, Hb.discrete H.2⟩⟩
 
-instance [OFE.Discrete A] [OFE.Discrete B] : OFE.Discrete (View F R) where
-  discrete_0 H := by
-    constructor
-    · apply OFE.Discrete.discrete_0 H.1
-    · apply OFE.Discrete.discrete_0 H.2
+open OFE in
+instance [Discrete A] [Discrete B] : Discrete (View F R) where
+  discrete_0 H := ⟨Discrete.discrete_0 H.1, Discrete.discrete_0 H.2⟩
+
+theorem view_auth.frac_inj [UCMRA B] {q1 q2 : DFrac F} {a1 a2 : A} {n} (H : (●V{q1} a1 : View F R) ≡{n}≡ ●V{q2} a2) :
+    q1 = q2 := H.1.1
+
+theorem view_auth.ag_inj [UCMRA B] {q1 q2 : DFrac F} {a1 a2 : A} {n} (H : (●V{q1} a1 : View F R) ≡{n}≡ ●V{q2} a2) :
+    a1 ≡{n}≡ a2 := toAgree.inj H.1.2
+
+theorem view_frag.inj [UCMRA B] {b1 b2 : B} {n} (H : (◯V b1 : View F R) ≡{n}≡ ◯V b2) :
+    b1 ≡{n}≡ b2 := H.2
+
+theorem view_auth_discrete [UFraction F] [UCMRA B] {dq a} (Ha : OFE.DiscreteE a) (He : OFE.DiscreteE (UCMRA.unit : B)) :
+    OFE.DiscreteE (●V{dq} a : View F R) := by
+  refine is_discrete ?_ He
+  apply OFE.Option.some_is_discrete
+  apply OFE.prod.is_discrete dfrac.is_discrete
+  apply Agree.toAgree.is_discrete
+  exact Ha
+
+theorem view_frag_discrete [UCMRA B] {b : B} (Hb : OFE.DiscreteE b) : (OFE.DiscreteE (◯V b : View F R)) :=
+  is_discrete OFE.Option.none_is_discrete Hb
 
 end ofe
 
 section cmra
 variable [UFraction F] [OFE A] [IB : UCMRA B] {R : view_rel A B} [ViewRel R]
 
--- Lemma
 theorem rel_iff_agree (Hb : b' ≡{n}≡ b) :
     (∃ a', toAgree a ≡{n}≡ toAgree a' ∧ R n a' b') ↔ R n a b := by
   refine ⟨fun H => ?_, fun H => ?_⟩
   · rcases H with ⟨_, HA, HR⟩
-    refine ViewRel.mono HR (toAgree.inj HA.symm) ?_ n.le_refl
-    exact OFE.Dist.to_incN Hb.symm
-  · refine ⟨a, .rfl, ?_⟩
-    refine ViewRel.mono H .rfl ?_ n.le_refl
-    exact OFE.Dist.to_incN Hb
+    exact ViewRel.mono HR (toAgree.inj HA.symm) Hb.symm.to_incN n.le_refl
+  · exact ⟨a, .rfl, ViewRel.mono H .rfl Hb.to_incN n.le_refl⟩
 
 instance auth_ne {dq : DFrac F} : OFE.NonExpansive (View.auth dq : A → View F R) where
   ne _ _ _ H := by
@@ -117,34 +131,20 @@ instance auth_ne₂ : OFE.NonExpansive₂ (View.auth : DFrac F → A → View F 
 instance frag_ne : OFE.NonExpansive (View.frag : B → View F R) where
   ne _ _ _ H := View.mk.ne.ne .rfl H
 
-omit [ViewRel R] [UFraction F] in
-theorem view_auth.frac_inj {q1 q2 : DFrac F} {a1 a2 : A} {n} (H : (●V{q1} a1 : View F R) ≡{n}≡ ●V{q2} a2) :
-    q1 = q2 := H.1.1
-
-omit [ViewRel R] [UFraction F] in
-theorem view_auth.ag_inj {q1 q2 : DFrac F} {a1 a2 : A} {n} (H : (●V{q1} a1 : View F R) ≡{n}≡ ●V{q2} a2) :
-    a1 ≡{n}≡ a2 := toAgree.inj H.1.2
-
-omit [ViewRel R] [UFraction F] in
-theorem view_frag.inj {b1 b2 : B} {n} (H : (◯V b1 : View F R) ≡{n}≡ ◯V b2) :
-    b1 ≡{n}≡ b2 := H.2
-
-abbrev valid (v : View F R) : Prop :=
+@[simp] def valid (v : View F R) : Prop :=
   match v.π_auth with
   | some (dq, ag) => ✓ dq ∧ (∀ n, ∃ a, ag ≡{n}≡ toAgree a ∧ R n a (π_frag v))
   | none => ∀ n, ∃ a, R n a (π_frag v)
 
-abbrev validN (n : Nat) (v : View F R) : Prop :=
+@[simp] def validN (n : Nat) (v : View F R) : Prop :=
   match v.π_auth with
   | some (dq, ag) => ✓{n} dq ∧ (∃ a, ag ≡{n}≡ toAgree a ∧ R n a (π_frag v))
   | none => ∃ a, R n a (π_frag v)
 
-def pcore (v : View F R) : Option (View F R) :=
-  let ag : Option (DFrac F × Agree A) := CMRA.core v.1
-  let b : B := CMRA.core v.2
-  some <| View.mk ag b
+@[simp] def pcore (v : View F R) : Option (View F R) :=
+  some <| View.mk (CMRA.core v.1) (CMRA.core v.2)
 
-abbrev op (v1 v2 : View F R) : View F R :=
+@[simp] def op (v1 v2 : View F R) : View F R :=
   View.mk (v1.1 • v2.1) (v1.2 • v2.2)
 
 instance : CMRA (View F R) where
@@ -154,10 +154,8 @@ instance : CMRA (View F R) where
   Valid := valid
   op_ne.ne n x1 x2 H := by
     refine View.mk.ne.ne ?_ ?_
-    · refine cmraOption.op_ne.ne ?_
-      exact OFE.NonExpansive.ne H
-    · refine IB.op_ne.ne ?_
-      exact OFE.NonExpansive.ne H
+    · refine cmraOption.op_ne.ne (OFE.NonExpansive.ne H)
+    · refine IB.op_ne.ne (OFE.NonExpansive.ne H)
   pcore_ne {n x y} cx H := by
     simp only [pcore, Option.some.injEq]
     intro Hc; subst Hc
@@ -275,19 +273,6 @@ instance : CMRA (View F R) where
     rcases H2 with ⟨z1, z2, Hze, Hz1, Hz2⟩
     exists ⟨z1.1, z1.2⟩
     exists ⟨z2.1, z2.2⟩
-
-omit [ViewRel R] in
-theorem view_auth_discrete {dq a} (Ha : OFE.DiscreteE a) (He : OFE.DiscreteE (UCMRA.unit : B)) :
-    OFE.DiscreteE (●V{dq} a : View F R) := by
-  refine is_discrete ?_ He
-  apply OFE.Option.some_is_discrete
-  apply OFE.prod.is_discrete dfrac.is_discrete
-  apply Agree.toAgree.is_discrete
-  exact Ha
-
-omit [UFraction F] [ViewRel R] in
-theorem view_frag_discrete {b : B} (Hb : OFE.DiscreteE b) : (OFE.DiscreteE (◯V b : View F R)) :=
-  is_discrete OFE.Option.none_is_discrete Hb
 
 instance [OFE.Discrete A] [CMRA.Discrete B] [ViewRelDiscrete R] : CMRA.Discrete (View F R) where
   discrete_valid := by
