@@ -10,6 +10,7 @@ import Iris.Algebra.Frac
 import Iris.Algebra.DFrac
 import Iris.Algebra.Agree
 import Iris.Algebra.Updates
+import Iris.Algebra.LocalUpdates
 
 open Iris
 
@@ -680,9 +681,97 @@ theorem view_update_auth (Hup : ∀ n bf, R n a bf → R n a' bf) :
   refine view_update (fun n bf H => ?_)
   exact ViewRel.mono (Hup n _ H) .rfl .rfl n.le_refl
 
+theorem view_updateP_auth_dfrac (Hupd : dq ~~>: P) :
+    (●V{dq} a : View F R ) ~~>: (fun k => ∃ dq', (k = ●V{dq'} a) ∧ P dq') := by
+  refine UpdateP.total.mpr (fun n ⟨ag, bf⟩ => ?_)
+  rcases ag with (_|⟨dq', ag⟩) <;> rintro ⟨Hv, a', _, _⟩
+  · obtain ⟨dr, Hdr, Heq⟩ := Hupd n none Hv
+    refine ⟨●V{dr} a, (by exists dr), ⟨Heq, (by exists a')⟩⟩
+  · obtain ⟨dr, Hdr, Heq⟩ := Hupd n (some dq') Hv
+    refine ⟨●V{dr} a, (by exists dr), ⟨Heq, (by exists a')⟩⟩
+
+theorem view_update_auth_persist : (●V{dq} a : View F R) ~~> ●V{.discard} a := by
+  apply Update.lift_updateP (g := fun dq => ●V{dq} a)
+  · intro P
+    apply view_updateP_auth_dfrac
+  · exact dfrac_discard_update
+
+theorem view_updateP_auth_unpersist [IsSplitFraction F] :
+    (●V{.discard} a : View F R) ~~>: fun k => ∃ q, k = ●V{.own q} a := by
+  apply UpdateP.weaken
+  · apply view_updateP_auth_dfrac
+    exact dfrac_undiscard_update
+  · rintro y ⟨dq, rfl, q', rfl⟩
+    exists q'
+
+theorem view_updateP_both_unpersist [IsSplitFraction F] :
+    ((●V{.discard} a : View F R) • ◯V b) ~~>: fun k => ∃ q, k = ((●V{.own q} a : View F R) • ◯V b ):= by
+  apply UpdateP.op
+  apply view_updateP_auth_unpersist
+  apply UpdateP.id rfl
+  rintro z1 z2 ⟨q, rfl⟩ rfl; exists q
+
+theorem view_updateP_frag {P : B → Prop} (Hupd : ∀ a n bf, R n a (b • bf) → ∃ b', P b' ∧ R n a (b' • bf)) :
+    (◯V b : View F R) ~~>: (fun k => ∃ b', (k = (◯V b' : View F R)) ∧ P b') := by
+  refine UpdateP.total.mpr (fun n ⟨ag, bf⟩ => ?_)
+  rcases ag with (_|⟨dq,af⟩)
+  simp only [CMRA.ValidN, validN]
+  · rintro ⟨a, Ha⟩
+    obtain ⟨b', HP, Hb'⟩ := Hupd a n bf Ha
+    exists (◯V b')
+    simp only [mk.injEq, true_and, exists_eq_left']
+    refine ⟨HP, ⟨a, Hb'⟩⟩
+  · rintro ⟨Hq, a, Hae, Hr⟩
+    obtain ⟨b', Hb', Hp⟩ := Hupd a n bf Hr
+    exists (◯V b')
+    simp only [mk.injEq, true_and, exists_eq_left']
+    refine ⟨Hb', ?_⟩
+    simp [CMRA.ValidN, validN, CMRA.op, op, optionOp]
+    refine ⟨Hq, ⟨a, Hae, Hp⟩⟩
+
+theorem view_update_frag (Hupd : ∀ a n bf, R n a (b • bf) → R n a (b' • bf)) :
+    (◯V b : View F R) ~~> (◯V b' : View F R) := by
+  refine Update.total.mpr (fun n ⟨ag, bf⟩ => ?_)
+  rcases ag with (_|⟨dq,af⟩)
+  simp only [CMRA.ValidN, validN]
+  · simp_all [CMRA.op, optionOp]
+    intro a HR
+    exists a
+    apply Hupd _ _ _ HR
+  · simp_all [CMRA.op, op, optionOp, CMRA.ValidN, validN]
+    intro Hq a He Hr
+    exists a
+    exact ⟨He, Hupd _ _ _ Hr⟩
+
+theorem view_update_dfrac_alloc (Hup : ∀ n bf, R n a bf → R n a (b • bf)) :
+    (●V{dq} a : View F R) ~~> ((●V{dq} a) • ◯V b) := by
+  refine Update.total.mpr (fun n ⟨ag', bf⟩ => ?_)
+  obtain (_|⟨p, ag⟩) := ag'
+  · simp [CMRA.op, op, optionOp, CMRA.ValidN, validN]
+    intro Hq a' Hag HR
+    refine ⟨Hq, a', Hag, ?_⟩
+    have He := toAgree.inj Hag
+    have HR' := ViewRel.mono HR He.symm (CMRA.incN_op_right n UCMRA.unit bf) n.le_refl
+    apply ViewRel.mono (Hup n bf HR') He ?_ n.le_refl
+    apply Iris.OFE.Dist.to_incN
+    refine CMRA.comm.dist.trans (.trans ?_ CMRA.comm.dist)
+    refine CMRA.op_ne.ne ?_
+    exact (CMRA.unit_left_id_dist _)
+  · rintro ⟨Hv, a0, Hag, Hrel⟩
+    refine ⟨Hv, ?_⟩
+    simp
+    exists a0
+    refine ⟨Hag, ?_⟩
+    simp_all [CMRA.op, op]
+    have Heq  := toAgree.incN.mp ⟨ag, Hag.symm⟩
+    have HR' := ViewRel.mono Hrel Heq.symm (CMRA.incN_op_right n UCMRA.unit bf) n.le_refl
+    apply ViewRel.mono (Hup _ _ HR') Heq ?_ n.le_refl
+    apply Iris.OFE.Dist.to_incN
+    refine CMRA.comm.dist.trans (.trans ?_ CMRA.comm.dist)
+    refine CMRA.op_ne.ne ?_
+    exact (CMRA.unit_left_id_dist _)
+
+-- TODO: Local update lemma
 
 end updates
-
-
-
 end View
