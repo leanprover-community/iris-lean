@@ -10,12 +10,12 @@ namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 theorem apply [BI PROP] {R P P' P1 P2 : PROP} {p : Bool}
-    (h1 : P ⊣⊢ P' ∗ □?p R) (h2 : P' ⊢ P1) [h3 : IntoWand' p false R P1 P2] : P ⊢ P2 :=
-  h1.mp.trans <| (sep_mono_l h2).trans <| wand_elim' h3.1
+    (h1 : P ⊢ P' ∗ □?p R) (h2 : P' ⊢ P1) [h3 : IntoWand' p false R P1 P2] : P ⊢ P2 :=
+  h1.trans <| (sep_mono_l h2).trans <| wand_elim' h3.1
 
-theorem temp [BI PROP] {e e' out el er : PROP} (pf : e ⊣⊢ e' ∗ out) (h : e' ⊣⊢ el ∗ er) :
-    e ⊣⊢ er ∗ □?false (el ∗ out) :=
-  pf.trans <| (sep_congr_l h).trans <| (sep_congr_l sep_comm).trans <| sep_assoc.trans .rfl
+theorem temp [BI PROP] {e e' out el er : PROP} (pf : e ⊢ e' ∗ out) (h : e' ⊢ el ∗ er) :
+    e ⊢ er ∗ □?false (el ∗ out) :=
+  pf.trans <| (sep_mono_l h).trans <| (sep_mono_l sep_symm).trans <| sep_assoc.mp.trans .rfl
 
 theorem temp' [BI PROP] {el out A1 A2 : PROP} (h : out ⊢ A1 -∗ A2) : el ∗ out ⊢ A1 -∗ (el ∗ A2) :=
   (sep_mono_r h).trans <| wand_intro' <| sep_symm.trans <| sep_assoc.mp.trans <| sep_mono .rfl wand_elim_l
@@ -32,9 +32,19 @@ def goalTracker {P} (goals : IO.Ref (Array MVarId)) (hyps : Hyps bi P) (goal : Q
   goals.modify (·.push m.mvarId!)
   pure m
 
+structure RemoveHyp' {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
+  (e' : Q($prop)) (hyps' : Hyps bi e') (out out' : Q($prop)) (p : Q(Bool))
+  (eq : $out =Q iprop(□?$p $out'))
+  (pf : Q($e ⊢ $e' ∗ $out))
+  deriving Inhabited
+
+theorem assumption' [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p A Q]
+  [TCOr (Affine P') (Absorbing Q)] (h : P ⊢ P' ∗ □?p A) : P ⊢ Q :=
+  h.trans <| (sep_mono_r inst.1).trans sep_elim_r
+
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
-    {e} (hyps : Hyps bi e) (goal : Q($prop)) (remHyp : RemoveHyp bi e) (spats : List SpecPat)
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (remHyp : RemoveHyp' bi e) (spats : List SpecPat)
     (k : ∀ {e}, Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
     MetaM (Q($e ⊢ $goal)) := do
   let ⟨e', hyps', out, out', p, eq, pf⟩ := remHyp
@@ -55,17 +65,17 @@ partial def iApplyCore
 
     let inst' : Q(IntoWand' false false iprop($el ∗ $out) $A1 iprop($el ∗ $A2)) := q({into_wand' := temp' ($inst).into_wand'})
 
-    let test := q(temp $pf $h)
+    let test := q(temp $pf ($h).mp)
     let pf' : Q($e ⊢ $el ∗ $A2) := q(apply (p := false) (R := iprop($el ∗ $out)) $test $m)
 
     let eq' := (← assertDefEqQ q($A2) q(intuitionisticallyIf false $A2)).down
-    let remHyps : RemoveHyp bi e := ⟨el, hypsl, A2, A2, q(false), eq', pf'⟩
+    let remHyps : RemoveHyp' bi e := ⟨el, hypsl, A2, A2, q(false), eq', pf'⟩
 
     return ← iApplyCore hyps goal remHyps spats.tail k
   else
     let _ ← synthInstanceQ q(FromAssumption $p $out' $goal)
     let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
-    return q(assumption $pf)
+    return q(assumption' $pf)
 
 -- todo: case when hyp is a lean lemma (later)
 elab "iapply" colGt term:pmTerm : tactic => do
@@ -75,7 +85,8 @@ elab "iapply" colGt term:pmTerm : tactic => do
   mvar.withContext do
     let g ← instantiateMVars <| ← mvar.getType
     let some { hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
-    let remHyp := hyps.remove true <| ← hyps.findWithInfo term.ident
+    let ⟨e', hyps', out, out', p, eq, pf⟩ := hyps.remove true <| ← hyps.findWithInfo term.ident
+    let remHyp := ⟨e', hyps', out, out', p, eq, q(($pf).mp)⟩
 
     let goals ← IO.mkRef #[]
     mvar.assign <| ← iApplyCore hyps goal remHyp term.spats <| goalTracker goals
