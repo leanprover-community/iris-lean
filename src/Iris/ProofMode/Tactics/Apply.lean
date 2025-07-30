@@ -13,6 +13,10 @@ theorem apply [BI PROP] {R P P' P1 P2 : PROP} {p : Bool}
     (h1 : P ⊣⊢ P' ∗ □?p R) (h2 : P' ⊢ P1) [h3 : IntoWand' p false R P1 P2] : P ⊢ P2 :=
   h1.mp.trans <| (sep_mono_l h2).trans <| wand_elim' h3.1
 
+theorem temp [BI PROP] {e e' out el er : PROP} (pf : e ⊣⊢ e' ∗ out) (h : e' ⊣⊢ el ∗ er) :
+    e ⊣⊢ er ∗ □?false (el ∗ out) :=
+  pf.trans <| (sep_congr_l h).trans <| (sep_congr_l sep_comm).trans <| sep_assoc.trans .rfl
+
 def binderIdentHasName (name : Name) (id : TSyntax ``binderIdent) : Bool :=
   match id with
   | `(binderIdent| $name':ident) => name'.getId == name
@@ -46,10 +50,13 @@ partial def iApplyCore
     let ⟨el, er, hypsl, hypsr, h⟩ := Hyps.split bi splitPat hyps'
     let m ← k hypsr A1
 
-    let _pf ← mkFreshExprMVarQ q($e ⊣⊢ $el ∗ $A2) -- this metavariable is all that is needed
+    let _ ← synthInstanceQ q(IntoWand' false false (iprop($el ∗ $out)) $A1 (iprop($el ∗ $A2)))
+
+    let test := q(temp $pf $h)
+    let pf' : Q($e ⊢ $el ∗ $A2) := q(apply (p := false) (R := iprop($el ∗ $out)) $test $m)
 
     let eq' := (← assertDefEqQ q($A2) q(intuitionisticallyIf false $A2)).down
-    let remHyps : RemoveHyp bi e := ⟨el, hypsl, A2, A2, q(false), eq', _pf⟩
+    let remHyps : RemoveHyp bi e := ⟨el, hypsl, A2, A2, q(false), eq', pf'⟩
 
     return ← iApplyCore hyps goal remHyps spats.tail k
   else
