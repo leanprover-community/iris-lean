@@ -31,10 +31,6 @@ structure RemoveHyp' {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
   (pf : Q($e ⊢ $e' ∗ $out))
   deriving Inhabited
 
-theorem assumption' [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p A Q]
-  [TCOr (Affine P') (Absorbing Q)] (h : P ⊢ P' ∗ □?p A) : P ⊢ Q :=
-  h.trans <| (sep_mono_r inst.1).trans sep_elim_r
-
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (remHyp : RemoveHyp' bi e) (spats : List SpecPat)
@@ -68,7 +64,7 @@ partial def iApplyCore
   else
     let _ ← synthInstanceQ q(FromAssumption $p $out' $goal)
     let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
-    return q(assumption' $pf)
+    return q(assumption $pf)
 
 -- todo: case when hyp is a lean lemma (later)
 elab "iapply" colGt term:pmTerm : tactic => do
