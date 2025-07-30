@@ -25,13 +25,6 @@ def binderIdentHasName (name : Name) (id : TSyntax ``binderIdent) : Bool :=
   | `(binderIdent| $name':ident) => name'.getId == name
   | _ => false
 
-variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
-def goalTracker {P} (goals : IO.Ref (Array MVarId)) (hyps : Hyps bi P) (goal : Q($prop)) : MetaM Q($P ⊢ $goal) := do
-  let m : Q($P ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { prop, bi, hyps, goal, .. }
-  goals.modify (·.push m.mvarId!)
-  pure m
-
 structure RemoveHyp' {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
   (e' : Q($prop)) (hyps' : Hyps bi e') (out out' : Q($prop)) (p : Q(Bool))
   (eq : $out =Q iprop(□?$p $out'))
