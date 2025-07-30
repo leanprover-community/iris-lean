@@ -17,6 +17,9 @@ theorem temp [BI PROP] {e e' out el er : PROP} (pf : e ⊣⊢ e' ∗ out) (h : e
     e ⊣⊢ er ∗ □?false (el ∗ out) :=
   pf.trans <| (sep_congr_l h).trans <| (sep_congr_l sep_comm).trans <| sep_assoc.trans .rfl
 
+theorem temp' [BI PROP] {el out A1 A2 : PROP} (h : out ⊢ A1 -∗ A2) : el ∗ out ⊢ A1 -∗ (el ∗ A2) :=
+  (sep_mono_r h).trans <| wand_intro' <| sep_symm.trans <| sep_assoc.mp.trans <| sep_mono .rfl wand_elim_l
+
 def binderIdentHasName (name : Name) (id : TSyntax ``binderIdent) : Bool :=
   match id with
   | `(binderIdent| $name':ident) => name'.getId == name
@@ -42,7 +45,7 @@ partial def iApplyCore
   if let some _ ← try? (synthInstanceQ q(IntoWand' $p false $out' $A1 $goal)) then
     let m ← k hyps' A1
     return q(apply $pf $m)
-  else if let some _ ← try? (synthInstanceQ q(IntoWand' $p false $out' $A1 $A2)) then
+  else if let some inst ← try? (synthInstanceQ q(IntoWand' $p false $out' $A1 $A2)) then
     let splitPat := fun name _ => match spats.head? with
       | some <| .idents bIdents => bIdents.any <| binderIdentHasName name
       | none => false
@@ -50,7 +53,7 @@ partial def iApplyCore
     let ⟨el, er, hypsl, hypsr, h⟩ := Hyps.split bi splitPat hyps'
     let m ← k hypsr A1
 
-    let _ ← synthInstanceQ q(IntoWand' false false (iprop($el ∗ $out)) $A1 (iprop($el ∗ $A2)))
+    let inst' : Q(IntoWand' false false iprop($el ∗ $out) $A1 iprop($el ∗ $A2)) := q({into_wand' := temp' ($inst).into_wand'})
 
     let test := q(temp $pf $h)
     let pf' : Q($e ⊢ $el ∗ $A2) := q(apply (p := false) (R := iprop($el ∗ $out)) $test $m)
