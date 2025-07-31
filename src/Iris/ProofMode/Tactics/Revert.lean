@@ -25,7 +25,7 @@ elab "irevert" colGt hyp:ident : tactic => do
 
   mvar.withContext do
     let uniq? ← try? do pure (← hyps.findWithInfo hyp)
-    if let (some uniq) := uniq? then
+    if let some uniq := uniq? then
       let ⟨e', hyps', out, _, _, _, h⟩ := hyps.remove true uniq
       let m : Q($e' ⊢ $out -∗ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
         IrisGoal.toExpr { hyps := hyps', goal := q(wand $out $goal), .. }
@@ -36,7 +36,7 @@ elab "irevert" colGt hyp:ident : tactic => do
       replaceMainGoal [m.mvarId!]
     else
       let f ← getFVarId hyp
-      let (some ldecl) := ((← getLCtx).find? f) | throwError "unknown identifier"
+      let some ldecl := (← getLCtx).find? f | throwError "irevert: {hyp.getId} not in scope"
 
       let bibase : Q(BIBase $prop) := q(@BI.toBIBase $prop $bi)
 
@@ -58,7 +58,7 @@ elab "irevert" colGt hyp:ident : tactic => do
           replaceMainGoal [m.mvarId!]
         else
           let Φ : Q($α → $prop) ← mapForallTelescope' (λ t _ => do
-            let (some ig) := parseIrisGoal? t | throwError "not in proof mode"
+            let (some ig) := parseIrisGoal? t | throwError "irevert: not in proof mode"
             return ig.goal
           ) (Expr.mvar mvarId)
           let m : Q($e ⊢ ∀ x, $Φ x) ← mkFreshExprSyntheticOpaqueMVar <|
