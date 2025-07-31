@@ -133,7 +133,7 @@ theorem pure [BI PROP] (P : PROP) (Hφ : φ) : ⊢ (⌜φ⌝ -∗ P) -∗ P := b
   irevert Hφ
   iexact H
 
-theorem «forall» [BI PROP] (Φ : α → PROP) : ⊢ (∀ x, Φ x) → Φ x := by
+theorem «forall» [BI PROP] (x : α) (Φ : α → PROP) : ⊢ (∀ x, Φ x) → Φ x := by
   iintro H
   irevert x
   iexact H
