@@ -20,50 +20,46 @@ theorem temp [BI PROP] {e e' out el er : PROP} (pf : e ⊢ e' ∗ out) (h : e' �
 theorem temp' [BI PROP] {el out A1 A2 : PROP} (h : out ⊢ A1 -∗ A2) : el ∗ out ⊢ A1 -∗ (el ∗ A2) :=
   (sep_mono_r h).trans <| wand_intro' <| sep_symm.trans <| sep_assoc.mp.trans <| sep_mono .rfl wand_elim_l
 
-def binderIdentHasName (name : Name) (id : TSyntax ``binderIdent) : Bool :=
-  match id with
-  | `(binderIdent| $name':ident) => name'.getId == name
-  | _ => false
-
 structure RemoveHyp' {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
   (e' : Q($prop)) (hyps' : Hyps bi e') (out out' : Q($prop)) (p : Q(Bool))
   (eq : $out =Q iprop(□?$p $out'))
   (pf : Q($e ⊢ $e' ∗ $out))
   deriving Inhabited
 
+-- todo: deal with intuitionistic modality properly
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (remHyp : RemoveHyp' bi e) (spats : List SpecPat)
     (k : ∀ {e}, Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
     MetaM (Q($e ⊢ $goal)) := do
-  let ⟨e', hyps', out, out', p, eq, pf⟩ := remHyp
+  let ⟨el, hypsl, per, er, p, _, pf⟩ := remHyp
 
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
 
-  if let some _ ← try? (synthInstanceQ q(IntoWand' $p false $out' $A1 $goal)) then
-    let m ← k hyps' A1
+  if let some _ ← try? (synthInstanceQ q(IntoWand' $p false $er $A1 $goal)) then
+    let m ← k hypsl A1
     return q(apply $pf $m)
-  else if let some inst ← try? (synthInstanceQ q(IntoWand' $p false $out' $A1 $A2)) then
+  else if let some inst ← try? (synthInstanceQ q(IntoWand' $p false $er $A1 $A2)) then
     let splitPat := fun name _ => match spats.head? with
       | some <| .idents bIdents => bIdents.any <| binderIdentHasName name
       | none => false
 
-    let ⟨el, er, hypsl, hypsr, h⟩ := Hyps.split bi splitPat hyps'
-    let m ← k hypsr A1
+    let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
+    let m ← k hypsr' A1
 
-    let inst' : Q(IntoWand' false false iprop($el ∗ $out) $A1 iprop($el ∗ $A2)) := q({into_wand' := temp' ($inst).into_wand'})
+    let inst' : Q(IntoWand' false false iprop($el' ∗ $per) $A1 iprop($el' ∗ $A2))
+      := q({into_wand' := temp' ($inst).into_wand'})
 
-    let test := q(temp $pf ($h).mp)
-    let pf' : Q($e ⊢ $el ∗ $A2) := q(apply (p := false) (R := iprop($el ∗ $out)) $test $m)
+    let pf' : Q($e ⊢ $el' ∗ $A2) := q(apply (temp $pf ($h').mp) $m)
 
     let eq' := (← assertDefEqQ q($A2) q(intuitionisticallyIf false $A2)).down
-    let remHyps : RemoveHyp' bi e := ⟨el, hypsl, A2, A2, q(false), eq', pf'⟩
+    let remHyps : RemoveHyp' bi e := ⟨el', hypsl', A2, A2, q(false), eq', pf'⟩
 
     return ← iApplyCore hyps goal remHyps spats.tail k
   else
-    let _ ← synthInstanceQ q(FromAssumption $p $out' $goal)
-    let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
+    let _ ← synthInstanceQ q(FromAssumption $p $er $goal)
+    let _ ← synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))
     return q(assumption $pf)
 
 -- todo: case when hyp is a lean lemma (later)

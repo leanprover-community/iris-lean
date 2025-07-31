@@ -53,6 +53,11 @@ def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
   | `(binderIdent| $name:ident) => pure (name.getId, name)
   | stx => return (← mkFreshUserName `x, stx)
 
+def binderIdentHasName (name : Name) (id : TSyntax ``binderIdent) : Bool :=
+  match id with
+  | `(binderIdent| $name':ident) => name'.getId == name
+  | _ => false
+
 def selectHyp (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (Name × Q(Bool) × Q($prop))
   | _, .emp _ => failure
   | _, .hyp _ _ uniq p ty' _ => do
