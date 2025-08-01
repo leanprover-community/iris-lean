@@ -493,27 +493,34 @@ theorem heap_view_alloc m k dq (v : V) : (Store.get m k = none) → ✓ dq → �
       have Hbf : Store.get bf j = none := by
         cases hc : Store.get bf j; rfl
         simp [HeapR, Store.all, toHeapPred] at Hrel
-        sorry
-        -- rcases hc ▸ Hrel j with ⟨_, _, HK, _, _⟩
-        -- subst h
-        -- exfalso
-        -- simp [HK] at Hfresh
+        exfalso
+        rename_i val
+        have Hrel' := Hrel _ _ _ hc
+        rcases Hrel' with ⟨_, HK, _, _, _⟩
+        subst h
+        simp [HK] at Hfresh
       simp only [Hbf]
-      sorry
-      -- exists v
-      -- rw [get_set_eq h]
-      -- refine ⟨rfl, ?_⟩
-      -- exists dq
-      -- exact ⟨⟨Hdq, Hval.validN⟩, CMRA.incN_refl _⟩
+      intro a b Hab
+      obtain ⟨rfl⟩ := Hab
+      exists v
+      rw [get_set_eq h]
+      refine ⟨rfl, ?_⟩
+      exists dq
+      exact ⟨⟨Hdq, Hval.validN⟩, CMRA.incN_refl _⟩
     else
       rw [Heap.point_get_ne h]
       cases hc : Store.get bf j <;> simp only []
+      · rintro _ _ ⟨⟩
+      intro a b Hab
+      obtain ⟨rfl⟩ := Hab
       simp [HeapR, Store.all, toHeapPred] at Hrel
-      all_goals sorry
-      -- rcases hc ▸ Hrel j with ⟨v, q, He, Hv, Hframe, Hinc⟩
-      -- rw [get_set_ne h]
-      -- refine ⟨v, ⟨He, ⟨q, ⟨Hv, ?_⟩⟩⟩⟩
-      -- exists Hframe
+      rcases Hrel j a b hc with ⟨v, He, q, Hv, Hframe, Hinc⟩
+      rw [get_set_ne h]
+      exists v
+      refine ⟨He, ?_⟩
+      exists q
+      refine ⟨Hv, ?_⟩
+      exists Hframe
 
 theorem heap_view_delete m k (v : V) :
    (heap_view_auth (.own 1) m : HeapView F K V H) • (heap_view_frag k (.own 1) v : HeapView F K V H) ~~>
@@ -521,6 +528,7 @@ theorem heap_view_delete m k (v : V) :
   refine View.view_update_dealloc (fun n bf Hrel j => ?_)
   simp [toHeapPred]
   cases He : Store.get bf j
+  · intro _ _ HK; simp at HK
   if h : k = j
     then
       simp [HeapR, Store.all, toHeapPred, CMRA.op, get_merge, Option.merge] at Hrel
@@ -530,27 +538,28 @@ theorem heap_view_delete m k (v : V) :
       rename_i vv
       have Hval := option_validN_Some_includedN (Hv := Hqv) (Hinc := Hqinc)
       exfalso
-      all_goals sorry
-      -- simp [CMRA.ValidN, Prod.op, Prod.ValidN] at Hval
-      -- have HK := Hval.1
-      -- obtain ⟨(f|_|f), _⟩ := vv <;> simp [valid, CMRA.op, op] at HK
-      -- · apply (UFraction.one_whole (α := F)).2; exists f
-      -- · apply (UFraction.one_whole (α := F)).2; exact HK
-      -- · apply (UFraction.one_whole (α := F)).2
-      --   exists f
-      --   exact Fraction.Fractional.proper HK
+      obtain ⟨z, _⟩ := Hqinc
+      simp [CMRA.ValidN, Prod.op, Prod.ValidN] at Hval
+      have HK := Hval.1
+      obtain ⟨(f|_|f), _⟩ := vv <;> simp [valid, CMRA.op, op] at HK
+      · apply (UFraction.one_whole (α := F)).2; exists f
+      · apply (UFraction.one_whole (α := F)).2; exact HK
+      · apply (UFraction.one_whole (α := F)).2
+        exists f
+        exact Fraction.Fractional.proper HK
     else
       simp [HeapR, Store.all, toHeapPred, CMRA.op, get_merge, Option.merge] at Hrel
       have Hrel' := Hrel j; clear Hrel
       simp [He, Heap.point_get_ne h] at Hrel'
-      all_goals sorry
-      -- obtain ⟨v, H1, q, H2⟩ := Hrel'
-      -- exists v
-      -- exists q
-      -- unfold Heap.delete
-      -- rw [Store.get_set_ne h]
-      -- exact ⟨H1, H2⟩
-  all_goals sorry
+      intro a b Hab
+      obtain ⟨rfl⟩ := Hab
+      obtain ⟨v, H1, q, H2⟩ := Hrel' a b rfl
+      exists v
+      refine ⟨?_, ?_⟩
+      · unfold Heap.delete
+        rw [Store.get_set_ne h]
+        trivial
+      exists q
 
 theorem heap_view_update (m : H _) k (dq : DFrac F) (v mv' v': V) (dq' : DFrac F) :
   (∀ (n : Nat) (mv : V) (f : Option (DFrac F × V)),
@@ -572,7 +581,9 @@ theorem heap_view_update (m : H _) k (dq : DFrac F) (v mv' v': V) (dq' : DFrac F
       have Hrel' := Hrel k
       simp [toHeapPred] at Hrel'
       simp [CMRA.op, Heap.get_merge, Option.merge, Heap.point, Store.get_set_eq rfl] at Hbf Hrel'
-      -- simp [HeapR, toHeapPred, Store.all] at Hrel
+      intro a b Hab
+      obtain ⟨rfl⟩ := Hab
+      simp [HeapR, toHeapPred, Store.all] at Hrel
       sorry
       -- cases hc : Store.get bf j <;> simp
       -- · have Hrel' := Hrel j; clear Hrel
