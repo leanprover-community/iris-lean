@@ -20,20 +20,13 @@ theorem temp [BI PROP] {e e' out el er : PROP} (pf : e ⊢ e' ∗ out) (h : e' �
 theorem temp' [BI PROP] {el out A1 A2 : PROP} (h : out ⊢ A1 -∗ A2) : el ∗ out ⊢ A1 -∗ (el ∗ A2) :=
   (sep_mono_r h).trans <| wand_intro' <| sep_symm.trans <| sep_assoc.mp.trans <| sep_mono .rfl wand_elim_l
 
-structure RemoveHyp' {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
-  (e' : Q($prop)) (hyps' : Hyps bi e') (out out' : Q($prop)) (p : Q(Bool))
-  (eq : $out =Q iprop(□?$p $out'))
-  (pf : Q($e ⊢ $e' ∗ $out))
-  deriving Inhabited
-
 -- todo: deal with intuitionistic modality properly
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
-    {e} (hyps : Hyps bi e) (goal : Q($prop)) (remHyp : RemoveHyp' bi e) (spats : List SpecPat)
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (el : Q($prop)) (hypsl : Hyps bi el)
+    (per er : Q($prop)) (p : Q(Bool)) (eq : $per =Q iprop(□?$p $er)) (pf : Q($e ⊢ $el ∗ $per)) (spats : List SpecPat)
     (k : ∀ {e}, Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
     MetaM (Q($e ⊢ $goal)) := do
-  let ⟨el, hypsl, per, er, p, _, pf⟩ := remHyp
-
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
 
@@ -54,9 +47,8 @@ partial def iApplyCore
     let pf' : Q($e ⊢ $el' ∗ $A2) := q(apply (temp $pf ($h').mp) $m)
 
     let eq' := (← assertDefEqQ q($A2) q(intuitionisticallyIf false $A2)).down
-    let remHyps : RemoveHyp' bi e := ⟨el', hypsl', A2, A2, q(false), eq', pf'⟩
 
-    return ← iApplyCore hyps goal remHyps spats.tail k
+    return ← iApplyCore hyps goal el' hypsl' A2 A2 q(false) eq' pf' spats.tail k
   else
     let _ ← synthInstanceQ q(FromAssumption $p $er $goal)
     let _ ← synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))
@@ -71,8 +63,7 @@ elab "iapply" colGt term:pmTerm : tactic => do
     let g ← instantiateMVars <| ← mvar.getType
     let some { hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
     let ⟨e', hyps', out, out', p, eq, pf⟩ := hyps.remove true <| ← hyps.findWithInfo term.ident
-    let remHyp := ⟨e', hyps', out, out', p, eq, q(($pf).mp)⟩
 
     let goals ← IO.mkRef #[]
-    mvar.assign <| ← iApplyCore hyps goal remHyp term.spats <| goalTracker goals
+    mvar.assign <| ← iApplyCore hyps goal e' hyps' out out' p eq q(($pf).mp) term.spats <| goalTracker goals
     replaceMainGoal (← goals.get).toList
