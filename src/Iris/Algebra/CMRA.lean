@@ -1258,6 +1258,11 @@ theorem option_valid_Some_included {a b : α} (Hv : ✓ a) (Hinc : some b ≼ so
   apply CMRA.valid_of_inc Hinc
   apply Hv
 
+instance [CMRA.Discrete α] : CMRA.Discrete (Option α) where
+  discrete_valid {x} := by
+    cases x <;> simp [CMRA.Valid, optionValid]
+    exact (CMRA.discrete_valid ·)
+
 end option
 
 section unit
@@ -1355,6 +1360,12 @@ theorem valid_snd {x : α × β} (h : ✓ x) : ✓ x.snd := h.right
 
 theorem validN_fst {n} {x : α × β} (h : ✓{n} x) : ✓{n} x.fst := h.left
 theorem validN_snd {n} {x : α × β} (h : ✓{n} x) : ✓{n} x.snd := h.right
+
+instance [CMRA.Discrete α] [CMRA.Discrete β]: CMRA.Discrete (α × β) where
+  discrete_valid := by
+    rintro ⟨_, _⟩
+    simp [CMRA.ValidN]
+    exact (⟨CMRA.discrete_valid ·, CMRA.discrete_valid ·⟩)
 
 end Prod
 

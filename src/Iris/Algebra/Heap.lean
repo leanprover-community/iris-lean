@@ -959,4 +959,14 @@ theorem dom_included {m1 m2 : T} (Hinc : m1 ≼ m2) : set_included (Heap.dom m1)
 --     (StoreO.map f m1 : StoreO T') ≼ StoreO.map f m2 := by
 --   s orry
 
+
+nonrec instance [HD : CMRA.Discrete V] [Heap T K V] : Discrete T where
+  discrete_0 {m1 m2} H := by
+    intro k
+    apply OFE.Discrete.discrete_0
+    exact H k
+  discrete_valid := by
+    intro H HH k
+    exact CMRA.Discrete.discrete_valid (α := Option V) (HH k)
+
 end heap_laws

@@ -106,7 +106,7 @@ theorem own_whole_exclusive {w : F} (Hw : Whole w) : CMRA.Exclusive (own w) wher
     · exact Hw.not_fractional
     · exact fun Hk => Hw.not_fractional Hk.of_add_left
 
-instance : CMRA.Exclusive (own (1 : F)) :=
+instance own_one_exclusive : CMRA.Exclusive (own (1 : F)) :=
   own_whole_exclusive <| UFraction.one_whole
 
 instance {f : F} : CMRA.Cancelable (own f) where
