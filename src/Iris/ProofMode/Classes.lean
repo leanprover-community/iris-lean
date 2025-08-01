@@ -48,13 +48,9 @@ class FromWand [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_wand : (Q1 -∗ Q2) ⊢ P
 export FromWand (from_wand)
 
-class IntoWand [BI PROP] (p q : Bool) (R P : PROP) (Q : outParam PROP) where
+class IntoWand [BI PROP] (p q : Bool) (R : PROP) (P Q : outParam PROP) where
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
-
-class IntoWand' [BI PROP] (p q : Bool) (R : PROP) (P Q : outParam PROP) where
-  into_wand' : □?p R ⊢ □?q P -∗ Q
-export IntoWand' (into_wand')
 
 class FromForall [BI PROP] (P : PROP) {α : outParam (Sort _)} (Ψ : outParam <| α → PROP) where
   from_forall : (∀ x, Ψ x) ⊢ P
@@ -110,7 +106,7 @@ class IntoAbsorbingly [BI PROP] (P : outParam PROP) (Q : PROP) where
 export IntoAbsorbingly (into_absorbingly)
 
 
-class FromAssumption (p : Bool) [BI PROP] (P Q : PROP) where
+class FromAssumption (p : Bool) [BI PROP] (P : semiOutParam PROP) (Q : PROP) where
   from_assumption : □?p P ⊢ Q
 export FromAssumption (from_assumption)
 

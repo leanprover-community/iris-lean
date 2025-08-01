@@ -10,7 +10,7 @@ namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 theorem apply [BI PROP] {R P P' P1 P2 : PROP} {p : Bool}
-    (h1 : P ⊢ P' ∗ □?p R) (h2 : P' ⊢ P1) [h3 : IntoWand' p false R P1 P2] : P ⊢ P2 :=
+    (h1 : P ⊢ P' ∗ □?p R) (h2 : P' ⊢ P1) [h3 : IntoWand p false R P1 P2] : P ⊢ P2 :=
   h1.trans <| (sep_mono_l h2).trans <| wand_elim' h3.1
 
 theorem temp [BI PROP] {e e' out el er : PROP} (pf : e ⊢ e' ∗ out) (h : e' ⊢ el ∗ er) :
@@ -37,10 +37,10 @@ partial def iApplyCore
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
 
-  if let some _ ← try? (synthInstanceQ q(IntoWand' $p false $er $A1 $goal)) then
+  if let some _ ← try? (synthInstanceQ q(IntoWand $p false $er $A1 $goal)) then
     let m ← k hypsl A1
     return q(apply $pf $m)
-  else if let some inst ← try? (synthInstanceQ q(IntoWand' $p false $er $A1 $A2)) then
+  if let some inst ← try? (synthInstanceQ q(IntoWand $p false $er $A1 $A2)) then
     let splitPat := fun name _ => match spats.head? with
       | some <| .idents bIdents => bIdents.any <| binderIdentHasName name
       | none => false
@@ -48,8 +48,8 @@ partial def iApplyCore
     let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
     let m ← k hypsr' A1
 
-    let inst' : Q(IntoWand' false false iprop($el' ∗ $per) $A1 iprop($el' ∗ $A2))
-      := q({into_wand' := temp' ($inst).into_wand'})
+    let inst' : Q(IntoWand false false iprop($el' ∗ $per) $A1 iprop($el' ∗ $A2))
+      := q({into_wand := temp' ($inst).into_wand})
 
     let pf' : Q($e ⊢ $el' ∗ $A2) := q(apply (temp $pf ($h').mp) $m)
 
