@@ -178,6 +178,44 @@ theorem lean_pure [BI PROP] (Q : PROP) : <affine> ⌜⊢ Q⌝ ⊢ Q := by
 
 end assumption
 
+-- apply
+namespace apply
+
+theorem exact [BI PROP] (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iapply HQ
+
+theorem apply [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
+  iintro HP H
+  iapply H
+  iexact HP
+
+theorem multiple [BI PROP] (P Q R : PROP) : ⊢ P -∗ Q -∗ (P -∗ Q -∗ R) -∗ R := by
+  iintro HP HQ H
+  iapply H with HP
+  · iexact HP
+  · iexact HQ
+
+theorem multiple' [BI PROP] (P Q R S : PROP) : ⊢ (P -∗ Q) -∗ P -∗ R -∗ (Q -∗ R -∗ S) -∗ S := by
+  iintro HPQ HP HR H
+  iapply H with [HPQ, HP]
+  · iapply HPQ
+    iexact HP
+  · iexact HR
+
+theorem exact_intuitionistic [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
+  iintro □HQ
+  iapply HQ
+
+theorem apply_intuitionistic [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) -∗ Q := by
+  iintro HP H
+  iapply H
+  iexact HP
+
+-- todo: more complex intuitionistic modality test cases
+
+end apply
+
 -- ex falso
 namespace exfalso
 

@@ -286,11 +286,7 @@ elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
 
   -- process pattern
   let goals ← IO.mkRef #[]
-  let pf2 ← iCasesCore bi hyps' goal b A A' h pat fun hyps => do
-    let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-      IrisGoal.toExpr { u, prop, bi, hyps, goal, .. }
-    goals.modify (·.push m.mvarId!)
-    pure m
+  let pf2 ← iCasesCore bi hyps' goal b A A' h pat (λ hyps => goalTracker goals hyps goal)
 
   mvar.assign q(($pf).1.trans $pf2)
   replaceMainGoal (← goals.get).toList

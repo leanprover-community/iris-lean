@@ -46,12 +46,17 @@ elab "istop" : tactic => do
   mvar.setType irisGoal.strip
 
 theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p A Q]
-  [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q :=
-  h.1.trans <| (sep_mono_r inst.1).trans sep_elim_r
+  [TCOr (Affine P') (Absorbing Q)] (h : P ⊢ P' ∗ □?p A) : P ⊢ Q :=
+  h.trans <| (sep_mono_r inst.1).trans sep_elim_r
 
 def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
   | `(binderIdent| $name:ident) => pure (name.getId, name)
   | stx => return (← mkFreshUserName `x, stx)
+
+def binderIdentHasName (name : Name) (id : TSyntax ``binderIdent) : Bool :=
+  match id with
+  | `(binderIdent| $name':ident) => name'.getId == name
+  | _ => false
 
 def selectHyp (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (Name × Q(Bool) × Q($prop))
   | _, .emp _ => failure
@@ -59,3 +64,10 @@ def selectHyp (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (Name × Q(Bool
     let .true ← isDefEq ty ty' | failure
     pure (uniq, p, ty')
   | _, .sep _ _ _ _ lhs rhs => try selectHyp ty rhs catch _ => selectHyp ty lhs
+
+variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
+def goalTracker {P} (goals : IO.Ref (Array MVarId)) (hyps : Hyps bi P) (goal : Q($prop)) : MetaM Q($P ⊢ $goal) := do
+  let m : Q($P ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
+    IrisGoal.toExpr { prop, bi, hyps, goal, .. }
+  goals.modify (·.push m.mvarId!)
+  pure m

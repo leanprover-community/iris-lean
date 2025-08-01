@@ -67,6 +67,10 @@ instance intoWand_intuitionistically (p q : Bool) [BI PROP] (R P Q : PROP)
     [h : IntoWand true q R P Q] : IntoWand p q iprop(□ R) P Q where
   into_wand := (intuitionisticallyIf_mono h.1).trans intuitionisticallyIf_elim
 
+instance intoWand_intuitionistically_wand (p : Bool) [BI PROP] (P Q : PROP) :
+    IntoWand p true iprop(□ P -∗ Q) P Q where
+  into_wand := intuitionisticallyIf_elim
+
 instance intoWand_persistently_true (q : Bool) [BI PROP] (R P Q : PROP)
     [h : IntoWand true q R P Q] : IntoWand true q iprop(<pers> R) P Q where
   into_wand := intuitionistically_persistently.1.trans h.1
