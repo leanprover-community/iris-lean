@@ -23,6 +23,7 @@
 | `ileft`<br>`iright`                    | Choose to prove the left (`ileft`) or right (`iright`) side of a disjunction in the goal.                                                                                                                                            |
 | `icases` *hyp* `with` *cases-pat*      | Destruct the hypothesis *hyp* using the cases pattern *cases-pat*.                                                                                                                                                                   |
 | `iintro` *cases-pats*                  | Introduce up to multiple hypotheses and destruct them using the cases patterns *cases-pats*.                                                                                                                                         |
+| `irevert` *hyp*                        | Revert the hypothesis *hyp*.                                                                                                                                                                                                         |
 
 ## Cases Patterns
 
