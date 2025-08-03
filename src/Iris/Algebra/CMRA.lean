@@ -183,6 +183,7 @@ theorem op_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz ≡ x • (
 theorem op_opM_assoc_dist (x y : α) (mz : Option α) : (x • y) •? mz ≡{n}≡ x • (y •? mz) := by
   unfold op?; cases mz <;> simp [assoc.dist, Dist.symm]
 
+
 /-! ## Validity -/
 
 theorem Valid.validN : ✓ (x : α) → ✓{n} x := (valid_iff_validN.1 · _)
@@ -1098,6 +1099,10 @@ theorem CMRA.op_some_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz �
   | none   => .rfl
   | some _ => assoc.symm
 
+theorem CMRA.opM_opM_assoc {x : α} {y z : Option α} : (x •? y) •? z ≡ x •? (y • z) := by
+  cases y <;> cases z <;> simp [CMRA.op?, CMRA.op, optionOp]
+  exact assoc.symm
+
 theorem CMRA.op_some_opM_assoc_dist (x y : α) (mz : Option α) :
     (x • y) •? mz ≡{n}≡ x •? (some y • mz) :=
   match mz with
@@ -1258,6 +1263,36 @@ theorem option_valid_Some_included {a b : α} (Hv : ✓ a) (Hinc : some b ≼ so
   apply CMRA.valid_of_inc Hinc
   apply Hv
 
+theorem option_some_inc_opM_iff {a b : α} : some a ≼ some b ↔ ∃ mc, b ≡ a •? mc := by
+  simp [option_inc_iff]
+  constructor
+  · rintro (H|H)
+    · exists none; simpa [CMRA.op?] using H.symm
+    · rcases H with ⟨mc', H⟩
+      exists (some mc')
+  · rintro ⟨(_|z), H⟩
+    · exact .inl H.symm
+    · right; exists z
+
+theorem option_some_incN_opM_iff {a b : α} : some a ≼{n} some b ↔ ∃ mc, b ≡{n}≡ a •? mc := by
+  simp [option_incN_iff]
+  constructor
+  · rintro (H|H)
+    · exists none; simpa [CMRA.op?] using H.symm
+    · rcases H with ⟨mc', H⟩
+      exists (some mc')
+  · rintro ⟨(_|z), H⟩
+    · exact .inl H.symm
+    · right; exists z
+
+instance [CMRA.Discrete α] : CMRA.Discrete (Option α) where
+  discrete_valid {x} := by
+    cases x <;> simp [CMRA.Valid, optionValid]
+    exact (CMRA.discrete_valid ·)
+
+theorem option_some_op_opM {a : α} {ma : Option α} : some a • ma = some (a •? ma) := by
+  cases ma <;> simp [CMRA.op?, CMRA.op, optionOp]
+
 end option
 
 section unit
@@ -1355,6 +1390,12 @@ theorem valid_snd {x : α × β} (h : ✓ x) : ✓ x.snd := h.right
 
 theorem validN_fst {n} {x : α × β} (h : ✓{n} x) : ✓{n} x.fst := h.left
 theorem validN_snd {n} {x : α × β} (h : ✓{n} x) : ✓{n} x.snd := h.right
+
+instance [CMRA.Discrete α] [CMRA.Discrete β]: CMRA.Discrete (α × β) where
+  discrete_valid := by
+    rintro ⟨_, _⟩
+    simp [CMRA.ValidN]
+    exact (⟨CMRA.discrete_valid ·, CMRA.discrete_valid ·⟩)
 
 end Prod
 
