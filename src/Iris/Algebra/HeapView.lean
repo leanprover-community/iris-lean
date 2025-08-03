@@ -20,8 +20,6 @@ variable [IHHmap : ∀ V, HasHHMap (H (DFrac F × V)) (H V) K (DFrac F × V) V]
   ∀ k fv, Store.get f k = some fv →
     ∃ (v : V) (dq : DFrac F), Store.get m k = .some v ∧ ✓{n} (dq, v) ∧ (some fv ≼{n} some (dq, v))
 
-
-
 instance : ViewRel (HeapR F K V H) where
   mono {n1 n2 m1 m2 f1 f2 Hrel Hm Hf Hn k} := by
     intro vk Hk
@@ -570,80 +568,70 @@ theorem heap_view_update (m : H _) k (dq : DFrac F) (v mv' v': V) (dq' : DFrac F
   ((heap_view_auth (.own 1) m : HeapView F K V H) • (heap_view_frag k dq v : HeapView F K V H)) ~~>
   ((heap_view_auth (.own 1) (Store.set m k (some mv')) : HeapView F K V H) • (heap_view_frag k dq' v' : HeapView F K V H)) := by
   intro Hup
-  refine View.view_update (fun n bf Hrel j => ?_)
-  simp [toHeapPred]
+  apply View.view_update
+  rintro n bf Hrel j ⟨df, va⟩
+  simp [CMRA.op, Heap.get_merge, Prod.op]
   if h : k = j
     then
-      subst h
-      cases Hbf : Store.get (Heap.point k (some (dq', v')) • bf) k; simp
-      -- simp [CMRA.op, Heap.get_merge, Option.merge, Heap.point] at Hbf
-      simp only [get_set_eq rfl]
-      have Hrel' := Hrel k
-      simp [toHeapPred] at Hrel'
-      simp [CMRA.op, Heap.get_merge, Option.merge, Heap.point, Store.get_set_eq rfl] at Hbf Hrel'
-      intro a b Hab
-      obtain ⟨rfl⟩ := Hab
-      simp [HeapR, toHeapPred, Store.all] at Hrel
-      sorry
-      -- cases hc : Store.get bf j <;> simp
-      -- · have Hrel' := Hrel j; clear Hrel
-      --   rw [get_set_eq h]
-      --   simp [CMRA.op, Heap.get_merge, Option.merge, Heap.point] at Hrel'
-      --   simp [get_set_eq h, get_empty, hc] at Hrel'
-      --   obtain ⟨vf, H1, qf, H2, H3⟩ := Hrel'
-      --   exists mv'
-      --   refine ⟨rfl, ?_⟩
-      --   sorry
-      --   -- refine ⟨rfl, ?_⟩
-      --   -- exists dq'
-      --   -- sorry
-      -- · sorry
+      simp [Heap.point, Store.get_set_eq h, Heap.get_empty]
+      intro Hbf
+      have Hrel' := Hrel k ((dq, v) •? (Store.get bf k))
+      have Hrel'' := Hrel' ?G; clear Hrel'
+      case G=>
+        clear Hrel'
+        simp [CMRA.op, Heap.get_merge, Heap.point, Store.get_set_eq h, CMRA.op?]
+        cases h : Store.get bf k <;> simp [Option.merge, h, Store.get_set_eq rfl]
+      obtain ⟨mv, mdf, Hlookup, Hval, Hincl'⟩ := Hrel''
+      obtain ⟨f', Hincl⟩ := option_some_incN_opM_iff.mp Hincl'; clear Hincl'
+      let f := (Store.get bf k) • f'
+      have Hincl' : (mdf, mv) ≡{n}≡ (dq, v) •? f := by
+        refine .trans Hincl ?_
+        apply OFE.Equiv.dist
+        apply CMRA.opM_opM_assoc
+      clear Hincl
+      have Hup' := Hup n mv f Hlookup (Hincl'.validN.mp Hval) ?G
+      case G=>
+        apply Hincl'.2.trans
+        match f with
+        | none => simp [CMRA.op?]
+        | some ⟨_, _⟩ => simp [CMRA.op?, CMRA.op]
+      obtain ⟨Hval', Hincl'⟩ := Hup'
+      exists ((dq' •? (Option.map Prod.fst f)))
+      refine ⟨?_, ?_⟩
+      · apply CMRA.validN_ne (x := (dq' •? Option.map Prod.fst f, v' •? Prod.snd <$> f))
+        · refine ⟨.rfl, Hincl'.symm⟩
+        cases h : f <;> simp [CMRA.op?]
+        · exact CMRA.validN_opM Hval'
+        · simp [h, CMRA.op?, CMRA.op, Prod.op] at Hval'
+          exact Hval'
+      · rw [← Hbf]
+        suffices HF : some ((dq', v') •? (Store.get bf j)) ≼{n} some (dq' •? (Option.map Prod.fst f), mv') by
+          apply CMRA.incN_trans ?_ HF
+          simp [Option.merge, Prod.op, CMRA.op?]
+          cases h : Store.get bf j <;> simp
+          · exact CMRA.incN_refl _
+          · exact CMRA.incN_refl _
+        apply option_some_incN_opM_iff.mpr
+        exists f'
+        refine OFE.Dist.trans (y := (dq' •? Option.map Prod.fst f, v' •? Prod.snd <$> f)) ?_ ?_
+        · exact OFE.dist_prod_ext rfl Hincl'
+        apply OFE.Dist.trans ?_
+        · apply OFE.equiv_dist.mp
+          exact CMRA.opM_opM_assoc.symm
+        obtain H : Store.get bf j • f' = f := by rw [← h]
+        rw [H]
+        simp [Option.map]
+        cases h : f
+        · simp [CMRA.op, optionOp, CMRA.op?]
+        · simp [CMRA.op, optionOp, CMRA.op?, Prod.op]
     else
-      simp [CMRA.op, Heap.get_merge, Option.merge, Heap.point]
-      rw [get_set_ne h, Heap.get_empty]
-      cases hc : Store.get bf j <;> simp
-      rename_i val
-      sorry
-      -- rw [get_set_ne h]
-      -- simp [HeapR, toHeapPred, Store.all] at Hrel
-      -- have Hrel' := Hrel j; clear Hrel
-      -- simp [CMRA.op, Heap.get_merge, Option.merge, Heap.point] at Hrel'
-      -- simp [get_set_ne h, get_empty, hc] at Hrel'
-      -- exact Hrel'
-
---   Proof.
---     intros Hup. apply view_update=> n bf Hrel j [df va].
---     rewrite lookup_op.
---     destruct (decide (j = k)) as [->|Hne]; last first.
---     { (* prove that other keys are unaffected *)
---       simplify_map_eq. rewrite lookup_singleton_ne //.
---       (* FIXME simplify_map_eq should have done this *)
---       rewrite left_id. intros Hbf.
---       edestruct (Hrel j) as (mva & mdf & Hlookup & Hval & Hincl).
---       { rewrite lookup_op lookup_singleton_ne // left_id //. }
---       naive_solver. }
---     simplify_map_eq. rewrite lookup_singleton.
---     (* FIXME simplify_map_eq should have done this *)
---     intros Hbf.
---     edestruct (Hrel k) as (mv & mdf & Hlookup & Hval & Hincl).
---     { rewrite lookup_op lookup_singleton // Some_op_opM //. }
---     rewrite Some_includedN_opM in Hincl.
---     destruct Hincl as [f' Hincl]. rewrite cmra_opM_opM_assoc in Hincl.
---     set f := bf !! k ⋅ f'. (* the complete frame *)
---     change (bf !! k ⋅ f') with f in Hincl.
---     specialize (Hup n mv f). destruct Hup as (Hval' & Hincl').
---     { done. }
---     { rewrite -Hincl. done. }
---     { destruct Hincl as [_ Hincl]. simpl in Hincl. rewrite Hincl.
---       by destruct f. }
---     eexists mv', (dq' ⋅? (fst <$> f)). split; first done.
---     rewrite -Hbf. clear Hbf. split.
---     - rewrite Hincl'. destruct Hval'. by destruct f.
---     - rewrite Some_op_opM. rewrite Some_includedN_opM.
---       exists f'. rewrite Hincl'.
---       rewrite cmra_opM_opM_assoc. change (bf !! k ⋅ f') with f.
---       by destruct f.
---   Qed.
+      simp [Heap.point, Store.get_set_ne h, Heap.get_empty]
+      intro Hbf
+      have Hrel' := Hrel j (df, va) -- (dq • df, v • va)
+      simp [CMRA.op, Heap.get_merge, Prod.op] at Hrel'
+      simp [Option.merge, Heap.point, Store.get_set_ne h, Heap.get_empty] at Hrel'
+      simp only [Hbf] at Hrel'
+      exact Hrel' trivial
 
 theorem heap_update_local m k dq v mv' v' :
     (Store.get m k = some mv) →
