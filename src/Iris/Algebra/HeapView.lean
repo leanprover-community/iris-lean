@@ -684,47 +684,59 @@ theorem heap_view_frag_dfrac k dq P v : dq ~~>: P →
   apply UpdateP.weaken
   · apply View.view_updateP_frag (P := fun b' => ∃ dq', ((◯V b') = heap_view_frag k dq' v) ∧ P dq')
     intros m n bf Hrel
-    simp [HeapR, Store.all, toHeapPred] at Hrel
-    have Hrel' := Hrel k; clear Hrel
-    simp [CMRA.op, get_merge, Heap.point_get_eq rfl] at Hrel'
-    have hc : Store.get bf k = ((dq, v) •? (Store.get bf k)) := by
-      simp [CMRA.op?]
-      cases hcc : Store.get bf k <;> simp
-      all_goals sorry
-    rw [hc] at Hrel'
-    sorry
-  · rintro _ ⟨_, rfl, q, _⟩; exists q
---   Proof
-
---     intros Hdq.
---     eapply cmra_updateP_weaken;
---       [apply view_updateP_frag
---          with (P := λ b', ∃ dq', ◯V b' = gmap_view_frag k dq' v ∧ P dq')
---       |naive_solver].
---     intros m n bf Hrel.
---     destruct (Hrel k ((dq, v) ⋅? bf !! k)) as (v' & dq' & Hlookup & Hval & Hincl).
---     { by rewrite lookup_op lookup_singleton Some_op_opM. }
---     rewrite Some_includedN_opM in Hincl.
---     destruct Hincl as [f' Hincl]. rewrite cmra_opM_opM_assoc in Hincl.
---     set f := bf !! k ⋅ f'. (* the complete frame *)
---     change (bf !! k ⋅ f') with f in Hincl.
---     destruct (Hdq n (option_map fst f)) as (dq'' & HPdq'' & Hvdq'').
---     { destruct Hincl as [Heq _]. simpl in Heq. rewrite Heq in Hval.
---       destruct Hval as [Hval _]. by destruct f. }
---     eexists. split; first by exists dq''.
---     intros j [df va] Heq.
---     destruct (decide (k = j)) as [->|Hne].
---     - rewrite lookup_op lookup_singleton in Heq.
---       eexists v', (dq'' ⋅? (fst <$> f)).
---       split; first done. split.
---       + split; last by apply Hval. simpl. done.
---       + rewrite -Heq. exists f'.
---         rewrite -assoc. change (bf !! j ⋅ f') with f.
---         destruct Hincl as [_ Hincl]. simpl in Hincl. rewrite Hincl.
---         by destruct f.
---     - rewrite lookup_op lookup_singleton_ne // left_id in Heq.
---       eapply Hrel. rewrite lookup_op lookup_singleton_ne // left_id Heq //.
---   Qed.
+    simp only [HeapR, Store.all, toHeapPred] at Hrel
+    have Hrel' := Hrel k ((dq, v) •? Store.get bf k) ?G
+    case G=>
+      simp [CMRA.op, Heap.get_merge, Heap.point_get_eq rfl, Option.merge, CMRA.op?]
+      cases Store.get bf k <;> simp
+    obtain ⟨v', dq', Hlookup, Hval, Hincl⟩ := Hrel'
+    obtain ⟨f', Hincl⟩ := option_some_incN_opM_iff.mp Hincl
+    have Hincl' : (dq', v') ≡{n}≡ (dq, v) •? ((Store.get bf k) • f') := by
+      refine Hincl.trans ?_
+      apply OFE.equiv_dist.mp
+      exact CMRA.opM_opM_assoc
+    clear Hincl
+    -- f := bf !! k ⋅ f'
+    -- (Store.get bf k) • f'
+    have X := Hdq n (Option.map Prod.fst ((Store.get bf k) • f')) ?G
+    case G =>
+      cases h : (Store.get bf k) • f' <;> simp [Option.map, CMRA.op?]
+      · simp [h, CMRA.op?] at Hincl'
+        exact CMRA.validN_ne Hincl'.1 Hval.1
+      · simp [h, CMRA.op?] at Hincl'
+        exact CMRA.validN_ne Hincl'.1 Hval.1
+    obtain ⟨dq'', HPdq'', Hvdq''⟩ := X
+    exists Heap.point k (dq'', v)
+    refine ⟨?_, ?_⟩
+    · exists dq''
+    rintro j ⟨df, va⟩ Heq
+    if h : k = j
+      then
+        simp [CMRA.op, Heap.get_merge, Heap.point_get_eq h] at Heq
+        exists v'
+        exists ((dq'' •? (Option.map Prod.fst $ (Store.get bf k) • f')))
+        refine ⟨h ▸ Hlookup, ⟨Hvdq'' , Hval.2⟩, ?_⟩
+        exists f'
+        cases h : f' <;> cases h' : Store.get bf k <;> simp [OFE.Dist, Option.Forall₂, CMRA.op, optionOp, CMRA.op?] <;>
+        simp_all [h', h, CMRA.op, optionOp, CMRA.op?, Prod.op]
+        · exact Hincl'.2
+        · exact Hincl'.2
+        · exact Hincl'.2
+        · have HR := Hincl'.2
+          refine ⟨?_, ?_⟩
+          · rw [← Heq.1]
+            exact CMRA.op_assocN
+          · simp at HR
+            rw [← Heq.2]
+            refine HR.trans ?_
+            exact CMRA.op_assocN
+      else
+        apply Hrel
+        simp [CMRA.op, Heap.get_merge, Heap.point_get_ne h] at Heq ⊢
+        exact Heq
+  · intro y
+    rintro ⟨b, rfl, q, _, _⟩
+    exists q
 
 theorem heap_view_frag_persist k dq v :
   (heap_view_frag k dq v : HeapView F K V H) ~~> heap_view_frag k .discard v := by
