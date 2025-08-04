@@ -10,15 +10,12 @@ namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 theorem apply [BI PROP] {R P P' P1 P2 : PROP}
-    (h1 : P ⊢ P' ∗ R) (h2 : P' ⊢ P1) [h3 : IntoWand false false R P1 P2] : P ⊢ P2 :=
-  h1.trans <| (sep_mono_l h2).trans <| wand_elim' h3.1
+    (h1 : P ⊣⊢ P' ∗ R) (h2 : P' ⊢ P1) [h3 : IntoWand false false R P1 P2] : P ⊢ P2 :=
+  h1.mp.trans <| (sep_mono_l h2).trans <| wand_elim' h3.1
 
-theorem temp [BI PROP] {e e' out el er : PROP} (pf : e ⊢ e' ∗ out) (h : e' ⊢ el ∗ er) :
-    e ⊢ er ∗ □?false (el ∗ out) :=
-  pf.trans <| (sep_mono_l h).trans <| (sep_mono_l sep_symm).trans <| sep_assoc.mp.trans .rfl
-
-theorem temp' [BI PROP] {el out A1 A2 : PROP} (h : out ⊢ A1 -∗ A2) : el ∗ out ⊢ A1 -∗ (el ∗ A2) :=
-  (sep_mono_r h).trans <| wand_intro' <| sep_symm.trans <| sep_assoc.mp.trans <| sep_mono .rfl wand_elim_l
+theorem temp [BI PROP] {el er el' er' A1 A2 : PROP}
+    (h' : el ⊣⊢ el' ∗ er') (m : er' ⊢ A1) [inst : IntoWand false false er A1 A2] : el ∗ er ⊢ el' ∗ A2 :=
+  (sep_congr h' .rfl).mp.trans <| sep_assoc.mp.trans <| sep_mono_r <| (sep_mono m inst.1).trans wand_elim_r
 
 -- todo: deal with intuitionistic modality properly
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
@@ -32,7 +29,7 @@ partial def iApplyCore
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $goal)) then
     let m ← addGoal hypsl A1
     return q(apply .rfl $m)
-  if let some inst ← try? (synthInstanceQ q(IntoWand false false $er $A1 $A2)) then
+  if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $A2)) then
     let splitPat := fun name _ => match spats.head? with
       | some <| .idents bIdents => bIdents.any <| binderIdentHasName name
       | none => false
@@ -40,12 +37,8 @@ partial def iApplyCore
     let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
     let m ← addGoal hypsr' A1
 
-    let res ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
-
-    -- todo: simplify
-    let inst' : Q(IntoWand false false iprop(□?false ($el' ∗ $er)) $A1 iprop($el' ∗ $A2))
-      := q({into_wand := temp' ($inst).into_wand})
-    let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(apply (temp .rfl ($h').mp) $m)
+    let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(temp $h' $m)
+    let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
 
     return q(($pf).trans $res)
   else
