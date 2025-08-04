@@ -212,7 +212,11 @@ theorem apply_intuitionistic [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) 
   iapply H
   iexact HP
 
--- todo: more complex intuitionistic modality test cases
+theorem multiple_intuitionistic [BI PROP] (P Q R : PROP) : ⊢ □ P -∗ Q -∗ (P -∗ Q -∗ □ R) -∗ R := by
+  iintro □HP HQ H
+  iapply H with _, HQ
+  . iexact HP
+  . iexact HQ
 
 end apply
 

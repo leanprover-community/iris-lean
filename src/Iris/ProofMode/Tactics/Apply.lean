@@ -40,7 +40,7 @@ partial def iApplyCore
     let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(rec_apply $h' $m)
     let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
 
-    return q(($pf).trans $res)
+    return q(.trans $pf $res)
   else
     let _ ← synthInstanceQ q(FromAssumption false $er $goal)
     let _ ← synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))
