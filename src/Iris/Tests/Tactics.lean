@@ -59,6 +59,23 @@ theorem spatial [BI PROP] (Q : PROP) : <affine> P ⊢ Q -∗ Q := by
   iclear HP
   iexact HQ
 
+theorem select1 [BI PROP] (Q : PROP) : <affine> P ∗ <affine> P'  ∗ <affine> P'' ∗ □ R ∗ □ R' ∗ □ R' ⊢ Q -∗ Q := by
+  iintro ⟨HP, HP', HP'', □ R, □ R', □ R''⟩
+  iclear HP
+  iclear %
+  iclear *
+  iclear R
+  iclear #
+  iintro HQ
+  iexact HQ
+
+theorem select2 [BI PROP] (Q : PROP) : <affine> P ∗ <affine> P'  ∗ <affine> P'' ∗ □ R ∗ □ R' ∗ □ R' ⊢ Q -∗ Q := by
+  iintro ⟨HP, HP', HP'', □ R, □ R', □ R''⟩
+  iclear HP % HP' R
+  iclear * #
+  iintro HQ
+  iexact HQ
+
 end clear
 
 -- intro

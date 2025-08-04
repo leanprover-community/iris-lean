@@ -1,31 +1,57 @@
-import Lean.Data.Name
+/-
+Copyright (c) 2025 Zongyuan Liu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Zongyuan Liu
+-/
+import Iris.BI
+import Iris.ProofMode.Expr
+import Iris.ProofMode.Classes
+import Iris.ProofMode.Tactics.Basic
+import Iris.Std
+import Lean.Elab
 import Iris.ProofMode.Patterns.SelectPattern
 
 namespace Iris.ProofMode
 open Lean
 
-open Lean Elab Tactic Meta Std
+open Lean Elab Tactic Meta Qq BI Std
 
 inductive iElaboratedSelectPat
 | pure
-| ident (intuitionistic: Bool) (name : TSyntax ``binderIdent)
+| ident (intuitionistic: Bool) (uniq : Name)
 
+-- Ad-hoc NameSet
+namespace iNameSet
+/-- Lean.NameSet is based on red-black trees. Fine for smallish context. -/
+private def Impl := Lean.NameSet
+def Ty := Impl
+def emp : Ty := NameSet.empty
+def addUniq (set : Ty) (uniq:Name): MetaM Ty :=
+    if set.contains uniq then throwError "duplicate hypothesis" else pure (set.insert uniq)
+end iNameSet
 
-elab "ielaborateselpat" colGt pat:iselectPat : tactic => do
-
-  -- parse syntax
-  let pat ← liftMacroM <| iSelectPat.parse pat
-
-  let mvar ← getMainGoal
-  mvar.withContext do
-  let g ← instantiateMVars <| ← mvar.getType
-  let some { u, prop, bi, e, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
-
-  let uniq ← hyps.findWithInfo hyp
-  let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true uniq
-
-  let m : Q($e' ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { u, prop, bi, hyps := hyps', goal, .. }
-
-  mvar.assign ((← clearCore bi e e' out goal pf).app m)
-  replaceMainGoal [m.mvarId!]
+variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
+def elaborateSelPatsCore {e} (hyps : Hyps bi e) (pats: List iSelectPat) : MetaM (List iElaboratedSelectPat) := do
+  let (_, epats) ← pats.foldrM (fun pat ⟨set, el⟩ => elaborateSelPat el set pat) (iNameSet.emp , [])
+  pure (epats)
+  where elaborateSelPat (el: List iElaboratedSelectPat) (set: iNameSet.Ty) (pat: iSelectPat): MetaM (iNameSet.Ty × List iElaboratedSelectPat) :=
+  match pat with
+  | (iSelectPat.intuitionistic) =>
+      (hyps.findAll (fun _ p => isTrue p))
+       |>.foldlM (fun ⟨s, l⟩ ⟨uniq,_,_⟩ => do
+        let newSet ← iNameSet.addUniq s uniq
+        pure (newSet, .ident true uniq:: l)) (set, el)
+  | (iSelectPat.spatial) =>
+      (hyps.findAll (fun _ p => isTrue p |> not))
+       |>.foldlM (fun ⟨s, l⟩ ⟨uniq,_,_⟩ => do
+        let newSet ← iNameSet.addUniq s uniq
+        pure (newSet, .ident false uniq:: l)) (set, el)
+  | (iSelectPat.one name) =>
+        match hyps.find? (fun n _ => n == name) with
+        | some (uniq, p, _) => do
+            let newSet ← iNameSet.addUniq set uniq
+            pure (newSet, (.ident (isTrue p) uniq) :: el)
+        | none =>
+            throwError "hypothesis not found: {name}"
+  | iSelectPat.pure =>
+      pure (set, .pure :: el)
