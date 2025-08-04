@@ -21,5 +21,5 @@ elab "iexact" colGt hyp:ident : tactic => do
   let _ ← synthInstanceQ q(FromAssumption $p $out $goal)
   let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
 
-  mvar.assign q(assumption (Q := $goal) ($pf).mp)
+  mvar.assign q(assumption (Q := $goal) $pf)
   replaceMainGoal []
