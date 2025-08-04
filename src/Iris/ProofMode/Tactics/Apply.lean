@@ -45,17 +45,16 @@ partial def iApplyCore
     let _ ← synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))
     return q(assumption (p := false) .rfl)
 
--- todo: case when hyp is a lean lemma (later)
+-- todo: case when hyp is a lean lemma
 elab "iapply" colGt term:pmTerm : tactic => do
   let term ← liftMacroM <| PMTerm.parse term
-  let mvar ← getMainGoal
+  let (mvar, { hyps, goal, .. }) ← istart (← getMainGoal)
 
   mvar.withContext do
-    let g ← instantiateMVars <| ← mvar.getType
-    let some { hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
-    let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true <| ← hyps.findWithInfo term.ident
+    if let some uniq ← try? do pure (← hyps.findWithInfo term.ident) then
+      let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove false uniq
 
-    let goals ← IO.mkRef #[]
-    let res ← iApplyCore goal e' out hyps' term.spats <| goalTracker goals
-    mvar.assign <| q(($pf).mp.trans $res)
-    replaceMainGoal (← goals.get).toList
+      let goals ← IO.mkRef #[]
+      let res ← iApplyCore goal e' out hyps' term.spats <| goalTracker goals
+      mvar.assign <| q(($pf).mp.trans $res)
+      replaceMainGoal (← goals.get).toList

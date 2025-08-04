@@ -212,8 +212,8 @@ theorem apply_intuitionistic [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) 
   iapply H
   iexact HP
 
-theorem multiple_intuitionistic [BI PROP] (P Q R : PROP) : ⊢ □ P -∗ Q -∗ (P -∗ Q -∗ □ R) -∗ R := by
-  iintro □HP HQ H
+theorem multiple_intuitionistic [BI PROP] (P Q R : PROP) : ⊢ □ P -∗ Q -∗ □ (P -∗ Q -∗ □ R) -∗ R := by
+  iintro □HP HQ □H
   iapply H with _, HQ
   . iexact HP
   . iexact HQ
