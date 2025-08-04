@@ -45,7 +45,6 @@ partial def iApplyCore
     let _ ← synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))
     return q(assumption (p := false) .rfl)
 
--- todo: case when hyp is a lean lemma
 elab "iapply" colGt term:pmTerm : tactic => do
   let term ← liftMacroM <| PMTerm.parse term
   let mvar ← getMainGoal
@@ -60,8 +59,3 @@ elab "iapply" colGt term:pmTerm : tactic => do
       let res ← iApplyCore goal e' out hyps' term.spats <| goalTracker goals
       mvar.assign <| q(($pf).mp.trans $res)
       replaceMainGoal (← goals.get).toList
-    else
-      let f ← getFVarId term.ident
-      let some ldecl := (← getLCtx).find? f | throwError "iapply: {term.ident.getId} not in scope"
-      let t := ldecl.type
-      logInfo t
