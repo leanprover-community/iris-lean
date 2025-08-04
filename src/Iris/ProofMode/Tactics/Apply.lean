@@ -17,7 +17,6 @@ theorem rec_apply [BI PROP] {el er el' er' A1 A2 : PROP}
     (h1 : el ⊣⊢ el' ∗ er') (h2 : er' ⊢ A1) [IntoWand false false er A1 A2] : el ∗ er ⊢ el' ∗ A2 :=
   (sep_congr h1 .rfl).mp.trans <| sep_assoc.mp.trans <| sep_mono_r <| apply h2
 
--- todo: deal with intuitionistic modality properly
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
     (goal el er : Q($prop)) (hypsl : Hyps bi el) (spats : List SpecPat)

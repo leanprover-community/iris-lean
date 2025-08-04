@@ -433,6 +433,10 @@ instance (priority := default + 10) fromAssumption_forall (p : Bool) [BI PROP] (
     (x : α) (Q : PROP) [h : FromAssumption p (Φ x) Q] : FromAssumption p iprop(∀ x, Φ x) Q where
   from_assumption := (intuitionisticallyIf_mono <| forall_elim x).trans h.1
 
+instance fromAssumption_later [BI PROP] (p : Bool) (P Q : PROP)
+    [h : FromAssumption p P Q] : FromAssumption p P iprop(▷ Q) where
+  from_assumption := h.1.trans later_intro
+
 -- IntoPure
 instance intoPure_pure (φ : Prop) [BI PROP] : IntoPure (PROP := PROP) iprop(⌜φ⌝) φ := ⟨.rfl⟩
 

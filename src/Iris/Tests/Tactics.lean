@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Oliver Soeser
 -/
 import Iris.BI
 import Iris.ProofMode
@@ -217,6 +217,21 @@ theorem multiple_intuitionistic [BI PROP] (P Q R : PROP) : ⊢ □ P -∗ Q -∗
   iapply H with _, HQ
   . iexact HP
   . iexact HQ
+
+theorem later [BI PROP] (P Q : PROP) : ⊢ (▷ P -∗ Q) -∗ P -∗ Q := by
+  iintro H HP
+  iapply H
+  iexact HP
+
+theorem affine [BI PROP] [BIAffine PROP] (P Q : PROP) : ⊢ (P → Q) -∗ <pers> P -∗ Q := by
+  iintro H HP
+  iapply H
+  iexact HP
+
+theorem later_affine [BI PROP] [BIAffine PROP] (P Q : PROP) : ⊢ (▷ P → Q) -∗ P -∗ Q := by
+  iintro H HP
+  iapply H
+  iexact HP
 
 end apply
 
