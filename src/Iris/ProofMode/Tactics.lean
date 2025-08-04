@@ -1,5 +1,6 @@
 /- A description of the tactics can be found in `tactics.md`. -/
 import Iris.ProofMode.Tactics.Assumption
+import Iris.ProofMode.Tactics.Apply
 import Iris.ProofMode.Tactics.Basic
 import Iris.ProofMode.Tactics.Cases
 import Iris.ProofMode.Tactics.Clear
