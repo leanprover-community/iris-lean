@@ -48,9 +48,11 @@ partial def iApplyCore
 -- todo: case when hyp is a lean lemma
 elab "iapply" colGt term:pmTerm : tactic => do
   let term ← liftMacroM <| PMTerm.parse term
-  let (mvar, { hyps, goal, .. }) ← istart (← getMainGoal)
+  let mvar ← getMainGoal
 
   mvar.withContext do
+    let g ← instantiateMVars <| ← mvar.getType
+    let some { hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
     if let some uniq ← try? do pure (← hyps.findWithInfo term.ident) then
       let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove false uniq
 
@@ -58,3 +60,8 @@ elab "iapply" colGt term:pmTerm : tactic => do
       let res ← iApplyCore goal e' out hyps' term.spats <| goalTracker goals
       mvar.assign <| q(($pf).mp.trans $res)
       replaceMainGoal (← goals.get).toList
+    else
+      let f ← getFVarId term.ident
+      let some ldecl := (← getLCtx).find? f | throwError "iapply: {term.ident.getId} not in scope"
+      let t := ldecl.type
+      logInfo t
