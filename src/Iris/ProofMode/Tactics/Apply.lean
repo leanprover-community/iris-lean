@@ -9,13 +9,13 @@ import Iris.ProofMode.Tactics.Split
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-theorem apply [BI PROP] {R P P' P1 P2 : PROP}
-    (h1 : P ⊣⊢ P' ∗ R) (h2 : P' ⊢ P1) [h3 : IntoWand false false R P1 P2] : P ⊢ P2 :=
-  h1.mp.trans <| (sep_mono_l h2).trans <| wand_elim' h3.1
+theorem apply [BI PROP] {R P' P1 P2 : PROP}
+    (h : P' ⊢ P1) [inst : IntoWand false false R P1 P2] : P' ∗ R ⊢ P2 :=
+  (sep_mono h inst.1).trans wand_elim_r
 
-theorem temp [BI PROP] {el er el' er' A1 A2 : PROP}
-    (h' : el ⊣⊢ el' ∗ er') (m : er' ⊢ A1) [inst : IntoWand false false er A1 A2] : el ∗ er ⊢ el' ∗ A2 :=
-  (sep_congr h' .rfl).mp.trans <| sep_assoc.mp.trans <| sep_mono_r <| (sep_mono m inst.1).trans wand_elim_r
+theorem rec_apply [BI PROP] {el er el' er' A1 A2 : PROP}
+    (h1 : el ⊣⊢ el' ∗ er') (h2 : er' ⊢ A1) [IntoWand false false er A1 A2] : el ∗ er ⊢ el' ∗ A2 :=
+  (sep_congr h1 .rfl).mp.trans <| sep_assoc.mp.trans <| sep_mono_r <| apply h2
 
 -- todo: deal with intuitionistic modality properly
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
@@ -28,7 +28,7 @@ partial def iApplyCore
 
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $goal)) then
     let m ← addGoal hypsl A1
-    return q(apply .rfl $m)
+    return q(apply $m)
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $A2)) then
     let splitPat := fun name _ => match spats.head? with
       | some <| .idents bIdents => bIdents.any <| binderIdentHasName name
@@ -37,7 +37,7 @@ partial def iApplyCore
     let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
     let m ← addGoal hypsr' A1
 
-    let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(temp $h' $m)
+    let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(rec_apply $h' $m)
     let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
 
     return q(($pf).trans $res)
