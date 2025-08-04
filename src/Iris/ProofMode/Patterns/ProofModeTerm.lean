@@ -31,4 +31,4 @@ partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
   | _ => Macro.throwUnsupported
 where
   parseSpats (spats : Syntax.TSepArray `specPat ",") : MacroM (List SpecPat) :=
-      return (← spats.elemsAndSeps.toList.mapM fun pat => SpecPat.parse pat)
+      return (← spats.getElems.toList.mapM fun pat => SpecPat.parse pat.raw)

@@ -24,13 +24,13 @@ theorem temp' [BI PROP] {el out A1 A2 : PROP} (h : out ⊢ A1 -∗ A2) : el ∗ 
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
     (goal el er : Q($prop)) (hypsl : Hyps bi el) (spats : List SpecPat)
-    (k : ∀ {e}, Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
+    (addGoal : ∀ {e}, Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
     MetaM (Q($el ∗ $er ⊢ $goal)) := do
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
 
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $goal)) then
-    let m ← k hypsl A1
+    let m ← addGoal hypsl A1
     return q(apply .rfl $m)
   if let some inst ← try? (synthInstanceQ q(IntoWand false false $er $A1 $A2)) then
     let splitPat := fun name _ => match spats.head? with
@@ -38,13 +38,15 @@ partial def iApplyCore
       | none => false
 
     let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
-    let m ← k hypsr' A1
+    let m ← addGoal hypsr' A1
 
+    let res ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
+
+    -- todo: simplify
     let inst' : Q(IntoWand false false iprop(□?false ($el' ∗ $er)) $A1 iprop($el' ∗ $A2))
       := q({into_wand := temp' ($inst).into_wand})
-
     let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(apply (temp .rfl ($h').mp) $m)
-    let res ← iApplyCore goal el' A2 hypsl' spats.tail k
+
     return q(($pf).trans $res)
   else
     let _ ← synthInstanceQ q(FromAssumption false $er $goal)
