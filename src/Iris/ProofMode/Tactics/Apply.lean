@@ -9,12 +9,12 @@ import Iris.ProofMode.Tactics.Split
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-theorem apply [BI PROP] {R P' P1 P2 : PROP}
-    (h : P' ⊢ P1) [inst : IntoWand false false R P1 P2] : P' ∗ R ⊢ P2 :=
+theorem apply [BI PROP] {P Q1 Q2 R : PROP}
+    (h : P ⊢ Q1) [inst : IntoWand false false R Q1 Q2] : P ∗ R ⊢ Q2 :=
   (sep_mono h inst.1).trans wand_elim_r
 
-theorem rec_apply [BI PROP] {el er el' er' A1 A2 : PROP}
-    (h1 : el ⊣⊢ el' ∗ er') (h2 : er' ⊢ A1) [IntoWand false false er A1 A2] : el ∗ er ⊢ el' ∗ A2 :=
+theorem rec_apply [BI PROP] {P Q P' Q' Q1 Q2 : PROP}
+    (h1 : P ⊣⊢ P' ∗ Q') (h2 : Q' ⊢ Q1) [IntoWand false false Q Q1 Q2] : P ∗ Q ⊢ P' ∗ Q2 :=
   (sep_congr h1 .rfl).mp.trans <| sep_assoc.mp.trans <| sep_mono_r <| apply h2
 
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
@@ -73,4 +73,4 @@ elab "iapply" colGt term:pmTerm : tactic => do
         let ls ← mvar.apply expr
         replaceMainGoal ls
       catch _ =>
-        logInfo "apply case"
+        logInfo "not implemented: lean apply case"
