@@ -26,21 +26,24 @@ partial def iApplyCore
   let A2 ← mkFreshExprMVarQ q($prop)
 
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $goal)) then
-    let m ← addGoal hypsl A1
+    -- final apply case
+    let m ← addGoal hypsl A1 -- final goal receives all remaining hypotheses
     return q(apply $m)
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $A2)) then
+    -- recursive apply case
     let splitPat := fun name _ => match spats.head? with
       | some <| .idents bIdents => bIdents.any <| binderIdentHasName name
       | none => false
 
     let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
-    let m ← addGoal hypsr' A1
+    let m ← addGoal hypsr' A1 -- new goal receives hypotheses determined by splitPat
 
     let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(rec_apply $h' $m)
     let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
 
     return q(.trans $pf $res)
   else
+    -- exact case
     let _ ← synthInstanceQ q(FromAssumption false $er $goal)
     let _ ← synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))
     return q(assumption (p := false) .rfl)
@@ -53,6 +56,7 @@ elab "iapply" colGt term:pmTerm : tactic => do
     let g ← instantiateMVars <| ← mvar.getType
     let some { hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
     if let some uniq ← try? do pure (← hyps.findWithInfo term.ident) then
+      -- lemma from iris context
       let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove false uniq
 
       let goals ← IO.mkRef #[]
@@ -60,7 +64,13 @@ elab "iapply" colGt term:pmTerm : tactic => do
       mvar.assign <| q(($pf).mp.trans $res)
       replaceMainGoal (← goals.get).toList
     else
+      -- lemma from lean context
       let f ← getFVarId term.ident
       let expr := Expr.fvar f
-      let ls ← mvar.apply expr
-      replaceMainGoal ls
+
+      try
+        -- exact case
+        let ls ← mvar.apply expr
+        replaceMainGoal ls
+      catch _ =>
+        logInfo "apply case"
