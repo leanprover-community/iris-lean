@@ -233,6 +233,10 @@ theorem later_affine [BI PROP] [BIAffine PROP] (P Q : PROP) : ⊢ (▷ P → Q) 
   iapply H
   iexact HP
 
+theorem exact_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
+  istart
+  iapply H
+
 end apply
 
 -- ex falso

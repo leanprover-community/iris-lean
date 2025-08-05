@@ -59,3 +59,8 @@ elab "iapply" colGt term:pmTerm : tactic => do
       let res ← iApplyCore goal e' out hyps' term.spats <| goalTracker goals
       mvar.assign <| q(($pf).mp.trans $res)
       replaceMainGoal (← goals.get).toList
+    else
+      let f ← getFVarId term.ident
+      let expr := Expr.fvar f
+      let ls ← mvar.apply expr
+      replaceMainGoal ls
