@@ -119,11 +119,11 @@ def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : TacticM Uni
   mvar.assign q(sep_split (Q := $goal) $pf $m1 $m2)
   replaceMainGoal [m1.mvarId!, m2.mvarId!]
 
-elab "isplitl" "[" names:ident,* "]" : tactic => do
-  isplitCore .splitLeft names.getElems
+elab "isplitl" "[" names:(colGt ident)* "]": tactic => do
+  isplitCore .splitLeft names
 
-elab "isplitr" "[" names:ident,* "]" : tactic => do
-  isplitCore .splitRight names.getElems
+elab "isplitr" "[" names:(colGt ident)* "]": tactic => do
+  isplitCore .splitRight names
 
 macro "isplitl" : tactic => `(tactic| isplitr [])
 macro "isplitr" : tactic => `(tactic| isplitl [])

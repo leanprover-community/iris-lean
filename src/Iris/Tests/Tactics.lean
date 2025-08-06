@@ -414,7 +414,7 @@ theorem sep_left [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗
   iintro HP
   iintro HQ
   iintro _HR
-  isplitl [HP]
+  isplitl [HP _HR]
   · iexact HP
   · iexact HQ
 
