@@ -50,29 +50,29 @@ namespace clear
 theorem intuitionistic [BI PROP] (Q : PROP) : □ P ⊢ Q -∗ Q := by
   iintro □HP
   iintro HQ
-  iclear HP
+  iclear [HP]
   iexact HQ
 
 theorem spatial [BI PROP] (Q : PROP) : <affine> P ⊢ Q -∗ Q := by
   iintro HP
   iintro HQ
-  iclear HP
+  iclear [HP]
   iexact HQ
 
 theorem select1 [BI PROP] (Q : PROP) : <affine> P ∗ <affine> P'  ∗ <affine> P'' ∗ □ R ∗ □ R' ∗ □ R' ⊢ Q -∗ Q := by
   iintro ⟨HP, HP', HP'', □ R, □ R', □ R''⟩
-  iclear HP
-  iclear %
-  iclear *
-  iclear R
-  iclear #
+  iclear [HP]
+  iclear [%]
+  iclear [*]
+  iclear [R]
+  iclear [#]
   iintro HQ
   iexact HQ
 
 theorem select2 [BI PROP] (Q : PROP) : <affine> P ∗ <affine> P'  ∗ <affine> P'' ∗ □ R ∗ □ R' ∗ □ R' ⊢ Q -∗ Q := by
   iintro ⟨HP, HP', HP'', □ R, □ R', □ R''⟩
-  iclear HP % HP' R
-  iclear * #
+  iclear [HP % HP' R]
+  iclear [* #]
   iintro HQ
   iexact HQ
 

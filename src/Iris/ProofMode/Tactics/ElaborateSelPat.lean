@@ -31,27 +31,27 @@ def addUniq (set : Ty) (uniq:Name): MetaM Ty :=
 end iNameSet
 
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
-def elaborateSelPatsCore {e} (hyps : Hyps bi e) (pats: List iSelectPat) : MetaM (List iElaboratedSelectPat) := do
-  let (_, epats) ← pats.foldrM (fun pat ⟨set, el⟩ => elaborateSelPat el set pat) (iNameSet.emp , [])
+def elaborateSelPatsCore {e} (hyps : Hyps bi e) (pat: iSelectPat) : MetaM (List iElaboratedSelectPat) := do
+  let (_, epats) ← pat.foldrM (fun pat ⟨set, el⟩ => elaborateSelPat el set pat) (iNameSet.emp , [])
   pure (epats)
-  where elaborateSelPat (el: List iElaboratedSelectPat) (set: iNameSet.Ty) (pat: iSelectPat): MetaM (iNameSet.Ty × List iElaboratedSelectPat) :=
-  match pat with
-  | (iSelectPat.intuitionistic) =>
+  where elaborateSelPat (el: List iElaboratedSelectPat) (set: iNameSet.Ty) (pata: iSelectPatAtom): MetaM (iNameSet.Ty × List iElaboratedSelectPat) :=
+  match pata with
+  | (iSelectPatAtom.intuitionistic) =>
       (hyps.findAll (fun _ p => isTrue p))
        |>.foldlM (fun ⟨s, l⟩ ⟨uniq,_,_⟩ => do
         let newSet ← iNameSet.addUniq s uniq
         pure (newSet, .ident true uniq:: l)) (set, el)
-  | (iSelectPat.spatial) =>
+  | (iSelectPatAtom.spatial) =>
       (hyps.findAll (fun _ p => isTrue p |> not))
        |>.foldlM (fun ⟨s, l⟩ ⟨uniq,_,_⟩ => do
         let newSet ← iNameSet.addUniq s uniq
         pure (newSet, .ident false uniq:: l)) (set, el)
-  | (iSelectPat.one name) =>
+  | (iSelectPatAtom.one name) =>
         match hyps.find? (fun n _ => n == name) with
         | some (uniq, p, _) => do
             let newSet ← iNameSet.addUniq set uniq
             pure (newSet, (.ident (isTrue p) uniq) :: el)
         | none =>
             throwError "hypothesis not found: {name}"
-  | iSelectPat.pure =>
+  | iSelectPatAtom.pure =>
       pure (set, .pure :: el)

@@ -5,7 +5,7 @@
 | `istart`                               | Start the proof mode.                                                                                                                                                                                                                |
 | `istop`                                | Stop the proof mode.                                                                                                                                                                                                                 |
 | `irename` *nameFrom* `into` *nameTo*   | Rename the hypothesis *nameFrom* to *nameTo*.                                                                                                                                                                                        |
-| `iclear` *hyp*                         | Discard the hypothesis *hyp*.                                                                                                                                                                                                        |
+| `iclear` `[` *selpat* `]`                         | Discard the hypotheses selected by *selpat*.                                                                                                                                                                                                        |
 | `iexists` *x*                          | Resolve an existential quantifier in the goal by introducing the variable *x*.                                                                                                                                                       |
 | `iexact` *hyp*                         | Solve the goal with the hypothesis *hyp*.                                                                                                                                                                                            |
 | `iassumption_lean`                     | Solve the goal with a hypothesis of the type `⊢ Q` from the Lean context.                                                                                                                                                            |
@@ -44,3 +44,12 @@ P1 ∗ (□ P2 ∨ P2) ∗ (P3 ∧ P3')
 ⟨HP1, □HP2 | HP2, ⟨HP3, _⟩⟩
 -- (there are of course other valid patterns for destructing the shown hypothesis)
 ```
+
+## Selection Patterns
+
+| Pattern                         | Description                                                                                                                                                                         |
+|---------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| *name*                          | Select the hypothesis *name*.                                                                                                                                                    |
+| `*`                             |  Select all spatial hypotheses in the context.                                                                                                                                                                |
+| `#`                             |  Select all persistent hypotheses in the context.                                                                                                                                                                |
+| `%`                             |  Select all pure hypotheses in the context.                                                                                                                                                                |

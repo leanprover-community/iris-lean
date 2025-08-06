@@ -46,15 +46,15 @@ where processPat (mvar: MVarId) (epat : iElaboratedSelectPat): MetaM (MVarId) :=
         mvar.assign ((← (clearCore bi p e e' out goal pf)).app m)
         pure (m.mvarId!)
 
-elab "iclear" pats:(colGt iselectPat)* : tactic => do
+elab "iclear" selpat:iselectPat : tactic => do
   -- parse syntax
-  let pats ← liftMacroM <| pats.mapM <| iSelectPat.parse
+  let pats ← liftMacroM <| iSelectPat.parse selpat
 
   let mvar ← getMainGoal
   mvar.withContext do
     let g ← instantiateMVars <| ← mvar.getType
     let some { u := _, prop := _ , bi, e := _, hyps, goal := _ } := parseIrisGoal? g | throwError "not in proof mode"
-    let epats ← elaborateSelPatsCore bi hyps pats.toList
+    let epats ← elaborateSelPatsCore bi hyps pats
 
     -- Process all elaborated patterns
     let finalMvar ← clearCoreGo mvar epats
