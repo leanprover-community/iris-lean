@@ -17,8 +17,7 @@ theorem rec_apply [BI PROP] {P Q P' Q' Q1 Q2 : PROP}
     (h1 : P ⊣⊢ P' ∗ Q') (h2 : Q' ⊢ Q1) [IntoWand false false Q Q1 Q2] : P ∗ Q ⊢ P' ∗ Q2 :=
   (sep_congr h1 .rfl).mp.trans <| sep_assoc.mp.trans <| sep_mono_r <| apply h2
 
-theorem temp [BI PROP] {e hyp goal : PROP} (pf : ⊢ hyp) (res : e ∗ hyp ⊢ goal)
-    : e ⊢ goal :=
+theorem apply_lean [BI PROP] {P Q R : PROP} (pf : ⊢ Q) (res : P ∗ Q ⊢ R) : P ⊢ R :=
   sep_emp.mpr.trans <| (sep_mono_r pf).trans res
 
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
@@ -87,6 +86,6 @@ elab "iapply" colGt term:pmTerm : tactic => do
 
           let goals ← IO.mkRef #[]
           let res ← iApplyCore goal e hyp hyps term.spats <| goalTracker goals
-          mvar.assign <| ← mkAppM ``temp #[pf, res]
+          mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
           replaceMainGoal (← goals.get).toList
         | _ => throwError "iapply: {term.ident.getId} is not an entailment"
