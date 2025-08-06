@@ -58,7 +58,7 @@ elab "iapply" colGt term:pmTerm : tactic => do
 
   mvar.withContext do
     let g ← instantiateMVars <| ← mvar.getType
-    let some { u, prop, bi, e, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+    let some { e, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
     if let some uniq ← try? do pure (← hyps.findWithInfo term.ident) then
       -- lemma from iris context
       let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove false uniq
@@ -82,8 +82,8 @@ elab "iapply" colGt term:pmTerm : tactic => do
 
         match ldecl.type with
         | .app (.app (.app (.app (.const ``Iris.BI.Entails _) _) _) P) Q =>
-          let hyp : Q($prop) ← mkAppM ``Iris.BI.wand #[P, Q]
-          let pf : Q(⊢ $hyp) ← mkAppM ``as_emp_valid_1 #[hyp, val]
+          let hyp ← mkAppM ``Iris.BI.wand #[P, Q]
+          let pf ← mkAppM ``as_emp_valid_1 #[hyp, val]
 
           let goals ← IO.mkRef #[]
           let res ← iApplyCore goal e hyp hyps term.spats <| goalTracker goals
