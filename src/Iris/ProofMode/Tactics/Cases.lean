@@ -286,7 +286,7 @@ elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
 
   -- process pattern
   let goals ← IO.mkRef #[]
-  let pf2 ← iCasesCore bi hyps' goal b A A' h pat (λ hyps => goalTracker goals hyps goal)
+  let pf2 ← iCasesCore bi hyps' goal b A A' h pat (λ hyps => goalTracker goals .anonymous hyps goal)
 
   mvar.assign q(($pf).1.trans $pf2)
   replaceMainGoal (← goals.get).toList

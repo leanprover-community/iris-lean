@@ -23,29 +23,36 @@ theorem apply_lean [BI PROP] {P Q R : PROP} (pf : ⊢ Q) (res : P ∗ Q ⊢ R) :
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
     (goal el er : Q($prop)) (hypsl : Hyps bi el) (spats : List SpecPat)
-    (addGoal : ∀ {e}, Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
+    (addGoal : ∀ {e}, Name → Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
     MetaM (Q($el ∗ $er ⊢ $goal)) := do
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
 
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $goal)) then
     -- final apply case
-    let m ← if let (some <| .idents _, some inst) := (spats.head?,
+    let m ← if let (some <| .idents _ _, some inst) := (spats.head?,
         ← try? (synthInstanceQ q(FromAssumption false $el $A1))) then
       pure q(($inst).from_assumption)
     else
-      addGoal hypsl A1 -- final goal receives all remaining hypotheses
+      let name := match spats.head? with
+        | some <| .idents _ n => n
+        | _ => .anonymous
+      addGoal name hypsl A1 -- final goal receives all remaining hypotheses
     return q(apply $m)
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $A2)) then
     -- recursive apply case
     let splitPat := fun name _ => match spats.head? with
-      | some <| .idents bIdents => bIdents.any <| binderIdentHasName name
+      | some <| .idents bIdents _ => bIdents.any <| binderIdentHasName name
       | none => false
 
     let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
     let m ← if let some inst ← try? (synthInstanceQ q(FromAssumption false $er' $A1)) then
       pure q(($inst).from_assumption)
-    else addGoal hypsr' A1 -- new goal receives hypotheses determined by splitPat
+    else
+      let name := match spats.head? with
+        | some <| .idents _ n => n
+        | _ => .anonymous
+      addGoal name hypsr' A1 -- new goal receives hypotheses determined by splitPat
 
     let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(rec_apply $h' $m)
     let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal

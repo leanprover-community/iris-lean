@@ -66,8 +66,10 @@ def selectHyp (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (Name × Q(Bool
   | _, .sep _ _ _ _ lhs rhs => try selectHyp ty rhs catch _ => selectHyp ty lhs
 
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
-def goalTracker {P} (goals : IO.Ref (Array MVarId)) (hyps : Hyps bi P) (goal : Q($prop)) : MetaM Q($P ⊢ $goal) := do
+def goalTracker {P} (goals : IO.Ref (Array MVarId)) (name : Name) (hyps : Hyps bi P)
+    (goal : Q($prop)) : MetaM Q($P ⊢ $goal) := do
   let m : Q($P ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps, goal, .. }
+  m.mvarId!.setUserName name
   goals.modify (·.push m.mvarId!)
   pure m
