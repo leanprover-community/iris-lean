@@ -30,9 +30,7 @@ partial def iApplyCore
 
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $goal)) then
     -- final apply case
-    let m ← if let some inst ← try? (synthInstanceQ q(FromAssumption false $el $A1)) then
-      pure q(($inst).from_assumption)
-    else addGoal hypsl A1 -- final goal receives all remaining hypotheses
+    let m ← addGoal hypsl A1 -- final goal receives all remaining hypotheses
     return q(apply $m)
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $A2)) then
     -- recursive apply case
