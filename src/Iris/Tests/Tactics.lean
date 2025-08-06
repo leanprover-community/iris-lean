@@ -242,6 +242,18 @@ theorem apply_lean [BI PROP] (P Q : PROP) (H : P ⊢ Q) (HP : ⊢ P) : ⊢ Q := 
   iapply H
   iapply HP
 
+theorem apply_lean' [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) (HP : ⊢ P) : ⊢ Q := by
+  istart
+  iapply H
+  . exact exact emp -- todo: close trivial goals automatically
+  . iapply HP
+
+theorem multiple_lean [BI PROP] (P Q R : PROP) (H : P ⊢ Q -∗ R) (HP : ⊢ P) : ⊢ Q -∗ R := by
+  iintro HQ
+  iapply H
+  . iapply HP
+  . iapply HQ
+
 end apply
 
 -- ex falso
