@@ -237,6 +237,12 @@ theorem exact_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
   istart
   iapply H
 
+theorem apply_lean [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) (HP : ⊢ P) : ⊢ Q := by
+  istart
+  iapply H
+  . exact exact emp -- todo: close goals of the form [: ⊢ emp] automatically
+  . iapply HP
+
 end apply
 
 -- ex falso

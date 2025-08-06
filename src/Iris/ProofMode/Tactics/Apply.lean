@@ -17,6 +17,10 @@ theorem rec_apply [BI PROP] {P Q P' Q' Q1 Q2 : PROP}
     (h1 : P ⊣⊢ P' ∗ Q') (h2 : Q' ⊢ Q1) [IntoWand false false Q Q1 Q2] : P ∗ Q ⊢ P' ∗ Q2 :=
   (sep_congr h1 .rfl).mp.trans <| sep_assoc.mp.trans <| sep_mono_r <| apply h2
 
+theorem temp [BI PROP] {e hyp goal : PROP} (pf : ⊢ hyp) (res : e ∗ hyp ⊢ goal)
+    : e ⊢ goal :=
+  sep_emp.mpr.trans <| (sep_mono_r pf).trans res
+
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore
     (goal el er : Q($prop)) (hypsl : Hyps bi el) (spats : List SpecPat)
@@ -54,7 +58,7 @@ elab "iapply" colGt term:pmTerm : tactic => do
 
   mvar.withContext do
     let g ← instantiateMVars <| ← mvar.getType
-    let some { hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+    let some { u, prop, bi, e, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
     if let some uniq ← try? do pure (← hyps.findWithInfo term.ident) then
       -- lemma from iris context
       let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove false uniq
@@ -66,11 +70,27 @@ elab "iapply" colGt term:pmTerm : tactic => do
     else
       -- lemma from lean context
       let f ← getFVarId term.ident
-      let expr := Expr.fvar f
+      let val := Expr.fvar f
 
       try
         -- exact case
-        let ls ← mvar.apply expr
+        let ls ← mvar.apply val
         replaceMainGoal ls
       catch _ =>
-        logInfo "not implemented: lean apply case"
+        -- apply case
+        let some ldecl := (← getLCtx).find? f | throwError "iapply: {term.ident.getId} not in scope"
+        let bibase := Expr.app (.app (.const ``BI.toBIBase [u]) prop) bi
+
+        match ldecl.type with
+        | .app (.app (.app (.app (.const ``Iris.BI.Entails _) _) _) P) Q =>
+          let hyp : Q($prop) := mkAppN (Expr.const ``Iris.BI.wand [u]) #[prop, bibase, P, Q] -- P -∗ Q : PROP
+          let ent : Q(Prop) := mkAppN (Expr.const ``Iris.BI.Entails [u]) #[prop, bibase, P, Q] -- P ⊢ Q : Prop
+
+          let inst ← synthInstance q(AsEmpValid1 $ent $hyp)
+          let pf : Q(⊢ $hyp) := mkAppN (Expr.const ``as_emp_valid_1 [u]) #[prop, ent, bi, hyp, inst, val]
+
+          let goals ← IO.mkRef #[]
+          let res ← iApplyCore goal e hyp hyps term.spats <| goalTracker goals
+          mvar.assign <| mkAppN (Expr.const ``temp [u]) #[prop, bi, e, hyp, goal, pf, res]
+          replaceMainGoal (← goals.get).toList
+        | _ => throwError "iapply: {term.ident.getId} is not an entailment"
