@@ -30,7 +30,9 @@ partial def iApplyCore
 
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $goal)) then
     -- final apply case
-    let m ← addGoal hypsl A1 -- final goal receives all remaining hypotheses
+    let m ← if let some inst ← try? (synthInstanceQ q(FromAssumption false $el $A1)) then
+      pure q(($inst).from_assumption)
+    else addGoal hypsl A1 -- final goal receives all remaining hypotheses
     return q(apply $m)
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $A2)) then
     -- recursive apply case
@@ -39,7 +41,9 @@ partial def iApplyCore
       | none => false
 
     let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
-    let m ← addGoal hypsr' A1 -- new goal receives hypotheses determined by splitPat
+    let m ← if let some inst ← try? (synthInstanceQ q(FromAssumption false $er' $A1)) then
+      pure q(($inst).from_assumption)
+    else addGoal hypsr' A1 -- new goal receives hypotheses determined by splitPat
 
     let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(rec_apply $h' $m)
     let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
@@ -63,7 +67,7 @@ elab "iapply" colGt term:pmTerm : tactic => do
       let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove false uniq
 
       let goals ← IO.mkRef #[]
-      let res ← iApplyCore goal e' out hyps' term.spats <| goalTracker' goals
+      let res ← iApplyCore goal e' out hyps' term.spats <| goalTracker goals
       mvar.assign <| q(($pf).mp.trans $res)
       replaceMainGoal (← goals.get).toList
     else
@@ -85,7 +89,7 @@ elab "iapply" colGt term:pmTerm : tactic => do
           let pf ← mkAppM ``as_emp_valid_1 #[hyp, val]
 
           let goals ← IO.mkRef #[]
-          let res ← iApplyCore goal e hyp hyps term.spats <| goalTracker' goals
+          let res ← iApplyCore goal e hyp hyps term.spats <| goalTracker goals
           mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
           replaceMainGoal (← goals.get).toList
         | _ => throwError "iapply: {term.ident.getId} is not an entailment"

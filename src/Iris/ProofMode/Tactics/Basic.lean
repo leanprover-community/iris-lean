@@ -5,7 +5,6 @@ Authors: Lars König, Mario Carneiro
 -/
 import Iris.ProofMode.Expr
 import Iris.ProofMode.Classes
-import Iris.Std
 
 namespace Iris.ProofMode
 open Lean Elab.Tactic Meta Qq BI Std
@@ -72,11 +71,3 @@ def goalTracker {P} (goals : IO.Ref (Array MVarId)) (hyps : Hyps bi P) (goal : Q
     IrisGoal.toExpr { prop, bi, hyps, goal, .. }
   goals.modify (·.push m.mvarId!)
   pure m
-
-variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
-/-- Like `goalTracker` but tries to solve trivial goals first -/
-def goalTracker' {P} (goals : IO.Ref (Array MVarId)) (hyps : Hyps bi P) (goal : Q($prop)) : MetaM Q($P ⊢ $goal) := do
-  if let some inst ← try? (synthInstanceQ q(FromAssumption false $P $goal)) then
-    pure q(($inst).from_assumption)
-  else
-    goalTracker goals hyps goal
