@@ -79,18 +79,14 @@ elab "iapply" colGt term:pmTerm : tactic => do
       catch _ =>
         -- apply case
         let some ldecl := (← getLCtx).find? f | throwError "iapply: {term.ident.getId} not in scope"
-        let bibase := Expr.app (.app (.const ``BI.toBIBase [u]) prop) bi
 
         match ldecl.type with
         | .app (.app (.app (.app (.const ``Iris.BI.Entails _) _) _) P) Q =>
-          let hyp : Q($prop) := mkAppN (Expr.const ``Iris.BI.wand [u]) #[prop, bibase, P, Q] -- P -∗ Q : PROP
-          let ent : Q(Prop) := mkAppN (Expr.const ``Iris.BI.Entails [u]) #[prop, bibase, P, Q] -- P ⊢ Q : Prop
-
-          let inst ← synthInstance q(AsEmpValid1 $ent $hyp)
-          let pf : Q(⊢ $hyp) := mkAppN (Expr.const ``as_emp_valid_1 [u]) #[prop, ent, bi, hyp, inst, val]
+          let hyp : Q($prop) ← mkAppM ``Iris.BI.wand #[P, Q]
+          let pf : Q(⊢ $hyp) ← mkAppM ``as_emp_valid_1 #[hyp, val]
 
           let goals ← IO.mkRef #[]
           let res ← iApplyCore goal e hyp hyps term.spats <| goalTracker goals
-          mvar.assign <| mkAppN (Expr.const ``temp [u]) #[prop, bi, e, hyp, goal, pf, res]
+          mvar.assign <| ← mkAppM ``temp #[pf, res]
           replaceMainGoal (← goals.get).toList
         | _ => throwError "iapply: {term.ident.getId} is not an entailment"
