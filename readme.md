@@ -1,8 +1,15 @@
-Lean 4 port of *Iris*, a higher-order concurrent separation logic framework.
+# Verified-zkEVM Fork of Iris
 
+This is a fork of [iris-lean](https://github.com/iris-project/iris-lean), a higher-order concurrent separation logic framework. We plan to develop the [Bluebell](https://arxiv.org/pdf/2402.18708) program logic on top of Iris. This repo adds mathlib as a dependency for probability theory and other math prerequisites.
+
+- [Verified-zkEVM Fork of Iris](#verified-zkevm-fork-of-iris)
 - [About Iris](#about-iris)
 - [Project](#project)
   - [Usage](#usage)
+    - [1. Instantiating the Separation Logic Interface](#1-instantiating-the-separation-logic-interface)
+    - [2. Adding Custom Notation](#2-adding-custom-notation)
+    - [3. Instantiating Existing Typeclasses](#3-instantiating-existing-typeclasses)
+    - [4. Writing Separation Logic Proofs](#4-writing-separation-logic-proofs)
   - [Structure](#structure)
   - [Tactics](#tactics)
   - [Type Classes](#type-classes)
