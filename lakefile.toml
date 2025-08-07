@@ -9,6 +9,11 @@ version = "git#v4.21.0"
 
 [[lean_lib]]
 name = "Iris"
+globs = ["Iris.*"]
+
+[[lean_lib]]
+name = "Bluebell"
+globs = ["Bluebell.*"]
 
 [[lean_lib]]
 name = "IrisTest"
