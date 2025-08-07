@@ -243,6 +243,14 @@ theorem multiple_lean [BI PROP] (P Q R : PROP) (H : P ⊢ Q -∗ R) (HP : ⊢ P)
   iapply H with _, HQ
   iapply HP
 
+theorem auto [BI PROP] (P Q : PROP) : ⊢ P -∗ (True -∗ P -∗ Q) -∗ Q := by
+  iintro HP H
+  iapply H with _, HP
+
+theorem auto' [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ (Q ∗ emp)) -∗ Q := by
+  iintro HP H
+  iapply H with HP
+
 end apply
 
 -- ex falso
