@@ -7,6 +7,10 @@ name = "Qq"
 scope = "leanprover-community"
 version = "git#stable"
 
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+
 [[lean_lib]]
 name = "Iris"
 

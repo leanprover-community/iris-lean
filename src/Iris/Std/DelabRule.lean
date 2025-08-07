@@ -32,3 +32,20 @@ macro_rules
         def unexpand : Lean.PrettyPrinter.Unexpander
           $[| $p => $s]*
           | _ => throw ())
+
+/- Suggested fix
+syntax "delab_rule" ident matchAlts' : command
+macro_rules
+  | `(delab_rule $f $[| $p => $s]*) => do
+    let f := f.getId
+    if f.isAnonymous then
+      throwUnsupported
+    let f ← match ← Macro.resolveGlobalName f with
+      | [(name, [])] => pure name
+      | _           => throwUnsupported
+
+    `(@[app_unexpander $(mkIdent f)]
+      def unexpand : Lean.PrettyPrinter.Unexpander
+        $[| $p => $s]*
+        | _ => throw ())
+-/

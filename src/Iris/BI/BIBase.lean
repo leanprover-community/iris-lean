@@ -285,4 +285,3 @@ macro_rules
 
 delab_rule except0
   | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
-
