@@ -26,3 +26,8 @@ where
   | `(specPat| [$[$names:binderIdent],*]) => some <| .idents names.toList .anonymous
   | `(specPat| [$[$names:binderIdent],*] $goal:str) => some <| .idents names.toList (.mkSimple goal.getString)
   | _ => none
+
+def headName (spats : List SpecPat) : Name :=
+  match spats.head? with
+    | some <| .idents _ n => n
+    | _ => .anonymous

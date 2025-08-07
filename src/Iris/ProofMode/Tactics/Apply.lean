@@ -34,10 +34,7 @@ partial def iApplyCore
         ← try? (synthInstanceQ q(FromAssumption false $el $A1))) then
       pure q(($inst).from_assumption)
     else
-      let name := match spats.head? with
-        | some <| .idents _ n => n
-        | _ => .anonymous
-      addGoal name hypsl A1 -- final goal receives all remaining hypotheses
+      addGoal (headName spats) hypsl A1 -- final goal receives all remaining hypotheses
     return q(apply $m)
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $A2)) then
     -- recursive apply case
@@ -49,10 +46,7 @@ partial def iApplyCore
     let m ← if let some inst ← try? (synthInstanceQ q(FromAssumption false $er' $A1)) then
       pure q(($inst).from_assumption)
     else
-      let name := match spats.head? with
-        | some <| .idents _ n => n
-        | _ => .anonymous
-      addGoal name hypsr' A1 -- new goal receives hypotheses determined by splitPat
+      addGoal (headName spats) hypsr' A1 -- new goal receives hypotheses determined by splitPat
 
     let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(rec_apply $h' $m)
     let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
