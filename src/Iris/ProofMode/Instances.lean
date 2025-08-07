@@ -437,26 +437,6 @@ instance fromAssumption_later [BI PROP] (p : Bool) (P Q : PROP)
     [h : FromAssumption p P Q] : FromAssumption p P iprop(▷ Q) where
   from_assumption := h.1.trans later_intro
 
-instance fromAssumption_emp_sep_l [BI PROP] (p : Bool) (P Q : PROP)
-    [h : FromAssumption p P Q] : FromAssumption p iprop(emp ∗ P) Q where
-  from_assumption := (intuitionisticallyIf_mono emp_sep.mp).trans h.1
-
-instance fromAssumption_sep_emp_l [BI PROP] (p : Bool) (P Q : PROP)
-    [h : FromAssumption p P Q] : FromAssumption p iprop(P ∗ emp) Q where
-  from_assumption := (intuitionisticallyIf_mono sep_emp.mp).trans h.1
-
-instance fromAssumption_emp_sep_r [BI PROP] (p : Bool) (P Q : PROP)
-    [h : FromAssumption p P Q] : FromAssumption p P iprop(emp ∗ Q) where
-  from_assumption := h.1.trans emp_sep.mpr
-
-instance fromAssumption_sep_emp_r [BI PROP] (p : Bool) (P Q : PROP)
-    [h : FromAssumption p P Q] : FromAssumption p P iprop(Q ∗ emp) where
-  from_assumption := h.1.trans sep_emp.mpr
-
-instance fromAssumption_emp_true [BI PROP] (p : Bool)
-    : FromAssumption p (emp : PROP) iprop(True) where
-  from_assumption := true_intro
-
 -- IntoPure
 instance intoPure_pure (φ : Prop) [BI PROP] : IntoPure (PROP := PROP) iprop(⌜φ⌝) φ := ⟨.rfl⟩
 

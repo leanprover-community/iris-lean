@@ -209,8 +209,8 @@ theorem apply_intuitionistic [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) 
 theorem multiple_intuitionistic [BI PROP] (P Q R : PROP) : ⊢ □ P -∗ Q -∗ □ (P -∗ Q -∗ □ R) -∗ R := by
   iintro □HP HQ □H
   iapply H with _ "P", HQ "Q"
-  . iexact HP
-  . iexact HQ
+  case Q => iexact HQ
+  iexact HP
 
 theorem later [BI PROP] (P Q : PROP) : ⊢ (▷ P -∗ Q) -∗ P -∗ Q := by
   iintro H HP
@@ -242,14 +242,6 @@ theorem multiple_lean [BI PROP] (P Q R : PROP) (H : P ⊢ Q -∗ R) (HP : ⊢ P)
   iintro HQ
   iapply H with _, HQ
   iapply HP
-
-theorem auto [BI PROP] (P Q : PROP) : ⊢ P -∗ (True -∗ P -∗ Q) -∗ Q := by
-  iintro HP H
-  iapply H with _, HP
-
-theorem auto' [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ (Q ∗ emp)) -∗ Q := by
-  iintro HP H
-  iapply H with HP
 
 end apply
 
