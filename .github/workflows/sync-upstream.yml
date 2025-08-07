@@ -1,0 +1,150 @@
+name: Sync with Upstream
+
+on:
+  schedule:
+    - cron: "0 9 */14 * *" # Every 14 days at 09:00 AM UTC
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  sync_upstream:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/leanprover-community/iris-lean.git || true
+          git fetch upstream
+
+      - name: Create sync branch
+        id: sync
+        run: |
+          BRANCH_NAME="sync-upstream-$(date +%Y-%m-%d)"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          
+          # Check if there are any differences between our master and upstream master
+          UPSTREAM_COMMITS=$(git rev-list --count HEAD..upstream/master 2>/dev/null || echo "0")
+          echo "upstream_commits=$UPSTREAM_COMMITS" >> $GITHUB_OUTPUT
+          
+          if [ "$UPSTREAM_COMMITS" -eq "0" ]; then
+            echo "No new commits from upstream. Skipping sync."
+            echo "needs_sync=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "needs_sync=true" >> $GITHUB_OUTPUT
+          echo "Found $UPSTREAM_COMMITS new commits from upstream"
+          
+          # Create and switch to sync branch
+          git checkout -b "$BRANCH_NAME"
+          
+          # Attempt to merge upstream changes
+          if git merge upstream/master --no-edit; then
+            echo "merge_success=true" >> $GITHUB_OUTPUT
+            echo "Upstream changes merged successfully"
+          else
+            echo "merge_success=false" >> $GITHUB_OUTPUT
+            echo "Merge conflicts detected"
+            # Add all files (including conflicted ones) and commit
+            git add .
+            git commit -m "WIP: Sync with upstream - merge conflicts need resolution"
+          fi
+
+      - name: Push sync branch
+        if: steps.sync.outputs.needs_sync == 'true'
+        run: |
+          git push origin ${{ steps.sync.outputs.branch_name }}
+
+      - name: Create Pull Request
+        if: steps.sync.outputs.needs_sync == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branchName = '${{ steps.sync.outputs.branch_name }}';
+            const mergeSuccess = '${{ steps.sync.outputs.merge_success }}' === 'true';
+            const upstreamCommits = '${{ steps.sync.outputs.upstream_commits }}';
+            
+            let title, body;
+            
+            if (mergeSuccess) {
+              title = `🔄 Sync with upstream (${upstreamCommits} commits)`;
+              body = `## Upstream Sync
+              
+            This PR automatically syncs changes from \`leanprover-community/iris-lean\`.
+
+            ### Changes
+            - **${upstreamCommits}** new commits from upstream
+            - No merge conflicts detected ✅
+
+            ### Next Steps
+            - Review the changes
+            - Run tests to ensure compatibility
+            - Merge when ready
+
+            ---
+            *This PR was created automatically by the sync-upstream workflow.*`;
+            } else {
+              title = `⚠️ Sync with upstream (${upstreamCommits} commits) - Conflicts Need Resolution`;
+              body = `## Upstream Sync - Manual Resolution Required
+
+            This PR automatically syncs changes from \`leanprover-community/iris-lean\`, but **merge conflicts were detected** and need manual resolution.
+
+            ### Changes
+            - **${upstreamCommits}** new commits from upstream
+            - ⚠️ Merge conflicts detected - manual resolution required
+
+            ### Next Steps
+            1. Check out this branch locally: \`git checkout ${branchName}\`
+            2. Resolve merge conflicts in the affected files
+            3. Commit the resolved changes
+            4. Push the updates: \`git push origin ${branchName}\`
+            5. Review and merge this PR
+
+            ### Commands to resolve locally:
+            \`\`\`bash
+            git checkout ${branchName}
+            # Resolve conflicts in your editor
+            git add .
+            git commit -m "Resolve merge conflicts from upstream sync"
+            git push origin ${branchName}
+            \`\`\`
+
+            ---
+            *This PR was created automatically by the sync-upstream workflow.*`;
+            }
+            
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              head: branchName,
+              base: 'master',
+              body: body
+            });
+            
+            console.log(`Created PR #${pr.number}: ${pr.html_url}`);
+            
+            // Add labels based on merge status
+            const labels = ['upstream-sync'];
+            if (!mergeSuccess) {
+              labels.push('merge-conflicts');
+            }
+            
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: labels
+            });
