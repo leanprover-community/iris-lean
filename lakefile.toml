@@ -3,13 +3,9 @@ srcDir = "./src/"
 defaultTargets = ["Iris", "IrisTest"]
 
 [[require]]
-name = "Qq"
-scope = "leanprover-community"
-version = "git#stable"
-
-[[require]]
 name = "mathlib"
 scope = "leanprover-community"
+version = "git#v4.21.0"
 
 [[lean_lib]]
 name = "Iris"
