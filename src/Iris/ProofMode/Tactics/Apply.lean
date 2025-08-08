@@ -40,10 +40,7 @@ partial def iApplyCore
     else
       addGoal (headName spats) hypsl A1
     return q(apply $m)
-  else
-    -- iapply recursive case
-    let _ ← synthInstanceQ q(IntoWand false false $er $A1 $A2)
-
+  else if let some _ ← try? <| synthInstanceQ q(IntoWand false false $er $A1 $A2) then
     let splitPat := fun name _ => match spats.head? with
       | some <| .ident bIdent _ => binderIdentHasName name bIdent
       | some <| .idents bIdents _ => bIdents.any <| binderIdentHasName name
@@ -60,6 +57,8 @@ partial def iApplyCore
     let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
 
     return q(.trans $pf $res)
+  else
+    throwError "iapply: cannot apply {er}"
 
 elab "iapply" colGt term:pmTerm : tactic => do
   let term ← liftMacroM <| PMTerm.parse term
