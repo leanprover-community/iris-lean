@@ -8,7 +8,7 @@ open Lean
 
 declare_syntax_cat specPat
 
-syntax binderIdent optional(" as " str) : specPat
+syntax binderIdent : specPat
 syntax "[" binderIdent,* "]" optional(" as " str) : specPat
 
 inductive SpecPat
@@ -23,7 +23,6 @@ partial def SpecPat.parse (pat : Syntax) : MacroM SpecPat := do
 where
   go : TSyntax `specPat → Option SpecPat
   | `(specPat| $name:binderIdent) => some <| .ident name .anonymous
-  | `(specPat| $name:binderIdent as $goal:str) => some <| .ident name (.mkSimple goal.getString)
   | `(specPat| [$[$names:binderIdent],*]) => some <| .idents names.toList .anonymous
   | `(specPat| [$[$names:binderIdent],*] as $goal:str) => some <| .idents names.toList (.mkSimple goal.getString)
   | _ => none
