@@ -93,9 +93,9 @@ inductive splitSide where
 | splitLeft | splitRight
 
 def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : TacticM Unit := do
-  let splitRight ← match side with
-    | .splitLeft => pure false
-    | .splitRight => pure true
+  let splitRight := match side with
+    | .splitLeft => false
+    | .splitRight => true
 
   -- extract environment
   let (mvar, { u, prop, bi, hyps, goal, .. }) ← istart (← getMainGoal)
