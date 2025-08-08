@@ -30,7 +30,7 @@ partial def iApplyCore
 
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $goal)) then
     -- final apply case
-    let m ← if let (some <| .idents _ _, some inst) := (spats.head?,
+    let m ← if let (some <| .ident _ _, some inst) := (spats.head?,
         ← try? (synthInstanceQ q(FromAssumption false $el $A1))) then
       pure q(($inst).from_assumption)
     else
@@ -44,7 +44,8 @@ partial def iApplyCore
       | _ => false
 
     let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
-    let m ← if let some inst ← try? (synthInstanceQ q(FromAssumption false $er' $A1)) then
+    let m ← if let (some <| .ident _ _, some inst) := (spats.head?,
+        ← try? (synthInstanceQ q(FromAssumption false $er' $A1))) then
       pure q(($inst).from_assumption)
     else
       addGoal (headName spats) hypsr' A1 -- new goal receives hypotheses determined by splitPat
