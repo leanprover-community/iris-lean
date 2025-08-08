@@ -28,16 +28,22 @@ partial def iApplyCore
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
 
-  if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $goal)) then
-    -- final apply case
+  if let (some _, some _)
+      := (← try? <| synthInstanceQ q(FromAssumption false $er $goal),
+          ← try? <| synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))) then
+    return q(assumption (p := false) .rfl) -- iexact case
+  else if let some _ ← try? <| synthInstanceQ q(IntoWand false false $er $A1 $goal) then
+    -- iapply base case
     let m ← if let (some <| .ident _ _, some inst) := (spats.head?,
         ← try? (synthInstanceQ q(FromAssumption false $el $A1))) then
       pure q(($inst).from_assumption)
     else
-      addGoal (headName spats) hypsl A1 -- final goal receives all remaining hypotheses
+      addGoal (headName spats) hypsl A1
     return q(apply $m)
-  if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $A2)) then
-    -- recursive apply case
+  else
+    -- iapply recursive case
+    let _ ← synthInstanceQ q(IntoWand false false $er $A1 $A2)
+
     let splitPat := fun name _ => match spats.head? with
       | some <| .ident bIdent _ => binderIdentHasName name bIdent
       | some <| .idents bIdents _ => bIdents.any <| binderIdentHasName name
@@ -48,17 +54,12 @@ partial def iApplyCore
         ← try? (synthInstanceQ q(FromAssumption false $er' $A1))) then
       pure q(($inst).from_assumption)
     else
-      addGoal (headName spats) hypsr' A1 -- new goal receives hypotheses determined by splitPat
+      addGoal (headName spats) hypsr' A1
 
     let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(rec_apply $h' $m)
     let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
 
     return q(.trans $pf $res)
-  else
-    -- exact case
-    let _ ← synthInstanceQ q(FromAssumption false $er $goal)
-    let _ ← synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))
-    return q(assumption (p := false) .rfl)
 
 elab "iapply" colGt term:pmTerm : tactic => do
   let term ← liftMacroM <| PMTerm.parse term
