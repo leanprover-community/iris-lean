@@ -67,6 +67,10 @@ instance intoWand_intuitionistically (p q : Bool) [BI PROP] (R P Q : PROP)
     [h : IntoWand true q R P Q] : IntoWand p q iprop(□ R) P Q where
   into_wand := (intuitionisticallyIf_mono h.1).trans intuitionisticallyIf_elim
 
+instance intoWand_intuitionistically_wand (p : Bool) [BI PROP] (P Q : PROP) :
+    IntoWand p true iprop(□ P -∗ Q) P Q where
+  into_wand := intuitionisticallyIf_elim
+
 instance intoWand_persistently_true (q : Bool) [BI PROP] (R P Q : PROP)
     [h : IntoWand true q R P Q] : IntoWand true q iprop(<pers> R) P Q where
   into_wand := intuitionistically_persistently.1.trans h.1
@@ -428,6 +432,10 @@ set_option synthInstance.checkSynthOrder false in
 instance (priority := default + 10) fromAssumption_forall (p : Bool) [BI PROP] (Φ : α → PROP)
     (x : α) (Q : PROP) [h : FromAssumption p (Φ x) Q] : FromAssumption p iprop(∀ x, Φ x) Q where
   from_assumption := (intuitionisticallyIf_mono <| forall_elim x).trans h.1
+
+instance fromAssumption_later [BI PROP] (p : Bool) (P Q : PROP)
+    [h : FromAssumption p P Q] : FromAssumption p P iprop(▷ Q) where
+  from_assumption := h.1.trans later_intro
 
 -- IntoPure
 instance intoPure_pure (φ : Prop) [BI PROP] : IntoPure (PROP := PROP) iprop(⌜φ⌝) φ := ⟨.rfl⟩
