@@ -8,10 +8,11 @@ open Lean
 
 declare_syntax_cat specPat
 
-syntax binderIdent optional(str) : specPat
-syntax "[" binderIdent,* "]" optional(str) : specPat
+syntax binderIdent optional(" as " str) : specPat
+syntax "[" binderIdent,* "]" optional(" as " str) : specPat
 
 inductive SpecPat
+  | ident (name : TSyntax ``binderIdent) (goalName : Name)
   | idents (names : List (TSyntax ``binderIdent)) (goalName : Name)
   deriving Repr, Inhabited
 
@@ -21,13 +22,14 @@ partial def SpecPat.parse (pat : Syntax) : MacroM SpecPat := do
   | some pat => return pat
 where
   go : TSyntax `specPat → Option SpecPat
-  | `(specPat| $name:binderIdent) => some <| .idents [name] .anonymous
-  | `(specPat| $name:binderIdent $goal:str) => some <| .idents [name] (.mkSimple goal.getString)
+  | `(specPat| $name:binderIdent) => some <| .ident name .anonymous
+  | `(specPat| $name:binderIdent as $goal:str) => some <| .ident name (.mkSimple goal.getString)
   | `(specPat| [$[$names:binderIdent],*]) => some <| .idents names.toList .anonymous
-  | `(specPat| [$[$names:binderIdent],*] $goal:str) => some <| .idents names.toList (.mkSimple goal.getString)
+  | `(specPat| [$[$names:binderIdent],*] as $goal:str) => some <| .idents names.toList (.mkSimple goal.getString)
   | _ => none
 
 def headName (spats : List SpecPat) : Name :=
   match spats.head? with
-    | some <| .idents _ n => n
+    | some <| .ident _ name => name
+    | some <| .idents _ name => name
     | _ => .anonymous

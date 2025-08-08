@@ -187,16 +187,16 @@ theorem exact [BI PROP] (Q : PROP) : Q ⊢ Q := by
 
 theorem apply [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
   iintro HP H
-  iapply H with HP
+  iapply H with [HP]
 
 theorem multiple [BI PROP] (P Q R : PROP) : ⊢ P -∗ Q -∗ (P -∗ Q -∗ R) -∗ R := by
   iintro HP HQ H
-  iapply H with HP, HQ
+  iapply H with HP, [HQ]
 
 theorem multiple' [BI PROP] (P Q R S : PROP) : ⊢ (P -∗ Q) -∗ P -∗ R -∗ (Q -∗ R -∗ S) -∗ S := by
   iintro HPQ HP HR H
-  iapply H with [HPQ, HP], HR
-  iapply HPQ with HP
+  iapply H with [HPQ, HP], [HR]
+  iapply HPQ with [HP]
 
 theorem exact_intuitionistic [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
   iintro □HQ
@@ -204,25 +204,25 @@ theorem exact_intuitionistic [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
 
 theorem apply_intuitionistic [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) -∗ Q := by
   iintro HP H
-  iapply H with HP
+  iapply H with [HP]
 
 theorem multiple_intuitionistic [BI PROP] (P Q R : PROP) : ⊢ □ P -∗ Q -∗ □ (P -∗ Q -∗ □ R) -∗ R := by
   iintro □HP HQ □H
-  iapply H with _ "P", HQ "Q"
+  iapply H with _ as "P", HQ as "Q"
   case Q => iexact HQ
   iexact HP
 
 theorem later [BI PROP] (P Q : PROP) : ⊢ (▷ P -∗ Q) -∗ P -∗ Q := by
   iintro H HP
-  iapply H with HP
+  iapply H with [HP]
 
 theorem affine [BI PROP] [BIAffine PROP] (P Q : PROP) : ⊢ (P → Q) -∗ <pers> P -∗ Q := by
   iintro H HP
-  iapply H with HP
+  iapply H with [HP]
 
 theorem later_affine [BI PROP] [BIAffine PROP] (P Q : PROP) : ⊢ (▷ P → Q) -∗ P -∗ Q := by
   iintro H HP
-  iapply H with HP
+  iapply H with [HP]
 
 theorem exact_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
   istart
@@ -240,7 +240,7 @@ theorem apply_lean' [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) (HP : ⊢ P) : ⊢
 
 theorem multiple_lean [BI PROP] (P Q R : PROP) (H : P ⊢ Q -∗ R) (HP : ⊢ P) : ⊢ Q -∗ R := by
   iintro HQ
-  iapply H with _, HQ
+  iapply H with _, [HQ]
   iapply HP
 
 end apply

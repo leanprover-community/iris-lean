@@ -39,8 +39,9 @@ partial def iApplyCore
   if let some _ ← try? (synthInstanceQ q(IntoWand false false $er $A1 $A2)) then
     -- recursive apply case
     let splitPat := fun name _ => match spats.head? with
+      | some <| .ident bIdent _ => binderIdentHasName name bIdent
       | some <| .idents bIdents _ => bIdents.any <| binderIdentHasName name
-      | none => false
+      | _ => false
 
     let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
     let m ← if let some inst ← try? (synthInstanceQ q(FromAssumption false $er' $A1)) then
