@@ -248,10 +248,10 @@ end apply
 -- pose
 namespace pose
 
-theorem exac_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
+theorem exact_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
   istart
-  ipose H as "H" -- todo: auto-remove [emp]
-  iapply H with _
+  ipose H as "H"
+  iapply H
 
 theorem apply_lean [BI PROP] (P Q : PROP) (H : P ⊢ Q) : ⊢ P -∗ Q := by
   istart
