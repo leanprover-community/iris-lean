@@ -25,13 +25,15 @@ def iPoseCore
 
   match ldecl.type with
   | .app (.app (.app (.app (.const ``Iris.BI.Entails _) _) _) P) Q =>
-    let hyp := ← match P with
+    let hyp : Q($prop) := ← match P with
     | .app (.app (.const ``Iris.BI.BIBase.emp _) _) _ => pure Q
     | _ => mkAppM ``Iris.BI.wand #[P, Q]
     let pf ← mkAppM ``as_emp_valid_1 #[hyp, val]
 
     let uniq ← mkFreshId
-    let hyps' := .mkSep hyps (.mkHyp _ name uniq q(false) hyp)
+    let hyp' : Hyps bi hyp := Hyps.mkHyp bi name uniq q(false) hyp hyp
+    let e' := q(iprop($e ∗ $hyp))
+    let hyps' : Hyps bi e' := Hyps.mkSep hyps hyp' q(iprop($e ∗ $hyp))
 
     let m ← addGoal hyps' goal
 
