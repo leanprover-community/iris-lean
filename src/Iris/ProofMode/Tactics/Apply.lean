@@ -5,6 +5,7 @@ Authors: Oliver Soeser
 -/
 import Iris.ProofMode.Patterns.ProofModeTerm
 import Iris.ProofMode.Tactics.Split
+import Iris.ProofMode.Tactics.Pose
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
@@ -19,6 +20,24 @@ theorem rec_apply [BI PROP] {P Q P' Q' Q1 Q2 : PROP}
 
 theorem apply_lean [BI PROP] {P Q R : PROP} (pf : ⊢ Q) (res : P ∗ Q ⊢ R) : P ⊢ R :=
   sep_emp.mpr.trans <| (sep_mono_r pf).trans res
+
+variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
+partial def processSpecPats
+    (el A1 : Q($prop)) (hypsl : Hyps bi el) (spats : List SpecPat)
+    (addGoal : ∀ {e}, Name → Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
+    MetaM ((el' er' : Q($prop)) × Q($er' ⊢ $A1) × Hyps bi el' × Q($el ⊣⊢ $el' ∗ $er')) := do
+  let splitPat := fun name _ => match spats.head? with
+    | some <| .ident bIdent _ => binderIdentHasName name bIdent
+    | some <| .idents bIdents _ => bIdents.any <| binderIdentHasName name
+    | _ => false
+
+  let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
+  let m ← if let (some <| .ident _ _, some inst) := (spats.head?,
+      ← try? (synthInstanceQ q(FromAssumption false $er' $A1))) then
+    pure q(($inst).from_assumption)
+  else
+    addGoal (headName spats) hypsr' A1
+  return ⟨el', er', m, hypsl', h'⟩
 
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 partial def iApplyCore

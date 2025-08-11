@@ -32,10 +32,11 @@ def iPoseCore
 
     let uniq ← mkFreshId
     let hyp' : Hyps bi hyp := Hyps.mkHyp bi name uniq q(false) hyp hyp
+
     let e' := q(iprop($e ∗ $hyp))
     let hyps' : Hyps bi e' := Hyps.mkSep hyps hyp' q(iprop($e ∗ $hyp))
 
-    let m ← addGoal hyps' goal
+    let m : Q($e' ⊢ $goal) ← addGoal hyps' goal
 
     return ← mkAppM ``pose #[m, pf]
   | _ => throwError "ipose: {ident} is not an entailment"
