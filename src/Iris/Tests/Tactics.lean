@@ -245,6 +245,18 @@ theorem multiple_lean [BI PROP] (P Q R : PROP) (H : P ⊢ Q -∗ R) (HP : ⊢ P)
 
 end apply
 
+-- pose
+namespace pose
+
+theorem apply_lean [BI PROP] (P Q : PROP) (H : ⊢ P) : (P -∗ Q) ⊢ Q := by
+  istart
+  ipose H
+  iintro HP H
+  iapply H with HP
+  iapply HP with _
+
+end pose
+
 -- ex falso
 namespace exfalso
 
