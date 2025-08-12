@@ -79,7 +79,7 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
     let g ← instantiateMVars <| ← mvar.getType
     let some { prop, e, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
     match pmt.term.raw with
-    | .ident _ _ _ _ =>
+    | .ident _ _ _ _ => do
       let ident : Ident := ⟨pmt.term.raw⟩
       if let some uniq ← try? do pure (← hyps.findWithInfo ident) then
         -- lemma from iris context
@@ -98,6 +98,4 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
         let res ← iApplyCore goal e hyp hyps pmt.spats <| goalTracker goals
         mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
         replaceMainGoal (← goals.get).toList
-    | .node _ kind _ => throwError "iapply: {pmt.term.raw} of kind {kind} is a node"
-    | .missing => throwError "iapply: failed to parse {pmt.term.raw}"
-    | .atom _ _ => throwError "iapply: {pmt.term.raw} is an atom"
+    | _ => throwError "iapply: {pmt.term.raw} is not a binderIdent"

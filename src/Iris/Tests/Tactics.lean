@@ -228,10 +228,6 @@ theorem exact_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
   istart
   iapply H
 
-/-theorem exact_lean' [BI PROP] (Q : PROP) : Q ∗ emp ⊢ Q := by
-  istart
-  iapply (sep_emp.mp (P := Q))-/
-
 theorem apply_lean [BI PROP] (P Q : PROP) (H : P ⊢ Q) (HP : ⊢ P) : ⊢ Q := by
   istart
   iapply H
