@@ -98,6 +98,6 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
         let res ← iApplyCore goal e hyp hyps pmt.spats <| goalTracker goals
         mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
         replaceMainGoal (← goals.get).toList
-    | .node _ kind _ => throwError "iapply: {pmt.term.raw} of kind {kind} is a node"
+    | .node _ _ _ => throwError "iapply: {pmt.term.raw} is a node"
     | .missing => throwError "iapply: failed to parse {pmt.term.raw}"
     | .atom _ _ => throwError "iapply: {pmt.term.raw} is an atom"
