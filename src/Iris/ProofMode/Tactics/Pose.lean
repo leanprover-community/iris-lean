@@ -13,10 +13,9 @@ theorem pose [BI PROP] {e hyp goal : PROP}
     (H1 : e ∗ hyp ⊢ goal) (H2 : ⊢ hyp) : e ⊢ goal :=
   sep_emp.mpr.trans <| (sep_mono_r H2).trans H1
 
-def iPoseCore (prop : Q(Type u)) (f : FVarId) : MetaM (Q($prop) × Expr) := do
+def iPoseCore (prop : Q(Type u)) (f : FVarId) (ident : Ident) : MetaM (Q($prop) × Expr) := do
   let val := Expr.fvar f
-
-  let some ldecl := (← getLCtx).find? f | throwError "ipose: not in scope"
+  let some ldecl := (← getLCtx).find? f | throwError "ipose: {ident} not in scope"
 
   match ldecl.type with
   | .app (.app (.app (.app (.const ``Iris.BI.Entails _) _) _) P) Q =>
@@ -26,7 +25,7 @@ def iPoseCore (prop : Q(Type u)) (f : FVarId) : MetaM (Q($prop) × Expr) := do
     let pf ← mkAppM ``as_emp_valid_1 #[hyp, val]
 
     return ⟨hyp, pf⟩
-  | _ => throwError "ipose: not an entailment"
+  | _ => throwError "ipose: {ident} is not an entailment"
 
 elab "ipose" colGt ident:ident "as" colGt name:str : tactic => do
   let mvar ← getMainGoal
@@ -36,13 +35,12 @@ elab "ipose" colGt ident:ident "as" colGt name:str : tactic => do
     let some { prop, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
     let f ← getFVarId ident
-
-    let ⟨hyp, pf⟩ := ← iPoseCore prop f
+    let ⟨hyp, pf⟩ := ← iPoseCore prop f ident
 
     let uniq ← mkFreshId
     let name := .str .anonymous name.getString
-    let hyp' := Hyps.mkHyp bi name uniq q(false) hyp hyp
-    let hyps':= Hyps.mkSep hyps hyp'
+    let hypsr := Hyps.mkHyp bi name uniq q(false) hyp hyp
+    let hyps' := Hyps.mkSep hyps hypsr
 
     let goals ← IO.mkRef #[]
     let m ← goalTracker goals .anonymous hyps' goal

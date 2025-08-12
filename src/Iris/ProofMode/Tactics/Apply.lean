@@ -55,9 +55,8 @@ partial def iApplyCore
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
 
-  if let (some _, some _)
-      := (← try? <| synthInstanceQ q(FromAssumption false $er $goal),
-          ← try? <| synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))) then
+  if let (some _, some _) := (← try? <| synthInstanceQ q(FromAssumption false $er $goal),
+                              ← try? <| synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))) then
     -- iexact case
     return q(assumption (p := false) .rfl)
   else if let some _ ← try? <| synthInstanceQ q(IntoWand false false $er $A1 $goal) then
@@ -90,7 +89,7 @@ elab "iapply" colGt term:pmTerm : tactic => do
     else
       -- lemma from lean context
       let f ← getFVarId term.ident
-      let ⟨hyp, pf⟩ ← iPoseCore prop f
+      let ⟨hyp, pf⟩ ← iPoseCore prop f term.ident
 
       let goals ← IO.mkRef #[]
       let res ← iApplyCore goal e hyp hyps term.spats <| goalTracker goals
