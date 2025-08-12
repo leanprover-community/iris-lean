@@ -13,10 +13,10 @@ theorem pose [BI PROP] {e hyp goal : PROP}
     (H1 : e ∗ hyp ⊢ goal) (H2 : ⊢ hyp) : e ⊢ goal :=
   sep_emp.mpr.trans <| (sep_mono_r H2).trans H1
 
-def iPoseCore (prop : Q(Type u)) (ident : TSyntax `ident) (f : FVarId) : MetaM (Q($prop) × Expr) := do
+def iPoseCore (prop : Q(Type u)) (f : FVarId) : MetaM (Q($prop) × Expr) := do
   let val := Expr.fvar f
 
-  let some ldecl := (← getLCtx).find? f | throwError "ipose: {ident} not in scope"
+  let some ldecl := (← getLCtx).find? f | throwError "ipose: not in scope"
 
   match ldecl.type with
   | .app (.app (.app (.app (.const ``Iris.BI.Entails _) _) _) P) Q =>
@@ -26,7 +26,7 @@ def iPoseCore (prop : Q(Type u)) (ident : TSyntax `ident) (f : FVarId) : MetaM (
     let pf ← mkAppM ``as_emp_valid_1 #[hyp, val]
 
     return ⟨hyp, pf⟩
-  | _ => throwError "ipose: {ident} is not an entailment"
+  | _ => throwError "ipose: not an entailment"
 
 elab "ipose" colGt ident:ident "as" colGt name:str : tactic => do
   let mvar ← getMainGoal
@@ -37,7 +37,7 @@ elab "ipose" colGt ident:ident "as" colGt name:str : tactic => do
 
     let f ← getFVarId ident
 
-    let ⟨hyp, pf⟩ := ← iPoseCore prop ident f
+    let ⟨hyp, pf⟩ := ← iPoseCore prop f
 
     let uniq ← mkFreshId
     let name := .str .anonymous name.getString

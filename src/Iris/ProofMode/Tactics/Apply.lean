@@ -90,16 +90,9 @@ elab "iapply" colGt term:pmTerm : tactic => do
     else
       -- lemma from lean context
       let f ← getFVarId term.ident
-      let val := Expr.fvar f
+      let ⟨hyp, pf⟩ ← iPoseCore prop f
 
-      try
-        -- exact case
-        let ls ← mvar.apply val
-        replaceMainGoal ls
-      catch _ =>
-        -- apply case
-        let ⟨hyp, pf⟩ ← iPoseCore prop term.ident f
-        let goals ← IO.mkRef #[]
-        let res ← iApplyCore goal e hyp hyps term.spats <| goalTracker goals
-        mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
-        replaceMainGoal (← goals.get).toList
+      let goals ← IO.mkRef #[]
+      let res ← iApplyCore goal e hyp hyps term.spats <| goalTracker goals
+      mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
+      replaceMainGoal (← goals.get).toList
