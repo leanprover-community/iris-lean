@@ -22,7 +22,7 @@ theorem apply_lean [BI PROP] {P Q R : PROP} (pf : ⊢ Q) (res : P ∗ Q ⊢ R) :
   sep_emp.mpr.trans <| (sep_mono_r pf).trans res
 
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
-def temp
+def specPatGoal
     (A1 : Q($prop)) (hyps : Hyps bi e) (spats : List SpecPat)
     (addGoal : ∀ {e}, Name → Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
     MetaM Q($e ⊢ $A1) := do
@@ -43,7 +43,7 @@ def processSpecPats
     | _ => false
 
   let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
-  let m ← temp A1 hypsr' spats addGoal
+  let m ← specPatGoal A1 hypsr' spats addGoal
   return ⟨el', er', m, hypsl', h'⟩
 
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
@@ -61,7 +61,7 @@ partial def iApplyCore
     return q(assumption (p := false) .rfl)
   else if let some _ ← try? <| synthInstanceQ q(IntoWand false false $er $A1 $goal) then
     -- iapply base case
-    let m ← temp A1 hypsl spats addGoal
+    let m ← specPatGoal A1 hypsl spats addGoal
     return q(apply $m)
   else if let some _ ← try? <| synthInstanceQ q(IntoWand false false $er $A1 $A2) then
     -- iapply recursive case
