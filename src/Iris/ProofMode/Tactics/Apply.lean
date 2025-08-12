@@ -22,8 +22,8 @@ theorem apply_lean [BI PROP] {P Q R : PROP} (pf : ⊢ Q) (res : P ∗ Q ⊢ R) :
   sep_emp.mpr.trans <| (sep_mono_r pf).trans res
 
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
-partial def processSpecPats
-    (el A1 : Q($prop)) (hypsl : Hyps bi el) (spats : List SpecPat)
+def processSpecPats
+    (A1 : Q($prop)) (hypsl : Hyps bi el) (spats : List SpecPat)
     (addGoal : ∀ {e}, Name → Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
     MetaM ((el' er' : Q($prop)) × Q($er' ⊢ $A1) × Hyps bi el' × Q($el ⊣⊢ $el' ∗ $er')) := do
   let splitPat := fun name _ => match spats.head? with
@@ -60,17 +60,7 @@ partial def iApplyCore
       addGoal (headName spats) hypsl A1
     return q(apply $m)
   else if let some _ ← try? <| synthInstanceQ q(IntoWand false false $er $A1 $A2) then
-    let splitPat := fun name _ => match spats.head? with
-      | some <| .ident bIdent _ => binderIdentHasName name bIdent
-      | some <| .idents bIdents _ => bIdents.any <| binderIdentHasName name
-      | _ => false
-
-    let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
-    let m ← if let (some <| .ident _ _, some inst) := (spats.head?,
-        ← try? (synthInstanceQ q(FromAssumption false $er' $A1))) then
-      pure q(($inst).from_assumption)
-    else
-      addGoal (headName spats) hypsr' A1
+    let ⟨el', er', m, hypsl', h'⟩ ← processSpecPats A1 hypsl spats addGoal
 
     let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(rec_apply $h' $m)
     let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
