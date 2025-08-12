@@ -13,8 +13,7 @@ theorem pose [BI PROP] {e hyp goal : PROP}
     (H1 : e ∗ hyp ⊢ goal) (H2 : ⊢ hyp) : e ⊢ goal :=
   sep_emp.mpr.trans <| (sep_mono_r H2).trans H1
 
-variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
-def iPoseCore (ident : TSyntax `ident) (f : FVarId) : MetaM (Q($prop) × Expr) := do
+def iPoseCore (prop : Q(Type u)) (ident : TSyntax `ident) (f : FVarId) : MetaM (Q($prop) × Expr) := do
   let val := Expr.fvar f
 
   let some ldecl := (← getLCtx).find? f | throwError "ipose: {ident} not in scope"
@@ -34,11 +33,11 @@ elab "ipose" colGt ident:ident "as" colGt name:str : tactic => do
 
   mvar.withContext do
     let g ← instantiateMVars <| ← mvar.getType
-    let some { bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+    let some { prop, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
     let f ← getFVarId ident
 
-    let ⟨hyp, pf⟩ := ← iPoseCore ident f
+    let ⟨hyp, pf⟩ := ← iPoseCore prop ident f
 
     let uniq ← mkFreshId
     let name := .str .anonymous name.getString
