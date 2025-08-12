@@ -71,27 +71,31 @@ partial def iApplyCore
   else
     throwError "iapply: cannot apply {er}"
 
-elab "iapply" colGt term:pmTerm : tactic => do
-  let term ← liftMacroM <| PMTerm.parse term
+elab "iapply" colGt pmt:pmTerm : tactic => do
+  let pmt ← liftMacroM <| PMTerm.parse pmt
   let mvar ← getMainGoal
 
   mvar.withContext do
     let g ← instantiateMVars <| ← mvar.getType
     let some { prop, e, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
-    if let some uniq ← try? do pure (← hyps.findWithInfo term.ident) then
-      -- lemma from iris context
-      let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove false uniq
+    match pmt.term.raw with
+    | .ident _ _ _ _ => do
+      let ident : Ident := ⟨pmt.term.raw⟩
+      if let some uniq ← try? do pure (← hyps.findWithInfo ident) then
+        -- lemma from iris context
+        let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove false uniq
 
-      let goals ← IO.mkRef #[]
-      let res ← iApplyCore goal e' out hyps' term.spats <| goalTracker goals
-      mvar.assign <| q(($pf).mp.trans $res)
-      replaceMainGoal (← goals.get).toList
-    else
-      -- lemma from lean context
-      let f ← getFVarId term.ident
-      let ⟨hyp, pf⟩ ← iPoseCore prop f term.ident
+        let goals ← IO.mkRef #[]
+        let res ← iApplyCore goal e' out hyps' pmt.spats <| goalTracker goals
+        mvar.assign <| q(($pf).mp.trans $res)
+        replaceMainGoal (← goals.get).toList
+      else
+        -- lemma from lean context
+        let f ← getFVarId pmt.term
+        let ⟨hyp, pf⟩ ← iPoseCore prop f ident
 
-      let goals ← IO.mkRef #[]
-      let res ← iApplyCore goal e hyp hyps term.spats <| goalTracker goals
-      mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
-      replaceMainGoal (← goals.get).toList
+        let goals ← IO.mkRef #[]
+        let res ← iApplyCore goal e hyp hyps pmt.spats <| goalTracker goals
+        mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
+        replaceMainGoal (← goals.get).toList
+    | _ => throwError "iapply: {pmt.term.raw} is not a binderIdent"

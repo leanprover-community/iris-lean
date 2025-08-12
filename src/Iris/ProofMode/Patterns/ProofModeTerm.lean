@@ -10,24 +10,24 @@ open Lean
 
 declare_syntax_cat pmTerm
 
-syntax binderIdent : pmTerm
-syntax binderIdent "with" specPat,+ : pmTerm
-syntax binderIdent "$!" ident,+ : pmTerm
-syntax binderIdent "$!" ident,+ "with" specPat,+ : pmTerm
+syntax term : pmTerm
+syntax term "with" specPat,+ : pmTerm
+syntax term "$!" term,+ : pmTerm
+syntax term "$!" term,+ "with" specPat,+ : pmTerm
 
 structure PMTerm where
-  ident : Ident
-  ts : List Ident
+  term : Term
+  terms : List Term
   spats : List SpecPat
   deriving Repr, Inhabited
 
 partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
   match ← expandMacros term with
-  | `(pmTerm| $name:ident) => return ⟨name, [], []⟩
-  | `(pmTerm| $name:ident with $spats,*) => return ⟨name, [], ← parseSpats spats⟩
-  | `(pmTerm| $name:ident $! $ts,*) => return ⟨name, ts.getElems.toList, []⟩
-  | `(pmTerm| $name:ident $! $ts,* with $spats,*) =>
-    return ⟨name, ts.getElems.toList, ← parseSpats spats⟩
+  | `(pmTerm| $trm:term) => return ⟨trm, [], []⟩
+  | `(pmTerm| $trm:term with $spats,*) => return ⟨trm, [], ← parseSpats spats⟩
+  | `(pmTerm| $trm:term $! $ts,*) => return ⟨trm, ts.getElems.toList, []⟩
+  | `(pmTerm| $trm:term $! $ts,* with $spats,*) =>
+    return ⟨trm, ts.getElems.toList, ← parseSpats spats⟩
   | _ => Macro.throwUnsupported
 where
   parseSpats (spats : Syntax.TSepArray `specPat ",") : MacroM (List SpecPat) :=
