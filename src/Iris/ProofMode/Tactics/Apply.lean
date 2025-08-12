@@ -22,6 +22,17 @@ theorem apply_lean [BI PROP] {P Q R : PROP} (pf : ⊢ Q) (res : P ∗ Q ⊢ R) :
   sep_emp.mpr.trans <| (sep_mono_r pf).trans res
 
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
+def temp
+    (A1 : Q($prop)) (hyps : Hyps bi e) (spats : List SpecPat)
+    (addGoal : ∀ {e}, Name → Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
+    MetaM Q($e ⊢ $A1) := do
+  return ← if let (some <| .ident _ _, some inst) := (spats.head?,
+      ← try? (synthInstanceQ q(FromAssumption false $e $A1))) then
+    pure q(($inst).from_assumption)
+  else
+    addGoal (headName spats) hyps A1
+
+variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def processSpecPats
     (A1 : Q($prop)) (hypsl : Hyps bi el) (spats : List SpecPat)
     (addGoal : ∀ {e}, Name → Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
@@ -32,11 +43,7 @@ def processSpecPats
     | _ => false
 
   let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
-  let m ← if let (some <| .ident _ _, some inst) := (spats.head?,
-      ← try? (synthInstanceQ q(FromAssumption false $er' $A1))) then
-    pure q(($inst).from_assumption)
-  else
-    addGoal (headName spats) hypsr' A1
+  let m ← temp A1 hypsr' spats addGoal
   return ⟨el', er', m, hypsl', h'⟩
 
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
@@ -50,16 +57,14 @@ partial def iApplyCore
   if let (some _, some _)
       := (← try? <| synthInstanceQ q(FromAssumption false $er $goal),
           ← try? <| synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))) then
-    return q(assumption (p := false) .rfl) -- iexact case
+    -- iexact case
+    return q(assumption (p := false) .rfl)
   else if let some _ ← try? <| synthInstanceQ q(IntoWand false false $er $A1 $goal) then
     -- iapply base case
-    let m ← if let (some <| .ident _ _, some inst) := (spats.head?,
-        ← try? (synthInstanceQ q(FromAssumption false $el $A1))) then
-      pure q(($inst).from_assumption)
-    else
-      addGoal (headName spats) hypsl A1
+    let m ← temp A1 hypsl spats addGoal
     return q(apply $m)
   else if let some _ ← try? <| synthInstanceQ q(IntoWand false false $er $A1 $A2) then
+    -- iapply recursive case
     let ⟨el', er', m, hypsl', h'⟩ ← processSpecPats A1 hypsl spats addGoal
 
     let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(rec_apply $h' $m)
