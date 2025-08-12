@@ -14,9 +14,9 @@ theorem apply [BI PROP] {P Q1 Q2 R : PROP}
     (h : P ⊢ Q1) [inst : IntoWand false false R Q1 Q2] : P ∗ R ⊢ Q2 :=
   (sep_mono h inst.1).trans wand_elim_r
 
-theorem rec_apply [BI PROP] {P Q P' Q' Q1 Q2 : PROP}
-    (h1 : P ⊣⊢ P' ∗ Q') (h2 : Q' ⊢ Q1) [IntoWand false false Q Q1 Q2] : P ∗ Q ⊢ P' ∗ Q2 :=
-  (sep_congr h1 .rfl).mp.trans <| sep_assoc.mp.trans <| sep_mono_r <| apply h2
+theorem rec_apply [BI PROP] {P Q P' Q' Q1 Q2 R : PROP}
+    (h1 : P ⊣⊢ P' ∗ Q') (h2 : Q' ⊢ Q1) (h3 : P' ∗ Q2 ⊢ R) [IntoWand false false Q Q1 Q2] : P ∗ Q ⊢ R :=
+  (sep_congr h1 .rfl).mp.trans <| sep_assoc.mp.trans <| (sep_mono_r <| apply h2).trans h3
 
 theorem apply_lean [BI PROP] {P Q R : PROP} (pf : ⊢ Q) (res : P ∗ Q ⊢ R) : P ⊢ R :=
   sep_emp.mpr.trans <| (sep_mono_r pf).trans res
@@ -65,12 +65,9 @@ partial def iApplyCore
     return q(apply $m)
   else if let some _ ← try? <| synthInstanceQ q(IntoWand false false $er $A1 $A2) then
     -- iapply recursive case
-    let ⟨el', er', m, hypsl', h'⟩ ← processSpecPats A1 hypsl spats addGoal
-
-    let pf : Q($el ∗ $er ⊢ $el' ∗ $A2) := q(rec_apply $h' $m)
+    let ⟨el', _, m, hypsl', h'⟩ ← processSpecPats A1 hypsl spats addGoal
     let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
-
-    return q(.trans $pf $res)
+    return q(rec_apply $h' $m $res)
   else
     throwError "iapply: cannot apply {er}"
 
