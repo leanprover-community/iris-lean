@@ -15,7 +15,8 @@ theorem apply [BI PROP] {P Q1 Q2 R : PROP}
   (sep_mono h inst.1).trans wand_elim_r
 
 theorem rec_apply [BI PROP] {P Q P' Q' Q1 Q2 R : PROP}
-    (h1 : P ⊣⊢ P' ∗ Q') (h2 : Q' ⊢ Q1) (h3 : P' ∗ Q2 ⊢ R) [IntoWand false false Q Q1 Q2] : P ∗ Q ⊢ R :=
+    (h1 : P ⊣⊢ P' ∗ Q') (h2 : Q' ⊢ Q1) (h3 : P' ∗ Q2 ⊢ R)
+    [IntoWand false false Q Q1 Q2] : P ∗ Q ⊢ R :=
   (sep_congr h1 .rfl).mp.trans <| sep_assoc.mp.trans <| (sep_mono_r <| apply h2).trans h3
 
 theorem apply_lean [BI PROP] {P Q R : PROP} (pf : ⊢ Q) (res : P ∗ Q ⊢ R) : P ⊢ R :=
@@ -96,6 +97,10 @@ elab "iapply" colGt term:pmTerm : tactic => do
         let ls ← mvar.apply val
         replaceMainGoal ls
       catch _ =>
+        --let goals' ← IO.mkRef #[]
+        --let x ← iPoseCore goal hyps .anonymous term.ident f <| goalTracker goals' .anonymous
+        --logInfo x
+
         -- apply case
         let some ldecl := (← getLCtx).find? f | throwError "iapply: {term.ident.getId} not in scope"
 

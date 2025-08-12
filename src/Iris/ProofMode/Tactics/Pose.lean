@@ -14,11 +14,7 @@ theorem pose [BI PROP] {e hyp goal : PROP}
   sep_emp.mpr.trans <| (sep_mono_r H2).trans H1
 
 variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
-def iPoseCore
-    (goal : Q($prop)) (hyps : Hyps bi e) (name : Name)
-    (ident : TSyntax `ident) (f : FVarId)
-    (addGoal : ∀ {e}, Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal))
-    : MetaM Expr := do
+def iPoseCore (ident : TSyntax `ident) (f : FVarId) : MetaM (Q($prop) × Expr) := do
   let val := Expr.fvar f
 
   let some ldecl := (← getLCtx).find? f | throwError "ipose: {ident} not in scope"
@@ -30,15 +26,7 @@ def iPoseCore
     | _ => mkAppM ``Iris.BI.wand #[P, Q]
     let pf ← mkAppM ``as_emp_valid_1 #[hyp, val]
 
-    let uniq ← mkFreshId
-    let hyp' : Hyps bi hyp := Hyps.mkHyp bi name uniq q(false) hyp hyp
-
-    let e' := q(iprop($e ∗ $hyp))
-    let hyps' : Hyps bi e' := Hyps.mkSep hyps hyp' q(iprop($e ∗ $hyp))
-
-    let m : Q($e' ⊢ $goal) ← addGoal hyps' goal
-
-    return ← mkAppM ``pose #[m, pf]
+    return ⟨hyp, pf⟩
   | _ => throwError "ipose: {ident} is not an entailment"
 
 elab "ipose" colGt ident:ident "as" colGt name:str : tactic => do
@@ -46,10 +34,18 @@ elab "ipose" colGt ident:ident "as" colGt name:str : tactic => do
 
   mvar.withContext do
     let g ← instantiateMVars <| ← mvar.getType
-    let some { hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+    let some { bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
     let f ← getFVarId ident
 
+    let ⟨hyp, pf⟩ := ← iPoseCore ident f
+
+    let uniq ← mkFreshId
+    let name := .str .anonymous name.getString
+    let hyp' := Hyps.mkHyp bi name uniq q(false) hyp hyp
+    let hyps':= Hyps.mkSep hyps hyp'
+
     let goals ← IO.mkRef #[]
-    mvar.assign <| ← iPoseCore goal hyps (.str .anonymous name.getString) ident f <| goalTracker goals .anonymous
+    let m ← goalTracker goals .anonymous hyps' goal
+    mvar.assign <| ← mkAppM ``pose #[m, pf]
     replaceMainGoal (← goals.get).toList

@@ -16,7 +16,7 @@ declared as an `outParam`. Consequently, if type class instance search is suppos
 `AsEmpValid2` is used.
 -/
 
-class AsEmpValid1 (φ : outParam Prop) {PROP : Type _} (P : PROP) [BI PROP] where
+class AsEmpValid1 (φ : semiOutParam Prop) {PROP : Type _} (P : PROP) [BI PROP] where
   as_emp_valid : φ ↔ ⊢ P
 
 class AsEmpValid2 (φ : Prop) {PROP : outParam (Type _)} (P : outParam PROP) [BI PROP] where
