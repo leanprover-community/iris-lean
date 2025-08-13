@@ -90,11 +90,7 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
     else
       -- lemma from lean context
       let mut val ← instantiateMVars (← elabTermForApply pmt.term)
-      if val.isMVar then
-        Term.synthesizeSyntheticMVarsNoPostponing
-        val ← instantiateMVars val
-
-      let _ := ← try? <| (·.apply) (← getMainGoal) val
+      let _ := ← try? <| mvar.apply val
       Term.synthesizeSyntheticMVarsNoPostponing
 
       let ⟨hyp, pf⟩ ← iPoseCore prop val ⟨pmt.term⟩
