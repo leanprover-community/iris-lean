@@ -78,33 +78,25 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
   mvar.withContext do
     let g ← instantiateMVars <| ← mvar.getType
     let some { prop, e, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
-    match pmt.term.raw with
-    | .ident _ _ _ _ => do
-      let ident : Ident := ⟨pmt.term.raw⟩
-      if let some uniq ← try? do pure (← hyps.findWithInfo ident) then
-        -- lemma from iris context
-        let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove false uniq
+    let ident : Ident := ⟨pmt.term.raw⟩
+    if let some uniq ← try? do pure (← hyps.findWithInfo ident) then
+      -- lemma from iris context
+      let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove false uniq
 
-        let goals ← IO.mkRef #[]
-        let res ← iApplyCore goal e' out hyps' pmt.spats <| goalTracker goals
-        mvar.assign <| q(($pf).mp.trans $res)
-        replaceMainGoal (← goals.get).toList
-      else
-        -- lemma from lean context
-        let f ← getFVarId pmt.term
-        let ⟨hyp, pf⟩ ← iPoseCore prop f ident
-
-        let goals ← IO.mkRef #[]
-        let res ← iApplyCore goal e hyp hyps pmt.spats <| goalTracker goals
-        mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
-        replaceMainGoal (← goals.get).toList
-    | .node _ _ _ =>
-      -- bluntly applies lean lemma
+      let goals ← IO.mkRef #[]
+      let res ← iApplyCore goal e' out hyps' pmt.spats <| goalTracker goals
+      mvar.assign <| q(($pf).mp.trans $res)
+      replaceMainGoal (← goals.get).toList
+    else
+      -- lemma from lean context
       let mut val ← instantiateMVars (← elabTermForApply pmt.term)
       if val.isMVar then
         Term.synthesizeSyntheticMVarsNoPostponing
         val ← instantiateMVars val
-      let mvarIds' ← (·.apply (term? := some m!"`{pmt.term}`")) (← getMainGoal) val
-      Term.synthesizeSyntheticMVarsNoPostponing
-      replaceMainGoal mvarIds'
-    | _ => throwError "iapply: {pmt.term} is neither an identifier nor a node"
+
+      let ⟨hyp, pf⟩ ← iPoseCore prop val ⟨pmt.term⟩
+
+      let goals ← IO.mkRef #[]
+      let res ← iApplyCore goal e hyp hyps pmt.spats <| goalTracker goals
+      mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
+      replaceMainGoal (← goals.get).toList

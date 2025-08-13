@@ -230,7 +230,7 @@ theorem exact_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
 
 theorem exact_lean' [BI PROP] : ⊢ emp ∗ (emp : PROP) := by
   istart
-  iapply @sep_emp.mpr
+  iapply (sep_emp (P := (emp : PROP))).mpr
 
 theorem apply_lean [BI PROP] (P Q : PROP) (H : P ⊢ Q) (HP : ⊢ P) : ⊢ Q := by
   istart
