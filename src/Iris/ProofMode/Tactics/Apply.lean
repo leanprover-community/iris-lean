@@ -98,4 +98,13 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
         let res ← iApplyCore goal e hyp hyps pmt.spats <| goalTracker goals
         mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
         replaceMainGoal (← goals.get).toList
-    | _ => throwError "iapply: {pmt.term.raw} is not a binderIdent"
+    | .node _ _ _ =>
+      -- bluntly applies lean lemma
+      let mut val ← instantiateMVars (← elabTermForApply pmt.term)
+      if val.isMVar then
+        Term.synthesizeSyntheticMVarsNoPostponing
+        val ← instantiateMVars val
+      let mvarIds' ← (·.apply (term? := some m!"`{pmt.term}`")) (← getMainGoal) val
+      Term.synthesizeSyntheticMVarsNoPostponing
+      replaceMainGoal mvarIds'
+    | _ => throwError "iapply: {pmt.term} is neither an identifier nor a node"
