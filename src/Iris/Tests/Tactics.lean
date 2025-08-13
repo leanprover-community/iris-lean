@@ -242,6 +242,12 @@ theorem apply_lean' [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) (HP : ⊢ P) : ⊢
   iapply H with _
   iapply HP
 
+theorem apply_lean'' [BI PROP] (P Q : PROP) (H1 : P ⊢ Q) (H2 : Q ⊢ R) : P ⊢ R := by
+  istart
+  iintro HP
+  iapply (wand_intro (emp_sep.mp.trans H2))
+  iapply H1 with HP
+
 theorem multiple_lean [BI PROP] (P Q R : PROP) (H : P ⊢ Q -∗ R) (HP : ⊢ P) : ⊢ Q -∗ R := by
   iintro HQ
   iapply H with _, HQ

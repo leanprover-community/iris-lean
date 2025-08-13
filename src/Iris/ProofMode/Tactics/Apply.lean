@@ -89,13 +89,27 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
       replaceMainGoal (← goals.get).toList
     else
       -- lemma from lean context
-      let expected : Expr := q($e ⊢ $goal)
-      let expr ← elabTerm pmt.term (some expected)
-      let expr ← mkAppM' expr #[]
+      let A1 ← mkFreshExprMVarQ q($prop)
+      let A2 ← mkFreshExprMVarQ q($prop)
+      if let some _ ← try? <| synthInstanceQ q(IntoWand false false $goal $A1 $A2) then
+        let expected : Expr := q($e ⊢ $A1 -∗ $A2)
+        let expr ← elabTerm pmt.term (some expected)
+        let expr ← mkAppM' expr #[]
 
-      let ⟨hyp, pf⟩ ← iPoseCore prop expr ⟨pmt.term⟩
+        let ⟨hyp, pf⟩ ← iPoseCore prop expr ⟨pmt.term⟩
 
-      let goals ← IO.mkRef #[]
-      let res ← iApplyCore goal e hyp hyps pmt.spats <| goalTracker goals
-      mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
-      replaceMainGoal (← goals.get).toList
+        let goals ← IO.mkRef #[]
+        let res ← iApplyCore goal e hyp hyps pmt.spats <| goalTracker goals
+        mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
+        replaceMainGoal (← goals.get).toList
+      else
+        let expected : Expr := q($e ⊢ $goal)
+        let expr ← elabTerm pmt.term (some expected)
+        let expr ← mkAppM' expr #[]
+
+        let ⟨hyp, pf⟩ ← iPoseCore prop expr ⟨pmt.term⟩
+
+        let goals ← IO.mkRef #[]
+        let res ← iApplyCore goal e hyp hyps pmt.spats <| goalTracker goals
+        mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
+        replaceMainGoal (← goals.get).toList
