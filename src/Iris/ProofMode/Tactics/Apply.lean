@@ -89,11 +89,10 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
       replaceMainGoal (← goals.get).toList
     else
       -- lemma from lean context
-      let mut val ← instantiateMVars (← elabTermForApply pmt.term)
-      let _ := ← try? <| mvar.apply val
-      Term.synthesizeSyntheticMVarsNoPostponing
+      let expr ← elabTerm pmt.term (some q($e ⊢ $goal)) -- todo: expected type?
+      let expr ← mkAppM' expr #[]
 
-      let ⟨hyp, pf⟩ ← iPoseCore prop val ⟨pmt.term⟩
+      let ⟨hyp, pf⟩ ← iPoseCore prop expr ⟨pmt.term⟩
 
       let goals ← IO.mkRef #[]
       let res ← iApplyCore goal e hyp hyps pmt.spats <| goalTracker goals
