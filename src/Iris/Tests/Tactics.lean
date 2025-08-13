@@ -253,6 +253,11 @@ theorem multiple_lean [BI PROP] (P Q R : PROP) (H : P ⊢ Q -∗ R) (HP : ⊢ P)
   iapply H with _, HQ
   iapply HP
 
+theorem multiple_lean' [BI PROP] (P Q R : PROP) (H : P ∗ Q ⊢ R) (HP : ⊢ P) : ⊢ Q -∗ R := by
+  iintro HQ
+  iapply (wand_intro H) with _, HQ
+  iapply HP
+
 end apply
 
 -- pose
