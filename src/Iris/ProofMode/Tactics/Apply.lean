@@ -89,7 +89,8 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
       replaceMainGoal (← goals.get).toList
     else
       -- lemma from lean context
-      let expr ← elabTerm pmt.term (some q($e ⊢ $goal)) -- todo: expected type?
+      let expected : Expr := q($e ⊢ $goal)
+      let expr ← elabTerm pmt.term (some expected)
       let expr ← mkAppM' expr #[]
 
       let ⟨hyp, pf⟩ ← iPoseCore prop expr ⟨pmt.term⟩
