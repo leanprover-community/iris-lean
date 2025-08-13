@@ -27,6 +27,7 @@ class Numbers (α : Type _) extends CommMonoid α, TotallyOrdered α where
   zero_lt_one : 0 < 1
   lt_def : ∀ {a b : α}, a < b ↔ a ≤ b ∧ a ≠ b
   add_le_compat : ∀ {a b c : α}, a ≤ b → a + c ≤ b + c
+  add_le_def : ∀ {a b : α}, a ≤ b ↔ ∃ c ≥ 0, a + c = b
   add_left_cancel : ∀ {a b c : α}, c + a = c + b → a = b
   -- these two are theorems. remove them after replacing them with theorems
   add_le_mono  : ∀ {a b c : α}, a + b ≤ c → a ≤ c
@@ -35,6 +36,8 @@ class Numbers (α : Type _) extends CommMonoid α, TotallyOrdered α where
 section NumbersAPI
 
 variable [iNum : Numbers α]
+
+
 
 theorem add_right_cancel : ∀ {a b : α}, a + c = b + c → a = b := by
   intro a b h
@@ -173,15 +176,19 @@ instance : CMRA.Discrete (Numerical α) where
 instance : CMRA.Exclusive (one : Numerical α) where
   exclusive0_l x H := by
     simp [CMRA.ValidN, CMRA.op] at H
+
     sorry
 
 
--- TODO: Simplify
 instance {q : Numerical α} : CMRA.Cancelable q where
   cancelableN {n x y} := by
     simp [CMRA.ValidN]
     intro _
-    suffices q + x = q + y → x = y by sorry -- {apply this}
+    have h : q + x = q + y → x = y := by
+      simp [Numbers.add_left_cancel]
+      sorry
+    
+    suffices q + x = q + y → x = y by apply h -- {apply this}
     intro H
     simp at H
     have H' := @iNum.add_left_cancel x.car y.car q.car
@@ -194,7 +201,7 @@ instance {q : Numerical α} : CMRA.Cancelable q where
     have H'' : ({ car := Add.add q x } : Numerical α).car = ({ car := Add.add q y } : Numerical α).car := by
       rw [H]
     exact H''
--- TODO: Simplify
+
 instance {q : Numerical α} : CMRA.IdFree q where
   id_free0_r y := by
     intro H H'
