@@ -258,6 +258,10 @@ theorem multiple_lean' [BI PROP] (P Q R : PROP) (H : P ∗ Q ⊢ R) (HP : ⊢ P)
   iapply (wand_intro H) with _, HQ
   iapply HP
 
+theorem exact_forall [BI PROP] (P : α → PROP) (a : α) (H : ⊢ ∀ x, P x) : ⊢ P a := by
+  istart
+  iapply H
+
 end apply
 
 -- pose
