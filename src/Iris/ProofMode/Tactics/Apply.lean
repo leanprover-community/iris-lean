@@ -92,7 +92,7 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
       let A1 ← mkFreshExprMVarQ q($prop)
       let A2 ← mkFreshExprMVarQ q($prop)
 
-      let expected : Expr := if let some _ := ← try? <|
+      let expected : Q(Prop) := if let some _ := ← try? <|
         synthInstanceQ q(IntoWand false false $goal $A1 $A2)
         then q($e ⊢ $A1 -∗ $A2) else q($e ⊢ $goal)
 

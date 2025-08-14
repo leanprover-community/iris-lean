@@ -10,8 +10,8 @@ import Iris.ProofMode.Tactics.Basic
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-theorem pose [BI PROP] {e hyp goal : PROP}
-    (H1 : e ∗ hyp ⊢ goal) (H2 : ⊢ hyp) : e ⊢ goal :=
+theorem pose [BI PROP] {P Q R : PROP}
+    (H1 : P ∗ Q ⊢ R) (H2 : ⊢ Q) : P ⊢ R :=
   sep_emp.mpr.trans <| (sep_mono_r H2).trans H1
 
 def iPoseCore (prop : Q(Type u)) (val : Expr) (ident : Ident) : MetaM (Q($prop) × Expr) := do
