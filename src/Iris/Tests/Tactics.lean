@@ -265,12 +265,12 @@ namespace pose
 
 theorem exact_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
   istart
-  ipose H as "HQ"
+  ipose H as HQ
   iapply HQ
 
 theorem apply_lean [BI PROP] (P Q : PROP) (H : P ⊢ Q) : ⊢ P -∗ Q := by
   istart
-  ipose H as "HPQ"
+  ipose H as HPQ
   iapply HPQ
 
 end pose
