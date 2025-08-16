@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Mario Carneiro
+Authors: Lars König, Mario Carneiro, Zongyuan Liu
 -/
 import Iris.ProofMode.Tactics.Remove
 import Iris.ProofMode.Patterns.SelectPattern
@@ -27,24 +27,27 @@ def clearCore {prop : Q(Type u)} (_bi : Q(BI $prop)) (p: Bool) (e e' out goal : 
     let _ ← synthInstanceQ q(TCOr (Affine $out) (Absorbing $goal))
     pure q(clear_spatial $pf)
 
-def clearCoreGo (mvar : MVarId) (epats : List iElaboratedSelectPat): MetaM MVarId := do
-  epats.foldlM processPat mvar
-where processPat (mvar: MVarId) (epat : iElaboratedSelectPat): MetaM (MVarId) :=
+structure ClearState {prop : Q(Type u)} {bi : Q(BI $prop)} where
+    (mvar': MVarId) (e: Q($prop)) (hyps: Hyps bi e)
+
+def clearCoreGo {u : Level} {prop : Q(Type u)} {bi : Q(BI $prop)} (goal : Q($prop))
+    (cs : @ClearState _ prop bi) (epats : List iElaboratedSelectPat): MetaM (@ClearState _ prop bi) := do
+    epats.foldlM processPat cs
+where processPat: (ClearState) → iElaboratedSelectPat → MetaM (ClearState)
+  | { mvar', e, hyps}, epat => do
     match epat with
     | iElaboratedSelectPat.pure => do
-      mvar.cleanup
+        let newmvar ← mvar'.cleanup
+        pure ({ mvar':= newmvar, e, hyps})
     | iElaboratedSelectPat.ident p uniq => do
-      mvar.withContext do
-        let g ← instantiateMVars <| ← mvar.getType
-        let some { u, prop, bi, e, hyps, goal} := parseIrisGoal? g | throwError "not in proof mode"
-
+      mvar'.withContext do
         let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true uniq
 
         let m : Q($e' ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
           IrisGoal.toExpr { u, prop, bi, hyps := hyps', goal, .. }
 
-        mvar.assign ((← (clearCore bi p e e' out goal pf)).app m)
-        pure (m.mvarId!)
+        mvar'.assign ((← (clearCore bi p e e' out goal pf)).app m)
+        pure ({ mvar':= m.mvarId!, e:= e', hyps := hyps'})
 
 elab "iclear" selpat:iselectPat : tactic => do
   -- parse syntax
@@ -53,9 +56,9 @@ elab "iclear" selpat:iselectPat : tactic => do
   let mvar ← getMainGoal
   mvar.withContext do
     let g ← instantiateMVars <| ← mvar.getType
-    let some { u := _, prop := _ , bi, e := _, hyps, goal := _ } := parseIrisGoal? g | throwError "not in proof mode"
+    let some { u := u, prop := prop , bi, e := e, hyps, goal} := parseIrisGoal? g | throwError "not in proof mode"
     let epats ← elaborateSelPatsCore bi hyps pats
 
     -- Process all elaborated patterns
-    let finalMvar ← clearCoreGo mvar epats
+    let { mvar' := finalMvar, e:= _, hyps := _ } ← @clearCoreGo u prop bi goal { mvar':= mvar , e, hyps} epats
     replaceMainGoal [finalMvar]
