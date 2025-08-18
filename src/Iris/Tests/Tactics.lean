@@ -262,13 +262,17 @@ theorem exact_forall [BI PROP] (P : α → PROP) (a : α) (H : ⊢ ∀ x, P x) :
   istart
   iapply H
 
--- theorem apply_forall [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
+theorem apply_forall [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
+  iintro HP
+  iapply H $! a, b with HP
+
+-- theorem apply_forall_intuitionistic [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
 --   iintro HP
---   iapply H $! a b with HP
+--   iapply H $! a, b with HP
 
 -- theorem apply_forall' [BI PROP] (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Qb := by
 --   iintro H HP
---   iapply H $! a b with HP
+--   iapply H $! a, b with HP
 
 end apply
 
@@ -285,14 +289,19 @@ theorem apply_lean [BI PROP] (P Q : PROP) (H : P ⊢ Q) : ⊢ P -∗ Q := by
   ipose H as HPQ
   iapply HPQ
 
--- theorem apply_forall [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
+theorem apply_forall [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
+  iintro HP
+  ipose H $! a, b as H'
+  iapply H' with HP
+
+-- theorem apply_forall_intuitionistic [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
 --   iintro HP
---   ipose H $! a b as H'
+--   ipose H $! a, b as H'
 --   iapply H' with HP
 
 -- theorem apply_forall' [BI PROP] (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Qb := by
 --   iintro H HP
---   ipose H $! a b as H'
+--   ipose H $! a, b as H'
 --   iapply H' with HP
 
 end pose
