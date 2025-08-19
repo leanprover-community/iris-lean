@@ -69,7 +69,7 @@ partial def iApplyCore
     let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
     return q(rec_apply $h' $m $res)
   else
-    throwError "iapply: cannot apply {er}"
+    throwError "iapply: cannot apply {er} to {goal}"
 
 elab "iapply" colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
