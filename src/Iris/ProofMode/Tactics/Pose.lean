@@ -14,8 +14,9 @@ theorem pose [BI PROP] {P Q R : PROP}
     (H1 : P ∗ Q ⊢ R) (H2 : ⊢ Q) : P ⊢ R :=
   sep_emp.mpr.trans <| (sep_mono_r H2).trans H1
 
-theorem pose_forall [BI PROP] (x : α) {P : α → PROP}
-    (H : ⊢ ∀ x, P x) : ⊢ P x := Entails.trans H <| forall_elim x
+theorem pose_forall [BI PROP] (x : α) (P : α → PROP) {Q : PROP}
+    [H1 : IntoForall Q P] (H2 : ⊢ Q) : ⊢ P x :=
+  Entails.trans H2 <| H1.into_forall.trans <| forall_elim x
 
 partial def instantiateForalls {prop : Q(Type u)} (bi : Q(BI $prop)) (hyp : Q($prop))
     (pf : Q(⊢ $hyp)) (terms : List Term) : TacticM (Expr × Expr) := do
@@ -25,7 +26,7 @@ partial def instantiateForalls {prop : Q(Type u)} (bi : Q(BI $prop)) (hyp : Q($p
     let Φ ← mkFreshExprMVarQ q($ttype → $prop)
     let _ ← synthInstanceQ q(IntoForall $hyp $Φ)
     let res ← mkAppM' Φ #[texpr]
-    let pf' ← mkAppM ``pose_forall #[texpr, pf]
+    let pf' ← mkAppM ``pose_forall #[texpr, Φ, pf]
     return ← instantiateForalls bi res pf' terms.tail
   else
     let pf ← mkAppM ``as_emp_valid_1 #[hyp, pf]
