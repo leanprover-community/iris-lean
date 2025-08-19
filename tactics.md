@@ -24,7 +24,7 @@
 | `icases` *hyp* `with` *cases-pat*      | Destruct the hypothesis *hyp* using the cases pattern *cases-pat*.                                                                                                                                                                   |
 | `iintro` *cases-pats*                  | Introduce up to multiple hypotheses and destruct them using the cases patterns *cases-pats*.                                                                                                                                         |
 | `iapply` *pmTerm*                      | Match the conclusion of the current goal against the conclusion of the *pmTerm* and generates goals for each of its premises, moving all unused spatial hypotheses to the last premise.                                              |
-| `ipose` *hyp* `as` *name*              | Move *hyp* into the Iris context with the name *name*.                                                                                                                                                                               |
+| `ipose` *pmTerm* `as` *name*           | Move *pmTerm* into the Iris context with the name *name*.                                                                                                                                                                               |
 
 ## Cases Patterns
 
