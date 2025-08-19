@@ -40,7 +40,7 @@ proposition can be derived. Type classes with the prefix `Into` are used to gene
 *into* which the original proposition can be turned by derivation. Additional boolean flags are
 used to indicate that certain propositions should be intuitionistic. -/
 
-class IntoEmpValid (φ : semiOutParam Prop) {PROP : Type _} (P : PROP) [BI PROP] where
+class IntoEmpValid (φ : Prop) {PROP : outParam (Type _)} (P : outParam PROP) [BI PROP] where
   into_emp_valid : φ → ⊢ P
 export IntoEmpValid (into_emp_valid)
 

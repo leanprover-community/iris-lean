@@ -6,6 +6,7 @@ Authors: Oliver Soeser
 import Iris.ProofMode.Patterns.ProofModeTerm
 import Iris.ProofMode.Patterns.CasesPattern
 import Iris.ProofMode.Tactics.Basic
+import Iris.Std
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
@@ -33,14 +34,12 @@ partial def instantiateForalls {prop : Q(Type u)} (bi : Q(BI $prop)) (hyp : Q($p
     return ⟨hyp, pf⟩
 
 def iPoseCore {prop : Q(Type u)} (bi : Q(BI $prop)) (val : Expr) (terms : List Term) : TacticM (Q($prop) × Expr) := do
-  let valType : Q($prop) ← inferType val
-  match valType with
-  | .app (.app (.app (.app (.const ``Iris.BI.Entails _) _) _) P) Q =>
-    let hyp : Q($prop) := ← match P with
-    | .app (.app (.const ``Iris.BI.BIBase.emp _) _) _ => pure Q
-    | _ => mkAppM ``Iris.BI.wand #[P, Q]
+  let p : Q(Prop) ← inferType val
+  let hyp ← mkFreshExprMVarQ q($prop)
+  if let some _ ← try? <| synthInstanceQ q(IntoEmpValid $p $hyp) then
     return ← instantiateForalls bi hyp val terms
-  | _ => throwError "ipose: {val} is not an entailment"
+  else
+    throwError "ipose: {val} is not an entailment"
 
 elab "ipose" colGt pmt:pmTerm "as" pat:(colGt icasesPat) : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
