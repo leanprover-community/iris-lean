@@ -117,7 +117,7 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
 
       let expr ← mkAppM' (← elabTerm pmt.term (some expected)) #[]
 
-      let ⟨hyp, pf⟩ ← iPoseCore bi expr ⟨pmt.term⟩ pmt.terms
+      let ⟨hyp, pf⟩ ← iPoseCore bi expr pmt.terms
 
       let goals ← IO.mkRef #[]
       let res ← iApplyCore goal e hyp hyps pmt.spats <| goalTracker goals

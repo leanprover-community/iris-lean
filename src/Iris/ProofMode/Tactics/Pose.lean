@@ -32,7 +32,7 @@ partial def instantiateForalls {prop : Q(Type u)} (bi : Q(BI $prop)) (hyp : Q($p
     let pf ← mkAppM ``as_emp_valid_1 #[hyp, pf]
     return ⟨hyp, pf⟩
 
-def iPoseCore {prop : Q(Type u)} (bi : Q(BI $prop)) (val : Expr) (ident : Ident) (terms : List Term) : TacticM (Q($prop) × Expr) := do
+def iPoseCore {prop : Q(Type u)} (bi : Q(BI $prop)) (val : Expr) (terms : List Term) : TacticM (Q($prop) × Expr) := do
   let valType : Q($prop) ← inferType val
   match valType with
   | .app (.app (.app (.app (.const ``Iris.BI.Entails _) _) _) P) Q =>
@@ -40,7 +40,7 @@ def iPoseCore {prop : Q(Type u)} (bi : Q(BI $prop)) (val : Expr) (ident : Ident)
     | .app (.app (.const ``Iris.BI.BIBase.emp _) _) _ => pure Q
     | _ => mkAppM ``Iris.BI.wand #[P, Q]
     return ← instantiateForalls bi hyp val terms
-  | _ => throwError "ipose: {ident} is not an entailment"
+  | _ => throwError "ipose: {val} is not an entailment"
 
 elab "ipose" colGt pmt:pmTerm "as" pat:(colGt icasesPat) : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
@@ -52,7 +52,7 @@ elab "ipose" colGt pmt:pmTerm "as" pat:(colGt icasesPat) : tactic => do
     let some { bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
     let f ← getFVarId pmt.term
-    let ⟨hyp, pf⟩ := ← iPoseCore bi (.fvar f) ⟨pmt.term⟩ pmt.terms
+    let ⟨hyp, pf⟩ := ← iPoseCore bi (.fvar f) pmt.terms
 
     let uniq ← mkFreshId
     let name ← match pat with
