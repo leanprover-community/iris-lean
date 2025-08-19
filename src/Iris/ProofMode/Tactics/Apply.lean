@@ -71,6 +71,24 @@ partial def iApplyCore
   else
     throwError "iapply: cannot apply {er} to {goal}"
 
+theorem apply_forall [BI PROP] (x : α) (P : α → PROP) {Q : PROP}
+    [H1 : IntoForall Q P] (H2 : E ⊢ E' ∗ Q) : E ⊢ E' ∗ P x :=
+  Entails.trans H2 <| sep_mono_r <| H1.into_forall.trans <| forall_elim x
+
+partial def instantiateForalls' {prop : Q(Type u)} (e e' : Q($prop)) (bi : Q(BI $prop))
+    (out : Q($prop)) (pf : Q($e ⊢ $e' ∗ $out)) (terms : List Term) :
+    TacticM (Expr × Expr) := do
+  if let some t := terms.head? then
+    let texpr ← mkAppM' (← elabTerm t none) #[]
+    let ⟨_, ttype, texpr⟩ ← inferTypeQ texpr
+    let Φ ← mkFreshExprMVarQ q($ttype → $prop)
+    let _ ← synthInstanceQ q(IntoForall $out $Φ)
+    let res ← mkAppM' Φ #[texpr]
+    let pf' ← mkAppM ``apply_forall #[texpr, Φ, pf]
+    return ← instantiateForalls' e e' bi res pf' terms.tail
+  else
+    return ⟨out, pf⟩
+
 elab "iapply" colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
   let mvar ← getMainGoal
@@ -82,9 +100,11 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
       -- lemma from iris context
       let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove false uniq
 
+      let ⟨out, pf⟩ := ← instantiateForalls' e e' bi out q(($pf).mp) pmt.terms
+
       let goals ← IO.mkRef #[]
       let res ← iApplyCore goal e' out hyps' pmt.spats <| goalTracker goals
-      mvar.assign <| q(($pf).mp.trans $res)
+      mvar.assign <| ← mkAppM ``Entails.trans #[pf, res]
       replaceMainGoal (← goals.get).toList
     else
       -- lemma from lean context
