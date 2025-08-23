@@ -12,7 +12,7 @@ syntax binderIdent : specPat
 syntax "[" binderIdent,* "]" optional(" as " str) : specPat
 
 inductive SpecPat
-  | ident (name : TSyntax ``binderIdent) (goalName : Name)
+  | ident (name : TSyntax ``binderIdent)
   | idents (names : List (TSyntax ``binderIdent)) (goalName : Name)
   deriving Repr, Inhabited
 
@@ -22,13 +22,13 @@ partial def SpecPat.parse (pat : Syntax) : MacroM SpecPat := do
   | some pat => return pat
 where
   go : TSyntax `specPat → Option SpecPat
-  | `(specPat| $name:binderIdent) => some <| .ident name .anonymous
+  | `(specPat| $name:binderIdent) => some <| .ident name
   | `(specPat| [$[$names:binderIdent],*]) => some <| .idents names.toList .anonymous
   | `(specPat| [$[$names:binderIdent],*] as $goal:str) => some <| .idents names.toList (.mkSimple goal.getString)
   | _ => none
 
 def headName (spats : List SpecPat) : Name :=
   match spats.head? with
-    | some <| .ident _ name => name
+    | some <| .ident _ => .anonymous
     | some <| .idents _ name => name
     | _ => .anonymous

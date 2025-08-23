@@ -27,7 +27,7 @@ def specPatGoal
     (A1 : Q($prop)) (hyps : Hyps bi e) (spats : List SpecPat)
     (addGoal : ∀ {e}, Name → Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
     MetaM Q($e ⊢ $A1) := do
-  return ← if let (some <| .ident _ _, some inst) := (spats.head?,
+  return ← if let (some <| .ident _, some inst) := (spats.head?,
       ← try? (synthInstanceQ q(FromAssumption false $e $A1))) then
     pure q(($inst).from_assumption)
   else
@@ -39,7 +39,7 @@ def processSpecPats
     (addGoal : ∀ {e}, Name → Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
     MetaM ((el' er' : Q($prop)) × Q($er' ⊢ $A1) × Hyps bi el' × Q($el ⊣⊢ $el' ∗ $er')) := do
   let splitPat := fun name _ => match spats.head? with
-    | some <| .ident bIdent _ => binderIdentHasName name bIdent
+    | some <| .ident bIdent => binderIdentHasName name bIdent
     | some <| .idents bIdents _ => bIdents.any <| binderIdentHasName name
     | _ => false
 
