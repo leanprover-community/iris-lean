@@ -118,7 +118,7 @@ end intro
 -- revert
 namespace revert
 
-theorem spatial [BI PROP] (P : PROP) (H : ⊢ P -∗ P) : P ⊢ P := by
+theorem spatial [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) : P ⊢ Q := by
   iintro HP
   irevert HP
   exact H

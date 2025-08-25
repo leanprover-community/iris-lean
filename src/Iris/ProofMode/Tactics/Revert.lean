@@ -30,9 +30,7 @@ elab "irevert" colGt hyp:ident : tactic => do
       let m : Q($e' ⊢ $out -∗ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
         IrisGoal.toExpr { hyps := hyps', goal := q(wand $out $goal), .. }
 
-      let pf : Q($e ⊢ $goal) := q(wand_revert $h $m)
-
-      mvar.assign pf
+      mvar.assign q(wand_revert $h $m)
       replaceMainGoal [m.mvarId!]
     else
       let f ← getFVarId hyp
