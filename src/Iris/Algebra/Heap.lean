@@ -235,7 +235,7 @@ theorem lookup_inc {m1 m2 : T} :
     simp [CMRA.op, optionOp, get_merge, get_hmap]
     cases get m2 i <;> cases get m1 i <;> cases f i <;> simp
 
--- TODO: Fix this
+-- TODO: Refactor/fix
 theorem pcore_idemp_1 {x cx : T} : Store.pcore x = some cx → Store.pcore cx ≡ some cx := by
   refine fun H => ?_
   have H' : ((Store.pcore ((Store.pcore x).getD x)).getD ((Store.pcore x).getD x)) ≡ ((Store.pcore x).getD x) := by
@@ -276,6 +276,7 @@ theorem pcore_idemp_1 {x cx : T} : Store.pcore x = some cx → Store.pcore cx �
       simp_all
   apply (H ▸ H')
 
+-- TODO: Refactor/fix
 def pcore_extend_1 {n : Nat} {x y1 y2 : T} : Store.validN n x → x ≡{n}≡ Store.op y1 y2 → (z1 : T) ×' (z2 : T) ×' x ≡ Store.op z1 z2 ∧ z1 ≡{n}≡ y1 ∧ z2 ≡{n}≡ y2 := by
   intro Hm Heq
   have F (i : K) := @CMRA.extend (Option V) _ n (Store.get x i) (Store.get y1 i) (Store.get y2 i) (Hm i) ?G
@@ -323,47 +324,36 @@ def pcore_extend_1 {n : Nat} {x y1 y2 : T} : Store.validN n x → x ≡{n}≡ St
       unfold FF2
       rw [hF]
 
-instance StoreO_CMRA : CMRA (T) where
+open OFE in
+instance instStoreCMRA : CMRA T where
   pcore := Store.pcore
   op := Store.op
   ValidN := Store.validN
   Valid := Store.valid
-  op_ne := by
-    intro x
-    constructor
-    intro n x1 x2 H1 i
-    simp [Store.op, get_merge]
-    have H1' := H1 i
-    revert H1'
-    cases Store.get x1 i <;>
-    cases Store.get x2 i <;>
-    simp
-    intro H
-    cases (Store.get x i) <;> simp
-    · trivial
-    · apply op_right_dist; trivial
-  pcore_ne {n x y cx} H := by
+  op_ne.ne _ x1 x2 H i := by
+    specialize H i; revert H; rename_i x _
+    simp [op, get_merge]
+    cases get x1 i <;> cases get x2 i <;> cases get x i <;> simp
+    apply op_right_dist
+  pcore_ne {n x y _} H := by
     simp only [Store.pcore, Option.some.injEq, exists_eq_left']
-    refine (· ▸ fun k => ?_)
-    have H := H k
-    revert H
-    cases hx : Store.get x k <;> cases hy : Store.get y k <;> simp
-    · rw [hmap_unalloc hx, hmap_unalloc hy]
-    · rw [hmap_alloc hx, hmap_alloc hy]
-      intro H1
-      exact OFE.NonExpansive.ne H1
-  validN_ne Hx H k := CMRA.validN_ne (OFE.NonExpansive.ne (f := (Store.get · k : T → Option V)) Hx) (H k)
-  valid_iff_validN {x} :=
-    ⟨fun H n k => valid_iff_validN.mp (H k) n, fun H k => valid_iff_validN.mpr (H · k)⟩
+    refine (· ▸ fun k => ?_); specialize H k; revert H
+    rw [get_hmap, get_hmap]
+    cases Store.get x k <;> cases Store.get y k <;> simp
+    exact (NonExpansive.ne ·)
+  validN_ne Hx H k := validN_ne (NonExpansive.ne (f := (Store.get · k : T → Option V)) Hx) (H k)
+  valid_iff_validN :=
+    ⟨fun H n k => valid_iff_validN.mp (H k) n,
+     fun H k => valid_iff_validN.mpr (H · k)⟩
   validN_succ H k := validN_succ (H k)
   validN_op_left {n x1 x2} H k := by
-    apply CMRA.validN_op_left (y := Store.get x2 k)
-    simp [CMRA.op, optionOp, Store.validN, Heap.get_merge,  ] at ⊢ H
-    have H' := H k
-    generalize HX : Store.get x1 k = X
-    generalize HY : Store.get x2 k = Y
-    simp_all
-    cases X <;> cases Y <;> simp_all [CMRA.op, optionOp]
+    refine validN_op_left (y := Store.get x2 k) ?_
+    specialize H k; revert H
+    simp only [Store.op, get_merge, Option.merge]
+    cases get x1 k <;> cases get x2 k <;> simp [optionOp, op]
+
+  -- Here
+
   assoc := by
     rintro x y z k
     simp [Store.op, Heap.get_merge]
