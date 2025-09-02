@@ -184,11 +184,11 @@ theorem Store.chain_get [Store T K V] [OFE V] (k : K) (c : Chain T) :
 open Store in
 instance Heap.instCOFE [Heap T K V] [COFE V] : COFE T where
   compl c := hmap (fun _ => COFE.compl <| c.map ⟨_, get_ne ·⟩) (c 0)
-  conv_compl {n c} k := by
+  conv_compl {_ c} k := by
+    rw [get_hmap]
     rcases H : get (c.chain 0) k
-    · rw [hmap_unalloc H]
-      rw [← chain_get, chain_none_const (c := chain k c) (n := 0) (H▸rfl)]; rfl
-    · exact hmap_alloc H ▸ IsCOFE.conv_compl
+    · rw [← chain_get, chain_none_const (c := chain k c) (n := 0) (H▸rfl)]; rfl
+    · exact IsCOFE.conv_compl
 
 end ofe
 
@@ -199,105 +199,45 @@ open CMRA
 
 variable [Heap T K V] [CMRA V]
 
-instance [CMRA V] : OFE.NonExpansive₂ (Heap.merge (T := T) (K := K) (V := V) op) where
-  ne _ x1 x2 Hx y1 y2 Hy := by
-    intro i
-    have Hx' := Hx i
-    have Hy' := Hy i
-    simp [get_merge]
-    cases h1 : Store.get x1 i <;> cases h2 : Store.get y1 i <;>
-    cases h3 : Store.get x2 i <;> cases h4 : Store.get y2 i <;>
-    simp_all
-    exact OFE.Dist.op Hx' Hy'
+@[simp] def Store.op (s1 s2 : T) : T := merge (K := K) CMRA.op s1 s2
+@[simp] def Store.unit : T := empty
+@[simp] def Store.pcore (s : T) : Option T := some <| hmap (fun _ => CMRA.pcore) s
+@[simp] def Store.valid (s : T) : Prop := ∀ k, ✓ (get s k : Option V)
+@[simp] def Store.validN (n : Nat) (s : T) : Prop := ∀ k, ✓{n} (get s k : Option V)
 
-@[simp] def Store.op (s1 s2 : T) : T := Heap.merge (K := K) CMRA.op s1 s2
-@[simp] def Store.unit : T := Heap.empty
-@[simp] def Store.pcore (s : T) : Option (T) := some <| Heap.hmap (fun _ => CMRA.pcore) s
-@[simp] def Store.valid (s : T) : Prop := ∀ k, ✓ (Store.get s k : Option V)
-@[simp] def Store.validN (n : Nat) (s : T) : Prop := ∀ k, ✓{n} (Store.get s k : Option V)
+theorem lookup_incN {n} {m1 m2 : T} :
+    (∃ (z : T), m2 ≡{n}≡ Store.op m1 z) ↔
+    ∀ i, (∃ z, (get m2 i) ≡{n}≡ (get m1 i) • z) := by
+  refine ⟨fun ⟨z, Hz⟩ i => ?_, fun H => ?_⟩
+  · refine ⟨get z i, ?_⟩
+    refine .trans (get_ne i |>.ne Hz) ?_
+    simp only [Store.op, op, optionOp, get_merge]
+    cases get m1 i <;> cases get z i <;> simp
+  · obtain ⟨f, Hf⟩ := Classical.axiomOfChoice H
+    exists hmap (fun k _ => f k) m2
+    refine fun i => (Hf i).trans ?_
+    specialize Hf i; revert Hf
+    simp [CMRA.op, optionOp, get_merge, get_hmap]
+    cases get m2 i <;> cases get m1 i <;> cases f i <;> simp
 
-theorem lookup_includedN n (m1 m2 : T) :
-  (∃ (z : T), m2 ≡{n}≡ Store.op m1 z) ↔
-  ∀ i, (∃ z, (Store.get m2 i) ≡{n}≡ (Store.get m1 i) • z) := by
-  constructor
-  · intros H i
-    rcases H with ⟨z, Hz⟩
-    exists (Store.get z i)
-    simp_all [CMRA.op, optionOp]
-    have Hz' := Hz i
-    simp [Heap.get_merge] at Hz'
-    generalize HX : Store.get m1 i = X
-    generalize HZ : Store.get z i = Z
-    rw [HX, HZ] at Hz'
-    cases X <;> cases Z <;> simp_all
-  · intro H
-    rcases (Classical.axiomOfChoice H) with ⟨f, Hf⟩
-    suffices ∃ z, ∀ (x : K), Store.get m2 x ≡{n}≡ Store.get (Store.op m1 z) x by exact this
-    suffices ∃ z, ∀ (x : K), Store.get m1 x • f x ≡{n}≡ Store.get (Store.op m1 z) x by
-      rcases this with ⟨tx, tH⟩
-      exists tx; intro i
-      exact (Hf i).trans (tH i)
-    simp [CMRA.op, optionOp, get_merge]
-    exists (hmap (fun k _ => f k) m2)
-    intro i
-    cases h : Store.get m2 i
-    · rw [hmap_unalloc h]
-      -- Both Store.get m1 x and f x are none? No
-      cases hh : Store.get m1 i <;>
-      cases hhh : f i <;> simp
-      · have Hf' := Hf i
-        rw [h, hh, hhh] at Hf'
-        simp [CMRA.op, optionOp] at Hf'
-      · have Hf' := Hf i
-        rw [h, hh, hhh] at Hf'
-        simp [CMRA.op, optionOp] at Hf'
-    · rw [hmap_alloc h]
-      cases hh : Store.get m1 i <;>
-      cases hhh : f i <;> simp
-
-theorem lookup_included {m1 m2 : T} :
-  (∃ (z : T), m2 ≡ Store.op m1 z) ↔
-  ∀ i, (∃ z, (Store.get m2 i) ≡ (Store.get m1 i) • z) := by
-  constructor
-  · intros H i
-    rcases H with ⟨z, Hz⟩
-    exists (Store.get z i)
-    simp_all [CMRA.op, optionOp]
-    have Hz' := Hz i
-    simp [Heap.get_merge,  ] at Hz'
-    generalize HX : get m1 i = X
-    generalize HZ : get z i = Z
-    rw [HX, HZ] at Hz'
-    cases X <;> cases Z <;> simp_all
-  · intro H
-    rcases (Classical.axiomOfChoice H) with ⟨f, Hf⟩
-    suffices ∃ z, ∀ (x : K), Store.get m2 x ≡ Store.get (Store.op m1 z) x by exact this
-    suffices ∃ z, ∀ (x : K), Store.get m1 x • f x ≡ Store.get (Store.op m1 z) x by
-      rcases this with ⟨tx, tH⟩
-      exists tx; intro i
-      exact (Hf i).trans (tH i)
-    simp [CMRA.op, optionOp, get_merge]
-    exists (hmap (fun k _ => f k) m2)
-    intro i
-    cases h : Store.get m2 i
-    · rw [hmap_unalloc h]
-      -- Both Store.get m1 x and f x are none? No
-      cases hh : Store.get m1 i <;>
-      cases hhh : f i <;> simp
-      · have Hf' := Hf i
-        rw [h, hh, hhh] at Hf'
-        simp [CMRA.op, optionOp] at Hf'
-      · have Hf' := Hf i
-        rw [h, hh, hhh] at Hf'
-        simp [CMRA.op, optionOp] at Hf'
-    · rw [hmap_alloc h]
-      cases hh : Store.get m1 i <;>
-      cases hhh : f i <;> simp
-
+theorem lookup_inc {m1 m2 : T} :
+    (∃ (z : T), m2 ≡ Store.op m1 z) ↔
+    ∀ i, (∃ z, (Store.get m2 i) ≡ (Store.get m1 i) • z) := by
+  refine ⟨fun ⟨z, Hz⟩ i => ?_, fun H => ?_⟩
+  · refine ⟨get z i, ?_⟩
+    refine .trans (get_ne i |>.eqv Hz) ?_
+    simp only [Store.op, op, optionOp, get_merge]
+    cases get m1 i <;> cases get z i <;> simp
+  · obtain ⟨f, Hf⟩ := Classical.axiomOfChoice H
+    exists hmap (fun k _ => f k) m2
+    refine fun i => (Hf i).trans ?_
+    specialize Hf i; revert Hf
+    simp [CMRA.op, optionOp, get_merge, get_hmap]
+    cases get m2 i <;> cases get m1 i <;> cases f i <;> simp
 
 -- TODO: Fix this
 theorem pcore_idemp_1 {x cx : T} : Store.pcore x = some cx → Store.pcore cx ≡ some cx := by
-  refine (fun H => ?_)
+  refine fun H => ?_
   have H' : ((Store.pcore ((Store.pcore x).getD x)).getD ((Store.pcore x).getD x)) ≡ ((Store.pcore x).getD x) := by
     intro k
     rw [H]
@@ -308,12 +248,10 @@ theorem pcore_idemp_1 {x cx : T} : Store.pcore x = some cx → Store.pcore cx �
     cases X <;> simp
     · rw [hmap_unalloc HX]
       rw [H]
+      rw [get_hmap]
       cases h : Store.get cx k
-      · rw [hmap_unalloc h]
-      · rw [hmap_alloc h]
-        rw [← H] at h
-        rw [hmap_unalloc HX] at h
-        cases h
+      · rfl
+      · rw [← H, hmap_unalloc HX] at h; cases h
     rename_i v
     generalize HY : pcore v = Y
     cases Y
@@ -492,7 +430,7 @@ instance StoreO_CMRA : CMRA (T) where
       cases Store.get vv i <;> cases Store.get x i <;> simp_all
     intro x y H'
     unfold le'
-    refine lookup_included.mpr ?_
+    refine lookup_inc.mpr ?_
     intro i
     suffices (core (Store.get x i)) ≼ (core (Store.get y i)) by
       simp_all [core', core, get_dmap]
@@ -896,7 +834,7 @@ theorem dom_op (m1 m2 : T) : Heap.dom (m1 • m2) = set_union (Heap.dom m1) (Hea
 
 theorem dom_included {m1 m2 : T} (Hinc : m1 ≼ m2) : set_included (Heap.dom m1) (Heap.dom m2) := by
   intro i
-  rcases lookup_included.mp Hinc i with ⟨z, Hz⟩
+  rcases lookup_inc.mp Hinc i with ⟨z, Hz⟩
   simp [Heap.dom]
   simp [OFE.Equiv, Option.Forall₂] at Hz
   generalize HX : Store.get m1 i = X

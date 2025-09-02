@@ -23,7 +23,7 @@ variable [IHHmap : ∀ V, HasHHMap (H (DFrac F × V)) (H V) K (DFrac F × V) V]
 instance : ViewRel (HeapR F K V H) where
   mono {n1 n2 m1 m2 f1 f2 Hrel Hm Hf Hn k} := by
     intro vk Hk
-    obtain ⟨Hf'', _⟩ := lookup_includedN n2 f2 f1
+    obtain ⟨Hf'', _⟩ := lookup_incN (n := n2) (m1 := f2) (m2 := f1)
     have Hf''' := Hf'' Hf k; clear Hf Hf''
     obtain Hf' : ∃ z, Store.get f1 k ≡{n2}≡ (some vk) • z := by
       obtain ⟨z, Hz⟩ := Hf'''; exists z
@@ -69,7 +69,7 @@ instance : ViewRel (HeapR F K V H) where
   rel_unit n := by
     exists Heap.empty
     intro k
-    simp [HeapR, Store.all, UCMRA.unit, Heap.get_empty]
+    simp [HeapR, Store.all, UCMRA.unit, Store.unit, Heap.get_empty]
 
 omit IHHmap in
 theorem view_rel_unit : HeapR F K V H n m UCMRA.unit := by
