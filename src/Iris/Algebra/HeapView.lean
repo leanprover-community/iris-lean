@@ -38,7 +38,7 @@ instance : ViewRel (HeapR F K V H) where
     rename_i val
     rcases Heq : val with ⟨q', va'⟩
     rw [h, Heq] at Hf'
-    simp only [HeapR, Store.all, toHeapPred] at Hrel
+    simp only [HeapR, Store.all] at Hrel
     obtain ⟨v, dq, Hm1, ⟨Hvval, Hdqval⟩, Hvincl⟩ := Hrel k val h
     have X : ∃ y : V, get m2 k = some y ∧ v ≡{n2}≡ y := by
       simp_all
@@ -61,7 +61,7 @@ instance : ViewRel (HeapR F K V H) where
     intro n m f Hrel k
     rcases Hf : Store.get f k with (_|⟨dqa, va⟩)
     · simp [CMRA.ValidN, optionValidN]
-    · simp only [HeapR, Store.all, toHeapPred] at Hrel
+    · simp only [HeapR, Store.all] at Hrel
       obtain ⟨v, dq, Hmval, Hvval, Hvincl⟩ := Hf ▸ Hrel k _ Hf
       rw [Hf] at Hvincl
       refine CMRA.validN_of_incN Hvincl ?_
@@ -69,11 +69,11 @@ instance : ViewRel (HeapR F K V H) where
   rel_unit n := by
     exists Heap.empty
     intro k
-    simp [HeapR, Store.all, toHeapPred, UCMRA.unit, store_unit, Heap.get_empty]
+    simp [HeapR, Store.all, UCMRA.unit, Heap.get_empty]
 
 omit IHHmap in
 theorem view_rel_unit : HeapR F K V H n m UCMRA.unit := by
-  simp [HeapR, Store.all, toHeapPred, UCMRA.unit, Heap.get_empty]
+  simp [HeapR, Store.all,   UCMRA.unit, Heap.get_empty]
 
 theorem heap_view_rel_exists n f : (∃ m, HeapR F K V H n m f) ↔ ✓{n} f := by
   constructor
@@ -82,7 +82,7 @@ theorem heap_view_rel_exists n f : (∃ m, HeapR F K V H n m f) ↔ ✓{n} f := 
   intro Hv
   let FF : (K → (DFrac F × V) → Option V) := fun k _ => (Store.get f k).bind (fun x => some x.2)
   exists ((IHHmap V).hhmap FF f)
-  simp [HeapR, Store.all, toHeapPred]
+  simp [HeapR, Store.all]
   intro k
   cases h : Store.get f k <;> simp []
   rename_i val
@@ -96,7 +96,7 @@ theorem heap_view_rel_exists n f : (∃ m, HeapR F K V H n m f) ↔ ✓{n} f := 
 
 instance gmap_view_rel_discrete [CMRA.Discrete V] : ViewRelDiscrete (HeapR F K V H) where
   discrete n h H := by
-    simp [HeapR, Store.all, toHeapPred]
+    simp [HeapR, Store.all]
     intro H k a b He
     have H' := H k a b He
     obtain ⟨v, Hv1, ⟨x, Hx1, Hx2⟩⟩ := H'
@@ -144,11 +144,11 @@ theorem heap_view_rel_lookup n m k dq v :
   constructor
   · intro Hrel
     have Hrel' := Hrel k (dq, v)
-    simp only [HeapR, Store.all, toHeapPred, Heap.point, Store.get_set_eq] at Hrel'
+    simp only [HeapR, Store.all,   Heap.point, Store.get_set_eq] at Hrel'
     obtain ⟨v', dq', Hlookup, Hval, Hinc⟩ := Hrel' trivial
     exists v'; exists dq'
   · rintro ⟨v', dq', Hlookup, Hval, _⟩ j
-    simp only [HeapR, Store.all, toHeapPred, Heap.point]
+    simp only [HeapR, Store.all,   Heap.point]
     if h : k = j
       then
         simp [Store.get_set_eq h]
@@ -239,7 +239,7 @@ theorem heap_view_frag_op k dq1 dq2 v1 v2 :
   rw [← View.view_frag_op]
   apply View.frag_ne.eqv
   apply Store.eqv_of_Equiv
-  apply Equiv_trans.trans _ point_op.symm
+  apply Store.Equiv_trans.trans _ point_op.symm
   rfl
 
 omit IHHmap in
@@ -483,14 +483,13 @@ theorem heap_view_alloc m k dq (v : V) : (Store.get m k = none) → ✓ dq → �
     ((heap_view_auth (.own 1) (Store.set m k (.some v)) : HeapView F K V H) • heap_view_frag k dq v) := by
   intro Hfresh Hdq Hval
   refine View.view_update_alloc (fun n bf Hrel j => ?_ )
-  simp [toHeapPred]
   simp [CMRA.op, get_merge, Option.merge]
   if h : k = j
     then
       rw [Heap.point_get_eq h]
       have Hbf : Store.get bf j = none := by
         cases hc : Store.get bf j; rfl
-        simp [HeapR, Store.all, toHeapPred] at Hrel
+        simp [HeapR, Store.all] at Hrel
         exfalso
         rename_i val
         have Hrel' := Hrel _ _ _ hc
@@ -511,7 +510,7 @@ theorem heap_view_alloc m k dq (v : V) : (Store.get m k = none) → ✓ dq → �
       · rintro _ _ ⟨⟩
       intro a b Hab
       obtain ⟨rfl⟩ := Hab
-      simp [HeapR, Store.all, toHeapPred] at Hrel
+      simp [HeapR, Store.all] at Hrel
       rcases Hrel j a b hc with ⟨v, He, q, Hv, Hframe, Hinc⟩
       rw [get_set_ne h]
       exists v
@@ -524,12 +523,11 @@ theorem heap_view_delete m k (v : V) :
    (heap_view_auth (.own 1) m : HeapView F K V H) • (heap_view_frag k (.own 1) v : HeapView F K V H) ~~>
    heap_view_auth (.own 1) (Heap.delete m k) := by
   refine View.view_update_dealloc (fun n bf Hrel j => ?_)
-  simp [toHeapPred]
   cases He : Store.get bf j
-  · intro _ _ HK; simp at HK
+  · intro _ HK; simp at HK
   if h : k = j
     then
-      simp [HeapR, Store.all, toHeapPred, CMRA.op, get_merge, Option.merge] at Hrel
+      simp [HeapR, Store.all,   CMRA.op, get_merge, Option.merge] at Hrel
       have Hrel' := Hrel k; clear Hrel
       simp [h, He, Heap.point_get_eq rfl] at Hrel'
       obtain ⟨v, HK, q, Hqv, Hqinc⟩ := Hrel'
@@ -546,18 +544,18 @@ theorem heap_view_delete m k (v : V) :
         exists f
         exact Fraction.Fractional.proper HK
     else
-      simp [HeapR, Store.all, toHeapPred, CMRA.op, get_merge, Option.merge] at Hrel
+      simp [HeapR, Store.all, CMRA.op, get_merge, Option.merge] at Hrel
       have Hrel' := Hrel j; clear Hrel
       simp [He, Heap.point_get_ne h] at Hrel'
-      intro a b Hab
+      rintro ⟨a, b⟩ Hab
       obtain ⟨rfl⟩ := Hab
       obtain ⟨v, H1, q, H2⟩ := Hrel' a b rfl
       exists v
-      refine ⟨?_, ?_⟩
+      exists q
+      refine ⟨?_, H2⟩
       · unfold Heap.delete
         rw [Store.get_set_ne h]
         trivial
-      exists q
 
 theorem heap_view_update (m : H _) k (dq : DFrac F) (v mv' v': V) (dq' : DFrac F) :
   (∀ (n : Nat) (mv : V) (f : Option (DFrac F × V)),
@@ -684,7 +682,7 @@ theorem heap_view_frag_dfrac k dq P v : dq ~~>: P →
   apply UpdateP.weaken
   · apply View.view_updateP_frag (P := fun b' => ∃ dq', ((◯V b') = heap_view_frag k dq' v) ∧ P dq')
     intros m n bf Hrel
-    simp only [HeapR, Store.all, toHeapPred] at Hrel
+    simp only [HeapR, Store.all] at Hrel
     have Hrel' := Hrel k ((dq, v) •? Store.get bf k) ?G
     case G=>
       simp [CMRA.op, Heap.get_merge, Heap.point_get_eq rfl, Option.merge, CMRA.op?]

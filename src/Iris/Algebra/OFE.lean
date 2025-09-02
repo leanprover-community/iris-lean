@@ -302,6 +302,12 @@ theorem Option.none_is_discrete [OFE α] : DiscreteE (none : Option α) := by
   constructor
   intro y; cases y <;> simp
 
+instance Option.merge_ne [OFE α] {op : α → α → α} [NonExpansive₂ op] :
+    NonExpansive₂ (Option.merge op) where
+  ne n x1 x2 Hx y1 y2 Hy := by
+    cases x1 <;> cases x2 <;> cases y1 <;> cases y2 <;> simp_all
+    exact NonExpansive₂.ne Hx Hy
+
 abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
 
 instance [OFEFun (β : α → _)] : OFE ((x : α) → β x) where
