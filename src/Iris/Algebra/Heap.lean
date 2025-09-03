@@ -235,95 +235,6 @@ theorem lookup_inc {m1 m2 : T} :
     simp [CMRA.op, optionOp, get_merge, get_hmap]
     cases get m2 i <;> cases get m1 i <;> cases f i <;> simp
 
--- TODO: Refactor/fix
-theorem pcore_idemp_1 {x cx : T} : Store.pcore x = some cx → Store.pcore cx ≡ some cx := by
-  refine fun H => ?_
-  have H' : ((Store.pcore ((Store.pcore x).getD x)).getD ((Store.pcore x).getD x)) ≡ ((Store.pcore x).getD x) := by
-    intro k
-    rw [H]
-    simp only [Option.getD_some, get_dmap]
-    simp [Store.pcore] at H
-    rw [← H]
-    generalize HX : Store.get x k = X
-    cases X <;> simp
-    · rw [hmap_unalloc HX]
-      rw [H]
-      rw [get_hmap]
-      cases h : Store.get cx k
-      · rfl
-      · rw [← H, hmap_unalloc HX] at h; cases h
-    rename_i v
-    generalize HY : pcore v = Y
-    cases Y
-    · conv=>
-        rhs
-        rw [hmap_alloc HX]
-      rw [HY]
-      rw [H]
-      cases h : Store.get cx k
-      · rw [hmap_unalloc h]
-      · exfalso
-        rw [← H] at h
-        rw [hmap_alloc HX] at h
-        simp_all
-    have Hidem := pcore_idem HY
-    simp_all
-    cases h : Store.get cx k
-    · rw [hmap_unalloc h]
-    · rw [hmap_alloc h]
-      rw [← H] at h
-      rw [hmap_alloc HX] at h
-      simp_all
-  apply (H ▸ H')
-
--- TODO: Refactor/fix
-def pcore_extend_1 {n : Nat} {x y1 y2 : T} : Store.validN n x → x ≡{n}≡ Store.op y1 y2 → (z1 : T) ×' (z2 : T) ×' x ≡ Store.op z1 z2 ∧ z1 ≡{n}≡ y1 ∧ z2 ≡{n}≡ y2 := by
-  intro Hm Heq
-  have F (i : K) := @CMRA.extend (Option V) _ n (Store.get x i) (Store.get y1 i) (Store.get y2 i) (Hm i) ?G
-  case G =>
-    apply ((get_ne (T := T) i).ne Heq).trans
-    simp [CMRA.op, optionOp, get_merge]
-    cases HX : Store.get y1 i <;> cases HY : Store.get y2 i <;> simp
-  let FF1 (k : K) (_ : V) := (F k |>.fst)
-  let FF2 (k : K) (_ : V) := (F k |>.snd.fst)
-  exists hmap FF1 y1
-  exists hmap FF2 y2
-  refine ⟨fun i => ?_, fun i => ?_, fun i => ?_⟩
-    <;> simp [Store.op, get_merge]
-    <;> rcases hF : (F i) with ⟨z1, z2, Hm, Hz1, Hz2⟩
-  · refine Hm.trans ?_
-    simp [CMRA.op, optionOp]
-    cases z1 <;> cases z2 <;> simp_all [FF1, FF2] <;> cases h1 : Store.get y1 i <;> simp [h1] at Hz1 <;> cases h2 : Store.get y2 i <;> simp [h2] at Hz2
-    · rw [hmap_unalloc h1]
-      rw [hmap_unalloc h2]
-      simp
-    · rw [hmap_unalloc h1]
-      rw [hmap_alloc h2]
-      rw [hF]
-      simp
-    · rw [hmap_alloc h1]
-      rw [hmap_unalloc h2]
-      rw [hF]
-      simp
-    · rw [hmap_alloc h1]
-      rw [hmap_alloc h2]
-      rw [hF]
-      simp
-  · cases h : Store.get y1 i
-    · rw [hmap_unalloc h]
-    · rw [hmap_alloc h]
-      rw [← h]
-      refine .trans ?_ Hz1
-      unfold FF1
-      rw [hF]
-  · cases h : Store.get y2 i
-    · rw [hmap_unalloc h]
-    · rw [hmap_alloc h]
-      rw [← h]
-      refine .trans ?_ Hz2
-      unfold FF2
-      rw [hF]
-
 open OFE in
 instance instStoreCMRA : CMRA T where
   pcore := Store.pcore
@@ -341,7 +252,8 @@ instance instStoreCMRA : CMRA T where
     rw [get_hmap, get_hmap]
     cases Store.get x k <;> cases Store.get y k <;> simp
     exact (NonExpansive.ne ·)
-  validN_ne Hx H k := validN_ne (NonExpansive.ne (f := (Store.get · k : T → Option V)) Hx) (H k)
+  validN_ne Hx H k :=
+    validN_ne (NonExpansive.ne (f := (Store.get · k : T → Option V)) Hx) (H k)
   valid_iff_validN :=
     ⟨fun H n k => valid_iff_validN.mp (H k) n,
      fun H k => valid_iff_validN.mpr (H · k)⟩
@@ -351,101 +263,82 @@ instance instStoreCMRA : CMRA T where
     specialize H k; revert H
     simp only [Store.op, get_merge, Option.merge]
     cases get x1 k <;> cases get x2 k <;> simp [optionOp, op]
-
-  -- Here
-
-  assoc := by
-    rintro x y z k
+  assoc {x y z} k := by
+    simp only [Store.op, get_merge]
+    cases Store.get x k <;> cases Store.get y k <;> cases Store.get z k <;> simp
+    exact assoc
+  comm {x y} k := by
     simp [Store.op, Heap.get_merge]
-    cases h1 : Store.get x k <;>
-    cases h2 : Store.get y k <;>
-    cases h3 : Store.get z k <;>
-    simp_all
-    apply assoc
-  comm := by
-    rintro x y k
-    simp [Store.op, Heap.get_merge]
-    cases h1 : Store.get x k <;>
-    cases h2 : Store.get y k <;>
-    simp_all
+    cases Store.get x k <;> cases Store.get y k <;> simp
     exact comm
-  pcore_op_left {x cx} := by
-    refine (fun H => ?_)
-    have H' : Store.op ((Store.pcore x).getD x) x ≡ x := by
-      intro k
-      simp [Store.op, Store.pcore, Store.op, get_merge]
-      simp [Store.pcore] at H
-      rw [H]
-      cases hcx : Store.get cx k <;> cases hx : Store.get x k <;> simp
-      · rw [← H] at hcx
-        rw [hmap_unalloc hx] at hcx
-        cases hcx
-      · apply pcore_op_left
-        rename_i val1 val2
-        have HH : Store.get (hmap (fun x => pcore) x) k = Store.get cx k := by rw [H]
-        rw [hcx] at HH
-        rw [hmap_alloc hx] at HH
-        trivial
-    apply (H ▸ H')
-  pcore_idem {x cx} := by exact pcore_idemp_1
+  pcore_op_left {x cx} H k := by
+    simp only [← Option.getD_some (a := cx) (b := cx), Store.op, get_merge]
+    cases Hcx : Store.get cx k <;> cases hx : Store.get x k <;> simp <;>
+      simp only [Store.pcore, Option.some.injEq] at H
+    · rw [← H, hmap_unalloc hx] at Hcx
+      cases Hcx
+    · apply pcore_op_left
+      rw [← Hcx, ← H, hmap_alloc hx]
+  pcore_idem {x cx} H := by
+    simp only [Store.pcore, Option.some.injEq] at H
+    change (Store.pcore cx |>.getD cx) ≡ cx
+    intro k
+    simp [← H, get_hmap]
+    rcases Store.get x k with (_|v) <;> simp
+    cases HY : pcore v; simp
+    exact pcore_idem HY
   pcore_op_mono := by
     apply pcore_op_mono_of_core_op_mono
-    let core' (x : T) := (Store.pcore x).getD x
-    let le' (x y : T) := ∃ z, y ≡ Store.op x z
+    rintro x cx y ⟨z, Hz⟩
+    suffices ∃ z, (Store.pcore y |>.getD y) ≡ Store.op (Store.pcore x |>.getD x) z by
+      rintro Hx
+      simp only [Store.pcore, Option.some.injEq, Store.op, exists_eq_left']
+      rcases this with ⟨z', Hz'⟩
+      exists z'
+      refine .trans Hz' (fun i => ?_)
+      cases get z' i <;> cases get x i <;> simp_all
+    refine lookup_inc.mpr (fun i => ?_)
+    obtain ⟨v', Hv'⟩ : (core (Store.get x i)) ≼ (core (Store.get y i))  := by
+      apply core_mono
+      exists get z i
+      have Hz := Hz i; revert Hz
+      simp [CMRA.op, optionOp, get_merge]
+      cases get x i <;> cases get z i <;> simp_all
+    exists v'
+    simp_all [core, pcore, optionCore, get_hmap]
+  extend {n x y1 y2} Hm Heq := by
+    have Hslice i : Store.get x i ≡{n}≡ Store.get y1 i • Store.get y2 i := by
+      refine (get_ne i |>.ne Heq).trans ?_
+      simp [CMRA.op, get_merge, optionOp]
+      cases get y1 i <;> cases get y2 i <;> simp
+    let extendF (i : K) := CMRA.extend (Hm i) (Hslice i)
+    exists hmap (fun k (_ : V) => extendF k |>.fst) y1
+    exists hmap (fun k (_ : V) => extendF k |>.snd.fst) y2
+    simp [Store.op, get_merge]
+    refine ⟨fun i => ?_, fun i => ?_, fun i => ?_⟩
+    all_goals rcases hF : extendF i with ⟨z1, z2, Hm, Hz1, Hz2⟩
+    · refine Hm.trans ?_
+      simp [Store.op, get_merge, hF, CMRA.op, optionOp]
+      cases z1 <;> cases z2 <;> cases h1 : get y1 i <;> cases h2 : get y2 i <;> simp [h1, h2] at Hz1 Hz2
+      · rw [hmap_unalloc h1, hmap_unalloc h2]; simp
+      · rw [hmap_unalloc h1, hmap_alloc h2, hF]; simp
+      · rw [hmap_alloc h1, hmap_unalloc h2, hF]; simp
+      · rw [hmap_alloc h1, hmap_alloc h2, hF]; simp
+    · cases h : Store.get y1 i
+      · rw [hmap_unalloc h]
+      · rw [hmap_alloc h, ← h, hF]; exact Hz1
+    · cases h : Store.get y2 i
+      · rw [hmap_unalloc h]
+      · rw [hmap_alloc h, ← h, hF]; exact Hz2
 
-    -- First direction, no countability used
-    have Hcore'le'1 (x y : T) : le' x y → ∀ (i : K), (Store.get x i ≼ Store.get y i) := by
-      intros H i
-      rcases H with ⟨z, Hz⟩
-      exists (Store.get z i)
-      simp_all [CMRA.op, optionOp]
-      have Hz' := Hz i
-      simp [Heap.get_merge,  ] at Hz'
-      generalize HX : Store.get x i = X
-      generalize HZ : Store.get z i = Z
-      rw [HX, HZ] at Hz'
-      cases X <;> cases Z <;> simp_all
-
-    suffices ∀ x y : T, le' x y → le' (core' x) (core' y) by
-      rintro x cx y Hxy' Hx
-      have Hxy := this x y Hxy'
-      unfold core' at Hxy
-      simp [Hx] at Hxy
-      simp [Store.pcore]
-      rcases Hxy with ⟨vv, Hvv⟩
-      exists vv
-      apply Hvv.trans
-      intro i
-      simp [get_merge]
-      cases Store.get vv i <;> cases Store.get x i <;> simp_all
-    intro x y H'
-    unfold le'
-    refine lookup_inc.mpr ?_
-    intro i
-    suffices (core (Store.get x i)) ≼ (core (Store.get y i)) by
-      simp_all [core', core, get_dmap]
-      rcases this with ⟨vv, Hvv⟩
-      exists vv
-      simp_all [pcore, optionCore, Hvv]
-      cases hx : Store.get x i <;> cases hy : Store.get y i <;> simp_all
-      · simp [hmap_unalloc hx, hmap_unalloc hy, Hvv]
-      · simp [hmap_unalloc hx, hmap_alloc hy, Hvv]
-      · simp [hmap_alloc hx, hmap_unalloc hy, Hvv]
-      · simp [hmap_alloc hx, hmap_alloc hy, Hvv]
-    exact core_mono (Hcore'le'1 x y H' i)
-
-  extend := fun {n} {x y₁ y₂} a a_1 => pcore_extend_1 a a_1
-
-instance StoreO_UCMRA : UCMRA (T) where
+instance instStoreUCMRA : UCMRA T where
   unit := Store.unit
-  unit_valid := by simp [CMRA.Valid, Store.valid, optionValid, Store.unit, Heap.get_empty]
-  unit_left_id := by
-    intro x k
-    simp [CMRA.op, Heap.get_merge, Store.unit, Heap.get_empty]
-  pcore_unit := by
-    intro k
-    simp [CMRA.pcore, get_dmap, Store.unit, Heap.get_empty]
-    rw [hmap_unalloc Heap.get_empty]
+  unit_valid := by
+    simp [CMRA.Valid, Store.valid, optionValid, Store.unit, get_empty]
+  unit_left_id _ := by
+    simp [CMRA.op, Heap.get_merge, Store.unit, get_empty]
+  pcore_unit _ := by
+    simp [Store.unit, hmap_unalloc get_empty, get_empty]
 
 end cmra
 
@@ -453,7 +346,6 @@ section heap_laws
 
 variable {K V : Type _} [Heap T K V] [CMRA V]
 open CMRA
-
 
 theorem lookup_validN_Some {m : T} : ✓{n} m → Store.get m i ≡{n}≡ some x → ✓{n} x := by
   suffices ✓{n} Store.get m i → Store.get m i ≡{n}≡ some x → ✓{n} x by
