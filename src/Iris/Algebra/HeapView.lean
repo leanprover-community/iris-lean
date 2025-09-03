@@ -216,7 +216,7 @@ theorem heap_view_auth_op_valid m1 m2 : ✓ ((heap_view_auth (.own One.one) m1 :
 theorem heap_view_frag_validN n k dq v : ✓{n} (heap_view_frag k dq v : HeapView F K V H) ↔ ✓ dq ∧ ✓{n} v := by
   apply View.view_frag_validN.trans
   apply (heap_view_rel_exists F K V H _ _).trans
-  apply point_validN
+  apply point_validN_iff
 
 theorem heap_view_frag_valid k dq v : ✓ (heap_view_frag k dq v : HeapView F K V H) ↔ ✓ dq ∧ ✓ v := by
   suffices (∀ n, ✓{n} (heap_view_frag k dq v : HeapView F K V H)) ↔ ✓ dq ∧ ✓ v by exact this
@@ -239,7 +239,7 @@ theorem heap_view_frag_op k dq1 dq2 v1 v2 :
   rw [← View.view_frag_op]
   apply View.frag_ne.eqv
   apply Store.eqv_of_Equiv
-  apply Store.Equiv_trans.trans _ point_op.symm
+  apply Store.Equiv_trans.trans _ point_op_point.symm
   rfl
 
 omit IHHmap in
@@ -257,8 +257,8 @@ theorem heap_view_frag_op_validN n k dq1 dq2 v1 v2 :
   · apply CMRA.validN_iff
     apply OFE.equiv_dist.mp
     apply Store.eqv_of_Equiv
-    apply point_op
-  apply point_validN.trans
+    apply point_op_point
+  apply point_validN_iff.trans
   apply Eq.to_iff rfl
 
 theorem heap_view_frag_op_valid k dq1 dq2 v1 v2 :
@@ -275,8 +275,8 @@ theorem heap_view_frag_op_valid k dq1 dq2 v1 v2 :
     · apply CMRA.validN_iff
       apply OFE.equiv_dist.mp
       apply Store.eqv_of_Equiv
-      apply point_op
-    apply point_validN.trans
+      apply point_op_point
+    apply point_validN_iff.trans
     apply Eq.to_iff rfl
   constructor
   · intro H
@@ -461,7 +461,7 @@ instance heap_view_frag_core_id [CMRA.CoreId dq] [CMRA.CoreId v] :
   simp only [heap_view_frag, CMRA.pcore]
   simp only [View.pcore, some_eqv_some]
   refine NonExpansive₂.eqv trivial ?_
-  refine point_core' ?_
+  refine point_core_eqv ?_
   simp [CMRA.pcore, Prod.pcore]
   simp [CMRA.pcore] at H1
   simp [H1]
