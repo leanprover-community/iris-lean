@@ -35,6 +35,13 @@ class Store (T : Type _) (K V : outParam (Type _)) where
   get_set_ne {t k k' v} : k ≠ k' → get (set t k v) k' = get t k'
 export Store (get set get_set_eq get_set_ne)
 
+open Classical in
+theorem Store.get_set [Store T K V] {t : T} {k k' : K} {v : V} :
+    get (set t k v) k' = if k = k' then v else get t k' := by
+  split <;> rename_i h
+  · exact get_set_eq h
+  · exact get_set_ne h
+
 /-- An index-dependent predicate holds at every member of the store. -/
 def Store.all [Store T K V] (P : K → V → Prop) : T → Prop :=
   fun t => ∀ k, P k (get t k)
@@ -118,6 +125,13 @@ theorem Heap.point_get_eq [Heap T K V] (H : k = k') : get (point k v : T) k' = v
 
 theorem Heap.point_get_ne [Heap T K V] (H : k ≠ k') : get (point k v : T) k' = none := by
   rw [point, get_set_ne H, get_empty]
+
+open Classical in
+theorem Heap.get_point [Heap T K V] {k k' : K} {v : Option V} :
+    get (point k v : T) k' = if k = k' then v else .none := by
+  split <;> rename_i h
+  · exact point_get_eq h
+  · exact point_get_ne h
 
 /-- An AllocHeap is a heap which can allocate elements under some condition. -/
 class AllocHeap (T : Type _) (K V : outParam (Type _)) extends Heap T K V where
@@ -347,387 +361,236 @@ namespace Heap
 variable {K V : Type _} [Heap T K V] [CMRA V]
 open CMRA Store
 
+theorem validN_get_validN {m : T} (Hv : ✓{n} m) (He : get m i ≡{n}≡ some x) : ✓{n} x := by
+  specialize Hv i; revert Hv
+  rcases h : get m i <;> simp [h] at He
+  exact OFE.Dist.validN He |>.mp
 
-theorem validN_get_validN {m : T} : ✓{n} m → Store.get m i ≡{n}≡ some x → ✓{n} x := by
-  suffices ✓{n} Store.get m i → Store.get m i ≡{n}≡ some x → ✓{n} x by
-    exact fun Hv => (this (Hv i) ·)
-  simp only [ValidN, optionValidN]
-  split <;> rename_i He <;> rw [He]
-  · exact fun Hv => (·.validN |>.mp Hv)
-  · rintro _ ⟨⟩
-
-theorem valid_get_valid {m : T} (Hv : ✓ m) (He : Store.get m i ≡ some x) : ✓ x :=
+theorem valid_get_valid {m : T} (Hv : ✓ m) (He : get m i ≡ some x) : ✓ x :=
   valid_iff_validN.mpr (fun _ => validN_get_validN Hv.validN He.dist)
 
-theorem insert_validN {m : T} (Hx : ✓{n} x) (Hm : ✓{n} m) : ✓{n} (Store.set m i x) := by
+theorem insert_validN {m : T} (Hx : ✓{n} x) (Hm : ✓{n} m) : ✓{n} (set m i x) := by
   intro k
-  simp [CMRA.ValidN]
-  if He : i = k
-    then rw [get_set_eq (T := T) He]; exact Hx
-    else rw [get_set_ne (T := T) (He ·)]; apply Hm
+  rw [get_set]; split; rename_i He
+  · exact Hx
+  · apply Hm
 
-theorem insert_valid {m : T} (Hx : ✓ x) (Hm : ✓ m) : ✓ (Store.set m i x) :=
+theorem insert_valid {m : T} (Hx : ✓ x) (Hm : ✓ m) : ✓ (set m i x) :=
   valid_iff_validN.mpr (fun _ => insert_validN Hx.validN Hm.validN)
 
-theorem point_valid_iff : ✓ (Heap.point i x : T) ↔ ✓ x := by
-  simp only [Heap.point, Store.get]
-  constructor <;> intro H
-  · have H' := H i; simp [Heap.point_get_eq rfl] at H'; rw [get_set_eq (T := T) rfl] at H'; exact H'
-  · intro k
-    if He : i = k
-      then rw [get_set_eq (T := T) He]; trivial
-      else rw [get_set_ne (T := T) He, Heap.get_empty]; trivial
+theorem point_valid_iff : ✓ (point i x : T) ↔ ✓ x := by
+  refine ⟨fun H => ?_, fun H k => ?_⟩
+  · specialize H i; rw [point_get_eq rfl] at H; trivial
+  · rw [get_point]; split <;> trivial
 
-theorem point_validN_iff : ✓{n} (Heap.point i x : T) ↔ ✓{n} x := by
-  simp only [Heap.point, Store.get]
-  constructor <;> intro H
-  · have H' := H i; simp [Heap.point_get_eq rfl] at H'; rw [get_set_eq (T := T) rfl] at H'; exact H'
-  · intro k
-    if He : i = k
-      then rw [get_set_eq (T := T) He]; trivial
-      else rw [get_set_ne (T := T) He, Heap.get_empty]; trivial
+theorem point_validN_iff : ✓{n} (point i x : T) ↔ ✓{n} x := by
+  refine ⟨fun H => ?_, fun H k => ?_⟩
+  · specialize H i; rw [point_get_eq rfl] at H; trivial
+  · rw [get_point]; split <;> trivial
 
-theorem delete_validN {m : T} (Hv : ✓{n} m) : ✓{n} (Heap.delete m i) := by
+theorem delete_validN {m : T} (Hv : ✓{n} m) : ✓{n} (delete m i) := by
   intro k
-  if He : i = k
-    then simp only [Heap.delete]; rw [Store.get_set_eq (T := T) He]; trivial
-    else simp only [Heap.delete]; rw [Store.get_set_ne (T := T) He]; exact Hv k
+  rw [delete, get_set]; split
+  · trivial
+  · exact Hv k
 
-theorem delete_valid {m : T} (Hv : ✓ m) : ✓ (Heap.delete m i) :=
+theorem delete_valid {m : T} (Hv : ✓ m) : ✓ (delete m i) :=
   valid_iff_validN.mpr (fun _ => delete_validN Hv.validN)
 
-theorem set_equiv_point_op_point {m : T} (Hemp : Store.get m i = none) :
-    Store.Equiv (Store.set m i x) (Heap.point i x • m) := by
-  simp_all [CMRA.op, Store.op, Store.Equiv]
+theorem set_equiv_point_op_point {m : T} (Hemp : get m i = none) : Equiv (set m i x) (point i x • m) := by
   refine funext (fun k => ?_)
-  if He : i = k
-    then
-      rw [Store.get_set_eq (T := T) He]
-      simp only [get_merge]
-      rw [Heap.point_get_eq He, He.symm, Hemp]
-      unfold Option.merge
-      split
-      · rfl
-      · rfl
-      · rename_i Hk; rcases Hk
-      · rename_i Hk; rcases Hk
-    else
-      rw [Store.get_set_ne (T := T) He]
-      simp [Store.op, get_merge]
-      rw [Heap.point_get_ne He]
-      unfold Option.merge
-      split <;> trivial
+  simp [CMRA.op, Store.op, Equiv, get_merge, Option.merge, get_point, Hemp, get_set]
+  split <;> rename_i He
+  · rw [← He, Hemp]; cases x <;> rfl
+  · cases (Store.get m k) <;> rfl
 
-theorem set_eq_point_op_point [IsoFunStore (T) K (Option V)] {m : T} (Hemp : Store.get m i = none) :
-    Store.set m i x = Heap.point i x • m :=
+theorem set_eq_point_op_point [IsoFunStore T K (Option V)] {m : T} (Hemp : get m i = none) :
+    set m i x = point i x • m :=
   IsoFunStore.store_eq_of_Equiv (set_equiv_point_op_point Hemp)
 
 theorem core_point_equiv {i : K} {x : V} {cx} (Hpcore : pcore x = some cx) :
-    Store.Equiv (core (Heap.point i (some x) : T)) ((Heap.point i (some cx) : T)) := by
-  simp [core, CMRA.pcore]
-  rw [← Hpcore]
-  apply funext
-  intro k
-  if He : i = k
-    then simp [Heap.point_get_eq He, hmap_alloc]
-    else simp [Heap.point_get_ne He, hmap_unalloc]
+    Equiv (T := T) (core <| point i (some x)) (point i (some cx)) := by
+  refine funext fun k => ?_
+  simp [← Hpcore, core, CMRA.pcore, get_point, get_hmap]
+  split <;> rfl
 
-theorem point_core_eq [IsoFunStore (T) K (Option V)] {i : K} {x : V} {cx} (Hpcore : pcore x = some cx) :
-    core (Heap.point i (some x) : T) = (Heap.point i (some cx) : T) :=
+theorem point_core_eq [IsoFunStore T K (Option V)] {i : K} {x : V} {cx} (Hpcore : pcore x = some cx) :
+    core (point (T := T) i (some x)) = point i (some cx)  :=
   IsoFunStore.store_eq_of_Equiv (core_point_equiv Hpcore)
 
 theorem point_core_eqv {i : K} {x : V} {cx} (Hpcore : pcore x ≡ some cx) :
-    core (Heap.point i (some x)) ≡ (Heap.point i (some cx) : T) := by
-  simp [core, CMRA.pcore]
+    core (point (T := T) i (some x)) ≡ point i (some cx) := by
   intro k
-  if He : i = k
-    then simp [Heap.point_get_eq He, hmap_alloc]; exact Hpcore
-    else simp [Heap.point_get_ne He, hmap_unalloc]
+  simp [core, CMRA.pcore, get_point, get_hmap]
+  split <;> trivial
 
 theorem point_core_total [IsTotal V] {i : K} {x : V} :
-    Store.Equiv (core (Heap.point i (some x) : T)) ((Heap.point i (some (core x)))) := by
-  obtain ⟨xc, Hxc⟩ := total x
+    Equiv (core <| point (T := T) i (some x)) ((point i (some (core x)))) := by
+  obtain ⟨_, Hxc⟩ := total x
   apply (core_point_equiv Hxc).trans
   simp [core, Hxc]
 
-theorem point_core_total_eq [IsTotal V] [IsoFunStore (T) K (Option V)] {i : K} {x : V} :
-    core (Heap.point i (some x) : T) = (Heap.point i (some (core x))) :=
+theorem point_core_total_eq [IsTotal V] [IsoFunStore T K (Option V)] {i : K} {x : V} :
+    core (point (T := T) i (some x)) = point i (some (core x)) :=
   IsoFunStore.store_eq_of_Equiv point_core_total
 
 theorem point_op_point {i : K} {x y : V} :
-    Store.Equiv ((Heap.point i (some x) : T) • (Heap.point i (some y))) ((Heap.point i (some (x • y)))) := by
-  unfold Store.Equiv
-  apply funext
-  intro k
-  simp [CMRA.op]
-  simp [Heap.get_merge]
-  if He : i = k
-    then
-      rw [Heap.point_get_eq He]
-      rw [Heap.point_get_eq He]
-      simp only [Option.merge]
-      rw [Heap.point_get_eq He]
-    else
-      rw [Heap.point_get_ne He]
-      rw [Heap.point_get_ne He]
-      simp only [Option.merge]
-      rw [Heap.point_get_ne He]
+    Equiv ((point (T := T) i (some x)) • (point i (some y))) ((point i (some (x • y)))) := by
+  refine funext fun k => ?_
+  simp only [CMRA.op, Store.op, get_merge, get_point]
+  split <;> simp [Option.merge]
 
-theorem point_op_point_eq [IsoFunStore (T) K (Option V)] {i : K} {x y : V} :
-    (Heap.point i (some x) : T) • (Heap.point i (some y)) = (Heap.point i (some (x • y))) :=
+theorem point_op_point_eq [IsoFunStore T K (Option V)] {i : K} {x y : V} :
+    (point (T := T) i (some x)) • (point i (some y)) = (point i (some (x • y))) :=
   IsoFunStore.store_eq_of_Equiv point_op_point
 
-instance {m : T} [∀ x : V, CoreId x] : CoreId m := by
-  constructor
-  intro i
-  simp [get_dmap]
-  cases H' : Store.get m i
-  · rw [hmap_unalloc H']
-  · rw [hmap_alloc H']
-    apply CoreId.core_id
+instance {m : T} [∀ x : V, CoreId x] : CoreId m where
+  core_id i := by
+    rw [get_hmap]
+    cases Store.get m i <;> simp
+    exact core_id
 
-instance [CoreId (x : V)] : CoreId (Heap.point i (some x) : T) := by
-  constructor
-  intro k
-  simp [get_dmap]
-  if He : i = k
-    then
-      rw [Heap.point_get_eq He]
-      rw [hmap_alloc (Heap.point_get_eq He)]
-      exact CoreId.core_id
-    else
-      rw [Heap.point_get_ne He]
-      rw [hmap_unalloc (Heap.point_get_ne He)]
+instance [CoreId (x : V)] : CoreId (point (T := T) i (some x)) where
+  core_id k := by
+    simp [get_hmap, get_point]
+    split <;> simp
+    exact  core_id
 
 theorem point_incN_iff {m : T} :
-    (Heap.point i (some x) : T) ≼{n} m ↔ ∃ y, (Store.get m i ≡{n}≡ some y) ∧ some x ≼{n} some y := by
-  constructor
-  · rintro ⟨z, Hz⟩
-    have Hz' := Hz i
-    simp [CMRA.op, Store.op] at Hz'
-    simp [get_merge,  ] at Hz'
-    rw [Heap.point_get_eq rfl] at Hz'
-    generalize Hz0 : Store.get z i = z0
-    cases z0 <;> simp [Hz0] at Hz'
-    · exists x
-    · rename_i v
-      exists (x • v)
-      refine ⟨Hz', ?_⟩
+    (point (T := T) i (some x)) ≼{n} m ↔ ∃ y, (get m i ≡{n}≡ some y) ∧ some x ≼{n} some y := by
+  refine ⟨fun ⟨z, Hz⟩ => ?_, fun ⟨y, Hy, z, Hz⟩ => ?_⟩
+  · specialize Hz i; revert Hz
+    simp only [CMRA.op, Store.op, get_merge, point_get_eq rfl]
+    rcases get z i with (_|v)
+    · intro _
+      exists x
+    · refine (⟨x • v, ·, ?_⟩)
       exists v
-  · rintro ⟨y, Hy, z, Hz⟩
-    exists Store.set m i z
+  · exists set m i z
     intro j
-    if He : i = j
-      then
-        simp [Heap.point]
-        simp [Store.get, He] at Hy
-        refine Hy.trans (Hz.trans ?_)
-        simp [CMRA.op, Heap.get_merge, Heap.point_get_eq He, get_set_eq (T := T) He,  ]
-        cases z <;> simp [optionOp]
-      else
-        simp [CMRA.op]
-        simp [get_merge, Heap.point_get_ne He, Store.get_set_ne (T := T) He]
+    simp [CMRA.op, get_merge, get_point, get_set]
+    split <;> rename_i He
+    · refine (He ▸ Hy).trans (Hz.trans ?_)
+      cases z <;> simp [CMRA.op, optionOp]
+    · simp
 
 theorem point_inc_iff {m : T} :
-    (Heap.point i (some x) : T) ≼ m ↔ ∃ y, (Store.get m i ≡ some y) ∧ some x ≼ some y := by
-  constructor
-  · rintro ⟨z, Hz⟩
-    have Hz' := Hz i
-    simp [CMRA.op, Store.op] at Hz'
-    simp [Heap.get_merge] at Hz'
-    rw [Heap.point_get_eq rfl] at Hz'
-    generalize Hz0 : Store.get z i = z0
-    cases z0 <;> simp [Hz0] at Hz'
-    · exists x
-    · rename_i v
-      exists (x • v)
-      refine ⟨Hz', ?_⟩
+    (point i (T := T) (some x)) ≼ m ↔ ∃ y, (get m i ≡ some y) ∧ some x ≼ some y := by
+  refine ⟨fun ⟨z, Hz⟩ => ?_, fun ⟨y, Hy, z, Hz⟩ => ?_⟩
+  · specialize Hz i; revert Hz
+    simp only [CMRA.op, Store.op, get_merge, point_get_eq rfl]
+    rcases get z i with (_|v)
+    · intro _
+      exists x
+    · refine (⟨x • v, ·, ?_⟩)
       exists v
-  · rintro ⟨y, Hy, z, Hz⟩
-    exists Store.set m i z
+  · exists set m i z
     intro j
-    if He : i = j
-      then
-        rw [He] at Hy
-        refine Hy.trans (Hz.trans ?_)
-        simp [CMRA.op, Heap.get_merge, Heap.point_get_eq He, get_set_eq (T := T) He, optionOp]
-        cases z <;> simp
-      else
-        simp [ ]
-        simp [CMRA.op, CMRA.op, Store.op, get_merge, Heap.point_get_ne He, get_set_ne (T := T) He]
+    simp [CMRA.op, get_merge, get_point, get_set]
+    split <;> rename_i He
+    · refine (He ▸ Hy).trans (Hz.trans ?_)
+      cases z <;> simp [CMRA.op, optionOp]
+    · simp
 
 theorem exclusive_point_inc_iff {m : T} (He : Exclusive x) (Hv : ✓ m) :
-    (Heap.point i (some x) : T) ≼ m ↔ (Store.get m i ≡ some x) := by
-  apply point_inc_iff.trans
-  constructor
-  · rintro ⟨y, Hy, Hxy⟩
-    suffices x ≡ y by apply Hy.trans this.symm
+    (point i (T := T) (some x)) ≼ m ↔ (get m i ≡ some x) := by
+  refine point_inc_iff.trans ⟨fun ⟨y, Hy, Hxy⟩ => ?_, fun _ => ?_⟩
+  · suffices x ≡ y by exact Hy.trans <| this.symm
     exact some_inc_exclusive Hxy <| valid_get_valid Hv Hy
-  · intro _; exists x
+  · exists x
 
-theorem point_inc_point_iff : (Heap.point i (some x) : T) ≼ (Heap.point i (some y)) ↔ some x ≼ some y := by
-  apply point_inc_iff.trans
-  constructor
-  · rintro ⟨z, Hz, Hxz⟩
-    rw [Heap.point_get_eq rfl] at Hz
-    exact inc_of_inc_of_eqv Hxz Hz.symm
-  · intro H
-    exists y
-    rw [Heap.point_get_eq rfl]
-    exact ⟨.rfl, H⟩
+theorem point_inc_point_iff : (point i (T := T) (some x)) ≼ (point i (some y)) ↔ some x ≼ some y := by
+  refine point_inc_iff.trans ⟨fun ⟨z, Hz, Hxz⟩ => ?_, fun H => ?_⟩
+  · refine inc_of_inc_of_eqv Hxz ?_
+    refine .trans Hz.symm ?_
+    exact .of_eq <| point_get_eq rfl
+  · refine ⟨y, ?_, H⟩
+    exact .of_eq <| point_get_eq rfl
 
-theorem total_point_inc_point_iff [IsTotal V] :
-    (Heap.point i (some x) : T) ≼ (Heap.point i (some y))  ↔ x ≼ y :=
+theorem total_point_inc_point_iff [IsTotal V] : (point i (T := T) (some x)) ≼ (point i (some y)) ↔ x ≼ y :=
   point_inc_point_iff.trans <| some_inc_total.trans <| Eq.to_iff rfl
 
-theorem point_inc_point_mono (Hinc : x ≼ y) : (Heap.point i (some x) : T) ≼ (Heap.point i (some y)) :=
+theorem point_inc_point_mono (Hinc : x ≼ y) : (point (T := T) i (some x)) ≼ (point i (some y)) :=
   point_inc_point_iff.mpr <| some_inc.mpr <| .inr Hinc
 
-instance [H : Cancelable (some x)] : Cancelable (Heap.point i (some x) : T) := by
-  constructor
-  intro n m1 m2 Hv He j
-  have Hv' := Hv j; clear Hv
-  have He' := He j; clear He
-  simp_all [CMRA.op, Store.op, get_merge]
-  if He : i = j
-    then
-      rw [Heap.point_get_eq He] at *
-      apply H.cancelableN
-      · generalize HX : Store.get m1 j = X
-        rw [HX] at Hv'
-        cases X <;> simp_all [CMRA.op, Store.op, optionOp]
-      · generalize HX : (Store.get m1 j) = X
-        generalize HY : (Store.get m2 j) = Y
-        rw [HX, HY] at He'
-        cases X <;> cases Y <;> simp_all [CMRA.op, optionOp]
-    else
-      rw [Heap.point_get_ne He] at *
-      generalize HX : Store.get m1 j =  X
-      generalize HY : (Store.get m2 j) = Y
-      rw [HX, HY] at He'
-      rw [HX] at Hv'
-      cases X <;> cases Y <;> simp_all [CMRA.op, optionOp]
+instance [H : Cancelable (some x)] : Cancelable (point (T := T) i (some x)) where
+  cancelableN {n m1 m2} Hv He j := by
+    specialize Hv j; revert Hv
+    specialize He j; revert He
+    simp only [CMRA.op, Store.op, get_merge, Option.merge, get_point]
+    if He : i = j
+      then
+        simp_all only [↓reduceIte]
+        intro Hv He
+        cases _ : get m1 j <;> cases _ : get m2 j
+        all_goals apply H.cancelableN
+        all_goals simp_all [CMRA.op, Store.op, optionOp]
+      else
+        cases get m1 j <;> cases get m2 j
+        all_goals simp_all [CMRA.op, optionOp]
 
-instance {m : T} [Hid : ∀ x : V, IdFree x] [Hc : ∀ x : V, Cancelable x] : Cancelable m := by
-  constructor
-  intro n m1 m2 Hv He i
-  apply CMRA.cancelableN (x := Store.get m i)
-  · have Hv' := Hv i
-    simp [CMRA.op, Store.op] at Hv'
-    simp [Heap.get_merge] at Hv'
-    generalize HX : (Store.get m i) = X
-    generalize HY : (Store.get m1 i) = Y
-    simp_all [CMRA.op, Store.op, optionOp]
-    cases X <;> cases Y <;> simp_all
-  · have He' := He i
-    simp_all [CMRA.op, Store.op, optionOp]
-    simp [Heap.get_merge] at He'
-    generalize HX : (Store.get m i) = X
-    generalize HY : (Store.get m1 i) = Y
-    generalize HZ : (Store.get m2 i) = Z
-    rw [HX, HY] at He'
-    cases X <;> cases Y <;> cases Z <;> simp_all [Heap.get_merge,  ]
+instance {m : T} [Hid : ∀ x : V, IdFree x] [Hc : ∀ x : V, Cancelable x] : Cancelable m where
+  cancelableN {n m1 m2} Hv He i := by
+    apply cancelableN (x := get m i)
+    · specialize Hv i; revert Hv
+      simp [CMRA.op, Store.op, Heap.get_merge, optionOp]
+      cases _ : get m i <;> cases _ : get m1 i <;> simp_all
+    · specialize He i; revert He
+      simp [Heap.get_merge, CMRA.op, Store.op, optionOp]
+      cases get m i <;> cases get m1 i <;> cases get m2 i <;> simp_all [Heap.get_merge]
 
 theorem insert_op_equiv {m1 m2 : T} :
-    Store.Equiv ((Store.set (m1 • m2 : T) i (x • y : Option V))) ((Store.set m1 i x) • (Store.set m2 i y) : T) := by
-  simp [Store.Equiv, Store.Equiv]
-  apply funext
-  intro j
+    Equiv ((set (V := Option V) (m1 • m2) i (x • y))) (set m1 i x • set m2 i y) := by
+  refine funext fun j => ?_
   if He : i = j
     then
-      simp [CMRA.op, get_set_eq (T := T) He, get_merge]
-      simp [optionOp]
+      simp [CMRA.op, get_set_eq He, get_merge, optionOp]
       cases x <;> cases y <;> simp_all
-    else simp [CMRA.op, get_set_ne (T := T) He, Heap.get_merge]
+    else
+      simp [CMRA.op, get_set_ne (T := T) He, get_merge]
 
-theorem insert_op_eq [IsoFunStore (T) K (Option V)] {m1 m2 : T} : (Store.set (m1 • m2) i (x • y : Option V)) = (Store.set m1 i x) • (Store.set m2 i y) :=
+theorem insert_op_eq [IsoFunStore T K (Option V)] {m1 m2 : T} :
+    (set (V := Option V) (m1 • m2) i (x • y)) = (set m1 i x • set m2 i y) :=
   IsoFunStore.store_eq_of_Equiv insert_op_equiv
 
-theorem disjoint_op_equiv_union {m1 m2 : T} : set_disjoint (Heap.dom m1) (Heap.dom m2) →
-    Store.Equiv (m1 • m2) (Heap.union m1 m2) := by
-  intro Hd
-  simp [Store.Equiv]
-  apply funext
-  intro j
+theorem disjoint_op_equiv_union {m1 m2 : T} (Hd : set_disjoint (dom m1) (dom m2)) :
+    Equiv (m1 • m2) (union m1 m2) := by
+  refine funext fun j => ?_
   simp [CMRA.op, Store.op, Heap.get_merge]
-  generalize HX : Store.get m2 j = X
-  generalize HY : Store.get m1 j = Y
-  cases X <;> cases Y <;> simp_all
-  exfalso
-  apply Hd j
-  simp [Heap.dom, HX, HY]
+  rcases _ : get m1 j <;> cases _ : get m2 j <;> simp_all
+  refine (Hd j ?_).elim
+  simp_all [dom]
 
-theorem disjoint_op_eq_union [IsoFunStore (T) K (Option V)] {m1 m2 : T} (H : set_disjoint (Heap.dom m1) (Heap.dom m2)) :
+theorem disjoint_op_eq_union [IsoFunStore T K (Option V)] {m1 m2 : T} (H : set_disjoint (dom m1) (dom m2)) :
     m1 • m2 = Heap.union m1 m2 :=
   IsoFunStore.store_eq_of_Equiv (disjoint_op_equiv_union H)
 
-theorem valid0_disjoint_dom {m1 m2 : T} (Hv : ✓{0} (m1 • m2)) (H : ∀ k x, Store.get m1 k = some x → Exclusive x) :
-    set_disjoint (Heap.dom m1) (Heap.dom m2) := by
+theorem valid0_disjoint_dom {m1 m2 : T} (Hv : ✓{0} (m1 • m2)) (H : ∀ {k x}, get m1 k = some x → Exclusive x) :
+    set_disjoint (dom m1) (dom m2) := by
   rintro k
-  simp [Heap.dom, Option.isSome]
-  generalize HX : Store.get m1 k = X
-  cases X <;> simp
-  rename_i x
-  have H' := H _ _ HX
-  generalize HY : Store.get m2 k = Y
-  cases Y <;> simp_all
-  rcases H' with ⟨Hex⟩
-  rename_i xx
-  apply Hex xx
-  simp [CMRA.op, Store.op, CMRA.ValidN, Store.validN] at Hv
-  have Hv' := Hv k
-  simp [Heap.get_merge, optionValidN, HX, HY] at Hv'
-  exact Hv'
+  simp only [dom, Option.isSome]
+  rcases HX : get m1 k with (_|x) <;> simp
+  rcases HY : get m2 k with (_|y) <;> simp
+  apply (H HX).1 y
+  simp [CMRA.op, CMRA.ValidN] at Hv; specialize Hv k; revert Hv
+  simp [Heap.get_merge, optionValidN, HX, HY]
 
--- TODO: Redundant proof from valid0_disjoint_dom
-theorem valid_disjoint_dom {m1 m2 : T} (Hv : ✓ (m1 • m2)) (H : ∀ k x, Store.get m1 k = some x → Exclusive x) :
-    set_disjoint (Heap.dom m1) (Heap.dom m2) := by
-  rintro k
-  simp [Heap.dom, Option.isSome]
-  generalize HX : Store.get m1 k = X
-  cases X <;> simp
-  rename_i x
-  have H' := H _ _ HX
-  generalize HY : Store.get m2 k = Y
-  cases Y <;> simp_all
-  rcases H' with ⟨Hex⟩
-  rename_i xx
-  apply Hex xx
-  simp [CMRA.op, Store.op, CMRA.ValidN, Store.validN] at Hv
-  have Hv' := Hv k
-  simp [Heap.get_merge, optionValidN, HX, HY] at Hv'
-  exact Valid.validN Hv'
+theorem valid_disjoint_dom {m1 m2 : T} (Hv : ✓ (m1 • m2)) (H : ∀ {k x}, get m1 k = some x → Exclusive x) :
+    set_disjoint (dom m1) (dom m2) :=
+  valid0_disjoint_dom (Valid.validN Hv) H
 
-theorem dom_op_union (m1 m2 : T) : Heap.dom (m1 • m2) = set_union (Heap.dom m1) (Heap.dom m2) := by
-  refine (funext fun k => ?_)
-  simp only [CMRA.op, Store.op, Heap.dom, set_union, Heap.get_merge,  ]
-  generalize HX : Store.get m1 k = X
-  generalize HY : Store.get m2 k = Y
-  cases X <;> cases Y <;> simp_all [get_merge]
+theorem dom_op_union (m1 m2 : T) : dom (m1 • m2) = set_union (dom m1) (dom m2) := by
+  refine funext fun k => ?_
+  cases get m1 k <;> cases get m2 k <;> simp_all [CMRA.op, dom, set_union, get_merge]
 
-theorem inc_dom_inc {m1 m2 : T} (Hinc : m1 ≼ m2) : set_included (Heap.dom m1) (Heap.dom m2) := by
-  intro i
-  rcases lookup_inc.mp Hinc i with ⟨z, Hz⟩
-  simp [Heap.dom]
-  simp [OFE.Equiv, Option.Forall₂] at Hz
-  generalize HX : Store.get m1 i = X
-  generalize HY : Store.get m2 i = Y
-  cases X <;> cases Y <;> simp
-  simp [HX, HY, CMRA.op, Store.op, optionOp] at Hz
-  cases z <;> simp at Hz
-
--- theorem StoreO.map_mono [CMRA V'] [Heap T' K V'] {f : Option V → Option V'} {m1 m2 : StoreO T}
---     (H1 : ∀ v1 v2 : V, v1 ≡ v2 → f v1 ≡ f v2)  (H2 : ∀ x y, x ≼ y → f x ≼ f y) (H3 : m1 ≼ m2) :
---     (StoreO.map f m1 : StoreO T') ≼ StoreO.map f m2 := by
---   s orry
+theorem inc_dom_inc {m1 m2 : T} (Hinc : m1 ≼ m2) : set_included (dom m1) (dom m2) := by
+  intro i; unfold Heap.dom
+  rcases lookup_inc.mp Hinc i with ⟨z, Hz⟩; revert Hz
+  cases get m1 i <;> cases get m2 i <;> cases z <;>
+    simp [CMRA.op, optionOp]
 
 nonrec instance [HD : CMRA.Discrete V] [Heap T K V] : Discrete T where
-  discrete_0 {m1 m2} H := by
-    intro k
-    apply OFE.Discrete.discrete_0
-    exact H k
-  discrete_valid := by
-    intro H HH k
-    exact CMRA.Discrete.discrete_valid (α := Option V) (HH k)
+  discrete_0 {_ _} H := (OFE.Discrete.discrete_0 <| H ·)
+  discrete_valid {_} := (CMRA.Discrete.discrete_valid <| · ·)
 
 end Heap
