@@ -1,0 +1,1576 @@
+%% Requires amsmath, amssymb, mathrsfs
+
+
+\RequirePackage{array}
+\RequirePackage{bm}
+\RequirePackage{centernot}
+\RequirePackage{stmaryrd}
+\RequirePackage{etoolbox}
+\RequirePackage{mathtools}
+\usepackage{xspace}
+\usepackage{xparse}
+\usepackage{colortbl}
+
+
+%% Color blind friendly color definitions
+\definecolor{blindred}{RGB}{220,50,32}
+\definecolor{blindblue}{RGB}{0,90,181}
+\definecolor{blindlightblue}{RGB}{26,133,255}
+\definecolor{blindgreen}{RGB}{0,152,0} % green!60!black
+\definecolor{blinddarkgreen}{RGB}{0,107,90}%{0,77,64}
+\definecolor{blindorange}{RGB}{205,140,0}%{230,159,0}
+
+
+%%% FIX DELIMITERS SPACING
+\let\originalleft\left
+\let\originalright\right
+\renewcommand{\left}{\mathopen{}\mathclose\bgroup\originalleft}
+\renewcommand{\right}{\aftergroup\egroup\originalright}
+
+\newcommand{\@optsubscr}[1][]{\ifblank{#1}{}{_{#1}}}
+\newcommand{\@optsupscr}[1][]{\ifblank{#1}{}{^{#1}}}
+
+\newcommand{\acronym}[2]{\emph{#1}~(#2)}
+
+\newcommand{\Ie}{That is,\xspace}
+\newcommand{\Eg}{For example,\xspace}
+\newcommand{\ie}{i.e.~}
+\newcommand{\eg}{e.g.~}
+
+%%% Define \CASE, \AND and \OTHERWISE only within a \begin{cases} environment
+\let\ams@cases@copy@\cases
+\def\cases{%
+  \newcommand{\CASE}{&\text{if }}%
+  \newcommand{\AND}{\\&{}\land}%
+  \newcommand{\OTHERWISE}{& \text{otherwise}}%
+  \ams@cases@copy@%
+}
+
+\def\refitem@init{\let\@byrulesc\@empty}
+\def\refitem@do#1{\@byrulesc\def\@byrulesc{, }\ref{rule:#1}}
+\newcommand{\eq@explain}[1]{\tag*{\small(#1)}}
+% \newcommand{\eq@explain}[1]{\\[-5pt]\tag*{\small(#1)}\\[-5pt]}% only if placing explanations before step
+% \newcommand{\eq@explain}[1]{&&{\small\lbag\text{#1}\rbag}\\}
+% \newcommand{\eq@explain}[1]{&{\small[\text{#1}]}\\}
+\newcommand{\whichgproves@fst}{\gproves{}&}
+\newcommand{\whichgproves@tl}{\\\gproves{}&}
+\newcommand{\whichproves@fst}{\proves{}&}
+\newcommand{\whichproves@tl}{\\\proves{}&}
+\newcommand{\whichisequiv@fst}{\lequiv{}&}
+\newcommand{\whichisequiv@tl}{\\\lequiv{}&}
+\newcommand{\whichis@fst}{={}&}
+\newcommand{\whichis@tl}{\\={}&}
+
+\newenvironment{eqexplain}{%
+  \let\explain\eq@explain
+  \let\eqex@qedhere\qedhere
+  \def\qedhere{\tag*{\eqex@qedhere}}
+  \newcommand{\explainllap}[1]{&\qquad&&\mathllap{\small\lbag\text{##1}\rbag}\\}
+  \newcommand{\by}[1]{\explain{By ##1}}
+  \newcommand{\byrule}[1]{\explain{\ref{rule:##1}}}
+  \newcommand{\byrules}[1]{\explain{\refitem@init\forcsvlist{\refitem@do}{##1}}}
+  \newcommand{\bydef}[1][]{\explain{By \ifblank{##1}{def.}{Def.~\ref{def:##1}}}}
+  \newcommand{\whichgproves}{\@ifstar{\whichgproves@fst}{\whichgproves@tl}}
+  \newcommand{\whichproves}{\@ifstar{\whichproves@fst}{\whichproves@tl}}
+  \newcommand{\whichisequiv}{\@ifstar{\whichisequiv@fst}{\whichisequiv@tl}}
+  \newcommand{\whichis}{\@ifstar{\whichis@fst}{\whichis@tl}}
+  % \begin{equation*}
+  % \begin{alignedat}{4}
+  \csname flalign*\endcsname
+}{\unskip
+  \csname endflalign*\endcsname
+  % \end{alignedat}
+  % \end{equation*}
+}
+
+% logical and: we add the ability to ignore an optional star.
+% this is so that in certain environments we can turn them into newlines
+% except if it's starred
+\renewcommand\land{\land@h}
+\def\land@h{\@ifstar{\wedge}{\wedge}}
+\def\land@v{\@ifstar{\wedge}{\\\relax}}
+
+% swap phi and varphi
+\let\stdphi\phi
+\let\phi\varphi
+\let\varphi\stdphi
+
+% Primed and double primed variables, with smart spacing afterwards
+\newcommand{\pr}[1]{#1'\@ifnextchar){}{\@ifnextchar({}{\mkern-3mu}}}
+\newcommand{\dpr}[1]{#1''\@ifnextchar){}{\@ifnextchar({}{\mkern-3mu}}}
+
+\newcommand{\ghost}[3][c]{%
+  \def\ghost@align{\csname opposite@of@#1\endcsname}%
+  \mathmakebox[\widthof{$#2$}][#1]{\csname math\ghost@align lap\endcsname{#3}}%
+}
+
+\newcommand{\opposite@of@c}{c}
+\newcommand{\opposite@of@r}{l}
+\newcommand{\opposite@of@l}{r}
+
+
+\AtBeginDocument{\let\plainlabel\label}
+\newcommand{\setlabel}[1]{%
+  \gdef\@currentlabel{#1}\phantomsection%
+}
+\newcommand{\labelstep}[2][]{%
+  \ifblank{#1}{%
+    \refstepcounter{equation}%
+  }{%
+    \setlabel{#1}%
+  }%
+  \plainlabel{#2}%
+  \textup{\tagform@{\ref*{#2}}}% same as \eqref but no link
+}
+
+
+\newcommand{\adjustfigure}[1][\small]{% Fixes alignment in figures
+  \centering#1%
+  \columnwidth=\linewidth% needed in twocolumn layout
+  \belowdisplayskip=0pt\belowdisplayshortskip=0pt% no spurious space around eqs
+  \abovedisplayskip=0pt\abovedisplayshortskip=0pt}
+
+\newcommand{\prop}{\operatorname}
+
+\newcommand{\onehalf}{\text{\textonehalf}}
+\newcommand{\onequarter}{\text{\textonequarter}}
+\newcommand{\threequarters}{\text{\textthreequarters}}
+
+%%%  .oPYo.                      d'b
+%%%  8    8                      8
+%%% o8YooP' oPYo. .oPYo. .oPYo. o8P  .oPYo.
+%%%  8      8  `' 8    8 8    8  8   Yb..
+%%%  8      8     8    8 8    8  8     'Yb.
+%%%  8      8     `YooP' `YooP'  8   `YooP'
+%%% :..:::::..:::::.....::.....::..:::.....:
+%%% ::::::::::::::::::::::::::::::::::::::::
+%%% ::::::::::::::::::::::::::::::::::::::::
+
+% \RequirePackage{enumitem}
+\newlist{defenum}{enumerate}{2}
+\setlist[defenum]{
+  label=(\arabic*),
+  ref=\thedefinition(\arabic*)
+}
+\setlist[defenum,2]{
+  label=(\arabic{defenumi}.\arabic*),
+  ref=\thedefinition(\arabic{defenumi}.\Alph*),
+  leftmargin=2em
+}
+
+\@ifpackageloaded{cleveref}{
+  \crefname{defenumi}{condition}{conditions}
+  \Crefname{defenumi}{Condition}{Conditions}
+  \crefname{defenumii}{condition}{conditions}
+  \Crefname{defenumii}{Condition}{Conditions}
+}{}
+
+\newcommand{\smallbox}{\tiny\raisebox{1.1pt}{$\blacksquare$}}
+\newcommand{\smallsquare}{\tiny\raisebox{1.1pt}{$\square$}}
+
+\newcommand{\proofscript@item}[1][]{\item{}\ifblank{#1}{}{\textbf{#1.}}}%
+\newcommand{\proofscript@case}{\@ifstar\proofscript@item\proofscript@case@}%
+\newcommand{\proofscript@case@}[1][]{\item{}\textbf{Case\ifblank{#1}{}{~#1}.}}%
+
+\newlist{induction}{itemize}{10}
+\setlist[induction]{leftmargin=\parindent,label=\textbf{--},before={\let\step\proofscript@item}}
+\setlist[induction,1]{label={\smallbox}}
+\setlist[induction,2]{label={\smallsquare}}
+
+\newlist{casesplit}{itemize}{5}
+\setlist[casesplit]{leftmargin=\parindent,label={---},before={\let\case\proofscript@case}}
+\setlist[casesplit,1]{label=\textbf{--}}
+\setlist[casesplit,2]{label=\textbullet}
+\setlist[casesplit,3]{label=$\circ$}
+\setlist[casesplit,4]{label={--}}
+
+\newlist{proofsteps}{itemize}{5}
+\setlist[proofsteps]{leftmargin=\parindent,label={--},before={\let\step\proofscript@item}}
+\setlist[proofsteps,1]{label={\smallbox}}
+\setlist[proofsteps,2]{label=\textbf{--}}
+\setlist[proofsteps,3]{label=\textbullet}
+% Alternate:
+% \newlist{proofsteps}{enumerate}{6}
+% \setlist[proofsteps]{leftmargin=*,label*=\arabic*.,before={\let\step\proofscript@item}}
+
+\newlist{proofscript}{description}{6}
+\setlist[proofscript]{leftmargin=\parindent,itemsep=\baselineskip}
+
+
+%%%%    o    o
+%%%%    8b   8
+%%%%    8`b  8 .oPYo. ooYoYo. .oPYo. .oPYo.
+%%%%    8 `b 8 .oooo8 8' 8  8 8oooo8 Yb..
+%%%%    8  `b8 8    8 8  8  8 8.       'Yb.
+%%%%    8   `8 `YooP8 8  8  8 `Yooo' `YooP'
+%%%%    ..:::..:.....:..:..:..:.....::.....:
+%%%%    ::::::::::::::::::::::::::::::::::::
+%%%%    ::::::::::::::::::::::::::::::::::::
+
+
+\AtBeginDocument{{\bfseries\global\let\my@test@bf\f@series}}
+\def\boldable#1{%
+  \ifx\f@series\my@test@bf%
+    \boldsymbol{#1}%
+  \else%
+    #1%
+  \fi%
+}
+
+\def\hyph-{\mbox{-}\nobreak\hspace{0pt}}
+\def\pre#1-{$#1$\mbox{-}\nobreak\hspace{0pt}}
+% \nobreak avoids linebreaks
+% the 0-width space allows the suffix to be correctly hyphenated
+
+\newcommand{\thelogic}{\textsc{Bluebell}}
+\newcommand{\supercond}{joint conditioning\xspace}
+\newcommand{\Supercond}{Joint conditioning\xspace}
+\newcommand{\SuperCond}{Joint Conditioning\xspace}
+
+\newcommand{\salgebra}[1][]{%
+    \texorpdfstring{\pre{\boldable\sigma}-algebra#1}{sigma-algebra#1}\xspace}
+
+\newcommand{\lbl}{\mathsf}
+
+\newcommand{\Bool}{\mathbb{B}}
+\newcommand{\Nat}{\mathbb{N}}
+\newcommand{\Int}{\mathbb{Z}}
+\newcommand{\PosReal}{\mathbb{R}^{+}}
+\newcommand{\PosRat}{\mathbb{Q}^{+}}
+
+\newcommand{\Type}{\mathsf}
+
+\newcommand{\Prop}{\Type{Prop}}
+% \newcommand{\Assrt}{\Type{Assrt}}
+\newcommand{\HAssrt}{\Type{HA}}
+\newcommand{\HExpr}{\Type{HE}}
+\newcommand{\pHAssrt}{\Type{pHA}}
+\newcommand{\pHPAssrt}{\Type{pHPA}}
+
+\newcommand{\aexpr}{E}% expressions in assertions (use X for events then)
+% \newcommand{\aexpr}{\xi}% expressions in assertions
+
+\newcommand{\Idx}{\mathbb{I}}
+\newcommand{\Var}{\mathbb{X}}
+\newcommand{\Val}{\mathbb{V}}
+\newcommand{\Term}{\mathbb{T}}
+\newcommand{\Expr}{\mathbb{E}}
+\newcommand{\Store}{\mathbb{S}}
+
+\newcommand{\store}{s}
+\newcommand{\term}{t}
+\newcommand{\expr}{e}
+\newcommand{\guard}{g}
+\newcommand{\val}{v}
+
+% Auxiliary variables
+\newcommand{\tA}{t_{\p{A}}}
+\newcommand{\tB}{t_{\p{B}}}
+\newcommand{\QA}{Q_{\p{A}}}
+\newcommand{\QB}{Q_{\p{B}}}
+
+\newcommand{\opt}[1]{#1_{\bot}}
+\newcommand{\faulty}[1]{#1_{\fault}}
+
+%%%%    .oPYo.                              o
+%%%%    8    8                              8
+%%%%    8    8 .oPYo. .oPYo. oPYo. .oPYo.  o8P .oPYo. oPYo. .oPYo.
+%%%%    8    8 8    8 8oooo8 8  `' .oooo8   8  8    8 8  `' Yb..
+%%%%    8    8 8    8 8.     8     8    8   8  8    8 8       'Yb.
+%%%%    `YooP' 8YooP' `Yooo' 8     `YooP8   8  `YooP' 8     `YooP'
+%%%%    :.....:8 ....::.....:..:::::.....:::..::.....:..:::::.....:
+%%%%    :::::::8 ::::::::::::::::::::::::::::::::::::::::::::::::::
+%%%%    :::::::..::::::::::::::::::::::::::::::::::::::::::::::::::
+
+
+\let\arrowvect\vec
+% \RequirePackage{esvect}
+\newcommand{\vect}[1]{\arrowvect{#1}\@ifnextchar]{\,}{\@ifnextchar){\,}{\@ifnextchar{\rangle}{\,}{}}}}
+% \renewcommand{\vec}[1]{\mathbf{#1}}
+
+\DeclarePairedDelimiter\sem{\llbracket}{\rrbracket}
+\DeclarePairedDelimiter\semalt{[}{]}
+\newcommand{\Sem}[1][]{\mathop{\mathcal#1\relax}\sem}
+\newcommand{\Semalt}[1][]{\mathop{\mathcal#1\relax}\semalt}
+
+% \newcommand{\powerset}{\mathscr{P}}
+\DeclareFontFamily{U}{MnSymbolC}{}
+\DeclareSymbolFont{MnSyC}{U}{MnSymbolC}{m}{n}
+\DeclareFontShape{U}{MnSymbolC}{m}{n}{
+  <-6>    MnSymbolC5
+  <6-7>   MnSymbolC6
+  <7-8>   MnSymbolC7
+  <8-9>   MnSymbolC8
+  <9-10>  MnSymbolC9
+  <10-12> MnSymbolC10
+  <12->   MnSymbolC12%
+}{}
+\DeclareMathSymbol{\powerset}{\mathord}{MnSyC}{180}
+
+\newcommand{\finpow}{\powerset_{\!\!f}}
+\newcommand{\union}{\cup}
+\newcommand{\inters}{\cap}
+\newcommand{\dunion}{\uplus}
+%%% For big ops prefer textstyle as acmart uses huge bigops that look horrible
+%%% To get the huge ones use the starred version \Union*_{i \in I} A_i
+\newcommand{\Union}{\@ifstar{\bigcup}{\textstyle\bigcup}}
+\newcommand{\Inters}{\@ifstar{\bigcap}{\textstyle\bigcap}}
+\newcommand{\Dunion}{\@ifstar{\biguplus}{\textstyle\biguplus}}
+% \newcommand{\card}[1]{|#1|}
+\DeclarePairedDelimiter\card{\lvert}{\rvert}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+
+\newcommand{\cpart}{\@ifstar{\cpart@big}{\cpart@std}}
+\newcommand{\cpart@std}[2][i]{\{#2_{#1}\}_{#1 \in \Nat}}
+\newcommand{\cpart@big}[2][i]{\left\{#2_{#1}\right\}_{#1 \in \Nat}}
+
+\newcommand{\subs}{\subseteq}
+\newcommand{\sups}{\supseteq}
+
+\newcommand\sepid{\ensuremath{I}}
+\newcommand\sepand{\mathbin{\ast}}
+
+\NewDocumentCommand{\sepimp}{}{%
+  \mathrel{-\mathpalette\w@and\relax}%
+}
+\newcommand{\w@and}[2]{%
+  \vcenter{\hbox{\raisebox{.1pt}{\rotatebox{90}{$\m@th#1*$}}}}%
+}
+
+\newcommand{\kw}{\mathbf}
+
+
+
+\renewcommand{\implies}{\Rightarrow}
+\renewcommand{\impliedby}{\Leftarrow}
+\renewcommand{\iff}{\Leftrightarrow}
+\newcommand{\iso}{\cong}
+
+\newcommand{\setcompl}[1]{\overline{#1}}
+
+\newcommand{\freevars}{\operatorname{fv}}
+
+\newcommand{\hole}{\,{\cdot}\,}
+\newcommand{\wtv}[1][1]{%
+  \ifnum#1>0\wtv@{#1}\_\fi%
+}% whatever
+\def\wtv@#1{%
+  \ifnum#1>1 \_,\wtv@{\numexpr#1-1\relax}\fi%
+}
+
+\newcommand{\ITE}[3]{\mathsf{if}\ #1\ \mathsf{then}\ #2\ \mathsf{else}\ #3}
+
+\newcommand{\lst}[3][1]{{#2_{#1}}\ldots {#2_{#3}}}    %
+\newcommand{\lstc}[3][1]{{#2_{#1}},\ldots, {#2_{#3}}} %
+\newcommand{\lsts}[4]{#1_#2#4\ldots#4 #1_{#3}}        %
+\newcommand{\vct}[3][]{\ensuremath{\bar #2}} %
+
+\providecommand{\coloneq}{\mathrel{\mathop:}=} % required if not loading newtxmath
+\providecommand{\Coloneqq}{\mathrel{\mathop{::}}=} % required if not loading newtxmath
+\newcommand{\is}{\triangleq}% is defined as
+\newcommand{\of}{\mathop{:}}% of type
+% \newcommand{\embedding}{\sqsubseteq}
+\newcommand{\notimplies}{\centernot\implies}
+
+\newcommand{\compat}{\mathrel{\#}}
+
+\DeclareMathOperator{\arity}{ar}
+\DeclareMathOperator{\dom}{dom}
+\DeclareMathOperator{\psupp}{supp}
+\DeclarePairedDelimiter\supp{\lvert}{\rvert}
+
+\newcommand{\from}{\colon}
+\newcommand{\pto}{\rightharpoonup}% partial function
+\newcommand{\mto}{\xrightarrow{\lbl{m}}}% measurable function
+\newcommand{\inv}[1]{#1^{-1}}
+\newcommand{\ucto}{\xrightarrow{\lbl{u}}}% upward closed function
+% \newcommand{\ucto}{\xrightarrow{{\raLeq}}}% upward closed function
+
+\newcommand{\var}[1]{\mathit{#1}}
+
+\let\ST\st % to save `soul`'s \st definition
+% \def\st{\colon}  % such that (conflicts with `soul`)
+\def\st{\ldotp}  % such that (conflicts with `soul`)
+
+%%% https://tex.stackexchange.com/a/23436/36686
+\DeclareRobustCommand\bigop[2][1]{%
+  \mathop{\vphantom{\sum}\mathpalette\bigop@{{#1}{#2}}}\slimits@
+}
+\newcommand{\bigop@}[2]{\bigop@@#1#2}
+\newcommand{\bigop@@}[3]{%
+  \vcenter{%
+    \sbox\z@{$#1\sum$}%
+    \hbox{\resizebox{\ifx#1\displaystyle#2\else1.2\fi\dimexpr\ht\z@+\dp\z@}{!}{$\m@th#3$}}%
+  }%
+}
+\newcommand{\bigast}{\DOTSB\bigop{\ast}}
+\newcommand{\bigoast}{\DOTSB\bigop{\varoast}}
+
+\newcommand{\Sum}{\@ifstar{\textstyle\sum}{\sum}}
+
+\newcommand{\sprod}{\otimes}
+\newcommand{\sProd}{\bigotimes}
+\newcommand{\sunion}{\oplus}
+\newcommand{\sUnion}{\bigoplus}
+
+
+
+\DeclarePairedDelimiter{\angles}\langle\rangle
+
+\newcommand{\bigstep}[5][]{\angles{#2,#3}\Downarrow\ifblank{#1}{}{^{#1}}\angles{#4,#5}}
+% \newcommand{\bigfault}[3][\wtv]{\angles{#2,#3}\Downarrow\fault\ifblank{#1}{}{,#1}}
+% \newcommand{\bigsome}[2]{\angles{#1,#2}{\Downarrow}}
+\newcommand{\fault}{\lightning}
+
+% \newcommand{\scap}[3]{(#1=#2)@#3} %% DEPRECATED
+% \newcommand{\atsym}{\mathchoice
+%   {\mbox{\raisebox{1pt}{\scalebox{.7}{@}}}}
+%   {\mbox{\raisebox{1pt}{\scalebox{.7}{@}}}}
+%   {\mbox{\tiny @}}
+%   {\mbox{\tiny @}}
+% }
+% \newcommand{\at}[2]{#1\atsym#2}
+
+
+
+%%%%    .oPYo.          o                    o     o
+%%%%    8               8             8      8b   d8
+%%%%    `Yooo. .oPYo.  o8P .oPYo.   .oPo.    8`b d'8 .oPYo. .oPYo. .oPYo.
+%%%%        `8 8oooo8   8  Yb..     Yo..     8 `o' 8 .oooo8 8    8 Yb..
+%%%%         8 8.       8    'Yb.   8o  .    8     8 8    8 8    8   'Yb.
+%%%%    `YooP' `Yooo'   8  `YooP'   `Y8P'    8     8 `YooP8 8YooP' `YooP'
+%%%%    :.....::.....:::..::.....::::.8 .::::..::::..:.....:8 ....::.....:
+%%%%    ::::::::::::::::::::::::::::::..::::::::::::::::::::8 ::::::::::::
+%%%%    ::::::::::::::::::::::::::::::::::::::::::::::::::::..::::::::::::
+
+
+
+% Sets
+
+\newcommand\given{\nonscript\:\delimsize\vert\nonscript\:\mathopen{}}
+\begingroup
+  \lccode`\~=`\|
+  \lowercase{\endgroup
+    \def\@set@special@mid{\mathcode`\|=\string"8000 \def~{\given}}}
+\DeclarePairedDelimiterXPP\set[1]{}\{\}{}{\@set@special@mid#1}
+
+
+% Substitutions
+
+%%% \subst{bla -> bla, bla -> bla}
+%%% delimiter is , if you need to escape it just put it in braces {,}
+%%% an empty entry inserts dots: \subst{x_1 -> y_1,,x_n -> y_n}
+\newcommand{\subst@delim}[4]{%
+    \let\subst@binding@#1\relax
+    #2\subst@kern\@subst#4,\relax\noexpand\@end@subst\subst@kern#3%
+}
+\def\@subst#1,#2\@end@subst{
+    \ifx\relax#2\relax%
+      \subst@binding@[#1]
+    \else%
+      \ifblank{#1}{\ldots}{\subst@binding@[#1]},\:\@subst#2\@end@subst
+    \fi%
+}
+
+\def\subst@binding[#1->#2]{#2/#1}
+\def\subst@kern{\mkern1mu}
+\def\subst{\subst@delim\subst@binding[]}
+\def\isub{\@ifstar{\isub@@}{\isub@}}
+\def\isub@{\subst@delim\subst@binding\llparenthesis\rrparenthesis}
+\DeclarePairedDelimiter{\isub@@}\llparenthesis\rrparenthesis
+\def\mapsto@binding[#1->#2]{#1\mapsto#2}
+\def\upd{\subst@delim\mapsto@binding[]}
+% Maps
+
+\newcommand{\mdunion}{\cdot}
+\newcommand{\Mdunion}{\bigodot}
+\newcommand{\munion}{+}
+\newcommand{\Munion}{\bigoplus}
+\newcommand{\isundef}[1]{#1 = \bot}
+\newcommand{\isdef}[1]{#1 \ne \bot}
+
+\newcommand{\hyper}[1]{\boldsymbol{#1}}
+
+\AtBeginDocument{
+  \colorlet{text}{.}
+}
+\colorlet{idx}{red!60!black}
+
+\newcommand{\idxcolor}{\color{idx}}
+\newcommand{\I}[1]{{\idxcolor#1}}
+
+\newcommand{\allowbr}{\discretionary{}{}{}}
+
+\newcommand\mapcolon{{\mathchar"3A}\,\color{text}}
+\begingroup
+  \lccode`\~=`\:
+  \lowercase{\endgroup
+    \def\@map@special@colon{\mathcode`\:=\string"8000 \def~{\mapcolon}}}
+
+\newcommand\mapbigcomma{\@ifstar{{\mathchar"2C}&\color{idx}}{\\\color{idx}}}
+\begingroup
+  \lccode`\~=`\:
+  \lowercase{\endgroup
+    \def\@map@big@colon{\mathcode`\:=\string"8000 \def~{&}}}
+\begingroup
+  \lccode`\~=`\,
+  \lowercase{\endgroup
+    \def\@map@big@comma{\mathcode`\,=\string"8000 \def~{\mapbigcomma}}}
+
+\def\@map@i{\let\I\idxcolor\colorlet{text}{.}}
+\def\@map@comma{\def\comma{\mathchar"2C}}
+
+\def\map@open{[}
+\def\map@close{]}
+
+% \newcommand\emptymap{(\fun i.\bot)}
+\newcommand\emptymap{\bigl\map@open\bigr\map@close}
+% \map
+\DeclarePairedDelimiterXPP\map[1]{}\map@open\map@close{}{\@set@special@mid\@map@special@colon\@map@i\global\let\lastmapsize\delimsize\relax#1}
+
+\newcommand\m{\@ifnextchar.{\map@dunion}{\@ifnextchar+{\map@union}{\@ifnextchar*{\map@@}{\@ifnextchar<{\map@big}{\map@}}}}}
+\def\map@dunion#1{\mdunion}
+\def\map@union#1{\munion}
+\newcommand\map@{\@ifnextchar[{\map@map}{\map@var}}
+\def\map@map[#1]{\ifblank{#1}{\emptymap}{\map{#1}}}
+\def\map@big<#1>{\ifblank{#1}{\emptymap}{%
+  \bgroup%
+  \@map@big@colon%
+  \@map@big@comma%
+  \@map@i\@map@comma%
+  \left\map@open
+  \begin{array}{@{\;}r@{{\color{idx}\mathchar"3A}\;}l@{\;}r@{{\color{idx}\mathchar"3A}\;}l@{\;}}
+    \color{idx}#1
+  \end{array}
+  \right\map@close
+  \egroup
+}}
+\def\map@var#1{\hyper{#1}}
+\def\map@@*[#1]{\map*{#1}}
+
+\newcommand{\pv}[1]{\ensuremath{\vec{\texttt{#1}}}}
+
+\newcommand{\remidx}[2]{#1\!/\!_{#2}}
+
+\newcommand{\const}[2]{{#1}^{#2}}
+\newcommand{\zeros}[1]{\const{0}{#1}}
+\newcommand{\ones}[1]{\const{1}{#1}}
+
+%%%%     .oPYo.
+%%%%     8    8
+%%%%    o8YooP' oPYo. .oPYo. .oPYo. oPYo. .oPYo. ooYoYo. .oPYo.
+%%%%     8      8  `' 8    8 8    8 8  `' .oooo8 8' 8  8 Yb..
+%%%%     8      8     8    8 8    8 8     8    8 8  8  8   'Yb.
+%%%%     8      8     `YooP' `YooP8 8     `YooP8 8  8  8 `YooP'
+%%%%    :..:::::..:::::.....::....8 ..:::::.....:..:..:..:.....:
+%%%%    :::::::::::::::::::::::ooP'.::::::::::::::::::::::::::::
+%%%%    :::::::::::::::::::::::...::::::::::::::::::::::::::::::
+
+\newcommand{\pwhile}{\textsf{pWhile}\xspace}
+\def\grammOr{\hspace{3pt}\mid\hspace{3pt}}
+\def\grammIs{\Coloneqq}
+
+\begingroup
+\catcode`\|=\active%
+\gdef\@grammar@bar{%
+    \catcode`\|=\active%
+    \def|{\grammOr}%
+}
+\endgroup
+
+\newcommand{\gramm}[1]{%
+  \begingroup
+  \def\is{\grammIs}%
+  \@grammar@bar%
+  #1%
+  \endgroup%
+}
+
+\newenvironment{grammar}{%
+    \begin{equation*}%
+    \def\is{& \grammIs }%
+    \renewcommand{\arraystretch}{1.2}%
+    \@grammar@bar%
+    \aligned%
+}
+{%
+    \endaligned%
+    \end{equation*}%
+    \aftergroup\ignorespaces%
+}
+
+%%%
+%%% CODE
+%%%
+
+% TeXLive24 makes it so that \coloneqq is actually \coloneq...
+\newcommand\sturdycoloneq{\mathrel{\mathop{\mathchar"3A}}=}
+
+\colorlet{lineno}{black!50}
+\colorlet{codecomment}{green!60!black}
+
+\RequirePackage{listings}
+
+\lstdefinelanguage{lambda}{%
+  keywords={def,let,in,while,do,repeat,for,if,then,else,skip,return},
+  comment=[l]{//},
+  commentstyle = {\color{codecomment}},
+}[keywords,comments,strings]
+
+\lstdefinestyle{std}{
+  basicstyle={\ttfamily},
+  columns=[l]flexible,
+  tabsize=2,
+  numbersep=6pt,
+  literate={
+    {\ :=\ }{{$\,\sturdycoloneq\,$}}2
+    {:=}{{$\,\sturdycoloneq\,$}}2
+    {\ :~\ }{{$\,\colonapprox\,$}}2
+    {:~}{{$\,\colonapprox\,$}}2
+    {\ =\ }{{$\,=\,$}}2
+    {=}{{$\,=\,$}}2
+    {\ !=\ }{{$\,\neq\,$}}2
+    {!}{{$\neg$}}1
+    {!=}{{$\,\neq\,$}}2
+    {<=}{{$\leq$}}1
+    {>=}{{$\geq$}}1
+    {<<}{{$\langle$}}1
+    {<<\ }{{$\langle$}}1
+    {>>}{{$\rangle$}}1
+    {\ >>}{{$\rangle$}}1
+    {...}{{$\ldots$}}3
+    {rec}{{$\upmu$}}1
+    {vrec}{{$\hat{\upmu}$}}1
+    {fun}{{$\uplambda$}}1
+    {||}{{$\parallel$}}3
+    {_1}{{$_{\texttt{1}}$}}1
+    {_2}{{$_{\texttt{2}}$}}1
+    {_3}{{$_{\texttt{3}}$}}1
+    {_4}{{$_{\texttt{4}}$}}1
+    {_i}{{$_{i}$}}1
+    {_j}{{$_{j}$}}1
+    {_n}{{$_{n}$}}1
+    {1/2}{{$\onehalf$}}1
+    {1/4}{{$\onequarter$}}1
+    {3/4}{{$\threequarters$}}1
+  },
+  % boxpos=t,
+  mathescape,
+  keepspaces,
+}
+
+
+\newcommand{\code}[2][]{%
+  \ifmmode\let\par\endgraf\expandafter\text\fi%
+  {\lstinline[style=std,language=lambda,columns=fullflexible,keepspaces=false,#1]@#2@}%
+}
+
+\def\p{\texttt}
+
+\def\rec#1.{\ensuremath{\upmu}#1\st}
+\def\vrec#1.{\ensuremath{\hat{\upmu}}#1\st}
+\def\fun#1.{\ensuremath{\bm{\uplambda}}#1\st}
+\def\vfun#1.{\ensuremath{\underline{\uplambda}}#1\st}
+
+
+\lstnewenvironment{sourcecode}[1][]{
+  \lstset{
+    language=lambda,
+    style=std,
+    numbers=left,
+    aboveskip=\abovedisplayskip,
+    belowskip=\belowdisplayskip,
+    numberstyle={\tiny\color{lineno}},
+    xleftmargin=2ex,
+    escapechar=@,
+    #1
+  }
+}{}
+\lstnewenvironment{sourcecode*}[1][]{
+  \lstset{
+    language=lambda,
+    style=std,
+    numbersep=0pt,
+%    aboveskip=-5pt,
+%    belowskip=-5pt,
+    xleftmargin=0pt,
+    xrightmargin=0pt,
+    % boxpos=t,
+    #1
+  }
+}{}
+
+
+\newcommand{\semleq}{\preceq}
+\newcommand{\semeq}{\simeq}
+
+\DeclareMathOperator{\idx}{idx}
+
+\newcommand{\PVar}{\mathbb{X}}
+\DeclareMathOperator{\pvar}{pvar}
+\DeclareMathOperator{\mods}{mods}
+\DeclareMathOperator{\relav}{relavant}
+\DeclareMathOperator{\reads}{reads}
+
+% \DeclarePairedDelimiterXPP\probOf[1]{\mathsf{Pr}}(){}{
+%   \def\given{\nonscript\:\delimsize\vert\nonscript\:\mathopen{}}
+%   #1}
+\newcommand{\condmid}{\nonscript\:\delimsize\vert\nonscript\:\mathopen{}}
+
+\newcommand{\expectOf}{\@ifnextchar_{\@@expectOf}{\@expectOf}}
+\def\@@expectOf_#1{\mathsf{E}_{#1}\bare@expectOf}
+\DeclarePairedDelimiterXPP\@expectOf[1]{\mathsf{E}}[]{}{
+  \let\given\condmid
+  #1}
+\DeclarePairedDelimiterXPP\bare@expectOf[1]{}[]{}{
+  \let\given\condmid
+  #1}
+
+\newcommand{\probOf}{\@ifnextchar_{\@@probOf}{\@probOf}}
+\def\@@probOf_#1{\mathsf{Pr}_{#1}\bare@probOf}
+\DeclarePairedDelimiterXPP\@probOf[1]{\mathsf{Pr}}(){}{
+  \let\given\condmid
+  #1}
+\DeclarePairedDelimiterXPP\bare@probOf[1]{}(){}{
+  \let\given\condmid
+  #1}
+
+\DeclarePairedDelimiterXPP\sigcl[1]{\sigma}(){}{#1}
+\def\closure{\sigcl}% synonym 
+
+
+\newcommand{\Skip}{\code{skip}}
+\newcommand{\Seq}[2]{{#1} \p; {#2}}
+\newcommand{\Assn}[2]{#1 \code{ := }{#2}}
+\newcommand{\Sample}[3]{ #1 \code{ :~ }#2 \code{(} #3 \code{)}}
+\newcommand{\While}[2]{\code{while}\ #1\ \code{do}\ #2}
+\newcommand{\Loop}[2]{\code{repeat}\ #1\ #2}
+\newcommand{\Ifthen}[2]{\code{if}\ #1\ \code{then}\ #2}
+\newcommand{\Cond}[3]{\code{if}\;#1\;\code{then}\;#2\;\code{else}\;#3}
+
+\newcommand{\Ber}[1]{\mathsf{Ber}_{#1}}% Bernoulli
+\newcommand{\Unif}[1]{\mathsf{Unif}_{#1}}% Uniform
+\newcommand{\Zp}{\mathbb{Z}_{p}}% Field Zp
+\newcommand{\UnifZp}{\mathsf{U}_{p}}% Uniform
+
+\newcommand{\someop}{\divideontimes}
+\newcommand{\prim}{\phi}
+\newcommand{\Ectxt}{\mathop{\strut\mathcal{E}}\nolimits}
+
+
+%%%%    o                    o
+%%%%    8
+%%%%    8     .oPYo. .oPYo. o8 .oPYo.
+%%%%    8     8    8 8    8  8 8    '
+%%%%    8     8    8 8    8  8 8    .
+%%%%    8oooo `YooP' `YooP8  8 `YooP'
+%%%%    ......:.....::....8 :..:.....:
+%%%%    :::::::::::::::ooP'.::::::::::
+%%%%    :::::::::::::::...::::::::::::
+\newcommand{\lambdares}{\widehat{\lambda}}
+
+\newcommand{\True}{\mathsf{True}}
+\newcommand{\False}{\mathsf{False}}
+
+\newcommand{\true}{\mathsf{true}}
+\newcommand{\false}{\mathsf{false}}
+
+\colorlet{couplings}{blindblue}
+
+\newcommand{\indom}{\own}
+\newcommand{\measurable}[1]{ \text{meas}(#1) }
+\newcommand{\modelsLilac}{\models_{\lilac}}
+
+\newcommand{\sep}{\sepand}
+\newcommand{\wand}{\sepimp}
+
+\newcommand{\ridx}{\rho}% reindexing
+
+\DeclarePairedDelimiterXPP{\cpl}[1]%
+  {\colorlet{cpl@txt}{.}\color{couplings}}%
+  \lfloor\rfloor%
+  {}{\color{cpl@txt}#1\color{couplings}}% coupling
+
+\newcommand{\cplv}[1]{\cpl*{\let\land\land@v\begin{matrix}#1\end{matrix}}}
+
+\newcommand{\pprop}[1]{\pure{#1}}
+
+\newcommand{\beq}{\doteq}
+
+\newcommand{\asequal}[2]{\cpl{#1 = #2}}
+\newcommand{\aseqlilac}{\mathbin{\stackrel{\mathsf{as}}{\mathop{=}}}}
+\newcommand{\ownsym}{\mathsf{own}}
+\DeclarePairedDelimiterXPP{\own}[1]%
+  {\ownsym} () {}{#1}
+
+\newcommand{\ownall}{\ownsym_{\Var}}
+
+\newcommand{\isDistAs}{\sim}
+\newcommand{\distAs}[2]{#1 \isDistAs #2}
+
+\colorlet{sure}{brown}
+\DeclarePairedDelimiterXPP{\sure}[1]%
+  {\colorlet{cpl@txt}{.}\color{sure}}%
+  \lceil\rceil%
+  {}{\color{cpl@txt}#1\color{sure}}% coupling
+
+
+\DeclareMathOperator\unif{unif}
+\newcommand\dirac[1]{\delta_{#1}}
+
+\newcommand{\Sep}{\@ifstar{\displaystyle\bigast}{\textstyle\bigast}}
+\newcommand{\LAnd}{\@ifstar{\displaystyle\bigwedge}{\textstyle\bigwedge}}
+\newcommand{\LOr}{\@ifstar{\displaystyle\bigvee}{\textstyle\bigvee}}
+
+\newcommand{\at}{\angles}% easier to remember than \va?
+
+\newcommand{\Exists}{\boldsymbol{\exists}}
+\newcommand{\Forall}{\boldsymbol{\forall}}
+
+\def\E#1.{\Exists #1\st}
+\def\A#1.{\Forall #1\st}
+\def\P#1.{\Pi_{#1}\st}
+\def\PP#1.{{\hat\Pi}_{#1}\st}
+% \newcommand{\Mod}[1]{\mathsf{\mathbf{#1}}}
+% \newcommand{\Mod}[1]{\mathbb{#1}}
+% \newcommand{\Mod}[1]{\mathfrak{#1}}
+\newcommand{\Mod}[1]{\boldsymbol{\mathcal{#1}}}
+\DeclareMathOperator{\CondMod}{\Mod{C}}
+\def\CMod#1{\CondMod_{#1}}
+\def\LC#1#2{{\mathsf{\mathbf{C}}}_{#1\gets#2}}% Lilac's conditioning
+\makeatother
+\def\C#1@#2#3.{\CMod{#1\at{#2}}#3\st}
+\makeatletter
+% \def\CC#1#2.{\CMod{#1}#2\st}
+\def\CC{\@ifstar{\CC@t}{\CC@d}}
+\def\CC@d#1#2.{\CMod{#1}#2\st}
+\def\CC@t#1#2.{\CondMod\nolimits_{#1}#2\st} 
+
+% \newcommand{\idxrem}[2]{\mathop{\downarrow}\nolimits^{#1}_{#2}}
+
+\def\fpu{\mathop{{|}\mkern-4mu{\Rrightarrow}}}
+\newcommand{\pers}{\mathop{\boxempty}}
+
+\def\afpuRel{\leadsto}
+\def\afpu{\@ifnextchar[{\AFPU}{\afpuRel}}
+\def\AFPU[#1,#2~>#3,#4]{\angles{#1,#2}\afpuRel\angles{#3,#4}}
+% \newcommand\aupd[2]{\sideset{_{#1}}{_{#2}}\fpu}
+% \newcommand\aupd[2]{\mathop{[#1]\mkern-4mu{\equiv}\mkern-4mu[#2]\mkern-4mu{\Rrightarrow}}}
+% \newcommand\aupd[2]{\mathop{{\equiv}\mkern-4mu[#1]\mkern-4mu{\Rrightarrow}\mkern-4mu[#2]}}
+% \newcommand\aupd[2]{\mathop{[#1,#2\rangle}}
+\newcommand\aupd[3][]{\mathop{\angles[#1]{#2{\Rrightarrow}#3}}}
+
+\DeclarePairedDelimiterXPP{\ip}[2]{\p{#1}}\langle\rangle{}{#2}% indexed prog var
+\DeclarePairedDelimiterXPP{\Ip}[2]{\p{#1}}\langle\rangle{}{{\idxcolor#2}}% indexed prog var with concrete index
+\DeclarePairedDelimiterXPP{\ipv}[2]{\pv{#1}}\langle\rangle{}{#2}% indexed prog var vector
+
+\DeclareMathOperator{\irrel}{irrel}
+\DeclareMathOperator{\homogeneousop}{homogeneous}
+\newcommand{\homogeneous}[2][]{\homogeneousop_{#1}(#2)}
+
+\newcommand{\replsalg}{\triangleleft}
+
+\def\retsym{\hyper{r}}
+% \def\retsym{\p{ret}}
+\newcommand{\@retarg}[1][]{\ifblank{#1}{}{\at{#1}}}
+% \def\retsym{\rho}
+% \def\@retarg\@optsubscr
+\def\ret{\@ifnextchar.{\retsym}{\retsym\@retarg}}
+\def\@retdot#1{.\,}
+
+\newcommand{\T}[3]{
+  \left\{
+  \begin{array}{@{}r@{}c@{}l@{}}
+    \null#1
+  \end{array}
+  \middle\}
+  \; #2 \;
+  \middle\{
+  \begin{array}{@{}r@{}c@{}l@{}}
+    \null#3
+  \end{array}
+  \right\}%
+}
+
+\def\J#1|-#2#3#4{%
+  #1\vdash
+    \left\{
+    \begin{array}{@{}r@{}c@{}l@{}}
+      \null#2
+    \end{array}
+    \middle\}
+    \; #3 \;
+    \middle\{
+    \begin{array}{@{}r@{}c@{}l@{}}
+      \null#4
+    \end{array}
+    \right\}%
+}
+
+\def\Jv#1|-#2#3#4{%
+  \bgroup%
+  \renewcommand{\arraystretch}{1.2}%
+  \begin{array}{@{}r@{\;}l@{}}
+    \mathllap{#1{}}{\vdash}\;
+      & \left\{#2\right\}\\
+      & #3\\
+      & \left\{#4\right\}
+  \end{array}
+  \egroup%
+}
+
+% \newcommand{\proves}{\color{blue!80!black}\vdash\color{text}}
+\newcommand{\proves}{\vdash\@optsubscr}
+\newcommand{\provedby}{\dashv}
+\newcommand{\notproves}{\centernot\proves}
+
+\def \mpr@@proves #1#2{\hbox
+    {${\vdash}\mkern -5mu\lower .03pt \mpr@@fraction {#1}{#2}$}}
+
+\newcommand{\proves@bar}[1]{
+  \\\mathllap{{\vdash}}\mkern-5mu%
+  \leaders\hbox{$\mkern-3mu\relax-$}\hfill\null%
+  \ifblank{#1}{}{\refstepcounter{equation}\rlap{\quad(\theequation)}}%
+  \\
+}
+\newcommand{\proves@tag}[1]{
+  \setlabel{#1}
+  \llap{\color{black!70}#1:\quad}
+  % \refstepcounter{equation}
+  % \llap{(\theequation)\quad}
+  % \ifblank{#1}{}{\label{#1}}
+}
+\newenvironment{entailment}[1][]{%
+  \def\proves{\proves@bar{#1}}
+  \let\tagHyp\proves@tag
+  \let\tagGoal\proves@tag
+  \begin{array}{l}
+}{%
+  \end{array}%
+}
+
+\def\lequiv{\mathrel{\provedby\proves}}
+\def\gproves{\Vdash}% globally proves
+
+\newcommand{\wpsymb}{\mathbf{wp}}
+\DeclarePairedDelimiter{\post@bra}\{\}
+\newcommand{\WP}[1]{\wpsymb\,{#1}\,\post@bra}
+\newcommand{\wpc}[1]{\WP{#1}}
+\newcommand{\WPvv}[2]{%
+  \begin{array}[t]{@{}l@{\,}l}
+    \wpsymb&{#1}\{%
+    \\
+    & #2
+    \\
+    \}
+  \end{array}
+}
+\def\wpv@valign{t}
+\newcommand{\WPv}[2]{%
+  \begin{array}[\wpv@valign]{@{}l@{\,}l@{}}
+    \wpsymb&{#1}%
+    % \\\hfill{\color{gray}\raisebox{3.7pt}{$\lfloor\!$}} &
+    \\\hfill{\color{black!30}\reflectbox{\rotatebox[origin=c]{180}{$\Rsh$}}} &
+    \left\{\strut{\def\wpv@valign{c}#2}\right\}
+  \end{array}
+}
+
+\def\V#1|-{#1\proves}
+
+\def\SAT#1|={#1\vDash}
+
+
+\DeclareMathOperator{\projectable}{proj}
+
+
+\newenvironment{conj}[1][l]{%
+  \let\land\land@v%
+  \def\and{\land}%
+  \begin{pmatrix*}[#1]%
+}{%
+  \end{pmatrix*}%
+}
+\newenvironment{conj*}[1][l]{%
+  \let\land\land@v%
+  \def\and{\land}%
+  \begin{matrix*}[#1]%
+}{%
+  \end{matrix*}%
+}
+\newenvironment{grp}[1][l]{%
+  \left\lgroup%
+  \renewcommand{\arraystretch}{1.2}%
+  \begin{array}{@{}#1@{}}%
+}{%
+  \end{array}%
+  \right\rgroup%
+}
+
+\newenvironment{smallvec}{\null\,\vcenter\bgroup
+  \Let@\restore@math@cr\default@tag
+  \baselineskip6\ex@ \lineskip1.5\ex@ \lineskiplimit\lineskip
+  \ialign\bgroup\hfil$\m@th\scriptstyle##$\hfil&&{}\hfil
+  $\m@th\scriptstyle##$\hfil\crcr
+}{%
+  \crcr\egroup\egroup\,%
+}
+\newcommand\svec[1]{{%
+  \left(\!\begin{smallvec}#1\end{smallvec}\!\right)%
+}}
+
+
+
+
+%%%%     .oPYo.        8
+%%%%     8   `8        8
+%%%%    o8YooP' o    o 8 .oPYo. .oPYo.
+%%%%     8   `b 8    8 8 8oooo8 Yb..
+%%%%     8    8 8    8 8 8.       'Yb.
+%%%%     8    8 `YooP' 8 `Yooo' `YooP'
+%%%%    :..:::..:.....:..:.....::.....:
+%%%%    :::::::::::::::::::::::::::::::
+%%%%    :::::::::::::::::::::::::::::::
+
+\newcommand{\ruletitle}{\textsf}
+\newcommand{\ruleshort}{\textsc}
+
+\AtBeginDocument{
+  \@ifpackageloaded{hyperref}{}{
+    \def\phantomsection{}
+  }
+}
+
+\def \RuleNameStyle #1{\textsc{\strut#1}}
+\def\RuleName #1{%
+  \hbox {\TirNameStyle{\strut#1}}%
+}
+\def\RuleNameProofLink#1{%
+  \hbox {\hyperref[proof:#1]{\TirNameStyle{\strut#1}}}%
+}
+
+\def\RuleNameLbl #1{%
+    \RuleName{#1}%
+    % \hbox {\TirNameStyle{\strut#1}}%
+    \protected@xdef\@currentlabel{\protect\RuleNameStyle{#1}}
+    \protected@xdef\cref@currentlabel{%
+      [rule][0][]%
+      \protect\RuleNameStyle{\strut#1}}%
+    \phantomsection%
+}
+
+
+\newenvironment{proofrules}{%
+  \let\RefTirName\RuleName%
+  \let\TirName\RuleName%
+  \let\LabTirName\RuleNameLbl%
+  % \let\RightTirName\RuleName%
+  \providecommand{\relabel}[1]{\@bsphack\@esphack}
+  \setkeys{mpr}{vcenter}%
+  \begin{mathpar}
+}{%
+  \end{mathpar}%
+  \ignorespacesafterend%
+}
+
+\newenvironment{proofrules*}{%
+  \let\RefTirName\RuleName%
+  \let\TirName\RuleName%
+  \let\LabTirName\RuleNameLbl%
+  % \let\RightTirName\RuleName%
+  \providecommand{\relabel}[1]{\@bsphack\@esphack}
+  \begin{mathparpagebreakable}
+}{%
+  \end{mathparpagebreakable}%
+  \ignorespacesafterend%
+}
+
+\newenvironment{proofrule}{%
+  \begin{equation*}
+  \let\RefTirName\RuleName%
+  \let\TirName\RuleName%
+  \let\LabTirName\RuleNameLbl%
+  \providecommand{\relabel}[1]{\@bsphack\@esphack}
+  % \let\RightTirName\RuleName%
+}{%
+  \end{equation*}%
+  \ignorespacesafterend%
+}
+
+\newif\if@deriv@wrap
+\newsavebox{\@derivation}
+\newenvironment{derivation}[1][\small]{%
+  \begin{lrbox}{\@derivation}#1\(%
+}{%
+  \)%
+  \end{lrbox}%
+  \ifmmode\@deriv@wrapfalse\else\@deriv@wraptrue\fi%
+  \if@deriv@wrap\begin{equation*}\fi%
+  \ifdim\wd\@derivation<\linewidth%
+    \usebox{\@derivation}%
+  \else%
+    \resizebox{\linewidth}{!}{\usebox{\@derivation}}%
+  \fi%
+  \if@deriv@wrap\end{equation*}\fi%
+  \ignorespacesafterend%
+}
+
+\newlength{\rulesecskip}
+\setlength{\rulesecskip}{.5\baselineskip}
+\newcommand{\rulesecdiv}{%
+  \noindent\leavevmode%
+  \leaders\hrule height 0.6ex depth \dimexpr.12ex-0.6ex\hfill\kern0pt%
+}
+
+\newcommand{\rulesection}{%
+  \@ifstar{\rulesection@}{\rulesection@@}%
+}
+\newcommand{\rulesection@@}{\par\vspace{\rulesecskip}\rulesection@}
+\newcommand{\rulesection@}[1]{%
+  {\color{gray}\makebox[1em]{\rulesecdiv}\hspace{1ex}{#1}\hspace{1ex}\rulesecdiv}%
+  \vspace{\rulesecskip}%
+}
+\newcommand{\rulesectionend}{%
+  \par\vspace{\rulesecskip}%
+  {\color{gray}\rulesecdiv}%
+}
+
+\newcommand{\jumptoproofsym}{$\dashrightarrow$}
+
+%-----------------------------------------------------------------------------
+%% Misc shorthands
+%-----------------------------------------------------------------------------
+\newcommand{\omitted}{\wtv}
+\newcommand{\uses}{\text{uses}}
+\newcommand{\liftA}[1]{#1} % for lift a preassertion to a post assertion
+\newcommand{\liftSpace}[1]{#1} % for lift a Probability space:w
+\newcommand{\pst}[1]{(#1)[2]} % for projecting to the distribution
+\newcommand{\pval}[1]{(#1)[1]} % for projecting to the return value
+\newcommand{\default}{\bot} 
+
+%-----------------------------------------------------------------------------
+%% Synonyms
+%-----------------------------------------------------------------------------
+\newcommand{\hpt}{\m{t}}
+\newcommand{\hps}{\m{s}}
+\newcommand{\hpd}{\m{d}}
+\newcommand{\hpr}{\m{r}}
+\newcommand{\hpv}{\m{v}}
+\newcommand{\va}{\angles}
+\newcommand{\disjunion}{\dunion}
+\newcommand{\Disjunion}{\Dunion}
+
+\newcommand{\wptriv}{\Cref{rule:wp-triv}\xspace}
+\newcommand{\wpcons}{\Cref{rule:wp-cons}\xspace}
+\newcommand{\wpall}{\Cref{rule:wp-all}\xspace}
+\newcommand{\wpconst}{\Cref{rule:wp-const}\xspace}
+\newcommand{\wpframe}{\Cref{rule:wp-frame}\xspace}
+\newcommand{\wpimplr}{\Cref{rule:wp-impl-r}\xspace}
+\newcommand{\wpsubst}{\Cref{rule:wp-subst}\xspace}
+\newcommand{\wpidx}{\Cref{rule:wp-idx}\xspace}
+\newcommand{\wpseq}{\Cref{rule:wp-seq}\xspace}
+\newcommand{\wpassign}{\Cref{rule:wp-assign}\xspace}
+\newcommand{\wpsamp}{\Cref{rule:wp-samp}\xspace}
+\newcommand{\wpif}{\Cref{rule:wp-if}\xspace}
+\newcommand{\wpwhile}{\Cref{rule:wp-while}\xspace}
+\newcommand{\wpnest}{\Cref{rule:wp-nest}\xspace}
+\newcommand{\wpconj}{\Cref{rule:wp-conj}\xspace}
+\newcommand{\wpconjstar}{\Cref{rule:wp-conj-star}\xspace}
+\newcommand{\wpproj}{\Cref{rule:wp-proj}\xspace}
+\newcommand{\wpidxpost}{\Cref{rule:wp-idx-post}\xspace}
+\newcommand{\wpidxswap}{\Cref{rule:wp-idx-swap}\xspace}
+\newcommand{\wpidxmerge}{\Cref{rule:wp-idx-merge}\xspace}
+
+\newcommand{\denot}{\Sem}
+\newcommand{\ktt}{\text{true}}
+\newcommand{\kff}{\text{false}}
+\newcommand{\wh}{\widehat}
+
+%\newcommand{\bigstep}[4]{\left\langle #1, #2 \right\rangle \Downarrow \left\langle #3, #4 \right\rangle}
+
+
+%%%%     .oPYo.              8             8       o 8  o   o
+%%%%     8    8              8             8         8      8
+%%%%    o8YooP' oPYo. .oPYo. 8oPYo. .oPYo. 8oPYo. o8 8 o8  o8P o    o
+%%%%     8      8  `' 8    8 8    8 .oooo8 8    8  8 8  8   8  8    8
+%%%%     8      8     8    8 8    8 8    8 8    8  8 8  8   8  8    8
+%%%%     8      8     `YooP' `YooP' `YooP8 `YooP'  8 8  8   8  `YooP8
+%%%%    :..:::::..:::::.....::.....::.....::.....::....:..::..::....8
+%%%%    :::::::::::::::::::::::::::::::::::::::::::::::::::::::::ooP'.
+%%%%    :::::::::::::::::::::::::::::::::::::::::::::::::::::::::...::
+
+
+\newcommand{\Dist}{\mathbb{D}}% Probability distribution
+\newcommand{\ProbSp}{\mathbb{P}}
+\newcommand{\SigAlg}{\mathbb{A}}
+
+\newcommand{\Outcomes}{\Omega}
+\newcommand{\psp}{\mathcal{P}}% prob space variable
+\newcommand{\salg}{\mathcal{F}}% sigma alg variable
+\newcommand{\salgalt}{\mathcal{G}}% sigma alg alternative variable
+\newcommand{\maybePsp}{\psp_{\!\invalid}}% prob space or invalid variable
+
+\newcommand{\event}{X}
+\newcommand{\eventalt}{Y}
+
+\newcommand{\prob}{\mu}
+\newcommand{\probalt}{\nu}
+
+\newcommand{\eqq}[1]{\approx_{#1}} 
+
+\newcommand{\RV}{\text{RV}} % currently used for randomized program variables
+
+\newcommand{\sigmaF}{\salg}
+\newcommand{\sigmaG}{\salgalt}
+
+\newcommand{\SO}{\Sigma_{\Outcomes}}
+\newcommand{\SVO}{\Sigma_{\Val \times \Outcomes}}
+
+
+\newcommand{\projout}[2]{\Pi_{\widehat{#1}} #2}
+\newcommand{\extP}[2]{\text{Ext}_{#1} #2}
+\newcommand{\minext}[2]{\mathsf{minext}(#1, #2)}
+
+% monadic stuff:
+
+\DeclareMathOperator{\bind}{\mathbf{bind}}
+\DeclareMathOperator{\@return}{\mathbf{return}}
+\def\return{\@return}
+
+\newcommand{\fuse}{\Yleft}
+
+
+\newcommand{\haskell@do}[1]{\@hs@do#1;\relax\noexpand\@end@hs@do}
+\def\hs@binding#1<-#2\hs@endbinding{\hs@var#1 \gets #2}
+\def\hs@seq@sp{\textbf{;}\;}
+\def\hs@seq@nl{\textbf{;}\\}
+\def\hs@dotsh{\dots\hs@seq@sp}
+\def\hs@dotsv{\quad\vdots\\}
+\def\hs@var{\@ifnextchar_{\hs@wtv}{}}
+\def\hs@wtv_{\wtv}
+\def\@hs@do#1;#2\@end@hs@do{
+    \ifx\relax#2\relax%
+      #1%
+    \else%
+      \ifblank{#1}{\hs@dots}{\hs@binding#1\hs@endbinding\hs@seq}\@hs@do#2\@end@hs@do
+    \fi%
+}
+
+\newcommand{\DO}{\@ifstar{\DO@p}{\DO@}}%
+\newcommand{\DO@p}[1]{\left(\vphantom{\big(}\DO@{#1}\right)}%
+\newcommand{\DO@}[1]{%
+  \let\hs@seq\hs@seq@sp%
+  \let\hs@dots\hs@dotsh%
+  \haskell@do{#1}
+}
+\newcommand{\DOv}{\@ifstar{\DOv@h}{\DOv@v}}%
+\newcommand{\DOv@h}[1]{%
+  \left\lgroup%
+  \let\hs@seq\hs@seq@sp%
+  \let\hs@dots\hs@dotsh%
+  \begin{array}{@{}l@{}}
+    \haskell@do{#1}
+  \end{array}
+  \right\rgroup%
+}
+\newcommand{\DOv@v}[1]{%
+  \left\lgroup%
+  \let\hs@seq\hs@seq@nl%
+  \let\hs@dots\hs@dotsv%
+  \begin{array}{@{}l@{}}
+    \haskell@do{#1}
+  \end{array}
+  \right\rgroup%
+}
+
+\newcommand{\pfwd}[2]{#2 \circ \inv{#1}}
+\newcommand{\krnl}{\kappa}
+
+% DEPRECATED:
+\newcommand{\dbind}{\triangleright }
+%\newcommand{\bind}[2]{#1 \triangleright (#2)}
+\newcommand{\unit}[1]{\return(#1)}
+
+%\NewDocumentCommand\bind{gg}{\IfNoValueTF{#1}{\mathsf{bind}\xspace}{#1 |> #2}}%
+\newcommand{\giry}{\Dist}
+\newcommand{\ev}{\text{ev}}
+% END DEPRECATED
+
+
+% newtxmath loaded by acmart offers \bulletSS
+% \newcommand*\bigcdot{\mathpalette\bigcdot@{.5}}
+% \newcommand*\bigcdot@[2]{\mathbin{\vcenter{\hbox{\scalebox{#2}{$\m@th#1\bullet$}}}}}
+
+\newcommand{\indepcomb}{\oast}
+
+\newcommand{\Hyp}[2][I]{{#2}^{#1}}
+\newcommand{\Full}[1]{\Sigma_{#1}}% powerset sigma algebra
+\newcommand{\HFull}[1]{\boldsymbol{\Sigma}_{#1}}% powerset sigma algebra
+\newcommand{\spaceP}{\psp}
+\newcommand{\Triv}[1]{\vvmathbb{1}_{#1}}% trivial sigma algebra
+%\newcommand{\spaceTriv}{\Triv{\Val}} %Jialu: sync with Emanuele's notation later
+\newcommand{\Mt}{\mathcal{M}_{\m{t}}}
+%\newcommand{\Mp}{\mathcal{M}_{\m{p}}}
+\newcommand{\spacePframe}{\Mt \otimes \frm{\m{\psp}}}
+\newcommand{\inPframe}[1]{\mathcal{M}_{#1} \otimes \frm{\m{\psp}}}
+\newcommand{\outPframe}{(\Triv{\Val} \otimes \Mt \otimes \frm{\m{\psp}})}
+\newcommand{\spaceProjframe}[1]{(\Triv{\Val} \otimes \mathcal{M}_{#1} \otimes \frm{\m{\psp}})}
+
+\newcommand{\dist}{d} 
+\newcommand{\pprod}{\otimes}% probability spaces product
+\newcommand{\pprodOf}{\mathop{\otimes}}% product of hyper probability spaces
+\newcommand{\pProd}{\bigotimes}
+\newcommand{\cprod}{\times}% cartesian probability spaces product
+\newcommand{\punion}{\oplus}% probability spaces union
+\newcommand{\pUnion}{\bigoplus}
+\newcommand{\iprod}{\indepcomb}% independent product
+
+\DeclarePairedDelimiterXPP\forget[2]{}{\lceil}{\rceil}{_{#1}}{#2}
+\newcommand{\eqmodv}[1]{\approx_{#1}}
+
+
+\newcommand{\restr}[2]{{#1}\vert_{#2}}
+
+\newcommand{\extTo}{\sqsubseteq}
+\newcommand{\extOf}{\sqsupseteq}
+
+% Resource Algebra
+% each command has an optional argument specifying the RA it belongs to
+\newcommand{\raOp}{\cdot\@optsubscr}
+\newcommand{\raLeq}{\preceq\@optsubscr}
+\newcommand{\raGeq}{\succeq\@optsubscr}
+\newcommand{\raUnit}{\varepsilon\@optsubscr}
+\newcommand{\raValid}{\mathop{\mathcal{V}}\nolimits\@optsubscr}
+\newcommand{\invalid}{\lightning}
+
+% deprecated? %
+\newcommand{\resleq}{\preceq}
+\newcommand{\resemp}{\varepsilon}
+%%%%%%%%%%%%%%%
+
+\newcommand{\PSpRA}{\mathsf{PSp}}
+\newcommand{\PSpPmRA}{\mathsf{PSpPm}}
+\newcommand{\Perm}{\mathsf{Perm}}
+\newcommand{\permap}{p}
+\newcommand{\AuthOf}[1]{\mathsf{Auth}(#1)}
+\newcommand{\Auth}[2]{\mathsf{A}(#1, #2)}
+\newcommand{\Frag}[1]{\mathsf{F}(#1)}
+\newcommand{\PEx}[2]{#1 {\color{red}@} #2}% deprecated!
+\newcommand{\PAlign}[2]{#1 \compat #2}% deprecated: alignment -> compatibility
+\newcommand{\margDist}[2]{#1 \mid_{#2}}
+
+\DeclareMathOperator{\psinv}{pabs}
+
+\DeclareMathOperator{\trivialOn}{triv}
+
+\newcommand{\Model}{\mathcal{M}}
+
+% assertions
+% \DeclarePairedDelimiter{\pure}{\ulcorner}{\urcorner}
+\colorlet{pure}{gray}
+\DeclarePairedDelimiterXPP{\pure}[1]%
+  {\colorlet{pure@txt}{.}\color{pure}}%
+  {\ulcorner}{\urcorner}%
+  {}{\color{pure@txt}#1\color{pure}}% coupling
+
+\DeclarePairedDelimiterXPP{\Own}[1]%
+  {\mathsf{Own}} () {}{#1}
+
+
+\newcommand{\perm}[1]{%
+  {%
+    \def\mapcolon{{\mathchar"3A}}%
+    \def\map@open{(}%
+    \def\map@close{)}%
+    \map*{#1}%
+  }%
+}
+\newcommand{\auth}[1]{\mathop{\bullet}#1}
+\newcommand{\frag}[2][]{\mathop{{\circ}_{#1}}#2}
+
+\newcommand{\withp}[1]{@{#1}}
+\newcommand{\withperm}[1]{@\perm{#1}}
+
+% \newcommand{\frag}[2][]{\circ}
+
+
+\newcommand{\almostM}[2]{#1 \Yleft #2}
+\newcommand{\almostcompose}{\odot}
+
+\newcommand{\proj}{\pi}
+\newcommand{\frm}[1]{{#1}^{\lbl{f}}}% frame
+\newcommand{\rf}{\mathsf{r}_\mathsf{f}}% frame
+\newcommand{\rs}{\mathsf{r}}% frame
+\newcommand{\rlift}[1]{#1}
+
+\newcommand{\disint}[2]{#1 \mid_{#2}}
+
+\newcommand{\kernelize}[1]{\langle \rangle \mapsto #1}
+
+% Definition unfolding
+
+% To be deprecated
+\newcommand{\mut}{\m[i: \mu_i]} % to be made deprecated
+\newcommand{\whmu}{\widehat{\mu}}
+\newcommand{\muiframe}{\mu_i^{\sepand}}
+\newcommand{\muframe}{\mu^{\sepand}}
+
+\def\bern(#1){\Ber{#1}}
+\newcommand{\xor}{\ \code{xor}\ }
+\newcommand{\FV}{\pvar}
+\newcommand{\fullp}{\mathbf{1}}
+\newcommand{\constrain}[2]{#1|_{#2}} %this notation clashes with teh one for disint
+\newcommand{\condition}[2]{#1|_{#2}} %this notation clashes with teh one for disint
+
+%-----------------------------------------
+
+\newcommand{\numlist}[1]{[#1]}
+\newcommand{\model}[2]{(#1)(#2)}%% we should get rid of this
+
+
+
+
+%%%  .oPYo.                      d'b   .oPYo.          o  8  o
+%%%  8    8                      8     8    8          8  8
+%%% o8YooP' oPYo. .oPYo. .oPYo. o8P    8    8 o    o  o8P 8 o8 odYo. .oPYo.
+%%%  8      8  `' 8    8 8    8  8     8    8 8    8   8  8  8 8' `8 8oooo8
+%%%  8      8     8    8 8    8  8     8    8 8    8   8  8  8 8   8 8.
+%%%  8      8     `YooP' `YooP'  8     `YooP' `YooP'   8  8  8 8   8 `Yooo'
+%%% :..:::::..:::::.....::.....::..:::::.....::.....:::..:..:....::..:.....:
+%%% ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+%%% ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+\colorlet{assert}{blindblue}
+\colorlet{meta}{black!80}
+\colorlet{prooflines}{black!80}
+\colorlet{prooftitlelines}{black!50}
+
+\newcommand\assert{\@ifstar{\assert@star}{\assert@args}}
+\newcommand\assert@star[1]{\ensuremath{\assert@*{#1}}}
+\newcommand\assert@args[2][]{\ensuremath{\assert@[#1]{#2}}}
+\DeclarePairedDelimiterXPP\assert@[1]{\begingroup\color{assert}}\{\}{\endgroup}{#1}
+
+
+\def\bbell@@ASSR#1{\assert*{\begin{array}{@{}l@{}}#1\end{array}}}
+% \def\bbell@@CTXT#1|-{\ensuremath{{\color{context}#1}\vdash{}}}
+\def\bbell@@CODE{\;\code}
+\def\bbell@@META#1{\ensuremath{\color{meta}#1}}
+\def\bbell@@TITLE#1{%
+  \arrayrulecolor{prooftitlelines}\hline
+  \textsc{\strut #1}\\
+  \hline\arrayrulecolor{prooflines}\vrule height 3ex depth 0pt width 0pt\relax%
+  \global\let\bbell@@TITLE@END\bbell@@TITLE@LINE
+}
+\def\bbell@@TITLE@LINE{\\[1ex]\arrayrulecolor{prooftitlelines}\hline\arrayrulecolor{prooflines}}
+\def\bbell@@BR{{}\\{}}
+% \def\bbell@@STEPLAB{}
+\newcommand\bbell@@TAG[1][]{\qquad\refstepcounter{equation}(\theequation)\ifblank{#1}{}{\label{#1}}}
+
+\def\bbell@step@delim{;}
+
+\newlength{\bbell@proofindent}
+\setlength{\bbell@proofindent}{1em}
+\newif\if@bbell@fstruleappl
+\def\bbell@forruleappl#1{\@bbell@fstruleappltrue\bbell@forruleappl@#1,,}
+\def\bbell@forruleappl@#1,{\ifx,#1,\else \bbell@ruleapplref{#1}\expandafter\bbell@forruleappl@\fi}
+\def\bbell@ruleapplref#1{%
+  \if@bbell@fstruleappl\else\bbell@step@delim\ \fi%
+  \@bbell@fstruleapplfalse%
+  \bbell@ruleref{#1}%
+}
+\newif\ifbbell@islabel
+\def\bbell@ruleref@check{\@ifnextchar"{\bbell@islabelfalse\bbell@forget}{\bbell@islabeltrue\bbell@forget}}
+\def\bbell@forget#1\bbell@end{}
+\def\bbell@strip@q"#1"{#1}
+\def\bbell@ruleref#1{%
+  \bbell@ruleref@check#1\bbell@end%
+  \ifbbell@islabel\ref{#1}\else\bbell@strip@q#1\fi%
+}
+\newcommand{\bbell@stepannot}[1]{%
+  \llap{%
+    \footnotesize%
+    \rotatebox[origin=c]{90}{%
+      \rule[-1pt]{0pt}{0pt}%
+      #1}%
+  }%
+}
+\newcommand{\bbell@ruleappl}[1]{%
+  \bbell@stepannot{\bbell@forruleappl{#1}}%
+}
+
+\newenvironment{proofoutline}[1][l]{%
+  \let\BR\bbell@@BR%
+  \let\ASSR\bbell@@ASSR%
+  \let\PREC\bbell@@ASSR%
+  \let\POST\bbell@@ASSR%
+  % \let\CTXT\bbell@@CTXT%
+  \let\CODE\bbell@@CODE%
+  \let\META\bbell@@META%
+  \let\TITLE\bbell@@TITLE%
+  \let\TAG\bbell@@TAG%
+  \let\bbell@@TITLE@END\relax
+  \noindent%
+  \arrayrulecolor{prooflines}%
+  \begin{tabular}{@{}#1@{}}%
+}{%
+  \bbell@@TITLE@END%
+  \end{tabular}%
+}
+
+\newenvironment{proofjump}[1][]{%
+  \noindent%
+  \hspace*{\bbell@proofindent}%
+  \ifblank{#1}{}{\bbell@ruleappl{#1}}%
+  \begin{tabular}{@{\,}|@{\;}l@{}}%
+}{%
+  \end{tabular}%
+}
+
+\newenvironment{proofindent}[1][\;]{%
+  \noindent%
+  \hspace*{\bbell@proofindent}%
+  \begin{tabular}{@{#1}l@{}}%
+}{%
+  \end{tabular}%
+}
+
+
+\newcounter{proofjump}
+\newcommand{\bbellproofjumpdef}[2]{%
+  \csgdef{bbell@pj@#1}{\bbell@forruleappl{#2}}%
+}
+
+\DeclareRobustCommand{\explainproofjump}[1]{%
+  {\def\bbell@step@delim{,}%
+  \csname bbell@pj@#1\endcsname}%
+}
+\newcommand{\bbell@proofjump}[1]{%
+  \refstepcounter{proofjump}%
+  \bbell@stepannot{\textsc{Step~\arabic{proofjump}}}%
+  \renewcommand{\theproofjump}{\arabic{proofjump}}%
+  \xdef\theproofjump@lst{#1}%
+}
+\def\theproofjump@lst{}
+\newcommand{\bbell@pj@label}[1]{
+  \@bsphack%
+  \if@filesw%
+    \protected@write\@auxout{}%
+      {\string\bbellproofjumpdef{#1}{\theproofjump@lst}}%
+  \fi%
+  \bbell@label[step]{#1}%
+  \@esphack%
+  %\let\label\bbell@label%
+}
+
+\AtBeginDocument{\let\bbell@label\label}
+\newenvironment{proofjump*}[1][]{%
+  \noindent%
+  \let\label\bbell@pj@label
+  \hspace*{\bbell@proofindent}%
+  \ifblank{#1}{}{\bbell@proofjump{#1}}%
+  \begin{tabular}{@{\,}|@{\;}l@{}}%
+}{%
+  \end{tabular}%
+}
+
+
+
