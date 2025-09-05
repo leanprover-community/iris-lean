@@ -1,4 +1,7 @@
 /.lake
+/.notes
+/.claude
+/.cursor
 
 # LaTeX compilation files
 *.aux
