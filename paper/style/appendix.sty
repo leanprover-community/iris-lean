@@ -1,0 +1,96 @@
+
+\newif\ifappendix
+\newif\ifwideappendix\wideappendixfalse
+
+\DeclareOption{appendix}{\appendixtrue}
+\DeclareOption{include}{\appendixtrue}
+\DeclareOption{omit}{\appendixfalse}
+\DeclareOption{wide}{\wideappendixtrue}
+
+\ExecuteOptions{omit}
+
+\ProcessOptions\relax
+
+\newcommand{\ifnoappendix}{\ifappendix\else}
+
+\providecommand{\additionalmaterialref}{\appendixname}
+\providecommand{\Additionalmaterialref}{The \appendixname}
+
+\newcommand{\additionalmaterial}[2][The \additionalmaterialref]{%
+  \def\additionalmaterialref{#2}%
+  \def\Additionalmaterialref{#1}%
+}
+
+\newcommand{\omittedrulelabel}
+  {\@ifstar{\omittedrulelabel@@}{\omittedrulelabel@}}
+
+\newcommand{\appendixref}[1]{%
+  \ifappendix%
+    \cref{#1}%
+  \else%
+    \additionalmaterialref%
+  \fi%
+}
+\newcommand{\Appendixref}[1]{%
+  \ifappendix%
+    \Cref{#1}%
+  \else%
+    \Additionalmaterialref%
+  \fi%
+}
+
+\ifappendix
+  \ifwideappendix
+    \RequirePackage{geometry}
+  \fi
+  \RequirePackage{fancyhdr}
+  \fancypagestyle{appendixpagestyle}{%
+    \fancyhead[LE]{\ACM@linecountL\@headfootfont\@acmArticlePage\ \textbullet\ \appendixname}%
+    \fancyhead[RO]{\@headfootfont\appendixname\ \textbullet\ \@acmArticlePage}%
+  }
+
+  \RequirePackage{etoolbox}
+  \appto{\appendix}{
+    \clearpage
+    \pagestyle{appendixpagestyle}
+    \thispagestyle{firstpagestyle}
+    \ifwideappendix%
+      \newgeometry{twoside=true, head=13pt, foot=2pc,
+        % paperwidth=8.5in, paperheight=11in,
+        includeheadfoot,
+        top=78pt, bottom=114pt, inner=81pt, outer=81pt,
+        marginparwidth=4pc,heightrounded
+      }%
+      \fancyhfoffset[E,O]{0pt}%
+      \let\ACM@linecountL\relax%
+      \let\ACM@linecountR\relax%
+    \fi
+    \par
+    \addvspace{4ex}%
+    \@afterindentfalse
+    {\parindent \z@ \raggedright
+     \interlinepenalty \@M
+     \normalfont
+     \huge \bfseries \appendixname%
+     \phantomsection\addcontentsline{toc}{section}{\appendixname}
+     \par}%
+    \nobreak
+    \vskip 3ex
+    \@afterheading
+  }
+  \newcommand{\omittedrulelabel@@}[2]{\@bsphack\@esphack}%
+  \newcommand{\omittedrulelabel@}[2]{%
+    \ref{#2}%
+  }
+\else
+  \def\appendix{\end{document}}
+  \newcommand{\omittedrulelabel@@}[2]{%
+    \gdef\@currentlabel{\protect\RuleNameStyle{#1}}\phantomsection%
+    \label{#2}%
+  }
+  \newcommand{\omittedrulelabel@}[2]{%
+    \gdef\@currentlabel{\protect\RuleNameStyle{#1}}\phantomsection%
+    \label{#2}%
+    \ref{#2}%
+  }
+\fi
