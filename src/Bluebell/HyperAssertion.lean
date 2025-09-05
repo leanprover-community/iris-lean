@@ -154,6 +154,84 @@ theorem sep_own_own_entails_own_op (b c : M) : entails (sep (own (M := M) b) (ow
   have h_op : b • c ≼ r' • s := CMRA.op_mono hr hs
   exact CMRA.Included.trans h_op hrs
 
+/-- Commutativity of separating conjunction up to entailment. -/
+theorem sep_comm {P Q : HyperAssertion M} : entails (sep P Q) (sep Q P) := by
+  intro a
+  rintro ⟨b, c, hPb, hQc, hinc⟩
+  have hcb : c • b ≼ a := CMRA.inc_of_eqv_of_inc (CMRA.comm (x:=c) (y:=b)) hinc
+  exact ⟨c, b, hQc, hPb, hcb⟩
+
+/-- Associativity of separating conjunction up to entailment. -/
+theorem sep_assoc {P Q R : HyperAssertion M} [CMRA.IsTotal M] :
+    entails (sep (sep P Q) R) (sep P (sep Q R)) := by
+  intro a
+  rintro ⟨x, z, hx, hz, hxz⟩
+  rcases hx with ⟨b, c, hPb, hQc, hbc⟩
+  -- From b • c ≼ x and x • z ≼ a, obtain (b • c) • z ≼ a
+  have h1 : (b • c) • z ≼ a :=
+    CMRA.Included.trans (CMRA.op_mono_left z hbc) hxz
+  -- Convert by associativity to b • (c • z) ≼ a
+  have h2 : b • (c • z) ≼ a :=
+    (CMRA.inc_of_eqv_of_inc (CMRA.assoc (x:=b) (y:=c) (z:=z))) h1
+  -- Build witnesses for sep P (sep Q R)
+  refine ⟨b, (c • z), hPb, ?_, h2⟩
+  exact ⟨c, z, hQc, hz, CMRA.inc_refl (x := c • z)⟩
+
+/-- Commutativity of conjunction. -/
+theorem and_comm {P Q : HyperAssertion M} : entails (and P Q) (and Q P) := by
+  intro a; intro h; exact And.intro h.right h.left
+
+/-- Commutativity of disjunction. -/
+theorem or_comm {P Q : HyperAssertion M} : entails (or P Q) (or Q P) := by
+  intro a; intro h; cases h with
+  | inl hP => exact Or.inr hP
+  | inr hQ => exact Or.inl hQ
+
 end CMRALemmas
+
+/-! ## BI wiring (no step-indexing) -/
+
+section BI
+
+open Iris
+
+variable {M : Type*} [CMRA M]
+
+namespace HyperAssertion
+
+/-- In the non-step-indexed model, we stub `persistently` as identity. -/
+def persistently (P : HyperAssertion M) : HyperAssertion M := P
+
+/-- In the non-step-indexed model, we stub `later` as identity. -/
+def later (P : HyperAssertion M) : HyperAssertion M := P
+
+end HyperAssertion
+
+open HyperAssertion Iris.BI
+
+/-- BIBase instance over `HyperAssertion M` using our CMRA-backed connectives.
+`persistently` and `later` are stubs (identity) in this non-step-indexed model. -/
+instance : BIBase (HyperAssertion M) where
+  Entails := entails
+  emp := emp
+  pure := pure
+  and := and
+  or := or
+  imp := imp
+  sForall := fun (X : HyperAssertion M → Prop) =>
+    ⟨{a | ∀ P, X P → a ∈ P}, by
+      intro a a' haa' ha P hXP
+      exact P.upper haa' (ha P hXP)⟩
+  sExists := fun (X : HyperAssertion M → Prop) =>
+    ⟨{a | ∃ P, X P ∧ a ∈ P}, by
+      intro a a' haa'
+      rintro ⟨P, hXP, haP⟩
+      exact ⟨P, hXP, P.upper haa' haP⟩⟩
+  sep := sep
+  wand := wand
+  persistently := persistently
+  later := later
+
+end BI
 
 end Bluebell
