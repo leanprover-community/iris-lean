@@ -1,0 +1,655 @@
+\section{Measure Theory Lemmas}
+
+\paragraph{Notation}
+In what follows,
+given $n\in\Nat$ with~$n> 1$,
+we write $\numlist{n}$
+to denote the set $\set{1, \dots, n}$.
+Moreover, for iterated summation we use the
+notation
+$
+  \sum_{i \in I \mid \Phi(i)} f(i)
+$
+where~$I = \set{i_0, i_1, \dots}$ is countable
+and $\Phi$ is a predicate on elements of~$I$,
+to denote the sum $ f(j_0) + f(j_1) + \dots $
+where $j_0, j_1, \dots$ is the sublist of $ i_0, i_1, \dots $ consisting
+of the elements that satisfy~$\Phi$.
+A similar convention is used for other commutative and associative operators,
+\eg $\union$.
+A countable partition of~$\Outcomes$ is a partition of $\Outcomes$,
+$S \subs \powerset(\Outcomes)$,
+with countably many sets.
+For uniformity, we represent countable partitions as $S = \cpart{A}$
+with the convention that when the partition has finitely many sets,
+say~$n$, all the $A_i$ with $i \geq n$ are empty.
+
+As mentioned, \thelogic\ is only concerned with discrete distributions,
+\ie distributions over a countable set of outcomes.
+The following lemma expresses the key property of \salgebra[s]
+over countable outcomes that we exploit for proving the
+other results.
+
+\begin{lemma}
+  \label{thm:countable-partition-generated}
+ Let $\Outcomes$ be an countable set, and $\salg$ to be an arbitrary \salgebra{}
+  on $\Outcomes$. Then there exists a countable partition $S$ of~$\Outcomes$
+  such that $\salg = \closure{S}$.
+\end{lemma}
+
+\begin{proof}
+  For every element $x \in \Outcomes$,
+  we identify the smallest event $E_x \in \salg$ such that $x \in E_x$,
+  and show that for $x, z \in \Outcomes$,
+  either $E_x = E_z$ or $E_x \cap E_z = \emptyset$.
+  Then the set $S = \set{E_x \mid x \in \Outcomes}$
+  is a partition of~$\Outcomes$,
+  and any event $E \in \salg$ can be represented as
+  $\Union_{x \in E} E_x$, which suffices to show that $\salg = \closure{S}$.
+
+  For every $x, y$, let
+\begin{align*}
+    A_{x, y} &=
+    \begin{cases}
+      \Outcomes \CASE \text{$\forall E \in \salg$, either $x , y$ both in~$E$ or $x , y$ both not in~$E$} \\
+      E \OTHERWISE, \text{pick any $E \in \salg$ such that $x \in E$ and $y \notin E$}
+    \end{cases}
+  \end{align*}
+Then we show that, for all $x$,
+  $E_x = \cap_{y \in \Outcomes} A_{x, y}$ is the smallest
+  event in $\salg$ such that $x \in E_x$ as follows.
+  If there exists $E_x'$ such that $x \in E_x'$ and $E_x' \subset E_x$,
+  then $E_x \setminus E_x'$ is not empty. Let $y$ be an element of
+  $E_x \setminus E_x'$, and by the definition of $A_{x, y}$, we have
+  $y \notin A_{x,y}$. Thus, $y \notin \cap_{y \in \Outcomes} A_{x, y} = E_x$,
+  which contradicts with $y \in E_x \setminus E_x'$.
+
+  Next, for any  $x, z \in \Outcomes$,
+  since $E_x$ is the smallest event containing $x$ and
+  $E_z$ is the smallest event containing $z$,
+  the smaller event $E_z \setminus E_x$ is either equivalent to
+  $E_z$ or not containing $z$.
+  \begin{casesplit}
+    \item
+      If $E_z \setminus E_x = E_z$, then $E_x$ and $E_z$ are
+      disjoint.
+    \item If $z \not\in E_z \setminus E_x$, then it must $z \in E_x$,
+      which implies that there exists \emph{no} $E \in \salg$ such that
+      $x \in E$ and $z \notin E$. Because $\salg$ is closed under
+      complement, then there exists \emph{no} $E \in \salg$ such that
+      $x \notin E$ and $z \in E$ as well. Therefore,
+      we have $x \in  \Inters_{y \in \Outcomes} A_{z, y} = E_z$ as well.
+      Furthermore, because $E_z$ is the smallest event in
+      $\salg$ that contains $z$ and $E_x$ also contains $z$,
+      we have $E_z \subseteq E_x$; symmetrically, we have
+      $E_x \subseteq E_z$.
+      Thus, $E_x = E_z$.
+    \end{casesplit}
+    Hence,  the set $S = \set{E_x \mid x \in \Outcomes}$ is a
+    countable partition of~$\Outcomes$.
+\end{proof}
+
+\begin{lemma}
+\label{lemma:sigma-alg-representation}
+  If $S = \cpart{A}$ is a partition of $\Outcomes$,
+  and $\salg = \closure{S}$,
+  then every event~$E\in\salg$ can be written as
+  $E = \Dunion_{i \in I} A_i$ for some $I \subs \Nat$.
+In other words,
+  $
+    \closure{S} = \set[\big]{ \Dunion_{i \in I} A_i | I \subseteq \Nat }.
+  $
+\end{lemma}
+
+\begin{proof}
+  Because \salgebra[s] are closed under countable union,
+  for any $I \subseteq \Nat$,
+  $ \Dunion_{i \in I} A_i \in \closure{S} $.
+  Thus, $\closure{S} \supseteq \set[\big]{ \Dunion_{i \in I} A_i \mid I \subseteq \Nat }$.
+
+  Also, $\set[\big]{ \Dunion_{i \in I} A_i \mid I \subseteq \Nat }$ is
+  a \salgebra{}:
+\begin{itemize}
+    \item
+      $\Outcomes = \Dunion_{i \in \Nat} A_i$.
+    \item
+      Given a countable sequences of events
+      $E_1 = \Dunion_{i \in I_1} A_i$,
+      $E_2 = \Dunion_{i \in I_2} A_i$,
+      \dots,
+      let
+      $I = \Union_{j\in \Nat} I_j$;
+      then we have
+      $ \Union_{j\in\Nat} E_i = \Dunion_{i\in I} A_i $.
+    \item
+      If $E = \Dunion_{i \in I} A_i$, then
+      the complement of $E$ is
+      $
+        (\Outcomes\setminus E) = \Dunion_{i \in (\Nat \setminus I)} A_i
+      $.
+  \end{itemize}
+  Then, $\set{ \Dunion_{i \in I} A_i \mid I \subseteq \Nat }$ is
+  a \salgebra{} that contains $S$.
+  Therefore, $
+    \closure{S} = \set[\big]{\Dunion_{i \in I} A_i \mid I \subseteq \Nat }
+  $.
+\end{proof}
+
+\begin{lemma}
+ \label{lemma:partition-order}
+ Let $\Outcomes$ be a countable set.
+ If\/ $S_1 = \cpart[i]{A}$ and
+    $S_2 = \cpart[j]{B}$ are both countable partitions of $\Outcomes$,
+ then $\closure{S_1} \subseteq \closure{S_2}$ implies that
+ for any $B_j \in S_2$ with $B_j\ne \emptyset$,
+ we can find a unique $A_i \in S_1$ such that $B_j \subseteq A_i$.
+\end{lemma}
+
+\begin{proof}
+ For any $B_j \in S_2$ with $B_j\ne \emptyset$,
+ pick an arbitrary element $s \in B_j$ and
+ denote the unique element of $S_1$ that contains~$s$ as~$A_i$.
+ Because $A_i \in S_1$ and $S_1 \subset  \closure{S_1} \subseteq \closure{S_2}$,  we have $A_i \in  \closure{S_2}$.
+Note that $s \in B_j$ and $B_j$ is an element of the partition $S_2$
+  that generates $\closure{S_2}$, $B_j$ must be the smallest event
+  in $\closure{S_2}$ that contains $s$.
+ Because $s \in A_i$ as well, $B_j$ being the smallest event containing $s$
+  implies that $B_j \subseteq A_i$.
+\end{proof}
+
+\begin{lemma}
+ \label{lemma:bind-extend}
+ Assume we are given a \salgebra{} $\sigmaF_1$
+ over a countable set $\Outcomes$,
+ measure $\mu_1 \in \Dist(\sigmaF_1)$,
+ a countable set $A$,
+ a distribution $\mu \in \Full{A}$,
+ and a function $\krnl_1 \colon A \to \Dist(\sigmaF_1)$
+ such that $\mu_1 = \bind(\mu, \krnl_1)$.
+ Then, for any probability space $(\sigmaF_2, \mu_2)$ such that
+ $(\sigmaF_1, \mu_1) \extTo (\sigmaF_2, \mu_2)$,
+ there exists $\krnl_2$ such that $\mu_2 = \bind(\mu, \krnl_2)$,
+ and that for any $a \in \psupp(\mu)$,
+ $(\sigmaF_1, \krnl_1(a)) \extTo (\sigmaF_2, \krnl_2(a))$.
+\end{lemma}
+
+\begin{proof}
+  By~\cref{thm:countable-partition-generated},
+  $\sigmaF_i = \closure{S_i}$ for some countable partition $S_i$.
+  Also, $(\sigmaF_1, \mu_1) \extTo (\sigmaF_2, \mu_2)$ implies that
+  $\sigmaF_1 \subseteq \sigmaF_2$.
+  So we have $\closure{S_1} \subseteq \closure{S_2}$,
+  which by~\cref{lemma:partition-order} implies that
+  for any $B \in S_2$ with $B \ne \emptyset$,
+  we can find a unique $A \in S_1$ such that $B \subseteq A$.
+  Let~$f$ be the mapping associating to any $B\ne \emptyset$
+  the corresponding $A = f(B)$, and $f(B)=\emptyset$ when $B=\emptyset$.
+
+  Then, we define $\krnl_2$ as follows:
+  for any $a \in A$, $E \in \sigmaF_2$,
+  there exists $S \subseteq S_2$ such that
+  $E = \Dunion_{B \in S} B$,
+  then define
+\begin{align*}
+   \krnl_2(a)(E) = \sum_{B \in S} \krnl_1(a)(f(B)) \cdot h(B),
+  \end{align*}
+  where
+  $h(B) = \mu_2(B) / \mu_2(f(B))$ if $ \mu_2(f(B)) \neq 0$
+  and $h(B) = 0$ otherwise.
+
+Then we calculate:
+  \begin{align}
+      &\bind(\mu, \krnl_2)(E) \notag\\
+   &=  \sum_{a\in A} \mu(a) \cdot \krnl_2(E) \notag \\
+   &=  \sum_{a\in A} \mu(a) \cdot \sum_{B \in S} \krnl_1(a)(f(B)) \cdot h(B) \notag \\
+   &=  \sum_{B \in S}  \sum_{a\in A} \mu(a) \cdot \krnl_1(a)(f(B)) \cdot h(B)  \notag \\
+   &=  \sum_{B \in S}  \bind(\mu, \krnl_1)(f(B)) \cdot h(B) \notag  \\
+   &=  \sum_{B \in S}  \mu_1(f(B)) \cdot h(B) \notag \\
+   &=  \sum_{B \in S \mid \mathrlap{\mu_2(f(B)) \neq 0}}  \mu_1(f(B)) \cdot \frac{\mu_2(B)}{ \mu_2(f(B))} \notag \\
+   &=  \sum_{B \in S \mid \mathrlap{\mu_2(f(B)) \neq 0}}  \mu_2(f(B)) \cdot \frac{\mu_2(B)}{\mu_2(f(B))} \tag{$\mu_1(E') = \mu_2(E')$ for any $E' \in \sigmaF_1$}\\
+   &=  \sum_{B \in S \mid \mathrlap{\mu_2(f(B)) \neq 0}}  \mu_2(B)  \notag \\
+   &=  \sum_{B \in S \mid \mathrlap{\mu_2(f(B)) \neq 0}}  \mu_2(B)
+       \quad+\quad
+       \sum_{B \in S \mid  \mathrlap{\mu_2(f(B)) = 0}}  \mu_2(B)  \tag{Because $\mu_2(f(B)) = 0$ implies $\mu_2(B) = 0$} \\
+   &= \sum_{B \in S}  \mu_2(B) \notag \\
+   &= \mu_2(\Dunion_{B \in S} B ) \notag \\
+   &= \mu_2(E) \notag
+  \end{align}
+Thus, $\bind(\mu, \krnl_2)= \mu_2$.
+
+  Also, for any $a \in A_{\mu}$, for any $E \in \sigmaF_1$,
+  there exists $S' \subseteq S_1$
+  such that $E=\Dunion_{A \in S'} A$.
+  \begin{align*}
+   \krnl_2(a)(E)
+   &= \krnl_2(a)\bigl(\Dunion_{A \in S'} A\bigr) \\
+   &= \sum_{A \in S'} \krnl_2(a)(A) \\
+   &= \sum_{A \in S'} \sum_{B \subseteq A \mid \mathrlap{B \in \sigmaF_2}} \krnl_2(a)(B)\\
+&= \sum_{A \in S'}
+        \sum_{B \subseteq A \mid \mathrlap{B \in \sigmaF_2, \mu_2(f(B)) \neq 0}}
+          \quad\krnl_1(a)(f(B)) \cdot \frac{\mu_2(B)}{\mu_2(f(B))} \\
+&= \sum_{A \in S' \mid \mathrlap{\mu_2(A) \neq 0}} \krnl_1(a)(A) \cdot \frac{\left(\sum_{B \subseteq A \mid B \in \sigmaF_2}  \mu_2(B) \right) }{\mu_2(A)} \\
+   &= \sum_{A \in S' \mid \mathrlap{\mu_2(A) \neq 0}} \krnl_1(a)(A) \cdot \frac{ \mu_2(A)}{ \mu_2(A)} \\
+   &= \sum_{A \in S' \mid \mathrlap{\mu_2(A) \neq 0}} \krnl_1(a)(A)  \\
+   &= \sum_{A \in S'} \krnl_1(a)(A)  \\
+   &= \krnl_1(a)\bigl(\Dunion_{A \in S'} A\bigr)  \\
+   &= \krnl_1(a)(E)
+  \end{align*}
+Thus, for any $a$, $(\sigma_1, \krnl_1(a)) \extTo (\sigma_2, \krnl_2(a))$.
+\end{proof}
+
+\begin{lemma}
+ \label{lemma:product-algebra}
+ Given two \salgebra[s] $\sigmaF_1$ and $\sigmaF_2$
+ over two countable underlying sets $\Outcomes_1, \Outcomes_2$,
+ then a general element in the product \salgebra{}
+ $\sigmaF_1 \otimes \sigmaF_2$ can
+ be expressed as $\Dunion_{(i, j) \in I} (A_{i} \times B_{j})$
+ for some $I \subseteq \Nat^2$ and
+ $A_{i} \in \sigmaF_{1}, B_{j} \in \sigmaF_{2}$ for $(i,j) \in I$.
+\end{lemma}
+
+ \begin{proof}
+By~\cref{thm:countable-partition-generated}, each \salgebra{}
+  $\sigmaF_i$ is generated by a countable partition over $\Outcomes_i$.
+  Let $S_1 = \cpart{A}$ be the countable partition that generates $\sigmaF_1$,
+  $S_2 = \cpart{B}$ be the countable partition that generates $\sigmaF_2$.
+    By \cref{lemma:sigma-alg-representation},
+    a general element in $\sigmaF_1$ can be written as
+  $\Dunion_{j \in J} A_{j}$ for some $J \subseteq \Nat$,
+  and similarly,
+   a general element in $\sigmaF_2$ can be written as
+  $\Dunion_{k \in K} B_{k}$ for some $K \subseteq \Nat$.
+
+  Note that $\{A_j \times B_k \}_{j, k \in \Nat}$ is a partition because:
+  if $(A_j \times B_k)  \cap (A_{j'} \times B_{k'}) \neq \emptyset$ for some
+  $j \neq j'$ and $k \neq k'$,
+  then it must $A_j \cap A_{j'} \neq \emptyset$ and $B_k \cap B_{k'} \neq \emptyset$,
+  and that imply that $A_j =A_{j'}$ and $B_j =B_{j'}$;
+  therefore, $A_j \times B_k = A_{j'} \times B_{k'}$.
+
+  We next show that $\sigmaF_1 \otimes \sigmaF_2$ is generated by
+  the partition $\{A_j \times B_k \}_{j, k \in \Nat}$.
+\begin{align*}
+   \sigmaF_1 \otimes \sigmaF_2
+   &= \closure*{\sigmaF_1 \times \sigmaF_2} \\
+   &= \closure*{\set*{\Dunion_{j \in J_1} A_{j} \times \Dunion_{j \in J_2} B_{j} | J_1, J_2 \subseteq \Nat}} \\
+   &= \closure*{\set*{\Dunion_{j \in J_1, k \in J_2}  (A_{j} \times B_{k}) | J_1, J_2 \subseteq \Nat }} \\
+   &= \closure*{\set*{ A_{j} \times B_{k} | j, k\subseteq \Nat }}
+   \end{align*}
+Since each $A_j \in S_1 \subseteq \sigmaF_1$ and $B_k \in S_2 \subseteq \sigmaF_2$
+   a general element in $\sigmaF_1 \otimes \sigmaF_2$ can
+  be expressed as $\set*{\Dunion_{j, k \subseteq I} (A_{j} \times B_{k}) \mid
+  A_{j} \in \sigmaF_{1}, B_{k} \in \sigmaF_{2}, I \subseteq \Nat^2}$
+according to \cref{thm:countable-partition-generated}.
+ \end{proof}
+
+
+ \begin{lemma}
+  \label{lemma:indep-prod-exists}
+  Given two probability spaces
+  $(\sigmaF_a, \mu_a), (\sigmaF_b, \mu_b) \in \ProbSp(\Outcomes)$,
+  their independent product
+  $(\sigmaF_a, \mu_a) \iprod (\sigmaF_b, \mu_b)$ exists
+  if $\mu_a(E_a) \cdot \mu_b(E_b) = 0 $
+  for any $E_a \in \sigmaF_a, E_b \in \sigmaF_b$ such that
+  $E_a \cap E_b = \emptyset$.
+ \end{lemma}
+
+ \begin{proof}
+We first define $\mu: \set{E_a \cap E_b \mid E_a \in \sigmaF_a, E_b \in \sigmaF_b}
+  \to [0,1]$ by $\mu(E_a \cap E_b) = \mu_a(E_a) \cdot \mu_b(E_b)$
+   for any $E_a \in \sigmaF_a, E_b \in \sigmaF_b$,
+   and then show that $\mu$ could be extended to a probability
+   measure on $\sigmaF_a \punion \sigmaF_b$.
+
+  \begin{itemize}
+   \item We first need to show that $\mu$ is \textbf{well-defined}.
+    That is,
+    $E_a \cap E_b = E_a' \cap E_b'$
+    implies $\mu_a(E_a) \cdot \mu_b(E_b) = \mu_a(E'_a) \cdot \mu_b(E'_b)$.
+
+     When $E_a \cap E_b = E_a' \cap E_b'$, it must $E_a \cap E_a' \supseteq
+     E_a \cap E_b = E_a' \cap E_b'$, Thus, $E_a \setminus E_a' \subseteq E_a
+     \setminus E_b$, and then $E_a \setminus E_a'$ is disjoint from $E_b$;
+     symmetrically, $E_a' \setminus E_a$ is disjoint from $E_b'$.
+     Since $E_a, E_a'$ are both in $\sigmaF_{a}$, we have $E_a \setminus E_a'$
+     and $E_a' \setminus E_a$ both measurable in $\sigmaF_a$.
+     Their disjointness and the result above implies that
+     $\mu_a(E_a \setminus E_a') \cdot \mu_b(E_b) = 0$ and
+     $\mu_a(E'_a \setminus E_a) \cdot \mu_b(E'_b) = 0$.
+     Symmetric reasoning can also show that
+     $E'_b \setminus E_b$ is disjoint from $E'_a \cap E_a$,
+       and  $E_b \setminus E'_b$ is disjoint from $E'_a \cap E_a$,
+       which implies
+       $\mu_a(E_b \setminus E'_b) \cdot \mu_b(E'_a \cap E_a) = 0$ and
+     $\mu_a(E'_b \setminus E_b) \cdot \mu_b(E'_a) = 0$.
+
+     Then there are four possibilities:
+     \begin{itemize}
+      \item If $\mu_b(E_b) = 0$ and $\mu_b(E_b') = 0$,
+       then $\mu_a(E_a) \cdot \mu_b(E_b) = 0 = \mu_a(E_a') \cdot \mu_b(E_b')$.
+      \item If $\mu_a(E_a \setminus E'_a) = 0$ and $\mu_b(E'_a \setminus E_a) = 0$.
+       Then
+       \begin{align*}
+        \mu_a(E_a) \cdot \mu_b(E_b) &=
+        \mu_a((E'_a \setminus E_a) \disjunion (E'_a \cap E_a)) \cdot \mu_b(E_b) \\
+          &= (\mu_a(E'_a \setminus E_a) + \mu_a(E'_a \cap E_a)) \cdot \mu_b(E_b) \\
+          &= \mu_a(E'_a \cap E_a) \cdot \mu_b(E_b) \\
+          &= (\mu_a(E_a \setminus E'_a) + \mu_a(E'_a \cap E_a)) \cdot \mu_b(E_b) \\
+          &= \mu_a(E'_a) \cdot \mu_b(E_b)
+       \end{align*}
+
+       Thus,  either $\mu_a(E'_a \cap E_a) = 0$, which implies that
+       \[
+        \mu_a(E_a) \cdot \mu_b(E_b)  = (0 + 0) \cdot  \mu_b(E_b) = 0 =(0+0) \cdot \mu_b(E_b) = \mu_a(E'_a) \cdot \mu_b(E'_b),
+       \]
+       or we have both $\mu_b(E'_b \setminus E_b) = 0$ and $\mu_b(E_b \setminus E'_b) = 0$, which imply that
+       \begin{align*}
+        \mu_a(E_a) \cdot \mu_b(E_b)
+          &= \mu_a(E'_a) \cdot \mu_b(E_b)\\
+          &= \mu_a(E'_a) \cdot \mu_b((E_b \cap E'_b ) \disjunion (E_b \setminus E'_b)) \\
+          &= \mu_a(E'_a) \cdot (\mu_b(E_b \cap E'_b ) + 0) \\
+          &= \mu_a(E'_a) \cdot (\mu_b(E_b \cap E'_b ) + \mu_b(E'_b \setminus E_b)) \\
+          &= \mu_a(E'_a) \cdot \mu_b(E'_b ).
+       \end{align*}
+       \item If $\mu_b(E'_b) = 0$ and $\mu_b(E_a \setminus E'_a) = 0$,
+        then
+        \begin{align*}
+         \mu_a(E_a) \cdot \mu_b(E_b)
+         &= (\mu_a(E_a \cap E'_a) + \mu_a(E_a \setminus E'_a)) \cdot (\mu_b(E_b \cap E'_b) + \mu_b(E_b \setminus E'_b)) \\
+         &= \mu_a(E_a \cap E'_a)  \cdot \mu_b(E_b \setminus E'_b)
+        \end{align*}
+Because $\mu_a(E_b \setminus E'_b) \cdot \mu_b(E'_a \cap E_a) = 0$ and
+     $\mu_a(E'_b \setminus E_b) \cdot \mu_b(E'_a) = 0$.
+        Thus, $\mu_a(E_a) \cdot \mu_b(E_b) =0 = \mu_a(E'_a) \cdot \mu_b(E'_b)$.
+
+       \item If $\mu_b(E_b) = 0$ and $\mu_b(E'_a \setminus E_a) = 0$,
+        then symmetric as above.
+
+     \end{itemize}
+
+     In all these cases,
+     $\mu_a(E_a) \cdot \mu_b(E_b) = \mu_a(E'_a) \cdot \mu_b(E'_b)$ as desired.
+
+    \item Show that $\mu$ satisfy \textbf{countable additivity} in $\{E_a \cap E_b \mid E_a \in \sigmaF_a,
+   E_b \in  \sigmaF_b\}$.
+
+   We start with showing that $\mu$ is finite-additive.
+   Suppose $E_a^n \cap E_b^n = \Disjunion_{i \in [n]}(A_i \cap B_i)$ where
+   each $A_i \in \sigmaF_a$ and $B_i \in \sigmaF_b$.
+  Fix any $A_i \cap B_i$, there is unique minimal $A \in \sigmaF_a$ containing
+  $A_i \cap B_i$, because if $A \supseteq A_i \cap B_i$ and  $A' \supseteq
+  A_i \cap B_i$, then  $A \cap A' \supseteq A_i \cap B_i$
+  and $A \cap A' \in \sigmaF_A$ too, and $A \cap A'$ is smaller.
+   Because we have shown that $\mu$ is well-defined, in the following proof,
+   we can assume without loss of generality that $A_i$ is the smallest set in $\sigmaF_a$ containing $A_i \cap B_i$.
+   Similarly, we let $B_i$ to be the smallest set in $\sigmaF_b$ containing $A_i \cap B_i$.
+   Thus,  $E_a^n \cap E_b^n = \Disjunion_{i \in [n]}(A_i \cap B_i)$ implies
+   every $A_i$ is smaller than $E_a^n$ and every $B_i$ is smaller than $E_b^n$.
+   Therefore,
+   $E_a^n \supseteq \cup_{i \in [n]} A_i$ and
+   $E_b^n \supseteq \cup_{i \in [n]} B_i$,
+   which implies that
+   \[
+    E_a^n \cap E_b^n \supseteq (\cup_{i \in [n]} A_i) \cap (\cup_{i \in [n]} B_i) \supseteq \cup_{i \in [n] } (A_i \cap B_i) = E_a^n \cap E_b^n,
+   \]
+   which implies that the $\supseteq$ in the inequalities all collapse to $=$.
+
+
+
+
+   For any $I \subseteq [n]$, define
+   $\alpha_I = \cap_{i \in I} A_i \setminus (\cup_{i \in [n] \setminus I} A_i)$, and $\beta_I = \cap_{i \in I} B_i \setminus (\cup_{i \in [n] \setminus I} B_i)$.
+   For any $I \neq I'$, $\alpha_I \cap \alpha_{I'} = \emptyset$.
+   Thus, $\{\alpha_I\}_{I \subseteq [n]}$ is a set of disjoint sets in $\cup_{i \in [n]} A_i$,
+   and similarly, $\{\beta_I\}_{I \subseteq [n]}$ is a set of disjoint sets in $\cup_{i \in [n]} B_i$.
+   Also, for any $i \in [n]$,
+   we have
+   $A_i = \cup_{I \subseteq [n] \mid i \in I} \alpha_I $
+   and
+   $B_i = \cup_{I \subseteq [n] \mid i \in I} \beta_I $.
+   Furthermore, for any $I$,
+\begin{align*}
+    \alpha_I \cap \cup_{i \in [n]} B_i
+    \subseteq (\cup_{i \in [n]} A_i) \cap (\cup_{i \in [n]} B_i)
+    = \Dunion_{i \in [n]} A_i \cap B_i ,
+   \end{align*}
+and thus,
+\begin{align}
+    \alpha_I \cap \cup_{i \in [n]} B_i
+    & = (\Dunion_{i \in [n]} A_i \cap B_i) \cap (\alpha_I \cap \cup_{i \in [n]} B_i) \notag \\
+    & = \Dunion_{i \in [n]} \left( A_i \cap B_i \cap \alpha_I \cap \cup_{j \in [n]} B_j \right) \notag \\
+    & = \Dunion_{i \in I} \left( A_i \cap B_i \cap \alpha_I \cap \cup_{j \in [n]} B_j \right)  \tag{$A_i \cap \alpha_I = \emptyset$ if $i \notin I$} \\
+    & = \Dunion_{i \in I} \left( A_i \cap B_i \cap \alpha_I\right)
+    \tag{$B_i \cap \cup_{j \in [n]} B_j = B_i$ for any $i$}\\
+    & = \Dunion_{i \in I} \left( B_i \cap \alpha_I\right)
+    \tag{$A_i \cap \alpha_I = \alpha_I$ for any $i \in I$ }\\
+    & = \alpha_I \cap \cup_{i \in I } B_i
+    \label{eq:finite-add-alpha}
+   \end{align}
+
+   Now,
+  \begin{align}
+   &\mu(E^n_a \cap E^n_b) \notag \\
+   &= \mu((\cup_{i \in [n]} A_i) \cap (\cup_{i \in [n]} B_i)) \notag \\
+   &= \mu((\Dunion_{I \subseteq [n]} \alpha_I) \cap (\cup_{i \in [n]} B_i)) \tag{By definition of $\alpha_I$}\\
+   &= \mu_a(\Dunion_{I \subseteq [n]} \alpha_I) \cdot  \mu_b(\cup_{i \in [n]} B_i)  \tag{By definition of $\mu$} \\
+   &= \left\lgroup\sum_{I \subseteq [n]} \mu_a (\alpha_I) \right\rgroup \cdot  \mu_b(\cup_{i \in [n]} B_i)  \tag{By finite-additivity of $\mu_a$} \\
+   &= \sum_{I \subseteq [n]} \mu_a (\alpha_I) \cdot  \mu_b(\cup_{i \in [n]} B_i) \notag\\
+   &= \sum_{I \subseteq [n]}  \mu(\alpha_I \cap (\cup_{i \in [n]} B_i)) \tag{By definition of $\mu$} \\
+   &= \sum_{I \subseteq [n]}  \mu(\alpha_I \cap (\cup_{i \in I} B_i))
+   \tag{By~\cref{eq:finite-add-alpha}}\\
+   &= \sum_{I \subseteq [n]}  \mu_a(\alpha_I) \cdot \mu_b (\cup_{i \in I} B_i)\tag{By definition of $\mu$} \\
+   &= \sum_{I \subseteq [n]}  \mu_a(\alpha_I) \cdot \mu_b (\cup_{i \in I} (\disjunion_{I' \subseteq [n] \mid i \in I'} \beta_{I'}))
+   \tag{By definition of $\beta_I$} \\
+   &= \sum_{I \subseteq [n]}  \mu_a(\alpha_I) \cdot \mu_b (\disjunion_{I' \subseteq [n] \mid I \cap I' \neq \emptyset} \beta_{I'}) \notag \\
+   &= \sum_{I \subseteq [n]}  \mu_a(\alpha_I) \cdot \sum_{I' \subseteq [n] \mid \mathrlap{I \cap I' \neq \emptyset}} \mu_b (\beta_{I'}) \notag \\
+   &= \sum_{I \subseteq [n]} \sum_{I' \subseteq [n] \mid \mathrlap{I \cap I' \neq \emptyset}}  \mu_a(\alpha_I) \cdot \mu_b (\beta_{I'}) \notag
+  \end{align}
+Meanwhile, for any $I, I'$, if $|I \cap I'| \geq 2$,
+  then there exists some $j, k$ such that $j \in I \cap I'$ and $k \in I \cap I'$,
+  so
+\begin{align}
+    \mu_{a}(\alpha_I) \cdot \mu_{b}(\beta_{I'})
+    &= \mu_{a}(\cap_{i \in I} A_i \setminus (\cup_{i \in [n] \setminus I} A_i)) \cdot \mu_{b}(\cap_{i \in I} B_i \setminus (\cup_{i \in [n] \setminus I} B_i)) \notag \\
+    &\leq \mu_{a}(A_j \cap A_k) \cdot \mu_{b}(B_j \cap B_k) \notag \\
+    &= \mu(A_j \cap A_k \cap B_j \cap B_k) \notag \\
+    &= \mu((A_j\cap B_j) \cap (A_k \cap B_k)) \notag \\
+    &= \mu(\emptyset) \notag \\
+    &= 0. \notag
+  \end{align}
+Thus, continuing our previous derivation,
+\begin{align}
+   &\mu(E^n_a \cap E^n_b) \notag \\
+   &= \sum_{I \subseteq [n]} \sum_{I' \subseteq [n] \mid \mathrlap{I \cap I' \neq \emptyset}}  \mu_a(\alpha_I) \cdot \mu_b (\beta_{I'}) \notag \\
+   &= \sum_{I \subseteq [n]}
+        \sum_{I' \subseteq [n] \mid \mathrlap{1 = \card{I \cap I'}}}
+          \mu_a(\alpha_I) \cdot \mu_b (\beta_{I'})
+   \tag{Because $\mu_{a}(\alpha_I) \cdot \mu_{b}(\beta_{I'})=0$ if $|I \cap I'| \geq 2$}\\
+   &= \sum_{i \in [n]}
+        \sum_{I \subseteq [n] \mid i \in I}
+          \sum_{I' \subseteq [n] \mid \mathrlap{I \cap I' = \set{i}} }
+            \mu_a(\alpha_I) \cdot \mu_b (\beta_{I'})
+      \notag \\
+   &= \sum_{i \in [n]} \sum_{I \subseteq [n] \mid i \in I} \sum_{I' \subseteq [n] \mid \mathrlap{i \in I'}}  \mu_a(\alpha_I) \cdot \mu_b (\beta_{I'})
+   \tag{Because $\mu_{a}(\alpha_I) \cdot \mu_{b}(\beta_{I'})=0$ if $|I \cap I'| \geq 2$}\\
+   &= \sum_{i \in [n]}
+         \left\lgroup
+         \sum_{I \subseteq [n] \mid \mathrlap{i \in I}} \mu_a(\alpha_I)
+         \cdot
+         \sum_{I' \subseteq [n] \mid \mathrlap{i \in I'}} \mu_b (\beta_{I'})
+         \right\rgroup
+     \notag \\
+   &= \sum_{i \in [n]} \mu_a(A_i) \cdot \mu_b(B_i) \notag \\
+   &= \sum_{i \in [n]} \mu(A_i \cap B_i) \notag
+  \end{align}
+
+  Thus, we established the finite additivity.
+  For countable additivity, suppose $E_a \cap E_b = \Disjunion_{i \in \Nat}(A_i \cap B_i)$. By the same reason as above, we also have
+  \[
+    E_a \cap E_b = (\cup_{i \in \Nat} A_i) \cap (\cup_{i \in \Nat} B_i) = \cup_{i \in \Nat} (A_i \cap B_i) = E_a \cap E_b.
+  \]
+
+
+Then,
+  \begin{align}
+   &\mu(E_a \cap E_b) \notag \\
+   &= \mu((\cup_{i \in \Nat} A_i) \cap (\cup_{i \in \Nat} B_i)) \notag \\
+   &= \mu_a(\cup_{i \in \Nat} A_i) \cdot \mu_b(\cup_{i \in \Nat} B_i) \notag \\
+   &= \mu_a(\lim_{n \to \infty} \cup_{i \in [n]} A_i) \cdot \mu_b(\lim_{n \to \infty} \cup_{i \in [n]} B_i) \notag \\
+   &= \lim_{n \to \infty} \mu_a(\cup_{i \in [n]} A_i) \cdot \lim_{n \to \infty} \mu_b( \cup_{i \in [n]} B_i) \tag{By continuity of $\mu_a$ and $\mu_b$} \\
+   &= \lim_{n \to \infty} \mu_a(\cup_{i \in [n]} A_i) \cdot \mu_b( \cup_{i \in [n]} B_i) \tag{$\dagger$} \\
+   &= \lim_{n \to \infty} \sum_{i \in [n]}  \mu_b ( B_i) \cdot \mu_a(A_i) \tag{By~\cref{eq:finite-add-alpha}} \\
+   &= \sum_{i \in \Nat}  \mu_b ( B_i) \cdot \mu_a(A_i),
+  \end{align}
+where ($\dagger$) holds because that the product of limits equals to the limit of
+  the product when both $\lim_{n \to \infty} \mu_a(\cup_{i \in [n]} A_i)$ and
+  $\lim_{n \to \infty} \mu_b( \cup_{i \in [n]} B_i)$ are finite.
+  Thus, we proved countable additivity as well.
+
+
+
+ \item
+  Next we show that we can \textbf{extend $\mu$ to a measure on
+  $\sigmaF_a \punion \sigmaF_b$}.
+
+  So far, we proved that $\mu$ is a sub-additive measure on the
+  $\set{E_a \cap E_b | E_a \in \sigmaF_a, E_b \in \sigmaF_b}$,
+  which forms a $\pi$-system.
+  By a known theorem in probability theory
+  (\eg \cite[Corollary 2.5.4]{rosenthal2006first}),
+  we can extend a sub-additive measure on a
+   $\pi$-system to the \salgebra{} it generates if the $\pi$-system is
+   a semi-algebra.
+   Thus, we can extend $\mu$ to a measure on $\closure{\{E_a \cap E_b \mid E_a \in \sigmaF_a,\ E_b \in \sigmaF_b\}}$ if we can prove $J = \{E_a \cap E_b \mid E_a \in \sigmaF_a,\ E_b \in \sigmaF_b\}$ is a semi-algebra.
+
+   \begin{itemize}
+    \item $J$ contains $\emptyset$ and $\Outcomes$: trivial.
+    \item $J$ is closed under finite intersection:
+     $(E_a \cap E_b) \cap (E'_a \cap E'_b) = (E_a \cap E'_a) \cap (E_b \cap E'_b)$, where $E_a \cap E'_a \in \sigmaF_a$, and $E_b \cap E'_b \in \sigmaF_b$.
+    \item The complement of any element of $J$ is equal to a finite disjoint
+     union of elements of $J$:
+     \begin{align*}
+      (E_a \cap E_b)^C &= E_a^C \cup E_b^C \\
+             &= (E_a^C \cap \Outcomes) \disjunion (E_a \cap E_b^C)
+     \end{align*}
+     where $E_a^C, E_a \in \sigmaF_a$, and $E_b^C, \Outcomes \in \sigmaF_b$.
+
+   \end{itemize}
+
+     As shown in~\cite{lilac},
+\begin{align}
+      \closure{\{E_a \cap E_b \mid E_a \in \sigmaF_a, E_b \in \sigmaF_b\}}
+     = \sigmaF_a \punion \sigmaF_b
+     \end{align}
+Thus, the extension of $\mu$ is a measure on $\sigmaF_a \punion \sigmaF_b$.
+
+    \item Last, we show that $\mu$ is a \textbf{probability measure} on
+     $\sigmaF_a \punion \sigmaF_b$:
+     $\mu(\Outcomes) = \mu_a(\Outcomes) \cdot \mu_b(\Outcomes) = 1$.
+    \qedhere
+ \end{itemize}
+ \end{proof}
+
+ \begin{lemma}
+  \label{lemma:fibre-prod-exists}
+    Consider two probability spaces
+  $(\sigmaF_1, \mu_1), (\sigmaF_2, \prob_2) \in \ProbSp(\Outcomes)$,
+  and some other probability space $(\Full{A}, \prob)$ and kernel $\krnl$
+  such that $\prob_1 = \bind(\prob, \krnl)$.
+
+  Then, the independent product
+  $(\sigmaF_1, \mu_1) \iprod (\sigmaF_2, \mu_2)$
+  exists if and only if
+   for any $a \in \psupp(\prob)$,
+   the independent product
+   $(\sigmaF_1, \krnl(a)) \iprod (\sigmaF_2, \prob_2)$ exists.
+When they both exist,
+  \[
+   (\sigmaF_1, \prob_1) \iprod (\sigmaF_2, \prob_2)
+  = (\sigmaF_1 \punion \sigmaF_2,
+     \bind(\prob, \fun a. \krnl(a) \iprod \prob_2))
+  \]
+ \end{lemma}
+
+
+
+ \begin{proof}
+    We first show the backwards direction.
+  By~\cref{lemma:indep-prod-exists},
+  for any $a \in \psupp(\prob)$, to show that the independent product
+  $(\sigmaF_1, \krnl(a)) \iprod (\sigmaF_1, \prob_1)$ exists,
+  it suffices to show that for any $E_1 \in \sigmaF_1, E_2 \in \sigmaF_2$
+  such that $E_1 \cap E_2 = \emptyset$,
+  $\krnl(a)(E_1) \cdot \prob_2(E_2) = 0$.
+
+  Fix any such $E_1, E_2$,
+  because $(\sigmaF_1, \prob_1) \iprod (\sigmaF_2, \prob_2)$ is defined,
+  we have $\prob_1(E_1) \cdot \prob_2(E_2) = 0$, then either $\prob_1(E_1) = 0$
+  or $\prob_2(E_2) = 0$.
+\begin{itemize}
+   \item If $\prob_1(E_1) = 0$:
+   Recall that
+\[
+    \prob_1(E_1) = \bind(\prob, \krnl)(E_1)
+    = \sum_{a \in A} \prob(a) \cdot \krnl(a) (E_1)
+    = \sum_{\mathclap{a \in \psupp(\prob)}} \prob(a) \cdot \krnl(a) (E_1)
+   \]
+Because all $\prob(a) > 0$ and $\krnl(a) (E_1) \geq 0$ for all $a \in \psupp(\prob)$
+   $\sum_{a \in \psupp(\prob)} \prob(a) \cdot \krnl(a) (E_1) = 0$ implies that
+   $\prob(a) \cdot \krnl(a) (E_1) = 0$ for all $a \in \psupp(\prob)$.
+   Thus, for all $a \in \psupp(\prob)$, it must $\krnl(a) (E_1) = 0$.
+   Therefore, $\krnl(a)(E_1) \cdot \prob_2(E_2) = 0$ for all  $a \in \psupp(\prob)$
+   with this $E_1, E_2$.
+
+  \item If $\prob_2(E_2) = 0$, then it is also clear that
+    $\krnl(a)(E_1) \cdot \prob_2(E_2) = 0$ for all  $a \in \psupp(\prob)$.
+  \end{itemize}
+Thus, we have $\krnl(a)(E_1) \cdot \prob_2(E_2) = 0$ for any
+  $E_1 \cap E_2 = \emptyset$ and $a \in \psupp(\prob)$.
+  By~\cref{lemma:indep-prod-exists},
+  the independent product $(\sigmaF_1, \krnl(a)) \iprod (\sigmaF_1, \prob_1)$ exists.
+
+    For the forward direction:
+    for any $E_1 \in \sigmaF_1$ and $E_2 \in \sigmaF_2$ such that $E_1 \cap E_2 = \emptyset$,
+   the independent product $(\sigmaF_1, \krnl(a)) \iprod (\sigmaF_2, \mu_2)$ exists implies that
+   \begin{align*}
+     \krnl(a) (E_1) \cdot \mu_2(E_2) = 0.
+   \end{align*}
+Thus,
+   \begin{align*}
+    \mu_1(E_1) \cdot \mu_2(E_2)
+    &= \bind(\mu, \krnl)(E_1)  \cdot \mu_2(E_2) \\
+    &= \left\lgroup\sum_{a \in A} \mu(a) \cdot \krnl(a) (E_1) \right\rgroup  \cdot \mu_2(E_2) \\
+    &= \sum_{a \in A_{\mu}} \mu(a) \cdot \left(\krnl(a) (E_1)  \cdot \mu_2(E_2) \right) \\
+    &= \sum_{a \in A_{\mu}} \mu(a) \cdot 0
+    = 0
+   \end{align*}
+
+   Thus, by~\cref{lemma:indep-prod-exists},
+   the independent product $(\sigmaF_1, \mu_1) \iprod (\sigmaF_2, \mu_2)$ exists.
+For any $E_1 \in \sigmaF_1$ and $E_2 \in \sigmaF_2$,
+\begin{align*}
+   &\bind(\prob, \fun a. \krnl(a) \iprod \prob_2 ) (E_1 \inters E_2)\\
+  &= \sum_{\mathclap{a \in \psupp(\prob)}}
+     \prob(a) \cdot
+     \left(\krnl(a) \iprod  \prob_2\right)(E_1 \inters E_2) \\
+  &= \sum_{\mathclap{a \in \psupp(\prob)}}
+      \prob(a) \cdot \krnl(a)(E_1) \cdot \prob_2(E_2) \\
+  &= \left\lgroup
+     \sum_{a \in \psupp(\prob)}
+      \prob(a) \cdot \krnl(a)(E_1)
+    \right\rgroup \cdot \prob_2(E_2) \\
+  &= \bind(\prob, \krnl)(E_1) \cdot \prob_2(E_2) \\
+  &= \prob_1(E_1) \cdot \prob_2(E_2) \\
+  &= (\prob_1 \iprod \prob_2)(E_1 \inters E_2)
+  \end{align*}
+Thus,
+  $
+   (\sigmaF_1, \prob_1) \iprod (\sigmaF_2, \prob_2)
+  = (\sigmaF_1 \punion \sigmaF_2,
+     \bind(\prob, \fun a. \krnl(a) \iprod \prob_2)).
+  $
+ \end{proof}
+

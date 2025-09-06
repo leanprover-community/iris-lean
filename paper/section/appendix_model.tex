@@ -1,0 +1,331 @@
+\section{Model}
+\label{sec:appendix:model}
+
+\subsection{Basic Connectives}
+
+The following are the definitions of the standard SL connectives
+we use in \thelogic:
+\begin{align*}
+  \pure{\phi} &\is \fun \wtv. \phi
+  &
+  P * Q &\is \fun a.
+    \exists b_1,b_2 \st
+      (b_1 \raOp b_2) \raLeq a \land
+      P(b_1) \land
+      Q(b_2)
+  \\
+  \Own{b} &\is \fun a. b \raLeq a
+  &
+  P \wand Q &\is \fun a.
+    \forall b\st
+     \raValid(a \raOp b)
+     \implies
+     P(b)
+     \implies
+     Q(a \raOp b)
+  \\
+  P \land Q &\is \fun a. P(a) \land Q(a)
+  &
+  \A x \of X.P(x) &\is \fun a.
+    \forall x \in X\st P(x)(a)
+  \\
+  P \lor Q &\is \fun a. P(a) \lor Q(a)
+  &
+  \E x \of X.P(x) &\is \fun a.
+    \exists x \in X\st P(x)(a)
+\end{align*}
+
+\subsection{Construction of the \thelogic\ Model}
+
+\begin{lemma}
+  The structure $\PSpRA$ is an ordered unital resource algebra (RA) as defined
+  in~\cref{def:ra}.
+\end{lemma}
+
+\begin{proof}
+We defined $\raOp$ and $\raLeq$ the same way as in~\cite{lilac},
+  and they have proved that $\raOp$ is associative and commutative,
+  and $\raLeq$ is transitive and reflexive.
+  We check the rest of conditions one by one.
+  \begin{induction}
+    \step[Condition~$a \raOp b = b \raOp a$]
+      The independent product is proved to be commutative in ~\cite{lilac}.
+    \step[Condition~$(a \raOp b) \raOp c = a \raOp (b \raOp c)$]
+      The independent product is proved to be associative in~\cite{lilac}.
+    \step[Condition~$a \raLeq b \implies b \raLeq c \implies a \raLeq c$]
+      The order $\raLeq$ is proved to be transitive in~\cite{lilac}.
+    \step[Condition~$a \raLeq a$]
+      The order $\raLeq$ is proved to be reflexive in~\cite{lilac}.
+    \step[Condition~$\raValid(a \raOp b) \implies \raValid(a)$]
+      Pattern matching on $a \raOp b$,
+      either there exists probability spaces $\psp_1, \psp_2$ such that
+      $a = \psp_1$, $b = \psp_2$ and $\psp_1 \iprod \psp_2$ is defined,
+      or $a \raOp b = \invalid$.
+\begin{casesplit}
+        \case[$a \raOp b = \invalid$] Note that
+        $\raValid(a \raOp b)$ does not hold when $a \raOp b = \invalid$,
+      so we can eliminate this case by ex falso quodlibet.
+      \case[$a \raOp b = \psp_1 \iprod \psp_2$] Then
+      $a = \psp_1$, and thus $\raValid(a)$.
+      \end{casesplit}
+
+    \step[Condition~$\raValid(\raUnit)$]
+      Clear because $\raUnit \neq \invalid$.
+\step[Condition~$a \raLeq b \implies \raValid(b) \implies \raValid(a)$]
+      Pattern matching on $a$ and $b$,
+      either there exists probability spaces $\psp_1, \psp_2$ such that
+      $a = \psp_1$, $b = \psp_2$ and $\psp_1 \extTo \psp_2$ is defined,
+      or $b = \invalid$.
+      \begin{casesplit}
+        \case[$b = \invalid$] Then $\raValid(b)$ does not hold,
+      and we can eliminate this case by ex falso quodlibet.
+        \case[$a = \psp_1$, $b = \psp_2$ and
+        $\psp_1 \extTo \psp_2$]  We clearly have $\raValid(a)$.
+      \end{casesplit}
+
+    \step[Condition~$\raUnit \raOp a = a$]
+      Pattern matching on $a$,
+      either $a = \invalid$
+      or there exists some probability space $\psp$ such that $a = \psp$.
+      \begin{casesplit}
+        \case[$a = \invalid$] Then $\raUnit \raOp a = \invalid = a$.
+        \case[$a = \psp$] Then $\raUnit \raOp a = a$.
+      \end{casesplit}
+
+    \step[Condition~$a \raLeq b \implies a \raOp c \raLeq b \raOp c$]
+      Pattern matching on $a$ and $b$.
+      If $a \raLeq b $,
+      then either $b = \invalid$ or there exists
+       $\psp, \psp'$ such that $a = \psp$ and $b = \psp'$.
+       \begin{casesplit}
+         \case[$b = \invalid$] Then $b \raOp c = \invalid$ is the top element,
+       and then $a \raOp c \raLeq b \raOp c$.
+         \case[Otherwise]
+       $a \raLeq b$ iff $\psp \raLeq \psp'$,
+       then either $b \raOp c = \invalid$ and $a \raOp c \raLeq b \raOp c$ follows,
+       or  $b \raOp c = \psp' \iprod \psp''$
+       for some probability space $c = \psp''$.
+       Then $\psp \raLeq \psp'$ implies that
+       $\psp \raOp \psp''$ is also defined and
+       $\psp \raOp \psp' \raLeq \psp \raOp \psp''$.
+       Thus, $a \raOp c \raLeq b \raOp c$ too.
+       \qedhere
+      \end{casesplit}
+  \end{induction}
+\end{proof}
+
+
+
+
+\begin{lemma} [RA composition preserves compatibility]
+  \label{lemma:well-defined-psppmra-1}
+   \[
+  \salg_1\compat\permap_1
+  \implies
+  \salg_2\compat\permap_2
+  \implies
+    (\salg_1 \punion \salg_2)\compat(\permap_1 \raOp \permap_2)
+  \]
+\end{lemma}
+
+\begin{proof}
+  Let $S_1 = \set{x \in \Var \mid \permap_1(x) = 0}$,
+  $S_2 = \set{x \in \Var \mid \permap_2(x) = 0}$.
+  If $\salg_1\compat\permap_1$, then there exists
+  $\psp_1' \in \ProbSp((\Var \setminus S_1) \to \Val)$
+  such that
+  $\psp_1 = \psp_1' \pprod \Triv{S_1 \to \Val}$
+  In addition, if $\salg_2\compat\permap_2$, then there exists
+  $\psp_2' \in \ProbSp((\Var \setminus S_2) \to \Val)$
+  such that
+  $\psp_2 = \psp_2' \pprod \Triv{S_2 \to \Val}$.
+  Then,
+  \begin{align*}
+    \psp_1 \raOp \psp_2
+    &= \psp_1 \iprod \psp_2 \\
+    &= (\psp_1' \pprod \Triv{S_1 \to \Val}) \iprod
+    (\psp_2' \pprod \Triv{S_2 \to \Val})
+  \end{align*}
+
+  Say $(\salg_1', \prob_1') = \psp_1'$,
+  and  $(\salg_2', \prob_2') = \psp_2'$.
+  Then the sigma algebra of $\psp_1 \raOp \psp_2$
+  is
+  \begin{align*}
+  &\closure{\set{(E_1 \times S_1 \to \Val) \cap (E_2 \times S_2 \to \Val) \mid E_1 \in \salg_1', E_2 \in \salg_2'}} \\
+    = & \closure{\set{\left( (E_1 \times (S_1 \setminus S_2) \to \Val) \cap (E_2 \times (S_2 \setminus E_1) \to \Val) \right) \times (S_1 \cap S_2) \mid E_1 \in \salg_1', E_2 \in \salg_2'}}
+  \end{align*}
+
+  Then, there exists $\psp'' \in \ProbSp((\Var \setminus (S_1 \cap S_2)) \to \Val)$ such that
+  $\psp_1 \raOp \psp_2 = \psp'' \pprod  \Triv{(S_1 \cap S_2) \to \Val})$.
+  Also,
+  \begin{align*}
+     &\set{x \in \Var \mid (\permap_1 \raOp \permap_2)(x) = 0} \\
+    =&\set{x \in \Var \mid \permap_1(x) + \permap_2(x) = 0} \\
+    =&\set{x \in \Var \mid \permap_1(x) = 0 \text{ and } \permap_2(x) = 0} \\
+    =& S_1 \cap S_2
+  \end{align*}
+  Therefore, $\salg_1 \punion \salg_2$ is compatible with $\permap_1 \raOp \permap_2$
+\end{proof}
+
+\begin{lemma}
+  The structure $(\Perm, \raLeq, \raValid, \raOp, \raUnit)$ is an ordered unital resource algebra (RA) as defined
+  in~\cref{def:ra}.
+\end{lemma}
+
+\begin{proof}
+  We check the conditions one by one.
+  \begin{induction}
+    \step[Condition~$a \raOp b = b \raOp a$]
+      Follows from the commutativity of addition.
+
+    \step[Condition~$(a \raOp b) \raOp c = a \raOp (b \raOp c)$]
+      Follows from the associativity of addition.
+
+    \step[Condition~$a \raLeq b \implies b \raLeq c \implies a \raLeq c$]
+      $\raLeq$ is a point-wise lifting of the order $\leq$ on arithmetics,
+      so it follows from the transitivity of $\leq$.
+
+    \step[Condition~$a \raLeq a$]
+      $\raLeq$ is a point-wise lifting of the order $\leq$ on arithmetics,
+      so it follows from the reflexivity of $\leq$.
+
+    \step[Condition~$\raValid(a \raOp b) \implies \raValid(a)$]
+      By definition,
+      \begin{align*}
+        \raValid(a \raOp b)
+        &\implies \forall x \in \Var, (a \raOp b)(x) \leq 1 \\
+        &\implies \forall x \in \Var, a(x) + b(x) \leq 1 \\
+        &\implies \forall x \in \Var, a(x) \leq 1 \\
+        &\implies \raValid(a)
+      \end{align*}
+
+    \step[Condition~$\raValid(\raUnit)$]
+      Note that $\raUnit = \fun \wtv. 0$ satisfies that
+      $\forall x \in \Var, \raUnit(x) \leq 1$,
+      so $\raValid(\raUnit)$.
+
+    \step[Condition~$a \raLeq b \implies \raValid(b) \implies \raValid(a)$]
+      By definition,
+      $a \raLeq b$ means
+      $\forall x \in \Var. a(x) \leq b(x)$,
+      and $\raValid(b)$ means that
+      $\forall x \in \Var. b(x) \leq 1$.
+      Thus, $a \raLeq b$ and $\raValid(b)$ implies that
+      $\forall x \in \Var. a(x) \leq b(x) \leq 1$,
+      which implies $\raValid(a)$.
+
+    \step[Condition~$\raUnit \raOp a = a$]
+      By definition,
+      \begin{align*}
+        \raUnit \raOp a
+        &= \fun x. (\fun \wtv. 0)(x) + a(x) \\
+        &= \fun x. 0 + a(x) \\
+        &= a.
+      \end{align*}
+
+      \step[Condition~$a \raLeq b \implies a \raOp c \raLeq b \raOp c$]
+      By definition,
+      \begin{align*}
+        a \raLeq b
+        &\iff \forall x \in \Var. a(x) \leq b(x) \\
+        &\implies \forall x \in \Var. a(x) + c(x) \leq b(x) + c(x) \\
+        &\implies a \raOp c \raLeq b \raOp c
+        \tag*{\qedhere}
+      \end{align*}
+  \end{induction}
+\end{proof}
+
+
+\begin{lemma}
+  \label{lemma:psppm-ra}
+  The structure $\PSpPmRA$ is an ordered unital resource algebra (RA) as defined
+  in~\cref{def:ra}.
+\end{lemma}
+
+\begin{proof}
+  We want to check that $\PSpPmRA$ satisfies all the requirements to be
+  an ordered unital resource algebra (RA).
+  Because $\PSpPmRA$ is very close to a product of $\PSpRA$ and $\Perm$,
+  the proof below is very close to the proof that product RAs
+  are RA.
+
+  First,~\cref{lemma:well-defined-psppmra-1} implies that $\raOp$
+  is well-defined.
+
+  Then we need to check all the RA axioms are satisfied.
+  For any $a, b \in \PSpPmRA$ and any $\psp_1, \permap_1, \psp_2, \permap_2$ such
+  that $a = (\psp_1, \permap_1), b = (\psp_2, \permap_2)$.
+
+  We check the conditions one by one.
+  \begin{induction}
+\step[Condition~$\raValid(a \raOp b) \implies \raValid(a)$]
+      By definition,
+      $a \raOp b = (\psp_1, \permap_1) \raOp (\psp_2, \permap_2)
+      = (\psp_1 \raOp \psp_2, \permap_1 \raOp \permap_2)$.
+      And $\raValid(\psp_1 \raOp \psp_2, \permap_1 \raOp \permap_2)$
+      implies that
+      $\raValid(\psp_1 \raOp \psp_2)$ and
+      $\raValid(\permap_1 \raOp \permap_2)$.
+      Because $\PSpRA$ and $\Perm$ are both RAs,
+      we have $\raValid(\psp_1)$ and $\raValid(\permap_1)$.
+      Thus, $\raValid(\psp_1, \permap_1)$.
+\step[Condition~$\raValid(\raUnit)$]
+      Clear because $\raUnit = (\Triv{\Store}, \fun \p{x}. 0)$
+      and $\Triv{\Store} \neq \invalid$, and
+      $\forall x. \left(\fun \p{x}. 0\right)(x) \leq 1$.
+
+    \step[Condition~$a \raLeq b \implies \raValid(b) \implies \raValid(a)$]
+      $a \raLeq b $ implies that
+      $\psp_1 \raLeq \psp_2$ and $\permap_1 \raLeq \permap_2$.
+      $\raValid(b)$ implies that
+       $\psp_2 \neq \invalid$, and
+      $\forall x. \left(\permap_2 \right)(x) \leq 1$.
+      Thus,  $\psp_1 \neq \invalid$, and
+      $\forall x. \left(\permap_1 \right)(x) \leq 1$.
+      And therefore, $\raValid(b)$.
+
+    \step[Condition~$\raUnit \raOp a = a$]
+$
+        \raUnit \raOp a
+        = (\Triv{\Store}, \fun \p{x}. 0) \raOp (\psp_1, \permap_1) \\
+        =  (\Triv{\Store} \raOp \psp_1,  \fun \p{x}. 0 \raOp \permap_1) \\
+        = (\psp_1, \permap_1) = a.
+      $
+
+    \step[Condition~$a \raLeq b \implies a \raOp c \raLeq b \raOp c$]
+      $a \raLeq b $ implies that
+      $\psp_1 \raLeq \psp_2$ and $\permap_1 \raLeq \permap_2$.
+
+      Say $c = (\psp_3, \permap_3)$.
+      Then $a \raOp c = (\psp_1 \raOp \psp_3, \permap_1 \raOp \permap_3)$ and $b \raOp c = (\psp_2 \raOp \psp_3, \permap_2 \raOp \permap_3)$.
+      Because $\psp_1 \raLeq \psp_2$,
+      $\psp_1 \raOp \psp_3 \raLeq \psp_2 \raOp \psp_3$;
+      similarly,
+      $\permap_1 \raOp \permap_3 \raLeq \permap_2 \raOp \permap_3$.
+      Thus, $a \raOp c \raLeq b \raOp c$.
+      \qedhere
+  \end{induction}
+\end{proof}
+
+  \begin{lemma}
+    \label{lemma:product-preserve-ra}
+    If $M$ is an RA, then $\Hyp{M}$ is also an RA.
+  \end{lemma}
+
+  \begin{proof}
+    RA is known to be closed under products, and
+    $\Hyp{M}$ can be obtained as products of $M$,
+    so we omit the proof.
+  \end{proof}
+
+  \begin{lemma}
+  $\Model_I$ is an RA.
+\end{lemma}
+
+\begin{proof}
+  By~\cref{lemma:psppm-ra}, $\PSpPmRA$ is an RA.
+  By~\cref{lemma:product-preserve-ra},
+  $\Model_I = \Hyp{\PSpPmRA}$ is also an RA.
+\end{proof}
+

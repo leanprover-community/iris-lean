@@ -1,0 +1,186 @@
+\subsection{One-time Pad (Unary)}
+\label{sec:appendix:ex:otp-unary}
+
+  Similarly to the relational version, we can, using \ref{rule:wp-seq},\ref{rule:wp-assign} and \ref{rule:wp-samp}, easily show that:
+\begin{equation*}
+  \True\withp{\m{\permap}}
+  \proves
+  \WP {
+   \m[\I1: \code{encrypt}()]
+  }{
+     \distAs{\Ip{k}{1}}{\Ber{\onehalf}} *
+     \distAs{\Ip{m}{1}}{\Ber{p}} *
+     \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}
+  }.
+\end{equation*}
+
+We then show the crucial derivation of \cref{sec:ex:one-time-pad} in more detail.
+\begin{eqexplain}
+  &
+  \distAs{\Ip{k}{1}}{\Ber{\onehalf}} *
+  \distAs{\Ip{m}{1}}{\Ber{p}} *
+  \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}
+\whichproves
+  \CC{\Ber{p}} m.
+  \bigl(
+    \sure{\Ip{m}{1}=m} *
+    \distAs{\Ip{k}{1}}{\Ber{\onehalf}} *
+    \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}
+  \bigr)
+  \byrules{c-unit-r,c-frame}
+\whichproves
+  \CC{\Ber{p}} m.
+  \bigl(
+    \sure{\Ip{m}{1}=m} *
+    \distAs{\Ip{k}{1}}{\Ber{\onehalf}} *
+    \sure{\Ip{c}{1} = \Ip{k}{1} \xor m}
+  \bigr)
+  \byrules{sure-merge}
+\whichproves
+  \CC{\Ber{p}} m.
+  \Bigl(
+    \sure{\Ip{m}{1}=m} *
+    \CC{\Ber{\onehalf}} k.
+    \bigl(
+      \sure{\Ip{k}{1}=k} *
+      \sure{\Ip{c}{1} = \Ip{k}{1} \xor m}
+    \bigr)
+  \Bigr)
+  \byrules{c-unit-r,c-frame}
+\whichproves
+  \CC{\Ber{p}} m.
+    \bigl(
+      \sure{\Ip{m}{1}=m} *
+      \CC{\Ber{\onehalf}} k.
+        \sure{\Ip{k}{1}=k \land \Ip{c}{1} = k \xor m}
+    \bigr)
+  \byrules{sure-merge}
+\whichproves
+  \CC{\Ber{p}} m.
+    \left(
+    \sure{\Ip{m}{1}=m} *
+    \begin{cases}
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k} \CASE m=0
+      \\
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=\neg k} \CASE m=1
+    \end{cases}
+    \right)
+  \byrule{c-cons}
+\whichproves
+  \CC{\Ber{p}} m.
+    \left(
+    \sure{\Ip{m}{1}=m} *
+    \begin{cases}
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k} \CASE m=0
+      \\
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k} \CASE m=1
+    \end{cases}
+    \right)
+  \byrule{c-transf}
+\whichproves
+  \CC{\Ber{p}} m.
+    \bigl(
+      \sure{\Ip{m}{1}=m} *
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k}
+    \bigr)
+\whichproves
+  \CC{\Ber{p}} m.
+  \CC{\Ber{\onehalf}} k.
+    \bigl(
+      \sure{\Ip{m}{1}=m} *
+      \sure{\Ip{c}{1}=k}
+    \bigr)
+  \byrules{c-frame}
+\whichproves
+  \CC{\Ber{p}} m.
+  \CC{\Ber{\onehalf}} k.
+    \sure{\Ip{m}{1}=m \land \Ip{c}{1}=k}
+  \byrules{sure-merge}
+\whichproves
+  \CC{\Ber{p} \pprod \Ber{\onehalf}} (m,k).
+    \sure{(\Ip{m}{1},\Ip{c}{1})=(m,k)}
+  \byrules{c-assoc}
+\whichproves
+  \distAs{(\Ip{m}{1},\Ip{c}{1})}{(\Ber{p} \pprod \Ber{\onehalf})}
+  \byrule{c-unit-r}
+\whichproves
+  \distAs{\Ip{m}{1}}{\Ber{p}} *
+  \distAs{\Ip{c}{1}}{\Ber{\onehalf}}
+  \byrule{prod-split}
+\end{eqexplain}
+
+The application of \ref{rule:c-transf} to the case with $m=1$ is as follows:
+\[
+\infer{
+  \forall b \in \set{0,1}.
+    \Ber{\onehalf}(b)=\Ber{\onehalf}(\neg b)
+}{
+  \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=\neg k}
+  \proves
+  \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k}
+}
+\] 
+\begin{figure*}
+  \adjustfigure[\small]\setlength\tabcolsep{0pt}\begin{tabular*}{\textwidth}{
+    @{\extracolsep{\fill}}
+    *{4}{p{\textwidth/4}}@{}
+  }
+\begin{sourcecode*}
+def BelowMax($x$,$S$):
+  repeat $N$:
+    q:~$\prob_S$
+    r':=r
+    r := r' || q >= $x$
+\end{sourcecode*}
+&
+\begin{sourcecode*}
+def AboveMin($x$,$S$):
+  repeat $N$:
+    p:~$\prob_S$
+    l':=l
+    l := l' || p <= $x$
+\end{sourcecode*}
+&
+\begin{sourcecode*}
+def BETW_SEQ($x$, $S$):
+  BelowMax($x$,$S$);
+  AboveMin($x$,$S$);
+  d := r && l
+\end{sourcecode*}
+\\
+\begin{sourcecode*}
+def BETW($x$,$S$):
+  repeat $2 N$:
+    s:~$\prob_S$
+    l':=l
+    l := l' || s <= $x$
+    r':=r
+    r := r' || s >= $x$
+  d := r && l
+\end{sourcecode*}
+&
+\begin{sourcecode*}
+def BETW_MIX($x$, $S$):
+  repeat $N$:
+    p:~$\prob_S$
+    l':=l
+    l := l' || p <= $x$
+    q:~$\prob_S$
+    r':=r
+    r := r' || q >= $x$
+  d := r && l
+\end{sourcecode*}
+&
+\begin{sourcecode*}
+def BETW_N($x$,$S$):
+  repeat $N$:
+    s:~$\prob_S$
+    l':=l
+    l := l' || s <= $x$
+    r':=r
+    r := r' || s >= $x$
+  d := r && l
+\end{sourcecode*}
+\end{tabular*}   \caption{Stochastic dominance examples: composing Monte Carlo algorithms in different ways. All variables are initially 0.}
+  \label{fig:between-code-repeat}
+\end{figure*}

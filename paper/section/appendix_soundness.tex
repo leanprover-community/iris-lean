@@ -1,0 +1,3489 @@
+\section{Soundness}
+\label{sec:appendix:soundness}
+
+\subsection{Soundness of Primitive Rules}
+\label{sec:appendix:primitive-rules}
+
+
+\subsubsection{Soundness of Distribution Ownership Rules}
+\begin{lemma}
+\label{proof:and-to-star}
+  \Cref{rule:and-to-star} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume a valid $a\in\Model_I$ is such that
+  it satisfies $ P \land Q $.
+  This means that for some $(\m{\salg},\m{\prob},\m{\permap}) \raLeq a$, both
+    $P(\m{\salg},\m{\prob},\m{\permap})$ and
+    $Q(\m{\salg},\m{\prob},\m{\permap})$
+  hold.
+  We want to prove $(P \ast Q)(a)$ holds.
+  To this end, let
+  $ (\m{\salg}_1, \m{\prob}_1, \m{\permap}_1) $ and
+  $ (\m{\salg}_2, \m{\prob}_2, \m{\permap}_2) $
+  be such that
+  for every $i \in \idx(P)$:
+  \begin{align*}
+    \m{\salg}_1(i) &= \m{\salg}(i)
+    &
+    \m{\salg}_2(i) &= \set{\emptyset, \Outcomes}
+    \\
+    \m{\prob}_1(i) &= \m{\prob}(i)
+    &
+    \m{\prob}_2(i) &= \fun \event. \ITE{\event=\Outcomes}{1}{0}
+    \\
+    \m{\permap}_1(i) &= \m{\permap}(i)
+    &
+    \m{\permap}_2(i) &= \fun \wtv. 0
+  \intertext{
+    and for all $i\in I \setminus \idx(P)$:
+  }
+    \m{\salg}_2(i) &= \m{\salg}(i)
+    &
+    \m{\salg}_1(i) &= \set{\emptyset, \Outcomes}
+    \\
+    \m{\prob}_2(i) &= \m{\prob}(i)
+    &
+    \m{\prob}_1(i) &= \fun \event. \ITE{\event=\Outcomes}{1}{0}
+    \\
+    \m{\permap}_2(i) &= \m{\permap}(i)
+    &
+    \m{\permap}_1(i) &= \fun \wtv. 0
+  \end{align*}
+Clearly, by construction,
+  $
+    (\m{\salg}_1, \m{\prob}_1, \m{\permap}_1)
+    \iprod
+    (\m{\salg}_2, \m{\prob}_2, \m{\permap}_2)
+    =
+    (\m{\salg},\m{\prob},\m{\permap}).
+  $
+  and
+  $P(\m{\salg}_1, \m{\prob}_1, \m{\permap}_1)$.
+  Since $\idx(P) \inters \idx(Q) = \emptyset$,
+  we also have
+  $Q(\m{\salg}_2, \m{\prob}_2, \m{\permap}_2)$.
+  Therefore,
+  $(P \ast Q)(\m{\salg}, \m{\prob}, \m{\permap})$,
+  and so $(P \ast Q)(a)$ by upward closure.
+\end{proof} \begin{lemma}
+\label{proof:dist-inj}
+  \Cref{rule:dist-inj} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume a valid $a\in\Model_I$ is such that both
+  $ \distAs{E\at{i}}{\prob }(a) $ and
+  $ \distAs{E\at{i}}{\prob'}(a) $
+  hold.
+  Let $ a = (\m{\salg}, \m{\prob}_0,\m{\permap}) $,
+  then we know
+  $ \prob = \m{\prob}_0 \circ \inv{E\at{i}} = \prob'$,
+  which proves the claim.
+\end{proof}
+ \begin{lemma}
+\label{proof:sure-merge}
+  \Cref{rule:sure-merge} is sound.
+\end{lemma}
+
+\begin{proof}
+  The proof for the forward direction is very similar to
+  the one for~\cref{rule:sure-eq-inj}.
+  For $a \in \Model_I$,
+  if $(\sure{E_1\at{i}} \ast \sure{E_2 \at{i}})(a)$.
+  Then there exists
+  $a_1, a_2$ such that $a_1 \raOp a_2 \raLeq a$ and
+  $\sure{E_1 \at{i}}(a_1)$,
+  $\sure{E_2 \at{i}}(a_2)$.
+  Say $a = (\m{\sigmaF}, \m{\mu}, \m{\permap})$,
+  $a_1 = (\m{\sigmaF}_1, \m{\mu}_1, \m{\permap}_1)$
+  and $a_2 = (\m{\sigmaF}_2, \m{\mu}_2, \m{\permap}_2)$.
+  Then $\sure{E_1\at{i}}(a_1)$ implies that
+  \begin{align*}
+    \m{\mu}_1 (\inv{E_1\at{i}}(\True)) = 1
+  \end{align*}
+  And similarly,
+  \begin{align*}
+    \m{\mu}_2 (\inv{E_2\at{i} }(\True)) = 1
+  \end{align*}
+  Thus,
+  \begin{align*}
+    \m{\mu} (\inv{E_1\at{i}}(\True) \cap \inv{E_2\at{i}}(\True) )
+    &= \m{\mu}_1 (\inv{E_1\at{i}}(\True))  \cdot \m{\mu}_2 (\inv{E_2\at{i}}(\True))
+     = 1.
+  \end{align*}
+  Hence,
+  \begin{align*}
+    \m{\mu} (\inv{E_1\at{i} \land E_2\at{i}}(\True) )
+    &= \m{\mu} (\inv{E_1\at{i}}(\True) \cap \inv{E_2\at{i}}(\True)) = 1
+  \end{align*}
+  Thus, $\sure{E_1\at{i} \land E_2\at{j}} (a)$.
+
+  Now we prove the backwards direction:
+  Say $a = (\m{\sigmaF}, \m{\mu}, \m{\permap})$.
+  if  $\sure{E_1\at{i} \land E_2\at{j}} (a)$,
+  then $\m{\mu} (\inv{E_1\at{i} \land E_2\at{i}}(\True)) = 1$,
+  and then
+  \begin{align*}
+    \m{\mu} (\inv{E_1\at{i}}(\True))  &\geq \m{\mu} (\inv{E_1\at{i} \land E_2\at{i}}(\True)) = 1 \\
+    \m{\mu} (\inv{E_2\at{i}}(\True))  &\geq \m{\mu} (\inv{E_1\at{i} \land E_2\at{i}}(\True)) = 1
+  \end{align*}
+
+  Let $\m{\sigmaF_1} = \closure{\inv{E_1\at{i}}(\True)}$
+  and $\m{\sigmaF_2} = \closure{\inv{E_2\at{i}}(\True)}$.
+  Then,
+  \begin{gather*}
+    \sure{E_1\at{i}} (\m{\sigmaF_1}, \constrain{\m{\mu}}{\m{\sigmaF_1}}, \fun \wtv. 0) \\
+    \sure{E_2\at{i}} (\m{\sigmaF_2}, \constrain{\m{\mu}}{\m{\sigmaF_2}}, \fun \wtv. 0) \\
+    (\m{\sigmaF_1}, \constrain{\m{\mu}}{\m{\sigmaF_1}}, \fun \wtv. 0) \ast  (\m{\sigmaF_2}, \constrain{\m{\mu}}{\m{\sigmaF_2}}, \fun \wtv. 0) \raLeq a
+  \end{gather*}
+  Thus, $\sure{E_1\at{i}} \ast \sure{E_2\at{i}}$ holds on $a$.
+\end{proof} \begin{lemma}
+\label{proof:sure-and-star}
+  \Cref{rule:sure-and-star} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume $a = (\m{\salg}, \m{\prob}, \m{\permap}) \in \Model_I$ and
+  $(\sure{E\at{i}} \land P)(a)$ holds.
+  We want to show that
+  $(\sure{E\at{i}} \ast P)(a)$ holds.
+  First note that:
+  \begin{align*}
+    (\sure{E\at{i}} \land P)(a)
+    & \implies \sure{E\at{i}}(a) \land P(a) \\
+    & \implies \almostM{E}{(\m{\salg}(i), \m{\prob}(i))}
+    \land \m{\prob} \circ \inv{E\at{i}}(\true) = \dirac{\True}
+    \land P(a)
+  \end{align*}
+
+  Define $\m{\salg}', \m{\permap}_{\aexpr}, \m{\permap}_{P}$ such that,
+  for any $j \in I$:
+  \begin{align*}
+    \m{\salg}'(j) &=
+    \begin{cases}
+      \set{\emptyset, \Store} \CASE j \neq i\\
+      \set{\emptyset, \Store, \inv{E\at{i}}(\True), \Store \setminus
+      \inv{E\at{i}}(\True)} \OTHERWISE
+    \end{cases}
+    \\
+    \m{\permap}_{\aexpr}(j) &=
+    \begin{cases}
+      \fun \wtv.0 \CASE j \ne i \\
+      \fun \ip{x}{i}.
+        \ITE{\p{x} \in \pvar(\aexpr)}{\m{\permap}(i)(\ip{x}{i})/2}{0}
+    \CASE j = i
+    \end{cases}
+    \\
+    \m{\permap}_{P}(j) &=
+    \begin{cases}
+      \m{\permap}(j) \CASE j \ne i \\
+      \fun \ip{x}{i}.
+        \ITE{\p{x} \in \pvar(\aexpr)}{\m{\permap}(i)(\ip{x}{i})/2}{\m{\permap}(i)(\ip{x}{i})}
+    \CASE j = i
+    \end{cases}
+  \end{align*}
+  By construction, we have
+  $
+    \m{\permap} = \m{\permap}_{\aexpr} \raOp \m{\permap}_{P}.
+  $
+  Now let:
+  \begin{align*}
+    b &= (\m{\salg}', \restr{\m{\prob}}{\m{\salg}'}, \m{\permap}_{\aexpr})
+    &
+    a' &= (\m{\salg}, \m{\prob}, \m{\permap}_{P})
+  \end{align*}
+  note that $\raValid(b)$ holds because $\m{\salg}'(i)$ can at best be non-trivial on $\pvar(\aexpr)$.
+  The resource $a'$ is also valid, since $\m{\permap}_{P}$ has the same non-zero components as $\m{\permap}$.
+  Then
+  $\sure{E\at{i}}(b)$ holds because
+  $\almostM{E}{( \m{\salg}'(i), \restr{\m{\prob}}{\m{\salg}'}(i) )}$
+  and $\restr{\m{\prob}}{\m{\salg}'} \circ \inv{E\at{i}}
+  = \m{\prob} \circ \inv{E\at{i}} = \dirac{\True}$.
+  By applying~\cref{lemma:indep-prod-exists}, it is easy to show that
+  $(\m{\salg}', \restr{\m{\prob}}{\m{\salg}'}) \iprod (\m{\salg}, \m{\prob})$
+  is defined and is equal to $(\m{\salg}, \m{\prob})$.
+  Therefore,
+  $\raValid(b \raOp a)$ and $b \raOp a = a$.
+  By the side condition $\psinv(P, \pvar(E\at{i}))$ and the fact that
+  $\m{\permap}_{P}$ is a scaled down version of $\m{\permap}$,
+  we obtain from $P(a)$ that $P(a')$ holds too.
+  This proves that
+  $(\sure{E\at{i}} \ast P)(a)$ holds, as desired.
+\end{proof}
+ \begin{lemma}
+\label{proof:prod-split}
+  \Cref{rule:prod-split} is sound.
+\end{lemma}
+
+\begin{proof}
+  For any $(\m{\salg},\m{\prob}, \m{\permap})$ such that
+  $(\distAs{(\aexpr_1\at{i}, \aexpr_2\at{i})}{\mu_1 \pprod \mu_2}) (\m{\salg},\m{\prob}, \m{\permap})$,
+  by definition, it must
+  \begin{align*}
+      \E \m{\salg'},\m{\prob'}.
+      (\Own{\m{\salg'},\m{\prob'}})(\m{\salg},\m{\prob}, \m{\permap}) *
+    \almostM{(\aexpr_1, \aexpr_2)}{(\m{\salg'}(i),\m{\prob'}(i))}
+    \land
+    \mu_1 \pprod \mu_2 = \m{\prob'}(i) \circ \inv{(\aexpr_1, \aexpr_2)}
+    .
+  \end{align*}
+  We can derive from it that
+  \begin{align*}
+    \E \m{\salg'},\m{\prob'}, \m{\permap'}.
+      & (\m{\salg'},\m{\prob'}) \raLeq (\m{\salg},\m{\prob}, \m{\permap}) * \\
+      & \Big( \forall a, b  \in A. \exists L_{a, b},U_{a,b} \in \salg'(i)  \st
+        L_{a, b} \subs \inv{(\aexpr_1, \aexpr_2)}(a, b) \subs U_{a, b}
+       \land
+        \prob'(L_{a, b})=\prob'(U_{a, b}) \land  \\
+      &
+       \mu_1 \pprod \mu_2 (a, b)
+= \m{\prob'}(i) (L_{a, b})
+       = \m{\prob'}(i) (U_{a, b})
+    \Big)
+  \end{align*}
+  Also, for any $a, b, a', b' \in A$ such that $a \neq a'$
+  or $b \neq b'$, we have
+  $L_{a,b}$ disjoint from $L_{a',b'}$ because on $L_{a,b} \inters L_{a',b'}$,
+  the random variable $(\aexpr_1, \aexpr_2)$ maps to both
+  $(a, b)$ and $(a',b')$.
+
+  Define
+  \[
+    \m{\salg}_1(i) = \closure{\set{(\Union_{b \in A} L_{a, b} ) \mid a \in A} \union \set{(\Union_{b \in A} U_{a, b})  \mid a \in A}},
+  \]
+  and similarly define
+    \[
+      \m{\salg}_2(i) = \closure{\set{(\Union_{a \in A} L_{a, b} ) \mid b \in A} \union \set{(\Union_{a \in A} U_{a, b} )  \mid b \in A}}.
+  \]
+  Denote $\m{\prob'}$ restricted to $\m{\salg}_1$ as $\m{\prob'}_1$
+  and $\m{\prob'}$ restricted to $\m{\salg}_2$ as $\m{\prob'}_2$.
+
+
+  We want to show that
+  $(\m{\salg}_1(i), \m{\prob'}_1(i)) \indepcomb (\m{\salg}_2(i), \m{\prob'}_2(i)) \extTo (\m{\salg'}(i), \m{\prob'}(i))$,
+  which boils down to show that for any $\event_1 \in \m{\salg}_1(i)$, any
+  $\event_2 \in \m{\salg}_2(i)$,
+  \begin{align*}
+    \m{\prob'}(\event_1 \inters \event_2) = \m{\prob'}_1(\event_1) \cdot  \m{\prob'}_2(\event_2)
+  \end{align*}
+
+      For convenience, we will
+      denote $\union_{b \in A} L_{a, b}$ as $L_a$,
+      denote $\union_{a \in A} L_{a, b}$ as $L_b$,
+      denote $\union_{b \in A} U_{a, b}$ as $U_a$,
+      and denote $\union_{a \in A} U_{a, b}$ as $U_b$.
+
+
+
+
+      First, using a standard construction in measure theory proofs,
+      we rewrite $\salg_1$ and $\salg_2$ as sigma algebra generated
+      by sets of partitions.
+      Specifically, $\salg_1$ is equivalent to
+      \[
+        \closure{\set{\Inters_{a \in S_1} L_a \inters \Inters_{a \in S_2} U_a \setminus (\Union_{a \in A \setminus S_1} L_a \union \Union_{a \in A \setminus S_2} U_a)  \mid S_1, S_2 \subseteq A}}
+      \]
+      and similarly, $\salg_2$ is equivalent to
+      \[
+        \closure{\set{\Inters_{b \in T_1} L_b \inters \Inters_{b \in T_2} U_b \setminus (\Union_{b \in A \setminus T_1} L_b \union \Union_{b \in A \setminus T_2} U_b)  \mid T_1, T_2 \subseteq A}}.
+      \]
+      Thus, by~\cref{lemma:sigma-alg-representation}, any event $\event_1$ in
+      $\salg_1$ can be represented by
+      \[
+        \Dunion_{S_1 \in I_1, S_2 \in I_2}
+        \Inters_{a \in S_1} L_a \inters \Inters_{a \in S_2} U_a \setminus (\Union_{a \in A \setminus S_1} L_a \union \Union_{a \in A \setminus S_2} U_a)
+      \]
+      for some $I_1, I_2 \subseteq \mathcal{P}(A)$, where
+      $\mathcal{P}$ is the powerset over $A$.
+      Similarly, any event $\event_2$ in $\salg_2$ can be represented by
+      \[
+        \Dunion_{S_3 \in I_3, S_4 \in I_4}
+        \Inters_{b \in S_3} L_b \inters \Inters_{b \in S_4} U_b \setminus (\Union_{b \in A \setminus S_3} L_b \union \Union_{b \in A \setminus S_2} U_b)
+      \]
+      for some  $I_3, I_4 \subseteq \mathcal{P}(A)$.
+      Thus, $\event_1 \inters \event_2$ can be represented as
+      \begin{align*}
+        \event_1 \inters \event_2
+        &=(\Dunion_{S_1 \in I_1, S_2 \in I_2}
+        \Inters_{a \in S_1} L_a \inters \Inters_{a \in S_2} U_a \setminus (\Union_{a \in A \setminus S_1} L_a \union \Union_{a \in A \setminus S_2} U_a) ) \\
+        &\Inters
+        (\Dunion_{S_3 \in I_3, S_4 \in I_4}
+        \Inters_{b \in S_3} L_b \inters \Inters_{b \in S_4} U_b \setminus (\Union_{b \in A \setminus S_3} L_b \union \Union_{b \in A \setminus S_2} U_b) )\\
+        = & \Dunion_{S_1 \in I_1, S_2 \in I_2, S_3 \in I_3, S_4 \in I_4} (\Inters_{a \in S_1} L_a \inters \Inters_{a \in S_2} U_a \setminus (\Union_{a \in A \setminus S_1} L_a \union \Union_{a \in A \setminus S_2} U_a) ) \\
+          &\inters ( \Inters_{b \in S_3} L_b \inters \Inters_{b \in S_4} U_b \setminus (\Union_{b \in A \setminus S_3} L_b \union \Union_{b \in A \setminus S_2} U_b) )
+      \end{align*}
+
+      Because $L_{a,b}$ and $L_{a',b'}$ are disjoint as long as not
+      $a = a'$ and $b = b'$,
+      we have $L_a$ disjoint from $L_{a'}$ if $a \neq a'$.
+      Thus,
+      $\Inters_{a \in S_1} L_a \inters \Inters_{a \in S_2} U_a \setminus (\Union_{a \in A \setminus S_1} L_a \union \Union_{a \in A \setminus S_2} U_a)$
+      is not empty only when $S_1$ is singleton and empty.
+      \begin{itemize}
+        \item If $S_1$ is empty,
+      then
+      \[
+        \Inters_{a \in S_1} L_a \inters \Inters_{a \in S_2} U_a \setminus (\Union_{a \in A \setminus S_1} L_a \union \Union_{a \in A \setminus S_2} U_a)
+        =  \Inters_{a \in S_2} U_a \setminus (\Union_{a \in A} L_a \union \Union_{a \in A \setminus S_2} U_a)
+      \]
+      has measure 0 because $\Union_{a \in A} L_a$ has measure 1.
+        \item Otherwise, if $S_1$ is singleton, say $S_1 = \{a'\}$,
+      then
+      \begin{align*}
+        \Inters_{a \in S_1} L_a \inters \Inters_{a \in S_2} U_a \setminus (\Union_{a \in A \setminus S_1} L_a \union \Union_{a \in A \setminus S_2} U_a)
+        &= L_{a'} \inters \Inters_{a \in S_2} U_a \setminus \Union_{a \in A \setminus S_2} U_a).
+      \end{align*}
+Furthermore,
+      \begin{align*}
+        \m{\prob'}(\Inters_{a \in S_2} U_a)
+        &= \m{\prob'}(\Inters_{a \in S_2} L_a \disjunion (U_a \setminus L_a)) \\
+        &= \m{\prob'}(\Inters_{a \in S_2} L_a) + 0
+      \end{align*}
+      And $\Inters_{a \in S_2} L_a$ is non-empty only if
+      $S_2$ is a singleton set or empty set.
+      Thus, $L_{a'} \inters \Inters_{a \in S_2} U_a \setminus \Union_{a \in A \setminus S_2} U_a) \subseteq \Inters_{a \in S_2} U_a$ has non-zero measure only if
+      $S_2$ is empty or a singleton set.
+\begin{itemize}
+        \item When $S_2$ is empty,
+      \begin{align*}
+        L_{a'} \inters \Inters_{a \in S_2} U_a \setminus \Union_{a \in A \setminus S_2} U_a
+        &= L_{a'} \setminus \Union_{a \in A} U_a
+        \subseteq L_{a'} \setminus  U_{a'}
+        =\emptyset
+      \end{align*}
+        \item When $S_2 = \{a'\}$,
+      \begin{align*}
+        L_{a'} \inters \Inters_{a \in S_2} U_a \setminus \Union_{a \in A \setminus S_2} U_a
+        &= L_{a'} \setminus \Union_{a \in A, a \neq a'} U_a .
+      \end{align*}
+        \item
+      When $S_2 = \{a''\}$ for some $a'' \neq a'$
+      \begin{align*}
+        L_{a'} \inters \Inters_{a \in S_2} U_a \setminus \Union_{a \in A \setminus S_2} U_a
+        &= L_{a'} \inters U_{a''} \setminus \Union_{a \in A, a \neq a''} U_a \\
+        &= \emptyset
+      \end{align*}
+      \end{itemize}
+      \end{itemize}
+
+Thus,
+      \begin{align*}
+         \m{\prob'}(\event_1)
+        = & \m{\prob'}\Big(\Union_{S_1 \in I_1, S_2 \in I_2} \Inters_{a \in S_1} L_a \inters \Inters_{a \in S_2} U_a \setminus (\Union_{a \in A \setminus S_1} L_a \union \Union_{a \in A \setminus S_2} U_a) \inters) \\
+          = & \m{\prob'}\Big(\Union_{\{a'\} \in I_1, S_2 \in I_2} ( L_{a'} \inters \Inters_{a \in S_2} U_a \setminus \Union_{a \in A \setminus S_2} U_a) \Big) \\
+          = & \m{\prob'}\Big(\Union_{\{a'\} \in I_1 \inters I_2} L_{a'} \inters U_{a'} \setminus \Union_{a \in A, a \neq a'} U_a \Big)  \\
+          = & \m{\prob'}\Big(\Union_{\{a'\} \in I_1 \inters I_2} ( L_{a'} \setminus \Union_{a \in A, a \neq a'} U_a )  \Big) \\
+          = & \m{\prob'}\Big(\Union_{\{a'\} \in I_1 \inters I_2} ( L_{a'} \setminus \Union_{a \in A, a \neq a'} (L_a \Union (U_a \setminus L_a)) )  \Big) \\
+          = & \m{\prob'}\Big(\Union_{\{a'\} \in I_1 \inters I_2} ( L_{a'} \setminus \Union_{a \in A, a \neq a'} (L_a ) ) \Big) \\
+          = & \m{\prob'}\Big(\Union_{\{a'\} \in I_1 \inters I_2} L_{a'} \Big)
+      \end{align*}
+      Denote $\Union_{\{a'\} \in I_1 \inters I_2} L_{a'}$
+      as $\event'_1$.
+      And $\event_1 \setminus \event'_1$ and $\event'_1 \setminus \event_1$ both have measure 0.
+
+      Similar results hold for $\event_2$ as well, and we can show that
+      \begin{align*}
+        \m{\prob'}(\event_2)
+         = & \m{\prob'}\Big(\Union_{\{b'\} \in I_3 \inters I_4} L_{b'} \Big)
+      \end{align*}
+      Denote $\Union_{\{b'\} \in I_3 \inters I_4} L_{b'}$
+      as $\event'_2$.
+      And $\event_2 \setminus \event'_2$ and $\event'_2 \setminus \event_2$ both have measure 0.
+
+
+      Thus,
+      \begin{align*}
+         \m{\prob'}(\event_1 \inters \event_2)
+        =& \m{\prob'}(\event_1 \inters \event_2 \inters \event'_1)
+        + \m{\prob'}((\event_1 \inters \event_2) \setminus \event'_1)\\
+        =& \m{\prob'}(\event_1 \inters \event_2 \inters \event'_1)
+        + 0 \\
+        =& \m{\prob'}(\event_1 \inters \event_2 \inters \event'_1 \inters \event'_2) + \m{\prob'}((\event_1 \inters \event_2 \inters \event'_1) \setminus \event'_2) + 0 \\
+        =& \m{\prob'}(\event_1 \inters \event_2 \inters \event'_1 \inters \event'_2) + 0 + 0 \\
+        =&  \m{\prob'}(\event_1 \inters \event_2 \inters \event'_1 \inters \event'_2) +  \m{\prob'}((\event_2 \inters \event'_1 \inters \event'_2 ) \setminus \event_1) \\
+        =&  \m{\prob'}(\event_2 \inters \event'_1 \inters \event'_2)  \\
+        =&  \m{\prob'}(\event_2 \inters \event'_1 \inters \event'_2) + \m{\prob'}((\event'_1 \inters \event'_2 ) \setminus \event_2) \\
+        =&  \m{\prob'}(\event'_1 \inters \event'_2) \\
+        =&  \m{\prob'}\left((\Union_{\{a'\} \in I_1 \inters I_2} L_{a'}) \inters (\Union_{\{b'\} \in I_3 \inters I_4} L_{b'})\right) \\
+         =&  \m{\prob'}\left(\Union_{\{a'\} \in I_1 \inters I_2, \{b'\} \in I_3 \inters I_4} L_{a', b'}\right) \\
+         =&  \sum_{\substack{\{a'\} \in I_1 \inters I_2 \\ \{b'\} \in I_3 \inters I_4}} \m{\prob'}(L_{a', b'})
+       \end{align*}
+
+Next we show that
+       $         \m{\prob'}(i) (L_{a, b})
+         = \m{\prob'}(i) (\event_1) \cdot \m{\prob'}(i) (\event_2)$.
+         Note that
+      $\m{\prob'}(L_a)  = \sum_{b} \m{\prob'}(L_{a,b}) = \m{\prob'}(\inv{\aexpr_1}(a))$,
+      and
+      $\m{\prob'}(L_b)  = \sum_{a} \m{\prob'}(L_{a,b}) = \m{\prob'}(\inv{\aexpr_2}(b))$.
+      And $\mu_1 \pprod \mu_2 = \m{\prob'}(i) \circ \inv{(\aexpr_1, \aexpr_2)}$
+      implies that
+      \begin{align*}
+        \m{\prob'}(i) (L_{a, b})
+        &= \mu_1 \pprod \mu_2 (a, b)\\
+        &=\mu_1(a) \cdot \mu_2(b)
+      \end{align*}
+      Then
+      \begin{align*}
+        \mu_1(a)
+        &= \mu_1(a) \cdot \sum_{b \in A} \mu_2(b)\\
+        &= \sum_{b \in A} \mu_1(a) \cdot \mu_2(b) \\
+        &= \sum_{b \in A} \m{\prob'}(i) (L_{a, b}) \\
+        &= \m{\prob'}(i) \left(\sum_{b \in A} L_{a, b}\right)  \\
+        &= \m{\prob'}(i) (L_a),
+      \end{align*}
+      and similarly,
+      \begin{align*}
+        \mu_2(b)
+        &= \left(\sum_{a \in A} \mu_1(a)\right) \cdot \mu_2(b)\\
+        &= \sum_{a \in A} (\mu_1(a) \cdot \mu_2(b))\\
+        &= \sum_{a \in A} \m{\prob'}(i) (L_{a, b}) \\
+        &= \m{\prob'}(i) \left(\sum_{a \in A} L_{a, b}\right)  \\
+        &= \m{\prob'}(i) (L_b).
+      \end{align*}
+      Thus,
+      \begin{align*}
+         \m{\prob'}(i) (L_{a, b})
+         &=\mu_1(a) \cdot \mu_2(b)
+         = \m{\prob'}(i) (L_a) \cdot \m{\prob'}(i) (L_b)
+      \end{align*}
+
+
+
+Therefore,
+       \begin{align*}
+         \m{\prob'}(\event_1 \inters \event_2)
+         =&  \sum_{\substack{\{a'\} \in I_1 \inters I_2 \\ \{b'\} \in I_3 \inters I_4}} \m{\prob'}(L_{a', b'}) \\
+         =&  \sum_{\substack{\{a'\} \in I_1 \inters I_2 \\ \{b'\} \in I_3 \inters I_4}} \m{\prob'}(L_{a'}) \cdot \m{\prob'}(L_{b'}) \\
+       =&  \sum_{\mathclap{\{a'\} \in I_1 \inters I_2}}  \m{\prob'}(L_{a'}) \cdot \sum_{\mathclap{\{b'\} \in I_3 \inters I_4}} \m{\prob'}(L_{b'}) \\
+       =& \m{\prob'}(\event_1) \cdot \m{\prob'}(\event_2)\\
+       =& \m{\prob_1'}(\event_1) \cdot \m{\prob_2'}(\event_2)
+      \end{align*}
+
+  Thus we have
+  $(\m{\salg}_1, \m{\prob'}_1) \iprod (\m{\salg}_2, \m{\prob'}_2) \extTo (\m{\salg'}, \m{\prob'})$.
+  Let $\m{\permap_1} = \m{\permap_2} = \fun x. \m{\permap'}(x)/2$.
+
+  Next we show that $\distAs{\aexpr_1}{\mu_1} (\m{\salg}_1, \m{\prob'}_1, \m{\permap_1}) $ and $\distAs{\aexpr_2}{\mu_2} (\m{\salg}_2, \m{\prob'}_2, \m{\permap_2})$.
+  By definition,
+  $\distAs{\aexpr_1}{\mu_1} (\m{\salg}_1, \m{\prob'}_1, \m{\permap_1})$
+  is equivalent to
+\begin{align*}
+      \E \m{\salg''},\m{\prob''}.
+      (\Own{\m{\salg''},\m{\prob''}})(\m{\salg}_1, \m{\prob'}_1, \m{\permap_1}) *
+    \almostM{\aexpr_1}{(\m{\salg''}(i), \m{\prob''}(i))}
+    \land
+    \mu_1 = \m{\prob''}(i) \circ \inv{\aexpr_1}
+    ,
+  \end{align*}
+which is equivalent to
+\begin{multline*}
+      \E \m{\salg''},\m{\prob''}.
+      (\m{\salg''},\m{\prob''}) \raLeq (\m{\salg}_1, \m{\prob'}_1) *
+      \bigl(\forall a \in A. \exists S_a, T_a \in \ \m{\salg''}(i).\\
+      S_a \subseteq \inv{\aexpr_1}(a) \subseteq T_a  \land
+      \m{\prob''}(i)(S_a) =  \m{\prob''}(i)(S_a) \land
+      \mu_1(a) = \m{\prob''}(i)(S_a) = \m{\prob''}(i)(T_{a})
+      \bigr)
+  \end{multline*}
+We can pick the existential witness to be
+  $\m{\salg}_1, \m{\prob'}_1$.
+  For any $a \in A$,
+  $ \inv{\aexpr_1}(a) = \Union_{b \in A}\inv{(\aexpr_1, \aexpr_2)} (a, b)$.
+  Because we have $L_{a, b} \subseteq \inv{(\aexpr_1, \aexpr_2)} (a, b) \subseteq U_{a,b}$,
+  then
+  \[
+   \Union_{b \in A} L_{a, b} \subseteq
+   \inv{\aexpr_1}(a) = \Union_{b \in A}\inv{(\aexpr_1, \aexpr_2)} (a, b)
+   \subseteq \Union_{b \in A} U_{a, b} .
+ \]
+  By definition, for each $a$,
+  $\Union_{b \in A} L_{a, b} \in \m{\salg}_1(i)$ and
+  $\Union_{b \in A} U_{a, b} \in \m{\salg}_1(i)$,
+  and we also have
+  \begin{align*}
+     \m{\prob'}_1(i) (\Union_{b \in A} L_{a, b})
+     &= \sum_{b \in A} \m{\prob'}_1(i) (L_{a,b})\\
+     &= \sum_{b \in A} \m{\prob'}_1(i) (U_{a,b})\\
+     &= \m{\prob'}_1(i) \bigl(\Union_{b \in A} U_{a, b}\bigr)\\
+     &= \mu_1(a)
+  \end{align*}
+  Thus, $S_a = \Union_{b \in A} L_{a, b}$ and
+  $T_a = \Union_{b \in A} U_{a, b}$ witnesses the conditions needed
+  for
+  $\distAs{\aexpr_1}{\mu_1} (\m{\salg}_1, \m{\prob'}_1, \m{\permap_1}) $.
+  And similarly, we have $\distAs{\aexpr_2}{\mu_2} (\m{\salg}_2, \m{\prob'}_2, \m{\permap_2}) $.
+\end{proof}
+ 
+\subsubsection{Soundness of Conditioning Rules}
+\begin{lemma}
+\label{proof:c-true}
+  \Cref{rule:c-true} is sound.
+\end{lemma}
+
+\begin{proof}
+  Let $\m{{\raUnit}} = (\m{\salg}_{\m{{\raUnit}}}, \m{\prob}_{\m{{\raUnit}}}, \m{\permap}_{\m{{\raUnit}}}) \in \Model_I$
+  be the unit of $\Model_I$ and
+  $\m{\krnl} = \fun v. \m{\prob}_{\m{{\raUnit}}}$.
+  Then,
+  \begin{eqexplain}
+    \True
+\whichproves*
+    \Own{\m{\salg}_{\m{{\raUnit}}}, \m{\prob}_{\m{{\raUnit}}}}
+\whichproves
+    \Own{\m{\salg}_{\m{{\raUnit}}}, \m{\prob}_{\m{{\raUnit}}}} *
+      \pure{
+        \forall i\in I\st
+          \m{\prob}_{\m{{\raUnit}}}(i) = \bind(\prob, \m{\krnl}(i))
+      }
+\whichproves
+      \Own{\m{\salg}_{\m{{\raUnit}}}, \m{\prob}_{\m{{\raUnit}}}}
+      * \pure{
+        \forall i\in I\st
+          \m{\prob}_{\m{{\raUnit}}}(i) = \bind(\prob, \m{\krnl}(i))
+      }
+      * \True
+\whichproves
+    \E \m{\salg}_{\m{{\raUnit}}}, \m{\prob}_{\m{{\raUnit}}}, \m{\krnl}.
+      \Own{\m{\salg}_{\m{{\raUnit}}}, \m{\prob}_{\m{{\raUnit}}}}
+      \begin{array}[t]{@{}>{{}}l}
+      * \pure{
+        \forall i\in I\st
+          \m{\prob}_{\m{{\raUnit}}}(i) = \bind(\prob, \m{\krnl}(i))
+      } \\
+      * (
+        \forall v \in \psupp(\prob).
+         \Own{\m{\salg}_{\m{{\raUnit}}}, \m{\krnl}(I)(v), \m{\permap}_{\m{{\raUnit}}}} \wand \True
+      )
+      \end{array}
+\whichproves
+    \CMod{\prob} \wtv. \True
+  \qedhere
+  \end{eqexplain}
+\end{proof} \begin{lemma}
+\label{proof:c-false}
+  \Cref{rule:c-false} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume $a \in \Model_I$ is such that
+  $\raValid(a)$ and that it satisfies
+  $ \CC{\prob} v.\False $.
+  By definition, this means that,
+  for some $ \m{\salg}_0, \m{\prob}_0,\m{\permap}_0,$ and $ \m{\krnl}_0 $:
+  \begin{gather}
+    (\m{\salg}_0, \m{\prob}_0,\m{\permap}_0) \raLeq a
+    \label{c-false:prob0}
+    \\
+    \forall i\in I\st
+      \m{\prob}_0(i) = \bind(\prob, \m{\krnl}_0(i))
+    \label{c-false:prob0-bind}
+    \\
+    \forall v \in \psupp(\prob) \st
+      \False(\m{\salg}_0, \m{\krnl}_0(I)(v), \m{\permap}_0)
+    \label{c-false:False-krnl0}
+  \end{gather}
+  Let $v_0 \in \psupp(\prob)$---we know one exists because $\prob$
+  is a (discrete) probability distribution.
+  Then by \eqref{c-false:False-krnl0} on~$v_0$
+  we get $\False(\m{\salg}_0, \m{\krnl}_0(I)(v_0), \m{\permap}_0)$ holds.
+  Since $\False(\wtv)$ is by definition false,
+  we get $\False(a)$ holds \emph{ex falso}.
+\end{proof} \begin{lemma}
+\label{proof:c-cons}
+  \Cref{rule:c-cons} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume $a \in \Model_I$ is such that
+  $\raValid(a)$ and that it satisfies
+  $ \CC{\prob} v.K(v) $.
+  By definition, this means that,
+  for some $ \m{\salg}_0, \m{\prob}_0,\m{\permap}_0,$ and $ \m{\krnl}_0 $:
+  \begin{gather}
+    (\m{\salg}_0, \m{\prob}_0,\m{\permap}_0) \raLeq a
+    \label{c-cons:prob0}
+    \\
+    \forall i\in I\st
+      \m{\prob}_0(i) = \bind(\prob, \m{\krnl}_0(i))
+    \label{c-cons:prob0-bind}
+    \\
+    \forall v \in \psupp(\prob) \st
+      K(v)(\m{\salg}_0, \m{\krnl}_0(I)(v), \m{\permap}_0)
+    \label{c-cons:K-krnl0}
+  \end{gather}
+  Then by the premise $\forall v\st K(v) \proves K'(v)$
+  and \eqref{c-cons:K-krnl0} we obtain
+  \begin{equation}
+    \forall v \in \psupp(\prob) \st
+      K'(v)(\m{\salg}_0, \m{\krnl}_0(I)(v), \m{\permap}_0)
+    \label{c-cons:K'-krnl0}
+  \end{equation}
+  By
+  \eqref{c-cons:prob0}, \eqref{c-cons:prob0-bind}, and \eqref{c-cons:K'-krnl0}
+  we get $ \CC{\prob} v.K'(v) $ as desired.
+\end{proof} \begin{lemma}
+\label{proof:c-frame}
+  \Cref{rule:c-frame} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume $a \in \Model_I$ is such that
+  $\raValid(a)$ and that it satisfies
+  $ P * \CC{\prob} v.K(v) $.
+  By definition, this means that
+  there exist some
+  $(\m{\salg}_1, \m{\prob}_1, \m{\permap}_1)$,
+  $(\m{\salg}_2, \m{\prob}_2, \m{\permap}_2)$,
+  and $\m{\krnl}$
+  such that
+  \begin{gather}
+    (\m{\salg}_1, \m{\prob}_1, \m{\permap}_1)
+    \raOp
+    (\m{\salg}_2, \m{\prob}_2, \m{\permap}_2)
+    \raLeq a
+    \\
+    P(\m{\salg}_1, \m{\prob}_1, \m{\permap}_1)
+    \\
+\forall i \in I.
+      \m{\prob}_2(i) = \bind(\prob, \m{\krnl}(i))
+    \\
+    \forall v\in \psupp(\prob) \st
+      K(v)(\m{\salg}_2, \m{\krnl}(I)(v), \m{\permap}_2)
+  \end{gather}
+Now let:
+  \begin{align*}
+    (\m{\salg}',\m{\prob}',\m{\permap}')
+    &=
+    (\m{\salg}_1(i), \m{\prob}_1(i)) \iprod (\m{\salg}_2(i), \m{\prob}_2(i))
+  &
+    \m{\krnl}'(i) &= \fun v. \m{\prob}_1(i) \iprod \m{\krnl}(i)(v)
+  \end{align*}
+  By~\cref{lemma:fibre-prod-exists}, for each~$i\in I$:
+  \begin{align*}
+    (\m{\salg}',\m{\prob}',\m{\permap}')
+    &= (\m{\salg}_1(i), \m{\prob}_1(i)) \iprod (\m{\salg}_2(i), \m{\prob}_2(i))
+    \\
+    &= (\m{\salg}_1(i) \punion \m{\salg}_2(i),
+       \bind(\prob, \fun v. \m{\prob}_1(i) \iprod \m{\krnl}(i)(v)))
+   \tag*{(By \cref{lemma:fibre-prod-exists})}
+    \\
+    &= (\m{\salg}_1(i) \punion \m{\salg}_2(i),
+       \bind(\prob, \m{\krnl}'(i)))
+  \end{align*}
+  Notice that $ \m{\krnl}'(I)(v) = \m{\prob}_1 \iprod \m{\krnl}(I)(v) $.
+  Thus we obtain:
+  \begin{gather}
+    (\m{\salg}',\m{\prob}',\m{\permap}')
+    \raLeq a
+    \\
+\forall i \in I.
+      \m{\prob}'(i) = \bind(\prob, \m{\krnl}'(i))
+    \\
+    \intertext{and for all $v \in \psupp(\prob)$,}
+(\m{\salg}_1, \m{\prob}_1, \m{\permap}_1)
+      \iprod
+    (\m{\salg}_2, \m{\krnl}(I)(v), \m{\permap}_2)
+    =
+    (\m{\salg}', \m{\prob}_1 \iprod \m{\krnl}(I)(v), \m{\permap}')
+    \raLeq
+    (\m{\salg}', \m{\krnl}'(I)(v),\m{\permap}')
+    \\
+    P(\m{\salg}_1, \m{\prob}_1, \m{\permap}_1)
+    \\
+    K(v)(\m{\salg}_2, \m{\krnl}(I)(v), \m{\permap}_2)
+  \end{gather}
+  which gives us that $a$ satisfies
+  $ \CC{\prob} v.(P * K(v)) $ as desired.
+\end{proof} \begin{lemma}
+\label{proof:c-unit-l}
+  \Cref{rule:c-unit-l} is sound.
+\end{lemma}
+
+\begin{proof}
+  Straightforward.
+\end{proof} \begin{lemma}
+\label{proof:c-unit-r}
+  \Cref{rule:c-unit-r} is sound.
+\end{lemma}
+
+\begin{proof}
+  We prove the two directions separately.
+
+  \begin{casesplit}
+  \case*[Forward direction $\distAs{\aexpr\at{i}}{\prob} \proves \CC\prob v.\sure{\aexpr\at{i} = v}$]
+    By unfolding the assumption $\distAs{\aexpr\at{i}}{\prob}$ we get
+    that there exist $\m{\salg},\m{\prob}$ such that:
+    \[
+      \Own{\m{\salg},\m{\prob}}
+      *
+      \pure{
+        \almostM{\aexpr}{(\m{\salg}(i),\m{\prob}(i))}
+      }
+      *
+      \pure{
+        \prob = \m{\prob}(i) \circ \inv{\aexpr}
+      }
+    \]
+    holds.
+    Let
+    \begin{align*}
+      \m{\krnl} &\is
+      \fun j.
+        \begin{cases}
+          \fun v. \m{\prob}(j) \CASE j \ne i
+          \\
+          \fun v. \gamma_v     \CASE j=i
+        \end{cases}
+      &
+      \gamma_v &\is
+        \fun \event \of \m{\salg}(i).
+          \frac{\m{\prob}(i)(\event \inters \inv{(\aexpr=v)})}
+               {\m{\prob}(i)(\inv{(\aexpr=v)})}
+    \end{align*}
+    That is, $\m{\krnl}(j)$ maps every~$v$ to $\m{\prob}(j)$ when $i\ne j$,
+    while when $i=j$ it maps~$v$ to the distribution $\m{\prob}(i)$ conditioned on $\aexpr=v$.
+    Note that $\m{\krnl}$ is well defined because
+    \begin{enumerate*}
+      \item
+        although the events
+        $\event \inters \inv{(\aexpr=v)}$ and
+        $\inv{(\aexpr=v)}$
+        might not belong to $\m{\salg}(i)$,
+        their probability is uniquely determined
+        by almost measurability of $\aexpr$;
+      \item
+        we are only interested in the cases where~$v \in \psupp(\prob)$,
+        which implies that the denominator is not zero:
+        $\m{\prob}(i)(\inv{(\aexpr=v)}) = \prob(v) > 0$.
+    \end{enumerate*}
+    By construction we obtain that
+    \begin{gather}
+      \forall j \in I\st
+        \m{\prob}(j) = \bind(\prob, \m{\krnl}(j))
+      \label{c-unit-r:bind}
+      \\
+      \forall v\in \psupp(\prob)\st
+        \m{\krnl}(i)(v)(\inv{(E=v)}) = 1
+      \label{c-unit-r:prob1}
+    \end{gather}
+    From \eqref{c-unit-r:prob1} we get that
+    $\sure{\aexpr\at{i} = v}$ holds on
+    $(\m{\salg}(i), \m{\krnl}(i)(v), \m{\permap}(i))$,
+    from which it follows that:
+    \[
+      \Own{\m{\salg}, \m{\krnl}(I)(v), \m{\permap}}
+      \wand \sure{\aexpr\at{i} = v}
+    \]
+    Therefore we obtain
+    \begin{align*}
+      & \E \m{\salg},\m{\prob}, \m{\krnl}, \m{\permap}.
+          \Own{\m{\salg},\m{\prob}, \m{\permap}} *
+          \pure{\forall j \in I. \m{\prob}(j) = \bind(\prob, \m{\krnl}(j))} \\
+      & \qquad \qquad  *
+          (
+            \forall v \in A_{\prob}.
+              \Own{\m{\salg}, \m{\krnl}(I)(v), \m{\permap}}
+              \wand \sure{\aexpr\at{i} = v}
+          )
+    \end{align*}
+    which gives us $ \CC\prob v.\sure{\aexpr\at{i} = v} $
+    by \cref{prop:cond-as-wand}.
+
+\case*[Backward direction $\CC\prob v.\sure{\aexpr\at{i} = v} \proves \distAs{\aexpr\at{i}}{\prob}$]
+    First note that
+    \begin{align*}
+      \sure{\aexpr\at{i} = v} &(\m{\salg}, \m{\krnl}(v), \m{\permap})
+      \\
+      &\iff
+        \bigl(\distAs{((\aexpr = v) \in \true)\at{i}}{\delta_{\True}}\bigr)
+          (\m{\salg}, \m{\krnl}(I)(v), \m{\permap})
+      \\
+      &\iff
+        \almostM{((\aexpr = v) \in \true)}{(\m{\salg}(i), \m{\krnl}(i)(v))}
+        \land
+        \delta_{\True} =
+          \m{\krnl}(i)(v) \circ \inv{((\aexpr = v) \in \true)}
+      \\
+      &\iff
+        \almostM{((\aexpr = v) \in \true)}{(\m{\salg}(i), \m{\krnl}(i)(v))}
+        \land
+        \delta_{v} = \m{\krnl}(i)(v) \circ \inv{\aexpr}
+    \end{align*}
+
+for some $\m{\krnl}$.
+    This implies
+    $\pure{\almostM{E}{\m{\salg}(i), \m{\krnl}(i)(v)}}$.
+    Then, for any value $v \in \psupp(\prob)$,
+    \begin{align*}
+      \m{\prob}(i) \circ \inv{\aexpr}(v)
+      &=(\bind(\prob, \m{\krnl}(i) ) \circ \inv{\aexpr})(v)\\
+      &=  \bind(\prob, \m{\krnl}(i) )  (\inv{\aexpr}(v)) \\
+      &=  \sum_{\mathclap{v'\in\psupp(\prob)}}  \prob(v') \cdot \m{\krnl}(i)(v') (\inv{\aexpr}(v)) \\
+      &=  \sum_{\mathclap{v'\in\psupp(\prob)}}  \prob(v') \cdot (\m{\krnl}(i)(v') \circ \inv{\aexpr}) (v) \\
+      &=  \sum_{\mathclap{v'\in\psupp(\prob)}}  \prob(v') \cdot \dirac{v'} (v) \\
+&=  \prob(v)
+    \end{align*}
+    This implies the pure facts that
+    $ \almostM{\aexpr}{(\m{\salg}(i),\m{\prob}(i))}$ and
+    $\prob = \m{\prob}(i) \circ \inv{\aexpr}$.
+    Therefore:
+    \begin{eqexplain}
+      \CC\prob v. \sure{\aexpr\at{i} = v} \notag
+      \whichproves*
+      \E \m{\salg},\m{\prob}, \m{\krnl}, \m{\permap}.
+          \Own{\m{\salg},\m{\prob}, \m{\permap}} *
+          \pure{\forall j \in I. \m{\prob}(j) = \bind(\prob, \m{\krnl}(j))} \notag \\
+          & \qquad \qquad  *
+          (\forall v \in A_{\prob}.
+          \Own{\m{\salg}, \m{\krnl}(I)(v), \m{\permap}}
+          \wand
+          \sure{\aexpr\at{i} = v}
+          )
+      \whichproves
+      \E \m{\salg},\m{\prob}.
+        \Own{\m{\salg},\m{\prob}} *
+          \pure{
+            \almostM{\aexpr}{(\m{\salg}(i),\m{\prob}(i))}}
+            \ast
+          \pure{
+            \prob = \m{\prob}(i) \circ \inv{\aexpr}
+        }
+       \whichproves
+       \distAs{\aexpr\at{i}}{\prob}
+       \qedhere
+    \end{eqexplain}
+  \end{casesplit}
+\end{proof}
+ \begin{lemma}
+\label{proof:c-assoc}
+  \Cref{rule:c-assoc} is sound.
+\end{lemma}
+
+\begin{proof}
+  Define $\krnl' = \fun v . \bind(\krnl(v), \fun w . \return(v, w))$.
+  We start by rewriting the assumption $\CC{\prob} v.\CC{\krnl(v)} w.K(v,w)$ so that $k'$ is used and~$K$ depends only on the binding of the innermost modality:
+  \begin{eqexplain}
+    \CC{\prob} v.\CC{\krnl(v)} w.K(v,w)
+    \whichproves*
+    \CC{\prob} v.\CC{\krnl'(v)} (v',w).K(v,w)
+    \byrules{c-transf,c-cons}
+    \whichproves
+    \CC{\prob} v.\CC{\krnl'(v)} (v',w).K(v',w)
+    \byrules{c-pure,c-cons}
+  \end{eqexplain}
+  \Cref{rule:c-transf} is applied to the innermost modality
+  by using the bijection $f_v(w) = (v,w)$.
+  Then, since $(v',w) \in \psupp(k'(v)) \implies v=v'$,
+  we can replace~$v'$ for~$v$ in~$K$.
+
+  Our goal is now to prove:
+  \[
+    \CC{\prob} v.\CC{\krnl'(v)} (v',w).K(v',w)
+    \proves
+    \CC{\bind(\prob,\krnl')} (v',w).K(v',w)
+  \]
+
+  Let $a\in\Model_I$ be such that $ \raValid(a) $ and that it satisfies
+  $ \CC{\prob} v.\CC{\krnl'(v)} (v',w).K(v',w). $
+  From this assumption we know that,
+  for some $ \m{\salg}_0, \m{\prob}_0,\m{\permap}_0,$ and $ \m{\krnl}_0 $:
+  \begin{gather}
+    (\m{\salg}_0, \m{\prob}_0,\m{\permap}_0) \raLeq a
+    \label{c-assoc:prob0}
+    \\
+    \forall i\in I\st
+      \m{\prob}_0(i) = \bind(\prob, \m{\krnl}_0(i))
+    \label{c-assoc:prob0-bind}
+  \end{gather}
+  such that $\forall v \in \psupp(\prob)$,
+  there are some
+  $ \m{\salg}_1^v, \m{\prob}_1^v,\m{\permap}_1^v,$ and $ \m{\krnl}_1^v $
+  satisfying:
+  \begin{gather}
+    (\m{\salg}_1^v, \m{\prob}_1^v,\m{\permap}_1^v)
+    \raLeq
+    (\m{\salg}_0, \m{\krnl}_0(I)(v),\m{\permap}_0)
+    \label{c-assoc:prob1}
+    \\
+    \forall i\in I\st
+      \m{\prob}_1^v(i) = \bind(\krnl'(v), \m{\krnl}_1^v(i))
+    \label{c-assoc:prob1-bind}
+    \\
+    \forall (v',w) \in \psupp(\krnl'(v)) \st
+      K(v',w)(\m{\salg}_1^v, \m{\krnl}_1^v(I)(v',w), \m{\permap}_1^v)
+    \label{c-assoc:K-krnl1}
+  \end{gather}
+
+  Our goal is to prove
+  $ \CC{\bind(\prob,\krnl')} (v',w).K(v',w) $ holds on $a$.
+  To this end, we want to show that
+  there exists $\m{\krnl}_2'$ such that:
+\begin{gather}
+    \forall i\in I\st
+      \m{\prob}_0(i) = \bind(\bind(\prob,\krnl'), \m{\krnl}_2'(i))
+    \label{c-assoc:goal1}
+    \\
+    \forall (v',w) \in \psupp(\bind(\prob,\krnl')) \st
+      K(v', w)(\m{\salg}_0 , \m{\krnl}_2'(I) (v'), \m{\permap}_0)
+    \label{c-assoc:goal2}
+  \end{gather}
+
+  Now let
+  \[
+    \m{\krnl}_2(i) = \fun (v', w). \m{\krnl}_1^{v'}(i)(v', w).
+  \]
+  which by construction and \cref{c-assoc:prob1-bind} gives us
+  \[
+    \m{\prob}_1^v(i)
+    = \bind(\krnl'(v), \m{\krnl}_1^v(i))
+    = \bind(\krnl'(v), \m{\krnl}_2(i))
+  \]
+  Therefore, by \cref{c-assoc:prob1}, we can apply \cref{lemma:bind-extend}
+  and obtain that there exists a $\m{\krnl}_2'$ such that
+  \begin{gather}
+    \m{\krnl}_0(i)(v) = \bind(\krnl'(v), \m{\krnl}_2'(i))
+    \label{c-assoc:k0-bind2}
+    \\
+    \bigl(\m{\salg}_0, \m{\krnl}_2'(i)(v',w)\bigr)
+    \extOf
+    \bigl(\m{\salg}_1^{v'}, \m{\krnl}_2(i)(v',w)\bigr)
+    =
+    \bigl(\m{\salg}_1^{v'},\m{\krnl}_1^{v'}(i)(v',w)\bigr)
+    \label{c-assoc:kgeq}
+  \end{gather}
+  By \cref{c-assoc:prob0-bind,c-assoc:k0-bind2}
+  we have:
+  \begin{align*}
+    \m{\prob}_0(i)
+    &= \bind(\prob, \m{\krnl}_0(i)) \\
+    &= \bind(\prob, \fun v.\bind(\krnl'(v), \m{\krnl}_2'(i)))
+      &\text{By \eqref{prop:bind-assoc}}\\
+    &= \bind(\bind(\prob, \krnl'), \m{\krnl}_2'(i))
+  \end{align*}
+  which proves \cref{c-assoc:goal1}.
+
+  Finally, to prove \cref{c-assoc:goal2}, we can observe that
+  $(v',w) \in \psupp(\bind(\prob,\krnl'))$ implies $v'\in \psupp(\prob)$;
+  therefore, by \eqref{c-assoc:K-krnl1}, upward closure of $K(v',w)$, and
+  \eqref{c-assoc:kgeq} and \eqref{c-assoc:prob1},
+  we can conclude~$K(v',w)$ holds on
+  $(\m{\salg}_0 , \m{\krnl}_2'(I) (v'), \m{\permap}_0)$,
+  as desired.
+\end{proof} \begin{lemma}
+\label{proof:c-unassoc}
+  \Cref{rule:c-unassoc} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume $a \in \Model_I$ is such that
+  $\raValid(a)$ and that it satisfies
+  $ \CC{\bind(\prob,\krnl)} w.K(w) $.
+  By definition, this means that,
+  for some $ \m{\salg}_0, \m{\prob}_0,\m{\permap}_0,$ and $ \m{\krnl}_0 $:
+  \begin{gather}
+    (\m{\salg}_0, \m{\prob}_0,\m{\permap}_0) \raLeq a
+    \label{c-unassoc:prob0}
+    \\
+    \forall i\in I\st
+      \m{\prob}_0(i) = \bind(\bind(\prob, \krnl), \m{\krnl}_0(i))
+    \label{c-unassoc:prob0-bind}
+    \\
+    \forall w \in \psupp(\bind(\prob, \krnl)) \st
+      K(w)(\m{\salg}_0, \m{\krnl}_0(I)(w), \m{\permap}_0)
+    \label{c-unassoc:K-krnl0}
+  \end{gather}
+  Our goal is to show that~$a$ satisfies
+  $\CC\prob v. \CC{\krnl(v)} w.K(w)$,
+  for which it would suffice to show that there is a $\m{\krnl}_1$
+  such that:
+  \begin{gather}
+    \forall i\in I\st
+      \m{\prob}_0(i) = \bind(\prob, \m{\krnl}_1(i))
+    \label{c-unassoc:prob0-bind1}
+    \\
+    \intertext{
+      and for all $v \in \psupp(\prob)$
+      there is a $\m{\krnl}_2^v$ with
+    }
+    \forall i\in I\st
+      \m{\krnl}_1(i)(v) = \bind(\krnl(v), \m{\krnl}_2^v(i))
+    \label{c-unassoc:krnl1-bind}
+    \\
+    \forall w \in \psupp(\krnl(v)) \st
+      K(w)(\m{\salg}_0, \m{\krnl}_2^v(I)(w), \m{\permap}_0)
+    \label{c-unassoc:K-krnl1}
+  \end{gather}
+
+  To prove this we let
+  \begin{align*}
+    \m{\krnl}_1(i) &= \fun v.\bind(\krnl(v), \m{\krnl}_0(i))
+    &
+    \m{\krnl}_2^v(i) &= \m{\krnl}_0(i)
+  \end{align*}
+
+  By \eqref{prop:bind-assoc} we have
+  \[
+    \m{\prob}_0(i)
+    = \bind(\bind(\prob, \krnl), \m{\krnl}_0(i))
+    = \bind(\prob, \fun v.\bind(\krnl(v), \m{\krnl}_0(i)))
+    = \bind(\prob, \m{\krnl}_1(i))
+  \]
+  which proves \eqref{c-unassoc:prob0-bind1}.
+  By construction,
+  \[
+    \m{\krnl}_1(i)(v)
+    = \bind(\krnl(v), \m{\krnl}_0(i))
+    = \bind(\krnl(v), \m{\krnl}_2^v(i))
+  \]
+  proving \eqref{c-unassoc:krnl1-bind}.
+  Finally,
+  $v \in \psupp(\prob)$ and $w \in \psupp(\krnl(v))$
+  imply $w \in \psupp(\bind(\prob, \krnl))$,
+  so by \eqref{c-unassoc:K-krnl0} we proved
+  \eqref{c-unassoc:K-krnl1}, concluding the proof.
+\end{proof}
+ \begin{lemma}
+\label{proof:c-and}
+  \Cref{rule:c-and} is sound.
+\end{lemma}
+
+\begin{proof}
+  Let~$I_1 = \idx(K_1)$ and $I_2 = I \setminus I_1$;
+  by $\idx(K_1) \inters \idx(K_2) = \emptyset$
+  we have $I_2 \sups \idx(K_2)$.
+  Assume $a\in \Model_I$ is such that~$\raValid(a)$ holds and
+  that it satisfies $
+    \CC{\prob} v. K_1(v)
+      \land
+    \CC{\prob} v. K_2(v)
+  $.
+  This means that
+  for each $j \in \set{1,2}$,
+  for some $ \m{\salg}_j, \m{\prob}_j,\m{\permap}_j,$ and $ \m{\krnl}_j $:
+  \begin{gather}
+    (\m{\salg}_j, \m{\prob}_j,\m{\permap}_j) \raLeq a
+    \label{c-and:prob}
+    \\
+    \forall i\in I\st
+      \m{\prob}_j(i) = \bind(\prob, \m{\krnl}_j(i))
+    \label{c-and:prob-bind}
+    \\
+    \forall v \in \psupp(\prob) \st
+      K_j(v)(\m{\salg}_j, \m{\krnl}_j(I)(v), \m{\permap}_j)
+    \label{c-and:K-krnl}
+  \end{gather}
+  Now let
+  \begin{align*}
+    \hat{\m{\salg}} &=
+    \begin{cases}
+      \m{\salg}_1(i) \CASE i \in I_1 \\
+      \m{\salg}_2(i) \CASE i \in I_2
+    \end{cases}
+    &
+    \hat{\m{\prob}} &=
+    \begin{cases}
+      \m{\prob}_1(i) \CASE i \in I_1 \\
+      \m{\prob}_2(i) \CASE i \in I_2
+    \end{cases}
+    &
+    \hat{\m{\permap}} &=
+    \begin{cases}
+      \m{\permap}_1(i) \CASE i \in I_1 \\
+      \m{\permap}_2(i) \CASE i \in I_2
+    \end{cases}
+    &
+    \hat{\m{\krnl}}(i) &=
+    \begin{cases}
+      \m{\krnl}_1(i) \CASE i \in I_1 \\
+      \m{\krnl}_2(i) \CASE i \in I_2
+    \end{cases}
+  \end{align*}
+  By construction, we have:
+  \begin{gather*}
+    (\hat{\m{\salg}}, \hat{\m{\prob}},\hat{\m{\permap}}) \raLeq a
+    \\
+    \forall i\in I\st
+      \hat{\m{\prob}}(i) = \bind(\prob, \hat{\m{\krnl}}(i))
+  \end{gather*}
+  Moreover, for any~$v \in \psupp(\prob)$ and any $j \in \set{1,2}$,
+  since $I_j \sups \idx(K_j)$, condition \eqref{c-and:K-krnl} implies
+  \[
+    K_j(v)(\hat{\m{\salg}}, \hat{\m{\krnl}}(I)(v), \hat{\m{\permap}})
+  \]
+  This means
+  $(\hat{\m{\salg}}, \hat{\m{\krnl}}(I)(v), \hat{\m{\permap}})$
+  satisfies
+  $(K_1(v) \land K_2(v))$,
+  and thus~$a$ satisfies
+  $ \CC\prob v. (K_1(v) \land K_2(v)) $,
+  as desired.
+\end{proof} \begin{lemma}
+\label{proof:c-skolem}
+  \Cref{rule:c-skolem} is sound.
+\end{lemma}
+
+\begin{proof}
+  For any resource $r = (\m{\sigmaF}, \m{\mu}, \m{\permap})$,
+  \begin{align*}
+    &
+    \left(\CC\prob v. \E x \of \Var. Q(v, x) \right) (\m{\sigmaF}, \m{\mu}, \m{\permap}) \\
+    {}\iff {} &
+    \exists \m{\krnl} \st
+             \forall i \in I.
+             \m{\mu}(i) = \bind(\prob, \m{\krnl}(i))
+    {}\land{}
+    \forall v\in  \psupp(\prob) \st
+     (\E x \of X. Q(v, x))(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})
+  \end{align*}
+
+   For all $v\in \psupp(\prob)$,
+   $\E x \of X. Q(v, x)$ holds on $(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})$.
+   Thus,
+   $Q(v, x_v)(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})$
+   holds for some $x_v$.
+   Then define $f: A \to \Var$ by letting $f(v) = x_v$ for $v \in \psupp(\mu)$.
+   Then,
+   \begin{align*}
+   \exists \m{\krnl} \st
+             \forall i \in I.
+             \m{\mu}(i) = \bind(\prob, \m{\krnl}(i))
+               {}\land{}
+              \forall v\in  \psupp(\prob) \st
+      Q(v, f(v))(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})
+  \end{align*}
+  And therefore $\m{\sigmaF}, \m{\mu}, \m{\permap}$
+  satisfies ${\E f \of A \to \Var. \CC\prob v. Q(v, x)}$.
+\end{proof} \begin{lemma}
+\label{proof:c-transf}
+  \Cref{rule:c-transf} is sound.
+\end{lemma}
+
+\begin{proof}
+  For any resource $a = (\m{\sigmaF}, \m{\mu}, \m{\permap})$,
+  if $ \model{\CC\prob v.K(v)}{(\m{\sigmaF}, \m{\mu}, \m{\permap})}$,
+  then
+  \begin{align*}
+    \begin{array}[t]{@{}r@{\,}l@{}}
+      \E \m{\krnl}.
+      & (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raLeq a
+      \land
+        \forall i\in I\st
+        \m{\mu}(i) = \bind(\prob, \m{\krnl}(i))
+      \\ & \land \;
+        \forall v \in \psupp(\prob).
+          \model{K(v)}{ (\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap}) }
+    \end{array}
+  \end{align*}
+
+  $\m{\mu} = \bind(\prob, \m{\krnl})$  says that for any
+  $E \in \m{\sigmaF}$,
+  \begin{align}
+    \m{\mu}(E)
+    &= \sum_{\mathclap{v \in \psupp(\mu)}} \prob(v) \cdot \m{\krnl}(I)(v)(E) \notag \\
+    &= \sum_{\mathclap{v \mid f(v) \in \psupp(\mu)}} \prob(f(v)) \cdot \m{\krnl}(I)(f(v))(E) \tag{Because $f$ is bijective}\\
+    &= \sum_{\mathclap{v \in \psupp(\mu')}} \mu'(v) \cdot \m{\krnl}(I)(f(v))(E) \tag{Because $\mu'(v) = \mu(f(v))$} \\
+    &= \bind(\prob', \fun v . \m{\krnl}(I)(f(v)))(E) \notag
+  \end{align}
+  Thus, $\m{\mu} = \bind(\prob', \fun v . \m{\krnl}(I)(f(v)))$.
+  Furthermore, $\model{K(f(v))}{ (\m{\sigmaF}, \m{\krnl}(I)(f(v)), \m{\permap}) }$.
+
+  Thus, if we denote $\fun v . \m{\krnl}(I)(f(v))$ as $\m{\krnl'}$, it satisfies
+  \begin{align*}
+    \begin{array}[t]{@{}r@{\,}l@{}}
+      & (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raLeq a
+      \land
+        \forall i\in I\st
+        \m{\mu}(i) = \bind(\prob', \m{\krnl'}(i))
+      \\ & \land \;
+        \forall v \in \psupp(\prob).
+          \model{K(v)}{ (\m{\sigmaF}, \m{\krnl'}(I)(v), \m{\permap})}
+    \end{array}
+  \end{align*}
+  Thus, $ \model{\CC\prob' v.K(f(v))}{(\m{\sigmaF}, \m{\mu}, \m{\permap})}$.
+\end{proof}
+ \begin{lemma}
+\label{proof:sure-str-convex}
+  \Cref{rule:sure-str-convex} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume $a \in \Model_I$ is a valid resource that
+  satisfies $\CMod{\prob} v. (K(v) \ast  \sure{\aexpr\at{i}})$.
+  Then, by definition, we know that,
+  for some $ (\m{\salg}_0, \m{\prob}_0, \m{\permap}_0) $ and $\m{\krnl}_0$:
+  \begin{gather}
+    (\m{\salg}_0, \m{\prob}_0, \m{\permap}_0) \raLeq a
+    \label{sure-str-convex:a}
+    \\
+    \forall i\in I\st
+       \m{\prob}_0(i) = \bind(\prob, \m{\krnl}_0(i))
+    \label{sure-str-convex:bind-a}
+    \\
+    \intertext{and, for all $v \in \psupp(\prob)$, there are
+      $(\m{\salg}^v_1, \m{\prob}^v_1, \m{\permap}^v_1)$,
+      $(\m{\salg}^v_2, \m{\prob}^v_2, \m{\permap}^v_2)$
+      such that}
+(\m{\salg}^v_1, \m{\prob}^v_1, \m{\permap}^v_1)
+    \raOp
+    (\m{\salg}^v_2, \m{\prob}^v_2, \m{\permap}^v_2)
+    \raLeq
+      (\m{\salg}_0, \m{\krnl}_0(I)(v), \m{\permap}_0)
+    \label{sure-str-convex:star}
+    \\
+    K(v)(\m{\salg}^v_1, \m{\prob}^v_1, \m{\permap}^v_1)
+    \label{sure-str-convex:K}
+    \\
+    \sure{\aexpr\at{i}}(\m{\salg}^v_2, \m{\prob}^v_2, \m{\permap}^v_2)
+    \label{sure-str-convex:sure}
+  \end{gather}
+  From \eqref{sure-str-convex:sure} we know that for all~$v \in \psupp(\prob)$
+  there are $L^v_1,L^v_0,U^v_1,U^v_0 \in \m{\salg}^v_2(i)$ such that:
+  \begin{align*}
+    L^v_0 &\subs \inv{\aexpr}(\False) \subs U^v_0
+    &
+    \m{\prob}^v_2(L^v_0) &= \m{\prob}^v_2(U^v_0) = 0
+    \\
+    L^v_1 &\subs \inv{\aexpr}(\True) \subs U^v_1
+    &
+    \m{\prob}^v_2(L^v_1) &= \m{\prob}^v_2(U^v_1) = 1
+  \end{align*}
+  Without loss of generality, all $L^v_0, L^v_1, U^v_0, U^v_1$ can be assumed
+  to be only non-trivial on $\pvar(\aexpr)$.
+  Consequently, we can also assume that
+  $\m{\permap}^v_2(\ip{x}{j})<1$ for every $\ip{x}{j}$,
+and in addition
+  $\m{\permap}^v_2(\ip{x}{j})>0$
+  if and only if $\p{x}\in \pvar{\aexpr}$ and $j=i$.
+  From these components we can construct a new resource:
+  \begin{align*}
+    \m{\salg}_3(j) &\is
+      \begin{cases}
+        \sigcl*{\set*{
+          \Inters_{v \in \psupp(\prob)} L^v_1,
+          \Union_{v \in \psupp(\prob)} U^v_1
+        }}
+        \CASE j  =  i \\
+        \set{\Store, \emptyset}
+        \CASE j \ne i
+      \end{cases}
+    \\
+    \m{\prob}_3 &\is \restr{\m{\prob}_0}{\m{\salg}_3}
+    \\
+    \m{\permap}_3 &\is
+      \fun \ip{x}{j}.
+      \begin{cases}
+        \min
+          \set{\m{\permap}^v_2(\ip{x}{i}) | v \in \psupp(\prob)}
+        \CASE j=i \land \p{x} \in \pvar(\aexpr) \\
+        0 \OTHERWISE
+      \end{cases}
+  \end{align*}
+  By construction we obtain that
+  $ \forall j\in I\st \m{\salg}_3(j) \subs \m{\salg}_0(j) $,
+and that
+  $\raValid(\m{\salg}_3, \m{\prob}_3, \m{\permap}_3)$.
+Now letting
+  $
+   \m{\permap}_1' = {\m{\permap}_0-\m{\permap}_3}
+  $,
+  we obtain a valid resource
+  $(\m{\salg}_0, \m{\prob}_0, \m{\permap}_1')$.
+
+
+  Moreover,
+  we have
+  $
+    \m{\salg}_0 = \m{\salg}_0 \punion \m{\salg}_3
+  $
+  and
+  $
+    \forall j\in I\st
+    \forall\event\in\m{\salg}_3(j)\st
+      \m{\prob}_3(\event)\in\set{0,1}
+  $,
+  which means that
+  for any $X \in \m{\salg}_3$ and $Y \in \m{\salg}_0$,
+  $\m{\prob}_3(X) \cdot \m{\prob}_0(Y) = \m{\prob}_0(X \cap Y)$.
+  Then, by \eqref{sure-str-convex:bind-a}:
+  \[
+    (\m{\salg}_0, \bind(\prob, \m{\krnl}_0), \m{\permap}_1')
+    \iprod
+    (\m{\salg}_3, \m{\prob}_3, \m{\permap}_3)
+    \raLeq
+    (\m{\salg}_0, \m{\prob}_0, \m{\permap}_0) = a
+  \]
+  To close the proof it would then suffice to show that
+  $ \CMod{\prob} v. K(v) $
+  holds on
+  $(\m{\salg}_0, \bind(\prob, \m{\krnl}_0), \m{\permap}_1')$
+  and that
+  $ \sure{\aexpr\at{i}} $
+  holds on
+  $ (\m{\salg}_3(j),\m{\prob}_3,\m{\permap}_3) $.
+  The latter is obvious.
+  The former follows from
+  the fact that $ \restr{\m{\krnl}_0(j)(v)}{\m{\salg}^v_1} = \m{\prob}^v_1(j) $;
+  by upward-closure and \eqref{sure-str-convex:K}
+  this means that, for all $v \in \psupp(\prob)$:
+  \[
+    K(v)(\m{\salg}^v_1, \m{\prob}^v_1, \m{\permap}^v_1)
+    \implies
+    K(v)(\m{\salg}_0, \m{\krnl}_0(I)(v), \m{\permap}_1')
+  \]
+  which proves our claim.
+\end{proof}
+ \begin{lemma}
+\label{proof:c-for-all}
+  \Cref{rule:c-for-all} is sound.
+\end{lemma}
+
+\begin{proof}
+  By unfolding the definitions,
+\begin{align*}
+      &\CMod\prob \m{v}. \forall x: X. Q(\m{v}) \\
+    \iff &
+    \begin{array}[t]{r@{\,}l}
+    \E \m{\sigmaF}, \m{\mu}_0, \m{\krnl}.
+      &\Own{(\m{\sigmaF}, \m{\mu}_0)} *
+      \pure{
+        \forall i\in I\st
+          \m{\mu}_0(i) = \bind(\prob, \m{\krnl}(i))
+      }\\ & * \; (
+        \forall a \in A_{\prob}.
+\Own{(\m{\sigmaF}, \m[i: \m{\krnl}(i)(a) | i \in I])} \wand \forall x: X. Q(\m{v})
+          )
+    \end{array}
+    \\
+    \implies &
+    \begin{array}[t]{r@{\,}l}
+    \forall x: X.
+    \E \m{\sigmaF}, \m{\mu}_0, \m{\krnl}.
+      &\Own{(\m{\sigmaF}, \m{\mu}_0)} *
+      \pure{
+        \forall i\in I\st
+          \m{\mu}_0(i) = \bind(\prob, \m{\krnl}(i))
+      }\\ & * \; (
+        \forall a \in A_{\prob}.
+\Own{(\m{\sigmaF}, \m[i: \m{\krnl}(i)(a) | i \in I])} \wand Q(\m{v})
+          )
+    \end{array}\\
+    \iff & \forall x: X. \CMod\prob \m{v}. Q(\m{v})
+  \end{align*}
+\end{proof} \begin{lemma}
+\label{proof:c-pure}
+  \Cref{rule:c-pure} is sound.
+\end{lemma}
+
+\begin{proof}
+  We first prove the forward direction:
+  For any $a \in \Model_I$,
+  if $\model{\pure{\mu(X) = 1} \ast \CMod{\mu}. K(v)}{(a)}$,
+  then there exists some
+  $\m{\salg}_0, \m{\prob}_0,\m{\permap}_0,$ and $ \m{\krnl}_0 $:
+  \begin{gather*}
+    (\m{\salg}_0, \m{\prob}_0,\m{\permap}_0) \raLeq a
+    \\
+    \forall i\in I\st
+      \m{\prob}_0(i) = \bind(\prob, \m{\krnl}_0(i)) \\
+      \forall v \in \psupp(\prob) \st
+      \model{K(v)}{(\m{\salg}_0, \m{\krnl}_0(I)(v), \m{\permap}_0)}
+  \end{gather*}
+
+   The pure fact $\pure{\mu(X) = 1}$ implies that
+   $X \supseteq \psupp(\mu)$ , and thus
+   for every $v \in \psupp(\mu)$, $\pure{v \in X}$.
+   Therefore, $\model{K(v)}{(\m{\salg}_0, \m{\krnl}_0(I)(v), \m{\permap}_0)}$,
+   which witnesses that
+   $\model{\CMod{\mu}. \pure{v \in X} \ast K(v)}{(a)}$.
+
+  We then prove the backward direction:
+  if $\CMod{\mu}. \pure{v \in X} \ast K(v) $,
+  then there exists
+    $\m{\salg}_0, \m{\prob}_0,\m{\permap}_0,$ and~$ \m{\krnl}_0 $:
+  \begin{gather*}
+    (\m{\salg}_0, \m{\prob}_0,\m{\permap}_0) \raLeq a
+    \\
+    \forall i\in I\st
+      \m{\prob}_0(i) = \bind(\prob, \m{\krnl}_0(i)) \\
+      \forall v \in \psupp(\prob) \st
+      \model{\pure{v \in X} \ast K(v)}{(\m{\salg}_0, \m{\krnl}_0(I)(v), \m{\permap}_0)}
+  \end{gather*}
+  Then it must $X \supseteq \psupp(\mu)$,
+  which implies that $\pure{\mu(X) = 1}$.
+  Meanwhile, $\pure{v \in X} \ast K(v)$ holding on ${(\m{\salg}_0, \m{\krnl}_0(I)(v), \m{\permap}_0)}$
+  implies that $K(v)$ holds on
+  ${(\m{\salg}_0, \m{\krnl}_0(I)(v), \m{\permap}_0)}$
+  Therefore, $\pure{\mu(X) = 1} \ast \CMod{\mu}. K(v)$ holds on $a$.
+\end{proof}
+ 
+
+\subsection{Soundness of Primitive WP Rules}
+\label{sec:appendix:wp-rules}
+
+
+\subsubsection{Structural Rules}
+\begin{lemma}
+\label{proof:wp-cons}
+  \Cref{rule:wp-cons} is sound.
+\end{lemma}
+
+\begin{proof}
+  For any resource $a$,
+  if $(\WP {\m{t}} {Q})(a)$, then
+  \[
+    \forall \m{\prob}_0 \st
+    \forall c \st
+    (a \raOp c) \raLeq \m{\prob}_0
+    \implies
+    \exists b \st
+    \bigl(
+      (b \raOp c) \raLeq \sem{\m{t}}(\m{\prob}_0)
+      \land
+      \model{Q}{(b)}
+    \bigr)
+  \]
+  From the premise $Q \proves Q'$, and the fact that $b$ must be valid for $ (b \raOp c) \raLeq \sem{\m{t}}(\m{\prob}_0) $ to hold, we have that $Q(b)$ implies $Q'(b)$.
+  Thus, it must
+  \[
+    \forall \m{\prob}_0 \st
+    \forall c \st
+    (a \raOp c) \raLeq \m{\prob}_0
+    \implies
+    \exists b \st
+    \bigl(
+      (b \raOp c) \raLeq \sem{\m{t}}(\m{\prob}_0)
+      \land
+      Q'(b)
+    \bigr),
+  \]
+  which says $(\WP {\m{t}} {Q'})(a)$.
+\end{proof} \begin{lemma}
+\label{proof:wp-frame}
+  \Cref{rule:wp-frame} is sound.
+\end{lemma}
+
+\begin{proof}
+  Let $a\in\Model_I$ be a valid resource such that
+  it satisfies $P \ast \WP {\m{t}} {Q}$.
+  By definition, this means that, for some $a_1,a_2$:
+  \begin{gather}
+    a_1 \raOp a_2 \raLeq a
+    \\
+    P(a_1)
+    \label{wp-frame:pa1}
+    \\
+    \forall \m{\prob}_0, c \st
+      (a_2 \raOp c) \raLeq \m{\prob}_0
+      \implies
+        \exists b \st
+        \bigl(
+          (b \raOp c) \raLeq \sem{\m{t}}(\m{\prob}_0)
+          \land
+          Q(b)
+        \bigr)
+    \label{wp-frame:assumed-wp}
+  \end{gather}
+  Our goal is to prove $a$ satisfies
+  $\WP {\m{t}} {P * Q}$, which,
+  by unfolding the definitions, amounts to:
+  \begin{equation}
+    \exists a' \raLeq a \st
+    \forall \m{\prob}_0, c' \st
+      (a' \raOp c') \raLeq \m{\prob}_0
+      \implies
+      \exists b_1,b \st
+        ((b_1 \raOp b) \raOp c') \raLeq \sem{\m{t}}(\m{\prob}_0)
+        \land
+        P(b_1) \land Q(b)
+    \label{wp-frame:goal}
+  \end{equation}
+
+  Our goal can be proven by instantiating
+  $a' = (a_1 \raOp a_2)$ and $b_1 = a_1$,
+  from which we reduce the goal
+  to proving, for all $\m{\prob}_0, c'$:
+  \begin{equation}
+      ((a_1 \raOp a_2) \raOp c') \raLeq \m{\prob}_0
+      \implies
+      \exists b \st
+        ((a_1 \raOp b) \raOp c') \raLeq \sem{\m{t}}(\m{\prob}_0)
+        \land
+        P(a_1) \land Q(b)
+  \end{equation}
+  We have that $P(a_1)$ holds by \eqref{wp-frame:pa1}.
+  By associativity and commutativity of the RA operation,
+  we reduce the goal to:
+  \begin{equation}
+      (a_2 \raOp (a_1 \raOp c')) \raLeq \m{\prob}_0
+      \implies
+      \exists b \st
+        (b \raOp (a_1 \raOp c')) \raLeq \sem{\m{t}}(\m{\prob}_0)
+        \land
+        Q(b)
+  \end{equation}
+  This follows by applying assumption~\eqref{wp-frame:assumed-wp}
+  with $c = (a_1 \raOp c')$.
+\end{proof}
+ \begin{lemma}
+\label{proof:wp-nest}
+  \Cref{rule:wp-nest} is sound.
+\end{lemma}
+
+\begin{proof}
+  Because $\m{t_1 \m. t_2}$ is defined,
+  it must $\supp{\m{t_1}} \cap \supp{\m{t_2}} = \emptyset$.
+  By definition
+because $\supp{\m{t_1}} \cap \supp{\m{t_2}} = \emptyset$,
+  we have
+$
+    \sem{(\m{t_1 \m. t_2)}}(\m{\prob})
+    = \sem{\m{t_2}} (\sem{\m{t_1}} (\m{\prob}))
+  $.
+
+
+  \begin{itemize}
+    \item For the $\vdash$ case:
+Assume $a$ is a valid resource such that
+  $(\WP {\m{t_1}} {\WP {\m{t_2}} {Q}})(a)$ holds.
+  Our goal is to prove $(\WP {\m{t_1 \m. t_2}} {Q})(a_0)$ holds,
+  which unfolds by definition of WP into:
+  \begin{equation}
+    \forall \m{\prob}_0\st
+    \forall c_0 \st
+    (a_0 \raOp c_0) \raLeq \m{\prob}_0
+    \implies
+      \exists a_2 \st
+      \bigl(
+        (a_2 \raOp c_0) \raLeq \sem{\m{t_1 \m. t_2}}(\m{\prob}_0)
+      \land Q(a_2)
+      \bigr)
+    \label{wp-nest:goal}
+  \end{equation}
+
+  Take an arbitrary $\m{\prob}_0$ and $c_0$ such that
+  $ (a_0 \raOp c_0) \raLeq \m{\prob}_0 $.
+  By unfolding the WPs in the assumption,
+  we have that there exists a
+  $a_1 \in \Model_I$ such that:
+  \begin{gather}
+    (a_1 \raOp c_0) \raLeq \sem{\m{t_1}}(\m{\prob}_0)
+    \label{wp-nest:a1}
+    \\
+    \forall \m{\prob}_1\st
+    \forall c_1 \st
+      (a_1 \raOp c_1) \raLeq \m{\prob}_1
+      \implies
+      \exists a_2 \st
+      (a_2 \raOp c_1) \raLeq \sem{\m{t_2}}(\m{\prob}_1)
+      \land  Q(a_2)
+    \label{wp-nest:a2}
+  \end{gather}
+  We can apply \eqref{wp-nest:a2} to \eqref{wp-nest:a1}
+  by instantiating $\m{\prob}_1$ with $\sem{\m{t_1}}(\m{\prob}_0)$,
+  and $c_1$ with $c_0$,
+  obtaining:
+  \[
+    \exists a_2 \st
+    ((a_2 \raOp c_0) \raLeq \sem{\m{t_1}}(\sem{\m{t_2}}(\m{\prob}_0))
+    \land  Q(a_2))
+  \]
+  When $\m{t_1 \m. t_2}$ is defined,
+  the terms $\m{t_1}$ and $\m{t_2}$ are on disjoint indices,
+  and thus
+  $ \sem{ \m{t_1} \m. \m{t_2}}(\prob_0) = \sem{\m{t_1}}(\sem{\m{t_2}}(\prob_0)) $,
+  we obtain the goal \eqref{wp-nest:goal} as desired.
+
+    \item For the $\dashv$ case:
+      For any resource $a$,
+      \begin{align}
+      &
+      \WP {(\m{t_1} \m. \m{t_2})} {Q} (a) \notag \\
+      {}\iff{} &
+        \forall \m{\prob}_0 \st
+        \forall c \st
+        (a \raOp c) \raLeq \m{\prob}_0
+        \implies
+        \exists b \st
+        \bigl(
+          (b \raOp c) \raLeq \sem{\m{t_1} \m. \m{t_2}}(\m{\prob}_0)
+          \land
+          \model{Q}{(b)}
+       \bigr)
+       \label{helper:wp-nest:1}
+      \end{align}
+
+      Since $(b \raOp c) \raLeq \sem{\m{t_1} \m. \m{t_2}}(\m{\prob}_0)
+      $, we have $\raValid(b \raOp c)$ and thus $\raValid(b)$. Say
+      \begin{align*}
+        b &= \m[i: \m{\sigmaF_b}(i), \m{\mu_b}(i), \m{\permap_b}(i)] \\
+        c &= \m[i: \m{\sigmaF_c}(i), \m{\mu_c}(i), \m{\permap_c}(i)]
+\end{align*}
+      Let
+      \begin{align*}
+        b' &=
+        \begin{cases}
+          i:  (\m{\sigmaF_b}(i), \m{\mu_b}(i), \m{\permap_b}(i)) \CASE \text{ if $i \in \supp{\m{t_1}}$} \\
+          i : (\m{\sigmaF}(i), \m{\mu}(i), \m{\permap}(i)) \CASE \text{ if $i \notin \supp{\m{t_1}}$ }
+        \end{cases}
+      \end{align*}
+      Since $\raValid(b \raOp c)$ and  $\raValid(a \raOp c)$,
+      on each index $i \in I$, we have $\raValid(b'(i) \raOp c(i))$  .
+      Thus, $\raValid(b' \raOp c)$.
+      Also, for each $i \in I$,
+      $(b'(i) \raOp c(i)) \raLeq \sem{\m{t_1}(i)}(\m{\prob}_0(i))$,
+      which implies that
+      \[
+          (b' \raOp c) \raLeq \sem{\m{t_1}}(\m{\prob}_0)
+      \]
+      We want to show next that
+      $\model{\WP {\m{t_2}} {Q}}{b'}$.
+      For any $c' = \m[i: \m{\sigmaF'_c}(i), \m{\mu'_c}(i), \m{\permap'_c}(i)]$
+      such that $\raValid(b' \raOp c')$,
+      it must
+      \begin{align*}
+        &\raValid((\m{\sigmaF_b}(i), \m{\mu_b}(i), \m{\permap_b}(i)) \raOp (\m{\sigmaF'_c}(i), \m{\mu'_c}(i), \m{\permap'_c}(i)))  &\text{if } i \in \supp{\m{t_1}} \\
+        &\raValid((\m{\sigmaF}(i), \m{\mu}(i), \m{\permap}(i)) \raOp (\m{\sigmaF'_c}(i), \m{\mu'_c}(i), \m{\permap'_c}(i)))  &\text{if } i  \in \supp{\m{t_2}}
+      \end{align*}
+      By~\cref{helper:wp-nest:1},
+      $\raValid((\m{\sigmaF}(i), \m{\mu}(i), \m{\permap}(i)) \raOp (\m{\sigmaF'_c}(i), \m{\mu'_c}(i), \m{\permap'_c}(i)))$
+      also implies
+      \[
+        \raValid((\m{\sigmaF_b}(i), \m{\mu_b}(i), \m{\permap_b}(i)) \raOp (\m{\sigmaF'_c}(i), \m{\mu'_c}(i), \m{\permap'_c}(i))).
+      \]
+      Thus,
+      $(b \raOp c) \raLeq \sem{\m{t_1} \m. \m{t_2}}(\m{\prob}_0)
+          \land
+          Q(b)$
+          witnesses that
+           $\WP {\m{t_2}} {Q}(b')$.
+  \end{itemize}
+\end{proof}
+ \begin{lemma}
+\label{proof:wp-conj}
+  \Cref{rule:wp-conj} is sound.
+\end{lemma}
+
+\begin{proof}
+     For any resource $a$,
+      \begin{align*}
+        & \bigl(\WP {\m{t_1}} {Q_1} \land   \WP {\m{t_2}} {Q_2}\bigr)(a)
+        \\
+        \iff &
+        \forall \m{\prob}_0 \st
+        \forall c \st
+        (a \raOp c) \raLeq \m{\prob}_0
+        \implies \\
+             & \exists b \st
+        \bigl(
+          (b \raOp c) \raLeq \sem{\m{t_1}}(\m{\prob}_0)
+          \land
+          Q(b)
+       \bigr) \land
+         \exists b' \st
+        \bigl(
+          (b' \raOp c) \raLeq \sem{\m{t_2}}(\m{\prob}_0)
+          \land
+          Q(b')
+       \bigr)
+      \end{align*}
+
+      Define $b''$ such that
+      \begin{align*}
+        b''(i) & =
+        \begin{cases}
+          b(i) \CASE i \in \idx(Q_1) \\
+          b'(i) \OTHERWISE
+        \end{cases}
+      \end{align*}
+
+      For any $c$, $\raValid(a \raOp c)$ implies
+       $\raValid(b'' \raOp c)$ because
+       $\raValid(b'(i) \raOp c(i))$ and
+       $\raValid(b(i) \raOp c(i))$ for all $i$.
+       Furthermore,
+       $b''(i) = b(i)$ for $i \in \idx(Q_1)$ implies
+       that $Q_1(b'')$.
+       Also,
+       $\idx(Q_2) \inters \supp{\m{t}_1} \subs \supp{\m{t}_2}$
+       implies
+       that $Q_2(b'')$.
+       Therefore, $(Q_1 \land Q_2)(b'')$, witnessing
+       $\model{\WP {\m{t_1} + \m{t_2}} {Q_1 \land Q_2}}{(a)} $.
+\end{proof} \begin{lemma}
+\label{proof:c-wp-swap}
+  \Cref{rule:c-wp-swap} is sound.
+\end{lemma}
+
+\begin{proof}
+    By the meaning of conditioning modality and weakest precondition transformer,
+    \begin{align*}
+    &(\ownall \land \CMod\prob v. \WP {\m{t}} {Q(v)})(a) \\
+    {}\iff{}
+    &\ownall(a) \land
+    \begin{array}[t]{@{}r@{\,}l@{}}
+    \E \m{\sigmaF}, \m{\mu}, \m{\permap}, \m{\krnl}.
+      & (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raLeq a
+      \land
+        \forall i\in I\st
+        \m{\mu}(i) = \bind(\prob, \m{\krnl}(i))
+      \\ & \land \;
+        \forall v \in \psupp(\prob).
+          (\WP {\m{t}} {Q(v)})(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})
+    \end{array}
+  \end{align*}
+Intuitively, for each $v$,
+  running $\m{t}$ on each fibre $(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})$
+  gives a output resource that satisfies $Q(v)$.
+
+  Assume $\raValid(a)$ holds and let
+  $a = (\m{\sigmaF}_a, \m{\mu}_a, \m{\permap}_a)$.
+  By~\cref{lemma:bind-extend},
+  when $ (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raLeq a$,
+  $\m{\mu} = \bind(\prob, \m{\krnl})$ iff that there exists $\m{\krnl}''$ such that
+  $\m{\mu}_a = \bind(\prob, \m{\krnl}'')$  and $\m{\krnl}(I)(v) \extTo \m{\krnl}''(I)(v)$ for every $v$.
+  Thus,
+\begin{align*}
+    (\CMod\prob v. \WP {\m{t}} {Q(v)})(\m{\sigmaF}_a, \m{\mu}_a, \m{\permap}_a)
+    \iff
+    \begin{array}[t]{@{}r@{\,}l@{}}
+    \E \m{\krnl}.
+      &\forall i\in I\st
+        \m{\mu}_a (i) = \bind(\prob, \m{\krnl}''(i))
+        \\ & \land \;
+        \forall v \in \psupp(\prob).
+          (\WP {\m{t}} {Q(v)})(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})
+    \end{array}
+  \end{align*}
+
+  We want to show that
+  \[
+      \WP {\m{t}}{\CMod\prob v. {Q(v)}} (a)
+    \]
+  which is equivalent to
+  \[
+        \A \m{\prob'}.
+        \forall c\st
+        a\raOp c \raLeq \m{\prob'}
+          \implies
+            \exists a'\st
+            a'\raOp c \raLeq {\sem{\m{t}} (\m{\prob'})}
+            \land
+            (\CMod \prob Q(v))(a).
+  \]
+  Let's fix an arbitrary $ \m{\prob'}, c $ that satisfy
+  $\raValid(a \raOp c) \land  a\raOp c \raLeq a_{\m{\prob'}}$,
+  we try to construct a corresponding $a'$.
+  The high-level approach that we will take is to show that running $\m{t}$ on $a$ takes us to a resource that is equivalent to bind the set of output resource satisfying $Q(v)$ to $\mu$.
+
+
+
+  Recall that $a  = (\m{\sigmaF}_a, \m{\mu}_a, \m{\permap}_a)$ also satisfies
+  $\ownall$, which says $\m{\sigmaF}_a =  \Full{\Var}$.
+  We claim that
+  $ a\raOp c  \raLeq (\Full{\Var}, \m{\mu'}, \permap_1)$ holds implies that
+  the probability space $c$ is trivial.
+  Say $c = (\m{\sigmaF}_c, \m{\mu}_c, \m{\permap}_c)$, then for any $E \in \m{\sigmaF}_c$,
+  the event $E$ must also in $\m{\sigmaF}_a$ and $\Full{\Var}$  because they are
+  the full sigma algebra.
+  By definition of $ a\raOp c  \raLeq (\Full{\Var}, \m{\mu'}, \permap_1)$,
+  we have
+\begin{align}
+    &\m{\mu}_c(E) \cdot \m{\mu}_a(E) =  \m{\mu'}(E \cap E)  = \m{\mu'}(E).
+    \label{eq:c-wp-swap-c-trivial}
+  \end{align}
+  Another implication of  $ a\raOp c  \raLeq (\Full{\Var}, \m{\mu'}, \permap_1)$ is that
+  we have $\m{\mu}_c(E)  = \m{\mu'}(E)$ and  $\m{\mu}_a(E)  = \m{\mu'}(E)$.
+  Combining with~\cref{eq:c-wp-swap-c-trivial}, we can conclude
+  \begin{align*}
+    \m{\mu'}(E) \cdot \m{\mu'}(E) =  \m{\mu'}(E),
+  \end{align*}
+  which implies that
+  $\m{\mu}_c(E) = \m{\mu'}(E)  \in \{0,1\}$.
+  Therefore, $c$ is a trivial probability space and
+  \begin{align*}
+    (\m{\salg}_a, \m{\krnl}(I)(v), \m{\permap}_a) \raOp c \raLeq
+    (\m{\salg}_a, \m{\krnl}(I)(v), \m{\permap}_a)
+  \end{align*}
+
+  Furthermore, for every $v \in \psupp(\mu)$, we have
+  $(\WP {\m{t}} {Q(v)})(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})$
+  which implies
+  \begin{align}
+    \label{eq:c-wp-swap:helper}
+        \A \m{\krnl'}. &
+(\m{\salg}_a, \m{\krnl}(I)(v), \m{\permap}_a) \raOp c
+          \raLeq \m{\krnl'}(I)(v)
+        \\
+        & {} \implies {}
+        \exists a_v\st
+(a_v \raOp c \raLeq \sem{\m{t}} (\m{\krnl'}(I)(v))) \land Q(v)(a_v) .
+      \end{align}
+Therefore,
+  \begin{align}
+   & a\raOp c \raLeq a_{\m{\prob'}}
+  {}\implies{} \forall v \in \psupp(\mu). (\raValid((\m{\salg}_a, \m{\krnl}(I)(v), \m{\permap}_a) \raOp c) \land  (\m{\salg}_a, \m{\krnl}(I)(v), \m{\permap}_a) \raOp c \raLeq (\Full{\Var}, \m{\krnl}(I)(v), \fullp) \tag{By~\ref{lemma:fibre-prod-exists} and~\ref{lemma:bind-extend}}\\
+  {}\implies{} & \forall v \in \psupp(\mu).  \exists a_v\st
+        \raValid(a_v \raOp c) \land  \left(a_v \raOp c \raLeq (\Full{\Var}, \sem{\m{t}} (\m{\krnl}(I)(v)), \fullp)\right)  \land  Q(v)(a_v)
+        \tag{By~\cref{eq:c-wp-swap:helper}} \\
+  {}\implies{} & \forall v \in \psupp(\mu). \m{\permap}_{a_v} + \m{\permap}_c \raLeq \fullp \land    Q(v)(\Full{\Var}, \sem{\m{t}} (\m{\krnl'}(I)(v)), \fullp).
+        \tag{By upwards closure}
+  \end{align}
+
+  Let $a'_v =  (\Full{\Var}, \sem{\m{t}} (\m{\krnl'}(I)(v)), \m{\permap}_{a})$.
+  Because $\mu_c(E) \in \{0, 1\}$ for any $E \in \sigmaF_c$, for every $v$,
+  we have $ (\Full{\Var}, \sem{\m{t}} (\m{\krnl'}(I)(v)))  \raOp (\m{\sigmaF}_c, \m{\mu}_c)$
+  defined and thus
+  $a'_v \raOp c$ valid.
+  Define
+  \[
+    a' =
+     (\Full{\Var},
+      \bind(\mu, \fun v . \sem{\m{t}} (\m{\krnl'}(I)(v)),
+      \m{\permap}_a)
+  \]
+  By~\cref{lemma:fibre-prod-exists},
+  $ \raValid(a'_v \raOp c)$ for all $v \in \psupp_{\mu}$ implies
+  $\raValid(a' \raOp c)$.
+  Also, because  $Q(v)(a_v)$ for all $v \in A_{\mu}$,
+  $(\CMod{\prob} v. Q(v))(a') $.
+Thus, $(\WP {\m{t}}{\CMod\prob v. {Q(v)}}) (a)$.
+\end{proof}
+ 
+\subsubsection{Program Rules}
+\begin{lemma}
+\label{proof:wp-skip}
+  \Cref{rule:wp-skip} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume $a \in \Model_I$ is valid and such that~$P(a)$ holds.
+  By unfolding the definition of WP, we need to prove
+  \[
+    \forall \m{\prob}_0.
+      \forall c \st
+      (a \raOp c) \raLeq \m{\prob}_0
+      \implies
+      \exists b \st
+      \bigl(
+        (b \raOp c) \raLeq \sem{\m{t}}(\m{\prob}_0)
+        \land
+        P(b)
+      \bigr)
+  \]
+  which follows trivially
+  by $\sem{\m[i:\code{skip}]}(\m{\prob}_0)=\m{\prob}_0$ and picking $b=a$.
+\end{proof}
+ \begin{lemma}
+\label{proof:wp-seq}
+  \Cref{rule:wp-seq} is sound.
+\end{lemma}
+
+\begin{proof}
+Assume $a_0 \in \Model_I$ is a valid resource such that
+  $(\WP {\m[i: t]} {\WP {\m[i: t']} {Q}})(a_0)$ holds.
+  Our goal is to prove $(\WP {(\m[i: t\p; t'])} {Q})(a_0)$ holds,
+  which unfolds by definition of WP into:
+  \begin{equation}
+    \forall \m{\prob}_0\st
+    \forall c_0 \st
+    (a_0 \raOp c_0) \raLeq \m{\prob}_0
+    \implies
+      \exists a_2 \st
+      \bigl(
+      (a_2 \raOp c_0) \raLeq \sem{\m[i: t\p; t']}(\m{\prob}_0)
+      \land Q(a_2)
+      \bigr)
+    \label{wp-seq:goal}
+  \end{equation}
+
+  Take an arbitrary $\m{\prob}_0$ and $c_0$ such that
+  $ (a_0 \raOp c_0) \raLeq \m{\prob}_0 $.
+  By unfolding the WPs in the assumption,
+  we have that there exists a
+  $a_1 \in \Model_I$ such that:
+  \begin{gather}
+    (a_1 \raOp c_0) \raLeq \sem{\m[i: t]}(\m{\prob}_0)
+    \label{wp-seq:a1}
+    \\
+    \forall \m{\prob}_1\st
+    \forall c_1 \st
+      (a_1 \raOp c_1) \raLeq \m{\prob}_1
+      \implies
+      \exists a_2 \st
+      ((a_2 \raOp c_1) \raLeq \sem{\m[i: t']}(\m{\prob}_1)
+      \land  Q(a_2))
+    \label{wp-seq:a2}
+  \end{gather}
+  We can apply \eqref{wp-seq:a2} to \eqref{wp-seq:a1}
+  by instantiating $\m{\prob}_1$ with $\sem{\m[i: t]}(\m{\prob}_0)$,
+  and $c_1$ with $c_0$,
+  obtaining:
+  \[
+    \exists a_2 \st
+    ((a_2 \raOp c_0) \raLeq \sem{\m[i: t']}(\sem{\m[i: t]}(\m{\prob}_0))
+    \land  Q(a_2))
+  \]
+  Since by definition,
+  $ \sem{t\p; t'}(\prob_0) = \sem{t'}(\sem{t}(\prob_0)) $,
+  we obtain the goal \eqref{wp-seq:goal} as desired.
+\end{proof} \begin{lemma}
+\label{proof:wp-assign}
+  \Cref{rule:wp-assign} is sound.
+\end{lemma}
+
+\begin{proof}
+  \newcommand{\specialevent}{A}
+  Let $a \in \Model_I$ be a valid resource,
+  and let $a(i) = (\salg, \prob, \permap)$.
+  By assumption we have
+  $\permap(\p{x}) = 1$ and
+  $\permap(\p{y}) > 0$ for all $ \p{y} \in \FV(\expr)$.
+  We want to show that $a$ satisfies
+  $\WP {\m[i: \code{x:=}\expr]} {\sure{\ip{x}{i} = \expr\at{i}}}$.
+This is equivalent to
+\[
+    \forall \m{\prob}_0 \st
+      \forall c\st
+      (a\raOp c \raLeq  \m{\prob}_0)
+      \implies
+        \exists b\st (
+          b\raOp c \raLeq  \sem{\m[i: \code{x:=}\expr]}(\m{\prob}_0) \land
+          \sure{\ip{x}{i} = \expr\at{i}}(b)
+        )
+  \]
+  We show this holds by picking~$b$ as follows:
+  \begin{align*}
+    b &\is a\m[i: {(\salg_b, \prob_b, \permap)}]
+    &
+    \salg_b &\is \set{
+      \Store,\emptyset,\specialevent,\Store\setminus\specialevent
+    }
+    &
+    \specialevent &\is \set{
+      \store\upd{\p{x}->\sem{\expr}(\store)} | \store \in \Store
+}
+  \end{align*}
+  where $\prob_b$ is determined by setting $ \prob_b(\specialevent)=1. $
+
+  By construction we have that $\sure{\ip{x}{i} = \expr\at{i}}(b)$ holds.
+  To close the proof we then need to show that
+$(b \raOp c) \raLeq \sem{\m[i: \code{x:=}\expr]}(\m{\prob}_0)$.
+
+  Let $c(i) = (\salg_c,\prob_c,\permap_c)$.
+  Observe that by the assumptions on $\permap$,
+  we have $\raValid(b)$ since $\salg_b$ is
+  only non-trivial on $\pvar(\expr)\union\set{\p{x}}$;
+  moreover, by the assumption $\raValid(a \raOp c)$
+  we have that $\raValid(\permap + \permap_c)$ holds,
+  which means that $\permap_c(\p{x})=0$,
+  and thus $\salg_c$ is trivial on \p{x}.
+
+
+  \newcommand{\Pre}{\operatorname{pre}}
+Let us define the function
+  $
+    \Pre \from \powerset(\Store) \to \powerset(\Store)
+  $
+  as:
+  \[
+    \Pre(\event) \is
+      \set{ \store
+          | \store\upd{\p{x}->\sem{\expr}(\store)} \in \event
+        }.
+  \]
+  That is, $\Pre(\event)$ is the weakest precondition (in the standard sense)
+  of the assignment.
+  By construction, we have:
+  \begin{align*}
+    \Pre(\specialevent) &= \Store
+    &
+    \Pre(\event_1 \inters \event_2) &=
+      \Pre(\event_1) \inters \Pre(\event_2)
+    \\
+    \Pre(\Store \setminus \specialevent) &= \emptyset
+    &
+    \Pre(\event_c) &= \event_c
+      \text{ for all } \event_c \in \salg_c
+  \end{align*}
+  In particular, the latter holds because $\salg_c$ is trivial in \p{x}.
+
+  By unfolding the definition of $\sem{\hole}$,
+  it is easy to check that for every $\event \in \Full{\Store}$:
+  \[
+    \sem{\code{x:=}\expr}(\mu_0)(\event) = \mu_0(\Pre(\event))
+  \]
+
+  We are now ready to show
+  $(b \raOp c) \raLeq \sem{\m[i: \code{x:=}\expr]}(\m{\prob}_0)$
+  by showing that
+  $
+    (\salg_b,\prob_b)\iprod(\salg_c,\prob_c)
+    =
+    (\salg_b \punion \salg_c,
+     \restr{\sem{\code{x:=}\expr}(\prob_0)}{(\salg_b \punion \salg_c)})
+  $
+  where $\prob_0 = \m{\prob}_0(i)$.
+  To show this it suffices to prove that
+  for every $\event_b \in \salg_b$ and every $\event_c \in \salg_c$,
+  $
+    \sem{\code{x:=}\expr}(\prob_0)(\event_b \inters \event_c)
+    = \prob_b(\event_b) \cdot \prob_c(\event_c).
+  $
+  We proceed by case analysis on $\event_b$:
+  \begin{casesplit}
+  \case[$\event_b = \specialevent$]
+    Then:
+    \begin{align*}
+      \sem{\code{x:=}\expr}(\prob_0)(\specialevent \inters \event_c)
+        &= \prob_0(\Pre(\specialevent \inters \event_c))
+      \\&= \prob_0(\Pre(\specialevent) \inters \Pre(\event_c))
+      \\&= \prob_0(\Store \inters \Pre(\event_c))
+      \\&= \prob_0(\Pre(\event_c))
+      \\&= \prob_b(\specialevent) \cdot \prob_0(\event_c)
+      \\&= \prob_b(\specialevent) \cdot \prob_c(\event_c)
+    \end{align*}
+  \case[$\event_b = \Store \setminus \specialevent$]
+    Then:
+    \begin{align*}
+      \sem{\code{x:=}\expr}(\prob_0)
+          (\Store \setminus \specialevent \inters \event_c)
+        &= \prob_0(\Pre((\Store \setminus \specialevent) \inters \event_c))
+      \\&= \prob_0(\Pre(\Store \setminus \specialevent) \inters \Pre(\event_c))
+      \\&= \prob_0(\emptyset \inters \Pre(\event_c))
+      \\&= 0
+      \\&= \prob_b(\Store \setminus \specialevent) \cdot \prob_c(\event_c)
+    \end{align*}
+  \case[$\event_b = \Store$ or $\event_b = \emptyset$]
+    Analogous to the previous cases.
+    \qedhere
+  \end{casesplit}
+\end{proof}
+ \begin{lemma}
+\label{proof:wp-samp}
+  \Cref{rule:wp-samp} is sound.
+\end{lemma}
+
+\begin{proof}
+  \newcommand{\specialevent}{A}
+  Assume $a \in \Model_I$ is valid and such that
+  $ a(i) = (\salg, \prob, \permap)$, with $\permap(x) = 1$.
+  Our goal is to show that~$a$ satisfies
+  $
+    \WP {\m[i: \code{x:~$\dist$($\vec{v}$)}]} {\distAs{\ip{x}{i}}{d(\vec{v})}}
+  $
+which is equivalent to proving, for all $\m{\prob}_0$ and for all~$c$:
+\begin{equation}
+    (a\raOp c \raLeq  \m{\prob}_0)
+    \implies
+      \exists b\st \bigl(
+        b\raOp c \raLeq \sem{\m[i: \code{x:~$\dist$($\vec{v}$)}]}(\m{\prob}_0)
+        \land
+        (\distAs{x}{d(\vec{v})})(b)
+      \bigr)
+    \label{wp-samp:goal}
+  \end{equation}
+
+  Let $\prob_0 = \m{\prob}_0(i)$ and
+      $\prob_1 = \sem{\code{x:~$\dist$($\vec{v}$)}}(\prob_0)$.
+  Moreover, let $ c(i) = (\salg_c,\prob_c,\permap_c) $.
+  Observe that by the assumptions on $\permap$ and validity of~$a \raOp c$,
+  we have $\permap_c(\p{x})=0$,
+  which means $\salg_c$ is trivial on \p{x}.
+  We aim to prove~\eqref{wp-samp:goal} by letting
+  \begin{align*}
+    b &\is a\m[i: {(\salg_b, \prob_b, \permap_b)}]
+    &
+    \prob_b &\is
+      \restr{\prob_1}{\salg_b}
+    \\
+    \salg_b &\is
+      \sigcl*{
+        \set[\big]{
+          \set{ \store \in \Store | \store(\p{x}) = v }
+        | v\in \Val
+        }
+      }
+    &
+    \permap_b &\is
+      \perm{\p{x}: 1}
+\end{align*}
+  Note that by construction $ \raValid(\permap_b + \permap_c) $,
+  and $\raValid(b)$ since $\salg_b$ is only non-trivial in \p{x}.
+  \newcommand{\Pre}{\operatorname{pre}}
+  Similarly to the proof for~\cref{rule:wp-assign},
+  we define the function
+  $
+    \Pre \from \powerset(\Store) \to \powerset(\Store)
+  $
+  as:
+  \[
+    \Pre(\event) \is
+      \set{ \store
+          | \exists v \in \Val \st \store\upd{\p{x}->v} \in \event
+        }.
+  \]
+  Since $\salg_c$ is trivial on \p{x},
+  for all $ \event_c \in \salg_c $,
+  $\Pre(\event_c) = \event_c$.
+  Moreover,
+  for all $ \event_b \in \salg_b \setminus \set{\emptyset} $,
+  $ \Pre(\event_b) = \Store $,
+  since $\event_b$ is trivial on every variable except~\p{x}.
+
+  By unfolding the definitions, we have:
+  \begin{align*}
+    \mu_1(\event) &=
+      \sem{\code{x:~$\dist$($\vec{v}$)}}(\prob_0)(\event)
+\\&=
+      \Sum_{\store \in \event}
+        \prob_0(\Pre(\store)) \cdot \sem{\dist}(\vec{v})(\store(\p{x}))
+  \end{align*}
+  We now show that
+  $
+    (\salg_b, \prob_b) \iprod (\salg_c, \prob_c)
+    =
+    (\salg_b \punion \salg_c, \restr{\prob_1}{(\salg_b \punion \salg_c)})
+  $
+  by showing that
+  for all $\event_b \in \salg_b$ and
+          $\event_c \in \salg_c$:
+  $
+    \prob_1(\event_b \inters \event_c)
+    =
+    \prob_b(\event_b) \cdot \prob_c(\event_c).
+  $
+  \newcommand{\valOf}{\operatorname{V}}
+  To prove this we first
+  define $\valOf \from \powerset(\Store) \to \powerset(\Val)$ as
+  $
+    \valOf(\event) \is
+      \set{ \store(\p{x}) | \store \in \event },
+  $
+  and $ S_w \is \set{ \store | \store(\p{x}) = w } $.
+  We observe that
+  $
+    \event_b   = \Dunion_{w \in \valOf(\event_b)} S_w
+  $, and thus
+  $
+    \event_b \inters \event_c
+    = \Dunion_{w \in \valOf(\event_b)} (\event_c \inters S_w)
+  $;
+  moreover,
+  $
+    \Pre(\event_c \inters S_w)
+    = \set{ \store | \store\upd{x->w} \in \event_c } = \event_c
+  $.
+  Thus, we can calculate:
+  \begin{align*}
+    \prob_1(\event_b \inters \event_c)
+      &=
+    \sum_{\mathclap{\store \in \event_b \inters \event_c}}
+      \prob_0(\Pre(\store)) \cdot \sem{\dist}(\vec{v})(\store(\p{x}))
+    \\&=
+    \sum_{w \in \valOf(\event_b)}
+    \sum_{\store \in \event_c \inters S_{w}}
+      \prob_0(\Pre(\store)) \cdot
+      \sem{\dist}(\vec{v})(w)
+    \\&=
+    \sum_{w \in \valOf(\event_b)}
+    \left(
+      \sem{\dist}(\vec{v})(w) \cdot
+      \sum_{\mathclap{\store \in \event_c \inters S_{w}}}
+      \prob_0(\Pre(\store))
+    \right)
+    \\&=
+    \left(
+    \sum_{w \in \valOf(\event_b)}
+      \sem{\dist}(\vec{v})(w)
+      \cdot \prob_0(\Pre(\event_c \inters S_w))
+    \right)
+    \\&=
+    \left(
+    \sum_{w \in \valOf(\event_b)}
+      \sem{\dist}(\vec{v})(w)
+    \right)
+    \cdot \prob_0(\event_c)
+    \\&=
+    \prob_b(\event_b) \cdot  \prob_c(\event_c)
+  \end{align*}
+The last equation is given by
+  $ a\raOp c \raLeq  \m{\prob}_0 $ which implies that $ \prob_c = \restr{\prob_0}{\salg_c} $, and by:
+  \begin{align*}
+    \prob_b(\event_b)
+      =
+    \prob_1(\event_b)
+      &=
+    \sum_{\store \in \event_b}
+      \prob_0(\Pre(\store)) \cdot \sem{\dist}(\vec{v})(\store(\p{x}))
+    \\&=
+    \sum_{w \in \valOf(\event_b)}
+      \sum_{\store \in S_w}
+        \prob_0(\Pre(\store)) \cdot \sem{\dist}(\vec{v})(w)
+    \\&=
+    \sum_{\mathclap{w \in \valOf(\event_b)}}
+      \sem{\dist}(\vec{v})(w)
+  \end{align*}
+
+  Finally, we need to show $ (\distAs{x}{d(\vec{v})})(b) $
+  which amounts to proving
+  $\almostM{\p{x}}{(\salg_b,\prob_b)}$
+  and
+  $\sem{\dist}(\vec{v}) = \prob_b \circ \inv{\p{x}}$.
+  The former holds because by construction \p{x} is measurable in $\salg_b$.
+  For the latter, for all $W \subs \Val$:
+  \[
+    (\prob_b \circ \inv{\p{x}})(W)
+    =
+    \prob_b (\inv{\p{x}}(W))
+    =
+    \sum_{\mathclap{w \in \valOf(\inv{\p{x}}(W))}}
+      \sem{\dist}(\vec{v})(w)
+    =
+    \sum_{w \in W}
+      \sem{\dist}(\vec{v})(w)
+    =
+    \sem{\dist}(\vec{v})(W).
+    \qedhere
+  \]
+\end{proof}
+ \begin{lemma}
+\label{proof:wp-if-prim}
+  \Cref{rule:wp-if-prim} is sound.
+\end{lemma}
+
+\begin{proof}
+  For any valid resource $a$,
+  \begin{align*}
+    & \left(\ITE{v}{\WP{\m[i: t_1]}{Q(1)}}{\WP{\m[i: t_2]}{Q(0)}}\right)(a)\\
+    {}\iff {} &
+    \begin{cases}
+      \left(\WP{\m[i: t_1]}{Q(1)}\right)(a) \CASE v \doteq 1 \\
+      \left(\WP{\m[i: t_2]}{Q(0)}\right)(a)\OTHERWISE \\
+    \end{cases} \\
+    {}\iff {}&
+  \forall \m{\prob}_0.
+    \forall c \st
+    (a \raOp c) \raLeq \m{\prob}_0
+    \implies
+      \begin{cases}
+          \exists b \st (b \raOp c) \raLeq \sem{i: \m{t_1}}(\m{\prob}_0)
+      \land Q(1)(b)
+      \CASE v \doteq 1 \\
+          \exists b \st (b \raOp c) \raLeq \sem{i: \m{t_2}}(\m{\prob}_0)
+      \land Q(0)(b)
+      \OTHERWISE
+      \end{cases} \\
+    {}\iff {} &
+    \forall \m{\prob}_0.
+    \forall c \st
+    (a \raOp c) \raLeq \m{\prob}_0
+    {}\implies {}
+    \exists b \st (b \raOp c) \raLeq \sem{i: \ITE{v}{\m{t_1}}{\m{t_2}}}(\m{\prob}_0)
+      \land  Q(v \doteq 1)(b) \\
+    \implies &  \left(\WP{\m[i: \ITE{v}{\m{t_1}}{\m{t_2}}]}{Q(v \doteq 1)}\right)(a)
+  \end{align*}
+\end{proof} \begin{lemma}
+\label{proof:wp-bind}
+  \Cref{rule:wp-bind} is sound.
+\end{lemma}
+
+\begin{proof}
+  For any resource $a = (\m{\sigmaF}, \m{\mu}, \m{\permap})$,
+  $(\sure{\expr\at{i}=v} * \WP{\m*[i: {\Ectxt[v]}]}{Q})(\m{\sigmaF}, \m{\mu}, \m{\permap})$ iff
+    there exists $(\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1}), (\m{\sigmaF_2}, \m{\mu_2}, \m{\permap_2})$ such that
+\begin{gather*}
+      (\sure{\expr\at{i}=v})(\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1})\\
+      (\WP{\m*[i: {\Ectxt[v]}]}{Q})(\m{\sigmaF_2}, \m{\mu_2}, \m{\permap_2})\\
+      (\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1}) \raOp  (\m{\sigmaF_2}, \m{\mu_2}, \m{\permap_2})
+      \raLeq (\m{\sigmaF}, \m{\mu}, \m{\permap})
+    \end{gather*}
+By the upwards closure, we also have
+    \begin{gather*}
+      (\sure{\expr\at{i}=v})(\m{\sigmaF}, \m{\mu}, \m{\permap}) \\
+      (\WP{\m*[i: {\Ectxt[v]}]}{Q})(\m{\sigmaF}, \m{\mu}, \m{\permap})
+    \end{gather*}
+The fact that $(\sure{\expr\at{i}=v})(\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1})$
+    implies that $\m{\mu_1}(\inv{(\expr\at{i}=v)} (\True)) = 1$,
+    which implies that
+    $\sem{\expr}(s) = v$ for all $s \in \psupp(\m{\mu}_1(i))$.
+
+
+    By~\cref{lemma:context-binding}, we have for any $s \in \Store$,
+    \begin{align*}
+      \Sem[K]{\Ectxt[\expr]}(s) = \Sem[K]{\Ectxt[\sem{\expr}(s)]}(s),
+    \end{align*}
+    which implies that for any $\mu_0$ over $\Full{\Store}$
+    \begin{align*}
+      \sem{\Ectxt[\expr]}(\mu_0)
+      &= \DO{
+        s <- \m{\mu_0};
+        \Sem[K]{\Ectxt[\expr]}(s)
+      }\\
+      &= \DO{
+        s <- \m{\mu_0};
+        \Sem[K]{\Ectxt[\sem{\expr}(s)]}(s)
+      }\\
+      &= \DO{
+        s <- \m{\mu_0};
+        \Sem[K]{\Ectxt[v]}(s)
+      }\\
+      &= \sem{\Ectxt[v]}(\mu_0).
+    \end{align*}
+Define $\mu'_0 = \Sem{\m[i: {\Ectxt[v]}]} \mu_0$.
+    Thus, $(\WP{\m*[i: {\Ectxt[v]}]}{Q})(a)$ iff
+\begin{align*}
+  \forall \mu_0 \st
+    \forall c\st
+    (\raValid(a \raOp c) \land  a\raOp c \raLeq  a_{\mu_0})
+      \implies
+        \exists a'\st
+        (\raValid(a' \raOp c) \land  a'\raOp c \raLeq  a_{\mu'_0} \land Q(a'))
+\end{align*}
+iff
+\begin{align*}
+  \forall \mu_0 \st
+    \forall c\st
+    (\raValid(a \raOp c) \land  a\raOp c \raLeq  a_{\mu_0})
+      \implies
+        \exists a'\st
+        (\raValid(a' \raOp c) \land  a'\raOp c \raLeq  a_{\mu'_0} \land Q(a'))
+\end{align*}
+iff $\model{\WP{\m*[i: {\Ectxt[\expr]}]}{Q}}{(a)}$.
+\end{proof}
+ \begin{lemma}
+\label{proof:wp-loop-unf}
+  \Cref{rule:wp-loop-unf} is sound.
+\end{lemma}
+
+\begin{proof}
+  By definition,
+  \begin{align*}
+    \sem{\Loop{(n+1)}{t}}(\prob)
+    &= \bigl(
+         \DO{s <- \prob; s' <- \var{loop}_{\term}(n,s); \Sem[K]{t}(s')}
+       \bigr) \\
+    &= \sem{(\Loop{n}{t})\p;t}(\prob)
+  \end{align*}
+  thus the rule follows from the argument of \cref{proof:wp-seq}.
+\end{proof} \begin{lemma}
+\label{proof:wp-loop}
+  \Cref{rule:wp-loop} is sound.
+\end{lemma}
+
+\begin{proof}
+  By induction on~$n$.
+  \begin{induction}
+    \step[Base case~$n=0$]
+      Analogously to \cref{proof:wp-skip}
+      since, by definition,
+      $\Sem{\Loop{0}{t}}(\mu_0) = \mu_0$.
+
+    \step[Induction step~$n>0$]
+      By induction hypothesis
+      $P(0) \proves \WP{\m[j: \Loop{(n-1)}{t}]}{P(n-1)}$ holds,
+      and we want to show that
+      $P(0) \proves \WP{\m[j: \Loop{n}{t}]}{P(n)}$.
+      By \cref{proof:wp-loop-unf},
+      it suffices to show
+      $ P(0) \proves \WP{\m[j: \Loop{(n-1)}{t}]}{\WP {\m[j:t]}{P(n)}} $.
+      By applying the induction hypothesis and \cref{proof:wp-cons} we are left
+      with proving
+      $ P(n-1) \proves \WP {\m[j:t]}{P(n)} $
+      which is implied by the premise of the rule with $i=n-1 < n$.
+    \qedhere
+  \end{induction}
+\end{proof}
+ 
+\subsection{Soundness of Derived Rules}
+\label{sec:appendix:derived-rules}
+
+
+In this section we provide derivations for the rules we claim
+are derivable in \thelogic.
+
+
+\subsubsection{Ownership and Distributions}
+\begin{lemma}
+\label{proof:sure-dirac}
+  \Cref{rule:sure-dirac} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \distAs{E\at{i}}{\delta_v}
+\whichisequiv*
+    \E \m{\sigmaF}, \m{\prob}.
+      \Own{(\m{\sigmaF}, \m{\prob})}
+      *
+      \pure{\m{\prob} \circ \inv{E\at{i}} = \dirac{v}}
+\whichisequiv
+    \E \m{\sigmaF}, \m{\prob}.
+      \Own{(\m{\sigmaF}, \m{\prob})}
+      *
+      \pure{\m{\prob} \circ \inv{(E\at{i} = v)} = \dirac{\True}}
+\whichisequiv
+    \sure{E\at{i} = v}
+\qedhere
+  \end{eqexplain}
+\end{proof} \begin{lemma}
+\label{proof:sure-eq-inj}
+  \Cref{rule:sure-eq-inj} is sound.
+\end{lemma}
+
+\begin{proof}
+\begin{eqexplain}
+  \sure{\aexpr\at{i} = v}
+  *
+  \sure{\aexpr\at{i} = v'}
+\whichproves*
+  \distAs{\aexpr\at{i}}{\dirac{v}}
+  *
+  \distAs{\aexpr\at{i}}{\dirac{v'}}
+  \byrule{sure-dirac}
+\whichproves
+  \distAs{\aexpr\at{i}}{\dirac{v}}
+  \land
+  \distAs{\aexpr\at{i}}{\dirac{v'}}
+\whichproves
+  \pure{\dirac{v}=\dirac{v'}}
+  \byrule{dist-inj}
+\whichproves
+  \pure{v=v'}
+\qedhere
+\end{eqexplain}
+\end{proof} \begin{lemma}
+\label{proof:sure-sub}
+  \Cref{rule:sure-sub} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+\distAs{\aexpr_1\at{i}}{\prob}
+    *
+    \sure{(\aexpr_2 = f(\aexpr_1))\at{i}}
+  \whichproves*
+    \CC\prob v.
+      \sure{\aexpr_1\at{i} = v}
+      *
+      \sure{(\aexpr_2 = f(\aexpr_1))\at{i}}
+  \byrules{c-unit-r,c-frame}
+\whichproves
+    \CC\prob v.
+      \sure{\aexpr_1\at{i} = v \land \aexpr_2\at{i} = f(\aexpr_1\at{i})}
+  \byrule{sure-merge}
+\whichproves
+    \CC\prob v. \sure{\aexpr_2\at{i} = f(v)}
+  \byrule{c-cons}
+\whichproves
+    \CC\prob v. \CC{\dirac{f(v)}} \pr{v}.\sure{\aexpr_2\at{i} = \pr{v}}
+  \byrule{c-unit-l}
+\whichproves
+    \CC{\pr{\prob}} \pr{v}.\sure{\aexpr_2\at{i} = \pr{v}}
+  \byrules{c-assoc,c-sure-proj}
+  \end{eqexplain}
+  where $\pr{\prob} = \bind(\prob, \fun x. \dirac{f(x)}) = \prob \circ \inv{f}$.
+  By \ref{rule:c-unit-r} we thus get
+  $\distAs{\aexpr_2\at{i}}{\prob \circ \inv{f}}$.
+\end{proof} \begin{lemma}
+\label{proof:dist-fun}
+  \Cref{rule:dist-fun} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume $E\from \Store \to A$ and $ f \from A \to B $, then:
+  \begin{eqexplain}
+    \distAs{\aexpr\at{i}}{\prob}
+\whichproves*
+      \CC\prob v. \sure{(\aexpr = v)\at{i}}
+    \byrules{c-unit-r}
+\whichproves
+      \CC\prob v. \sure{(f\circ\aexpr)\at{i} = f(v)}
+    \byrules{c-cons}
+\whichproves
+      \CC\prob v. \CC{\dirac{f(v)}} \pr{v}.\sure{(f\circ\aexpr)\at{i} = \pr{v}}
+    \byrule{c-unit-l}
+\whichproves
+      \CC{\pr{\prob}} \pr{v}.\sure{(f\circ\aexpr)\at{i} = \pr{v}}
+    \byrules{c-assoc,c-sure-proj}
+  \end{eqexplain}
+  where $\pr{\prob} = \bind(\prob, \fun x. \dirac{f(x)}) = \prob \circ \inv{f}$.
+  By \ref{rule:c-unit-r} we thus get
+  $\distAs{(f\circ\aexpr)\at{i}}{\prob \circ \inv{f}}$.
+\end{proof} \begin{lemma}
+\label{proof:dirac-dup}
+  \Cref{rule:dirac-dup} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \distAs{E\at{i}}{\dirac{v}}
+    \whichproves*
+    \sure{E\at{i} = v}
+    \byrule{sure-dirac}
+    \whichproves
+    \sure{E\at{i} = v} \ast \sure{E\at{i} = v}
+    \byrule{sure-merge}
+    \whichproves
+    \distAs{E\at{i}}{\dirac{v}} * \distAs{E\at{i}}{\dirac{v}}
+    \byrule{sure-dirac}
+  \end{eqexplain}
+\end{proof} \begin{lemma}
+\label{proof:dist-supp}
+  \Cref{rule:dist-supp} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \distAs{E\at{i}}{\mu}
+    \whichproves*
+    \CMod{\mu} v. \sure{E\at{i} = v}
+    \byrule{c-unit-r}
+    \whichproves
+    \pure{\mu(\psupp(\mu)) = 1} \ast
+    \CMod{\mu} v. \sure{E\at{i} = v}
+    \whichproves
+    \CMod{\mu} v. \big(\pure{v \in \psupp(\mu)} \ast \sure{E\at{i} = v}\big)
+    \byrule{c-pure}
+    \whichproves
+    \CMod{\mu} v. \big(\sure{E\at{i} = v} \ast \sure{E\at{i} \in \psupp(\mu)} \big)
+\whichproves
+    \big(\CMod{\mu} v.\sure{E\at{i} = v}\big)
+    \ast \sure{E\at{i} \in \psupp(\mu)}
+    \byrule{sure-str-convex}
+    \whichproves
+    \distAs{E\at{i}}{\mu}
+    \ast \sure{E\at{i} \in \psupp(\mu)}
+    \byrule{c-unit-r}
+  \end{eqexplain}
+\end{proof} \begin{lemma}
+\label{proof:prod-unsplit}
+  \Cref{rule:prod-unsplit} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \distAs{\aexpr_1\at{i}}{\prob_1} *
+    \distAs{\aexpr_2\at{i}}{\prob_2}
+    \whichproves*
+    \CC{\prob_1} v_1.
+    \CC{\prob_2} v_2.
+    \bigl(
+      \sure{\aexpr_1\at{i} = v_1} *
+      \sure{\aexpr_2\at{i} = v_2}
+    \bigr)
+    \byrules{c-unit-r,c-frame}
+\whichproves
+    \CC{\prob_1} v_1.
+    \CC{\prob_2} v_2.
+      \sure{(\aexpr_1, \aexpr_2)\at{i} = (v_1, v_2)}
+    \byrules{sure-merge}
+\whichproves
+    \CC{\prob_1 \pprod \prob_2} (v_1,v_2).
+      \sure{(\aexpr_1, \aexpr_2)\at{i} = (v_1, v_2)}
+    \byrules{c-assoc}
+\whichproves
+    \distAs{(\aexpr_1\at{i}, \aexpr_2\at{i})}{\prob_1 \otimes \prob_2}
+    \byrule{c-unit-r}
+  \end{eqexplain}
+\end{proof}
+ 
+\subsubsection{\Supercond}
+\begin{lemma}
+\label{proof:c-fuse}
+  \Cref{rule:c-fuse} is sound.
+\end{lemma}
+
+\begin{proof}
+  Recall that
+  $
+    \prob \fuse \krnl
+    \is
+    \fun(v,w). \prob(v)\krnl(v)(w).
+  $
+  which can be reformulated as
+  $
+    \prob \fuse \krnl =
+    \bind(\prob,\fun v.(\bind(\krnl(v), \fun w.\return(v,w)))).
+  $
+
+  The $(\proves)$ direction is an instance of \ref{rule:c-assoc}.
+
+  The $(\provedby)$ direction follows from \ref{rule:c-unassoc}:
+  \begin{eqexplain}
+    \CC{\prob \fuse \krnl} (v',w'). K(v',w')
+\whichproves*
+    \CC \prob v.
+      \CC{\bind(\krnl(v), \fun w.\dirac{(v,w)})} (v',w'). K(v',w')
+    \byrule{c-unassoc}
+\whichproves
+    \CC \prob v.
+      \CC{\krnl(v)} w.
+        \CC {\dirac{(v,w)}} (v',w'). K(v',w')
+    \byrule{c-unassoc}
+\whichproves
+    \CC{\prob} v.
+    \CC{\krnl(v)} w.
+      K(v,w)
+    \byrule{c-unit-l}
+  \end{eqexplain}
+\end{proof}
+ \begin{lemma}
+\label{proof:c-swap}
+  \Cref{rule:c-swap} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \CC{\prob_1} v_1.
+      \CC{\prob_2} v_2.
+        K(v_1, v_2)
+\whichproves*
+      \CC{\prob_1 \pprod \prob_2}
+        (v_1,v_2).
+          K(v_1, v_2)
+    \byrule{c-fuse}
+\whichproves
+    \CC{\prob_2} v_2.
+      \CC{\prob_1} v_1.
+          K(v_1, v_2)
+    \byrule{c-fuse}
+  \end{eqexplain}
+  Where
+  \[
+    \prob_1 \pprod \prob_2
+    =
+    \prob_1 \fuse (\fun \wtv.\prob_2)
+=
+    \prob_2 \fuse (\fun \wtv.\prob_1)
+\]
+  justifies the applications of \ref{rule:c-fuse}.
+\end{proof}
+ \begin{lemma}
+\label{proof:sure-convex}
+  \Cref{rule:sure-convex} is sound.
+\end{lemma}
+
+\begin{proof}
+  By \ref{rule:sure-str-convex} with $K = \True$.
+\end{proof}
+ \begin{lemma}
+\label{proof:dist-convex}
+  \Cref{rule:dist-convex} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \CMod{\prob} v. \distAs{E\at{i}}{\mu'}
+    \whichproves*
+    \CMod{\mu} v.  \CMod{\mu'} w. \sure{E\at{i} = w}
+    \byrule{c-unit-r}
+    \whichproves
+    \CMod{\mu'} w. \CMod{\mu} v.  \sure{E\at{i} = w}
+    \byrule{c-swap}
+    \whichproves
+    \CMod{\mu'} w.  \sure{E\at{i} = w}
+    \byrule{sure-convex}
+    \whichproves
+    \distAs{E\at{i}}{\mu'}
+    \byrule{c-unit-r}
+  \end{eqexplain}
+\end{proof}
+ \begin{lemma}
+\label{proof:c-proj}
+  The following rule is sound:
+  \begin{proofrule}
+  \infer{
+    \forall (v,\wtv)\in\psupp(\prob).
+    \forall \prob'.
+    \CC{\prob'} w. P(v) \proves P(v)
+  }{
+    \CC \prob (v,w). P(v) \lequiv
+    \CC {\prob\circ\inv{\proj}} v. P(v)
+  }
+  \end{proofrule}
+\end{lemma}
+\begin{proof}
+  Assume that for all $(v,\wtv)\in\psupp(\prob)$,
+  $\forall \prob'. \CC{\prob'} w. P(v) \proves P(v)$
+  (\ie $P(v)$ is convex).
+  By \cref{lm:fuse-split} there is some~$\krnl$ such that
+  $ \prob=(\prob\circ\inv{\proj})\fuse\krnl $.
+  Then:
+  \begin{eqexplain}
+    \CC \prob (v,w). P(v)
+    \whichisequiv*
+    \CC {\prob\circ\inv{\proj}} v.
+    \CC {\krnl(v)} w. P(v)
+    \byrule{c-fuse}
+    \whichisequiv
+    \CC {\prob\circ\inv{\proj}} v. P(v)
+  \end{eqexplain}
+  The last step is justified by the convexity assumption in the~$(\proves)$
+  direction,
+  and by \ref{rule:c-true} and \ref{rule:c-frame} in the~$(\provedby)$ direction.
+\end{proof}
+
+
+
+\begin{lemma}
+\label{proof:c-sure-proj}
+  \Cref{rule:c-sure-proj} is sound.
+\end{lemma}
+\begin{proof}
+  By \cref{proof:c-proj} and \cref{proof:sure-convex}.
+\end{proof}
+ \begin{lemma}
+\label{proof:c-sure-proj-many}
+  \Cref{rule:c-sure-proj-many} is sound.
+\end{lemma}
+
+\begin{proof}
+  Let $
+    X_i \is \set{ \p{x} | \ip{x}{i} \in X }
+  $ for every $i\in I$.
+  Then:
+  \begin{eqexplain}
+    \CC\prob (\m{v}, w).
+      \sure{\ip{x}{i}=\m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+\whichisequiv*
+    \CC{\prob} (\m{v}, w).
+      \LAnd_{i\in I}
+        \sure{\LAnd_{\p{x}\in X_i} \ip{x}{i}=\m{v}(\ip{x}{i})}
+\whichisequiv
+    \LAnd_{i\in I}
+      \CC{\prob} (\m{v}, w).
+        \sure{\LAnd_{\p{x}\in X_i} \ip{x}{i}=\m{v}(\ip{x}{i})}
+    \byrule{c-and}
+\whichisequiv
+    \LAnd_{i\in I}
+      \CC{\prob\circ\inv{\proj_1}} \m{v}.
+        \sure{\LAnd_{\p{x}\in X_i} \ip{x}{i}=\m{v}(\ip{x}{i})}
+    \byrule{c-sure-proj}
+\whichisequiv
+    \CC{\prob\circ\inv{\proj_1}} \m{v}.
+      \LAnd_{i\in I}
+        \sure{\LAnd_{\p{x}\in X_i} \ip{x}{i}=\m{v}(\ip{x}{i})}
+    \byrule{c-and}
+\whichisequiv
+    \CC{\prob\circ\inv{\proj_1}} \m{v}.
+      \sure{\ip{x}{i}=\m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+  \end{eqexplain}
+  Note that the (iterated) applications of \ref{rule:c-and}
+  satisfy the side condition
+  because the inner assertions are by construction on disjoint indices.
+  The backward direction of \ref{rule:c-and} holds by
+  the standard laws of conjunction.
+\end{proof}
+ \begin{lemma}
+\label{proof:c-extract}
+  \Cref{rule:c-extract} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \CC{\prob_1} v_1. \bigl(
+      \sure{\aexpr_1\at{i} = v_1} *
+      \distAs{\aexpr_2\at{i}}{\prob_2}
+    \bigr)
+\whichproves*
+      \CC{\prob_1} v_1.
+        \bigl(
+          \sure{\aexpr_1\at{i}=v_1} *
+          \CC{\prob_2} v_2. \sure{\aexpr_2\at{i}=v_2}
+        \bigr)
+      \byrule{c-unit-r}
+    \whichproves
+      \CC{\prob_1} v_1.
+      \CC{\prob_2} v_2.
+        \bigl(
+          \sure{\aexpr_1\at{i}=v_1} *
+          \sure{\aexpr_2\at{i}=v_2}
+        \bigr)
+      \byrules{c-frame}
+    \whichproves
+      \CC{\prob_1} v_1.
+      \CC{\prob_2} v_2.
+        \sure{\aexpr_1\at{i}=v_1 \land \aexpr_2\at{i}=v_2}
+      \byrules{sure-merge}
+    \whichproves
+      \CC{\prob_1 \pprod \prob_2} (v_1,v_2).
+        \sure{(\aexpr_1\at{i},\aexpr_2\at{i})=(v_1,v_2)}
+      \byrules{c-assoc}
+    \whichproves
+      \distAs{(\aexpr_1\at{i},\aexpr_2\at{i})}{(\prob_1 \pprod \prob_2)}
+      \byrule{c-unit-r}
+    \whichproves
+      \distAs{\aexpr_1\at{i}}{\prob_1} *
+      \distAs{\aexpr_2\at{i}}{\prob_2}
+      \byrule{prod-split}
+  \end{eqexplain}
+\end{proof}
+ \begin{lemma}
+\label{proof:c-dist-proj}
+  \Cref{rule:c-dist-proj} is sound.
+\end{lemma}
+
+\begin{proof}
+  By \cref{proof:c-proj} and \cref{proof:dist-convex}.
+\end{proof}
+ 
+\subsubsection{Relational Lifting}
+\begin{lemma}
+\label{proof:rl-cons}
+  \Cref{rule:rl-cons} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \cpl{R_1}
+\whichis*
+      \E \prob.
+        \pure{\prob(R_1) = 1} *
+        \CC\prob \m{v}.
+          \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+\whichproves
+      \E \prob.
+        \pure{\prob(R_2) = 1} *
+        \CC\prob \m{v}.
+          \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+    \by{$R_1 \subseteq R_2$}
+\whichis \cpl{R_2}
+  \qedhere
+  \end{eqexplain}
+\end{proof} \begin{lemma}
+\label{proof:rl-unary}
+  \Cref{rule:rl-unary} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \cpl{R}
+\whichis*
+    \E \prob.
+      \pure{\prob(R) = 1} *
+      \CC\prob \m{v}.
+        \sure{\ip{x}{i} = \m{v}(\p{x}{i})}_{\p{x}{i}\in X}
+\whichproves
+    \E \prob.
+      \CC\prob \m{v}.
+        \pure{\m{v} \in R}
+        * \sure{\ip{x}{i} = \m{v}(\p{x}{i})}_{\p{x}{i}\in X}
+    \byrule{c-pure}
+\whichproves
+    \E \prob.
+      \CC\prob \m{v}.
+        \sure{R(\p{x}_1\at{i}, \dots , \p{x}_n\at{i})}
+\whichproves
+    \E \prob.
+      \sure{R(\p{x}_1\at{i}, \dots, \p{x}_n\at{i})}
+    \byrule{sure-convex}
+\whichproves
+    \sure{R(\p{x}_1\at{i}, \dots, \p{x}_n\at{i})}
+  \qedhere
+  \end{eqexplain}
+\end{proof}
+
+%
+ \begin{lemma}
+\label{proof:rl-eq-dist}
+  \Cref{rule:rl-eq-dist} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \cpl{x\at{i} = y\at{j}}
+\proves{}&
+    \E \prob'.
+     \CC{\prob'} (v_1,v_2).\bigl(
+      \sure{\Ip{x}{i} = v_1} \land
+      \sure{\Ip{y}{j} = v_2} \land
+      \pure{v_1=v_2}
+    \bigr)
+\whichproves
+    \E \prob'.
+     \CC{\prob'} (v_1, v_2).\bigl(
+      \sure{\Ip{x}{i} = v_1} \land
+      \sure{\Ip{y}{j} = v_1 }
+    \bigr)
+    \byrule{c-cons}
+\whichproves
+    \E \prob'.
+     \CC{\prob'\circ\inv{\proj_1}} v_1.\bigl(
+      \sure{\Ip{x}{i} = v_1} \land
+      \sure{\Ip{y}{j} = v_1 }
+    \bigr)
+    \byrule{c-sure-proj}
+\whichproves
+    \E \prob.
+     \CC{\prob} v_1.\bigl(
+      \sure{\Ip{x}{i} = v_1} \land
+      \sure{\Ip{y}{j} = v_1 }
+    \bigr)
+    \by{$ \prob = \prob'\circ\inv{\proj_1} $}
+\whichproves
+    \E \prob.
+      \bigl(
+      \CC\prob v_1.
+       \sure{\Ip{x}{i} = v_1}
+      \bigr)
+      \land
+      \bigl(
+      \CC\prob v_1.
+        \sure{\Ip{y}{j} = v_1}
+      \bigr)
+\whichproves
+    \E \prob.
+    \distAs{\Ip{x}{i}}{\mu}
+    \land
+    \distAs{\Ip{y}{j}}{\mu}
+    \byrule{c-unit-r}
+\whichproves
+    \E \prob.
+    \distAs{\Ip{x}{i}}{\mu}
+    \ast
+    \distAs{\Ip{y}{j}}{\mu}
+    \byrule{and-to-star}
+  \end{eqexplain}
+\end{proof} \begin{lemma}
+  \Cref{rule:rl-convex} is sound.
+\end{lemma}
+
+\begin{proof}
+ \begin{eqexplain}
+   \CMod{\prob} a \st \cpl{R}
+\whichis*
+\CMod{\prob} a \st
+     \E \prob'.
+       \pure{\prob'(R) = 1} *
+       \bigl(
+         \CC{\prob'} \m{v}.
+           \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+       \bigr)
+\whichproves
+     \E \krnl.
+     \CMod{\prob} a \st
+       \bigl(
+         \CC{\krnl(a)} \m{v}.
+           \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+           * \pure{R(\m{v})}
+       \bigr)
+   \byrules{c-pure,c-skolem}
+\whichproves
+     \E \hat{\prob}.
+     \CMod{\hat{\prob}} (a,\m{v}) \st
+       \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+       * \pure{R(\m{v})}
+   \byrule{c-fuse}
+\whichproves
+     \E \hat{\prob}.
+     \pure{\hat{\prob} \circ \inv{\proj_2}(R) = 1} *
+     \CMod{\hat{\prob}} (a,\m{v}) \st
+       \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+   \byrule{c-pure}
+\whichproves
+     \E \hat{\prob}.
+     \pure{\hat{\prob} \circ \inv{\proj_2}(R) = 1} *
+     \CMod{\hat{\prob} \circ \inv{\proj_2}} \m{v} \st
+       \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+   \byrule{c-sure-proj-many}
+\whichproves
+     \E \hat{\prob}'.
+     \pure{\hat{\prob}'(R) = 1} *
+     \CMod{\hat{\prob}'} \m{v} \st
+       \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+\whichis \cpl{R}
+ \end{eqexplain}
+ In the derivation we use
+ $ \hat{\prob} = \prob \fuse \krnl $,
+ and
+ $\hat{\prob}' = \hat{\prob} \circ \inv{\proj_2}$.
+\end{proof}
+ \begin{lemma}
+\label{proof:rl-merge}
+  \Cref{rule:rl-merge} is sound.
+\end{lemma}
+
+\begin{proof}
+  Let $R_1\in \Val^{X_1}$ and $R_2\in \Val^{X_2}$
+  and let
+  $ X = X_1 \inters X_2 $,
+  $ Y_1 = X_1 \setminus X $, and
+  $ Y_2 = X_2 \setminus X $, so that
+  $ X_1 \union X_2 = Y_1 \dunion X \dunion Y_2 $.
+
+  By definition, $\cpl{R_1} * \cpl{R_2}$ entails that for some
+  $ \prob_1,\prob_2 $ with $ \prob_1(R_1)=1 $ and $ \prob_1(R_2)=1 $:
+  \begin{eqexplain}
+&
+    \CC{\prob_1} \m{v}_1.
+      (\sure{\ip{x}{i} = \m{v}_1(\ip{x}{i})}_{\ip{x}{i}\in X_1}) *
+\CC{\prob_2} \m{v}_2.
+      (\sure{\ip{x}{i} = \m{v}_2(\ip{x}{i})}_{\ip{x}{i}\in X_2})
+\whichproves
+  \CC{\prob_1} (\m{w}_1,\m{v}_1). (
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1}
+    \land
+    \sure{\ip{x}{i} = \m{v}_1(\ip{x}{i})}_{\ip{x}{i}\in X}
+    * \pure{(\m{w}_1\m{v}_1) \in R_1}
+  ) *
+  {} \\ &
+  \CC{\prob_2} (\m{w}_2,\m{v}_2). (
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2}
+    \land
+    \sure{\ip{x}{i} = \m{v}_2(\ip{x}{i})}_{\ip{x}{i}\in X}
+    * \pure{(\m{w}_2\m{v}_2) \in R_2}
+  )
+  \byrule{c-pure}
+\whichproves
+  \CC{\prob_1} (\m{w}_1,\m{v}_1).
+    \CC{\prob_2} (\m{w}_2,\m{v}_2).
+    \begin{pmatrix*}[l]
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1}
+          \land
+          \sure{\ip{x}{i} = \m{v}_1(\ip{x}{i})}_{\ip{x}{i}\in X} * {}
+    \\
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2}
+          \land
+          \sure{\ip{x}{i} = \m{v}_2(\ip{x}{i})}_{\ip{x}{i}\in X} * {}
+    \\
+      \pure{(\m{w}_1\m{v}_1) \in R_1}
+    * \pure{(\m{w}_2\m{v}_2) \in R_2}
+    \end{pmatrix*}
+  \byrule{c-frame}
+\whichproves
+  \CC{\prob_1} (\m{w}_1,\m{v}_1).
+    \CC{\prob_2} (\m{w}_2,\m{v}_2).
+    \begin{pmatrix*}[l]
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1}
+          \land
+          \sure{\ip{x}{i} = \m{v}_1(\ip{x}{i})}_{\ip{x}{i}\in X} * {}
+    \\
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2}
+          \land
+          \sure{\ip{x}{i} = \m{v}_2(\ip{x}{i})}_{\ip{x}{i}\in X} * {}
+    \\
+      \pure{(\m{w}_1\m{v}_1) \in R_1}
+    * \pure{(\m{w}_2\m{v}_2) \in R_2}
+    * \pure{\m{v}_1=\m{v}_2}
+    \end{pmatrix*}
+  \byrule{sure-eq-inj}
+\whichproves
+  \CC{\prob_1} (\m{w}_1,\m{v}_1).
+  \CC{\prob_2} (\m{w}_2,\m{v}_2).
+    \begin{pmatrix*}[l]
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1} \land {}
+    \\
+    \sure{\ip{x}{i} = \m{v}_1(\ip{x}{i})}_{\ip{x}{i}\in X} \land {}
+    \\
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2} * {}
+    \\
+    \pure{(\m{w}_1\m{v}_1) \in R_1 \land (\m{w}_2\m{v}_1) \in R_2}
+    \end{pmatrix*}
+  \byrule{c-cons}
+\whichproves
+  \CC{\prob_1} (\m{w}_1,\m{v}_1).
+  \CC{\prob_2 \circ \inv{\pi_1}} (\m{w}_2).
+    \begin{pmatrix*}[l]
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1} \land {}
+    \\
+    \sure{\ip{x}{i} = \m{v}_1(\ip{x}{i})}_{\ip{x}{i}\in X} \land {}
+    \\
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2} * {}
+    \\
+    \pure{(\m{w}_1\m{v}_1) \in R_1 \land (\m{w}_2\m{v}_1) \in R_2}
+    \end{pmatrix*}
+  \byrule{c-sure-proj}
+  \end{eqexplain}
+
+
+
+  Thus by letting $
+  \prob = \prob_1 \pprod (\prob_2 \circ \inv{\pi_1})
+  =\bind(\prob_1, \krnl_2)
+  $ where
+  \[
+    \krnl_2 = \fun (\m{w}_1\m{v}_1).(
+      \bind(\prob_2,\fun (\m{w}_2,\m{v}_2).
+                        \return (\m{w}_1\m{w}_2\m{v}_1))
+    )
+  \]
+  we obtain:
+  \begin{eqexplain}
+  &
+  \CC{\prob_1} (\m{w}_1',\m{v}_1').
+    \CC{\krnl_2(\m{w}_1',\m{v}_1')} (\m{w}_1,\m{w}_2,\m{w}).
+    \begin{pmatrix*}[l]
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1} \land {}
+    \\
+    \sure{\ip{x}{i} = \m{w}(\ip{x}{i})}_{\ip{x}{i}\in X} \land {}
+    \\
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2} * {}
+    \\
+    \pure{(\m{w}_1\m{w}) \in R_1 \land (\m{w}_2\m{w}) \in R_2}
+    \end{pmatrix*}
+\whichproves
+  \CC{\prob} (\m{w}_1,\m{w}_2,\m{w}).
+    \begin{pmatrix*}[l]
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1} \land {}
+    \\
+    \sure{\ip{x}{i} = \m{w}(\ip{x}{i})}_{\ip{x}{i}\in X} \land {}
+    \\
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2}
+    \\
+    \pure{(\m{w}_1\m{w}) \in R_1 \land (\m{w}_2\m{w}) \in R_2}
+    \end{pmatrix*}
+  \byrules{c-assoc,c-sure-proj}
+\whichproves
+  \CC{\prob} \m{v}.
+    \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in (X_1\union X_2)}
+    * \pure{(\restr{\m{v}}{X_1}) \in R_1 \land (\restr{\m{v}}{X_2}) \in R_2}
+  \end{eqexplain}
+  The result gives us $ \cpl{R_1 \land R_2} $
+  by \ref{rule:c-pure} and \cref{def:rel-lift}.
+\end{proof} \begin{lemma}
+\label{proof:rl-sure-merge}
+  \Cref{rule:rl-sure-merge} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \cpl{R} * \sure{\ip{x}{i} = \expr\at{i}}
+  \whichproves*
+    \E\prob.
+      \CC\prob \m{v}. \bigl(
+        \sure{\ip{y}{i} = \m{v}(\ip{y}{i})}_{\ip{y}{i}\in X}
+        * \pure{R(\m{v})}
+      \bigr)
+      * \sure{\ip{x}{i} = \expr\at{i}}
+  \bydef
+\whichproves
+    \E\prob.
+      \CC\prob \m{v}. \bigl(
+        \sure{\ip{y}{i} = \m{v}(\ip{y}{i})}_{\ip{y}{i}\in X}
+        * \pure{R(\m{v})}
+        * \sure{\ip{x}{i} = \expr\at{i}}
+      \bigr)
+  \byrule{c-frame}
+\whichproves
+    \E\prob.
+      \CC\prob \m{v}. \bigl(
+        \sure{\ip{y}{i} = \m{v}(\ip{y}{i})}_{\ip{y}{i}\in X}
+        * \pure{R(\m{v})}
+        * \sure{\ip{x}{i} = \sem{\expr\at{i}}(\m{v})}
+      \bigr)
+  \by{$\pvar(\expr\at{i}) \subs X$}
+\whichproves
+    \E\prob.
+      \CC\prob \m{v}. \bigl(
+        \sure{\ip{y}{i} = \m{v}(\ip{y}{i})}_{\ip{y}{i}\in X}
+        * \pure{R(\m{v})}
+        * \CC{\dirac{\sem{\expr\at{i}}(\m{v})}} w.\sure{\ip{x}{i} = w}
+      \bigr)
+  \byrule{c-unit-l}
+\whichproves
+    \E\prob.
+      \CC\prob \m{v}.
+      \CC{\dirac{\sem{\expr\at{i}}(\m{v})}} w.
+      \bigl(
+        \sure{\ip{y}{i} = \m{v}(\ip{y}{i})}_{\ip{y}{i}\in X}
+        * \pure{R(\m{v})}
+        * \sure{\ip{x}{i} = w}
+      \bigr)
+  \byrule{c-frame}
+\whichproves
+    \E\prob'.
+      \CC{\prob'} \m{v}'.
+      \begin{grp}
+        \sure{\ip{y}{i} = \m{v}'(\ip{y}{i})}_{\ip{y}{i}\in X}
+        * \sure{\ip{x}{i} = \m{v}'(\ip{x}{i})} \\ {}
+        * \pure{R(\m{v}') \land \sem{\expr\at{i}}(\m{v}') = \m{v}'(\ip{x}{i})}
+      \end{grp}
+  \byrules{c-pure,c-assoc}
+\whichproves
+    \cpl{R \land \ip{x}{i} = \expr\at{i}}
+  \end{eqexplain}
+  where we let
+  $
+    \prob' \is
+      \left(
+      \DO{
+        \m{v} <- \prob;
+        \return(\m{v}\upd{\ip{x}{i} -> \sem{\expr\at{i}}(\m{v})})
+      }
+      \right).
+  $
+\end{proof} \begin{lemma}
+\label{proof:coupling}
+  \Cref{rule:coupling} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assuming
+  $\prob \circ \inv{\proj_1} = \prob_1$,
+  $\prob \circ \inv{\proj_2} = \prob_2$, and
+  $\prob(R) = 1$, we have:
+  \begin{eqexplain}
+    \distAs{\p{x}_1\at{\I1}}{\prob_1} *
+    \distAs{\p{x}_2\at{\I2}}{\prob_2}
+\whichproves*
+    \CC{\prob_1} v. \sure{x_1\at{1} = v} *
+    \CC{\prob_2} w. \sure{x_2\at{2} = w}
+    \byrule{c-unit-r}
+\whichproves
+    \CC{\prob} (v, w). \sure{x_1\at{1} = v} *
+    \CC{\prob} (v, w). \sure{x_2\at{2} = w}
+    \byrule{c-sure-proj}
+\whichproves
+    \CC{\prob} (v, w). \sure{x_1\at{1} = v} \land
+    \CC{\prob} (v, w). \sure{x_2\at{2} = w}
+    \byrule{and-to-star}
+\whichproves
+    \CC{\prob} (v, w).
+      (\sure{x_1\at{1} = v} \land
+      \sure{x_2\at{2} = w})
+    \byrule{c-and}
+\whichproves
+    \cpl{R(x_1\at{1}, x_2\at{2})}
+    \by{$\prob(R) = 1$}
+  \end{eqexplain}
+\end{proof}
+ 
+\subsubsection{Weakest Precondition}
+\begin{lemma}
+\label{proof:wp-loop-0}
+  \Cref{rule:wp-loop-0} is sound.
+\end{lemma}
+
+\begin{proof}
+  Special case of \ref{rule:wp-loop} with $n=0$,
+  which makes the premises trivial.
+\end{proof} \begin{lemma}
+\label{proof:wp-loop-lockstep}
+  \Cref{rule:wp-loop-lockstep} is sound.
+\end{lemma}
+
+\begin{proof}
+  We derive the following rule:
+  \[
+  \infer*{
+    \forall k < n\st
+      P(k) \proves \WP {\m[i: t, j: t']}{P(k+1)}
+  }{
+    P(0) \proves
+    \WP {\m[i: (\Loop{n}{t}), j: (\Loop{n}{t'})]} {P(n)}
+  }
+  \]
+  (for $n\in \Nat$ and $i \ne j$)
+  from the standard \ref{rule:wp-loop},
+  as follows.
+  Let
+  \[
+    P'(k) \is
+    \WP {\m[j: \Loop{k}{t'}]} {P(k)}
+  \]
+  Note that
+  $P(0) \proves P'(0)$
+  by \ref{rule:wp-loop-0}.
+  Then we can apply the \ref{rule:wp-loop} using $P'$ as a loop invariant
+  \begin{derivation}
+    \infer*[Right=\ref{rule:wp-nest}]{
+    \infer*{
+    \infer*[Right=\ref{rule:wp-loop}]{
+    \infer*{
+    \infer*[Right=\ref{rule:wp-nest}]{
+    \infer*[Right=\ref{rule:wp-loop-unf}]{
+    \infer*[Right=\ref{rule:wp-cons}]{
+    \infer*[Right=\ref{rule:wp-nest}]{
+    \infer*{}{
+      \forall k \leq n \st
+      P(k)
+      \proves
+      \WP {\m[i: t, j: t']} {P(k+1)}
+    }}{
+      \forall k \leq n \st
+      P(k)
+      \proves
+        \WP {\m[j: t']} {
+          \WP {\m[i: t]} {P(k+1)}
+      }
+    }}{
+      \forall k \leq n \st
+      \WP {\m[j: \Loop{k}{t'}]} {P(k)}
+      \proves
+      \WP {\m[j: \Loop{k}{t'}]}[\big]{
+        \WP {\m[j: t']} {
+          \WP {\m[i: t]} {P(k+1)}
+        }
+      }
+    }}{
+      \forall k \leq n \st
+      \WP {\m[j: \Loop{k}{t'}]} {P(k)}
+      \proves
+      \WP {\m[j: \Loop{(k+1)}{t'}]}[\big]{
+        \WP {\m[i: t]} {P(k+1)}
+      }
+    }}{
+      \forall k \leq n \st
+      \WP {\m[j: \Loop{k}{t'}]} {P(k)}
+      \proves
+      \WP {\m[i: t]}[\big]{
+        \WP {\m[j: \Loop{(k+1)}{t'}]} {P(k+1)}
+      }
+    }}{
+      \forall k \leq n \st
+        P(k)' \proves
+          \WP {\m[i: t]} {P'(k+1)}
+    }}{
+      P'(0) \proves
+      \WP {\m[i: (\Loop{n}{t})]}{
+        P'(n)
+      }
+    }}{
+      P(0) \proves
+      \WP {\m[i: (\Loop{n}{t})]}{
+        \WP{\m[j: (\Loop{n}{t'})]} {P(n)}
+      }
+    }}{
+      P(0) \proves
+      \WP {\m[i: (\Loop{n}{t}), j: (\Loop{n}{t'})]} {P(n)}
+    }
+  \end{derivation}
+  From bottom to top,
+    we focus on component $i$ using \ref{rule:wp-nest};
+    then we use $P(0) \proves P'(0)$ and transitivity of entailment
+    to rewrite the goal using the invariant $P'$;
+    we then use \ref{rule:wp-loop} and unfold the invariant;
+    using \ref{rule:wp-nest} twice we can swap the two components so that
+    component~$j$ is the topmost WP in the assumption and conclusion;
+    using \ref{rule:wp-loop-unf} we break off the first $k$ iterations at~$j$;
+    finally, using \ref{rule:wp-cons} we can eliminate the topmost
+    WP on both sides of the entailments.
+
+  It is straightforward to adapt the argument for any number of components
+  looping the same number of times.
+\end{proof} \begin{lemma}
+\label{proof:wp-rl-assign}
+  \Cref{rule:wp-rl-assign} is sound.
+\end{lemma}
+
+\begin{proof}
+  Define
+    $\m{\permap}_R \is (\m{\permap} \setminus \ip{x}{i})/2$ and
+    $ \m{\permap}_{\p{x}} \is \m{\permap} - \m{\permap}_R $;
+  note that by $\m{\permap}(\ip{x}{i})=1$
+  we have $\m{\permap}_{\p{x}}(\ip{x}{i})=1$.
+  We first show that the following hold:
+  \begin{align}
+    \cpl{R}\withp{\m{\permap}}
+    &\proves
+    \cpl{R}\withp{\m{\permap}_R} * (\m{\permap}_{\p{x}})
+    \\
+    \cpl{R}\withp{\m{\permap}_R}
+      * \sure{\p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}_{\p{x}}}
+    &\proves
+    \cpl{R \land \p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}}
+  \end{align}
+  The first entailment holds because $\cpl{R}$ is permission-scaling-invariant
+  (see \cref{sec:appendix:permissions})
+  and by the assumption that $\p{x}\notin \pvar(R)$.
+  The second entailment holds by \ref{rule:rl-sure-merge}.
+
+  We can then derive:
+  \[
+  \begin{derivation}
+    \infer*[Right=\ref{rule:wp-cons}]{
+    \infer*[Right=\ref{rule:wp-frame}]{
+    \infer*[Right=\ref{rule:wp-assign}]{ }{
+      (\m{\permap}_{\p{x}})
+      \proves
+      \WP {\m[i: \code{x:=}\expr]}[\big] {
+          \sure{\p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}_{\p{x}}}
+      }
+    }}{
+      \cpl{R}\withp{\m{\permap}_R}
+      * (\m{\permap}_{\p{x}})
+      \proves
+      \WP {\m[i: \code{x:=}\expr]}[\big] {
+        \cpl{R}\withp{\m{\permap}_R}
+          * \sure{\p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}_{\p{x}}}
+      }
+    }}{
+      \cpl{R}\withp{\m{\permap}}
+      \proves
+      \WP {\m[i: \code{x:=}\expr]}[\big] {
+        \cpl{R \land \p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}}
+      }
+    }
+  \end{derivation}
+  \qedhere
+  \]
+\end{proof} \begin{lemma}
+\label{proof:wp-if-unary}
+  \Cref{rule:wp-if-unary} is sound.
+\end{lemma}
+
+\begin{proof}
+  From the premises, we derive:
+  \[
+  \begin{derivation}
+  \infer*[right=\ref{rule:c-wp-swap}]{
+  \infer*[Right={\ref{rule:c-unit-r},\ref{rule:c-frame}}]{
+  \infer*[Right=\ref{rule:c-cons}]{
+  \infer*[Right=\ref{rule:wp-bind}]{
+  \infer*[Right=\ref{rule:wp-if-prim}]{
+  \infer*{
+    P * \sure{\Ip{e}{1}=1} \gproves \WP {\m[\I1:t_1]} {Q(1)}
+    \\
+    P * \sure{\Ip{e}{1}=0} \gproves \WP {\m[\I1:t_2]} {Q(0)}
+  }{\forall b\in\set{0,1}\st
+    P * \sure{\Ip{e}{1}=1}
+    \gproves
+    \ITE{b}{\WP{\m[\I1:t_1]}{Q(1)}}{\WP{\m[\I1:t_2]}{Q(0)}}
+  }}{\forall b\in\set{0,1}\st
+    P * \sure{\Ip{e}{1}=b}
+    \gproves
+    \WP {\m[\I1:
+        (\code{if $\;b\;$ then $\;t_1\;$ else $\;t_2$})
+      ]}{
+      Q(b\beq 1)
+    }
+  }}{\forall b\in\set{0,1}\st
+    P * \sure{\Ip{e}{1}=b}
+    \gproves
+    \WP {\m[\I1:
+      (\code{if e then $\;t_1\;$ else $\;t_2$})
+    ]}{
+      Q(b\beq 1)
+    }
+  }}{\CC{\beta} b.(P * \sure{\Ip{e}{1}=b})
+    \gproves
+    \CC{\beta} b.
+    \WP {\m[\I1:
+      (\code{if e then $\;t_1\;$ else $\;t_2$})
+    ]}{
+      Q(b\beq 1)
+    }
+  }}{P * \distAs{\Ip{e}{1}}{\beta}
+    \gproves
+    \CC{\beta} b.
+    \WP {\m[\I1:
+      (\code{if e then $\;t_1\;$ else $\;t_2$})
+    ]}{
+      Q(b\beq 1)
+    }
+  }}{P * \distAs{\Ip{e}{1}}{{\beta}}
+    \gproves
+    \WP {\m[\I1:
+        (\code{if e then $\;t_1\;$ else $\;t_2$})
+      ]}{
+      \CC{\beta} b.Q(b\beq 1)
+    }
+  }
+  \end{derivation}
+  \qedhere
+  \]
+\end{proof}
+

@@ -1,0 +1,931 @@
+\section{Case Studies for \thelogic}
+\label{sec:discussion}
+\label{sec:examples}
+Our evaluation of \thelogic\ is based on two main lines of enquiry: (1) Are high-level principles about probabilistic reasoning provable from the core constructs of \thelogic? (2) Does \thelogic, through enabling new reasoning patterns, expand the horizon for verification of probabilistic programs
+\emph{beyond} what was possible before?
+We include case studies that try to highlight the contribution of \thelogic\ each question, and sometimes both at the same time.
+Specifically, our evaluation is guided by the following research questions:
+\begin{enumerate}[label=\textbf{RQ\arabic*:},ref=\textbf{RQ\arabic*}]
+\item Do joint conditioning and independence offer a good abstract interface over the underlying semantic model?
+\label{rq:abstract}
+\item Can known unary/relational principles be reconstructed from \thelogic's primitives?
+\label{rq:known}
+\item Can new unary/relational principles be discovered (as new lemmas) and proved from \thelogic's primitives?
+\label{rq:new}
+\item Can \thelogic's primitives be successfully incorporated in an effective \emph{program} logic?\label{rq:programs}
+\end{enumerate}
+We already demonstrated positive answers to some of these questions
+in \cref{sec:overview}:
+for example, the proof of the One-time pad addresses
+  \labelcref{rq:abstract,rq:known},
+the proof of \ref{rule:seq-swap} addresses \labelcref{rq:new,rq:programs}.
+In this section we provide a more detailed evaluation
+through a number of challenging examples.
+The full proofs of the case studies and additional examples
+are in \appendixref{sec:appendix:examples}.
+Here, we summarize some highlights to frame the key contributions of \thelogic.
+
+
+
+
+
+
+
+
+\subsection{pRHL-style Reasoning}
+\label{sec:ex:prhl-style}
+
+Our first example is an encoding of pRHL's judgments in \thelogic,
+sketching how pRHL-style reasoning can be
+effectively embedded and extended in \thelogic{}
+(\labelcref{rq:abstract,rq:known,rq:new,rq:programs}).
+
+In pRHL, the semantics of triples implicitly always conditions
+on the input store,
+so that programs are always seen as running from a pair of
+\emph{deterministic} input stores satisfying the relational precondition.
+Judgments in pRHL have the form
+$
+  \proves t_1 \sim t_2 : R_0 \implies R_1
+$
+where $R_0,R_1$ are two relations on states
+(the pre- and postcondition, respectively)
+and $t_1,t_2$ are the two programs to be compared.
+Such a judgment can be encoded in \thelogic\ as:
+\begin{equation}
+  \cpl{R_0}
+  \proves
+  \E \prob.
+    \CC\prob \m{s}.(
+      \var{St}(\m{s}) \land
+      \WP {\m[\I1:t_1,\I2:t_2]} {\cpl{R_1}}
+    )
+  \quad
+  \text{where}
+  \quad
+  \var{St}(\m{s}) \is
+    \sure{\ip{x}{i}=\m{s}(\ip{x}{i})}_{\ip{x}{i}\in I\times\Var}
+  \label{triple:prhl}
+\end{equation}
+As the input state is always conditioned,
+and the precondition is always a relational lifting,
+one is always in the position of applying \ref{rule:c-cons}
+to eliminate the implicit conditioning of the lifting and the one wrapping the
+WP, reducing the problem to a goal where the input state is deterministic
+(and thus where the primitive rules of WP laws apply without need for
+further conditioning).
+As noted in \cref{sec:overview:obox},
+LHC-style WPs allow us to lift our unary WP rules
+to binary with little effort.
+
+An interesting property of the encoding in~\eqref{triple:prhl} is that
+anything of the form $ \CC\prob \m{s}.(\var{St}(\m{s}) \land \dots) $
+has ownership of the full store (as it conditions on every variable).
+We observe that WPs (of any arity) which have this property
+enjoy an extremely powerful rule.
+Let $ \ownall \is \A \ip{x}{i} \in I\times\Var.\own{\ip{x}{i}} $.
+The following is a valid (primitive) rule in \thelogic:
+\begin{proofrule}
+  \infer*[lab=c-wp-swap]{}{
+  \CC\prob v.
+    \WP{\m{t}}{Q(v)}
+    \land \ownall
+  \proves
+  \WP{\m{t}}*{\CC\prob v.Q(v)}
+}   \label{rule:c-wp-swap}
+\end{proofrule}
+
+
+\Cref{rule:c-wp-swap},
+allows the shift of the conditioning on the input to the conditioning of the output.
+This rule provides a powerful way to make progress in lifting
+a conditional statement to an unconditional one.
+To showcase \ref{rule:c-wp-swap},
+consider the two programs in \cref{fig:cond-swap-code}, which
+are equivalent:
+if we couple the \p{x} in both programs,
+the other two samplings can be coupled under conditioning on \p{x}.
+Formally, let $ P \gproves Q \is P \land \ownall \proves Q \land \ownall $.
+We process the two assignments to $\p{x}$, which we can couple
+$
+  \distAs{\Ip{x}{1}}{d_0} *
+  \distAs{\Ip{x}{2}}{d_0}
+  \proves
+  \CC{d_0} v.(\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v})
+$.
+Then, let $t_1$ ($t_2$) be the rest of \p{prog1} (\p{prog2}).
+We can then derive:
+\par
+\begin{derivation}
+\infer*[right=\ref{rule:rl-convex}]{
+\infer*[Right=\ref{rule:c-wp-swap}]{
+\infer*[Right=\ref{rule:c-cons}]{
+\infer*[Right=\ref{rule:rl-merge}]{
+\infer*[Right=\ref{rule:coupling}]{
+  \forall v\st
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]}*{
+  \begin{matrix*}[l]
+    \cpl{\Ip{x}{1} = \Ip{x}{2}} *
+    \distAs{\Ip{y}{1}}{d_1(v)} *
+    \distAs{\Ip{y}{2}}{d_1(v)} *
+    {}\\
+    \distAs{\Ip{z}{1}}{d_2(v)} *
+    \distAs{\Ip{z}{2}}{d_2(v)}
+  \end{matrix*}
+  }
+}{
+  \forall v\st
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2}} *
+    \cpl{\Ip{y}{1} = \Ip{y}{2}} *
+    \cpl{\Ip{z}{1} = \Ip{z}{2}}
+  }
+}}{
+  \forall v\st
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+}}{
+  \CC{d_0} v.(\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v})
+  \gproves
+  \CC{d_0} v.
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+}}{
+  \CC{d_0} v.(\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v})
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+  \CC{d_0} v.
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+}}{
+  \CC{d_0} v.(\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v})
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+}
+\end{derivation}
+\vspace{\belowdisplayskip}
+
+Where the top triple can be easily derived using standard steps.
+Reading it from bottom to top, we start by invoking convexity of
+relational lifting to introduce a conditioning modality in the postcondition
+matching the one in the precondition.
+\Cref{rule:c-wp-swap} allows us to bring the whole WP under the modality,
+allowing \cref{rule:c-cons} to remove it on both sides.
+From then it is a matter of establishing and combining
+the couplings on \p{y} and \p{z}.
+Note that these couplings are only possible because the coupling
+on \p{x} made the parameters of $d_1$ and of $d_2$ coincide on both indices.
+In \cref{sec:ex:von-neumann} we show this kind of derivation can be useful
+for unary reasoning too.
+
+While the $\ownall$ condition is restricting,
+without it the rule is unsound in the current model.
+We leave it as future work to study whether there is a model
+that validates this rule without requiring~$\ownall$.
+
+\subsection{One Time Pad Revisited}
+\label{sec:ex:one-time-pad}
+In \cref{sec:overview}, we prove the \p{encrypt} program correct relationally
+(missing details are in \appendixref{sec:appendix:examples:onetimerel}).
+An alternative way of stating and proving the correctness of \p{encrypt}
+is to establish that in the output distribution \p{c} and \p{m} are independent,
+which can be expressed as the \emph{unary} goal (also studied in~\cite{barthe2019probabilistic}):
+$
+(\m{\permap})
+  \proves
+  \WP {\m[\I1: \code{encrypt()}]} {
+    \distAs{\Ip{c}{1}}{\Ber{1/2}} *
+    \distAs{\Ip{m}{1}}{\Ber{p}}
+  }
+$
+(where $\m{\permap} = \m[\Ip{k}{1}:1,\Ip{m}{1}:1,\Ip{c}{1}:1]$).
+The triple states that after running \p{encrypt},
+the ciphertext \p{c} is distributed as a fair coin,
+and---importantly---is \emph{not} correlated with the plaintext in \p{m}.
+The PSL proof in~\cite{barthe2019probabilistic} performs some of the steps
+within the logic, but needs to carry out some crucial entailments at the meta-level, which is a symptom of unsatisfactory abstractions~(\labelcref{rq:abstract}). The same applies to the Lilac proof in~\cite{lilac2} which requires  ad-hoc lemmas proven on the semantic model.
+The stumbling block is proving the valid entailment:
+\[
+  \distAs{\Ip{k}{1}}{\Ber{\onehalf}} *
+  \distAs{\Ip{m}{1}}{\Ber{p}} *
+  \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}
+  \proves
+  \distAs{\Ip{m}{1}}{\Ber{p}} *
+  \distAs{\Ip{c}{1}}{\Ber{\onehalf}}
+\]
+In \thelogic\ we can prove the entailment in two steps:
+(1) we condition on \p{m} and \p{k} to compute the result of
+the \p{xor} operation and obtain that \p{c} is distributed as $\Ber{\onehalf}$;
+(2) we carefully eliminate the conditioning while preserving the independence
+of \p{m} and \p{c}.
+
+The first step starts by conditioning on \p{m} and \p{k} and proceeds as follows:
+\begin{eqexplain}
+  & \CC{\Ber{p}} m.
+    \bigl(
+      \sure{\Ip{m}{1}=m} *
+      \CC{\Ber{\onehalf}} k.
+        (\sure{\Ip{k}{1}=k} *
+        \sure{\Ip{c}{1} = k \xor m})
+    \bigr)
+\whichproves
+  \CC{\Ber{p}} m.
+    \left(
+    \sure{\Ip{m}{1}=m} *
+    \begin{cases}
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k} \CASE m=0
+      \\
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=\neg k} \CASE m=1
+    \end{cases}
+    \right)
+  \byrule{c-cons}
+\whichproves
+  \CC{\Ber{p}} m.
+    \bigl(
+      \sure{\Ip{m}{1}=m} *
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k}
+    \bigr)
+  \byrule{c-transf}
+\end{eqexplain}The crucial entailment is the application of \ref{rule:c-transf} to the $m=1$ branch,
+by using negation as the bijection
+(which satisfies the premises of the rules since $\Ber{\onehalf}$ is unbiased).
+
+The second step uses the following primitive rule of \thelogic:
+\begin{proofrule}
+  \infer*[lab=prod-split]{}{
+  \distAs{(\aexpr_1\at{i}, \aexpr_2\at{i})}{\prob_1 \otimes \prob_2}
+  \proves
+  \distAs{\aexpr_1\at{i}}{\prob_1} *
+  \distAs{\aexpr_2\at{i}}{\prob_2}
+}
+   \label{rule:prod-split}
+\end{proofrule}
+with which we can prove:
+\begin{eqexplain}
+& \CC{\Ber{p}} m.
+    \bigl(
+      \sure{\Ip{m}{1}=m} *
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k}
+    \bigr)
+\whichproves
+  \CC{\Ber{p}} m.
+  \CC{\Ber{\onehalf}} k.
+    \sure{\Ip{m}{1}=m \land \Ip{c}{1}=k}
+  \ifappendix \byrules{c-frame,sure-merge}\else \byrules{c-frame}\fi \whichproves
+  \CC{\Ber{p} \pprod \Ber{\onehalf}} (m,k).
+    \sure{(\Ip{m}{1},\Ip{c}{1})=(m,k)}
+  \byrules{c-fuse}
+\whichproves
+  \distAs{(\Ip{m}{1},\Ip{c}{1})}{(\Ber{p} \pprod \Ber{\onehalf})}
+  \byrule{c-unit-r}
+\whichproves
+  \distAs{\Ip{m}{1}}{\Ber{p}} *
+  \distAs{\Ip{c}{1}}{\Ber{\onehalf}}
+  \byrule{prod-split}
+\end{eqexplain}
+
+As this is a common manipulation needed to extract unconditional independence
+from a conditional fact, we can formulate it as the more general
+derived rule
+\begin{proofrule}
+  \infer*[lab=c-extract]{}{
+  \CC{\prob_1} v_1. \bigl(
+    \sure{\aexpr_1\at{i} = v_1} *
+    \distAs{\aexpr_2\at{i}}{\prob_2}
+  \bigr)
+  \proves
+  \distAs{\aexpr_1\at{i}}{\prob_1} *
+  \distAs{\aexpr_2\at{i}}{\prob_2}
+}   \label{rule:c-extract}
+\end{proofrule}
+
+
+
+
+
+\subsection{Markov Blankets}
+\label{sec:ex:markov-blanket}
+
+In probabilistic reasoning, introducing conditioning is easy,
+but deducing unconditional facts from conditional ones is not immediate.
+The same applies to the \supercond\ modality: by design, one cannot eliminate it for free.
+Crucial to \thelogic's expressiveness is the inclusion of rules that can
+soundly derive unconditional information from conditional assertions.
+
+We use the concept of a \emph{Markov Blanket}---a very common tool in Bayesian reasoning
+  for simplifying conditioning---to illustrate \thelogic's expressiveness (\labelcref{rq:abstract,rq:known}).
+Intuitively, Markov blankets identify a set of variables that affect the distribution of a random variable \emph{directly}:
+this is useful because by conditioning on those variables
+we can remove conditional connection between the random variable
+and all the variables on which it \emph{indirectly} depends.
+
+
+For concreteness, consider the program
+\code{x1:~$\dist_1$;
+x2:~$\dist_2(\p{x1})$;
+x3:~$\dist_3(\p{x2})$}.
+The program describes a Markov chain of three variables.
+One way of interpreting this pattern is that the joint output distribution
+is described by the program as a product of conditional distributions:
+the distribution over \p{x2} is described conditionally on \p{x1},
+and the one of \p{x3} conditionally on \p{x2}.
+This kind of dependencies are ubiquitous in, for instance, hidden Markov models and Bayesian network representations of distributions.
+
+A crucial tool for the analysis of such models is the concept of a
+Markov Blanket of a variable~\p{x}: the set of variables that are direct dependencies of~\p{x}.
+Clearly~\p{x3} depends on~\p{x2} and, indirectly, on~\p{x1}.
+However, Markov chains enjoy the memorylessness property:
+when fixing a variable in the chain, the variables that follow it are independent from the variables that preceded it.
+For our example this means that if we condition on~\p{x2}, then
+\p{x1} and~\p{x3} are independent (\ie we can ignore the indirect dependencies).
+
+In \thelogic\ we can characterize the output distribution with the assertion
+\[
+  \CC{\dist_1} v_1. \Bigl(
+    \sure{\p{x1}=v_1} *
+    \CC{\dist_2(v_1)} v_2. \bigl(
+      \sure{\p{x2}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+\]
+Note how this postcondition represents the output distribution
+as implicitly as the program does.
+We want to transform the assertion into:
+\[
+  \CC{\prob_2} v_2.
+  \bigl(
+    \sure{\p{x2}=v_2} *
+    \distAs{\p{x1}}{\prob_1(v_2)} *
+    \distAs{\p{x3}}{\dist_3(v_2)}
+  \bigr)
+\]
+for appropriate $\prob_2$ and $\prob_1$.
+This isolates the conditioning to the direct dependency of \p{x1}
+and keeps full information about \p{x3},
+available for further manipulation down the line.
+
+In probability theory, the proof of memorylessness is an application
+of Bayes' law: we are computing
+the distribution of \p{x1} conditioned on \p{x2},
+from the distribution of \p{x2} conditioned on \p{x1}.
+
+In \thelogic\ we can produce the transformation using the \supercond\ rules,
+in particular the right-to-left direction of \ref{rule:c-fuse}
+and the primitive rule that is behind its left-to-right
+direction:
+\begin{proofrule}
+  \infer*[lab=c-unassoc]{}{
+  \CC{\bind(\prob,\krnl)} w.K(w)
+  \proves
+  \CC\prob v. \CC{\krnl(v)} w.K(w)
+}   \label{rule:c-unassoc}
+\end{proofrule}
+
+Using these we can prove:
+\begin{eqexplain}
+  &
+  \CC{\dist_1} v_1. \Bigl(
+    \sure{\p{x1}=v_1} *
+    \CC{\dist_2(v_1)} v_2. \bigl(
+      \sure{\p{x1}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+\whichproves
+  \CC{\dist_1} v_1. \Bigl(
+    \CC{\dist_2(v_1)} v_2. \bigl(
+      \sure{\p{x1}=v_1} *
+      \sure{\p{x1}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+  \byrules{c-frame}
+\whichproves
+  \CC{\prob_0} (v_1,v_2). \bigl(
+      \sure{\p{x1}=v_1} *
+      \sure{\p{x2}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+  \bigr)
+  \byrules{c-fuse}
+\whichproves
+  \CC{\prob_2} v_2. \Bigl(
+    \CC{\prob_1(v_2)} v_1.
+    \bigl(
+      \sure{\p{x1}=v_1} *
+      \sure{\p{x2}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+  \byrules{c-unassoc}
+\whichproves
+  \CC{\prob_2} v_2. \Bigl(
+    \sure{\p{x2}=v_2} *
+    \CC{\prob_1(v_2)} v_1.
+    \bigl(
+      \sure{\p{x1}=v_1} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+  \byrules{sure-str-convex}
+\whichproves
+  \CC{\prob_2} v_2. \bigl(
+    \sure{\p{x2}=v_2} *
+    \distAs{\p{x1}}{\prob_1(v_2)} *
+    \distAs{\p{x3}}{\dist_3(v_2)}
+  \bigr)
+  \byrules{c-extract}
+\end{eqexplain}
+where
+$
+  \dist_1 \fuse \dist_2 = \prob_0 =
+  \bind(\prob_2,\prob_1).
+$
+The existence of such $\prob_2$ and $\prob_1$ is a simple application
+of Bayes' law:
+$
+  \prob_2(v_2) =
+    \Sum_{v_1 \in \Val} \prob_0(v_1,v_2),
+$
+and
+$
+  \prob_1(v_2)(v_1) =
+    \frac{\prob_0(v_1,v_2)}{\prob_2(v_2)}.
+$
+We see the ability of \thelogic\ to perform these manipulations
+as evidence that \supercond\ and independence form a sturdy abstraction
+over the semantic model~(\labelcref{rq:abstract}).
+The amount of meta-reasoning required to manipulate the distributions
+indexing the conditioning modality are minimal and localized,
+and offer a good entry-point to inject facts about distributions
+without interfering with the rest of the proof context.
+
+
+
+\subsection{Multi-party Secure Computation}
+\label{sec:ex:multiparty}
+
+In \emph{multi-party secure computation}, the goal is to for~$N$
+parties to compute a function~$f(x_1,\dots,x_N)$ of
+some private data~$x_i$ owned by each party~$i$,
+without revealing any more information about~$x_i$ than the output of~$f$
+would reveal if computed centrally by a trusted party.
+For example, if $f$ is addition, a secure computation of~$f$ can be used
+to compute the total number of votes without revealing who voted positively:
+some information would leak (e.g. if the total is non-zero then \emph{somebody} voted positively) but only what is revealed by knowing the total and nothing more.
+
+To achieve this objective, multi-party secure addition~(\p{MPSAdd})
+works by having the parties break their secret into~$N$ \emph{secret shares}
+which individually look random, but the sum of which amounts to the original secret.
+These secret shares are then distributed to the other parties so that each party knows an incomplete set of shares of the other parties.
+Yet, each party can reliably compute the result of the function by computing a function of the received shares.
+
+As it is very often the case, there is no single ``canonical'' way of specifying
+this kind of security property.
+For  \p{MPSAdd}, for instance, we can formalize security
+(focusing on the perspective of party~1)
+in two ways:
+as a unary or as a relational specification.
+
+The \emph{unary specification} says that,
+  conditionally on the secret of party~$1$
+  and the sum of the other secrets,
+  all the values received by~$1$ (we call this the \emph{view} of~$1$)
+  are independent from the secrets of the other parties.
+Roughly:
+\begin{equation*}
+  \distAs{(\p{x}_1, \p{x}_2, \p{x}_3)\at{\I1}}{\prob_0}
+  \proves
+  \WP {\m[\I1: \p{MPSAdd}]}*{
+    \E\prob.
+    \CC {\prob} {(v, s)}.
+    \begin{grp}
+      \sure{\p x_1\at{\I1} = v \land (\p x_2 + \p x_3)\at{\I1}=s} * {}
+      \\
+      \own{\p{view}_1\at{\I1}} * \own{\p x_2\at{\I1},\p x_3\at{\I1}}
+\end{grp}
+  }
+\end{equation*}
+where $\prob_0$ is an arbitrary distribution of the three secrets.
+Notice how conditioning nicely expresses that the acceptable leakage is just the sum.
+
+The \emph{relational specification} says that
+    when running the program from two initial states
+    differing only in the secrets of the other parties,
+    but not in their sum,
+    the views of party~$i$ would be distributed in the same way.
+Roughly:
+\begin{equation*}
+  \cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+  \end{conj*}
+  }
+\proves
+  \WP {\m<1:\p{MPSAdd},2:\p{MPSAdd}>}[\bigg]{
+    \cpl*{
+\p{view}_1\at{\I1} = \p{view}_1\at{\I2}
+}
+  }
+\end{equation*}
+
+The two specifications look quite different and also suggest quite different
+proof strategies: the unary judgment suggests a proof by manipulating independence and conditioning; the relational one hints at a proof by relational lifting. Depending on the program, each of these strategies could have their merits.
+As a first contribution, we show that \thelogic\ can not only specify in both styles (\labelcref{rq:abstract}), but also provide
+\emph{proofs} in both styles (\labelcref{rq:programs}).
+
+Having two very different specifications for the same security goal, however begs the question:
+are they equivalent?
+After all, as the \emph{prover} of the property one might prefer one proof style over the other, but as a \emph{consumer} of the specification the choice might
+be dictated by the proof context that needs to use the specification for
+proving a global goal.
+To decouple the proof strategy from the uses of the specification,
+we would need to be able to convert one specification into the other
+\emph{within} the logic, thus sparing the prover from having to forsee
+which specification a proof context might need in the future.
+
+Our second key result is that in fact the equivalence between
+the unary
+and the relational specification
+can be proven in \thelogic.
+This is enabled by the powerful \supercond\ rules and the encoding
+of relational lifting as \supercond.
+This is remarkable as this type of result has always been justified
+entirely at the level of the semantic model in other logics (\eg pRHL, Lilac).
+This illustrates the fitness of \thelogic\ as a tool for abstract
+meta-level reasoning (\labelcref{rq:abstract}).
+
+
+
+
+
+In~\appendixref{sec:appendix:ex:multiparty} we provide \thelogic\ proofs for:
+\begin{enumerate*}
+  \item the unary specification;
+  \item the relational specification (independently of the unary proof);
+  \item the equivalence of the two specifications.
+\end{enumerate*}
+Although the third item would spare us from proving one of the first two,
+we provide direct proofs in the two styles to provide a point of comparison
+between them.
+
+
+
+\subsection{Von Neumann Extractor}
+\label{sec:ex:von-neumann}
+
+A randomness extractor is a mechanism that transforms a stream of
+``low-quality'' randomness sources into a stream of ``high-quality''
+randomness sources.
+The von Neumann extractor~\cite{vonNeumann}
+is perhaps the earliest instance of such mechanism,
+and it converts a stream of independent coins with the same bias~$p$
+into a stream of independent \emph{fair} coins.
+Verifying the correctness of the extractor requires careful reasoning
+under conditioning, and showcases the use of \cref{rule:c-wp-swap} in a
+unary setting (\labelcref{rq:known,rq:programs}).
+
+We can model the extractor, up to $N \in \Nat$ iterations, in our language\footnote{While technically our language does not support arrays,
+  they can be easily encoded as a collection of~$N$ variables.
+}
+as shown in \cref{fig:von-neumann}.
+The program repeatedly flips two biased coins, and outputs the outcome of the first coin if the outcomes where different, otherwise it retries.
+As an example, we prove in \thelogic~ that the bits produced in \p{out} are independent fair coin flips.
+Formally, for $\ell$ produced bits, we want the following to hold:
+\[
+  \var{Out}_\ell \is
+  \distAs{\p{out}[0]\at{\I1}}{\Ber{\onehalf}} *
+  \dots *
+  \distAs{\p{out}[\ell-1]\at{\I1}}{\Ber{\onehalf}}.
+\]
+To know how many bits were produced, however,
+we need to condition on \p{len}
+obtaining the specification
+(recall $ P \gproves Q \is P \land \ownall \proves Q \land \ownall $):
+\[
+  \gproves \WP {\m[\I1: \p{vn}(N)]}*{
+    \E \prob. \CC \prob \ell. \bigl(
+      \sure{\Ip{len}{1} = \ell \leq N} *
+      \var{Out}_\ell
+    \bigr)
+  }
+\]
+
+\begin{wrapfigure}[12]{R}{30ex}\begin{sourcecode*}[gobble=2,aboveskip=0pt,belowskip=0pt]
+  def vn($N$):
+    len := 0
+    repeat $N$:
+      coin_1 :~ Ber($p$)
+      coin_2 :~ Ber($p$)
+      if coin_1 != coin_2 then:
+        out[len] := coin_1
+        len := len+1
+  \end{sourcecode*}
+  \caption{Von Neumann extractor.}
+  \label{fig:von-neumann}
+\end{wrapfigure}
+
+The postcondition straightforwardly generalizes to a loop invariant
+\[
+  P(i) =
+  \E \prob. \CC \prob \ell. \bigl(
+    \sure{\Ip{len}{1} = \ell \leq i} *
+    \var{Out}_\ell
+  \bigr)
+\]
+The main challenge in the example is handling the if-then statement.
+Intuitively we want to argue that if $ \p{coin}_1 \ne \p{coin}_2 $,
+the two coins would have either values $(0,1)$ or $(1,0)$,
+and both of these outcomes have probability $ p(1-p) $;
+therefore,
+conditionally on the `if' guard being true,
+$\p{coin}_1$ is a fair coin.
+
+Two features of \thelogic\ are crucial to implement the above intuition.
+The first is the ability of manipulating conditioning given by the \supercond\ rules.
+At the entry point of the if-then statement in \cref{fig:von-neumann}
+we obtain
+$
+  P(i) *
+  \distAs{\p{coin}_1\at{\I1}}{\Ber{p}} *
+  \distAs{\p{coin}_2\at{\I1}}{\Ber{p}}.
+$
+Using \thelogic's rules we can easily derive
+$
+  P(i) *
+  \distAs{(\p{coin}_1 \ne \p{coin}_2,\p{coin}_1)\at{\I1}}{\prob_0}
+$
+for some $\prob_0$.
+The main insight of the algorithm then can be expressed as the fact that
+$\prob_0 = \beta \fuse \krnl$ for some $\beta\of\Dist(\set{0,1})$
+which is the distribution of $\p{coin}_1 \ne \p{coin}_2$,
+and some~$\krnl$ describing the distribution of the first coin in the two
+cases, which we know is such that $\krnl(1)=\Ber{\onehalf}$.
+Then, thanks to \ref{rule:c-unit-r} and \ref{rule:c-fuse}, we obtain:
+\begin{align*}
+&\distAs{(\p{coin}_1 \ne \p{coin}_2,\p{coin}_1)\at{\I1}}{(\beta \fuse \krnl)}
+\\ {}\proves{}&
+\CC \beta b. \bigl(
+  \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b} *
+  \pure{b=1} \implies
+    \distAs{\p{coin}_1\at{\I1}}{\Ber{\onehalf}}
+\bigr)
+\end{align*}
+Then, if we could reason about the `then' branch under conditioning,
+since the guard $\p{coin}_1 \ne \p{coin}_2$ implies $b=1$ we would obtain
+$ \distAs{\p{coin}_1\at{\I1}}{\Ber{\onehalf}} $, which is the key to the proof.
+The ability of reasoning under conditioning is the second feature
+of \thelogic\ which unlocks the proof.
+In this case, the step is driven by \cref{rule:c-wp-swap},
+which allows us to prove the if-then statement by case analysis on~$b$.
+
+
+
+\subsection{Monte Carlo Algorithms}
+\label{sec:ex:monte-carlo}
+
+By elaborating on the Monte Carlo example of \cref{sec:intro},
+we want to show the fitness of \thelogic\ as a program logic
+(\labelcref{rq:programs}) and its specific approach for dealing
+with the structure of a program.
+Recall the example in Figure \ref{fig:between-code} and the goal
+outlined in \cref{sec:intro} of comparing the accuracy of the two
+Monte Carlo algorithms \p{BETW\_SEQ} and \p{BETW}.
+This goal can be encoded as
+\[
+  \begin{conj}
+  \sure{\Ip{l}{1}=\Ip{r}{1}=0} *{}\\
+  \sure{\Ip{l}{2}=\Ip{r}{2}=0}
+  \end{conj}
+  \withp{\m{\permap}}
+  \proves
+  \WP {\m<
+    \I1: \code{BETW_SEQ($x$, $S$)},
+    \I2: \code{BETW($x$, $S$)}
+  >}[\bigg]{
+    \cpl{\Ip{d}{1} \leq \Ip{d}{2}}
+  }
+\]
+(where $\m{\permap}$ contains full permissions for all the variables)
+which, through the relational lifting, states that it is more likely
+to get a positive answer from \p{BETW} than from \p{BETW\_SEQ}.
+The challenge is implementing the intuitive relational argument
+sketched in \cref{sec:intro},
+in the presence of very different looping structures.
+More precisely, we want to compare the sequential composition of two loops
+$ l_1 = (\Loop{N}{\tA}\p;\Loop{N}{\tB}) $
+with a single loop
+$ l_2 = \Loop{(2N)}{t} $
+considering the $N$ iterations of~$\tA$ in lockstep with the first~$N$ iterations of~$l_2$, and the $N$ iterations of $\tB$ with the remaining~$N$ iterations of $l_2$.
+It is not possible to perform such proof purely in pRHL, which can only handle loops that are perfectly aligned, and tools based on pRHL overcome this limitation by offering a number of code transformations, proved correct externally to the logic, with which one can rewrite the loops so that they syntactically align. In this case such a transformation could look like
+$ \Loop{(M+N)}{t} \equiv \Loop{M}{t}\p;\Loop{N}{t} $,
+using which one can rewrite $l_2$ so it aligns with the two shorter loops.
+What \thelogic\ can achieve is to avoid the use of such ad-hoc syntactic transformations, and produce a proof structured in two steps: first, one can prove, \emph{within the logic}, that it is sound to align the loops as described; and then proceed with the proof of the aligned loops.
+
+The key idea is that the desired alignment of loops can be expressed
+as a (derived) rule, encoding the net effect of the syntactic loop splitting,
+without having to manipulate the syntax:
+\begin{proofrule}
+  \infer*[lab=wp-loop-split]{
+  P_1(N_1) \proves P_2(0)
+  \\\\
+  \forall i < N_1 \st
+    P_1(i) \proves \WP{\m[\I1: t_1, \I2: t]}{P_1(i+1)}
+  \\\\
+  \forall j < N_2 \st
+    P_2(j) \proves \WP{\m[\I1: t_2, \I2: t]}{P_2(j+1)}
+}{
+  P_1(0) \proves
+  \WP{\m[
+    \I1: (\Loop{N_1}{t_1}\p;\Loop{N_2}{t_2}),
+    \I2: \Loop{(N_1+N_2)}{t}
+  ]}{P_2(N_2)}
+}   \label{rule:wp-loop-split}
+\end{proofrule}
+The rule considers two programs: a sequence of two loops, and a single loop
+with the same cumulative number of iterations.
+It asks the user to produce two relational loop invariants~$P_1$ and~$P_2$
+which are used to relate $N_1$ iterations of $t_1$ and $t$ together,
+and $N_2$ iterations of $t_2$ and $t$ together.
+
+Crucially,
+such rule is \emph{derivable}
+from the primitive rules of looping of \thelogic:
+\begin{proofrules}\small
+  \infer*[lab=wp-loop,right=$n\in\Nat$]{
+  \forall i < n\st
+  P(i) \proves
+  \WP {\m[j: t]} {P(i+1)}
+}{
+  P(0) \proves
+  \WP {\m[j: \Loop{n}{t}]} {P(n)}
+}   \label{rule:wp-loop}
+
+  \infer*[lab=wp-loop-unf]{}{
+  {\begin{array}{@{}r@{}l@{}}
+    &\WP {\m[i: \Loop{n}{t}]} {
+      \WP {\m[i: t]} { Q }
+    }
+    \\\proves{}&
+    \WP {\m[i: \Loop{(n+1)}{t}]} {Q}
+  \end{array}}
+}   \label{rule:wp-loop-unf}
+\end{proofrules}
+\Cref{rule:wp-loop} is a standard unary invariant-based rule;
+\ref{rule:wp-loop-unf} simply reflects the
+semantics of a loop in terms of its unfoldings.
+Using these
+we can prove \ref{rule:wp-loop-split}
+avoiding semantic reasoning all together,
+and fully generically on the loop bodies,
+allowing it to be reused in any situation fitting the pattern.
+
+In our example, we can prove our goal by instanting it with the loop invariants:
+\begin{align*}
+  P_1(i) &\is
+    \cpl{
+      \Ip{r}{1}\leq\Ip{r}{2}
+      \land
+      \Ip{l}{1}=0\leq\Ip{l}{2}
+    }
+  &
+  P_2(j) &\is
+    \cpl{
+      \Ip{r}{1}\leq\Ip{r}{2}
+      \land
+      \Ip{l}{1}\leq\Ip{l}{2}
+    }
+\end{align*}
+
+
+
+\begingroup \newcommand{\tBet}[1]{t_{\p{M}}^{#1}}
+
+
+\begin{figure*}
+  \lstset{gobble=2}\hfill
+  \hbox{\begin{sourcecode*}
+  def BETW_MIX($x$,$S$):
+    repeat $N$:
+      p :~ $\prob_S$; l := l || p <= $x$
+      q :~ $\prob_S$; r := r || q >= $x$
+    d := r && l
+  \end{sourcecode*}}
+  \hfill
+  \begin{tabular}{cc}
+  \begin{sourcecode*}
+  def prog1:
+    x :~ $d_0$
+    y :~ $d_1$(x)
+    z :~ $d_2$(x)
+  \end{sourcecode*}
+  &
+  \begin{sourcecode*}
+  def prog2:
+    x :~ $d_0$
+    z :~ $d_2$(x)
+    y :~ $d_1$(x)
+  \end{sourcecode*}
+  \end{tabular}
+  \hfill\null
+
+  \begin{minipage}{.4\linewidth}
+    \caption{A variant of the \p{BETW} program.}
+    \label{fig:betw-mix-code}
+  \end{minipage}\begin{minipage}{.4\linewidth}
+    \caption{Conditional Swapping}
+    \label{fig:cond-swap-code}
+  \end{minipage}
+\end{figure*}
+
+This handling of structural differences as derived proof patterns
+is more powerful than syntactic transformations:
+it can, for example, handle transformations that are sound only under some
+assumptions about state.
+To show an instance of this,
+we consider a variant of the previous example:
+\p{BETW\_MIX} (in \cref{fig:betw-mix-code})
+is another variant of \p{BETW\_SEQ}
+which still makes~$2N$ samples but interleaves sampling
+for the minimum and for the maximum.
+We want to prove that this is equivalent to \p{BETW\_SEQ}.
+Letting $\m{\permap}$ contain full permissions for the relevant variables,
+the goal is \[
+  P_0\withp{\m{\permap}}
+  \proves
+  \WP {\m[
+    \I1: \code{BETW_SEQ($x, S$)},
+    \I2: \code{BETW_MIX($x, S$)}
+  ]} {
+    \cpl{\Ip{d}{1} = \Ip{d}{2}}
+  }
+\]
+with $P_0 = \sure{{\Ip{l}{1}=\Ip{r}{1}=0}}*\sure{{\Ip{l}{2}=\Ip{r}{2}=0}}$.
+
+Call $\tBet{1}$ and $\tBet{2}$ the first and second half of the body of the loop
+of \p{BETW\_MIX}, respectively.
+The strategy
+is to consider together one execution of $\tA$
+(the body of the loop of \p{AboveMin}),
+and $\tBet{1}$;
+and one of~$\tB$ (of \p{BelowMax}),
+and~$\tBet{2}$.
+The strategy relies on the observation that every iteration of the three loops
+is \emph{independent} from the others.
+To formalize the proof idea we thus first prove a derived proof pattern
+encoding the desired alignment, which we can state for generic~$t_1,t_2,t_1',t_2'$:
+\begin{proofrule}
+  \infer*[lab=wp-loop-mix]{
+  \forall i < N \st
+    P_1(i) \proves \WP{\m[\I1: t_1, \I2: t_1']}{P_1(i+1)}
+  \\
+  \forall i < N \st
+    P_2(i) \proves \WP{\m[\I1: t_2, \I2: t_2']}{P_2(i+1)}
+}{
+  P_1(0) * P_2(0)
+  \proves
+  \WP{\m[
+    \I1: (\Loop{N}{t_1}\p;\Loop{N}{t_2}),
+    \I2: \Loop{N}{(t_1';t_2')}
+  ]}{P_1(N) * P_2(N)}
+}   \label{rule:wp-loop-mix}
+\end{proofrule}
+The rule matches on two programs: a sequence of two loops,
+and a single loop with a body split into two parts.
+The premises require a proof that $t_1$ together with $t_1'$ (the first half of the body of the second loop) preserve the invariant $P_1$;
+and that the same is true for $t_2$ and $t_2'$ with respect to an invariant~$P_2$.
+The precondition $P_1(0)*P_2(0)$ in the conclusion ensures that the two
+loop invariants are independent.
+The rule \ref{rule:wp-loop-mix} can be again entirely derived
+from \thelogic's primitive rules.
+We can then apply it to our example
+using as invariants
+$
+  P_1 \is \cpl{\Ip{l}{1} = \Ip{l}{2}}
+$ and $
+  P_2 \is \cpl{\Ip{r}{1} = \Ip{r}{2}}.
+$
+Then, \ref{rule:rl-merge} closes the proof.
+
+\endgroup
+

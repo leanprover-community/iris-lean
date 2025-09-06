@@ -1,0 +1,3323 @@
+\section{Case Studies}
+\label{sec:appendix:examples}
+
+
+\subsection{pRHL-style Reasoning}
+\label{sec:appendix:ex:prhl}
+
+Here we elaborate on the conditional swap example that appeared in~\cref{sec:ex:prhl-style}.
+By~\cref{rule:wp-samp}, for each index $i \in \{1, 2\}$, we have
+\begin{align*}
+  \gproves \WP{\m[i: \code{x:~}d_0]}{\distAs{\ip{x}{i}}{d_0}}
+\end{align*}
+By~\cref{rule:wp-conj}, we can combine the two programs together and derive
+\begin{align*}
+  \gproves \WP{\m[1: \code{x:~}d_0, 2: \code{x:~}d_0]}{\distAs{\Ip{x}{1}}{d_0} \land \distAs{\Ip{x}{2}}{d_0}}
+\end{align*}
+By~\cref{rule:c-unit-r},
+\[\distAs{\Ip{x}{1}}{d_0} \land \distAs{\Ip{x}{2}}{d_0} \proves
+  \CC{d_0} v. \sure{\Ip{x}{1} = v} \land  \CC{d_0} v. \sure{\Ip{x}{2} = v}
+\]
+Then, we can apply~\cref{rule:c-and}, which implies
+\[
+  \CC{d_0} v. \sure{\Ip{x}{1} = v} \land  \CMod{d_0} v. \sure{\Ip{x}{2} = v}
+  \proves
+  {\CC{d_0} v. (\sure{\Ip{x}{1} = v} \land  \sure{\Ip{x}{2} = v})}
+\]
+from which we can derive:
+\begin{align*}
+  \gproves \WP{\m[\I1: \code{x:~}d_0, \I2: \code{x:~}d_0]}{\CC{d_0} v.(\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v})}.
+\end{align*}
+
+For the rest of \p{prog1} (\p{prog2}):
+similarly, by~\cref{rule:wp-samp}, for each index $i \in \{1, 2\}$, we have
+\begin{align}
+  &\gproves \WP{\m[i: \code{y:~}d_1(v)]}{\distAs{\Ip{y}{i}}{d_1(v)}}
+  \label{helper:case:cond-swap:1}\\
+  &\gproves \WP{\m[i: \code{z:~}d_2(v)]}{\distAs{\Ip{z}{i}}{d_2(v)}} .
+  \label{helper:case:cond-swap:2}
+\end{align}
+By~\cref{rule:wp-frame},
+\begin{align}
+  &\distAs{\Ip{z}{i}}{d_2(v)} \gproves \WP{\m[i: \code{y:~}d_1(v)]}{\distAs{\Ip{z}{i}}{d_2(v)} * \distAs{\Ip{y}{i}}{d_1(v)}}
+  \label{helper:case:cond-swap:3}\\
+  &\distAs{\Ip{y}{i}}{d_1(v)} \gproves \WP{\m[i: \code{z:~}d_2(v)]}{\distAs{\Ip{y}{i}}{d_1(v)} * \distAs{\Ip{z}{i}}{d_2(v)}} .
+  \label{helper:case:cond-swap:4}
+\end{align}
+Thus, applying~\cref{rule:wp-seq} to combine~\cref{helper:case:cond-swap:1}
+and~\cref{helper:case:cond-swap:4}, we get
+\begin{align}
+  \gproves \WP{\m[\I1:  \code{y:~}d_1(v); \code{z:~}d_2(v)]}{\distAs{\Ip{y}{1}}{d_1(v)} * \distAs{\Ip{z}{1}}{d_2(v)}};
+  \label{helper:case:cond-swap:5}
+\end{align}
+By applying~\cref{rule:wp-seq} to combine~\cref{helper:case:cond-swap:2}
+and~\cref{helper:case:cond-swap:3}, we get
+\begin{align}
+  \gproves \WP{\m[\I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{\distAs{\Ip{y}{2}}{d_1(v)} * \distAs{\Ip{z}{2}}{d_2(v)}} .
+  \label{helper:case:cond-swap:6}
+\end{align}
+Then, by~\cref{rule:wp-bind}, we can derive
+\begin{align*}
+\sure{\Ip{x}{1}=v}
+  &\gproves \WPv{\m[\I1:  \code{y:~}d_1(x); \code{z:~}d_2(x)]}{
+  \distAs{\Ip{y}{1}}{d_1(v)} * \distAs{\Ip{z}{1}}{d_2(v)}} \\
+\sure{\Ip{x}{2}=v}
+  &\gproves \WP{\m[\I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{
+  \distAs{\Ip{y}{2}}{d_1(v)} * \distAs{\Ip{z}{2}}{d_2(v)}}
+\end{align*}
+Then, applying~\cref{rule:wp-conj} to combine the program at index 1 and 2,
+we get
+\begin{align*}
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  &\gproves \WPv{\m[\I1: \code{y:~}d_1(x); \code{z:~}d_2(x);
+                    \I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{
+  \distAs{\Ip{y}{1}}{d_1(v)} * \distAs{\Ip{z}{1}}{d_2(v)} *
+  \distAs{\Ip{y}{2}}{d_1(v)} * \distAs{\Ip{z}{2}}{d_2(v)}}
+\end{align*}
+Also, we have
+\begin{align*}
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  &\gproves \WPv{\m[\I1: \code{y:~}d_1(x); \code{z:~}d_2(x);
+                    \I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{
+   \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+ }
+\end{align*}
+by~\cref{rule:wp-frame},
+where $\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v} \proves \sure{\Ip{x}{1}=\Ip{x}{2}}$. Therefore,
+we have
+\begin{align*}
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  &\gproves \WPv{\m[\I1: \code{y:~}d_1(x); \code{z:~}d_2(x);
+                    \I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{
+   \sure{\Ip{x}{1} = \Ip{x}{2}}
+ }
+\end{align*}
+By~\cref{rule:wp-conj},
+\begin{align*}
+  &\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}\\
+  {}\gproves {}&\WPv{\m[\I1: \code{y:~}d_1(x); \code{z:~}d_2(x);
+                        \I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{
+   \sure{\Ip{x}{1} = \Ip{x}{2}}
+   \land \left(\distAs{\Ip{y}{1}}{d_1(v)} * \distAs{\Ip{z}{1}}{d_2(v)}
+   * \distAs{\Ip{y}{2}}{d_1(v)} * \distAs{\Ip{z}{2}}{d_2(v)}\right)
+ }
+\end{align*}
+By~\cref{rule:sure-and-star}, we get
+\begin{align*}
+  &\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v} \\
+  {} \gproves {} &\WPv{\m[\I1: \code{y:~}d_1(x); \code{z:~}d_2(x);
+                          \I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{
+   \sure{\Ip{x}{1} = \Ip{x}{2}}
+   * \distAs{\Ip{y}{1}}{d_1(v)} * \distAs{\Ip{z}{1}}{d_2(v)}
+   * \distAs{\Ip{y}{2}}{d_1(v)} * \distAs{\Ip{z}{2}}{d_2(v)}
+ }
+\end{align*}
+
+Now, we can proceed with the derivation explained in~\cref{sec:ex:prhl-style}.
+\begin{derivation}
+\infer*[right=\ref{rule:rl-convex}]{
+\infer*[Right=\ref{rule:c-wp-swap}]{
+\infer*[Right=\ref{rule:c-cons}]{
+\infer*[Right=\ref{rule:rl-merge}]{
+\infer*[Right=\ref{rule:coupling}]{
+  \forall v\st
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]}*{
+  \begin{matrix*}[l]
+    \cpl{\Ip{x}{1} = \Ip{x}{2}} *
+    \distAs{\Ip{y}{1}}{d_1(v)} *
+    \distAs{\Ip{y}{2}}{d_1(v)} *
+    {}\\
+    \distAs{\Ip{z}{1}}{d_2(v)} *
+    \distAs{\Ip{z}{2}}{d_2(v)}
+  \end{matrix*}
+  }
+}{
+  \forall v\st
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2}} *
+    \cpl{\Ip{y}{1} = \Ip{y}{2}} *
+    \cpl{\Ip{z}{1} = \Ip{z}{2}}
+  }
+}}{
+  \forall v\st
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+}}{
+  \CC{d_0} v.(\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v})
+  \gproves
+  \CC{d_0} v.
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+}}{
+  \CC{d_0} v.(\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v})
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+  \CC{d_0} v.
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+}}{
+  \CC{d_0} v.(\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v})
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+}
+\end{derivation}
+
+Last, with~\cref{rule:wp-seq}, we have
+\begin{align*}
+    \gproves
+    \WP {\m[\I1: \code{prog1}, \I2: \code{prog2}]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+\end{align*} 
+
+\subsection{One-time Pad (Relational)}
+\label{sec:appendix:examples:onetimerel}
+\label{sec:appendix:ex:otp-rel}
+
+  To wrap up the proof of \Cref{sec:overview}
+we first observe that the assertion~$P$
+of~(\ref{ex:xor:start}) can be easily obtained by
+using the WP rules for assignments and sequencing, proving:
+\[
+    \True\withp{\m{\permap}}
+    \proves
+    \WP {\m<
+      \I1: \code{encrypt()},
+      \I2: \code{c:~Ber(1/2)}
+    >}*{
+      \begin{pmatrix}
+        \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+          *
+        \distAs{\Ip{m}{1}}{\Ber{p}}
+          *
+        \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+          * {}\\
+        \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}
+      \end{pmatrix}
+      \withp{\m{\permap}}
+    }
+\]
+where $\m{\permap} = \m[\Ip{k}{1}:1,\Ip{m}{1}:1,\Ip{c}{1}:1,\Ip{c}{2}:1]$
+(\ie we have full permissions on the variables we modify).
+
+
+We can prove the entailment:
+\[
+  \CC{\Ber{p}} v.
+  \left(
+    \sure{\Ip{m}{1}=v} *
+    \begin{pmatrix}
+    \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+    \\ {}*
+    \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+    \end{pmatrix}
+  \right)
+  \proves
+  \CC{\Ber{p}} v.
+    \left(
+      \sure{\Ip{m}{1}=v}
+      *
+      \begin{cases}
+        \cpl{ \Ip{k}{1} = \Ip{c}{2} }     \CASE v=0 \\
+        \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} } \CASE v=1
+      \end{cases}
+    \right)
+\]
+by using \ref{rule:c-cons}, which asks us to prove that the
+two assertions inside the conditioning are in the entailment relation
+for each value of~$v$.
+This leads to these two cases:
+\begin{align*}
+  \sure{\Ip{m}{1}=0}
+  * \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+  * \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+  & \proves
+  \sure{\Ip{m}{1}=0} * \cpl{ \Ip{k}{1} = \Ip{c}{2} }
+\\
+  \sure{\Ip{m}{1}=1}
+  * \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+  * \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+  & \proves
+  \sure{\Ip{m}{1}=1} * \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} }
+\end{align*}
+which are straightforward consequences of the two couplings we proved
+in~\eqref{ex:xor-two-cpl}.
+
+Finally, the assignment to \p{c} in \p{encrypt} generated the fact
+$\sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}$.
+By routine propagation of this fact
+(using \ref{rule:c-frame} and \ref{rule:sure-merge})
+we can establish:
+\begin{eqexplain}
+  &
+  \CC{\Ber{p}} v.
+    \left(
+      \sure{\Ip{m}{1}=v}
+      *
+      \begin{cases}
+        \cpl{ \Ip{k}{1} = \Ip{c}{2} }     \CASE v=0 \\
+        \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} } \CASE v=1
+      \end{cases}
+    \right)
+    *
+    \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}
+\whichproves
+  \CC{\Ber{p}} v.
+    \left(
+      \sure{\Ip{m}{1}=v}
+      *
+      \begin{cases}
+        \cpl{ \Ip{k}{1} = \Ip{c}{2} } * \sure{ \Ip{c}{1} = \Ip{k}{1} \xor 0 }
+          \CASE v=0 \\
+        \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} } * \sure{ \Ip{c}{1} = \Ip{k}{1} \xor 1 }
+          \CASE v=1
+      \end{cases}
+    \right)
+\whichproves
+  \CC{\Ber{p}} v.
+    \left(
+      \sure{\Ip{m}{1}=v}
+      *
+      \begin{cases}
+        \cpl{ \Ip{c}{1} = \Ip{c}{2} } \CASE v=0 \\
+        \cpl{ \Ip{c}{1} = \Ip{c}{2} } \CASE v=1
+      \end{cases}
+    \right)
+\whichproves
+  \CC{\Ber{p}} v.
+        \cpl{ \Ip{c}{1} = \Ip{c}{2} }
+\whichproves
+  \cpl{ \Ip{c}{1} = \Ip{c}{2} }
+  \byrule{rl-merge}
+\end{eqexplain}
+
+In particular, the entailments
+\begin{align*}
+\cpl{ \Ip{k}{1} = \Ip{c}{2} } * \sure{ \Ip{c}{1} = \Ip{k}{1} \xor 0 }
+&\proves
+\cpl{ \Ip{c}{1} = \Ip{c}{2} }
+\\
+\cpl{ \Ip{k}{1} = \neg\Ip{c}{2} } * \sure{ \Ip{c}{1} = \Ip{k}{1} \xor 1 }
+&\proves
+\cpl{ \Ip{c}{1} = \Ip{c}{2} }
+\end{align*}
+can be proved by applying \ref{rule:rl-sure-merge} and \ref{rule:rl-cons}.
+ 
+
+\subsection{One-time Pad (Unary)}
+\label{sec:appendix:ex:otp-unary}
+
+  Similarly to the relational version, we can, using \ref{rule:wp-seq},\ref{rule:wp-assign} and \ref{rule:wp-samp}, easily show that:
+\begin{equation*}
+  \True\withp{\m{\permap}}
+  \proves
+  \WP {
+   \m[\I1: \code{encrypt}()]
+  }{
+     \distAs{\Ip{k}{1}}{\Ber{\onehalf}} *
+     \distAs{\Ip{m}{1}}{\Ber{p}} *
+     \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}
+  }.
+\end{equation*}
+
+We then show the crucial derivation of \cref{sec:ex:one-time-pad} in more detail.
+\begin{eqexplain}
+  &
+  \distAs{\Ip{k}{1}}{\Ber{\onehalf}} *
+  \distAs{\Ip{m}{1}}{\Ber{p}} *
+  \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}
+\whichproves
+  \CC{\Ber{p}} m.
+  \bigl(
+    \sure{\Ip{m}{1}=m} *
+    \distAs{\Ip{k}{1}}{\Ber{\onehalf}} *
+    \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}
+  \bigr)
+  \byrules{c-unit-r,c-frame}
+\whichproves
+  \CC{\Ber{p}} m.
+  \bigl(
+    \sure{\Ip{m}{1}=m} *
+    \distAs{\Ip{k}{1}}{\Ber{\onehalf}} *
+    \sure{\Ip{c}{1} = \Ip{k}{1} \xor m}
+  \bigr)
+  \byrules{sure-merge}
+\whichproves
+  \CC{\Ber{p}} m.
+  \Bigl(
+    \sure{\Ip{m}{1}=m} *
+    \CC{\Ber{\onehalf}} k.
+    \bigl(
+      \sure{\Ip{k}{1}=k} *
+      \sure{\Ip{c}{1} = \Ip{k}{1} \xor m}
+    \bigr)
+  \Bigr)
+  \byrules{c-unit-r,c-frame}
+\whichproves
+  \CC{\Ber{p}} m.
+    \bigl(
+      \sure{\Ip{m}{1}=m} *
+      \CC{\Ber{\onehalf}} k.
+        \sure{\Ip{k}{1}=k \land \Ip{c}{1} = k \xor m}
+    \bigr)
+  \byrules{sure-merge}
+\whichproves
+  \CC{\Ber{p}} m.
+    \left(
+    \sure{\Ip{m}{1}=m} *
+    \begin{cases}
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k} \CASE m=0
+      \\
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=\neg k} \CASE m=1
+    \end{cases}
+    \right)
+  \byrule{c-cons}
+\whichproves
+  \CC{\Ber{p}} m.
+    \left(
+    \sure{\Ip{m}{1}=m} *
+    \begin{cases}
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k} \CASE m=0
+      \\
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k} \CASE m=1
+    \end{cases}
+    \right)
+  \byrule{c-transf}
+\whichproves
+  \CC{\Ber{p}} m.
+    \bigl(
+      \sure{\Ip{m}{1}=m} *
+      \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k}
+    \bigr)
+\whichproves
+  \CC{\Ber{p}} m.
+  \CC{\Ber{\onehalf}} k.
+    \bigl(
+      \sure{\Ip{m}{1}=m} *
+      \sure{\Ip{c}{1}=k}
+    \bigr)
+  \byrules{c-frame}
+\whichproves
+  \CC{\Ber{p}} m.
+  \CC{\Ber{\onehalf}} k.
+    \sure{\Ip{m}{1}=m \land \Ip{c}{1}=k}
+  \byrules{sure-merge}
+\whichproves
+  \CC{\Ber{p} \pprod \Ber{\onehalf}} (m,k).
+    \sure{(\Ip{m}{1},\Ip{c}{1})=(m,k)}
+  \byrules{c-assoc}
+\whichproves
+  \distAs{(\Ip{m}{1},\Ip{c}{1})}{(\Ber{p} \pprod \Ber{\onehalf})}
+  \byrule{c-unit-r}
+\whichproves
+  \distAs{\Ip{m}{1}}{\Ber{p}} *
+  \distAs{\Ip{c}{1}}{\Ber{\onehalf}}
+  \byrule{prod-split}
+\end{eqexplain}
+
+The application of \ref{rule:c-transf} to the case with $m=1$ is as follows:
+\[
+\infer{
+  \forall b \in \set{0,1}.
+    \Ber{\onehalf}(b)=\Ber{\onehalf}(\neg b)
+}{
+  \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=\neg k}
+  \proves
+  \CC{\Ber{\onehalf}} k. \sure{\Ip{c}{1}=k}
+}
+\] 
+\begin{figure*}
+  \adjustfigure[\small]\setlength\tabcolsep{0pt}\begin{tabular*}{\textwidth}{
+    @{\extracolsep{\fill}}
+    *{4}{p{\textwidth/4}}@{}
+  }
+\begin{sourcecode*}
+def BelowMax($x$,$S$):
+  repeat $N$:
+    q:~$\prob_S$
+    r':=r
+    r := r' || q >= $x$
+\end{sourcecode*}
+&
+\begin{sourcecode*}
+def AboveMin($x$,$S$):
+  repeat $N$:
+    p:~$\prob_S$
+    l':=l
+    l := l' || p <= $x$
+\end{sourcecode*}
+&
+\begin{sourcecode*}
+def BETW_SEQ($x$, $S$):
+  BelowMax($x$,$S$);
+  AboveMin($x$,$S$);
+  d := r && l
+\end{sourcecode*}
+\\
+\begin{sourcecode*}
+def BETW($x$,$S$):
+  repeat $2 N$:
+    s:~$\prob_S$
+    l':=l
+    l := l' || s <= $x$
+    r':=r
+    r := r' || s >= $x$
+  d := r && l
+\end{sourcecode*}
+&
+\begin{sourcecode*}
+def BETW_MIX($x$, $S$):
+  repeat $N$:
+    p:~$\prob_S$
+    l':=l
+    l := l' || p <= $x$
+    q:~$\prob_S$
+    r':=r
+    r := r' || q >= $x$
+  d := r && l
+\end{sourcecode*}
+&
+\begin{sourcecode*}
+def BETW_N($x$,$S$):
+  repeat $N$:
+    s:~$\prob_S$
+    l':=l
+    l := l' || s <= $x$
+    r':=r
+    r := r' || s >= $x$
+  d := r && l
+\end{sourcecode*}
+\end{tabular*}   \caption{Stochastic dominance examples: composing Monte Carlo algorithms in different ways. All variables are initially 0.}
+  \label{fig:between-code-repeat}
+\end{figure*}
+
+
+\subsection{Markov Blanket and Variable Elimination}
+\label{sec:appendix:ex:markov-blanket}
+
+  In probabilistic reasoning, introducing conditioning is easy,
+but deducing unconditional facts from conditional ones is not immediate.
+The same applies to the \supercond\ modality: by design, one cannot eliminate it for free.
+Crucial to \thelogic's expressiveness is the inclusion of rules that can
+soundly derive unconditional information from conditional assertions.
+
+In this example we show how \thelogic\ is able to derive a common
+tool used in Bayesian reasoning to simplify conditioning as much as possible
+through the concept of a \emph{Markov Blanket}.
+
+For concreteness, consider the program:
+\begin{center}
+\code{x1:~$\dist_1$;
+x2:~$\dist_2(\p{x1})$;
+x3:~$\dist_3(\p{x2})$}
+\end{center}
+The program describes a Markov chain of three variables.
+One way of interpreting this pattern is that the joint output distribution
+is described by the program as a product of conditional distributions:
+the distribution over \p{x2} is described conditionally on \p{x1},
+and the one of \p{x3} conditionally on \p{x2}.
+This kind of dependencies are ubiquitous in, for instance, hidden Markov models and Bayesian network representations of distributions.
+
+A crucial tool for the analysis of such models is the concept of a
+\emph{Markov Blanket} of a variable \p{x}: the set of variables that are direct dependencies of \p{x}.
+Clearly \p{x3} depends on \p{x2} and, indirectly, on \p{x1}.
+However, Markov chains enjoy the memorylessness property:
+when fixing a variable in the chain, the variables that follow it are independent from the variables that preceded it.
+For our example this means that if we condition on \p{x2},
+\p{x1} and \p{x3} are independent (\ie we can ignore the indirect dependencies).
+
+In \thelogic\ we can characterize the output distribution with the assertion
+\[
+  \CC{\dist_1} v_1. \Bigl(
+    \sure{\p{x1}=v_1} *
+    \CC{\dist_2(v_1)} v_2. \bigl(
+      \sure{\p{x2}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+\]
+Note how this postcondition represents the output distribution
+as implicitly as the program does.
+We want to transform the assertion into:
+\[
+  \CC{\prob_2} v_2.
+  \bigl(
+    \sure{\p{x2}=v_2} *
+    \distAs{\p{x1}}{\prob_1(v_2)} *
+    \distAs{\p{x3}}{\dist_3(v_2)}
+  \bigr)
+\]
+for appropriate $\prob_2$ and $\prob_1$.
+This isolates the conditioning to the direct dependency of \p{x1}
+and keeps full information about \p{x3},
+available for further manipulation down the line.
+
+In probability theory, the proof of memorylessness is an application
+of Bayes' law: we are computing
+the distribution of \p{x1} conditioned on \p{x2},
+from the distribution of \p{x2} conditioned on \p{x1}.
+
+In \thelogic\ we can produce the transformation using the joint conditioning rules:
+\begin{eqexplain}
+  &
+  \CC{\dist_1} v_1. \Bigl(
+    \sure{\p{x1}=v_1} *
+    \CC{\dist_2(v_1)} v_2. \bigl(
+      \sure{\p{x1}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+\whichproves
+  \CC{\dist_1} v_1. \Bigl(
+    \CC{\dist_2(v_1)} v_2. \bigl(
+      \sure{\p{x1}=v_1} *
+      \sure{\p{x1}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+  \byrules{c-frame}
+\whichproves
+  \CC{\prob_0} (v_1,v_2). \bigl(
+      \sure{\p{x1}=v_1} *
+      \sure{\p{x2}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+  \bigr)
+  \byrules{c-assoc}
+\whichproves
+  \CC{\prob_2} v_2. \Bigl(
+    \CC{\prob_1(v_2)} v_1.
+    \bigl(
+      \sure{\p{x1}=v_1} *
+      \sure{\p{x2}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+  \byrules{c-unassoc}
+\whichproves
+  \CC{\prob_2} v_2. \Bigl(
+    \sure{\p{x2}=v_2} *
+    \CC{\prob_1(v_2)} v_1.
+    \bigl(
+      \sure{\p{x1}=v_1} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+  \byrules{sure-str-convex}
+\whichproves
+  \CC{\prob_2} v_2. \bigl(
+    \sure{\p{x2}=v_2} *
+    \distAs{\p{x1}}{\prob_1(v_2)} *
+    \distAs{\p{x3}}{\dist_3(v_2)}
+  \bigr)
+  \byrules{c-extract}
+\end{eqexplain}
+where
+$
+  (\dist_1 \fuse \dist_2) = \prob_0 =
+  \bind(\prob_2,\prob_1).
+$
+The existence of such $\prob_2$ and $\prob_1$ is a simple application
+of Bayes' law:
+$
+  \prob_2(v_2) =
+    \Sum_{v_1 \in \Val} \prob_0(v_1,v_2),
+$
+and
+$
+  \prob_1(v_2)(v_1) =
+    \frac{\prob_0(v_1,v_2)}{\prob_2(v_2)}.
+$
+ 
+
+\subsection{Multi-party Secure Computation}
+\label{sec:appendix:ex:multiparty}
+
+  The idea of \emph{multi-party secure computation} is to allow~$N$
+parties to compute a function~$f(x_1,\dots,x_N)$ of
+some private data~$x_i$ owned by each party~$i$,
+without revealing any more information about~$x_i$ than the output of~$f$
+would reveal if computed centrally by a trusted party.
+When $f$ is addition, a secure computation of~$f$ is useful, for example,
+to compute the total number of votes without revealing who voted positively:
+some information would leak (e.g., if the total is non-zero then \emph{somebody} voted positively) but only what is revealed by knowing the total and nothing more.
+
+To achieve this objective, multi-party secure addition~(MPSAdd)
+works by having the parties break their secret into~$N$ \emph{secret shares}
+which individually look random, but the sum of which amounts to the original secret.
+These secret shares are then distributed to the other parties so that each party knows an incomplete set of shares of the other parties.
+Yet, each party can reliably compute the result of the function by computing a function of the received shares.
+
+\Cref{fig:mpsadd} shows the MPSAdd algorithm, for the case~$N=3$,
+as modelled in~\cite{barthe2019probabilistic}.
+The algorithm works as follows.
+Each party~$i$ knows its secret~$x_i$.
+All the parties agree on an appropriate prime number~$p$ to use,
+and want to compute the sum of all the secrets (modulo~$p$).
+The algorithm goes through three phases:
+\begin{itemize}
+  \item\emph{Phase~1:}
+    Each party~$i$ computes its three secret shares in row \p{r[$i$][-]}
+    by generating two independent random
+    numbers~\p{r[$i$][1]}, \p{r[$i$][2]} in~$\Zp$
+    drawing from the \emph{uniform} distribution~$\UnifZp$.
+The third share \p{r[$i$][3]} is chosen so that the sum of the shares
+    amounts to the secret~\p{x}$_i$.
+
+    Then columns are communicated so that each party~$i$
+    receives column \p{r[-][$j$]} for every $j\ne i$.
+    Each party now knows 2 out of 3 of the shares of each other party.
+  \item\emph{Phase~2:}
+    Each party~$i$
+    computes, for every $j\ne i$,
+    \p{s[$j$]} as the sum of the column \p{r[-][$j$]},
+    and sends it to the other parties.
+  \item\emph{Phase~3:}
+    Each party now knows \p{s[-]},
+    the sum of which is the sum of the secrets.
+\end{itemize}
+
+\citet{barthe2019probabilistic} provide a partial proof of the example:
+\begin{enumerate*}
+\item
+  They only verify uniformity and independence from the input of the
+  secret shares \p{r} (with a proof that involves ad-hoc axioms);
+\item
+  As PSL can only represent (unconditional) independence,
+  the proof cannot state anything
+  useful about the other values \p{s} that are circulated to compute the sum;
+  in principle they can also leak too much information,
+  but will not be independent of the secret since they are supposed to
+  disclose their sum.
+\end{enumerate*}
+
+In this section we set out to prove the stronger property that,
+by the end of the computation, nothing is revealed by the values
+party~$i$ received from the other parties other than the sum.
+We focus on party~$1$ as the specifications and proofs for the other parties
+are entirely analogous.
+
+\begin{figure}
+  \centering \begin{tabular}{c}
+  \begin{sourcecode}[gobble=2]
+  def MPSAdd:
+    // Phase 1
+    for i in [1,2,3]:
+      r[i][1] :~ $\UnifZp$ // Uniform sample from $\color{codecomment}\Zp$
+      r[i][2] :~ $\UnifZp$
+      r[i][3] := x$_i$ - r[i][1] - r[i][2] mod $p$
+    // Phase 2
+    for i in [1,2,3]:
+      s[i] := r[1][i] + r[2][i] + r[3][i] mod $p$
+    // Phase 3
+    sum := s[1] + s[2] + s[3] mod $p$
+  \end{sourcecode}\end{tabular}
+  \caption{Multi-party secure addition.}
+  \label{fig:mpsadd}
+\end{figure}
+
+
+We observe that the above goal can be formalized using two
+very different judgments, one unary and one relational.
+
+\smallskip
+
+The \textbf{\emph{unary specification}} says that,
+conditionally on the secret of party~$i$, and the sum of the other secrets,
+all the values received by~$i$ (we call this the \emph{view} of~$i$)
+are independent from the secrets of the other parties;
+moreover the learned components of~\p{r} are uniformly distributed.
+
+Formally, the view of party~$1$ is the vector:
+\[
+  \p{view}_1 = (
+    \p{r[1][-]},\p{r[2][2]}, \p{r[2][3]},
+    \p{r[3][2]}, \p{r[3][3]},
+    \p{s[-]},\p{sum}
+  )
+\]
+The unary specification would then assume an arbitrary distribution~$\prob_0$
+of the secrets (making no assumption about their independence),
+and asserting in the postcondition that $\p{view}_1$ and $(\p x_1,\p x_2)$ are
+independent conditionally on $\p x_1$ and $\p x_2+\p x_3$
+(\ie conditionally on the secret of party~1 and the total sum of the secrets).
+\begin{equation}
+  (\distAs{(\p{x}_1, \p{x}_2, \p{x}_3)}{\prob_0})
+  \withp{\m{\permap}}
+  \proves
+  \WP {\p{MPSAdd}}*{
+    \CC {\tilde{\prob}_0} {(v_1, v_{23})}.
+    \begin{grp}
+      \sure{\p x_1 = v_1 \land (\p x_2 + \p x_3)=v_{23}} * {}
+      \\
+      \distAs{\p{view}_1}{U(v_1,v_{23})} *
+      \E \prob_{23}.\distAs{(\p x_2,\p x_3)}{\prob_{23}}
+    \end{grp}
+  }
+\label{multiparty:unary:goal}
+\end{equation}
+For readability we omit the indices on the term and variables
+as they are $\at{\I1}$ everywhere;
+we also implicitly interpret equalities and sums to be modulo~$p$.
+Here $U(v_1,v_{23})$ distributes
+the components of \p{r} in $\p{view}_1$ uniformly (except for \p{r[1][3]}),
+and $ {
+  \tilde{\prob}_0 = \left(\DO{(x_1,x_2,x_3) <- \prob_0; \return (x_1,x_2+x_3)}\right)
+} $;
+moreover $\m{\permap}$ contains all the necessary permissions for the
+assignments in \p{MPSAdd}.
+Note how the conditioning on the sum represents the expected leakage of
+the multi-party computation.
+
+\smallskip
+
+The \textbf{\emph{relational specification}} says that
+    when running the program from two initial states
+    differing only in the secrets of the other parties,
+    but not in their sum,
+    the views of party~$i$ would be distributed in the same way.
+As a binary judgement, the specification can be formalized as:
+\begin{equation}
+  \cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+  \end{conj*}
+  }
+  \withp{\m{\permap}}
+  \proves
+  \WP {\m<1:\p{MPSAdd},2:\p{MPSAdd}>}*{
+    \cpl*{
+    \begin{conj*}
+      \p x_1\at{\I1} = \p x_1\at{\I2}
+      \land
+      (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+      \land
+      \p{view}_1\at{\I1} = \p{view}_1\at{\I2}
+    \end{conj*}
+    }
+  }
+\label{multiparty:rel:goal}
+\end{equation}
+
+\medskip
+As a first result, we show that \thelogic{} can produce a proof for both specifications, one in unary style, the other in a relational-lifting style.
+This demonstrates how \thelogic{} supports both styles uniformly,
+making it possible to pick and choose the one that fits the prover's intuition
+best, or that turns out to be easier to carry out.
+
+Having two very different specification for the same property,
+however, begs the question of whether the two specifications are really
+equivalent; moreover, we would like to make the choice of how to \emph{prove}
+the property independent of how the property is represented.
+This is important, for example, because one proof strategy (\eg the relational)
+might be more convenient for some program, but we might then want to reuse
+the proven specification in a larger proof that might be conducted in a different style (\eg unary).
+Our second key result is that we show how we can derive one spec from the other
+\emph{within} \thelogic{}, thus showing that picking a style for proving the program does not inhibit the reuse of the result in a different style.
+This also illustrates the fitness of \thelogic{} as a tool for abstract
+meta-level reasoning:
+in pRHL or PSL/Lilac,
+the adequacy of a specification (or conversion between styles)
+needs to be proven outside of the logic.
+In \thelogic{} this can happen within the same logic that supports the proofs of the programs.
+
+The rest of the section is devoted to substantiating these claims,
+providing \thelogic{} proofs for:
+\begin{enumerate}
+  \item the unary specification;
+  \item the relationa specification (independently of the unary proof);
+  \item the equivalence of the two specifications.
+\end{enumerate}
+Although the third item would spare us from proving one of the first two,
+we provide direct proofs in the two styles to provide a point of comparison
+between them.
+
+
+\subsubsection{Proof of the unary specification}
+As a first step, we can apply the rules for loops and assignments to obtain
+the postcondition~$Q$:
+\begin{align*}
+  Q &= X * R_{12} * R_3 * S * \var{Sum}
+  &
+  R_{12} &=
+    \Sep_{i\in\set{1,2,3}} (
+      \distAs{\p{r[$i$][1]}}{\UnifZp}
+      *
+      \distAs{\p{r[$i$][2]}}{\UnifZp}
+    )
+  \\
+  X &= \distAs{(\p{x}_1, \p{x}_2, \p{x}_3)}{\prob_0}
+  &
+  R_{3} &=
+    \Sep_{i\in\set{1,2,3}}
+      \sure[\big]{\p{r[$i$][3]} = \p x_i-\p{r[$i$][1]}-\p{r[$i$][2]}}
+  \\
+  \var{Sum} &= \sure{ \p{sum} = \p{s[1]}+\p{s[2]}+\p{s[3]} }
+  &
+  S &= \sure*{
+        \LAnd_{i\in\set{1,2,3}}
+          \p{s[$i$]} = \p{r[1][$i$]}+\p{r[2][$i$]}+\p{r[3][$i$]}
+      }
+\end{align*}
+Now the goal is to show that $Q$ entails the postcondition of~\eqref{multiparty:unary:goal}.
+As a first step we transform~$X$ into $\distAs{(\p{x}_1, \p{x}_2 + \p{x}_2)}{\prob}$ by \ref{rule:dist-fun}.
+Then we condition on $(\p{x}_1, \p{x}_2 + \p{x}_3, \p{x}_2 \p{x}_3)$ and
+the variables in $R_{12}$, obtaining:
+\[
+  \CC{\prob'} (v_1,v_{23},v_2,v_3).
+  \begin{grp}
+    \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23} \land (\p x_2,\p x_3) = (v_2, v_3)} *
+    {}\\
+    \CC{\UnifZp} u_{11}. \CC{\UnifZp} u_{12}.
+    \CC{\UnifZp} u_{21}. \CC{\UnifZp} u_{22}.
+    \CC{\UnifZp} u_{31}. \CC{\UnifZp} u_{32}.
+    {}\\\qquad
+      \sure*{
+        \begin{conj*}
+\p{r[1][1]} = u_{11} \land*
+          \p{r[1][2]} = u_{12} \land*
+            \p{r[1][3]} = v_1 - u_{11} - u_{12}
+          \land
+\p{r[2][2]} = u_{22} \land*
+            \p{r[2][3]} = v_2 - u_{21} - u_{22}
+          \land
+\p{r[3][2]} = u_{32} \land*
+            \p{r[3][3]} = (v_{23}-v_2) - u_{31} - u_{32}
+          \land
+          \p{s[1]} = u_{11} + u_{21} + u_{31}
+          \land
+          \p{s[2]} = u_{12} + u_{22} + u_{32}
+          \land
+          \p{s[3]} = v_1 - u_{11} - u_{12} + v_2 - u_{21} - u_{22} + (v_{23} - v_2) - u_{31} - u_{32}
+          \land
+          \p{sum} = \p{s[1]} + \p{s[2]} + \p{s[3]}
+        \end{conj*}
+      }
+  \end{grp}
+\]
+Here $\prob' = \DO{ (x_1,x_2,x_3) <- \prob_0; \return (x_1,x_2+x_3,x_2) } $.
+We already weakened the assertion by forgetting the information about
+\p{r[2][1]} and \p{r[3][1]}, which are not part of $\p{view}_1$.
+
+Now we perform a change of variables thanks to \cref{rule:c-transf},
+to express our equalities in terms of
+$u_{21}' = u_{21}-v_2$ instead of $u_{21}$ and
+$u_{31}' = u_{31}-(v_{23}-v_2)$ instead of $u_{31}$.
+To justify the change we simply observe that, for all $n\in\Zp$,
+the function $ f_n(u) = u-n \mod p $ is a bijection and
+$ \UnifZp \circ \inv{f_n} = \UnifZp $.
+This gives us, with some simple arithmetic simplifications:
+\[
+  \CC{\prob'} (v_1,v_{23},v_2,v_3).
+  \begin{grp}
+    \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23} \land (\p x_2,\p x_3) = (v_2, v_3)} *
+    {}\\
+    \CC{\UnifZp} u_{11}. \CC{\UnifZp} u_{12}.
+    \CC{\UnifZp} u_{21}'. \CC{\UnifZp} u_{22}.
+    \CC{\UnifZp} u_{31}'. \CC{\UnifZp} u_{32}.
+    {}\\\qquad
+      \sure*{
+        \begin{conj*}
+          \p{r[1][1]} = u_{11} \land*
+          \p{r[1][2]} = u_{12} \land*
+            \p{r[1][3]} = v_1 - u_{11} - u_{12}
+          \land
+          \p{r[2][2]} = u_{22} \land*
+            \p{r[2][3]} = - u_{21}' - u_{22}
+          \land
+          \p{r[3][2]} = u_{32} \land*
+            \p{r[3][3]} = - u_{31}' - u_{32}
+          \land
+          \p{s[1]} = u_{11} + u_{21}' + u_{31}'+v_{23}
+          \land
+          \p{s[2]} = u_{12} + u_{22} + u_{32}
+          \land
+          \p{s[3]} = v_1 - u_{11} - u_{12} - u_{21}' - u_{22} - u_{31}' - u_{32}
+          \land
+          \p{sum} = \p{s[1]} + \p{s[2]} + \p{s[3]}
+        \end{conj*}
+      }
+  \end{grp}
+\]
+In particular we removed all dependencies on $v_2$ from the inner formula.
+We can now apply \ref{rule:c-assoc} to collapse all the inner conditioning
+into a single one:
+\[
+  \CC{\prob'} (v_1,v_{23},v_2,v_3).
+  \begin{grp}
+    \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23} \land (\p x_2,\p x_3) = (v_2, v_3)} *
+    {}\\
+    \CC{U(v_1,v_{23})} \m{u}.
+      \sure*{\p{view}_1 = \m{u }}
+  \end{grp}
+\]
+where $U(v_1,v_{23}) = (\DO{\m{v}<-\UnifZp \pprod \dots \pprod \UnifZp; \return g(\m{v})})$ takes the six independent samples from $\UnifZp$ and returns
+the values for each of the components of $\p{view}_1$ (which justifies the dependency on $v_1$ and $v_{23}$).
+Finally, we split $\prob' = \bind(\prob, \krnl)$ obtaining:
+\begin{eqexplain}
+  &
+  \CC{\prob'} (v_1,v_{23},v_2,v_3).
+  \begin{grp}
+    \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23} \land (\p x_2,\p x_3) = (v_2, v_3)} *
+    {}\\
+    \CC{U(v_1,v_{23})} \m{u}.
+      \sure*{\p{view}_1 = \m{u }}
+  \end{grp}
+  \whichproves
+\CC{\prob'} (v_1,v_{23},v_2,v_3).
+  \begin{grp}
+    \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23}} *
+    {}\\
+    \sure{(\p{x}_2, \p{x}_3) = (v_2, v_3)} *
+    {}\\
+      \distAs{\p{view}_1}{U(v_1,v_{23})}
+  \end{grp}
+  \byrules{sure-merge,c-unit-r}
+  \whichproves
+\CC{\tilde{\prob}_0} (v_1,v_{23}).
+  \begin{grp}
+  \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23}} *
+    {}\\
+  \CC{\krnl(v_1,v_{23})} (v_2,v_3).
+    {}\\\quad
+  \bigl(
+    \sure{(\p{x}_2, \p{x}_3) = (v_2, v_3)} *
+    \distAs{\p{view}_1}{U(v_1,v_{23})}
+  \bigr)
+  \end{grp}
+  \byrules{c-unassoc,sure-str-convex}
+  \whichproves
+\CC{\tilde{\prob}_0} (v_1,v_{23}).
+  \begin{grp}
+  \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23}} *
+    {}\\
+    \distAs{(\p{x}_2, \p{x}_3)}{\krnl(v_1,v_{23})} *
+    \distAs{\p{view}_1}{U(v_1,v_{23})}
+  \end{grp}
+  \byrules{c-extract}
+  \whichproves
+\CC {\tilde{\prob}_0} {(v_1, v_{23})}.
+  \begin{grp}
+    \sure{\p x_1 = v_1 \land (\p x_2 + \p x_3)=v_{23}} * {}
+    \\
+    \distAs{\p{view}_1}{U(v_1,v_{23})} *
+    \E \prob_{23}.\distAs{(\p x_2,\p x_3)}{\prob_{23}}
+  \end{grp}
+\end{eqexplain}
+
+\noindent
+This gets us the desired postcondition, and concludes the proof.
+
+\subsubsection{Proof of the relational specification}
+
+We now want to prove the goal~\eqref{multiparty:rel:goal}
+using the relational lifting technique,
+\ie inducing a suitable coupling between the variables of the two components.
+Starting from precondition
+$
+  \cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land*
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+  \end{conj*}
+  },
+$
+we can proceed just like in the unary proof, blindly applying the loop and assignment rules obtaining (reusing the assertions of the previous section):
+\begin{align*}
+  \cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+  \end{conj*}
+  }
+  *
+  \begin{grp}
+    R_{12}\at{\I1} * R_3\at{\I1} * S\at{\I1} * \var{Sum}\at{\I1}
+    *{}\\
+    R_{12}\at{\I2} * R_3\at{\I2} * S\at{\I2} * \var{Sum}\at{\I2}
+  \end{grp}
+\end{align*}
+Now the main task is to couple the sources of randomness
+in $R_{12}$ so that the views of~1 coincide in the two components.
+The idea is that if we can induce a coupling where
+$
+  r[2][1]\at{\I1} =
+    r[2][1]\at{\I2} + (\p{x}_2\at{\I1} - \p{x}_2\at{\I2})
+$ and $
+  r[3][1]\at{\I1} =
+    r[3][1]\at{\I2} + (\p{x}_3\at{\I1} - \p{x}_3\at{\I2})
+$
+then we would obtain $\p{view}_1\at{\I1}=\p{view}_1\at{\I2}$.
+To implement the idea we combine two observations:
+\begin{enumerate*}
+  \item we can induce the desired coupling if we are under conditioning
+        of $\p{x}_2$ and $\p{x}_3$ on both indices;
+        a conditioning that is already happening in the relational lifting
+        of the precondition;
+  \item the coupling is valid because addition of some constant modulo~$p$
+        to a uniformly distributed variable, gives a uniformly distributed variable (an observation we also exploited in the unary proof).
+\end{enumerate*}
+
+Formally, we first unfold the definition of the relational lifting
+to reveal the \supercond\ on $\p{x}_1$, $\p{x}_2$, and $\p{x}_3$,
+and move the other resources inside the conditioning by \ref{rule:c-frame}:
+\begin{eqexplain}
+  &
+  \cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+  \end{conj*}
+  }
+  *
+  \begin{grp}
+    R_{12}\at{\I1} * R_3\at{\I1} * S\at{\I1} * \var{Sum}\at{\I1}
+    *{}\\
+    R_{12}\at{\I2} * R_3\at{\I2} * S\at{\I2} * \var{Sum}\at{\I2}
+  \end{grp}
+  \whichproves
+\E \hat\prob.
+  \CC{\hat\prob} \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+  }.
+  \begin{grp}
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3}     * {}\\
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}} * {}\\
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}}
+  \end{grp}
+  *
+  \begin{grp}
+    R_{12}\at{\I1} * R_3\at{\I1} * S\at{\I1} * \var{Sum}\at{\I1}
+    *{}\\
+    R_{12}\at{\I2} * R_3\at{\I2} * S\at{\I2} * \var{Sum}\at{\I2}
+  \end{grp}
+  \whichproves
+\E \hat\prob.
+  \CC{\hat\prob} \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+  }.
+  \begin{grp}
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3}* {}\\
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}} *
+    R_{12}\at{\I1} * R_3\at{\I1} * S\at{\I1} * \var{Sum}\at{\I1}
+    * {}\\
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}} *
+    R_{12}\at{\I2} * R_3\at{\I2} * S\at{\I2} * \var{Sum}\at{\I2}
+  \end{grp}
+  \byrule{c-frame}
+\end{eqexplain}
+
+Now by using \ref{rule:c-cons}, we can induce a coupling inside the condtioning.
+By using \ref{rule:coupling} we obtain:
+\begin{eqexplain}
+  R_{12}\at{\I1} * R_{12}\at{\I2}
+  \whichproves*
+\begin{grp}
+  \Sep_{i\in\set{1,2,3}} (
+    \distAs{\p{r[$i$][1]}\at{\I1}}{\UnifZp}
+    *
+    \distAs{\p{r[$i$][2]}\at{\I1}}{\UnifZp}
+  )
+  * {}\\
+  \Sep_{i\in\set{1,2,3}} (
+    \distAs{\p{r[$i$][1]}\at{\I2}}{\UnifZp}
+    *
+    \distAs{\p{r[$i$][2]}\at{\I2}}{\UnifZp}
+  )
+  \end{grp}
+  \whichproves
+\cpl*{
+    \begin{conj*}
+      \p{r[1][1]}\at{\I1}=\p{r[1][1]}\at{\I2}
+      \land
+      \LAnd_{i\in\set{1,2,3}}
+        \p{r[i][2]}\at{\I1}= \p{r[i][2]}\at{\I2}
+      \land
+      \p{r[2][1]}\at{\I1}=\p{r[2][1]}\at{\I2}+(v_2-w_2)
+      \land
+      \p{r[3][1]}\at{\I1}=\p{r[3][1]}\at{\I2}+(v_3-w_3)
+    \end{conj*}
+  }
+  \byrule{coupling}
+\end{eqexplain}
+The application of \ref{rule:coupling} is supported by the coupling
+\[
+  \prob = \DO{
+    (u_1,\dots,u_6) <- \UnifZp^{(6)};
+    \return
+      \begin{grp}
+      (u_1,u_2,u_3+(v_2-w_2),u_4,u_5+(v_3-w_3),u_6), \\
+      (u_1,u_2,u_3,u_4,u_5,u_6)
+      \end{grp}
+  }
+\]
+where $ \UnifZp^{(6)} $ is the independent product of 6 $\UnifZp$.
+The joint distribution~$\prob$ satisfies
+$\prob \circ \inv{\proj_1} = \UnifZp^{(6)}$,
+$\prob \circ \inv{\proj_2} = \UnifZp^{(6)}$;
+note that $\UnifZp^{(6)}$ is the distribution of
+$ (\p{r[1][1]},\p{r[1][2]},\p{r[2][1]},\p{r[3][1]},\p{r[3][2]}) $
+at both indices $\I1$ and $\I2$ (by $R_{12}$).
+
+Now we can merge the relational lifting with the other almost sure
+facts we have under conditioning, simplify and apply \ref{rule:rl-convex}
+to obtain the desired unconditional coupling:
+\begin{eqexplain}
+  &
+  \CC{\hat\prob} \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+  }.
+  \begin{grp}
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3}* {}\\
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}} *
+    R_{12}\at{\I1} * R_3\at{\I1} * S\at{\I1} * \var{Sum}\at{\I1}
+    * {}\\
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}} *
+    R_{12}\at{\I2} * R_3\at{\I2} * S\at{\I2} * \var{Sum}\at{\I2}
+  \end{grp}
+  \whichproves
+\CC{\hat\prob} \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+  }.
+  \begin{grp}
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3}* {}\\
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}} *
+     R_3\at{\I1} * S\at{\I1} * \var{Sum}\at{\I1}
+    * {}\\
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}} *
+     R_3\at{\I2} * S\at{\I2} * \var{Sum}\at{\I2}
+   * {}\\
+   \cpl*{
+     \begin{conj*}
+       \p{r[1][1]}\at{\I1}=\p{r[1][1]}\at{\I2}
+       \land
+       \LAnd_{i\in\set{1,2,3}}
+         \p{r[i][2]}\at{\I1}= \p{r[i][2]}\at{\I2}
+       \land
+       \p{r[2][1]}\at{\I1}=\p{r[2][1]}\at{\I2}+(v_2-w_2)
+       \land
+       \p{r[3][1]}\at{\I1}=\p{r[3][1]}\at{\I2}+(v_3-w_3)
+     \end{conj*}
+   }
+  \end{grp}
+  \whichproves
+\CC{\hat\prob} \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+  }.
+   \cpl*{
+    \begin{conj*}
+      v_1=w_1 \land* v_2+v_3=w_2+w_3
+      \land
+      \p{r[1][1]}\at{\I1}=\p{r[1][1]}\at{\I2}
+      \land
+      \LAnd_{i\in\set{1,2,3}}
+        \p{r[i][2]}\at{\I1}= \p{r[i][2]}\at{\I2}
+      \land
+      \p{r[2][1]}\at{\I1}=\p{r[2][1]}\at{\I2}+(v_2-w_2)
+      \land
+      \p{r[3][1]}\at{\I1}=\p{r[3][1]}\at{\I2}+(v_3-w_3)
+      \land
+      \LAnd_{i\in\set{1,2,3}}
+       \p x_i\at{\I1} = v_i \land*
+       \p x_i\at{\I2} = w_i
+      \land
+      \LAnd_{i\in\set{1,2,3}}
+        (\p{r[$i$][3]} = \p x_i-\p{r[$i$][1]}-\p{r[$i$][2]})\at{\I1}
+      \land \dots
+    \end{conj*}
+   }
+  \byrule{rl-sure-merge}
+  \whichproves
+\CC{\hat\prob} \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+  }.
+    \cpl*{
+    \begin{conj*}
+      \p x_1\at{\I1} = \p x_1\at{\I2}
+      \land
+      (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+      \land
+      \p{view}_1\at{\I1} = \p{view}_1\at{\I2}
+    \end{conj*}
+    }
+  \byrule{rl-cons}
+  \whichproves
+\cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+    \land
+    \p{view}_1\at{\I1} = \p{view}_1\at{\I2}
+  \end{conj*}
+  }
+  \byrule{rl-convex}
+\end{eqexplain}
+
+
+\subsubsection{Proof of equivalence of the two specifications}
+
+Now we prove that one can prove the relational specification from the unary one,
+and vice versa.
+
+
+\paragraph{From unary to relational}
+We want to show that
+assuming the unary specification \eqref{multiparty:unary:goal} holds,
+we can derive the relational specification \eqref{multiparty:rel:goal}.
+We first need to bridge the gap between having one component
+in the assumption and two in the consequence.
+This is actually easy: the proof of \eqref{multiparty:unary:goal} is
+completely parametric in the index chosen for the program,
+so the same proof can prove two specifications, one where the index of the term is \I1 and one where it is \I2.
+As a side note, this ``reindexing'' argument can be made into a rule of the logic following the LHC approach~\cite{d2022proving} but we do not do this
+in this paper so we can focus on the novel aspects of the logic.
+More formally, let~$P(\prob_0)$ and~$Q(\prob_0)$ be the precondition and the postcondition
+of the unary specification \eqref{multiparty:unary:goal}.
+Furthermore, let~$ \cpl{R_1} $ and $ \cpl{R_2} $ be the precondition and postcondition of the relational specification~\eqref{multiparty:rel:goal}.
+
+First we can infer a binary spec from two unary instances of the unary spec,
+for arbitrary $\prob_1,\prob_2 \of \Dist(\Zp^3)$:
+\begin{equation}
+  \infer* {P(\prob_1)\at{\I1}
+    \proves
+    \WP {\m[\I1: \p{MPSAdd}]} {
+      Q(\prob_1)\at{\I1}
+    }
+    \\\\
+    P(\prob_2)\at{\I2}
+    \proves
+    \WP {\m[\I2: \p{MPSAdd}]} {
+      Q(\prob_2)\at{\I2}
+    }
+  }{
+    \begin{conj}
+    P(\prob_1)\at{\I1} \land P(\prob_2)\at{\I2}
+    \end{conj}
+    \proves
+    \WP {\m<1: \p{MPSAdd}, 2: \p{MPSAdd}>}*{
+      \begin{conj*}
+      Q(\prob_1)\at{\I1} \land Q(\prob_2)\at{\I2}
+      \end{conj*}
+    }
+  }
+  \label{multiparty:u2b:dup}
+\end{equation}
+
+Recalling from \eqref{multiparty:unary:goal}
+that $ {
+  \tilde{\prob} = \left(\DO{(x_1,x_2,x_3) <- \prob; \return (x_1,x_2+x_3)}\right)
+} $,
+ the proof works by showing:
+\begin{gather}
+  \cpl{R_1}
+  \proves
+  \E \prob_1,\prob_2.
+  (P(\prob_1)\at{\I1} \land P(\prob_2)\at{\I2})
+  *\pure{\tilde\prob_1=\tilde\prob_2}
+  \label{multiparty:u2b:prec}
+  \\
+Q(\prob_1)\at{\I1} \land Q(\prob_2)\at{\I2}
+  *\pure{\tilde\prob_1=\tilde\prob_2}
+\proves
+  \cpl{R_2}
+  \label{multiparty:u2b:post}
+\end{gather}
+From \eqref{multiparty:u2b:prec} we obtain $\prob_1$ and $\prob_2$
+with which to instantiate \eqref{multiparty:u2b:dup},
+and that the precondition of \eqref{multiparty:u2b:dup} holds.
+Then, by applying \ref{rule:wp-cons} to the conclusion of
+\eqref{multiparty:u2b:dup} and \eqref{multiparty:u2b:post}
+we obtain the desired relational specification \eqref{multiparty:rel:goal}.
+
+Entailment~\eqref{multiparty:u2b:prec} is obtained in the same way one proves
+\ref{rule:rl-eq-dist}:
+\begin{eqexplain}
+  \cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+  \end{conj*}
+  }
+  \whichproves*
+\E {\hat\prob}.
+  \pure{\hat\prob(R_1)=1} *
+  \CC{\hat\prob} \left(
+    \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+    }
+  \right).
+    \begin{conj}
+      \sure{\p x_i\at{\I1}=v_i}_{i\in\set{1,2,3}} \land
+      \sure{\p x_i\at{\I2}=w_i}_{i\in\set{1,2,3}}
+    \end{conj}
+  \whichproves
+\E {\hat\prob}.
+  \pure{\hat\prob(R_1)=1} *
+  \begin{conj}
+    \CC{\hat\prob} \left(
+      \svec{
+      v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+      }
+    \right).
+      \sure{\p x_i\at{\I1}=v_i}_{i\in\set{1,2,3}}
+    \land
+    \CC{\hat\prob} \left(
+      \svec{
+      v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+      }
+    \right).
+      \sure{\p x_i\at{\I2}=w_i}_{i\in\set{1,2,3}}
+    \end{conj}
+  \whichproves
+\E {\hat\prob}.
+  \pure{\hat\prob(R_1)=1} *
+  \begin{conj}
+    \CC{\hat\prob\circ\inv{\proj_1}} (v_1,v_2,v_3).
+      \sure{\p x_i\at{\I1}=v_i}_{i\in\set{1,2,3}}
+    \land
+    \CC{\hat\prob\circ\inv{\proj_2}} (w_1,w_2,w_3).
+      \sure{\p x_i\at{\I2}=w_i}_{i\in\set{1,2,3}}
+  \end{conj}
+  \whichproves
+\E \prob_1,\prob_2.
+  \begin{conj}
+    \distAs{(\p{x}_1, \p{x}_2, \p{x}_3)\at{\I1}}{\prob_1}
+    \land
+    \distAs{(\p{x}_1, \p{x}_2, \p{x}_3)\at{\I2}}{\prob_2}
+  \end{conj}
+  * \pure{\tilde\prob_1=\tilde\prob_2}
+\end{eqexplain}
+The last step is justified by letting
+$\prob_1 = \hat\prob\circ\inv{\proj_1}$ and
+$\prob_2 = \hat\prob\circ\inv{\proj_2}$,
+noting that $ \hat\prob(R_1)=1 $ implies $\tilde\prob_1=\tilde\prob_2$.
+
+Finally, we prove \eqref{multiparty:u2b:post}.
+Under the assumption $\tilde\prob_1=\tilde\prob_2$
+we know that there is some coupling $\hat\prob$
+such that
+$ \hat\prob\circ\inv{\proj_1} = \tilde\prob_1 =
+  \tilde\prob_2 = \hat\prob\circ\inv{\proj_2} $, and
+$ \hat\prob(R)=1 $ where
+$ R = \set{ ((v_1,v_{23}), (v_1,v_{23})) | v_1,v_{23} \in \Zp } $.
+\begin{eqexplain}
+  &
+  \begin{grp}
+    \CC {\tilde{\prob}_1} {(v_1, v_{23})}.
+    \begin{grp}
+      \sure{\p x_1\at{\I1} = v_1 \land (\p x_2 + \p x_3)\at{\I1}=v_{23}} * {}
+      \\
+      \distAs{\p{view}_1\at{\I1}}{U(v_1,v_{23})} *
+      \E \prob_{23}.\distAs{(\p x_2,\p x_3)\at{\I1}}{\prob_{23}}
+    \end{grp}
+    \\
+    \CC {\tilde{\prob}_2} {(w_1, w_{23})}.
+    \begin{grp}
+      \sure{\p x_1\at{\I2} = w_1 \land (\p x_2 + \p x_3)\at{\I2}=w_{23}} * {}
+      \\
+      \distAs{\p{view}_1\at{\I2}}{U(w_1,w_{23})} *
+      \E \prob_{23}.\distAs{(\p x_2,\p x_3)\at{\I2}}{\prob_{23}}
+    \end{grp}
+  \end{grp}
+  \whichproves
+\begin{grp}
+    \CC {\hat\prob} \svec{
+      v_1,& v_{23}\\w_1,& w_{23}
+    }.
+    \begin{grp}
+      \sure{\p x_1\at{\I1} = v_1 \land (\p x_2 + \p x_3)\at{\I1}=v_{23}} * {}
+      \\
+      \distAs{\p{view}_1\at{\I1}}{U(v_1,v_{23})} *
+      \E \prob_{23}.\distAs{(\p x_2,\p x_3)\at{\I1}}{\prob_{23}}
+    \end{grp}
+    \\
+    \CC {\hat\prob} \svec{
+      v_1,& v_{23}\\w_1,& w_{23}
+    }.
+    \begin{grp}
+      \sure{\p x_1\at{\I2} = w_1 \land (\p x_2 + \p x_3)\at{\I2}=w_{23}} * {}
+      \\
+      \distAs{\p{view}_1\at{\I2}}{U(w_1,w_{23})} *
+      \E \prob_{23}.\distAs{(\p x_2,\p x_3)\at{\I2}}{\prob_{23}}
+    \end{grp}
+  \end{grp}
+  \byrule{c-sure-proj}
+  \whichproves
+\CC {\hat\prob} \svec{
+    v_1,& v_{23}\\w_1,& w_{23}
+  }.
+  \begin{grp}
+    \sure{\p x_1\at{\I1} = v_1 \land (\p x_2 + \p x_3)\at{\I1}=v_{23}}
+    \\
+    \sure{\p x_1\at{\I2} = w_1 \land (\p x_2 + \p x_3)\at{\I2}=w_{23}}
+    \\
+    \distAs{\p{view}_1\at{\I1}}{U(v_1,v_{23})} *
+    \E \prob_{23}.\distAs{(\p x_2,\p x_3)\at{\I1}}{\prob_{23}}
+    \\
+    \distAs{\p{view}_1\at{\I2}}{U(w_1,w_{23})} *
+    \E \prob_{23}.\distAs{(\p x_2,\p x_3)\at{\I2}}{\prob_{23}}
+    \\
+    \pure{v_1=w_1 \land v_{23}=w_{23}}
+  \end{grp}
+  \byrule{c-and}
+  \whichproves
+\E \krnl_1, \krnl_2.
+  \CC {\hat\prob} \svec{
+    v_1,& v_{23}\\w_1,& w_{23}
+  }.
+  \begin{grp}
+    \sure{\p x_1\at{\I1} = v_1 \land (\p x_2 + \p x_3)\at{\I1}=v_{23}}
+    \\
+    \sure{\p x_1\at{\I2} = w_1 \land (\p x_2 + \p x_3)\at{\I2}=w_{23}}
+    \\
+\cpl{\p{view}_1\at{\I1}=\p{view}_1\at{\I2}}
+    \\
+\distAs{(\p x_2,\p x_3)\at{\I1}}{\krnl_1(v_1, v_{23},w_1,w_{23})}
+    \\
+    \distAs{(\p x_2,\p x_3)\at{\I2}}{\krnl_2(v_1, v_{23},w_1,w_{23})}
+    \\
+    \pure{v_1=w_1 \land v_{23}=w_{23}}
+  \end{grp}
+  \byrules{c-skolem,coupling}
+  \whichproves
+\E \krnl_1, \krnl_2.
+  \CC {\hat\prob} \svec{
+    v_1,& v_{23}\\w_1,& w_{23}
+  }.
+  \begin{grp}
+    \sure{\p x_1\at{\I1} = v_1 \land (\p x_2 + \p x_3)\at{\I1}=v_{23}}
+    \\
+    \sure{\p x_1\at{\I2} = w_1 \land (\p x_2 + \p x_3)\at{\I2}=w_{23}}
+    \\
+    \cpl{\p{view}_1\at{\I1}=\p{view}_1\at{\I2}}
+    \\
+    \CC{\krnl_1(v_1, v_{23},w_1,w_{23})} (v_2,v_3).
+    \sure{(\p x_2,\p x_3)\at{\I1} = (v_1,v_2)}
+    \\
+    \CC{\krnl_2(v_1, v_{23},w_1,w_{23})} (w_2,w_3).
+    \sure{(\p x_2,\p x_3)\at{\I2} = (w_1,w_2)}
+    \\
+    \pure{v_1=w_1 \land v_{23}=w_{23}}
+  \end{grp}
+  \byrules{c-unit-r}
+  \whichproves
+\E \hat\prob_1.
+  \CC {\hat\prob_1} \svec{
+    v_1,& v_{23},& v_2,& v_3\\w_1,& w_{23},& w_2,& w_3
+  }.
+  \begin{grp}
+    \sure{\p x_1\at{\I1} = v_1 \land (\p x_2 + \p x_3)\at{\I1}=v_{23}}
+    \\
+    \sure{\p x_1\at{\I2} = w_1 \land (\p x_2 + \p x_3)\at{\I2}=w_{23}}
+    \\
+    \cpl{\p{view}_1\at{\I1}=\p{view}_1\at{\I2}}
+    \\
+    \sure{(\p x_2,\p x_3)\at{\I1} = (v_1,v_2)}
+    \\
+    \sure{(\p x_2,\p x_3)\at{\I2} = (w_1,w_2)}
+    \\
+    \pure{v_1=w_1 \land v_{23}=w_{23}}
+  \end{grp}
+  \byrules{c-frame,c-assoc}
+  \whichproves
+\E \hat\prob_2.
+  \CC {\hat\prob_2} \svec{
+    v_1,& v_2,& v_3\\w_1,& w_2,& w_3
+  }.
+  \begin{grp}
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}}
+    \land
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}}
+    \\
+    \cpl{\p{view}_1\at{\I1}=\p{view}_1\at{\I2}}
+    \\
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3}
+  \end{grp}
+  \byrules{c-transf}
+  \whichproves
+\E \hat\prob_2.
+  \CC {\hat\prob_2} (\m{v},\m{w}).
+  \begin{grp}
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}}
+    \land
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}}
+    \\
+    \E {\hat\nu}.
+      \CC{\hat\nu} (\m{u}_1,\m{u}_2).
+        \sure{\p{view}_1\at{\I1}=\m{u}_1}\land
+        \sure{\p{view}_1\at{\I2}=\m{u}_2}\land
+        \pure{\m{u}_1=\m{u}_2}
+    \\
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3}
+  \end{grp}
+  \bydef
+  \whichproves
+\E \hat\prob_3.
+  \CC {\hat\prob_3} (\m{v},\m{w},\m{u}_1,\m{u}_2).
+  \begin{grp}
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}}
+    \land
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}}
+    \\
+    \sure{\p{view}_1\at{\I1}=\m{u}_1}\land
+    \sure{\p{view}_1\at{\I2}=\m{u}_2}\land
+    \\
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3 \land \m{u}_1=\m{u}_2}
+  \end{grp}
+  \byrules{c-skolem,c-assoc}
+  \whichproves
+\cpl*{
+    \begin{conj*}
+      \p x_1\at{\I1} = \p x_1\at{\I2}
+      \land
+      (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+      \land
+      \p{view}_1\at{\I1} = \p{view}_1\at{\I2}
+    \end{conj*}
+  }
+  \bydef
+\end{eqexplain}
+
+
+
+\paragraph{From relational to unary}
+The proof in the reverse direction follows the same strategy as the unary to relational direction, except the entailments between preconditions and postconditions are reversed; their proof steps in the previous section are however reversible, so we do not repeat the proof here.
+There is one niggle:
+what we can derive from the relational specification is the judgment
+$
+  P(\prob_0)\at{\I1} \land P(\prob_0)\at{\I2}
+  \proves
+  \WP {\m[\I1: \p{MPSAdd}, \I2: \p{MPSAdd}]}*{
+    Q(\prob_0)\at{\I1} \land Q(\prob_0)\at{\I2}
+  }
+$
+which in fact implies the unary specification (by ignoring component \I2),
+but we have not provided \thelogic\ with rules to eliminate components.
+The issue has been solved in LHC~\cite{d2022proving} with
+the \emph{projection modality}
+$ \P i. P = \fun a. \exists b\st P(a\m[i: b]) $,
+which supports the principle
+\[
+  \infer*[lab=wp-proj]{
+    P \proves \WP {\m{t}} {Q}
+  }{
+    \P i. P \proves \WP {(\m{t}\setminus i)} {\P i.Q}
+  }
+\]
+The rule is sound in \thelogic\ model and could be used to fill this (small) gap
+since
+$
+  P(\prob_0)\at{\I1}
+  \proves
+  \P\I2.\bigl(P(\prob_0)\at{\I1} \land P(\prob_0)\at{\I2}\bigr)
+$ and
+$
+  \P\I2.\bigl(Q(\prob_0)\at{\I1} \land Q(\prob_0)\at{\I2}\bigr)
+  \proves
+  Q(\prob_0)\at{\I1}
+$.
+We did not emphasize projection in this paper to avoid distracting from the main novel contributions.
+ 
+
+\subsection{Von Neumann Extractor}
+\label{sec:appendix:ex:von-neumann}
+
+  A randomness extractor is a mechanism that transforms a stream of
+``low-quality'' randomness sources into a stream of ``high-quality''
+randomness sources.
+The Von Neumann extractor is perhaps the earliest instance of such mechanism,
+and it converts a stream of independent coins with the same bias~$p$
+into a stream of independent \emph{fair} coins.
+
+In our language we can model the extractor, up to $N \in \Nat$ iterations,
+as shown in \cref{fig:von-neumann}.
+The program repeatedly flips two biased coins, and outputs the outcome of the first coin if the outcomes where different, otherwise it retries.
+What we can prove is that the bits produced in \p{out} are independent fair coin flips: if we produced~$\ell$ bits we should be able to prove the postcondition
+\[
+  \var{Out}_\ell \is
+  \distAs{\p{out}[0]\at{\I1}}{\Ber{\onehalf}} *
+  \dots *
+  \distAs{\p{out}[\ell-1]\at{\I1}}{\Ber{\onehalf}}.
+\]
+To know how many bits were produced, however,
+we need to condition on \p{len}
+obtaining the specification:
+\[
+  \gproves \WP {\m[\I1: \p{vn}(N)]} {
+    \E \prob. \CC \prob \ell. \bigl(
+      \sure{\Ip{len}{1} = \ell \leq N} *
+      \var{Out}_\ell
+    \bigr)
+  }
+\]
+(Recall $ P \gproves Q \is P \land \ownall \proves Q \land \ownall $)
+
+
+
+\begin{mathfig}[\small]
+  \begin{proofoutline}
+  \PREC{\ownall}\\
+  \CODE{len:=0}\\
+  \ASSR{\sure{\Ip{len}{1} = 0}}\\
+  \ASSR{\E \prob. \CC \prob \ell. \bigl(
+      \sure{\Ip{len}{1} = \ell \leq 0}
+    \bigr)}
+    \TAG[von-neumann:P0]
+  \\
+  \begin{proofjump}[rule:wp-loop,"invariant $P(i) =
+    \E \prob. \CC \prob \ell. \bigl(
+      \sure{\Ip{len}{1} = \ell \leq i} *
+      \var{Out}_\ell
+    \bigr)$"
+  ]
+  \CODE{repeat\ $N$:}\\
+  \begin{proofindent}
+\ASSR{P(i)}\\
+  \CODE{coin_1 :~ Ber($p$)}\\
+  \CODE{coin_2 :~ Ber($p$)}\\
+  \ASSR{
+    P(i)
+    * \distAs{\p{coin}_1\at{\I1}}{\Ber{p}}
+    * \distAs{\p{coin}_2\at{\I1}}{\Ber{p}}
+  }\\
+  \ASSR{
+    \CC \prob \ell. \CC \beta b.
+    \begin{pmatrix}
+      \sure{\Ip{len}{1}=\ell\leq i} *
+      \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b}
+      \\ {}
+      * \var{Out}_\ell *
+      (\pure{b=1} \implies \distAs{\p{coin}_1\at{\I1}}{\Ber{\onehalf}})
+    \end{pmatrix}
+  }
+  \TAG[von-neumann:ClCb]
+  \\
+  \begin{proofjump}[rule:c-wp-elim]
+    \ASSR{
+      \sure{\Ip{len}{1}=\ell\leq i} *
+      \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b}
+      \\ {}
+      * \var{Out}_\ell *
+      (\pure{b=1} \implies \distAs{\p{coin}_1\at{\I1}}{\Ber{\onehalf}})
+    }\\
+    \CODE{if coin_1 != coin$_2\ $ then:}\\
+    \begin{proofindent}
+      \ASSR{
+        \sure{\Ip{len}{1}=\ell\leq i} *
+        \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1}}
+        \\ {}
+        * \var{Out}_\ell *
+        \distAs{\p{coin}_1\at{\I1}}{\Ber{\onehalf}}
+      }\\
+      \CODE{out[len] := coin_1}\\
+      \CODE{len := len+1}\\
+      \ASSR{
+        \sure{\Ip{len}{1}=\ell+1\leq i+1} *
+        \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1}}
+        \\ {}
+        * \var{Out}_\ell *
+        \distAs{\p{coin}_1\at{\I1}}{\Ber{\onehalf}}
+        * \sure{(\p{out[len]} = \p{coin}_1)\at{\I1}}
+      }\\
+    \end{proofindent}
+    \\
+    \ASSR{
+      \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1}=b}
+      * \var{Out}_\ell \\{} *
+      \begin{cases}
+        \sure{\Ip{len}{1}=\ell+1\leq i+1} *
+        \distAs{\p{out[len]}\at{\I1}}{\Ber{\onehalf}}
+        \CASE b=1
+        \\
+        \sure{\Ip{len}{1}=\ell\leq i+1}
+        \CASE b=0
+      \end{cases}
+    }
+  \end{proofjump}
+  \\
+  \ASSR{
+    \CC \prob \ell.\CC \beta b.
+      \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1}=b}
+      * \var{Out}_\ell * \dots
+  }
+  \\
+  \ASSR{
+    \CC {\prob'} {\ell'}. \bigl(
+      \sure{\Ip{len}{1} = \ell' \leq i+1} *
+      \var{Out}_{\ell'}
+    \bigr)
+  }
+  \quad\TAG[von-neumann:Pi+1]
+  \end{proofindent}
+  \end{proofjump}
+  \\
+  \POST{\E \prob. \CC \prob \ell. \bigl(
+        \sure{\Ip{len}{1} = \ell \leq N} *
+        \var{Out}_\ell
+      \bigr)}
+  \end{proofoutline}
+  \caption{Proof outline of the Von Neumann extractor example.}
+  \label{fig:von-neumann-outline}
+\end{mathfig}
+
+
+The \thelogic\ proof of this specification is shown
+in the outline in \cref{fig:von-neumann-outline}.
+The postcondition straightforwardly generalizes to a loop invariant
+\[
+  P(i) =
+  \E \prob. \CC \prob \ell. \bigl(
+    \sure{\Ip{len}{1} = \ell \leq i} *
+    \var{Out}_\ell
+  \bigr)
+\]
+At step~\eqref{von-neumann:P0} we show, by
+using \ref{rule:c-unit-l} and the definition of $\sure{\hole}$,
+that we can obtain the loop invariant with $i=0$:
+$P(0) = \E \prob. \CC \prob \ell. \bigl(
+      \sure{\Ip{len}{1} = \ell \leq 0} *
+      \var{Out}_0
+    \bigr) = \E \prob. \CC \prob \ell. \bigl(
+      \sure{\Ip{len}{1} = \ell \leq 0}
+    \bigr). $
+
+For the proof of the body of the loop we can assume~$P(i)$ and we need to prove
+the postcondition~$P(i+1)$.
+After sampling the two coins,
+we reach the point where we apply the fundamental insight behind
+the extractor, at step~\eqref{von-neumann:ClCb}.
+The key idea is that with some probability~$q$ the two coins will be different,
+in which case the outcomes of the two coins can be either $(0,1)$ or $(1,0)$,
+which both have the same probability $p(1-p)$.
+Therefore, if the coins are different, $\p{coin}_1=0$ and $\p{coin}_1=1$
+have the same probability, \ie $\p{coin}_1$ looks like a fair coin.
+
+\thelogic\ is capable of representing this reasoning as follows.
+
+We start with two independent biased coins, which we can combine
+into a random variable $(\p{coin}_1 \ne \p{coin}_2,\p{coin}_1)$
+recording whether the two outcomes where different and the outcome
+of the first coin;
+it is easy to derive (using \ref{rule:prod-unsplit} and \ref{rule:dist-fun}):
+\[
+  \distAs{\p{coin}_1\at{\I1}}{\Ber{p}} *
+  \distAs{\p{coin}_2\at{\I1}}{\Ber{p}}
+  \proves
+  \distAs{(\p{coin}_1 \ne \p{coin}_2,\p{coin}_1)\at{\I1}}{\prob_0}
+\]
+where
+$
+  \prob_0 \is \left(\DO{
+    c_1 <- \Ber{p};
+    c_2 <- \Ber{p};
+    \return (c_1 \ne c_2, c_1)
+  }\right).
+$
+Now the crucial observation of the extractor can be phrased as
+a reformulation of~$\prob_0$:
+\begin{align*}
+  \prob_0 &= \beta \fuse \krnl
+  &
+  \beta &\is \Ber{q}
+  &
+  \krnl(1) &\is \Ber{\onehalf} &
+  \krnl(0) &\is \Ber{q'}\end{align*}
+Here one first determines
+(with some probability~$q$ which is a function of~$p$)
+whether the two coins will be different or equal,
+and then generates $c_1$ accordingly:
+in the ``different'' branch ($b=1$) the first coin is distributed as $\Ber{\onehalf}$ while in the ``equal'' branch ($b=0$) the first coin is distributed with some bias~$q'$ (also a function of~$p$).
+
+So using $ \prob_0 = \beta \fuse \krnl $ we derive:
+\begin{eqexplain}
+  &
+  \distAs{(\p{coin}_1 \ne \p{coin}_2,\p{coin}_1)\at{\I1}}{(\beta \fuse \krnl)}
+\whichproves
+\CC {\beta \fuse \krnl} {(b,c_1)}.
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b \land \p{coin}_1\at{\I1}=c_1}
+  \byrules{c-unit-r}
+\whichproves
+\CC \beta b.\CC {\krnl(b)} {c_1}.
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b} *
+    \sure{\p{coin}_1\at{\I1}=c_1}
+  \byrules{c-fuse}
+\whichproves
+\CC \beta b. \bigl(
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b} *
+    \CC {\krnl(b)} {c_1}.
+      \sure{\p{coin}_1\at{\I1}=c_1}
+  \bigr)
+  \byrules{sure-str-convex}
+\whichproves
+\CC \beta b. \bigl(
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b} *
+    \pure{b=1} \implies
+    \CC {\Ber{\onehalf}} {c_1}.
+      \sure{\p{coin}_1\at{\I1}=c_1}
+  \bigr)
+  \byrules{c-cons}
+\whichproves
+\CC \beta b. \bigl(
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b} *
+    \pure{b=1} \implies
+      \distAs{\p{coin}_1\at{\I1}}{\Ber{\onehalf}}
+  \bigr)
+  \byrules{c-unit-r}
+\end{eqexplain}
+
+The application of \ref{rule:c-fuse}
+allows us to first condition on $\p{coin}_1 \ne \p{coin}_2$,
+and then the first coin.
+We can then weaken the case where $b=0$ and only record that
+if $b=1$ then $\p{coin}_1$ is a fair coin.
+
+This takes us through step~\eqref{von-neumann:ClCb} of \cref{fig:von-neumann-outline}.
+Now the precondition of the if statement is conditional on \p{len} and
+$\p{coin}_1 \ne \p{coin}_2$.
+Intuitively, we want to evaluate the effects of the if statement
+in the two possible outcomes and put together the results.
+This is precisely the purpose of the \ref{rule:c-wp-swap} rule,
+which together with \ref{rule:c-cons} gives us the derived rule:
+
+\begin{proofrule}
+  \infer*[lab=c-wp-elim]{
+    \forall v\in\psupp(\prob) \st
+    P(v) \gproves \WP {\m{t}} {Q(v)}
+  }{
+    \CC \prob v.P(v) \gproves \WP {\m{t}} {\CC \prob v.Q(v)}
+  }
+  \label{rule:c-wp-elim}
+\end{proofrule}
+
+By applying the rule twice
+(once on the conditioning on \p{len},
+and the on the conditioning on $\p{coin}_1 \ne \p{coin}_2$),
+we can process the if statement case by case,
+and then combine, under the same conditioning, the postconditions
+we obtained in each case.
+The ``else'' branch is a \code{skip} (omitted) so it preserves the precondition
+in the $b=0$ branch.
+In the ``then'' branch we can assume $b=1$; we apply \ref{rule:wp-rl-assign}
+to the assignments and combine the result with the ``else'' branch by making
+the overall postcondition of the if statement to be parametric
+on the value of~$b$ (and~$\ell$).
+
+The last non-obvious step is~\eqref{von-neumann:Pi+1} in \cref{fig:von-neumann-outline},
+where we show that the conditional postcondition of the if statement
+implies the loop invariant $P(i+1)$.
+Let
+\[
+  K(\ell,b) =
+  \begin{cases}
+    \sure{\Ip{len}{1}=\ell+1\leq i+1} *
+    \distAs{\p{out[len]}\at{\I1}}{\Ber{\onehalf}}
+    \CASE b=1
+    \\
+    \sure{\Ip{len}{1}=\ell\leq i+1}
+    \CASE b=0
+  \end{cases}
+\]
+then the step is proven as follows:
+\begin{eqexplain}
+  &
+  \CC \prob \ell.\CC \beta b. \bigl(
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1}=b}
+    * \var{Out}_\ell * K(\ell,b)
+  \bigr)
+  \whichproves
+\CC {\prob \pprod \beta} (\ell,b).\bigl(
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1}=b}
+    * \var{Out}_\ell * K(\ell,b)
+  \bigr)
+  \byrule{c-assoc}
+  \whichproves
+\CC {\prob \pprod \beta} (\ell,b).\bigl(
+    \var{Out}_\ell * K(\ell,b)
+  \bigr)
+  \byrules{c-cons}
+  \whichproves
+\CC {\prob''} (\ell',\ell).
+    \begin{cases}
+      \sure{\Ip{len}{1}=\ell'\leq i+1} *
+      \var{Out}_{\ell'-1} *
+      \distAs{\p{out[len]}\at{\I1}}{\Ber{\onehalf}}
+      \CASE \ell'=\ell+1
+      \\
+      \sure{\Ip{len}{1}=\ell'\leq i+1} *
+      \var{Out}_{\ell'}
+      \CASE \ell'=\ell
+    \end{cases}
+  \byrules{c-transf}
+  \whichproves
+\CC {\prob''\circ\inv{\proj_1}} \ell'.\bigl(
+    \sure{\Ip{len}{1}=\ell'\leq i+1} *
+    \var{Out}_{\ell'}
+  \bigr)
+  \byrules{c-dist-proj}
+  \whichproves
+\E \prob'.
+  \CC {\prob'} \ell'.\bigl(
+    \sure{\Ip{len}{1}=\ell'\leq i+1} *
+    \var{Out}_{\ell'}
+  \bigr)
+\end{eqexplain}
+
+The application of \ref{rule:c-transf}
+uses the function $f(\ell,b) = (\ell+b, \ell)$ to introduce the new $\ell'$
+and then we project away the unused~$\ell$ using the derived \ref{rule:c-dist-proj} (note that the rule applies to $\sure{\hole}$ assertions and multiple ownership assertions in a separating conjunction thanks to \ref{rule:prod-split} and \ref{rule:prod-unsplit}).
+ 
+
+\subsection{Monte Carlo: $\p{BETW\_SEQ} \leq \p{BETW}$}
+\label{sec:appendix:ex:monte}
+
+  Recall the example sketched in \cref{sec:intro}
+where one wants to compare the accuracy of variants of a  Monte Carlo algorithm
+(in \cref{fig:between-code})
+to estimate whether a number~$x$ is within the extrema of some set~$S$.
+\Cref{fig:between-code-repeat} reproduces the code here for convenience,
+with the self-assignments to~\p{l} and~\p{r} expanded to their form with
+a temporary (primed) variable storing the old value of the assigned variable.
+
+The verification task we accomplish in this section is to compare
+the accuracy of the two Monte Carlo algorithms
+\p{BETW\_SEQ} and \p{BETW} (the optimized one).
+
+This goal can be encoded as the judgment:
+\[
+  \cpl{\Ip{l}{1}=\Ip{r}{1}=\Ip{l}{2}=\Ip{r}{2}=0}\withp{\m{\permap}}
+  \proves
+  \WP {\m[
+    \I1: \code{BETW_SEQ($x, S$)},
+    \I2: \code{BETW($x, S$)}
+  ]} {
+    \cpl{\Ip{d}{1} \leq \Ip{d}{2}}
+  }
+\]
+where
+$\m{\permap}$ contains full permissions for all the variables.
+The judgment states, through the relational lifting, that it is more likely
+to get a positive answer from \p{BETW} than from \p{BETW\_SEQ}.
+The challenge is implementing the intuitive relational argument
+sketched in \cref{sec:intro},
+in the presence of very different looping structures.
+
+By \ref{rule:wp-rl-assign}, it is easy to prove that
+\[
+  \cpl{\Ip{l}{1}\leq\Ip{l}{2} \land
+       \Ip{r}{1}\leq\Ip{r}{2}}\withp{\m{\permap}}
+  \proves
+  \WP {\m[
+    \I1: \code{d := r&&l},
+    \I2: \code{d := r&&l}
+  ]} {
+    \cpl{\Ip{d}{1} \leq \Ip{d}{2}}
+  }
+\]
+Therefore we will focus on proving that the loops produce distributions
+satisfying $
+  Q = \cpl{\Ip{l}{1}\leq\Ip{l}{2} \land
+       \Ip{r}{1}\leq\Ip{r}{2}}.
+$
+
+Now the main obstacle is that we have a single loop at component~$\I2$
+looping $2N$ times, and two sequentially composed loops in $\I1$,
+each running $N$ iterations.
+In a standard coupling-based logic like pRHL,
+such structural differences are usually bridged by invoking a
+syntactic transformation (\eg loop splitting) that is provided
+by a library of transformations that were proven separately, using meta-reasoning directly on the semantic model,
+by the designer of the logic.
+In \thelogic\ we aim at:
+\begin{itemize}
+  \item Avoiding resorting to syntactic transformations;
+  \item Avoiding relying on an ad-hoc (incomplete) library of transformations;
+  \item Avoiding having to argue for correctness of transformations semantically.
+\end{itemize}
+To achieve this, we formulate the loop-splitting pattern as a \emph{rule}
+which allows to consider $N$ iterations of component $\I2$ against the first loop of $\I1$, and the rest against the second loop of $\I1$.
+\begin{proofrule}
+  \infer*[lab=wp-loop-split]{
+  P_1(N_1) \proves P_2(0)
+  \\\\
+  \forall i < N_1 \st
+    P_1(i) \proves \WP{\m[\I1: t_1, \I2: t]}{P_1(i+1)}
+  \\\\
+  \forall j < N_2 \st
+    P_2(j) \proves \WP{\m[\I1: t_2, \I2: t]}{P_2(j+1)}
+}{
+  P_1(0) \proves
+  \WP{\m[
+    \I1: (\Loop{N_1}{t_1}\p;\Loop{N_2}{t_2}),
+    \I2: \Loop{(N_1+N_2)}{t}
+  ]}{P_2(N_2)}
+}   \relabel{rule:wp-loop-split}
+\end{proofrule}
+
+Most importantly, such rule is \emph{derivable} from the primitive rules of \thelogic, avoiding semantic reasoning all together.
+Once this rule is proven, it can be used any time need for such pattern arises.
+Before showing how this rule is derivable,
+which we do in \cref{proof:wp-loop-split},
+let us show how to use it to close our example.
+
+We want to apply \ref{rule:wp-loop-split} with $N_1=N_2=N$,
+$t_1$ as the body of the loop of \p{BelowMax},
+$t_2$ as the body of the loop of \p{AboveMin},
+and
+$t$ as the body of the loop of \p{BETW}.
+We define the two loop invariants as follows:
+\begin{align*}
+  P_1(i) &\is
+    \cpl{
+      \Ip{r}{1}\leq\Ip{r}{2}
+      \land
+      \Ip{l}{1}=0\leq\Ip{l}{2}
+    }
+  &
+  P_2(j) &\is
+    \cpl{
+      \Ip{r}{1}\leq\Ip{r}{2}
+      \land
+      \Ip{l}{1}\leq\Ip{l}{2}
+    }
+\end{align*}
+Note that they both ignore the iteration number.
+Clearly we have:
+\begin{align*}
+  P_0 &\proves P_1(0)
+  &
+  P_1(N) &\proves P_2(0)
+  &
+  P_2(N) &\proves Q
+\end{align*}
+
+By applying \ref{rule:wp-loop-split} we reduce the goal to the triples:
+\begin{align*}
+  \cpl{
+    \Ip{r}{1}\leq\Ip{r}{2}
+    \land
+    \Ip{l}{1}=0\leq\Ip{l}{2}
+  }
+  &\proves
+  \WP{\m[
+    \I1: t_1,
+    \I2: t
+  ]}{
+    \cpl{
+      \Ip{r}{1}\leq\Ip{r}{2}
+      \land
+      \Ip{l}{1}=0\leq\Ip{l}{2}
+    }
+  }
+  \\
+  \cpl{
+    \Ip{r}{1}\leq\Ip{r}{2}
+    \land
+    \Ip{l}{1}\leq\Ip{l}{2}
+  }
+  &\proves
+  \WP{\m[
+    \I1: t_2,
+    \I2: t
+  ]}{
+    \cpl{
+      \Ip{r}{1}\leq\Ip{r}{2}
+      \land
+      \Ip{l}{1}\leq\Ip{l}{2}
+    }
+  }
+\end{align*}
+which are easy to obtain by replicating the standard coupling-based reasoning
+steps, using \ref{rule:coupling} and \ref{rule:wp-rl-assign}.
+
+\medskip
+As promised, we now prove \ref{rule:wp-loop-split} is derivable.
+\begin{lemma}
+\label{proof:wp-loop-split}
+  \Cref{rule:wp-loop-split} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume:
+  \begin{gather}
+  P_1(N_1) \proves P_2(0)
+  \label{wp-loop-split:P1-P2}
+  \\
+  \forall i < N_1 \st
+    P_1(i) \proves \WP{\m[\I1: t_1, \I2: t]}{P_1(i+1)}
+  \label{wp-loop-split:loop1}
+  \\
+  \forall j < N_2 \st
+    P_2(j) \proves \WP{\m[\I1: t_2, \I2: t]}{P_2(j+1)}
+  \label{wp-loop-split:loop2}
+  \end{gather}
+  We want to show:
+  \[
+    P_1(0) \proves
+    \WP{\m[
+      \I1: (\Loop{N_1}{t_1}\p;\Loop{N_2}{t_2}),
+      \I2: \Loop{(N_1+N_2)}{t}
+    ]}{P_2(N_2)}
+  \]
+  First, by using \ref{rule:wp-nest} and \ref{rule:wp-seq},
+  we can reduce the goal to:
+  \[
+    P_1(0) \proves
+    \WP{\m[\I2: \Loop{(N_1+N_2)}{t}]}[\big]{
+      \WP{\m[\I1: \Loop{N_1}{t_1}]}{
+        \WP{\m[\I1:\Loop{N_2}{t_2}]}{P_2(N_2)}
+       }
+    }
+  \]
+  Now define:
+  \[
+    P(k) =
+    \begin{cases}
+    \WP {\m[\I1: \Loop{k}{t_1}]} { P_1(k) }
+    \CASE k \leq N_1
+    \\
+    \WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+      \WP {\m[\I1: \Loop{(k-N_1)}{t_2}]} { P_2(k-N_1) }
+    }
+    \CASE k > N_1
+    \end{cases}
+  \]
+  We have:
+  \begin{gather}
+    P_1(0) \proves P(0)
+    \label{wp-loop-split:P1-P}
+    \\
+    P(N_1+N_2) \proves
+    \WP{\m[\I1: \Loop{N_1}{t_1}]}{
+      \WP{\m[\I1:\Loop{N_2}{t_2}]}{P_2(N_2)}
+     }
+    \label{wp-loop-split:P-P2}
+  \end{gather}
+  Entailment~\eqref{wp-loop-split:P1-P} holds by \ref{rule:wp-loop-0},
+  and \eqref{wp-loop-split:P-P2} holds by definition.
+  Therefore, using \ref{rule:wp-cons} we reduced the goal to
+  \[
+    P(0) \proves \WP{\m[\I2: \Loop{(N_1+N_2)}{t}]}{P(N_1+N_2)}
+  \]
+  which we can make progress on using \ref{rule:wp-loop}.
+  We are left with proving:
+  \[
+    \forall k < N_1+N_2\st
+    P(k) \proves
+    \WP {\m[\I2: t]} {P(k+1)}
+  \]
+  We distinguish three cases:
+  \begin{casesplit}
+  \case[$k<N_1$] By unfolding the definition of~$P$ we obtain:
+    \[
+      \WP {\m[\I1: \Loop{k}{t_1}]} { P_1(k) }
+      \proves
+      \WP {\m[\I2: t]}[\big]{
+        \WP {\m[\I1: \Loop{(k+1)}{t_1}]} { P_1(k+1) }
+      }
+    \]
+    Using \ref{rule:wp-loop-unf} on the inner WP we obtain:
+    \[
+      \WP {\m[\I1: \Loop{k}{t_1}]} { P_1(k) }
+      \proves
+      \WP {\m[\I2: t]}[\big]{
+        \WP {\m[\I1: \Loop{(k)}{t_1}]} { \WP{\m[\I1: t_1]}{P_1(k+1)} }
+      }
+    \]
+    By \ref{rule:wp-nest} we can swap the two topmost WPs:
+    \[
+      \WP {\m[\I1: \Loop{k}{t_1}]} { P_1(k) }
+      \proves
+      \WP {\m[\I1: \Loop{k}{t_1}]}[\big]{
+        \WP {\m[\I2: t]} { \WP{\m[\I1: t_1]}{P_1(k+1)} }
+      }
+    \]
+    Finally, by \ref{rule:wp-cons} we can eliminate the topmost WP from both sides:
+    \[
+      P_1(k)
+      \proves
+      \WP {\m[\I2: t]} { \WP{\m[\I1: t_1]}{P_1(k+1)} }
+    \]
+    which by \ref{rule:wp-nest} is our assumption~\eqref{wp-loop-split:loop1}
+    with $i=k$.
+
+  \case[$k=N_1$] By unfolding the definition of~$P$ we obtain:
+    \[
+      \WP {\m[\I1: \Loop{N_1}{t_1}]} { P_1(N_1) }
+      \proves
+      \WP {\m[\I2: t]}*{
+        \WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+          \WP {\m[\I1: \Loop{1}{t_2}]} { P_2(0) }
+        }
+      }
+    \]
+    By a trivial application of \ref{rule:wp-loop}
+    we have $
+      \WP {\m[\I1: t]} { Q }
+      \proves
+      \WP {\m[\I1: \Loop{1}{t}]} { Q }
+    $, so we can simplify the innermost WP to:
+    \[
+      \WP {\m[\I1: \Loop{N_1}{t_1}]} { P_1(N_1) }
+      \proves
+      \WP {\m[\I2: t]}*{
+        \WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+          \WP {\m[\I1: t_2]} { P_2(1) }
+        }
+      }
+    \]
+    Then by \ref{rule:wp-nest} we can swap the topmost WPs:
+    \[
+      \WP {\m[\I1: \Loop{N_1}{t_1}]} { P_1(N_1) }
+      \proves
+      \WP {\m[\I1: \Loop{N_1}{t_1}]}*{
+        \WP {\m[\I2: t]}[\big]{
+          \WP {\m[\I1: t_2]} { P_2(1) }
+        }
+      }
+    \]
+    By \ref{rule:wp-cons} we can eliminate the topmost WP from both sides:
+    \[
+      P_1(N_1)
+      \proves
+      \WP {\m[\I2: t]}[\big]{
+        \WP {\m[\I1: t_2]} { P_2(1) }
+      }
+    \]
+    Using assumption~\eqref{wp-loop-split:P-P2} we can reduce this to:
+    \[
+      P_2(0)
+      \proves
+      \WP {\m[\I2: t]}[\big]{
+        \WP {\m[\I1: t_2]} { P_2(1) }
+      }
+    \]
+    which by \ref{rule:wp-nest} is our assumption~\eqref{wp-loop-split:loop2}
+    with $j=0$.
+
+  \case[$k>N_1$] By unfolding the definition of~$P$ we obtain:
+    \begin{align*}
+      &\WP {\m[\I1: \Loop{N_1}{t_1}]}{
+        \WP {\m[\I1: \Loop{(k-N_1)}{t_2}]} { P_2(k-N_1) }
+      }
+      \\ {}\proves{}&
+      \WP {\m[\I2: t]}*{
+        \WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+          \WP {\m[\I1: \Loop{(k-N_1+1)}{t_2}]} { P_2(k-N_1+1) }
+        }
+      }
+    \end{align*}
+    Using \ref{rule:wp-loop-unf} on the inner WP we obtain:
+    \begin{align*}
+      &\WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+        \WP {\m[\I1: \Loop{(k-N_1)}{t_2}]} { P_2(k-N_1) }
+      }
+      \\ {}\proves{}&
+      \WP {\m[\I2: t]}*{
+        \WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+          \WP {\m[\I1: \Loop{(k-N_1)}{t_2}]} {
+            \WP{\m[\I1: t_2]}{P_2(k-N_1+1)}
+          }
+        }
+      }
+    \end{align*}
+    By \ref{rule:wp-nest} we can push the topmost WP inside:
+    \begin{align*}
+      &\WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+        \WP {\m[\I1: \Loop{(k-N_1)}{t_2}]} { P_2(k-N_1) }
+      }
+      \\ {}\proves{}&
+      \WP {\m[\I1: \Loop{N_1}{t_1}]}*{
+        \WP {\m[\I1: \Loop{(k-N_1)}{t_2}]}[\big]{
+          \WP {\m[\I2: t]} {
+            \WP{\m[\I1: t_2]}{P_2(k-N_1+1)}
+          }
+        }
+      }
+    \end{align*}
+    Finally, by \ref{rule:wp-cons} we can eliminate the topmost WPs from both sides:
+    \begin{equation*}
+    P_2(k-N_1)
+    \proves
+    \WP {\m[\I2: t]} {
+      \WP{\m[\I1: t_2]}{P_2(k-N_1+1)}
+    }
+    \end{equation*}
+    which by \ref{rule:wp-nest} is our assumption~\eqref{wp-loop-split:loop2}
+    with $j=k-N_1$.
+  \qedhere
+  \end{casesplit}
+\end{proof}  
+
+\subsection{Monte Carlo: Equivalence Between \p{BETW\_MIX} and \p{BETW\_SEQ}}
+
+  \Cref{fig:between-code-repeat} shows another way in which one can
+approximately compute the ``between'' function: \p{BETW\_MIX}.
+In this example we want to prove the equivalence between
+\p{BETW\_MIX} and \p{BETW\_SEQ}.
+Again, the main obstacle to overcome in the proof is that
+the structure of the two programs is very different.
+\p{BETW\_SEQ} has two loops of~$N$ iterations, with one sample per iteration.
+\p{BETW\_MIX} has a single loop of~$N$ iterations, but it samples twice
+per iteration.
+Note that the equivalence cannot be understood as a generic program transformation: the order in which the samples are taken in the two programs
+is drastically different; they are only equivalent because the calculations
+done on each of these independent samples are independent from one another.
+
+Intuitively, we want to produce a proof that aligns each iteration
+of the first loop of \p{BETW\_SEQ} with half of each iteration of \p{BETW\_MIX},
+and each iteration of the second loop of \p{BETW\_SEQ} with the second half of each iteration of \p{BETW\_MIX}.
+In the same vein as the previous example, we want to formalize the
+proof pattern as a rule that aligns the loops as desired,
+prove the rule is derivable, and apply it to the example.
+A rule encoding the above pattern is the following:
+\begin{proofrule}
+  \infer*[lab=wp-loop-mix]{
+  \forall i < N \st
+    P_1(i) \proves \WP{\m[\I1: t_1, \I2: t_1']}{P_1(i+1)}
+  \\
+  \forall i < N \st
+    P_2(i) \proves \WP{\m[\I1: t_2, \I2: t_2']}{P_2(i+1)}
+}{
+  P_1(0) * P_2(0)
+  \proves
+  \WP{\m[
+    \I1: (\Loop{N}{t_1}\p;\Loop{N}{t_2}),
+    \I2: \Loop{N}{(t_1';t_2')}
+  ]}{P_1(N) * P_2(N)}
+}   \relabel{rule:wp-loop-mix}
+\end{proofrule}
+Before showing how this rule is derivable,
+which we do in \cref{proof:wp-loop-mix},
+let us show how to use it to close our example.
+
+We want to prove the goal:
+\[
+  \begin{conj}
+    \sure{\Ip{r}{1} = \Ip{l}{1} = 0} \land
+    \sure{\Ip{r}{2} = \Ip{l}{2} = 0}
+  \end{conj}
+  \withp{\m{p}}
+  \proves
+  \WP{\m<
+    \I1: \Loop{N}{t_{\p{r}}}\p; \Loop{N}{t_{\p{l}}},
+    \I2: \Loop{N}{(t_{\p{r}}\p; t_{\p{l}})}
+  >}*{
+    \cpl*{
+    \begin{conj*}
+      \Ip{r}{1} = \Ip{r}{2} \land
+      \Ip{l}{1} = \Ip{l}{2}
+    \end{conj*}
+    }
+  }
+\]
+where
+  $\m{p}$ has full permissions for all the relevant variables,
+  $t_{\p{r}}$ is the body of the loop of \p{BelowMax}, and
+  $t_{\p{l}}$ is the body of the loop of \p{AboveMin}.
+
+As a first manipulation, we use \ref{rule:rl-merge} in the postcondition,
+and \cref{rule:coupling} (via \ref{rule:sure-dirac}) to the precondition,
+to obtain:
+\[
+  \begin{conj}
+    \cpl{\Ip{r}{1} = \Ip{r}{2}}\withp{\m{p}_{\p{r}}} * {}\\
+    \cpl{\Ip{l}{1} = \Ip{l}{2}}\withp{\m{p}_{\p{l}}}
+  \end{conj}
+  \proves
+  \WP{\m<
+    \I1: \Loop{N}{t_{\p{r}}}\p; \Loop{N}{t_{\p{l}}},
+    \I2: \Loop{N}{(t_{\p{r}}\p; t_{\p{l}})}
+  >}*{
+    \begin{conj}
+      \cpl{\Ip{r}{1} = \Ip{r}{2}}\withp{\m{p}_{\p{r}}} * {}\\
+      \cpl{\Ip{l}{1} = \Ip{l}{2}}\withp{\m{p}_{\p{l}}}
+    \end{conj}
+  }
+\]
+where
+$\m{p}_{\p{r}} = \m[\Ip{r}{1}:1, \Ip{r}{2}:1, \Ip{q}{1}:1, \Ip{q}{2}:1] $, and
+$\m{p}_{\p{l}} = \m[\Ip{l}{1}:1, \Ip{l}{2}:1, \Ip{p}{1}:1, \Ip{p}{2}:1] $.
+Then \ref{rule:wp-loop-mix} applies and we are left with the two triples
+\begin{gather*}
+  \cpl{\Ip{r}{1} = \Ip{r}{2}}
+  \withp{\m{p}_{\p{r}}}
+  \proves
+  \WP{\m[
+    \I1: t_{\p{r}},
+    \I2: t_{\p{r}}
+  ]}*{
+    \cpl{\Ip{r}{1} = \Ip{r}{2}}
+    \withp{\m{p}_{\p{r}}}
+  }
+  \\
+  \cpl{\Ip{l}{1} = \Ip{l}{2}}
+  \withp{\m{p}_{\p{l}}}
+  \proves
+  \WP{\m[
+    \I1: t_{\p{l}},
+    \I2: t_{\p{l}}
+  ]}*{
+    \cpl{\Ip{l}{1} = \Ip{l}{2}}
+    \withp{\m{p}_{\p{l}}}
+  }
+\end{gather*}
+which are trivially proved using a standard coupling argument.
+
+\medskip
+As promised, we now prove \ref{rule:wp-loop-mix} is derivable,
+concluding the example.
+\begin{lemma}
+\label{proof:wp-loop-mix}
+  \Cref{rule:wp-loop-mix} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume:
+  \begin{gather}
+    \forall i < N \st
+      P_1(i) \proves \WP{\m[\I1: t_1, \I2: t_1']}{P_1(i+1)}
+    \label{wp-loop-mix:P1}
+    \\
+    \forall i < N \st
+      P_2(i) \proves \WP{\m[\I1: t_2, \I2: t_2']}{P_2(i+1)}
+    \label{wp-loop-mix:P2}
+  \end{gather}
+  Our goal is to prove:
+  \[
+    P_1(0) * P_2(0)
+    \proves
+    \WP{\m[
+      \I1: (\Loop{N}{t_1}\p;\Loop{N}{t_2}),
+      \I2: \Loop{N}{(t_1';t_2')}
+    ]}{P_1(N) * P_2(N)}
+  \]
+  We first massage the goal to split the sequential composition at \I1.
+  By \ref{rule:wp-seq} and \ref{rule:wp-nest} we obtain
+  \[
+    P_1(0) * P_2(0)
+    \proves
+    \WPv{\m[\I2: \Loop{N}{(t_1';t_2')}]}{
+      \WP{\m[\I1: \Loop{N}{t_1}]}{
+        \WP{\m[\I1: \Loop{N}{t_2}]}{
+          P_1(N) * P_2(N)
+        }
+      }
+    }
+  \]
+  Now by applying \ref{rule:wp-frame} in the postcondition (twice) we obtain
+  \begin{equation}
+    P_1(0) * P_2(0)
+    \proves
+    \WP{\m[\I2: \Loop{N}{(t_1';t_2')}]}*{
+      \begin{conj}
+      \WP{\m[\I1: \Loop{N}{t_1}]}{P_1(N)} * {}\\
+      \WP{\m[\I1: \Loop{N}{t_2}]}{P_2(N)}
+      \end{conj}
+    }
+  \label{wp-loop-mix:goal-loop}
+  \end{equation}
+  Define
+  \begin{align*}
+    P(i) &\is Q_1(i) * Q_2(i)
+    &
+    Q_1(i) &\is \WP{\m[\I1: \Loop{i}{t_1}]}{P_1(i)}
+    &
+    Q_2(i) &\is \WP{\m[\I1: \Loop{i}{t_2}]}{P_2(i)}
+  \end{align*}
+  Clearly we have
+  $ P_1(0) * P_2(0) \proves P(0) $ (by \ref{rule:wp-loop-0})
+  and $ P(N) $ coincides with the postcondition
+  of our goal~\eqref{wp-loop-mix:goal-loop}, which is now rewritten to:
+  \[
+    P(0)\proves \WP{\m[\I2: \Loop{N}{(t_1'\p;t_2')}]}{P(N)}
+  \]
+  Now we can apply \ref{rule:wp-loop} with invariant~$P$ and reduce the goal to
+  the triples:
+  \[
+    \forall i < N \st
+      Q_1(i)*Q_2(i) \proves \WP{\m[\I2: (t_1'\p;t_2')]}{Q_1(i+1)*Q_2(i+1)}
+  \]
+  By \ref{rule:wp-seq} and \ref{rule:wp-frame} we can reduce the goal to
+  \[
+    Q_1(i)*Q_2(i) \proves
+    \WP{\m[\I2: t_1']}{Q_1(i+1)} *
+    \WP{\m[\I2: t_2']}{Q_2(i+1)}
+  \]
+  which we can prove by showing the two triples:
+  \begin{align*}
+    Q_1(i) &\proves
+    \WP{\m[\I2: t_1']}{Q_1(i+1)}
+    &
+    Q_2(i) &\proves
+    \WP{\m[\I2: t_2']}{Q_2(i+1)}
+  \end{align*}
+  We focus on the former as the latter can be dealt with symmetrically.
+  By unfolding $Q_1$ we obtain:
+  \[
+    \WP{\m[\I1: \Loop{i}{t_1}]}{P_1(i)}
+    \proves
+    \WP{\m[\I2: t_1']}[\big]{\WP{\m[\I1: \Loop{(i+1)}{t_1}]}{P_1(i+1)}}.
+  \]
+  We then apply \ref{rule:wp-loop-unf} to the innermost WP and \ref{rule:wp-nest}to swap the two WPs in the conclusion:
+  \[
+    \WP{\m[\I1: \Loop{i}{t_1}]}{P_1(i)}
+    \proves
+    \WP{\m[\I1: \Loop{i}{t_1}]}[\big]{\WP{\m[\I2: t_1', \I1: t_1]}{P_1(i+1)}}.
+  \]
+  Finally, by \ref{rule:wp-cons} we can eliminate the topmost WPs
+  on both sides and reduce the goal to assumption~\eqref{wp-loop-mix:P1}.
+\end{proof}
+ 
+ 
+
+
+
+
+
+
+
+\subsection{Randomized Cache Management}
+  
+
+Cache is a part of computer memory fast to access but limited in its size.
+Cache management algorithms determine which elements are to keep or
+evict upon a sequence of requests.
+If the computer knows the entire sequence of requests, then its best strategy is
+to always evict the element that is next requested furtherest in the future.
+We call this strategy the \emph{offline optimal algorithm}.
+However, a realistic cache algorithm needs to make decisions
+online, which make it impossible to consider requests in the future.
+While for some applications deterministic
+cache algorithms, such as First-In-First-Out (FIFO), Last-In-First-Out (LIFO),
+and Least Recently Used (LRU), perform relatively well, they suffer when the
+sequence of requests are produced adversarially to maximize their misses. It is
+proved that, for a cache that holds $k$ items, no deterministic cache algorithm
+is $< k$-competitive; that means for any deterministic cache algorithm, there
+exists some sequence on which the algorithm produces at least $k$ times misses
+of the offline optimal algorithm's number of misses.
+
+Randomization could help a lot in this scenario of adversarial requests.
+The \emph{Marker algorithm}, a randomized algorithm also known as 1-bit LRU algorithm,
+is shown to be $\log(k)$-competitive to the offline optimal.
+While the algorithm is relatively intuitive, its analysis involves many parts.
+Though we do not have an end-to-end formal proof of that analysis,
+we can verify some important components in our logic.
+
+The Marker algorithm attaches each slot of its cache with an 1-bit marker.
+Initially, for any $1 \leq i \leq k$, the mark
+$\code{cache[$i$][mark]}$ is set to 0.
+Then it operates in phases.
+At the beginning of each phase, the markers are all set to 0.
+Every time it encounters a new request that
+it has not seen in the current phase,
+either the requested element is already in the cache and then
+it simply changes that slot's mark to 1,
+or the requested element is not in the cache,
+then it replaces the item on a randomly chosen 0-marked slot with the request
+and marks that slot to~1.
+Thus, after processing $k$ distinct requests in a phase,
+all the slots in the cache are marked with~1.
+ The algorithm then reset all
+these marks to 0 and start a new phase.
+
+We show the details of the implementation of each phase in~\cref{fig:marker:algorithm}.
+(The part resetting all marks to 0 and starts a new phase is not modelled.)
+A crucial step in the implementation is to sample the eviction index $\code{ev}$
+uniformly randomly from all index marked to 0.
+There are many ways to implement that. We use a memory-efficient reservoir sampling algorithm~\cite{vitter1985random}, which can also be used in many other applications.
+Throughout this example, in both the code and the proof, we use $[a, b]$ to denote the set of integers
+that are at least $a$ and at most $b$.
+
+\begin{figure}
+\setlength\tabcolsep{0pt}\begin{tabular*}{\textwidth}{
+    @{\extracolsep{\fill}}
+    *{4}{p{\textwidth/4}}@{}
+  }
+  \begin{sourcecode*}
+  def Marker(seq, N, cache):
+    cost := 0
+    i := 1
+    repeat N:
+       hit := False
+       j := 1
+       repeat k:
+	       if cache[j]  == seq[i]:
+		        cache[j] := (seq[i], 1)
+		        hit := True
+	       j := j+1
+	    if hit:
+		    skip
+		  else:
+        ev:~Reservoir_Samp(k, cache)
+		  	cache[ev] := (seq[i], 1)
+		    cost := cost + 1
+      i := i+1
+  \end{sourcecode*}
+  &
+  \begin{sourcecode*}
+    def Reservoir-Samp(k, cache):
+        c = 0
+        j = 0
+        ev := None
+        repeat k:
+          c := c + 1
+          if cache[j][mark] = 0 then
+            j := j + 1
+            x :~ unifInt [1,j]
+            if x <= 1:
+              ev := c
+  \end{sourcecode*}
+\end{tabular*}
+  \caption{The Marker algorithm.}
+  \label{fig:marker:algorithm}
+\end{figure}
+
+
+\subsubsection{Reservoir Sampling}
+
+The first component that we verify is the reservoir sampling.
+We want to show that for any input $\code{cache}$,
+the output $\code{ev}$ is distributed uniformly
+among indices $1 \leq l \leq k$  with $\code{cache[$l$][mark]} = 0$.
+We state that goal in our logic as
+\begin{align*}
+  & \forall S.
+  \sure{l \in S \iff \code{cache[$l$][mark]} = 1} \\
+  \gproves
+  &\WP{1: \code{Reservoir-Samp($k$, cache)}}{
+    \sure{l \in S \iff \code{cache[$l$][mark]} = 1}
+    \ast \distAs{\code{ev}}{\Unif{[1, k] \setminus S}}
+  }
+\end{align*}
+The condition
+$\sure{l \in S \iff \code{cache[$l$][mark]} = 1}$
+ makes sure that $S$ contains exactly the cache indices
+ marked as 0.
+
+
+The program uses $\p{c}$ to track the number of
+slots that we iterate over and \code{j} to count the number of
+cache indices with mark 0. It initializes both
+$\p{c}$ and $\code{j}$ to 0, and $\code{ev}$ to a non-integer
+value \code{None}.
+The program then iterates over the entries \code{cache[$c$]} for
+$1 \leq c \leq k$ and in each iteration update $\code{ev}$ and \code{j}
+to maintain that the loop invariants that
+1) $\code{ev}$ is distributed uniformly among
+indices we have iterated over that are marked 0, i.e.,
+$\distAs{\code{ev}}{\Unif{[1,c] \setminus S}}$
+(the uniform distribution over empty set does not make sense,
+so we arbitrarily interpret $\Unif{\emptyset}$ as the Dirac distribution
+over the value \code{None});
+2) the number of element in $\Unif{[1,c] \setminus S}$ is $\code{j}$.
+Specifically, in the $c^{th}$ iteration,
+if $\code{cache[$c$]} = 1$, we just increase $c$ by 1 and enter the next iteration.
+If $\code{cache[$c$]} = 0$,
+then we increase both $\code{c, j}$ by 1
+and sample an integer \code{x} uniformly from the interval $[1, j]$.
+If $\code{x} = 1$, which happens with probability $\frac{1}{j}$,
+then we update $\code{ev}$ to the current index $c$;
+if $\code{x} \neq 1$, which happens with $\frac{j - 1}{j}$ of the case,
+we keep the previous $\code{ev}$, which has equal probability
+to be any one of the $j - 1$ elements from $[1,c - 1] \setminus S$.
+Thus, the distribution of $\code{ev}$ after this iteration
+is a convex combination of these two branches, which we can
+show to be $ \Unif{[1,c] \setminus S}$, thus reestablishing the loop invariants.
+
+
+We outline the proof in~\ref{fig:discrete-reservoir}.
+We omit $\ownall$ and permission 1 on all variables get assigned to in all assertions.
+Also, because we need to include $\sure{l \in S \iff \code{cache[$l$][mark]} = 1}$
+in all the assertions,
+we abbreviate it into $\varphi$ to minimize the visual overhead.
+
+Define $P(\p{c})$ to be
+\[
+  \varphi \ast \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = j}
+\]
+At the first few steps, by~\ref{rule:wp-assign},
+we get
+\[
+  \varphi \ast \sure{\p{c} = 0} \ast \sure{\code{j} = 0} \ast \sure{\code{ev} = \code{None}}
+\]
+before entering the first iteration.
+This propositionally implies that $\sure{[1, \p{c}] \setminus S = \emptyset}$,
+and by~\ref{rule:c-unit-l} and~\ref{rule:c-unit-r},
+\[
+\sure{\code{ev} = \code{None}} \vdash \distAs{\code{ev}}{\delta_{\code{None}}}
+\]
+and thus we have $P(0)$.
+
+
+\begin{mathfig}[\small]
+  \begin{proofoutline}
+    \PREC{ \sure{l \in S \iff \code{cache[$l$][mark]} = 1}}\\
+    \CODE{c = 0}\\
+    \CODE{j = 0}\\
+    \CODE{ev := None} \\
+    \ASSR{\varphi \ast \sure{\p{c} = 0} \ast \sure{\code{j} = 0} \ast \sure{\code{ev} = \code{None}}}\\
+    \CODE{repeat k:}\\
+    \begin{proofindent}
+      \ASSR{P(c)}\\
+      \ASSR{
+        \varphi \ast \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = j}
+      }\\
+      \CODE{c := c + 1}\\
+      \ASSR{
+        \varphi
+        \ast \distAs{\code{ev}}{\Unif{[1, \p{c} - 1] \setminus S}} \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j}
+      }\\
+      \CODE{if cache[c][mark] = 0 then} \\
+      \begin{proofindent}
+        \CODE{j := j+1}\\
+        \ASSR{
+          \sure{\code{cache[c][mark]} = 0} \ast \varphi \ast
+          \distAs{\code{ev}}{\Unif{[1, \p{c} - 1] \setminus S}} \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}}\\
+        \CODE{x :~ unifInt [1,j]} \\
+        \ASSR{
+                \sure{\code{cache[c][mark]} = 0} \ast
+                \varphi \ast \distAs{\code{ev}}{\Unif{[1, \p{c} - 1] \setminus S}} \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1} \ast \distAs{x}{\Unif{[1, j]}}}\\
+\CODE{if x = 1:}\\
+            \begin{proofindent}
+              \CODE{ev := c}\\
+            \end{proofindent}\\
+            \ASSR{
+              \CMod{\Unif{[1, j]}} w.
+              \begin{pmatrix}
+                \sure{w \neq 1} \implies \CMod{\Unif{[1, \p{c}-1] \setminus S}} v.\sure{\code{ev} = v}\\
+                \sure{w = 1} \implies \sure{\code{ev} = c}
+              \end{pmatrix}
+              \ast
+              \begin{pmatrix}
+              \sure{\code{cache[c][mark]} = 0} \\\ast
+              \varphi \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}
+              \end{pmatrix}
+            }\\
+            \ASSR{
+              \sure{\code{cache[c][mark]} = 0} \ast
+              \varphi \ast \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = j}
+            }\TAG[reservoir:end]\\
+      \end{proofindent}\\
+            \ASSR{
+              \begin{pmatrix}
+                \sure{\code{cache[c][mark]} = 0} \implies
+                \varphi \ast \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = j} \\
+                \sure{\code{cache[c][mark]} = 1} \implies
+                \varphi \ast \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = \card{[1, \p{c} - 1] \setminus S} = j} \\
+              \end{pmatrix}
+            } \TAG[reservoir:wp-if-prim]\\
+            \ASSR{
+                \varphi \ast
+                \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = j}
+            }\\
+    \end{proofindent}\\
+    \ASSR{
+                \varphi \ast
+                \distAs{\code{ev}}{\Unif{[1, k] \setminus S}} \ast \sure{\card{[1, k] \setminus S} = j}
+            }
+  \end{proofoutline}
+  \caption{Reservoir Sampling}
+  \label{fig:discrete-reservoir}
+\end{mathfig}
+
+We then want to use~\ref{rule:wp-if-prim} to prove~\eqref{reservoir:wp-if-prim}.
+The $\sure{\code{cache[c][mark]} = 1}$ branch is trivial.
+For the $\sure{\code{cache[c][mark]} = 0}$ branch,
+we first apply~\ref{rule:wp-assign} and~\ref{rule:wp-samp} for the assignment and
+the sampling. We then apply~\ref{rule:wp-if-unary} and~\ref{rule:wp-assign}
+for the $\code{if x = 1}$ branching.
+The most crucial step is ~\eqref{reservoir:end}, which we prove in the follow.
+For visual presentation,
+we abbreviate $\sure{\code{cache[c][mark]} = 0} \ast \varphi$ as $\psi$.
+\begin{eqexplain}
+&\CMod{\Unif{[1, j]}} w.
+              \begin{grp}
+                \sure{w \neq 1} \implies \CMod{\Unif{[1, \p{c}-1] \setminus S}} v.\sure{\code{ev} = v}\\
+                \sure{w = 1} \implies \sure{\code{ev} = c}
+              \end{grp}
+              \ast \psi
+              \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}
+      \whichproves
+\CMod{\Unif{[1, j]}} w.
+              \begin{grp}
+                \sure{w \neq 1} \implies \CMod{\Unif{[1, \p{c}-1] \setminus S}} v.\sure{\code{ev} = v}\\
+                \sure{w = 1} \implies \CMod{\Unif{[1, \p{c}-1] \setminus S}} v. \sure{\code{ev} = \p{c}}
+              \end{grp}
+              \ast \psi
+              \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}
+      \byrules{c-true, c-frame}
+      \whichproves
+\CMod{\Unif{[1, j]}} w.
+              \CMod{\Unif{[1, \p{c}-1] \setminus S}} v. \sure{\code{ev} =
+                \ITE{w = 1}{\p{c}}{v} }
+              \ast \psi
+              \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}
+      \byrule{c-cons}
+      \whichproves
+\CMod{\Unif{[1, j]} \pprod \Unif{[1, \p{c}-1] \setminus S}} (w, v).  \sure{\code{ev} = \ITE{w = 1}{\p{c}}{v} }
+              \ast \psi
+              \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}
+      \byrule{c-fuse}
+\end{eqexplain}
+Because  $\sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}$,
+there exists some bijection $h$ between $[1, \p{c} - 1] \setminus S$
+and $[1, j-1]$.
+For $(x, y) \in [1, j - 1] \times (([1, \p{c} - 1]) \setminus S) \cup \{\p{c}\}$,
+we define
+\begin{align*}
+f(x, y) &= \ITE{y = \p{c}}{1}{x + 1} \\
+g(x, y) &= \ITE{y = \p{c}}{h^{-1}(x)}{y}
+\end{align*}
+Pure reasoning yields that the map
+$\langle f, g \rangle : (w, v) \mapsto (f(w,v),g(w,v))$
+is a bijection between
+$[1, j - 1] \times (([1, \p{c} - 1]) \setminus S) \cup \{\p{c}\}$ and
+$[1,j] \times ([1, \p{c} - 1] \setminus S)$.
+Furthermore, for any $(x, y)$,
+\[
+\Unif{[1, j]} \pprod \Unif{[1, \p{c}-1] \setminus S}(f(x), g(y))
+=  \frac{1}{j \cdot (j - 1)}
+= \Unif{[1, j - 1]} \pprod \Unif{[1, (\p{c}-1] \setminus S) \cup \{c\} }(x, y) ,
+\]
+Thus, we can apply~\ref{rule:c-transf} with the bijection $\langle f, g \rangle$
+to derive that
+\begin{align*}
+  &\CMod{\Unif{[1, j]} \pprod \Unif{[1, \p{c}-1] \setminus S}} (w, v).
+  \sure{\code{ev} = \ITE{w = 1}{\p{c}}{v} }
+              \ast \psi
+              \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1} \\
+  \proves
+  &\CMod{\Unif{[1, j - 1]} \pprod \Unif{([1, \p{c}-1] \setminus S) \cup \{c\} }} (x, y).
+    \begin{conj}
+    \sure{
+      \code{ev} =
+      \ITE{f(x, y) = 1}{\p{c}}{g(x,y)}
+    }\\
+    \ast \psi
+    \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}.
+    \end{conj}
+\end{align*}
+Propositional reasoning gives the result that
+\begin{align*}
+&\ITE{f(x, y) = 1}{\p{c}}{g(x,y)} \\
+{}={}
+&\ITE{y = \p{c}}{\p{c}}{\left(
+    \ITE{y = \p{c}}{h^{-1}(x)}{y}
+  \right)}\\
+{}={}&  y.
+\end{align*}
+Thus, we can simplify the assertion above into
+\begin{align*}
+  &\CMod{\Unif{[1, j - 1]} \pprod \Unif{([1, \p{c}-1] \setminus S) \cup \{c\} }} (x, y).
+    \sure{
+      \code{ev} = y
+    }
+    \ast \psi
+    \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}.
+\end{align*}
+Now recall that $\psi$ is $\sure{\code{cache[c][mark]} = 0} \ast
+    \sure{l \in S \iff \code{cache[$l$][mark]} = 1}$,
+which implies that the set $([1, \p{c}-1] \setminus S) \cup \{c\}$ is the equivalent to
+$([1, \p{c}] \setminus S)$.
+Thus, we can further simplify the assertion above into
+\begin{align*}
+  &\CMod{\Unif{[1, j - 1]} \pprod \Unif{[1, \p{c}] \setminus S}} (x, y).  \sure{\code{ev} = y} \ast \psi
+  \ast \sure{\card{[1, \p{c}] \setminus S} = j},
+\end{align*}
+Then, we apply~\ref{rule:c-sure-proj} to project out the unused part
+of the distribution under conditioning:
+\begin{align*}
+  &\CMod{\Unif{[1, \p{c}] \setminus S}} (x, y).
+  \begin{conj}
+  \sure{\code{ev} = y}
+  \ast \sure{\code{cache[c][mark]} = 0}
+  \\
+  \ast
+    \sure{l \in S \iff \code{cache[$l$][mark]} = 1}  \ast \sure{\card{[1, \p{c}] \setminus S} = j}.
+  \end{conj}
+\end{align*}
+Applying~\ref{rule:sure-str-convex}, we can pull out almost sure assertions
+under the conditioning modality and get
+\begin{align*}
+  &\left( \CMod{\Unif{[1, \p{c}] \setminus S}} (x, y).
+  \sure{\code{ev} = y} \right)
+  \ast
+  \begin{conj}
+  \sure{\code{cache[c][mark]} = 0}
+  \\
+  \ast
+    \sure{l \in S \iff \code{cache[$l$][mark]} = 1}  \ast \sure{\card{[1, \p{c}] \setminus S} = j}.
+  \end{conj}
+\end{align*}
+Last, we apply~\ref{rule:c-unit-l} to obtain~\eqref{reservoir:end},
+and ~\eqref{reservoir:wp-if-prim} follows from~\ref{rule:wp-if-unary}.
+
+By simplifying~\eqref{reservoir:wp-if-prim},
+we close the loop invariant $P(c)$.
+Finally, applying the loop rule~\ref{rule:wp-loop}, we get
+\begin{align*}
+    \sure{l \in S \iff \code{cache[$l$][mark]} = 1} \ast
+    \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = j}.
+\end{align*}
+
+
+
+\subsubsection{Marker algorithm within a phase}
+When reasoning about Marker's algorithm, the pen-and-paper proof uses a
+reduction-flavored technique. Given the actual sequence of requests
+$\code{seq}$, we compute a modified sequence $\code{worseseq}$ by moving
+requests that are not in the initial cache, a.k.a., the clean request, ahead of
+those that are in the cache, a.k.a., the dirty
+requests.
+Each clean request incurs cost 1 wherever it appears,
+and dirty request incurs cost 1 if the cache slot holding its value
+has been evicted in the current phase and incur cost 0 otherwise.
+Thus, the clean requests in \code{seq} and \code{worseseq} incur
+the same cost, and the dirty requests in \code{worseseq}
+incur at least as much cost as in \code{seq}.
+This is an inherently relational argument. The rest part of the pen-and-paper
+analysis uses a lot of unary reasoning to upper bound the cost of Marker on
+$\code{worseseq}$, and concludes that it also upper bounds the cost of processing \code{seq}.
+Though we are not able to prove every step in this analysis formally,
+it suggests the need to combine unary and n-nary reasoning.
+In the following, we verify an important component of the
+unary analysis:
+when Marker operates on $M$ clean requests
+in the beginning of a phase, the $M$ distinct clean requests incurs exactly cost $m$
+and the evicted slots are chosen uniformly.
+
+At the beginning of the phase,
+it holds that
+\[
+  \forall 1 \leq l \leq k. \sure{\code{cache[$l$][mark] = 0}}.
+\]
+We also assume that $\code{cost}$ is $c$ and $\code{cache}$ is $h$ in the beginning
+of the phase.
+To express that the Marker is handling requests $\code{seq}[i]$ that are not currently in the cache,
+we assert that
+\[
+\forall 1 \leq n \leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h\code{[$l$][value]}}.
+\]
+The cost increases by exactly $M$ only if these $M$ clean requests are distinct,
+so we also require
+\[
+  \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}
+\]
+We combine these into the precondition and outline the proof at~\Cref{fig:cache-clean-phase}.
+The assertions throughout should be conjuncted with $\ownall$ with $\land$ and
+we omit it for visual simplicity.
+For the loop, we use the loop invariant
+\[
+  P(i) :=
+  \CMod{\kappa(i-1)} S.
+        \begin{pmatrix}
+             \sure{\code{cost} = c + i - 1}
+           \ast \left( \forall i \leq n \leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]} \right) \\
+             {} \ast \left( \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]} \right) \\
+             {} \ast \left( \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}} \right)\\
+        \end{pmatrix},
+\]
+where the kernel $\kappa$ is defined such that for any $1 \leq i \leq m$,
+$\kappa(i) = \Unif{\{S \subseteq [1, k] \mid \textsf{size}(S) = i\}}$ --
+so $\kappa(i- 1) = \Unif{\big\{S \subseteq [1, k] \mid \textsf{size}(S) = i - 1 \big\}}$.
+And we write $\sure{A \iff B \iff C}$
+as shorthand for $\sure{A \iff B} \ast \sure{B \iff C}$.
+
+\begin{mathfig}[\small]
+  \begin{proofoutline}
+  \PREC{
+        \sure{\code{cost} = c} \ast
+        \begin{pmatrix}
+        \forall 1 \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]}\\
+        \ast {} \forall 1 \leq l \leq k. \sure{\code{cache[$l$][mark] = 0}}\\
+        \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+        \end{pmatrix}
+      }\\
+  \CODE{i := 1}\\
+\CODE{repeat M:}\\
+  \begin{proofindent}
+    \ASSR{P(i)} \TAG[cache:clean:P(i)]\\
+\CODE{hit := 0}\\
+    \CODE{j := 1}\\
+    \ASSR{\CMod{\kappa(i-1)} S.
+        \begin{pmatrix}
+             \sure{\code{cost} = c + i - 1} \ast \forall i \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]}\\
+             {} \ast \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]} \\
+             {} \ast \sure{\code{hit} = 0} \ast \sure{\code{j} = 1}
+             \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+        \end{pmatrix}
+      }\\
+    \CODE{repeat k:}\\
+    \begin{proofindent}
+      \ASSR{Q(j)} \TAG[cache:clean:Q(j)]\\
+    \CODE{if cache[j][value]  = seq[i]:}\\
+      \begin{proofindent}
+        \CODE{cache[j][mark] := 1; hit := 1} \\
+      \end{proofindent}\\
+      \CODE{j := j+1}\\
+    \end{proofindent}\\
+    \ASSR{
+      \CMod{\kappa(i-1)} S.
+        \begin{pmatrix}
+          \sure{\code{cost} = c + i - 1} \ast \forall i \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]}\\
+             {} \ast \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]} \\
+             {} \ast \sure{\code{hit} = 0}
+             \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+        \end{pmatrix}
+      } \TAG[cache:clean:6] \\
+    \CODE{if $\ \neg$ hit then:} \\
+      \begin{proofindent}
+        \CODE{ev:~Reservoir-Samp(k, cache)}\\
+        \ASSR{
+          \CMod{\kappa(i-1)} S.
+          \begin{pmatrix}
+          \sure{\code{cost} = c + i - 1} \ast \forall i \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]}\\
+             {} \ast \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]} \\
+             {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+             {} \ast \sure{\code{hit} = 0} \ast  \distAs{\code{ev}}{\Unif{[1,k] \setminus S}}
+          \end{pmatrix}
+         }  \TAG[cache:clean:5] \\
+        \ASSR{
+          \CMod{\kappa(i-1)} S.
+          \CMod{\Unif{[1,k] \setminus S}} u.
+          \begin{pmatrix}
+          \sure{\code{cost} = c + i - 1} \ast \forall i \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]}\\
+             {} \ast \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]} \\
+             {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+             {} \ast \sure{\code{hit} = 0} \ast \sure{\code{ev} = u}
+          \end{pmatrix}
+          }  \TAG[cache:clean:3]\\
+\CODE{cache[ev][value] := seq[i]} \\
+        \ASSR{
+           \CMod{\kappa(i-1)} S.
+          \CMod{\Unif{[1,k] \setminus S}} u.
+          \begin{pmatrix}
+             \sure{\code{cost} = c + i - 1}
+             \ast \left(\forall i < n \leq M.\  \forall 1 \leq l \leq k.
+           \sure{\code{seq[n]} \neq h[l][\code{value}]}\right)\\
+           {} \ast
+           \begin{grp}
+             \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1}\\
+             \ast \sure{l \in S \cup \{u\} \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]}\\
+           \end{grp} \\
+             {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+             {} \ast \sure{\code{hit} = 0} \ast \sure{\code{ev} = u}
+          \end{pmatrix}
+        } \TAG[cache:clean:7] \\
+          \CODE{cache[ev][mark] := 1} \\
+        \ASSR{
+          \CMod{\kappa(i-1)} S.
+          \CMod{\Unif{[1,k] \setminus S}} u.
+          \begin{pmatrix}
+          \sure{\code{cost} = c + i - 1} \ast \forall i \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]}\\
+             {} \ast \forall l. \sure{l \in (S \cup \{u\}) \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]} \\
+             {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+             {} \ast \sure{\code{hit} = 0} \ast \sure{\code{ev} = u}
+          \end{pmatrix}
+        } \TAG[cache:clean:8] \\
+          \ASSR{
+          \CMod{\kappa(i)} S.
+          \begin{pmatrix}
+                \sure{\code{cost} = c + i - 1}  \ast
+                \forall i + 1 \leq n \leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]} \\
+                 {} \ast (\forall l. \sure{l \in (S \cup \{u\}) \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]}) \\
+                 {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+          \end{pmatrix}
+          }
+          \TAG[cache:clean:4]\\
+        \CODE{cost := cost + 1}\\
+        \ASSR{
+          \CMod{\kappa(i)} S.
+          \begin{pmatrix}
+            \sure{\code{cost} = c + i }  \ast
+            \forall i + 1 \leq n \leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]} \\
+                 {} \ast (\forall l. \sure{l \in (S \cup \{u\}) \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]}) \\
+                 {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+          \end{pmatrix}
+          }\\
+      \end{proofindent} \\
+      \CODE{i := i+1}\\
+      \end{proofindent}\\
+      \ASSR{\CMod{\kappa(M)} S.
+        \begin{pmatrix}
+             \sure{\code{cost} = c + M}
+              \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}
+             \\
+             {} \ast \forall l. \sure*{
+             \begin{conj*}
+               l \in S \iff \code{h[$l$][mark]} = 1
+               \\\iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]
+             \end{conj*}
+             }
+        \end{pmatrix}
+      }
+  \end{proofoutline}
+  \caption{Cache: clean phase}
+  \label{fig:cache-clean-phase}
+\end{mathfig}
+
+Starting from $P(i)$, we first apply~\ref{rule:wp-assign} twice
+and then enter the inner loop with
+\begin{align*}
+  Q(j) =
+      \CMod{\kappa(i-1)} S.
+        \begin{pmatrix}
+          \sure{\code{cost} = c + i - 1} \ast \left( \forall 1 \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq \code{h[$l$][value]}} \right)\\
+             {} \ast \left( \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]}\right) \\
+             {} \ast \sure{\code{hit} = 0}
+             \ast \left(\forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}} \right)\\
+        \end{pmatrix}
+\end{align*}
+To reestablish $Q(j)$ in~\eqref{cache:clean:Q(j)},
+we apply~\ref{rule:c-wp-swap} to reason from fixed $S$. Then we
+use~\ref{rule:wp-if-prim}:
+the condition $ \forall 1 \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq \code{cache[$l$][value]}}$ implies that we do not enter \code{if} block and
+the assertion $Q(j)$ still holds afterwards. Last, we
+apply~\ref{rule:wp-assign} to derive that $Q(j)$ holds
+after the assignment $\code{j := j+1}$. Since $Q(j) = Q(j+1)$,
+$Q(j + 1)$ holds as well.
+Thus by~\ref{rule:wp-loop} we have~\eqref{cache:clean:6}.
+
+The step~\eqref{cache:clean:5} is derived using~\ref{rule:c-wp-swap}
+and the specs of $\code{Reservoir-Samp}$.
+For the step~\eqref{cache:clean:3}, we apply~\ref{rule:c-unit-r} to rewrite
+$\distAs{\code{ev}}{\Unif{[1,k] \setminus S}}$ as $\CMod{\Unif{[1,k] \setminus
+S}} u. \sure{\code{ev} = u}$ and we use~\ref{rule:c-frame} to pull
+$\CMod{\Unif{[1,k] \setminus S}} u.$ ahead. In the next step,
+using~\ref{rule:wp-assign}, we get
+\begin{align*}
+  \CMod{\kappa(i-1)} S.
+          \CMod{\Unif{[1,k] \setminus S}} u.
+          \begin{pmatrix}
+             \sure{\code{cost} = c + i - 1}
+             \ast \left(\forall i < n \leq M.\  \forall 1 \leq l \leq k.
+              \sure{\code{seq[n]} \neq \code{h[$l$][value]}}\right)\\
+           {} \ast
+           \begin{grp}
+             \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1}\\
+             \ast \sure{l \in S \land l \neq \code{ev} \implies \code{cache}[l][\code{value}] \neq h[l][\code{value}]}\\
+             \ast \sure{ \code{cache}[l][\code{value}] \neq h[l][\code{value}]  \land l \neq \code{ev} \implies l \in S } \\
+           \end{grp} \\
+             {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+             {} \ast \sure{\code{hit} = 0} \ast \sure{\code{ev} = u}
+          \end{pmatrix}
+\end{align*}
+With propositional reasoning, we can replace
+ $
+ \sure{ \code{cache}[l][\code{value}] \neq h[l][\code{value}]  \land l \neq \code{ev} \implies l \in S }
+ $
+with
+$
+  \sure{ \code{cache}[l][\code{value}] \neq h[l][\code{value}]  \implies l \in \{ S \cup u\} }
+$
+under the condition
+$\sure{\code{ev} = u}$;
+also, because $\forall i < n \leq M.\  \forall 1 \leq l \leq k.
+              \sure{\code{seq[n]} \neq \code{h[$l$][value]}}$,
+we can strengthen the assertion
+$\sure{l \in S \land l \neq \code{ev} \implies \code{cache}[l][\code{value}] \neq h[l][\code{value}]}$
+into
+$\sure{l \in S \cup \{u\} \implies \code{cache}[l][\code{value}] \neq h[l][\code{value}]}$.
+Thus, we have~\eqref{cache:clean:7}.
+
+Similarly, applying~\ref{rule:wp-assign} and using propositional reasoning,
+we can derive~\eqref{cache:clean:8}.
+For the step~\eqref{cache:clean:4}, we apply~\ref{rule:c-fuse} to combine
+$\CMod{\kappa(i - 1)} S. \CMod{\Unif{[1,k] \setminus S}} u.$ into
+$\CMod{\kappa(i - 1) \fuse \Unif{[1,k] \setminus S}} (S, u)$.
+We then apply~\ref{rule:c-transf} based on the bijection between
+$(S, u)$ and $(S \cup \{u\}, u)$ to get that
+such that
+\begin{align*}
+  \CMod{d} (S', u).
+          \begin{pmatrix}
+          \sure{\code{cost} = c + i - 1}  \ast \forall i + 1 \leq n \leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value]}} \\
+                 {} \ast  (\forall l. \sure{l \in S' \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]}) \\
+                 {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+          \end{pmatrix},
+\end{align*}
+where
+\begin{align*}
+  d &= \bind(\kappa(i - 1), \fun S. \bind(\Unif{[1,k] \setminus S}, \fun u. \dirac{(S \cup \{u\},  u)})) \\
+    &= \bind(\kappa(i ), \fun S. \bind(\Unif{[1,k] \setminus S}, \fun u. \dirac(S ,  u)))
+\end{align*}
+Since $u$ is not used,
+we could use~\ref{rule:c-sure-proj} to project out $u$ and
+derive that
+\begin{align*}
+  \CMod{\kappa(i)} S'.
+          \begin{pmatrix}
+                 \sure{\code{cost} = c + i - 1}  \ast  \forall i + 1 \leq n \leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h\code{[$l$][value]}} \\
+                 {} \ast (\forall l. \sure{l \in S' \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]}) \\
+                 {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+          \end{pmatrix}
+\end{align*}
+
+
+Then, by~\ref{rule:wp-assign} and~\ref{rule:wp-loop}, we can derive the post-condition
+\begin{align*}
+  \CMod{\kappa(M)} S.
+        \begin{pmatrix}
+             \sure{\code{cost} = c + M} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}} \\
+             {} \ast \forall l.
+             \sure*{
+               l \in S
+               \iff
+               \code{cache[$l$][mark]} = 1
+               \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]
+             }
+        \end{pmatrix}
+\end{align*}
+Last, with~\ref{rule:sure-str-convex}, we can establish
+\begin{align*}
+ \sure{\code{cost} = c + M} \ast
+  \CMod{\kappa(M)} S.
+             \forall l.
+             \sure*{
+               l \in S
+               \iff
+               \code{cache[$l$][mark]} = 1
+               \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]
+             }
+\end{align*}
+which states our goal that $\code{cost}$ increases by exactly $M$ and
+the set of evicted indices $S$ is picked uniformly.
+
+
+
+
+
+
+
+ 
+
+
+ 
+\end{document}
+

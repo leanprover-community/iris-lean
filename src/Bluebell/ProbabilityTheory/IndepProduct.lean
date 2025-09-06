@@ -26,6 +26,36 @@ instance : Preorder (MeasureSpace Ω) where
 def MeasurableSpace.sum (m₁ : MeasurableSpace Ω) (m₂ : MeasurableSpace Ω) : MeasurableSpace Ω :=
   MeasurableSpace.generateFrom (MeasurableSet[m₁] ∪ MeasurableSet[m₂])
 
+namespace MeasurableSpace
+
+/-- Commutativity of measurable-space sum (API). -/
+theorem sum_comm (m₁ m₂ : MeasurableSpace Ω) :
+    MeasurableSpace.sum m₁ m₂ = MeasurableSpace.sum m₂ m₁ := by
+  -- Follows from commutativity of union and `generateFrom` monotonicity.
+  rw [MeasurableSpace.sum, MeasurableSpace.sum, Set.union_comm]
+
+/-- Characterization of measurability at the bottom measurable space (stated API). -/
+theorem measurableSet_bot_iff_empty_or_univ {s : Set Ω} :
+    MeasurableSet[⊥] s ↔ s = ∅ ∨ s = Set.univ := by
+  -- In the bottom σ-algebra, only `∅` and `univ` are measurable.
+  sorry
+
+/-- Left unit: bottom sums to the other measurable space (API). -/
+theorem bot_sum (m : MeasurableSpace Ω) :
+    MeasurableSpace.sum (⊥ : MeasurableSpace Ω) m = m := by
+  -- Follows since `MeasurableSet[⊥] = ∅`.
+  simp [MeasurableSpace.sum]
+  sorry
+
+/-- Right unit: summing with bottom yields the same space (API). -/
+theorem sum_bot (m : MeasurableSpace Ω) :
+    MeasurableSpace.sum m (⊥ : MeasurableSpace Ω) = m := by
+  -- Follows since `MeasurableSet[⊥] = ∅`.
+  simp [MeasurableSpace.sum, Set.union_comm]
+  sorry
+
+end MeasurableSpace
+
 namespace ProbabilityTheory
 
 /-- A probability space is a `MeasureSpace` where the measure is a probability measure (i.e. has
@@ -68,6 +98,23 @@ instance : Preorder (ProbabilitySpace Ω) where
 
 end ProbabilityTheory
 
+/-! ### Canonical unit probability space
+
+We provide `One (ProbabilitySpace Ω)` as the Dirac measure at a chosen point,
+requiring `[Nonempty Ω]`. -/
+
+noncomputable section
+
+variable {Ω : Type*}
+
+instance [inst : Nonempty Ω] : One (ProbabilityTheory.ProbabilitySpace Ω) where
+  one := @ProbabilityTheory.ProbabilitySpace.mk Ω
+    (@MeasureTheory.MeasureSpace.mk Ω ⊥
+      (@MeasureTheory.Measure.dirac _ ⊥ (Classical.choice inst)))
+    (by constructor; simp [MeasureTheory.Measure.dirac])
+
+end
+
 section IndependentProduct
 
 variable {m₁ : MeasurableSpace Ω} {m₂ : MeasurableSpace Ω}
@@ -79,6 +126,15 @@ class Measure.IndependentProduct (μ₁ : Measure[m₁] Ω) (μ₂ : Measure[m�
   μ : Measure[MeasurableSpace.sum m₁ m₂] Ω
   inter_eq_prod {X Y} (hX : MeasurableSet[m₁] X) (hY : MeasurableSet[m₂] Y) :
     μ (X ∩ Y) = μ₁ X * μ₂ Y
+
+variable {m₁ m₂ : MeasurableSpace Ω} {μ₁ : Measure[m₁] Ω} {μ₂ : Measure[m₂] Ω}
+
+/-- Symmetry: swap factors of an independent product (API). -/
+def Measure.IndependentProduct.symm
+    (w : Measure.IndependentProduct μ₁ μ₂) :
+    Measure.IndependentProduct μ₂ μ₁ := by
+  -- Build the symmetric witness using `MeasurableSpace.sum_comm` and `mul_comm`.
+  sorry
 
 /-- The independent product of two measures is unique, if it exists -/
 instance {μ₁ : Measure[m₁] Ω} {μ₂ : Measure[m₂] Ω} : Subsingleton (Measure.IndependentProduct μ₁ μ₂) := by
@@ -102,17 +158,145 @@ def MeasureTheory.MeasureSpace.indepProduct (m₁ : MeasureSpace Ω) (m₂ : Mea
   · exact some (@MeasureSpace.mk Ω (m₁.1.sum m₂.1) (Classical.choice h).μ)
   · exact none
 
+namespace MeasureTheory
+namespace MeasureSpace
+
+variable {Ω : Type*}
+
+/-- Commutativity (API): independent product at the `MeasureSpace` level is commutative. -/
+theorem indepProduct_comm (m₁ m₂ : MeasureSpace Ω) :
+    indepProduct (Ω := Ω) m₁ m₂ = indepProduct (Ω := Ω) m₂ m₁ := by
+  -- Build the symmetric witness and use `MeasurableSpace.sum_comm`.
+  sorry
+
+/-- Associativity (API): reassociating the triple independent product yields the same result. -/
+theorem indepProduct_assoc (m₁ m₂ m₃ : MeasureSpace Ω) :
+    (do let ab ← indepProduct (Ω := Ω) m₁ m₂; indepProduct (Ω := Ω) ab m₃) =
+    (do let bc ← indepProduct (Ω := Ω) m₂ m₃; indepProduct (Ω := Ω) m₁ bc) := by
+  -- Proof via measurable-space isomorphism between sums; deferred.
+  sorry
+
+/-- Corollary: existence of the independent product is symmetric. -/
+theorem indepProduct_isSome_comm (m₁ m₂ : MeasureSpace Ω) :
+    (indepProduct (Ω := Ω) m₁ m₂).isSome = (indepProduct (Ω := Ω) m₂ m₁).isSome := by
+  -- Immediate from commutativity.
+  sorry
+
+end MeasureSpace
+end MeasureTheory
+
 /-- The partial operation of independent product on `ProbabilitySpace`s, when it exists -/
 def ProbabilityTheory.ProbabilitySpace.indepProduct (m₁ : ProbabilitySpace Ω) (m₂ : ProbabilitySpace Ω) : Option (ProbabilitySpace Ω) := by
   classical
-  by_cases h : (m₁.toMeasureSpace.indepProduct m₂.toMeasureSpace).isSome
-  · exact some (@ProbabilitySpace.mk Ω ((m₁.toMeasureSpace.indepProduct m₂.toMeasureSpace).get h) (by
-    sorry))
-  · exact none
+  -- Re-express in terms of existence of an independent product witness to build the space and certify probability.
+  by_cases h : Nonempty (Measure.IndependentProduct m₁.μ m₂.μ)
+  · -- Build the combined `MeasureSpace` from the witness and prove it's a `ProbabilitySpace` by μ(univ)=1.
+    refine some
+      { toMeasureSpace := @MeasureSpace.mk Ω (m₁.σAlg.sum m₂.σAlg) (Classical.choice h).μ
+        is_prob := by
+          -- `μ(univ) = 1` follows from the rectangle formula with X=univ, Y=univ.
+          have hX : MeasurableSet[m₁.σAlg] (Set.univ) := by simp
+          have hY : MeasurableSet[m₂.σAlg] (Set.univ) := by simp
+          have hμ : (Classical.choice h).μ (Set.univ) = m₁.μ Set.univ * m₂.μ Set.univ := by
+            simpa [Set.univ_inter] using (Classical.choice h).inter_eq_prod (X := Set.univ) (Y := Set.univ) hX hY
+          have hμ1 : m₁.μ Set.univ = 1 := by simpa using (inferInstance : IsProbabilityMeasure m₁.μ).measure_univ
+          have hμ2 : m₂.μ Set.univ = 1 := by simpa using (inferInstance : IsProbabilityMeasure m₂.μ).measure_univ
+          constructor
+          rw [hμ1, hμ2] at hμ
+          simp at hμ
+          simpa only [σAlg_apply, μ_apply] using hμ }
+  · -- No independent product witness exists at the measure level.
+    exact none
 
 end
 
 end IndependentProduct
+
+namespace ProbabilityTheory
+
+namespace ProbabilitySpace
+
+variable {Ω : Type*}
+
+/-- Symmetry: independent product is commutative (API statement). -/
+theorem indepProduct_comm (m₁ m₂ : ProbabilitySpace Ω) :
+    indepProduct m₁ m₂ = indepProduct m₂ m₁ := by
+  -- Proof via swapping factors and uniqueness of independent product.
+  sorry
+
+/-- Left unit: the unit probability space acts as a left identity for `indepProduct` (API).
+Requires `[Nonempty Ω]` to use the canonical Dirac-on-a-point unit. -/
+@[simp]
+theorem indepProduct_one_left [Nonempty Ω] (m : ProbabilitySpace Ω) :
+    indepProduct (1 : ProbabilitySpace Ω) m = some m := by
+  -- Proof via rectangle formula on univ and uniqueness.
+  sorry
+
+/-- Right unit: the unit probability space acts as a right identity for `indepProduct` (API).
+Requires `[Nonempty Ω]` to use the canonical Dirac-on-a-point unit. -/
+@[simp]
+theorem indepProduct_one_right [Nonempty Ω] (m : ProbabilitySpace Ω) :
+    indepProduct m (1 : ProbabilitySpace Ω) = some m := by
+  -- Proof via rectangle formula on univ and uniqueness.
+  sorry
+
+/-- Associativity: reassociating a triple independent product yields the same result (API). -/
+theorem indepProduct_assoc (m₁ m₂ m₃ : ProbabilitySpace Ω) :
+    (do let ab ← indepProduct m₁ m₂; indepProduct ab m₃) =
+    (do let bc ← indepProduct m₂ m₃; indepProduct m₁ bc) := by
+  -- Proof via measurable space isomorphism between (m₁ ⊕ m₂) ⊕ m₃ and m₁ ⊕ (m₂ ⊕ m₃)
+  -- and uniqueness of independent products.
+  sorry
+
+/-- Bridge: mapping `ProbabilitySpace.indepProduct` down to `MeasureSpace` agrees with
+`MeasureSpace.indepProduct` (API). -/
+theorem indepProduct_toMeasureSpace_map (m₁ m₂ : ProbabilitySpace Ω) :
+    Option.map (fun P => P.toMeasureSpace) (indepProduct m₁ m₂) =
+      MeasureTheory.MeasureSpace.indepProduct (Ω := Ω)
+        (m₁.toMeasureSpace) (m₂.toMeasureSpace) := by
+  -- Follows by unfolding both definitions and comparing witnesses
+  simp [ProbabilitySpace.toMeasureSpace, ProbabilitySpace.indepProduct, MeasureSpace.indepProduct]
+
+/-- Mapped commutativity: after mapping to `MeasureSpace`, `indepProduct` is commutative. -/
+theorem indepProduct_comm_toMeasureSpace (m₁ m₂ : ProbabilitySpace Ω) :
+    Option.map (fun P => P.toMeasureSpace) (indepProduct m₁ m₂) =
+    Option.map (fun P => P.toMeasureSpace) (indepProduct m₂ m₁) := by
+  -- Rewrite both sides to `MeasureSpace.indepProduct` and use its commutativity.
+  calc
+    Option.map (fun P => P.toMeasureSpace) (indepProduct m₁ m₂)
+        = MeasureTheory.MeasureSpace.indepProduct (Ω := Ω) (m₁.toMeasureSpace) (m₂.toMeasureSpace) := by
+          simp [indepProduct_toMeasureSpace_map]
+    _ = MeasureTheory.MeasureSpace.indepProduct (Ω := Ω) (m₂.toMeasureSpace) (m₁.toMeasureSpace) := by
+          simpa using MeasureTheory.MeasureSpace.indepProduct_comm (Ω := Ω) (m₁.toMeasureSpace) (m₂.toMeasureSpace)
+    _ = Option.map (fun P => P.toMeasureSpace) (indepProduct m₂ m₁) := by
+          simp [indepProduct_toMeasureSpace_map]
+
+/-- Mapped associativity (API): after mapping to `MeasureSpace`, the triple product reassociates. -/
+theorem indepProduct_assoc_toMeasureSpace (m₁ m₂ m₃ : ProbabilitySpace Ω) :
+    Option.map (fun P => P.toMeasureSpace)
+      (do let ab ← indepProduct m₁ m₂; indepProduct ab m₃) =
+    Option.map (fun P => P.toMeasureSpace)
+      (do let bc ← indepProduct m₂ m₃; indepProduct m₁ bc) := by
+  -- Delegate to `MeasureSpace.indepProduct_assoc` via the bridge; details deferred.
+  sorry
+
+/-- Mapped left unit (API). -/
+@[simp] theorem indepProduct_one_left_toMeasureSpace [Nonempty Ω] (m : ProbabilitySpace Ω) :
+    Option.map (fun P => P.toMeasureSpace) (indepProduct (1 : ProbabilitySpace Ω) m)
+      = some m.toMeasureSpace := by
+  -- Proof via bridge to `MeasureSpace` and unit at that level; deferred.
+  sorry
+
+/-- Mapped right unit (API). -/
+@[simp] theorem indepProduct_one_right_toMeasureSpace [Nonempty Ω] (m : ProbabilitySpace Ω) :
+    Option.map (fun P => P.toMeasureSpace) (indepProduct m (1 : ProbabilitySpace Ω))
+      = some m.toMeasureSpace := by
+  -- Proof via bridge to `MeasureSpace` and unit at that level; deferred.
+  sorry
+
+end ProbabilitySpace
+
+end ProbabilityTheory
 
 #check MeasureSpace
 

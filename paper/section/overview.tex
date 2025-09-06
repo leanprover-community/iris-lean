@@ -1,0 +1,938 @@
+\section{A Tour of \thelogic}
+\label{sec:overview}
+
+
+
+In this section we will highlight the main key ideas behind
+\thelogic, using a running example.
+
+\subsection{The Alliance}
+\label{sec:overview:intro}
+
+\begin{wrapfigure}[7]{R}{20ex}\begin{sourcecode*}[linewidth=.9\linewidth,xleftmargin=.1\linewidth,
+    belowskip=-.5em,aboveskip=-1em,
+    gobble=2
+  ]
+  def encrypt():
+    k :~ Ber(1/2)
+    m :~ Ber($p$)
+    c := k xor m
+  \end{sourcecode*}\caption{One time pad.}
+  \label{fig:onetime-code}
+\end{wrapfigure}
+We work with a first-order imperative probabilistic programming language
+consisting of programs~$t\in\Term$ that mutate a variable store~$\store\in\Store$
+(\ie a finite map from variable names~$\Var$ to values~$\Val$).
+We only consider discrete distributions
+(but with possibly infinite support).
+In \cref{fig:onetime-code} we show a simple example adapted from~\cite{barthe2019probabilistic}:
+the \p{encrypt} procedure uses a fair coin flip to generate an encryption key
+\p{k}, generates a plaintext message in boolean variable \p{m}
+(using a coin flip with some bias~$p$)
+and produces the ciphertext \p{c} by XORing the key and the message.
+A desired property of the program is that the ciphertext should be
+indistinguishable from an unbiased coin flip; as a binary triple:
+\begin{equation}
+  \{\True\}
+  \m[
+    \I1: \code{encrypt()},
+    \I2: \code{c:~Ber(1/2)}
+  ]
+  \{
+    \cpl{ \Ip{c}{1}=\Ip{c}{2} }
+  \}
+  \label{ex:xor:goal}
+\end{equation}
+where we use the $\at{i}$ notation to indicate the index of the program store that an expression references.
+In \cref{sec:ex:one-time-pad}, we discuss a unary-style proof of this goal in \thelogic. Here, we focus on a relational argument, as a running example. The natural (relational) argument goes as follows.
+When computing the final XOR,
+  if $\p{m}=0$ then \code{c=k},
+  and if $\p{m}=1$ then \code{c=!k}.
+Since both $\Ip{k}{1}$ and $\Ip{c}{2}$ are distributed as \emph{unbiased} coins,
+they can be coupled either so that they get the same value,
+or so that they get opposite values (the marginals are the same).
+One or the other coupling must be established
+\emph{conditionally} on~$\Ip{m}{1}$, to formalize this argument.
+Doing so in pRHL faces the problem that the logic is too rigid to permit one to
+condition on $\Ip{m}{1}$ before $\Ip{k}{1}$ is sampled; rather it forces one to establish a coupling of $\Ip{k}{1}$ and $\Ip{c}{2}$ right when the two samplings happen.
+This rigidity is a well-known limitation of relational logics,
+which we overcome by ``immersing'' relational lifting
+in a logic with assertions on distributions.
+Recent work~\cite{gregersen2023asynchronous}
+proposed workarounds based on ghost code for pre-sampling
+(see~\cref{sec:relwork}).
+We present a different solution based on framing, to the generic problem of out-of-order coupling, in~\cref{sec:overview:obox}.
+
+Unconstrained by the pRHL assumption that every assertion has to be represented as a relational lifting, we observe three crucial components in the proof idea:
+\begin{enumerate}
+\item
+  \emph{Probabilistic independence}
+  between the sampling of $\Ip{k}{1}$ and $\Ip{m}{1}$,
+  which makes conditioning on $\Ip{m}{1}$ preserve the
+  distribution of $\Ip{k}{1}$;
+\item
+  \emph{Conditioning} to perform case analysis
+  on the possible values of $\Ip{m}{1}$;
+\item
+  \emph{Relational lifting}
+  to represent the existence of couplings imposing the desired
+  correlation between $\Ip{k}{1}$ and $\Ip{c}{2}$.
+\end{enumerate}
+Unary logics like
+  Probabilistic Separation Logics~(PSL)
+  \cite{barthe2019probabilistic} and
+  Lilac
+explored how probabilistic independence
+can be represented as \emph{separating conjunction},
+obtaining remarkably expressive and elegant reasoning principles.
+In \thelogic, we import the notion of independence from Lilac:
+\thelogic's assertions are interpreted over
+tuples of probability spaces~$\m{\psp}$,
+and $ Q_1 * Q_2 $  holds on $\m{\psp}$ if
+$\m{\psp}(i)$ can be seen as the \emph{independent product}
+of $ \m{\psp}_1(i) $ and $\m{\psp}_2(i)$,
+for each~$i$,
+such that the tuples $\m{\psp}_1$ and $\m{\psp}_2$ satisfy $Q_1$ and $Q_2$
+respectively.
+This means that
+  $\distAs{\Ip{x}{1}}{\prob} * \distAs{\Ip{y}{1}}{\prob}$
+states that $\Ip{x}{1}$ and $\Ip{y}{1}$ are independent and identically distributed,
+as opposed to
+  $\distAs{\Ip{x}{1}}{\prob} \land \distAs{\Ip{y}{1}}{\prob}$
+which merely declares the two variables as identically distributed
+(but possibly correlated).
+For a unary predicate over stores~$R$
+we write $\sure{R\at{i}}$ to mean that
+the predicate~$R$ holds with probability~1
+in the distribution at index~$i$.
+
+With these tools it is easy to get through the first two assignments
+of \p{encrypt} and the one on component $\I2$ and get to a state
+satisfying the assertion
+\begin{equation}
+  P =
+  \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+  *
+  \distAs{\Ip{m}{1}}{\Ber{p}}
+  *
+  \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+  \label{ex:xor:start}
+\end{equation}
+
+The next ingredient we need is conditioning.
+We introduce a new modality $\CMod{\prob}$ for conditioning,
+in the spirit of Lilac.
+The modality takes the form
+$
+  \CC\prob v.K(v)
+$
+where~$\prob$ is a distribution, $v$ is a logical variable bound
+by the modality (ranging over the support of~$\prob$),
+and $K(v)$ is a family of assertions indexed by~$v$.
+Before exploring the general meaning of the modality
+(which we do in \cref{sec:overview:supercond}),
+let us illustrate how we would represent conditioning on $\Ip{m}{1}$
+in our running example.
+We know $\Ip{m}{1}$ is distributed as~$\Ber{p}$;
+conditioning on $\Ip{m}{1}$ in \thelogic\ would give us
+an assertion of the form
+$\CC{\Ber{p}} v. K(v)$
+where~$v$ ranges over~$\set{0,1}$,
+and the assertions
+$K(0) = \sure{\Ip{m}{1}=0} * P_0 $
+and
+$K(1) = \sure{\Ip{m}{1}=1} * P_1 $
+(for some $P_0,P_1$)
+represent the properties of the distribution conditioned on
+$ \Ip{m}{1}=0 $ and $ \Ip{m}{1}=1 $, respectively.
+Intuitively, the assertion states that the current distribution
+satisfies $K(v)$ when conditioned on $\Ip{m}{1}=v$.
+Semantically, a distribution $\prob_0$ satisfies the assertion
+$\CC{\Ber{p}} v. K(v)$
+if there exists distributions $ \krnl_0, \krnl_1$ such that
+$\krnl_0$ satisfies $ K(0)$,
+$\krnl_1$ satisfies $ K(1)$, and
+$\prob_0$ is the convex combination
+$
+  \prob_0 = p \cdot \krnl_1 + (1-p) \cdot \krnl_0.
+$
+When $K(v)$ constrains, as in our case, the value of a variable
+(here $\Ip{m}{1}$) to be~$v$,
+the only $\krnl_0$ and $\krnl_1$ satisfying the above constraints
+are the distribution $\prob_0$ conditioned on the variable being 0 and 1 respectively.
+
+
+
+Combining independence and conditioning with the third ingredient,
+relational lifting~$\cpl{R}$ (we discuss more about how to define it
+in~\cref{sec:overview:supercond}), we can now express with an assertion the desired
+conditional coupling we foreshadowed in the beginning:
+\begin{equation}
+  Q =
+  \CC{\Ber{p}} v.
+    \left(
+      \sure{\Ip{m}{1}=v}
+      *
+      \begin{cases}
+        \cpl{ \Ip{k}{1} = \Ip{c}{2} }     \CASE v=0 \\
+        \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} } \CASE v=1
+      \end{cases}
+    \right)
+  \label{ex:xor:ccouple}
+\end{equation}
+The idea is that we first condition on $\Ip{m}{1}$
+so that we can see it as the deterministic value~$v$,
+and then we couple $\Ip{k}{1}$ and $\Ip{c}{2}$ differently
+depending on~$v$.
+
+To carry out the proof idea formally, we are left with two subgoals.
+The first is to formally prove the entailment
+$
+  P \proves Q.
+$
+Then, it is possible to prove that after
+the final assignment to \p{c} at index \I{1},
+the program is in a state that satisfies
+$Q * \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}$.
+To finish the proof we would need to prove that
+$
+  Q * \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}
+  \proves
+  \cpl{ \Ip{c}{1} = \Ip{c}{2} }.
+$
+These missing steps need laws
+governing the interaction among independence, conditioning and relational lifting in this \pre n-ary setting.
+
+\begin{result}
+A crucial observation of \thelogic{}
+is that, by choosing an appropriate definition for the
+\supercond\ modality~$\CMod{\prob}$,
+relational lifting can be encoded as a form of conditioning.
+Consequently, the laws governing relational lifting can be derived
+from the more primitive laws for \supercond.
+Moreover, the interactions between relational lifting and independence can be derived through the primitive laws for the interactions between \supercond\ and independence.
+\end{result}
+
+
+
+
+
+\subsection{\SuperCond\ and Relational Lifting}
+\label{sec:overview:supercond}
+
+Now we introduce the \emph{joint} conditioning modality and its general \pre n-ary version.
+Given
+$\prob \of \Dist(A)$ and
+a function $\krnl \from A \to \Dist(B)$ (called a \emph{Markov kernel}),
+define the distribution $\bind(\prob, \krnl) \of \Dist(B)$ as
+$
+  \bind(\prob, \krnl) =
+    \fun b.\Sum*_{a\in A} \prob(a) \cdot \krnl(a)(b)
+$ and $
+  \return(v) = \dirac{v}.
+$
+The $\bind$ operation represents a convex combination with coefficients in
+$\prob$, while $\dirac{v}$ is the Dirac distribution, which assigns probability~1
+to the outcome~$v$.
+These operations form a monad with the distribution functor $\Dist(\hole)$,
+a special case of the Giry monad~\cite{giry1982categorical}.
+Given a distribution $\prob \of \Dist(A)$,
+and a predicate~$K(a)$ over pairs of distributions
+parametrized by values~$a\in A$,
+we define
+$
+  \CMod{\prob} a\st K(a)
+$
+to hold on some $(\prob_1,\prob_2)$ if
+\begin{align*}
+  \exists \krnl_1,\krnl_2 \st
+  \forall i \in \set{1,2} \st
+    \prob_i = \bind(\prob, \krnl_i)
+  \land
+  \forall a \in \psupp(\prob) \st
+    K(a) \text{ holds on }
+    (\krnl_1(a), \krnl_2(a))
+\end{align*}
+Namely, we decompose the pair $(\prob_1,\prob_2)$ component wise
+into convex compositions of $\prob$ and some kernels~$\krnl_1,\krnl_2$,
+one per component.
+Then for every $a$ with non-zero probability in~$\prob$, we require the predicate~$K(a)$ to hold for the pair of distributions
+$ (\krnl_1(a), \krnl_2(a)) $.
+The definition naturally extends to any number of indices.
+
+
+One powerful application of the \supercond modality is to encode relational
+liftings $\cpl{R}$.
+Imagine we want to express $\cpl{ \Ip{k}{1} = \Ip{c}{2} }$.
+It suffices to assert that there exists some distribution
+$\prob \of \Dist(\Val\times\Val)$ over pairs of values such that
+$
+  \CC\prob (v_1,v_2).\bigl(
+    \sure{\Ip{k}{1} = v_1} \land
+    \sure{\Ip{c}{2} = v_2} \land
+    \pure{v_1=v_2}
+  \bigr),
+$
+where $\pure{\phi}$ denote the embedding of a pure fact~$\phi$ (\ie a meta-level statement) into the logic. Let us digest the formula step-by-step.
+$\CC\prob (v_1,v_2). \bigl(\sure{\Ip{k}{1} = v_1} \land \sure{\Ip{c}{2} = v_2}\bigr)$
+conditions the distribution at index \I{1} on $\Ip{k}{1} = v_1$ and
+conditions the distribution at index \I{2} on $\Ip{c}{2} = v_2$;
+such simultaneous conditioning is possible only if $\prob$ projected
+to its first index, $\prob \circ \inv{\proj_1}$, is the marginal distribution
+of $\Ip{k}{1}$ and $\prob$ projected to its second index, $\prob \circ
+\inv{\proj_2}$, is the marginal distribution of $\Ip{c}{2}$.
+Thus, $\prob$ is a joint distribution -- a.k.a. coupling -- of the marginal distributions of $\Ip{k}{1}$ and $\Ip{c}{2}$.
+The full assertion $\CC\prob (v_1,v_2).(
+    \sure{\Ip{k}{1} = v_1} \land
+    \sure{\Ip{c}{2} = v_2} \land
+    \pure{v_1=v_2})$
+ensures that the coupling $\prob$ has non-zero probabilities only on pairs
+$(v_1, v_2)$ where $v_1 = v_2$, and this is exactly the requirement of the relational lifting $\cpl{\Ip{k}{1} = \Ip{c}{2}}$.
+
+
+The idea generalizes to arbitrary relation lifting $\cpl{R}$,
+which are encoded using assertions of the form
+$
+  \E\prob.\CC{\prob} (\vec{v}_1,\vec{v}_2).\bigl(
+    \sure{\vec{\p{x}}\at{\I1}=\vec{v}_1}
+    \land
+    \sure{\vec{\p{x}}\at{\I2}=\vec{v}_2}
+    \land
+    \pure{R(\vec{v}_1,\vec{v}_2)}
+  \bigr).
+$
+The encoding hinges on the crucial decision in the design of the
+\supercond modality of using the same distribution~$\prob$ to
+decompose the distributions at all indices.
+Then, the assertion inside the conditioning can force $\prob$ to be
+a joint distribution of (marginal) distributions of program states at
+different indices; and it can further force $\prob$ to have non-zero
+probability only on pairs of program states that satisfy the relation~$R$.
+
+
+\begin{result}
+The remarkable fact is that our formulation of
+relational lifting directly explains:
+\begin{enumerate}
+\item How the relational lifting can be \emph{established}:
+  that is, by providing some joint distribution~$\prob$ for
+  $\Ip{k}{1}$ and $\Ip{c}{2}$ ensuring~$R$ (the relation being lifted)
+  holds for their joint outcomes;
+  and
+\item
+  How the relational lifting can be \emph{used} in entailments:
+  that is, it guarantees that if one conditions on the store,
+  $R$~holds between the (now deterministic) variables.
+\end{enumerate}
+\end{result}
+
+To make these definitions and connections come to fruition we need to
+study which laws are supported by the \supercond\ modality
+and whether they are expressive enough to reason about distributions pairs
+without having to drop down to the level of semantics.
+
+
+
+
+
+
+\subsection{The Laws of \SuperCond}
+
+
+We survey the key laws for \supercond\ in this section, and explore a vital consequence of defining both conditional independence and relational lifting based on the \supercond modality: the laws of both can be derived from a set of expressive laws about \supercond\ alone. To keep the exposition concrete,
+we focus on a small subset of laws that are enough to prove the example
+of \cref{sec:overview:intro}.
+Let us focus first on proving:
+\begin{equation}
+  \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+  *
+  \distAs{\Ip{m}{1}}{\Ber{p}}
+  *
+  \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+  \proves
+  \CC{\Ber{p}} v.
+    \left(
+      \sure{\Ip{m}{1}=v}
+      *
+      \begin{cases}
+        \cpl{ \Ip{k}{1} = \Ip{c}{2} }     \CASE v=0 \\
+        \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} } \CASE v=1
+      \end{cases}
+    \right)
+  \label{ex:xor:entail1}
+\end{equation}
+
+
+\noindent
+We need the following primitive laws of \supercond:
+\begin{proofrules}
+  \infer*[lab=c-unit-r]{}{
+  \distAs{\aexpr\at{i}}{\mu}
+  \lequiv
+  \CC\prob v.\sure{\aexpr\at{i}=v}
+}   \label{rule:c-unit-r}
+
+  \infer*[lab=c-frame]{}{
+  P * \CC\prob v.K(v)
+  \proves
+  \CC\prob v.(P * K(v))
+}   \label{rule:c-frame}
+
+  \infer*[lab=c-cons]{
+  \forall v\st
+  K_1(v) \proves K_2(v)
+}{
+  \CC\prob v.K_1(v)
+  \proves
+  \CC\prob v.K_2(v)
+}   \label{rule:c-cons}
+\end{proofrules}
+
+\Cref{rule:c-unit-r} can convert back and forth from
+ownership of an expression~$E$ at~$i$ distributed as~$\prob$,
+and the conditioning on~$\prob$ that makes~$E$ look deterministic.
+\Cref{rule:c-frame} allows to bring inside conditioning
+any resource that is independent from it.
+\Cref{rule:c-cons} simply allows to apply entailments inside \supercond.
+We can use these laws to perform conditioning on~$\Ip{m}{1}$:
+\begin{eqexplain}
+&
+  \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+  *
+  \distAs{\Ip{m}{1}}{\Ber{p}}
+  *
+  \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+\whichproves
+  \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+  *
+  (\CC{\Ber{p}} v.\sure{\Ip{m}{1}=v})
+  *
+  \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+\byrule{c-unit-r}
+\whichproves
+  \CC{\Ber{p}} v.
+  \left(
+    \sure{\Ip{m}{1}=v}
+    *
+    \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+    *
+    \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+  \right)
+\byrule{c-frame}
+\end{eqexplain}
+Here we use \ref{rule:c-unit-r} to convert ownership of~$\Ip{m}{1}$
+into its conditioned form.
+Then we can bring the other independent variables inside the conditioning
+with \ref{rule:c-frame}.
+This derivation follows in spirit the way in which Lilac
+introduces conditioning, thus inheriting its ergonomic elegance.
+Our rules however differ from Lilac's in both form and substance.
+First, Lilac's rule for introducing conditioning (called \textsc{C-Indep}),
+requires converting ownership of a variable into conditioning, and bringing some independent resources inside conditioning, as a single monolithic step.
+In \thelogic\ we accomplish this pattern as a combination of our
+\ref{rule:c-unit-r} and \ref{rule:c-frame},
+which are independently useful.
+Specifically, \ref{rule:c-unit-r} is bidirectional,
+which makes it useful to recover unconditional facts from conditional ones.
+Furthermore, we recognize that \ref{rule:c-unit-r} is nothing but
+a reflection of the right unit law of the monadic structure of distributions
+(which we elaborate on in \cref{sec:logic}).
+This connection prompted us to provide rules that reflect the remaining
+monadic laws (left unit~\ref{rule:c-unit-l} and
+associativity~\ref{rule:c-fuse}). It is noteworthy that these rules do not follow from Lilac's proofs:
+our modality has a different semantics, and our rules seamlessly apply to
+assertions of any arity.
+
+To establish the conditional relational liftings of the entailment in \eqref{ex:xor:entail1},
+\thelogic\ provides a way to introduce relational liftings from ownership of the distributions
+of some variables:
+\begin{proofrule}
+  \infer*[lab=coupling]{
+  \prob \circ \inv{\proj_1} = \prob_1
+  \\
+  \prob \circ \inv{\proj_2} = \prob_2
+  \\
+  \prob(R) = 1
+}{
+  \distAs{\p{x}_1\at{\I1}}{\prob_1} *
+  \distAs{\p{x}_2\at{\I2}}{\prob_2}
+  \proves
+  \cpl{R(\p{x}_1\at{\I1}, \p{x}_2\at{\I2})}
+}
+   \label{rule:coupling}
+\end{proofrule}
+The side conditions of the rule ask the prover to provide a coupling
+$\prob \of \Dist(\Val\times\Val)$
+of $\prob_1 \of \Dist(\Val)$ and $\prob_2 \of \Dist(\Val)$,
+which assigns probability~1 to a (binary) relation~$R$.
+If $\p{x}_1\at{\I1}$ and $\p{x}_2\at{\I2}$ are distributed as $\prob_1$ and $\prob_2$, respectively, then the relational lifting of $R$ holds between them
+(as witnessed by the existence of~$\prob$).
+Note that for the rule to apply, the two variables need to live in distinct indices.
+\begin{result}
+Interestingly, \ref{rule:coupling} can be derived from the
+encoding of relational lifting and the laws of \supercond.
+\end{result}
+Remarkably, although the rule mirrors the
+step of coupling two samplings in a pRHL proof,
+it does not apply to the code doing the sampling itself,
+but to the assertions representing the effects of those samplings.
+This allows us to delay the forming of coupling to until
+all necessary information is available (here, the outcome of $\Ip{m}{1}$).
+We can use \ref{rule:coupling} to prove both entailments:
+{\begin{equation}
+  \distAs{\Ip{k}{1}}{\Ber{\onehalf}} *
+  \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+  \proves
+  \cpl{ \Ip{k}{1} = \Ip{c}{2} }
+\text{\; and \; }
+  \distAs{\Ip{k}{1}}{\Ber{\onehalf}} *
+  \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+  \proves
+  \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} }
+  \label{ex:xor-two-cpl}
+\end{equation}}
+In the first case we use the coupling which flips a single coin and returns
+the same outcome for both components, in the second we flip a single coin
+but return opposite outcomes.
+Thus we can now prove:
+\[
+  \CC{\Ber{p}} v.
+  \left(
+    \sure{\Ip{m}{1}=v} *
+    \begin{pmatrix}
+    \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+    \\ {}*
+    \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+    \end{pmatrix}
+  \right)
+  \proves
+  \CC{\Ber{p}} v.
+    \left(
+      \sure{\Ip{m}{1}=v}
+      *
+      \begin{cases}
+        \cpl{ \Ip{k}{1} = \Ip{c}{2} }     \CASE v=0 \\
+        \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} } \CASE v=1
+      \end{cases}
+    \right)
+\]
+by using \ref{rule:c-cons},
+and using the two couplings of~\eqref{ex:xor-two-cpl} in the $v=0$ and $v=1$ respectively.
+Finally, the assignment to \p{c} in \p{encrypt} generates the fact
+$\sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}$.
+By routine propagation of this fact we can establish
+$
+  \CC{\Ber{p}} v. \cpl{ \Ip{c}{1} = \Ip{c}{2} }.
+$
+To get an unconditional lifting,
+we need a principle explaining the interaction between lifting and conditioning.
+\thelogic\ can derive the general rule:
+\begin{proofrule}
+  \infer*[lab=rl-convex]{}{
+  \CC\prob \wtv.\cpl{R} \proves \cpl{R}
+}
+%
+   \label{rule:rl-convex}
+\end{proofrule}
+which states that relational liftings are \emph{convex},
+\ie closed under convex combinations.
+\begin{result}
+\ref{rule:rl-convex} is an instance of many rules on the interaction between relational lifting
+and the other connectives (conditioning in this case)
+that can be derived in \thelogic\ by exploiting the encoding of liftings as \supercond.
+\end{result}
+
+Let us see how this is done for \ref{rule:rl-convex} based on two other rules of \supercond:
+\begin{proofrules}\small \infer*[lab=c-skolem]{
+  \prob \of \Dist(\Full{A})
+}{
+  \CC\prob v. \E x \of X. Q(v, x)
+  \proves
+  \E f \of A \to X. \CC\prob v. Q(v, f(v))
+}   \label{rule:c-skolem}
+
+\infer*[lab=c-fuse]{}{
+  \CC{\prob} v.
+  \CC{\krnl(v)} w.
+    K(v,w)
+  \lequiv
+  \CC{\prob \fuse \krnl} (v,w). K(v,w)
+}   \label{rule:c-fuse}
+\end{proofrules}
+\Cref{rule:c-skolem} is a primitive rule which
+follows from Skolemization of the implicit universal
+quantification used on~$v$ by the modality.
+\Cref{rule:c-fuse}
+can be seen as a way to merge two nested conditioning or split one conditioning into two.
+The rule uses $
+  \prob \fuse \krnl \is
+    \fun(v,w).{ \prob(v) \cdot \krnl(v)(w)},
+$
+a variant of $\bind$ that does not forget the intermediate~$v$.
+\Cref{rule:c-fuse} is an immediate consequence of two primitive rules
+\ifappendix(\ref{rule:c-assoc} and \ref{rule:c-unassoc}) \fi
+that reflect the associativity of the~$\bind$ operation.
+
+
+To prove \ref{rule:rl-convex}
+we start by unfolding the definition of relational lifting
+(we write $K(v)$ for the part of the encoding inside the conditioning):
+\begin{eqexplain}
+  \CC\prob v. \cpl{R}
+  \lequiv {} &
+  \CC\prob v.
+    \E \hat{\prob}_0.
+      \CC{\hat{\prob}_0} w. K(w)
+\whichproves
+  \E \krnl.
+    \CC\prob v.
+      \CC{\krnl(v)} w. K(w)
+\byrule{c-skolem}
+\whichproves
+  \E \krnl.
+    \CC {\prob \fuse \krnl} (v,w). K(w)
+\byrule{c-fuse}
+\whichproves
+  \E \hat\prob_1.
+    \CC{\hat\prob_1} (v,w). K(w)
+\proves
+  \cpl{R}
+\bydef
+\end{eqexplain}
+The application of \ref{rule:c-skolem} commutes the existential
+quantification of the joint distribution~$\hat{\prob}_0$ and the outer modality.
+By \ref{rule:c-fuse} we are able to merge the two modalities and obtain again
+something of the same form as the encoding of relational liftings.
+
+
+
+\subsection{Outside the Box of Relational Lifting}
+\label{sec:overview:obox}
+
+
+
+
+One of the well-known limitations of pRHL is that it requires
+a very strict structural alignment between the order of samplings
+to be coupled in the two programs.
+A common pattern that pRHL rules cannot handle is
+showing that reversing the order of execution of two blocks of code
+does not affect the output distribution,
+\eg running
+  \code{x:=Ber(1/2);y:=Ber(2/3)} versus
+  \code{y:=Ber(2/3);x:=Ber(1/2)}.
+In \thelogic, we can establish this pattern using a \emph{derived} general rule:
+\begin{proofrule}
+  \infer*[lab=seq-swap]{
+    \{P_1\} {\m[\I1: t_1, \I2: t_1']} \{\cpl{R_1}\}
+    \\
+    \{P_2\} {\m[\I1: t_2, \I2: t_2']} \{\cpl{R_2}\}
+  }{
+    \{P_1 * P_2\}
+    {\m[
+     \I1: (t_1\p; t_2),
+     \I2: (t_2'\p; t_1')
+    ]}
+    \{\cpl*{
+      R_1
+      \land
+      R_2
+    }\}
+  }
+  \label{rule:seq-swap}
+\end{proofrule}
+The rule assumes that the lifting of $R_1$ (resp. $R_2$) can be established
+by analyzing $t_1$ and $t_1'$ ($t_2$ and~$t_2'$)
+side by side from precondition $P_1$ ($P_2)$.
+The standard sequential rule of pRHL would force an alignment
+between the wrong pairs ($t_1$ with~$t_2'$, and $t_2$ with~$t_1'$).
+Crucial to the soundness of the rule is the assumption
+(expressed by the precondition~$P_1*P_2$ in the conclusion)
+that $P_1$ and~$P_2$ are probabilistically independent.\footnote{
+  In the full model of \thelogic,
+  to ensure safe mutation, assertions also include ``write/read permissions''
+  on variables (in the ``variables as resource''-style~\cite{BornatCY06}).
+  In \ref{rule:seq-swap} the separation between $P_1$ and $P_2$ ensures,
+  in addition to probabilistic independence, that if $t_1$ has write permissions
+  on a variable~$\p{x}$, $t_2$ does not have read permissions on it and viceversa (and analogously for $t_1'$ and $t_2'$).
+  The full model incurs in some permissions bookkeeping,
+  which we omit in this section for readability;
+  \cref{ex:perm-triples} shows how to fill in the omitted details.}
+In contrast, because pRHL lacks the construct of independence,
+it simply cannot express such a rule.
+
+\begin{result}
+\thelogic's treatment of relational lifting enables the study of the interaction
+between lifting and independence,
+unlocking a novel solution for forfeiting strict structural similarities between components required by relational logics.
+\end{result}
+Two ingredients of \thelogic\ cooperate to prove
+\ref{rule:seq-swap}:
+the adoption of a \emph{weakest precondition}~(WP) formulation of triples
+(and associated rules)
+and a novel property of relational lifting. Let us start with WP.
+In \thelogic, a triple $\{P\}\ \m{t}\ \{Q\}$ is actually encoded as
+the entailment
+$ P \proves \WP {\m{t}} {Q} $.
+Here, $P$ and $Q$ are both assertions on \pre n-nary tuples of distributions;
+and throughout, we use the bold $\m{t}$ to denote an \pre n-nary
+tuple of program terms.
+The formula $ \WP {\m{t}} {Q}$  is a natural generalization of WP assertion to \pre n-nary programs:
+$\WP {\m{t}} {Q}$
+holds on
+a \pre n-nary tuple of distributions~$\m{\prob}$,
+if the tuple of output distributions
+obtained by running each program in~$\m{t}$ on the corresponding component
+of~$\m{\prob}$,
+satisfies~$Q$.
+\thelogic\ provides a number of rules for manipulating WP;
+here is a selection needed for deriving \ref{rule:seq-swap}:
+\begin{proofrules}
+  \infer*[lab=wp-cons]{
+  Q \proves Q'
+}{
+  \wpc{\m{t}}{Q}
+  \proves
+  \wpc{\m{t}}{Q'}
+}   \label{rule:wp-cons}
+
+  \infer*[lab=wp-frame]{}{
+  P \sepand \wpc{\hpt}{Q}
+  \proves
+  \wpc{\hpt}{\liftA{P} \sepand Q}
+}   \label{rule:wp-frame}
+
+  \infer*[lab=wp-seq]{}{
+  \WP {\m[i: t]}[\big]{
+    \WP {\m*[i: \smash{t'}]} {Q}
+  }
+  \proves
+  \WP {\m[i: (t\code{;}\ t')]} {Q}
+}   \label{rule:wp-seq}
+
+  \infer*[lab=wp-nest]{}{
+  \wpc{\m{t}_1}{
+    \wpc{\m{t}_2}{Q}
+  }
+  \lequiv
+  \wpc{(\m{t}_1 \m. \m{t}_2)}{Q}
+}   \label{rule:wp-nest}
+\end{proofrules}
+\Cref{rule:wp-cons,rule:wp-frame} are the usual consequence and framing rules
+of Separation Logic, in WP form.
+By adopting Lilac's measure-theoretic notion of independence as the interpretation for separating conjunction, we obtain a clean frame rule.
+Among the WP rules for program constructs,
+\cref{rule:wp-seq} takes care of sequential composition.
+Notably, we only need to state it for unary WPs,
+in contrast to other logics where supporting relational proofs
+requires building the lockstep strategy into the rules.
+We use the more flexible approach from the Logic for Hypertriple Composition (LHC)~\cite{d2022proving},
+where a handful of arity-changing rules allow seamless integration
+of unary and relational judgments.
+One such rule is the \ref{rule:wp-nest} rule, which
+establishes the equivalence of a WP on $ \m{t}_1 \m. \m{t}_2 $,
+where $(\m.)$ is union of indexed tuples with disjoint indexes,
+and two nested WPs involving $\m{t}_1$, and $\m{t}_2$ individually.
+This for instance allows us to lift the unary \ref{rule:wp-seq}
+to a binary lockstep rule:
+\begin{derivation}
+  \infer*[Right=\ref{rule:wp-nest}]{
+  \infer*[Right={\ref{rule:wp-seq},\ref{rule:wp-cons}}]{
+  \infer*[Right=\ref{rule:wp-nest}]{
+  \infer*[Right=\ref{rule:wp-cons}]{
+    P \proves
+    \WP {\m[\I1: t_1]} {
+      \WP {\m[\I2: t_2]}{Q'}
+    }
+    \\
+    Q' \proves \WP {\m[\I1: t_1']} {
+      \WP {\m[\I2: t_2']} {Q}
+    }
+  }{
+    P \proves
+    \WP {\m[\I1: t_1]} {
+      \WP {\m[\I2: t_2]}{
+        \WP {\m[\I1: t_1']} {
+          \WP {\m[\I2: t_2']} {Q}
+        }
+      }
+    }
+  }}{
+    P \proves
+    \WP {\m[\I1: t_1]} {
+      \WP {\m[\I1: t_1']} {
+        \WP {\m[\I2: t_2]}{
+          \WP {\m[\I2: t_2']} {Q}
+        }
+      }
+    }
+  }}{
+    P \proves
+    \WP {\m[\I1: (t_1\p; t_1')]} {
+      \WP {\m[\I2: (t_2\p;t_2')]} {Q}
+    }
+  }}{
+    P \proves \WP {\m[\I1: (t_1\p; t_1'), \I2: (t_2\p;t_2')]} {Q}
+  }
+\end{derivation}
+
+The crucial idea behind \ref{rule:seq-swap} is that the two programs
+$t_1$ and $t_2$ we want to swap rely on \emph{independent} resources,
+and thus their effects are independent from each other.
+In Separation Logic this kind of reasoning is driven by framing:
+which is done through framing in Separation Logic:
+while executing~$t_1$, frame the resources
+needed for~$t_2$, which remain intact in the state left by~$t_1$.
+Multiple applications of~\ref{rule:wp-frame} and other basic rules
+get us to the post-condition $\cpl{R_1} \ast \cpl{R_2}$, but
+we want to combine them into one relational lifting.
+This is accommodated~by:
+\begin{proofrule}
+  \infer*[lab=rl-merge]{}{
+  \cpl{R_1} * \cpl{R_2}
+  \proves
+  \cpl{R_1 \land R_2}
+}
+%
+   \label{rule:rl-merge}
+\end{proofrule}
+We do not show the derivation here for space constraints,
+but essentially it consists in unfolding the encoding of lifting,
+and using \ref{rule:c-frame} and \ref{rule:c-fuse}
+to merge the two \supercond\ modalities.
+
+Using these rules we can construct the following derivation:
+\begin{derivation}[\small]
+  \infer*[Right=\ref{rule:rl-merge}]{
+  \infer*[Right=\ref{rule:wp-nest}]{
+  \infer*[Right={\ref{rule:wp-seq},\ref{rule:wp-nest}}]{
+  \infer*[Right=\ref{rule:wp-frame}]{
+  \infer*[Right=\ref{rule:wp-frame}]{
+  \infer*[Right={\ref{rule:wp-frame},\ref{rule:wp-nest}}]{
+  \infer*{
+    P_1 \proves \WP {\m[\I1: t_1, \I2: t_1']}{\cpl{R_1}}
+    \\
+    P_2 \proves \WP {\m[\I1: t_2, \I2: t_2']}{\cpl{R_2}}
+  }{
+    P_1 * P_2
+    \proves
+    \WP{\m[\I1: t_1,\I2: t_1']}{
+      \cpl{R_1}
+    }
+    *
+    \WP{\m[\I1: t_2, \I2: t_2' ]}{
+      \cpl{R_2}
+    }
+  }}{
+    P_1 * P_2
+    \proves
+    \WP{\m[\I1: t_1]}[\big]{
+\WP{\m[
+       \I1: t_2,
+       \I2: t_2'
+      ]}*{
+        \cpl{R_2}
+      } * {}
+      \WP{\m[\I2: t_1']}{
+        \cpl{R_1}
+      }
+}
+  }}{
+    P_1 * P_2
+    \proves
+    \WP{\m[\I1: t_1]}[\Big]{
+    \WP{\m[
+     \I1: t_2,
+     \I2: t_2'
+    ]}[\big]{
+\cpl{R_2} * {}
+      \WP{\m[\I2: t_1']}{
+        \cpl{R_1}
+      }
+} }
+  }}{
+    P_1 * P_2
+    \proves
+    \WP{\m[\I1: t_1]}[\Big]{
+    \WP{\m[
+     \I1: t_2,
+     \I2: t_2'
+    ]}[\big]{
+    \WP{\m[\I2: t_1']}{
+\cpl{R_1} * {}
+\cpl{R_2}
+} } }
+  }}{P_1 * P_2
+    \proves
+    \WP{\m[\I1: (t_1\p; t_2)]}[\big]{
+      \WP{\m[\I2: (t_2'\p; t_1')]}{
+        \cpl{R_1} *
+        \cpl{R_2}
+      }
+    }
+  }}{P_1 * P_2
+    \proves
+    \WP{\m[
+     \I1: (t_1\p; t_2),
+     \I2: (t_2'\p; t_1')
+    ]}[\big]{
+\cpl{R_1} *
+\cpl{R_2}
+}
+  }}{P_1 * P_2
+    \proves
+    \WP{\m[
+     \I1: (t_1\p; t_2),
+     \I2: (t_2'\p; t_1')
+    ]}*{\cpl*{
+R_1 \land
+      R_2
+}}
+  }
+\end{derivation}
+We explain the proof strategy from bottom to top.
+We first apply \ref{rule:rl-merge} to the postcondition
+(thanks to \ref{rule:wp-cons}).
+This step reduces the goal to proving the two relational liftings
+can be established independently from each other.
+Then we apply \ref{rule:wp-nest} and \ref{rule:wp-seq}
+to separate the two indices, break the sequential compositions and recombine
+the two inner WPs.
+We then proceed by three applications of the \ref{rule:wp-frame} rule:
+the first brings $\cpl{R_2}$ out of the innermost WP;
+the second brings the WP on $\m[\I1:t_1']$ outside the middle WP;
+the last brings the WP on $\m[\I1:t_2,\I2:t_2']$ outside the topmost WP.
+An application of \cref{rule:wp-nest} merges the resulting nested WPs
+on $t_1$ and $t_1'$.
+We thus effectively reduced the problem to showing that the two WPs
+can be established independently, which was our original goal.
+
+The \ref{rule:rl-merge} rule not only provides an elegant way of overcoming
+the long-standing alignments issue with constructing relational lifting,
+but also shows how fundamental the role of probabilistic independence is
+for compositional reasoning:
+the same rule with standard conjunction is unsound!
+Intuitively, if we just had $ \cpl{R_1} \land \cpl{R_2} $,
+we would know there exist two couplings
+$\prob_1$ and $\prob_2$,
+justifying $\cpl{R_1}$ and $\cpl{R_2}$ respectively,
+but the desired consequence $\cpl{R_1 \land R_2}$
+requires the construction of a single coupling that justifies both relations
+at the same time.
+We can see this is not always possible by looking back at
+\eqref{ex:xor-two-cpl}:
+for two fair coins we can establish
+$
+  \cpl{ \Ip{k}{1} = \Ip{c}{2} }
+  \land
+  \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} }
+$,
+but
+$
+  \cpl{
+    \Ip{k}{1} = \Ip{c}{2}
+    \land
+    \Ip{k}{1} = \neg\Ip{c}{2}
+  }
+$ is equivalent to false.
+

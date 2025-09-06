@@ -1,0 +1,143 @@
+\section{Related Work}
+\label{sec:relwork}
+
+
+
+
+
+Research on deductive verification of probabilistic programs has developed a
+wide range of techniques that employ {\em unary} and  {\em relational} styles of reasoning. \thelogic\ advances the state of the art in both styles, by coherently unifying the strengths of both. We limit our comparison here to deductive techniques only, and focus most of our attention on explaining how \thelogic\ offers new  reasoning tools compared to these.
+
+
+\paragraph{\bfseries Unary-style Reasoning.}
+Early work in this line focuses more on analyzing marginal distributions and probabilities, and features like harnessing the power of  probabilistic independence and conditioning have been more recently added to make more expressive program logics~\cite{ramshaw1979formalizing,rand2015vphl,barthe2016ellora,barthe2019probabilistic,bao2022separation,lilac}.
+
+Much work in this line has been inspired by {\em Separation Logic}~(SL),
+a powerful tool
+for reasoning about pointer-manipulating programs,
+known for its support of \emph{local reasoning}
+of separated program components~\cite{reynolds2000intuitionistic}.
+PSL~\cite{barthe2019probabilistic} was the first logic to present a SL model for reasoning about the probabilistic independence of program variables, which facilitates modular reasoning about independent components within a probabilistic program.
+In~\cite{bao2021bunched} and~\cite{bao2022separation} SL variants are used for reasoning about conditional independence and negative dependence, respectively;
+both are used in algorithm analysis as relaxations of
+independence.
+
+\paragraph{Lilac}
+Lilac~\cite{lilac} is the most recent addition to this group and introduces a new foundation of probabilistic separation logic based on measure theory.
+It enables reasoning about independence and conditional independence uniformly in one logic and supports continuous distributions.
+\thelogic\ also uses a measure-theory based model, similar to Lilac,
+although limited to discrete distributions.
+While \thelogic\ uses Lilac's independent product as a model of separating conjunction, it differs from Lilac in three aspects:
+(1) the treatment of ownership,
+(2) support for mutable state, and
+(3) the model of conditioning.
+
+Ownership as almost-measurability is required to support inferences like
+$
+  \own{\p{x}} * \sure{\p{x}=\p{y}}
+  \proves
+  \own{\p{y}},
+$
+which were implicitly used in the first version of Lilac,
+but were not valid in its model.
+\citet{lilac2} fixes the issue by changing the meaning of $\sure{\p{x}=\p{y}}$,
+while our fix acts on the meaning of ownership
+(and we see $\sure{E}$ assertions as an instance of regular ownership).
+
+Lilac works with
+immutable state~\cite{staton2020},
+which simplifies reasoning in certain contexts
+(e.g., the frame rule and the if rule).
+\thelogic's model supports mutable state through a creative use of permissions,
+obtaining a clean frame rule, at the cost of some predictable bookkeeping.
+
+The more significant difference with Lilac is however in the definition of the conditioning modality.
+Lilac's modality~$\LC{v}{E}\,P(v)$ is indexed by a random variable~$E$,
+and roughly corresponds to the \thelogic\ assertion
+$ \E \prob. \CC \prob v.(\sure{E=v} * P(v)) $.
+The difference is not merely syntactic,
+and requires changing the model of the modality.
+For example, Lilac's modality satisfies
+$
+  {\LC{v}{E}\,P_1(v) \land \LC{v}{E}\,P_2(v)}
+  \proves
+  {\LC{v}{E}\,(P_1(v) \land P_2(v))},
+$
+but the analogous rule
+$
+  {\CC{\prob} v. K_1(v)
+    \land
+  \CC{\prob} v. K_2(v)}
+  \proves
+  {\CC\prob v.
+    (K_1(v) \land K_2(v))}
+$
+(corresponding to \ref{rule:c-and} without the side condition)
+is unsound in \thelogic:
+The meaning of the modalities in the premise ensures
+the \emph{existence} of two kernels $\krnl_1$ and $\krnl_2$ supporting
+$K_1$ and $K_2$ respectively,
+but the conclusion requires the existence of a \emph{single} kernel
+supporting both~$K_1$ and~$K_2$.
+Lilac's rule holds because when one conditions on a random variable,
+the corresponding kernels are unique.
+We did not find losing this rule limiting.
+On the other hand,
+Lilac's conditioning has two key disadvantages:
+(i)  it does not record the distribution of~$E$,
+     losing this information when conditioning,
+(ii) it does not generalize to the relational setting.
+Even considering only the unary setting,
+having access to the distribution~$\prob$ in fact unlocks a number of new
+rules (\eg \ref{rule:c-unit-r} and \ref{rule:c-fuse})
+that are key to the increased expressivity of \thelogic.
+In particular, the rules of \thelogic\ provide a wider arsenal of tools
+that can convert a conditional assertion back into an unconditional one.
+This is especially important when conditioning is used as a reasoning tool,
+regardless of whether the end goal is a conditional statement.
+
+
+
+
+
+
+
+
+
+
+
+
+\paragraph{\bfseries Relational Reasoning}
+\citet{barthe2009formal} extend relational Hoare logic~\cite{benton2004simple} to reason about probabilistic programs in a logic called pRHL (probabilistic Relational Hoare Logic).
+In pRHL, assertions on pairs of deterministic program states are lifted to assertions on pairs of distributions, and on the surface, the logic simply manipulates the deterministic assertions.
+A number of variants of pRHL were successfully applied to proving various cryptographic protocols and differential privacy algorithms~\cite{barthe2009formal,barthe2015coupling,hsu2017probabilistic,wang2019proving, zhang2017lightdp}.
+When a natural relational proof for an argument exists, these logics are simple and elegant to use. However, they fundamentally
+trade expressiveness for ease of use.
+A persisting problem with them has been that they rely on a strict structural alignment between the order of samples in the two programs. Recall our discussion in \cref{sec:overview:obox} for an example of this that \thelogic\ can handle.
+\citet{gregersen2023asynchronous} recently proposed Clutch,
+a logic to prove contextual refinement in a probabilistic higher-order language,
+where ``out of order'' couplings between samplings are achieved by
+using ghost code that pre-samples some assignments,
+a technique inspired by \emph{prophecy variables}~\cite{jung2019future}.
+In \cref{sec:overview} we showed how \thelogic\ can resolve the issue
+without ghost code
+(in the context of first-order imperative programs) by using framing and probabilistic independence creatively.
+In contrast to \thelogic, Clutch can only express relational properties;
+it also uses separation but with its classical interpretation as disjointness
+of deterministic state.
+
+Polaris~\cite{tassarotti2019polaris}, is an early instance of a probabilistic relational (concurrent) separation logic.
+However, separation in Polaris is again classic disjointness of state.
+
+
+Our \pre n-ary WP is inspired by LHC~\cite{d2022proving},
+which shows how arity-changing rules (like \ref{rule:wp-nest})
+can accommodate modular and flexible relational proofs of deterministic programs.
+
+
+
+\paragraph{\bfseries Other Techniques.}
+Expectation-based approaches, which reason about expected quantities of probabilistic programs via a weakest-pre-expectation operator that propagates information about expected values backwards through the program, have been classically used to verify randomized algorithms~\cite{kozen1983PDL,Morgan:1996,kaminski2016weakest,kaminski2019thesis,aguirre2021pre,Bartocci2022moment}.
+These logics offer ergonomic dedicated principles for expectations, but do not aim at unifying principles for analyzing more general classes of properties or proof techniques, like we attempt here.
+Ellora~\cite{barthe2016ellora} proposes an assertion-based logic (without separation nor conditioning) to overcome the limitation of working only with expectations.
+

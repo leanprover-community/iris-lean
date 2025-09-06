@@ -1,0 +1,994 @@
+\subsection{Multi-party Secure Computation}
+\label{sec:appendix:ex:multiparty}
+
+  The idea of \emph{multi-party secure computation} is to allow~$N$
+parties to compute a function~$f(x_1,\dots,x_N)$ of
+some private data~$x_i$ owned by each party~$i$,
+without revealing any more information about~$x_i$ than the output of~$f$
+would reveal if computed centrally by a trusted party.
+When $f$ is addition, a secure computation of~$f$ is useful, for example,
+to compute the total number of votes without revealing who voted positively:
+some information would leak (e.g., if the total is non-zero then \emph{somebody} voted positively) but only what is revealed by knowing the total and nothing more.
+
+To achieve this objective, multi-party secure addition~(MPSAdd)
+works by having the parties break their secret into~$N$ \emph{secret shares}
+which individually look random, but the sum of which amounts to the original secret.
+These secret shares are then distributed to the other parties so that each party knows an incomplete set of shares of the other parties.
+Yet, each party can reliably compute the result of the function by computing a function of the received shares.
+
+\Cref{fig:mpsadd} shows the MPSAdd algorithm, for the case~$N=3$,
+as modelled in~\cite{barthe2019probabilistic}.
+The algorithm works as follows.
+Each party~$i$ knows its secret~$x_i$.
+All the parties agree on an appropriate prime number~$p$ to use,
+and want to compute the sum of all the secrets (modulo~$p$).
+The algorithm goes through three phases:
+\begin{itemize}
+  \item\emph{Phase~1:}
+    Each party~$i$ computes its three secret shares in row \p{r[$i$][-]}
+    by generating two independent random
+    numbers~\p{r[$i$][1]}, \p{r[$i$][2]} in~$\Zp$
+    drawing from the \emph{uniform} distribution~$\UnifZp$.
+The third share \p{r[$i$][3]} is chosen so that the sum of the shares
+    amounts to the secret~\p{x}$_i$.
+
+    Then columns are communicated so that each party~$i$
+    receives column \p{r[-][$j$]} for every $j\ne i$.
+    Each party now knows 2 out of 3 of the shares of each other party.
+  \item\emph{Phase~2:}
+    Each party~$i$
+    computes, for every $j\ne i$,
+    \p{s[$j$]} as the sum of the column \p{r[-][$j$]},
+    and sends it to the other parties.
+  \item\emph{Phase~3:}
+    Each party now knows \p{s[-]},
+    the sum of which is the sum of the secrets.
+\end{itemize}
+
+\citet{barthe2019probabilistic} provide a partial proof of the example:
+\begin{enumerate*}
+\item
+  They only verify uniformity and independence from the input of the
+  secret shares \p{r} (with a proof that involves ad-hoc axioms);
+\item
+  As PSL can only represent (unconditional) independence,
+  the proof cannot state anything
+  useful about the other values \p{s} that are circulated to compute the sum;
+  in principle they can also leak too much information,
+  but will not be independent of the secret since they are supposed to
+  disclose their sum.
+\end{enumerate*}
+
+In this section we set out to prove the stronger property that,
+by the end of the computation, nothing is revealed by the values
+party~$i$ received from the other parties other than the sum.
+We focus on party~$1$ as the specifications and proofs for the other parties
+are entirely analogous.
+
+\begin{figure}
+  \centering \begin{tabular}{c}
+  \begin{sourcecode}[gobble=2]
+  def MPSAdd:
+    // Phase 1
+    for i in [1,2,3]:
+      r[i][1] :~ $\UnifZp$ // Uniform sample from $\color{codecomment}\Zp$
+      r[i][2] :~ $\UnifZp$
+      r[i][3] := x$_i$ - r[i][1] - r[i][2] mod $p$
+    // Phase 2
+    for i in [1,2,3]:
+      s[i] := r[1][i] + r[2][i] + r[3][i] mod $p$
+    // Phase 3
+    sum := s[1] + s[2] + s[3] mod $p$
+  \end{sourcecode}\end{tabular}
+  \caption{Multi-party secure addition.}
+  \label{fig:mpsadd}
+\end{figure}
+
+
+We observe that the above goal can be formalized using two
+very different judgments, one unary and one relational.
+
+\smallskip
+
+The \textbf{\emph{unary specification}} says that,
+conditionally on the secret of party~$i$, and the sum of the other secrets,
+all the values received by~$i$ (we call this the \emph{view} of~$i$)
+are independent from the secrets of the other parties;
+moreover the learned components of~\p{r} are uniformly distributed.
+
+Formally, the view of party~$1$ is the vector:
+\[
+  \p{view}_1 = (
+    \p{r[1][-]},\p{r[2][2]}, \p{r[2][3]},
+    \p{r[3][2]}, \p{r[3][3]},
+    \p{s[-]},\p{sum}
+  )
+\]
+The unary specification would then assume an arbitrary distribution~$\prob_0$
+of the secrets (making no assumption about their independence),
+and asserting in the postcondition that $\p{view}_1$ and $(\p x_1,\p x_2)$ are
+independent conditionally on $\p x_1$ and $\p x_2+\p x_3$
+(\ie conditionally on the secret of party~1 and the total sum of the secrets).
+\begin{equation}
+  (\distAs{(\p{x}_1, \p{x}_2, \p{x}_3)}{\prob_0})
+  \withp{\m{\permap}}
+  \proves
+  \WP {\p{MPSAdd}}*{
+    \CC {\tilde{\prob}_0} {(v_1, v_{23})}.
+    \begin{grp}
+      \sure{\p x_1 = v_1 \land (\p x_2 + \p x_3)=v_{23}} * {}
+      \\
+      \distAs{\p{view}_1}{U(v_1,v_{23})} *
+      \E \prob_{23}.\distAs{(\p x_2,\p x_3)}{\prob_{23}}
+    \end{grp}
+  }
+\label{multiparty:unary:goal}
+\end{equation}
+For readability we omit the indices on the term and variables
+as they are $\at{\I1}$ everywhere;
+we also implicitly interpret equalities and sums to be modulo~$p$.
+Here $U(v_1,v_{23})$ distributes
+the components of \p{r} in $\p{view}_1$ uniformly (except for \p{r[1][3]}),
+and $ {
+  \tilde{\prob}_0 = \left(\DO{(x_1,x_2,x_3) <- \prob_0; \return (x_1,x_2+x_3)}\right)
+} $;
+moreover $\m{\permap}$ contains all the necessary permissions for the
+assignments in \p{MPSAdd}.
+Note how the conditioning on the sum represents the expected leakage of
+the multi-party computation.
+
+\smallskip
+
+The \textbf{\emph{relational specification}} says that
+    when running the program from two initial states
+    differing only in the secrets of the other parties,
+    but not in their sum,
+    the views of party~$i$ would be distributed in the same way.
+As a binary judgement, the specification can be formalized as:
+\begin{equation}
+  \cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+  \end{conj*}
+  }
+  \withp{\m{\permap}}
+  \proves
+  \WP {\m<1:\p{MPSAdd},2:\p{MPSAdd}>}*{
+    \cpl*{
+    \begin{conj*}
+      \p x_1\at{\I1} = \p x_1\at{\I2}
+      \land
+      (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+      \land
+      \p{view}_1\at{\I1} = \p{view}_1\at{\I2}
+    \end{conj*}
+    }
+  }
+\label{multiparty:rel:goal}
+\end{equation}
+
+\medskip
+As a first result, we show that \thelogic{} can produce a proof for both specifications, one in unary style, the other in a relational-lifting style.
+This demonstrates how \thelogic{} supports both styles uniformly,
+making it possible to pick and choose the one that fits the prover's intuition
+best, or that turns out to be easier to carry out.
+
+Having two very different specification for the same property,
+however, begs the question of whether the two specifications are really
+equivalent; moreover, we would like to make the choice of how to \emph{prove}
+the property independent of how the property is represented.
+This is important, for example, because one proof strategy (\eg the relational)
+might be more convenient for some program, but we might then want to reuse
+the proven specification in a larger proof that might be conducted in a different style (\eg unary).
+Our second key result is that we show how we can derive one spec from the other
+\emph{within} \thelogic{}, thus showing that picking a style for proving the program does not inhibit the reuse of the result in a different style.
+This also illustrates the fitness of \thelogic{} as a tool for abstract
+meta-level reasoning:
+in pRHL or PSL/Lilac,
+the adequacy of a specification (or conversion between styles)
+needs to be proven outside of the logic.
+In \thelogic{} this can happen within the same logic that supports the proofs of the programs.
+
+The rest of the section is devoted to substantiating these claims,
+providing \thelogic{} proofs for:
+\begin{enumerate}
+  \item the unary specification;
+  \item the relationa specification (independently of the unary proof);
+  \item the equivalence of the two specifications.
+\end{enumerate}
+Although the third item would spare us from proving one of the first two,
+we provide direct proofs in the two styles to provide a point of comparison
+between them.
+
+
+\subsubsection{Proof of the unary specification}
+As a first step, we can apply the rules for loops and assignments to obtain
+the postcondition~$Q$:
+\begin{align*}
+  Q &= X * R_{12} * R_3 * S * \var{Sum}
+  &
+  R_{12} &=
+    \Sep_{i\in\set{1,2,3}} (
+      \distAs{\p{r[$i$][1]}}{\UnifZp}
+      *
+      \distAs{\p{r[$i$][2]}}{\UnifZp}
+    )
+  \\
+  X &= \distAs{(\p{x}_1, \p{x}_2, \p{x}_3)}{\prob_0}
+  &
+  R_{3} &=
+    \Sep_{i\in\set{1,2,3}}
+      \sure[\big]{\p{r[$i$][3]} = \p x_i-\p{r[$i$][1]}-\p{r[$i$][2]}}
+  \\
+  \var{Sum} &= \sure{ \p{sum} = \p{s[1]}+\p{s[2]}+\p{s[3]} }
+  &
+  S &= \sure*{
+        \LAnd_{i\in\set{1,2,3}}
+          \p{s[$i$]} = \p{r[1][$i$]}+\p{r[2][$i$]}+\p{r[3][$i$]}
+      }
+\end{align*}
+Now the goal is to show that $Q$ entails the postcondition of~\eqref{multiparty:unary:goal}.
+As a first step we transform~$X$ into $\distAs{(\p{x}_1, \p{x}_2 + \p{x}_2)}{\prob}$ by \ref{rule:dist-fun}.
+Then we condition on $(\p{x}_1, \p{x}_2 + \p{x}_3, \p{x}_2 \p{x}_3)$ and
+the variables in $R_{12}$, obtaining:
+\[
+  \CC{\prob'} (v_1,v_{23},v_2,v_3).
+  \begin{grp}
+    \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23} \land (\p x_2,\p x_3) = (v_2, v_3)} *
+    {}\\
+    \CC{\UnifZp} u_{11}. \CC{\UnifZp} u_{12}.
+    \CC{\UnifZp} u_{21}. \CC{\UnifZp} u_{22}.
+    \CC{\UnifZp} u_{31}. \CC{\UnifZp} u_{32}.
+    {}\\\qquad
+      \sure*{
+        \begin{conj*}
+\p{r[1][1]} = u_{11} \land*
+          \p{r[1][2]} = u_{12} \land*
+            \p{r[1][3]} = v_1 - u_{11} - u_{12}
+          \land
+\p{r[2][2]} = u_{22} \land*
+            \p{r[2][3]} = v_2 - u_{21} - u_{22}
+          \land
+\p{r[3][2]} = u_{32} \land*
+            \p{r[3][3]} = (v_{23}-v_2) - u_{31} - u_{32}
+          \land
+          \p{s[1]} = u_{11} + u_{21} + u_{31}
+          \land
+          \p{s[2]} = u_{12} + u_{22} + u_{32}
+          \land
+          \p{s[3]} = v_1 - u_{11} - u_{12} + v_2 - u_{21} - u_{22} + (v_{23} - v_2) - u_{31} - u_{32}
+          \land
+          \p{sum} = \p{s[1]} + \p{s[2]} + \p{s[3]}
+        \end{conj*}
+      }
+  \end{grp}
+\]
+Here $\prob' = \DO{ (x_1,x_2,x_3) <- \prob_0; \return (x_1,x_2+x_3,x_2) } $.
+We already weakened the assertion by forgetting the information about
+\p{r[2][1]} and \p{r[3][1]}, which are not part of $\p{view}_1$.
+
+Now we perform a change of variables thanks to \cref{rule:c-transf},
+to express our equalities in terms of
+$u_{21}' = u_{21}-v_2$ instead of $u_{21}$ and
+$u_{31}' = u_{31}-(v_{23}-v_2)$ instead of $u_{31}$.
+To justify the change we simply observe that, for all $n\in\Zp$,
+the function $ f_n(u) = u-n \mod p $ is a bijection and
+$ \UnifZp \circ \inv{f_n} = \UnifZp $.
+This gives us, with some simple arithmetic simplifications:
+\[
+  \CC{\prob'} (v_1,v_{23},v_2,v_3).
+  \begin{grp}
+    \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23} \land (\p x_2,\p x_3) = (v_2, v_3)} *
+    {}\\
+    \CC{\UnifZp} u_{11}. \CC{\UnifZp} u_{12}.
+    \CC{\UnifZp} u_{21}'. \CC{\UnifZp} u_{22}.
+    \CC{\UnifZp} u_{31}'. \CC{\UnifZp} u_{32}.
+    {}\\\qquad
+      \sure*{
+        \begin{conj*}
+          \p{r[1][1]} = u_{11} \land*
+          \p{r[1][2]} = u_{12} \land*
+            \p{r[1][3]} = v_1 - u_{11} - u_{12}
+          \land
+          \p{r[2][2]} = u_{22} \land*
+            \p{r[2][3]} = - u_{21}' - u_{22}
+          \land
+          \p{r[3][2]} = u_{32} \land*
+            \p{r[3][3]} = - u_{31}' - u_{32}
+          \land
+          \p{s[1]} = u_{11} + u_{21}' + u_{31}'+v_{23}
+          \land
+          \p{s[2]} = u_{12} + u_{22} + u_{32}
+          \land
+          \p{s[3]} = v_1 - u_{11} - u_{12} - u_{21}' - u_{22} - u_{31}' - u_{32}
+          \land
+          \p{sum} = \p{s[1]} + \p{s[2]} + \p{s[3]}
+        \end{conj*}
+      }
+  \end{grp}
+\]
+In particular we removed all dependencies on $v_2$ from the inner formula.
+We can now apply \ref{rule:c-assoc} to collapse all the inner conditioning
+into a single one:
+\[
+  \CC{\prob'} (v_1,v_{23},v_2,v_3).
+  \begin{grp}
+    \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23} \land (\p x_2,\p x_3) = (v_2, v_3)} *
+    {}\\
+    \CC{U(v_1,v_{23})} \m{u}.
+      \sure*{\p{view}_1 = \m{u }}
+  \end{grp}
+\]
+where $U(v_1,v_{23}) = (\DO{\m{v}<-\UnifZp \pprod \dots \pprod \UnifZp; \return g(\m{v})})$ takes the six independent samples from $\UnifZp$ and returns
+the values for each of the components of $\p{view}_1$ (which justifies the dependency on $v_1$ and $v_{23}$).
+Finally, we split $\prob' = \bind(\prob, \krnl)$ obtaining:
+\begin{eqexplain}
+  &
+  \CC{\prob'} (v_1,v_{23},v_2,v_3).
+  \begin{grp}
+    \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23} \land (\p x_2,\p x_3) = (v_2, v_3)} *
+    {}\\
+    \CC{U(v_1,v_{23})} \m{u}.
+      \sure*{\p{view}_1 = \m{u }}
+  \end{grp}
+  \whichproves
+\CC{\prob'} (v_1,v_{23},v_2,v_3).
+  \begin{grp}
+    \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23}} *
+    {}\\
+    \sure{(\p{x}_2, \p{x}_3) = (v_2, v_3)} *
+    {}\\
+      \distAs{\p{view}_1}{U(v_1,v_{23})}
+  \end{grp}
+  \byrules{sure-merge,c-unit-r}
+  \whichproves
+\CC{\tilde{\prob}_0} (v_1,v_{23}).
+  \begin{grp}
+  \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23}} *
+    {}\\
+  \CC{\krnl(v_1,v_{23})} (v_2,v_3).
+    {}\\\quad
+  \bigl(
+    \sure{(\p{x}_2, \p{x}_3) = (v_2, v_3)} *
+    \distAs{\p{view}_1}{U(v_1,v_{23})}
+  \bigr)
+  \end{grp}
+  \byrules{c-unassoc,sure-str-convex}
+  \whichproves
+\CC{\tilde{\prob}_0} (v_1,v_{23}).
+  \begin{grp}
+  \sure{\p{x}_1 = v_1 \land (\p{x}_2 + \p{x}_3) = v_{23}} *
+    {}\\
+    \distAs{(\p{x}_2, \p{x}_3)}{\krnl(v_1,v_{23})} *
+    \distAs{\p{view}_1}{U(v_1,v_{23})}
+  \end{grp}
+  \byrules{c-extract}
+  \whichproves
+\CC {\tilde{\prob}_0} {(v_1, v_{23})}.
+  \begin{grp}
+    \sure{\p x_1 = v_1 \land (\p x_2 + \p x_3)=v_{23}} * {}
+    \\
+    \distAs{\p{view}_1}{U(v_1,v_{23})} *
+    \E \prob_{23}.\distAs{(\p x_2,\p x_3)}{\prob_{23}}
+  \end{grp}
+\end{eqexplain}
+
+\noindent
+This gets us the desired postcondition, and concludes the proof.
+
+\subsubsection{Proof of the relational specification}
+
+We now want to prove the goal~\eqref{multiparty:rel:goal}
+using the relational lifting technique,
+\ie inducing a suitable coupling between the variables of the two components.
+Starting from precondition
+$
+  \cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land*
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+  \end{conj*}
+  },
+$
+we can proceed just like in the unary proof, blindly applying the loop and assignment rules obtaining (reusing the assertions of the previous section):
+\begin{align*}
+  \cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+  \end{conj*}
+  }
+  *
+  \begin{grp}
+    R_{12}\at{\I1} * R_3\at{\I1} * S\at{\I1} * \var{Sum}\at{\I1}
+    *{}\\
+    R_{12}\at{\I2} * R_3\at{\I2} * S\at{\I2} * \var{Sum}\at{\I2}
+  \end{grp}
+\end{align*}
+Now the main task is to couple the sources of randomness
+in $R_{12}$ so that the views of~1 coincide in the two components.
+The idea is that if we can induce a coupling where
+$
+  r[2][1]\at{\I1} =
+    r[2][1]\at{\I2} + (\p{x}_2\at{\I1} - \p{x}_2\at{\I2})
+$ and $
+  r[3][1]\at{\I1} =
+    r[3][1]\at{\I2} + (\p{x}_3\at{\I1} - \p{x}_3\at{\I2})
+$
+then we would obtain $\p{view}_1\at{\I1}=\p{view}_1\at{\I2}$.
+To implement the idea we combine two observations:
+\begin{enumerate*}
+  \item we can induce the desired coupling if we are under conditioning
+        of $\p{x}_2$ and $\p{x}_3$ on both indices;
+        a conditioning that is already happening in the relational lifting
+        of the precondition;
+  \item the coupling is valid because addition of some constant modulo~$p$
+        to a uniformly distributed variable, gives a uniformly distributed variable (an observation we also exploited in the unary proof).
+\end{enumerate*}
+
+Formally, we first unfold the definition of the relational lifting
+to reveal the \supercond\ on $\p{x}_1$, $\p{x}_2$, and $\p{x}_3$,
+and move the other resources inside the conditioning by \ref{rule:c-frame}:
+\begin{eqexplain}
+  &
+  \cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+  \end{conj*}
+  }
+  *
+  \begin{grp}
+    R_{12}\at{\I1} * R_3\at{\I1} * S\at{\I1} * \var{Sum}\at{\I1}
+    *{}\\
+    R_{12}\at{\I2} * R_3\at{\I2} * S\at{\I2} * \var{Sum}\at{\I2}
+  \end{grp}
+  \whichproves
+\E \hat\prob.
+  \CC{\hat\prob} \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+  }.
+  \begin{grp}
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3}     * {}\\
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}} * {}\\
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}}
+  \end{grp}
+  *
+  \begin{grp}
+    R_{12}\at{\I1} * R_3\at{\I1} * S\at{\I1} * \var{Sum}\at{\I1}
+    *{}\\
+    R_{12}\at{\I2} * R_3\at{\I2} * S\at{\I2} * \var{Sum}\at{\I2}
+  \end{grp}
+  \whichproves
+\E \hat\prob.
+  \CC{\hat\prob} \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+  }.
+  \begin{grp}
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3}* {}\\
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}} *
+    R_{12}\at{\I1} * R_3\at{\I1} * S\at{\I1} * \var{Sum}\at{\I1}
+    * {}\\
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}} *
+    R_{12}\at{\I2} * R_3\at{\I2} * S\at{\I2} * \var{Sum}\at{\I2}
+  \end{grp}
+  \byrule{c-frame}
+\end{eqexplain}
+
+Now by using \ref{rule:c-cons}, we can induce a coupling inside the condtioning.
+By using \ref{rule:coupling} we obtain:
+\begin{eqexplain}
+  R_{12}\at{\I1} * R_{12}\at{\I2}
+  \whichproves*
+\begin{grp}
+  \Sep_{i\in\set{1,2,3}} (
+    \distAs{\p{r[$i$][1]}\at{\I1}}{\UnifZp}
+    *
+    \distAs{\p{r[$i$][2]}\at{\I1}}{\UnifZp}
+  )
+  * {}\\
+  \Sep_{i\in\set{1,2,3}} (
+    \distAs{\p{r[$i$][1]}\at{\I2}}{\UnifZp}
+    *
+    \distAs{\p{r[$i$][2]}\at{\I2}}{\UnifZp}
+  )
+  \end{grp}
+  \whichproves
+\cpl*{
+    \begin{conj*}
+      \p{r[1][1]}\at{\I1}=\p{r[1][1]}\at{\I2}
+      \land
+      \LAnd_{i\in\set{1,2,3}}
+        \p{r[i][2]}\at{\I1}= \p{r[i][2]}\at{\I2}
+      \land
+      \p{r[2][1]}\at{\I1}=\p{r[2][1]}\at{\I2}+(v_2-w_2)
+      \land
+      \p{r[3][1]}\at{\I1}=\p{r[3][1]}\at{\I2}+(v_3-w_3)
+    \end{conj*}
+  }
+  \byrule{coupling}
+\end{eqexplain}
+The application of \ref{rule:coupling} is supported by the coupling
+\[
+  \prob = \DO{
+    (u_1,\dots,u_6) <- \UnifZp^{(6)};
+    \return
+      \begin{grp}
+      (u_1,u_2,u_3+(v_2-w_2),u_4,u_5+(v_3-w_3),u_6), \\
+      (u_1,u_2,u_3,u_4,u_5,u_6)
+      \end{grp}
+  }
+\]
+where $ \UnifZp^{(6)} $ is the independent product of 6 $\UnifZp$.
+The joint distribution~$\prob$ satisfies
+$\prob \circ \inv{\proj_1} = \UnifZp^{(6)}$,
+$\prob \circ \inv{\proj_2} = \UnifZp^{(6)}$;
+note that $\UnifZp^{(6)}$ is the distribution of
+$ (\p{r[1][1]},\p{r[1][2]},\p{r[2][1]},\p{r[3][1]},\p{r[3][2]}) $
+at both indices $\I1$ and $\I2$ (by $R_{12}$).
+
+Now we can merge the relational lifting with the other almost sure
+facts we have under conditioning, simplify and apply \ref{rule:rl-convex}
+to obtain the desired unconditional coupling:
+\begin{eqexplain}
+  &
+  \CC{\hat\prob} \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+  }.
+  \begin{grp}
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3}* {}\\
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}} *
+    R_{12}\at{\I1} * R_3\at{\I1} * S\at{\I1} * \var{Sum}\at{\I1}
+    * {}\\
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}} *
+    R_{12}\at{\I2} * R_3\at{\I2} * S\at{\I2} * \var{Sum}\at{\I2}
+  \end{grp}
+  \whichproves
+\CC{\hat\prob} \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+  }.
+  \begin{grp}
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3}* {}\\
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}} *
+     R_3\at{\I1} * S\at{\I1} * \var{Sum}\at{\I1}
+    * {}\\
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}} *
+     R_3\at{\I2} * S\at{\I2} * \var{Sum}\at{\I2}
+   * {}\\
+   \cpl*{
+     \begin{conj*}
+       \p{r[1][1]}\at{\I1}=\p{r[1][1]}\at{\I2}
+       \land
+       \LAnd_{i\in\set{1,2,3}}
+         \p{r[i][2]}\at{\I1}= \p{r[i][2]}\at{\I2}
+       \land
+       \p{r[2][1]}\at{\I1}=\p{r[2][1]}\at{\I2}+(v_2-w_2)
+       \land
+       \p{r[3][1]}\at{\I1}=\p{r[3][1]}\at{\I2}+(v_3-w_3)
+     \end{conj*}
+   }
+  \end{grp}
+  \whichproves
+\CC{\hat\prob} \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+  }.
+   \cpl*{
+    \begin{conj*}
+      v_1=w_1 \land* v_2+v_3=w_2+w_3
+      \land
+      \p{r[1][1]}\at{\I1}=\p{r[1][1]}\at{\I2}
+      \land
+      \LAnd_{i\in\set{1,2,3}}
+        \p{r[i][2]}\at{\I1}= \p{r[i][2]}\at{\I2}
+      \land
+      \p{r[2][1]}\at{\I1}=\p{r[2][1]}\at{\I2}+(v_2-w_2)
+      \land
+      \p{r[3][1]}\at{\I1}=\p{r[3][1]}\at{\I2}+(v_3-w_3)
+      \land
+      \LAnd_{i\in\set{1,2,3}}
+       \p x_i\at{\I1} = v_i \land*
+       \p x_i\at{\I2} = w_i
+      \land
+      \LAnd_{i\in\set{1,2,3}}
+        (\p{r[$i$][3]} = \p x_i-\p{r[$i$][1]}-\p{r[$i$][2]})\at{\I1}
+      \land \dots
+    \end{conj*}
+   }
+  \byrule{rl-sure-merge}
+  \whichproves
+\CC{\hat\prob} \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+  }.
+    \cpl*{
+    \begin{conj*}
+      \p x_1\at{\I1} = \p x_1\at{\I2}
+      \land
+      (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+      \land
+      \p{view}_1\at{\I1} = \p{view}_1\at{\I2}
+    \end{conj*}
+    }
+  \byrule{rl-cons}
+  \whichproves
+\cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+    \land
+    \p{view}_1\at{\I1} = \p{view}_1\at{\I2}
+  \end{conj*}
+  }
+  \byrule{rl-convex}
+\end{eqexplain}
+
+
+\subsubsection{Proof of equivalence of the two specifications}
+
+Now we prove that one can prove the relational specification from the unary one,
+and vice versa.
+
+
+\paragraph{From unary to relational}
+We want to show that
+assuming the unary specification \eqref{multiparty:unary:goal} holds,
+we can derive the relational specification \eqref{multiparty:rel:goal}.
+We first need to bridge the gap between having one component
+in the assumption and two in the consequence.
+This is actually easy: the proof of \eqref{multiparty:unary:goal} is
+completely parametric in the index chosen for the program,
+so the same proof can prove two specifications, one where the index of the term is \I1 and one where it is \I2.
+As a side note, this ``reindexing'' argument can be made into a rule of the logic following the LHC approach~\cite{d2022proving} but we do not do this
+in this paper so we can focus on the novel aspects of the logic.
+More formally, let~$P(\prob_0)$ and~$Q(\prob_0)$ be the precondition and the postcondition
+of the unary specification \eqref{multiparty:unary:goal}.
+Furthermore, let~$ \cpl{R_1} $ and $ \cpl{R_2} $ be the precondition and postcondition of the relational specification~\eqref{multiparty:rel:goal}.
+
+First we can infer a binary spec from two unary instances of the unary spec,
+for arbitrary $\prob_1,\prob_2 \of \Dist(\Zp^3)$:
+\begin{equation}
+  \infer* {P(\prob_1)\at{\I1}
+    \proves
+    \WP {\m[\I1: \p{MPSAdd}]} {
+      Q(\prob_1)\at{\I1}
+    }
+    \\\\
+    P(\prob_2)\at{\I2}
+    \proves
+    \WP {\m[\I2: \p{MPSAdd}]} {
+      Q(\prob_2)\at{\I2}
+    }
+  }{
+    \begin{conj}
+    P(\prob_1)\at{\I1} \land P(\prob_2)\at{\I2}
+    \end{conj}
+    \proves
+    \WP {\m<1: \p{MPSAdd}, 2: \p{MPSAdd}>}*{
+      \begin{conj*}
+      Q(\prob_1)\at{\I1} \land Q(\prob_2)\at{\I2}
+      \end{conj*}
+    }
+  }
+  \label{multiparty:u2b:dup}
+\end{equation}
+
+Recalling from \eqref{multiparty:unary:goal}
+that $ {
+  \tilde{\prob} = \left(\DO{(x_1,x_2,x_3) <- \prob; \return (x_1,x_2+x_3)}\right)
+} $,
+ the proof works by showing:
+\begin{gather}
+  \cpl{R_1}
+  \proves
+  \E \prob_1,\prob_2.
+  (P(\prob_1)\at{\I1} \land P(\prob_2)\at{\I2})
+  *\pure{\tilde\prob_1=\tilde\prob_2}
+  \label{multiparty:u2b:prec}
+  \\
+Q(\prob_1)\at{\I1} \land Q(\prob_2)\at{\I2}
+  *\pure{\tilde\prob_1=\tilde\prob_2}
+\proves
+  \cpl{R_2}
+  \label{multiparty:u2b:post}
+\end{gather}
+From \eqref{multiparty:u2b:prec} we obtain $\prob_1$ and $\prob_2$
+with which to instantiate \eqref{multiparty:u2b:dup},
+and that the precondition of \eqref{multiparty:u2b:dup} holds.
+Then, by applying \ref{rule:wp-cons} to the conclusion of
+\eqref{multiparty:u2b:dup} and \eqref{multiparty:u2b:post}
+we obtain the desired relational specification \eqref{multiparty:rel:goal}.
+
+Entailment~\eqref{multiparty:u2b:prec} is obtained in the same way one proves
+\ref{rule:rl-eq-dist}:
+\begin{eqexplain}
+  \cpl*{
+  \begin{conj*}
+    \p x_1\at{\I1} = \p x_1\at{\I2}
+    \land
+    (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+  \end{conj*}
+  }
+  \whichproves*
+\E {\hat\prob}.
+  \pure{\hat\prob(R_1)=1} *
+  \CC{\hat\prob} \left(
+    \svec{
+    v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+    }
+  \right).
+    \begin{conj}
+      \sure{\p x_i\at{\I1}=v_i}_{i\in\set{1,2,3}} \land
+      \sure{\p x_i\at{\I2}=w_i}_{i\in\set{1,2,3}}
+    \end{conj}
+  \whichproves
+\E {\hat\prob}.
+  \pure{\hat\prob(R_1)=1} *
+  \begin{conj}
+    \CC{\hat\prob} \left(
+      \svec{
+      v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+      }
+    \right).
+      \sure{\p x_i\at{\I1}=v_i}_{i\in\set{1,2,3}}
+    \land
+    \CC{\hat\prob} \left(
+      \svec{
+      v_1,&v_2,&v_3\\w_1,&w_2,&w_3
+      }
+    \right).
+      \sure{\p x_i\at{\I2}=w_i}_{i\in\set{1,2,3}}
+    \end{conj}
+  \whichproves
+\E {\hat\prob}.
+  \pure{\hat\prob(R_1)=1} *
+  \begin{conj}
+    \CC{\hat\prob\circ\inv{\proj_1}} (v_1,v_2,v_3).
+      \sure{\p x_i\at{\I1}=v_i}_{i\in\set{1,2,3}}
+    \land
+    \CC{\hat\prob\circ\inv{\proj_2}} (w_1,w_2,w_3).
+      \sure{\p x_i\at{\I2}=w_i}_{i\in\set{1,2,3}}
+  \end{conj}
+  \whichproves
+\E \prob_1,\prob_2.
+  \begin{conj}
+    \distAs{(\p{x}_1, \p{x}_2, \p{x}_3)\at{\I1}}{\prob_1}
+    \land
+    \distAs{(\p{x}_1, \p{x}_2, \p{x}_3)\at{\I2}}{\prob_2}
+  \end{conj}
+  * \pure{\tilde\prob_1=\tilde\prob_2}
+\end{eqexplain}
+The last step is justified by letting
+$\prob_1 = \hat\prob\circ\inv{\proj_1}$ and
+$\prob_2 = \hat\prob\circ\inv{\proj_2}$,
+noting that $ \hat\prob(R_1)=1 $ implies $\tilde\prob_1=\tilde\prob_2$.
+
+Finally, we prove \eqref{multiparty:u2b:post}.
+Under the assumption $\tilde\prob_1=\tilde\prob_2$
+we know that there is some coupling $\hat\prob$
+such that
+$ \hat\prob\circ\inv{\proj_1} = \tilde\prob_1 =
+  \tilde\prob_2 = \hat\prob\circ\inv{\proj_2} $, and
+$ \hat\prob(R)=1 $ where
+$ R = \set{ ((v_1,v_{23}), (v_1,v_{23})) | v_1,v_{23} \in \Zp } $.
+\begin{eqexplain}
+  &
+  \begin{grp}
+    \CC {\tilde{\prob}_1} {(v_1, v_{23})}.
+    \begin{grp}
+      \sure{\p x_1\at{\I1} = v_1 \land (\p x_2 + \p x_3)\at{\I1}=v_{23}} * {}
+      \\
+      \distAs{\p{view}_1\at{\I1}}{U(v_1,v_{23})} *
+      \E \prob_{23}.\distAs{(\p x_2,\p x_3)\at{\I1}}{\prob_{23}}
+    \end{grp}
+    \\
+    \CC {\tilde{\prob}_2} {(w_1, w_{23})}.
+    \begin{grp}
+      \sure{\p x_1\at{\I2} = w_1 \land (\p x_2 + \p x_3)\at{\I2}=w_{23}} * {}
+      \\
+      \distAs{\p{view}_1\at{\I2}}{U(w_1,w_{23})} *
+      \E \prob_{23}.\distAs{(\p x_2,\p x_3)\at{\I2}}{\prob_{23}}
+    \end{grp}
+  \end{grp}
+  \whichproves
+\begin{grp}
+    \CC {\hat\prob} \svec{
+      v_1,& v_{23}\\w_1,& w_{23}
+    }.
+    \begin{grp}
+      \sure{\p x_1\at{\I1} = v_1 \land (\p x_2 + \p x_3)\at{\I1}=v_{23}} * {}
+      \\
+      \distAs{\p{view}_1\at{\I1}}{U(v_1,v_{23})} *
+      \E \prob_{23}.\distAs{(\p x_2,\p x_3)\at{\I1}}{\prob_{23}}
+    \end{grp}
+    \\
+    \CC {\hat\prob} \svec{
+      v_1,& v_{23}\\w_1,& w_{23}
+    }.
+    \begin{grp}
+      \sure{\p x_1\at{\I2} = w_1 \land (\p x_2 + \p x_3)\at{\I2}=w_{23}} * {}
+      \\
+      \distAs{\p{view}_1\at{\I2}}{U(w_1,w_{23})} *
+      \E \prob_{23}.\distAs{(\p x_2,\p x_3)\at{\I2}}{\prob_{23}}
+    \end{grp}
+  \end{grp}
+  \byrule{c-sure-proj}
+  \whichproves
+\CC {\hat\prob} \svec{
+    v_1,& v_{23}\\w_1,& w_{23}
+  }.
+  \begin{grp}
+    \sure{\p x_1\at{\I1} = v_1 \land (\p x_2 + \p x_3)\at{\I1}=v_{23}}
+    \\
+    \sure{\p x_1\at{\I2} = w_1 \land (\p x_2 + \p x_3)\at{\I2}=w_{23}}
+    \\
+    \distAs{\p{view}_1\at{\I1}}{U(v_1,v_{23})} *
+    \E \prob_{23}.\distAs{(\p x_2,\p x_3)\at{\I1}}{\prob_{23}}
+    \\
+    \distAs{\p{view}_1\at{\I2}}{U(w_1,w_{23})} *
+    \E \prob_{23}.\distAs{(\p x_2,\p x_3)\at{\I2}}{\prob_{23}}
+    \\
+    \pure{v_1=w_1 \land v_{23}=w_{23}}
+  \end{grp}
+  \byrule{c-and}
+  \whichproves
+\E \krnl_1, \krnl_2.
+  \CC {\hat\prob} \svec{
+    v_1,& v_{23}\\w_1,& w_{23}
+  }.
+  \begin{grp}
+    \sure{\p x_1\at{\I1} = v_1 \land (\p x_2 + \p x_3)\at{\I1}=v_{23}}
+    \\
+    \sure{\p x_1\at{\I2} = w_1 \land (\p x_2 + \p x_3)\at{\I2}=w_{23}}
+    \\
+\cpl{\p{view}_1\at{\I1}=\p{view}_1\at{\I2}}
+    \\
+\distAs{(\p x_2,\p x_3)\at{\I1}}{\krnl_1(v_1, v_{23},w_1,w_{23})}
+    \\
+    \distAs{(\p x_2,\p x_3)\at{\I2}}{\krnl_2(v_1, v_{23},w_1,w_{23})}
+    \\
+    \pure{v_1=w_1 \land v_{23}=w_{23}}
+  \end{grp}
+  \byrules{c-skolem,coupling}
+  \whichproves
+\E \krnl_1, \krnl_2.
+  \CC {\hat\prob} \svec{
+    v_1,& v_{23}\\w_1,& w_{23}
+  }.
+  \begin{grp}
+    \sure{\p x_1\at{\I1} = v_1 \land (\p x_2 + \p x_3)\at{\I1}=v_{23}}
+    \\
+    \sure{\p x_1\at{\I2} = w_1 \land (\p x_2 + \p x_3)\at{\I2}=w_{23}}
+    \\
+    \cpl{\p{view}_1\at{\I1}=\p{view}_1\at{\I2}}
+    \\
+    \CC{\krnl_1(v_1, v_{23},w_1,w_{23})} (v_2,v_3).
+    \sure{(\p x_2,\p x_3)\at{\I1} = (v_1,v_2)}
+    \\
+    \CC{\krnl_2(v_1, v_{23},w_1,w_{23})} (w_2,w_3).
+    \sure{(\p x_2,\p x_3)\at{\I2} = (w_1,w_2)}
+    \\
+    \pure{v_1=w_1 \land v_{23}=w_{23}}
+  \end{grp}
+  \byrules{c-unit-r}
+  \whichproves
+\E \hat\prob_1.
+  \CC {\hat\prob_1} \svec{
+    v_1,& v_{23},& v_2,& v_3\\w_1,& w_{23},& w_2,& w_3
+  }.
+  \begin{grp}
+    \sure{\p x_1\at{\I1} = v_1 \land (\p x_2 + \p x_3)\at{\I1}=v_{23}}
+    \\
+    \sure{\p x_1\at{\I2} = w_1 \land (\p x_2 + \p x_3)\at{\I2}=w_{23}}
+    \\
+    \cpl{\p{view}_1\at{\I1}=\p{view}_1\at{\I2}}
+    \\
+    \sure{(\p x_2,\p x_3)\at{\I1} = (v_1,v_2)}
+    \\
+    \sure{(\p x_2,\p x_3)\at{\I2} = (w_1,w_2)}
+    \\
+    \pure{v_1=w_1 \land v_{23}=w_{23}}
+  \end{grp}
+  \byrules{c-frame,c-assoc}
+  \whichproves
+\E \hat\prob_2.
+  \CC {\hat\prob_2} \svec{
+    v_1,& v_2,& v_3\\w_1,& w_2,& w_3
+  }.
+  \begin{grp}
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}}
+    \land
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}}
+    \\
+    \cpl{\p{view}_1\at{\I1}=\p{view}_1\at{\I2}}
+    \\
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3}
+  \end{grp}
+  \byrules{c-transf}
+  \whichproves
+\E \hat\prob_2.
+  \CC {\hat\prob_2} (\m{v},\m{w}).
+  \begin{grp}
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}}
+    \land
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}}
+    \\
+    \E {\hat\nu}.
+      \CC{\hat\nu} (\m{u}_1,\m{u}_2).
+        \sure{\p{view}_1\at{\I1}=\m{u}_1}\land
+        \sure{\p{view}_1\at{\I2}=\m{u}_2}\land
+        \pure{\m{u}_1=\m{u}_2}
+    \\
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3}
+  \end{grp}
+  \bydef
+  \whichproves
+\E \hat\prob_3.
+  \CC {\hat\prob_3} (\m{v},\m{w},\m{u}_1,\m{u}_2).
+  \begin{grp}
+    \sure{\p x_i\at{\I1} = v_i}_{i\in\set{1,2,3}}
+    \land
+    \sure{\p x_i\at{\I2} = w_i}_{i\in\set{1,2,3}}
+    \\
+    \sure{\p{view}_1\at{\I1}=\m{u}_1}\land
+    \sure{\p{view}_1\at{\I2}=\m{u}_2}\land
+    \\
+    \pure{v_1=w_1 \land v_2+v_3=w_2+w_3 \land \m{u}_1=\m{u}_2}
+  \end{grp}
+  \byrules{c-skolem,c-assoc}
+  \whichproves
+\cpl*{
+    \begin{conj*}
+      \p x_1\at{\I1} = \p x_1\at{\I2}
+      \land
+      (\p x_2+\p x_3)\at{\I1} = (\p x_2+\p x_3)\at{\I2}
+      \land
+      \p{view}_1\at{\I1} = \p{view}_1\at{\I2}
+    \end{conj*}
+  }
+  \bydef
+\end{eqexplain}
+
+
+
+\paragraph{From relational to unary}
+The proof in the reverse direction follows the same strategy as the unary to relational direction, except the entailments between preconditions and postconditions are reversed; their proof steps in the previous section are however reversible, so we do not repeat the proof here.
+There is one niggle:
+what we can derive from the relational specification is the judgment
+$
+  P(\prob_0)\at{\I1} \land P(\prob_0)\at{\I2}
+  \proves
+  \WP {\m[\I1: \p{MPSAdd}, \I2: \p{MPSAdd}]}*{
+    Q(\prob_0)\at{\I1} \land Q(\prob_0)\at{\I2}
+  }
+$
+which in fact implies the unary specification (by ignoring component \I2),
+but we have not provided \thelogic\ with rules to eliminate components.
+The issue has been solved in LHC~\cite{d2022proving} with
+the \emph{projection modality}
+$ \P i. P = \fun a. \exists b\st P(a\m[i: b]) $,
+which supports the principle
+\[
+  \infer*[lab=wp-proj]{
+    P \proves \WP {\m{t}} {Q}
+  }{
+    \P i. P \proves \WP {(\m{t}\setminus i)} {\P i.Q}
+  }
+\]
+The rule is sound in \thelogic\ model and could be used to fill this (small) gap
+since
+$
+  P(\prob_0)\at{\I1}
+  \proves
+  \P\I2.\bigl(P(\prob_0)\at{\I1} \land P(\prob_0)\at{\I2}\bigr)
+$ and
+$
+  \P\I2.\bigl(Q(\prob_0)\at{\I1} \land Q(\prob_0)\at{\I2}\bigr)
+  \proves
+  Q(\prob_0)\at{\I1}
+$.
+We did not emphasize projection in this paper to avoid distracting from the main novel contributions.

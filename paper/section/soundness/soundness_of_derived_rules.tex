@@ -1,0 +1,1089 @@
+\subsection{Soundness of Derived Rules}
+\label{sec:appendix:derived-rules}
+
+
+In this section we provide derivations for the rules we claim
+are derivable in \thelogic.
+
+
+\subsubsection{Ownership and Distributions}
+\begin{lemma}
+\label{proof:sure-dirac}
+  \Cref{rule:sure-dirac} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \distAs{E\at{i}}{\delta_v}
+\whichisequiv*
+    \E \m{\sigmaF}, \m{\prob}.
+      \Own{(\m{\sigmaF}, \m{\prob})}
+      *
+      \pure{\m{\prob} \circ \inv{E\at{i}} = \dirac{v}}
+\whichisequiv
+    \E \m{\sigmaF}, \m{\prob}.
+      \Own{(\m{\sigmaF}, \m{\prob})}
+      *
+      \pure{\m{\prob} \circ \inv{(E\at{i} = v)} = \dirac{\True}}
+\whichisequiv
+    \sure{E\at{i} = v}
+\qedhere
+  \end{eqexplain}
+\end{proof} \begin{lemma}
+\label{proof:sure-eq-inj}
+  \Cref{rule:sure-eq-inj} is sound.
+\end{lemma}
+
+\begin{proof}
+\begin{eqexplain}
+  \sure{\aexpr\at{i} = v}
+  *
+  \sure{\aexpr\at{i} = v'}
+\whichproves*
+  \distAs{\aexpr\at{i}}{\dirac{v}}
+  *
+  \distAs{\aexpr\at{i}}{\dirac{v'}}
+  \byrule{sure-dirac}
+\whichproves
+  \distAs{\aexpr\at{i}}{\dirac{v}}
+  \land
+  \distAs{\aexpr\at{i}}{\dirac{v'}}
+\whichproves
+  \pure{\dirac{v}=\dirac{v'}}
+  \byrule{dist-inj}
+\whichproves
+  \pure{v=v'}
+\qedhere
+\end{eqexplain}
+\end{proof} \begin{lemma}
+\label{proof:sure-sub}
+  \Cref{rule:sure-sub} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+\distAs{\aexpr_1\at{i}}{\prob}
+    *
+    \sure{(\aexpr_2 = f(\aexpr_1))\at{i}}
+  \whichproves*
+    \CC\prob v.
+      \sure{\aexpr_1\at{i} = v}
+      *
+      \sure{(\aexpr_2 = f(\aexpr_1))\at{i}}
+  \byrules{c-unit-r,c-frame}
+\whichproves
+    \CC\prob v.
+      \sure{\aexpr_1\at{i} = v \land \aexpr_2\at{i} = f(\aexpr_1\at{i})}
+  \byrule{sure-merge}
+\whichproves
+    \CC\prob v. \sure{\aexpr_2\at{i} = f(v)}
+  \byrule{c-cons}
+\whichproves
+    \CC\prob v. \CC{\dirac{f(v)}} \pr{v}.\sure{\aexpr_2\at{i} = \pr{v}}
+  \byrule{c-unit-l}
+\whichproves
+    \CC{\pr{\prob}} \pr{v}.\sure{\aexpr_2\at{i} = \pr{v}}
+  \byrules{c-assoc,c-sure-proj}
+  \end{eqexplain}
+  where $\pr{\prob} = \bind(\prob, \fun x. \dirac{f(x)}) = \prob \circ \inv{f}$.
+  By \ref{rule:c-unit-r} we thus get
+  $\distAs{\aexpr_2\at{i}}{\prob \circ \inv{f}}$.
+\end{proof} \begin{lemma}
+\label{proof:dist-fun}
+  \Cref{rule:dist-fun} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume $E\from \Store \to A$ and $ f \from A \to B $, then:
+  \begin{eqexplain}
+    \distAs{\aexpr\at{i}}{\prob}
+\whichproves*
+      \CC\prob v. \sure{(\aexpr = v)\at{i}}
+    \byrules{c-unit-r}
+\whichproves
+      \CC\prob v. \sure{(f\circ\aexpr)\at{i} = f(v)}
+    \byrules{c-cons}
+\whichproves
+      \CC\prob v. \CC{\dirac{f(v)}} \pr{v}.\sure{(f\circ\aexpr)\at{i} = \pr{v}}
+    \byrule{c-unit-l}
+\whichproves
+      \CC{\pr{\prob}} \pr{v}.\sure{(f\circ\aexpr)\at{i} = \pr{v}}
+    \byrules{c-assoc,c-sure-proj}
+  \end{eqexplain}
+  where $\pr{\prob} = \bind(\prob, \fun x. \dirac{f(x)}) = \prob \circ \inv{f}$.
+  By \ref{rule:c-unit-r} we thus get
+  $\distAs{(f\circ\aexpr)\at{i}}{\prob \circ \inv{f}}$.
+\end{proof} \begin{lemma}
+\label{proof:dirac-dup}
+  \Cref{rule:dirac-dup} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \distAs{E\at{i}}{\dirac{v}}
+    \whichproves*
+    \sure{E\at{i} = v}
+    \byrule{sure-dirac}
+    \whichproves
+    \sure{E\at{i} = v} \ast \sure{E\at{i} = v}
+    \byrule{sure-merge}
+    \whichproves
+    \distAs{E\at{i}}{\dirac{v}} * \distAs{E\at{i}}{\dirac{v}}
+    \byrule{sure-dirac}
+  \end{eqexplain}
+\end{proof} \begin{lemma}
+\label{proof:dist-supp}
+  \Cref{rule:dist-supp} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \distAs{E\at{i}}{\mu}
+    \whichproves*
+    \CMod{\mu} v. \sure{E\at{i} = v}
+    \byrule{c-unit-r}
+    \whichproves
+    \pure{\mu(\psupp(\mu)) = 1} \ast
+    \CMod{\mu} v. \sure{E\at{i} = v}
+    \whichproves
+    \CMod{\mu} v. \big(\pure{v \in \psupp(\mu)} \ast \sure{E\at{i} = v}\big)
+    \byrule{c-pure}
+    \whichproves
+    \CMod{\mu} v. \big(\sure{E\at{i} = v} \ast \sure{E\at{i} \in \psupp(\mu)} \big)
+\whichproves
+    \big(\CMod{\mu} v.\sure{E\at{i} = v}\big)
+    \ast \sure{E\at{i} \in \psupp(\mu)}
+    \byrule{sure-str-convex}
+    \whichproves
+    \distAs{E\at{i}}{\mu}
+    \ast \sure{E\at{i} \in \psupp(\mu)}
+    \byrule{c-unit-r}
+  \end{eqexplain}
+\end{proof} \begin{lemma}
+\label{proof:prod-unsplit}
+  \Cref{rule:prod-unsplit} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \distAs{\aexpr_1\at{i}}{\prob_1} *
+    \distAs{\aexpr_2\at{i}}{\prob_2}
+    \whichproves*
+    \CC{\prob_1} v_1.
+    \CC{\prob_2} v_2.
+    \bigl(
+      \sure{\aexpr_1\at{i} = v_1} *
+      \sure{\aexpr_2\at{i} = v_2}
+    \bigr)
+    \byrules{c-unit-r,c-frame}
+\whichproves
+    \CC{\prob_1} v_1.
+    \CC{\prob_2} v_2.
+      \sure{(\aexpr_1, \aexpr_2)\at{i} = (v_1, v_2)}
+    \byrules{sure-merge}
+\whichproves
+    \CC{\prob_1 \pprod \prob_2} (v_1,v_2).
+      \sure{(\aexpr_1, \aexpr_2)\at{i} = (v_1, v_2)}
+    \byrules{c-assoc}
+\whichproves
+    \distAs{(\aexpr_1\at{i}, \aexpr_2\at{i})}{\prob_1 \otimes \prob_2}
+    \byrule{c-unit-r}
+  \end{eqexplain}
+\end{proof}
+ 
+\subsubsection{\Supercond}
+\begin{lemma}
+\label{proof:c-fuse}
+  \Cref{rule:c-fuse} is sound.
+\end{lemma}
+
+\begin{proof}
+  Recall that
+  $
+    \prob \fuse \krnl
+    \is
+    \fun(v,w). \prob(v)\krnl(v)(w).
+  $
+  which can be reformulated as
+  $
+    \prob \fuse \krnl =
+    \bind(\prob,\fun v.(\bind(\krnl(v), \fun w.\return(v,w)))).
+  $
+
+  The $(\proves)$ direction is an instance of \ref{rule:c-assoc}.
+
+  The $(\provedby)$ direction follows from \ref{rule:c-unassoc}:
+  \begin{eqexplain}
+    \CC{\prob \fuse \krnl} (v',w'). K(v',w')
+\whichproves*
+    \CC \prob v.
+      \CC{\bind(\krnl(v), \fun w.\dirac{(v,w)})} (v',w'). K(v',w')
+    \byrule{c-unassoc}
+\whichproves
+    \CC \prob v.
+      \CC{\krnl(v)} w.
+        \CC {\dirac{(v,w)}} (v',w'). K(v',w')
+    \byrule{c-unassoc}
+\whichproves
+    \CC{\prob} v.
+    \CC{\krnl(v)} w.
+      K(v,w)
+    \byrule{c-unit-l}
+  \end{eqexplain}
+\end{proof}
+ \begin{lemma}
+\label{proof:c-swap}
+  \Cref{rule:c-swap} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \CC{\prob_1} v_1.
+      \CC{\prob_2} v_2.
+        K(v_1, v_2)
+\whichproves*
+      \CC{\prob_1 \pprod \prob_2}
+        (v_1,v_2).
+          K(v_1, v_2)
+    \byrule{c-fuse}
+\whichproves
+    \CC{\prob_2} v_2.
+      \CC{\prob_1} v_1.
+          K(v_1, v_2)
+    \byrule{c-fuse}
+  \end{eqexplain}
+  Where
+  \[
+    \prob_1 \pprod \prob_2
+    =
+    \prob_1 \fuse (\fun \wtv.\prob_2)
+=
+    \prob_2 \fuse (\fun \wtv.\prob_1)
+\]
+  justifies the applications of \ref{rule:c-fuse}.
+\end{proof}
+ \begin{lemma}
+\label{proof:sure-convex}
+  \Cref{rule:sure-convex} is sound.
+\end{lemma}
+
+\begin{proof}
+  By \ref{rule:sure-str-convex} with $K = \True$.
+\end{proof}
+ \begin{lemma}
+\label{proof:dist-convex}
+  \Cref{rule:dist-convex} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \CMod{\prob} v. \distAs{E\at{i}}{\mu'}
+    \whichproves*
+    \CMod{\mu} v.  \CMod{\mu'} w. \sure{E\at{i} = w}
+    \byrule{c-unit-r}
+    \whichproves
+    \CMod{\mu'} w. \CMod{\mu} v.  \sure{E\at{i} = w}
+    \byrule{c-swap}
+    \whichproves
+    \CMod{\mu'} w.  \sure{E\at{i} = w}
+    \byrule{sure-convex}
+    \whichproves
+    \distAs{E\at{i}}{\mu'}
+    \byrule{c-unit-r}
+  \end{eqexplain}
+\end{proof}
+ \begin{lemma}
+\label{proof:c-proj}
+  The following rule is sound:
+  \begin{proofrule}
+  \infer{
+    \forall (v,\wtv)\in\psupp(\prob).
+    \forall \prob'.
+    \CC{\prob'} w. P(v) \proves P(v)
+  }{
+    \CC \prob (v,w). P(v) \lequiv
+    \CC {\prob\circ\inv{\proj}} v. P(v)
+  }
+  \end{proofrule}
+\end{lemma}
+\begin{proof}
+  Assume that for all $(v,\wtv)\in\psupp(\prob)$,
+  $\forall \prob'. \CC{\prob'} w. P(v) \proves P(v)$
+  (\ie $P(v)$ is convex).
+  By \cref{lm:fuse-split} there is some~$\krnl$ such that
+  $ \prob=(\prob\circ\inv{\proj})\fuse\krnl $.
+  Then:
+  \begin{eqexplain}
+    \CC \prob (v,w). P(v)
+    \whichisequiv*
+    \CC {\prob\circ\inv{\proj}} v.
+    \CC {\krnl(v)} w. P(v)
+    \byrule{c-fuse}
+    \whichisequiv
+    \CC {\prob\circ\inv{\proj}} v. P(v)
+  \end{eqexplain}
+  The last step is justified by the convexity assumption in the~$(\proves)$
+  direction,
+  and by \ref{rule:c-true} and \ref{rule:c-frame} in the~$(\provedby)$ direction.
+\end{proof}
+
+
+
+\begin{lemma}
+\label{proof:c-sure-proj}
+  \Cref{rule:c-sure-proj} is sound.
+\end{lemma}
+\begin{proof}
+  By \cref{proof:c-proj} and \cref{proof:sure-convex}.
+\end{proof}
+ \begin{lemma}
+\label{proof:c-sure-proj-many}
+  \Cref{rule:c-sure-proj-many} is sound.
+\end{lemma}
+
+\begin{proof}
+  Let $
+    X_i \is \set{ \p{x} | \ip{x}{i} \in X }
+  $ for every $i\in I$.
+  Then:
+  \begin{eqexplain}
+    \CC\prob (\m{v}, w).
+      \sure{\ip{x}{i}=\m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+\whichisequiv*
+    \CC{\prob} (\m{v}, w).
+      \LAnd_{i\in I}
+        \sure{\LAnd_{\p{x}\in X_i} \ip{x}{i}=\m{v}(\ip{x}{i})}
+\whichisequiv
+    \LAnd_{i\in I}
+      \CC{\prob} (\m{v}, w).
+        \sure{\LAnd_{\p{x}\in X_i} \ip{x}{i}=\m{v}(\ip{x}{i})}
+    \byrule{c-and}
+\whichisequiv
+    \LAnd_{i\in I}
+      \CC{\prob\circ\inv{\proj_1}} \m{v}.
+        \sure{\LAnd_{\p{x}\in X_i} \ip{x}{i}=\m{v}(\ip{x}{i})}
+    \byrule{c-sure-proj}
+\whichisequiv
+    \CC{\prob\circ\inv{\proj_1}} \m{v}.
+      \LAnd_{i\in I}
+        \sure{\LAnd_{\p{x}\in X_i} \ip{x}{i}=\m{v}(\ip{x}{i})}
+    \byrule{c-and}
+\whichisequiv
+    \CC{\prob\circ\inv{\proj_1}} \m{v}.
+      \sure{\ip{x}{i}=\m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+  \end{eqexplain}
+  Note that the (iterated) applications of \ref{rule:c-and}
+  satisfy the side condition
+  because the inner assertions are by construction on disjoint indices.
+  The backward direction of \ref{rule:c-and} holds by
+  the standard laws of conjunction.
+\end{proof}
+ \begin{lemma}
+\label{proof:c-extract}
+  \Cref{rule:c-extract} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \CC{\prob_1} v_1. \bigl(
+      \sure{\aexpr_1\at{i} = v_1} *
+      \distAs{\aexpr_2\at{i}}{\prob_2}
+    \bigr)
+\whichproves*
+      \CC{\prob_1} v_1.
+        \bigl(
+          \sure{\aexpr_1\at{i}=v_1} *
+          \CC{\prob_2} v_2. \sure{\aexpr_2\at{i}=v_2}
+        \bigr)
+      \byrule{c-unit-r}
+    \whichproves
+      \CC{\prob_1} v_1.
+      \CC{\prob_2} v_2.
+        \bigl(
+          \sure{\aexpr_1\at{i}=v_1} *
+          \sure{\aexpr_2\at{i}=v_2}
+        \bigr)
+      \byrules{c-frame}
+    \whichproves
+      \CC{\prob_1} v_1.
+      \CC{\prob_2} v_2.
+        \sure{\aexpr_1\at{i}=v_1 \land \aexpr_2\at{i}=v_2}
+      \byrules{sure-merge}
+    \whichproves
+      \CC{\prob_1 \pprod \prob_2} (v_1,v_2).
+        \sure{(\aexpr_1\at{i},\aexpr_2\at{i})=(v_1,v_2)}
+      \byrules{c-assoc}
+    \whichproves
+      \distAs{(\aexpr_1\at{i},\aexpr_2\at{i})}{(\prob_1 \pprod \prob_2)}
+      \byrule{c-unit-r}
+    \whichproves
+      \distAs{\aexpr_1\at{i}}{\prob_1} *
+      \distAs{\aexpr_2\at{i}}{\prob_2}
+      \byrule{prod-split}
+  \end{eqexplain}
+\end{proof}
+ \begin{lemma}
+\label{proof:c-dist-proj}
+  \Cref{rule:c-dist-proj} is sound.
+\end{lemma}
+
+\begin{proof}
+  By \cref{proof:c-proj} and \cref{proof:dist-convex}.
+\end{proof}
+ 
+\subsubsection{Relational Lifting}
+\begin{lemma}
+\label{proof:rl-cons}
+  \Cref{rule:rl-cons} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \cpl{R_1}
+\whichis*
+      \E \prob.
+        \pure{\prob(R_1) = 1} *
+        \CC\prob \m{v}.
+          \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+\whichproves
+      \E \prob.
+        \pure{\prob(R_2) = 1} *
+        \CC\prob \m{v}.
+          \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+    \by{$R_1 \subseteq R_2$}
+\whichis \cpl{R_2}
+  \qedhere
+  \end{eqexplain}
+\end{proof} \begin{lemma}
+\label{proof:rl-unary}
+  \Cref{rule:rl-unary} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \cpl{R}
+\whichis*
+    \E \prob.
+      \pure{\prob(R) = 1} *
+      \CC\prob \m{v}.
+        \sure{\ip{x}{i} = \m{v}(\p{x}{i})}_{\p{x}{i}\in X}
+\whichproves
+    \E \prob.
+      \CC\prob \m{v}.
+        \pure{\m{v} \in R}
+        * \sure{\ip{x}{i} = \m{v}(\p{x}{i})}_{\p{x}{i}\in X}
+    \byrule{c-pure}
+\whichproves
+    \E \prob.
+      \CC\prob \m{v}.
+        \sure{R(\p{x}_1\at{i}, \dots , \p{x}_n\at{i})}
+\whichproves
+    \E \prob.
+      \sure{R(\p{x}_1\at{i}, \dots, \p{x}_n\at{i})}
+    \byrule{sure-convex}
+\whichproves
+    \sure{R(\p{x}_1\at{i}, \dots, \p{x}_n\at{i})}
+  \qedhere
+  \end{eqexplain}
+\end{proof}
+
+%
+ \begin{lemma}
+\label{proof:rl-eq-dist}
+  \Cref{rule:rl-eq-dist} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \cpl{x\at{i} = y\at{j}}
+\proves{}&
+    \E \prob'.
+     \CC{\prob'} (v_1,v_2).\bigl(
+      \sure{\Ip{x}{i} = v_1} \land
+      \sure{\Ip{y}{j} = v_2} \land
+      \pure{v_1=v_2}
+    \bigr)
+\whichproves
+    \E \prob'.
+     \CC{\prob'} (v_1, v_2).\bigl(
+      \sure{\Ip{x}{i} = v_1} \land
+      \sure{\Ip{y}{j} = v_1 }
+    \bigr)
+    \byrule{c-cons}
+\whichproves
+    \E \prob'.
+     \CC{\prob'\circ\inv{\proj_1}} v_1.\bigl(
+      \sure{\Ip{x}{i} = v_1} \land
+      \sure{\Ip{y}{j} = v_1 }
+    \bigr)
+    \byrule{c-sure-proj}
+\whichproves
+    \E \prob.
+     \CC{\prob} v_1.\bigl(
+      \sure{\Ip{x}{i} = v_1} \land
+      \sure{\Ip{y}{j} = v_1 }
+    \bigr)
+    \by{$ \prob = \prob'\circ\inv{\proj_1} $}
+\whichproves
+    \E \prob.
+      \bigl(
+      \CC\prob v_1.
+       \sure{\Ip{x}{i} = v_1}
+      \bigr)
+      \land
+      \bigl(
+      \CC\prob v_1.
+        \sure{\Ip{y}{j} = v_1}
+      \bigr)
+\whichproves
+    \E \prob.
+    \distAs{\Ip{x}{i}}{\mu}
+    \land
+    \distAs{\Ip{y}{j}}{\mu}
+    \byrule{c-unit-r}
+\whichproves
+    \E \prob.
+    \distAs{\Ip{x}{i}}{\mu}
+    \ast
+    \distAs{\Ip{y}{j}}{\mu}
+    \byrule{and-to-star}
+  \end{eqexplain}
+\end{proof} \begin{lemma}
+  \Cref{rule:rl-convex} is sound.
+\end{lemma}
+
+\begin{proof}
+ \begin{eqexplain}
+   \CMod{\prob} a \st \cpl{R}
+\whichis*
+\CMod{\prob} a \st
+     \E \prob'.
+       \pure{\prob'(R) = 1} *
+       \bigl(
+         \CC{\prob'} \m{v}.
+           \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+       \bigr)
+\whichproves
+     \E \krnl.
+     \CMod{\prob} a \st
+       \bigl(
+         \CC{\krnl(a)} \m{v}.
+           \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+           * \pure{R(\m{v})}
+       \bigr)
+   \byrules{c-pure,c-skolem}
+\whichproves
+     \E \hat{\prob}.
+     \CMod{\hat{\prob}} (a,\m{v}) \st
+       \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+       * \pure{R(\m{v})}
+   \byrule{c-fuse}
+\whichproves
+     \E \hat{\prob}.
+     \pure{\hat{\prob} \circ \inv{\proj_2}(R) = 1} *
+     \CMod{\hat{\prob}} (a,\m{v}) \st
+       \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+   \byrule{c-pure}
+\whichproves
+     \E \hat{\prob}.
+     \pure{\hat{\prob} \circ \inv{\proj_2}(R) = 1} *
+     \CMod{\hat{\prob} \circ \inv{\proj_2}} \m{v} \st
+       \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+   \byrule{c-sure-proj-many}
+\whichproves
+     \E \hat{\prob}'.
+     \pure{\hat{\prob}'(R) = 1} *
+     \CMod{\hat{\prob}'} \m{v} \st
+       \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+\whichis \cpl{R}
+ \end{eqexplain}
+ In the derivation we use
+ $ \hat{\prob} = \prob \fuse \krnl $,
+ and
+ $\hat{\prob}' = \hat{\prob} \circ \inv{\proj_2}$.
+\end{proof}
+ \begin{lemma}
+\label{proof:rl-merge}
+  \Cref{rule:rl-merge} is sound.
+\end{lemma}
+
+\begin{proof}
+  Let $R_1\in \Val^{X_1}$ and $R_2\in \Val^{X_2}$
+  and let
+  $ X = X_1 \inters X_2 $,
+  $ Y_1 = X_1 \setminus X $, and
+  $ Y_2 = X_2 \setminus X $, so that
+  $ X_1 \union X_2 = Y_1 \dunion X \dunion Y_2 $.
+
+  By definition, $\cpl{R_1} * \cpl{R_2}$ entails that for some
+  $ \prob_1,\prob_2 $ with $ \prob_1(R_1)=1 $ and $ \prob_1(R_2)=1 $:
+  \begin{eqexplain}
+&
+    \CC{\prob_1} \m{v}_1.
+      (\sure{\ip{x}{i} = \m{v}_1(\ip{x}{i})}_{\ip{x}{i}\in X_1}) *
+\CC{\prob_2} \m{v}_2.
+      (\sure{\ip{x}{i} = \m{v}_2(\ip{x}{i})}_{\ip{x}{i}\in X_2})
+\whichproves
+  \CC{\prob_1} (\m{w}_1,\m{v}_1). (
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1}
+    \land
+    \sure{\ip{x}{i} = \m{v}_1(\ip{x}{i})}_{\ip{x}{i}\in X}
+    * \pure{(\m{w}_1\m{v}_1) \in R_1}
+  ) *
+  {} \\ &
+  \CC{\prob_2} (\m{w}_2,\m{v}_2). (
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2}
+    \land
+    \sure{\ip{x}{i} = \m{v}_2(\ip{x}{i})}_{\ip{x}{i}\in X}
+    * \pure{(\m{w}_2\m{v}_2) \in R_2}
+  )
+  \byrule{c-pure}
+\whichproves
+  \CC{\prob_1} (\m{w}_1,\m{v}_1).
+    \CC{\prob_2} (\m{w}_2,\m{v}_2).
+    \begin{pmatrix*}[l]
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1}
+          \land
+          \sure{\ip{x}{i} = \m{v}_1(\ip{x}{i})}_{\ip{x}{i}\in X} * {}
+    \\
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2}
+          \land
+          \sure{\ip{x}{i} = \m{v}_2(\ip{x}{i})}_{\ip{x}{i}\in X} * {}
+    \\
+      \pure{(\m{w}_1\m{v}_1) \in R_1}
+    * \pure{(\m{w}_2\m{v}_2) \in R_2}
+    \end{pmatrix*}
+  \byrule{c-frame}
+\whichproves
+  \CC{\prob_1} (\m{w}_1,\m{v}_1).
+    \CC{\prob_2} (\m{w}_2,\m{v}_2).
+    \begin{pmatrix*}[l]
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1}
+          \land
+          \sure{\ip{x}{i} = \m{v}_1(\ip{x}{i})}_{\ip{x}{i}\in X} * {}
+    \\
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2}
+          \land
+          \sure{\ip{x}{i} = \m{v}_2(\ip{x}{i})}_{\ip{x}{i}\in X} * {}
+    \\
+      \pure{(\m{w}_1\m{v}_1) \in R_1}
+    * \pure{(\m{w}_2\m{v}_2) \in R_2}
+    * \pure{\m{v}_1=\m{v}_2}
+    \end{pmatrix*}
+  \byrule{sure-eq-inj}
+\whichproves
+  \CC{\prob_1} (\m{w}_1,\m{v}_1).
+  \CC{\prob_2} (\m{w}_2,\m{v}_2).
+    \begin{pmatrix*}[l]
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1} \land {}
+    \\
+    \sure{\ip{x}{i} = \m{v}_1(\ip{x}{i})}_{\ip{x}{i}\in X} \land {}
+    \\
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2} * {}
+    \\
+    \pure{(\m{w}_1\m{v}_1) \in R_1 \land (\m{w}_2\m{v}_1) \in R_2}
+    \end{pmatrix*}
+  \byrule{c-cons}
+\whichproves
+  \CC{\prob_1} (\m{w}_1,\m{v}_1).
+  \CC{\prob_2 \circ \inv{\pi_1}} (\m{w}_2).
+    \begin{pmatrix*}[l]
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1} \land {}
+    \\
+    \sure{\ip{x}{i} = \m{v}_1(\ip{x}{i})}_{\ip{x}{i}\in X} \land {}
+    \\
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2} * {}
+    \\
+    \pure{(\m{w}_1\m{v}_1) \in R_1 \land (\m{w}_2\m{v}_1) \in R_2}
+    \end{pmatrix*}
+  \byrule{c-sure-proj}
+  \end{eqexplain}
+
+
+
+  Thus by letting $
+  \prob = \prob_1 \pprod (\prob_2 \circ \inv{\pi_1})
+  =\bind(\prob_1, \krnl_2)
+  $ where
+  \[
+    \krnl_2 = \fun (\m{w}_1\m{v}_1).(
+      \bind(\prob_2,\fun (\m{w}_2,\m{v}_2).
+                        \return (\m{w}_1\m{w}_2\m{v}_1))
+    )
+  \]
+  we obtain:
+  \begin{eqexplain}
+  &
+  \CC{\prob_1} (\m{w}_1',\m{v}_1').
+    \CC{\krnl_2(\m{w}_1',\m{v}_1')} (\m{w}_1,\m{w}_2,\m{w}).
+    \begin{pmatrix*}[l]
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1} \land {}
+    \\
+    \sure{\ip{x}{i} = \m{w}(\ip{x}{i})}_{\ip{x}{i}\in X} \land {}
+    \\
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2} * {}
+    \\
+    \pure{(\m{w}_1\m{w}) \in R_1 \land (\m{w}_2\m{w}) \in R_2}
+    \end{pmatrix*}
+\whichproves
+  \CC{\prob} (\m{w}_1,\m{w}_2,\m{w}).
+    \begin{pmatrix*}[l]
+    \sure{\ip{y}{i} = \m{w}_1(\ip{y}{i})}_{\ip{y}{i}\in Y_1} \land {}
+    \\
+    \sure{\ip{x}{i} = \m{w}(\ip{x}{i})}_{\ip{x}{i}\in X} \land {}
+    \\
+    \sure{\ip{y}{i} = \m{w}_2(\ip{y}{i})}_{\ip{y}{i}\in Y_2}
+    \\
+    \pure{(\m{w}_1\m{w}) \in R_1 \land (\m{w}_2\m{w}) \in R_2}
+    \end{pmatrix*}
+  \byrules{c-assoc,c-sure-proj}
+\whichproves
+  \CC{\prob} \m{v}.
+    \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in (X_1\union X_2)}
+    * \pure{(\restr{\m{v}}{X_1}) \in R_1 \land (\restr{\m{v}}{X_2}) \in R_2}
+  \end{eqexplain}
+  The result gives us $ \cpl{R_1 \land R_2} $
+  by \ref{rule:c-pure} and \cref{def:rel-lift}.
+\end{proof} \begin{lemma}
+\label{proof:rl-sure-merge}
+  \Cref{rule:rl-sure-merge} is sound.
+\end{lemma}
+
+\begin{proof}
+  \begin{eqexplain}
+    \cpl{R} * \sure{\ip{x}{i} = \expr\at{i}}
+  \whichproves*
+    \E\prob.
+      \CC\prob \m{v}. \bigl(
+        \sure{\ip{y}{i} = \m{v}(\ip{y}{i})}_{\ip{y}{i}\in X}
+        * \pure{R(\m{v})}
+      \bigr)
+      * \sure{\ip{x}{i} = \expr\at{i}}
+  \bydef
+\whichproves
+    \E\prob.
+      \CC\prob \m{v}. \bigl(
+        \sure{\ip{y}{i} = \m{v}(\ip{y}{i})}_{\ip{y}{i}\in X}
+        * \pure{R(\m{v})}
+        * \sure{\ip{x}{i} = \expr\at{i}}
+      \bigr)
+  \byrule{c-frame}
+\whichproves
+    \E\prob.
+      \CC\prob \m{v}. \bigl(
+        \sure{\ip{y}{i} = \m{v}(\ip{y}{i})}_{\ip{y}{i}\in X}
+        * \pure{R(\m{v})}
+        * \sure{\ip{x}{i} = \sem{\expr\at{i}}(\m{v})}
+      \bigr)
+  \by{$\pvar(\expr\at{i}) \subs X$}
+\whichproves
+    \E\prob.
+      \CC\prob \m{v}. \bigl(
+        \sure{\ip{y}{i} = \m{v}(\ip{y}{i})}_{\ip{y}{i}\in X}
+        * \pure{R(\m{v})}
+        * \CC{\dirac{\sem{\expr\at{i}}(\m{v})}} w.\sure{\ip{x}{i} = w}
+      \bigr)
+  \byrule{c-unit-l}
+\whichproves
+    \E\prob.
+      \CC\prob \m{v}.
+      \CC{\dirac{\sem{\expr\at{i}}(\m{v})}} w.
+      \bigl(
+        \sure{\ip{y}{i} = \m{v}(\ip{y}{i})}_{\ip{y}{i}\in X}
+        * \pure{R(\m{v})}
+        * \sure{\ip{x}{i} = w}
+      \bigr)
+  \byrule{c-frame}
+\whichproves
+    \E\prob'.
+      \CC{\prob'} \m{v}'.
+      \begin{grp}
+        \sure{\ip{y}{i} = \m{v}'(\ip{y}{i})}_{\ip{y}{i}\in X}
+        * \sure{\ip{x}{i} = \m{v}'(\ip{x}{i})} \\ {}
+        * \pure{R(\m{v}') \land \sem{\expr\at{i}}(\m{v}') = \m{v}'(\ip{x}{i})}
+      \end{grp}
+  \byrules{c-pure,c-assoc}
+\whichproves
+    \cpl{R \land \ip{x}{i} = \expr\at{i}}
+  \end{eqexplain}
+  where we let
+  $
+    \prob' \is
+      \left(
+      \DO{
+        \m{v} <- \prob;
+        \return(\m{v}\upd{\ip{x}{i} -> \sem{\expr\at{i}}(\m{v})})
+      }
+      \right).
+  $
+\end{proof} \begin{lemma}
+\label{proof:coupling}
+  \Cref{rule:coupling} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assuming
+  $\prob \circ \inv{\proj_1} = \prob_1$,
+  $\prob \circ \inv{\proj_2} = \prob_2$, and
+  $\prob(R) = 1$, we have:
+  \begin{eqexplain}
+    \distAs{\p{x}_1\at{\I1}}{\prob_1} *
+    \distAs{\p{x}_2\at{\I2}}{\prob_2}
+\whichproves*
+    \CC{\prob_1} v. \sure{x_1\at{1} = v} *
+    \CC{\prob_2} w. \sure{x_2\at{2} = w}
+    \byrule{c-unit-r}
+\whichproves
+    \CC{\prob} (v, w). \sure{x_1\at{1} = v} *
+    \CC{\prob} (v, w). \sure{x_2\at{2} = w}
+    \byrule{c-sure-proj}
+\whichproves
+    \CC{\prob} (v, w). \sure{x_1\at{1} = v} \land
+    \CC{\prob} (v, w). \sure{x_2\at{2} = w}
+    \byrule{and-to-star}
+\whichproves
+    \CC{\prob} (v, w).
+      (\sure{x_1\at{1} = v} \land
+      \sure{x_2\at{2} = w})
+    \byrule{c-and}
+\whichproves
+    \cpl{R(x_1\at{1}, x_2\at{2})}
+    \by{$\prob(R) = 1$}
+  \end{eqexplain}
+\end{proof}
+ 
+\subsubsection{Weakest Precondition}
+\begin{lemma}
+\label{proof:wp-loop-0}
+  \Cref{rule:wp-loop-0} is sound.
+\end{lemma}
+
+\begin{proof}
+  Special case of \ref{rule:wp-loop} with $n=0$,
+  which makes the premises trivial.
+\end{proof} \begin{lemma}
+\label{proof:wp-loop-lockstep}
+  \Cref{rule:wp-loop-lockstep} is sound.
+\end{lemma}
+
+\begin{proof}
+  We derive the following rule:
+  \[
+  \infer*{
+    \forall k < n\st
+      P(k) \proves \WP {\m[i: t, j: t']}{P(k+1)}
+  }{
+    P(0) \proves
+    \WP {\m[i: (\Loop{n}{t}), j: (\Loop{n}{t'})]} {P(n)}
+  }
+  \]
+  (for $n\in \Nat$ and $i \ne j$)
+  from the standard \ref{rule:wp-loop},
+  as follows.
+  Let
+  \[
+    P'(k) \is
+    \WP {\m[j: \Loop{k}{t'}]} {P(k)}
+  \]
+  Note that
+  $P(0) \proves P'(0)$
+  by \ref{rule:wp-loop-0}.
+  Then we can apply the \ref{rule:wp-loop} using $P'$ as a loop invariant
+  \begin{derivation}
+    \infer*[Right=\ref{rule:wp-nest}]{
+    \infer*{
+    \infer*[Right=\ref{rule:wp-loop}]{
+    \infer*{
+    \infer*[Right=\ref{rule:wp-nest}]{
+    \infer*[Right=\ref{rule:wp-loop-unf}]{
+    \infer*[Right=\ref{rule:wp-cons}]{
+    \infer*[Right=\ref{rule:wp-nest}]{
+    \infer*{}{
+      \forall k \leq n \st
+      P(k)
+      \proves
+      \WP {\m[i: t, j: t']} {P(k+1)}
+    }}{
+      \forall k \leq n \st
+      P(k)
+      \proves
+        \WP {\m[j: t']} {
+          \WP {\m[i: t]} {P(k+1)}
+      }
+    }}{
+      \forall k \leq n \st
+      \WP {\m[j: \Loop{k}{t'}]} {P(k)}
+      \proves
+      \WP {\m[j: \Loop{k}{t'}]}[\big]{
+        \WP {\m[j: t']} {
+          \WP {\m[i: t]} {P(k+1)}
+        }
+      }
+    }}{
+      \forall k \leq n \st
+      \WP {\m[j: \Loop{k}{t'}]} {P(k)}
+      \proves
+      \WP {\m[j: \Loop{(k+1)}{t'}]}[\big]{
+        \WP {\m[i: t]} {P(k+1)}
+      }
+    }}{
+      \forall k \leq n \st
+      \WP {\m[j: \Loop{k}{t'}]} {P(k)}
+      \proves
+      \WP {\m[i: t]}[\big]{
+        \WP {\m[j: \Loop{(k+1)}{t'}]} {P(k+1)}
+      }
+    }}{
+      \forall k \leq n \st
+        P(k)' \proves
+          \WP {\m[i: t]} {P'(k+1)}
+    }}{
+      P'(0) \proves
+      \WP {\m[i: (\Loop{n}{t})]}{
+        P'(n)
+      }
+    }}{
+      P(0) \proves
+      \WP {\m[i: (\Loop{n}{t})]}{
+        \WP{\m[j: (\Loop{n}{t'})]} {P(n)}
+      }
+    }}{
+      P(0) \proves
+      \WP {\m[i: (\Loop{n}{t}), j: (\Loop{n}{t'})]} {P(n)}
+    }
+  \end{derivation}
+  From bottom to top,
+    we focus on component $i$ using \ref{rule:wp-nest};
+    then we use $P(0) \proves P'(0)$ and transitivity of entailment
+    to rewrite the goal using the invariant $P'$;
+    we then use \ref{rule:wp-loop} and unfold the invariant;
+    using \ref{rule:wp-nest} twice we can swap the two components so that
+    component~$j$ is the topmost WP in the assumption and conclusion;
+    using \ref{rule:wp-loop-unf} we break off the first $k$ iterations at~$j$;
+    finally, using \ref{rule:wp-cons} we can eliminate the topmost
+    WP on both sides of the entailments.
+
+  It is straightforward to adapt the argument for any number of components
+  looping the same number of times.
+\end{proof} \begin{lemma}
+\label{proof:wp-rl-assign}
+  \Cref{rule:wp-rl-assign} is sound.
+\end{lemma}
+
+\begin{proof}
+  Define
+    $\m{\permap}_R \is (\m{\permap} \setminus \ip{x}{i})/2$ and
+    $ \m{\permap}_{\p{x}} \is \m{\permap} - \m{\permap}_R $;
+  note that by $\m{\permap}(\ip{x}{i})=1$
+  we have $\m{\permap}_{\p{x}}(\ip{x}{i})=1$.
+  We first show that the following hold:
+  \begin{align}
+    \cpl{R}\withp{\m{\permap}}
+    &\proves
+    \cpl{R}\withp{\m{\permap}_R} * (\m{\permap}_{\p{x}})
+    \\
+    \cpl{R}\withp{\m{\permap}_R}
+      * \sure{\p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}_{\p{x}}}
+    &\proves
+    \cpl{R \land \p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}}
+  \end{align}
+  The first entailment holds because $\cpl{R}$ is permission-scaling-invariant
+  (see \cref{sec:appendix:permissions})
+  and by the assumption that $\p{x}\notin \pvar(R)$.
+  The second entailment holds by \ref{rule:rl-sure-merge}.
+
+  We can then derive:
+  \[
+  \begin{derivation}
+    \infer*[Right=\ref{rule:wp-cons}]{
+    \infer*[Right=\ref{rule:wp-frame}]{
+    \infer*[Right=\ref{rule:wp-assign}]{ }{
+      (\m{\permap}_{\p{x}})
+      \proves
+      \WP {\m[i: \code{x:=}\expr]}[\big] {
+          \sure{\p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}_{\p{x}}}
+      }
+    }}{
+      \cpl{R}\withp{\m{\permap}_R}
+      * (\m{\permap}_{\p{x}})
+      \proves
+      \WP {\m[i: \code{x:=}\expr]}[\big] {
+        \cpl{R}\withp{\m{\permap}_R}
+          * \sure{\p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}_{\p{x}}}
+      }
+    }}{
+      \cpl{R}\withp{\m{\permap}}
+      \proves
+      \WP {\m[i: \code{x:=}\expr]}[\big] {
+        \cpl{R \land \p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}}
+      }
+    }
+  \end{derivation}
+  \qedhere
+  \]
+\end{proof} \begin{lemma}
+\label{proof:wp-if-unary}
+  \Cref{rule:wp-if-unary} is sound.
+\end{lemma}
+
+\begin{proof}
+  From the premises, we derive:
+  \[
+  \begin{derivation}
+  \infer*[right=\ref{rule:c-wp-swap}]{
+  \infer*[Right={\ref{rule:c-unit-r},\ref{rule:c-frame}}]{
+  \infer*[Right=\ref{rule:c-cons}]{
+  \infer*[Right=\ref{rule:wp-bind}]{
+  \infer*[Right=\ref{rule:wp-if-prim}]{
+  \infer*{
+    P * \sure{\Ip{e}{1}=1} \gproves \WP {\m[\I1:t_1]} {Q(1)}
+    \\
+    P * \sure{\Ip{e}{1}=0} \gproves \WP {\m[\I1:t_2]} {Q(0)}
+  }{\forall b\in\set{0,1}\st
+    P * \sure{\Ip{e}{1}=1}
+    \gproves
+    \ITE{b}{\WP{\m[\I1:t_1]}{Q(1)}}{\WP{\m[\I1:t_2]}{Q(0)}}
+  }}{\forall b\in\set{0,1}\st
+    P * \sure{\Ip{e}{1}=b}
+    \gproves
+    \WP {\m[\I1:
+        (\code{if $\;b\;$ then $\;t_1\;$ else $\;t_2$})
+      ]}{
+      Q(b\beq 1)
+    }
+  }}{\forall b\in\set{0,1}\st
+    P * \sure{\Ip{e}{1}=b}
+    \gproves
+    \WP {\m[\I1:
+      (\code{if e then $\;t_1\;$ else $\;t_2$})
+    ]}{
+      Q(b\beq 1)
+    }
+  }}{\CC{\beta} b.(P * \sure{\Ip{e}{1}=b})
+    \gproves
+    \CC{\beta} b.
+    \WP {\m[\I1:
+      (\code{if e then $\;t_1\;$ else $\;t_2$})
+    ]}{
+      Q(b\beq 1)
+    }
+  }}{P * \distAs{\Ip{e}{1}}{\beta}
+    \gproves
+    \CC{\beta} b.
+    \WP {\m[\I1:
+      (\code{if e then $\;t_1\;$ else $\;t_2$})
+    ]}{
+      Q(b\beq 1)
+    }
+  }}{P * \distAs{\Ip{e}{1}}{{\beta}}
+    \gproves
+    \WP {\m[\I1:
+        (\code{if e then $\;t_1\;$ else $\;t_2$})
+      ]}{
+      \CC{\beta} b.Q(b\beq 1)
+    }
+  }
+  \end{derivation}
+  \qedhere
+  \]
+\end{proof}

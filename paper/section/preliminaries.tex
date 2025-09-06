@@ -1,0 +1,204 @@
+\section{Preliminaries: Programs and Probability Spaces}
+\label{sec:prelims}
+
+To formally define the model of \thelogic\ and validate its rules,
+we introduce a number of preliminary notions.
+Our starting point is the measure-theoretic approach of
+\cite{lilac} in defining probabilistic separation.
+We recall the main definitions here.
+The main additional assumption we make throughout
+is that the set of outcomes of distributions is countable.
+
+
+\begin{definition}[Probability spaces]
+\label{def:prob-sp}
+  Given a set of possible \emph{outcomes} $\Outcomes$,
+  a \salgebra\ $ \salg \in \SigAlg(\Outcomes) $ is
+  a set of subsets of $\Outcomes$
+    that is closed under countable unions and
+    complements, and such that
+    $\Outcomes \in \salg$.
+  The \emph{full} \salgebra\ over~$\Outcomes$ is
+  $ \Full{\Outcomes} = \powerset(\Outcomes) $,
+		the powerset of $\Outcomes$.
+  For $F \subs \powerset(\Outcomes)$, we write $\sigcl{F} \in \SigAlg(\Outcomes)$
+    for the smallest \salgebra\ containing $F$.
+Given~$\salg \in \SigAlg(\Outcomes)$,
+  a \emph{probability distribution}~$\prob \in \Dist(\salg)$,
+    is a countably additive function~$ \prob \from \salg \to [0,1] $
+    with $\prob(\Outcomes)=1$.
+  The support of a distribution $\prob \in \Dist(\Full{\Outcomes})$
+  is the set of outcomes with non-zero probability
+  $ \psupp(\prob) \is \set{ a \in \Outcomes | \prob(a) > 0 } $,
+  where $\prob(a)$ abbreviates $\prob(\set{a})$.
+
+  A \emph{probability space} $ \psp \in \ProbSp(\Outcomes) $ is
+  a pair $ \psp = (\salg, \prob) $ of
+    a \salgebra\ $\salg \in \SigAlg(\Outcomes)$ and
+    a probability distribution~$\prob \in \Dist(\salg)$.
+The \emph{trivial} probability space $\Triv{\Outcomes} \in \ProbSp(\Outcomes)$
+  is the trivial \salgebra\ $ \set{\Outcomes,\emptyset} $
+  equipped with the trivial probability distribution.
+Given $\salg_1 \subs \salg_2$ and $\prob \in \Dist(\salg_2)$,
+  the distribution $ \restr{\prob}{\salg_1} \in \Dist(\salg_1) $
+  is the restriction of $\prob$ to $\salg_1$.
+The \emph{extension pre-order}~$(\extTo)$ over probability spaces is defined as
+  $
+    (\salg_1, \prob_1) \extTo (\salg_2, \prob_2) \is
+      \salg_1 \subs \salg_2 \land \prob_1 = \restr{\prob_2}{\salg_1}.
+  $
+
+  A function $f \from \Outcomes_1 \to \Outcomes_2$ is
+  \em{measurable} on
+  $ \salg_1\in\SigAlg(\Outcomes_1)$ and $\salg_2\in\SigAlg(\Outcomes_2) $
+  if\/
+  $ \forall \event \in \salg_2 \st {\inv{f}(\event) \in \salg_1} $.
+When $\salg_2 = \Full{\Outcomes_2}$
+	we simply say~$f$ is measurable~in~$\salg_1$.
+\end{definition}
+
+\begin{definition}[Product and union spaces]
+\label{def:prod-union-sp}
+  Given $ \salg_1 \in \SigAlg(\Outcomes_1),\salg_2 \in \SigAlg(\Outcomes_2) $,
+  their product is the \salgebra{}
+  $ \salg_1 \pprod \salg_2 \in \SigAlg(\Outcomes_1 \times \Outcomes_2) $
+  defined as
+  $ \salg_1 \pprod \salg_2 \is \sigcl{\set{\event_1 \times \event_2 | \event_1 \in \salg_1, \event_2 \in \salg_2}} $,
+  and their union is the \salgebra{}
+  $ \salg_1 \punion \salg_2 \is \sigcl{\salg_1 \union \salg_2} $.
+The product of two probability distributions
+  $ \prob_1 \in \Dist(\salg_1) $ and
+  $ \prob_2 \in \Dist(\salg_2) $ is
+  the distribution
+  $ (\prob_1 \pprod \prob_2) \in \Dist(\salg_1 \pprod \salg_2) $
+  defined by
+  $ (\prob_1 \pprod \prob_2)(\event_1 \times \event_2) = \prob_1(\event_1)\prob_2(\event_2) $
+  for all $\event_1 \in \salg_1$, $\event_2 \in \salg_2$.
+\end{definition}
+
+\begin{definition}[Independent product~\cite{lilac}]
+\label{def:indep-comb}
+  Given $ (\salg_1, \prob_1),(\salg_2, \prob_2) \in \ProbSp(\Outcomes) $,
+  their \emph{independent product} is
+  the probability space
+  $(\salg_1 \punion \salg_2, \prob) \in \ProbSp(\Outcomes)$
+  where for all~$ \event_1 \in \salg_1, \event_2 \in \salg_2 $,
+  $
+    \prob(\event_1 \inters \event_2) = \prob_1(\event_1) \cdot \prob_2(\event_2)
+  $. It is unique, if it exists~\cite[Lemma 2.3]{lilac}. Let $ \psp_1 \iprod \psp_2 $ be the unique independent product
+  of $\psp_1$ and $\psp_2$ when it exists, and be undefined otherwise.
+\end{definition}
+
+
+
+
+
+\paragraph{Indexed tuples}
+To handle unary and higher-arity relational assertions in a uniform way,
+we consider finite sets of indices $I \subs \Nat$,
+and \pre I-indexed tuples of values of type~$X$,
+represented as (finite) functions $\Hyp[I]{X}$.
+We use boldface to range over such functions.
+The syntax $ \m{x} = \m[i_0: x_0,\dots,i_n: x_n] $ denotes the function
+$ \m{x} \in \Hyp[\set{i_0,\dots,i_n}]{X} $ with $\m{x}(i_k) = x_k$.
+We often use comprehension-style notation \eg $\m{x} = \m[i: x_i | i\in I]$.
+For $\m{x} \in \Hyp[I]{A}$ we let $\supp{\m{x}} \is I$.
+Given some $ \m{x} \in \Hyp[I]{A} $ and some $J \subs I$,
+the operation $ \m{x} \setminus J \is \m[i: \m{x}(i) | i \in I \setminus J] $
+removes the components with indices in~$J$ from $\m{x}$.
+
+\paragraph{Programs}
+We consider a simple first-order imperative language.
+We fix a finite set of \emph{program variables}~$\p{x} \in \Var$
+and countable set of \emph{values}~$\val \in \Val \is \Int$
+and define the program \emph{stores} to be
+$ \store \in \Store \is \Var \to \Val $
+(note that $\Store$ is countable).
+
+\begin{mathfig}
+  \begin{grammar}
+\Expr \ni \expr \is
+        \val | \code{x} | \prim(\vec{\expr})
+    \qquad
+    \vec{\expr} \grammIs \expr_1,\dots,\expr_n
+    \qquad
+    \prim \grammIs + | - | < | \dots
+    \qquad
+    \dist \grammIs \p{Ber} | \p{Unif} | \dots
+    \\
+    \Term \ni \term \is
+        \Assn{x}{\expr}
+      | \Sample{x}{\dist}{\vec{\expr}}
+      | \Skip
+| \Seq{\term_1}{\term_2}
+      | \Cond{\expr}{\term_1}{\term_2}
+      | \Loop{\expr}{\term}
+  \end{grammar}
+  \caption{Syntax of program terms.}
+  \label{fig:term-syntax}
+\end{mathfig}
+
+Program \emph{terms}~$ \term \in \Term $ are formed according to the
+grammar in \cref{fig:term-syntax}.
+For simplicity,
+booleans are encoded by using~$0 \in \Val$ as false and any other value as true.
+We will use the events
+  $\false \is \set{0}$ and
+  $\true \is \set{n \in \Val | n\ne 0}$.
+Programs use standard deterministic primitives~$\prim$,
+which are interpreted as functions
+$ \sem{\prim} \from \Val^n \to \Val $, where $n$ is the arity of $\prim$.
+Expressions~$\expr$ are effect-free deterministic numeric expressions,
+and denote, as is standard, a function
+$ \sem{\expr} \from \Store \to \Val $,
+\ie a random variable of $\Full{\Store}$.
+We write $\pvar(\expr)$ for the set of program variables that occur
+in~$\expr$.
+Programs can refer to some collection of known
+\emph{discrete} distributions~$\dist$,
+each allowing a certain number of parameters.
+Sampling assignments $ \code{x:~$\dist$($\vec{v}$)} $
+sample from the distribution $\Sem{\dist}(\vec{v}) \from \Dist(\Full{\Val})$.
+The distribution $ \Sem{\p{Ber}}(p) = \Ber{p} \of\Dist(\Full{\set{0,1}}) $
+is the Bernoulli distribution assigning probability~$p$ to outcome~1.
+
+Similar to Lilac, we consider a simple iteration construct
+$ \code{repeat}\; e\; t $ which evaluates $e$ to a value $n \in \Val$
+and, if $n>0$, executes $t$ in sequence $n$ times.
+This means we only consider a subset of terminating programs.
+The semantics of programs is
+entirely standard and is defined in \appendixref{sec:appendix:definition}.
+It associates each term~$t$ to a function
+$
+  \sem{t} \from \Dist(\Full{\Store}) \to \Dist(\Full{\Store})
+$
+from distributions of input stores to
+distributions of output stores.
+
+In the relational reasoning setting, one would consider multiple
+programs at the same time and relate their semantics.
+Following LHC~\cite{d2022proving},
+we define \emph{hyper-terms} as $ \m{t} \in \Hyp[J]{\Term} $
+for some finite set of indices~$J$.
+Let~$I$ be such that~$\supp{\m{t}} \subs I$; the semantics
+$
+  \sem{\m{t}}_I \from
+      \Hyp[I]{\Dist(\Full{\Store})} \to \Hyp[I]{\Dist(\Full{\Store})}
+$
+takes a \pre I-indexed family of distributions as input and outputs
+another \pre I-indexed family of distributions:
+\[
+  \sem{\m{t}}_I(\m{\prob}) \is
+    \fun i.
+    \ITE{i \in \supp{\m{t}}}{
+      \sem{\m{t}(i)}(\m{\prob}(i))
+    }{
+      \m{\prob}(i)
+    }
+\]
+Note that the store distributions at indices in $ I \setminus \supp{t} $
+are preserved as is.
+We omit~$I$ when it can be inferred from context.
+To refer to program variables in a specific component we use
+elements of $I\times \Var$, writing $\ip{x}{i}$ for $(i,\p{x})$.
+

@@ -1,0 +1,904 @@
+\section{The \thelogic\ Logic}
+\label{sec:logic}
+
+We are now ready to define \thelogic's semantic model,
+and formally prove its laws.
+
+\subsection{A Model of (Probabilistic) Resources}
+
+As a model for our assertions we use a modern presentation of
+partial commutative monoids, adapted from \cite{KrebbersJ0TKTCD18},
+called ``ordered unital resource algebras'' (henceforth~RA).
+Instead of a partial binary operation, RAs are equipped with a \emph{total}
+binary operation and a predicate $\raValid$ indicating which elements of the
+carrier are considered \emph{valid} resources.
+Partiality of the operation manifests as mapping some combinations of arguments
+to invalid elements.
+
+\begin{definition}[Ordered Unital Resource Algebra]
+\label{def:ra}
+  An \emph{ordered unital resource algebra}~(RA) is a tuple
+  $
+    (M, \raLeq, \raValid, \raOp, \raUnit)
+  $
+  where
+  $ \raLeq \from M \times M \to \Prop $ is the reflexive and transitive
+  \emph{resource order},
+  $ \raValid \from M \to \Prop $ is the \emph{validity predicate},
+  $ (\raOp) \from M \to M \to M $ is the \emph{resource composition},
+  a commutative and associative binary operation on $M$,
+  and
+  $ \raUnit \in M $ is the \emph{unit} of $M$,
+  satisfying, for all $a,b,c\in M$:
+  \begin{mathpar}
+  \raValid(\raUnit)
+
+  \raUnit \raOp a = a
+
+  \infer{
+    \raValid(a \raOp b)
+  }{
+    \raValid(a)
+  }
+
+  \infer{
+    a \raLeq b
+    \\
+    \raValid(b)
+  }{
+    \raValid(a)
+  }
+
+  \infer{
+    a \raLeq b
+  }{
+    a \raOp c \raLeq b \raOp c
+  }
+  \end{mathpar}
+\end{definition}
+
+Any RA can serve as a model of basic connectives of separation logics;
+in particular, $P*Q$ will hold on $a \in M$ if and only if
+there are $a_1,a_2 \in M$ such that $ a = a_1 \raOp a_2 $ and
+$P$ holds on $a_1$ and $Q$ holds on $a_2$.
+
+\thelogic's assertions will be interpreted over a specific RA,
+which we construct as the combination of other basic RAs.
+The main component is the Probability Spaces RA,
+which uses independent product as the RA operation.
+
+\begin{definition}[Probability Spaces RA]
+  The \emph{probability spaces RA}
+  $ \PSpRA_\Outcomes $
+  is the resource algebra
+  ${(\ProbSp(\Outcomes) \dunion \set{\invalid}, \raLeq, \raValid, \raOp, \Triv{\Outcomes})}$
+  where
+  $\raLeq$ is the extension order with $\invalid$ added as the top element,
+  that is,
+    $ \psp_1 \raLeq \psp_2 \is \psp_1 \extTo \psp_2 $ and
+    $ \forall a \in \PSpRA_\Outcomes\st
+        a \raLeq \invalid$;
+  $\raValid(a) \is a \neq \invalid$;
+  composition is independent product:\[
+    a \raOp b \is
+      \begin{cases}
+        \psp_1 \iprod \psp_2
+          \CASE a=\psp_1, b=\psp_2, \text{ and }
+                \psp_1 \iprod \psp_2 \text{ is defined}
+        \\
+        \invalid \OTHERWISE
+      \end{cases}
+  \]
+\end{definition}
+
+The fact that $\PSpRA_\Outcomes$ satisfies the axioms of RAs is
+established in~\appendixref{sec:appendix:model} and builds on the analogous
+construction in Lilac.
+In comparison with the coarser model of PSL,
+independent product represents a more sophisticated way of separating
+probability spaces.
+In PSL, separation of distributions requires the distributions to
+involve disjoint sets of variables, ruling out
+assertions like
+$ \distAs{\p{x}}{\prob} * \sure{\p{x}=\p{y}} $
+or
+$ \own{\p{x}} * \own{\code{x xor y}} $,
+which are satisfiable in Lilac and \thelogic.
+
+\begin{example}
+\label{ex:indip-prod}
+  Assume there are only two variables $\p{x}$ and $\p{y}$.
+  Let $X_v = \set{ \store | \store(\p{x}) = v}$
+  and  $\psp_1 = (\salg_1,\prob_1) $ with
+  $ \salg_1 = \sigcl{\set{ X_v | v \in \Val}} $
+  and let $ \prob_1 $ give \p{x} the distribution of a fair coin,
+  \ie $ \prob_1 $ is
+  the extension to $\salg_1$ of
+  $ \prob_1(X_0) = \prob_1(X_1) = \onehalf $.
+  Intuitively, the assertion $\distAs{\p{x}}{\Ber{\onehalf}}$ holds
+  on $\psp_1$
+  (we will define the assertion's interpretation in \cref{sec:prob-assert}).
+  Similarly, $\sure{\p{x}=\p{y}}$ holds on $\psp_2 = (\salg_2, \prob_2)$
+  where
+  $
+    \salg_2 = \set{\emptyset, \Store, \set{E}, \Store\setminus E}
+  $ with $ E = \set{\store | \store(\p{x})=\store(\p{y})} $
+  and $\prob_2(E) = 1$.
+  Note that $\salg_2$ is very coarse:
+  it does not contain events that can pin the value of \p{x} precisely;
+  thanks to this, $\prob_2$ does not need to specify what is the distribution of \p{x}, but only that \p{y} will coincide on \p{x} with probability~1.
+  It is easy to see that the independent product of $\psp_1$ and $\psp_2$
+  exists and is $\psp_3 = (\salg_1 \punion \salg_2, \prob_3)$
+  where $\prob_3$ is determined by
+  $ \prob_3(X_0 \inters E) = \prob_3(X_1 \inters E) = \onehalf $,
+  \ie makes \p{x} \p{y} the outcomes of the same fair coin.
+  This means $\psp_3$ is a model of $\distAs{\p{x}}{\Ber{\onehalf}} * \sure{\p{x}=\p{y}}$.
+\end{example}
+
+
+When state is immutable, like in Lilac (which uses a functional language),
+the $\PSpRA_\Outcomes$ RA is adequate to support a logic for probabilistic independence.
+There is however an obstacle in adopting independent product in a language
+with mutable state.
+
+\begin{example}
+  Consider a simple assignment \code{x:=0}.
+  In the spirit of separation logic's local reasoning,
+  we would want to prove a
+  small-footprint triple for the assignment, \ie one where the precondition
+  only involves ownership of the variable \p{x}.
+  We could try with $ \distAs{x}{\prob} $ (for arbitrary $\prob$)
+  but we would run into problems proving the frame property:
+  as we remarked, an assertion like $\sure{\p{x}=\p{y}}$ is
+  a valid frame of $ \distAs{x}{\prob} $;
+  yet if $y \ne 0$, such frame would not hold after the assignment.
+\end{example}
+
+We solve this problem by combining $\PSpRA$ with an RA of permissions over variables.
+The idea is that in addition to information about the distribution,
+assertions can indicate which ``write permissions'' we own on variables.
+An assertion that owns write permissions on \p{x} would be incompatible
+with any frame predicating on \p{x}.
+Then a triple for assignment just needs to require write permission
+to the assigned variable.
+We model permissions using a standard fractional permission RA.
+
+\begin{definition}The \emph{permissions RA}
+  is defined as
+  $(\Perm, \raLeq, \raValid, \raOp, \raUnit)$
+  where
+  $ \Perm \is \Var \to \PosRat $,
+  $ {a \raLeq b} \is {\forall \p{x} \in \Var \st a(\p{x}) \leq b(\p{x})} $,
+  $ \raValid(a) \is (\forall \p{x} \in \Var \st a(\p{x}) \leq 1) $,
+  $ a_1 \raOp a_2 \is \fun \p{x}. a_1(\p{x}) + a_2(\p{x})$ and
+  $ \raUnit = \fun \wtv.0 $.
+\end{definition}
+
+We now want to combine permissions with probability spaces.
+The goal is to allow probability spaces to contain only information
+about variables of which we have some non-zero permission.
+This gives rise to the following definition.
+
+\begin{definition}[Compatibility]
+  Given a probability space $\psp \in \ProbSp(\Store)$ and
+  a permission map $\permap \in \Perm$,
+we say that $\psp$ is \emph{compatible} with $\permap$,
+  written $\psp\compat\permap$,
+  if there exists
+  $\psp' \in \ProbSp((\Var \setminus S) \to \Val)$
+  such that
+  $\psp = \psp' \pprod \Triv{S \to \Val}$,
+  where
+  $S = \set{x \in \Var | \permap(x) = 0}.$
+  Note that we are exploiting the isomorphism
+  $
+    \Store \iso
+    ((\Var \setminus S) \to \Val)
+      \times
+      (S \to \Val).
+  $
+  We extend the notion to $ \PSpRA_{\Store} $
+  by declaring $ \invalid \compat \permap \is \True$.
+\end{definition}
+
+We can now construct an RA which combines probability spaces and permissions.
+
+\begin{definition}Let
+  $
+    \PSpPmRA \is
+      \set{
+        (\maybePsp, \permap)
+          | \maybePsp \in \PSpRA_{\Store},
+            \permap \in \Perm,
+            \maybePsp \compat \permap
+      }.
+  $
+  We associate with $\PSpPmRA$ the
+  \emph{Probability Spaces with Permissions}~RA
+  $
+    (\PSpPmRA, \raLeq, \raValid, \raOp, \raUnit)
+  $
+  where
+\begin{align*}
+    \raValid((\maybePsp, \permap)) &\is
+      \maybePsp \neq \invalid
+      \land \forall\p{x}.\permap(\p{x}) \leq 1
+    &
+    (\maybePsp, \permap) \raOp (\maybePsp', \permap') &\is
+      (\maybePsp \raOp \maybePsp', \permap \raOp \permap')
+    \\
+    (\maybePsp, \permap) \raLeq (\maybePsp', \permap') &\is
+      \maybePsp \raLeq \maybePsp'
+      \text{ and }
+      \permap \raLeq \permap'
+    &
+    \raUnit &\is ( \Triv{\Store}, \fun \p{x}. 0)
+  \end{align*}
+\end{definition}
+
+
+
+
+
+\begin{example}
+\label{ex:perm-ra}
+  Using $\PSpPmRA$,
+  we can refine an assertion
+  $\distAs{\p{x}}{\prob}$ into
+  $(\distAs{\p{x}}{\prob})\withperm{x:q}$,
+  which holds on resources $(\psp, \permap)$ where $\psp$ distributes \p{x}
+  as $\prob$ and $\permap(\p{x})\geq q$.
+  What this achieves is to be able to differentiate between an assertion
+  $(\distAs{\p{x}}{\prob})\withperm{x:\onehalf}$ which allows frames to predicate on $\p{x}$ (\eg $\sure{\p{x}=\p{y}}$) and
+  an assertion $(\distAs{\p{x}}{\prob})\withperm{x:1}$ which does not allow the
+  frame and consequently allows mutation of~\p{x}.
+\end{example}
+
+While this allows for a clean semantic treatment of mutation and independence,
+it does incur some bookkeeping of permissions in practice,
+which we omitted in the examples of \cref{sec:overview}.
+The necessary permissions are however easy to infer
+from the variables used in the assertions,
+as we will illustrate later in \cref{ex:perm-triples}.
+
+Finally, to build \thelogic's model we simply construct an RA
+of \pre I-indexed tuples of probability spaces with permissions.
+
+\begin{definition}[\thelogic\ RA]
+Given a set of indices~$I$ and a RA~$M$,
+  the \emph{product RA} $ \Hyp[I]{M} $ is the pointwise lifting
+  of the components of~$M$.
+\thelogic's model is $\Model_I \is \Hyp{\PSpPmRA}$.
+\end{definition}
+
+\subsection{Probabilistic Hyper-Assertions}
+\label{sec:prob-assert}
+
+Now we turn to the assertions in our logic.
+We take a semantic approach to assertions:
+we do not insist on a specific syntax and instead characterize
+what constitutes an assertion by its type.
+In Separation Logic, assertions are defined relative to some RA~$M$,
+as the upward closed functions $ M \to \Prop $.
+An assertion $ P \from M \to \Prop $ is upward closed if
+$ \forall a, a' \in M\st a \raLeq[M] a' \implies P(a) \implies P(a'). $
+We write $ M \ucto \Prop $ for the type of upward closed assertions on $M$.
+We define hyper-assertions to be assertions over $\Model_I$,
+\ie $P \in \HAssrt_I \is \Model_I \ucto \Prop $.
+Entailment is defined as
+$
+  (P \proves Q) \is
+    \forall a \in M\st
+      \raValid(a) \implies (P(a) \implies Q(a)).
+$
+Logical equivalence is defined as entailment in both directions:
+$ P \lequiv Q \is (P \proves Q) \land (Q \proves P) $.
+We inherit the basic connectives
+(conjunction, disjunction, separation, quantification)
+from SL, which are well-defined on arbitrary RAs, including~$\Model_I$.
+In particular:
+\begin{align*}
+  P * Q &\is \fun a.
+    \exists b_1,b_2 \st
+      (b_1 \raOp b_2) \raLeq a \land
+      P(b_1) \land
+      Q(b_2)
+  &
+  \pure{\varphi} &\is \fun \wtv. \varphi
+  &
+  \Own{b} &\is \fun a. b \raLeq a
+\end{align*}
+Pure assertions $\pure{\varphi}$ lift meta-level propositions~$\varphi$
+to assertions (by ignoring the resource).
+$\Own{b}$ holds on resources that are greater or equal than~$b$ in the RA order;
+this means~$b$ represents a lower bound on the available resources.
+
+
+
+We now turn to assertions
+that are specific to probabilistic reasoning in \thelogic{},
+\ie the ones that can only be interpreted in $\Model_I$.
+We use the following two abbreviations:
+\begin{align*}
+  \Own{\m{\salg}, \m{\prob}, \m{\permap}} &\is
+    \Own{((\m{\salg}, \m{\prob}), \m{\permap})}
+&
+  \Own{\m{\salg}, \m{\prob}} &\is
+    \E \m{\permap}. \Own{\m{\salg}, \m{\prob}, \m{\permap}}
+\end{align*}
+
+To start, we define \emph{\pre A-typed assertion expressions}~$ \aexpr $
+which are of type
+$ \aexpr \from \Store \to A $.
+Note that the type of the semantics of a program expression $\sem{\expr} \from \Store \to \Val$ is a \pre\Val-typed assertion expression; because of this we seamlessly use program expressions in assertions, implicitly coercing them to their semantics.
+Since in general we deal with hyper-stores $\m{\store} \in \Hyp{\Store}$,
+we use the notation $\aexpr\at{i}$ to denote the application of $\aexpr$ to the
+store $\m{\store}(i)$.
+Notationally, it may be confusing to read composite expressions like
+$ (\p{x}-\p{z})\at{i} $, so we write them for clarity with each program variable annotated with the index, as in $\ip{x}{i} - \ip{z}{i}$.
+
+\paragraph{The meaning of owning~$ \distAs{\Ip{x}{1}}{\prob} $}
+A function $ f \from A \to B $ is \emph{measurable} in a \salgebra{}
+$ \salg \of \SigAlg(A) $ if $ \inv{f}(b) = \set{a \in A | f(a) = b} \in \salg $
+for all $b\in B$.
+An expression $\aexpr$ always defines a measurable function
+(\ie a \emph{random variable})
+in $\Full{\Store}$,
+but might not be measurable in some sub-algebras of $\Full{\Store}$.
+Lilac proposed to use measurability as the notion of ownership:
+an expression~$\aexpr$ is owned in any resources that contains enough
+information to determine its distribution, \ie that makes $\aexpr$ measurable.
+While this makes sense conceptually,
+we discovered it made another important connective of Lilac,
+almost sure equality, slightly flawed
+(in that it would not support the necessary laws).\footnote{In fact, a later revision~\cite{lilac2} corrected the issue,
+  although with a different solution from ours.
+  See~\cref{sec:relwork}.}
+We propose a slight weakening of the notion of measurability which solves
+those issues while still retaining the intent behind the meaning of ownership in relation to independence and conditioning.
+We call this weaker notion ``almost measurability''.
+
+\begin{definition}[Almost-measurability]
+  \label{def:almost-meas}
+  Given a probability space $ (\salg,\prob) \in \ProbSp(\Outcomes) $
+  and a set $\event \subs \Outcomes$,
+  we say $ \event $ is \emph{almost measurable} in $(\salg, \prob)$,
+  written $ \almostM{\event}{(\salg, \prob)} $,
+  if \[
+    \exists \event_1,\event_2 \in \salg \st
+    \event_1 \subs \event \subs \event_2
+    \land
+    \prob(\event_1)=\prob(\event_2)
+  \]
+  We say a function~$ \aexpr \from \Outcomes \to A $,
+  is \emph{almost measurable} in $(\salg, \prob)$,
+  written $ \almostM{\aexpr}{(\salg, \prob)} $,
+  if $
+  {\almostM{\inv{\aexpr}(a)}{(\salg, \prob)}}
+  $
+  for all $a \in A$.
+When
+  $ \event_1 \subs \event \subs \event_2$
+  and
+  $ \prob(\event_1)=\prob(\event_2)=p $,
+  we can unambiguously assign probability~$p$ to $\event$,
+  as any extension of~$\prob$ to $\Full{\Outcomes}$ must
+  assign~$p$ to $\event$;
+  then we write~$\prob(\event)$ for $p$.
+\end{definition}
+
+While almost-measurability does not imply measurability,
+it constrains the current probability space to contain enough information
+to uniquely determine the distribution of~$\aexpr$ in any
+extension where~$\aexpr$ becomes measurable.
+For example let $X=\set{\store | \store(\p{x}) = 42}$ and
+$ \salg = \sigma(\set{\event}) = \set{\Store,\emptyset,X,\Store\setminus X}$.
+If $ \prob(X) = 1 $, then $ \almostM{\p{x}}{(\salg,\prob)} $
+holds but $\p{x}$ is not measurable in~$\salg$, as $\salg$ lacks events
+for $\p{x}=v$ for all~$v$ except~$42$.
+Nevertheless, any extension $(\salg',\prob') \extOf (\salg,\prob)$
+where $\p{x}$ is measurable,
+would need to assign $\prob'(X) = 1$ and
+$\prob(\p{x}=v) = 0$ for every $v \ne 42$.
+
+We arrive at the definition of the assertion
+$\distAs{\aexpr\at{i}}{\prob}$ which requires
+$\aexpr\at{i}$ to be almost-measurable,
+determining its distribution as~$\prob$ in any extension
+of the local probability space.
+Formally, given $ \prob \of \Dist(\Full{A}) $ and $\aexpr \from \Store \to A$,
+we define:
+\begin{align*}
+  \distAs{\aexpr\at{i}}{\prob} & \is
+  \E \m{\salg},\m{\prob}.
+  \Own{\m{\salg},\m{\prob}} *
+  \pure{
+    \almostM{\aexpr}{(\m{\salg}(i),\m{\prob}(i))}
+    \land
+    \prob = \m{\prob}(i) \circ \inv{\aexpr}
+  }
+\end{align*}
+The assertion states that we own just enough information about the probability
+space at index~$i$, so that its distribution is uniquely determined as~$\prob$ in any extension of the space.
+
+
+
+Using the $\distAs{\aexpr\at{i}}{\prob}$ assertion
+we can define a number of useful derived assertions:
+\begin{align*}
+  \expectOf{\aexpr\at{i}} = r & \is
+    \E \prob.
+      \distAs{\aexpr\at{i}}{\prob} *
+      \pure{
+r = \Sum*_{a\in\psupp(\prob)} \prob(a) \cdot a
+      }
+  &
+  \sure{\aexpr\at{i}} &\is
+\distAs{(\aexpr \in \true)\at{i}}{\dirac{\True}}
+  \\
+  \probOf{\aexpr\at{i}} = r & \is
+    \E \prob.
+    \distAs{\aexpr\at{i}}{\prob} *
+    \pure{
+      \prob(\true) = r
+    }
+  &
+  \own{\aexpr\at{i}} &\is
+    \E \prob. \distAs{\aexpr\at{i}}{\prob}
+\end{align*}
+Assertions about
+expectations ($\expectOf{\aexpr\at{i}}$) and
+probabilities ($\probOf{\aexpr\at{i}}$),
+simply assert ownership of some distribution with the desired (pure) property.
+The ``almost surely'' assertion
+$\sure{\aexpr\at{i}}$ takes a boolean-valued expression $\aexpr$ and
+asserts that it holds (at~$i$) with probability 1.
+As remarked in \cref{ex:indip-prod}, an assertion like
+$\sure{\Ip{x}{1}=\Ip{y}{1}}$ owns the expression~$(\Ip{x}{1}=\Ip{y}{1})$ but not necessarily~$\Ip{x}{1}$ itself:
+the only events needed to make the expression almost measurable are
+$ \Ip{x}{1}=\Ip{y}{1} $ and $\Ip{x}{1}\ne\Ip{y}{1}$,
+which would be not enough to
+make~$\Ip{x}{1}$ itself almost measurable.
+This means that an assertion like
+$ \own{\Ip{x}{1}} * \sure{\Ip{x}{1}=\Ip{y}{1}} $ is satisfiable.
+
+\paragraph{Permissions}
+The previous example highlights the difficulty with supporting mutable state:
+owning $ \distAs{\Ip{x}{1}}{\prob} $ is not enough to allow safe mutation,
+because the frame can record information like~$\sure{\Ip{x}{1}=\Ip{y}{1}}$,
+which could be invalidated by an assignment to $\p{x}$.
+Our solution is analogous to the ``variables as resource''
+technique in Separation Logic~\cite{BornatCY06},
+and uses the permission component of \thelogic's~RA.
+To manipulate permissions we define the assertions:
+\begin{align*}
+  \perm{\ip{x}{i}:q} &\is
+    \E\m{\psp},\m{\permap}.
+      \Own{\m{\psp},\m{\permap}}
+      * \pure{\m{\permap}(i)(\p{x}) = q}
+  &
+  P\withp{\m{\permap}} &\is
+    P \land \E\m{\psp}.\Own{\m{\psp}, \m{\permap}}
+\end{align*}
+Now owning $\perm{\Ip{x}{1}:1}$ forbids any frame to retain information
+about $\Ip{x}{1}$: any resource compatible with $\perm{\Ip{x}{1}:1}$
+would have a \salgebra\ which is trivial on $\Ip{x}{1}$.
+In practice, preconditions are always of the form
+$ P\withp{\m{\permap}} $ where $\m{\permap}$ contains full permissions
+for every variable the relevant program mutates,
+and non-zero permissions for the other variables referenced in the assertions or program.
+When framing, one would distribute evenly the permissions to each separated
+conjunct, according to the variables mentioned in the assertions.
+We illustrate this pattern concretely in \cref{ex:perm-triples}.
+
+\begin{wrapfigure}[4]{R}{23ex}\centering
+$
+  \let\LabTirName\RuleNameLbl \infer*[lab=and-to-star]{
+  \idx(P) \inters \idx(Q) = \emptyset
+}{
+  P \land Q \proves P \sepand Q
+}   \label{rule:and-to-star}
+$
+\end{wrapfigure}
+\paragraph{Relevant indices}
+Sometimes it is useful to determine which indices are relevant for an assertion.
+Semantically, we can determine if the indices $J \subs I$ are irrelevant to~$P$
+by
+$
+\irrel_J(P) \is
+  \forall a \in \Model_I \st
+    \bigl(
+      \exists \pr{a} \st
+        \raValid(\pr{a})
+        \land
+        a = \pr{a} \setminus J
+        \land P(\pr{a})
+    \bigr)
+    \implies P(a).
+$
+The set $\idx(P)$ is the smallest subset of $I$ so that
+$ \irrel_{I\setminus \idx(P)}(P) $ holds.
+\Cref{rule:and-to-star} states that separation between resources
+that live in different indexes is the same as normal conjunction:
+distributions at different indexes are neither independent nor correlated;
+they simply live in ``parallel universes'' and can be related as needed.
+
+
+\subsection{\SuperCond}
+
+
+As we discussed in \cref{sec:overview},
+the centerpiece of \thelogic{} is the \supercond\ modality,
+which we can now define fully formally.
+
+
+\begin{definition}[\Supercond\ modality]
+  \label{def:c-mod}
+  Let $ \prob \in \Dist(\Full{A}) $
+  and $ K \from A \to \HAssrt_I $,
+  then we define the assertion
+  $ \CMod{\prob} K \of \HAssrt_I $
+  as follows
+  (where $ \m{\krnl}(I)(v) \is \m[i: \m{\krnl}(i)(v) | i \in I] $):
+  \begin{align*}
+    \CMod{\prob} K &\is
+    \fun a.
+    \begin{array}[t]{@{}r@{\,}l@{}}
+      \E \m{\sigmaF}, \m{\mu}, \m{\permap}, \m{\krnl}.
+      & (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raLeq a
+      \land
+      \forall i\in I\st
+      \m{\mu}(i) = \bind(\prob, \m{\krnl}(i))
+   \\ & \land \;
+   \forall v \in \psupp(\prob).
+   K(v)(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})
+    \end{array}
+  \end{align*}
+
+\end{definition}
+The definition follows the principle we explained in
+\cref{sec:overview:supercond}:
+$ \CMod{\prob} K $ holds on resources where we own some
+tuple of probability spaces which can all be seen
+as the convex combinations of the same~$\prob$ and some kernel.
+Then the conditional assertion~$K(v)$ is required to hold on the
+tuple of kernels evaluated at~$v$.
+Note that the definition is upward-closed by construction.
+
+\begin{mathfig}[\small]
+  \begin{proofrules}
+    \infer*[lab=c-true]{}{
+  \proves \CC\prob \wtv.\True
+}     \label{rule:c-true}
+
+    \infer*[lab=c-unit-l]{}{
+  \CC{\dirac{v_0}} v.K(v)
+  \lequiv
+  K(v_0)
+}     \label{rule:c-unit-l}
+
+    \infer*[lab=c-transf]{
+f \from \psupp(\prob') \to \psupp(\prob)
+  \;\text{ bijective}
+  \\\\
+  \forall b \in \psupp(\prob') \st
+    \prob'(b) = \prob(f(b))
+}{
+  \CC\prob a.K(a)
+  \proves
+  \CC{\prob'} b.K(f(b))
+}     \label{rule:c-transf}
+
+    \infer*[lab=c-and]{
+  \idx(K_1) \inters \idx(K_2) = \emptyset
+}{
+  \CC{\prob} v. K_1(v)
+    \land
+  \CC{\prob} v. K_2(v)
+  \proves
+  \CC\prob v.
+    (K_1(v) \land K_2(v))
+}     \label{rule:c-and}
+
+    \infer*[lab=sure-str-convex]{}{
+  \CC\prob v.(K(v) * \sure{\aexpr\at{i}})
+  \proves
+  \sure{\aexpr\at{i}} * \CC\prob v.K(v)
+}     \label{rule:sure-str-convex}
+
+    \infer*[lab=c-pure]{}{
+  \pure{\prob(\event)=1} * \CC\prob v.K(v)
+  \lequiv
+  \CC\prob v.(\pure{v \in \event} * K(v))
+}     \label{rule:c-pure}
+  \end{proofrules}
+  \caption{Primitive Conditioning Laws.}
+  \label{fig:cond-laws}
+\end{mathfig}
+
+We discussed a number of \supercond\ laws in \cref{sec:overview}.
+\Cref{fig:cond-laws} shows some important primitive laws
+that were left out.
+\Cref{rule:c-true} allows to introduce a trivial modality;
+together with \ref{rule:c-frame} this allows for the introduction
+of the modality around any assertion.
+\Cref{rule:c-unit-l} is a reflection of the left unit rule of the underlying
+monad: conditioning on the Dirac distribution can be eliminated.
+\Cref{rule:c-transf} allows for the transformation of the
+convex combination using~$\prob$
+into using~$\prob'$ by applying a bijection between their support
+in a way that does not affect the weights of each outcome.
+\Cref{rule:c-and} allows to merge two modalities using the same~$\prob$,
+provided the inner conditioned assertions do not overlap
+in their relevant indices.
+
+
+\Cref{rule:sure-str-convex} internalizes a stronger version of convexity of
+$ \sure{\aexpr\at{i}} $ assertions.
+When $K(v) = \True$ we obtain convexity
+$
+  \CC\prob v.\sure{\aexpr\at{i}}
+  \proves
+  \sure{\aexpr\at{i}}.
+$
+Additionally the rule asserts that the unconditional~$\sure{\aexpr\at{i}}$
+keeps being independent of the conditional $K$.
+
+Finally, \cref{rule:c-pure} allows to translate facts that hold with probability~1 in~$\prob$ to predicates that hold on every~$v$ bound by conditioning on~$\prob$.
+
+
+
+We can now give the general encoding of relational lifting
+in terms of \supercond.
+
+\begin{definition}[Relational Lifting]
+\label{def:rel-lift}
+  Let $X \subs I \times \Var$;
+  given a relation~$R$ between variables in $X$,
+  \ie $R \subs \Val^{X}$,
+  we define
+  (letting
+  $
+    \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X} \is
+      \LAnd_{\ip{x}{i}\in X}
+        \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}
+  $):
+  \begin{align*}
+    \cpl{R} &\is
+      \E \prob \of \Dist(\Val^{X}).
+        \pure{\prob(R) = 1} *
+        \CC\prob \m{v}.
+          \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+  \end{align*}
+\end{definition}
+
+\begin{example}
+Let us expand \cref{def:rel-lift} on
+$\cpl{ \Ip{k}{1} = \Ip{c}{2} }$.
+The assertion concerns the variables
+$X = \set{\Ip{k}{1}, \Ip{c}{2}}$;
+to instantiate the definition we see the assertion as
+the lifting $ \cpl{R_{=}} $
+of the relation $ R_{=} \subs \Val^X $
+defined as
+$
+  R_{=} =
+    \set{ \m{v} \in \Val^{X}
+        | \m{v}(\Ip{k}{1}) = \m{v}(\Ip{c}{2}) }
+  ,
+$
+giving rise to the assertion
+\[
+  \E \prob.
+    \pure{\prob(R_{=}) = 1} *
+    \CC\prob \m{v}.
+      \sure{\Ip{k}{1} = \m{v}(\Ip{k}{1})}
+      \land
+      \sure{\Ip{c}{2} = \m{v}(\Ip{c}{2})}
+\]
+Here, $\Val^X$ can be alternatively presented as
+$ \Val^2 $, giving
+$ R_{=} \equiv \set{(v,v) | v \in \Val} $.
+With this reformulation, the encoding of \cref{def:rel-lift} becomes
+\[
+  \E \prob.
+    \pure{\prob(R_{=}) = 1} *
+    \CC\prob (v_1,v_2).
+      \sure{\Ip{k}{1} = v_1}
+      \land
+      \sure{\Ip{c}{2} = v_2}
+\]
+Thanks to \ref{rule:c-pure}, the assertion can be rewritten as
+$
+  \E \prob.
+    \CC\prob (v_1,v_2).
+      \pure{R_{=}(v_1,v_2)} *
+      \sure{\Ip{k}{1} = v_1}
+      \land
+      \sure{\Ip{c}{2} = v_2}
+$
+which can be simplified to
+$
+  \E \prob.
+  \CC\prob (v_1,v_2).\bigl(
+    \sure{\Ip{k}{1} = v_1} \land
+    \sure{\Ip{c}{2} = v_2} \land
+    \pure{v_1=v_2}
+  \bigr)
+$
+(which is how we presented the encoding in \cref{sec:overview:supercond}).
+Since $R_{=}$ is so simple,
+by \ref{rule:c-transf} we can simplify the assertion even further and obtain
+$
+  \E \prob.
+  \CC\prob v.\bigl(
+    \sure{\Ip{k}{1} = v} \land
+    \sure{\Ip{c}{2} = v}
+  \bigr).
+$
+\end{example}
+
+In \cref{rule:rl-merge},
+the two relations might refer to different indexed variables,
+\ie $R_1\in \Val^{X_1}$ and $R_2\in \Val^{X_2}$;
+the notation $R_1 \land R_2$ is defined as
+$
+  R_1 \land R_2 \is
+    \set*{ \m{s} \in \Val^{X_1\union X_2}
+      | \restr{\m{s}}{X_1} \in R_1 \land \restr{\m{s}}{X_2} \in R_2
+    }.
+$
+
+\subsection{Weakest Precondition}
+
+To reason about (hyper-)programs,
+we introduce a \emph{weakest-precondition assertion}~(WP)
+$\WP {\m{t}} {Q}$, which intuitively states:
+given the current input distributions (at each index),
+if we run the programs in $\m{t}$ at their corresponding index
+we obtain output distributions that satisfy~$Q$;
+furthermore, every frame is preserved.
+We refer to the number of indices of $\m{t}$ as the \emph{arity} of the WP.
+
+
+
+\begin{definition}[Weakest Precondition]
+\label{def:wp}
+For $a\in\Model_I$ and $\m{\prob} \of \Dist(\Full{\Hyp{\Store}})$
+let $ a \raLeq \m{\prob} $ mean
+$
+  a \raLeq (\Full{\Hyp{\Store}},\m{\prob},\fun x.1).
+$
+\[
+  \WP {\m{t}} {Q} \is
+    \fun a.
+      \forall \m{\prob}_0.
+        \forall c \st
+        (a \raOp c) \raLeq \m{\prob}_0
+        \implies
+        \exists b \st
+        \bigl(
+          (b \raOp c) \raLeq \sem{\m{t}}(\m{\prob}_0)
+          \land
+          Q(b)
+        \bigr)
+\]
+\end{definition}
+The assertion holds on the resources~$a$ such that
+if, together with some frame~$c$,
+they can be seen as a fragment of the global distribution
+$\m{\prob}_0$, then it is possible to update the resource
+to some~$b$ which still composes with the frame~$c$,
+and~$b\raOp c$ can be seen as a fragment of the output distribution
+$\sem{\m{t}}(\m{\prob}_0)$.
+Moreover, such~$b$ needs to satisfy the postcondition~$Q$.
+
+We discussed some of the WP rules of \thelogic\ in \cref{sec:overview};
+the full set of rules is produced in \appendixref{sec:appendix:rules}.
+Let us briefly mention the axioms for assignments:
+\begin{proofrules}\small
+    \infer*[lab=wp-samp]{}{
+  \perm{\ip{x}{i} : 1}
+  \proves
+  \WP {\m[i: \code{x:~$\dist$($\vec{v}$)}]}
+      {\distAs{\ip{x}{i}}{\dist(\vec{v})}}
+}     \label{rule:wp-samp}
+
+    \infer*[lab=wp-assign]{
+  \p{x} \notin \pvar(\expr)
+  \\
+  \forall \p{y} \in \pvar(\expr) \st
+    \m{\permap}(\ip{y}{i}) > 0
+  \\
+  \m{\permap}(\ip{x}{i})=1
+}{
+  (\m{\permap})
+  \proves
+  \WP {\m[i: \code{x:=}\expr]}[\big] {
+    \sure{\p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}}
+  }
+}
+     \label{rule:wp-assign}
+  \end{proofrules}
+\Cref{rule:wp-samp} is the expected ``small footprint'' rule for
+sampling; the precondition only requires full permission on the variable
+being assigned, to forbid any frame to record information about it.
+\Cref{rule:wp-assign} requires full permission on \p{x},
+and non-zero permission on the variables on the RHS of the assignment.
+This allows the postcondition to assert that \p{x} and the expression~$\expr$
+assigned to it are equal with probability~1.
+The condition $\p{x} \notin \pvar(\vec{\expr})$ ensures $\expr$ has the same
+meaning before and after the assignment, but is not restrictive:
+if needed the old value of \p{x} can be stored in a temporary variable,
+or the proof can condition on \p{x} to work with its pure value.
+
+
+The assignment rules are the only ones that impose constraints on the owned
+permissions.
+In proofs, this means that most manipulations simply thread through permissions
+so that the needed ones can reach the applications of the assignment rules.
+To avoid cluttering derivations with this bookkeeping,
+we mostly omit permission information from assertions.
+The appropriate permission annotations can be easily inferred,
+as we show in the following example.
+
+\begin{example}
+\label{ex:perm-triples}
+  Consider the following triple with permissions omitted:
+  \[
+    \distAs{\Ip{x}{1}}{\prob_1} *
+    \sure{\Ip{x}{1}=\Ip{y}{1}} *
+    \distAs{\Ip{z}{1}}{\prob_2}
+    \proves
+    \WP {\m[\I1: \code{x:=z}]} {
+      \sure{\Ip{x}{1}=\Ip{z}{1}} *
+      \distAs{\Ip{z}{1}}{\prob_2}
+    }
+  \]
+  To be able to apply \cref{rule:wp-assign},
+  we need to get $\perm{x:1, z:q}$ from the precondition,
+  for some $q>0$.
+  To do so, formally, we need to be more explicit about the permissions owned.
+  The pattern is that whenever a triple is considered, the
+  precondition should own full permissions on the variables
+  assigned to in the program term, and non-zero permission on the other relevant variables.
+  In our example we need permission~1 for $\Ip{x}{1}$ and arbitrary permissions
+  $q_1,q_2>0$ for $\Ip{y}{1}$ and $\Ip{z}{1}$ respectively.
+  Since we have two separated sub-assertions that refer to $\Ip{x}{1}$,
+  we would split the full permission into two halves,
+  obtaining the precondition:
+  \[
+    (\distAs{\Ip{x}{1}}{\mu_1})\withperm{\Ip{x}{1}:\onehalf} *
+    \sure{\Ip{x}{1}=\Ip{y}{1}}\withperm{\Ip{x}{1}:\onehalf,\Ip{y}{1}:q_1} *
+    (\distAs{\Ip{z}{1}}{\prob_2})\withperm{\Ip{z}{1}:q_2}
+  \]
+  To obtain the full permission on $\Ip{x}{1}$ we are now forced to consume
+  both the first two resources, weakening the precondition to:
+  \[
+    \perm{\Ip{x}{1}:1} *
+    \perm{\Ip{y}{1}:q_1} *
+    (\distAs{\Ip{z}{1}}{\prob_2})\withperm{\Ip{z}{1}:q_2}
+  \]
+  This step in general forces the consumption of any frame
+  recording information about the assigned variables.
+  To obtain non-zero permission for $\Ip{z}{1}$ while still being able to
+  frame $\distAs{\Ip{z}{1}}{\prob_2}$,
+  we let~$q = q_2/2$ and weaken the precondition to:
+  \[
+    \perm{\Ip{x}{1}:1, \Ip{z}{1}:q} *
+    \perm{\Ip{y}{1}:q_1} *
+    (\distAs{\Ip{z}{1}}{\prob_2})\withperm{\Ip{z}{1}:q}
+  \]
+  Now an application of \ref{rule:wp-frame} and \ref{rule:wp-assign}
+  would give us a postcondition:
+  \[
+    \sure{\Ip{x}{1}=\Ip{z}{1}}\withperm{\Ip{x}{1}:1, \Ip{z}{1}:q} *
+    \perm{\Ip{y}{1}:q_1} *
+    (\distAs{\Ip{z}{1}}{\prob_2})\withperm{\Ip{z}{1}:q}
+  \]
+  which is strong enough to imply the desired postcondition.
+  In a fully expanded proof, one would keep the permissions
+  owned in the postcondition so that they can be used in
+  proofs concerning the continuation of the program.
+\end{example}
+

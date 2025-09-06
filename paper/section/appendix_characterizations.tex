@@ -1,0 +1,325 @@
+\section{Characterizations of \SuperCond\ and Relational Lifting}
+\label{sec:appendix:alt-cond-rl}
+
+Interestingly, it is possible to characterize the conditioning modality
+using the other connectives of the logic.
+\begin{proposition}[Alternative Characterization of \Supercond]
+\label{prop:cond-as-wand}
+  The following is a logically equivalent characterization
+  of the \supercond\ modality:
+  \begin{align*}
+    \CMod{\prob} K &\lequiv
+    \begin{array}[t]{@{}r@{\,}l@{}}
+      \E \m{\salg}, \m{\prob}, \m{\permap}, \m{\krnl}.
+        & \Own{\m{\salg}, \m{\prob}, \m{\permap}} *
+        \pure{\forall i\in I\st
+        \m{\mu}(i) = \bind(\prob, \m{\krnl}(i))}
+     \\ & * \;
+     \A v \in \psupp(\prob).
+     \Own{\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap}}
+     \wand
+     K(v)
+    \end{array}
+\end{align*}
+\end{proposition}
+
+
+\begin{proof}
+	In the following, we sometimes abbreviate
+	${\forall i\in I\st
+                \m{\mu}(i) = \bind(\prob, \m{\krnl}(i))}$
+	by writing just ${\m{\mu} = \bind(\prob, \m{\kappa})}$.
+
+	We start with the embedding:
+
+	\begin{align*}
+				&\begin{array}[t]{@{}r@{\,}l@{}}
+        \E \m{\salg}, \m{\prob}, \m{\permap}, \m{\krnl}.
+        & \Own{\m{\salg}, \m{\prob}, \m{\permap}} *
+        \pure{\forall i\in I\st
+                \m{\mu}(i) = \bind(\prob, \m{\krnl}(i))}
+        \\ & * \;
+        \A a \in \psupp(\prob).
+          \Own{\m{\sigmaF}, \m{\krnl}(I)(a), \m{\permap}}
+          \wand
+            K(a)
+ 			 \end{array}\\
+{}\lequiv {} &
+				\fun r.
+        \exists \m{\sigmaF}, \m{\mu}, \m{\permap}, \m{\kappa}.
+        \big(\Own{\m{\sigmaF}, \m{\mu'}, \m{\permap}} \sepand
+				\pprop{\m{\mu} = \bind(\prob, \m{\kappa})} \sepand \\
+					&\qquad \qquad
+        (\forall a \in \psupp(\prob). \Own{\m{\sigmaF}, \m{\kappa} a, \m{\permap}} \sepimp K(a)) \big) (r) \\
+{}\lequiv {} &
+			 \fun r.
+				\exists \m{\sigmaF}, \m{\mu},  \m{\permap},  \m{\kappa},
+				\m{\sigmaF_1}, \m{\mu_1},  \m{\permap_1},
+				\m{\sigmaF_2}, \m{\mu_2}, \m{\permap_2},
+				\m{\sigmaF_3}, \m{\mu_3}, \m{\permap_3}, \\
+				&\qquad \qquad
+				r \extOf (\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1}) \raOp
+				(\m{\sigmaF_2}, \m{\mu_2}, \m{\permap_2}) \raOp (\m{\sigmaF_3}, \m{\mu_3}, \m{\permap_3}) \land\\
+				&\qquad \qquad
+				(\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1}) \extOf (\m{\sigmaF}, \m{\mu}, \m{\permap})  \land
+				\pprop{\m{\mu} = \bind(\prob, \m{\kappa})} \land \\
+				&\qquad \qquad
+				(\forall a \in \psupp(\prob). \forall r_1, r_2 \st
+				r_1 \raOp (\m{\sigmaF_3}, \m{\mu_3}, \m{\permap_3}) = r_2 \land
+				r_1 \extOf (\m{\sigmaF}, \m{\kappa} a, \m{\permap})
+				\implies K(a)(r_2))\\
+{}\lequiv {} &
+				\fun r.
+				\exists \m{\sigmaF}, \m{\mu}, \m{\permap},
+				\m{\sigmaF_3}, \m{\mu_3}, \m{\permap_3}, \m{\kappa}. \\
+				& \qquad \qquad
+				r \extOf
+				(\m{\sigmaF}, \m{\mu}, \m{\permap})  \raOp (\m{\sigmaF_3}, \m{\mu_3}) \land
+				\pprop{\m{\mu} = \bind(\prob, \m{\kappa})} \land \\
+				& \qquad \qquad
+				(\forall a \in \psupp(\prob). \forall r_1, r_2 \st
+				r_1 \raOp (\m{\sigmaF_3}, \m{\mu_3}, \m{\permap_3}) = r_2 \land
+				r_1 \extOf (\m{\sigmaF}, \m{\kappa} a, \m{\permap})
+				\implies K(a)(r_2))
+	\end{align*}
+For the last equivalence, the forward direction holds because
+\begin{align*}
+		r &\extOf (\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1}) \raOp
+		(\m{\sigmaF_2}, \m{\mu_2}, \m{\permap_2}) \raOp (\m{\sigmaF_3}, \m{\mu_3}, \m{\permap_3})\\
+			&\extOf  (\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1}) \raOp (\m{\sigmaF_3}, \m{\mu_3}, \m{\permap_3}) \\
+			&\extOf  (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raOp (\m{\sigmaF_3}, \m{\mu_3}, \m{\permap_3}).
+	\end{align*}
+The backward direction holds because we can pick
+	$(\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1}) = (\m{\sigmaF}, \m{\mu}, \m{\permap})$,
+	$(\m{\sigmaF_2}, \m{\mu_2})$ be the trivial probability space on $\store$ and
+	$\m{\permap_2} = \fun \wtv. 0$.
+
+	\begin{itemize}
+		\item To show that the embedding implies the original assertion $\CMod{\prob} K $,
+	we start with $\m{\mu}(i) \iprod \m{\mu_3}(i)$. For any $i$, we have
+	$\m{\mu}(i) = \bind(\prob, \m{\kappa}(i))$, and thus
+\begin{align*}
+											\m{\mu }(i) \iprod \m{\mu_3}(i)
+											&= \bind(\mu, \m{\kappa}(i)) \iprod \m{\mu_3}(i).
+										\end{align*}
+According to~\cref{lemma:fibre-prod-exists},
+										$\m{\mu }(i) \iprod \m{\mu_3}(i)$ is defined implies that
+										$\m{\kappa}(i)(a) \iprod  \m{\mu_3}(i)$ is defined for any $a \in $.
+										Furthermore,
+\begin{align*}
+											\m{\mu }(i) \iprod \m{\mu_3}(i)
+											&= \bind(\mu, \fun a. \m{\kappa}(i)(a) \iprod  \m{\mu_3}(i) )
+										\end{align*}
+										We abbreviate the hyperkernel $\m[i: \fun a. \m{\kappa}(i)(a) \iprod  \m{\mu_3}(i) \mid i \in I]$
+										as $\m{\kappa'} $.
+For any $a \in \psupp(\prob)$,
+										the assertion
+										\[
+											\forall a \in \psupp(\prob). \forall r_1, r_2.
+											r_1 \iprod (\m{\sigmaF_3}, \m{\mu_3}, \m{\permap_3}) = r_2 \land
+											r_1 \extOf (\m{\sigmaF}, \m{\kappa}(I)a, \m{\permap})
+											\implies K(a)(r_2)
+										\]
+										applies with the specific case
+										$r_1 =  (\m{\sigmaF }, \m{\kappa}(I)(a), \m{\permap})$,
+										gives us
+										\[
+K(a) ((\m{\sigmaF}, \m{\kappa}(I)(a), \m{\permap}) \raOp (\m{\sigmaF_3} , \m{\mu_3}, \m{\permap_3} )])
+										\]
+										By the definition of composition in our resource algebra,
+										we have that $K(a)$ holds on $(\m{\sigmaF} \punion \m{\sigmaF_3},  \m{\kappa}'(I)(a), \m{\permap} + \m{\permap_3})$.
+
+										For any $r$,
+										\begin{itemize}
+											\item If $\raValid(r)$, then there exists $\m{\sigmaF'}, \m{\mu'}, \m{\permap'}$ such that
+												$r = (\m{\sigmaF'}, \m{\mu'}, \m{\permap'})$.
+												Note that
+												\begin{align*}
+													r = (\m{\sigmaF'}, \m{\mu'}, \m{\permap'})
+													&\extOf (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raOp  (\m{\sigmaF_3} , \m{\mu_3}, \m{\permap_3})
+													=  (\m{\sigmaF} \punion \m{\sigmaF_3} , \m{\mu} \iprod \m{\mu_3}, \m{\permap} + \m{\permap_3})
+												\end{align*}
+
+												By~\cref{lemma:bind-extend}, $\m{\mu} \iprod \m{\mu_3} = \bind(\mu, \m{\kappa'})$ implies
+												that there exists $\m{\kappa''}$ such that
+												$\m{\mu}(i) = \bind(\mu, \m{\kappa''}(i)) $, and that for any $a \in \psupp{\mu}$,
+												$(\m{\sigmaF} \punion \m{\sigmaF_3}, \m{\kappa'}(I)(a)) \extTo (\m{\sigmaF'}, \m{\kappa''}(I)(a)) $.
+												Thus, by monotonicity with respect to the extension order,
+												that would imply 	$K(a)$ holds on $(\m{\sigmaF'}, \m{\kappa''}(I)(a), \m{\permap'})$.
+												And $K(a)$ holds on $(\m{\sigmaF'}, \m{\kappa''}(I)(a), \m{\permap'})$ for any
+												$a \in \psupp{\mu}$ together with
+												$\m{\mu}(i) = \bind(\mu, \m{\kappa''}(i))$ implies that $r$ satisfy the original assertion
+												of conditioning modality.
+\item If not $\raValid(r)$, then $r$ satisfies any assertions, so $r$ satisfy the original
+												assertion of conditioning modality.
+										\end{itemize}
+
+									\item
+										To show the other direction that having the original assertion implies the
+										embedded assertion.
+										Assume $\CMod{\mu} K(r)$,
+										that is,
+										\begin{align*}
+											    \begin{array}[t]{@{}r@{\,}l@{}}
+    													\E \m{\sigmaF}, \m{\mu}, \m{\permap}, \m{\krnl}.
+     													 & (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raLeq r
+     													 \land
+     													   \forall i\in I\st
+     													     \m{\mu}(i) = \bind(\prob, \m{\krnl}(i))
+     													 \\ & \land \;
+     													   \forall v \in \psupp(\prob).
+     													     K(v)(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})
+    											\end{array}
+													(r)
+										\end{align*}
+
+										To show that $r$ also satisfy the embedding,
+										we pick the witness for the existential quantifier as follows:
+										let $(\m{\sigmaF_3}, \m{\mu_3})$ be the trivial probability space on
+										$\Store$;
+										let $\m{\permap_3} = \fun \wtv. 0$;
+										pick $(\m{\sigmaF}_{\text{embd}}, \m{\mu}_{\text{embd}}, \m{\permap}_{\text{embd}})$
+										be the $(\m{\sigmaF}_{\text{orig}}, \m{\mu}_{\text{orig}}, \m{\permap}_{\text{orig}})$
+										that witness $\CMod{\mu} K (r)$,
+										and $\m{\kappa}_{\text{embd}} = \m{\kappa}_{\text{orig}}$.
+
+										Then:
+										\begin{itemize}
+											\item First we show
+												\begin{align*}
+													r
+													&\raGeq
+													(\m{\sigmaF}_{\text{orig}}, \m{\mu}_{\text{orig}}, \m{\permap}_{\text{orig}}) \\
+													&= (\m{\sigmaF}_{\text{orig}}, \m{\mu}_{\text{orig}}, \m{\permap}_{\text{orig}}) \raOp (\m{\sigmaF_3}, \m{\mu_3}, \m{\permap_3}) \\
+													&= (\m{\sigmaF}_{\text{embd}}, \m{\mu}_{\text{embd}}, \m{\permap}_{\text{embd}}) \raOp (\m{\sigmaF_3}, \m{\mu_3}, \m{\permap_3})
+												\end{align*}
+\item $\m{\mu}_{\text{orig}} = \bind(\mu, \m{\kappa}_{\text{orig}} (I) (a))$ 
+											implies $\m{\mu}_{\text{embd}} = \bind(\mu, \m{\kappa}_{\text{embd}} (I) (a))$.
+\item For any $r_1, r_2$,
+										\[
+											r_1 \raOp (\m{\sigmaF_3}, \m{\mu_3}, \m{\permap_3}) = r_2 \land
+											r_1 \extOf (\m{\sigmaF}_{\text{embd}}, \m{\kappa}_{\text{embd}} (I)(a), \m{\permap}_{\text{embd}})
+										\]
+										implies that $r_2 = r_1 \extOf (\m{\sigmaF}_{\text{orig}}, \m{\kappa}_{\text{orig}} (I)(a), \m{\permap}_{\text{orig}})$.
+										By the assumption that the orig assertion holds,
+										we have $K(a) (\m{\sigmaF}_{\text{orig}}, \m{\kappa}_{\text{orig}} (I)(a), \m{\permap}_{\text{orig}})$,
+                which implies $K(a)(r_2)$.
+										\end{itemize}
+
+										Therefore, $r$ also satisfy the embedding.\qedhere
+								\end{itemize}
+									\end{proof}
+
+
+
+
+
+
+\begin{lemma}[Alternative Characterization of Relational Lifting]\label{lemma:cpl-is-cpl}
+Given a relation $R$ over $\Store_1 \times \Store_2$,
+	then $\cpl{R}(\m{\sigmaF}, \m{\mu}, \m{\permap})$ holds
+iff there exists $\wh{\mu}$ over $\m{\sigmaF}(1) \otimes \m{\sigmaF}(2)$ such that
+	$\wh{\mu}(R) = 1$,
+  $\wh{\mu} \circ \pi_1^{-1} = \m{\mu}(1)$,
+  and $\wh{\mu} \circ \pi_2^{-1} = \m{\mu}(2)$.
+\end{lemma}
+
+\begin{proof}
+	We first unfold the definition of the coupling modality:
+	\begin{align*}
+		&  \cpl{R} (\m{\sigmaF}, \m{\mu}, \m{\permap})\\
+{} \iff {} &
+		\left( \exists \mu. \mu(R) = 1 \land
+		\CC{\prob} \m{v}.
+		\LAnd_{\ip{x}{i} \in X}
+    \sure{\ip{x}{i} = \m{v}(\ip{x}{i})} \right)
+    (\m{\sigmaF}, \m{\mu}, \m{\permap})
+    \\
+{} \iff {} &
+		\exists \mu. \mu(R) = 1 \land
+		\left( \CC{\prob} \m{v}.
+		\LAnd_{\ip{x}{i} \in X}
+    \sure{\ip{x}{i} = \m{v}(\ip{x}{i})} \right)
+    (\m{\sigmaF}, \m{\mu}, \m{\permap})
+    \\
+{} \iff {}&
+		\exists \prob. \prob(R) = 1 \land
+    \exists \m{\sigmaF'}, \m{\mu'}, \m{\permap'}, \m{\krnl} \st
+      (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raGeq (\m{\sigmaF'}, \m{\mu'}, \m{\permap'}) \land
+      \forall i \in I.\bind(\prob, \m{\krnl}(i) )= \m{\prob}(i) {}\land{} \\
+		&\qquad \qquad 	\forall \m{v}\in \psupp(\prob) \st
+    \left( \LAnd_{\ip{x}{i} \in X} \sure{\ip{x}{i} = \m{v}(\ip{x}{i})} \right)
+    (\m{\sigmaF'}, \m{\mu'}, \m{\permap'})\\
+{} \iff {} &
+		\exists \prob. \prob(R) = 1 \land
+		\exists \m{\sigmaF'}, \m{\mu'}, \m{\permap'}, \m{\krnl} \st
+       (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raGeq (\m{\sigmaF'}, \m{\mu'}, \m{\permap'}) \land
+			\forall i \in I.\bind(\prob, \m{\krnl}(i) )= \prob_i {}\land{}
+		  \\
+			&\qquad \qquad \qquad \forall \m{v}\in \psupp(\prob) \st
+      \LAnd_{i \in \{1,2\}}
+		  \LAnd_{\ip{x}{i} \in X}
+        \pure{\almostM{(\ip{x}{i} = \m{v}(\ip{x}{i}))}{(\sigmaF'(i), \m{\krnl}(i)(\m{v}))} }
+        \land \\
+      & \qquad \qquad \qquad \qquad \qquad \qquad \qquad  \pure{\m{\krnl}(i)(\m{v}) \circ \inv{(\ip{x}{i} = \m{v}(\ip{x}{i}))} = \delta_{\True} }
+	\end{align*}
+
+	Now, to show that
+	$\cpl{R} (\m{\sigmaF}, \m{\mu}, \m{\permap})$
+  implies there exists $\wh{\mu}$ over $\m{\sigmaF}(1) \otimes \m{\sigmaF}(2)$ such that
+	$\wh{\mu}(R) = 1$,
+	$\wh{\mu} \circ \pi_1^{-1} = \mu_1$,
+	and $\wh{\mu} \circ \pi_2^{-1} = \mu_2$, we define $\wh{\mu}$ over
+	$\sigmaF_1 \otimes \sigmaF_2$  as
+	$\bind(\mu, \fun \m{v}. \m{\krnl}(1)(\m{v}) \pprod \m{\krnl}(2)(\m{v}))$.
+	Then,
+\begin{align*}
+		\wh{\mu}(R) &= \bind(\mu, \m{v}. \m{\krnl}(1)(\m{v}) \pprod \m{\krnl}(2)(\m{v}))(R) \\
+								&= \sum_{\mathclap{\m{v} \in \psupp(\prob)}} \mu(\m{v}) \cdot \left( \m{\krnl}(1)(\m{v}) \pprod \m{\krnl}(2)(\m{v}) \right)(R)
+	\end{align*}
+Since $\mu(R) = 1$, then for all $\m{v} \in \psupp_{\prob}$, and $\m{v} \in R$, by additivity:
+	\begin{align}
+		\left( \m{\krnl}(1)(\m{v}) \pprod \m{\krnl}(2)(\m{v}) \right)(R) &\geq \left( \m{\krnl}(1)(\m{v}) \pprod \m{\krnl}(2)(\m{v}) \right)(\m{v}) \notag \\
+   &=  \m{\krnl}(1)(\m{v}) (\pi_1 (\m{v})) \cdot \m{\krnl}(2)(\m{v}) (\pi_2 (\m{v})) \label{eq:cpladequacy:explain}\\
+	 &= \m{\krnl}(1)(\m{v})(\LAnd_{\ip{x}{1} \in X} \ip{x}{1} = \m{v}(\ip{x}{1})) \cdot \m{\krnl}(2)(\m{v})(\LAnd_{\ip{x}{2} \in X} \ip{x}{2} = \m{v}(\ip{x}{2})) \notag \\
+	 &= 1		  \notag
+	\end{align}
+where~\cref{eq:cpladequacy:explain} is because $\m{v}$ as a singleton can also be thought of as a Cartesian product.
+Thus,
+	\begin{align*}
+		\wh{\mu}(R) &= \sum_{\mathclap{\m{v} \in \psupp(\prob)}} \mu(\m{v}) \cdot 1 \cdot 1
+								= \sum_{\mathclap{\m{v} \in \psupp(\prob)}} \mu(\m{v})
+								= 1
+	\end{align*}
+Meanwhile, for $E_i \in \sigmaF_i$, and
+  let $j = 2$ if $i = 1$ and $j = 1$ if $i = 2$,
+\begin{align}
+		(\wh{\mu} \circ \pi_i^{-1}) (E_i)
+&= \wh{\mu} (E_i \times \Store_j) \\
+		&= \bind(\mu, \fun \m{v} . \m{\krnl}(1)(\m{v}) \pprod \m{\krnl}(2)(\m{v}))(  E_i \times \Store_j) \notag \\
+		&= \sum_{\mathclap{\m{v} \in \psupp{\mu}}} \left( \m{\krnl}(1)(\m{v}) \pprod \m{\krnl}(2)(\m{v}) \right) (E_i \times \Store_j) \notag \\
+		&= \sum_{\mathclap{\m{v} \in \psupp{\mu}}} \m{\krnl}(i)(\m{v})(E_i) \cdot \m{\krnl}(j)(\m{v}) (\Store_j) \notag \\
+		&= \sum_{\mathclap{\m{v} \in \psupp{\mu}}} \m{\krnl}(i)(\m{v})(E_i) \cdot 1 \notag \\
+		&= \bind(\mu, \fun \m{v} . \m{\krnl}(i)) (E_i) \notag \\
+		&= \mu_i(E_i) \notag
+	\end{align}
+Thus, we complete the forward direction.
+
+	For the backwards direction,
+	we pick $\mu = \wh{\mu}$,
+  $\m{\mu'}(i) = \pi_{i}\wh{\mu}$ ($\m{\sigmaF'}(i)$ accordingly),
+  $\m{\permap'}=\m{\permap'}$,
+	and $\m{\krnl}(i) = \fun \m{v}. \dirac{\pi_{\ip{x}{i} \in X} \m{v}}$.
+Then,
+\begin{align*}
+		\bind(\mu, \m{\krnl}(i))
+		&= \bind(\wh{\mu}, \fun \m{v}. \dirac{\pi_{\ip{x}{i} \in X} \m{v}})\\
+		&= \wh{\mu} \circ \pi_i^{-1} = \m{\mu}(i)
+	\end{align*}
+Also, by definition,
+	$\m{k}(i)(\m{v}) = \dirac{\pi_{\ip{x}{i} \in X} \m{v}}$.
+Thus,
+  $\almostM{\{\ip{x}{i} = \m{v}(\ip{x}{i})\}}{(\m{\sigmaF}(i), \m{\krnl}(i)(\m{v}))}$ and
+  $\m{\krnl}(i)(\m{v}) \circ \inv{\ip{x}{i} = \m{v}(\ip{x}{i})} = \dirac{\True}$.
+\end{proof}
+

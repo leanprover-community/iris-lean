@@ -1,0 +1,132 @@
+\subsection{One-time Pad (Relational)}
+\label{sec:appendix:examples:onetimerel}
+\label{sec:appendix:ex:otp-rel}
+
+  To wrap up the proof of \Cref{sec:overview}
+we first observe that the assertion~$P$
+of~(\ref{ex:xor:start}) can be easily obtained by
+using the WP rules for assignments and sequencing, proving:
+\[
+    \True\withp{\m{\permap}}
+    \proves
+    \WP {\m<
+      \I1: \code{encrypt()},
+      \I2: \code{c:~Ber(1/2)}
+    >}*{
+      \begin{pmatrix}
+        \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+          *
+        \distAs{\Ip{m}{1}}{\Ber{p}}
+          *
+        \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+          * {}\\
+        \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}
+      \end{pmatrix}
+      \withp{\m{\permap}}
+    }
+\]
+where $\m{\permap} = \m[\Ip{k}{1}:1,\Ip{m}{1}:1,\Ip{c}{1}:1,\Ip{c}{2}:1]$
+(\ie we have full permissions on the variables we modify).
+
+
+We can prove the entailment:
+\[
+  \CC{\Ber{p}} v.
+  \left(
+    \sure{\Ip{m}{1}=v} *
+    \begin{pmatrix}
+    \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+    \\ {}*
+    \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+    \end{pmatrix}
+  \right)
+  \proves
+  \CC{\Ber{p}} v.
+    \left(
+      \sure{\Ip{m}{1}=v}
+      *
+      \begin{cases}
+        \cpl{ \Ip{k}{1} = \Ip{c}{2} }     \CASE v=0 \\
+        \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} } \CASE v=1
+      \end{cases}
+    \right)
+\]
+by using \ref{rule:c-cons}, which asks us to prove that the
+two assertions inside the conditioning are in the entailment relation
+for each value of~$v$.
+This leads to these two cases:
+\begin{align*}
+  \sure{\Ip{m}{1}=0}
+  * \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+  * \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+  & \proves
+  \sure{\Ip{m}{1}=0} * \cpl{ \Ip{k}{1} = \Ip{c}{2} }
+\\
+  \sure{\Ip{m}{1}=1}
+  * \distAs{\Ip{k}{1}}{\Ber{\onehalf}}
+  * \distAs{\Ip{c}{2}}{\Ber{\onehalf}}
+  & \proves
+  \sure{\Ip{m}{1}=1} * \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} }
+\end{align*}
+which are straightforward consequences of the two couplings we proved
+in~\eqref{ex:xor-two-cpl}.
+
+Finally, the assignment to \p{c} in \p{encrypt} generated the fact
+$\sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}$.
+By routine propagation of this fact
+(using \ref{rule:c-frame} and \ref{rule:sure-merge})
+we can establish:
+\begin{eqexplain}
+  &
+  \CC{\Ber{p}} v.
+    \left(
+      \sure{\Ip{m}{1}=v}
+      *
+      \begin{cases}
+        \cpl{ \Ip{k}{1} = \Ip{c}{2} }     \CASE v=0 \\
+        \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} } \CASE v=1
+      \end{cases}
+    \right)
+    *
+    \sure{\Ip{c}{1} = \Ip{k}{1} \xor \Ip{m}{1}}
+\whichproves
+  \CC{\Ber{p}} v.
+    \left(
+      \sure{\Ip{m}{1}=v}
+      *
+      \begin{cases}
+        \cpl{ \Ip{k}{1} = \Ip{c}{2} } * \sure{ \Ip{c}{1} = \Ip{k}{1} \xor 0 }
+          \CASE v=0 \\
+        \cpl{ \Ip{k}{1} = \neg\Ip{c}{2} } * \sure{ \Ip{c}{1} = \Ip{k}{1} \xor 1 }
+          \CASE v=1
+      \end{cases}
+    \right)
+\whichproves
+  \CC{\Ber{p}} v.
+    \left(
+      \sure{\Ip{m}{1}=v}
+      *
+      \begin{cases}
+        \cpl{ \Ip{c}{1} = \Ip{c}{2} } \CASE v=0 \\
+        \cpl{ \Ip{c}{1} = \Ip{c}{2} } \CASE v=1
+      \end{cases}
+    \right)
+\whichproves
+  \CC{\Ber{p}} v.
+        \cpl{ \Ip{c}{1} = \Ip{c}{2} }
+\whichproves
+  \cpl{ \Ip{c}{1} = \Ip{c}{2} }
+  \byrule{rl-merge}
+\end{eqexplain}
+
+In particular, the entailments
+\begin{align*}
+\cpl{ \Ip{k}{1} = \Ip{c}{2} } * \sure{ \Ip{c}{1} = \Ip{k}{1} \xor 0 }
+&\proves
+\cpl{ \Ip{c}{1} = \Ip{c}{2} }
+\\
+\cpl{ \Ip{k}{1} = \neg\Ip{c}{2} } * \sure{ \Ip{c}{1} = \Ip{k}{1} \xor 1 }
+&\proves
+\cpl{ \Ip{c}{1} = \Ip{c}{2} }
+\end{align*}
+can be proved by applying \ref{rule:rl-sure-merge} and \ref{rule:rl-cons}.

@@ -1,0 +1,531 @@
+\section{Conclusions and Future Work}
+\thelogic's journey started as a quest to integrate unary and relational
+probabilistic reasoning and ended up uncovering \supercond{}
+as a key fundational tool.
+Remarkably, to achieve our goal we had to deviate from Lilac's previous
+proposal in both the definition of conditioning,
+  to enable the encoding of relational lifting,
+and of ownership (with almost measurability),
+  to resolve an issue with almost sure assertions
+(recently corrected~\cite{lilac2} in a different way).
+In addition, our model supports mutable state without sacrificing
+expressiveness.
+One limitation of our current model is lack of support for continuous
+distributions.
+Lilac's model and recent advances in it~\cite{LiAJ0H24} could suggest a pathway for a continuous extension of \thelogic,
+but it is unclear if all our rules would be still valid;
+for example \cref{rule:c-fuse}'s soundness hinges on properties of discrete distributions that we could not extend to the general case in an obvious way.
+\thelogic's encoding of relational lifting and the novel proof principles it uncovered for it are a demonstration of the potential
+of \supercond\ as a basis for deriving high-level logics on top of an ergonomic
+core logic.
+Obvious candidates for such scheme are approximate couplings~\cite{apRHL}
+(which have been used for \eg differential privacy),
+and expectation-based calculi (à la Ellora).
+ 
+\begin{acks}
+  We would like to thank Justin Hsu
+  for connecting the authors and the many discussions.
+  We also thank Derek Dreyer and Deepak Garg for the
+  discussions and support.
+  We are grateful to the POPL'25 reviewers for
+  their constructive feedback.
+  Jialu Bao was supported by the
+  \grantsponsor{nsf}
+    {NSF}
+    {https://doi.org/10.13039/100000001}
+  Award No.~\grantnum{nsf}{2153916}.
+  Emanuele D'Osualdo was supported by a
+  \grantsponsor{persist}
+    {European Research Council (ERC)}
+    {https://doi.org/10.13039/501100000781}
+  Consolidator Grant for the project ``PERSIST'' under the European Union's Horizon 2020 research and innovation programme
+  (grant No.~\grantnum{persist}{101003349}).
+Azadeh Farzan was supported by the
+  \grantsponsor{canada}
+    {National Science and Engineering Research Council of Canada}
+    {https://doi.org/10.13039/501100000038}
+  Discovery Grant.
+\end{acks}
+
+
+\setlabel{LAST}
+\label{paper-last-page}
+
+
+
+
+\newcommand{\SortNoop}[1]{}
+\begin{thebibliography}{35}
+
+
+
+\ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
+\ifx \showDOI      \undefined \def \showDOI       #1{#1}\fi
+\ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
+\ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
+\ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
+\ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
+\ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
+\ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
+\ifx \showURL      \undefined \def \showURL       {\relax}        \fi
+\providecommand\bibfield[2]{#2}
+\providecommand\bibinfo[2]{#2}
+\providecommand\natexlab[1]{#1}
+\providecommand\showeprint[2][]{arXiv:#2}
+
+\bibitem[Aguirre et~al\mbox{.}(2017)]{AguirreBGGS19}
+\bibfield{author}{\bibinfo{person}{Alejandro Aguirre}, \bibinfo{person}{Gilles
+  Barthe}, \bibinfo{person}{Marco Gaboardi}, \bibinfo{person}{Deepak Garg},
+  {and} \bibinfo{person}{Pierre-Yves Strub}.} \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{A relational logic for higher-order programs}.
+\newblock \bibinfo{journal}{\emph{Proceedings of the {ACM} on Programming
+  Languages}} \bibinfo{volume}{1}, \bibinfo{number}{{ACM} {SIGPLAN}
+  {I}nternational {C}onference on {F}unctional {P}rogramming ({ICFP}), Oxford,
+  England} (\bibinfo{year}{2017}), \bibinfo{pages}{1--29}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3110265}
+\showDOI{\tempurl}
+
+
+\bibitem[Aguirre et~al\mbox{.}(2021)]{aguirre2021pre}
+\bibfield{author}{\bibinfo{person}{Alejandro Aguirre}, \bibinfo{person}{Gilles
+  Barthe}, \bibinfo{person}{Justin Hsu}, \bibinfo{person}{Benjamin~Lucien
+  Kaminski}, \bibinfo{person}{Joost-Pieter Katoen}, {and}
+  \bibinfo{person}{Christoph Matheja}.} \bibinfo{year}{2021}\natexlab{}.
+\newblock \showarticletitle{A pre-expectation calculus for probabilistic
+  sensitivity}.
+\newblock \bibinfo{journal}{\emph{Proceedings of the {ACM} on Programming
+  Languages}} \bibinfo{volume}{5}, \bibinfo{number}{{ACM} {SIGPLAN--SIGACT}
+  {S}ymposium on {P}rinciples of {P}rogramming {L}anguages ({POPL}), Lisbon,
+  Portugal} (\bibinfo{year}{2021}), \bibinfo{pages}{1--28}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3434333}
+\showDOI{\tempurl}
+
+
+\bibitem[Bao et~al\mbox{.}(2021)]{bao2021bunched}
+\bibfield{author}{\bibinfo{person}{Jialu Bao}, \bibinfo{person}{Simon
+  Docherty}, \bibinfo{person}{Justin Hsu}, {and} \bibinfo{person}{Alexandra
+  Silva}.} \bibinfo{year}{2021}\natexlab{}.
+\newblock \showarticletitle{A bunched logic for conditional independence}. In
+  \bibinfo{booktitle}{\emph{{IEEE} {S}ymposium on {L}ogic in {C}omputer
+  {S}cience ({LICS}), Rome, Italy}}. IEEE, \bibinfo{pages}{1--14}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1109/LICS52264.2021.9470712}
+\showDOI{\tempurl}
+
+
+\bibitem[Bao et~al\mbox{.}(2022)]{bao2022separation}
+\bibfield{author}{\bibinfo{person}{Jialu Bao}, \bibinfo{person}{Marco
+  Gaboardi}, \bibinfo{person}{Justin Hsu}, {and} \bibinfo{person}{Joseph
+  Tassarotti}.} \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{A separation logic for negative dependence}.
+\newblock \bibinfo{journal}{\emph{Proceedings of the {ACM} on Programming
+  Languages}} \bibinfo{volume}{6}, \bibinfo{number}{{ACM} {SIGPLAN--SIGACT}
+  {S}ymposium on {P}rinciples of {P}rogramming {L}anguages ({POPL}),
+  Philadelphia, Pennsylvania} (\bibinfo{year}{2022}), \bibinfo{pages}{1--29}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3498719}
+\showDOI{\tempurl}
+
+
+\bibitem[Barthe et~al\mbox{.}(2018)]{barthe2016ellora}
+\bibfield{author}{\bibinfo{person}{Gilles Barthe}, \bibinfo{person}{Thomas
+  Espitau}, \bibinfo{person}{Marco Gaboardi}, \bibinfo{person}{Benjamin
+  Gr{\'e}goire}, \bibinfo{person}{Justin Hsu}, {and}
+  \bibinfo{person}{Pierre-Yves Strub}.} \bibinfo{year}{2018}\natexlab{}.
+\newblock \showarticletitle{An assertion-based program logic for probabilistic
+  programs}. In \bibinfo{booktitle}{\emph{Programming Languages and Systems}}.
+  \bibinfo{publisher}{Springer International Publishing},
+  \bibinfo{address}{Cham}, \bibinfo{pages}{117--144}.
+\newblock
+
+
+\bibitem[Barthe et~al\mbox{.}(2015)]{barthe2015coupling}
+\bibfield{author}{\bibinfo{person}{Gilles Barthe}, \bibinfo{person}{Thomas
+  Espitau}, \bibinfo{person}{Benjamin Gr{\'e}goire}, \bibinfo{person}{Justin
+  Hsu}, \bibinfo{person}{L{\'e}o Stefanesco}, {and}
+  \bibinfo{person}{Pierre-Yves Strub}.} \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{Relational reasoning via probabilistic coupling}.
+  In \bibinfo{booktitle}{\emph{International Conference on Logic for
+  Programming, Artificial Intelligence and Reasoning (LPAR), Suva, Fiji}}.
+  Springer, \bibinfo{pages}{387--401}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1007/978-3-662-48899-7_27}
+\showDOI{\tempurl}
+
+
+\bibitem[Barthe et~al\mbox{.}(2009)]{barthe2009formal}
+\bibfield{author}{\bibinfo{person}{Gilles Barthe}, \bibinfo{person}{Benjamin
+  Gr{\'e}goire}, {and} \bibinfo{person}{Santiago Zanella~B{\'e}guelin}.}
+  \bibinfo{year}{2009}\natexlab{}.
+\newblock \showarticletitle{Formal certification of code-based cryptographic
+  proofs}. In \bibinfo{booktitle}{\emph{{ACM} {SIGPLAN--SIGACT} {S}ymposium on
+  {P}rinciples of {P}rogramming {L}anguages ({POPL}), Savannah, Georgia}}.
+  \bibinfo{pages}{90--101}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/1480881.1480894}
+\showDOI{\tempurl}
+
+
+\bibitem[Barthe et~al\mbox{.}(2019)]{barthe2019probabilistic}
+\bibfield{author}{\bibinfo{person}{Gilles Barthe}, \bibinfo{person}{Justin
+  Hsu}, {and} \bibinfo{person}{Kevin Liao}.} \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{A probabilistic separation logic}.
+\newblock \bibinfo{journal}{\emph{Proceedings of the {ACM} on Programming
+  Languages}} \bibinfo{volume}{4}, \bibinfo{number}{{ACM} {SIGPLAN--SIGACT}
+  {S}ymposium on {P}rinciples of {P}rogramming {L}anguages ({POPL}), Lisbon,
+  Portugal} (\bibinfo{year}{2019}), \bibinfo{pages}{1--30}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3371123}
+\showDOI{\tempurl}
+
+
+\bibitem[Barthe et~al\mbox{.}(2012)]{apRHL}
+\bibfield{author}{\bibinfo{person}{Gilles Barthe}, \bibinfo{person}{Boris
+  K{\"{o}}pf}, \bibinfo{person}{Federico Olmedo}, {and}
+  \bibinfo{person}{Santiago~Zanella B{\'{e}}guelin}.}
+  \bibinfo{year}{2012}\natexlab{}.
+\newblock \showarticletitle{Probabilistic relational reasoning for differential
+  privacy}. In \bibinfo{booktitle}{\emph{{ACM} {SIGPLAN--SIGACT} {S}ymposium on
+  {P}rinciples of {P}rogramming {L}anguages ({POPL}), Philadelphia,
+  Pennsylvania}}. \bibinfo{publisher}{{ACM}}, \bibinfo{pages}{97--110}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/2103656.2103670}
+\showDOI{\tempurl}
+
+
+\bibitem[Benton(2004)]{benton2004simple}
+\bibfield{author}{\bibinfo{person}{Nick Benton}.}
+  \bibinfo{year}{2004}\natexlab{}.
+\newblock \showarticletitle{Simple relational correctness proofs for static
+  analyses and program transformations}. In \bibinfo{booktitle}{\emph{{ACM}
+  {SIGPLAN--SIGACT} {S}ymposium on {P}rinciples of {P}rogramming {L}anguages
+  ({POPL}), Venice, Italy}}, Vol.~\bibinfo{volume}{39}. \bibinfo{publisher}{ACM
+  New York, NY, USA}, \bibinfo{pages}{14--25}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/964001.964003}
+\showDOI{\tempurl}
+
+
+\bibitem[Bornat et~al\mbox{.}(2005)]{BornatCY06}
+\bibfield{author}{\bibinfo{person}{Richard Bornat}, \bibinfo{person}{Cristiano
+  Calcagno}, {and} \bibinfo{person}{Hongseok Yang}.}
+  \bibinfo{year}{2005}\natexlab{}.
+\newblock \showarticletitle{Variables as resource in separation logic}. In
+  \bibinfo{booktitle}{\emph{Conference on the Mathematical Foundations of
+  Programming Semantics (MFPS), Birmingham, England}}
+  \emph{(\bibinfo{series}{Electronic Notes in Theoretical Computer Science},
+  Vol.~\bibinfo{volume}{155})}. \bibinfo{publisher}{Elsevier},
+  \bibinfo{pages}{247--276}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1016/J.ENTCS.2005.11.059}
+\showDOI{\tempurl}
+
+
+\bibitem[{D'}Osualdo et~al\mbox{.}(2022)]{d2022proving}
+\bibfield{author}{\bibinfo{person}{Emanuele {D'}Osualdo},
+  \bibinfo{person}{Azadeh Farzan}, {and} \bibinfo{person}{Derek Dreyer}.}
+  \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{Proving hypersafety compositionally}.
+\newblock \bibinfo{journal}{\emph{Proceedings of the {ACM} on Programming
+  Languages}} \bibinfo{volume}{6}, \bibinfo{number}{{ACM} {SIGPLAN}
+  {C}onference on {O}bject {O}riented {P}rogramming: {S}ystems, {L}anguages,
+  and {A}pplications ({OOPSLA}), Auckland, New Zealand} (\bibinfo{year}{2022}),
+  \bibinfo{pages}{289--314}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3563298}
+\showDOI{\tempurl}
+
+
+\bibitem[Giry(1982)]{giry1982categorical}
+\bibfield{author}{\bibinfo{person}{Michele Giry}.}
+  \bibinfo{year}{1982}\natexlab{}.
+\newblock \showarticletitle{A categorical approach to probability theory}. In
+  \bibinfo{booktitle}{\emph{Categorical Aspects of Topology and Analysis:
+  Proceedings of an International Conference Held at Carleton University,
+  Ottawa, August 11--15, 1981}}. Springer, \bibinfo{pages}{68--85}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1007/S11225-010-9232-Z}
+\showDOI{\tempurl}
+
+
+\bibitem[Gregersen et~al\mbox{.}(2024)]{gregersen2023asynchronous}
+\bibfield{author}{\bibinfo{person}{Simon~Oddershede Gregersen},
+  \bibinfo{person}{Alejandro Aguirre}, \bibinfo{person}{Philipp~G.
+  Haselwarter}, \bibinfo{person}{Joseph Tassarotti}, {and}
+  \bibinfo{person}{Lars Birkedal}.} \bibinfo{year}{2024}\natexlab{}.
+\newblock \showarticletitle{Asynchronous probabilistic couplings in
+  higher-order separation logic}.
+\newblock \bibinfo{journal}{\emph{Proceedings of the {ACM} on Programming
+  Languages}} \bibinfo{volume}{8}, \bibinfo{number}{{ACM} {SIGPLAN--SIGACT}
+  {S}ymposium on {P}rinciples of {P}rogramming {L}anguages ({POPL}), London,
+  England} (\bibinfo{year}{2024}), \bibinfo{pages}{753--784}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3632868}
+\showDOI{\tempurl}
+
+
+\bibitem[Hsu(2017)]{hsu2017probabilistic}
+\bibfield{author}{\bibinfo{person}{Justin Hsu}.}
+  \bibinfo{year}{2017}\natexlab{}.
+\newblock \emph{\bibinfo{title}{Probabilistic couplings for probabilistic
+  reasoning}}.
+\newblock \bibinfo{thesistype}{Ph.\,D. Dissertation}.
+\newblock
+
+
+\bibitem[Jung et~al\mbox{.}(2019)]{jung2019future}
+\bibfield{author}{\bibinfo{person}{Ralf Jung}, \bibinfo{person}{Rodolphe
+  Lepigre}, \bibinfo{person}{Gaurav Parthasarathy}, \bibinfo{person}{Marianna
+  Rapoport}, \bibinfo{person}{Amin Timany}, \bibinfo{person}{Derek Dreyer},
+  {and} \bibinfo{person}{Bart Jacobs}.} \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{The future is ours: prophecy variables in
+  separation logic}.
+\newblock \bibinfo{journal}{\emph{Proceedings of the {ACM} on Programming
+  Languages}} \bibinfo{volume}{4}, \bibinfo{number}{{ACM} {SIGPLAN--SIGACT}
+  {S}ymposium on {P}rinciples of {P}rogramming {L}anguages ({POPL}), Lisbon,
+  Portugal} (\bibinfo{year}{2019}), \bibinfo{pages}{1--32}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3371113}
+\showDOI{\tempurl}
+
+
+\bibitem[Kaminski(2019)]{kaminski2019thesis}
+\bibfield{author}{\bibinfo{person}{Benjamin~Lucien Kaminski}.}
+  \bibinfo{year}{2019}\natexlab{}.
+\newblock \emph{\bibinfo{title}{Advanced weakest precondition calculi for
+  probabilistic programs}}.
+\newblock \bibinfo{thesistype}{Ph.\,D. Dissertation}. \bibinfo{school}{RWTH
+  Aachen University}.
+\newblock
+
+
+\bibitem[Kaminski et~al\mbox{.}(2016)]{kaminski2016weakest}
+\bibfield{author}{\bibinfo{person}{Benjamin~Lucien Kaminski},
+  \bibinfo{person}{Joost-Pieter Katoen}, \bibinfo{person}{Christoph Matheja},
+  {and} \bibinfo{person}{Federico Olmedo}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Weakest precondition reasoning for expected
+  run--times of probabilistic programs}. In \bibinfo{booktitle}{\emph{European
+  Symposium on Programming (ESOP), Eindhoven, The Netherlands}}. Springer,
+  \bibinfo{pages}{364--389}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1007/978-3-662-49498-1_15}
+\showDOI{\tempurl}
+
+
+\bibitem[Kozen(1983)]{kozen1983PDL}
+\bibfield{author}{\bibinfo{person}{Dexter Kozen}.}
+  \bibinfo{year}{1983}\natexlab{}.
+\newblock \showarticletitle{A Probabilistic {PDL}}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 15th Annual {ACM} Symposium on
+  Theory of Computing, 25-27 April, 1983, Boston, Massachusetts, {USA}}}.
+  \bibinfo{publisher}{{ACM}}, \bibinfo{pages}{291--297}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/800061.808758}
+\showDOI{\tempurl}
+
+
+\bibitem[Krebbers et~al\mbox{.}(2018)]{KrebbersJ0TKTCD18}
+\bibfield{author}{\bibinfo{person}{Robbert Krebbers},
+  \bibinfo{person}{Jacques{-}Henri Jourdan}, \bibinfo{person}{Ralf Jung},
+  \bibinfo{person}{Joseph Tassarotti}, \bibinfo{person}{Jan{-}Oliver Kaiser},
+  \bibinfo{person}{Amin Timany}, \bibinfo{person}{Arthur Chargu{\'{e}}raud},
+  {and} \bibinfo{person}{Derek Dreyer}.} \bibinfo{year}{2018}\natexlab{}.
+\newblock \showarticletitle{MoSeL: a general, extensible modal framework for
+  interactive proofs in separation logic}.
+\newblock \bibinfo{journal}{\emph{Proceedings of the {ACM} on Programming
+  Languages}}  \bibinfo{volume}{2} (\bibinfo{year}{2018}),
+  \bibinfo{pages}{77:1--77:30}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3236772}
+\showDOI{\tempurl}
+
+
+\bibitem[Li et~al\mbox{.}(2023a)]{lilac}
+\bibfield{author}{\bibinfo{person}{John~M Li}, \bibinfo{person}{Amal Ahmed},
+  {and} \bibinfo{person}{Steven Holtzen}.} \bibinfo{year}{2023}\natexlab{a}.
+\newblock \showarticletitle{Lilac: a modal separation logic for conditional
+  probability}.
+\newblock \bibinfo{journal}{\emph{Proceedings of the {ACM} on Programming
+  Languages}}  \bibinfo{volume}{7} (\bibinfo{year}{2023}),
+  \bibinfo{pages}{148--171}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3591226}
+\showDOI{\tempurl}
+
+
+\bibitem[Li et~al\mbox{.}(2023b)]{lilac2}
+\bibfield{author}{\bibinfo{person}{John~M. Li}, \bibinfo{person}{Amal Ahmed},
+  {and} \bibinfo{person}{Steven Holtzen}.} \bibinfo{year}{2023}\natexlab{b}.
+\newblock \bibinfo{title}{Lilac: A Modal Separation Logic for Conditional
+  Probability}.
+\newblock
+\newblock
+\showeprint[arxiv]{2304.01339v2}
+
+
+\bibitem[Li et~al\mbox{.}(2024)]{LiAJ0H24}
+\bibfield{author}{\bibinfo{person}{John~M. Li}, \bibinfo{person}{Jon Aytac},
+  \bibinfo{person}{Philip Johnson{-}Freyd}, \bibinfo{person}{Amal Ahmed}, {and}
+  \bibinfo{person}{Steven Holtzen}.} \bibinfo{year}{2024}\natexlab{}.
+\newblock \showarticletitle{A nominal approach to probabilistic separation
+  logic}. In \bibinfo{booktitle}{\emph{{IEEE} {S}ymposium on {L}ogic in
+  {C}omputer {S}cience ({LICS}), Tallinn, Estonia}}.
+  \bibinfo{publisher}{{ACM}}, \bibinfo{pages}{55:1--55:14}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3661814.3662135}
+\showDOI{\tempurl}
+
+
+\bibitem[Moosbrugger et~al\mbox{.}(2022)]{Bartocci2022moment}
+\bibfield{author}{\bibinfo{person}{Marcel Moosbrugger},
+  \bibinfo{person}{Miroslav Stankovi{\v{c}}}, \bibinfo{person}{Ezio Bartocci},
+  {and} \bibinfo{person}{Laura Kov{\'a}cs}.} \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{This is the moment for probabilistic loops}.
+\newblock \bibinfo{journal}{\emph{Proceedings of the {ACM} on Programming
+  Languages}} \bibinfo{volume}{6}, \bibinfo{number}{{ACM} {SIGPLAN}
+  {C}onference on {O}bject {O}riented {P}rogramming: {S}ystems, {L}anguages,
+  and {A}pplications ({OOPSLA}), Auckland, New Zealand} (\bibinfo{year}{2022}),
+  \bibinfo{pages}{1497--1525}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3563341}
+\showDOI{\tempurl}
+
+
+\bibitem[Morgan et~al\mbox{.}(1996)]{Morgan:1996}
+\bibfield{author}{\bibinfo{person}{Carroll Morgan}, \bibinfo{person}{Annabelle
+  McIver}, {and} \bibinfo{person}{Karen Seidel}.}
+  \bibinfo{year}{1996}\natexlab{}.
+\newblock \showarticletitle{Probabilistic predicate transformers}.
+\newblock \bibinfo{journal}{\emph{ACM Transactions on Programming Languages and
+  Systems}} (\bibinfo{year}{1996}).
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/229542.229547}
+\showDOI{\tempurl}
+
+
+\bibitem[Ramshaw(1979)]{ramshaw1979formalizing}
+\bibfield{author}{\bibinfo{person}{Lyle~Harold Ramshaw}.}
+  \bibinfo{year}{1979}\natexlab{}.
+\newblock \bibinfo{booktitle}{\emph{Formalizing the analysis of algorithms}}.
+  Vol.~\bibinfo{volume}{75}.
+\newblock \bibinfo{publisher}{Xerox Palo Alto Research Center}.
+\newblock
+
+
+\bibitem[Rand and Zdancewic(2015)]{rand2015vphl}
+\bibfield{author}{\bibinfo{person}{Robert Rand} {and} \bibinfo{person}{Steve
+  Zdancewic}.} \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{VPHL: A verified partial-correctness logic for
+  probabilistic programs}.
+\newblock \bibinfo{journal}{\emph{Electronic Notes in Theoretical Computer
+  Science}}  \bibinfo{volume}{319} (\bibinfo{year}{2015}),
+  \bibinfo{pages}{351--367}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1016/J.ENTCS.2015.12.021}
+\showDOI{\tempurl}
+
+
+\bibitem[Reynolds(2000)]{reynolds2000intuitionistic}
+\bibfield{author}{\bibinfo{person}{John Reynolds}.}
+  \bibinfo{year}{2000}\natexlab{}.
+\newblock \showarticletitle{Intuitionistic reasoning about shared mutable data
+  structure}.
+\newblock \bibinfo{journal}{\emph{Millennial perspectives in computer science}}
+  \bibinfo{volume}{2}, \bibinfo{number}{1} (\bibinfo{year}{2000}),
+  \bibinfo{pages}{303--321}.
+\newblock
+
+
+\bibitem[Rosenthal(2006)]{rosenthal2006first}
+\bibfield{author}{\bibinfo{person}{Jeffrey~S. Rosenthal}.}
+  \bibinfo{year}{2006}\natexlab{}.
+\newblock \bibinfo{booktitle}{\emph{A first look at rigorous probability
+  theory}}.
+\newblock \bibinfo{publisher}{World Scientific Publishing Company}.
+\newblock
+
+
+\bibitem[Staton(2020)]{staton2020}
+\bibfield{author}{\bibinfo{person}{Sam Staton}.}
+  \bibinfo{year}{2020}\natexlab{}.
+\newblock \showarticletitle{Probabilistic programs as measures}.
+\newblock \bibinfo{journal}{\emph{Foundations of Probabilistic Programming}}
+  (\bibinfo{year}{2020}), \bibinfo{pages}{43}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1017/9781108770750}
+\showDOI{\tempurl}
+
+
+\bibitem[Tassarotti and Harper(2019)]{tassarotti2019polaris}
+\bibfield{author}{\bibinfo{person}{Joseph Tassarotti} {and}
+  \bibinfo{person}{Robert Harper}.} \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{A separation logic for concurrent randomized
+  programs}.
+\newblock \bibinfo{journal}{\emph{Proceedings of the {ACM} on Programming
+  Languages}} \bibinfo{volume}{3}, \bibinfo{number}{{ACM} {SIGPLAN--SIGACT}
+  {S}ymposium on {P}rinciples of {P}rogramming {L}anguages ({POPL}), Lisbon,
+  Portugal} (\bibinfo{year}{2019}), \bibinfo{pages}{1--30}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3290377}
+\showDOI{\tempurl}
+
+
+\bibitem[Vitter(1985)]{vitter1985random}
+\bibfield{author}{\bibinfo{person}{Jeffrey~S Vitter}.}
+  \bibinfo{year}{1985}\natexlab{}.
+\newblock \showarticletitle{Random sampling with a reservoir}.
+\newblock \bibinfo{journal}{\emph{ACM Transactions on Mathematical Software
+  (TOMS)}} \bibinfo{volume}{11}, \bibinfo{number}{1} (\bibinfo{year}{1985}),
+  \bibinfo{pages}{37--57}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3147.3165}
+\showDOI{\tempurl}
+
+
+\bibitem[{von Neumann}(1951)]{vonNeumann}
+\bibfield{author}{\bibinfo{person}{John {von Neumann}}.}
+  \bibinfo{year}{1951}\natexlab{}.
+\newblock \showarticletitle{Various techniques used in connection with random
+  digits}.
+\newblock \bibinfo{journal}{\emph{Journal of Research of the National Bureau of
+  Standards, Applied Math Series}} (\bibinfo{year}{1951}),
+  \bibinfo{pages}{36--38}.
+\newblock
+
+
+\bibitem[Wang et~al\mbox{.}(2019)]{wang2019proving}
+\bibfield{author}{\bibinfo{person}{Yuxin Wang}, \bibinfo{person}{Zeyu Ding},
+  \bibinfo{person}{Guanhong Wang}, \bibinfo{person}{Daniel Kifer}, {and}
+  \bibinfo{person}{Danfeng Zhang}.} \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{Proving differential privacy with shadow
+  execution}.
+\newblock \bibinfo{journal}{\emph{Proceedings of the {ACM} on Programming
+  Languages}} \bibinfo{number}{{ACM} {SIGPLAN--SIGACT} {S}ymposium on
+  {P}rinciples of {P}rogramming {L}anguages ({POPL}), Lisbon, Portugal}
+  (\bibinfo{year}{2019}), \bibinfo{pages}{655--669}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3314221.3314619}
+\showDOI{\tempurl}
+
+
+\bibitem[Zhang and Kifer(2017)]{zhang2017lightdp}
+\bibfield{author}{\bibinfo{person}{Danfeng Zhang} {and} \bibinfo{person}{Daniel
+  Kifer}.} \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{LightDP: Towards automating differential privacy
+  proofs}. In \bibinfo{booktitle}{\emph{{ACM} {SIGPLAN--SIGACT} {S}ymposium on
+  {P}rinciples of {P}rogramming {L}anguages ({POPL}), Paris, France}}.
+  \bibinfo{pages}{888--901}.
+\newblock
+\urldef\tempurl \url{https://doi.org/10.1145/3009837.3009884}
+\showDOI{\tempurl}
+
+
+\end{thebibliography}
+ 
+
+\appendix
+
+\allowdisplaybreaks
+

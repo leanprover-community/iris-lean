@@ -1,0 +1,718 @@
+\subsection{Randomized Cache Management}
+  
+
+Cache is a part of computer memory fast to access but limited in its size.
+Cache management algorithms determine which elements are to keep or
+evict upon a sequence of requests.
+If the computer knows the entire sequence of requests, then its best strategy is
+to always evict the element that is next requested furtherest in the future.
+We call this strategy the \emph{offline optimal algorithm}.
+However, a realistic cache algorithm needs to make decisions
+online, which make it impossible to consider requests in the future.
+While for some applications deterministic
+cache algorithms, such as First-In-First-Out (FIFO), Last-In-First-Out (LIFO),
+and Least Recently Used (LRU), perform relatively well, they suffer when the
+sequence of requests are produced adversarially to maximize their misses. It is
+proved that, for a cache that holds $k$ items, no deterministic cache algorithm
+is $< k$-competitive; that means for any deterministic cache algorithm, there
+exists some sequence on which the algorithm produces at least $k$ times misses
+of the offline optimal algorithm's number of misses.
+
+Randomization could help a lot in this scenario of adversarial requests.
+The \emph{Marker algorithm}, a randomized algorithm also known as 1-bit LRU algorithm,
+is shown to be $\log(k)$-competitive to the offline optimal.
+While the algorithm is relatively intuitive, its analysis involves many parts.
+Though we do not have an end-to-end formal proof of that analysis,
+we can verify some important components in our logic.
+
+The Marker algorithm attaches each slot of its cache with an 1-bit marker.
+Initially, for any $1 \leq i \leq k$, the mark
+$\code{cache[$i$][mark]}$ is set to 0.
+Then it operates in phases.
+At the beginning of each phase, the markers are all set to 0.
+Every time it encounters a new request that
+it has not seen in the current phase,
+either the requested element is already in the cache and then
+it simply changes that slot's mark to 1,
+or the requested element is not in the cache,
+then it replaces the item on a randomly chosen 0-marked slot with the request
+and marks that slot to~1.
+Thus, after processing $k$ distinct requests in a phase,
+all the slots in the cache are marked with~1.
+ The algorithm then reset all
+these marks to 0 and start a new phase.
+
+We show the details of the implementation of each phase in~\cref{fig:marker:algorithm}.
+(The part resetting all marks to 0 and starts a new phase is not modelled.)
+A crucial step in the implementation is to sample the eviction index $\code{ev}$
+uniformly randomly from all index marked to 0.
+There are many ways to implement that. We use a memory-efficient reservoir sampling algorithm~\cite{vitter1985random}, which can also be used in many other applications.
+Throughout this example, in both the code and the proof, we use $[a, b]$ to denote the set of integers
+that are at least $a$ and at most $b$.
+
+\begin{figure}
+\setlength\tabcolsep{0pt}\begin{tabular*}{\textwidth}{
+    @{\extracolsep{\fill}}
+    *{4}{p{\textwidth/4}}@{}
+  }
+  \begin{sourcecode*}
+  def Marker(seq, N, cache):
+    cost := 0
+    i := 1
+    repeat N:
+       hit := False
+       j := 1
+       repeat k:
+	       if cache[j]  == seq[i]:
+		        cache[j] := (seq[i], 1)
+		        hit := True
+	       j := j+1
+	    if hit:
+		    skip
+		  else:
+        ev:~Reservoir_Samp(k, cache)
+		  	cache[ev] := (seq[i], 1)
+		    cost := cost + 1
+      i := i+1
+  \end{sourcecode*}
+  &
+  \begin{sourcecode*}
+    def Reservoir-Samp(k, cache):
+        c = 0
+        j = 0
+        ev := None
+        repeat k:
+          c := c + 1
+          if cache[j][mark] = 0 then
+            j := j + 1
+            x :~ unifInt [1,j]
+            if x <= 1:
+              ev := c
+  \end{sourcecode*}
+\end{tabular*}
+  \caption{The Marker algorithm.}
+  \label{fig:marker:algorithm}
+\end{figure}
+
+
+\subsubsection{Reservoir Sampling}
+
+The first component that we verify is the reservoir sampling.
+We want to show that for any input $\code{cache}$,
+the output $\code{ev}$ is distributed uniformly
+among indices $1 \leq l \leq k$  with $\code{cache[$l$][mark]} = 0$.
+We state that goal in our logic as
+\begin{align*}
+  & \forall S.
+  \sure{l \in S \iff \code{cache[$l$][mark]} = 1} \\
+  \gproves
+  &\WP{1: \code{Reservoir-Samp($k$, cache)}}{
+    \sure{l \in S \iff \code{cache[$l$][mark]} = 1}
+    \ast \distAs{\code{ev}}{\Unif{[1, k] \setminus S}}
+  }
+\end{align*}
+The condition
+$\sure{l \in S \iff \code{cache[$l$][mark]} = 1}$
+ makes sure that $S$ contains exactly the cache indices
+ marked as 0.
+
+
+The program uses $\p{c}$ to track the number of
+slots that we iterate over and \code{j} to count the number of
+cache indices with mark 0. It initializes both
+$\p{c}$ and $\code{j}$ to 0, and $\code{ev}$ to a non-integer
+value \code{None}.
+The program then iterates over the entries \code{cache[$c$]} for
+$1 \leq c \leq k$ and in each iteration update $\code{ev}$ and \code{j}
+to maintain that the loop invariants that
+1) $\code{ev}$ is distributed uniformly among
+indices we have iterated over that are marked 0, i.e.,
+$\distAs{\code{ev}}{\Unif{[1,c] \setminus S}}$
+(the uniform distribution over empty set does not make sense,
+so we arbitrarily interpret $\Unif{\emptyset}$ as the Dirac distribution
+over the value \code{None});
+2) the number of element in $\Unif{[1,c] \setminus S}$ is $\code{j}$.
+Specifically, in the $c^{th}$ iteration,
+if $\code{cache[$c$]} = 1$, we just increase $c$ by 1 and enter the next iteration.
+If $\code{cache[$c$]} = 0$,
+then we increase both $\code{c, j}$ by 1
+and sample an integer \code{x} uniformly from the interval $[1, j]$.
+If $\code{x} = 1$, which happens with probability $\frac{1}{j}$,
+then we update $\code{ev}$ to the current index $c$;
+if $\code{x} \neq 1$, which happens with $\frac{j - 1}{j}$ of the case,
+we keep the previous $\code{ev}$, which has equal probability
+to be any one of the $j - 1$ elements from $[1,c - 1] \setminus S$.
+Thus, the distribution of $\code{ev}$ after this iteration
+is a convex combination of these two branches, which we can
+show to be $ \Unif{[1,c] \setminus S}$, thus reestablishing the loop invariants.
+
+
+We outline the proof in~\ref{fig:discrete-reservoir}.
+We omit $\ownall$ and permission 1 on all variables get assigned to in all assertions.
+Also, because we need to include $\sure{l \in S \iff \code{cache[$l$][mark]} = 1}$
+in all the assertions,
+we abbreviate it into $\varphi$ to minimize the visual overhead.
+
+Define $P(\p{c})$ to be
+\[
+  \varphi \ast \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = j}
+\]
+At the first few steps, by~\ref{rule:wp-assign},
+we get
+\[
+  \varphi \ast \sure{\p{c} = 0} \ast \sure{\code{j} = 0} \ast \sure{\code{ev} = \code{None}}
+\]
+before entering the first iteration.
+This propositionally implies that $\sure{[1, \p{c}] \setminus S = \emptyset}$,
+and by~\ref{rule:c-unit-l} and~\ref{rule:c-unit-r},
+\[
+\sure{\code{ev} = \code{None}} \vdash \distAs{\code{ev}}{\delta_{\code{None}}}
+\]
+and thus we have $P(0)$.
+
+
+\begin{mathfig}[\small]
+  \begin{proofoutline}
+    \PREC{ \sure{l \in S \iff \code{cache[$l$][mark]} = 1}}\\
+    \CODE{c = 0}\\
+    \CODE{j = 0}\\
+    \CODE{ev := None} \\
+    \ASSR{\varphi \ast \sure{\p{c} = 0} \ast \sure{\code{j} = 0} \ast \sure{\code{ev} = \code{None}}}\\
+    \CODE{repeat k:}\\
+    \begin{proofindent}
+      \ASSR{P(c)}\\
+      \ASSR{
+        \varphi \ast \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = j}
+      }\\
+      \CODE{c := c + 1}\\
+      \ASSR{
+        \varphi
+        \ast \distAs{\code{ev}}{\Unif{[1, \p{c} - 1] \setminus S}} \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j}
+      }\\
+      \CODE{if cache[c][mark] = 0 then} \\
+      \begin{proofindent}
+        \CODE{j := j+1}\\
+        \ASSR{
+          \sure{\code{cache[c][mark]} = 0} \ast \varphi \ast
+          \distAs{\code{ev}}{\Unif{[1, \p{c} - 1] \setminus S}} \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}}\\
+        \CODE{x :~ unifInt [1,j]} \\
+        \ASSR{
+                \sure{\code{cache[c][mark]} = 0} \ast
+                \varphi \ast \distAs{\code{ev}}{\Unif{[1, \p{c} - 1] \setminus S}} \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1} \ast \distAs{x}{\Unif{[1, j]}}}\\
+\CODE{if x = 1:}\\
+            \begin{proofindent}
+              \CODE{ev := c}\\
+            \end{proofindent}\\
+            \ASSR{
+              \CMod{\Unif{[1, j]}} w.
+              \begin{pmatrix}
+                \sure{w \neq 1} \implies \CMod{\Unif{[1, \p{c}-1] \setminus S}} v.\sure{\code{ev} = v}\\
+                \sure{w = 1} \implies \sure{\code{ev} = c}
+              \end{pmatrix}
+              \ast
+              \begin{pmatrix}
+              \sure{\code{cache[c][mark]} = 0} \\\ast
+              \varphi \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}
+              \end{pmatrix}
+            }\\
+            \ASSR{
+              \sure{\code{cache[c][mark]} = 0} \ast
+              \varphi \ast \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = j}
+            }\TAG[reservoir:end]\\
+      \end{proofindent}\\
+            \ASSR{
+              \begin{pmatrix}
+                \sure{\code{cache[c][mark]} = 0} \implies
+                \varphi \ast \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = j} \\
+                \sure{\code{cache[c][mark]} = 1} \implies
+                \varphi \ast \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = \card{[1, \p{c} - 1] \setminus S} = j} \\
+              \end{pmatrix}
+            } \TAG[reservoir:wp-if-prim]\\
+            \ASSR{
+                \varphi \ast
+                \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = j}
+            }\\
+    \end{proofindent}\\
+    \ASSR{
+                \varphi \ast
+                \distAs{\code{ev}}{\Unif{[1, k] \setminus S}} \ast \sure{\card{[1, k] \setminus S} = j}
+            }
+  \end{proofoutline}
+  \caption{Reservoir Sampling}
+  \label{fig:discrete-reservoir}
+\end{mathfig}
+
+We then want to use~\ref{rule:wp-if-prim} to prove~\eqref{reservoir:wp-if-prim}.
+The $\sure{\code{cache[c][mark]} = 1}$ branch is trivial.
+For the $\sure{\code{cache[c][mark]} = 0}$ branch,
+we first apply~\ref{rule:wp-assign} and~\ref{rule:wp-samp} for the assignment and
+the sampling. We then apply~\ref{rule:wp-if-unary} and~\ref{rule:wp-assign}
+for the $\code{if x = 1}$ branching.
+The most crucial step is ~\eqref{reservoir:end}, which we prove in the follow.
+For visual presentation,
+we abbreviate $\sure{\code{cache[c][mark]} = 0} \ast \varphi$ as $\psi$.
+\begin{eqexplain}
+&\CMod{\Unif{[1, j]}} w.
+              \begin{grp}
+                \sure{w \neq 1} \implies \CMod{\Unif{[1, \p{c}-1] \setminus S}} v.\sure{\code{ev} = v}\\
+                \sure{w = 1} \implies \sure{\code{ev} = c}
+              \end{grp}
+              \ast \psi
+              \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}
+      \whichproves
+\CMod{\Unif{[1, j]}} w.
+              \begin{grp}
+                \sure{w \neq 1} \implies \CMod{\Unif{[1, \p{c}-1] \setminus S}} v.\sure{\code{ev} = v}\\
+                \sure{w = 1} \implies \CMod{\Unif{[1, \p{c}-1] \setminus S}} v. \sure{\code{ev} = \p{c}}
+              \end{grp}
+              \ast \psi
+              \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}
+      \byrules{c-true, c-frame}
+      \whichproves
+\CMod{\Unif{[1, j]}} w.
+              \CMod{\Unif{[1, \p{c}-1] \setminus S}} v. \sure{\code{ev} =
+                \ITE{w = 1}{\p{c}}{v} }
+              \ast \psi
+              \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}
+      \byrule{c-cons}
+      \whichproves
+\CMod{\Unif{[1, j]} \pprod \Unif{[1, \p{c}-1] \setminus S}} (w, v).  \sure{\code{ev} = \ITE{w = 1}{\p{c}}{v} }
+              \ast \psi
+              \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}
+      \byrule{c-fuse}
+\end{eqexplain}
+Because  $\sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}$,
+there exists some bijection $h$ between $[1, \p{c} - 1] \setminus S$
+and $[1, j-1]$.
+For $(x, y) \in [1, j - 1] \times (([1, \p{c} - 1]) \setminus S) \cup \{\p{c}\}$,
+we define
+\begin{align*}
+f(x, y) &= \ITE{y = \p{c}}{1}{x + 1} \\
+g(x, y) &= \ITE{y = \p{c}}{h^{-1}(x)}{y}
+\end{align*}
+Pure reasoning yields that the map
+$\langle f, g \rangle : (w, v) \mapsto (f(w,v),g(w,v))$
+is a bijection between
+$[1, j - 1] \times (([1, \p{c} - 1]) \setminus S) \cup \{\p{c}\}$ and
+$[1,j] \times ([1, \p{c} - 1] \setminus S)$.
+Furthermore, for any $(x, y)$,
+\[
+\Unif{[1, j]} \pprod \Unif{[1, \p{c}-1] \setminus S}(f(x), g(y))
+=  \frac{1}{j \cdot (j - 1)}
+= \Unif{[1, j - 1]} \pprod \Unif{[1, (\p{c}-1] \setminus S) \cup \{c\} }(x, y) ,
+\]
+Thus, we can apply~\ref{rule:c-transf} with the bijection $\langle f, g \rangle$
+to derive that
+\begin{align*}
+  &\CMod{\Unif{[1, j]} \pprod \Unif{[1, \p{c}-1] \setminus S}} (w, v).
+  \sure{\code{ev} = \ITE{w = 1}{\p{c}}{v} }
+              \ast \psi
+              \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1} \\
+  \proves
+  &\CMod{\Unif{[1, j - 1]} \pprod \Unif{([1, \p{c}-1] \setminus S) \cup \{c\} }} (x, y).
+    \begin{conj}
+    \sure{
+      \code{ev} =
+      \ITE{f(x, y) = 1}{\p{c}}{g(x,y)}
+    }\\
+    \ast \psi
+    \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}.
+    \end{conj}
+\end{align*}
+Propositional reasoning gives the result that
+\begin{align*}
+&\ITE{f(x, y) = 1}{\p{c}}{g(x,y)} \\
+{}={}
+&\ITE{y = \p{c}}{\p{c}}{\left(
+    \ITE{y = \p{c}}{h^{-1}(x)}{y}
+  \right)}\\
+{}={}&  y.
+\end{align*}
+Thus, we can simplify the assertion above into
+\begin{align*}
+  &\CMod{\Unif{[1, j - 1]} \pprod \Unif{([1, \p{c}-1] \setminus S) \cup \{c\} }} (x, y).
+    \sure{
+      \code{ev} = y
+    }
+    \ast \psi
+    \ast \sure{\card{[1, \p{c} - 1] \setminus S} = j - 1}.
+\end{align*}
+Now recall that $\psi$ is $\sure{\code{cache[c][mark]} = 0} \ast
+    \sure{l \in S \iff \code{cache[$l$][mark]} = 1}$,
+which implies that the set $([1, \p{c}-1] \setminus S) \cup \{c\}$ is the equivalent to
+$([1, \p{c}] \setminus S)$.
+Thus, we can further simplify the assertion above into
+\begin{align*}
+  &\CMod{\Unif{[1, j - 1]} \pprod \Unif{[1, \p{c}] \setminus S}} (x, y).  \sure{\code{ev} = y} \ast \psi
+  \ast \sure{\card{[1, \p{c}] \setminus S} = j},
+\end{align*}
+Then, we apply~\ref{rule:c-sure-proj} to project out the unused part
+of the distribution under conditioning:
+\begin{align*}
+  &\CMod{\Unif{[1, \p{c}] \setminus S}} (x, y).
+  \begin{conj}
+  \sure{\code{ev} = y}
+  \ast \sure{\code{cache[c][mark]} = 0}
+  \\
+  \ast
+    \sure{l \in S \iff \code{cache[$l$][mark]} = 1}  \ast \sure{\card{[1, \p{c}] \setminus S} = j}.
+  \end{conj}
+\end{align*}
+Applying~\ref{rule:sure-str-convex}, we can pull out almost sure assertions
+under the conditioning modality and get
+\begin{align*}
+  &\left( \CMod{\Unif{[1, \p{c}] \setminus S}} (x, y).
+  \sure{\code{ev} = y} \right)
+  \ast
+  \begin{conj}
+  \sure{\code{cache[c][mark]} = 0}
+  \\
+  \ast
+    \sure{l \in S \iff \code{cache[$l$][mark]} = 1}  \ast \sure{\card{[1, \p{c}] \setminus S} = j}.
+  \end{conj}
+\end{align*}
+Last, we apply~\ref{rule:c-unit-l} to obtain~\eqref{reservoir:end},
+and ~\eqref{reservoir:wp-if-prim} follows from~\ref{rule:wp-if-unary}.
+
+By simplifying~\eqref{reservoir:wp-if-prim},
+we close the loop invariant $P(c)$.
+Finally, applying the loop rule~\ref{rule:wp-loop}, we get
+\begin{align*}
+    \sure{l \in S \iff \code{cache[$l$][mark]} = 1} \ast
+    \distAs{\code{ev}}{\Unif{[1, \p{c}] \setminus S}} \ast \sure{\card{[1, \p{c}] \setminus S} = j}.
+\end{align*}
+
+
+
+\subsubsection{Marker algorithm within a phase}
+When reasoning about Marker's algorithm, the pen-and-paper proof uses a
+reduction-flavored technique. Given the actual sequence of requests
+$\code{seq}$, we compute a modified sequence $\code{worseseq}$ by moving
+requests that are not in the initial cache, a.k.a., the clean request, ahead of
+those that are in the cache, a.k.a., the dirty
+requests.
+Each clean request incurs cost 1 wherever it appears,
+and dirty request incurs cost 1 if the cache slot holding its value
+has been evicted in the current phase and incur cost 0 otherwise.
+Thus, the clean requests in \code{seq} and \code{worseseq} incur
+the same cost, and the dirty requests in \code{worseseq}
+incur at least as much cost as in \code{seq}.
+This is an inherently relational argument. The rest part of the pen-and-paper
+analysis uses a lot of unary reasoning to upper bound the cost of Marker on
+$\code{worseseq}$, and concludes that it also upper bounds the cost of processing \code{seq}.
+Though we are not able to prove every step in this analysis formally,
+it suggests the need to combine unary and n-nary reasoning.
+In the following, we verify an important component of the
+unary analysis:
+when Marker operates on $M$ clean requests
+in the beginning of a phase, the $M$ distinct clean requests incurs exactly cost $m$
+and the evicted slots are chosen uniformly.
+
+At the beginning of the phase,
+it holds that
+\[
+  \forall 1 \leq l \leq k. \sure{\code{cache[$l$][mark] = 0}}.
+\]
+We also assume that $\code{cost}$ is $c$ and $\code{cache}$ is $h$ in the beginning
+of the phase.
+To express that the Marker is handling requests $\code{seq}[i]$ that are not currently in the cache,
+we assert that
+\[
+\forall 1 \leq n \leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h\code{[$l$][value]}}.
+\]
+The cost increases by exactly $M$ only if these $M$ clean requests are distinct,
+so we also require
+\[
+  \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}
+\]
+We combine these into the precondition and outline the proof at~\Cref{fig:cache-clean-phase}.
+The assertions throughout should be conjuncted with $\ownall$ with $\land$ and
+we omit it for visual simplicity.
+For the loop, we use the loop invariant
+\[
+  P(i) :=
+  \CMod{\kappa(i-1)} S.
+        \begin{pmatrix}
+             \sure{\code{cost} = c + i - 1}
+           \ast \left( \forall i \leq n \leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]} \right) \\
+             {} \ast \left( \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]} \right) \\
+             {} \ast \left( \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}} \right)\\
+        \end{pmatrix},
+\]
+where the kernel $\kappa$ is defined such that for any $1 \leq i \leq m$,
+$\kappa(i) = \Unif{\{S \subseteq [1, k] \mid \textsf{size}(S) = i\}}$ --
+so $\kappa(i- 1) = \Unif{\big\{S \subseteq [1, k] \mid \textsf{size}(S) = i - 1 \big\}}$.
+And we write $\sure{A \iff B \iff C}$
+as shorthand for $\sure{A \iff B} \ast \sure{B \iff C}$.
+
+\begin{mathfig}[\small]
+  \begin{proofoutline}
+  \PREC{
+        \sure{\code{cost} = c} \ast
+        \begin{pmatrix}
+        \forall 1 \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]}\\
+        \ast {} \forall 1 \leq l \leq k. \sure{\code{cache[$l$][mark] = 0}}\\
+        \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+        \end{pmatrix}
+      }\\
+  \CODE{i := 1}\\
+\CODE{repeat M:}\\
+  \begin{proofindent}
+    \ASSR{P(i)} \TAG[cache:clean:P(i)]\\
+\CODE{hit := 0}\\
+    \CODE{j := 1}\\
+    \ASSR{\CMod{\kappa(i-1)} S.
+        \begin{pmatrix}
+             \sure{\code{cost} = c + i - 1} \ast \forall i \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]}\\
+             {} \ast \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]} \\
+             {} \ast \sure{\code{hit} = 0} \ast \sure{\code{j} = 1}
+             \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+        \end{pmatrix}
+      }\\
+    \CODE{repeat k:}\\
+    \begin{proofindent}
+      \ASSR{Q(j)} \TAG[cache:clean:Q(j)]\\
+    \CODE{if cache[j][value]  = seq[i]:}\\
+      \begin{proofindent}
+        \CODE{cache[j][mark] := 1; hit := 1} \\
+      \end{proofindent}\\
+      \CODE{j := j+1}\\
+    \end{proofindent}\\
+    \ASSR{
+      \CMod{\kappa(i-1)} S.
+        \begin{pmatrix}
+          \sure{\code{cost} = c + i - 1} \ast \forall i \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]}\\
+             {} \ast \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]} \\
+             {} \ast \sure{\code{hit} = 0}
+             \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+        \end{pmatrix}
+      } \TAG[cache:clean:6] \\
+    \CODE{if $\ \neg$ hit then:} \\
+      \begin{proofindent}
+        \CODE{ev:~Reservoir-Samp(k, cache)}\\
+        \ASSR{
+          \CMod{\kappa(i-1)} S.
+          \begin{pmatrix}
+          \sure{\code{cost} = c + i - 1} \ast \forall i \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]}\\
+             {} \ast \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]} \\
+             {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+             {} \ast \sure{\code{hit} = 0} \ast  \distAs{\code{ev}}{\Unif{[1,k] \setminus S}}
+          \end{pmatrix}
+         }  \TAG[cache:clean:5] \\
+        \ASSR{
+          \CMod{\kappa(i-1)} S.
+          \CMod{\Unif{[1,k] \setminus S}} u.
+          \begin{pmatrix}
+          \sure{\code{cost} = c + i - 1} \ast \forall i \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]}\\
+             {} \ast \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]} \\
+             {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+             {} \ast \sure{\code{hit} = 0} \ast \sure{\code{ev} = u}
+          \end{pmatrix}
+          }  \TAG[cache:clean:3]\\
+\CODE{cache[ev][value] := seq[i]} \\
+        \ASSR{
+           \CMod{\kappa(i-1)} S.
+          \CMod{\Unif{[1,k] \setminus S}} u.
+          \begin{pmatrix}
+             \sure{\code{cost} = c + i - 1}
+             \ast \left(\forall i < n \leq M.\  \forall 1 \leq l \leq k.
+           \sure{\code{seq[n]} \neq h[l][\code{value}]}\right)\\
+           {} \ast
+           \begin{grp}
+             \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1}\\
+             \ast \sure{l \in S \cup \{u\} \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]}\\
+           \end{grp} \\
+             {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+             {} \ast \sure{\code{hit} = 0} \ast \sure{\code{ev} = u}
+          \end{pmatrix}
+        } \TAG[cache:clean:7] \\
+          \CODE{cache[ev][mark] := 1} \\
+        \ASSR{
+          \CMod{\kappa(i-1)} S.
+          \CMod{\Unif{[1,k] \setminus S}} u.
+          \begin{pmatrix}
+          \sure{\code{cost} = c + i - 1} \ast \forall i \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]}\\
+             {} \ast \forall l. \sure{l \in (S \cup \{u\}) \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]} \\
+             {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+             {} \ast \sure{\code{hit} = 0} \ast \sure{\code{ev} = u}
+          \end{pmatrix}
+        } \TAG[cache:clean:8] \\
+          \ASSR{
+          \CMod{\kappa(i)} S.
+          \begin{pmatrix}
+                \sure{\code{cost} = c + i - 1}  \ast
+                \forall i + 1 \leq n \leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]} \\
+                 {} \ast (\forall l. \sure{l \in (S \cup \{u\}) \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]}) \\
+                 {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+          \end{pmatrix}
+          }
+          \TAG[cache:clean:4]\\
+        \CODE{cost := cost + 1}\\
+        \ASSR{
+          \CMod{\kappa(i)} S.
+          \begin{pmatrix}
+            \sure{\code{cost} = c + i }  \ast
+            \forall i + 1 \leq n \leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value}]} \\
+                 {} \ast (\forall l. \sure{l \in (S \cup \{u\}) \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]}) \\
+                 {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+          \end{pmatrix}
+          }\\
+      \end{proofindent} \\
+      \CODE{i := i+1}\\
+      \end{proofindent}\\
+      \ASSR{\CMod{\kappa(M)} S.
+        \begin{pmatrix}
+             \sure{\code{cost} = c + M}
+              \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}
+             \\
+             {} \ast \forall l. \sure*{
+             \begin{conj*}
+               l \in S \iff \code{h[$l$][mark]} = 1
+               \\\iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]
+             \end{conj*}
+             }
+        \end{pmatrix}
+      }
+  \end{proofoutline}
+  \caption{Cache: clean phase}
+  \label{fig:cache-clean-phase}
+\end{mathfig}
+
+Starting from $P(i)$, we first apply~\ref{rule:wp-assign} twice
+and then enter the inner loop with
+\begin{align*}
+  Q(j) =
+      \CMod{\kappa(i-1)} S.
+        \begin{pmatrix}
+          \sure{\code{cost} = c + i - 1} \ast \left( \forall 1 \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq \code{h[$l$][value]}} \right)\\
+             {} \ast \left( \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]}\right) \\
+             {} \ast \sure{\code{hit} = 0}
+             \ast \left(\forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}} \right)\\
+        \end{pmatrix}
+\end{align*}
+To reestablish $Q(j)$ in~\eqref{cache:clean:Q(j)},
+we apply~\ref{rule:c-wp-swap} to reason from fixed $S$. Then we
+use~\ref{rule:wp-if-prim}:
+the condition $ \forall 1 \leq n\leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq \code{cache[$l$][value]}}$ implies that we do not enter \code{if} block and
+the assertion $Q(j)$ still holds afterwards. Last, we
+apply~\ref{rule:wp-assign} to derive that $Q(j)$ holds
+after the assignment $\code{j := j+1}$. Since $Q(j) = Q(j+1)$,
+$Q(j + 1)$ holds as well.
+Thus by~\ref{rule:wp-loop} we have~\eqref{cache:clean:6}.
+
+The step~\eqref{cache:clean:5} is derived using~\ref{rule:c-wp-swap}
+and the specs of $\code{Reservoir-Samp}$.
+For the step~\eqref{cache:clean:3}, we apply~\ref{rule:c-unit-r} to rewrite
+$\distAs{\code{ev}}{\Unif{[1,k] \setminus S}}$ as $\CMod{\Unif{[1,k] \setminus
+S}} u. \sure{\code{ev} = u}$ and we use~\ref{rule:c-frame} to pull
+$\CMod{\Unif{[1,k] \setminus S}} u.$ ahead. In the next step,
+using~\ref{rule:wp-assign}, we get
+\begin{align*}
+  \CMod{\kappa(i-1)} S.
+          \CMod{\Unif{[1,k] \setminus S}} u.
+          \begin{pmatrix}
+             \sure{\code{cost} = c + i - 1}
+             \ast \left(\forall i < n \leq M.\  \forall 1 \leq l \leq k.
+              \sure{\code{seq[n]} \neq \code{h[$l$][value]}}\right)\\
+           {} \ast
+           \begin{grp}
+             \forall l. \sure{l \in S \iff \code{cache[$l$][mark]} = 1}\\
+             \ast \sure{l \in S \land l \neq \code{ev} \implies \code{cache}[l][\code{value}] \neq h[l][\code{value}]}\\
+             \ast \sure{ \code{cache}[l][\code{value}] \neq h[l][\code{value}]  \land l \neq \code{ev} \implies l \in S } \\
+           \end{grp} \\
+             {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+             {} \ast \sure{\code{hit} = 0} \ast \sure{\code{ev} = u}
+          \end{pmatrix}
+\end{align*}
+With propositional reasoning, we can replace
+ $
+ \sure{ \code{cache}[l][\code{value}] \neq h[l][\code{value}]  \land l \neq \code{ev} \implies l \in S }
+ $
+with
+$
+  \sure{ \code{cache}[l][\code{value}] \neq h[l][\code{value}]  \implies l \in \{ S \cup u\} }
+$
+under the condition
+$\sure{\code{ev} = u}$;
+also, because $\forall i < n \leq M.\  \forall 1 \leq l \leq k.
+              \sure{\code{seq[n]} \neq \code{h[$l$][value]}}$,
+we can strengthen the assertion
+$\sure{l \in S \land l \neq \code{ev} \implies \code{cache}[l][\code{value}] \neq h[l][\code{value}]}$
+into
+$\sure{l \in S \cup \{u\} \implies \code{cache}[l][\code{value}] \neq h[l][\code{value}]}$.
+Thus, we have~\eqref{cache:clean:7}.
+
+Similarly, applying~\ref{rule:wp-assign} and using propositional reasoning,
+we can derive~\eqref{cache:clean:8}.
+For the step~\eqref{cache:clean:4}, we apply~\ref{rule:c-fuse} to combine
+$\CMod{\kappa(i - 1)} S. \CMod{\Unif{[1,k] \setminus S}} u.$ into
+$\CMod{\kappa(i - 1) \fuse \Unif{[1,k] \setminus S}} (S, u)$.
+We then apply~\ref{rule:c-transf} based on the bijection between
+$(S, u)$ and $(S \cup \{u\}, u)$ to get that
+such that
+\begin{align*}
+  \CMod{d} (S', u).
+          \begin{pmatrix}
+          \sure{\code{cost} = c + i - 1}  \ast \forall i + 1 \leq n \leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h[l][\code{value]}} \\
+                 {} \ast  (\forall l. \sure{l \in S' \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]}) \\
+                 {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+          \end{pmatrix},
+\end{align*}
+where
+\begin{align*}
+  d &= \bind(\kappa(i - 1), \fun S. \bind(\Unif{[1,k] \setminus S}, \fun u. \dirac{(S \cup \{u\},  u)})) \\
+    &= \bind(\kappa(i ), \fun S. \bind(\Unif{[1,k] \setminus S}, \fun u. \dirac(S ,  u)))
+\end{align*}
+Since $u$ is not used,
+we could use~\ref{rule:c-sure-proj} to project out $u$ and
+derive that
+\begin{align*}
+  \CMod{\kappa(i)} S'.
+          \begin{pmatrix}
+                 \sure{\code{cost} = c + i - 1}  \ast  \forall i + 1 \leq n \leq M.\  \forall 1 \leq l \leq k. \sure{\code{seq[n]} \neq h\code{[$l$][value]}} \\
+                 {} \ast (\forall l. \sure{l \in S' \iff \code{cache[$l$][mark]} = 1 \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]}) \\
+                 {} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}}\\
+          \end{pmatrix}
+\end{align*}
+
+
+Then, by~\ref{rule:wp-assign} and~\ref{rule:wp-loop}, we can derive the post-condition
+\begin{align*}
+  \CMod{\kappa(M)} S.
+        \begin{pmatrix}
+             \sure{\code{cost} = c + M} \ast \forall 1 \leq n' < n \leq M. \sure{\code{seq[n]} \neq \code{seq[n']}} \\
+             {} \ast \forall l.
+             \sure*{
+               l \in S
+               \iff
+               \code{cache[$l$][mark]} = 1
+               \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]
+             }
+        \end{pmatrix}
+\end{align*}
+Last, with~\ref{rule:sure-str-convex}, we can establish
+\begin{align*}
+ \sure{\code{cost} = c + M} \ast
+  \CMod{\kappa(M)} S.
+             \forall l.
+             \sure*{
+               l \in S
+               \iff
+               \code{cache[$l$][mark]} = 1
+               \iff \code{cache}[l][\code{value}] \neq h[l][\code{value}]
+             }
+\end{align*}
+which states our goal that $\code{cost}$ increases by exactly $M$ and
+the set of evicted indices $S$ is picked uniformly.
+
+
+
+
+
+
+
+ 
+
+
+ 
+\end{document}

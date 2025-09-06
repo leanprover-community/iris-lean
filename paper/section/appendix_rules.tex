@@ -1,0 +1,668 @@
+\section{The Rules of \thelogic}
+\label{sec:appendix:rules}
+
+In this section we list all the rules of \thelogic,
+including some omitted (but useful) rules in addition to those
+that appear in the main text.
+Since our treatment is purely semantic,
+rules are simply lemmas that hold in the model.
+Although we do not aim for a full axiomatization,
+we try to identify the key proof principles that apply to each of our connectives.
+For brevity, we omit the rules that apply to the basic connectives of separation logic, as they are well-known and have been proven correct for any model that is an RA. For those we refer to \cite{KrebbersJ0TKTCD18}.
+
+In \cref{fig:assertions} we summarize the notation we use for
+assertions over \thelogic's model.
+Recall that \thelogic's assertions
+$P \in \HAssrt_I \is \Model_I \ucto \Prop $
+are the upward-closed predicates over elements of
+the RA $\Model_I$.
+
+\begin{figure}[h]
+\adjustfigure \begin{align*}
+    \pure{\varphi} &\is \fun \wtv. \varphi
+    \\
+    \Own{b} &\is \fun a. b \raLeq a
+    \\
+    P \land Q &\is \fun a.
+        P(a) \land Q(a)
+    \\
+    P * Q &\is \fun a.
+      \exists b_1,b_2 \st
+        (b_1 \raOp b_2) \raLeq a \land
+        P(b_1) \land
+        Q(b_2)
+    \\
+    \E x \of X. K &\is \fun a.
+      \exists x \of X \st
+        K(x)(a)
+    & (K\from X \to \HAssrt_I)
+    \\
+    \A x \of X. K &\is \fun a.
+      \forall x \of X \st
+        K(x)(a)
+    & (K\from X \to \HAssrt_I)
+    \\
+    \Own{\m{\salg}, \m{\prob}} &\is
+      \E \m{\permap}. \Own{\m{\salg}, \m{\prob}, \m{\permap}}
+    \\
+    \distAs{\aexpr\at{i}}{\prob} & \is
+      \E \m{\salg},\m{\prob}.
+      \Own{\m{\salg},\m{\prob}} *
+      \pure{
+        \almostM{\aexpr}{(\m{\salg}(i),\m{\prob}(i))}
+        \land
+        \prob = \m{\prob}(i) \circ \inv{\aexpr}
+      }
+    \\
+    \CMod{\prob} K &\is
+    \fun a.
+      \begin{array}[t]{@{}r@{\,}l@{}}
+        \E \m{\sigmaF}, \m{\mu}, \m{\permap}, \m{\krnl}.
+        & (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raLeq a
+        \land
+        \forall i\in I\st
+        \m{\mu}(i) = \bind(\prob, \m{\krnl}(i))
+       \\ & \land \;
+        \forall v \in \psupp(\prob).
+          K(v)(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})
+      \end{array}
+    & (\prob \of \Dist(A), K\from A \to \HAssrt_I)
+    \\
+    \WP {\m{t}} {Q} &\is
+      \fun a.
+        \forall \m{\prob}_0.
+          \forall c \st
+          (a \raOp c) \raLeq \m{\prob}_0
+          \implies
+          \exists b \st
+          \bigl(
+            (b \raOp c) \raLeq \sem{\m{t}}(\m{\prob}_0)
+            \land
+            Q(b)
+          \bigr)
+    \\
+    \sure{\aexpr\at{i}} &\is
+\distAs{(\aexpr \in \true)\at{i}}{\dirac{\True}}
+    \\
+    \own{\aexpr\at{i}} &\is
+      \E \prob. \distAs{\aexpr\at{i}}{\prob}
+    \\
+    \perm{\ip{x}{i}:q} &\is
+      \E\m{\psp},\m{\permap}.
+        \Own{\m{\psp},\m{\permap}}
+        * \pure{\m{\permap}(i)(\p{x}) = q}
+    \\
+    P\withp{\m{\permap}} &\is
+      P \land \E\m{\psp}.\Own{\m{\psp}, \m{\permap}}
+    \\
+    \cpl{R} &\is
+      \E \prob \of \Dist(\Val^{X}).
+        \pure{\prob(R) = 1} *
+        \CC\prob \m{v}.
+          \sure{\ip{x}{i} = \m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+    & (R \subs \Val^{X}, X \subs I \times \Var)
+  \end{align*}
+\caption{The assertions used in \thelogic.}
+\label{fig:assertions}
+\end{figure}
+
+\begin{proposition}[Upward-closure]
+  All the assertions in \cref{fig:assertions} are upward-closed.
+\end{proposition}
+\begin{proof}
+  Easy by inspection of the definitions.
+  The definitions where upward-closedness is less obvious
+  (\eg \supercond)
+  are made upward-closed by construction by explicit use of
+  the order $\raLeq$ in the definition.
+\end{proof}
+
+Although we adopt a ``shallow embedding'' approach to assertions
+(and thus we do not provide separate syntax),
+the rules of \thelogic\ provide an axiomatic treatment
+of these assertions so that the user should never manipulate raw predicates
+over the semantic model.
+We consider the connectives listed above WP
+(included) in \cref{fig:assertions} to be the ones that the user
+should never need to unfold into their definitions and only manipulate
+through rules.
+
+We make a distinction between
+``primitive'' and ``derived'' rules.
+The primitive rules require proofs that manipulate the semantic model definitions directly; these are the ones we would consider part of a proper axiomatization.
+The derived rules can be proved sound by staying at the level of the logic,
+\ie by using the primitive rules of \thelogic.
+
+\Cref{fig:primitive-rules} lists the primitive rules for distribution ownership assertions and for the \supercond\ modality.
+\Cref{fig:wp-rules} lists the primitive rules for the weakest precondition modality.
+In \cref{fig:derived-rules} we list some useful derived rules,
+and in \cref{fig:derived-wp-rules} we show some derived rules for WP.
+
+We provide proofs for each rule in the form of lemmas in \cref{sec:appendix:soundness}.
+The name labelling each rule is a link to the proof of soundness of the rule.
+
+\let\RuleName\RuleNameProofLink
+
+\begin{figure}[btp]
+\adjustfigure[\small]
+  \rulesection*{Distribution ownership rules}
+  \begin{proofrules}
+    \infer*[lab=and-to-star]{
+  \idx(P) \inters \idx(Q) = \emptyset
+}{
+  P \land Q \proves P \sepand Q
+}     \relabel{rule:and-to-star}
+
+    \infer*[lab=dist-inj]{}{
+  \distAs{\aexpr\at{i}}{\prob}
+  \land
+  \distAs{\aexpr\at{i}}{\prob'}
+  \proves
+  \pure{\prob=\prob'}
+}     \label{rule:dist-inj}
+
+    \infer*[lab=sure-merge]{}{
+  \sure{\aexpr_1\at{i}} *
+  \sure{\aexpr_2\at{i}}
+  \lequiv
+  \sure{(\aexpr_1 \land \aexpr_2)\at{i}}
+}
+%
+     \label{rule:sure-merge}
+
+    \infer*[lab=sure-and-star]{
+  \psinv(P, \pvar(E\at{i}))
+}{
+  \sure{E\at{i}} \land P
+  \proves
+  \sure{E\at{i}} \ast P
+}
+%
+     \label{rule:sure-and-star}
+
+    \infer*[lab=prod-split]{}{
+  \distAs{(\aexpr_1\at{i}, \aexpr_2\at{i})}{\prob_1 \otimes \prob_2}
+  \proves
+  \distAs{\aexpr_1\at{i}}{\prob_1} *
+  \distAs{\aexpr_2\at{i}}{\prob_2}
+}
+     \relabel{rule:prod-split}
+  \end{proofrules}
+\rulesection{\Supercond rules}
+\begin{proofrules}
+    \infer*[lab=c-true]{}{
+  \proves \CC\prob \wtv.\True
+}     \relabel{rule:c-true}
+
+    \infer*[lab=c-false]{}{
+  \CC\prob v.\False
+  \proves
+  \False
+}     \label{rule:c-false}
+
+    \infer*[lab=c-cons]{
+  \forall v\st
+  K_1(v) \proves K_2(v)
+}{
+  \CC\prob v.K_1(v)
+  \proves
+  \CC\prob v.K_2(v)
+}     \relabel{rule:c-cons}
+
+    \infer*[lab=c-frame]{}{
+  P * \CC\prob v.K(v)
+  \proves
+  \CC\prob v.(P * K(v))
+}     \relabel{rule:c-frame}
+
+    \infer*[lab=c-unit-l]{}{
+  \CC{\dirac{v_0}} v.K(v)
+  \lequiv
+  K(v_0)
+}     \relabel{rule:c-unit-l}
+
+    \infer*[lab=c-unit-r]{}{
+  \distAs{\aexpr\at{i}}{\mu}
+  \lequiv
+  \CC\prob v.\sure{\aexpr\at{i}=v}
+}     \relabel{rule:c-unit-r}
+
+    \infer*[lab=c-assoc]{
+\prob_0 = \bind(\prob,\fun v.(\bind(\krnl(v), \fun w.\return(v,w))))
+}{
+  \CC{\prob} v.\CC{\krnl(v)} w.K(v,w)
+  \proves
+  \CC{\prob_0} (v,w).K(v,w)
+}     \label{rule:c-assoc}
+
+    \infer*[lab=c-unassoc]{}{
+  \CC{\bind(\prob,\krnl)} w.K(w)
+  \proves
+  \CC\prob v. \CC{\krnl(v)} w.K(w)
+}     \relabel{rule:c-unassoc}
+
+    \infer*[lab=c-and]{
+  \idx(K_1) \inters \idx(K_2) = \emptyset
+}{
+  \CC{\prob} v. K_1(v)
+    \land
+  \CC{\prob} v. K_2(v)
+  \proves
+  \CC\prob v.
+    (K_1(v) \land K_2(v))
+}     \relabel{rule:c-and}
+
+    \infer*[lab=c-skolem]{
+  \prob \of \Dist(\Full{A})
+}{
+  \CC\prob v. \E x \of X. Q(v, x)
+  \proves
+  \E f \of A \to X. \CC\prob v. Q(v, f(v))
+}     \relabel{rule:c-skolem}
+
+    \infer*[lab=c-transf]{
+f \from \psupp(\prob') \to \psupp(\prob)
+  \;\text{ bijective}
+  \\\\
+  \forall b \in \psupp(\prob') \st
+    \prob'(b) = \prob(f(b))
+}{
+  \CC\prob a.K(a)
+  \proves
+  \CC{\prob'} b.K(f(b))
+}     \relabel{rule:c-transf}
+
+    \infer*[lab=sure-str-convex]{}{
+  \CC\prob v.(K(v) * \sure{\aexpr\at{i}})
+  \proves
+  \sure{\aexpr\at{i}} * \CC\prob v.K(v)
+}     \relabel{rule:sure-str-convex}
+
+    \infer*[lab=c-for-all]{}{
+  \CC\prob v. \A x \of X. Q(v, x)
+  \proves
+  \A x \of X. \CC\prob v. Q(v, x)
+}     \label{rule:c-for-all}
+
+    \infer*[lab=c-pure]{}{
+  \pure{\prob(\event)=1} * \CC\prob v.K(v)
+  \lequiv
+  \CC\prob v.(\pure{v \in \event} * K(v))
+}     \relabel{rule:c-pure}
+  \end{proofrules}
+  \rulesectionend
+\caption{The primitive rules of \thelogic.}
+\label{fig:primitive-rules}
+\end{figure}
+
+\begin{figure}[tp]
+\adjustfigure[\small]
+  \rulesection*{Structural WP rules}
+  \begin{proofrules}
+    \infer*[lab=wp-cons]{
+  Q \proves Q'
+}{
+  \wpc{\m{t}}{Q}
+  \proves
+  \wpc{\m{t}}{Q'}
+}     \relabel{rule:wp-cons}
+
+    \infer*[lab=wp-frame]{}{
+  P \sepand \wpc{\hpt}{Q}
+  \proves
+  \wpc{\hpt}{\liftA{P} \sepand Q}
+}     \relabel{rule:wp-frame}
+
+    \infer*[lab=wp-nest]{}{
+  \wpc{\m{t}_1}{
+    \wpc{\m{t}_2}{Q}
+  }
+  \lequiv
+  \wpc{(\m{t}_1 \m. \m{t}_2)}{Q}
+}     \relabel{rule:wp-nest}
+
+    \infer*[lab=wp-conj]{
+  \idx(Q_1) \inters \supp{\m{t}_2} \subs \supp{\m{t}_1}
+    \\
+  \idx(Q_2) \inters \supp{\m{t}_1} \subs \supp{\m{t}_2}
+}{
+  \wpc{\m{t}_1}{Q_1}
+  \land
+  \wpc{\m{t}_2}{Q_2}
+  \proves
+  \wpc{(\m{t}_1 \m+ \m{t}_2)}{Q_1 \land Q_2}
+}     \label{rule:wp-conj}
+
+    \infer*[lab=c-wp-swap]{}{
+  \CC\prob v.
+    \WP{\m{t}}{Q(v)}
+    \land \ownall
+  \proves
+  \WP{\m{t}}*{\CC\prob v.Q(v)}
+}     \relabel{rule:c-wp-swap}
+  \end{proofrules}
+  \rulesection{Program WP rules}
+  \begin{proofrules}
+    \infer*[lab=wp-skip]{}{
+  P \proves \WP {\m[i: \code{skip}]} {P}
+}     \label{rule:wp-skip}
+
+    \infer*[lab=wp-seq]{}{
+  \WP {\m[i: t]}[\big]{
+    \WP {\m*[i: \smash{t'}]} {Q}
+  }
+  \proves
+  \WP {\m[i: (t\code{;}\ t')]} {Q}
+}     \relabel{rule:wp-seq}
+
+    \infer*[lab=wp-assign]{
+  \p{x} \notin \pvar(\expr)
+  \\
+  \forall \p{y} \in \pvar(\expr) \st
+    \m{\permap}(\ip{y}{i}) > 0
+  \\
+  \m{\permap}(\ip{x}{i})=1
+}{
+  (\m{\permap})
+  \proves
+  \WP {\m[i: \code{x:=}\expr]}[\big] {
+    \sure{\p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}}
+  }
+}
+     \relabel{rule:wp-assign}
+
+    \infer*[lab=wp-samp]{}{
+  \perm{\ip{x}{i} : 1}
+  \proves
+  \WP {\m[i: \code{x:~$\dist$($\vec{v}$)}]}
+      {\distAs{\ip{x}{i}}{\dist(\vec{v})}}
+}     \relabel{rule:wp-samp}
+
+    \infer*[lab=wp-if-prim]{}{
+{\begin{array}{@{}r@{}l@{}}
+  &\ITE{v}
+    {\WP{\m[i: t_1]}{Q(1)}}
+    {\WP{\m[i: t_2]}{Q(0)}}
+\\\proves{}&
+  \WP{
+    \m[i: \code{if $\;v\;$ then $\;t_1\;$ else $\;t_2$}]
+  }{Q(v)}
+\end{array}}
+}     \label{rule:wp-if-prim}
+
+    \infer*[lab=wp-bind]{}{
+  \sure{\expr\at{i}=v} *
+    \WP{\m*[i: {\Ectxt[v]}]}{Q}
+  \proves
+  \WP{\m*[i: {\Ectxt[\expr]}]}{Q}
+}     \label{rule:wp-bind}
+
+    \infer*[lab=wp-loop-unf]{}{
+  {\begin{array}{@{}r@{}l@{}}
+    &\WP {\m[i: \Loop{n}{t}]} {
+      \WP {\m[i: t]} { Q }
+    }
+    \\\proves{}&
+    \WP {\m[i: \Loop{(n+1)}{t}]} {Q}
+  \end{array}}
+}     \relabel{rule:wp-loop-unf}
+
+    \infer*[lab=wp-loop,right=$n\in\Nat$]{
+  \forall i < n\st
+  P(i) \proves
+  \WP {\m[j: t]} {P(i+1)}
+}{
+  P(0) \proves
+  \WP {\m[j: \Loop{n}{t}]} {P(n)}
+}     \relabel{rule:wp-loop}
+  \end{proofrules}
+  \rulesectionend
+\caption{The primitive WP rules of \thelogic.}
+\label{fig:wp-rules}
+\end{figure}
+
+
+\begin{figure}[tp]
+\adjustfigure[\small]
+  \rulesection*{Ownership and distributions}
+  \begin{proofrules}
+    \infer*[lab=sure-dirac]{}{
+  \distAs{\aexpr\at{i}}{\dirac{v}}
+  \lequiv
+  \sure{\aexpr\at{i}=v}
+}     \label{rule:sure-dirac}
+
+    \infer*[lab=sure-eq-inj]{}{
+  \sure{\aexpr\at{i} = v}
+  *
+  \sure{\aexpr\at{i} = v'}
+  \proves
+  \pure{v=v'}
+}
+%
+     \label{rule:sure-eq-inj}
+
+    \infer*[lab=sure-sub]{}{
+  \distAs{\aexpr_1\at{i}}{\prob}
+  *
+  \sure{(\aexpr_2 = f(\aexpr_1))\at{i}}
+  \proves
+  \distAs{\aexpr_2\at{i}}{\prob \circ \inv{f}}
+}
+%
+     \label{rule:sure-sub}
+
+    \infer*[lab=dist-fun]{}{
+  \distAs{\aexpr\at{i}}{\prob}
+  \proves
+  \distAs{(f\circ\aexpr)\at{i}}{\prob \circ \inv{f}}
+}
+%
+     \label{rule:dist-fun}
+
+    \infer*[lab=dirac-dup]{}{
+  \distAs{\aexpr\at{i}}{\dirac{v}}
+  \proves
+  \distAs{\aexpr\at{i}}{\dirac{v}} *
+  \distAs{\aexpr\at{i}}{\dirac{v}}
+}     \label{rule:dirac-dup}
+
+    \infer*[lab=dist-supp]{}{
+  \distAs{\aexpr\at{i}}{\prob}
+  \proves
+  \distAs{\aexpr\at{i}}{\prob} * \sure{\aexpr\at{i} \in \psupp(\prob)}
+}
+%
+     \label{rule:dist-supp}
+
+    \infer*[lab=prod-unsplit]{}{
+  \distAs{\aexpr_1\at{i}}{\prob_1} *
+  \distAs{\aexpr_2\at{i}}{\prob_2}
+  \proves
+  \distAs{(\aexpr_1\at{i}, \aexpr_2\at{i})}{\prob_1 \otimes \prob_2}
+}
+%
+     \label{rule:prod-unsplit}
+    \end{proofrules}
+    \rulesection{\Supercond}
+    \begin{proofrules}
+      \infer*[lab=c-fuse]{}{
+  \CC{\prob} v.
+  \CC{\krnl(v)} w.
+    K(v,w)
+  \lequiv
+  \CC{\prob \fuse \krnl} (v,w). K(v,w)
+}       \relabel{rule:c-fuse}
+
+      \infer*[lab=c-swap]{}{
+  \CC{\prob_1} v_1.
+    \CC{\prob_2} v_2.
+      K(v_1, v_2)
+  \proves
+  \CC{\prob_2} v_2.
+    \CC{\prob_1} v_1.
+      K(v_1, v_2)
+}       \label{rule:c-swap}
+
+      \infer*[lab=sure-convex]{}{
+  \CC\prob v.\sure{\aexpr\at{i}}
+  \proves
+  \sure{\aexpr\at{i}}
+}       \label{rule:sure-convex}
+
+      \infer*[lab=dist-convex]{}{
+  \CC\prob v.\distAs{\aexpr\at{i}}{\prob'}
+  \proves
+  \distAs{\aexpr\at{i}}{\prob'}
+}       \label{rule:dist-convex}
+
+      \infer*[lab=c-sure-proj]{}{
+  \CC\prob (v, w).\sure{\aexpr(v)\at{i}}
+  \lequiv
+  \CC{\prob\circ\inv{\proj_1}} v.\sure{\aexpr(v)\at{i}}
+}       \label{rule:c-sure-proj}
+
+      \infer*[lab=c-sure-proj-many]{}{
+  \CC\prob (\m{v}, w).
+    \sure{\ip{x}{i}=\m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+  \lequiv
+  \CC{\prob\circ\inv{\proj_1}} \m{v}.
+    \sure{\ip{x}{i}=\m{v}(\ip{x}{i})}_{\ip{x}{i}\in X}
+}       \label{rule:c-sure-proj-many}
+
+      \infer*[lab=c-extract]{}{
+  \CC{\prob_1} v_1. \bigl(
+    \sure{\aexpr_1\at{i} = v_1} *
+    \distAs{\aexpr_2\at{i}}{\prob_2}
+  \bigr)
+  \proves
+  \distAs{\aexpr_1\at{i}}{\prob_1} *
+  \distAs{\aexpr_2\at{i}}{\prob_2}
+}       \relabel{rule:c-extract}
+
+      \infer*[lab=c-dist-proj]{}{
+  \CC\prob (x, y).
+    \distAs{\aexpr\at{i}(x)}{\prob(x)}
+  \proves \CC{\prob\circ\inv{\proj_1}} x.
+    \distAs{\aexpr\at{i}(x)}{\prob(x)}
+}       \label{rule:c-dist-proj}
+    \end{proofrules}
+    \rulesection{Relational Lifting}
+    \begin{proofrules}
+    \infer*[lab=rl-cons]{
+  R_1 \subs R_2
+}{
+  \cpl{R_1} \proves \cpl{R_2}
+}
+%
+     \label{rule:rl-cons}
+
+    \infer*[lab=rl-unary]{
+  R \subs \Val^{\set{\p{x}_1\at{i},\dots,\p{x}_n\at{i}}}
+}{
+  \cpl{R} \proves \sure{R(\p{x}_1\at{i},\dots,\p{x}_n\at{i})}
+}
+%
+     \label{rule:rl-unary}
+
+    \infer*[lab=rl-eq-dist]{i \ne j}{
+  \cpl{\ip{x}{i}=\ip{y}{j}}
+  \proves
+  \E \prob.
+    \distAs{\ip{x}{i}}{\prob}
+    *
+    \distAs{\ip{y}{j}}{\prob}
+}     \label{rule:rl-eq-dist}
+
+    \infer*[lab=rl-convex]{}{
+  \CC\prob \wtv.\cpl{R} \proves \cpl{R}
+}
+%
+     \relabel{rule:rl-convex}
+
+    \infer*[lab=rl-merge]{}{
+  \cpl{R_1} * \cpl{R_2}
+  \proves
+  \cpl{R_1 \land R_2}
+}
+%
+     \relabel{rule:rl-merge}
+
+    \infer*[lab=rl-sure-merge]{
+  R \subs \Val^{X}
+  \\
+  \pvar(\expr\at{i}) \subs X
+}{
+  \cpl{R} * \sure{\ip{x}{i} = \expr\at{i}}
+  \proves
+  \cpl{R \land \p{x}\at{i} = \expr\at{i}}
+}     \label{rule:rl-sure-merge}
+
+    \infer*[lab=coupling]{
+  \prob \circ \inv{\proj_1} = \prob_1
+  \\
+  \prob \circ \inv{\proj_2} = \prob_2
+  \\
+  \prob(R) = 1
+}{
+  \distAs{\p{x}_1\at{\I1}}{\prob_1} *
+  \distAs{\p{x}_2\at{\I2}}{\prob_2}
+  \proves
+  \cpl{R(\p{x}_1\at{\I1}, \p{x}_2\at{\I2})}
+}
+     \relabel{rule:coupling}\end{proofrules}
+  \rulesectionend
+\caption{Derived rules.}
+\label{fig:derived-rules}
+\end{figure}
+
+\begin{figure}[tp]
+\adjustfigure[\small]
+\begin{proofrules}
+    \infer*[lab=wp-loop-0]{}{
+  P \proves \WP {\m[i: \Loop{0}{t}]} {P}
+}     \label{rule:wp-loop-0}
+
+    \infer*[lab=wp-loop-lockstep,right=$n\in\Nat$]{
+  \forall k < n\st
+    P(k) \proves \WP {\m[i: t, j: t']}{P(k+1)}
+}{
+  P(0) \proves
+  \WP {\m[i: (\Loop{n}{t}), j: (\Loop{n}{t'})]} {P(n)}
+}     \label{rule:wp-loop-lockstep}
+
+    \infer*[lab=wp-rl-assign]{
+  R \subs \Val^{X}
+  \\
+  \ip{x}{i} \notin \pvar(\expr\at{i}) \subs X
+  \\
+  \forall \p{y} \in \pvar(\expr) \st
+    \m{\permap}(\ip{y}{i}) > 0
+  \\
+  \m{\permap}(\ip{x}{i})=1
+}{
+  \cpl{R}\withp{\m{\permap}}
+  \proves
+  \WP {\m[i: \code{x:=}\expr]}[\big] {
+    \cpl{R \land \p{x}\at{i} = \expr\at{i}}\withp{\m{\permap}}
+  }
+}     \label{rule:wp-rl-assign}
+
+    \infer*[lab=wp-if-unary]{
+  P * \sure{\ip{e}{\I1} = 1}
+  \gproves
+  \WP {\m[\I1: t_1]}{Q(1)}
+  \\
+  P * \sure{\ip{e}{\I1} = 0}
+  \gproves
+  \WP {\m[\I1: t_2]}{Q(0)}
+}{
+  P * \distAs{\ip{e}{\I1}}{\beta}
+  \gproves
+  \WP {\m[\I1: \Cond{\p{e}}{t_1}{t_2}]}[\big]{\CC{\beta} b.Q(b)}
+}     \label{rule:wp-if-unary}
+  \end{proofrules}
+\caption{Derived WP rules.}
+\label{fig:derived-wp-rules}
+\end{figure}
+

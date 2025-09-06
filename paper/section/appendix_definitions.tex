@@ -1,0 +1,243 @@
+\section{Auxiliary Definitions}
+\label{sec:appendix:definition}
+
+\begin{definition}[Bind and return]
+  Let $A$ be a countable set and $\salg$ a \salgebra.
+  We define the following functions:
+  \begin{align*}
+    \return &\from A \to \Dist(\Full{A})
+    &
+    \bind &\from
+      \Dist(\Full{A}) \to
+      (A \to \Dist(\salg))
+        \to \Dist(\salg)
+    \\
+    \return&(a) \is \dirac{a}
+    &
+    \bind&(\prob, \krnl) \is
+      \fun \event \in \salg.
+\sum_{a\in A} \prob(a) \cdot \krnl(a)(\event)
+  \end{align*}
+  We will use throughout Haskell-style notation for monadic expressions,
+  for instance:
+  \[
+    \bigl(\DO{x <- \prob; y <- f(x); \return(x+y)}\bigr)
+    \equiv
+    \bind(\prob,
+      \fun x.
+        \bind(f(x),
+          \fun y.
+            \return(x+y)
+        )
+    )
+  \]
+\end{definition}
+
+The $\bind$ and $\return$ operators form a well-known monad with
+$\Dist$, and thus satisfy the monadic laws:
+\begin{align*}
+  \bind(\prob,\fun x.\return(x)) &= \prob
+  \tag{\textsc{unit-r}}
+  \label{prop:bind-unit-r}
+  \\
+  \bind(\return(v),\krnl) &= \krnl(v)
+  \tag{\textsc{unit-l}}
+  \label{prop:bind-unit-l}
+  \\
+  \bind(\bind(\prob,\krnl_1),\krnl_2) &=
+    \bind(\prob,\fun x.\bind(\krnl_1(x),\krnl_2))
+  \tag{\textsc{assoc}}
+  \label{prop:bind-assoc}
+\end{align*}
+
+By \cref{thm:countable-partition-generated},
+for any sigma algebra $\sigmaF'$ on countable underlying set, there exists
+a partition $S$ of the underlying space that generated it, so we can transform
+any such $\sigmaF'$ to a full sigma algebra over $S$.
+Since we are working with countable underlying set throughout,
+the requirement of $\prob$ to be over the full sigma algebra $\Full{A}$ is not an extra restriction.
+
+\begin{definition}[Fusion operation]
+  Given $\prob \of \Dist(A)$ and $\krnl \from A \to \Dist(B)$,
+  we define their fusion $(\prob \fuse \krnl) \of \Dist(A \times B)$
+  by:
+  \[
+    \prob\fuse\krnl \is
+      \fun(v,w). \prob(v)\krnl(v)(w).
+  \]
+\end{definition}
+
+\begin{proposition}
+  $
+    \prob\fuse\krnl =
+    \bind(\prob,\fun v.(\bind(\krnl(v), \fun w.\return(v,w)))).
+  $
+\end{proposition}
+
+\begin{proof}
+  By unfolding the definitions, we obtain
+  \begin{align*}
+    &\bind(\prob,\fun v.(\bind(\krnl(v), \fun w.\return(v,w))))(a,b)
+    \\
+    &=
+    \Sum_{a'\in A}
+      \prob(a') \cdot
+      \Sum_{b'\in B}
+        \krnl(a')(b')\cdot\dirac{(a',b')}(a,b)
+    \\&= \prob(a)\krnl(a)(b)
+    \qedhere
+  \end{align*}
+\end{proof}
+
+\begin{lemma}\label{lm:fuse-split}
+  For all $\prob \of \Dist(A\times B)$,
+  there exists a $\krnl \from A \to \Dist(B)$
+  such that
+  $ \prob = (\prob \circ \inv{\proj_1})\fuse\krnl $.
+\end{lemma}
+
+\begin{proof}
+  Let $\prob_1 = \prob \circ \inv{\proj_1}$.
+  Then the result is immediate by letting
+  $
+    \krnl(a)(b) =
+      \begin{cases}
+        \frac{\prob_0(a,b)}{\prob_1(a)}
+          \CASE \prob_1(a) > 0
+        \\
+        0 \OTHERWISE
+      \end{cases}
+  $.
+\end{proof}
+
+\subsection{Program Semantics}
+
+We assume each primitive operator $\prim \in \set{\p+,\p-,\p<,\dots}$
+has an associated arity $\arity(\prim) \in \Nat$, and
+is given semantics as some function
+$ \sem{\prim} \from \Val^{\arity(\prim)} \to \Val. $
+Expressions $\expr \in \Expr$ are given semantics as a function
+$ \sem{\expr} \from \Store \to \Val $
+as standard:
+\begin{align*}
+  \sem{v}(s) &\is v
+  &
+  \sem{\p{x}}(s) &\is s(\p{x})
+  &
+  \sem{\prim(\expr_1,\dots,\expr_{\arity(\prim)})}(s) &\is
+    \sem{\prim}(\sem{\expr_1},\dots,\sem{\expr_{\arity(\prim)}})
+\end{align*}
+
+\begin{definition}[Term semantics]
+\label{def:semantics}
+  Given $\term \in \Term$ we define its \emph{kernel semantics}
+  $\Sem[K]{\term} \from \Store \to \Dist(\Full{\Store}) $
+  as follows:
+  \begin{align*}
+    \Sem[K]{\code{skip}}(s) &\is
+      \return(s)
+    \\
+    \Sem[K]{\code{x:=}\expr}(s) &\is
+        \return(s\upd{\p{x}->\sem{\expr}(s)})
+    \\
+    \Sem[K]{\code{x:~$\dist$($\expr_1,\dots,\expr_n$)}}(s) &\is
+      \DO{
+        v <- \sem{\dist}(\sem{\expr_1}(s),\dots,\sem{\expr_n}(s));
+        \return(s\upd{\p{x}->v})
+      }
+    \\
+    \Sem[K]{\term_1\p;\term_2}(s) &\is
+      \DO{
+        s' <- \Sem[K]{\term_1}(s);
+        \Sem[K]{\term_2}(s')
+      }
+    \\
+    \Sem[K]{\code{if$\;\expr\;$then$\;\term_1\;$else$\;\term_2\;$}}(s) &\is
+      \DO{
+        \ITE{\sem{\expr}(s) \ne 0}
+          {\Sem[K]{\term_1}(s)}
+          {\Sem[K]{\term_2}(s)}
+      }
+    \\
+    \Sem[K]{\Loop{\expr}{\term}}(s) &\is
+      \var{loop}_{\term}(\sem{\expr}(s), s)
+\end{align*}
+  where $\var{loop}_{\term}$ simply iterates $\term$:
+  \[
+    \var{loop}_{\term}(n, s) \is
+      \begin{cases}
+        \return(s) \CASE n \leq 0 \\
+        \DO{s' <- \var{loop}_{\term}(n-1, s); \Sem[K]{\term}(s')} \OTHERWISE
+      \end{cases}
+  \]
+The semantics of a term is then defined as:
+  \begin{align*}
+    \sem{\term} &\from \Dist(\Full{\Store}) \to \Dist(\Full{\Store})
+    \\
+    \sem{\term}(\prob) &\is \DO{s <- \prob; \Sem[K]{\term}(s)}
+  \end{align*}
+\end{definition}
+
+Evaluation contexts~$\Ectxt$ are defined by the following grammar:
+\begin{grammar}
+  \Ectxt \is
+       \Assn{x}{\pr{\Ectxt}}
+    | \Sample{x}{\dist}{\vec{\expr}_1,\pr{\Ectxt},\vec{\expr}_2}
+| \Cond{\pr{\Ectxt}}{\term_1}{\term_2}
+    | \Loop{\pr{\Ectxt}}{\term}
+  \\
+  \pr{\Ectxt} \is
+      [\hole]
+    | \prim(\vec{\expr}_1,\pr{\Ectxt},\vec{\expr}_2)
+\end{grammar}
+
+A simple property holds for evaluation contexts.
+
+\begin{lemma}
+  \label{lemma:context-binding}
+  $\Sem[K]{\Ectxt[\expr]}(s) = \Sem[K]{\Ectxt[\sem{\expr}(s)]}(s).$
+\end{lemma}
+
+\begin{proof}
+  Easy by induction on the structure of evaluation contexts.
+\end{proof}
+
+
+
+
+
+
+
+\subsection{Permissions}
+\label{sec:appendix:permissions}
+
+\Cref{rule:sure-and-star}
+needs a side-condition on assertions which concerns how
+an assertion constrains permission ownership.
+In \thelogic, most manipulations do not concern permissions,
+except for when a mutation takes place, where permissions are used
+to make sure the frame forgets all information about the variable to be mutated.
+The notion of \emph{permission-abstract assertion} we now define
+characterises the assertions which are not chiefly concerned about permissions.
+
+
+
+An assertion~$P \in \HAssrt_I$ is \emph{permission-abstract}
+with respect to some~$X \subs I \times \Var$,
+written $\psinv(P, X)$, if it is invariant under scaling of permission of~$X$;
+that is:
+\[
+  \psinv(P, X) \is
+    \forall \m{\salg},\m{\prob},\m{\permap}, q, n\in \Nat\setminus\set{0}.
+      P(\m{\salg},\m{\prob},\m{\permap}\m[\ip{x}{i}: q])
+      \implies
+        P(\m{\salg},\m{\prob},\m{\permap}\m[\ip{x}{i}: q/n]).
+\]
+For example,
+  fixing $X=\set{\ip{x}{i}}$ then
+  $ \distAs{\ip{x}{i}}{\prob} $,
+  $ \sure{\ip{x}{i}=v} $, and
+  $ \perm{\ip{y}{i}: 1} $
+  are permission-abstract,
+  but $ \perm{\ip{x}{i}: \onehalf} $ is not.
+

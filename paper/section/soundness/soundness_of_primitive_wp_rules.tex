@@ -1,0 +1,976 @@
+\subsection{Soundness of Primitive WP Rules}
+\label{sec:appendix:wp-rules}
+
+
+\subsubsection{Structural Rules}
+\begin{lemma}
+\label{proof:wp-cons}
+  \Cref{rule:wp-cons} is sound.
+\end{lemma}
+
+\begin{proof}
+  For any resource $a$,
+  if $(\WP {\m{t}} {Q})(a)$, then
+  \[
+    \forall \m{\prob}_0 \st
+    \forall c \st
+    (a \raOp c) \raLeq \m{\prob}_0
+    \implies
+    \exists b \st
+    \bigl(
+      (b \raOp c) \raLeq \sem{\m{t}}(\m{\prob}_0)
+      \land
+      \model{Q}{(b)}
+    \bigr)
+  \]
+  From the premise $Q \proves Q'$, and the fact that $b$ must be valid for $ (b \raOp c) \raLeq \sem{\m{t}}(\m{\prob}_0) $ to hold, we have that $Q(b)$ implies $Q'(b)$.
+  Thus, it must
+  \[
+    \forall \m{\prob}_0 \st
+    \forall c \st
+    (a \raOp c) \raLeq \m{\prob}_0
+    \implies
+    \exists b \st
+    \bigl(
+      (b \raOp c) \raLeq \sem{\m{t}}(\m{\prob}_0)
+      \land
+      Q'(b)
+    \bigr),
+  \]
+  which says $(\WP {\m{t}} {Q'})(a)$.
+\end{proof} \begin{lemma}
+\label{proof:wp-frame}
+  \Cref{rule:wp-frame} is sound.
+\end{lemma}
+
+\begin{proof}
+  Let $a\in\Model_I$ be a valid resource such that
+  it satisfies $P \ast \WP {\m{t}} {Q}$.
+  By definition, this means that, for some $a_1,a_2$:
+  \begin{gather}
+    a_1 \raOp a_2 \raLeq a
+    \\
+    P(a_1)
+    \label{wp-frame:pa1}
+    \\
+    \forall \m{\prob}_0, c \st
+      (a_2 \raOp c) \raLeq \m{\prob}_0
+      \implies
+        \exists b \st
+        \bigl(
+          (b \raOp c) \raLeq \sem{\m{t}}(\m{\prob}_0)
+          \land
+          Q(b)
+        \bigr)
+    \label{wp-frame:assumed-wp}
+  \end{gather}
+  Our goal is to prove $a$ satisfies
+  $\WP {\m{t}} {P * Q}$, which,
+  by unfolding the definitions, amounts to:
+  \begin{equation}
+    \exists a' \raLeq a \st
+    \forall \m{\prob}_0, c' \st
+      (a' \raOp c') \raLeq \m{\prob}_0
+      \implies
+      \exists b_1,b \st
+        ((b_1 \raOp b) \raOp c') \raLeq \sem{\m{t}}(\m{\prob}_0)
+        \land
+        P(b_1) \land Q(b)
+    \label{wp-frame:goal}
+  \end{equation}
+
+  Our goal can be proven by instantiating
+  $a' = (a_1 \raOp a_2)$ and $b_1 = a_1$,
+  from which we reduce the goal
+  to proving, for all $\m{\prob}_0, c'$:
+  \begin{equation}
+      ((a_1 \raOp a_2) \raOp c') \raLeq \m{\prob}_0
+      \implies
+      \exists b \st
+        ((a_1 \raOp b) \raOp c') \raLeq \sem{\m{t}}(\m{\prob}_0)
+        \land
+        P(a_1) \land Q(b)
+  \end{equation}
+  We have that $P(a_1)$ holds by \eqref{wp-frame:pa1}.
+  By associativity and commutativity of the RA operation,
+  we reduce the goal to:
+  \begin{equation}
+      (a_2 \raOp (a_1 \raOp c')) \raLeq \m{\prob}_0
+      \implies
+      \exists b \st
+        (b \raOp (a_1 \raOp c')) \raLeq \sem{\m{t}}(\m{\prob}_0)
+        \land
+        Q(b)
+  \end{equation}
+  This follows by applying assumption~\eqref{wp-frame:assumed-wp}
+  with $c = (a_1 \raOp c')$.
+\end{proof}
+ \begin{lemma}
+\label{proof:wp-nest}
+  \Cref{rule:wp-nest} is sound.
+\end{lemma}
+
+\begin{proof}
+  Because $\m{t_1 \m. t_2}$ is defined,
+  it must $\supp{\m{t_1}} \cap \supp{\m{t_2}} = \emptyset$.
+  By definition
+because $\supp{\m{t_1}} \cap \supp{\m{t_2}} = \emptyset$,
+  we have
+$
+    \sem{(\m{t_1 \m. t_2)}}(\m{\prob})
+    = \sem{\m{t_2}} (\sem{\m{t_1}} (\m{\prob}))
+  $.
+
+
+  \begin{itemize}
+    \item For the $\vdash$ case:
+Assume $a$ is a valid resource such that
+  $(\WP {\m{t_1}} {\WP {\m{t_2}} {Q}})(a)$ holds.
+  Our goal is to prove $(\WP {\m{t_1 \m. t_2}} {Q})(a_0)$ holds,
+  which unfolds by definition of WP into:
+  \begin{equation}
+    \forall \m{\prob}_0\st
+    \forall c_0 \st
+    (a_0 \raOp c_0) \raLeq \m{\prob}_0
+    \implies
+      \exists a_2 \st
+      \bigl(
+        (a_2 \raOp c_0) \raLeq \sem{\m{t_1 \m. t_2}}(\m{\prob}_0)
+      \land Q(a_2)
+      \bigr)
+    \label{wp-nest:goal}
+  \end{equation}
+
+  Take an arbitrary $\m{\prob}_0$ and $c_0$ such that
+  $ (a_0 \raOp c_0) \raLeq \m{\prob}_0 $.
+  By unfolding the WPs in the assumption,
+  we have that there exists a
+  $a_1 \in \Model_I$ such that:
+  \begin{gather}
+    (a_1 \raOp c_0) \raLeq \sem{\m{t_1}}(\m{\prob}_0)
+    \label{wp-nest:a1}
+    \\
+    \forall \m{\prob}_1\st
+    \forall c_1 \st
+      (a_1 \raOp c_1) \raLeq \m{\prob}_1
+      \implies
+      \exists a_2 \st
+      (a_2 \raOp c_1) \raLeq \sem{\m{t_2}}(\m{\prob}_1)
+      \land  Q(a_2)
+    \label{wp-nest:a2}
+  \end{gather}
+  We can apply \eqref{wp-nest:a2} to \eqref{wp-nest:a1}
+  by instantiating $\m{\prob}_1$ with $\sem{\m{t_1}}(\m{\prob}_0)$,
+  and $c_1$ with $c_0$,
+  obtaining:
+  \[
+    \exists a_2 \st
+    ((a_2 \raOp c_0) \raLeq \sem{\m{t_1}}(\sem{\m{t_2}}(\m{\prob}_0))
+    \land  Q(a_2))
+  \]
+  When $\m{t_1 \m. t_2}$ is defined,
+  the terms $\m{t_1}$ and $\m{t_2}$ are on disjoint indices,
+  and thus
+  $ \sem{ \m{t_1} \m. \m{t_2}}(\prob_0) = \sem{\m{t_1}}(\sem{\m{t_2}}(\prob_0)) $,
+  we obtain the goal \eqref{wp-nest:goal} as desired.
+
+    \item For the $\dashv$ case:
+      For any resource $a$,
+      \begin{align}
+      &
+      \WP {(\m{t_1} \m. \m{t_2})} {Q} (a) \notag \\
+      {}\iff{} &
+        \forall \m{\prob}_0 \st
+        \forall c \st
+        (a \raOp c) \raLeq \m{\prob}_0
+        \implies
+        \exists b \st
+        \bigl(
+          (b \raOp c) \raLeq \sem{\m{t_1} \m. \m{t_2}}(\m{\prob}_0)
+          \land
+          \model{Q}{(b)}
+       \bigr)
+       \label{helper:wp-nest:1}
+      \end{align}
+
+      Since $(b \raOp c) \raLeq \sem{\m{t_1} \m. \m{t_2}}(\m{\prob}_0)
+      $, we have $\raValid(b \raOp c)$ and thus $\raValid(b)$. Say
+      \begin{align*}
+        b &= \m[i: \m{\sigmaF_b}(i), \m{\mu_b}(i), \m{\permap_b}(i)] \\
+        c &= \m[i: \m{\sigmaF_c}(i), \m{\mu_c}(i), \m{\permap_c}(i)]
+\end{align*}
+      Let
+      \begin{align*}
+        b' &=
+        \begin{cases}
+          i:  (\m{\sigmaF_b}(i), \m{\mu_b}(i), \m{\permap_b}(i)) \CASE \text{ if $i \in \supp{\m{t_1}}$} \\
+          i : (\m{\sigmaF}(i), \m{\mu}(i), \m{\permap}(i)) \CASE \text{ if $i \notin \supp{\m{t_1}}$ }
+        \end{cases}
+      \end{align*}
+      Since $\raValid(b \raOp c)$ and  $\raValid(a \raOp c)$,
+      on each index $i \in I$, we have $\raValid(b'(i) \raOp c(i))$  .
+      Thus, $\raValid(b' \raOp c)$.
+      Also, for each $i \in I$,
+      $(b'(i) \raOp c(i)) \raLeq \sem{\m{t_1}(i)}(\m{\prob}_0(i))$,
+      which implies that
+      \[
+          (b' \raOp c) \raLeq \sem{\m{t_1}}(\m{\prob}_0)
+      \]
+      We want to show next that
+      $\model{\WP {\m{t_2}} {Q}}{b'}$.
+      For any $c' = \m[i: \m{\sigmaF'_c}(i), \m{\mu'_c}(i), \m{\permap'_c}(i)]$
+      such that $\raValid(b' \raOp c')$,
+      it must
+      \begin{align*}
+        &\raValid((\m{\sigmaF_b}(i), \m{\mu_b}(i), \m{\permap_b}(i)) \raOp (\m{\sigmaF'_c}(i), \m{\mu'_c}(i), \m{\permap'_c}(i)))  &\text{if } i \in \supp{\m{t_1}} \\
+        &\raValid((\m{\sigmaF}(i), \m{\mu}(i), \m{\permap}(i)) \raOp (\m{\sigmaF'_c}(i), \m{\mu'_c}(i), \m{\permap'_c}(i)))  &\text{if } i  \in \supp{\m{t_2}}
+      \end{align*}
+      By~\cref{helper:wp-nest:1},
+      $\raValid((\m{\sigmaF}(i), \m{\mu}(i), \m{\permap}(i)) \raOp (\m{\sigmaF'_c}(i), \m{\mu'_c}(i), \m{\permap'_c}(i)))$
+      also implies
+      \[
+        \raValid((\m{\sigmaF_b}(i), \m{\mu_b}(i), \m{\permap_b}(i)) \raOp (\m{\sigmaF'_c}(i), \m{\mu'_c}(i), \m{\permap'_c}(i))).
+      \]
+      Thus,
+      $(b \raOp c) \raLeq \sem{\m{t_1} \m. \m{t_2}}(\m{\prob}_0)
+          \land
+          Q(b)$
+          witnesses that
+           $\WP {\m{t_2}} {Q}(b')$.
+  \end{itemize}
+\end{proof}
+ \begin{lemma}
+\label{proof:wp-conj}
+  \Cref{rule:wp-conj} is sound.
+\end{lemma}
+
+\begin{proof}
+     For any resource $a$,
+      \begin{align*}
+        & \bigl(\WP {\m{t_1}} {Q_1} \land   \WP {\m{t_2}} {Q_2}\bigr)(a)
+        \\
+        \iff &
+        \forall \m{\prob}_0 \st
+        \forall c \st
+        (a \raOp c) \raLeq \m{\prob}_0
+        \implies \\
+             & \exists b \st
+        \bigl(
+          (b \raOp c) \raLeq \sem{\m{t_1}}(\m{\prob}_0)
+          \land
+          Q(b)
+       \bigr) \land
+         \exists b' \st
+        \bigl(
+          (b' \raOp c) \raLeq \sem{\m{t_2}}(\m{\prob}_0)
+          \land
+          Q(b')
+       \bigr)
+      \end{align*}
+
+      Define $b''$ such that
+      \begin{align*}
+        b''(i) & =
+        \begin{cases}
+          b(i) \CASE i \in \idx(Q_1) \\
+          b'(i) \OTHERWISE
+        \end{cases}
+      \end{align*}
+
+      For any $c$, $\raValid(a \raOp c)$ implies
+       $\raValid(b'' \raOp c)$ because
+       $\raValid(b'(i) \raOp c(i))$ and
+       $\raValid(b(i) \raOp c(i))$ for all $i$.
+       Furthermore,
+       $b''(i) = b(i)$ for $i \in \idx(Q_1)$ implies
+       that $Q_1(b'')$.
+       Also,
+       $\idx(Q_2) \inters \supp{\m{t}_1} \subs \supp{\m{t}_2}$
+       implies
+       that $Q_2(b'')$.
+       Therefore, $(Q_1 \land Q_2)(b'')$, witnessing
+       $\model{\WP {\m{t_1} + \m{t_2}} {Q_1 \land Q_2}}{(a)} $.
+\end{proof} \begin{lemma}
+\label{proof:c-wp-swap}
+  \Cref{rule:c-wp-swap} is sound.
+\end{lemma}
+
+\begin{proof}
+    By the meaning of conditioning modality and weakest precondition transformer,
+    \begin{align*}
+    &(\ownall \land \CMod\prob v. \WP {\m{t}} {Q(v)})(a) \\
+    {}\iff{}
+    &\ownall(a) \land
+    \begin{array}[t]{@{}r@{\,}l@{}}
+    \E \m{\sigmaF}, \m{\mu}, \m{\permap}, \m{\krnl}.
+      & (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raLeq a
+      \land
+        \forall i\in I\st
+        \m{\mu}(i) = \bind(\prob, \m{\krnl}(i))
+      \\ & \land \;
+        \forall v \in \psupp(\prob).
+          (\WP {\m{t}} {Q(v)})(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})
+    \end{array}
+  \end{align*}
+Intuitively, for each $v$,
+  running $\m{t}$ on each fibre $(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})$
+  gives a output resource that satisfies $Q(v)$.
+
+  Assume $\raValid(a)$ holds and let
+  $a = (\m{\sigmaF}_a, \m{\mu}_a, \m{\permap}_a)$.
+  By~\cref{lemma:bind-extend},
+  when $ (\m{\sigmaF}, \m{\mu}, \m{\permap}) \raLeq a$,
+  $\m{\mu} = \bind(\prob, \m{\krnl})$ iff that there exists $\m{\krnl}''$ such that
+  $\m{\mu}_a = \bind(\prob, \m{\krnl}'')$  and $\m{\krnl}(I)(v) \extTo \m{\krnl}''(I)(v)$ for every $v$.
+  Thus,
+\begin{align*}
+    (\CMod\prob v. \WP {\m{t}} {Q(v)})(\m{\sigmaF}_a, \m{\mu}_a, \m{\permap}_a)
+    \iff
+    \begin{array}[t]{@{}r@{\,}l@{}}
+    \E \m{\krnl}.
+      &\forall i\in I\st
+        \m{\mu}_a (i) = \bind(\prob, \m{\krnl}''(i))
+        \\ & \land \;
+        \forall v \in \psupp(\prob).
+          (\WP {\m{t}} {Q(v)})(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})
+    \end{array}
+  \end{align*}
+
+  We want to show that
+  \[
+      \WP {\m{t}}{\CMod\prob v. {Q(v)}} (a)
+    \]
+  which is equivalent to
+  \[
+        \A \m{\prob'}.
+        \forall c\st
+        a\raOp c \raLeq \m{\prob'}
+          \implies
+            \exists a'\st
+            a'\raOp c \raLeq {\sem{\m{t}} (\m{\prob'})}
+            \land
+            (\CMod \prob Q(v))(a).
+  \]
+  Let's fix an arbitrary $ \m{\prob'}, c $ that satisfy
+  $\raValid(a \raOp c) \land  a\raOp c \raLeq a_{\m{\prob'}}$,
+  we try to construct a corresponding $a'$.
+  The high-level approach that we will take is to show that running $\m{t}$ on $a$ takes us to a resource that is equivalent to bind the set of output resource satisfying $Q(v)$ to $\mu$.
+
+
+
+  Recall that $a  = (\m{\sigmaF}_a, \m{\mu}_a, \m{\permap}_a)$ also satisfies
+  $\ownall$, which says $\m{\sigmaF}_a =  \Full{\Var}$.
+  We claim that
+  $ a\raOp c  \raLeq (\Full{\Var}, \m{\mu'}, \permap_1)$ holds implies that
+  the probability space $c$ is trivial.
+  Say $c = (\m{\sigmaF}_c, \m{\mu}_c, \m{\permap}_c)$, then for any $E \in \m{\sigmaF}_c$,
+  the event $E$ must also in $\m{\sigmaF}_a$ and $\Full{\Var}$  because they are
+  the full sigma algebra.
+  By definition of $ a\raOp c  \raLeq (\Full{\Var}, \m{\mu'}, \permap_1)$,
+  we have
+\begin{align}
+    &\m{\mu}_c(E) \cdot \m{\mu}_a(E) =  \m{\mu'}(E \cap E)  = \m{\mu'}(E).
+    \label{eq:c-wp-swap-c-trivial}
+  \end{align}
+  Another implication of  $ a\raOp c  \raLeq (\Full{\Var}, \m{\mu'}, \permap_1)$ is that
+  we have $\m{\mu}_c(E)  = \m{\mu'}(E)$ and  $\m{\mu}_a(E)  = \m{\mu'}(E)$.
+  Combining with~\cref{eq:c-wp-swap-c-trivial}, we can conclude
+  \begin{align*}
+    \m{\mu'}(E) \cdot \m{\mu'}(E) =  \m{\mu'}(E),
+  \end{align*}
+  which implies that
+  $\m{\mu}_c(E) = \m{\mu'}(E)  \in \{0,1\}$.
+  Therefore, $c$ is a trivial probability space and
+  \begin{align*}
+    (\m{\salg}_a, \m{\krnl}(I)(v), \m{\permap}_a) \raOp c \raLeq
+    (\m{\salg}_a, \m{\krnl}(I)(v), \m{\permap}_a)
+  \end{align*}
+
+  Furthermore, for every $v \in \psupp(\mu)$, we have
+  $(\WP {\m{t}} {Q(v)})(\m{\sigmaF}, \m{\krnl}(I)(v), \m{\permap})$
+  which implies
+  \begin{align}
+    \label{eq:c-wp-swap:helper}
+        \A \m{\krnl'}. &
+(\m{\salg}_a, \m{\krnl}(I)(v), \m{\permap}_a) \raOp c
+          \raLeq \m{\krnl'}(I)(v)
+        \\
+        & {} \implies {}
+        \exists a_v\st
+(a_v \raOp c \raLeq \sem{\m{t}} (\m{\krnl'}(I)(v))) \land Q(v)(a_v) .
+      \end{align}
+Therefore,
+  \begin{align}
+   & a\raOp c \raLeq a_{\m{\prob'}}
+  {}\implies{} \forall v \in \psupp(\mu). (\raValid((\m{\salg}_a, \m{\krnl}(I)(v), \m{\permap}_a) \raOp c) \land  (\m{\salg}_a, \m{\krnl}(I)(v), \m{\permap}_a) \raOp c \raLeq (\Full{\Var}, \m{\krnl}(I)(v), \fullp) \tag{By~\ref{lemma:fibre-prod-exists} and~\ref{lemma:bind-extend}}\\
+  {}\implies{} & \forall v \in \psupp(\mu).  \exists a_v\st
+        \raValid(a_v \raOp c) \land  \left(a_v \raOp c \raLeq (\Full{\Var}, \sem{\m{t}} (\m{\krnl}(I)(v)), \fullp)\right)  \land  Q(v)(a_v)
+        \tag{By~\cref{eq:c-wp-swap:helper}} \\
+  {}\implies{} & \forall v \in \psupp(\mu). \m{\permap}_{a_v} + \m{\permap}_c \raLeq \fullp \land    Q(v)(\Full{\Var}, \sem{\m{t}} (\m{\krnl'}(I)(v)), \fullp).
+        \tag{By upwards closure}
+  \end{align}
+
+  Let $a'_v =  (\Full{\Var}, \sem{\m{t}} (\m{\krnl'}(I)(v)), \m{\permap}_{a})$.
+  Because $\mu_c(E) \in \{0, 1\}$ for any $E \in \sigmaF_c$, for every $v$,
+  we have $ (\Full{\Var}, \sem{\m{t}} (\m{\krnl'}(I)(v)))  \raOp (\m{\sigmaF}_c, \m{\mu}_c)$
+  defined and thus
+  $a'_v \raOp c$ valid.
+  Define
+  \[
+    a' =
+     (\Full{\Var},
+      \bind(\mu, \fun v . \sem{\m{t}} (\m{\krnl'}(I)(v)),
+      \m{\permap}_a)
+  \]
+  By~\cref{lemma:fibre-prod-exists},
+  $ \raValid(a'_v \raOp c)$ for all $v \in \psupp_{\mu}$ implies
+  $\raValid(a' \raOp c)$.
+  Also, because  $Q(v)(a_v)$ for all $v \in A_{\mu}$,
+  $(\CMod{\prob} v. Q(v))(a') $.
+Thus, $(\WP {\m{t}}{\CMod\prob v. {Q(v)}}) (a)$.
+\end{proof}
+ 
+\subsubsection{Program Rules}
+\begin{lemma}
+\label{proof:wp-skip}
+  \Cref{rule:wp-skip} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume $a \in \Model_I$ is valid and such that~$P(a)$ holds.
+  By unfolding the definition of WP, we need to prove
+  \[
+    \forall \m{\prob}_0.
+      \forall c \st
+      (a \raOp c) \raLeq \m{\prob}_0
+      \implies
+      \exists b \st
+      \bigl(
+        (b \raOp c) \raLeq \sem{\m{t}}(\m{\prob}_0)
+        \land
+        P(b)
+      \bigr)
+  \]
+  which follows trivially
+  by $\sem{\m[i:\code{skip}]}(\m{\prob}_0)=\m{\prob}_0$ and picking $b=a$.
+\end{proof}
+ \begin{lemma}
+\label{proof:wp-seq}
+  \Cref{rule:wp-seq} is sound.
+\end{lemma}
+
+\begin{proof}
+Assume $a_0 \in \Model_I$ is a valid resource such that
+  $(\WP {\m[i: t]} {\WP {\m[i: t']} {Q}})(a_0)$ holds.
+  Our goal is to prove $(\WP {(\m[i: t\p; t'])} {Q})(a_0)$ holds,
+  which unfolds by definition of WP into:
+  \begin{equation}
+    \forall \m{\prob}_0\st
+    \forall c_0 \st
+    (a_0 \raOp c_0) \raLeq \m{\prob}_0
+    \implies
+      \exists a_2 \st
+      \bigl(
+      (a_2 \raOp c_0) \raLeq \sem{\m[i: t\p; t']}(\m{\prob}_0)
+      \land Q(a_2)
+      \bigr)
+    \label{wp-seq:goal}
+  \end{equation}
+
+  Take an arbitrary $\m{\prob}_0$ and $c_0$ such that
+  $ (a_0 \raOp c_0) \raLeq \m{\prob}_0 $.
+  By unfolding the WPs in the assumption,
+  we have that there exists a
+  $a_1 \in \Model_I$ such that:
+  \begin{gather}
+    (a_1 \raOp c_0) \raLeq \sem{\m[i: t]}(\m{\prob}_0)
+    \label{wp-seq:a1}
+    \\
+    \forall \m{\prob}_1\st
+    \forall c_1 \st
+      (a_1 \raOp c_1) \raLeq \m{\prob}_1
+      \implies
+      \exists a_2 \st
+      ((a_2 \raOp c_1) \raLeq \sem{\m[i: t']}(\m{\prob}_1)
+      \land  Q(a_2))
+    \label{wp-seq:a2}
+  \end{gather}
+  We can apply \eqref{wp-seq:a2} to \eqref{wp-seq:a1}
+  by instantiating $\m{\prob}_1$ with $\sem{\m[i: t]}(\m{\prob}_0)$,
+  and $c_1$ with $c_0$,
+  obtaining:
+  \[
+    \exists a_2 \st
+    ((a_2 \raOp c_0) \raLeq \sem{\m[i: t']}(\sem{\m[i: t]}(\m{\prob}_0))
+    \land  Q(a_2))
+  \]
+  Since by definition,
+  $ \sem{t\p; t'}(\prob_0) = \sem{t'}(\sem{t}(\prob_0)) $,
+  we obtain the goal \eqref{wp-seq:goal} as desired.
+\end{proof} \begin{lemma}
+\label{proof:wp-assign}
+  \Cref{rule:wp-assign} is sound.
+\end{lemma}
+
+\begin{proof}
+  \newcommand{\specialevent}{A}
+  Let $a \in \Model_I$ be a valid resource,
+  and let $a(i) = (\salg, \prob, \permap)$.
+  By assumption we have
+  $\permap(\p{x}) = 1$ and
+  $\permap(\p{y}) > 0$ for all $ \p{y} \in \FV(\expr)$.
+  We want to show that $a$ satisfies
+  $\WP {\m[i: \code{x:=}\expr]} {\sure{\ip{x}{i} = \expr\at{i}}}$.
+This is equivalent to
+\[
+    \forall \m{\prob}_0 \st
+      \forall c\st
+      (a\raOp c \raLeq  \m{\prob}_0)
+      \implies
+        \exists b\st (
+          b\raOp c \raLeq  \sem{\m[i: \code{x:=}\expr]}(\m{\prob}_0) \land
+          \sure{\ip{x}{i} = \expr\at{i}}(b)
+        )
+  \]
+  We show this holds by picking~$b$ as follows:
+  \begin{align*}
+    b &\is a\m[i: {(\salg_b, \prob_b, \permap)}]
+    &
+    \salg_b &\is \set{
+      \Store,\emptyset,\specialevent,\Store\setminus\specialevent
+    }
+    &
+    \specialevent &\is \set{
+      \store\upd{\p{x}->\sem{\expr}(\store)} | \store \in \Store
+}
+  \end{align*}
+  where $\prob_b$ is determined by setting $ \prob_b(\specialevent)=1. $
+
+  By construction we have that $\sure{\ip{x}{i} = \expr\at{i}}(b)$ holds.
+  To close the proof we then need to show that
+$(b \raOp c) \raLeq \sem{\m[i: \code{x:=}\expr]}(\m{\prob}_0)$.
+
+  Let $c(i) = (\salg_c,\prob_c,\permap_c)$.
+  Observe that by the assumptions on $\permap$,
+  we have $\raValid(b)$ since $\salg_b$ is
+  only non-trivial on $\pvar(\expr)\union\set{\p{x}}$;
+  moreover, by the assumption $\raValid(a \raOp c)$
+  we have that $\raValid(\permap + \permap_c)$ holds,
+  which means that $\permap_c(\p{x})=0$,
+  and thus $\salg_c$ is trivial on \p{x}.
+
+
+  \newcommand{\Pre}{\operatorname{pre}}
+Let us define the function
+  $
+    \Pre \from \powerset(\Store) \to \powerset(\Store)
+  $
+  as:
+  \[
+    \Pre(\event) \is
+      \set{ \store
+          | \store\upd{\p{x}->\sem{\expr}(\store)} \in \event
+        }.
+  \]
+  That is, $\Pre(\event)$ is the weakest precondition (in the standard sense)
+  of the assignment.
+  By construction, we have:
+  \begin{align*}
+    \Pre(\specialevent) &= \Store
+    &
+    \Pre(\event_1 \inters \event_2) &=
+      \Pre(\event_1) \inters \Pre(\event_2)
+    \\
+    \Pre(\Store \setminus \specialevent) &= \emptyset
+    &
+    \Pre(\event_c) &= \event_c
+      \text{ for all } \event_c \in \salg_c
+  \end{align*}
+  In particular, the latter holds because $\salg_c$ is trivial in \p{x}.
+
+  By unfolding the definition of $\sem{\hole}$,
+  it is easy to check that for every $\event \in \Full{\Store}$:
+  \[
+    \sem{\code{x:=}\expr}(\mu_0)(\event) = \mu_0(\Pre(\event))
+  \]
+
+  We are now ready to show
+  $(b \raOp c) \raLeq \sem{\m[i: \code{x:=}\expr]}(\m{\prob}_0)$
+  by showing that
+  $
+    (\salg_b,\prob_b)\iprod(\salg_c,\prob_c)
+    =
+    (\salg_b \punion \salg_c,
+     \restr{\sem{\code{x:=}\expr}(\prob_0)}{(\salg_b \punion \salg_c)})
+  $
+  where $\prob_0 = \m{\prob}_0(i)$.
+  To show this it suffices to prove that
+  for every $\event_b \in \salg_b$ and every $\event_c \in \salg_c$,
+  $
+    \sem{\code{x:=}\expr}(\prob_0)(\event_b \inters \event_c)
+    = \prob_b(\event_b) \cdot \prob_c(\event_c).
+  $
+  We proceed by case analysis on $\event_b$:
+  \begin{casesplit}
+  \case[$\event_b = \specialevent$]
+    Then:
+    \begin{align*}
+      \sem{\code{x:=}\expr}(\prob_0)(\specialevent \inters \event_c)
+        &= \prob_0(\Pre(\specialevent \inters \event_c))
+      \\&= \prob_0(\Pre(\specialevent) \inters \Pre(\event_c))
+      \\&= \prob_0(\Store \inters \Pre(\event_c))
+      \\&= \prob_0(\Pre(\event_c))
+      \\&= \prob_b(\specialevent) \cdot \prob_0(\event_c)
+      \\&= \prob_b(\specialevent) \cdot \prob_c(\event_c)
+    \end{align*}
+  \case[$\event_b = \Store \setminus \specialevent$]
+    Then:
+    \begin{align*}
+      \sem{\code{x:=}\expr}(\prob_0)
+          (\Store \setminus \specialevent \inters \event_c)
+        &= \prob_0(\Pre((\Store \setminus \specialevent) \inters \event_c))
+      \\&= \prob_0(\Pre(\Store \setminus \specialevent) \inters \Pre(\event_c))
+      \\&= \prob_0(\emptyset \inters \Pre(\event_c))
+      \\&= 0
+      \\&= \prob_b(\Store \setminus \specialevent) \cdot \prob_c(\event_c)
+    \end{align*}
+  \case[$\event_b = \Store$ or $\event_b = \emptyset$]
+    Analogous to the previous cases.
+    \qedhere
+  \end{casesplit}
+\end{proof}
+ \begin{lemma}
+\label{proof:wp-samp}
+  \Cref{rule:wp-samp} is sound.
+\end{lemma}
+
+\begin{proof}
+  \newcommand{\specialevent}{A}
+  Assume $a \in \Model_I$ is valid and such that
+  $ a(i) = (\salg, \prob, \permap)$, with $\permap(x) = 1$.
+  Our goal is to show that~$a$ satisfies
+  $
+    \WP {\m[i: \code{x:~$\dist$($\vec{v}$)}]} {\distAs{\ip{x}{i}}{d(\vec{v})}}
+  $
+which is equivalent to proving, for all $\m{\prob}_0$ and for all~$c$:
+\begin{equation}
+    (a\raOp c \raLeq  \m{\prob}_0)
+    \implies
+      \exists b\st \bigl(
+        b\raOp c \raLeq \sem{\m[i: \code{x:~$\dist$($\vec{v}$)}]}(\m{\prob}_0)
+        \land
+        (\distAs{x}{d(\vec{v})})(b)
+      \bigr)
+    \label{wp-samp:goal}
+  \end{equation}
+
+  Let $\prob_0 = \m{\prob}_0(i)$ and
+      $\prob_1 = \sem{\code{x:~$\dist$($\vec{v}$)}}(\prob_0)$.
+  Moreover, let $ c(i) = (\salg_c,\prob_c,\permap_c) $.
+  Observe that by the assumptions on $\permap$ and validity of~$a \raOp c$,
+  we have $\permap_c(\p{x})=0$,
+  which means $\salg_c$ is trivial on \p{x}.
+  We aim to prove~\eqref{wp-samp:goal} by letting
+  \begin{align*}
+    b &\is a\m[i: {(\salg_b, \prob_b, \permap_b)}]
+    &
+    \prob_b &\is
+      \restr{\prob_1}{\salg_b}
+    \\
+    \salg_b &\is
+      \sigcl*{
+        \set[\big]{
+          \set{ \store \in \Store | \store(\p{x}) = v }
+        | v\in \Val
+        }
+      }
+    &
+    \permap_b &\is
+      \perm{\p{x}: 1}
+\end{align*}
+  Note that by construction $ \raValid(\permap_b + \permap_c) $,
+  and $\raValid(b)$ since $\salg_b$ is only non-trivial in \p{x}.
+  \newcommand{\Pre}{\operatorname{pre}}
+  Similarly to the proof for~\cref{rule:wp-assign},
+  we define the function
+  $
+    \Pre \from \powerset(\Store) \to \powerset(\Store)
+  $
+  as:
+  \[
+    \Pre(\event) \is
+      \set{ \store
+          | \exists v \in \Val \st \store\upd{\p{x}->v} \in \event
+        }.
+  \]
+  Since $\salg_c$ is trivial on \p{x},
+  for all $ \event_c \in \salg_c $,
+  $\Pre(\event_c) = \event_c$.
+  Moreover,
+  for all $ \event_b \in \salg_b \setminus \set{\emptyset} $,
+  $ \Pre(\event_b) = \Store $,
+  since $\event_b$ is trivial on every variable except~\p{x}.
+
+  By unfolding the definitions, we have:
+  \begin{align*}
+    \mu_1(\event) &=
+      \sem{\code{x:~$\dist$($\vec{v}$)}}(\prob_0)(\event)
+\\&=
+      \Sum_{\store \in \event}
+        \prob_0(\Pre(\store)) \cdot \sem{\dist}(\vec{v})(\store(\p{x}))
+  \end{align*}
+  We now show that
+  $
+    (\salg_b, \prob_b) \iprod (\salg_c, \prob_c)
+    =
+    (\salg_b \punion \salg_c, \restr{\prob_1}{(\salg_b \punion \salg_c)})
+  $
+  by showing that
+  for all $\event_b \in \salg_b$ and
+          $\event_c \in \salg_c$:
+  $
+    \prob_1(\event_b \inters \event_c)
+    =
+    \prob_b(\event_b) \cdot \prob_c(\event_c).
+  $
+  \newcommand{\valOf}{\operatorname{V}}
+  To prove this we first
+  define $\valOf \from \powerset(\Store) \to \powerset(\Val)$ as
+  $
+    \valOf(\event) \is
+      \set{ \store(\p{x}) | \store \in \event },
+  $
+  and $ S_w \is \set{ \store | \store(\p{x}) = w } $.
+  We observe that
+  $
+    \event_b   = \Dunion_{w \in \valOf(\event_b)} S_w
+  $, and thus
+  $
+    \event_b \inters \event_c
+    = \Dunion_{w \in \valOf(\event_b)} (\event_c \inters S_w)
+  $;
+  moreover,
+  $
+    \Pre(\event_c \inters S_w)
+    = \set{ \store | \store\upd{x->w} \in \event_c } = \event_c
+  $.
+  Thus, we can calculate:
+  \begin{align*}
+    \prob_1(\event_b \inters \event_c)
+      &=
+    \sum_{\mathclap{\store \in \event_b \inters \event_c}}
+      \prob_0(\Pre(\store)) \cdot \sem{\dist}(\vec{v})(\store(\p{x}))
+    \\&=
+    \sum_{w \in \valOf(\event_b)}
+    \sum_{\store \in \event_c \inters S_{w}}
+      \prob_0(\Pre(\store)) \cdot
+      \sem{\dist}(\vec{v})(w)
+    \\&=
+    \sum_{w \in \valOf(\event_b)}
+    \left(
+      \sem{\dist}(\vec{v})(w) \cdot
+      \sum_{\mathclap{\store \in \event_c \inters S_{w}}}
+      \prob_0(\Pre(\store))
+    \right)
+    \\&=
+    \left(
+    \sum_{w \in \valOf(\event_b)}
+      \sem{\dist}(\vec{v})(w)
+      \cdot \prob_0(\Pre(\event_c \inters S_w))
+    \right)
+    \\&=
+    \left(
+    \sum_{w \in \valOf(\event_b)}
+      \sem{\dist}(\vec{v})(w)
+    \right)
+    \cdot \prob_0(\event_c)
+    \\&=
+    \prob_b(\event_b) \cdot  \prob_c(\event_c)
+  \end{align*}
+The last equation is given by
+  $ a\raOp c \raLeq  \m{\prob}_0 $ which implies that $ \prob_c = \restr{\prob_0}{\salg_c} $, and by:
+  \begin{align*}
+    \prob_b(\event_b)
+      =
+    \prob_1(\event_b)
+      &=
+    \sum_{\store \in \event_b}
+      \prob_0(\Pre(\store)) \cdot \sem{\dist}(\vec{v})(\store(\p{x}))
+    \\&=
+    \sum_{w \in \valOf(\event_b)}
+      \sum_{\store \in S_w}
+        \prob_0(\Pre(\store)) \cdot \sem{\dist}(\vec{v})(w)
+    \\&=
+    \sum_{\mathclap{w \in \valOf(\event_b)}}
+      \sem{\dist}(\vec{v})(w)
+  \end{align*}
+
+  Finally, we need to show $ (\distAs{x}{d(\vec{v})})(b) $
+  which amounts to proving
+  $\almostM{\p{x}}{(\salg_b,\prob_b)}$
+  and
+  $\sem{\dist}(\vec{v}) = \prob_b \circ \inv{\p{x}}$.
+  The former holds because by construction \p{x} is measurable in $\salg_b$.
+  For the latter, for all $W \subs \Val$:
+  \[
+    (\prob_b \circ \inv{\p{x}})(W)
+    =
+    \prob_b (\inv{\p{x}}(W))
+    =
+    \sum_{\mathclap{w \in \valOf(\inv{\p{x}}(W))}}
+      \sem{\dist}(\vec{v})(w)
+    =
+    \sum_{w \in W}
+      \sem{\dist}(\vec{v})(w)
+    =
+    \sem{\dist}(\vec{v})(W).
+    \qedhere
+  \]
+\end{proof}
+ \begin{lemma}
+\label{proof:wp-if-prim}
+  \Cref{rule:wp-if-prim} is sound.
+\end{lemma}
+
+\begin{proof}
+  For any valid resource $a$,
+  \begin{align*}
+    & \left(\ITE{v}{\WP{\m[i: t_1]}{Q(1)}}{\WP{\m[i: t_2]}{Q(0)}}\right)(a)\\
+    {}\iff {} &
+    \begin{cases}
+      \left(\WP{\m[i: t_1]}{Q(1)}\right)(a) \CASE v \doteq 1 \\
+      \left(\WP{\m[i: t_2]}{Q(0)}\right)(a)\OTHERWISE \\
+    \end{cases} \\
+    {}\iff {}&
+  \forall \m{\prob}_0.
+    \forall c \st
+    (a \raOp c) \raLeq \m{\prob}_0
+    \implies
+      \begin{cases}
+          \exists b \st (b \raOp c) \raLeq \sem{i: \m{t_1}}(\m{\prob}_0)
+      \land Q(1)(b)
+      \CASE v \doteq 1 \\
+          \exists b \st (b \raOp c) \raLeq \sem{i: \m{t_2}}(\m{\prob}_0)
+      \land Q(0)(b)
+      \OTHERWISE
+      \end{cases} \\
+    {}\iff {} &
+    \forall \m{\prob}_0.
+    \forall c \st
+    (a \raOp c) \raLeq \m{\prob}_0
+    {}\implies {}
+    \exists b \st (b \raOp c) \raLeq \sem{i: \ITE{v}{\m{t_1}}{\m{t_2}}}(\m{\prob}_0)
+      \land  Q(v \doteq 1)(b) \\
+    \implies &  \left(\WP{\m[i: \ITE{v}{\m{t_1}}{\m{t_2}}]}{Q(v \doteq 1)}\right)(a)
+  \end{align*}
+\end{proof} \begin{lemma}
+\label{proof:wp-bind}
+  \Cref{rule:wp-bind} is sound.
+\end{lemma}
+
+\begin{proof}
+  For any resource $a = (\m{\sigmaF}, \m{\mu}, \m{\permap})$,
+  $(\sure{\expr\at{i}=v} * \WP{\m*[i: {\Ectxt[v]}]}{Q})(\m{\sigmaF}, \m{\mu}, \m{\permap})$ iff
+    there exists $(\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1}), (\m{\sigmaF_2}, \m{\mu_2}, \m{\permap_2})$ such that
+\begin{gather*}
+      (\sure{\expr\at{i}=v})(\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1})\\
+      (\WP{\m*[i: {\Ectxt[v]}]}{Q})(\m{\sigmaF_2}, \m{\mu_2}, \m{\permap_2})\\
+      (\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1}) \raOp  (\m{\sigmaF_2}, \m{\mu_2}, \m{\permap_2})
+      \raLeq (\m{\sigmaF}, \m{\mu}, \m{\permap})
+    \end{gather*}
+By the upwards closure, we also have
+    \begin{gather*}
+      (\sure{\expr\at{i}=v})(\m{\sigmaF}, \m{\mu}, \m{\permap}) \\
+      (\WP{\m*[i: {\Ectxt[v]}]}{Q})(\m{\sigmaF}, \m{\mu}, \m{\permap})
+    \end{gather*}
+The fact that $(\sure{\expr\at{i}=v})(\m{\sigmaF_1}, \m{\mu_1}, \m{\permap_1})$
+    implies that $\m{\mu_1}(\inv{(\expr\at{i}=v)} (\True)) = 1$,
+    which implies that
+    $\sem{\expr}(s) = v$ for all $s \in \psupp(\m{\mu}_1(i))$.
+
+
+    By~\cref{lemma:context-binding}, we have for any $s \in \Store$,
+    \begin{align*}
+      \Sem[K]{\Ectxt[\expr]}(s) = \Sem[K]{\Ectxt[\sem{\expr}(s)]}(s),
+    \end{align*}
+    which implies that for any $\mu_0$ over $\Full{\Store}$
+    \begin{align*}
+      \sem{\Ectxt[\expr]}(\mu_0)
+      &= \DO{
+        s <- \m{\mu_0};
+        \Sem[K]{\Ectxt[\expr]}(s)
+      }\\
+      &= \DO{
+        s <- \m{\mu_0};
+        \Sem[K]{\Ectxt[\sem{\expr}(s)]}(s)
+      }\\
+      &= \DO{
+        s <- \m{\mu_0};
+        \Sem[K]{\Ectxt[v]}(s)
+      }\\
+      &= \sem{\Ectxt[v]}(\mu_0).
+    \end{align*}
+Define $\mu'_0 = \Sem{\m[i: {\Ectxt[v]}]} \mu_0$.
+    Thus, $(\WP{\m*[i: {\Ectxt[v]}]}{Q})(a)$ iff
+\begin{align*}
+  \forall \mu_0 \st
+    \forall c\st
+    (\raValid(a \raOp c) \land  a\raOp c \raLeq  a_{\mu_0})
+      \implies
+        \exists a'\st
+        (\raValid(a' \raOp c) \land  a'\raOp c \raLeq  a_{\mu'_0} \land Q(a'))
+\end{align*}
+iff
+\begin{align*}
+  \forall \mu_0 \st
+    \forall c\st
+    (\raValid(a \raOp c) \land  a\raOp c \raLeq  a_{\mu_0})
+      \implies
+        \exists a'\st
+        (\raValid(a' \raOp c) \land  a'\raOp c \raLeq  a_{\mu'_0} \land Q(a'))
+\end{align*}
+iff $\model{\WP{\m*[i: {\Ectxt[\expr]}]}{Q}}{(a)}$.
+\end{proof}
+ \begin{lemma}
+\label{proof:wp-loop-unf}
+  \Cref{rule:wp-loop-unf} is sound.
+\end{lemma}
+
+\begin{proof}
+  By definition,
+  \begin{align*}
+    \sem{\Loop{(n+1)}{t}}(\prob)
+    &= \bigl(
+         \DO{s <- \prob; s' <- \var{loop}_{\term}(n,s); \Sem[K]{t}(s')}
+       \bigr) \\
+    &= \sem{(\Loop{n}{t})\p;t}(\prob)
+  \end{align*}
+  thus the rule follows from the argument of \cref{proof:wp-seq}.
+\end{proof} \begin{lemma}
+\label{proof:wp-loop}
+  \Cref{rule:wp-loop} is sound.
+\end{lemma}
+
+\begin{proof}
+  By induction on~$n$.
+  \begin{induction}
+    \step[Base case~$n=0$]
+      Analogously to \cref{proof:wp-skip}
+      since, by definition,
+      $\Sem{\Loop{0}{t}}(\mu_0) = \mu_0$.
+
+    \step[Induction step~$n>0$]
+      By induction hypothesis
+      $P(0) \proves \WP{\m[j: \Loop{(n-1)}{t}]}{P(n-1)}$ holds,
+      and we want to show that
+      $P(0) \proves \WP{\m[j: \Loop{n}{t}]}{P(n)}$.
+      By \cref{proof:wp-loop-unf},
+      it suffices to show
+      $ P(0) \proves \WP{\m[j: \Loop{(n-1)}{t}]}{\WP {\m[j:t]}{P(n)}} $.
+      By applying the induction hypothesis and \cref{proof:wp-cons} we are left
+      with proving
+      $ P(n-1) \proves \WP {\m[j:t]}{P(n)} $
+      which is implied by the premise of the rule with $i=n-1 < n$.
+    \qedhere
+  \end{induction}
+\end{proof}

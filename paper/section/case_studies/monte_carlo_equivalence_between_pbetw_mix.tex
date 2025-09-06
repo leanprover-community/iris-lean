@@ -1,0 +1,219 @@
+\subsection{Monte Carlo: Equivalence Between \p{BETW\_MIX} and \p{BETW\_SEQ}}
+
+  \Cref{fig:between-code-repeat} shows another way in which one can
+approximately compute the ``between'' function: \p{BETW\_MIX}.
+In this example we want to prove the equivalence between
+\p{BETW\_MIX} and \p{BETW\_SEQ}.
+Again, the main obstacle to overcome in the proof is that
+the structure of the two programs is very different.
+\p{BETW\_SEQ} has two loops of~$N$ iterations, with one sample per iteration.
+\p{BETW\_MIX} has a single loop of~$N$ iterations, but it samples twice
+per iteration.
+Note that the equivalence cannot be understood as a generic program transformation: the order in which the samples are taken in the two programs
+is drastically different; they are only equivalent because the calculations
+done on each of these independent samples are independent from one another.
+
+Intuitively, we want to produce a proof that aligns each iteration
+of the first loop of \p{BETW\_SEQ} with half of each iteration of \p{BETW\_MIX},
+and each iteration of the second loop of \p{BETW\_SEQ} with the second half of each iteration of \p{BETW\_MIX}.
+In the same vein as the previous example, we want to formalize the
+proof pattern as a rule that aligns the loops as desired,
+prove the rule is derivable, and apply it to the example.
+A rule encoding the above pattern is the following:
+\begin{proofrule}
+  \infer*[lab=wp-loop-mix]{
+  \forall i < N \st
+    P_1(i) \proves \WP{\m[\I1: t_1, \I2: t_1']}{P_1(i+1)}
+  \\
+  \forall i < N \st
+    P_2(i) \proves \WP{\m[\I1: t_2, \I2: t_2']}{P_2(i+1)}
+}{
+  P_1(0) * P_2(0)
+  \proves
+  \WP{\m[
+    \I1: (\Loop{N}{t_1}\p;\Loop{N}{t_2}),
+    \I2: \Loop{N}{(t_1';t_2')}
+  ]}{P_1(N) * P_2(N)}
+}   \relabel{rule:wp-loop-mix}
+\end{proofrule}
+Before showing how this rule is derivable,
+which we do in \cref{proof:wp-loop-mix},
+let us show how to use it to close our example.
+
+We want to prove the goal:
+\[
+  \begin{conj}
+    \sure{\Ip{r}{1} = \Ip{l}{1} = 0} \land
+    \sure{\Ip{r}{2} = \Ip{l}{2} = 0}
+  \end{conj}
+  \withp{\m{p}}
+  \proves
+  \WP{\m<
+    \I1: \Loop{N}{t_{\p{r}}}\p; \Loop{N}{t_{\p{l}}},
+    \I2: \Loop{N}{(t_{\p{r}}\p; t_{\p{l}})}
+  >}*{
+    \cpl*{
+    \begin{conj*}
+      \Ip{r}{1} = \Ip{r}{2} \land
+      \Ip{l}{1} = \Ip{l}{2}
+    \end{conj*}
+    }
+  }
+\]
+where
+  $\m{p}$ has full permissions for all the relevant variables,
+  $t_{\p{r}}$ is the body of the loop of \p{BelowMax}, and
+  $t_{\p{l}}$ is the body of the loop of \p{AboveMin}.
+
+As a first manipulation, we use \ref{rule:rl-merge} in the postcondition,
+and \cref{rule:coupling} (via \ref{rule:sure-dirac}) to the precondition,
+to obtain:
+\[
+  \begin{conj}
+    \cpl{\Ip{r}{1} = \Ip{r}{2}}\withp{\m{p}_{\p{r}}} * {}\\
+    \cpl{\Ip{l}{1} = \Ip{l}{2}}\withp{\m{p}_{\p{l}}}
+  \end{conj}
+  \proves
+  \WP{\m<
+    \I1: \Loop{N}{t_{\p{r}}}\p; \Loop{N}{t_{\p{l}}},
+    \I2: \Loop{N}{(t_{\p{r}}\p; t_{\p{l}})}
+  >}*{
+    \begin{conj}
+      \cpl{\Ip{r}{1} = \Ip{r}{2}}\withp{\m{p}_{\p{r}}} * {}\\
+      \cpl{\Ip{l}{1} = \Ip{l}{2}}\withp{\m{p}_{\p{l}}}
+    \end{conj}
+  }
+\]
+where
+$\m{p}_{\p{r}} = \m[\Ip{r}{1}:1, \Ip{r}{2}:1, \Ip{q}{1}:1, \Ip{q}{2}:1] $, and
+$\m{p}_{\p{l}} = \m[\Ip{l}{1}:1, \Ip{l}{2}:1, \Ip{p}{1}:1, \Ip{p}{2}:1] $.
+Then \ref{rule:wp-loop-mix} applies and we are left with the two triples
+\begin{gather*}
+  \cpl{\Ip{r}{1} = \Ip{r}{2}}
+  \withp{\m{p}_{\p{r}}}
+  \proves
+  \WP{\m[
+    \I1: t_{\p{r}},
+    \I2: t_{\p{r}}
+  ]}*{
+    \cpl{\Ip{r}{1} = \Ip{r}{2}}
+    \withp{\m{p}_{\p{r}}}
+  }
+  \\
+  \cpl{\Ip{l}{1} = \Ip{l}{2}}
+  \withp{\m{p}_{\p{l}}}
+  \proves
+  \WP{\m[
+    \I1: t_{\p{l}},
+    \I2: t_{\p{l}}
+  ]}*{
+    \cpl{\Ip{l}{1} = \Ip{l}{2}}
+    \withp{\m{p}_{\p{l}}}
+  }
+\end{gather*}
+which are trivially proved using a standard coupling argument.
+
+\medskip
+As promised, we now prove \ref{rule:wp-loop-mix} is derivable,
+concluding the example.
+\begin{lemma}
+\label{proof:wp-loop-mix}
+  \Cref{rule:wp-loop-mix} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume:
+  \begin{gather}
+    \forall i < N \st
+      P_1(i) \proves \WP{\m[\I1: t_1, \I2: t_1']}{P_1(i+1)}
+    \label{wp-loop-mix:P1}
+    \\
+    \forall i < N \st
+      P_2(i) \proves \WP{\m[\I1: t_2, \I2: t_2']}{P_2(i+1)}
+    \label{wp-loop-mix:P2}
+  \end{gather}
+  Our goal is to prove:
+  \[
+    P_1(0) * P_2(0)
+    \proves
+    \WP{\m[
+      \I1: (\Loop{N}{t_1}\p;\Loop{N}{t_2}),
+      \I2: \Loop{N}{(t_1';t_2')}
+    ]}{P_1(N) * P_2(N)}
+  \]
+  We first massage the goal to split the sequential composition at \I1.
+  By \ref{rule:wp-seq} and \ref{rule:wp-nest} we obtain
+  \[
+    P_1(0) * P_2(0)
+    \proves
+    \WPv{\m[\I2: \Loop{N}{(t_1';t_2')}]}{
+      \WP{\m[\I1: \Loop{N}{t_1}]}{
+        \WP{\m[\I1: \Loop{N}{t_2}]}{
+          P_1(N) * P_2(N)
+        }
+      }
+    }
+  \]
+  Now by applying \ref{rule:wp-frame} in the postcondition (twice) we obtain
+  \begin{equation}
+    P_1(0) * P_2(0)
+    \proves
+    \WP{\m[\I2: \Loop{N}{(t_1';t_2')}]}*{
+      \begin{conj}
+      \WP{\m[\I1: \Loop{N}{t_1}]}{P_1(N)} * {}\\
+      \WP{\m[\I1: \Loop{N}{t_2}]}{P_2(N)}
+      \end{conj}
+    }
+  \label{wp-loop-mix:goal-loop}
+  \end{equation}
+  Define
+  \begin{align*}
+    P(i) &\is Q_1(i) * Q_2(i)
+    &
+    Q_1(i) &\is \WP{\m[\I1: \Loop{i}{t_1}]}{P_1(i)}
+    &
+    Q_2(i) &\is \WP{\m[\I1: \Loop{i}{t_2}]}{P_2(i)}
+  \end{align*}
+  Clearly we have
+  $ P_1(0) * P_2(0) \proves P(0) $ (by \ref{rule:wp-loop-0})
+  and $ P(N) $ coincides with the postcondition
+  of our goal~\eqref{wp-loop-mix:goal-loop}, which is now rewritten to:
+  \[
+    P(0)\proves \WP{\m[\I2: \Loop{N}{(t_1'\p;t_2')}]}{P(N)}
+  \]
+  Now we can apply \ref{rule:wp-loop} with invariant~$P$ and reduce the goal to
+  the triples:
+  \[
+    \forall i < N \st
+      Q_1(i)*Q_2(i) \proves \WP{\m[\I2: (t_1'\p;t_2')]}{Q_1(i+1)*Q_2(i+1)}
+  \]
+  By \ref{rule:wp-seq} and \ref{rule:wp-frame} we can reduce the goal to
+  \[
+    Q_1(i)*Q_2(i) \proves
+    \WP{\m[\I2: t_1']}{Q_1(i+1)} *
+    \WP{\m[\I2: t_2']}{Q_2(i+1)}
+  \]
+  which we can prove by showing the two triples:
+  \begin{align*}
+    Q_1(i) &\proves
+    \WP{\m[\I2: t_1']}{Q_1(i+1)}
+    &
+    Q_2(i) &\proves
+    \WP{\m[\I2: t_2']}{Q_2(i+1)}
+  \end{align*}
+  We focus on the former as the latter can be dealt with symmetrically.
+  By unfolding $Q_1$ we obtain:
+  \[
+    \WP{\m[\I1: \Loop{i}{t_1}]}{P_1(i)}
+    \proves
+    \WP{\m[\I2: t_1']}[\big]{\WP{\m[\I1: \Loop{(i+1)}{t_1}]}{P_1(i+1)}}.
+  \]
+  We then apply \ref{rule:wp-loop-unf} to the innermost WP and \ref{rule:wp-nest}to swap the two WPs in the conclusion:
+  \[
+    \WP{\m[\I1: \Loop{i}{t_1}]}{P_1(i)}
+    \proves
+    \WP{\m[\I1: \Loop{i}{t_1}]}[\big]{\WP{\m[\I2: t_1', \I1: t_1]}{P_1(i+1)}}.
+  \]
+  Finally, by \ref{rule:wp-cons} we can eliminate the topmost WPs
+  on both sides and reduce the goal to assumption~\eqref{wp-loop-mix:P1}.
+\end{proof}

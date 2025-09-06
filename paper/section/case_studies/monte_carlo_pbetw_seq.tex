@@ -1,0 +1,380 @@
+\subsection{Monte Carlo: $\p{BETW\_SEQ} \leq \p{BETW}$}
+\label{sec:appendix:ex:monte}
+
+  Recall the example sketched in \cref{sec:intro}
+where one wants to compare the accuracy of variants of a  Monte Carlo algorithm
+(in \cref{fig:between-code})
+to estimate whether a number~$x$ is within the extrema of some set~$S$.
+\Cref{fig:between-code-repeat} reproduces the code here for convenience,
+with the self-assignments to~\p{l} and~\p{r} expanded to their form with
+a temporary (primed) variable storing the old value of the assigned variable.
+
+The verification task we accomplish in this section is to compare
+the accuracy of the two Monte Carlo algorithms
+\p{BETW\_SEQ} and \p{BETW} (the optimized one).
+
+This goal can be encoded as the judgment:
+\[
+  \cpl{\Ip{l}{1}=\Ip{r}{1}=\Ip{l}{2}=\Ip{r}{2}=0}\withp{\m{\permap}}
+  \proves
+  \WP {\m[
+    \I1: \code{BETW_SEQ($x, S$)},
+    \I2: \code{BETW($x, S$)}
+  ]} {
+    \cpl{\Ip{d}{1} \leq \Ip{d}{2}}
+  }
+\]
+where
+$\m{\permap}$ contains full permissions for all the variables.
+The judgment states, through the relational lifting, that it is more likely
+to get a positive answer from \p{BETW} than from \p{BETW\_SEQ}.
+The challenge is implementing the intuitive relational argument
+sketched in \cref{sec:intro},
+in the presence of very different looping structures.
+
+By \ref{rule:wp-rl-assign}, it is easy to prove that
+\[
+  \cpl{\Ip{l}{1}\leq\Ip{l}{2} \land
+       \Ip{r}{1}\leq\Ip{r}{2}}\withp{\m{\permap}}
+  \proves
+  \WP {\m[
+    \I1: \code{d := r&&l},
+    \I2: \code{d := r&&l}
+  ]} {
+    \cpl{\Ip{d}{1} \leq \Ip{d}{2}}
+  }
+\]
+Therefore we will focus on proving that the loops produce distributions
+satisfying $
+  Q = \cpl{\Ip{l}{1}\leq\Ip{l}{2} \land
+       \Ip{r}{1}\leq\Ip{r}{2}}.
+$
+
+Now the main obstacle is that we have a single loop at component~$\I2$
+looping $2N$ times, and two sequentially composed loops in $\I1$,
+each running $N$ iterations.
+In a standard coupling-based logic like pRHL,
+such structural differences are usually bridged by invoking a
+syntactic transformation (\eg loop splitting) that is provided
+by a library of transformations that were proven separately, using meta-reasoning directly on the semantic model,
+by the designer of the logic.
+In \thelogic\ we aim at:
+\begin{itemize}
+  \item Avoiding resorting to syntactic transformations;
+  \item Avoiding relying on an ad-hoc (incomplete) library of transformations;
+  \item Avoiding having to argue for correctness of transformations semantically.
+\end{itemize}
+To achieve this, we formulate the loop-splitting pattern as a \emph{rule}
+which allows to consider $N$ iterations of component $\I2$ against the first loop of $\I1$, and the rest against the second loop of $\I1$.
+\begin{proofrule}
+  \infer*[lab=wp-loop-split]{
+  P_1(N_1) \proves P_2(0)
+  \\\\
+  \forall i < N_1 \st
+    P_1(i) \proves \WP{\m[\I1: t_1, \I2: t]}{P_1(i+1)}
+  \\\\
+  \forall j < N_2 \st
+    P_2(j) \proves \WP{\m[\I1: t_2, \I2: t]}{P_2(j+1)}
+}{
+  P_1(0) \proves
+  \WP{\m[
+    \I1: (\Loop{N_1}{t_1}\p;\Loop{N_2}{t_2}),
+    \I2: \Loop{(N_1+N_2)}{t}
+  ]}{P_2(N_2)}
+}   \relabel{rule:wp-loop-split}
+\end{proofrule}
+
+Most importantly, such rule is \emph{derivable} from the primitive rules of \thelogic, avoiding semantic reasoning all together.
+Once this rule is proven, it can be used any time need for such pattern arises.
+Before showing how this rule is derivable,
+which we do in \cref{proof:wp-loop-split},
+let us show how to use it to close our example.
+
+We want to apply \ref{rule:wp-loop-split} with $N_1=N_2=N$,
+$t_1$ as the body of the loop of \p{BelowMax},
+$t_2$ as the body of the loop of \p{AboveMin},
+and
+$t$ as the body of the loop of \p{BETW}.
+We define the two loop invariants as follows:
+\begin{align*}
+  P_1(i) &\is
+    \cpl{
+      \Ip{r}{1}\leq\Ip{r}{2}
+      \land
+      \Ip{l}{1}=0\leq\Ip{l}{2}
+    }
+  &
+  P_2(j) &\is
+    \cpl{
+      \Ip{r}{1}\leq\Ip{r}{2}
+      \land
+      \Ip{l}{1}\leq\Ip{l}{2}
+    }
+\end{align*}
+Note that they both ignore the iteration number.
+Clearly we have:
+\begin{align*}
+  P_0 &\proves P_1(0)
+  &
+  P_1(N) &\proves P_2(0)
+  &
+  P_2(N) &\proves Q
+\end{align*}
+
+By applying \ref{rule:wp-loop-split} we reduce the goal to the triples:
+\begin{align*}
+  \cpl{
+    \Ip{r}{1}\leq\Ip{r}{2}
+    \land
+    \Ip{l}{1}=0\leq\Ip{l}{2}
+  }
+  &\proves
+  \WP{\m[
+    \I1: t_1,
+    \I2: t
+  ]}{
+    \cpl{
+      \Ip{r}{1}\leq\Ip{r}{2}
+      \land
+      \Ip{l}{1}=0\leq\Ip{l}{2}
+    }
+  }
+  \\
+  \cpl{
+    \Ip{r}{1}\leq\Ip{r}{2}
+    \land
+    \Ip{l}{1}\leq\Ip{l}{2}
+  }
+  &\proves
+  \WP{\m[
+    \I1: t_2,
+    \I2: t
+  ]}{
+    \cpl{
+      \Ip{r}{1}\leq\Ip{r}{2}
+      \land
+      \Ip{l}{1}\leq\Ip{l}{2}
+    }
+  }
+\end{align*}
+which are easy to obtain by replicating the standard coupling-based reasoning
+steps, using \ref{rule:coupling} and \ref{rule:wp-rl-assign}.
+
+\medskip
+As promised, we now prove \ref{rule:wp-loop-split} is derivable.
+\begin{lemma}
+\label{proof:wp-loop-split}
+  \Cref{rule:wp-loop-split} is sound.
+\end{lemma}
+
+\begin{proof}
+  Assume:
+  \begin{gather}
+  P_1(N_1) \proves P_2(0)
+  \label{wp-loop-split:P1-P2}
+  \\
+  \forall i < N_1 \st
+    P_1(i) \proves \WP{\m[\I1: t_1, \I2: t]}{P_1(i+1)}
+  \label{wp-loop-split:loop1}
+  \\
+  \forall j < N_2 \st
+    P_2(j) \proves \WP{\m[\I1: t_2, \I2: t]}{P_2(j+1)}
+  \label{wp-loop-split:loop2}
+  \end{gather}
+  We want to show:
+  \[
+    P_1(0) \proves
+    \WP{\m[
+      \I1: (\Loop{N_1}{t_1}\p;\Loop{N_2}{t_2}),
+      \I2: \Loop{(N_1+N_2)}{t}
+    ]}{P_2(N_2)}
+  \]
+  First, by using \ref{rule:wp-nest} and \ref{rule:wp-seq},
+  we can reduce the goal to:
+  \[
+    P_1(0) \proves
+    \WP{\m[\I2: \Loop{(N_1+N_2)}{t}]}[\big]{
+      \WP{\m[\I1: \Loop{N_1}{t_1}]}{
+        \WP{\m[\I1:\Loop{N_2}{t_2}]}{P_2(N_2)}
+       }
+    }
+  \]
+  Now define:
+  \[
+    P(k) =
+    \begin{cases}
+    \WP {\m[\I1: \Loop{k}{t_1}]} { P_1(k) }
+    \CASE k \leq N_1
+    \\
+    \WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+      \WP {\m[\I1: \Loop{(k-N_1)}{t_2}]} { P_2(k-N_1) }
+    }
+    \CASE k > N_1
+    \end{cases}
+  \]
+  We have:
+  \begin{gather}
+    P_1(0) \proves P(0)
+    \label{wp-loop-split:P1-P}
+    \\
+    P(N_1+N_2) \proves
+    \WP{\m[\I1: \Loop{N_1}{t_1}]}{
+      \WP{\m[\I1:\Loop{N_2}{t_2}]}{P_2(N_2)}
+     }
+    \label{wp-loop-split:P-P2}
+  \end{gather}
+  Entailment~\eqref{wp-loop-split:P1-P} holds by \ref{rule:wp-loop-0},
+  and \eqref{wp-loop-split:P-P2} holds by definition.
+  Therefore, using \ref{rule:wp-cons} we reduced the goal to
+  \[
+    P(0) \proves \WP{\m[\I2: \Loop{(N_1+N_2)}{t}]}{P(N_1+N_2)}
+  \]
+  which we can make progress on using \ref{rule:wp-loop}.
+  We are left with proving:
+  \[
+    \forall k < N_1+N_2\st
+    P(k) \proves
+    \WP {\m[\I2: t]} {P(k+1)}
+  \]
+  We distinguish three cases:
+  \begin{casesplit}
+  \case[$k<N_1$] By unfolding the definition of~$P$ we obtain:
+    \[
+      \WP {\m[\I1: \Loop{k}{t_1}]} { P_1(k) }
+      \proves
+      \WP {\m[\I2: t]}[\big]{
+        \WP {\m[\I1: \Loop{(k+1)}{t_1}]} { P_1(k+1) }
+      }
+    \]
+    Using \ref{rule:wp-loop-unf} on the inner WP we obtain:
+    \[
+      \WP {\m[\I1: \Loop{k}{t_1}]} { P_1(k) }
+      \proves
+      \WP {\m[\I2: t]}[\big]{
+        \WP {\m[\I1: \Loop{(k)}{t_1}]} { \WP{\m[\I1: t_1]}{P_1(k+1)} }
+      }
+    \]
+    By \ref{rule:wp-nest} we can swap the two topmost WPs:
+    \[
+      \WP {\m[\I1: \Loop{k}{t_1}]} { P_1(k) }
+      \proves
+      \WP {\m[\I1: \Loop{k}{t_1}]}[\big]{
+        \WP {\m[\I2: t]} { \WP{\m[\I1: t_1]}{P_1(k+1)} }
+      }
+    \]
+    Finally, by \ref{rule:wp-cons} we can eliminate the topmost WP from both sides:
+    \[
+      P_1(k)
+      \proves
+      \WP {\m[\I2: t]} { \WP{\m[\I1: t_1]}{P_1(k+1)} }
+    \]
+    which by \ref{rule:wp-nest} is our assumption~\eqref{wp-loop-split:loop1}
+    with $i=k$.
+
+  \case[$k=N_1$] By unfolding the definition of~$P$ we obtain:
+    \[
+      \WP {\m[\I1: \Loop{N_1}{t_1}]} { P_1(N_1) }
+      \proves
+      \WP {\m[\I2: t]}*{
+        \WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+          \WP {\m[\I1: \Loop{1}{t_2}]} { P_2(0) }
+        }
+      }
+    \]
+    By a trivial application of \ref{rule:wp-loop}
+    we have $
+      \WP {\m[\I1: t]} { Q }
+      \proves
+      \WP {\m[\I1: \Loop{1}{t}]} { Q }
+    $, so we can simplify the innermost WP to:
+    \[
+      \WP {\m[\I1: \Loop{N_1}{t_1}]} { P_1(N_1) }
+      \proves
+      \WP {\m[\I2: t]}*{
+        \WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+          \WP {\m[\I1: t_2]} { P_2(1) }
+        }
+      }
+    \]
+    Then by \ref{rule:wp-nest} we can swap the topmost WPs:
+    \[
+      \WP {\m[\I1: \Loop{N_1}{t_1}]} { P_1(N_1) }
+      \proves
+      \WP {\m[\I1: \Loop{N_1}{t_1}]}*{
+        \WP {\m[\I2: t]}[\big]{
+          \WP {\m[\I1: t_2]} { P_2(1) }
+        }
+      }
+    \]
+    By \ref{rule:wp-cons} we can eliminate the topmost WP from both sides:
+    \[
+      P_1(N_1)
+      \proves
+      \WP {\m[\I2: t]}[\big]{
+        \WP {\m[\I1: t_2]} { P_2(1) }
+      }
+    \]
+    Using assumption~\eqref{wp-loop-split:P-P2} we can reduce this to:
+    \[
+      P_2(0)
+      \proves
+      \WP {\m[\I2: t]}[\big]{
+        \WP {\m[\I1: t_2]} { P_2(1) }
+      }
+    \]
+    which by \ref{rule:wp-nest} is our assumption~\eqref{wp-loop-split:loop2}
+    with $j=0$.
+
+  \case[$k>N_1$] By unfolding the definition of~$P$ we obtain:
+    \begin{align*}
+      &\WP {\m[\I1: \Loop{N_1}{t_1}]}{
+        \WP {\m[\I1: \Loop{(k-N_1)}{t_2}]} { P_2(k-N_1) }
+      }
+      \\ {}\proves{}&
+      \WP {\m[\I2: t]}*{
+        \WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+          \WP {\m[\I1: \Loop{(k-N_1+1)}{t_2}]} { P_2(k-N_1+1) }
+        }
+      }
+    \end{align*}
+    Using \ref{rule:wp-loop-unf} on the inner WP we obtain:
+    \begin{align*}
+      &\WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+        \WP {\m[\I1: \Loop{(k-N_1)}{t_2}]} { P_2(k-N_1) }
+      }
+      \\ {}\proves{}&
+      \WP {\m[\I2: t]}*{
+        \WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+          \WP {\m[\I1: \Loop{(k-N_1)}{t_2}]} {
+            \WP{\m[\I1: t_2]}{P_2(k-N_1+1)}
+          }
+        }
+      }
+    \end{align*}
+    By \ref{rule:wp-nest} we can push the topmost WP inside:
+    \begin{align*}
+      &\WP {\m[\I1: \Loop{N_1}{t_1}]}[\big]{
+        \WP {\m[\I1: \Loop{(k-N_1)}{t_2}]} { P_2(k-N_1) }
+      }
+      \\ {}\proves{}&
+      \WP {\m[\I1: \Loop{N_1}{t_1}]}*{
+        \WP {\m[\I1: \Loop{(k-N_1)}{t_2}]}[\big]{
+          \WP {\m[\I2: t]} {
+            \WP{\m[\I1: t_2]}{P_2(k-N_1+1)}
+          }
+        }
+      }
+    \end{align*}
+    Finally, by \ref{rule:wp-cons} we can eliminate the topmost WPs from both sides:
+    \begin{equation*}
+    P_2(k-N_1)
+    \proves
+    \WP {\m[\I2: t]} {
+      \WP{\m[\I1: t_2]}{P_2(k-N_1+1)}
+    }
+    \end{equation*}
+    which by \ref{rule:wp-nest} is our assumption~\eqref{wp-loop-split:loop2}
+    with $j=k-N_1$.
+  \qedhere
+  \end{casesplit}
+\end{proof}

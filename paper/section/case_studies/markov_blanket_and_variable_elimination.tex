@@ -1,0 +1,135 @@
+\subsection{Markov Blanket and Variable Elimination}
+\label{sec:appendix:ex:markov-blanket}
+
+  In probabilistic reasoning, introducing conditioning is easy,
+but deducing unconditional facts from conditional ones is not immediate.
+The same applies to the \supercond\ modality: by design, one cannot eliminate it for free.
+Crucial to \thelogic's expressiveness is the inclusion of rules that can
+soundly derive unconditional information from conditional assertions.
+
+In this example we show how \thelogic\ is able to derive a common
+tool used in Bayesian reasoning to simplify conditioning as much as possible
+through the concept of a \emph{Markov Blanket}.
+
+For concreteness, consider the program:
+\begin{center}
+\code{x1:~$\dist_1$;
+x2:~$\dist_2(\p{x1})$;
+x3:~$\dist_3(\p{x2})$}
+\end{center}
+The program describes a Markov chain of three variables.
+One way of interpreting this pattern is that the joint output distribution
+is described by the program as a product of conditional distributions:
+the distribution over \p{x2} is described conditionally on \p{x1},
+and the one of \p{x3} conditionally on \p{x2}.
+This kind of dependencies are ubiquitous in, for instance, hidden Markov models and Bayesian network representations of distributions.
+
+A crucial tool for the analysis of such models is the concept of a
+\emph{Markov Blanket} of a variable \p{x}: the set of variables that are direct dependencies of \p{x}.
+Clearly \p{x3} depends on \p{x2} and, indirectly, on \p{x1}.
+However, Markov chains enjoy the memorylessness property:
+when fixing a variable in the chain, the variables that follow it are independent from the variables that preceded it.
+For our example this means that if we condition on \p{x2},
+\p{x1} and \p{x3} are independent (\ie we can ignore the indirect dependencies).
+
+In \thelogic\ we can characterize the output distribution with the assertion
+\[
+  \CC{\dist_1} v_1. \Bigl(
+    \sure{\p{x1}=v_1} *
+    \CC{\dist_2(v_1)} v_2. \bigl(
+      \sure{\p{x2}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+\]
+Note how this postcondition represents the output distribution
+as implicitly as the program does.
+We want to transform the assertion into:
+\[
+  \CC{\prob_2} v_2.
+  \bigl(
+    \sure{\p{x2}=v_2} *
+    \distAs{\p{x1}}{\prob_1(v_2)} *
+    \distAs{\p{x3}}{\dist_3(v_2)}
+  \bigr)
+\]
+for appropriate $\prob_2$ and $\prob_1$.
+This isolates the conditioning to the direct dependency of \p{x1}
+and keeps full information about \p{x3},
+available for further manipulation down the line.
+
+In probability theory, the proof of memorylessness is an application
+of Bayes' law: we are computing
+the distribution of \p{x1} conditioned on \p{x2},
+from the distribution of \p{x2} conditioned on \p{x1}.
+
+In \thelogic\ we can produce the transformation using the joint conditioning rules:
+\begin{eqexplain}
+  &
+  \CC{\dist_1} v_1. \Bigl(
+    \sure{\p{x1}=v_1} *
+    \CC{\dist_2(v_1)} v_2. \bigl(
+      \sure{\p{x1}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+\whichproves
+  \CC{\dist_1} v_1. \Bigl(
+    \CC{\dist_2(v_1)} v_2. \bigl(
+      \sure{\p{x1}=v_1} *
+      \sure{\p{x1}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+  \byrules{c-frame}
+\whichproves
+  \CC{\prob_0} (v_1,v_2). \bigl(
+      \sure{\p{x1}=v_1} *
+      \sure{\p{x2}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+  \bigr)
+  \byrules{c-assoc}
+\whichproves
+  \CC{\prob_2} v_2. \Bigl(
+    \CC{\prob_1(v_2)} v_1.
+    \bigl(
+      \sure{\p{x1}=v_1} *
+      \sure{\p{x2}=v_2} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+  \byrules{c-unassoc}
+\whichproves
+  \CC{\prob_2} v_2. \Bigl(
+    \sure{\p{x2}=v_2} *
+    \CC{\prob_1(v_2)} v_1.
+    \bigl(
+      \sure{\p{x1}=v_1} *
+      \distAs{\p{x3}}{\dist_3(v_2)}
+    \bigr)
+  \Bigr)
+  \byrules{sure-str-convex}
+\whichproves
+  \CC{\prob_2} v_2. \bigl(
+    \sure{\p{x2}=v_2} *
+    \distAs{\p{x1}}{\prob_1(v_2)} *
+    \distAs{\p{x3}}{\dist_3(v_2)}
+  \bigr)
+  \byrules{c-extract}
+\end{eqexplain}
+where
+$
+  (\dist_1 \fuse \dist_2) = \prob_0 =
+  \bind(\prob_2,\prob_1).
+$
+The existence of such $\prob_2$ and $\prob_1$ is a simple application
+of Bayes' law:
+$
+  \prob_2(v_2) =
+    \Sum_{v_1 \in \Val} \prob_0(v_1,v_2),
+$
+and
+$
+  \prob_1(v_2)(v_1) =
+    \frac{\prob_0(v_1,v_2)}{\prob_2(v_2)}.
+$

@@ -1,0 +1,335 @@
+\section{Introduction}\label{sec:intro}
+Probabilistic programs are pervasive, appearing as
+  machine learned subsystems,
+  implementations of randomized algorithms,
+  cryptographic protocols, and
+  differentially private components,
+among many more.
+Ensuring reliability of such programs requires formal frameworks
+in which correctness requirements can be formalized and verified
+for such programs.
+Similar to the history of classical program verification,
+a lot of progress in this has come in the form of program logics
+for probabilistic programs.
+In the program logic literature,
+there are two main styles of reasoning for probabilistic programs:
+\emph{unary} and \emph{relational},
+depending on the nature of the property of interest.
+For instance, for differential privacy or cryptographic protocols correctness,
+the property of interest is naturally expressible relationally.
+In contrast, for example, specifying the expected cost of a
+randomized algorithm is naturally done in the unary style.
+
+Unary goals are triples $ \{P\}\ t\ \{Q\}$ where
+$t$ is a probabilistic program,
+$P$ and $Q$ are the pre- and post-conditions,
+\ie \emph{predicates over distributions of stores}.
+Such triples assert that
+running~$t$ on an input store drawn from a distribution satisfying~$P$
+results in a distribution over output stores which satisfies~$Q$.
+Unary reasoning for probabilistic programs has made great strides,
+producing logics for reasoning about
+  expectations~\cite{kozen1983PDL,Morgan:1996,kaminski2016weakest,kaminski2019thesis,aguirre2021pre,Bartocci2022moment}
+  and probabilistic independence~\cite{barthe2019probabilistic}.
+  DIBI~\cite{bao2021bunched} and Lilac~\cite{lilac},
+  which are the most recent, made a strong case for adding power to reason
+about conditioning and independence in one logic.
+Intuitively, conditioning on some random variable~\p{x}
+allows to focus on the distribution of other variables
+assuming~$\p{x}$ is some deterministic outcome~$v$;
+two variables are (conditionally) independent if
+knowledge of one does not give any knowledge of the other (under conditioning).
+Lilac argued for (conditional) independence as the fundamental source of
+modularity in the probabilistic setting.
+
+Relational goals, in contrast, specify a desired relation between the output
+distributions of \emph{two} programs~$t_1$ and~$t_2$,
+for example, that~$t_1$ and~$t_2$ produce the same output distribution.
+In principle, proving such goals can be approached in a unary style:
+if the output distributions can be characterized
+individually for each program,
+then they can be compared after the fact.
+More often than not, however,
+precisely characterizing the output distribution of a program
+can be extremely challenging.
+Relational program logics like pRHL~\cite{barthe2009formal}
+and its successors~\cite{barthe2009formal,barthe2015coupling,hsu2017probabilistic,gregersen2023asynchronous,AguirreBGGS19},
+allow for a different and often more advantageous strategy.
+The idea is to consider the two programs side by side,
+and analyse their code as if executed in lockstep.
+If the effect of a step on one side is ``matched'' by the corresponding
+step on the other side,
+then the overall outputs would also ``match''.
+This way, the proof only shows that whatever is computed on one side,
+will be matched by a computation on the other, without having to characterise
+what the actual output is.
+
+This idea of ``matching'' probabilistic steps is formalised in these logics
+via the notion of \emph{couplings}~\cite{barthe2009formal,barthe2015coupling}.
+The two programs can be conceptually considered to execute in
+two ``parallel universes'', where they are oblivious to each other's randomness.
+It is therefore sound to pretend their executions draw samples from
+a common source of randomness (called a \emph{coupling})
+in any way that eases the argument,
+as long as the marginal distribution of the correlated runs in each universe
+coincides with the original one.
+For example, if both programs flip a fair coin,
+one can force the outcomes of the coin flips to be the same
+(or the opposite of each other,
+depending on which serves the particular line of argument better).
+Relating the samples in a specific way helps with
+relating the distributions step by step, to support a relational goal.
+Couplings, when applicable, permit relational logics to elegantly sidestep
+the need to characterize the output distributions precisely.
+As such, relational logics hit an ergonomic sweet spot in reasoning style
+by restricting the form of the proofs that can be carried out.
+
+
+
+
+Consider, for example, the code in
+\cref{fig:between-code}.
+The \code{BelowMax($x, S$)} procedure takes~$N$ samples
+from a non-empty set~$S \subs \Int$,
+according to an (arbitrary) distribution $\prob_S \of \Dist(S)$;
+if any of the samples is larger than the given input~$x$
+it declares~$x$ to be below the maximum of~$S$.
+The \code{AboveMin($x, S$)} approximates in the same way
+whether~$x$ is above the minimum of~$S$.
+These are Monte Carlo style algorithms with a \emph{false bias}:
+if the answer is false, they always correctly produce it,
+and if the answer is true, then they correctly classify it
+with a probability that depends on~$N$
+(i.e., the number of samples).
+It is a well-known fact that Monte Carlo style algorithms can be composed.
+For example, \p{BETW\_SEQ} runs
+\code{BelowMax($x, S$)} and \code{AboveMin($x, S$)}
+to produce a \emph{false-biased} Monte Carlo algorithm
+for approximately deciding whether~$x$ lies \emph{within} the extrema of~$S$.
+Now, imagine a programmer proposed \p{BETW},
+as a way of getting more mileage out of the number of samples drawn;
+both procedures take~$2N$ samples,
+but \p{BETW} performs more computation for each sample.
+Such optimisations are not really concerned about
+what the precise output distribution of each code is,
+but rather that a \emph{true} answer is produced
+with higher probability by \p{BETW};
+in other words, its \emph{stochastic dominance} over \p{BETW\_SEQ}.
+
+A unary program logic has only one way of reasoning
+about this type of stochastic-dominance:
+it has to analyze each code in isolation,
+characterize its output distribution,
+and finally assert/prove that one dominates the other.
+In contrast, there is a natural \emph{relational strategy}
+for proving this goal:
+we can match the~$N$ samples of \p{BelowMax}
+with~$N$ of the samples of \p{BETW}, and the~$N$ samples of \p{AboveMin}
+with the remaining samples of \p{BETW} in lockstep,
+and for each of these aligned steps,
+\p{BETW} has more chances of turning \p{l} and \p{r} to~1
+(and they can only increase).
+
+
+
+\begin{figure*}
+  \adjustfigure[\small]\lstset{
+belowskip=-5pt,
+    gobble=2,
+  }\setlength\tabcolsep{0pt}\begin{tabular*}{\textwidth}{
+      @{\extracolsep{\fill}}
+      *{4}{p{\textwidth/4}}@{}
+    }
+\begin{sourcecode*}
+  def BelowMax($x$,$S$):
+    repeat $N$:
+      q :~ $\prob_S$
+      r := r || q >= $x$
+  \end{sourcecode*}
+&
+  \begin{sourcecode*}
+  def AboveMin($x$,$S$):
+    repeat $N$:
+      p :~ $\prob_S$
+      l := l || p <= $x$
+  \end{sourcecode*}
+&
+  \begin{sourcecode*}
+  def BETW_SEQ($x$, $S$):
+    BelowMax($x$,$S$);
+    AboveMin($x$,$S$);
+    d := r && l
+  \end{sourcecode*}
+  &
+  \begin{sourcecode*}
+  def BETW($x$,$S$):
+    repeat $2 N$:
+      s :~ $\prob_S$
+      l := l || s <= $x$
+      r := r || s >= $x$
+    d := r && l
+  \end{sourcecode*}
+  \end{tabular*}
+  \caption{A stochastic dominance example: composing Monte Carlo algorithms two different ways.
+    \ifappendix All variables are initially~0,
+      $N\in\Nat$ is some fixed constant,
+      $S$ is a set of integers, and
+      $\prob_S$ is some given distribution of elements of~$S$.
+      Both \p{BETW\_SEQ($x$,$S$)} and \p{BETW($x$,$S$)}
+      approximately decide whether~$x$ lies within the extrema of~$S$.\else $N\in\Nat$ is some fixed constant, and all variables are initially~0.\fi }
+  \label{fig:between-code}
+\end{figure*}
+
+Unary logics can express information about distributions
+with arbitrary levels of precision;
+yet none can encode the simple natural proof idea outlined above.
+This suggests an opportunity:
+Bring native relational reasoning support to an expressive unary logic,
+like Lilac.
+Such a logic can be based on assertions over distributions, offering the precision and expressiveness of unary logics while natively supporting relational reasoning.
+As a result, it would be able to encode the argument outlined above
+at the appropriate level of abstraction.
+To explore this idea,
+let us outline the central principle that we would need
+to import from relational reasoning:
+\emph{relational lifting}.
+
+Relational logics use variants of judgments of the form
+$ \{R_1\} \m[\I1: t_1, \I2: t_2] \{R_2\}$, where
+$t_1$ and $t_2$ are the two programs we are comparing and
+$R_1$ and $R_2$ are the relational pre- and post-conditions.
+$R_1$ and $R_2$ differ from unary assertions in two ways:
+first they are used to relate two distributions
+instead of constraining a single one.
+Second, they are predicates over \emph{pairs of stores},
+and not of distributions directly.
+Let us call predicates of this type ``deterministic relations''.
+If~$R$ was a deterministic predicate over a single store,
+requiring it to hold with probability~1 would naturally lift it
+to a predicate $\sure{R}$ over distributions of stores.
+When~$R$ is a deterministic relation between pairs of stores,
+its \emph{relational lifting}~$\cpl{R}$ relates two distributions over stores
+$\prob_1,\prob_2 \of \Dist(\Store)$,
+if (1) there is a distribution over \emph{pairs} of stores
+$\prob \of \Dist(\Store\times\Store)$
+such that its marginal distributions on the first and second store
+coincide with $\prob_1$ and $\prob_2$ respectively,
+(\ie $\prob$ is a \emph{coupling} of $\prob_1$ and $\prob_2$)
+and (2) $\prob$ samples pairs of stores
+satisfying the relation~$R$ with probability~1.
+Such relational liftings can
+encode a variety of useful relations between distributions.
+For instance, let $R = (\Ip{x}{1} = \Ip{x}{2})$
+relate stores~$s_{\I{1}}$ and~$s_{\I{2}}$
+if they both assign the same value to \p{x};
+then the lifting $\cpl{R}$ holds for two distributions
+$\prob_{\I{1}},\prob_{\I{2}} \of \Dist(\Store)$
+if and only if they induce the same distributions in \p{x}.
+Similarly, the lifting $\cpl{\Ip{x}{1} \leq \Ip{x}{2}}$
+encodes stochastic dominance of the distribution of \p{x}
+in $\prob_{\I{2}}$ over the one in $\prob_{\I{1}}$.
+
+
+
+
+
+
+
+
+
+Relational proofs built out of relational lifting
+then work by using deterministic relations as assertions,
+and showing that a suitably coupled lockstep execution
+of the two programs satisfies each assertion with probability~1.
+To bring relational reasoning to unary logics,
+we want to preserve the fact that assertions are over distributions,
+and yet support relational lifting as the key abstraction
+to do relational reasoning.
+This new logic can equally be viewed as a relational logic
+with assertions over pairs of distributions
+(rather than over pairs of stores).
+With such a view,
+seeing relational lifting as one among many constructs
+to build assertions seems like a very natural, yet completely unexplored, idea.
+
+What is entirely non-obvious is whether relational lifting
+works well as an abstraction together with the other key ``unary'' constructs,
+such as independence and conditioning,
+that are the source of expressive power of unary logics.
+\ifappendix The properties of couplings already provide a source of examples
+for one way in which unary and relational facts might interact.
+For example, from a well-known property of couplings,
+\else
+For example, from the properties of couplings,
+\fi we know that establishing $\cpl{\Ip{x}{1} = \Ip{x}{2}}$ implies that
+$\Ip{x}{1}$ and $\Ip{x}{2}$ are identically distributed;
+this can be expressed as an entailment:
+\begin{equation}
+  \cpl{\Ip{x}{1} = \Ip{x}{2}}
+  \lequiv
+  \E \prob.
+    \distAs{\Ip{x}{1}}{\prob}
+    \land
+    \distAs{\Ip{x}{2}}{\prob}
+  \label{eq:rl-id-conv}
+\end{equation}
+The equivalence says that establishing a coupling that can
+(almost surely) equate the values of $\Ip{x}{1}$ and $\Ip{x}{2}$,
+amounts to establishing that the two variables are identically distributed.
+The equivalence can be seen as a way to interface ``unary'' facts
+and relational liftings.
+
+
+Probability theory is full of lemmas of this sort and it is clearly undesirable to admit any lemma that is needed for one proof or another as an axiom in the program logic.
+Can we have a logic in which they are derivable without having to abandon its nice abstractions?
+Can the two styles be interoperable at the level of the logic?
+In this paper, we provide an affirmative answer to this question by proposing a new program logic called \thelogic.
+
+
+We propose that relational lifting does in fact have non-trivial and useful
+interactions with independence and conditioning.
+Remarkably, \thelogic's development is unlocked by
+a more fundamental observation:
+once an appropriate notion of conditioning is defined in \thelogic,
+relational lifting and its laws can be derived from this foundational
+conditioning construct.
+
+
+The key idea is a new characterization of relational lifting as a form of
+conditioning:
+whilst relational lifting is usually seen as a way to induce a relation over distributions from a deterministic relation,
+\thelogic\ sees it as a way to go from
+a tuple of distributions to a relation between the values of some conditioned variables.
+More precisely:
+\begin{itemize}
+  \item
+    We introduce a new \emph{\supercond} modality in \thelogic\
+    which can be seen, in hindsight,
+    as a natural way to condition when dealing with tuples of distributions.
+  \item
+    We show that \supercond\ can represent uniformly
+    both, conditioning \emph{à la} Lilac,
+    and relational lifting as derived notions in \thelogic.
+  \item
+    We prove a rich set of general rules for \supercond,
+    from which we can derive both known and novel proof principles
+    for conditioning and for relational liftings in \thelogic.
+\end{itemize}
+
+Interestingly, our \supercond\ modality can replicate the same reasoning
+style of Lilac's modality, while having a different semantics
+(and validating an overlapping but different set of rules as a result).
+This deviation in the semantics is a stepping stone for obtaining an
+adequate generalization to the \pre n-ary case (unifying unary and binary as special cases).
+We expand on these ideas in \cref{sec:overview}, using a running example.
+More importantly, our \supercond\  enables \thelogic\ to
+\begin{itemize}
+\item Accommodate unary and relational reasoning
+  in a fundamentally interoperable way: For instance, we showcase the interaction between lifting and conditioning in the derivation of our running example in \cref{sec:overview}.
+\item Illuminate known reasoning principles: For instance, we discuss how \thelogic\ emulates pRHL-style reasoning
+  in~\cref{sec:ex:prhl-style}.
+\item Propose new tools to build program proofs: For instance, we discuss out-of-order coupling of samples through \ref{rule:seq-swap} in \cref{sec:overview:obox}.\item Enable the exploration of the theory of high-level constructs
+   like relational lifting (via the laws of independence and \supercond): For instance, novel broadly useful rules \ref{rule:rl-merge} and \ref{rule:rl-convex}, discussed in \cref{sec:overview} can be derived within \thelogic.
+\end{itemize}
+All proofs, omitted details, and additional examples can be found in~\ifappendix the Appendix.\else\cite{fullversion}.\fi  \ifappendix\pagebreak\fi
+

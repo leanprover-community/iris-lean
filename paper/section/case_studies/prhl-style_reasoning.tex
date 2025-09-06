@@ -1,0 +1,187 @@
+\subsection{pRHL-style Reasoning}
+\label{sec:appendix:ex:prhl}
+
+Here we elaborate on the conditional swap example that appeared in~\cref{sec:ex:prhl-style}.
+By~\cref{rule:wp-samp}, for each index $i \in \{1, 2\}$, we have
+\begin{align*}
+  \gproves \WP{\m[i: \code{x:~}d_0]}{\distAs{\ip{x}{i}}{d_0}}
+\end{align*}
+By~\cref{rule:wp-conj}, we can combine the two programs together and derive
+\begin{align*}
+  \gproves \WP{\m[1: \code{x:~}d_0, 2: \code{x:~}d_0]}{\distAs{\Ip{x}{1}}{d_0} \land \distAs{\Ip{x}{2}}{d_0}}
+\end{align*}
+By~\cref{rule:c-unit-r},
+\[\distAs{\Ip{x}{1}}{d_0} \land \distAs{\Ip{x}{2}}{d_0} \proves
+  \CC{d_0} v. \sure{\Ip{x}{1} = v} \land  \CC{d_0} v. \sure{\Ip{x}{2} = v}
+\]
+Then, we can apply~\cref{rule:c-and}, which implies
+\[
+  \CC{d_0} v. \sure{\Ip{x}{1} = v} \land  \CMod{d_0} v. \sure{\Ip{x}{2} = v}
+  \proves
+  {\CC{d_0} v. (\sure{\Ip{x}{1} = v} \land  \sure{\Ip{x}{2} = v})}
+\]
+from which we can derive:
+\begin{align*}
+  \gproves \WP{\m[\I1: \code{x:~}d_0, \I2: \code{x:~}d_0]}{\CC{d_0} v.(\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v})}.
+\end{align*}
+
+For the rest of \p{prog1} (\p{prog2}):
+similarly, by~\cref{rule:wp-samp}, for each index $i \in \{1, 2\}$, we have
+\begin{align}
+  &\gproves \WP{\m[i: \code{y:~}d_1(v)]}{\distAs{\Ip{y}{i}}{d_1(v)}}
+  \label{helper:case:cond-swap:1}\\
+  &\gproves \WP{\m[i: \code{z:~}d_2(v)]}{\distAs{\Ip{z}{i}}{d_2(v)}} .
+  \label{helper:case:cond-swap:2}
+\end{align}
+By~\cref{rule:wp-frame},
+\begin{align}
+  &\distAs{\Ip{z}{i}}{d_2(v)} \gproves \WP{\m[i: \code{y:~}d_1(v)]}{\distAs{\Ip{z}{i}}{d_2(v)} * \distAs{\Ip{y}{i}}{d_1(v)}}
+  \label{helper:case:cond-swap:3}\\
+  &\distAs{\Ip{y}{i}}{d_1(v)} \gproves \WP{\m[i: \code{z:~}d_2(v)]}{\distAs{\Ip{y}{i}}{d_1(v)} * \distAs{\Ip{z}{i}}{d_2(v)}} .
+  \label{helper:case:cond-swap:4}
+\end{align}
+Thus, applying~\cref{rule:wp-seq} to combine~\cref{helper:case:cond-swap:1}
+and~\cref{helper:case:cond-swap:4}, we get
+\begin{align}
+  \gproves \WP{\m[\I1:  \code{y:~}d_1(v); \code{z:~}d_2(v)]}{\distAs{\Ip{y}{1}}{d_1(v)} * \distAs{\Ip{z}{1}}{d_2(v)}};
+  \label{helper:case:cond-swap:5}
+\end{align}
+By applying~\cref{rule:wp-seq} to combine~\cref{helper:case:cond-swap:2}
+and~\cref{helper:case:cond-swap:3}, we get
+\begin{align}
+  \gproves \WP{\m[\I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{\distAs{\Ip{y}{2}}{d_1(v)} * \distAs{\Ip{z}{2}}{d_2(v)}} .
+  \label{helper:case:cond-swap:6}
+\end{align}
+Then, by~\cref{rule:wp-bind}, we can derive
+\begin{align*}
+\sure{\Ip{x}{1}=v}
+  &\gproves \WPv{\m[\I1:  \code{y:~}d_1(x); \code{z:~}d_2(x)]}{
+  \distAs{\Ip{y}{1}}{d_1(v)} * \distAs{\Ip{z}{1}}{d_2(v)}} \\
+\sure{\Ip{x}{2}=v}
+  &\gproves \WP{\m[\I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{
+  \distAs{\Ip{y}{2}}{d_1(v)} * \distAs{\Ip{z}{2}}{d_2(v)}}
+\end{align*}
+Then, applying~\cref{rule:wp-conj} to combine the program at index 1 and 2,
+we get
+\begin{align*}
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  &\gproves \WPv{\m[\I1: \code{y:~}d_1(x); \code{z:~}d_2(x);
+                    \I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{
+  \distAs{\Ip{y}{1}}{d_1(v)} * \distAs{\Ip{z}{1}}{d_2(v)} *
+  \distAs{\Ip{y}{2}}{d_1(v)} * \distAs{\Ip{z}{2}}{d_2(v)}}
+\end{align*}
+Also, we have
+\begin{align*}
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  &\gproves \WPv{\m[\I1: \code{y:~}d_1(x); \code{z:~}d_2(x);
+                    \I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{
+   \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+ }
+\end{align*}
+by~\cref{rule:wp-frame},
+where $\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v} \proves \sure{\Ip{x}{1}=\Ip{x}{2}}$. Therefore,
+we have
+\begin{align*}
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  &\gproves \WPv{\m[\I1: \code{y:~}d_1(x); \code{z:~}d_2(x);
+                    \I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{
+   \sure{\Ip{x}{1} = \Ip{x}{2}}
+ }
+\end{align*}
+By~\cref{rule:wp-conj},
+\begin{align*}
+  &\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}\\
+  {}\gproves {}&\WPv{\m[\I1: \code{y:~}d_1(x); \code{z:~}d_2(x);
+                        \I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{
+   \sure{\Ip{x}{1} = \Ip{x}{2}}
+   \land \left(\distAs{\Ip{y}{1}}{d_1(v)} * \distAs{\Ip{z}{1}}{d_2(v)}
+   * \distAs{\Ip{y}{2}}{d_1(v)} * \distAs{\Ip{z}{2}}{d_2(v)}\right)
+ }
+\end{align*}
+By~\cref{rule:sure-and-star}, we get
+\begin{align*}
+  &\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v} \\
+  {} \gproves {} &\WPv{\m[\I1: \code{y:~}d_1(x); \code{z:~}d_2(x);
+                          \I2: \code{z:~}d_2(v); \code{y:~}d_1(v)]}{
+   \sure{\Ip{x}{1} = \Ip{x}{2}}
+   * \distAs{\Ip{y}{1}}{d_1(v)} * \distAs{\Ip{z}{1}}{d_2(v)}
+   * \distAs{\Ip{y}{2}}{d_1(v)} * \distAs{\Ip{z}{2}}{d_2(v)}
+ }
+\end{align*}
+
+Now, we can proceed with the derivation explained in~\cref{sec:ex:prhl-style}.
+\begin{derivation}
+\infer*[right=\ref{rule:rl-convex}]{
+\infer*[Right=\ref{rule:c-wp-swap}]{
+\infer*[Right=\ref{rule:c-cons}]{
+\infer*[Right=\ref{rule:rl-merge}]{
+\infer*[Right=\ref{rule:coupling}]{
+  \forall v\st
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]}*{
+  \begin{matrix*}[l]
+    \cpl{\Ip{x}{1} = \Ip{x}{2}} *
+    \distAs{\Ip{y}{1}}{d_1(v)} *
+    \distAs{\Ip{y}{2}}{d_1(v)} *
+    {}\\
+    \distAs{\Ip{z}{1}}{d_2(v)} *
+    \distAs{\Ip{z}{2}}{d_2(v)}
+  \end{matrix*}
+  }
+}{
+  \forall v\st
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2}} *
+    \cpl{\Ip{y}{1} = \Ip{y}{2}} *
+    \cpl{\Ip{z}{1} = \Ip{z}{2}}
+  }
+}}{
+  \forall v\st
+  \sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v}
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+}}{
+  \CC{d_0} v.(\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v})
+  \gproves
+  \CC{d_0} v.
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+}}{
+  \CC{d_0} v.(\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v})
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+  \CC{d_0} v.
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+}}{
+  \CC{d_0} v.(\sure{\Ip{x}{1}=v} \land \sure{\Ip{x}{2}=v})
+  \gproves
+  \WP {\m[\I1: t_1, \I2: t_2]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+}
+\end{derivation}
+
+Last, with~\cref{rule:wp-seq}, we have
+\begin{align*}
+    \gproves
+    \WP {\m[\I1: \code{prog1}, \I2: \code{prog2}]} {
+    \cpl{\Ip{x}{1} = \Ip{x}{2} \land
+         \Ip{y}{1} = \Ip{y}{2} \land
+         \Ip{z}{1} = \Ip{z}{2}}
+  }
+\end{align*}

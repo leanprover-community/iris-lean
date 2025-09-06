@@ -1,0 +1,346 @@
+\subsection{Von Neumann Extractor}
+\label{sec:appendix:ex:von-neumann}
+
+  A randomness extractor is a mechanism that transforms a stream of
+``low-quality'' randomness sources into a stream of ``high-quality''
+randomness sources.
+The Von Neumann extractor is perhaps the earliest instance of such mechanism,
+and it converts a stream of independent coins with the same bias~$p$
+into a stream of independent \emph{fair} coins.
+
+In our language we can model the extractor, up to $N \in \Nat$ iterations,
+as shown in \cref{fig:von-neumann}.
+The program repeatedly flips two biased coins, and outputs the outcome of the first coin if the outcomes where different, otherwise it retries.
+What we can prove is that the bits produced in \p{out} are independent fair coin flips: if we produced~$\ell$ bits we should be able to prove the postcondition
+\[
+  \var{Out}_\ell \is
+  \distAs{\p{out}[0]\at{\I1}}{\Ber{\onehalf}} *
+  \dots *
+  \distAs{\p{out}[\ell-1]\at{\I1}}{\Ber{\onehalf}}.
+\]
+To know how many bits were produced, however,
+we need to condition on \p{len}
+obtaining the specification:
+\[
+  \gproves \WP {\m[\I1: \p{vn}(N)]} {
+    \E \prob. \CC \prob \ell. \bigl(
+      \sure{\Ip{len}{1} = \ell \leq N} *
+      \var{Out}_\ell
+    \bigr)
+  }
+\]
+(Recall $ P \gproves Q \is P \land \ownall \proves Q \land \ownall $)
+
+
+
+\begin{mathfig}[\small]
+  \begin{proofoutline}
+  \PREC{\ownall}\\
+  \CODE{len:=0}\\
+  \ASSR{\sure{\Ip{len}{1} = 0}}\\
+  \ASSR{\E \prob. \CC \prob \ell. \bigl(
+      \sure{\Ip{len}{1} = \ell \leq 0}
+    \bigr)}
+    \TAG[von-neumann:P0]
+  \\
+  \begin{proofjump}[rule:wp-loop,"invariant $P(i) =
+    \E \prob. \CC \prob \ell. \bigl(
+      \sure{\Ip{len}{1} = \ell \leq i} *
+      \var{Out}_\ell
+    \bigr)$"
+  ]
+  \CODE{repeat\ $N$:}\\
+  \begin{proofindent}
+\ASSR{P(i)}\\
+  \CODE{coin_1 :~ Ber($p$)}\\
+  \CODE{coin_2 :~ Ber($p$)}\\
+  \ASSR{
+    P(i)
+    * \distAs{\p{coin}_1\at{\I1}}{\Ber{p}}
+    * \distAs{\p{coin}_2\at{\I1}}{\Ber{p}}
+  }\\
+  \ASSR{
+    \CC \prob \ell. \CC \beta b.
+    \begin{pmatrix}
+      \sure{\Ip{len}{1}=\ell\leq i} *
+      \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b}
+      \\ {}
+      * \var{Out}_\ell *
+      (\pure{b=1} \implies \distAs{\p{coin}_1\at{\I1}}{\Ber{\onehalf}})
+    \end{pmatrix}
+  }
+  \TAG[von-neumann:ClCb]
+  \\
+  \begin{proofjump}[rule:c-wp-elim]
+    \ASSR{
+      \sure{\Ip{len}{1}=\ell\leq i} *
+      \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b}
+      \\ {}
+      * \var{Out}_\ell *
+      (\pure{b=1} \implies \distAs{\p{coin}_1\at{\I1}}{\Ber{\onehalf}})
+    }\\
+    \CODE{if coin_1 != coin$_2\ $ then:}\\
+    \begin{proofindent}
+      \ASSR{
+        \sure{\Ip{len}{1}=\ell\leq i} *
+        \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1}}
+        \\ {}
+        * \var{Out}_\ell *
+        \distAs{\p{coin}_1\at{\I1}}{\Ber{\onehalf}}
+      }\\
+      \CODE{out[len] := coin_1}\\
+      \CODE{len := len+1}\\
+      \ASSR{
+        \sure{\Ip{len}{1}=\ell+1\leq i+1} *
+        \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1}}
+        \\ {}
+        * \var{Out}_\ell *
+        \distAs{\p{coin}_1\at{\I1}}{\Ber{\onehalf}}
+        * \sure{(\p{out[len]} = \p{coin}_1)\at{\I1}}
+      }\\
+    \end{proofindent}
+    \\
+    \ASSR{
+      \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1}=b}
+      * \var{Out}_\ell \\{} *
+      \begin{cases}
+        \sure{\Ip{len}{1}=\ell+1\leq i+1} *
+        \distAs{\p{out[len]}\at{\I1}}{\Ber{\onehalf}}
+        \CASE b=1
+        \\
+        \sure{\Ip{len}{1}=\ell\leq i+1}
+        \CASE b=0
+      \end{cases}
+    }
+  \end{proofjump}
+  \\
+  \ASSR{
+    \CC \prob \ell.\CC \beta b.
+      \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1}=b}
+      * \var{Out}_\ell * \dots
+  }
+  \\
+  \ASSR{
+    \CC {\prob'} {\ell'}. \bigl(
+      \sure{\Ip{len}{1} = \ell' \leq i+1} *
+      \var{Out}_{\ell'}
+    \bigr)
+  }
+  \quad\TAG[von-neumann:Pi+1]
+  \end{proofindent}
+  \end{proofjump}
+  \\
+  \POST{\E \prob. \CC \prob \ell. \bigl(
+        \sure{\Ip{len}{1} = \ell \leq N} *
+        \var{Out}_\ell
+      \bigr)}
+  \end{proofoutline}
+  \caption{Proof outline of the Von Neumann extractor example.}
+  \label{fig:von-neumann-outline}
+\end{mathfig}
+
+
+The \thelogic\ proof of this specification is shown
+in the outline in \cref{fig:von-neumann-outline}.
+The postcondition straightforwardly generalizes to a loop invariant
+\[
+  P(i) =
+  \E \prob. \CC \prob \ell. \bigl(
+    \sure{\Ip{len}{1} = \ell \leq i} *
+    \var{Out}_\ell
+  \bigr)
+\]
+At step~\eqref{von-neumann:P0} we show, by
+using \ref{rule:c-unit-l} and the definition of $\sure{\hole}$,
+that we can obtain the loop invariant with $i=0$:
+$P(0) = \E \prob. \CC \prob \ell. \bigl(
+      \sure{\Ip{len}{1} = \ell \leq 0} *
+      \var{Out}_0
+    \bigr) = \E \prob. \CC \prob \ell. \bigl(
+      \sure{\Ip{len}{1} = \ell \leq 0}
+    \bigr). $
+
+For the proof of the body of the loop we can assume~$P(i)$ and we need to prove
+the postcondition~$P(i+1)$.
+After sampling the two coins,
+we reach the point where we apply the fundamental insight behind
+the extractor, at step~\eqref{von-neumann:ClCb}.
+The key idea is that with some probability~$q$ the two coins will be different,
+in which case the outcomes of the two coins can be either $(0,1)$ or $(1,0)$,
+which both have the same probability $p(1-p)$.
+Therefore, if the coins are different, $\p{coin}_1=0$ and $\p{coin}_1=1$
+have the same probability, \ie $\p{coin}_1$ looks like a fair coin.
+
+\thelogic\ is capable of representing this reasoning as follows.
+
+We start with two independent biased coins, which we can combine
+into a random variable $(\p{coin}_1 \ne \p{coin}_2,\p{coin}_1)$
+recording whether the two outcomes where different and the outcome
+of the first coin;
+it is easy to derive (using \ref{rule:prod-unsplit} and \ref{rule:dist-fun}):
+\[
+  \distAs{\p{coin}_1\at{\I1}}{\Ber{p}} *
+  \distAs{\p{coin}_2\at{\I1}}{\Ber{p}}
+  \proves
+  \distAs{(\p{coin}_1 \ne \p{coin}_2,\p{coin}_1)\at{\I1}}{\prob_0}
+\]
+where
+$
+  \prob_0 \is \left(\DO{
+    c_1 <- \Ber{p};
+    c_2 <- \Ber{p};
+    \return (c_1 \ne c_2, c_1)
+  }\right).
+$
+Now the crucial observation of the extractor can be phrased as
+a reformulation of~$\prob_0$:
+\begin{align*}
+  \prob_0 &= \beta \fuse \krnl
+  &
+  \beta &\is \Ber{q}
+  &
+  \krnl(1) &\is \Ber{\onehalf} &
+  \krnl(0) &\is \Ber{q'}\end{align*}
+Here one first determines
+(with some probability~$q$ which is a function of~$p$)
+whether the two coins will be different or equal,
+and then generates $c_1$ accordingly:
+in the ``different'' branch ($b=1$) the first coin is distributed as $\Ber{\onehalf}$ while in the ``equal'' branch ($b=0$) the first coin is distributed with some bias~$q'$ (also a function of~$p$).
+
+So using $ \prob_0 = \beta \fuse \krnl $ we derive:
+\begin{eqexplain}
+  &
+  \distAs{(\p{coin}_1 \ne \p{coin}_2,\p{coin}_1)\at{\I1}}{(\beta \fuse \krnl)}
+\whichproves
+\CC {\beta \fuse \krnl} {(b,c_1)}.
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b \land \p{coin}_1\at{\I1}=c_1}
+  \byrules{c-unit-r}
+\whichproves
+\CC \beta b.\CC {\krnl(b)} {c_1}.
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b} *
+    \sure{\p{coin}_1\at{\I1}=c_1}
+  \byrules{c-fuse}
+\whichproves
+\CC \beta b. \bigl(
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b} *
+    \CC {\krnl(b)} {c_1}.
+      \sure{\p{coin}_1\at{\I1}=c_1}
+  \bigr)
+  \byrules{sure-str-convex}
+\whichproves
+\CC \beta b. \bigl(
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b} *
+    \pure{b=1} \implies
+    \CC {\Ber{\onehalf}} {c_1}.
+      \sure{\p{coin}_1\at{\I1}=c_1}
+  \bigr)
+  \byrules{c-cons}
+\whichproves
+\CC \beta b. \bigl(
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1} = b} *
+    \pure{b=1} \implies
+      \distAs{\p{coin}_1\at{\I1}}{\Ber{\onehalf}}
+  \bigr)
+  \byrules{c-unit-r}
+\end{eqexplain}
+
+The application of \ref{rule:c-fuse}
+allows us to first condition on $\p{coin}_1 \ne \p{coin}_2$,
+and then the first coin.
+We can then weaken the case where $b=0$ and only record that
+if $b=1$ then $\p{coin}_1$ is a fair coin.
+
+This takes us through step~\eqref{von-neumann:ClCb} of \cref{fig:von-neumann-outline}.
+Now the precondition of the if statement is conditional on \p{len} and
+$\p{coin}_1 \ne \p{coin}_2$.
+Intuitively, we want to evaluate the effects of the if statement
+in the two possible outcomes and put together the results.
+This is precisely the purpose of the \ref{rule:c-wp-swap} rule,
+which together with \ref{rule:c-cons} gives us the derived rule:
+
+\begin{proofrule}
+  \infer*[lab=c-wp-elim]{
+    \forall v\in\psupp(\prob) \st
+    P(v) \gproves \WP {\m{t}} {Q(v)}
+  }{
+    \CC \prob v.P(v) \gproves \WP {\m{t}} {\CC \prob v.Q(v)}
+  }
+  \label{rule:c-wp-elim}
+\end{proofrule}
+
+By applying the rule twice
+(once on the conditioning on \p{len},
+and the on the conditioning on $\p{coin}_1 \ne \p{coin}_2$),
+we can process the if statement case by case,
+and then combine, under the same conditioning, the postconditions
+we obtained in each case.
+The ``else'' branch is a \code{skip} (omitted) so it preserves the precondition
+in the $b=0$ branch.
+In the ``then'' branch we can assume $b=1$; we apply \ref{rule:wp-rl-assign}
+to the assignments and combine the result with the ``else'' branch by making
+the overall postcondition of the if statement to be parametric
+on the value of~$b$ (and~$\ell$).
+
+The last non-obvious step is~\eqref{von-neumann:Pi+1} in \cref{fig:von-neumann-outline},
+where we show that the conditional postcondition of the if statement
+implies the loop invariant $P(i+1)$.
+Let
+\[
+  K(\ell,b) =
+  \begin{cases}
+    \sure{\Ip{len}{1}=\ell+1\leq i+1} *
+    \distAs{\p{out[len]}\at{\I1}}{\Ber{\onehalf}}
+    \CASE b=1
+    \\
+    \sure{\Ip{len}{1}=\ell\leq i+1}
+    \CASE b=0
+  \end{cases}
+\]
+then the step is proven as follows:
+\begin{eqexplain}
+  &
+  \CC \prob \ell.\CC \beta b. \bigl(
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1}=b}
+    * \var{Out}_\ell * K(\ell,b)
+  \bigr)
+  \whichproves
+\CC {\prob \pprod \beta} (\ell,b).\bigl(
+    \sure{(\p{coin}_1 \ne \p{coin}_2)\at{\I1}=b}
+    * \var{Out}_\ell * K(\ell,b)
+  \bigr)
+  \byrule{c-assoc}
+  \whichproves
+\CC {\prob \pprod \beta} (\ell,b).\bigl(
+    \var{Out}_\ell * K(\ell,b)
+  \bigr)
+  \byrules{c-cons}
+  \whichproves
+\CC {\prob''} (\ell',\ell).
+    \begin{cases}
+      \sure{\Ip{len}{1}=\ell'\leq i+1} *
+      \var{Out}_{\ell'-1} *
+      \distAs{\p{out[len]}\at{\I1}}{\Ber{\onehalf}}
+      \CASE \ell'=\ell+1
+      \\
+      \sure{\Ip{len}{1}=\ell'\leq i+1} *
+      \var{Out}_{\ell'}
+      \CASE \ell'=\ell
+    \end{cases}
+  \byrules{c-transf}
+  \whichproves
+\CC {\prob''\circ\inv{\proj_1}} \ell'.\bigl(
+    \sure{\Ip{len}{1}=\ell'\leq i+1} *
+    \var{Out}_{\ell'}
+  \bigr)
+  \byrules{c-dist-proj}
+  \whichproves
+\E \prob'.
+  \CC {\prob'} \ell'.\bigl(
+    \sure{\Ip{len}{1}=\ell'\leq i+1} *
+    \var{Out}_{\ell'}
+  \bigr)
+\end{eqexplain}
+
+The application of \ref{rule:c-transf}
+uses the function $f(\ell,b) = (\ell+b, \ell)$ to introduce the new $\ell'$
+and then we project away the unused~$\ell$ using the derived \ref{rule:c-dist-proj} (note that the rule applies to $\sure{\hole}$ assertions and multiple ownership assertions in a separating conjunction thanks to \ref{rule:prod-split} and \ref{rule:prod-unsplit}).
