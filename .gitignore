@@ -15,3 +15,5 @@
 
 # Generated paper PDF
 paper/paper.pdf
+
+.DS_Store
