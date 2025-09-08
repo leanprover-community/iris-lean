@@ -183,6 +183,7 @@ theorem op_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz ≡ x • (
 theorem op_opM_assoc_dist (x y : α) (mz : Option α) : (x • y) •? mz ≡{n}≡ x • (y •? mz) := by
   unfold op?; cases mz <;> simp [assoc.dist, Dist.symm]
 
+
 /-! ## Validity -/
 
 theorem Valid.validN : ✓ (x : α) → ✓{n} x := (valid_iff_validN.1 · _)
@@ -1098,6 +1099,10 @@ theorem CMRA.op_some_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz �
   | none   => .rfl
   | some _ => assoc.symm
 
+theorem CMRA.opM_opM_assoc {x : α} {y z : Option α} : (x •? y) •? z ≡ x •? (y • z) := by
+  cases y <;> cases z <;> simp [CMRA.op?, CMRA.op, optionOp]
+  exact assoc.symm
+
 theorem CMRA.op_some_opM_assoc_dist (x y : α) (mz : Option α) :
     (x • y) •? mz ≡{n}≡ x •? (some y • mz) :=
   match mz with
@@ -1116,7 +1121,7 @@ theorem CMRA.inc_of_some_inc_some [CMRA.IsTotal α] {x y : α} (h : some y ≼ s
   | none => ⟨core y, (CMRA.equiv_of_some_equiv_some hmz).trans (op_core y).symm⟩
   | some z => ⟨z, hmz⟩
 
-theorem CMRA.incN_of_some_incN_some [CMRA.IsTotal α] {x y : α} : some y ≼{n} some x → y ≼{n} x
+theorem CMRA.incN_of_Option.some_incN_some_iff_some [CMRA.IsTotal α] {x y : α} : some y ≼{n} some x → y ≼{n} x
   | ⟨none, hmz⟩ => ⟨core y, (CMRA.dist_of_some_dist_some hmz).trans (op_core_dist y).symm⟩
   | ⟨some z, hmz⟩ => ⟨z, hmz⟩
 
@@ -1133,6 +1138,163 @@ theorem not_valid_some_exclN_op_left {n} {x : α} [CMRA.Exclusive x] {y : α} :
 
 theorem validN_op_unit {n} {x : Option α} (vx : ✓{n} x) : ✓{n} x • CMRA.unit := by
   cases x <;> trivial
+
+theorem Option.inc_iff {ma mb : Option α} :
+    ma ≼ mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ (a ≡ b ∨ a ≼ b) := by
+  constructor
+  · rintro ⟨mc, Hmc⟩
+    cases ma <;> cases mb <;> cases mc <;> simp_all [CMRA.op, optionOp]
+    · exact .inl Hmc.symm
+    · right; rename_i v3; exists v3
+  · rintro (H|⟨a, b, Ha, Hb, (H|⟨z, Hz⟩)⟩)
+    · subst H; exists mb; simp [CMRA.op, optionOp]
+    · subst Ha; subst Hb; exists none; simp [CMRA.op, optionOp]; exact H.symm
+    · subst Ha; subst Hb; exists some z
+
+theorem Option.incN_iff {ma mb : Option α} :
+    ma ≼{n} mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ (a ≡{n}≡ b ∨ a ≼{n} b) := by
+  constructor
+  · rintro ⟨mc, Hmc⟩
+    cases ma <;> cases mb <;> cases mc <;> simp_all [CMRA.op, optionOp]
+    · exact .inl Hmc.symm
+    · right; rename_i v3; exists v3
+  · rintro (H|⟨a, b, Ha, Hb, (H|⟨z, Hz⟩)⟩)
+    · subst H; exists mb; simp [CMRA.op, optionOp]
+    · subst Ha; subst Hb; exists none; simp [CMRA.op, optionOp]; exact H.symm
+    · subst Ha; subst Hb; exists some z
+
+theorem Option.inc_iff_isTotal [CMRA.IsTotal α] {ma mb : Option α} :
+    ma ≼ mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼ b := by
+  apply Option.inc_iff.trans _
+  constructor
+  · rintro (H|⟨a, b, Ha, Hb, (H|H)⟩)
+    · exact .inl H
+    · right
+      refine ⟨a, b, Ha, Hb, ?_⟩
+      exists (CMRA.core a)
+      exact H.symm.trans (CMRA.op_core a).symm
+    · exact .inr ⟨a, b, Ha, Hb, H⟩
+  · rintro (H|⟨a, b, Ha, Hb, H⟩)
+    · exact .inl H
+    · exact .inr ⟨a, b, Ha, Hb, .inr H⟩
+
+theorem Option.incN_iff_isTotal [CMRA.IsTotal α] {ma mb : Option α} :
+    ma ≼{n} mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼{n} b := by
+  apply Option.incN_iff.trans _
+  constructor
+  · rintro (H|⟨a, b, Ha, Hb, (H|H)⟩)
+    · exact .inl H
+    · right
+      refine ⟨a, b, Ha, Hb, ?_⟩
+      exists (CMRA.core a)
+      apply H.symm.trans (CMRA.op_core_dist a).symm
+    · exact .inr ⟨a, b, Ha, Hb, H⟩
+  · rintro (H|⟨a, b, Ha, Hb, H⟩)
+    · exact .inl H
+    · exact .inr ⟨a, b, Ha, Hb, .inr H⟩
+
+theorem Option.some_incN_some_iff {a b : α} : some a ≼{n} some b ↔ a ≡{n}≡ b ∨ a ≼{n} b := by
+  apply Option.incN_iff.trans; simp
+
+-- Here
+theorem Option.some_inc_some_iff {a b : α} : some a ≼ some b ↔ a ≡ b ∨ a ≼ b := by
+  apply Option.inc_iff.trans; simp
+
+theorem Option.eqv_of_inc_exclusive [CMRA.Exclusive (a : α)] {b : α} (H : some a ≼ some b) (Hv : ✓ b) :
+     a ≡ b := by
+  rcases Option.inc_iff.mp H with (H|⟨a', b', Ha, Hb, H⟩); simp at H
+  simp only [Option.some.injEq] at Ha Hb; subst Ha; subst Hb
+  rcases H with (H|H); trivial
+  exact (CMRA.not_valid_of_excl_inc H Hv).elim
+
+theorem Option.dst_of_inc_exclusive [CMRA.Exclusive (a : α)] {b : α} (H : some a ≼{n} some b) (Hv : ✓{n} b)  :
+    a ≡{n}≡ b := by
+  rcases Option.incN_iff.mp H with (H|⟨a', b', Ha, Hb, H⟩); simp at H
+  simp only [Option.some.injEq] at Ha Hb; subst Ha; subst Hb
+  rcases H with (H|H); trivial
+  exact (CMRA.not_valid_of_exclN_inc H Hv).elim
+
+theorem Option.some_inc_some_iff_isTotal [CMRA.IsTotal α] {a b : α} : some a ≼ some b ↔ a ≼ b := by
+  apply Option.some_inc_some_iff.trans
+  refine ⟨?_, .inr⟩
+  rintro (H|H)
+  · exists (CMRA.core a)
+    exact H.symm.trans (CMRA.op_core a).symm
+  · exact H
+
+theorem Option.some_incN_some_iff_isTotal [CMRA.IsTotal α] {a b : α} : some a ≼{n} some b ↔ a ≼{n} b := by
+  apply Option.some_incN_some_iff.trans
+  refine ⟨?_, .inr⟩
+  rintro (H|H)
+  · exists (CMRA.core a)
+    exact H.symm.trans (CMRA.op_core_dist a).symm
+  · exact H
+
+instance {a : α} [Hid : CMRA.IdFree a] [Hc : CMRA.Cancelable a] : CMRA.Cancelable (some a) := by
+  constructor
+  rintro n (_|b) (_|c) _ HE
+  · trivial
+  · rename_i h
+    simp [CMRA.op, optionOp] at HE
+    exact Hid.id_free0_r c (CMRA.valid0_of_validN h) (HE.symm.le (n.zero_le))
+  · rename_i h
+    simp [CMRA.op, optionOp] at HE
+    apply Hid.id_free0_r b
+    · simp [CMRA.op, optionOp, CMRA.ValidN, optionValidN] at h
+      apply CMRA.valid0_of_validN
+      exact (Dist.validN HE).mp h
+    · apply Dist.le HE (n.zero_le)
+  · simp [OFE.Dist, Option.Forall₂]
+    apply Hc.cancelableN
+    · rename_i h; exact h
+    · apply HE
+
+instance (ma : Option α) [Hid : ∀ a : α, CMRA.IdFree a] [Hc : ∀ a : α, CMRA.Cancelable a] :
+    CMRA.Cancelable ma := by
+  cases ma
+  constructor
+  · simp [CMRA.op, optionOp]
+  · infer_instance
+
+-- Weird that replacing this proof with the #print-ed term doesn't work for some reason
+theorem Option.validN_of_incN_validN {a b : α} (Hv : ✓{n} a) (Hinc : some b ≼{n} some a) : ✓{n} b :=  by
+  apply CMRA.validN_of_incN Hinc
+  apply Hv
+
+-- Same, can't replace with #print-ed term
+theorem Option.valid_of_inc_valid {a b : α} (Hv : ✓ a) (Hinc : some b ≼ some a) : ✓ b :=  by
+  apply CMRA.valid_of_inc Hinc
+  apply Hv
+
+theorem Option.some_inc_some_iff_op? {a b : α} : some a ≼ some b ↔ ∃ mc, b ≡ a •? mc := by
+  simp [Option.inc_iff]
+  constructor
+  · rintro (H|H)
+    · exists none; simpa [CMRA.op?] using H.symm
+    · rcases H with ⟨mc', H⟩
+      exists (some mc')
+  · rintro ⟨(_|z), H⟩
+    · exact .inl H.symm
+    · right; exists z
+
+theorem Option.some_incN_some_iff_op? {a b : α} : some a ≼{n} some b ↔ ∃ mc, b ≡{n}≡ a •? mc := by
+  simp [Option.incN_iff]
+  constructor
+  · rintro (H|H)
+    · exists none; simpa [CMRA.op?] using H.symm
+    · rcases H with ⟨mc', H⟩
+      exists (some mc')
+  · rintro ⟨(_|z), H⟩
+    · exact .inl H.symm
+    · right; exists z
+
+instance [CMRA.Discrete α] : CMRA.Discrete (Option α) where
+  discrete_valid {x} := by
+    cases x <;> simp [CMRA.Valid, optionValid]
+    exact (CMRA.discrete_valid ·)
+
+theorem Option.some_op_op? {a : α} {ma : Option α} : some a • ma = some (a •? ma) := by
+  cases ma <;> simp [CMRA.op?, CMRA.op, optionOp]
 
 end option
 
@@ -1231,6 +1393,12 @@ theorem valid_snd {x : α × β} (h : ✓ x) : ✓ x.snd := h.right
 
 theorem validN_fst {n} {x : α × β} (h : ✓{n} x) : ✓{n} x.fst := h.left
 theorem validN_snd {n} {x : α × β} (h : ✓{n} x) : ✓{n} x.snd := h.right
+
+instance [CMRA.Discrete α] [CMRA.Discrete β]: CMRA.Discrete (α × β) where
+  discrete_valid := by
+    rintro ⟨_, _⟩
+    simp [CMRA.ValidN]
+    exact (⟨CMRA.discrete_valid ·, CMRA.discrete_valid ·⟩)
 
 end Prod
 
