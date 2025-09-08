@@ -22,7 +22,7 @@ variable [IHHmap : ∀ V, HasHHMap (H (DFrac F × V)) (H V) K (DFrac F × V) V]
     ∃ (v : V) (dq : DFrac F), Store.get m k = .some v ∧ ✓{n} (dq, v) ∧ (some fv ≼{n} some (dq, v))
 
 instance : ViewRel (HeapR F K V H) where
-  mono {n1 n2 m1 m2 f1 f2 Hrel Hm Hf Hn k} := by
+  mono {n1 m1 f1 n2 m2 f2 Hrel Hm Hf Hn k} := by
     intro vk Hk
     obtain ⟨Hf'', _⟩ := lookup_incN (n := n2) (m1 := f2) (m2 := f1)
     have Hf''' := Hf'' Hf k; clear Hf Hf''
@@ -460,7 +460,7 @@ instance heap_view_frag_core_id [CMRA.CoreId dq] [CMRA.CoreId v] :
   obtain ⟨H2⟩ := H2
   constructor
   simp only [heap_view_frag, CMRA.pcore]
-  simp only [View.pcore, some_eqv_some]
+  simp only [View.Pcore, some_eqv_some]
   refine NonExpansive₂.eqv trivial ?_
   refine Heap.point_core_eqv ?_
   simp [CMRA.pcore, Prod.pcore]
