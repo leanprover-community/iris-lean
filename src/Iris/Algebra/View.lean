@@ -95,7 +95,7 @@ theorem view_auth_discrete [UFraction F] [UCMRA B] {dq a} (Ha : OFE.DiscreteE a)
     OFE.DiscreteE (●V{dq} a : View F R) := by
   refine is_discrete ?_ He
   apply OFE.Option.some_is_discrete
-  apply OFE.prod.is_discrete dfrac.is_discrete
+  apply OFE.prod.is_discrete DFrac.is_discrete
   apply Agree.toAgree.is_discrete
   exact Ha
 
@@ -675,13 +675,13 @@ theorem view_update_auth_persist : (●V{dq} a : View F R) ~~> ●V{.discard} a 
   apply Update.lift_updateP (g := fun dq => ●V{dq} a)
   · intro P
     apply view_updateP_auth_dfrac
-  · exact dfrac_discard_update
+  · exact DFrac.update_discard
 
 theorem view_updateP_auth_unpersist [IsSplitFraction F] :
     (●V{.discard} a : View F R) ~~>: fun k => ∃ q, k = ●V{.own q} a := by
   apply UpdateP.weaken
   · apply view_updateP_auth_dfrac
-    exact dfrac_undiscard_update
+    exact DFrac.update_acquire
   · rintro y ⟨dq, rfl, q', rfl⟩
     exists q'
 

@@ -743,14 +743,14 @@ theorem heap_view_frag_persist k dq v :
   (heap_view_frag k dq v : HeapView F K V H) ~~> heap_view_frag k .discard v := by
   apply Update.lift_updateP (fun (dq : DFrac F) => heap_view_frag (H := H) (F := F) k dq v)
   · exact fun P Hupd => heap_view_frag_dfrac k dq P v Hupd
-  · exact dfrac_discard_update
+  · exact DFrac.update_discard
 
 theorem heap_view_frag_unpersist [IsSplitFraction F] k v :
     (heap_view_frag k .discard v : HeapView F K V H) ~~>:
     fun a => ∃ q, a = heap_view_frag k (.own q) v := by
   apply UpdateP.weaken
   · apply heap_view_frag_dfrac
-    apply dfrac_undiscard_update
+    apply DFrac.update_acquire
   rintro y ⟨q, rfl, ⟨q1, rfl⟩⟩
   exists q1
 

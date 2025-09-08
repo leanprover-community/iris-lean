@@ -106,7 +106,7 @@ theorem own_whole_exclusive {w : F} (Hw : Whole w) : CMRA.Exclusive (own w) wher
     · exact Hw.not_fractional
     · exact fun Hk => Hw.not_fractional Hk.of_add_left
 
-instance own_one_exclusive : CMRA.Exclusive (own (1 : F)) :=
+instance : CMRA.Exclusive (own (1 : F)) :=
   own_whole_exclusive <| UFraction.one_whole
 
 instance {f : F} : CMRA.Cancelable (own f) where
@@ -143,7 +143,7 @@ theorem valid_own_op_discard {q : F} : ✓ own q • discard ↔ Fractional q :=
 instance : CMRA.Discrete (DFrac F) where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 
-theorem dfrac.is_discrete {q : DFrac F} : OFE.DiscreteE q := ⟨congrArg id⟩
+theorem DFrac.is_discrete {q : DFrac F} : OFE.DiscreteE q := ⟨congrArg id⟩
 
 instance : CMRA.Discrete (DFrac F) where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
@@ -151,7 +151,8 @@ instance : CMRA.Discrete (DFrac F) where
 instance : CMRA.Discrete (DFrac F) where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 
-theorem dfrac_discard_update {dq : DFrac F} : dq ~~> .discard := by
+-- dfrac_discard_update
+theorem DFrac.update_discard {dq : DFrac F} : dq ~~> .discard := by
   rintro n (_|⟨q|_|q⟩) H <;>
     have H' := (CMRA.valid_iff_validN' n).mpr H <;>
     apply (CMRA.valid_iff_validN' n).mp <;>
@@ -167,7 +168,8 @@ theorem dfrac_discard_update {dq : DFrac F} : dq ~~> .discard := by
     · exact H
     · exact CMRA.valid_op_right _ _ H
 
-theorem dfrac_undiscard_update [IsSplitFraction F] :
+-- dfrac_undiscard_update
+theorem DFrac.update_acquire [IsSplitFraction F] :
     (.discard : DFrac F) ~~>: fun k => ∃ q, k = .own q := by
   apply UpdateP.discrete.mpr
   rintro (_|⟨q|_|q⟩)
