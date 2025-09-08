@@ -310,7 +310,7 @@ theorem heap_view_both_validN n dp m k v :
   constructor
   · rintro ⟨Hdp, v', dq', Hlookup, Hvalid, Hincl⟩
     have Heq : v ≡{n}≡ Hdp := by
-      have Z := @some_incN_exclusive _ _ (DFrac.own One.one, v) n ?G _ Hincl Hvalid
+      have Z := @Option.dst_of_inc_exclusive _ _ (DFrac.own One.one, v) n ?G _ Hincl Hvalid
       case G =>
         -- TODO: This should be a DFrac lemma
         constructor
@@ -340,7 +340,8 @@ theorem heap_view_both_validN n dp m k v :
         apply  (UFraction.one_whole (α := F)).1
       rw [h] at Hlookup
       exact (Dist.validN (id (Dist.symm Hlookup))).mp Hval
-    · apply some_incN.mpr ?_; left
+    · apply Option.some_incN_some_iff.mpr ?_
+      left
       apply dist_prod_ext rfl ?_
       exact id (Dist.symm (h.symm ▸ Hlookup : some _ ≡{n}≡ some _))
 
@@ -353,7 +354,7 @@ theorem heap_view_both_dfrac_validN_total [CMRA.IsTotal V] n dp m k dq v :
   exists v'
   refine ⟨Hdp, ?_, Hlookup, Hvalid.2, ?_⟩
   · suffices some dq ≼ some dq' by
-      apply option_valid_Some_included ?_ this
+      refine Option.valid_of_inc_valid ?_ this
       apply (CMRA.valid_iff_validN' n).mpr Hvalid.1
     apply (CMRA.inc_iff_incN n).mpr
     rcases Hincl with ⟨x, Hx⟩
@@ -363,8 +364,9 @@ theorem heap_view_both_dfrac_validN_total [CMRA.IsTotal V] n dp m k dq v :
     · exists x.1
       simp [CMRA.op, optionOp]
       apply Hx.1
-  · suffices some v ≼{n} some v' by exact some_incN_total.mp this
-    apply some_incN_total.mpr ?_
+  · suffices some v ≼{n} some v' by
+      apply CMRA.incN_of_Option.some_incN_some_iff_some this
+    refine Option.some_incN_some_iff_isTotal.mpr ?_
     rcases Hincl with ⟨x, Hx⟩
     rcases x with (_|x) <;> simp [CMRA.op, optionOp, Prod.op] at Hx
     · apply CMRA.incN_of_incN_of_dist (CMRA.incN_refl _)
@@ -408,7 +410,7 @@ theorem heap_view_both_dfrac_valid_discrete_total [CMRA.IsTotal V] [CMRA.Discret
     · apply CMRA.valid_of_eqv Hx.1
       simp [CMRA.Valid, Prod.Valid] at Hvalid
       apply Hvalid.1
-    · suffices some dq ≼ some dq' by exact option_valid_Some_included Hvalid.1 this
+    · suffices some dq ≼ some dq' by exact Option.valid_of_inc_valid Hvalid.1 this
       exists x.fst
       simp [CMRA.op, optionOp]
       have Hx' := Hx.1
@@ -533,7 +535,7 @@ theorem heap_view_delete m k (v : V) :
       simp [h, He, Heap.point_get_eq rfl] at Hrel'
       obtain ⟨v, HK, q, Hqv, Hqinc⟩ := Hrel'
       rename_i vv
-      have Hval := option_validN_Some_includedN (Hv := Hqv) (Hinc := Hqinc)
+      have Hval := Option.validN_of_incN_validN (Hv := Hqv) (Hinc := Hqinc)
       exfalso
       obtain ⟨z, _⟩ := Hqinc
       simp [CMRA.ValidN, Prod.op, Prod.ValidN] at Hval
@@ -581,7 +583,7 @@ theorem heap_view_update (m : H _) k (dq : DFrac F) (v mv' v': V) (dq' : DFrac F
         simp [CMRA.op, Heap.get_merge, Heap.point, Store.get_set_eq h, CMRA.op?]
         cases h : Store.get bf k <;> simp [Option.merge, h, Store.get_set_eq rfl]
       obtain ⟨mv, mdf, Hlookup, Hval, Hincl'⟩ := Hrel''
-      obtain ⟨f', Hincl⟩ := option_some_incN_opM_iff.mp Hincl'; clear Hincl'
+      obtain ⟨f', Hincl⟩ := Option.some_incN_some_iff_op?.mp Hincl'; clear Hincl'
       let f := (Store.get bf k) • f'
       have Hincl' : (mdf, mv) ≡{n}≡ (dq, v) •? f := by
         refine .trans Hincl ?_
@@ -610,7 +612,7 @@ theorem heap_view_update (m : H _) k (dq : DFrac F) (v mv' v': V) (dq' : DFrac F
           cases h : Store.get bf j <;> simp
           · exact CMRA.incN_refl _
           · exact CMRA.incN_refl _
-        apply option_some_incN_opM_iff.mpr
+        apply Option.some_incN_some_iff_op?.mpr
         exists f'
         refine OFE.Dist.trans (y := (dq' •? Option.map Prod.fst f, v' •? Prod.snd <$> f)) ?_ ?_
         · exact OFE.dist_prod_ext rfl Hincl'
@@ -689,7 +691,7 @@ theorem heap_view_frag_dfrac k dq P v : dq ~~>: P →
       simp [CMRA.op, Heap.get_merge, Heap.point_get_eq rfl, Option.merge, CMRA.op?]
       cases Store.get bf k <;> simp
     obtain ⟨v', dq', Hlookup, Hval, Hincl⟩ := Hrel'
-    obtain ⟨f', Hincl⟩ := option_some_incN_opM_iff.mp Hincl
+    obtain ⟨f', Hincl⟩ := Option.some_incN_some_iff_op?.mp Hincl
     have Hincl' : (dq', v') ≡{n}≡ (dq, v) •? ((Store.get bf k) • f') := by
       refine Hincl.trans ?_
       apply OFE.equiv_dist.mp

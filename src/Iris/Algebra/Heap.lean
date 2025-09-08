@@ -496,7 +496,7 @@ theorem exclusive_point_inc_iff {m : T} (He : Exclusive x) (Hv : ✓ m) :
     (point i (T := T) (some x)) ≼ m ↔ (get m i ≡ some x) := by
   refine point_inc_iff.trans ⟨fun ⟨y, Hy, Hxy⟩ => ?_, fun _ => ?_⟩
   · suffices x ≡ y by exact Hy.trans <| this.symm
-    exact some_inc_exclusive Hxy <| valid_get_valid Hv Hy
+    exact Option.eqv_of_inc_exclusive Hxy <| valid_get_valid Hv Hy
   · exists x
 
 theorem point_inc_point_iff : (point i (T := T) (some x)) ≼ (point i (some y)) ↔ some x ≼ some y := by
@@ -508,10 +508,10 @@ theorem point_inc_point_iff : (point i (T := T) (some x)) ≼ (point i (some y))
     exact .of_eq <| point_get_eq rfl
 
 theorem total_point_inc_point_iff [IsTotal V] : (point i (T := T) (some x)) ≼ (point i (some y)) ↔ x ≼ y :=
-  point_inc_point_iff.trans <| some_inc_total.trans <| Eq.to_iff rfl
+  point_inc_point_iff.trans <| Option.some_inc_some_iff_isTotal
 
 theorem point_inc_point_mono (Hinc : x ≼ y) : (point (T := T) i (some x)) ≼ (point i (some y)) :=
-  point_inc_point_iff.mpr <| some_inc.mpr <| .inr Hinc
+  point_inc_point_iff.mpr <| Option.some_inc_some_iff.mpr <| .inr Hinc
 
 instance [H : Cancelable (some x)] : Cancelable (point (T := T) i (some x)) where
   cancelableN {n m1 m2} Hv He j := by
