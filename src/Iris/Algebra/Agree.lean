@@ -233,6 +233,41 @@ theorem Agree.includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x :=
 theorem Agree.included {x y : Agree α} : x ≼ y ↔ y ≡ y • x :=
   ⟨fun ⟨z, h⟩ n => includedN.mp ⟨z, h n⟩, fun h => ⟨y, h.trans op_comm⟩⟩
 
+theorem Agree.toAgree.is_discrete {a : α} (Ha : OFE.DiscreteE a) : OFE.DiscreteE (toAgree a) := by
+  refine ⟨fun ⟨Hal, Har⟩ _ => ?_⟩
+  constructor <;> simp_all [toAgree]
+  · rcases Hal with ⟨b, Hb1, Hb2⟩
+    exact ⟨b, ⟨Hb1, Ha.discrete (Har b Hb1) |>.dist⟩⟩
+  · intro H Hb
+    exact Ha.discrete (Har H Hb) |>.dist
+
+open OFE OFE.Discrete in
+instance [OFE α] [Discrete α] : Discrete (Agree α) where
+  discrete_0 {x y} H := by
+    refine fun n => ⟨fun a Ha => ?_, fun b Hb => ?_⟩
+    · rcases H.1 a Ha with ⟨c, Hc⟩
+      refine ⟨c, ⟨Hc.1, ?_⟩⟩
+      apply equiv_dist.mp <| discrete_0 (Hc.2.le <| Nat.zero_le 0)
+    · rcases H.2 b Hb with ⟨c, Hc⟩
+      refine ⟨c, ⟨Hc.1, ?_⟩⟩
+      apply equiv_dist.mp <| discrete_0 (Hc.2.le <| Nat.zero_le 0)
+
+instance toAgree.ne [OFE α] : OFE.NonExpansive (toAgree : α → Agree α) where
+  ne n x y H := by
+    refine ⟨?_, ?_⟩
+    · intro a Ha; exists y; revert Ha
+      simp [toAgree]; exact (·▸H)
+    · intro b Hb; exists x; revert Hb
+      simp [toAgree]; exact (·▸H)
+
+theorem toAgree.inj {a1 a2 : α} {n} (H : toAgree a1 ≡{n}≡ toAgree a2) : a1 ≡{n}≡ a2 := by
+  have Hinc : a1 ∈ (toAgree a1).car := by simp [toAgree]
+  rcases H.1 a1 Hinc with ⟨_, ⟨_, _⟩⟩
+  simp_all [toAgree]
+
+instance : CMRA.IsTotal (Agree α) where
+  total := by simp [CMRA.pcore]
+
 theorem Agree.valid_includedN {x y : Agree α} : ✓{n} y → x ≼{n} y → x ≡{n}≡ y := by
   intro hval ⟨z, heq⟩
   have : ✓{n} (x • z) := heq.validN.mp hval
@@ -354,4 +389,9 @@ theorem Agree.agree_map_ext {g : α → β} [OFE.NonExpansive g] (heq : ∀ a, f
   · exact ⟨g a, ⟨a, ha, rfl⟩, (heq a).dist⟩
   · exact ⟨f a, ⟨a, ha, rfl⟩, (heq a).dist⟩
 
+theorem toAgree.incN {a b : α} {n} : toAgree a ≼{n} toAgree b ↔ a ≡{n}≡ b := by
+  refine ⟨?_, fun H => (CMRA.incN_iff_right <| toAgree.ne.ne H).mp <| CMRA.incN_refl _⟩
+  intro H
+  apply toAgree.inj
+  exact Agree.valid_includedN trivial H
 end agree_map
