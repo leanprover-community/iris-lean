@@ -208,7 +208,7 @@ theorem apply_intuitionistic [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) 
 
 theorem multiple_intuitionistic [BI PROP] (P Q R : PROP) : ⊢ □ P -∗ Q -∗ □ (P -∗ Q -∗ □ R) -∗ R := by
   iintro □HP HQ □H
-  iapply H with _, [HQ] as "Q" -- demonstrating goal naming
+  iapply H with _, [HQ] as "Q"
   case Q => iexact HQ
   iexact HP
 
@@ -262,9 +262,9 @@ theorem exact_forall [BI PROP] (P : α → PROP) (a : α) (H : ⊢ ∀ x, P x) :
   istart
   iapply H
 
--- theorem exact_forall' [BI PROP] (P : α → PROP) (a : α) (H : ∀ x, ⊢ P x) : ⊢ P a := by
---   istart
---   iapply H
+theorem exact_forall' [BI PROP] (P : α → PROP) (a : α) (H : ∀ x, ⊢ P x) : ⊢ P a := by
+  istart
+  iapply H
 
 theorem apply_forall [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
   iintro HP

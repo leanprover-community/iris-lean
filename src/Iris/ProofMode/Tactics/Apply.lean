@@ -55,6 +55,7 @@ partial def iApplyCore
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
 
+  let _ ← isDefEq er goal
   if let (some _, some _) := (← try? <| synthInstanceQ q(FromAssumption false $er $goal),
                               ← try? <| synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))) then
     -- iexact case

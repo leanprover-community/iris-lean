@@ -33,11 +33,21 @@ partial def instantiateForalls {prop : Q(Type u)} (bi : Q(BI $prop)) (hyp : Q($p
     let pf ← mkAppM ``as_emp_valid_1 #[hyp, pf]
     return ⟨hyp, pf⟩
 
-def iPoseCore {prop : Q(Type u)} (bi : Q(BI $prop)) (val : Expr) (terms : List Term) : TacticM (Q($prop) × Expr) := do
+partial def handleDependentArrows {prop : Q(Type u)} (bi : Q(BI $prop)) (val : Expr) : TacticM (Expr × Q(Prop)) := do
   let p : Q(Prop) ← inferType val
+  if let .forallE _ binderType _ _ := p then
+    let m ← mkFreshExprMVar binderType
+    let val' := mkApp val m
+    -- Add as goal if of type Prop
+    return ← handleDependentArrows bi val'
+  else
+    return (val, p)
+
+def iPoseCore {prop : Q(Type u)} (bi : Q(BI $prop)) (val : Expr) (terms : List Term) : TacticM (Q($prop) × Expr) := do
   let hyp ← mkFreshExprMVarQ q($prop)
+  let (v, p) ← handleDependentArrows bi val
   if let some _ ← try? <| synthInstanceQ q(IntoEmpValid $p $hyp) then
-    return ← instantiateForalls bi hyp val terms
+    return ← instantiateForalls bi hyp v terms
   else
     throwError "ipose: {val} is not an entailment"
 
