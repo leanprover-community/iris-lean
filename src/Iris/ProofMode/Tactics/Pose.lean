@@ -33,19 +33,20 @@ partial def instantiateForalls {prop : Q(Type u)} (bi : Q(BI $prop)) (hyp : Q($p
     let pf ← mkAppM ``as_emp_valid_1 #[hyp, pf]
     return ⟨hyp, pf⟩
 
-partial def handleDependentArrows {prop : Q(Type u)} (bi : Q(BI $prop)) (val : Expr) : TacticM (Expr × Q(Prop)) := do
+partial def handleDependentArrows {prop : Q(Type u)} (bi : Q(BI $prop)) (val : Expr) (goals : IO.Ref (Array MVarId)) : TacticM (Expr × Q(Prop)) := do
   let p : Q(Prop) ← inferType val
   if let .forallE _ binderType _ _ := p then
     let m ← mkFreshExprMVar binderType
     let val' := mkApp val m
-    -- Add as goal if of type Prop
-    return ← handleDependentArrows bi val'
+    goals.modify (·.push m.mvarId!)
+    return ← handleDependentArrows bi val' goals
   else
     return (val, p)
 
-def iPoseCore {prop : Q(Type u)} (bi : Q(BI $prop)) (val : Expr) (terms : List Term) : TacticM (Q($prop) × Expr) := do
+def iPoseCore {prop : Q(Type u)} (bi : Q(BI $prop)) (val : Expr) (terms : List Term)
+    (goals : IO.Ref (Array MVarId)) : TacticM (Q($prop) × Expr) := do
   let hyp ← mkFreshExprMVarQ q($prop)
-  let (v, p) ← handleDependentArrows bi val
+  let (v, p) ← handleDependentArrows bi val goals
   if let some _ ← try? <| synthInstanceQ q(IntoEmpValid $p $hyp) then
     return ← instantiateForalls bi hyp v terms
   else
@@ -60,8 +61,10 @@ elab "ipose" colGt pmt:pmTerm "as" pat:(colGt icasesPat) : tactic => do
     let g ← instantiateMVars <| ← mvar.getType
     let some { bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
+    let goals ← IO.mkRef #[]
+
     let f ← getFVarId pmt.term
-    let ⟨hyp, pf⟩ := ← iPoseCore bi (.fvar f) pmt.terms
+    let ⟨hyp, pf⟩ := ← iPoseCore bi (.fvar f) pmt.terms goals
 
     let uniq ← mkFreshId
     let name ← match pat with
@@ -74,7 +77,6 @@ elab "ipose" colGt pmt:pmTerm "as" pat:(colGt icasesPat) : tactic => do
     let hypsr := Hyps.mkHyp bi name uniq q(false) hyp hyp
     let hyps' := Hyps.mkSep hyps hypsr
 
-    let goals ← IO.mkRef #[]
     let m ← goalTracker goals .anonymous hyps' goal
     mvar.assign <| ← mkAppM ``pose #[m, pf]
     replaceMainGoal (← goals.get).toList
