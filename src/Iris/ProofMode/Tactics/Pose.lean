@@ -4,8 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser
 -/
 import Iris.ProofMode.Patterns.ProofModeTerm
-import Iris.ProofMode.Patterns.CasesPattern
-import Iris.ProofMode.Tactics.Basic
+import Iris.ProofMode.Tactics.Cases
 import Iris.Std
 
 namespace Iris.ProofMode
@@ -66,17 +65,6 @@ elab "ipose" colGt pmt:pmTerm "as" pat:(colGt icasesPat) : tactic => do
     let f ← getFVarId pmt.term
     let ⟨hyp, pf⟩ := ← iPoseCore bi (.fvar f) pmt.terms goals
 
-    let uniq ← mkFreshId
-    let name ← match pat with
-    | .one name =>
-      let (name, _) ← getFreshName name
-      pure <| .str .anonymous name.toString
-    -- handling general introduction patterns should be implemented in the future (using iCasesCore)
-    | _ => throwError "ipose: pattern must be a single identifier"
-
-    let hypsr := Hyps.mkHyp bi name uniq q(false) hyp hyp
-    let hyps' := Hyps.mkSep hyps hypsr
-
-    let m ← goalTracker goals .anonymous hyps' goal
+    let m ← iCasesCore bi hyps goal q(false) hyp hyp ⟨⟩ pat (λ hyps => goalTracker goals .anonymous hyps goal)
     mvar.assign <| ← mkAppM ``pose #[m, pf]
     replaceMainGoal (← goals.get).toList
