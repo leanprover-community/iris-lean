@@ -9,7 +9,7 @@ open Lean
 declare_syntax_cat specPat
 
 syntax binderIdent : specPat
-syntax "[" binderIdent,* "]" optional(" as " str) : specPat
+syntax "[" binderIdent,* "]" optional(" as " ident) : specPat
 
 inductive SpecPat
   | ident (name : TSyntax ``binderIdent)
@@ -24,7 +24,9 @@ where
   go : TSyntax `specPat → Option SpecPat
   | `(specPat| $name:binderIdent) => some <| .ident name
   | `(specPat| [$[$names:binderIdent],*]) => some <| .idents names.toList .anonymous
-  | `(specPat| [$[$names:binderIdent],*] as $goal:str) => some <| .idents names.toList (.mkSimple goal.getString)
+  | `(specPat| [$[$names:binderIdent],*] as $goal:ident) => match goal.raw with
+    | .ident _ _ val _ => some <| .idents names.toList val
+    | _ => none
   | _ => none
 
 def headName (spats : List SpecPat) : Name :=
