@@ -46,7 +46,7 @@ def MyR (S : String) : IResUR FF1 := fun i _ => some (HγE i ▸ MyAg S)
 
 theorem MyR_always_invalid (S₁ S₂ : String) (Hne : S₁ ≠ S₂) (n : Nat) : ¬✓{n} MyR S₁ • MyR S₂ := by
   simp [CMRA.op, CMRA.ValidN]
-  exists γ, ⟨0⟩
+  exists γ
   rw [← HγE ⟨Nat.zero, Nat.le.refl⟩]
   simp [instIsGFunctorsFF1, CMRA.ValidN, CMRA.op, Agree.op, Agree.validN,
         instCOFELeibnizO, COFE.ofDiscrete, OFE.ofDiscrete, optionOp, optionValidN]

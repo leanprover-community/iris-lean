@@ -24,7 +24,7 @@ abbrev IsGFunctors (G : GFunctors) := ∀ (i : GId G), RFunctorContractive G[i]
 def SubG (FF₁ FF₂ : GFunctors) : Prop :=
   ∀ i : GId FF₁, ∃ j : GId FF₂, FF₁[i] = FF₂[j]
 
-def GName := LeibnizO Nat
+abbrev GName := Nat
 
 abbrev IResF (FF : GFunctors) : COFE.OFunctorPre :=
   DiscreteFunOF (fun i : GId FF => GenMapOF GName FF[i])
