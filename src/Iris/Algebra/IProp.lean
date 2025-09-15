@@ -35,6 +35,7 @@ instance [IsGFunctors GF] [RFunctorContractive F] : IsGFunctors (GF.set i F) :=
 
 def SubG (FF₁ FF₂ : GFunctors) : Prop := ∀ i, ∃ j, FF₁ i = FF₂ j
 
+
 /-- GName: Ghost variable name. In iProp, there are an unlimited amount of names for
 each GType .-/
 abbrev GName := Nat
@@ -51,7 +52,7 @@ def iPrePropO : Type _ := OFunctor.Fix (UPredOF (IResF FF))
 
 instance : COFE (iPrePropO FF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
-def IResUR : Type := (i : Nat) → GName → Option (FF i (iPrePropO FF) (iPrePropO FF))
+def IResUR : Type := (i : GType) → GName → Option (FF i (iPrePropO FF) (iPrePropO FF))
 
 instance : UCMRA (IResUR FF) :=
   ucmraDiscreteFunO (β := fun (i : GType) => GName → Option (FF i (iPrePropO FF) (iPrePropO FF)))
@@ -59,4 +60,46 @@ instance : UCMRA (IResUR FF) :=
 abbrev IProp := UPred (IResUR FF)
 
 end IProp
+
+class InG (FF : GFunctors) [IsGFunctors FF] (A : Type _) where
+  typ : GType
+  lookup : A = FF typ (iPrePropO FF) (iPrePropO FF) := by rfl
+
+instance : InG GFunctors.default Unit where typ := 0
+
+def OwnR (FF : GFunctors) [IsGFunctors FF] [I : InG FF A] (γ : GName) (a : A) : IResUR FF :=
+  fun τ' γ' => if H : τ' = I.typ ∧ γ' = γ then H.1▸I.lookup |>.mp a else none
+
+-- Issue: Not necessarily true that the CMRA instance for B is the same as the tranasport
+-- of the CMRA instance for A.
+-- Solutions: Bundle CMRA instance in GFunctors & add constraint to InG
+-- Internalize CMRA data?
+-- theorem CMRA.Valid_transport {A B : Type _} [CMRA A] [CMRA B] {a : A} {b : B}
+--     (H : A = B) : (✓ a) = (✓ (H ▸ a)) := by
+--   subst H
+--   congr 1
+--   sorry
+
+section OwnR
+
+/-
+variable (FF : GFunctors) [IsGFunctors FF]
+
+theorem valid_iff [CMRA A] [InG FF A] (a : A) : ✓ a ↔ ✓ (OwnR FF γ a) := by
+  refine ⟨fun Hv τ' γ' => ?_, ?_⟩
+  · simp only [CMRA.Valid, optionValid, OwnR]
+    split <;> try trivial
+    rename_i x y He; revert He
+    split
+    · rintro ⟨H⟩
+      sorry
+    · rintro ⟨⟩
+  · sorry
+-/
+end OwnR
+
+
+
+attribute [irreducible] OwnR -- OwnR should be manipulated using equations only
+
 end Iris
