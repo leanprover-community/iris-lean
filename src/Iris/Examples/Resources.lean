@@ -14,9 +14,7 @@ open Iris.BI
 
 section no_resources
 
-abbrev FF0 : GFunctors := #[]
-
-local instance : IsGFunctors FF0 := nofun
+abbrev FF0 : GFunctors := GFunctors.default
 
 -- A proof with no resources
 example (P Q : IProp FF0) : P ∗ Q ⊢ ⌜True⌝ := by
@@ -32,25 +30,22 @@ end no_resources
 
 section const_agree
 
-abbrev FF1 : GFunctors := #[COFE.constOF (Agree (LeibnizO String))]
-abbrev γ : GId FF1 := ⟨0, Nat.zero_lt_succ _⟩
-theorem HγE  (i : GId FF1) : i = γ := by unfold γ; cases i; congr; apply Nat.lt_one_iff.mp; trivial
-theorem HγLookup : FF1[γ] = COFE.constOF (Agree (LeibnizO String)) := rfl
-local instance : IsGFunctors FF1 := fun i => by rw [HγE i, HγLookup]; infer_instance
+abbrev γ : GType := 1
+
+abbrev FF1 : GFunctors := GFunctors.default.set γ (COFE.constOF (Agree (LeibnizO String)))
 
 @[simp]
 def MyAg (S : String) : Agree (LeibnizO String) := ⟨[⟨S⟩], by simp⟩
 
 @[simp]
-def MyR (S : String) : IResUR FF1 := fun i _ => some (HγE i ▸ MyAg S)
+def MyR (S : String) : IResUR FF1
+| 1, 0 => some (MyAg S)
+| _, _ => none
 
 theorem MyR_always_invalid (S₁ S₂ : String) (Hne : S₁ ≠ S₂) (n : Nat) : ¬✓{n} MyR S₁ • MyR S₂ := by
-  simp [CMRA.op, CMRA.ValidN]
-  exists γ
-  rw [← HγE ⟨Nat.zero, Nat.le.refl⟩]
-  simp [instIsGFunctorsFF1, CMRA.ValidN, CMRA.op, Agree.op, Agree.validN,
-        instCOFELeibnizO, COFE.ofDiscrete, OFE.ofDiscrete, optionOp, optionValidN]
-  exact fun a => id (Ne.symm Hne)
+  simp only [CMRA.ValidN, CMRA.op, MyR, MyAg, Classical.not_forall]
+  refine ⟨γ, 0, fun H => ?_⟩
+  exact Hne <| LeibnizO.dist_inj <| Agree.toAgree_op_validN_iff_dist.mp H
 
 def AgreeString (S : String) : IProp FF1 := UPred.ownM (MyR S)
 

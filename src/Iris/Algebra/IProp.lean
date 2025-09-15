@@ -12,36 +12,49 @@ import Init.Data.Vector
 
 namespace Iris
 
-def GFunctors := Array COFE.OFunctorPre
+-- MARKUSDE: The number of types of ghost state being finite is not necessary
+-- for any of the ghost state constructions so we can remove it and simplify
+-- the types.
 
-def GId (FF : GFunctors) : Type _ := Fin FF.size
+/-- GType: Each type of ghost state in the global context of ghost states is
+referenced by its index (GType) in a GFunctors list. -/
+abbrev GType := Nat
 
-instance (FF : GFunctors) : GetElem GFunctors (GId FF) COFE.OFunctorPre (fun _ _ => True) where
-  getElem _ x _ := (show Array _ from FF)[x.1]
+def GFunctors := GType → COFE.OFunctorPre
 
-abbrev IsGFunctors (G : GFunctors) := ∀ (i : GId G), RFunctorContractive G[i]
+-- MARKUSDE: Abbreviation so synthesis of IsGFunctors works
+abbrev GFunctors.default : GFunctors := fun _ => COFE.constOF Unit
 
-def SubG (FF₁ FF₂ : GFunctors) : Prop :=
-  ∀ i : GId FF₁, ∃ j : GId FF₂, FF₁[i] = FF₂[j]
+def GFunctors.set (GF : GFunctors) (i : Nat) (F : COFE.OFunctorPre) : GFunctors :=
+  fun j => if j == i then F else GF j
 
+abbrev IsGFunctors (G : GFunctors) := ∀ i, RFunctorContractive (G i)
+
+instance [IsGFunctors GF] [RFunctorContractive F] : IsGFunctors (GF.set i F) :=
+  fun _ => by unfold GFunctors.set; split <;> infer_instance
+
+def SubG (FF₁ FF₂ : GFunctors) : Prop := ∀ i, ∃ j, FF₁ i = FF₂ j
+
+/-- GName: Ghost variable name. In iProp, there are an unlimited amount of names for
+each GType .-/
 abbrev GName := Nat
 
 abbrev IResF (FF : GFunctors) : COFE.OFunctorPre :=
-  DiscreteFunOF (fun i : GId FF => GenMapOF GName FF[i])
+  DiscreteFunOF (fun i => GenMapOF GName (FF i))
 
 section IProp
 open COFE
 
-variable (FF : GFunctors) [IG : IsGFunctors FF]
+variable (FF : GFunctors) [IsGFunctors FF]
 
 def iPrePropO : Type _ := OFunctor.Fix (UPredOF (IResF FF))
 
 instance : COFE (iPrePropO FF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
-def IResUR : Type := (i : GId FF) → GName → Option (FF[i] (iPrePropO FF) (iPrePropO FF))
+def IResUR : Type := (i : Nat) → GName → Option (FF i (iPrePropO FF) (iPrePropO FF))
 
 instance : UCMRA (IResUR FF) :=
-  ucmraDiscreteFunO (β := fun (i : GId FF) => GName → Option (FF[i] (iPrePropO FF) (iPrePropO FF)))
+  ucmraDiscreteFunO (β := fun (i : GType) => GName → Option (FF i (iPrePropO FF) (iPrePropO FF)))
 
 abbrev IProp := UPred (IResUR FF)
 
