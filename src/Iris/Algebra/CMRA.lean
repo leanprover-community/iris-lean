@@ -876,9 +876,6 @@ class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
   map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-variable (F T) in
-def RFunctor.ap [RFunctor F] [OFE T] := F T T
-
 attribute [instance] RFunctor.cmra
 
 
