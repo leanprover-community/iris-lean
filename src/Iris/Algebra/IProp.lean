@@ -48,107 +48,23 @@ open COFE
 
 variable (FF : GFunctors) [IsGFunctors FF]
 
-def iPrePropO : Type _ := OFunctor.Fix (UPredOF (IResF FF))
+def IPre : Type _ := OFunctor.Fix (UPredOF (IResF FF))
 
-instance : COFE (iPrePropO FF) := inferInstanceAs (COFE (OFunctor.Fix _))
+instance : COFE (IPre FF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
-def IResUR : Type := (i : GType) → GName → Option (FF i (iPrePropO FF) (iPrePropO FF))
+def IResUR : Type := (i : GType) → GName → Option (FF i (IPre FF) (IPre FF))
 
 instance : UCMRA (IResUR FF) :=
-  ucmraDiscreteFunO (β := fun (i : GType) => GName → Option (FF i (iPrePropO FF) (iPrePropO FF)))
+  ucmraDiscreteFunO (β := fun (i : GType) => GName → Option (FF i (IPre FF) (IPre FF)))
 
 abbrev IProp := UPred (IResUR FF)
 
+def IProp.unfold : IProp FF -n> IPre FF :=
+  OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF FF)))
+
+def IProp.fold : IPre FF -n> IProp FF :=
+  OFE.Iso.inv <| OFunctor.Fix.iso (F := (UPredOF (IResF FF)))
 
 end IProp
-
-/- There is an isomorphism between the typ'th projection iProp and the CMRA A. This allows us
-to make statements in terms of A without unfolding the FF functor (therefore allowing us
-to reason about FF equationally). -/
-class iIso (FF : GFunctors) (A : Type _) [IsGFunctors FF] [CMRA A] (τ : GType) where
-  fwd : A -n> FF τ (iPrePropO FF) (iPrePropO FF)
-  rev : FF τ (iPrePropO FF) (iPrePropO FF) -n> A
-  gf_inv : rev (fwd i) = i
-  fg_inv : fwd (rev i) = i
-  ValidN_iso_f : ✓{n} a ↔ ✓{n} (fwd a)
-  op_iso_f {a b : A} : fwd (a • b) = fwd a • fwd b
-  pcore_iso_f {a : A} : (CMRA.pcore a).map f = CMRA.pcore (fwd a)
-
-theorem iIso.Valid_iso [IsGFunctors FF] [CMRA A] [iIso FF A τ] (a : A) :
-    ✓a ↔ ✓(iIso.fwd a : FF τ (iPrePropO FF) (iPrePropO FF)) :=
-  ⟨fun Hv => CMRA.valid_iff_validN.mpr fun _ => ValidN_iso_f.mp <| Hv.validN,
-   fun Hv => CMRA.valid_iff_validN.mpr fun _ => ValidN_iso_f.mpr <| Hv.validN⟩
-
-def iSingleton [IsGFunctors FF] (τ : GName) (v : FF τ (iPrePropO FF) (iPrePropO FF)) : IResUR FF :=
-  fun τ' _ => if H : τ' = τ then some (H ▸ v) else none
-
-def OwnR [IsGFunctors FF] [CMRA A] [iIso FF A τ] (a : A) : IResUR FF := iSingleton τ (iIso.fwd a)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/-
-class InG (FF : GFunctors) [IsGFunctors FF] (A : Type _) where
-  typ : GType
-  -- TODO: Make this a isomorphims?
-  lookup : A = FF typ (iPrePropO FF) (iPrePropO FF) := by rfl
-
-instance : InG GFunctors.default Unit where typ := 0
-
-def ap (F : COFE.OFunctorPre) (T : Type _) [OFE T] := F T T
-
--- #check Iris.COFE.OFunctor.Fix.unfold
-
--- nonrec def InG.unfold (FF : GFunctors) [IsGFunctors FF] [I : InG FF A] :=
---     -- (FF I.typ (IProp FF) (IProp FF)) -n> (FF I.typ (iPrePropO FF) (iPrePropO FF)) :=
---   (COFE.OFunctor.map (Iris.COFE.OFunctor.Fix.unfold (F := FF I.typ)) _)
--- -- (Iris.COFE.OFunctor.Fix.fold)
-
-
--- Issue: Not necessarily true that the CMRA instance for B is the same as the tranasport
--- of the CMRA instance for A.
--- Solutions: Bundle CMRA instance in GFunctors & add constraint to InG
--- Internalize CMRA data?
--- theorem CMRA.Valid_transport {A B : Type _} [CMRA A] [CMRA B] {a : A} {b : B}
---     (H : A = B) : (✓ a) = (✓ (H ▸ a)) := by
---   subst H
---   congr 1
---   sorry
--/
-
-
-/-
-
-section OwnR
-variable (FF : GFunctors) [IsGFunctors FF]
-
-theorem valid_iff [CMRA A] [InG FF A] (a : A) : ✓ a ↔ ✓ (OwnR FF γ a) := by
-  refine ⟨fun Hv τ' γ' => ?_, ?_⟩
-  · simp only [CMRA.Valid, optionValid, OwnR]
-    split <;> try trivial
-    rename_i x y He; revert He
-    split
-    · rintro ⟨H⟩
-      sorry
-    · rintro ⟨⟩
-  · sorry
--/
-
-/-
-end OwnR
-
-attribute [irreducible] OwnR -- OwnR should be manipulated using equations only
--/
-
 
 end Iris
