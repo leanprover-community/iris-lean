@@ -11,12 +11,13 @@ inductive BaseLit where
   | Poison
   | Loc (l : loc)
   | Prophecy (p : ProphId)
-
+deriving DecidableEq, Inhabited
 
 -- Why are there two different ways to negate?
 inductive UnOp where
   | Neg
   | Minus
+deriving Inhabited, DecidableEq
 
 inductive BinOp where
   | Plus
@@ -33,7 +34,7 @@ inductive BinOp where
   | Lt
   | Eq
   | Offset
-
+deriving Inhabited, DecidableEq
 
 inductive Binder
   | BAnon
@@ -47,7 +48,6 @@ inductive Val where
   | Pair (v₁ v₂ : Val)
   | InjL (v : Val)
   | InjR (v : Val)
-
 
 -- The comments are borrowed as is from Iris Rocq
 inductive Expr where
@@ -75,7 +75,7 @@ inductive Expr where
   | Load (e : Expr)
   | Store (e₁ e₂ : Expr)
   | CmpXchg (e₀ e₁ e₂ : Expr) -- Compare-exchange
-  | Xchg (e₀ e₁ : Expr) -- exchange
+  | Xchg (e₁ e₂ : Expr) -- exchange
   | FAA (e₁ e₂ : Expr) --  Fetch-and-add
   -- Concurrency
   | Fork (e : Expr)
@@ -84,6 +84,73 @@ inductive Expr where
   | Resolve (e₀ e₁ e₂ : Expr) -- wrapped expr, proph, val
 
 end
+
+instance : Inhabited Val where
+  default := .Lit BaseLit.Unit
+
+instance : Inhabited Expr where
+  default := .Val default
+
+
+mutual
+def valEq (v₁ v₂ : Val) : Bool :=
+  match v₁, v₂ with
+  | .Lit x, .Lit y => decide (x = y)
+  | .InjL x, .InjL y => valEq x y
+  | .InjR x, .InjR y => valEq x y
+  | .Pair x₁ x₂, .Pair y₁ y₂ => valEq x₁ y₁ && valEq x₂ y₂
+  | .Rec f₁ x₁ e₁, .Rec f₂ x₂ e₂ => decide (f₁ = f₂) && decide (x₁ = x₂) && exprEq e₁ e₂
+  | _, _ => false
+
+def exprEq (e₁ e₂ : Expr) : Bool :=
+  match e₁, e₂ with
+  | .Val v₁, .Val v₂ => valEq v₁ v₂
+  | .Var x₁, .Var x₂ => decide (x₁ = x₂)
+  | .Rec f₁ x₁ e₁, .Rec f₂ x₂ e₂ =>
+            decide (f₁ = f₂)
+        &&  decide (x₁ = x₂)
+        &&  exprEq e₁ e₂
+  | .App e₁ f₁, .App e₂ f₂ => exprEq e₁ e₂ && exprEq f₁ f₂
+  | .Unop op₁ e₁, .Unop op₂ e₂ => decide (op₁ = op₂) && exprEq e₁ e₂
+  | .Binop op₁ e₁ f₁, .Binop op₂ e₂ f₂ =>
+            decide (op₁ = op₂)
+        &&  exprEq e₁ e₂
+        &&  exprEq f₁ f₂
+  | .If cond₁ left₁ right₁, .If cond₂ left₂ right₂ =>
+            exprEq cond₁ cond₂
+        &&  exprEq left₁ left₂
+        &&  exprEq right₁ right₂
+  | .Pair e₁ f₁, .Pair e₂ f₂ =>
+        exprEq e₁ e₂ && exprEq f₁ f₂
+  | .Fst e₁, .Fst e₂ => exprEq e₁ e₂
+  | .Snd e₁, .Snd e₂ => exprEq e₁ e₂
+  | .InjL e₁, .InjL e₂ => exprEq e₁ e₂
+  | .InjR e₁, .InjR e₂ => exprEq e₁ e₂
+  | .Case e₁ f₁ g₁, .Case e₂ f₂ g₂ => exprEq e₁ e₂ && exprEq f₁ f₂ && exprEq g₁ g₂
+  | .AllocN n₁ v₁, .AllocN n₂ v₂ => exprEq n₁ n₂ && exprEq v₁ v₂
+  | .Free e₁, .Free e₂ => exprEq e₁ e₂
+  | .Load e₁, .Load e₂ => exprEq e₁ e₂
+  | .Store e₁ f₁, .Store e₂ f₂ => exprEq e₁ e₂ && exprEq f₁ f₂
+  | .CmpXchg e₁ f₁ g₁, .CmpXchg e₂ f₂ g₂ =>
+            exprEq e₁ e₂
+        &&  exprEq f₁ f₂
+        &&  exprEq g₁ g₂
+  | .Xchg e₁ f₁, .Xchg e₂ f₂ => exprEq e₁ e₂ && exprEq f₁ f₂
+  | .FAA e₁ f₁, .FAA e₂ f₂ => exprEq e₁ e₂ && exprEq f₁ f₂
+  | .Fork e₁, .Fork e₂ => exprEq e₁ e₂
+  | .NewProph, .NewProph => True
+  | .Resolve e₁ f₁ g₁, .Resolve e₂ f₂ g₂ =>
+            exprEq e₁ e₂
+        &&  exprEq f₁ f₂
+        &&  exprEq g₁ g₂
+  | _, _ => false
+end
+
+instance : BEq Val where
+  beq := valEq
+instance : BEq Expr where
+  beq := exprEq
+
 
 
 def toVal (e : Expr) : Option Val :=
