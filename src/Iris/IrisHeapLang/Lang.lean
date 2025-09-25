@@ -8,7 +8,7 @@ inductive BaseLit where
   | Int (n : Int)
   | Bool (b : Bool)
   | Unit
-  | LitPoison
+  | Poison
   | Loc (l : loc)
   | Prophecy (p : ProphId)
 
@@ -37,7 +37,8 @@ inductive BinOp where
 
 inductive Binder
   | BAnon
-  | BNamed (name : Lean.Ident)
+  | BNamed (name : String)
+deriving DecidableEq
 
 mutual
 inductive Val where
@@ -46,6 +47,7 @@ inductive Val where
   | Pair (v₁ v₂ : Val)
   | InjL (v : Val)
   | InjR (v : Val)
+
 
 -- The comments are borrowed as is from Iris Rocq
 inductive Expr where
@@ -80,18 +82,51 @@ inductive Expr where
   -- Prophecy
   | NewProph
   | Resolve (e₀ e₁ e₂ : Expr) -- wrapped expr, proph, val
+
 end
+
 
 def toVal (e : Expr) : Option Val :=
   match e with
   | .Val v => some v
   | _ => none
 
+-- Defined for completeness with the Rocq version
+abbrev ofVal (v : Val) : Expr := .Val v
+
 def BaseLit.isUnboxed (l : BaseLit) :=
   match l with
   | .Prophecy _ => False
-  | .LitPoison => False
+  | .Poison => False
   | _ => True
+
+def Val.isUnboxed (l : Val) :=
+  match l with
+  | .Lit l => l.isUnboxed
+  | .InjL x => x.isUnboxed
+  | .InjR x => x.isUnboxed
+  | _ => False
+
+structure State where
+  heap : loc → Option Val
+  usedPropId : ProphId → Prop
+
+theorem toOfVal : ∀ v, toVal (ofVal v) = some v := by
+  intro v
+  simp [toVal, ofVal]
+
+theorem ofToVal : ∀ e : Expr, ∀ v : Val,
+  toVal e = some v → ofVal v = e :=  by
+  intro e v h
+  revert v
+  cases h : e <;> simp [Expr.Val, ofVal, toVal]
+
+
+
+
+
+
+
 end HeapLang
 
 
