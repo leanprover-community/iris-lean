@@ -145,7 +145,10 @@ def exprEq (e₁ e₂ : Expr) : Bool :=
         &&  exprEq g₁ g₂
   | _, _ => false
 end
-
+instance : BEq Val where
+  beq := valEq
+instance : BEq Expr where
+  beq := exprEq
 macro "big_decide_tactic" : tactic => do
   `(tactic|
     all_goals
@@ -260,10 +263,7 @@ noncomputable instance valDecEq (v₁ v₂ : Val) : Decidable (v₁ = v₂) := b
         decide_tactic
 
 end
-instance : BEq Val where
-  beq := valEq
-instance : BEq Expr where
-  beq := exprEq
+
 
 
 
@@ -303,73 +303,70 @@ theorem ofToVal : ∀ e : Expr, ∀ v : Val,
   cases h : e <;> simp [Expr.Val, ofVal, toVal]
 
 
+inductive ECtxItem where
+  | AppL (v₂ : Val)
+  | AppR (e₁ : Expr)
+  | Unop (op : UnOp)
+  | BinopL (op : BinOp) (v₂ : Val)
+  | BinopR (op : BinOp) (e₁ : Expr)
+  | If (e₁ e₂ : Expr)
+  | PairL (v₂ : Val)
+  | PairR (e₁ : Expr)
+  | Fst
+  | Snd
+  | InjL
+  | InjR
+  | Case (e₁ e₂ : Expr)
+  | AllocNL (v₂ : Val)
+  | AllocNR (e₁ : Expr)
+  | Free
+  | Load
+  | StoreL (v₂ : Val)
+  | StoreR (e₁ : Expr)
+  | XchgL (v₂ : Val)
+  | XchgR (e₁ : Expr)
+  | CmpXchgL (v₁ v₂ : Val)
+  | CmpXchgM (e₀ : Expr) (v₂ : Val)
+  | CmpXchgR (e₀ e₁ : Expr)
+  | FaaL (v₂ : Val)
+  | FaaR (e₁ : Expr)
+  | ResolveL (ctx : ECtxItem) (v₁ v₂ : Val)
+  | ResolveM (e₀ : Expr) (v₂ : Val)
+  | ResolveR (e₀ e₁ : Expr)
 
 
+def FillItem (Ki : ECtxItem) (e : Expr) : Expr :=
+  match Ki with
+  | .AppL v₂ => .App e (ofVal v₂)
+  | .AppR e₁ => .App e₁ e
+  | .Unop op => .Unop op e
+  | .BinopL op v₂ => .Binop op e (.Val v₂)
+  | .BinopR op e₁ => .Binop op e₁ e
+  | .If e₁ e₂ => .If e e₁ e₂
+  | .PairL v₂ => .Pair e (.Val v₂)
+  | .PairR e₁ => .Pair e₁ e
+  | .Fst => .Fst e
+  | .Snd => .Snd e
+  | .InjL => .InjL e
+  | .InjR => .InjR e
+  | .Case e₁ e₂ => .Case e e₁ e₂
+  | .AllocNL v₂ => .AllocN e (.Val v₂)
+  | .AllocNR e₁ => .AllocN e₁ e
+  | .Free => .Free e
+  | .Load => .Load e
+  | .StoreL v₂ => .Store e (.Val v₂)
+  | .StoreR e₁ => .Store e₁ e
+  | .XchgL v₂ => .Xchg e (.Val v₂)
+  | .XchgR e₁ => .Xchg e₁ e
+  | .CmpXchgL v₁ v₂ => .CmpXchg e (.Val v₁) (.Val v₂)
+  | .CmpXchgM e₀ v₂ => .CmpXchg e₀ e (.Val v₂)
+  | .CmpXchgR e₀ e₁ => .CmpXchg e₀ e₁ e
+  | .FaaL v₂ => .FAA e (.Val v₂)
+  | .FaaR e₁ => .FAA e₁ e
+  | .ResolveL K v₁ v₂ => .Resolve (FillItem K e) (.Val v₁) (.Val v₂)
+  | .ResolveM ex v₂ => .Resolve ex e (.Val v₂)
+  | .ResolveR ex e₁ => .Resolve ex e₁ e
 
 
 
 end HeapLang
-
-
-/-
-val :=
-  | LitV (l : base_lit)
-  | RecV (f x : binder) (e : expr)
-  | PairV (v1 v2 : val)
-  | InjLV (v : val)
-  | InjRV (v : val).
-Inductive base_lit : Set :=
-  | LitInt (n : Z) | LitBool (b : bool) | LitUnit | LitPoison
-  | LitLoc (l : loc) | LitProphecy (p: proph_id).
-Inductive un_op : Set :=
-  | NegOp | MinusUnOp.
-Inductive bin_op : Set :=
-  (** We use "quot" and "rem" instead of "div" and "mod" to
-      better match the behavior of 'real' languages:
-      e.g., in Rust, -30 -4 == 7. ("div" would return 8.) *)
-  | PlusOp | MinusOp | MultOp | QuotOp | RemOp (* Arithmetic *)
-  | AndOp | OrOp | XorOp (* Bitwise *)
-  | ShiftLOp | ShiftROp (* Shifts *)
-  | LeOp | LtOp | EqOp (* Relations *)
-  | OffsetOp. (* Pointer offset *)
-
-Inductive expr :=
-  (* Values *)
-  | Val (v : val)
-  (* Base lambda calculus *)
-  | Var (x : string)
-  | Rec (f x : binder) (e : expr)
-  | App (e1 e2 : expr)
-  (* Base types and their operations *)
-  | UnOp (op : un_op) (e : expr)
-  | BinOp (op : bin_op) (e1 e2 : expr)
-  | If (e0 e1 e2 : expr)
-  (* Products *)
-  | Pair (e1 e2 : expr)
-  | Fst (e : expr)
-  | Snd (e : expr)
-  (* Sums *)
-  | InjL (e : expr)
-  | InjR (e : expr)
-  | Case (e0 : expr) (e1 : expr) (e2 : expr)
-  (* Heap *)
-  | AllocN (e1 e2 : expr) (* array length (positive number), initial value *)
-  | Free (e : expr)
-  | Load (e : expr)
-  | Store (e1 : expr) (e2 : expr)
-  | CmpXchg (e0 : expr) (e1 : expr) (e2 : expr) (* Compare-exchange *)
-  | Xchg (e0 : expr) (e1 : expr) (* exchange *)
-  | FAA (e1 : expr) (e2 : expr) (* Fetch-and-add *)
-  (* Concurrency *)
-  | Fork (e : expr)
-  (* Prophecy *)
-  | NewProph
-  | Resolve (e0 : expr) (e1 : expr) (e2 : expr) (* wrapped expr, proph, val *)
-with val :=
-  | LitV (l : base_lit)
-  | RecV (f x : binder) (e : expr)
-  | PairV (v1 v2 : val)
-  | InjLV (v : val)
-  | InjRV (v : val).
-
--/
