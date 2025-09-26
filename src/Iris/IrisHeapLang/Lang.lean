@@ -367,6 +367,63 @@ def FillItem (Ki : ECtxItem) (e : Expr) : Expr :=
   | .ResolveM ex v₂ => .Resolve ex e (.Val v₂)
   | .ResolveR ex e₁ => .Resolve ex e₁ e
 
+-- Substitution
+def subst (x : String) (v : Val) (e : Expr)  : Expr :=
+  match e with
+  | .Val _ => e
+  | .Var y => if decide (x = y) then .Val v else .Var y
+  | .Rec f y e =>
+     .Rec f y $ if decide (.BNamed x ≠ f ∧ .BNamed x ≠ y) then subst x v e else e
+  | .App e₁ e₂ => .App (subst x v e₁) (subst x v e₂)
+  | .Unop op e => .Unop op (subst x v e)
+  | .Binop op e₁ e₂ => .Binop op (subst x v e₁) (subst x v e₂)
+  | .If e₀ e₁ e₂ => .If (subst x v e₀) (subst x v e₁) (subst x v e₂)
+  | .Pair e₁ e₂ => .Pair (subst x v e₁) (subst x v e₂)
+  | .Fst e => .Fst (subst x v e)
+  | .Snd e => .Snd (subst x v e)
+  | .InjL e => .InjL (subst x v e)
+  | .InjR e => .InjR (subst x v e)
+  | .Case e₀ e₁ e₂ => .Case (subst x v e₀) (subst x v e₁) (subst x v e₂)
+  | .AllocN e₁ e₂ => .AllocN (subst x v e₁) (subst x v e₂)
+  | .Free e => .Free (subst x v e)
+  | .Load e => .Load (subst x v e)
+  | .Xchg e₁ e₂ => .Xchg (subst x v e₁) (subst x v e₂)
+  | .Store e₁ e₂ => .Store (subst x v e₁) (subst x v e₂)
+  | .CmpXchg e₀ e₁ e₂ => .CmpXchg (subst x v e₀) (subst x v e₁) (subst x v e₂)
+  | .FAA e₁ e₂ => .FAA (subst x v e₁) (subst x v e₂)
+  | .Fork e => .Fork (subst x v e)
+  | .NewProph => .NewProph
+  | .Resolve ex e₁ e₂ => .Resolve (subst x v ex) (subst x v e₁) (subst x v e₂)
+
+def subst' (mx : Binder) (v : Val) : Expr → Expr :=
+  match mx with
+  | .BNamed x => subst x v
+  | .BAnon => id
+
+def unOpEval (op : UnOp) (v : Val) : Option Val :=
+  match op, v with
+  | .Neg, .Lit (.Bool b) => some $ .Lit $ .Bool (not b)
+  | .Neg, .Lit (.Int n) => some $ .Lit $ .Int (Int.not n) -- find a lean equivalent here
+  | .Minus, .Lit (.Int n) => some $ .Lit $ .Int (- n)
+  | _, _ => none
+
+
+def binOpEvalInt (op : BinOp) (n₁ n₂ : Int) : Option BaseLit :=
+  match op with
+  | .Plus => some $ .Int (n₁ + n₂)
+  | .Minus => some $ .Int (n₁ - n₂)
+  | .Mult => some $ .Int (n₁ * n₂)
+  | .Quot => some $ .Int (n₁ /  n₂)
+  | .Rem => some $ .Int (n₁ % n₂)
+  | .And => some $ .Int (n₁ &&& n₂) -- need the mathlib bitwise defs
+  | .Or => some $ .Int (n₁ ||| n₂)
+  | .Xor => some $ .Int (Int.xor n₁ n₂)
+  | .ShiftL => some $ .Int (n₁ <<< n₂)
+  | .ShiftR => some $ .Int (n₁ >>> n₂)
+  | .Le => some $ .Bool (decide (n₁ ≤ n₂))
+  | .Lt => some $ .Bool (decide (n₁ < n₂))
+  | .Eq => some $ .Bool (decide (n₁ = n₂))
+  | .Offset => none
 
 
 end HeapLang
