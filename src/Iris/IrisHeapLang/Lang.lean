@@ -1,7 +1,13 @@
+import Std
 
 namespace HeapLang
 
-abbrev loc := Int
+abbrev Loc := Int
+
+instance : Inhabited (Loc) := inferInstance
+instance : BEq (Loc) := inferInstance
+instance : DecidableEq (Loc) := inferInstance
+
 abbrev ProphId := {x : Int // x ≥ 0} -- Why does Rocq Iris do this?
 
 inductive BaseLit where
@@ -9,7 +15,7 @@ inductive BaseLit where
   | Bool (b : Bool)
   | Unit
   | Poison
-  | Loc (l : loc)
+  | Loc (l : Loc)
   | Prophecy (p : ProphId)
 deriving DecidableEq, Inhabited
 
@@ -145,10 +151,13 @@ def exprEq (e₁ e₂ : Expr) : Bool :=
         &&  exprEq g₁ g₂
   | _, _ => false
 end
+
 instance : BEq Val where
   beq := valEq
+
 instance : BEq Expr where
   beq := exprEq
+
 macro "big_decide_tactic" : tactic => do
   `(tactic|
     all_goals
@@ -288,9 +297,6 @@ def Val.isUnboxed (l : Val) :=
   | .InjR x => x.isUnboxed
   | _ => False
 
-structure State where
-  heap : loc → Option Val
-  usedPropId : ProphId → Prop
 
 theorem toOfVal : ∀ v, toVal (ofVal v) = some v := by
   intro v
@@ -403,7 +409,7 @@ def subst' (mx : Binder) (v : Val) : Expr → Expr :=
 def unOpEval (op : UnOp) (v : Val) : Option Val :=
   match op, v with
   | .Neg, .Lit (.Bool b) => some $ .Lit $ .Bool (not b)
-  | .Neg, .Lit (.Int n) => some $ .Lit $ .Int (Int.not n) 
+  | .Neg, .Lit (.Int n) => some $ .Lit $ .Int (Int.not n)
   | .Minus, .Lit (.Int n) => some $ .Lit $ .Int (- n)
   | _, _ => none
 
@@ -415,15 +421,68 @@ def binOpEvalInt (op : BinOp) (n₁ n₂ : Int) : Option BaseLit :=
   | .Mult => some $ .Int (n₁ * n₂)
   | .Quot => some $ .Int (n₁ /  n₂)
   | .Rem => some $ .Int (n₁ % n₂)
-  | .And => some $ .Int (n₁ &&& n₂) -- need the mathlib bitwise defs
-  | .Or => some $ .Int (n₁ ||| n₂)
-  | .Xor => some $ .Int (Int.xor n₁ n₂)
-  | .ShiftL => some $ .Int (n₁ <<< n₂)
-  | .ShiftR => some $ .Int (n₁ >>> n₂)
+  | .And => sorry -- some $ .Int (n₁ &&& n₂) -- need the mathlib bitwise defs
+  | .Or => sorry -- some $ .Int (n₁ ||| n₂)
+  | .Xor => sorry -- some $ .Int (Int.xor n₁ n₂)
+  | .ShiftL => sorry -- some $ .Int (n₁ <<< n₂)
+  | .ShiftR => sorry -- some $ .Int (n₁ >>> n₂)
   | .Le => some $ .Bool (decide (n₁ ≤ n₂))
   | .Lt => some $ .Bool (decide (n₁ < n₂))
   | .Eq => some $ .Bool (decide (n₁ = n₂))
   | .Offset => none
 
+def binOpEvalBool (op : BinOp) (b₁ b₂ : Bool) : Option BaseLit :=
+  match op with
+  | .Plus | .Minus | .Mult | .Quot | .Rem => none -- (* Arithmetic *)
+  | .And => some <| .Bool <| b₁ && b₂
+  | .Or => some <| .Bool <| b₁ || b₂
+  | .Xor => some <| .Bool <| xor b₁ b₂
+  | .ShiftL | .ShiftR => none -- (* Shifts *)
+  | .Le | .Lt => none -- (* InEquality *)
+  | .Eq => some <| .Bool <| decide (b₁ = b₂)
+  | .Offset => none
+
+def binOpEvalLoc (op : BinOp) (l₁ : Loc) (v₂ : BaseLit) : Option BaseLit :=
+  match op, v₂ with
+  | .Offset, .Int offset => some <| .Loc (l₁ + offset)
+  | .Le, .Loc l₂ => some <| .Bool (decide (l₁ ≤ l₂))
+  | .Lt, .Loc l₂ => some $ .Bool (decide (l₁ < l₂))
+  | _, _ => none
+
+def valsCompareSafe (vl v₁ : Val) : Prop :=
+  Val.isUnboxed vl ∨ Val.isUnboxed v₁
+
+
+-- Replace this with a proper decidable instance later.
+open Classical in
+noncomputable def binOpEval (op : BinOp) (v₁ v₂ : Val) : Option Val :=
+  if decide (op = .Eq) then
+    if decide (valsCompareSafe v₁ v₂) then
+      some <| .Lit <| .Bool <| decide (v₁ = v₂)
+    else
+      none
+  else
+    match v₁, v₂ with
+    | .Lit (.Int n₁), .Lit (.Int n₂) => do
+          let val ← binOpEvalInt op n₁ n₂
+          return .Lit <| val
+    | .Lit (.Bool b₁), .Lit (.Bool b₂) => do
+          let val ← binOpEvalBool op b₁ b₂
+          return .Lit <| val
+    | .Lit (.Loc l₁), .Lit v₂ => do
+          let val ← binOpEvalLoc op l₁ v₂
+          return .Lit <| val
+    | _, _ => none
+
+
+structure State where
+  heap : Loc → Option Val
+  usedProphId : ProphId → Prop
+
+def stateUpdHeap
+  (update: (Loc → Option Val) → (Loc → Option Val))
+  (σ: State) : State where
+    heap := update σ.heap
+    usedProphId := σ.usedProphId
 
 end HeapLang
