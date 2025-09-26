@@ -403,7 +403,7 @@ def subst' (mx : Binder) (v : Val) : Expr → Expr :=
 def unOpEval (op : UnOp) (v : Val) : Option Val :=
   match op, v with
   | .Neg, .Lit (.Bool b) => some $ .Lit $ .Bool (not b)
-  | .Neg, .Lit (.Int n) => some $ .Lit $ .Int (Int.not n) -- find a lean equivalent here
+  | .Neg, .Lit (.Int n) => some $ .Lit $ .Int (Int.not n) 
   | .Minus, .Lit (.Int n) => some $ .Lit $ .Int (- n)
   | _, _ => none
 
