@@ -422,6 +422,9 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
       _ ≡{n}≡ (m1 • m2) • (w2 • w1) := CMRA.assoc.dist
       _ ≡{n}≡ (m1 • m2) • (w1 • w2) := CMRA.comm.op_r.dist
 
+theorem ownM_eqv {m1 m2 : M} (H : m1 ≡ m2) : ownM m1 ⊣⊢ ownM m2 :=
+  ⟨fun _ _ _ => (CMRA.incN_iff_left H.dist).mp, fun _ _ _ => (CMRA.incN_iff_left H.dist).mpr⟩
+
 theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : (cmraValid m : UPred M) ⊢ False :=
   fun n _ _ => H n
 
