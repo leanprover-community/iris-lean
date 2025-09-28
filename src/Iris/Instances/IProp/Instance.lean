@@ -34,6 +34,31 @@ def ElemG.ap [OFE T] (E : ElemG FF τ F) (v : F.ap T) : FF.api τ T := by
   rw [E.transp]
   exact v
 
+-- NB. I'm not sure if this instance is going to be a problem yet.
+set_option synthInstance.checkSynthOrder false
+instance instCMRAElemG [GF : IsGFunctors FF] {τ : outParam GType} [E : ElemG FF τ F] : CMRA (F.ap (IProp FF)) :=
+  E.transp ▸ (GF τ).cmra
+
+section ElemGTest
+-- Test: The CMRA inferred by this is the same as the CMRA you get from the GFunctors instance
+
+variable [GF : IsGFunctors FF] [E : ElemG FF τ (constOF Unit)]
+
+def Inst1 : CMRA ((constOF Unit).ap (IProp FF)) :=
+  COFE.OFunctor.constOF_RFunctor (B := Unit) |>.cmra
+def Inst2 : CMRA ((constOF Unit).ap (IProp FF)) :=
+  @instCMRAElemG FF (constOF Unit) GF τ E
+
+-- #check Inst1
+-- #check Inst2
+
+-- example : @Inst1 FF GF = @Inst2 FF τ GF E := by
+--   unfold Inst1
+--   unfold Inst2
+--   rfl
+
+end ElemGTest
+
 end ElemG
 
 section Fold
@@ -43,7 +68,7 @@ open Iris COFE UPred
 variable [IsGFunctors FF]
 
 /-- Isorecursive unfolding for each projection of FF. -/
-def IProp.unfoldi  : FF.api τ (IProp FF) -n> FF.api τ (IPre FF) :=
+def IProp.unfoldi : FF.api τ (IProp FF) -n> FF.api τ (IPre FF) :=
   OFunctor.map (IProp.fold FF) (IProp.unfold FF)
 
 /-- Isorecursive folding for each projection of FF. -/
@@ -68,32 +93,26 @@ open Iris COFE UPred IProp
 
 variable [GF : IsGFunctors FF]
 
-def iSingleton τ [E : ElemG FF τ F] (γ : GName) (v : F.ap (IProp FF)) : IResUR FF :=
+-- MARKUSDE: NB. To avoid CMRA transports, we will define all of the core theorems
+-- in terms of projections out of GFunctors  (eg. FF.api ..). These should be wrapped
+-- using ElemG at the user level.
+
+
+def iSingleton τ (γ : GName) (v : FF.api τ (IProp FF)) : IResUR FF :=
   fun τ' γ' =>
-    if Hτ : (τ' = τ ∧ γ' = γ)
-      then some (Hτ.1 ▸ (unfoldi <| (E.ap v)))
+    if H : (τ' = τ ∧ γ' = γ)
+      then some (H.1 ▸ (unfoldi <| v))
       else none
 
--- TODO Is this going to be a problem?
--- We need an instance of CMRA for eg. the NonExpansive instance
-set_option synthInstance.checkSynthOrder false
-instance {τ : outParam GType} [E : ElemG FF τ F] : CMRA (F (IProp FF) (IProp FF)) :=
-  E.transp ▸ (GF τ).cmra
-
-instance [E : ElemG FF τ F] {γ : GName} :
-    OFE.NonExpansive (iSingleton (FF := FF) (τ := τ) (F := F) γ)  where
+instance {γ : GName} : OFE.NonExpansive (iSingleton τ γ (FF := FF))  where
   ne {n x1 x2} H τ' γ' := by
     simp [iSingleton]
     split <;> try rfl
     simp [optionOp]
     rename_i h; rcases h with ⟨h1, h2⟩; subst h1; subst h2; simp
-    apply OFE.NonExpansive.ne
-    exact E.transp ▸ H
+    apply OFE.NonExpansive.ne H
 
-def iOwn (τ  : GType) [E : ElemG FF τ F] (γ : GName) (v : F (IProp FF) (IProp FF)) : IProp FF :=
-  UPred.ownM <| iSingleton τ γ v
-
-theorem iSingleton_op [IsGFunctors FF] [ElemG FF τ F] (x y : F (IProp FF) (IProp FF)):
+theorem iSingleton_op [IsGFunctors FF] (x y : FF τ (IProp FF) (IProp FF)):
     (iSingleton τ γ x) • iSingleton τ γ y ≡ iSingleton τ γ (x • y) := by
   intro τ' γ'
   unfold iSingleton
@@ -104,22 +123,22 @@ theorem iSingleton_op [IsGFunctors FF] [ElemG FF τ F] (x y : F (IProp FF) (IPro
   simp [IProp.unfoldi]
   sorry
 
-instance iOwn_ne [ElemG FF τ F] : OFE.NonExpansive (iOwn τ γ : F (IProp FF) (IProp FF) → IProp FF) where
+def iOwn (τ  : GType) (γ : GName) (v : FF τ (IProp FF) (IProp FF)) : IProp FF :=
+  UPred.ownM <| iSingleton τ γ v
+
+instance iOwn_ne : OFE.NonExpansive (iOwn τ γ : FF τ (IProp FF) (IProp FF) → IProp FF) where
   ne {n x1 x2} H := by
     unfold iOwn
     apply OFE.NonExpansive.ne
     apply OFE.NonExpansive.ne
     exact H
 
-theorem iOwn_op [ElemG FF τ F] {a1 a2 : F (IProp FF) (IProp FF)} :
+theorem iOwn_op {a1 a2 : FF.api τ (IProp FF)} :
     iOwn τ γ (a1 • a2) ⊣⊢ iOwn τ γ a1 ∗ iOwn τ γ a2 :=
   ownM_eqv (iSingleton_op _ _).symm |>.trans (ownM_op _ _)
 
--- Will I always need to specify that these are F (IProp FF) (IProp FF)?
-theorem iOwn_mono [ElemG FF τ F] {a1 a2 : F (IProp FF) (IProp FF)} (H : a2 ≼ a1) :
+theorem iOwn_mono {a1 a2 : FF.api τ (IProp FF)} (H : a2 ≼ a1) :
   iOwn τ γ a1 ⊢ iOwn τ γ a2 := sorry
-
-
 
 
 end iOwn
