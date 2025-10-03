@@ -12,50 +12,37 @@ import Init.Data.Vector
 
 namespace Iris
 
--- MARKUSDE: The number of types of ghost state being finite is not necessary
--- for any of the ghost state constructions so we can remove it and simplify
--- the types.
-
-/-- GType: Each type of ghost state in the global context of ghost states is
-referenced by its index (GType) in a GFunctors list. -/
-abbrev GType := Nat
-
-def GFunctors := GType → COFE.OFunctorPre
-
--- MARKUSDE: Abbreviation so synthesis of IsGFunctors works
-abbrev GFunctors.default : GFunctors := fun _ => COFE.constOF Unit
-
-def GFunctors.set (GF : GFunctors) (i : Nat) (F : COFE.OFunctorPre) : GFunctors :=
-  fun j => if j == i then F else GF j
-
-abbrev IsGFunctors (G : GFunctors) := ∀ i, RFunctorContractive (G i)
-
-instance [IsGFunctors GF] [RFunctorContractive F] : IsGFunctors (GF.set i F) :=
-  fun _ => by unfold GFunctors.set; split <;> infer_instance
-
-def SubG (FF₁ FF₂ : GFunctors) : Prop := ∀ i, ∃ j, FF₁ i = FF₂ j
-
-
-/-- GName: Ghost variable name. In iProp, there are an unlimited amount of names for
-each GType .-/
-abbrev GName := Nat
-
-abbrev IResF (FF : GFunctors) : COFE.OFunctorPre :=
-  DiscreteFunOF (fun i => GenMapOF GName (FF i))
-
-section IProp
 open COFE
 
-variable (FF : GFunctors) [IsGFunctors FF]
+abbrev GType := Nat
+
+def BundledGFunctors := GType → Σ F : OFunctorPre, RFunctorContractive F
+
+def BundledGFunctors.default : BundledGFunctors := fun _ => ⟨COFE.constOF Unit, by infer_instance⟩
+
+def BundledGFunctors.set (GF : BundledGFunctors) (i : Nat) (FB : Σ F, RFunctorContractive F) :
+    BundledGFunctors :=
+  fun j => if j = i then FB else GF j
+
+abbrev GName := Nat
+
+abbrev IResF (FF : BundledGFunctors) : OFunctorPre :=
+  DiscreteFunOF (fun i => GenMapOF GName (FF i).fst)
+
+instance (FF: BundledGFunctors) (i : GName) : RFunctorContractive ((FF i).fst) := (FF i).snd
+
+section IProp
+
+variable (FF : BundledGFunctors)
 
 def IPre : Type _ := OFunctor.Fix (UPredOF (IResF FF))
 
 instance : COFE (IPre FF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
-def IResUR : Type := (i : GType) → GName → Option (FF i (IPre FF) (IPre FF))
+def IResUR : Type := (i : GType) → GName → Option (FF i |>.fst (IPre FF) (IPre FF))
 
 instance : UCMRA (IResUR FF) :=
-  ucmraDiscreteFunO (β := fun (i : GType) => GName → Option (FF i (IPre FF) (IPre FF)))
+  ucmraDiscreteFunO (β := fun (i : GType) => GName → Option (FF i |>.fst (IPre FF) (IPre FF)))
 
 abbrev IProp := UPred (IResUR FF)
 

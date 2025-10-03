@@ -11,20 +11,177 @@ import Iris.Algebra.UPred
 import Iris.Algebra.IProp
 import Iris.Instances.UPred
 
+namespace Iris
+
+open COFE
+
 /-- Apply an OFunctor at a fixed type -/
-abbrev Iris.COFE.OFunctorPre.ap (F : Iris.COFE.OFunctorPre) (T : Type _) [OFE T] :=
+abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [OFE T] :=
   F T T
 
 /-- Apply a list of OFunctors at a fixed type and index -/
-abbrev Iris.GFunctors.api (FF : Iris.GFunctors) (τ : GType) (T : Type _) [OFE T] :=
-  FF τ |>.ap T
+abbrev BundledGFunctors.api (FF : BundledGFunctors) (τ : GType) (T : Type _) [OFE T] :=
+  FF τ |>.fst |>.ap T
 
 section ElemG
 
-open Iris COFE
+open OFE
 
-class ElemG (FF : GFunctors) (τ : GType) (F : OFunctorPre) : Prop where
-  transp : FF τ = F
+class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] where
+  τ : GType
+  transp : FF τ = ⟨F, ‹_›⟩
+
+def ElemG.Bundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : F.ap T → GF.api E.τ T :=
+  (congrArg (OFunctorPre.ap · T) (Sigma.mk.inj E.transp).left).mpr
+
+def ElemG.Unbundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : GF.api E.τ T → F.ap T :=
+  (congrArg (OFunctorPre.ap · T) (Sigma.mk.inj E.transp).left).mp
+
+instance ElemG.Bundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
+    OFE.NonExpansive (E.Bundle (T := T)) where
+  ne {n x1 x2} H := by
+    simp [Bundle]
+    let Z := Sigma.mk.inj E.transp |>.1.symm
+    subst Z
+    -- Not sure...
+    sorry
+
+instance ElemG.UnBundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
+    OFE.NonExpansive (E.Unbundle (T := T)) where
+  ne {n x1 x2} H := sorry
+
+end ElemG
+
+section Fold
+
+open Iris COFE UPred
+
+variable {FF : BundledGFunctors}
+
+/-- Isorecursive unfolding for each projection of FF. -/
+def IProp.unfoldi : FF.api τ (IProp FF) -n> FF.api τ (IPre FF) :=
+  OFunctor.map (IProp.fold FF) (IProp.unfold FF)
+
+/-- Isorecursive folding for each projection of FF. -/
+def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
+  OFunctor.map (IProp.unfold FF) (IProp.fold FF)
+
+theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) ≡ x := by
+  refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
+  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
+  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+
+theorem IProp.proj_fold_unfold (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x := by
+  refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
+  refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
+  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+
+end Fold
+
+section iSingleton
+
+open IProp OFE UPred
+
+def iSingleton {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IResUR GF :=
+  fun τ' γ' =>
+    if H : (τ' = E.τ ∧ γ' = γ)
+      then some (H.1 ▸ (unfoldi <| E.Bundle v))
+      else none
+
+theorem IResUR_op_eval {GF} (c1 c2 : IResUR GF) : (c1 • c2) τ' γ' = (c1 τ' γ') • (c2 τ' γ') := by
+    simp [CMRA.op, optionOp]
+
+instance {γ : GName} [RFunctorContractive F] [E : ElemG GF F] :
+    OFE.NonExpansive (iSingleton F γ (GF := GF))  where
+  ne {n x1 x2} H τ' γ' := by
+    simp [iSingleton]
+    split <;> try rfl
+    simp [optionOp]
+    rename_i h; rcases h with ⟨h1, h2⟩; subst h1; subst h2; simp
+    exact NonExpansive.ne (NonExpansive.ne H)
+
+theorem iSingleton_op {γ : GName} [RFunctorContractive F] [E : ElemG GF F]
+    (x y : F.ap (IProp GF)) :
+    (iSingleton F γ x) • iSingleton F γ y ≡ iSingleton F γ (x • y) := by
+  intro τ' γ'
+  unfold iSingleton
+  simp [CMRA.op]
+  split <;> try rfl
+  simp [optionOp]
+  rename_i h; rcases h with ⟨h1, h2⟩; subst h1; subst h2; simp
+  simp [IProp.unfoldi]
+  sorry
+
+end iSingleton
+
+def iOwn {GF F} [RFunctorContractive F] [ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IProp GF :=
+  UPred.ownM <| iSingleton F γ v
+
+section iOwn
+
+open IProp OFE UPred
+
+variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
+
+instance iOwn_ne : NonExpansive (iOwn τ : F.ap (IProp GF) → IProp GF) where
+  ne {n x1 x2} H := by unfold iOwn; exact NonExpansive.ne (NonExpansive.ne H)
+
+theorem iOwn_op {a1 a2 : F.ap (IProp GF)} : iOwn γ (a1 • a2) ⊣⊢ iOwn γ a1 ∗ iOwn γ a2 :=
+  UPred.ownM_eqv (iSingleton_op _ _).symm |>.trans (UPred.ownM_op _ _)
+
+theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOwn γ a2 := by
+  rcases H with ⟨ac, Hac⟩
+  rintro n x Hv ⟨clos, Hclos⟩
+  -- Basically the heaps proof, want some other lemmas
+  refine ⟨iSingleton F γ ac • clos, Hclos.trans ?_⟩
+  intros τ' γ'
+  refine .trans ?_ CMRA.op_assocN.symm
+  rw [IResUR_op_eval]
+  unfold iSingleton
+  split
+  · refine Dist.op_l ?_
+    simp [CMRA.op, optionOp]
+    -- Somehow use Hac
+    sorry
+  · simp [CMRA.op, optionOp]
+
+-- Lemma own_mono γ a1 a2 : a2 ≼ a1 → own γ a1 ⊢ own γ a2.
+-- Proof. move=> [c ->]. by rewrite own_op sep_elim_l. Qed.
+
+theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ UPred.cmraValid a := by
+  sorry
+-- Lemma own_valid γ a : own γ a ⊢ ✓ a.
+-- Proof. by rewrite !own_eq /own_def ownM_valid iRes_singleton_validI. Qed.
+
+
+-- Lemma own_valid_2 γ a1 a2 : own γ a1 -∗ own γ a2 -∗ ✓ (a1 ⋅ a2).
+-- Proof. apply entails_wand, wand_intro_r. by rewrite -own_op own_valid. Qed.
+-- Lemma own_valid_3 γ a1 a2 a3 : own γ a1 -∗ own γ a2 -∗ own γ a3 -∗ ✓ (a1 ⋅ a2 ⋅ a3).
+-- Proof. apply entails_wand. do 2 apply wand_intro_r. by rewrite -!own_op own_valid. Qed.
+
+
+-- Lemma own_valid_r γ a : own γ a ⊢ own γ a ∗ ✓ a.
+-- Proof. apply: bi.persistent_entails_r. apply own_valid. Qed.
+-- Lemma own_valid_l γ a : own γ a ⊢ ✓ a ∗ own γ a.
+-- Proof. by rewrite comm -own_valid_r. Qed.
+
+-- Global Instance own_timeless γ a : Discrete a → Timeless (own γ a).
+-- Proof. rewrite !own_eq /own_def. apply _. Qed.
+-- Global Instance own_core_persistent γ a : CoreId a → Persistent (own γ a).
+-- Proof. rewrite !own_eq /own_def; apply _. Qed.
+
+
+
+end iOwn
+
+
+
+
+
+end Iris
+
+
+/-
 
 def ElemG.api [OFE T] (E : ElemG FF τ F) (v : FF.api τ T) : F.ap T :=
   E.transp ▸ v
@@ -61,31 +218,6 @@ end ElemGTest
 
 end ElemG
 
-section Fold
-
-open Iris COFE UPred
-
-variable [IsGFunctors FF]
-
-/-- Isorecursive unfolding for each projection of FF. -/
-def IProp.unfoldi : FF.api τ (IProp FF) -n> FF.api τ (IPre FF) :=
-  OFunctor.map (IProp.fold FF) (IProp.unfold FF)
-
-/-- Isorecursive folding for each projection of FF. -/
-def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
-  OFunctor.map (IProp.unfold FF) (IProp.fold FF)
-
-theorem IProp.unfoldi_foldi (x : FF τ (IPre FF) (IPre FF)) : unfoldi (foldi x) ≡ x := by
-  refine .trans (OFunctor.map_comp (F := FF τ) ..).symm ?_
-  refine .trans ?_ (OFunctor.map_id (F := FF τ) x)
-  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
-
-theorem IProp.proj_fold_unfold (x : FF τ (IProp FF) (IProp FF)) : foldi (unfoldi x) ≡ x := by
-  refine .trans (OFunctor.map_comp (F := FF τ) ..).symm ?_
-  refine .trans ?_ (OFunctor.map_id (F := FF τ) x)
-  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
-
-end Fold
 
 section iOwn
 
@@ -98,50 +230,13 @@ variable [GF : IsGFunctors FF]
 -- using ElemG at the user level.
 
 
-def iSingleton τ (γ : GName) (v : FF.api τ (IProp FF)) : IResUR FF :=
-  fun τ' γ' =>
-    if H : (τ' = τ ∧ γ' = γ)
-      then some (H.1 ▸ (unfoldi <| v))
-      else none
 
-instance {γ : GName} : OFE.NonExpansive (iSingleton τ γ (FF := FF))  where
-  ne {n x1 x2} H τ' γ' := by
-    simp [iSingleton]
-    split <;> try rfl
-    simp [optionOp]
-    rename_i h; rcases h with ⟨h1, h2⟩; subst h1; subst h2; simp
-    apply OFE.NonExpansive.ne H
 
-theorem iSingleton_op [IsGFunctors FF] (x y : FF τ (IProp FF) (IProp FF)):
-    (iSingleton τ γ x) • iSingleton τ γ y ≡ iSingleton τ γ (x • y) := by
-  intro τ' γ'
-  unfold iSingleton
-  simp [CMRA.op]
-  split <;> try rfl
-  simp [optionOp]
-  rename_i h; rcases h with ⟨h1, h2⟩; subst h1; subst h2; simp
-  simp [IProp.unfoldi]
-  sorry
 
-def iOwn (τ  : GType) (γ : GName) (v : FF τ (IProp FF) (IProp FF)) : IProp FF :=
-  UPred.ownM <| iSingleton τ γ v
-
-instance iOwn_ne : OFE.NonExpansive (iOwn τ γ : FF τ (IProp FF) (IProp FF) → IProp FF) where
-  ne {n x1 x2} H := by
-    unfold iOwn
-    apply OFE.NonExpansive.ne
-    apply OFE.NonExpansive.ne
-    exact H
-
-theorem iOwn_op {a1 a2 : FF.api τ (IProp FF)} :
-    iOwn τ γ (a1 • a2) ⊣⊢ iOwn τ γ a1 ∗ iOwn τ γ a2 :=
-  ownM_eqv (iSingleton_op _ _).symm |>.trans (ownM_op _ _)
-
-theorem iOwn_mono {a1 a2 : FF.api τ (IProp FF)} (H : a2 ≼ a1) :
-  iOwn τ γ a1 ⊢ iOwn τ γ a2 := sorry
 
 
 end iOwn
+-/
 
 
 
@@ -159,38 +254,5 @@ end iOwn
 
 
 
--- Lemma own_mono γ a1 a2 : a2 ≼ a1 → own γ a1 ⊢ own γ a2.
--- Proof. move=> [c ->]. by rewrite own_op sep_elim_l. Qed.
-
--- Internal validity
--- Lemma own_valid γ a : own γ a ⊢ ✓ a.
--- Proof. by rewrite !own_eq /own_def ownM_valid iRes_singleton_validI. Qed.
--- Lemma own_valid_2 γ a1 a2 : own γ a1 -∗ own γ a2 -∗ ✓ (a1 ⋅ a2).
--- Proof. apply entails_wand, wand_intro_r. by rewrite -own_op own_valid. Qed.
--- Lemma own_valid_3 γ a1 a2 a3 : own γ a1 -∗ own γ a2 -∗ own γ a3 -∗ ✓ (a1 ⋅ a2 ⋅ a3).
--- Proof. apply entails_wand. do 2 apply wand_intro_r. by rewrite -!own_op own_valid. Qed.
--- Lemma own_valid_r γ a : own γ a ⊢ own γ a ∗ ✓ a.
--- Proof. apply: bi.persistent_entails_r. apply own_valid. Qed.
--- Lemma own_valid_l γ a : own γ a ⊢ ✓ a ∗ own γ a.
--- Proof. by rewrite comm -own_valid_r. Qed.
-
--- Global Instance own_timeless γ a : Discrete a → Timeless (own γ a).
--- Proof. rewrite !own_eq /own_def. apply _. Qed.
--- Global Instance own_core_persistent γ a : CoreId a → Persistent (own γ a).
--- Proof. rewrite !own_eq /own_def; apply _. Qed.
---
--- Lemma later_own γ a : ▷ own γ a ⊢ ◇ ∃ b, own γ b ∧ ▷ (a ≡ b).
--- Proof.
---   rewrite own_eq /own_def later_ownM. apply exist_elim=> r.
---   assert (NonExpansive (λ r : iResUR Σ, r (inG_id i) !! γ)).
---   { intros n r1 r2 Hr. f_equiv. by specialize (Hr (inG_id i)). }
---   rewrite internal_eq_sym later_internal_eq_iRes_singleton.
---   rewrite (except_0_intro (uPred_ownM r)) -except_0_and. f_equiv.
---   rewrite and_exist_l. f_equiv=> b. rewrite and_exist_l. apply exist_elim=> r'.
---   rewrite assoc. apply and_mono_l.
---   etrans; [|apply ownM_mono, (cmra_included_l _ r')].
---   eapply (internal_eq_rewrite' _ _ uPred_ownM _); [apply and_elim_r|].
---   apply and_elim_l.
--- Qed.
 
 -/
