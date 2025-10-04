@@ -195,7 +195,6 @@ instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : BI.Persistent (iOwn γ a) where
     -- Core is element-wise, then use CoreId inst
     sorry
 
-
 theorem iOwn_alloc_strong_dep {f : GName → F.ap (IProp GF)} {P : GName → Prop}
     (HI : Infinite P) (Hv : ∀ γ, P γ → ✓ (f γ)) :
     ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ iOwn γ (f γ) := by
@@ -317,7 +316,15 @@ Lemma own_alloc a : ✓ a → ⊢ |==> ∃ γ, own γ a.
 Proof. intros Ha. eapply (own_alloc_dep (λ _, a)); eauto. Qed.
 -/
 
-
+instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : BI.Persistent (iOwn γ a) where
+  persistent := by
+    simp [iOwn]
+    refine .trans (UPred.persistently_ownM_core _) ?_
+    refine BI.persistently_mono ?_
+    refine BI.equiv_iff.mp ?_ |>.mp
+    refine OFE.NonExpansive.eqv ?_
+    -- Core is element-wise, then use CoreId inst
+    sorry
 
 end iOwn
 end Iris

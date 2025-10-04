@@ -520,6 +520,14 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   · exact ⟨HΦy, CMRA.incN_op_left k y x3⟩
 
 -- TODO: later_ownM, ownM_forall (needs internal eq)
+instance : Persistent (ownM (CMRA.core a) : UPred M) where
+  persistent := by
+    refine .trans (persistently_ownM_core _) ?_
+    refine persistently_mono ?_
+    refine equiv_iff.mp ?_ |>.mp
+    refine OFE.NonExpansive.eqv ?_
+    exact CMRA.core_idem a
+
 theorem ownM_updateP (Φ : M → Prop) :
     x ~~>: Φ → UPred.ownM x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ UPred.ownM y := by
   intro Hup
