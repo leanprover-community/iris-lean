@@ -14,8 +14,6 @@ open Iris.BI
 
 section Example1
 
-variable [IsGFunctors FF]
-
 
 end Example1
 

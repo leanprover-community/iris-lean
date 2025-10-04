@@ -12,6 +12,7 @@ import Iris.Algebra.Agree
 namespace Iris.Examples
 open Iris.BI
 
+/-
 section no_resources
 
 abbrev FF0 : GFunctors := GFunctors.default
@@ -63,3 +64,4 @@ end const_agree
 
 
 end Iris.Examples
+-/
