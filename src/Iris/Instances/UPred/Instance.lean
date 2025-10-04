@@ -459,6 +459,14 @@ theorem later_soundness : iprop(True ⊢ ▷ P) → iprop((True : UPred M) ⊢ P
 theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (CMRA.core a) :=
   fun _ _ _ H => CMRA.core_incN_core H
 
+instance : Persistent (ownM (CMRA.core a) : UPred M) where
+  persistent := by
+    refine .trans (persistently_ownM_core _) ?_
+    refine persistently_mono ?_
+    refine equiv_iff.mp ?_ |>.mp
+    refine OFE.NonExpansive.eqv ?_
+    exact CMRA.core_idem a
+
 theorem ownM_updateP (Φ : M → Prop) :
     x ~~>: Φ → UPred.ownM x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ UPred.ownM y := by
   intro Hup
@@ -509,6 +517,9 @@ theorem cmra_cmraValid_weaken [CMRA A] (a b : A) :
 theorem cmraValid_entails [CMRA A] [CMRA B] {a : A} {b : B} (Hv : ∀ n, ✓{n} a → ✓{n} b) :
     (cmraValid a : UPred M) ⊢ cmraValid b :=
   fun _ _ _ H => Hv _ H
+
+instance [CMRA A] {a : A} : Persistent (UPred.cmraValid a : UPred M) where
+  persistent := fun _ _ _ a => a
 
 instance : BIAffine (UPred M) := ⟨by infer_instance⟩
 

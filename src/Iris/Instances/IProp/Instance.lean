@@ -43,7 +43,7 @@ instance ElemG.Bundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T]
     simp [Bundle]
     let Z := Sigma.mk.inj E.transp |>.1.symm
     subst Z
-    -- Not sure...
+    -- Not sure how to prove this
     sorry
 
 instance ElemG.UnBundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
@@ -110,6 +110,7 @@ theorem iSingleton_op {γ : GName} [RFunctorContractive F] [E : ElemG GF F]
   simp [optionOp]
   rename_i h; rcases h with ⟨h1, h2⟩; subst h1; subst h2; simp
   simp [IProp.unfoldi]
+  -- Not sure, but I believe it
   sorry
 
 end iSingleton
@@ -141,118 +142,37 @@ theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOw
   split
   · refine Dist.op_l ?_
     simp [CMRA.op, optionOp]
+    -- Should hold
     -- Somehow use Hac
     sorry
   · simp [CMRA.op, optionOp]
 
--- Lemma own_mono γ a1 a2 : a2 ≼ a1 → own γ a1 ⊢ own γ a2.
--- Proof. move=> [c ->]. by rewrite own_op sep_elim_l. Qed.
-
 theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ UPred.cmraValid a := by
+  refine .trans (UPred.ownM_valid _) ?_
+  refine UPred.valid_entails (fun n H => ?_)
+  specialize H E.τ γ
+  simp [iSingleton, CMRA.ValidN, optionValidN] at H
+  -- Should hold
   sorry
--- Lemma own_valid γ a : own γ a ⊢ ✓ a.
--- Proof. by rewrite !own_eq /own_def ownM_valid iRes_singleton_validI. Qed.
 
+theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} : iOwn γ a1 ∗ iOwn γ a2 ⊢ UPred.cmraValid (a1 • a2) :=
+  iOwn_op.mpr.trans iOwn_cmraValid
 
--- Lemma own_valid_2 γ a1 a2 : own γ a1 -∗ own γ a2 -∗ ✓ (a1 ⋅ a2).
--- Proof. apply entails_wand, wand_intro_r. by rewrite -own_op own_valid. Qed.
--- Lemma own_valid_3 γ a1 a2 a3 : own γ a1 -∗ own γ a2 -∗ own γ a3 -∗ ✓ (a1 ⋅ a2 ⋅ a3).
--- Proof. apply entails_wand. do 2 apply wand_intro_r. by rewrite -!own_op own_valid. Qed.
+theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ UPred.cmraValid a :=
+  BI.persistent_entails_l iOwn_cmraValid
 
+theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ UPred.cmraValid a ∗ iOwn γ a :=
+  BI.persistent_entails_r iOwn_cmraValid
 
--- Lemma own_valid_r γ a : own γ a ⊢ own γ a ∗ ✓ a.
--- Proof. apply: bi.persistent_entails_r. apply own_valid. Qed.
--- Lemma own_valid_l γ a : own γ a ⊢ ✓ a ∗ own γ a.
--- Proof. by rewrite comm -own_valid_r. Qed.
-
--- Global Instance own_timeless γ a : Discrete a → Timeless (own γ a).
--- Proof. rewrite !own_eq /own_def. apply _. Qed.
--- Global Instance own_core_persistent γ a : CoreId a → Persistent (own γ a).
--- Proof. rewrite !own_eq /own_def; apply _. Qed.
-
-
+instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : BI.Persistent (iOwn γ a) where
+  persistent := by
+    simp [iOwn]
+    refine .trans (UPred.persistently_ownM_core _) ?_
+    refine BI.persistently_mono ?_
+    refine BI.equiv_iff.mp ?_ |>.mp
+    refine OFE.NonExpansive.eqv ?_
+    -- Core is element-wise, then use CoreId inst
+    sorry
 
 end iOwn
-
-
-
-
-
 end Iris
-
-
-/-
-
-def ElemG.api [OFE T] (E : ElemG FF τ F) (v : FF.api τ T) : F.ap T :=
-  E.transp ▸ v
-
-def ElemG.ap [OFE T] (E : ElemG FF τ F) (v : F.ap T) : FF.api τ T := by
-  unfold Iris.GFunctors.api
-  rw [E.transp]
-  exact v
-
--- NB. I'm not sure if this instance is going to be a problem yet.
-set_option synthInstance.checkSynthOrder false
-instance instCMRAElemG [GF : IsGFunctors FF] {τ : outParam GType} [E : ElemG FF τ F] : CMRA (F.ap (IProp FF)) :=
-  E.transp ▸ (GF τ).cmra
-
-section ElemGTest
--- Test: The CMRA inferred by this is the same as the CMRA you get from the GFunctors instance
-
-variable [GF : IsGFunctors FF] [E : ElemG FF τ (constOF Unit)]
-
-def Inst1 : CMRA ((constOF Unit).ap (IProp FF)) :=
-  COFE.OFunctor.constOF_RFunctor (B := Unit) |>.cmra
-def Inst2 : CMRA ((constOF Unit).ap (IProp FF)) :=
-  @instCMRAElemG FF (constOF Unit) GF τ E
-
--- #check Inst1
--- #check Inst2
-
--- example : @Inst1 FF GF = @Inst2 FF τ GF E := by
---   unfold Inst1
---   unfold Inst2
---   rfl
-
-end ElemGTest
-
-end ElemG
-
-
-section iOwn
-
-open Iris COFE UPred IProp
-
-variable [GF : IsGFunctors FF]
-
--- MARKUSDE: NB. To avoid CMRA transports, we will define all of the core theorems
--- in terms of projections out of GFunctors  (eg. FF.api ..). These should be wrapped
--- using ElemG at the user level.
-
-
-
-
-
-
-
-end iOwn
--/
-
-
-
-/-
-
-
-
-
--- #check cmraValid
--- cmraValid for the singleton
-
-
-
-
-
-
-
-
--/
