@@ -13,6 +13,7 @@ import Iris.Algebra.Agree
 namespace Iris.Examples
 open Iris.BI COFE
 
+/-
 section no_resources
 
 variable [UCMRA M]
@@ -56,3 +57,4 @@ end const_agree
 
 
 end Iris.Examples
+-/

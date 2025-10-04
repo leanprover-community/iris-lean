@@ -520,6 +520,38 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   · exact ⟨HΦy, CMRA.incN_op_left k y x3⟩
 
 -- TODO: later_ownM, ownM_forall (needs internal eq)
+theorem ownM_updateP (Φ : M → Prop) :
+    x ~~>: Φ → UPred.ownM x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ UPred.ownM y := by
+  intro Hup
+  rintro n x2 _ ⟨x3, Hk⟩ k yf _ Hv
+  have G : ✓{k} x •? some (x3 • yf) := by
+    simp [CMRA.op?]
+    apply CMRA.validN_ne _ Hv
+    refine .trans ?_ CMRA.assoc.dist.symm
+    refine CMRA.op_commN.trans (.trans ?_ CMRA.op_commN)
+    apply CMRA.op_ne.ne
+    apply OFE.Dist.le Hk
+    trivial
+  obtain ⟨y, _, _⟩ := Hup k (some (x3 • yf)) G
+  exists (y • x3)
+  refine ⟨?_, ?_⟩
+  · rename_i Hy
+    simp [CMRA.op?] at Hy
+    apply CMRA.validN_ne _ Hy
+    refine .trans ?_ CMRA.assoc.dist
+    exact CMRA.op_ne.ne .rfl
+  · simp [BI.exists, BI.sExists, UPred.sExists]
+    exists (UPred.ownM y)
+    refine ⟨?_, ?_⟩
+    · exists y
+      refine UPred.ext_iff.mpr ?_
+      apply funext (fun n => funext fun x => ?_)
+      simp [BI.pure, BI.and, UPred.and, UPred.pure]
+      intro _
+      trivial
+    · exists x3
+
+-- TODO: later_ownM, ownM_forall  (needs internal eq )
 
 theorem cmraValid_intro [CMRA A] {P : UPred M} (a : A) (Ha : ✓ a) : P ⊢ cmraValid a :=
   fun _ _ _ _ => CMRA.Valid.validN Ha
