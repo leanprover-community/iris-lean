@@ -7,6 +7,7 @@ Authors: Markus de Medeiros
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
 import Iris.Algebra.UPred
+import Iris.Algebra.GenMap
 import Iris.Algebra.COFESolver
 import Init.Data.Vector
 
@@ -26,31 +27,39 @@ def BundledGFunctors.set (GF : BundledGFunctors) (i : Nat) (FB : Σ F, RFunctorC
 
 abbrev GName := Nat
 
-abbrev IResF (FF : BundledGFunctors) : OFunctorPre :=
-  DiscreteFunOF (fun i => GenMapOF GName (FF i).fst)
+abbrev IResF (GF : BundledGFunctors) : OFunctorPre :=
+  DiscreteFunOF (fun i => GenMapOF GName (GF i).fst)
 
-instance (FF: BundledGFunctors) (i : GName) : RFunctorContractive ((FF i).fst) := (FF i).snd
+instance (GF : BundledGFunctors) (i : GName) : RFunctorContractive ((GF i).fst) := (GF i).snd
 
 section IProp
 
-variable (FF : BundledGFunctors)
+variable (GF : BundledGFunctors)
 
-def IPre : Type _ := OFunctor.Fix (UPredOF (IResF FF))
+-- instance : OFunctorContractive (UPredOF (IResF GF)) := by
+--   unfold IResF
+--   let X := @instUPredOFunctorContractive (F := IResF GF)
+--   sorry
 
-instance : COFE (IPre FF) := inferInstanceAs (COFE (OFunctor.Fix _))
+def IPre : Type _ := OFunctor.Fix (UPredOF (IResF GF))
 
-def IResUR : Type := (i : GType) → GName → Option (FF i |>.fst (IPre FF) (IPre FF))
+instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
-instance : UCMRA (IResUR FF) :=
-  ucmraDiscreteFunO (β := fun (i : GType) => GName → Option (FF i |>.fst (IPre FF) (IPre FF)))
+def IResUR : Type := (i : GType) → GName → Option (GF i |>.fst (IPre GF) (IPre GF))
 
-abbrev IProp := UPred (IResUR FF)
+instance : UCMRA (IResUR GF) :=
+  ucmraDiscreteFunO (β := fun (i : GType) => GName → Option (GF i |>.fst (IPre GF) (IPre GF)))
 
-def IProp.unfold : IProp FF -n> IPre FF :=
-  OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF FF)))
+abbrev IProp := UPred (IResUR GF)
 
-def IProp.fold : IPre FF -n> IProp FF :=
-  OFE.Iso.inv <| OFunctor.Fix.iso (F := (UPredOF (IResF FF)))
+-- def IProp.unfold : IProp GF -n> IPre GF :=
+--   OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
+
+def IProp.unfold :=
+  OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
+
+def IProp.fold : IPre GF -n> IProp GF :=
+  OFE.Iso.inv <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
 
 end IProp
 

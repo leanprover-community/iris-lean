@@ -788,3 +788,16 @@ instance [OFunctorContractive F] : OFunctorContractive (LaterOF F) where
     simp_all only [Dist, DistLater, Function.uncurry, OFunctor.map, laterMap]
 
 end LaterOF
+
+section Subtype
+
+instance [OFE α] {P : α → Prop} : OFE { a  // P a } where
+  Equiv := (·.val ≡ ·.val)
+  Dist n := (·.val ≡{n}≡ ·.val)
+  dist_eqv.refl _ := Dist.of_eq rfl
+  dist_eqv.symm := Dist.symm
+  dist_eqv.trans := Dist.trans
+  equiv_dist := equiv_dist
+  dist_lt := Dist.lt
+
+end Subtype

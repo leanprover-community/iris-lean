@@ -1262,26 +1262,3 @@ instance urFunctorContractiveOptionOF
 
 end optionOF
 
-section GenMap
-
-/-
-The OFE over gmaps is eqivalent to a non-depdenent discrete function to an `Option` type with a
-`Leibniz` OFE.
-In this setting, the CMRA is always unital, and as a consquence the oFunctors do not require
-unitality in order to act as a `URFunctor(Contractive)`.
--/
-
-variable (α β : Type _) [UCMRA β] [Leibniz β]
-
-abbrev GenMap := α → Option β
-
--- #synth CMRA (Option β)
--- #synth CMRA (α -d> (Option β))
--- #synth UCMRA (α -d> (Option β))
--- The synthesized UMRA here has unit (fun x => ε) = (fun x => none).
--- For us, this is equivalent to the Rocq-iris unit ∅.
-
-abbrev GenMapOF (C : Type _) (F : COFE.OFunctorPre) :=
-  DiscreteFunOF fun (_ : C) => OptionOF F
-
-end GenMap
