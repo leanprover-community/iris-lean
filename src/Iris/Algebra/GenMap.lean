@@ -177,7 +177,11 @@ abbrev GenMapOF (C : Type _) (F : OFunctorPre) : OFunctorPre :=
 
 abbrev GenMap.lift [OFE α] [OFE β] (f : α -n> β) : GenMap T α -n> GenMap T β where
   f g := .mk fun t => Option.map f (g.car t)
-  ne := sorry
+  ne.ne {n x1 x2} H γ := by
+    specialize H γ
+    simp [Option.map]
+    split <;> split <;> simp_all
+    exact NonExpansive.ne H
 
 instance GenMapOF_instOFunctor (F : OFunctorPre) [OFunctor F] :
     OFunctor (GenMapOF Nat F) where
@@ -196,6 +200,7 @@ instance GenMapOF_instOFunctor (F : OFunctorPre) [OFunctor F] :
     cases _ : x.car γ <;> simp
     exact OFunctor.map_comp _ _ _ _ _
 
+-- TODO: Cleanup
 instance GenMapOF_instURFunctor (F : COFE.OFunctorPre) [RFunctor F] :
     URFunctor (GenMapOF Nat F) where
   map f g := {
@@ -225,16 +230,20 @@ instance GenMapOF_instURFunctor (F : COFE.OFunctorPre) [RFunctor F] :
       cases h' : CMRA.pcore v
       · simp_all [h']
         cases h'' : CMRA.pcore ((OFunctor.map f g).f v) <;> simp_all
-        sorry
+        simp_all [RFunctor.toOFunctor]
       · simp_all [h']
-        sorry
+        cases h'' : CMRA.pcore ((OFunctor.map f g).f v) <;> simp_all [RFunctor.toOFunctor]
     op z x γ := by
-      let Hop := @(URFunctor.map (F := OptionOF F) f g).pcore (z.car γ)
-      sorry -- (URFunctor.map f g).op _ _
+      let Hop := @(URFunctor.map (F := OptionOF F) f g).op (z.car γ) (x.car γ)
+      simp [Option.map, RFunctor.toOFunctor, optionCore, CMRA.op, optionOp, Option.bind,
+           URFunctor.map] at Hop ⊢
+      cases h : z.car γ <;> cases h' : x.car γ <;> simp
+      simp [h, h'] at Hop
+      simp_all [OFunctor.map, optionMap, RFunctor.toOFunctor]
   }
-  map_ne.ne := sorry -- COFE.OFunctor.map_ne.ne
-  map_id := sorry -- COFE.OFunctor.map_id
-  map_comp := sorry -- COFE.OFunctor.map_comp
+  map_ne.ne := COFE.OFunctor.map_ne.ne
+  map_id := COFE.OFunctor.map_id
+  map_comp := COFE.OFunctor.map_comp
 
 instance GenMapOF_instURFC (F : COFE.OFunctorPre) [HURF : RFunctorContractive F] :
     URFunctorContractive (GenMapOF Nat F) where
