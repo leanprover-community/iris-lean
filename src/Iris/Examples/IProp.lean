@@ -14,7 +14,7 @@ open Iris.BI COFE
 
 section Example1
 
-abbrev F0 : OFunctorPre := COFE.constOF (Agree (LeibnizO String))
+abbrev F0 : OFunctorPre := constOF (Agree (LeibnizO String))
 
 variable {GF} [E0 : ElemG GF F0]
 
@@ -50,8 +50,6 @@ example : ⊢ |==> ∃ (γ0 γ1 : GName) (s0 s1 : String),
   isplit l [Hγ0]
   · iexact Hγ0
   · iexact Hγ1
-
-
 
 
 end Example1
