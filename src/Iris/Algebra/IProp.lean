@@ -55,11 +55,11 @@ abbrev IProp := UPred (IResUR GF)
 -- def IProp.unfold : IProp GF -n> IPre GF :=
 --   OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
 
-def IProp.unfold :=
-  OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
+def IProp.unfold : IProp GF -n> IPre GF := sorry
+  -- OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
 
-def IProp.fold : IPre GF -n> IProp GF :=
-  OFE.Iso.inv <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
+def IProp.fold : IPre GF -n> IProp GF := sorry
+  -- OFE.Iso.inv <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
 
 end IProp
 

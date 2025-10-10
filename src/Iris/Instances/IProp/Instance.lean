@@ -70,11 +70,13 @@ theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) ≡ x 
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
   apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  all_goals sorry
 
 theorem IProp.proj_fold_unfold (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x := by
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
   apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  all_goals sorry
 
 end Fold
 
