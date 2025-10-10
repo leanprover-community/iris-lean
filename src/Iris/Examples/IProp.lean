@@ -23,10 +23,36 @@ private theorem autoverse : ⊢
   apply iOwn_alloc
   exact fun _ => trivial
 
-example : ⊢ |==> ∃ (γ1 γ2 : GName),
-    iOwn (E := E0) γ1 (toAgree ⟨"hi"⟩) ∗
-    iOwn (E := E0) γ2 (toAgree ⟨"hello"⟩) := by
-  sorry
+example : ⊢ |==> ∃ (γ0 γ1 : GName) (s0 s1 : String),
+    iOwn (E := E0) γ0 (toAgree ⟨s0⟩) ∗
+    iOwn (E := E0) γ1 (toAgree ⟨s1⟩) := by
+  let v0 : F0.ap (IProp GF) := toAgree ⟨"string0"⟩
+  let v1 : F0.ap (IProp GF) := toAgree ⟨"string1"⟩
+
+  -- Allocate the resources
+  refine emp_sep.mpr.trans <| (sep_mono (iOwn_alloc v1 (fun _ => trivial)) .rfl).trans ?_
+  refine emp_sep.mpr.trans <| (sep_mono (iOwn_alloc v0 (fun _ => trivial)) .rfl).trans ?_
+
+  -- Eliminate the bupds (by hand, until iMod is implemented)
+  refine BIUpdate.frame_r.trans ?_
+  refine BIUpdate.mono (sep_mono .rfl BIUpdate.frame_r) |>.trans ?_
+  refine BIUpdate.mono bupd_frame_l |>.trans ?_
+  refine BIUpdate.trans.trans ?_
+  refine BIUpdate.mono ?_
+
+  -- Complete the Iris proof
+  istart
+  iintro ⟨⟨γ0, Hγ0⟩, ⟨γ1, Hγ1⟩, -⟩
+  iexists γ0
+  iexists γ1
+  iexists "string0"
+  iexists "string1"
+  isplit l [Hγ0]
+  · iexact Hγ0
+  · iexact Hγ1
+
+
+
 
 end Example1
 
