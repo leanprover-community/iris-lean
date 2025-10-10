@@ -115,7 +115,7 @@ theorem iSingleton_op {γ : GName} [RFunctorContractive F] [E : ElemG GF F]
 
 end iSingleton
 
-def iOwn {GF F} [RFunctorContractive F] [ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IProp GF :=
+def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IProp GF :=
   UPred.ownM <| iSingleton F γ v
 
 section iOwn
