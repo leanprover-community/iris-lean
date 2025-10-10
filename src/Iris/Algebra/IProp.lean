@@ -36,30 +36,22 @@ section IProp
 
 variable (GF : BundledGFunctors)
 
--- instance : OFunctorContractive (UPredOF (IResF GF)) := by
---   unfold IResF
---   let X := @instUPredOFunctorContractive (F := IResF GF)
---   sorry
-
 def IPre : Type _ := OFunctor.Fix (UPredOF (IResF GF))
 
 instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
-def IResUR : Type := (i : GType) → GName → Option (GF i |>.fst (IPre GF) (IPre GF))
+def IResUR : Type := (i : GType) → GenMap Nat (GF i |>.fst (IPre GF) (IPre GF))
 
 instance : UCMRA (IResUR GF) :=
-  ucmraDiscreteFunO (β := fun (i : GType) => GName → Option (GF i |>.fst (IPre GF) (IPre GF)))
+  ucmraDiscreteFunO (β := fun (i : GType) => GenMap GName (GF i |>.fst (IPre GF) (IPre GF)))
 
 abbrev IProp := UPred (IResUR GF)
 
--- def IProp.unfold : IProp GF -n> IPre GF :=
---   OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
+def IProp.unfold : IProp GF -n> IPre GF :=
+  OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
 
-def IProp.unfold : IProp GF -n> IPre GF := sorry
-  -- OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
-
-def IProp.fold : IPre GF -n> IProp GF := sorry
-  -- OFE.Iso.inv <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
+def IProp.fold : IPre GF -n> IProp GF :=
+  OFE.Iso.inv <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
 
 end IProp
 

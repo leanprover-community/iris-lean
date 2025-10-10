@@ -59,11 +59,17 @@ theorem Infinite.mono {P Q : α → Prop} (H : Infinite P) (Hmono : ∀ a, P a �
   rcases H with ⟨enum, Henum_inc, Henum_inj⟩
   exact ⟨enum, Hmono (enum _) Henum_inc, Henum_inj⟩
 
+theorem Infinite.Nat_True : Infinite fun (_ : Nat) => True := ⟨id, trivial, id⟩
+
+
 section GenMapImpl
 
 -- abbrev GenMap := { f : α → Option β // Infinite (IsFree f) }
 structure GenMap (α β : Type _) where
   car : α → Option β
+
+instance : CoeFun (GenMap α β) (fun _ => α → Option β) where
+  coe := GenMap.car
 
 nonrec def GenMap.alter [DecidableEq α] (g : GenMap α β) (a : α) (b : Option β) : GenMap α β where
   car := alter g.car a b
@@ -408,3 +414,28 @@ Qed.
 end GenMapImpl
 
 end GenMap
+--
+--
+-- -- TODO: Move to a new file
+--
+-- section Functions
+--
+-- variable {α : Type _} {β : α → Type _} [∀ x, UCMRA (β x)]
+--
+-- -- Updates for base CMRA's
+--
+-- theorem singleton_updateP_empty [DecidableEq α] {x : α} {P : β x → Prop} {Q : (∀ x, β x) → Prop} :
+--   (UCMRA.unit ~~>: P) →
+--   (∀ y2 : β x, P y2 → Q (fun a' => if h : a' = x then h ▸ y2 else UCMRA.unit)) →
+--   (UCMRA.unit ~~>: Q) := sorry
+--
+--
+-- -- (P : {x : α} → β x → Prop)
+-- --     (Q : ((a : α) → Option (β a)) → Prop) : True := sor
+--   -- (UCMRA.unit ~~>: P) → (∀ y2 : β x, P y2 → Q (alter (fun _ => UCMRA.unit) x y2)) := sorry
+-- --
+-- --         (P : β x → Prop) (Q : ((a : α) → Option (β a)) → Prop) :
+-- --     (ε ~~>: P) → (∀ y2 : β x, P y2 → Q (singleton x y2)) → ε ~~>: Q := sorry
+-- --   Proof.
+--
+-- end Functions
