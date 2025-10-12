@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
 
+-- import Iris.Std.DepRewrite
 import Iris.BI
 import Iris.Algebra
 import Iris.Instances.UPred
@@ -35,15 +36,57 @@ def ElemG.Bundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : F.ap 
 def ElemG.Unbundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : GF.api E.τ T → F.ap T :=
   (congrArg (OFunctorPre.ap · T) (Sigma.mk.inj E.transp).left).mp
 
+theorem X {x y : Sort _} (H : x = y) : (Eq.symm (Eq.symm H)) = H := rfl
+
+set_option pp.deepTerms true
+set_option pp.proofs true
 -- set_option pp.all true
+-- set_option pp.universes false
+
+theorem OFE.cast_dist' [Iα : OFE α] [Iβ : OFE β] {x y : α}
+    (Ht : α = β) (HIt : Ht.symm ▸ Iα = Iβ)  (H : x ≡{n}≡ y) :
+    (Ht ▸ x) ≡{n}≡ (Ht ▸ y) := by
+  subst Ht; subst HIt; exact H
+
+
+
 instance ElemG.Bundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
     OFE.NonExpansive (E.Bundle (T := T)) where
   ne {n x1 x2} H := by
-    simp [Bundle]
-    let Z := Sigma.mk.inj E.transp |>.1.symm
-    subst Z
-    -- Not sure how to prove this
-    sorry
+    rename_i IF IO
+    rcases E with ⟨τ, HET⟩
+    have T1 := Sigma.mk.inj HET |>.1.symm
+    have W := congrArg (OFunctorPre.ap · T) (Sigma.mk.inj HET).left
+    simp only [] at W
+    unfold Bundle
+    have X := @OFE.cast_dist' (F.ap T) (GF.api τ T) n _ _ x1 x2
+    unfold _proof_1
+    rw [eq_mpr_eq_cast]
+    rw [Iris.X (id (Eq.symm W))]
+    -- (Sigma.mk.inj E.transp |>.1.symm) (Sigma.mk.inj E.transp |>.2.symm)
+    apply X
+    · -- TODO: is cast_dist written in a way that makes this true?
+      have Z := (Sigma.mk.inj HET |>.2.symm)
+      -- have W' := @congrArg _ (F.ap T) (fun IIF : RFunctorContractive F => @IIF.toRFunctor.cmra)
+      have Z' := Eq.symm (id (Eq.symm W))
+
+      -- unfold RFunctor.cmra
+      -- unfold instRFunctorContractiveFstOFunctorPre
+      -- have Z1 := (Sigma.mk.inj E.transp |>.1.symm)
+      -- have Z2 := (Sigma.mk.inj E.transp |>.2.symm)
+      -- rw! (castMode := .all) [<- Z2]
+      -- unfold type_eq_of_heq
+      -- cases IF <;> simp_all
+
+      -- have X : Eq.symm (Eq.symm (_proof_1 E)) = (_proof_1 E) := sorry
+      -- unfold Iris.CMRA.toOFE
+      -- unfold RFunctor.cmra
+      -- unfold instRFunctorContractiveFstOFunctorPre
+      -- rename_i II _
+      -- have Z := (Sigma.mk.inj E.transp |>.1.symm)
+      -- subst Z
+      sorry
+    · exact H
 
 instance ElemG.UnBundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
     OFE.NonExpansive (E.Unbundle (T := T)) where
