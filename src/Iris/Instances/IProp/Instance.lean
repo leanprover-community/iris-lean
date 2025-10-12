@@ -5,10 +5,7 @@ Authors: Markus de Medeiros
 -/
 
 import Iris.BI
-import Iris.Algebra.OFE
-import Iris.Algebra.CMRA
-import Iris.Algebra.UPred
-import Iris.Algebra.IProp
+import Iris.Algebra
 import Iris.Instances.UPred
 
 namespace Iris
@@ -27,6 +24,7 @@ section ElemG
 
 open OFE
 
+
 class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] where
   τ : GType
   transp : FF τ = ⟨F, ‹_›⟩
@@ -37,6 +35,7 @@ def ElemG.Bundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : F.ap 
 def ElemG.Unbundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : GF.api E.τ T → F.ap T :=
   (congrArg (OFunctorPre.ap · T) (Sigma.mk.inj E.transp).left).mp
 
+-- set_option pp.all true
 instance ElemG.Bundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
     OFE.NonExpansive (E.Bundle (T := T)) where
   ne {n x1 x2} H := by
