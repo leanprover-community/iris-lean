@@ -36,7 +36,11 @@ def ElemG.Bundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : F.ap 
 def ElemG.Unbundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : GF.api E.τ T → F.ap T :=
   (congrArg (OFunctorPre.ap · T) (Sigma.mk.inj E.transp).left).mp
 
-theorem X {x y : Sort _} (H : x = y) : (Eq.symm (Eq.symm H)) = H := rfl
+theorem ElemG.transp_OFE {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : F.ap T = GF.api E.τ T := by
+  sorry
+
+
+theorem LemX {x y : Sort _} (H : x = y) : (Eq.symm (Eq.symm H)) = H := rfl
 
 set_option pp.deepTerms true
 set_option pp.proofs true
@@ -48,27 +52,60 @@ theorem OFE.cast_dist' [Iα : OFE α] [Iβ : OFE β] {x y : α}
     (Ht ▸ x) ≡{n}≡ (Ht ▸ y) := by
   subst Ht; subst HIt; exact H
 
-
-
 instance ElemG.Bundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
     OFE.NonExpansive (E.Bundle (T := T)) where
   ne {n x1 x2} H := by
     rename_i IF IO
-    rcases E with ⟨τ, HET⟩
-    have T1 := Sigma.mk.inj HET |>.1.symm
-    have W := congrArg (OFunctorPre.ap · T) (Sigma.mk.inj HET).left
-    simp only [] at W
-    unfold Bundle
-    have X := @OFE.cast_dist' (F.ap T) (GF.api τ T) n _ _ x1 x2
-    unfold _proof_1
-    rw [eq_mpr_eq_cast]
-    rw [Iris.X (id (Eq.symm W))]
-    -- (Sigma.mk.inj E.transp |>.1.symm) (Sigma.mk.inj E.transp |>.2.symm)
-    apply X
-    · -- TODO: is cast_dist written in a way that makes this true?
-      have Z := (Sigma.mk.inj HET |>.2.symm)
-      -- have W' := @congrArg _ (F.ap T) (fun IIF : RFunctorContractive F => @IIF.toRFunctor.cmra)
-      have Z' := Eq.symm (id (Eq.symm W))
+    -- have A1 := (@Iris.COFE.OFunctorPre.ap F T IO)
+    -- have B1 := (@Iris.BundledGFunctors.api GF (@Iris.ElemG.τ GF F IF E) T IO)
+    -- have E1 := (@Iris.ElemG.transp_OFE T GF F IF E IO)
+    -- have O1 := (@Iris.CMRA.toOFE (F.ap T) (@Iris.RFunctor.cmra F IF.toRFunctor T T IO IO))
+    -- have HEL :=
+    -- (@Eq.rec
+    --   _
+    --   (F.ap T)
+    --   (fun x (h : F.ap T = x) => Iris.OFE x)
+    --   (@Iris.CMRA.toOFE (F.ap T) (@Iris.RFunctor.cmra F IF.toRFunctor T T IO IO))
+    --   (GF.api E.τ T) E.transp_OFE)
+
+    -- have W' : Eq.symm (Eq.symm (transp_OFE E)) ▸ O1 = HEL := sorry
+
+
+    have W :
+    (@Eq
+      (Iris.OFE (@Iris.BundledGFunctors.api GF (@Iris.ElemG.τ GF F IF E) T IO))
+      (@Eq.rec
+        (Type u_2)
+        (F.ap T)
+        (fun x (h : F.ap T = x) => Iris.OFE x)
+        (@Iris.CMRA.toOFE (F.ap T) (@Iris.RFunctor.cmra F IF.toRFunctor T T IO IO))
+        (GF.api E.τ T) E.transp_OFE)
+
+    (@Iris.CMRA.toOFE (@Iris.BundledGFunctors.api GF (@Iris.ElemG.τ GF F IF E) T IO)
+      (@Iris.RFunctor.cmra
+        (@Sigma.fst Iris.COFE.OFunctorPre (fun (F : Iris.COFE.OFunctorPre) => Iris.RFunctorContractive F)
+          (GF (@Iris.ElemG.τ GF F IF E)))
+        (@Iris.RFunctorContractive.toRFunctor
+          (@Sigma.fst Iris.COFE.OFunctorPre (fun (F : Iris.COFE.OFunctorPre) => Iris.RFunctorContractive F)
+            (GF (@Iris.ElemG.τ GF F IF E)))
+          (Iris.instRFunctorContractiveFstOFunctorPre GF (@Iris.ElemG.τ GF F IF E)))
+        T T IO IO))) :=
+      sorry
+
+    exact @OFE.cast_dist' (F.ap T) (GF.api E.τ T) n _ _ x1 x2 (E.transp_OFE) W H
+
+    -- rcases E with ⟨τ, HET⟩
+    -- have T1 := Sigma.mk.inj HET |>.1.symm
+    -- have W := congrArg (OFunctorPre.ap · T) (Sigma.mk.inj HET).left
+    -- simp only [] at W
+    -- unfold Bundle
+    -- unfold _proof_1
+    -- rw [eq_mpr_eq_cast]
+    -- rw [Iris.X (id (Eq.symm W))]
+    -- -- (Sigma.mk.inj E.transp |>.1.symm) (Sigma.mk.inj E.transp |>.2.symm)
+      -- have Z := (Sigma.mk.inj HET |>.2.symm)
+      -- -- have W' := @congrArg _ (F.ap T) (fun IIF : RFunctorContractive F => @IIF.toRFunctor.cmra)
+      -- have Z' := Eq.symm (id (Eq.symm W))
 
       -- unfold RFunctor.cmra
       -- unfold instRFunctorContractiveFstOFunctorPre
@@ -85,8 +122,6 @@ instance ElemG.Bundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T]
       -- rename_i II _
       -- have Z := (Sigma.mk.inj E.transp |>.1.symm)
       -- subst Z
-      sorry
-    · exact H
 
 instance ElemG.UnBundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
     OFE.NonExpansive (E.Unbundle (T := T)) where
