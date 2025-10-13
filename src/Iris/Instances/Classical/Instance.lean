@@ -107,20 +107,20 @@ instance : BI (HeapProp Val) where
     exact h_PQR σ h_P h_Q
 
   sForall_intro := by
-    simp only [BI.Entails, BI.forall]
+    simp only [BI.Entails]
     intro _ _ h_PΨ σ h_P p hp
     exact h_PΨ p hp σ h_P
   sForall_elim := by
-    simp only [BI.Entails, BI.forall]
+    simp only [BI.Entails]
     intro _ p hp _ h_Ψ
     exact h_Ψ p hp
 
   sExists_intro := by
-    simp only [BI.Entails, BI.exists]
+    simp only [BI.Entails]
     intro _ p hp _ h_Ψ
     exact ⟨p, hp, h_Ψ⟩
   sExists_elim := by
-    simp only [BI.Entails, BI.exists]
+    simp only [BI.Entails]
     intro _ _ h_ΦQ σ ⟨p, hp, h_Φ⟩
     exact h_ΦQ p hp σ h_Φ
 

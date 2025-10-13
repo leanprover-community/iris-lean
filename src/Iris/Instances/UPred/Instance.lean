@@ -373,7 +373,7 @@ instance : BIPlainly (UPred M) where
   elim_persistently {P} n x Hx := by
     simp [plainly, UPred.plainly]; intro H
     refine iprop(<pers> P).mono ?_ CMRA.incN_unit n.le_refl
-    simp [intuitionistically, affinely, UPred.persistently, persistently, BIBase.and, UPred.and]
+    simp [UPred.persistently, persistently]
     exact P.mono H CMRA.incN_unit n.le_refl
   idem _ _ _ := id
   plainly_sForall_2 {Φ} n x hv H p hp := H (plainly p) ⟨p, ⟨
