@@ -116,7 +116,7 @@ theorem LocalUpdate.valid [CMRA.Discrete α] {x y x' y' : α}
 
 theorem LocalUpdate.total_valid0 [CMRA.IsTotal α] {x y x' y' : α}
     (h : ✓{0} x → ✓{0} y → y ≼{0} x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
-  .valid0 fun vx0 vy0 mz => h vx0 vy0 (CMRA.incN_of_some_incN_some mz)
+  .valid0 fun vx0 vy0 mz => h vx0 vy0 (Option.some_incN_some_iff_isTotal.mp mz)
 
 theorem LocalUpdate.total_valid [CMRA.IsTotal α] [CMRA.Discrete α] {x y x' y' : α}
     (h : ✓ x → ✓ y → y ≼ x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
