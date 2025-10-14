@@ -16,7 +16,7 @@ declared as an `outParam`. Consequently, if type class instance search is suppos
 `AsEmpValid2` is used.
 -/
 
-class AsEmpValid1 (φ : outParam Prop) {PROP : Type _} (P : PROP) [BI PROP] where
+class AsEmpValid1 (φ : semiOutParam Prop) {PROP : Type _} (P : PROP) [BI PROP] where
   as_emp_valid : φ ↔ ⊢ P
 
 class AsEmpValid2 (φ : Prop) {PROP : outParam (Type _)} (P : outParam PROP) [BI PROP] where
@@ -40,6 +40,10 @@ proposition can be derived. Type classes with the prefix `Into` are used to gene
 *into* which the original proposition can be turned by derivation. Additional boolean flags are
 used to indicate that certain propositions should be intuitionistic. -/
 
+class IntoEmpValid (φ : Prop) {PROP : outParam (Type _)} (P : outParam PROP) [BI PROP] where
+  into_emp_valid : φ → ⊢ P
+export IntoEmpValid (into_emp_valid)
+
 class FromImp [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_imp : (Q1 → Q2) ⊢ P
 export FromImp (from_imp)
@@ -48,7 +52,7 @@ class FromWand [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
   from_wand : (Q1 -∗ Q2) ⊢ P
 export FromWand (from_wand)
 
-class IntoWand [BI PROP] (p q : Bool) (R P : PROP) (Q : outParam PROP) where
+class IntoWand [BI PROP] (p q : Bool) (R : PROP) (P Q : outParam PROP) where
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
 
@@ -106,7 +110,7 @@ class IntoAbsorbingly [BI PROP] (P : outParam PROP) (Q : PROP) where
 export IntoAbsorbingly (into_absorbingly)
 
 
-class FromAssumption (p : Bool) [BI PROP] (P Q : PROP) where
+class FromAssumption (p : Bool) [BI PROP] (P : semiOutParam PROP) (Q : PROP) where
   from_assumption : □?p P ⊢ Q
 export FromAssumption (from_assumption)
 

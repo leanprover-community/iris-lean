@@ -53,9 +53,23 @@ def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
   | `(binderIdent| $name:ident) => pure (name.getId, name)
   | stx => return (← mkFreshUserName `x, stx)
 
+def binderIdentHasName (name : Name) (id : TSyntax ``binderIdent) : Bool :=
+  match id with
+  | `(binderIdent| $name':ident) => name'.getId == name
+  | _ => false
+
 def selectHyp (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (Name × Q(Bool) × Q($prop))
   | _, .emp _ => failure
   | _, .hyp _ _ uniq p ty' _ => do
     let .true ← isDefEq ty ty' | failure
     pure (uniq, p, ty')
   | _, .sep _ _ _ _ lhs rhs => try selectHyp ty rhs catch _ => selectHyp ty lhs
+
+variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
+def goalTracker {P} (goals : IO.Ref (Array MVarId)) (name : Name) (hyps : Hyps bi P)
+    (goal : Q($prop)) : MetaM Q($P ⊢ $goal) := do
+  let m : Q($P ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
+    IrisGoal.toExpr { prop, bi, hyps, goal, .. }
+  m.mvarId!.setUserName name
+  goals.modify (·.push m.mvarId!)
+  pure m
