@@ -32,7 +32,7 @@ end iNameSet
 
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 def elaborateSelPatsCore {e} (hyps : Hyps bi e) (pat: iSelectPat) : MetaM (List iElaboratedSelectPat) := do
-  let (_, epats) ← pat.foldrM (fun pat ⟨set, el⟩ => elaborateSelPat el set pat) (iNameSet.emp , [])
+  let (_, epats) ← pat.foldrM (fun pat ⟨st, el⟩ => elaborateSelPat el st pat) (iNameSet.emp , [])
   pure (epats)
   where elaborateSelPat (el: List iElaboratedSelectPat) (set: iNameSet.Ty) (pata: iSelectPatAtom): MetaM (iNameSet.Ty × List iElaboratedSelectPat) :=
   match pata with
