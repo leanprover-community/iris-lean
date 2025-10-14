@@ -567,7 +567,7 @@ theorem sep_left [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗
   iintro HP
   iintro HQ
   iintro _HR
-  isplit l [HP]
+  isplitl [HP _HR]
   · iexact HP
   · iexact HQ
 
@@ -575,7 +575,7 @@ theorem sep_right [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -�
   iintro HP
   iintro HQ
   iintro _HR
-  isplit r [HQ]
+  isplitr [HQ]
   · iexact HP
   · iexact HQ
 
@@ -583,7 +583,7 @@ theorem sep_left_all [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ P -∗ □ Q -�
   iintro HP
   iintro □HQ
   iintro _HR
-  isplit l
+  isplitl
   · iexact HP
   · iexact HQ
 
@@ -591,7 +591,7 @@ theorem sep_right_all [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ □ P -∗ Q -�
   iintro □HP
   iintro HQ
   iintro _HR
-  isplit r
+  isplitr
   · iexact HP
   · iexact HQ
 
@@ -612,7 +612,7 @@ theorem right [BI PROP] (Q : PROP) : Q ⊢ P ∨ Q := by
 
 theorem complex [BI PROP] (P Q : PROP) : ⊢ P -∗ Q -∗ P ∗ (R ∨ Q ∨ R) := by
   iintro HP HQ
-  isplit l [HP]
+  isplitl [HP]
   · iassumption
   iright
   ileft

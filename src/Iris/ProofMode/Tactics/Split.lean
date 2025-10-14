@@ -89,23 +89,20 @@ theorem sep_split [BI PROP] {P P1 P2 Q Q1 Q2 : PROP} [inst : FromSep Q Q1 Q2]
     (h : P ⊣⊢ P1 ∗ P2) (h1 : P1 ⊢ Q1) (h2 : P2 ⊢ Q2) : P ⊢ Q :=
   h.1.trans <| (sep_mono h1 h2).trans inst.1
 
-declare_syntax_cat splitSide
-syntax "l" : splitSide
-syntax "r" : splitSide
+inductive splitSide where
+| splitLeft | splitRight
 
-elab "isplit" side:splitSide "[" names:ident,* "]" : tactic => do
-  -- parse syntax
-  let splitRight ← match side with
-    | `(splitSide| l) => pure false
-    | `(splitSide| r) => pure true
-    | _  => throwUnsupportedSyntax
+def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : TacticM Unit := do
+  let splitRight := match side with
+    | .splitLeft => false
+    | .splitRight => true
 
   -- extract environment
   let (mvar, { u, prop, bi, hyps, goal, .. }) ← istart (← getMainGoal)
   mvar.withContext do
 
   let mut uniqs : NameSet := {}
-  for name in names.getElems do
+  for name in names do
     uniqs := uniqs.insert (← hyps.findWithInfo name)
 
   let Q1 ← mkFreshExprMVarQ prop
@@ -122,5 +119,11 @@ elab "isplit" side:splitSide "[" names:ident,* "]" : tactic => do
   mvar.assign q(sep_split (Q := $goal) $pf $m1 $m2)
   replaceMainGoal [m1.mvarId!, m2.mvarId!]
 
-macro "isplit" &"l" : tactic => `(tactic| isplit r [])
-macro "isplit" &"r" : tactic => `(tactic| isplit l [])
+elab "isplitl" "[" names:(colGt ident)* "]": tactic => do
+  isplitCore .splitLeft names
+
+elab "isplitr" "[" names:(colGt ident)* "]": tactic => do
+  isplitCore .splitRight names
+
+macro "isplitl" : tactic => `(tactic| isplitr [])
+macro "isplitr" : tactic => `(tactic| isplitl [])
