@@ -218,7 +218,7 @@ partial def iCasesCore
       k (.mkSep hyps hyp)
 
   | .clear => do
-    let pf ← clearCore bi q(iprop($P ∗ $A)) P A Q q(.rfl)
+    let pf ← clearCore bi (isTrue p) q(iprop($P ∗ $A)) P A Q q(.rfl)
     pure q($pf $(← k hyps))
 
   | .conjunction [arg] | .disjunction [arg] => iCasesCore hyps Q p A A' ⟨⟩ arg @k
