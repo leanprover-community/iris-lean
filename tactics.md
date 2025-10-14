@@ -5,7 +5,7 @@
 | `istart`                               | Start the proof mode.                                                                                                                                                                                                                |
 | `istop`                                | Stop the proof mode.                                                                                                                                                                                                                 |
 | `irename` *nameFrom* `into` *nameTo*   | Rename the hypothesis *nameFrom* to *nameTo*.                                                                                                                                                                                        |
-| `iclear` *hyp*                         | Discard the hypothesis *hyp*.                                                                                                                                                                                                        |
+| `iclear` `[` *selpat* `]`                         | Discard the hypotheses selected by *selpat*.                                                                                                                                                                                                        |
 | `iexists` *x*                          | Resolve an existential quantifier in the goal by introducing the variable *x*.                                                                                                                                                       |
 | `iexact` *hyp*                         | Solve the goal with the hypothesis *hyp*.                                                                                                                                                                                            |
 | `iassumption_lean`                     | Solve the goal with a hypothesis of the type `⊢ Q` from the Lean context.                                                                                                                                                            |
@@ -62,3 +62,12 @@ Proof mode terms (*pmTerm*) are of the form
 (H $! t1 ... tn with "specPat1 ... specPatN")
 ```
 where `H` is a hypothesis or Lean term whose conclusion is an entailment, `t1 ... tn` are Lean terms for the instantiation of universal quantifiers, and `specPat1 ... specPatN` are specialization patterns.
+
+## Selection Patterns
+
+| Pattern                         | Description                                                                                                                                                                         |
+|---------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| *name*                          | Select the hypothesis *name*.                                                                                                                                                    |
+| `*`                             |  Select all spatial hypotheses in the context.                                                                                                                                                                |
+| `#`                             |  Select all persistent hypotheses in the context.                                                                                                                                                                |
+| `%`                             |  Select all pure hypotheses in the context.                                                                                                                                                                |

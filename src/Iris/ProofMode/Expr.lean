@@ -71,11 +71,17 @@ partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     let (name, uniq, ty) ← parseName? expr
     some ⟨ty, .hyp expr name uniq q(false) ty ⟨⟩⟩
 
-partial def Hyps.find? {u prop bi} (name : Name) :
+partial def Hyps.find? {u prop bi} (pred: Name -> Q(Bool) -> Bool) :
     ∀ {s}, @Hyps u prop bi s → Option (Name × Q(Bool) × Q($prop))
   | _, .emp _ => none
-  | _, .hyp _ name' uniq p ty _ => if name == name' then (uniq, p, ty) else none
-  | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
+  | _, .hyp _ name' uniq p ty _ => if pred name' p then (uniq, p, ty) else none
+  | _, .sep _ _ _ _ lhs rhs => rhs.find? pred <|> lhs.find? pred
+
+partial def Hyps.findAll {u prop bi} (pred: Name -> Q(Bool) -> Bool) :
+    ∀ {s}, @Hyps u prop bi s → List (Name × Q(Bool) × Q($prop))
+  | _, .emp _ => []
+  | _, .hyp _ name' uniq p ty _ => if pred name' p then [(uniq, p, ty)] else []
+  | _, .sep _ _ _ _ lhs rhs => rhs.findAll pred ++ lhs.findAll pred
 
 /-- This is the same as `Entails`, but it takes a `BI` instead.
 This constant is used to detect iris proof goals. -/
@@ -121,7 +127,7 @@ def addHypInfo (stx : Syntax) (name uniq : Name) (prop : Q(Type u)) (ty : Q($pro
   let ty := q(HypMarker $ty)
   addLocalVarInfo stx (lctx.mkLocalDecl ⟨uniq⟩ name ty) (.fvar ⟨uniq⟩) ty isBinder
 
-def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : MetaM Name := do
-  let some (uniq, _, ty) := hyps.find? name.getId | throwError "unknown hypothesis"
-  addHypInfo name name.getId uniq prop ty
+def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (id : Ident) : MetaM Name := do
+  let some (uniq, _, ty) := hyps.find? (fun name' _ => name' = id.getId) | throwError "unknown hypothesis"
+  addHypInfo id id.getId uniq prop ty
   pure uniq
