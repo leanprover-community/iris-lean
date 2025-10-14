@@ -13,6 +13,7 @@ import Iris.ProofMode.Tactics.Move
 import Iris.ProofMode.Tactics.Pose
 import Iris.ProofMode.Tactics.Pure
 import Iris.ProofMode.Tactics.Remove
+import Iris.ProofMode.Tactics.Revert
 import Iris.ProofMode.Tactics.Rename
 import Iris.ProofMode.Tactics.Specialize
 import Iris.ProofMode.Tactics.Split
