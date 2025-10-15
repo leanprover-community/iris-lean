@@ -18,7 +18,21 @@ MoSeL (in contrast to the older IPM) supports different separation logics as wel
 
 # Using Iris-Lean as a Dependency
 
-Iris-Lean [releases](https://github.com/leanprover-community/iris-lean/releases) in sync with Lean. The `master` branch may contain more recently added features, and the `unstable` tag will be periodically updated with features that are still in development.
+- Iris-Lean is updated in sync with Lean. The [releases](https://github.com/leanprover-community/iris-lean/releases) page includes tags for recent versions.
+- The `master` branch may contain features added since the last release:
+```
+[[require]]
+name = "iris"
+git = "https://github.com/leanprover-community/iris-lean.git"
+rev = "master"
+```
+- The `unstable` tag will be periodically updated with features that are still in development:
+```
+[[require]]
+name = "iris"
+git = "https://github.com/leanprover-community/iris-lean.git"
+rev = "unstable"
+```
 
 # Development
 
