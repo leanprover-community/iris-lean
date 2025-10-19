@@ -37,91 +37,36 @@ def ElemG.Unbundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : GF.
   (congrArg (OFunctorPre.ap · T) (Sigma.mk.inj E.transp).left).mp
 
 theorem ElemG.transp_OFE {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : F.ap T = GF.api E.τ T := by
-  sorry
+  unfold OFunctorPre.ap
+  unfold BundledGFunctors.api
+  rw [E.transp]
 
 
 theorem LemX {x y : Sort _} (H : x = y) : (Eq.symm (Eq.symm H)) = H := rfl
-
-set_option pp.deepTerms true
-set_option pp.proofs true
--- set_option pp.all true
--- set_option pp.universes false
 
 theorem OFE.cast_dist' [Iα : OFE α] [Iβ : OFE β] {x y : α}
     (Ht : α = β) (HIt : Ht.symm ▸ Iα = Iβ)  (H : x ≡{n}≡ y) :
     (Ht ▸ x) ≡{n}≡ (Ht ▸ y) := by
   subst Ht; subst HIt; exact H
 
+-- set_option pp.deepTerms true
+-- set_option pp.proofs true
+-- set_option pp.all true
+-- set_option pp.universes false
+
 instance ElemG.Bundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
     OFE.NonExpansive (E.Bundle (T := T)) where
   ne {n x1 x2} H := by
     rename_i IF IO
-    -- have A1 := (@Iris.COFE.OFunctorPre.ap F T IO)
-    -- have B1 := (@Iris.BundledGFunctors.api GF (@Iris.ElemG.τ GF F IF E) T IO)
-    -- have E1 := (@Iris.ElemG.transp_OFE T GF F IF E IO)
-    -- have O1 := (@Iris.CMRA.toOFE (F.ap T) (@Iris.RFunctor.cmra F IF.toRFunctor T T IO IO))
-    -- have HEL :=
-    -- (@Eq.rec
-    --   _
-    --   (F.ap T)
-    --   (fun x (h : F.ap T = x) => Iris.OFE x)
-    --   (@Iris.CMRA.toOFE (F.ap T) (@Iris.RFunctor.cmra F IF.toRFunctor T T IO IO))
-    --   (GF.api E.τ T) E.transp_OFE)
-
-    -- have W' : Eq.symm (Eq.symm (transp_OFE E)) ▸ O1 = HEL := sorry
-
-
-    have W :
-    (@Eq
-      (Iris.OFE (@Iris.BundledGFunctors.api GF (@Iris.ElemG.τ GF F IF E) T IO))
-      (@Eq.rec
-        (Type u_2)
-        (F.ap T)
-        (fun x (h : F.ap T = x) => Iris.OFE x)
-        (@Iris.CMRA.toOFE (F.ap T) (@Iris.RFunctor.cmra F IF.toRFunctor T T IO IO))
-        (GF.api E.τ T) E.transp_OFE)
-
-    (@Iris.CMRA.toOFE (@Iris.BundledGFunctors.api GF (@Iris.ElemG.τ GF F IF E) T IO)
-      (@Iris.RFunctor.cmra
-        (@Sigma.fst Iris.COFE.OFunctorPre (fun (F : Iris.COFE.OFunctorPre) => Iris.RFunctorContractive F)
-          (GF (@Iris.ElemG.τ GF F IF E)))
-        (@Iris.RFunctorContractive.toRFunctor
-          (@Sigma.fst Iris.COFE.OFunctorPre (fun (F : Iris.COFE.OFunctorPre) => Iris.RFunctorContractive F)
-            (GF (@Iris.ElemG.τ GF F IF E)))
-          (Iris.instRFunctorContractiveFstOFunctorPre GF (@Iris.ElemG.τ GF F IF E)))
-        T T IO IO))) :=
-      sorry
-
-    exact @OFE.cast_dist' (F.ap T) (GF.api E.τ T) n _ _ x1 x2 (E.transp_OFE) W H
-
-    -- rcases E with ⟨τ, HET⟩
-    -- have T1 := Sigma.mk.inj HET |>.1.symm
-    -- have W := congrArg (OFunctorPre.ap · T) (Sigma.mk.inj HET).left
-    -- simp only [] at W
-    -- unfold Bundle
-    -- unfold _proof_1
-    -- rw [eq_mpr_eq_cast]
-    -- rw [Iris.X (id (Eq.symm W))]
-    -- -- (Sigma.mk.inj E.transp |>.1.symm) (Sigma.mk.inj E.transp |>.2.symm)
-      -- have Z := (Sigma.mk.inj HET |>.2.symm)
-      -- -- have W' := @congrArg _ (F.ap T) (fun IIF : RFunctorContractive F => @IIF.toRFunctor.cmra)
-      -- have Z' := Eq.symm (id (Eq.symm W))
-
-      -- unfold RFunctor.cmra
-      -- unfold instRFunctorContractiveFstOFunctorPre
-      -- have Z1 := (Sigma.mk.inj E.transp |>.1.symm)
-      -- have Z2 := (Sigma.mk.inj E.transp |>.2.symm)
-      -- rw! (castMode := .all) [<- Z2]
-      -- unfold type_eq_of_heq
-      -- cases IF <;> simp_all
-
-      -- have X : Eq.symm (Eq.symm (_proof_1 E)) = (_proof_1 E) := sorry
-      -- unfold Iris.CMRA.toOFE
-      -- unfold RFunctor.cmra
-      -- unfold instRFunctorContractiveFstOFunctorPre
-      -- rename_i II _
-      -- have Z := (Sigma.mk.inj E.transp |>.1.symm)
-      -- subst Z
+    have A1 := (@Iris.COFE.OFunctorPre.ap F T IO)
+    have B1 := (@Iris.BundledGFunctors.api GF (@Iris.ElemG.τ GF F IF E) T IO)
+    unfold Bundle
+    unfold _proof_1
+    simp
+    apply (OFE.cast_dist' _ _ H)
+    rw [LemX (@Iris.ElemG.transp_OFE T GF F IF E IO)]
+    -- Reduce it to the problem of proving the RFunctors are equal?
+    sorry
 
 instance ElemG.UnBundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
     OFE.NonExpansive (E.Unbundle (T := T)) where
@@ -295,12 +240,36 @@ theorem iOwn_alloc_dep (f : GName → F.ap (IProp GF)) (Ha : ∀ γ, ✓ (f γ))
 theorem iOwn_alloc (a : F.ap (IProp GF)) : ✓ a → ⊢ |==> ∃ γ, iOwn γ a :=
   fun Ha => iOwn_alloc_dep _ (fun _ => Ha)
 
-theorem iOwn_updateP P γ a : a ~~>: P → iOwn γ a ⊢ |==> ∃ a' : F.ap (IProp GF), ⌜P a'⌝ ∗ iOwn γ a' :=
-  sorry
+theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) :
+    iOwn γ a ⊢ |==> ∃ a' : F.ap (IProp GF), ⌜P a'⌝ ∗ iOwn γ a' := by
+  refine .trans (Q := iprop(|==> ∃ m, ⌜ ∃ a', m = (iSingleton F γ a') ∧ P a' ⌝ ∧ UPred.ownM m)) ?_ ?_
+  · apply UPred.ownM_updateP
+    sorry
+  · refine BIUpdate.mono ?_
+    refine BI.exists_elim (fun m => ?_)
+    refine BI.pure_elim_l (fun ⟨a', Hm, HP⟩ => ?_)
+    refine BI.exists_intro' a' ?_
+    subst Hm
+    refine BI.persistent_entails_r ?_
+    exact BI.pure_intro HP
 
-theorem iOwn_update γ (a a' : F.ap (IProp GF)) : a ~~> a' → iOwn γ a ⊢ |==> iOwn γ a' :=
-  sorry
+theorem iOwn_update {γ} {a a' : F.ap (IProp GF)} (Hupd : a ~~> a') : iOwn γ a ⊢ |==> iOwn γ a' := by
+  refine .trans (iOwn_updateP <| UpdateP.of_update Hupd) ?_
+  refine BIUpdate.mono ?_
+  refine BI.exists_elim (fun m => ?_)
+  refine BI.pure_elim (a' = m) BI.sep_elim_l ?_
+  rintro rfl
+  exact BI.sep_elim_r
 
+theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [IsUnit ε] : ⊢ |==> iOwn γ ε := by
+  intro n x Hv He
+  simp [bupd, UPred.bupd, iOwn, UPred.ownM]
+  intro k yf Hk Hx
+  refine ⟨x, ⟨Hx, ⟨x, ?_⟩⟩⟩
+  -- At each coordinate they're equal due to optionOp, or equiv due to IsUnit (ie. coordinate γ)
+  intro i j
+  simp [CMRA.op, optionOp]
+  sorry
 
 
 /-
@@ -350,63 +319,6 @@ Lemma own_alloc_cofinite a (G : gset gname) :
 Proof. intros Ha. eapply (own_alloc_cofinite_dep (λ _, a)); eauto. Qed.
 Lemma own_alloc a : ✓ a → ⊢ |==> ∃ γ, own γ a.
 Proof. intros Ha. eapply (own_alloc_dep (λ _, a)); eauto. Qed.
-
-(** ** Frame preserving updates *)
-Lemma own_updateP P γ a : a ~~>: P → own γ a ⊢ |==> ∃ a', ⌜P a'⌝ ∗ own γ a'.
-Proof.
-  intros Hupd. rewrite !own_eq.
-  rewrite -(bupd_mono (∃ m,
-    ⌜ ∃ a', m = iRes_singleton γ a' ∧ P a' ⌝ ∧ uPred_ownM m)%I).
-  - apply bupd_ownM_updateP, (discrete_fun_singleton_updateP _ (λ m, ∃ x,
-      m = {[ γ := x ]} ∧ ∃ x',
-      x = inG_unfold x' ∧ ∃ a',
-      x' = cmra_transport inG_prf a' ∧ P a')); [|naive_solver].
-    apply singleton_updateP', (iso_cmra_updateP' inG_fold).
-    { apply inG_unfold_fold. }
-    { apply (cmra_morphism_op _). }
-    { apply inG_unfold_validN. }
-    by apply cmra_transport_updateP'.
-  - apply exist_elim=> m; apply pure_elim_l=> -[a' [-> HP]].
-    rewrite -(exist_intro a'). rewrite -persistent_and_sep.
-    by apply and_intro; [apply pure_intro|].
-Qed.
-
-Lemma own_update γ a a' : a ~~> a' → own γ a ⊢ |==> own γ a'.
-Proof.
-  intros. iIntros "?".
-  iMod (own_updateP (a' =.) with "[$]") as (a'') "[-> $]".
-  { by apply cmra_update_updateP. }
-  done.
-Qed.
-Lemma own_update_2 γ a1 a2 a' :
-  a1 ⋅ a2 ~~> a' → own γ a1 -∗ own γ a2 ==∗ own γ a'.
-Proof. intros. apply entails_wand, wand_intro_r. rewrite -own_op. by iApply own_update. Qed.
-Lemma own_update_3 γ a1 a2 a3 a' :
-  a1 ⋅ a2 ⋅ a3 ~~> a' → own γ a1 -∗ own γ a2 -∗ own γ a3 ==∗ own γ a'.
-Proof. intros. apply entails_wand. do 2 apply wand_intro_r. rewrite -!own_op. by iApply own_update. Qed.
-End global.
-
-Global Arguments own_valid {_ _} [_] _ _.
-Global Arguments own_valid_2 {_ _} [_] _ _ _.
-Global Arguments own_valid_3 {_ _} [_] _ _ _ _.
-Global Arguments own_valid_l {_ _} [_] _ _.
-Global Arguments own_valid_r {_ _} [_] _ _.
-Global Arguments own_updateP {_ _} [_] _ _ _ _.
-Global Arguments own_update {_ _} [_] _ _ _ _.
-Global Arguments own_update_2 {_ _} [_] _ _ _ _ _.
-Global Arguments own_update_3 {_ _} [_] _ _ _ _ _ _.
-
-Lemma own_unit A `{i : !inG Σ (A:ucmra)} γ : ⊢ |==> own γ (ε:A).
-Proof.
-  rewrite /bi_emp_valid (ownM_unit emp) !own_eq /own_def.
-  apply bupd_ownM_update, discrete_fun_singleton_update_empty.
-  apply (alloc_unit_singleton_update (inG_unfold (cmra_transport inG_prf ε))).
-  - apply (cmra_morphism_valid _), cmra_transport_valid, ucmra_unit_valid.
-  - intros x. rewrite -(inG_unfold_fold x) -(cmra_morphism_op inG_unfold).
-    f_equiv. generalize (inG_fold x)=> x'.
-    destruct inG_prf=> /=. by rewrite left_id.
-  - done.
-Qed.
 -/
 
 

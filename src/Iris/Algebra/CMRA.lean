@@ -94,6 +94,16 @@ class UCMRA (α : Type _) extends CMRA α where
   unit_left_id : unit • x ≡ x
   pcore_unit : pcore unit ≡ some unit
 
+class IsUnit [CMRA α] (ε : α) : Prop where
+  unit_valid : ✓ ε
+  unit_left_id : ε • x ≡ x
+  pcore_unit : CMRA.pcore ε ≡ some ε
+
+instance [UCMRA α] : IsUnit (UCMRA.unit : α) where
+  unit_valid := UCMRA.unit_valid
+  unit_left_id := UCMRA.unit_left_id
+  pcore_unit := UCMRA.pcore_unit
+
 namespace CMRA
 variable [CMRA α]
 
