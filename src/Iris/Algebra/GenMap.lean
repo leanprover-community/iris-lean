@@ -61,6 +61,24 @@ theorem Infinite.mono {P Q : α → Prop} (H : Infinite P) (Hmono : ∀ a, P a �
 
 theorem Infinite.Nat_True : Infinite fun (_ : Nat) => True := ⟨id, trivial, id⟩
 
+-- Two infinite predicates on Nat must intersect
+-- This relies on Nat being countable and both predicates having infinite support
+-- TODO: This requires either:
+--   1. A constructive search with decidable equality on Q
+--   2. Cardinality arguments showing two infinite subsets of Nat must intersect
+--   3. A "co-finite" strengthening of Infinite (infinite complement)
+-- For the ghost state allocation, this is a fundamental property needed.
+theorem Infinite.inter_nonempty_nat {P Q : Nat → Prop}
+    (HP : Infinite P) (HQ : Infinite Q) : ∃ n, P n ∧ Q n := by
+  rcases HP with ⟨PE, HPE_inc, HPE_inj⟩
+  rcases HQ with ⟨QE, HQE_inc, HQE_inj⟩
+  -- In Coq Iris, this is proven using pred_infinite_set which has the property:
+  -- ∀ (finite set S), ∃ n, P n ∧ n ∉ S
+  -- This would let us find an element in P outside any finite set.
+  -- Then, since IsFree has infinitely many elements, only finitely many are allocated,
+  -- so we can find an element in P that's also free.
+  sorry
+
 
 section GenMapImpl
 
