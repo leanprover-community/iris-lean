@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Zongyuan Liu
 -/
 
--- import Iris.Std.DepRewrite
 import Iris.BI
 import Iris.Algebra
 import Iris.Instances.UPred
@@ -24,75 +23,30 @@ section ElemG
 
 open OFE
 
+/-- Transport an OFunctorPre application along equality of the OFunctorPre.  -/
+def TranspAp {F1 F2 : OFunctorPre} (H : F1 = F2) {T} [OFE T] :
+    F1.ap T = F2.ap T := congrArg (OFunctorPre.ap · T) H
 
-class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] where
-  τ : GType
-  transp : FF τ = ⟨F, ‹_›⟩
+theorem OFE.transpAp_eqv_mp [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂] [OFE T]
+    (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₁.ap T} (H : x ≡{n}≡ y) :
+    (TranspAp h_fun).mp x ≡{n}≡ (TranspAp h_fun).mp y := by
+  cases h_fun; cases eq_of_heq h_inst; exact H
 
-def ElemG.Bundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : F.ap T → GF.api E.τ T :=
-  (congrArg (OFunctorPre.ap · T) (Sigma.mk.inj E.transp).left).mpr
+theorem OFE.transpAp_eqv_mpr [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂] [OFE T]
+    (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₂.ap T} (H : x ≡{n}≡ y) :
+    (TranspAp h_fun).mpr x ≡{n}≡ (TranspAp h_fun).mpr y := by
+  cases h_fun; cases eq_of_heq h_inst; exact H
 
-def ElemG.Unbundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : GF.api E.τ T → F.ap T :=
-  (congrArg (OFunctorPre.ap · T) (Sigma.mk.inj E.transp).left).mp
+theorem OFE.transpAp_op_mp [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂] [OFE T]
+    (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₁ T T} :
+    (TranspAp h_fun).mp (x • y) ≡ (TranspAp h_fun).mp x • (TranspAp h_fun).mp y := by
+  cases h_fun; cases eq_of_heq h_inst; rfl
 
+theorem OFE.transpAp_op_mpr [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂] [OFE T]
+    (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₂ T T} :
+    (TranspAp h_fun).mpr (x • y) ≡ (TranspAp h_fun).mpr x • (TranspAp h_fun).mpr y := by
+  cases h_fun; cases eq_of_heq h_inst; rfl
 
--- Version using congrArg and .mpr instead of ▸
--- Note: (congrArg f h).mpr goes from RHS to LHS, so we need h.symm
-theorem OFE.cast_dist_from_RFunctor_mpr {F₁ F₂ : OFunctorPre}
-    [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂]
-    {T : Type u} [OFE T]
-    (h_fun : F₁ = F₂)
-    (h_inst : HEq RF₁ RF₂)
-    {n : Nat} {x y : F₁ T T}
-    (H : x ≡{n}≡ y) :
-    (congrArg (OFunctorPre.ap · T) h_fun.symm).mpr x ≡{n}≡ (congrArg (OFunctorPre.ap · T) h_fun.symm).mpr y := by
-  cases h_fun
-  have : RF₁ = RF₂ := eq_of_heq h_inst
-  cases this
-  exact H
-
--- Version for .mp (opposite direction)
-theorem OFE.cast_dist_from_RFunctor_mp {F₁ F₂ : OFunctorPre}
-    [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂]
-    {T : Type u} [OFE T]
-    (h_fun : F₁ = F₂)
-    (h_inst : HEq RF₁ RF₂)
-    {n : Nat} {x y : F₂ T T}
-    (H : x ≡{n}≡ y) :
-    (congrArg (OFunctorPre.ap · T) h_fun.symm).mp x ≡{n}≡ (congrArg (OFunctorPre.ap · T) h_fun.symm).mp y := by
-  cases h_fun
-  have : RF₁ = RF₂ := eq_of_heq h_inst
-  cases this
-  exact H
-
-theorem OFE.cast_op_from_RFunctor_mpr {F₁ F₂ : OFunctorPre}
-    [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂]
-    {T : Type u} [OFE T]
-    (h_fun : F₁ = F₂)
-    (h_inst : HEq RF₁ RF₂)
-    {x y : F₁ T T} :
-    (congrArg (OFunctorPre.ap · T) h_fun.symm).mpr (x • y) ≡
-    (congrArg (OFunctorPre.ap · T) h_fun.symm).mpr x • (congrArg (OFunctorPre.ap · T) h_fun.symm).mpr y := by
-  cases h_fun
-  have : RF₁ = RF₂ := eq_of_heq h_inst
-  cases this
-  rfl
-
--- .mp preserves op for RFunctor casts
-theorem OFE.cast_op_from_RFunctor_mp {F₁ F₂ : OFunctorPre}
-    [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂]
-    {T : Type u} [OFE T]
-    (h_fun : F₁ = F₂)
-    (h_inst : HEq RF₁ RF₂)
-    {x y : F₂ T T} :
-    (congrArg (OFunctorPre.ap · T) h_fun.symm).mp (x • y) ≡
-    (congrArg (OFunctorPre.ap · T) h_fun.symm).mp x • (congrArg (OFunctorPre.ap · T) h_fun.symm).mp y := by
-  cases h_fun
-  have : RF₁ = RF₂ := eq_of_heq h_inst
-  cases this
-  rfl
-
--- .mpr preserves pcore for RFunctor casts
 theorem OFE.cast_pcore_from_RFunctor_mpr {F₁ F₂ : OFunctorPre}
     [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂]
     {T : Type u} [OFE T]
@@ -152,25 +106,25 @@ theorem OFE.cast_validN_from_RFunctor_mp {F₁ F₂ : OFunctorPre}
   intro H
   exact H
 
--- Helper lemmas showing Bundle and Unbundle preserve CMRA operations
---
--- KEY INSIGHT: CMRA (F.ap T) = CMRA (F T T) comes from RFunctorContractive F,
--- NOT from T itself! So even though IProp GF has no CMRA instance, F.ap (IProp GF)
--- DOES have a CMRA instance (from RFunctor.cmra).
---
--- This means these lemmas CAN be applied to F.ap (IProp GF)!
--- The real blocker is just the field elimination issue with E.τ.
+class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] where
+  τ : GType
+  transp : FF τ = ⟨F, ‹_›⟩
 
--- Bundle preserves op
--- Note: CMRA (F.ap T) comes from RFunctorContractive F, not from T
--- The challenge is the field elimination issue - E.τ appears in goal
-theorem ElemG.Bundle_op {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T]
-    (x y : F.ap T) :
-    E.Bundle (x • y) ≡ E.Bundle x • E.Bundle y := by
-  unfold Bundle
-  have h_fun : (GF E.τ).fst = F := (Sigma.mk.inj E.transp).left
-  have h_inst : HEq (GF E.τ).snd ‹RFunctorContractive F› := (Sigma.mk.inj E.transp).right
-  exact OFE.cast_op_from_RFunctor_mpr h_fun.symm h_inst.symm
+def ElemG.TranspMap {GF F} [RFunctorContractive F] (E : ElemG GF F) T [OFE T] : (GF E.τ).fst = F :=
+  Sigma.mk.inj E.transp |>.1
+
+def ElemG.TranspClass {GF F} [I : RFunctorContractive F] (E : ElemG GF F) T [OFE T] : HEq (GF E.τ).snd I :=
+  Sigma.mk.inj E.transp |>.2
+
+def ElemG.Bundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : F.ap T → GF.api E.τ T :=
+  TranspAp (E.TranspMap T) |>.mpr
+
+def ElemG.Unbundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : GF.api E.τ T → F.ap T :=
+  TranspAp (E.TranspMap T) |>.mp
+
+-- theorem ElemG.Bundle_op {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] (x y : F.ap T) :
+--     E.Bundle (x • y) ≡ E.Bundle x • E.Bundle y :=
+--   OFE.transpAp_op_mpr (E.TranspMap T) (E.TranspClass T)
 
 -- Bundle preserves pcore
 theorem ElemG.Bundle_pcore {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T]
@@ -182,13 +136,9 @@ theorem ElemG.Bundle_pcore {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE 
   exact OFE.cast_pcore_from_RFunctor_mpr h_fun.symm h_inst.symm
 
 -- Unbundle preserves op
-theorem ElemG.Unbundle_op {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T]
-    (x y : GF.api E.τ T) :
-    E.Unbundle (x • y) ≡ E.Unbundle x • E.Unbundle y := by
-  unfold Unbundle
-  have h_fun : (GF E.τ).fst = F := (Sigma.mk.inj E.transp).left
-  have h_inst : HEq (GF E.τ).snd ‹RFunctorContractive F› := (Sigma.mk.inj E.transp).right
-  exact OFE.cast_op_from_RFunctor_mp h_fun.symm h_inst.symm
+theorem ElemG.Unbundle_op [RFunctorContractive F] (E : ElemG GF F) [OFE T] (x y : GF.api E.τ T) :
+    E.Unbundle (x • y) ≡ E.Unbundle x • E.Unbundle y :=
+  OFE.transpAp_op_mp (E.TranspMap T) (E.TranspClass T)
 
 -- Bundle preserves validN
 theorem ElemG.Bundle_validN {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T]
@@ -218,35 +168,19 @@ theorem ElemG.Unbundle_pcore {GF F} [RFunctorContractive F] (E : ElemG GF F) [OF
   exact OFE.cast_pcore_from_RFunctor_mp h_fun.symm h_inst.symm
 
 -- Bundle and Unbundle are inverses
-theorem ElemG.Bundle_Unbundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T]
-    (x : GF.api E.τ T) :
-    E.Bundle (E.Unbundle x) ≡ x := by
-  unfold Bundle Unbundle
-  simp [Equiv]
+theorem ElemG.Bundle_Unbundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] (x : GF.api E.τ T) :
+    E.Bundle (E.Unbundle x) ≡ x := by simp [Bundle, Unbundle, Equiv]
 
-theorem ElemG.Unbundle_Bundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T]
-    (x : F.ap T) :
-    E.Unbundle (E.Bundle x) ≡ x := by
-  unfold Bundle Unbundle
-  simp [Equiv]
+theorem ElemG.Unbundle_Bundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] (x : F.ap T) :
+    E.Unbundle (E.Bundle x) ≡ x := by simp [Bundle, Unbundle, Equiv]
 
 instance ElemG.Bundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
     OFE.NonExpansive (E.Bundle (T := T)) where
-  ne {n x1 x2} H := by
-    unfold Bundle
-    have h_fun : (GF E.τ).fst = F := (Sigma.mk.inj E.transp).left
-    have h_inst : HEq (GF E.τ).snd ‹RFunctorContractive F› := (Sigma.mk.inj E.transp).right
-    exact @OFE.cast_dist_from_RFunctor_mpr F (GF E.τ).fst ‹RFunctorContractive F› (GF E.τ).snd
-          T ‹OFE T› h_fun.symm h_inst.symm n x1 x2 H
+  ne {_ _ _} := OFE.transpAp_eqv_mpr (E.TranspMap T) (E.TranspClass T)
 
-instance ElemG.UnBundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
+instance ElemG.Unbundle.ne {GF F} [RFunctorContractive F] {E : ElemG GF F} [OFE T] :
     OFE.NonExpansive (E.Unbundle (T := T)) where
-  ne {n x1 x2} H := by
-    unfold Unbundle
-    have h_fun : (GF E.τ).fst = F := (Sigma.mk.inj E.transp).left
-    have h_inst : HEq (GF E.τ).snd ‹RFunctorContractive F› := (Sigma.mk.inj E.transp).right
-    exact @OFE.cast_dist_from_RFunctor_mp F (GF E.τ).fst ‹RFunctorContractive F› (GF E.τ).snd
-          T ‹OFE T› h_fun.symm h_inst.symm n x1 x2 H
+  ne {_ _ _} H := OFE.transpAp_eqv_mp (E.TranspMap T) (E.TranspClass T) H
 
 end ElemG
 
@@ -341,7 +275,7 @@ theorem iSingleton_op {γ : GName} [RFunctorContractive F] [E : ElemG GF F]
   -- 3. Combine with congruence
   --
   -- Now we can use Bundle_op because CMRA (F.ap (IProp GF)) exists from RFunctor!
-  have h_bundle := ElemG.Bundle_op E x y
+  -- have h_bundle := ElemG.Bundle_op E x y
   -- map is a CMRA homomorphism, so it preserves op
   -- Need to be explicit about the type: we're mapping (GF E.τ).fst (IProp GF) (IProp GF) → (GF E.τ).fst (IPre GF) (IPre GF)
   have h_map : ∀ (a b : GF.api E.τ (IProp GF)),
@@ -356,7 +290,9 @@ theorem iSingleton_op {γ : GName} [RFunctorContractive F] [E : ElemG GF F]
   -- Apply map to both sides of h_bundle, then use h_map
   have h1 : OFunctor.map (IProp.fold GF) (IProp.unfold GF) (E.Bundle (x • y)) ≡
             OFunctor.map (IProp.fold GF) (IProp.unfold GF) (E.Bundle x • E.Bundle y) := by
-    exact OFE.NonExpansive.eqv h_bundle
+    apply OFE.NonExpansive.eqv
+    apply OFE.transpAp_op_mpr (E.TranspMap (F.ap (IProp GF))) (E.TranspClass (F.ap (IProp GF)))
+
   have h2 := h_map (E.Bundle x) (E.Bundle y)
   exact (h1.trans h2).symm
 
@@ -399,11 +335,11 @@ theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOw
       apply NonExpansive.ne
       exact Hac.dist
     -- Use Bundle_op: Bundle (a2 • ac) ≡ Bundle a2 • Bundle ac
-    have h2 : E.Bundle (a2 • ac) ≡ E.Bundle a2 • E.Bundle ac := ElemG.Bundle_op E a2 ac
+    -- have h2 : E.Bundle (a2 • ac) ≡ E.Bundle a2 • E.Bundle ac := ElemG.Bundle_op E a2 ac
     -- Combine h1 and h2
     have h3 : E.Bundle a1 ≡{n}≡ E.Bundle a2 • E.Bundle ac := by
       refine Dist.trans h1 ?_
-      exact h2.dist
+      apply OFE.transpAp_op_mpr (E.TranspMap (F.ap (IProp GF))) (E.TranspClass (F.ap (IProp GF))) |>.dist
     -- Apply unfoldi (which is OFunctor.map, a CMRA homomorphism)
     have h4 : IProp.unfoldi (E.Bundle a2 • E.Bundle ac) ≡{n}≡
               IProp.unfoldi (E.Bundle a2) • IProp.unfoldi (E.Bundle ac) := by
@@ -866,7 +802,9 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) :
             apply CMRA.validN_ne (h_comp.op_l).dist
             exact h_after_hom
           -- Apply Unbundle
-          have h_unbundle_hom := ElemG.Unbundle_op E (E.Bundle a) ((RFunctor.map (IProp.unfold GF) (IProp.fold GF)).toHom.f v)
+          have h_unbundle_hom : E.Unbundle (E.Bundle a • (RFunctor.map (unfold GF) (fold GF)).f v) ≡ E.Unbundle (E.Bundle a) • E.Unbundle ((RFunctor.map (unfold GF) (fold GF)).f v) := by
+            apply OFE.transpAp_op_mp (E.TranspMap ((GF (ElemG.τ GF F)).fst.ap (IPre GF))) (E.TranspClass ((GF (ElemG.τ GF F)).fst.ap (IPre GF)))
+            -- ElemG.Unbundle_op E (E.Bundle a) ((RFunctor.map (IProp.unfold GF) (IProp.fold GF)).toHom.f v)
           have h_after_unbundle : ✓{n} (E.Unbundle (E.Bundle a) • E.Unbundle ((RFunctor.map (IProp.unfold GF) (IProp.fold GF)).toHom.f v)) := by
             apply CMRA.validN_ne h_unbundle_hom.dist
             exact ElemG.Unbundle_validN E _ h_bundle_foldi_v
@@ -900,8 +838,7 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) :
               -- From ✓{n} (a' • E.Unbundle (foldi v))
               -- Apply Bundle
               have h_bundle_valid : ✓{n} (E.Bundle a' • E.Bundle (E.Unbundle (foldi v))) := by
-                have h_bundle_op := ElemG.Bundle_op E a' (E.Unbundle (foldi v))
-                apply CMRA.validN_ne h_bundle_op.dist
+                apply CMRA.validN_ne (OFE.transpAp_op_mpr (E.TranspMap (F.ap (IProp GF))) (E.TranspClass (F.ap (IProp GF))) |>.dist)
                 exact ElemG.Bundle_validN E _ Ha'_valid
               -- Use Bundle_Unbundle
               have h_bundle_unbundle := ElemG.Bundle_Unbundle E (foldi v)
@@ -988,7 +925,7 @@ theorem ElemG.Bundle_unit {GF F} [RFunctorContractive F] (E : ElemG GF F)
             -- .mp ((.mpr ε) • x) ≡ .mp (.mpr ε) • .mp x
             -- where .mpr ε : (GF E.τ).fst.ap (IProp GF)
             -- This is exactly OFE.cast_op_from_RFunctor_mp
-            exact OFE.cast_op_from_RFunctor_mp h_fun.symm h_inst.symm
+            apply OFE.transpAp_op_mp h_fun h_inst
         _ ≡ ε • E.Unbundle x := by
             have := ElemG.Unbundle_Bundle E ε
             exact this.op_l
