@@ -1,7 +1,5 @@
 # Verified-zkEVM Fork of Iris
 
-# Verified-zkEVM Fork of Iris
-
 This is a fork of [iris-lean](https://github.com/iris-project/iris-lean), a higher-order concurrent separation logic framework. We plan to develop the [Bluebell](https://arxiv.org/pdf/2402.18708) program logic on top of Iris. This repo adds mathlib as a dependency for probability theory and other math prerequisites.
 
 - [Verified-zkEVM Fork of Iris](#verified-zkevm-fork-of-iris)
