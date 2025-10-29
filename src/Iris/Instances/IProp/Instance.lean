@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors: Markus de Medeiros, Zongyuan Liu
 -/
 
 -- import Iris.Std.DepRewrite
@@ -35,41 +35,6 @@ def ElemG.Bundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : F.ap 
 def ElemG.Unbundle {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : GF.api E.τ T → F.ap T :=
   (congrArg (OFunctorPre.ap · T) (Sigma.mk.inj E.transp).left).mp
 
-theorem ElemG.transp_OFE {GF F} [RFunctorContractive F] (E : ElemG GF F) [OFE T] : F.ap T = GF.api E.τ T := by
-  unfold OFunctorPre.ap
-  unfold BundledGFunctors.api
-  rw [E.transp]
-
-
-theorem LemX {x y : Sort _} (H : x = y) : (Eq.symm (Eq.symm H)) = H := rfl
-
-theorem OFE.cast_dist' [Iα : OFE α] [Iβ : OFE β] {x y : α}
-    (Ht : α = β) (HIt : Ht.symm ▸ Iα = Iβ)  (H : x ≡{n}≡ y) :
-    (Ht ▸ x) ≡{n}≡ (Ht ▸ y) := by
-  subst Ht; subst HIt; exact H
-
--- Can we prove a stronger version that doesn't need the instance equality?
--- The challenge: OFE instances are not unique (different metrics possible)
--- But in our case, both instances come from RFunctor.cmra.toOFE
-
--- Key idea: If both OFE instances come from the same source (RFunctor.cmra)
--- and the RFunctor instances are HEq, maybe we can prove something?
-theorem OFE.cast_dist_from_RFunctor {F₁ F₂ : OFunctorPre}
-    [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂]
-    {T : Type u} [OFE T]
-    (h_fun : F₁ = F₂)
-    (h_inst : HEq RF₁ RF₂)
-    {n : Nat} {x y : F₁ T T}
-    (H : x ≡{n}≡ y) :
-    (h_fun ▸ x : F₂ T T) ≡{n}≡ (h_fun ▸ y) := by
-  -- Both sides use RFunctor.cmra.toOFE as their OFE instance
-  -- If we could show this instance is "the same" after transport...
-  cases h_fun
-  -- After cases, F₁ = F₂, so h_inst : HEq RF₁ RF₂ with F₁ = F₁
-  -- This should give us RF₁ = RF₂ by eq_of_heq
-  have : RF₁ = RF₂ := eq_of_heq h_inst
-  cases this
-  exact H
 
 -- Version using congrArg and .mpr instead of ▸
 -- Note: (congrArg f h).mpr goes from RHS to LHS, so we need h.symm
@@ -100,9 +65,6 @@ theorem OFE.cast_dist_from_RFunctor_mp {F₁ F₂ : OFunctorPre}
   cases this
   exact H
 
--- CMRA operation preservation for casts from RFunctor
-
--- .mpr preserves op for RFunctor casts
 theorem OFE.cast_op_from_RFunctor_mpr {F₁ F₂ : OFunctorPre}
     [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂]
     {T : Type u} [OFE T]
@@ -198,56 +160,6 @@ theorem OFE.cast_validN_from_RFunctor_mp {F₁ F₂ : OFunctorPre}
 --
 -- This means these lemmas CAN be applied to F.ap (IProp GF)!
 -- The real blocker is just the field elimination issue with E.τ.
-
--- General lemma: congrArg.mpr preserves op
--- If h : α = β, then congrArg F h : F α = F β
--- So .mpr : F β → F α (goes backwards)
-theorem congrArg_mpr_op {F : Type _ → Type _} [∀ {T}, CMRA (F T)] {α β : Type _}
-    (h : α = β) (x y : F β) :
-    (congrArg F h).mpr (x • y) ≡ (congrArg F h).mpr x • (congrArg F h).mpr y := by
-  cases h
-  rfl
-
--- Similar for .mp (opposite direction: F α → F β)
-theorem congrArg_mp_op {F : Type _ → Type _} [∀ {T}, CMRA (F T)] {α β : Type _}
-    (h : α = β) (x y : F α) :
-    (congrArg F h).mp (x • y) ≡ (congrArg F h).mp x • (congrArg F h).mp y := by
-  cases h
-  rfl
-
--- congrArg.mpr preserves validN
-theorem congrArg_mpr_validN {F : Type _ → Type _} [∀ {T}, CMRA (F T)] {α β : Type _}
-    (h : α = β) {n : Nat} (x : F β) :
-    ✓{n} x → ✓{n} ((congrArg F h).mpr x) := by
-  cases h
-  intro H
-  exact H
-
--- congrArg.mp preserves validN
-theorem congrArg_mp_validN {F : Type _ → Type _} [∀ {T}, CMRA (F T)] {α β : Type _}
-    (h : α = β) {n : Nat} (x : F α) :
-    ✓{n} x → ✓{n} ((congrArg F h).mp x) := by
-  cases h
-  intro H
-  exact H
-
--- congrArg.mpr preserves pcore
--- This is more subtle - requires that cast commutes with pcore
-theorem congrArg_mpr_pcore {F : Type _ → Type _} [∀ {T}, CMRA (F T)] {α β : Type _}
-    (h : α = β) (x : F β) :
-    (CMRA.pcore x).map (congrArg F h).mpr ≡ CMRA.pcore ((congrArg F h).mpr x) := by
-  cases h
-  simp
-  rcases CMRA.pcore x with (_|c) <;> simp
-
--- congrArg.mp preserves pcore
--- This is more subtle - requires that cast commutes with pcore
-theorem congrArg_mp_pcore {F : Type _ → Type _} [∀ {T}, CMRA (F T)] {α β : Type _}
-    (h : α = β) (x : F α) :
-    (CMRA.pcore x).map (congrArg F h).mp ≡ CMRA.pcore ((congrArg F h).mp x) := by
-  cases h
-  simp
-  rcases CMRA.pcore x with (_|c) <;> simp
 
 -- Bundle preserves op
 -- Note: CMRA (F.ap T) comes from RFunctorContractive F, not from T
