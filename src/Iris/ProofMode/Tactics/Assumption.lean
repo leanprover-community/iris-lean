@@ -53,7 +53,7 @@ def assumptionFast {e} (hyps : Hyps bi e) : MetaM Q($e ⊢ $Q) := do
     hyps.removeG true fun _ _ b ty => try? do
       synthInstance q(FromAssumption $b $ty $Q)
     | failure
-  let (_ : Q(FromAssumption $b $ty $Q)) := inst
+  let _ : Q(FromAssumption $b $ty $Q) := inst
   have : $out =Q iprop(□?$b $ty) := ⟨⟩
   match fastPath with
   | .absorbing _ => return q(assumption (Q := $Q) $pf)
