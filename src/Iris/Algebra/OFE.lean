@@ -600,6 +600,11 @@ def optionMap {α β : Type _} [OFE α] [OFE β] (f : α -n> β) : Option α -n>
   rintro _ ⟨⟩ ⟨⟩ H <;> simp_all [Dist, Option.Forall₂]
   exact f.ne.ne H
 
+theorem Option.map_forall₂ {α β : Type _} [OFE α] [OFE β] (f : α → β) [hf : OFE.NonExpansive f]
+    {o1 o2 : Option α} (h : o1 ≡ o2) : o1.map f ≡ o2.map f := by
+  cases o1 <;> cases o2 <;> simp_all [Option.Forall₂]
+  exact hf.eqv h
+
 end Option
 
 section OptionOF
