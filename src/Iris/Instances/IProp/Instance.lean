@@ -324,132 +324,10 @@ instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : BI.Persistent (iOwn γ a) where
 theorem iOwn_alloc_strong_dep {f : GName → F.ap (IProp GF)} {P : GName → Prop}
     (HI : Infinite P) (Hv : ∀ γ, P γ → ✓ (f γ)) :
     ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ iOwn γ (f γ) := by
-  sorry
-/-
-theorem iOwn_alloc_strong_dep {f : GName → F.ap (IProp GF)} {P : GName → Prop}
-    (HI : Infinite P) (Hv : ∀ γ, P γ → ✓ (f γ)) :
-    ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ iOwn γ (f γ) := by
   refine .trans (Q := iprop(|==> ∃ m : IResUR GF, ⌜∃ γ, P γ ∧ m = iSingleton _ γ (f γ)⌝ ∧ UPred.ownM m)) ?_ ?_
   · refine .trans (UPred.ownM_unit _) <| BI.intuitionistically_elim.trans ?_
-    refine UPred.ownM_updateP _ (fun n mz Hvalid => ?_)
-    -- Key insight: pick γ based on the frame mz
-    -- For each frame, we need γ ∈ P such that γ is free in that frame
-    cases mz with
-    | none =>
-      -- No frame: any element from P works
-      rcases HI with ⟨PE, HPE⟩
-      refine ⟨iSingleton F (PE 0) (f (PE 0)), ⟨_, HPE.inc, rfl⟩, ?_⟩
-      -- Validity is trivial for empty frame
-      intro γ; constructor
-      · intro γ'
-        simp [CMRA.ValidN, optionValidN, CMRA.op?, iSingleton]
-        rcases Classical.em (γ = ElemG.τ GF F ∧ γ' = PE 0) with (⟨h1, h2⟩ | h)
-        · subst h1 h2
-          simp [iSingleton]
-          have hvn : ✓{n} (f (PE 0)) := (Hv (PE 0) HPE.inc).validN
-          have hb : ✓{n} (E.Bundle (f (PE 0))) := ElemG.Bundle_validN E (f (PE 0)) hvn
-          exact IProp.unfoldi_validN (E.Bundle (f (PE 0))) hb
-        · simp_all only [↓reduceDIte]
-      · -- IsFree: show that after allocating at PE 0, infinitely many remain free
-        -- Use Poke to shift the enumeration, skipping PE 0
-        refine ⟨Poke PE 0, ?_, ?_⟩
-        · intro n'
-          -- After allocation at PE 0, Poke PE 0 enumerates the remaining free positions
-          simp [IsFree, iSingleton, CMRA.op?]
-          intro h hcontra
-          -- Poke PE 0 n' = PE (n' + 1) ≠ PE 0 by injectivity
-          simp only [Poke] at hcontra
-          split at hcontra
-          · next hn => have := HPE.inj hcontra; omega
-          · next hn => have := HPE.inj hcontra; omega
-        · intro n' m' h
-          -- Poke is injective when the base enumeration is injective
-          simp only [Poke] at h
-          by_cases hn : n' < 0 <;> by_cases hm : m' < 0
-          · rw [if_pos hn, if_pos hm] at h; exact HPE.inj h
-          · rw [if_pos hn, if_neg hm] at h; have := HPE.inj h; omega
-          · rw [if_neg hn, if_pos hm] at h; have := HPE.inj h; omega
-          · rw [if_neg hn, if_neg hm] at h; have := HPE.inj h; omega
-    | some z =>
-      -- Have frame z: pick γ ∈ P that's free in z
-      -- Use Infinite.inter_nonempty_nat to find such a γ
-      have Hvalid_z : ✓{n} ((UCMRA.unit : IResUR GF) • z) := by
-        simp [CMRA.op?] at Hvalid; exact Hvalid
-      have Hinf_free : Infinite (IsFree (z E.τ).car) := by
-        -- Extract the infinity condition from validity of the GenMap at type E.τ
-        have h := Hvalid_z E.τ
-        -- The validity of a GenMap includes Infinite (IsFree ...)
-        rcases h with ⟨_, Hinf⟩
-        -- Now show (unit • z) E.τ has the same IsFree as z E.τ
-        refine Infinite.mono Hinf (fun a => ?_)
-        simp [IsFree, CMRA.op]
-        have : ((UCMRA.unit : IResUR GF) E.τ).car a = none := by simp [UCMRA.unit]
-        simp [this, optionOp]
-      have h_inter : ∃ n, P n ∧ IsFree (z E.τ).car n := by
-        -- FIXME: unprovable
-        sorry
-      rcases h_inter with ⟨γ_fresh, Hγ_P, Hγ_free⟩
-      refine ⟨iSingleton F γ_fresh (f γ_fresh), ⟨γ_fresh, Hγ_P, rfl⟩, ?_⟩
-      -- Now prove validity with γ_fresh which is free in the frame
-      intro γ; constructor
-      · intro γ'
-        simp [CMRA.ValidN, optionValidN, CMRA.op?, iSingleton]
-        rcases Classical.em (γ = ElemG.τ GF F ∧ γ' = γ_fresh) with (⟨h1, h2⟩ | h)
-        · -- At the allocated position: γ = E.τ and γ' = γ_fresh
-          subst h1 h2
-          -- After subst, γ_fresh becomes γ'
-          simp [iSingleton, CMRA.op, optionOp]
-          -- γ' is free in z, so z E.τ γ' = none
-          simp [IsFree] at Hγ_free
-          rw [Hγ_free]
-          simp [optionOp]
-          -- Now show validity of unfoldi (E.Bundle (f γ'))
-          have hvn : ✓{n} (f γ') := (Hv γ' Hγ_P).validN
-          have hb : ✓{n} (E.Bundle (f γ')) := ElemG.Bundle_validN E (f γ') hvn
-          exact IProp.unfoldi_validN (E.Bundle (f γ')) hb
-        · -- Away from allocated position: use validity of z
-          -- Since h : ¬(γ = E.τ ∧ γ' = γ_fresh), iSingleton at (γ, γ') is none
-          have h_if_false : ¬(γ = ElemG.τ GF F ∧ γ' = γ_fresh) := h
-          simp [CMRA.op, iSingleton]
-          rw [dif_neg h_if_false]
-          simp [optionOp]
-          -- Now just the validity from z
-          -- Note: (unit • z) γ = z γ since unit is left identity
-          have h_unit_z : (((UCMRA.unit : IResUR GF) • z) γ).car = (z γ).car := by
-            simp [CMRA.op, UCMRA.unit, optionOp]
-          have := Hvalid_z γ
-          rcases this with ⟨Hv_z, _⟩
-          simp [CMRA.ValidN] at Hv_z
-          rw [h_unit_z] at Hv_z
-          exact Hv_z γ'
-      · -- IsFree: show infinitely many remain free after allocation
-        rcases Classical.em (γ = ElemG.τ GF F) with (h_eq | h_ne)
-        · -- Case: γ = E.τ, use alter_isFree_infinite
-          subst h_eq
-          simp [CMRA.op?, CMRA.op, iSingleton]
-          -- The goal is: Infinite (IsFree (fun x => optionOp (if x = γ_fresh then ... else none) ((z E.τ).car x)))
-          -- We know γ_fresh is free in (z E.τ).car, i.e., (z E.τ).car γ_fresh = none
-          simp [IsFree] at Hγ_free
-          -- Now show this matches alter pattern
-          suffices h : (fun x => optionOp (if x = γ_fresh then some (unfoldi (E.Bundle (f γ_fresh))) else none) ((z (ElemG.τ GF F)).car x)) =
-                       alter (z (ElemG.τ GF F)).car γ_fresh (some (unfoldi (E.Bundle (f γ_fresh)))) by
-            rw [h]; exact alter_isFree_infinite Hinf_free
-          funext x
-          simp only [alter, optionOp]
-          by_cases h : x = γ_fresh
-          · subst h
-            rw [if_pos rfl, if_pos rfl]
-            rw [Hγ_free]
-          · rw [if_neg h, if_neg (Ne.symm h)]
-            cases (z (ElemG.τ GF F)).car x <;> rfl
-        · -- Case: γ ≠ E.τ, iSingleton doesn't affect this type
-          simp [CMRA.op?, CMRA.op, iSingleton]
-          -- The dif_neg applies because γ ≠ E.τ
-          have : ∀ x, ¬(γ = ElemG.τ GF F ∧ x = γ_fresh) := fun x ⟨h1, _⟩ => h_ne h1
-          simp [this]
-          -- Now (z γ).car still has infinite free elements
-          have := Hvalid_z γ
-          exact this.2
+    refine UPred.ownM_updateP _ ?_
+    sorry
   · refine BIUpdate.mono ?_
     refine BI.exists_elim (fun m => ?_)
     refine BI.pure_elim (φ := ∃ γ, P γ ∧ m = iSingleton F γ (f γ)) BI.and_elim_l ?_
@@ -458,7 +336,6 @@ theorem iOwn_alloc_strong_dep {f : GName → F.ap (IProp GF)} {P : GName → Pro
     refine BI.emp_sep.mpr.trans (BI.sep_mono ?_ ?_)
     · exact BI.pure_intro HP
     · rw [Hm]; exact .rfl
--/
 
 theorem iOwn_alloc_dep (f : GName → F.ap (IProp GF)) (Ha : ∀ γ, ✓ (f γ)) :
     ⊢ |==> ∃ γ, iOwn γ (f γ) :=
@@ -468,11 +345,10 @@ theorem iOwn_alloc_dep (f : GName → F.ap (IProp GF)) (Ha : ∀ γ, ✓ (f γ))
 theorem iOwn_alloc (a : F.ap (IProp GF)) : ✓ a → ⊢ |==> ∃ γ, iOwn γ a :=
   fun Ha => iOwn_alloc_dep _ (fun _ => Ha)
 
---  MARKUSDE: Here
-
 theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.ap (IProp GF), ⌜P a'⌝ ∗ iOwn γ a' := by
   refine .trans (Q := iprop(|==> ∃ m, ⌜ ∃ a', m = (iSingleton F γ a') ∧ P a' ⌝ ∧ UPred.ownM m)) ?_ ?_
   · apply UPred.ownM_updateP
+    -- NB. The rest of this case is singleton_updateP
     intro n mz Hv
     cases mz with
     | none =>
@@ -718,10 +594,10 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
     -- Show ✓{n} (iSingleton F γ ε •? mz)
     intro τ'
     by_cases Heq : τ' = E.τ
-    ·
+    · 
       subst Heq
       refine ⟨?_, ?_⟩
-      ·
+      · 
         intro γ'
         unfold iSingleton
         simp [CMRA.op?, CMRA.ValidN, optionValidN]
@@ -737,7 +613,7 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
           simp [CMRA.op?] at Hv'
           rcases Hv' with ⟨h_valid, _⟩
           by_cases h_key : γ' = γ
-          ·
+          · 
             simp [h_key]
             rcases h_at : (mz' E.τ).car γ with (⟨⟩ | v)
             · simp [optionOp]; exact unfoldi_bundle_validN E n
@@ -745,13 +621,12 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
               haveI h_unit : IsUnit (IProp.unfoldi (E.Bundle ε)) := unfoldi_bundle_unit E
               have h_v_valid := extract_frame_validN E.τ n mz' h_valid γ v h_at
               exact CMRA.validN_ne h_unit.unit_left_id.dist.symm h_v_valid
-          ·
+          · 
             simp [h_key]
             rcases h_at : (mz' E.τ).car γ' with (⟨⟩ | v)
             · trivial
             · simp [optionOp]; exact extract_frame_validN E.τ n mz' h_valid γ' v h_at
-      ·
-        cases mz with
+      · cases mz with
         | none => exact iSingleton_infinite_free γ ε
         | some mz' =>
           have ⟨_, h_inf⟩ := Hv E.τ; simp [CMRA.op?] at h_inf
@@ -759,7 +634,7 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
             apply Infinite.mono h_inf
             intro k h_free; simp [IsFree, CMRA.op, UCMRA.unit, optionOp] at h_free ⊢; exact h_free
           exact iSingleton_op_isFree_infinite γ ε (mz' E.τ) h_inf_mz
-    ·
+    · 
       have h_is_unit := iSingleton_ne_eq_unit γ ε τ' Heq
       cases mz with
       | none =>
