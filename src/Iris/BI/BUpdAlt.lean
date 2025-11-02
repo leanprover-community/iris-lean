@@ -67,11 +67,25 @@ theorem bupd_alt_intro {P : PROP} : P ⊢ bupd_alt P := by
   ispecialize H Hp as H1
   iexact H1
 
-theorem bupt_alt_mono {P Q : PROP} : (P ⊢ Q) → (bupd_alt P ⊢ bupd_alt Q) := by
-  intro
-  unfold bupd_alt
 
-  sorry
+
+theorem bupt_alt_mono {P Q : PROP} : (P ⊢ Q) → (bupd_alt P ⊢ bupd_alt Q) := by
+  intros H
+  unfold bupd_alt
+  iintro R HQR
+  iintro Hp
+
+  have H1 : ⊢ iprop(Q -∗ ■ HQR) -∗ iprop(P -∗ ■ HQR) := by
+    iintro H
+    iintro Hp
+    iapply H
+    apply H
+    done
+  iintro ⟨Ha, H2⟩
+  ispecialize Ha HQR
+  iapply Ha
+  iapply H1
+  iassumption
 
 theorem bupd_alt_trans {P : PROP} : bupd_alt (bupd_alt P) ⊢ P := by
   sorry
