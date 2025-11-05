@@ -118,7 +118,6 @@ instance {γ : GName} [RFunctorContractive F] [E : ElemG GF F] :
   ne {n x1 x2} H τ' γ' := by
     simp [iSingleton]
     split <;> try rfl
-    simp [optionOp]
     rename_i h; rcases h with ⟨h1, h2⟩; subst h1; subst h2; simp
     exact NonExpansive.ne (NonExpansive.ne H)
 
