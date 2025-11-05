@@ -32,14 +32,29 @@ class BIBase (PROP : Type u) where
 
 namespace BIBase
 
-def «forall» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sForall fun p => ∃ a, P a = p
-def «exists» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sExists fun p => ∃ a, P a = p
-
 /-- Entailment on separation logic propositions. -/
 macro:25 P:term:29 " ⊢ " Q:term:25 : term => ``(BIBase.Entails iprop($P) iprop($Q))
 
 delab_rule BIBase.Entails
   | `($_ $P $Q) => do ``($(← unpackIprop P) ⊢ $(← unpackIprop Q))
+
+structure BiEntails [BIBase PROP] (P Q : PROP) where
+  mp : P ⊢ Q
+  mpr : Q ⊢ P
+
+/-- Entailment on separation logic propositions with an empty context. -/
+macro:25 "⊢ " P:term:25 : term => ``(emp ⊢ $P)
+/-- Bidirectional entailment on separation logic propositions. -/
+macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(BiEntails iprop($P) iprop($Q))
+
+delab_rule BIBase.Entails
+  | `($_ iprop(emp) $P) => do ``(⊢ $(← unpackIprop P))
+
+delab_rule BIBase.BiEntails
+  | `($_ $P $Q) => do ``($(← unpackIprop P) ⊣⊢ $(← unpackIprop Q))
+
+def «forall» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sForall fun p => ∃ a, P a ⊣⊢ p
+def «exists» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sExists fun p => ∃ a, P a ⊣⊢ p
 
 /-- Embedding of pure Lean proposition as separation logic proposition. -/
 syntax "⌜" term "⌝" : term
@@ -166,21 +181,6 @@ syntax:max "<absorb> " term:40 : term
 def affinely    [BIBase PROP] (P : PROP) : PROP := iprop(emp ∧ P)
 def absorbingly [BIBase PROP] (P : PROP) : PROP := iprop(True ∗ P)
 
-structure BiEntails [BIBase PROP] (P Q : PROP) where
-  mp : P ⊢ Q
-  mpr : Q ⊢ P
-
-/-- Entailment on separation logic propositions with an empty context. -/
-macro:25 "⊢ " P:term:25 : term => ``(emp ⊢ $P)
-/-- Bidirectional entailment on separation logic propositions. -/
-macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(BiEntails iprop($P) iprop($Q))
-
-delab_rule BIBase.Entails
-  | `($_ iprop(emp) $P) => do ``(⊢ $(← unpackIprop P))
-
-delab_rule BIBase.BiEntails
-  | `($_ $P $Q) => do ``($(← unpackIprop P) ⊣⊢ $(← unpackIprop Q))
-
 macro_rules
   | `(iprop(<affine> $P)) => ``(affinely iprop($P))
   | `(iprop(<absorb> $P)) => ``(absorbingly iprop($P))
@@ -285,4 +285,3 @@ macro_rules
 
 delab_rule except0
   | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
-

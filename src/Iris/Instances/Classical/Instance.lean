@@ -232,10 +232,9 @@ instance : BI (HeapProp Val) where
     simp only [BI.Entails, BI.persistently, BI.and]
     intro _ _ _ h
     exact h
-  persistently_sExists_1 := by
-    simp only [BI.Entails, BI.persistently, BI.exists]
-    intro _ _ ⟨p, hp, h⟩
-    exact ⟨_, ⟨_, rfl⟩, hp, h⟩
+  persistently_sExists_1 {Ψ} _ h :=
+    match h with
+    | Exists.intro p ⟨hp, h⟩ => Exists.intro iprop(⌜Ψ p⌝ ∧ fun x => p ∅) ⟨Exists.intro p ⟨fun σ _ => ⟨hp, h⟩, fun σ _ => ⟨hp, h⟩⟩, ⟨hp, h⟩⟩
   persistently_absorb_l := by
     simp only [BI.Entails, BI.persistently, BI.sep]
     intro _ _ _ ⟨_, _, _, _, h_P, _⟩
@@ -255,8 +254,17 @@ instance : BI (HeapProp Val) where
 
   later_mono := id
   later_intro _ := id
-  later_sForall_2 _ h _ hp := h _ ⟨_, rfl⟩ hp
-  later_sExists_false _ := fun ⟨p, hp⟩ => .inr ⟨_, ⟨_, rfl⟩, hp⟩
+  later_sForall_2 _ h p hp := by
+    apply h
+    refine ⟨p, ?_⟩
+    constructor
+    · refine fun _ _ => ?_
+      simp_all [BI.imp, BI.pure, BI.later]
+    · refine fun _ _ => ?_
+      simp_all [BI.imp, BI.pure, BI.later]
+  later_sExists_false _ := by
+    refine fun ⟨p, hp⟩ => .inr ⟨p, ⟨⟨p, ⟨fun _ h => h.2, ?_⟩⟩, hp.2⟩⟩
+    refine fun _ h => And.imp_right (fun _ => h) hp
   later_sep := ⟨fun _ => id, fun _ => id⟩
   later_persistently := ⟨fun _ => id, fun _ => id⟩
   later_false_em _ h := .inr fun _ => h

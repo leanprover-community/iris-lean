@@ -86,8 +86,7 @@ theorem plainly_forall_2 {Ψ : α → PROP} : (∀ a, ■ (Ψ a)) ⊢ ■ (∀ a
   refine imp_intro' ?_
   refine and_comm.mp.trans <| imp_elim' <| pure_elim _ .rfl ?_
   rintro ⟨_, Ha⟩
-  rewrite [← Ha]
-  exact imp_intro' <| and_elim_l.trans <| forall_elim _
+  exact imp_intro' <| and_elim_l.trans <| (forall_elim _).trans (mono Ha.1)
 
 theorem plainly_persistently_elim : ■ <pers> P ⊣⊢ ■ P := by
   constructor
@@ -152,8 +151,8 @@ theorem plainly_exists_1 [BIPlainlyExists PROP] {Ψ : α → PROP} :
     ■ (∃ a, Ψ a) ⊢ ∃ a, ■ (Ψ a) := by
   refine plainly_sExists_1.trans ?_
   refine exists_elim fun p => imp_elim <| pure_elim' ?_
-  rintro ⟨a, rfl⟩
-  exact imp_intro' <| exists_intro' a and_elim_l
+  rintro ⟨a, Heq⟩
+  exact imp_intro' <| exists_intro' a (and_elim_l.trans (mono Heq.2))
 
 theorem plainly_exists [BIPlainlyExists PROP] {Ψ : α → PROP} : ■ (∃ a, Ψ a) ⊣⊢ ∃ a, ■ (Ψ a) :=
   ⟨plainly_exists_1, plainly_exists_2⟩
