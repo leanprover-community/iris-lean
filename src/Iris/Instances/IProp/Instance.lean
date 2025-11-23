@@ -321,26 +321,108 @@ instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : BI.Persistent (iOwn γ a) where
     refine NonExpansive.eqv ?_
     apply CMRA.core_eqv_self
 
+/-
 theorem iOwn_alloc_strong_dep {f : GName → F.ap (IProp GF)} {P : GName → Prop}
-    (HI : Infinite P) (Hv : ∀ γ, P γ → ✓ (f γ)) :
+    (HI : Infinite P) (Hf_valid : ∀ γ, P γ → ✓ (f γ)) :
     ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ iOwn γ (f γ) := by
   refine .trans (Q := iprop(|==> ∃ m : IResUR GF, ⌜∃ γ, P γ ∧ m = iSingleton _ γ (f γ)⌝ ∧ UPred.ownM m)) ?_ ?_
-  · refine .trans (UPred.ownM_unit _) <| BI.intuitionistically_elim.trans ?_
-    refine UPred.ownM_updateP _ ?_
-    sorry
-  · refine BIUpdate.mono ?_
-    refine BI.exists_elim (fun m => ?_)
-    refine BI.pure_elim (φ := ∃ γ, P γ ∧ m = iSingleton F γ (f γ)) BI.and_elim_l ?_
-    refine fun ⟨γ, HP, Hm⟩ => BI.and_elim_r' ?_
-    refine BI.exists_intro' γ ?_
-    refine BI.emp_sep.mpr.trans (BI.sep_mono ?_ ?_)
-    · exact BI.pure_intro HP
-    · rw [Hm]; exact .rfl
+-/
 
 theorem iOwn_alloc_dep (f : GName → F.ap (IProp GF)) (Ha : ∀ γ, ✓ (f γ)) :
-    ⊢ |==> ∃ γ, iOwn γ (f γ) :=
-  (iOwn_alloc_strong_dep .Nat_True (fun _ => Ha ·)).trans <|
-  BIUpdate.mono <| BI.exists_mono fun _ => BI.sep_elim_r
+    ⊢ |==> ∃ γ, iOwn γ (f γ) := by
+  unfold iOwn
+  refine .trans (Q := iprop(|==> ∃ m : IResUR GF, ⌜∃ γ, m = iSingleton _ γ (f γ)⌝ ∧ UPred.ownM m)) ?_ ?_
+  · refine .trans (UPred.ownM_unit _) <| BI.intuitionistically_elim.trans ?_
+    refine UPred.ownM_updateP _ ?_
+    -- Prove: (UCMRA.unit : IResUR GF) ~~>: (fun m => ∃ γ, m = iSingleton F γ (f γ))
+    intro n mz Hv
+    -- Pick a fresh γ from the frame
+    -- Easy case: no frame
+    cases mz with
+    | none =>
+      -- Just pick γ = 0
+      let γ := 0
+      refine ⟨iSingleton F γ (f γ), ⟨γ, rfl⟩, ?_⟩
+      simp [CMRA.op?]
+      intro τ'
+      by_cases h_tau : τ' = E.τ
+      · subst h_tau
+        refine ⟨?_, iSingleton_infinite_free γ (f γ)⟩
+        intro γ'
+        unfold iSingleton
+        simp [CMRA.ValidN, optionValidN]
+        by_cases h_gamma : γ' = γ
+        · simp [h_gamma]
+          apply unfoldi_validN
+          apply transpAp_validN_mp (E.TranspMap <| F.ap (IProp GF)).symm (E.TranspClass <| F.ap (IProp GF)).symm
+          exact (Ha γ).validN
+        · simp [h_gamma]
+      · unfold iSingleton
+        simp [h_tau]
+        exact (UCMRA.unit_valid : ✓ (UCMRA.unit : GenMap Nat _)).validN
+    | some mz' =>
+      -- Pick a fresh γ from mz' E.τ
+      have h_valid_E := Hv E.τ
+      simp [CMRA.op?] at h_valid_E
+      rcases h_valid_E with ⟨h_pointwise, h_inf⟩
+      -- The frame at E.τ after composing with unit equals mz' at E.τ
+      have h_unit_op : (UCMRA.unit : IResUR GF) E.τ • mz' E.τ ≡ mz' E.τ := by
+        intro k
+        simp [CMRA.op, UCMRA.unit, optionOp]
+      -- Extract a free key using GenMap.valid_exists_fresh
+      have h_valid_mz : ✓{n} (mz' E.τ) := CMRA.validN_ne h_unit_op.dist ⟨h_pointwise, h_inf⟩
+      have ⟨γ, h_free_γ⟩ := @GenMap.valid_exists_fresh _ _ _ _ _ h_valid_mz
+      refine ⟨iSingleton F γ (f γ), ⟨γ, rfl⟩, ?_⟩
+      -- Show ✓{n} iSingleton F γ (f γ) •? some mz'
+      simp [CMRA.op?]
+      intro τ'
+      by_cases h_tau : τ' = E.τ
+      · subst h_tau
+        refine ⟨?_, ?_⟩
+        · -- Pointwise validity
+          intro γ'
+          simp [CMRA.op]
+          by_cases h_gamma : γ' = γ
+          · -- At the allocated key γ
+            subst h_gamma
+            unfold iSingleton at *
+            rw [h_free_γ]
+            simp [CMRA.ValidN, optionValidN, optionOp]
+            apply unfoldi_validN
+            apply transpAp_validN_mp (E.TranspMap <| F.ap (IProp GF)).symm (E.TranspClass <| F.ap (IProp GF)).symm
+            exact (Ha γ').validN
+          · -- At other keys
+            unfold iSingleton
+            simp [h_gamma, optionOp]
+            -- Validity from the frame
+            have := h_pointwise γ'
+            simp [CMRA.op, UCMRA.unit, optionOp] at this
+            exact this
+        · -- Infinite free keys
+          have h_inf_mz' : Infinite (IsFree (mz' E.τ).car) := by
+            apply Infinite.mono h_inf
+            intro k h_free
+            simp [IsFree, CMRA.op, UCMRA.unit, optionOp] at h_free ⊢
+            exact h_free
+          exact iSingleton_op_isFree_infinite γ (f γ) (mz' E.τ) h_inf_mz'
+      · -- τ' ≠ E.τ
+        have h_singleton_eq_unit : (iSingleton F γ (f γ) τ').car = (UCMRA.unit : GenMap Nat _).car := by
+          ext γ'
+          unfold iSingleton
+          simp [h_tau]
+        have h_frame_valid := Hv τ'
+        simp [CMRA.op?] at h_frame_valid
+        have h_eq : (iSingleton F γ (f γ) • mz') τ' ≡ (UCMRA.unit : IResUR GF) τ' • mz' τ' := by
+          intro k
+          simp [CMRA.op, h_singleton_eq_unit, UCMRA.unit]
+        exact CMRA.validN_ne h_eq.symm.dist h_frame_valid
+  · refine BIUpdate.mono ?_
+    refine BI.exists_elim (fun m => ?_)
+    refine BI.pure_elim (φ := ∃ γ, m = iSingleton F γ (f γ)) BI.and_elim_l ?_
+    refine fun ⟨γ, Hm⟩ => BI.and_elim_r' ?_
+    refine BI.exists_intro' γ ?_
+    rw [Hm]
+    exact .rfl
 
 theorem iOwn_alloc (a : F.ap (IProp GF)) : ✓ a → ⊢ |==> ∃ γ, iOwn γ a :=
   fun Ha => iOwn_alloc_dep _ (fun _ => Ha)
