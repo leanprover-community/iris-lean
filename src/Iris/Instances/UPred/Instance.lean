@@ -8,6 +8,7 @@ import Iris.BI
 import Iris.Algebra.OFE
 import Iris.Algebra.CMRA
 import Iris.Algebra.UPred
+import Iris.Algebra.Updates
 
 section UPredInstance
 
@@ -295,8 +296,9 @@ instance : BI (UPred M) where
   persistently_emp_2 := Std.refl
   persistently_and_2 := Std.refl
   persistently_sExists_1 n x v := fun ⟨p, HΨ, H⟩ => by
-    refine ⟨iprop(<pers> p), ⟨p, ?_⟩, H⟩
-    ext; exact and_iff_right HΨ
+    refine ⟨iprop(<pers> p), ⟨p, ⟨?_, ?_⟩⟩, H⟩ <;>
+    refine fun _ _ _ => ?_ <;> simp [BI.and, UPred.and]
+    simp_all [BI.pure, UPred.pure]
   persistently_absorb_l {P Q} _ x _ := fun ⟨x1, x2, H1, H2, H3⟩ =>
     P.mono H2 (CMRA.core_incN_core ⟨x2, H1⟩) (Nat.le_refl _)
   persistently_and_l _ x _ H := ⟨CMRA.core x, x, (CMRA.core_op _).symm.dist, H⟩
@@ -306,14 +308,22 @@ instance : BI (UPred M) where
   later_intro {P} := fun
     | 0, _, _, _ => trivial
     | n+1, _, _, Hp => P.mono Hp (CMRA.incN_refl _) (Nat.le_add_right ..)
-  later_sForall_2 {Ψ} := fun
-    | 0, _, _, _ => trivial
-    | n+1, _, Hx, H => fun _ => H _ ⟨_, rfl⟩ _ _ (CMRA.inc_refl _) (Nat.le_refl _) Hx
+  later_sForall_2 {Ψ} n m hv h := by
+    cases n
+    · trivial
+    · intro p hp
+      refine h (later p) ⟨p, ?_⟩
+      constructor <;> intro n' x' hx' hp'
+      · exact hp' _ _ CMRA.Included.rfl (Nat.le_refl _) hx' hp
+      · intro n'' x'' hin hn hx'' _
+        exact (later p).mono hp' (CMRA.incN_of_inc _ hin) hn
   later_sExists_false := fun
     | 0, _, _, _ => .inl trivial
     | n+1, x, Hx, ⟨p', Hp', H⟩ => by
       refine .inr ⟨later p', ⟨p', ?_⟩, H⟩
-      ext n x; exact and_iff_right Hp'
+      constructor <;> intro n x hv
+      · exact (and_iff_right Hp').mp
+      · exact (and_iff_right Hp').mpr
   later_sep {P Q} := by
     constructor <;> rintro (_ | n) x Hv H
     · exact ⟨UCMRA.unit, x, UCMRA.unit_left_id.dist.symm, trivial, trivial⟩
@@ -366,7 +376,9 @@ instance : BIPlainly (UPred M) where
     simp [UPred.persistently, persistently]
     exact P.mono H CMRA.incN_unit n.le_refl
   idem _ _ _ := id
-  plainly_sForall_2 _ _ hv H _ := H _ ⟨_, rfl⟩ _ _ .rfl (Nat.le_refl _) hv
+  plainly_sForall_2 {Φ} n x hv H p hp := H (plainly p) ⟨p, ⟨
+      fun n' x' hx' h => h _ _ CMRA.Included.rfl (Nat.le_refl _) hx' hp,
+      fun n' x' hx' h n'' x'' hin hn hx'' _ => p.mono h (CMRA.incN_refl UCMRA.unit) hn⟩⟩
   plainly_impl_plainly {P Q} n x Hx HPQ n' x' Hx' Hn Hv H := by
     apply Q.mono _ (CMRA.incN_of_inc _ Hx') n'.le_refl
     apply HPQ _ _ CMRA.Included.rfl Hn (CMRA.validN_of_le Hn Hx)
@@ -376,7 +388,7 @@ instance : BIPlainly (UPred M) where
   later_plainly := ⟨Std.refl, Std.refl⟩
 
 instance : BIPlainlyExists (UPred M) where
-  plainly_sExists_1 _ _ _ := fun ⟨_, hp⟩ => ⟨_, ⟨_, rfl⟩, hp⟩
+  plainly_sExists_1 _ _ _ := fun ⟨_, hp⟩ => ⟨_, ⟨_, BIBase.BiEntails.rfl⟩, hp⟩
 
 instance : BUpd (UPred M) := ⟨bupd⟩
 
@@ -422,6 +434,9 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
       _ ≡{n}≡ (m1 • m2) • (w2 • w1) := CMRA.assoc.dist
       _ ≡{n}≡ (m1 • m2) • (w1 • w2) := CMRA.comm.op_r.dist
 
+theorem ownM_eqv {m1 m2 : M} (H : m1 ≡ m2) : ownM m1 ⊣⊢ ownM m2 :=
+  ⟨fun _ _ _ => (CMRA.incN_iff_left H.dist).mp, fun _ _ _ => (CMRA.incN_iff_left H.dist).mpr⟩
+
 theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : (cmraValid m : UPred M) ⊢ False :=
   fun n _ _ => H n
 
@@ -455,7 +470,42 @@ theorem later_soundness : iprop(True ⊢ ▷ P) → iprop((True : UPred M) ⊢ P
 theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (CMRA.core a) :=
   fun _ _ _ H => CMRA.core_incN_core H
 
--- TODO: bupd_ownM_updateP (needs basic updates to be defined)
+instance : Persistent (ownM (CMRA.core a) : UPred M) where
+  persistent := by
+    refine .trans (persistently_ownM_core _) ?_
+    refine persistently_mono ?_
+    refine equiv_iff.mp ?_ |>.mp
+    refine OFE.NonExpansive.eqv ?_
+    exact CMRA.core_idem a
+
+theorem ownM_updateP (Φ : M → Prop) :
+    x ~~>: Φ → UPred.ownM x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ UPred.ownM y := by
+  intro Hup
+  rintro n x2 _ ⟨x3, Hk⟩ k yf _ Hv
+  have G : ✓{k} x •? some (x3 • yf) := by
+    simp [CMRA.op?]
+    apply CMRA.validN_ne _ Hv
+    refine .trans ?_ CMRA.assoc.dist.symm
+    refine CMRA.op_commN.trans (.trans ?_ CMRA.op_commN)
+    apply CMRA.op_ne.ne
+    apply OFE.Dist.le Hk
+    trivial
+  obtain ⟨y, Hy_prop, Hy_valid⟩ := Hup k (some (x3 • yf)) G
+  exists (y • x3)
+  refine ⟨?_, ?_⟩
+  · simp [CMRA.op?] at Hy_valid
+    apply CMRA.validN_ne _ Hy_valid
+    refine .trans ?_ CMRA.assoc.dist
+    exact CMRA.op_ne.ne .rfl
+  · simp [BI.exists, BI.sExists, UPred.sExists]
+    exists (UPred.ownM y)
+    refine ⟨?_, ?_⟩
+    · exists y
+      constructor <;> intro n x hx
+      · exact (and_iff_right Hy_prop).mp
+      · exact (and_iff_right Hy_prop).mpr
+    · exists x3
+
 -- TODO: later_ownM, ownM_forall  (needs internal eq )
 
 theorem cmraValid_intro [CMRA A] {P : UPred M} (a : A) (Ha : ✓ a) : P ⊢ cmraValid a :=
@@ -475,6 +525,9 @@ theorem cmra_cmraValid_weaken [CMRA A] (a b : A) :
 theorem cmraValid_entails [CMRA A] [CMRA B] {a : A} {b : B} (Hv : ∀ n, ✓{n} a → ✓{n} b) :
     (cmraValid a : UPred M) ⊢ cmraValid b :=
   fun _ _ _ H => Hv _ H
+
+instance [CMRA A] {a : A} : Persistent (UPred.cmraValid a : UPred M) where
+  persistent := fun _ _ _ a => a
 
 instance : BIAffine (UPred M) := ⟨by infer_instance⟩
 
