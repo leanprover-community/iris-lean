@@ -7,6 +7,8 @@ Authors: Markus de Medeiros, Mario Carneiro
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
 import Iris.Algebra.Frac
+import Iris.Algebra.Updates
+import Iris.Algebra.LocalUpdates
 
 namespace Iris
 
@@ -137,5 +139,67 @@ theorem valid_discard : ✓ (discard : DFrac F) := by simp [CMRA.Valid, valid]
 
 theorem valid_own_op_discard {q : F} : ✓ own q • discard ↔ Fractional q := by
   simp [CMRA.op, op, CMRA.Valid, valid]
+
+instance : CMRA.Discrete (DFrac F) where
+  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
+
+theorem DFrac.is_discrete {q : DFrac F} : OFE.DiscreteE q := ⟨congrArg id⟩
+
+instance : CMRA.Discrete (DFrac F) where
+  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
+
+instance : CMRA.Discrete (DFrac F) where
+  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
+
+-- dfrac_discard_update
+theorem DFrac.update_discard {dq : DFrac F} : dq ~~> .discard := by
+  rintro n (_|⟨q|_|q⟩) H <;>
+    have H' := (CMRA.valid_iff_validN' n).mpr H <;>
+    apply (CMRA.valid_iff_validN' n).mp <;>
+    simp [CMRA.op?] at H' ⊢
+  · simp [CMRA.Valid, valid]
+  · cases dq
+    · exact valid_op_own H
+    · exact H
+    · exact valid_op_own H
+  · simp [CMRA.Valid, valid, CMRA.op, op]
+  · cases dq
+    · exact CMRA.valid_op_right _ _ H
+    · exact H
+    · exact CMRA.valid_op_right _ _ H
+
+-- dfrac_undiscard_update
+theorem DFrac.update_acquire [IsSplitFraction F] :
+    (.discard : DFrac F) ~~>: fun k => ∃ q, k = .own q := by
+  apply UpdateP.discrete.mpr
+  rintro (_|⟨q|_|q⟩)
+  · rintro _
+    exists (.own One.one)
+    refine ⟨⟨One.one, rfl⟩, ?_⟩
+    simp [CMRA.op?, CMRA.op, op, CMRA.Valid, valid, add_comm]
+    apply UFraction.one_whole.1
+  · rintro ⟨q', HP⟩
+    exists (.own q')
+    refine ⟨⟨q', rfl⟩, ?_⟩
+    simp [CMRA.op?, CMRA.op, op, CMRA.Valid, valid, add_comm]
+    exact HP
+  · intro _
+    let q' : F := (IsSplitFraction.split One.one).1
+    exists (.own q')
+    refine ⟨⟨q', rfl⟩, ?_⟩
+    simp [CMRA.op?, CMRA.op, op, CMRA.Valid, valid]
+    exists (IsSplitFraction.split One.one).2
+    rw [IsSplitFraction.split_add]
+    apply UFraction.one_whole.1
+  · rintro ⟨q', HP⟩
+    let q'' : F := (IsSplitFraction.split q').1
+    exists (.own q'')
+    refine ⟨⟨q'', rfl⟩, ?_⟩
+    simp [CMRA.op?, CMRA.op, op, CMRA.Valid, valid]
+    rw [add_comm]
+    exists (IsSplitFraction.split q').2
+    rw [← add_assoc]
+    rw [IsSplitFraction.split_add]
+    exact HP
 
 end dfrac
