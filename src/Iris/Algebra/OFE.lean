@@ -671,6 +671,11 @@ def optionMap {α β : Type _} [OFE α] [OFE β] (f : α -n> β) : Option α -n>
   rintro _ ⟨⟩ ⟨⟩ H <;> simp_all [Dist, Option.Forall₂]
   exact f.ne.ne H
 
+theorem Option.map_forall₂ {α β : Type _} [OFE α] [OFE β] (f : α → β) [hf : OFE.NonExpansive f]
+    {o1 o2 : Option α} (h : o1 ≡ o2) : o1.map f ≡ o2.map f := by
+  cases o1 <;> cases o2 <;> simp_all [Option.Forall₂]
+  exact hf.eqv h
+
 end Option
 
 section OptionOF
@@ -860,17 +865,20 @@ instance [OFunctorContractive F] : OFunctorContractive (LaterOF F) where
 
 end LaterOF
 
-section subtype
+section Subtype
 
-instance [OFE α] {P : α → Prop} : OFE { x : α // P x } where
+instance [OFE α] {P : α → Prop} : OFE { a  // P a } where
   Equiv := (·.val ≡ ·.val)
   Dist n := (·.val ≡{n}≡ ·.val)
-  dist_eqv := {
-    refl x := dist_eqv.refl x.val
-    symm H := H.symm
-    trans H1 H2 := H1.trans H2
-  }
+  dist_eqv.refl _ := Dist.of_eq rfl
+  dist_eqv.symm := Dist.symm
+  dist_eqv.trans := Dist.trans
   equiv_dist := equiv_dist
-  dist_lt := dist_lt
+  dist_lt := Dist.lt
 
-end subtype
+end Subtype
+
+theorem OFE.cast_dist [Iα : OFE α] [Iβ : OFE β] {x y : α}
+    (Ht : α = β) (HIt : Iα = Ht ▸ Iβ)  (H : x ≡{n}≡ y) :
+    (Ht ▸ x) ≡{n}≡ (Ht ▸ y) := by
+  subst Ht; subst HIt; exact H

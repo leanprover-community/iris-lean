@@ -94,6 +94,16 @@ class UCMRA (α : Type _) extends CMRA α where
   unit_left_id : unit • x ≡ x
   pcore_unit : pcore unit ≡ some unit
 
+class IsUnit [CMRA α] (ε : α) : Prop where
+  unit_valid : ✓ ε
+  unit_left_id : ε • x ≡ x
+  pcore_unit : CMRA.pcore ε ≡ some ε
+
+instance [UCMRA α] : IsUnit (UCMRA.unit : α) where
+  unit_valid := UCMRA.unit_valid
+  unit_left_id := UCMRA.unit_left_id
+  pcore_unit := UCMRA.pcore_unit
+
 namespace CMRA
 variable [CMRA α]
 
@@ -877,9 +887,6 @@ class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
   map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-variable (F T) in
-def RFunctor.ap [RFunctor F] [OFE T] := F T T
-
 attribute [instance] RFunctor.cmra
 
 
@@ -1433,26 +1440,3 @@ instance urFunctorContractiveOptionOF
 
 end optionOF
 
-section GenMap
-
-/-
-The OFE over gmaps is eqivalent to a non-depdenent discrete function to an `Option` type with a
-`Leibniz` OFE.
-In this setting, the CMRA is always unital, and as a consquence the oFunctors do not require
-unitality in order to act as a `URFunctor(Contractive)`.
--/
-
-variable (α β : Type _) [UCMRA β] [Leibniz β]
-
-abbrev GenMap := α → Option β
-
--- #synth CMRA (Option β)
--- #synth CMRA (α -d> (Option β))
--- #synth UCMRA (α -d> (Option β))
--- The synthesized UMRA here has unit (fun x => ε) = (fun x => none).
--- For us, this is equivalent to the Rocq-iris unit ∅.
-
-abbrev GenMapOF (C : Type _) (F : COFE.OFunctorPre) :=
-  DiscreteFunOF fun (_ : C) => OptionOF F
-
-end GenMap
