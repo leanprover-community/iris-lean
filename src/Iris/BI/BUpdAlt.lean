@@ -145,20 +145,12 @@ variable [UCMRA M] (own : M → PROP)
 variable (own_updateP_plainly :
   ∀ (x : M) (Φ : M → Prop) (R : PROP),
     (x ~~>: Φ) →
-    own x ∗ (∀ y, iprop(⌜Φ y⌝) -∗ own y -∗ ■ R) ⊢ ■ R)
-
-  -- Lemma own_updateP x (Φ : M → Prop) :
-  --   x ~~>: Φ → own x ⊢ bupd_alt (∃ y, ⌜Φ y⌝ ∧ own y).
-  -- Proof.
-  --   iIntros (Hup) "Hx"; iIntros (R) "H".
-  --   iApply (own_updateP_plainly with "[$Hx H]"); first done.
-  --   iIntros (y ?) "Hy". iApply "H"; auto.
-  -- Qed.
+    own x ∗ (∀ y, iprop(<affine> ⌜Φ y⌝) -∗ own y -∗ ■ R) ⊢ ■ R)
 theorem own_updateP {x : M} {Φ : M → Prop}
     (own_updateP_plainly :
       ∀ (x : M) (Φ : M → Prop) (R : PROP),
         (x ~~>: Φ) →
-        own x ∗ (∀ y, iprop(⌜Φ y⌝) -∗ own y -∗ ■ R) ⊢ ■ R) :
+        own x ∗ (∀ y, iprop(<affine> ⌜Φ y⌝) -∗ own y -∗ ■ R) ⊢ ■ R) :
     (x ~~>: Φ) →
     own x ⊢ bupd_alt iprop(∃ y, ⌜Φ y⌝ ∧ own y) := by
   intro Hup
@@ -168,17 +160,58 @@ theorem own_updateP {x : M} {Φ : M → Prop}
   iapply own_updateP_plainly x Φ R Hup
   isplit l [Hx]
   · iexact Hx
-  -- TODO: can't intro (HΦ) to pure context
-  iintro y (HΦ) Hy
+  -- TODO: can't intro HΦ to pure context
+  iintro y
+  iintro HΦ
+  icases HΦ with ⌜HQ⌝
+  iintro Hy
   iapply H
   iexists y
-  sorry
-
+  isplit
+  · ipure_intro
+    exact HQ
+  · iexact Hy
 end bupd_alt
+
+-- Helper predicate for bupd_alt_bupd proof
+private def bupd_alt_pred [UCMRA M] (P : UPred M) (y : M) : UPred M where
+  holds k _ := ∃ x'', ✓{k} (x'' • y) ∧ P k x''
+  mono {_} := fun ⟨z, Hz1, Hz2⟩ _ Hn =>
+    ⟨z, CMRA.validN_of_le Hn Hz1, P.mono Hz2 (CMRA.incN_refl z) Hn⟩
 
 -- The alternative definition entails the ordinary basic update
 theorem bupd_alt_bupd [UCMRA M] (P : UPred M) : bupd_alt P ⊢ |==> P := by
-  sorry
+  unfold bupd_alt bupd
+  -- Unseal
+  intro n x Hx H
+  -- Unfold bupd definition in `Instance.lean`
+  intro k y Hkn Hxy
+  -- Apply H to the custom predicate R
+  let R := bupd_alt_pred P y
+  -- H : iprop(∀ R, (P -∗ ■ R) -∗ ■ R).holds n x
+  -- This is sForall (fun p => ∃ R, (P -∗ ■ R) -∗ ■ R = p).holds n x
+  -- Which means: ∀ p, (∃ R', ...) → p n x
+  -- We instantiate with our R
+  have H_inst : (UPred.wand (UPred.wand P (UPred.plainly R)) (UPred.plainly R)).holds n x :=
+    H (UPred.wand (UPred.wand P (UPred.plainly R)) (UPred.plainly R)) ⟨R, rfl⟩
+  -- Now use mono to get it at k with y (not x • y!)
+  -- We need x ≼{k} y, but that's not generally true
+  -- Instead, apply H_inst directly at k with y
+  -- But we need ✓{k} (x • y) to apply the wand
+  -- Actually, let's just use H_inst as a wand and apply it
+  -- The wand says: ∀ k' y', k' ≤ n → ✓{k'} (x • y') → (P -∗ ■ R) k' y' → (■ R) k' (x • y')
+  have wand_holds : (UPred.wand P (UPred.plainly R)).holds k y := by
+    intro k' z Hk' Hvyz HP
+    -- Need to show: (■ R) k' (y • z), which is R k' UCMRA.unit
+    -- R k' UCMRA.unit = ∃ x'', ✓{k'} (x'' • y) ∧ P k' x''
+    refine ⟨z, ?_, HP⟩
+    -- Hvyz : ✓{k'} (y • z), need ✓{k'} (z • y)
+    exact CMRA.validN_ne CMRA.op_commN Hvyz
+  -- Now apply H_inst
+  have HR : (UPred.plainly R).holds k (x • y) := H_inst k y Hkn Hxy wand_holds
+  -- HR : (■ R) k (x • y), which unfolds to R k UCMRA.unit
+  -- R k UCMRA.unit = ∃ x', ✓{k} (x' • y) ∧ P k x'
+  exact HR
 
 
 theorem bupd_alt_bupd_iff [UCMRA M] (P : UPred M) : bupd_alt P ⊣⊢ |==> P := by
@@ -190,4 +223,68 @@ theorem bupd_alt_bupd_iff [UCMRA M] (P : UPred M) : bupd_alt P ⊣⊢ |==> P := 
 theorem ownM_updateP [UCMRA M] (x : M) (Φ : M → Prop) (R : UPred M) :
     (x ~~>: Φ) →
     UPred.ownM x ∗ (∀ y, iprop(⌜Φ y⌝) -∗ UPred.ownM y -∗ ■ R) ⊢ ■ R := by
-  sorry
+  intro Hup
+  -- Unfold to work at the representation level
+  intro n z Hv ⟨x1, z2, Hx, ⟨z1, Hz1⟩, HR⟩
+  -- Hv : ✓{n} z
+  -- Destructure the sep:
+  -- x1, z2 are the two parts
+  -- Hx : z ≡{n} x1 • z2
+  -- ⟨z1, Hz1⟩ : (ownM x) n x1, which means x ≼{n} x1, i.e., ∃ z1, x1 ≡{n} x • z1
+  -- HR : ForAll holds at z2
+
+  -- After ofe_subst, we have z ≡{n} (x • z1) • z2
+  have Hz_subst : z ≡{n}≡ (x • z1) • z2 := by
+    calc z ≡{n}≡ x1 • z2 := Hx
+         _ ≡{n}≡ (x • z1) • z2 := Hz1.op_l
+
+  -- Apply the update with frame z1 • z2
+  have Hvalid : ✓{n} (x •? some (z1 • z2)) := by
+    show ✓{n} (x • (z1 • z2))
+    refine CMRA.validN_ne ?_ Hv
+    calc z ≡{n}≡ (x • z1) • z2 := Hz_subst
+         _ ≡{n}≡ x • (z1 • z2) := CMRA.assoc.symm.dist
+
+  obtain ⟨y, HΦy, Hvalid_y⟩ := Hup n (some (z1 • z2)) Hvalid
+
+  -- HR : ∀ p, (∃ y', p = ...) → p n z2
+  -- We need to instantiate with the wand
+  let p := UPred.wand (UPred.pure (Φ y)) (UPred.wand (UPred.ownM y) (UPred.plainly R))
+  have Hp : (UPred.wand (UPred.pure (Φ y)) (UPred.wand (UPred.ownM y) (UPred.plainly R))).holds n z2 :=
+    HR p ⟨y, rfl⟩
+
+  -- Apply Hp at step n with resource z1
+  -- First wand: (⌜Φ y⌝ -∗ (ownM y -∗ ■ R)).holds n z2
+  -- Means: ∀ n' x', n' ≤ n → ✓{n'} (z2 • x') → (⌜Φ y⌝) n' x' → (ownM y -∗ ■ R) n' (z2 • x')
+  -- We need ✓{n} (z2 • z1)
+  have Hv_z2z1 : ✓{n} (z2 • z1) := by
+    -- From Coq line 250: rewrite comm. by eapply cmra_validN_op_r.
+    -- We have Hvalid_y : ✓{n} (y •? some (z1 • z2)) = ✓{n} (y • (z1 • z2))
+    -- Need ✓{n} (z2 • z1)
+    have : ✓{n} (y • (z1 • z2)) := Hvalid_y
+    exact CMRA.validN_ne CMRA.comm.dist (CMRA.validN_op_right this)
+
+  have Hp1 : (UPred.wand (UPred.ownM y) (UPred.plainly R)).holds n (z2 • z1) := Hp n z1 (Nat.le_refl _) Hv_z2z1 HΦy
+
+  -- Apply the second wand at step n with resource y
+  -- (ownM y -∗ ■ R).holds n (z2 • z1)
+  -- Means: ∀ n' x', n' ≤ n → ✓{n'} ((z2 • z1) • x') → (ownM y) n' x' → (■ R) n' ((z2 • z1) • x')
+  -- We want to apply this with x' = y at step n
+  -- Need: ✓{n} ((z2 • z1) • y)
+  have Hv_z2z1y : ✓{n} ((z2 • z1) • y) := by
+    -- From Coq line 251: by rewrite (comm _ _ y) (comm _ z2).
+    -- We have Hvalid_y : ✓{n} (y • (z1 • z2))
+    have : ✓{n} (y • (z1 • z2)) := Hvalid_y
+    refine CMRA.validN_ne ?_ this
+    calc y • (z1 • z2) ≡{n}≡ y • (z2 • z1) := CMRA.comm.dist.op_r
+         _ ≡{n}≡ (z2 • z1) • y := CMRA.comm.symm.dist
+
+  -- Need: (ownM y) n y, which is y ≼{n} y
+  have Hy_incl : y ≼{n} y := CMRA.incN_refl y
+
+  have HR_goal : (UPred.plainly R).holds n ((z2 • z1) • y) :=
+    Hp1 n y (Nat.le_refl _) Hv_z2z1y Hy_incl
+
+  -- HR_goal : R n UCMRA.unit
+  -- We need to show: R n UCMRA.unit
+  exact HR_goal
