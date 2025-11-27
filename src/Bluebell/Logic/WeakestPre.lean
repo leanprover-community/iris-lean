@@ -47,7 +47,11 @@ noncomputable def wp (t : IndexedPSpPm I α V F → IndexedPSpPm I α V F)
 variable {t t₁ t₂ : IndexedPSpPm I α V F → IndexedPSpPm I α V F}
   {P Q Q' Q₁ Q₂ : HyperAssertion (IndexedPSpPm I α V F)}
 
-theorem wp_conseq (h : Q ⊢ Q') : (wp t Q) ⊢ (wp t Q') := by sorry
+omit [MeasurableSpace V] in
+theorem wp_conseq (h : Q ⊢ Q') : (wp t Q) ⊢ (wp t Q') := by
+  intro x hx μ₀ c hinc
+  rcases hx μ₀ c hinc with ⟨b, hb, hQ⟩
+  exact ⟨b, hb, h b hQ⟩
 
 theorem wp_frame : P ∗ (wp t Q) ⊢ (wp t (sep P Q)) := by sorry
 
