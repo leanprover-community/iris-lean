@@ -19,11 +19,15 @@ inductive BaseLit where
   | Prophecy (p : ProphId)
 deriving DecidableEq, Inhabited
 
+abbrev iDecEqBaseLit := instDecidableEqBaseLit
+
 -- Why are there two different ways to negate?
 inductive UnOp where
   | Neg
   | Minus
 deriving Inhabited, DecidableEq
+
+abbrev iDecEqUnOp := instDecidableEqUnOp
 
 inductive BinOp where
   | Plus
@@ -42,10 +46,14 @@ inductive BinOp where
   | Offset
 deriving Inhabited, DecidableEq
 
+abbrev iDecEqBinOp := instDecidableEqBinOp
+
 inductive Binder
   | BAnon
   | BNamed (name : String)
-deriving DecidableEq
+deriving DecidableEq, Inhabited
+
+abbrev iDecEqBinder := instDecidableEqBinder
 
 mutual
 inductive Val where
@@ -96,7 +104,6 @@ instance : Inhabited Val where
 
 instance : Inhabited Expr where
   default := .Val default
-
 
 mutual
 def valEq (v₁ v₂ : Val) : Bool :=
@@ -152,11 +159,151 @@ def exprEq (e₁ e₂ : Expr) : Bool :=
   | _, _ => false
 end
 
+
+example (v₁ v₂ : Val) : Val.InjL v₁ ≠ Val.InjR v₂ := by
+  apply Val.noConfusion
+mutual
+def valDecEq (v₁ v₂ : Val) : Decidable (v₁ = v₂) :=
+  match v₁, v₂ with
+  | .Lit x, .Lit y =>
+        let h := iDecEqBaseLit x y
+        match h with
+        | .isTrue p => isTrue (by congr)
+        | .isFalse p => isFalse (by simp [p])
+  | .InjL x, .InjL y =>
+        let h := valDecEq x y
+        match h with
+        | .isTrue p => isTrue (by simp_all)
+        | .isFalse p => isFalse (by simp_all)
+  | .InjR x, .InjR y =>
+        match (valDecEq x y) with
+        | .isTrue p => isTrue (by simp_all)
+        | .isFalse p => isFalse (by simp_all)
+  | .Pair x₁ x₂, .Pair y₁ y₂ =>
+        match hh : (valDecEq x₁ y₁), (valDecEq x₂ y₂) with
+        | .isTrue p₁, .isTrue p₂ => isTrue (by simp [p₁, p₂])
+        | .isTrue p₁, .isFalse p₂
+        | .isFalse p₁, .isTrue p₂
+        | .isFalse p₁, .isFalse p₂ =>
+              .isFalse (by simp[p₁,p₂])
+  | .Rec f₁ x₁ e₁, .Rec f₂ x₂ e₂ =>
+        match hf : (iDecEqBinder f₁ f₂), hx : (iDecEqBinder x₁ x₂), he : (exprDecEq e₁ e₂) with
+        | .isTrue pf, .isTrue px, .isTrue pe => .isTrue (by simp [pf, px, pe])
+        | f, x, e =>
+            have h : f ≠ isTrue _ ∨ x ≠ isTrue _ ∨ e ≠ isTrue _ := by
+              simp[hf, hx, he]
+
+            .isFalse (by
+              intro h'
+              cases h'
+
+              <;> simp_all[h])
+  | .Lit _, .InjL _
+  | .Lit _, .InjR _
+  | .Lit _, .Pair _ _
+  | .Lit _, .Rec _ _ _
+  | .InjL _, .Lit _
+  | .InjL _, .InjR _
+  | .InjL _, .Pair _ _
+  | .InjL _, .Rec _ _ _
+  | .InjR _, .InjL _
+  | .InjR _, .Lit _
+  | .InjR _, .Pair _ _
+  | .InjR _, .Rec _ _ _
+  | .Pair _ _, .InjL _
+  | .Pair _ _, .InjR _
+  | .Pair _ _, .Lit _
+  | .Pair _ _, .Rec _ _ _
+  | .Rec _ _ _, .InjL _
+  | .Rec _ _ _, .InjR _
+  | .Rec _ _ _, .Pair _ _
+  | .Rec _ _ _, .Lit _ =>
+        .isFalse (by simp_all)
+
+
+
+def exprDecEq (e₁ e₂ : Expr) : Decidable (e₁ = e₂) :=
+  match e₁, e₂ with
+  | .Val v₁, .Val v₂ =>
+        match valDecEq v₁ v₂ with
+        | isTrue p => isTrue (by simp[p])
+        | isFalse p => isFalse (by simp[p])
+  | .Var x₁, .Var x₂ =>
+        match instDecidableEqString x₁  x₂ with
+        | .isTrue p => isTrue (by congr)
+        | .isFalse p => isFalse (by simp [p])
+  | .Rec f₁ x₁ e₁, .Rec f₂ x₂ e₂ =>
+        match iDecEqBinder f₁ f₂, iDecEqBinder x₁  x₂, exprDecEq e₁ e₂ with
+        | .isTrue _, isTrue _, isTrue _ => isTrue (by simp_all)
+        | .isTrue _, .isTrue _, .isFalse _
+        | .isTrue _, .isFalse _, .isTrue _
+        | .isTrue _, .isFalse _, .isFalse _
+        | .isFalse _, .isTrue _, .isTrue _
+        | .isFalse _, .isTrue _, .isFalse _
+        | .isFalse _, .isFalse _, .isTrue _
+        | .isFalse _, .isFalse _, .isFalse _ => .isFalse (by simp_all)
+  | .App e₁ f₁, .App e₂ f₂ =>
+        match h1 : exprDecEq e₁ e₂, h2: exprDecEq f₁ f₂ with
+        | isTrue _, isTrue _ => isTrue (by simp_all)
+        | he, hf =>
+            have h : exprDecEq e₁ e₂ ≠ isTrue _ ∨ exprDecEq f₁ f₂ ≠ isTrue _ := by
+              cases 
+              simp [h1, h2]
+              intro h'
+
+            isFalse (by
+                cases he
+                <;> cases hf
+                <;> simp_all [h1, h2]
+                )
+  | .Unop op₁ e₁, .Unop op₂ e₂ =>
+      match (iDecEqUnOp op₁ op₂), (exprDecEq e₁  e₂) with
+      | .isTrue hop, .isTrue he => .isTrue (by simp [hop, he])
+      | .isTrue _, .isFalse _
+      | .isFalse _, .isTrue _
+      | .isFalse _, isFalse _ => isFalse (by simp_all)
+  | .Binop op₁ e₁ f₁, .Binop op₂ e₂ f₂ =>
+            decide (op₁ = op₂)
+        &&  exprEq e₁ e₂
+        &&  exprEq f₁ f₂
+  | .If cond₁ left₁ right₁, .If cond₂ left₂ right₂ =>
+            exprEq cond₁ cond₂
+        &&  exprEq left₁ left₂
+        &&  exprEq right₁ right₂
+  | .Pair e₁ f₁, .Pair e₂ f₂ =>
+        exprEq e₁ e₂ && exprEq f₁ f₂
+  | .Fst e₁, .Fst e₂ => exprEq e₁ e₂
+  | .Snd e₁, .Snd e₂ => exprEq e₁ e₂
+  | .InjL e₁, .InjL e₂ => exprEq e₁ e₂
+  | .InjR e₁, .InjR e₂ => exprEq e₁ e₂
+  | .Case e₁ f₁ g₁, .Case e₂ f₂ g₂ => exprEq e₁ e₂ && exprEq f₁ f₂ && exprEq g₁ g₂
+  | .AllocN n₁ v₁, .AllocN n₂ v₂ => exprEq n₁ n₂ && exprEq v₁ v₂
+  | .Free e₁, .Free e₂ => exprEq e₁ e₂
+  | .Load e₁, .Load e₂ => exprEq e₁ e₂
+  | .Store e₁ f₁, .Store e₂ f₂ => exprEq e₁ e₂ && exprEq f₁ f₂
+  | .CmpXchg e₁ f₁ g₁, .CmpXchg e₂ f₂ g₂ =>
+            exprEq e₁ e₂
+        &&  exprEq f₁ f₂
+        &&  exprEq g₁ g₂
+  | .Xchg e₁ f₁, .Xchg e₂ f₂ => exprEq e₁ e₂ && exprEq f₁ f₂
+  | .FAA e₁ f₁, .FAA e₂ f₂ => exprEq e₁ e₂ && exprEq f₁ f₂
+  | .Fork e₁, .Fork e₂ => exprEq e₁ e₂
+  | .NewProph, .NewProph => True
+  | .Resolve e₁ f₁ g₁, .Resolve e₂ f₂ g₂ =>
+            exprEq e₁ e₂
+        &&  exprEq f₁ f₂
+        &&  exprEq g₁ g₂
+  | _, _ => false
+end
+
+
 instance : BEq Val where
   beq := valEq
 
 instance : BEq Expr where
   beq := exprEq
+
+
 
 macro "big_decide_tactic" : tactic => do
   `(tactic|
