@@ -157,9 +157,15 @@ def exprEq (e₁ e₂ : Expr) : Bool :=
   | _, _ => false
 end
 
+instance : BEq Val where
+  beq := valEq
+
+instance : BEq Expr where
+  beq := exprEq
 
 example (v₁ v₂ : Val) : Val.InjL v₁ ≠ Val.InjR v₂ := by
   apply Val.noConfusion
+
 mutual
 def valDecEq (v₁ v₂ : Val) : Decidable (v₁ = v₂) :=
   match v₁, v₂ with
@@ -187,15 +193,13 @@ def valDecEq (v₁ v₂ : Val) : Decidable (v₁ = v₂) :=
   | .Rec f₁ x₁ e₁, .Rec f₂ x₂ e₂ =>
         match hf : (iDecEqBinder f₁ f₂), hx : (iDecEqBinder x₁ x₂), he : (exprDecEq e₁ e₂) with
         | .isTrue pf, .isTrue px, .isTrue pe => .isTrue (by simp [pf, px, pe])
-        | f, x, e =>
-            have h : f ≠ isTrue _ ∨ x ≠ isTrue _ ∨ e ≠ isTrue _ := by
-              simp[hf, hx, he]
-
-            .isFalse (by
-              intro h'
-              cases h'
-
-              <;> simp_all[h])
+        | .isTrue pf, .isFalse px, .isFalse pe
+        | .isTrue pf, .isTrue px, isFalse pe
+        | .isTrue pf, .isFalse px, isTrue pe
+        | .isFalse pf, .isTrue px, .isTrue pe
+        | .isFalse pf, .isFalse px, .isFalse pe
+        | .isFalse pf, .isTrue px, isFalse pe
+        | .isFalse pf, .isFalse px, .isTrue pe => .isFalse (by simp [pf, px, pe])
   | .Lit _, .InjL _
   | .Lit _, .InjR _
   | .Lit _, .Pair _ _
@@ -221,7 +225,7 @@ def valDecEq (v₁ v₂ : Val) : Decidable (v₁ = v₂) :=
 
 
 def exprDecEq (e₁ e₂ : Expr) : Decidable (e₁ = e₂) :=
-  match e₁, e₂ with
+  match h₁ : e₁,  h₂ : e₂ with
   | .Val v₁, .Val v₂ =>
         match valDecEq v₁ v₂ with
         | isTrue p => isTrue (by simp[p])
@@ -243,63 +247,132 @@ def exprDecEq (e₁ e₂ : Expr) : Decidable (e₁ = e₂) :=
   | .App e₁ f₁, .App e₂ f₂ =>
         match h1 : exprDecEq e₁ e₂, h2: exprDecEq f₁ f₂ with
         | isTrue _, isTrue _ => isTrue (by simp_all)
-        | he, hf =>
-            have h : exprDecEq e₁ e₂ ≠ isTrue _ ∨ exprDecEq f₁ f₂ ≠ isTrue _ := by
-              cases
-              simp [h1, h2]
-              intro h'
+        | isTrue _ , isFalse _
+        | .isFalse _, .isTrue _
+        | .isFalse _, .isFalse _ => isFalse (by simp_all)
 
-            isFalse (by
-                cases he
-                <;> cases hf
-                <;> simp_all [h1, h2]
-                )
   | .Unop op₁ e₁, .Unop op₂ e₂ =>
       match (iDecEqUnOp op₁ op₂), (exprDecEq e₁  e₂) with
       | .isTrue hop, .isTrue he => .isTrue (by simp [hop, he])
       | .isTrue _, .isFalse _
       | .isFalse _, .isTrue _
-      | .isFalse _, isFalse _ => isFalse (by simp_all)
+      | .isFalse _, .isFalse _ => .isFalse (by simp_all)
   | .Binop op₁ e₁ f₁, .Binop op₂ e₂ f₂ =>
-            decide (op₁ = op₂)
-        &&  exprEq e₁ e₂
-        &&  exprEq f₁ f₂
+      match iDecEqBinOp op₁ op₂, exprDecEq e₁ e₂, exprDecEq f₁ f₂ with
+      | .isTrue _, .isTrue _, .isTrue _ => .isTrue (by simp_all)
+      | .isTrue _, .isTrue _, .isFalse _
+      | .isTrue _, .isFalse _, .isTrue _
+      | .isTrue _, .isFalse _, .isFalse _
+      | .isFalse _, .isTrue _, .isTrue _
+      | .isFalse _, .isTrue _, .isFalse _
+      | .isFalse _, .isFalse _, .isTrue _
+      | .isFalse _, .isFalse _, .isFalse _ => .isFalse (by simp_all)
+
   | .If cond₁ left₁ right₁, .If cond₂ left₂ right₂ =>
-            exprEq cond₁ cond₂
-        &&  exprEq left₁ left₂
-        &&  exprEq right₁ right₂
+      match exprDecEq cond₁ cond₂, exprDecEq left₁ left₂, exprDecEq right₁ right₂ with
+      | .isTrue _, .isTrue _, .isTrue _ => .isTrue (by simp_all)
+      | .isTrue _, .isTrue _, .isFalse _
+      | .isTrue _, .isFalse _, .isTrue _
+      | .isTrue _, .isFalse _, .isFalse _
+      | .isFalse _, .isTrue _, .isTrue _
+      | .isFalse _, .isTrue _, .isFalse _
+      | .isFalse _, .isFalse _, .isTrue _
+      | .isFalse _, .isFalse _, .isFalse _ => .isFalse (by simp_all)
   | .Pair e₁ f₁, .Pair e₂ f₂ =>
-        exprEq e₁ e₂ && exprEq f₁ f₂
-  | .Fst e₁, .Fst e₂ => exprEq e₁ e₂
-  | .Snd e₁, .Snd e₂ => exprEq e₁ e₂
-  | .InjL e₁, .InjL e₂ => exprEq e₁ e₂
-  | .InjR e₁, .InjR e₂ => exprEq e₁ e₂
-  | .Case e₁ f₁ g₁, .Case e₂ f₂ g₂ => exprEq e₁ e₂ && exprEq f₁ f₂ && exprEq g₁ g₂
-  | .AllocN n₁ v₁, .AllocN n₂ v₂ => exprEq n₁ n₂ && exprEq v₁ v₂
-  | .Free e₁, .Free e₂ => exprEq e₁ e₂
-  | .Load e₁, .Load e₂ => exprEq e₁ e₂
-  | .Store e₁ f₁, .Store e₂ f₂ => exprEq e₁ e₂ && exprEq f₁ f₂
+        match exprDecEq e₁ e₂, exprDecEq f₁ f₂ with
+        | .isTrue _, .isTrue _ => .isTrue (by simp_all)
+        | .isTrue _, .isFalse _
+        | .isFalse _, .isTrue _
+        | .isFalse _, .isFalse _ => .isFalse (by simp_all)
+  | .Fst e₁, .Fst e₂ =>
+      match exprDecEq e₁ e₂ with
+      | .isTrue _ => .isTrue (by simp_all)
+      | .isFalse _ => .isFalse (by simp_all)
+  | .Snd e₁, .Snd e₂ =>
+      match exprDecEq e₁ e₂ with
+      | .isTrue _ => .isTrue (by simp_all)
+      | .isFalse _ => .isFalse (by simp_all)
+  | .InjL e₁, .InjL e₂ =>
+      match exprDecEq e₁ e₂ with
+      | .isTrue _ => .isTrue (by simp_all)
+      | .isFalse _ => .isFalse (by simp_all)
+  | .InjR e₁, .InjR e₂ =>
+      match exprDecEq e₁ e₂ with
+      | .isTrue _ => .isTrue (by simp_all)
+      | .isFalse _ => .isFalse (by simp_all)
+  | .Case e₁ f₁ g₁, .Case e₂ f₂ g₂ =>
+      match exprDecEq e₁ e₂, exprDecEq f₁ f₂, exprDecEq g₁ g₂ with
+      | .isTrue _, .isTrue _, .isTrue _ => .isTrue (by simp_all)
+      | .isTrue _, .isTrue _, .isFalse _
+      | .isTrue _, .isFalse _, .isTrue _
+      | .isTrue _, .isFalse _, .isFalse _
+      | .isFalse _, .isTrue _, .isTrue _
+      | .isFalse _, .isTrue _, .isFalse _
+      | .isFalse _, .isFalse _, .isTrue _
+      | .isFalse _, .isFalse _, .isFalse _ => .isFalse (by simp_all)
+  | .AllocN n₁ v₁, .AllocN n₂ v₂ =>
+      match exprDecEq n₁ n₂, exprDecEq v₁ v₂ with
+        | .isTrue _, .isTrue _ => .isTrue (by simp_all)
+        | .isTrue _, .isFalse _
+        | .isFalse _, .isTrue _
+        | .isFalse _, .isFalse _ => .isFalse (by simp_all)
+  | .Free e₁, .Free e₂ =>
+      match exprDecEq e₁ e₂ with
+      | .isTrue _ => .isTrue (by simp_all)
+      | .isFalse _ => .isFalse (by simp_all)
+  | .Load e₁, .Load e₂ =>
+        match exprDecEq e₁ e₂ with
+      | .isTrue _ => .isTrue (by simp_all)
+      | .isFalse _ => .isFalse (by simp_all)
+  | .Store e₁ f₁, .Store e₂ f₂ =>
+      match exprDecEq e₁ e₂, exprDecEq f₁ f₂ with
+        | .isTrue _, .isTrue _ => .isTrue (by simp_all)
+        | .isTrue _, .isFalse _
+        | .isFalse _, .isTrue _
+        | .isFalse _, .isFalse _ => .isFalse (by simp_all)
   | .CmpXchg e₁ f₁ g₁, .CmpXchg e₂ f₂ g₂ =>
-            exprEq e₁ e₂
-        &&  exprEq f₁ f₂
-        &&  exprEq g₁ g₂
-  | .Xchg e₁ f₁, .Xchg e₂ f₂ => exprEq e₁ e₂ && exprEq f₁ f₂
-  | .FAA e₁ f₁, .FAA e₂ f₂ => exprEq e₁ e₂ && exprEq f₁ f₂
-  | .Fork e₁, .Fork e₂ => exprEq e₁ e₂
-  | .NewProph, .NewProph => True
+      match exprDecEq e₁ e₂, exprDecEq f₁ f₂, exprDecEq g₁ g₂ with
+      | .isTrue _, .isTrue _, .isTrue _ => .isTrue (by simp_all)
+      | .isTrue _, .isTrue _, .isFalse _
+      | .isTrue _, .isFalse _, .isTrue _
+      | .isTrue _, .isFalse _, .isFalse _
+      | .isFalse _, .isTrue _, .isTrue _
+      | .isFalse _, .isTrue _, .isFalse _
+      | .isFalse _, .isFalse _, .isTrue _
+      | .isFalse _, .isFalse _, .isFalse _ => .isFalse (by simp_all)
+  | .Xchg e₁ f₁, .Xchg e₂ f₂ =>
+      match exprDecEq e₁ e₂, exprDecEq f₁ f₂ with
+        | .isTrue _, .isTrue _ => .isTrue (by simp_all)
+        | .isTrue _, .isFalse _
+        | .isFalse _, .isTrue _
+        | .isFalse _, .isFalse _ => .isFalse (by simp_all)
+  | .FAA e₁ f₁, .FAA e₂ f₂ =>
+      match exprDecEq e₁ e₂, exprDecEq f₁ f₂ with
+        | .isTrue _, .isTrue _ => .isTrue (by simp_all)
+        | .isTrue _, .isFalse _
+        | .isFalse _, .isTrue _
+        | .isFalse _, .isFalse _ => .isFalse (by simp_all)
+  | .Fork e₁, .Fork e₂ =>
+      match exprDecEq e₁ e₂ with
+      | .isTrue _ => .isTrue (by simp_all)
+      | .isFalse _ => .isFalse (by simp_all)
+  | .NewProph, .NewProph => .isTrue (by rfl)
   | .Resolve e₁ f₁ g₁, .Resolve e₂ f₂ g₂ =>
-            exprEq e₁ e₂
-        &&  exprEq f₁ f₂
-        &&  exprEq g₁ g₂
-  | _, _ => false
+        match exprDecEq e₁ e₂, exprDecEq f₁ f₂, exprDecEq g₁ g₂ with
+      | .isTrue _, .isTrue _, .isTrue _ => .isTrue (by simp_all)
+      | .isTrue _, .isTrue _, .isFalse _
+      | .isTrue _, .isFalse _, .isTrue _
+      | .isTrue _, .isFalse _, .isFalse _
+      | .isFalse _, .isTrue _, .isTrue _
+      | .isFalse _, .isTrue _, .isFalse _
+      | .isFalse _, .isFalse _, .isTrue _
+      | .isFalse _, .isFalse _, .isFalse _ => .isFalse (by simp_all)
+  | _, _ => .isFalse (by
+
+      sorry)
+
 end
 
-
-instance : BEq Val where
-  beq := valEq
-
-instance : BEq Expr where
-  beq := exprEq
 
 
 
