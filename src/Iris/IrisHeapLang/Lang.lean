@@ -38,12 +38,10 @@ inductive BinOp where
   | And
   | Or
   | Xor
-  | ShiftL
-  | ShiftR
   | Le
   | Lt
   | Eq
-  | Offset
+
 deriving Inhabited, DecidableEq
 
 abbrev iDecEqBinOp := instDecidableEqBinOp
@@ -162,6 +160,7 @@ end
 
 example (v₁ v₂ : Val) : Val.InjL v₁ ≠ Val.InjR v₂ := by
   apply Val.noConfusion
+
 mutual
 def valDecEq (v₁ v₂ : Val) : Decidable (v₁ = v₂) :=
   match v₁, v₂ with
@@ -196,7 +195,6 @@ def valDecEq (v₁ v₂ : Val) : Decidable (v₁ = v₂) :=
             .isFalse (by
               intro h'
               cases h'
-
               <;> simp_all[h])
   | .Lit _, .InjL _
   | .Lit _, .InjR _
@@ -247,7 +245,7 @@ def exprDecEq (e₁ e₂ : Expr) : Decidable (e₁ = e₂) :=
         | isTrue _, isTrue _ => isTrue (by simp_all)
         | he, hf =>
             have h : exprDecEq e₁ e₂ ≠ isTrue _ ∨ exprDecEq f₁ f₂ ≠ isTrue _ := by
-              cases 
+              cases
               simp [h1, h2]
               intro h'
 
@@ -305,120 +303,121 @@ instance : BEq Expr where
 
 
 
-macro "big_decide_tactic" : tactic => do
-  `(tactic|
-    all_goals
-    try {
-      apply isFalse
-      simp_all
-    }
-    try {
-      apply isTrue
-      simp_all
-    }
-  )
-macro "decide_tactic" : tactic => do
-  `(tactic|
-      (
-        · apply isTrue
-          simp_all
-        all_goals
-          apply isFalse
-          simp_all
+-- macro "big_decide_tactic" : tactic => do
+--   `(tactic|
+--     all_goals
+--     try {
+--       apply isFalse
+--       simp_all
+--     }
+--     try {
+--       apply isTrue
+--       simp_all
+--     }
+--   )
+-- macro "decide_tactic" : tactic => do
+--   `(tactic|
+--       (
+--         · apply isTrue
+--           simp_all
+--         all_goals
+--           apply isFalse
+--           simp_all
 
-      )
-    )
-mutual
-noncomputable instance exprDecEq (e₁ e₂ : Expr) : Decidable (e₁ = e₂) := by
-  cases e₁ <;> cases e₂
-  big_decide_tactic
-  case Val.Val x y =>
-    by_cases x = y
-    decide_tactic
-  case Var.Var x y =>
-    by_cases x = y
-    decide_tactic
-  case InjL.InjL x y =>
-    by_cases x = y
-    decide_tactic
-  case InjR.InjR x y =>
-    by_cases x = y
-    decide_tactic
-  case Pair.Pair x₁ x₂ y₁ y₂ =>
-    by_cases h₁ : x₁ = y₁ <;> by_cases h₂ : x₂ = y₂
-    decide_tactic
-  case Rec.Rec f₁ x₁ e₁ f₂ x₂ e₂ =>
-    by_cases h₁ : f₁ = f₂ <;> by_cases h₂ : x₁ = x₂ <;> by_cases h₃ : e₁ = e₂
-    decide_tactic
-  case App.App e₁ f₁ e₂ f₂ =>
-    by_cases h₁ : e₁ = e₂ <;> by_cases h₂ : f₁ = f₂
-    decide_tactic
-  case Unop.Unop op₁ f₁ op₂ f₂ =>
-    by_cases op₁ = op₂ <;> by_cases f₁ = f₂
-    decide_tactic
-  case Binop.Binop op₁ f₁ g₁ op₂ f₂ g₂ =>
-    by_cases op₁ = op₂ <;> by_cases f₁ = f₂ <;> by_cases g₁ = g₂
-    decide_tactic
-  case If.If cond₁ l₁ r₁ cond₂ l₂ r₂ =>
-    by_cases cond₁ = cond₂ <;> by_cases l₁ = l₂ <;> by_cases r₁ = r₂
-    decide_tactic
-  case Fst.Fst e₁ e₂ =>
-    by_cases e₁ = e₂
-    decide_tactic
-  case Snd.Snd e₁ e₂ =>
-    by_cases e₁ = e₂
-    decide_tactic
-  case Case.Case c₁ f₁ g₁ c₂ f₂ g₂ =>
-    by_cases c₁ = c₂ <;> by_cases f₁ = f₂ <;> by_cases g₁ = g₂
-    decide_tactic
-  case AllocN.AllocN e₁ f₁ e₂ f₂ =>
-    by_cases e₁ = e₂ <;> by_cases f₁ = f₂
-    decide_tactic
-  case Free.Free e₁ e₂ =>
-    by_cases e₁ = e₂
-    decide_tactic
-  case Load.Load e₁ e₂ =>
-    by_cases e₁ = e₂
-    decide_tactic
-  case Store.Store f₁ e₁ f₂ e₂  =>
-    by_cases f₁ = f₂ <;> by_cases e₁ = e₂
-    decide_tactic
-  case CmpXchg.CmpXchg e₁ f₁ g₁ e₂ f₂ g₂ =>
-    by_cases e₁ = e₂ <;> by_cases f₁ = f₂ <;> by_cases g₁ = g₂
-    decide_tactic
-  case Xchg.Xchg e₁ f₁ e₂ f₂ =>
-    by_cases e₁ = e₂ <;> by_cases f₁ = f₂
-    decide_tactic
-  case FAA.FAA e₁ f₁ e₂ f₂ =>
-    by_cases e₁ = e₂ <;> by_cases f₁ = f₂
-    decide_tactic
-  case Fork.Fork e₁ e₂ =>
-    by_cases e₁ = e₂
-    decide_tactic
-  case Resolve e₁ f₁ g₁ e₂ f₂ g₂ =>
-    by_cases e₁ = e₂ <;> by_cases f₁ = f₂ <;> by_cases g₁ = g₂
-    decide_tactic
+--       )
+--     )
 
-noncomputable instance valDecEq (v₁ v₂ : Val) : Decidable (v₁ = v₂) := by
-  cases v₁ <;> cases v₂
-  big_decide_tactic
-  case Lit.Lit x y =>
-        by_cases x = y
-        decide_tactic
-  case InjL.InjL x y =>
-        by_cases x = y
-        decide_tactic
-  case InjR.InjR x y =>
-        by_cases x = y
-        decide_tactic
-  case Pair.Pair x₁ x₂ y₁ y₂ =>
-        by_cases x₁ = y₁ <;> by_cases x₂ = y₂
-        decide_tactic
-  case Rec.Rec f₁ x₁ e₁ f₂ x₂ e₂ =>
-        by_cases f₁ = f₂ <;> by_cases x₁ = x₂ <;> by_cases e₁ = e₂
-        decide_tactic
+-- mutual
+-- noncomputable instance exprDecEq (e₁ e₂ : Expr) : Decidable (e₁ = e₂) := by
+--   cases e₁ <;> cases e₂
+--   big_decide_tactic
+--   case Val.Val x y =>
+--     by_cases x = y
+--     decide_tactic
+--   case Var.Var x y =>
+--     by_cases x = y
+--     decide_tactic
+--   case InjL.InjL x y =>
+--     by_cases x = y
+--     decide_tactic
+--   case InjR.InjR x y =>
+--     by_cases x = y
+--     decide_tactic
+--   case Pair.Pair x₁ x₂ y₁ y₂ =>
+--     by_cases h₁ : x₁ = y₁ <;> by_cases h₂ : x₂ = y₂
+--     decide_tactic
+--   case Rec.Rec f₁ x₁ e₁ f₂ x₂ e₂ =>
+--     by_cases h₁ : f₁ = f₂ <;> by_cases h₂ : x₁ = x₂ <;> by_cases h₃ : e₁ = e₂
+--     decide_tactic
+--   case App.App e₁ f₁ e₂ f₂ =>
+--     by_cases h₁ : e₁ = e₂ <;> by_cases h₂ : f₁ = f₂
+--     decide_tactic
+--   case Unop.Unop op₁ f₁ op₂ f₂ =>
+--     by_cases op₁ = op₂ <;> by_cases f₁ = f₂
+--     decide_tactic
+--   case Binop.Binop op₁ f₁ g₁ op₂ f₂ g₂ =>
+--     by_cases op₁ = op₂ <;> by_cases f₁ = f₂ <;> by_cases g₁ = g₂
+--     decide_tactic
+--   case If.If cond₁ l₁ r₁ cond₂ l₂ r₂ =>
+--     by_cases cond₁ = cond₂ <;> by_cases l₁ = l₂ <;> by_cases r₁ = r₂
+--     decide_tactic
+--   case Fst.Fst e₁ e₂ =>
+--     by_cases e₁ = e₂
+--     decide_tactic
+--   case Snd.Snd e₁ e₂ =>
+--     by_cases e₁ = e₂
+--     decide_tactic
+--   case Case.Case c₁ f₁ g₁ c₂ f₂ g₂ =>
+--     by_cases c₁ = c₂ <;> by_cases f₁ = f₂ <;> by_cases g₁ = g₂
+--     decide_tactic
+--   case AllocN.AllocN e₁ f₁ e₂ f₂ =>
+--     by_cases e₁ = e₂ <;> by_cases f₁ = f₂
+--     decide_tactic
+--   case Free.Free e₁ e₂ =>
+--     by_cases e₁ = e₂
+--     decide_tactic
+--   case Load.Load e₁ e₂ =>
+--     by_cases e₁ = e₂
+--     decide_tactic
+--   case Store.Store f₁ e₁ f₂ e₂  =>
+--     by_cases f₁ = f₂ <;> by_cases e₁ = e₂
+--     decide_tactic
+--   case CmpXchg.CmpXchg e₁ f₁ g₁ e₂ f₂ g₂ =>
+--     by_cases e₁ = e₂ <;> by_cases f₁ = f₂ <;> by_cases g₁ = g₂
+--     decide_tactic
+--   case Xchg.Xchg e₁ f₁ e₂ f₂ =>
+--     by_cases e₁ = e₂ <;> by_cases f₁ = f₂
+--     decide_tactic
+--   case FAA.FAA e₁ f₁ e₂ f₂ =>
+--     by_cases e₁ = e₂ <;> by_cases f₁ = f₂
+--     decide_tactic
+--   case Fork.Fork e₁ e₂ =>
+--     by_cases e₁ = e₂
+--     decide_tactic
+--   case Resolve e₁ f₁ g₁ e₂ f₂ g₂ =>
+--     by_cases e₁ = e₂ <;> by_cases f₁ = f₂ <;> by_cases g₁ = g₂
+--     decide_tactic
 
-end
+-- noncomputable instance valDecEq (v₁ v₂ : Val) : Decidable (v₁ = v₂) := by
+--   cases v₁ <;> cases v₂
+--   big_decide_tactic
+--   case Lit.Lit x y =>
+--         by_cases x = y
+--         decide_tactic
+--   case InjL.InjL x y =>
+--         by_cases x = y
+--         decide_tactic
+--   case InjR.InjR x y =>
+--         by_cases x = y
+--         decide_tactic
+--   case Pair.Pair x₁ x₂ y₁ y₂ =>
+--         by_cases x₁ = y₁ <;> by_cases x₂ = y₂
+--         decide_tactic
+--   case Rec.Rec f₁ x₁ e₁ f₂ x₂ e₂ =>
+--         by_cases f₁ = f₂ <;> by_cases x₁ = x₂ <;> by_cases e₁ = e₂
+--         decide_tactic
+
+-- end
 
 
 
