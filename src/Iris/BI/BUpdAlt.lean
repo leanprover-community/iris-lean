@@ -14,14 +14,10 @@ import Iris.BI.Updates
 -- I need to import this for "bupd_alt_bupd"
 import Iris.Instances.UPred.Instance
 
+set_option trace.Meta.synthInstance true
+
 namespace Iris
 open Iris.Std BI
-
-
--- Note to self: all rocq code are in multiline comments
---               All questions start with TODO:
-
--- TODO: why in rocq this definition is not moved into the section?
 
 -- This file contains an alternative version of basic updates, that is
 -- expression in terms of just the plain modality [■]
@@ -34,7 +30,6 @@ section bupd_alt
 variable [BI PROP] [BIPlainly PROP]
 
 -- TODO: the following 4 global instance
-
 
 /- Implicit Types P Q R : PROP. -/
 
@@ -63,7 +58,6 @@ theorem bupd_alt_intro {P : PROP} : P ⊢ bupd_alt P := by
   iintro Hp
   unfold bupd_alt
   iintro R H
-  -- TODO: can i use iapply now?
   ispecialize H Hp as H1
   iexact H1
 
@@ -74,7 +68,6 @@ theorem bupt_alt_mono {P Q : PROP} : (P ⊢ Q) → (bupd_alt P ⊢ bupd_alt Q) :
   unfold bupd_alt
   iintro R HQR
   iintro Hp
-
   have H1 : ⊢ iprop(Q -∗ ■ HQR) -∗ iprop(P -∗ ■ HQR) := by
     iintro H
     iintro Hp
@@ -146,11 +139,12 @@ variable (own_updateP_plainly :
   ∀ (x : M) (Φ : M → Prop) (R : PROP),
     (x ~~>: Φ) →
     own x ∗ (∀ y, iprop(<affine> ⌜Φ y⌝) -∗ own y -∗ ■ R) ⊢ ■ R)
+
 theorem own_updateP {x : M} {Φ : M → Prop}
     (own_updateP_plainly :
       ∀ (x : M) (Φ : M → Prop) (R : PROP),
         (x ~~>: Φ) →
-        own x ∗ (∀ y, iprop(<affine> ⌜Φ y⌝) -∗ own y -∗ ■ R) ⊢ ■ R) :
+        own x ∗ (∀ y, <affine> iprop(⌜Φ y⌝) -∗ own y -∗ ■ R) ⊢ ■ R) :
     (x ~~>: Φ) →
     own x ⊢ bupd_alt iprop(∃ y, ⌜Φ y⌝ ∧ own y) := by
   intro Hup
@@ -182,32 +176,22 @@ private def bupd_alt_pred [UCMRA M] (P : UPred M) (y : M) : UPred M where
 -- The alternative definition entails the ordinary basic update
 theorem bupd_alt_bupd [UCMRA M] (P : UPred M) : bupd_alt P ⊢ |==> P := by
   unfold bupd_alt bupd
-  -- Unseal
   intro n x Hx H
   -- Unfold bupd definition in `Instance.lean`
   intro k y Hkn Hxy
-  -- Apply H to the custom predicate R
   let R := bupd_alt_pred P y
-  -- H : iprop(∀ R, (P -∗ ■ R) -∗ ■ R).holds n x
-  -- This is sForall (fun p => ∃ R, (P -∗ ■ R) -∗ ■ R = p).holds n x
-  -- Which means: ∀ p, (∃ R', ...) → p n x
-  -- We instantiate with our R
   have H_inst : (UPred.wand (UPred.wand P (UPred.plainly R)) (UPred.plainly R)).holds n x :=
+    -- TODO: why do i need to pass this wand into H..., why I also need to pass in this proof
     H (UPred.wand (UPred.wand P (UPred.plainly R)) (UPred.plainly R)) ⟨R, rfl⟩
-  -- Now use mono to get it at k with y (not x • y!)
-  -- We need x ≼{k} y, but that's not generally true
-  -- Instead, apply H_inst directly at k with y
-  -- But we need ✓{k} (x • y) to apply the wand
-  -- Actually, let's just use H_inst as a wand and apply it
-  -- The wand says: ∀ k' y', k' ≤ n → ✓{k'} (x • y') → (P -∗ ■ R) k' y' → (■ R) k' (x • y')
+
   have wand_holds : (UPred.wand P (UPred.plainly R)).holds k y := by
     intro k' z Hk' Hvyz HP
     -- Need to show: (■ R) k' (y • z), which is R k' UCMRA.unit
     -- R k' UCMRA.unit = ∃ x'', ✓{k'} (x'' • y) ∧ P k' x''
     refine ⟨z, ?_, HP⟩
-    -- Hvyz : ✓{k'} (y • z), need ✓{k'} (z • y)
     exact CMRA.validN_ne CMRA.op_commN Hvyz
-  -- Now apply H_inst
+
+  -- TODO: why do I need to pass in k, y, Hkn, Hxy, wand_holds again??
   have HR : (UPred.plainly R).holds k (x • y) := H_inst k y Hkn Hxy wand_holds
   -- HR : (■ R) k (x • y), which unfolds to R k UCMRA.unit
   -- R k UCMRA.unit = ∃ x', ✓{k} (x' • y) ∧ P k x'
