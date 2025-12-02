@@ -41,7 +41,7 @@ inductive BinOp where
   | Le
   | Lt
   | Eq
-
+  | Offset
 deriving Inhabited, DecidableEq
 
 abbrev iDecEqBinOp := instDecidableEqBinOp
@@ -160,7 +160,6 @@ end
 
 example (v₁ v₂ : Val) : Val.InjL v₁ ≠ Val.InjR v₂ := by
   apply Val.noConfusion
-
 mutual
 def valDecEq (v₁ v₂ : Val) : Decidable (v₁ = v₂) :=
   match v₁, v₂ with
@@ -195,6 +194,7 @@ def valDecEq (v₁ v₂ : Val) : Decidable (v₁ = v₂) :=
             .isFalse (by
               intro h'
               cases h'
+
               <;> simp_all[h])
   | .Lit _, .InjL _
   | .Lit _, .InjR _
@@ -326,7 +326,6 @@ instance : BEq Expr where
 
 --       )
 --     )
-
 -- mutual
 -- noncomputable instance exprDecEq (e₁ e₂ : Expr) : Decidable (e₁ = e₂) := by
 --   cases e₁ <;> cases e₂
@@ -524,8 +523,7 @@ def subst (x : String) (v : Val) (e : Expr)  : Expr :=
   match e with
   | .Val _ => e
   | .Var y => if decide (x = y) then .Val v else .Var y
-  | .Rec f y e =>
-     .Rec f y $ if decide (.BNamed x ≠ f ∧ .BNamed x ≠ y) then subst x v e else e
+  | .Rec f y e => .Rec f y $ if decide (.BNamed x ≠ f ∧ .BNamed x ≠ y) then subst x v e else e
   | .App e₁ e₂ => .App (subst x v e₁) (subst x v e₂)
   | .Unop op e => .Unop op (subst x v e)
   | .Binop op e₁ e₂ => .Binop op (subst x v e₁) (subst x v e₂)
@@ -567,11 +565,10 @@ def binOpEvalInt (op : BinOp) (n₁ n₂ : Int) : Option BaseLit :=
   | .Mult => some $ .Int (n₁ * n₂)
   | .Quot => some $ .Int (n₁ /  n₂)
   | .Rem => some $ .Int (n₁ % n₂)
-  | .And => sorry -- some $ .Int (n₁ &&& n₂) -- need the mathlib bitwise defs
-  | .Or => sorry -- some $ .Int (n₁ ||| n₂)
-  | .Xor => sorry -- some $ .Int (Int.xor n₁ n₂)
-  | .ShiftL => sorry -- some $ .Int (n₁ <<< n₂)
-  | .ShiftR => sorry -- some $ .Int (n₁ >>> n₂)
+  | .And => none -- some $ .Int (n₁ &&& n₂) -- need the mathlib bitwise defs
+  | .Or => none -- some $ .Int (n₁ ||| n₂)
+  | .Xor => none -- some $ .Int (Int.xor n₁ n₂)
+
   | .Le => some $ .Bool (decide (n₁ ≤ n₂))
   | .Lt => some $ .Bool (decide (n₁ < n₂))
   | .Eq => some $ .Bool (decide (n₁ = n₂))
@@ -583,7 +580,6 @@ def binOpEvalBool (op : BinOp) (b₁ b₂ : Bool) : Option BaseLit :=
   | .And => some <| .Bool <| b₁ && b₂
   | .Or => some <| .Bool <| b₁ || b₂
   | .Xor => some <| .Bool <| xor b₁ b₂
-  | .ShiftL | .ShiftR => none -- (* Shifts *)
   | .Le | .Lt => none -- (* InEquality *)
   | .Eq => some <| .Bool <| decide (b₁ = b₂)
   | .Offset => none
