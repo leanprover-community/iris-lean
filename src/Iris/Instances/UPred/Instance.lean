@@ -8,6 +8,7 @@ import Iris.BI
 import Iris.Algebra.OFE
 import Iris.Algebra.CMRA
 import Iris.Algebra.UPred
+import Iris.Algebra.Updates
 
 section UPredInstance
 
@@ -455,8 +456,19 @@ theorem later_soundness : iprop(True ⊢ ▷ P) → iprop((True : UPred M) ⊢ P
 theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (CMRA.core a) :=
   fun _ _ _ H => CMRA.core_incN_core H
 
--- TODO: bupd_ownM_updateP (needs basic updates to be defined)
--- TODO: later_ownM, ownM_forall  (needs internal eq )
+theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
+  (x ~~>: Φ) → ownM x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ ownM y := by
+  intro Hup n x2 Hv ⟨x3, Hx⟩ k yf Hk Hyf
+  have Hxv : ✓{k} x • (x3 • yf) := by
+    refine CMRA.validN_ne ?_ Hyf
+    exact (Hx.le Hk).op_l.trans CMRA.assoc.symm.dist
+  rcases Hup k (some (x3 • yf)) Hxv with ⟨y, HΦy, Hyv⟩
+  refine ⟨y • x3, CMRA.validN_ne CMRA.op_assocN Hyv, ?_⟩
+  refine ⟨iprop(⌜Φ y⌝ ∧ ownM y), ?_, ?_⟩
+  · exists y
+  · exact ⟨HΦy, CMRA.incN_op_left k y x3⟩
+
+-- TODO: later_ownM, ownM_forall (needs internal eq)
 
 theorem cmraValid_intro [CMRA A] {P : UPred M} (a : A) (Ha : ✓ a) : P ⊢ cmraValid a :=
   fun _ _ _ _ => CMRA.Valid.validN Ha
