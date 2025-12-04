@@ -176,7 +176,7 @@ theorem DFrac.update_acquire [IsSplitFraction F] :
   · rintro _
     exists (.own One.one)
     refine ⟨⟨One.one, rfl⟩, ?_⟩
-    simp [CMRA.op?, CMRA.op, op, CMRA.Valid, valid, add_comm]
+    simp [CMRA.op?, CMRA.Valid, valid]
     apply UFraction.one_whole.1
   · rintro ⟨q', HP⟩
     exists (.own q')

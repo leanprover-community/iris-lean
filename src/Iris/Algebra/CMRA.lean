@@ -183,7 +183,6 @@ theorem op_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz ≡ x • (
 theorem op_opM_assoc_dist (x y : α) (mz : Option α) : (x • y) •? mz ≡{n}≡ x • (y •? mz) := by
   unfold op?; cases mz <;> simp [assoc.dist, Dist.symm]
 
-
 /-! ## Validity -/
 
 theorem Valid.validN : ✓ (x : α) → ✓{n} x := (valid_iff_validN.1 · _)
@@ -1092,6 +1091,7 @@ instance ucmraOption : UCMRA (Option α) where
   pcore_unit := by rfl
 
 theorem CMRA.equiv_of_some_equiv_some {x y : α} (h : some x ≡ some y) : x ≡ y := h
+
 theorem CMRA.dist_of_some_dist_some {n} {x y : α} (h : some x ≡{n}≡ some y) : x ≡{n}≡ y := h
 
 theorem CMRA.op_some_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz ≡ x •? (some y • mz) :=

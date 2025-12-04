@@ -104,10 +104,10 @@ class Heap (T : Type _) (K V : outParam (Type _)) extends Store T K (Option V) w
 export Heap (empty hmap merge get_empty get_hmap get_merge)
 
 theorem hmap_alloc [Heap T K V] {t : T} (H : get t k = some v) : get (hmap f t) k = f k v := by
-  simp [get_hmap, bind, H]
+  simp [get_hmap, H]
 
 theorem hmap_unalloc [Heap T K V] {t : T} (H : get t k = none) : get (hmap f t) k = none := by
-  simp [get_hmap, bind, H]
+  simp [get_hmap, H]
 
 /-- The heap of a single point -/
 def Heap.point [Heap T K V] (k : K) (v : Option V) : T := set empty k v
@@ -257,7 +257,7 @@ instance instStoreCMRA : CMRA T where
   Valid := Store.valid
   op_ne.ne _ x1 x2 H i := by
     specialize H i; revert H; rename_i x _
-    simp [op, get_merge]
+    simp [get_merge]
     cases get x1 i <;> cases get x2 i <;> cases get x i <;> simp
     apply op_right_dist
   pcore_ne {n x y _} H := by
@@ -328,11 +328,11 @@ instance instStoreCMRA : CMRA T where
     let extendF (i : K) := CMRA.extend (Hm i) (Hslice i)
     exists hmap (fun k (_ : V) => extendF k |>.fst) y1
     exists hmap (fun k (_ : V) => extendF k |>.snd.fst) y2
-    simp [Store.op, get_merge]
+    simp [Store.op]
     refine ⟨fun i => ?_, fun i => ?_, fun i => ?_⟩
     all_goals rcases hF : extendF i with ⟨z1, z2, Hm, Hz1, Hz2⟩
     · refine Hm.trans ?_
-      simp [Store.op, get_merge, hF, CMRA.op, optionOp]
+      simp [get_merge, CMRA.op, optionOp]
       cases z1 <;> cases z2 <;> cases h1 : get y1 i <;> cases h2 : get y2 i <;> simp [h1, h2] at Hz1 Hz2
       · rw [hmap_unalloc h1, hmap_unalloc h2]; simp
       · rw [hmap_unalloc h1, hmap_alloc h2, hF]; simp
@@ -399,7 +399,7 @@ theorem delete_valid {m : T} (Hv : ✓ m) : ✓ (delete m i) :=
 
 theorem set_equiv_point_op_point {m : T} (Hemp : get m i = none) : Equiv (set m i x) (point i x • m) := by
   refine funext (fun k => ?_)
-  simp [CMRA.op, Store.op, Equiv, get_merge, Option.merge, get_point, Hemp, get_set]
+  simp [CMRA.op, Store.op, get_merge, Option.merge, get_point, get_set]
   split <;> rename_i He
   · rw [← He, Hemp]; cases x <;> rfl
   · cases (Store.get m k) <;> rfl
@@ -524,10 +524,10 @@ instance [H : Cancelable (some x)] : Cancelable (point (T := T) i (some x)) wher
         intro Hv He
         cases _ : get m1 j <;> cases _ : get m2 j
         all_goals apply H.cancelableN
-        all_goals simp_all [CMRA.op, Store.op, optionOp]
+        all_goals simp_all [CMRA.op, optionOp]
       else
         cases get m1 j <;> cases get m2 j
-        all_goals simp_all [CMRA.op, optionOp]
+        all_goals simp_all
 
 instance {m : T} [Hid : ∀ x : V, IdFree x] [Hc : ∀ x : V, Cancelable x] : Cancelable m where
   cancelableN {n m1 m2} Hv He i := by
@@ -537,7 +537,7 @@ instance {m : T} [Hid : ∀ x : V, IdFree x] [Hc : ∀ x : V, Cancelable x] : Ca
       cases _ : get m i <;> cases _ : get m1 i <;> simp_all
     · specialize He i; revert He
       simp [Heap.get_merge, CMRA.op, Store.op, optionOp]
-      cases get m i <;> cases get m1 i <;> cases get m2 i <;> simp_all [Heap.get_merge]
+      cases get m i <;> cases get m1 i <;> cases get m2 i <;> simp_all
 
 theorem insert_op_equiv {m1 m2 : T} :
     Equiv ((set (V := Option V) (m1 • m2) i (x • y))) (set m1 i x • set m2 i y) := by
