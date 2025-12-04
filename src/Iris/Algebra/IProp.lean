@@ -7,43 +7,52 @@ Authors: Markus de Medeiros
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
 import Iris.Algebra.UPred
+import Iris.Algebra.GenMap
 import Iris.Algebra.COFESolver
 import Init.Data.Vector
 
 namespace Iris
 
-def GFunctors := Array COFE.OFunctorPre
-
-def GId (FF : GFunctors) : Type _ := Fin FF.size
-
-instance (FF : GFunctors) : GetElem GFunctors (GId FF) COFE.OFunctorPre (fun _ _ => True) where
-  getElem _ x _ := (show Array _ from FF)[x.1]
-
-abbrev IsGFunctors (G : GFunctors) := ∀ (i : GId G), RFunctorContractive G[i]
-
-def SubG (FF₁ FF₂ : GFunctors) : Prop :=
-  ∀ i : GId FF₁, ∃ j : GId FF₂, FF₁[i] = FF₂[j]
-
-def GName := LeibnizO Nat
-
-abbrev IResF (FF : GFunctors) : COFE.OFunctorPre :=
-  DiscreteFunOF (fun i : GId FF => GenMapOF GName FF[i])
-
-section IProp
 open COFE
 
-variable (FF : GFunctors) [IG : IsGFunctors FF]
+abbrev GType := Nat
 
-def iPrePropO : Type _ := OFunctor.Fix (UPredOF (IResF FF))
+def BundledGFunctors := GType → Σ F : OFunctorPre, RFunctorContractive F
 
-instance : COFE (iPrePropO FF) := inferInstanceAs (COFE (OFunctor.Fix _))
+def BundledGFunctors.default : BundledGFunctors := fun _ => ⟨COFE.constOF Unit, by infer_instance⟩
 
-def IResUR : Type := (i : GId FF) → GName → Option (FF[i] (iPrePropO FF) (iPrePropO FF))
+def BundledGFunctors.set (GF : BundledGFunctors) (i : Nat) (FB : Σ F, RFunctorContractive F) :
+    BundledGFunctors :=
+  fun j => if j = i then FB else GF j
 
-instance : UCMRA (IResUR FF) :=
-  ucmraDiscreteFunO (β := fun (i : GId FF) => GName → Option (FF[i] (iPrePropO FF) (iPrePropO FF)))
+abbrev GName := Nat
 
-abbrev IProp := UPred (IResUR FF)
+abbrev IResF (GF : BundledGFunctors) : OFunctorPre :=
+  DiscreteFunOF (fun i => GenMapOF GName (GF i).fst)
+
+instance (GF : BundledGFunctors) (i : GName) : RFunctorContractive ((GF i).fst) := (GF i).snd
+
+section IProp
+
+variable (GF : BundledGFunctors)
+
+def IPre : Type _ := OFunctor.Fix (UPredOF (IResF GF))
+
+instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix _))
+
+def IResUR : Type := (i : GType) → GenMap Nat (GF i |>.fst (IPre GF) (IPre GF))
+
+instance : UCMRA (IResUR GF) :=
+  ucmraDiscreteFunO (β := fun (i : GType) => GenMap GName (GF i |>.fst (IPre GF) (IPre GF)))
+
+abbrev IProp := UPred (IResUR GF)
+
+def IProp.unfold : IProp GF -n> IPre GF :=
+  OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
+
+def IProp.fold : IPre GF -n> IProp GF :=
+  OFE.Iso.inv <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
 
 end IProp
+
 end Iris
