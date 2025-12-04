@@ -14,7 +14,7 @@ import Iris.BI.Updates
 -- I need to import this for "bupd_alt_bupd"
 import Iris.Instances.UPred.Instance
 
-set_option trace.Meta.synthInstance true
+-- set_option trace.Meta.synthInstance true
 
 namespace Iris
 open Iris.Std BI
@@ -154,16 +154,13 @@ theorem own_updateP {x : M} {Φ : M → Prop}
   iapply own_updateP_plainly x Φ R Hup
   isplit l [Hx]
   · iexact Hx
-  -- TODO: can't intro HΦ to pure context
-  iintro y
-  iintro HΦ
-  icases HΦ with ⌜HQ⌝
+  iintro y ⌜HΦ⌝
   iintro Hy
   iapply H
   iexists y
   isplit
   · ipure_intro
-    exact HQ
+    exact HΦ
   · iexact Hy
 end bupd_alt
 
@@ -180,22 +177,13 @@ theorem bupd_alt_bupd [UCMRA M] (P : UPred M) : bupd_alt P ⊢ |==> P := by
   -- Unfold bupd definition in `Instance.lean`
   intro k y Hkn Hxy
   let R := bupd_alt_pred P y
-  have H_inst : (UPred.wand (UPred.wand P (UPred.plainly R)) (UPred.plainly R)).holds n x :=
-    -- TODO: why do i need to pass this wand into H..., why I also need to pass in this proof
-    H (UPred.wand (UPred.wand P (UPred.plainly R)) (UPred.plainly R)) ⟨R, rfl⟩
+  have H_inst : iprop((P -∗ ■ R) -∗ ■ R).holds n x := H _ ⟨R, rfl⟩
 
-  have wand_holds : (UPred.wand P (UPred.plainly R)).holds k y := by
+  have wand_holds : iprop(P -∗ ■ R).holds k y := by
     intro k' z Hk' Hvyz HP
-    -- Need to show: (■ R) k' (y • z), which is R k' UCMRA.unit
-    -- R k' UCMRA.unit = ∃ x'', ✓{k'} (x'' • y) ∧ P k' x''
     refine ⟨z, ?_, HP⟩
     exact CMRA.validN_ne CMRA.op_commN Hvyz
-
-  -- TODO: why do I need to pass in k, y, Hkn, Hxy, wand_holds again??
-  have HR : (UPred.plainly R).holds k (x • y) := H_inst k y Hkn Hxy wand_holds
-  -- HR : (■ R) k (x • y), which unfolds to R k UCMRA.unit
-  -- R k UCMRA.unit = ∃ x', ✓{k} (x' • y) ∧ P k x'
-  exact HR
+  exact H_inst k y Hkn Hxy wand_holds
 
 
 theorem bupd_alt_bupd_iff [UCMRA M] (P : UPred M) : bupd_alt P ⊣⊢ |==> P := by
@@ -208,67 +196,34 @@ theorem ownM_updateP [UCMRA M] (x : M) (Φ : M → Prop) (R : UPred M) :
     (x ~~>: Φ) →
     UPred.ownM x ∗ (∀ y, iprop(⌜Φ y⌝) -∗ UPred.ownM y -∗ ■ R) ⊢ ■ R := by
   intro Hup
-  -- Unfold to work at the representation level
-  intro n z Hv ⟨x1, z2, Hx, ⟨z1, Hz1⟩, HR⟩
-  -- Hv : ✓{n} z
-  -- Destructure the sep:
-  -- x1, z2 are the two parts
-  -- Hx : z ≡{n} x1 • z2
-  -- ⟨z1, Hz1⟩ : (ownM x) n x1, which means x ≼{n} x1, i.e., ∃ z1, x1 ≡{n} x • z1
-  -- HR : ForAll holds at z2
-
-  -- After ofe_subst, we have z ≡{n} (x • z1) • z2
+  intro n z
+  intro Hv
+  -- x1 z2 are introduced for separating conjunction
+  -- (ownM x).holds n x1 := x ≼{n} x1, namely x · z1 = x1
+  intro ⟨x1, z2, Hx, ⟨z1, Hz1⟩, HR⟩
+  -- manually having ofe_subst, z ≡{n} (x • z1) • z2
   have Hz_subst : z ≡{n}≡ (x • z1) • z2 := by
     calc z ≡{n}≡ x1 • z2 := Hx
          _ ≡{n}≡ (x • z1) • z2 := Hz1.op_l
 
-  -- Apply the update with frame z1 • z2
   have Hvalid : ✓{n} (x •? some (z1 • z2)) := by
     show ✓{n} (x • (z1 • z2))
     refine CMRA.validN_ne ?_ Hv
     calc z ≡{n}≡ (x • z1) • z2 := Hz_subst
          _ ≡{n}≡ x • (z1 • z2) := CMRA.assoc.symm.dist
+  have ⟨y, HΦy, Hvalid_y⟩ := Hup n (some (z1 • z2)) Hvalid
 
-  obtain ⟨y, HΦy, Hvalid_y⟩ := Hup n (some (z1 • z2)) Hvalid
+  have Hp := HR (iprop(⌜Φ y⌝ -∗ (UPred.ownM y -∗ ■ R))) ⟨y, rfl⟩
 
-  -- HR : ∀ p, (∃ y', p = ...) → p n z2
-  -- We need to instantiate with the wand
-  let p := UPred.wand (UPred.pure (Φ y)) (UPred.wand (UPred.ownM y) (UPred.plainly R))
-  have Hp : (UPred.wand (UPred.pure (Φ y)) (UPred.wand (UPred.ownM y) (UPred.plainly R))).holds n z2 :=
-    HR p ⟨y, rfl⟩
-
-  -- Apply Hp at step n with resource z1
-  -- First wand: (⌜Φ y⌝ -∗ (ownM y -∗ ■ R)).holds n z2
-  -- Means: ∀ n' x', n' ≤ n → ✓{n'} (z2 • x') → (⌜Φ y⌝) n' x' → (ownM y -∗ ■ R) n' (z2 • x')
-  -- We need ✓{n} (z2 • z1)
   have Hv_z2z1 : ✓{n} (z2 • z1) := by
-    -- From Coq line 250: rewrite comm. by eapply cmra_validN_op_r.
-    -- We have Hvalid_y : ✓{n} (y •? some (z1 • z2)) = ✓{n} (y • (z1 • z2))
-    -- Need ✓{n} (z2 • z1)
-    have : ✓{n} (y • (z1 • z2)) := Hvalid_y
-    exact CMRA.validN_ne CMRA.comm.dist (CMRA.validN_op_right this)
+    exact CMRA.validN_ne CMRA.comm.dist (CMRA.validN_op_right Hvalid)
 
-  have Hp1 : (UPred.wand (UPred.ownM y) (UPred.plainly R)).holds n (z2 • z1) := Hp n z1 (Nat.le_refl _) Hv_z2z1 HΦy
+  have Hp1 : iprop(UPred.ownM y -∗ ■ R).holds n (z2 • z1) := Hp n z1 (Nat.le_refl _) Hv_z2z1 HΦy
 
-  -- Apply the second wand at step n with resource y
-  -- (ownM y -∗ ■ R).holds n (z2 • z1)
-  -- Means: ∀ n' x', n' ≤ n → ✓{n'} ((z2 • z1) • x') → (ownM y) n' x' → (■ R) n' ((z2 • z1) • x')
-  -- We want to apply this with x' = y at step n
-  -- Need: ✓{n} ((z2 • z1) • y)
   have Hv_z2z1y : ✓{n} ((z2 • z1) • y) := by
-    -- From Coq line 251: by rewrite (comm _ _ y) (comm _ z2).
-    -- We have Hvalid_y : ✓{n} (y • (z1 • z2))
-    have : ✓{n} (y • (z1 • z2)) := Hvalid_y
-    refine CMRA.validN_ne ?_ this
+    apply CMRA.validN_ne ?_ Hvalid_y
     calc y • (z1 • z2) ≡{n}≡ y • (z2 • z1) := CMRA.comm.dist.op_r
          _ ≡{n}≡ (z2 • z1) • y := CMRA.comm.symm.dist
 
-  -- Need: (ownM y) n y, which is y ≼{n} y
   have Hy_incl : y ≼{n} y := CMRA.incN_refl y
-
-  have HR_goal : (UPred.plainly R).holds n ((z2 • z1) • y) :=
-    Hp1 n y (Nat.le_refl _) Hv_z2z1y Hy_incl
-
-  -- HR_goal : R n UCMRA.unit
-  -- We need to show: R n UCMRA.unit
-  exact HR_goal
+  exact Hp1 n y (Nat.le_refl _) Hv_z2z1y Hy_incl
