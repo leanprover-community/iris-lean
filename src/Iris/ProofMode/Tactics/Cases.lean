@@ -278,7 +278,7 @@ elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
   -- parse syntax
   let pat ← liftMacroM <| iCasesPat.parse pat
 
-  let (mvar, { u, prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
+  let (mvar, { u, prop := _, bi, e := _, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
   let uniq ← hyps.findWithInfo hyp
