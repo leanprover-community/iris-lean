@@ -1165,33 +1165,27 @@ theorem Option.incN_iff {ma mb : Option α} :
 
 theorem Option.inc_iff_isTotal [CMRA.IsTotal α] {ma mb : Option α} :
     ma ≼ mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼ b := by
-  apply Option.inc_iff.trans _
+  rw [Option.inc_iff]
   constructor
-  · rintro (H|⟨a, b, Ha, Hb, (H|H)⟩)
-    · exact .inl H
-    · right
-      refine ⟨a, b, Ha, Hb, ?_⟩
-      exists (CMRA.core a)
-      exact H.symm.trans (CMRA.op_core a).symm
-    · exact .inr ⟨a, b, Ha, Hb, H⟩
-  · rintro (H|⟨a, b, Ha, Hb, H⟩)
-    · exact .inl H
-    · exact .inr ⟨a, b, Ha, Hb, .inr H⟩
+  · rintro (rfl | ⟨a, b, rfl, rfl, (Heqv | Hinc)⟩)
+    · simp
+    · exact .inr ⟨a, b, rfl, rfl, ⟨CMRA.core a, Heqv.symm.trans (CMRA.op_core a).symm⟩⟩
+    · exact .inr ⟨a, b, rfl, rfl, Hinc⟩
+  · rintro (rfl | ⟨a, b, rfl, rfl, Hinc⟩)
+    · simp
+    · exact .inr ⟨a, b, rfl, rfl, .inr Hinc⟩
 
 theorem Option.incN_iff_isTotal [CMRA.IsTotal α] {ma mb : Option α} :
     ma ≼{n} mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼{n} b := by
-  apply Option.incN_iff.trans _
+  rw [Option.incN_iff]
   constructor
-  · rintro (H|⟨a, b, Ha, Hb, (H|H)⟩)
-    · exact .inl H
-    · right
-      refine ⟨a, b, Ha, Hb, ?_⟩
-      exists (CMRA.core a)
-      apply H.symm.trans (CMRA.op_core_dist a).symm
-    · exact .inr ⟨a, b, Ha, Hb, H⟩
-  · rintro (H|⟨a, b, Ha, Hb, H⟩)
-    · exact .inl H
-    · exact .inr ⟨a, b, Ha, Hb, .inr H⟩
+  · rintro (rfl | ⟨a, b, rfl, rfl, (Heqv | Hinc)⟩)
+    · simp
+    · exact .inr ⟨a, b, rfl, rfl, ⟨CMRA.core a, Heqv.symm.trans (CMRA.op_core_dist a).symm⟩⟩
+    · exact .inr ⟨a, b, rfl, rfl, Hinc⟩
+  · rintro (rfl | ⟨a, b, rfl, rfl, Hinc⟩)
+    · simp
+    · exact .inr ⟨a, b, rfl, rfl, .inr Hinc⟩
 
 theorem Option.some_incN_some_iff {a b : α} : some a ≼{n} some b ↔ a ≡{n}≡ b ∨ a ≼{n} b := by
   apply Option.incN_iff.trans; simp
@@ -1267,13 +1261,12 @@ theorem Option.valid_of_inc_valid {a b : α} (Hv : ✓ a) (Hinc : some b ≼ som
 theorem Option.some_inc_some_iff_opM {a b : α} : some a ≼ some b ↔ ∃ mc, b ≡ a •? mc := by
   simp [Option.inc_iff]
   constructor
-  · rintro (H|H)
-    · exists none; simpa [CMRA.op?] using H.symm
-    · rcases H with ⟨mc', H⟩
-      exists (some mc')
-  · rintro ⟨(_|z), H⟩
+  · rintro (Heqv | ⟨mc', Hinc⟩)
+    · exact ⟨none, by simpa [CMRA.op?] using Heqv.symm⟩
+    · exact ⟨some mc', Hinc⟩
+  · rintro ⟨_|z, H⟩
     · exact .inl H.symm
-    · right; exists z
+    · exact .inr ⟨z, H⟩
 
 theorem Option.some_incN_some_iff_opM {a b : α} : some a ≼{n} some b ↔ ∃ mc, b ≡{n}≡ a •? mc := by
   simp [Option.incN_iff]
