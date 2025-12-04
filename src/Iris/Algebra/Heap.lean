@@ -6,145 +6,10 @@ Authors: Markus de Medeiros
 
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
+import Iris.Std.Set
+import Iris.Std.Heap
 
 open Iris
-
-/-! ## Generic heaps
-
-Note: There are three definitions of equivalence in this file
-
-[1] OFE.Equiv (pointwise equvalence)
-[2] StoreO.Equiv (pointwise equality of .get)
-[3] Eq (equality of representations)
-
-[3] -> [2] -> [1] always
-[1] -> [2] when the value type is Leibniz
-[2] -> [3] when the store is an IsoFunStore
--/
-
--- TODO: Move this to a generic set theory library
-def set_disjoint {X : Type _} (S1 S2 : X → Prop) : Prop := ∀ x : X, ¬(S1 x ∧ S2 x)
-def set_union {X : Type _} (S1 S2 : X → Prop) : X → Prop := fun x => S1 x ∨ S2 x
-def set_included {X : Type _} (S1 S2 : X → Prop) : Prop := ∀ x, S1 x → S2 x
-
-/-- The type `T` can store and retrieve keys of type `K` and obtain values of type `V`. -/
-class Store (T : Type _) (K V : outParam (Type _)) where
-  get : T → K → V
-  set : T → K → V → T
-  get_set_eq {t k k' v} : k = k' → get (set t k v) k' = v
-  get_set_ne {t k k' v} : k ≠ k' → get (set t k v) k' = get t k'
-export Store (get set get_set_eq get_set_ne)
-
-open Classical in
-theorem Store.get_set [Store T K V] {t : T} {k k' : K} {v : V} :
-    get (set t k v) k' = if k = k' then v else get t k' := by
-  split <;> rename_i h
-  · exact get_set_eq h
-  · exact get_set_ne h
-
-/-- An index-dependent predicate holds at every member of the store. -/
-def Store.all [Store T K V] (P : K → V → Prop) : T → Prop :=
-  fun t => ∀ k, P k (get t k)
-
-/-- Two Stores are pointwise equivalent. -/
-@[simp] def Store.Equiv [Store T K V] (t1 t2 : T) : Prop := get t1 = get t2
-
-instance Store.Equiv_trans [Store T K V] : Trans Equiv (Equiv (T := T)) Equiv := ⟨by simp_all⟩
-
-/-- RepFunStore: The type T can represent all functions that satisfy Rep.
-For instance, this holds with `rep _ = True` when `T = K → V`. On the other hand, when
-`T = list (K × Option V)` representing a partial function with an association list, this holds
-when `rep f` is the predicate that says `f` has finite domain. -/
-class RepFunStore (T : Type _) (K V : outParam (Type _)) [Store T K V] where
-  rep : (K → V) → Prop
-  rep_get (t : T) : rep (get t)
-  ofFun : { f : K → V // rep f } → T
-  get_ofFun: get (ofFun f) = f
-export RepFunStore (rep rep_get ofFun get_ofFun)
-
-/-- IsoFunStore: The type T is isomorphic the type of functions `{f : Rep f}`, or in other words,
-equality of T is the same as equality of `{f : Rep f}`. -/
-class IsoFunStore (T : Type _) (K V : outParam (Type _)) [Store T K V] extends RepFunStore T K V where
-  ofFun_get {t : T} : ofFun ⟨get t, rep_get t⟩ = t
-export IsoFunStore (ofFun_get)
-
-theorem IsStoreIso.ext [Store T K V] [IsoFunStore T K V] {t1 t2 : T}
-    (H : ∀ k, get t1 k = get t2 k) : t1 = t2 := by
-  rw [← ofFun_get (t := t1), ← ofFun_get (t := t2)]
-  congr 2; exact funext H
-
-/-- [2] → [3] -/
-theorem IsoFunStore.store_eq_of_Equiv [Store T K V] [IsoFunStore T K V] {t1 t2 : T} :
-    Store.Equiv t1 t2 → t1 = t2 := (IsStoreIso.ext <| fun k => congrFun · k)
-
-/-- Stores of type T1 can be coerced to stores of type T2. -/
-class HasStoreMap (T1 T2 : Type _) (K V1 V2 : outParam (Type _)) [Store T1 K V1] [Store T2 K V2] where
-  /-- Map a function that depends on the elemet across the entire structure  -/
-  dmap (f : K → V1 → V2) : T1 → T2
-  get_dmap : get (dmap f t) k = f k (get t k)
-export HasStoreMap (dmap get_dmap)
-
-/-- Map between heaps that preserves non-allocations. -/
-class HasHHMap (T1 T2 : Type _) (K V1 V2 : outParam (Type _))
-   [Store T1 K (Option V1)] [Store T2 K (Option V2)] where
-  hhmap (f : K → V1 → Option V2) : T1 → T2
-  hhmap_get (f : K → V1 → Option V2) : get (hhmap f t) k = (get t k).bind (f k)
-export HasHHMap (hhmap hhmap_get)
-
-def HasStoreMap.map (f : V1 → V2) [Store T1 K V1] [Store T2 K V2] [HasStoreMap T1 T2 K V1 V2] : T1 → T2 :=
-  HasStoreMap.dmap (fun (_ : K) => f)
-
-class Heap (T : Type _) (K V : outParam (Type _)) extends Store T K (Option V) where
-  empty : T
-  hmap (f : K → V → Option V) : T → T
-  merge (op : V → V → V) : T → T → T
-  get_empty : get empty k = none
-  get_hmap : get (hmap f t) k = (get t k).bind (f k)
-  get_merge : get (merge op t1 t2) k = Option.merge op (get t1 k) (get t2 k)
-export Heap (empty hmap merge get_empty get_hmap get_merge)
-
-theorem hmap_alloc [Heap T K V] {t : T} (H : get t k = some v) : get (hmap f t) k = f k v := by
-  simp [get_hmap, H]
-
-theorem hmap_unalloc [Heap T K V] {t : T} (H : get t k = none) : get (hmap f t) k = none := by
-  simp [get_hmap, H]
-
-/-- The heap of a single point -/
-def Heap.point [Heap T K V] (k : K) (v : Option V) : T := set empty k v
-
-/-- Delete an element from a heap by setting its value to .none -/
-def Heap.delete [Heap T K V] (t : T) (k : K) : T := set t k none
-
-/-- The domain of a heap is the set of keys that map to .some values. -/
-def Heap.dom [Heap T K V] (t : T) : K → Prop := fun k => (get t k).isSome
-
-@[simp] def Heap.union [Heap T K V] : T → T → T := merge (fun v _ => v)
-
-theorem Heap.point_get_eq [Heap T K V] (H : k = k') : get (point k v : T) k' = v := by
-  rw [point, get_set_eq H]
-
-theorem Heap.point_get_ne [Heap T K V] (H : k ≠ k') : get (point k v : T) k' = none := by
-  rw [point, get_set_ne H, get_empty]
-
-open Classical in
-theorem Heap.get_point [Heap T K V] {k k' : K} {v : Option V} :
-    get (point k v : T) k' = if k = k' then v else .none := by
-  split <;> rename_i h
-  · exact point_get_eq h
-  · exact point_get_ne h
-
-/-- An AllocHeap is a heap which can allocate elements under some condition. -/
-class AllocHeap (T : Type _) (K V : outParam (Type _)) extends Heap T K V where
-  notFull : T → Prop
-  fresh {t : T} : notFull t → K
-  get_fresh  {H : notFull t} : get t (fresh H) = none
-export AllocHeap (notFull fresh get_fresh)
-
-/-- An UnboundeHeap is a heap which can allocate an unbounded number of elements starting at empty. -/
-class UnboundedHeap (T : Type _) (K V : outParam (Type _)) extends AllocHeap T K V where
-  notFull_empty : notFull (empty : T)
-  notFull_set_fresh {H : notFull t} : notFull (set t (fresh H) v)
-export UnboundedHeap (notFull_empty notFull_set_fresh)
 
 section ofe
 open OFE
@@ -161,8 +26,8 @@ instance Store.instOFE [Store T K V] [OFE V] : OFE T where
   ne.1 {_ _ _} H k := H k
 
 @[simp] def Store.ofMap [Store T K V] [R : RepFunStore T K V] [OFE V] : {f : K → V // R.rep f} -n> T where
-  f x := ofFun x
-  ne.1 {_ _ _} H k := by rw [get_ofFun, get_ofFun]; exact H k
+  f x := of_fun x
+  ne.1 {_ _ _} H k := by rw [get_of_fun, get_of_fun]; exact H k
 
 instance get_ne [Store T K V] [OFE V] (k : K) : NonExpansive (get · k : T → V) where
   ne {_ _ _} Ht := Ht k
@@ -553,7 +418,7 @@ theorem insert_op_eq [IsoFunStore T K (Option V)] {m1 m2 : T} :
     (set (V := Option V) (m1 • m2) i (x • y)) = (set m1 i x • set m2 i y) :=
   IsoFunStore.store_eq_of_Equiv insert_op_equiv
 
-theorem disjoint_op_equiv_union {m1 m2 : T} (Hd : set_disjoint (dom m1) (dom m2)) :
+theorem disjoint_op_equiv_union {m1 m2 : T} (Hd : Set.Disjoint (dom m1) (dom m2)) :
     Equiv (m1 • m2) (union m1 m2) := by
   refine funext fun j => ?_
   simp [CMRA.op, Store.op, Heap.get_merge]
@@ -561,12 +426,12 @@ theorem disjoint_op_equiv_union {m1 m2 : T} (Hd : set_disjoint (dom m1) (dom m2)
   refine (Hd j ?_).elim
   simp_all [dom]
 
-theorem disjoint_op_eq_union [IsoFunStore T K (Option V)] {m1 m2 : T} (H : set_disjoint (dom m1) (dom m2)) :
+theorem disjoint_op_eq_union [IsoFunStore T K (Option V)] {m1 m2 : T} (H : Set.Disjoint (dom m1) (dom m2)) :
     m1 • m2 = Heap.union m1 m2 :=
   IsoFunStore.store_eq_of_Equiv (disjoint_op_equiv_union H)
 
 theorem valid0_disjoint_dom {m1 m2 : T} (Hv : ✓{0} (m1 • m2)) (H : ∀ {k x}, get m1 k = some x → Exclusive x) :
-    set_disjoint (dom m1) (dom m2) := by
+    Set.Disjoint (dom m1) (dom m2) := by
   rintro k
   simp only [dom, Option.isSome]
   rcases HX : get m1 k with (_|x) <;> simp
@@ -576,14 +441,14 @@ theorem valid0_disjoint_dom {m1 m2 : T} (Hv : ✓{0} (m1 • m2)) (H : ∀ {k x}
   simp [Heap.get_merge, HX, HY]
 
 theorem valid_disjoint_dom {m1 m2 : T} (Hv : ✓ (m1 • m2)) (H : ∀ {k x}, get m1 k = some x → Exclusive x) :
-    set_disjoint (dom m1) (dom m2) :=
+    Set.Disjoint (dom m1) (dom m2) :=
   valid0_disjoint_dom (Valid.validN Hv) H
 
-theorem dom_op_union (m1 m2 : T) : dom (m1 • m2) = set_union (dom m1) (dom m2) := by
+theorem dom_op_union (m1 m2 : T) : dom (m1 • m2) = Set.Union (dom m1) (dom m2) := by
   refine funext fun k => ?_
-  cases get m1 k <;> cases get m2 k <;> simp_all [CMRA.op, dom, set_union, get_merge]
+  cases get m1 k <;> cases get m2 k <;> simp_all [CMRA.op, dom, Set.Union, get_merge]
 
-theorem inc_dom_inc {m1 m2 : T} (Hinc : m1 ≼ m2) : set_included (dom m1) (dom m2) := by
+theorem inc_dom_inc {m1 m2 : T} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (dom m2) := by
   intro i; unfold Heap.dom
   rcases lookup_inc.mp Hinc i with ⟨z, Hz⟩; revert Hz
   cases get m1 i <;> cases get m2 i <;> cases z <;>
