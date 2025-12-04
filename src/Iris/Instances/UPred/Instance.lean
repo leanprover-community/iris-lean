@@ -461,19 +461,14 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   intro Hup n x2 Hv ⟨x3, Hx⟩ k yf Hk Hyf
   have Hxv : ✓{k} x • (x3 • yf) := by
     refine CMRA.validN_ne ?_ Hyf
-    calc x2 • yf ≡{k}≡ (x • x3) • yf := (Hx.le Hk).op_l
-         _       ≡{k}≡ x • (x3 • yf) := CMRA.assoc.symm.dist
+    exact (Hx.le Hk).op_l.trans CMRA.assoc.symm.dist
   rcases Hup k (some (x3 • yf)) Hxv with ⟨y, HΦy, Hyv⟩
-  exists y • x3; constructor
-  · have : y • (x3 • yf) ≡{k}≡ (y • x3) • yf := (CMRA.op_assocN : y • (x3 • yf) ≡{k}≡ (y • x3) • yf)
-    exact CMRA.validN_ne this Hyv
-  · exists iprop(⌜Φ y⌝ ∧ ownM y); constructor
-    · exists y
-    constructor
-    · exact HΦy
-    · exact CMRA.incN_op_left k y x3
+  refine ⟨y • x3, CMRA.validN_ne CMRA.op_assocN Hyv, ?_⟩
+  refine ⟨iprop(⌜Φ y⌝ ∧ ownM y), ?_, ?_⟩
+  · exists y
+  · exact ⟨HΦy, CMRA.incN_op_left k y x3⟩
 
--- TODO: later_ownM, ownM_forall  (needs internal eq )
+-- TODO: later_ownM, ownM_forall (needs internal eq)
 
 theorem cmraValid_intro [CMRA A] {P : UPred M} (a : A) (Ha : ✓ a) : P ⊢ cmraValid a :=
   fun _ _ _ _ => CMRA.Valid.validN Ha
