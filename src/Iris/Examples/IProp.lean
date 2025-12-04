@@ -47,7 +47,7 @@ example : ⊢ |==> ∃ (γ0 γ1 : GName) (s0 s1 : String),
   iexists γ1
   iexists "string0"
   iexists "string1"
-  isplit l [Hγ0]
+  isplitl [Hγ0]
   · iexact Hγ0
   · iexact Hγ1
 

@@ -284,6 +284,29 @@ instance [OFE α] [Leibniz α] : Leibniz (Option α) where
     | none, none, _ => rfl
     | some _, some _, h => congrArg some (Leibniz.eq_of_eqv h)
 
+instance [OFE α] [Discrete α] : Discrete (Option α) where
+  discrete_0 {x y} H :=
+    match x, y with
+    | none, none => H
+    | some _, some _ => some_eqv_some.mpr (discrete_0 H)
+
+instance OFE.Option.some.ne [OFE α] : OFE.NonExpansive (some : α → Option α) := ⟨fun _ _ _ => id⟩
+
+theorem Option.some_is_discrete [OFE α] {a : α} (Ha : DiscreteE a) : DiscreteE (some a) := by
+  constructor
+  rintro (_|_) H
+  · exact H
+  · exact Ha.discrete H
+
+theorem Option.none_is_discrete [OFE α] : DiscreteE (none : Option α) := by
+  constructor; rintro (_|_) <;> simp
+
+instance Option.merge_ne [OFE α] {op : α → α → α} [NonExpansive₂ op] :
+    NonExpansive₂ (Option.merge op) where
+  ne n x1 x2 Hx y1 y2 Hy := by
+    rcases x1, x2, y1, y2 with ⟨_|_, _|_, _|_, _|_⟩ <;> simp_all
+    exact NonExpansive₂.ne Hx Hy
+
 abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
 
 instance [OFEFun (β : α → _)] : OFE ((x : α) → β x) where
@@ -348,6 +371,19 @@ theorem dist_fst {n} [OFE α] [OFE β] {x y : α × β} (h : x ≡{n}≡ y) : x.
 theorem dist_snd {n} [OFE α] [OFE β] {x y : α × β} (h : x ≡{n}≡ y) : x.snd ≡{n}≡ y.snd := h.right
 theorem dist_prod_ext {n} [OFE α] [OFE β] {x₁ x₂ : α} {y₁ y₂ : β}
     (ex : x₁ ≡{n}≡ x₂) (ey : y₁ ≡{n}≡ y₂) : (x₁, y₁) ≡{n}≡ (x₂, y₂) := ⟨ex, ey⟩
+
+theorem prod.is_discrete [OFE α] [OFE β] {a : α} {b : β} (Ha : DiscreteE a) (Hb : DiscreteE b) :
+    DiscreteE (a, b) := by
+  constructor
+  intro y H; refine ⟨Ha.discrete H.1, Hb.discrete H.2⟩
+
+instance [OFE α] [OFE β] [Discrete α] [Discrete β] : Discrete (α × β) where
+  discrete_0 H := by
+    constructor
+    · apply Discrete.discrete_0
+      apply H.1
+    · apply Discrete.discrete_0
+      apply H.2
 
 /-- An isomorphism between two OFEs is a pair of morphisms whose composition is equivalent to the
 identity morphism. -/
@@ -457,6 +493,40 @@ theorem map_comp [OFE α] [OFE β] [OFE γ] {f : α -n> β} {g : β -n> γ} {c :
   simp [map]
 
 end Chain
+
+/-- If a chain of Option is ever none, is the constant none chain. -/
+theorem chain_none_const [OFE V] {c : Chain (Option V)} (H : c n = none) :
+    c = Chain.const none := by
+  rcases c with ⟨c, Hc⟩
+  congr 1; refine funext (fun k => ?_)
+  rcases Nat.le_or_ge n k with (Hnk|Hnk)
+  · suffices c k ≡{n}≡ c n by cases _ : c k <;> simp_all
+    exact Hc Hnk
+  · suffices c k ≡{k}≡ c n by cases _ : c k <;> simp_all
+    exact (Hc Hnk).symm
+
+/-- If a chain of Option is ever some, it is the lift a chain by some. -/
+def chain_option_some [OFE V] {c : Chain (Option V)} (H : c n = some v) :
+    ∃ c' : Chain V, c = Chain.map ⟨some, OFE.Option.some.ne⟩ c' := by
+  have HVc (k) : ∃ v', c k = some v' := by
+    rcases h : c.chain k with (_|v')
+    · simp [chain_none_const h] at H
+    · exists v'
+  let c' : Chain V :=
+    ⟨fun n => Classical.choose <| HVc n,
+     by
+       intro n i Hni
+       have HR := c.cauchy Hni
+       rw [Classical.choose_spec (HVc n), Classical.choose_spec (HVc i)] at HR
+       exact HR ⟩
+  exists c'
+  rcases hcc : c with ⟨cc, Hcc⟩
+  simp only [Chain.map, Chain.mk.injEq]
+  refine funext (fun i => ?_)
+  simp only [c']
+  have Hchoose := Classical.choose_spec (HVc i)
+  rw [← Hchoose]
+  simp [hcc]
 
 /-- Complete ordered family of equivalences -/
 class IsCOFE (α : Type _) [OFE α] where

@@ -128,10 +128,6 @@ theorem iSingleton_op {γ : GName} [RFunctorContractive F] [E : ElemG GF F]
   intro τ' γ'
   unfold iSingleton
   simp [CMRA.op]
-  split <;> try rfl
-  simp [optionOp]
-  rename_i h; rcases h with ⟨h1, h2⟩; subst h1; subst h2; simp
-  simp [IProp.unfoldi]
   -- I believe it
   sorry
 
