@@ -66,11 +66,11 @@ theorem LocalUpdate.op_frame (x y x' y' yf : α)
   intro n mz vx e
   have ⟨h1, h2⟩ := h n (some yf • mz) vx <| calc
     x ≡{n}≡ (y • yf) •? mz := e
-    _ ≡{n}≡ y •? (some yf • mz) := CMRA.op_some_opM_assoc_dist y yf mz
+    _ ≡{n}≡ y •? (some yf • mz) := Option.op_some_opM_assoc_dist
   exists h1
   calc
     x' ≡{n}≡ y' •? (some yf • mz) := h2
-    _  ≡{n}≡ (y' • yf) •? mz      := (CMRA.op_some_opM_assoc_dist y' yf mz).symm
+    _  ≡{n}≡ (y' • yf) •? mz      := Option.op_some_opM_assoc_dist.symm
 
 theorem LocalUpdate.cancel (x y z : α) [CMRA.Cancelable x] : (x • y, x • z) ~l~> (y, z) :=
   fun _ _ vx e => ⟨CMRA.validN_op_right vx, CMRA.op_opM_cancel_dist vx e⟩
@@ -106,7 +106,7 @@ theorem LocalUpdate.valid0 {x y x' y' : α}
     (x, y) ~l~> (x', y') := by
   intro n mz vx e
   have v0y : ✓{0} y := CMRA.valid0_of_validN <| CMRA.validN_opM ((OFE.Dist.validN e).mp vx)
-  have : some y ≼{0} some x := CMRA.inc0_of_incN (CMRA.some_inc_some_of_dist_opM e)
+  have : some y ≼{0} some x := CMRA.inc0_of_incN (Option.some_inc_some_of_dist_opM e)
   exact h (CMRA.valid0_of_validN vx) v0y this n mz vx e
 
 theorem LocalUpdate.valid [CMRA.Discrete α] {x y x' y' : α}
@@ -116,11 +116,11 @@ theorem LocalUpdate.valid [CMRA.Discrete α] {x y x' y' : α}
 
 theorem LocalUpdate.total_valid0 [CMRA.IsTotal α] {x y x' y' : α}
     (h : ✓{0} x → ✓{0} y → y ≼{0} x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
-  .valid0 fun vx0 vy0 mz => h vx0 vy0 (CMRA.incN_of_some_incN_some mz)
+  .valid0 fun vx0 vy0 mz => h vx0 vy0 (Option.some_incN_some_iff_isTotal.mp mz)
 
 theorem LocalUpdate.total_valid [CMRA.IsTotal α] [CMRA.Discrete α] {x y x' y' : α}
     (h : ✓ x → ✓ y → y ≼ x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
-  .valid fun vx vy inc => h vx vy (CMRA.inc_of_some_inc_some inc)
+  .valid fun vx vy inc => h vx vy (Option.inc_of_some_inc_some inc)
 
 end CMRA
 
@@ -215,7 +215,7 @@ theorem LocalUpdate.alloc_option {x : α} (y : Option α)
   match mz with
   | none | some none => exact ⟨vx.validN, .rfl⟩
   | some (some z) =>
-    have ⟨_, hw⟩ := CMRA.exists_op_some_dist_some (n := n) y z
+    have ⟨_, hw⟩ := Option.exists_op_some_dist_some (n := n) y z
     cases e.trans hw
 
 theorem LocalUpdate.delete_option (x : Option α) (y : α) [CMRA.Exclusive y] :
@@ -223,7 +223,7 @@ theorem LocalUpdate.delete_option (x : Option α) (y : α) [CMRA.Exclusive y] :
   intro n mz vx e
   match mz with
   | none | some none => exact ⟨trivial, .rfl⟩
-  | some (some z) => cases not_valid_some_exclN_op_left <| (OFE.Dist.validN e).mp vx
+  | some (some z) => cases Option.not_valid_some_exclN_op_left <| (OFE.Dist.validN e).mp vx
 
 theorem LocalUpdate.delete_option_cancelable
     (mx : Option α) [CMRA.Cancelable mx] : (mx, mx) ~l~> (none, none) := by
@@ -231,4 +231,4 @@ theorem LocalUpdate.delete_option_cancelable
   match mz with
   | none | some none => exact ⟨trivial, .rfl⟩
   | some (some _) =>
-    exact ⟨trivial, CMRA.cancelableN (validN_op_unit vx) ((CMRA.unit_right_id_dist mx).trans e)⟩
+    exact ⟨trivial, CMRA.cancelableN (Option.validN_op_unit vx) ((CMRA.unit_right_id_dist mx).trans e)⟩
