@@ -573,7 +573,7 @@ theorem valid0_disjoint_dom {m1 m2 : T} (Hv : ✓{0} (m1 • m2)) (H : ∀ {k x}
   rcases HY : get m2 k with (_|y) <;> simp
   apply (H HX).1 y
   simp [CMRA.op, CMRA.ValidN] at Hv; specialize Hv k; revert Hv
-  simp [Heap.get_merge, optionValidN, HX, HY]
+  simp [Heap.get_merge, HX, HY]
 
 theorem valid_disjoint_dom {m1 m2 : T} (Hv : ✓ (m1 • m2)) (H : ∀ {k x}, get m1 k = some x → Exclusive x) :
     set_disjoint (dom m1) (dom m2) :=
