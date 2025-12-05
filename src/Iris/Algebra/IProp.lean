@@ -13,31 +13,18 @@ import Init.Data.Vector
 
 namespace Iris
 
--- MARKUSDE: The number of types of ghost state being finite is not necessary
--- for any of the ghost state constructions so we can remove it and simplify
--- the types.
+open COFE
 
-/-- GType: Each type of ghost state in the global context of ghost states is
-referenced by its index (GType) in a GFunctors list. -/
 abbrev GType := Nat
 
-def GFunctors := GType → COFE.OFunctorPre
+def BundledGFunctors := GType → Σ F : OFunctorPre, RFunctorContractive F
 
--- MARKUSDE: Abbreviation so synthesis of IsGFunctors works
-abbrev GFunctors.default : GFunctors := fun _ => COFE.constOF Unit
+def BundledGFunctors.default : BundledGFunctors := fun _ => ⟨COFE.constOF Unit, by infer_instance⟩
 
-def GFunctors.set (GF : GFunctors) (i : Nat) (F : COFE.OFunctorPre) : GFunctors :=
-  fun j => if j == i then F else GF j
+def BundledGFunctors.set (GF : BundledGFunctors) (i : Nat) (FB : Σ F, RFunctorContractive F) :
+    BundledGFunctors :=
+  fun j => if j = i then FB else GF j
 
-abbrev IsGFunctors (G : GFunctors) := ∀ i, RFunctorContractive (G i)
-
-instance [IsGFunctors GF] [RFunctorContractive F] : IsGFunctors (GF.set i F) :=
-  fun _ => by unfold GFunctors.set; split <;> infer_instance
-
-def SubG (FF₁ FF₂ : GFunctors) : Prop := ∀ i, ∃ j, FF₁ i = FF₂ j
-
-/-- GName: Ghost variable name. In iProp, there are an unlimited amount of names for
-each GType .-/
 abbrev GName := Nat
 
 abbrev IResF (GF : BundledGFunctors) : OFunctorPre :=
@@ -49,26 +36,18 @@ section IProp
 
 variable (GF : BundledGFunctors)
 
--- instance : OFunctorContractive (UPredOF (IResF GF)) := by
---   unfold IResF
---   let X := @instUPredOFunctorContractive (F := IResF GF)
---   sorry
-
 def IPre : Type _ := OFunctor.Fix (UPredOF (IResF GF))
 
 instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
-def IResUR : Type := (i : GType) → GName → Option (GF i |>.fst (IPre GF) (IPre GF))
+def IResUR : Type := (i : GType) → GenMap Nat (GF i |>.fst (IPre GF) (IPre GF))
 
 instance : UCMRA (IResUR GF) :=
-  ucmraDiscreteFunO (β := fun (i : GType) => GName → Option (GF i |>.fst (IPre GF) (IPre GF)))
+  ucmraDiscreteFunO (β := fun (i : GType) => GenMap GName (GF i |>.fst (IPre GF) (IPre GF)))
 
 abbrev IProp := UPred (IResUR GF)
 
--- def IProp.unfold : IProp GF -n> IPre GF :=
---   OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
-
-def IProp.unfold :=
+def IProp.unfold : IProp GF -n> IPre GF :=
   OFE.Iso.hom <| OFunctor.Fix.iso (F := (UPredOF (IResF GF)))
 
 def IProp.fold : IPre GF -n> IProp GF :=

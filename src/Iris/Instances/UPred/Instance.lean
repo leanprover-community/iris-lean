@@ -528,34 +528,6 @@ instance : Persistent (ownM (CMRA.core a) : UPred M) where
     refine OFE.NonExpansive.eqv ?_
     exact CMRA.core_idem a
 
-theorem ownM_updateP (Φ : M → Prop) :
-    x ~~>: Φ → UPred.ownM x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ UPred.ownM y := by
-  intro Hup
-  rintro n x2 _ ⟨x3, Hk⟩ k yf _ Hv
-  have G : ✓{k} x •? some (x3 • yf) := by
-    simp [CMRA.op?]
-    apply CMRA.validN_ne _ Hv
-    refine .trans ?_ CMRA.assoc.dist.symm
-    refine CMRA.op_commN.trans (.trans ?_ CMRA.op_commN)
-    apply CMRA.op_ne.ne
-    apply OFE.Dist.le Hk
-    trivial
-  obtain ⟨y, Hy_prop, Hy_valid⟩ := Hup k (some (x3 • yf)) G
-  exists (y • x3)
-  refine ⟨?_, ?_⟩
-  · simp [CMRA.op?] at Hy_valid
-    apply CMRA.validN_ne _ Hy_valid
-    refine .trans ?_ CMRA.assoc.dist
-    exact CMRA.op_ne.ne .rfl
-  · simp [BI.exists, BI.sExists, UPred.sExists]
-    exists (UPred.ownM y)
-    refine ⟨?_, ?_⟩
-    · exists y
-      constructor <;> intro n x hx
-      · exact (and_iff_right Hy_prop).mp
-      · exact (and_iff_right Hy_prop).mpr
-    · exists x3
-
 -- TODO: later_ownM, ownM_forall  (needs internal eq )
 
 theorem cmraValid_intro [CMRA A] {P : UPred M} (a : A) (Ha : ✓ a) : P ⊢ cmraValid a :=
