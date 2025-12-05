@@ -36,9 +36,8 @@ theorem sum_comm (m₁ m₂ : MeasurableSpace Ω) :
 
 /-- Characterization of measurability at the bottom measurable space (stated API). -/
 theorem measurableSet_bot_iff_empty_or_univ {s : Set Ω} :
-    MeasurableSet[⊥] s ↔ s = ∅ ∨ s = Set.univ := by
-  -- In the bottom σ-algebra, only `∅` and `univ` are measurable.
-  sorry
+    MeasurableSet[⊥] s ↔ s = ∅ ∨ s = Set.univ :=
+  measurableSet_bot_iff
 
 /-- Left unit: bottom sums to the other measurable space (API). -/
 theorem bot_sum (m : MeasurableSpace Ω) :
