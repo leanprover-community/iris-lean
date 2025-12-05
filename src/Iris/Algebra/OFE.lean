@@ -294,18 +294,17 @@ instance OFE.Option.some.ne [OFE α] : OFE.NonExpansive (some : α → Option α
 
 theorem Option.some_is_discrete [OFE α] {a : α} (Ha : DiscreteE a) : DiscreteE (some a) := by
   constructor
-  intro y H; cases y
+  rintro (_|_) H
   · exact H
   · exact Ha.discrete H
 
 theorem Option.none_is_discrete [OFE α] : DiscreteE (none : Option α) := by
-  constructor
-  intro y; cases y <;> simp
+  constructor; rintro (_|_) <;> simp
 
 instance Option.merge_ne [OFE α] {op : α → α → α} [NonExpansive₂ op] :
     NonExpansive₂ (Option.merge op) where
   ne n x1 x2 Hx y1 y2 Hy := by
-    cases x1 <;> cases x2 <;> cases y1 <;> cases y2 <;> simp_all
+    rcases x1, x2, y1, y2 with ⟨_|_, _|_, _|_, _|_⟩ <;> simp_all
     exact NonExpansive₂.ne Hx Hy
 
 abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
@@ -604,7 +603,7 @@ abbrev constOF (B : Type) : OFunctorPre := fun _ _ _ _ => B
 instance oFunctorConstOF [OFE B] : OFunctor (constOF B) where
   cofe := _
   map _ _ := ⟨id, id_ne⟩
-  map_ne := by intros; constructor; simp [NonExpansive₂]
+  map_ne := by intros; constructor; simp
   map_id := by simp
   map_comp := by simp
 
@@ -688,16 +687,16 @@ instance oFunctorOption [OFunctor F] : OFunctor (OptionOF F) where
     cases z <;> simp [optionMap, Dist, Option.Forall₂]
     apply OFunctor.map_ne.ne Hx Hy
   map_id z := by
-    cases z <;> simp [optionMap, Dist, Equiv, Option.Forall₂]
+    cases z <;> simp [optionMap, Equiv, Option.Forall₂]
     apply OFunctor.map_id
   map_comp _ _ _ _ z := by
-    cases z <;> simp [optionMap, Dist, Equiv, Option.Forall₂]
+    cases z <;> simp [optionMap, Equiv, Option.Forall₂]
     apply OFunctor.map_comp
 
 instance [OFunctorContractive F] : OFunctorContractive (OptionOF F) where
   map_contractive.1 H z := by
     have := (OFunctorContractive.map_contractive (F := F)).distLater_dist H
-    cases z <;> simp_all [optionMap, Dist, Equiv, Option.Forall₂, Function.uncurry, OFunctor.map]
+    cases z <;> simp_all [optionMap, Dist, Option.Forall₂, Function.uncurry, OFunctor.map]
 
 end OptionOF
 

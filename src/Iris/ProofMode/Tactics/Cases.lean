@@ -278,7 +278,7 @@ elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
   -- parse syntax
   let pat ← liftMacroM <| iCasesPat.parse pat
 
-  let (mvar, { u, prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
+  let (mvar, { u, prop := _, bi, e := _, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
   let uniq ← hyps.findWithInfo hyp
@@ -286,11 +286,7 @@ elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
 
   -- process pattern
   let goals ← IO.mkRef #[]
-  let pf2 ← iCasesCore bi hyps' goal b A A' h pat fun hyps => do
-    let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-      IrisGoal.toExpr { u, prop, bi, hyps, goal, .. }
-    goals.modify (·.push m.mvarId!)
-    pure m
+  let pf2 ← iCasesCore bi hyps' goal b A A' h pat (λ hyps => goalTracker goals .anonymous hyps goal)
 
   mvar.assign q(($pf).1.trans $pf2)
   replaceMainGoal (← goals.get).toList

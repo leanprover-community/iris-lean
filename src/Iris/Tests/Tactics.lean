@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Oliver Soeser
 -/
 import Iris.BI
 import Iris.ProofMode
@@ -177,6 +177,142 @@ theorem lean_pure [BI PROP] (Q : PROP) : <affine> ⌜⊢ Q⌝ ⊢ Q := by
   iassumption
 
 end assumption
+
+-- apply
+namespace apply
+
+theorem exact [BI PROP] (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iapply HQ
+
+theorem apply [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
+  iintro HP H
+  iapply H with HP
+
+theorem multiple [BI PROP] (P Q R : PROP) : ⊢ P -∗ Q -∗ (P -∗ Q -∗ R) -∗ R := by
+  iintro HP HQ H
+  iapply H with HP, HQ
+
+theorem multiple' [BI PROP] (P Q R S : PROP) : ⊢ (P -∗ Q) -∗ P -∗ R -∗ (Q -∗ R -∗ S) -∗ S := by
+  iintro HPQ HP HR H
+  iapply H with [HPQ, HP], HR
+  iapply HPQ with HP
+
+theorem exact_intuitionistic [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
+  iintro □HQ
+  iapply HQ
+
+theorem apply_intuitionistic [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) -∗ Q := by
+  iintro HP H
+  iapply H with HP
+
+theorem multiple_intuitionistic [BI PROP] (P Q R : PROP) : ⊢ □ P -∗ Q -∗ □ (P -∗ Q -∗ □ R) -∗ R := by
+  iintro □HP HQ □H
+  iapply H with _, [HQ] as Q
+  case Q => iexact HQ
+  iexact HP
+
+theorem later [BI PROP] (P Q : PROP) : ⊢ (▷ P -∗ Q) -∗ P -∗ Q := by
+  iintro H HP
+  iapply H with HP
+
+theorem affine [BI PROP] [BIAffine PROP] (P Q : PROP) : ⊢ (P → Q) -∗ <pers> P -∗ Q := by
+  iintro H HP
+  iapply H with HP
+
+theorem later_affine [BI PROP] [BIAffine PROP] (P Q : PROP) : ⊢ (▷ P → Q) -∗ P -∗ Q := by
+  iintro H HP
+  iapply H with HP
+
+theorem exact_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
+  istart
+  iapply H
+
+theorem exact_lean' [BI PROP] (Q : PROP) : Q ⊢ (emp ∗ Q) ∗ emp := by
+  istart
+  iapply (wand_intro sep_emp.mpr)
+
+theorem exact_lean'' [BI PROP] (Q : PROP) (H : 0 = 0 → ⊢ Q) : ⊢ Q := by
+  istart
+  iapply H
+  rfl
+
+theorem apply_lean [BI PROP] (P Q : PROP) (H : P ⊢ Q) (HP : ⊢ P) : ⊢ Q := by
+  istart
+  iapply H
+  iapply HP
+
+theorem apply_lean' [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) (HP : ⊢ P) : ⊢ Q := by
+  istart
+  iapply H with _
+  iapply HP
+
+theorem apply_lean'' [BI PROP] (P Q : PROP) (H1 : P ⊢ Q) (H2 : Q ⊢ R) : P ⊢ R := by
+  istart
+  iintro HP
+  iapply (wand_intro (emp_sep.mp.trans H2))
+  iapply H1 with HP
+
+theorem multiple_lean [BI PROP] (P Q R : PROP) (H : P ⊢ Q -∗ R) (HP : ⊢ P) : ⊢ Q -∗ R := by
+  iintro HQ
+  iapply H with _, HQ
+  iapply HP
+
+theorem multiple_lean' [BI PROP] (P Q R : PROP) (H : P ∗ Q ⊢ R) (HP : ⊢ P) : ⊢ Q -∗ R := by
+  iintro HQ
+  iapply (wand_intro H) with _, HQ
+  iapply HP
+
+theorem exact_forall [BI PROP] (P : α → PROP) (a : α) (H : ⊢ ∀ x, P x) : ⊢ P a := by
+  istart
+  iapply H
+
+theorem exact_forall' [BI PROP] (P : α → PROP) (a : α) (H : ∀ x, ⊢ P x) : ⊢ P a := by
+  istart
+  iapply H
+
+theorem apply_forall [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
+  iintro HP
+  iapply H $! a, b with HP
+
+theorem apply_forall' [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
+  iintro H HP
+  iapply H $! a, b with HP
+
+theorem apply_forall_intuitionistic [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
+  iintro HP
+  iapply H $! a, b with HP
+
+theorem apply_forall_intuitionistic' [BI PROP] (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
+  iintro H HP
+  iapply H $! a, b with HP
+
+end apply
+
+-- pose
+namespace pose
+
+theorem exact_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
+  istart
+  ipose H as HQ
+  iapply HQ
+
+theorem apply_lean [BI PROP] (P Q : PROP) (H : P ⊢ Q) : ⊢ P -∗ Q := by
+  istart
+  ipose H as HPQ
+  iapply HPQ
+
+theorem apply_forall [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
+  iintro HP
+  ipose H $! a, b as H'
+  iapply H' with HP
+
+theorem apply_forall_intuitionistic [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
+  iintro HP
+  ipose H $! a, b as H'
+  iapply H' with HP
+
+end pose
 
 -- ex falso
 namespace exfalso
@@ -414,7 +550,7 @@ theorem sep_left [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -∗
   iintro HP
   iintro HQ
   iintro _HR
-  isplit l [HP]
+  isplitl [HP _HR]
   · iexact HP
   · iexact HQ
 
@@ -422,7 +558,7 @@ theorem sep_right [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ P -∗ Q -∗ R -�
   iintro HP
   iintro HQ
   iintro _HR
-  isplit r [HQ]
+  isplitr [HQ]
   · iexact HP
   · iexact HQ
 
@@ -430,7 +566,7 @@ theorem sep_left_all [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ P -∗ □ Q -�
   iintro HP
   iintro □HQ
   iintro _HR
-  isplit l
+  isplitl
   · iexact HP
   · iexact HQ
 
@@ -438,7 +574,7 @@ theorem sep_right_all [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ □ P -∗ Q -�
   iintro □HP
   iintro HQ
   iintro _HR
-  isplit r
+  isplitr
   · iexact HP
   · iexact HQ
 
@@ -459,7 +595,7 @@ theorem right [BI PROP] (Q : PROP) : Q ⊢ P ∨ Q := by
 
 theorem complex [BI PROP] (P Q : PROP) : ⊢ P -∗ Q -∗ P ∗ (R ∨ Q ∨ R) := by
   iintro HP HQ
-  isplit l [HP]
+  isplitl [HP]
   · iassumption
   iright
   ileft
