@@ -145,6 +145,14 @@ theorem op_left_eqv {x y : α} (z : α) (e : x ≡ y) : x • z ≡ y • z :=
   comm.trans <| e.op_r.trans comm
 theorem _root_.Iris.OFE.Equiv.op_l {x y z : α} : x ≡ y → x • z ≡ y • z := op_left_eqv _
 
+theorem op_right_comm {x y z : α} : x • (y • z) ≡ y • (x • z) := calc
+  x • (y • z) ≡ (x • y) • z := assoc
+  _           ≡ (y • x) • z := comm.op_l
+  _           ≡ y • (x • z) := assoc.symm
+
+theorem op_left_comm {x y z : α} : (x • y) • z ≡ y • (x • z) :=
+  assoc.symm.trans op_right_comm
+
 theorem op_left_dist {x y : α} (z : α) (e : x ≡{n}≡ y) : x • z ≡{n}≡ y • z :=
   op_commN.trans <| e.op_r.trans op_commN
 theorem _root_.Iris.OFE.Dist.op_l {x y z : α} : x ≡{n}≡ y → x • z ≡{n}≡ y • z := op_left_dist _
