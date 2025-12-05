@@ -1,17 +1,4 @@
--- TODO: reduce import size?
-import Iris.BI.BI
-import Iris.BI.BIBase
-import Iris.BI.Classes
-import Iris.BI.DerivedLaws
-import Iris.Algebra
-import Iris.Algebra.Updates
-import Iris.Algebra.UPred
-import Iris.BI.Plainly
 import Iris.ProofMode
-import Iris.BI.Updates
-
--- TODO: why in rocq I don't need to explicitly import this?
--- I need to import this for "bupd_alt_bupd"
 import Iris.Instances.UPred.Instance
 
 -- set_option trace.Meta.synthInstance true
@@ -43,16 +30,13 @@ Proof. solve_proper. Qed.
 Global Instance bupd_alt_flip_mono' : Proper (flip (⊢) ==> flip (⊢)) bupd_alt.
 Proof. solve_proper. Qed.
 -/
+
 -- NonExpansive
-
 -- Proper
-
 -- mono'
-
 -- flip mono
 
 -- TODO: should I use `lemma`? and how?
-
 -- The Laws of the basica update modality hold
 theorem bupd_alt_intro {P : PROP} : P ⊢ bupd_alt P := by
   iintro Hp
@@ -60,8 +44,6 @@ theorem bupd_alt_intro {P : PROP} : P ⊢ bupd_alt P := by
   iintro R H
   ispecialize H Hp as H1
   iexact H1
-
-
 
 theorem bupt_alt_mono {P Q : PROP} : (P ⊢ Q) → (bupd_alt P ⊢ bupd_alt Q) := by
   intros H
@@ -90,7 +72,6 @@ theorem bupd_alt_trans {P : PROP} : bupd_alt (bupd_alt P) ⊢ bupd_alt P := by
   iapply HpR2
   iassumption
 
--- TODO: why need to wrap `P ∗ Q` with an iprop
 theorem bupd_alt_frame_r {P Q : PROP} : bupd_alt P ∗ Q ⊢ (bupd_alt iprop(P ∗ Q)) := by
   unfold bupd_alt
   iintro ⟨Hp, Hq⟩ R H
@@ -98,7 +79,7 @@ theorem bupd_alt_frame_r {P Q : PROP} : bupd_alt P ∗ Q ⊢ (bupd_alt iprop(P �
   iapply HpR
   iintro Hp
   iapply H
-  isplit l [Hp]
+  isplitl [Hp]
   · iexact Hp
   · iexact Hq
 
@@ -152,7 +133,7 @@ theorem own_updateP {x : M} {Φ : M → Prop}
   unfold bupd_alt
   iintro R H
   iapply own_updateP_plainly x Φ R Hup
-  isplit l [Hx]
+  isplitl [Hx]
   · iexact Hx
   iintro y ⌜HΦ⌝
   iintro Hy
