@@ -42,16 +42,30 @@ theorem measurableSet_bot_iff_empty_or_univ {s : Set Ω} :
 /-- Left unit: bottom sums to the other measurable space (API). -/
 theorem bot_sum (m : MeasurableSpace Ω) :
     MeasurableSpace.sum (⊥ : MeasurableSpace Ω) m = m := by
-  -- Follows since `MeasurableSet[⊥] = ∅`.
-  simp [MeasurableSpace.sum]
-  sorry
+  simp only [MeasurableSpace.sum]
+  have h : (MeasurableSet[⊥] ∪ MeasurableSet[m] : Set (Set Ω)) = MeasurableSet[m] := by
+    ext s
+    simp only [Set.mem_union]
+    constructor
+    · intro hs
+      rcases hs with hbot | hm
+      · have : MeasurableSet[⊥] s := hbot
+        rw [measurableSet_bot_iff] at this
+        rcases this with rfl | rfl
+        · exact @MeasurableSet.empty Ω m
+        · exact @MeasurableSet.univ Ω m
+      · exact hm
+    · intro hm
+      right
+      exact hm
+  rw [h]
+  exact @generateFrom_measurableSet Ω m
 
 /-- Right unit: summing with bottom yields the same space (API). -/
 theorem sum_bot (m : MeasurableSpace Ω) :
     MeasurableSpace.sum m (⊥ : MeasurableSpace Ω) = m := by
-  -- Follows since `MeasurableSet[⊥] = ∅`.
-  simp [MeasurableSpace.sum, Set.union_comm]
-  sorry
+  rw [sum_comm]
+  exact bot_sum m
 
 end MeasurableSpace
 
