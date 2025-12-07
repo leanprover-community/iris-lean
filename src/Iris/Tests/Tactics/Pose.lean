@@ -76,4 +76,61 @@ theorem global_theorem_application [BI PROP] (cond : A → Prop) (Q : A → PROP
   · exact Hcond
   · iapply HR with HQ
 
+-- ============================================================================
+-- Tests for forall handling in synthIntoEmpValid
+-- These test cases attempt to check whether foralls hidden behind let-bindings
+-- are properly handled. The errors reveal that such cases currently FAIL,
+-- confirming that synthIntoEmpValid's forall cases may be unreachable.
+-- ============================================================================
+
+/-- A simple let-binding that zeta-reduces to a base entailment.
+    This SHOULD work since whnf reduces `let f := P ⊢ Q; f` to `P ⊢ Q`. -/
+theorem let_simple_zeta [BI PROP] (P Q : PROP) (H : let f := P ⊢ Q; f) : P ⊢ Q := by
+  iintro HP
+  ipose H as HPQ
+  iapply HPQ with HP
+
+/-- Test that handleDependentArrows correctly strips Lean-level foralls
+    (these are syntactically visible, not hidden behind let). -/
+theorem lean_forall_visible [BI PROP] (P Q : α → PROP) (a : α)
+    (H : ∀ x, P x ⊢ Q x) : P a ⊢ Q a := by
+  iintro HP
+  ipose H as HPQ
+  iapply HPQ with HP
+
+/-- Test Lean-level forall with Prop guard (both visible). -/
+theorem lean_forall_with_guard [BI PROP] (cond : α → Prop) (P Q : α → PROP) (a : α) (Hcond : cond a)
+    (H : ∀ x, cond x → (P x ⊢ Q x)) : P a ⊢ Q a := by
+  iintro HP
+  ipose H as HPQ
+  · exact Hcond
+  iapply HPQ with HP
+
+/-- Multiple Lean-level foralls. -/
+theorem lean_multiple_foralls [BI PROP] (P Q : α → β → PROP) (a : α) (b : β)
+    (H : ∀ x y, P x y ⊢ Q x y) : P a b ⊢ Q a b := by
+  iintro HP
+  ipose H as HPQ
+  iapply HPQ with HP
+
+-- ============================================================================
+-- Tests for foralls/implications hidden behind let-bindings.
+-- These now work after merging handleDependentArrows into synthIntoEmpValid.
+-- ============================================================================
+
+/-- A let-binding that hides a forall (now works with whnf reduction). -/
+theorem let_hides_forall [BI PROP] (P Q : α → PROP) (a : α)
+    (H : let f := fun x => P x ⊢ Q x; f a) : P a ⊢ Q a := by
+  iintro HP
+  ipose H as HPQ
+  iapply HPQ with HP
+
+/-- A let-binding that hides a Prop implication (now works with whnf reduction). -/
+theorem let_hides_implication [BI PROP] (cond : Prop) (P Q : PROP) (Hcond : cond)
+    (H : let f := fun (c : Prop) => c → (P ⊢ Q); f cond) : P ⊢ Q := by
+  iintro HP
+  ipose H as HPQ
+  · exact Hcond
+  iapply HPQ with HP
+
 end pose

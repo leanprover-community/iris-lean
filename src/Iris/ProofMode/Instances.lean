@@ -10,7 +10,7 @@ import Iris.Std.TC
 namespace Iris.ProofMode
 open Iris.BI Iris.Std
 
--- ## AsEmpValid
+-- AsEmpValid
 instance (priority := default - 10) asEmpValidEmpValid1
     [BI PROP] (P : PROP) : AsEmpValid1 (⊢ P) P := ⟨by simp⟩
 instance (priority := default + 10) asEmpValidEmpValid2
@@ -38,21 +38,12 @@ instance asEmpValid2_forall [BI PROP] {α : Type _} (φ : α → Prop) (P : α �
     fun hφ => forall_intro fun x => ((h x).as_emp_valid).mp (hφ x),
     fun hP x => ((h x).as_emp_valid).mpr (hP.trans (forall_elim x))⟩
 
--- ## IntoEmpValid
+-- IntoEmpValid
 
 -- Back to [AsEmpValid2] because we know [φ]
 instance intoEmpValid_here [BI PROP] (φ : Prop) (P : PROP) [h : AsEmpValid2 φ P] :
     IntoEmpValid φ P where
   into_emp_valid := h.as_emp_valid.mp
-
-instance intoEmpValid_impl [BI PROP] (P : PROP) (φ ψ : Prop) (hφ : φ) [h : IntoEmpValid ψ P] :
-    IntoEmpValid (φ → ψ) P where
-  into_emp_valid := fun hψ => h.into_emp_valid (hψ hφ)
-
-set_option synthInstance.checkSynthOrder false in
-instance intoEmpValid_forall [BI PROP] (P : PROP) {α : Sort _} (φ : α → Prop) (x : α)
-    [h : IntoEmpValid (φ x) P] : IntoEmpValid (∀ x, φ x) P where
-  into_emp_valid := fun hφ => h.into_emp_valid (hφ x)
 
 theorem into_emp_valid_proj [BI PROP] (P : PROP) (φ : Prop) [h : IntoEmpValid φ P] : φ → ⊢ P :=
   h.into_emp_valid
