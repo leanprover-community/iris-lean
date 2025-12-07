@@ -1,6 +1,6 @@
 name = "iris"
 srcDir = "./src/"
-defaultTargets = ["Iris", "IrisTest"]
+defaultTargets = ["Iris", "Bluebell", "IrisTest"]
 
 [[require]]
 name = "mathlib"
