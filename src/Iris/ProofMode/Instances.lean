@@ -10,7 +10,7 @@ import Iris.Std.TC
 namespace Iris.ProofMode
 open Iris.BI Iris.Std
 
--- AsEmpValid
+-- ## AsEmpValid
 instance (priority := default - 10) asEmpValidEmpValid1
     [BI PROP] (P : PROP) : AsEmpValid1 (⊢ P) P := ⟨by simp⟩
 instance (priority := default + 10) asEmpValidEmpValid2
@@ -26,15 +26,36 @@ instance asEmpValid1_equiv [BI PROP] (P Q : PROP) : AsEmpValid1 (P ⊣⊢ Q) ipr
 instance asEmpValid2_equiv [BI PROP] (P Q : PROP) : AsEmpValid2 (P ⊣⊢ Q) iprop(P ∗-∗ Q) :=
   AsEmpValid1.to2
 
--- IntoEmpValid
-instance intoEmpValid_emp_entails [BI PROP] (P : PROP) : IntoEmpValid (⊢ P) iprop(P) where
-  into_emp_valid := id
+instance asEmpValid1_forall [BI PROP] {α : Type _} (φ : α → Prop) (P : α → PROP)
+    [h : ∀ x, AsEmpValid1 (φ x) (P x)] : AsEmpValid1 (∀ x, φ x) iprop(∀ x, P x) where
+  as_emp_valid := ⟨
+    fun hφ => forall_intro fun x => ((h x).as_emp_valid).mp (hφ x),
+    fun hP x => ((h x).as_emp_valid).mpr (hP.trans (forall_elim x))⟩
 
-instance intoEmpValid_entails [BI PROP] (P Q : PROP) : IntoEmpValid (P ⊢ Q) iprop(P -∗ Q) where
-  into_emp_valid := entails_wand
+instance asEmpValid2_forall [BI PROP] {α : Type _} (φ : α → Prop) (P : α → PROP)
+    [h : ∀ x, AsEmpValid2 (φ x) (P x)] : AsEmpValid2 (∀ x, φ x) iprop(∀ x, P x) where
+  as_emp_valid := ⟨
+    fun hφ => forall_intro fun x => ((h x).as_emp_valid).mp (hφ x),
+    fun hP x => ((h x).as_emp_valid).mpr (hP.trans (forall_elim x))⟩
 
-instance intoEmpValid_equiv [BI PROP] (P Q : PROP) : IntoEmpValid (P ⊣⊢ Q) iprop(P ∗-∗ Q) where
-  into_emp_valid := equiv_wandIff
+-- ## IntoEmpValid
+
+-- Back to [AsEmpValid2] because we know [φ]
+instance intoEmpValid_here [BI PROP] (φ : Prop) (P : PROP) [h : AsEmpValid2 φ P] :
+    IntoEmpValid φ P where
+  into_emp_valid := h.as_emp_valid.mp
+
+instance intoEmpValid_impl [BI PROP] (P : PROP) (φ ψ : Prop) (hφ : φ) [h : IntoEmpValid ψ P] :
+    IntoEmpValid (φ → ψ) P where
+  into_emp_valid := fun hψ => h.into_emp_valid (hψ hφ)
+
+set_option synthInstance.checkSynthOrder false in
+instance intoEmpValid_forall [BI PROP] (P : PROP) {α : Sort _} (φ : α → Prop) (x : α)
+    [h : IntoEmpValid (φ x) P] : IntoEmpValid (∀ x, φ x) P where
+  into_emp_valid := fun hφ => h.into_emp_valid (hφ x)
+
+theorem into_emp_valid_proj [BI PROP] (P : PROP) (φ : Prop) [h : IntoEmpValid φ P] : φ → ⊢ P :=
+  h.into_emp_valid
 
 -- FromImp
 instance fromImp_imp [BI PROP] (P1 P2 : PROP) : FromImp iprop(P1 → P2) P1 P2 := ⟨.rfl⟩
