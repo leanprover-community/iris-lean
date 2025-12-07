@@ -86,8 +86,6 @@ partial def handleDependentArrows {prop : Q(Type u)} (bi : Q(BI $prop)) (val : E
     -- (whnf may over-reduce things like entailment notation)
     return (val, p)
 
-
-
 /-- Core logic for `ipose`: converts a Lean proof into an Iris hypothesis.
 
     Parameters:
