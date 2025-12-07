@@ -76,15 +76,8 @@ theorem global_theorem_application [BI PROP] (cond : A → Prop) (Q : A → PROP
   · exact Hcond
   · iapply HR with HQ
 
--- ============================================================================
--- Tests for forall handling in synthIntoEmpValid
--- These test cases attempt to check whether foralls hidden behind let-bindings
--- are properly handled. The errors reveal that such cases currently FAIL,
--- confirming that synthIntoEmpValid's forall cases may be unreachable.
--- ============================================================================
-
 /-- A simple let-binding that zeta-reduces to a base entailment.
-    This SHOULD work since whnf reduces `let f := P ⊢ Q; f` to `P ⊢ Q`. -/
+    This works since whnf reduces `let f := P ⊢ Q; f` to `P ⊢ Q`. -/
 theorem let_simple_zeta [BI PROP] (P Q : PROP) (H : let f := P ⊢ Q; f) : P ⊢ Q := by
   iintro HP
   ipose H as HPQ
@@ -112,11 +105,6 @@ theorem lean_multiple_foralls [BI PROP] (P Q : α → β → PROP) (a : α) (b :
   iintro HP
   ipose H as HPQ
   iapply HPQ with HP
-
--- ============================================================================
--- Tests for foralls/implications hidden behind let-bindings.
--- These now work after merging handleDependentArrows into synthIntoEmpValid.
--- ============================================================================
 
 /-- A let-binding that hides a forall (now works with whnf reduction). -/
 theorem let_hides_forall [BI PROP] (P Q : α → PROP) (a : α)
