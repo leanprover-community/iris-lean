@@ -138,7 +138,7 @@ noncomputable instance : CMRA (PermissionRat α) where
     exact le_trans hle this
   assoc := by intro x y z; funext a; simp [op, add_assoc]
   comm := by intro x y; funext a; simp [op, add_comm]
-  pcore_op_left := by intro x cx hx; cases hx; funext a; simp [op, pcore, zero]
+  pcore_op_left := by intro x cx hx; cases hx; funext a; simp [op, zero]
   pcore_idem := by intro x cx hx; cases hx; rfl
   pcore_op_mono := by
     intro x cx hx y
@@ -150,7 +150,7 @@ noncomputable instance : CMRA (PermissionRat α) where
     refine ⟨zero, ?_⟩
     -- pcore (x ⊗ y) = some zero = some (cx ⊗ zero)
     -- after rewriting cx = zero
-    simp [pcore, op, zero, hx', CMRA.op]
+    simp [pcore, hx']
     unfold zero op
     simp
   extend {n x y₁ y₂} Hvalid Heq := by
@@ -165,9 +165,9 @@ noncomputable instance : CMRA (PermissionRat α) where
 /-- UCMRA instance: unit is the constant-0 function, which matches the RA unit. -/
 noncomputable instance : UCMRA (PermissionRat α) where
   unit := (zero : PermissionRat α)
-  unit_valid := by intro a; simp [valid, zero]
+  unit_valid := by intro a; simp [zero]
   unit_left_id := by intro x; funext a; simp [op, zero, instCMRA]
-  pcore_unit := by simp [pcore, zero, CMRA.pcore]
+  pcore_unit := by simp [pcore, CMRA.pcore]
 
 end PermissionRat
 

@@ -202,18 +202,18 @@ theorem sep_assoc {P Q R : HyperAssertion M} [CMRA.IsTotal M] :
 
 /-- Commutativity of conjunction. -/
 theorem and_comm {P Q : HyperAssertion M} : entails (and P Q) (and Q P) := by
-  intro a; intro h; exact And.intro h.right h.left
+  intro a h; exact And.intro h.right h.left
 
 /-- Commutativity of disjunction. -/
 theorem or_comm {P Q : HyperAssertion M} : entails (or P Q) (or Q P) := by
-  intro a; intro h; cases h with
+  intro a h; cases h with
   | inl hP => exact Or.inr hP
   | inr hQ => exact Or.inl hQ
 
 /-- Associativity of conjunction. -/
 theorem and_assoc {P Q R : HyperAssertion M} :
     entails (and (and P Q) R) (and P (and Q R)) := by
-  intro a; intro h
+  intro a h
   rcases h with ⟨hPQ, hR⟩
   rcases hPQ with ⟨hP, hQ⟩
   exact And.intro hP (And.intro hQ hR)
@@ -221,7 +221,7 @@ theorem and_assoc {P Q R : HyperAssertion M} :
 /-- Associativity of disjunction. -/
 theorem or_assoc {P Q R : HyperAssertion M} :
     entails (or (or P Q) R) (or P (or Q R)) := by
-  intro a; intro h
+  intro a h
   cases h with
   | inl hPQ => cases hPQ with
     | inl hP => exact Or.inl hP
@@ -231,31 +231,31 @@ theorem or_assoc {P Q R : HyperAssertion M} :
 /-- Left unit for conjunction with `pure True`. -/
 theorem and_true_left {P : HyperAssertion M} :
     entails (and (pure True) P) P := by
-  intro a; intro h; exact h.right
+  intro a h; exact h.right
 
 /-- Right unit for conjunction with `pure True`. -/
 theorem and_true_right {P : HyperAssertion M} :
     entails (and P (pure True)) P := by
-  intro a; intro h; exact h.left
+  intro a h; exact h.left
 
 /-- Left unit for disjunction with `pure False`. -/
 theorem or_false_left {P : HyperAssertion M} :
     entails (or (pure False) P) P := by
-  intro a; intro h; cases h with
+  intro a h; cases h with
   | inl hFalse => cases hFalse
   | inr hP => exact hP
 
 /-- Right unit for disjunction with `pure False`. -/
 theorem or_false_right {P : HyperAssertion M} :
     entails (or P (pure False)) P := by
-  intro a; intro h; cases h with
+  intro a h; cases h with
   | inl hP => exact hP
   | inr hFalse => cases hFalse
 
 /-- Left unit for sep: `emp ∗ P ⊢ P`. -/
 theorem sep_emp_left {P : HyperAssertion M} :
     entails (sep emp P) P := by
-  intro a; intro h
+  intro a h
   rcases h with ⟨b, c, hb, hc, hbc⟩
   -- hb : b ∈ emp, so False; emp’s carrier is empty, contradiction
   cases hb
@@ -263,7 +263,7 @@ theorem sep_emp_left {P : HyperAssertion M} :
 /-- Right unit for sep: `P ∗ emp ⊢ P`. -/
 theorem sep_emp_right {P : HyperAssertion M} :
     entails (sep P emp) P := by
-  intro a; intro h
+  intro a h
   rcases h with ⟨b, c, hb, hc, hbc⟩
   cases hc
 
@@ -271,7 +271,7 @@ theorem sep_emp_right {P : HyperAssertion M} :
 theorem sep_mono {P P' Q Q' : HyperAssertion M}
     (h1 : entails P P') (h2 : entails Q Q') :
     entails (sep P Q) (sep P' Q') := by
-  intro a; intro h
+  intro a h
   rcases h with ⟨b, c, hPb, hQc, hinc⟩
   exact ⟨b, c, h1 _ hPb, h2 _ hQc, hinc⟩
 

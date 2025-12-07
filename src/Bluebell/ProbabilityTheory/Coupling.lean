@@ -56,8 +56,7 @@ theorem pure_eq_pmf_pure {a : α} : (pure a : SPMF α) = PMF.pure a := by
 
 theorem bind_eq_pmf_bind {p : SPMF α} {f : α → SPMF β} :
     (p >>= f) = PMF.bind p (fun a => match a with | some a' => f a' | none => PMF.pure none) := by
-  simp [bind, liftM, OptionT.bind, monadLift, MonadLift.monadLift, OptionT.lift,
-    PMF.instMonad, OptionT.mk]
+  simp [bind, OptionT.bind, PMF.instMonad, OptionT.mk]
   rfl
 
 @[ext]
@@ -81,7 +80,7 @@ theorem IsCoupling.pure_iff {α β : Type u} {a : α} {b : β} {c : SPMF (α × 
     have : (x : Option α) → (Prod.fst <$> c) x = (some <$> PMF.pure a) x := by
       rw [h1]; intro x; congr
     sorry
-  · intro h; constructor <;> simp [h, ← liftM_map]
+  · intro h; constructor <;> simp [h]
 
 theorem IsCoupling.none_iff {α β : Type u} {c : SPMF (α × β)} :
     IsCoupling c (failure : SPMF α) (failure : SPMF β) ↔ c = failure := by

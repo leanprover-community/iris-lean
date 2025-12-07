@@ -151,4 +151,61 @@ noncomputable instance cmraFun {ι : Type*} {β : ι → Type*} [∀ i, CMRA (β
       by intro i; exact (F i).2.2.2.1,
       by intro i; exact (F i).2.2.2.2⟩
 
+/-- CMRA instance for dependent function space when components are UCMRA.
+Unlike `cmraFun`, this has a proper pcore that returns the pointwise unit. -/
+noncomputable instance cmraFunUCMRA {ι : Type*} {β : ι → Type*} [∀ i, UCMRA (β i)] :
+    CMRA ((i : ι) → β i) where
+  pcore _ := some (fun _ => UCMRA.unit)
+  op f g i := f i • g i
+  ValidN n f := ∀ i, ✓{n} f i
+  Valid f := ∀ i, ✓ f i
+  op_ne.ne n f g H i := (H i).op_r
+  pcore_ne {n x y cx} _ hx := by
+    have heq : some (fun _ => UCMRA.unit) = some cx := hx
+    refine ⟨fun _ => UCMRA.unit, rfl, ?_⟩
+    intro i
+    have := Option.some.inj heq.symm
+    simp [this]
+  validN_ne {n x y} H Hx i := validN_ne (H i) (Hx i)
+  valid_iff_validN {f} := by
+    constructor
+    · intro hv n i; exact (valid_iff_validN.mp (hv i)) n
+    · intro h i; exact (valid_iff_validN.mpr (fun n => h n i))
+  validN_succ {x n} H i := validN_succ (H i)
+  validN_op_left {n x y} H i := validN_op_left (H i)
+  assoc {x y z} := by intro i; exact assoc
+  comm {x y} := by intro i; exact comm
+  pcore_op_left {x cx} hx := by
+    have heq : some (fun _ => UCMRA.unit) = some cx := hx
+    have hcx : cx = fun _ => UCMRA.unit := Option.some.inj heq.symm
+    intro i
+    simp [hcx]
+    exact UCMRA.unit_left_id
+  pcore_idem {x cx} hx := by
+    have heq : some (fun _ => UCMRA.unit) = some cx := hx
+    have hcx : cx = fun _ => UCMRA.unit := Option.some.inj heq.symm
+    simp [hcx]
+  pcore_op_mono {x cx} hx y := by
+    have heq : some (fun _ => UCMRA.unit) = some cx := hx
+    have hcx : cx = fun _ => UCMRA.unit := Option.some.inj heq.symm
+    refine ⟨fun _ => UCMRA.unit, ?_⟩
+    simp [hcx]
+    intro i
+    exact UCMRA.unit_left_id.symm
+  extend {n f f1 f2} Hv He := by
+    classical
+    let F i := extend (Hv i) (He i)
+    exact ⟨(fun i => (F i).1), (fun i => (F i).2.1),
+      by intro i; exact (F i).2.2.1,
+      by intro i; exact (F i).2.2.2.1,
+      by intro i; exact (F i).2.2.2.2⟩
+
+/-- UCMRA instance for dependent function space when components are UCMRA. -/
+noncomputable instance ucmraFun {ι : Type*} {β : ι → Type*} [∀ i, UCMRA (β i)] :
+    UCMRA ((i : ι) → β i) where
+  unit := fun _ => UCMRA.unit
+  unit_valid _ := UCMRA.unit_valid
+  unit_left_id _ := UCMRA.unit_left_id
+  pcore_unit := OFE.Equiv.rfl
+
 end Bluebell
