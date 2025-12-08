@@ -52,7 +52,4 @@ example : AgreeString "I <3 iris-lean!" ⊢ (AgreeString "I don't :<" -∗ False
 
 end const_agree
 
-
-
-
 end Iris.Examples

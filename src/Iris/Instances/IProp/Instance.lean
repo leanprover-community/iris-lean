@@ -76,10 +76,10 @@ def ElemG.Unbundle  (E : ElemG GF F) [OFE T] : GF.api E.τ T → F.ap T :=
   TranspAp (E.TranspMap T) |>.mp
 
 theorem ElemG.Bundle_Unbundle  (E : ElemG GF F) [OFE T] (x : GF.api E.τ T) :
-    E.Bundle (E.Unbundle x) ≡ x := by simp [Bundle, Unbundle, Equiv]
+    E.Bundle (E.Unbundle x) ≡ x := by simp [Bundle, Unbundle]
 
 theorem ElemG.Unbundle_Bundle (E : ElemG GF F) [OFE T] (x : F.ap T) :
-    E.Unbundle (E.Bundle x) ≡ x := by simp [Bundle, Unbundle, Equiv]
+    E.Unbundle (E.Bundle x) ≡ x := by simp [Bundle, Unbundle]
 
 instance ElemG.Bundle.ne {E : ElemG GF F} [OFE T] :
     OFE.NonExpansive (E.Bundle (T := T)) where
@@ -153,9 +153,9 @@ instance : OFE.NonExpansive (iSingleton F γ (GF := GF))  where
 
 theorem iSingleton_op  (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSingleton F γ y ≡ iSingleton F γ (x • y) := by
   intro τ' γ'
-  simp [iSingleton, CMRA.op]
-  split <;> simp [optionOp]
-  rename_i h; rcases h with ⟨h1, h2⟩; subst h1 h2; simp [unfoldi]
+  simp [iSingleton, CMRA.op, optionOp]
+  by_cases H : (τ' = ElemG.τ GF F ∧ γ' = γ) <;> simp [H]
+  rcases H with ⟨h1, h2⟩; subst h1 h2; simp [unfoldi]
   refine ((RFunctor.map (fold GF) (unfold GF)).op (E.Bundle x) (E.Bundle y)).symm.trans ?_
   refine NonExpansive.eqv (.symm ?_)
   exact transpAp_op_mp (E.TranspMap <| F.ap (IProp GF)).symm (E.TranspClass <| F.ap (IProp GF)).symm
@@ -233,21 +233,21 @@ theorem unfoldi_Bundle_coreId {a : F.ap (IProp GF)} [CMRA.CoreId a] :
       _ ≡ (some a).map E.Bundle := by
         have : CMRA.pcore a ≡ some a := CMRA.CoreId.core_id
         rcases h : CMRA.pcore a with (_ | ca)
-        · rw [h] at this; simp [Option.Forall₂] at this
-        · rw [h] at this; simp [Option.Forall₂, Option.map] at this ⊢
+        · rw [h] at this; simp [] at this
+        · rw [h] at this; simp [Option.map] at this ⊢
           exact OFE.NonExpansive.eqv this
-      _ ≡ some (E.Bundle a) := by simp [Option.map, Option.Forall₂, OFE.Equiv.rfl]
+      _ ≡ some (E.Bundle a) := by simp [Option.map, OFE.Equiv.rfl]
   calc CMRA.pcore ((RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f (E.Bundle a))
     ≡ (CMRA.pcore (E.Bundle a)).map (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f :=
       (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).pcore (E.Bundle a) |>.symm
     _ ≡ (some (E.Bundle a)).map (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f := by
       have : CMRA.pcore (E.Bundle a) ≡ some (E.Bundle a) := bundle_coreId.core_id
       rcases h : CMRA.pcore (E.Bundle a) with (_ | c)
-      · rw [h] at this; simp [Option.Forall₂] at this
-      · rw [h] at this; simp [Option.Forall₂, Option.map] at this ⊢
+      · rw [h] at this; simp [] at this
+      · rw [h] at this; simp [Option.map] at this ⊢
         exact OFE.NonExpansive.eqv this
     _ ≡ some ((RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f (E.Bundle a)) := by
-      simp [Option.map, Option.Forall₂, OFE.Equiv.rfl]
+      simp [Option.map, OFE.Equiv.rfl]
 
 instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : CMRA.CoreId (iSingleton F γ a) where
   core_id τ' γ' := by
@@ -333,7 +333,7 @@ theorem iOwn_alloc_dep (f : GName → F.ap (IProp GF)) (Ha : ∀ γ, ✓ (f γ))
   unfold iOwn
   refine .trans (Q := iprop(|==> ∃ m : IResUR GF, ⌜∃ γ, m = iSingleton _ γ (f γ)⌝ ∧ UPred.ownM m)) ?_ ?_
   · refine .trans (UPred.ownM_unit _) <| BI.intuitionistically_elim.trans ?_
-    refine UPred.ownM_updateP _ ?_
+    refine UPred.bupd_ownM_updateP _ _ ?_
     -- Prove: (UCMRA.unit : IResUR GF) ~~>: (fun m => ∃ γ, m = iSingleton F γ (f γ))
     intro n mz Hv
     -- Pick a fresh γ from the frame
@@ -387,13 +387,13 @@ theorem iOwn_alloc_dep (f : GName → F.ap (IProp GF)) (Ha : ∀ γ, ✓ (f γ))
             subst h_gamma
             unfold iSingleton at *
             rw [h_free_γ]
-            simp [CMRA.ValidN, optionValidN, optionOp]
+            simp [CMRA.ValidN, optionValidN]
             apply unfoldi_validN
             apply transpAp_validN_mp (E.TranspMap <| F.ap (IProp GF)).symm (E.TranspClass <| F.ap (IProp GF)).symm
             exact (Ha γ').validN
           · -- At other keys
             unfold iSingleton
-            simp [h_gamma, optionOp]
+            simp [h_gamma]
             -- Validity from the frame
             have := h_pointwise γ'
             simp [CMRA.op, UCMRA.unit, optionOp] at this
@@ -429,7 +429,7 @@ theorem iOwn_alloc (a : F.ap (IProp GF)) : ✓ a → ⊢ |==> ∃ γ, iOwn γ a 
 
 theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.ap (IProp GF), ⌜P a'⌝ ∗ iOwn γ a' := by
   refine .trans (Q := iprop(|==> ∃ m, ⌜ ∃ a', m = (iSingleton F γ a') ∧ P a' ⌝ ∧ UPred.ownM m)) ?_ ?_
-  · apply UPred.ownM_updateP
+  · apply UPred.bupd_ownM_updateP
     -- NB. The rest of this case is singleton_updateP
     intro n mz Hv
     cases mz with
@@ -485,7 +485,7 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.
               refine IProp.unfoldi_validN (E.Bundle a') ?_
               apply OFE.transpAp_validN_mp (E.TranspMap <| F.ap (IProp GF)).symm (E.TranspClass <| F.ap (IProp GF)).symm
               exact Ha'_valid
-            · simp [h_gamma, iSingleton, optionOp]
+            · simp [h_gamma, iSingleton]
               have h := (Hv E.τ).1 γ'
               simp [CMRA.op, iSingleton, h_gamma, optionOp, CMRA.op?] at h
               exact h
@@ -494,7 +494,7 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.
             rcases h_frame_inf with ⟨_, h_inf⟩
             apply Infinite.mono h_inf (fun k h_free => ?_)
             simp [IsFree, CMRA.op, iSingleton, optionOp] at h_free ⊢
-            by_cases h_k : k = γ <;> simp_all [h_k, h_mz_gamma, optionOp]
+            by_cases h_k : k = γ <;> simp_all []
         · have h_frame_valid := Hv τ'
           simp [CMRA.op?, CMRA.op, iSingleton, h_tau] at h_frame_valid ⊢
           exact h_frame_valid
@@ -528,7 +528,7 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.
           · intro γ'
             simp [CMRA.op]
             by_cases h_gamma : γ' = γ
-            · simp [h_gamma, iSingleton, optionOp, h_mz_gamma, CMRA.ValidN, optionValidN]
+            · simp [h_gamma, iSingleton, h_mz_gamma, CMRA.ValidN, optionValidN]
               simp [CMRA.op?] at Ha'_valid
               have h_bundle_foldi_v : ✓{n} (E.Bundle a' • foldi v) := by
                 apply CMRA.validN_ne (ElemG.Bundle_Unbundle E (foldi v)).op_r.dist
@@ -544,7 +544,7 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.
               have h_unfoldi_foldi := IProp.unfoldi_foldi v
               apply CMRA.validN_ne (h_unfoldi_foldi.op_r).dist
               exact h_after_unfoldi
-            · simp [h_gamma, iSingleton, optionOp]
+            · simp [h_gamma, iSingleton]
               have h_frame_valid := Hv E.τ
               simp [CMRA.op?] at h_frame_valid
               rcases h_frame_valid with ⟨h_pointwise, _⟩
@@ -557,7 +557,7 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.
             apply Infinite.mono h_inf
             intro k h_free
             simp [IsFree, CMRA.op, iSingleton, optionOp] at h_free ⊢
-            by_cases h_k : k = γ <;> simp_all [h_k, h_mz_gamma, optionOp, h_free]
+            by_cases h_k : k = γ <;> simp_all
         · have h_frame_valid := Hv τ'
           simp [CMRA.op?, CMRA.op, iSingleton, h_tau] at h_frame_valid ⊢
           exact h_frame_valid
@@ -605,8 +605,8 @@ theorem ElemG.Bundle_unit {GF F} [RFunctorContractive F] (E : ElemG GF F)
          rename_i unit
          have := unit.pcore_unit
          rcases eqn: CMRA.pcore ε
-         · rw [eqn] at this; simp [Option.Forall₂] at this
-         · rw [eqn] at this; simp [Option.Forall₂, Option.map] at this ⊢
+         · rw [eqn] at this; simp [] at this
+         · rw [eqn] at this; simp [Option.map] at this ⊢
            exact NonExpansive.eqv this
       _ ≡ E.Bundle ε := by rfl
 
@@ -636,7 +636,7 @@ IsUnit (unfoldi x) := by
       _ ≡ (some x).map (RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f :=
         Option.map_forall₂ _ IsUnit.pcore_unit
       _ ≡ some ((RFunctor.map (IProp.fold GF) (IProp.unfold GF)).toHom.f x) := by
-        simp [Option.map, Option.Forall₂, OFE.Equiv.rfl]
+        simp [Option.map, OFE.Equiv.rfl]
 
 theorem unit_op_eq {GF : BundledGFunctors} (τ : GType) (m : GenMap GName (GF.api τ (IPre GF))) :
     ((UCMRA.unit : IResUR GF) τ) • m ≡ m := by
@@ -685,7 +685,7 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
         simp [CMRA.op?, CMRA.ValidN, optionValidN]
         cases mz with
         | none =>
-          simp [CMRA.op, optionOp]
+          simp []
           by_cases h_key : γ' = γ
           · simp [h_key]; exact unfoldi_bundle_validN E n
           · simp [h_key]
@@ -698,8 +698,8 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
           · 
             simp [h_key]
             rcases h_at : (mz' E.τ).car γ with (⟨⟩ | v)
-            · simp [optionOp]; exact unfoldi_bundle_validN E n
-            · simp [optionOp]
+            · simp []; exact unfoldi_bundle_validN E n
+            · simp []
               haveI h_unit : IsUnit (IProp.unfoldi (E.Bundle ε)) := unfoldi_bundle_unit E
               have h_v_valid := extract_frame_validN E.τ n mz' h_valid γ v h_at
               exact CMRA.validN_ne h_unit.unit_left_id.dist.symm h_v_valid
@@ -707,7 +707,7 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
             simp [h_key]
             rcases h_at : (mz' E.τ).car γ' with (⟨⟩ | v)
             · trivial
-            · simp [optionOp]; exact extract_frame_validN E.τ n mz' h_valid γ' v h_at
+            · simp []; exact extract_frame_validN E.τ n mz' h_valid γ' v h_at
       · cases mz with
         | none => exact iSingleton_infinite_free γ ε
         | some mz' =>
@@ -720,7 +720,7 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
       have h_is_unit := iSingleton_ne_eq_unit γ ε τ' Heq
       cases mz with
       | none =>
-        simp [CMRA.op?, CMRA.op, h_is_unit]
+        simp [CMRA.op?]
         show ✓{n} (⟨fun γ' => if _ : τ' = E.τ ∧ γ' = γ then _ else none⟩ : GenMap Nat _)
         simp [Heq]
         exact (UCMRA.unit_valid : ✓ (UCMRA.unit : GenMap Nat ((GF τ').fst (IPre GF) (IPre GF)))).validN
@@ -733,7 +733,7 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
           cases (mz' τ').car k <;> simp [OFE.Equiv.rfl]
         exact CMRA.validN_ne h_eq.dist Hv'
 
-  refine .trans (UPred.ownM_updateP _ Hupd) ?_
+  refine .trans (UPred.bupd_ownM_updateP _ _ Hupd) ?_
   refine BIUpdate.mono ?_
   refine BI.exists_elim (fun y => ?_)
   refine BI.pure_elim (iSingleton F γ ε = y) BI.and_elim_l ?_
