@@ -26,20 +26,7 @@ instance asEmpValid1_equiv [BI PROP] (P Q : PROP) : AsEmpValid1 (P ⊣⊢ Q) ipr
 instance asEmpValid2_equiv [BI PROP] (P Q : PROP) : AsEmpValid2 (P ⊣⊢ Q) iprop(P ∗-∗ Q) :=
   AsEmpValid1.to2
 
-instance asEmpValid1_forall [BI PROP] {α : Type _} (φ : α → Prop) (P : α → PROP)
-    [h : ∀ x, AsEmpValid1 (φ x) (P x)] : AsEmpValid1 (∀ x, φ x) iprop(∀ x, P x) where
-  as_emp_valid := ⟨
-    fun hφ => forall_intro fun x => ((h x).as_emp_valid).mp (hφ x),
-    fun hP x => ((h x).as_emp_valid).mpr (hP.trans (forall_elim x))⟩
-
-instance asEmpValid2_forall [BI PROP] {α : Type _} (φ : α → Prop) (P : α → PROP)
-    [h : ∀ x, AsEmpValid2 (φ x) (P x)] : AsEmpValid2 (∀ x, φ x) iprop(∀ x, P x) where
-  as_emp_valid := ⟨
-    fun hφ => forall_intro fun x => ((h x).as_emp_valid).mp (hφ x),
-    fun hP x => ((h x).as_emp_valid).mpr (hP.trans (forall_elim x))⟩
-
 -- IntoEmpValid
-
 -- Back to [AsEmpValid2] because we know [φ]
 instance intoEmpValid_here [BI PROP] (φ : Prop) (P : PROP) [h : AsEmpValid2 φ P] :
     IntoEmpValid φ P where
