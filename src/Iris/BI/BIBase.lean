@@ -170,13 +170,15 @@ structure BiEntails [BIBase PROP] (P Q : PROP) where
   mp : P ⊢ Q
   mpr : Q ⊢ P
 
+def EmpValid [BIBase PROP] (P: PROP) := iprop(emp ⊢ P)
+
 /-- Entailment on separation logic propositions with an empty context. -/
-macro:25 "⊢ " P:term:25 : term => ``(emp ⊢ $P)
+macro:25 "⊢ " P:term:25 : term => ``(EmpValid iprop($P))
 /-- Bidirectional entailment on separation logic propositions. -/
 macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(BiEntails iprop($P) iprop($Q))
 
-delab_rule BIBase.Entails
-  | `($_ iprop(emp) $P) => do ``(⊢ $(← unpackIprop P))
+delab_rule BIBase.EmpValid
+  | `($_ $P) => do ``(⊢ $(← unpackIprop P))
 
 delab_rule BIBase.BiEntails
   | `($_ $P $Q) => do ``($(← unpackIprop P) ⊣⊢ $(← unpackIprop Q))
@@ -285,4 +287,3 @@ macro_rules
 
 delab_rule except0
   | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
-

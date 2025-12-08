@@ -289,31 +289,6 @@ theorem apply_forall_intuitionistic' [BI PROP] (P Q : α → PROP) (a b : α) : 
 
 end apply
 
--- pose
-namespace pose
-
-theorem exact_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
-  istart
-  ipose H as HQ
-  iapply HQ
-
-theorem apply_lean [BI PROP] (P Q : PROP) (H : P ⊢ Q) : ⊢ P -∗ Q := by
-  istart
-  ipose H as HPQ
-  iapply HPQ
-
-theorem apply_forall [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
-  iintro HP
-  ipose H $! a, b as H'
-  iapply H' with HP
-
-theorem apply_forall_intuitionistic [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
-  iintro HP
-  ipose H $! a, b as H'
-  iapply H' with HP
-
-end pose
-
 -- ex falso
 namespace exfalso
 

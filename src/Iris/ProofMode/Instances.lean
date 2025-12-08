@@ -27,14 +27,13 @@ instance asEmpValid2_equiv [BI PROP] (P Q : PROP) : AsEmpValid2 (P ⊣⊢ Q) ipr
   AsEmpValid1.to2
 
 -- IntoEmpValid
-instance intoEmpValid_emp_entails [BI PROP] (P : PROP) : IntoEmpValid (⊢ P) iprop(P) where
-  into_emp_valid := id
+-- Back to [AsEmpValid2] because we know [φ]
+instance intoEmpValid_here [BI PROP] (φ : Prop) (P : PROP) [h : AsEmpValid2 φ P] :
+    IntoEmpValid φ P where
+  into_emp_valid := h.as_emp_valid.mp
 
-instance intoEmpValid_entails [BI PROP] (P Q : PROP) : IntoEmpValid (P ⊢ Q) iprop(P -∗ Q) where
-  into_emp_valid := entails_wand
-
-instance intoEmpValid_equiv [BI PROP] (P Q : PROP) : IntoEmpValid (P ⊣⊢ Q) iprop(P ∗-∗ Q) where
-  into_emp_valid := equiv_wandIff
+theorem into_emp_valid_proj [BI PROP] (P : PROP) (φ : Prop) [h : IntoEmpValid φ P] : φ → ⊢ P :=
+  h.into_emp_valid
 
 -- FromImp
 instance fromImp_imp [BI PROP] (P1 P2 : PROP) : FromImp iprop(P1 → P2) P1 P2 := ⟨.rfl⟩
