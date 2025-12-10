@@ -11,20 +11,27 @@ open Iris.Std BI
 def bupd_alt [BI PROP] [BIPlainly PROP] (P : PROP) : PROP :=
   iprop(∀ R, (P -∗ ■ R) -∗ ■ R)
 
-
-
 section bupd_alt
 variable [BI PROP] [BIPlainly PROP]
 
--- TODO: the following 4 global instance
-
-/- Implicit Types P Q R : PROP. -/
-
+instance bupd_alt_ne : OFE.NonExpansive (bupd_alt (PROP := PROP)) where
+  ne n x1 x2 Hx := by
+    unfold bupd_alt
+    apply forall_ne
+    intro R
+    apply wand_ne.ne;
+    · apply wand_ne.ne
+      · exact Hx
+      · exact .rfl
+    · exact .rfl
 /-
 Global Instance bupd_alt_ne : NonExpansive bupd_alt.
 Proof. solve_proper. Qed.
+-- non-expansive is like Proper but wiht ≡n≡
+
 Global Instance bupd_alt_proper : Proper ((≡) ==> (≡)) bupd_alt.
 Proof. solve_proper. Qed.
+
 Global Instance bupd_alt_mono' : Proper ((⊢) ==> (⊢)) bupd_alt.
 Proof. solve_proper. Qed.
 Global Instance bupd_alt_flip_mono' : Proper (flip (⊢) ==> flip (⊢)) bupd_alt.
@@ -100,9 +107,10 @@ theorem bupd_bupd_alt [BIUpdate PROP] [BIBUpdatePlainly PROP] {P : PROP} : (|==>
   refine BIUpdate.frame_r.trans ?_
   refine (BIUpdate.mono sep_symm).trans ?_
   -- TODO: what gets filled in in the `_` here, namely what is of type `BI PROP`?
-  refine (BIUpdate.mono <| @wand_elim PROP _ iprop(P -∗ ■ R) P iprop(■R) .rfl).trans ?_
-  exact bupd_elim
+  let AAA : BI PROP := by infer_instance
+  exact (BIUpdate.mono <| wand_elim .rfl).trans bupd_elim
 
+-- #print bupd_bupd_alt
 -- We get the usual rule for frame preserving updates if we have an [own]
 -- connective satisfying the following rule w.r.t. interaction with plainly.
 
