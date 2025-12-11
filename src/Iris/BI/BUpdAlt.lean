@@ -24,27 +24,8 @@ instance bupd_alt_ne : OFE.NonExpansive (bupd_alt (PROP := PROP)) where
       · exact Hx
       · exact .rfl
     · exact .rfl
-/-
-Global Instance bupd_alt_ne : NonExpansive bupd_alt.
-Proof. solve_proper. Qed.
--- non-expansive is like Proper but wiht ≡n≡
 
-Global Instance bupd_alt_proper : Proper ((≡) ==> (≡)) bupd_alt.
-Proof. solve_proper. Qed.
-
-Global Instance bupd_alt_mono' : Proper ((⊢) ==> (⊢)) bupd_alt.
-Proof. solve_proper. Qed.
-Global Instance bupd_alt_flip_mono' : Proper (flip (⊢) ==> flip (⊢)) bupd_alt.
-Proof. solve_proper. Qed.
--/
-
--- NonExpansive
--- Proper
--- mono'
--- flip mono
-
--- TODO: should I use `lemma`? and how?
--- The Laws of the basica update modality hold
+-- The Laws of the basic update modality hold
 theorem bupd_alt_intro {P : PROP} : P ⊢ bupd_alt P := by
   iintro Hp
   unfold bupd_alt
@@ -99,30 +80,16 @@ theorem bupd_alt_plainly {P : PROP} : bupd_alt iprop(■ P) ⊢ (■ P) := by
   iexact Hp
 
 -- Any modality confirming with [BiBUpdPlainly] entails the alternative definition
--- TODO: don't quite understand the typeclass mechanisms...
 theorem bupd_bupd_alt [BIUpdate PROP] [BIBUpdatePlainly PROP] {P : PROP} : (|==> P) ⊢  bupd_alt P := by
   unfold bupd_alt
   iintro HP (R) H
   -- Eliminate the bupds (by hand, until iMod is implemented)
   refine BIUpdate.frame_r.trans ?_
   refine (BIUpdate.mono sep_symm).trans ?_
-  -- TODO: what gets filled in in the `_` here, namely what is of type `BI PROP`?
-  let AAA : BI PROP := by infer_instance
   exact (BIUpdate.mono <| wand_elim .rfl).trans bupd_elim
 
--- #print bupd_bupd_alt
 -- We get the usual rule for frame preserving updates if we have an [own]
 -- connective satisfying the following rule w.r.t. interaction with plainly.
-
--- TODO: how to translate the following?
--- TODO: How is context different from variable
--- TODO: check if this is a faithful translation of
-/-
-  Context {M : ucmra} (own : M → PROP).
-  Context (own_updateP_plainly : ∀ x Φ R,
-    x ~~>: Φ →
-    own x ∗ (∀ y, ⌜Φ y⌝ -∗ own y -∗ ■ R) ⊢ ■ R).
--/
 variable [UCMRA M] (own : M → PROP)
 variable (own_updateP_plainly :
   ∀ (x : M) (Φ : M → Prop) (R : PROP),
