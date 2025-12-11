@@ -1,8 +1,6 @@
 import Iris.ProofMode
 import Iris.Instances.UPred.Instance
 
--- set_option trace.Meta.synthInstance true
-
 namespace Iris
 open Iris.Std BI
 
@@ -16,7 +14,6 @@ variable [BI PROP] [BIPlainly PROP]
 
 instance bupd_alt_ne : OFE.NonExpansive (bupd_alt (PROP := PROP)) where
   ne n x1 x2 Hx := by
-    unfold bupd_alt
     apply forall_ne
     intro R
     apply wand_ne.ne;
@@ -94,13 +91,12 @@ variable [UCMRA M] (own : M → PROP)
 variable (own_updateP_plainly :
   ∀ (x : M) (Φ : M → Prop) (R : PROP),
     (x ~~>: Φ) →
-    own x ∗ (∀ y, iprop(<affine> ⌜Φ y⌝) -∗ own y -∗ ■ R) ⊢ ■ R)
+    own x ∗ (∀ y, iprop(⌜Φ y⌝) -∗ own y -∗ ■ R) ⊢ ■ R)
 
-theorem own_updateP {x : M} {Φ : M → Prop}
-    (own_updateP_plainly :
-      ∀ (x : M) (Φ : M → Prop) (R : PROP),
-        (x ~~>: Φ) →
-        own x ∗ (∀ y, <affine> iprop(⌜Φ y⌝) -∗ own y -∗ ■ R) ⊢ ■ R) :
+-- Since own_updateP doesn't use `own_updateP_plainly` in the type,
+-- need to explicitly include it
+include own_updateP_plainly
+theorem own_updateP {x : M} {Φ : M → Prop} :
     (x ~~>: Φ) →
     own x ⊢ bupd_alt iprop(∃ y, ⌜Φ y⌝ ∧ own y) := by
   intro Hup
@@ -118,6 +114,7 @@ theorem own_updateP {x : M} {Φ : M → Prop}
   · ipure_intro
     exact HΦ
   · iexact Hy
+
 end bupd_alt
 
 -- Helper predicate for bupd_alt_bupd proof
