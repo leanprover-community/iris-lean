@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mario Carneiro, Сухарик (@suhr), Markus de Medeiros
 -/
 import Iris.Algebra.OFE
+import Iris.Algebra.Monoid
 
 namespace Iris
 open OFE
@@ -730,6 +731,12 @@ instance empty_cancelable : Cancelable (unit : α) where
 
 theorem _root_.Iris.OFE.Dist.to_incN {n} {x y : α} (H : x ≡{n}≡ y) : x ≼{n} y :=
   ⟨unit, ((equiv_dist.mp unit_right_id n).trans H).symm⟩
+
+instance cmra_monoid : Algebra.Monoid α (@op α _) unit where
+  op_ne.ne := fun {_n} {_x₁ _x₂} hx {_y₁ _y₂} hy => Dist.op hx hy
+  op_assoc _ _ _ := assoc.symm
+  op_comm _ _ := comm
+  op_left_id _ := unit_left_id
 
 end ucmra
 
