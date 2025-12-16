@@ -1,0 +1,431 @@
+/-
+Copyright (c) 2025 Alok Singh. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Alok Singh
+-/
+
+import Iris.Std.Heap
+import Std.Data.TreeMap
+import Std.Data.ExtTreeMap
+
+/-!
+# Heap Instances for Standard Types
+
+This file provides `Store` and `Heap` instances for standard Lean types.
+
+## Main instances
+
+- `Store` instance for functions `K → V` (total stores)
+- `Heap` instance for functions `K → Option V` (partial stores / heaps)
+- `RepFunStore` and `IsoFunStore` instances for function types
+- `Store` and `Heap` instances for `TreeMap` and `ExtTreeMap`
+
+## Implementation notes
+
+The function type `K → Option V` provides a canonical heap implementation where:
+- `get` is just function application
+- `set` uses function update
+- `empty` returns `fun _ => none`
+- `hmap` and `merge` are defined pointwise
+
+-/
+
+namespace Iris.Std
+
+/-! ## Function Store Instance -/
+
+section FunStore
+
+variable {K V : Type _}
+
+/-- Functions form a total store. -/
+instance instStoreFun [DecidableEq K] : Store (K → V) K V where
+  get t k := t k
+  set t k v := fun k' => if k = k' then v else t k'
+  get_set_eq {t k k' v} h := by simp [h]
+  get_set_ne {t k k' v} h := by simp [h]
+
+/-- Functions represent all functions (trivially). -/
+instance instRepFunStoreFun [DecidableEq K] : RepFunStore (K → V) K V where
+  rep _ := True
+  rep_get _ := trivial
+  of_fun f := f.val
+  get_of_fun := rfl
+
+/-- Functions are isomorphic to themselves. -/
+instance instIsoFunStoreFun [DecidableEq K] : IsoFunStore (K → V) K V where
+  of_fun_get := rfl
+
+end FunStore
+
+/-! ## Function Heap Instance -/
+
+section FunHeap
+
+variable {K V : Type _} [DecidableEq K]
+
+/-- Functions to Option form a heap. -/
+instance instHeapFun : Heap (K → Option V) K V where
+  empty := fun _ => none
+  hmap f t k := (t k).bind (f k)
+  merge op t1 t2 k := Option.merge op (t1 k) (t2 k)
+  get_empty := rfl
+  get_hmap := rfl
+  get_merge := rfl
+
+end FunHeap
+
+end Iris.Std
+
+/-! ## TreeMap Heap Instance -/
+
+namespace Std.TreeMap
+
+section HeapInstance
+
+variable {K V : Type _} {cmp : K → K → Ordering}
+
+variable [TransCmp cmp]
+
+/-- TreeMap forms a Store with Option values.
+
+Note: This requires that `cmp k k' = .eq` implies `k = k'` (i.e., `LawfulEqCmp`).
+-/
+instance instStore [LawfulEqCmp cmp] : Store (TreeMap K V cmp) K (Option V) where
+  get t k := t[k]?
+  set t k v := t.alter k (fun _ => v)
+  get_set_eq {t k k' v} h := by simp [h]
+  get_set_ne {t k k' v} h := by simp [getElem?_alter, h]
+
+/-! ### Connection to List foldl -/
+
+open Std.DTreeMap.Internal in
+/-- Helper: get? of foldl with Impl.Const.alter! has the expected behavior.
+    This version works with dependent pairs from toListModel.
+    Uses `compare` from the ambient Ord instance. -/
+private theorem get?_foldl_alter_impl_sigma [inst : Ord K] [TransOrd K]
+    {l : List ((a : K) × (fun _ => V) a)}
+    {init : Impl K (fun _ => V)} {f : K → V → V → V} {k : K}
+    (hinit : init.WF)
+    (hl : l.Pairwise (fun a b => compare a.1 b.1 ≠ .eq)) :
+    Impl.Const.get? (l.foldl (fun acc kv =>
+        Impl.Const.alter! kv.1 (fun
+          | none => some kv.2
+          | some v1 => some (f kv.1 v1 kv.2)) acc) init) k =
+      match Impl.Const.get? init k, l.find? (fun kv => compare kv.1 k == .eq) with
+      | some v1, some kv2 => some (f kv2.1 v1 kv2.2)
+      | some v1, none => some v1
+      | none, some kv2 => some kv2.2
+      | none, none => none := by
+  induction l generalizing init with
+  | nil =>
+    simp only [List.foldl_nil, List.find?_nil]
+    cases Impl.Const.get? init k <;> rfl
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    let alterFn : Option V → Option V := fun
+      | none => some hd.2
+      | some v1 => some (f hd.1 v1 hd.2)
+    have hwf_new : (Impl.Const.alter! hd.1 alterFn init).WF :=
+      Impl.WF.constAlter! (f := alterFn) hinit
+    rw [ih hwf_new (hl.tail)]
+    by_cases heq : compare hd.1 k = .eq
+    · rw [Impl.Const.get?_alter! hinit]
+      simp only [heq, ↓reduceIte]
+      have hfind : List.find? (fun kv => compare kv.1 k == .eq) (hd :: tl) = some hd := by
+        simp only [List.find?_cons, heq, beq_self_eq_true]
+      rw [hfind]
+      have htl : tl.find? (fun kv => compare kv.1 k == .eq) = none := by
+        apply List.find?_eq_none.mpr
+        intro kv hkv hkv_eq
+        simp only [beq_iff_eq] at hkv_eq
+        exact List.rel_of_pairwise_cons hl hkv (TransCmp.eq_trans heq (OrientedCmp.eq_symm hkv_eq))
+      rw [htl]
+      have hget_congr := Impl.Const.get?_congr hinit heq
+      rw [← hget_congr]
+      cases Impl.Const.get? init hd.1 with
+      | none => simp [alterFn]
+      | some v => simp [alterFn]
+    · rw [Impl.Const.get?_alter! hinit]
+      simp only [heq, ↓reduceIte]
+      have hfind : List.find? (fun kv => compare kv.1 k == .eq) (hd :: tl) =
+                   tl.find? (fun kv => compare kv.1 k == .eq) := by
+        simp only [List.find?_cons]
+        have hne : (compare hd.1 k == .eq) = false := by simp [beq_eq_false_iff_ne, heq]
+        simp only [hne]
+      rw [hfind]
+
+/-- Helper lemma: foldl over list with alter has the expected getElem? behavior.
+    This is the key induction lemma for proving getElem?_mergeWith. -/
+theorem foldl_alter_getElem? {l : List (K × V)} {init : TreeMap K V cmp} {f : K → V → V → V}
+    {k : K} (hl : l.Pairwise (fun a b => cmp a.1 b.1 ≠ .eq)) :
+    (l.foldl (fun acc kv => acc.alter kv.1 fun
+        | none => some kv.2
+        | some v1 => some (f kv.1 v1 kv.2)) init)[k]? =
+      match init[k]?, l.find? (fun kv => cmp kv.1 k == .eq) with
+      | some v1, some kv2 => some (f kv2.1 v1 kv2.2)
+      | some v1, none => some v1
+      | none, some kv2 => some kv2.2
+      | none, none => none := by
+  induction l generalizing init with
+  | nil =>
+    simp only [List.foldl_nil, List.find?_nil]
+    cases init[k]? <;> rfl
+  | cons hd tl ih =>
+    simp only [List.foldl_cons]
+    rw [ih (hl.tail)]
+    by_cases heq : cmp hd.1 k = .eq
+    · -- hd.1 matches k
+      simp only [getElem?_alter, getElem?_congr (OrientedCmp.eq_symm heq)]
+      have hfind : List.find? (fun kv => cmp kv.1 k == .eq) (hd :: tl) = some hd := by
+        simp only [List.find?_cons, heq, beq_self_eq_true]
+      rw [hfind]
+      have htl : tl.find? (fun kv => cmp kv.1 k == .eq) = none := by
+        apply List.find?_eq_none.mpr
+        intro kv hkv hkv_eq
+        simp only [beq_iff_eq] at hkv_eq
+        exact List.rel_of_pairwise_cons hl hkv (TransCmp.eq_trans heq (OrientedCmp.eq_symm hkv_eq))
+      rw [htl]
+      simp only [ReflCmp.compare_self, ↓reduceIte]
+      cases init[hd.1]? <;> rfl
+    · -- hd.1 doesn't match k
+      simp only [getElem?_alter, heq, ↓reduceIte]
+      have hfind : List.find? (fun kv => cmp kv.1 k == .eq) (hd :: tl) =
+                   tl.find? (fun kv => cmp kv.1 k == .eq) := by
+        simp only [List.find?_cons]
+        have hne : (cmp hd.1 k == .eq) = false := by simp [heq]
+        simp [hne]
+      rw [hfind]
+
+/-- TreeMap.mergeWith equals list foldl with alter at the getElem? level. -/
+theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
+    {f : K → V → V → V} {k : K} :
+    (t₁.mergeWith f t₂)[k]? = (t₂.toList.foldl (fun acc kv =>
+        acc.alter kv.1 fun | none => some kv.2 | some v1 => some (f kv.1 v1 kv.2)) t₁)[k]? := by
+  rw [foldl_alter_getElem? (distinct_keys_toList (t := t₂))]
+  letI : Ord K := ⟨cmp⟩
+
+  have h_impl : (t₁.mergeWith f t₂)[k]? =
+      Std.DTreeMap.Internal.Impl.Const.get?
+        (Std.DTreeMap.Internal.Impl.Const.mergeWith! f t₁.inner.inner t₂.inner.inner) k := by
+    show Std.DTreeMap.Internal.Impl.Const.get?
+           (Std.DTreeMap.Internal.Impl.Const.mergeWith f t₁.inner.inner t₂.inner.inner
+             t₁.inner.wf.balanced).impl k =
+         Std.DTreeMap.Internal.Impl.Const.get?
+           (Std.DTreeMap.Internal.Impl.Const.mergeWith! f t₁.inner.inner t₂.inner.inner) k
+    rw [Std.DTreeMap.Internal.Impl.Const.mergeWith_eq_mergeWith!]
+
+  have h_foldl : Std.DTreeMap.Internal.Impl.Const.mergeWith! f t₁.inner.inner t₂.inner.inner =
+      Std.DTreeMap.Internal.Impl.foldl (fun t a b₂ =>
+        Std.DTreeMap.Internal.Impl.Const.alter! a (fun
+          | none => some b₂
+          | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner := rfl
+
+  have h_list : Std.DTreeMap.Internal.Impl.foldl (fun t a b₂ =>
+        Std.DTreeMap.Internal.Impl.Const.alter! a (fun
+          | none => some b₂
+          | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner =
+      t₂.inner.inner.toListModel.foldl (fun acc p =>
+        Std.DTreeMap.Internal.Impl.Const.alter! p.1 (fun
+          | none => some p.2
+          | some b₁ => some (f p.1 b₁ p.2)) acc) t₁.inner.inner := by
+    rw [Std.DTreeMap.Internal.Impl.foldl_eq_foldl]
+
+  have hdist : t₂.inner.inner.toListModel.Pairwise (fun a b => compare a.1 b.1 ≠ .eq) := by
+    have hpw := List.pairwise_map.mp <|
+      Std.DTreeMap.Internal.Impl.SameKeys.ordered_iff_pairwise_keys.mp t₂.inner.wf.ordered
+    exact hpw.imp fun hlt heq => by rw [heq] at hlt; cases hlt
+
+  -- Connect t₁[k]? with the internal get?
+  have h_get_eq : t₁[k]? = Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k := rfl
+
+  rw [h_impl, h_foldl, h_list, get?_foldl_alter_impl_sigma t₁.inner.wf hdist, h_get_eq]
+
+  have h_toList : t₂.toList = t₂.inner.inner.toListModel.map (fun e => (e.1, e.2)) :=
+    Std.DTreeMap.Internal.Impl.Const.toList_eq_toListModel_map
+
+  have h_find : ∀ (l : List ((a : K) × (fun _ => V) a)),
+      (l.map (fun e => (e.1, e.2))).find? (fun kv => cmp kv.1 k == .eq) =
+      (l.find? (fun kv => cmp kv.1 k == .eq)).map (fun e => (e.1, e.2)) := by
+    intro l
+    induction l with
+    | nil => rfl
+    | cons hd tl ih =>
+      simp only [List.map_cons, List.find?_cons]
+      cases cmp hd.1 k == .eq <;> simp only [Option.map_some, *]
+
+  have hfind_eq := h_find t₂.inner.inner.toListModel
+  rw [← h_toList] at hfind_eq
+
+  cases hres : t₂.inner.inner.toListModel.find? (fun kv => cmp kv.1 k == .eq) with
+  | none =>
+    have hfind_none : t₂.toList.find? (fun kv => cmp kv.1 k == .eq) = none := by
+      rw [hfind_eq, hres]; rfl
+    simp only [hfind_none]
+    cases Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k <;> rfl
+  | some kv =>
+    have hfind_some : t₂.toList.find? (fun kv => cmp kv.1 k == .eq) = some (kv.1, kv.2) := by
+      rw [hfind_eq, hres]; rfl
+    simp only [hfind_some]
+    cases Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k <;> rfl
+
+/-- getElem? of mergeWith has the expected semantics.
+
+This lemma states that `mergeWith` behaves as expected: it combines two maps such that:
+- If both maps have a key, the merge function is applied
+- If only one map has a key, that value is used
+- If neither has the key, the result is none
+
+The proof uses the internal implementation details of TreeMap.mergeWith, which is
+defined as a foldl over the second tree using alter operations.
+-/
+@[simp] theorem getElem?_mergeWith' [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
+    {f : K → V → V → V} {k : K} :
+    (t₁.mergeWith f t₂)[k]? =
+      match t₁[k]?, t₂[k]? with
+      | some v1, some v2 => some (f k v1 v2)
+      | some v1, none => some v1
+      | none, some v2 => some v2
+      | none, none => none := by
+  -- First, establish the key property using our foldl_alter_getElem? helper
+  have hfoldl := foldl_alter_getElem? (init := t₁) (f := f) (k := k) (distinct_keys_toList (t := t₂))
+
+  -- Helper: convert t₂[k]? = none to List.find? = none
+  have find_none : t₂[k]? = none →
+      t₂.toList.find? (fun kv => cmp kv.1 k == .eq) = none := by
+    intro hget
+    apply List.find?_eq_none.mpr
+    intro kv hkv
+    simp only [beq_iff_eq]
+    intro heq
+    have : t₂[k]? = some kv.2 := by
+      rw [getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList]
+      exact ⟨kv.1, OrientedCmp.eq_symm heq, hkv⟩
+    simp_all
+
+  -- Helper: convert t₂[k]? = some v to List.find? = some kv
+  have find_some : ∀ v, t₂[k]? = some v →
+      ∃ kv, t₂.toList.find? (fun kv => cmp kv.1 k == .eq) = some kv ∧
+            kv.2 = v ∧ cmp kv.1 k = .eq := by
+    intro v hget
+    have ⟨k', hcmp, hmem⟩ := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp hget
+    have hpred : (fun kv : K × V => cmp kv.1 k == .eq) (k', v) = true := by
+      simp only [beq_iff_eq, OrientedCmp.eq_symm hcmp]
+    -- Use find?_isSome to get that find? returns some value
+    have hisSome := List.find?_isSome (p := fun kv => cmp kv.1 k == .eq) |>.mpr ⟨(k', v), hmem, hpred⟩
+    obtain ⟨kv, hfind⟩ := Option.isSome_iff_exists.mp hisSome
+    have hpkv := List.find?_some hfind
+    have hkv_cmp : cmp kv.1 k = .eq := by simp_all [beq_iff_eq]
+    have hkv_mem : kv ∈ t₂.toList := List.mem_of_find?_eq_some hfind
+    have hkv_val : kv.2 = v := by
+      have hget' : t₂[k]? = some kv.2 := by
+        rw [getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList]
+        exact ⟨kv.1, OrientedCmp.eq_symm hkv_cmp, hkv_mem⟩
+      simp only [hget, Option.some.injEq] at hget'
+      exact hget'.symm
+    exact ⟨kv, hfind, hkv_val, hkv_cmp⟩
+
+  -- Use the helper lemma that connects mergeWith to foldl
+  have mergeWith_eq := getElem?_mergeWith_eq_foldl (t₁ := t₁) (t₂ := t₂) (f := f) (k := k)
+
+  -- Case split based on t₁[k]? and t₂[k]?
+  cases h1 : t₁[k]? with
+  | none =>
+    cases h2 : t₂[k]? with
+    | none => rw [mergeWith_eq, hfoldl, h1, find_none h2]
+    | some v2 =>
+      obtain ⟨kv, hfind, hval, hcmp⟩ := find_some v2 h2
+      rw [mergeWith_eq, hfoldl, h1, hfind]
+      have heq : kv.1 = k := LawfulEqCmp.eq_of_compare hcmp
+      subst heq hval
+      rfl
+  | some v1 =>
+    cases h2 : t₂[k]? with
+    | none => rw [mergeWith_eq, hfoldl, h1, find_none h2]
+    | some v2 =>
+      obtain ⟨kv, hfind, hval, hcmp⟩ := find_some v2 h2
+      rw [mergeWith_eq, hfoldl, h1, hfind]
+      have heq : kv.1 = k := LawfulEqCmp.eq_of_compare hcmp
+      subst heq hval
+      rfl
+
+/-- TreeMap forms a Heap. -/
+instance instHeap [LawfulEqCmp cmp] : Heap (TreeMap K V cmp) K V where
+  empty := {}
+  hmap f t := t.filterMap f
+  merge op t1 t2 := t1.mergeWith (fun _ v1 v2 => op v1 v2) t2
+  get_empty := rfl
+  get_hmap {f t k} := by
+    show (filterMap f t)[k]? = t[k]?.bind (f k)
+    rw [getElem?_filterMap]; simp [Option.pbind_eq_bind, getKey_eq]
+  get_merge {op t1 t2 k} := by
+    show (mergeWith _ t1 t2)[k]? = Option.merge op t1[k]? t2[k]?
+    rw [getElem?_mergeWith']; cases t1[k]? <;> cases t2[k]? <;> rfl
+
+end HeapInstance
+
+end Std.TreeMap
+
+/-! ## ExtTreeMap Heap Instance -/
+
+namespace Std.ExtTreeMap
+
+section HeapInstance
+
+variable {K V : Type _} {cmp : K → K → Ordering}
+
+variable [TransCmp cmp]
+
+/-- ExtTreeMap forms a Store with Option values.
+
+Note: This requires that `cmp k k' = .eq` implies `k = k'` (i.e., `LawfulEqCmp`).
+-/
+instance instStore [LawfulEqCmp cmp] : Store (ExtTreeMap K V cmp) K (Option V) where
+  get t k := t[k]?
+  set t k v := t.alter k (fun _ => v)
+  get_set_eq {t k k' v} h := by simp [h]
+  get_set_ne {t k k' v} h := by simp [getElem?_alter, h]
+
+/-- getElem? of mergeWith has the expected semantics for ExtTreeMap.
+
+The proof uses quotient induction to reduce to DTreeMap representatives,
+then reuses the TreeMap proof since both share the same internal implementation. -/
+@[simp] theorem getElem?_mergeWith' [LawfulEqCmp cmp] {t₁ t₂ : ExtTreeMap K V cmp}
+    {f : K → V → V → V} {k : K} :
+    (t₁.mergeWith f t₂)[k]? =
+      match t₁[k]?, t₂[k]? with
+      | some v1, some v2 => some (f k v1 v2)
+      | some v1, none => some v1
+      | none, some v2 => some v2
+      | none, none => none := by
+  show ExtDTreeMap.Const.get? (ExtDTreeMap.Const.mergeWith f t₁.inner t₂.inner) k =
+    match ExtDTreeMap.Const.get? t₁.inner k, ExtDTreeMap.Const.get? t₂.inner k with
+    | some v1, some v2 => some (f k v1 v2)
+    | some v1, none => some v1
+    | none, some v2 => some v2
+    | none, none => none
+  obtain ⟨q₁⟩ := t₁.inner
+  obtain ⟨q₂⟩ := t₂.inner
+  induction q₁ using Quotient.ind with
+  | _ m₁ =>
+    induction q₂ using Quotient.ind with
+    | _ m₂ =>
+      -- Reduce to TreeMap proof via DTreeMap representatives
+      exact Std.TreeMap.getElem?_mergeWith' (t₁ := ⟨m₁⟩) (t₂ := ⟨m₂⟩) (f := f) (k := k)
+
+/-- ExtTreeMap forms a Heap. -/
+instance instHeap [LawfulEqCmp cmp] : Heap (ExtTreeMap K V cmp) K V where
+  empty := {}
+  hmap f t := t.filterMap f
+  merge op t1 t2 := t1.mergeWith (fun _ v1 v2 => op v1 v2) t2
+  get_empty := rfl
+  get_hmap {f t k} := by
+    show (filterMap f t)[k]? = t[k]?.bind (f k)
+    rw [getElem?_filterMap]; simp [Option.pbind_eq_bind, getKey_eq]
+  get_merge {op t1 t2 k} := by
+    show (mergeWith _ t1 t2)[k]? = Option.merge op t1[k]? t2[k]?
+    rw [getElem?_mergeWith']; cases t1[k]? <;> cases t2[k]? <;> rfl
+
+end HeapInstance
+
+end Std.ExtTreeMap
