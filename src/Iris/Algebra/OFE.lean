@@ -806,18 +806,49 @@ section FixpointAB
 
 class ContractiveABA [OFE α] [OFE β] (fA : α → β → α) where
   dL_dist_dist : DistLater n x₁ x₂ → y₁ ≡{n}≡ y₂ → fA x₁ y₁ ≡{n}≡ fA x₂ y₂
-  non_exp : NonExpansive₂ fA := ⟨fun n x₁ x₂ Hx y₁ y₂ Hy => by
-    apply dL_dist_dist
+
+@[ext] structure ContractiveABAHom (α β : Type _) [OFE α] [OFE β] where
+  f: α → β → α
+  [contractive: ContractiveABA f]
+  ne₂: NonExpansive₂ f := ⟨fun n x₁ x₂ Hx y₁ y₂ Hy => by
+    apply contractive.dL_dist_dist
     exact Dist.distLater Hx
     exact Hy
   ⟩
+
+instance [OFE α] [OFE β] : OFE (ContractiveABAHom α β) where
+  Equiv f g := f.f ≡ g.f
+  Dist n f g := f.f ≡{n}≡ g.f
+  dist_eqv := {
+    refl _ := dist_eqv.refl _
+    symm h := dist_eqv.symm h
+    trans h1 h2 := dist_eqv.trans h1 h2
+  }
+  equiv_dist := equiv_dist
+  dist_lt := dist_lt
+
 class ContractiveABB [OFE α] [OFE β] (fB : α → β → β) where
   dL_dL_dist : DistLater n x₁ x₂ → DistLater n y₁ y₂ → fB x₁ y₁ ≡{n}≡ fB x₂ y₂
-  non_exp : NonExpansive₂ fB := ⟨fun n x₁ x₂ Hx y₁ y₂ Hy => by
-    apply dL_dL_dist
+
+@[ext] structure ContractiveABBHom (α β : Type _) [OFE α] [OFE β] where
+  f: α → β → β
+  [contractive: ContractiveABB f]
+  ne₂: NonExpansive₂ f := ⟨fun n x₁ x₂ Hx y₁ y₂ Hy => by
+    apply contractive.dL_dL_dist
     exact Dist.distLater Hx
     exact Dist.distLater Hy
   ⟩
+
+instance [OFE α] [OFE β] : OFE (ContractiveABBHom α β) where
+  Equiv f g := f.f ≡ g.f
+  Dist n f g := f.f ≡{n}≡ g.f
+  dist_eqv := {
+    refl _ := dist_eqv.refl _
+    symm h := dist_eqv.symm h
+    trans h1 h2 := dist_eqv.trans h1 h2
+  }
+  equiv_dist := equiv_dist
+  dist_lt := dist_lt
 
 def fixpointAB [COFE α] [COFE β] [Inhabited α] [Inhabited β]
   (fB : α → β → β) [ContractiveABB fB]
@@ -865,7 +896,7 @@ def fixpointA [COFE α] [COFE β] [Inhabited α] [Inhabited β]
   (fA : α → β → α)
   (fB : α → β → β)
   [fA_Contractive : ContractiveABA fA]
-  [ContractiveABB fB]
+  [fB_Contractive : ContractiveABB fB]
   : α :=
 by
   let con_hom : α -c> α := {
@@ -881,6 +912,9 @@ by
   }
   exact OFE.ContractiveHom.fixpoint con_hom
 
+nonrec abbrev OFE.ContractiveHom.fixpointA [COFE α] [COFE β] [Inhabited α] [Inhabited β]
+  (fA: ContractiveABAHom α β) (fB: ContractiveABBHom α β) : α :=
+    fixpointA (fA_Contractive := fA.contractive) (fB_Contractive := fB.contractive) fA.f fB.f
 
 def fixpointB [COFE α] [COFE β] [Inhabited α] [Inhabited β]
   (fA : α → β → α)
@@ -888,6 +922,10 @@ def fixpointB [COFE α] [COFE β] [Inhabited α] [Inhabited β]
   [fA_Contractive : ContractiveABA fA]
   [fB_Contractive : ContractiveABB fB]
   : β := fixpointAB fB <| fixpointA fA fB
+
+nonrec abbrev OFE.ContractiveHom.fixpointB [COFE α] [COFE β] [Inhabited α] [Inhabited β]
+  (fA: ContractiveABAHom α β) (fB: ContractiveABBHom α β) : β :=
+    fixpointB (fA_Contractive := fA.contractive) (fB_Contractive := fB.contractive) fA.f fB.f
 
 theorem fixpointA_unfold [COFE α] [COFE β] [Inhabited α] [Inhabited β]
   (fA : α → β → α)
@@ -915,10 +953,10 @@ theorem fixpointA_unique [COFE α] [COFE β] [Inhabited α] [Inhabited β]
   intro Hp Hq
   refine .trans Hp.symm ?_
   apply fixpoint_unique
-  have := fA_Contractive.non_exp
+  have := ({f := fA} : ContractiveABAHom α β).ne₂
   refine NonExpansive₂.eqv Hp.symm ?_
   apply fixpoint_unique
-  have := fB_Contractive.non_exp
+  have := ({f := fB} : ContractiveABBHom α β).ne₂
   refine .trans ?_ (NonExpansive₂.eqv Hp.symm Equiv.rfl)
   exact Hq.symm
 
@@ -931,52 +969,31 @@ theorem fixpointB_unique [COFE α] [COFE β] [Inhabited α] [Inhabited β]
 : fA p q ≡ p → fB p q ≡ q → q ≡ (fixpointB fA fB) := by
   intro Hp Hq
   apply fixpoint_unique
-  have := fB_Contractive.non_exp
+  have := ({f := fB} : ContractiveABBHom α β).ne₂
   refine .trans Hq.symm (NonExpansive₂.eqv ?_ Equiv.rfl)
   apply fixpointA_unique fA fB p q
   exact Hp
   exact Hq
 
-theorem fixpointA_ne [COFE α] [COFE β] [Inhabited α] [Inhabited β]
-  (fA : α → β → α)
-  (fA' : α → β → α)
-  (fB : α → β → β)
-  (fB' : α → β → β)
-  [fA_Contractive : ContractiveABA fA]
-  [fA'_Contractive : ContractiveABA fA']
-  [fB_Contractive : ContractiveABB fB]
-  [fB'_Contractive : ContractiveABB fB']
-  n : (∀ x y, fA x y ≡{n}≡ fA' x y) →
-      (∀ x y, fB x y ≡{n}≡ fB' x y) →
-      fixpointA fA fB ≡{n}≡ fixpointA fA' fB' := by
-  intros HfA HfB
-  apply OFE.ContractiveHom.fixpoint_ne.ne
-  intro z1
-  refine .trans (fA_Contractive.non_exp.ne Dist.rfl ?_) (HfA z1 _)
-  apply OFE.ContractiveHom.fixpoint_ne.ne
-  intro z2
-  exact HfB z1 z2
+instance OFE.ContractiveHom.fixpointA_ne [COFE α] [COFE β] [Inhabited α] [Inhabited β] :
+  NonExpansive₂ (OFE.ContractiveHom.fixpointA (α := α) (β := β)) where
+  ne n fA fA' HfA fB fB' HfB := by
+    apply OFE.ContractiveHom.fixpoint_ne.ne
+    intro z₁
+    refine .trans (fA.ne₂.ne Dist.rfl ?_) (HfA z₁ _)
+    apply OFE.ContractiveHom.fixpoint_ne.ne
+    intro z₂
+    exact HfB z₁ z₂
 
-
-theorem fixpointB_ne [COFE α] [COFE β] [Inhabited α] [Inhabited β]
-  (fA : α → β → α)
-  (fA' : α → β → α)
-  (fB : α → β → β)
-  (fB' : α → β → β)
-  [fA_Contractive : ContractiveABA fA]
-  [fA'_Contractive : ContractiveABA fA']
-  [fB_Contractive : ContractiveABB fB]
-  [fB'_Contractive : ContractiveABB fB']
-  n : (∀ x y, fA x y ≡{n}≡ fA' x y) →
-      (∀ x y, fB x y ≡{n}≡ fB' x y) →
-      fixpointB fA fB ≡{n}≡ fixpointB fA' fB' := by
-  intros HfA HfB
-  apply OFE.ContractiveHom.fixpoint_ne.ne
-  intro z1
-  refine .trans (fB_Contractive.non_exp.ne ?_ Dist.rfl) (HfB _ z1)
-  apply fixpointA_ne
-  exact HfA
-  exact HfB
+instance OFE.ContractiveHom.fixpointB_ne [COFE α] [COFE β] [Inhabited α] [Inhabited β] :
+  NonExpansive₂ (OFE.ContractiveHom.fixpointB (α := α) (β := β)) where
+  ne n fA fA' HfA fB fB' HfB := by
+    apply OFE.ContractiveHom.fixpoint_ne.ne
+    intro z₁
+    refine .trans (fB.ne₂.ne ?_ Dist.rfl) (HfB _ z₁)
+    apply OFE.ContractiveHom.fixpointA_ne.ne
+    exact HfA
+    exact HfB
 
 end FixpointAB
 
