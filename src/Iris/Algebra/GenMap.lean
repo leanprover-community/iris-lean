@@ -12,7 +12,7 @@ open OFE
 
 section GenMap
 
-/- The OFE over gmaps is eqivalent to a non-depdenent discrete function to an `Option` type with a
+/- The OFE over gmaps is eqivalent to a non-dependent discrete function to an `Option` type with a
 `Leibniz` OFE of keys, and an infinite number of unallocated elements.
 
 In this setting, the CMRA is always unital, and as a consquence the oFunctors do not require
@@ -73,6 +73,24 @@ instance : CoeFun (GenMap α β) (fun _ => α → Option β) where
 nonrec def GenMap.alter [DecidableEq α] (g : GenMap α β) (a : α) (b : Option β) : GenMap α β where
   car := alter g.car a b
 
+def GenMap.empty [DecidableEq α] : GenMap α β := ⟨fun _ => none⟩
+
+def GenMap.singleton [DecidableEq α] (x : α) (y : β) : GenMap α β :=
+  empty.alter x y
+
+-- Helper lemmas for empty_map and singleton_map
+theorem empty_map_lookup [DecidableEq α] (γ : α) :
+  (GenMap.empty : GenMap α β).car γ = none := by rfl
+
+theorem singleton_map_in [DecidableEq α] (x : α) (y : β) :
+  (GenMap.singleton x y).car x = some y := by
+  simp [GenMap.singleton, GenMap.alter, GenMap.empty, alter]
+
+theorem singleton_map_ne [DecidableEq α] {x : α} {y : β} {x' : α} (h : x' ≠ x) :
+    (GenMap.singleton x y).car x' = none := by
+  simp [GenMap.singleton, GenMap.alter, alter, GenMap.empty]
+  intro heq; subst heq; contradiction
+
 section OFE
 variable (α β : Type _) [OFE β]
 
@@ -103,8 +121,8 @@ instance instCMRA_GenMap : CMRA (GenMap α β) where
   pcore_ne {n x y cx} H Hm := by
     have Hm' : (CMRA.pcore x.car) = some cx.car := by
       rcases h : (CMRA.pcore x.car)
-      · simp_all [h]
-      · simp_all [h]
+      · simp_all
+      · simp_all
         rw [← Hm]
     have H' : x.car ≡{n}≡ y.car := by exact H
     rcases CMRA.pcore_ne H' Hm' with ⟨cy', Hcy'1, Hcy'2⟩
@@ -154,10 +172,12 @@ instance instCMRA_GenMap : CMRA (GenMap α β) where
     exists .mk z2
 
 instance instUCMRA_GenMap : UCMRA (GenMap Nat β) where
-  unit := GenMap.mk <| UCMRA.unit
+  unit := GenMap.empty
   unit_valid := ⟨fun _ => trivial, ⟨id, rfl, id⟩⟩
-  unit_left_id := by simp [CMRA.op, UCMRA.unit, optionOp]
-  pcore_unit := by simp [CMRA.pcore, UCMRA.unit, CMRA.core, optionCore]
+  unit_left_id := by simp [CMRA.op, GenMap.empty, optionOp]
+  pcore_unit := by simp [CMRA.pcore, GenMap.empty, CMRA.core, optionCore]
+
+instance : CMRA.IsTotal (GenMap Nat β) := by exact CMRA.unit_total
 
 theorem GenMap.alter_valid [DecidableEq α] {g : GenMap α β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
     ✓{n} g.alter a b := by
@@ -171,6 +191,57 @@ theorem GenMap.alter_valid [DecidableEq α] {g : GenMap α β} (Hb : ✓{n} b) (
 theorem GenMap.valid_exists_fresh {g : GenMap α β} (Hv : ✓{n} g) : ∃ a : α, g.car a = none := by
   rcases Hv with ⟨_, e, He_inc, _⟩
   exact ⟨e 0, He_inc⟩
+
+theorem singleton_map_op [DecidableEq α] (x : α) (y1 y2 : β) :
+    (GenMap.singleton x y1 : GenMap α β) • GenMap.singleton x y2 = GenMap.singleton x (y1 • y2) := by
+  apply congrArg GenMap.mk
+  funext γ
+  simp only [CMRA.op, optionOp]
+  by_cases h : γ = x
+  · subst h
+    simp [GenMap.singleton, GenMap.empty, GenMap.alter, alter]
+  · simp [GenMap.singleton, GenMap.empty, GenMap.alter, alter]
+    grind
+
+theorem singleton_map_pcore [DecidableEq α] (x : α) (y : β) (γ : α) :
+    ((GenMap.singleton x y : GenMap α β).car γ).bind CMRA.pcore =
+    if γ = x then (CMRA.pcore y) else none := by
+  by_cases h : γ = x
+  · subst h
+    simp [singleton_map_in]
+  · simp [singleton_map_ne h]
+    intros; simp_all only [not_true_eq_false]
+
+-- Validity lemmas for singleton_map
+theorem validN_singleton_map_in [DecidableEq α] (x : α) (y : β) (n : Nat) :
+    ✓{n} (GenMap.singleton x y).car x → ✓{n} y := by
+  rw [singleton_map_in]
+  simp [CMRA.ValidN, optionValidN]
+
+theorem Op_singleton_comm [DecidableEq α] {mf : GenMap α β} {x : α} (y : β) :
+  IsFree mf.car x →
+  (GenMap.singleton x y) • mf ≡ mf.alter x (some y) := by
+  intro H_free k
+  by_cases heq : k = x
+  · subst heq
+    simp only [CMRA.op, GenMap.alter, alter, GenMap.singleton, empty_map_lookup]
+    simp only [optionOp, ↓reduceIte]
+    rw [H_free]
+  · simp only [CMRA.op, GenMap.alter, alter, GenMap.singleton, empty_map_lookup]
+    simp [if_neg (heq ∘ Eq.symm), optionOp]
+
+theorem validN_op_comm [DecidableEq α] {m mf : GenMap α β} (x : α) (y : β) (H : IsFree mf.car x) :
+  ✓{n} m.alter x y • mf ↔ ✓{n} (m • mf).alter x y := by
+  apply Dist.validN
+  intro k; simp [IsFree] at H
+  by_cases heq : k = x
+  · -- Case: k = x
+    subst heq
+    simp [CMRA.op, GenMap.alter, alter, H, optionOp]
+  · -- Case: k ≠ γ
+    simp only [CMRA.op, GenMap.alter, alter]
+    have : x ≠ k := heq ∘ Eq.symm
+    rw [if_neg this, if_neg this]
 
 end CMRA
 
@@ -216,7 +287,7 @@ instance GenMapOF_instURFunctor (F : COFE.OFunctorPre) [RFunctor F] :
       · cases h : x.car z <;> simp [Option.map, CMRA.ValidN, optionValidN, h]
         rename_i _ α₁ α₂ β₁ β₂ _ _ _ _ v
         let Hvalid := @(URFunctor.map (F := OptionOF F) f g).validN n v
-        simp [CMRA.ValidN, optionValidN, h, URFunctor.map] at Hvalid
+        simp [CMRA.ValidN, optionValidN, URFunctor.map] at Hvalid
         specialize Hvalid ?_
         · specialize hv z
           simp [CMRA.ValidN, optionValidN] at hv
@@ -233,18 +304,18 @@ instance GenMapOF_instURFunctor (F : COFE.OFunctorPre) [RFunctor F] :
       rename_i v
       simp [OFE.Equiv, Option.Forall₂, URFunctor.map, Option.bind, h, optionCore, OFunctor.map, optionMap, Option.map] at Hcore
       cases h' : CMRA.pcore v
-      · simp_all [h']
+      · simp_all
         cases h'' : CMRA.pcore ((OFunctor.map f g).f v) <;> simp_all
         simp_all [RFunctor.toOFunctor]
-      · simp_all [h']
+      · simp_all
         cases h'' : CMRA.pcore ((OFunctor.map f g).f v) <;> simp_all [RFunctor.toOFunctor]
     op z x γ := by
       let Hop := @(URFunctor.map (F := OptionOF F) f g).op (z.car γ) (x.car γ)
-      simp [Option.map, RFunctor.toOFunctor, optionCore, CMRA.op, optionOp, Option.bind,
+      simp [Option.map, RFunctor.toOFunctor, CMRA.op, optionOp,
            URFunctor.map] at Hop ⊢
       cases h : z.car γ <;> cases h' : x.car γ <;> simp
       simp [h, h'] at Hop
-      simp_all [OFunctor.map, optionMap, RFunctor.toOFunctor]
+      simp_all [OFunctor.map, optionMap]
   }
   map_ne.ne := COFE.OFunctor.map_ne.ne
   map_id := COFE.OFunctor.map_id
@@ -267,174 +338,3 @@ section updates
 -- Which gmap updates do we need?
 
 end updates
-
-
-/-
-Lemma insert_updateP (P : A → Prop) (Q : gmap K A → Prop) m i x :
-  x ~~>: P →
-  (∀ y, P y → Q (<[i:=y]>m)) →
-  <[i:=x]>m ~~>: Q.
-Proof.
-  intros Hx%option_updateP' HP; apply cmra_total_updateP=> n mf Hm.
-  destruct (Hx n (Some (mf !! i))) as ([y|]&?&?); try done.
-  { by generalize (Hm i); rewrite lookup_op; simplify_map_eq. }
-  exists (<[i:=y]> m); split; first by auto.
-  intros j; move: (Hm j)=>{Hm}; rewrite !lookup_op=>Hm.
-  destruct (decide (i = j)); simplify_map_eq/=; auto.
-Qed.
-Lemma insert_updateP' (P : A → Prop) m i x :
-  x ~~>: P → <[i:=x]>m ~~>: λ m', ∃ y, m' = <[i:=y]>m ∧ P y.
-Proof. eauto using insert_updateP. Qed.
-Lemma insert_update m i x y : x ~~> y → <[i:=x]>m ~~> <[i:=y]>m.
-Proof. rewrite !cmra_update_updateP; eauto using insert_updateP with subst. Qed.
-
-Lemma singleton_updateP (P : A → Prop) (Q : gmap K A → Prop) i x :
-  x ~~>: P → (∀ y, P y → Q {[ i := y ]}) → {[ i := x ]} ~~>: Q.
-Proof. apply insert_updateP. Qed.
-Lemma singleton_updateP' (P : A → Prop) i x :
-  x ~~>: P → {[ i := x ]} ~~>: λ m, ∃ y, m = {[ i := y ]} ∧ P y.
-Proof. apply insert_updateP'. Qed.
-Lemma singleton_update i (x y : A) : x ~~> y → {[ i := x ]} ~~> {[ i := y ]}.
-Proof. apply insert_update. Qed.
-
-Lemma delete_update m i : m ~~> delete i m.
-Proof.
-  apply cmra_total_update=> n mf Hm j; destruct (decide (i = j)); subst.
-  - move: (Hm j). rewrite !lookup_op lookup_delete_eq left_id.
-    apply cmra_validN_op_r.
-  - move: (Hm j). by rewrite !lookup_op lookup_delete_ne.
-Qed.
-
-
-
-
-
-Section freshness.
-  Local Set Default Proof Using "Type*".
-  Context `{!Infinite K}.
-  Lemma alloc_updateP_strong_dep (Q : gmap K A → Prop) (I : K → Prop) m (f : K → A) :
-    pred_infinite I →
-    (∀ i, m !! i = None → I i → ✓ (f i)) →
-    (∀ i, m !! i = None → I i → Q (<[i:=f i]>m)) → m ~~>: Q.
-  Proof.
-    move=> /(pred_infinite_set I (C:=gset K)) HP ? HQ.
-    apply cmra_total_updateP. intros n mf Hm.
-    destruct (HP (dom (m ⋅ mf))) as [i [Hi1 Hi2]].
-    assert (m !! i = None).
-    { eapply not_elem_of_dom. revert Hi2.
-      rewrite dom_op not_elem_of_union. naive_solver. }
-    exists (<[i:=f i]>m); split.
-    - by apply HQ.
-    - rewrite insert_singleton_op //.
-      rewrite -assoc -insert_singleton_op; last by eapply not_elem_of_dom.
-    apply insert_validN; [apply cmra_valid_validN|]; auto.
-  Qed.
-  Lemma alloc_updateP_strong (Q : gmap K A → Prop) (I : K → Prop) m x :
-    pred_infinite I →
-    ✓ x → (∀ i, m !! i = None → I i → Q (<[i:=x]>m)) → m ~~>: Q.
-  Proof.
-    move=> HP ? HQ. eapply (alloc_updateP_strong_dep _ _ _ (λ _, x)); eauto.
-  Qed.
-  Lemma alloc_updateP (Q : gmap K A → Prop) m x :
-    ✓ x → (∀ i, m !! i = None → Q (<[i:=x]>m)) → m ~~>: Q.
-  Proof.
-    move=>??.
-    eapply (alloc_updateP_strong _ (λ _, True));
-    eauto using pred_infinite_True.
-  Qed.
-  Lemma alloc_updateP_cofinite (Q : gmap K A → Prop) (J : gset K) m x :
-    ✓ x → (∀ i, m !! i = None → i ∉ J → Q (<[i:=x]>m)) → m ~~>: Q.
-  Proof.
-    eapply alloc_updateP_strong.
-    apply (pred_infinite_set (C:=gset K)).
-    intros E. exists (fresh (J ∪ E)).
-    apply not_elem_of_union, is_fresh.
-  Qed.
-
-  (* Variants without the universally quantified Q, for use in case that is an evar. *)
-  Lemma alloc_updateP_strong_dep' m (f : K → A) (I : K → Prop) :
-    pred_infinite I →
-    (∀ i, m !! i = None → I i → ✓ (f i)) →
-    m ~~>: λ m', ∃ i, I i ∧ m' = <[i:=f i]>m ∧ m !! i = None.
-  Proof. eauto using alloc_updateP_strong_dep. Qed.
-  Lemma alloc_updateP_strong' m x (I : K → Prop) :
-    pred_infinite I →
-    ✓ x → m ~~>: λ m', ∃ i, I i ∧ m' = <[i:=x]>m ∧ m !! i = None.
-  Proof. eauto using alloc_updateP_strong. Qed.
-  Lemma alloc_updateP' m x :
-    ✓ x → m ~~>: λ m', ∃ i, m' = <[i:=x]>m ∧ m !! i = None.
-  Proof. eauto using alloc_updateP. Qed.
-  Lemma alloc_updateP_cofinite' m x (J : gset K) :
-    ✓ x → m ~~>: λ m', ∃ i, i ∉ J ∧ m' = <[i:=x]>m ∧ m !! i = None.
-  Proof. eauto using alloc_updateP_cofinite. Qed.
-End freshness.
-
-Lemma alloc_unit_singleton_updateP (P : A → Prop) (Q : gmap K A → Prop) u i :
-  ✓ u → LeftId (≡) u (⋅) →
-  u ~~>: P → (∀ y, P y → Q {[ i := y ]}) → ∅ ~~>: Q.
-Proof.
-  intros ?? Hx HQ. apply cmra_total_updateP=> n gf Hg.
-  destruct (Hx n (gf !! i)) as (y&?&Hy).
-  { move:(Hg i). rewrite !left_id.
-    case: (gf !! i)=>[x|]; rewrite /= ?left_id //.
-    intros; by apply cmra_valid_validN. }
-  exists {[ i := y ]}; split; first by auto.
-  intros i'; destruct (decide (i' = i)) as [->|].
-  - rewrite lookup_op lookup_singleton_eq.
-    move:Hy; case: (gf !! i)=>[x|]; rewrite /= ?right_id //.
-  - move:(Hg i'). by rewrite !lookup_op lookup_singleton_ne // !left_id.
-Qed.
-Lemma alloc_unit_singleton_updateP' (P: A → Prop) u i :
-  ✓ u → LeftId (≡) u (⋅) →
-  u ~~>: P → ∅ ~~>: λ m, ∃ y, m = {[ i := y ]} ∧ P y.
-Proof. eauto using alloc_unit_singleton_updateP. Qed.
-Lemma alloc_unit_singleton_update (u : A) i (y : A) :
-  ✓ u → LeftId (≡) u (⋅) → u ~~> y → (∅:gmap K A) ~~> {[ i := y ]}.
-Proof.
-  rewrite !cmra_update_updateP;
-    eauto using alloc_unit_singleton_updateP with subst.
-Qed.
--/
-
--- def GenMapOF (C : Type _) (F : C → COFE.OFunctorPre) : COFE.OFunctorPre :=
---   fun A B => { f : (c : C) → OptionOF (F c) A B // Infinite (IsFree f) }
-
--- TODO: CMRA instances, updates for alloc + modify, urFunctor instance for when F is always an rFunctor
--- Functor merges
---    urFunctorOptionOF [RFunctor F] : URFunctor (OptionOF F) where
--- instance urFunctorContractiveOptionOF [RFunctorContractive F] : URFunctorContractive (OptionOF F) where
---    DiscreteFunOF_URFC {C} (F : C → COFE.OFunctorPre) [HURF : ∀ c, URFunctorContractive (F c)] :
--- So it should expect ∀ c, (RFunctorContractive c)
-
--- instance instURFunctor_GenMapOF {F : C → COFE.OFunctorPre} [∀ c, RFunctorContractive (F c)] :
---     URFunctor (GenMapOF C F) :=
---   sorry
-
-end GenMapImpl
-
-end GenMap
---
---
--- -- TODO: Move to a new file
---
--- section Functions
---
--- variable {α : Type _} {β : α → Type _} [∀ x, UCMRA (β x)]
---
--- -- Updates for base CMRA's
---
--- theorem singleton_updateP_empty [DecidableEq α] {x : α} {P : β x → Prop} {Q : (∀ x, β x) → Prop} :
---   (UCMRA.unit ~~>: P) →
---   (∀ y2 : β x, P y2 → Q (fun a' => if h : a' = x then h ▸ y2 else UCMRA.unit)) →
---   (UCMRA.unit ~~>: Q) := sorry
---
---
--- -- (P : {x : α} → β x → Prop)
--- --     (Q : ((a : α) → Option (β a)) → Prop) : True := sor
---   -- (UCMRA.unit ~~>: P) → (∀ y2 : β x, P y2 → Q (alter (fun _ => UCMRA.unit) x y2)) := sorry
--- --
--- --         (P : β x → Prop) (Q : ((a : α) → Option (β a)) → Prop) :
--- --     (ε ~~>: P) → (∀ y2 : β x, P y2 → Q (singleton x y2)) → ε ~~>: Q := sorry
--- --   Proof.
---
--- end Functions

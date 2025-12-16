@@ -1024,6 +1024,25 @@ variable [CMRA α]
   | none, _ => y
   | _, none => x
 
+-- Helper lemmas for option operations
+theorem optionOp_eq_none_left {α : Type _} [CMRA α] {x y : Option α}
+    (h : optionOp x y = none) : x = none :=
+  match x with
+  | none => rfl
+  | some x' =>
+    match y with
+    | none => h
+    | some y' => by simp [optionOp] at h
+
+theorem optionOp_eq_none_right {α : Type _} [CMRA α] {x y : Option α}
+    (h : optionOp x y = none) : y = none :=
+  match y with
+  | none => rfl
+  | some y' =>
+    match x with
+    | none => h
+    | some x' => by simp [optionOp] at h
+
 @[simp] def optionValidN (n : Nat) : Option α → Prop
   | some x => ✓{n} x
   | none => True
@@ -1402,4 +1421,3 @@ instance urFunctorContractiveOptionOF
   map_contractive.1 := COFE.OFunctorContractive.map_contractive.1
 
 end optionOF
-
