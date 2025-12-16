@@ -805,7 +805,7 @@ end Fixpoint
 section FixpointAB
 
 class ContractiveABA [OFE α] [OFE β] (fA : α → β → α) where
-  dL_dist_dist : DistLater n x₁ x₂ → y₁ ≡{n}≡ y₂ → fA x₁ y₁ ≡{n}≡ fA x₂ y₂
+  dL_dist_dist : ∀ ⦃n x₁ x₂⦄, DistLater n x₁ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → fA x₁ y₁ ≡{n}≡ fA x₂ y₂
 
 @[ext] structure ContractiveABAHom (α β : Type _) [OFE α] [OFE β] where
   f: α → β → α
@@ -828,7 +828,7 @@ instance [OFE α] [OFE β] : OFE (ContractiveABAHom α β) where
   dist_lt := dist_lt
 
 class ContractiveABB [OFE α] [OFE β] (fB : α → β → β) where
-  dL_dL_dist : DistLater n x₁ x₂ → DistLater n y₁ y₂ → fB x₁ y₁ ≡{n}≡ fB x₂ y₂
+  dL_dL_dist : ∀ ⦃n x₁ x₂⦄, DistLater n x₁ x₂ → ∀ ⦃y₁ y₂⦄, DistLater n y₁ y₂ → fB x₁ y₁ ≡{n}≡ fB x₂ y₂
 
 @[ext] structure ContractiveABBHom (α β : Type _) [OFE α] [OFE β] where
   f: α → β → β
