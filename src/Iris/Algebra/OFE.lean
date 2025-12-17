@@ -804,14 +804,17 @@ end Fixpoint
 
 section FixpointAB
 
-/-- A composition of a contractive function and a NonExpansive function is NonExpansive₂. -/
-instance ne₂_of_contractive_ne [OFE α] [OFE β] (fA : α -c> β -n> α) : NonExpansive₂ fun x => (fA.f x).f where
+instance [OFE α] [OFE β] [OFE γ] : CoeFun (α -c> β -n> γ) (fun _ => α → β → γ) := ⟨fun f x => (f.f x).f⟩
+instance [OFE α] [OFE β] [OFE γ] : CoeFun (α -c> β -c> γ) (fun _ => α → β → γ) := ⟨fun f x => (f.f x).f⟩
+
+/-- A Contractive function with NonExpansive function codomain is NonExpansive₂. -/
+instance ne₂_of_contractive_ne [OFE α] [OFE β] [OFE γ] (fA : α -c> β -n> γ) : NonExpansive₂ fA where
   ne := fun n x₁ x₂ Hx y₁ y₂ Hy => by
     refine .trans ?_ ((fA.f x₂).ne.ne Hy)
     apply fA.ne.ne Hx
 
-/-- A composition of two contractive functions is NonExpansive₂. -/
-instance ne₂_of_contractive [OFE α] [OFE β] (fB : α -c> β -c> β) : NonExpansive₂ fun x => (fB.f x).f where
+/-- A Contractive function with Contractive function codomain is NonExpansive₂. -/
+instance ne₂_of_contractive [OFE α] [OFE β] [OFE γ] (fB : α -c> β -c> γ) : NonExpansive₂ fB where
   ne := fun n x₁ x₂ Hx y₁ y₂ Hy => by
     refine .trans ?_ ((fB.f x₂).ne.ne Hy)
     apply fB.ne.ne Hx
@@ -825,7 +828,7 @@ by
     f := fB x,
     contractive := {
       distLater_dist := fun dl => by
-        apply (fB x).contractive.distLater_dist
+        apply (fB.f x).contractive.distLater_dist
         exact dl
     }
   }
@@ -851,7 +854,7 @@ theorem fixpointAA_contractive [COFE α] [COFE β] [Inhabited α] [Inhabited β]
   : Contractive (fixpointAA fA fB) where
   distLater_dist := by
     intro n x₁ x₂ Dl
-    refine .trans ?_ ((fA x₂).ne.ne ((fixpointAB_contractive fB).distLater_dist Dl))
+    refine .trans ?_ ((fA.f x₂).ne.ne ((fixpointAB_contractive fB).distLater_dist Dl))
     apply fA.contractive.distLater_dist
     exact Dl
 
@@ -897,10 +900,10 @@ theorem fixpointA_unique [COFE α] [COFE β] [Inhabited α] [Inhabited β]
   refine .trans Hp.symm ?_
   apply fixpoint_unique
   have := ne₂_of_contractive_ne fA
-  refine NonExpansive₂.eqv (f := fun x => (fA.f x).f) Hp.symm ?_
+  refine NonExpansive₂.eqv (f := fA) Hp.symm ?_
   apply fixpoint_unique
   have := ne₂_of_contractive fB
-  exact .trans Hq.symm (NonExpansive₂.eqv (f := fun x => (fB.f x).f) Hp.symm Equiv.rfl)
+  exact .trans Hq.symm (NonExpansive₂.eqv (f := fB) Hp.symm Equiv.rfl)
 
 theorem fixpointB_unique [COFE α] [COFE β] [Inhabited α] [Inhabited β]
   (fA : α -c> β -n> α)
@@ -910,7 +913,7 @@ theorem fixpointB_unique [COFE α] [COFE β] [Inhabited α] [Inhabited β]
   intro Hp Hq
   apply fixpoint_unique
   have := ne₂_of_contractive fB
-  refine .trans Hq.symm (NonExpansive₂.eqv (f := fun x => (fB.f x).f) ?_ Equiv.rfl)
+  refine .trans Hq.symm (NonExpansive₂.eqv (f := fB) ?_ Equiv.rfl)
   exact fixpointA_unique fA fB p q Hp Hq
 
 instance fixpointA_ne [COFE α] [COFE β] [Inhabited α] [Inhabited β] :
