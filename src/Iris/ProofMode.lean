@@ -5,4 +5,3 @@ import Iris.ProofMode.Instances
 import Iris.ProofMode.Patterns
 import Iris.ProofMode.Tactics
 import Iris.ProofMode.UnifHints
-import Iris.ProofMode.BupdPlain
