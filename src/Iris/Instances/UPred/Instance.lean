@@ -497,74 +497,42 @@ end UPred
 
 section UPredAlt
 
-open BUpdPlain
+open BUpdPlain CMRA UPred
 
 /-
 ## Compatibility between the UPred model of BUpd and the BUpd construction for generic BIPlainly instances
 -/
 
--- Helper predicate for BUpdPlain_bupd proof
-private def BUpdPlain_pred [UCMRA M] (P : UPred M) (y : M) : UPred M where
+def BUpdPlain_pred [UCMRA M] (P : UPred M) (y : M) : UPred M where
   holds k _ := ∃ x'', ✓{k} (x'' • y) ∧ P k x''
   mono {_} := fun ⟨z, Hz1, Hz2⟩ _ Hn =>
-    ⟨z, CMRA.validN_of_le Hn Hz1, P.mono Hz2 (CMRA.incN_refl z) Hn⟩
+    ⟨z, validN_of_le Hn Hz1, P.mono Hz2 (incN_refl z) Hn⟩
 
--- The alternative definition entails the ordinary basic update
+/-- The alternative definition entails the ordinary basic update -/
 theorem BUpdPlain_bupd [UCMRA M] (P : UPred M) : BUpdPlain P ⊢ |==> P := by
-  unfold BUpdPlain bupd
-  intro n x Hx H
-  -- Unfold bupd definition in `Instance.lean`
-  intro k y Hkn Hxy
-  let R := BUpdPlain_pred P y
-  have H_inst : iprop((P -∗ ■ R) -∗ ■ R).holds n x := H _ ⟨R, rfl⟩
+  intro n x Hx H k y Hkn Hxy
+  refine (H _ ⟨BUpdPlain_pred P y, rfl⟩) k y Hkn Hxy ?_
+  intro _ z _ Hvyz HP
+  refine ⟨z, validN_ne op_commN Hvyz, HP⟩
 
-  have wand_holds : iprop(P -∗ ■ R).holds k y := by
-    intro k' z Hk' Hvyz HP
-    refine ⟨z, ?_, HP⟩
-    exact CMRA.validN_ne CMRA.op_commN Hvyz
-  exact H_inst k y Hkn Hxy wand_holds
+theorem BUpdPlain_bupd_iff [UCMRA M] (P : UPred M) : BUpdPlain P ⊣⊢ |==> P :=
+  ⟨BUpdPlain_bupd P, BUpd_BUpdPlain⟩
 
-
-theorem BUpdPlain_bupd_iff [UCMRA M] (P : UPred M) : BUpdPlain P ⊣⊢ |==> P := by
-  refine ⟨?_, ?_⟩
-  · apply BUpdPlain_bupd
-  · apply bupd_BUpdPlain
-
--- The law about the interaction between [uPred_ownM] and plainly holds.
-theorem ownM_updateP [UCMRA M] (x : M) (Φ : M → Prop) (R : UPred M) :
-    (x ~~>: Φ) →
-    UPred.ownM x ∗ (∀ y, iprop(⌜Φ y⌝) -∗ UPred.ownM y -∗ ■ R) ⊢ ■ R := by
-  intro Hup
-  intro n z
-  intro Hv
-  -- x1 z2 are introduced for separating conjunction
-  -- (ownM x).holds n x1 := x ≼{n} x1, namely x · z1 = x1
-  intro ⟨x1, z2, Hx, ⟨z1, Hz1⟩, HR⟩
-  -- manually having ofe_subst, z ≡{n} (x • z1) • z2
-  have Hz_subst : z ≡{n}≡ (x • z1) • z2 := by
-    calc z ≡{n}≡ x1 • z2 := Hx
-         _ ≡{n}≡ (x • z1) • z2 := Hz1.op_l
-
+theorem ownM_updateP [UCMRA M] {x : M} {R : UPred M} (Φ : M → Prop) (Hup : x ~~>: Φ) :
+    ownM x ∗ (∀ y, iprop(⌜Φ y⌝) -∗ ownM y -∗ ■ R) ⊢ ■ R := by
+  intro n z Hv ⟨x1, z2, Hx, ⟨z1, Hz1⟩, HR⟩
   have Hvalid : ✓{n} (x •? some (z1 • z2)) := by
     show ✓{n} (x • (z1 • z2))
     refine CMRA.validN_ne ?_ Hv
-    calc z ≡{n}≡ (x • z1) • z2 := Hz_subst
+    calc z ≡{n}≡ x1 • z2 := Hx
+         _ ≡{n}≡ (x • z1) • z2 := Hz1.op_l
          _ ≡{n}≡ x • (z1 • z2) := CMRA.assoc.symm.dist
   have ⟨y, HΦy, Hvalid_y⟩ := Hup n (some (z1 • z2)) Hvalid
-
   have Hp := HR (iprop(⌜Φ y⌝ -∗ (UPred.ownM y -∗ ■ R))) ⟨y, rfl⟩
-
-  have Hv_z2z1 : ✓{n} (z2 • z1) := by
-    exact CMRA.validN_ne CMRA.comm.dist (CMRA.validN_op_right Hvalid)
-
-  have Hp1 : iprop(UPred.ownM y -∗ ■ R).holds n (z2 • z1) := Hp n z1 (Nat.le_refl _) Hv_z2z1 HΦy
-
-  have Hv_z2z1y : ✓{n} ((z2 • z1) • y) := by
-    apply CMRA.validN_ne ?_ Hvalid_y
+  refine Hp n z1 (Nat.le_refl _) ?_ HΦy n y (Nat.le_refl _) ?_ (incN_refl y)
+  · exact CMRA.validN_ne CMRA.comm.dist (CMRA.validN_op_right Hvalid)
+  · apply CMRA.validN_ne ?_ Hvalid_y
     calc y • (z1 • z2) ≡{n}≡ y • (z2 • z1) := CMRA.comm.dist.op_r
          _ ≡{n}≡ (z2 • z1) • y := CMRA.comm.symm.dist
-
-  have Hy_incl : y ≼{n} y := CMRA.incN_refl y
-  exact Hp1 n y (Nat.le_refl _) Hv_z2z1y Hy_incl
 
 section UPredAlt
