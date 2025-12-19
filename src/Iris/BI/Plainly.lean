@@ -302,7 +302,6 @@ theorem impl_wand_plainly : (■ P → Q) ⊣⊢ (■ P -∗ Q) :=
 
 end AffineBI
 
--- Typeclass instances
 instance plainly_absorbing (P : PROP) : Absorbing iprop(■ P) where
   absorbing := absorbingly_elim_plainly.1
 
