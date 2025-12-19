@@ -1147,7 +1147,7 @@ theorem Option.inc_iff {ma mb : Option α} :
     · exact .inl Hmc.symm
     · right; rename_i v3; exists v3
   · rintro (H|⟨a, b, Ha, Hb, (H|⟨z, Hz⟩)⟩)
-    · subst H; exists mb; simp [CMRA.op, optionOp]
+    · subst H; exists mb
     · subst Ha; subst Hb; exists none; simp [CMRA.op, optionOp]; exact H.symm
     · subst Ha; subst Hb; exists some z
 
@@ -1159,7 +1159,7 @@ theorem Option.incN_iff {ma mb : Option α} :
     · exact .inl Hmc.symm
     · right; rename_i v3; exists v3
   · rintro (H|⟨a, b, Ha, Hb, (H|⟨z, Hz⟩)⟩)
-    · subst H; exists mb; simp [CMRA.op, optionOp]
+    · subst H; exists mb
     · subst Ha; subst Hb; exists none; simp [CMRA.op, optionOp]; exact H.symm
     · subst Ha; subst Hb; exists some z
 
