@@ -11,12 +11,12 @@ namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 theorem have_as_emp_valid [BI PROP] {φ} {P Q : PROP}
-    [h1 : AsEmpValid2 φ P] (h : φ) : Q ⊢ Q ∗ P :=
-  sep_emp.2.trans (sep_mono_r (h1.1.mp h))
+    [h1 : AsEmpValid .into φ P] (h : φ) : Q ⊢ Q ∗ P :=
+  sep_emp.2.trans (sep_mono_r (as_emp_valid_1 _ h))
 
 
-def iHaveCore (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
-  (tm : Term) (name : TSyntax ``binderIdent) (keep : Bool) : TacticM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
+private def iHaveCore (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
+  (tm : Term) (name : TSyntax ``binderIdent) (keep : Bool) (mayPostpone : Bool) : TacticM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
   if let some uniq ← try? <| hyps.findWithInfo ⟨tm⟩ then
     -- assertion from the Iris context
     let ⟨_, hyps, _, out', p, _, pf⟩ := hyps.remove (!keep) uniq
@@ -24,13 +24,12 @@ def iHaveCore (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
     return ⟨uniq', _, hyps, q($pf.1)⟩
   else
     -- lean hypothesis
-    let val ← instantiateMVars <| ← elabTerm tm none false
+    let val ← instantiateMVars <| ← elabTerm tm none mayPostpone
     let ty ← instantiateMVars <| ← inferType val
 
     let ⟨newMVars, _, _⟩ ← forallMetaTelescopeReducing ty
     let val := mkAppN val newMVars
     -- TOOD: should we call postprocessAppMVars?
-    -- TODO: should we call Term.synthesizeSyntheticMVarsNoPostponing?
     let newMVarIds ← newMVars.map Expr.mvarId! |>.filterM fun mvarId => not <$> mvarId.isAssigned
     let otherMVarIds ← getMVarsNoDelayed val
     let otherMVarIds := otherMVarIds.filter (!newMVarIds.contains ·)
@@ -41,14 +40,14 @@ def iHaveCore (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
     let ⟨0, ty, val⟩ ← inferTypeQ val | throwError m!"{val} is not a Prop"
 
     let hyp ← mkFreshExprMVarQ q($prop)
-    let some _ ← try? <| synthInstanceQ q(AsEmpValid2 $ty $hyp) | throwError m!"{ty} is not an entailment"
+    let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(AsEmpValid .into $ty $hyp) | throwError m!"{ty} is not an entailment"
 
     let ⟨uniq', hyps⟩ ← Hyps.addWithInfo bi name q(false) hyp hyps
     return ⟨uniq', _, hyps, q(have_as_emp_valid $val)⟩
 
 def iHave (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
-  (pmt : PMTerm) (name : TSyntax ``binderIdent) (keep : Bool) : TacticM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
-  let ⟨uniq, _, hyps', pf⟩ ← iHaveCore gs hyps pmt.term name keep
+  (pmt : PMTerm) (name : TSyntax ``binderIdent) (keep : Bool) (mayPostpone := false) : TacticM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
+  let ⟨uniq, _, hyps', pf⟩ ← iHaveCore gs hyps pmt.term name keep mayPostpone
   let ⟨_, hyps'', pf'⟩ ← iSpecializeCore gs hyps' uniq pmt.terms pmt.spats
   return ⟨uniq, _, hyps'', q($(pf).trans $pf')⟩
 

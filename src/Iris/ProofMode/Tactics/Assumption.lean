@@ -41,6 +41,10 @@ elab "iassumption_lean" : tactic => do
   assumptionLean bi e goal mvar
   replaceMainGoal []
 
+theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p A Q]
+  [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q :=
+  h.1.trans <| (sep_mono_r inst.1).trans sep_elim_r
+
 inductive AssumptionFastPath (prop : Q(Type u)) (bi : Q(BI $prop)) (Q : Q($prop)) where
   | absorbing (_ : Q(Absorbing $Q))
   | biAffine (_ : Q(BIAffine $prop))
