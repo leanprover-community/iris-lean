@@ -20,10 +20,8 @@ def assumptionLean {prop : Q(Type u)} (_bi : Q(BI $prop)) (ehyps goal : Q($prop)
   mvar.withContext do
     let _ ← synthInstanceQ q(TCOr (Affine $ehyps) (Absorbing $goal))
     for h in ← getLCtx do
-      let some #[_, _, hh, (P : Q($prop))] := (← whnfR h.type).appM? ``Entails | continue
-      unless (← whnfR hh).isAppOfArity ``BI.emp 2 do continue
+      let some #[_, _, (P : Q($prop))] := (← whnfR h.type).appM? ``BIBase.EmpValid | continue
       have h : Q(⊢ $P) := .fvar h.fvarId
-      -- let (name, type) := (h.userName, ← instantiateMVars h.type)
 
       -- try to solve the goal
       try
