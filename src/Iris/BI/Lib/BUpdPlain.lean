@@ -48,26 +48,22 @@ theorem BUpdPlain_mono {P Q : PROP} : (P ⊢ Q) → (BUpdPlain P ⊢ BUpdPlain Q
     iapply H
     apply H
   iintro ⟨Ha, H2⟩
-  ispecialize Ha HQR
-  iapply Ha
+  iapply Ha $! HQR
   iapply H1
   iexact H2
 
 theorem BUpdPlain_idemp {P : PROP} : BUpdPlain (BUpdPlain P) ⊢ BUpdPlain P := by
   unfold BUpdPlain
   iintro Hp R H
-  ispecialize Hp R as HpR
-  iapply HpR
+  iapply Hp $! R
   iintro Hp
-  ispecialize Hp R as HpR2
-  iapply HpR2
+  iapply Hp $! R
   iassumption
 
 theorem BUpdPlain_frame_r {P Q : PROP} : BUpdPlain P ∗ Q ⊢ (BUpdPlain iprop(P ∗ Q)) := by
   unfold BUpdPlain
   iintro ⟨Hp, Hq⟩ R H
-  ispecialize Hp R as HpR
-  iapply HpR
+  iapply Hp $! R
   iintro Hp
   iapply H
   isplitl [Hp]
@@ -77,8 +73,7 @@ theorem BUpdPlain_frame_r {P Q : PROP} : BUpdPlain P ∗ Q ⊢ (BUpdPlain iprop(
 theorem BUpdPlain_plainly {P : PROP} : BUpdPlain iprop(■ P) ⊢ (■ P) := by
   unfold BUpdPlain
   iintro H
-  ispecialize H P as HP
-  iapply HP
+  iapply H $! P
   exact wand_rfl
 
 /- BiBUpdPlainly entails the alternative definition -/
