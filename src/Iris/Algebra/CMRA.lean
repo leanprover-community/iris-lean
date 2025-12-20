@@ -1136,7 +1136,7 @@ theorem inc_iff {ma mb : Option α} :
     · exact .inl Hmc.symm
     · exact .inr ⟨_, Hmc⟩
   · rintro (H|⟨_, _, _, _, (H|⟨z, _⟩)⟩) <;> subst_eqs
-    · exists mb; simp [op]
+    · exists mb
     · exists none; simp [op]; exact H.symm
     · exists some z
 
@@ -1147,7 +1147,7 @@ theorem incN_iff {ma mb : Option α} :
     · exact .inl Hmc.symm
     · exact .inr ⟨_, Hmc⟩
   · rintro (H|⟨_, _, _, _, (H|⟨z, _⟩)⟩) <;> subst_eqs
-    · exists mb; simp [op]
+    · exists mb
     · exists none; simp [op]; exact H.symm
     · exists some z
 
