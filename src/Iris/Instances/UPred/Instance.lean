@@ -9,7 +9,7 @@ import Iris.Algebra.OFE
 import Iris.Algebra.CMRA
 import Iris.Algebra.UPred
 import Iris.Algebra.Updates
-import Iris.ProofMode.BUpdPlain
+import Iris.BI.Lib.BUpdPlain
 
 section UPredInstance
 
