@@ -13,13 +13,13 @@ open Lean Elab Tactic Meta Qq BI Std
 
 theorem tac_apply [BI PROP] {p} {P Q P' Q1 R : PROP}
     (h1 : P ⊣⊢ P' ∗ □?p Q) (h2 : P' ⊢ Q1)
-    [h3 : IntoWand p false Q Q1 R] : P ⊢ R :=
+    [h3 : IntoWand p false Q .out Q1 .in R] : P ⊢ R :=
       h1.1.trans (Entails.trans (sep_mono_l h2) (wand_elim' h3.1))
 
 partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} (gs : Goals bi) {e} (hyps : Hyps bi e) (goal : Q($prop)) (uniq : Name) : TacticM Q($e ⊢ $goal) := do
   let ⟨_, hyps', _, out, p, _, pf⟩ := hyps.remove true uniq
   let A ← mkFreshExprMVarQ q($prop)
-  if let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(IntoWand $p false $out $A $goal) then
+  if let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(IntoWand $p false $out .out $A .in $goal) then
      let pf' ← gs.addGoal hyps' A
      return q(tac_apply $pf $pf')
 
@@ -34,7 +34,7 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
   let gs ← Goals.new bi
   let ⟨uniq, _, hyps, pf⟩ ← iHave gs hyps pmt (← `(binderIdent|_)) true (mayPostpone := true)
   let ⟨e', _, _, out, p, _, pf'⟩ := hyps.remove true uniq
-  if let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(FromAssumption $p $out $goal) then
+  if let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(FromAssumption $p .in $out $goal) then
     if let LOption.some _ ← trySynthInstanceQ q(TCOr (Affine $e') (Absorbing $goal)) then
       -- behave like iexact
       Term.synthesizeSyntheticMVarsNoPostponing

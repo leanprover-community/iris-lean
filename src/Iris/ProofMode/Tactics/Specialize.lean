@@ -15,22 +15,22 @@ structure SpecializeState {prop : Q(Type u)} (bi : Q(BI $prop)) (orig : Q($prop)
   (e : Q($prop)) (hyps : Hyps bi e) (p : Q(Bool)) (out : Q($prop))
   pf : Q($orig ⊢ $e ∗ □?$p $out)
 
-theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 P3 : PROP}
+theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊣⊢ A3 ∗ □?p P1)
-    [h3 : IntoWand q false Q P2 P3] [h4 : FromAssumption p P1 P2] :
-    A1 ⊢ A3 ∗ □?(p && q) P3 := by
+    [h3 : IntoWand q p Q .in P1 .out P2] :
+    A1 ⊢ A3 ∗ □?(p && q) P2 := by
   refine h1.trans <| (sep_mono_l h2.1).trans <| sep_assoc.1.trans (sep_mono_r ?_)
   cases p with
-  | false => exact (sep_mono_r h3.1).trans <| (sep_mono_l h4.1).trans wand_elim_r
+  | false => exact (sep_mono_r h3.1).trans <| wand_elim_r
   | true => exact
     (sep_mono intuitionisticallyIf_intutitionistically.2 intuitionisticallyIf_idem.2).trans <|
-    intuitionisticallyIf_sep_2.trans <| intuitionisticallyIf_mono <| (sep_mono_l h4.1).trans (wand_elim' h3.1)
+    intuitionisticallyIf_sep_2.trans <| intuitionisticallyIf_mono <| (wand_elim' h3.1)
 
 -- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
-theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 P2 : PROP}
+theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 : PROP} P2
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊣⊢ A3 ∗ A4) (h3 : A4 ⊢ P1)
-    [inst : IntoWand q false Q P1 P2] : A1 ⊢ A3 ∗ P2 := by
+    [inst : IntoWand q false Q .out P1 .out P2] : A1 ⊢ A3 ∗ P2 := by
   refine h1.trans <| (sep_mono_l h2.1).trans <| sep_assoc.1.trans (sep_mono_r ((sep_mono_l h3).trans ?_))
   exact (sep_mono_r inst.1).trans wand_elim_r
 
@@ -59,11 +59,8 @@ def SpecializeState.process_wand (gs : @Goals u prop bi) :
     have : $out₁ =Q iprop(□?$p1 $out₁') := ⟨⟩
     have : $p2 =Q ($p1 && $p) := ⟨⟩
 
-    let out₁'' ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
-    let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(IntoWand $p false $out $out₁'' $out₂) |
-      throwError m!"ispecialize: {out} is not a wand"
-    let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(FromAssumption $p1 $out₁' $out₁'') |
+    let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(IntoWand $p $p1 $out .in $out₁' .out $out₂) |
       throwError m!"ispecialize: cannot instantiate {out} with {out₁'}"
     let pf := q(specialize_wand $pf $pf')
     return { e := e', hyps := hyps', p := p2, out := out₂, pf }
@@ -74,9 +71,9 @@ def SpecializeState.process_wand (gs : @Goals u prop bi) :
     let ⟨el', _, hypsl', hypsr', h'⟩ := Hyps.split bi (λ _ uniq => uniqs.contains uniq) hyps
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
-    let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(IntoWand $p false $out $out₁ $out₂) | throwError m!"ispecialize: {out} is not a wand"
+    let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(IntoWand $p false $out .out $out₁ .out $out₂) | throwError m!"ispecialize: {out} is not a wand"
     let pf' ← gs.addGoal hypsr' out₁ g
-    let pf := q(specialize_wand_subgoal $pf $h' $pf')
+    let pf := q(specialize_wand_subgoal $out₂ $pf $h' $pf')
     return { e := el', hyps := hypsl', p := q(false), out := out₂, pf }
 
 def iSpecializeCore (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)

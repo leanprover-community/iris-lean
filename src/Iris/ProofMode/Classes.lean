@@ -9,6 +9,15 @@ import Iris.ProofMode.SynthInstance
 namespace Iris.ProofMode
 open Iris.BI
 
+/-- [InOut] is used to dynamically determine whether a type class
+parameter is an input or an output. This is important for classes that
+are used with multiple modings, e.g., IntoWand. Instances can match on
+the InOut parameter to avoid accidentially instantiating outputs if
+matching on an input was intended. -/
+inductive InOut where
+  | in
+  | out
+
 inductive AsEmpValid.Direction where
   | into
   | from
@@ -40,7 +49,9 @@ class FromWand [BI PROP] (P : PROP) (Q1 Q2 : outParam PROP) where
 export FromWand (from_wand)
 
 @[ipm_class]
-class IntoWand [BI PROP] (p q : Bool) (R : PROP) (P Q : outParam PROP) where
+class IntoWand [BI PROP] (p q : Bool) (R : PROP)
+  (ioP : InOut) (P : semiOutParam PROP)
+  (ioQ : InOut) (Q : semiOutParam PROP) where
   into_wand : □?p R ⊢ □?q P -∗ Q
 export IntoWand (into_wand)
 
@@ -112,7 +123,7 @@ export IntoAbsorbingly (into_absorbingly)
 
 
 @[ipm_class]
-class FromAssumption (p : Bool) [BI PROP] (P : semiOutParam PROP) (Q : PROP) where
+class FromAssumption (p : Bool) [BI PROP] (ioP : InOut) (P : semiOutParam PROP) (Q : PROP) where
   from_assumption : □?p P ⊢ Q
 export FromAssumption (from_assumption)
 

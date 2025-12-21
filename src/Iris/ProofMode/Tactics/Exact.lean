@@ -17,7 +17,7 @@ elab "iexact" colGt hyp:ident : tactic => do
   let uniq ← hyps.findWithInfo hyp
   let ⟨e', _, _, out, p, _, pf⟩ := hyps.remove true uniq
 
-  let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(FromAssumption $p $out $goal)
+  let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(FromAssumption $p .in $out $goal)
     | throwError "iexact: cannot unify {out} and {goal}"
   let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
 
