@@ -433,23 +433,22 @@ theorem disjoint_op_eq_union [IsoFunStore T K (Option V)] {m1 m2 : T} (H : Set.D
     m1 • m2 = Heap.union m1 m2 :=
   IsoFunStore.store_eq_of_Equiv (disjoint_op_equiv_union H)
 
-theorem valid0_disjoint_dom {m1 m2 : T} (Hv : ✓{0} (m1 • m2)) (H : ∀ {k x}, get m1 k = some x → Exclusive x) :
+theorem valid0_disjoint_dom {m1 m2 : T} (Hv : ✓{0} (CMRA.op m1 m2)) (H : ∀ {k x}, get m1 k = some x → Exclusive x) :
     Set.Disjoint (dom m1) (dom m2) := by
   rintro k
   simp only [dom, Option.isSome]
-  rcases HX : get m1 k with (_|x) <;> simp
-  rcases HY : get m2 k with (_|y) <;> simp
-  apply (H HX).1 y
-  simp [CMRA.op, CMRA.ValidN] at Hv; specialize Hv k; revert Hv
-  simp [Heap.get_merge, HX, HY]
+  rcases HX : get m1 k with (_|x) <;> rcases HY : get m2 k with (_|y) <;> simp
+  · apply (H HX).1 y
+    simp [CMRA.op, CMRA.ValidN] at Hv; specialize Hv k; revert Hv
+    simp [Heap.get_merge, HX, HY, Option.merge]
 
 theorem valid_disjoint_dom {m1 m2 : T} (Hv : ✓ (m1 • m2)) (H : ∀ {k x}, get m1 k = some x → Exclusive x) :
     Set.Disjoint (dom m1) (dom m2) :=
   valid0_disjoint_dom (Valid.validN Hv) H
 
-theorem dom_op_union (m1 m2 : T) : dom (m1 • m2) = Set.Union (dom m1) (dom m2) := by
+theorem dom_op_union (m1 m2 : T) : dom (CMRA.op m1 m2) = Set.Union (dom m1) (dom m2) := by
   refine funext fun k => ?_
-  cases get m1 k <;> cases get m2 k <;> simp_all [CMRA.op, dom, Set.Union, get_merge]
+  cases h1 : get m1 k <;> cases h2 : get m2 k <;> simp [h1, h2, CMRA.op, dom, Set.Union, get_merge, Option.merge]
 
 theorem inc_dom_inc {m1 m2 : T} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (dom m2) := by
   intro i

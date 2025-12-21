@@ -1,7 +1,10 @@
+import Iris.BI.BI
+import Iris.BI.BIBase
 import Iris.BI.Classes
 import Iris.BI.DerivedLaws
 import Iris.BI.Extensions
 import Iris.BI.Instances
-import Iris.BI.BI
 import Iris.BI.Notation
+import Iris.BI.Plainly
 import Iris.BI.Updates
+import Iris.BI.InternalEq

@@ -1131,25 +1131,47 @@ theorem validN_op_unit {n} {x : Option α} (vx : ✓{n} x) : ✓{n} x • unit :
 
 theorem inc_iff {ma mb : Option α} :
     ma ≼ mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ (a ≡ b ∨ a ≼ b) := by
-  refine ⟨fun ⟨mc, Hmc⟩ => ?_, ?_⟩
-  · rcases ma, mb, mc with ⟨_|_, _|_, _|_⟩ <;> simp_all [op]
-    · exact .inl Hmc.symm
-    · exact .inr ⟨_, Hmc⟩
-  · rintro (H|⟨_, _, _, _, (H|⟨z, _⟩)⟩) <;> subst_eqs
-    · exists mb
-    · exists none; simp [op]; exact H.symm
-    · exists some z
+  constructor
+  · rintro ⟨mc, Hmc⟩
+    cases hma : ma with
+    | none => exact .inl rfl
+    | some a =>
+      cases hmb : mb with
+      | none => simp [hma, hmb, op, optionOp] at Hmc; cases mc <;> simp at Hmc
+      | some b =>
+        cases hmc : mc with
+        | none =>
+          simp [hma, hmb, hmc, op, optionOp] at Hmc
+          exact .inr ⟨a, b, rfl, rfl, .inl Hmc.symm⟩
+        | some c =>
+          simp [hma, hmb, hmc, op, optionOp] at Hmc
+          exact .inr ⟨a, b, rfl, rfl, .inr ⟨c, Hmc⟩⟩
+  · rintro (rfl | ⟨a, b, rfl, rfl, (H | ⟨z, Hz⟩)⟩)
+    · exact ⟨mb, by simp [op, optionOp]⟩
+    · refine ⟨none, ?_⟩; simp [op, optionOp]; exact H.symm
+    · refine ⟨some z, ?_⟩; simp [op, optionOp]; exact Hz
 
 theorem incN_iff {ma mb : Option α} :
     ma ≼{n} mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ (a ≡{n}≡ b ∨ a ≼{n} b) := by
-  refine ⟨fun ⟨mc, Hmc⟩ => ?_, ?_⟩
-  · rcases ma, mb, mc with ⟨_|_, _|_, _|_⟩ <;> simp_all [op]
-    · exact .inl Hmc.symm
-    · exact .inr ⟨_, Hmc⟩
-  · rintro (H|⟨_, _, _, _, (H|⟨z, _⟩)⟩) <;> subst_eqs
-    · exists mb
-    · exists none; simp [op]; exact H.symm
-    · exists some z
+  constructor
+  · rintro ⟨mc, Hmc⟩
+    cases hma : ma with
+    | none => exact .inl rfl
+    | some a =>
+      cases hmb : mb with
+      | none => simp [hma, hmb, op, optionOp] at Hmc; cases mc <;> simp at Hmc
+      | some b =>
+        cases hmc : mc with
+        | none =>
+          simp [hma, hmb, hmc, op, optionOp] at Hmc
+          exact .inr ⟨a, b, rfl, rfl, .inl Hmc.symm⟩
+        | some c =>
+          simp [hma, hmb, hmc, op, optionOp] at Hmc
+          exact .inr ⟨a, b, rfl, rfl, .inr ⟨c, Hmc⟩⟩
+  · rintro (rfl | ⟨a, b, rfl, rfl, (H | ⟨z, Hz⟩)⟩)
+    · exact ⟨mb, by simp [op, optionOp]⟩
+    · refine ⟨none, ?_⟩; simp [op, optionOp]; exact H.symm
+    · refine ⟨some z, ?_⟩; simp [op, optionOp]; exact Hz
 
 theorem inc_iff_isTotal [IsTotal α] {ma mb : Option α} :
     ma ≼ mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼ b := by
