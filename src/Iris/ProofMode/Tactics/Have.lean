@@ -10,10 +10,9 @@ import Iris.ProofMode.Tactics.Specialize
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-theorem have_as_emp_valid [BI PROP] {φ} {P Q : PROP}
+theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ P] (h : φ) : Q ⊢ Q ∗ P :=
-  sep_emp.2.trans (sep_mono_r (as_emp_valid_1 _ h))
-
+  sep_emp.2.trans (sep_mono_r (asEmpValid_1 _ h))
 
 private def iHaveCore (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
   (tm : Term) (name : TSyntax ``binderIdent) (keep : Bool) (mayPostpone : Bool) : TacticM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
@@ -43,7 +42,7 @@ private def iHaveCore (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
     let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(AsEmpValid .into $ty $hyp) | throwError m!"{ty} is not an entailment"
 
     let ⟨uniq', hyps⟩ ← Hyps.addWithInfo bi name q(false) hyp hyps
-    return ⟨uniq', _, hyps, q(have_as_emp_valid $val)⟩
+    return ⟨uniq', _, hyps, q(have_asEmpValid $val)⟩
 
 def iHave (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
   (pmt : PMTerm) (name : TSyntax ``binderIdent) (keep : Bool) (mayPostpone := false) : TacticM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do

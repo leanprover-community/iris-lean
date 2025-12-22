@@ -30,7 +30,7 @@ def istart (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withContext do
   let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P, .. }
   let subgoal : Quoted q(⊢ $P) ←
     mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
-  mvar.assign q(ProofMode.as_emp_valid_2 $goal $subgoal)
+  mvar.assign q(ProofMode.asEmpValid_2 $goal $subgoal)
   pure (subgoal.mvarId!, irisGoal)
 
 elab "istart" : tactic => do

@@ -26,9 +26,9 @@ inductive AsEmpValid.Direction where
 class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) {PROP : outParam (Type _)} (P : outParam PROP) [BI PROP] where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
 
-theorem as_emp_valid_1 [BI PROP] (P : PROP) [AsEmpValid .into φ P] : φ → ⊢ P :=
+theorem asEmpValid_1 [BI PROP] (P : PROP) [AsEmpValid .into φ P] : φ → ⊢ P :=
   AsEmpValid.as_emp_valid.1 rfl
-theorem as_emp_valid_2 [BI PROP] (φ : Prop) [AsEmpValid .from φ (P : PROP)] : (⊢ P) → φ :=
+theorem asEmpValid_2 [BI PROP] (φ : Prop) [AsEmpValid .from φ (P : PROP)] : (⊢ P) → φ :=
   AsEmpValid.as_emp_valid.2 rfl
 
 
