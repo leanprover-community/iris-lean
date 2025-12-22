@@ -14,11 +14,9 @@ theorem exists_intro' [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExis
 
 elab "iexists" xs:term,+ : tactic => do
   -- resolve existential quantifier with the given argument
+  ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do
 
-  let (mvar, { prop, bi, e, hyps, goal, .. }) ← istart (← getMainGoal)
-  mvar.withContext do
   let mut new_goal_and_pf : ((g : Q($prop)) × Q($g ⊢ $goal)) := ⟨goal, q(.rfl)⟩
-  let gs ← Goals.new bi
 
   for x in xs.getElems do
     have new_goal : Q($prop) := new_goal_and_pf.1
@@ -26,15 +24,14 @@ elab "iexists" xs:term,+ : tactic => do
     let v ← mkFreshLevelMVar
     let α ← mkFreshExprMVarQ q(Sort v)
     let Φ ← mkFreshExprMVarQ q($α → $prop)
-    let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(FromExists $(new_goal) $Φ)
+    let some _ ← ProofModeM.trySynthInstanceQ q(FromExists $(new_goal) $Φ)
       | throwError "iexists: cannot turn {new_goal} into an existential quantifier"
     let x ← elabTermEnsuringTypeQ (u := .succ .zero) x α
     let newMVarIds ← getMVarsNoDelayed x
-    for mvar in newMVarIds do gs.addPureGoal mvar
+    for mvar in newMVarIds do addMVarGoal mvar
     let new_goal' : Q($prop) := Expr.headBeta q($Φ $x)
     let new_goal_pf' : Q($Φ $x ⊢ $goal) := q(exists_intro' _ $(new_goal_pf))
     new_goal_and_pf := ⟨new_goal', new_goal_pf'⟩
 
-  let m : Q($e ⊢ $(new_goal_and_pf.1)) ← gs.addGoal hyps new_goal_and_pf.1
+  let m : Q($e ⊢ $(new_goal_and_pf.1)) ← addBIGoal hyps new_goal_and_pf.1
   mvar.assign q($(m).trans $(new_goal_and_pf.2))
-  replaceMainGoal (← gs.getGoals)
