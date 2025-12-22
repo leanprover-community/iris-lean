@@ -117,7 +117,6 @@ protected def synthInstance? (type : Expr) (maxResultSize? : Option Nat := none)
   -- we can be sure that e only depends on the mvars that actually appear in e
   (← synthInstanceCore? type maxResultSize?).mapM λ e => do let e ← instantiateMVars e; return (e, ← e.getMVarDependencies)
 
-
 protected def trySynthInstance (type : Expr) (maxResultSize? : Option Nat := none) : MetaM (LOption (Expr × Std.HashSet MVarId)) := do
   catchInternalId isDefEqStuckExceptionId
     (toLOptionM <| ProofMode.synthInstance? type maxResultSize?)
@@ -130,3 +129,19 @@ protected def trySynthInstanceQAddingGoals {prop : Q(Type u)} {bi : Q(BI $prop)}
   let LOption.some (e, mvars) ← ProofMode.trySynthInstance α | return none
   mvars.forM gs.addPureGoal
   return some e
+
+syntax (name := ipm_synth) "#ipm_synth " term : command
+
+@[command_elab ipm_synth]
+def ipm_synth_elab : Command.CommandElab
+  | `(#ipm_synth $term) =>
+        withoutModifyingEnv <| Command.runTermElabM fun _ => Term.withDeclName `_ipm_synth do
+        let e ← Term.elabTerm term none
+        Term.synthesizeSyntheticMVarsNoPostponing (ignoreStuckTC := true)
+        let e ← Term.levelMVarToParam (← instantiateMVars e)
+        match ← trySynthInstance e with
+        | .undef => logInfo "Undefined"
+        | .none => logInfo "None"
+        | .some inst => do
+            logInfo s!"{Lean.Expr.getAppFn inst}"
+  | _ => throwUnsupportedSyntax
