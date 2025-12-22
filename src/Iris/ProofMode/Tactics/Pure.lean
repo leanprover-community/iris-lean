@@ -68,6 +68,7 @@ elab "ipure" colGt hyp:ident : tactic => do
   mvar.assign pf
   replaceMainGoal [m.mvarId!]
 
+-- TODO: Is this necessary or can it be replaced by ipure_intro; trivial?
 elab "iemp_intro" : tactic => do
   let (mvar, { prop, e, goal, .. }) ← istart (← getMainGoal)
   mvar.withContext do
