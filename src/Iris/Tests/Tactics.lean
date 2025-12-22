@@ -331,6 +331,28 @@ theorem apply_two_wands [BI PROP] (P Q : Nat → PROP) :
   . iexact HP1
   . iexact HP2
 
+theorem apply_and_l [BI PROP] (P Q : Nat → PROP) :
+  ((P 1 -∗ P 2) ∧ (Q 1 -∗ Q 2)) ⊢ P 1 -∗ P 2 := by
+  iintro H HP1
+  iapply H
+  iexact HP1
+
+theorem apply_and_r [BI PROP] (P Q : Nat → PROP) :
+  ((P 1 -∗ P 2) ∧ (Q 1 -∗ Q 2)) ⊢ Q 1 -∗ Q 2 := by
+  iintro H HQ1
+  iapply H
+  iexact HQ1
+
+theorem apply_and_l_exact [BI PROP] (P Q : Nat → PROP) :
+  (P 1 ∧ Q 1) ⊢ P 1 := by
+  iintro H
+  iapply H
+
+theorem apply_and_r_exact [BI PROP] (P Q : Nat → PROP) :
+  (P 1 ∧ Q 1) ⊢ Q 1 := by
+  iintro H
+  iapply H
+
 end apply
 
 -- have

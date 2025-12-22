@@ -38,10 +38,12 @@ instance intoWand_imp_true [BI PROP] ioP ioQ (P Q P' : PROP) [Affine P']
   into_wand := wand_intro <| (sep_mono_r h.1).trans <| by
     dsimp; exact sep_and.trans <| imp_elim intuitionistically_elim
 
+@[ipm_backtrack]
 instance intoWand_and_l (p q : Bool) [BI PROP] ioP ioQ (R1 R2 P' Q' : PROP)
     [h : IntoWand p q R1 ioP P' ioQ Q'] : IntoWand p q iprop(R1 ∧ R2) ioP P' ioQ Q' where
   into_wand := (intuitionisticallyIf_mono and_elim_l).trans h.1
 
+@[ipm_backtrack]
 instance intoWand_and_r (p q : Bool) [BI PROP] ioP ioQ (R1 R2 P' Q' : PROP)
     [h : IntoWand p q R2 ioP P' ioQ Q'] : IntoWand p q iprop(R1 ∧ R2) ioP P' ioQ Q' where
   into_wand := (intuitionisticallyIf_mono and_elim_r).trans h.1
@@ -427,6 +429,24 @@ instance (priority := default + 10) fromAssumption_forall (p : Bool) [BI PROP] (
 instance fromAssumption_later [BI PROP] (p : Bool) ioP (P Q : PROP)
     [h : FromAssumption p ioP P Q] : FromAssumption p ioP P iprop(▷ Q) where
   from_assumption := h.1.trans later_intro
+
+set_option synthInstance.checkSynthOrder false in
+@[ipm_backtrack]
+instance fromAssumption_and_l [BI PROP] (p : Bool) (P1 P2 Q : PROP)
+    [h : FromAssumption p .in P1 Q] : FromAssumption p .in iprop(P1 ∧ P2) Q where
+  from_assumption :=
+    match p, h with
+    | true, h => intuitionistically_and.mp.trans (and_elim_l.trans h.1)
+    | false, h => and_elim_l.trans h.1
+
+set_option synthInstance.checkSynthOrder false in
+@[ipm_backtrack]
+instance fromAssumption_and_r [BI PROP] (p : Bool) (P1 P2 Q : PROP)
+    [h : FromAssumption p .in P2 Q] : FromAssumption p .in iprop(P1 ∧ P2) Q where
+  from_assumption :=
+    match p, h with
+    | true, h => intuitionistically_and.mp.trans (and_elim_r.trans h.1)
+    | false, h => and_elim_r.trans h.1
 
 -- IntoPure
 instance intoPure_pure (φ : Prop) [BI PROP] : IntoPure (PROP := PROP) iprop(⌜φ⌝) φ := ⟨.rfl⟩

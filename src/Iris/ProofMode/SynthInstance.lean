@@ -26,13 +26,31 @@ syntax (name := ipm_class) "ipm_class" : attr
 initialize registerBuiltinAttribute {
   name := `ipm_class
   descr := "proof mode class"
-  add := fun decl stx kind =>
+  add := fun decl _stx _kind =>
     ipmClassesExt.add decl
+}
+
+initialize ipmBacktrackExt :
+    SimpleScopedEnvExtension Name (Std.HashSet Name)  ←
+  registerSimpleScopedEnvExtension {
+    addEntry := fun s n => s.insert n
+    initial := ∅
+  }
+
+syntax (name := ipm_backtrack) "ipm_backtrack" : attr
+
+/-- This attribute marks instances on which the proof mode synthesis should backtrack. -/
+initialize registerBuiltinAttribute {
+  name := `ipm_backtrack
+  descr := "Enable backtracking for this instance"
+  add := fun decl _stx _kind =>
+    ipmBacktrackExt.add decl
 }
 
 
 private partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
   withIncRecDepth do
+    let backtrackSet := ipmBacktrackExt.getState (← getEnv)
     let mvarType  ← inferType mvar
     let mvarType  ← instantiateMVars mvarType
     if !(ipmClassesExt.getState (← getEnv)).contains mvarType.getAppFn.constName then
@@ -49,14 +67,18 @@ private partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) :=
       return none
     for inst in instances.reverse do
       let mctx0 ← getMCtx
-      let res ← withTraceNode `Meta.synthInstance
-        (withMCtx mctx0 do return MessageData.withMCtx mctx0 m!"{exceptOptionEmoji ·} apply {inst.val} to {← instantiateMVars (← inferType mvar)}") do
+      let (res, match?) ← withTraceNode `Meta.synthInstance
+        (λ r => withMCtx mctx0 do return MessageData.withMCtx mctx0 m!"{exceptOptionEmoji (r.map (·.1))} apply {inst.val} to {← instantiateMVars (← inferType mvar)}") do
         setMCtx mctx
-        let some (mctx', subgoals) ← withAssignableSyntheticOpaque (SynthInstance.tryResolve mvar inst) | return none
+        let some (mctx', subgoals) ← withAssignableSyntheticOpaque (SynthInstance.tryResolve mvar inst) | return (none, false)
         setMCtx mctx'
         for g in subgoals do
-          let some _ ← synthInstanceMainCore g | return none
+          let some _ ← synthInstanceMainCore g | return (none, true)
+        return (some (), true)
       if res.isSome then
+        return res
+      if (match? && !backtrackSet.contains inst.val.getAppFn.constName) then
+        trace[Meta.synthInstance] "no backtracking to other instances"
         return res
     return none
 
