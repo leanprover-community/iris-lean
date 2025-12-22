@@ -10,7 +10,7 @@ namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 theorem pure_assumption [BI PROP] {P A Q : PROP} (h_P : ⊢ A)
-    [inst : FromAssumption true A Q] [TCOr (Affine P) (Absorbing Q)] :
+    [inst : FromAssumption true .in A Q] [TCOr (Affine P) (Absorbing Q)] :
     P ⊢ Q :=
   have := intuitionistically_emp.2.trans <| (intuitionistically_mono h_P).trans inst.1
   emp_sep.2.trans <| (sep_mono_l this).trans sep_elim_l
@@ -26,7 +26,7 @@ def assumptionLean {prop : Q(Type u)} (_bi : Q(BI $prop)) (ehyps goal : Q($prop)
 
       -- try to solve the goal
       try
-        let _ ← synthInstanceQ q(FromAssumption true $P $goal)
+        let _ ← synthInstanceQ q(FromAssumption true .in $P $goal)
         mvar.assign q(pure_assumption (P := $ehyps) (Q := $goal) $h)
         return
       catch e => trace[Meta.debug] e.toMessageData; pure ()
@@ -41,6 +41,10 @@ elab "iassumption_lean" : tactic => do
   assumptionLean bi e goal mvar
   replaceMainGoal []
 
+theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p .in A Q]
+  [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q :=
+  h.1.trans <| (sep_mono_r inst.1).trans sep_elim_r
+
 inductive AssumptionFastPath (prop : Q(Type u)) (bi : Q(BI $prop)) (Q : Q($prop)) where
   | absorbing (_ : Q(Absorbing $Q))
   | biAffine (_ : Q(BIAffine $prop))
@@ -50,9 +54,9 @@ variable {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop))
 def assumptionFast {e} (hyps : Hyps bi e) : MetaM Q($e ⊢ $Q) := do
   let some ⟨inst, _, _, out, ty, b, _, pf⟩ ←
     hyps.removeG true fun _ _ b ty => try? do
-      synthInstance q(FromAssumption $b $ty $Q)
+      synthInstance q(FromAssumption $b .in $ty $Q)
     | failure
-  let _ : Q(FromAssumption $b $ty $Q) := inst
+  let _ : Q(FromAssumption $b .in $ty $Q) := inst
   have : $out =Q iprop(□?$b $ty) := ⟨⟩
   match fastPath with
   | .absorbing _ => return q(assumption (Q := $Q) $pf)
@@ -75,9 +79,9 @@ def assumptionSlow (assume : Bool) :
     Pure.pure (.affine q(emp_affine))
   | out, .hyp _ _ _ b ty _ => do
     let fromAssum (_:Unit) := do
-      let _ ← synthInstanceQ q(FromAssumption $b $ty $Q)
+      let _ ← synthInstanceQ q(FromAssumption $b .in $ty $Q)
       let inst ← try? (synthInstanceQ q(Affine $out))
-      return .main q(FromAssumption.from_assumption) inst
+      return .main q(FromAssumption.from_assumption .in) inst
     let affine (_:Unit) := return .affine (← synthInstanceQ q(Affine $out))
     if assume then
       try fromAssum () catch _ => try affine () catch _ => return .none
