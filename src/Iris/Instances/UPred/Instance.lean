@@ -8,6 +8,8 @@ import Iris.BI
 import Iris.Algebra.OFE
 import Iris.Algebra.CMRA
 import Iris.Algebra.UPred
+import Iris.Algebra.Updates
+import Iris.BI.Lib.BUpdPlain
 
 section UPredInstance
 
@@ -455,8 +457,19 @@ theorem later_soundness : iprop(True ⊢ ▷ P) → iprop((True : UPred M) ⊢ P
 theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (CMRA.core a) :=
   fun _ _ _ H => CMRA.core_incN_core H
 
--- TODO: bupd_ownM_updateP (needs basic updates to be defined)
--- TODO: later_ownM, ownM_forall  (needs internal eq )
+theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
+  (x ~~>: Φ) → ownM x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ ownM y := by
+  intro Hup n x2 Hv ⟨x3, Hx⟩ k yf Hk Hyf
+  have Hxv : ✓{k} x • (x3 • yf) := by
+    refine CMRA.validN_ne ?_ Hyf
+    exact (Hx.le Hk).op_l.trans CMRA.assoc.symm.dist
+  rcases Hup k (some (x3 • yf)) Hxv with ⟨y, HΦy, Hyv⟩
+  refine ⟨y • x3, CMRA.validN_ne CMRA.op_assocN Hyv, ?_⟩
+  refine ⟨iprop(⌜Φ y⌝ ∧ ownM y), ?_, ?_⟩
+  · exists y
+  · exact ⟨HΦy, CMRA.incN_op_left k y x3⟩
+
+-- TODO: later_ownM, ownM_forall (needs internal eq)
 
 theorem cmraValid_intro [CMRA A] {P : UPred M} (a : A) (Ha : ✓ a) : P ⊢ cmraValid a :=
   fun _ _ _ _ => CMRA.Valid.validN Ha
@@ -481,3 +494,45 @@ instance : BIAffine (UPred M) := ⟨by infer_instance⟩
 -- TODO: Port derived lemmas
 
 end UPred
+
+section UPredAlt
+
+open BUpdPlain CMRA UPred
+
+/-
+## Compatibility between the UPred model of BUpd and the BUpd construction for generic BIPlainly instances
+-/
+
+def BUpdPlain_pred [UCMRA M] (P : UPred M) (y : M) : UPred M where
+  holds k _ := ∃ x'', ✓{k} (x'' • y) ∧ P k x''
+  mono {_} := fun ⟨z, Hz1, Hz2⟩ _ Hn =>
+    ⟨z, validN_of_le Hn Hz1, P.mono Hz2 (incN_refl z) Hn⟩
+
+/-- The alternative definition entails the ordinary basic update -/
+theorem BUpdPlain_bupd [UCMRA M] (P : UPred M) : BUpdPlain P ⊢ |==> P := by
+  intro n x Hx H k y Hkn Hxy
+  refine (H _ ⟨BUpdPlain_pred P y, rfl⟩) k y Hkn Hxy ?_
+  intro _ z _ Hvyz HP
+  refine ⟨z, validN_ne op_commN Hvyz, HP⟩
+
+theorem BUpdPlain_bupd_iff [UCMRA M] (P : UPred M) : BUpdPlain P ⊣⊢ |==> P :=
+  ⟨BUpdPlain_bupd P, BUpd_BUpdPlain⟩
+
+theorem ownM_updateP [UCMRA M] {x : M} {R : UPred M} (Φ : M → Prop) (Hup : x ~~>: Φ) :
+    ownM x ∗ (∀ y, iprop(⌜Φ y⌝) -∗ ownM y -∗ ■ R) ⊢ ■ R := by
+  intro n z Hv ⟨x1, z2, Hx, ⟨z1, Hz1⟩, HR⟩
+  have Hvalid : ✓{n} (x •? some (z1 • z2)) := by
+    show ✓{n} (x • (z1 • z2))
+    refine CMRA.validN_ne ?_ Hv
+    calc z ≡{n}≡ x1 • z2 := Hx
+         _ ≡{n}≡ (x • z1) • z2 := Hz1.op_l
+         _ ≡{n}≡ x • (z1 • z2) := CMRA.assoc.symm.dist
+  have ⟨y, HΦy, Hvalid_y⟩ := Hup n (some (z1 • z2)) Hvalid
+  have Hp := HR (iprop(⌜Φ y⌝ -∗ (UPred.ownM y -∗ ■ R))) ⟨y, rfl⟩
+  refine Hp n z1 (Nat.le_refl _) ?_ HΦy n y (Nat.le_refl _) ?_ (incN_refl y)
+  · exact CMRA.validN_ne CMRA.comm.dist (CMRA.validN_op_right Hvalid)
+  · apply CMRA.validN_ne ?_ Hvalid_y
+    calc y • (z1 • z2) ≡{n}≡ y • (z2 • z1) := CMRA.comm.dist.op_r
+         _ ≡{n}≡ (z2 • z1) • y := CMRA.comm.symm.dist
+
+section UPredAlt

@@ -32,7 +32,7 @@ elab "irename" colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do
   let g ← instantiateMVars <| ← mvar.getType
   let some { prop, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
 
-  let some (uniq, _, ty) := hyps.find? (fun n _ => n == nameFrom.getId) | throwError "unknown hypothesis"
+  let some (uniq, _, ty) := hyps.find? nameFrom.getId | throwError "unknown hypothesis"
   addHypInfo nameFrom nameFrom.getId uniq prop ty
   let some hyps' := hyps.rename uniq nameTo.getId | unreachable!
   addHypInfo nameTo nameTo.getId uniq prop ty (isBinder := true)

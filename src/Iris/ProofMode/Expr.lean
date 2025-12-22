@@ -22,12 +22,17 @@ def parseName? : Expr → Option (Name × Name × Expr)
 def mkNameAnnotation (name uniq : Name) (e : Expr) : Expr :=
   .mdata ⟨[(nameAnnotation, .ofName name), (uniqAnnotation, .ofName uniq)]⟩ e
 
+def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
+  | `(binderIdent| $name:ident) => pure (name.getId, name)
+  | stx => return (← mkFreshUserName `x, stx)
+
 inductive Hyps {prop : Q(Type u)} (bi : Q(BI $prop)) : (e : Q($prop)) → Type where
   | emp (_ : $e =Q emp) : Hyps bi e
   | sep (tm elhs erhs : Q($prop)) (_ : $e =Q iprop($elhs ∗ $erhs))
         (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) : Hyps bi e
   | hyp (tm : Q($prop)) (name uniq : Name) (p : Q(Bool)) (ty : Q($prop))
         (_ : $e =Q iprop(□?$p $ty)) : Hyps bi e
+deriving Repr
 
 instance : Inhabited (Hyps bi s) := ⟨.emp ⟨⟩⟩
 
@@ -56,6 +61,13 @@ def Hyps.mkHyp {prop : Q(Type u)} (bi : Q(BI $prop))
     (name uniq : Name) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) : Hyps bi e :=
   .hyp (mkIntuitionisticIf bi p (mkNameAnnotation name uniq ty)) name uniq p ty ⟨⟩
 
+-- TODO: should this ensure that adding a hypothesis to emp creates a
+-- hyp node instead of a sep node?
+def Hyps.add {prop : Q(Type u)} (bi : Q(BI $prop))
+    (name uniq : Name) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
+    : Hyps bi q(iprop($e ∗ □?$p $ty)) :=
+  Hyps.mkSep h (.mkHyp bi name uniq p ty)
+
 partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     Option ((s : Q($prop)) × Hyps bi s) := do
   if let some #[_, _, P, Q] := appM? expr ``sep then
@@ -71,11 +83,11 @@ partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     let (name, uniq, ty) ← parseName? expr
     some ⟨ty, .hyp expr name uniq q(false) ty ⟨⟩⟩
 
-partial def Hyps.find? {u prop bi} (pred: Name -> Q(Bool) -> Bool) :
+partial def Hyps.find? {u prop bi} (name : Name) :
     ∀ {s}, @Hyps u prop bi s → Option (Name × Q(Bool) × Q($prop))
   | _, .emp _ => none
-  | _, .hyp _ name' uniq p ty _ => if pred name' p then (uniq, p, ty) else none
-  | _, .sep _ _ _ _ lhs rhs => rhs.find? pred <|> lhs.find? pred
+  | _, .hyp _ name' uniq p ty _ => if name == name' then (uniq, p, ty) else none
+  | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
 
 partial def Hyps.findAll {u prop bi} (pred: Name -> Q(Bool) -> Bool) :
     ∀ {s}, @Hyps u prop bi s → List (Name × Q(Bool) × Q($prop))
@@ -113,6 +125,9 @@ def IrisGoal.strip : IrisGoal → Expr
 to have type `A : PROP` even though `PROP` is not a type. -/
 def HypMarker {PROP : Type _} (_A : PROP) : Prop := True
 
+/-- addLocalVarInfo associates the syntax `stx` (usually representing a hypothesis) with its type.
+This allows one to hover over the syntax and see the type. isBinder marks the place where the
+ hypothesis is introduced, e.g. for jump to definition. -/
 def addLocalVarInfo (stx : Syntax) (lctx : LocalContext)
     (expr : Expr) (expectedType? : Option Expr) (isBinder := false) : MetaM Unit := do
   Elab.withInfoContext' (pure ())
@@ -127,7 +142,18 @@ def addHypInfo (stx : Syntax) (name uniq : Name) (prop : Q(Type u)) (ty : Q($pro
   let ty := q(HypMarker $ty)
   addLocalVarInfo stx (lctx.mkLocalDecl ⟨uniq⟩ name ty) (.fvar ⟨uniq⟩) ty isBinder
 
-def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (id : Ident) : MetaM Name := do
-  let some (uniq, _, ty) := hyps.find? (fun name' _ => name' = id.getId) | throwError "unknown hypothesis"
-  addHypInfo id id.getId uniq prop ty
+/-- Hyps.findWithInfo should be used on names obtained from the syntax of a tactic to highlight them correctly. -/
+def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : MetaM Name := do
+  let some (uniq, _, ty) := hyps.find? name.getId | throwError "unknown hypothesis"
+  addHypInfo name name.getId uniq prop ty
   pure uniq
+
+/-- Hyps.addWithInfo should be used by tactics that introduce a hypothesis based on the name given by the user. -/
+def Hyps.addWithInfo {prop : Q(Type u)} (bi : Q(BI $prop))
+    (name : TSyntax ``binderIdent) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
+    : MetaM (Name × Hyps bi q(iprop($e ∗ □?$p $ty))) := do
+  let uniq' ← mkFreshId
+  let (nameTo, nameRef) ← getFreshName name
+  addHypInfo nameRef nameTo uniq' prop ty (isBinder := true)
+  let hyps := Hyps.add bi nameTo uniq' p ty h
+  return ⟨uniq', hyps⟩

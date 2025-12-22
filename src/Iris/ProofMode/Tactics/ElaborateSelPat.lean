@@ -47,7 +47,7 @@ def elaborateSelPatsCore {e} (hyps : Hyps bi e) (pat: iSelectPat) : MetaM (List 
         let newSet ← iNameSet.addUniq s uniq
         pure (newSet, .ident false uniq:: l)) (set, el)
   | (iSelectPatAtom.one name) =>
-        match hyps.find? (fun n _ => n == name) with
+        match hyps.find? name with
         | some (uniq, p, _) => do
             let newSet ← iNameSet.addUniq set uniq
             pure (newSet, (.ident (isTrue p) uniq) :: el)
