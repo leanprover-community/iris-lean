@@ -204,16 +204,16 @@ theorem exact [BI PROP] (Q : PROP) : Q ⊢ Q := by
 
 theorem apply [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
   iintro HP H
-  iapply H with HP
+  iapply H $$ HP
 
 theorem multiple [BI PROP] (P Q R : PROP) : ⊢ P -∗ Q -∗ (P -∗ Q -∗ R) -∗ R := by
   iintro HP HQ H
-  iapply H with HP, HQ
+  iapply H $$ HP, HQ
 
 theorem multiple' [BI PROP] (P Q R S : PROP) : ⊢ (P -∗ Q) -∗ P -∗ R -∗ (Q -∗ R -∗ S) -∗ S := by
   iintro HPQ HP HR H
-  iapply H with [HPQ, HP], HR
-  iapply HPQ with HP
+  iapply H $$ [HPQ, HP], HR
+  iapply HPQ $$ HP
 
 theorem exact_intuitionistic [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
   iintro □HQ
@@ -221,25 +221,25 @@ theorem exact_intuitionistic [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
 
 theorem apply_intuitionistic [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) -∗ Q := by
   iintro HP H
-  iapply H with HP
+  iapply H $$ HP
 
 theorem multiple_intuitionistic [BI PROP] (P Q R : PROP) : ⊢ □ P -∗ Q -∗ □ (P -∗ Q -∗ □ R) -∗ R := by
   iintro □HP HQ □H
-  iapply H with [], [HQ] as Q
+  iapply H $$ [], [HQ] as Q
   case Q => iexact HQ
   iexact HP
 
 theorem later [BI PROP] (P Q : PROP) : ⊢ (▷ P -∗ Q) -∗ P -∗ Q := by
   iintro H HP
-  iapply H with HP
+  iapply H $$ HP
 
 theorem test_affine [BI PROP] [BIAffine PROP] (P Q : PROP) : ⊢ (P → Q) -∗ <pers> P -∗ Q := by
   iintro H HP
-  iapply H with HP
+  iapply H $$ HP
 
 theorem later_affine [BI PROP] [BIAffine PROP] (P Q : PROP) : ⊢ (▷ P → Q) -∗ P -∗ Q := by
   iintro H HP
-  iapply H with HP
+  iapply H $$ HP
 
 theorem exact_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
   iapply H
@@ -263,23 +263,23 @@ theorem apply_lean [BI PROP] (P Q : PROP) (H : P ⊢ Q) (HP : ⊢ P) : ⊢ Q := 
   iapply HP
 
 theorem apply_lean' [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) (HP : ⊢ P) : ⊢ Q := by
-  iapply H with []
+  iapply H $$ []
   iapply HP
 
 theorem apply_lean'' [BI PROP] (P Q : PROP) (H1 : P ⊢ Q) (H2 : Q ⊢ R) : P ⊢ R := by
   iintro HP
   iapply (wand_intro (emp_sep.mp.trans H2))
   . ipure_intro; trivial
-  iapply H1 with HP
+  iapply H1 $$ HP
 
 theorem multiple_lean [BI PROP] (P Q R : PROP) (H : P ⊢ Q -∗ R) (HP : ⊢ P) : ⊢ Q -∗ R := by
   iintro HQ
-  iapply H with [], HQ
+  iapply H $$ [], HQ
   iapply HP
 
 theorem multiple_lean' [BI PROP] (P Q R : PROP) (H : P ∗ Q ⊢ R) (HP : ⊢ P) : ⊢ Q -∗ R := by
   iintro HQ
-  iapply (wand_intro H) with [], HQ
+  iapply (wand_intro H) $$ [], HQ
   iapply HP
 
 theorem exact_forall [BI PROP] (P : α → PROP) (a : α) (H : ⊢ ∀ x, P x) : ⊢ P a := by
@@ -291,25 +291,30 @@ theorem exact_forall' [BI PROP] (P : α → PROP) (a : α) (H : ∀ x, ⊢ P x) 
 
 theorem apply_forall [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
   iintro HP
-  iapply H $! a, b with HP
+  iapply H $$ %a, %b, HP
 
 theorem apply_forall' [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  iapply H $! a, b with HP
+  iapply H $$ %a, %b, HP
 
-/-- error: ispecialize: iprop(P a -∗ Q b) is not a forall -/
+theorem apply_forall'' [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
+  iintro H HP
+  iapply H $$ %by exact a, %b, [HP]
+  iapply HP
+
+/-- error: ispecialize: iprop(P a -∗ Q b) is not a lean premise -/
 #guard_msgs in
 theorem apply_forall_too_many [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  iapply H $! a, b, _ with HP
+  iapply H $$ %a, %b, %_, HP
 
 theorem apply_forall2 [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  iapply H with HP
+  iapply H $$ HP
 
 theorem apply_forall3 [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  iapply H $! ?_, ?_ with HP
+  iapply H $$ %?_, %?_, HP
 
 theorem apply_forall4 [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
@@ -318,11 +323,11 @@ theorem apply_forall4 [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, 
 
 theorem apply_forall_intuitionistic [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
   iintro HP
-  iapply H $! a with HP
+  iapply H $$ %a, HP
 
 theorem apply_forall_intuitionistic' [BI PROP] (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  iapply H $! a, b with HP
+  iapply H $$ %a, %b, HP
 
 theorem apply_two_wands [BI PROP] (P Q : Nat → PROP) :
   (P 1 -∗ P 2 -∗ Q 1) ⊢ □ P 1 -∗ P 2 -∗ Q 1 := by
@@ -403,22 +408,22 @@ theorem apply_lean [BI PROP] (P Q : PROP) (H : P ⊢ Q) : ⊢ P -∗ Q := by
 
 theorem apply_forall [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
   iintro HP
-  ihave H' := H $! a, b
-  iapply H' with HP
+  ihave H' := H $$ %a, %b
+  iapply H' $$ HP
 
 theorem apply_forall_spatial [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  ihave H' := H $! a, b with HP
+  ihave H' := H $$ %a, %b, HP
   iexact H'
 
 theorem apply_forall_intuitionistic [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
   iintro HP
-  ihave H' := H $! a, b
-  iapply H' with HP
+  ihave H' := H $$ %a, %b
+  iapply H' $$ HP
 
 theorem apply_forall_intuitionistic_iris [BI PROP] (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  ihave H' := H $! a, b with [HP]
+  ihave H' := H $$ %a, %b, [HP]
   . iexact HP
   iexact H'
 
@@ -553,60 +558,60 @@ namespace specialize
 
 theorem wand_spatial [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
   iintro HP HPQ
-  ispecialize HPQ with HP
+  ispecialize HPQ $$ HP
   iexact HPQ
 
 theorem wand_spatial_subgoal [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
   iintro HP HPQ
-  ispecialize HPQ with [HP]
+  ispecialize HPQ $$ [HP]
   . iexact HP
   iexact HPQ
 
 theorem wand_spatial_subgoal_named [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
   iintro HP HPQ
-  ispecialize HPQ with [HP] as G
+  ispecialize HPQ $$ [HP] as G
   case G => iexact HP
   iexact HPQ
 
 theorem wand_intuitionistic [BI PROP] (Q : PROP) : □ P ⊢ □ (P -∗ Q) -∗ □ Q := by
   iintro □HP □HPQ
-  ispecialize HPQ with HP
+  ispecialize HPQ $$ HP
   iexact HPQ
 
 theorem wand_intuitionistic_subgoal [BI PROP] (Q : PROP) : □ P ⊢ □ (P -∗ Q) -∗ Q := by
   iintro □HP □HPQ
-  ispecialize HPQ with []
+  ispecialize HPQ $$ []
   . iexact HP
   iexact HPQ
 
 theorem wand_intuitionistic_required [BI PROP] (Q : PROP) : □ P ⊢ □ (□ P -∗ Q) -∗ □ Q := by
   iintro □HP □HPQ
-  ispecialize HPQ with HP
+  ispecialize HPQ $$ HP
   iexact HPQ
 
 theorem wand_intuitionistic_spatial [BI PROP] (Q : PROP) : □ P ⊢ (P -∗ Q) -∗ Q := by
   iintro □HP HPQ
-  ispecialize HPQ with HP
+  ispecialize HPQ $$ HP
   iexact HPQ
 
 theorem wand_intuitionistic_required_spatial [BI PROP] (Q : PROP) : □ P ⊢ (□ P -∗ Q) -∗ Q := by
   iintro □HP HPQ
-  ispecialize HPQ with HP
+  ispecialize HPQ $$ HP
   iexact HPQ
 
 theorem wand_spatial_intuitionistic [BI PROP] (Q : PROP) : P ⊢ □ (P -∗ Q) -∗ Q := by
   iintro HP □HPQ
-  ispecialize HPQ with HP
+  ispecialize HPQ $$ HP
   iexact HPQ
 
 theorem wand_spatial_multiple [BI PROP] (Q : PROP) : ⊢ P1 -∗ P2 -∗ (P1 -∗ P2 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HPQ
-  ispecialize HPQ with HP1, HP2
+  ispecialize HPQ $$ HP1, HP2
   iexact HPQ
 
 theorem wand_spatial_multiple_subgoal [BI PROP] (Q : PROP) : ⊢ P1 -∗ P2 -∗ (P1 -∗ P2 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HPQ
-  ispecialize HPQ with [HP1], [HP2]
+  ispecialize HPQ $$ [HP1], [HP2]
   . iexact HP1
   . iexact HP2
   iexact HPQ
@@ -614,53 +619,78 @@ theorem wand_spatial_multiple_subgoal [BI PROP] (Q : PROP) : ⊢ P1 -∗ P2 -∗
 theorem wand_intuitionistic_multiple [BI PROP] (Q : PROP) :
     ⊢ □ P1 -∗ □ P2 -∗ □ (P1 -∗ □ P2 -∗ Q) -∗ □ Q := by
   iintro □HP1 □HP2 □HPQ
-  ispecialize HPQ with HP1, HP2
+  ispecialize HPQ $$ HP1, HP2
   iexact HPQ
 
 theorem wand_multiple [BI PROP] (Q : PROP) :
     ⊢ P1 -∗ □ P2 -∗ P3 -∗ □ (P1 -∗ P2 -∗ P3 -∗ Q) -∗ Q := by
   iintro HP1 □HP2 HP3 HPQ
-  ispecialize HPQ with HP1, HP2, HP3
+  ispecialize HPQ $$ HP1, HP2, HP3
   iexact HPQ
 
 theorem forall_spatial [BI PROP] (Q : Nat → PROP) : ⊢ (∀ x, Q x) -∗ Q (y + 1) := by
   iintro HQ
-  ispecialize HQ $! (y + 1)
+  ispecialize HQ $$ %(y + 1)
   iexact HQ
 
 theorem forall_intuitionistic [BI PROP] (Q : Nat → PROP) : ⊢ □ (∀ x, Q x) -∗ □ Q y := by
   iintro □HQ
-  ispecialize HQ $! y
+  ispecialize HQ $$ %y
   iexact HQ
 
 theorem forall_spatial_intuitionistic [BI PROP] (Q : Nat → PROP) : ⊢ (∀ x, □ Q x) -∗ □ Q y := by
   iintro HQ
-  ispecialize HQ $! y
+  ispecialize HQ $$ %y
   iexact HQ
 
 theorem forall_spatial_multiple [BI PROP] (Q : Nat → Nat → PROP) :
     ⊢ (∀ x, ∀ y, Q x y) -∗ Q x y := by
   iintro HQ
-  ispecialize HQ $! x, y
+  ispecialize HQ $$ %x, %y
   iexact HQ
 
 theorem forall_intuitionistic_multiple [BI PROP] (Q : Nat → Nat → PROP) :
     ⊢ □ (∀ x, ∀ y, Q x y) -∗ □ Q x y := by
   iintro □HQ
-  ispecialize HQ $! x, y
+  ispecialize HQ $$ %x, %y
   iexact HQ
 
 theorem forall_multiple [BI PROP] (Q : Nat → Nat → PROP) : ⊢ (∀ x, □ (∀ y, Q x y)) -∗ □ Q x y := by
   iintro HQ
-  ispecialize HQ $! x, y
+  ispecialize HQ $$ %x, %y
   iexact HQ
 
 theorem multiple [BI PROP] (Q : Nat → PROP) :
     ⊢ □ P1 -∗ P2 -∗ (□ P1 -∗ (∀ x, P2 -∗ Q x)) -∗ Q y := by
   iintro □HP1 HP2 HPQ
-  ispecialize HPQ with HP1
-  ispecialize HPQ $! y with HP2
+  ispecialize HPQ $$ HP1
+  ispecialize HPQ $$ %y, HP2
   iexact HPQ
+
+theorem pure [BI PROP] (P : PROP) :
+    ⊢ (True -∗ P) -∗ P := by
+  iintro H
+  ispecialize H $$ %.intro
+  iexact H
+
+theorem pure_tactic [BI PROP] (P : PROP) :
+    ⊢ (True -∗ P) -∗ P := by
+  iintro H
+  ispecialize H $$ %(by grind)
+  iexact H
+
+theorem pure_alternation [BI PROP] (P Q : PROP) :
+    ⊢ (∀ x, P -∗ ⌜x = 1⌝ -∗ Q) -∗ P -∗ Q := by
+  iintro H HP
+  ispecialize H $$ %_, HP, %rfl
+  iexact H
+
+theorem pure_alternation2 [BI PROP] (P Q : PROP) :
+    ⊢ (∀ x, P -∗ ⌜x = 1⌝ -∗ Q) -∗ P -∗ Q := by
+  iintro H HP
+  ispecialize H $$ %_, HP, %_
+  · rfl
+  iexact H
 
 end specialize
 
