@@ -220,17 +220,17 @@ theorem indepMul_assoc (x y z : PSp Ω) :
     -- Case split to handle the do-notation
     rcases h12 : P₁.indepProduct P₂ with _|P12
     · -- P₁.indepProduct P₂ = none
-      simp [h12] at assoc ⊢
+      simp only [h12, Option.bind_eq_bind, Option.bind_none] at assoc ⊢
       rcases h23 : P₂.indepProduct P₃ with _|P23
       · rfl
-      · simp [h23] at assoc ⊢
+      · simp only [h23, Option.bind_some] at assoc ⊢
         rw [← assoc]
     · -- P₁.indepProduct P₂ = some P12
-      simp [h12] at assoc ⊢
+      simp only [h12, Option.bind_eq_bind, Option.bind_some] at assoc ⊢
       rcases h23 : P₂.indepProduct P₃ with _|P23
-      · simp [h23] at assoc ⊢
+      · simp only [h23, Option.bind_none] at assoc ⊢
         rw [assoc]
-      · simp [h23] at assoc ⊢
+      · simp only [h23, Option.bind_some] at assoc ⊢
         rw [assoc]
 
 /-- Left unit (API): `1` acts as a left identity for `PSp.indepMul`. -/
