@@ -213,9 +213,25 @@ theorem indepMul_comm (x y : PSp Ω) : indepMul x y = indepMul y x := by
 theorem indepMul_assoc (x y z : PSp Ω) :
     indepMul (indepMul x y) z = indepMul x (indepMul y z) := by
   -- Delegates to `ProbabilitySpace.indepProduct_assoc` case-wise.
-  -- Proof deferred.
   cases x <;> cases y <;> cases z <;> simp [indepMul]
-  · sorry
+  · rename_i P₁ P₂ P₃
+    -- Use indepProduct_assoc directly
+    have assoc := ProbabilityTheory.ProbabilitySpace.indepProduct_assoc P₁ P₂ P₃
+    -- Case split to handle the do-notation
+    rcases h12 : P₁.indepProduct P₂ with _|P12
+    · -- P₁.indepProduct P₂ = none
+      simp [h12] at assoc ⊢
+      rcases h23 : P₂.indepProduct P₃ with _|P23
+      · rfl
+      · simp [h23] at assoc ⊢
+        rw [← assoc]
+    · -- P₁.indepProduct P₂ = some P12
+      simp [h12] at assoc ⊢
+      rcases h23 : P₂.indepProduct P₃ with _|P23
+      · simp [h23] at assoc ⊢
+        rw [assoc]
+      · simp [h23] at assoc ⊢
+        rw [assoc]
 
 /-- Left unit (API): `1` acts as a left identity for `PSp.indepMul`. -/
 @[simp]
