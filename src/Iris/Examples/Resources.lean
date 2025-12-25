@@ -3,7 +3,6 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
-import Iris.BI
 import Iris.ProofMode
 import Iris.Algebra.IProp
 import Iris.Instances.UPred.Instance
@@ -49,7 +48,7 @@ theorem MyR_always_invalid (S₁ S₂ : String) (Hne : S₁ ≠ S₂) (n : Nat) 
   exists γ, ⟨0⟩
   rw [← HγE ⟨Nat.zero, Nat.le.refl⟩]
   simp [instIsGFunctorsFF1, CMRA.ValidN, CMRA.op, Agree.op, Agree.validN,
-        instCOFELeibnizO, COFE.ofDiscrete, OFE.ofDiscrete, optionOp, optionValidN]
+        instCOFELeibnizO, COFE.ofDiscrete, OFE.ofDiscrete]
   exact fun a => id (Ne.symm Hne)
 
 def AgreeString (S : String) : IProp FF1 := UPred.ownM (MyR S)

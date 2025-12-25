@@ -27,6 +27,10 @@ class Fraction (α : Type _) extends Add α where
   add_ne : ∀ {a b : α}, a ≠ b + a
   proper_add_mono_left : ∀ {a b : α}, Proper (a + b) → Proper a
 
+class IsSplitFraction (α : Type _) [Fraction α] where
+  split : α → α × α
+  split_add {a : α} : (split a).1 + (split a).2 = a
+
 namespace Fraction
 
 /-- A fraction does not represent the entire resource.

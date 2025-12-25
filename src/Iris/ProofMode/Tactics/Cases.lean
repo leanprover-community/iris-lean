@@ -207,6 +207,7 @@ partial def iCasesCore
     (pat : iCasesPat) (k : ∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q)) : MetaM (Q($P ∗ $A ⊢ $Q)) :=
   match pat with
   | .one name => do
+    -- TODO: use Hyps.addWithInfo here?
     let (name, ref) ← getFreshName name
     let uniq ← mkFreshId
     addHypInfo ref name uniq prop A' (isBinder := true)
@@ -278,19 +279,15 @@ elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
   -- parse syntax
   let pat ← liftMacroM <| iCasesPat.parse pat
 
-  let (mvar, { u, prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
+  let (mvar, { u, prop := _, bi, e := _, hyps, goal }) ← istart (← getMainGoal)
   mvar.withContext do
 
   let uniq ← hyps.findWithInfo hyp
   let ⟨_, hyps', A, A', b, h, pf⟩ := hyps.remove true uniq
 
   -- process pattern
-  let goals ← IO.mkRef #[]
-  let pf2 ← iCasesCore bi hyps' goal b A A' h pat fun hyps => do
-    let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-      IrisGoal.toExpr { u, prop, bi, hyps, goal, .. }
-    goals.modify (·.push m.mvarId!)
-    pure m
+  let gs ← Goals.new bi
+  let pf2 ← iCasesCore bi hyps' goal b A A' h pat (λ hyps => gs.addGoal hyps goal)
 
   mvar.assign q(($pf).1.trans $pf2)
-  replaceMainGoal (← goals.get).toList
+  replaceMainGoal (← gs.getGoals)

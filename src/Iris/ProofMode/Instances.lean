@@ -26,6 +26,16 @@ instance asEmpValid1_equiv [BI PROP] (P Q : PROP) : AsEmpValid1 (P ⊣⊢ Q) ipr
 instance asEmpValid2_equiv [BI PROP] (P Q : PROP) : AsEmpValid2 (P ⊣⊢ Q) iprop(P ∗-∗ Q) :=
   AsEmpValid1.to2
 
+-- IntoEmpValid
+instance intoEmpValid_emp_entails [BI PROP] (P : PROP) : IntoEmpValid (⊢ P) iprop(P) where
+  into_emp_valid := id
+
+instance intoEmpValid_entails [BI PROP] (P Q : PROP) : IntoEmpValid (P ⊢ Q) iprop(P -∗ Q) where
+  into_emp_valid := entails_wand
+
+instance intoEmpValid_equiv [BI PROP] (P Q : PROP) : IntoEmpValid (P ⊣⊢ Q) iprop(P ∗-∗ Q) where
+  into_emp_valid := equiv_wandIff
+
 -- FromImp
 instance fromImp_imp [BI PROP] (P1 P2 : PROP) : FromImp iprop(P1 → P2) P1 P2 := ⟨.rfl⟩
 -- FromWand
@@ -66,6 +76,10 @@ instance intoWand_affinely (p q : Bool) [BI  PROP] (R P Q : PROP) [h : IntoWand 
 instance intoWand_intuitionistically (p q : Bool) [BI PROP] (R P Q : PROP)
     [h : IntoWand true q R P Q] : IntoWand p q iprop(□ R) P Q where
   into_wand := (intuitionisticallyIf_mono h.1).trans intuitionisticallyIf_elim
+
+instance intoWand_intuitionistically_wand (p : Bool) [BI PROP] (P Q : PROP) :
+    IntoWand p true iprop(□ P -∗ Q) P Q where
+  into_wand := intuitionisticallyIf_elim
 
 instance intoWand_persistently_true (q : Bool) [BI PROP] (R P Q : PROP)
     [h : IntoWand true q R P Q] : IntoWand true q iprop(<pers> R) P Q where
@@ -428,6 +442,10 @@ set_option synthInstance.checkSynthOrder false in
 instance (priority := default + 10) fromAssumption_forall (p : Bool) [BI PROP] (Φ : α → PROP)
     (x : α) (Q : PROP) [h : FromAssumption p (Φ x) Q] : FromAssumption p iprop(∀ x, Φ x) Q where
   from_assumption := (intuitionisticallyIf_mono <| forall_elim x).trans h.1
+
+instance fromAssumption_later [BI PROP] (p : Bool) (P Q : PROP)
+    [h : FromAssumption p P Q] : FromAssumption p P iprop(▷ Q) where
+  from_assumption := h.1.trans later_intro
 
 -- IntoPure
 instance intoPure_pure (φ : Prop) [BI PROP] : IntoPure (PROP := PROP) iprop(⌜φ⌝) φ := ⟨.rfl⟩

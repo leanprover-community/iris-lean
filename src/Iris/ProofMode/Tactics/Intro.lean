@@ -102,16 +102,12 @@ elab "iintro" pats:(colGt icasesPat)* : tactic => do
   -- parse syntax
   let pats ← liftMacroM <| pats.mapM <| iCasesPat.parse
 
-  let (mvar, { prop, bi, hyps, goal, .. }) ← istart (← getMainGoal)
+  let (mvar, { bi, hyps, goal, .. }) ← istart (← getMainGoal)
   mvar.withContext do
 
   -- process patterns
-  let goals ← IO.mkRef #[]
-  let pf ← iIntroCore bi hyps goal pats.toList fun {P} hyps goal => do
-    let m : Q($P ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-      IrisGoal.toExpr { prop, bi, hyps, goal, .. }
-    goals.modify (·.push m.mvarId!)
-    pure m
+  let gs ← Goals.new bi
+  let pf ← iIntroCore bi hyps goal pats.toList <| gs.addGoal
 
   mvar.assign pf
-  replaceMainGoal (← goals.get).toList
+  replaceMainGoal (← gs.getGoals)

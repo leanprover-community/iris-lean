@@ -49,9 +49,10 @@ theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption
   [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q :=
   h.1.trans <| (sep_mono_r inst.1).trans sep_elim_r
 
-def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
-  | `(binderIdent| $name:ident) => pure (name.getId, name)
-  | stx => return (← mkFreshUserName `x, stx)
+def binderIdentHasName (name : Name) (id : TSyntax ``binderIdent) : Bool :=
+  match id with
+  | `(binderIdent| $name':ident) => name'.getId == name
+  | _ => false
 
 def selectHyp (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (Name × Q(Bool) × Q($prop))
   | _, .emp _ => failure
@@ -59,3 +60,32 @@ def selectHyp (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (Name × Q(Bool
     let .true ← isDefEq ty ty' | failure
     pure (uniq, p, ty')
   | _, .sep _ _ _ _ lhs rhs => try selectHyp ty rhs catch _ => selectHyp ty lhs
+
+structure Goals {prop : Q(Type u)} (bi : Q(BI $prop)) where
+  goals : IO.Ref (Array MVarId)
+
+def Goals.new {prop : Q(Type u)} (bi : Q(BI $prop)) : BaseIO (Goals bi) :=
+  do return {goals := ← IO.mkRef #[]}
+
+def Goals.addGoal {prop : Q(Type u)} {bi : Q(BI $prop)} (g : Goals bi)
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) : MetaM Q($e ⊢ $goal) := do
+  let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
+    IrisGoal.toExpr { prop, bi, hyps, goal, .. }
+  m.mvarId!.setUserName name
+  g.goals.modify (·.push m.mvarId!)
+  pure m
+
+def Goals.addPureGoal {prop : Q(Type u)} {bi : Q(BI $prop)} (g : Goals bi)
+    (m : MVarId) (name : Name := .anonymous) : MetaM Unit := do
+  -- don't override an existing name, e.g. for ?_
+  if !name.isAnonymous then
+    m.setUserName name
+  g.goals.modify (·.push m)
+
+def Goals.getGoals {prop : Q(Type u)} {bi : Q(BI $prop)} (g : Goals bi) : MetaM (List MVarId) := do
+  let goals ← g.goals.get
+  -- put the goals that depend on other goals last
+  let mvars ← goals.foldlM (λ m g => do
+    return m ∪ (← g.getMVarDependencies)) ∅
+  let (dep, nonDep) := goals.partition (λ x => mvars.contains x)
+  return (nonDep ++ dep).toList
