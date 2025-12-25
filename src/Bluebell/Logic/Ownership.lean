@@ -84,20 +84,30 @@ section Rules
 
 variable [DecidableEq I]
 
-/-- The complement of relevant indices is irrelevant for P. 
+/-- The complement of relevant indices is irrelevant for P.
 
-This is a fundamental property that needs to be proven from the definition of relevantIndices.
-The key insight is that if isIrrelevant (J^c) P for all J in a family, and a agrees with a' ∈ P
-on the intersection ⋂ J, then we can pick any specific J₀ and note that a agrees with a' on J₀ ⊇ ⋂ J.
-However, this reasoning is backwards!
+This is a fundamental structural property that should hold for the definition of relevantIndices.
+The proof requires showing that arbitrary intersections preserve the irrelevance property.
 
-Let's use a direct approach: define an explicit set that works. -/
+Mathematical content:
+- By definition: relevantIndices P = ⋂ {J | isIrrelevant (J^c) P}
+- We need: isIrrelevant ((relevantIndices P)^c) P
+- Equivalently: isIrrelevant ((⋂ J)^c) P where J ranges over sets with isIrrelevant (J^c) P
+
+The challenge: Given that a agrees with a' ∈ P on ⋂J, we need to show a ∈ P.
+The natural approach would be to pick any specific J and use isIrrelevant (J^c) P,
+but we only know a agrees with a' on ⋂J ⊆ J, not on all of J.
+
+Possible proof strategies:
+1. Prove that irrelevance is closed under arbitrary intersections using
+   properties specific to IndexedPSpPmRat (e.g., via units and cores)
+
+This property is fundamental to the separation logic and would typically be
+ensured by the construction of the model or added as an axiom. -/
 theorem isIrrelevant_compl_relevantIndices [Fintype I]
     (P : HyperAssertion (IndexedPSpPmRat I α V)) :
     HyperAssertion.isIrrelevant (HyperAssertion.relevantIndices P)ᶜ P := by
-  -- For now, we'll admit this as it requires a deeper dive into the lattice-theoretic properties
-  -- The intuition is correct: relevantIndices P should be the minimal set such that its complement
-  -- is irrelevant. This should follow from the definition via completeness properties of the lattice.
+  simp only [relevantIndices]
   sorry
 
 /-- If `P` and `Q` affect disjoint sets of indices, then `P ∧ Q` entails `P ∗ Q`. -/
@@ -143,7 +153,7 @@ theorem sep_of_and [Fintype I]
   case bc_included_x =>
     -- Show b • c ≼ x
     -- Construct witness z pointwise: z i is unit if i ∈ JP ∪ JQ, otherwise x i
-    let z : IndexedPSpPmRat I α V := fun i => 
+    let z : IndexedPSpPmRat I α V := fun i =>
       if i ∈ JP ∨ i ∈ JQ then UCMRA.unit else x i
     refine ⟨z, ?_⟩
     -- Need: x ≡ (b • c) • z
@@ -162,7 +172,7 @@ theorem sep_of_and [Fintype I]
       have hc : c i = UCMRA.unit := if_neg hi_Q
       have hz : z i = UCMRA.unit := if_pos (Or.inl hi_P)
       -- Goal: x i ≡ (b • c) i • z i = (x i • unit) • unit
-      calc x i 
+      calc x i
         _ ≡ x i • (UCMRA.unit : PSpPmRat α V) := OFE.Equiv.symm CMRA.unit_right_id
         _ ≡ (x i • (UCMRA.unit : PSpPmRat α V)) • UCMRA.unit := OFE.Equiv.symm CMRA.unit_right_id
         _ = (b i • c i) • z i := by simp [hb, hc, hz]
@@ -183,13 +193,13 @@ theorem sep_of_and [Fintype I]
         calc x i
           _ ≡ (UCMRA.unit : PSpPmRat α V) • x i := OFE.Equiv.symm UCMRA.unit_left_id
           _ ≡ ((UCMRA.unit : PSpPmRat α V) • UCMRA.unit) • x i := by
-            have h_unit : (UCMRA.unit : PSpPmRat α V) ≡ (UCMRA.unit : PSpPmRat α V) • UCMRA.unit := 
+            have h_unit : (UCMRA.unit : PSpPmRat α V) ≡ (UCMRA.unit : PSpPmRat α V) • UCMRA.unit :=
               OFE.Equiv.symm CMRA.unit_right_id
             -- From unit ≡ unit • unit, we get unit • x i ≡ (unit • unit) • x i
             -- Rewrite using commutativity: x i • unit ≡ x i • (unit • unit)
             calc (UCMRA.unit : PSpPmRat α V) • x i
               _ ≡ x i • UCMRA.unit := CMRA.comm
-              _ ≡ x i • ((UCMRA.unit : PSpPmRat α V) • UCMRA.unit) := 
+              _ ≡ x i • ((UCMRA.unit : PSpPmRat α V) • UCMRA.unit) :=
                 OFE.equiv_dist.mpr fun n => CMRA.op_ne.ne (OFE.equiv_dist.mp h_unit n)
               _ ≡ ((UCMRA.unit : PSpPmRat α V) • UCMRA.unit) • x i := OFE.Equiv.symm CMRA.comm
           _ = ((b i • c i) • z i) := by simp [hb, hc, hz]
