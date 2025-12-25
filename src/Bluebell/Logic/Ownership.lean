@@ -84,31 +84,157 @@ section Rules
 
 variable [DecidableEq I]
 
+/-- Union closure for isIrrelevant: if K₁ and K₂ are both irrelevant, so is K₁ ∪ K₂. -/
+lemma isIrrelevant_union [Fintype I] (P : HyperAssertion (IndexedPSpPmRat I α V))
+    {K₁ K₂ : Set I} (h₁ : isIrrelevant K₁ P) (h₂ : isIrrelevant K₂ P) :
+    isIrrelevant (K₁ ∪ K₂) P := by
+  classical
+  intro a ⟨a', hagree, ha'P⟩
+  let a'' : I → PSpPmRat α V := fun i => if i ∈ K₁ then a' i else a i
+  have hagree'' : ∀ i, i ∉ K₂ → a'' i = a' i := by
+    intro i hi₂
+    by_cases hi₁ : i ∈ K₁
+    · simp only [a'', if_pos hi₁]
+    · simp only [a'', if_neg hi₁]
+      apply hagree
+      simp only [Set.mem_union, not_or]
+      exact ⟨hi₁, hi₂⟩
+  have ha''P : a'' ∈ P := h₂ a'' ⟨a', hagree'', ha'P⟩
+  have hagree_a_a'' : ∀ i, i ∉ K₁ → a i = a'' i := by
+    intro i hi₁
+    simp only [a'', if_neg hi₁]
+  exact h₁ a ⟨a'', hagree_a_a'', ha''P⟩
+
+/-- Empty set is trivially irrelevant. -/
+lemma isIrrelevant_empty [Fintype I] (P : HyperAssertion (IndexedPSpPmRat I α V)) :
+    isIrrelevant ∅ P := by
+  intro a ⟨a', hagree, ha'P⟩
+  have : a = a' := funext fun i => hagree i (Set.notMem_empty i)
+  rw [this]
+  exact ha'P
+
+/-- Main lemma: if each differing coordinate can be covered by an irrelevant set, then a ∈ P.
+This is proved by strong induction on the number of differing coordinates. -/
+lemma mem_of_agree_outside_covered [Fintype I] (P : HyperAssertion (IndexedPSpPmRat I α V))
+    (a' : I → PSpPmRat α V) (ha'P : a' ∈ P)
+    (S : Set (Set I)) (hS : ∀ K ∈ S, isIrrelevant K P)
+    (a : I → PSpPmRat α V)
+    (h_cover : ∀ i, a i ≠ a' i → ∃ K ∈ S, i ∈ K) : a ∈ P := by
+  classical
+  -- Count differing coordinates
+  let diffSet := fun (b : I → PSpPmRat α V) => Finset.univ.filter fun i => b i ≠ a' i
+
+  -- Strong induction on the cardinality of differing set
+  have key : ∀ (n : ℕ) (b : I → PSpPmRat α V),
+    (∀ i, b i ≠ a' i → ∃ K ∈ S, i ∈ K) →
+    (diffSet b).card = n → b ∈ P := by
+    intro n
+    induction n using Nat.strong_induction_on with
+    | _ n ih =>
+      intro b h_b_cover hcard
+      -- Case: no differing coordinates
+      by_cases h_empty : (diffSet b) = ∅
+      · have hb_eq : b = a' := funext fun i => by
+          by_contra h
+          have hi : i ∈ diffSet b := Finset.mem_filter.mpr ⟨Finset.mem_univ i, h⟩
+          rw [h_empty] at hi
+          exact Finset.notMem_empty i hi
+        rw [hb_eq]
+        exact ha'P
+      · -- There's at least one differing coordinate
+        have hD_nonempty : (diffSet b).Nonempty := Finset.nonempty_iff_ne_empty.mpr h_empty
+        obtain ⟨x, hx⟩ := hD_nonempty
+        have hx_diff : b x ≠ a' x := (Finset.mem_filter.mp hx).2
+
+        -- Get covering set for x
+        obtain ⟨K, hKS, hxK⟩ := h_b_cover x hx_diff
+        have hK_irr : isIrrelevant K P := hS K hKS
+
+        -- Define b_mid: replace b on K with a'
+        let b_mid : I → PSpPmRat α V := fun i => if i ∈ K then a' i else b i
+
+        -- b agrees with b_mid outside K
+        have h_agree_b_bmid : ∀ i, i ∉ K → b i = b_mid i := by
+          intro i hi
+          simp only [b_mid, if_neg hi]
+
+        -- b_mid has strictly fewer differing coordinates
+        have h_bmid_fewer : (diffSet b_mid).card < (diffSet b).card := by
+          apply Finset.card_lt_card
+          constructor
+          · -- diffSet b_mid ⊆ diffSet b
+            intro i hi
+            simp only [Finset.mem_filter, Finset.mem_univ, true_and, diffSet, b_mid] at hi ⊢
+            by_cases hiK : i ∈ K
+            · simp only [if_pos hiK] at hi; exact absurd rfl hi
+            · simp only [if_neg hiK] at hi; exact hi
+          · -- diffSet b_mid ≠ diffSet b (x is in diffSet b but not in diffSet b_mid)
+            intro h_subs
+            have hx_in_db : x ∈ diffSet b := Finset.mem_filter.mpr ⟨Finset.mem_univ x, hx_diff⟩
+            have hx_in_db_mid : x ∈ diffSet b_mid := h_subs hx_in_db
+            simp only [Finset.mem_filter, Finset.mem_univ, true_and, diffSet, b_mid] at hx_in_db_mid
+            simp only [if_pos hxK] at hx_in_db_mid
+            exact hx_in_db_mid rfl
+
+        -- b_mid satisfies the covering property
+        have h_bmid_cover : ∀ i, b_mid i ≠ a' i → ∃ K ∈ S, i ∈ K := by
+          intro i hi
+          simp only [b_mid] at hi
+          by_cases hiK : i ∈ K
+          · simp only [if_pos hiK] at hi; exact absurd rfl hi
+          · simp only [if_neg hiK] at hi; exact h_b_cover i hi
+
+        -- By IH, b_mid ∈ P
+        have h_bmid_P : b_mid ∈ P := by
+          apply ih (diffSet b_mid).card
+          · calc (diffSet b_mid).card
+                 _ < (diffSet b).card := h_bmid_fewer
+                 _ = n := hcard
+          · exact h_bmid_cover
+          · rfl
+
+        -- Apply irrelevance of K
+        exact hK_irr b ⟨b_mid, h_agree_b_bmid, h_bmid_P⟩
+
+  exact key (diffSet a).card a h_cover rfl
+
 /-- The complement of relevant indices is irrelevant for P.
 
 This is a fundamental structural property that should hold for the definition of relevantIndices.
-The proof requires showing that arbitrary intersections preserve the irrelevance property.
+The proof shows that irrelevance is closed under arbitrary unions (equivalently, intersections
+of the family of sets with irrelevant complements form an irrelevant complement).
 
-Mathematical content:
-- By definition: relevantIndices P = ⋂ {J | isIrrelevant (J^c) P}
-- We need: isIrrelevant ((relevantIndices P)^c) P
-- Equivalently: isIrrelevant ((⋂ J)^c) P where J ranges over sets with isIrrelevant (J^c) P
-
-The challenge: Given that a agrees with a' ∈ P on ⋂J, we need to show a ∈ P.
-The natural approach would be to pick any specific J and use isIrrelevant (J^c) P,
-but we only know a agrees with a' on ⋂J ⊆ J, not on all of J.
-
-Possible proof strategies:
-1. Prove that irrelevance is closed under arbitrary intersections using
-   properties specific to IndexedPSpPmRat (e.g., via units and cores)
-
-This property is fundamental to the separation logic and would typically be
-ensured by the construction of the model or added as an axiom. -/
+The strategy is:
+1. Show isIrrelevant is closed under binary unions (`isIrrelevant_union`)
+2. Use strong induction on the number of differing coordinates (`mem_of_agree_outside_covered`)
+3. For each differing coordinate, use its covering irrelevant set to "fix" it -/
 theorem isIrrelevant_compl_relevantIndices [Fintype I]
     (P : HyperAssertion (IndexedPSpPmRat I α V)) :
     HyperAssertion.isIrrelevant (HyperAssertion.relevantIndices P)ᶜ P := by
+  classical
   simp only [relevantIndices]
-  sorry
+  let S := {J : Set I | isIrrelevant Jᶜ P}
+
+  have h_eq : (sInf S : Set I)ᶜ = ⋃₀ (Set.compl '' S) := Set.compl_sInter S
+  rw [h_eq]
+
+  intro a ⟨a', hagree, ha'P⟩
+
+  let T := Set.compl '' S
+
+  have hT : ∀ K ∈ T, isIrrelevant K P := by
+    intro K hK
+    obtain ⟨J, hJS, rfl⟩ := hK
+    exact hJS
+
+  have h_cover : ∀ i, a i ≠ a' i → ∃ K ∈ T, i ∈ K := by
+    intro i hi
+    have h : i ∈ ⋃₀ T := by
+      by_contra h_not_in
+      exact hi (hagree i h_not_in)
+    exact Set.mem_sUnion.mp h
+
+  exact mem_of_agree_outside_covered P a' ha'P T hT a h_cover
 
 /-- If `P` and `Q` affect disjoint sets of indices, then `P ∧ Q` entails `P ∗ Q`. -/
 theorem sep_of_and [Fintype I]
