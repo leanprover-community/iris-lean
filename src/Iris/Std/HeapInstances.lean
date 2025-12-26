@@ -100,9 +100,6 @@ instance instStore [LawfulEqCmp cmp] : Store (TreeMap K V cmp) K (Option V) wher
 /-! ### Connection to List foldl -/
 
 open Std.DTreeMap.Internal in
-/-- Helper: get? of foldl with Impl.Const.alter! has the expected behavior.
-    This version works with dependent pairs from toListModel.
-    Uses `compare` from the ambient Ord instance. -/
 private theorem get?_foldl_alter_impl_sigma [inst : Ord K] [TransOrd K]
     {l : List ((a : K) × (fun _ => V) a)}
     {init : Impl K (fun _ => V)} {f : K → V → V → V} {k : K}
@@ -259,14 +256,10 @@ theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V c
 
   cases hres : t₂.inner.inner.toListModel.find? (fun kv => cmp kv.1 k == .eq) with
   | none =>
-    have hfind_none : t₂.toList.find? (fun kv => cmp kv.1 k == .eq) = none := by
-      rw [hfind_eq, hres]; rfl
-    simp only [hfind_none]
+    simp only [hfind_eq, hres, Option.map_none]
     cases Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k <;> rfl
   | some kv =>
-    have hfind_some : t₂.toList.find? (fun kv => cmp kv.1 k == .eq) = some (kv.1, kv.2) := by
-      rw [hfind_eq, hres]; rfl
-    simp only [hfind_some]
+    simp only [hfind_eq, hres, Option.map_some]
     cases Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k <;> rfl
 
 /-- getElem? of mergeWith has the expected semantics.
@@ -407,11 +400,8 @@ then reuses the TreeMap proof since both share the same internal implementation.
   obtain ⟨q₁⟩ := t₁.inner
   obtain ⟨q₂⟩ := t₂.inner
   induction q₁ using Quotient.ind with
-  | _ m₁ =>
-    induction q₂ using Quotient.ind with
-    | _ m₂ =>
-      -- Reduce to TreeMap proof via DTreeMap representatives
-      exact Std.TreeMap.getElem?_mergeWith' (t₁ := ⟨m₁⟩) (t₂ := ⟨m₂⟩) (f := f) (k := k)
+  | _ m₁ => induction q₂ using Quotient.ind with
+    | _ m₂ => exact Std.TreeMap.getElem?_mergeWith' (t₁ := ⟨m₁⟩) (t₂ := ⟨m₂⟩) (f := f) (k := k)
 
 /-- ExtTreeMap forms a Heap. -/
 instance instHeap [LawfulEqCmp cmp] : Heap (ExtTreeMap K V cmp) K V where
