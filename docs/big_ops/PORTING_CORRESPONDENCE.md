@@ -394,8 +394,8 @@ Additional theorems provided:
 | `big_sepM_insert_acc` | `BigSepM.insert_acc` | ✅ Ported | Uses delete + forall wand |
 | `big_sepM_fn_insert` | - | Not ported | Low priority |
 | `big_sepM_fn_insert'` | - | Not ported | Low priority |
-| `big_sepM_filter'` | `BigSepM.filter'` | ✅ Ported | Needs FiniteMapLawsSelf |
-| `big_sepM_filter` | `BigSepM.filter''` | ✅ Ported | BiAffine, needs FiniteMapLawsSelf |
+| `big_sepM_filter'` | `BigSepM.filter'` | ✅ Ported | φ : K × V → Prop with Decidable, needs FiniteMapLawsSelf |
+| `big_sepM_filter` | `BigSepM.filter` | ✅ Ported | BiAffine, φ : K × V → Prop with Decidable, needs FiniteMapLawsSelf |
 | `big_sepM_union` | `BigSepM.union` | ✅ Ported | Requires permutation proof |
 | `big_sepM_sep` | `BigSepM.sep'` | ✅ Ported | Via BigOpL.op_distr |
 | `big_sepM_sep_2` | `BigSepM.sep_2` | ✅ Ported | Symmetric of sep' |

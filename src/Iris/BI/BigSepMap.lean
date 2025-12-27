@@ -914,14 +914,15 @@ variable [FiniteMapLawsSelf M K V]
 
 omit [DecidableEq K] in
 /-- Helper: bigOpL over filtered list. -/
-private theorem filter_list_aux {Φ : K × V → PROP} (p : K × V → Bool) (l : List (K × V)) :
-    bigOpL sep emp (fun _ kv => Φ kv) (l.filter p) ⊣⊢
-    bigOpL sep emp (fun _ kv => if p kv then Φ kv else emp) l := by
+private theorem filter_list_aux (Φ : K × V → PROP) (φ : K × V → Prop) [∀ kv, Decidable (φ kv)]
+    (l : List (K × V)) :
+    bigOpL sep emp (fun _ kv => Φ kv) (l.filter (fun kv => decide (φ kv))) ⊣⊢
+    bigOpL sep emp (fun _ kv => if decide (φ kv) then Φ kv else emp) l := by
   induction l with
   | nil => simp only [List.filter, bigOpL]; exact .rfl
   | cons kv kvs ih =>
     simp only [List.filter]
-    cases hp : p kv with
+    cases hp : decide (φ kv) with
     | false =>
       simp only [bigOpL, hp]
       exact ih.trans emp_sep.symm
@@ -930,46 +931,60 @@ private theorem filter_list_aux {Φ : K × V → PROP} (p : K × V → Bool) (l 
       exact ⟨sep_mono_r ih.1, sep_mono_r ih.2⟩
 
 /-- Corresponds to `big_sepM_filter'` in Rocq Iris.
-    Big sep over a filtered map is equivalent to big sep with conditional predicate. -/
-theorem filter' {Φ : K → V → PROP} {m : M} (p : K → V → Bool) :
-    ([∗ map] k ↦ x ∈ FiniteMap.filter p m, Φ k x) ⊣⊢
-      [∗ map] k ↦ x ∈ m, if p k x then Φ k x else emp := by
+    Big sep over a filtered map is equivalent to big sep with conditional predicate.
+
+    Rocq: `Lemma big_sepM_filter' (φ : K * A → Prop) `{∀ kx, Decision (φ kx)} Φ m :
+            ([∗ map] k ↦ x ∈ filter φ m, Φ k x) ⊣⊢
+            ([∗ map] k ↦ x ∈ m, if decide (φ (k, x)) then Φ k x else emp).` -/
+theorem filter' {Φ : K → V → PROP} {m : M}
+    (φ : K × V → Prop) [∀ kv, Decidable (φ kv)] :
+    ([∗ map] k ↦ x ∈ FiniteMap.filter (fun k v => decide (φ (k, v))) m, Φ k x) ⊣⊢
+      [∗ map] k ↦ x ∈ m, if decide (φ (k, x)) then Φ k x else emp := by
   simp only [bigSepM]
-  have hperm := toList_filter m p
-  have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.filter p m)) ≡
-             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) ((toList m).filter (fun kv => p kv.1 kv.2)) :=
+  have hperm := toList_filter m (fun k v => decide (φ (k, v)))
+  have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2)
+               (toList (FiniteMap.filter (fun k v => decide (φ (k, v))) m)) ≡
+             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2)
+               ((toList m).filter (fun kv => decide (φ kv))) :=
     BigOpL.perm _ hperm
   refine equiv_iff.mp heq |>.trans ?_
-  exact filter_list_aux (fun kv => p kv.1 kv.2) (toList m)
+  exact filter_list_aux (fun kv => Φ kv.1 kv.2) φ (toList m)
 
 /-- Corresponds to `big_sepM_filter` in Rocq Iris. Requires `BIAffine`.
-    Big sep over a filtered map is equivalent to big sep with implication guard. -/
-theorem filter'' [BIAffine PROP] {Φ : K → V → PROP} {m : M}
-    (φ : K → V → Prop) [∀ k v, Decidable (φ k v)] :
-    ([∗ map] k ↦ x ∈ FiniteMap.filter (fun k v => decide (φ k v)) m, Φ k x) ⊣⊢
-      [∗ map] k ↦ x ∈ m, iprop(⌜φ k x⌝ → Φ k x) := by
-  have heq : ([∗ map] k ↦ x ∈ m, if decide (φ k x) then Φ k x else emp) ⊣⊢
-      [∗ map] k ↦ x ∈ m, iprop(⌜φ k x⌝ → Φ k x) := by
+    Big sep over a filtered map is equivalent to big sep with implication guard.
+
+    Rocq: `Lemma big_sepM_filter `{!BiAffine PROP}
+            (φ : K * A → Prop) `{∀ kx, Decision (φ kx)} Φ m :
+            ([∗ map] k ↦ x ∈ filter φ m, Φ k x) ⊣⊢
+            ([∗ map] k ↦ x ∈ m, ⌜φ (k, x)⌝ → Φ k x).` -/
+theorem filter [BIAffine PROP] {Φ : K → V → PROP} {m : M}
+    (φ : K × V → Prop) [∀ kv, Decidable (φ kv)] :
+    ([∗ map] k ↦ x ∈ FiniteMap.filter (fun k v => decide (φ (k, v))) m, Φ k x) ⊣⊢
+      [∗ map] k ↦ x ∈ m, iprop(⌜φ (k, x)⌝ → Φ k x) := by
+  -- The proof follows Rocq: `setoid_rewrite <-decide_emp. apply big_sepM_filter'.`
+  -- We rewrite using the equivalence: (⌜φ kx⌝ → P) ⊣⊢ (if decide (φ kx) then P else emp)
+  have heq : ([∗ map] k ↦ x ∈ m, if decide (φ (k, x)) then Φ k x else emp) ⊣⊢
+      [∗ map] k ↦ x ∈ m, iprop(⌜φ (k, x)⌝ → Φ k x) := by
     apply equiv_iff.mp
     apply proper
     intro k v _
-    cases hp : decide (φ k v) with
+    cases hp : decide (φ (k, v)) with
     | false =>
-      have hφ : ¬φ k v := of_decide_eq_false hp
-      -- emp ≡ (⌜φ k v⌝ → Φ k v) when ¬φ k v
-      -- Forward: emp ⊢ ⌜φ k v⌝ → Φ k v (vacuously true since ⌜φ k v⌝ is absurd)
-      -- Backward: (⌜φ k v⌝ → Φ k v) ⊢ emp (affine)
+      have hφ : ¬φ (k, v) := of_decide_eq_false hp
+      -- emp ≡ (⌜φ (k, v)⌝ → Φ k v) when ¬φ (k, v)
+      -- Forward: emp ⊢ ⌜φ (k, v)⌝ → Φ k v (vacuously true since ⌜φ (k, v)⌝ is absurd)
+      -- Backward: (⌜φ (k, v)⌝ → Φ k v) ⊢ emp (affine)
       refine equiv_iff.mpr ⟨?_, Affine.affine⟩
       refine imp_intro' <| pure_elim_l fun h => ?_
       exact absurd h hφ
     | true =>
-      have hφ : φ k v := of_decide_eq_true hp
-      -- Φ k v ≡ (⌜φ k v⌝ → Φ k v) when φ k v holds
+      have hφ : φ (k, v) := of_decide_eq_true hp
+      -- Φ k v ≡ (⌜φ (k, v)⌝ → Φ k v) when φ (k, v) holds
       simp only [↓reduceIte]
       refine equiv_iff.mpr ⟨?_, ?_⟩
       · exact imp_intro' <| pure_elim_l fun _ => Entails.rfl
       · exact (and_intro (pure_intro hφ) .rfl).trans imp_elim_r
-  exact (filter' _).trans heq
+  exact (filter' φ).trans heq
 
 /-! ## Missing Lemmas from Rocq Iris
 
