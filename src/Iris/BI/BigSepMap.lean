@@ -670,10 +670,9 @@ theorem list_to_map {Φ : K → V → PROP} {l : List (K × V)}
 /-! ## Intro and Forall Lemmas -/
 
 /-- Corresponds to `big_sepM_intro` in Rocq Iris.
-    This is the direct translation using `□` modality in the proposition.
 
     Rocq: `□ (∀ k x, ⌜m !! k = Some x⌝ → Φ k x) ⊢ [∗ map] k↦x ∈ m, Φ k x` -/
-theorem intro' {Φ : K → V → PROP} {m : M} :
+theorem intro {Φ : K → V → PROP} {m : M} :
     iprop(□ (∀ k v, ⌜get? m k = some v⌝ → Φ k v)) ⊢ [∗ map] k ↦ x ∈ m, Φ k x := by
   simp only [bigSepM]
   generalize hl : toList m = l
@@ -705,36 +704,6 @@ theorem intro' {Φ : K → V → PROP} {m : M} :
           exact (forall_elim kv'.1).trans ((forall_elim kv'.2).trans
             ((imp_mono_l (pure_mono fun _ => htail kv' List.mem_cons_self)).trans true_imp.1))
         · exact ih' fun kv'' hmem => htail kv'' (List.mem_cons_of_mem _ hmem)
-
-/-- Alternative form of `big_sepM_intro` using `[Intuitionistic P]` typeclass.
-    This is more convenient when P is known to be intuitionistic at the type level. -/
-theorem intro {P : PROP} {Φ : K → V → PROP} {m : M} [Intuitionistic P]
-    (h : ∀ k v, get? m k = some v → P ⊢ Φ k v) :
-    P ⊢ [∗ map] k ↦ x ∈ m, Φ k x := by
-  simp only [bigSepM]
-  generalize hl : toList m = l
-  induction l generalizing m with
-  | nil => exact Intuitionistic.intuitionistic.trans affinely_elim_emp
-  | cons kv kvs ih =>
-    simp only [bigOpL]
-    have hmem_kv : kv ∈ toList m := hl ▸ List.mem_cons_self
-    have hget_kv := (toList_get? m kv.1 kv.2).mpr hmem_kv
-    refine Intuitionistic.intuitionistic.trans <| intuitionistically_sep_idem.2.trans <|
-      sep_mono (intuitionistically_elim.trans (h kv.1 kv.2 hget_kv)) ?_
-    refine intuitionistically_elim.trans ?_
-    -- For the tail, we need to provide a proof for each element in kvs
-    -- Since kvs is a subset of toList m, any kv' in kvs is also in toList m
-    have htail : ∀ kv', kv' ∈ kvs → get? m kv'.1 = some kv'.2 := fun kv' hmem =>
-      (toList_get? m kv'.1 kv'.2).mpr (hl ▸ List.mem_cons_of_mem _ hmem)
-    -- Now we need to show P ⊢ bigOpL sep emp ... kvs
-    clear ih hmem_kv hget_kv hl
-    induction kvs with
-    | nil => exact Intuitionistic.intuitionistic.trans affinely_elim_emp
-    | cons kv' kvs' ih' =>
-      simp only [bigOpL]
-      refine Intuitionistic.intuitionistic.trans <| intuitionistically_sep_idem.2.trans <|
-        sep_mono (intuitionistically_elim.trans (h kv'.1 kv'.2 (htail kv' List.mem_cons_self))) ?_
-      exact intuitionistically_elim.trans (ih' fun kv'' hmem => htail kv'' (List.mem_cons_of_mem _ hmem))
 
 /-- Forward direction of `big_sepM_forall` in Rocq Iris. -/
 theorem forall_1' {Φ : K → V → PROP} {m : M} [BIAffine PROP]
@@ -790,12 +759,8 @@ theorem impl {Φ Ψ : K → V → PROP} {m : M} :
       □ (∀ k v, iprop(⌜get? m k = some v⌝ → Φ k v -∗ Ψ k v)) -∗ [∗ map] k ↦ x ∈ m, Ψ k x := by
   apply wand_intro
   -- First derive: □ (∀ k v, ⌜get? m k = some v⌝ → Φ k v -∗ Ψ k v) ⊢ bigSepM (Φ -∗ Ψ) m
-  have h1 : iprop(□ (∀ k v, ⌜get? m k = some v⌝ → Φ k v -∗ Ψ k v)) ⊢ bigSepM (fun k v => iprop(Φ k v -∗ Ψ k v)) m := by
-    haveI : Intuitionistic iprop(□ (∀ k v, ⌜get? m k = some v⌝ → Φ k v -∗ Ψ k v)) :=
-      intuitionistically_intuitionistic _
-    exact intro fun k v hget => intuitionistically_elim.trans <|
-      (forall_elim k).trans (forall_elim v) |>.trans <|
-      (imp_mono_l (pure_mono fun _ => hget)).trans true_imp.1
+  have h1 : iprop(□ (∀ k v, ⌜get? m k = some v⌝ → Φ k v -∗ Ψ k v)) ⊢ bigSepM (fun k v => iprop(Φ k v -∗ Ψ k v)) m :=
+    intro
   -- Now combine: bigSepM Φ ∗ bigSepM (Φ -∗ Ψ) ⊢ bigSepM Ψ
   refine (sep_mono_r h1).trans ?_
   exact sep_2.1.trans (mono' fun _ _ => wand_elim_r)
@@ -856,22 +821,26 @@ theorem lookup_acc_impl {Φ : K → V → PROP} {m : M} {k : K} {v : V}
   -- Use impl with the condition that k' ≠ k (since we're on erase m k)
   have himpl : iprop(□ (∀ k' v', ⌜get? m k' = some v'⌝ → ⌜k' ≠ k⌝ → Φ k' v' -∗ Ψ k' v'))
       ⊢ bigSepM (fun k' v' => iprop(Φ k' v' -∗ Ψ k' v')) (erase m k) := by
-    haveI : Intuitionistic iprop(□ (∀ k' v', ⌜get? m k' = some v'⌝ → ⌜k' ≠ k⌝ → Φ k' v' -∗ Ψ k' v')) :=
-      intuitionistically_intuitionistic _
-    apply intro
-    intro k' v' hget'
-    have hget_erase : get? (erase m k) k' = some v' := hget'
-    have hne : k' ≠ k := by
-      intro heq
-      rw [heq, get?_erase_eq] at hget_erase
-      exact Option.noConfusion hget_erase
-    have hget_m : get? m k' = some v' := by
-      rw [get?_erase_ne m k k' hne.symm] at hget_erase
-      exact hget_erase
-    exact intuitionistically_elim.trans <|
-      (forall_elim k').trans (forall_elim v') |>.trans <|
-      (imp_mono_l (pure_mono fun _ => hget_m)).trans true_imp.1 |>.trans <|
-      (imp_mono_l (pure_mono fun _ => hne)).trans true_imp.1
+    -- Transform the □ (∀ k' v', ⌜get? m k' = some v'⌝ → ⌜k' ≠ k⌝ → Φ k' v' -∗ Ψ k' v')
+    -- into □ (∀ k' v', ⌜get? (erase m k) k' = some v'⌝ → Φ k' v' -∗ Ψ k' v')
+    have htrans : iprop(□ (∀ k' v', ⌜get? m k' = some v'⌝ → ⌜k' ≠ k⌝ → Φ k' v' -∗ Ψ k' v'))
+        ⊢ iprop(□ (∀ k' v', ⌜get? (erase m k) k' = some v'⌝ → Φ k' v' -∗ Ψ k' v')) := by
+      apply intuitionistically_mono
+      apply forall_mono; intro k'
+      apply forall_mono; intro v'
+      apply imp_intro'
+      -- From ⌜get? (erase m k) k' = some v'⌝, derive ⌜get? m k' = some v'⌝ and ⌜k' ≠ k⌝
+      apply pure_elim_l; intro hget_erase
+      have hne : k' ≠ k := by
+        intro heq
+        rw [heq, get?_erase_eq] at hget_erase
+        exact Option.noConfusion hget_erase
+      have hget_m : get? m k' = some v' := by
+        rw [get?_erase_ne m k k' hne.symm] at hget_erase
+        exact hget_erase
+      exact (and_intro (pure_intro hget_m) .rfl).trans imp_elim_r |>.trans <|
+        (and_intro (pure_intro hne) .rfl).trans imp_elim_r
+    exact htrans.trans intro
   refine (sep_mono_r himpl).trans ?_
   exact sep_2.1.trans (mono' fun _ _ => wand_elim_r)
 

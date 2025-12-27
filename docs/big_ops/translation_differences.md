@@ -247,7 +247,7 @@ Lemma big_orL_ne Φ Ψ l n :
 
 ### 25. ~~`big_sepM_intro` Uses Intuitionistic Typeclass~~ ✅ FIXED
 
-**Status:** Now has both forms - `intro'` matches Rocq exactly, `intro` provides typeclass convenience.
+**Status:** Now matches Rocq exactly.
 
 **Rocq:**
 ```coq
@@ -257,17 +257,11 @@ Lemma big_sepM_intro Φ m :
 
 **Lean (updated):**
 ```lean
--- Direct translation matching Rocq signature:
-theorem intro' {Φ : K → V → PROP} {m : M} :
+theorem intro {Φ : K → V → PROP} {m : M} :
     iprop(□ (∀ k v, ⌜get? m k = some v⌝ → Φ k v)) ⊢ [∗ map] k ↦ x ∈ m, Φ k x
-
--- Alternative with typeclass (kept for convenience):
-theorem intro {P : PROP} {Φ : K → V → PROP} {m : M} [Intuitionistic P]
-    (h : ∀ k v, get? m k = some v → P ⊢ Φ k v) :
-    P ⊢ [∗ map] k ↦ x ∈ m, Φ k x
 ```
 
-**Resolution:** Added `intro'` which uses `□` modality directly in the proposition, matching Rocq's signature exactly. The original `intro` is kept as a convenience form for when the intuitionistic property is known at the type level.
+**Resolution:** Changed `intro` to use `□` modality directly in the proposition, matching Rocq's signature exactly.
 
 ---
 
