@@ -294,18 +294,25 @@ Lemma big_orL_zip_seqZ (Φ : Z * A → PROP) n len l :
 | BigOrL `zip_seqZ` | Uses `Nat` not `Z` | Done |
 | BigAndL `zip_seqZ` | Uses `Nat` not `Z` | Done |
 | BigSepM `lookup` | Split into Affine/Absorbing | Done |
+| BigSepM `lookup_dom` | Uses explicit value, Affine only | Done |
 | BigSepM `insert_2` | Split into Affine/Absorbing | Done |
 | BigSepM `subseteq` | Sorry (needs map laws) | Partial |
 | BigSepM `delete` | Added `toList_erase` law | Done |
 | BigSepM `intro` | Uses [Intuitionistic P] | Done |
 | BigSepM `forall'` | Split into _1'/\_2' helpers | Done |
 | BigSepM `dup` | Uses ⊢ not -∗ | Done |
+| BigSepM `impl`/`wand` | Uses ⊢ + single -∗ | Done |
 | BigSepM `persistently` | Requires BIAffine | Done |
 | BigSepM `later`/`laterN` | Biconditional requires BIAffine | Done |
 | BigSepM `pure'` | Requires BIAffine | Done |
 | BigSepM map transforms | Explicit perm proofs | Done |
+| BigSepM `union` | Perm proof (not ##ₘ) | Done |
 | BigSepM `filter` | Requires FiniteMapLawsSelf | Done |
 | BigSepM `mapForall` | Local definition | Done |
+| BigSepM `fn_insert*` | Not ported | Low |
+| BigSepM `sep_zip*` | Not ported | Low |
+| BigSepM `impl_strong` etc. | Not ported | Low |
+| BigSepM `kmap` | Not ported | Low |
 | BigAndM `subseteq` | Sorry (needs map laws) | Partial |
 | BigAndM `intro` | Simpler (no Intuitionistic) | Done |
 | BigAndM `and'` | Biconditional (idempotent) | Done |
@@ -315,7 +322,11 @@ Lemma big_orL_zip_seqZ (Φ : Z * A → PROP) n len l :
 | BigAndM `pure_2` | No affinely needed | Done |
 | BigAndM `affine` instance | Lean-only, requires BIAffine | Done |
 | BigAndM map transforms | Explicit perm proofs | Done |
+| BigAndM `union` | Perm proof (not ##ₘ) | Done |
 | BigAndM `map_to_list` | Lean-only addition | Done |
+| BigAndM `fn_insert*` | Not ported | Low |
+| BigAndM `kmap` | Not ported | Low |
+| BigAndM `map_seq*` | Not ported | Low |
 | BigAndM Timeless | Not ported | Low |
 
 ---
@@ -621,9 +632,177 @@ theorem filter' {Φ : K → V → PROP} {m : M} (p : K → V → Bool) :
 
 ---
 
-## Part H: BigAndM Additional Differences
+### 39. `big_sepM_filter` BIAffine Difference
 
-### 39. BigAndM Uses `True` as Unit (vs `emp` for BigSepM)
+**Rocq:**
+```coq
+Lemma big_sepM_filter `{!BiAffine PROP}
+    (φ : K * A → Prop) `{∀ kx, Decision (φ kx)} Φ m :
+  ([∗ map] k ↦ x ∈ filter φ m, Φ k x) ⊣⊢
+  ([∗ map] k ↦ x ∈ m, ⌜φ (k, x)⌝ → Φ k x).
+```
+
+**Lean:**
+```lean
+theorem filter'' [BIAffine PROP] {Φ : K → V → PROP} {m : M} (p : K → V → Bool) :
+    ([∗ map] k ↦ x ∈ FiniteMap.filter p m, Φ k x) ⊣⊢
+      [∗ map] k ↦ x ∈ m, iprop(⌜p k x = true⌝ → Φ k x)
+```
+
+**Note:** Both require `BIAffine`. The Rocq version uses `decide_emp` trick internally. The `filter'` version (without `BIAffine`) uses `if ... then ... else emp` in both.
+
+---
+
+### 40. `big_sepM_union` Disjointness vs Permutation
+
+**Rocq:**
+```coq
+Lemma big_sepM_union Φ m1 m2 :
+  m1 ##ₘ m2 →
+  ([∗ map] k↦y ∈ m1 ∪ m2, Φ k y)
+  ⊣⊢ ([∗ map] k↦y ∈ m1, Φ k y) ∗ ([∗ map] k↦y ∈ m2, Φ k y).
+```
+
+**Lean:**
+```lean
+theorem union {Φ : K → V → PROP} {m₁ m₂ : M}
+    (hperm : (toList (m₁ ∪ m₂)).Perm (toList m₁ ++ toList m₂)) :
+    ([∗ map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢
+      ([∗ map] k ↦ y ∈ m₁, Φ k y) ∗ [∗ map] k ↦ y ∈ m₂, Φ k y
+```
+
+**Difference:** Rocq takes a disjointness hypothesis `m1 ##ₘ m2`. Lean takes an explicit permutation proof. Users providing permutation proofs typically have disjoint maps (otherwise union is not a simple append).
+
+---
+
+### 41. `big_sepM_lookup_dom` Uses `is_Some` vs Explicit Value
+
+**Rocq:**
+```coq
+Lemma big_sepM_lookup_dom (Φ : K → PROP) m i
+  `{!TCOr (∀ j, Affine (Φ j)) (Absorbing (Φ i))} :
+  is_Some (m !! i) → ([∗ map] k↦_ ∈ m, Φ k) ⊢ Φ i.
+```
+
+**Lean:**
+```lean
+theorem lookup_dom {Φ : K → PROP} {m : M} {k : K} {v : V} [∀ j, Affine (Φ j)]
+    (h : get? m k = some v) :
+    bigSepM (fun k' _ => Φ k') m ⊢ Φ k
+```
+
+**Difference:** Rocq uses `is_Some (m !! i)` and `TCOr` for Affine/Absorbing. Lean requires an explicit value `v` and only has the Affine version. An Absorbing version could be added.
+
+---
+
+### 42. `big_sepM_impl` Statement Difference
+
+**Rocq:**
+```coq
+Lemma big_sepM_impl Φ Ψ m :
+  ([∗ map] k↦x ∈ m, Φ k x) -∗
+  □ (∀ k x, ⌜m !! k = Some x⌝ → Φ k x -∗ Ψ k x) -∗
+  [∗ map] k↦x ∈ m, Ψ k x.
+```
+
+**Lean:**
+```lean
+theorem impl {Φ Ψ : K → V → PROP} {m : M} :
+    ([∗ map] k ↦ x ∈ m, Φ k x) ⊢
+      □ (∀ k v, iprop(⌜get? m k = some v⌝ → Φ k v -∗ Ψ k v)) -∗ [∗ map] k ↦ x ∈ m, Ψ k x
+```
+
+**Difference:** Rocq uses two separate wands (`-∗ ... -∗`). Lean uses entailment followed by single wand (`⊢ ... -∗`). Semantically equivalent due to curry/uncurry.
+
+---
+
+### 43. `big_sepM_wand` Statement Difference
+
+**Rocq:**
+```coq
+Lemma big_sepM_wand Φ Ψ m :
+  ([∗ map] k↦x ∈ m, Φ k x) -∗
+  ([∗ map] k↦x ∈ m, Φ k x -∗ Ψ k x) -∗
+  [∗ map] k↦x ∈ m, Ψ k x.
+```
+
+**Lean:**
+```lean
+theorem wand {Φ Ψ : K → V → PROP} {m : M} :
+    ([∗ map] k ↦ x ∈ m, Φ k x) ⊢
+      ([∗ map] k ↦ x ∈ m, Φ k x -∗ Ψ k x) -∗ [∗ map] k ↦ x ∈ m, Ψ k x
+```
+
+**Difference:** Same as `impl` - Rocq uses two wands, Lean uses entailment + wand.
+
+---
+
+### 44. Not Ported: `big_sepM_fn_insert*`
+
+**Rocq has:**
+```coq
+Lemma big_sepM_fn_insert {B} (Ψ : K → A → B → PROP) (f : K → B) m i x b :
+  m !! i = None →
+     ([∗ map] k↦y ∈ <[i:=x]> m, Ψ k y (<[i:=b]> f k))
+  ⊣⊢ (Ψ i x b ∗ [∗ map] k↦y ∈ m, Ψ k y (f k)).
+
+Lemma big_sepM_fn_insert' (Φ : K → PROP) m i x P :
+  m !! i = None →
+  ([∗ map] k↦y ∈ <[i:=x]> m, <[i:=P]> Φ k) ⊣⊢ (P ∗ [∗ map] k↦y ∈ m, Φ k).
+```
+
+**Lean:** Not ported.
+
+**Reason:** Low priority. These lemmas handle function insertion which is less common.
+
+---
+
+### 45. Not Ported: `big_sepM_sep_zip*`
+
+**Rocq has:**
+```coq
+Lemma big_sepM_sep_zip_with ... (f : A → B → C) ... m1 m2 :
+  ...
+  ([∗ map] k↦xy ∈ map_zip_with f m1 m2, Φ1 k (g1 xy) ∗ Φ2 k (g2 xy)) ⊣⊢
+  ([∗ map] k↦x ∈ m1, Φ1 k x) ∗ ([∗ map] k↦y ∈ m2, Φ2 k y).
+
+Lemma big_sepM_sep_zip ...
+```
+
+**Lean:** Not ported.
+
+**Reason:** Low priority. Requires `map_zip_with` infrastructure.
+
+---
+
+### 46. Not Ported: `big_sepM_impl_strong`, `big_sepM_impl_dom_subseteq`
+
+**Rocq has:** These lemmas for advanced impl patterns with filtered maps.
+
+**Lean:** Not ported.
+
+**Reason:** Low priority. Complex lemmas for specialized use cases.
+
+---
+
+### 47. Not Ported: `big_sepM_kmap`
+
+**Rocq:**
+```coq
+Lemma big_sepM_kmap `{Countable K1, Countable K2} {A}
+    (h : K1 → K2) `{!Inj (=) (=) h} (Φ : K2 → A → PROP) (m : gmap K1 A) :
+  ([∗ map] k2 ↦ y ∈ kmap h m, Φ k2 y) ⊣⊢ ([∗ map] k1 ↦ y ∈ m, Φ (h k1) y).
+```
+
+**Lean:** Not ported.
+
+**Reason:** Requires `kmap` (key mapping) operation on maps.
+
+---
+
+## Part I: BigAndM Additional Differences
+
+### 48. BigAndM Uses `True` as Unit (vs `emp` for BigSepM)
 
 **BigSepM:** Uses `emp` as the unit for empty maps.
 ```lean
@@ -643,7 +822,7 @@ abbrev bigAndM ... := bigOpL and iprop(True) ...
 
 ---
 
-### 40. BigAndM `persistently` Does NOT Require `BIAffine`
+### 49. BigAndM `persistently` Does NOT Require `BIAffine`
 
 **Rocq:**
 ```coq
@@ -661,7 +840,7 @@ theorem persistently {Φ : K → V → PROP} {m : M} :
 
 ---
 
-### 41. BigAndM `later` Does NOT Require `BIAffine`
+### 50. BigAndM `later` Does NOT Require `BIAffine`
 
 **Rocq:**
 ```coq
@@ -679,7 +858,7 @@ theorem later {Φ : K → V → PROP} {m : M} :
 
 ---
 
-### 42. BigAndM `pure_2` Does NOT Require `affinely`
+### 51. BigAndM `pure_2` Does NOT Require `affinely`
 
 **Rocq:**
 ```coq
@@ -697,7 +876,7 @@ theorem pure_2 {φ : K → V → Prop} {m : M} :
 
 ---
 
-### 43. BigAndM `affine` Instance Requires `BIAffine`
+### 52. BigAndM `affine` Instance Requires `BIAffine`
 
 **Rocq:** BigAndM doesn't have Affine instances in general.
 
@@ -711,7 +890,7 @@ instance affine {Φ : K → V → PROP} {m : M} [BIAffine PROP] :
 
 ---
 
-### 44. BigAndM Map Transformation Lemmas
+### 53. BigAndM Map Transformation Lemmas
 
 Same as BigSepM, the following BigAndM lemmas take explicit permutation proofs:
 
@@ -723,7 +902,7 @@ Same as BigSepM, the following BigAndM lemmas take explicit permutation proofs:
 
 ---
 
-### 45. `big_andM_map_to_list` is Lean-Only
+### 54. `big_andM_map_to_list` is Lean-Only
 
 **Rocq:** Implicit in the definition.
 
