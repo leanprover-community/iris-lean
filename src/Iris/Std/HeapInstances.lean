@@ -42,8 +42,8 @@ variable {K V : Type _}
 instance instStoreFun [DecidableEq K] : Store (K → V) K V where
   get t k := t k
   set t k v := fun k' => if k = k' then v else t k'
-  get_set_eq {t k k' v} h := by simp [h]
-  get_set_ne {t k k' v} h := by simp [h]
+  get_set_eq {t k k' v} h := by grind
+  get_set_ne {t k k' v} h := by grind
 
 /-- Functions represent all functions (trivially). -/
 instance instRepFunStoreFun [DecidableEq K] : RepFunStore (K → V) K V where
@@ -94,8 +94,8 @@ Note: This requires that `cmp k k' = .eq` implies `k = k'` (i.e., `LawfulEqCmp`)
 instance instStore [LawfulEqCmp cmp] : Store (TreeMap K V cmp) K (Option V) where
   get t k := t[k]?
   set t k v := t.alter k (fun _ => v)
-  get_set_eq {t k k' v} h := by simp [h]
-  get_set_ne {t k k' v} h := by simp [getElem?_alter, h]
+  get_set_eq {t k k' v} h := by grind
+  get_set_ne {t k k' v} h := by simp [getElem?_alter]; grind
 
 /-! ### Connection to List foldl -/
 
@@ -146,10 +146,7 @@ private theorem get?_foldl_alter_impl_sigma [inst : Ord K] [TransOrd K]
     · rw [Impl.Const.get?_alter! hinit]
       simp only [heq, ↓reduceIte]
       have hfind : List.find? (fun kv => compare kv.1 k == .eq) (hd :: tl) =
-                   tl.find? (fun kv => compare kv.1 k == .eq) := by
-        simp only [List.find?_cons]
-        have hne : (compare hd.1 k == .eq) = false := by simp [beq_eq_false_iff_ne, heq]
-        simp only [hne]
+                   tl.find? (fun kv => compare kv.1 k == .eq) := by simp [heq]
       rw [hfind]
 
 /-- Helper lemma: foldl over list with alter has the expected getElem? behavior.
@@ -188,10 +185,7 @@ theorem foldl_alter_getElem? {l : List (K × V)} {init : TreeMap K V cmp} {f : K
     · -- hd.1 doesn't match k
       simp only [getElem?_alter, heq, ↓reduceIte]
       have hfind : List.find? (fun kv => cmp kv.1 k == .eq) (hd :: tl) =
-                   tl.find? (fun kv => cmp kv.1 k == .eq) := by
-        simp only [List.find?_cons]
-        have hne : (cmp hd.1 k == .eq) = false := by simp [heq]
-        simp [hne]
+                   tl.find? (fun kv => cmp kv.1 k == .eq) := by simp [heq]
       rw [hfind]
 
 /-- TreeMap.mergeWith equals list foldl with alter at the getElem? level. -/
@@ -244,12 +238,9 @@ theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V c
   have h_find : ∀ (l : List ((a : K) × (fun _ => V) a)),
       (l.map (fun e => (e.1, e.2))).find? (fun kv => cmp kv.1 k == .eq) =
       (l.find? (fun kv => cmp kv.1 k == .eq)).map (fun e => (e.1, e.2)) := by
-    intro l
-    induction l with
+    intro l; induction l with
     | nil => rfl
-    | cons hd tl ih =>
-      simp only [List.map_cons, List.find?_cons]
-      cases cmp hd.1 k == .eq <;> simp only [Option.map_some, *]
+    | cons hd tl ih => simp only [List.map_cons, List.find?_cons]; split <;> simp_all
 
   have hfind_eq := h_find t₂.inner.inner.toListModel
   rw [← h_toList] at hfind_eq
@@ -284,38 +275,26 @@ defined as a foldl over the second tree using alter operations.
   have hfoldl := foldl_alter_getElem? (init := t₁) (f := f) (k := k) (distinct_keys_toList (t := t₂))
 
   -- Helper: convert t₂[k]? = none to List.find? = none
-  have find_none : t₂[k]? = none →
-      t₂.toList.find? (fun kv => cmp kv.1 k == .eq) = none := by
-    intro hget
-    apply List.find?_eq_none.mpr
-    intro kv hkv
-    simp only [beq_iff_eq]
-    intro heq
-    have : t₂[k]? = some kv.2 := by
-      rw [getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList]
-      exact ⟨kv.1, OrientedCmp.eq_symm heq, hkv⟩
-    simp_all
+  have find_none : t₂[k]? = none → t₂.toList.find? (fun kv => cmp kv.1 k == .eq) = none := by
+    intro hget; apply List.find?_eq_none.mpr; intro kv hkv; simp only [beq_iff_eq]; intro heq
+    have : t₂[k]? = some kv.2 := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mpr
+      ⟨kv.1, OrientedCmp.eq_symm heq, hkv⟩
+    grind
 
   -- Helper: convert t₂[k]? = some v to List.find? = some kv
   have find_some : ∀ v, t₂[k]? = some v →
-      ∃ kv, t₂.toList.find? (fun kv => cmp kv.1 k == .eq) = some kv ∧
-            kv.2 = v ∧ cmp kv.1 k = .eq := by
+      ∃ kv, t₂.toList.find? (fun kv => cmp kv.1 k == .eq) = some kv ∧ kv.2 = v ∧ cmp kv.1 k = .eq := by
     intro v hget
     have ⟨k', hcmp, hmem⟩ := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp hget
-    have hpred : (fun kv : K × V => cmp kv.1 k == .eq) (k', v) = true := by
-      simp only [beq_iff_eq, OrientedCmp.eq_symm hcmp]
-    -- Use find?_isSome to get that find? returns some value
+    have hpred : (fun kv : K × V => cmp kv.1 k == .eq) (k', v) = true := by simp [OrientedCmp.eq_symm hcmp]
     have hisSome := List.find?_isSome (p := fun kv => cmp kv.1 k == .eq) |>.mpr ⟨(k', v), hmem, hpred⟩
     obtain ⟨kv, hfind⟩ := Option.isSome_iff_exists.mp hisSome
     have hpkv := List.find?_some hfind
     have hkv_cmp : cmp kv.1 k = .eq := by simp_all [beq_iff_eq]
-    have hkv_mem : kv ∈ t₂.toList := List.mem_of_find?_eq_some hfind
     have hkv_val : kv.2 = v := by
-      have hget' : t₂[k]? = some kv.2 := by
-        rw [getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList]
-        exact ⟨kv.1, OrientedCmp.eq_symm hkv_cmp, hkv_mem⟩
-      simp only [hget, Option.some.injEq] at hget'
-      exact hget'.symm
+      have := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mpr
+        ⟨kv.1, OrientedCmp.eq_symm hkv_cmp, List.mem_of_find?_eq_some hfind⟩
+      simp_all
     exact ⟨kv, hfind, hkv_val, hkv_cmp⟩
 
   -- Use the helper lemma that connects mergeWith to foldl
@@ -376,8 +355,8 @@ Note: This requires that `cmp k k' = .eq` implies `k = k'` (i.e., `LawfulEqCmp`)
 instance instStore [LawfulEqCmp cmp] : Store (ExtTreeMap K V cmp) K (Option V) where
   get t k := t[k]?
   set t k v := t.alter k (fun _ => v)
-  get_set_eq {t k k' v} h := by simp [h]
-  get_set_ne {t k k' v} h := by simp [getElem?_alter, h]
+  get_set_eq {t k k' v} h := by grind
+  get_set_ne {t k k' v} h := by simp [getElem?_alter]; grind
 
 /-- getElem? of mergeWith has the expected semantics for ExtTreeMap.
 
