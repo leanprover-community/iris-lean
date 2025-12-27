@@ -294,14 +294,28 @@ Lemma big_orL_zip_seqZ (Φ : Z * A → PROP) n len l :
 | BigOrL `zip_seqZ` | Uses `Nat` not `Z` | Done |
 | BigAndL `zip_seqZ` | Uses `Nat` not `Z` | Done |
 | BigSepM `lookup` | Split into Affine/Absorbing | Done |
+| BigSepM `insert_2` | Split into Affine/Absorbing | Done |
 | BigSepM `subseteq` | Sorry (needs map laws) | Partial |
 | BigSepM `delete` | Added `toList_erase` law | Done |
 | BigSepM `intro` | Uses [Intuitionistic P] | Done |
 | BigSepM `forall'` | Split into _1'/\_2' helpers | Done |
 | BigSepM `dup` | Uses ⊢ not -∗ | Done |
+| BigSepM `persistently` | Requires BIAffine | Done |
+| BigSepM `later`/`laterN` | Biconditional requires BIAffine | Done |
+| BigSepM `pure'` | Requires BIAffine | Done |
+| BigSepM map transforms | Explicit perm proofs | Done |
+| BigSepM `filter` | Requires FiniteMapLawsSelf | Done |
+| BigSepM `mapForall` | Local definition | Done |
 | BigAndM `subseteq` | Sorry (needs map laws) | Partial |
 | BigAndM `intro` | Simpler (no Intuitionistic) | Done |
 | BigAndM `and'` | Biconditional (idempotent) | Done |
+| BigAndM unit | Uses `True` not `emp` | Done |
+| BigAndM `persistently` | No BIAffine needed | Done |
+| BigAndM `later`/`laterN` | No BIAffine needed | Done |
+| BigAndM `pure_2` | No affinely needed | Done |
+| BigAndM `affine` instance | Lean-only, requires BIAffine | Done |
+| BigAndM map transforms | Explicit perm proofs | Done |
+| BigAndM `map_to_list` | Lean-only addition | Done |
 | BigAndM Timeless | Not ported | Low |
 
 ---
@@ -503,6 +517,223 @@ have true_and : ∀ (X : PROP), iprop(True) ∧ X ⊣⊢ X :=
 | BigAndM `and'` | Biconditional | Done |
 | BigAndM Affine instances | Not applicable | N/A |
 | BigAndM Timeless instances | Not ported | Low |
+
+---
+
+## Part G: BigSepM Additional Differences
+
+### 33. `big_sepM_persistently` Requires `BIAffine`
+
+**Rocq:**
+```coq
+Lemma big_sepM_persistently `{BiAffine PROP} Φ m :
+  <pers> ([∗ map] k↦x ∈ m, Φ k x) ⊣⊢ [∗ map] k↦x ∈ m, <pers> Φ k x.
+```
+
+**Lean:**
+```lean
+theorem persistently {Φ : K → V → PROP} {m : M} [BIAffine PROP] :
+    iprop(<pers> [∗ map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗ map] k ↦ x ∈ m, <pers> Φ k x
+```
+
+**Status:** Same signature, both require `BIAffine`.
+
+---
+
+### 34. `big_sepM_later` Requires `BIAffine`
+
+**Rocq:**
+```coq
+Lemma big_sepM_later `{BiAffine PROP} Φ m :
+  ▷ ([∗ map] k↦x ∈ m, Φ k x) ⊣⊢ [∗ map] k↦x ∈ m, ▷ Φ k x.
+```
+
+**Lean:**
+```lean
+theorem later [BIAffine PROP] {Φ : K → V → PROP} {m : M} :
+    iprop(▷ [∗ map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗ map] k ↦ x ∈ m, ▷ Φ k x
+```
+
+**Status:** Same signature, both require `BIAffine`. The `later_2` direction does not require `BIAffine`.
+
+---
+
+### 35. `big_sepM_pure` Requires `BIAffine`
+
+**Rocq:**
+```coq
+Lemma big_sepM_pure `{!BiAffine PROP} (φ : K → A → Prop) m :
+  ([∗ map] k↦x ∈ m, ⌜φ k x⌝) ⊣⊢ ⌜map_Forall φ m⌝.
+```
+
+**Lean:**
+```lean
+theorem pure' [BIAffine PROP] {φ : K → V → Prop} {m : M} :
+    ([∗ map] k ↦ x ∈ m, ⌜φ k x⌝) ⊣⊢ (⌜mapForall φ m⌝ : PROP)
+```
+
+**Status:** Same signature, both require `BIAffine`. The forward direction (`pure_1`) does not require `BIAffine`.
+
+---
+
+### 36. `mapForall` Definition
+
+**Rocq:** Uses `map_Forall` from stdpp.
+
+**Lean:** Defines `mapForall` locally:
+```lean
+def mapForall (φ : K → V → Prop) (m : M) : Prop :=
+  ∀ k v, get? m k = some v → φ k v
+```
+
+**Reason:** Lean implementation provides its own definition equivalent to stdpp's `map_Forall`.
+
+---
+
+### 37. Map Transformation Lemmas Require Explicit Permutation Proofs
+
+The following BigSepM lemmas take explicit permutation proofs instead of using typeclasses:
+
+| Lemma | Permutation Required |
+|-------|---------------------|
+| `fmap` | `(toList (map f m)).Perm ((toList m).map ...)` |
+| `omap` | `(toList (filterMap f m)).Perm ((toList m).filterMap ...)` |
+| `union` | `(toList (m₁ ∪ m₂)).Perm (toList m₁ ++ toList m₂)` |
+| `list_to_map` | `(toList (ofList l)).Perm l` |
+
+**Reason:** The abstract `FiniteMap` interface doesn't provide these permutation proofs automatically. Users must supply them for their specific map implementations.
+
+---
+
+### 38. Filter Lemmas Require `FiniteMapLawsSelf`
+
+**Rocq:** Uses `mapset.countable` and related infrastructure.
+
+**Lean:**
+```lean
+theorem filter' {Φ : K → V → PROP} {m : M} (p : K → V → Bool) :
+    ([∗ map] k ↦ x ∈ FiniteMap.filter p m, Φ k x) ⊣⊢ ...
+```
+
+**Requires:** `[FiniteMapLawsSelf M K V]` which provides `toList_filter` law.
+
+**Reason:** The `FiniteMapLawsSelf` typeclass provides the necessary law that filtering preserves the list permutation property.
+
+---
+
+## Part H: BigAndM Additional Differences
+
+### 39. BigAndM Uses `True` as Unit (vs `emp` for BigSepM)
+
+**BigSepM:** Uses `emp` as the unit for empty maps.
+```lean
+abbrev bigSepM ... := bigOpL sep emp ...
+```
+
+**BigAndM:** Uses `True` as the unit for empty maps.
+```lean
+abbrev bigAndM ... := bigOpL and iprop(True) ...
+```
+
+**Implication:** This affects `omap` and `filter'` lemmas:
+- BigSepM `omap`: `none` case produces `emp`
+- BigAndM `omap`: `none` case produces `True`
+- BigSepM `filter'`: `false` case produces `emp`
+- BigAndM `filter'`: `false` case produces `True`
+
+---
+
+### 40. BigAndM `persistently` Does NOT Require `BIAffine`
+
+**Rocq:**
+```coq
+Lemma big_andM_persistently Φ m :
+  <pers> ([∧ map] k↦x ∈ m, Φ k x) ⊣⊢ [∧ map] k↦x ∈ m, <pers> Φ k x.
+```
+
+**Lean:**
+```lean
+theorem persistently {Φ : K → V → PROP} {m : M} :
+    iprop(<pers> [∧ map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∧ map] k ↦ x ∈ m, <pers> Φ k x
+```
+
+**Status:** Same - neither requires `BIAffine`. This is a key difference from `BigSepM.persistently` which requires `BIAffine`.
+
+---
+
+### 41. BigAndM `later` Does NOT Require `BIAffine`
+
+**Rocq:**
+```coq
+Lemma big_andM_later Φ m :
+  ▷ ([∧ map] k↦x ∈ m, Φ k x) ⊣⊢ [∧ map] k↦x ∈ m, ▷ Φ k x.
+```
+
+**Lean:**
+```lean
+theorem later {Φ : K → V → PROP} {m : M} :
+    iprop(▷ [∧ map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∧ map] k ↦ x ∈ m, ▷ Φ k x
+```
+
+**Status:** Same - neither requires `BIAffine`. This is a key difference from `BigSepM.later` which requires `BIAffine`.
+
+---
+
+### 42. BigAndM `pure_2` Does NOT Require `affinely`
+
+**Rocq:**
+```coq
+Lemma big_andM_pure_2 (φ : K → A → Prop) m :
+  ⌜map_Forall φ m⌝ ⊢ [∧ map] k↦x ∈ m, ⌜φ k x⌝.
+```
+
+**Lean:**
+```lean
+theorem pure_2 {φ : K → V → Prop} {m : M} :
+    (⌜mapForall φ m⌝ : PROP) ⊢ ([∧ map] k ↦ x ∈ m, ⌜φ k x⌝)
+```
+
+**Difference from BigSepM:** `BigSepM.affinely_pure_2` requires `<affine>` on the pure proposition because `emp` is not `True`. BigAndM doesn't need this because `True ∧ ⌜P⌝ ⊣⊢ ⌜P⌝`.
+
+---
+
+### 43. BigAndM `affine` Instance Requires `BIAffine`
+
+**Rocq:** BigAndM doesn't have Affine instances in general.
+
+**Lean:**
+```lean
+instance affine {Φ : K → V → PROP} {m : M} [BIAffine PROP] :
+    Affine ([∧ map] k ↦ x ∈ m, Φ k x)
+```
+
+**Reason:** In a `BIAffine` setting, any proposition is affine, including big conjunctions. This is a Lean-only convenience instance.
+
+---
+
+### 44. BigAndM Map Transformation Lemmas
+
+Same as BigSepM, the following BigAndM lemmas take explicit permutation proofs:
+
+| Lemma | Permutation Required |
+|-------|---------------------|
+| `fmap` | `(toList (map f m)).Perm ((toList m).map ...)` |
+| `omap` | `(toList (filterMap f m)).Perm ((toList m).filterMap ...)` |
+| `union` | `(toList (m₁ ∪ m₂)).Perm (toList m₁ ++ toList m₂)` |
+
+---
+
+### 45. `big_andM_map_to_list` is Lean-Only
+
+**Rocq:** Implicit in the definition.
+
+**Lean:**
+```lean
+theorem map_to_list {Φ : K → V → PROP} {m : M} :
+    ([∧ map] k ↦ x ∈ m, Φ k x) ⊣⊢ ([∧ list] kv ∈ toList m, Φ kv.1 kv.2)
+```
+
+**Reason:** Explicitly provided for convenience and symmetry with `BigSepM.map_to_list`.
 
 ---
 
