@@ -160,16 +160,6 @@ theorem mono' {Φ Ψ : K → V → PROP} {m : M}
     ([∧ map] k ↦ x ∈ m, Φ k x) ⊢ [∧ map] k ↦ x ∈ m, Ψ k x :=
   mono (fun k v _ => h k v)
 
-/-- Corresponds to `big_andM_subseteq` in Rocq Iris.
-    If `m₂ ⊆ m₁`, we can extract the bigAndM over the smaller map.
-    Unlike big_sepM_subseteq, this does NOT require Affine. -/
-theorem subseteq {Φ : K → V → PROP} {m₁ m₂ : M}
-    (h : m₂ ⊆ m₁) :
-    ([∧ map] k ↦ x ∈ m₁, Φ k x) ⊢ [∧ map] k ↦ x ∈ m₂, Φ k x := by
-  -- This proof requires similar infrastructure as big_sepM_subseteq
-  -- but simpler because we can use and_elim_l (no Affine needed)
-  sorry
-
 /-! ## Typeclass Instances -/
 
 /-- Corresponds to `big_andM_empty_persistent` in Rocq Iris. -/
@@ -397,6 +387,16 @@ theorem impl {Φ Ψ : K → V → PROP} {m : M} :
   -- Φ k v ∧ (⌜hget⌝ → Φ k v → Ψ k v) ⊢ Ψ k v
   refine (and_mono .rfl ((and_intro (pure_intro hget) .rfl).trans imp_elim_r)).trans imp_elim_r
 
+/-- Corresponds to `big_andM_subseteq` in Rocq Iris.
+    If `m₂ ⊆ m₁`, we can extract the bigAndM over the smaller map.
+    Unlike big_sepM_subseteq, this does NOT require Affine. -/
+theorem subseteq {Φ : K → V → PROP} {m₁ m₂ : M}
+    (hsub : m₂ ⊆ m₁) :
+    ([∧ map] k ↦ x ∈ m₁, Φ k x) ⊢ [∧ map] k ↦ x ∈ m₂, Φ k x :=
+  -- Use intro: for each (k, v) in m₂, show bigAndM m₁ ⊢ Φ k v
+  -- Since m₂ ⊆ m₁, we have get? m₁ k = some v, so use lookup
+  intro fun k v hget₂ => lookup (hsub k v hget₂)
+
 /-! ## Pure Lemmas -/
 
 /-- `mapForall φ m` means `φ k v` holds for all key-value pairs in `m`.
@@ -536,7 +536,6 @@ theorem filter'' {Φ : K → V → PROP} {m : M} (p : K → V → Bool) :
 /-! ## Missing Lemmas from Rocq Iris
 
 The following lemmas from Rocq Iris are not yet fully ported:
-- `big_andM_subseteq`: Uses sorry (needs map difference/union laws)
 - `big_andM_fn_insert*`: Low priority
 - `big_andM_timeless*`: Requires and_timeless infrastructure
 - `big_andM_kmap`, `big_andM_map_seq`: Low priority

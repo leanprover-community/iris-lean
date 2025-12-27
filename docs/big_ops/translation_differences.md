@@ -243,29 +243,9 @@ Lemma big_orL_ne Φ Ψ l n :
 
 ---
 
-## Part E: BigSepM (Map) Differences
+## Part F: BigAndM (Map Conjunction) - Notes
 
-### 25. ~~`big_sepM_intro` Uses Intuitionistic Typeclass~~ ✅ FIXED
-
-**Status:** Now matches Rocq exactly.
-
-**Rocq:**
-```coq
-Lemma big_sepM_intro Φ m :
-  □ (∀ k x, ⌜m !! k = Some x⌝ → Φ k x) ⊢ [∗ map] k↦x ∈ m, Φ k x.
-```
-
-**Lean (updated):**
-```lean
-theorem intro {Φ : K → V → PROP} {m : M} :
-    iprop(□ (∀ k v, ⌜get? m k = some v⌝ → Φ k v)) ⊢ [∗ map] k ↦ x ∈ m, Φ k x
-```
-
-**Resolution:** Changed `intro` to use `□` modality directly in the proposition, matching Rocq's signature exactly.
-
----
-
-## Part F: BigAndM (Map Conjunction) Differences
+This section documents non-differences and implementation notes for BigAndM.
 
 ### 28. BigAndM Uses `iprop(True)` as Unit
 
@@ -278,42 +258,17 @@ abbrev bigAndM [BI PROP] {M K V} [FiniteMap M K V]
   bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) (toList m)
 ```
 
-**Reason:** This is the same as Rocq; `iprop(True)` is Lean's notation for the BI `True` proposition.
+**Status:** Same as Rocq - `iprop(True)` is Lean's notation for the BI `True` proposition.
 
 ---
 
-### 29. `big_andM_subseteq` Uses Sorry
-
-**Rocq:**
-```coq
-Lemma big_andM_subseteq (Φ : K → A → PROP) m1 m2 :
-  m2 ⊆ m1 → ([∧ map] k↦x ∈ m1, Φ k x) ⊢ [∧ map] k↦x ∈ m2, Φ k x.
-```
-
-**Lean:** Uses `sorry` for the same reason as `BigSepM.subseteq`:
-- Requires map difference/union laws not yet in the abstract FiniteMap interface
-
-**Status:** Blocked on extending FiniteMap with subset/difference operations.
-
----
-
-### 30. BigAndM Simpler Than BigSepM
-
-Several BigAndM lemmas are simpler than their BigSepM counterparts:
-
-| Lemma | BigSepM | BigAndM | Reason |
-|-------|---------|---------|--------|
-| `intro` | Requires `[Intuitionistic P]` | No constraint needed | `∧` doesn't consume resources |
-| `and'` | One direction only | Biconditional | `∧` is idempotent |
-| `pure_2` | Requires `⬚` (affinely) | Direct `⌜P⌝ ⊢ ...` | `True ∧ ⌜P⌝ ⊣⊢ ⌜P⌝` |
-
----
-
-### 31. BigAndM Missing Affine Instances
+### 31. BigAndM Affine Instances (Intentional)
 
 **Rocq:** BigAndM doesn't have Affine instances (since `True ∧ ... ∧ True` is not generally affine unless the BI is affine).
 
-**Lean:** Same - no Affine typeclass instances for BigAndM.
+**Lean:** Same - no general Affine typeclass instances for BigAndM. The `BIAffine` instance is provided.
+
+**Status:** This is intentional behavior, matching Rocq.
 
 ---
 
@@ -325,79 +280,11 @@ have true_and : ∀ (X : PROP), iprop(True) ∧ X ⊣⊢ X :=
   fun X => ⟨and_elim_r, and_intro true_intro .rfl⟩
 ```
 
-**Reason:** Unlike `emp_sep` which has dedicated lemmas, `True ∧ X ⊣⊢ X` is composed inline from basic laws.
+**Status:** Stylistic difference only. Unlike `emp_sep` which has dedicated lemmas, `True ∧ X ⊣⊢ X` is composed inline from basic laws.
 
 ---
 
 ## Part G: BigSepM Additional Differences
-
-### 33. `big_sepM_persistently` Requires `BIAffine`
-
-**Rocq:**
-```coq
-Lemma big_sepM_persistently `{BiAffine PROP} Φ m :
-  <pers> ([∗ map] k↦x ∈ m, Φ k x) ⊣⊢ [∗ map] k↦x ∈ m, <pers> Φ k x.
-```
-
-**Lean:**
-```lean
-theorem persistently {Φ : K → V → PROP} {m : M} [BIAffine PROP] :
-    iprop(<pers> [∗ map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗ map] k ↦ x ∈ m, <pers> Φ k x
-```
-
-**Status:** Same signature, both require `BIAffine`.
-
----
-
-### 34. `big_sepM_later` Requires `BIAffine`
-
-**Rocq:**
-```coq
-Lemma big_sepM_later `{BiAffine PROP} Φ m :
-  ▷ ([∗ map] k↦x ∈ m, Φ k x) ⊣⊢ [∗ map] k↦x ∈ m, ▷ Φ k x.
-```
-
-**Lean:**
-```lean
-theorem later [BIAffine PROP] {Φ : K → V → PROP} {m : M} :
-    iprop(▷ [∗ map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗ map] k ↦ x ∈ m, ▷ Φ k x
-```
-
-**Status:** Same signature, both require `BIAffine`. The `later_2` direction does not require `BIAffine`.
-
----
-
-### 35. `big_sepM_pure` Requires `BIAffine`
-
-**Rocq:**
-```coq
-Lemma big_sepM_pure `{!BiAffine PROP} (φ : K → A → Prop) m :
-  ([∗ map] k↦x ∈ m, ⌜φ k x⌝) ⊣⊢ ⌜map_Forall φ m⌝.
-```
-
-**Lean:**
-```lean
-theorem pure' [BIAffine PROP] {φ : K → V → Prop} {m : M} :
-    ([∗ map] k ↦ x ∈ m, ⌜φ k x⌝) ⊣⊢ (⌜mapForall φ m⌝ : PROP)
-```
-
-**Status:** Same signature, both require `BIAffine`. The forward direction (`pure_1`) does not require `BIAffine`.
-
----
-
-### 36. `mapForall` Definition
-
-**Rocq:** Uses `map_Forall` from stdpp.
-
-**Lean:** Defines `mapForall` locally:
-```lean
-def mapForall (φ : K → V → Prop) (m : M) : Prop :=
-  ∀ k v, get? m k = some v → φ k v
-```
-
-**Reason:** Lean implementation provides its own definition equivalent to stdpp's `map_Forall`.
-
----
 
 ### 37. Map Transformation Lemmas Require Explicit Permutation Proofs
 
