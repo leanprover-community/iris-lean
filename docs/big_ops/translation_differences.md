@@ -245,19 +245,20 @@ Lemma big_orL_ne Φ Ψ l n :
 
 ## Part G: BigSepM Additional Differences
 
-### 37. Map Transformation Lemmas Require Explicit Permutation Proofs
+### 37. Map Transformation Lemmas Use Typeclass Laws
 
-The following BigSepM lemmas take explicit permutation proofs instead of using typeclasses:
+The following BigSepM lemmas are aligned with Rocq by using the `FiniteMapLaws` typeclasses:
 
-| Lemma | Permutation Required |
-|-------|---------------------|
-| `fmap` | `(toList (map f m)).Perm ((toList m).map ...)` |
-| `omap` | `(toList (filterMap f m)).Perm ((toList m).filterMap ...)` |
-| `list_to_map` | `(toList (ofList l)).Perm l` |
+| Lemma | Typeclass Law Used |
+|-------|-------------------|
+| `fmap` | `FiniteMapLawsExt.toList_map` |
+| `omap` | `FiniteMapLawsSelf.toList_filterMap` |
+| `list_to_map` | `FiniteMapLaws.toList_ofList` (requires `Nodup` on keys) |
+| `union` | `FiniteMapLawsSelf.toList_union_disjoint` (requires `Disjoint`) |
 
-**Note:** `union` now takes a disjointness hypothesis `FiniteMap.Disjoint m₁ m₂` (aligned with Rocq), with `union_perm` available for explicit permutation proofs.
+**Note:** Explicit permutation proof versions (`fmap_perm`, `omap_perm`, `list_to_map_perm`, `union_perm`) are also available for cases where the typeclass laws don't apply.
 
-**Reason:** The abstract `FiniteMap` interface doesn't provide these permutation proofs automatically. Users must supply them for their specific map implementations.
+**Rocq equivalents:** These correspond to stdpp's `map_to_list_fmap`, `map_to_list_to_map`, etc. which are provided by `gmap`'s implementation.
 
 ---
 

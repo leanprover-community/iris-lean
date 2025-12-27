@@ -142,6 +142,10 @@ class FiniteMapLaws (M : Type u) (K : Type v) (V : Type w)
       For `m !! k = some v`, `toList (erase m k)` is a permutation of `toList m` with `(k, v)` removed. -/
   toList_erase : ∀ (m : M) k v, get? m k = some v →
     (toList m).Perm ((k, v) :: toList (erase m k))
+  /-- `toList` and `ofList` roundtrip is a permutation (when keys are unique).
+      Corresponds to Rocq's `map_to_list_to_map`. -/
+  toList_ofList : ∀ (l : List (K × V)), (l.map Prod.fst).Nodup →
+    (toList (ofList l : M)).Perm l
 
 /-- Extended laws for finite maps with value type transformations. -/
 class FiniteMapLawsExt (M : Type u) (M' : Type u') (K : Type v) (V : Type w) (V' : Type w')
@@ -172,7 +176,7 @@ class FiniteMapLawsSelf (M : Type u) (K : Type v) (V : Type w)
     (toList (m₁ \ m₂)).Perm
       ((toList m₁).filter (fun kv => (get? m₂ kv.1).isNone))
 
-export FiniteMapLaws (get?_empty get?_insert_eq get?_insert_ne get?_erase_eq get?_erase_ne get?_ofList toList_empty toList_insert toList_get? toList_nodup toList_erase)
+export FiniteMapLaws (get?_empty get?_insert_eq get?_insert_ne get?_erase_eq get?_erase_ne get?_ofList toList_empty toList_insert toList_get? toList_nodup toList_erase toList_ofList)
 export FiniteMapLawsExt (toList_map)
 export FiniteMapLawsSelf (toList_filterMap toList_filter toList_union_disjoint toList_difference)
 

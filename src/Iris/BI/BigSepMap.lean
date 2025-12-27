@@ -668,12 +668,19 @@ end FilterMapTransformations
 
 /-! ## List-Map Conversions -/
 
-omit [DecidableEq K] [FiniteMapLaws M K V] in
 /-- Corresponds to `big_sepM_list_to_map` in Rocq Iris.
     Big sep over a map constructed from a list (with no duplicate keys).
-
-    Note: Requires the permutation proof showing `toList (ofList l)` is a permutation of `l`. -/
+    Aligned with Rocq: requires `NoDup l.*1` (no duplicate keys). -/
 theorem list_to_map {Φ : K → V → PROP} {l : List (K × V)}
+    (hnodup : (l.map Prod.fst).Nodup) :
+    ([∗ map] k ↦ x ∈ (ofList l : M), Φ k x) ⊣⊢ [∗ list] kv ∈ l, Φ kv.1 kv.2 := by
+  simp only [bigSepM]
+  exact equiv_iff.mp (BigOpL.perm _ (toList_ofList l hnodup))
+
+omit [DecidableEq K] [FiniteMapLaws M K V] in
+/-- Version of `list_to_map` with explicit permutation proof.
+    Use when the permutation is not automatically available from `toList_ofList`. -/
+theorem list_to_map_perm {Φ : K → V → PROP} {l : List (K × V)}
     (hperm : (toList (ofList l : M)).Perm l) :
     ([∗ map] k ↦ x ∈ (ofList l : M), Φ k x) ⊣⊢ [∗ list] kv ∈ l, Φ kv.1 kv.2 := by
   simp only [bigSepM]
