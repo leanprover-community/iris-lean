@@ -245,72 +245,9 @@ Lemma big_orL_ne Φ Ψ l n :
 
 ## Part E: BigSepM (Map) Differences
 
-### 22. ~~`big_sepM_lookup` Split into Separate Lemmas~~ ✅ FIXED
+### 25. ~~`big_sepM_intro` Uses Intuitionistic Typeclass~~ ✅ FIXED
 
-**Status:** Now unified using `TCOr` pattern like Rocq.
-
-**Rocq:**
-```coq
-Lemma big_sepM_lookup Φ m i x
-  `{!TCOr (∀ j y, Affine (Φ j y)) (Absorbing (Φ i x))} :
-  m !! i = Some x → ([∗ map] k↦y ∈ m, Φ k y) ⊢ Φ i x.
-```
-
-**Lean (updated):**
-```lean
-theorem lookup {Φ : K → V → PROP} {m : M} {k : K} {v : V}
-    (h : get? m k = some v) :
-    [TCOr (∀ j w, Affine (Φ j w)) (Absorbing (Φ k v))] →
-    ([∗ map] k' ↦ x ∈ m, Φ k' x) ⊢ Φ k v
-  | TCOr.l => ...
-  | TCOr.r => ...
-```
-
-**Resolution:** Uses `TCOr` pattern matching to handle both Affine and Absorbing cases in a single lemma, matching the Rocq signature.
-
----
-
-### 23. ~~`big_sepM_delete` Requires New FiniteMapLaws~~ ✅ ALREADY FIXED
-
-**Status:** Previously fixed by adding `toList_erase` law to `FiniteMapLaws`.
-
-**Lean:**
-```lean
-toList_erase : ∀ (m : M) k v, get? m k = some v →
-  (toList m).Perm ((k, v) :: toList (erase m k))
-```
-
----
-
-### 24. ~~`big_sepM_subseteq` Uses Sorry~~ ✅ PROOF STRUCTURE COMPLETE
-
-**Status:** Proof structure completed. Now depends on `toList_difference_union` in FiniteMap (a list permutation lemma with sorry).
-
-**Rocq:**
-```coq
-Lemma big_sepM_subseteq Φ m1 m2 `{!∀ k x, Affine (Φ k x)} :
-  m2 ⊆ m1 → ([∗ map] k ↦ x ∈ m1, Φ k x) ⊢ [∗ map] k ↦ x ∈ m2, Φ k x.
-```
-
-**Lean (updated):**
-```lean
-theorem subseteq {Φ : K → V → PROP} {m₁ m₂ : M} [FiniteMapLawsSelf M K V] [∀ k v, Affine (Φ k v)]
-    (h : m₂ ⊆ m₁) :
-    ([∗ map] k ↦ x ∈ m₁, Φ k x) ⊢ [∗ map] k ↦ x ∈ m₂, Φ k x
-```
-
-**Changes Made:**
-1. Added map difference operation `m₁ \ m₂` to `FiniteMap`
-2. Added `toList_difference` law to `FiniteMapLawsSelf`
-3. Added `disjoint_difference_r` lemma (fully proved)
-4. Added `toList_difference_union` lemma (sorry on list permutation fact)
-5. Full proof structure for `subseteq` using `map_difference_union` approach
-
-**Remaining:** The underlying list permutation lemma `toList_difference_union` needs proof that `toList m₂ ++ filter (toList m₁) ~ toList m₁` when `m₂ ⊆ m₁`.
-
----
-
-### 25. `big_sepM_intro` Uses Intuitionistic Typeclass
+**Status:** Now has both forms - `intro'` matches Rocq exactly, `intro` provides typeclass convenience.
 
 **Rocq:**
 ```coq
@@ -318,14 +255,19 @@ Lemma big_sepM_intro Φ m :
   □ (∀ k x, ⌜m !! k = Some x⌝ → Φ k x) ⊢ [∗ map] k↦x ∈ m, Φ k x.
 ```
 
-**Lean:**
+**Lean (updated):**
 ```lean
+-- Direct translation matching Rocq signature:
+theorem intro' {Φ : K → V → PROP} {m : M} :
+    iprop(□ (∀ k v, ⌜get? m k = some v⌝ → Φ k v)) ⊢ [∗ map] k ↦ x ∈ m, Φ k x
+
+-- Alternative with typeclass (kept for convenience):
 theorem intro {P : PROP} {Φ : K → V → PROP} {m : M} [Intuitionistic P]
     (h : ∀ k v, get? m k = some v → P ⊢ Φ k v) :
     P ⊢ [∗ map] k ↦ x ∈ m, Φ k x
 ```
 
-**Reason:** Lean uses the `[Intuitionistic P]` typeclass constraint instead of the `□` modality in the statement. This makes the typeclass system handle the resource-duplication property.
+**Resolution:** Added `intro'` which uses `□` modality directly in the proposition, matching Rocq's signature exactly. The original `intro` is kept as a convenience form for when the intuitionistic property is known at the type level.
 
 ---
 

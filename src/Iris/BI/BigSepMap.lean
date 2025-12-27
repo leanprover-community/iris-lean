@@ -669,7 +669,45 @@ theorem list_to_map {Φ : K → V → PROP} {l : List (K × V)}
 
 /-! ## Intro and Forall Lemmas -/
 
-/-- Corresponds to `big_sepM_intro` in Rocq Iris. -/
+/-- Corresponds to `big_sepM_intro` in Rocq Iris.
+    This is the direct translation using `□` modality in the proposition.
+
+    Rocq: `□ (∀ k x, ⌜m !! k = Some x⌝ → Φ k x) ⊢ [∗ map] k↦x ∈ m, Φ k x` -/
+theorem intro' {Φ : K → V → PROP} {m : M} :
+    iprop(□ (∀ k v, ⌜get? m k = some v⌝ → Φ k v)) ⊢ [∗ map] k ↦ x ∈ m, Φ k x := by
+  simp only [bigSepM]
+  generalize hl : toList m = l
+  induction l generalizing m with
+  | nil =>
+    -- □ P ⊢ emp (via affinely_elim_emp)
+    exact affinely_elim_emp
+  | cons kv kvs ih =>
+    simp only [bigOpL]
+    -- □ (∀ k v, ⌜...⌝ → Φ k v) ⊢ Φ kv.1 kv.2 ∗ bigOpL ... kvs
+    have hmem_kv : kv ∈ toList m := hl ▸ List.mem_cons_self
+    have hget_kv := (toList_get? m kv.1 kv.2).mpr hmem_kv
+    -- Use intuitionistically_sep_idem to duplicate □ P
+    refine intuitionistically_sep_idem.2.trans <| sep_mono ?_ ?_
+    · -- □ (∀ k v, ...) ⊢ Φ kv.1 kv.2
+      refine intuitionistically_elim.trans ?_
+      exact (forall_elim kv.1).trans ((forall_elim kv.2).trans
+        ((imp_mono_l (pure_mono fun _ => hget_kv)).trans true_imp.1))
+    · -- □ (∀ k v, ...) ⊢ bigOpL ... kvs
+      have htail : ∀ kv', kv' ∈ kvs → get? m kv'.1 = some kv'.2 := fun kv' hmem =>
+        (toList_get? m kv'.1 kv'.2).mpr (hl ▸ List.mem_cons_of_mem _ hmem)
+      clear ih hmem_kv hget_kv hl
+      induction kvs with
+      | nil => exact affinely_elim_emp
+      | cons kv' kvs' ih' =>
+        simp only [bigOpL]
+        refine intuitionistically_sep_idem.2.trans <| sep_mono ?_ ?_
+        · refine intuitionistically_elim.trans ?_
+          exact (forall_elim kv'.1).trans ((forall_elim kv'.2).trans
+            ((imp_mono_l (pure_mono fun _ => htail kv' List.mem_cons_self)).trans true_imp.1))
+        · exact ih' fun kv'' hmem => htail kv'' (List.mem_cons_of_mem _ hmem)
+
+/-- Alternative form of `big_sepM_intro` using `[Intuitionistic P]` typeclass.
+    This is more convenient when P is known to be intuitionistic at the type level. -/
 theorem intro {P : PROP} {Φ : K → V → PROP} {m : M} [Intuitionistic P]
     (h : ∀ k v, get? m k = some v → P ⊢ Φ k v) :
     P ⊢ [∗ map] k ↦ x ∈ m, Φ k x := by
