@@ -129,16 +129,12 @@ private theorem get?_foldl_alter_impl_sigma [inst : Ord K] [TransOrd K]
     by_cases heq : compare hd.1 k = .eq
     · rw [Impl.Const.get?_alter! hinit]
       simp only [heq, ↓reduceIte, List.find?_cons, beq_self_eq_true]
-      have htl : tl.find? (fun kv => compare kv.1 k == .eq) = none := by
-        apply List.find?_eq_none.mpr; intro kv hkv hkv_eq; simp only [beq_iff_eq] at hkv_eq
+      have htl : tl.find? (fun kv => compare kv.1 k == .eq) = none := List.find?_eq_none.mpr fun kv hkv hkv_eq => by
+        simp only [beq_iff_eq] at hkv_eq
         exact List.rel_of_pairwise_cons hl hkv (TransCmp.eq_trans heq (OrientedCmp.eq_symm hkv_eq))
       rw [htl, ← Impl.Const.get?_congr hinit heq]
       cases Impl.Const.get? init hd.1 <;> simp [alterFn]
-    · rw [Impl.Const.get?_alter! hinit]
-      simp only [heq, ↓reduceIte]
-      have hfind : List.find? (fun kv => compare kv.1 k == .eq) (hd :: tl) =
-                   tl.find? (fun kv => compare kv.1 k == .eq) := by simp [heq]
-      rw [hfind]
+    · rw [Impl.Const.get?_alter! hinit]; simp [heq]
 
 /-- Helper lemma: foldl over list with alter has the expected getElem? behavior.
     This is the key induction lemma for proving getElem?_mergeWith. -/
@@ -162,16 +158,13 @@ theorem foldl_alter_getElem? {l : List (K × V)} {init : TreeMap K V cmp} {f : K
     by_cases heq : cmp hd.1 k = .eq
     · -- hd.1 matches k
       simp only [getElem?_alter, getElem?_congr (OrientedCmp.eq_symm heq), List.find?_cons, heq, beq_self_eq_true]
-      have htl : tl.find? (fun kv => cmp kv.1 k == .eq) = none := by
-        apply List.find?_eq_none.mpr; intro kv hkv hkv_eq; simp only [beq_iff_eq] at hkv_eq
+      have htl : tl.find? (fun kv => cmp kv.1 k == .eq) = none := List.find?_eq_none.mpr fun kv hkv hkv_eq => by
+        simp only [beq_iff_eq] at hkv_eq
         exact List.rel_of_pairwise_cons hl hkv (TransCmp.eq_trans heq (OrientedCmp.eq_symm hkv_eq))
       simp only [htl, ReflCmp.compare_self, ↓reduceIte]
       cases init[hd.1]? <;> rfl
     · -- hd.1 doesn't match k
-      simp only [getElem?_alter, heq, ↓reduceIte]
-      have hfind : List.find? (fun kv => cmp kv.1 k == .eq) (hd :: tl) =
-                   tl.find? (fun kv => cmp kv.1 k == .eq) := by simp [heq]
-      rw [hfind]
+      simp [getElem?_alter, heq]
 
 /-- TreeMap.mergeWith equals list foldl with alter at the getElem? level. -/
 theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
@@ -183,13 +176,9 @@ theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V c
 
   have h_impl : (t₁.mergeWith f t₂)[k]? =
       Std.DTreeMap.Internal.Impl.Const.get?
-        (Std.DTreeMap.Internal.Impl.Const.mergeWith! f t₁.inner.inner t₂.inner.inner) k := by
-    show Std.DTreeMap.Internal.Impl.Const.get?
-           (Std.DTreeMap.Internal.Impl.Const.mergeWith f t₁.inner.inner t₂.inner.inner
-             t₁.inner.wf.balanced).impl k =
-         Std.DTreeMap.Internal.Impl.Const.get?
-           (Std.DTreeMap.Internal.Impl.Const.mergeWith! f t₁.inner.inner t₂.inner.inner) k
-    rw [Std.DTreeMap.Internal.Impl.Const.mergeWith_eq_mergeWith!]
+        (Std.DTreeMap.Internal.Impl.Const.mergeWith! f t₁.inner.inner t₂.inner.inner) k :=
+    congrArg (Std.DTreeMap.Internal.Impl.Const.get? · k)
+      (Std.DTreeMap.Internal.Impl.Const.mergeWith_eq_mergeWith! ..)
 
   have h_foldl : Std.DTreeMap.Internal.Impl.Const.mergeWith! f t₁.inner.inner t₂.inner.inner =
       Std.DTreeMap.Internal.Impl.foldl (fun t a b₂ =>
@@ -230,13 +219,9 @@ theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V c
   have hfind_eq := h_find t₂.inner.inner.toListModel
   rw [← h_toList] at hfind_eq
 
-  cases hres : t₂.inner.inner.toListModel.find? (fun kv => cmp kv.1 k == .eq) with
-  | none =>
-    simp only [hfind_eq, hres, Option.map_none]
-    cases Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k <;> rfl
-  | some kv =>
-    simp only [hfind_eq, hres, Option.map_some]
-    cases Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k <;> rfl
+  cases hres : t₂.inner.inner.toListModel.find? (fun kv => cmp kv.1 k == .eq) <;>
+    (simp only [hfind_eq, hres, Option.map_none, Option.map_some];
+     cases Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k <;> rfl)
 
 /-- getElem? of mergeWith has the expected semantics.
 
