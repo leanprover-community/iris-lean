@@ -100,6 +100,13 @@ def zip [FiniteMap M' K V'] [FiniteMap M'' K (V × V')] (m₁ : M) (m₂ : M') :
 /-- Membership: a key is in the map if it has a value. -/
 def Mem (m : M) (k : K) : Prop := (get? m k).isSome
 
+/-- Difference: remove all keys in `m₂` from `m₁`.
+    `m₁ ∖ m₂` contains entries `(k, v)` where `k ∈ m₁` but `k ∉ m₂`. -/
+def difference (m₁ m₂ : M) : M :=
+  ofList ((toList m₁).filter (fun (k, _) => (get? m₂ k).isNone))
+
+instance : SDiff M := ⟨difference⟩
+
 end FiniteMap
 
 /-- Membership instance for finite maps: `k ∈ m` means the key `k` is in the map `m`. -/
@@ -160,10 +167,14 @@ class FiniteMapLawsSelf (M : Type u) (K : Type v) (V : Type w)
   toList_union_disjoint : ∀ (m₁ m₂ : M),
     FiniteMap.Disjoint m₁ m₂ →
     (toList (m₁ ∪ m₂)).Perm (toList m₁ ++ toList m₂)
+  /-- toList of difference is related to filter over toList. -/
+  toList_difference : ∀ (m₁ m₂ : M),
+    (toList (m₁ \ m₂)).Perm
+      ((toList m₁).filter (fun kv => (get? m₂ kv.1).isNone))
 
 export FiniteMapLaws (get?_empty get?_insert_eq get?_insert_ne get?_erase_eq get?_erase_ne get?_ofList toList_empty toList_insert toList_get? toList_nodup toList_erase)
 export FiniteMapLawsExt (toList_map)
-export FiniteMapLawsSelf (toList_filterMap toList_filter toList_union_disjoint)
+export FiniteMapLawsSelf (toList_filterMap toList_filter toList_union_disjoint toList_difference)
 
 namespace FiniteMapLaws
 
@@ -292,6 +303,52 @@ theorem disjoint_symm {m₁ m₂ : M} (h : Disjoint m₁ m₂) : Disjoint m₂ m
 
 theorem disjoint_empty_right [DecidableEq K] [FiniteMapLaws M K V] (m : M) : Disjoint m (∅ : M) :=
   disjoint_symm (FiniteMapLaws.disjoint_empty_left m)
+
+/-- `m₂` and `m₁ \ m₂` are disjoint.
+    This is unconditional - the difference by definition removes all keys in m₂. -/
+theorem disjoint_difference_r [DecidableEq K] [FiniteMapLaws M K V] [FiniteMapLawsSelf M K V]
+    (m₁ m₂ : M) : Disjoint m₂ (m₁ \ m₂) := by
+  intro k ⟨h_in_m2, h_in_diff⟩
+  -- h_in_m2: (get? m₂ k).isSome
+  -- h_in_diff: (get? (m₁ \ m₂) k).isSome
+  -- But (m₁ \ m₂) only has keys not in m₂, so this is a contradiction
+  -- We need to show that if k ∈ m₁ \ m₂, then k ∉ m₂
+  -- The difference filters to entries where (get? m₂ k).isNone
+  have hdiff := toList_difference (M := M) (K := K) (V := V) m₁ m₂
+  -- From h_in_diff, get some value v at k in the diff
+  obtain ⟨v, hget_diff⟩ := Option.isSome_iff_exists.mp h_in_diff
+  -- (k, v) ∈ toList (m₁ \ m₂)
+  have hmem_diff : (k, v) ∈ toList (m₁ \ m₂) := (toList_get? (m₁ \ m₂) k v).mp hget_diff
+  -- By permutation, (k, v) ∈ filtered list
+  have hmem_filter : (k, v) ∈ (toList m₁).filter (fun kv => (get? m₂ kv.1).isNone) :=
+    hdiff.mem_iff.mp hmem_diff
+  -- From filter membership, (get? m₂ k).isNone = true
+  have hfilter : (get? m₂ k).isNone = true := (List.mem_filter.mp hmem_filter).2
+  -- But h_in_m2 says (get? m₂ k).isSome - this is a contradiction
+  simp only [Option.isNone_iff_eq_none] at hfilter
+  simp only [hfilter, Option.isSome_none, Bool.false_eq_true] at h_in_m2
+
+/-- toList of difference union: `toList (m₂ ∪ (m₁ \ m₂))` is a permutation of `toList m₁`
+    when `m₂ ⊆ m₁`. This is the key lemma for `big_sepM_subseteq`. -/
+theorem toList_difference_union [DecidableEq K] [FiniteMapLaws M K V] [FiniteMapLawsSelf M K V]
+    (m₁ m₂ : M) (hsub : m₂ ⊆ m₁) :
+    (toList (m₂ ∪ (m₁ \ m₂))).Perm (toList m₁) := by
+  -- m₂ and m₁ \ m₂ are disjoint
+  have hdisj : Disjoint m₂ (m₁ \ m₂) := disjoint_difference_r m₁ m₂
+  -- toList (m₂ ∪ (m₁ \ m₂)) ~ toList m₂ ++ toList (m₁ \ m₂)
+  have hunion := toList_union_disjoint m₂ (m₁ \ m₂) hdisj
+  -- toList (m₁ \ m₂) ~ filter (toList m₁)
+  have hdiff := toList_difference (M := M) (K := K) (V := V) m₁ m₂
+  -- Need to show: toList m₂ ++ filter (toList m₁) ~ toList m₁
+  -- Since m₂ ⊆ m₁, every entry in m₂ is also in m₁
+  -- And filter removes exactly the entries in m₂
+  -- So together they form all of m₁
+  refine hunion.trans ?_
+  -- Need: toList m₂ ++ toList (m₁ \ m₂) ~ toList m₁
+  refine List.Perm.trans (List.Perm.append_left (toList m₂) hdiff) ?_
+  -- Need: toList m₂ ++ filter (toList m₁) ~ toList m₁
+  -- This is essentially saying that partitioning m₁ by "in m₂" gives m₂'s entries and the rest
+  sorry
 
 end FiniteMap
 

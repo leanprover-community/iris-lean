@@ -172,20 +172,41 @@ theorem flip_mono' {Φ Ψ : K → V → PROP} {m : M}
 /-- Corresponds to `big_sepM_subseteq` in Rocq Iris.
     If `m₂ ⊆ m₁`, we can extract the bigSepM over the smaller map.
 
-    Note: This requires additional map infrastructure (difference, disjoint union)
-    that is not yet available in the abstract FiniteMap interface.
-    The Rocq proof uses `map_difference_union` and `big_opM_union`.
-    For now, we provide a sorry-based placeholder. -/
-theorem subseteq {Φ : K → V → PROP} {m₁ m₂ : M} [∀ k v, Affine (Φ k v)]
+    The proof uses the identity `m₂ ∪ (m₁ \ m₂) = m₁` when `m₂ ⊆ m₁`,
+    combined with `big_sepM_union` for disjoint maps. -/
+theorem subseteq {Φ : K → V → PROP} {m₁ m₂ : M} [FiniteMapLawsSelf M K V] [∀ k v, Affine (Φ k v)]
     (h : m₂ ⊆ m₁) :
     ([∗ map] k ↦ x ∈ m₁, Φ k x) ⊢ [∗ map] k ↦ x ∈ m₂, Φ k x := by
-  -- This proof requires map_difference_union : m₂ ∪ (m₁ ∖ m₂) = m₁
-  -- and big_opM_union for disjoint maps.
-  -- For the abstract FiniteMap interface, we would need:
-  -- 1. Map difference operation: m₁ ∖ m₂
-  -- 2. Proof that m₂ ##ₘ (m₁ ∖ m₂) when m₂ ⊆ m₁
-  -- 3. big_sepM_union for disjoint maps
-  sorry
+  -- Step 1: m₁ ~ m₂ ∪ (m₁ \ m₂) (as permutation of toLists)
+  have hperm := Iris.Std.FiniteMap.toList_difference_union m₁ m₂ h
+  -- Step 2: m₂ and (m₁ \ m₂) are disjoint
+  have hdisj := Iris.Std.FiniteMap.disjoint_difference_r m₁ m₂
+  -- Step 3: toList (m₂ ∪ (m₁ \ m₂)) ~ toList m₂ ++ toList (m₁ \ m₂)
+  have hunion_perm := toList_union_disjoint m₂ (m₁ \ m₂) hdisj
+  -- Now bigSepM m₁ ≡ bigSepM (m₂ ∪ (m₁ \ m₂)) by permutation
+  simp only [bigSepM]
+  have heq_m1 : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList m₁) ≡
+               bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (m₂ ∪ (m₁ \ m₂))) :=
+    BigOpL.perm _ hperm.symm
+  refine (equiv_iff.mp heq_m1).1.trans ?_
+  -- bigSepM (m₂ ∪ (m₁ \ m₂)) ≡ bigSepM m₂ ∗ bigSepM (m₁ \ m₂)
+  have heq_union : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (m₂ ∪ (m₁ \ m₂))) ≡
+                  bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList m₂ ++ toList (m₁ \ m₂)) :=
+    BigOpL.perm _ hunion_perm
+  refine (equiv_iff.mp heq_union).1.trans ?_
+  -- bigOpL over append = sep of two bigOpLs
+  have happ := BigOpL.append (op := sep (PROP := PROP)) (unit := emp)
+    (fun _ (kv : K × V) => Φ kv.1 kv.2) (toList m₂) (toList (m₁ \ m₂))
+  refine (equiv_iff.mp happ).1.trans ?_
+  -- Now we have: bigSepM m₂ ∗ bigSepM (m₁ \ m₂) ⊢ bigSepM m₂
+  -- Since bigSepM (m₁ \ m₂) is Affine (all Φ k v are Affine), we can drop it
+  -- Need to provide the Affine instance for the right side
+  haveI : Affine (bigOpL sep emp (fun n (kv : K × V) => Φ kv.1 kv.2) (toList (m₁ \ m₂))) :=
+    ⟨BigOpL.closed (fun P => P ⊢ emp) (fun _ kv => Φ kv.1 kv.2) (toList (m₁ \ m₂))
+      Entails.rfl
+      (fun _ _ h1 h2 => (sep_mono h1 h2).trans sep_emp.1)
+      (fun _ _ _ => Affine.affine)⟩
+  exact sep_elim_l
 
 /-! ## Typeclass Instances -/
 
@@ -286,27 +307,27 @@ theorem lookup_acc {Φ : K → V → PROP} {m : M} {k : K} {v : V}
   -- We need: bigSepM m ⊢ Φ k v ∗ (Φ k v -∗ bigSepM m)
   (delete h).1.trans (sep_mono_r (wand_intro' (delete h).2))
 
-/-- Corresponds to `big_sepM_lookup` in Rocq Iris (Affine version).
-    Extract a specific element from the big sep, discarding the rest. -/
-theorem lookup {Φ : K → V → PROP} {m : M} {k : K} {v : V} [∀ j w, Affine (Φ j w)]
+/-- Corresponds to `big_sepM_lookup` in Rocq Iris.
+    Extract a specific element from the big sep, discarding the rest.
+    Uses TCOr to handle both the Affine case (all predicates are Affine)
+    and the Absorbing case (the specific element is Absorbing). -/
+theorem lookup {Φ : K → V → PROP} {m : M} {k : K} {v : V}
     (h : get? m k = some v) :
-    ([∗ map] k' ↦ x ∈ m, Φ k' x) ⊢ Φ k v :=
-  (delete h).1.trans sep_elim_l
+    [TCOr (∀ j w, Affine (Φ j w)) (Absorbing (Φ k v))] →
+    ([∗ map] k' ↦ x ∈ m, Φ k' x) ⊢ Φ k v
+  | TCOr.l => (delete h).1.trans sep_elim_l
+  | TCOr.r => (lookup_acc h).trans (sep_elim_l (P := Φ k v) (Q := iprop(Φ k v -∗ bigSepM Φ m)))
 
-/-- Corresponds to `big_sepM_lookup` in Rocq Iris (Absorbing version).
-    Extract a specific element from the big sep when that element is absorbing. -/
-theorem lookup_absorbing {Φ : K → V → PROP} {m : M} {k : K} {v : V} [Absorbing (Φ k v)]
+/-- Corresponds to `big_sepM_lookup_dom` in Rocq Iris.
+    Lookup when the predicate doesn't depend on the value.
+    Uses TCOr to handle both Affine and Absorbing cases.
+    Note: Rocq uses `is_Some (m !! i)`, here we require an explicit value `v`. -/
+theorem lookup_dom {Φ : K → PROP} {m : M} {k : K} {v : V}
     (h : get? m k = some v) :
-    ([∗ map] k' ↦ x ∈ m, Φ k' x) ⊢ Φ k v :=
-  -- Use lookup_acc and then use sep_elim_l with the Absorbing instance
-  (lookup_acc h).trans (sep_elim_l (P := Φ k v) (Q := iprop(Φ k v -∗ bigSepM Φ m)))
-
-/-- Corresponds to `big_sepM_lookup_dom` in Rocq Iris (Affine version).
-    Lookup when the predicate doesn't depend on the value. -/
-theorem lookup_dom {Φ : K → PROP} {m : M} {k : K} {v : V} [∀ j, Affine (Φ j)]
-    (h : get? m k = some v) :
-    bigSepM (fun k' _ => Φ k') m ⊢ Φ k :=
-  lookup (Φ := fun k' _ => Φ k') h
+    [TCOr (∀ j, Affine (Φ j)) (Absorbing (Φ k))] →
+    bigSepM (fun k' _ => Φ k') m ⊢ Φ k
+  | TCOr.l => lookup (Φ := fun k' _ => Φ k') h
+  | TCOr.r => lookup (Φ := fun k' _ => Φ k') h
 
 /-- Corresponds to `big_sepM_insert_acc` in Rocq Iris.
     Access element at key `k` with ability to update it to any new value. -/
