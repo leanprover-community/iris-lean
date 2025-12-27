@@ -196,10 +196,9 @@ theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V c
           | some b₁ => some (f p.1 b₁ p.2)) acc) t₁.inner.inner := by
     rw [Std.DTreeMap.Internal.Impl.foldl_eq_foldl]
 
-  have hdist : t₂.inner.inner.toListModel.Pairwise (fun a b => compare a.1 b.1 ≠ .eq) := by
-    have hpw := List.pairwise_map.mp <|
-      Std.DTreeMap.Internal.Impl.SameKeys.ordered_iff_pairwise_keys.mp t₂.inner.wf.ordered
-    exact hpw.imp fun hlt heq => by rw [heq] at hlt; cases hlt
+  have hdist : t₂.inner.inner.toListModel.Pairwise (fun a b => compare a.1 b.1 ≠ .eq) :=
+    (List.pairwise_map.mp <| Std.DTreeMap.Internal.Impl.SameKeys.ordered_iff_pairwise_keys.mp
+      t₂.inner.wf.ordered).imp fun hlt heq => nomatch heq ▸ hlt
 
   -- Connect t₁[k]? with the internal get?
   have h_get_eq : t₁[k]? = Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k := rfl
@@ -244,14 +243,11 @@ defined as a foldl over the second tree using alter operations.
   -- First, establish the key property using our foldl_alter_getElem? helper
   have hfoldl := foldl_alter_getElem? (init := t₁) (f := f) (k := k) (distinct_keys_toList (t := t₂))
 
-  -- Helper: convert t₂[k]? = none to List.find? = none
   have find_none : t₂[k]? = none → t₂.toList.find? (fun kv => cmp kv.1 k == .eq) = none := by
-    intro hget; apply List.find?_eq_none.mpr; intro kv hkv; simp only [beq_iff_eq]; intro heq
-    have : t₂[k]? = some kv.2 := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mpr
-      ⟨kv.1, OrientedCmp.eq_symm heq, hkv⟩
-    grind
+    intro hget; apply List.find?_eq_none.mpr; intro kv hkv heq; simp only [beq_iff_eq] at heq
+    exact absurd (getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mpr
+      ⟨kv.1, OrientedCmp.eq_symm heq, hkv⟩) (by simp [hget])
 
-  -- Helper: convert t₂[k]? = some v to List.find? = some kv
   have find_some : ∀ v, t₂[k]? = some v →
       ∃ kv, t₂.toList.find? (fun kv => cmp kv.1 k == .eq) = some kv ∧ kv.2 = v ∧ cmp kv.1 k = .eq := by
     intro v hget
