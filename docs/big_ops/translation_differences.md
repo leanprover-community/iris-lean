@@ -256,8 +256,6 @@ The following BigSepM lemmas are aligned with Rocq by using the `FiniteMapLaws` 
 | `list_to_map` | `FiniteMapLaws.toList_ofList` (requires `Nodup` on keys) |
 | `union` | `FiniteMapLawsSelf.toList_union_disjoint` (requires `Disjoint`) |
 
-**Note:** Explicit permutation proof versions (`fmap_perm`, `omap_perm`, `list_to_map_perm`, `union_perm`) are also available for cases where the typeclass laws don't apply.
-
 **Rocq equivalents:** These correspond to stdpp's `map_to_list_fmap`, `map_to_list_to_map`, etc. which are provided by `gmap`'s implementation.
 
 ---

@@ -640,20 +640,6 @@ theorem omap {Φ : K → V → PROP} {m : M} (f : V → Option V)
     BigOpL.perm _ hperm
   exact equiv_iff.mp heq |>.trans (omap_list_aux f (toList m))
 
-omit [DecidableEq K] [FiniteMapLaws M K V] in
-/-- Helper lemma for union with explicit permutation proof. -/
-theorem union_perm {Φ : K → V → PROP} {m₁ m₂ : M}
-    (hperm : (toList (m₁ ∪ m₂)).Perm (toList m₁ ++ toList m₂)) :
-    ([∗ map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢
-      ([∗ map] k ↦ y ∈ m₁, Φ k y) ∗ [∗ map] k ↦ y ∈ m₂, Φ k y := by
-  simp only [bigSepM]
-  have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (m₁ ∪ m₂)) ≡
-             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList m₁ ++ toList m₂) :=
-    BigOpL.perm _ hperm
-  refine equiv_iff.mp heq |>.trans ?_
-  -- bigOpL over appended list equals sep of two bigOpLs
-  exact equiv_iff.mp (BigOpL.append _ (toList m₁) (toList m₂))
-
 /-- Corresponds to `big_sepM_union` in Rocq Iris.
     Big sep over a disjoint union splits into a separating conjunction.
 
@@ -661,8 +647,14 @@ theorem union_perm {Φ : K → V → PROP} {m₁ m₂ : M}
 theorem union [FiniteMapLawsSelf M K V] {Φ : K → V → PROP} {m₁ m₂ : M}
     (hdisj : FiniteMap.Disjoint m₁ m₂) :
     ([∗ map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢
-      ([∗ map] k ↦ y ∈ m₁, Φ k y) ∗ [∗ map] k ↦ y ∈ m₂, Φ k y :=
-  union_perm (toList_union_disjoint m₁ m₂ hdisj)
+      ([∗ map] k ↦ y ∈ m₁, Φ k y) ∗ [∗ map] k ↦ y ∈ m₂, Φ k y := by
+  simp only [bigSepM]
+  have hperm := toList_union_disjoint m₁ m₂ hdisj
+  have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (m₁ ∪ m₂)) ≡
+             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList m₁ ++ toList m₂) :=
+    BigOpL.perm _ hperm
+  refine equiv_iff.mp heq |>.trans ?_
+  exact equiv_iff.mp (BigOpL.append _ (toList m₁) (toList m₂))
 
 end FilterMapTransformations
 
@@ -676,15 +668,6 @@ theorem list_to_map {Φ : K → V → PROP} {l : List (K × V)}
     ([∗ map] k ↦ x ∈ (ofList l : M), Φ k x) ⊣⊢ [∗ list] kv ∈ l, Φ kv.1 kv.2 := by
   simp only [bigSepM]
   exact equiv_iff.mp (BigOpL.perm _ (toList_ofList l hnodup))
-
-omit [DecidableEq K] [FiniteMapLaws M K V] in
-/-- Version of `list_to_map` with explicit permutation proof.
-    Use when the permutation is not automatically available from `toList_ofList`. -/
-theorem list_to_map_perm {Φ : K → V → PROP} {l : List (K × V)}
-    (hperm : (toList (ofList l : M)).Perm l) :
-    ([∗ map] k ↦ x ∈ (ofList l : M), Φ k x) ⊣⊢ [∗ list] kv ∈ l, Φ kv.1 kv.2 := by
-  simp only [bigSepM]
-  exact equiv_iff.mp (BigOpL.perm _ hperm)
 
 /-! ## Intro and Forall Lemmas -/
 
