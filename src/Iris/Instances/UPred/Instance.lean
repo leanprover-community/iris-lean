@@ -468,34 +468,27 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   · exists y
   · exact ⟨HΦy, CMRA.incN_op_left k y x3⟩
 
+-- TODO: later_ownM, ownM_forall (needs internal eq)
+
+theorem cmraValid_intro [CMRA A] {P : UPred M} (a : A) (Ha : ✓ a) : P ⊢ cmraValid a :=
+  fun _ _ _ _ => CMRA.Valid.validN Ha
+
+theorem cmraValid_elim [CMRA A] (a : A) : (cmraValid a : UPred M) ⊢ iprop(⌜ ✓{0} a ⌝) :=
+  fun n _ _ H => CMRA.validN_of_le n.zero_le H
+
+theorem plainly_cmra_cmraValid_1 [CMRA A] (a : A) :
+    (cmraValid a : UPred M) ⊢ ■ cmraValid a :=
+  Std.refl
+
+theorem cmra_cmraValid_weaken [CMRA A] (a b : A) :
+    (cmraValid (a • b) : UPred M) ⊢ cmraValid a :=
+  fun _ _ _ H => CMRA.validN_op_left H
+
+theorem cmraValid_entails [CMRA A] [CMRA B] {a : A} {b : B} (Hv : ∀ n, ✓{n} a → ✓{n} b) :
+    (cmraValid a : UPred M) ⊢ cmraValid b :=
+  fun _ _ _ H => Hv _ H
+
 instance : BIAffine (UPred M) := ⟨by infer_instance⟩
-
-instance [OFE A] : InternalEq (UPred M) A where
-  internalEq := UPred.eq
-
-theorem later_ownM (a : M) : ▷ ownM a ⊣⊢ ∃ b, ownM b ∧ ▷ (a ≡ b) := by
-  constructor
-  · intro n x Hv H
-    cases n with
-    | zero =>
-      refine ⟨iprop(ownM x ∧ ▷ (a ≡ x)), ⟨x, rfl⟩, ?_⟩
-      exact ⟨CMRA.IncludedN.rfl, ⟨⟩⟩
-    | succ n =>
-      rcases H with ⟨z, Hz⟩
-      have Hv' : ✓{n} x := CMRA.validN_succ Hv
-      rcases CMRA.extend Hv' Hz with ⟨b, z', Hx, Hab, Hzz⟩
-      refine ⟨iprop(ownM b ∧ ▷ (a ≡ b)), ⟨b, rfl⟩, ?_⟩
-      exact ⟨⟨z', Hx.dist⟩, Hab.symm⟩
-  · intro n x Hv ⟨p, ⟨b, hp⟩, H⟩
-    rw [← hp] at H
-    cases n with
-    | zero => exact ⟨⟩
-    | succ n =>
-      rcases H with ⟨⟨z, Hz⟩, Heq⟩
-      exists z
-      calc
-        x ≡{n}≡ b • z := Hz.le (Nat.le_succ n)
-        _ ≡{n}≡ a • z := Heq.symm.op_l
 
 -- TODO: Port derived lemmas
 

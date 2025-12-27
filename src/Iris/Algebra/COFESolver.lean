@@ -131,7 +131,7 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
       rintro a _ eq rfl
       rw [Nat.add_assoc, Nat.add_left_cancel_iff] at eq; subst a
       apply down_up
-    · cases (Nat.lt_or_eq_of_le h₁).resolve_left (h₂ ∘ Nat.lt_succ_iff.1)
+    · cases (Nat.lt_or_eq_of_le h₁).resolve_left (h₂ ∘ Nat.lt_succ.1)
       have {a b} (e₁ : i+1+a = i+1) (e₂ : i+1 = i+b) :
           down F i (eqToHom e₁ (upN F a n)) ≡ downN F b (eqToHom e₂ n) := by
         cases Nat.add_left_cancel (k := 0) e₁; cases Nat.add_left_cancel e₂
