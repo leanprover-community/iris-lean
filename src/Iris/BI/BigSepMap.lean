@@ -321,13 +321,18 @@ theorem lookup {Φ : K → V → PROP} {m : M} {k : K} {v : V}
 /-- Corresponds to `big_sepM_lookup_dom` in Rocq Iris.
     Lookup when the predicate doesn't depend on the value.
     Uses TCOr to handle both Affine and Absorbing cases.
-    Note: Rocq uses `is_Some (m !! i)`, here we require an explicit value `v`. -/
-theorem lookup_dom {Φ : K → PROP} {m : M} {k : K} {v : V}
-    (h : get? m k = some v) :
+
+    Rocq: `is_Some (m !! i) → ([∗ map] k↦_ ∈ m, Φ k) ⊢ Φ i` -/
+theorem lookup_dom {Φ : K → PROP} {m : M} {k : K}
+    (h : (get? m k).isSome) :
     [TCOr (∀ j, Affine (Φ j)) (Absorbing (Φ k))] →
-    bigSepM (fun k' _ => Φ k') m ⊢ Φ k
-  | TCOr.l => lookup (Φ := fun k' _ => Φ k') h
-  | TCOr.r => lookup (Φ := fun k' _ => Φ k') h
+    bigSepM (fun k' _ => Φ k') m ⊢ Φ k := by
+  -- Extract the value from isSome
+  have ⟨v, hv⟩ : ∃ v, get? m k = some v := Option.isSome_iff_exists.mp h
+  intro htc
+  exact match htc with
+  | TCOr.l => lookup (Φ := fun k' _ => Φ k') hv
+  | TCOr.r => lookup (Φ := fun k' _ => Φ k') hv
 
 /-- Corresponds to `big_sepM_insert_acc` in Rocq Iris.
     Access element at key `k` with ability to update it to any new value. -/
@@ -636,11 +641,8 @@ theorem omap {Φ : K → V → PROP} {m : M} (f : V → Option V)
   exact equiv_iff.mp heq |>.trans (omap_list_aux f (toList m))
 
 omit [DecidableEq K] [FiniteMapLaws M K V] in
-/-- Corresponds to `big_sepM_union` in Rocq Iris.
-    Big sep over a disjoint union splits into a separating conjunction.
-
-    Note: Requires the permutation proof for the specific map implementation. -/
-theorem union {Φ : K → V → PROP} {m₁ m₂ : M}
+/-- Helper lemma for union with explicit permutation proof. -/
+theorem union_perm {Φ : K → V → PROP} {m₁ m₂ : M}
     (hperm : (toList (m₁ ∪ m₂)).Perm (toList m₁ ++ toList m₂)) :
     ([∗ map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢
       ([∗ map] k ↦ y ∈ m₁, Φ k y) ∗ [∗ map] k ↦ y ∈ m₂, Φ k y := by
@@ -651,6 +653,16 @@ theorem union {Φ : K → V → PROP} {m₁ m₂ : M}
   refine equiv_iff.mp heq |>.trans ?_
   -- bigOpL over appended list equals sep of two bigOpLs
   exact equiv_iff.mp (BigOpL.append _ (toList m₁) (toList m₂))
+
+/-- Corresponds to `big_sepM_union` in Rocq Iris.
+    Big sep over a disjoint union splits into a separating conjunction.
+
+    Rocq: `m1 ##ₘ m2 → ([∗ map] k↦y ∈ m1 ∪ m2, Φ k y) ⊣⊢ ([∗ map] k↦y ∈ m1, Φ k y) ∗ ([∗ map] k↦y ∈ m2, Φ k y)` -/
+theorem union [FiniteMapLawsSelf M K V] {Φ : K → V → PROP} {m₁ m₂ : M}
+    (hdisj : FiniteMap.Disjoint m₁ m₂) :
+    ([∗ map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢
+      ([∗ map] k ↦ y ∈ m₁, Φ k y) ∗ [∗ map] k ↦ y ∈ m₂, Φ k y :=
+  union_perm (toList_union_disjoint m₁ m₂ hdisj)
 
 end FilterMapTransformations
 

@@ -243,47 +243,6 @@ Lemma big_orL_ne Φ Ψ l n :
 
 ---
 
-## Part F: BigAndM (Map Conjunction) - Notes
-
-This section documents non-differences and implementation notes for BigAndM.
-
-### 28. BigAndM Uses `iprop(True)` as Unit
-
-**Rocq:** Big conjunction uses `True` as the unit (identity element).
-
-**Lean:**
-```lean
-abbrev bigAndM [BI PROP] {M K V} [FiniteMap M K V]
-    (Φ : K → V → PROP) (m : M) : PROP :=
-  bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) (toList m)
-```
-
-**Status:** Same as Rocq - `iprop(True)` is Lean's notation for the BI `True` proposition.
-
----
-
-### 31. BigAndM Affine Instances (Intentional)
-
-**Rocq:** BigAndM doesn't have Affine instances (since `True ∧ ... ∧ True` is not generally affine unless the BI is affine).
-
-**Lean:** Same - no general Affine typeclass instances for BigAndM. The `BIAffine` instance is provided.
-
-**Status:** This is intentional behavior, matching Rocq.
-
----
-
-### 32. `true_and` Helper Pattern
-
-**Lean:** Uses a local helper in proofs involving the unit:
-```lean
-have true_and : ∀ (X : PROP), iprop(True) ∧ X ⊣⊢ X :=
-  fun X => ⟨and_elim_r, and_intro true_intro .rfl⟩
-```
-
-**Status:** Stylistic difference only. Unlike `emp_sep` which has dedicated lemmas, `True ∧ X ⊣⊢ X` is composed inline from basic laws.
-
----
-
 ## Part G: BigSepM Additional Differences
 
 ### 37. Map Transformation Lemmas Require Explicit Permutation Proofs
@@ -294,8 +253,9 @@ The following BigSepM lemmas take explicit permutation proofs instead of using t
 |-------|---------------------|
 | `fmap` | `(toList (map f m)).Perm ((toList m).map ...)` |
 | `omap` | `(toList (filterMap f m)).Perm ((toList m).filterMap ...)` |
-| `union` | `(toList (m₁ ∪ m₂)).Perm (toList m₁ ++ toList m₂)` |
 | `list_to_map` | `(toList (ofList l)).Perm l` |
+
+**Note:** `union` now takes a disjointness hypothesis `FiniteMap.Disjoint m₁ m₂` (aligned with Rocq), with `union_perm` available for explicit permutation proofs.
 
 **Reason:** The abstract `FiniteMap` interface doesn't provide these permutation proofs automatically. Users must supply them for their specific map implementations.
 
@@ -338,49 +298,7 @@ theorem filter'' [BIAffine PROP] {Φ : K → V → PROP} {m : M} (p : K → V �
 
 ---
 
-### 40. `big_sepM_union` Disjointness vs Permutation
-
-**Rocq:**
-```coq
-Lemma big_sepM_union Φ m1 m2 :
-  m1 ##ₘ m2 →
-  ([∗ map] k↦y ∈ m1 ∪ m2, Φ k y)
-  ⊣⊢ ([∗ map] k↦y ∈ m1, Φ k y) ∗ ([∗ map] k↦y ∈ m2, Φ k y).
-```
-
-**Lean:**
-```lean
-theorem union {Φ : K → V → PROP} {m₁ m₂ : M}
-    (hperm : (toList (m₁ ∪ m₂)).Perm (toList m₁ ++ toList m₂)) :
-    ([∗ map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢
-      ([∗ map] k ↦ y ∈ m₁, Φ k y) ∗ [∗ map] k ↦ y ∈ m₂, Φ k y
-```
-
-**Difference:** Rocq takes a disjointness hypothesis `m1 ##ₘ m2`. Lean takes an explicit permutation proof. Users providing permutation proofs typically have disjoint maps (otherwise union is not a simple append).
-
----
-
-### 41. `big_sepM_lookup_dom` Uses `is_Some` vs Explicit Value
-
-**Rocq:**
-```coq
-Lemma big_sepM_lookup_dom (Φ : K → PROP) m i
-  `{!TCOr (∀ j, Affine (Φ j)) (Absorbing (Φ i))} :
-  is_Some (m !! i) → ([∗ map] k↦_ ∈ m, Φ k) ⊢ Φ i.
-```
-
-**Lean:**
-```lean
-theorem lookup_dom {Φ : K → PROP} {m : M} {k : K} {v : V} [∀ j, Affine (Φ j)]
-    (h : get? m k = some v) :
-    bigSepM (fun k' _ => Φ k') m ⊢ Φ k
-```
-
-**Difference:** Rocq uses `is_Some (m !! i)` and `TCOr` for Affine/Absorbing. Lean requires an explicit value `v` and only has the Affine version. An Absorbing version could be added.
-
----
-
-### 44. Not Ported: `big_sepM_fn_insert*`
+### 40. Not Ported: `big_sepM_fn_insert*`
 
 **Rocq has:**
 ```coq
@@ -400,7 +318,7 @@ Lemma big_sepM_fn_insert' (Φ : K → PROP) m i x P :
 
 ---
 
-### 45. Not Ported: `big_sepM_sep_zip*`
+### 41. Not Ported: `big_sepM_sep_zip*`
 
 **Rocq has:**
 ```coq
@@ -418,7 +336,7 @@ Lemma big_sepM_sep_zip ...
 
 ---
 
-### 46. Not Ported: `big_sepM_impl_strong`, `big_sepM_impl_dom_subseteq`
+### 42. Not Ported: `big_sepM_impl_strong`, `big_sepM_impl_dom_subseteq`
 
 **Rocq has:** These lemmas for advanced impl patterns with filtered maps.
 
@@ -428,7 +346,7 @@ Lemma big_sepM_sep_zip ...
 
 ---
 
-### 47. Not Ported: `big_sepM_kmap`
+### 43. Not Ported: `big_sepM_kmap`
 
 **Rocq:**
 ```coq
