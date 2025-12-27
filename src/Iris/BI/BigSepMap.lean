@@ -944,29 +944,32 @@ theorem filter' {Φ : K → V → PROP} {m : M} (p : K → V → Bool) :
 
 /-- Corresponds to `big_sepM_filter` in Rocq Iris. Requires `BIAffine`.
     Big sep over a filtered map is equivalent to big sep with implication guard. -/
-theorem filter'' [BIAffine PROP] {Φ : K → V → PROP} {m : M} (p : K → V → Bool) :
-    ([∗ map] k ↦ x ∈ FiniteMap.filter p m, Φ k x) ⊣⊢
-      [∗ map] k ↦ x ∈ m, iprop(⌜p k x = true⌝ → Φ k x) := by
-  have heq : ([∗ map] k ↦ x ∈ m, if p k x then Φ k x else emp) ⊣⊢
-      [∗ map] k ↦ x ∈ m, iprop(⌜p k x = true⌝ → Φ k x) := by
+theorem filter'' [BIAffine PROP] {Φ : K → V → PROP} {m : M}
+    (φ : K → V → Prop) [∀ k v, Decidable (φ k v)] :
+    ([∗ map] k ↦ x ∈ FiniteMap.filter (fun k v => decide (φ k v)) m, Φ k x) ⊣⊢
+      [∗ map] k ↦ x ∈ m, iprop(⌜φ k x⌝ → Φ k x) := by
+  have heq : ([∗ map] k ↦ x ∈ m, if decide (φ k x) then Φ k x else emp) ⊣⊢
+      [∗ map] k ↦ x ∈ m, iprop(⌜φ k x⌝ → Φ k x) := by
     apply equiv_iff.mp
     apply proper
     intro k v _
-    cases hp : p k v with
+    cases hp : decide (φ k v) with
     | false =>
-      simp only [↓reduceIte, Bool.false_eq_true]
-      -- emp ≡ (⌜false⌝ → Φ k v)
-      -- Forward: emp ⊢ ⌜false⌝ → Φ k v (vacuously true since ⌜false⌝ is absurd)
-      -- Backward: (⌜false⌝ → Φ k v) ⊢ emp (affine)
+      have hφ : ¬φ k v := of_decide_eq_false hp
+      -- emp ≡ (⌜φ k v⌝ → Φ k v) when ¬φ k v
+      -- Forward: emp ⊢ ⌜φ k v⌝ → Φ k v (vacuously true since ⌜φ k v⌝ is absurd)
+      -- Backward: (⌜φ k v⌝ → Φ k v) ⊢ emp (affine)
       refine equiv_iff.mpr ⟨?_, Affine.affine⟩
       refine imp_intro' <| pure_elim_l fun h => ?_
-      simp at h
+      exact absurd h hφ
     | true =>
-      -- After simp, the goal becomes: Φ k v ≡ (True → Φ k v) since ⌜p k v = true⌝ simplifies to True
+      have hφ : φ k v := of_decide_eq_true hp
+      -- Φ k v ≡ (⌜φ k v⌝ → Φ k v) when φ k v holds
       simp only [↓reduceIte]
-      -- Now: Φ k v ≡ (True → Φ k v), which is exactly true_imp.symm
-      exact equiv_iff.mpr true_imp.symm
-  exact (filter' p).trans heq
+      refine equiv_iff.mpr ⟨?_, ?_⟩
+      · exact imp_intro' <| pure_elim_l fun _ => Entails.rfl
+      · exact (and_intro (pure_intro hφ) .rfl).trans imp_elim_r
+  exact (filter' _).trans heq
 
 /-! ## Missing Lemmas from Rocq Iris
 

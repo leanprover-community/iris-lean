@@ -245,59 +245,7 @@ Lemma big_orL_ne Φ Ψ l n :
 
 ## Part G: BigSepM Additional Differences
 
-### 37. Map Transformation Lemmas Use Typeclass Laws
-
-The following BigSepM lemmas are aligned with Rocq by using the `FiniteMapLaws` typeclasses:
-
-| Lemma | Typeclass Law Used |
-|-------|-------------------|
-| `fmap` | `FiniteMapLawsExt.toList_map` |
-| `omap` | `FiniteMapLawsSelf.toList_filterMap` |
-| `list_to_map` | `FiniteMapLaws.toList_ofList` (requires `Nodup` on keys) |
-| `union` | `FiniteMapLawsSelf.toList_union_disjoint` (requires `Disjoint`) |
-
-**Rocq equivalents:** These correspond to stdpp's `map_to_list_fmap`, `map_to_list_to_map`, etc. which are provided by `gmap`'s implementation.
-
----
-
-### 38. Filter Lemmas Require `FiniteMapLawsSelf`
-
-**Rocq:** Uses `mapset.countable` and related infrastructure.
-
-**Lean:**
-```lean
-theorem filter' {Φ : K → V → PROP} {m : M} (p : K → V → Bool) :
-    ([∗ map] k ↦ x ∈ FiniteMap.filter p m, Φ k x) ⊣⊢ ...
-```
-
-**Requires:** `[FiniteMapLawsSelf M K V]` which provides `toList_filter` law.
-
-**Reason:** The `FiniteMapLawsSelf` typeclass provides the necessary law that filtering preserves the list permutation property.
-
----
-
-### 39. `big_sepM_filter` BIAffine Difference
-
-**Rocq:**
-```coq
-Lemma big_sepM_filter `{!BiAffine PROP}
-    (φ : K * A → Prop) `{∀ kx, Decision (φ kx)} Φ m :
-  ([∗ map] k ↦ x ∈ filter φ m, Φ k x) ⊣⊢
-  ([∗ map] k ↦ x ∈ m, ⌜φ (k, x)⌝ → Φ k x).
-```
-
-**Lean:**
-```lean
-theorem filter'' [BIAffine PROP] {Φ : K → V → PROP} {m : M} (p : K → V → Bool) :
-    ([∗ map] k ↦ x ∈ FiniteMap.filter p m, Φ k x) ⊣⊢
-      [∗ map] k ↦ x ∈ m, iprop(⌜p k x = true⌝ → Φ k x)
-```
-
-**Note:** Both require `BIAffine`. The Rocq version uses `decide_emp` trick internally. The `filter'` version (without `BIAffine`) uses `if ... then ... else emp` in both.
-
----
-
-### 40. Not Ported: `big_sepM_fn_insert*`
+### 21. Not Ported: `big_sepM_fn_insert*`
 
 **Rocq has:**
 ```coq
@@ -317,7 +265,7 @@ Lemma big_sepM_fn_insert' (Φ : K → PROP) m i x P :
 
 ---
 
-### 41. Not Ported: `big_sepM_sep_zip*`
+### 22. Not Ported: `big_sepM_sep_zip*`
 
 **Rocq has:**
 ```coq
@@ -335,7 +283,7 @@ Lemma big_sepM_sep_zip ...
 
 ---
 
-### 42. Not Ported: `big_sepM_impl_strong`, `big_sepM_impl_dom_subseteq`
+### 23. Not Ported: `big_sepM_impl_strong`, `big_sepM_impl_dom_subseteq`
 
 **Rocq has:** These lemmas for advanced impl patterns with filtered maps.
 
@@ -345,7 +293,7 @@ Lemma big_sepM_sep_zip ...
 
 ---
 
-### 43. Not Ported: `big_sepM_kmap`
+### 24. Not Ported: `big_sepM_kmap`
 
 **Rocq:**
 ```coq
@@ -362,7 +310,7 @@ Lemma big_sepM_kmap `{Countable K1, Countable K2} {A}
 
 ## Part I: BigAndM Additional Differences
 
-### 50. BigAndM `later` Does NOT Require `BIAffine`
+### 25. BigAndM `later` Does NOT Require `BIAffine`
 
 **Rocq:**
 ```coq
@@ -380,7 +328,7 @@ theorem later {Φ : K → V → PROP} {m : M} :
 
 ---
 
-### 52. BigAndM `affine` Instance Requires `BIAffine`
+### 26. BigAndM `affine` Instance Requires `BIAffine`
 
 **Rocq:** BigAndM doesn't have Affine instances in general.
 
@@ -394,7 +342,7 @@ instance affine {Φ : K → V → PROP} {m : M} [BIAffine PROP] :
 
 ---
 
-### 53. BigAndM Map Transformation Lemmas
+### 27. BigAndM Map Transformation Lemmas
 
 Same as BigSepM, the following BigAndM lemmas take explicit permutation proofs:
 
@@ -406,13 +354,13 @@ Same as BigSepM, the following BigAndM lemmas take explicit permutation proofs:
 
 ---
 
-### 55. BigAndM `union` Disjointness vs Permutation
+### 28. BigAndM `union` Disjointness vs Permutation
 
 Same as BigSepM - Rocq takes `m1 ##ₘ m2`, Lean takes explicit permutation proof.
 
 ---
 
-### 56. Not Ported: `big_andM_fn_insert*`
+### 29. Not Ported: `big_andM_fn_insert*`
 
 **Rocq has:**
 ```coq
@@ -432,7 +380,7 @@ Lemma big_andM_fn_insert' (Φ : K → PROP) m i x P :
 
 ---
 
-### 57. Not Ported: `big_andM_kmap`
+### 30. Not Ported: `big_andM_kmap`
 
 **Rocq:**
 ```coq
@@ -447,24 +395,21 @@ Lemma big_andM_kmap `{Countable K1, Countable K2} {A}
 
 ---
 
-### 58. Not Ported: `big_andM_map_seq*`
+### 31. Not Ported: `big_andM_map_seq*`
 
 **Rocq has:**
 ```coq
 Lemma big_andM_map_seq {A} (Φ : nat → A → PROP) (start : nat) (l : list A) :
   ([∧ map] k ↦ x ∈ map_seq start l, Φ k x) ⊣⊢ ([∧ list] i ↦ x ∈ l, Φ (start + i) x).
-
-Lemma big_andM_map_seqZ {A} (Φ : Z → A → PROP) (start : Z) (l : list A) :
-  ([∧ map] k ↦ x ∈ map_seqZ start l, Φ k x) ⊣⊢ ([∧ list] i ↦ x ∈ l, Φ (start + i)%Z x).
 ```
 
 **Lean:** Not ported.
 
-**Reason:** Requires `map_seq` and `map_seqZ` operations.
+**Reason:** Requires `map_seq` operation.
 
 ---
 
-### 59. BigAndM Timeless Instances Not Ported
+### 32. BigAndM Timeless Instances Not Ported
 
 **Rocq has:**
 ```coq
