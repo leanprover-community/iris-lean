@@ -7,7 +7,7 @@ This document tracks the porting progress from Iris's `big_op.v` (Rocq) to Lean 
 The Rocq file covers big operations over:
 1. **Lists** (`big_sepL`, `big_andL`, `big_orL`) - **Partially ported**
 2. **Two Lists** (`big_sepL2`) - **Partially ported**
-3. **Finite Maps** (`big_sepM`, `big_andM`, `big_sepM2`) - **Not ported**
+3. **Finite Maps** (`big_sepM`, `big_andM`, `big_sepM2`) - **Partially ported** (big_sepM ~95%, big_andM ~90%)
 4. **Finite Sets** (`big_sepS`) - **Not ported**
 5. **Multisets** (`big_sepMS`) - **Not ported**
 
@@ -20,6 +20,9 @@ The Rocq file covers big operations over:
 | `BigOpList2.lean` | Definition and lemmas for `bigSepL2` (over two lists) |
 | `BigOpListAnd.lean` | Lemmas for `bigAndL` (big conjunction over lists) |
 | `BigOpListOr.lean` | Lemmas for `bigOrL` (big disjunction over lists) |
+| `BigOpMap.lean` | Core definitions: `bigSepM`, `bigAndM` with notations |
+| `BigSepMap.lean` | Lemmas for `bigSepM` (big separating conjunction over maps) |
+| `BigAndMap.lean` | Lemmas for `bigAndM` (big conjunction over maps) |
 
 ---
 
@@ -449,51 +452,80 @@ Key lemmas ported:
 
 ## Section 6: Big Conjunction over Maps (`big_andM`)
 
-### Porting Status: **Not Started**
+### Porting Status: **~90% Complete**
+
+### Lean Implementation File
+
+| Lean File | Contents |
+|-----------|----------|
+| `Iris/BI/BigAndMap.lean` | Lemmas for `bigAndM` (big conjunction over maps) |
 
 ### Correspondence Table
 
-| Rocq Lemma | Lean Theorem | Priority | Notes |
-|------------|--------------|----------|-------|
-| `big_andM_mono` | `BigAndM.mono` | High | |
-| `big_andM_ne` | `BigAndM.ne` | Medium | |
-| `big_andM_proper` | `BigAndM.proper` | High | |
-| `big_andM_mono'` | `BigAndM.mono'` (instance) | Medium | |
-| `big_andM_empty_persistent` | `BigAndM.empty_persistent` (instance) | Medium | |
-| `big_andM_persistent` | `BigAndM.persistent` | Medium | |
-| `big_andM_persistent'` | `BigAndM.persistent` (instance) | Medium | |
-| `big_andM_empty_timeless` | - | Low | |
-| `big_andM_timeless` | - | Low | |
-| `big_andM_timeless'` | - | Low | |
-| `big_andM_subseteq` | `BigAndM.subseteq` | Medium | No Affine needed |
-| `big_andM_empty` | `BigAndM.empty` | High | `@[simp]` |
-| `big_andM_empty'` | `BigAndM.empty'` | Medium | |
-| `big_andM_insert` | `BigAndM.insert` | High | |
-| `big_andM_delete` | `BigAndM.delete` | High | |
-| `big_andM_insert_delete` | `BigAndM.insert_delete` | High | |
-| `big_andM_insert_2` | `BigAndM.insert_2` | Medium | |
-| `big_andM_lookup` | `BigAndM.lookup` | High | |
-| `big_andM_lookup_dom` | `BigAndM.lookup_dom` | Medium | |
-| `big_andM_singleton` | `BigAndM.singleton` | High | |
-| `big_andM_fmap` | `BigAndM.fmap` | High | |
-| `big_andM_omap` | `BigAndM.omap` | Medium | |
-| `big_andM_fn_insert` | `BigAndM.fn_insert` | Low | |
-| `big_andM_fn_insert'` | `BigAndM.fn_insert'` | Low | |
-| `big_andM_filter'` | `BigAndM.filter'` | Medium | |
-| `big_andM_filter` | `BigAndM.filter` | Medium | |
-| `big_andM_union` | `BigAndM.union` | High | |
-| `big_andM_and` | `BigAndM.and'` | High | Biconditional |
-| `big_andM_persistently` | `BigAndM.persistently` | Medium | |
-| `big_andM_intro` | `BigAndM.intro` | High | |
-| `big_andM_forall` | `BigAndM.forall'` | High | Biconditional |
-| `big_andM_impl` | `BigAndM.impl` | High | |
-| `big_andM_pure_1` | `BigAndM.pure_1` | Medium | |
-| `big_andM_pure_2` | `BigAndM.pure_2` | Medium | |
-| `big_andM_pure` | `BigAndM.pure` | Medium | Biconditional |
-| `big_andM_later` | `BigAndM.later` | Medium | |
-| `big_andM_laterN` | `BigAndM.laterN` | Medium | |
-| `big_andM_kmap` | `BigAndM.kmap` | Low | |
-| `big_andM_map_seq` | `BigAndM.map_seq` | Low | |
+| Rocq Lemma | Lean Theorem | Status | Notes |
+|------------|--------------|--------|-------|
+| `big_andM_mono` | `BigAndM.mono` | ✅ Ported | Conditional on `get? m k = some v` |
+| `big_andM_ne` | `BigAndM.ne` | ✅ Ported | Non-expansiveness |
+| `big_andM_proper` | `BigAndM.proper` | ✅ Ported | Conditional proper |
+| - | `BigAndM.congr` | ✅ Ported | Lean-only: unconditional proper |
+| `big_andM_mono'` | `BigAndM.mono'` | ✅ Ported | Unconditional mono |
+| `big_andM_empty_persistent` | `BigAndM.empty_persistent` (instance) | ✅ Ported | |
+| `big_andM_persistent` | `BigAndM.persistent_cond` | ✅ Ported | Conditional version |
+| `big_andM_persistent'` | `BigAndM.persistent` (instance) | ✅ Ported | Global instance `[∀ k v, Persistent (Φ k v)]` |
+| - | `BigAndM.affine` (instance) | ✅ Ported | Lean-only: BIAffine instance |
+| `big_andM_empty_timeless` | - | Not ported | Requires Timeless infrastructure |
+| `big_andM_timeless` | - | Not ported | Requires and_timeless |
+| `big_andM_timeless'` | - | Not ported | Requires and_timeless |
+| `big_andM_subseteq` | `BigAndM.subseteq` | ⚠️ Sorry | Needs map difference/union laws |
+| `big_andM_empty` | `BigAndM.empty` | ✅ Ported | `@[simp]` |
+| `big_andM_empty'` | `BigAndM.empty'` | ✅ Ported | |
+| `big_andM_insert` | `BigAndM.insert` | ✅ Ported | Requires `get? m k = none` |
+| `big_andM_delete` | `BigAndM.delete` | ✅ Ported | |
+| `big_andM_insert_delete` | `BigAndM.insert_delete` | ✅ Ported | |
+| `big_andM_insert_2` | `BigAndM.insert_2` | ✅ Ported | |
+| `big_andM_lookup` | `BigAndM.lookup` | ✅ Ported | |
+| `big_andM_lookup_dom` | `BigAndM.lookup_dom` | ✅ Ported | |
+| `big_andM_singleton` | `BigAndM.singleton` | ✅ Ported | |
+| `big_andM_fmap` | `BigAndM.fmap` | ✅ Ported | Requires permutation proof |
+| `big_andM_omap` | `BigAndM.omap` | ✅ Ported | Requires permutation proof |
+| `big_andM_fn_insert` | - | Not ported | Low priority |
+| `big_andM_fn_insert'` | - | Not ported | Low priority |
+| `big_andM_filter'` | `BigAndM.filter'` | ✅ Ported | Needs FiniteMapLawsSelf |
+| `big_andM_filter` | `BigAndM.filter''` | ✅ Ported | Uses implication guard |
+| `big_andM_union` | `BigAndM.union` | ✅ Ported | Requires permutation proof |
+| `big_andM_and` | `BigAndM.and'` | ✅ Ported | Biconditional |
+| `big_andM_persistently` | `BigAndM.persistently` | ✅ Ported | |
+| `big_andM_intro` | `BigAndM.intro` | ✅ Ported | Simpler than BigSepM.intro (no Intuitionistic needed) |
+| `big_andM_forall` | `BigAndM.forall'` | ✅ Ported | Biconditional |
+| `big_andM_impl` | `BigAndM.impl` | ✅ Ported | |
+| `big_andM_pure_1` | `BigAndM.pure_1` | ✅ Ported | Uses mapForall definition |
+| `big_andM_pure_2` | `BigAndM.pure_2` | ✅ Ported | Uses mapForall definition |
+| `big_andM_pure` | `BigAndM.pure'` | ✅ Ported | Biconditional |
+| `big_andM_later` | `BigAndM.later` | ✅ Ported | |
+| `big_andM_laterN` | `BigAndM.laterN` | ✅ Ported | |
+| - | `BigAndM.map_to_list` | ✅ Ported | Lean-only: conversion to list |
+| `big_andM_kmap` | - | Not ported | Low priority |
+| `big_andM_map_seq` | - | Not ported | Low priority |
+
+### Summary
+
+**Ported: ~35 lemmas** (including Lean-only additions)
+
+Key lemmas ported:
+- Structural: `empty`, `empty'`, `singleton`, `insert`, `delete`, `insert_delete`, `insert_2`
+- Lookup: `lookup`, `lookup_dom`
+- Monotonicity: `mono`, `proper`, `congr`, `ne`, `mono'`
+- Submap: `subseteq` (sorry - needs map difference/union laws)
+- Instances: `empty_persistent`, `persistent_cond`, `persistent`, `affine`
+- Logical: `and'`, `persistently`, `union`
+- Intro/Forall/Impl: `intro`, `forall'`, `impl`
+- Modalities: `later`, `laterN`
+- Conversion: `map_to_list`
+- Map transformations: `fmap`, `omap`
+- Pure: `pure_1`, `pure_2`, `pure'` (uses mapForall definition)
+- Filter: `filter'`, `filter''` (requires FiniteMapLawsSelf)
+
+**Not ported:** ~5 lemmas (mostly requiring additional infrastructure or low priority)
 
 ---
 
@@ -857,10 +889,11 @@ The `BigSepL2.app` and `BigSepL2.snoc` lemmas now align with Rocq:
 | big_andL | ~30 | ~32 | ~100% |
 | big_orL | ~32 | ~34 | ~100% |
 | big_sepM | ~55 | ~53 | ~95% |
+| big_andM | ~30 | ~35 | ~90% |
 | **Total (Lists)** | **~167** | **~180** | **~100%** |
-| **Total (Maps)** | **~55** | **~53** | **~95%** |
+| **Total (Maps)** | **~85** | **~88** | **~93%** |
 
-Remaining not ported: big_andM (~30), big_sepM2 (~55), big_sepS (~42), big_sepMS (~32), commuting (~16).
+Remaining not ported: big_sepM2 (~55), big_sepS (~42), big_sepMS (~32), commuting (~16).
 
 ---
 

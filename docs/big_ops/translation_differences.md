@@ -299,6 +299,10 @@ Lemma big_orL_zip_seqZ (Φ : Z * A → PROP) n len l :
 | BigSepM `intro` | Uses [Intuitionistic P] | Done |
 | BigSepM `forall'` | Split into _1'/\_2' helpers | Done |
 | BigSepM `dup` | Uses ⊢ not -∗ | Done |
+| BigAndM `subseteq` | Sorry (needs map laws) | Partial |
+| BigAndM `intro` | Simpler (no Intuitionistic) | Done |
+| BigAndM `and'` | Biconditional (idempotent) | Done |
+| BigAndM Timeless | Not ported | Low |
 
 ---
 
@@ -423,6 +427,82 @@ theorem dup {P : PROP} [Affine P] {m : M} :
 ```
 
 **Reason:** Lean uses `⊢` instead of `-∗` for the outer entailment, making the wand_intro more explicit in the proof.
+
+---
+
+## Part F: BigAndM (Map Conjunction) Differences
+
+### 28. BigAndM Uses `iprop(True)` as Unit
+
+**Rocq:** Big conjunction uses `True` as the unit (identity element).
+
+**Lean:**
+```lean
+abbrev bigAndM [BI PROP] {M K V} [FiniteMap M K V]
+    (Φ : K → V → PROP) (m : M) : PROP :=
+  bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) (toList m)
+```
+
+**Reason:** This is the same as Rocq; `iprop(True)` is Lean's notation for the BI `True` proposition.
+
+---
+
+### 29. `big_andM_subseteq` Uses Sorry
+
+**Rocq:**
+```coq
+Lemma big_andM_subseteq (Φ : K → A → PROP) m1 m2 :
+  m2 ⊆ m1 → ([∧ map] k↦x ∈ m1, Φ k x) ⊢ [∧ map] k↦x ∈ m2, Φ k x.
+```
+
+**Lean:** Uses `sorry` for the same reason as `BigSepM.subseteq`:
+- Requires map difference/union laws not yet in the abstract FiniteMap interface
+
+**Status:** Blocked on extending FiniteMap with subset/difference operations.
+
+---
+
+### 30. BigAndM Simpler Than BigSepM
+
+Several BigAndM lemmas are simpler than their BigSepM counterparts:
+
+| Lemma | BigSepM | BigAndM | Reason |
+|-------|---------|---------|--------|
+| `intro` | Requires `[Intuitionistic P]` | No constraint needed | `∧` doesn't consume resources |
+| `and'` | One direction only | Biconditional | `∧` is idempotent |
+| `pure_2` | Requires `⬚` (affinely) | Direct `⌜P⌝ ⊢ ...` | `True ∧ ⌜P⌝ ⊣⊢ ⌜P⌝` |
+
+---
+
+### 31. BigAndM Missing Affine Instances
+
+**Rocq:** BigAndM doesn't have Affine instances (since `True ∧ ... ∧ True` is not generally affine unless the BI is affine).
+
+**Lean:** Same - no Affine typeclass instances for BigAndM.
+
+---
+
+### 32. `true_and` Helper Pattern
+
+**Lean:** Uses a local helper in proofs involving the unit:
+```lean
+have true_and : ∀ (X : PROP), iprop(True) ∧ X ⊣⊢ X :=
+  fun X => ⟨and_elim_r, and_intro true_intro .rfl⟩
+```
+
+**Reason:** Unlike `emp_sep` which has dedicated lemmas, `True ∧ X ⊣⊢ X` is composed inline from basic laws.
+
+---
+
+## Summary Table Update (BigAndM)
+
+| Category | Status | Priority |
+|----------|--------|----------|
+| BigAndM `subseteq` | Sorry (needs map laws) | Partial |
+| BigAndM `intro` | Simpler than BigSepM | Done |
+| BigAndM `and'` | Biconditional | Done |
+| BigAndM Affine instances | Not applicable | N/A |
+| BigAndM Timeless instances | Not ported | Low |
 
 ---
 
