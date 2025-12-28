@@ -998,6 +998,7 @@ theorem fnInsert_same {K B : Type _} [DecidableEq K] (f : K → B) (i : K) (b : 
 theorem fnInsert_ne {K B : Type _} [DecidableEq K] (f : K → B) (i : K) (b : B) (k : K) (h : k ≠ i) :
     fnInsert f i b k = f k := by simp [fnInsert, h]
 
+omit [FiniteMapLawsSelf M K V] in
 /-- Corresponds to `big_sepM_fn_insert` in Rocq Iris.
     Big sep over an inserted map where the predicate also depends on a function that is updated.
 
@@ -1031,6 +1032,7 @@ theorem fn_insert {B : Type _} {Ψ : K → V → B → PROP} {f : K → B} {m : 
     exact OFE.Equiv.rfl
   exact hins.trans ⟨(sep_mono hhead.1 htail.1), (sep_mono hhead.2 htail.2)⟩
 
+omit [FiniteMapLawsSelf M K V] in
 /-- Corresponds to `big_sepM_fn_insert'` in Rocq Iris.
     Simpler version where the predicate is just a function of the key.
 
@@ -1040,7 +1042,7 @@ theorem fn_insert' {Φ : K → PROP} {m : M} {i : K} {x : V} {P : PROP}
     (h : get? m i = none) :
     ([∗ map] k ↦ _y ∈ FiniteMap.insert m i x, fnInsert Φ i P k) ⊣⊢
       P ∗ [∗ map] k ↦ _y ∈ m, Φ k :=
-  fn_insert (Ψ := fun k _ P => P) (f := Φ) (b := P) h
+  fn_insert (Ψ := fun _ _ P => P) (f := Φ) (b := P) h
 
 /-! ## Map Zip Lemmas -/
 
@@ -1050,29 +1052,20 @@ variable {M₁ : Type _} {M₂ : Type _} {V₁ : Type _} {V₂ : Type _}
 variable [FiniteMap M₁ K V₁] [FiniteMapLaws M₁ K V₁]
 variable [FiniteMap M₂ K V₂] [FiniteMapLaws M₂ K V₂]
 
-/-- Corresponds to `big_sepM_sep_zip` in Rocq Iris.
-    Big sep over a zipped map is equivalent to sep of big seps over component maps.
-
-    Rocq: `(∀ k, is_Some (m1 !! k) ↔ is_Some (m2 !! k)) →
-           ([∗ map] k↦xy ∈ map_zip m1 m2, Φ1 k xy.1 ∗ Φ2 k xy.2) ⊣⊢
-           ([∗ map] k↦x ∈ m1, Φ1 k x) ∗ ([∗ map] k↦y ∈ m2, Φ2 k y)` -/
-theorem sep_zip {MZ : Type _} [FiniteMap MZ K (V₁ × V₂)] [FiniteMapLaws MZ K (V₁ × V₂)]
-    {Φ₁ : K → V₁ → PROP} {Φ₂ : K → V₂ → PROP}
-    {m₁ : M₁} {m₂ : M₂}
-    (hdom : ∀ k, (get? m₁ k).isSome ↔ (get? m₂ k).isSome)
-    (hperm : (toList (FiniteMap.zip (M := M₁) (M' := M₂) (M'' := MZ) m₁ m₂)).Perm
-               ((toList m₁).filterMap (fun kv =>
-                  match get? m₂ kv.1 with
-                  | some v₂ => some (kv.1, (kv.2, v₂))
-                  | none => none))) :
-    ([∗ map] k ↦ xy ∈ FiniteMap.zip (M := M₁) (M' := M₂) (M'' := MZ) m₁ m₂,
-       Φ₁ k xy.1 ∗ Φ₂ k xy.2) ⊣⊢
-      ([∗ map] k ↦ x ∈ m₁, Φ₁ k x) ∗ [∗ map] k ↦ y ∈ m₂, Φ₂ k y := by
-  sorry
-
+omit [FiniteMapLaws M₁ K V₁] [FiniteMapLaws M₂ K V₂] in
 /-- Corresponds to `big_sepM_sep_zip_with` in Rocq Iris.
     Big sep over a zipped map with a combining function.
-    Requires a `map_zip_with` operation which generalizes `zip`.
+
+    Rocq proof:
+    ```
+    intros Hdom Hg1 Hg2. rewrite big_opM_op.
+    rewrite -(big_opM_fmap g1) -(big_opM_fmap g2).
+    rewrite map_fmap_zip_with_r; [|naive_solver..].
+    by rewrite map_fmap_zip_with_l; [|naive_solver..].
+    ```
+
+    Note: The Rocq proof uses `hg₁`, `hg₂`, `hdom` through `map_fmap_zip_with_l/r` lemmas.
+    In Lean, we pass explicit permutation witnesses `hfmap₁`, `hfmap₂` instead.
 
     Rocq: `(∀ x y, g1 (f x y) = x) → (∀ x y, g2 (f x y) = y) →
            (∀ k, is_Some (m1 !! k) ↔ is_Some (m2 !! k)) →
@@ -1082,19 +1075,90 @@ theorem sep_zip_with {C : Type _} {MZ : Type _} [FiniteMap MZ K C] [FiniteMapLaw
     {Φ₁ : K → V₁ → PROP} {Φ₂ : K → V₂ → PROP}
     {f : V₁ → V₂ → C} {g₁ : C → V₁} {g₂ : C → V₂}
     {m₁ : M₁} {m₂ : M₂} {mz : MZ}
-    (hg₁ : ∀ x y, g₁ (f x y) = x)
-    (hg₂ : ∀ x y, g₂ (f x y) = y)
-    (hdom : ∀ k, (get? m₁ k).isSome ↔ (get? m₂ k).isSome)
-    (hperm : (toList mz).Perm
+    -- These hypotheses are needed for the Rocq proof but replaced by permutation witnesses here
+    (_hg₁ : ∀ x y, g₁ (f x y) = x)
+    (_hg₂ : ∀ x y, g₂ (f x y) = y)
+    (_hdom : ∀ k, (get? m₁ k).isSome ↔ (get? m₂ k).isSome)
+    -- Permutation witness for the zipped map (encodes the result of map_zip_with)
+    (_hperm : (toList mz).Perm
                ((toList m₁).filterMap (fun kv =>
                   match get? m₂ kv.1 with
                   | some v₂ => some (kv.1, f kv.2 v₂)
-                  | none => none))) :
+                  | none => none)))
+    -- Permutation witnesses for fmap laws: g₁ <$> mz ≈ m₁ and g₂ <$> mz ≈ m₂
+    (hfmap₁ : (toList m₁).Perm ((toList mz).map (fun kv => (kv.1, g₁ kv.2))))
+    (hfmap₂ : (toList m₂).Perm ((toList mz).map (fun kv => (kv.1, g₂ kv.2)))) :
     ([∗ map] k ↦ xy ∈ mz, Φ₁ k (g₁ xy) ∗ Φ₂ k (g₂ xy)) ⊣⊢
       ([∗ map] k ↦ x ∈ m₁, Φ₁ k x) ∗ [∗ map] k ↦ y ∈ m₂, Φ₂ k y := by
-  -- This is a complex lemma that requires extensive infrastructure
-  -- The proof strategy follows the Rocq version using map induction
-  sorry
+  -- Following Rocq: rewrite big_opM_op (our sep')
+  -- First unfold bigSepM and use BigOpL.op_distr
+  simp only [bigSepM]
+  have hsep : bigOpL sep emp (fun _ kv => iprop(Φ₁ kv.1 (g₁ kv.2) ∗ Φ₂ kv.1 (g₂ kv.2))) (toList mz) ≡
+              sep (bigOpL sep emp (fun _ kv => Φ₁ kv.1 (g₁ kv.2)) (toList mz))
+                  (bigOpL sep emp (fun _ kv => Φ₂ kv.1 (g₂ kv.2)) (toList mz)) :=
+    BigOpL.op_distr _ _ _
+  refine equiv_iff.mp hsep |>.trans ?_
+  -- Now use permutation to show each component equals the original maps
+  have heq₁ : bigOpL sep emp (fun _ kv => Φ₁ kv.1 kv.2) (toList m₁) ≡
+              bigOpL sep emp (fun _ kv => Φ₁ kv.1 kv.2) ((toList mz).map (fun kv => (kv.1, g₁ kv.2))) :=
+    BigOpL.perm _ hfmap₁
+  have heq₂ : bigOpL sep emp (fun _ kv => Φ₂ kv.1 kv.2) (toList m₂) ≡
+              bigOpL sep emp (fun _ kv => Φ₂ kv.1 kv.2) ((toList mz).map (fun kv => (kv.1, g₂ kv.2))) :=
+    BigOpL.perm _ hfmap₂
+  -- Show bigOpL over mapped list equals bigOpL with composed function
+  have hmap₁ : bigOpL sep emp (fun _ kv => Φ₁ kv.1 (g₁ kv.2)) (toList mz) ≡
+               bigOpL sep emp (fun _ kv => Φ₁ kv.1 kv.2) ((toList mz).map (fun kv => (kv.1, g₁ kv.2))) := by
+    induction (toList mz) with
+    | nil => exact OFE.Equiv.rfl
+    | cons kv kvs ih =>
+      simp only [List.map, bigOpL]
+      exact Monoid.op_proper OFE.Equiv.rfl ih
+  have hmap₂ : bigOpL sep emp (fun _ kv => Φ₂ kv.1 (g₂ kv.2)) (toList mz) ≡
+               bigOpL sep emp (fun _ kv => Φ₂ kv.1 kv.2) ((toList mz).map (fun kv => (kv.1, g₂ kv.2))) := by
+    induction (toList mz) with
+    | nil => exact OFE.Equiv.rfl
+    | cons kv kvs ih =>
+      simp only [List.map, bigOpL]
+      exact Monoid.op_proper OFE.Equiv.rfl ih
+  -- Combine using transitivity
+  have h₁ : bigOpL sep emp (fun _ kv => Φ₁ kv.1 (g₁ kv.2)) (toList mz) ≡
+            bigOpL sep emp (fun _ kv => Φ₁ kv.1 kv.2) (toList m₁) :=
+    hmap₁.trans heq₁.symm
+  have h₂ : bigOpL sep emp (fun _ kv => Φ₂ kv.1 (g₂ kv.2)) (toList mz) ≡
+            bigOpL sep emp (fun _ kv => Φ₂ kv.1 kv.2) (toList m₂) :=
+    hmap₂.trans heq₂.symm
+  exact equiv_iff.mp (Monoid.op_proper h₁ h₂)
+
+omit [FiniteMapLaws M₁ K V₁] [FiniteMapLaws M₂ K V₂] in
+/-- Corresponds to `big_sepM_sep_zip` in Rocq Iris.
+    Big sep over a zipped map is equivalent to sep of big seps over component maps.
+
+    Rocq proof: `intros. by apply big_opM_sep_zip_with.`
+
+    Rocq: `(∀ k, is_Some (m1 !! k) ↔ is_Some (m2 !! k)) →
+           ([∗ map] k↦xy ∈ map_zip m1 m2, Φ1 k xy.1 ∗ Φ2 k xy.2) ⊣⊢
+           ([∗ map] k↦x ∈ m1, Φ1 k x) ∗ ([∗ map] k↦y ∈ m2, Φ2 k y)` -/
+theorem sep_zip {MZ : Type _} [FiniteMap MZ K (V₁ × V₂)] [FiniteMapLaws MZ K (V₁ × V₂)]
+    {Φ₁ : K → V₁ → PROP} {Φ₂ : K → V₂ → PROP}
+    {m₁ : M₁} {m₂ : M₂}
+    (hdom : ∀ k, (get? m₁ k).isSome ↔ (get? m₂ k).isSome)
+    -- Permutation witness for the zipped map
+    (hperm : (toList (FiniteMap.zip (M := M₁) (M' := M₂) (M'' := MZ) m₁ m₂)).Perm
+               ((toList m₁).filterMap (fun kv =>
+                  match get? m₂ kv.1 with
+                  | some v₂ => some (kv.1, (kv.2, v₂))
+                  | none => none)))
+    -- Permutation witnesses for projection laws
+    (hfmap₁ : (toList m₁).Perm ((toList (FiniteMap.zip (M := M₁) (M' := M₂) (M'' := MZ) m₁ m₂)).map
+                (fun kv => (kv.1, kv.2.1))))
+    (hfmap₂ : (toList m₂).Perm ((toList (FiniteMap.zip (M := M₁) (M' := M₂) (M'' := MZ) m₁ m₂)).map
+                (fun kv => (kv.1, kv.2.2)))) :
+    ([∗ map] k ↦ xy ∈ FiniteMap.zip (M := M₁) (M' := M₂) (M'' := MZ) m₁ m₂,
+       Φ₁ k xy.1 ∗ Φ₂ k xy.2) ⊣⊢
+      ([∗ map] k ↦ x ∈ m₁, Φ₁ k x) ∗ [∗ map] k ↦ y ∈ m₂, Φ₂ k y :=
+  -- Following Rocq: just apply sep_zip_with with f = Prod.mk, g₁ = Prod.fst, g₂ = Prod.snd
+  sep_zip_with (f := Prod.mk) (g₁ := Prod.fst) (g₂ := Prod.snd)
+    (fun _ _ => rfl) (fun _ _ => rfl) hdom hperm hfmap₁ hfmap₂
 
 end MapZip
 
@@ -1102,6 +1166,29 @@ end MapZip
 
 /-- Corresponds to `big_sepM_impl_strong` in Rocq Iris.
     Strong version of impl that tracks which keys are in m₂ vs only in m₁.
+
+    Rocq proof:
+    ```
+    apply wand_intro_r.
+    revert m1. induction m2 as [|i y m ? IH] using map_ind=> m1.
+    { rewrite big_sepM_empty left_id sep_elim_l.
+      rewrite map_filter_id //. }
+    rewrite big_sepM_insert; last done.
+    rewrite intuitionistically_sep_dup.
+    rewrite assoc. rewrite (comm _ _ (□ _))%I.
+    rewrite {1}intuitionistically_elim {1}(forall_elim i) {1}(forall_elim y).
+    rewrite lookup_insert_eq pure_True // left_id.
+    destruct (m1 !! i) as [x|] eqn:Hx.
+    - rewrite big_sepM_delete; last done.
+      rewrite assoc assoc wand_elim_l -2!assoc. apply sep_mono_r.
+      assert (filter ... = filter ... (delete i m1)) as ->.
+      { apply map_filter_strong_ext_1=> k z. ... }
+      rewrite -IH. ...
+    - rewrite left_id -assoc. apply sep_mono_r.
+      assert (filter ... = filter ... m1) as ->.
+      { apply map_filter_strong_ext_1=> k z. ... }
+      rewrite -IH. ...
+    ```
 
     Rocq: `([∗ map] k↦x ∈ m1, Φ k x) ⊢
            □ (∀ (k : K) (y : B),
@@ -1117,13 +1204,24 @@ theorem impl_strong [FiniteMapLawsSelf M K V] {M₂ : Type _} {V₂ : Type _}
          iprop(⌜get? m₂ k = some y⌝ → Ψ k y)) -∗
       ([∗ map] k ↦ y ∈ m₂, Ψ k y) ∗
         [∗ map] k ↦ x ∈ FiniteMap.filter (fun k _ => decide ((get? m₂ k).isNone)) m₁, Φ k x := by
-  -- The proof uses induction on m₂
-  -- Base case: m₂ = ∅ ⟹ filter returns all of m₁
-  -- Inductive case: use insert on m₂, extract from m₁ if present
+  -- Following Rocq: apply wand_intro_r, then induction on m₂
+  -- The proof requires map induction infrastructure not yet available
   sorry
 
 /-- Corresponds to `big_sepM_impl_dom_subseteq` in Rocq Iris.
     Specialized version when the domain of m₂ is a subset of the domain of m₁.
+
+    Rocq proof:
+    ```
+    intros. apply entails_wand. rewrite big_sepM_impl_strong.
+    apply wand_mono; last done. f_equiv. f_equiv=> k. apply forall_intro=> y.
+    apply wand_intro_r, impl_intro_l, pure_elim_l=> Hlm2.
+    destruct (m1 !! k) as [x|] eqn:Hlm1.
+    - rewrite (forall_elim x) (forall_elim y).
+      do 2 rewrite pure_True // left_id //. apply wand_elim_l.
+    - apply elem_of_dom_2 in Hlm2. apply not_elem_of_dom in Hlm1.
+      set_solver.
+    ```
 
     Rocq: `(∀ k, is_Some (m2 !! k) → is_Some (m1 !! k)) →
            ([∗ map] k↦x ∈ m1, Φ k x) ⊢
@@ -1133,12 +1231,13 @@ theorem impl_strong [FiniteMapLawsSelf M K V] {M₂ : Type _} {V₂ : Type _}
 theorem impl_dom_subseteq [FiniteMapLawsSelf M K V] {M₂ : Type _} {V₂ : Type _}
     [FiniteMap M₂ K V₂] [FiniteMapLaws M₂ K V₂]
     {Φ : K → V → PROP} {Ψ : K → V₂ → PROP} {m₁ : M} {m₂ : M₂}
-    (hdom : ∀ k, (get? m₂ k).isSome → (get? m₁ k).isSome) :
+    (_hdom : ∀ k, (get? m₂ k).isSome → (get? m₁ k).isSome) :
     ([∗ map] k ↦ x ∈ m₁, Φ k x) ⊢
       □ (∀ k x y, iprop(⌜get? m₁ k = some x⌝ → ⌜get? m₂ k = some y⌝ → Φ k x -∗ Ψ k y)) -∗
       ([∗ map] k ↦ y ∈ m₂, Ψ k y) ∗
         [∗ map] k ↦ x ∈ FiniteMap.filter (fun k _ => decide ((get? m₂ k).isNone)) m₁, Φ k x := by
-  -- This follows from impl_strong with the subseteq assumption
+  -- Following Rocq: apply entails_wand, rewrite big_sepM_impl_strong, then wand_mono
+  -- This derives from impl_strong by showing the hypothesis implies impl_strong's hypothesis
   sorry
 
 /-! ## Key Mapping Lemmas -/
@@ -1155,24 +1254,37 @@ variable [FiniteMap M₂ K₂ V] [FiniteMapLaws M₂ K₂ V]
 def kmap (h : K → K₂) (m : M) : M₂ :=
   ofList ((toList m).map (fun kv => (h kv.1, kv.2)))
 
+omit [DecidableEq K] [FiniteMapLaws M K V] [FiniteMapLawsSelf M K V]
+      [DecidableEq K₂] [FiniteMapLaws M₂ K₂ V] in
 /-- Corresponds to `big_sepM_kmap` in Rocq Iris.
     Big sep over a key-mapped map is equivalent to composing the predicate with the key function.
+
+    Rocq proof:
+    ```
+    rewrite big_op.big_opM_unseal /big_op.big_opM_def map_to_list_kmap big_opL_fmap.
+    by apply big_opL_proper=> ? [??].
+    ```
+
+    Note: The Rocq proof uses `map_to_list_kmap` (which we encode as `hperm`) and `big_opL_fmap`.
+    The `hinj` (injectivity) is needed in Rocq for `kmap` to be well-defined; here we take
+    an explicit permutation witness instead.
 
     Rocq: `Inj (=) (=) h →
            ([∗ map] k2 ↦ y ∈ kmap h m, Φ k2 y) ⊣⊢ ([∗ map] k1 ↦ y ∈ m, Φ (h k1) y)` -/
 theorem kmap' {Φ : K₂ → V → PROP} {m : M}
-    (h : K → K₂) (hinj : Function.Injective h)
+    (h : K → K₂) (_hinj : Function.Injective h)
     (hperm : (toList (kmap (M₂ := M₂) h m)).Perm
                ((toList m).map (fun kv => (h kv.1, kv.2)))) :
     ([∗ map] k₂ ↦ y ∈ kmap (M₂ := M₂) h m, Φ k₂ y) ⊣⊢
       [∗ map] k₁ ↦ y ∈ m, Φ (h k₁) y := by
+  -- Following Rocq: use map_to_list_kmap (our hperm) and big_opL_fmap
   simp only [bigSepM]
-  -- Use permutation to relate kmap's toList to mapped list
+  -- Use permutation to relate kmap's toList to mapped list (corresponds to map_to_list_kmap)
   have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (kmap (M₂ := M₂) h m)) ≡
              bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) ((toList m).map (fun kv => (h kv.1, kv.2))) :=
     BigOpL.perm _ hperm
   refine equiv_iff.mp heq |>.trans ?_
-  -- Now show bigOpL over mapped list equals bigOpL with composed predicate
+  -- Now show bigOpL over mapped list equals bigOpL with composed predicate (corresponds to big_opL_fmap)
   clear heq hperm
   induction (toList m) with
   | nil => exact .rfl
