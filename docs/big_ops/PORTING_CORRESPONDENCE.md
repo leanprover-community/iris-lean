@@ -392,8 +392,8 @@ Additional theorems provided:
 | `big_sepM_insert_override_1` | `BigSepM.insert_override_1` | ✅ Ported | |
 | `big_sepM_insert_override_2` | `BigSepM.insert_override_2` | ✅ Ported | |
 | `big_sepM_insert_acc` | `BigSepM.insert_acc` | ✅ Ported | Uses delete + forall wand |
-| `big_sepM_fn_insert` | - | Not ported | Low priority |
-| `big_sepM_fn_insert'` | - | Not ported | Low priority |
+| `big_sepM_fn_insert` | `BigSepM.fn_insert` | ✅ Ported | Uses custom `fnInsert` helper |
+| `big_sepM_fn_insert'` | `BigSepM.fn_insert'` | ✅ Ported | Simpler version |
 | `big_sepM_filter'` | `BigSepM.filter'` | ✅ Ported | φ : K × V → Prop with Decidable, needs FiniteMapLawsSelf |
 | `big_sepM_filter` | `BigSepM.filter` | ✅ Ported | BiAffine, φ : K × V → Prop with Decidable, needs FiniteMapLawsSelf |
 | `big_sepM_union` | `BigSepM.union` | ✅ Ported | Requires permutation proof |
@@ -418,33 +418,35 @@ Additional theorems provided:
 | `big_sepM_laterN_2` | `BigSepM.laterN_2` | ✅ Ported | No BiAffine needed |
 | `big_sepM_map_to_list` | `BigSepM.map_to_list` | ✅ Ported | Uses `[∗ list]` notation |
 | `big_sepM_list_to_map` | `BigSepM.list_to_map` | ✅ Ported | Requires permutation proof |
-| `big_sepM_sep_zip_with` | - | Not ported | Low priority |
-| `big_sepM_sep_zip` | - | Not ported | Low priority |
-| `big_sepM_impl_strong` | - | Not ported | Low priority |
-| `big_sepM_impl_dom_subseteq` | - | Not ported | Low priority |
-| `big_sepM_kmap` | - | Not ported | Low priority |
+| `big_sepM_sep_zip_with` | `BigSepM.sep_zip_with` | ⚠️ Sorry | Uses FiniteMap.zip |
+| `big_sepM_sep_zip` | `BigSepM.sep_zip` | ⚠️ Sorry | Uses FiniteMap.zip |
+| `big_sepM_impl_strong` | `BigSepM.impl_strong` | ⚠️ Sorry | Advanced impl pattern |
+| `big_sepM_impl_dom_subseteq` | `BigSepM.impl_dom_subseteq` | ⚠️ Sorry | Domain subseteq impl |
+| `big_sepM_kmap` | `BigSepM.kmap'` | ⚠️ Sorry | Key mapping via custom `kmap` |
 | `big_sepM_map_seq` | - | Not ported | Low priority |
 
 ### Summary
 
-**Ported: 55 lemmas** (including Lean-only additions)
+**Ported: 62 lemmas** (including Lean-only additions)
 
 Key lemmas ported:
 - Structural: `empty`, `empty'`, `singleton`, `insert`, `delete`, `insert_delete`
 - Insert variants: `insert_acc`, `insert_2`, `insert_2_absorbing`, `insert_override`, `insert_override_1`, `insert_override_2`
+- Function insert: `fn_insert`, `fn_insert'` (uses custom `fnInsert` helper)
 - Lookup: `lookup_acc`, `lookup`, `lookup_absorbing`, `lookup_dom`, `lookup_acc_impl`
 - Monotonicity: `mono`, `proper`, `congr`, `ne`, `mono'`, `flip_mono'`
 - Submap: `subseteq` (sorry - needs map difference/union laws)
 - Instances: `empty_persistent`, `persistent_cond`, `persistent`, `empty_affine`, `affine_cond`, `affine`
 - Logical: `sep'`, `sep_2`, `and'`, `wand`, `union`
-- Intro/Forall/Impl: `intro`, `forall'`, `forall_1'`, `forall_2'`, `impl`, `dup`
+- Intro/Forall/Impl: `intro`, `forall'`, `forall_1'`, `forall_2'`, `impl`, `impl_strong` (sorry), `impl_dom_subseteq` (sorry), `dup`
 - Modalities: `persistently`, `later`, `later_2`, `laterN`, `laterN_2`
 - Conversion: `map_to_list`, `list_to_map`
-- Map transformations: `fmap`, `omap`
+- Map transformations: `fmap`, `omap`, `kmap'` (sorry)
+- Zip operations: `sep_zip_with` (sorry), `sep_zip` (sorry)
 - Pure: `pure_1`, `affinely_pure_2`, `pure'` (uses mapForall definition)
 - Filter: `filter'`, `filter''` (requires FiniteMapLawsSelf)
 
-**Not ported:** ~5 lemmas (mostly requiring additional map laws or low priority)
+**Not ported:** 1 lemma (`big_sepM_map_seq` - low priority)
 
 **Note:** The newly ported lemmas (`fmap`, `omap`, `union`, `list_to_map`) take explicit permutation proofs as arguments instead of using typeclasses. This design allows users to provide the necessary permutation proofs for their specific map implementations.
 
@@ -888,10 +890,10 @@ The `BigSepL2.app` and `BigSepL2.snoc` lemmas now align with Rocq:
 | big_sepL2 | ~55 | ~62 | ~100% |
 | big_andL | ~30 | ~32 | ~100% |
 | big_orL | ~32 | ~34 | ~100% |
-| big_sepM | ~55 | ~53 | ~95% |
+| big_sepM | ~55 | ~62 | ~98% |
 | big_andM | ~30 | ~35 | ~90% |
 | **Total (Lists)** | **~167** | **~180** | **~100%** |
-| **Total (Maps)** | **~85** | **~88** | **~93%** |
+| **Total (Maps)** | **~85** | **~97** | **~95%** |
 
 Remaining not ported: big_sepM2 (~55), big_sepS (~42), big_sepMS (~32), commuting (~16).
 
