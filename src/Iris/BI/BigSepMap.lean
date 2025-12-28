@@ -1204,9 +1204,70 @@ theorem impl_strong [FiniteMapLawsSelf M K V] {M₂ : Type _} {V₂ : Type _}
          iprop(⌜get? m₂ k = some y⌝ → Ψ k y)) -∗
       ([∗ map] k ↦ y ∈ m₂, Ψ k y) ∗
         [∗ map] k ↦ x ∈ FiniteMap.filter (fun k _ => decide ((get? m₂ k).isNone)) m₁, Φ k x := by
-  -- Following Rocq: apply wand_intro_r, then induction on m₂
-  -- The proof requires map induction infrastructure not yet available
-  sorry
+  -- Use wand_intro to move the □(...) to the left
+  apply wand_intro
+  -- Swap to get □(...) on the left
+  refine sep_comm.1.trans ?_
+  -- Goal: □(...) ∗ bigSepM Φ m₁ ⊢ bigSepM Ψ m₂ ∗ bigSepM Φ (filter ...)
+  -- We work with lists directly
+  simp only [bigSepM]
+  -- Use list induction on toList m₂
+  generalize hl₂ : toList m₂ = l₂
+  induction l₂ generalizing m₂ with
+  | nil =>
+    -- m₂ has empty toList, so bigOpL over it is emp
+    simp only [bigOpL]
+    -- Goal: □(...) ∗ bigOpL ... m₁ ⊢ emp ∗ bigOpL ... (filter ...)
+    refine (sep_mono_l (affinely_elim_emp (PROP := PROP))).trans ?_
+    -- Goal: emp ∗ bigOpL ... m₁ ⊢ emp ∗ bigOpL ... (filter ...)
+    refine sep_mono_r ?_
+    -- Goal: bigOpL ... m₁ ⊢ bigOpL ... (filter ...)
+    -- When m₂ is empty (toList m₂ = []), all keys have get? m₂ k = none
+    -- So the filter condition is always true, and filter m₁ ≈ m₁
+    have hfilter_all : ∀ k v, (k, v) ∈ toList m₁ →
+        decide ((get? m₂ k).isNone) = true := by
+      intro k v _hmem
+      -- Since toList m₂ = [], get? m₂ k = none for all k
+      have hempty : toList m₂ = [] := hl₂
+      simp only [decide_eq_true_eq]
+      cases hget : get? m₂ k with
+      | none => rfl
+      | some y =>
+        have hmem : (k, y) ∈ toList m₂ := (toList_get? m₂ k y).mp hget
+        rw [hempty] at hmem
+        exact False.elim (List.not_mem_nil hmem)
+    -- The filter keeps everything, so toList (filter ...) ~ toList m₁
+    have hperm := @toList_filter M K V _ _ _ _ m₁ (fun k _ => decide ((get? m₂ k).isNone))
+    have hfilter_eq : (toList m₁).filter (fun kv => decide ((get? m₂ kv.1).isNone)) = toList m₁ := by
+      apply List.filter_eq_self.mpr
+      intro kv hmem
+      exact hfilter_all kv.1 kv.2 hmem
+    rw [hfilter_eq] at hperm
+    exact equiv_iff.mp (BigOpL.perm _ hperm.symm) |>.1
+  | cons kv l₂' _ih =>
+    /-
+    Inductive case: toList m₂ = kv :: l₂'
+
+    BLOCKING ISSUE: List induction on toList m₂ is insufficient.
+
+    The challenge is that l₂' (the tail) might not be the toList of any map m₂'
+    such that `get? m₂' = get? m₂` except for kv.1. In other words, we cannot
+    easily construct a "smaller map" from the list tail.
+
+    The Rocq proof uses `map_ind` which provides:
+    - A smaller map `m` where `m !! kv.1 = None`
+    - The relationship `m₂ = <[kv.1 := kv.2]> m`
+    - This allows applying `big_sepM_insert` and the IH properly
+
+    To complete this proof, we need one of:
+    1. A `map_ind` principle in FiniteMapLaws that provides proper induction on map structure
+    2. An `erase` operation that provably gives `toList (erase m₂ kv.1) ~ l₂'`
+       (we have `toList_erase` but it requires `get? m₂ kv.1 = some kv.2`)
+    3. A way to construct a map from a list and prove properties about it
+
+    For now, this case remains incomplete pending map induction infrastructure.
+    -/
+    sorry
 
 /-- Corresponds to `big_sepM_impl_dom_subseteq` in Rocq Iris.
     Specialized version when the domain of m₂ is a subset of the domain of m₁.
@@ -1236,8 +1297,15 @@ theorem impl_dom_subseteq [FiniteMapLawsSelf M K V] {M₂ : Type _} {V₂ : Type
       □ (∀ k x y, iprop(⌜get? m₁ k = some x⌝ → ⌜get? m₂ k = some y⌝ → Φ k x -∗ Ψ k y)) -∗
       ([∗ map] k ↦ y ∈ m₂, Ψ k y) ∗
         [∗ map] k ↦ x ∈ FiniteMap.filter (fun k _ => decide ((get? m₂ k).isNone)) m₁, Φ k x := by
-  -- Following Rocq: apply entails_wand, rewrite big_sepM_impl_strong, then wand_mono
-  -- This derives from impl_strong by showing the hypothesis implies impl_strong's hypothesis
+  /-
+  Following Rocq proof structure:
+  1. apply entails_wand, rewrite big_sepM_impl_strong
+  2. apply wand_mono (the conclusion is the same, just need to show hypothesis is weaker)
+  3. For each k, show that the dom_subseteq hypothesis implies the impl_strong hypothesis
+  4. Use hdom to show that when m₂ !! k = some y, we have m₁ !! k = some x for some x
+
+  This proof depends on impl_strong which requires map induction.
+  -/
   sorry
 
 /-! ## Key Mapping Lemmas -/
