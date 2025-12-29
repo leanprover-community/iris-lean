@@ -35,7 +35,7 @@ namespace BigAndM
 @[simp]
 theorem empty {Φ : K → V → PROP} :
     ([∧ map] k ↦ x ∈ (∅ : M), Φ k x) ⊣⊢ iprop(True) := by
-  simp only [bigAndM, toList_empty, bigOpL]
+  simp only [bigAndM, map_to_list_empty, bigOpL]
   exact .rfl
 
 /-- Corresponds to `big_andM_empty'` in Rocq Iris. -/
@@ -46,10 +46,10 @@ theorem empty' {P : PROP} {Φ : K → V → PROP} :
 /-- Corresponds to `big_andM_singleton` in Rocq Iris. -/
 theorem singleton {Φ : K → V → PROP} {k : K} {v : V} :
     ([∧ map] k' ↦ x ∈ ({[k := v]} : M), Φ k' x) ⊣⊢ Φ k v := by
-  have hget : get? (∅ : M) k = none := get?_empty k
+  have hget : get? (∅ : M) k = none := lookup_empty k
   have hperm : (toList (FiniteMap.insert (∅ : M) k v)).Perm ((k, v) :: toList (∅ : M)) :=
-    toList_insert (∅ : M) k v hget
-  simp only [toList_empty] at hperm
+    map_to_list_insert (∅ : M) k v hget
+  simp only [map_to_list_empty] at hperm
   simp only [bigAndM, FiniteMap.singleton]
   have heq : bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.insert (∅ : M) k v)) ≡
              bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) [(k, v)] :=
@@ -63,7 +63,7 @@ theorem insert {Φ : K → V → PROP} {m : M} {k : K} {v : V}
     ([∧ map] k' ↦ x ∈ FiniteMap.insert m k v, Φ k' x) ⊣⊢
       Φ k v ∧ [∧ map] k' ↦ x ∈ m, Φ k' x := by
   simp only [bigAndM]
-  have hperm := toList_insert m k v h
+  have hperm := map_to_list_insert m k v h
   have hperm_eq : bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.insert m k v)) ≡
                   bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) ((k, v) :: toList m) :=
     BigOpL.perm _ hperm
@@ -73,25 +73,25 @@ theorem insert {Φ : K → V → PROP} {m : M} {k : K} {v : V}
 /-- Corresponds to `big_andM_insert_delete` in Rocq Iris. -/
 theorem insert_delete {Φ : K → V → PROP} {m : M} {k : K} {v : V} :
     ([∧ map] k' ↦ x ∈ FiniteMap.insert m k v, Φ k' x) ⊣⊢
-      Φ k v ∧ [∧ map] k' ↦ x ∈ erase m k, Φ k' x := by
-  have hperm := FiniteMapLaws.toList_insert_erase_perm m k v
+      Φ k v ∧ [∧ map] k' ↦ x ∈ delete m k, Φ k' x := by
+  have hperm := FiniteMapLaws.toList_insert_delete_perm m k v
   have heq : bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.insert m k v)) ≡
-             bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.insert (erase m k) k v)) :=
+             bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.insert (delete m k) k v)) :=
     BigOpL.perm _ hperm
   simp only [bigAndM]
-  have herase : get? (erase m k) k = none := get?_erase_eq m k
-  have hins := @insert PROP _ M K V _ _ _ Φ (erase m k) k v herase
+  have hdelete : get? (delete m k) k = none := lookup_delete_eq m k
+  have hins := @insert PROP _ M K V _ _ _ Φ (delete m k) k v hdelete
   exact (equiv_iff.mp heq).trans hins
 
 /-- Corresponds to `big_andM_delete` in Rocq Iris.
     Splits a big and over a map into the element at key `k` and the rest. -/
-theorem delete {Φ : K → V → PROP} {m : M} {k : K} {v : V}
+theorem delete' {Φ : K → V → PROP} {m : M} {k : K} {v : V}
     (h : get? m k = some v) :
-    ([∧ map] k' ↦ x ∈ m, Φ k' x) ⊣⊢ Φ k v ∧ [∧ map] k' ↦ x ∈ erase m k, Φ k' x := by
+    ([∧ map] k' ↦ x ∈ m, Φ k' x) ⊣⊢ Φ k v ∧ [∧ map] k' ↦ x ∈ Std.delete m k, Φ k' x := by
   simp only [bigAndM]
-  have hperm := toList_erase m k v h
+  have hperm := map_to_list_delete m k v h
   have heq : bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) (toList m) ≡
-             bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) ((k, v) :: toList (erase m k)) :=
+             bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) ((k, v) :: toList (Std.delete m k)) :=
     BigOpL.perm _ hperm
   simp only [bigOpL] at heq
   exact equiv_iff.mp heq
@@ -118,7 +118,7 @@ theorem mono {Φ Ψ : K → V → PROP} {m : M}
   simp only [bigAndM]
   apply mono_list
   intro kv hmem
-  have hkv : get? m kv.1 = some kv.2 := (toList_get? m kv.1 kv.2).mpr hmem
+  have hkv : get? m kv.1 = some kv.2 := (elem_of_map_to_list m kv.1 kv.2).mpr hmem
   exact h kv.1 kv.2 hkv
 
 /-- Corresponds to `big_andM_proper` in Rocq Iris. -/
@@ -131,7 +131,7 @@ theorem proper {Φ Ψ : K → V → PROP} {m : M}
   have hi : i < (toList m).length := List.getElem?_eq_some_iff.mp hget |>.1
   have heq : (toList m)[i] = kv := List.getElem?_eq_some_iff.mp hget |>.2
   have hmem : kv ∈ toList m := heq ▸ List.getElem_mem hi
-  have hkv : get? m kv.1 = some kv.2 := (toList_get? m kv.1 kv.2).mpr hmem
+  have hkv : get? m kv.1 = some kv.2 := (elem_of_map_to_list m kv.1 kv.2).mpr hmem
   exact h kv.1 kv.2 hkv
 
 /-- Unconditional version of `proper`. No direct Rocq equivalent. -/
@@ -150,7 +150,7 @@ theorem ne {Φ Ψ : K → V → PROP} {m : M} {n : Nat}
   have hi : i < (toList m).length := List.getElem?_eq_some_iff.mp hget |>.1
   have heq : (toList m)[i] = kv := List.getElem?_eq_some_iff.mp hget |>.2
   have hmem : kv ∈ toList m := heq ▸ List.getElem_mem hi
-  have hkv : get? m kv.1 = some kv.2 := (toList_get? m kv.1 kv.2).mpr hmem
+  have hkv : get? m kv.1 = some kv.2 := (elem_of_map_to_list m kv.1 kv.2).mpr hmem
   exact h kv.1 kv.2 hkv
 
 /-- Corresponds to `big_andM_mono'` in Rocq Iris.
@@ -166,7 +166,7 @@ theorem mono' {Φ Ψ : K → V → PROP} {m : M}
 instance empty_persistent {Φ : K → V → PROP} :
     Persistent ([∧ map] k ↦ x ∈ (∅ : M), Φ k x) where
   persistent := by
-    simp only [bigAndM, toList_empty, bigOpL]
+    simp only [bigAndM, map_to_list_empty, bigOpL]
     exact persistently_true.2
 
 /-- Corresponds to `big_andM_persistent` in Rocq Iris (conditional version). -/
@@ -182,7 +182,7 @@ theorem persistent_cond {Φ : K → V → PROP} {m : M}
     have hi : i < (toList m).length := List.getElem?_eq_some_iff.mp hget |>.1
     have heq : (toList m)[i] = kv := List.getElem?_eq_some_iff.mp hget |>.2
     have hmem : kv ∈ toList m := heq ▸ List.getElem_mem hi
-    have hkv : get? m kv.1 = some kv.2 := (toList_get? m kv.1 kv.2).mpr hmem
+    have hkv : get? m kv.1 = some kv.2 := (elem_of_map_to_list m kv.1 kv.2).mpr hmem
     exact (h kv.1 kv.2 hkv).persistent
 
 /-- Corresponds to `big_andM_persistent'` in Rocq Iris. -/
@@ -206,7 +206,7 @@ instance affine {Φ : K → V → PROP} {m : M} [BIAffine PROP] :
 theorem lookup {Φ : K → V → PROP} {m : M} {k : K} {v : V}
     (h : get? m k = some v) :
     ([∧ map] k' ↦ x ∈ m, Φ k' x) ⊢ Φ k v :=
-  (delete h).1.trans and_elim_l
+  (delete' h).1.trans and_elim_l
 
 /-- Corresponds to `big_andM_lookup_dom` in Rocq Iris.
     Lookup when the predicate doesn't depend on the value. -/
@@ -225,7 +225,7 @@ theorem insert_2 {Φ : K → V → PROP} {m : M} {k : K} {v : V} :
     exact (insert hm).2
   | some y =>
     -- When key k is in m with value y, we need to show the equivalence via erase
-    have hdel := delete (Φ := Φ) (m := m) hm
+    have hdel := delete' (Φ := Φ) (m := m) hm
     -- hdel: bigAndM m ⊣⊢ Φ k y ∧ bigAndM (erase m k)
     -- We have: Φ k v ∧ bigAndM m
     -- Goal: bigAndM (insert m k v)
@@ -355,10 +355,10 @@ theorem intro {P : PROP} {Φ : K → V → PROP} {m : M}
   | cons kv kvs ih =>
     simp only [bigOpL]
     have hmem_kv : kv ∈ toList m := hl ▸ List.mem_cons_self
-    have hget_kv := (toList_get? m kv.1 kv.2).mpr hmem_kv
+    have hget_kv := (elem_of_map_to_list m kv.1 kv.2).mpr hmem_kv
     refine and_intro (h kv.1 kv.2 hget_kv) ?_
     have htail : ∀ kv', kv' ∈ kvs → get? m kv'.1 = some kv'.2 := fun kv' hmem =>
-      (toList_get? m kv'.1 kv'.2).mpr (hl ▸ List.mem_cons_of_mem _ hmem)
+      (elem_of_map_to_list m kv'.1 kv'.2).mpr (hl ▸ List.mem_cons_of_mem _ hmem)
     clear ih hmem_kv hget_kv hl
     induction kvs with
     | nil => exact true_intro
@@ -413,7 +413,7 @@ theorem pure_1 {φ : K → V → Prop} {m : M} :
       bigOpL and iprop(True) (fun _ (kv : K × V) => iprop(⌜φ kv.1 kv.2⌝)) l ⊢
         iprop(⌜∀ kv, kv ∈ l → φ kv.1 kv.2⌝) by
     refine (h (toList m)).trans <| pure_mono fun hlist k v hget => ?_
-    have hmem : (k, v) ∈ toList m := (toList_get? m k v).mp hget
+    have hmem : (k, v) ∈ toList m := (elem_of_map_to_list m k v).mp hget
     exact hlist (k, v) hmem
   intro l
   induction l with
@@ -438,7 +438,7 @@ theorem pure_2 {φ : K → V → Prop} {m : M} :
       iprop(⌜∀ kv, kv ∈ l → φ kv.1 kv.2⌝) ⊢
         bigOpL and iprop(True) (fun _ (kv : K × V) => iprop(⌜φ kv.1 kv.2⌝)) l by
     refine (pure_mono fun hmap kv hmem => ?_).trans (h (toList m))
-    have hget : get? m kv.1 = some kv.2 := (toList_get? m kv.1 kv.2).mpr hmem
+    have hget : get? m kv.1 = some kv.2 := (elem_of_map_to_list m kv.1 kv.2).mpr hmem
     exact hmap kv.1 kv.2 hget
   intro l
   induction l with

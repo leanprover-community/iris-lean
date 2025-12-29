@@ -144,6 +144,9 @@ instance {M : Type u} {K : Type v} {V : Type w} [inst : FiniteMap M K V] : Membe
     Corresponds to Rocq's `FinMap` class axioms. -/
 class FiniteMapLaws (M : Type u) (K : Type v) (V : Type w)
     [DecidableEq K] [FiniteMap M K V] where
+  /-- Map extensionality: two maps with the same lookups are equal.
+      Corresponds to Rocq's `map_eq`. -/
+  map_eq : ∀ (m₁ m₂ : M), (∀ i, get? m₁ i = get? m₂ i) → m₁ = m₂
   /-- Looking up in an empty map returns `none`.
       Corresponds to Rocq's `lookup_empty`. -/
   lookup_empty : ∀ k, get? (∅ : M) k = none
@@ -215,7 +218,8 @@ class FiniteMapLawsSelf (M : Type u) (K : Type v) (V : Type w)
     (toList (m₁ \ m₂)).Perm
       ((toList m₁).filter (fun kv => (get? m₂ kv.1).isNone))
 
-export FiniteMapLaws (lookup_empty lookup_insert_eq lookup_insert_ne lookup_delete_eq lookup_delete_ne elem_of_list_to_map map_to_list_empty map_to_list_insert elem_of_map_to_list NoDup_map_to_list map_to_list_delete map_to_list_to_map)
+export FiniteMapLaws (map_eq lookup_empty lookup_insert_eq lookup_insert_ne lookup_delete_eq lookup_delete_ne elem_of_list_to_map map_to_list_empty map_to_list_insert elem_of_map_to_list NoDup_map_to_list map_to_list_delete map_to_list_to_map)
+
 export FiniteMapLawsExt (toList_map)
 export FiniteMapLawsSelf (toList_filterMap toList_filter toList_union_disjoint toList_difference)
 
@@ -393,6 +397,505 @@ theorem lookup_delete_None (m : M) (i j : K) :
     get? (delete m i) j = none ↔ i = j ∨ get? m j = none := by
   rw [lookup_delete]
   split <;> simp_all
+
+-- ============================================================================
+-- Induction Principles
+-- ============================================================================
+
+/-- Insert then delete is identity when key wasn't present.
+    Corresponds to Rocq's `insert_delete_id`. -/
+theorem insert_delete_id (m : M) (i : K) (x : V) :
+    get? m i = some x → insert (delete m i) i x = m := by
+  intro h
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro j
+  by_cases hij : i = j
+  · subst hij
+    simp [lookup_insert_eq, h]
+  · simp [lookup_insert_ne _ _ _ _ hij, lookup_delete_ne _ _ _ hij]
+
+/-- Delete then insert is identity.
+    Corresponds to Rocq's `delete_insert_id`. -/
+theorem delete_insert_id (m : M) (i : K) (x : V) :
+    get? m i = none → delete (insert m i x) i = m := by
+  intro h
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro j
+  by_cases hij : i = j
+  · subst hij
+    simp [lookup_delete_eq, h]
+  · simp [lookup_delete_ne _ _ _ hij, lookup_insert_ne _ _ _ _ hij]
+
+/-- Empty map is characterized by all lookups returning none. -/
+theorem eq_empty_iff (m : M) : m = ∅ ↔ ∀ k, get? m k = none := by
+  constructor
+  · intro h k
+    rw [h, lookup_empty]
+  · intro h
+    apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+    intro k
+    rw [h, lookup_empty]
+
+/-- Well-founded induction on maps using the strict submap relation.
+    This is the most basic induction principle.
+    Corresponds to Rocq's `map_ind`. -/
+theorem map_ind {P : M → Prop}
+    (hemp : P ∅)
+    (hins : ∀ i x m, get? m i = none → P m → P (insert m i x))
+    (m : M) : P m := by
+  -- We use well-founded induction on the length of toList
+  generalize hn : (toList m).length = n
+  induction n using Nat.strongRecOn generalizing m with
+  | ind n ih =>
+    cases hn' : toList m with
+    | nil =>
+      -- If toList is empty, the map must behave like empty
+      have h : ∀ k, get? m k = none := by
+        intro k
+        cases hget : get? m k with
+        | none => rfl
+        | some v =>
+          have hmem := (elem_of_map_to_list m k v).mp hget
+          rw [hn'] at hmem
+          simp at hmem
+      -- By extensionality, m = ∅
+      have heq : m = ∅ := eq_empty_iff m |>.mpr h
+      rw [heq]
+      exact hemp
+    | cons kv kvs =>
+      -- m has at least one entry
+      obtain ⟨k, v⟩ := kv
+      -- delete k from m gives a smaller map
+      have hdel : get? m k = some v := by
+        have hmem : (k, v) ∈ (k, v) :: kvs := List.Mem.head _
+        have hmem' : (k, v) ∈ toList m := hn' ▸ hmem
+        exact (elem_of_map_to_list m k v).mpr hmem'
+      -- toList (delete m k) has one fewer element
+      have hperm := map_to_list_delete m k v hdel
+      -- The deleted map has strictly smaller toList (by one element)
+      have hlen : (toList (delete m k)).length < n := by
+        have hperm_len := hperm.length_eq
+        simp only [List.length_cons] at hperm_len
+        omega
+      -- Apply IH to get P (delete m k)
+      have ih_del := ih (toList (delete m k)).length hlen (delete m k) rfl
+      -- Since get? (delete m k) k = none, we can apply hins
+      have hdel_none : get? (delete m k) k = none := lookup_delete_eq m k
+      -- We get P (insert (delete m k) k v)
+      have result := hins k v (delete m k) hdel_none ih_del
+      -- By extensionality, insert (delete m k) k v = m
+      have heq := insert_delete_id m k v hdel
+      rw [← heq]
+      exact result
+
+-- ============================================================================
+-- Insert and Delete Composition Lemmas
+-- ============================================================================
+
+/-- Delete is idempotent.
+    Corresponds to Rocq's `delete_delete_eq`. -/
+theorem delete_delete_eq (m : M) (i : K) :
+    delete (delete m i) i = delete m i := by
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro j
+  by_cases hij : i = j
+  · subst hij
+    simp [lookup_delete_eq]
+  · simp [lookup_delete_ne _ _ _ hij]
+
+/-- Delete of different keys commutes.
+    Corresponds to Rocq's `delete_delete`. -/
+theorem delete_delete (m : M) (i j : K) :
+    delete (delete m i) j = delete (delete m j) i := by
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro k
+  by_cases hik : i = k <;> by_cases hjk : j = k <;> simp [lookup_delete, *]
+
+/-- Insert then delete of different keys commutes.
+    Corresponds to Rocq's `delete_insert_ne`. -/
+theorem delete_insert_ne (m : M) (i j : K) (x : V) :
+    i ≠ j → delete (insert m i x) j = insert (delete m j) i x := by
+  intro hij
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro k
+  by_cases hik : i = k <;> by_cases hjk : j = k
+  · subst hik hjk; exact absurd rfl hij
+  · subst hik; simp [lookup_insert, lookup_delete, hjk]
+  · subst hjk; simp [lookup_insert, lookup_delete, hik]
+  · simp [lookup_insert, lookup_delete, hik, hjk]
+
+/-- Delete then insert of same key gives just insert.
+    Corresponds to Rocq's `insert_delete_eq`. -/
+theorem insert_delete_eq (m : M) (i : K) (x : V) :
+    insert (delete m i) i x = insert m i x := by
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro j
+  by_cases hij : i = j
+  · subst hij
+    simp [lookup_insert_eq]
+  · simp [lookup_insert_ne _ _ _ _ hij, lookup_delete_ne _ _ _ hij]
+
+/-- Insert of different keys commutes.
+    Corresponds to Rocq's `insert_insert`. -/
+theorem insert_insert (m : M) (i j : K) (x y : V) :
+    i ≠ j → insert (insert m i x) j y = insert (insert m j y) i x := by
+  intro hij
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro k
+  by_cases hik : i = k <;> by_cases hjk : j = k
+  · subst hik hjk; exact absurd rfl hij
+  · subst hik; simp [lookup_insert, hjk]
+  · subst hjk; simp [lookup_insert, hik]
+  · simp [lookup_insert, hik, hjk]
+
+/-- Insert of same key keeps later value.
+    Corresponds to Rocq's `insert_insert_eq`. -/
+theorem insert_insert_eq' (m : M) (i : K) (x y : V) :
+    insert (insert m i x) i y = insert m i y := by
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro j
+  by_cases hij : i = j
+  · subst hij
+    simp [lookup_insert_eq]
+  · simp [lookup_insert_ne _ _ _ _ hij]
+
+/-- Deleting from empty is empty.
+    Corresponds to Rocq's `delete_empty`. -/
+theorem delete_empty' (i : K) :
+    delete (∅ : M) i = ∅ := by
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro j
+  simp [lookup_delete, lookup_empty]
+
+/-- Delete is identity when key not present.
+    Corresponds to Rocq's `delete_id`. -/
+theorem delete_id (m : M) (i : K) :
+    get? m i = none → delete m i = m := by
+  intro h
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro j
+  by_cases hij : i = j
+  · subst hij
+    simp [lookup_delete_eq, h]
+  · simp [lookup_delete_ne _ _ _ hij]
+
+/-- Insert is identity when key already has that value.
+    Corresponds to Rocq's `insert_id`. -/
+theorem insert_id' (m : M) (i : K) (x : V) :
+    get? m i = some x → insert m i x = m := by
+  intro h
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro j
+  by_cases hij : i = j
+  · subst hij
+    simp [lookup_insert_eq, h]
+  · simp [lookup_insert_ne _ _ _ _ hij]
+
+/-- Insert on empty gives singleton.
+    Corresponds to Rocq's `insert_empty`. -/
+theorem insert_empty [DecidableEq K] (i : K) (x : V) :
+    insert (∅ : M) i x = FiniteMap.singleton i x := by
+  rfl
+
+/-- Inserted map is non-empty.
+    Corresponds to Rocq's `insert_non_empty`. -/
+theorem insert_non_empty (m : M) (i : K) (x : V) :
+    insert m i x ≠ ∅ := by
+  intro h
+  have := eq_empty_iff (insert m i x) |>.mp h i
+  simp [lookup_insert_eq] at this
+
+-- ============================================================================
+-- Submap Lemmas
+-- ============================================================================
+
+/-- Delete preserves submap.
+    Corresponds to Rocq's `delete_subseteq`. -/
+theorem delete_subseteq (m : M) (i : K) : delete m i ⊆ m := by
+  intro k v h
+  by_cases hik : i = k
+  · subst hik
+    simp [lookup_delete_eq] at h
+  · simp [lookup_delete_ne _ _ _ hik] at h
+    exact h
+
+/-- Delete of present key is strict submap (submap but not equal).
+    Corresponds to Rocq's `delete_subset`. -/
+theorem delete_subset (m : M) (i : K) (v : V) :
+    get? m i = some v → delete m i ⊆ m ∧ delete m i ≠ m := by
+  intro hi
+  constructor
+  · exact delete_subseteq m i
+  · intro heq
+    have : get? (delete m i) i = get? m i := by rw [heq]
+    simp [lookup_delete_eq, hi] at this
+
+/-- Insert on non-present key gives superset.
+    Corresponds to Rocq's `insert_subseteq`. -/
+theorem insert_subseteq (m : M) (i : K) (x : V) :
+    get? m i = none → m ⊆ insert m i x := by
+  intro hi k v hk
+  by_cases hik : i = k
+  · subst hik
+    simp [hi] at hk
+  · simp [lookup_insert_ne _ _ _ _ hik, hk]
+
+/-- Insert on non-present key gives strict superset (superset but not equal).
+    Corresponds to Rocq's `insert_subset`. -/
+theorem insert_subset (m : M) (i : K) (x : V) :
+    get? m i = none → m ⊆ insert m i x ∧ m ≠ insert m i x := by
+  intro hi
+  constructor
+  · exact insert_subseteq m i x hi
+  · intro heq
+    have h2 : get? (insert m i x) i = some x := lookup_insert_eq m i x
+    rw [← heq] at h2
+    rw [hi] at h2
+    exact Option.noConfusion h2
+
+/-- Delete is monotone with respect to submap.
+    Corresponds to Rocq's `delete_mono`. -/
+theorem delete_mono (m₁ m₂ : M) (i : K) :
+    m₁ ⊆ m₂ → delete m₁ i ⊆ delete m₂ i := by
+  intro hsub k v hk
+  by_cases hik : i = k
+  · subst hik
+    simp [lookup_delete_eq] at hk
+  · simp [lookup_delete_ne _ _ _ hik] at hk ⊢
+    exact hsub k v hk
+
+/-- Insert is monotone with respect to submap.
+    Corresponds to Rocq's `insert_mono`. -/
+theorem insert_mono (m₁ m₂ : M) (i : K) (x : V) :
+    m₁ ⊆ m₂ → insert m₁ i x ⊆ insert m₂ i x := by
+  intro hsub k v hk
+  by_cases hik : i = k
+  · subst hik
+    simp [lookup_insert_eq] at hk ⊢
+    exact hk
+  · simp [lookup_insert_ne _ _ _ _ hik] at hk ⊢
+    exact hsub k v hk
+
+-- ============================================================================
+-- Singleton Lemmas
+-- ============================================================================
+
+/-- Singleton is non-empty.
+    Corresponds to Rocq's `map_non_empty_singleton`. -/
+theorem singleton_non_empty (i : K) (x : V) :
+    FiniteMap.singleton i x ≠ (∅ : M) := by
+  exact insert_non_empty ∅ i x
+
+/-- Delete from singleton of same key is empty.
+    Corresponds to Rocq's `delete_singleton_eq`. -/
+theorem delete_singleton_eq (i : K) (x : V) :
+    delete (FiniteMap.singleton i x : M) i = ∅ := by
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro j
+  simp [FiniteMap.singleton, lookup_delete, lookup_insert, lookup_empty]
+
+/-- Delete from singleton of different key is identity.
+    Corresponds to Rocq's `delete_singleton_ne`. -/
+theorem delete_singleton_ne (i j : K) (x : V) :
+    i ≠ j → delete (FiniteMap.singleton j x : M) i = FiniteMap.singleton j x := by
+  intro hij
+  apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
+  intro k
+  simp [FiniteMap.singleton, lookup_delete, lookup_insert, lookup_empty]
+  intro hik
+  intro hjk
+  subst hik hjk
+  exact hij rfl
+
+-- ============================================================================
+-- map_Forall Predicate
+-- ============================================================================
+
+/-- A predicate holds for all key-value pairs in the map.
+    Corresponds to Rocq's `map_Forall`. -/
+def map_Forall (P : K → V → Prop) (m : M) : Prop :=
+  ∀ k v, get? m k = some v → P k v
+
+/-- map_Forall is equivalent to checking toList.
+    Corresponds to Rocq's `map_Forall_to_list`. -/
+theorem map_Forall_to_list (P : K → V → Prop) (m : M) :
+    map_Forall P m ↔ ∀ kv ∈ toList m, P kv.1 kv.2 := by
+  constructor
+  · intro hfa kv hmem
+    have := (elem_of_map_to_list m kv.1 kv.2).mpr hmem
+    exact hfa kv.1 kv.2 this
+  · intro hlist k v hget
+    have := (elem_of_map_to_list m k v).mp hget
+    exact hlist (k, v) this
+
+/-- map_Forall holds vacuously on empty map.
+    Corresponds to Rocq's `map_Forall_empty`. -/
+theorem map_Forall_empty (P : K → V → Prop) : map_Forall P (∅ : M) := by
+  intro k v h
+  simp [lookup_empty] at h
+
+/-- map_Forall is preserved by implication.
+    Corresponds to Rocq's `map_Forall_impl`. -/
+theorem map_Forall_impl (P Q : K → V → Prop) (m : M) :
+    map_Forall P m → (∀ k v, P k v → Q k v) → map_Forall Q m := by
+  intro hp himpl k v hget
+  exact himpl k v (hp k v hget)
+
+/-- map_Forall on insert implies P holds for the inserted value.
+    Corresponds to Rocq's `map_Forall_insert_1_1`. -/
+theorem map_Forall_insert_1_1 (P : K → V → Prop) (m : M) (i : K) (x : V) :
+    map_Forall P (insert m i x) → P i x := by
+  intro hfa
+  exact hfa i x (lookup_insert_eq m i x)
+
+/-- map_Forall on insert implies map_Forall on original (when key not present).
+    Corresponds to Rocq's `map_Forall_insert_1_2`. -/
+theorem map_Forall_insert_1_2 (P : K → V → Prop) (m : M) (i : K) (x : V) :
+    get? m i = none → map_Forall P (insert m i x) → map_Forall P m := by
+  intro hi hfa k v hget
+  by_cases hik : i = k
+  · subst hik
+    simp [hi] at hget
+  · have : get? (insert m i x) k = some v := by
+      simp [lookup_insert_ne _ _ _ _ hik, hget]
+    exact hfa k v this
+
+/-- map_Forall is preserved by insert when P holds.
+    Corresponds to Rocq's `map_Forall_insert_2`. -/
+theorem map_Forall_insert_2 (P : K → V → Prop) (m : M) (i : K) (x : V) :
+    P i x → map_Forall P m → map_Forall P (insert m i x) := by
+  intro hpix hfa k v hget
+  by_cases hik : i = k
+  · subst hik
+    simp [lookup_insert_eq] at hget
+    rw [← hget]
+    exact hpix
+  · simp [lookup_insert_ne _ _ _ _ hik] at hget
+    exact hfa k v hget
+
+/-- map_Forall characterization for insert when key not present.
+    Corresponds to Rocq's `map_Forall_insert`. -/
+theorem map_Forall_insert (P : K → V → Prop) (m : M) (i : K) (x : V) :
+    get? m i = none → (map_Forall P (insert m i x) ↔ P i x ∧ map_Forall P m) := by
+  intro hi
+  constructor
+  · intro hfa
+    exact ⟨map_Forall_insert_1_1 P m i x hfa, map_Forall_insert_1_2 P m i x hi hfa⟩
+  · intro ⟨hpix, hfa⟩
+    exact map_Forall_insert_2 P m i x hpix hfa
+
+/-- map_Forall on singleton.
+    Corresponds to Rocq's `map_Forall_singleton`. -/
+theorem map_Forall_singleton (P : K → V → Prop) (i : K) (x : V) :
+    map_Forall P (FiniteMap.singleton i x : M) ↔ P i x := by
+  constructor
+  · intro hfa
+    exact hfa i x (lookup_singleton_eq i x)
+  · intro hpix k v hget
+    simp [lookup_singleton] at hget
+    obtain ⟨rfl, rfl⟩ := hget
+    exact hpix
+
+/-- map_Forall is preserved by delete.
+    Corresponds to Rocq's `map_Forall_delete`. -/
+theorem map_Forall_delete (P : K → V → Prop) (m : M) (i : K) :
+    map_Forall P m → map_Forall P (delete m i) := by
+  intro hfa k v hget
+  by_cases hik : i = k
+  · subst hik
+    simp [lookup_delete_eq] at hget
+  · simp [lookup_delete_ne _ _ _ hik] at hget
+    exact hfa k v hget
+
+-- ============================================================================
+-- Disjoint Lemmas
+-- ============================================================================
+
+/-- Characterization of disjoint maps.
+    Corresponds to Rocq's `map_disjoint_spec`. -/
+theorem map_disjoint_spec (m₁ m₂ : M) :
+    FiniteMap.Disjoint m₁ m₂ ↔ ∀ k, get? m₁ k = none ∨ get? m₂ k = none := by
+  constructor
+  · intro hdisj k
+    by_cases h1 : (get? m₁ k).isSome
+    · by_cases h2 : (get? m₂ k).isSome
+      · exact absurd ⟨h1, h2⟩ (hdisj k)
+      · simp only [Option.not_isSome_iff_eq_none] at h2
+        exact Or.inr h2
+    · simp only [Option.not_isSome_iff_eq_none] at h1
+      exact Or.inl h1
+  · intro h k ⟨hs1, hs2⟩
+    cases h k with
+    | inl h1 => simp [h1] at hs1
+    | inr h2 => simp [h2] at hs2
+
+/-- Insert preserves disjointness when key not in the other map.
+    Corresponds to Rocq's `map_disjoint_insert_l`. -/
+theorem map_disjoint_insert_l (m₁ m₂ : M) (i : K) (x : V) :
+    get? m₂ i = none →
+    FiniteMap.Disjoint m₁ m₂ →
+    FiniteMap.Disjoint (insert m₁ i x) m₂ := by
+  intro hi hdisj k ⟨hs1, hs2⟩
+  by_cases hik : i = k
+  · subst hik
+    simp [hi] at hs2
+  · simp [lookup_insert_ne _ _ _ _ hik] at hs1
+    exact hdisj k ⟨hs1, hs2⟩
+
+/-- Insert preserves disjointness (right version).
+    Corresponds to Rocq's `map_disjoint_insert_r`. -/
+theorem map_disjoint_insert_r (m₁ m₂ : M) (i : K) (x : V) :
+    get? m₁ i = none →
+    FiniteMap.Disjoint m₁ m₂ →
+    FiniteMap.Disjoint m₁ (insert m₂ i x) := by
+  intro hi hdisj k ⟨hs1, hs2⟩
+  by_cases hik : i = k
+  · subst hik
+    simp [hi] at hs1
+  · simp [lookup_insert_ne _ _ _ _ hik] at hs2
+    exact hdisj k ⟨hs1, hs2⟩
+
+/-- Delete preserves disjointness.
+    Corresponds to Rocq's `map_disjoint_delete_l`. -/
+theorem map_disjoint_delete_l (m₁ m₂ : M) (i : K) :
+    FiniteMap.Disjoint m₁ m₂ → FiniteMap.Disjoint (delete m₁ i) m₂ := by
+  intro hdisj k ⟨hs1, hs2⟩
+  by_cases hik : i = k
+  · subst hik
+    simp [lookup_delete_eq] at hs1
+  · simp [lookup_delete_ne _ _ _ hik] at hs1
+    exact hdisj k ⟨hs1, hs2⟩
+
+/-- Delete preserves disjointness (right version).
+    Corresponds to Rocq's `map_disjoint_delete_r`. -/
+theorem map_disjoint_delete_r (m₁ m₂ : M) (i : K) :
+    FiniteMap.Disjoint m₁ m₂ → FiniteMap.Disjoint m₁ (delete m₂ i) := by
+  intro hdisj k ⟨hs1, hs2⟩
+  by_cases hik : i = k
+  · subst hik
+    simp [lookup_delete_eq] at hs2
+  · simp [lookup_delete_ne _ _ _ hik] at hs2
+    exact hdisj k ⟨hs1, hs2⟩
+
+/-- Singleton is disjoint from map when key not present.
+    Corresponds to Rocq's `map_disjoint_singleton_l`. -/
+theorem map_disjoint_singleton_l (m : M) (i : K) (x : V) :
+    get? m i = none → FiniteMap.Disjoint (FiniteMap.singleton i x) m := by
+  intro hi k ⟨hs1, hs2⟩
+  by_cases hik : i = k
+  · subst hik
+    simp [hi] at hs2
+  · simp [FiniteMap.singleton, lookup_insert_ne _ _ _ _ hik, lookup_empty] at hs1
+
+/-- Singleton is disjoint from map when key not present (right version).
+    Corresponds to Rocq's `map_disjoint_singleton_r`. -/
+theorem map_disjoint_singleton_r (m : M) (i : K) (x : V) :
+    get? m i = none → FiniteMap.Disjoint m (FiniteMap.singleton i x) := by
+  intro hi k ⟨hs1, hs2⟩
+  by_cases hik : i = k
+  · subst hik
+    simp [hi] at hs1
+  · simp [FiniteMap.singleton, lookup_insert_ne _ _ _ _ hik, lookup_empty] at hs2
 
 end FiniteMapLaws
 

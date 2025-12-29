@@ -35,7 +35,7 @@ namespace BigSepM
 @[simp]
 theorem empty {Φ : K → V → PROP} :
     ([∗ map] k ↦ x ∈ (∅ : M), Φ k x) ⊣⊢ emp := by
-  simp only [bigSepM, toList_empty, bigOpL]
+  simp only [bigSepM, map_to_list_empty, bigOpL]
   exact .rfl
 
 /-- Corresponds to `big_sepM_empty'` in Rocq Iris. -/
@@ -46,10 +46,10 @@ theorem empty' {P : PROP} [Affine P] {Φ : K → V → PROP} :
 /-- Corresponds to `big_sepM_singleton` in Rocq Iris. -/
 theorem singleton {Φ : K → V → PROP} {k : K} {v : V} :
     ([∗ map] k' ↦ x ∈ ({[k := v]} : M), Φ k' x) ⊣⊢ Φ k v := by
-  have hget : get? (∅ : M) k = none := get?_empty k
+  have hget : get? (∅ : M) k = none := lookup_empty k
   have hperm : (toList (FiniteMap.insert (∅ : M) k v)).Perm ((k, v) :: toList (∅ : M)) :=
-    toList_insert (∅ : M) k v hget
-  simp only [toList_empty] at hperm
+    map_to_list_insert (∅ : M) k v hget
+  simp only [map_to_list_empty] at hperm
   simp only [bigSepM, FiniteMap.singleton]
   -- Use that permutation preserves big sep
   have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.insert (∅ : M) k v)) ≡
@@ -64,7 +64,7 @@ theorem insert {Φ : K → V → PROP} {m : M} {k : K} {v : V}
     ([∗ map] k' ↦ x ∈ FiniteMap.insert m k v, Φ k' x) ⊣⊢
       Φ k v ∗ [∗ map] k' ↦ x ∈ m, Φ k' x := by
   simp only [bigSepM]
-  have hperm := toList_insert m k v h
+  have hperm := map_to_list_insert m k v h
   -- bigOpL over permuted list equals bigOpL over original
   have hperm_eq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.insert m k v)) ≡
                   bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) ((k, v) :: toList m) :=
@@ -75,26 +75,26 @@ theorem insert {Φ : K → V → PROP} {m : M} {k : K} {v : V}
 /-- Corresponds to `big_sepM_insert_delete` in Rocq Iris. -/
 theorem insert_delete {Φ : K → V → PROP} {m : M} {k : K} {v : V} :
     ([∗ map] k' ↦ x ∈ FiniteMap.insert m k v, Φ k' x) ⊣⊢
-      Φ k v ∗ [∗ map] k' ↦ x ∈ erase m k, Φ k' x := by
-  -- Use permutation between insert m k v and insert (erase m k) k v
-  have hperm := FiniteMapLaws.toList_insert_erase_perm m k v
+      Φ k v ∗ [∗ map] k' ↦ x ∈ Std.delete m k, Φ k' x := by
+  -- Use permutation between insert m k v and insert (Std.delete m k) k v
+  have hperm := FiniteMapLaws.toList_insert_delete_perm m k v
   have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.insert m k v)) ≡
-             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.insert (erase m k) k v)) :=
+             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.insert (Std.delete m k) k v)) :=
     BigOpL.perm _ hperm
   simp only [bigSepM]
-  have herase : get? (erase m k) k = none := get?_erase_eq m k
-  have hins := @insert PROP _ M K V _ _ _ Φ (erase m k) k v herase
+  have herase : get? (Std.delete m k) k = none := lookup_delete_eq m k
+  have hins := @insert PROP _ M K V _ _ _ Φ (Std.delete m k) k v herase
   exact (equiv_iff.mp heq).trans hins
 
 /-- Corresponds to `big_sepM_delete` in Rocq Iris.
     Splits a big sep over a map into the element at key `k` and the rest. -/
 theorem delete {Φ : K → V → PROP} {m : M} {k : K} {v : V}
     (h : get? m k = some v) :
-    ([∗ map] k' ↦ x ∈ m, Φ k' x) ⊣⊢ Φ k v ∗ [∗ map] k' ↦ x ∈ erase m k, Φ k' x := by
+    ([∗ map] k' ↦ x ∈ m, Φ k' x) ⊣⊢ Φ k v ∗ [∗ map] k' ↦ x ∈ Std.delete m k, Φ k' x := by
   simp only [bigSepM]
-  have hperm := toList_erase m k v h
+  have hperm := map_to_list_delete m k v h
   have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList m) ≡
-             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) ((k, v) :: toList (erase m k)) :=
+             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) ((k, v) :: toList (Std.delete m k)) :=
     BigOpL.perm _ hperm
   simp only [bigOpL] at heq
   exact equiv_iff.mp heq
@@ -121,7 +121,7 @@ theorem mono {Φ Ψ : K → V → PROP} {m : M}
   simp only [bigSepM]
   apply mono_list
   intro kv hmem
-  have hkv : get? m kv.1 = some kv.2 := (toList_get? m kv.1 kv.2).mpr hmem
+  have hkv : get? m kv.1 = some kv.2 := (elem_of_map_to_list m kv.1 kv.2).mpr hmem
   exact h kv.1 kv.2 hkv
 
 /-- Corresponds to `big_sepM_proper` in Rocq Iris. -/
@@ -134,7 +134,7 @@ theorem proper {Φ Ψ : K → V → PROP} {m : M}
   have hi : i < (toList m).length := List.getElem?_eq_some_iff.mp hget |>.1
   have heq : (toList m)[i] = kv := List.getElem?_eq_some_iff.mp hget |>.2
   have hmem : kv ∈ toList m := heq ▸ List.getElem_mem hi
-  have hkv : get? m kv.1 = some kv.2 := (toList_get? m kv.1 kv.2).mpr hmem
+  have hkv : get? m kv.1 = some kv.2 := (elem_of_map_to_list m kv.1 kv.2).mpr hmem
   exact h kv.1 kv.2 hkv
 
 /-- Unconditional version of `proper`. No direct Rocq equivalent. -/
@@ -153,7 +153,7 @@ theorem ne {Φ Ψ : K → V → PROP} {m : M} {n : Nat}
   have hi : i < (toList m).length := List.getElem?_eq_some_iff.mp hget |>.1
   have heq : (toList m)[i] = kv := List.getElem?_eq_some_iff.mp hget |>.2
   have hmem : kv ∈ toList m := heq ▸ List.getElem_mem hi
-  have hkv : get? m kv.1 = some kv.2 := (toList_get? m kv.1 kv.2).mpr hmem
+  have hkv : get? m kv.1 = some kv.2 := (elem_of_map_to_list m kv.1 kv.2).mpr hmem
   exact h kv.1 kv.2 hkv
 
 /-- Corresponds to `big_sepM_mono'` in Rocq Iris.
@@ -214,7 +214,7 @@ theorem subseteq {Φ : K → V → PROP} {m₁ m₂ : M} [FiniteMapLawsSelf M K 
 instance empty_persistent {Φ : K → V → PROP} :
     Persistent ([∗ map] k ↦ x ∈ (∅ : M), Φ k x) where
   persistent := by
-    simp only [bigSepM, toList_empty, bigOpL]
+    simp only [bigSepM, map_to_list_empty, bigOpL]
     exact persistently_emp_2
 
 /-- Corresponds to `big_sepM_persistent` in Rocq Iris (conditional version). -/
@@ -230,7 +230,7 @@ theorem persistent_cond {Φ : K → V → PROP} {m : M}
     have hi : i < (toList m).length := List.getElem?_eq_some_iff.mp hget |>.1
     have heq : (toList m)[i] = kv := List.getElem?_eq_some_iff.mp hget |>.2
     have hmem : kv ∈ toList m := heq ▸ List.getElem_mem hi
-    have hkv : get? m kv.1 = some kv.2 := (toList_get? m kv.1 kv.2).mpr hmem
+    have hkv : get? m kv.1 = some kv.2 := (elem_of_map_to_list m kv.1 kv.2).mpr hmem
     exact (h kv.1 kv.2 hkv).persistent
 
 /-- Corresponds to `big_sepM_persistent'` in Rocq Iris. -/
@@ -242,7 +242,7 @@ instance persistent {Φ : K → V → PROP} {m : M} [∀ k v, Persistent (Φ k v
 instance empty_affine {Φ : K → V → PROP} :
     Affine ([∗ map] k ↦ x ∈ (∅ : M), Φ k x) where
   affine := by
-    simp only [bigSepM, toList_empty, bigOpL]
+    simp only [bigSepM, map_to_list_empty, bigOpL]
     exact Entails.rfl
 
 /-- Corresponds to `big_sepM_affine` in Rocq Iris (conditional version). -/
@@ -258,7 +258,7 @@ theorem affine_cond {Φ : K → V → PROP} {m : M}
     have hi : i < (toList m).length := List.getElem?_eq_some_iff.mp hget |>.1
     have heq : (toList m)[i] = kv := List.getElem?_eq_some_iff.mp hget |>.2
     have hmem : kv ∈ toList m := heq ▸ List.getElem_mem hi
-    have hkv : get? m kv.1 = some kv.2 := (toList_get? m kv.1 kv.2).mpr hmem
+    have hkv : get? m kv.1 = some kv.2 := (elem_of_map_to_list m kv.1 kv.2).mpr hmem
     exact (h kv.1 kv.2 hkv).affine
 
 /-- Corresponds to `big_sepM_affine'` in Rocq Iris. -/
@@ -303,7 +303,7 @@ theorem lookup_acc {Φ : K → V → PROP} {m : M} {k : K} {v : V}
     (h : get? m k = some v) :
     ([∗ map] k' ↦ x ∈ m, Φ k' x) ⊢
       Φ k v ∗ (Φ k v -∗ [∗ map] k' ↦ x ∈ m, Φ k' x) :=
-  -- delete h : bigSepM m ⊣⊢ Φ k v ∗ bigSepM (erase m k)
+  -- delete h : bigSepM m ⊣⊢ Φ k v ∗ bigSepM (Std.delete m k)
   -- We need: bigSepM m ⊢ Φ k v ∗ (Φ k v -∗ bigSepM m)
   (delete h).1.trans (sep_mono_r (wand_intro' (delete h).2))
 
@@ -343,23 +343,23 @@ theorem insert_acc {Φ : K → V → PROP} {m : M} {k : K} {v : V}
   -- First extract using delete
   have hdel := delete (Φ := Φ) (m := m) h
   refine hdel.1.trans (sep_mono_r ?_)
-  -- Now prove: bigSepM (erase m k) ⊢ ∀ v', Φ k v' -∗ bigSepM (insert m k v')
+  -- Now prove: bigSepM (Std.delete m k) ⊢ ∀ v', Φ k v' -∗ bigSepM (insert m k v')
   apply forall_intro
   intro v'
-  -- insert m k v' has the same lookup as insert (erase m k) k v'
-  have heq : ∀ k', get? (FiniteMap.insert m k v') k' = get? (FiniteMap.insert (erase m k) k v') k' := by
+  -- insert m k v' has the same lookup as insert (Std.delete m k) k v'
+  have heq : ∀ k', get? (FiniteMap.insert m k v') k' = get? (FiniteMap.insert (Std.delete m k) k v') k' := by
     intro k'
-    rw [FiniteMapLaws.get?_insert, FiniteMapLaws.get?_insert, FiniteMapLaws.get?_erase]
+    rw [FiniteMapLaws.lookup_insert, FiniteMapLaws.lookup_insert, FiniteMapLaws.lookup_delete]
     split <;> simp_all
   have hperm := FiniteMapLaws.toList_perm_eq_of_get?_eq heq
-  have hperm_eq : bigSepM Φ (FiniteMap.insert m k v') ⊣⊢ bigSepM Φ (FiniteMap.insert (erase m k) k v') := by
+  have hperm_eq : bigSepM Φ (FiniteMap.insert m k v') ⊣⊢ bigSepM Φ (FiniteMap.insert (Std.delete m k) k v') := by
     simp only [bigSepM]
     exact equiv_iff.mp (BigOpL.perm _ hperm)
   -- Now use insert on erased map
-  have hins := insert (Φ := Φ) (m := erase m k) (k := k) (v := v') (get?_erase_eq m k)
-  -- Need: bigSepM (erase m k) ⊢ Φ k v' -∗ bigSepM (insert m k v')
-  -- hins: bigSepM (insert (erase m k) k v') ⊣⊢ Φ k v' ∗ bigSepM (erase m k)
-  -- So: Φ k v' ∗ bigSepM (erase m k) ⊢ bigSepM (insert m k v')
+  have hins := insert (Φ := Φ) (m := Std.delete m k) (k := k) (v := v') (lookup_delete_eq m k)
+  -- Need: bigSepM (Std.delete m k) ⊢ Φ k v' -∗ bigSepM (insert m k v')
+  -- hins: bigSepM (insert (Std.delete m k) k v') ⊣⊢ Φ k v' ∗ bigSepM (Std.delete m k)
+  -- So: Φ k v' ∗ bigSepM (Std.delete m k) ⊢ bigSepM (insert m k v')
   exact wand_intro' (hins.2.trans hperm_eq.2)
 
 /-- Corresponds to `big_sepM_insert_2` in Rocq Iris (Affine version).
@@ -375,22 +375,22 @@ theorem insert_2 {Φ : K → V → PROP} {m : M} {k : K} {v : V} [∀ w, Affine 
   | some y =>
     -- m has key k with value y, need to replace it
     have hdel := delete (Φ := Φ) (m := m) hm
-    -- hdel: bigSepM m ⊣⊢ Φ k y ∗ bigSepM (erase m k)
+    -- hdel: bigSepM m ⊣⊢ Φ k y ∗ bigSepM (Std.delete m k)
     -- Goal: Φ k v ∗ bigSepM m ⊢ bigSepM (insert m k v)
-    -- Expand bigSepM m: Φ k v ∗ (Φ k y ∗ bigSepM (erase m k))
+    -- Expand bigSepM m: Φ k v ∗ (Φ k y ∗ bigSepM (Std.delete m k))
     refine (sep_mono_r hdel.1).trans ?_
-    -- Reassociate: (Φ k v ∗ Φ k y) ∗ bigSepM (erase m k)
-    refine (sep_assoc (P := Φ k v) (Q := Φ k y) (R := bigSepM (fun k' x => Φ k' x) (erase m k))).2.trans ?_
-    -- Drop Φ k y (affine): Φ k v ∗ bigSepM (erase m k)
+    -- Reassociate: (Φ k v ∗ Φ k y) ∗ bigSepM (Std.delete m k)
+    refine (sep_assoc (P := Φ k v) (Q := Φ k y) (R := bigSepM (fun k' x => Φ k' x) (Std.delete m k))).2.trans ?_
+    -- Drop Φ k y (affine): Φ k v ∗ bigSepM (Std.delete m k)
     refine (sep_mono_l sep_elim_l).trans ?_
     -- Use insert on erased map
-    have hins := insert (Φ := Φ) (m := erase m k) (k := k) (v := v) (get?_erase_eq m k)
-    have heq : ∀ k', get? (FiniteMap.insert m k v) k' = get? (FiniteMap.insert (erase m k) k v) k' := by
+    have hins := insert (Φ := Φ) (m := Std.delete m k) (k := k) (v := v) (lookup_delete_eq m k)
+    have heq : ∀ k', get? (FiniteMap.insert m k v) k' = get? (FiniteMap.insert (Std.delete m k) k v) k' := by
       intro k'
-      rw [FiniteMapLaws.get?_insert, FiniteMapLaws.get?_insert, FiniteMapLaws.get?_erase]
+      rw [FiniteMapLaws.lookup_insert, FiniteMapLaws.lookup_insert, FiniteMapLaws.lookup_delete]
       split <;> simp_all
     have hperm := FiniteMapLaws.toList_perm_eq_of_get?_eq heq
-    have hperm_eq : bigSepM Φ (FiniteMap.insert m k v) ⊣⊢ bigSepM Φ (FiniteMap.insert (erase m k) k v) := by
+    have hperm_eq : bigSepM Φ (FiniteMap.insert m k v) ⊣⊢ bigSepM Φ (FiniteMap.insert (Std.delete m k) k v) := by
       simp only [bigSepM]
       exact equiv_iff.mp (BigOpL.perm _ hperm)
     exact hins.2.trans hperm_eq.2
@@ -405,16 +405,16 @@ theorem insert_2_absorbing {Φ : K → V → PROP} {m : M} {k : K} {v : V} [Abso
   | some y =>
     have hdel := delete (Φ := Φ) (m := m) hm
     refine (sep_mono_r hdel.1).trans ?_
-    refine (sep_assoc (P := Φ k v) (Q := Φ k y) (R := bigSepM (fun k' x => Φ k' x) (erase m k))).2.trans ?_
+    refine (sep_assoc (P := Φ k v) (Q := Φ k y) (R := bigSepM (fun k' x => Φ k' x) (Std.delete m k))).2.trans ?_
     -- Use sep_elim_l with Absorbing instance
     refine (sep_mono_l (sep_elim_l (P := Φ k v) (Q := Φ k y))).trans ?_
-    have hins := insert (Φ := Φ) (m := erase m k) (k := k) (v := v) (get?_erase_eq m k)
-    have heq : ∀ k', get? (FiniteMap.insert m k v) k' = get? (FiniteMap.insert (erase m k) k v) k' := by
+    have hins := insert (Φ := Φ) (m := Std.delete m k) (k := k) (v := v) (lookup_delete_eq m k)
+    have heq : ∀ k', get? (FiniteMap.insert m k v) k' = get? (FiniteMap.insert (Std.delete m k) k v) k' := by
       intro k'
-      rw [FiniteMapLaws.get?_insert, FiniteMapLaws.get?_insert, FiniteMapLaws.get?_erase]
+      rw [FiniteMapLaws.lookup_insert, FiniteMapLaws.lookup_insert, FiniteMapLaws.lookup_delete]
       split <;> simp_all
     have hperm := FiniteMapLaws.toList_perm_eq_of_get?_eq heq
-    have hperm_eq : bigSepM Φ (FiniteMap.insert m k v) ⊣⊢ bigSepM Φ (FiniteMap.insert (erase m k) k v) := by
+    have hperm_eq : bigSepM Φ (FiniteMap.insert m k v) ⊣⊢ bigSepM Φ (FiniteMap.insert (Std.delete m k) k v) := by
       simp only [bigSepM]
       exact equiv_iff.mp (BigOpL.perm _ hperm)
     exact hins.2.trans hperm_eq.2
@@ -450,18 +450,18 @@ theorem insert_override_1 {Φ : K → V → PROP} {m : M} {k : K} {v v' : V}
   refine sep_comm.1.trans ?_
   have hins := insert_delete (Φ := Φ) (m := m) (k := k) (v := v')
   -- Now: bigSepM (insert m k v') ∗ (Φ k v' -∗ Φ k v) ⊢ bigSepM m
-  -- hins: bigSepM (insert m k v') ⊣⊢ Φ k v' ∗ bigSepM (erase m k)
+  -- hins: bigSepM (insert m k v') ⊣⊢ Φ k v' ∗ bigSepM (Std.delete m k)
   refine (sep_mono_l hins.1).trans ?_
-  -- Now: (Φ k v' ∗ bigSepM (erase m k)) ∗ (Φ k v' -∗ Φ k v) ⊢ bigSepM m
-  refine (sep_assoc (P := Φ k v') (Q := bigSepM (fun k' x => Φ k' x) (erase m k)) (R := iprop(Φ k v' -∗ Φ k v))).1.trans ?_
-  -- Now: Φ k v' ∗ (bigSepM (erase m k) ∗ (Φ k v' -∗ Φ k v)) ⊢ bigSepM m
+  -- Now: (Φ k v' ∗ bigSepM (Std.delete m k)) ∗ (Φ k v' -∗ Φ k v) ⊢ bigSepM m
+  refine (sep_assoc (P := Φ k v') (Q := bigSepM (fun k' x => Φ k' x) (Std.delete m k)) (R := iprop(Φ k v' -∗ Φ k v))).1.trans ?_
+  -- Now: Φ k v' ∗ (bigSepM (Std.delete m k) ∗ (Φ k v' -∗ Φ k v)) ⊢ bigSepM m
   refine (sep_mono_r sep_comm.1).trans ?_
-  -- Now: Φ k v' ∗ ((Φ k v' -∗ Φ k v) ∗ bigSepM (erase m k)) ⊢ bigSepM m
-  refine (sep_assoc (P := Φ k v') (Q := iprop(Φ k v' -∗ Φ k v)) (R := bigSepM (fun k' x => Φ k' x) (erase m k))).2.trans ?_
-  -- Now: (Φ k v' ∗ (Φ k v' -∗ Φ k v)) ∗ bigSepM (erase m k) ⊢ bigSepM m
+  -- Now: Φ k v' ∗ ((Φ k v' -∗ Φ k v) ∗ bigSepM (Std.delete m k)) ⊢ bigSepM m
+  refine (sep_assoc (P := Φ k v') (Q := iprop(Φ k v' -∗ Φ k v)) (R := bigSepM (fun k' x => Φ k' x) (Std.delete m k))).2.trans ?_
+  -- Now: (Φ k v' ∗ (Φ k v' -∗ Φ k v)) ∗ bigSepM (Std.delete m k) ⊢ bigSepM m
   -- wand_elim_l expects (P -∗ Q) ∗ P, so swap first
   refine (sep_mono_l (sep_comm.1.trans (wand_elim_l (P := Φ k v') (Q := Φ k v)))).trans ?_
-  -- Now: Φ k v ∗ bigSepM (erase m k) ⊢ bigSepM m
+  -- Now: Φ k v ∗ bigSepM (Std.delete m k) ⊢ bigSepM m
   exact (delete hm).2
 
 /-- Corresponds to `big_sepM_insert_override_2` in Rocq Iris.
@@ -474,17 +474,17 @@ theorem insert_override_2 {Φ : K → V → PROP} {m : M} {k : K} {v v' : V}
   refine sep_comm.1.trans ?_
   have hdel := delete (Φ := Φ) (m := m) hm
   -- Now: bigSepM m ∗ (Φ k v -∗ Φ k v') ⊢ bigSepM (insert m k v')
-  -- hdel: bigSepM m ⊣⊢ Φ k v ∗ bigSepM (erase m k)
+  -- hdel: bigSepM m ⊣⊢ Φ k v ∗ bigSepM (Std.delete m k)
   refine (sep_mono_l hdel.1).trans ?_
-  -- Now: (Φ k v ∗ bigSepM (erase m k)) ∗ (Φ k v -∗ Φ k v') ⊢ bigSepM (insert m k v')
-  refine (sep_assoc (P := Φ k v) (Q := bigSepM (fun k' x => Φ k' x) (erase m k)) (R := iprop(Φ k v -∗ Φ k v'))).1.trans ?_
-  -- Now: Φ k v ∗ (bigSepM (erase m k) ∗ (Φ k v -∗ Φ k v')) ⊢ bigSepM (insert m k v')
+  -- Now: (Φ k v ∗ bigSepM (Std.delete m k)) ∗ (Φ k v -∗ Φ k v') ⊢ bigSepM (insert m k v')
+  refine (sep_assoc (P := Φ k v) (Q := bigSepM (fun k' x => Φ k' x) (Std.delete m k)) (R := iprop(Φ k v -∗ Φ k v'))).1.trans ?_
+  -- Now: Φ k v ∗ (bigSepM (Std.delete m k) ∗ (Φ k v -∗ Φ k v')) ⊢ bigSepM (insert m k v')
   refine (sep_mono_r sep_comm.1).trans ?_
-  -- Now: Φ k v ∗ ((Φ k v -∗ Φ k v') ∗ bigSepM (erase m k)) ⊢ bigSepM (insert m k v')
-  refine (sep_assoc (P := Φ k v) (Q := iprop(Φ k v -∗ Φ k v')) (R := bigSepM (fun k' x => Φ k' x) (erase m k))).2.trans ?_
-  -- Now: (Φ k v ∗ (Φ k v -∗ Φ k v')) ∗ bigSepM (erase m k) ⊢ bigSepM (insert m k v')
+  -- Now: Φ k v ∗ ((Φ k v -∗ Φ k v') ∗ bigSepM (Std.delete m k)) ⊢ bigSepM (insert m k v')
+  refine (sep_assoc (P := Φ k v) (Q := iprop(Φ k v -∗ Φ k v')) (R := bigSepM (fun k' x => Φ k' x) (Std.delete m k))).2.trans ?_
+  -- Now: (Φ k v ∗ (Φ k v -∗ Φ k v')) ∗ bigSepM (Std.delete m k) ⊢ bigSepM (insert m k v')
   refine (sep_mono_l (sep_comm.1.trans (wand_elim_l (P := Φ k v) (Q := Φ k v')))).trans ?_
-  -- Now: Φ k v' ∗ bigSepM (erase m k) ⊢ bigSepM (insert m k v')
+  -- Now: Φ k v' ∗ bigSepM (Std.delete m k) ⊢ bigSepM (insert m k v')
   exact insert_delete.2
 
 /-! ## Map Conversion -/
@@ -667,7 +667,7 @@ theorem list_to_map {Φ : K → V → PROP} {l : List (K × V)}
     (hnodup : (l.map Prod.fst).Nodup) :
     ([∗ map] k ↦ x ∈ (ofList l : M), Φ k x) ⊣⊢ [∗ list] kv ∈ l, Φ kv.1 kv.2 := by
   simp only [bigSepM]
-  exact equiv_iff.mp (BigOpL.perm _ (toList_ofList l hnodup))
+  exact equiv_iff.mp (BigOpL.perm _ (map_to_list_to_map l hnodup))
 
 /-! ## Intro and Forall Lemmas -/
 
@@ -686,7 +686,7 @@ theorem intro {Φ : K → V → PROP} {m : M} :
     simp only [bigOpL]
     -- □ (∀ k v, ⌜...⌝ → Φ k v) ⊢ Φ kv.1 kv.2 ∗ bigOpL ... kvs
     have hmem_kv : kv ∈ toList m := hl ▸ List.mem_cons_self
-    have hget_kv := (toList_get? m kv.1 kv.2).mpr hmem_kv
+    have hget_kv := (elem_of_map_to_list m kv.1 kv.2).mpr hmem_kv
     -- Use intuitionistically_sep_idem to duplicate □ P
     refine intuitionistically_sep_idem.2.trans <| sep_mono ?_ ?_
     · -- □ (∀ k v, ...) ⊢ Φ kv.1 kv.2
@@ -695,7 +695,7 @@ theorem intro {Φ : K → V → PROP} {m : M} :
         ((imp_mono_l (pure_mono fun _ => hget_kv)).trans true_imp.1))
     · -- □ (∀ k v, ...) ⊢ bigOpL ... kvs
       have htail : ∀ kv', kv' ∈ kvs → get? m kv'.1 = some kv'.2 := fun kv' hmem =>
-        (toList_get? m kv'.1 kv'.2).mpr (hl ▸ List.mem_cons_of_mem _ hmem)
+        (elem_of_map_to_list m kv'.1 kv'.2).mpr (hl ▸ List.mem_cons_of_mem _ hmem)
       clear ih hmem_kv hget_kv hl
       induction kvs with
       | nil => exact affinely_elim_emp
@@ -728,12 +728,12 @@ theorem forall_2' {Φ : K → V → PROP} {m : M} [BIAffine PROP]
   | cons kv kvs ih =>
     simp only [bigOpL]
     have hmem_kv : kv ∈ toList m := hl ▸ List.mem_cons_self
-    have hget_kv := (toList_get? m kv.1 kv.2).mpr hmem_kv
+    have hget_kv := (elem_of_map_to_list m kv.1 kv.2).mpr hmem_kv
     have head_step : iprop(∀ k v, ⌜get? m k = some v⌝ → Φ k v) ⊢ Φ kv.1 kv.2 :=
       (forall_elim kv.1).trans (forall_elim kv.2) |>.trans <|
         (and_intro (pure_intro hget_kv) .rfl).trans imp_elim_r
     have htail : ∀ kv', kv' ∈ kvs → get? m kv'.1 = some kv'.2 := fun kv' hmem =>
-      (toList_get? m kv'.1 kv'.2).mpr (hl ▸ List.mem_cons_of_mem _ hmem)
+      (elem_of_map_to_list m kv'.1 kv'.2).mpr (hl ▸ List.mem_cons_of_mem _ hmem)
     -- Clear ih and prove tail directly
     refine and_self.2.trans (and_mono_l head_step) |>.trans persistent_and_sep_1 |>.trans <|
       sep_mono_r ?_
@@ -803,42 +803,42 @@ theorem lookup_acc_impl {Φ : K → V → PROP} {m : M} {k : K} {v : V}
   -- First extract Φ k v using delete
   have hdel := delete (Φ := Φ) (m := m) hget
   refine hdel.1.trans (sep_mono_r ?_)
-  -- Now we need: bigSepM (erase m k) ⊢ ∀ Ψ, □ (...) -∗ Ψ k v -∗ bigSepM m Ψ
+  -- Now we need: bigSepM (Std.delete m k) ⊢ ∀ Ψ, □ (...) -∗ Ψ k v -∗ bigSepM m Ψ
   apply forall_intro
   intro Ψ
   apply wand_intro
   apply wand_intro
-  -- We have: (bigSepM Φ (erase m k) ∗ □ (...)) ∗ Ψ k v
+  -- We have: (bigSepM Φ (Std.delete m k) ∗ □ (...)) ∗ Ψ k v
   -- Goal: bigSepM Ψ m
-  -- Use delete on Ψ: bigSepM Ψ m ⊣⊢ Ψ k v ∗ bigSepM Ψ (erase m k)
+  -- Use delete on Ψ: bigSepM Ψ m ⊣⊢ Ψ k v ∗ bigSepM Ψ (Std.delete m k)
   have hdelΨ := delete (Φ := Ψ) (m := m) hget
-  -- Rearrange to get: Ψ k v ∗ (bigSepM Φ (erase m k) ∗ □ (...))
+  -- Rearrange to get: Ψ k v ∗ (bigSepM Φ (Std.delete m k) ∗ □ (...))
   refine sep_comm.1.trans <| (sep_mono_r sep_comm.1).trans ?_
-  -- Now: Ψ k v ∗ (□ (...) ∗ bigSepM Φ (erase m k))
+  -- Now: Ψ k v ∗ (□ (...) ∗ bigSepM Φ (Std.delete m k))
   refine (sep_mono_r sep_comm.1).trans ?_
-  -- Now: Ψ k v ∗ (bigSepM Φ (erase m k) ∗ □ (...))
-  -- Use hdelΨ.2: Ψ k v ∗ bigSepM Ψ (erase m k) ⊢ bigSepM Ψ m
+  -- Now: Ψ k v ∗ (bigSepM Φ (Std.delete m k) ∗ □ (...))
+  -- Use hdelΨ.2: Ψ k v ∗ bigSepM Ψ (Std.delete m k) ⊢ bigSepM Ψ m
   refine (sep_mono_r ?_).trans hdelΨ.2
-  -- Need: bigSepM Φ (erase m k) ∗ □ (...) ⊢ bigSepM Ψ (erase m k)
-  -- Use impl with the condition that k' ≠ k (since we're on erase m k)
+  -- Need: bigSepM Φ (Std.delete m k) ∗ □ (...) ⊢ bigSepM Ψ (Std.delete m k)
+  -- Use impl with the condition that k' ≠ k (since we're on Std.delete m k)
   have himpl : iprop(□ (∀ k' v', ⌜get? m k' = some v'⌝ → ⌜k' ≠ k⌝ → Φ k' v' -∗ Ψ k' v'))
-      ⊢ bigSepM (fun k' v' => iprop(Φ k' v' -∗ Ψ k' v')) (erase m k) := by
+      ⊢ bigSepM (fun k' v' => iprop(Φ k' v' -∗ Ψ k' v')) (Std.delete m k) := by
     -- Transform the □ (∀ k' v', ⌜get? m k' = some v'⌝ → ⌜k' ≠ k⌝ → Φ k' v' -∗ Ψ k' v')
-    -- into □ (∀ k' v', ⌜get? (erase m k) k' = some v'⌝ → Φ k' v' -∗ Ψ k' v')
+    -- into □ (∀ k' v', ⌜get? (Std.delete m k) k' = some v'⌝ → Φ k' v' -∗ Ψ k' v')
     have htrans : iprop(□ (∀ k' v', ⌜get? m k' = some v'⌝ → ⌜k' ≠ k⌝ → Φ k' v' -∗ Ψ k' v'))
-        ⊢ iprop(□ (∀ k' v', ⌜get? (erase m k) k' = some v'⌝ → Φ k' v' -∗ Ψ k' v')) := by
+        ⊢ iprop(□ (∀ k' v', ⌜get? (Std.delete m k) k' = some v'⌝ → Φ k' v' -∗ Ψ k' v')) := by
       apply intuitionistically_mono
       apply forall_mono; intro k'
       apply forall_mono; intro v'
       apply imp_intro'
-      -- From ⌜get? (erase m k) k' = some v'⌝, derive ⌜get? m k' = some v'⌝ and ⌜k' ≠ k⌝
+      -- From ⌜get? (Std.delete m k) k' = some v'⌝, derive ⌜get? m k' = some v'⌝ and ⌜k' ≠ k⌝
       apply pure_elim_l; intro hget_erase
       have hne : k' ≠ k := by
         intro heq
-        rw [heq, get?_erase_eq] at hget_erase
+        rw [heq, lookup_delete_eq] at hget_erase
         exact Option.noConfusion hget_erase
       have hget_m : get? m k' = some v' := by
-        rw [get?_erase_ne m k k' hne.symm] at hget_erase
+        rw [lookup_delete_ne m k k' hne.symm] at hget_erase
         exact hget_erase
       exact (and_intro (pure_intro hget_m) .rfl).trans imp_elim_r |>.trans <|
         (and_intro (pure_intro hne) .rfl).trans imp_elim_r
@@ -863,7 +863,7 @@ theorem pure_1 {φ : K → V → Prop} {m : M} :
       bigOpL sep emp (fun _ (kv : K × V) => iprop(⌜φ kv.1 kv.2⌝)) l ⊢
         iprop(⌜∀ kv, kv ∈ l → φ kv.1 kv.2⌝) by
     refine (h (toList m)).trans <| pure_mono fun hlist k v hget => ?_
-    have hmem : (k, v) ∈ toList m := (toList_get? m k v).mp hget
+    have hmem : (k, v) ∈ toList m := (elem_of_map_to_list m k v).mp hget
     exact hlist (k, v) hmem
   intro l
   induction l with
@@ -888,7 +888,7 @@ theorem affinely_pure_2 {φ : K → V → Prop} {m : M} :
       iprop(<affine> ⌜∀ kv, kv ∈ l → φ kv.1 kv.2⌝) ⊢
         bigOpL sep emp (fun _ (kv : K × V) => iprop(<affine> ⌜φ kv.1 kv.2⌝)) l by
     refine (affinely_mono <| pure_mono fun hmap kv hmem => ?_).trans (h (toList m))
-    have hget : get? m kv.1 = some kv.2 := (toList_get? m kv.1 kv.2).mpr hmem
+    have hget : get? m kv.1 = some kv.2 := (elem_of_map_to_list m kv.1 kv.2).mpr hmem
     exact hmap kv.1 kv.2 hget
   intro l
   induction l with
@@ -1233,7 +1233,7 @@ theorem impl_strong [FiniteMapLawsSelf M K V] {M₂ : Type _} {V₂ : Type _}
       cases hget : get? m₂ k with
       | none => rfl
       | some y =>
-        have hmem : (k, y) ∈ toList m₂ := (toList_get? m₂ k y).mp hget
+        have hmem : (k, y) ∈ toList m₂ := (elem_of_map_to_list m₂ k y).mp hget
         rw [hempty] at hmem
         exact False.elim (List.not_mem_nil hmem)
     -- The filter keeps everything, so toList (filter ...) ~ toList m₁
@@ -1262,7 +1262,7 @@ theorem impl_strong [FiniteMapLawsSelf M K V] {M₂ : Type _} {V₂ : Type _}
     To complete this proof, we need one of:
     1. A `map_ind` principle in FiniteMapLaws that provides proper induction on map structure
     2. An `erase` operation that provably gives `toList (erase m₂ kv.1) ~ l₂'`
-       (we have `toList_erase` but it requires `get? m₂ kv.1 = some kv.2`)
+       (we have `map_to_list_delete` but it requires `get? m₂ kv.1 = some kv.2`)
     3. A way to construct a map from a list and prove properties about it
 
     For now, this case remains incomplete pending map induction infrastructure.
@@ -1369,7 +1369,7 @@ The following lemmas from Rocq Iris are not yet fully ported:
 - `big_sepM_timeless*`: Requires sep_timeless infrastructure
 
 Recently ported:
-- `big_sepM_delete`: Added `toList_erase` law to FiniteMapLaws
+- `big_sepM_delete`: Added `map_to_list_delete` law to FiniteMapLaws
 - `big_sepM_lookup_acc`, `big_sepM_lookup`, `big_sepM_lookup_dom`: Using delete
 - `big_sepM_insert_acc`: Uses delete + forall wand
 - `big_sepM_insert_2`: Split into Affine/Absorbing versions
