@@ -7,6 +7,11 @@ name = "mathlib"
 scope = "leanprover-community"
 rev = "v4.26.0"
 
+[[require]]
+name = "importGraph"
+scope = "leanprover-community"
+rev = "v4.26.0"
+
 [[lean_lib]]
 name = "Iris"
 globs = ["Iris.*"]
