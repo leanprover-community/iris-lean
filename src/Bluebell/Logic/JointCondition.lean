@@ -56,7 +56,7 @@ noncomputable def jointCondition {β : Type*} [MeasurableSpace β] [MeasurableSp
       (h : ∀ i, PSp.compatiblePermRat (WithTop.some (P i)) (p i))
       (κ : (i : I) → β → @MeasureTheory.Measure (α → V) (P i).σAlg),
       -- Pack current owned resource and require inclusion into `a`
-      (fun i => ⟨WithTop.some (P i), p i, h i⟩) ≤ a ∧
+      (fun i => ⟨WithTop.some (P i), p i, h i⟩) ≼ a ∧
       -- Each index measure factors as μ bind κ(i)
       (∀ i, (P i).μ = μ.toMeasure.bind (κ i)) ∧
       -- For every outcome v of μ, K v holds on the tuple of kernels evaluated at v
@@ -75,14 +75,12 @@ noncomputable def jointCondition {β : Type*} [MeasurableSpace β] [MeasurableSp
     -- Upward-closure: witnesses remain valid and inclusion composes.
     intro a a' haa' ha
     rcases ha with ⟨P, p, h, κ, hinc, hμ, hK⟩
-    refine ⟨P, p, h, κ, ?_, hμ, hK⟩
-    unfold IndexedPSpPmRat at haa'
-    sorry⟩
+    refine ⟨P, p, h, κ, CMRA.Included.trans hinc haa', hμ, hK⟩⟩
 
 notation "𝑪_" => jointCondition
 
--- def isPermissionAbstract (X : Set (I × α)) (P : HyperAssertion I α V) : Prop := sorry
-  -- ∀ Pp : IndexedPSpPm I α V, ∀ q : ℚ≥0, ∀ n : ℕ+, P Pp ≤ P → ∃ Pp' : IndexedPSpPm I α V, Pp' ≤ P ∧ Pp = Pp' ∧ True
+-- def isPermissionAbstract (X : Set (I × α)) (P : HyperAssertion (IndexedPSpPmRat I α V)) : Prop := sorry
+  -- ∀ Pp : IndexedPSpPmRat I α V, ∀ q : ℚ≥0, ∀ n : ℕ+, P Pp ≤ P → ∃ Pp' : IndexedPSpPmRat I α V, Pp' ≤ P ∧ Pp = Pp' ∧ True
 
 -- Lifting of a relation via the joint conditioning modality
 noncomputable def liftRelation [Nonempty V] [DecidableEq V] [MeasurableSpace V]
