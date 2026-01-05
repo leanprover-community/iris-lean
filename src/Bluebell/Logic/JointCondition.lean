@@ -9,10 +9,10 @@ open Iris ProbabilityTheory
 namespace Bluebell
 namespace HyperAssertion
 
-variable {I α V F : Type*} [Nonempty V] [UFraction F]
+variable {I α V : Type*} [Nonempty V]
 
 /-!
-`jointCondition` implements the modality from the paper (logic.tex, Def. “Supercond modality”).
+`jointCondition` implements the modality from the paper (logic.tex, Def. "Supercond modality").
 
 Paper definition (informal Lean transcription):
 - Given `μ : PMF β` and `K : β → HAssrt_I`, define
@@ -22,18 +22,18 @@ Paper definition (informal Lean transcription):
   2. ∀ i, `μs i = bind μ (κ i)`, and
   3. ∀ v ∈ support(μ), `K v (σF, (λ i, κ i v), permap)`.
 
-Our encoding over the model `IndexedPSpPm I α V F` realizes these components as:
+Our encoding over the model `IndexedPSpPmRat I α V` realizes these components as:
 - `P : I → ProbabilitySpace (α → V)` packs per-index `(σAlg, μ)`,
-- `p : I → Permission α F`,
+- `p : I → PermissionRat α`,
 - `κ : (i : I) → β → Measure (α → V)` (a Markov kernel into the common outcome space),
-- we assemble resources as tuples `⟨⟨WithTop.some (P i), p i⟩, …⟩` and require
+- we assemble resources as tuples `⟨psp, perm, compat⟩` and require
   CMRA inclusion into the current `a`.
 
 Formal statement as used here:
 `a ∈ C_ μ K` iff there exist `P p h κ` such that
-- `(fun i => ⟨⟨WithTop.some (P i), p i⟩, …⟩) ≤ a`,
+- `(fun i => ⟨WithTop.some (P i), p i, h i⟩) ≤ a`,
 - `∀ i, (P i).μ = μ.toMeasure.bind (κ i)`,
-- `∀ v ∈ μ.support, K v (fun j => ⟨⟨WithTop.some (ProbabilitySpace.mk (MeasureSpace.mk (P j).σAlg (κ j v)) …), p j⟩, …⟩)`.
+- `∀ v ∈ μ.support, K v (fun j => ⟨WithTop.some (ProbabilitySpace.mk (MeasureSpace.mk (P j).σAlg (κ j v)) …), p j, h j⟩)`.
 
 Current stubs/assumptions in this implementation:
 - We do not prove that each `κ i v` is a probability measure; this appears as a
@@ -41,53 +41,51 @@ Current stubs/assumptions in this implementation:
 - We do not state measurability assumptions on `κ` (kernel laws) explicitly;
   those can be added later as hypotheses if needed.
 - Compatibility proofs for the kernel-updated spaces are discharged by
-  `simp` using our `compatiblePerm` definition (insensitivity of the σ-algebra),
-  which is correct under the paper’s intent, but stronger facts (e.g. closure)
+  `simp` using our `compatiblePermRat` definition (insensitivity of the σ-algebra),
+  which is correct under the paper's intent, but stronger facts (e.g. closure)
   will be proved in subsequent work.
 - The order `≤` on the model is `CMRA.Included` (see HyperAssertion wiring).
 - All deeper properties are intentionally left as theorem statements with `sorry`.
 -/
 noncomputable def jointCondition {β : Type*} [MeasurableSpace β] [MeasurableSpace V]
-    (μ : PMF β) (K : β → HyperAssertion (IndexedPSpPm I α V F)) :
-    HyperAssertion (IndexedPSpPm I α V F) :=
+    (μ : PMF β) (K : β → HyperAssertion (IndexedPSpPmRat I α V)) :
+    HyperAssertion (IndexedPSpPmRat I α V) :=
   ⟨setOf (fun a =>
     ∃ (P : I → ProbabilityTheory.ProbabilitySpace (α → V))
-      (p : I → Permission α F)
-      (h : ∀ i, ProbabilityTheory.ProbabilitySpace.compatiblePerm (P i) (p i))
+      (p : I → PermissionRat α)
+      (h : ∀ i, PSp.compatiblePermRat (WithTop.some (P i)) (p i))
       (κ : (i : I) → β → @MeasureTheory.Measure (α → V) (P i).σAlg),
       -- Pack current owned resource and require inclusion into `a`
-      (fun i => ⟨⟨WithTop.some (P i), p i⟩, h i⟩) ≤ a ∧
+      (fun i => ⟨WithTop.some (P i), p i, h i⟩) ≼ a ∧
       -- Each index measure factors as μ bind κ(i)
       (∀ i, (P i).μ = μ.toMeasure.bind (κ i)) ∧
       -- For every outcome v of μ, K v holds on the tuple of kernels evaluated at v
       (∀ v ∈ μ.support,
         K v
-          (fun j => ⟨⟨WithTop.some
+          (fun j => ⟨WithTop.some
               (@ProbabilityTheory.ProbabilitySpace.mk _
                 (@MeasureTheory.MeasureSpace.mk _ (P j).σAlg (κ j v))
                 (by
                   -- IsProbabilityMeasure for the kernel measure at index j and outcome v
                   -- deferred as a placeholder
                   sorry)),
-            p j⟩,
+            p j,
             h j⟩))
     ), by
     -- Upward-closure: witnesses remain valid and inclusion composes.
     intro a a' haa' ha
     rcases ha with ⟨P, p, h, κ, hinc, hμ, hK⟩
-    refine ⟨P, p, h, κ, ?_, hμ, hK⟩
-    unfold IndexedPSpPm at haa'
-    sorry⟩
+    refine ⟨P, p, h, κ, CMRA.Included.trans hinc haa', hμ, hK⟩⟩
 
 notation "𝑪_" => jointCondition
 
--- def isPermissionAbstract (X : Set (I × α)) (P : HyperAssertion I α V) : Prop := sorry
-  -- ∀ Pp : IndexedPSpPm I α V, ∀ q : ℚ≥0, ∀ n : ℕ+, P Pp ≤ P → ∃ Pp' : IndexedPSpPm I α V, Pp' ≤ P ∧ Pp = Pp' ∧ True
+-- def isPermissionAbstract (X : Set (I × α)) (P : HyperAssertion (IndexedPSpPmRat I α V)) : Prop := sorry
+  -- ∀ Pp : IndexedPSpPmRat I α V, ∀ q : ℚ≥0, ∀ n : ℕ+, P Pp ≤ P → ∃ Pp' : IndexedPSpPmRat I α V, Pp' ≤ P ∧ Pp = Pp' ∧ True
 
 -- Lifting of a relation via the joint conditioning modality
 noncomputable def liftRelation [Nonempty V] [DecidableEq V] [MeasurableSpace V]
     (s : _root_.Set (I × α)) (R : _root_.Set (s → V)) :
-    HyperAssertion (IndexedPSpPm I α V F) :=
+    HyperAssertion (IndexedPSpPmRat I α V) :=
   «exists» (fun μ : PMF (s → V) =>
     sep (pure (∑' x : R, μ x = 1))
       (𝑪_ μ (fun v : s → V =>
@@ -96,13 +94,13 @@ noncomputable def liftRelation [Nonempty V] [DecidableEq V] [MeasurableSpace V]
 section JointConditioning
 
 variable {β : Type*} [MeasurableSpace β] {μ : PMF β}
-  {K K₁ K₂ : β → HyperAssertion (IndexedPSpPm I α V F)}
+  {K K₁ K₂ : β → HyperAssertion (IndexedPSpPmRat I α V)}
   [MeasurableSpace V]
 
 theorem C_conseq (h : ∀ v, K₁ v ⊢ K₂ v) : 𝑪_ μ K₁ ⊢ 𝑪_ μ K₂ := by
   sorry
 
-theorem C_frame {P : HyperAssertion (IndexedPSpPm I α V F)} :
+theorem C_frame {P : HyperAssertion (IndexedPSpPmRat I α V)} :
     P ∗ 𝑪_ μ K ⊢ 𝑪_ μ (fun v => sep P (K v)) := by
   sorry
 
@@ -111,19 +109,19 @@ theorem C_unit_left [Countable β] [MeasurableSingletonClass β] {v₀ : β} :
   sorry
 
 theorem C_unit_right [DecidableEq β] {i : I} {E : (α → V) → β} {μ : PMF β} :
-    assertSampledFrom i E μ ⊣⊢ 𝑪_ μ (fun v => assertTrue i (fun x => E x = v) (F := F)) := by
+    assertSampledFrom i E μ ⊣⊢ 𝑪_ μ (fun v => assertTrue i (fun x => E x = v)) := by
   sorry
 
 theorem C_assoc {β₁ β₂ : Type _} [MeasurableSpace β₁] [MeasurableSpace β₂]
     {μ : PMF β₁} {κ : β₁ → PMF β₂}
-    {K : β₁ × β₂ → HyperAssertion (IndexedPSpPm I α V F)} :
+    {K : β₁ × β₂ → HyperAssertion (IndexedPSpPmRat I α V)} :
       𝑪_ μ (fun v => 𝑪_ (κ v) (fun w => K (v, w))) ⊢
         𝑪_ (do let v ← μ; let w ← κ v; return (v, w)) K := by
   sorry
 
 theorem C_unassoc {β₁ β₂ : Type _} [MeasurableSpace β₁] [MeasurableSpace β₂]
     {μ : PMF β₁} {κ : β₁ → PMF β₂}
-    {K : β₂ → HyperAssertion (IndexedPSpPm I α V F)} :
+    {K : β₂ → HyperAssertion (IndexedPSpPmRat I α V)} :
       𝑪_ (μ.bind κ) (fun w => K w) ⊢ 𝑪_ μ (fun v => 𝑪_ (κ v) (fun w => K w)) := by
   sorry
 
@@ -134,12 +132,12 @@ theorem C_and [DecidableEq I] [Fintype I]
 
 /-- Also requires that the measurable space on `β` is the top one -/
 theorem C_exists {γ : Type*}
-    {Q : β × γ → HyperAssertion (IndexedPSpPm I α V F)} :
+    {Q : β × γ → HyperAssertion (IndexedPSpPmRat I α V)} :
     𝑪_ μ (fun v => ∃ x, Q (v, x)) ⊢ ∃ f : β → γ, 𝑪_ μ (fun v => Q (v, f v)) := by
   sorry
 
 theorem C_forall {γ : Type*}
-    {Q : β × γ → HyperAssertion (IndexedPSpPm I α V F)} :
+    {Q : β × γ → HyperAssertion (IndexedPSpPmRat I α V)} :
     𝑪_ μ (fun v => «forall» (fun x => Q (v, x))) ⊢ ∀ x, 𝑪_ μ (fun v => Q (v, x)) := by
   sorry
 
