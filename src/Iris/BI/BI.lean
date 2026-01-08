@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Mario Carneiro
+Authors: Lars König, Mario Carneiro, Zongyuan Liu
 -/
 import Iris.Algebra.OFE
 import Iris.BI.BIBase
@@ -18,6 +18,8 @@ theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
 
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
 class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
+  -- Iris-Rocq defines BI equiv `≡` as OFE equiv, `⊣⊢` as two directions of bi-entailment,
+  -- and uses `bi_mixin_equiv_entails`. The two implementations are equivalent.
   Equiv P Q := P ⊣⊢ Q
 
   entails_preorder : Preorder Entails
@@ -102,7 +104,7 @@ export BIBase (
   Entails emp pure and or imp sForall sExists «forall» «exists» sep wand
   persistently BiEntails iff wandIff affinely absorbingly
   intuitionistically later persistentlyIf affinelyIf absorbinglyIf
-  intuitionisticallyIf bigAnd bigOr bigSep Entails.trans BiEntails.trans)
+  intuitionisticallyIf Entails.trans BiEntails.trans)
 
 attribute [rw_mono_rule] BI.sep_mono
 attribute [rw_mono_rule] BI.persistently_mono

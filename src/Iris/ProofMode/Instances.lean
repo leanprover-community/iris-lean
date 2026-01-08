@@ -70,7 +70,7 @@ instance intoWand_forall (p q : Bool) [BI PROP] (Φ : α → PROP) (P Q : PROP) 
 instance intoWand_affinely (p q : Bool) [BI  PROP] (R P Q : PROP) [h : IntoWand p q R P Q] :
     IntoWand p q iprop(<affine> R) iprop(<affine> P) iprop(<affine> Q) where
   into_wand := wand_intro <|
-    (sep_congr intuitionisticallyIf_affinely intuitionisticallyIf_affinely).1.trans <|
+    (sep_congr intuitionisticallyIf_affinely intuitionisticallyIf_affinely).mp.trans <|
     affinely_sep_2.trans <| affinely_mono <| wand_elim h.1
 
 instance intoWand_intuitionistically (p q : Bool) [BI PROP] (R P Q : PROP)
@@ -109,15 +109,15 @@ instance (priority := default + 10) fromExists_exists [BI PROP] (Φ : α → PRO
 
 instance fromExists_pure (φ : α → Prop) [BI PROP] :
     FromExists (PROP := PROP) iprop(⌜∃ x, φ x⌝) (fun a => iprop(⌜φ a⌝)) where
-  from_exists := pure_exists.1
+  from_exists := pure_exists.mp
 
 instance fromExists_affinely [BI PROP] (P : PROP) (Φ : α → PROP) [h : FromExists P Φ] :
     FromExists iprop(<affine> P) (fun a => iprop(<affine> (Φ a))) where
-  from_exists := affinely_exists.2.trans <| affinely_mono h.1
+  from_exists := affinely_exists.mpr.trans <| affinely_mono h.1
 
 instance fromExists_intuitionistically [BI PROP] (P : PROP) (Φ : α → PROP) [h : FromExists P Φ] :
     FromExists iprop(□ P) (fun a => iprop(□ (Φ a))) where
-  from_exists := intuitionistically_exists.2.trans <| intuitionistically_mono h.1
+  from_exists := intuitionistically_exists.mpr.trans <| intuitionistically_mono h.1
 
 instance fromExists_absorbingly [BI PROP] (P : PROP) (Φ : α → PROP) [h : FromExists P Φ] :
     FromExists iprop(<absorb> P) (fun a => iprop(<absorb> (Φ a))) where

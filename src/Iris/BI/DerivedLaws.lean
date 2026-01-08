@@ -9,6 +9,7 @@ import Iris.BI.BI
 import Iris.Std.Classes
 import Iris.Std.Rewrite
 import Iris.Std.TC
+import Iris.Algebra.Monoid
 
 namespace Iris.BI
 open Iris.Std BI
@@ -193,15 +194,6 @@ theorem imp_trans [BI PROP] {P Q R : PROP} : (P → Q) ∧ (Q → R) ⊢ P → R
 theorem false_imp [BI PROP] {P : PROP} : (False → P) ⊣⊢ True :=
   ⟨true_intro, imp_intro <| and_elim_r.trans false_elim⟩
 
-instance [BI PROP] : LawfulBigOp and (iprop(True) : PROP) BiEntails where
-  refl := .rfl
-  symm h := h.symm
-  trans h1 h2 := h1.trans h2
-  comm := and_comm
-  assoc := and_assoc
-  left_id := true_and
-  congr_l := and_congr_l
-
 theorem and_left_comm [BI PROP] {P Q R : PROP} : P ∧ Q ∧ R ⊣⊢ Q ∧ P ∧ R :=
   and_assoc.symm.trans <| (and_congr_l and_comm).trans and_assoc
 
@@ -280,15 +272,6 @@ instance [BI PROP] : LeftId (α := PROP) BiEntails emp sep := ⟨emp_sep⟩
 
 theorem sep_emp [BI PROP] {P : PROP} : P ∗ emp ⊣⊢ P := sep_comm.trans emp_sep
 instance [BI PROP] : RightId (α := PROP) BiEntails emp sep := ⟨sep_emp⟩
-
-instance [BI PROP] : LawfulBigOp sep (emp : PROP) BiEntails where
-  refl := .rfl
-  symm h := h.symm
-  trans h1 h2 := h1.trans h2
-  comm := sep_comm
-  assoc := sep_assoc
-  left_id := emp_sep
-  congr_l := sep_congr_l
 
 theorem true_sep_2 [BI PROP] {P : PROP} : P ⊢ True ∗ P := emp_sep.2.trans (sep_mono_l true_intro)
 
@@ -971,6 +954,9 @@ theorem intuitionistically_and_sep [BI PROP] {P Q : PROP} : □ (P ∧ Q) ⊣⊢
 theorem intuitionistically_sep_idem [BI PROP] {P : PROP} : □ P ∗ □ P ⊣⊢ □ P :=
   and_sep_intuitionistically.symm.trans and_self
 
+theorem intuitionistically_sep_dup [BI PROP] {P : PROP} : □ P ⊣⊢ □ P ∗ □ P :=
+  intuitionistically_sep_idem.symm
+
 theorem intuitionistically_wand [BI PROP] {P Q : PROP} : (□ P -∗ Q) ⊣⊢ (<pers> P → Q) :=
   ⟨imp_intro <| persistently_and_intuitionistically_sep_r.1.trans wand_elim_l,
    wand_intro <|persistently_and_intuitionistically_sep_r.2.trans imp_elim_l⟩
@@ -1484,16 +1470,6 @@ instance imp_absorbing [BI PROP] (P Q : PROP) [Persistent P] [Absorbing P] [Abso
   absorbing := imp_intro' <| persistent_and_affinely_sep_l.1.trans <| absorbingly_sep_r.1.trans <|
     (absorbingly_mono <| persistent_and_affinely_sep_l.2.trans imp_elim_r).trans absorbing
 
-theorem bigOp_sep_nil [BI PROP] : iprop([∗] []) ⊣⊢ (emp : PROP) := .rfl
-
-theorem bigOp_and_nil [BI PROP] : iprop([∧] []) ⊣⊢ (True : PROP) := .rfl
-
-theorem bigOp_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} :
-    [∗] (P :: Ps) ⊣⊢ P ∗ [∗] Ps := bigOp_cons
-
-theorem bigOp_and_cons [BI PROP] {P : PROP} {Ps : List PROP} :
-    [∧] (P :: Ps) ⊣⊢ P ∧ [∧] Ps := bigOp_cons
-
 /-! # Reduction to boolean comparisons -/
 
 theorem and_forall_bool [BI PROP] {P Q : PROP} :
@@ -1644,3 +1620,121 @@ theorem loeb_wand_intuitionistically [BI PROP] [BILoeb PROP] {P : PROP} :
 theorem loeb_wand [BI PROP] [BILoeb PROP] {P : PROP} : □ (▷ P -∗ P) ⊢ P :=
   (intuitionistically_mono (wand_mono intuitionistically_elim .rfl)).trans
     loeb_wand_intuitionistically
+
+/-! ## Monoid Instances for Big Operators -/
+
+/-- `∧` forms a commutative monoid with unit `True`. -/
+instance bi_and_monoid [BI PROP] : Algebra.Monoid PROP BIBase.and iprop(True) where
+  op_ne := and_ne
+  op_assoc _ _ _ := equiv_iff.mpr and_assoc
+  op_comm _ _ := equiv_iff.mpr and_comm
+  op_left_id _ := equiv_iff.mpr true_and
+
+/-- `∨` forms a commutative monoid with unit `False`. -/
+instance bi_or_monoid [BI PROP] : Algebra.Monoid PROP BIBase.or iprop(False) where
+  op_ne := or_ne
+  op_assoc _ _ _ := equiv_iff.mpr or_assoc
+  op_comm _ _ := equiv_iff.mpr or_comm
+  op_left_id _ := equiv_iff.mpr false_or
+
+/-- `∗` forms a commutative monoid with unit `emp`. -/
+instance bi_sep_monoid [BI PROP] : Algebra.Monoid PROP BIBase.sep iprop(emp) where
+  op_ne := sep_ne
+  op_assoc _ _ _ := equiv_iff.mpr sep_assoc
+  op_comm _ _ := equiv_iff.mpr sep_comm
+  op_left_id _ := equiv_iff.mpr emp_sep
+
+/-- `<pers>` is a monoid homomorphism for `∧`/`True` with respect to `≡`. -/
+instance bi_persistently_and_homomorphism [BI PROP] :
+    Algebra.MonoidHomomorphism BIBase.and BIBase.and iprop(True) iprop(True)
+      (· ≡ ·) (@BIBase.persistently PROP _) where
+  rel_refl _ := OFE.Equiv.rfl
+  rel_trans h1 h2 := h1.trans h2
+  rel_proper h1 h2 := ⟨fun h => h1.symm.trans (h.trans h2), fun h => h1.trans (h.trans h2.symm)⟩
+  op_proper h1 h2 := equiv_iff.mpr (and_congr (equiv_iff.mp h1) (equiv_iff.mp h2))
+  f_ne := persistently_ne
+  homomorphism _ _ := equiv_iff.mpr persistently_and
+  map_unit := equiv_iff.mpr persistently_pure
+
+/-- `<pers>` is a monoid homomorphism for `∨`/`False` with respect to `≡`. -/
+instance bi_persistently_or_homomorphism [BI PROP] :
+    Algebra.MonoidHomomorphism BIBase.or BIBase.or iprop(False) iprop(False)
+      (· ≡ ·) (@BIBase.persistently PROP _) where
+  rel_refl _ := OFE.Equiv.rfl
+  rel_trans h1 h2 := h1.trans h2
+  rel_proper h1 h2 := ⟨fun h => h1.symm.trans (h.trans h2), fun h => h1.trans (h.trans h2.symm)⟩
+  op_proper h1 h2 := equiv_iff.mpr (or_congr (equiv_iff.mp h1) (equiv_iff.mp h2))
+  f_ne := persistently_ne
+  homomorphism _ _ := equiv_iff.mpr persistently_or
+  map_unit := equiv_iff.mpr persistently_pure
+
+/-- `<pers>` is a weak monoid homomorphism for `∗`/`emp` with respect to `≡` when `BiPositive`. -/
+instance bi_persistently_sep_weak_homomorphism [BI PROP] [BIPositive PROP] :
+    Algebra.WeakMonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp)
+      (· ≡ ·) (@BIBase.persistently PROP _) where
+  rel_refl _ := OFE.Equiv.rfl
+  rel_trans h1 h2 := h1.trans h2
+  rel_proper h1 h2 := ⟨fun h => h1.symm.trans (h.trans h2), fun h => h1.trans (h.trans h2.symm)⟩
+  op_proper h1 h2 := equiv_iff.mpr (sep_congr (equiv_iff.mp h1) (equiv_iff.mp h2))
+  f_ne := persistently_ne
+  homomorphism _ _ := equiv_iff.mpr persistently_sep
+
+/-- `<pers>` is a monoid homomorphism for `∗`/`emp` with respect to `≡` when `BiAffine`. -/
+instance bi_persistently_sep_homomorphism [BI PROP] [BIAffine PROP] :
+    Algebra.MonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp)
+      (· ≡ ·) (@BIBase.persistently PROP _) where
+  rel_refl _ := OFE.Equiv.rfl
+  rel_trans h1 h2 := h1.trans h2
+  rel_proper h1 h2 := ⟨fun h => h1.symm.trans (h.trans h2), fun h => h1.trans (h.trans h2.symm)⟩
+  op_proper h1 h2 := equiv_iff.mpr (sep_congr (equiv_iff.mp h1) (equiv_iff.mp h2))
+  f_ne := persistently_ne
+  homomorphism _ _ := equiv_iff.mpr persistently_sep
+  map_unit := equiv_iff.mpr persistently_emp'
+
+/-- `<pers>` is a weak monoid homomorphism for `∗`/`emp` with respect to `flip (⊢)`. -/
+instance bi_persistently_sep_entails_weak_homomorphism [BI PROP] :
+    Algebra.WeakMonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp)
+      (flip BIBase.Entails) (@BIBase.persistently PROP _) where
+  rel_refl _ := BIBase.Entails.rfl
+  rel_trans h1 h2 := h2.trans h1
+  rel_proper h1 h2 := ⟨fun h => (BI.equiv_iff.mp h2).2.trans (h.trans (BI.equiv_iff.mp h1).1),
+                       fun h => (BI.equiv_iff.mp h2).1.trans (h.trans (BI.equiv_iff.mp h1).2)⟩
+  op_proper h1 h2 := sep_mono h1 h2
+  f_ne := persistently_ne
+  homomorphism _ _ := persistently_sep_2
+
+/-- `<pers>` is a monoid homomorphism for `∗`/`emp` with respect to `flip (⊢)`. -/
+instance bi_persistently_sep_entails_homomorphism [BI PROP] :
+    Algebra.MonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp)
+      (flip BIBase.Entails) (@BIBase.persistently PROP _) where
+  rel_refl _ := BIBase.Entails.rfl
+  rel_trans h1 h2 := h2.trans h1
+  rel_proper h1 h2 := ⟨fun h => (BI.equiv_iff.mp h2).2.trans (h.trans (BI.equiv_iff.mp h1).1),
+                       fun h => (BI.equiv_iff.mp h2).1.trans (h.trans (BI.equiv_iff.mp h1).2)⟩
+  op_proper h1 h2 := sep_mono h1 h2
+  f_ne := persistently_ne
+  homomorphism _ _ := persistently_sep_2
+  map_unit := persistently_emp_intro
+
+/-- `▷` is a monoid homomorphism for `∧`/`True` with respect to `≡`. -/
+instance bi_later_and_homomorphism [BI PROP] :
+    Algebra.MonoidHomomorphism BIBase.and BIBase.and iprop(True) iprop(True)
+      (· ≡ ·) (@BIBase.later PROP _) where
+  rel_refl _ := OFE.Equiv.rfl
+  rel_trans h1 h2 := h1.trans h2
+  rel_proper h1 h2 := ⟨fun h => h1.symm.trans (h.trans h2), fun h => h1.trans (h.trans h2.symm)⟩
+  op_proper h1 h2 := equiv_iff.mpr (and_congr (equiv_iff.mp h1) (equiv_iff.mp h2))
+  f_ne := later_ne
+  homomorphism _ _ := equiv_iff.mpr later_and
+  map_unit := equiv_iff.mpr later_true
+
+/-- `▷` is a weak monoid homomorphism for `∨`/`False` with respect to `≡`. -/
+instance bi_later_or_weak_homomorphism [BI PROP] :
+    Algebra.WeakMonoidHomomorphism BIBase.or BIBase.or iprop(False) iprop(False)
+      (· ≡ ·) (@BIBase.later PROP _) where
+  rel_refl _ := OFE.Equiv.rfl
+  rel_trans h1 h2 := h1.trans h2
+  rel_proper h1 h2 := ⟨fun h => h1.symm.trans (h.trans h2), fun h => h1.trans (h.trans h2.symm)⟩
+  op_proper h1 h2 := equiv_iff.mpr (or_congr (equiv_iff.mp h1) (equiv_iff.mp h2))
+  f_ne := later_ne
+  homomorphism _ _ := equiv_iff.mpr later_or

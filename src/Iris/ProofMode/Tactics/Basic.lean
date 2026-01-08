@@ -65,7 +65,7 @@ structure Goals {prop : Q(Type u)} (bi : Q(BI $prop)) where
   goals : IO.Ref (Array MVarId)
 
 def Goals.new {prop : Q(Type u)} (bi : Q(BI $prop)) : BaseIO (Goals bi) :=
-  do return {goals := ← IO.mkRef #[]}
+  do return { goals := ← IO.mkRef #[] }
 
 def Goals.addGoal {prop : Q(Type u)} {bi : Q(BI $prop)} (g : Goals bi)
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) : MetaM Q($e ⊢ $goal) := do

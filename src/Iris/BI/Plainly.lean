@@ -91,7 +91,7 @@ theorem plainly_forall_2 {Ψ : α → PROP} : (∀ a, ■ (Ψ a)) ⊢ ■ (∀ a
 
 theorem plainly_persistently_elim : ■ <pers> P ⊣⊢ ■ P := by
   constructor
-  · refine (true_and.2.trans <| and_mono emp_intro .rfl).trans ?_
+  · refine (true_and.mpr.trans <| and_mono emp_intro .rfl).trans ?_
     refine .trans ?_ (mono <| and_forall_bool.2.trans persistently_and_emp_elim)
     refine and_forall_bool.1.trans ?_
     refine .trans ?_ plainly_forall_2
@@ -101,12 +101,12 @@ theorem plainly_persistently_elim : ■ <pers> P ⊣⊢ ■ P := by
 
 theorem absorbingly_elim_plainly : <absorb> ■ P ⊣⊢ ■ P := by
   constructor
-  · refine (absorbingly_mono <| persistently_elim_plainly.2).trans ?_
-    refine .trans ?_ persistently_elim_plainly.1
-    exact absorbingly_persistently.1.trans .rfl
+  · refine (absorbingly_mono persistently_elim_plainly.mpr).trans ?_
+    refine .trans ?_ persistently_elim_plainly.mp
+    exact absorbingly_persistently.mp.trans .rfl
   · refine .trans ?_ (absorbingly_mono persistently_elim_plainly.1)
-    refine persistently_elim_plainly.2.trans ?_
-    exact .trans .rfl absorbingly_persistently.2
+    refine persistently_elim_plainly.mpr.trans ?_
+    exact .trans .rfl absorbingly_persistently.mpr
 
 theorem plainly_and_sep_elim : ■ P ∧ Q ⊢ (emp ∧ P) ∗ Q :=
   (and_mono elim_persistently .rfl).trans persistently_and_sep_elim_emp
@@ -201,7 +201,7 @@ theorem plainly_true_emp : ■ True ⊣⊢ ■ (emp : PROP) :=
 theorem plainly_and_sep : ■ (P ∧ Q) ⊢ ■ (P ∗ Q) := by
   refine (plainly_and.mp.trans <| (and_mono idem .rfl).trans plainly_and.mpr).trans ?_
   refine (mono <| and_mono .rfl emp_sep.mpr).trans ?_
-  refine (mono <| plainly_and_sep_assoc.1).trans ?_
+  refine (mono <| plainly_and_sep_assoc.mp).trans ?_
   refine (mono <| sep_mono and_comm.mp .rfl).trans ?_
   exact (mono <| sep_mono plainly_and_emp_elim .rfl).trans .rfl
 

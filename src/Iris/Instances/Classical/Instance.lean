@@ -136,25 +136,17 @@ instance : BI (HeapProp Val) where
     constructor
     · exact h_PQ σ₁ h_P
     · exact h_P'Q' σ₂ h_P'
-  emp_sep.mp := by
+  emp_sep {P} := ⟨by
     simp only [BI.Entails, BI.sep, BI.emp]
-    intro _ ⟨σ₁, σ₂, h_union, _, h_emp, h_P⟩
+    intro σ ⟨σ₁, σ₂, h_union, _, h_emp, h_P⟩
     rw [h_emp] at h_union
     rw [← empty_union] at h_union
     rw [h_union]
-    exact h_P
-  emp_sep.mpr := by
+    exact h_P,
+   by
     simp only [BI.Entails, BI.sep, BI.emp]
     intro σ h_P
-    apply Exists.intro ∅
-    apply Exists.intro σ
-    constructor
-    · exact empty_union
-    constructor
-    · exact empty_disjoint
-    constructor
-    · rfl
-    · exact h_P
+    exact ⟨∅, σ, empty_union, empty_disjoint, rfl, h_P⟩⟩
   sep_symm := by
     simp only [BI.Entails, BI.sep]
     intro _ _ _ ⟨σ₁, σ₂, h_union, h_disjoint, h_P, h_Q⟩
