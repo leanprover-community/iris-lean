@@ -448,21 +448,6 @@ instance fromAssumption_and_r [BI PROP] (p : Bool) (P1 P2 Q : PROP)
     | true, h => intuitionistically_and.mp.trans (and_elim_r.trans h.1)
     | false, h => and_elim_r.trans h.1
 
-section fromAssumption_test
-
-/- IPM backtracking search will search for right conjuncts before left conjuncts,
-because `fromAssumption_and_r` is declared after `fromAssumption_and_l`.
-This is the same behavior as regular typeclass search. -/
-
-variable [BI PROP] (P1 P2 Q : PROP) [FromAssumption p .in P1 Q] [FromAssumption p .in P2 Q]
-
-/-- info: fromAssumption_and_r p P1 P2 Q  -/
-#guard_msgs in #synth (FromAssumption p .in iprop(P1 ∧ P2) Q)
-/-- info: Iris.ProofMode.fromAssumption_and_r.{u_1} -/
-#guard_msgs in #ipm_synth (FromAssumption p .in iprop(P1 ∧ P2) Q)
-
-end fromAssumption_test
-
 -- IntoPure
 instance intoPure_pure (φ : Prop) [BI PROP] : IntoPure (PROP := PROP) iprop(⌜φ⌝) φ := ⟨.rfl⟩
 

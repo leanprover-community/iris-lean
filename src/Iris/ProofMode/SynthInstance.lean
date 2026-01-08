@@ -5,7 +5,29 @@ Authors: Michael Sammler
 -/
 import Iris.ProofMode.Goals
 
-/- TODO: How to call these functions? ProofMode.synthInstance, ipmSynthInstance, synthIPMInstance, synthInstanceIPM? -/
+/-
+This file implements a custom typeclass synthesis algorithm that is used for the proof mode typeclasses.
+This is necessary since proof mode typeclasses need to be able to instantiate and create new mvars, but the
+standard typeclass synthesis does not support this.
+
+See also https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Issues.20with.20typeclasses.20in.20the.20proof.20mode/with/563410548 for discussion.
+
+In addition to the synthInstance family of functions, we provide the following attributes and annotations:
+
+The `ipm_class` attribute marks that a class should use the IPM synthesis defined in this file. For all other classes,
+the IPM synthesis falls back to standard synthesis, enabling one to use standard type classes as parameters for IPM type classes.
+Note that IPM synthesis is *not* triggered automatically for holes where the class is marked with `ipm_class`. Instead,
+the IPM synthesis needs to be explicitly invoked via the functions in this file.
+
+The `ipm_backtrack` attribute on an instance tells the IPM synthesis to backtrack if instance instance can be applied, but
+its preconditions fail to synthesize. This is not enabled by default to avoid accidental exponential blow-ups.
+
+The `InOut` type in Classes.lean is used to dynamically determine, which parameters are inputs and which are outputs. IPM synthesis
+ignores `outParam` and `semiOutParam` annotations, but it is still recommended to add these annotations as documentation.
+
+The `#imp_synth` command allows testing ipm synthesis, similar to the `#synth` command.
+
+-/
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
@@ -66,9 +88,8 @@ private partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) :=
     if instances.isEmpty then
       return none
     for inst in instances.reverse do
-      let mctx0 ← getMCtx
       let (res, match?) ← withTraceNode `Meta.synthInstance
-        (λ r => withMCtx mctx0 do return MessageData.withMCtx mctx0 m!"{exceptOptionEmoji (r.map (·.1))} apply {inst.val} to {← instantiateMVars (← inferType mvar)}") do
+        (λ r => withMCtx mctx do return MessageData.withMCtx mctx m!"{exceptOptionEmoji (r.map (·.1))} apply {inst.val} to {← instantiateMVars (← inferType mvar)}") do
         setMCtx mctx
         let some (mctx', subgoals) ← withAssignableSyntheticOpaque (SynthInstance.tryResolve mvar inst) | return (none, false)
         setMCtx mctx'
@@ -103,9 +124,9 @@ private def synthInstanceCore? (type : Expr) (maxResultSize? : Option Nat := non
                                           foApprox := true, ctxApprox := true, constApprox := false, univApprox := false }) do
   withInTypeClassResolution do
     let type ← instantiateMVars type
-    -- TODO: Should we run whnf under the ∀ quantifiers of type?
+    -- TODO: if it becomes necessary, run whnf under the ∀ quantifiers of type
     -- let type ← preprocess type
-    -- TODO: should we create mvars for outParams?
+    -- TODO: if it becomes necessary, create mvars for outParams
     -- let normType ← preprocessOutParam type
     let normType := type
     -- key point: we don't create a new MCtxDepth here such that we can instantiate and create mvars
@@ -139,9 +160,9 @@ def ipm_synth_elab : Command.CommandElab
         let e ← Term.elabTerm term none
         Term.synthesizeSyntheticMVarsNoPostponing (ignoreStuckTC := true)
         let e ← Term.levelMVarToParam (← instantiateMVars e)
-        match ← trySynthInstance e with
+        match ← ProofMode.trySynthInstance e with
         | .undef => logInfo "Undefined"
         | .none => logInfo "None"
-        | .some inst => do
-            logInfo s!"{Lean.Expr.getAppFn inst}"
+        | .some (e, mvars) => do
+            logInfo m!"solution: {← inferType e}, new goals: {← mvars.toList.mapM (λ m => do return m!"{Expr.mvar m}: {← m.getType}")}"
   | _ => throwUnsupportedSyntax
