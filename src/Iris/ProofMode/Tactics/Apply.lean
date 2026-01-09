@@ -23,7 +23,7 @@ partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} (gs : Goals bi) {e}
      let pf' ← gs.addGoal hyps' A
      return q(apply $pf $pf')
 
-  let some ⟨_, hyps'', pf''⟩ ← try? <| iSpecializeCore gs hyps uniq [] [.goal [] .anonymous] | throwError m!"iapply: cannot apply {out} to {goal}"
+  let some ⟨_, hyps'', pf''⟩ ← try? <| iSpecializeCore gs hyps uniq [.goal [] .anonymous] | throwError m!"iapply: cannot apply {out} to {goal}"
   let pf''' ← iApplyCore gs hyps'' goal uniq
   return q($(pf'').trans $pf''')
 

@@ -86,6 +86,13 @@ instance intoForall_intuitionistically [BI PROP] (P : PROP) (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(□ P) (fun a => iprop(□ (Φ a))) where
   into_forall := (intuitionistically_mono h.1).trans intuitionistically_forall_1
 
+instance intoForall_wand_pure [BI PROP] (P Q : PROP) Φ
+    [h : FromPure a P Φ] : IntoForall iprop(P -∗ Q) (fun _ : Φ => Q) where
+  into_forall := forall_intro λ hΦ =>
+    emp_sep.2.trans <| (sep_mono_l <|
+      (affinelyIf_emp.mpr.trans (affinelyIf_mono (pure_intro hΦ))).trans
+        h.1).trans wand_elim_r
+
 -- FromExists
 instance (priority := default + 10) fromExists_exists [BI PROP] (Φ : α → PROP) :
     FromExists iprop(∃ a, Φ a) Φ := ⟨.rfl⟩

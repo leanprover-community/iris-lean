@@ -47,7 +47,7 @@ private def iHaveCore (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
 def iHave (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
   (pmt : PMTerm) (name : TSyntax ``binderIdent) (keep : Bool) (mayPostpone := false) : TacticM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
   let ⟨uniq, _, hyps', pf⟩ ← iHaveCore gs hyps pmt.term name keep mayPostpone
-  let ⟨_, hyps'', pf'⟩ ← iSpecializeCore gs hyps' uniq pmt.terms pmt.spats
+  let ⟨_, hyps'', pf'⟩ ← iSpecializeCore gs hyps' uniq pmt.spats
   return ⟨uniq, _, hyps'', q($(pf).trans $pf')⟩
 
 elab "ihave" colGt name:binderIdent " := " pmt:pmTerm  : tactic => do
