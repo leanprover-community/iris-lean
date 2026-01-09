@@ -489,6 +489,7 @@ variable [FiniteMap M' K' V]
 variable [FiniteMapLaws M' K' V]
 variable [FiniteMapKmapLaws M M' K K' V]
 
+omit [FiniteMapLawsSelf M K V] in
 /-- Corresponds to `big_andM_kmap` in Rocq Iris. -/
 theorem kmap {Φ : K' → V → PROP} {m : M} (f : K → K') (hinj : ∀ {x y}, f x = f y → x = y) :
     ([∧map] k' ↦ y ∈ FiniteMap.kmap (M' := M') f m, Φ k' y) ⊣⊢

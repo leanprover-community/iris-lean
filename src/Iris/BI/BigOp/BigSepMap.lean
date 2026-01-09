@@ -944,6 +944,7 @@ end MapZip
 
 /-! ## Advanced Impl Lemmas -/
 
+omit [FiniteMapLawsSelf M K V] in
 /-- Corresponds to `big_sepM_impl_strong` in Rocq Iris.
     Strong version of impl that tracks which keys are in m₂ vs only in m₁. -/
 theorem impl_strong [FiniteMapLawsSelf M K V] {M₂ : Type _} {V₂ : Type _}
@@ -1059,6 +1060,7 @@ theorem impl_strong [FiniteMapLawsSelf M K V] {M₂ : Type _} {V₂ : Type _}
         (sep_mono_r (sep_mono_r hweaken)).trans <| (sep_mono_r (IH (Std.delete m₁ i))).trans <|
         (sep_mono_r (sep_mono_r hfilter_equiv.2)).trans <| sep_assoc.2.trans (sep_mono_l hinsert_goal.2)
 
+omit [FiniteMapLawsSelf M K V] in
 /-- Corresponds to `big_sepM_impl_dom_subseteq` in Rocq Iris.
     Specialized version when the domain of m₂ is a subset of the domain of m₁. -/
 theorem impl_dom_subseteq [FiniteMapLawsSelf M K V] {M₂ : Type _} {V₂ : Type _}
@@ -1159,6 +1161,7 @@ section DomainSet
 variable {S : Type _} [FiniteSet S K] [FiniteSetLaws S K]
 variable [FiniteMapLawsSelf M K V]
 
+omit [FiniteMapLawsSelf M K V] in
 /-- Corresponds to `big_sepM_dom` in Rocq Iris. -/
 theorem dom {Φ : K → PROP} (m : M) :
     ([∗map] k ↦ _v ∈ m, Φ k) ⊣⊢ ([∗set] k ∈ (domSet m : S), Φ k) := by
@@ -1207,6 +1210,7 @@ theorem dom {Φ : K → PROP} (m : M) :
       _ ⊣⊢ Φ k ∗ ([∗set] k' ∈ (domSet m : S), Φ k') := ⟨sep_mono_r IH.1, sep_mono_r IH.2⟩
       _ ⊣⊢ ([∗set] k' ∈ FiniteSet.singleton k ∪ (domSet m : S), Φ k') := (BigSepS.insert hk_not_in_dom).symm
 
+omit [FiniteMapLawsSelf M K V] in
 /-- Corresponds to `big_sepM_gset_to_gmap` in Rocq Iris. -/
 theorem ofSet' {Φ : K → V → PROP} (X : S) (c : V) :
     ([∗map] k ↦ a ∈ (ofSet c X : M), Φ k a) ⊣⊢ ([∗set] k ∈ X, Φ k c) := by
@@ -1240,6 +1244,7 @@ end DomainSet
 
 /-! ## Commuting Lemmas -/
 
+omit [DecidableEq K] [FiniteMapLaws M K V] [FiniteMapLawsSelf M K V] in
 /-- Corresponds to `big_sepM_sepL` in Rocq Iris. -/
 theorem sepL {B : Type _} (Φ : K → V → Nat → B → PROP) (m : M) (l : List B) :
     ([∗map] k↦x ∈ m, [∗list] k'↦y ∈ l, Φ k x k' y) ⊣⊢
@@ -1252,6 +1257,7 @@ theorem sepL {B : Type _} (Φ : K → V → Nat → B → PROP) (m : M) (l : Lis
       _ ⊣⊢ [∗list] k'↦y ∈ l, [∗map] k↦x ∈ m, Φ k x k' y :=
           equiv_iff.mp <| BigSepL.congr fun k' y => .rfl
 
+omit [DecidableEq K] [FiniteMapLaws M K V] [FiniteMapLawsSelf M K V] in
 /-- Corresponds to `big_sepM_sepM` in Rocq Iris. -/
 theorem sepM {M₂ : Type _} {K₂ : Type _} {V₂ : Type _}
     [DecidableEq K₂] [FiniteMap M₂ K₂ V₂] [FiniteMapLaws M₂ K₂ V₂]
@@ -1271,6 +1277,7 @@ theorem sepM {M₂ : Type _} {K₂ : Type _} {V₂ : Type _}
       _ ⊣⊢ [∗map] k₂↦x₂ ∈ m₂, [∗map] k₁↦x₁ ∈ m₁, Φ k₁ x₁ k₂ x₂ :=
           equiv_iff.mp <| BigSepL.congr fun _ kv₂ => .rfl
 
+omit [DecidableEq K] [FiniteMapLaws M K V] [FiniteMapLawsSelf M K V] in
 /-- Corresponds to `big_sepM_sepS` in Rocq Iris. -/
 theorem sepS {B : Type _} {S : Type _}
     [DecidableEq B] [FiniteSet S B] [FiniteSetLaws S B]

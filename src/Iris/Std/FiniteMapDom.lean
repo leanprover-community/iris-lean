@@ -32,10 +32,12 @@ def domSet (m : M) : S := FiniteSet.ofList ((FiniteMap.toList m).map Prod.fst)
 /-- Create map from set with constant value. -/
 def ofSet (c : V) (X : S) : M := FiniteMap.ofList ((FiniteSet.toList X).map (fun k => (k, c)))
 
+omit [FiniteMapLawsSelf M K V] in
 /-- Domain of empty map is empty set. -/
 theorem domSet_empty : domSet (∅ : M) = (∅ : S) := by
   simp only [domSet, FiniteMapLaws.map_to_list_empty, List.map_nil, FiniteSetLaws.ofList_nil]
 
+omit [FiniteMapLawsSelf M K V] in
 /-- Membership in domSet iff key has a value in the map. -/
 theorem elem_of_domSet (m : M) (k : K) :
     FiniteSet.mem k (domSet (m : M) : S) = true ↔ ∃ v, FiniteMap.get? m k = some v := by
@@ -49,6 +51,7 @@ theorem elem_of_domSet (m : M) (k : K) :
   · intro ⟨v, hv⟩
     refine ⟨(k, v), FiniteMapLaws.elem_of_map_to_list m k v |>.mp hv, rfl⟩
 
+omit [FiniteMapLawsSelf M K V] in
 /-- Domain of insert includes the inserted key. -/
 theorem domSet_insert (m : M) (k : K) (v : V) :
     (domSet (FiniteMap.insert m k v) : S) = FiniteSet.insert k (domSet m : S) := by
@@ -87,6 +90,7 @@ theorem domSet_insert (m : M) (k : K) (v : V) :
         elem_of_domSet (FiniteMap.insert m k v) x |>.mpr ⟨v', heq.symm ▸ hv'⟩
       exact this
 
+omit [FiniteMapLawsSelf M K V] in
 /-- Domain of ofSet equals the original set. -/
 theorem domSet_ofSet (c : V) (X : S) :
     domSet (ofSet c X : M) = X := by

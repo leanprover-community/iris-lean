@@ -26,6 +26,7 @@ namespace BigSepS
 
 /-! ## Monotonicity and Congruence -/
 
+omit [DecidableEq A] in
 private theorem mono_list {Φ Ψ : A → PROP} {l : List A}
     (h : ∀ x, List.Mem x l → Φ x ⊢ Ψ x) :
     bigOpL sep emp (fun _ x => Φ x) l ⊢ bigOpL sep emp (fun _ x => Ψ x) l := by
@@ -86,6 +87,7 @@ theorem flip_mono' {Φ Ψ : A → PROP} {X : S}
 
 /-! ## Basic Structural Lemmas -/
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_elements` in Rocq Iris. -/
 theorem elements {Φ : A → PROP} {X : S} :
     ([∗set] x ∈ X, Φ x) ⊣⊢ [∗list] x ∈ toList X, Φ x := by
@@ -106,9 +108,10 @@ theorem empty' {P : PROP} [Affine P] {Φ : A → PROP} :
     P ⊢ [∗set] x ∈ (∅ : S), Φ x :=
   Affine.affine.trans empty.2
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_emp` in Rocq Iris. -/
 theorem emp' {X : S} :
-    ([∗set] x ∈ X, emp) ⊣⊢ (emp : PROP) := by
+    ([∗set] _x ∈ X, emp) ⊣⊢ (emp : PROP) := by
   unfold bigSepS
   have := @BigOpL.unit_const PROP _ _ sep emp _ (toList X)
   exact equiv_iff.mp this
@@ -450,6 +453,7 @@ instance empty_persistent {Φ : A → PROP} :
     simp only [BigOpL.nil]
     exact persistently_emp_intro (PROP := PROP) (P := emp)
 
+omit [DecidableEq A] in
 private theorem persistent_list {Φ : A → PROP} {l : List A}
     (h : ∀ x, List.Mem x l → Persistent (Φ x)) :
     bigOpL sep emp (fun _ => Φ) l ⊢ <pers> bigOpL sep emp (fun _ => Φ) l := by
@@ -486,6 +490,7 @@ instance empty_affine {Φ : A → PROP} :
     have h := empty (Φ := Φ) (S := S)
     exact h.1
 
+omit [DecidableEq A] in
 private theorem affine_list {Φ : A → PROP} {l : List A}
     (h : ∀ x, List.Mem x l → Affine (Φ x)) :
     bigOpL sep emp (fun _ => Φ) l ⊢ emp := by
@@ -660,6 +665,7 @@ theorem filter_acc [BIAffine PROP] (φ : A → Prop) [DecidablePred φ] {Φ : A 
 
 /-! ## Separation Logic Combinators -/
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_sep` in Rocq Iris. -/
 theorem sep' {Φ Ψ : A → PROP} {X : S} :
     ([∗set] y ∈ X, Φ y ∗ Ψ y) ⊣⊢ ([∗set] y ∈ X, Φ y) ∗ ([∗set] y ∈ X, Ψ y) := by
@@ -674,7 +680,7 @@ theorem sep_2 {Φ Ψ : A → PROP} {X : S} :
     ([∗set] y ∈ X, Φ y ∗ Ψ y) := by
   apply wand_intro (PROP := PROP)
   refine sep_comm (PROP := PROP).1.trans ?_
-  have h := @sep' PROP _ S A _ _ _ Ψ Φ X
+  have h := @sep' PROP _ S A _ Ψ Φ X
   refine h.2.trans ?_
   apply mono
   intro x _
@@ -750,11 +756,13 @@ theorem forall' [BIAffine PROP] {Φ : A → PROP} {X : S}
 
 /-! ## Modal Operators -/
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_persistently` in Rocq Iris. -/
 theorem persistently [BIAffine PROP] {Φ : A → PROP} {X : S} :
     (<pers> ([∗set] y ∈ X, Φ y)) ⊣⊢ [∗set] y ∈ X, <pers> (Φ y) :=
   (persistently_congr elements).trans (BigSepL.persistently.trans elements.symm)
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_dup` in Rocq Iris. -/
 theorem dup {P : PROP} [hAff : Affine P] {X : S} :
     ⊢ □ (P -∗ P ∗ P) -∗ P -∗ [∗set] _x ∈ X, P := by
@@ -775,16 +783,19 @@ theorem dup {P : PROP} [hAff : Affine P] {X : S} :
     refine (sep_mono_l ih).trans ?_
     exact sep_comm (PROP := PROP).1
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_later` in Rocq Iris. -/
 theorem later [BIAffine PROP] {Φ : A → PROP} {X : S} :
     iprop(▷ [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷ Φ y :=
   (later_congr elements).trans (BigSepL.later.trans elements.symm)
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_later_2` in Rocq Iris. -/
 theorem later_2 {Φ : A → PROP} {X : S} :
     ([∗set] y ∈ X, ▷ Φ y) ⊢ iprop(▷ [∗set] y ∈ X, Φ y) :=
   elements.1.trans (BigSepL.later_2.trans (later_mono elements.2))
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_laterN` in Rocq Iris. -/
 theorem laterN [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : S} :
     iprop(▷^[n] [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷^[n] Φ y := by
@@ -792,6 +803,7 @@ theorem laterN [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : S} :
   | zero => exact .rfl
   | succ m ih => exact (later_congr ih).trans later
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_laterN_2` in Rocq Iris. -/
 theorem laterN_2 {Φ : A → PROP} {n : Nat} {X : S} :
     ([∗set] y ∈ X, ▷^[n] Φ y) ⊢ iprop(▷^[n] [∗set] y ∈ X, Φ y) := by
@@ -801,6 +813,7 @@ theorem laterN_2 {Φ : A → PROP} {n : Nat} {X : S} :
 
 /-! ## Introduction and Elimination -/
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 private theorem intro_list {Φ : A → PROP} {X : S} {l : List A}
     (hmem : ∀ x, List.Mem x l → FiniteSet.mem x X = true) :
     (□ (∀ x, ⌜FiniteSet.mem x X = true⌝ → Φ x)) ⊢ bigOpL sep emp (fun _ => Φ) l := by
@@ -898,6 +911,7 @@ theorem subseteq {Φ : A → PROP} {X Y : S}
 
 /-! ## Commuting Lemmas -/
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_sepL` in Rocq Iris. -/
 theorem sepL {B : Type _} (Φ : A → Nat → B → PROP) (X : S) (l : List B) :
     ([∗set] x ∈ X, [∗list] k↦y ∈ l, Φ x k y) ⊣⊢
@@ -909,6 +923,7 @@ theorem sepL {B : Type _} (Φ : A → Nat → B → PROP) (X : S) (l : List B) :
       _ ⊣⊢ [∗list] k↦y ∈ l, [∗set] x ∈ X, Φ x k y :=
           equiv_iff.mp <| BigSepL.congr (fun k y => equiv_iff.mpr <| elements (Φ := fun x => Φ x k y).symm)
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_sepS` in Rocq Iris. -/
 theorem sepS {B : Type _} {T : Type _} [DecidableEq B] [FiniteSet T B] [FiniteSetLaws T B]
     (Φ : A → B → PROP) (X : S) (Y : T) :
@@ -924,6 +939,7 @@ theorem sepS {B : Type _} {T : Type _} [DecidableEq B] [FiniteSet T B] [FiniteSe
           equiv_iff.mp <| BigSepL.congr (fun _ y => equiv_iff.mpr <| elements (Φ := fun x => Φ x y).symm)
       _ ⊣⊢ [∗set] y ∈ Y, [∗set] x ∈ X, Φ x y := elements (Φ := fun y => [∗set] x ∈ X, Φ x y).symm
 
+omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_sepM` in Rocq Iris. -/
 theorem sepM {B : Type _} {M : Type _} {K : Type _}
     [DecidableEq K] [FiniteMap M K B] [FiniteMapLaws M K B]
