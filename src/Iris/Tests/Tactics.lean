@@ -172,21 +172,38 @@ end revert
 -- exists
 namespace «exists»
 
-theorem id [BI PROP] : ⊢ (∃ x, x : PROP) := by
+theorem id [BI PROP] : ⊢@{PROP} ∃ x, x := by
   iexists iprop(True)
   ipure_intro
   exact True.intro
 
-theorem f [BI PROP] : ⊢ (∃ (_x : Nat), True ∨ False : PROP) := by
+theorem f [BI PROP] : ⊢@{PROP} ∃ (_x : Nat), True ∨ False := by
   iexists 42
   ileft
   ipure_intro
   exact True.intro
 
-theorem pure [BI PROP] : ⊢ (⌜∃ x, x ∨ False⌝ : PROP) := by
+theorem pure [BI PROP] : ⊢@{PROP} ⌜∃ x, x ∨ False⌝ := by
   iexists True
   ipure_intro
   exact Or.inl True.intro
+
+
+theorem mvar [BI PROP] : ⊢@{PROP} ∃ x, ⌜x = 42⌝ := by
+  iexists ?y
+  ipure_intro
+  rfl
+
+theorem mvar_anon [BI PROP] : ⊢@{PROP} ∃ x, ⌜x = 42⌝ := by
+  iexists _
+  ipure_intro
+  rfl
+
+theorem mvar_two [BI PROP] : ⊢@{PROP} ∃ x y : Nat, ⌜x = y⌝ := by
+  iexists _, 1
+  ipure_intro
+  rfl
+
 
 end «exists»
 
@@ -282,9 +299,8 @@ theorem exact_lean [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
   iapply H
 
 theorem exact_lean' [BI PROP] (Q : PROP) : Q ⊢ (emp ∗ Q) ∗ emp := by
-  iapply (wand_intro (PROP:=PROP) sep_emp.mpr)
-  istop
-  apply affine
+  iapply (wand_intro sep_emp.mpr)
+  iemp_intro
 
 theorem exact_lean'' [BI PROP] (Q : PROP) (H : 0 = 0 → ⊢ Q) : ⊢ Q := by
   iapply H
@@ -292,10 +308,9 @@ theorem exact_lean'' [BI PROP] (Q : PROP) (H : 0 = 0 → ⊢ Q) : ⊢ Q := by
 
 theorem exact_lean''' [BI PROP] : ⊢@{PROP} ⌜1 = 1⌝ := by
   istart
-  iapply (pure_intro (PROP:=PROP) (P:=emp))
+  iapply (pure_intro (P:=emp))
   . rfl
-  istop
-  apply affine
+  iemp_intro
 
 theorem apply_lean [BI PROP] (P Q : PROP) (H : P ⊢ Q) (HP : ⊢ P) : ⊢ Q := by
   iapply H
@@ -308,7 +323,7 @@ theorem apply_lean' [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) (HP : ⊢ P) : ⊢
 theorem apply_lean'' [BI PROP] (P Q : PROP) (H1 : P ⊢ Q) (H2 : Q ⊢ R) : P ⊢ R := by
   iintro HP
   iapply (wand_intro (emp_sep.mp.trans H2))
-  . istop; apply affine
+  . ipure_intro; trivial
   iapply H1 with HP
 
 theorem multiple_lean [BI PROP] (P Q R : PROP) (H : P ⊢ Q -∗ R) (HP : ⊢ P) : ⊢ Q -∗ R := by
@@ -325,10 +340,6 @@ theorem exact_forall [BI PROP] (P : α → PROP) (a : α) (H : ⊢ ∀ x, P x) :
   istart
   iapply H
 
-/--
-error: iapply: cannot apply P ?x to P a
--/
-#guard_msgs in -- TODO: allow tc search to instantiate mvars
 theorem exact_forall' [BI PROP] (P : α → PROP) (a : α) (H : ∀ x, ⊢ P x) : ⊢ P a := by
   iapply H
 
@@ -340,29 +351,28 @@ theorem apply_forall' [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, 
   iintro H HP
   iapply H $! a, b with HP
 
-/- TODO: enable this when tc seach can create mvars
+/-- error: ispecialize: iprop(P a -∗ Q b) is not a forall -/
+#guard_msgs in
+theorem apply_forall_too_many [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
+  iintro H HP
+  iapply H $! a, b, _ with HP
+
 theorem apply_forall2 [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
   iapply H with HP
--/
 
-/--
-error: ispecialize: cannot instantiate iprop(P ?m.37 -∗ Q ?m.40) with P a
--/
-#guard_msgs in -- TODO: tc search should be able to instantiate mvars
 theorem apply_forall3 [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
   iapply H $! ?_, ?_ with HP
 
-/- TODO: enable this when tc seach can create mvars
 theorem apply_forall4 [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
   iapply H
--/
+  iapply HP
 
 theorem apply_forall_intuitionistic [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
   iintro HP
-  iapply H $! a, b with HP
+  iapply H $! a with HP
 
 theorem apply_forall_intuitionistic' [BI PROP] (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
@@ -374,6 +384,28 @@ theorem apply_two_wands [BI PROP] (P Q : Nat → PROP) :
   iapply H
   . iexact HP1
   . iexact HP2
+
+theorem apply_and_l [BI PROP] (P Q : Nat → PROP) :
+  ((P 1 -∗ P 2) ∧ (Q 1 -∗ Q 2)) ⊢ P 1 -∗ P 2 := by
+  iintro H HP1
+  iapply H
+  iexact HP1
+
+theorem apply_and_r [BI PROP] (P Q : Nat → PROP) :
+  ((P 1 -∗ P 2) ∧ (Q 1 -∗ Q 2)) ⊢ Q 1 -∗ Q 2 := by
+  iintro H HQ1
+  iapply H
+  iexact HQ1
+
+theorem apply_and_l_exact [BI PROP] (P Q : Nat → PROP) :
+  (P 1 ∧ Q 1) ⊢ P 1 := by
+  iintro H
+  iapply H
+
+theorem apply_and_r_exact [BI PROP] (P Q : Nat → PROP) :
+  (P 1 ∧ Q 1) ⊢ Q 1 := by
+  iintro H
+  iapply H
 
 end apply
 
@@ -397,6 +429,10 @@ theorem exact_lean_forall2 [BI PROP] (Q : Nat → PROP) (H : ∀ x, ⊢ Q x) : �
 theorem exact_lean_forall3 [BI PROP] (Q : Nat → Nat → PROP) (H : ∀ x y, ⊢ Q x y) : ⊢ Q 1 1 := by
   ihave HQ := H ?res ?res
   case res => exact 1
+  iexact HQ
+
+theorem exact_lean_forall4 [BI PROP] (Q : Nat → PROP) (H : ∀ x, ⊢ Q x) : ⊢ Q 1 := by
+  ihave HQ := H
   iexact HQ
 
 theorem exact_lean_tc [BI PROP] (Q : Nat → PROP) (H : ∀ (P : PROP) [Persistent P], ⊢ P) : ⊢ Q 1 := by
