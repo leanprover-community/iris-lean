@@ -18,82 +18,45 @@ namespace Iris.Std
 
 open FiniteMap FiniteSet
 
-variable {M : Type _} {K : Type _} {V : Type _}
-variable [DecidableEq K] [FiniteMap M K V] [FiniteMapLaws M K V]
+variable {M : Type _ → _} {K : Type _}
+variable [DecidableEq K] [FiniteMap M K] [FiniteMapLaws M K]
 
 section DomainSet
 
 variable {S : Type _} [FiniteSet S K] [FiniteSetLaws S K]
-variable [FiniteMapLawsSelf M K V]
 
 /-- Convert map domain to a finite set. -/
-def domSet (m : M) : S := FiniteSet.ofList ((FiniteMap.toList m).map Prod.fst)
+def domSet (m : M V) : S := FiniteSet.ofList ((FiniteMap.toList m).map Prod.fst)
 
 /-- Create map from set with constant value. -/
-def ofSet (c : V) (X : S) : M := FiniteMap.ofList ((FiniteSet.toList X).map (fun k => (k, c)))
+def ofSet (c : V) (X : S) : M V := FiniteMap.ofList ((FiniteSet.toList X).map (fun k => (k, c)))
 
-omit [FiniteMapLawsSelf M K V] in
+  /-- Lookup returns `none` iff the key is not in the domain.
+      Corresponds to Rocq's `not_elem_of_dom`. -/
+theorem not_elem_of_domSet : ∀ (m : M V) k, get? m k = none ↔ k ∉ (domSet m : S) := by sorry
+
+  /-- Lookup returns `some` iff the key is in the domain.
+      Corresponds to Rocq's `elem_of_dom`. -/
+theorem elem_of_domSet : ∀ (m : M V) k, (∃ v, get? m k = some v) ↔ k ∈ (domSet m : S) := by sorry
+
 /-- Domain of empty map is empty set. -/
-theorem domSet_empty : domSet (∅ : M) = (∅ : S) := by
+theorem domSet_empty : domSet (∅ : M V) = (∅ : S) := by
   simp only [domSet, FiniteMapLaws.map_to_list_empty, List.map_nil, FiniteSetLaws.ofList_nil]
 
-omit [FiniteMapLawsSelf M K V] in
-/-- Membership in domSet iff key has a value in the map. -/
-theorem elem_of_domSet (m : M) (k : K) :
-    FiniteSet.mem k (domSet (m : M) : S) = true ↔ ∃ v, FiniteMap.get? m k = some v := by
-  simp only [domSet, FiniteSetLaws.mem_ofList, List.mem_map]
-  constructor
-  · intro ⟨p, hp, hk⟩
-    have : (p.fst, p.snd) ∈ FiniteMap.toList m := hp
-    have : FiniteMap.get? m p.fst = some p.snd := FiniteMapLaws.elem_of_map_to_list m p.fst p.snd |>.mpr this
-    rw [hk] at this
-    exact ⟨p.snd, this⟩
-  · intro ⟨v, hv⟩
-    refine ⟨(k, v), FiniteMapLaws.elem_of_map_to_list m k v |>.mp hv, rfl⟩
+/-- The domain after insert includes the inserted key. -/
+theorem domSet_insert (m : M V) (k : K) (v : V) :
+   k ∈ (domSet (insert m k v) : S) := by
+  simp only [domSet, Membership.mem]
+  rw [FiniteSetLaws.mem_ofList]
+  rw [List.mem_map]
+  have : get? (insert m k v) k = some v := lookup_insert_eq m k v
+  have : (k, v) ∈ FiniteMap.toList (insert m k v) :=
+    FiniteMapLaws.elem_of_map_to_list (insert m k v) k v |>.mpr this
+  exact ⟨(k, v), this, rfl⟩
 
-omit [FiniteMapLawsSelf M K V] in
-/-- Domain of insert includes the inserted key. -/
-theorem domSet_insert (m : M) (k : K) (v : V) :
-    (domSet (FiniteMap.insert m k v) : S) = FiniteSet.insert k (domSet m : S) := by
-  apply @FiniteSetLaws.ext S K _ _
-  intro x
-  by_cases h : x = k
-  · -- Case: x = k
-    subst h
-    rw [FiniteSetLaws.mem_insert_eq (domSet m) x x rfl]
-    have : FiniteSet.mem x (domSet (FiniteMap.insert m x v) : S) = true :=
-      elem_of_domSet (FiniteMap.insert m x v) x |>.mpr ⟨v, FiniteMapLaws.lookup_insert_eq m x v⟩
-    exact this
-  · -- Case: x ≠ k
-    rw [FiniteSetLaws.mem_insert_ne (domSet m) x k h]
-    cases hmem : FiniteSet.mem x (domSet m : S)
-    · -- mem x (domSet m) = false, need to show mem x (domSet (insert m k v)) = false
-      have : ¬∃ v', FiniteMap.get? m x = some v' := by
-        intro ⟨v', hv'⟩
-        have : FiniteSet.mem x (domSet m : S) = true := elem_of_domSet m x |>.mpr ⟨v', hv'⟩
-        rw [hmem] at this
-        cases this
-      cases hins : FiniteSet.mem x (domSet (FiniteMap.insert m k v) : S)
-      · rfl
-      · -- Contradiction
-        have ⟨v', hv'⟩ := elem_of_domSet (FiniteMap.insert m k v) x |>.mp hins
-        have heq : FiniteMap.get? (FiniteMap.insert m k v) x = FiniteMap.get? m x :=
-          FiniteMapLaws.lookup_insert_ne m k x v (Ne.symm h)
-        rw [heq] at hv'
-        have : False := this ⟨v', hv'⟩
-        cases this
-    · -- mem x (domSet m) = true, need to show mem x (domSet (insert m k v)) = true
-      have ⟨v', hv'⟩ := elem_of_domSet m x |>.mp hmem
-      have heq : FiniteMap.get? (FiniteMap.insert m k v) x = FiniteMap.get? m x :=
-        FiniteMapLaws.lookup_insert_ne m k x v (Ne.symm h)
-      have : FiniteSet.mem x (domSet (FiniteMap.insert m k v) : S) = true :=
-        elem_of_domSet (FiniteMap.insert m k v) x |>.mpr ⟨v', heq.symm ▸ hv'⟩
-      exact this
-
-omit [FiniteMapLawsSelf M K V] in
 /-- Domain of ofSet equals the original set. -/
 theorem domSet_ofSet (c : V) (X : S) :
-    domSet (ofSet c X : M) = X := by
+    domSet (ofSet c X : M V) = X := by
   apply @FiniteSetLaws.ext S K _ _
   intro k
   simp only [domSet]
@@ -106,14 +69,13 @@ theorem domSet_ofSet (c : V) (X : S) :
     obtain ⟨⟨k', v⟩, hmem_list, heq⟩ := hmem
     simp at heq
     rw [← heq]
-    have : FiniteMap.get? (ofSet c X : M) k' = some v :=
-      FiniteMapLaws.elem_of_map_to_list _ _ _ |>.mpr hmem_list
-    simp only [ofSet, FiniteMapLaws.elem_of_list_to_map] at this
+    have hget : FiniteMap.get? (ofSet c X : M V) k' = some v :=
+      FiniteMapLaws.elem_of_map_to_list _ _ _ |>.mp hmem_list
+    -- Use elem_of_list_to_map_2 to get membership from lookup
+    have hmem' : (k', v) ∈ (FiniteSet.toList X).map (fun x => (x, c)) := by
+      simp only [ofSet] at hget
+      exact FiniteMapLaws.elem_of_list_to_map_2 _ _ _ hget
     have : k' ∈ ((FiniteSet.toList X).map (fun x => (x, c))).map Prod.fst := by
-      have : (k', v) ∈ ((FiniteSet.toList X).map (fun x => (x, c))).reverse := by
-        exact list_lookup_some_mem k' v _ this
-      have hmem' : (k', v) ∈ (FiniteSet.toList X).map (fun x => (x, c)) := by
-        exact List.mem_reverse.mp this
       rw [List.mem_map]
       exact ⟨(k', v), hmem', rfl⟩
     simp [List.map_map] at this
@@ -125,22 +87,19 @@ theorem domSet_ofSet (c : V) (X : S) :
     have hmapped : (k, c) ∈ (FiniteSet.toList X).map (fun x => (x, c)) := by
       rw [List.mem_map]
       exact ⟨k, hk_in, rfl⟩
-    have : FiniteMap.get? (ofSet c X : M) k = some c := by
-      simp only [ofSet, FiniteMapLaws.elem_of_list_to_map]
-      have : (k, c) ∈ ((FiniteSet.toList X).map (fun x => (x, c))).reverse :=
-        List.mem_reverse.mpr hmapped
-      have hnodup : ((FiniteSet.toList X).map (fun x => (x, c))).reverse.map Prod.fst |>.Nodup := by
-        rw [List.map_reverse]
+    have : FiniteMap.get? (ofSet c X : M V) k = some c := by
+      simp only [ofSet]
+      -- Use elem_of_list_to_map_1 to get lookup from membership
+      have hnodup : ((FiniteSet.toList X).map (fun x => (x, c))).map Prod.fst |>.Nodup := by
         simp only [List.map_map]
-        show (List.map (fun x => x) (FiniteSet.toList X)).reverse.Nodup
+        show (List.map (fun x => x) (FiniteSet.toList X)).Nodup
         simp only [List.map_id']
         have ⟨l', hperm, hnodup', _⟩ : ∃ l', (FiniteSet.toList X).Perm l' ∧ l'.Nodup ∧ FiniteSet.ofList l' = X :=
           FiniteSetLaws.ofList_toList X
-        have hnodup_toList : (FiniteSet.toList X).Nodup := hperm.symm.nodup hnodup'
-        exact list_nodup_reverse (FiniteSet.toList X) |>.mpr hnodup_toList
-      exact list_mem_lookup k c _ hnodup this
-    have : (k, c) ∈ FiniteMap.toList (ofSet c X : M) :=
-      FiniteMapLaws.elem_of_map_to_list _ _ _ |>.mp this
+        exact hperm.symm.nodup hnodup'
+      exact FiniteMapLaws.elem_of_list_to_map_1 _ _ _ hnodup hmapped
+    have : (k, c) ∈ FiniteMap.toList (ofSet c X : M V) :=
+      FiniteMapLaws.elem_of_map_to_list _ _ _ |>.mpr this
     exact ⟨(k, c), this, rfl⟩
 
 end DomainSet

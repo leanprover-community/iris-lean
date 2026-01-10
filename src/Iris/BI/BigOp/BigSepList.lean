@@ -704,8 +704,8 @@ theorem sepL {B : Type _} (Φ : Nat → A → Nat → B → PROP) (l₁ : List A
       exact sep_mono_r ih'.2
 
 /-- Corresponds to `big_sepL_sepM` in Rocq Iris. -/
-theorem sepM {B : Type _} {M : Type _} {K : Type _} [FiniteMap M K B]
-    (Φ : Nat → A → K → B → PROP) (l : List A) (m : M) :
+theorem sepM {B : Type _} {M : Type _ → Type _} {K : Type _} [FiniteMap M K]
+    (Φ : Nat → A → K → B → PROP) (l : List A) (m : M B) :
     ([∗list] k↦x ∈ l, [∗map] k'↦y ∈ m, Φ k x k' y) ⊣⊢
       ([∗map] k'↦y ∈ m, [∗list] k↦x ∈ l, Φ k x k' y) := by
   calc [∗list] k↦x ∈ l, [∗map] k'↦y ∈ m, Φ k x k' y

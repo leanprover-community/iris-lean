@@ -89,14 +89,14 @@ section Map
 
 /-- Big separating conjunction over a map.
     `bigSepM Φ m` computes `∗_{k ↦ v ∈ m} Φ k v` -/
-abbrev bigSepM [BI PROP] {M : Type _} {K : Type _} {V : Type _} [FiniteMap M K V]
-    (Φ : K → V → PROP) (m : M) : PROP :=
+abbrev bigSepM [BI PROP] {M : Type _ → Type _} {K : Type _} {V : Type _} [FiniteMap M K]
+    (Φ : K → V → PROP) (m : M V) : PROP :=
   bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList m)
 
 /-- Big conjunction over a map.
     `bigAndM Φ m` computes `∧_{k ↦ v ∈ m} Φ k v` -/
-abbrev bigAndM [BI PROP] {M : Type _} {K : Type _} {V : Type _} [FiniteMap M K V]
-    (Φ : K → V → PROP) (m : M) : PROP :=
+abbrev bigAndM [BI PROP] {M : Type _ → Type _} {K : Type _} {V : Type _} [FiniteMap M K]
+    (Φ : K → V → PROP) (m : M V) : PROP :=
   bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) (toList m)
 
 /-! ## Notation -/
