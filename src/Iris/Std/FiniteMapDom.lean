@@ -31,13 +31,47 @@ def domSet (m : M V) : S := FiniteSet.ofList ((FiniteMap.toList m).map Prod.fst)
 /-- Create map from set with constant value. -/
 def ofSet (c : V) (X : S) : M V := FiniteMap.ofList ((FiniteSet.toList X).map (fun k => (k, c)))
 
-  /-- Lookup returns `none` iff the key is not in the domain.
-      Corresponds to Rocq's `not_elem_of_dom`. -/
-theorem not_elem_of_domSet : ∀ (m : M V) k, get? m k = none ↔ k ∉ (domSet m : S) := by sorry
+/-- Corresponds to Rocq's `not_elem_of_dom`. -/
+theorem not_elem_of_domSet : ∀ (m : M V) k, get? m k = none ↔ k ∉ (domSet m : S) := by
+  intro m k
+  simp only [domSet, Membership.mem]
+  rw [FiniteSetLaws.mem_ofList]
+  constructor
+  · intro h_none h_in
+    rw [List.mem_map] at h_in
+    obtain ⟨⟨k', v⟩, h_mem, h_eq⟩ := h_in
+    simp at h_eq
+    subst h_eq
+    have : get? m k' = some v := (FiniteMapLaws.elem_of_map_to_list m k' v).mp h_mem
+    rw [h_none] at this
+    exact Option.noConfusion this
+  · intro h_not_in
+    cases h : get? m k
+    · rfl
+    · rename_i v
+      have : (k, v) ∈ FiniteMap.toList m := (FiniteMapLaws.elem_of_map_to_list m k v).mpr h
+      have : k ∈ (FiniteMap.toList m).map Prod.fst := by
+        rw [List.mem_map]
+        exact ⟨(k, v), this, rfl⟩
+      exact absurd this h_not_in
 
-  /-- Lookup returns `some` iff the key is in the domain.
-      Corresponds to Rocq's `elem_of_dom`. -/
-theorem elem_of_domSet : ∀ (m : M V) k, (∃ v, get? m k = some v) ↔ k ∈ (domSet m : S) := by sorry
+/-- Corresponds to Rocq's `elem_of_dom`. -/
+theorem elem_of_domSet : ∀ (m : M V) k, (∃ v, get? m k = some v) ↔ k ∈ (domSet m : S) := by
+  intro m k
+  simp only [domSet, Membership.mem]
+  rw [FiniteSetLaws.mem_ofList]
+  constructor
+  · intro ⟨v, h_some⟩
+    have : (k, v) ∈ FiniteMap.toList m := (FiniteMapLaws.elem_of_map_to_list m k v).mpr h_some
+    rw [List.mem_map]
+    exact ⟨(k, v), this, rfl⟩
+  · intro h_in
+    rw [List.mem_map] at h_in
+    obtain ⟨⟨k', v⟩, h_mem, h_eq⟩ := h_in
+    simp at h_eq
+    subst h_eq
+    have : get? m k' = some v := (FiniteMapLaws.elem_of_map_to_list m k' v).mp h_mem
+    exact ⟨v, this⟩
 
 /-- Domain of empty map is empty set. -/
 theorem domSet_empty : domSet (∅ : M V) = (∅ : S) := by

@@ -980,115 +980,274 @@ theorem map_disjoint_singleton_r (m : M V) (i : K) (x : V) :
     simp [hi] at hs1
   · simp [FiniteMap.singleton, lookup_insert_ne _ _ _ _ hik, lookup_empty] at hs2
 
-/-- toList of map (fmap) is a permutation of mapping over toList.
-    This is a weaker form that we can prove without the fold-based infrastructure.
-    The stronger equality version (`toList_map_eq`) would require `fold_map` and `fold_foldr`. -/
+/-- toList of map (fmap) is a permutation of mapping over toList. -/
 theorem toList_map [DecidableEq V'] : ∀ (m : M V) (f : V → V'),
   (toList (FiniteMap.map f m)).Perm
       ((toList m).map (fun kv => (kv.1, f kv.2))) := by
   intro m f
   simp only [FiniteMap.map]
-  -- toList (ofList ((toList m).map g)) is Perm to (toList m).map g
-  -- where g = fun kv => (kv.1, f kv.2)
   apply map_to_list_to_map
-  -- Need to show: ((toList m).map g).map Prod.fst |>.Nodup
   simp only [List.map_map]
   show ((toList m).map (fun x => x.1)).Nodup
   exact NoDup_map_to_list_keys m
 
-/-- Corresponds to Rocq's `map_fmap_zip_with_r`.
-    When `g1 (f x y) = x` and the domains of m1 and m2 match,
-    mapping g1 over zipWith f m1 m2 gives back m1 (up to map equality). -/
-theorem map_fmap_zipWith_r {V' V'' : Type _} [DecidableEq V'] [DecidableEq V'']
+/-- Lookup in a mapped finite map. -/
+theorem lookup_map [DecidableEq V] {V' : Type _} [DecidableEq V'] (f : V → V') (m : M V) (k : K) :
+    get? (FiniteMap.map f m) k = (get? m k).map f := by
+  simp only [FiniteMap.map]
+  by_cases h : ∃ v, get? m k = some v
+  · -- k in m
+    obtain ⟨v, hv⟩ := h
+    have hmem : (k, v) ∈ toList m := (elem_of_map_to_list m k v).mpr hv
+    have hmem' : (k, f v) ∈ (toList m).map (fun (ki, vi) => (ki, f vi)) := by
+      rw [List.mem_map]
+      exact ⟨(k, v), hmem, rfl⟩
+    have hnodup : ((toList m).map (fun (ki, vi) => (ki, f vi))).map Prod.fst |>.Nodup := by
+      simp only [List.map_map]
+      show ((toList m).map Prod.fst).Nodup
+      exact NoDup_map_to_list_keys m
+    have := (elem_of_list_to_map (M := M) _ k (f v) hnodup).mp hmem'
+    simp [hv, this]
+  · -- k not in m
+    have hk : get? m k = none := by
+      cases hm : get? m k
+      · rfl
+      · exfalso; apply h; exact ⟨_, hm⟩
+    simp [hk]
+    cases h' : get? (ofList ((toList m).map (fun (ki, vi) => (ki, f vi))) : M V') k
+    · rfl
+    · rename_i v'
+      have hnodup : ((toList m).map (fun (ki, vi) => (ki, f vi))).map Prod.fst |>.Nodup := by
+        simp only [List.map_map]
+        show ((toList m).map Prod.fst).Nodup
+        exact NoDup_map_to_list_keys m
+      have hmem : (k, v') ∈ (toList m).map (fun (ki, vi) => (ki, f vi)) :=
+        (elem_of_list_to_map (M := M) (V := V') _ k v' hnodup).mpr h'
+      rw [List.mem_map] at hmem
+      obtain ⟨⟨k', v''⟩, hmem', heq⟩ := hmem
+      simp at heq
+      cases heq
+      rename_i heq_k heq_v
+      have : get? m k' = some v'' := (elem_of_map_to_list m k' v'').mp hmem'
+      rw [heq_k, hk] at this
+      cases this
+
+/-- filterMap preserves Nodup on keys (first projection). -/
+private theorem nodup_map_fst_filterMap {V' V'' : Type _}
+    (l : List (K × V)) (g : K → V → Option (K × V'')) :
+    (l.map Prod.fst).Nodup →
+    (∀ ki vi k' v', g ki vi = some (k', v') → k' = ki) →
+    ((l.filterMap (fun (ki, vi) => g ki vi)).map Prod.fst).Nodup := by
+  intro h_nodup h_preserve_key
+  have aux : ∀ (k_target : K) (l' : List (K × V)),
+      k_target ∈ (l'.filterMap (fun (ki, vi) => g ki vi)).map Prod.fst →
+      k_target ∈ l'.map Prod.fst := by
+    intro k_target l'
+    induction l' with
+    | nil => simp
+    | cons kv' tail' ih_aux =>
+      obtain ⟨k'', v''⟩ := kv'
+      intro hmem_filter
+      simp only [List.filterMap] at hmem_filter
+      cases hg' : g k'' v'' with
+      | none =>
+        simp only [hg'] at hmem_filter
+        exact List.mem_cons_of_mem k'' (ih_aux hmem_filter)
+      | some res' =>
+        obtain ⟨k''', v'''⟩ := res'
+        have : k''' = k'' := h_preserve_key k'' v'' k''' v''' hg'
+        subst this
+        simp only [hg', List.map_cons, List.mem_cons] at hmem_filter
+        rw [List.map_cons, List.mem_cons]
+        cases hmem_filter with
+        | inl heq => left; exact heq
+        | inr hmem' => right; exact ih_aux hmem'
+  -- Main proof by induction
+  induction l with
+  | nil => simp
+  | cons kv tail ih =>
+    obtain ⟨k, v⟩ := kv
+    rw [List.map_cons, List.nodup_cons] at h_nodup
+    simp only [List.filterMap]
+    cases hg : g k v with
+    | none =>
+      -- g k v = none, so kv is filtered out
+      exact ih h_nodup.2
+    | some res =>
+      -- g k v = some res, so kv is kept
+      obtain ⟨k', v'⟩ := res
+      have hk_eq : k' = k := h_preserve_key k v k' v' hg
+      rw [List.map_cons, List.nodup_cons]
+      constructor
+      · intro hmem
+        rw [hk_eq] at hmem
+        apply h_nodup.1
+        exact aux k tail hmem
+      · exact ih h_nodup.2
+
+/-- Helper lemma: lookup in zipWith. -/
+theorem lookup_zipWith [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
+    (f : V → V' → V'') (m1 : M V) (m2 : M V') (k : K) :
+    get? (FiniteMap.zipWith f m1 m2) k =
+      match get? m1 k, get? m2 k with
+      | some v1, some v2 => some (f v1 v2)
+      | _, _ => none := by
+  simp only [FiniteMap.zipWith]
+  cases h1 : get? m1 k
+  · -- m1 doesn't have k, so result should be none
+    simp
+    -- The result is none because k is not in the filtered list
+    cases h' : get? (ofList ((toList m1).filterMap (fun (ki, vi) =>
+        match get? m2 ki with
+        | some v' => some (ki, f vi v')
+        | none => none)) : M V'') k
+    · rfl
+    · -- Contradiction: k is in the result but not in m1
+      rename_i v_result
+      -- k must be in the filterMap output
+      have hnodup : ((toList m1).filterMap (fun (ki, vi) =>
+          match get? m2 ki with
+          | some v' => some (ki, f vi v')
+          | none => none)).map Prod.fst |>.Nodup := by
+        refine nodup_map_fst_filterMap (V' := V') (V'' := V'') (toList m1) (fun ki vi =>
+            match get? m2 ki with
+            | some v' => some (ki, f vi v')
+            | none => none) (NoDup_map_to_list_keys m1) ?_
+        intros ki vi k' v' heq
+        cases heq' : get? m2 ki <;> simp [heq'] at heq
+        obtain ⟨rfl, _⟩ := heq
+        rfl
+      have hmem : (k, v_result) ∈ (toList m1).filterMap (fun (ki, vi) =>
+          match get? m2 ki with
+          | some v' => some (ki, f vi v')
+          | none => none) :=
+        (elem_of_list_to_map (M := M) (V := V'') _ k v_result hnodup).mpr h'
+      rw [List.mem_filterMap] at hmem
+      obtain ⟨⟨k', v1'⟩, hmem1, hmatch⟩ := hmem
+      simp at hmatch
+      cases hm2 : get? m2 k' <;> simp [hm2] at hmatch
+      · obtain ⟨heq_k, _⟩ := hmatch
+        have : get? m1 k' = some v1' := (elem_of_map_to_list m1 k' v1').mp hmem1
+        rw [heq_k, h1] at this
+        cases this
+  · -- m1 has k
+    rename_i v1
+    cases h2 : get? m2 k
+    · -- m2 doesn't have k, so result should be none
+      simp
+      cases h' : get? (ofList ((toList m1).filterMap (fun (ki, vi) =>
+          match get? m2 ki with
+          | some v' => some (ki, f vi v')
+          | none => none)) : M V'') k
+      · rfl
+      · -- Contradiction: result is some but m2 doesn't have k
+        rename_i v_result
+        have hnodup : ((toList m1).filterMap (fun (ki, vi) =>
+            match get? m2 ki with
+            | some v' => some (ki, f vi v')
+            | none => none)).map Prod.fst |>.Nodup := by
+          refine nodup_map_fst_filterMap (V' := V') (V'' := V'') (toList m1) (fun ki vi =>
+              match get? m2 ki with
+              | some v' => some (ki, f vi v')
+              | none => none) (NoDup_map_to_list_keys m1) ?_
+          intros ki vi k' v' heq
+          cases heq' : get? m2 ki <;> simp [heq'] at heq
+          obtain ⟨rfl, _⟩ := heq
+          rfl
+        have hmem : (k, v_result) ∈ (toList m1).filterMap (fun (ki, vi) =>
+            match get? m2 ki with
+            | some v' => some (ki, f vi v')
+            | none => none) :=
+          (elem_of_list_to_map (M := M) (V := V'') _ k v_result hnodup).mpr h'
+        rw [List.mem_filterMap] at hmem
+        obtain ⟨⟨k', v1'⟩, hmem1, hmatch⟩ := hmem
+        simp at hmatch
+        cases hm2 : get? m2 k' <;> simp [hm2] at hmatch
+        · obtain ⟨heq_k, _⟩ := hmatch
+          rw [heq_k, h2] at hm2
+          cases hm2
+    · -- Both have k, result should be some (f v1 v2)
+      rename_i v2
+      simp
+      -- Show k maps to f v1 v2 in the result
+      have hmem1 : (k, v1) ∈ toList m1 := (elem_of_map_to_list m1 k v1).mpr h1
+      have hmem_filter : (k, f v1 v2) ∈ (toList m1).filterMap (fun (ki, vi) =>
+          match get? m2 ki with
+          | some v' => some (ki, f vi v')
+          | none => none) := by
+        rw [List.mem_filterMap]
+        refine ⟨(k, v1), hmem1, ?_⟩
+        simp [h2]
+      have hnodup : ((toList m1).filterMap (fun (ki, vi) =>
+          match get? m2 ki with
+          | some v' => some (ki, f vi v')
+          | none => none)).map Prod.fst |>.Nodup := by
+        refine nodup_map_fst_filterMap (V' := V') (V'' := V'') (toList m1) (fun ki vi =>
+            match get? m2 ki with
+            | some v' => some (ki, f vi v')
+            | none => none) (NoDup_map_to_list_keys m1) ?_
+        intros ki vi k' v' heq
+        cases heq' : get? m2 ki <;> simp [heq'] at heq
+        obtain ⟨rfl, _⟩ := heq
+        rfl
+      exact (elem_of_list_to_map (M := M) _ k (f v1 v2) hnodup).mp hmem_filter
+
+/-- Corresponds to Rocq's `map_fmap_zip_with_r`. -/
+theorem map_fmap_zipWith_r [DecidableEq V] {V' V'' : Type _} [DecidableEq V'] [DecidableEq V'']
     (f : V → V' → V'') (g1 : V'' → V) (m1 : M V) (m2 : M V')
     (hg1 : ∀ x y, g1 (f x y) = x)
     (hdom : ∀ k, (get? m1 k).isSome ↔ (get? m2 k).isSome) :
     FiniteMap.map g1 (FiniteMap.zipWith f m1 m2) = m1 := by
-  sorry
+  apply map_eq
+  intro k
+  rw [lookup_map, lookup_zipWith]
+  cases h1 : get? m1 k with
+  | none => simp
+  | some x =>
+    -- From hdom, we know m2 has k
+    have h2 : (get? m2 k).isSome = true := (hdom k).mp (by simp [h1])
+    cases h2' : get? m2 k with
+    | none => simp [h2'] at h2
+    | some y =>
+      simp [hg1]
 
-/-- Corresponds to Rocq's `map_fmap_zip_with_l`.
-    When `g2 (f x y) = y` and the domains of m1 and m2 match,
-    mapping g2 over zipWith f m1 m2 gives back m2 (up to map equality). -/
-theorem map_fmap_zipWith_l {V' V'' : Type _} [DecidableEq V'] [DecidableEq V'']
+/-- Corresponds to Rocq's `map_fmap_zip_with_l`. -/
+theorem map_fmap_zipWith_l [DecidableEq V] [DecidableEq V'] {V'' : Type _} [DecidableEq V'']
     (f : V → V' → V'') (g2 : V'' → V') (m1 : M V) (m2 : M V')
     (hg2 : ∀ x y, g2 (f x y) = y)
     (hdom : ∀ k, (get? m1 k).isSome ↔ (get? m2 k).isSome) :
     FiniteMap.map g2 (FiniteMap.zipWith f m1 m2) = m2 := by
-  sorry
+  apply map_eq
+  intro k
+  rw [lookup_map, lookup_zipWith]
+  cases h2 : get? m2 k with
+  | none => simp
+  | some y =>
+    -- From hdom, we know m1 has k
+    have h1 : (get? m1 k).isSome = true := (hdom k).mpr (by simp [h2])
+    cases h1' : get? m1 k with
+    | none => simp [h1'] at h1
+    | some x =>
+      simp [hg2]
+
+/-- Corresponds to Rocq's `lookup_union_None`.
+    Lookup in union is none iff both lookups are none. -/
+theorem lookup_union_None (m1 m2 : M V) (i : K) :
+    get? (m1 ∪ m2) i = none ↔ get? m1 i = none ∧ get? m2 i = none := by
+  rw [lookup_union]
+  cases h1 : get? m1 i <;> cases h2 : get? m2 i <;> simp [Option.orElse]
+
+/-- Corresponds to Rocq's `insert_union_l`.
+    Insert distributes over union on the left. -/
+theorem insert_union_l (m1 m2 : M V) (i : K) (x : V) :
+    get? (insert (m1 ∪ m2) i x) = get? (insert m1 i x ∪ m2) := by
+  funext k
+  by_cases hik : i = k
+  · subst hik
+    simp [lookup_insert_eq, lookup_union]
+  · simp [lookup_insert_ne _ _ _ _ hik, lookup_union]
 
 end FiniteMapLaws
-
--- namespace FiniteMapLawsFold
-
--- variable {M : Type _ → _} {K : Type v} {V : Type _}
--- variable [DecidableEq K] [FiniteMap M K] [FiniteMapLaws M K] [FiniteMapLawsFold M K]
--- /-- Corresponds to Rocq's `map_fold_fmap`
--- Rocq Proof:
---   induction m as [|i x m ? Hfold IH] using map_fold_fmap_ind.
---   { by rewrite fmap_empty, !map_fold_empty. }
---   rewrite fmap_insert. rewrite <-(map_fmap_id m) at 2. rewrite !Hfold.
---   by rewrite IH, map_fmap_id. -/
--- theorem fold_map (f : K → V' → B → B) (g : V → V') b (m : M V) :
---   fold f b (FiniteMap.map g m) = fold (fun i => f i ∘ g) b m := by sorry
-
--- /-- toList of map (fmap) equals mapping over toList (equality version).
---     `toList (map f m) = (toList m).map (fun (k, v) => (k, f v))`
---     Corresponds to Rocq's `map_to_list_fmap`
---    Rocq proof:
---   unfold map_to_list. rewrite map_fold_fmap, !map_fold_foldr.
---   induction (map_to_list m) as [|[]]; f_equal/=; auto. -/
--- theorem toList_map_eq [DecidableEq V'] : ∀ (m : M V) (f : V → V'),
---   toList (FiniteMap.map f m) =
---       ((toList m).map (fun kv => (kv.1, f kv.2))) := by sorry
-
-
--- /-- Corresponds to Rocq's `map_fold_ind`
--- Rocq proof:
---   intros Hemp Hins m.
---   induction m as [|i x m ? Hfold IH] using map_fold_fmap_ind; [done|].
---   apply Hins; [done| |done]. intros B f b x'.
---   assert (m = id <$> m) as →.
---   { apply map_eq; intros j; by rewrite lookup_fmap, option_fmap_id. }
---   apply Hfold.
---     -/
--- private theorem map_fold_ind (P : M V → Prop) :
---   P ∅ →
---   (∀ i x m,
---     get? m i = none →
---     (∀ B (f : K → V → B → B) b x',
---       fold f b (insert m i x') = f i x' (fold f b m)) →
---     P m →
---     P (insert m i x)) →
---   ∀ m, P m := by sorry
-
--- /-- Corresponds to Rocq's `map_fold_weak_ind`. -/
--- theorem fold_weak_ind {B : Type u''}
---     (P : B → M V → Prop) (f : K → V → B → B) (b : B)
---     (hemp : P b ∅)
---     (hins : ∀ i x m r, get? m i = none → P r m → P (f i x r) (insert m i x))
---     (m : M V) : P (fold f b m) m := by
---   sorry
-
--- /-- Induction principle with first key constraint: prove properties about maps by induction,
---     where the inductive step requires that the inserted key becomes the first key.
-
---     Corresponds to Rocq's `map_first_key_ind`. -/
--- theorem map_first_key_ind (P : M V → Prop)
---     (hemp : P ∅)
---     (hins : ∀ i x m, get? m i = none → FiniteMap.firstKey (insert m i x) i → P m → P (insert m i x))
---     (m : M V) : P m := by
---   sorry
-
--- /-- Corresponds to Rocq's `map_fold_foldr`
--- Rocq proof:
---   unfold map_to_list. induction m as [|i x m ? Hfold IH] using map_fold_ind.
---   - by rewrite !map_fold_empty.
---   - by rewrite !Hfold, IH.
--- -/
--- theorem fold_foldr (f : K → V → B → B) b (m : M V) :
---   fold f b m = List.foldr (fun ⟨k, v⟩ b => f k v b) b (toList m) := by sorry
-
--- end FiniteMapLawsFold
 
 namespace FiniteMap
 

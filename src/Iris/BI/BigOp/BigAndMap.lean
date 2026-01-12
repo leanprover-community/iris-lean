@@ -296,7 +296,8 @@ theorem union [FiniteMapLawsSelf K M] {Φ : K → V → PROP} {m₁ m₂ : M V}
     (hdisj : m₁ ##ₘ m₂) :
     ([∧map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢
       ([∧map] k ↦ y ∈ m₁, Φ k y) ∧ [∧map] k ↦ y ∈ m₂, Φ k y := by
-    sorry
+  simp only [bigAndM]
+  exact equiv_iff.mp (BigOpM.union (op := and) (unit := iprop(True)) Φ m₁ m₂ hdisj)
 
 end FilterMapTransformations
 
@@ -445,12 +446,7 @@ theorem filter' {Φ : K → V → PROP} {m : M V} (p : K → V → Bool) :
     ([∧map] k ↦ x ∈ FiniteMap.filter p m, Φ k x) ⊣⊢
       [∧map] k ↦ x ∈ m, if p k x then Φ k x else iprop(True) := by
   simp only [bigAndM]
-  have hperm := toList_filter m p
-  have heq : bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.filter p m)) ≡
-             bigOpL and iprop(True) (fun _ kv => Φ kv.1 kv.2) ((toList m).filter (fun kv => p kv.1 kv.2)) :=
-    BigOpL.perm _ hperm
-  refine equiv_iff.mp heq |>.trans ?_
-  exact filter_list_aux (fun kv => p kv.1 kv.2) (toList m)
+  exact equiv_iff.mp (BigOpM.filter' (op := and) (unit := iprop(True)) p Φ m)
 
 /-- Corresponds to `big_andM_filter` in Rocq Iris. -/
 theorem filter'' {Φ : K → V → PROP} {m : M V} (p : K → V → Bool) :

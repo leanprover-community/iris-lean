@@ -640,6 +640,88 @@ theorem fmap {B : Type w} [DecidableEq B] (h : V → B) (Φ : K → B → M) (m 
   -- Now use BigOpL.fmap to transform the mapped list
   exact BigOpL.fmap (op := op) (unit := unit) (fun kv => (kv.1, h kv.2)) (fun _ kv => Φ kv.1 kv.2) (FiniteMap.toList m)
 
+
+omit [DecidableEq K] [DecidableEq V] in
+/-- Helper: bigOpL over filtered list. -/
+private theorem filter_list_aux (Φ : K × V → M) (φ : K → V → Bool) (l : List (K × V)) :
+    bigOpL op unit (fun _ kv => Φ kv) (l.filter (fun kv => φ kv.1 kv.2)) ≡
+    bigOpL op unit (fun _ kv => if φ kv.1 kv.2 then Φ kv else unit) l := by
+  induction l with
+  | nil => simp only [List.filter, BigOpL.nil]; exact Equiv.rfl
+  | cons kv kvs ih =>
+    simp only [List.filter]
+    cases hp : φ kv.1 kv.2 with
+    | false =>
+      simp only [BigOpL.cons, hp]
+      exact Equiv.trans ih (Equiv.symm (Monoid.op_left_id _))
+    | true =>
+      simp only [BigOpL.cons, hp]
+      exact Monoid.op_congr_r ih
+
+omit [DecidableEq V] in
+/-- Corresponds to Rocq's `big_opM_filter'`. -/
+theorem filter' [FiniteMapLawsSelf K M'] (φ : K → V → Bool) (Φ : K → V → M) (m : M' V) :
+    bigOpM (op := op) (unit := unit) Φ (FiniteMap.filter φ m) ≡
+    bigOpM (op := op) (unit := unit) (fun k x => if φ k x then Φ k x else unit) m := by
+  unfold bigOpM
+  have hperm := toList_filter m φ
+  have heq : bigOpL op unit (fun _ kv => Φ kv.1 kv.2)
+               (FiniteMap.toList (FiniteMap.filter φ m)) ≡
+             bigOpL op unit (fun _ kv => Φ kv.1 kv.2)
+               ((FiniteMap.toList m).filter (fun kv => φ kv.1 kv.2)) :=
+    BigOpL.perm _ hperm
+  refine Equiv.trans heq ?_
+  exact filter_list_aux (fun kv => Φ kv.1 kv.2) φ (FiniteMap.toList m)
+
+/-- Corresponds to Rocq's `big_opM_union`. -/
+theorem union (Φ : K → V → M) (m1 m2 : M' V) :
+    FiniteMap.Disjoint m1 m2 →
+    bigOpM (op := op) (unit := unit) Φ (m1 ∪ m2) ≡
+    op (bigOpM (op := op) (unit := unit) Φ m1) (bigOpM (op := op) (unit := unit) Φ m2) := by
+  intro hdisj
+  apply FiniteMapLaws.map_ind (P := fun m1 =>
+    FiniteMap.Disjoint m1 m2 →
+    bigOpM (op := op) (unit := unit) Φ (m1 ∪ m2) ≡
+    op (bigOpM (op := op) (unit := unit) Φ m1) (bigOpM (op := op) (unit := unit) Φ m2))
+  · intro _
+    have heq : ∅ ∪ m2 = m2 := by
+      apply FiniteMapLaws.map_eq
+      intro k
+      rw [FiniteMapLaws.lookup_union, FiniteMapLaws.lookup_empty]
+      simp [Option.orElse]
+    rw [heq, empty]
+    exact Equiv.symm (Monoid.op_left_id _)
+  · intro i x m hi_none IH hdisj'
+    have hi_m2 : get? m2 i = none := by
+      have := FiniteMapLaws.map_disjoint_spec (Std.insert m i x) m2 |>.mp hdisj' i
+      simp [FiniteMapLaws.lookup_insert_eq] at this
+      exact this
+    have hm_disj : FiniteMap.Disjoint m m2 := by
+      intro k ⟨hk1, hk2⟩
+      have : (get? (Std.insert m i x) k).isSome ∧ (get? m2 k).isSome := by
+        constructor
+        · by_cases hik : i = k
+          · subst hik; simp [hi_none] at hk1
+          · rw [FiniteMapLaws.lookup_insert_ne _ _ _ _ hik]; exact hk1
+        · exact hk2
+      exact hdisj' k this
+    have heq : Std.insert (m ∪ m2) i x = Std.insert m i x ∪ m2 := by
+      apply FiniteMapLaws.map_eq
+      intro k
+      exact congrFun (FiniteMapLaws.insert_union_l m m2 i x) k
+    have hunion_none : get? (m ∪ m2) i = none := by
+      rw [FiniteMapLaws.lookup_union_None]
+      exact ⟨hi_none, hi_m2⟩
+    -- Apply bigOpM insert lemmas
+    show bigOpM (op := op) (unit := unit) Φ (Std.insert m i x ∪ m2) ≡
+         op (bigOpM (op := op) (unit := unit) Φ (Std.insert m i x)) (bigOpM (op := op) (unit := unit) Φ m2)
+    rw [← heq]
+    refine Equiv.trans (insert Φ (m ∪ m2) i x hunion_none) ?_
+    refine Equiv.trans (Monoid.op_congr_r (IH hm_disj)) ?_
+    refine Equiv.trans (Equiv.symm (Monoid.op_assoc _ _ _)) ?_
+    exact Monoid.op_congr_l (Equiv.symm (insert Φ m i x hi_none))
+  · exact hdisj
+
 omit [DecidableEq V] [DecidableEq K] [FiniteMapLaws K M'] in
 /-- Corresponds to Rocq's `big_opM_op`. -/
 theorem op_distr (Φ Ψ : K → V → M) (m : M' V) :

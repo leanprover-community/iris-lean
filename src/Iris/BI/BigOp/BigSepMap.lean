@@ -134,11 +134,6 @@ theorem flip_mono' {Φ Ψ : K → V → PROP} {m : M V}
     ([∗map] k ↦ x ∈ m, Ψ k x) ⊢ [∗map] k ↦ x ∈ m, Φ k x :=
   mono' h
 
-/-- Corresponds to `big_sepM_subseteq` in Rocq Iris. -/
-theorem subseteq {Φ : K → V → PROP} {m₁ m₂ : M V} [FiniteMapLawsSelf K M] [∀ k v, Affine (Φ k v)]
-    (h : m₂ ⊆ m₁) :
-    ([∗map] k ↦ x ∈ m₁, Φ k x) ⊢ [∗map] k ↦ x ∈ m₂, Φ k x := by sorry
-
 /-! ## Typeclass Instances -/
 
 /-- Corresponds to `big_sepM_empty_persistent` in Rocq Iris. -/
@@ -482,7 +477,20 @@ theorem union [FiniteMapLawsSelf K M] {Φ : K → V → PROP} {m₁ m₂ : M V}
     ([∗map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢
       ([∗map] k ↦ y ∈ m₁, Φ k y) ∗ [∗map] k ↦ y ∈ m₂, Φ k y := by
   simp only [bigSepM]
-  sorry
+  exact equiv_iff.mp (BigOpM.union (op := sep) (unit := emp) Φ m₁ m₂ hdisj)
+
+/-- Corresponds to `big_sepM_subseteq` in Rocq Iris. -/
+theorem subseteq {Φ : K → V → PROP} {m₁ m₂ : M V} [FiniteMapLawsSelf K M] [∀ k v, Affine (Φ k v)]
+    (h : m₂ ⊆ m₁) :
+    ([∗map] k ↦ x ∈ m₁, Φ k x) ⊢ [∗map] k ↦ x ∈ m₂, Φ k x := by
+  have heq : m₂ ∪ (m₁ \ m₂) = m₁ := FiniteMap.map_difference_union m₁ m₂ h
+  have hdisj : FiniteMap.Disjoint m₂ (m₁ \ m₂) := FiniteMap.disjoint_difference_r m₁ m₂
+  suffices hsuff : ([∗map] k ↦ x ∈ m₂ ∪ (m₁ \ m₂), Φ k x) ⊢ [∗map] k ↦ x ∈ m₂, Φ k x by
+    have : ([∗map] k ↦ x ∈ m₁, Φ k x) ≡ ([∗map] k ↦ x ∈ m₂ ∪ (m₁ \ m₂), Φ k x) := by rw [heq]
+    exact (equiv_iff.mp this).1.trans hsuff
+  refine (union hdisj).1.trans ?_
+  have : Affine ([∗map] k ↦ x ∈ m₁ \ m₂, Φ k x) := inferInstance
+  exact sep_elim_l
 
 end FilterMapTransformations
 
@@ -716,14 +724,7 @@ theorem filter' {Φ : K → V → PROP} {m : M V}
     ([∗map] k ↦ x ∈ FiniteMap.filter (fun k v => decide (φ (k, v))) m, Φ k x) ⊣⊢
       [∗map] k ↦ x ∈ m, if decide (φ (k, x)) then Φ k x else emp := by
   simp only [bigSepM]
-  have hperm := toList_filter m (fun k v => decide (φ (k, v)))
-  have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2)
-               (toList (FiniteMap.filter (fun k v => decide (φ (k, v))) m)) ≡
-             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2)
-               ((toList m).filter (fun kv => decide (φ kv))) :=
-    BigOpL.perm _ hperm
-  refine equiv_iff.mp heq |>.trans ?_
-  exact filter_list_aux (fun kv => Φ kv.1 kv.2) φ (toList m)
+  exact equiv_iff.mp (BigOpM.filter' (op := sep) (unit := emp) (fun k v => decide (φ (k, v))) Φ m)
 
 /-- Corresponds to `big_sepM_filter` in Rocq Iris. -/
 theorem filter [BIAffine PROP] {Φ : K → V → PROP} {m : M V}
