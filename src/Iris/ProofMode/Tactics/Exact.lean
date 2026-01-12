@@ -11,15 +11,12 @@ namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 elab "iexact" colGt hyp:ident : tactic => do
-  let (mvar, { bi, hyps, goal, .. }) ← istart (← getMainGoal)
-  mvar.withContext do
-  let gs ← Goals.new bi
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
   let uniq ← hyps.findWithInfo hyp
   let ⟨e', _, _, out, p, _, pf⟩ := hyps.remove true uniq
 
-  let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(FromAssumption $p .in $out $goal)
+  let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption $p .in $out $goal)
     | throwError "iexact: cannot unify {out} and {goal}"
   let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
 
   mvar.assign q(assumption (Q := $goal) $pf)
-  replaceMainGoal (← gs.getGoals)

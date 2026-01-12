@@ -14,18 +14,14 @@ theorem from_and_intro [BI PROP] {P Q A1 A2 : PROP} [inst : FromAnd Q A1 A2]
   (and_intro h1 h2).trans inst.1
 
 elab "isplit" : tactic => do
-  let (mvar, { prop, bi, e, hyps, goal, .. }) ← istart (← getMainGoal)
-  mvar.withContext do
+  ProofModeM.runTactic λ mvar { prop, hyps, goal, .. } => do
 
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
-  let _ ← synthInstanceQ q(FromAnd $goal $A1 $A2)
-  let m1 : Q($e ⊢ $A1) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { prop, bi, hyps, goal := A1, .. }
-  let m2 : Q($e ⊢ $A2) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { prop, bi, hyps, goal := A2, .. }
+  let some _ ← ProofModeM.trySynthInstanceQ q(FromAnd $goal $A1 $A2) | throwError "isplit: {goal} is not a conjunction"
+  let m1 ← addBIGoal hyps A1
+  let m2 ← addBIGoal hyps A2
   mvar.assign q(from_and_intro (Q := $goal) $m1 $m2)
-  replaceMainGoal [m1.mvarId!, m2.mvarId!]
 
 
 theorem split_es [BI PROP] {Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : emp ∗ Q ⊣⊢ Q1 ∗ Q2 :=
@@ -98,8 +94,7 @@ def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : TacticM Uni
     | .splitRight => true
 
   -- extract environment
-  let (mvar, { u, prop, bi, hyps, goal, .. }) ← istart (← getMainGoal)
-  mvar.withContext do
+  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
 
   let mut uniqs : NameSet := {}
   for name in names do
@@ -107,17 +102,15 @@ def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : TacticM Uni
 
   let Q1 ← mkFreshExprMVarQ prop
   let Q2 ← mkFreshExprMVarQ prop
-  let _ ← synthInstanceQ q(FromSep $goal $Q1 $Q2)
+  let some _ ← ProofModeM.trySynthInstanceQ q(FromSep $goal $Q1 $Q2) |
+    throwError "isplit: {goal} is not a separating conjunction"
 
   -- split conjunction
-  let ⟨el, er, lhs, rhs, pf⟩ := hyps.split bi (fun _ uniq => uniqs.contains uniq == splitRight)
+  let ⟨_, _, lhs, rhs, pf⟩ := hyps.split bi (fun _ uniq => uniqs.contains uniq == splitRight)
 
-  let m1 : Q($el ⊢ $Q1) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { u, prop, bi, hyps := lhs, goal := Q1, .. }
-  let m2 : Q($er ⊢ $Q2) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { u, prop, bi, hyps := rhs, goal := Q2, .. }
+  let m1 ← addBIGoal lhs Q1
+  let m2 ← addBIGoal rhs Q2
   mvar.assign q(sep_split (Q := $goal) $pf $m1 $m2)
-  replaceMainGoal [m1.mvarId!, m2.mvarId!]
 
 elab "isplitl" "[" names:(colGt ident)* "]": tactic => do
   isplitCore .splitLeft names

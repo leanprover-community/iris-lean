@@ -86,6 +86,13 @@ instance intoForall_intuitionistically [BI PROP] (P : PROP) (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(□ P) (fun a => iprop(□ (Φ a))) where
   into_forall := (intuitionistically_mono h.1).trans intuitionistically_forall_1
 
+instance intoForall_wand_pure [BI PROP] (P Q : PROP) Φ
+    [h : FromPure a P Φ] : IntoForall iprop(P -∗ Q) (fun _ : Φ => Q) where
+  into_forall := forall_intro λ hΦ =>
+    emp_sep.2.trans <| (sep_mono_l <|
+      (affinelyIf_emp.mpr.trans (affinelyIf_mono (pure_intro hΦ))).trans
+        h.1).trans wand_elim_r
+
 -- FromExists
 instance (priority := default + 10) fromExists_exists [BI PROP] (Φ : α → PROP) :
     FromExists iprop(∃ a, Φ a) Φ := ⟨.rfl⟩
@@ -137,6 +144,7 @@ instance intoExists_persistently [BI PROP] {P : PROP} (Φ : α → PROP) [h : In
 instance (priority := default - 10) fromAnd_and [BI PROP] (P1 P2 : PROP) :
     FromAnd iprop(P1 ∧ P2) P1 P2 := ⟨.rfl⟩
 
+@[ipm_backtrack]
 instance (priority := default + 30) fromAnd_sep_persistent_l [BI PROP] (P1 P1' P2 : PROP)
     [Persistent P1] [h : IntoAbsorbingly P1' P1] : FromAnd iprop(P1 ∗ P2) P1' P2 where
   from_and := by
@@ -144,6 +152,7 @@ instance (priority := default + 30) fromAnd_sep_persistent_l [BI PROP] (P1 P1' P
       sep_mono_l <| (affinely_mono ?_).trans intuitionistically_elim
     exact (absorbingly_mono persistent).trans absorbingly_persistently.1
 
+@[ipm_backtrack]
 instance (priority := default + 20) fromAnd_sep_persistent_r [BI PROP] (P1 P2 P2' : PROP)
     [Persistent P2] [h : IntoAbsorbingly P2' P2] : FromAnd iprop(P1 ∗ P2) P1 P2' where
   from_and := by
@@ -167,11 +176,13 @@ instance (priority := default + 10) fromAnd_persistently_sep [BI PROP] (P Q1 Q2 
 instance (priority := default - 10) intoAnd_and (p : Bool) [BI PROP] (P Q : PROP) :
     IntoAnd p iprop(P ∧ Q) P Q := ⟨.rfl⟩
 
+@[ipm_backtrack]
 instance intoAnd_and_affine_l [BI PROP] (P Q Q' : PROP) [Affine P]
     [h : FromAffinely Q' Q] : IntoAnd false iprop(P ∧ Q) P Q' where
   into_and := (and_mono_l (affine_affinely _).2).trans <|
     affinely_and_l.1.trans <| affinely_and.1.trans <| and_mono (affine_affinely _).1 h.1
 
+@[ipm_backtrack]
 instance intoAnd_and_affine_r [BI PROP] (P P' Q : PROP) [Affine Q]
     [h : FromAffinely P' P] : IntoAnd false iprop(P ∧ Q) P' Q where
   into_and := (and_mono_r (affine_affinely _).2).trans <|
@@ -235,6 +246,7 @@ instance (priority := default + 10) fromSep_persistently [BI PROP] (P Q1 Q2 : PR
   from_sep := persistently_sep_2.trans (persistently_mono h.1)
 
 -- AndIntoSep
+@[ipm_class]
 class inductive AndIntoSep [BI PROP] : PROP → PROP → PROP → PROP → Prop
   | affine (P Q Q' : PROP) [Affine P] [h : FromAffinely Q' Q] : AndIntoSep P P Q Q'
   | affinely (P Q : PROP) : AndIntoSep P iprop(<affine> P) Q Q
@@ -245,6 +257,7 @@ attribute [instance] AndIntoSep.affine AndIntoSep.affinely
 instance intoSep_sep [BI PROP] (P Q : PROP) : IntoSep iprop(P ∗ Q) P Q := ⟨.rfl⟩
 
 set_option synthInstance.checkSynthOrder false in
+@[ipm_backtrack]
 instance intoSep_and_persistent_l [BI PROP] (P Q P' Q' : PROP) [Persistent P]
     [inst : AndIntoSep P P' Q Q'] : IntoSep iprop(P ∧ Q) P' Q' where
   into_sep :=
@@ -255,6 +268,7 @@ instance intoSep_and_persistent_l [BI PROP] (P Q P' Q' : PROP) [Persistent P]
     | _, AndIntoSep.affinely .. => persistent_and_affinely_sep_l_1
 
 set_option synthInstance.checkSynthOrder false in
+@[ipm_backtrack]
 instance intoSep_and_persistent_r [BI PROP] (P Q P' Q' : PROP) [Persistent Q]
     [inst : AndIntoSep Q Q' P P'] : IntoSep iprop(P ∧ Q) P' Q' where
   into_sep :=
@@ -352,6 +366,7 @@ instance (priority := default - 10) intoPersistently_persistent [BI PROP] (P : P
   into_persistently := h.1
 
 -- FromAffinely
+@[ipm_backtrack]
 instance fromAffinely_affine [BI PROP] (P : PROP) [Affine P] : FromAffinely P P true where
   from_affinely := affinely_elim
 

@@ -3,7 +3,7 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-import Iris.ProofMode.Goals
+import Iris.ProofMode.Expr
 
 /-
 This file implements a custom typeclass synthesis algorithm that is used for the proof mode typeclasses.
@@ -26,7 +26,6 @@ The `InOut` type in Classes.lean is used to dynamically determine, which paramet
 ignores `outParam` and `semiOutParam` annotations, but it is still recommended to add these annotations as documentation.
 
 The `#imp_synth` command allows testing ipm synthesis, similar to the `#synth` command.
-
 -/
 
 namespace Iris.ProofMode
@@ -143,13 +142,22 @@ protected def trySynthInstance (type : Expr) (maxResultSize? : Option Nat := non
     (toLOptionM <| ProofMode.synthInstance? type maxResultSize?)
     (fun _ => pure LOption.undef)
 
+protected def synthInstance (type : Expr) (maxResultSize? : Option Nat := none) : MetaM (Expr × Std.HashSet MVarId) :=
+  catchInternalId isDefEqStuckExceptionId
+    (do
+      let result? ← ProofMode.synthInstance? type maxResultSize?
+      match result? with
+      | some result => pure result
+      | none        => do _ ← throwFailedToSynthesize type; unreachable!)
+    (fun _ => do _ ← throwFailedToSynthesize type; unreachable!)
+
+/- It is recommended to use ProofModeM.trySynthInstanceQ and ProofModeM.synthInstanceQ that automatically handle the newly spawed goals. -/
+
 protected def trySynthInstanceQ (α : Q(Sort u)) : MetaM (LOption (Q($α) × Std.HashSet MVarId)) :=
   ProofMode.trySynthInstance α
 
-protected def trySynthInstanceQAddingGoals {prop : Q(Type u)} {bi : Q(BI $prop)} (gs : Goals bi) (α : Q(Sort v)) : MetaM (Option Q($α)) := do
-  let LOption.some (e, mvars) ← ProofMode.trySynthInstance α | return none
-  mvars.forM gs.addPureGoal
-  return some e
+protected def synthInstanceQ (α : Q(Sort u)) : MetaM (Q($α) × Std.HashSet MVarId) :=
+  ProofMode.synthInstance α
 
 syntax (name := ipm_synth) "#ipm_synth " term : command
 
