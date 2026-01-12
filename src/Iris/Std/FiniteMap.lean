@@ -28,7 +28,7 @@ namespace Iris.Std
 The type `M` represents a finite map from keys of type `K` to values of type `V`.
 
 This corresponds to Rocq's `FinMap` class from stdpp. -/
-class FiniteMap (M : Type u → Type _) (K : outParam (Type v)) where
+class FiniteMap (K : outParam (Type u)) (M : Type u' → Type _) where
   /-- Lookup a key in the map, returning `none` if not present.
       Corresponds to Rocq's `lookup` (notation `!!`). -/
   get? : M V → K → Option V
@@ -49,13 +49,13 @@ class FiniteMap (M : Type u → Type _) (K : outParam (Type v)) where
   /-- Fold over all key-value pairs in the map.
       The order of folding depends on the internal representation.
       Corresponds to Rocq's `map_fold`. -/
-  fold {A : Type _} : (K → V → A → A) → A → M V → A
+  fold {A : Type u'} : (K → V → A → A) → A → M V → A
 
 export FiniteMap (get? insert delete toList ofList fold)
 
 namespace FiniteMap
 
-variable {M : Type u → Type _} {K : Type v} [FiniteMap M K]  {V : Type _}
+variable {K : Type u} {V : Type u'} {M : Type u' → Type _} [FiniteMap K M]
 
 /-- Empty map instance for `∅` notation. -/
 instance : EmptyCollection (M V) := ⟨empty⟩
@@ -131,13 +131,13 @@ instance : SDiff (M V) := ⟨difference⟩
     Given `f : K → K'`, `kmap f m` transforms a map with keys of type `K`
     into a map with keys of type `K'`.
     Corresponds to Rocq's `kmap`. -/
-def kmap {M' : Type _ → _} {K' : Type v'} [FiniteMap M' K'] (f : K → K') (m : M V) : (M' V) :=
+def kmap {K' : Type u} {M' : Type u' → _} [FiniteMap K' M'] (f : K → K') (m : M V) : (M' V) :=
   ofList ((toList m).map (fun (k, v) => (f k, v)))
 
 /-- Convert a list to a map with sequential natural number keys starting from `start`.
     `map_seq start [v₀, v₁, v₂, ...]` creates a map `{start ↦ v₀, start+1 ↦ v₁, start+2 ↦ v₂, ...}`.
     Corresponds to Rocq's `map_seq`. -/
-def map_seq [FiniteMap M Nat] (start : Nat) (l : List V) : M V :=
+def map_seq [FiniteMap Nat M] (start : Nat) (l : List V) : M V :=
   ofList (l.mapIdx (fun i v => (start + i, v)))
 
 /-- Check if a key is the first key in the map's `toList` representation.
@@ -153,13 +153,13 @@ def map_Forall (P : K → V → Prop) (m : M V) : Prop :=
 end FiniteMap
 
 /-- Membership instance for finite maps: `k ∈ m` means the key `k` is in the map `m`. -/
-instance {M : Type u → Type _} {K : Type v}  [inst : FiniteMap M K] : Membership K (M V) :=
+instance  {K : Type u} {M : Type u' → Type _}  [inst : FiniteMap K M] : Membership K (M V) :=
   ⟨fun (m : M V) (k : K) => (inst.get? m k).isSome⟩
 
 /-- Laws that a finite map implementation must satisfy.
     Corresponds to Rocq's `FinMap` class axioms. -/
-class FiniteMapLaws (M : Type u → Type _) (K : Type _)
-    [DecidableEq K] [FiniteMap M K] where
+class FiniteMapLaws (K : (outParam (Type u))) (M : Type u' → Type _)
+    [DecidableEq K] [FiniteMap K M] where
   /-- Corresponds to Rocq's `map_eq`. -/
   map_eq : ∀ (m₁ m₂ : M V), (∀ i, get? m₁ i = get? m₂ i) → m₁ = m₂
   /-- Corresponds to Rocq's `lookup_empty`. -/
@@ -183,24 +183,18 @@ class FiniteMapLaws (M : Type u → Type _) (K : Type _)
   /-- Corresponds to Rocq's implicit behavior of `list_to_map`. -/
   ofList_cons : ∀ (k : K) (v : V) (l : List (K × V)),
     (ofList ((k, v) :: l) : M V) = insert (ofList l) k v
-  /-- Folding over the empty map returns the initial accumulator.
-      Corresponds to Rocq's `map_fold_empty`. -/
-  fold_empty : ∀ {A : Type u'} (f : K → V → A → A) (b : A),
-    fold f b (∅ : M V) = b
-  fold_fmap_ind (P : M V → Prop) :
-    P ∅ →
-    (∀ i x m,
-      get? m i = none →
-      (∀ A' B (f : K → A' → B → B) (g : V → A') b x',
-        fold f b (insert ((FiniteMap.map g m)) i x') = f i x' (fold f b (FiniteMap.map g m))) →
-      P m →
-      P (insert m i x)) →
-    ∀ m, P m
-
+  /-- Corresponds to Rocq's `map_to_list_spec`. -/
+  map_to_list_spec (m : M V) :
+    (toList m).Nodup ∧ (∀ i x, (i, x) ∈ toList m ↔ get? m i = some x)
+  /-- Corresponds to Rocq's `map_ind`. -/
+  map_ind {P : M V → Prop}
+    (hemp : P ∅)
+    (hins : ∀ i x m, get? m i = none → P m → P (insert m i x))
+    (m : M V) : P m
 
 /-- Self-referential extended laws (for filterMap, filter on the same type). -/
-class FiniteMapLawsSelf (M : Type u → _) (K : Type v)
-    [DecidableEq K] [FiniteMap M K] [FiniteMapLaws M K] where
+class FiniteMapLawsSelf (K : outParam (Type u)) (M : Type u' → Type _)
+    [DecidableEq K] [FiniteMap K M] [FiniteMapLaws K M] where
   /-- toList of filterMap (omap) is related to filterMap over toList. -/
   toList_filterMap : ∀ (m : M V) (f : V → Option V),
     (toList (FiniteMap.filterMap (M := M) f m)).Perm
@@ -209,23 +203,12 @@ class FiniteMapLawsSelf (M : Type u → _) (K : Type v)
   toList_filter : ∀ (m : M V) (φ : K → V → Bool),
     (toList (FiniteMap.filter (M := M) φ m)).Perm
       ((toList m).filter (fun kv => φ kv.1 kv.2))
-  /-- toList of union for disjoint maps.
-      Corresponds to Rocq's implicit behavior from `map_to_list_union`. -/
-  toList_union_disjoint : ∀ (m₁ m₂ : M V),
-    FiniteMap.Disjoint m₁ m₂ →
-    (toList (m₁ ∪ m₂)).Perm (toList m₁ ++ toList m₂)
-  /-- toList of difference is related to filter over toList. -/
-  toList_difference : ∀ (m₁ m₂ : M V),
-    (toList (m₁ \ m₂)).Perm
-      ((toList m₁).filter (fun kv => (get? m₂ kv.1).isNone))
 
 /-- Laws for kmap operation (key transformation). -/
-class FiniteMapKmapLaws (M : Type _ → _) (M' : Type _ → _) (K : Type _) (K' : Type _)
-    [DecidableEq K] [DecidableEq K'] [FiniteMap M K] [FiniteMap M' K']
-    [FiniteMapLaws M K] [FiniteMapLaws M' K'] where
+class FiniteMapKmapLaws (K : outParam (Type u)) (K' : outParam (Type u)) (M : Type u' → Type _) (M' : Type u' → Type _)
+    [DecidableEq K] [DecidableEq K'] [FiniteMap K M] [FiniteMap K' M']
+    [FiniteMapLaws K M] [FiniteMapLaws K' M'] where
   /-- toList of kmap is related to mapping over toList.
-      For an injective function `f : K → K'`, `toList (kmap f m)` is a permutation of
-      `(toList m).map (fun (k, v) => (f k, v))`.
       Corresponds to Rocq's `map_to_list_kmap`. -/
   toList_kmap : ∀ (f : K → K') (m : M V),
     (∀ {x y}, f x = f y → x = y) →  -- f is injective
@@ -233,7 +216,7 @@ class FiniteMapKmapLaws (M : Type _ → _) (M' : Type _ → _) (K : Type _) (K' 
       ((toList m).map (fun (k, v) => (f k, v)))
 
 /-- Laws for map_seq operation (list to indexed map). -/
-class FiniteMapSeqLaws (M : Type u → _) [FiniteMap M Nat] [FiniteMapLaws M Nat] where
+class FiniteMapSeqLaws (M : Type u → Type _) [FiniteMap Nat M] [FiniteMapLaws Nat M] where
   /-- toList of map_seq is related to zip with sequence.
       `toList (map_seq start l)` is a permutation of `zip (seq start (length l)) l`.
       Corresponds to Rocq's `map_to_list_seq`. -/
@@ -241,18 +224,22 @@ class FiniteMapSeqLaws (M : Type u → _) [FiniteMap M Nat] [FiniteMapLaws M Nat
     (toList (FiniteMap.map_seq start l : M V)).Perm
       ((List.range' start l.length).zip l)
 
-export FiniteMapLaws (map_eq lookup_empty lookup_insert_eq lookup_insert_ne lookup_delete_eq
-lookup_delete_ne
-ofList_nil ofList_cons fold_empty fold_fmap_ind)
+export FiniteMapLaws (map_eq
+lookup_empty
+lookup_insert_eq lookup_insert_ne
+lookup_delete_eq lookup_delete_ne
+ofList_nil ofList_cons
+map_to_list_spec
+map_ind)
 
-export FiniteMapLawsSelf (toList_filterMap toList_filter toList_union_disjoint toList_difference)
+export FiniteMapLawsSelf (toList_filterMap toList_filter)
 export FiniteMapKmapLaws (toList_kmap)
 export FiniteMapSeqLaws (toList_map_seq)
 
 namespace FiniteMapLaws
 
-variable {M : Type _ → _} {K : Type v} {V : Type _}
-variable [DecidableEq K] [FiniteMap M K] [FiniteMapLaws M K]
+variable {K : Type u} {V : Type u'} {M : Type u' → Type _}
+variable [DecidableEq K] [FiniteMap K M] [FiniteMapLaws K M]
 
 /-- Auxiliary lemma: if get? (ofList l) k = some v, then (k, v) ∈ l -/
 private theorem mem_of_get?_ofList (l : List (K × V)) (k : K) (v : V) :
@@ -303,20 +290,6 @@ theorem lookup_insert_delete (m : M V) (k k' : K) (v : V) :
   · simp [h, lookup_insert_eq]
   · simp [lookup_insert_ne _ _ _ _ h, lookup_delete_ne _ _ _ h]
 
-/-- Corresponds to Rocq's `map_to_list_spec`.
-  Rocq proof:
-  apply (map_fold_weak_ind (λ l m,
-    NoDup l ∧ ∀ i x, (i,x) ∈ l ↔ m !! i = Some x)); clear m.
-  { split; [constructor|]. intros i x. by rewrite elem_of_nil, lookup_empty. }
-  intros i x m l ? [IH1 IH2]. split; [constructor; naive_solver|].
-  intros j y. rewrite elem_of_cons, IH2.
-  unfold insert, map_insert. destruct (decide (i = j)) as [->|].
-  - rewrite lookup_partial_alter_eq. naive_solver.
-  - rewrite lookup_partial_alter_ne by done. naive_solver.
--/
-private theorem map_to_list_spec (m : M V) :
-    (toList m).Nodup ∧ (∀ i x, (i, x) ∈ toList m ↔ get? m i = some x) := by sorry
-
 /-- Corresponds to Rocq's `NoDup_map_to_list`. -/
 theorem NoDup_map_to_list (m : M V): (toList m).Nodup := by
    apply (map_to_list_spec m).1
@@ -355,7 +328,7 @@ theorem NoDup_map_to_list_keys (m : M V): (toList m).map Prod.fst |>.Nodup := by
   -- We have (k₁, v₁) and (k₂, v₂) both in toList m with k₁ = k₂
   simp at heq
   -- By map_to_list_spec, both satisfy: get? m kᵢ = some vᵢ
-  have ⟨_, hmem⟩ := map_to_list_spec m
+  obtain ⟨_, hmem⟩ := map_to_list_spec (M := M) (K := K) (V := V) m
   have hv1 : get? m k₁ = some v₁ := (hmem k₁ v₁).mp h1
   have hv2 : get? m k₂ = some v₂ := (hmem k₂ v₂).mp h2
   -- Since k₁ = k₂, we have get? m k₁ = get? m k₂
@@ -367,7 +340,7 @@ theorem NoDup_map_to_list_keys (m : M V): (toList m).map Prod.fst |>.Nodup := by
   ext <;> simp [heq]
 
 /-- Corresponds to Rocq's `elem_of_map_to_list`. -/
-theorem elem_of_map_to_list (m : M V) : ∀ k v, (k, v) ∈ toList m ↔ get? m k = some v := by 
+theorem elem_of_map_to_list (m : M V) : ∀ k v, (k, v) ∈ toList m ↔ get? m k = some v := by
   apply (map_to_list_spec m).2
 
 /-- Corresponds to Rocq's `elem_of_list_to_map_2`. -/
@@ -419,11 +392,12 @@ theorem elem_of_list_to_map_1 (l : List (K × V)) (i : K) (x : V) :
       have : get? (ofList l : M V) i = some x := ih hnodup_tail hmem'
       rw [ofList_cons, lookup_insert_ne _ _ _ _ hne, this]
 
-/-- Corresponds to Rocq's `elem_of_list_to_map`
-Rocq Proof:
-    split; auto using elem_of_list_to_map_1, elem_of_list_to_map_2.  -/
+/-- Corresponds to Rocq's `elem_of_list_to_map` -/
 theorem elem_of_list_to_map (l : List (K × V)) i x (hnodup : (l.map Prod.fst).Nodup):
-   (i,x) ∈ l ↔ get? (ofList l : M V) i = some x := by sorry
+   (i,x) ∈ l ↔ get? (ofList l : M V) i = some x := by
+    constructor
+    apply elem_of_list_to_map_1; exact hnodup
+    apply elem_of_list_to_map_2
 
 /-- Corresponds to Rocq's `list_to_map_inj`. -/
 theorem list_to_map_inj [DecidableEq V] (l1 l2 : List (K × V)) :
@@ -466,7 +440,7 @@ theorem list_to_map_to_list (m : M V) :
   apply list_to_map_inj (M := M) (K:=K)
   · exact NoDup_map_to_list_keys (M := M) (K := K) (V := V) (ofList l)
   · exact hnodup
-  rw [list_to_map_to_list] 
+  rw [list_to_map_to_list]
 
 /-- Two maps with the same get? behavior have permutation-equivalent toLists. -/
 theorem toList_perm_eq_of_get?_eq [DecidableEq V] {m₁ m₂ : M V}
@@ -591,12 +565,17 @@ theorem insert_delete_id (m : M V) (i : K) (x : V) :
     simp [lookup_insert_eq, h]
   · simp [lookup_insert_ne _ _ _ _ hij, lookup_delete_ne _ _ _ hij]
 
-
-  /-- Corresponds to Rocq's `map_to_list_empty`. 
-  Rocq proof:
-  apply elem_of_nil_inv. intros [i x].
-  rewrite elem_of_map_to_list. apply lookup_empty_Some. -/
-theorem map_to_list_empty : toList (∅ : M V) = [] := by sorry
+  /-- Corresponds to Rocq's `map_to_list_empty`. -/
+theorem map_to_list_empty : toList (∅ : M V) = [] := by
+  -- Show that the list is empty by proving no element can be in it
+  apply List.eq_nil_iff_forall_not_mem.mpr
+  intro ⟨i, x⟩ hmem
+  -- Use elem_of_map_to_list to rewrite membership
+  rw [elem_of_map_to_list] at hmem
+  -- Now we have get? ∅ i = some x, but lookup_empty says get? ∅ i = none
+  rw [lookup_empty] at hmem
+  -- Contradiction: none ≠ some x
+  exact Option.noConfusion hmem
 
   /-- Corresponds to Rocq's `map_to_list_insert`. -/
 theorem map_to_list_insert [DecidableEq V] : ∀ (m : M V) k v, get? m k = none →
@@ -649,100 +628,6 @@ theorem eq_empty_iff (m : M V) : m = ∅ ↔ ∀ k, get? m k = none := by
     intro k
     rw [h, lookup_empty]
 
-/-- Corresponds to Rocq's `map_ind`. -/
-theorem map_ind {P : M V → Prop}
-    (hemp : P ∅)
-    (hins : ∀ i x m, get? m i = none → P m → P (insert m i x))
-    (m : M V) : P m := by
-    -- Use fold_fmap_ind to prove map_ind
-    apply fold_fmap_ind P hemp
-    intro i x m hi _ hPm
-    exact hins i x m hi hPm
-
-/-- Corresponds to Rocq's `map_fold_ind`
-Rocq proof: 
-  intros Hemp Hins m.
-  induction m as [|i x m ? Hfold IH] using map_fold_fmap_ind; [done|].
-  apply Hins; [done| |done]. intros B f b x'.
-  assert (m = id <$> m) as →.
-  { apply map_eq; intros j; by rewrite lookup_fmap, option_fmap_id. }
-  apply Hfold.
-    -/
-private theorem map_fold_ind (P : M V → Prop) :
-  P ∅ →
-  (∀ i x m,
-    get? m i = none →
-    (∀ B (f : K → V → B → B) b x',
-      fold f b (insert m i x') = f i x' (fold f b m)) →
-    P m →
-    P (insert m i x)) →
-  ∀ m, P m := by sorry
-
-
-/-- Corresponds to Rocq's `map_fold_weak_ind`. -/
-theorem fold_weak_ind {B : Type u''}
-    (P : B → M V → Prop) (f : K → V → B → B) (b : B)
-    (hemp : P b ∅)
-    (hins : ∀ i x m r, get? m i = none → P r m → P (f i x r) (insert m i x))
-    (m : M V) : P (fold f b m) m := by
-  sorry
-
-/-- Induction principle with first key constraint: prove properties about maps by induction,
-    where the inductive step requires that the inserted key becomes the first key.
-
-    Corresponds to Rocq's `map_first_key_ind`. -/
-theorem map_first_key_ind (P : M V → Prop)
-    (hemp : P ∅)
-    (hins : ∀ i x m, get? m i = none → FiniteMap.firstKey (insert m i x) i → P m → P (insert m i x))
-    (m : M V) : P m := by
-  sorry
-
-/-- Corresponds to Rocq's `map_fold_foldr` 
-Rocq proof:
-  unfold map_to_list. induction m as [|i x m ? Hfold IH] using map_fold_ind.
-  - by rewrite !map_fold_empty.
-  - by rewrite !Hfold, IH.
--/
-theorem fold_foldr (f : K → V → B → B) b (m : M V) :
-  fold f b m = List.foldr (fun ⟨k, v⟩ b => f k v b) b (toList m) := by sorry
-
-
-/-- Corresponds to Rocq's `map_fold_fmap`
-Rocq Proof:
-  induction m as [|i x m ? Hfold IH] using map_fold_fmap_ind.
-  { by rewrite fmap_empty, !map_fold_empty. }
-  rewrite fmap_insert. rewrite <-(map_fmap_id m) at 2. rewrite !Hfold.
-  by rewrite IH, map_fmap_id. -/
-theorem fold_map (f : K → V' → B → B) (g : V → V') b (m : M V) :
-  fold f b (FiniteMap.map g m) = fold (fun i => f i ∘ g) b m := by sorry
-
-
-/-- toList of map (fmap) is a permutation of mapping over toList.
-    This is a weaker form that we can prove without the fold-based infrastructure.
-    The stronger equality version (`toList_map_eq`) would require `fold_map` and `fold_foldr`. -/
-theorem toList_map [DecidableEq V'] : ∀ (m : M V) (f : V → V'),
-  (toList (FiniteMap.map f m)).Perm
-      ((toList m).map (fun kv => (kv.1, f kv.2))) := by
-  intro m f
-  simp only [FiniteMap.map]
-  -- toList (ofList ((toList m).map g)) is Perm to (toList m).map g
-  -- where g = fun kv => (kv.1, f kv.2)
-  apply map_to_list_to_map
-  -- Need to show: ((toList m).map g).map Prod.fst |>.Nodup
-  simp only [List.map_map]
-  show ((toList m).map (fun x => x.1)).Nodup
-  exact NoDup_map_to_list_keys m
-
-/-- toList of map (fmap) equals mapping over toList (equality version).
-    `toList (map f m) = (toList m).map (fun (k, v) => (k, f v))`
-    Corresponds to Rocq's `map_to_list_fmap`
-   Rocq proof:
-  unfold map_to_list. rewrite map_fold_fmap, !map_fold_foldr.
-  induction (map_to_list m) as [|[]]; f_equal/=; auto.
-  This requires `fold_map` and `fold_foldr` which are currently unimplemented. -/
-theorem toList_map_eq [DecidableEq V'] : ∀ (m : M V) (f : V → V'),
-  toList (FiniteMap.map f m) =
-      ((toList m).map (fun kv => (kv.1, f kv.2))) := by sorry
 
 /-- Corresponds to Rocq's `delete_delete_eq`. -/
 theorem delete_delete_eq (m : M V) (i : K) :
@@ -834,6 +719,7 @@ theorem insert_id' (m : M V) (i : K) (x : V) :
     simp [lookup_insert_eq, h]
   · simp [lookup_insert_ne _ _ _ _ hij]
 
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Corresponds to Rocq's `insert_empty`. -/
 theorem insert_empty (i : K) (x : V) :
     insert (∅ : M V) i x = FiniteMap.singleton i x := by
@@ -947,6 +833,7 @@ theorem map_Forall_empty (P : K → V → Prop) : FiniteMap.map_Forall P (∅ : 
   intro k v h
   simp [lookup_empty] at h
 
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Corresponds to Rocq's `map_Forall_impl`. -/
 theorem map_Forall_impl (P Q : K → V → Prop) (m : M V) :
     FiniteMap.map_Forall P m → (∀ k v, P k v → Q k v) → FiniteMap.map_Forall Q m := by
@@ -1013,6 +900,7 @@ theorem map_Forall_delete (P : K → V → Prop) (m : M V) (i : K) :
   · simp [lookup_delete_ne _ _ _ hik] at hget
     exact hfa k v hget
 
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Corresponds to Rocq's `map_disjoint_spec`. -/
 theorem map_disjoint_spec (m₁ m₂ : M V) :
     FiniteMap.Disjoint m₁ m₂ ↔ ∀ k, get? m₁ k = none ∨ get? m₂ k = none := by
@@ -1092,6 +980,22 @@ theorem map_disjoint_singleton_r (m : M V) (i : K) (x : V) :
     simp [hi] at hs1
   · simp [FiniteMap.singleton, lookup_insert_ne _ _ _ _ hik, lookup_empty] at hs2
 
+/-- toList of map (fmap) is a permutation of mapping over toList.
+    This is a weaker form that we can prove without the fold-based infrastructure.
+    The stronger equality version (`toList_map_eq`) would require `fold_map` and `fold_foldr`. -/
+theorem toList_map [DecidableEq V'] : ∀ (m : M V) (f : V → V'),
+  (toList (FiniteMap.map f m)).Perm
+      ((toList m).map (fun kv => (kv.1, f kv.2))) := by
+  intro m f
+  simp only [FiniteMap.map]
+  -- toList (ofList ((toList m).map g)) is Perm to (toList m).map g
+  -- where g = fun kv => (kv.1, f kv.2)
+  apply map_to_list_to_map
+  -- Need to show: ((toList m).map g).map Prod.fst |>.Nodup
+  simp only [List.map_map]
+  show ((toList m).map (fun x => x.1)).Nodup
+  exact NoDup_map_to_list_keys m
+
 /-- Corresponds to Rocq's `map_fmap_zip_with_r`.
     When `g1 (f x y) = x` and the domains of m1 and m2 match,
     mapping g1 over zipWith f m1 m2 gives back m1 (up to map equality). -/
@@ -1114,9 +1018,81 @@ theorem map_fmap_zipWith_l {V' V'' : Type _} [DecidableEq V'] [DecidableEq V'']
 
 end FiniteMapLaws
 
+-- namespace FiniteMapLawsFold
+
+-- variable {M : Type _ → _} {K : Type v} {V : Type _}
+-- variable [DecidableEq K] [FiniteMap M K] [FiniteMapLaws M K] [FiniteMapLawsFold M K]
+-- /-- Corresponds to Rocq's `map_fold_fmap`
+-- Rocq Proof:
+--   induction m as [|i x m ? Hfold IH] using map_fold_fmap_ind.
+--   { by rewrite fmap_empty, !map_fold_empty. }
+--   rewrite fmap_insert. rewrite <-(map_fmap_id m) at 2. rewrite !Hfold.
+--   by rewrite IH, map_fmap_id. -/
+-- theorem fold_map (f : K → V' → B → B) (g : V → V') b (m : M V) :
+--   fold f b (FiniteMap.map g m) = fold (fun i => f i ∘ g) b m := by sorry
+
+-- /-- toList of map (fmap) equals mapping over toList (equality version).
+--     `toList (map f m) = (toList m).map (fun (k, v) => (k, f v))`
+--     Corresponds to Rocq's `map_to_list_fmap`
+--    Rocq proof:
+--   unfold map_to_list. rewrite map_fold_fmap, !map_fold_foldr.
+--   induction (map_to_list m) as [|[]]; f_equal/=; auto. -/
+-- theorem toList_map_eq [DecidableEq V'] : ∀ (m : M V) (f : V → V'),
+--   toList (FiniteMap.map f m) =
+--       ((toList m).map (fun kv => (kv.1, f kv.2))) := by sorry
+
+
+-- /-- Corresponds to Rocq's `map_fold_ind`
+-- Rocq proof:
+--   intros Hemp Hins m.
+--   induction m as [|i x m ? Hfold IH] using map_fold_fmap_ind; [done|].
+--   apply Hins; [done| |done]. intros B f b x'.
+--   assert (m = id <$> m) as →.
+--   { apply map_eq; intros j; by rewrite lookup_fmap, option_fmap_id. }
+--   apply Hfold.
+--     -/
+-- private theorem map_fold_ind (P : M V → Prop) :
+--   P ∅ →
+--   (∀ i x m,
+--     get? m i = none →
+--     (∀ B (f : K → V → B → B) b x',
+--       fold f b (insert m i x') = f i x' (fold f b m)) →
+--     P m →
+--     P (insert m i x)) →
+--   ∀ m, P m := by sorry
+
+-- /-- Corresponds to Rocq's `map_fold_weak_ind`. -/
+-- theorem fold_weak_ind {B : Type u''}
+--     (P : B → M V → Prop) (f : K → V → B → B) (b : B)
+--     (hemp : P b ∅)
+--     (hins : ∀ i x m r, get? m i = none → P r m → P (f i x r) (insert m i x))
+--     (m : M V) : P (fold f b m) m := by
+--   sorry
+
+-- /-- Induction principle with first key constraint: prove properties about maps by induction,
+--     where the inductive step requires that the inserted key becomes the first key.
+
+--     Corresponds to Rocq's `map_first_key_ind`. -/
+-- theorem map_first_key_ind (P : M V → Prop)
+--     (hemp : P ∅)
+--     (hins : ∀ i x m, get? m i = none → FiniteMap.firstKey (insert m i x) i → P m → P (insert m i x))
+--     (m : M V) : P m := by
+--   sorry
+
+-- /-- Corresponds to Rocq's `map_fold_foldr`
+-- Rocq proof:
+--   unfold map_to_list. induction m as [|i x m ? Hfold IH] using map_fold_ind.
+--   - by rewrite !map_fold_empty.
+--   - by rewrite !Hfold, IH.
+-- -/
+-- theorem fold_foldr (f : K → V → B → B) b (m : M V) :
+--   fold f b m = List.foldr (fun ⟨k, v⟩ b => f k v b) b (toList m) := by sorry
+
+-- end FiniteMapLawsFold
+
 namespace FiniteMap
 
-variable {M : Type _ → _} {K : Type v} {V : Type w} [FiniteMap M K]
+variable {K : Type v} {M : Type u → _}  [FiniteMap K M]
 
 /-- Submap is reflexive. -/
 theorem submap_refl (m : M V) : m ⊆ m := fun _ _ h => h
@@ -1129,18 +1105,18 @@ theorem submap_trans {m₁ m₂ m₃ : M V} (h₁ : m₁ ⊆ m₂) (h₂ : m₂ 
 theorem disjoint_symm {m₁ m₂ : M V} (h : Disjoint m₁ m₂) : Disjoint m₂ m₁ :=
   fun k ⟨h₂, h₁⟩ => h k ⟨h₁, h₂⟩
 
-theorem map_disjoint_empty_r [DecidableEq K] [FiniteMapLaws M K] (m : M V) : Disjoint m (∅ : M V) :=
-  disjoint_symm (FiniteMapLaws.map_disjoint_empty_l m)
+theorem map_disjoint_empty_r [DecidableEq K] [FiniteMapLaws K M] (m : M V) : Disjoint m (∅ : M V) :=
+  disjoint_symm (FiniteMapLaws.map_disjoint_empty_l (K:= K) m)
 
 /-- `m₂` and `m₁ \ m₂` are disjoint. -/
-theorem disjoint_difference_r [DecidableEq K] [FiniteMapLaws M K] [FiniteMapLawsSelf M K]
+theorem disjoint_difference_r [DecidableEq K] [FiniteMapLaws K M] [FiniteMapLawsSelf K M]
     (m₁ m₂ : M V) : Disjoint m₂ (m₁ \ m₂) := by
   intro k ⟨h_in_m2, h_in_diff⟩
   rw [FiniteMapLaws.lookup_difference] at h_in_diff
   simp only [h_in_m2, ↓reduceIte, Option.isSome_none, Bool.false_eq_true] at h_in_diff
 
 /-- Corresponds to Rocq's `map_difference_union`. -/
-theorem map_difference_union [DecidableEq K] [FiniteMapLaws M K] [FiniteMapLawsSelf M K]
+theorem map_difference_union [DecidableEq K] [FiniteMapLaws K M] [FiniteMapLawsSelf K M]
     (m₁ m₂ : M V) (hsub : m₂ ⊆ m₁) : m₂ ∪ (m₁ \ m₂) = m₁ := by
   apply FiniteMapLaws.map_eq (M := M) (K := K) (V := V)
   intro k

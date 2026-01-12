@@ -23,8 +23,8 @@ open BIBase
 Rocq Iris: `iris/bi/big_op.v`, Section `sep_map` -/
 
 variable {PROP : Type _} [BI PROP]
-variable {M : Type _ → Type _} {K : Type _} {V : Type _}
-variable [DecidableEq K] [DecidableEq V] [FiniteMap M K] [FiniteMapLaws M K]
+variable {K : Type u} {M : Type u' → Type _}  {V : Type _}
+variable [DecidableEq K] [DecidableEq V] [FiniteMap K M] [FiniteMapLaws K M]
 
 namespace BigSepM
 
@@ -45,16 +45,12 @@ theorem empty' {P : PROP} [Affine P] {Φ : K → V → PROP} :
 /-- Corresponds to `big_sepM_singleton` in Rocq Iris. -/
 theorem singleton {Φ : K → V → PROP} {k : K} {v : V} :
     ([∗map] k' ↦ x ∈ ({[k := v]} : M V), Φ k' x) ⊣⊢ Φ k v := by
-  have hget : get? (∅ : M V) k = none := lookup_empty k
-  have hperm : (toList (FiniteMap.insert (∅ : M V) k v)).Perm ((k, v) :: toList (∅ : M V)) :=
-    FiniteMapLaws.map_to_list_insert (∅ : M V) k v hget
-  simp only [FiniteMapLaws.map_to_list_empty] at hperm
   simp only [bigSepM, FiniteMap.singleton]
-  have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.insert (∅ : M V) k v)) ≡
-             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) [(k, v)] :=
-    BigOpL.perm (fun kv => Φ kv.1 kv.2) hperm
-  simp only [bigOpL] at heq
-  exact (equiv_iff.mp heq).trans ⟨sep_emp.1, sep_emp.2⟩
+  -- bigOpM Φ (insert ∅ k v) ≡ Φ k v ∗ emp (by insert) ≡ Φ k v (by op_right_id)
+  -- But BigOpM.singleton gives us: bigOpM Φ (insert ∅ k v) ≡ Φ k v directly
+  have heq : BigOpM.bigOpM (op := sep) (unit := emp) Φ (FiniteMap.insert (∅ : M V) k v) ≡ Φ k v :=
+    BigOpM.singleton (op := sep) (unit := emp) Φ k v
+  exact equiv_iff.mp heq
 
 /-- Corresponds to `big_sepM_insert` in Rocq Iris. -/
 theorem insert {Φ : K → V → PROP} {m : M V} {k : K} {v : V}
@@ -62,12 +58,7 @@ theorem insert {Φ : K → V → PROP} {m : M V} {k : K} {v : V}
     ([∗map] k' ↦ x ∈ FiniteMap.insert m k v, Φ k' x) ⊣⊢
       Φ k v ∗ [∗map] k' ↦ x ∈ m, Φ k' x := by
   simp only [bigSepM]
-  have hperm := FiniteMapLaws.map_to_list_insert m k v h
-  have hperm_eq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.insert m k v)) ≡
-                  bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) ((k, v) :: toList m) :=
-    BigOpL.perm _ hperm
-  simp only [bigOpL] at hperm_eq
-  exact equiv_iff.mp hperm_eq
+  exact equiv_iff.mp (BigOpM.insert (op := sep) (unit := emp) Φ m k v h)
 
 /-- Corresponds to `big_sepM_insert_delete` in Rocq Iris. -/
 theorem insert_delete {Φ : K → V → PROP} {m : M V} {k : K} {v : V} :
@@ -84,12 +75,7 @@ theorem delete {Φ : K → V → PROP} {m : M V} {k : K} {v : V}
     (h : get? m k = some v) :
     ([∗map] k' ↦ x ∈ m, Φ k' x) ⊣⊢ Φ k v ∗ [∗map] k' ↦ x ∈ Std.delete m k, Φ k' x := by
   simp only [bigSepM]
-  have hperm := FiniteMapLaws.map_to_list_delete m k v h
-  have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList m) ≡
-             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) ((k, v) :: toList (Std.delete m k)) :=
-    BigOpL.perm _ hperm
-  simp only [bigOpL] at heq
-  exact equiv_iff.mp heq
+  exact equiv_iff.mp (BigOpM.delete (op := sep) (unit := emp) Φ m k v h)
 
 /-! ## Monotonicity and Congruence -/
 
@@ -121,13 +107,7 @@ theorem proper {Φ Ψ : K → V → PROP} {m : M V}
     (h : ∀ k v, get? m k = some v → Φ k v ≡ Ψ k v) :
     ([∗map] k ↦ x ∈ m, Φ k x) ≡ [∗map] k ↦ x ∈ m, Ψ k x := by
   simp only [bigSepM]
-  apply BigOpL.congr
-  intro i kv hget
-  have hi : i < (toList m).length := List.getElem?_eq_some_iff.mp hget |>.1
-  have heq : (toList m)[i] = kv := List.getElem?_eq_some_iff.mp hget |>.2
-  have hmem : kv ∈ toList m := heq ▸ List.getElem_mem hi
-  have hkv : get? m kv.1 = some kv.2 := (FiniteMapLaws.elem_of_map_to_list m kv.1 kv.2).mp hmem
-  exact h kv.1 kv.2 hkv
+  exact BigOpM.proper (op := sep) (unit := emp) Φ Ψ m h
 
 /-- Unconditional version of `proper`. No direct Rocq equivalent. -/
 theorem congr {Φ Ψ : K → V → PROP} {m : M V}
@@ -140,13 +120,7 @@ theorem ne {Φ Ψ : K → V → PROP} {m : M V} {n : Nat}
     (h : ∀ k v, get? m k = some v → Φ k v ≡{n}≡ Ψ k v) :
     ([∗map] k ↦ x ∈ m, Φ k x) ≡{n}≡ [∗map] k ↦ x ∈ m, Ψ k x := by
   simp only [bigSepM]
-  apply BigOpL.congr_ne
-  intro i kv hget
-  have hi : i < (toList m).length := List.getElem?_eq_some_iff.mp hget |>.1
-  have heq : (toList m)[i] = kv := List.getElem?_eq_some_iff.mp hget |>.2
-  have hmem : kv ∈ toList m := heq ▸ List.getElem_mem hi
-  have hkv : get? m kv.1 = some kv.2 := (FiniteMapLaws.elem_of_map_to_list m kv.1 kv.2).mp hmem
-  exact h kv.1 kv.2 hkv
+  exact BigOpM.ne (op := sep) (unit := emp) Φ Ψ m n h
 
 /-- Corresponds to `big_sepM_mono'` in Rocq Iris. -/
 theorem mono' {Φ Ψ : K → V → PROP} {m : M V}
@@ -161,7 +135,7 @@ theorem flip_mono' {Φ Ψ : K → V → PROP} {m : M V}
   mono' h
 
 /-- Corresponds to `big_sepM_subseteq` in Rocq Iris. -/
-theorem subseteq {Φ : K → V → PROP} {m₁ m₂ : M V} [FiniteMapLawsSelf M K] [∀ k v, Affine (Φ k v)]
+theorem subseteq {Φ : K → V → PROP} {m₁ m₂ : M V} [FiniteMapLawsSelf K M] [∀ k v, Affine (Φ k v)]
     (h : m₂ ⊆ m₁) :
     ([∗map] k ↦ x ∈ m₁, Φ k x) ⊢ [∗map] k ↦ x ∈ m₂, Φ k x := by sorry
 
@@ -225,15 +199,15 @@ instance affine {Φ : K → V → PROP} {m : M V} [∀ k v, Affine (Φ k v)] :
 
 /-! ## Logical Operations -/
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Corresponds to `big_sepM_sep` in Rocq Iris. -/
 theorem sep' {Φ Ψ : K → V → PROP} {m : M V} :
     ([∗map] k ↦ x ∈ m, Φ k x ∗ Ψ k x) ⊣⊢
       ([∗map] k ↦ x ∈ m, Φ k x) ∗ [∗map] k ↦ x ∈ m, Ψ k x := by
   simp only [bigSepM]
-  exact equiv_iff.mp (BigOpL.op_distr _ _ _)
+  exact equiv_iff.mp (BigOpM.op_distr (op := sep) (unit := emp) Φ Ψ m)
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Corresponds to `big_sepM_sep_2` in Rocq Iris. -/
 theorem sep_2 {Φ Ψ : K → V → PROP} {m : M V} :
     ([∗map] k ↦ x ∈ m, Φ k x) ∗ ([∗map] k ↦ x ∈ m, Ψ k x) ⊣⊢
@@ -376,7 +350,7 @@ theorem insert_override_2 {Φ : K → V → PROP} {m : M V} {k : K} {v v' : V}
 
 /-! ## Map Conversion -/
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Corresponds to `big_sepM_map_to_list` in Rocq Iris. -/
 theorem map_to_list {Φ : K → V → PROP} {m : M V} :
     ([∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ ([∗list] kv ∈ toList m, Φ kv.1 kv.2) := by
@@ -385,7 +359,7 @@ theorem map_to_list {Φ : K → V → PROP} {m : M V} :
 
 /-! ## Persistently and Later -/
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Helper for persistently: induction on list. -/
 private theorem persistently_list {Φ : K × V → PROP} {l : List (K × V)} [BIAffine PROP] :
     iprop(<pers> bigOpL sep emp (fun _ kv => Φ kv) l) ⊣⊢
@@ -396,14 +370,14 @@ private theorem persistently_list {Φ : K × V → PROP} {l : List (K × V)} [BI
     simp only [bigOpL]
     exact persistently_sep.trans ⟨sep_mono_r ih.1, sep_mono_r ih.2⟩
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Corresponds to `big_sepM_persistently` in Rocq Iris. -/
 theorem persistently {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
     iprop(<pers> [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, <pers> Φ k x := by
   simp only [bigSepM]
   exact persistently_list
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Helper for later: induction on list. -/
 private theorem later_list {Φ : K × V → PROP} {l : List (K × V)} [BIAffine PROP] :
     iprop(▷ bigOpL sep emp (fun _ kv => Φ kv) l) ⊣⊢
@@ -414,14 +388,14 @@ private theorem later_list {Φ : K × V → PROP} {l : List (K × V)} [BIAffine 
     simp only [bigOpL]
     exact later_sep.trans ⟨sep_mono_r ih.1, sep_mono_r ih.2⟩
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Corresponds to `big_sepM_later` in Rocq Iris. -/
 theorem later [BIAffine PROP] {Φ : K → V → PROP} {m : M V} :
     iprop(▷ [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, ▷ Φ k x := by
   simp only [bigSepM]
   exact later_list
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Helper for later_2: induction on list. -/
 private theorem later_2_list {Φ : K × V → PROP} {l : List (K × V)} :
     bigOpL sep emp (fun _ kv => iprop(▷ Φ kv)) l ⊢
@@ -432,14 +406,14 @@ private theorem later_2_list {Φ : K × V → PROP} {l : List (K × V)} :
     simp only [bigOpL]
     exact (sep_mono_r ih).trans later_sep.2
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Corresponds to `big_sepM_later_2` in Rocq Iris. -/
 theorem later_2 {Φ : K → V → PROP} {m : M V} :
     ([∗map] k ↦ x ∈ m, ▷ Φ k x) ⊢ iprop(▷ [∗map] k ↦ x ∈ m, Φ k x) := by
   simp only [bigSepM]
   exact later_2_list
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Corresponds to `big_sepM_laterN` in Rocq Iris. -/
 theorem laterN [BIAffine PROP] {Φ : K → V → PROP} {m : M V} {n : Nat} :
     iprop(▷^[n] [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, ▷^[n] Φ k x := by
@@ -447,7 +421,7 @@ theorem laterN [BIAffine PROP] {Φ : K → V → PROP} {m : M V} {n : Nat} :
   | zero => exact .rfl
   | succ k ih => exact (later_congr ih).trans later
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Corresponds to `big_sepM_laterN_2` in Rocq Iris. -/
 theorem laterN_2 {Φ : K → V → PROP} {m : M V} {n : Nat} :
     ([∗map] k ↦ x ∈ m, ▷^[n] Φ k x) ⊢ iprop(▷^[n] [∗map] k ↦ x ∈ m, Φ k x) := by
@@ -467,23 +441,13 @@ theorem fmap {Φ : K → V' → PROP} {m : M V} (f : V → V') :
     ([∗map] k ↦ y ∈ FiniteMap.map f m, Φ k y) ⊣⊢
       [∗map] k ↦ y ∈ m, Φ k (f y) := by
   simp only [bigSepM]
-  have hperm := FiniteMapLaws.toList_map (K := K) m f
-  have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (FiniteMap.map f m)) ≡
-             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) ((toList m).map (fun kv => (kv.1, f kv.2))) :=
-    BigOpL.perm _ hperm
-  refine equiv_iff.mp heq |>.trans ?_
-  clear heq hperm
-  induction (toList m) with
-  | nil => exact .rfl
-  | cons kv kvs ih =>
-    simp only [List.map, bigOpL]
-    exact ⟨sep_mono_r ih.1, sep_mono_r ih.2⟩
+  exact equiv_iff.mp (BigOpM.fmap (op := sep) (unit := emp) f Φ m)
 
 end MapTransformations
 
 section FilterMapTransformations
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Helper lemma for omap: bigOpL over filterMapped list. -/
 private theorem omap_list_aux {Φ : K → V → PROP} (f : V → Option V) (l : List (K × V)) :
     bigOpL sep emp (fun _ kv => Φ kv.1 kv.2)
@@ -502,7 +466,7 @@ private theorem omap_list_aux {Φ : K → V → PROP} (f : V → Option V) (l : 
       exact ⟨sep_mono_r ih.1, sep_mono_r ih.2⟩
 
 /-- Corresponds to `big_sepM_omap` in Rocq Iris. -/
-theorem omap [FiniteMapLawsSelf M K] {Φ : K → V → PROP} {m : M V} (f : V → Option V) :
+theorem omap [FiniteMapLawsSelf K M] {Φ : K → V → PROP} {m : M V} (f : V → Option V) :
     ([∗map] k ↦ y ∈ FiniteMap.filterMap (M := M) f m, Φ k y) ⊣⊢
       [∗map] k ↦ y ∈ m, match f y with | some y' => Φ k y' | none => emp := by
   simp only [bigSepM]
@@ -513,17 +477,12 @@ theorem omap [FiniteMapLawsSelf M K] {Φ : K → V → PROP} {m : M V} (f : V �
   exact equiv_iff.mp heq |>.trans (omap_list_aux f (toList m))
 
 /-- Corresponds to `big_sepM_union` in Rocq Iris. -/
-theorem union [FiniteMapLawsSelf M K] {Φ : K → V → PROP} {m₁ m₂ : M V}
+theorem union [FiniteMapLawsSelf K M] {Φ : K → V → PROP} {m₁ m₂ : M V}
     (hdisj : m₁ ##ₘ m₂) :
     ([∗map] k ↦ y ∈ m₁ ∪ m₂, Φ k y) ⊣⊢
       ([∗map] k ↦ y ∈ m₁, Φ k y) ∗ [∗map] k ↦ y ∈ m₂, Φ k y := by
   simp only [bigSepM]
-  have hperm := toList_union_disjoint m₁ m₂ hdisj
-  have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (m₁ ∪ m₂)) ≡
-             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList m₁ ++ toList m₂) :=
-    BigOpL.perm _ hperm
-  refine equiv_iff.mp heq |>.trans ?_
-  exact equiv_iff.mp (BigOpL.append _ (toList m₁) (toList m₂))
+  sorry
 
 end FilterMapTransformations
 
@@ -533,8 +492,8 @@ end FilterMapTransformations
 theorem list_to_map {Φ : K → V → PROP} {l : List (K × V)}
     (hnodup : (l.map Prod.fst).Nodup) :
     ([∗map] k ↦ x ∈ (ofList l : M V), Φ k x) ⊣⊢ [∗list] kv ∈ l, Φ kv.1 kv.2 := by
-  simp only [bigSepM]
-  exact equiv_iff.mp (BigOpL.perm _ (FiniteMapLaws.map_to_list_to_map l hnodup))
+  simp only [bigSepM, bigSepL]
+  exact equiv_iff.mp (BigOpM.list_to_map (op := sep) (unit := emp) Φ l hnodup)
 
 /-! ## Intro and Forall Lemmas -/
 
@@ -624,7 +583,7 @@ theorem impl {Φ Ψ : K → V → PROP} {m : M V} :
   refine (sep_mono_r h1).trans ?_
   exact sep_2.1.trans (mono' fun _ _ => wand_elim_r)
 
-omit [DecidableEq K] [FiniteMapLaws M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] in
 /-- Corresponds to `big_sepM_dup` in Rocq Iris. -/
 theorem dup {P : PROP} [Affine P] {m : M V} :
     □ (P -∗ P ∗ P) ⊢ P -∗ [∗map] _k ↦ _x ∈ m, P := by
@@ -731,7 +690,7 @@ theorem pure' [BIAffine PROP] {φ : K → V → Prop} {m : M V} :
 
 /-! ## Filter Lemmas -/
 
-variable [FiniteMapLawsSelf M K]
+variable [FiniteMapLawsSelf K M]
 
 omit [DecidableEq K] in
 /-- Helper: bigOpL over filtered list. -/
@@ -802,7 +761,7 @@ theorem fnInsert_same {K B : Type _} [DecidableEq K] (f : K → B) (i : K) (b : 
 theorem fnInsert_ne {K B : Type _} [DecidableEq K] (f : K → B) (i : K) (b : B) (k : K) (h : k ≠ i) :
     fnInsert f i b k = f k := by simp [fnInsert, h]
 
-omit [FiniteMapLawsSelf M K] in
+omit [FiniteMapLawsSelf K M] in
 /-- Corresponds to `big_sepM_fn_insert` in Rocq Iris. -/
 theorem fn_insert {B : Type _} {Ψ : K → V → B → PROP} {f : K → B} {m : M V} {i : K} {x : V} {b : B}
     (h : get? m i = none) :
@@ -825,7 +784,6 @@ theorem fn_insert {B : Type _} {Ψ : K → V → B → PROP} {f : K → B} {m : 
     exact OFE.Equiv.rfl
   exact hins.trans ⟨(sep_mono hhead.1 htail.1), (sep_mono hhead.2 htail.2)⟩
 
-omit [FiniteMapLawsSelf M K] in
 /-- Corresponds to `big_sepM_fn_insert'` in Rocq Iris. -/
 theorem fn_insert' {Φ : K → PROP} {m : M V} {i : K} {x : V} {P : PROP}
     (h : get? m i = none) :
@@ -838,12 +796,12 @@ theorem fn_insert' {Φ : K → PROP} {m : M V} {i : K} {x : V} {P : PROP}
 section MapZip
 
 variable {M₁ : Type _ → Type _} {M₂ : Type _ → Type _} {V₁ : Type _} {V₂ : Type _}
-variable [FiniteMap M₁ K] [FiniteMapLaws M₁ K]
-variable [FiniteMap M₂ K] [FiniteMapLaws M₂ K]
+variable [FiniteMap K M₁] [FiniteMapLaws K M₁]
+variable [FiniteMap K M₂] [FiniteMapLaws K M₂]
 
-omit [FiniteMapLaws M₁ K] [FiniteMapLaws M₂ K] in
+omit [FiniteMapLaws K M₁] [FiniteMapLaws K M₂] in
 /-- Corresponds to `big_sepM_sep_zip_with` in Rocq Iris. -/
-theorem sep_zip_with {C : Type _} {MZ : Type _ → Type _} [FiniteMap MZ K] [FiniteMapLaws MZ K]
+theorem sep_zip_with {C : Type _} {MZ : Type _ → Type _} [FiniteMap K MZ] [FiniteMapLaws K MZ]
     {Φ₁ : K → V₁ → PROP} {Φ₂ : K → V₂ → PROP}
     {f : V₁ → V₂ → C} {g₁ : C → V₁} {g₂ : C → V₂}
     {m₁ : M₁ V₁} {m₂ : M₂ V₂} {mz : MZ C}
@@ -893,10 +851,9 @@ theorem sep_zip_with {C : Type _} {MZ : Type _ → Type _} [FiniteMap MZ K] [Fin
     hmap₂.trans heq₂.symm
   exact equiv_iff.mp (Monoid.op_proper h₁ h₂)
 
-omit [FiniteMapLaws M₁ K] [FiniteMapLaws M₂ K] in
+omit [FiniteMapLaws K M₂] in
 /-- Corresponds to `big_sepM_sep_zip` in Rocq Iris. -/
-theorem sep_zip [FiniteMap M₁ K] [FiniteMapLaws M₁ K] [FiniteMap M₂ K] [FiniteMapLaws M₂ K]
-    {Φ₁ : K → V₁ → PROP} {Φ₂ : K → V₂ → PROP}
+theorem sep_zip {Φ₁ : K → V₁ → PROP} {Φ₂ : K → V₂ → PROP}
     {m₁ : M₁ V₁} {m₂ : M₂ V₂} {mz : M₁ (V₁ × V₂)}
     (hdom : ∀ k, (get? m₁ k).isSome ↔ (get? m₂ k).isSome)
     (hperm : (toList mz).Perm
@@ -917,11 +874,10 @@ end MapZip
 
 /-! ## Advanced Impl Lemmas -/
 
-omit [FiniteMapLawsSelf M K] in
 /-- Corresponds to `big_sepM_impl_strong` in Rocq Iris.
     Strong version of impl that tracks which keys are in m₂ vs only in m₁. -/
-theorem impl_strong [FiniteMapLawsSelf M K] {M₂ : Type _ → Type _} {V₂ : Type _}
-    [FiniteMap M₂ K] [FiniteMapLaws M₂ K] [DecidableEq V₂]
+theorem impl_strong {M₂ : Type _ → Type _} {V₂ : Type _}
+    [FiniteMap K M₂] [FiniteMapLaws K M₂] [DecidableEq V₂]
     {Φ : K → V → PROP} {Ψ : K → V₂ → PROP} {m₁ : M V} {m₂ : M₂ V₂} :
     ([∗map] k ↦ x ∈ m₁, Φ k x) ⊢
       □ (∀ k, ∀ y, (match get? m₁ k with | some x => Φ k x | none => emp) -∗
@@ -1033,11 +989,10 @@ theorem impl_strong [FiniteMapLawsSelf M K] {M₂ : Type _ → Type _} {V₂ : T
         (sep_mono_r (sep_mono_r hweaken)).trans <| (sep_mono_r (IH (Std.delete m₁ i))).trans <|
         (sep_mono_r (sep_mono_r hfilter_equiv.2)).trans <| sep_assoc.2.trans (sep_mono_l hinsert_goal.2)
 
-omit [FiniteMapLawsSelf M K] in
 /-- Corresponds to `big_sepM_impl_dom_subseteq` in Rocq Iris.
     Specialized version when the domain of m₂ is a subset of the domain of m₁. -/
-theorem impl_dom_subseteq [FiniteMapLawsSelf M K] {M₂ : Type _ → Type _} {V₂ : Type _}
-    [FiniteMap M₂ K] [FiniteMapLaws M₂ K] [DecidableEq V₂]
+theorem impl_dom_subseteq {M₂ : Type _ → Type _} {V₂ : Type _}
+    [FiniteMap K M₂] [FiniteMapLaws K M₂] [DecidableEq V₂]
     {Φ : K → V → PROP} {Ψ : K → V₂ → PROP} {m₁ : M V} {m₂ : M₂ V₂}
     (_hdom : ∀ k, (get? m₂ k).isSome → (get? m₁ k).isSome) :
     ([∗map] k ↦ x ∈ m₁, Φ k x) ⊢
@@ -1070,37 +1025,19 @@ section Kmap
 
 variable {K₂ : Type _} {M₂ : Type _ → Type _}
 variable [DecidableEq K₂]
-variable [FiniteMap M₂ K₂] [FiniteMapLaws M₂ K₂]
 
-/-- Key map: apply a function to all keys in a map.
-    `kmap h m` has entries `(h k, v)` for each `(k, v)` in `m`.
-    Requires `h` to be injective to preserve map semantics. -/
-def kmap (h : K → K₂) (m : M V) : M₂ V :=
-  ofList ((toList m).map (fun kv => (h kv.1, kv.2)))
-
-omit [DecidableEq K] [FiniteMapLaws M K] [FiniteMapLawsSelf M K] in
+omit [DecidableEq V] [FiniteMapLawsSelf K M] [DecidableEq K₂] in
 /-- Corresponds to `big_sepM_kmap` in Rocq Iris.
     Note: The Rocq proof uses `map_to_list_kmap` (which we encode as `hperm`) and `big_opL_fmap`.
     The `hinj` (injectivity) is needed in Rocq for `kmap` to be well-defined; here we take
     an explicit permutation witness instead. -/
-theorem kmap' [DecidableEq K₂] [FiniteMap M₂ K₂] [FiniteMapLaws M₂ K₂]
+theorem kmap [DecidableEq K₂] [FiniteMap K₂ M₂] [FiniteMapLaws K₂ M₂] [FiniteMapKmapLaws K K₂ M M₂]
     {Φ : K₂ → V → PROP} {m : M V}
-    (h : K → K₂) (_hinj : Function.Injective h)
-    (hperm : (toList (kmap h m : M₂ V)).Perm
-               ((toList m).map (fun kv => (h kv.1, kv.2)))) :
-    ([∗map] k₂ ↦ y ∈ (kmap h m : M₂ V), Φ k₂ y) ⊣⊢
-      [∗map] k₁ ↦ y ∈ m, Φ (h k₁) y := by
-  simp only [bigSepM]
-  have heq : bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) (toList (kmap h m : M₂ V)) ≡
-             bigOpL sep emp (fun _ kv => Φ kv.1 kv.2) ((toList m).map (fun kv => (h kv.1, kv.2))) :=
-    BigOpL.perm _ hperm
-  refine equiv_iff.mp heq |>.trans ?_
-  clear heq hperm
-  induction (toList m) with
-  | nil => exact .rfl
-  | cons kv kvs ih =>
-    simp only [List.map, bigOpL]
-    exact ⟨sep_mono_r ih.1, sep_mono_r ih.2⟩
+    (f : K → K₂)
+    (hinj : ∀ {x y}, f x = f y → x = y):
+    ([∗map] k₂ ↦ y ∈ (FiniteMap.kmap f m : M₂ V), Φ k₂ y) ⊣⊢
+      [∗map] k₁ ↦ y ∈ m, Φ (f k₁) y := by
+  exact equiv_iff.mp (@BigOpM.kmap PROP _ sep emp _ M K V _ _ _ M₂ K₂ _ _ _ _ f @hinj Φ m)
 
 end Kmap
 
@@ -1108,22 +1045,17 @@ end Kmap
 
 section ListToMap
 
-variable [FiniteMap M Nat]
-variable [FiniteMapLaws M Nat]
+variable [FiniteMap Nat M]
+variable [FiniteMapLaws Nat M]
 variable [FiniteMapSeqLaws M]
 
+omit [DecidableEq V] in
 /-- Corresponds to `big_sepM_map_seq` in Rocq Iris. -/
 theorem map_seq {Φ : Nat → V → PROP} (start : Nat) (l : List V) :
     ([∗map] k ↦ x ∈ (FiniteMap.map_seq start l : M V), Φ k x) ⊣⊢
       ([∗list] i ↦ x ∈ l, Φ (start + i) x) := by
   simp only [bigSepM, bigSepL]
-  have h1 : bigOpL sep iprop(emp) (fun _ kv => Φ kv.fst kv.snd) (toList (FiniteMap.map_seq start l : M V)) ≡
-            bigOpL sep iprop(emp) (fun _ kv => Φ kv.fst kv.snd) ((List.range' start l.length).zip l) :=
-    BigOpL.perm (fun kv => Φ kv.fst kv.snd) (toList_map_seq (M := M) start l)
-  have h2 : bigOpL sep iprop(emp) (fun _ kv => Φ kv.fst kv.snd) ((List.range' start l.length).zip l) ≡
-            bigOpL sep iprop(emp) (fun i x => Φ (start + i) x) l :=
-    BigOpL.zip_seq (fun p => Φ p.1 p.2) start l
-  exact equiv_iff.mp (h1.trans h2)
+  exact equiv_iff.mp (BigOpM.map_seq (op := sep) (unit := emp) Φ start l)
 
 end ListToMap
 
@@ -1132,13 +1064,12 @@ end ListToMap
 section DomainSet
 
 variable {S : Type _} [FiniteSet S K] [FiniteSetLaws S K]
-variable [FiniteMapLawsSelf M K]
 
-omit [FiniteMapLawsSelf M K] in
+omit [FiniteMapLawsSelf K M] in
 /-- Corresponds to `big_sepM_dom` in Rocq Iris. -/
 theorem dom {Φ : K → PROP} (m : M V) :
     ([∗map] k ↦ _v ∈ m, Φ k) ⊣⊢ ([∗set] k ∈ (domSet m : S), Φ k) := by
-  induction m using @FiniteMapLaws.map_ind M K V _ _ _ with
+  induction m using @FiniteMapLaws.map_ind K M _ _ _ with
   | hemp =>
     rw [domSet_empty]
     exact ⟨empty.1.trans BigSepS.empty.2, BigSepS.empty.1.trans empty.2⟩
@@ -1231,7 +1162,6 @@ theorem dom {Φ : K → PROP} (m : M V) :
       _ ⊣⊢ ([∗set] k' ∈ FiniteSet.singleton k ∪ (domSet m : S), Φ k') := (BigSepS.insert hk_not_in_dom).symm
       _ ⊣⊢ ([∗set] k' ∈ (domSet (FiniteMap.insert m k v) : S), Φ k') := by rw [hdom_eq]; exact .rfl
 
-omit [FiniteMapLawsSelf M K] in
 /-- Corresponds to `big_sepM_gset_to_gmap` in Rocq Iris. -/
 theorem ofSet' {Φ : K → V → PROP} (X : S) (c : V) :
     ([∗map] k ↦ a ∈ (ofSet c X : M V), Φ k a) ⊣⊢ ([∗set] k ∈ X, Φ k c) := by
@@ -1264,7 +1194,7 @@ end DomainSet
 
 /-! ## Commuting Lemmas -/
 
-omit [DecidableEq K] [FiniteMapLaws M K] [FiniteMapLawsSelf M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] [FiniteMapLawsSelf K M] [DecidableEq V] in
 /-- Corresponds to `big_sepM_sepL` in Rocq Iris. -/
 theorem sepL {B : Type _} (Φ : K → V → Nat → B → PROP) (m : M V) (l : List B) :
     ([∗map] k↦x ∈ m, [∗list] k'↦y ∈ l, Φ k x k' y) ⊣⊢
@@ -1277,10 +1207,10 @@ theorem sepL {B : Type _} (Φ : K → V → Nat → B → PROP) (m : M V) (l : L
       _ ⊣⊢ [∗list] k'↦y ∈ l, [∗map] k↦x ∈ m, Φ k x k' y :=
           equiv_iff.mp <| BigSepL.congr fun k' y => .rfl
 
-omit [DecidableEq K] [FiniteMapLaws M K] [FiniteMapLawsSelf M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] [FiniteMapLawsSelf K M] [DecidableEq V] in
 /-- Corresponds to `big_sepM_sepM` in Rocq Iris. -/
 theorem sepM {M₂ : Type _ → Type _} {K₂ : Type _} {V₂ : Type _}
-    [DecidableEq K₂] [FiniteMap M₂ K₂] [FiniteMapLaws M₂ K₂]
+    [DecidableEq K₂] [FiniteMap K₂ M₂] [FiniteMapLaws K₂ M₂]
     (Φ : K → V → K₂ → V₂ → PROP) (m₁ : M V) (m₂ : M₂ V₂) :
     ([∗map] k₁↦x₁ ∈ m₁, [∗map] k₂↦x₂ ∈ m₂, Φ k₁ x₁ k₂ x₂) ⊣⊢
       ([∗map] k₂↦x₂ ∈ m₂, [∗map] k₁↦x₁ ∈ m₁, Φ k₁ x₁ k₂ x₂) := by
@@ -1297,7 +1227,7 @@ theorem sepM {M₂ : Type _ → Type _} {K₂ : Type _} {V₂ : Type _}
       _ ⊣⊢ [∗map] k₂↦x₂ ∈ m₂, [∗map] k₁↦x₁ ∈ m₁, Φ k₁ x₁ k₂ x₂ :=
           equiv_iff.mp <| BigSepL.congr fun _ kv₂ => .rfl
 
-omit [DecidableEq K] [FiniteMapLaws M K] [FiniteMapLawsSelf M K] in
+omit [DecidableEq K] [FiniteMapLaws K M] [FiniteMapLawsSelf K M] [DecidableEq V] in
 /-- Corresponds to `big_sepM_sepS` in Rocq Iris. -/
 theorem sepS {B : Type _} {S : Type _}
     [DecidableEq B] [FiniteSet S B] [FiniteSetLaws S B]

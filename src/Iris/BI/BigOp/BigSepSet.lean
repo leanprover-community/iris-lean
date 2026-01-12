@@ -942,7 +942,7 @@ theorem sepS {B : Type _} {T : Type _} [DecidableEq B] [FiniteSet T B] [FiniteSe
 omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_sepM` in Rocq Iris. -/
 theorem sepM {B : Type _} {M : Type _ → Type _} {K : Type _}
-    [DecidableEq K] [FiniteMap M K] [FiniteMapLaws M K]
+    [DecidableEq K] [FiniteMap K M] [FiniteMapLaws K M]
     (Φ : A → K → B → PROP) (X : S) (m : M B) :
     ([∗set] x ∈ X, [∗map] k↦y ∈ m, Φ x k y) ⊣⊢
       ([∗map] k↦y ∈ m, [∗set] x ∈ X, Φ x k y) := by

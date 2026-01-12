@@ -18,8 +18,8 @@ namespace Iris.Std
 
 open FiniteMap FiniteSet
 
-variable {M : Type _ → _} {K : Type _}
-variable [DecidableEq K] [FiniteMap M K] [FiniteMapLaws M K]
+variable {K : Type _} {M : Type _ → _}
+variable [DecidableEq K] [FiniteMap K M] [FiniteMapLaws K M]
 
 section DomainSet
 

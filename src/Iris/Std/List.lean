@@ -34,6 +34,37 @@ theorem list_lookup_some_mem {A B : Type _} [BEq A] [LawfulBEq A]
       right
       exact ih h
 
+/-- If a key-value pair is in the list with no duplicate keys, lookup returns that value. -/
+theorem list_mem_lookup_some {A B : Type _} [BEq A] [LawfulBEq A]
+    (k : A) (v : B) (l : List (A × B))
+    (hnodup : (l.map Prod.fst).Nodup) :
+    (k, v) ∈ l → List.lookup k l = some v := by
+  intro h
+  induction l with
+  | nil => contradiction
+  | cons hd tl ih =>
+    simp [List.lookup]
+    simp at h
+    rw [List.map_cons, List.nodup_cons] at hnodup
+    obtain ⟨hnotin, hnodup_tl⟩ := hnodup
+    cases h with
+    | inl heq =>
+      cases heq
+      have : (k == k) = true := BEq.refl k
+      simp
+    | inr hmem =>
+      split
+      · next heq =>
+        have k_eq_hd : k = hd.1 := by
+          simp only [beq_iff_eq] at heq
+          exact heq
+        have : k ∈ (tl.map Prod.fst) := by
+          simp
+          exact ⟨v, hmem⟩
+        rw [k_eq_hd] at this
+        contradiction
+      · next hneq => exact ih hnodup_tl hmem
+
 /-- Lookup in a mapped list returns the mapped value. -/
 theorem list_lookup_map {A B : Type _} [BEq A] [LawfulBEq A]
     (f : A → B) (k : A) (l : List A) (h : k ∈ l) :
@@ -96,11 +127,9 @@ theorem list_mem_lookup {A B : Type _} [BEq A] [LawfulBEq A]
     · next heq =>
       cases h with
       | inl heq_pair =>
-        -- (k, v) = hd, so we need to show some hd.2 = some v
         rw [Prod.ext_iff] at heq_pair
         exact congrArg some heq_pair.2.symm
       | inr hmem =>
-        -- k is in tl but k == hd.1, contradicts nodup
         have keq : k = hd.1 := eq_of_beq heq
         subst keq
         have hmem_map : hd.1 ∈ tl.map Prod.fst := by
@@ -237,5 +266,148 @@ theorem nodup_of_nodup_map_fst {α β : Type _} (l : List (α × β))
       exact h.1 this
     · rw [List.map_cons, List.nodup_cons] at h
       exact ih h.2
+
+/-- If a list has no duplicate keys (Nodup on first components),
+    then filtering preserves this property on the first components. -/
+theorem nodup_map_fst_filter {α β : Type _}
+    (l : List (α × β)) (p : α × β → Bool)
+    (h : (l.map Prod.fst).Nodup) :
+    ((List.filter p l).map Prod.fst).Nodup := by
+  induction l with
+  | nil => simp
+  | cons kv tail ih =>
+    rw [List.map_cons, List.nodup_cons] at h
+    simp only [List.filter]
+    split
+    · rw [List.map_cons, List.nodup_cons]
+      constructor
+      · intro hmem
+        apply h.1
+        clear h ih
+        induction tail with
+        | nil => simp at hmem
+        | cons kv' tail' ih_tail =>
+          simp only [List.filter] at hmem
+          split at hmem
+          · simp only [List.map_cons, List.mem_cons] at hmem
+            rcases hmem with heq | hmem'
+            · rw [List.map_cons, List.mem_cons]
+              left
+              exact heq
+            · have : kv.fst ∈ List.map Prod.fst tail' := ih_tail hmem'
+              rw [List.map_cons, List.mem_cons]
+              right
+              exact this
+          · have : kv.fst ∈ List.map Prod.fst tail' := ih_tail hmem
+            rw [List.map_cons, List.mem_cons]
+            right
+            exact this
+      · exact ih h.2
+    · exact ih h.2
+
+/-- If a list has no duplicate keys (Nodup on first components) and we map keys
+    with an injective function, the result also has no duplicate keys. -/
+theorem nodup_map_fst_map_injective {α β γ : Type _}
+    (l : List (α × β)) (f : α → γ)
+    (hinj : ∀ {x y : α}, f x = f y → x = y)
+    (h : (l.map Prod.fst).Nodup) :
+    ((List.map (fun x => (f x.fst, x.snd)) l).map Prod.fst).Nodup := by
+  rw [List.map_map]
+  induction l with
+  | nil => constructor
+  | cons kv tail ih =>
+    rw [List.map_cons, List.nodup_cons] at h
+    rw [List.map_cons, List.nodup_cons]
+    constructor
+    · intro hmem
+      apply h.1
+      clear h ih
+      induction tail with
+      | nil => simp at hmem
+      | cons kv' tail' ih_tail =>
+        rw [List.map_cons, List.mem_cons] at hmem
+        rcases hmem with heq | hmem'
+        · have : kv.fst = kv'.fst := hinj heq
+          rw [List.map_cons, List.mem_cons]
+          left
+          exact this
+        · rw [List.map_cons, List.mem_cons]
+          right
+          exact ih_tail hmem'
+    · exact ih h.2
+
+/-- mapIdx with addition creates the same result as zipping with range'. -/
+theorem mapIdx_add_eq_zip_range' {α : Type _} (start : Nat) (l : List α) :
+    List.mapIdx (fun i v => (start + i, v)) l = (List.range' start l.length).zip l := by
+  induction l generalizing start with
+  | nil =>
+    rw [List.mapIdx_nil, List.length_nil, List.range'_zero, List.zip_nil_left]
+  | cons hd tl ih =>
+    rw [List.mapIdx_cons, List.length_cons, List.range'_succ, List.zip_cons_cons]
+    congr 1
+    have heq : (fun (i : Nat) (v : α) => (start + (i + 1), v)) = (fun (i : Nat) (v : α) => (start + 1 + i, v)) := by
+      funext i v
+      simp only [Nat.add_assoc, Nat.add_comm 1]
+    rw [heq]
+    exact ih (start + 1)
+
+/-- The keys from mapIdx with addition are all distinct. -/
+theorem nodup_map_fst_mapIdx_add {α : Type _} (start : Nat) (l : List α) :
+    (List.mapIdx (fun i v => (start + i, v)) l).map Prod.fst |>.Nodup := by
+  rw [mapIdx_add_eq_zip_range', List.map_fst_zip]
+  · exact List.nodup_range' (step := 1)
+  · rw [List.length_range']
+    omega
+
+/-- If a list has no duplicate keys (Nodup on first components),
+    then filtering by mapping the second components preserves this property. -/
+theorem nodup_filterMap_of_nodup_keys {α β : Type _}
+    (l : List (α × β)) (f : β → Option β)
+    (h : (l.map Prod.fst).Nodup) :
+    (List.filterMap (fun x => Option.map (fun _ => x.fst) (f x.snd)) l).Nodup := by
+  induction l with
+  | nil => simp
+  | cons kv tail ih =>
+    rw [List.map_cons, List.nodup_cons] at h
+    simp only [List.filterMap]
+    split
+    · exact ih h.2
+    · next b heq =>
+      have hb : b = kv.fst := by
+        rw [Option.map_eq_some_iff] at heq
+        obtain ⟨_, _, hf⟩ := heq
+        exact hf.symm
+      subst hb
+      constructor
+      · intro a' hmem_a'
+        intro heq_contr
+        subst heq_contr
+        apply h.1
+        clear h ih heq
+        induction tail with
+        | nil => simp at hmem_a'
+        | cons kv' tail' ih_tail =>
+          simp only [List.filterMap] at hmem_a'
+          split at hmem_a'
+          · have : kv.fst ∈ List.map Prod.fst tail' := ih_tail hmem_a'
+            simp
+            right
+            simp at this
+            exact this
+          · next b' heq' =>
+            have hb' : b' = kv'.fst := by
+              rw [Option.map_eq_some_iff] at heq'
+              obtain ⟨_, _, hf⟩ := heq'
+              exact hf.symm
+            subst hb'
+            simp only [List.mem_cons] at hmem_a'
+            rcases hmem_a' with heq_k | hmem'
+            · simp [heq_k]
+            · have : kv.fst ∈ List.map Prod.fst tail' := ih_tail hmem'
+              simp
+              right
+              simp at this
+              exact this
+      · exact ih h.2
 
 end Iris.Std
