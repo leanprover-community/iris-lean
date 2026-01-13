@@ -147,8 +147,8 @@ private theorem bigSepS_perm_of_mem_eq {Φ : A → PROP} {X Y : S}
   have hsub2 : Y ⊆ X := fun z hz => by
     rw [mem_iff_mem] at hz ⊢
     rw [hmem_eq z]; exact hz
-  have ⟨l₁, hperm1⟩ := FiniteSetLaws.toList_subset Y X hsub1
-  have ⟨l₂, hperm2⟩ := FiniteSetLaws.toList_subset X Y hsub2
+  have ⟨l₁, hperm1⟩ := FiniteSet.toList_subset Y X hsub1
+  have ⟨l₂, hperm2⟩ := FiniteSet.toList_subset X Y hsub2
   have hl1_nil : l₁ = [] := by
     have h1 := hperm1.length_eq
     have h2 := hperm2.length_eq
@@ -195,8 +195,33 @@ theorem union_2 {Φ : A → PROP} {X Y : S}
     ⊢ ([∗set] y ∈ X, Φ y) -∗ ([∗set] y ∈ Y, Φ y) -∗ ([∗set] y ∈ X ∪ Y, Φ y) := by
   have h_core : ∀ X : S, ([∗set] y ∈ X, Φ y) ∗ ([∗set] y ∈ Y, Φ y) ⊢ ([∗set] y ∈ X ∪ Y, Φ y) := by
     intro X
-    refine FiniteSet.set_ind (P := fun X => ([∗set] y ∈ X, Φ y) ∗ ([∗set] y ∈ Y, Φ y) ⊢ ([∗set] y ∈ X ∪ Y, Φ y)) ?_ ?_ X
-    · refine (sep_mono_l empty.1).trans ?_
+    refine FiniteSet.set_ind (P := fun X => ([∗set] y ∈ X, Φ y) ∗ ([∗set] y ∈ Y, Φ y) ⊢ ([∗set] y ∈ X ∪ Y, Φ y))
+      ?proper ?base ?step X
+    case proper =>
+      intro X₁ X₂ hequiv hent
+      have h1 : ([∗set] y ∈ X₁, Φ y) ⊣⊢ ([∗set] y ∈ X₂, Φ y) := bigSepS_perm_of_mem_eq (fun z => Bool.eq_iff_iff.mpr (hequiv z))
+      have h2 : ([∗set] y ∈ X₁ ∪ Y, Φ y) ⊣⊢ ([∗set] y ∈ X₂ ∪ Y, Φ y) := by
+        apply bigSepS_perm_of_mem_eq
+        intro z
+        rw [Bool.eq_iff_iff, ← mem_iff_mem, ← mem_iff_mem]
+        constructor
+        · intro h
+          have := (FiniteSet.mem_union X₁ Y z).mp h
+          apply (FiniteSet.mem_union X₂ Y z).mpr
+          cases this with
+          | inl hl => left; exact (hequiv z).mp hl
+          | inr hr => right; exact hr
+        · intro h
+          have := (FiniteSet.mem_union X₂ Y z).mp h
+          apply (FiniteSet.mem_union X₁ Y z).mpr
+          cases this with
+          | inl hl => left; exact (hequiv z).mpr hl
+          | inr hr => right; exact hr
+      refine (sep_mono_l h1.2).trans ?_
+      refine hent.trans ?_
+      exact h2.1
+    case base =>
+      refine (sep_mono_l empty.1).trans ?_
       refine emp_sep.1.trans ?_
       have hmem_eq : ∀ z, FiniteSet.mem z (∅ ∪ Y) = FiniteSet.mem z Y := fun z => by
         have hunion := FiniteSet.mem_union (∅ : S) Y z
@@ -220,7 +245,8 @@ theorem union_2 {Φ : A → PROP} {X Y : S}
             exact Bool.noConfusion hr
         · rfl
       exact (bigSepS_perm_of_mem_eq hmem_eq).2
-    · intro x X' hnotin IH
+    case step =>
+      intro x X' hnotin IH
       have hdisj : FiniteSet.Disjoint (FiniteSet.singleton x : S) X' := by
         intro y ⟨hmem1, hmem2⟩
         by_cases hyx : y = x
@@ -376,8 +402,8 @@ theorem insert_2 {Φ : A → PROP} {X : S} {x : A}
     have hX_sub_union : X ⊆ (FiniteSet.singleton x ∪ X) := fun y hy => by
       rw [FiniteSet.mem_union]
       right; exact hy
-    have ⟨l₁, hperm1⟩ := FiniteSetLaws.toList_subset X (FiniteSet.singleton x ∪ X) hunion_sub_X
-    have ⟨l₂, hperm2⟩ := FiniteSetLaws.toList_subset (FiniteSet.singleton x ∪ X) X hX_sub_union
+    have ⟨l₁, hperm1⟩ := FiniteSet.toList_subset X (FiniteSet.singleton x ∪ X) hunion_sub_X
+    have ⟨l₂, hperm2⟩ := FiniteSet.toList_subset (FiniteSet.singleton x ∪ X) X hX_sub_union
     have hl1_nil : l₁ = [] := by
       have h := hperm1.length_eq
       have h2 := hperm2.length_eq
@@ -474,8 +500,8 @@ theorem delete_2 {Φ : A → PROP} {X : S} {x : A}
     refine (sep_mono_l hAff.affine).trans emp_sep.1 |>.trans ?_
     have hX_sub_diff : X ⊆ FiniteSet.diff X (FiniteSet.singleton x) := fun y hy => hX_sub y hy
     have hdiff_sub_X : FiniteSet.diff X (FiniteSet.singleton x) ⊆ X := fun y hy => hdiff_sub y hy
-    have ⟨l₁, hperm1⟩ := FiniteSetLaws.toList_subset (FiniteSet.diff X (FiniteSet.singleton x)) X hX_sub_diff
-    have ⟨l₂, hperm2⟩ := FiniteSetLaws.toList_subset X (FiniteSet.diff X (FiniteSet.singleton x)) hdiff_sub_X
+    have ⟨l₁, hperm1⟩ := FiniteSet.toList_subset (FiniteSet.diff X (FiniteSet.singleton x)) X hX_sub_diff
+    have ⟨l₂, hperm2⟩ := FiniteSet.toList_subset X (FiniteSet.diff X (FiniteSet.singleton x)) hdiff_sub_X
     have hlen_eq : (toList (FiniteSet.diff X (FiniteSet.singleton x))).length =
         (toList X).length := by
       have h1 := hperm1.length_eq
@@ -866,6 +892,7 @@ theorem later_2 {Φ : A → PROP} {X : S} :
     ([∗set] y ∈ X, ▷ Φ y) ⊢ iprop(▷ [∗set] y ∈ X, Φ y) :=
   elements.1.trans (BigSepL.later_2.trans (later_mono elements.2))
 
+omit [DecidableEq A] [FiniteSetLaws A S] in
 /-- Corresponds to `big_sepS_laterN` in Rocq Iris. -/
 theorem laterN [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : S} :
     iprop(▷^[n] [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷^[n] Φ y := by
@@ -976,7 +1003,7 @@ theorem subseteq {Φ : A → PROP} {X Y : S}
     (hsub : Y ⊆ X) :
     ([∗set] x ∈ X, Φ x) ⊢ [∗set] x ∈ Y, Φ x := by
   unfold bigSepS
-  have ⟨l, hperm⟩ := FiniteSetLaws.toList_subset X Y hsub
+  have ⟨l, hperm⟩ := FiniteSet.toList_subset X Y hsub
   exact BigSepL.submseteq hperm
 
 /-! ## Commuting Lemmas -/

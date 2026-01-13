@@ -116,29 +116,29 @@ instance : Equivalence (@SetEquiv A S _ _) where
   symm := fun {X Y} hxy => setEquiv_symm X Y hxy
   trans := fun {X Y Z} hxy hyz => setEquiv_trans X Y Z hxy hyz
 
-/-- Filter: keep only elements satisfying a predicate.
-    Corresponds to Rocq's `filter φ X`. -/
+/-- Corresponds to Rocq's `filter φ X`. -/
 def filter (φ : A → Bool) : S → S :=
   fun s => ofList ((toList s).filter φ)
 
-/-- Bind operation on sets. Flatmap a function over all elements.
-    Corresponds to Rocq's `set_bind`. -/
+/-- Corresponds to Rocq's `set_bind`. -/
 def bind  {B : Type w} {S' : Type u} [FiniteSet B S'] (f : A → S') (X : S) : S' :=
   ofList ((toList X).flatMap (fun x => toList (f x)))
 
-/-- Option map operation on sets. Maps a partial function, keeping only Some values.
-    Corresponds to Rocq's `set_omap`. -/
+/-- Corresponds to Rocq's `set_omap`. -/
 def omap {B : Type w} {S' : Type u} [DecidableEq B] [FiniteSet B S']
     (f : A → Option B) (X : S) : S' :=
   ofList ((toList X).filterMap f)
 
-/-- Forall predicate on sets. Corresponds to Rocq's `set_Forall`. -/
+/-- Corresponds to Rocq's `set_Forall`. -/
 def setForall (P : A → Prop) (X : S) : Prop :=
   ∀ x, x ∈ X → P x
 
-/-- Exists predicate on sets. Corresponds to Rocq's `set_Exists`. -/
+/-- Corresponds to Rocq's `set_Exists`. -/
 def setExists (P : A → Prop) (X : S) : Prop :=
   ∃ x, x ∈ X ∧ P x
+
+/-- Corresponds to Rocq's `size`. -/
+def size (s : S) : Nat := (toList s).length
 
 end FiniteSet
 
@@ -163,9 +163,8 @@ class FiniteSetLaws (A : Type v) (S : Type u) [DecidableEq A] [FiniteSet A S] wh
   /-- Converting to list and back preserves the set (up to permutation). -/
   toList_ofList : ∀ (l : List A) (s : S), l.Nodup → FiniteSet.ofList l = s →
     (FiniteSet.toList s).Perm l
-  /-- Converting list to set and back gives a permutation of the deduplicated list. -/
-  ofList_toList : ∀ (s : S),
-    ∃ l', (FiniteSet.toList s).Perm l' ∧ l'.Nodup ∧ FiniteSet.ofList l' = s
+  /-- Corresponds to Rocq's `NoDup_elements`. -/
+  toList_nodup (X : S) : (toList X).Nodup
   /-- Inserting into a set gives a list permutation including the new element. -/
   set_to_list_insert : ∀ (s : S) (x : A), x ∉ s →
     (FiniteSet.toList (FiniteSet.insert x s)).Perm (x :: FiniteSet.toList s)
@@ -179,9 +178,6 @@ class FiniteSetLaws (A : Type v) (S : Type u) [DecidableEq A] [FiniteSet A S] wh
   toList_empty : FiniteSet.toList (∅ : S) = []
   /-- Membership is preserved by toList. -/
   mem_toList : ∀ (X : S) (x : A), x ∈ FiniteSet.toList X ↔ x ∈ X
-  /-- Subset relation preserved by toList: if Y ⊆ X, toList Y elements appear in toList X. -/
-  toList_subset : ∀ (X Y : S), Y ⊆ X →
-    ∃ l, (FiniteSet.toList Y ++ l).Perm (FiniteSet.toList X)
   /-- toList of filter is related to filter over toList. -/
   toList_filter : ∀ (X : S) (φ : A → Bool),
     (FiniteSet.toList (FiniteSet.filter φ X)).Perm ((FiniteSet.toList X).filter φ)
@@ -195,15 +191,36 @@ variable {A : Type v} {S : Type u} [DecidableEq A] [FiniteSet A S] [FiniteSetLaw
 
 /-- Membership in singleton: true iff equal. Corresponds to Rocq's `elem_of_singleton`. -/
 theorem mem_singleton (x y : A) : x ∈ (FiniteSet.singleton y : S) ↔ x = y := by
-  sorry
+  unfold singleton insert
+  constructor
+  · intro h
+    -- h : x ∈ ofList (y :: toList ∅)
+    have h1 : x ∈ (y :: toList (∅ : S)) := (FiniteSetLaws.mem_ofList _ x).mp h
+    simp [FiniteSetLaws.toList_empty] at h1
+    exact h1
+  · intro h
+    have : x ∈ (y :: toList (∅ : S)) := by simp [FiniteSetLaws.toList_empty, h]
+    exact (FiniteSetLaws.mem_ofList _ x).mpr this
 
 /-- Membership after insert: true if equal, otherwise unchanged. -/
 theorem mem_insert_eq (s : S) (x y : A) (h : x = y) : x ∈ (FiniteSet.insert y s) := by
-  sorry
+  unfold insert
+  have : x ∈ (y :: toList s) := by simp [h]
+  exact (FiniteSetLaws.mem_ofList _ x).mpr this
 
 /-- Membership after insert: unchanged if not equal. -/
 theorem mem_insert_ne (s : S) (x y : A) (h : x ≠ y) : x ∈ (FiniteSet.insert y s) ↔ x ∈ s := by
-  sorry
+  unfold insert
+  constructor
+  · intro hmem
+    have h1 : x ∈ (y :: toList s) := (FiniteSetLaws.mem_ofList _ x).mp hmem
+    cases h1 with
+    | head => exact absurd rfl h
+    | tail _ h' => exact (FiniteSetLaws.mem_toList s x).mp h'
+  · intro hmem
+    have h1 : x ∈ toList s := (FiniteSetLaws.mem_toList s x).mpr hmem
+    have : x ∈ (y :: toList s) := List.Mem.tail y h1
+    exact (FiniteSetLaws.mem_ofList _ x).mpr this
 
 /-- Singleton as insert into empty. -/
 theorem singleton_insert (x : A) : (FiniteSet.singleton x : S) = FiniteSet.insert x ∅ := by
@@ -211,59 +228,207 @@ theorem singleton_insert (x : A) : (FiniteSet.singleton x : S) = FiniteSet.inser
 
 /-- Membership after erase: false if equal, otherwise unchanged. -/
 theorem mem_erase_eq (s : S) (x y : A) (h : x = y) : x ∉ (FiniteSet.erase y s) := by
-  sorry
+  intro hmem
+  unfold erase at hmem
+  have h1 : x ∈ (toList s).filter (fun z => decide (z ≠ y)) :=
+    (FiniteSetLaws.mem_ofList _ x).mp hmem
+  have h2 : x ∈ toList s ∧ decide (x ≠ y) = true := List.mem_filter.mp h1
+  simp [h] at h2
 
 /-- Membership after erase: unchanged if not equal. -/
 theorem mem_erase_ne (s : S) (x y : A) (h : x ≠ y) :
     x ∈ (FiniteSet.erase y s) ↔ x ∈ s := by
-  sorry
+  unfold erase
+  constructor
+  · intro hmem
+    have h1 : x ∈ (toList s).filter (fun z => decide (z ≠ y)) :=
+      (FiniteSetLaws.mem_ofList _ x).mp hmem
+    have h2 : x ∈ toList s := (List.mem_filter.mp h1).1
+    exact (FiniteSetLaws.mem_toList s x).mp h2
+  · intro hmem
+    have h1 : x ∈ toList s := (FiniteSetLaws.mem_toList s x).mpr hmem
+    have h2 : decide (x ≠ y) = true := by simp [h]
+    have : x ∈ (toList s).filter (fun z => decide (z ≠ y)) :=
+      List.mem_filter.mpr ⟨h1, h2⟩
+    exact (FiniteSetLaws.mem_ofList _ x).mpr this
 
 /-- toList of singleton set is a singleton list (up to permutation). -/
 theorem toList_singleton (x : A) : (FiniteSet.toList (FiniteSet.singleton x : S)).Perm [x] := by
-  sorry
+  unfold singleton insert
+  -- toList (ofList (x :: toList ∅)) should be a permutation of [x]
+  have h_empty : toList (∅ : S) = [] := FiniteSetLaws.toList_empty
+  have h_nodup : [x].Nodup := by simp
+  have h_eq : ofList [x] = (ofList (x :: toList (∅ : S)) : S) := by simp [h_empty]
+  rw [← h_eq]
+  exact FiniteSetLaws.toList_ofList [x] (ofList [x]) h_nodup rfl
+
+
+  /-- Converting list to set and back gives a permutation of the deduplicated list. -/
+  theorem ofList_toList : ∀ (s : S),
+    FiniteSet.ofList (FiniteSet.toList s) ≡ s := by
+  intro s x
+  constructor
+  · intro h
+    have : x ∈ toList s := (FiniteSetLaws.mem_ofList (toList s) x).mp h
+    exact (FiniteSetLaws.mem_toList s x).mp this
+  · intro h
+    have : x ∈ toList s := (FiniteSetLaws.mem_toList s x).mpr h
+    exact (FiniteSetLaws.mem_ofList (toList s) x).mpr this
 
 /-- toList of union when disjoint (up to permutation). -/
 theorem toList_union (X Y : S) (h : FiniteSet.Disjoint X Y) :
     ∃ l', (FiniteSet.toList (X ∪ Y)).Perm (FiniteSet.toList X ++ l') ∧
           (FiniteSet.toList Y).Perm l' := by
-  sorry
-
-/-- toList of set difference (up to permutation). -/
-theorem toList_sdiff (X : S) (x : A) (h : FiniteSet.mem x X = true) :
-    ∃ l', (FiniteSet.toList X).Perm (x :: l') ∧
-          (FiniteSet.toList (FiniteSet.diff X (FiniteSet.singleton x))).Perm l' := by
-  sorry
+  -- Use toList Y as l'
+  exists toList Y
+  constructor
+  · -- Show toList (X ∪ Y) ~ toList X ++ toList Y
+    show (toList (union X Y)).Perm (toList X ++ toList Y)
+    -- union X Y = ofList (toList X ++ toList Y) by definition
+    unfold union
+    -- Now we need: toList (ofList (toList X ++ toList Y)) ~ toList X ++ toList Y
+    -- Get nodup property for toList X and toList Y
+    have hnodupX := @FiniteSetLaws.toList_nodup A S _ _ _ X
+    have hnodupY := @FiniteSetLaws.toList_nodup A S _ _ _ Y
+    -- Since X and Y are disjoint, toList X ++ toList Y is nodup
+    have hconcat_nodup : (toList X ++ toList Y).Nodup := by
+      apply List.nodup_append.mpr
+      constructor
+      · exact hnodupX
+      constructor
+      · exact hnodupY
+      · intro a ha b hb hab
+        subst hab
+        have hmemX : a ∈ X := (FiniteSetLaws.mem_toList X a).mp ha
+        have hmemY : a ∈ Y := (FiniteSetLaws.mem_toList Y a).mp hb
+        exact h a ⟨hmemX, hmemY⟩
+    -- Apply toList_ofList axiom
+    exact @FiniteSetLaws.toList_ofList A S _ _ _ (toList X ++ toList Y) (ofList (toList X ++ toList Y)) hconcat_nodup rfl
+  · -- Show toList Y ~ toList Y
+    exact List.Perm.refl _
 
 /-- Membership in difference: y ∈ X \ {x} ↔ y ∈ X ∧ y ≠ x -/
 theorem mem_diff_singleton (X : S) (x y : A) :
     y ∈ (FiniteSet.diff X (FiniteSet.singleton x)) ↔ (y ∈ X ∧ y ≠ x) := by
-  sorry
+  unfold diff
+  constructor
+  · intro h
+    have h1 : y ∈ (toList X).filter (fun z => !mem z (singleton x : S)) :=
+      (FiniteSetLaws.mem_ofList _ y).mp h
+    have ⟨h2, h3⟩ := List.mem_filter.mp h1
+    have h4 : y ∈ X := (FiniteSetLaws.mem_toList X y).mp h2
+    -- h3 : !mem y (singleton x : S) = true, so mem y (singleton x : S) = false
+    have h5 : ¬(y ∈ (singleton x : S)) := by
+      intro hy
+      have : mem y (singleton x : S) = true := hy
+      simp [this] at h3
+    have h7 : y ≠ x := by
+      intro heq
+      apply h5
+      rw [heq]
+      exact (mem_singleton x x).mpr rfl
+    exact ⟨h4, h7⟩
+  · intro ⟨h1, h2⟩
+    have h3 : y ∈ toList X := (FiniteSetLaws.mem_toList X y).mpr h1
+    have h4 : ¬(y ∈ (singleton x : S)) := by
+      intro h
+      have : y = x := (mem_singleton y x).mp h
+      exact h2 this
+    have h5 : mem y (singleton x : S) = false := by
+      cases h : mem y (singleton x : S)
+      · rfl
+      · exact absurd h h4
+    have h6 : (fun z => !mem z (singleton x : S)) y = true := by
+      simp [h5]
+    have : y ∈ (toList X).filter (fun z => !mem z (singleton x : S)) :=
+      List.mem_filter.mpr ⟨h3, h6⟩
+    exact (FiniteSetLaws.mem_ofList _ y).mpr this
+
+/-- Membership in union: x ∈ X ∪ Y ↔ x ∈ X ∨ x ∈ Y -/
+theorem mem_union (X Y : S) (x : A) :
+    x ∈ (X ∪ Y) ↔ (x ∈ X ∨ x ∈ Y) := by
+  show mem x (union X Y) = true ↔ _
+  unfold union
+  constructor
+  · intro h
+    have h1 : x ∈ (toList X ++ toList Y) := (FiniteSetLaws.mem_ofList _ x).mp h
+    have : x ∈ toList X ∨ x ∈ toList Y := List.mem_append.mp h1
+    cases this with
+    | inl h => exact Or.inl ((FiniteSetLaws.mem_toList X x).mp h)
+    | inr h => exact Or.inr ((FiniteSetLaws.mem_toList Y x).mp h)
+  · intro h
+    cases h with
+    | inl h =>
+      have h1 : x ∈ toList X := (FiniteSetLaws.mem_toList X x).mpr h
+      have : x ∈ (toList X ++ toList Y) := List.mem_append.mpr (Or.inl h1)
+      exact (FiniteSetLaws.mem_ofList _ x).mpr this
+    | inr h =>
+      have h1 : x ∈ toList Y := (FiniteSetLaws.mem_toList Y x).mpr h
+      have : x ∈ (toList X ++ toList Y) := List.mem_append.mpr (Or.inr h1)
+      exact (FiniteSetLaws.mem_ofList _ x).mpr this
 
 /-- Subset decomposition: If Y ⊆ X, then X = Y ∪ (X \ Y) up to the disjointness condition. -/
 theorem union_diff (X Y : S) (h : Y ⊆ X) :
     FiniteSet.Disjoint Y (FiniteSet.diff X Y) ∧
     (X ≡ Y ∪ (FiniteSet.diff X Y)) := by
-  sorry
-
-/-- Membership in union: x ∈ X ∪ Y ↔ x ∈ X ∨ x ∈ Y -/
-theorem mem_union (X Y : S) (x : A) :
-    x ∈ (X ∪ Y) ↔ (x ∈ X ∨ x ∈ Y) := by
-  sorry
-
-/-- Union is commutative for toList (up to permutation). -/
-theorem toList_union_comm (X Y : S) :
-    (FiniteSet.toList (X ∪ Y)).Perm (FiniteSet.toList (Y ∪ X)) := by
-  sorry
+  constructor
+  · -- Disjoint Y (X \ Y)
+    intro z
+    intro ⟨hz_in_Y, hz_in_diff⟩
+    -- hz_in_diff : z ∈ X \ Y, so by diff definition z ∉ Y
+    unfold diff at hz_in_diff
+    have h1 : z ∈ (toList X).filter (fun w => !mem w Y) :=
+      (FiniteSetLaws.mem_ofList _ z).mp hz_in_diff
+    have ⟨_, h3⟩ := List.mem_filter.mp h1
+    have h4 : ¬(z ∈ Y) := by
+      intro hz
+      have : mem z Y = true := hz
+      simp [this] at h3
+    exact h4 hz_in_Y
+  · -- X ≡ Y ∪ (X \ Y)
+    intro z
+    constructor
+    · intro hz_in_X
+      -- If z ∈ X, either z ∈ Y or z ∈ X \ Y
+      cases hz : mem z Y
+      · -- z ∉ Y, so z ∈ X \ Y
+        have : z ∈ diff X Y := by
+          unfold diff
+          have h1 : z ∈ toList X := (FiniteSetLaws.mem_toList X z).mpr hz_in_X
+          have h2 : (fun w => !mem w Y) z = true := by simp [hz]
+          have : z ∈ (toList X).filter (fun w => !mem w Y) :=
+            List.mem_filter.mpr ⟨h1, h2⟩
+          exact (FiniteSetLaws.mem_ofList _ z).mpr this
+        exact (mem_union Y (diff X Y) z).mpr (Or.inr this)
+      · -- z ∈ Y
+        have : z ∈ Y := hz
+        exact (mem_union Y (diff X Y) z).mpr (Or.inl this)
+    · intro hz_in_union
+      have : z ∈ Y ∨ z ∈ diff X Y := (mem_union Y (diff X Y) z).mp hz_in_union
+      cases this with
+      | inl h' => exact h z h'
+      | inr h' =>
+        unfold diff at h'
+        have h1 : z ∈ (toList X).filter (fun w => !mem w Y) :=
+          (FiniteSetLaws.mem_ofList _ z).mp h'
+        have ⟨h2, _⟩ := List.mem_filter.mp h1
+        exact (FiniteSetLaws.mem_toList X z).mp h2
 
 /-- Membership in filter: x ∈ filter φ X ↔ x ∈ X ∧ φ x = true -/
 theorem mem_filter (X : S) (φ : A → Bool) (x : A) :
     x ∈ (FiniteSet.filter φ X) ↔ (x ∈ X ∧ φ x = true) := by
-  sorry
+  unfold filter
+  constructor
+  · intro h
+    have h1 : x ∈ (toList X).filter φ := (FiniteSetLaws.mem_ofList _ x).mp h
+    have ⟨h2, h3⟩ : x ∈ toList X ∧ φ x = true := List.mem_filter.mp h1
+    exact ⟨(FiniteSetLaws.mem_toList X x).mp h2, h3⟩
+  · intro ⟨h1, h2⟩
+    have h3 : x ∈ toList X := (FiniteSetLaws.mem_toList X x).mpr h1
+    have : x ∈ (toList X).filter φ := List.mem_filter.mpr ⟨h3, h2⟩
+    exact (FiniteSetLaws.mem_ofList _ x).mpr this
 
-/-- Size of a finite set: number of elements. Corresponds to Rocq's `size`. -/
-def size (s : S) : Nat := (toList s).length
-
-/-- The set is finite (always true for FiniteSet). Corresponds to Rocq's `set_finite`. -/
+/-- Corresponds to Rocq's `set_finite`. -/
 theorem set_finite (X : S) : ∃ (l : List A), ∀ x, x ∈ l ↔ x ∈ X := by
   exists toList X
   intro x
@@ -271,17 +436,35 @@ theorem set_finite (X : S) : ∃ (l : List A), ∀ x, x ∈ l ↔ x ∈ X := by
 
 section Elements
 
-/-- toList is proper: equivalent sets have permutation-equivalent lists.
-    Corresponds to Rocq's `elements_proper`. -/
-theorem toList_proper (X Y : S) (h : ∀ x, mem x X = mem x Y) :
-    (toList X).Perm (toList Y) := by
-  sorry
 
-/-- Converting list to set and back gives the original set (up to permutation).
-    Corresponds to Rocq's `list_to_set_elements`. -/
+/-- Corresponds to Rocq's `NoDup_Permutation`. -/
+theorem list_perm_of_mem_eq_nodup (l₁ l₂ : List A) (h1 : l₁.Nodup) (h2 : l₂.Nodup)
+    (hmem : ∀ x, x ∈ l₁ ↔ x ∈ l₂) : l₁.Perm l₂ := by
+  apply List.perm_iff_count.mpr
+  intro a
+  rw [h1.count, h2.count]
+  simp only [hmem]
+
+/-- Corresponds to Rocq's `elements_proper`. -/
+theorem toList_proper (X Y : S) (h : X ≡ Y) :
+    (toList X).Perm (toList Y) := by
+  have hX := @FiniteSetLaws.toList_nodup A S _ _ _ X
+  have hY := @FiniteSetLaws.toList_nodup A S _ _ _ Y
+  apply list_perm_of_mem_eq_nodup (toList X) (toList Y) hX hY
+  intro x
+  constructor
+  · intro hx
+    have : x ∈ X := (FiniteSetLaws.mem_toList X x).mp hx
+    have : x ∈ Y := (h x).mp this
+    exact (FiniteSetLaws.mem_toList Y x).mpr this
+  · intro hy
+    have : x ∈ Y := (FiniteSetLaws.mem_toList Y x).mp hy
+    have : x ∈ X := (h x).mpr this
+    exact (FiniteSetLaws.mem_toList X x).mpr this
+
+/-- Corresponds to Rocq's `list_to_set_elements`. -/
 theorem ofList_toList_equiv (X : S) : ∀ x, x ∈ (ofList (toList X) : S) ↔ x ∈ X := by
   intro x
-  -- Use mem_ofList and mem_toList axioms
   constructor
   · intro h
     have : x ∈ toList X := (FiniteSetLaws.mem_ofList (toList X) x).mp h
@@ -290,93 +473,146 @@ theorem ofList_toList_equiv (X : S) : ∀ x, x ∈ (ofList (toList X) : S) ↔ x
     have : x ∈ toList X := (FiniteSetLaws.mem_toList X x).mpr h
     exact (FiniteSetLaws.mem_ofList (toList X) x).mpr this
 
-/-- Converting a NoDup list to set and back gives a permutation.
-    Corresponds to Rocq's `elements_list_to_set`. -/
+/-- Corresponds to Rocq's `elements_list_to_set`. -/
 theorem toList_ofList_perm (l : List A) (h : l.Nodup) :
     (toList (ofList l : S)).Perm l := by
-  -- Directly use the axiom toList_ofList
   exact FiniteSetLaws.toList_ofList l (ofList l : S) h rfl
 
-/-- Union of singleton and set when element not in set.
-    Corresponds to Rocq's `elements_union_singleton`. -/
+/-- Corresponds to Rocq's `elements_union_singleton`. -/
 theorem toList_union_singleton (X : S) (x : A) (h : x ∉ X) :
     (toList (union (singleton x) X)).Perm (x :: toList X) := by
-  -- Use the fact that {x} and X are disjoint, then use toList_union
   have hdisj : Disjoint (singleton x) X := by
     intro y
     intro ⟨h1, h2⟩
-    -- y ∈ {x} means y = x
     have : y = x := (mem_singleton y x).mp h1
     rw [this] at h2
     exact h h2
-  -- Get the permutation from toList_union
   obtain ⟨l', hperm, hperm'⟩ := toList_union (singleton x) X hdisj
-  -- toList (singleton x) is a permutation of [x]
   have hsing := toList_singleton (A := A) (S := S) x
-  -- Build up the permutation step by step
   have h1 : (toList (singleton x) ++ l').Perm ([x] ++ l') :=
     List.Perm.append hsing (List.Perm.refl l')
   have h2 : ([x] ++ l').Perm ([x] ++ toList X) :=
     List.Perm.append (List.Perm.refl [x]) hperm'.symm
   exact hperm.trans (h1.trans h2)
 
-/-- Subset relation on toList. Corresponds to Rocq's `elements_submseteq`. -/
-theorem toList_submseteq (X Y : S) (h : X ⊆ Y) :
-    ∀ x, x ∈ toList X → x ∈ toList Y := by
-  intro x hx
-  rw [FiniteSetLaws.mem_toList] at hx ⊢
-  exact h x hx
+/-- Union is commutative for toList (up to permutation). -/
+theorem toList_union_comm (X Y : S) :
+    (FiniteSet.toList (X ∪ Y)).Perm (FiniteSet.toList (Y ∪ X)) := by
+  -- Show that union X Y ≡ union Y X, then use toList_proper
+  have hequiv : union X Y ≡ union Y X := by
+    intro z
+    constructor
+    · intro h
+      have : z ∈ X ∨ z ∈ Y := (mem_union X Y z).mp h
+      have : z ∈ Y ∨ z ∈ X := this.symm
+      exact (mem_union Y X z).mpr this
+    · intro h
+      have : z ∈ Y ∨ z ∈ X := (mem_union Y X z).mp h
+      have : z ∈ X ∨ z ∈ Y := this.symm
+      exact (mem_union X Y z).mpr this
+  exact toList_proper (union X Y) (union Y X) hequiv
+
+/-- toList of set difference (up to permutation). -/
+theorem toList_sdiff (X : S) (x : A) (h : FiniteSet.mem x X = true) :
+    ∃ l', (FiniteSet.toList X).Perm (x :: l') ∧
+          (FiniteSet.toList (FiniteSet.diff X (FiniteSet.singleton x))).Perm l' := by
+  have h' : x ∈ X := h
+  have herase := FiniteSetLaws.set_to_list_erase X x h'
+  obtain ⟨l', hperm, heq⟩ := herase
+  have hmem_eq : ∀ y, y ∈ erase x X ↔ y ∈ diff X (singleton x) := by
+    intro y
+    constructor
+    · intro hy
+      cases heq_y : decide (y = x)
+      · -- y ≠ x
+        have hne : y ≠ x := by
+          intro heq
+          subst heq
+          simp at heq_y
+        have : y ∈ X := (mem_erase_ne X y x hne).mp hy
+        exact (mem_diff_singleton X x y).mpr ⟨this, hne⟩
+      · simp at heq_y
+        have : y ∉ erase x X := mem_erase_eq X y x heq_y
+        exact absurd hy this
+    · intro hy
+      have ⟨hy_in_X, hy_ne⟩ := (mem_diff_singleton X x y).mp hy
+      exact (mem_erase_ne X y x hy_ne).mpr hy_in_X
+  exists l'
+  constructor
+  · exact hperm
+  · rw [← heq]
+    apply List.Perm.symm
+    apply toList_proper
+    intro y
+    exact hmem_eq y
+
+  /-- Corresponds to Rocq's `elements_submseteq`  -/
+  theorem toList_subset : ∀ (X Y : S), Y ⊆ X →
+    ∃ l, (FiniteSet.toList Y ++ l).Perm (FiniteSet.toList X) := by
+    intro X Y h
+    -- Use union_diff to decompose X into Y ∪ (X \ Y)
+    have ⟨hdisj, hequiv⟩ := union_diff X Y h
+    -- Get the permutation from toList_union
+    obtain ⟨l', hperm, hperm'⟩ := toList_union Y (diff X Y) hdisj
+    -- Use l' as the witness
+    exists l'
+    -- Show (toList Y ++ l') ~ toList X
+    -- We know toList (Y ∪ (X \ Y)) ~ toList Y ++ l' from hperm
+    -- and toList X ~ toList (Y ∪ (X \ Y)) from hequiv
+    have h1 : (toList X).Perm (toList (Y ∪ (diff X Y))) :=
+      toList_proper X (Y ∪ (diff X Y)) hequiv
+    have h2 : (toList (Y ∪ (diff X Y))).Perm (toList Y ++ l') := hperm
+    exact (h1.trans h2).symm
 
 end Elements
 
 section Size
 
-/-- Empty set has size 0. Corresponds to Rocq's `size_empty`. -/
+/-- Corresponds to Rocq's `size_empty`. -/
 theorem size_empty : size (∅ : S) = 0 := by
   unfold size
   rw [FiniteSetLaws.toList_empty]
   rfl
 
-/-- Size 0 iff empty set. Corresponds to Rocq's `size_empty_iff`. -/
+/-- Corresponds to Rocq's `size_empty_iff`. -/
 theorem size_empty_iff (X : S) : size X = 0 ↔ ∀ x, x ∉ X := by
   constructor
-  · -- Forward: size X = 0 → ∀ x, x ∉ X
-    intro hsize x
+  · intro hsize x
     unfold size at hsize
-    -- toList X has length 0, so it must be []
     have hnil : toList X = [] := List.eq_nil_of_length_eq_zero hsize
-    -- If x ∈ X were true, then x ∈ toList X, but toList X = []
     intro hmem
     have : x ∈ toList X := (FiniteSetLaws.mem_toList X x).mpr hmem
     rw [hnil] at this
     cases this
-  · -- Backward: (∀ x, x ∉ X) → size X = 0
-    sorry
+  · intro hempty
+    unfold size
+    cases hlist : toList X with
+    | nil => rfl
+    | cons x xs =>
+      have : x ∈ toList X := by rw [hlist]; exact List.mem_cons_self ..
+      have : x ∈ X := (FiniteSetLaws.mem_toList X x).mp this
+      exact absurd this (hempty x)
 
-/-- Singleton set has size 1. Corresponds to Rocq's `size_singleton`. -/
+/-- Corresponds to Rocq's `size_singleton`. -/
 theorem size_singleton (x : A) : size (singleton x : S) = 1 := by
   unfold size
   have h := toList_singleton (A := A) (S := S) x
   have : [x].length = 1 := rfl
   rw [← this, ← h.length_eq]
 
-/-- Non-empty set has positive size. Corresponds to Rocq's `set_choose`. -/
+/-- Corresponds to Rocq's `set_choose`. -/
 theorem set_choose (X : S) (h : size X ≠ 0) : ∃ x, x ∈ X := by
   unfold size at h
-  -- If toList X has non-zero length, it must be x :: l for some x, l
   cases hlist : toList X with
   | nil =>
-    -- Contradiction: list is empty but h says length ≠ 0
     rw [hlist] at h
     simp at h
   | cons x l =>
-    -- x is the first element, so x ∈ toList X
     exists x
     have : x ∈ toList X := by rw [hlist]; exact List.mem_cons_self ..
     exact (FiniteSetLaws.mem_toList X x).mp this
 
-/-- Union of disjoint sets has size equal to sum.
-    Corresponds to Rocq's `size_union`. -/
+/-- Corresponds to Rocq's `size_union`. -/
 theorem size_union (X Y : S) (h : Disjoint X Y) :
     size (X ∪ Y) = size X + size Y := by
   unfold size
@@ -388,27 +624,8 @@ theorem subseteq_size (X Y : S) (h : X ⊆ Y) : size X ≤ size Y := by
   have ⟨hdisj, heq⟩ := union_diff Y X h
   -- Y = X ∪ (Y \ X) in terms of membership, and X and Y \ X are disjoint
   -- We can use toList_proper to show Y and X ∪ (Y \ X) have the same size
-  have hmem_eq : ∀ z, mem z Y = mem z (X ∪ (Y \ X)) := by
-    intro z
-    -- heq z says: z ∈ Y ↔ z ∈ (X ∪ (Y \ X))
-    -- Need to show: mem z Y = mem z (X ∪ Y \ X)
-    cases hmem_y : mem z Y <;> cases hmem_union : mem z (X ∪ (Y \ X))
-    · rfl
-    · -- Contradiction: X ∪ (Y \ X) true but Y false
-      have h1 : z ∈ (X ∪ (Y \ X)) := hmem_union
-      have h2 : z ∈ Y := (heq z).mpr h1
-      have h3 : mem z Y = true := h2
-      rw [hmem_y] at h3
-      cases h3
-    · -- Contradiction: Y true but X ∪ (Y \ X) false
-      have h1 : z ∈ Y := hmem_y
-      have h2 : z ∈ (X ∪ (Y \ X)) := (heq z).mp h1
-      have h3 : mem z (X ∪ (Y \ X)) = true := h2
-      rw [hmem_union] at h3
-      cases h3
-    · rfl
   -- Use toList_proper to get that the lists have the same length
-  have hperm := toList_proper Y (X ∪ (Y \ X)) hmem_eq
+  have hperm := toList_proper Y (X ∪ (Y \ X)) heq
   have hsize_eq : size Y = size (X ∪ (Y \ X)) := by
     unfold size
     exact hperm.length_eq
@@ -422,22 +639,9 @@ theorem subset_size (X Y : S) (h : X ⊆ Y) (hne : ∃ x, x ∈ Y ∧ x ∉ X) :
   have ⟨x, hmemY, hmemX⟩ := hne
   -- Derive: size Y = size X + size (Y \ X) from union_diff
   have ⟨hdisj, heq⟩ := union_diff Y X h
-  have hmem_eq : ∀ z, mem z Y = mem z (X ∪ (Y \ X)) := by
-    intro z
-    cases hmem_y : mem z Y <;> cases hmem_union : mem z (X ∪ (Y \ X))
-    · rfl
-    · have h1 : z ∈ (X ∪ (Y \ X)) := hmem_union
-      have h2 : z ∈ Y := (heq z).mpr h1
-      have h3 : mem z Y = true := h2
-      rw [hmem_y] at h3; cases h3
-    · have h1 : z ∈ Y := hmem_y
-      have h2 : z ∈ (X ∪ (Y \ X)) := (heq z).mp h1
-      have h3 : mem z (X ∪ (Y \ X)) = true := h2
-      rw [hmem_union] at h3; cases h3
-    · rfl
   have hsize_union := size_union X (Y \ X) hdisj
   have hsize_y : size Y = size X + size (Y \ X) := by
-    have hperm := toList_proper Y (X ∪ (Y \ X)) hmem_eq
+    have hperm := toList_proper Y (X ∪ (Y \ X)) heq
     calc size Y
       _ = size (X ∪ (Y \ X)) := by unfold size; exact hperm.length_eq
       _ = size X + size (Y \ X) := hsize_union
@@ -471,27 +675,10 @@ theorem size_difference (X Y : S) (h : Y ⊆ X) :
     size (X \ Y) = size X - size Y := by
   have ⟨hdisj, heq⟩ := union_diff X Y h
   -- X = Y ∪ (X \ Y) and they are disjoint
-  have hmem_eq : ∀ z, mem z X = mem z (Y ∪ (X \ Y)) := by
-    intro z
-    cases hmem_x : mem z X <;> cases hmem_union : mem z (Y ∪ (X \ Y))
-    · rfl
-    · -- Contradiction: Y ∪ (X \ Y) true but X false
-      have h1 : z ∈ (Y ∪ (X \ Y)) := hmem_union
-      have h2 : z ∈ X := (heq z).mpr h1
-      have h3 : mem z X = true := h2
-      rw [hmem_x] at h3
-      cases h3
-    · -- Contradiction: X true but Y ∪ (X \ Y) false
-      have h1 : z ∈ X := hmem_x
-      have h2 : z ∈ (Y ∪ (X \ Y)) := (heq z).mp h1
-      have h3 : mem z (Y ∪ (X \ Y)) = true := h2
-      rw [hmem_union] at h3
-      cases h3
-    · rfl
   -- Use size_union
   have hsize_union := size_union Y (X \ Y) hdisj
   have : size X = size Y + size (X \ Y) := by
-    have hperm := toList_proper X (Y ∪ (X \ Y)) hmem_eq
+    have hperm := toList_proper X (Y ∪ (X \ Y)) heq
     calc size X
       _ = size (Y ∪ (X \ Y)) := by unfold size; exact hperm.length_eq
       _ = size Y + size (X \ Y) := hsize_union
@@ -625,16 +812,70 @@ theorem set_wf : WellFounded (fun (X Y : S) => X ⊆ Y ∧ ∃ x, x ∈ Y ∧ x 
     exact h_sub X Y hrel
   · exact (measure (size (S := S) (A := A))).wf
 
-/-- Induction principle for finite sets.
-    Corresponds to Rocq's `set_ind`. -/
+/-- Corresponds to Rocq's `set_ind`. -/
 theorem set_ind {P : S → Prop}
+    (proper : ∀ X Y, X ≡ Y → P X → P Y)
     (hemp : P ∅)
     (hadd : ∀ x X, x ∉ X → P X → P (union (singleton x) X))
     (X : S) : P X := by
   -- Use well-founded induction based on set_wf
   apply WellFounded.induction set_wf X
   intro Y IH
-  sorry
+  -- Case split on whether Y is empty
+  cases hsize : size Y with
+  | zero =>
+    -- Y is empty, so use hemp
+    have hempty_equiv : ∀ x, x ∉ Y := (size_empty_iff Y).mp hsize
+    -- Show P Y by using proper to transfer from ∅
+    have hY_equiv : ∅ ≡ Y := by
+      intro x
+      constructor
+      · intro h
+        exact absurd h (FiniteSetLaws.mem_empty x)
+      · intro h
+        exact absurd h (hempty_equiv x)
+    exact proper ∅ Y hY_equiv hemp
+  | succ n =>
+    -- Y is non-empty, so pick an element x ∈ Y
+    have ⟨x, hx⟩ := set_choose Y (by omega)
+    -- Let Y' = Y \ {x}
+    let Y' := diff Y (singleton x)
+    -- Show that Y' is a proper subset of Y
+    have hsub : Y' ⊆ Y := by
+      intro z hz
+      have ⟨hz_in_Y, _⟩ := (mem_diff_singleton Y x z).mp hz
+      exact hz_in_Y
+    have hproper : ∃ y, y ∈ Y ∧ y ∉ Y' := by
+      exists x
+      constructor
+      · exact hx
+      · intro hcontra
+        have ⟨_, hne⟩ := (mem_diff_singleton Y x x).mp hcontra
+        exact hne rfl
+    -- Apply IH to Y'
+    have hP_Y' : P Y' := IH Y' ⟨hsub, hproper⟩
+    -- Show x ∉ Y'
+    have hx_notin : x ∉ Y' := by
+      intro hcontra
+      have ⟨_, hne⟩ := (mem_diff_singleton Y x x).mp hcontra
+      exact hne rfl
+    -- Apply hadd
+    have hP_union : P (union (singleton x) Y') := hadd x Y' hx_notin hP_Y'
+    -- Show Y ≡ union (singleton x) Y' using union_diff
+    have hY_equiv : union (singleton x) Y' ≡ Y := by
+      intro z
+      -- Use the union_diff theorem
+      have hsub_singleton : singleton x ⊆ Y := by
+        intro w hw
+        have : w = x := (mem_singleton w x).mp hw
+        rw [this]
+        exact hx
+      have ⟨_, heq⟩ := union_diff Y (singleton x) hsub_singleton
+      -- heq shows Y ≡ singleton x ∪ (Y \ singleton x)
+      -- Y' = diff Y (singleton x), so this is exactly what we need
+      exact (heq z).symm
+    -- Use proper to transfer P from union (singleton x) Y' to Y
+    exact proper (union (singleton x) Y') Y hY_equiv hP_union
 
 end SetInduction
 

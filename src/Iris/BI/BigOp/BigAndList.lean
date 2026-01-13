@@ -256,7 +256,7 @@ theorem perm {Φ : A → PROP} {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
 /-! ## Missing Lemmas from Rocq Iris
 
 The following lemmas from Rocq Iris are not ported:
-- `big_andL_submseteq`: Uses stdpp's `⊆+` relation (use `perm` instead)
+- `big_andL_submseteq`: Uses stdpp's `⊆+` relation
 - `big_andL_ne`: OFE-level non-expansiveness (handled at algebra layer)
 - `big_andL_mono'`, `big_andL_id_mono'`: Convenience wrappers (use `mono` directly)
 - `big_andL_absorbing`, `big_andL_absorbing'`: Absorbing typeclass (not implemented)

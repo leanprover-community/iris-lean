@@ -1164,8 +1164,8 @@ theorem dom {Φ : K → PROP} (m : M V) :
           intro z hz
           rw [mem_iff_mem] at hz ⊢
           rw [hdom_eq z]; exact hz
-        have ⟨l₁, hperm1⟩ := FiniteSetLaws.toList_subset (domSet (FiniteMap.insert m k v) : S) _ hsub1
-        have ⟨l₂, hperm2⟩ := FiniteSetLaws.toList_subset (FiniteSet.singleton k ∪ (domSet m : S)) _ hsub2
+        have ⟨l₁, hperm1⟩ := FiniteSet.toList_subset (domSet (FiniteMap.insert m k v) : S) _ hsub1
+        have ⟨l₂, hperm2⟩ := FiniteSet.toList_subset (FiniteSet.singleton k ∪ (domSet m : S)) _ hsub2
         have hl1_nil : l₁ = [] := by
           have h1 := hperm1.length_eq
           have h2 := hperm2.length_eq
@@ -1234,8 +1234,8 @@ theorem ofSet' {Φ : K → V → PROP} (X : S) (c : V) :
       have : FiniteSet.mem z X = true := hz
       rw [← hmem_eq z] at this
       exact this
-    have ⟨l₁, hperm1⟩ := FiniteSetLaws.toList_subset X _ hsub1
-    have ⟨l₂, hperm2⟩ := FiniteSetLaws.toList_subset (domSet (ofSet c X : M V) : S) _ hsub2
+    have ⟨l₁, hperm1⟩ := FiniteSet.toList_subset X _ hsub1
+    have ⟨l₂, hperm2⟩ := FiniteSet.toList_subset (domSet (ofSet c X : M V) : S) _ hsub2
     have hl1_nil : l₁ = [] := by
       have h1 := hperm1.length_eq
       have h2 := hperm2.length_eq

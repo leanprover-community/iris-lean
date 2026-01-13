@@ -126,9 +126,7 @@ theorem domSet_ofSet (c : V) (X : S) :
         simp only [List.map_map]
         show (List.map (fun x => x) (FiniteSet.toList X)).Nodup
         simp only [List.map_id']
-        have ⟨l', hperm, hnodup', _⟩ : ∃ l', (FiniteSet.toList X).Perm l' ∧ l'.Nodup ∧ FiniteSet.ofList l' = X :=
-          FiniteSetLaws.ofList_toList X
-        exact hperm.symm.nodup hnodup'
+        exact FiniteSetLaws.toList_nodup X
       exact FiniteMapLaws.elem_of_list_to_map_1 _ _ _ hnodup hmapped
     have : (k, c) ∈ FiniteMap.toList (ofSet c X : M V) :=
       FiniteMapLaws.elem_of_map_to_list _ _ _ |>.mpr this
