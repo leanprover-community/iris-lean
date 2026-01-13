@@ -1064,7 +1064,7 @@ end ListToMap
 
 section DomainSet
 
-variable {S : Type _} [FiniteSet S K] [FiniteSetLaws S K]
+variable {S : Type _} [FiniteSet K S] [FiniteSetLaws K S]
 
 omit [FiniteMapLawsSelf K M] in
 /-- Corresponds to `big_sepM_dom` in Rocq Iris. -/
@@ -1081,50 +1081,43 @@ theorem dom {Φ : K → PROP} (m : M V) :
       · have ⟨v', hv⟩ := elem_of_domSet m k |>.mpr h
         rw [hk_not_in] at hv
         cases hv
-    have hinsert_eq : FiniteSet.insert k (domSet m : S) = FiniteSet.singleton k ∪ (domSet m : S) := by
-      apply @FiniteSetLaws.ext S K _ _
+    have hinsert_eq : FiniteSet.insert k (domSet m : S) ≡ FiniteSet.singleton k ∪ (domSet m : S) := by
       intro x
-      by_cases hx : x = k
-      · rw [FiniteSetLaws.mem_insert_eq _ _ _ hx]
-        have : FiniteSet.mem x (FiniteSet.singleton k ∪ (domSet m : S)) = true := by
-          apply FiniteSetLaws.mem_union _ _ _ |>.mpr
+      constructor
+      · intro h
+        by_cases hx : x = k
+        · apply FiniteSet.mem_union _ _ _ |>.mpr
           left
-          exact FiniteSetLaws.mem_singleton _ _ |>.mpr hx
-        rw [this]
-      · rw [FiniteSetLaws.mem_insert_ne _ _ _ hx]
-        cases hm : FiniteSet.mem x (domSet m : S)
-        · have hsing : FiniteSet.mem x (FiniteSet.singleton k : S) = false := by
-            cases h : FiniteSet.mem x (FiniteSet.singleton k : S)
-            · rfl
-            · have : x = k := FiniteSetLaws.mem_singleton _ _ |>.mp h
-              exact absurd this hx
-          have : FiniteSet.mem x (FiniteSet.singleton k ∪ (domSet m : S)) = false := by
-            cases h : FiniteSet.mem x (FiniteSet.singleton k ∪ (domSet m : S))
-            · rfl
-            · have : FiniteSet.mem x (FiniteSet.singleton k : S) = true ∨ FiniteSet.mem x (domSet m : S) = true :=
-                FiniteSetLaws.mem_union _ _ _ |>.mp h
-              cases this with
-              | inl h' => rw [hsing] at h'; cases h'
-              | inr h' => rw [hm] at h'; cases h'
-          rw [this]
-        · have : FiniteSet.mem x (FiniteSet.singleton k ∪ (domSet m : S)) = true :=
-            FiniteSetLaws.mem_union _ _ _ |>.mpr (Or.inr hm)
-          rw [this]
-    have hdom_eq : (FiniteSet.singleton k ∪ (domSet m : S) : S) = (domSet (FiniteMap.insert m k v) : S) := by
-      apply @FiniteSetLaws.ext S K _ _
+          exact FiniteSet.mem_singleton _ _ |>.mpr hx
+        · have hmem := (FiniteSet.mem_insert_ne _ _ _ hx).mp h
+          apply FiniteSet.mem_union _ _ _ |>.mpr
+          right
+          exact hmem
+      · intro h
+        have hmem := FiniteSet.mem_union _ _ _ |>.mp h
+        cases hmem with
+        | inl hsing =>
+          have : x = k := FiniteSet.mem_singleton _ _ |>.mp hsing
+          exact FiniteSet.mem_insert_eq _ _ _ this
+        | inr hdom =>
+          by_cases hx : x = k
+          · exact FiniteSet.mem_insert_eq _ _ _ hx
+          · exact (FiniteSet.mem_insert_ne _ _ _ hx).mpr hdom
+    have hdom_eq : ∀ x, FiniteSet.mem x (FiniteSet.singleton k ∪ (domSet m : S)) =
+                        FiniteSet.mem x (domSet (FiniteMap.insert m k v) : S) := by
       intro x
       by_cases hx : x = k
       · rw [hx]
         have h1 : FiniteSet.mem k (FiniteSet.singleton k ∪ (domSet m : S)) = true := by
-          apply FiniteSetLaws.mem_union _ _ _ |>.mpr
+          apply FiniteSet.mem_union _ _ _ |>.mpr
           left
-          exact FiniteSetLaws.mem_singleton _ _ |>.mpr rfl
+          exact FiniteSet.mem_singleton _ _ |>.mpr rfl
         have h2 : FiniteSet.mem k (domSet (FiniteMap.insert m k v) : S) = true :=
           elem_of_domSet (FiniteMap.insert m k v) k |>.mp ⟨v, lookup_insert_eq m k v⟩
         rw [h1, h2]
       · by_cases hm : FiniteSet.mem x (domSet m : S) = true
         · have h1 : FiniteSet.mem x (FiniteSet.singleton k ∪ (domSet m : S)) = true := by
-            apply FiniteSetLaws.mem_union _ _ _ |>.mpr
+            apply FiniteSet.mem_union _ _ _ |>.mpr
             right
             exact hm
           have h2 : FiniteSet.mem x (domSet (FiniteMap.insert m k v) : S) = true := by
@@ -1137,13 +1130,13 @@ theorem dom {Φ : K → PROP} (m : M V) :
         · have hs : FiniteSet.mem x (FiniteSet.singleton k : S) = false := by
             cases h : FiniteSet.mem x (FiniteSet.singleton k : S)
             · rfl
-            · have : x = k := FiniteSetLaws.mem_singleton _ _ |>.mp h
+            · have : x = k := FiniteSet.mem_singleton _ _ |>.mp h
               exact absurd this hx
           have h1 : FiniteSet.mem x (FiniteSet.singleton k ∪ (domSet m : S)) = false := by
             cases h : FiniteSet.mem x (FiniteSet.singleton k ∪ (domSet m : S))
             · rfl
             · have : FiniteSet.mem x (FiniteSet.singleton k : S) = true ∨ FiniteSet.mem x (domSet m : S) = true :=
-                FiniteSetLaws.mem_union _ _ _ |>.mp h
+                FiniteSet.mem_union _ _ _ |>.mp h
               cases this with
               | inl h' => rw [h'] at hs; cases hs
               | inr h' => exact absurd h' hm
@@ -1161,7 +1154,29 @@ theorem dom {Φ : K → PROP} (m : M V) :
         ⊣⊢ Φ k ∗ ([∗map] k' ↦ _v ∈ m, Φ k') := insert hk_not_in
       _ ⊣⊢ Φ k ∗ ([∗set] k' ∈ (domSet m : S), Φ k') := ⟨sep_mono_r IH.1, sep_mono_r IH.2⟩
       _ ⊣⊢ ([∗set] k' ∈ FiniteSet.singleton k ∪ (domSet m : S), Φ k') := (BigSepS.insert hk_not_in_dom).symm
-      _ ⊣⊢ ([∗set] k' ∈ (domSet (FiniteMap.insert m k v) : S), Φ k') := by rw [hdom_eq]; exact .rfl
+      _ ⊣⊢ ([∗set] k' ∈ (domSet (FiniteMap.insert m k v) : S), Φ k') := by
+        -- Use membership equality to show the two bigSepS are equivalent
+        have hsub1 : (FiniteSet.singleton k ∪ (domSet m : S)) ⊆ (domSet (FiniteMap.insert m k v) : S) := by
+          intro z hz
+          rw [mem_iff_mem] at hz ⊢
+          rw [← hdom_eq z]; exact hz
+        have hsub2 : (domSet (FiniteMap.insert m k v) : S) ⊆ (FiniteSet.singleton k ∪ (domSet m : S)) := by
+          intro z hz
+          rw [mem_iff_mem] at hz ⊢
+          rw [hdom_eq z]; exact hz
+        have ⟨l₁, hperm1⟩ := FiniteSetLaws.toList_subset (domSet (FiniteMap.insert m k v) : S) _ hsub1
+        have ⟨l₂, hperm2⟩ := FiniteSetLaws.toList_subset (FiniteSet.singleton k ∪ (domSet m : S)) _ hsub2
+        have hl1_nil : l₁ = [] := by
+          have h1 := hperm1.length_eq
+          have h2 := hperm2.length_eq
+          simp only [List.length_append] at h1 h2
+          have : l₁.length = 0 := by omega
+          match l₁ with
+          | [] => rfl
+          | _ :: _ => simp at this
+        rw [hl1_nil, List.append_nil] at hperm1
+        unfold bigSepS
+        exact equiv_iff.mp (@BigOpL.perm PROP _ _ sep emp _ Φ _ _ hperm1)
 
 /-- Corresponds to `big_sepM_gset_to_gmap` in Rocq Iris. -/
 theorem ofSet' {Φ : K → V → PROP} (X : S) (c : V) :
@@ -1185,11 +1200,56 @@ theorem ofSet' {Φ : K → V → PROP} (X : S) (c : V) :
     rw [this]
   have h2 : ([∗map] k ↦ a ∈ (ofSet c X : M V), Φ k c) ⊣⊢
             ([∗set] k ∈ (domSet (ofSet c X : M V) : S), Φ k c) := dom _
-  have h3 : (domSet (ofSet c X : M V) : S) = X := domSet_ofSet c X
-  rw [h3] at h2
+  -- domSet_ofSet gives us set equivalence, convert to bigSepS equivalence
+  have h3 : ([∗set] k ∈ (domSet (ofSet c X : M V) : S), Φ k c) ⊣⊢
+            ([∗set] k ∈ X, Φ k c) := by
+    have hequiv := @domSet_ofSet K M _ _ _ S _ _ V c X
+    -- Use membership equality to show the two bigSepS are equivalent
+    have hmem_eq : ∀ z, FiniteSet.mem z (domSet (ofSet c X : M V) : S) = FiniteSet.mem z X := by
+      intro z
+      cases h : FiniteSet.mem z (domSet (ofSet c X : M V) : S) <;>
+        cases h' : FiniteSet.mem z X
+      · rfl
+      · -- h says mem z (domSet ...) = false, h' says mem z X = true
+        -- But hequiv z says z ∈ domSet ... ↔ z ∈ X, so this is a contradiction
+        have hz_in_X : z ∈ X := h'
+        have hz_in_dom : z ∈ (domSet (ofSet c X : M V) : S) := (hequiv z).mpr hz_in_X
+        have : FiniteSet.mem z (domSet (ofSet c X : M V) : S) = true := hz_in_dom
+        rw [h] at this
+        cases this
+      · -- h says mem z (domSet ...) = true, h' says mem z X = false
+        have hz_in_dom : z ∈ (domSet (ofSet c X : M V) : S) := h
+        have hz_in_X : z ∈ X := (hequiv z).mp hz_in_dom
+        have : FiniteSet.mem z X = true := hz_in_X
+        rw [h'] at this
+        cases this
+      · rfl
+    have hsub1 : (domSet (ofSet c X : M V) : S) ⊆ X := by
+      intro z hz
+      have : FiniteSet.mem z (domSet (ofSet c X : M V) : S) = true := hz
+      rw [hmem_eq z] at this
+      exact this
+    have hsub2 : X ⊆ (domSet (ofSet c X : M V) : S) := by
+      intro z hz
+      have : FiniteSet.mem z X = true := hz
+      rw [← hmem_eq z] at this
+      exact this
+    have ⟨l₁, hperm1⟩ := FiniteSetLaws.toList_subset X _ hsub1
+    have ⟨l₂, hperm2⟩ := FiniteSetLaws.toList_subset (domSet (ofSet c X : M V) : S) _ hsub2
+    have hl1_nil : l₁ = [] := by
+      have h1 := hperm1.length_eq
+      have h2 := hperm2.length_eq
+      simp only [List.length_append] at h1 h2
+      have : l₁.length = 0 := by omega
+      match l₁ with
+      | [] => rfl
+      | _ :: _ => simp at this
+    rw [hl1_nil, List.append_nil] at hperm1
+    unfold bigSepS
+    exact equiv_iff.mp (@BigOpL.perm PROP _ _ sep emp _ (Φ · c) _ _ hperm1)
   have h1' : ([∗map] k ↦ a ∈ (ofSet c X : M V), Φ k a) ⊣⊢
              ([∗map] k ↦ a ∈ (ofSet c X : M V), Φ k c) := BI.equiv_iff.mp h1
-  exact BiEntails.trans h1' h2
+  exact BiEntails.trans h1' (BiEntails.trans h2 h3)
 
 end DomainSet
 
@@ -1231,7 +1291,7 @@ theorem sepM {M₂ : Type _ → Type _} {K₂ : Type _} {V₂ : Type _}
 omit [DecidableEq K] [FiniteMapLaws K M] [FiniteMapLawsSelf K M] [DecidableEq V] in
 /-- Corresponds to `big_sepM_sepS` in Rocq Iris. -/
 theorem sepS {B : Type _} {S : Type _}
-    [DecidableEq B] [FiniteSet S B] [FiniteSetLaws S B]
+    [DecidableEq B] [FiniteSet B S] [FiniteSetLaws B S]
     (Φ : K → V → B → PROP) (m : M V) (X : S) :
     ([∗map] k↦x ∈ m, [∗set] y ∈ X, Φ k x y) ⊣⊢
       ([∗set] y ∈ X, [∗map] k↦x ∈ m, Φ k x y) := by

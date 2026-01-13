@@ -138,9 +138,9 @@ section Set
     `bigSepS Φ S` computes `∗_{x ∈ S} Φ x`
 
     Corresponds to `big_opS` in Rocq Iris. -/
-abbrev bigSepS [BI PROP] {S : Type _} {A : Type _} [FiniteSet S A]
+abbrev bigSepS [BI PROP] {S : Type _} {A : Type _} [FiniteSet A S]
     (Φ : A → PROP) (s : S) : PROP :=
-  bigOpL sep emp (fun _ x => Φ x) (toList s)
+  bigOpL sep emp (fun _ x => Φ x) (FiniteSet.toList s)
 
 /-! ## Notation -/
 

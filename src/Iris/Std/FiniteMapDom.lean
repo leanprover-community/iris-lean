@@ -23,7 +23,7 @@ variable [DecidableEq K] [FiniteMap K M] [FiniteMapLaws K M]
 
 section DomainSet
 
-variable {S : Type _} [FiniteSet S K] [FiniteSetLaws S K]
+variable {S : Type _} [FiniteSet K S] [FiniteSetLaws K S]
 
 /-- Convert map domain to a finite set. -/
 def domSet (m : M V) : S := FiniteSet.ofList ((FiniteMap.toList m).map Prod.fst)
@@ -34,7 +34,7 @@ def ofSet (c : V) (X : S) : M V := FiniteMap.ofList ((FiniteSet.toList X).map (f
 /-- Corresponds to Rocq's `not_elem_of_dom`. -/
 theorem not_elem_of_domSet : ∀ (m : M V) k, get? m k = none ↔ k ∉ (domSet m : S) := by
   intro m k
-  simp only [domSet, Membership.mem]
+  simp only [domSet]
   rw [FiniteSetLaws.mem_ofList]
   constructor
   · intro h_none h_in
@@ -58,7 +58,7 @@ theorem not_elem_of_domSet : ∀ (m : M V) k, get? m k = none ↔ k ∉ (domSet 
 /-- Corresponds to Rocq's `elem_of_dom`. -/
 theorem elem_of_domSet : ∀ (m : M V) k, (∃ v, get? m k = some v) ↔ k ∈ (domSet m : S) := by
   intro m k
-  simp only [domSet, Membership.mem]
+  simp only [domSet]
   rw [FiniteSetLaws.mem_ofList]
   constructor
   · intro ⟨v, h_some⟩
@@ -80,7 +80,7 @@ theorem domSet_empty : domSet (∅ : M V) = (∅ : S) := by
 /-- The domain after insert includes the inserted key. -/
 theorem domSet_insert (m : M V) (k : K) (v : V) :
    k ∈ (domSet (insert m k v) : S) := by
-  simp only [domSet, Membership.mem]
+  simp only [domSet]
   rw [FiniteSetLaws.mem_ofList]
   rw [List.mem_map]
   have : get? (insert m k v) k = some v := lookup_insert_eq m k v
@@ -90,11 +90,9 @@ theorem domSet_insert (m : M V) (k : K) (v : V) :
 
 /-- Domain of ofSet equals the original set. -/
 theorem domSet_ofSet (c : V) (X : S) :
-    domSet (ofSet c X : M V) = X := by
-  apply @FiniteSetLaws.ext S K _ _
+    domSet (ofSet c X : M V) ≡ X := by
   intro k
   simp only [domSet]
-  apply Bool.eq_iff_iff.mpr
   constructor
   · -- Forward: k ∈ domSet (ofSet c X) → k ∈ X
     intro hmem

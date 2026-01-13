@@ -20,7 +20,7 @@ open BIBase
 
 variable {PROP : Type _} [BI PROP]
 variable {S : Type _} {A : Type _}
-variable [DecidableEq A] [FiniteSet S A] [FiniteSetLaws S A]
+variable [DecidableEq A] [FiniteSet A S] [FiniteSetLaws A S]
 
 namespace BigSepS
 
@@ -87,7 +87,7 @@ theorem flip_mono' {Φ Ψ : A → PROP} {X : S}
 
 /-! ## Basic Structural Lemmas -/
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
+omit [DecidableEq A] [FiniteSetLaws A S] in
 /-- Corresponds to `big_sepS_elements` in Rocq Iris. -/
 theorem elements {Φ : A → PROP} {X : S} :
     ([∗set] x ∈ X, Φ x) ⊣⊢ [∗list] x ∈ toList X, Φ x := by
@@ -108,7 +108,7 @@ theorem empty' {P : PROP} [Affine P] {Φ : A → PROP} :
     P ⊢ [∗set] x ∈ (∅ : S), Φ x :=
   Affine.affine.trans empty.2
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
+omit [DecidableEq A] [FiniteSetLaws A S] in
 /-- Corresponds to `big_sepS_emp` in Rocq Iris. -/
 theorem emp' {X : S} :
     ([∗set] _x ∈ X, emp) ⊣⊢ (emp : PROP) := by
@@ -120,7 +120,7 @@ theorem emp' {X : S} :
 theorem singleton {Φ : A → PROP} {x : A} :
     ([∗set] y ∈ (FiniteSet.singleton x : S), Φ y) ⊣⊢ Φ x := by
   unfold bigSepS
-  have hperm := FiniteSetLaws.toList_singleton (S := S) (x : A)
+  have hperm := FiniteSet.toList_singleton (S := S) (x : A)
   have hp := equiv_iff.mp (@BigOpL.perm PROP _ _ sep emp _ Φ _ _ hperm)
   simp only [BigOpL.cons, BigOpL.nil] at hp
   exact hp.trans sep_emp
@@ -130,7 +130,7 @@ theorem union {Φ : A → PROP} {X Y : S}
     (h : FiniteSet.Disjoint X Y) :
     ([∗set] y ∈ X ∪ Y, Φ y) ⊣⊢ ([∗set] y ∈ X, Φ y) ∗ ([∗set] y ∈ Y, Φ y) := by
   unfold bigSepS
-  obtain ⟨l', hperm, hperm'⟩ := FiniteSetLaws.toList_union (S := S) X Y h
+  obtain ⟨l', hperm, hperm'⟩ := FiniteSet.toList_union (S := S) X Y h
   have hp1 := equiv_iff.mp (@BigOpL.perm PROP _ _ sep emp _ Φ _ _ hperm)
   have happ := equiv_iff.mp (@BigOpL.append PROP _ _ sep emp _ (fun _ x => Φ x) (toList X) l')
   have hp2 : bigOpL sep emp (fun _ => Φ) (toList X) ∗ bigOpL sep emp (fun _ => Φ) l' ⊣⊢
@@ -141,8 +141,12 @@ theorem union {Φ : A → PROP} {X Y : S}
 private theorem bigSepS_perm_of_mem_eq {Φ : A → PROP} {X Y : S}
     (hmem_eq : ∀ z, FiniteSet.mem z X = FiniteSet.mem z Y) :
     ([∗set] y ∈ X, Φ y) ⊣⊢ ([∗set] y ∈ Y, Φ y) := by
-  have hsub1 : X ⊆ Y := fun z hz => by have := hmem_eq z; rwa [← this]
-  have hsub2 : Y ⊆ X := fun z hz => by have := hmem_eq z; rwa [this]
+  have hsub1 : X ⊆ Y := fun z hz => by
+    rw [mem_iff_mem] at hz ⊢
+    rw [← hmem_eq z]; exact hz
+  have hsub2 : Y ⊆ X := fun z hz => by
+    rw [mem_iff_mem] at hz ⊢
+    rw [hmem_eq z]; exact hz
   have ⟨l₁, hperm1⟩ := FiniteSetLaws.toList_subset Y X hsub1
   have ⟨l₂, hperm2⟩ := FiniteSetLaws.toList_subset X Y hsub2
   have hl1_nil : l₁ = [] := by
@@ -162,11 +166,11 @@ theorem delete {Φ : A → PROP} {X : S} {x : A}
     (h : FiniteSet.mem x X = true) :
     ([∗set] y ∈ X, Φ y) ⊣⊢ Φ x ∗ [∗set] y ∈ FiniteSet.diff X (FiniteSet.singleton x), Φ y := by
   unfold bigSepS
-  obtain ⟨l', hperm, hperm'⟩ := FiniteSetLaws.toList_sdiff (S := S) X x h
+  obtain ⟨l', hperm, hperm'⟩ := FiniteSet.toList_sdiff (S := S) X x h
   have hp1 := equiv_iff.mp (@BigOpL.perm PROP _ _ sep emp _ Φ _ _ hperm)
   simp only [BigOpL.cons] at hp1
   have hp2 : Φ x ∗ bigOpL sep emp (fun _ => Φ) l' ⊣⊢
-             Φ x ∗ bigOpL sep emp (fun _ => Φ) (toList (diff X (FiniteSet.singleton x))) :=
+             Φ x ∗ bigOpL sep emp (fun _ => Φ) (toList (FiniteSet.diff X (FiniteSet.singleton x))) :=
     sep_congr_r (equiv_iff.mp (@BigOpL.perm PROP _ _ sep emp _ Φ _ _ hperm'.symm))
   exact hp1.trans hp2
 
@@ -178,9 +182,10 @@ theorem insert {Φ : A → PROP} {X : S} {x : A}
     intro y ⟨hmem1, hmem2⟩
     by_cases hyx : y = x
     · subst hyx; simp_all
-    · rw [FiniteSet.singleton, FiniteSetLaws.mem_insert_ne _ _ _ hyx] at hmem1
-      rw [FiniteSetLaws.mem_empty] at hmem1
-      exact Bool.noConfusion hmem1
+    · rw [FiniteSet.singleton] at hmem1
+      have hmem1' := (FiniteSet.mem_insert_ne ∅ y x hyx).mp hmem1
+      have := FiniteSetLaws.mem_empty (A := A) (S := S) y
+      exact this hmem1'
   have hunion := union (Φ := Φ) hdisj
   exact hunion.trans (sep_congr_l singleton)
 
@@ -194,15 +199,25 @@ theorem union_2 {Φ : A → PROP} {X Y : S}
     · refine (sep_mono_l empty.1).trans ?_
       refine emp_sep.1.trans ?_
       have hmem_eq : ∀ z, FiniteSet.mem z (∅ ∪ Y) = FiniteSet.mem z Y := fun z => by
-        have hunion := FiniteSetLaws.mem_union (∅ : S) Y z
+        have hunion := FiniteSet.mem_union (∅ : S) Y z
         have hempty := FiniteSetLaws.mem_empty (S := S) (A := A) z
         cases hz : FiniteSet.mem z (∅ ∪ Y) <;> cases hy : FiniteSet.mem z Y
         · rfl
-        · have := hunion.mpr (Or.inr hy); rw [hz] at this; exact Bool.noConfusion this
-        · have := hunion.mp hz
+        · -- Need to show: false = true leads to contradiction
+          rw [← mem_iff_mem] at hy
+          have : z ∈ (∅ ∪ Y) := hunion.mpr (Or.inr hy)
+          rw [mem_iff_mem] at this
+          rw [hz] at this
+          exact Bool.noConfusion this
+        · -- Need to show: true = false leads to contradiction
+          rw [← mem_iff_mem] at hz
+          have := hunion.mp hz
           cases this with
-          | inl hl => rw [hempty] at hl; exact Bool.noConfusion hl
-          | inr hr => rw [hy] at hr; exact Bool.noConfusion hr
+          | inl hl => exact absurd hl hempty
+          | inr hr =>
+            rw [mem_iff_mem] at hr
+            rw [hy] at hr
+            exact Bool.noConfusion hr
         · rfl
       exact (bigSepS_perm_of_mem_eq hmem_eq).2
     · intro x X' hnotin IH
@@ -210,9 +225,10 @@ theorem union_2 {Φ : A → PROP} {X Y : S}
         intro y ⟨hmem1, hmem2⟩
         by_cases hyx : y = x
         · subst hyx; simp_all
-        · rw [FiniteSet.singleton, FiniteSetLaws.mem_insert_ne _ _ _ hyx] at hmem1
-          rw [FiniteSetLaws.mem_empty] at hmem1
-          exact Bool.noConfusion hmem1
+        · rw [FiniteSet.singleton] at hmem1
+          have hmem1' := (FiniteSet.mem_insert_ne ∅ y x hyx).mp hmem1
+          have := FiniteSetLaws.mem_empty (A := A) (S := S) y
+          exact this hmem1'
       have hunion_x_X' := union (Φ := Φ) hdisj
       have hins : ([∗set] y ∈ FiniteSet.singleton x ∪ X', Φ y) ⊣⊢ Φ x ∗ [∗set] y ∈ X', Φ y :=
         hunion_x_X'.trans (sep_congr_l singleton)
@@ -221,25 +237,51 @@ theorem union_2 {Φ : A → PROP} {X Y : S}
       refine h_assoc.1.trans ?_
       refine (sep_mono_r IH).trans ?_
       by_cases hx_in_Y : FiniteSet.mem x Y = true
-      · have hx_in_union : FiniteSet.mem x (X' ∪ Y) = true :=
-          (FiniteSetLaws.mem_union X' Y x).mpr (Or.inr hx_in_Y)
+      · have hx_in_union : FiniteSet.mem x (X' ∪ Y) = true := by
+          have h1 : x ∈ Y := hx_in_Y
+          have h2 : x ∈ (X' ∪ Y) := (FiniteSet.mem_union X' Y x).mpr (Or.inr h1)
+          exact h2
         have hmem_eq : ∀ w, FiniteSet.mem w (X' ∪ Y) =
                            FiniteSet.mem w ((FiniteSet.singleton x ∪ X') ∪ Y) := fun w => by
           by_cases hwx : w = x
           · rw [hwx]
-            have lhs : FiniteSet.mem x (X' ∪ Y) = true :=
-              (FiniteSetLaws.mem_union X' Y x).mpr (Or.inr hx_in_Y)
+            have lhs : FiniteSet.mem x (X' ∪ Y) = true := hx_in_union
             have rhs_inner : FiniteSet.mem x (FiniteSet.singleton x ∪ X') = true := by
-              rw [FiniteSetLaws.mem_union, FiniteSet.singleton, FiniteSetLaws.mem_insert_eq _ _ _ rfl]
-              simp
-            have rhs : FiniteSet.mem x ((FiniteSet.singleton x ∪ X') ∪ Y) = true :=
-              (FiniteSetLaws.mem_union (FiniteSet.singleton x ∪ X') Y x).mpr (Or.inl rhs_inner)
+              have h1 : x ∈ (FiniteSet.singleton (S := S) x) := by
+                rw [FiniteSet.singleton]
+                exact FiniteSet.mem_insert_eq ∅ x x rfl
+              have h2 : x ∈ ((FiniteSet.singleton x : S) ∪ X') := (FiniteSet.mem_union (FiniteSet.singleton x) X' x).mpr (Or.inl h1)
+              exact h2
+            have rhs : FiniteSet.mem x ((FiniteSet.singleton x ∪ X') ∪ Y) = true := by
+              have h1 : x ∈ (FiniteSet.singleton x ∪ X') := rhs_inner
+              have h2 : x ∈ ((FiniteSet.singleton x ∪ X') ∪ Y) := (FiniteSet.mem_union (FiniteSet.singleton x ∪ X') Y x).mpr (Or.inl h1)
+              exact h2
             rw [lhs, rhs]
-          · rw [Bool.eq_iff_iff]
-            rw [FiniteSetLaws.mem_union X' Y w, FiniteSetLaws.mem_union (FiniteSet.singleton x ∪ X') Y w]
-            rw [FiniteSetLaws.mem_union (FiniteSet.singleton x) X' w]
-            rw [FiniteSet.singleton, FiniteSetLaws.mem_insert_ne _ _ _ hwx, FiniteSetLaws.mem_empty]
-            simp
+          · rw [Bool.eq_iff_iff, ← mem_iff_mem, ← mem_iff_mem]
+            constructor
+            · intro h
+              have := (FiniteSet.mem_union X' Y w).mp h
+              apply (FiniteSet.mem_union (FiniteSet.singleton x ∪ X') Y w).mpr
+              cases this with
+              | inl hX' =>
+                left
+                apply (FiniteSet.mem_union (FiniteSet.singleton x) X' w).mpr
+                right; exact hX'
+              | inr hY =>
+                right; exact hY
+            · intro h
+              have := (FiniteSet.mem_union (FiniteSet.singleton x ∪ X') Y w).mp h
+              apply (FiniteSet.mem_union X' Y w).mpr
+              cases this with
+              | inl hsingX' =>
+                have := (FiniteSet.mem_union (FiniteSet.singleton x) X' w).mp hsingX'
+                cases this with
+                | inl hsing =>
+                  rw [FiniteSet.singleton] at hsing
+                  have := (FiniteSet.mem_insert_ne ∅ w x hwx).mp hsing
+                  exact absurd this (FiniteSetLaws.mem_empty (A := A) (S := S) w)
+                | inr hX' => left; exact hX'
+              | inr hY => right; exact hY
         refine (sep_mono_r (delete hx_in_union).1).trans ?_
         refine sep_assoc.2.trans ?_
         refine (sep_mono_l sep_elim_l).trans ?_
@@ -248,10 +290,13 @@ theorem union_2 {Φ : A → PROP} {X Y : S}
       · have hx_notin_union : FiniteSet.mem x (X' ∪ Y) = false := by
           have : ¬(FiniteSet.mem x (X' ∪ Y) = true) := by
             intro h
-            have := (FiniteSetLaws.mem_union X' Y x).mp h
+            have hmem : x ∈ (X' ∪ Y) := h
+            have := (FiniteSet.mem_union X' Y x).mp hmem
             cases this with
-            | inl h' => simp [h'] at hnotin
-            | inr h' => simp [h'] at hx_in_Y
+            | inl h' => exact hnotin h'
+            | inr h' =>
+              have : FiniteSet.mem x Y = true := h'
+              exact hx_in_Y this
           cases h : FiniteSet.mem x (X' ∪ Y)
           · rfl
           · contradiction
@@ -260,21 +305,48 @@ theorem union_2 {Φ : A → PROP} {X Y : S}
           by_cases hwx : w = x
           · rw [hwx]
             have lhs_inner : FiniteSet.mem x (FiniteSet.singleton (S := S) x) = true := by
-              rw [FiniteSet.singleton, FiniteSetLaws.mem_insert_eq (S := S) _ _ _ rfl]
+              rw [FiniteSet.singleton, FiniteSet.mem_insert_eq (S := S) _ _ _ rfl]
             have lhs : FiniteSet.mem x (FiniteSet.singleton x ∪ (X' ∪ Y)) = true :=
-              (FiniteSetLaws.mem_union (S := S) (FiniteSet.singleton x) (X' ∪ Y) x).mpr (Or.inl lhs_inner)
+              (FiniteSet.mem_union (S := S) (FiniteSet.singleton x) (X' ∪ Y) x).mpr (Or.inl lhs_inner)
             have rhs_inner : FiniteSet.mem x (FiniteSet.singleton x ∪ X') = true :=
-              (FiniteSetLaws.mem_union (FiniteSet.singleton x) X' x).mpr (Or.inl lhs_inner)
+              (FiniteSet.mem_union (FiniteSet.singleton x) X' x).mpr (Or.inl lhs_inner)
             have rhs : FiniteSet.mem x ((FiniteSet.singleton x ∪ X') ∪ Y) = true :=
-              (FiniteSetLaws.mem_union (FiniteSet.singleton x ∪ X') Y x).mpr (Or.inl rhs_inner)
+              (FiniteSet.mem_union (FiniteSet.singleton x ∪ X') Y x).mpr (Or.inl rhs_inner)
             rw [lhs, rhs]
-          · rw [Bool.eq_iff_iff]
-            rw [FiniteSetLaws.mem_union (FiniteSet.singleton x) (X' ∪ Y) w]
-            rw [FiniteSetLaws.mem_union (FiniteSet.singleton x ∪ X') Y w]
-            rw [FiniteSetLaws.mem_union (FiniteSet.singleton x) X' w]
-            rw [FiniteSetLaws.mem_union X' Y w]
-            rw [FiniteSet.singleton, FiniteSetLaws.mem_insert_ne _ _ _ hwx, FiniteSetLaws.mem_empty]
-            simp
+          · rw [Bool.eq_iff_iff, ← mem_iff_mem, ← mem_iff_mem]
+            constructor
+            · intro h
+              have := (FiniteSet.mem_union (FiniteSet.singleton x) (X' ∪ Y) w).mp h
+              apply (FiniteSet.mem_union (FiniteSet.singleton x ∪ X') Y w).mpr
+              cases this with
+              | inl hsing =>
+                left
+                apply (FiniteSet.mem_union (FiniteSet.singleton x) X' w).mpr
+                left; exact hsing
+              | inr hunion =>
+                have := (FiniteSet.mem_union X' Y w).mp hunion
+                cases this with
+                | inl hX' =>
+                  left
+                  apply (FiniteSet.mem_union (FiniteSet.singleton x) X' w).mpr
+                  right; exact hX'
+                | inr hY => right; exact hY
+            · intro h
+              have := (FiniteSet.mem_union (FiniteSet.singleton x ∪ X') Y w).mp h
+              apply (FiniteSet.mem_union (FiniteSet.singleton x) (X' ∪ Y) w).mpr
+              cases this with
+              | inl hsingX' =>
+                have := (FiniteSet.mem_union (FiniteSet.singleton x) X' w).mp hsingX'
+                cases this with
+                | inl hsing => left; exact hsing
+                | inr hX' =>
+                  right
+                  apply (FiniteSet.mem_union X' Y w).mpr
+                  left; exact hX'
+              | inr hY =>
+                right
+                apply (FiniteSet.mem_union X' Y w).mpr
+                right; exact hY
         refine (insert hx_notin_union).2.trans ?_
         exact (@bigSepS_perm_of_mem_eq PROP _ S A _ _ _ Φ _ _ hmem_eq).1
   have h1 : ([∗set] y ∈ X, Φ y) ⊢ ([∗set] y ∈ Y, Φ y) -∗ ([∗set] y ∈ X ∪ Y, Φ y) :=
@@ -292,16 +364,17 @@ theorem insert_2 {Φ : A → PROP} {X : S} {x : A}
     refine (sep_assoc (PROP := PROP)).2.trans ?_
     refine (sep_mono_l sep_elim_l).trans ?_
     have hunion_sub_X : (FiniteSet.singleton x ∪ X) ⊆ X := fun y hy => by
-      rw [FiniteSetLaws.mem_union] at hy
+      rw [FiniteSet.mem_union] at hy
       cases hy with
       | inl h =>
         by_cases hyx : y = x
         · subst hyx; exact hx
-        · rw [FiniteSet.singleton, FiniteSetLaws.mem_insert_ne _ _ _ hyx, FiniteSetLaws.mem_empty] at h
-          exact Bool.noConfusion h
+        · rw [FiniteSet.singleton] at h
+          have h' := (FiniteSet.mem_insert_ne ∅ y x hyx).mp h
+          exact absurd h' (FiniteSetLaws.mem_empty (A := A) (S := S) y)
       | inr h => exact h
     have hX_sub_union : X ⊆ (FiniteSet.singleton x ∪ X) := fun y hy => by
-      rw [FiniteSetLaws.mem_union]
+      rw [FiniteSet.mem_union]
       right; exact hy
     have ⟨l₁, hperm1⟩ := FiniteSetLaws.toList_subset X (FiniteSet.singleton x ∪ X) hunion_sub_X
     have ⟨l₂, hperm2⟩ := FiniteSetLaws.toList_subset (FiniteSet.singleton x ∪ X) X hX_sub_union
@@ -329,7 +402,7 @@ theorem insert_2' {Φ : A → PROP} {X : S} {x : A}
   have heq : ([∗set] y ∈ X ∪ FiniteSet.singleton x, Φ y) ⊣⊢
              ([∗set] y ∈ FiniteSet.singleton x ∪ X, Φ y) := by
     unfold bigSepS
-    have hperm := FiniteSetLaws.toList_union_comm (S := S) (A := A) X (FiniteSet.singleton x)
+    have hperm := FiniteSet.toList_union_comm (S := S) (A := A) X (FiniteSet.singleton x)
     exact equiv_iff.mp (@BigOpL.perm PROP _ _ sep emp _ Φ _ _ hperm)
   have h1 : ⊢ Φ x -∗ ([∗set] y ∈ X, Φ y) -∗ ([∗set] y ∈ FiniteSet.singleton x ∪ X, Φ y) :=
     entails_wand insert_2
@@ -385,16 +458,19 @@ theorem delete_2 {Φ : A → PROP} {X : S} {x : A}
   · exact (delete (Φ := Φ) hx).2
   · have hdiff_sub : ∀ y, FiniteSet.mem y (FiniteSet.diff X (FiniteSet.singleton x)) = true →
         FiniteSet.mem y X = true := fun y hy =>
-      ((FiniteSetLaws.mem_diff_singleton X x y).mp hy).1
+      ((FiniteSet.mem_diff_singleton X x y).mp hy).1
     have hX_sub : ∀ y, FiniteSet.mem y X = true →
         FiniteSet.mem y (FiniteSet.diff X (FiniteSet.singleton x)) = true := by
       intro y hy
-      rw [FiniteSetLaws.mem_diff_singleton]
-      constructor
-      · exact hy
-      · intro heq
-        subst heq
-        exact hx hy
+      have : y ∈ X := hy
+      have : y ∈ FiniteSet.diff X (FiniteSet.singleton x) := by
+        apply (FiniteSet.mem_diff_singleton X x y).mpr
+        constructor
+        · exact hy
+        · intro heq
+          subst heq
+          exact hx hy
+      exact this
     refine (sep_mono_l hAff.affine).trans emp_sep.1 |>.trans ?_
     have hX_sub_diff : X ⊆ FiniteSet.diff X (FiniteSet.singleton x) := fun y hy => hX_sub y hy
     have hdiff_sub_X : FiniteSet.diff X (FiniteSet.singleton x) ⊆ X := fun y hy => hdiff_sub y hy
@@ -592,31 +668,26 @@ theorem filter_acc' (φ : A → Prop) [DecidablePred φ] {Φ : A → PROP} {X Y 
   -- First, show that filter φ Y ⊆ X
   have hfilter_sub : FiniteSet.filter (fun x => decide (φ x)) Y ⊆ X := by
     intro z hz
-    have ⟨hz_Y, hz_φ⟩ := FiniteSetLaws.mem_filter Y (fun x => decide (φ x)) z |>.mp hz
+    have ⟨hz_Y, hz_φ⟩ := FiniteSet.mem_filter Y (fun x => decide (φ x)) z |>.mp hz
     have : φ z := of_decide_eq_true hz_φ
     exact h z hz_Y this
   -- Use union_diff to decompose X
-  have ⟨hdisj, hmem_decomp⟩ := FiniteSetLaws.union_diff X (FiniteSet.filter (fun x => decide (φ x)) Y) hfilter_sub
-  -- X = filterY ∪ (X \ filterY), and they are disjoint
-  have hX_decomp : X = FiniteSet.filter (fun x => decide (φ x)) Y ∪
-      FiniteSet.diff X (FiniteSet.filter (fun x => decide (φ x)) Y) := by
-    apply @FiniteSetLaws.ext S A _ _
-    intro z
-    apply Bool.eq_iff_iff.mpr
-    constructor
-    · intro hz; rw [FiniteSetLaws.mem_union]; exact (hmem_decomp z).mp hz
-    · intro hz; rw [FiniteSetLaws.mem_union] at hz; exact (hmem_decomp z).mpr hz
+  have ⟨hdisj, hmem_decomp⟩ := FiniteSet.union_diff X (FiniteSet.filter (fun x => decide (φ x)) Y) hfilter_sub
+  -- X ≡ filterY ∪ (X \ filterY), and they are disjoint (given by hmem_decomp)
+  -- We'll use the membership equivalence to prove the bigop equivalence
   -- Apply union: [∗set] X = [∗set] filterY ∗ [∗set] (X \ filterY)
   have hunion := @union PROP _ S A _ _ _ Φ (FiniteSet.filter (fun x => decide (φ x)) Y)
       (FiniteSet.diff X (FiniteSet.filter (fun x => decide (φ x)) Y)) hdisj
   have hX_split : ([∗set] y ∈ X, Φ y) ⊣⊢
       ([∗set] y ∈ FiniteSet.filter (fun x => decide (φ x)) Y, Φ y) ∗
       ([∗set] y ∈ FiniteSet.diff X (FiniteSet.filter (fun x => decide (φ x)) Y), Φ y) := by
-    -- Convert equality to equivalence, then compose with hunion
-    have heq : ([∗set] y ∈ X, Φ y) = ([∗set] y ∈ FiniteSet.filter (fun x => decide (φ x)) Y ∪
-        FiniteSet.diff X (FiniteSet.filter (fun x => decide (φ x)) Y), Φ y) :=
-      congrArg (fun s => bigSepS Φ s) hX_decomp
-    exact BIBase.BiEntails.of_eq heq |>.trans hunion
+    -- Use membership equivalence to prove bigop equivalence
+    have hmem_eq : ∀ z, FiniteSet.mem z X = FiniteSet.mem z (FiniteSet.filter (fun x => decide (φ x)) Y ∪
+        FiniteSet.diff X (FiniteSet.filter (fun x => decide (φ x)) Y)) := fun z => by
+      rw [Bool.eq_iff_iff, ← mem_iff_mem, ← mem_iff_mem]
+      exact hmem_decomp z
+    have heq := @bigSepS_perm_of_mem_eq PROP _ S A _ _ _ Φ X _ hmem_eq
+    exact heq.trans hunion
   -- Apply filter': [∗set] filterY = [∗set] y ∈ Y, if φ y then Φ y else emp
   have hfilter := @filter' PROP _ S A _ _ _ φ _ Φ Y
   -- Combine: [∗set] X ⊣⊢ A ∗ Z where A = [∗set] Y with filter, Z = [∗set] (X \ filterY)
@@ -665,7 +736,7 @@ theorem filter_acc [BIAffine PROP] (φ : A → Prop) [DecidablePred φ] {Φ : A 
 
 /-! ## Separation Logic Combinators -/
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
+omit [DecidableEq A] [FiniteSetLaws A S] in
 /-- Corresponds to `big_sepS_sep` in Rocq Iris. -/
 theorem sep' {Φ Ψ : A → PROP} {X : S} :
     ([∗set] y ∈ X, Φ y ∗ Ψ y) ⊣⊢ ([∗set] y ∈ X, Φ y) ∗ ([∗set] y ∈ X, Ψ y) := by
@@ -756,13 +827,13 @@ theorem forall' [BIAffine PROP] {Φ : A → PROP} {X : S}
 
 /-! ## Modal Operators -/
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
+omit [DecidableEq A] [FiniteSetLaws A S] in
 /-- Corresponds to `big_sepS_persistently` in Rocq Iris. -/
 theorem persistently [BIAffine PROP] {Φ : A → PROP} {X : S} :
     (<pers> ([∗set] y ∈ X, Φ y)) ⊣⊢ [∗set] y ∈ X, <pers> (Φ y) :=
   (persistently_congr elements).trans (BigSepL.persistently.trans elements.symm)
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
+omit [DecidableEq A] [FiniteSetLaws A S] in
 /-- Corresponds to `big_sepS_dup` in Rocq Iris. -/
 theorem dup {P : PROP} [hAff : Affine P] {X : S} :
     ⊢ □ (P -∗ P ∗ P) -∗ P -∗ [∗set] _x ∈ X, P := by
@@ -783,19 +854,18 @@ theorem dup {P : PROP} [hAff : Affine P] {X : S} :
     refine (sep_mono_l ih).trans ?_
     exact sep_comm (PROP := PROP).1
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
+omit [DecidableEq A] [FiniteSetLaws A S] in
 /-- Corresponds to `big_sepS_later` in Rocq Iris. -/
 theorem later [BIAffine PROP] {Φ : A → PROP} {X : S} :
     iprop(▷ [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷ Φ y :=
   (later_congr elements).trans (BigSepL.later.trans elements.symm)
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
+omit [DecidableEq A] [FiniteSetLaws A S] in
 /-- Corresponds to `big_sepS_later_2` in Rocq Iris. -/
 theorem later_2 {Φ : A → PROP} {X : S} :
     ([∗set] y ∈ X, ▷ Φ y) ⊢ iprop(▷ [∗set] y ∈ X, Φ y) :=
   elements.1.trans (BigSepL.later_2.trans (later_mono elements.2))
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
 /-- Corresponds to `big_sepS_laterN` in Rocq Iris. -/
 theorem laterN [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : S} :
     iprop(▷^[n] [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷^[n] Φ y := by
@@ -803,7 +873,7 @@ theorem laterN [BIAffine PROP] {Φ : A → PROP} {n : Nat} {X : S} :
   | zero => exact .rfl
   | succ m ih => exact (later_congr ih).trans later
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
+omit [DecidableEq A] [FiniteSetLaws A S] in
 /-- Corresponds to `big_sepS_laterN_2` in Rocq Iris. -/
 theorem laterN_2 {Φ : A → PROP} {n : Nat} {X : S} :
     ([∗set] y ∈ X, ▷^[n] Φ y) ⊢ iprop(▷^[n] [∗set] y ∈ X, Φ y) := by
@@ -813,7 +883,7 @@ theorem laterN_2 {Φ : A → PROP} {n : Nat} {X : S} :
 
 /-! ## Introduction and Elimination -/
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
+omit [FiniteSetLaws A S] in
 private theorem intro_list {Φ : A → PROP} {X : S} {l : List A}
     (hmem : ∀ x, List.Mem x l → FiniteSet.mem x X = true) :
     (□ (∀ x, ⌜FiniteSet.mem x X = true⌝ → Φ x)) ⊢ bigOpL sep emp (fun _ => Φ) l := by
@@ -882,7 +952,7 @@ theorem elem_of_acc_impl {Φ : A → PROP} {X : S} {x : A}
     apply imp_intro'
     apply pure_elim_l
     intro hy_diff
-    have ⟨hy_X, hy_ne⟩ := (FiniteSetLaws.mem_diff_singleton X x y).mp hy_diff
+    have ⟨hy_X, hy_ne⟩ := (FiniteSet.mem_diff_singleton X x y).mp hy_diff
     exact (forall_elim y).trans <|
       (imp_mono_l (pure_mono fun _ => hy_X)).trans true_imp.1 |>.trans <|
       (imp_mono_l (pure_mono fun _ => hy_ne.symm)).trans true_imp.1
@@ -911,7 +981,7 @@ theorem subseteq {Φ : A → PROP} {X Y : S}
 
 /-! ## Commuting Lemmas -/
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
+omit [DecidableEq A] [FiniteSetLaws A S] in
 /-- Corresponds to `big_sepS_sepL` in Rocq Iris. -/
 theorem sepL {B : Type _} (Φ : A → Nat → B → PROP) (X : S) (l : List B) :
     ([∗set] x ∈ X, [∗list] k↦y ∈ l, Φ x k y) ⊣⊢
@@ -923,9 +993,9 @@ theorem sepL {B : Type _} (Φ : A → Nat → B → PROP) (X : S) (l : List B) :
       _ ⊣⊢ [∗list] k↦y ∈ l, [∗set] x ∈ X, Φ x k y :=
           equiv_iff.mp <| BigSepL.congr (fun k y => equiv_iff.mpr <| elements (Φ := fun x => Φ x k y).symm)
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
+omit [DecidableEq A] [FiniteSetLaws A S] in
 /-- Corresponds to `big_sepS_sepS` in Rocq Iris. -/
-theorem sepS {B : Type _} {T : Type _} [DecidableEq B] [FiniteSet T B] [FiniteSetLaws T B]
+theorem sepS {B : Type _} {T : Type _} [DecidableEq B] [FiniteSet B T] [FiniteSetLaws B T]
     (Φ : A → B → PROP) (X : S) (Y : T) :
     ([∗set] x ∈ X, [∗set] y ∈ Y, Φ x y) ⊣⊢
       ([∗set] y ∈ Y, [∗set] x ∈ X, Φ x y) := by
@@ -939,7 +1009,7 @@ theorem sepS {B : Type _} {T : Type _} [DecidableEq B] [FiniteSet T B] [FiniteSe
           equiv_iff.mp <| BigSepL.congr (fun _ y => equiv_iff.mpr <| elements (Φ := fun x => Φ x y).symm)
       _ ⊣⊢ [∗set] y ∈ Y, [∗set] x ∈ X, Φ x y := elements (Φ := fun y => [∗set] x ∈ X, Φ x y).symm
 
-omit [DecidableEq A] [FiniteSetLaws S A] in
+omit [DecidableEq A] [FiniteSetLaws A S] in
 /-- Corresponds to `big_sepS_sepM` in Rocq Iris. -/
 theorem sepM {B : Type _} {M : Type _ → Type _} {K : Type _}
     [DecidableEq K] [FiniteMap K M] [FiniteMapLaws K M]

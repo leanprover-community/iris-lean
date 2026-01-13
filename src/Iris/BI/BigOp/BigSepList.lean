@@ -717,7 +717,7 @@ theorem sepM {B : Type _} {M : Type _ → Type _} {K : Type _} [FiniteMap K M]
           equiv_iff.mp <| BigSepL.congr fun _ kv => .rfl
 
 /-- Corresponds to `big_sepL_sepS` in Rocq Iris. -/
-theorem sepS {B : Type _} {S : Type _} [DecidableEq B] [FiniteSet S B] [FiniteSetLaws S B]
+theorem sepS {B : Type _} {S : Type _} [DecidableEq B] [FiniteSet B S] [FiniteSetLaws B S]
     (Φ : Nat → A → B → PROP) (l : List A) (X : S) :
     ([∗list] k↦x ∈ l, [∗set] y ∈ X, Φ k x y) ⊣⊢
       ([∗set] y ∈ X, [∗list] k↦x ∈ l, Φ k x y) := by
