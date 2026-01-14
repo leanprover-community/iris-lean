@@ -104,6 +104,8 @@ structure IrisGoal where
 def isIrisGoal (expr : Expr) : Bool := isAppOfArity expr ``Entails' 4
 
 def parseIrisGoal? (expr : Expr) : Option IrisGoal := do
+  -- remove top-level metadata when matching on the goal
+  let expr := expr.consumeMData
   let some #[prop, bi, P, goal] := expr.appM? ``Entails' | none
   let u := expr.getAppFn.constLevels![0]!
   let ⟨e, hyps⟩ ← parseHyps? bi P
@@ -113,7 +115,11 @@ def IrisGoal.toExpr : IrisGoal → Expr
   | { hyps, goal, .. } => q(Entails' $(hyps.tm) $goal)
 
 def IrisGoal.strip : IrisGoal → Expr
-  | { e, goal, .. } => q(Entails $e $goal)
+  | { e, goal, .. } =>
+    if e.consumeMData.isAppOfArity ``emp 2 then
+      q(BIBase.EmpValid $goal)
+    else
+      q(Entails $e $goal)
 
 /-- This is only used for display purposes, so that we can render context variables that appear
 to have type `A : PROP` even though `PROP` is not a type. -/
