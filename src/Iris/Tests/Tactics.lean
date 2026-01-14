@@ -15,6 +15,7 @@ open Iris.BI
 theorem start_stop [BI PROP] (Q : PROP) (H : Q ⊢ Q) : Q ⊢ Q := by
   istart
   iintro _HQ
+  have HH: True := by trivial
   istop
   exact H
 
