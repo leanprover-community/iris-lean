@@ -12,10 +12,10 @@ open OFE
 
 section GenMap
 
-/- The OFE over gmaps is eqivalent to a non-dependent discrete function to an `Option` type with a
+/- The OFE over gmaps is equivalent to a non-dependent discrete function to an `Option` type with a
 `Leibniz` OFE of keys, and an infinite number of unallocated elements.
 
-In this setting, the CMRA is always unital, and as a consquence the oFunctors do not require
+In this setting, the CMRA is always unital, and as a consequence the oFunctors do not require
 unitality in order to act as a `URFunctor(Contractive)`.
 
 GenMap is only intended to be used in the construction of the core IProp model. It is a stripped-down
