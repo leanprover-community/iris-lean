@@ -1,6 +1,9 @@
 import Iris.Std.Classes
 import Iris.Std.Expr
 import Iris.Std.FiniteMap
+import Iris.Std.FiniteMapInst
+import Iris.Std.FiniteSet
+import Iris.Std.FiniteSetInst
 import Iris.Std.Nat
 import Iris.Std.Prod
 import Iris.Std.Qq
