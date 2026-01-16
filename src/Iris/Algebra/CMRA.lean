@@ -1024,25 +1024,6 @@ variable [CMRA α]
   | none, _ => y
   | _, none => x
 
--- Helper lemmas for option operations
-theorem optionOp_eq_none_left {α : Type _} [CMRA α] {x y : Option α}
-    (h : optionOp x y = none) : x = none :=
-  match x with
-  | none => rfl
-  | some x' =>
-    match y with
-    | none => h
-    | some y' => by simp [optionOp] at h
-
-theorem optionOp_eq_none_right {α : Type _} [CMRA α] {x y : Option α}
-    (h : optionOp x y = none) : y = none :=
-  match y with
-  | none => rfl
-  | some y' =>
-    match x with
-    | none => h
-    | some x' => by simp [optionOp] at h
-
 @[simp] def optionValidN (n : Nat) : Option α → Prop
   | some x => ✓{n} x
   | none => True
@@ -1162,7 +1143,7 @@ theorem inc_iff {ma mb : Option α} :
     · exact .inl Hmc.symm
     · exact .inr ⟨_, Hmc⟩
   · rintro (H|⟨_, _, _, _, (H|⟨z, _⟩)⟩) <;> subst_eqs
-    · exists mb; simp [op]
+    · exists mb
     · exists none; simp [op]; exact H.symm
     · exists some z
 
@@ -1173,7 +1154,7 @@ theorem incN_iff {ma mb : Option α} :
     · exact .inl Hmc.symm
     · exact .inr ⟨_, Hmc⟩
   · rintro (H|⟨_, _, _, _, (H|⟨z, _⟩)⟩) <;> subst_eqs
-    · exists mb; simp [op]
+    · exists mb
     · exists none; simp [op]; exact H.symm
     · exists some z
 
