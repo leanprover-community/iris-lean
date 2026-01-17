@@ -34,10 +34,12 @@ def Goals.addPureGoal {prop : Q(Type u)} {bi : Q(BI $prop)} (g : Goals bi)
   g.goals.modify (·.push m)
 
 -- TODO: change this to replace main goal that deduplicates goals
-def Goals.getGoals {prop : Q(Type u)} {bi : Q(BI $prop)} (g : Goals bi) : MetaM (List MVarId) := do
+def Goals.getGoals {prop : Q(Type u)} {bi : Q(BI $prop)} (g : Goals bi) : TermElabM (List MVarId) := do
   let goals ← g.goals.get
   -- put the goals that depend on other goals last
   let mvars ← goals.foldlM (λ m g => do
     return m ∪ (← g.getMVarDependencies)) ∅
   let (dep, nonDep) := goals.partition (λ x => mvars.contains x)
+  -- TODO: Is this the right place to do this?
+  Term.synthesizeSyntheticMVarsNoPostponing
   return (nonDep ++ dep).toList
