@@ -1470,6 +1470,12 @@ theorem persistent_and_sep_1 [BI PROP] {P Q : PROP} :
   | TCOr.l => persistent_and_affinely_sep_l_1.trans (sep_mono_l affinely_elim)
   | TCOr.r => persistent_and_affinely_sep_r_1.trans (sep_mono_r affinely_elim)
 
+theorem persistent_entails_r [BI PROP] {P Q : PROP} [Persistent Q] (H : P ⊢ Q) : P ⊢ Q ∗ P :=
+  (and_intro H .rfl).trans persistent_and_sep_1
+
+theorem persistent_entails_l [BI PROP] {P Q : PROP} [Persistent Q] (H : P ⊢ Q) : P ⊢ P ∗ Q :=
+  (and_intro .rfl H).trans persistent_and_sep_1
+
 theorem absorbingly_intuitionistically [BI PROP] {P : PROP} : <absorb> □ P ⊣⊢ <pers> P :=
   ⟨(absorbingly_mono persistently_of_intuitionistically).trans absorbingly_persistently.1,
    and_self.2.trans <| persistently_and_intuitionistically_sep_r.1.trans <| sep_mono_l true_intro⟩
