@@ -81,7 +81,7 @@ instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
   map_id _ _ z _ := uPred_proper <| URFunctor.map_id z
   map_comp f g f' g' _ _ H _ := uPred_proper <| URFunctor.map_comp g' f' g f H
 
-instance [URFunctorContractive F] : COFE.OFunctorContractive (UPredOF F) where
+instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorContractive (UPredOF F) where
   map_contractive.1 {_ x y} HKL _ _ _ Hn _ := by
     refine uPred_ne <| (URFunctorContractive.map_contractive.1
       (x := (x.snd, x.fst)) (y := (y.snd, y.fst)) ?_ _).le Hn
