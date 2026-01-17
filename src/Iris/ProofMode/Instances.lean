@@ -11,82 +11,65 @@ namespace Iris.ProofMode
 open Iris.BI Iris.Std
 
 -- AsEmpValid
-instance (priority := default - 10) asEmpValidEmpValid1
-    [BI PROP] (P : PROP) : AsEmpValid1 (⊢ P) P := ⟨by simp⟩
-instance (priority := default + 10) asEmpValidEmpValid2
-    [BI PROP] (P : PROP) : AsEmpValid2 (⊢ P) P := AsEmpValid1.to2
+instance (priority := default + 10) asEmpValidEmpValid
+    [BI PROP] d (P : PROP) : AsEmpValid d (⊢ P) P := ⟨by simp⟩
 
-instance asEmpValid1_entails [BI PROP] (P Q : PROP) : AsEmpValid1 (P ⊢ Q) iprop(P -∗ Q) where
-  as_emp_valid := ⟨entails_wand, wand_entails⟩
-instance asEmpValid2_entails [BI PROP] (P Q : PROP) : AsEmpValid2 (P ⊢ Q) iprop(P -∗ Q) :=
-  AsEmpValid1.to2
+instance asEmpValid_entails [BI PROP] d (P Q : PROP) : AsEmpValid d (P ⊢ Q) iprop(P -∗ Q) where
+  as_emp_valid := ⟨λ _ => entails_wand, λ _ => wand_entails⟩
 
-instance asEmpValid1_equiv [BI PROP] (P Q : PROP) : AsEmpValid1 (P ⊣⊢ Q) iprop(P ∗-∗ Q) where
-  as_emp_valid := ⟨equiv_wandIff, wandIff_equiv⟩
-instance asEmpValid2_equiv [BI PROP] (P Q : PROP) : AsEmpValid2 (P ⊣⊢ Q) iprop(P ∗-∗ Q) :=
-  AsEmpValid1.to2
-
--- IntoEmpValid
-instance intoEmpValid_emp_entails [BI PROP] (P : PROP) : IntoEmpValid (⊢ P) iprop(P) where
-  into_emp_valid := id
-
-instance intoEmpValid_entails [BI PROP] (P Q : PROP) : IntoEmpValid (P ⊢ Q) iprop(P -∗ Q) where
-  into_emp_valid := entails_wand
-
-instance intoEmpValid_equiv [BI PROP] (P Q : PROP) : IntoEmpValid (P ⊣⊢ Q) iprop(P ∗-∗ Q) where
-  into_emp_valid := equiv_wandIff
+instance asEmpValid_equiv [BI PROP] (P Q : PROP) : AsEmpValid d (P ⊣⊢ Q) iprop(P ∗-∗ Q) where
+  as_emp_valid := ⟨λ _ => equiv_wandIff, λ _ => wandIff_equiv⟩
 
 -- FromImp
 instance fromImp_imp [BI PROP] (P1 P2 : PROP) : FromImp iprop(P1 → P2) P1 P2 := ⟨.rfl⟩
 -- FromWand
 instance fromWand_wand [BI PROP] (P1 P2 : PROP) : FromWand iprop(P1 -∗ P2) P1 P2 := ⟨.rfl⟩
 -- IntoWand
-instance intoWand_wand (p q : Bool) [BI PROP] (P Q P' : PROP) [h : FromAssumption q P P'] :
-    IntoWand p q iprop(P' -∗ Q) P Q where
+instance intoWand_wand (p q : Bool) [BI PROP] ioP ioQ (P Q P' : PROP) [h : FromAssumption q ioP P P'] :
+    IntoWand p q iprop(P' -∗ Q) ioP P ioQ Q where
   into_wand := (intuitionisticallyIf_mono <| wand_mono_l h.1).trans intuitionisticallyIf_elim
 
-instance intoWand_imp_false [BI PROP] (P Q P' : PROP) [Absorbing P'] [Absorbing iprop(P' → Q)]
-    [h : FromAssumption b P P'] : IntoWand false b iprop(P' → Q) P Q where
+instance intoWand_imp_false [BI PROP] ioP ioQ (P Q P' : PROP) [Absorbing P'] [Absorbing iprop(P' → Q)]
+    [h : FromAssumption b ioP P P'] : IntoWand false b iprop(P' → Q) ioP P ioQ Q where
   into_wand := wand_intro <| (sep_mono_r h.1).trans <| by dsimp; exact sep_and.trans imp_elim_l
 
-instance intoWand_imp_true [BI PROP] (P Q P' : PROP) [Affine P']
-    [h : FromAssumption b P P'] : IntoWand true b iprop(P' → Q) P Q where
+instance intoWand_imp_true [BI PROP] ioP ioQ (P Q P' : PROP) [Affine P']
+    [h : FromAssumption b ioP P P'] : IntoWand true b iprop(P' → Q) ioP P ioQ Q where
   into_wand := wand_intro <| (sep_mono_r h.1).trans <| by
     dsimp; exact sep_and.trans <| imp_elim intuitionistically_elim
 
-instance intoWand_and_l (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
-    [h : IntoWand p q R1 P' Q'] : IntoWand p q iprop(R1 ∧ R2) P' Q' where
+@[ipm_backtrack]
+instance intoWand_and_l (p q : Bool) [BI PROP] ioP ioQ (R1 R2 P' Q' : PROP)
+    [h : IntoWand p q R1 ioP P' ioQ Q'] : IntoWand p q iprop(R1 ∧ R2) ioP P' ioQ Q' where
   into_wand := (intuitionisticallyIf_mono and_elim_l).trans h.1
 
-instance intoWand_and_r (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
-    [h : IntoWand p q R2 Q' P'] : IntoWand p q iprop(R1 ∧ R2) Q' P' where
+@[ipm_backtrack]
+instance intoWand_and_r (p q : Bool) [BI PROP] ioP ioQ (R1 R2 P' Q' : PROP)
+    [h : IntoWand p q R2 ioP P' ioQ Q'] : IntoWand p q iprop(R1 ∧ R2) ioP P' ioQ Q' where
   into_wand := (intuitionisticallyIf_mono and_elim_r).trans h.1
 
+-- The set_option is ok since this is an instance for an IPM class and thus can create mvars.
 set_option synthInstance.checkSynthOrder false in
-instance intoWand_forall (p q : Bool) [BI PROP] (Φ : α → PROP) (P Q : PROP) (x : α)
-    [h : IntoWand p q (Φ x) P Q] : IntoWand p q iprop(∀ x, Φ x) P Q where
+instance intoWand_forall (p q : Bool) [BI PROP] (Φ : α → PROP) ioP ioQ (P Q : PROP) (x : α)
+    [h : IntoWand p q (Φ x) ioP P ioQ Q] : IntoWand p q iprop(∀ x, Φ x) ioP P ioQ Q where
   into_wand := (intuitionisticallyIf_mono <| BI.forall_elim x).trans h.1
 
-instance intoWand_affinely (p q : Bool) [BI  PROP] (R P Q : PROP) [h : IntoWand p q R P Q] :
-    IntoWand p q iprop(<affine> R) iprop(<affine> P) iprop(<affine> Q) where
+instance intoWand_affinely (p q : Bool) [BI PROP] ioP ioQ (R P Q : PROP) [h : IntoWand p q R ioP P ioQ Q] :
+    IntoWand p q iprop(<affine> R) ioP iprop(<affine> P) ioQ iprop(<affine> Q) where
   into_wand := wand_intro <|
     (sep_congr intuitionisticallyIf_affinely intuitionisticallyIf_affinely).1.trans <|
     affinely_sep_2.trans <| affinely_mono <| wand_elim h.1
 
-instance intoWand_intuitionistically (p q : Bool) [BI PROP] (R P Q : PROP)
-    [h : IntoWand true q R P Q] : IntoWand p q iprop(□ R) P Q where
+instance intoWand_intuitionistically (p q : Bool) [BI PROP] ioP ioQ (R P Q : PROP)
+    [h : IntoWand true q R ioP P ioQ Q] : IntoWand p q iprop(□ R) ioP P ioQ Q where
   into_wand := (intuitionisticallyIf_mono h.1).trans intuitionisticallyIf_elim
 
-instance intoWand_intuitionistically_wand (p : Bool) [BI PROP] (P Q : PROP) :
-    IntoWand p true iprop(□ P -∗ Q) P Q where
-  into_wand := intuitionisticallyIf_elim
-
-instance intoWand_persistently_true (q : Bool) [BI PROP] (R P Q : PROP)
-    [h : IntoWand true q R P Q] : IntoWand true q iprop(<pers> R) P Q where
+instance intoWand_persistently_true (q : Bool) [BI PROP] ioP ioQ (R P Q : PROP)
+    [h : IntoWand true q R ioP P ioQ Q] : IntoWand true q iprop(<pers> R) ioP P ioQ Q where
   into_wand := intuitionistically_persistently.1.trans h.1
 
-instance intoWand_persistently_false (q : Bool) [BI PROP] (R P Q : PROP) [Absorbing R]
-    [h : IntoWand false q R P Q] : IntoWand false q iprop(<pers> R) P Q where
+instance intoWand_persistently_false (q : Bool) [BI PROP] ioP ioQ (R P Q : PROP) [Absorbing R]
+    [h : IntoWand false q R ioP P ioQ Q] : IntoWand false q iprop(<pers> R) ioP P ioQ Q where
   into_wand := persistently_elim.trans h.1
 
 -- FromForall
@@ -397,55 +380,73 @@ instance (priority := default - 10) intoAbsorbingly_default [BI PROP] (P : PROP)
     IntoAbsorbingly iprop(<absorb> P) P := ⟨.rfl⟩
 
 -- FromAssumption
-instance (priority := default + 100) fromAssumption_exact (p : Bool) [BI PROP] (P : PROP) :
-    FromAssumption p P P where
+instance (priority := default + 100) fromAssumption_exact (p : Bool) [BI PROP] ioP (P : PROP) :
+    FromAssumption p ioP P P where
   from_assumption := intuitionisticallyIf_elim
 
-instance (priority := default + 30) fromAssumption_persistently_r [BI PROP] (P Q : PROP)
-    [h : FromAssumption true P Q] : FromAssumption true P iprop(<pers> Q) where
+instance (priority := default + 30) fromAssumption_persistently_r [BI PROP] ioP (P Q : PROP)
+    [h : FromAssumption true ioP P Q] : FromAssumption true ioP P iprop(<pers> Q) where
   from_assumption := (persistent (P := iprop(□ P))).trans (persistently_mono h.1)
 
-instance (priority := default + 30) fromAssumption_affinely_r [BI PROP] (P Q : PROP)
-    [h : FromAssumption true P Q] : FromAssumption true P iprop(<affine> Q) where
+instance (priority := default + 30) fromAssumption_affinely_r [BI PROP] ioP (P Q : PROP)
+    [h : FromAssumption true ioP P Q] : FromAssumption true ioP P iprop(<affine> Q) where
   from_assumption := affinely_idem.2.trans <| affinely_mono h.1
 
-instance (priority := default + 30) fromAssumption_intuitionistically_r [BI PROP] (P Q : PROP)
-    [h : FromAssumption true P Q] : FromAssumption true P iprop(□ Q) where
+instance (priority := default + 30) fromAssumption_intuitionistically_r [BI PROP] ioP (P Q : PROP)
+    [h : FromAssumption true ioP P Q] : FromAssumption true ioP P iprop(□ Q) where
   from_assumption := intuitionistically_idem.2.trans <| intuitionistically_mono h.1
 
-instance (priority := default + 20) fromAssumption_absorbingly_r (p : Bool) [BI PROP] (P Q : PROP)
-    [h : FromAssumption p P Q] : FromAssumption p P iprop(<absorb> Q) where
+instance (priority := default + 20) fromAssumption_absorbingly_r (p : Bool) [BI PROP] ioP (P Q : PROP)
+    [h : FromAssumption p ioP P Q] : FromAssumption p ioP P iprop(<absorb> Q) where
   from_assumption := absorbingly_intro.trans <| absorbingly_mono h.1
 
 instance (priority := default + 20) fromAssumption_intuitionistically_l (p : Bool) [BI PROP]
-    (P Q : PROP) [h : FromAssumption true P Q] : FromAssumption p iprop(□ P) Q where
+    (P Q : PROP) [h : FromAssumption true .in P Q] : FromAssumption p .in iprop(□ P) Q where
   from_assumption := intuitionisticallyIf_intutitionistically.1.trans h.1
 
 instance (priority := default + 20) fromAssumption_intuitionistically_l_true (p : Bool) [BI PROP]
-    (P Q : PROP) [h : FromAssumption p P Q] : FromAssumption p iprop(□ P) Q where
+    (P Q : PROP) [h : FromAssumption p .in P Q] : FromAssumption p .in iprop(□ P) Q where
   from_assumption := (intuitionisticallyIf_comm' (q := true)).1.trans <|
     intuitionistically_elim.trans h.1
 
 instance (priority := default + 30) fromAssumption_persistently_l_true [BI PROP] (P Q : PROP)
-    [h : FromAssumption true P Q] : FromAssumption true iprop(<pers> P) Q where
+    [h : FromAssumption true .in P Q] : FromAssumption true .in iprop(<pers> P) Q where
   from_assumption := intuitionistically_persistently.1.trans h.1
 
 instance (priority := default + 30) fromAssumption_persistently_l_false [BI PROP] [BIAffine PROP]
-    (P Q : PROP) [h : FromAssumption true P Q] : FromAssumption false iprop(<pers> P) Q where
+    (P Q : PROP) [h : FromAssumption true .in P Q] : FromAssumption false .in iprop(<pers> P) Q where
   from_assumption := intuitionistically_iff_persistently.2.trans h.1
 
 instance (priority := default + 20) fromAssumption_affinely_l (p : Bool) [BI PROP] (P Q : PROP)
-    [h : FromAssumption p P Q] : FromAssumption p iprop(<affine> P) Q where
+    [h : FromAssumption p .in P Q] : FromAssumption p .in iprop(<affine> P) Q where
   from_assumption := (intuitionisticallyIf_mono affinely_elim).trans h.1
 
 set_option synthInstance.checkSynthOrder false in
 instance (priority := default + 10) fromAssumption_forall (p : Bool) [BI PROP] (Φ : α → PROP)
-    (x : α) (Q : PROP) [h : FromAssumption p (Φ x) Q] : FromAssumption p iprop(∀ x, Φ x) Q where
+    (x : α) (Q : PROP) [h : FromAssumption p .in (Φ x) Q] : FromAssumption p .in iprop(∀ x, Φ x) Q where
   from_assumption := (intuitionisticallyIf_mono <| forall_elim x).trans h.1
 
-instance fromAssumption_later [BI PROP] (p : Bool) (P Q : PROP)
-    [h : FromAssumption p P Q] : FromAssumption p P iprop(▷ Q) where
+instance fromAssumption_later [BI PROP] (p : Bool) ioP (P Q : PROP)
+    [h : FromAssumption p ioP P Q] : FromAssumption p ioP P iprop(▷ Q) where
   from_assumption := h.1.trans later_intro
+
+set_option synthInstance.checkSynthOrder false in
+@[ipm_backtrack]
+instance fromAssumption_and_l [BI PROP] (p : Bool) (P1 P2 Q : PROP)
+    [h : FromAssumption p .in P1 Q] : FromAssumption p .in iprop(P1 ∧ P2) Q where
+  from_assumption :=
+    match p, h with
+    | true, h => intuitionistically_and.mp.trans (and_elim_l.trans h.1)
+    | false, h => and_elim_l.trans h.1
+
+set_option synthInstance.checkSynthOrder false in
+@[ipm_backtrack]
+instance fromAssumption_and_r [BI PROP] (p : Bool) (P1 P2 Q : PROP)
+    [h : FromAssumption p .in P2 Q] : FromAssumption p .in iprop(P1 ∧ P2) Q where
+  from_assumption :=
+    match p, h with
+    | true, h => intuitionistically_and.mp.trans (and_elim_r.trans h.1)
+    | false, h => and_elim_r.trans h.1
 
 -- IntoPure
 instance intoPure_pure (φ : Prop) [BI PROP] : IntoPure (PROP := PROP) iprop(⌜φ⌝) φ := ⟨.rfl⟩

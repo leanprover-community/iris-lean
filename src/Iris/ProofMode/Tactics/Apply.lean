@@ -1,126 +1,47 @@
 /-
 Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Oliver Soeser
+Authors: Oliver Soeser, Michael Sammler
 -/
 import Iris.ProofMode.Patterns.ProofModeTerm
+import Iris.ProofMode.Tactics.Assumption
 import Iris.ProofMode.Tactics.Split
-import Iris.ProofMode.Tactics.Pose
+import Iris.ProofMode.Tactics.Have
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-theorem apply [BI PROP] {P Q1 Q2 R : PROP}
-    (h : P ⊢ Q1) [inst : IntoWand false false R Q1 Q2] : P ∗ R ⊢ Q2 :=
-  (sep_mono h inst.1).trans wand_elim_r
+theorem apply [BI PROP] {p} {P Q P' Q1 R : PROP}
+    (h1 : P ⊣⊢ P' ∗ □?p Q) (h2 : P' ⊢ Q1)
+    [h3 : IntoWand p false Q .out Q1 .in R] : P ⊢ R :=
+      h1.1.trans (Entails.trans (sep_mono_l h2) (wand_elim' h3.1))
 
-theorem rec_apply [BI PROP] {P Q P' Q' Q1 Q2 R : PROP}
-    (h1 : P ⊣⊢ P' ∗ Q') (h2 : Q' ⊢ Q1) (h3 : P' ∗ Q2 ⊢ R)
-    [IntoWand false false Q Q1 Q2] : P ∗ Q ⊢ R :=
-  (sep_congr h1 .rfl).mp.trans <| sep_assoc.mp.trans <| (sep_mono_r <| apply h2).trans h3
+partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} (gs : Goals bi) {e} (hyps : Hyps bi e) (goal : Q($prop)) (uniq : Name) : TacticM Q($e ⊢ $goal) := do
+  let ⟨_, hyps', _, out, p, _, pf⟩ := hyps.remove true uniq
+  let A ← mkFreshExprMVarQ q($prop)
+  if let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(IntoWand $p false $out .out $A .in $goal) then
+     let pf' ← gs.addGoal hyps' A
+     return q(apply $pf $pf')
 
-theorem apply_lean [BI PROP] {P Q R : PROP} (h1 : ⊢ Q) (h2 : P ∗ Q ⊢ R) : P ⊢ R :=
-  sep_emp.mpr.trans <| (sep_mono_r h1).trans h2
-
-variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
-def specPatGoal
-    (A1 : Q($prop)) (hyps : Hyps bi e) (spats : List SpecPat)
-    (addGoal : ∀ {e}, Name → Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
-    MetaM Q($e ⊢ $A1) := do
-  return ← if let (some <| .ident _, some inst) := (spats.head?,
-      ← try? (synthInstanceQ q(FromAssumption false $e $A1))) then
-    pure q(($inst).from_assumption)
-  else
-    addGoal (headName spats) hyps A1
-
-variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
-def processSpecPats
-    (A1 : Q($prop)) (hypsl : Hyps bi el) (spats : List SpecPat)
-    (addGoal : ∀ {e}, Name → Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
-    MetaM ((el' er' : Q($prop)) × Q($er' ⊢ $A1) × Hyps bi el' × Q($el ⊣⊢ $el' ∗ $er')) := do
-  let splitPat := fun name _ => match spats.head? with
-    | some <| .ident bIdent => binderIdentHasName name bIdent
-    | some <| .idents bIdents _ => bIdents.any <| binderIdentHasName name
-    | _ => false
-
-  let ⟨el', er', hypsl', hypsr', h'⟩ := Hyps.split bi splitPat hypsl
-  let m ← specPatGoal A1 hypsr' spats addGoal
-  return ⟨el', er', m, hypsl', h'⟩
-
-variable {prop : Q(Type u)} {bi : Q(BI $prop)} in
-partial def iApplyCore
-    (goal el er : Q($prop)) (hypsl : Hyps bi el) (spats : List SpecPat)
-    (addGoal : ∀ {e}, Name → Hyps bi e → (goal : Q($prop)) → MetaM Q($e ⊢ $goal)) :
-    MetaM (Q($el ∗ $er ⊢ $goal)) := do
-  let A1 ← mkFreshExprMVarQ q($prop)
-  let A2 ← mkFreshExprMVarQ q($prop)
-
-  let _ ← isDefEq er goal
-  if let (some _, some _) := (← try? <| synthInstanceQ q(FromAssumption false $er $goal),
-                              ← try? <| synthInstanceQ q(TCOr (Affine $el) (Absorbing $goal))) then
-    -- iexact case
-    return q(assumption (p := false) .rfl)
-  else if let some _ ← try? <| synthInstanceQ q(IntoWand false false $er $A1 $goal) then
-    -- iapply base case
-    let m ← specPatGoal A1 hypsl spats addGoal
-    return q(apply $m)
-  else if let some _ ← try? <| synthInstanceQ q(IntoWand false false $er $A1 $A2) then
-    -- iapply recursive case
-    let ⟨el', _, m, hypsl', h'⟩ ← processSpecPats A1 hypsl spats addGoal
-    let res : Q($el' ∗ $A2 ⊢ $goal) ← iApplyCore goal el' A2 hypsl' spats.tail addGoal
-    return q(rec_apply $h' $m $res)
-  else
-    throwError "iapply: cannot apply {er} to {goal}"
-
-theorem apply_forall [BI PROP] (x : α) (P : α → PROP) {Q : PROP}
-    [H1 : IntoForall Q P] (H2 : E ⊢ E' ∗ Q) : E ⊢ E' ∗ P x :=
-  Entails.trans H2 <| sep_mono_r <| H1.into_forall.trans <| forall_elim x
-
-partial def instantiateForalls' {prop : Q(Type u)} (e e' : Q($prop)) (bi : Q(BI $prop))
-    (out : Q($prop)) (pf : Q($e ⊢ $e' ∗ $out)) (terms : List Term) :
-    TacticM (Expr × Expr) := do
-  if let some t := terms.head? then
-    let texpr ← mkAppM' (← elabTerm t none) #[]
-    let ⟨_, ttype, texpr⟩ ← inferTypeQ texpr
-    let Φ ← mkFreshExprMVarQ q($ttype → $prop)
-    let _ ← synthInstanceQ q(IntoForall $out $Φ)
-    let res ← mkAppM' Φ #[texpr]
-    let pf' ← mkAppM ``apply_forall #[texpr, Φ, pf]
-    return ← instantiateForalls' e e' bi res pf' terms.tail
-  else
-    return ⟨out, pf⟩
+  let some ⟨_, hyps'', pf''⟩ ← try? <| iSpecializeCore gs hyps uniq [] [.goal [] .anonymous] | throwError m!"iapply: cannot apply {out} to {goal}"
+  let pf''' ← iApplyCore gs hyps'' goal uniq
+  return q($(pf'').trans $pf''')
 
 elab "iapply" colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
-  let mvar ← getMainGoal
-
+  let (mvar, { bi, hyps, goal, .. }) ← istart (← getMainGoal)
   mvar.withContext do
-    let g ← instantiateMVars <| ← mvar.getType
-    let some { u, prop, e, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
-    if let some uniq ← try? do pure (← hyps.findWithInfo ⟨pmt.term⟩) then
-      -- lemma from iris context
-      let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove false uniq
-
-      let ⟨out, pf⟩ := ← instantiateForalls' e e' bi out q(($pf).mp) pmt.terms
-
-      let goals ← IO.mkRef #[]
-      let res ← iApplyCore goal e' out hyps' pmt.spats <| goalTracker goals
-      mvar.assign <| ← mkAppM ``Entails.trans #[pf, res]
-      replaceMainGoal (← goals.get).toList
-    else
-      -- lemma from lean context
-      let A1 ← mkFreshExprMVarQ q($prop)
-      let A2 ← mkFreshExprMVarQ q($prop)
-
-      let expected : Q(Prop) := if let some _ := ← try? <|
-        synthInstanceQ q(IntoWand false false $goal $A1 $A2)
-        then q($e ⊢ $A1 -∗ $A2) else q($e ⊢ $goal)
-
-      let expr ← mkAppM' (← elabTerm pmt.term (some expected)) #[]
-
-      let goals ← IO.mkRef #[]
-      let ⟨hyp, pf⟩ ← iPoseCore bi expr pmt.terms goals
-
-      let res ← iApplyCore goal e hyp hyps pmt.spats <| goalTracker goals
-      mvar.assign <| ← mkAppM ``apply_lean #[pf, res]
-      replaceMainGoal (← goals.get).toList
+  let gs ← Goals.new bi
+  let ⟨uniq, _, hyps, pf⟩ ← iHave gs hyps pmt (← `(binderIdent|_)) true (mayPostpone := true)
+  let ⟨e', _, _, out, p, _, pf'⟩ := hyps.remove true uniq
+  if let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(FromAssumption $p .in $out $goal) then
+    if let LOption.some _ ← trySynthInstanceQ q(TCOr (Affine $e') (Absorbing $goal)) then
+      -- behave like iexact
+      Term.synthesizeSyntheticMVarsNoPostponing
+      mvar.assign q($(pf).trans (assumption (Q := $goal) $pf'))
+      replaceMainGoal (← gs.getGoals)
+      return
+  let pf' ← iApplyCore gs hyps goal uniq
+  Term.synthesizeSyntheticMVarsNoPostponing
+  mvar.assign q($(pf).trans $pf')
+  replaceMainGoal (← gs.getGoals)

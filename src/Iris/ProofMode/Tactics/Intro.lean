@@ -45,18 +45,17 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
 
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iIntroCore
-    {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List iCasesPat)
-    (k : ∀ {P}, Hyps bi P → (Q : Q($prop)) → MetaM Q($P ⊢ $Q)) :
+    {P} (gs : Goals bi) (hyps : Hyps bi P) (Q : Q($prop)) (pats : List iCasesPat) :
     MetaM (Q($P ⊢ $Q)) := do
   match pats with
-  | [] => k hyps Q
+  | [] => gs.addGoal hyps Q
   | pat :: pats =>
     let A1 ← mkFreshExprMVarQ q($prop)
     let A2 ← mkFreshExprMVarQ q($prop)
     let fromImp ← try? (α := Q(FromImp $Q $A1 $A2)) do
       synthInstanceQ q(FromImp $Q $A1 $A2)
     if let (.clear, some _) := (pat, fromImp) then
-      let pf ← iIntroCore hyps A2 pats k
+      let pf ← iIntroCore gs hyps A2 pats
       return q(imp_intro_drop (Q := $Q) $pf)
     else
     let alres ← try? (α := _ × (v : Level) × (α : Q(Sort v)) × (Φ : Q($α → $prop)) ×
@@ -72,29 +71,29 @@ partial def iIntroCore
         addLocalVarInfo ref (← getLCtx) x α
         have B : Q($prop) := Expr.headBeta q($Φ $x)
         have : $B =Q $Φ $x := ⟨⟩
-        let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← iIntroCore hyps B pats k
+        let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← iIntroCore gs hyps B pats
         return q(from_forall_intro (Q := $Q) $pf)
     else
     let B ← mkFreshExprMVarQ q($prop)
     match pat, fromImp with
     | .intuitionistic pat, some _ =>
       let _ ← synthInstanceQ q(IntoPersistently false $A1 $B)
-      let pf ← iCasesCore bi hyps A2 q(true) q(iprop(□ $B)) B ⟨⟩ pat (iIntroCore · A2 pats k)
+      let pf ← iCasesCore bi hyps A2 q(true) q(iprop(□ $B)) B ⟨⟩ pat (iIntroCore gs · A2 pats)
       return q(imp_intro_intuitionistic (Q := $Q) $pf)
     | .intuitionistic pat, none =>
       let _ ← synthInstanceQ q(FromWand $Q $A1 $A2)
       let _ ← synthInstanceQ q(IntoPersistently false $A1 $B)
       let _ ← synthInstanceQ q(TCOr (Affine $A1) (Absorbing $A2))
-      let pf ← iCasesCore bi hyps A2 q(true) q(iprop(□ $B)) B ⟨⟩ pat (iIntroCore · A2 pats k)
+      let pf ← iCasesCore bi hyps A2 q(true) q(iprop(□ $B)) B ⟨⟩ pat (iIntroCore gs · A2 pats)
       return q(wand_intro_intuitionistic (Q := $Q) $pf)
     | _, some _ =>
       let _ ← synthInstanceQ q(FromAffinely $B $A1)
       let _ ← synthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
-      let pf ← iCasesCore bi hyps A2 q(false) B B ⟨⟩ pat (iIntroCore · A2 pats k)
+      let pf ← iCasesCore bi hyps A2 q(false) B B ⟨⟩ pat (iIntroCore gs · A2 pats)
       return q(imp_intro_spatial (Q := $Q) $pf)
     | _, none =>
       let _ ← synthInstanceQ q(FromWand $Q $A1 $A2)
-      let pf ← iCasesCore bi hyps A2 q(false) A1 A1 ⟨⟩ pat (iIntroCore · A2 pats k)
+      let pf ← iCasesCore bi hyps A2 q(false) A1 A1 ⟨⟩ pat (iIntroCore gs · A2 pats)
       return q(wand_intro_spatial (Q := $Q) $pf)
 
 
@@ -106,8 +105,8 @@ elab "iintro" pats:(colGt icasesPat)* : tactic => do
   mvar.withContext do
 
   -- process patterns
-  let goals ← IO.mkRef #[]
-  let pf ← iIntroCore bi hyps goal pats.toList <| goalTracker goals .anonymous
+  let gs ← Goals.new bi
+  let pf ← iIntroCore bi gs hyps goal pats.toList
 
   mvar.assign pf
-  replaceMainGoal (← goals.get).toList
+  replaceMainGoal (← gs.getGoals)
