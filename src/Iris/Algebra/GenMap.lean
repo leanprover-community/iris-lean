@@ -35,7 +35,6 @@ def Infinite (P : α → Prop) : Prop := ∃ e, Enum P e
 
 def IsFree {β : α → Type _} (f : (a : α) → Option (β a)) : α → Prop := fun a => f a = none
 
-set_option grind.warning false
 theorem alter_isFree_infinite [DecidableEq α] {f : α → Option β} (H : Infinite (IsFree f)) :
     Infinite (IsFree (alter f a b)) := by
   rcases H with ⟨enum, Henum_inc, Henum_inj⟩
@@ -63,7 +62,6 @@ theorem Infinite.nat_true : Infinite fun (_ : Nat) => True := ⟨id, trivial, id
 
 section GenMapImpl
 
--- abbrev GenMap := { f : α → Option β // Infinite (IsFree f) }
 structure GenMap (α β : Type _) where
   car : α → Option β
 
@@ -78,23 +76,22 @@ def GenMap.empty [DecidableEq α] : GenMap α β := ⟨fun _ => none⟩
 def GenMap.singleton [DecidableEq α] (x : α) (y : β) : GenMap α β :=
   empty.alter x y
 
--- Helper lemmas for empty_map and singleton_map
-theorem empty_map_lookup [DecidableEq α] (γ : α) :
+theorem GenMap.empty_map_lookup [DecidableEq α] (γ : α) :
   (GenMap.empty : GenMap α β).car γ = none := by rfl
 
-theorem singleton_map_in [DecidableEq α] (x : α) (y : β) :
+theorem GenMap.singleton_map_in [DecidableEq α] (x : α) (y : β) :
   (GenMap.singleton x y).car x = some y := by
-  simp [GenMap.singleton, GenMap.alter, GenMap.empty, alter]
+  simp [GenMap.singleton, GenMap.alter, GenMap.empty, Iris.alter]
 
-theorem singleton_map_ne [DecidableEq α] {x : α} {y : β} {x' : α} (h : x' ≠ x) :
+theorem GenMap.singleton_map_none [DecidableEq α] {x : α} {y : β} {x' : α} (h : x' ≠ x) :
     (GenMap.singleton x y).car x' = none := by
-  simp [GenMap.singleton, GenMap.alter, alter, GenMap.empty]
+  simp [GenMap.singleton, GenMap.alter, Iris.alter, GenMap.empty]
   intro heq; subst heq; contradiction
 
 section OFE
 variable (α β : Type _) [OFE β]
 
-instance GenMap_instOFE : OFE (GenMap α β) where
+instance instOFE_GenMap : OFE (GenMap α β) where
   Equiv := (·.car ≡ ·.car)
   Dist n := (·.car ≡{n}≡ ·.car)
   dist_eqv.refl _ := Dist.of_eq rfl
@@ -105,27 +102,21 @@ instance GenMap_instOFE : OFE (GenMap α β) where
 end OFE
 
 section CMRA
+open CMRA GenMap
 
 variable (α β : Type _) [CMRA β]
 
--- NB. Could use actual subtypes, but I will first attempt to do the subtyping on validity alone
--- May make the OFunctors simpler because I just need to point them to GenMap instead
--- of writing something new.
--- Seems that the alter and alloc updates are still provable?
 instance instCMRA_GenMap : CMRA (GenMap α β) where
   pcore x := Option.map GenMap.mk <| CMRA.pcore x.car
   op x y := GenMap.mk (x.car • y.car)
   ValidN n x := ✓{n} x.car ∧ (Infinite (IsFree x.car))
   Valid x := ✓ x.car ∧ (Infinite (IsFree x.car))
-  op_ne.ne {_ _ _} H := CMRA.op_ne (α := α → Option β) |>.ne H
+  op_ne.ne {_ _ _} H := op_ne (α := α → Option β) |>.ne H
   pcore_ne {n x y cx} H Hm := by
-    have Hm' : (CMRA.pcore x.car) = some cx.car := by
-      rcases h : (CMRA.pcore x.car)
-      · simp_all
-      · simp_all
-        rw [← Hm]
-    have H' : x.car ≡{n}≡ y.car := by exact H
-    rcases CMRA.pcore_ne H' Hm' with ⟨cy', Hcy'1, Hcy'2⟩
+    have Hm' : (pcore x.car) = some cx.car := by
+      rcases h : (pcore x.car) <;> simp_all
+      rw [← Hm]
+    rcases pcore_ne H Hm' with ⟨cy', Hcy'1, Hcy'2⟩
     exact ⟨⟨cy'⟩, by simp [Hcy'1], Hcy'2⟩
   validN_ne {n x y H} := by
     refine fun ⟨Hv, ⟨e, Hf, Hi⟩⟩ => ⟨Dist.validN H |>.mp Hv, ?_⟩
@@ -135,53 +126,53 @@ instance instCMRA_GenMap : CMRA (GenMap α β) where
     simp_all [IsFree, OFE.Dist, Option.Forall₂]
   valid_iff_validN {x} := by
     refine ⟨fun ⟨Hv, Hi⟩ n => ⟨Hv.validN, Hi⟩, fun H => ⟨?_, H 0 |>.2⟩⟩
-    exact CMRA.valid_iff_validN.mpr (H · |>.1)
-  validN_succ {x n} := fun ⟨Hv, Hi⟩ => ⟨CMRA.validN_succ Hv, Hi⟩
+    exact valid_iff_validN.mpr (H · |>.1)
+  validN_succ {x n} := fun ⟨Hv, Hi⟩ => ⟨validN_succ Hv, Hi⟩
   validN_op_left {n x y} := by
     simp; rintro Hv Hf
-    refine ⟨CMRA.validN_op_left Hv, ?_⟩
+    refine ⟨validN_op_left Hv, ?_⟩
     refine Infinite.mono Hf (fun a => ?_)
-    simp [IsFree, CMRA.op, optionOp]
+    simp [IsFree, op, optionOp]
     cases _ : x.car a <;> cases _ : y.car a  <;> simp
   assoc {x y z} a := by
     cases _ : x.car a <;> cases _ : y.car a <;> cases _ : z.car a <;>
-      simp_all [CMRA.op, OFE.Equiv, Option.Forall₂, optionOp]
-    exact CMRA.assoc
+      simp_all [op, OFE.Equiv, Option.Forall₂, optionOp]
+    exact assoc
   comm {x y} a := by
     cases _ : x.car a <;> cases _ : y.car a <;>
-      simp_all [CMRA.op, OFE.Equiv, Option.Forall₂, optionOp]
-    exact CMRA.comm
+      simp_all [op, OFE.Equiv, Option.Forall₂, optionOp]
+    exact comm
   pcore_op_left {x cx} H := by
     rcases x with ⟨x⟩; rcases cx with ⟨cx⟩
-    have _ := CMRA.pcore_op_left (x := x) (cx := cx)
+    have _ := pcore_op_left (x := x) (cx := cx)
     simp_all [OFE.Equiv]
   pcore_idem {x cx} H := by
     rcases x with ⟨x⟩; rcases cx with ⟨cx⟩
     simp_all [OFE.Equiv, Option.Forall₂, Option.map]
-    apply CMRA.pcore_idem (x := x) (cx := cx)
-    simp [CMRA.pcore, H]
+    apply pcore_idem (x := x) (cx := cx)
+    simp [pcore, H]
   pcore_op_mono {x cx} := by
     rcases x with ⟨x⟩; rcases cx with ⟨cx⟩; simp
     refine fun H ⟨y⟩ => ?_
-    rcases CMRA.pcore_op_mono (x := x) (cx := cx) H y with ⟨cy, Hcy⟩
+    rcases pcore_op_mono (x := x) (cx := cx) H y with ⟨cy, Hcy⟩
     refine ⟨.mk cy, Hcy⟩
   extend {n x y1 y2} := by
     rintro ⟨Hv, _⟩ H
-    rcases CMRA.extend Hv H with ⟨z1, z2, _, _, _⟩
+    rcases extend Hv H with ⟨z1, z2, _, _, _⟩
     exists .mk z1
     exists .mk z2
 
 instance instUCMRA_GenMap : UCMRA (GenMap Nat β) where
   unit := GenMap.empty
   unit_valid := ⟨fun _ => trivial, ⟨id, rfl, id⟩⟩
-  unit_left_id := by simp [CMRA.op, GenMap.empty, optionOp]
-  pcore_unit := by simp [CMRA.pcore, GenMap.empty, CMRA.core, optionCore]
+  unit_left_id := by simp [op, empty, optionOp]
+  pcore_unit := by simp [pcore, empty, core, optionCore]
 
-instance : CMRA.IsTotal (GenMap Nat β) := by exact CMRA.unit_total
+instance : IsTotal (GenMap Nat β) := unit_total
 
 theorem GenMap.alter_valid [DecidableEq α] {g : GenMap α β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
     ✓{n} g.alter a b := by
-  rcases g with ⟨g⟩ <;> simp [GenMap.alter]
+  rcases g with ⟨g⟩ <;> simp [alter]
   rcases Hg with ⟨Hv, Hi⟩
   refine ⟨fun _ => ?_, alter_isFree_infinite Hi⟩
   simp [Iris.alter] <;> split
@@ -192,54 +183,53 @@ theorem GenMap.valid_exists_fresh {g : GenMap α β} (Hv : ✓{n} g) : ∃ a : �
   rcases Hv with ⟨_, e, He_inc, _⟩
   exact ⟨e 0, He_inc⟩
 
-theorem singleton_map_op [DecidableEq α] (x : α) (y1 y2 : β) :
-    (GenMap.singleton x y1 : GenMap α β) • GenMap.singleton x y2 = GenMap.singleton x (y1 • y2) := by
+theorem GenMap.singleton_map_op [DecidableEq α] (x : α) (y1 y2 : β) :
+    (singleton x y1 : GenMap α β) • singleton x y2 = singleton x (y1 • y2) := by
   apply congrArg GenMap.mk
   funext γ
   simp only [CMRA.op, optionOp]
   by_cases h : γ = x
   · subst h
-    simp [GenMap.singleton, GenMap.empty, GenMap.alter, alter]
-  · simp [GenMap.singleton, GenMap.empty, GenMap.alter, alter]
+    simp [singleton, empty, alter, Iris.alter]
+  · simp [singleton, empty, alter, Iris.alter]
     grind
 
-theorem singleton_map_pcore [DecidableEq α] (x : α) (y : β) (γ : α) :
-    ((GenMap.singleton x y : GenMap α β).car γ).bind CMRA.pcore =
-    if γ = x then (CMRA.pcore y) else none := by
+theorem GenMap.singleton_map_pcore [DecidableEq α] (x : α) (y : β) (γ : α) :
+    ((singleton x y : GenMap α β).car γ).bind pcore =
+    if γ = x then pcore y else none := by
   by_cases h : γ = x
   · subst h
     simp [singleton_map_in]
-  · simp [singleton_map_ne h]
-    intros; simp_all only [not_true_eq_false]
+  · simp_all [singleton_map_none h]
 
 -- Validity lemmas for singleton_map
-theorem validN_singleton_map_in [DecidableEq α] (x : α) (y : β) (n : Nat) :
-    ✓{n} (GenMap.singleton x y).car x → ✓{n} y := by
+theorem GenMap.validN_singleton_map_in [DecidableEq α] (x : α) (y : β) (n : Nat) :
+    ✓{n} (singleton x y).car x → ✓{n} y := by
   rw [singleton_map_in]
-  simp [CMRA.ValidN, optionValidN]
+  simp [ValidN, optionValidN]
 
-theorem op_singleton_comm [DecidableEq α] {mf : GenMap α β} {x : α} (y : β) :
+theorem GenMap.op_singleton_comm [DecidableEq α] {mf : GenMap α β} {x : α} (y : β) :
   IsFree mf.car x →
   (GenMap.singleton x y) • mf ≡ mf.alter x (some y) := by
   intro H_free k
   by_cases heq : k = x
   · subst heq
-    simp only [CMRA.op, GenMap.alter, alter, GenMap.singleton, empty_map_lookup]
+    simp only [op, alter, Iris.alter, singleton, empty_map_lookup]
     simp only [optionOp, ↓reduceIte]
     rw [H_free]
-  · simp only [CMRA.op, GenMap.alter, alter, GenMap.singleton, empty_map_lookup]
+  · simp only [op, alter, Iris.alter, singleton, empty_map_lookup]
     simp [if_neg (heq ∘ Eq.symm), optionOp]
 
-theorem validN_op_comm [DecidableEq α] {m mf : GenMap α β} (x : α) (y : β) (H : IsFree mf.car x) :
+theorem GenMap.validN_op_comm [DecidableEq α] {m mf : GenMap α β} (x : α) (y : β) (H : IsFree mf.car x) :
   ✓{n} m.alter x y • mf ↔ ✓{n} (m • mf).alter x y := by
   apply Dist.validN
   intro k; simp [IsFree] at H
   by_cases heq : k = x
   · -- Case: k = x
     subst heq
-    simp [CMRA.op, GenMap.alter, alter, H, optionOp]
+    simp [CMRA.op, GenMap.alter, Iris.alter, H, optionOp]
   · -- Case: k ≠ γ
-    simp only [CMRA.op, GenMap.alter, alter]
+    simp only [CMRA.op, alter, Iris.alter]
     have : x ≠ k := heq ∘ Eq.symm
     rw [if_neg this, if_neg this]
 
@@ -259,9 +249,9 @@ abbrev GenMap.lift [OFE α] [OFE β] (f : α -n> β) : GenMap T α -n> GenMap T 
     split <;> split <;> simp_all
     exact NonExpansive.ne H
 
-instance GenMapOF_instOFunctor (F : OFunctorPre) [OFunctor F] :
+instance instOFunctor_GenMapOF (F : OFunctorPre) [OFunctor F] :
     OFunctor (GenMapOF Nat F) where
-  cofe {A B _ _} := GenMap_instOFE Nat (F A B)
+  cofe {A B _ _} := instOFE_GenMap Nat (F A B)
   map f₁ f₂ := GenMap.lift <| OFunctor.map (F := F) f₁ f₂
   map_ne.ne {n x1 x2} Hx {y1 y2} Hy k γ := by
     simp only [OFE.Dist, Option.Forall₂, Option.map]
@@ -290,13 +280,10 @@ instance GenMapOF_instURFunctor (F : COFE.OFunctorPre) [RFunctor F] :
         simp [CMRA.ValidN, optionValidN, URFunctor.map] at Hvalid
         specialize Hvalid ?_
         · specialize hv z
-          simp [CMRA.ValidN, optionValidN] at hv
-          simp [h] at hv
-          exact hv
+          simp_all [CMRA.ValidN, optionValidN]
         exact Hvalid
       · specialize @Hf n
-        simp [IsFree, Option.map] at Hf ⊢
-        simp [Hf]
+        simp_all [IsFree, Option.map]
     pcore x γ := by
       let Hcore := @(URFunctor.map (F := OptionOF F) f g).pcore (x.car γ)
       simp [Option.map] at Hcore ⊢
@@ -305,8 +292,7 @@ instance GenMapOF_instURFunctor (F : COFE.OFunctorPre) [RFunctor F] :
       simp [OFE.Equiv, Option.Forall₂, URFunctor.map, Option.bind, h, optionCore, OFunctor.map, optionMap, Option.map] at Hcore
       cases h' : CMRA.pcore v
       · simp_all
-        cases h'' : CMRA.pcore ((OFunctor.map f g).f v) <;> simp_all
-        simp_all [RFunctor.toOFunctor]
+        cases h'' : CMRA.pcore ((OFunctor.map f g).f v) <;> simp_all [RFunctor.toOFunctor]
       · simp_all
         cases h'' : CMRA.pcore ((OFunctor.map f g).f v) <;> simp_all [RFunctor.toOFunctor]
     op z x γ := by

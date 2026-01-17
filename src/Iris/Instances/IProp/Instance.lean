@@ -209,7 +209,7 @@ end Fold
 
 section iSingleton
 
-open IProp OFE UPred
+open IProp OFE UPred GenMap
 
 def iSingleton {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IResUR GF :=
   fun τ' =>
@@ -231,7 +231,7 @@ instance : OFE.NonExpansive (iSingleton F γ (GF := GF))  where
         have h1 : E.bundle x1 ≡{n}≡ E.bundle x2 := NonExpansive.ne H
         have h2 : unfoldi (E.bundle x1) ≡{n}≡ unfoldi (E.bundle x2) := NonExpansive.ne h1
         exact h2
-      · simp [singleton_map_ne heq]
+      · simp [singleton_map_none heq]
     · rfl
 
 theorem iSingleton_op (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSingleton F γ y ≡ iSingleton F γ (x • y) := by
@@ -242,13 +242,13 @@ theorem iSingleton_op (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSinglet
     simp only [CMRA.op, optionOp]
     by_cases heq : γ' = γ
     · subst heq
-      simp only [iSingleton, ↓reduceDIte, singleton_map_in, some_eqv_some]
+      simp only [iSingleton, ↓reduceDIte, GenMap.singleton_map_in, some_eqv_some]
       apply ((RFunctor.map (fold GF) (unfold GF)).op _ _).symm.trans
       exact NonExpansive.eqv (bundle_op x y).symm
-    · simp only [iSingleton, ↓reduceDIte, singleton_map_ne heq]
+    · simp only [iSingleton, ↓reduceDIte, singleton_map_none heq]
       rfl
   · rename_i h
-    simp [iSingleton, h, CMRA.op, empty_map_lookup]
+    simp [iSingleton, h, CMRA.op, GenMap.empty_map_lookup]
 
 -- Helper lemmas for iSingleton validity and freedom properties
 
@@ -256,7 +256,7 @@ theorem iSingleton_op (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSinglet
 theorem iSingleton_free_at_ne {γ : GName} {v : F.ap (IProp GF)} {γ' : GName} (h : γ' ≠ γ) :
     (iSingleton F γ v E.τ).car γ' = none := by
   simp [iSingleton]
-  exact singleton_map_ne h
+  exact singleton_map_none h
 
 -- iSingleton at a single key has infinitely many free keys
 theorem iSingleton_infinite_free {γ : GName} {v : F.ap (IProp GF)} :
@@ -276,14 +276,14 @@ theorem iSingleton_ne_eq_unit {γ : GName} {v : F.ap (IProp GF)} {τ' : GType} (
   simp only [iSingleton, UCMRA.unit]
   split
   · rename_i heq; subst heq; contradiction
-  · apply empty_map_lookup
+  · apply GenMap.empty_map_lookup
 
 -- Composing with iSingleton preserves freedom at keys ≠ γ
 theorem iSingleton_op_ne_free {γ : GName} {v : F.ap (IProp GF)}
     {m : GenMap GName (GF.api E.τ (IPre GF))} {γ' : GName} (h_ne : γ' ≠ γ) (h_free : m.car γ' = none) :
     ((iSingleton F γ v E.τ) • m).car γ' = none := by
   simp [CMRA.op, optionOp, iSingleton, h_free]
-  rw [singleton_map_ne h_ne]
+  rw [singleton_map_none h_ne]
 
 -- Composing with iSingleton preserves infinite free keys
 theorem iSingleton_op_isFree_infinite {γ : GName} {v : F.ap (IProp GF)}
@@ -348,11 +348,11 @@ instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : CMRA.CoreId (iSingleton F γ a)
     · rename_i h; subst h
       by_cases heq : γ' = γ
       · subst heq
-        simp only [singleton_map_in, optionCore]
+        simp only [GenMap.singleton_map_in, optionCore]
         unfold CMRA.pcore
         simp
         exact unfoldi_bundle_coreId.core_id
-      · simp [singleton_map_ne heq]
+      · simp [singleton_map_none heq]
     · rfl
 
 theorem ElemG.bundle_validN {a : F.ap (IProp GF)} (H : ✓{n} a) :
@@ -380,7 +380,7 @@ theorem IProp.unfoldi_bundle_unit {ε : F.ap (IProp GF)} [IsUnit ε] :
 theorem validN_of_iSingleton {a : F.ap (IProp GF)} (Hv : ✓{n} iSingleton F γ a) : ✓{n} a := by
   -- The singleton stores `unfoldi (E.bundle a)` at key γ in type E.τ
   have h_at_gamma : ✓{n} (((iSingleton F γ a) E.τ).car γ) := (Hv E.τ).1 γ
-  simp [iSingleton, singleton_map_in] at h_at_gamma
+  simp [iSingleton, GenMap.singleton_map_in] at h_at_gamma
   -- Reverse the transformations: foldi → unbundle → transpAp
   apply CMRA.validN_ne (ElemG.unbundle_bundle E a).dist
   apply ElemG.unbundle_validN
@@ -393,14 +393,14 @@ theorem iSingleton_validN_at_E_τ {a : F.ap (IProp GF)} (a_valid : ✓{n} a) :
   refine ⟨fun γ' => ?_, ?_⟩
   · -- Pointwise validity
     simp [iSingleton]
-    by_cases h_gamma : γ' = γ <;> simp [h_gamma, CMRA.ValidN, optionValidN, singleton_map_in]
+    by_cases h_gamma : γ' = γ <;> simp [h_gamma, CMRA.ValidN, optionValidN, GenMap.singleton_map_in]
     · exact IProp.unfoldi_bundle_validN a_valid
-    · simp [singleton_map_ne h_gamma]
+    · simp [singleton_map_none h_gamma]
   · -- Infinite free keys (using poke to skip γ)
     refine ⟨poke id γ, ?_, ?_⟩
     · intro γ'; simp [IsFree, iSingleton, poke]
       have : ¬ (if γ' < γ then γ' else γ' + 1) = γ := by grind only [cases Or]
-      simp [singleton_map_ne this]
+      simp [singleton_map_none this]
     · intro _ _; simp [poke]; split <;> split <;> omega
 
 /-- iSingleton validity at types τ' ≠ E.τ follows from unit validity. -/
@@ -433,7 +433,7 @@ theorem validN_of_iSingleton_op_free {mf : IResUR GF} {y : F.ap (IProp GF)}
   -- Extract validity at key γ from the composition
   have h_at_gamma : ✓{n} ((((iSingleton F γ y) • mf) E.τ).car γ) := (Hv E.τ).1 γ
   simp [IsFree] at Hfree
-  simp [iSingleton, CMRA.op, Hfree, singleton_map_in] at h_at_gamma
+  simp [iSingleton, CMRA.op, Hfree, GenMap.singleton_map_in] at h_at_gamma
   -- Reverse the transformations: foldi → unbundle → transpAp
   apply CMRA.validN_ne (ElemG.unbundle_bundle E y).dist
   apply ElemG.unbundle_validN
@@ -451,15 +451,15 @@ theorem validN_mf_at_E_τ_of_iSingleton_op_free {mf : IResUR GF} {y : F.ap (IPro
     by_cases h_gamma : γ' = γ
     · simp [h_gamma, Hfree, CMRA.ValidN]
     · have h := (Hv E.τ).1 γ'
-      simp [CMRA.op, iSingleton, singleton_map_ne h_gamma, optionOp] at h
+      simp [CMRA.op, iSingleton, singleton_map_none h_gamma, optionOp] at h
       exact h
   · -- Infinite free keys: extract from composition
     rcases Hv E.τ with ⟨_, h_inf⟩
     apply Infinite.mono h_inf (fun k h_free => ?_)
     simp [IsFree, CMRA.op, iSingleton, optionOp] at h_free ⊢
     by_cases h_k : k = γ
-    · simp_all [singleton_map_in]
-    · simp_all [singleton_map_ne h_k]
+    · simp_all [GenMap.singleton_map_in]
+    · simp_all [singleton_map_none h_k]
 
 /-- Extract validity of `mf` at types τ' ≠ E.τ from `iSingleton F γ y • mf`. -/
 theorem validN_mf_at_ne_of_iSingleton_op {mf : IResUR GF} {y : F.ap (IProp GF)}
@@ -500,7 +500,7 @@ theorem iSingleton_op_validN_at_γ {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
   · intros γ'
     by_cases h_key : γ' = γ
     · subst γ'; exact Hv_a
-    · simp [CMRA.ValidN, CMRA.op, iSingleton, singleton_map_ne h_key]
+    · simp [CMRA.ValidN, CMRA.op, iSingleton, singleton_map_none h_key]
       rcases h_at : (mf E.τ).car γ' with (⟨⟩ | v)
       · trivial
       · simp []; exact extract_frame_validN (Hv E.τ).1 h_at
@@ -515,7 +515,7 @@ def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap 
 
 section iOwn
 
-open IProp OFE UPred BI
+open IProp OFE UPred BI GenMap
 
 variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 
@@ -536,15 +536,15 @@ theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOw
   · rename_i h; rcases h with ⟨rfl, rfl⟩
     refine Dist.op_l ?_
     by_cases heq : γ' = γ
-    · simp only [heq, singleton_map_in]
+    · simp only [heq, GenMap.singleton_map_in]
       apply some_dist_some.mpr
       apply Equiv.dist
       apply (NonExpansive.eqv (NonExpansive.eqv Hac)).trans
       apply (NonExpansive.eqv (bundle_op a2 ac)).trans
       exact (RFunctor.map (fold GF) (unfold GF)).op _ _
-    · simp only [singleton_map_ne heq]
+    · simp only [singleton_map_none heq]
       simp only [CMRA.op, optionOp, Dist.rfl]
-  · simp [empty_map_lookup]; apply Dist.op_l
+  · simp [GenMap.empty_map_lookup]; apply Dist.op_l
     rfl
 
 theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ UPred.cmraValid a :=
@@ -621,7 +621,7 @@ theorem iSingleton_op_validN_notfree {mf : IResUR GF} {y : F.ap (IProp GF)} :
   have h_valid_at_tau : ✓{n} ((iSingleton F γ y • mf) E.τ) := Hv E.τ
   rcases h_valid_at_tau with ⟨h_pointwise, _⟩
   have h_at_gamma : ✓{n} ((((iSingleton F γ y) • mf) E.τ).car γ) := h_pointwise γ
-  simp [iSingleton, CMRA.op, Hnfree, singleton_map_in]  at h_at_gamma
+  simp [iSingleton, CMRA.op, Hnfree, GenMap.singleton_map_in]  at h_at_gamma
   apply CMRA.validN_ne (ElemG.unbundle_bundle E y).op_l.dist
   apply CMRA.validN_ne (unbundle_op (E.bundle y) (foldi.f v)).dist
   apply ElemG.unbundle_validN
@@ -683,19 +683,19 @@ theorem validN_iSingleton_op_notfree {mz' : IResUR GF} :
     simp [CMRA.op]
     by_cases h_gamma : γ' = γ
     · -- At γ: use validN_bundle_op_foldi
-      simp [h_gamma, iSingleton, Hnotfree, CMRA.ValidN, optionValidN, singleton_map_in]
+      simp [h_gamma, iSingleton, Hnotfree, CMRA.ValidN, optionValidN, GenMap.singleton_map_in]
       exact validN_bundle_op_foldi Ha'_valid
     · -- At γ' ≠ γ: extract from original composition
       have h_at_gamma' := (Hv E.τ).1 γ'
-      simp [CMRA.op, iSingleton, singleton_map_ne h_gamma, optionOp] at h_at_gamma' ⊢
+      simp [CMRA.op, iSingleton, singleton_map_none h_gamma, optionOp] at h_at_gamma' ⊢
       exact h_at_gamma'
   · -- Infinite free keys: monotonicity from original composition
     obtain ⟨_, h_inf⟩ := Hv E.τ
     apply Infinite.mono h_inf
     intro k h_free
     by_cases h_k : k = γ
-    · subst h_k; simp [IsFree, CMRA.op, iSingleton, singleton_map_in, Hnotfree] at h_free
-    · simp [IsFree, CMRA.op, iSingleton, singleton_map_ne h_k] at h_free ⊢; exact h_free
+    · subst h_k; simp [IsFree, CMRA.op, iSingleton, GenMap.singleton_map_in, Hnotfree] at h_free
+    · simp [IsFree, CMRA.op, iSingleton, singleton_map_none h_k] at h_free ⊢; exact h_free
 
 theorem singleton_updateP {a : F.ap (IProp GF)} :
   (a ~~>: P) →
@@ -750,7 +750,7 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
     refine ⟨iSingleton F γ ε, rfl, ?_⟩
     replace Hv := CMRA.validN_ne UCMRA.unit_left_id.dist Hv
     apply iSingleton_op_validN_at_γ Hv
-    unfold iSingleton; simp [CMRA.ValidN, CMRA.op, singleton_map_in]
+    unfold iSingleton; simp [CMRA.ValidN, CMRA.op, GenMap.singleton_map_in]
     -- case analysis on [γ ∈ (mf E.τ)]
     rcases h_at : (mf E.τ).car γ with (⟨⟩ | v) <;> simp []
     · exact IProp.unfoldi_bundle_validN Hε.unit_valid.validN
