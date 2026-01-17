@@ -28,7 +28,7 @@ structure Enum (P : α → Prop) (enum : Nat → α) : Prop where
   inc {n} : P (enum n)
   inj {n m} : enum n = enum m → n = m
 
-def Poke [DecidableEq α] (enum : Nat → α) (n : Nat) : Nat → α :=
+def poke [DecidableEq α] (enum : Nat → α) (n : Nat) : Nat → α :=
   fun n' => if n' < n then enum n' else enum (n' + 1)
 
 def Infinite (P : α → Prop) : Prop := ∃ e, Enum P e
@@ -40,11 +40,11 @@ theorem alter_isFree_infinite [DecidableEq α] {f : α → Option β} (H : Infin
     Infinite (IsFree (alter f a b)) := by
   rcases H with ⟨enum, Henum_inc, Henum_inj⟩
   rcases Classical.em (∃ n₀, enum n₀ = a) with (⟨n₀, Hin⟩|Hout)
-  · refine ⟨Poke enum n₀, @fun n => ?_, @fun n m => ?_⟩
-    · simp [alter, IsFree]; split <;> rename_i h <;> revert h <;> simp [Poke]
+  · refine ⟨poke enum n₀, @fun n => ?_, @fun n m => ?_⟩
+    · simp [alter, IsFree]; split <;> rename_i h <;> revert h <;> simp [poke]
       · split <;> intro H <;> specialize Henum_inj (Hin ▸ H) <;> omega
       · split <;> refine fun _ => Henum_inc
-    · simp [Poke]
+    · simp [poke]
       split <;> split
       all_goals intro H <;> specialize Henum_inj H <;> grind
   · refine ⟨enum, @fun n => ?_, @fun n m Heq => ?_⟩
@@ -59,7 +59,7 @@ theorem Infinite.mono {P Q : α → Prop} (H : Infinite P) (Hmono : ∀ a, P a �
   rcases H with ⟨enum, Henum_inc, Henum_inj⟩
   exact ⟨enum, Hmono (enum _) Henum_inc, Henum_inj⟩
 
-theorem Infinite.Nat_True : Infinite fun (_ : Nat) => True := ⟨id, trivial, id⟩
+theorem Infinite.nat_true : Infinite fun (_ : Nat) => True := ⟨id, trivial, id⟩
 
 section GenMapImpl
 
@@ -218,7 +218,7 @@ theorem validN_singleton_map_in [DecidableEq α] (x : α) (y : β) (n : Nat) :
   rw [singleton_map_in]
   simp [CMRA.ValidN, optionValidN]
 
-theorem Op_singleton_comm [DecidableEq α] {mf : GenMap α β} {x : α} (y : β) :
+theorem op_singleton_comm [DecidableEq α] {mf : GenMap α β} {x : α} (y : β) :
   IsFree mf.car x →
   (GenMap.singleton x y) • mf ≡ mf.alter x (some y) := by
   intro H_free k

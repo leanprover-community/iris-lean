@@ -261,13 +261,13 @@ theorem iSingleton_free_at_ne {γ : GName} {v : F.ap (IProp GF)} {γ' : GName} (
 -- iSingleton at a single key has infinitely many free keys
 theorem iSingleton_infinite_free {γ : GName} {v : F.ap (IProp GF)} :
     Infinite (IsFree (iSingleton F γ v E.τ).car) := by
-  refine ⟨Poke id γ, ?_, ?_⟩
+  refine ⟨poke id γ, ?_, ?_⟩
   · intro n
-    simp [IsFree, Poke]
+    simp [IsFree, poke]
     split
     · rename_i h; exact iSingleton_free_at_ne (Nat.ne_of_lt h)
     · rename_i h; exact iSingleton_free_at_ne (Nat.ne_of_gt (Nat.lt_succ_of_le (Nat.ge_of_not_lt h)))
-  · intro n m; simp [Poke]; split <;> split <;> omega
+  · intro n m; simp [poke]; split <;> split <;> omega
 
 -- iSingleton at τ' ≠ E.τ is the unit
 theorem iSingleton_ne_eq_unit {γ : GName} {v : F.ap (IProp GF)} {τ' : GType} (h : τ' ≠ E.τ) :
@@ -291,15 +291,15 @@ theorem iSingleton_op_isFree_infinite {γ : GName} {v : F.ap (IProp GF)}
     Infinite (IsFree ((iSingleton F γ v E.τ) • m).car) := by
   rcases h_inf with ⟨enum, h_enum_free, h_enum_inj⟩
   by_cases h_gamma_in : ∃ n₀, enum n₀ = γ
-  · -- If γ appears in enum, use Poke to skip it
+  · -- If γ appears in enum, use poke to skip it
     rcases h_gamma_in with ⟨n₀, h_n₀⟩
-    refine ⟨Poke enum n₀, ?_, ?_⟩
+    refine ⟨poke enum n₀, ?_, ?_⟩
     · intro n
-      simp [Poke]
+      simp [poke]
       apply iSingleton_op_ne_free
       · split <;> intro H' <;> have _ := h_enum_inj (h_n₀ ▸ H') <;> omega
       · split <;> apply h_enum_free
-    · intro n m h_eq; simp [Poke] at h_eq
+    · intro n m h_eq; simp [poke] at h_eq
       split at h_eq <;> split at h_eq
       all_goals have _ := h_enum_inj h_eq; omega
   · -- If γ not in enum, all enumerated keys remain free
@@ -396,12 +396,12 @@ theorem iSingleton_validN_at_E_τ {a : F.ap (IProp GF)} (a_valid : ✓{n} a) :
     by_cases h_gamma : γ' = γ <;> simp [h_gamma, CMRA.ValidN, optionValidN, singleton_map_in]
     · exact IProp.unfoldi_bundle_validN a_valid
     · simp [singleton_map_ne h_gamma]
-  · -- Infinite free keys (using Poke to skip γ)
-    refine ⟨Poke id γ, ?_, ?_⟩
-    · intro γ'; simp [IsFree, iSingleton, Poke]
+  · -- Infinite free keys (using poke to skip γ)
+    refine ⟨poke id γ, ?_, ?_⟩
+    · intro γ'; simp [IsFree, iSingleton, poke]
       have : ¬ (if γ' < γ then γ' else γ' + 1) = γ := by grind only [cases Or]
       simp [singleton_map_ne this]
-    · intro _ _; simp [Poke]; split <;> split <;> omega
+    · intro _ _; simp [poke]; split <;> split <;> omega
 
 /-- iSingleton validity at types τ' ≠ E.τ follows from unit validity. -/
 theorem iSingleton_validN_at_ne {a : F.ap (IProp GF)} {τ' : GType} (h : τ' ≠ E.τ) :
@@ -582,7 +582,7 @@ theorem validN_iSingleton_op {mf : IResUR GF} {y} :
     simp [iSingleton]
     let v := unfoldi (E.bundle y)
     -- GenMap.singleton γ v • mf ≡ mf.alter γ v (since mf.car γ = none)
-    have Hsingleton_comm := Op_singleton_comm Nat _ v H_free
+    have Hsingleton_comm := op_singleton_comm Nat _ v H_free
     apply Hsingleton_comm.dist.validN.mpr
     apply GenMap.alter_valid _ _ _ (Hvalid_mf E.τ)
     -- Show ✓{n} (some v) where v = unfoldi (E.bundle (f γ))
