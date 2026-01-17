@@ -5,13 +5,12 @@ Authors: Oliver Soeser, Michael Sammler
 -/
 import Iris.ProofMode.Patterns.ProofModeTerm
 import Iris.ProofMode.Tactics.Assumption
-import Iris.ProofMode.Tactics.Split
 import Iris.ProofMode.Tactics.Have
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-theorem apply [BI PROP] {p} {P Q P' Q1 R : PROP}
+private theorem apply [BI PROP] {p} {P Q P' Q1 R : PROP}
     (h1 : P ⊣⊢ P' ∗ □?p Q) (h2 : P' ⊢ Q1)
     [h3 : IntoWand p false Q .out Q1 .in R] : P ⊢ R :=
       h1.1.trans (Entails.trans (sep_mono_l h2) (wand_elim' h3.1))

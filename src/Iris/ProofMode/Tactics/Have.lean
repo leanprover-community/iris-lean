@@ -10,7 +10,7 @@ import Iris.ProofMode.Tactics.Specialize
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
+private theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ P] (h : φ) : Q ⊢ Q ∗ P :=
   sep_emp.2.trans (sep_mono_r (asEmpValid_1 _ h))
 

@@ -8,7 +8,7 @@ import Iris.ProofMode.Tactics.Basic
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI
 
-theorem exists_intro' [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExists P Φ]
+private theorem exists_intro' [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExists P Φ]
     (a : α) (h : P ⊢ Q) : Φ a ⊢ Q :=
   ((exists_intro a).trans inst.1).trans h
 

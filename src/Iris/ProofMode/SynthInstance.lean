@@ -3,7 +3,8 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-import Iris.ProofMode.Expr
+import Qq
+import Iris.BI
 
 /-
 This file implements a custom typeclass synthesis algorithm that is used for the proof mode typeclasses.
@@ -133,7 +134,7 @@ private def synthInstanceCore? (type : Expr) (maxResultSize? : Option Nat := non
     trace[Meta.synthInstance] "result {result?}"
     return result?
 
-protected def synthInstance? (type : Expr) (maxResultSize? : Option Nat := none) : MetaM (Option (Expr × Std.HashSet MVarId)) := do profileitM Exception "typeclass inference " (← getOptions) (decl := type.getAppFn.constName?.getD .anonymous) do
+protected def synthInstance? (type : Expr) (maxResultSize? : Option Nat := none) : MetaM (Option (Expr × Std.HashSet MVarId)) := do profileitM Exception "typeclass inference IPM" (← getOptions) (decl := type.getAppFn.constName?.getD .anonymous) do
   -- we can be sure that e only depends on the mvars that actually appear in e
   (← synthInstanceCore? type maxResultSize?).mapM λ e => do let e ← instantiateMVars e; return (e, ← e.getMVarDependencies)
 
