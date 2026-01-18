@@ -346,12 +346,52 @@ def Agree.map : CMRA.Hom (Agree α) (Agree β) where
       · exact ⟨f b, .inl ⟨_, hb, rfl⟩, .rfl⟩
       · exact ⟨f b, .inr ⟨_, hb, rfl⟩, .rfl⟩
 
+theorem Agree.map_ne {g : α → β} [OFE.NonExpansive g] (heq : ∀ a, f a ≡{n}≡ g a) :
+    map f x ≡{n}≡ map g x := by
+  simp only [map, map']
+  constructor <;> simp only [List.mem_map] <;> rintro _ ⟨a, ha, rfl⟩
+  · exact ⟨g a, ⟨a, ha, rfl⟩, heq a⟩
+  · exact ⟨f a, ⟨a, ha, rfl⟩, heq a⟩
+
 theorem Agree.agree_map_ext {g : α → β} [OFE.NonExpansive g] (heq : ∀ a, f a ≡ g a) :
     map f x ≡ map g x := by
+  refine OFE.equiv_dist.mpr ?_
   intro n
-  simp only [dist, map, map', List.mem_map, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂]
-  constructor <;> intro a ha
-  · exact ⟨g a, ⟨a, ha, rfl⟩, (heq a).dist⟩
-  · exact ⟨f a, ⟨a, ha, rfl⟩, (heq a).dist⟩
+  apply Agree.map_ne
+  exact fun a => OFE.Equiv.dist (heq a)
+
+theorem Agree.map_id (x : Agree α) : Agree.map id x = x := by
+  simp only [map, map', List.map_id_fun, id_eq]
+
+theorem Agree.map_compose [OFE γ] (f : α -n> β) (g : β -n> γ) (x : Agree α) :
+    Agree.map (g.comp f) x = Agree.map g (Agree.map f x) := by
+  simp only [map, OFE.Hom.comp, map', List.map_map]
 
 end agree_map
+
+section agree_rfunctor
+
+abbrev AgreeRF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
+  fun A B _ _ => Agree (F A B)
+
+instance {F} [COFE.OFunctor F] : RFunctor (AgreeRF F) where
+  cmra := inferInstance
+  map f g := Agree.map (COFE.OFunctor.map f g)
+  map_ne.ne n f1 f2 heq1 g1 g2 heq2 x:= by
+    apply Agree.map_ne
+    apply COFE.OFunctor.map_ne.ne <;> assumption
+  map_id x := by
+    rw (config := { occs := .pos [2]}) [<- (Agree.map_id x)]
+    apply Agree.agree_map_ext
+    exact COFE.OFunctor.map_id
+  map_comp f g f' g' x := by
+    rw [<- Agree.map_compose]
+    apply Agree.agree_map_ext
+    apply COFE.OFunctor.map_comp
+
+instance {F} [COFE.OFunctorContractive F] : RFunctorContractive (AgreeRF F) where
+  map_contractive.1 {n x y} HKL z := by
+    apply Agree.map_ne
+    exact (COFE.OFunctorContractive.map_contractive.1 HKL)
+
+end agree_rfunctor
