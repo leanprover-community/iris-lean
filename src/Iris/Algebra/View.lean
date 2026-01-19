@@ -209,13 +209,9 @@ instance : CMRA (View F R) where
     · simp only; exact H1 ▸ CMRA.core_idem _
     · exact H2 ▸ CMRA.core_idem _
   pcore_op_mono := by
-    -- TODO: Cleanup this proof!
     apply pcore_op_mono_of_core_op_mono
     let f : (Option ((DFrac F) × Agree A) × B) → View F R := fun x => ⟨x.1, x.2⟩
     let g : View F R → (Option ((DFrac F) × Agree A) × B) := fun x => (x.auth, x.frag)
-    let opM' (x : View F R) (y : Option (View F R)) : View F R :=
-      match y with | some y => Op x y | none => x
-
     have g_pcore_0 {y : View F R} : CMRA.pcore (g y) ≡ g <$> Pcore y := by
       rcases y with ⟨x, b⟩
       simp only [Option.map_eq_map, Option.map, g]
@@ -226,26 +222,12 @@ instance : CMRA (View F R) where
     have g_pcore {y cy : View F R} : Pcore y ≡ some cy ↔ CMRA.pcore (g y) ≡ some (g cy) := by
       suffices y.Pcore ≡ some cy ↔ g <$> y.Pcore ≡ some (g cy) by
         exact ⟨g_pcore_0.trans ∘ this.mp, this.mpr ∘ g_pcore_0.symm.trans⟩
-      refine Iff.trans OFE.equiv_dist (Iff.trans ?_ OFE.equiv_dist.symm)
-      exact ⟨fun H n => H n, fun H n => H n⟩
-
-    have g_opM_f {x y} : g (opM' y (f x)) ≡ CMRA.op (g y) x := by
-      simp [opM', g, f, CMRA.op, Prod.op]
+      exact OFE.equiv_dist.trans OFE.equiv_dist.symm
 
     rintro y1 cy y2 ⟨z, Hy2⟩ Hy1
-    let Lcore := (@CMRA.pcore_mono' _ _ (g y1) (g y2) (g cy) ?G1 ?G2)
-    case G1 => exists (g z)
-    case G2 => exact g_pcore.mp <| OFE.Equiv.of_eq Hy1
-    rcases Lcore with ⟨cx, Hcgy2, ⟨x, Hcx⟩⟩
-    have Hcx' : cx ≡ g (opM' cy (f x)) := Hcx
-    have Hcgy2' : CMRA.pcore (g y2) ≡ some (g (opM' cy (f x))) := by rw [Hcgy2]; exact Hcx
-    have Hcgy2'' : Pcore y2 ≡ some (opM' cy (f x)) := g_pcore.mpr Hcgy2'
-    generalize HC : y2.Pcore = C
-    rw [HC] at Hcgy2''
-    cases C; exact Hcgy2''.elim
-    rename_i cy'
-    refine ⟨cy', ⟨rfl, ?_⟩⟩
-    exists (f x)
+    have Hle : g y1 ≼ g y2 := ⟨g z, Hy2⟩
+    obtain ⟨_, Hcgy2, x, Hcx⟩ := CMRA.pcore_mono' Hle (g_pcore.mp <| OFE.Equiv.of_eq Hy1)
+    exact ⟨_, rfl, f x, g_pcore.mpr (Hcgy2 ▸ Hcx)⟩
   extend {n x y1 y2} Hv He := by
     -- TODO: Cleanup!
     let g : View F R → (Option ((DFrac F) × Agree A) × B) := fun x => (x.auth, x.frag)
