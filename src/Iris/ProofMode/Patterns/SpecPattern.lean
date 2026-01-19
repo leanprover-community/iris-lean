@@ -8,12 +8,13 @@ open Lean
 
 declare_syntax_cat specPat
 
-syntax binderIdent : specPat
-syntax "[" binderIdent,* "]" optional(" as " ident) : specPat
+syntax ident : specPat
+syntax "[" ident,* "]" optional(" as " ident) : specPat
 
+-- see https://gitlab.mpi-sws.org/iris/iris/-/blob/master/iris/proofmode/spec_patterns.v?ref_type=heads#L15
 inductive SpecPat
-  | ident (name : TSyntax ``binderIdent)
-  | idents (names : List (TSyntax ``binderIdent)) (goalName : Name)
+  | ident (name : Ident)
+  | goal (names : List Ident) (goalName : Name)
   deriving Repr, Inhabited
 
 partial def SpecPat.parse (pat : Syntax) : MacroM SpecPat := do
@@ -22,15 +23,15 @@ partial def SpecPat.parse (pat : Syntax) : MacroM SpecPat := do
   | some pat => return pat
 where
   go : TSyntax `specPat → Option SpecPat
-  | `(specPat| $name:binderIdent) => some <| .ident name
-  | `(specPat| [$[$names:binderIdent],*]) => some <| .idents names.toList .anonymous
-  | `(specPat| [$[$names:binderIdent],*] as $goal:ident) => match goal.raw with
-    | .ident _ _ val _ => some <| .idents names.toList val
+  | `(specPat| $name:ident) => some <| .ident name
+  | `(specPat| [$[$names:ident],*]) => some <| .goal names.toList .anonymous
+  | `(specPat| [$[$names:ident],*] as $goal:ident) => match goal.raw with
+    | .ident _ _ val _ => some <| .goal names.toList val
     | _ => none
   | _ => none
 
 def headName (spats : List SpecPat) : Name :=
   match spats.head? with
     | some <| .ident _ => .anonymous
-    | some <| .idents _ name => name
+    | some <| .goal _ name => name
     | _ => .anonymous

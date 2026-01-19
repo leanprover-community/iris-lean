@@ -106,8 +106,8 @@ elab "iintro" pats:(colGt icasesPat)* : tactic => do
   mvar.withContext do
 
   -- process patterns
-  let goals ← IO.mkRef #[]
-  let pf ← iIntroCore bi hyps goal pats.toList <| goalTracker goals .anonymous
+  let gs ← Goals.new bi
+  let pf ← iIntroCore bi hyps goal pats.toList <| gs.addGoal
 
   mvar.assign pf
-  replaceMainGoal (← goals.get).toList
+  replaceMainGoal (← gs.getGoals)
