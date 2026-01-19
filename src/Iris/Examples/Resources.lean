@@ -6,19 +6,18 @@ Authors: Markus de Medeiros
 import Iris.ProofMode
 import Iris.Algebra.IProp
 import Iris.Instances.UPred.Instance
+import Iris.Instances.IProp.Instance
 import Iris.Algebra.Agree
 
 namespace Iris.Examples
-open Iris.BI
+open Iris.BI COFE
 
 section no_resources
 
-abbrev FF0 : GFunctors := #[]
-
-local instance : IsGFunctors FF0 := nofun
+variable [UCMRA M]
 
 -- A proof with no resources
-example (P Q : IProp FF0) : P ∗ Q ⊢ ⌜True⌝ := by
+example (P Q : UPred M) : P ∗ Q ⊢ ⌜True⌝ := by
   iintro ⟨HP, HQ⟩
   ipure_intro
   trivial
@@ -31,27 +30,16 @@ end no_resources
 
 section const_agree
 
-abbrev FF1 : GFunctors := #[COFE.constOF (Agree (LeibnizO String))]
-abbrev γ : GId FF1 := ⟨0, Nat.zero_lt_succ _⟩
-theorem HγE  (i : GId FF1) : i = γ := by unfold γ; cases i; congr; apply Nat.lt_one_iff.mp; trivial
-theorem HγLookup : FF1[γ] = COFE.constOF (Agree (LeibnizO String)) := rfl
-local instance : IsGFunctors FF1 := fun i => by rw [HγE i, HγLookup]; infer_instance
+abbrev γ : GType := 1
 
 @[simp]
-def MyAg (S : String) : Agree (LeibnizO String) := ⟨[⟨S⟩], by simp⟩
+def MyAg (S : String) : (Option (Agree (LeibnizO String))) := some ⟨[⟨S⟩], by simp⟩
 
-@[simp]
-def MyR (S : String) : IResUR FF1 := fun i _ => some (HγE i ▸ MyAg S)
+theorem MyR_always_invalid (S₁ S₂ : String) (Hne : S₁ ≠ S₂) (n : Nat) : ¬✓{n} MyAg S₁ • MyAg S₂ := by
+  simp only [CMRA.ValidN, CMRA.op, MyAg, optionValidN, optionOp]
+  exact (Hne <| LeibnizO.dist_inj <| Agree.toAgree_op_validN_iff_dist.mp ·)
 
-theorem MyR_always_invalid (S₁ S₂ : String) (Hne : S₁ ≠ S₂) (n : Nat) : ¬✓{n} MyR S₁ • MyR S₂ := by
-  simp [CMRA.op, CMRA.ValidN]
-  exists γ, ⟨0⟩
-  rw [← HγE ⟨Nat.zero, Nat.le.refl⟩]
-  simp [instIsGFunctorsFF1, CMRA.ValidN, CMRA.op, Agree.op, Agree.validN,
-        instCOFELeibnizO, COFE.ofDiscrete, OFE.ofDiscrete]
-  exact fun a => id (Ne.symm Hne)
-
-def AgreeString (S : String) : IProp FF1 := UPred.ownM (MyR S)
+def AgreeString (S : String) : UPred (Option (Agree (LeibnizO String))) := UPred.ownM (MyAg S)
 
 example : AgreeString "I <3 iris-lean!" ⊢ (AgreeString "I don't :<" -∗ False) := by
   iintro H H2
@@ -62,4 +50,5 @@ example : AgreeString "I <3 iris-lean!" ⊢ (AgreeString "I don't :<" -∗ False
   apply MyR_always_invalid; simp       -- Simplify
 
 end const_agree
+
 end Iris.Examples
