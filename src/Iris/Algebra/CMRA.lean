@@ -94,6 +94,16 @@ class UCMRA (α : Type _) extends CMRA α where
   unit_left_id : unit • x ≡ x
   pcore_unit : pcore unit ≡ some unit
 
+class IsUnit [CMRA α] (ε : α) : Prop where
+  unit_valid : ✓ ε
+  unit_left_id : ε • x ≡ x
+  pcore_unit : CMRA.pcore ε ≡ some ε
+
+instance [UCMRA α] : IsUnit (UCMRA.unit : α) where
+  unit_valid := UCMRA.unit_valid
+  unit_left_id := UCMRA.unit_left_id
+  pcore_unit := UCMRA.pcore_unit
+
 namespace CMRA
 variable [CMRA α]
 
@@ -877,9 +887,6 @@ class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
   map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-variable (F T) in
-def RFunctor.ap [RFunctor F] [OFE T] := F T T
-
 attribute [instance] RFunctor.cmra
 
 
@@ -1035,8 +1042,8 @@ instance cmraOption : CMRA (Option α) where
     rename_i x
     rcases x1, x2, x with ⟨_|_, _|_, _|_⟩ <;> simp_all [op_right_dist]
   pcore_ne {n} x y cx H := by
-    simp only [some.injEq]; rintro rfl
-    rcases x, y with ⟨_|x, _|y⟩ <;> simp_all [Dist, Forall₂]
+    simp only [Option.some.injEq]; rintro rfl
+    rcases x, y with ⟨_|x, _|y⟩ <;> simp_all [Dist, Option.Forall₂]
     cases Hv : pcore x <;> cases Hv' : pcore y <;> simp only []
     · cases pcore_ne H.symm Hv'; simp_all
     · cases pcore_ne H Hv; simp_all
@@ -1044,7 +1051,7 @@ instance cmraOption : CMRA (Option α) where
       cases Hv.symm.trans Hw1
       exact Hw2.symm
   validN_ne {n} x y H := by
-    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Dist, Forall₂]
+    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Dist, Option.Forall₂]
     exact Dist.validN H |>.mp
   valid_iff_validN {x} := by
     rcases x with ⟨_|_⟩ <;> simp [valid_iff_validN]
@@ -1060,7 +1067,7 @@ instance cmraOption : CMRA (Option α) where
   pcore_op_left {x cx} := by
     rcases x, cx with ⟨_|_, _|_⟩ <;> simp_all [pcore_op_left]
   pcore_idem := by
-    rintro (_|x) <;> simp [Equiv, Forall₂]
+    rintro (_|x) <;> simp [Equiv, Option.Forall₂]
     rcases H : pcore x with _|y <;> simp
     obtain ⟨z, Hz1, Hz2⟩ := equiv_some (pcore_idem H)
     simp [Hz1, Hz2]
@@ -1396,27 +1403,3 @@ instance urFunctorContractiveOptionOF
   map_contractive.1 := COFE.OFunctorContractive.map_contractive.1
 
 end optionOF
-
-section GenMap
-
-/-
-The OFE over gmaps is eqivalent to a non-depdenent discrete function to an `Option` type with a
-`Leibniz` OFE.
-In this setting, the CMRA is always unital, and as a consquence the oFunctors do not require
-unitality in order to act as a `URFunctor(Contractive)`.
--/
-
-variable (α β : Type _) [UCMRA β] [Leibniz β]
-
-abbrev GenMap := α → Option β
-
--- #synth CMRA (Option β)
--- #synth CMRA (α -d> (Option β))
--- #synth UCMRA (α -d> (Option β))
--- The synthesized UMRA here has unit (fun x => ε) = (fun x => none).
--- For us, this is equivalent to the Rocq-iris unit ∅.
-
-abbrev GenMapOF (C : Type _) (F : COFE.OFunctorPre) :=
-  DiscreteFunOF fun (_ : C) => OptionOF F
-
-end GenMap
