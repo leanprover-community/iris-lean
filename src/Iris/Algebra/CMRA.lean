@@ -1254,11 +1254,9 @@ theorem some_incN_some_iff_opM {a b : α} : some a ≼{n} some b ↔ ∃ mc, b �
     · exact .inl H.symm
     · right; exists z
 
-
-
 instance [CMRA.Discrete α] : CMRA.Discrete (Option α) where
   discrete_valid {x} := by
-    cases x <;> simp [CMRA.Valid, optionValid]
+    cases x <;> simp [Valid, optionValid]
     exact (CMRA.discrete_valid ·)
 
 end Option
