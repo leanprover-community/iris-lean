@@ -193,6 +193,7 @@ theorem op_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz ≡ x • (
 theorem op_opM_assoc_dist (x y : α) (mz : Option α) : (x • y) •? mz ≡{n}≡ x • (y •? mz) := by
   unfold op?; cases mz <;> simp [assoc.dist, Dist.symm]
 
+
 /-! ## Validity -/
 
 theorem Valid.validN : ✓ (x : α) → ✓{n} x := (valid_iff_validN.1 · _)
@@ -1262,8 +1263,8 @@ theorem some_incN_some_iff_opM {a b : α} : some a ≼{n} some b ↔ ∃ mc, b �
 
 instance [CMRA.Discrete α] : CMRA.Discrete (Option α) where
   discrete_valid {x} := by
-    cases x <;> simp [Valid]
-    exact (discrete_valid ·)
+    cases x <;> simp [Valid, optionValid]
+    exact (CMRA.discrete_valid ·)
 
 end Option
 end option

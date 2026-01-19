@@ -11,3 +11,4 @@ import Iris.Algebra.OFE
 import Iris.Algebra.Updates
 import Iris.Algebra.UPred
 import Iris.Algebra.Heap
+import Iris.Algebra.View
