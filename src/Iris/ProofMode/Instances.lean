@@ -89,6 +89,14 @@ instance fromForall_wand_pure [BI PROP] (P Q : PROP) φ
       | .l (t := _) => sep_elim_l |>.trans (forall_elim h)
       | .r (u := _) => sep_elim_l |>.trans (forall_elim h)
 
+instance fromForall_intuitionistically [BI PROP] [BIAffine PROP] [BIPersistentlyForall PROP] {A} P (Φ : A → PROP)
+  [FromForall P Φ] : FromForall iprop(□ P) (λ a => iprop(□ (Φ a))) where
+  from_forall := (forall_mono λ _ => persistently_of_intuitionistically).trans $
+    persistently_forall.2.trans $ (persistently_mono (from_forall (P:=P))).trans intuitionistically_iff_persistently.2
+instance fromForall_persistently [BI PROP] [BIPersistentlyForall PROP] {A} P (Φ : A → PROP)
+  [FromForall P Φ] : FromForall iprop(<pers> P) (λ a => iprop(<pers> (Φ a))) where
+  from_forall := persistently_forall.2.trans $ (persistently_mono (from_forall (P:=P)))
+
 -- IntoForall
 instance intoForall_forall [BI PROP] (Φ : α → PROP) : IntoForall iprop(∀ a, Φ a) Φ := ⟨.rfl⟩
 

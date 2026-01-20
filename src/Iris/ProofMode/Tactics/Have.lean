@@ -15,12 +15,12 @@ private theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
   sep_emp.2.trans (sep_mono_r (asEmpValid_1 _ h))
 
 private def iHaveCore {e} (hyps : @Hyps u prop bi e)
-  (tm : Term) (name : TSyntax ``binderIdent) (keep : Bool) (mayPostpone : Bool) : ProofModeM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
+  (tm : Term) (keep : Bool) (mayPostpone : Bool) :
+  ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
   if let some uniq ← try? <| hyps.findWithInfo ⟨tm⟩ then
     -- assertion from the Iris context
     let ⟨_, hyps, _, out', p, _, pf⟩ := hyps.remove (!keep) uniq
-    let ⟨uniq', hyps⟩ ← Hyps.addWithInfo bi name p out' hyps
-    return ⟨uniq', _, hyps, q($pf.1)⟩
+    return ⟨_, hyps, p, out', q($pf.1)⟩
   else
     -- lean hypothesis
     let val ← instantiateMVars <| ← elabTerm tm none mayPostpone
@@ -39,20 +39,36 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     let ⟨0, ty, val⟩ ← inferTypeQ val | throwError m!"{val} is not a Prop"
 
     let hyp ← mkFreshExprMVarQ q($prop)
-    let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty $hyp) | throwError m!"{ty} is not an entailment"
+    let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty $hyp)
+      | throwError m!"{ty} is not an entailment"
 
-    let ⟨uniq', hyps⟩ ← Hyps.addWithInfo bi name q(false) hyp hyps
-    return ⟨uniq', _, hyps, q(have_asEmpValid $val)⟩
+    return ⟨_, hyps, q(false), hyp, q(have_asEmpValid $val)⟩
 
 def iHave {e} (hyps : @Hyps u prop bi e)
-  (pmt : PMTerm) (name : TSyntax ``binderIdent) (keep : Bool) (mayPostpone := false) : ProofModeM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
-  let ⟨uniq, _, hyps', pf⟩ ← iHaveCore hyps pmt.term name keep mayPostpone
-  let ⟨_, hyps'', pf'⟩ ← iSpecializeCore hyps' uniq pmt.spats
-  return ⟨uniq, _, hyps'', q($(pf).trans $pf')⟩
+  (pmt : PMTerm) (keep : Bool) (mayPostpone := false) :
+  ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
+  let ⟨_, hyps', p, A, pf⟩ ← iHaveCore hyps pmt.term keep mayPostpone
+  let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p A pmt.spats
+  return ⟨_, hyps'', pb, B, q($(pf).trans $pf')⟩
 
-elab "ihave" colGt name:binderIdent " := " pmt:pmTerm  : tactic => do
+elab "ihave" colGt name:binderIdent " := " pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let ⟨_, _, hyps, pf⟩ ← iHave hyps pmt name true
+  ProofModeM.runTactic λ mvar { bi, hyps, goal, .. } => do
+  let ⟨_, hyps, p, out, pf⟩ ← iHave hyps pmt true
+  let ⟨_, hyps⟩ ← Hyps.addWithInfo bi name p out hyps
   let pf' ← addBIGoal hyps goal
   mvar.assign q(($pf).trans $pf')
+
+private theorem ihave_assert [BI PROP] {A B C : PROP}
+  (h1 : A ∗ □ (B -∗ B) ⊢ C) : A ⊢ C :=
+    (and_intro .rfl (persistently_emp_intro.trans (persistently_mono $ wand_intro emp_sep.1))).trans
+      $ persistently_and_intuitionistically_sep_r.1.trans h1
+
+elab "ihave" colGt name:binderIdent " : " P:term "$$" spat:specPat : tactic => do
+  let spat ← liftMacroM <| SpecPat.parse spat
+  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
+  let P ← elabTermEnsuringTypeQ (← `(iprop($P))) prop
+  let ⟨_, hyps, p, out, pf⟩ ← iSpecializeCore hyps q(true) q(iprop($P -∗ $P)) [spat]
+  let ⟨_, hyps⟩ ← Hyps.addWithInfo bi name p out hyps
+  let pf' ← addBIGoal hyps goal
+  mvar.assign q(ihave_assert (($pf).trans $pf'))

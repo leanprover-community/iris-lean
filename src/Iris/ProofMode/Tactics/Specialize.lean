@@ -75,24 +75,24 @@ private def SpecializeState.process_wand :
     let pf := q(specialize_wand_subgoal $out₂ $pf $h' $pf')
     return { e := el', hyps := hypsl', p := q(false), out := out₂, pf }
 
-def iSpecializeCore {e} (hyps : @Hyps u prop bi e)
-  (uniq : Name) (spats : List SpecPat) : ProofModeM ((e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
-  let some ⟨name, _, hyps, _, out, p, _, pf⟩ := Id.run <|
-    hyps.removeG true λ name uniq' _ _ => if uniq == uniq' then some name else none
-    | throwError "ispecialize: cannot find argument"
-  let state := { hyps, out, p, pf := q(($pf).1), .. }
+def iSpecializeCore {e} (hyps : @Hyps u prop bi e) (pa : Q(Bool)) (A : Q($prop)) (spats : List SpecPat) :
+  ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) × Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
+  let state := { hyps, out := A, p := pa, pf := q(.rfl), .. }
   let state ← spats.foldlM SpecializeState.process_wand state
-
-  let hyps' := Hyps.add bi name uniq state.p state.out state.hyps
-  return ⟨_, hyps', state.pf⟩
+  return ⟨_, state.hyps, state.p, state.out, state.pf⟩
 
 elab "ispecialize" colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  ProofModeM.runTactic λ mvar { bi, hyps, goal, .. } => do
   -- hypothesis must be in the context, otherwise use ihave
   let name := ⟨pmt.term⟩
   let some uniq ← try? <| hyps.findWithInfo name
     | throwError "{name} should be a hypothesis, use ihave instead"
-  let ⟨_, hyps', pf⟩ ← iSpecializeCore hyps uniq pmt.spats
-  let pf' ← addBIGoal hyps' goal
-  mvar.assign q(($pf).trans $pf')
+  let some ⟨name, _, hyps', _, out, p, _, pf⟩ := Id.run <|
+    hyps.removeG true λ name uniq' _ _ => if uniq == uniq' then some name else none
+    | throwError "ispecialize: cannot find argument"
+
+  let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p out pmt.spats
+  let hyps''' := Hyps.add bi name uniq pb B hyps''
+  let pf'' ← addBIGoal hyps''' goal
+  mvar.assign q(($pf).1.trans ($(pf').trans $pf''))

@@ -10,31 +10,32 @@ import Iris.ProofMode.Tactics.Have
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-private theorem apply [BI PROP] {p} {P Q P' Q1 R : PROP}
-    (h1 : P ⊣⊢ P' ∗ □?p Q) (h2 : P' ⊢ Q1)
-    [h3 : IntoWand p false Q .out Q1 .in R] : P ⊢ R :=
-      h1.1.trans (Entails.trans (sep_mono_l h2) (wand_elim' h3.1))
+private theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
+    (h1 : P ⊢ Q1)
+    [h2 : IntoWand p false Q .out Q1 .in R] : P ∗ □?p Q ⊢ R :=
+      (Entails.trans (sep_mono_l h1) (wand_elim' h2.1))
 
-partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e) (goal : Q($prop)) (uniq : Name) : ProofModeM Q($e ⊢ $goal) := do
-  let ⟨_, hyps', _, out, p, _, pf⟩ := hyps.remove true uniq
-  let A ← mkFreshExprMVarQ q($prop)
-  if let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $A .in $goal) then
-     let pf' ← addBIGoal hyps' A
-     return q(apply $pf $pf')
+partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e) (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) : ProofModeM Q($e ∗ □?$p $A ⊢ $goal) := do
+  let B ← mkFreshExprMVarQ q($prop)
+  if let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $A .out $B .in $goal) then
+     let pf ← addBIGoal hyps B
+     return q(apply $pf)
 
-  let some ⟨_, hyps'', pf''⟩ ← try? <| iSpecializeCore hyps uniq [.goal [] .anonymous] | throwError m!"iapply: cannot apply {out} to {goal}"
-  let pf''' ← iApplyCore hyps'' goal uniq
-  return q($(pf'').trans $pf''')
+  let some ⟨_, hyps', pb, B, pf⟩ ← try? <| iSpecializeCore hyps p A [.goal [] .anonymous]
+    | throwError m!"iapply: cannot apply {A} to {goal}"
+  let pf' ← iApplyCore hyps' pb B goal
+  return q($(pf).trans $pf')
 
 elab "iapply" colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let ⟨uniq, _, hyps, pf⟩ ← iHave hyps pmt (← `(binderIdent|_)) true (mayPostpone := true)
-  let ⟨e', _, _, out, p, _, pf'⟩ := hyps.remove true uniq
+  let ⟨e, hyps, p, out, pf⟩ ← iHave hyps pmt true (mayPostpone := true)
   if let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption $p .in $out $goal) then
-    if let LOption.some _ ← trySynthInstanceQ q(TCOr (Affine $e') (Absorbing $goal)) then
-      -- behave like iexact
-      mvar.assign q($(pf).trans (assumption (Q := $goal) $pf'))
-      return
-  let pf' ← iApplyCore hyps goal uniq
+    let LOption.some _ ← trySynthInstanceQ q(TCOr (Affine $e) (Absorbing $goal))
+      | throwError "iapply: the context {e} is not affine and goal not absorbing"
+    -- behave like iexact
+    have rfl : Q($e ∗ □?$p $out ⊣⊢ $e ∗ □?$p $out) := q(.rfl)
+    mvar.assign q($(pf).trans (assumption (Q := $goal) $(rfl)))
+    return
+  let pf' ← iApplyCore hyps p out goal
   mvar.assign q($(pf).trans $pf')

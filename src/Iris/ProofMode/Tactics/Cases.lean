@@ -158,6 +158,7 @@ def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p 
 
 theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
 
+  -- TODO: Why does this function require both A and A' instead of just A'?
 variable {u : Level} {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iCasesCore
     {P} (hyps : Hyps bi P) (Q : Q($prop)) (p : Q(Bool))
@@ -227,13 +228,13 @@ elab "icases" colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse pat
   ProofModeM.runTactic λ mvar { bi, goal, hyps, .. } => do
 
-  let ⟨uniq, _, hyps, pf⟩ ← iHave hyps pmt (← `(binderIdent|_)) false
-  let ⟨_, hyps', A, A', b, h, pf'⟩ := hyps.remove true uniq
+  let ⟨_, hyps, p, A, pf⟩ ← iHave hyps pmt false
 
   -- process pattern
-  let pf2 ← iCasesCore bi hyps' goal b A A' h pat (λ hyps => addBIGoal hyps goal)
+  have ⟨B, eq⟩ := mkIntuitionisticIf bi p A
+  let pf2 ← iCasesCore bi hyps goal p B A eq pat (λ hyps => addBIGoal hyps goal)
 
-  mvar.assign q(($pf).trans (($pf').1.trans $pf2))
+  mvar.assign q(($pf).trans $pf2)
 
 -- TODO: remove these shortcuts if they are not used
 macro "iintuitionistic" hyp:ident : tactic => `(tactic | icases $hyp:ident with □$hyp:ident)
