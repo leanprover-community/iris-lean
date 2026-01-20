@@ -45,9 +45,8 @@ theorem BUpdPlain_mono {P Q : PROP} : (P ⊢ Q) → (BUpdPlain P ⊢ BUpdPlain Q
     iintro H Hp
     iapply H
     apply H
-  iintro ⟨Ha, H2⟩
-  iapply Ha
-  iapply H1 $$ H2
+  iapply R
+  iapply H1 $$ Hp
 
 theorem BUpdPlain_idemp {P : PROP} : BUpdPlain (BUpdPlain P) ⊢ BUpdPlain P := by
   unfold BUpdPlain
