@@ -14,8 +14,8 @@ theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ P] (h : φ) : Q ⊢ Q ∗ P :=
   sep_emp.2.trans (sep_mono_r (asEmpValid_1 _ h))
 
-private def iHaveCore (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
-  (tm : Term) (name : TSyntax ``binderIdent) (keep : Bool) (mayPostpone : Bool) : TacticM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
+private def iHaveCore {e} (hyps : @Hyps u prop bi e)
+  (tm : Term) (name : TSyntax ``binderIdent) (keep : Bool) (mayPostpone : Bool) : ProofModeM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
   if let some uniq ← try? <| hyps.findWithInfo ⟨tm⟩ then
     -- assertion from the Iris context
     let ⟨_, hyps, _, out', p, _, pf⟩ := hyps.remove (!keep) uniq
@@ -33,29 +33,26 @@ private def iHaveCore (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
     let otherMVarIds ← getMVarsNoDelayed val
     let otherMVarIds := otherMVarIds.filter (!newMVarIds.contains ·)
     for mvar in newMVarIds ++ otherMVarIds do
-      gs.addPureGoal mvar
+      addMVarGoal mvar
 
     -- TODO: can we do this without re typechecking?
     let ⟨0, ty, val⟩ ← inferTypeQ val | throwError m!"{val} is not a Prop"
 
     let hyp ← mkFreshExprMVarQ q($prop)
-    let some _ ← ProofMode.trySynthInstanceQAddingGoals gs q(AsEmpValid .into $ty $hyp) | throwError m!"{ty} is not an entailment"
+    let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty $hyp) | throwError m!"{ty} is not an entailment"
 
     let ⟨uniq', hyps⟩ ← Hyps.addWithInfo bi name q(false) hyp hyps
     return ⟨uniq', _, hyps, q(have_asEmpValid $val)⟩
 
-def iHave (gs : @Goals u prop bi) {e} (hyps : Hyps bi e)
-  (pmt : PMTerm) (name : TSyntax ``binderIdent) (keep : Bool) (mayPostpone := false) : TacticM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
-  let ⟨uniq, _, hyps', pf⟩ ← iHaveCore gs hyps pmt.term name keep mayPostpone
-  let ⟨_, hyps'', pf'⟩ ← iSpecializeCore gs hyps' uniq pmt.spats
+def iHave {e} (hyps : @Hyps u prop bi e)
+  (pmt : PMTerm) (name : TSyntax ``binderIdent) (keep : Bool) (mayPostpone := false) : ProofModeM (Name × (e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
+  let ⟨uniq, _, hyps', pf⟩ ← iHaveCore hyps pmt.term name keep mayPostpone
+  let ⟨_, hyps'', pf'⟩ ← iSpecializeCore hyps' uniq pmt.spats
   return ⟨uniq, _, hyps'', q($(pf).trans $pf')⟩
 
 elab "ihave" colGt name:binderIdent " := " pmt:pmTerm  : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
-  let (mvar, { bi, hyps, goal, .. }) ← istart (← getMainGoal)
-  mvar.withContext do
-  let gs ← Goals.new bi
-  let ⟨_, _, hyps, pf⟩ ← iHave gs hyps pmt name true
-  let pf' ← gs.addGoal hyps goal
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  let ⟨_, _, hyps, pf⟩ ← iHave hyps pmt name true
+  let pf' ← addBIGoal hyps goal
   mvar.assign q(($pf).trans $pf')
-  replaceMainGoal (← gs.getGoals)
