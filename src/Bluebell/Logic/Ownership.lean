@@ -197,9 +197,10 @@ theorem sep_assertTrue_iff {i : I} {E₁ E₂ : (α → V) → Bool} :
       (assertTrue (I := I) (α := α) (V := V) i (fun x => E₁ x ∧ E₂ x)) := by
   sorry
 
+omit [DecidableEq I] in
 /-- If `pabs(𝑃, pvar(𝐸⟨𝑖⟩))` (to be defined), then `assertTrue i E ∧ P` entails `assertTrue i E ∗ P`. -/
 theorem sep_of_and_assertTrue {i : I} {E : (α → V) → Bool}
-    {P : HyperAssertion (IndexedPSpPmRat I α V)} (h : True) :
+    {P : HyperAssertion (IndexedPSpPmRat I α V)} :
     HyperAssertion.entails
       (HyperAssertion.sep
         (assertTrue (I := I) (α := α) (V := V) i E)
@@ -207,7 +208,25 @@ theorem sep_of_and_assertTrue {i : I} {E : (α → V) → Bool}
       (HyperAssertion.and
         (assertTrue (I := I) (α := α) (V := V) i E)
         P) := by
-  sorry
+  intro a ⟨b, c, hb, hc, hbc⟩
+  constructor
+  · -- Show a ∈ assertTrue i E
+    -- We have b ∈ assertTrue i E and b • c ≼ a
+    -- From b • c ≼ a, we have ∃ w, a ≡ (b • c) • w ≡ b • (c • w)
+    -- Therefore b ≼ a, and by upward closure, a ∈ assertTrue i E
+    obtain ⟨w, hw⟩ := hbc
+    have hb_inc_a : b ≼ a := ⟨c • w, hw.trans CMRA.assoc.symm⟩
+    exact (assertTrue (I := I) (α := α) (V := V) i E).upper hb_inc_a hb
+  · -- Show a ∈ P
+    -- We have c ∈ P and b • c ≼ a
+    -- From b • c ≼ a, we have ∃ w, a ≡ (b • c) • w ≡ c • (b • w)
+    -- Therefore c ≼ a, and by upward closure, a ∈ P
+    obtain ⟨w, hw⟩ := hbc
+    have h_rearrange : (b • c) • w ≡ c • (b • w) := calc
+      (b • c) • w ≡ (c • b) • w := CMRA.op_left_eqv w CMRA.comm
+      _           ≡ c • (b • w) := CMRA.assoc.symm
+    have hc_inc_a : c ≼ a := ⟨b • w, hw.trans h_rearrange⟩
+    exact P.upper hc_inc_a hc
 
 /-- Sampling on a product splits into sampling each component. -/
 theorem sampledFrom_prod {β₁ β₂ : Type _}
