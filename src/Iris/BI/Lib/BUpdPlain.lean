@@ -34,8 +34,7 @@ theorem BUpdPlain_intro {P : PROP} : P ⊢ BUpdPlain P := by
   iintro Hp
   unfold BUpdPlain
   iintro _ H
-  iapply H
-  iexact Hp
+  iapply H $$ Hp
 
 theorem BUpdPlain_mono {P Q : PROP} : (P ⊢ Q) → (BUpdPlain P ⊢ BUpdPlain Q) := by
   intros H
@@ -43,26 +42,24 @@ theorem BUpdPlain_mono {P Q : PROP} : (P ⊢ Q) → (BUpdPlain P ⊢ BUpdPlain Q
   iintro R HQR
   iintro Hp
   have H1 : ⊢ iprop(Q -∗ ■ HQR) -∗ iprop(P -∗ ■ HQR) := by
-    iintro H
-    iintro Hp
+    iintro H Hp
     iapply H
     apply H
-  iapply R
-  iapply H1
-  iexact Hp
+  iintro ⟨Ha, H2⟩
+  iapply Ha
+  iapply H1 $$ H2
 
 theorem BUpdPlain_idemp {P : PROP} : BUpdPlain (BUpdPlain P) ⊢ BUpdPlain P := by
   unfold BUpdPlain
   iintro Hp R H
-  iapply Hp $! R
+  iapply Hp
   iintro Hp
-  iapply Hp $! R
-  iassumption
+  iapply Hp $$ H
 
 theorem BUpdPlain_frame_r {P Q : PROP} : BUpdPlain P ∗ Q ⊢ (BUpdPlain iprop(P ∗ Q)) := by
   unfold BUpdPlain
   iintro ⟨Hp, Hq⟩ R H
-  iapply Hp $! R
+  iapply Hp
   iintro Hp
   iapply H
   isplitl [Hp]
@@ -72,7 +69,7 @@ theorem BUpdPlain_frame_r {P Q : PROP} : BUpdPlain P ∗ Q ⊢ (BUpdPlain iprop(
 theorem BUpdPlain_plainly {P : PROP} : BUpdPlain iprop(■ P) ⊢ (■ P) := by
   unfold BUpdPlain
   iintro H
-  iapply H $! P
+  iapply H
   exact wand_rfl
 
 /- BiBUpdPlainly entails the alternative definition -/
