@@ -12,7 +12,7 @@ namespace Iris.ProofMode
 open Lean Elab.Tactic Meta Qq BI Std
 
 elab "istart" : tactic => do
-  let (mvar, _) ← istart (← getMainGoal)
+  let (mvar, _) ← startProofMode (← getMainGoal)
   replaceMainGoal [mvar]
 
 elab "istop" : tactic => do

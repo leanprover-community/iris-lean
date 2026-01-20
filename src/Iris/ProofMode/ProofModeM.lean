@@ -26,6 +26,7 @@ instance : Monad ProofModeM :=
 instance : Inhabited (ProofModeM α) where
   default := throw default
 
+/-- Create a new BI goal with the given hypotheses and goal, and add it to the proof mode state. -/
 def addBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
   let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
@@ -34,6 +35,7 @@ def addBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
   modify ({goals := ·.goals.push m.mvarId!})
   pure m
 
+/-- Add an existing metavariable as a goal to the proof mode state if it is not already assigned or present. -/
 def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do
   if ← m.isAssignedOrDelayedAssigned then
     return
@@ -44,17 +46,20 @@ def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do
     m.setUserName name
   modify ({goals := ·.goals.push m})
 
+/-- Try to synthesize a typeclass instance, adding any created metavariables as proof mode goals. -/
 def ProofModeM.trySynthInstanceQ (α : Q(Sort v)) : ProofModeM (Option Q($α)) := do
   let LOption.some (e, mvars) ← ProofMode.trySynthInstance α | return none
   mvars.forM addMVarGoal
   return some e
 
+/-- Synthesize a typeclass instance, adding any created metavariables as proof mode goals. -/
 def ProofModeM.synthInstanceQ (α : Q(Sort v)) : ProofModeM Q($α) := do
   let (e, mvars) ← ProofMode.synthInstance α
   mvars.forM addMVarGoal
   return e
 
-def istart (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withContext do
+/-- Initialize proof mode for a metavariable, converting it to an Iris goal. -/
+def startProofMode (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withContext do
   -- parse goal
   let goal ← instantiateMVars <| ← mvar.getType
 
@@ -77,8 +82,9 @@ def istart (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withContext do
   mvar.assign q(asEmpValid_2 $goal $subgoal)
   pure (subgoal.mvarId!, irisGoal)
 
+/-- Run a ProofModeM computation on the main goal, ordering resulting goals with dependencies last. -/
 def ProofModeM.runTactic (x : MVarId → IrisGoal → ProofModeM α) (s : ProofModeM.State := {}) : TacticM α := do
-  let (mvar, g) ← istart (← getMainGoal)
+  let (mvar, g) ← startProofMode (← getMainGoal)
   mvar.withContext do
 
   let (res, {goals}) ← StateRefT'.run (x mvar g) s
@@ -87,9 +93,9 @@ def ProofModeM.runTactic (x : MVarId → IrisGoal → ProofModeM α) (s : ProofM
   Term.synthesizeSyntheticMVarsNoPostponing
 
   -- put the goals that depend on other goals last
-  let mvars ← goals.foldlM (λ m g => do
+  let dependees ← goals.foldlM (λ m g => do
     return m ∪ (← g.getMVarDependencies)) ∅
-  let (dep, nonDep) := goals.partition (λ x => mvars.contains x)
+  let (dep, nonDep) := goals.partition dependees.contains
 
   replaceMainGoal (nonDep ++ dep).toList
   return res
