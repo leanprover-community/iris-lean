@@ -102,7 +102,7 @@ theorem frag_discrete [UCMRA B] (Hb : DiscreteE b) : (DiscreteE (◯V b : View F
 end OFE
 
 section CMRA
-open IsViewRel toAgree OFE
+open IsViewRel toAgree OFE DFrac
 
 variable [UFraction F] [OFE A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
 
@@ -501,7 +501,7 @@ section Updates
 
 variable [UFraction F] [OFE A] [IB : UCMRA B] {R : ViewRel A B} [IsViewRel R]
 
-open CMRA
+open CMRA DFrac
 
 theorem auth_one_op_frag_updateP {Pab : A → B → Prop}
     (Hup : ∀ n bf, R n a (b • bf) → ∃ a' b', Pab a' b' ∧ R n a' (b' • bf)) :
