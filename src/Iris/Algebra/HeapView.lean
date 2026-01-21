@@ -39,11 +39,11 @@ variable [IHHmap : ∀ V, HasHeapMap (H (DFrac F × V)) (H V) K (DFrac F × V) V
 /-- The view relation for heaps: relates a model heap to a fragment heap at step index `n`. -/
 def HeapR (n : Nat) (m : H V) (f : H (DFrac F × V)) : Prop :=
   ∀ k fv, get f k = some fv →
-    ∃ (v : V) (dq : DFrac F), get m k = .some v ∧ ✓{n} (dq, v) ∧ (some fv ≼{n} some (dq, v))
+    ∃ (v : V) (dq : DFrac F), get m k = some v ∧ ✓{n} (dq, v) ∧ (some fv ≼{n} some (dq, v))
 
 instance : IsViewRel (HeapR F K V H) where
   mono {n1 m1 f1 n2 m2 f2 Hrel Hm Hf Hn k} vk Hk := by
-    obtain Hf' : ∃ z, get f1 k ≡{n2}≡ (some vk) • z := by
+    obtain Hf' : ∃ z, get f1 k ≡{n2}≡ some vk • z := by
       have ⟨z, Hz⟩ := lookup_incN (n := n2) (m1 := f2) (m2 := f1) |>.1 Hf k
       exact ⟨z, Hk ▸ Hz⟩
     match h : get f1 k with
@@ -77,7 +77,7 @@ theorem unit : HeapR F K V H n m UCMRA.unit := by
 
 theorem exists_iff_validN {n f} : (∃ m, HeapR F K V H n m f) ↔ ✓{n} f := by
   refine ⟨fun ⟨m, Hrel⟩ => IsViewRel.rel_validN _ _ _ Hrel, fun Hv => ?_⟩
-  let FF : (K → (DFrac F × V) → Option V) := fun k _ => get f k |>.bind (·.2)
+  let FF : K → (DFrac F × V) → Option V := fun k _ => get f k |>.bind (·.2)
   refine ⟨hhmap FF f, fun k => ?_⟩
   cases h : get f k
   · simp
@@ -143,7 +143,7 @@ instance : NonExpansive (Frag k dq : _ → HeapView F K V H) where
 
 variable {dp dq : DFrac F} {n : Nat} {m1 m2 : H V} {k : K} {v1 v2 : V}
 
-theorem auth_dfrac_op_equiv : Auth (dp • dq) m1 ≡ (Auth dp m1) • Auth dq m1 :=
+theorem auth_dfrac_op_equiv : Auth (dp • dq) m1 ≡ Auth dp m1 • Auth dq m1 :=
   auth_op_auth_eqv
 
 theorem dist_of_validN_auth_op : ✓{n} Auth dp m1 • Auth dq m2 → m1 ≡{n}≡ m2 :=
@@ -200,7 +200,7 @@ theorem auth_op_frag_one_validN_iff :
   · match h : get m1 k with
     | none => simp [h] at Hl
     | some v' =>
-      exists v', own one
+      exists v', .own one
       refine ⟨Hp, rfl, ?_, ?_⟩
       · exact ⟨one_whole (α := F) |>.1, Dist.validN (h ▸ Hl).symm |>.mp Hv⟩
       · exact Option.some_incN_some_iff.mpr <| .inl <| dist_prod_ext rfl (h.symm ▸ Hl).symm
@@ -245,7 +245,7 @@ theorem auth_op_frag_valid_total_discrete_iff [IsTotal V] [CMRA.Discrete V]
       · exists z
 
 theorem auth_op_frag_one_valid_iff :
-    ✓ Auth dp m1 • Frag k (own one) v1 ↔ ✓ dp ∧ ✓ v1 ∧ get m1 k ≡ some v1 := by
+    ✓ Auth dp m1 • Frag k (.own one) v1 ↔ ✓ dp ∧ ✓ v1 ∧ get m1 k ≡ some v1 := by
   refine valid_iff_validN.trans ?_
   refine forall_congr' (fun _ => auth_op_frag_one_validN_iff) |>.trans ?_
   refine ⟨fun Hv => ?_, ?_⟩
@@ -259,7 +259,7 @@ instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (H := H) k dq v1) wh
     simp only [CMRA.pcore, View.Pcore, some_eqv_some]
     refine NonExpansive₂.eqv trivial (point_core_eqv ?_)
     simp [CMRA.pcore, Prod.pcore]
-    cases h : (CMRA.pcore v1)
+    cases h : CMRA.pcore v1
     · exact not_none_eqv_some (h ▸ Hv1.core_id) |>.elim
     · simp only [Option.bind_some, H]
       exact ⟨rfl, some_eqv_some.mp (h ▸ Hv1.core_id)⟩
@@ -300,7 +300,7 @@ end WithMap
 section heapUpdates
 
 theorem update_one_alloc (Hfresh : get m1 k = none) (Hdq : ✓ dq) (Hval : ✓ v1) :
-    Auth (.own one) m1 ~~> Auth (H := H) (.own one) (set m1 k <| .some v1) • Frag k dq v1 := by
+    Auth (.own one) m1 ~~> Auth (H := H) (.own one) (set m1 k <| some v1) • Frag k dq v1 := by
   refine auth_one_alloc (fun n bf Hrel j => ?_)
   simp only [CMRA.op, Store.op, get_merge, Option.merge, exists_and_left, Prod.forall]
   by_cases h : k = j
@@ -315,7 +315,7 @@ theorem update_one_alloc (Hfresh : get m1 k = none) (Hdq : ✓ dq) (Hval : ✓ v
     exact (Hrel j · · <| · ▸ Hbf)
 
 theorem update_one_delete :
-    Auth (F := F) (.own one) m1 • (Frag k (.own one) v1) ~~> Auth (.own one) (delete m1 k) := by
+    Auth (F := F) (.own one) m1 • Frag k (.own one) v1 ~~> Auth (.own one) (delete m1 k) := by
   refine auth_one_op_frag_dealloc <| fun n bf Hrel j => ?_
   match He : get bf j with
   | none =>
@@ -345,20 +345,20 @@ theorem update_auth_op_frag
       ✓{n} ((dq, v) •? f) → (mv ≡{n}≡ ((v : V) •? (Prod.snd <$> f))) →
       ✓{n} ((dq', v') •? f) ∧ (mv' ≡{n}≡ v' •? (Prod.snd <$> f))) :
     Auth (F := F) (.own one) m1 • Frag k dq v ~~>
-    Auth (.own one) (set m1 k (some mv')) • (Frag k dq' v') := by
+    Auth (.own one) (set m1 k (some mv')) • Frag k dq' v' := by
   refine auth_one_op_frag_update fun n bf Hrel j ⟨df, va⟩ => ?_
   simp [CMRA.op, get_merge]
   by_cases h : k = j
   · simp only [point, get_set_eq h, Option.some.injEq, exists_eq_left']
     intro Hbf
-    specialize Hrel k ((dq, v) •? (Store.get bf k)) ?G
+    specialize Hrel k ((dq, v) •? Store.get bf k) ?G
     case G =>
       simp [CMRA.op, get_merge, point, op?]
       cases _ : get bf k <;> simp [Option.merge, get_set_eq rfl]
     obtain ⟨mv, mdf, Hlookup, Hval, Hincl'⟩ := Hrel
     obtain ⟨f', Hincl⟩ := Option.some_incN_some_iff_opM.mp Hincl'
     clear Hincl'
-    let f := (get bf k) • f'
+    let f := get bf k • f'
     have Hincl' : (mdf, mv) ≡{n}≡ (dq, v) •? f := Hincl.trans Option.opM_opM_assoc.dist
     clear Hincl
     specialize Hup n mv f Hlookup (Hincl'.validN.mp Hval) ?G
@@ -368,7 +368,7 @@ theorem update_auth_op_frag
       | none => simp [CMRA.op?]
       | some ⟨_, _⟩ => simp [CMRA.op?, CMRA.op]
     obtain ⟨Hval', Hincl'⟩ := Hup
-    exists ((dq' •? (Option.map Prod.fst f)))
+    exists (dq' •? Option.map Prod.fst f)
     constructor
     · refine validN_ne (x := (dq' •? Option.map Prod.fst f, v' •? Prod.snd <$> f))
         ⟨.rfl, Hincl'.symm⟩ ?_
@@ -377,7 +377,7 @@ theorem update_auth_op_frag
       · simp only [h] at Hval'
         exact Hval'
     · rw [← Hbf]
-      suffices HF : some ((dq', v') •? get bf j) ≼{n} some (dq' •? (Option.map Prod.fst f), mv') by
+      suffices HF : some ((dq', v') •? get bf j) ≼{n} some (dq' •? Option.map Prod.fst f, mv') by
         apply incN_trans ?_ HF
         cases _ : get bf j <;> exact incN_refl _
       refine Option.some_incN_some_iff_opM.mpr ?_
@@ -398,7 +398,7 @@ theorem update_auth_op_frag
 
 theorem update_of_local_update (Hl : get m1 k = some mv) (Hup : (mv, v) ~l~> (mv', v')) :
     Auth (F := F) (.own one) m1 • Frag k dq v ~~>
-    Auth (.own one) (set m1 k (.some mv')) • Frag k dq v' := by
+    Auth (.own one) (set m1 k (some mv')) • Frag k dq v' := by
   refine update_auth_op_frag (fun n mv0 f Hmv0 ⟨Hv1, Hv2⟩ Hincl => ?_)
   simp [Hl] at Hmv0
   subst Hmv0
@@ -410,7 +410,7 @@ theorem update_of_local_update (Hl : get m1 k = some mv) (Hup : (mv, v) ~l~> (mv
 
 theorem update_replace (Hval' : ✓ v2) :
     Auth (.own one) m1 • Frag (F := F) k (.own one) v1 ~~>
-    Auth (.own one) (set m1 k (.some v2)) • Frag k (.own one) v2 := by
+    Auth (.own one) (set m1 k (some v2)) • Frag k (.own one) v2 := by
   refine update_auth_op_frag fun n mv f Hlookup Hval Hincl => ?_
   cases _ : f <;> simp only [Option.map_eq_map, Option.map_none]
   · simp_all only [op?, Dist.rfl, and_true]
@@ -443,8 +443,8 @@ theorem update_of_dfrac_update P (Hdq : dq ~~>: P) :
     refine ⟨⟨dq'', rfl, HPdq''⟩, fun j ⟨df, va⟩ Heq => ?_⟩
     by_cases h : k = j
     · simp [CMRA.op, get_merge, point_get_eq h] at Heq
-      refine ⟨v', dq'' •? (Option.map Prod.fst $ (Store.get bf k) • f'), ?_⟩
-      refine ⟨h ▸ Hlookup, ⟨Hvdq'' , Hval.2⟩, f', ?_⟩
+      refine ⟨v', dq'' •? (Option.map Prod.fst <| (Store.get bf k) • f'), ?_⟩
+      refine ⟨h ▸ Hlookup, ⟨Hvdq'', Hval.2⟩, f', ?_⟩
       cases _ : f' <;> cases _ : get bf k <;>
         simp [Dist, Option.Forall₂, CMRA.op?] <;>
         simp_all [CMRA.op, op?, Prod.op] <;>
