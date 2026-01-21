@@ -183,38 +183,21 @@ theorem frag_add_op_equiv {q1 q2 : F} :
     Frag (H := H) k (.own (q1 + q2)) (v1 • v2) ≡ Frag k (.own q1) v1 • Frag k (.own q2) v2 :=
   frag_op_equiv
 
--- Here
-theorem auth_op_frag_validN_iff :
+nonrec theorem auth_op_frag_validN_iff :
     ✓{n} Auth dp m1 • Frag k dq v ↔
-    ∃ v' dq', ✓ dp ∧ Store.get m1 k = some v' ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼{n} some (dq', v') := by
-  simp [HeapView.Auth, HeapView.Frag]
-  apply View.auth_op_frag_validN_iff.trans
-  refine and_congr_right (fun H1 => ?_)
-  refine (HeapR.point_get_iff _ _ _ _ _ _ _ _ _).trans ?_
-  refine exists_congr (fun x => ?_)
-  exact exists_and_left
+    ∃ v' dq', ✓ dp ∧ Store.get m1 k = some v' ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼{n} some (dq', v') :=
+  auth_op_frag_validN_iff.trans <|
+    (and_congr_right fun _ => (HeapR.point_get_iff ..).trans <|
+    exists_congr fun _ => exists_and_left).trans (by grind)
 
+-- Here
 theorem auth_op_frag_one_validN_iff n dp m k v :
     ✓{n} ((HeapView.Auth dp m : HeapView F K V H) • HeapView.Frag k (.own One.one) v) ↔
       ✓ dp ∧ ✓{n} v ∧ Store.get m k ≡{n}≡ some v := by
-  apply (HeapView.auth_op_frag_validN_iff).trans
-  constructor
+  refine auth_op_frag_validN_iff.trans ⟨?_, ?_⟩
   · rintro ⟨Hdp, v', dq', Hlookup, Hvalid, Hincl⟩
     have Heq : v ≡{n}≡ Hdp := by
-      have Z := @Option.dist_of_inc_exclusive _ _ (DFrac.own One.one, v) n ?G _ Hincl Hvalid
-      case G =>
-        -- TODO: This should be a DFrac lemma
-        constructor
-        rintro ⟨y1, y2⟩
-        simp [CMRA.ValidN, CMRA.op]
-        intro H
-        exfalso
-        cases y1 <;> simp [DFrac.valid, DFrac.op] at H
-        · apply (UFraction.one_whole (α := F)).2
-          rename_i f; exists f
-        · apply (UFraction.one_whole (α := F)).2 H
-        · apply (UFraction.one_whole (α := F)).2
-          exact Fraction.Fractional.of_add_left H
+      have Z := @Option.dist_of_inc_exclusive _ _ (DFrac.own One.one, v) n _ _ Hincl Hvalid
       exact Z.2
     refine ⟨dq', ?_, ?_⟩
     · simp [CMRA.ValidN, Prod.ValidN] at Hvalid
