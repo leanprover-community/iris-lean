@@ -94,7 +94,7 @@ instance : IsViewRel (HeapR F K V H) where
     simp [UCMRA.unit, Store.unit, Heap.get_empty]
 
 omit IHHmap in
-theorem view_rel_unit : HeapR F K V H n m UCMRA.unit := by
+theorem HeapR.unit : HeapR F K V H n m UCMRA.unit := by
   simp [HeapR, UCMRA.unit, Heap.get_empty]
 
 theorem HeapR.exists_iff_validN n f : (∃ m, HeapR F K V H n m f) ↔ ✓{n} f := by
@@ -185,7 +185,7 @@ instance : NonExpansive (HeapView.Frag k dq : _ → HeapView F K V H) where
       else simp [get_set_ne h]
 
 omit IHHmap in
-theorem HeapView.auth_dfrac_op_eqv (dp dq : DFrac F) (m : H V) :
+theorem HeapView.auth_dfrac_op_equiv (dp dq : DFrac F) (m : H V) :
     (HeapView.Auth (dp • dq) m) ≡ (HeapView.Auth dp m) • HeapView.Auth dq m :=
   View.auth_op_auth_eqv
 
@@ -195,7 +195,7 @@ theorem HeapView.dist_of_validN_auth_op n dp m1 dq m2 :
   fun a => View.dist_of_validN_auth a
 
 omit IHHmap in
-theorem HeapView.eqv_of_valid_auth_op dp m1 dq m2 :
+theorem HeapView.equiv_of_valid_auth_op dp m1 dq m2 :
     ✓ ((HeapView.Auth dp m1 : HeapView F K V H) • HeapView.Auth dq m2) → m1 ≡ m2 :=
   fun a => View.eqv_of_valid_auth a
 
@@ -205,45 +205,45 @@ theorem HeapView.auth_validN_iff m n dq :
   apply View.auth_validN_iff.trans
   suffices ✓{n} dq ↔ ✓ dq by
     apply and_iff_left_of_imp (fun _ => ?_)
-    apply view_rel_unit
+    apply HeapR.unit
   rfl
 
 omit IHHmap in
 theorem HeapView.auth_valid_iff m dq : ✓ (HeapView.Auth dq m : HeapView F K V H) ↔ ✓ dq := by
   apply View.auth_valid_iff.trans
   refine and_iff_left_of_imp (fun _ n => ?_)
-  exact view_rel_unit F K V H
+  exact HeapR.unit F K V H
 
 omit IHHmap in
 theorem HeapView.auth_one_valid m : ✓ (HeapView.Auth (.own One.one) m : HeapView F K V H) := by
   apply (HeapView.auth_valid_iff _ _).mpr valid_own_one
 
 omit IHHmap in
-theorem HeapView.validN_auth_op_iff n dq1 dq2 m1 m2 :
+theorem HeapView.auth_op_auth_validN_iff n dq1 dq2 m1 m2 :
     ✓{n} ((HeapView.Auth dq1 m1 : HeapView F K V H) • HeapView.Auth dq2 m2) ↔
       ✓ (dq1 • dq2) ∧ m1 ≡{n}≡ m2 := by
   apply View.auth_op_auth_validN_iff.trans
   refine and_congr_right (fun _ => ?_)
   refine and_iff_left_of_imp (fun _ => ?_)
-  exact view_rel_unit F K V H
+  exact HeapR.unit F K V H
 
 omit IHHmap in
-theorem HeapView.valid_auth_op_iff dq1 dq2 m1 m2 :
+theorem HeapView.auth_op_auth_valid_iff dq1 dq2 m1 m2 :
     ✓ ((HeapView.Auth dq1 m1 : HeapView F K V H) • HeapView.Auth dq2 m2) ↔
       ✓ (dq1 • dq2) ∧ m1 ≡ m2 := by
   apply View.auth_op_auth_valid_iff.trans
   refine and_congr_right (fun _ => ?_)
   refine and_iff_left_of_imp (fun _ n => ?_)
-  exact view_rel_unit F K V H
+  exact HeapR.unit F K V H
 
 omit IHHmap in
-theorem HeapView.auth_one_op_validN_iff n m1 m2 :
+theorem HeapView.auth_one_op_auth_one_validN_iff n m1 m2 :
     ✓{n} ((HeapView.Auth (.own One.one) m1 : HeapView F K V H) •
       HeapView.Auth (.own One.one) m2) ↔ False :=
   View.auth_one_op_auth_one_validN_iff
 
 omit IHHmap in
-theorem HeapView.auth_one_op_valid_iff m1 m2 :
+theorem HeapView.auth_one_op_auth_one_valid_iff m1 m2 :
     ✓ ((HeapView.Auth (.own One.one) m1 : HeapView F K V H) •
       HeapView.Auth (.own One.one) m2) ↔ False :=
   View.auth_one_op_auth_one_valid_iff
@@ -266,7 +266,7 @@ theorem HeapView.frag_valid_iff k dq v :
     exact ⟨CMRA.valid_iff_validN.mp H1 n, CMRA.valid_iff_validN.mp H2 n⟩
 
 omit IHHmap in
-theorem HeapView.frag_op_eqv k dq1 dq2 v1 v2 :
+theorem HeapView.frag_op_equiv k dq1 dq2 v1 v2 :
     (HeapView.Frag k (dq1 • dq2) (v1 • v2) : HeapView F K V H) ≡
       HeapView.Frag k dq1 v1 • HeapView.Frag k dq2 v2 := by
   simp [HeapView.Frag]
@@ -277,10 +277,10 @@ theorem HeapView.frag_op_eqv k dq1 dq2 v1 v2 :
   rfl
 
 omit IHHmap in
-theorem HeapView.frag_add_op_eqv k q1 q2 v1 v2 :
+theorem HeapView.frag_add_op_equiv k q1 q2 v1 v2 :
     (HeapView.Frag k (.own (q1 + q2)) (v1 • v2) : HeapView F K V H) ≡
       HeapView.Frag k (.own q1) v1 • HeapView.Frag k (.own q2) v2 :=
-  HeapView.frag_op_eqv _ _ _ _ _
+  HeapView.frag_op_equiv _ _ _ _ _
 
 theorem HeapView.frag_op_validN_iff n k dq1 dq2 v1 v2 :
     ✓{n} ((HeapView.Frag k dq1 v1 : HeapView F K V H) • HeapView.Frag k dq2 v2) ↔
@@ -667,7 +667,7 @@ theorem HeapView.update_auth_op_frag (m : H _) k (dq : DFrac F) (v mv' v' : V) (
       simp only [Hbf] at Hrel'
       exact Hrel' trivial
 
-theorem HeapView.update_of_localUpdate m k dq v mv' v' :
+theorem HeapView.update_of_local_update m k dq v mv' v' :
     (Store.get m k = some mv) →
     (mv, v) ~l~> (mv', v') →
     ((HeapView.Auth (.own 1) m : HeapView F K V H) • HeapView.Frag k dq v) ~~>
@@ -708,11 +708,11 @@ theorem HeapView.update_replace m k v v' :
     apply CMRA.valid0_of_validN
     exact Hval.1
 
-theorem HeapView.auth_frac_discard dq m :
+theorem HeapView.auth_dfrac_discard dq m :
     (HeapView.Auth dq m : HeapView F K V H) ~~> HeapView.Auth .discard m :=
   View.auth_discard
 
-theorem HeapView.auth_frac_acquire [IsSplitFraction F] m :
+theorem HeapView.auth_dfrac_acquire [IsSplitFraction F] m :
     (HeapView.Auth .discard m : HeapView F K V H) ~~>:
       fun a => ∃ q, a = HeapView.Auth (F := F) (.own q) m :=
   View.auth_acquire
