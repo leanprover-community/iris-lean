@@ -31,67 +31,43 @@ It provides authoritative and fragmental ownership over heap elements with fract
 open Iris
 
 section heap_view
-open Heap
+open Store Heap OFE CMRA
 
 variable (F K V : Type _) (H : Type _ → Type _) [UFraction F] [∀ V, Heap (H V) K V] [CMRA V]
 variable [IHHmap : ∀ V, HasHeapMap (H (DFrac F × V)) (H V) K (DFrac F × V) V]
 
 /-- The view relation for heaps: relates a model heap to a fragment heap at step index `n`. -/
 def HeapR (n : Nat) (m : H V) (f : H ((DFrac F) × V)) : Prop :=
-  ∀ k fv, Store.get f k = some fv →
-    ∃ (v : V) (dq : DFrac F), Store.get m k = .some v ∧ ✓{n} (dq, v) ∧ (some fv ≼{n} some (dq, v))
+  ∀ k fv, get f k = some fv →
+    ∃ (v : V) (dq : DFrac F), get m k = .some v ∧ ✓{n} (dq, v) ∧ (some fv ≼{n} some (dq, v))
 
 instance : IsViewRel (HeapR F K V H) where
-  mono {n1 m1 f1 n2 m2 f2 Hrel Hm Hf Hn k} := by
-    intro vk Hk
-    obtain ⟨Hf'', _⟩ := Store.lookup_incN (n := n2) (m1 := f2) (m2 := f1)
-    have Hf''' := Hf'' Hf k; clear Hf Hf''
-    obtain Hf' : ∃ z, Store.get f1 k ≡{n2}≡ (some vk) • z := by
-      obtain ⟨z, Hz⟩ := Hf'''; exists z
-      apply Hz.trans
-      exact OFE.Dist.of_eq (congrFun (congrArg CMRA.op Hk) z)
-    clear Hf'''
-    cases h : Store.get f1 k with
-    | none =>
-      exfalso
-      rw [h] at Hf'
-      obtain ⟨z, HK⟩ := Hf'
-      cases z <;> simp [CMRA.op, optionOp] at HK
-    | some val =>
-      rcases Heq : val with ⟨q', va'⟩
-      rw [h, Heq] at Hf'
-      simp only [HeapR] at Hrel
-      obtain ⟨v, dq, Hm1, ⟨Hvval, Hdqval⟩, Hvincl⟩ := Hrel k val h
-      have X : ∃ y : V, get m2 k = some y ∧ v ≡{n2}≡ y := by
-        simp_all
-        have Hmm := Hm1 ▸ Hm k
-        rcases h : Store.get m2 k with (_|y) <;> simp [h] at Hmm
-        exists y
-      obtain ⟨v', Hm2, Hv⟩ := X
-      exists v'
-      exists dq
-      refine ⟨Hm2, ⟨Hvval, ?_⟩, ?_⟩
-      · exact CMRA.validN_ne Hv (CMRA.validN_of_le Hn Hdqval)
-      · suffices some vk ≼{n2} some (dq, v) by
-          apply CMRA.incN_of_incN_of_dist this
-          refine ⟨rfl, Hv⟩
-        apply CMRA.incN_trans
-        · apply Hf'
-        apply CMRA.incN_trans _ (CMRA.incN_of_incN_le Hn Hvincl)
-        rw [Heq]
-  rel_validN := by
-    intro n m f Hrel k
-    rcases Hf : Store.get f k with (_|⟨dqa, va⟩)
-    · simp [CMRA.ValidN, optionValidN]
-    · simp only [HeapR] at Hrel
-      obtain ⟨v, dq, Hmval, Hvval, Hvincl⟩ := Hf ▸ Hrel k _ Hf
-      rw [Hf] at Hvincl
-      refine CMRA.validN_of_incN Hvincl ?_
-      exact Hvval
+  mono {n1 m1 f1 n2 m2 f2 Hrel Hm Hf Hn k} vk Hk := by
+    obtain Hf' : ∃ z, get f1 k ≡{n2}≡ (some vk) • z := by
+      have ⟨z, Hz⟩ := lookup_incN (n := n2) (m1 := f2) (m2 := f1) |>.1 Hf k
+      exact ⟨z, Hk ▸ Hz⟩
+    match h : get f1 k with
+    | none => rcases h ▸ Hf' with ⟨_|_, HK⟩ <;> simp [CMRA.op, optionOp] at HK
+    | some ⟨dq', v'⟩ =>
+      obtain ⟨v, dq, Hm1, ⟨Hvval, Hdqval⟩, Hvincl⟩ := Hrel k ⟨dq', v'⟩ h
+      obtain ⟨v', Hm2, Hv⟩ : ∃ y : V, get m2 k = some y ∧ v ≡{n2}≡ y := by
+        have Hmm := Hm1 ▸ Hm k <;> revert Hmm
+        cases get m2 k <;> simp
+      exists v', dq
+      refine ⟨Hm2, ⟨Hvval, validN_ne Hv (validN_of_le Hn Hdqval)⟩, ?_⟩
+      suffices some vk ≼{n2} some (dq, v) by exact incN_of_incN_of_dist this ⟨rfl, Hv⟩
+      refine incN_trans Hf' ?_
+      refine incN_trans ?_ (incN_of_incN_le Hn Hvincl)
+      rw [h]
+  rel_validN n m f Hrel k := by
+    match Hf : get f k with
+    | none => simp [ValidN, optionValidN]
+    | some _ =>
+        obtain ⟨_, _, _, Hvv, Hvi⟩ := Hf ▸ Hrel k _ Hf
+        exact (Hf ▸ validN_of_incN Hvi Hvv)
   rel_unit n := by
-    exists Heap.empty
-    intro k
-    simp [UCMRA.unit, Store.unit, Heap.get_empty]
+    refine ⟨empty, fun _ _ => ?_⟩
+    simp [UCMRA.unit, Store.unit, get_empty]
 
 omit IHHmap in
 theorem HeapR.unit : HeapR F K V H n m UCMRA.unit := by
