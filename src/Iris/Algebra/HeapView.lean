@@ -51,33 +51,34 @@ instance : IsViewRel (HeapR F K V H) where
       apply Hz.trans
       exact OFE.Dist.of_eq (congrFun (congrArg CMRA.op Hk) z)
     clear Hf'''
-    cases h : Store.get f1 k
-    · exfalso
+    cases h : Store.get f1 k with
+    | none =>
+      exfalso
       rw [h] at Hf'
       obtain ⟨z, HK⟩ := Hf'
       cases z <;> simp [CMRA.op, optionOp] at HK
-    rename_i val
-    rcases Heq : val with ⟨q', va'⟩
-    rw [h, Heq] at Hf'
-    simp only [HeapR] at Hrel
-    obtain ⟨v, dq, Hm1, ⟨Hvval, Hdqval⟩, Hvincl⟩ := Hrel k val h
-    have X : ∃ y : V, get m2 k = some y ∧ v ≡{n2}≡ y := by
-      simp_all
-      have Hmm := Hm1 ▸ Hm k
-      rcases h : Store.get m2 k with (_|y) <;> simp [h] at Hmm
-      exists y
-    obtain ⟨v', Hm2, Hv⟩ := X
-    exists v'
-    exists dq
-    refine ⟨Hm2, ⟨Hvval, ?_⟩, ?_⟩
-    · exact CMRA.validN_ne Hv (CMRA.validN_of_le Hn Hdqval)
-    · suffices some vk ≼{n2} some (dq, v) by
-        apply CMRA.incN_of_incN_of_dist this
-        refine ⟨rfl, Hv⟩
-      apply CMRA.incN_trans
-      · apply Hf'
-      apply CMRA.incN_trans _ (CMRA.incN_of_incN_le Hn Hvincl)
-      rw [Heq]
+    | some val =>
+      rcases Heq : val with ⟨q', va'⟩
+      rw [h, Heq] at Hf'
+      simp only [HeapR] at Hrel
+      obtain ⟨v, dq, Hm1, ⟨Hvval, Hdqval⟩, Hvincl⟩ := Hrel k val h
+      have X : ∃ y : V, get m2 k = some y ∧ v ≡{n2}≡ y := by
+        simp_all
+        have Hmm := Hm1 ▸ Hm k
+        rcases h : Store.get m2 k with (_|y) <;> simp [h] at Hmm
+        exists y
+      obtain ⟨v', Hm2, Hv⟩ := X
+      exists v'
+      exists dq
+      refine ⟨Hm2, ⟨Hvval, ?_⟩, ?_⟩
+      · exact CMRA.validN_ne Hv (CMRA.validN_of_le Hn Hdqval)
+      · suffices some vk ≼{n2} some (dq, v) by
+          apply CMRA.incN_of_incN_of_dist this
+          refine ⟨rfl, Hv⟩
+        apply CMRA.incN_trans
+        · apply Hf'
+        apply CMRA.incN_trans _ (CMRA.incN_of_incN_le Hn Hvincl)
+        rw [Heq]
   rel_validN := by
     intro n m f Hrel k
     rcases Hf : Store.get f k with (_|⟨dqa, va⟩)
@@ -124,8 +125,7 @@ theorem HeapR.point_get_iff n m k dq v :
   · intro Hrel
     have Hrel' := Hrel k (dq, v)
     simp only [Heap.point, Store.get_set_eq] at Hrel'
-    obtain ⟨v', dq', Hlookup, Hval, Hinc⟩ := Hrel' trivial
-    exists v'; exists dq'
+    exact Hrel' trivial
   · rintro ⟨v', dq', Hlookup, Hval, _⟩ j
     simp only [Heap.point]
     if h : k = j
@@ -206,7 +206,7 @@ theorem HeapView.auth_validN_iff m n dq :
   suffices ✓{n} dq ↔ ✓ dq by
     apply and_iff_left_of_imp (fun _ => ?_)
     apply view_rel_unit
-  exact Eq.to_iff rfl
+  rfl
 
 omit IHHmap in
 theorem HeapView.auth_valid_iff m dq : ✓ (HeapView.Auth dq m : HeapView F K V H) ↔ ✓ dq := by
@@ -270,8 +270,8 @@ theorem HeapView.frag_valid_iff k dq v :
 
 omit IHHmap in
 theorem HeapView.frag_op_eqv k dq1 dq2 v1 v2 :
-    (HeapView.Frag k (dq1 • dq2) (v1  • v2) : HeapView F K V H) ≡
-      HeapView.Frag k dq1 v1  • HeapView.Frag k dq2 v2 := by
+    (HeapView.Frag k (dq1 • dq2) (v1 • v2) : HeapView F K V H) ≡
+      HeapView.Frag k dq1 v1 • HeapView.Frag k dq2 v2 := by
   simp [HeapView.Frag]
   rw [← View.frag_op_eq]
   apply View.frag_ne.eqv
@@ -281,13 +281,13 @@ theorem HeapView.frag_op_eqv k dq1 dq2 v1 v2 :
 
 omit IHHmap in
 theorem HeapView.frag_add_op_eqv k q1 q2 v1 v2 :
-    (HeapView.Frag k (.own (q1 + q2)) (v1  • v2) : HeapView F K V H) ≡
-      HeapView.Frag k (.own q1) v1  • HeapView.Frag k (.own q2) v2 := by
+    (HeapView.Frag k (.own (q1 + q2)) (v1 • v2) : HeapView F K V H) ≡
+      HeapView.Frag k (.own q1) v1 • HeapView.Frag k (.own q2) v2 := by
   apply HeapView.frag_op_eqv
 
 theorem HeapView.frag_op_validN_iff n k dq1 dq2 v1 v2 :
     ✓{n} ((HeapView.Frag k dq1 v1 : HeapView F K V H) • HeapView.Frag k dq2 v2) ↔
-      ✓ (dq1  • dq2) ∧ ✓{n} (v1  • v2) := by
+      ✓ (dq1 • dq2) ∧ ✓{n} (v1 • v2) := by
   apply View.frag_validN_iff.trans
   apply (HeapR.exists_iff_validN F K V H _ _ ).trans
   apply Iff.trans
@@ -296,11 +296,11 @@ theorem HeapView.frag_op_validN_iff n k dq1 dq2 v1 v2 :
     apply Store.eqv_of_Equiv
     apply Heap.point_op_point
   apply Heap.point_validN_iff.trans
-  apply Eq.to_iff rfl
+  rfl
 
 theorem HeapView.frag_op_valid_iff k dq1 dq2 v1 v2 :
     ✓ ((HeapView.Frag k dq1 v1 : HeapView F K V H) • HeapView.Frag k dq2 v2) ↔
-      ✓ (dq1  • dq2) ∧ ✓ (v1  • v2) := by
+      ✓ (dq1 • dq2) ∧ ✓ (v1 • v2) := by
   apply View.frag_valid_iff.trans
   suffices (∀ (n : Nat), ✓{n} dq1 • dq2 ∧ ✓{n} v1 • v2) ↔ ✓ dq1 • dq2 ∧ ✓ v1 • v2 by
     apply Iff.trans _ this
@@ -314,12 +314,11 @@ theorem HeapView.frag_op_valid_iff k dq1 dq2 v1 v2 :
       apply Store.eqv_of_Equiv
       apply Heap.point_op_point
     apply Heap.point_validN_iff.trans
-    apply Eq.to_iff rfl
+    rfl
   constructor
   · intro H
-    refine ⟨?_, ?_⟩
-    · apply CMRA.valid_iff_validN.mpr <| fun n => (H n).1
-    · apply CMRA.valid_iff_validN.mpr <| fun n => (H n).2
+    exact ⟨CMRA.valid_iff_validN.mpr fun n => (H n).1,
+           CMRA.valid_iff_validN.mpr fun n => (H n).2⟩
   · rintro ⟨H1, H2⟩ n
     refine ⟨?_, ?_⟩
     · apply CMRA.valid_iff_validN.mp H1
@@ -327,7 +326,7 @@ theorem HeapView.frag_op_valid_iff k dq1 dq2 v1 v2 :
 
 omit IHHmap in
 theorem HeapView.auth_op_frag_validN_iff n dp m k dq v :
-    ✓{n} ((HeapView.Auth dp m : HeapView F K V H)  • HeapView.Frag k dq v) ↔
+    ✓{n} ((HeapView.Auth dp m : HeapView F K V H) • HeapView.Frag k dq v) ↔
       ∃ v' dq', ✓ dp ∧ Store.get m k = some v' ∧ ✓{n} (dq', v') ∧
                 some (dq, v) ≼{n} some (dq', v') := by
   simp [HeapView.Auth, HeapView.Frag]
@@ -372,13 +371,13 @@ theorem HeapView.auth_op_frag_one_validN_iff n dp m k v :
     · simp [CMRA.ValidN, Prod.ValidN]
       refine ⟨?_, ?_⟩
       · simp [valid]
-        apply  (UFraction.one_whole (α := F)).1
+        apply (UFraction.one_whole (α := F)).1
       rw [h] at Hlookup
-      exact (Dist.validN (id (Dist.symm Hlookup))).mp Hval
+      exact (Dist.validN Hlookup.symm).mp Hval
     · apply Option.some_incN_some_iff.mpr ?_
       left
       apply dist_prod_ext rfl ?_
-      exact id (Dist.symm (h.symm ▸ Hlookup : some _ ≡{n}≡ some _))
+      exact (h.symm ▸ Hlookup : some _ ≡{n}≡ some _).symm
 
 omit IHHmap in
 theorem HeapView.auth_op_frag_validN_total_iff [CMRA.IsTotal V] n dp m k dq v :
@@ -430,8 +429,7 @@ theorem HeapView.auth_op_frag_discrete_valid_iff [CMRA.Discrete V] dp m k dq v :
         apply Hvalid.2
     · exact (CMRA.inc_iff_incN 0).mpr Hincl
   · rintro ⟨v', dq', Hdp, Hlookup, Hvalid, Hincl⟩ n
-    exists v'; exists dq'
-    refine ⟨Hdp, Hlookup, Hvalid.validN, (CMRA.inc_iff_incN n).mp Hincl⟩
+    exact ⟨v', dq', Hdp, Hlookup, Hvalid.validN, (CMRA.inc_iff_incN n).mp Hincl⟩
 
 omit IHHmap in
 theorem HeapView.auth_op_frag_valid_total_discrete_iff [CMRA.IsTotal V] [CMRA.Discrete V]
