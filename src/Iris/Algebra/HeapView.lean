@@ -30,14 +30,14 @@ It provides authoritative and fragmental ownership over heap elements with fract
 
 open Iris
 
-section heap_view
+section heapView
 open Store Heap OFE CMRA
 
 variable (F K V : Type _) (H : Type _ → Type _) [UFraction F] [∀ V, Heap (H V) K V] [CMRA V]
 variable [IHHmap : ∀ V, HasHeapMap (H (DFrac F × V)) (H V) K (DFrac F × V) V]
 
 /-- The view relation for heaps: relates a model heap to a fragment heap at step index `n`. -/
-def HeapR (n : Nat) (m : H V) (f : H ((DFrac F) × V)) : Prop :=
+def HeapR (n : Nat) (m : H V) (f : H (DFrac F × V)) : Prop :=
   ∀ k fv, get f k = some fv →
     ∃ (v : V) (dq : DFrac F), get m k = .some v ∧ ✓{n} (dq, v) ∧ (some fv ≼{n} some (dq, v))
 
@@ -63,8 +63,8 @@ instance : IsViewRel (HeapR F K V H) where
     match Hf : get f k with
     | none => simp [ValidN, optionValidN]
     | some _ =>
-        obtain ⟨_, _, _, Hvv, Hvi⟩ := Hf ▸ Hrel k _ Hf
-        exact (Hf ▸ validN_of_incN Hvi Hvv)
+      obtain ⟨_, _, _, Hvv, Hvi⟩ := Hf ▸ Hrel k _ Hf
+      exact (Hf ▸ validN_of_incN Hvi Hvv)
   rel_unit n := by
     refine ⟨empty, fun _ _ => ?_⟩
     simp [UCMRA.unit, Store.unit, get_empty]
@@ -79,7 +79,8 @@ theorem exists_iff_validN {n f} : (∃ m, HeapR F K V H n m f) ↔ ✓{n} f := b
   refine ⟨fun ⟨m, Hrel⟩ => IsViewRel.rel_validN _ _ _ Hrel, fun Hv => ?_⟩
   let FF : (K → (DFrac F × V) → Option V) := fun k _ => get f k |>.bind (·.2)
   refine ⟨hhmap FF f, fun k => ?_⟩
-  cases h : get f k; simp
+  cases h : get f k
+  · simp
   simp only [Option.some.injEq, exists_and_left]
   rintro ⟨dq, v⟩ rfl
   exists v
@@ -109,10 +110,10 @@ instance [CMRA.Discrete V] : IsViewRelDiscrete (HeapR F K V H) where
 
 end HeapR
 
-/-- A view of a Heap, that gives element-wise ownership -/
+/-- A view of a Heap, that gives element-wise ownership. -/
 abbrev HeapView := View F (HeapR F K V H)
 
-end heap_view
+end heapView
 
 namespace HeapView
 
@@ -136,7 +137,8 @@ instance : NonExpansive (Frag k dq : _ → HeapView F K V H) where
   ne _ _ _ Hx := by
     refine frag_ne.ne (fun k' => ?_)
     by_cases h : k = k'
-    · simp [point, get_set_eq h]; exact dist_prod_ext rfl Hx
+    · simp [point, get_set_eq h]
+      exact dist_prod_ext rfl Hx
     · simp [point, get_set_ne h]
 
 variable {dp dq : DFrac F} {n : Nat} {m1 m2 : H V} {k : K} {v1 v2 : V}
@@ -162,7 +164,7 @@ nonrec theorem auth_op_auth_validN_iff : ✓{n} Auth dp m1 • Auth dq m2 ↔ �
   auth_op_auth_validN_iff.trans <|
   and_congr_right <| fun _ => and_iff_left_of_imp <| fun _ => HeapR.unit _ _ _ _
 
-nonrec theorem auth_op_auth_valid_iff  : ✓ Auth dp m1 • Auth dq m2 ↔ ✓ dp • dq ∧ m1 ≡ m2 :=
+nonrec theorem auth_op_auth_valid_iff : ✓ Auth dp m1 • Auth dq m2 ↔ ✓ dp • dq ∧ m1 ≡ m2 :=
   auth_op_auth_valid_iff.trans <|
   and_congr_right <| fun _ => and_iff_left_of_imp <| fun _ _ => HeapR.unit _ _ _ _
 
@@ -232,7 +234,7 @@ theorem auth_op_frag_valid_total_discrete_iff [IsTotal V] [CMRA.Discrete V]
     (H : ✓ Auth dp m1 • Frag k dq v1) :
     ∃ v', ✓ dp ∧ ✓ dq ∧ get m1 k = some v' ∧ ✓ v' ∧ v1 ≼ v' := by
   obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := auth_op_frag_discrete_valid_iff |>.mp H
-  refine ⟨v', Hdp, ?_, Hl , Hv.2, ?_⟩
+  refine ⟨v', Hdp, ?_, Hl, Hv.2, ?_⟩
   · rcases Hi with ⟨(_|x), Hx⟩
     · exact valid_of_eqv Hx.1 Hv.1
     · exact Option.valid_of_inc_valid Hv.1 ⟨x.fst, Hx.1⟩
@@ -295,11 +297,11 @@ theorem frag_op_valid_iff :
 
 end WithMap
 
-section heap_updates
+section heapUpdates
 
 theorem update_one_alloc (Hfresh : get m1 k = none) (Hdq : ✓ dq) (Hval : ✓ v1) :
     Auth (.own one) m1 ~~> Auth (H := H) (.own one) (set m1 k <| .some v1) • Frag k dq v1 := by
-  refine auth_one_alloc (fun n bf Hrel j => ?_ )
+  refine auth_one_alloc (fun n bf Hrel j => ?_)
   simp only [CMRA.op, Store.op, get_merge, Option.merge, exists_and_left, Prod.forall]
   by_cases h : k = j
   · have Hbf : get bf j = none := by cases _ : get bf j <;> grind [HeapR]
@@ -308,14 +310,17 @@ theorem update_one_alloc (Hfresh : get m1 k = none) (Hdq : ✓ dq) (Hval : ✓ v
     exact ⟨v1, get_set_eq h, dq, ⟨Hdq, Hval.validN⟩, incN_refl _⟩
   · rw [point_get_ne h, get_set_ne h]
     simp only [HeapR, exists_and_left, Prod.forall] at Hrel
-    cases Hbf : get bf j; grind
+    cases Hbf : get bf j
+    · grind
     exact (Hrel j · · <| · ▸ Hbf)
 
 theorem update_one_delete :
     Auth (F := F) (.own one) m1 • (Frag k (.own one) v1) ~~> Auth (.own one) (delete m1 k) := by
   refine auth_one_op_frag_dealloc <| fun n bf Hrel j => ?_
   match He : get bf j with
-  | none => intro _ HK; simp at HK
+  | none =>
+    intro _ HK
+    simp at HK
   | some v =>
     by_cases h : k = j
     · specialize Hrel k
@@ -328,7 +333,8 @@ theorem update_one_delete :
       · exact one_whole.2 Hval.1 |>.elim
       · exact one_whole.2 ⟨f, Fraction.Fractional.proper Hval.1⟩ |>.elim
     · specialize Hrel j
-      simp only [CMRA.op, Store.op, get_merge, exists_and_left, Prod.forall, point_get_ne h, He] at Hrel
+      simp only [CMRA.op, Store.op, get_merge, exists_and_left, Prod.forall, point_get_ne h,
+        He] at Hrel
       rintro ⟨a, b⟩ ⟨rfl⟩
       obtain ⟨v, H, q, H'⟩ := Hrel a b rfl
       exact ⟨v, q, H.symm ▸ get_set_ne h, H'⟩
@@ -364,10 +370,12 @@ theorem update_auth_op_frag
     obtain ⟨Hval', Hincl'⟩ := Hup
     exists ((dq' •? (Option.map Prod.fst f)))
     constructor
-    · refine validN_ne (x := (dq' •? Option.map Prod.fst f, v' •? Prod.snd <$> f)) ⟨.rfl, Hincl'.symm⟩ ?_
+    · refine validN_ne (x := (dq' •? Option.map Prod.fst f, v' •? Prod.snd <$> f))
+        ⟨.rfl, Hincl'.symm⟩ ?_
       cases h : f <;> simp only [op?, Option.map_none, Option.map_eq_map]
       · exact validN_opM Hval'
-      · simp only [h] at Hval'; exact Hval'
+      · simp only [h] at Hval'
+        exact Hval'
     · rw [← Hbf]
       suffices HF : some ((dq', v') •? get bf j) ≼{n} some (dq' •? (Option.map Prod.fst f), mv') by
         apply incN_trans ?_ HF
@@ -382,7 +390,8 @@ theorem update_auth_op_frag
   · simp [point, get_set_ne h, get_empty]
     intro Hbf
     have Hrel' := Hrel j (df, va)
-    simp only [CMRA.op, Store.op, point, get_merge, Store.get_set_ne h, get_empty, exists_and_left] at Hrel'
+    simp only [CMRA.op, Store.op, point, get_merge, Store.get_set_ne h, get_empty,
+      exists_and_left] at Hrel'
     refine Hrel' ?_
     rw [← Hbf]
     simp
@@ -419,7 +428,7 @@ theorem update_of_dfrac_update P (Hdq : dq ~~>: P) :
     Frag (H := H) k dq v1 ~~>: fun a => ∃ dq', a = Frag k dq' v1 ∧ P dq' := by
   apply UpdateP.weaken
   · apply frag_updateP (P := fun b' => ∃ dq', (◯V b') = Frag k dq' v1 ∧ P dq')
-    intros m n bf Hrel
+    intro m n bf Hrel
     have Hrel' := Hrel k ((dq, v1) •? get bf k) ?G
     case G =>
       simp only [CMRA.op, Store.op, get_merge, point_get_eq rfl, op?]
@@ -456,7 +465,7 @@ theorem update_frag_acquire [IsSplitFraction F] :
   rintro y ⟨q, rfl, ⟨q1, rfl⟩⟩
   exists q1
 
-end heap_updates
+end heapUpdates
 
 -- TODO: Port functors
 
