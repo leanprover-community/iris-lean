@@ -28,13 +28,13 @@ theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
 
 def ipureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
     (P P' A Q : Q($prop)) (name : TSyntax ``binderIdent) (pf : Q($P ⊣⊢ $P' ∗ $A))
-    (k : (φ : Q(Prop)) → Q($φ) → MetaM (α × Q($P' ⊢ $Q))) : MetaM (α × Q($P ⊢ $Q)) := do
+    (k : (φ : Q(Prop)) → Q($φ) → ProofModeM (α × Q($P' ⊢ $Q))) : ProofModeM (α × Q($P ⊢ $Q)) := do
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let inst ← if A.isAppOfArity ``intuitionistically 3 then
     have A' : Q($prop) := A.appArg!
-    synthInstance q(IntoPure $A' $φ)
+    ProofModeM.synthInstanceQ q(IntoPure $A' $φ)
   else
-    synthInstance q(IntoPure $A $φ)
+    ProofModeM.synthInstanceQ q(IntoPure $A $φ)
 
   let (name, ref) ← getFreshName name
   withLocalDeclDQ name φ fun p => do
@@ -53,10 +53,7 @@ def ipureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
       pure (a, q(pure_elim_spatial $pf $f))
 
 elab "ipure" colGt hyp:ident : tactic => do
-  let mvar ← getMainGoal
-  mvar.withContext do
-  let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, e, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+  ProofModeM.runTactic λ mvar { prop, bi, e, hyps, goal, .. } => do
 
   let uniq ← hyps.findWithInfo hyp
   let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true uniq
@@ -65,17 +62,16 @@ elab "ipure" colGt hyp:ident : tactic => do
     let m ← mkFreshExprSyntheticOpaqueMVar <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. }
     pure (m, m)
 
+  addMVarGoal m.mvarId!
   mvar.assign pf
-  replaceMainGoal [m.mvarId!]
 
+-- TODO: Is this necessary or can it be replaced by ipure_intro; trivial?
 elab "iemp_intro" : tactic => do
-  let (mvar, { prop, e, goal, .. }) ← istart (← getMainGoal)
-  mvar.withContext do
+  ProofModeM.runTactic λ mvar { prop, e, goal, .. } => do
 
   let .true ← isDefEq goal q(emp : $prop) | throwError "goal is not `emp`"
   let _ ← synthInstanceQ q(Affine $e)
   mvar.assign q(affine (P := $e))
-  replaceMainGoal []
 
 theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
     [h : FromPure true Q φ] [Affine P] (hφ : φ) : P ⊢ Q :=
@@ -86,12 +82,11 @@ theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
   (pure_intro hφ).trans h.1
 
 elab "ipure_intro" : tactic => do
-  let (mvar, { e, goal, .. }) ← istart (← getMainGoal)
-  mvar.withContext do
+  ProofModeM.runTactic λ mvar { e, goal, .. } => do
 
   let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
-  let _ ← synthInstanceQ q(FromPure $b $goal $φ)
+  let _ ← ProofModeM.synthInstanceQ q(FromPure $b $goal $φ)
   let m : Q($φ) ← mkFreshExprMVar (← instantiateMVars φ)
 
   match ← whnf b with
@@ -103,4 +98,4 @@ elab "ipure_intro" : tactic => do
     have : $b =Q false := ⟨⟩
     mvar.assign q(pure_intro_spatial (P := $e) (Q := $goal) $m)
   | _ => throwError "failed to prove `FromPure _ {goal} _`"
-  replaceMainGoal [m.mvarId!]
+  addMVarGoal m.mvarId!

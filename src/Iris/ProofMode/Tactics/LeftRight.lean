@@ -13,31 +13,26 @@ theorem from_or_l [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
   (or_intro_l' h1).trans inst.1
 
 elab "ileft" : tactic => do
-  let (mvar, { u, prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
-  mvar.withContext do
-
+  ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do
   -- choose left side of disjunction
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
-  let _ ← synthInstanceQ q(FromOr $goal $A1 $A2)
-  let m : Q($e ⊢ $A1) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { u, prop, bi, hyps, goal := A1, .. }
+  let some _ ← ProofModeM.trySynthInstanceQ q(FromOr $goal $A1 $A2)
+    | throwError "ileft: {goal} is not a disjunction"
+
+  let m : Q($e ⊢ $A1) ← addBIGoal hyps A1
   mvar.assign q(from_or_l (Q := $goal) $m)
-  replaceMainGoal [m.mvarId!]
 
 theorem from_or_r [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A2) : P ⊢ Q :=
   (or_intro_r' h1).trans inst.1
 
 elab "iright" : tactic => do
-  let (mvar, { u, prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
-  mvar.withContext do
-
+  ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do
   -- choose right side of disjunction
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
-  let _ ← synthInstanceQ q(FromOr $goal $A1 $A2)
-  let m : Q($e ⊢ $A2) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { u, prop, bi, hyps, goal := A2, .. }
+  let some _ ← ProofModeM.trySynthInstanceQ q(FromOr $goal $A1 $A2)
+    | throwError "ileft: {goal} is not a disjunction"
+  let m : Q($e ⊢ $A2) ← addBIGoal hyps A2
   mvar.assign q(from_or_r (Q := $goal) $m)
-  replaceMainGoal [m.mvarId!]

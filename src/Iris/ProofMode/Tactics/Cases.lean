@@ -24,8 +24,8 @@ theorem sep_emp_intro_intuitionistic [BI PROP] {P Q : PROP}
 
 def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
     {P} (hyps : Hyps bi P) (Q A' : Q($prop)) (p : Q(Bool))
-    (k : ∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q)) :
-    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
+    (k : ∀ {P}, Hyps bi P → ProofModeM Q($P ⊢ $Q)) :
+    ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   try
     let ⟨_⟩ ← assertDefEqQ A' q(iprop(False))
     if p.constName! == ``true then
@@ -50,8 +50,8 @@ theorem exists_elim_intuitionistic [BI PROP] {P A Q : PROP} {Φ : α → PROP} [
 def iCasesExists {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
     (name : TSyntax ``binderIdent) (α : Q(Sort v)) (Φ : Q(«$α» → «$prop»))
     (_inst : Q(IntoExists «$A'» «$Φ»))
-    (k : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → MetaM Q($P ∗ $B ⊢ $Q)) :
-    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
+    (k : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → ProofModeM Q($P ∗ $B ⊢ $Q)) :
+    ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   let (name, ref) ← getFreshName name
   withLocalDeclDQ name α fun x => do
     addLocalVarInfo ref (← getLCtx) x α
@@ -88,8 +88,8 @@ theorem and_elim_r_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [IntoAnd true A
 
 def iCasesAndLR {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' A1 A2 : Q($prop)) (p : Q(Bool))
     (_inst : Q(IntoAnd $p $A' $A1 $A2)) (right : Bool)
-    (k : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → MetaM Q($P ∗ $B ⊢ $Q)) :
-    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
+    (k : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → ProofModeM Q($P ∗ $B ⊢ $Q)) :
+    ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   if p.constName! == ``true then
     have : $p =Q true := ⟨⟩
     if right then
@@ -115,12 +115,12 @@ theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd t
 def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
     {P} (hyps : Hyps bi P) (Q A' A1 A2 : Q($prop)) (p : Q(Bool))
     (inst : Option Q(IntoAnd $p $A' $A1 $A2))
-    (k : ∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q))
+    (k : ∀ {P}, Hyps bi P → ProofModeM Q($P ⊢ $Q))
     (k1 k2 : ∀ {P}, Hyps bi P → (Q B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) →
-      (∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q)) → MetaM Q($P ∗ $B ⊢ $Q)) :
-    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
+      (∀ {P}, Hyps bi P → ProofModeM Q($P ⊢ $Q)) → ProofModeM Q($P ∗ $B ⊢ $Q)) :
+    ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   if p.constName! == ``true then
-    let some _ := inst | _ ← synthInstanceQ q(IntoAnd $p $A' $A1 $A2); unreachable!
+    let some _ := inst | _ ← ProofModeM.synthInstanceQ q(IntoAnd $p $A' $A1 $A2); unreachable!
     have : $p =Q true := ⟨⟩
     let Q' := q(iprop(□ $A2 -∗ $Q))
     let pf ← k1 hyps Q' q(iprop(□ $A1)) A1 ⟨⟩ fun hyps => do
@@ -128,7 +128,7 @@ def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
       return q(wand_intro $pf)
     return q(and_elim_intuitionistic (A := $A') $pf)
   else
-    let _ ← synthInstanceQ q(IntoSep $A' $A1 $A2)
+    let _ ← ProofModeM.synthInstanceQ q(IntoSep $A' $A1 $A2)
     have : $p =Q false := ⟨⟩
     let Q' := q(iprop($A2 -∗ $Q))
     let pf ← k1 hyps Q' A1 A1 ⟨⟩ fun hyps => do
@@ -144,11 +144,11 @@ theorem or_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [IntoOr A A1 A2]
     (h1 : P ∗ □ A1 ⊢ Q) (h2 : P ∗ □ A2 ⊢ Q) : P ∗ □ A ⊢ Q := or_elim_spatial h1 h2
 
 def iCasesOr {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
-    (k1 k2 : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → MetaM Q($P ∗ $B ⊢ $Q)) :
-    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
+    (k1 k2 : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → ProofModeM Q($P ∗ $B ⊢ $Q)) :
+    ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   let A1 ← mkFreshExprMVarQ q($prop)
   let A2 ← mkFreshExprMVarQ q($prop)
-  let _ ← synthInstanceQ q(IntoOr $A' $A1 $A2)
+  let _ ← ProofModeM.synthInstanceQ q(IntoOr $A' $A1 $A2)
   if p.constName! == ``true then
     have : $p =Q true := ⟨⟩
     let pf1 ← k1 q(iprop(□ $A1)) A1 ⟨⟩
@@ -168,10 +168,10 @@ theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP} [IntoPersis
     (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q := intuitionistic_elim_spatial h
 
 def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
-    (k : (B' : Q($prop)) → MetaM Q($P ∗ □ $B' ⊢ $Q)) :
-    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
+    (k : (B' : Q($prop)) → ProofModeM Q($P ∗ □ $B' ⊢ $Q)) :
+    ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   let B' ← mkFreshExprMVarQ q($prop)
-  let _ ← synthInstanceQ q(IntoPersistently $p $A' $B')
+  let _ ← ProofModeM.synthInstanceQ q(IntoPersistently $p $A' $B')
   if p.constName! == ``true then
     have : $p =Q true := ⟨⟩
     return q(intuitionistic_elim_intuitionistic $(← k B'))
@@ -187,10 +187,10 @@ theorem spatial_elim_intuitionistic [BI PROP] {A A' Q : PROP} [FromAffinely A' A
     (h : P ∗ A' ⊢ Q) : P ∗ □ A ⊢ Q := (replaces_r (from_affine (p := true))).apply h
 
 def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
-    (k : (B' : Q($prop)) → MetaM Q($P ∗ $B' ⊢ $Q)) :
-    MetaM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
+    (k : (B' : Q($prop)) → ProofModeM Q($P ∗ $B' ⊢ $Q)) :
+    ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   let B' ← mkFreshExprMVarQ q($prop)
-  let _ ← synthInstanceQ q(FromAffinely $B' $A' $p)
+  let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B' $A' $p)
   if p.constName! == ``true then
     have : $p =Q true := ⟨⟩
     return q(spatial_elim_intuitionistic $(← k B'))
@@ -204,9 +204,10 @@ variable {u : Level} {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iCasesCore
     {P} (hyps : Hyps bi P) (Q : Q($prop)) (p : Q(Bool))
     (A A' : Q($prop)) (_ : $A =Q iprop(□?$p $A'))
-    (pat : iCasesPat) (k : ∀ {P}, Hyps bi P → MetaM Q($P ⊢ $Q)) : MetaM (Q($P ∗ $A ⊢ $Q)) :=
+    (pat : iCasesPat) (k : ∀ {P}, Hyps bi P → ProofModeM Q($P ⊢ $Q)) : ProofModeM (Q($P ∗ $A ⊢ $Q)) :=
   match pat with
   | .one name => do
+    -- TODO: use Hyps.addWithInfo here?
     let (name, ref) ← getFreshName name
     let uniq ← mkFreshId
     addHypInfo ref name uniq prop A' (isBinder := true)
@@ -234,7 +235,7 @@ partial def iCasesCore
       let v ← mkFreshLevelMVar
       let α ← mkFreshExprMVarQ q(Sort v)
       let Φ ← mkFreshExprMVarQ q($α → $prop)
-      Pure.pure ⟨n, v, α, Φ, ← synthInstanceQ q(IntoExists $A' $Φ)⟩
+      return ⟨n, v, α, Φ, ← ProofModeM.synthInstanceQ q(IntoExists $A' $Φ)⟩
     if let some ⟨n, _, α, Φ, inst⟩ := exres then
       iCasesExists bi P Q A' p n α Φ inst
         (iCasesCore hyps Q p · · · (.conjunction args) k)
@@ -243,7 +244,7 @@ partial def iCasesCore
       let A2 ← mkFreshExprMVarQ q($prop)
       let inst ← try? (α := Q(IntoAnd $p $A' $A1 $A2)) do
         unless arg matches .clear || args matches [.clear] || p.constName! == ``true do failure
-        synthInstanceQ q(IntoAnd $p $A' $A1 $A2)
+        ProofModeM.synthInstanceQ q(IntoAnd $p $A' $A1 $A2)
       if let (.clear, some inst) := (arg, inst) then
         iCasesAndLR bi P Q A' A1 A2 p inst (right := true) fun B B' h =>
           iCasesCore hyps Q p B B' h (.conjunction args) @k
@@ -277,20 +278,12 @@ partial def iCasesCore
 elab "icases" colGt hyp:ident "with" colGt pat:icasesPat : tactic => do
   -- parse syntax
   let pat ← liftMacroM <| iCasesPat.parse pat
-
-  let (mvar, { u, prop, bi, e, hyps, goal }) ← istart (← getMainGoal)
-  mvar.withContext do
+  ProofModeM.runTactic λ mvar { bi, goal, hyps, .. } => do
 
   let uniq ← hyps.findWithInfo hyp
   let ⟨_, hyps', A, A', b, h, pf⟩ := hyps.remove true uniq
 
   -- process pattern
-  let goals ← IO.mkRef #[]
-  let pf2 ← iCasesCore bi hyps' goal b A A' h pat fun hyps => do
-    let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-      IrisGoal.toExpr { u, prop, bi, hyps, goal, .. }
-    goals.modify (·.push m.mvarId!)
-    pure m
+  let pf2 ← iCasesCore bi hyps' goal b A A' h pat (λ hyps => addBIGoal hyps goal)
 
   mvar.assign q(($pf).1.trans $pf2)
-  replaceMainGoal (← goals.get).toList

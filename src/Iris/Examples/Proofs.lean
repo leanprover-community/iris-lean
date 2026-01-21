@@ -13,12 +13,12 @@ theorem proof_example_1 [BI PROP] (P Q R : PROP) (Φ : α → PROP) :
   P ∗ Q ∗ □ R ⊢ □ (R -∗ ∃ x, Φ x) -∗ ∃ x, Φ x ∗ P ∗ Q
 := by
   iintro ⟨HP, HQ, □HR⟩ □HRΦ
-  ispecialize HRΦ HR as HΦ
+  ihave HΦ := HRΦ $$ HR
   icases HΦ with ⟨x, _HΦ⟩
   iexists x
-  isplit r
+  isplitr
   · iassumption
-  isplit l [HP]
+  isplitl [HP]
   · iexact HP
   · iexact HQ
 

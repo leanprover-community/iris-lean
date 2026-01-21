@@ -45,18 +45,17 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
 
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iIntroCore
-    {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List iCasesPat)
-    (k : ∀ {P}, Hyps bi P → (Q : Q($prop)) → MetaM Q($P ⊢ $Q)) :
-    MetaM (Q($P ⊢ $Q)) := do
+    {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List iCasesPat) :
+    ProofModeM (Q($P ⊢ $Q)) := do
   match pats with
-  | [] => k hyps Q
+  | [] => addBIGoal hyps Q
   | pat :: pats =>
     let A1 ← mkFreshExprMVarQ q($prop)
     let A2 ← mkFreshExprMVarQ q($prop)
     let fromImp ← try? (α := Q(FromImp $Q $A1 $A2)) do
-      synthInstanceQ q(FromImp $Q $A1 $A2)
+      ProofModeM.synthInstanceQ q(FromImp $Q $A1 $A2)
     if let (.clear, some _) := (pat, fromImp) then
-      let pf ← iIntroCore hyps A2 pats k
+      let pf ← iIntroCore hyps A2 pats
       return q(imp_intro_drop (Q := $Q) $pf)
     else
     let alres ← try? (α := _ × (v : Level) × (α : Q(Sort v)) × (Φ : Q($α → $prop)) ×
@@ -65,36 +64,36 @@ partial def iIntroCore
       let v ← mkFreshLevelMVar
       let α ← mkFreshExprMVarQ q(Sort v)
       let Φ ← mkFreshExprMVarQ q($α → $prop)
-      Pure.pure ⟨n, v, α, Φ, ← synthInstanceQ q(FromForall $Q $Φ)⟩
+      return ⟨n, v, α, Φ, ← ProofModeM.synthInstanceQ q(FromForall $Q $Φ)⟩
     if let some ⟨n, _, α, Φ, _⟩ := alres then
       let (n, ref) ← getFreshName n
       withLocalDeclDQ n α fun x => do
         addLocalVarInfo ref (← getLCtx) x α
         have B : Q($prop) := Expr.headBeta q($Φ $x)
         have : $B =Q $Φ $x := ⟨⟩
-        let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← iIntroCore hyps B pats k
+        let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← iIntroCore hyps B pats
         return q(from_forall_intro (Q := $Q) $pf)
     else
     let B ← mkFreshExprMVarQ q($prop)
     match pat, fromImp with
     | .intuitionistic pat, some _ =>
-      let _ ← synthInstanceQ q(IntoPersistently false $A1 $B)
-      let pf ← iCasesCore bi hyps A2 q(true) q(iprop(□ $B)) B ⟨⟩ pat (iIntroCore · A2 pats k)
+      let _ ← ProofModeM.synthInstanceQ q(IntoPersistently false $A1 $B)
+      let pf ← iCasesCore bi hyps A2 q(true) q(iprop(□ $B)) B ⟨⟩ pat (iIntroCore · A2 pats)
       return q(imp_intro_intuitionistic (Q := $Q) $pf)
     | .intuitionistic pat, none =>
-      let _ ← synthInstanceQ q(FromWand $Q $A1 $A2)
-      let _ ← synthInstanceQ q(IntoPersistently false $A1 $B)
+      let _ ← ProofModeM.synthInstanceQ q(FromWand $Q $A1 $A2)
+      let _ ← ProofModeM.synthInstanceQ q(IntoPersistently false $A1 $B)
       let _ ← synthInstanceQ q(TCOr (Affine $A1) (Absorbing $A2))
-      let pf ← iCasesCore bi hyps A2 q(true) q(iprop(□ $B)) B ⟨⟩ pat (iIntroCore · A2 pats k)
+      let pf ← iCasesCore bi hyps A2 q(true) q(iprop(□ $B)) B ⟨⟩ pat (iIntroCore · A2 pats)
       return q(wand_intro_intuitionistic (Q := $Q) $pf)
     | _, some _ =>
-      let _ ← synthInstanceQ q(FromAffinely $B $A1)
+      let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B $A1)
       let _ ← synthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
-      let pf ← iCasesCore bi hyps A2 q(false) B B ⟨⟩ pat (iIntroCore · A2 pats k)
+      let pf ← iCasesCore bi hyps A2 q(false) B B ⟨⟩ pat (iIntroCore · A2 pats)
       return q(imp_intro_spatial (Q := $Q) $pf)
     | _, none =>
-      let _ ← synthInstanceQ q(FromWand $Q $A1 $A2)
-      let pf ← iCasesCore bi hyps A2 q(false) A1 A1 ⟨⟩ pat (iIntroCore · A2 pats k)
+      let _ ← ProofModeM.synthInstanceQ q(FromWand $Q $A1 $A2)
+      let pf ← iCasesCore bi hyps A2 q(false) A1 A1 ⟨⟩ pat (iIntroCore · A2 pats)
       return q(wand_intro_spatial (Q := $Q) $pf)
 
 
@@ -102,16 +101,7 @@ elab "iintro" pats:(colGt icasesPat)* : tactic => do
   -- parse syntax
   let pats ← liftMacroM <| pats.mapM <| iCasesPat.parse
 
-  let (mvar, { prop, bi, hyps, goal, .. }) ← istart (← getMainGoal)
-  mvar.withContext do
-
-  -- process patterns
-  let goals ← IO.mkRef #[]
-  let pf ← iIntroCore bi hyps goal pats.toList fun {P} hyps goal => do
-    let m : Q($P ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-      IrisGoal.toExpr { prop, bi, hyps, goal, .. }
-    goals.modify (·.push m.mvarId!)
-    pure m
+  ProofModeM.runTactic λ mvar { bi, hyps, goal, .. } => do
+  let pf ← iIntroCore bi hyps goal pats.toList
 
   mvar.assign pf
-  replaceMainGoal (← goals.get).toList

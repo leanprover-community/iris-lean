@@ -14,18 +14,14 @@ theorem from_and_intro [BI PROP] {P Q A1 A2 : PROP} [inst : FromAnd Q A1 A2]
   (and_intro h1 h2).trans inst.1
 
 elab "isplit" : tactic => do
-  let (mvar, { prop, bi, e, hyps, goal, .. }) ← istart (← getMainGoal)
-  mvar.withContext do
+  ProofModeM.runTactic λ mvar { prop, hyps, goal, .. } => do
 
   let A1 ← mkFreshExprMVarQ prop
   let A2 ← mkFreshExprMVarQ prop
-  let _ ← synthInstanceQ q(FromAnd $goal $A1 $A2)
-  let m1 : Q($e ⊢ $A1) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { prop, bi, hyps, goal := A1, .. }
-  let m2 : Q($e ⊢ $A2) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { prop, bi, hyps, goal := A2, .. }
+  let some _ ← ProofModeM.trySynthInstanceQ q(FromAnd $goal $A1 $A2) | throwError "isplit: {goal} is not a conjunction"
+  let m1 ← addBIGoal hyps A1
+  let m2 ← addBIGoal hyps A2
   mvar.assign q(from_and_intro (Q := $goal) $m1 $m2)
-  replaceMainGoal [m1.mvarId!, m2.mvarId!]
 
 
 theorem split_es [BI PROP] {Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : emp ∗ Q ⊣⊢ Q1 ∗ Q2 :=
@@ -89,38 +85,38 @@ theorem sep_split [BI PROP] {P P1 P2 Q Q1 Q2 : PROP} [inst : FromSep Q Q1 Q2]
     (h : P ⊣⊢ P1 ∗ P2) (h1 : P1 ⊢ Q1) (h2 : P2 ⊢ Q2) : P ⊢ Q :=
   h.1.trans <| (sep_mono h1 h2).trans inst.1
 
-declare_syntax_cat splitSide
-syntax "l" : splitSide
-syntax "r" : splitSide
+inductive splitSide where
+| splitLeft | splitRight
 
-elab "isplit" side:splitSide "[" names:ident,* "]" : tactic => do
-  -- parse syntax
-  let splitRight ← match side with
-    | `(splitSide| l) => pure false
-    | `(splitSide| r) => pure true
-    | _  => throwUnsupportedSyntax
+def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : TacticM Unit := do
+  let splitRight := match side with
+    | .splitLeft => false
+    | .splitRight => true
 
   -- extract environment
-  let (mvar, { u, prop, bi, hyps, goal, .. }) ← istart (← getMainGoal)
-  mvar.withContext do
+  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
 
   let mut uniqs : NameSet := {}
-  for name in names.getElems do
+  for name in names do
     uniqs := uniqs.insert (← hyps.findWithInfo name)
 
   let Q1 ← mkFreshExprMVarQ prop
   let Q2 ← mkFreshExprMVarQ prop
-  let _ ← synthInstanceQ q(FromSep $goal $Q1 $Q2)
+  let some _ ← ProofModeM.trySynthInstanceQ q(FromSep $goal $Q1 $Q2) |
+    throwError "isplit: {goal} is not a separating conjunction"
 
   -- split conjunction
-  let ⟨el, er, lhs, rhs, pf⟩ := hyps.split bi (fun _ uniq => uniqs.contains uniq == splitRight)
+  let ⟨_, _, lhs, rhs, pf⟩ := hyps.split bi (fun _ uniq => uniqs.contains uniq == splitRight)
 
-  let m1 : Q($el ⊢ $Q1) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { u, prop, bi, hyps := lhs, goal := Q1, .. }
-  let m2 : Q($er ⊢ $Q2) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { u, prop, bi, hyps := rhs, goal := Q2, .. }
+  let m1 ← addBIGoal lhs Q1
+  let m2 ← addBIGoal rhs Q2
   mvar.assign q(sep_split (Q := $goal) $pf $m1 $m2)
-  replaceMainGoal [m1.mvarId!, m2.mvarId!]
 
-macro "isplit" &"l" : tactic => `(tactic| isplit r [])
-macro "isplit" &"r" : tactic => `(tactic| isplit l [])
+elab "isplitl" "[" names:(colGt ident)* "]": tactic => do
+  isplitCore .splitLeft names
+
+elab "isplitr" "[" names:(colGt ident)* "]": tactic => do
+  isplitCore .splitRight names
+
+macro "isplitl" : tactic => `(tactic| isplitr [])
+macro "isplitr" : tactic => `(tactic| isplitl [])
