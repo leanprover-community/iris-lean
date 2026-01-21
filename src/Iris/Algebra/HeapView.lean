@@ -116,7 +116,7 @@ end heap_view
 
 namespace HeapView
 
-open Heap OFE View One Store DFrac
+open Heap OFE View One Store DFrac CMRA UFraction
 
 variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [∀ V, Heap (H V) K V] [CMRA V]
 
@@ -190,163 +190,83 @@ nonrec theorem auth_op_frag_validN_iff :
     (and_congr_right fun _ => (HeapR.point_get_iff ..).trans <|
     exists_congr fun _ => exists_and_left).trans (by grind)
 
--- Here
-theorem auth_op_frag_one_validN_iff n dp m k v :
-    ✓{n} ((HeapView.Auth dp m : HeapView F K V H) • HeapView.Frag k (.own One.one) v) ↔
-      ✓ dp ∧ ✓{n} v ∧ Store.get m k ≡{n}≡ some v := by
-  refine auth_op_frag_validN_iff.trans ⟨?_, ?_⟩
-  · rintro ⟨Hdp, v', dq', Hlookup, Hvalid, Hincl⟩
-    have Heq : v ≡{n}≡ Hdp := by
-      have Z := @Option.dist_of_inc_exclusive _ _ (DFrac.own One.one, v) n _ _ Hincl Hvalid
-      exact Z.2
-    refine ⟨dq', ?_, ?_⟩
-    · simp [CMRA.ValidN, Prod.ValidN] at Hvalid
-      apply CMRA.validN_ne Heq.symm Hvalid.2
-    · rw [Hlookup]
-      exact Heq.symm
-  · rintro ⟨Hdp, Hval, Hlookup⟩
-    rcases h : Store.get m k with (_|v'); simp [h] at Hlookup
-    exists v'; exists (DFrac.own One.one)
-    refine ⟨Hdp, rfl, ?_, ?_⟩
-    · simp [CMRA.ValidN, Prod.ValidN]
-      refine ⟨?_, ?_⟩
-      · simp [DFrac.valid]
-        apply (UFraction.one_whole (α := F)).1
-      rw [h] at Hlookup
-      exact (Dist.validN Hlookup.symm).mp Hval
-    · apply Option.some_incN_some_iff.mpr ?_
-      left
-      apply dist_prod_ext rfl ?_
-      exact (h.symm ▸ Hlookup : some _ ≡{n}≡ some _).symm
+theorem auth_op_frag_one_validN_iff :
+    ✓{n} (Auth dp m1 • Frag k (.own one) v1) ↔ ✓ dp ∧ ✓{n} v1 ∧ get m1 k ≡{n}≡ some v1 := by
+  refine auth_op_frag_validN_iff.trans ⟨fun ⟨Hp, v', dq', Hl, Hv, Hi⟩ => ?_, fun ⟨Hp, Hv, Hl⟩ => ?_⟩
+  · have Heq : v1 ≡{n}≡ Hp := Option.dist_of_inc_exclusive Hi Hv |>.2
+    exact ⟨dq', validN_ne Heq.symm Hv.2, Hl ▸ Heq.symm⟩
+  · match h : get m1 k with
+    | none => simp [h] at Hl
+    | some v' =>
+      exists v', own one
+      refine ⟨Hp, rfl, ?_, ?_⟩
+      · exact ⟨one_whole (α := F) |>.1, Dist.validN (h ▸ Hl).symm |>.mp Hv⟩
+      · exact Option.some_incN_some_iff.mpr <| .inl <| dist_prod_ext rfl (h.symm ▸ Hl).symm
 
-theorem auth_op_frag_validN_total_iff [CMRA.IsTotal V] n dp m k dq v :
-    ✓{n} ((HeapView.Auth dp m : HeapView F K V H) • HeapView.Frag k dq v) →
-    ∃ v', ✓ dp ∧ ✓ dq ∧ Store.get m k = some v' ∧ ✓{n} v' ∧ v ≼{n} v' := by
-  intro H; have H' := (HeapView.auth_op_frag_validN_iff).mp H; clear H
-  obtain ⟨v', dq', Hdp, Hlookup, Hvalid, Hincl⟩ := H'
+theorem auth_op_frag_validN_total_iff [IsTotal V] (H : ✓{n} Auth dp m1 • Frag k dq v1) :
+    ∃ v', ✓ dp ∧ ✓ dq ∧ Store.get m1 k = some v' ∧ ✓{n} v' ∧ v1 ≼{n} v' := by
+  obtain ⟨v', dq', Hdp, Hl, Hv, ⟨x, Hx⟩⟩ := auth_op_frag_validN_iff.mp H
   exists v'
-  refine ⟨Hdp, ?_, Hlookup, Hvalid.2, ?_⟩
-  · suffices some dq ≼ some dq' by
-      refine Option.valid_of_inc_valid ?_ this
-      apply (CMRA.valid_iff_validN' n).mpr Hvalid.1
-    apply (CMRA.inc_iff_incN n).mpr
-    rcases Hincl with ⟨x, Hx⟩
-    rcases x with (_|x) <;> simp [CMRA.op, optionOp, Prod.op] at Hx
-    · apply CMRA.incN_of_incN_of_dist (CMRA.incN_refl _)
-      apply Hx.1.symm
-    · exists x.1
-      simp [CMRA.op, optionOp]
-      apply Hx.1
-  · suffices some v ≼{n} some v' by
-      apply Option.some_incN_some_iff_isTotal.mp this
-    refine Option.some_incN_some_iff_isTotal.mpr ?_
-    rcases Hincl with ⟨x, Hx⟩
-    rcases x with (_|x) <;> simp [CMRA.op, optionOp, Prod.op] at Hx
-    · apply CMRA.incN_of_incN_of_dist (CMRA.incN_refl _)
-      apply Hx.2.symm
-    · exists x.2
-      apply Hx.2
+  refine ⟨Hdp, ?_, Hl, Hv.2, ?_⟩
+  · refine Option.valid_of_inc_valid (valid_iff_validN' n |>.mpr Hv.1) ?_
+    refine inc_iff_incN n |>.mpr ?_
+    match x with
+    | none => exact incN_of_incN_of_dist (incN_refl _) Hx.1.symm
+    | some x => exact ⟨x.1, Hx.1⟩
+  · match x with
+    | none => exact incN_of_incN_of_dist (incN_refl _) Hx.2.symm
+    | some x => exact ⟨x.2, Hx.2⟩
 
-theorem auth_op_frag_discrete_valid_iff [CMRA.Discrete V] dp m k dq v :
-    ✓ ((HeapView.Auth dp m : HeapView F K V H) • HeapView.Frag k dq v) ↔
-      ∃ v' dq', ✓ dp ∧ Store.get m k = some v' ∧ ✓ (dq', v') ∧ some (dq, v) ≼ some (dq', v') := by
-  apply CMRA.valid_iff_validN.trans
-  apply Iff.trans
-  · apply forall_congr'
-    intro _
-    apply HeapView.auth_op_frag_validN_iff
-  constructor
-  · intro Hvalid'
-    obtain ⟨v', dq', Hdp, Hlookup, Hvalid, Hincl⟩ := Hvalid' 0
-    exists v'; exists dq'
-    refine ⟨Hdp, Hlookup, ?_, ?_⟩
-    · refine ⟨?_, ?_⟩
-      · apply CMRA.Discrete.discrete_valid
-        apply Hvalid.1
-      · apply CMRA.Discrete.discrete_valid
-        apply Hvalid.2
-    · exact (CMRA.inc_iff_incN 0).mpr Hincl
-  · rintro ⟨v', dq', Hdp, Hlookup, Hvalid, Hincl⟩ n
-    exact ⟨v', dq', Hdp, Hlookup, Hvalid.validN, (CMRA.inc_iff_incN n).mp Hincl⟩
+theorem auth_op_frag_discrete_valid_iff [CMRA.Discrete V] :
+    ✓ Auth dp m1 • Frag k dq v1 ↔
+      ∃ v' dq', ✓ dp ∧ get m1 k = some v' ∧ ✓ (dq', v') ∧ some (dq, v1) ≼ some (dq', v') := by
+  refine valid_iff_validN.trans ?_
+  refine forall_congr' (fun _ => auth_op_frag_validN_iff) |>.trans ?_
+  refine ⟨fun Hvalid' => ?_, ?_⟩
+  · obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := Hvalid' 0
+    refine ⟨v', dq', Hdp, Hl, ?_, inc_iff_incN 0 |>.mpr Hi⟩
+    exact ⟨discrete_valid Hv.1, discrete_valid Hv.2⟩
+  · exact fun ⟨v', dq', Hdp, Hl, Hv, Hi⟩ n => ⟨v', dq', Hdp, Hl, Hv.validN, inc_iff_incN n |>.mp Hi⟩
 
-theorem auth_op_frag_valid_total_discrete_iff [CMRA.IsTotal V] [CMRA.Discrete V]
-    dp m k dq v :
-    ✓ ((HeapView.Auth dp m : HeapView F K V H) • HeapView.Frag k dq v) →
-      ∃ v', ✓ dp ∧ ✓ dq ∧ Store.get m k = some v' ∧ ✓ v' ∧ v ≼ v' := by
-  intro H
-  obtain ⟨v', dq', Hdp, Hlookup, Hvalid, Hincl⟩ :=
-    (HeapView.auth_op_frag_discrete_valid_iff _ _ _ _ _).mp H
-  exists v'
-  refine ⟨Hdp, ?_, Hlookup , ?_, ?_⟩
-  · rcases Hincl with ⟨(_|x), Hx⟩ <;> simp [CMRA.op, optionOp, Prod.op] at Hx
-    · apply CMRA.valid_of_eqv Hx.1
-      simp [CMRA.Valid, Prod.Valid] at Hvalid
-      apply Hvalid.1
-    · suffices some dq ≼ some dq' by exact Option.valid_of_inc_valid Hvalid.1 this
-      exists x.fst
-      simp [CMRA.op, optionOp]
-      have Hx' := Hx.1
-      exact Hx'
-  · exact Hvalid.2
-  · rcases Hincl with ⟨(_|x), Hx⟩ <;> simp [CMRA.op, optionOp, Prod.op] at Hx
-    · simp [OFE.Equiv] at Hx
-      apply CMRA.inc_of_inc_of_eqv (CMRA.inc_refl _)
-      exact Hx.2.symm
-    · suffices some v ≼ some v' by
-        rcases this with ⟨z, Hz⟩
-        rcases z with (_|z) <;> simp [CMRA.op, optionOp] at Hz
-        · apply CMRA.inc_of_inc_of_eqv
-          · apply CMRA.inc_refl
-          · apply Hz.symm
-        · exists z
-      exists x.snd
-      simp [CMRA.op, optionOp]
-      have Hx' := Hx.2
-      exact Hx'
+theorem auth_op_frag_valid_total_discrete_iff [IsTotal V] [CMRA.Discrete V]
+    (H : ✓ Auth dp m1 • Frag k dq v1) :
+    ∃ v', ✓ dp ∧ ✓ dq ∧ get m1 k = some v' ∧ ✓ v' ∧ v1 ≼ v' := by
+  obtain ⟨v', dq', Hdp, Hl, Hv, Hi⟩ := auth_op_frag_discrete_valid_iff |>.mp H
+  refine ⟨v', Hdp, ?_, Hl , Hv.2, ?_⟩
+  · rcases Hi with ⟨(_|x), Hx⟩
+    · exact valid_of_eqv Hx.1 Hv.1
+    · exact Option.valid_of_inc_valid Hv.1 ⟨x.fst, Hx.1⟩
+  · rcases Hi with ⟨(_|x), Hx⟩
+    · exact inc_of_inc_of_eqv (inc_refl _) Hx.2.symm
+    · rcases (⟨x.snd, Hx.2⟩ : some v1 ≼ some v') with ⟨(_|z), Hz⟩
+      · exact inc_of_inc_of_eqv (inc_refl _) Hz.symm
+      · exists z
 
-theorem auth_op_frag_one_valid_iff m dp k v :
-    ✓ ((HeapView.Auth dp m : HeapView F K V H) • HeapView.Frag k (.own One.one) v) ↔
-    ✓ dp ∧ ✓ v ∧ Store.get m k ≡ some v := by
-  apply CMRA.valid_iff_validN.trans
-  apply Iff.trans
-  · apply forall_congr'
-    intro _
-    apply HeapView.auth_op_frag_one_validN_iff
-  constructor
-  · intro Hvalid
-    refine ⟨?_, ?_, ?_⟩
-    · obtain ⟨Hdp, Hv, Hl⟩ := Hvalid 0
-      exact Hdp
-    · apply CMRA.valid_iff_validN.mpr (fun n => ?_)
-      obtain ⟨Hdp, Hv, Hl⟩ := Hvalid n
-      exact Hv
-    · apply OFE.equiv_dist.mpr (fun n => ?_)
-      obtain ⟨Hdp, Hv, Hl⟩ := Hvalid n
-      exact Hl
-  · rintro ⟨Hdp, Hv, Hl⟩ n
-    refine ⟨Hdp, Hv.validN, Hl.dist⟩
+theorem auth_op_frag_one_valid_iff :
+    ✓ Auth dp m1 • Frag k (own one) v1 ↔ ✓ dp ∧ ✓ v1 ∧ get m1 k ≡ some v1 := by
+  refine valid_iff_validN.trans ?_
+  refine forall_congr' (fun _ => auth_op_frag_one_validN_iff) |>.trans ?_
+  refine ⟨fun Hv => ?_, ?_⟩
+  · exact ⟨Hv 0 |>.1, valid_iff_validN.mpr (Hv · |>.2.1), equiv_dist.mpr (Hv · |>.2.2)⟩
+  · exact fun ⟨Hdp, Hv, Hl⟩ n => ⟨Hdp, Hv.validN, Hl.dist⟩
 
-instance [CMRA.CoreId dq] [CMRA.CoreId v] :
-    CMRA.CoreId (HeapView.Frag k dq v : HeapView F K V H) := by
-  rename_i H1 H2
-  obtain ⟨H1⟩ := H1
-  obtain ⟨H2⟩ := H2
-  constructor
-  simp only [HeapView.Frag, CMRA.pcore]
-  simp only [View.Pcore, some_eqv_some]
-  refine NonExpansive₂.eqv trivial ?_
-  refine Heap.point_core_eqv ?_
-  simp [CMRA.pcore, Prod.pcore]
-  simp [CMRA.pcore] at H1
-  simp [H1]
-  cases h : (CMRA.pcore v) <;> simp_all
-  refine ⟨rfl, ?_⟩
-  exact H2
+instance [Hdq : CoreId dq] [Hv1 : CoreId v1] : CoreId (Frag (H := H) k dq v1) where
+  core_id := by
+    obtain ⟨H⟩ := Hdq
+    simp [CMRA.pcore] at H
+    simp only [CMRA.pcore, View.Pcore, some_eqv_some]
+    refine NonExpansive₂.eqv trivial (point_core_eqv ?_)
+    simp [CMRA.pcore, Prod.pcore]
+    cases h : (CMRA.pcore v1)
+    · exact not_none_eqv_some (h ▸ Hv1.core_id) |>.elim
+    · simp only [Option.bind_some, H]
+      exact ⟨rfl, some_eqv_some.mp (h ▸ Hv1.core_id)⟩
 
 section WithMap
 
 variable [IHHmap : ∀ V, HasHeapMap (H (DFrac F × V)) (H V) K (DFrac F × V) V]
 
+-- Here
 theorem frag_validN_iff n k dq v  :
     ✓{n} (HeapView.Frag k dq v : HeapView F K V H) ↔ ✓ dq ∧ ✓{n} v := by
   apply View.frag_validN_iff.trans
