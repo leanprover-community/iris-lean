@@ -266,60 +266,32 @@ section WithMap
 
 variable [IHHmap : ∀ V, HasHeapMap (H (DFrac F × V)) (H V) K (DFrac F × V) V]
 
--- Here
-theorem frag_validN_iff n k dq v  :
-    ✓{n} (HeapView.Frag k dq v : HeapView F K V H) ↔ ✓ dq ∧ ✓{n} v := by
-  apply View.frag_validN_iff.trans
-  apply (HeapR.exists_iff_validN F K V H).trans
-  apply Heap.point_validN_iff
+nonrec theorem frag_validN_iff : ✓{n} Frag (H := H) k dq v1 ↔ ✓ dq ∧ ✓{n} v1 :=
+  frag_validN_iff.trans <| (HeapR.exists_iff_validN ..).trans point_validN_iff
 
-theorem frag_valid_iff k dq v :
-    ✓ (HeapView.Frag k dq v : HeapView F K V H) ↔ ✓ dq ∧ ✓ v := by
-  suffices (∀ n, ✓{n} (HeapView.Frag k dq v : HeapView F K V H)) ↔ ✓ dq ∧ ✓ v by exact this
-  suffices (∀ n, ✓ dq ∧ ✓{n} v) ↔ ✓ dq ∧ ✓ v by
-    apply Iff.trans (forall_congr' (HeapView.frag_validN_iff · k dq v)) this
-  constructor
-  · intro H
-    exact ⟨CMRA.valid_iff_validN.mpr (H · |>.1), CMRA.valid_iff_validN.mpr (H · |>.2)⟩
-  · rintro ⟨H1, H2⟩ n
-    exact ⟨CMRA.valid_iff_validN.mp H1 n, CMRA.valid_iff_validN.mp H2 n⟩
+theorem frag_valid_iff : ✓ Frag (H := H) k dq v1 ↔ ✓ dq ∧ ✓ v1 := by
+  refine (forall_congr' (fun _ => frag_validN_iff)).trans ?_
+  refine ⟨fun H => ?_, fun ⟨H1, H2⟩ n => ?_⟩
+  · exact ⟨valid_iff_validN.mpr (H · |>.1), valid_iff_validN.mpr (H · |>.2)⟩
+  · exact ⟨valid_iff_validN.mp H1 n, valid_iff_validN.mp H2 n⟩
 
-theorem frag_op_validN_iff n k dq1 dq2 v1 v2 :
-    ✓{n} ((HeapView.Frag k dq1 v1 : HeapView F K V H) • HeapView.Frag k dq2 v2) ↔
-      ✓ (dq1 • dq2) ∧ ✓{n} (v1 • v2) := by
-  apply View.frag_validN_iff.trans
-  apply (HeapR.exists_iff_validN F K V H).trans
-  apply Iff.trans
-  · apply CMRA.validN_iff
-    apply OFE.equiv_dist.mp
-    apply Store.eqv_of_Equiv
-    apply Heap.point_op_point
-  apply Heap.point_validN_iff.trans
-  rfl
+theorem frag_op_validN_iff :
+    ✓{n} Frag (H := H) k dp v1 • Frag k dq v2 ↔ ✓ (dp • dq) ∧ ✓{n} (v1 • v2) := by
+  refine View.frag_validN_iff.trans <| (HeapR.exists_iff_validN ..).trans ?_
+  refine (validN_iff <| equiv_dist.mp (eqv_of_Equiv point_op_point) _).trans ?_
+  exact point_validN_iff
 
-theorem frag_op_valid_iff k dq1 dq2 v1 v2 :
-    ✓ ((HeapView.Frag k dq1 v1 : HeapView F K V H) • HeapView.Frag k dq2 v2) ↔
-      ✓ (dq1 • dq2) ∧ ✓ (v1 • v2) := by
-  apply View.frag_valid_iff.trans
-  suffices (∀ (n : Nat), ✓{n} dq1 • dq2 ∧ ✓{n} v1 • v2) ↔ ✓ dq1 • dq2 ∧ ✓ v1 • v2 by
-    apply Iff.trans _ this
-    apply forall_congr'
-    intro n
-    apply (HeapR.exists_iff_validN F K V H).trans
-    simp [HeapView.Frag]
-    apply Iff.trans
-    · apply CMRA.validN_iff
-      apply OFE.equiv_dist.mp
-      apply Store.eqv_of_Equiv
-      apply Heap.point_op_point
-    apply Heap.point_validN_iff.trans
-    rfl
-  constructor
-  · intro H
-    exact ⟨CMRA.valid_iff_validN.mpr fun n => (H n).1,
-           CMRA.valid_iff_validN.mpr fun n => (H n).2⟩
-  · rintro ⟨H1, H2⟩ n
-    exact ⟨CMRA.valid_iff_validN.mp H1 n, CMRA.valid_iff_validN.mp H2 n⟩
+theorem frag_op_valid_iff :
+    ✓ (Frag (H := H) k dp v1 • Frag k dq v2) ↔
+    ✓ (dp • dq) ∧ ✓ (v1 • v2) := by
+  suffices (∀ (n : Nat), ✓{n} dp • dq ∧ ✓{n} v1 • v2) ↔ ✓ dp • dq ∧ ✓ v1 • v2 by
+    refine (forall_congr' (fun _ => ?_)).trans this
+    refine (HeapR.exists_iff_validN ..).trans ?_
+    refine (validN_iff <| equiv_dist.mp (eqv_of_Equiv point_op_point) _).trans ?_
+    exact point_validN_iff
+  refine ⟨fun H => ?_, fun ⟨Hp, Hv⟩ n => ?_⟩
+  · exact ⟨valid_iff_validN.mpr (H · |>.1), valid_iff_validN.mpr (H · |>.2)⟩
+  · exact ⟨valid_iff_validN.mp Hp n, CMRA.valid_iff_validN.mp Hv n⟩
 
 end WithMap
 
@@ -327,6 +299,7 @@ section heap_updates
 
 variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [∀ V, Heap (H V) K V] [CMRA V]
 
+-- Here
 theorem update_one_alloc m k dq (v : V) :
     (Store.get m k = none) → ✓ dq → ✓ v →
       HeapView.Auth (.own 1) m ~~>
