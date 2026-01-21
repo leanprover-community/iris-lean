@@ -116,7 +116,7 @@ end heap_view
 
 namespace HeapView
 
-open Heap OFE View One Store
+open Heap OFE View One Store DFrac
 
 variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [∀ V, Heap (H V) K V] [CMRA V]
 
@@ -209,7 +209,7 @@ theorem auth_op_frag_one_validN_iff n dp m k v :
         simp [CMRA.ValidN, CMRA.op]
         intro H
         exfalso
-        cases y1 <;> simp [Iris.valid, Iris.op] at H
+        cases y1 <;> simp [DFrac.valid, DFrac.op] at H
         · apply (UFraction.one_whole (α := F)).2
           rename_i f; exists f
         · apply (UFraction.one_whole (α := F)).2 H
@@ -227,7 +227,7 @@ theorem auth_op_frag_one_validN_iff n dp m k v :
     refine ⟨Hdp, rfl, ?_, ?_⟩
     · simp [CMRA.ValidN, Prod.ValidN]
       refine ⟨?_, ?_⟩
-      · simp [Iris.valid]
+      · simp [DFrac.valid]
         apply (UFraction.one_whole (α := F)).1
       rw [h] at Hlookup
       exact (Dist.validN Hlookup.symm).mp Hval
@@ -486,8 +486,7 @@ theorem update_one_delete m k (v : V) :
       obtain ⟨z, _⟩ := Hqinc
       simp [CMRA.ValidN, Prod.ValidN] at Hval
       have HK := Hval.1
-      -- FIXME: Fix the DFrac namespacing so it's not Iris.op!!
-      obtain ⟨(f|_|f), _⟩ := vv <;> simp [Iris.valid, CMRA.op, Iris.op] at HK
+      obtain ⟨(f|_|f), _⟩ := vv <;> simp [DFrac.valid, CMRA.op, DFrac.op] at HK
       · apply (UFraction.one_whole (α := F)).2; exists f
       · apply (UFraction.one_whole (α := F)).2; exact HK
       · apply (UFraction.one_whole (α := F)).2

@@ -25,7 +25,7 @@ inductive DFrac (F : Type _) where
 instance : OFE.Leibniz (DFrac F) := ⟨(·)⟩
 instance : OFE.Discrete (DFrac F) := ⟨congrArg id⟩
 
-section dfrac
+namespace DFrac
 
 open DFrac Fraction OFE.Discrete
 
@@ -143,7 +143,7 @@ theorem valid_own_op_discard {q : F} : ✓ own q • discard ↔ Fractional q :=
 instance : CMRA.Discrete (DFrac F) where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 
-theorem DFrac.is_discrete {q : DFrac F} : OFE.DiscreteE q := ⟨congrArg id⟩
+theorem is_discrete {q : DFrac F} : OFE.DiscreteE q := ⟨congrArg id⟩
 
 instance : CMRA.Discrete (DFrac F) where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
@@ -189,4 +189,4 @@ theorem DFrac.update_acquire [IsSplitFraction F] :
     rw [← add_assoc, IsSplitFraction.split_add]
     exact HP
 
-end dfrac
+end DFrac
