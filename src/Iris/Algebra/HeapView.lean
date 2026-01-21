@@ -69,62 +69,45 @@ instance : IsViewRel (HeapR F K V H) where
     refine ⟨empty, fun _ _ => ?_⟩
     simp [UCMRA.unit, Store.unit, get_empty]
 
+namespace HeapR
+
 omit IHHmap in
-theorem HeapR.unit : HeapR F K V H n m UCMRA.unit := by
+theorem unit : HeapR F K V H n m UCMRA.unit := by
   simp [HeapR, UCMRA.unit, Heap.get_empty]
 
-theorem HeapR.exists_iff_validN n f : (∃ m, HeapR F K V H n m f) ↔ ✓{n} f := by
-  constructor
-  · rintro ⟨m, Hrel⟩
-    exact IsViewRel.rel_validN _ _ _ Hrel
-  intro Hv
-  let FF : (K → (DFrac F × V) → Option V) := fun k _ => (Store.get f k).bind (fun x => some x.2)
-  exists ((IHHmap V).hhmap FF f)
-  simp [HeapR]
-  intro k
-  cases h : Store.get f k <;> simp []
-  rename_i val
-  rintro a b rfl
-  exists b
-  simp [hhmap_get, h, FF]
-  exists a
-  refine ⟨?_, CMRA.incN_refl _⟩
-  have Hv' := h ▸ Hv k
-  exact Hv'
+theorem exists_iff_validN {n f} : (∃ m, HeapR F K V H n m f) ↔ ✓{n} f := by
+  refine ⟨fun ⟨m, Hrel⟩ => IsViewRel.rel_validN _ _ _ Hrel, fun Hv => ?_⟩
+  let FF : (K → (DFrac F × V) → Option V) := fun k _ => get f k |>.bind (·.2)
+  refine ⟨hhmap FF f, fun k => ?_⟩
+  cases h : get f k; simp
+  simp only [Option.some.injEq, exists_and_left]
+  rintro ⟨dq, v⟩ rfl
+  exists v
+  simp only [hhmap_get, h, Option.bind_some, true_and, FF]
+  exact ⟨dq, (h ▸ Hv k : ✓{n} some (dq, v)), incN_refl _⟩
 
 omit IHHmap in
-theorem HeapR.point_get_iff n m k dq v :
-    HeapR F K V H n m (Heap.point k <| .some (dq, v)) ↔
+theorem point_get_iff n m k dq v :
+    HeapR F K V H n m (point k <| some (dq, v)) ↔
       ∃ (v' : V) (dq' : DFrac F),
-        Store.get m k = some v' ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼{n} some (dq', v') := by
+        get m k = some v' ∧ ✓{n} (dq', v') ∧ some (dq, v) ≼{n} some (dq', v') := by
   constructor
-  · intro Hrel
-    have Hrel' := Hrel k (dq, v)
-    simp only [Heap.point, Store.get_set_eq] at Hrel'
-    exact Hrel' trivial
-  · rintro ⟨v', dq', Hlookup, Hval, _⟩ j
-    simp only [Heap.point]
-    if h : k = j
-      then
-        simp [Store.get_set_eq h]
-        exists v'
-        refine ⟨h ▸ Hlookup, ?_⟩
-        exists dq'
-      else simp [Store.get_set_ne h, Heap.get_empty]
+  · refine fun Hrel => Hrel k (dq, v) ?_
+    simp [point, get_set_eq]
+  · rintro ⟨v', dq', Hlookup, Hval, Hinc⟩ j
+    simp only [point]
+    by_cases h : k = j
+    · simp [get_set_eq h]
+      exact ⟨v', h ▸ Hlookup, dq', Hval, Hinc⟩
+    · simp [get_set_ne h, get_empty]
 
 instance [CMRA.Discrete V] : IsViewRelDiscrete (HeapR F K V H) where
-  discrete n h H := by
-    simp [HeapR]
-    intro H k a b He
-    have H' := H k a b He
-    obtain ⟨v, Hv1, ⟨x, Hx1, Hx2⟩⟩ := H'
-    refine ⟨v, Hv1, ⟨x, ?_, ?_⟩⟩
-    · simp [CMRA.ValidN, Prod.ValidN] at Hx1 ⊢
-      refine ⟨Hx1.1, ?_⟩
-      apply CMRA.valid_iff_validN.mp
-      apply CMRA.Discrete.discrete_valid
-      exact Hx1.2
-    · exact (CMRA.inc_0_iff_incN n).mp Hx2
+  discrete n _ _ H k v He := by
+    have ⟨v, Hv1, ⟨x, Hx1, Hx2⟩⟩ := H k v He
+    refine ⟨v, Hv1, ⟨x, ?_, inc_0_iff_incN n |>.mp Hx2⟩⟩
+    exact ⟨Hx1.1, valid_iff_validN.mp (Discrete.discrete_valid Hx1.2) _⟩
+
+end HeapR
 
 abbrev HeapView := View F (HeapR F K V H)
 
@@ -227,7 +210,7 @@ theorem HeapView.auth_one_op_auth_one_valid_iff m1 m2 :
 theorem HeapView.frag_validN_iff n k dq v :
     ✓{n} (HeapView.Frag k dq v : HeapView F K V H) ↔ ✓ dq ∧ ✓{n} v := by
   apply View.frag_validN_iff.trans
-  apply (HeapR.exists_iff_validN F K V H _ _).trans
+  apply (HeapR.exists_iff_validN F K V H).trans
   apply Heap.point_validN_iff
 
 theorem HeapView.frag_valid_iff k dq v :
@@ -262,7 +245,7 @@ theorem HeapView.frag_op_validN_iff n k dq1 dq2 v1 v2 :
     ✓{n} ((HeapView.Frag k dq1 v1 : HeapView F K V H) • HeapView.Frag k dq2 v2) ↔
       ✓ (dq1 • dq2) ∧ ✓{n} (v1 • v2) := by
   apply View.frag_validN_iff.trans
-  apply (HeapR.exists_iff_validN F K V H _ _ ).trans
+  apply (HeapR.exists_iff_validN F K V H).trans
   apply Iff.trans
   · apply CMRA.validN_iff
     apply OFE.equiv_dist.mp
@@ -279,7 +262,7 @@ theorem HeapView.frag_op_valid_iff k dq1 dq2 v1 v2 :
     apply Iff.trans _ this
     apply forall_congr'
     intro n
-    apply (HeapR.exists_iff_validN F K V H _ _ ).trans
+    apply (HeapR.exists_iff_validN F K V H).trans
     simp [HeapView.Frag]
     apply Iff.trans
     · apply CMRA.validN_iff
