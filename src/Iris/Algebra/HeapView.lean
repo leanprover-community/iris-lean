@@ -297,290 +297,162 @@ end WithMap
 
 section heap_updates
 
-variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [∀ V, Heap (H V) K V] [CMRA V]
+theorem update_one_alloc (Hfresh : get m1 k = none) (Hdq : ✓ dq) (Hval : ✓ v1) :
+    Auth (.own one) m1 ~~> Auth (H := H) (.own one) (set m1 k <| .some v1) • Frag k dq v1 := by
+  refine auth_one_alloc (fun n bf Hrel j => ?_ )
+  simp only [CMRA.op, Store.op, get_merge, Option.merge, exists_and_left, Prod.forall]
+  by_cases h : k = j
+  · have Hbf : get bf j = none := by cases _ : get bf j <;> grind [HeapR]
+    rw [point_get_eq h, Hbf]
+    rintro _ _ ⟨rfl⟩
+    exact ⟨v1, get_set_eq h, dq, ⟨Hdq, Hval.validN⟩, incN_refl _⟩
+  · rw [point_get_ne h, get_set_ne h]
+    simp only [HeapR, exists_and_left, Prod.forall] at Hrel
+    cases Hbf : get bf j; grind
+    exact (Hrel j · · <| · ▸ Hbf)
 
--- Here
-theorem update_one_alloc m k dq (v : V) :
-    (Store.get m k = none) → ✓ dq → ✓ v →
-      HeapView.Auth (.own 1) m ~~>
-        ((HeapView.Auth (.own 1) (Store.set m k (.some v)) : HeapView F K V H) •
-          HeapView.Frag k dq v) := by
-  intro Hfresh Hdq Hval
-  refine View.auth_one_alloc (fun n bf Hrel j => ?_ )
-  simp [CMRA.op, get_merge, Option.merge]
-  if h : k = j
-    then
-      rw [Heap.point_get_eq h]
-      have Hbf : Store.get bf j = none := by
-        cases hc : Store.get bf j; rfl
-        simp [HeapR] at Hrel
-        exfalso
-        rename_i val
-        have Hrel' := Hrel _ _ _ hc
-        rcases Hrel' with ⟨_, HK, _, _, _⟩
-        subst h
-        simp [HK] at Hfresh
-      simp only [Hbf]
-      intro a b Hab
-      obtain ⟨rfl⟩ := Hab
-      exists v
-      rw [get_set_eq h]
-      refine ⟨rfl, ?_⟩
-      exists dq
-      exact ⟨⟨Hdq, Hval.validN⟩, CMRA.incN_refl _⟩
-    else
-      rw [Heap.point_get_ne h]
-      cases hc : Store.get bf j <;> simp only []
-      · rintro _ _ ⟨⟩
-      intro a b Hab
-      obtain ⟨rfl⟩ := Hab
-      simp [HeapR] at Hrel
-      rcases Hrel j a b hc with ⟨v, He, q, Hv, Hframe, Hinc⟩
-      rw [get_set_ne h]
-      exists v
-      refine ⟨He, ?_⟩
-      exists q
-      refine ⟨Hv, ?_⟩
-      exists Hframe
+theorem update_one_delete :
+    Auth (F := F) (.own one) m1 • (Frag k (.own one) v1) ~~> Auth (.own one) (delete m1 k) := by
+  refine auth_one_op_frag_dealloc <| fun n bf Hrel j => ?_
+  match He : get bf j with
+  | none => intro _ HK; simp at HK
+  | some v =>
+    by_cases h : k = j
+    · specialize Hrel k
+      simp only [CMRA.op, Store.op, get_merge, Option.merge, h, point_get_eq rfl, He,
+                 Option.some.injEq, forall_eq'] at Hrel
+      obtain ⟨_, _, _, Hqv, Hinc⟩ := Hrel
+      have Hval := Option.validN_of_incN_validN (Hv := Hqv) (Hinc := Hinc)
+      rcases v with ⟨(f|_|f), _⟩
+      · exact one_whole.2 ⟨f, Hval.1⟩ |>.elim
+      · exact one_whole.2 Hval.1 |>.elim
+      · exact one_whole.2 ⟨f, Fraction.Fractional.proper Hval.1⟩ |>.elim
+    · specialize Hrel j
+      simp only [CMRA.op, Store.op, get_merge, exists_and_left, Prod.forall, point_get_ne h, He] at Hrel
+      rintro ⟨a, b⟩ ⟨rfl⟩
+      obtain ⟨v, H, q, H'⟩ := Hrel a b rfl
+      exact ⟨v, q, H.symm ▸ get_set_ne h, H'⟩
 
-theorem update_one_delete m k (v : V) :
-    (HeapView.Auth (.own 1) m : HeapView F K V H) •
-      (HeapView.Frag k (.own 1) v : HeapView F K V H) ~~>
-        HeapView.Auth (.own 1) (Heap.delete m k) := by
-  refine View.auth_one_op_frag_dealloc (fun n bf Hrel j => ?_)
-  cases He : Store.get bf j
-  · intro _ HK; simp at HK
-  if h : k = j
-    then
-      simp [HeapR, CMRA.op, get_merge, Option.merge] at Hrel
-      have Hrel' := Hrel k; clear Hrel
-      simp [h, He, Heap.point_get_eq rfl] at Hrel'
-      obtain ⟨v, HK, q, Hqv, Hqinc⟩ := Hrel'
-      rename_i vv
-      have Hval := Option.validN_of_incN_validN (Hv := Hqv) (Hinc := Hqinc)
-      exfalso
-      obtain ⟨z, _⟩ := Hqinc
-      simp [CMRA.ValidN, Prod.ValidN] at Hval
-      have HK := Hval.1
-      obtain ⟨(f|_|f), _⟩ := vv <;> simp [DFrac.valid, CMRA.op, DFrac.op] at HK
-      · apply (UFraction.one_whole (α := F)).2; exists f
-      · apply (UFraction.one_whole (α := F)).2; exact HK
-      · apply (UFraction.one_whole (α := F)).2
-        exists f
-        exact Fraction.Fractional.proper HK
-    else
-      simp [HeapR, CMRA.op, get_merge, Option.merge] at Hrel
-      have Hrel' := Hrel j; clear Hrel
-      simp [He, Heap.point_get_ne h] at Hrel'
-      rintro ⟨a, b⟩ Hab
-      obtain ⟨rfl⟩ := Hab
-      obtain ⟨v, H1, q, H2⟩ := Hrel' a b rfl
-      exists v
-      exists q
-      refine ⟨?_, H2⟩
-      · unfold Heap.delete
-        rw [Store.get_set_ne h]
-        trivial
+theorem update_auth_op_frag
+    (Hup :
+      ∀ (n : Nat) (mv : V) (f : Option (DFrac F × V)), (get m1 k = some mv) →
+      ✓{n} ((dq, v) •? f) → (mv ≡{n}≡ ((v : V) •? (Prod.snd <$> f))) →
+      ✓{n} ((dq', v') •? f) ∧ (mv' ≡{n}≡ v' •? (Prod.snd <$> f))) :
+    Auth (F := F) (.own one) m1 • Frag k dq v ~~>
+    Auth (.own one) (set m1 k (some mv')) • (Frag k dq' v') := by
+  refine auth_one_op_frag_update fun n bf Hrel j ⟨df, va⟩ => ?_
+  simp [CMRA.op, get_merge]
+  by_cases h : k = j
+  · simp only [point, get_set_eq h, Option.some.injEq, exists_eq_left']
+    intro Hbf
+    specialize Hrel k ((dq, v) •? (Store.get bf k)) ?G
+    case G =>
+      simp [CMRA.op, get_merge, point, op?]
+      cases _ : get bf k <;> simp [Option.merge, get_set_eq rfl]
+    obtain ⟨mv, mdf, Hlookup, Hval, Hincl'⟩ := Hrel
+    obtain ⟨f', Hincl⟩ := Option.some_incN_some_iff_opM.mp Hincl'
+    clear Hincl'
+    let f := (get bf k) • f'
+    have Hincl' : (mdf, mv) ≡{n}≡ (dq, v) •? f := Hincl.trans Option.opM_opM_assoc.dist
+    clear Hincl
+    specialize Hup n mv f Hlookup (Hincl'.validN.mp Hval) ?G
+    case G =>
+      apply Hincl'.2.trans
+      match f with
+      | none => simp [CMRA.op?]
+      | some ⟨_, _⟩ => simp [CMRA.op?, CMRA.op]
+    obtain ⟨Hval', Hincl'⟩ := Hup
+    exists ((dq' •? (Option.map Prod.fst f)))
+    constructor
+    · refine validN_ne (x := (dq' •? Option.map Prod.fst f, v' •? Prod.snd <$> f)) ⟨.rfl, Hincl'.symm⟩ ?_
+      cases h : f <;> simp only [op?, Option.map_none, Option.map_eq_map]
+      · exact validN_opM Hval'
+      · simp only [h] at Hval'; exact Hval'
+    · rw [← Hbf]
+      suffices HF : some ((dq', v') •? get bf j) ≼{n} some (dq' •? (Option.map Prod.fst f), mv') by
+        apply incN_trans ?_ HF
+        cases _ : get bf j <;> exact incN_refl _
+      refine Option.some_incN_some_iff_opM.mpr ?_
+      exists f'
+      refine (dist_prod_ext rfl Hincl').trans ?_
+      refine .trans ?_ (equiv_dist.mp Option.opM_opM_assoc.symm _)
+      obtain H : get bf j • f' = f := by rw [← h]
+      rw [H]
+      cases _ : f <;> rfl
+  · simp [point, get_set_ne h, get_empty]
+    intro Hbf
+    have Hrel' := Hrel j (df, va)
+    simp only [CMRA.op, Store.op, point, get_merge, Store.get_set_ne h, get_empty, exists_and_left] at Hrel'
+    refine Hrel' ?_
+    rw [← Hbf]
+    simp
 
-theorem update_auth_op_frag (m : H _) k (dq : DFrac F) (v mv' v' : V) (dq' : DFrac F) :
-    (∀ (n : Nat) (mv : V) (f : Option (DFrac F × V)),
-      (Store.get m k = some mv) →
-      ✓{n} ((dq, v) •? f) →
-      (mv ≡{n}≡ ((v : V) •? (Prod.snd <$> f))) →
-      ✓{n} ((dq', v') •? f) ∧ (mv' ≡{n}≡ v' •? (Prod.snd <$> f))) →
-    ((HeapView.Auth (.own 1) m : HeapView F K V H) • (HeapView.Frag k dq v : HeapView F K V H)) ~~>
-      ((HeapView.Auth (.own 1) (Store.set m k (some mv')) : HeapView F K V H) •
-        (HeapView.Frag k dq' v' : HeapView F K V H)) := by
-  intro Hup
-  apply View.auth_one_op_frag_update
-  rintro n bf Hrel j ⟨df, va⟩
-  simp [CMRA.op, Heap.get_merge]
-  if h : k = j
-    then
-      simp [Heap.point, Store.get_set_eq h]
-      intro Hbf
-      have Hrel' := Hrel k ((dq, v) •? (Store.get bf k))
-      have Hrel'' := Hrel' ?G; clear Hrel'
-      case G=>
-        clear Hrel'
-        simp [CMRA.op, Heap.get_merge, Heap.point, CMRA.op?]
-        cases h : Store.get bf k <;> simp [Option.merge, Store.get_set_eq rfl]
-      obtain ⟨mv, mdf, Hlookup, Hval, Hincl'⟩ := Hrel''
-      obtain ⟨f', Hincl⟩ := Option.some_incN_some_iff_opM.mp Hincl'; clear Hincl'
-      let f := (Store.get bf k) • f'
-      have Hincl' : (mdf, mv) ≡{n}≡ (dq, v) •? f := by
-        refine .trans Hincl ?_
-        apply OFE.Equiv.dist
-        exact Option.opM_opM_assoc
-      clear Hincl
-      have Hup' := Hup n mv f Hlookup (Hincl'.validN.mp Hval) ?G
-      case G=>
-        apply Hincl'.2.trans
-        match f with
-        | none => simp [CMRA.op?]
-        | some ⟨_, _⟩ => simp [CMRA.op?, CMRA.op]
-      obtain ⟨Hval', Hincl'⟩ := Hup'
-      exists ((dq' •? (Option.map Prod.fst f)))
-      refine ⟨?_, ?_⟩
-      · apply CMRA.validN_ne (x := (dq' •? Option.map Prod.fst f, v' •? Prod.snd <$> f))
-        · refine ⟨.rfl, Hincl'.symm⟩
-        cases h : f <;> simp [CMRA.op?]
-        · exact CMRA.validN_opM Hval'
-        · simp [h, CMRA.op?, CMRA.op, Prod.op] at Hval'
-          exact Hval'
-      · rw [← Hbf]
-        suffices HF : some ((dq', v') •? (Store.get bf j)) ≼{n}
-            some (dq' •? (Option.map Prod.fst f), mv') by
-          apply CMRA.incN_trans ?_ HF
-          simp [Option.merge, Prod.op, CMRA.op?]
-          cases h : Store.get bf j <;> simp
-          · exact CMRA.incN_refl _
-          · exact CMRA.incN_refl _
-        apply Option.some_incN_some_iff_opM.mpr
-        exists f'
-        refine OFE.Dist.trans (y := (dq' •? Option.map Prod.fst f, v' •? Prod.snd <$> f)) ?_ ?_
-        · exact OFE.dist_prod_ext rfl Hincl'
-        apply OFE.Dist.trans ?_
-        · apply OFE.equiv_dist.mp
-          exact Option.opM_opM_assoc.symm
-        obtain H : Store.get bf j • f' = f := by rw [← h]
-        rw [H]
-        simp [Option.map]
-        cases h : f <;> simp [CMRA.op, CMRA.op?, Prod.op]
-    else
-      simp [Heap.point, Store.get_set_ne h, Heap.get_empty]
-      intro Hbf
-      have Hrel' := Hrel j (df, va)
-      simp [CMRA.op, Heap.get_merge] at Hrel'
-      simp [Option.merge, Heap.point, Store.get_set_ne h, Heap.get_empty] at Hrel'
-      simp only [Hbf] at Hrel'
-      exact Hrel' trivial
-
-theorem update_of_local_update m k dq v mv' v' :
-    (Store.get m k = some mv) →
-    (mv, v) ~l~> (mv', v') →
-    ((HeapView.Auth (.own 1) m : HeapView F K V H) • HeapView.Frag k dq v) ~~>
-      ((HeapView.Auth (.own 1) (Store.set m k (.some mv')) : HeapView F K V H) •
-        HeapView.Frag k dq v') := by
-  intro Hlookup Hup
-  apply HeapView.update_auth_op_frag
-  intro n mv0 f Hmv0 Hval Hincl
-  simp [Hlookup] at Hmv0; subst Hmv0
+theorem update_of_local_update (Hl : get m1 k = some mv) (Hup : (mv, v) ~l~> (mv', v')) :
+    Auth (F := F) (.own one) m1 • Frag k dq v ~~>
+    Auth (.own one) (set m1 k (.some mv')) • Frag k dq v' := by
+  refine update_auth_op_frag (fun n mv0 f Hmv0 ⟨Hv1, Hv2⟩ Hincl => ?_)
+  simp [Hl] at Hmv0
+  subst Hmv0
   have Hup' := Hup n (Prod.snd <$> f) ?G1 Hincl
   case G1 =>
-    refine CMRA.validN_ne Hincl.symm ?_
-    cases Hval; cases f <;> simp_all [CMRA.op?, CMRA.op]
-  obtain ⟨Hval', Hincl'⟩ := Hup'
-  refine ⟨?_, Hincl'⟩
-  simp_all
-  simp [CMRA.op?] at ⊢ Hincl Hincl'
-  cases f <;> simp_all [CMRA.op?, CMRA.op, Prod.op] <;>
-  refine ⟨Hval.1, CMRA.validN_ne Hincl' Hval'⟩
+    refine validN_ne Hincl.symm ?_
+    cases _ : f <;> simp_all [op?, CMRA.op]
+  cases f <;> exact ⟨⟨Hv1, validN_ne Hup'.2 Hup'.1⟩, Hup'.2⟩
 
-theorem update_replace m k v v' :
-    ✓ v' →
-    ((HeapView.Auth (.own 1) m : HeapView F K V H) •
-      (HeapView.Frag k (.own 1) v : HeapView F K V H)) ~~>
-        ((HeapView.Auth (F := F) (.own 1) (Store.set m k (.some v'))) •
-          (HeapView.Frag (F := F) k (.own 1) v')) := by
-  intro Hval'
-  apply HeapView.update_auth_op_frag
-  intro n mv f Hlookup Hval Hincl
-  cases f <;> simp
-  · simp_all [CMRA.op?]
-    refine ⟨Hval.1, ?_⟩
-    simp
-    exact CMRA.Valid.validN Hval'
+theorem update_replace (Hval' : ✓ v2) :
+    Auth (.own one) m1 • Frag (F := F) k (.own one) v1 ~~>
+    Auth (.own one) (set m1 k (.some v2)) • Frag k (.own one) v2 := by
+  refine update_auth_op_frag fun n mv f Hlookup Hval Hincl => ?_
+  cases _ : f <;> simp only [Option.map_eq_map, Option.map_none]
+  · simp_all only [op?, Dist.rfl, and_true]
+    exact ⟨Hval.1, Valid.validN Hval'⟩
   · simp_all [CMRA.op?, CMRA.op, Prod.op]
-    exfalso
-    apply (own_whole_exclusive (UFraction.one_whole (α := F))).exclusive0_l
-    apply CMRA.valid0_of_validN
-    exact Hval.1
+    exact (own_whole_exclusive one_whole |>.exclusive0_l _ (valid0_of_validN Hval.1)).elim
 
-theorem auth_dfrac_discard dq m :
-    (HeapView.Auth dq m : HeapView F K V H) ~~> HeapView.Auth .discard m :=
-  View.auth_discard
+theorem auth_dfrac_discard : Auth dq m1 ~~> Auth .discard m1 := auth_discard
 
-theorem auth_dfrac_acquire [IsSplitFraction F] m :
-    (HeapView.Auth .discard m : HeapView F K V H) ~~>:
-      fun a => ∃ q, a = HeapView.Auth (F := F) (.own q) m :=
-  View.auth_acquire
+theorem auth_dfrac_acquire [IsSplitFraction F] :
+    Auth (F := F) .discard m1 ~~>: fun a => ∃ q, a = Auth (.own q) m1 :=
+  auth_acquire
 
-theorem update_of_dfrac_update k dq P v :
-    dq ~~>: P →
-    (HeapView.Frag k dq v : HeapView F K V H) ~~>:
-      fun a => ∃ dq', a = HeapView.Frag k dq' v ∧ P dq' := by
-  intro Hdq
+theorem update_of_dfrac_update P (Hdq : dq ~~>: P) :
+    Frag (H := H) k dq v1 ~~>: fun a => ∃ dq', a = Frag k dq' v1 ∧ P dq' := by
   apply UpdateP.weaken
-  · apply View.frag_updateP (P := fun b' => ∃ dq', ((◯V b') = HeapView.Frag k dq' v) ∧ P dq')
+  · apply frag_updateP (P := fun b' => ∃ dq', (◯V b') = Frag k dq' v1 ∧ P dq')
     intros m n bf Hrel
-    simp only [HeapR] at Hrel
-    have Hrel' := Hrel k ((dq, v) •? Store.get bf k) ?G
-    case G=>
-      simp [CMRA.op, Heap.get_merge, Heap.point_get_eq rfl, Option.merge, CMRA.op?]
-      cases Store.get bf k <;> simp
+    have Hrel' := Hrel k ((dq, v1) •? get bf k) ?G
+    case G =>
+      simp only [CMRA.op, Store.op, get_merge, point_get_eq rfl, op?]
+      cases _ : get bf k <;> simp
     obtain ⟨v', dq', Hlookup, Hval, Hincl⟩ := Hrel'
     obtain ⟨f', Hincl⟩ := Option.some_incN_some_iff_opM.mp Hincl
-    have Hincl' : (dq', v') ≡{n}≡ (dq, v) •? ((Store.get bf k) • f') := by
-      refine Hincl.trans ?_
-      apply OFE.equiv_dist.mp
-      exact Option.opM_opM_assoc
-    clear Hincl
-    -- f := bf !! k ⋅ f'
-    -- (Store.get bf k) • f'
-    have X := Hdq n (Option.map Prod.fst ((Store.get bf k) • f')) ?G
-    case G =>
-      cases h : (Store.get bf k) • f' <;> simp [Option.map, CMRA.op?]
-      · simp [h, CMRA.op?] at Hincl'
-        exact CMRA.validN_ne Hincl'.1 Hval.1
-      · simp [h, CMRA.op?] at Hincl'
-        exact CMRA.validN_ne Hincl'.1 Hval.1
-    obtain ⟨dq'', HPdq'', Hvdq''⟩ := X
-    exists Heap.point k (dq'', v)
-    refine ⟨?_, ?_⟩
-    · exists dq''
-    rintro j ⟨df, va⟩ Heq
-    if h : k = j
-      then
-        simp [CMRA.op, Heap.get_merge, Heap.point_get_eq h] at Heq
-        exists v'
-        exists ((dq'' •? (Option.map Prod.fst $ (Store.get bf k) • f')))
-        refine ⟨h ▸ Hlookup, ⟨Hvdq'' , Hval.2⟩, ?_⟩
-        exists f'
-        cases h : f' <;> cases h' : Store.get bf k <;>
-          simp [OFE.Dist, Option.Forall₂, CMRA.op, optionOp, CMRA.op?] <;>
-          simp_all [CMRA.op, optionOp, CMRA.op?, Prod.op]
-        · exact Hincl'.2
-        · exact Hincl'.2
-        · exact Hincl'.2
-        · have HR := Hincl'.2
-          refine ⟨?_, ?_⟩
-          · rw [← Heq.1]
-            exact CMRA.op_assocN
-          · simp at HR
-            rw [← Heq.2]
-            refine HR.trans ?_
-            exact CMRA.op_assocN
-      else
-        apply Hrel
-        simp [CMRA.op, Heap.get_merge, Heap.point_get_ne h] at Heq ⊢
-        exact Heq
-  · intro y
-    rintro ⟨b, rfl, q, _, _⟩
+    replace Hincl := Hincl.trans (equiv_dist.mp Option.opM_opM_assoc _)
+    replace Hdq := Hdq n (Option.map Prod.fst (get bf k • f')) ?G
+    case G => cases h : get bf k • f' <;> exact validN_ne (h ▸ Hincl).1 Hval.1
+    obtain ⟨dq'', HPdq'', Hvdq''⟩ := Hdq
+    exists point k (dq'', v1)
+    refine ⟨⟨dq'', rfl, HPdq''⟩, fun j ⟨df, va⟩ Heq => ?_⟩
+    by_cases h : k = j
+    · simp [CMRA.op, get_merge, point_get_eq h] at Heq
+      refine ⟨v', dq'' •? (Option.map Prod.fst $ (Store.get bf k) • f'), ?_⟩
+      refine ⟨h ▸ Hlookup, ⟨Hvdq'' , Hval.2⟩, f', ?_⟩
+      cases _ : f' <;> cases _ : get bf k <;>
+        simp [Dist, Option.Forall₂, CMRA.op?] <;>
+        simp_all [CMRA.op, op?, Prod.op] <;>
+        try exact Hincl.2
+      exact ⟨Heq.1.symm ▸ op_assocN, Heq.2.symm ▸ Hincl.2.trans op_assocN⟩
+    · apply Hrel
+      simp [CMRA.op, get_merge, point_get_ne h] at Heq ⊢
+      exact Heq
+  · rintro y ⟨b, rfl, q, _, _⟩
     exists q
 
-theorem update_frag_discard k dq v :
-  (HeapView.Frag k dq v : HeapView F K V H) ~~> HeapView.Frag k .discard v := by
-  apply Update.lift_updateP (fun (dq : DFrac F) => HeapView.Frag (H := H) (F := F) k dq v)
-  · exact fun P Hupd => HeapView.update_of_dfrac_update k dq P v Hupd
-  · exact DFrac.update_discard
+theorem update_frag_discard : Frag (H := H) k dq v1 ~~> Frag k .discard v1 :=
+  .lift_updateP (Frag k · v1) _ _ update_of_dfrac_update DFrac.update_discard
 
-theorem update_frag_acquire [IsSplitFraction F] k v :
-    (HeapView.Frag k .discard v : HeapView F K V H) ~~>:
-    fun a => ∃ q, a = HeapView.Frag k (.own q) v := by
-  apply UpdateP.weaken
-  · apply HeapView.update_of_dfrac_update
-    apply DFrac.update_acquire
+theorem update_frag_acquire [IsSplitFraction F] :
+    (Frag k .discard v1 : HeapView F K V H) ~~>: fun a => ∃ q, a = Frag k (.own q) v1 := by
+  apply UpdateP.weaken (update_of_dfrac_update _ DFrac.update_acquire)
   rintro y ⟨q, rfl, ⟨q1, rfl⟩⟩
   exists q1
 
