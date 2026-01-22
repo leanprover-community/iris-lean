@@ -177,54 +177,50 @@ private theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeM
         acc.alter kv.1 (Option.insertOrMerge (f kv.1) kv.2)) t₁)[k]? := by
   rw [getElem?_foldl_alter (distinct_keys_toList (t := t₂))]
   letI : Ord K := ⟨cmp⟩
-
+  -- Unfold mergeWith to internal representation
   have h_impl : (t₁.mergeWith f t₂)[k]? =
       Std.DTreeMap.Internal.Impl.Const.get?
         (Std.DTreeMap.Internal.Impl.Const.mergeWith! f t₁.inner.inner t₂.inner.inner) k :=
     congrArg (Std.DTreeMap.Internal.Impl.Const.get? · k)
       (Std.DTreeMap.Internal.Impl.Const.mergeWith_eq_mergeWith! ..)
-
+  -- mergeWith! is definitionally foldl
   have h_foldl : Std.DTreeMap.Internal.Impl.Const.mergeWith! f t₁.inner.inner t₂.inner.inner =
       Std.DTreeMap.Internal.Impl.foldl (fun t a b₂ =>
         Std.DTreeMap.Internal.Impl.Const.alter! a (fun
           | none => some b₂
           | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner := rfl
-
+  -- Convert internal foldl to list foldl on toListModel
   have h_list : Std.DTreeMap.Internal.Impl.foldl (fun t a b₂ =>
         Std.DTreeMap.Internal.Impl.Const.alter! a (fun
           | none => some b₂
           | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner =
       t₂.inner.inner.toListModel.foldl (fun acc p =>
-        Std.DTreeMap.Internal.Impl.Const.alter! p.1 (Option.insertOrMerge (f p.1) p.2) acc) t₁.inner.inner := by
+        Std.DTreeMap.Internal.Impl.Const.alter! p.1 (Option.insertOrMerge (f p.1) p.2) acc)
+        t₁.inner.inner := by
     have heq : (fun t a b₂ => Std.DTreeMap.Internal.Impl.Const.alter! a
         (fun | none => some b₂ | some b₁ => some (f a b₁ b₂)) t) =
         (fun t a b₂ => Std.DTreeMap.Internal.Impl.Const.alter! a (Option.insertOrMerge (f a) b₂) t) := by
       funext t a b₂; congr 1; funext o; cases o <;> rfl
     rw [heq, Std.DTreeMap.Internal.Impl.foldl_eq_foldl]
-
+  -- Keys in toListModel are pairwise distinct
   have hdist : t₂.inner.inner.toListModel.Pairwise (fun a b => compare a.1 b.1 ≠ .eq) :=
     (List.pairwise_map.mp <|
       Std.DTreeMap.Internal.Impl.SameKeys.ordered_iff_pairwise_keys.mp t₂.inner.wf.ordered).imp
       fun hlt heq => nomatch heq ▸ hlt
-
-  -- Connect t₁[k]? with the internal get?
+  -- Connect t₁[k]? with internal get?
   have h_get_eq : t₁[k]? = Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k := rfl
-
   rw [h_impl, h_foldl, h_list, get?_foldl_alter_impl_sigma t₁.inner.wf hdist, h_get_eq]
-
+  -- Convert sigma-typed toListModel to product-typed toList
   have h_toList : t₂.toList = t₂.inner.inner.toListModel.map (fun e => (e.1, e.2)) :=
     Std.DTreeMap.Internal.Impl.Const.toList_eq_toListModel_map
-
-  have h_find : ∀ (l : List ((a : K) × (fun _ => V) a)),
+  have h_find : ∀ l : List ((a : K) × (fun _ => V) a),
       (l.map (fun e => (e.1, e.2))).find? (fun kv => cmp kv.1 k == .eq) =
-      (l.find? (fun kv => cmp kv.1 k == .eq)).map (fun e => (e.1, e.2)) := by
-    intro l; induction l with
+      (l.find? (fun kv => cmp kv.1 k == .eq)).map (fun e => (e.1, e.2)) := fun l => by
+    induction l with
     | nil => rfl
-    | cons hd tl ih => simp only [List.map_cons, List.find?_cons]; split <;> grind
-
+    | cons _ _ ih => simp only [List.map_cons, List.find?_cons]; split <;> grind
   have hfind_eq := h_find t₂.inner.inner.toListModel
   rw [← h_toList] at hfind_eq
-
   cases hres : t₂.inner.inner.toListModel.find? (fun kv => cmp kv.1 k == .eq) <;>
     simp only [hfind_eq, hres, Option.map_none, Option.map_some]
 
