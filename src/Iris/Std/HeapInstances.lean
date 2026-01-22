@@ -18,8 +18,8 @@ instances for types from the Lean standard library.
 ## Instances
 - Plain functions: `Store`, `IsoFunStore`
 - Functions into `Option`: `Heap`
-- Classical functions into `Option`:  `UnboundedHeap`
-- Association lists:  `UnboundedHeap`
+- Classical functions into `Option`: `UnboundedHeap`
+- Association lists: `UnboundedHeap`
 - `TreeMap`: `Heap`
 - `ExtTreeMap`: `Heap`
 -/
@@ -94,13 +94,15 @@ end Iris.Std
 
 section AssociationLists
 
+/-- An association list represented as a sequence of set and remove operations. -/
 inductive AssocList (V : Type _)
-| empty : AssocList V
-| set : Nat → V → AssocList V → AssocList V
-| remove : Nat → AssocList V → AssocList V
+  | empty : AssocList V
+  | set : Nat → V → AssocList V → AssocList V
+  | remove : Nat → AssocList V → AssocList V
 
 open AssocList
 
+/-- Look up a value in an association list. -/
 @[simp]
 def AssocList.lookup (f : AssocList V) (k : Nat) : Option V :=
   match f with
@@ -108,12 +110,14 @@ def AssocList.lookup (f : AssocList V) (k : Nat) : Option V :=
   | .set n v' rest => if n = k then some v' else rest.lookup k
   | .remove n rest => if n = k then none else rest.lookup k
 
+/-- Update an association list by setting or removing a key. -/
 @[simp]
 def AssocList.update (f : AssocList V) (k : Nat) (v : Option V) : AssocList V :=
   match v with
   | some v' => f.set k v'
   | none => f.remove k
 
+/-- Map a function over the values in an association list. -/
 @[simp]
 def AssocList.map (f : Nat → V → Option V') (g : AssocList V) : AssocList V' :=
   match g with
@@ -124,6 +128,7 @@ def AssocList.map (f : Nat → V → Option V') (g : AssocList V) : AssocList V'
       | .none => .remove n (rest.map f)
   | .remove n rest => .remove n (rest.map f)
 
+/-- Find a fresh key that is not present in the association list. -/
 @[simp]
 def AssocList.fresh (f : AssocList V) : Nat :=
   match f with
@@ -131,6 +136,7 @@ def AssocList.fresh (f : AssocList V) : Nat :=
   | .set n _ rest => max (n + 1) rest.fresh
   | .remove n rest => max (n + 1) rest.fresh
 
+/-- Construct an association list from a function on naturals less than N. -/
 @[simp]
 def AssocList.construct (f : Nat → Option V) (N : Nat) : AssocList V :=
   match N with
@@ -140,21 +146,25 @@ def AssocList.construct (f : Nat → Option V) (N : Nat) : AssocList V :=
       | some v => .set N' v (AssocList.construct f N')
       | none => (AssocList.construct f N')
 
+/-- The specification function for `construct`: returns f n for n < N, none otherwise. -/
 @[simp]
 def AssocList.construct_spec (f : Nat → Option V) (N : Nat) : Nat → (Option V) :=
   fun n => if n < N then f n else none
 
+/-- Updating an association list and then looking up is equivalent to the functional set. -/
 theorem AssocList.lookup_update (f : AssocList V) :
     (f.update k v).lookup = fset (f.lookup) k v := by
   funext k'
   cases f <;> cases v <;> simp [fset]
 
+/-- Keys greater than or equal to `fresh` are not present in the association list. -/
 theorem AssocList.fresh_lookup_ge (f : AssocList V) n :
     f.fresh ≤ n → f.lookup n = none := by
   induction f <;> simp
   case set => split <;> grind
   case remove => grind
 
+/-- The lookup function of a constructed association list matches its specification. -/
 theorem AssocList.construct_get (f : Nat → Option V) (N : Nat) :
     lookup (construct f N) = construct_spec f N := by
   funext k
@@ -188,6 +198,7 @@ instance AssocList.instStoreAssocList : Store (AssocList V) Nat (Option V) where
   get_set_eq He := by simp only [lookup_update, fset, if_pos He]
   get_set_ne He := by simp only [lookup_update, fset, if_neg He]
 
+/-- Lift a binary operation to `Option`, treating `none` as an identity element. -/
 abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
   match v1, v2 with
   | some v1, some v2 => some (op v1 v2)
@@ -231,10 +242,7 @@ instance instUnboundedHeapAssocList : UnboundedHeap (AssocList V) Nat V where
   notFull_empty := by simp [notFull]
   notFull_set_fresh {t v H} := by simp [notFull]
 
-
 end AssociationLists
-
-
 
 section Lemmas
 
@@ -267,7 +275,6 @@ namespace Std.TreeMap
 /-! ## TreeMap Heap Instance -/
 
 section HeapInstance
-
 
 open Option Std.DTreeMap.Internal.Impl List TransCmp OrientedCmp LawfulEqCmp Ordering
 
@@ -368,7 +375,7 @@ theorem getElem?_mergeWith' {t₁ t₂ : TreeMap K V compare} {f : K → V → V
   | some v =>
     obtain ⟨k', hcmp, hmem⟩ :=
       getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp h
-    have hpred : (compare k' k).isEq  = true := by simp [eq_symm hcmp]
+    have hpred : (compare k' k).isEq = true := by simp [eq_symm hcmp]
     obtain ⟨kv, hfind⟩ := isSome_iff_exists.mp <|
       find?_isSome (p := fun kv => (compare kv.1 k).isEq) |>.mpr ⟨(k', v), hmem, hpred⟩
     have hkv_cmp : compare kv.1 k = .eq := by
