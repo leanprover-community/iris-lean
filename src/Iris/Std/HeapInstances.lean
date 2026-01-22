@@ -126,7 +126,8 @@ instance instStore [LawfulEqCmp cmp] : Store (TreeMap K V cmp) K (Option V) wher
 
 private theorem get?_foldl_alter_impl_sigma [inst : Ord K] [TransOrd K]
     {l : List ((a : K) × (fun _ => V) a)} (hinit : init.WF)
-    (hl : l.Pairwise (compare ·.1 ·.1 ≠ .eq)) :
+    (hl : l.Pairwise (compare ·.1 ·.1 ≠ .eq))
+    :
     Const.get? (l.foldl (fun acc ⟨k, v⟩ => Const.alter! k (insertOrMerge (f k) v) acc) init) k =
     Option.pairMerge f (Const.get? init k) ((l.find? (compare ·.1 k == .eq)).map (fun kv => (kv.1, kv.2))) := by
   induction l generalizing init with
