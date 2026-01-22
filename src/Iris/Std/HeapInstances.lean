@@ -79,25 +79,30 @@ end Iris.Std
 /-! ## TreeMap Heap Instance -/
 
 /-- Merge an optional value with an optional key-value pair, using the pair's key in the merge
-function. This is a variant of `Option.merge` where the second argument carries a key. -/
-def Option.mergeWithPair (f : K → V → V → V) : Option V → Option (K × V) → Option V
+function. This is an internal helper for TreeMap heap proofs. -/
+private def Option.mergeWithPair (f : K → V → V → V) : Option V → Option (K × V) → Option V
   | some v1, some kv2 => some (f kv2.1 v1 kv2.2)
   | some v1, none => some v1
   | none, some kv2 => some kv2.2
   | none, none => none
 
-theorem Option.mergeWithPair_eq_merge {f : K → V → V → V} {k : K} {o1 : Option V} {o2 : Option V} :
-    Option.mergeWithPair f o1 (o2.map (k, ·)) = Option.merge (f k) o1 o2 := by
-  cases o1 <;> cases o2 <;> simp [mergeWithPair, Option.merge]
+@[simp] private theorem Option.mergeWithPair_none_right {f : K → V → V → V} {o1 : Option V} :
+    Option.mergeWithPair f o1 none = o1 := by cases o1 <;> rfl
 
-/-- Insert a value if none, or merge with existing value. Used in alter operations for maps. -/
-def Option.insertOrMerge (f : V → V → V) (v : V) : Option V → Option V
-  | none => some v
-  | some v' => some (f v' v)
+@[simp] private theorem Option.mergeWithPair_some_right {f : K → V → V → V} {o1 : Option V}
+    {k : K} {v : V} :
+    Option.mergeWithPair f o1 (some (k, v)) = Option.merge (f k) o1 (some v) := by cases o1 <;> rfl
 
-@[simp] theorem Option.insertOrMerge_apply (f : V → V → V) (v : V) :
-    Option.insertOrMerge f v = fun o => match o with | none => some v | some v' => some (f v' v) := by
-  funext o; cases o <;> rfl
+/-- Insert a value if none, or merge with existing value. Used in alter operations for maps.
+This is `Option.merge f o (some v)` - inserting `v` when empty, or merging with existing. -/
+def Option.insertOrMerge (f : V → V → V) (v : V) (o : Option V) : Option V :=
+  Option.merge f o (some v)
+
+@[simp] theorem Option.insertOrMerge_none (f : V → V → V) (v : V) :
+    Option.insertOrMerge f v none = some v := rfl
+
+@[simp] theorem Option.insertOrMerge_some (f : V → V → V) (v v' : V) :
+    Option.insertOrMerge f v (some v') = some (f v' v) := rfl
 
 namespace Std.TreeMap
 
@@ -145,41 +150,28 @@ private theorem get?_foldl_alter_impl_sigma [inst : Ord K] [TransOrd K]
       cases Impl.Const.get? init hd.1 <;> simp [alterFn, Option.mergeWithPair]
     · rw [Impl.Const.get?_alter! hinit]; simp [heq]
 
-/-- Helper lemma: foldl over list with alter has the expected getElem? behavior.
-    This is the key induction lemma for proving getElem?_mergeWith. -/
-theorem getElem?_foldl_alter {l : List (K × V)} {init : TreeMap K V cmp} {f : K → V → V → V}
+/-- foldl over list with alter gives getElem? in terms of mergeWithPair. -/
+private theorem getElem?_foldl_alter {l : List (K × V)} {init : TreeMap K V cmp} {f : K → V → V → V}
     {k : K} (hl : l.Pairwise (fun a b => cmp a.1 b.1 ≠ .eq)) :
     (l.foldl (fun acc kv => acc.alter kv.1 (Option.insertOrMerge (f kv.1) kv.2)) init)[k]? =
       Option.mergeWithPair f init[k]? (l.find? (fun kv => cmp kv.1 k == .eq)) := by
   induction l generalizing init with
-  | nil =>
-    simp only [List.foldl_nil, List.find?_nil]
-    cases init[k]? <;> rfl
+  | nil => simp only [List.foldl_nil, List.find?_nil]; cases init[k]? <;> rfl
   | cons hd tl ih =>
     simp only [List.foldl_cons]
     rw [ih (hl.tail)]
     by_cases heq : cmp hd.1 k = .eq
-    · -- hd.1 matches k
-      simp only [getElem?_alter, getElem?_congr (OrientedCmp.eq_symm heq), List.find?_cons, heq, beq_self_eq_true]
-      have htl : tl.find? (fun kv => cmp kv.1 k == .eq) = none := List.find?_eq_none.mpr fun kv hkv hkv_eq => by
-        simp only [beq_iff_eq] at hkv_eq
-        exact List.rel_of_pairwise_cons hl hkv (TransCmp.eq_trans heq (OrientedCmp.eq_symm hkv_eq))
+    · simp only [getElem?_alter, getElem?_congr (OrientedCmp.eq_symm heq), List.find?_cons, heq,
+          beq_self_eq_true]
+      have htl : tl.find? (fun kv => cmp kv.1 k == .eq) = none := List.find?_eq_none.mpr fun kv hkv h => by
+        simp only [beq_iff_eq] at h
+        exact List.rel_of_pairwise_cons hl hkv (TransCmp.eq_trans heq (OrientedCmp.eq_symm h))
       simp only [htl, ReflCmp.compare_self, ↓reduceIte]
       cases init[hd.1]? <;> rfl
-    · -- hd.1 doesn't match k
-      simp [getElem?_alter, heq]
-
-/-- `find?` commutes with mapping sigma types to product types. -/
-theorem find?_map_sigma {α : Type _} {β : α → Type _} {γ : Type _}
-    {l : List ((a : α) × β a)} {p : α × γ → Bool} {f : (e : (a : α) × β a) → γ} :
-    (l.map (fun e => (e.1, f e))).find? p =
-      (l.find? (p ∘ fun e => (e.1, f e))).map (fun e => (e.1, f e)) := by
-  induction l with
-  | nil => rfl
-  | cons hd tl ih => simp only [List.map_cons, List.find?_cons, Function.comp]; split <;> simp_all
+    · simp [getElem?_alter, heq]
 
 /-- TreeMap.mergeWith equals list foldl with alter at the getElem? level. -/
-theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
+private theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
     {f : K → V → V → V} {k : K} :
     (t₁.mergeWith f t₂)[k]? = (t₂.toList.foldl (fun acc kv =>
         acc.alter kv.1 (Option.insertOrMerge (f kv.1) kv.2)) t₁)[k]? := by
@@ -204,8 +196,11 @@ theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V c
           | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner =
       t₂.inner.inner.toListModel.foldl (fun acc p =>
         Std.DTreeMap.Internal.Impl.Const.alter! p.1 (Option.insertOrMerge (f p.1) p.2) acc) t₁.inner.inner := by
-    simp only [← Option.insertOrMerge_apply]
-    rw [Std.DTreeMap.Internal.Impl.foldl_eq_foldl]
+    have heq : (fun t a b₂ => Std.DTreeMap.Internal.Impl.Const.alter! a
+        (fun | none => some b₂ | some b₁ => some (f a b₁ b₂)) t) =
+        (fun t a b₂ => Std.DTreeMap.Internal.Impl.Const.alter! a (Option.insertOrMerge (f a) b₂) t) := by
+      funext t a b₂; congr 1; funext o; cases o <;> rfl
+    rw [heq, Std.DTreeMap.Internal.Impl.foldl_eq_foldl]
 
   have hdist : t₂.inner.inner.toListModel.Pairwise (fun a b => compare a.1 b.1 ≠ .eq) :=
     (List.pairwise_map.mp <|
@@ -234,51 +229,46 @@ theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V c
     simp only [hfind_eq, hres, Option.map_none, Option.map_some]
 
 /-- If `k` is not in the map, `find?` on `toList` returns `none`. -/
-theorem find?_eq_none_of_getElem?_eq_none [LawfulEqCmp cmp] {t : TreeMap K V cmp} {k : K}
-    (hget : t[k]? = none) : t.toList.find? (fun kv => cmp kv.1 k == .eq) = none := by
+private theorem find?_eq_none_of_getElem?_eq_none [LawfulEqCmp cmp] {t : TreeMap K V cmp} {k : K}
+    (h : t[k]? = none) : t.toList.find? (fun kv => cmp kv.1 k == .eq) = none := by
   apply List.find?_eq_none.mpr; intro kv hkv heq; simp only [beq_iff_eq] at heq
   exact absurd (getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mpr
-    ⟨kv.1, OrientedCmp.eq_symm heq, hkv⟩) (by simp [hget])
+    ⟨kv.1, OrientedCmp.eq_symm heq, hkv⟩) (by simp [h])
 
-/-- If `k` is in the map with value `v`, `find?` returns a matching key-value pair. -/
-theorem find?_eq_some_of_getElem?_eq_some [LawfulEqCmp cmp] {t : TreeMap K V cmp} {k : K} {v : V}
-    (hget : t[k]? = some v) :
-    ∃ kv, t.toList.find? (fun kv => cmp kv.1 k == .eq) = some kv ∧
-      kv.2 = v ∧ cmp kv.1 k = .eq := by
-  obtain ⟨k', hcmp, hmem⟩ := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp hget
-  have hpred : (fun kv : K × V => cmp kv.1 k == .eq) (k', v) = true :=
-    by simp [OrientedCmp.eq_symm hcmp]
+/-- If `k` is in the map with value `v`, `find?` returns `some (k', v)` where `k' = k`. -/
+private theorem find?_eq_some_of_getElem?_eq_some [LawfulEqCmp cmp] {t : TreeMap K V cmp}
+    {k : K} {v : V} (h : t[k]? = some v) :
+    ∃ k', t.toList.find? (fun kv => cmp kv.1 k == .eq) = some (k', v) ∧ k' = k := by
+  obtain ⟨k', hcmp, hmem⟩ := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp h
+  have hpred : (fun kv : K × V => cmp kv.1 k == .eq) (k', v) = true := by
+    simp [OrientedCmp.eq_symm hcmp]
   have hisSome := List.find?_isSome (p := fun kv => cmp kv.1 k == .eq) |>.mpr ⟨(k', v), hmem, hpred⟩
   obtain ⟨kv, hfind⟩ := Option.isSome_iff_exists.mp hisSome
   have hkv_cmp : cmp kv.1 k = .eq := by simpa [beq_iff_eq] using List.find?_some hfind
-  refine ⟨kv, hfind, ?_, hkv_cmp⟩
-  have := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mpr
-    ⟨kv.1, OrientedCmp.eq_symm hkv_cmp, List.mem_of_find?_eq_some hfind⟩
-  grind
+  have hval : kv.2 = v := by
+    have := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mpr
+      ⟨kv.1, OrientedCmp.eq_symm hkv_cmp, List.mem_of_find?_eq_some hfind⟩
+    grind
+  refine ⟨kv.1, ?_, LawfulEqCmp.eq_of_compare hkv_cmp⟩
+  simp only [hfind, ← hval, Prod.eta]
 
-/-- getElem? of mergeWith has the expected semantics.
+/-- Convert `mergeWithPair` applied to a `find?` result into `Option.merge` with `getElem?`. -/
+private theorem mergeWithPair_find?_eq_merge [LawfulEqCmp cmp] {t : TreeMap K V cmp}
+    {k : K} {o : Option V} {f : K → V → V → V} :
+    Option.mergeWithPair f o (t.toList.find? (fun kv => cmp kv.1 k == .eq)) =
+      Option.merge (f k) o t[k]? := by
+  cases h : t[k]? with
+  | none => simp [find?_eq_none_of_getElem?_eq_none h]
+  | some v =>
+    obtain ⟨k', hfind, hk'⟩ := find?_eq_some_of_getElem?_eq_some h
+    simp [hfind, hk']
 
-This lemma states that `mergeWith` behaves as expected: it combines two maps such that:
-- If both maps have a key, the merge function is applied
-- If only one map has a key, that value is used
-- If neither has the key, the result is none
-
-The proof uses the internal implementation details of TreeMap.mergeWith, which is
-defined as a foldl over the second tree using alter operations.
--/
+/-- `getElem?` of `mergeWith` combines values using `Option.merge`. -/
 @[simp] theorem getElem?_mergeWith' [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
     {f : K → V → V → V} {k : K} :
     (t₁.mergeWith f t₂)[k]? = Option.merge (f k) t₁[k]? t₂[k]? := by
-  have hfoldl := getElem?_foldl_alter (init := t₁) (f := f) (k := k) (distinct_keys_toList (t := t₂))
-  have mergeWith_eq := getElem?_mergeWith_eq_foldl (t₁ := t₁) (t₂ := t₂) (f := f) (k := k)
-  cases h2 : t₂[k]? with
-  | none =>
-    cases h1 : t₁[k]? <;>
-      (rw [mergeWith_eq, hfoldl, h1, find?_eq_none_of_getElem?_eq_none h2]; rfl)
-  | some v2 =>
-    obtain ⟨kv, hfind, hval, hcmp⟩ := find?_eq_some_of_getElem?_eq_some h2
-    have heq : kv.1 = k := LawfulEqCmp.eq_of_compare hcmp
-    cases h1 : t₁[k]? <;> (rw [mergeWith_eq, hfoldl, h1, hfind]; subst heq hval; rfl)
+  rw [getElem?_mergeWith_eq_foldl, getElem?_foldl_alter (distinct_keys_toList (t := t₂)),
+      mergeWithPair_find?_eq_merge]
 
 /-- TreeMap forms a Heap. -/
 instance instHeap [LawfulEqCmp cmp] : Heap (TreeMap K V cmp) K V where
