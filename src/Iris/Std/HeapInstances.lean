@@ -121,9 +121,18 @@ Note: This requires that `cmp k k' = .eq` implies `k = k'` (i.e., `LawfulEqCmp`)
 instance instStore [LawfulEqCmp cmp] : Store (TreeMap K V cmp) K (Option V) where
   get t k := t[k]?
   set t k v := t.alter k (fun _ => v)
-  get_set_eq {t k k' v} h := by grind
-  get_set_ne {t k k' v} h := by grind
-
+  get_set_eq {t k k' v} h := by
+    rw [getElem?_alter]
+    rw [ite_eq_left_iff]
+    intros H
+    grind
+  get_set_ne {t k k' v} h := by
+    rw [getElem?_alter]
+    rw [ite_eq_right_iff]
+    intros H
+    exfalso
+    apply h
+    grind
 
 private theorem get?_foldl_alter_impl_sigma [Ord K] [TransOrd K] [LawfulEqCmp (compare (α := K))]
     {l : List ((a : K) × (fun _ => V) a)} (hinit : init.WF)
@@ -135,17 +144,19 @@ private theorem get?_foldl_alter_impl_sigma [Ord K] [TransOrd K] [LawfulEqCmp (c
   | cons hd tl IH =>
     simp only [foldl_cons]
     rw [IH (WF.constAlter! hinit) (hl.tail)]
+    rw [Const.get?_alter! hinit]
     by_cases h  : compare hd.1 k = .eq
-    · have htl : tl.find? (fun x => (compare x.1 k).isEq) = none := by
+    · rw [← Const.get?_congr hinit h]
+      have htl : tl.find? (fun x => (compare x.1 k).isEq) = none := by
         refine find?_eq_none.mpr fun _ hkv He => rel_of_pairwise_cons hl hkv ?_
         have Y := LawfulEqCmp.eq_of_compare h
         rw [Y]
         rw [← He]
         simp_all
-      rw [Const.get?_alter! hinit, ← Const.get?_congr hinit h]
-      cases _ : Const.get? init hd.1 <;> simp [htl, h]
-      all_goals sorry
-    · rw [Const.get?_alter! hinit]; simp [h]
+      cases _ : Const.get? init hd.1
+      · simp [htl, h]
+      · simp [htl, h]
+    · simp [h]
 
 /-- foldl over list with alter gives getElem? in terms of mergeWithPair. -/
 private theorem getElem?_foldl_alter {l : List (K × V)} {init : TreeMap K V cmp} {f : K → V → V → V}
@@ -161,7 +172,7 @@ private theorem getElem?_foldl_alter {l : List (K × V)} {init : TreeMap K V cmp
         simp only [beq_iff_eq] at h
         exact rel_of_pairwise_cons hl hkv (eq_trans heq (eq_symm h))
       simp only [getElem?_congr (eq_symm heq), getElem?_alter_self, htl,
-                 Option.pairMerge_none_right, heq, BEq.rfl, find?_cons_of_pos]
+        Option.pairMerge_none_right, heq, BEq.rfl, find?_cons_of_pos]
       cases _ : init[hd.1]? <;> rfl
     · simp [getElem?_alter, heq]
 
@@ -178,8 +189,9 @@ private theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeM
     congrArg (Const.get? · k) (Const.mergeWith_eq_mergeWith! ..)
   rw [h_impl]
 
-  have h_foldl : Const.mergeWith! f t₁.inner.inner t₂.inner.inner =
-      .foldl (fun t a b₂ => Const.alter! a (fun | none => some b₂ | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner := rfl
+  have h_foldl :
+    Const.mergeWith! f t₁.inner.inner t₂.inner.inner =
+    .foldl (fun t a b₂ => Const.alter! a (fun | none => some b₂ | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner := rfl
   rw [h_foldl]
 
   have h_list : Std.DTreeMap.Internal.Impl.foldl (fun t a b₂ =>
@@ -216,8 +228,7 @@ private theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeM
 
 /-- `getElem?` of `mergeWith` combines values using `Option.merge`. -/
 @[simp] theorem getElem?_mergeWith' [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
-    {f : K → V → V → V} {k : K} :
-    (t₁.mergeWith f t₂)[k]? = Option.merge (f k) t₁[k]? t₂[k]? := by
+    {f : K → V → V → V} {k : K} : (t₁.mergeWith f t₂)[k]? = merge (f k) t₁[k]? t₂[k]? := by
   have X := getElem?_mergeWith_eq_foldl (t₁ := t₁) (t₂ := t₂) (f := f) (k := k)
   rw [X]
   rw [getElem?_foldl_alter (distinct_keys_toList (t := t₂))]
