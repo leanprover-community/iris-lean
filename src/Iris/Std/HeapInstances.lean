@@ -11,7 +11,13 @@ import Std.Data.ExtTreeMap
 /-!
 # Heap Instances for Standard Types
 
-This file provides `Store` and `Heap` instances for standard Lean types.
+This file provides a library of `Store`, `Heap`, `AllocHeap`, and `UnboundedHeap`
+instances for types from the Lean standard library.
+
+## Instances
+- Plain functions: `Store`, `IsoFunStore`
+- Functions into `Option`:
+
 
 ## Constraints
 
@@ -28,29 +34,29 @@ namespace Iris.Std
 
 section FunStore
 
-variable {K V : Type _}
+variable {K V : Type _} [DecidableEq K]
 
 /-- Functions form a total store. -/
-instance instStoreFun [DecidableEq K] : Store (K → V) K V where
+instance instStoreFun : Store (K → V) K V where
   get t k := t k
   set t k v := fun k' => if k = k' then v else t k'
   get_set_eq {t k k' v} h := by grind
   get_set_ne {t k k' v} h := by grind
 
 /-- Functions represent all functions (trivially). -/
-instance instRepFunStoreFun [DecidableEq K] : RepFunStore (K → V) K V where
+instance instRepFunStoreFun : RepFunStore (K → V) K V where
   rep _ := True
   rep_get _ := trivial
   of_fun f := f.val
   get_of_fun := rfl
 
 /-- Functions are isomorphic to themselves. -/
-instance instIsoFunStoreFun [DecidableEq K] : IsoFunStore (K → V) K V where
+instance instIsoFunStoreFun : IsoFunStore (K → V) K V where
   of_fun_get := rfl
 
 end FunStore
 
-/-! ## Function Heap Instance -/
+/-! ## Functions into Option Heap Instance -/
 
 section FunHeap
 
@@ -75,9 +81,7 @@ namespace Std.TreeMap
 
 section HeapInstance
 
-variable {K V : Type _} {cmp : K → K → Ordering}
-
-variable [TransCmp cmp]
+variable {K V : Type _} {cmp : K → K → Ordering} [TransCmp cmp]
 
 /-- TreeMap forms a Store with Option values.
 
@@ -88,8 +92,6 @@ instance instStore [LawfulEqCmp cmp] : Store (TreeMap K V cmp) K (Option V) wher
   set t k v := t.alter k (fun _ => v)
   get_set_eq {t k k' v} h := by grind
   get_set_ne {t k k' v} h := by simp [getElem?_alter]; grind
-
-/-! ### Connection to List foldl -/
 
 open Std.DTreeMap.Internal in
 private theorem get?_foldl_alter_impl_sigma [inst : Ord K] [TransOrd K]
