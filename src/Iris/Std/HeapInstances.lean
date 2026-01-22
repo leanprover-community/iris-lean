@@ -122,9 +122,8 @@ instance instStore : Store (TreeMap K V compare) K (Option V) where
     simp only [getElem?_alter, LawfulEqCmp.compare_eq_iff_eq, ite_eq_right_iff]
     exact (h · |>.elim)
 
-private theorem get?_foldl_alter_impl_sigma
-    {l : List ((a : K) × (fun _ => V) a)} (hinit : init.WF)
-    (hl : l.Pairwise (fun x y => ¬ (compare x.1 y.1).isEq)) :
+private theorem get?_foldl_alter_impl_sigma {l : List ((_ : K) × V)}
+    (hinit : init.WF) (hl : l.Pairwise (fun x y => ¬ (compare x.1 y.1).isEq)) :
     Const.get? (l.foldl (fun acc ⟨k, v⟩ => Const.alter! k (insertOrMerge (f k) v) acc) init) k =
     pairMerge f (Const.get? init k) ((l.find? (fun x => (compare x.1 k).isEq)).map (fun kv => (kv.1, kv.2))) := by
   induction l generalizing init with
@@ -147,11 +146,10 @@ private theorem get?_foldl_alter_impl_sigma
     · simp [h]
 
 omit [LawfulEqOrd K] in
-/-- foldl over list with alter gives getElem? in terms of mergeWithPair. -/
 private theorem getElem?_foldl_alter
     {l : List (K × V)} {init : TreeMap K V compare} {f : K → V → V → V}
     {k : K} (hl : l.Pairwise (fun a b => compare a.1 b.1 ≠ .eq)) :
-    (l.foldl (fun acc kv => acc.alter kv.1 (Option.insertOrMerge (f kv.1) kv.2)) init)[k]? =
+    (l.foldl (fun acc kv => acc.alter kv.1 (insertOrMerge (f kv.1) kv.2)) init)[k]? =
       Option.pairMerge f init[k]? (l.find? (fun kv => compare kv.1 k == .eq)) := by
   induction l generalizing init with
   | nil => simp only [List.foldl_nil, List.find?_nil]; cases init[k]? <;> rfl
@@ -194,27 +192,22 @@ private theorem getElem?_mergeWith_eq_foldl {t₁ t₂ : TreeMap K V compare}
     rw [heq, foldl_eq_foldl]
   rw [h_list]
 
-  have hdist : t₂.inner.inner.toListModel.Pairwise (fun x y => ¬ (compare x.1 y.1).isEq) := by
-    apply (pairwise_map.mp <| SameKeys.ordered_iff_pairwise_keys.mp t₂.inner.wf.ordered).imp
-    rintro hlt heq H
-    simp [H]
-  rw [get?_foldl_alter_impl_sigma t₁.inner.wf hdist]
-
-  have h_get_eq : t₁[k]? = Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k := rfl
-  rw [h_get_eq]
+  -- have h_get_eq : t₁[k]? = Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k := rfl
+  -- rw [h_get_eq]
 
   have h_toList : t₂.toList = t₂.inner.inner.toListModel.map (fun e => (e.1, e.2)) := Const.toList_eq_toListModel_map
   rw [h_toList]
 
-  have h_find : ∀ l : List ((a : K) × (fun _ => V) a),
+  have h_find : ∀ l : List ((_ : K) × V),
       (l.map (fun e => (e.1, e.2))).find? (fun kv => compare kv.1 k == .eq) =
-      (l.find? (fun kv => compare kv.1 k == .eq)).map (fun e => (e.1, e.2)) := fun l => by
-    induction l with grind
+      (l.find? (fun kv => (compare kv.1 k).isEq)).map (fun e => (e.1, e.2)) := fun l => by
+    induction l with grind [Ordering.isEq]
   rw [h_find]
 
-  congr 3
-  funext
-  exact Ordering.isEq_eq_beq_eq
+  refine get?_foldl_alter_impl_sigma t₁.inner.wf ?_
+  refine (pairwise_map.mp <| SameKeys.ordered_iff_pairwise_keys.mp t₂.inner.wf.ordered).imp ?_
+  rintro hlt heq H
+  simp [H]
 
 /-- `getElem?` of `mergeWith` combines values using `Option.merge`. -/
 @[simp] theorem getElem?_mergeWith' {t₁ t₂ : TreeMap K V compare}
