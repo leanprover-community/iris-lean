@@ -261,16 +261,13 @@ defined as a foldl over the second tree using alter operations.
 -/
 @[simp] theorem getElem?_mergeWith' [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
     {f : K → V → V → V} {k : K} :
-    (t₁.mergeWith f t₂)[k]? =
-      match t₁[k]?, t₂[k]? with
-      | some v1, some v2 => some (f k v1 v2)
-      | some v1, none => some v1
-      | none, some v2 => some v2
-      | none, none => none := by
+    (t₁.mergeWith f t₂)[k]? = Option.merge (f k) t₁[k]? t₂[k]? := by
   have hfoldl := foldl_alter_getElem? (init := t₁) (f := f) (k := k) (distinct_keys_toList (t := t₂))
   have mergeWith_eq := getElem?_mergeWith_eq_foldl (t₁ := t₁) (t₂ := t₂) (f := f) (k := k)
   cases h2 : t₂[k]? with
-  | none => cases h1 : t₁[k]? <;> rw [mergeWith_eq, hfoldl, h1, find?_eq_none_of_getElem?_eq_none h2]
+  | none =>
+    cases h1 : t₁[k]? <;>
+      (rw [mergeWith_eq, hfoldl, h1, find?_eq_none_of_getElem?_eq_none h2]; rfl)
   | some v2 =>
     obtain ⟨kv, hfind, hval, hcmp⟩ := find?_eq_some_of_getElem?_eq_some h2
     have heq : kv.1 = k := LawfulEqCmp.eq_of_compare hcmp
@@ -284,8 +281,7 @@ instance instHeap [LawfulEqCmp cmp] : Heap (TreeMap K V cmp) K V where
   get_empty := rfl
   get_hmap {f t k} := by
     show (filterMap f t)[k]? = t[k]?.bind (f k); simp [getElem?_filterMap, Option.pbind_eq_bind, getKey_eq]
-  get_merge {op t1 t2 k} := by
-    show (mergeWith _ t1 t2)[k]? = Option.merge op t1[k]? t2[k]?; simp only [getElem?_mergeWith']; cases t1[k]? <;> cases t2[k]? <;> rfl
+  get_merge := getElem?_mergeWith'
 
 end HeapInstance
 
@@ -317,18 +313,9 @@ The proof uses quotient induction to reduce to DTreeMap representatives,
 then reuses the TreeMap proof since both share the same internal implementation. -/
 @[simp] theorem getElem?_mergeWith' [LawfulEqCmp cmp] {t₁ t₂ : ExtTreeMap K V cmp}
     {f : K → V → V → V} {k : K} :
-    (t₁.mergeWith f t₂)[k]? =
-      match t₁[k]?, t₂[k]? with
-      | some v1, some v2 => some (f k v1 v2)
-      | some v1, none => some v1
-      | none, some v2 => some v2
-      | none, none => none := by
+    (t₁.mergeWith f t₂)[k]? = Option.merge (f k) t₁[k]? t₂[k]? := by
   show ExtDTreeMap.Const.get? (ExtDTreeMap.Const.mergeWith f t₁.inner t₂.inner) k =
-    match ExtDTreeMap.Const.get? t₁.inner k, ExtDTreeMap.Const.get? t₂.inner k with
-    | some v1, some v2 => some (f k v1 v2)
-    | some v1, none => some v1
-    | none, some v2 => some v2
-    | none, none => none
+    Option.merge (f k) (ExtDTreeMap.Const.get? t₁.inner k) (ExtDTreeMap.Const.get? t₂.inner k)
   obtain ⟨q₁⟩ := t₁.inner
   obtain ⟨q₂⟩ := t₂.inner
   induction q₁ using Quotient.ind with
@@ -343,8 +330,7 @@ instance instHeap [LawfulEqCmp cmp] : Heap (ExtTreeMap K V cmp) K V where
   get_empty := rfl
   get_hmap {f t k} := by
     show (filterMap f t)[k]? = t[k]?.bind (f k); simp [getElem?_filterMap, Option.pbind_eq_bind, getKey_eq]
-  get_merge {op t1 t2 k} := by
-    show (mergeWith _ t1 t2)[k]? = Option.merge op t1[k]? t2[k]?; simp only [getElem?_mergeWith']; cases t1[k]? <;> cases t2[k]? <;> rfl
+  get_merge := getElem?_mergeWith'
 
 end HeapInstance
 
