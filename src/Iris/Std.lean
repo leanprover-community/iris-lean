@@ -1,5 +1,8 @@
 import Iris.Std.Classes
 import Iris.Std.Expr
+import Iris.Std.Heap
+import Iris.Std.HeapInstances
+import Iris.Std.Infinite
 import Iris.Std.Nat
 import Iris.Std.Prod
 import Iris.Std.Qq

@@ -5,6 +5,7 @@ Authors: Alok Singh, Markus de Medeiros
 -/
 
 import Iris.Std.Heap
+import Iris.Std.Infinite
 import Std.Data.TreeMap
 import Std.Data.ExtTreeMap
 
@@ -65,6 +66,27 @@ instance instHeapFun : Heap (K → Option V) K V where
   get_merge := rfl
 
 end FunHeap
+
+/-! ## (Noncomputable) Allocation in an infinite function type -/
+noncomputable section ClassicalAllocHeap
+
+open Classical
+
+instance instClassicalAllocHeap : AllocHeap (K → Option V) K V where
+  notFull f := infinite <| cosupport f
+  fresh := choose ∘ coinfinte_exists_next
+  get_fresh {_ H} := choose_spec <| coinfinte_exists_next H
+
+instance instClassicalUnboundeHeap [InfiniteType K] : UnboundedHeap (K → Option V) K V where
+  notFull_empty := by
+    simp [notFull, infinite, cosupport, empty]
+    exact ⟨InfiniteType.enum, fun n m a => InfiniteType.enum_inj n m a⟩
+  notFull_set_fresh {t v H} := by
+    refine cofinite_alter_cofinite (Hs := H) (p' := fresh (T := K → Option V) H) ?_
+    simp [Store.set]
+    grind
+
+end ClassicalAllocHeap
 
 end Iris.Std
 
