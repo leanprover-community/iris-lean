@@ -124,23 +124,27 @@ instance instStore [LawfulEqCmp cmp] : Store (TreeMap K V cmp) K (Option V) wher
   get_set_eq {t k k' v} h := by grind
   get_set_ne {t k k' v} h := by grind
 
-private theorem get?_foldl_alter_impl_sigma [inst : Ord K] [TransOrd K]
+
+private theorem get?_foldl_alter_impl_sigma [Ord K] [TransOrd K] [LawfulEqCmp (compare (α := K))]
     {l : List ((a : K) × (fun _ => V) a)} (hinit : init.WF)
-    (hl : l.Pairwise (compare ·.1 ·.1 ≠ .eq))
-    :
+    (hl : l.Pairwise (fun x y => ¬ (compare x.1 y.1).isEq)) :
     Const.get? (l.foldl (fun acc ⟨k, v⟩ => Const.alter! k (insertOrMerge (f k) v) acc) init) k =
-    Option.pairMerge f (Const.get? init k) ((l.find? (compare ·.1 k == .eq)).map (fun kv => (kv.1, kv.2))) := by
+    Option.pairMerge f (Const.get? init k) ((l.find? (fun x => (compare x.1 k).isEq)).map (fun kv => (kv.1, kv.2))) := by
   induction l generalizing init with
   | nil => simp [foldl_nil]
   | cons hd tl IH =>
     simp only [foldl_cons]
     rw [IH (WF.constAlter! hinit) (hl.tail)]
     by_cases h  : compare hd.1 k = .eq
-    · have htl : tl.find? (compare ·.1 k == .eq) = none := by
-        refine find?_eq_none.mpr fun _ hkv _ => rel_of_pairwise_cons hl hkv ?_
-        exact (eq_trans h (eq_symm (by grind)))
+    · have htl : tl.find? (fun x => (compare x.1 k).isEq) = none := by
+        refine find?_eq_none.mpr fun _ hkv He => rel_of_pairwise_cons hl hkv ?_
+        have Y := LawfulEqCmp.eq_of_compare h
+        rw [Y]
+        rw [← He]
+        simp_all
       rw [Const.get?_alter! hinit, ← Const.get?_congr hinit h]
       cases _ : Const.get? init hd.1 <;> simp [htl, h]
+      all_goals sorry
     · rw [Const.get?_alter! hinit]; simp [h]
 
 /-- foldl over list with alter gives getElem? in terms of mergeWithPair. -/
@@ -169,10 +173,15 @@ private theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeM
     (t₂.toList.foldl (fun acc kv => acc.alter kv.1 (insertOrMerge (f kv.1) kv.2)) t₁)[k]? := by
   rw [getElem?_foldl_alter (distinct_keys_toList (t := t₂))]
   letI : Ord K := ⟨cmp⟩
+
   have h_impl : (t₁.mergeWith f t₂)[k]? = Const.get? (Const.mergeWith! f t₁.inner.inner t₂.inner.inner) k :=
     congrArg (Const.get? · k) (Const.mergeWith_eq_mergeWith! ..)
+  rw [h_impl]
+
   have h_foldl : Const.mergeWith! f t₁.inner.inner t₂.inner.inner =
       .foldl (fun t a b₂ => Const.alter! a (fun | none => some b₂ | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner := rfl
+  rw [h_foldl]
+
   have h_list : Std.DTreeMap.Internal.Impl.foldl (fun t a b₂ =>
      Const.alter! a (fun | none => some b₂ | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner =
      t₂.inner.inner.toListModel.foldl (fun acc p => Const.alter! p.1 (insertOrMerge (f p.1) p.2) acc) t₁.inner.inner := by
@@ -181,17 +190,29 @@ private theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeM
         (fun t a b₂ => Std.DTreeMap.Internal.Impl.Const.alter! a (Option.insertOrMerge (f a) b₂) t) := by
       funext t a b₂; congr 1; funext o; cases o <;> rfl
     rw [heq, foldl_eq_foldl]
-  have hdist : t₂.inner.inner.toListModel.Pairwise (compare ·.1 ·.1 ≠ .eq) :=
-    (pairwise_map.mp <| SameKeys.ordered_iff_pairwise_keys.mp t₂.inner.wf.ordered).imp fun hlt heq => nomatch heq ▸ hlt
+  rw [h_list]
+
+  have hdist : t₂.inner.inner.toListModel.Pairwise (fun x y => ¬ (compare x.1 y.1).isEq) := by
+    apply (pairwise_map.mp <| SameKeys.ordered_iff_pairwise_keys.mp t₂.inner.wf.ordered).imp
+    rintro hlt heq H
+    simp [H]
+  rw [get?_foldl_alter_impl_sigma t₁.inner.wf hdist]
+
   have h_get_eq : t₁[k]? = Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k := rfl
+  rw [h_get_eq]
+
   have h_toList : t₂.toList = t₂.inner.inner.toListModel.map (fun e => (e.1, e.2)) := Const.toList_eq_toListModel_map
+  rw [h_toList]
+
   have h_find : ∀ l : List ((a : K) × (fun _ => V) a),
       (l.map (fun e => (e.1, e.2))).find? (fun kv => cmp kv.1 k == .eq) =
       (l.find? (fun kv => cmp kv.1 k == .eq)).map (fun e => (e.1, e.2)) := fun l => by
     induction l with grind
-  rw [h_impl, h_foldl, h_list]
-  rw [get?_foldl_alter_impl_sigma t₁.inner.wf hdist]
-  grind
+  rw [h_find]
+
+  congr 3
+  funext
+  exact Ordering.isEq_eq_beq_eq
 
 /-- `getElem?` of `mergeWith` combines values using `Option.merge`. -/
 @[simp] theorem getElem?_mergeWith' [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
@@ -224,7 +245,7 @@ private theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeM
       rw [← H]
       congr 2
       funext
-      rw [← Ordering.isEq_eq_beq_eq] -- TODO: Can we move away from using beq everywhere?
+      rw [← Ordering.isEq_eq_beq_eq]
     simp [hfind, hk']
 
 /-- TreeMap forms a Heap. -/
