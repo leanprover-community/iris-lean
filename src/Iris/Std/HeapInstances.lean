@@ -140,45 +140,36 @@ open AssocList
 
 theorem AssocList.lookup_update (f : AssocList V):
     (f.update k v).lookup = fset (f.lookup) k v := by
-  refine funext (fun k' => ?_)
-  cases f <;> cases v <;> simp [fset]
+  funext k'; cases f <;> cases v <;> simp [fset]
 
 theorem AssocList.fresh_lookup_ge (f : AssocList V) n :
     f.fresh ≤ n → f.lookup n = none := by
-  induction f
-  · simp
-  · simp; split <;> grind
-  · simp; grind
+  induction f <;> simp
+  case set => split <;> grind
+  case remove => grind
 
 theorem AssocList.construct_get (f : Nat → Option V) (N : Nat) :
     lookup (construct f N) = construct_spec f N := by
-  refine funext (fun k => ?_)
-  rcases Nat.lt_or_ge k N with (HL|HG)
+  funext k
+  rcases Nat.lt_or_ge k N with HL | HG
   · induction N <;> simp
     rename_i N' IH
     split <;> rename_i h
-    · simp only [lookup]
-      split
+    · simp only [lookup]; split
       · simp_all
-      · rw [IH (by omega)]
-        simp
-        omega
+      · rw [IH (by omega)]; simp; omega
     · rw [if_pos HL]
-      if h : k < N'
-        then
-          simp [IH h]
-          intro H1
-          omega
-        else
-          have Hx : k = N' := by omega
-          simp_all
-          clear Hx h
-          suffices ∀ N'', N' ≤ N'' → (construct f N').lookup N'' = none by grind
-          induction N' <;> simp
-          rename_i n' _
-          cases f n' <;> simp <;> grind
-  · simp
-    rw [if_neg (by omega)]
+      if h : k < N' then
+        simp [IH h]; omega
+      else
+        have : k = N' := by omega
+        simp_all
+        clear this h
+        suffices ∀ N'', N' ≤ N'' → (construct f N').lookup N'' = none by grind
+        induction N' <;> simp
+        rename_i n' _
+        cases f n' <;> simp <;> grind
+  · simp; rw [if_neg (by omega)]
     induction N <;> simp
     split
     · simp [lookup]; grind
@@ -202,7 +193,7 @@ instance AssocList.instFiniteDomHeap : Heap (AssocList V) Nat V where
   get_hmap := by
     intros f t k
     induction t
-    · simp_all [empty, Store.get, map]
+    · simp_all [Store.get, map]
     · rename_i n' v' t' IH
       simp_all [Store.get]
       cases h1 : f n' v' <;> simp <;> split <;> rename_i h2 <;> simp_all
@@ -210,19 +201,15 @@ instance AssocList.instFiniteDomHeap : Heap (AssocList V) Nat V where
       simp_all [Store.get]
       split <;> simp [Option.bind]
   empty := .empty
-  get_empty := by intros; simp [Store.get]
+  get_empty := by simp [Store.get]
   merge op t1 t2 := construct (fun n => op_lift op (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
   get_merge := by
     intro op t1 t2 k
-    simp only [Store.get]
-    simp [AssocList.construct_get]
-    simp [Option.merge, op_lift]
+    simp [Store.get, AssocList.construct_get, Option.merge, op_lift]
     split <;> rename_i h
     · cases t1.lookup k <;> cases t2.lookup k <;> simp_all
-    · have Ht1 : t1.fresh ≤ k := by omega
-      have Ht2 : t2.fresh ≤ k := by omega
-      rw [AssocList.fresh_lookup_ge _ _ Ht1]
-      rw [AssocList.fresh_lookup_ge _ _ Ht2]
+    · rw [AssocList.fresh_lookup_ge _ _ (by omega : t1.fresh ≤ k)]
+      rw [AssocList.fresh_lookup_ge _ _ (by omega : t2.fresh ≤ k)]
 
 instance instFinitDomAllocHeap : AllocHeap (AssocList V) Nat V where
   notFull _ := True
