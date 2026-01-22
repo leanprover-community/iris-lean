@@ -18,6 +18,8 @@ instances for types from the Lean standard library.
 ## Instances
 - Plain functions: `Store`, `IsoFunStore`
 - Functions into `Option`: `Heap`
+- Classical functions into `Option`:  `UnboundedHeap`
+- Association lists:  `UnboundedHeap`
 - `TreeMap`: `Heap`
 - `ExtTreeMap`: `Heap`
 -/
@@ -89,6 +91,152 @@ instance instClassicalUnboundeHeap [InfiniteType K] : UnboundedHeap (K → Optio
 end ClassicalAllocHeap
 
 end Iris.Std
+
+section AssociationLists
+
+inductive AssocList (V : Type _)
+| empty : AssocList V
+| set : Nat → V → AssocList V → AssocList V
+| remove : Nat → AssocList V → AssocList V
+
+open AssocList
+
+@[simp] def AssocList.lookup (f : AssocList V) (k : Nat) : Option V :=
+  match f with
+  | .empty => none
+  | .set n v' rest => if n = k then some v' else rest.lookup k
+  | .remove n rest => if n = k then none else rest.lookup k
+
+@[simp] def AssocList.update (f : AssocList V) (k : Nat) (v : Option V) : AssocList V :=
+  match v with
+  | some v' => f.set k v'
+  | none => f.remove k
+
+@[simp] def AssocList.map (F : Nat → V → Option V') (f : AssocList V)  : AssocList V' :=
+  match f with
+  | .empty => .empty
+  | .set n v rest =>
+      match (F n v) with
+      | .some r => .set n r (rest.map F)
+      | .none => .remove n (rest.map F)
+  | .remove n rest => .remove n (rest.map F)
+
+@[simp] def AssocList.fresh (f : AssocList V) : Nat :=
+  match f with
+  | .empty => 0
+  | .set n _ rest => max (n + 1) rest.fresh
+  | .remove n rest => max (n + 1) rest.fresh
+
+@[simp] def AssocList.construct (f : Nat → Option V) (N : Nat) : AssocList V :=
+  match N with
+  | .zero => .empty
+  | .succ N' =>
+      match (f N') with
+      | some v => .set N' v (AssocList.construct f N')
+      | none => (AssocList.construct f N')
+
+@[simp] def AssocList.construct_spec (f : Nat → Option V) (N : Nat) : Nat → (Option V) :=
+  fun n => if n < N then f n else none
+
+theorem AssocList.lookup_update (f : AssocList V):
+    (f.update k v).lookup = fset (f.lookup) k v := by
+  refine funext (fun k' => ?_)
+  cases f <;> cases v <;> simp [fset]
+
+theorem AssocList.fresh_lookup_ge (f : AssocList V) n :
+    f.fresh ≤ n → f.lookup n = none := by
+  induction f
+  · simp
+  · simp; split <;> grind
+  · simp; grind
+
+theorem AssocList.construct_get (f : Nat → Option V) (N : Nat) :
+    lookup (construct f N) = construct_spec f N := by
+  refine funext (fun k => ?_)
+  rcases Nat.lt_or_ge k N with (HL|HG)
+  · induction N <;> simp
+    rename_i N' IH
+    split <;> rename_i h
+    · simp only [lookup]
+      split
+      · simp_all
+      · rw [IH (by omega)]
+        simp
+        omega
+    · rw [if_pos HL]
+      if h : k < N'
+        then
+          simp [IH h]
+          intro H1
+          omega
+        else
+          have Hx : k = N' := by omega
+          simp_all
+          clear Hx h
+          suffices ∀ N'', N' ≤ N'' → (construct f N').lookup N'' = none by grind
+          induction N' <;> simp
+          rename_i n' _
+          cases f n' <;> simp <;> grind
+  · simp
+    rw [if_neg (by omega)]
+    induction N <;> simp
+    split
+    · simp [lookup]; grind
+    · grind
+
+instance AssocList.instFiniteDomStore : Store (AssocList V) Nat (Option V) where
+  get := lookup
+  set := update
+  get_set_eq He := by simp only [lookup_update, fset, if_pos He]
+  get_set_ne He := by simp only [lookup_update, fset, if_neg He]
+
+abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
+  match v1, v2 with
+  | some v1, some v2 => some (op v1 v2)
+  | some v1, none => some v1
+  | none, some v2 => some v2
+  | none, none => none
+
+instance AssocList.instFiniteDomHeap : Heap (AssocList V) Nat V where
+  hmap h f := f.map h
+  get_hmap := by
+    intros f t k
+    induction t
+    · simp_all [empty, Store.get, map]
+    · rename_i n' v' t' IH
+      simp_all [Store.get]
+      cases h1 : f n' v' <;> simp <;> split <;> rename_i h2 <;> simp_all
+    · rename_i n' t' IH
+      simp_all [Store.get]
+      split <;> simp [Option.bind]
+  empty := .empty
+  get_empty := by intros; simp [Store.get]
+  merge op t1 t2 := construct (fun n => op_lift op (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
+  get_merge := by
+    intro op t1 t2 k
+    simp only [Store.get]
+    simp [AssocList.construct_get]
+    simp [Option.merge, op_lift]
+    split <;> rename_i h
+    · cases t1.lookup k <;> cases t2.lookup k <;> simp_all
+    · have Ht1 : t1.fresh ≤ k := by omega
+      have Ht2 : t2.fresh ≤ k := by omega
+      rw [AssocList.fresh_lookup_ge _ _ Ht1]
+      rw [AssocList.fresh_lookup_ge _ _ Ht2]
+
+instance instFinitDomAllocHeap : AllocHeap (AssocList V) Nat V where
+  notFull _ := True
+  fresh {f} _ := f.fresh
+  get_fresh {f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
+
+instance : UnboundedHeap (AssocList V) Nat V where
+  notFull_empty := by simp [notFull]
+  notFull_set_fresh {t v H} := by simp [notFull]
+
+
+end AssociationLists
+
+
 
 section Lemmas
 
