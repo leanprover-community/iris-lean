@@ -16,7 +16,7 @@ instances for types from the Lean standard library.
 
 ## Instances
 - Plain functions: `Store`, `IsoFunStore`
-- Functions into `Option`:
+- Functions into `Option`: `Heap`
 
 
 ## Constraints
@@ -74,6 +74,7 @@ instance instHeapFun : Heap (K → Option V) K V where
 end FunHeap
 
 end Iris.Std
+
 
 /-! ## TreeMap Heap Instance -/
 
