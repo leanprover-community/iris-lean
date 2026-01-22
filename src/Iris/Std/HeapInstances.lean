@@ -89,6 +89,15 @@ theorem Option.mergeWithPair_eq_merge {f : K → V → V → V} {k : K} {o1 : Op
     Option.mergeWithPair f o1 (o2.map (k, ·)) = Option.merge (f k) o1 o2 := by
   cases o1 <;> cases o2 <;> simp [mergeWithPair, Option.merge]
 
+/-- Insert a value if none, or merge with existing value. Used in alter operations for maps. -/
+def Option.insertOrMerge (f : V → V → V) (v : V) : Option V → Option V
+  | none => some v
+  | some v' => some (f v' v)
+
+@[simp] theorem Option.insertOrMerge_eq_match (f : V → V → V) (v : V) :
+    Option.insertOrMerge f v = fun o => match o with | none => some v | some v' => some (f v' v) := by
+  funext o; cases o <;> rfl
+
 namespace Std.TreeMap
 
 section HeapInstance
@@ -112,9 +121,7 @@ private theorem get?_foldl_alter_impl_sigma [inst : Ord K] [TransOrd K]
     (hinit : init.WF)
     (hl : l.Pairwise (fun a b => compare a.1 b.1 ≠ .eq)) :
     Impl.Const.get? (l.foldl (fun acc kv =>
-        Impl.Const.alter! kv.1 (fun
-          | none => some kv.2
-          | some v1 => some (f kv.1 v1 kv.2)) acc) init) k =
+        Impl.Const.alter! kv.1 (Option.insertOrMerge (f kv.1) kv.2) acc) init) k =
       Option.mergeWithPair f (Impl.Const.get? init k)
         ((l.find? (fun kv => compare kv.1 k == .eq)).map (fun kv => (kv.1, kv.2))) := by
   induction l generalizing init with
@@ -123,9 +130,7 @@ private theorem get?_foldl_alter_impl_sigma [inst : Ord K] [TransOrd K]
     cases Impl.Const.get? init k <;> rfl
   | cons hd tl ih =>
     simp only [List.foldl_cons]
-    let alterFn : Option V → Option V := fun
-      | none => some hd.2
-      | some v1 => some (f hd.1 v1 hd.2)
+    let alterFn := Option.insertOrMerge (f hd.1) hd.2
     have hwf_new : (Impl.Const.alter! hd.1 alterFn init).WF :=
       Impl.WF.constAlter! (f := alterFn) hinit
     rw [ih hwf_new (hl.tail)]
@@ -143,9 +148,7 @@ private theorem get?_foldl_alter_impl_sigma [inst : Ord K] [TransOrd K]
     This is the key induction lemma for proving getElem?_mergeWith. -/
 theorem foldl_alter_getElem? {l : List (K × V)} {init : TreeMap K V cmp} {f : K → V → V → V}
     {k : K} (hl : l.Pairwise (fun a b => cmp a.1 b.1 ≠ .eq)) :
-    (l.foldl (fun acc kv => acc.alter kv.1 fun
-        | none => some kv.2
-        | some v1 => some (f kv.1 v1 kv.2)) init)[k]? =
+    (l.foldl (fun acc kv => acc.alter kv.1 (Option.insertOrMerge (f kv.1) kv.2)) init)[k]? =
       Option.mergeWithPair f init[k]? (l.find? (fun kv => cmp kv.1 k == .eq)) := by
   induction l generalizing init with
   | nil =>
@@ -178,7 +181,7 @@ theorem find?_map_sigma {α : Type _} {β : α → Type _} {γ : Type _}
 theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
     {f : K → V → V → V} {k : K} :
     (t₁.mergeWith f t₂)[k]? = (t₂.toList.foldl (fun acc kv =>
-        acc.alter kv.1 fun | none => some kv.2 | some v1 => some (f kv.1 v1 kv.2)) t₁)[k]? := by
+        acc.alter kv.1 (Option.insertOrMerge (f kv.1) kv.2)) t₁)[k]? := by
   rw [foldl_alter_getElem? (distinct_keys_toList (t := t₂))]
   letI : Ord K := ⟨cmp⟩
 
@@ -199,9 +202,8 @@ theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V c
           | none => some b₂
           | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner =
       t₂.inner.inner.toListModel.foldl (fun acc p =>
-        Std.DTreeMap.Internal.Impl.Const.alter! p.1 (fun
-          | none => some p.2
-          | some b₁ => some (f p.1 b₁ p.2)) acc) t₁.inner.inner := by
+        Std.DTreeMap.Internal.Impl.Const.alter! p.1 (Option.insertOrMerge (f p.1) p.2) acc) t₁.inner.inner := by
+    simp only [← Option.insertOrMerge_eq_match]
     rw [Std.DTreeMap.Internal.Impl.foldl_eq_foldl]
 
   have hdist : t₂.inner.inner.toListModel.Pairwise (fun a b => compare a.1 b.1 ≠ .eq) :=
