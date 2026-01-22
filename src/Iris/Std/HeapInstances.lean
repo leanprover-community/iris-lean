@@ -165,33 +165,31 @@ private theorem getElem?_mergeWith_eq_foldl {t₁ t₂ : TreeMap K V compare}
   rintro hlt heq H
   simp [H]
 
-/-- `getElem?` of `mergeWith` combines values using `Option.merge`. -/
 @[simp] theorem getElem?_mergeWith' {t₁ t₂ : TreeMap K V compare}
     {f : K → V → V → V} {k : K} : (t₁.mergeWith f t₂)[k]? = merge (f k) t₁[k]? t₂[k]? := by
-  have X := getElem?_mergeWith_eq_foldl (t₁ := t₁) (t₂ := t₂) (f := f) (k := k)
-  rw [X]
-  rw [getElem?_foldl_alter (distinct_keys_toList (t := t₂))]
+  rw [getElem?_mergeWith_eq_foldl (t₁ := t₁) (t₂ := t₂) (f := f) (k := k),
+      getElem?_foldl_alter (distinct_keys_toList (t := t₂))]
   cases h : t₂[k]? with
   | none =>
-    rw [List.find?_eq_none.mpr]; simp
+    rw [List.find?_eq_none.mpr, pairMerge_none_right, merge_none_right]
     refine fun ⟨k', v'⟩ hkv' heq => ?_
-    have Y :=
-      (@getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList _ _ compare t₂ _ k v').mpr ⟨k', ?G, hkv'⟩
+    have _ := (getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList (k := k) (v := v')).mpr ⟨k', ?G, hkv'⟩
     case G =>
-      apply beq_iff_eq.mp
-      simp_all
+      replace h := compare_eq_iff_eq.mp <| isEq_iff_eq_eq.mp heq
+      simp only [isEq_iff_eq_eq, compare_eq_iff_eq] at heq
+      exact heq ▸ compare_self
     grind
   | some v =>
     obtain ⟨k', hcmp, hmem⟩ := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp h
-    have hpred : (fun kv : K × V => (compare kv.1 k).isEq) (k', v) = true := by simp [eq_symm hcmp]
-    have hisSome := List.find?_isSome (p := fun kv => (compare kv.1 k).isEq) |>.mpr ⟨(k', v), hmem, hpred⟩
-    obtain ⟨kv, hfind⟩ := Option.isSome_iff_exists.mp hisSome
+    have hpred : (compare k' k).isEq  = true := by simp [eq_symm hcmp]
+    obtain ⟨kv, hfind⟩ := isSome_iff_exists.mp <|
+      find?_isSome (p := fun kv => (compare kv.1 k).isEq) |>.mpr ⟨(k', v), hmem, hpred⟩
     have hkv_cmp : compare kv.1 k = .eq := by simpa [beq_iff_eq] using List.find?_some hfind
     have hval : kv.2 = v := by grind
     have hfind : find? (fun kv => (compare kv.fst k).isEq) t₂.toList = some (kv.fst, v) := by
       simp [← hval, ← hfind]
-    have hk' := eq_of_compare hkv_cmp
-    simp [hfind, hk']
+    simp [← hval, hfind]
+    simp [eq_of_compare hkv_cmp]
 
 instance instHeap : Heap (TreeMap K V compare) K V where
   empty := {}
@@ -211,6 +209,8 @@ namespace Std.ExtTreeMap
 
 section HeapInstance
 
+open Option Std.ExtDTreeMap List TransCmp OrientedCmp LawfulEqCmp Ordering
+
 variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
 
 /-- ExtTreeMap forms a Store with Option values.
@@ -223,22 +223,17 @@ instance instStore : Store (ExtTreeMap K V compare) K (Option V) where
   get_set_eq {t k k' v} h := by grind
   get_set_ne {t k k' v} h := by grind
 
-/-- getElem? of mergeWith has the expected semantics for ExtTreeMap.
-
-The proof uses quotient induction to reduce to DTreeMap representatives,
-then reuses the TreeMap proof since both share the same internal implementation. -/
-@[simp] theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare}
-    {f : K → V → V → V} {k : K} :
-    (t₁.mergeWith f t₂)[k]? = Option.merge (f k) t₁[k]? t₂[k]? := by
-  show ExtDTreeMap.Const.get? (ExtDTreeMap.Const.mergeWith f t₁.inner t₂.inner) k =
-    Option.merge (f k) (ExtDTreeMap.Const.get? t₁.inner k) (ExtDTreeMap.Const.get? t₂.inner k)
+@[simp] theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
+    (t₁.mergeWith f t₂)[k]? = merge (f k) t₁[k]? t₂[k]? := by
+  show
+    Const.get? (Const.mergeWith f t₁.inner t₂.inner) k =
+    merge (f k) (Const.get? t₁.inner k) (Const.get? t₂.inner k)
   obtain ⟨q₁⟩ := t₁.inner
   obtain ⟨q₂⟩ := t₂.inner
   induction q₁ using Quotient.ind with
   | _ m₁ => induction q₂ using Quotient.ind with
-    | _ m₂ => exact Std.TreeMap.getElem?_mergeWith' (t₁ := ⟨m₁⟩) (t₂ := ⟨m₂⟩) (f := f) (k := k)
+    | _ m₂ => exact Std.TreeMap.getElem?_mergeWith'
 
-/-- ExtTreeMap forms a Heap. -/
 instance instHeap : Heap (ExtTreeMap K V compare) K V where
   empty := {}
   hmap f t := t.filterMap f
