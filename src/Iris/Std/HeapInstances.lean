@@ -94,7 +94,7 @@ def Option.insertOrMerge (f : V → V → V) (v : V) : Option V → Option V
   | none => some v
   | some v' => some (f v' v)
 
-@[simp] theorem Option.insertOrMerge_eq_match (f : V → V → V) (v : V) :
+@[simp] theorem Option.insertOrMerge_apply (f : V → V → V) (v : V) :
     Option.insertOrMerge f v = fun o => match o with | none => some v | some v' => some (f v' v) := by
   funext o; cases o <;> rfl
 
@@ -146,7 +146,7 @@ private theorem get?_foldl_alter_impl_sigma [inst : Ord K] [TransOrd K]
 
 /-- Helper lemma: foldl over list with alter has the expected getElem? behavior.
     This is the key induction lemma for proving getElem?_mergeWith. -/
-theorem foldl_alter_getElem? {l : List (K × V)} {init : TreeMap K V cmp} {f : K → V → V → V}
+theorem getElem?_foldl_alter {l : List (K × V)} {init : TreeMap K V cmp} {f : K → V → V → V}
     {k : K} (hl : l.Pairwise (fun a b => cmp a.1 b.1 ≠ .eq)) :
     (l.foldl (fun acc kv => acc.alter kv.1 (Option.insertOrMerge (f kv.1) kv.2)) init)[k]? =
       Option.mergeWithPair f init[k]? (l.find? (fun kv => cmp kv.1 k == .eq)) := by
@@ -182,7 +182,7 @@ theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V c
     {f : K → V → V → V} {k : K} :
     (t₁.mergeWith f t₂)[k]? = (t₂.toList.foldl (fun acc kv =>
         acc.alter kv.1 (Option.insertOrMerge (f kv.1) kv.2)) t₁)[k]? := by
-  rw [foldl_alter_getElem? (distinct_keys_toList (t := t₂))]
+  rw [getElem?_foldl_alter (distinct_keys_toList (t := t₂))]
   letI : Ord K := ⟨cmp⟩
 
   have h_impl : (t₁.mergeWith f t₂)[k]? =
@@ -203,7 +203,7 @@ theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V c
           | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner =
       t₂.inner.inner.toListModel.foldl (fun acc p =>
         Std.DTreeMap.Internal.Impl.Const.alter! p.1 (Option.insertOrMerge (f p.1) p.2) acc) t₁.inner.inner := by
-    simp only [← Option.insertOrMerge_eq_match]
+    simp only [← Option.insertOrMerge_apply]
     rw [Std.DTreeMap.Internal.Impl.foldl_eq_foldl]
 
   have hdist : t₂.inner.inner.toListModel.Pairwise (fun a b => compare a.1 b.1 ≠ .eq) :=
@@ -268,7 +268,7 @@ defined as a foldl over the second tree using alter operations.
 @[simp] theorem getElem?_mergeWith' [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
     {f : K → V → V → V} {k : K} :
     (t₁.mergeWith f t₂)[k]? = Option.merge (f k) t₁[k]? t₂[k]? := by
-  have hfoldl := foldl_alter_getElem? (init := t₁) (f := f) (k := k) (distinct_keys_toList (t := t₂))
+  have hfoldl := getElem?_foldl_alter (init := t₁) (f := f) (k := k) (distinct_keys_toList (t := t₂))
   have mergeWith_eq := getElem?_mergeWith_eq_foldl (t₁ := t₁) (t₂ := t₂) (f := f) (k := k)
   cases h2 : t₂[k]? with
   | none =>
