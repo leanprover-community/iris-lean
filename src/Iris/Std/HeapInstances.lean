@@ -165,45 +165,24 @@ private theorem getElem?_foldl_alter
       cases _ : init[hd.1]? <;> rfl
     · simp [getElem?_alter, heq]
 
-open Std.DTreeMap.Internal.Impl Std.DTreeMap.Internal in
-/-- TreeMap.mergeWith equals list foldl with alter at the getElem? level. -/
 private theorem getElem?_mergeWith_eq_foldl {t₁ t₂ : TreeMap K V compare}
     {f : K → V → V → V} {k : K} :
     (t₁.mergeWith f t₂)[k]? =
     (t₂.toList.foldl (fun acc kv => acc.alter kv.1 (insertOrMerge (f kv.1) kv.2)) t₁)[k]? := by
   rw [getElem?_foldl_alter (distinct_keys_toList (t := t₂))]
-
-  have h_impl : (t₁.mergeWith f t₂)[k]? = Const.get? (Const.mergeWith! f t₁.inner.inner t₂.inner.inner) k :=
-    congrArg (Const.get? · k) (Const.mergeWith_eq_mergeWith! ..)
-  rw [h_impl]
-
+  rw [show _[_]? = _ from congrArg (Const.get? · k) (Const.mergeWith_eq_mergeWith! ..)]
   have h_foldl :
     Const.mergeWith! f t₁.inner.inner t₂.inner.inner =
-    .foldl (fun t a b₂ => Const.alter! a (fun | none => some b₂ | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner := rfl
+    .foldl (fun t a b₂ => Const.alter! a (insertOrMerge (f a) b₂) t) t₁.inner.inner t₂.inner.inner := by
+    unfold Const.mergeWith!; congr; funext _ _ _; congr; funext o; cases o <;> rfl
   rw [h_foldl]
-
-  have h_list : Std.DTreeMap.Internal.Impl.foldl (fun t a b₂ =>
-     Const.alter! a (fun | none => some b₂ | some b₁ => some (f a b₁ b₂)) t) t₁.inner.inner t₂.inner.inner =
-     t₂.inner.inner.toListModel.foldl (fun acc p => Const.alter! p.1 (insertOrMerge (f p.1) p.2) acc) t₁.inner.inner := by
-    have heq : (fun t a b₂ => Const.alter! a
-        (fun | none => some b₂ | some b₁ => some (f a b₁ b₂)) t) =
-        (fun t a b₂ => Std.DTreeMap.Internal.Impl.Const.alter! a (Option.insertOrMerge (f a) b₂) t) := by
-      funext t a b₂; congr 1; funext o; cases o <;> rfl
-    rw [heq, foldl_eq_foldl]
-  rw [h_list]
-
-  -- have h_get_eq : t₁[k]? = Std.DTreeMap.Internal.Impl.Const.get? t₁.inner.inner k := rfl
-  -- rw [h_get_eq]
-
-  have h_toList : t₂.toList = t₂.inner.inner.toListModel.map (fun e => (e.1, e.2)) := Const.toList_eq_toListModel_map
-  rw [h_toList]
-
-  have h_find : ∀ l : List ((_ : K) × V),
+  rw [foldl_eq_foldl]
+  rw [show t₂.toList = _ from Const.toList_eq_toListModel_map]
+  have hfind_map : ∀ l : List ((_ : K) × V),
       (l.map (fun e => (e.1, e.2))).find? (fun kv => compare kv.1 k == .eq) =
-      (l.find? (fun kv => (compare kv.1 k).isEq)).map (fun e => (e.1, e.2)) := fun l => by
-    induction l with grind [Ordering.isEq]
-  rw [h_find]
-
+      (l.find? (fun kv => (compare kv.1 k).isEq)).map (fun e => (e.1, e.2)) :=
+    fun l => by induction l with grind [Ordering.isEq]
+  rw [hfind_map]
   refine get?_foldl_alter_impl_sigma t₁.inner.wf ?_
   refine (pairwise_map.mp <| SameKeys.ordered_iff_pairwise_keys.mp t₂.inner.wf.ordered).imp ?_
   rintro hlt heq H
