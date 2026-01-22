@@ -72,7 +72,6 @@ instance Heap.instCOFE [Heap T K V] [COFE V] : COFE T where
 
 end OFE
 
-
 section CMRA
 open CMRA
 

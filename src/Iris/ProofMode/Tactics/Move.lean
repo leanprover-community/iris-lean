@@ -3,8 +3,7 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.ProofMode.Expr
-import Iris.ProofMode.Classes
+import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
@@ -30,8 +29,8 @@ inductive ReplaceHyp {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop)) where
   | main (e e' : Q($prop)) (hyps' : Hyps bi e') (pf : Q(Replaces $Q $e $e'))
 
 variable [Monad m] {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop))
-  (uniq : Name) (repl : Name → Q(Bool) → Q($prop) → MetaM (ReplaceHyp bi Q)) in
-def Hyps.replace : ∀ {e}, Hyps bi e → MetaM (ReplaceHyp bi Q)
+  (uniq : Name) (repl : Name → Q(Bool) → Q($prop) → ProofModeM (ReplaceHyp bi Q)) in
+def Hyps.replace : ∀ {e}, Hyps bi e → ProofModeM (ReplaceHyp bi Q)
   | _, .emp _ => pure .none
   | _, .hyp _ name uniq' p ty _ => do
     if uniq == uniq' then
@@ -69,15 +68,12 @@ theorem to_persistent_intuitionistic [BI PROP] {P P' Q : PROP}
   wand_mono_l <| affinely_mono hP.1
 
 elab "iintuitionistic" colGt hyp:ident : tactic => do
-  let mvar ← getMainGoal
-  mvar.withContext do
-  let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
 
   let uniq ← hyps.findWithInfo hyp
   match ← hyps.replace bi goal uniq fun name p ty => do
     let P' ← mkFreshExprMVarQ prop
-    let _ ← synthInstanceQ q(IntoPersistently $p $ty $P')
+    let _ ← ProofModeM.synthInstanceQ q(IntoPersistently $p $ty $P')
     addHypInfo hyp name uniq prop P' (isBinder := true)
     match matchBool p with
     | .inl _ =>
@@ -90,40 +86,35 @@ elab "iintuitionistic" colGt hyp:ident : tactic => do
   | .none => panic! "missing variable"
   | .unchanged _ hyps' =>
     mvar.setType <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. }
-  | .main _e e' hyps' pf =>
-    let m : Q($e' ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-      IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. }
+    addMVarGoal mvar
+  | .main _ _ hyps' pf =>
+    let m ← addBIGoal hyps' goal
     mvar.assign q(Replaces.apply $pf $m)
-    replaceMainGoal [m.mvarId!]
 
 theorem from_affine [BI PROP] {p : Bool} {P P' Q : PROP} [hP : FromAffinely P' P p] :
     Replaces Q iprop(□?p P) P' :=
   wand_mono_l <| affinelyIf_of_intuitionisticallyIf.trans hP.1
 
 elab "ispatial" colGt hyp:ident : tactic => do
-  let mvar ← getMainGoal
-  mvar.withContext do
-  let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
 
   let uniq ← hyps.findWithInfo hyp
   match ← hyps.replace bi goal uniq fun name p ty => do
     let P' ← mkFreshExprMVarQ prop
     match matchBool p with
     | .inl _ =>
-      let _ ← synthInstanceQ q(FromAffinely $P' $ty true)
+      let _ ← ProofModeM.synthInstanceQ q(FromAffinely $P' $ty true)
       addHypInfo hyp name uniq prop P' (isBinder := true)
       return .main q(iprop(□ $ty)) P' (.mkHyp bi name uniq q(false) P' _) q(from_affine (p := true))
     | .inr _ =>
-      let _ ← synthInstanceQ q(FromAffinely $P' $ty false)
+      let _ ← ProofModeM.synthInstanceQ q(FromAffinely $P' $ty false)
       addHypInfo hyp name uniq prop P' (isBinder := true)
       return .main ty P' (.mkHyp bi name uniq p P' _) q(from_affine (p := false))
   with
   | .none => panic! "missing variable"
   | .unchanged _ hyps' =>
     mvar.setType <| IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. }
-  | .main _e e' hyps' pf =>
-    let m : Q($e' ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
-      IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. }
+    addMVarGoal mvar
+  | .main _ _ hyps' pf =>
+    let m ← addBIGoal hyps' goal
     mvar.assign q(Replaces.apply $pf $m)
-    replaceMainGoal [m.mvarId!]

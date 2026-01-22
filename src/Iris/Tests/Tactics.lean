@@ -16,6 +16,7 @@ open Iris.BI
 example [BI PROP] (Q : PROP) (H : Q ⊢ Q) : Q ⊢ Q := by
   istart
   iintro _HQ
+  have HH: True := by trivial
   istop
   exact H
 

@@ -26,18 +26,16 @@ def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
     if oldUniq == uniq then some (Hyps.mkHyp bi new uniq p ty _) else none
 
 elab "irename" colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do
-  -- find hypothesis index
-  let mvar ← getMainGoal
-  mvar.withContext do
-  let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
 
+  -- find hypothesis index
   let some (uniq, _, ty) := hyps.find? nameFrom.getId | throwError "unknown hypothesis"
   addHypInfo nameFrom nameFrom.getId uniq prop ty
   let some hyps' := hyps.rename uniq nameTo.getId | unreachable!
   addHypInfo nameTo nameTo.getId uniq prop ty (isBinder := true)
 
   mvar.setType (IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. })
+  addMVarGoal mvar
 
 elab "irename" ":" colGt ty:term " => " colGt nameTo:ident : tactic => do
   -- parse syntax
@@ -45,10 +43,7 @@ elab "irename" ":" colGt ty:term " => " colGt nameTo:ident : tactic => do
     throwUnsupportedSyntax
 
   -- find hypothesis index
-  let mvar ← getMainGoal
-  mvar.withContext do
-  let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
 
   let ty ← elabTerm ty prop
   let (uniq, _, ty) ← try selectHyp ty hyps catch _ => throwError "unknown hypothesis"
@@ -56,3 +51,4 @@ elab "irename" ":" colGt ty:term " => " colGt nameTo:ident : tactic => do
   addHypInfo nameTo nameTo.getId uniq prop ty (isBinder := true)
 
   mvar.setType (IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. })
+  addMVarGoal mvar

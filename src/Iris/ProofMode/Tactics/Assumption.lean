@@ -16,7 +16,7 @@ theorem pure_assumption [BI PROP] {P A Q : PROP} (h_P : ⊢ A)
   emp_sep.2.trans <| (sep_mono_l this).trans sep_elim_l
 
 def assumptionLean {prop : Q(Type u)} (_bi : Q(BI $prop)) (ehyps goal : Q($prop))
-    (mvar : MVarId) : MetaM Unit := do
+    (mvar : MVarId) : ProofModeM Unit := do
   mvar.withContext do
     let _ ← synthInstanceQ q(TCOr (Affine $ehyps) (Absorbing $goal))
     for h in ← getLCtx do
@@ -25,21 +25,14 @@ def assumptionLean {prop : Q(Type u)} (_bi : Q(BI $prop)) (ehyps goal : Q($prop)
       -- let (name, type) := (h.userName, ← instantiateMVars h.type)
 
       -- try to solve the goal
-      try
-        let _ ← synthInstanceQ q(FromAssumption true .in $P $goal)
+      if let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption true .in $P $goal) then
         mvar.assign q(pure_assumption (P := $ehyps) (Q := $goal) $h)
         return
-      catch e => trace[Meta.debug] e.toMessageData; pure ()
     throwError "no matching hypothesis found"
 
 elab "iassumption_lean" : tactic => do
-  -- retrieve goal mvar declaration
-  let mvar ← getMainGoal
-  mvar.withContext do
-  let g ← instantiateMVars <| ← mvar.getType
-  let some { bi, e, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+  ProofModeM.runTactic λ mvar { bi, e, goal, .. } => do
   assumptionLean bi e goal mvar
-  replaceMainGoal []
 
 theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p .in A Q]
   [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q :=
@@ -51,10 +44,10 @@ inductive AssumptionFastPath (prop : Q(Type u)) (bi : Q(BI $prop)) (Q : Q($prop)
 
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop))
   (fastPath : AssumptionFastPath prop bi Q) in
-def assumptionFast {e} (hyps : Hyps bi e) : MetaM Q($e ⊢ $Q) := do
+def assumptionFast {e} (hyps : Hyps bi e) : ProofModeM Q($e ⊢ $Q) := do
   let some ⟨inst, _, _, out, ty, b, _, pf⟩ ←
-    hyps.removeG true fun _ _ b ty => try? do
-      synthInstance q(FromAssumption $b .in $ty $Q)
+    hyps.removeG true fun _ _ b ty => do
+      ProofModeM.trySynthInstanceQ q(FromAssumption $b .in $ty $Q)
     | failure
   let _ : Q(FromAssumption $b .in $ty $Q) := inst
   have : $out =Q iprop(□?$b $ty) := ⟨⟩
@@ -74,12 +67,12 @@ theorem assumption_r [BI PROP] {P Q R : PROP} [Affine P] (h : Q ⊢ R) : P ∗ Q
 
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop)) in
 def assumptionSlow (assume : Bool) :
-    ∀ {e}, Hyps bi e → MetaM (AssumptionSlow bi Q e)
+    ∀ {e}, Hyps bi e → ProofModeM (AssumptionSlow bi Q e)
   | _, .emp _ =>
     Pure.pure (.affine q(emp_affine))
   | out, .hyp _ _ _ b ty _ => do
     let fromAssum (_:Unit) := do
-      let _ ← synthInstanceQ q(FromAssumption $b .in $ty $Q)
+      let _ ← ProofModeM.synthInstanceQ q(FromAssumption $b .in $ty $Q)
       let inst ← try? (synthInstanceQ q(Affine $out))
       return .main q(FromAssumption.from_assumption .in) inst
     let affine (_:Unit) := return .affine (← synthInstanceQ q(Affine $out))
@@ -104,10 +97,7 @@ def assumptionSlow (assume : Bool) :
       | .main lpf none, some _ => return .main q(assumption_l $lpf) none
 
 elab "iassumption" : tactic => do
-  let mvar ← getMainGoal
-  mvar.withContext do
-  let g ← instantiateMVars <| ← mvar.getType
-  let some { prop, bi, e, hyps, goal, .. } := parseIrisGoal? g | throwError "not in proof mode"
+  ProofModeM.runTactic λ mvar { prop, bi, e, hyps, goal, .. } => do
 
   let inst : Option (AssumptionFastPath prop bi goal) ← try
     pure (some (.biAffine (← synthInstanceQ q(BIAffine $prop))))
@@ -122,4 +112,3 @@ elab "iassumption" : tactic => do
     mvar.assign pf
   catch _ =>
     assumptionLean bi e goal mvar
-  replaceMainGoal []
