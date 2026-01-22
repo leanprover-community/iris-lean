@@ -36,7 +36,7 @@ theorem coinfinite_fset_coinfinite (f : K → Option V) (H : infinite (cosupport
   simp [fset]
   grind
 
-theorem coinfinte_exists_next {f : K → Option V} :
+theorem coinfinite_exists_next {f : K → Option V} :
     infinite (cosupport f) → ∃ k, f k = none := by
   rintro ⟨enum, Henum, _⟩
   exists enum 0

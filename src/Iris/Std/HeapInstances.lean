@@ -76,10 +76,10 @@ open Classical
 
 instance instClassicalAllocHeap : AllocHeap (K → Option V) K V where
   notFull f := infinite <| cosupport f
-  fresh := choose ∘ coinfinte_exists_next
-  get_fresh {_ H} := choose_spec <| coinfinte_exists_next H
+  fresh := choose ∘ coinfinite_exists_next
+  get_fresh {_ H} := choose_spec <| coinfinite_exists_next H
 
-instance instClassicalUnboundeHeap [InfiniteType K] : UnboundedHeap (K → Option V) K V where
+instance instClassicalUnboundedHeap [InfiniteType K] : UnboundedHeap (K → Option V) K V where
   notFull_empty := by
     simp [notFull, infinite, cosupport, empty]
     exact ⟨InfiniteType.enum, fun n m a => InfiniteType.enum_inj n m a⟩
@@ -101,33 +101,38 @@ inductive AssocList (V : Type _)
 
 open AssocList
 
-@[simp] def AssocList.lookup (f : AssocList V) (k : Nat) : Option V :=
+@[simp]
+def AssocList.lookup (f : AssocList V) (k : Nat) : Option V :=
   match f with
   | .empty => none
   | .set n v' rest => if n = k then some v' else rest.lookup k
   | .remove n rest => if n = k then none else rest.lookup k
 
-@[simp] def AssocList.update (f : AssocList V) (k : Nat) (v : Option V) : AssocList V :=
+@[simp]
+def AssocList.update (f : AssocList V) (k : Nat) (v : Option V) : AssocList V :=
   match v with
   | some v' => f.set k v'
   | none => f.remove k
 
-@[simp] def AssocList.map (F : Nat → V → Option V') (f : AssocList V)  : AssocList V' :=
-  match f with
+@[simp]
+def AssocList.map (f : Nat → V → Option V') (g : AssocList V) : AssocList V' :=
+  match g with
   | .empty => .empty
   | .set n v rest =>
-      match (F n v) with
-      | .some r => .set n r (rest.map F)
-      | .none => .remove n (rest.map F)
-  | .remove n rest => .remove n (rest.map F)
+      match (f n v) with
+      | .some r => .set n r (rest.map f)
+      | .none => .remove n (rest.map f)
+  | .remove n rest => .remove n (rest.map f)
 
-@[simp] def AssocList.fresh (f : AssocList V) : Nat :=
+@[simp]
+def AssocList.fresh (f : AssocList V) : Nat :=
   match f with
   | .empty => 0
   | .set n _ rest => max (n + 1) rest.fresh
   | .remove n rest => max (n + 1) rest.fresh
 
-@[simp] def AssocList.construct (f : Nat → Option V) (N : Nat) : AssocList V :=
+@[simp]
+def AssocList.construct (f : Nat → Option V) (N : Nat) : AssocList V :=
   match N with
   | .zero => .empty
   | .succ N' =>
@@ -135,12 +140,14 @@ open AssocList
       | some v => .set N' v (AssocList.construct f N')
       | none => (AssocList.construct f N')
 
-@[simp] def AssocList.construct_spec (f : Nat → Option V) (N : Nat) : Nat → (Option V) :=
+@[simp]
+def AssocList.construct_spec (f : Nat → Option V) (N : Nat) : Nat → (Option V) :=
   fun n => if n < N then f n else none
 
-theorem AssocList.lookup_update (f : AssocList V):
+theorem AssocList.lookup_update (f : AssocList V) :
     (f.update k v).lookup = fset (f.lookup) k v := by
-  funext k'; cases f <;> cases v <;> simp [fset]
+  funext k'
+  cases f <;> cases v <;> simp [fset]
 
 theorem AssocList.fresh_lookup_ge (f : AssocList V) n :
     f.fresh ≤ n → f.lookup n = none := by
@@ -175,7 +182,7 @@ theorem AssocList.construct_get (f : Nat → Option V) (N : Nat) :
     · simp [lookup]; grind
     · grind
 
-instance AssocList.instFiniteDomStore : Store (AssocList V) Nat (Option V) where
+instance AssocList.instStoreAssocList : Store (AssocList V) Nat (Option V) where
   get := lookup
   set := update
   get_set_eq He := by simp only [lookup_update, fset, if_pos He]
@@ -188,35 +195,39 @@ abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
   | none, some v2 => some v2
   | none, none => none
 
-instance AssocList.instFiniteDomHeap : Heap (AssocList V) Nat V where
+instance AssocList.instHeapAssocList : Heap (AssocList V) Nat V where
   hmap h f := f.map h
   get_hmap := by
-    intros f t k
-    induction t
-    · simp_all [Store.get, map]
-    · rename_i n' v' t' IH
+    intro f t k
+    induction t with
+    | empty =>
+      simp_all [Store.get, map]
+    | set n' v' t' IH =>
       simp_all [Store.get]
       cases h1 : f n' v' <;> simp <;> split <;> rename_i h2 <;> simp_all
-    · rename_i n' t' IH
+    | remove n' t' IH =>
       simp_all [Store.get]
       split <;> simp [Option.bind]
   empty := .empty
   get_empty := by simp [Store.get]
-  merge op t1 t2 := construct (fun n => op_lift op (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
+  merge op t1 t2 :=
+    construct (fun n => op_lift op (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
   get_merge := by
     intro op t1 t2 k
     simp [Store.get, AssocList.construct_get, Option.merge, op_lift]
-    split <;> rename_i h
-    · cases t1.lookup k <;> cases t2.lookup k <;> simp_all
-    · rw [AssocList.fresh_lookup_ge _ _ (by omega : t1.fresh ≤ k)]
+    split
+    · rename_i h
+      cases t1.lookup k <;> cases t2.lookup k <;> simp_all
+    · rename_i h
+      rw [AssocList.fresh_lookup_ge _ _ (by omega : t1.fresh ≤ k)]
       rw [AssocList.fresh_lookup_ge _ _ (by omega : t2.fresh ≤ k)]
 
-instance instFinitDomAllocHeap : AllocHeap (AssocList V) Nat V where
+instance instAllocHeapAssocList : AllocHeap (AssocList V) Nat V where
   notFull _ := True
   fresh {f} _ := f.fresh
   get_fresh {f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
 
-instance : UnboundedHeap (AssocList V) Nat V where
+instance instUnboundedHeapAssocList : UnboundedHeap (AssocList V) Nat V where
   notFull_empty := by simp [notFull]
   notFull_set_fresh {t v H} := by simp [notFull]
 
@@ -227,22 +238,26 @@ end AssociationLists
 
 section Lemmas
 
-/-- Merge an optional value with an optional key-value pair, using the pair's key in the merge
-function. This is an internal helper for TreeMap heap proofs. -/
-private def Option.pairMerge (f : K → V → V → V) (o1 : Option V) (o2 : Option (K × V)) : Option V :=
+/-- Merge an optional value with an optional key-value pair, using the pair's key in the
+merge function. This is an internal helper for TreeMap heap proofs. -/
+private def Option.pairMerge (f : K → V → V → V) (o1 : Option V)
+    (o2 : Option (K × V)) : Option V :=
   o2.elim o1 fun ⟨k, v2⟩ => some (o1.elim v2 (f k · v2))
 
-@[simp] private theorem Option.pairMerge_none_right :
-    pairMerge f o1 none = o1 := by
+@[simp]
+private theorem Option.pairMerge_none_right : pairMerge f o1 none = o1 := by
   cases o1 <;> rfl
 
-@[simp] private theorem Option.pairMerge_some_right :
+@[simp]
+private theorem Option.pairMerge_some_right :
     pairMerge f o1 (some (k, v)) = merge (f k) o1 (some v) := by
   cases o1 <;> rfl
 
-/-- Insert a value if none, or merge with existing value. Used in alter operations for maps.
-This is `Option.merge f o (some v)` - inserting `v` when empty, or merging with existing. -/
-@[simp] def Option.insertOrMerge (f : V → V → V) (v : V) (o : Option V) : Option V :=
+/-- Insert a value if none, or merge with existing value. Used in alter operations for
+maps. This is `Option.merge f o (some v)` - inserting `v` when empty, or merging with
+existing. -/
+@[simp]
+def Option.insertOrMerge (f : V → V → V) (v : V) (o : Option V) : Option V :=
   merge f o (some v)
 
 end Lemmas
@@ -259,7 +274,7 @@ open Option Std.DTreeMap.Internal.Impl List TransCmp OrientedCmp LawfulEqCmp Ord
 variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
 
 /-- TreeMap forms a Store with Option values. -/
-instance instStore : Store (TreeMap K V compare) K (Option V) where
+instance instStoreTreeMap : Store (TreeMap K V compare) K (Option V) where
   get t k := t[k]?
   set t k v := t.alter k (fun _ => v)
   get_set_eq {t k k' v} h := by grind
@@ -268,9 +283,11 @@ instance instStore : Store (TreeMap K V compare) K (Option V) where
 private theorem get?_foldl_alter_impl_sigma {l : List ((_ : K) × V)}
     (hinit : init.WF) (hl : l.Pairwise (fun x y => ¬ (compare x.1 y.1).isEq)) :
     Const.get? (l.foldl (fun acc ⟨k, v⟩ => Const.alter! k (insertOrMerge (f k) v) acc) init) k =
-    pairMerge f (Const.get? init k) ((l.find? (fun x => (compare x.1 k).isEq)).map (fun kv => (kv.1, kv.2))) := by
+      pairMerge f (Const.get? init k)
+        ((l.find? (fun x => (compare x.1 k).isEq)).map (fun kv => (kv.1, kv.2))) := by
   induction l generalizing init with
-  | nil => simp [foldl_nil]
+  | nil =>
+    simp [foldl_nil]
   | cons hd tl IH =>
     rw [foldl_cons, IH (WF.constAlter! hinit) (hl.tail), Const.get?_alter! hinit]
     by_cases h : compare hd.1 k = .eq <;> simp [h]
@@ -284,9 +301,10 @@ private theorem get?_foldl_alter_impl_sigma {l : List ((_ : K) × V)}
 private theorem getElem?_foldl_alter {l : List (K × V)} {init : TreeMap K V compare}
     (hl : l.Pairwise (fun a b => compare a.1 b.1 ≠ .eq)) :
     (l.foldl (fun acc kv => acc.alter kv.1 (insertOrMerge (f kv.1) kv.2)) init)[k]? =
-    pairMerge f init[k]? (l.find? (fun kv => (compare kv.1 k).isEq)) := by
+      pairMerge f init[k]? (l.find? (fun kv => (compare kv.1 k).isEq)) := by
   induction l generalizing init with
-  | nil => simp
+  | nil =>
+    simp
   | cons hd tl ih =>
     rw [foldl_cons, ih (hl.tail)]
     by_cases heq : compare hd.1 k = .eq
@@ -302,53 +320,67 @@ private theorem getElem?_foldl_alter {l : List (K × V)} {init : TreeMap K V com
 private theorem getElem?_mergeWith_eq_foldl {t₁ t₂ : TreeMap K V compare}
     {f : K → V → V → V} {k : K} :
     (t₁.mergeWith f t₂)[k]? =
-    (t₂.toList.foldl (fun acc kv => acc.alter kv.1 (insertOrMerge (f kv.1) kv.2)) t₁)[k]? := by
+      (t₂.toList.foldl (fun acc kv => acc.alter kv.1 (insertOrMerge (f kv.1) kv.2)) t₁)[k]? := by
   rw [getElem?_foldl_alter (distinct_keys_toList (t := t₂))]
-  rw [show _[_]? = _ from congrArg (Const.get? · k) (Const.mergeWith_eq_mergeWith! ..)]
+  rw [show _[_]? = _ from
+    congrArg (Const.get? · k) (Const.mergeWith_eq_mergeWith! ..)]
   have h_foldl :
-    Const.mergeWith! f t₁.inner.inner t₂.inner.inner =
-    .foldl (fun t a b₂ => Const.alter! a (insertOrMerge (f a) b₂) t) t₁.inner.inner t₂.inner.inner := by
-    unfold Const.mergeWith!; congr; funext _ _ _; congr; funext o; cases o <;> rfl
+      Const.mergeWith! f t₁.inner.inner t₂.inner.inner =
+        .foldl (fun t a b₂ => Const.alter! a (insertOrMerge (f a) b₂) t)
+          t₁.inner.inner t₂.inner.inner := by
+    unfold Const.mergeWith!
+    congr
+    funext _ _ _
+    congr
+    funext o
+    cases o <;> rfl
   rw [h_foldl]
   rw [foldl_eq_foldl]
   rw [show t₂.toList = _ from Const.toList_eq_toListModel_map]
   have hfind_map : ∀ l : List ((_ : K) × V),
       (l.map (fun e => (e.1, e.2))).find? (fun kv => (compare kv.1 k).isEq) =
-      (l.find? (fun kv => (compare kv.1 k).isEq)).map (fun e => (e.1, e.2)) :=
+        (l.find? (fun kv => (compare kv.1 k).isEq)).map (fun e => (e.1, e.2)) :=
     fun l => by induction l with grind [isEq]
   rw [hfind_map]
   refine get?_foldl_alter_impl_sigma t₁.inner.wf ?_
-  refine (pairwise_map.mp <| SameKeys.ordered_iff_pairwise_keys.mp t₂.inner.wf.ordered).imp ?_
+  refine (pairwise_map.mp <|
+    SameKeys.ordered_iff_pairwise_keys.mp t₂.inner.wf.ordered).imp ?_
   rintro hlt heq H
   simp [H]
 
-@[simp] theorem getElem?_mergeWith' {t₁ t₂ : TreeMap K V compare}
-    {f : K → V → V → V} {k : K} : (t₁.mergeWith f t₂)[k]? = merge (f k) t₁[k]? t₂[k]? := by
+@[simp]
+theorem getElem?_mergeWith' {t₁ t₂ : TreeMap K V compare} {f : K → V → V → V} {k : K} :
+    (t₁.mergeWith f t₂)[k]? = merge (f k) t₁[k]? t₂[k]? := by
   rw [getElem?_mergeWith_eq_foldl (t₁ := t₁) (t₂ := t₂) (f := f) (k := k),
       getElem?_foldl_alter (distinct_keys_toList (t := t₂))]
   cases h : t₂[k]? with
   | none =>
     rw [List.find?_eq_none.mpr, pairMerge_none_right, merge_none_right]
     refine fun ⟨k', v'⟩ hkv' heq => ?_
-    have _ := (getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList (k := k) (v := v')).mpr ⟨k', ?G, hkv'⟩
+    have _ :=
+      (getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList (k := k) (v := v')).mpr
+        ⟨k', ?G, hkv'⟩
     case G =>
       replace h := compare_eq_iff_eq.mp <| isEq_iff_eq_eq.mp heq
       simp only [isEq_iff_eq_eq, compare_eq_iff_eq] at heq
       exact heq ▸ compare_self
     grind
   | some v =>
-    obtain ⟨k', hcmp, hmem⟩ := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp h
+    obtain ⟨k', hcmp, hmem⟩ :=
+      getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp h
     have hpred : (compare k' k).isEq  = true := by simp [eq_symm hcmp]
     obtain ⟨kv, hfind⟩ := isSome_iff_exists.mp <|
       find?_isSome (p := fun kv => (compare kv.1 k).isEq) |>.mpr ⟨(k', v), hmem, hpred⟩
-    have hkv_cmp : compare kv.1 k = .eq := by simpa [beq_iff_eq] using List.find?_some hfind
+    have hkv_cmp : compare kv.1 k = .eq := by
+      simpa [beq_iff_eq] using List.find?_some hfind
     have hval : kv.2 = v := by grind
-    have hfind : find? (fun kv => (compare kv.fst k).isEq) t₂.toList = some (kv.fst, v) := by
+    have hfind : find? (fun kv => (compare kv.fst k).isEq) t₂.toList =
+        some (kv.fst, v) := by
       simp [← hval, ← hfind]
     simp [← hval, hfind]
     simp [eq_of_compare hkv_cmp]
 
-instance instHeap : Heap (TreeMap K V compare) K V where
+instance instHeapTreeMap : Heap (TreeMap K V compare) K V where
   empty := {}
   hmap f t := t.filterMap f
   merge op t1 t2 := t1.mergeWith (fun _ v1 v2 => op v1 v2) t2
@@ -374,13 +406,14 @@ variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
 
 Note: This requires that `cmp k k' = .eq` implies `k = k'` (i.e., `LawfulEqCmp`).
 -/
-instance instStore : Store (ExtTreeMap K V compare) K (Option V) where
+instance instStoreExtTreeMap : Store (ExtTreeMap K V compare) K (Option V) where
   get t k := t[k]?
   set t k v := t.alter k (fun _ => v)
   get_set_eq {t k k' v} h := by grind
   get_set_ne {t k k' v} h := by grind
 
-@[simp] theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
+@[simp]
+theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
     (t₁.mergeWith f t₂)[k]? = merge (f k) t₁[k]? t₂[k]? := by
   show
     Const.get? (Const.mergeWith f t₁.inner t₂.inner) k =
@@ -391,7 +424,7 @@ instance instStore : Store (ExtTreeMap K V compare) K (Option V) where
   | _ m₁ => induction q₂ using Quotient.ind with
     | _ m₂ => exact Std.TreeMap.getElem?_mergeWith'
 
-instance instHeap : Heap (ExtTreeMap K V compare) K V where
+instance instHeapExtTreeMap : Heap (ExtTreeMap K V compare) K V where
   empty := {}
   hmap f t := t.filterMap f
   merge op t1 t2 := t1.mergeWith (fun _ => op) t2
