@@ -17,15 +17,8 @@ instances for types from the Lean standard library.
 ## Instances
 - Plain functions: `Store`, `IsoFunStore`
 - Functions into `Option`: `Heap`
-
-
-## Constraints
-
-The TreeMap/ExtTreeMap instances require `LawfulEqCmp cmp`, which states that
-`cmp k k' = .eq → k = k'`. This is necessary because TreeMap only guarantees
-key uniqueness up to the comparator—without this constraint, we couldn't prove
-`get (set t k v) k = v` since the stored key might differ from `k`.
-
+- `TreeMap`: `Heap`
+- `ExtTreeMap`: `Heap`
 -/
 
 namespace Iris.Std
@@ -108,10 +101,7 @@ open Option Std.DTreeMap.Internal.Impl List TransCmp OrientedCmp LawfulEqCmp Ord
 
 variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
 
-/-- TreeMap forms a Store with Option values.
-
-Note: This requires that `cmp k k' = .eq` implies `k = k'` (i.e., `LawfulEqCmp`).
--/
+/-- TreeMap forms a Store with Option values. -/
 instance instStore : Store (TreeMap K V compare) K (Option V) where
   get t k := t[k]?
   set t k v := t.alter k (fun _ => v)
@@ -134,23 +124,21 @@ private theorem get?_foldl_alter_impl_sigma {l : List ((_ : K) × V)}
       rw [eq_of_compare h, compare_eq_iff_eq.mp <| isEq_iff_eq_eq.mp He]
     rw [Hhead_none, map_none, pairMerge_none_right]
 
-omit [LawfulEqOrd K] in
-private theorem getElem?_foldl_alter
-    {l : List (K × V)} {init : TreeMap K V compare} {f : K → V → V → V}
-    {k : K} (hl : l.Pairwise (fun a b => compare a.1 b.1 ≠ .eq)) :
+private theorem getElem?_foldl_alter {l : List (K × V)} {init : TreeMap K V compare}
+    (hl : l.Pairwise (fun a b => compare a.1 b.1 ≠ .eq)) :
     (l.foldl (fun acc kv => acc.alter kv.1 (insertOrMerge (f kv.1) kv.2)) init)[k]? =
-      Option.pairMerge f init[k]? (l.find? (fun kv => compare kv.1 k == .eq)) := by
+    pairMerge f init[k]? (l.find? (fun kv => (compare kv.1 k).isEq)) := by
   induction l generalizing init with
-  | nil => simp only [List.foldl_nil, List.find?_nil]; cases init[k]? <;> rfl
+  | nil => simp
   | cons hd tl ih =>
     rw [foldl_cons, ih (hl.tail)]
     by_cases heq : compare hd.1 k = .eq
-    · have htl : tl.find? (fun kv => compare kv.1 k == .eq) = none := List.find?_eq_none.mpr fun kv hkv h => by
-        simp only [beq_iff_eq] at h
-        exact rel_of_pairwise_cons hl hkv (eq_trans heq (eq_symm h))
-      have X := @getElem_congr _ V (compare (α := K))
-      simp [getElem?_congr (cmp := compare) (eq_symm heq), htl, pairMerge_none_right, heq, BEq.rfl,
-        find?_cons_of_pos]
+    · have htl : tl.find? (fun kv => (compare kv.1 k).isEq) = none := by
+        refine find?_eq_none.mpr fun kv hkv h => ?_
+        refine rel_of_pairwise_cons hl hkv (eq_trans heq ?_)
+        rw [compare_eq_iff_eq.mp <| isEq_iff_eq_eq.mp h]
+        exact compare_self
+      simp [getElem?_congr (eq_symm heq), htl, heq]
       cases _ : init[hd.1]? <;> rfl
     · simp [getElem?_alter, heq]
 
@@ -168,7 +156,7 @@ private theorem getElem?_mergeWith_eq_foldl {t₁ t₂ : TreeMap K V compare}
   rw [foldl_eq_foldl]
   rw [show t₂.toList = _ from Const.toList_eq_toListModel_map]
   have hfind_map : ∀ l : List ((_ : K) × V),
-      (l.map (fun e => (e.1, e.2))).find? (fun kv => compare kv.1 k == .eq) =
+      (l.map (fun e => (e.1, e.2))).find? (fun kv => (compare kv.1 k).isEq) =
       (l.find? (fun kv => (compare kv.1 k).isEq)).map (fun e => (e.1, e.2)) :=
     fun l => by induction l with grind [isEq]
   rw [hfind_map]
@@ -203,14 +191,8 @@ private theorem getElem?_mergeWith_eq_foldl {t₁ t₂ : TreeMap K V compare}
     have hfind : find? (fun kv => (compare kv.fst k).isEq) t₂.toList = some (kv.fst, v) := by
       simp [← hval, ← hfind]
     have hk' := eq_of_compare hkv_cmp
-    suffices H : Option.pairMerge f t₁[k]? (find? (fun kv => (compare kv.fst k).isEq) t₂.toList) = Option.merge (f k) t₁[k]? (some v) by
-      rw [← H]
-      congr 2
-      funext
-      rw [← isEq_eq_beq_eq]
     simp [hfind, hk']
 
-/-- TreeMap forms a Heap. -/
 instance instHeap : Heap (TreeMap K V compare) K V where
   empty := {}
   hmap f t := t.filterMap f
