@@ -25,7 +25,7 @@ inductive DFrac (F : Type _) where
 instance : OFE.Leibniz (DFrac F) := ⟨(·)⟩
 instance : OFE.Discrete (DFrac F) := ⟨congrArg id⟩
 
-section dfrac
+namespace DFrac
 
 open DFrac Fraction OFE.Discrete
 
@@ -109,6 +109,22 @@ theorem own_whole_exclusive {w : F} (Hw : Whole w) : CMRA.Exclusive (own w) wher
 instance : CMRA.Exclusive (own (1 : F)) :=
   own_whole_exclusive <| UFraction.one_whole
 
+instance one_exclusive_left [CMRA V] {v : V} : CMRA.Exclusive (own (F := F) One.one, v) where
+  exclusive0_l := by
+    refine fun ⟨y1, _⟩ ⟨Hv1, _⟩ => ?_
+    rcases y1 with (y|_|y)
+    · exact UFraction.one_whole.2 ⟨_, Hv1⟩
+    · exact UFraction.one_whole.2 Hv1
+    · exact UFraction.one_whole.2 <| Fractional.of_add_left Hv1
+
+instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (F := F) One.one) where
+  exclusive0_l := by
+    refine fun ⟨_, y2⟩ ⟨_, Hv2⟩ => ?_
+    rcases y2 with (y|_|y)
+    · exact UFraction.one_whole.2 ⟨_, Hv2⟩
+    · exact UFraction.one_whole.2 Hv2
+    · exact UFraction.one_whole.2 <| Fractional.of_add_left Hv2
+
 instance {f : F} : CMRA.Cancelable (own f) where
   cancelableN {_} := by
     rintro ⟨⟩ ⟨⟩ <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
@@ -143,7 +159,13 @@ theorem valid_own_op_discard {q : F} : ✓ own q • discard ↔ Fractional q :=
 instance : CMRA.Discrete (DFrac F) where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 
-theorem DFrac.is_discrete {q : DFrac F} : OFE.DiscreteE q := ⟨congrArg id⟩
+theorem is_discrete {q : DFrac F} : OFE.DiscreteE q := ⟨congrArg id⟩
+
+instance : CMRA.Discrete (DFrac F) where
+  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
+
+instance : CMRA.Discrete (DFrac F) where
+  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 
 theorem DFrac.update_discard {dq : DFrac F} : dq ~~> .discard := by
   intros n q H
@@ -183,4 +205,4 @@ theorem DFrac.update_acquire [IsSplitFraction F] :
     rw [← add_assoc, IsSplitFraction.split_add]
     exact HP
 
-end dfrac
+end DFrac
