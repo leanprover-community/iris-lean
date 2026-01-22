@@ -178,12 +178,11 @@ private theorem getElem?_foldl_alter {l : List (K × V)} {init : TreeMap K V cmp
 
 open Std.DTreeMap.Internal.Impl Std.DTreeMap.Internal in
 /-- TreeMap.mergeWith equals list foldl with alter at the getElem? level. -/
-private theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
+private theorem getElem?_mergeWith_eq_foldl [Ord K] [TransOrd K] [LawfulEqCmp (compare (α := K))] {t₁ t₂ : TreeMap K V (compare (α := K))}
     {f : K → V → V → V} {k : K} :
     (t₁.mergeWith f t₂)[k]? =
     (t₂.toList.foldl (fun acc kv => acc.alter kv.1 (insertOrMerge (f kv.1) kv.2)) t₁)[k]? := by
   rw [getElem?_foldl_alter (distinct_keys_toList (t := t₂))]
-  letI : Ord K := ⟨cmp⟩
 
   have h_impl : (t₁.mergeWith f t₂)[k]? = Const.get? (Const.mergeWith! f t₁.inner.inner t₂.inner.inner) k :=
     congrArg (Const.get? · k) (Const.mergeWith_eq_mergeWith! ..)
@@ -217,8 +216,8 @@ private theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeM
   rw [h_toList]
 
   have h_find : ∀ l : List ((a : K) × (fun _ => V) a),
-      (l.map (fun e => (e.1, e.2))).find? (fun kv => cmp kv.1 k == .eq) =
-      (l.find? (fun kv => cmp kv.1 k == .eq)).map (fun e => (e.1, e.2)) := fun l => by
+      (l.map (fun e => (e.1, e.2))).find? (fun kv => compare kv.1 k == .eq) =
+      (l.find? (fun kv => compare kv.1 k == .eq)).map (fun e => (e.1, e.2)) := fun l => by
     induction l with grind
   rw [h_find]
 
@@ -227,7 +226,7 @@ private theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeM
   exact Ordering.isEq_eq_beq_eq
 
 /-- `getElem?` of `mergeWith` combines values using `Option.merge`. -/
-@[simp] theorem getElem?_mergeWith' [LawfulEqCmp cmp] {t₁ t₂ : TreeMap K V cmp}
+@[simp] theorem getElem?_mergeWith' [Ord K] [TransOrd K] [LawfulEqCmp (compare (α := K))] {t₁ t₂ : TreeMap K V (compare (α := K))}
     {f : K → V → V → V} {k : K} : (t₁.mergeWith f t₂)[k]? = merge (f k) t₁[k]? t₂[k]? := by
   have X := getElem?_mergeWith_eq_foldl (t₁ := t₁) (t₂ := t₂) (f := f) (k := k)
   rw [X]
@@ -237,22 +236,22 @@ private theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeM
     rw [List.find?_eq_none.mpr]; simp
     refine fun ⟨k', v'⟩ hkv' heq => ?_
     have Y :=
-      (@getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList _ _ cmp t₂ _ k v').mpr ⟨k', ?G, hkv'⟩
+      (@getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList _ _ compare t₂ _ k v').mpr ⟨k', ?G, hkv'⟩
     case G =>
       apply beq_iff_eq.mp
       simp_all
     grind
   | some v =>
     obtain ⟨k', hcmp, hmem⟩ := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp h
-    have hpred : (fun kv : K × V => (cmp kv.1 k).isEq) (k', v) = true := by simp [eq_symm hcmp]
-    have hisSome := List.find?_isSome (p := fun kv => (cmp kv.1 k).isEq) |>.mpr ⟨(k', v), hmem, hpred⟩
+    have hpred : (fun kv : K × V => (compare kv.1 k).isEq) (k', v) = true := by simp [eq_symm hcmp]
+    have hisSome := List.find?_isSome (p := fun kv => (compare kv.1 k).isEq) |>.mpr ⟨(k', v), hmem, hpred⟩
     obtain ⟨kv, hfind⟩ := Option.isSome_iff_exists.mp hisSome
-    have hkv_cmp : cmp kv.1 k = .eq := by simpa [beq_iff_eq] using List.find?_some hfind
+    have hkv_cmp : compare kv.1 k = .eq := by simpa [beq_iff_eq] using List.find?_some hfind
     have hval : kv.2 = v := by grind
-    have hfind : find? (fun kv => (cmp kv.fst k).isEq) t₂.toList = some (kv.fst, v) := by
+    have hfind : find? (fun kv => (compare kv.fst k).isEq) t₂.toList = some (kv.fst, v) := by
       simp [← hval, ← hfind]
     have hk' := LawfulEqCmp.eq_of_compare hkv_cmp
-    suffices H : Option.pairMerge f t₁[k]? (find? (fun kv => (cmp kv.fst k).isEq) t₂.toList) = Option.merge (f k) t₁[k]? (some v) by
+    suffices H : Option.pairMerge f t₁[k]? (find? (fun kv => (compare kv.fst k).isEq) t₂.toList) = Option.merge (f k) t₁[k]? (some v) by
       rw [← H]
       congr 2
       funext
@@ -260,7 +259,7 @@ private theorem getElem?_mergeWith_eq_foldl [LawfulEqCmp cmp] {t₁ t₂ : TreeM
     simp [hfind, hk']
 
 /-- TreeMap forms a Heap. -/
-instance instHeap [LawfulEqCmp cmp] : Heap (TreeMap K V cmp) K V where
+instance instHeap [Ord K] [TransOrd K] [LawfulEqCmp (compare (α := K))] : Heap (TreeMap K V compare) K V where
   empty := {}
   hmap f t := t.filterMap f
   merge op t1 t2 := t1.mergeWith (fun _ v1 v2 => op v1 v2) t2
@@ -279,15 +278,13 @@ namespace Std.ExtTreeMap
 
 section HeapInstance
 
-variable {K V : Type _} {cmp : K → K → Ordering}
-
-variable [TransCmp cmp]
+variable {K V : Type _}
 
 /-- ExtTreeMap forms a Store with Option values.
 
 Note: This requires that `cmp k k' = .eq` implies `k = k'` (i.e., `LawfulEqCmp`).
 -/
-instance instStore [LawfulEqCmp cmp] : Store (ExtTreeMap K V cmp) K (Option V) where
+instance instStore [Ord K] [TransOrd K] [LawfulEqCmp (compare (α := K))]  : Store (ExtTreeMap K V compare) K (Option V) where
   get t k := t[k]?
   set t k v := t.alter k (fun _ => v)
   get_set_eq {t k k' v} h := by grind
@@ -297,7 +294,7 @@ instance instStore [LawfulEqCmp cmp] : Store (ExtTreeMap K V cmp) K (Option V) w
 
 The proof uses quotient induction to reduce to DTreeMap representatives,
 then reuses the TreeMap proof since both share the same internal implementation. -/
-@[simp] theorem getElem?_mergeWith' [LawfulEqCmp cmp] {t₁ t₂ : ExtTreeMap K V cmp}
+@[simp] theorem getElem?_mergeWith' [Ord K] [TransOrd K] [LawfulEqCmp (compare (α := K))]  {t₁ t₂ : ExtTreeMap K V compare}
     {f : K → V → V → V} {k : K} :
     (t₁.mergeWith f t₂)[k]? = Option.merge (f k) t₁[k]? t₂[k]? := by
   show ExtDTreeMap.Const.get? (ExtDTreeMap.Const.mergeWith f t₁.inner t₂.inner) k =
@@ -309,7 +306,7 @@ then reuses the TreeMap proof since both share the same internal implementation.
     | _ m₂ => exact Std.TreeMap.getElem?_mergeWith' (t₁ := ⟨m₁⟩) (t₂ := ⟨m₂⟩) (f := f) (k := k)
 
 /-- ExtTreeMap forms a Heap. -/
-instance instHeap [LawfulEqCmp cmp] : Heap (ExtTreeMap K V cmp) K V where
+instance instHeap [Ord K] [TransOrd K] [LawfulEqCmp (compare (α := K))] : Heap (ExtTreeMap K V compare) K V where
   empty := {}
   hmap f t := t.filterMap f
   merge op t1 t2 := t1.mergeWith (fun _ => op) t2
