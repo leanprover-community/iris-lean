@@ -33,31 +33,30 @@ instance BUpdPlain_ne : NonExpansive (BUpdPlain (PROP := PROP)) where
 theorem BUpdPlain_intro {P : PROP} : P ⊢ BUpdPlain P := by
   iintro Hp
   unfold BUpdPlain
-  iintro _ H
+  iintro %_ H
   iapply H $$ Hp
 
 theorem BUpdPlain_mono {P Q : PROP} : (P ⊢ Q) → (BUpdPlain P ⊢ BUpdPlain Q) := by
   intros H
   unfold BUpdPlain
-  iintro R HQR
-  iintro Hp
+  iintro R %HQR Hp
   have H1 : ⊢ iprop(Q -∗ ■ HQR) -∗ iprop(P -∗ ■ HQR) := by
     iintro H Hp
     iapply H
-    apply H
+    iapply H $$ Hp
   iapply R
   iapply H1 $$ Hp
 
 theorem BUpdPlain_idemp {P : PROP} : BUpdPlain (BUpdPlain P) ⊢ BUpdPlain P := by
   unfold BUpdPlain
-  iintro Hp R H
+  iintro Hp %R H
   iapply Hp
   iintro Hp
   iapply Hp $$ H
 
 theorem BUpdPlain_frame_r {P Q : PROP} : BUpdPlain P ∗ Q ⊢ (BUpdPlain iprop(P ∗ Q)) := by
   unfold BUpdPlain
-  iintro ⟨Hp, Hq⟩ R H
+  iintro ⟨Hp, Hq⟩ %R H
   iapply Hp
   iintro Hp
   iapply H
@@ -74,10 +73,10 @@ theorem BUpdPlain_plainly {P : PROP} : BUpdPlain iprop(■ P) ⊢ (■ P) := by
 /- BiBUpdPlainly entails the alternative definition -/
 theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdatePlainly PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P := by
   unfold BUpdPlain
-  iintro _ _ _
-  refine BIUpdate.frame_r.trans ?_
-  refine (BIUpdate.mono sep_symm).trans ?_
-  exact (BIUpdate.mono <| wand_elim .rfl).trans bupd_elim
+  iintro HP %_ Hx
+  iapply bupd_elim
+  iapply bupd_wand_l
+  isplitl [Hx] <;> iassumption
 
 -- We get the usual rule for frame preserving updates if we have an [own]
 -- connective satisfying the following rule w.r.t. interaction with plainly.
@@ -89,12 +88,11 @@ theorem own_updateP [UCMRA M] {own : M → PROP} {x : M} {Φ : M → Prop}
     own x ⊢ BUpdPlain iprop(∃ y, ⌜Φ y⌝ ∧ own y) := by
   iintro Hx
   unfold BUpdPlain
-  iintro R H
+  iintro %R H
   iapply own_updateP_plainly x Φ R Hup
   isplitl [Hx]
   · iexact Hx
-  iintro y ⌜HΦ⌝
-  iintro Hy
+  iintro %y %HΦ Hy
   iapply H
   iexists y
   isplit

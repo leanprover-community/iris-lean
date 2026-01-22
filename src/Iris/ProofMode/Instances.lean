@@ -75,6 +75,20 @@ instance intoWand_persistently_false (q : Bool) [BI PROP] ioP ioQ (R P Q : PROP)
 -- FromForall
 instance fromForall_forall [BI PROP] (Φ : α → PROP) : FromForall (BIBase.forall Φ) Φ := ⟨.rfl⟩
 
+instance fromForall_impl_pure [BI PROP] (P Q : PROP) φ
+  [IntoPure P φ] :
+  FromForall iprop(P → Q) (λ _ : φ => Q) where
+  from_forall := imp_intro <| (and_mono_r into_pure).trans <| pure_elim_r forall_elim
+
+instance fromForall_wand_pure [BI PROP] (P Q : PROP) φ
+  [IntoPure P φ] [inst : TCOr (Affine P) (Absorbing Q)] :
+  FromForall iprop(P -∗ Q) (λ _ : φ => Q) where
+  from_forall := wand_intro <|
+    pure_elim _ ((sep_mono_r into_pure).trans sep_elim_r) fun h =>
+      match inst with
+      | .l (t := _) => sep_elim_l |>.trans (forall_elim h)
+      | .r (u := _) => sep_elim_l |>.trans (forall_elim h)
+
 -- IntoForall
 instance intoForall_forall [BI PROP] (Φ : α → PROP) : IntoForall iprop(∀ a, Φ a) Φ := ⟨.rfl⟩
 
@@ -131,6 +145,22 @@ instance intoExists_affinely [BI PROP] (P : PROP) (Φ : α → PROP) [h : IntoEx
 instance intoExists_intuitionistically [BI PROP] (P : PROP) (Φ : α → PROP) [h : IntoExists P Φ] :
     IntoExists iprop(□ P) (fun a => iprop(□ (Φ a))) where
   into_exists := (intuitionistically_mono h.1).trans intuitionistically_exists.1
+
+@[ipm_backtrack]
+instance (priority := default - 10) intoExist_and_pure [BI PROP] (PQ P Q : PROP) (Φ : Prop)
+  [IntoAnd false PQ P Q] [IntoPure P Φ] :
+  IntoExists PQ (λ _ : Φ => Q) where
+  into_exists :=
+    (into_and (p:=false) (P:=PQ)).trans
+      <| (and_mono_l into_pure).trans (pure_elim_l (λ h =>
+              exists_intro (Ψ:=λ _ => Q) h))
+
+instance intoExist_sep_pure [BI PROP] (P Q : PROP) (Φ : Prop)
+  [IntoPure P Φ] [TCOr (Affine P) (Absorbing Q)]:
+  IntoExists iprop(P ∗ Q) (λ _ : Φ => Q) where
+  into_exists :=
+    (pure_elim _ ((sep_mono_l into_pure).trans sep_elim_l) (λ h =>
+              sep_elim_r.trans <| exists_intro (Ψ:=λ _ => Q) h))
 
 instance intoExists_absorbingly [BI PROP] (P : PROP) (Φ : α → PROP) [h : IntoExists P Φ] :
     IntoExists iprop(<absorb> P) (fun a => iprop(<absorb> (Φ a))) where

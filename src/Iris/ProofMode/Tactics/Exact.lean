@@ -5,7 +5,6 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 import Iris.ProofMode.Tactics.Basic
 import Iris.ProofMode.Tactics.Assumption
-import Iris.ProofMode.Tactics.Remove
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
@@ -17,6 +16,7 @@ elab "iexact" colGt hyp:ident : tactic => do
 
   let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption $p .in $out $goal)
     | throwError "iexact: cannot unify {out} and {goal}"
-  let _ ← synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
+  let .some _ ← trySynthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
+    | throwError "iexact: context is not affine or goal is not absorbing"
 
   mvar.assign q(assumption (Q := $goal) $pf)

@@ -42,11 +42,8 @@ example : ⊢ |==> ∃ (γ0 γ1 : GName) (s0 s1 : String),
 
   -- Complete the Iris proof
   istart
-  iintro ⟨⟨γ0, Hγ0⟩, ⟨γ1, Hγ1⟩, -⟩
-  iexists γ0
-  iexists γ1
-  iexists "string0"
-  iexists "string1"
+  iintro ⟨⟨%γ0, Hγ0⟩, ⟨%γ1, Hγ1⟩, -⟩
+  iexists γ0, γ1, "string0", "string1"
   isplitl [Hγ0]
   · iexact Hγ0
   · iexact Hγ1
