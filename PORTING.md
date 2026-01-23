@@ -1,0 +1,262 @@
+# Status of the Iris-Lean port
+
+This file describes the state of the Iris-Lean port relative to the Rocq implementation.
+Each item in this list is organized the Rocq file containing it. 
+Once all tasks contained file are done, **and** once the file has been double checked for any missing lemmas, it can be marked complete.
+PR's which update this list by splitting large tasks into smaller parts, or double-checking files for completeness are welcome! 
+
+Some porting tasks will require other tasks as dependencies, the GitHub issues page lists the tasks that are accessible, and prioritised. 
+
+## Algebra
+
+- [ ] `agree.v`
+  - [x] CMRA 
+  - [x] Functors
+- [ ] `auth.v`
+  - [ ] CMRA
+  - [ ] Updates
+  - [ ] Functors
+- [ ] `big_op.v`
+  - TBD (Zongyuan?)
+- [ ] `cmra.v`
+  - [x] Lemmas
+  - [ ] Total CMRA construction
+  - [x] CMRA Morphisms
+  - [x] Functors
+  - [ ] Discrete CMRA construction
+  - [ ] Resource algebra construction
+  - [x] Unit 
+  - [x] Empty
+  - [x] Product
+  - [x] Option
+  - [x] Discrete
+  - [x] Isomorphisms
+- [ ] `cmra_big_op.v` 
+- [ ] `coPset.v`
+  - [ ] coPset definition
+  - [ ] CMRA
+- [x] `cofe_solver.v` 
+- [ ] `csum.v`
+  - [ ] CMRA
+  - [ ] Updates
+  - [ ] Functors
+- [ ] `dfrac.v`
+  - [x] CMRA
+  - [x] Updates
+- [ ] `dyn_reservation_map.v`
+  - [ ] CMRA
+  - [ ] Updates
+- [ ] `excl.v`
+  - [x] CMRA
+  - [x] Functors
+- [ ] `frac.v`
+  - [x] CMRA
+- [ ] `functions.v` (nb. contained in `CMRA.lean`)
+  - [x] CMRA
+  - [ ] Updates
+- [ ] `gmap.v` (nb. generalized in `Heap.lean`)
+  - [x] CMRA
+  - [ ] Updates
+  - [ ] Functors
+- [ ] `gmultiset.v` 
+  - [ ] CMRA
+  - [ ] Updates
+- [ ] `gset.v` 
+  - [ ] CMRA
+  - [ ] Updates
+- [ ] `list.v` 
+  - Is this an instance of the `Heap` CMRA?
+  - [ ] CMRA
+  - [ ] Functors
+- [x] `local_updates.v`
+- [ ] `max_prefix_list.v` 
+  - [ ] Lemmas
+  - [ ] Functors
+- [ ] `monoid.v`
+- [ ] `mra.v`
+- [ ] `numbers.v`
+- [ ]  `ofe.v`
+  - [x] Definitions
+  - [ ] Contractivity tactic
+  - [x] Fixpoints
+  - [x] Mutual fixpoints
+  - [x] Unit
+  - [x] Emtpy
+  - [x] Product
+  - [ ] Sum
+  - [x] Discrete
+  - [x] Leibniz
+  - [x] Option
+  - [x] Later
+  - [x] Discrete functions
+  - [x] Isomorphisms
+  - [ ] Sigma 
+- [ ] `proofmode_classes.v`
+  - TODO (Michael and Zongyuan?)
+- [ ] `reservation_map.v`
+  - [ ] CMRA
+  - [ ] Updates
+- [ ] `stepindex.v`
+- [ ] `stepindex_finite.v`
+- [ ] `sts.v`
+  - [ ] CMRA
+  - [ ] Updates
+- [ ] `ufrac.v` (nb. contained in `Frac.lean`)
+- [ ] `updates.v`
+  - [x] Lemmas
+  - [x] Updates
+  - [x] Isomorphisms
+  - [x] Product
+  - [x] Option
+- [ ] `vector.v` 
+  - [ ] CMRA
+  - [ ] Functors
+- [ ] `view.v` 
+  - [x] CMRA
+  - [x] Updates
+  - [ ] Functors
+- [ ] `lib/dfrac_agree.v` 
+  - [ ] Lemmas
+  - [ ] Updates
+- [ ] `lib/excl_auth.v` 
+  - [ ] Lemmas
+  - [ ] Updates
+  - [ ] Functors
+- [ ] `lib/frac_auth.v` 
+  - [ ] Lemmas
+  - [ ] Updates
+  - [ ] Functors
+- [ ] `lib/gmap_view.v` (nb. generalized in `HeapView.lean`)
+  - [x] CMRA
+  - [x] Updates
+  - [ ] Functors
+- [ ] `lib/gset_bij.v` 
+- [ ] `lib/mono_Z.v` (nb. generalize to `MonoNumbers.lean`)
+- [ ] `lib/mono_list.v` 
+  - [ ] Lemmas
+  - [ ] Functors
+- [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
+- [ ] `lib/ufrac_auth.v` 
+  - [ ] Lemmas
+  - [ ] Updates
+  - [ ] Functors
+
+## Base Logic 
+- [x] `base_logic.v`
+- [ ] `bi.v` (nb. contained in `Instances/UPred/Instance.lean`)
+  - [x] BI instance
+  - [ ] BI Persistently instance
+  - [x] BI Later instance
+  - [ ] SBI instance
+  - [x] BUPd instance
+  - [ ] Additional instances
+- [x] `bupd_alt.v` (nb. contained in `BI/Lib/BUpdPlain.lean`)
+- [ ] `derived.v`
+  - [x] Modalities 
+- [ ] `proofmode.v`
+  - TODO (Michael and Zongyuan?)
+- [ ] `upred.v` (nb. contained in `Algebra/UPred.lean` and `Instances/UPred/Instance.lean`)
+  - [x] CMRA 
+  - [x] Functors
+  - [x] Primitives and nonexpansivity
+  - Example: SIProp embedding
+  - [x] Later lemmas
+  - [x] Update lemmas
+- [ ] `lib/boxes.v`
+- [ ] `lib/cancelable_invariants.v`
+- [ ] `lib/fancy_updates.v`
+  - [ ] FUpd instance
+  - [ ] Soundness
+  - [ ] ProofMode instances
+- [ ] `lib/fancy_updates_from_vs.v`
+- [ ] `lib/gen_heap.v`
+- [ ] `lib/gen_inv_heap.v`
+- [ ] `lib/ghost_map.v`
+- [ ] `lib/ghost_var.v`
+- [ ] `lib/gset_bij.v`
+- [ ] `lib/invariants.v`
+- [ ] `lib/iprop.v`
+  - [x] Definition
+  - [ ] subG 
+  - [x] Functor solution
+- [ ] `lib/later_credits.v`
+- [ ] `lib/mono_Z.v` (nb. generalize to `MonoNumbers.lean`)
+- [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
+- [ ] `lib/na_invariants.v`
+- [ ] `lib/own.v`
+  - [x] Definition
+  - [x] Updates
+  - [ ] Big ops
+  - [ ] Proofmode instances
+  - [ ] Own/Forall lemmas
+- [ ] `lib/proph_map.v`
+- [ ] `lib/saved_prop.v`
+- [ ] `lib/token.v`
+- [ ] `lib/wsat.v`
+
+## BI
+
+- [ ] `algebra.v`
+- `ascii.v`
+- [x] `bi.v`
+- [ ] `big_op.v`
+- [ ] `cmra.v`
+- [x] `derived_connectives.v`
+- [ ] `derived_laws.v`
+- [ ] `derived_laws_later.v`
+  - [ ] Base lemmas
+  - [x] Löb induction definition
+  - [ ] Löb classes
+  - [ ] Except 0 lemmas
+  - [ ] Big Op lemmas
+- [ ] `embedding.v`
+- [ ] `extensions.v`
+  - [ ] BIPureForall
+- [ ] `interface.v` 
+  - [ ] Later instances
+- [ ] `internal_eq.v`
+- [ ] `monopred.v`
+  - [ ] COFE
+  - [ ] BI instance
+  - [ ] Extension instnaces
+- [x] `notation.v`
+- [ ] `plainly.v`
+  - [x] plainly lemmas
+  - [ ] big op lemmas
+  - [ ] internal eq lemmas
+- [ ] `sbi.v`
+- [ ] `sbi_unfold.v`
+- [ ] `telescopes.v`
+- [ ] `updates.v`
+  - [x] FUpd class
+  - [ ] Big op lemmas
+- [ ] `weakestpre.v`
+- [ ] `lib/atomic.v`
+- [ ] `lib/core.v`
+- [ ] `lib/counterexamples.v`
+- [ ] `lib/fixpoint_banach.v`
+- [ ] `lib/fixpoint_mono.v`
+- [ ] `lib/fractional.v`
+- [ ] `lib/laterable.v`
+- [ ] `lib/relations.v`
+
+## ProofMode 
+
+- TODO (Michael and Zongyuan?)
+
+## Examples
+
+- SI Logic 
+  - [ ] `si_logic/siprop.v`
+  - [ ] `si_logic/bi.v`
+    - [ ] BI instance 
+    - [ ] BI Persistently instance
+    - [ ] BI Later instance
+
+- Program Logic
+  - Final decisions about what to port from this folder have not been made yet.
+  - [ ] `language.v`
+  - [ ] `ectx_language.v`
+  - [ ] `ectxi_language.v`
+
+
