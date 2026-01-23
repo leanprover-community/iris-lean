@@ -1,22 +1,16 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Mario Carneiro
+Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
-import Iris.ProofMode.Expr
+import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 open Lean Elab.Tactic Meta Qq BI
 
-theorem exfalso [BI PROP] {P Q : PROP} (h : P ⊢ False) : P ⊢ Q := h.trans false_elim
+private theorem exfalso [BI PROP] {P Q : PROP} (h : P ⊢ False) : P ⊢ Q := h.trans false_elim
 
 elab "iexfalso" : tactic => do
-  let mvar ← getMainGoal
-  mvar.withContext do
-  let g ← instantiateMVars <| ← mvar.getType
-  let some { u, prop, bi, e, hyps, goal } := parseIrisGoal? g | throwError "not in proof mode"
-
-  let m : Q($e ⊢ False) ← mkFreshExprSyntheticOpaqueMVar <|
-    IrisGoal.toExpr { u, prop, bi, e, hyps, goal := q(iprop(False)) }
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  let m ← addBIGoal hyps q(iprop(False))
   mvar.assign q(exfalso (Q := $goal) $m)
-  replaceMainGoal [m.mvarId!]

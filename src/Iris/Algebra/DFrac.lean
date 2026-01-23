@@ -7,6 +7,8 @@ Authors: Markus de Medeiros, Mario Carneiro
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
 import Iris.Algebra.Frac
+import Iris.Algebra.Updates
+import Iris.Algebra.LocalUpdates
 
 namespace Iris
 
@@ -23,7 +25,7 @@ inductive DFrac (F : Type _) where
 instance : OFE.Leibniz (DFrac F) := ⟨(·)⟩
 instance : OFE.Discrete (DFrac F) := ⟨congrArg id⟩
 
-section dfrac
+namespace DFrac
 
 open DFrac Fraction OFE.Discrete
 
@@ -107,6 +109,22 @@ theorem own_whole_exclusive {w : F} (Hw : Whole w) : CMRA.Exclusive (own w) wher
 instance : CMRA.Exclusive (own (1 : F)) :=
   own_whole_exclusive <| UFraction.one_whole
 
+instance one_exclusive_left [CMRA V] {v : V} : CMRA.Exclusive (own (F := F) One.one, v) where
+  exclusive0_l := by
+    refine fun ⟨y1, _⟩ ⟨Hv1, _⟩ => ?_
+    rcases y1 with (y|_|y)
+    · exact UFraction.one_whole.2 ⟨_, Hv1⟩
+    · exact UFraction.one_whole.2 Hv1
+    · exact UFraction.one_whole.2 <| Fractional.of_add_left Hv1
+
+instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (F := F) One.one) where
+  exclusive0_l := by
+    refine fun ⟨_, y2⟩ ⟨_, Hv2⟩ => ?_
+    rcases y2 with (y|_|y)
+    · exact UFraction.one_whole.2 ⟨_, Hv2⟩
+    · exact UFraction.one_whole.2 Hv2
+    · exact UFraction.one_whole.2 <| Fractional.of_add_left Hv2
+
 instance {f : F} : CMRA.Cancelable (own f) where
   cancelableN {_} := by
     rintro ⟨⟩ ⟨⟩ <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
@@ -138,4 +156,53 @@ theorem valid_discard : ✓ (discard : DFrac F) := by simp [CMRA.Valid, valid]
 theorem valid_own_op_discard {q : F} : ✓ own q • discard ↔ Fractional q := by
   simp [CMRA.op, op, CMRA.Valid, valid]
 
-end dfrac
+instance : CMRA.Discrete (DFrac F) where
+  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
+
+theorem is_discrete {q : DFrac F} : OFE.DiscreteE q := ⟨congrArg id⟩
+
+instance : CMRA.Discrete (DFrac F) where
+  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
+
+instance : CMRA.Discrete (DFrac F) where
+  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
+
+theorem DFrac.update_discard {dq : DFrac F} : dq ~~> .discard := by
+  intros n q H
+  apply (CMRA.valid_iff_validN' n).mp
+  have H' := (CMRA.valid_iff_validN' n).mpr H
+  simp [CMRA.op?] at H' ⊢
+  rcases q with (_|⟨q|_|q⟩) <;> simp [CMRA.Valid, valid, CMRA.op, op]
+  · cases dq <;> first | exact valid_op_own H | exact H
+  · cases dq <;> first | exact Fractional.of_add_right H | exact H
+
+theorem DFrac.update_acquire [IsSplitFraction F] :
+    (.discard : DFrac F) ~~>: fun k => ∃ q, k = .own q := by
+  apply UpdateP.discrete.mpr
+  rintro (_|q)
+  · rintro _
+    refine ⟨.own One.one, ⟨⟨One.one, rfl⟩, ?_⟩⟩
+    simp [CMRA.Valid]
+    apply UFraction.one_whole.1
+  rcases q with (q|_|q)
+  · rintro ⟨q', HP⟩
+    refine ⟨(.own q'), ⟨⟨q', rfl⟩, ?_⟩⟩
+    simp [CMRA.op?, CMRA.op, op]
+    rw [add_comm]
+    exact HP
+  · intro _
+    let q' : F := (IsSplitFraction.split One.one).1
+    refine ⟨.own q', ⟨⟨q', rfl⟩, ?_⟩⟩
+    simp [CMRA.op?, CMRA.op, op]
+    refine ⟨(IsSplitFraction.split One.one).2, ?_⟩
+    rw [IsSplitFraction.split_add]
+    apply UFraction.one_whole.1
+  · rintro ⟨q', HP⟩
+    let q'' : F := (IsSplitFraction.split q').1
+    refine ⟨(.own q''), ⟨⟨q'', rfl⟩, ?_⟩⟩
+    simp only [CMRA.op?, CMRA.op, op, add_comm]
+    refine ⟨(IsSplitFraction.split q').2, ?_⟩
+    rw [← add_assoc, IsSplitFraction.split_add]
+    exact HP
+
+end DFrac

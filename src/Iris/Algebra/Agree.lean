@@ -233,6 +233,39 @@ theorem Agree.includedN {x y : Agree α} : x ≼{n} y ↔ y ≡{n}≡ y • x :=
 theorem Agree.included {x y : Agree α} : x ≼ y ↔ y ≡ y • x :=
   ⟨fun ⟨z, h⟩ n => includedN.mp ⟨z, h n⟩, fun h => ⟨y, h.trans op_comm⟩⟩
 
+theorem Agree.toAgree.is_discrete {a : α} (Ha : OFE.DiscreteE a) : OFE.DiscreteE (toAgree a) := by
+  refine ⟨fun ⟨Hal, Har⟩ _ => ⟨?_, ?_⟩⟩ <;> simp_all [toAgree]
+  · rcases Hal with ⟨b, Hb1, Hb2⟩
+    exact ⟨b, ⟨Hb1, Ha.discrete (Har b Hb1) |>.dist⟩⟩
+  · exact fun H Hb => Ha.discrete (Har H Hb) |>.dist
+
+open OFE OFE.Discrete in
+instance [OFE α] [Discrete α] : Discrete (Agree α) where
+  discrete_0 {x y} H := by
+    refine fun n => ⟨fun a Ha => ?_, fun b Hb => ?_⟩
+    · rcases H.1 a Ha with ⟨c, Hc⟩
+      refine ⟨c, ⟨Hc.1, ?_⟩⟩
+      apply equiv_dist.mp <| discrete_0 (Hc.2.le <| Nat.zero_le 0)
+    · rcases H.2 b Hb with ⟨c, Hc⟩
+      refine ⟨c, ⟨Hc.1, ?_⟩⟩
+      apply equiv_dist.mp <| discrete_0 (Hc.2.le <| Nat.zero_le 0)
+
+instance toAgree.ne [OFE α] : OFE.NonExpansive (toAgree : α → Agree α) where
+  ne n x y H := by
+    refine ⟨?_, ?_⟩
+    · intro a Ha; exists y; revert Ha
+      simp [toAgree]; exact (·▸H)
+    · intro b Hb; exists x; revert Hb
+      simp [toAgree]; exact (·▸H)
+
+theorem toAgree.inj {a1 a2 : α} {n} (H : toAgree a1 ≡{n}≡ toAgree a2) : a1 ≡{n}≡ a2 := by
+  have Hinc : a1 ∈ (toAgree a1).car := by simp [toAgree]
+  rcases H.1 a1 Hinc with ⟨_, ⟨_, _⟩⟩
+  simp_all [toAgree]
+
+instance : CMRA.IsTotal (Agree α) where
+  total := by simp [CMRA.pcore]
+
 theorem Agree.valid_includedN {x y : Agree α} : ✓{n} y → x ≼{n} y → x ≡{n}≡ y := by
   intro hval ⟨z, heq⟩
   have : ✓{n} (x • z) := heq.validN.mp hval
@@ -346,12 +379,48 @@ def Agree.map : CMRA.Hom (Agree α) (Agree β) where
       · exact ⟨f b, .inl ⟨_, hb, rfl⟩, .rfl⟩
       · exact ⟨f b, .inr ⟨_, hb, rfl⟩, .rfl⟩
 
-theorem Agree.agree_map_ext {g : α → β} [OFE.NonExpansive g] (heq : ∀ a, f a ≡ g a) :
-    map f x ≡ map g x := by
-  intro n
-  simp only [dist, map, map', List.mem_map, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂]
-  constructor <;> intro a ha
-  · exact ⟨g a, ⟨a, ha, rfl⟩, (heq a).dist⟩
-  · exact ⟨f a, ⟨a, ha, rfl⟩, (heq a).dist⟩
+theorem Agree.map_ne [OFE.NonExpansive g] (heq : ∀ a, f a ≡{n}≡ g a) :
+    map f x ≡{n}≡ map g x := by
+  simp only [map, map']
+  constructor <;> simp only [List.mem_map] <;> rintro _ ⟨a, ha, rfl⟩
+  · exact ⟨g a, ⟨a, ha, rfl⟩, heq a⟩
+  · exact ⟨f a, ⟨a, ha, rfl⟩, heq a⟩
 
+theorem Agree.agree_map_ext [OFE.NonExpansive g] (H : ∀ a, f a ≡ g a) :
+    map f x ≡ map g x :=
+  OFE.equiv_dist.mpr fun _ => map_ne (H · |>.dist)
+
+theorem Agree.map_id (x : Agree α) : Agree.map id x = x := by
+  simp only [map, map', List.map_id_fun, id_eq]
+
+theorem Agree.map_compose [OFE γ] (f : α -n> β) (g : β -n> γ) (x : Agree α) :
+    Agree.map (g.comp f) x = Agree.map g (Agree.map f x) := by
+  simp only [map, OFE.Hom.comp, map', List.map_map]
+
+theorem toAgree.incN {a b : α} {n} : toAgree a ≼{n} toAgree b ↔ a ≡{n}≡ b := by
+  refine ⟨?_, fun H => (CMRA.incN_iff_right <| toAgree.ne.ne H).mp <| CMRA.incN_refl _⟩
+  intro H
+  apply toAgree.inj
+  exact Agree.valid_includedN trivial H
 end agree_map
+
+section agree_rfunctor
+
+abbrev AgreeRF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
+  fun A B _ _ => Agree (F A B)
+
+instance {F} [COFE.OFunctor F] : RFunctor (AgreeRF F) where
+  map f g := Agree.map (COFE.OFunctor.map f g)
+  map_ne.ne _ _ _ Hx _ _ Hy  _ := Agree.map_ne <| COFE.OFunctor.map_ne.ne Hx Hy
+  map_id x := by
+    conv=> right; rw [<- (Agree.map_id x)]
+    exact (Agree.map_id x) ▸ Agree.agree_map_ext COFE.OFunctor.map_id
+  map_comp f g f' g' x := by
+    rw [<- Agree.map_compose]
+    apply Agree.agree_map_ext
+    apply COFE.OFunctor.map_comp
+
+instance {F} [COFE.OFunctorContractive F] : RFunctorContractive (AgreeRF F) where
+  map_contractive.1 H _ := Agree.map_ne (COFE.OFunctorContractive.map_contractive.1 H)
+
+end agree_rfunctor
