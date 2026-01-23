@@ -152,6 +152,15 @@ theorem cancel_local_update_unit (x y : α) [CMRA.Cancelable x] : (x • y, x) ~
   have e : (x • y, x • CMRA.unit) ≡ (x • y, x) := ⟨.rfl, CMRA.unit_right_id⟩
   .equiv_left _ e (.cancel x y CMRA.unit)
 
+/-- Necessary and sufficient condition for a local update on a unital discrete leibniz CMRA
+  with trivial validity predicate -/
+theorem leibniz_discrete_unital_triv_local_update [OFE.Leibniz α] [CMRA.Discrete α]
+    (Hv : ∀ x : α, ✓ x)
+    (H : ∀ {z : α}, x = y • z → x' = y' • z) :
+    (x,y) ~l~> (x', y') := by
+  refine (local_update_unital_discrete x y x' y').mpr fun _ _ He => ?_
+  refine ⟨Hv _, .of_eq <| H <| OFE.leibniz.mp He⟩
+
 end UCMRA
 
 theorem LocalUpdate.unit {x y x' y' : Unit} : (x, y) ~l~> (x', y') := .id ((), ())
