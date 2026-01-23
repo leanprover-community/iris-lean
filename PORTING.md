@@ -74,7 +74,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] Functors
 - [ ] `monoid.v`
 - [ ] `mra.v`
-- [ ] `numbers.v`
+- [x] `numbers.v`
 - [ ]  `ofe.v`
   - [x] Definitions
   - [ ] Contractivity tactic
