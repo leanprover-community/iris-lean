@@ -374,10 +374,10 @@ theorem ofList_injective [DecidableEq V] (l1 l2 : List (K × V)) :
     (l1.map Prod.fst).Nodup → (l2.map Prod.fst).Nodup →
     (ofList l1 : M V) = ofList l2 → l1.Perm l2 := by
   intro hnodup1 hnodup2 heq
-  have hnodup1' : l1.Nodup := Iris.Std.nodup_of_nodup_map_fst l1 hnodup1
-  have hnodup2' : l2.Nodup := Iris.Std.nodup_of_nodup_map_fst l2 hnodup2
+  have hnodup1' : l1.Nodup := List.nodup_of_nodup_map_fst l1 hnodup1
+  have hnodup2' : l2.Nodup := List.nodup_of_nodup_map_fst l2 hnodup2
   haveI : DecidableEq (K × V) := inferInstance
-  apply Iris.Std.perm_of_nodup_of_mem_iff hnodup1' hnodup2'
+  apply List.perm_of_nodup_of_mem_iff hnodup1' hnodup2'
   intro ⟨i, x⟩
   rw [mem_ofList (M := M) (K := K) l1 i x hnodup1,
       mem_ofList (M := M) (K := K) l2 i x hnodup2]
@@ -420,7 +420,7 @@ theorem toList_perm_of_get?_eq [DecidableEq V] {m₁ m₂ : M V}
   have hmem : ∀ kv, kv ∈ toList m₁ ↔ kv ∈ toList m₂ := by
     intro ⟨k, v⟩
     rw [mem_toList m₁ k v, mem_toList m₂ k v, h]
-  exact Iris.Std.perm_of_nodup_of_mem_iff hnodup₁ hnodup₂ hmem
+  exact List.perm_of_nodup_of_mem_iff hnodup₁ hnodup₂ hmem
 
 /-- toList of insert and insert-after-delete are permutations of each other. -/
 theorem toList_insert_delete [DecidableEq V] (m : M V) (k : K) (v : V) :
