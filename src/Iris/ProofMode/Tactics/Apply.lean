@@ -15,27 +15,43 @@ private theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
     [h2 : IntoWand p false Q .out Q1 .in R] : P ∗ □?p Q ⊢ R :=
       (Entails.trans (sep_mono_l h1) (wand_elim' h2.1))
 
+/--
+Apply a hypothesis `A` to the `goal` by eliminating the wands recursively
+
+## Parameters
+- `hyps`: The current proof mode hypothesis context
+- `p`: Persistence flag for `A`
+
+## Returns
+The proof of `hyps ∗ □?p A ⊢ goal`
+-/
 partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e) (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) : ProofModeM Q($e ∗ □?$p $A ⊢ $goal) := do
   let B ← mkFreshExprMVarQ q($prop)
+  -- if `A := B -∗ goal`, add `B` as a new subgoal and conclude `goal`
   if let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $A .out $B .in $goal) then
      let pf ← addBIGoal hyps B
      return q(apply $pf)
 
+  -- otherwise, if `A` has the form `P -∗ B`, eliminate the outer wand by creating a subgoal for `P`
   let some ⟨_, hyps', pb, B, pf⟩ ← try? <| iSpecializeCore hyps p A [.goal [] .anonymous]
     | throwError m!"iapply: cannot apply {A} to {goal}"
+  -- `hyps ∗ □?p A ⊢ hyps' ∗ □?pb B`, recursively apply `B` to the goal
   let pf' ← iApplyCore hyps' pb B goal
   return q($(pf).trans $pf')
 
 elab "iapply" colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let ⟨e, hyps, p, out, pf⟩ ← iHave hyps pmt true (mayPostpone := true)
+  -- assert the proof mode term `pmt` to obtain hypothesis `out`
+  let ⟨e, hyps', p, out, pf⟩ ← iHave hyps pmt true (mayPostpone := true)
+  -- if `□?p out` directly proves the goal, behave like `iexact`
   if let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption $p .in $out $goal) then
+    -- ensure the context can be discarded
     let LOption.some _ ← trySynthInstanceQ q(TCOr (Affine $e) (Absorbing $goal))
       | throwError "iapply: the context {e} is not affine and goal not absorbing"
-    -- behave like iexact
     have rfl : Q($e ∗ □?$p $out ⊣⊢ $e ∗ □?$p $out) := q(.rfl)
     mvar.assign q($(pf).trans (assumption (Q := $goal) $(rfl)))
     return
-  let pf' ← iApplyCore hyps p out goal
+  -- otherwise, `out` should be a wand, handled by `iApplyCore`
+  let pf' ← iApplyCore hyps' p out goal
   mvar.assign q($(pf).trans $pf')

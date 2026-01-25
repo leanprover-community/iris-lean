@@ -75,6 +75,21 @@ private def SpecializeState.process_wand :
     let pf := q(specialize_wand_subgoal $out₂ $pf $h' $pf')
     return { e := el', hyps := hypsl', p := q(false), out := out₂, pf }
 
+/-- Specialize a proposition `A` by applying a sequence of specialization patterns.
+
+## Parameters
+- `hyps`: Current proof mode hypothesis context
+- `pa`: Persistence flag for `A`
+- `spats`: List of specialization patterns to apply sequentially
+
+## Returns
+A tuple containing:
+- `e`: Proposition for `hyps'`
+- `hyps'`: Updated hypothesis context
+- `pb`: Persistence flag for `B`
+- `B`: Resulting proposition after applying all patterns
+- `pf`: Proof of `hyps ∗ □?pa A ⊢ hyps' ∗ □?pb B`
+-/
 def iSpecializeCore {e} (hyps : @Hyps u prop bi e) (pa : Q(Bool)) (A : Q($prop)) (spats : List SpecPat) :
   ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) × Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
   let state := { hyps, out := A, p := pa, pf := q(.rfl), .. }
@@ -95,4 +110,4 @@ elab "ispecialize" colGt pmt:pmTerm : tactic => do
   let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p out pmt.spats
   let hyps''' := Hyps.add bi name uniq pb B hyps''
   let pf'' ← addBIGoal hyps''' goal
-  mvar.assign q(($pf).1.trans ($(pf').trans $pf''))
+  mvar.assign q(($pf).1.trans <| $(pf').trans <| $pf'')

@@ -14,6 +14,23 @@ private theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ P] (h : φ) : Q ⊢ Q ∗ P :=
   sep_emp.2.trans (sep_mono_r (asEmpValid_1 _ h))
 
+/--
+Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.
+
+## Parameters
+- `hyps`: Current proof mode hypothesis context
+- `keep`: If `true` and `tm` is an Iris hypothesis, keep it in the context;
+  if `false`, remove it
+- `mayPostpone`: If `true`, allow postponing elaboration of metavariables in `tm`
+
+## Returns
+A tuple containing:
+- `e'`: Proposition for `hyps'`
+- `hyps'`: Updated hypothesis context
+- `p`: Persistence flag for the output (always `false` for Lean terms, inherited for Iris hypotheses)
+- `out`: Asserted proposition
+- `pf`: Proof of `hyps ⊢ hyps' ∗ □?p out`
+-/
 private def iHaveCore {e} (hyps : @Hyps u prop bi e)
   (tm : Term) (keep : Bool) (mayPostpone : Bool) :
   ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
@@ -47,16 +64,18 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
 def iHave {e} (hyps : @Hyps u prop bi e)
   (pmt : PMTerm) (keep : Bool) (mayPostpone := false) :
   ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
+  -- assert `term` as hypothesis `A`
   let ⟨_, hyps', p, A, pf⟩ ← iHaveCore hyps pmt.term keep mayPostpone
+  -- specialize `A` with `spats`
   let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p A pmt.spats
   return ⟨_, hyps'', pb, B, q($(pf).trans $pf')⟩
 
 elab "ihave" colGt name:binderIdent " := " pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
   ProofModeM.runTactic λ mvar { bi, hyps, goal, .. } => do
-  let ⟨_, hyps, p, out, pf⟩ ← iHave hyps pmt true
-  let ⟨_, hyps⟩ ← Hyps.addWithInfo bi name p out hyps
-  let pf' ← addBIGoal hyps goal
+  let ⟨_, hyps', p, out, pf⟩ ← iHave hyps pmt true
+  let ⟨_, hyps''⟩ ← Hyps.addWithInfo bi name p out hyps'
+  let pf' ← addBIGoal hyps'' goal
   mvar.assign q(($pf).trans $pf')
 
 private theorem ihave_assert [BI PROP] {A B C : PROP}
@@ -68,7 +87,8 @@ elab "ihave" colGt name:binderIdent " : " P:term "$$" spat:specPat : tactic => d
   let spat ← liftMacroM <| SpecPat.parse spat
   ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
   let P ← elabTermEnsuringTypeQ (← `(iprop($P))) prop
-  let ⟨_, hyps, p, out, pf⟩ ← iSpecializeCore hyps q(true) q(iprop($P -∗ $P)) [spat]
-  let ⟨_, hyps⟩ ← Hyps.addWithInfo bi name p out hyps
-  let pf' ← addBIGoal hyps goal
+  --  establish `P` with `spat`, get `out := P`
+  let ⟨_, hyps', p, out, pf⟩ ← iSpecializeCore hyps q(true) q(iprop($P -∗ $P)) [spat]
+  let ⟨_, hyps''⟩ ← Hyps.addWithInfo bi name p out hyps'
+  let pf' ← addBIGoal hyps'' goal
   mvar.assign q(ihave_assert (($pf).trans $pf'))

@@ -93,6 +93,7 @@ instance fromForall_intuitionistically [BI PROP] [BIAffine PROP] [BIPersistently
   [FromForall P Φ] : FromForall iprop(□ P) (λ a => iprop(□ (Φ a))) where
   from_forall := (forall_mono λ _ => persistently_of_intuitionistically).trans $
     persistently_forall.2.trans $ (persistently_mono (from_forall (P:=P))).trans intuitionistically_iff_persistently.2
+
 instance fromForall_persistently [BI PROP] [BIPersistentlyForall PROP] {A} P (Φ : A → PROP)
   [FromForall P Φ] : FromForall iprop(<pers> P) (λ a => iprop(<pers> (Φ a))) where
   from_forall := persistently_forall.2.trans $ (persistently_mono (from_forall (P:=P)))
