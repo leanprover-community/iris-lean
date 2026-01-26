@@ -20,7 +20,7 @@ inductive Equiv {α : Type _} (R : α → α → Prop) : List α → List α →
   | cons {x y : α} {l k : List α} : R x y → Equiv R l k → Equiv R (x :: l) (y :: k)
 
 def zipIdxInt {α : Type _} (l : List α) (n : Int) : List (α × Int) :=
-  l.zipIdx.map (fun ⟨v,i⟩ => (v, (i : Int) + n))
+  l.mapIdx (fun i v => (v, (i : Int) + n))
 
 /-- For a Nodup list, erasing an element removes it completely. -/
 theorem not_mem_erase_self_of_nodup {α : Type _} [DecidableEq α] (x : α) (l : List α)
