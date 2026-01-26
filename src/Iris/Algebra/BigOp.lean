@@ -315,16 +315,35 @@ theorem zip_idx (Φ : A × Nat → M) (n : Nat) (l : List A) :
     simp only [Nat.add_assoc, Nat.add_comm 1 i]; exact Equiv.rfl
 
 /-- Corresponds to Rocq's `big_opL_zip_seqZ`. -/
-theorem zip_idx_int (Φ :  A × Int → M) (n : Int) (l : List A) :
+theorem zip_idx_int (Φ : A × Int → M) (n : Int) (l : List A) :
     bigOpL op unit (fun _ => Φ) (Std.List.zipIdxInt l n) ≡
       bigOpL op unit (fun i x => Φ (x, n + (i : Int))) l := by
   unfold Std.List.zipIdxInt
-  have h1 := map (op := op) (unit := unit) (fun ⟨v,i⟩ => (v, (i : Int) + n)) (fun _ vi => Φ vi) l.zipIdx
-  have h2 := zip_idx (op := op) (unit := unit) (fun vi => Φ (vi.1, (vi.2 : Int) + n)) 0 l
-  simp only [Nat.zero_add] at h2
-  refine Equiv.trans h1 (Equiv.trans h2 (congr' fun i x => ?_))
-  simp only [Int.add_comm]
-  exact Equiv.rfl
+  suffices ∀ m, bigOpL op unit (fun _ => Φ) (l.mapIdx (fun i v => (v, (i : Int) + m))) ≡
+                bigOpL op unit (fun i x => Φ (x, m + (i : Int))) l by exact this n
+  intro m
+  induction l generalizing m with
+  | nil => simp only [List.mapIdx, nil]; exact Equiv.rfl
+  | cons x xs ih =>
+    simp only [List.mapIdx_cons, cons]
+    apply Monoid.op_proper
+    · show Φ (x, (0 : Int) + m) ≡ Φ (x, m + (0 : Int))
+      rw [Int.zero_add, Int.add_zero]
+    · have h_shift : ∀ i, ((i + 1 : Nat) : Int) + m = (i : Int) + (m + 1) := by
+        intro i; omega
+      have list_eq : (List.mapIdx (fun i v => (v, ↑(i + 1) + m)) xs) =
+                     (List.mapIdx (fun i v => (v, ↑i + (m + 1))) xs) := by
+        apply List.ext_getElem
+        · simp only [List.length_mapIdx]
+        · intro n hn1 hn2
+          simp only [List.getElem_mapIdx]
+          congr 1
+          exact h_shift n
+      rw [list_eq]
+      have h_ih := ih (m + 1)
+      refine Equiv.trans h_ih (congr' fun i _ => ?_)
+      have : m + 1 + (i : Int) = m + ((i + 1 : Nat) : Int) := by omega
+      rw [this]
 
 /-- Corresponds to Rocq's `big_opL_sep_zip_with`. -/
 theorem sep_zip_with {B C : Type _}
@@ -804,8 +823,20 @@ theorem map_seq {M'' : Type w → Type _} [FiniteMap Nat M''] [FiniteMapLaws Nat
             bigOpL op unit (fun _ kv => Φ kv.1 kv.2) ((List.range' start l.length).zip l) := by
     apply BigOpL.perm
     exact FiniteMapSeqLaws.toList_map_seq start l
-  apply Equiv.trans h1
-  exact BigOpL.zip_seq (op := op) (unit := unit) (fun kv => Φ kv.1 kv.2) start l
+  refine Equiv.trans h1 ?_
+  clear h1
+  induction l generalizing start with
+  | nil => simp only [List.zip_nil_right, BigOpL.nil]; exact Equiv.rfl
+  | cons x xs ih =>
+    have range_cons : List.range' start (x :: xs).length = start :: List.range' (start + 1) xs.length := by
+      simp only [List.length_cons, List.range']
+    simp only [range_cons, List.zip_cons_cons, BigOpL.cons]
+    refine Monoid.op_proper ?_ ?_
+    · rw [Nat.add_zero]
+    · have := ih (start + 1)
+      refine Equiv.trans this (BigOpL.congr' fun i _ => ?_)
+      have : start + 1 + i = start + (i + 1) := by omega
+      rw [this]
 
 /-- Corresponds to Rocq's `big_opM_sep_zip_with`. -/
 theorem sep_zip_with {A : Type _} {B : Type _} {C : Type _}
