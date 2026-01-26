@@ -73,11 +73,8 @@ def map (f : V → V') : M V → (M V') :=
 
 /-- Filter and map: apply a function that can optionally drop entries.
     Corresponds to Rocq's `omap`. -/
-def filterMap (f : V → Option V) : M V → M V :=
+def filterMap (f : V → Option V') : M V → M V' :=
   fun m => ofList ((toList m).filterMap (fun (k, v) => (f v).map (k, ·)))
-
-/-- Alias for `filterMap` to match Rocq's naming. -/
-abbrev omap := @filterMap
 
 /-- Filter entries by a predicate on key-value pairs.
     Corresponds to Rocq's `filter`. -/
@@ -206,7 +203,7 @@ class FiniteMapSeqLaws (M : Type u → Type _) [FiniteMap Nat M] [FiniteMapLaws 
       Corresponds to Rocq's `map_to_list_seq`. -/
   toList_map_seq : ∀ (start : Nat) (l : List V),
     (toList (FiniteMap.map_seq start l : M V)).Perm
-      ((List.range' start l.length).zip l)
+      (l.mapIdx (fun i v => ((i + start), v)))
 
 export FiniteMapLaws (ext
 get?_empty
