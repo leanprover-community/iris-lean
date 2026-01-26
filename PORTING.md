@@ -92,7 +92,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Isomorphisms
   - [ ] Sigma 
 - [ ] `proofmode_classes.v`
-  - TODO (Michael and Zongyuan?)
+  - [ ] IsOp
 - [ ] `reservation_map.v`
   - [ ] CMRA
   - [ ] Updates
@@ -154,7 +154,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `derived.v`
   - [x] Modalities 
 - [ ] `proofmode.v`
-  - TODO (Michael and Zongyuan?)
+  - [ ] class instances
 - [ ] `upred.v` (nb. contained in `Algebra/UPred.lean` and `Instances/UPred/Instance.lean`)
   - [x] CMRA 
   - [x] Functors
@@ -242,7 +242,158 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 
 ## ProofMode 
 
-- TODO (Michael and Zongyuan?)
+- [-] `base.v`
+  (helper functions that are not necessary / different in Lean)
+- [ ] `class_instances.v` (Instances.lean)
+  - [x] instances for basic connectives
+  - [ ] instances for telescopes
+  - [ ] instances for big ops
+  - [ ] MaybeCombineSepAs instances
+  - [ ] CombineSepGives instances
+  - [ ] ElimModal instances
+  - [ ] AddModal instances
+  - [ ] ElimInv instances
+- [ ] `class_instances_cmra.v`
+- [ ] `class_instances_embedding.v`
+- [ ] `class_instances_frame.v`
+- [ ] `class_instances_internal_eq.v`
+- [ ] `class_instances_later.v` (InstancesLater.lean)
+- [ ] `class_instances_make.v`
+- [ ] `class_instances_plainly.v`
+- [ ] `class_instances_updates.v`
+- [ ] `classes.v` (Classes.lean)
+  - [x] FromAssumption
+  - [x] IntoPure
+  - [x] FromPure
+  - [ ] IntoInternalEq
+  - [x] IntoPersistent
+  - [ ] FromModal
+  - [x] FromAffinely
+  - [x] IntoAbsorbingly
+  - [x] IntoWand
+  - [x] FromWand
+  - [x] FromImpl
+  - [x] FromSep
+  - [x] FromAnd
+  - [x] IntoAnd
+  - [x] IntoSep
+  - [x] FromOr
+  - [x] IntoOr
+  - [x] FromExist
+  - [x] IntoExist
+  - [x] IntoForall
+  - [x] FromForall
+  - [ ] IsExcept0
+  - [ ] CombineSepAs
+  - [ ] MaybeCombineSepAs
+  - [ ] CombineSepGives
+  - [ ] ElimModal
+  - [ ] AddModal
+  - [ ] Frame
+  - [ ] IntoExcept0
+  - [ ] MaybeIntoLaterN
+  - [ ] IntoLaterN
+  - [ ] IntoEmbed
+  - [x] AsEmpValid
+  - [ ] AsEmpValid0
+  - [ ] IntoInv
+  - [ ] ElimAcc
+  - [ ] IntoAcc
+  - [ ] ElimInv
+- [ ] `classes_make.v`
+- [ ] `coq_tactics.v` / `ltac_tactics.v` (split into the files in Tactics/)
+  - [ ] iSolveSideCondition
+  - [ ] iStartProof
+    - [x] basic
+    - [ ] with bi specified
+  - [x] iStopProof
+  - [x] iRename
+  - [ ] iClear
+    - [x] basic
+    - [ ] selection patterns
+  - [ ] iEval
+  - [ ] iSimpl
+  - [ ] iUnfold
+  - [x] iExact
+  - [x] iAssumption
+  - [-] iAssumptionCoq (iassumption_lean removed in https://github.com/leanprover-community/iris-lean/commit/b02fb8306b2c66aaa336b8ee2bc5eca0cdc5c899#diff-3289e4079a39b1d9a75ba9ee8532ef1c0a855d66a8e54fc5895585d0a32d12ee can be added back if necessary)
+  - [x] iExFalso
+  - [ ] iPure
+    - [x] basic
+    - [ ] pure destructuring patterns 
+          (also for other tactics using ipure)
+  - [x] iEmpIntro
+  - [x] iPureIntro
+  - [ ] iFrame
+  - [ ] iRevert
+  - [x] iPoseProof (Lean: ihave _ := _)
+  - [ ] iSpecialize
+    - [x] basic functionality
+    - [ ] duplicate context for persistent conclusion
+          (includes other tactics using specialization)
+    - [ ] all specialization patterns (see below)
+  - [x] iApply
+  - [x] iLeft
+  - [x] iRight
+  - [x] iSplit(L/R)
+  - [x] iExists
+  - [ ] iModIntro
+  - [ ] iNext (with later credits)
+  - [ ] iMod
+  - [ ] iDestruct (Lean: icases)
+    - [x] basic
+    - [ ] all destruct patterns (see below)
+  - [ ] iCombine
+  - [ ] iIntros
+    - [x] basic
+    - [ ] all intro patterns (see below)
+  - [ ] iInduction
+  - [ ] iLöb
+  - [ ] iAssert (Lean: ihave _ : _)
+  - [ ] iRewrite
+  - [ ] iInv
+  - [ ] iAccu
+  - [ ] rules for trivial
+- [x] `environments.v` (corresponds to Hyps / Entails')
+- [-] `ident_name.v` (not needed)
+- [ ] `intro_patterns.v` 
+  (split into Patterns/CasesPattern.lean / Patterns/IntroPattern.lean)
+  - [x] IIdent
+  - [x] IFresh
+  - [x] IDrop
+  - [ ] IFrame
+  - [x] IList
+  - [x] IPure
+  - [x] IIntuitionistic
+  - [x] ISpatial
+  - [ ] IModalElim
+  - [ ] IRewrite
+  - [ ] IPureIntro
+  - [ ] IModalIntro
+  - [ ] ISimpl
+  - [ ] IDone
+  - [ ] IForall
+  - [ ] IAll
+  - [ ] IClear
+  - [ ] IClearFrame
+- [ ] `modalities.v`
+- [ ] `modality_instances.v`
+- [ ] `monpred.v`
+- [x] `proofmode.v` (ProofMode.lean)
+- [-] `reduction.v` (not necessary in Lean)
+- [ ] `sel_patterns.v`
+- [ ] `spec_patterns.v`
+  - [x] SIdent
+  - [x] SPureGoal
+  - [ ] SGoal
+    - [ ] Kind
+    - [ ] Negate
+    - [ ] Frame
+    - [x] Hyps
+    - [ ] Done
+  - [ ] SAutoFrame
+- [-] `string_ident.v` (not necessary in Lean)
+- [-] `tokens.v` (not necessary in Lean)
 
 ## Examples
 

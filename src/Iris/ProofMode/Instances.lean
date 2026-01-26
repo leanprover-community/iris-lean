@@ -471,10 +471,6 @@ instance (priority := default + 10) fromAssumption_forall (p : Bool) [BI PROP] (
     (x : α) (Q : PROP) [h : FromAssumption p .in (Φ x) Q] : FromAssumption p .in iprop(∀ x, Φ x) Q where
   from_assumption := (intuitionisticallyIf_mono <| forall_elim x).trans h.1
 
-instance fromAssumption_later [BI PROP] (p : Bool) ioP (P Q : PROP)
-    [h : FromAssumption p ioP P Q] : FromAssumption p ioP P iprop(▷ Q) where
-  from_assumption := h.1.trans later_intro
-
 set_option synthInstance.checkSynthOrder false in
 @[ipm_backtrack]
 instance fromAssumption_and_l [BI PROP] (p : Bool) (P1 P2 Q : PROP)
