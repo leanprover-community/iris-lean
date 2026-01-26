@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
 import Iris.Algebra.Monoid
+import Iris.Std.List
 import Iris.Std.FiniteMap
 
 namespace Iris.Algebra
@@ -16,6 +17,7 @@ These are parameterized by a monoid operation and include theorems about their p
 
 open OFE
 
+/-- Corresponds to Rocq's `big_opL`. -/
 def bigOpL {M : Type u} {A : Type v} (op : M → M → M) (unit : M)
     (Φ : Nat → A → M) (l : List A) : M :=
   match l with
@@ -27,19 +29,22 @@ namespace BigOpL
 variable {M : Type _} {A : Type _} [OFE M] {op : M → M → M} {unit : M} [Monoid M op unit]
 
 omit [OFE M] [Monoid M op unit] in
+/-- Corresponds to Rocq's `big_opL_nil`. -/
 @[simp] theorem nil (Φ : Nat → A → M) :
     bigOpL op unit Φ ([] : List A) = unit := rfl
 
 omit [OFE M] [Monoid M op unit] in
+/-- Corresponds to Rocq's `big_opL_cons`. -/
 @[simp] theorem cons (Φ : Nat → A → M) (x : A) (xs : List A) :
     bigOpL op unit Φ (x :: xs) = op (Φ 0 x) (bigOpL op unit (fun n => Φ (n + 1)) xs) := rfl
 
+/-- Corresponds to Rocq's `big_opL_singleton`. -/
 @[simp] theorem singleton (Φ : Nat → A → M) (x : A) :
     bigOpL op unit Φ [x] ≡ Φ 0 x := by
   simp only [cons, nil]
   exact Monoid.op_right_id _
 
-/-- Congruence for bigOpL. -/
+/-- Corresponds to Rocq's `big_opL_proper`. -/
 theorem congr {Φ Ψ : Nat → A → M} {l : List A}
     (h : ∀ i x, l[i]? = some x → Φ i x ≡ Ψ i x) :
     bigOpL op unit Φ l ≡ bigOpL op unit Ψ l := by
@@ -53,7 +58,7 @@ theorem congr {Φ Ψ : Nat → A → M} {l : List A}
       exact h (i + 1) x hget
     exact Monoid.op_proper h0 (ih htail)
 
-/-- Non-expansive version of congruence. -/
+/-- Corresponds to Rocq's `big_opL_ne`. -/
 theorem congr_ne {Φ Ψ : Nat → A → M} {l : List A} {n : Nat}
     (h : ∀ i x, l[i]? = some x → Φ i x ≡{n}≡ Ψ i x) :
     bigOpL op unit Φ l ≡{n}≡ bigOpL op unit Ψ l := by
@@ -67,12 +72,13 @@ theorem congr_ne {Φ Ψ : Nat → A → M} {l : List A} {n : Nat}
       exact h (i + 1) x hget
     exact Monoid.op_ne_dist h0 (ih htail)
 
-/-- Simplified congruence when the functions are equivalent on all indices. -/
+/-- Congruence when the functions are equivalent on all indices. -/
 theorem congr' {Φ Ψ : Nat → A → M} {l : List A}
     (h : ∀ i x, Φ i x ≡ Ψ i x) :
     bigOpL op unit Φ l ≡ bigOpL op unit Ψ l :=
   congr (fun i x _ => h i x)
 
+/-- Corresponds to Rocq's `big_opL_app`. -/
 theorem append (Φ : Nat → A → M) (l₁ l₂ : List A) :
     bigOpL op unit Φ (l₁ ++ l₂) ≡
       op (bigOpL op unit Φ l₁) (bigOpL op unit (fun n => Φ (n + l₁.length)) l₂) := by
@@ -93,6 +99,7 @@ theorem append (Φ : Nat → A → M) (l₁ l₂ : List A) :
               (bigOpL op unit (fun n => Φ (n + (xs.length + 1))) l₂) := by
             simp only [heq]; exact Equiv.rfl
 
+/-- Corresponds to Rocq's `big_opL_snoc`. -/
 theorem snoc (Φ : Nat → A → M) (l : List A) (x : A) :
     bigOpL op unit Φ (l ++ [x]) ≡ op (bigOpL op unit Φ l) (Φ l.length x) := by
   have h := @append M A _ op unit _ Φ l [x]
@@ -100,14 +107,14 @@ theorem snoc (Φ : Nat → A → M) (l : List A) (x : A) :
   have hr : op (Φ l.length x) unit ≡ Φ l.length x := Monoid.op_right_id (Φ l.length x)
   exact Monoid.op_congr_r hr |> Equiv.trans h
 
-/-- Big op over constant unit collapses to unit. -/
+/-- Corresponds to Rocq's `big_opL_unit`. -/
 theorem unit_const (l : List A) :
     bigOpL op unit (fun _ _ => unit) l ≡ unit := by
   induction l with
   | nil => exact Equiv.rfl
   | cons _ _ ih => simp only [cons]; exact Equiv.trans (Monoid.op_left_id _) ih
 
-/-- Distribution of big op over the monoid operation. -/
+/-- Corresponds to Rocq's `big_opL_op`. -/
 theorem op_distr (Φ Ψ : Nat → A → M) (l : List A) :
     bigOpL op unit (fun i x => op (Φ i x) (Ψ i x)) l ≡
       op (bigOpL op unit Φ l) (bigOpL op unit Ψ l) := by
@@ -117,8 +124,8 @@ theorem op_distr (Φ Ψ : Nat → A → M) (l : List A) :
     simp only [cons]
     exact Equiv.trans (Monoid.op_congr_r (ih _ _)) Monoid.op_op_swap
 
-/-- Big op over mapped list equals big op with composed function. -/
-theorem fmap {B : Type v} (h : A → B) (Φ : Nat → B → M) (l : List A) :
+/-- Corresponds to Rocq's `big_opL_fmap`. -/
+theorem map {B : Type v} (h : A → B) (Φ : Nat → B → M) (l : List A) :
     bigOpL op unit Φ (l.map h) ≡ bigOpL op unit (fun i x => Φ i (h x)) l := by
   induction l generalizing Φ with
   | nil => exact Equiv.rfl
@@ -127,7 +134,7 @@ theorem fmap {B : Type v} (h : A → B) (Φ : Nat → B → M) (l : List A) :
     exact Monoid.op_proper Equiv.rfl (ih (fun n => Φ (n + 1)))
 
 omit [OFE M] [Monoid M op unit] in
-/-- Property `P` is preserved by big op if it holds for unit and is closed under `op`. -/
+/-- Corresponds to Rocq's `big_opL_closed`. -/
 theorem closed (P : M → Prop) (Φ : Nat → A → M) (l : List A)
     (hunit : P unit)
     (hop : ∀ x y, P x → P y → P (op x y))
@@ -141,7 +148,7 @@ theorem closed (P : M → Prop) (Φ : Nat → A → M) (l : List A)
     have htail : ∀ i x, ys[i]? = some x → P (Φ (i + 1) x) := fun i x hget => hf (i + 1) x hget
     exact hop _ _ h0 (ih _ htail)
 
-/-- Big operators over commutative monoids are invariant under permutation. -/
+/-- Corresponds to Rocq's `big_opL_permutation`. -/
 theorem perm (Φ : A → M) {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
     bigOpL op unit (fun _ => Φ) l₁ ≡ bigOpL op unit (fun _ => Φ) l₂ := by
   induction hp with
@@ -150,7 +157,7 @@ theorem perm (Φ : A → M) {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
   | swap _ _ _ => simp only [cons]; exact Monoid.op_swap_inner (unit := unit)
   | trans _ _ ih1 ih2 => exact Equiv.trans ih1 ih2
 
-/-- Split big op at position `n`. -/
+/-- Corresponds to Rocq's `big_opL_take_drop`. -/
 theorem take_drop (Φ : Nat → A → M) (l : List A) (n : Nat) :
     bigOpL op unit Φ l ≡
       op (bigOpL op unit Φ (l.take n)) (bigOpL op unit (fun k => Φ (n + k)) (l.drop n)) := by
@@ -162,21 +169,7 @@ theorem take_drop (Φ : Nat → A → M) (l : List A) (n : Nat) :
     simp only [List.drop_eq_nil_of_le (Nat.le_of_lt hn), List.take_of_length_le (Nat.le_of_lt hn), nil]
     exact Equiv.symm (Monoid.op_right_id _)
 
-omit [OFE M] [Monoid M op unit] in
-/-- Extensional equality (propositional, not just equivalence). -/
-theorem ext {Φ Ψ : Nat → A → M} {l : List A}
-    (h : ∀ i x, l[i]? = some x → Φ i x = Ψ i x) :
-    bigOpL op unit Φ l = bigOpL op unit Ψ l := by
-  induction l generalizing Φ Ψ with
-  | nil => rfl
-  | cons y ys ih =>
-    simp only [cons]
-    have h0 : Φ 0 y = Ψ 0 y := h 0 y rfl
-    have htail : ∀ i x, ys[i]? = some x → Φ (i + 1) x = Ψ (i + 1) x :=
-      fun i x hget => h (i + 1) x hget
-    rw [h0, ih htail]
-
-/-- Big op over `filterMap` (called `omap` in Rocq). -/
+/-- Corresponds to Rocq's `big_opL_omap`. -/
 theorem filter_map {B : Type v} (h : A → Option B) (Φ : B → M) (l : List A) :
     bigOpL op unit (fun _ => Φ) (l.filterMap h) ≡
       bigOpL op unit (fun _ x => (h x).elim unit Φ) l := by
@@ -188,7 +181,7 @@ theorem filter_map {B : Type v} (h : A → Option B) (Φ : B → M) (l : List A)
     · exact Equiv.trans ih (Equiv.symm (Monoid.op_left_id _))
     · exact Monoid.op_congr_r ih
 
-/-- Big op over flattened list equals nested big op. -/
+/-- Corresponds to Rocq's `big_opL_bind`. -/
 theorem bind {B : Type v} (h : A → List B) (Φ : B → M) (l : List A) :
     bigOpL op unit (fun _ => Φ) (l.flatMap h) ≡
       bigOpL op unit (fun _ x => bigOpL op unit (fun _ => Φ) (h x)) l := by
@@ -198,36 +191,8 @@ theorem bind {B : Type v} (h : A → List B) (Φ : B → M) (l : List A) :
     simp only [List.flatMap_cons, cons]
     exact Equiv.trans (append _ _ _) (Monoid.op_congr_r ih)
 
-/-- Big op over zipped list with separated functions. -/
-theorem sep_zip {B : Type v} (Φ : Nat → A → M) (Ψ : Nat → B → M) (l₁ : List A) (l₂ : List B)
-    (hlen : l₁.length = l₂.length) :
-    bigOpL op unit (fun i xy => op (Φ i xy.1) (Ψ i xy.2)) (l₁.zip l₂) ≡
-      op (bigOpL op unit Φ l₁) (bigOpL op unit Ψ l₂) := by
-  induction l₁ generalizing l₂ Φ Ψ with
-  | nil =>
-    cases l₂ with
-    | nil => simp only [List.zip_nil_left, nil]; exact Equiv.symm (Monoid.op_left_id _)
-    | cons _ _ => simp at hlen
-  | cons x xs ih =>
-    cases l₂ with
-    | nil => simp at hlen
-    | cons y ys =>
-      simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen
-      simp only [List.zip_cons_cons, cons]
-      exact Equiv.trans (Monoid.op_congr_r (ih (fun n => Φ (n + 1)) (fun n => Ψ (n + 1)) ys hlen)) Monoid.op_op_swap
-
-/-- Nested list iterations commute. -/
-theorem op_l_op_l {B : Type v} (Φ : Nat → A → Nat → B → M) (l₁ : List A) (l₂ : List B) :
-    bigOpL op unit (fun i x => bigOpL op unit (fun j y => Φ i x j y) l₂) l₁ ≡
-      bigOpL op unit (fun j y => bigOpL op unit (fun i x => Φ i x j y) l₁) l₂ := by
-  induction l₁ generalizing Φ with
-  | nil => simp only [nil]; exact Equiv.symm (unit_const _)
-  | cons x xs ih =>
-    simp only [cons]
-    exact Equiv.trans (Monoid.op_congr_r (ih _)) (Equiv.symm (op_distr _ _ _))
-
 omit [OFE M] [Monoid M op unit] in
-/-- Generic proper lemma across two potentially different lists. -/
+/-- Corresponds to Rocq's `big_opL_gen_proper_2`. -/
 theorem gen_proper_2 {B : Type v} (R : M → M → Prop)
     (Φ : Nat → A → M) (Ψ : Nat → B → M) (l₁ : List A) (l₂ : List B)
     (hunit : R unit unit)
@@ -251,29 +216,118 @@ theorem gen_proper_2 {B : Type v} (R : M → M → Prop)
           R (Φ (i + 1) a) (Ψ (i + 1) b) := fun i a b ha hb => hf (i + 1) a b ha hb
       exact hop _ _ _ _ h0 (ih (fun n => Φ (n + 1)) (fun n => Ψ (n + 1)) ys hlen htail)
 
-/-- Big op over zip with a shifted sequence. -/
-theorem zip_seq (Φ : Nat × A → M) (n : Nat) (l : List A) :
-    bigOpL op unit (fun _ => Φ) ((List.range' n l.length).zip l) ≡
-      bigOpL op unit (fun i x => Φ (n + i, x)) l := by
+omit [OFE M] [Monoid M op unit] in
+/-- Corresponds to Rocq's `big_opL_gen_proper`. -/
+theorem gen_proper (R : M → M → Prop)
+    (Φ Ψ : Nat → A → M) (l : List A)
+    (hR_refl : ∀ x, R x x)
+    (hR_op : ∀ a a' b b', R a a' → R b b' → R (op a b) (op a' b'))
+    (hf : ∀ k y, l[k]? = some y → R (Φ k y) (Ψ k y)) :
+    R (bigOpL op unit Φ l) (bigOpL op unit Ψ l) := by
+  apply gen_proper_2 (op := op) (unit := unit) R Φ Ψ l l
+  · exact hR_refl unit
+  · exact hR_op
+  · rfl
+  · intro k x y hx hy
+    cases hget : l[k]? with
+    | none =>
+      rw [hget] at hx
+      cases hx
+    | some z =>
+      have hxz : x = z := by rw [hget] at hx; cases hx; rfl
+      have hyz : y = z := by rw [hget] at hy; cases hy; rfl
+      rw [hxz, hyz]
+      exact hf k z hget
+
+omit [OFE M] [Monoid M op unit] in
+/-- Corresponds to Rocq's `big_opL_ext`. -/
+theorem ext {Φ Ψ : Nat → A → M} {l : List A}
+    (h : ∀ i x, l[i]? = some x → Φ i x = Ψ i x) :
+    bigOpL op unit Φ l = bigOpL op unit Ψ l := by
+    apply gen_proper
+    · intro _
+      rfl
+    · intros _ _ _ _ ha hb
+      rw [ha, hb]
+    · apply h
+
+omit [OFE M] [Monoid M op unit] in
+/-- Corresponds to Rocq's `big_opL_consZ_l`. -/
+theorem cons_int_l (Φ : Int → A → M) (x : A) (l : List A) :
+    bigOpL op unit (fun k => Φ k) (x :: l) =
+    op (Φ 0 x) (bigOpL op unit (fun k y => Φ (1 + (k : Int)) y) l) := by
+  simp only [cons]
+  apply congrArg
+  apply ext
+  intro i y hy
+  congr 1
+  omega
+
+omit [OFE M] [Monoid M op unit] in
+/-- Corresponds to Rocq's `big_opL_consZ_r`. -/
+theorem cons_int_r (Φ : Int → A → M) (x : A) (l : List A) :
+    bigOpL op unit (fun k => Φ k) (x :: l) =
+    op (Φ 0 x) (bigOpL op unit (fun k y => Φ ((k : Int) + 1) y) l) := by
+  simp only [cons]
+  rfl
+
+/-- Corresponds to Rocq's `big_opL_proper_2`. -/
+theorem proper_2 [OFE A] (Φ Ψ : Nat → A → M) (l₁ l₂ : List A)
+    (hlen : l₁.length = l₂.length)
+    (hf : ∀ (k : Nat) (y₁ y₂ : A), l₁[k]? = some y₁ → l₂[k]? = some y₂ → Φ k y₁ ≡ Ψ k y₂) :
+    bigOpL op unit Φ l₁ ≡ bigOpL op unit Ψ l₂ := by
+  apply gen_proper_2 (op := op) (unit := unit) (· ≡ ·) Φ Ψ l₁ l₂
+  · exact Equiv.rfl
+  · intros a a' b b' ha hb; exact Monoid.op_proper ha hb
+  · exact hlen
+  · intro k x y hx hy
+    cases hget1 : l₁[k]? with
+    | none =>
+      rw [hget1] at hx
+      cases hx
+    | some z₁ =>
+      cases hget2 : l₂[k]? with
+      | none =>
+        have h1 : k < l₁.length := by
+          cases h : l₁[k]? <;> simp_all
+        rw [hlen] at h1
+        have h2 : k < l₂.length := h1
+        have : l₂[k]? ≠ none := by
+          intro h
+          have : l₂[k]? = some l₂[k] := List.getElem?_eq_getElem h2
+          simp [h] at this
+        contradiction
+      | some z₂ =>
+        have hxz1 : x = z₁ := by rw [hget1] at hx; cases hx; rfl
+        have hyz2 : y = z₂ := by rw [hget2] at hy; cases hy; rfl
+        rw [hxz1, hyz2]
+        exact hf k z₁ z₂ hget1 hget2
+
+/-- Corresponds to Rocq's `big_opL_zip_seq`. -/
+theorem zip_idx (Φ : A × Nat → M) (n : Nat) (l : List A) :
+    bigOpL op unit (fun _ => Φ) (l.zipIdx n) ≡
+      bigOpL op unit (fun i x => Φ (x, n + i)) l := by
   induction l generalizing n with
-  | nil => simp only [List.length_nil, List.range'_zero, List.zip_nil_left, nil]; exact Equiv.rfl
+  | nil => simp only [nil]; exact Equiv.rfl
   | cons x xs ih =>
-    simp only [List.length_cons, List.range'_succ, List.zip_cons_cons, cons, Nat.add_zero]
+    simp only [cons, Nat.add_zero]
     refine Monoid.op_proper Equiv.rfl (Equiv.trans (ih (n + 1)) (congr' fun i _ => ?_))
     simp only [Nat.add_assoc, Nat.add_comm 1 i]; exact Equiv.rfl
 
-/-- Big op over zip with a sequence starting at 0. -/
-theorem zip_with_range (Φ : Nat × A → M) (l : List A) :
-    bigOpL op unit (fun _ => Φ) ((List.range l.length).zip l) ≡
-      bigOpL op unit (fun i x => Φ (i, x)) l := by
-  have h := @zip_seq M A _ op unit _ Φ 0 l
-  simp only [Nat.zero_add] at h
-  have heq : List.range l.length = List.range' 0 l.length := List.range_eq_range' (n := l.length)
-  rw [heq]
-  exact h
+/-- Corresponds to Rocq's `big_opL_zip_seqZ`. -/
+theorem zip_idx_int (Φ :  A × Int → M) (n : Int) (l : List A) :
+    bigOpL op unit (fun _ => Φ) (Std.List.zipIdxInt l n) ≡
+      bigOpL op unit (fun i x => Φ (x, n + (i : Int))) l := by
+  unfold Std.List.zipIdxInt
+  have h1 := map (op := op) (unit := unit) (fun ⟨v,i⟩ => (v, (i : Int) + n)) (fun _ vi => Φ vi) l.zipIdx
+  have h2 := zip_idx (op := op) (unit := unit) (fun vi => Φ (vi.1, (vi.2 : Int) + n)) 0 l
+  simp only [Nat.zero_add] at h2
+  refine Equiv.trans h1 (Equiv.trans h2 (congr' fun i x => ?_))
+  simp only [Int.add_comm]
+  exact Equiv.rfl
 
-/-- Generalized version of `sep_zip` with custom zip function. -/
-theorem sep_zip_with {B C : Type v}
+/-- Corresponds to Rocq's `big_opL_sep_zip_with`. -/
+theorem sep_zip_with {B C : Type _}
     (f : A → B → C) (g1 : C → A) (g2 : C → B)
     (Φ : Nat → A → M) (Ψ : Nat → B → M) (l₁ : List A) (l₂ : List B)
     (hg1 : ∀ x y, g1 (f x y) = x)
@@ -293,6 +347,19 @@ theorem sep_zip_with {B C : Type v}
       simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen
       simp only [List.zipWith_cons_cons, cons, hg1, hg2]
       exact Equiv.trans (Monoid.op_congr_r (ih (fun n => Φ (n + 1)) (fun n => Ψ (n + 1)) ys hlen)) Monoid.op_op_swap
+
+/-- Big op over zipped list with separated functions. -/
+theorem sep_zip {B : Type v} (Φ : Nat → A → M) (Ψ : Nat → B → M) (l₁ : List A) (l₂ : List B)
+    (hlen : l₁.length = l₂.length) :
+    bigOpL op unit (fun i xy => op (Φ i xy.1) (Ψ i xy.2)) (l₁.zip l₂) ≡
+      op (bigOpL op unit Φ l₁) (bigOpL op unit Ψ l₂) := by
+  simp [List.zip]
+  apply sep_zip_with (op := op)
+  · intro _ _
+    trivial
+  · intro _ _
+    trivial
+  · apply hlen
 
 variable {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
@@ -577,7 +644,7 @@ theorem map {B : Type w} [DecidableEq B] (h : V → B) (Φ : K → B → M) (m :
     apply BigOpL.perm
     exact FiniteMapLaws.toList_map m h
   apply Equiv.trans h1
-  exact BigOpL.fmap (op := op) (unit := unit) (fun kv => (kv.1, h kv.2)) (fun _ kv => Φ kv.1 kv.2) (FiniteMap.toList m)
+  exact BigOpL.map (op := op) (unit := unit) (fun kv => (kv.1, h kv.2)) (fun _ kv => Φ kv.1 kv.2) (FiniteMap.toList m)
 
 
 omit [DecidableEq K] [DecidableEq V] in
@@ -723,7 +790,7 @@ theorem kmap {M'' : Type _ → Type _} {K' : Type _} [DecidableEq K'] [FiniteMap
     apply BigOpL.perm
     exact FiniteMapKmapLaws.toList_kmap h m hinj
   apply Equiv.trans h1
-  exact BigOpL.fmap (op := op) (unit := unit) (fun kv => (h kv.1, kv.2)) (fun _ kv => Φ kv.1 kv.2) (FiniteMap.toList m)
+  exact BigOpL.map (op := op) (unit := unit) (fun kv => (h kv.1, kv.2)) (fun _ kv => Φ kv.1 kv.2) (FiniteMap.toList m)
 
 omit [DecidableEq V] in
 /-- Corresponds to Rocq's `big_opM_map_seq`. -/

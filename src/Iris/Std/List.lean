@@ -13,6 +13,15 @@ not available in Lean core.
 
 namespace Iris.Std.List
 
+/-- List equivalence relation parameterized by an element equivalence relation.
+    Corresponds to Rocq's `list_equiv`. -/
+inductive Equiv {α : Type _} (R : α → α → Prop) : List α → List α → Prop where
+  | nil : Equiv R [] []
+  | cons {x y : α} {l k : List α} : R x y → Equiv R l k → Equiv R (x :: l) (y :: k)
+
+def zipIdxInt {α : Type _} (l : List α) (n : Int) : List (α × Int) :=
+  l.zipIdx.map (fun ⟨v,i⟩ => (v, (i : Int) + n))
+
 /-- For a Nodup list, erasing an element removes it completely. -/
 theorem not_mem_erase_self_of_nodup {α : Type _} [DecidableEq α] (x : α) (l : List α)
     (hnd : l.Nodup) : x ∉ l.erase x := by
