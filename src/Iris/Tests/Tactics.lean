@@ -590,11 +590,19 @@ example [BI PROP] (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q
   . iexact HP
   iexact H'
 
+/-- Tests `ihave` with cases pattern -/
+example [BI PROP] (P Q : PROP) : ⊢ (□P ∗ Q) -∗ Q := by
+  iintro H
+  ihave ⟨□_, HQ⟩ := H
+  iexact HQ
+
 /-- Tests `ihave` assert -/
 example [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
   iintro HP Hwand
-  ihave HQ : Q $$ [Hwand, HP]
-  . iapply Hwand $$ HP
+  ihave ⟨HQ, _⟩ : (Q ∗ emp) $$ [Hwand, HP]
+  . isplit
+    . iapply Hwand $$ HP
+    . ipure_intro; trivial
   iexact HQ
 
 end ihave

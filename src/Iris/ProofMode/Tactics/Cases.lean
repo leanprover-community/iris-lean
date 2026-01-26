@@ -8,7 +8,7 @@ import Iris.ProofMode.Patterns.CasesPattern
 import Iris.ProofMode.Tactics.Basic
 import Iris.ProofMode.Tactics.Clear
 import Iris.ProofMode.Tactics.Pure
-import Iris.ProofMode.Tactics.Have
+import Iris.ProofMode.Tactics.HaveCore
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
