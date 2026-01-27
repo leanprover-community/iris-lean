@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors: Markus de Medeiros, Puming Liu
 -/
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
@@ -649,25 +649,25 @@ section ViewMap
 
 /- [OFE A] [UCMRA B] [OFE A'] [UCMRA B'] -/
 
-def View.map  {R : ViewRel A B} (R' : ViewRel A' B') (f : A → A') (g : B → B') (v : View F R) : View F R' where
+def map  {R : ViewRel A B} (R' : ViewRel A' B') (f : A → A') (g : B → B') (v : View F R) : View F R' where
   auth := match v.auth with
     | none => none
     | some (fr, a) => (fr, a.map' f)
   frag := g v.frag
 
-theorem View.map_id {R : ViewRel A B} (v : View F R) :
+theorem map_id {R : ViewRel A B} (v : View F R) :
     View.map R id id v = v := by
   simp [View.map, Agree.map']
   rcases v with ⟨a, b⟩
   cases a <;> simp
 
-theorem View.map_compose {R : ViewRel A B} {R' : ViewRel A' B'} {R'' : ViewRel A'' B''} f g (f' : A' → A'') (g' : B' → B'') (v : View F R) :
+theorem map_compose {R : ViewRel A B} {R' : ViewRel A' B'} {R'' : ViewRel A'' B''} f g (f' : A' → A'') (g' : B' → B'') (v : View F R) :
     View.map R'' (f' ∘ f) (g' ∘ g) v = View.map R'' f' g' (View.map R' f g v) := by
   simp [View.map, Agree.map']
   rcases v with ⟨a, b⟩
   cases a <;> simp
 
-theorem View.map_ext [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : ViewRel A' B'} (f1 f2 : A → A') (g1 g2 : B → B') [OFE.NonExpansive f1] [OFE.NonExpansive f2] (v : View F R) :
+theorem map_ext [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : ViewRel A' B'} (f1 f2 : A → A') (g1 g2 : B → B') [OFE.NonExpansive f1] [OFE.NonExpansive f2] (v : View F R) :
     (∀ a, f1 a ≡ f2 a) → (∀ b, g1 b ≡ g2 b) →
     View.map R' f1 g1 v ≡ View.map R' f2 g2 v := by
   intro h1 h2
@@ -677,7 +677,17 @@ theorem View.map_ext [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : V
     apply Agree.agree_map_ext h1
   · apply h2
 
-instance View.map_ne [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : ViewRel A' B'} (f : A → A') (g : B → B') [OFE.NonExpansive f] [hne : OFE.NonExpansive g] : OFE.NonExpansive (View.map R' f g : (View F R → _)) where
+theorem map_ne [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : ViewRel A' B'} (f1 f2 : A → A') (g1 g2 : B → B') [OFE.NonExpansive f1] [OFE.NonExpansive f2] (v : View F R) :
+    (∀ a, f1 a ≡{n}≡ f2 a) → (∀ b, g1 b ≡{n}≡ g2 b) →
+    View.map R' f1 g1 v ≡{n}≡ View.map R' f2 g2 v := by
+  intro h1 h2
+  simp [View.map]
+  constructor <;> simp only
+  · split <;> constructor <;> simp
+    apply Agree.map_ne h1
+  · apply h2
+
+instance [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : ViewRel A' B'} (f : A → A') (g : B → B') [OFE.NonExpansive f] [hne : OFE.NonExpansive g] : OFE.NonExpansive (View.map R' f g : (View F R → _)) where
   ne := by
     rintro n ⟨a1, b1⟩ ⟨a2, b2⟩ ⟨h1, h2⟩
     constructor <;> simp [map]
@@ -689,11 +699,11 @@ instance View.map_ne [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : V
     · apply hne.ne
       simp_all only [instCOFEDFrac]
 
-instance View.mapO [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : ViewRel A' B'} (f : A -n> A') (g : B -n> B') : View F R -n> View F R' where
+instance mapO [OFE A] [OFE B] [OFE A'] [OFE B'] (R : ViewRel A B) (R' : ViewRel A' B') (f : A -n> A') (g : B -n> B') : View F R -n> View F R' where
   f := View.map R' f g
   ne := inferInstance
 
-instance View.mapC [UFraction F] [OFE A] [UCMRA B] [OFE A'] [UCMRA B'] {R : ViewRel A B} [IsViewRel R] {R' : ViewRel A' B'} [IsViewRel R'] (f : A -n> A') (g : B -C> B') (H : ∀ n a b, R n a b → R' n (f a) (g b)) : View F R -C> View F R' where
+instance mapC [UFraction F] [OFE A] [UCMRA B] [OFE A'] [UCMRA B'] {R : ViewRel A B} [IsViewRel R] {R' : ViewRel A' B'} [IsViewRel R'] (f : A -n> A') (g : B -C> B') (H : ∀ n a b, R n a b → R' n (f a) (g b)) : View F R -C> View F R' where
   f := View.map R' f g
   ne := inferInstance
   validN := sorry

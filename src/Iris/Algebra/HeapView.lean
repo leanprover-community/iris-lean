@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors: Markus de Medeiros, Puming Liu
 -/
 import Iris.Algebra.Heap
 import Iris.Algebra.View
@@ -467,15 +467,63 @@ theorem update_frag_acquire [IsSplitFraction F] :
 
 end heapUpdates
 
--- TODO: Port functors
-
 section heapViewFunctor
+
+variable [∀ α β, HasHeapMap (H α) (H β) K α β]
+
+theorem heapR_map_eq [OFE A] [OFE B] [OFE A'] [OFE B'] [RFunctor T] (f : A' -n> A) (g : B -n> B') (n : Nat) (m : H (T A B)) (mv : H (DFrac F × T A B)) :
+    HeapR F K (T A B) H n m mv →
+    HeapR F K (T A' B') H n ((Heap.mapO H (RFunctor.map f g).toHom).f m) ((Heap.mapC H (Prod.mapC (CMRA.Hom.id (α := DFrac F)) (RFunctor.map (F:=T) f g))).f mv) := by
+  simp [HeapR, Heap.mapC, Heap.mapO, Heap.map', CMRA.Hom.id, OFE.Hom.id, Prod.mapC, hhmap_get]
+  intros hr k a b
+  rcases h : Store.get mv k with _ | ⟨a,b⟩ <;> simp
+  rintro rfl rfl
+  obtain ⟨v, hq, ⟨fr, ⟨hv1, hv2⟩, ho⟩⟩ := hr k a b h
+  exists (RFunctor.map f g).f v
+  constructor
+  simp [hq]
+  exists fr
+  constructor
+  · constructor <;> simp_all
+    exact (Hom.validN _ hv2)
+  · rw [Option.incN_iff] at ho ⊢
+    rcases ho with _ | he <;> simp_all
+    rcases he with ⟨he1, he2⟩ | he
+    · left
+      constructor <;> simp_all
+      exact (NonExpansive.ne he2)
+    · right
+      rw [<-Prod.prod_incN_iff] at *
+      rcases he with ⟨_ , he⟩
+      constructor
+      simp_all
+      apply (Hom.monoN _ _ he)
 
 abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPre :=
   fun A B _ _ => HeapView F K (T A B) H
 
-instance {T} [HT : RFunctor T] : URFunctor (fun A B _ _ => HeapView F K (T A B) H) := sorry
+instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
+  map {A A'} {B B'} _ _ _ _ f g := View.mapC (Heap.mapO H (RFunctor.map (F:=T) f g).toHom) (Heap.mapC H (Prod.mapC Hom.id (RFunctor.map (F:=T) f g))) (heapR_map_eq f g)
+  map_ne.ne a b c Hx d e Hy mv := by
+    simp [View.mapC]
+    apply View.map_ne
+    · intro
+      apply Heap.map_ne
+      apply RFunctor.map_ne.ne <;> simp_all
+    · intro m
+      apply Heap.map_ne
+      intro a
+      apply Prod.map_ne
+      simp
+      apply RFunctor.map_ne.ne <;> simp_all
+  map_id x := by
+    -- rw [View.map_id]
+    sorry
+  map_comp f g f' g' x := by
+    sorry
 
+instance {T} [RFunctorContractive T] : URFunctorContractive (HeapViewURF (F := F) (H := H) T) where
+  map_contractive.1 H _ := sorry
 
 end heapViewFunctor
 
