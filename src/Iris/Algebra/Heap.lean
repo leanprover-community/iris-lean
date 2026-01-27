@@ -464,13 +464,14 @@ nonrec instance [HD : CMRA.Discrete V] [Heap T K V] : Discrete T where
 end Heap
 
 section HeapFunctor
+
 variable {K} (H : Type _ → Type _) [∀ V, Heap (H V) K V] [∀ α β, HasHeapMap (H α) (H β) K α β]
 
 section HeapMap
 
 def Heap.map' [OFE α] [OFE β] (f : α → β) : H α → H β:= HasHeapMap.hhmap (fun _ a => some (f a))
 
-local instance Heap.map'_ne [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonExpansive (Heap.map' H f) where
+local instance [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonExpansive (Heap.map' H f) where
   ne := by
     simp only [OFE.Dist, Option.Forall₂, Heap.map', hhmap_get]
     intro n m1 m2

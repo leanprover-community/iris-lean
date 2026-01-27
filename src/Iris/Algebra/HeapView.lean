@@ -469,4 +469,14 @@ end heapUpdates
 
 -- TODO: Port functors
 
+section heapViewFunctor
+
+abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPre :=
+  fun A B _ _ => HeapView F K (T A B) H
+
+instance {T} [HT : RFunctor T] : URFunctor (fun A B _ _ => HeapView F K (T A B) H) := sorry
+
+
+end heapViewFunctor
+
 end HeapView
