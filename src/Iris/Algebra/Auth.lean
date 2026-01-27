@@ -418,12 +418,88 @@ theorem auth_local_update {a b0 b1 a' b0' b1' : A}
 
 /-! ## Functor -/
 
--- TODO: not sure how to port the functors
+/-- The authViewRel is preserved under CMRA homomorphisms. -/
+theorem authViewRel_map [UCMRA A'] [UCMRA B'] (g : A' -C> B') (n : Nat) (a : A') (b : A') :
+    authViewRel n a b → authViewRel n (g a) (g b) := by
+  intro ⟨Hinc, Hv⟩
+  constructor
+  · exact CMRA.Hom.monoN g n Hinc
+  · exact CMRA.Hom.validN g Hv
 
--- instance (F : OFunctorPre) [URFunctor F] : URFunctor
---      where
+abbrev AuthURF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
+  fun A B _ _ => Auth F (T A B)
 
--- instance GenMapOF_instURFunctor (F : COFE.OFunctorPre) [RFunctor F] :
---     URFunctor (GenMapOF Nat F) where
+instance instURFunctorAuthURF {T : COFE.OFunctorPre} [URFunctor T] : URFunctor (AuthURF (F := F) T) where
+  map {A A'} {B B'} _ _ _ _ f g :=
+    View.mapC
+      (URFunctor.map (F := T) f g).toHom
+      (URFunctor.map (F := T) f g)
+      (authViewRel_map (URFunctor.map f g))
+  map_ne.ne a b c Hx d e Hy x := by
+    simp [View.mapC]
+    apply View.map_ne
+    · intro y
+      exact URFunctor.map_ne.ne Hx Hy y
+    · intro y
+      exact URFunctor.map_ne.ne Hx Hy y
+  map_id x := by
+    simp only [View.mapC]
+    conv => rhs; rw [← View.map_id (R := authViewRel) x]
+    apply View.map_ext
+    · intro a; exact URFunctor.map_id a
+    · intro b; exact URFunctor.map_id b
+  map_comp f g f' g' x := by
+    simp only [View.mapC]
+    haveI : OFE.NonExpansive ((URFunctor.map (F := T) g g').f ∘ (URFunctor.map (F := T) f f').f) :=
+      (URFunctor.map (F := T) g g').toHom.comp (URFunctor.map (F := T) f f').toHom |>.ne
+    conv => rhs; rw [← View.map_compose (R' := authViewRel)]
+    apply View.map_ext
+    · intro a; exact URFunctor.map_comp f g f' g' a
+    · intro b; exact URFunctor.map_comp f g f' g' b
+
+instance instURFunctorContractiveAuthURF {T : COFE.OFunctorPre} [URFunctorContractive T] :
+    URFunctorContractive (AuthURF (F := F) T) where
+  map_contractive.1 H x := by
+    apply View.map_ne
+    · intro a; exact URFunctorContractive.map_contractive.1 H a
+    · intro b; exact URFunctorContractive.map_contractive.1 H b
+
+abbrev AuthRF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
+  fun A B _ _ => Auth F (T A B)
+
+instance instRFunctorAuthRF {T : COFE.OFunctorPre} [URFunctor T] : RFunctor (AuthRF (F := F) T) where
+  map {A A'} {B B'} _ _ _ _ f g :=
+    View.mapC
+      (URFunctor.map (F := T) f g).toHom
+      (URFunctor.map (F := T) f g)
+      (authViewRel_map (URFunctor.map f g))
+  map_ne.ne a b c Hx d e Hy x := by
+    simp [View.mapC]
+    apply View.map_ne
+    · intro y
+      exact URFunctor.map_ne.ne Hx Hy y
+    · intro y
+      exact URFunctor.map_ne.ne Hx Hy y
+  map_id x := by
+    simp only [View.mapC]
+    conv => rhs; rw [← View.map_id (R := authViewRel) x]
+    apply View.map_ext
+    · intro a; exact URFunctor.map_id a
+    · intro b; exact URFunctor.map_id b
+  map_comp f g f' g' x := by
+    simp only [View.mapC]
+    haveI : OFE.NonExpansive ((URFunctor.map (F := T) g g').f ∘ (URFunctor.map (F := T) f f').f) :=
+      (URFunctor.map (F := T) g g').toHom.comp (URFunctor.map (F := T) f f').toHom |>.ne
+    conv => rhs; rw [← View.map_compose (R' := authViewRel)]
+    apply View.map_ext
+    · intro a; exact URFunctor.map_comp f g f' g' a
+    · intro b; exact URFunctor.map_comp f g f' g' b
+
+instance instRFunctorContractiveAuthRF {T : COFE.OFunctorPre} [URFunctorContractive T] :
+    RFunctorContractive (AuthRF (F := F) T) where
+  map_contractive.1 H x := by
+    apply View.map_ne
+    · intro a; exact URFunctorContractive.map_contractive.1 H a
+    · intro b; exact URFunctorContractive.map_contractive.1 H b
 
 end Auth
