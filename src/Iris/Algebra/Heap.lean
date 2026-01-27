@@ -469,9 +469,9 @@ variable {K} (H : Type _ → Type _) [∀ V, Heap (H V) K V] [∀ α β, HasHeap
 
 section HeapMap
 
-def Heap.map' [OFE α] [OFE β] (f : α → β) : H α → H β:= HasHeapMap.hhmap (fun _ a => some (f a))
+def Heap.map' (f : α → β) : H α → H β := HasHeapMap.hhmap (fun _ a => some (f a))
 
-local instance [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonExpansive (Heap.map' H f) where
+instance [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonExpansive (Heap.map' H f) where
   ne := by
     simp only [OFE.Dist, Option.Forall₂, Heap.map', hhmap_get]
     intro n m1 m2
@@ -480,19 +480,32 @@ local instance [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OF
     cases Store.get m1 k <;> cases Store.get m2 k <;> simp
     apply OFE.NonExpansive.ne
 
+def Heap.map_id [OFE α] (a : H α):
+    Heap.map' H id a ≡ a := by
+  simp [OFE.Equiv, map', hhmap_get, Option.Forall₂]
+  intro x
+  rcases (Store.get a x) <;> simp
+
 def Heap.mapO [OFE α] [OFE β] (f : α -n> β) : OFE.Hom (H α) (H β) where
   f := Heap.map' H f
   ne := inferInstance
 
-def Heap.map_ne [OFE α] [OFE β] (f g : α -n> β) (heq: f ≡{n}≡ g) :
-    Heap.mapO H f ≡{n}≡ Heap.mapO H g := by
-  simp [OFE.Dist, mapO, Option.Forall₂, map', hhmap_get]
-  intro m k
+def Heap.map_ext [OFE α] [OFE β] (f g : α -> β) (heq: f ≡ g) :
+    Heap.map' H f m ≡ Heap.map' H g m := by
+  intro k
+  simp [map', hhmap_get]
   cases Store.get m k <;> simp
-  expose_names; exact heq val
+  exact heq _
+
+def Heap.map_ne [OFE α] [OFE β] (f g : α -> β) (heq: f ≡{n}≡ g) :
+    Heap.map' H f m ≡{n}≡ Heap.map' H g m := by
+  simp [OFE.Dist, Option.Forall₂, map', hhmap_get]
+  intro k
+  cases Store.get m k <;> simp
+  exact heq _
 
 def Heap.map_compose [OFE α] [OFE β] [OFE γ] (f : α -n> β) (g : β -n> γ) m :
-    Heap.mapO H (g.comp f) m ≡ Heap.mapO H g (Heap.mapO H f m) := by
+    Heap.map' H (g.comp f) m ≡ Heap.map' H g (Heap.mapO H f m) := by
   intro k
   simp [mapO, map', hhmap_get]
   cases Store.get m k <;> simp
@@ -508,11 +521,18 @@ def Heap.mapC [CMRA α] [CMRA β] (f : α -C> β) : CMRA.Hom (H α) (H β) where
     cases (Store.get x k) <;> simp
     apply CMRA.Hom.validN
   pcore m := by
-    simp [map', Option.map, CMRA.pcore]
-    sorry
+    intro x
+    simp [map', get_hmap, hhmap_get]
+    rcases Store.get m x with _|v <;> simp
+    have h : (CMRA.pcore v).bind (fun a => some (f a)) = (CMRA.pcore v).map f := by
+      rw [Option.map_eq_bind]
+      rfl
+    rw [h]
+    exact (CMRA.Hom.pcore f v)
   op m1 m2 n := by
-    simp [map']
-    sorry
+    simp [CMRA.op, map', hhmap_get, get_merge, Option.merge]
+    cases Store.get m1 n <;> cases Store.get m2 n <;> simp
+    apply CMRA.Hom.op
 
 end HeapMap
 
@@ -522,25 +542,47 @@ abbrev HeapOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
 instance {F} [COFE.OFunctor F] : COFE.OFunctor (HeapOF H F) where
   cofe := inferInstance
   map f g := Heap.mapO H (COFE.OFunctor.map f g)
-  map_ne := by
-    intros
+  map_ne {_} _ _ _ _ _ _ _ := by
     constructor
-    intros
+    intros _ _ _ _ _ _ _ _
     apply Heap.map_ne
     apply COFE.OFunctor.map_ne.ne <;> simp_all
-  map_comp := by
-    sorry
-  map_id := by
-    sorry
+  map_id x := by
+    symm
+    apply OFE.Equiv.trans
+    · exact (OFE.Equiv.symm (Heap.map_id H x))
+    · apply Heap.map_ext
+      exact (fun _ => OFE.Equiv.symm (COFE.OFunctor.map_id _))
+  map_comp f g f' g' m := by
+    simp [Heap.mapO, Heap.map']
+    symm
+    apply OFE.Equiv.trans (Store.eqv_of_Equiv rfl)
+    intro x
+    simp [hhmap_get]
+    cases (Store.get m x) <;> simp
+    exact OFE.Equiv.symm (COFE.OFunctor.map_comp f g f' g' _)
 
 instance {F} [RFunctor F] : URFunctor (HeapOF H F) where
   map f g := Heap.mapC H (RFunctor.map f g)
-  map_ne := by
-    sorry
-  map_comp := by
-    sorry
-  map_id := by
-    sorry
+  map_ne {_} _ _ _ _ _ _ _ := by
+    constructor
+    intros _ _ _ _ _ _ _ _
+    apply Heap.map_ne
+    apply RFunctor.map_ne.ne <;> simp_all
+  map_id x := by
+    symm
+    apply OFE.Equiv.trans
+    · exact (OFE.Equiv.symm (Heap.map_id H x))
+    · apply Heap.map_ext
+      exact (fun _ => OFE.Equiv.symm (RFunctor.map_id _))
+  map_comp f g f' g' m := by
+    simp [Heap.mapC, Heap.map']
+    symm
+    apply OFE.Equiv.trans (Store.eqv_of_Equiv rfl)
+    intro x
+    simp [hhmap_get]
+    cases (Store.get m x) <;> simp
+    exact OFE.Equiv.symm (RFunctor.map_comp f g f' g' _)
 
 instance {F} [RFunctorContractive F] : URFunctorContractive (HeapOF H F) where
   map_contractive.1 H m := by

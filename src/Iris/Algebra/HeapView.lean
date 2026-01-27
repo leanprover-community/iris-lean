@@ -505,7 +505,6 @@ abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPre :=
 instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
   map {A A'} {B B'} _ _ _ _ f g := View.mapC (Heap.mapO H (RFunctor.map (F:=T) f g).toHom) (Heap.mapC H (Prod.mapC Hom.id (RFunctor.map (F:=T) f g))) (heapR_map_eq f g)
   map_ne.ne a b c Hx d e Hy mv := by
-    simp [View.mapC]
     apply View.map_ne
     · intro
       apply Heap.map_ne
@@ -517,9 +516,22 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
       simp
       apply RFunctor.map_ne.ne <;> simp_all
   map_id x := by
-    -- rw [View.map_id]
-    sorry
+    rw (config := { occs := .pos [2]}) [<- (View.map_id x)]
+    apply View.map_ext
+    · exact (COFE.OFunctor.map_id (F := HeapOF H T))
+    · intro b
+      apply Equiv.trans
+      rotate_left
+      apply Heap.map_id
+      refine equiv_dist.mpr ?_
+      intro
+      apply Heap.map_ne
+      intro x
+      constructor
+      rfl
+      exact Equiv.dist (RFunctor.map_id _)
   map_comp f g f' g' x := by
+    simp [View.mapC]
     sorry
 
 instance {T} [RFunctorContractive T] : URFunctorContractive (HeapViewURF (F := F) (H := H) T) where
