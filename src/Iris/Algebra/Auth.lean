@@ -437,32 +437,22 @@ instance instURFunctorAuthURF {T : COFE.OFunctorPre} [URFunctor T] : URFunctor (
       (authViewRel_map (URFunctor.map f g))
   map_ne.ne a b c Hx d e Hy x := by
     simp [View.mapC]
-    apply View.map_ne
-    · intro y
-      exact URFunctor.map_ne.ne Hx Hy y
-    · intro y
-      exact URFunctor.map_ne.ne Hx Hy y
+    apply View.map_ne <;> intro y <;> exact URFunctor.map_ne.ne Hx Hy y
   map_id x := by
     simp only [View.mapC]
     conv => rhs; rw [← View.map_id (R := authViewRel) x]
-    apply View.map_ext
-    · intro a; exact URFunctor.map_id a
-    · intro b; exact URFunctor.map_id b
+    apply View.map_ext <;> apply URFunctor.map_id
   map_comp f g f' g' x := by
     simp only [View.mapC]
     haveI : OFE.NonExpansive ((URFunctor.map (F := T) g g').f ∘ (URFunctor.map (F := T) f f').f) :=
       (URFunctor.map (F := T) g g').toHom.comp (URFunctor.map (F := T) f f').toHom |>.ne
     conv => rhs; rw [← View.map_compose (R' := authViewRel)]
-    apply View.map_ext
-    · intro a; exact URFunctor.map_comp f g f' g' a
-    · intro b; exact URFunctor.map_comp f g f' g' b
+    apply View.map_ext <;> apply URFunctor.map_comp f g f' g'
 
 instance instURFunctorContractiveAuthURF {T : COFE.OFunctorPre} [URFunctorContractive T] :
     URFunctorContractive (AuthURF (F := F) T) where
   map_contractive.1 H x := by
-    apply View.map_ne
-    · intro a; exact URFunctorContractive.map_contractive.1 H a
-    · intro b; exact URFunctorContractive.map_contractive.1 H b
+    apply View.map_ne <;> apply URFunctorContractive.map_contractive.1 H
 
 abbrev AuthRF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
   fun A B _ _ => Auth F (T A B)
@@ -475,31 +465,21 @@ instance instRFunctorAuthRF {T : COFE.OFunctorPre} [URFunctor T] : RFunctor (Aut
       (authViewRel_map (URFunctor.map f g))
   map_ne.ne a b c Hx d e Hy x := by
     simp [View.mapC]
-    apply View.map_ne
-    · intro y
-      exact URFunctor.map_ne.ne Hx Hy y
-    · intro y
-      exact URFunctor.map_ne.ne Hx Hy y
+    apply View.map_ne <;> intro y <;> exact URFunctor.map_ne.ne Hx Hy y
   map_id x := by
     simp only [View.mapC]
     conv => rhs; rw [← View.map_id (R := authViewRel) x]
-    apply View.map_ext
-    · intro a; exact URFunctor.map_id a
-    · intro b; exact URFunctor.map_id b
+    apply View.map_ext <;> apply URFunctor.map_id
   map_comp f g f' g' x := by
     simp only [View.mapC]
     haveI : OFE.NonExpansive ((URFunctor.map (F := T) g g').f ∘ (URFunctor.map (F := T) f f').f) :=
       (URFunctor.map (F := T) g g').toHom.comp (URFunctor.map (F := T) f f').toHom |>.ne
     conv => rhs; rw [← View.map_compose (R' := authViewRel)]
-    apply View.map_ext
-    · intro a; exact URFunctor.map_comp f g f' g' a
-    · intro b; exact URFunctor.map_comp f g f' g' b
+    apply View.map_ext <;> apply URFunctor.map_comp f g f' g'
 
 instance instRFunctorContractiveAuthRF {T : COFE.OFunctorPre} [URFunctorContractive T] :
     RFunctorContractive (AuthRF (F := F) T) where
   map_contractive.1 H x := by
-    apply View.map_ne
-    · intro a; exact URFunctorContractive.map_contractive.1 H a
-    · intro b; exact URFunctorContractive.map_contractive.1 H b
+    apply View.map_ne <;> apply URFunctorContractive.map_contractive.1 H
 
 end Auth
