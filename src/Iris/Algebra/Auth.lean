@@ -412,8 +412,8 @@ theorem auth_update_dfrac_alloc {dq : DFrac F} {a b : A} [CoreId b]
 theorem auth_local_update {a b0 b1 a' b0' b1' : A}
     (Hup : (b0, b1) ~l~> (b0', b1'))
     (Hinc : b0' ≼ a') (Hv : ✓ a') :
-    LocalUpdate ((● a : Auth F A) • ◯ b0, (● a : Auth F A) • ◯ b1)
-                ((● a' : Auth F A) • ◯ b0', (● a' : Auth F A) • ◯ b1') :=
+    ((● a : Auth F A) • ◯ b0, (● a) • ◯ b1) ~l~>
+    ((● a' : Auth F A) • ◯ b0', (● a') • ◯ b1') :=
   View.view_local_update Hup fun n _ => ⟨incN_of_inc n Hinc, Hv.validN⟩
 
 /-! ## Functor -/
