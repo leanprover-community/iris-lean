@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors: Markus de Medeiros, Puming Liu
 -/
 
 import Iris.Algebra.CMRA
@@ -462,3 +462,89 @@ nonrec instance [HD : CMRA.Discrete V] [Heap T K V] : Discrete T where
   discrete_valid {_} := (CMRA.Discrete.discrete_valid <| · ·)
 
 end Heap
+
+section HeapFunctor
+
+variable {K} (H : Type _ → Type _) [∀ V, Heap (H V) K V] [∀ α β, HasHeapMap (H α) (H β) K α β]
+
+section HeapMap
+
+def Heap.map' [OFE α] [OFE β] (f : α → β) : H α → H β:= HasHeapMap.hhmap (fun _ a => some (f a))
+
+local instance [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonExpansive (Heap.map' H f) where
+  ne := by
+    simp only [OFE.Dist, Option.Forall₂, Heap.map', hhmap_get]
+    intro n m1 m2
+    apply forall_imp
+    intro k
+    cases Store.get m1 k <;> cases Store.get m2 k <;> simp
+    apply OFE.NonExpansive.ne
+
+def Heap.mapO [OFE α] [OFE β] (f : α -n> β) : OFE.Hom (H α) (H β) where
+  f := Heap.map' H f
+  ne := inferInstance
+
+def Heap.map_ne [OFE α] [OFE β] (f g : α -n> β) (heq: f ≡{n}≡ g) :
+    Heap.mapO H f ≡{n}≡ Heap.mapO H g := by
+  simp [OFE.Dist, mapO, Option.Forall₂, map', hhmap_get]
+  intro m k
+  cases Store.get m k <;> simp
+  expose_names; exact heq val
+
+def Heap.map_compose [OFE α] [OFE β] [OFE γ] (f : α -n> β) (g : β -n> γ) m :
+    Heap.mapO H (g.comp f) m ≡ Heap.mapO H g (Heap.mapO H f m) := by
+  intro k
+  simp [mapO, map', hhmap_get]
+  cases Store.get m k <;> simp
+
+def Heap.mapC [CMRA α] [CMRA β] (f : α -C> β) : CMRA.Hom (H α) (H β) where
+  f := Heap.map' H f
+  ne := inferInstance
+  validN {n x} := by
+    simp only [map', CMRA.ValidN, Store.validN, optionValidN]
+    apply forall_imp
+    intro k
+    rw [hhmap_get]
+    cases (Store.get x k) <;> simp
+    apply CMRA.Hom.validN
+  pcore m := by
+    simp [map', Option.map, CMRA.pcore]
+    sorry
+  op m1 m2 n := by
+    simp [map']
+    sorry
+
+end HeapMap
+
+abbrev HeapOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
+  fun A B _ _ => H (F A B)
+
+instance {F} [COFE.OFunctor F] : COFE.OFunctor (HeapOF H F) where
+  cofe := inferInstance
+  map f g := Heap.mapO H (COFE.OFunctor.map f g)
+  map_ne := by
+    intros
+    constructor
+    intros
+    apply Heap.map_ne
+    apply COFE.OFunctor.map_ne.ne <;> simp_all
+  map_comp := by
+    sorry
+  map_id := by
+    sorry
+
+instance {F} [RFunctor F] : URFunctor (HeapOF H F) where
+  map f g := Heap.mapC H (RFunctor.map f g)
+  map_ne := by
+    sorry
+  map_comp := by
+    sorry
+  map_id := by
+    sorry
+
+instance {F} [RFunctorContractive F] : URFunctorContractive (HeapOF H F) where
+  map_contractive.1 H m := by
+    apply Heap.map_ne _ _
+    apply (RFunctorContractive.map_contractive.1 H)
+
+end HeapFunctor
