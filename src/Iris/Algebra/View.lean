@@ -641,7 +641,33 @@ theorem auth_alloc (Hup : ∀ n bf, R n a bf → R n a (b • bf)) :
     refine CMRA.op_ne.ne ?_
     exact (CMRA.unit_left_id_dist _)
 
--- TODO: Local update lemma
+theorem view_local_update {a a' : A} {b0 b1 b0' b1' : B}
+    (Hup : (b0, b1) ~l~> (b0', b1'))
+    (Hrel : ∀ n, R n a b0 → R n a' b0') :
+    ((●V a : View F R) • ◯V b0, (●V a) • ◯V b1) ~l~> ((●V a') • ◯V b0', (●V a') • ◯V b1') := by
+  rw [local_update_unital]
+  intro n ⟨ag, bf⟩ Hv Heq
+  rw [auth_one_op_frag_validN_iff] at Hv
+
+  obtain (_|⟨dq, ag'⟩) := ag
+  · have Hb0_eq : b0 ≡{n}≡ b1 • bf := by
+      calc b0 ≡{n}≡ unit • b0 := (unit_left_id_dist b0).symm
+           _ ≡{n}≡ (unit • b1) • bf := Heq.2
+           _ ≡{n}≡ b1 • bf := (unit_left_id_dist b1).op_l
+    have Hvb0 : ✓{n} b0 := IsViewRel.rel_validN n a b0 Hv
+    have ⟨_, Hb0'⟩ := local_update_unital.mp Hup n bf Hvb0 Hb0_eq
+    constructor
+    · rw [auth_one_op_frag_validN_iff]
+      exact Hrel n Hv
+    · refine ⟨.rfl, ?_⟩
+      calc (unit • b0') ≡{n}≡ b0' := unit_left_id_dist b0'
+           _ ≡{n}≡ b1' • bf := Hb0'
+           _ ≡{n}≡ (unit • b1') • bf := (unit_left_id_dist b1').symm.op_l
+  · have Hwhole := UFraction.one_whole (α := F)
+    have Hvalid_frame : ✓{n} ((((●V a) • ◯V b1 : View F R)) • mk (some (dq, ag')) bf) :=
+      validN_ne Heq (auth_one_op_frag_validN_iff.mpr Hv)
+    exact ((UFraction.one_whole (α := F)).2 (DFrac.valid_own_op Hvalid_frame.1)).elim
 
 end Updates
+
 end View
