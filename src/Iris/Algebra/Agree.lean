@@ -349,7 +349,7 @@ section agree_map
 
 variable {α β} [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f]
 
-local instance : OFE.NonExpansive (Agree.map' f) where
+instance : OFE.NonExpansive (Agree.map' f) where
   ne := by
     intro n x₁ x₂ h
     simp only [Agree.map', Agree.dist_def, Agree.dist, List.mem_map, forall_exists_index, and_imp,
@@ -411,7 +411,7 @@ abbrev AgreeRF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
 
 instance {F} [COFE.OFunctor F] : RFunctor (AgreeRF F) where
   map f g := Agree.map (COFE.OFunctor.map f g)
-  map_ne.ne _ _ _ Hx _ _ Hy  _ := Agree.map_ne <| COFE.OFunctor.map_ne.ne Hx Hy
+  map_ne.ne _ _ _ Hx _ _ Hy _ := Agree.map_ne <| COFE.OFunctor.map_ne.ne Hx Hy
   map_id x := by
     conv=> right; rw [<- (Agree.map_id x)]
     exact (Agree.map_id x) ▸ Agree.agree_map_ext COFE.OFunctor.map_id

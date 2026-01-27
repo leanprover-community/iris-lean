@@ -493,7 +493,7 @@ theorem heapR_map_eq [OFE A] [OFE B] [OFE A'] [OFE B'] [RFunctor T] (f : A' -n> 
       constructor <;> simp_all
       exact (NonExpansive.ne he2)
     · right
-      rw [<-Prod.prod_incN_iff] at *
+      rw [<-Prod.incN_iff] at *
       rcases he with ⟨_ , he⟩
       constructor
       simp_all

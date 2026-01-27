@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mario Carneiro, Сухарик (@suhr), Markus de Medeiros
+Authors: Mario Carneiro, Сухарик (@suhr), Markus de Medeiros, Puming Liu
 -/
 import Iris.Algebra.OFE
 
@@ -1365,7 +1365,7 @@ theorem valid_snd {x : α × β} (h : ✓ x) : ✓ x.snd := h.right
 theorem validN_fst {n} {x : α × β} (h : ✓{n} x) : ✓{n} x.fst := h.left
 theorem validN_snd {n} {x : α × β} (h : ✓{n} x) : ✓{n} x.snd := h.right
 
-theorem prod_incN_iff {n} (a a' : α) (b b' : β) :
+theorem incN_iff {n} (a a' : α) (b b' : β) :
     a ≼{n} a' ∧ b ≼{n} b' ↔ (a, b) ≼{n} (a', b') := by
   constructor <;>simp [CMRA.IncludedN]
   · rintro x ha y hb
@@ -1410,12 +1410,16 @@ abbrev ProdOF (F1 : COFE.OFunctorPre) (F2 : COFE.OFunctorPre) : COFE.OFunctorPre
 instance [OF1: COFE.OFunctor F1] [OF2: COFE.OFunctor F2] : COFE.OFunctor (ProdOF F1 F2) where
   cofe := inferInstance
   map f g := Prod.mapO (OF1.map f g) (OF2.map f g)
-  map_ne := sorry
-  map_id := sorry
-  map_comp := sorry
+  map_ne.ne _ _ _ Hx _ _ Hy _ := by
+    constructor <;> apply COFE.OFunctor.map_ne.ne <;> assumption
+  map_id x := by
+    constructor <;> apply COFE.OFunctor.map_id
+  map_comp f g f' g' x := by
+    constructor <;> apply COFE.OFunctor.map_comp
 
 instance [COFE.OFunctorContractive F1] [COFE.OFunctorContractive F2] : COFE.OFunctorContractive (ProdOF F1 F2) where
-  map_contractive.1 := sorry
+  map_contractive.1 H _ := by
+    apply Prod.map_ne <;> intro <;> apply COFE.OFunctorContractive.map_contractive.1 <;> assumption
 
 end ProdOF
 
@@ -1426,9 +1430,22 @@ variable [CMRA A] [CMRA A'] [CMRA B] [CMRA B']
 instance Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
   f := Prod.map f g
   ne := inferInstance
-  validN := sorry
-  pcore := sorry
-  op := sorry
+  validN {n x} hval := by
+    simp [CMRA.ValidN, ValidN] at hval ⊢
+    cases hval
+    constructor <;> apply CMRA.Hom.validN <;> assumption
+  pcore x := by
+    simp [Option.map, Prod.map, CMRA.pcore, pcore]
+    have h2 := CMRA.Hom.pcore g x.snd
+    have h1 := CMRA.Hom.pcore f x.fst
+    rcases h : (CMRA.pcore x.fst) with _ | x1
+    · rcases _ : CMRA.pcore (f.f x.fst) <;> simp_all
+    · rcases h' : (CMRA.pcore x.snd) with _ | x2 <;>
+      rcases _ : CMRA.pcore (f.f x.fst) <;>
+      rcases _ : CMRA.pcore (g.f x.snd) <;> simp_all
+      constructor <;> simp_all
+  op x y := by
+    constructor <;> apply CMRA.Hom.op
 
 end ProdMorph
 

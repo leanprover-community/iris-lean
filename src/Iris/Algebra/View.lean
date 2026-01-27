@@ -647,8 +647,6 @@ end Updates
 
 section ViewMap
 
-/- [OFE A] [UCMRA B] [OFE A'] [UCMRA B'] -/
-
 def map  {R : ViewRel A B} (R' : ViewRel A' B') (f : A → A') (g : B → B') (v : View F R) : View F R' where
   auth := match v.auth with
     | none => none
@@ -706,9 +704,32 @@ instance mapO [OFE A] [OFE B] [OFE A'] [OFE B'] (R : ViewRel A B) (R' : ViewRel 
 instance mapC [UFraction F] [OFE A] [UCMRA B] [OFE A'] [UCMRA B'] {R : ViewRel A B} [IsViewRel R] {R' : ViewRel A' B'} [IsViewRel R'] (f : A -n> A') (g : B -C> B') (H : ∀ n a b, R n a b → R' n (f a) (g b)) : View F R -C> View F R' where
   f := View.map R' f g
   ne := inferInstance
-  validN := sorry
-  pcore := sorry
-  op := sorry
+  validN {n x} hval := by
+    simp [CMRA.ValidN, map] at *
+    rcases x with ⟨_ | ⟨fr,a⟩, b⟩ <;> simp_all
+    · obtain ⟨a, hr⟩ := hval
+      exists f a
+      exact (H n a b hr)
+    · rcases hval with ⟨hfr, a1, ha, hr⟩
+      exists f a1
+      constructor <;> try exact (H n a1 b hr)
+      apply (OFE.Dist.trans (OFE.NonExpansive.ne ha))
+      simp [toAgree, Agree.map']
+  pcore x := by
+    simp [CMRA.pcore, map, CMRA.core, Option.getD]
+    constructor
+    · rcases x.auth with _|⟨fr, a⟩ <;> simp [Prod.pcore]
+      rcases (CMRA.pcore fr) <;> simp
+      rcases h : (CMRA.pcore a) <;> cases h <;> simp [CMRA.pcore]
+    · have _ := CMRA.Hom.pcore g x.frag
+      rcases _ : (CMRA.pcore x.frag) <;>
+      rcases _ : (CMRA.pcore (g.f x.frag)) <;> simp_all
+  op x y := by
+    simp [CMRA.op, map]
+    constructor <;> simp [CMRA.Hom.op]
+    rcases x.auth <;> rcases y.auth <;> simp [Prod.op]
+    constructor <;> simp
+    apply (Agree.map _).op
 
 end ViewMap
 
