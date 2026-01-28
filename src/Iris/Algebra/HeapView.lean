@@ -503,7 +503,11 @@ abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPre :=
   fun A B _ _ => HeapView F K (T A B) H
 
 instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
-  map {A A'} {B B'} _ _ _ _ f g := View.mapC (Heap.mapO H (RFunctor.map (F:=T) f g).toHom) (Heap.mapC H (Prod.mapC Hom.id (RFunctor.map (F:=T) f g))) (heapR_map_eq f g)
+  map {A A'} {B B'} _ _ _ _ f g :=
+    View.mapC
+      (Heap.mapO H (RFunctor.map f g).toHom)
+      (Heap.mapC H (Prod.mapC Hom.id (RFunctor.map f g)))
+      (heapR_map_eq f g)
   map_ne.ne a b c Hx d e Hy mv := by
     apply View.map_ne
     · intro
@@ -526,16 +530,37 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
       refine equiv_dist.mpr ?_
       intro
       apply Heap.map_ne
-      intro x
+      intro
       constructor
       rfl
       exact Equiv.dist (RFunctor.map_id _)
   map_comp f g f' g' x := by
     simp [View.mapC]
-    sorry
+    rw [<- View.map_compose']
+    apply View.map_ext
+    · apply (inferInstance : URFunctor (HeapOF H T)).map_comp
+    · simp [Prod.mapC, CMRA.Hom.id, Heap.mapC]
+      intro
+      symm
+      apply OFE.Equiv.trans
+      exact (OFE.Equiv.symm (Heap.map_compose _ _ _ _))
+      apply Heap.map_ext
+      rw [Prod.map_comp_map]
+      apply (fun _ => Prod.map_ext _ _ _ _ _ _) <;> simp
+      exact (fun _ x => OFE.Equiv.symm (RFunctor.map_comp _ _ _ _ x))
 
 instance {T} [RFunctorContractive T] : URFunctorContractive (HeapViewURF (F := F) (H := H) T) where
-  map_contractive.1 H _ := sorry
+  map_contractive.1 H _ := by
+    apply View.map_ne
+    intro
+    apply Heap.map_ne
+    apply (RFunctorContractive.map_contractive.1 H)
+    intro
+    apply Heap.map_ne
+    intro
+    apply Prod.map_ne
+    simp
+    apply (RFunctorContractive.map_contractive.1 H)
 
 end heapViewFunctor
 

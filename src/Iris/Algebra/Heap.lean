@@ -504,10 +504,10 @@ def Heap.map_ne [OFE α] [OFE β] (f g : α -> β) (heq: f ≡{n}≡ g) :
   cases Store.get m k <;> simp
   exact heq _
 
-def Heap.map_compose [OFE α] [OFE β] [OFE γ] (f : α -n> β) (g : β -n> γ) m :
-    Heap.map' H (g.comp f) m ≡ Heap.map' H g (Heap.mapO H f m) := by
+def Heap.map_compose [OFE α] [OFE β] [OFE γ] (f : α -> β) (g : β -> γ) m :
+    Heap.map' H (g.comp f) m ≡ Heap.map' H g (Heap.map' H f m) := by
   intro k
-  simp [mapO, map', hhmap_get]
+  simp [map', hhmap_get]
   cases Store.get m k <;> simp
 
 def Heap.mapC [CMRA α] [CMRA β] (f : α -C> β) : CMRA.Hom (H α) (H β) where

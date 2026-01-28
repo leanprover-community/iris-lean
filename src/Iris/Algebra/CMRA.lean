@@ -1394,7 +1394,15 @@ instance (f : A → A') (g : B → B') [NonExpansive f] [NonExpansive g] : NonEx
     apply (inferInstance : NonExpansive _).ne <;>
     assumption
 
-theorem Prod.map_ne (f f' : A → A') (g g' : B → B') [NonExpansive f] [NonExpansive f'] [NonExpansive g] [NonExpansive g'] :
+omit [OFE A] [OFE B] in
+theorem Prod.map_ext (f f' : A → A') (g g' : B → B') :
+    (∀ a, f a ≡ f' a) → (∀ a, g a ≡ g' a) → Prod.map f g x ≡ Prod.map f' g' x := by
+  intros
+  cases x
+  constructor <;> simp_all
+
+omit [OFE A] [OFE B] in
+theorem Prod.map_ne (f f' : A → A') (g g' : B → B') :
     (∀ a, f a ≡{n}≡ f' a) → (∀ a, g a ≡{n}≡ g' a) → Prod.map f g x ≡{n}≡ Prod.map f' g' x := by
   intros
   cases x

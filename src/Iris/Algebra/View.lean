@@ -665,6 +665,9 @@ theorem map_compose {R : ViewRel A B} {R' : ViewRel A' B'} {R'' : ViewRel A'' B'
   rcases v with ⟨a, b⟩
   cases a <;> simp
 
+theorem map_compose' [OFE A] [OFE B] [OFE A'] [OFE B'] [OFE A''] [OFE B''] {R : ViewRel A B} {R' : ViewRel A' B'} {R'' : ViewRel A'' B''} f g (f' : A' -n> A'') (g' : B' -n> B'') (v : View F R) :
+    View.map R'' (f'.comp f) (g'.comp g) v = View.map R'' f' g' (View.map R' f g v) := map_compose f.f g.f f'.f g'.f v
+
 theorem map_ext [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : ViewRel A' B'} (f1 f2 : A → A') (g1 g2 : B → B') [OFE.NonExpansive f1] [OFE.NonExpansive f2] (v : View F R) :
     (∀ a, f1 a ≡ f2 a) → (∀ b, g1 b ≡ g2 b) →
     View.map R' f1 g1 v ≡ View.map R' f2 g2 v := by
