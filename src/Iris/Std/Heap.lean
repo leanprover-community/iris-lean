@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2023 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors: Markus de Medeiros, Puming Liu
 -/
 
 /-! ## Generic stores and heaps -/
@@ -77,6 +77,13 @@ class HasHeapMap (T1 T2 : Type _) (K V1 V2 : outParam (Type _))
   hhmap (f : K → V1 → Option V2) : T1 → T2
   hhmap_get (f : K → V1 → Option V2) : get (hhmap f t) k = (get t k).bind (f k)
 export HasHeapMap (hhmap hhmap_get)
+
+theorem hhmap_compose [Store T1 K (Option V1)] [Store T2 K (Option V2)] [Store T3 K (Option V3)] [HasHeapMap T1 T2 K V1 V2] [HasHeapMap T2 T3 K V2 V3] [HasHeapMap T1 T3 K V1 V3] (f : K → V1 → Option V2) (g : K → V2 → Option V3) (m : T1) :
+    Store.Equiv (hhmap g ((hhmap f m) : T2) : T3)  (hhmap (fun k a => (f k a) >>= (g k)) m) := by
+  ext
+  constructor <;> simp [hhmap_get] <;> intro h <;> rw [← h]
+  · apply Eq.symm (Option.bind_assoc (Store.get m _) (f _) (g _))
+  · (expose_names; exact Option.bind_assoc (Store.get m x) (f x) (g x))
 
 class Heap (T : Type _) (K V : outParam (Type _)) extends Store T K (Option V) where
   empty : T

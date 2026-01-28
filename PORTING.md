@@ -57,7 +57,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `gmap.v` (nb. generalized in `Heap.lean`)
   - [x] CMRA
   - [ ] Updates
-  - [ ] Functors
+  - [x] Functors
 - [ ] `gmultiset.v` 
   - [ ] CMRA
   - [ ] Updates
@@ -111,10 +111,10 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `vector.v` 
   - [ ] CMRA
   - [ ] Functors
-- [ ] `view.v` 
+- [] `view.v` 
   - [x] CMRA
   - [x] Updates
-  - [ ] Functors
+  - [x] Functors
 - [ ] `lib/dfrac_agree.v` 
   - [ ] Lemmas
   - [ ] Updates
@@ -126,10 +126,10 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] Lemmas
   - [ ] Updates
   - [ ] Functors
-- [ ] `lib/gmap_view.v` (nb. generalized in `HeapView.lean`)
+- [] `lib/gmap_view.v` (nb. generalized in `HeapView.lean`)
   - [x] CMRA
   - [x] Updates
-  - [ ] Functors
+  - [x] Functors
 - [ ] `lib/gset_bij.v` 
 - [ ] `lib/mono_Z.v` (nb. generalize to `MonoNumbers.lean`)
 - [ ] `lib/mono_list.v` 
