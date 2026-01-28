@@ -137,4 +137,14 @@ class FromPure [BI PROP] (a : outParam Bool) (P : PROP) (φ : outParam Prop) whe
   from_pure : <affine>?a ⌜φ⌝ ⊢ P
 export FromPure (from_pure)
 
+@[ipm_class]
+class IsExcept0 [BI PROP] (Q : PROP) where
+  is_except0 : ◇ Q ⊢ Q
+export IsExcept0 (is_except0)
+
+@[ipm_class]
+class IntoExcept0 [BI PROP] (P : PROP) (Q : outParam PROP) where
+  into_except0 : P ⊢ ◇ Q
+export IntoExcept0 (into_except0)
+
 end Iris.ProofMode

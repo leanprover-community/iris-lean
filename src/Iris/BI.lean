@@ -1,5 +1,6 @@
 import Iris.BI.Classes
 import Iris.BI.DerivedLaws
+import Iris.BI.DerivedLawsLater
 import Iris.BI.Extensions
 import Iris.BI.Instances
 import Iris.BI.BI

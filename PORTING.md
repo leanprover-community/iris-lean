@@ -204,10 +204,11 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [x] `derived_connectives.v`
 - [ ] `derived_laws.v`
 - [ ] `derived_laws_later.v`
-  - [ ] Base lemmas
+  - [x] Base lemmas
   - [x] Löb induction definition
-  - [ ] Löb classes
-  - [ ] Except 0 lemmas
+  - [x] Löb classes
+  - [x] Except 0 lemmas
+  - [ ] Timeless lemmas
   - [ ] Big Op lemmas
 - [ ] `embedding.v`
 - [ ] `extensions.v`
@@ -258,9 +259,24 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `class_instances_frame.v`
 - [ ] `class_instances_internal_eq.v`
 - [ ] `class_instances_later.v` (InstancesLater.lean)
+  - [x] basic instances
+  - [ ] FromModal
+  - [ ] ElimModal
+  - [ ] AddModal
+  - [ ] IntoLater
 - [ ] `class_instances_make.v`
 - [ ] `class_instances_plainly.v`
-- [ ] `class_instances_updates.v`
+- [ ] `class_instances_updates.v` (InstancesUpdates.lean)
+  - [x] Basic instances for bupd
+  - [ ] Basic instances for fupd
+  - [ ] FromModal bupd
+  - [ ] FromModal fupd
+  - [ ] ElimModal bupd
+  - [ ] ElimModal fupd
+  - [ ] AddModal bupd
+  - [ ] AddModal fupd
+  - [ ] ElimAcc bupd
+  - [ ] ElimAcc fupd
 - [ ] `classes.v` (Classes.lean)
   - [x] FromAssumption
   - [x] IntoPure
@@ -283,14 +299,14 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] IntoExist
   - [x] IntoForall
   - [x] FromForall
-  - [ ] IsExcept0
+  - [x] IsExcept0
   - [ ] CombineSepAs
   - [ ] MaybeCombineSepAs
   - [ ] CombineSepGives
   - [ ] ElimModal
   - [ ] AddModal
   - [ ] Frame
-  - [ ] IntoExcept0
+  - [x] IntoExcept0
   - [ ] MaybeIntoLaterN
   - [ ] IntoLaterN
   - [ ] IntoEmbed
