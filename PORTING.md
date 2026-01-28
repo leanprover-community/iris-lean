@@ -259,9 +259,24 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `class_instances_frame.v`
 - [ ] `class_instances_internal_eq.v`
 - [ ] `class_instances_later.v` (InstancesLater.lean)
+  - [x] basic instances
+  - [ ] FromModal
+  - [ ] ElimModal
+  - [ ] AddModal
+  - [ ] IntoLater
 - [ ] `class_instances_make.v`
 - [ ] `class_instances_plainly.v`
-- [ ] `class_instances_updates.v`
+- [ ] `class_instances_updates.v` (InstancesUpdates.lean)
+  - [x] Basic instances for bupd
+  - [ ] Basic instances for fupd
+  - [ ] FromModal bupd
+  - [ ] FromModal fupd
+  - [ ] ElimModal bupd
+  - [ ] ElimModal fupd
+  - [ ] AddModal bupd
+  - [ ] AddModal fupd
+  - [ ] ElimAcc bupd
+  - [ ] ElimAcc fupd
 - [ ] `classes.v` (Classes.lean)
   - [x] FromAssumption
   - [x] IntoPure
