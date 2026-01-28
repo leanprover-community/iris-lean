@@ -204,10 +204,11 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [x] `derived_connectives.v`
 - [ ] `derived_laws.v`
 - [ ] `derived_laws_later.v`
-  - [ ] Base lemmas
+  - [x] Base lemmas
   - [x] Löb induction definition
-  - [ ] Löb classes
-  - [ ] Except 0 lemmas
+  - [x] Löb classes
+  - [x] Except 0 lemmas
+  - [ ] Timeless lemmas
   - [ ] Big Op lemmas
 - [ ] `embedding.v`
 - [ ] `extensions.v`
@@ -283,14 +284,14 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] IntoExist
   - [x] IntoForall
   - [x] FromForall
-  - [ ] IsExcept0
+  - [x] IsExcept0
   - [ ] CombineSepAs
   - [ ] MaybeCombineSepAs
   - [ ] CombineSepGives
   - [ ] ElimModal
   - [ ] AddModal
   - [ ] Frame
-  - [ ] IntoExcept0
+  - [x] IntoExcept0
   - [ ] MaybeIntoLaterN
   - [ ] IntoLaterN
   - [ ] IntoEmbed
