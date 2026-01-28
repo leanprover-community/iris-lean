@@ -92,4 +92,4 @@ elab "ipure_intro" : tactic => do
     have : $b =Q false := ⟨⟩
     mvar.assign q(pure_intro_spatial (P := $e) (Q := $goal) $m)
   -- the following indicates a bug in the typeclass instances that generate b
-  | _ => throwError "ipure_intro: {b} must reduce to true or false"
+  | _ => throwError "ipure_intro: bug in typeclass instances, cannot reduce {b} to true or false"
