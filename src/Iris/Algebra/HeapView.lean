@@ -471,10 +471,14 @@ section heapViewFunctor
 
 variable [∀ α β, HasHeapMap (H α) (H β) K α β]
 
-theorem heapR_map_eq [OFE A] [OFE B] [OFE A'] [OFE B'] [RFunctor T] (f : A' -n> A) (g : B -n> B') (n : Nat) (m : H (T A B)) (mv : H (DFrac F × T A B)) :
+theorem heapR_map_eq [OFE A] [OFE B] [OFE A'] [OFE B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
+    (n : Nat) (m : H (T A B)) (mv : H (DFrac F × T A B)) :
     HeapR F K (T A B) H n m mv →
-    HeapR F K (T A' B') H n ((Heap.mapO H (RFunctor.map f g).toHom).f m) ((Heap.mapC H (Prod.mapC (CMRA.Hom.id (α := DFrac F)) (RFunctor.map (F:=T) f g))).f mv) := by
-  simp [HeapR, Heap.mapC, Heap.mapO, Heap.map', CMRA.Hom.id, OFE.Hom.id, Prod.mapC, hhmap_get]
+    HeapR F K (T A' B') H n
+      ((Heap.mapO H (RFunctor.map f g).toHom).f m)
+      ((Heap.mapC H (Prod.mapC (CMRA.Hom.id (α := DFrac F))
+      (RFunctor.map (F:=T) f g))).f mv) := by
+  simp [HeapR, Heap.mapC, Heap.mapO, Heap.map, CMRA.Hom.id, OFE.Hom.id, Prod.mapC, hhmap_get]
   intros hr k a b
   rcases h : Store.get mv k with _ | ⟨a,b⟩ <;> simp
   rintro rfl rfl
@@ -496,8 +500,8 @@ theorem heapR_map_eq [OFE A] [OFE B] [OFE A'] [OFE B'] [RFunctor T] (f : A' -n> 
       rw [<-Prod.incN_iff] at *
       rcases he with ⟨_ , he⟩
       constructor
-      simp_all
-      apply (Hom.monoN _ _ he)
+      · simp_all
+      · exact (Hom.monoN _ _ he)
 
 abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPre :=
   fun A B _ _ => HeapView F K (T A B) H
@@ -508,32 +512,19 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
       (Heap.mapO H (RFunctor.map f g).toHom)
       (Heap.mapC H (Prod.mapC Hom.id (RFunctor.map f g)))
       (heapR_map_eq f g)
-  map_ne.ne a b c Hx d e Hy mv := by
+  map_ne.ne n _ _ Hx _ _ Hy mv := by
     apply View.map_ne
-    · intro
-      apply Heap.map_ne
-      apply RFunctor.map_ne.ne <;> simp_all
-    · intro m
-      apply Heap.map_ne
-      intro a
-      apply Prod.map_ne
-      simp
-      apply RFunctor.map_ne.ne <;> simp_all
+    · refine fun _ => Heap.map_ne _ _ _ (RFunctor.map_ne.ne ?_ ?_) <;> simp_all
+    · refine fun _ => Heap.map_ne _ _ _ ?_
+      exact fun _ => Prod.map_ne _ _ _ _ (fun _ => rfl) (RFunctor.map_ne.ne Hx Hy)
   map_id x := by
     rw (config := { occs := .pos [2]}) [<- (View.map_id x)]
     apply View.map_ext
     · exact (COFE.OFunctor.map_id (F := HeapOF H T))
     · intro b
-      apply Equiv.trans
-      rotate_left
-      apply Heap.map_id
-      refine equiv_dist.mpr ?_
-      intro
-      apply Heap.map_ne
-      intro
-      constructor
-      rfl
-      exact Equiv.dist (RFunctor.map_id _)
+      refine (Equiv.trans ?_ (Heap.map_id _ b))
+      refine equiv_dist.mpr (fun n => (Heap.map_ne _ (n := n) _ _ ?_))
+      exact fun _ => ⟨rfl, Equiv.dist (RFunctor.map_id _)⟩
   map_comp f g f' g' x := by
     simp [View.mapC]
     rw [<- View.map_compose']
@@ -551,16 +542,9 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
 
 instance {T} [RFunctorContractive T] : URFunctorContractive (HeapViewURF (F := F) (H := H) T) where
   map_contractive.1 H _ := by
-    apply View.map_ne
-    intro
-    apply Heap.map_ne
-    apply (RFunctorContractive.map_contractive.1 H)
-    intro
-    apply Heap.map_ne
-    intro
-    apply Prod.map_ne
-    simp
-    apply (RFunctorContractive.map_contractive.1 H)
+    apply View.map_ne <;> intros <;> apply Heap.map_ne
+    · exact (RFunctorContractive.map_contractive.1 H)
+    · exact (fun _ => Prod.map_ne _ _ _ _ (fun _ => rfl) (RFunctorContractive.map_contractive.1 H))
 
 end heapViewFunctor
 
