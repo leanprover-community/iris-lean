@@ -33,8 +33,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Isomorphisms
 - [ ] `cmra_big_op.v` 
 - [ ] `coPset.v`
-  - [ ] coPset definition
-  - [ ] CMRA
+  - [x] coPset definition
+  - [x] CMRA
 - [x] `cofe_solver.v` 
 - [ ] `csum.v`
   - [ ] CMRA
@@ -62,7 +62,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] CMRA
   - [ ] Updates
 - [ ] `gset.v` 
-  - [ ] CMRA
+  - [x] CMRA
   - [ ] Updates
 - [ ] `list.v` 
   - Is this an instance of the `Heap` CMRA?
@@ -425,5 +425,3 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] `language.v`
   - [ ] `ectx_language.v`
   - [ ] `ectxi_language.v`
-
-

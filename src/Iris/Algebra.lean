@@ -1,6 +1,7 @@
 import Iris.Algebra.Agree
 import Iris.Algebra.CMRA
 import Iris.Algebra.COFESolver
+import Iris.Algebra.CoPset
 import Iris.Algebra.DFrac
 import Iris.Algebra.Excl
 import Iris.Algebra.Frac
