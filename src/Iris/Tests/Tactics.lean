@@ -430,6 +430,11 @@ example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) 
   iapply H $$ %by exact a, %b, [HP]
   iapply HP
 
+/-- Tests `iapply` with pure hypothesis -/
+example [BI PROP] (Q : α → PROP) (a b : α) : (∀ x, ∀ y, ⌜x = a⌝ -∗ Q y) ⊢ Q b := by
+  iintro H
+  iapply H $$ %_, %b, %rfl
+
 /-- error: ispecialize: iprop(P a -∗ Q b) is not a lean premise -/
 #guard_msgs in
 example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
@@ -494,6 +499,13 @@ example [BI PROP] (P Q : Nat → PROP) :
 example [BI PROP] (P Q : Nat → PROP) :
   (P 1 ∧ Q 1) ⊢ Q 1 := by
   iintro H
+  iapply H
+
+/- Tests `iapply` exact matching, but not affine -/
+/-- error: iapply: the context P is not affine and goal not absorbing -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : Q ⊢ P -∗ Q := by
+  iintro H HP
   iapply H
 
 end apply
@@ -577,6 +589,21 @@ example [BI PROP] (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q
   ihave H' := H $$ %a, %b, [HP]
   . iexact HP
   iexact H'
+
+/-- Tests `ihave` with cases pattern -/
+example [BI PROP] (P Q : PROP) : ⊢ (□P ∗ Q) -∗ Q := by
+  iintro H
+  ihave ⟨□_, HQ⟩ := H
+  iexact HQ
+
+/-- Tests `ihave` assert -/
+example [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
+  iintro HP Hwand
+  ihave ⟨HQ, _⟩ : (Q ∗ emp) $$ [Hwand, HP]
+  . isplit
+    . iapply Hwand $$ HP
+    . ipure_intro; trivial
+  iexact HQ
 
 end ihave
 
