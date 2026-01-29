@@ -59,24 +59,24 @@ theorem later_exists [BI PROP] [Inhabited α] {Φ : α → PROP} :
 
 theorem later_and [BI PROP] {P Q : PROP} : ▷ (P ∧ Q) ⊣⊢ ▷ P ∧ ▷ Q := by
   constructor
-  · refine (later_mono and_alt.mp).trans ?_
-    refine .trans ?_ and_alt.mpr
+  · refine (later_mono and_forall_bool.mp).trans ?_
+    refine .trans ?_ and_forall_bool.mpr
     refine (later_forall).mp.trans (forall_mono ?_)
     exact (·.casesOn .rfl .rfl)
-  · refine .trans ?_ (later_mono and_alt.mpr)
-    refine and_alt.mp.trans ?_
+  · refine .trans ?_ (later_mono and_forall_bool.mpr)
+    refine and_forall_bool.mp.trans ?_
     refine .trans (forall_mono ?_) later_forall.mpr
     exact (·.casesOn .rfl .rfl)
 
 theorem later_or [BI PROP] {P Q : PROP} : ▷ (P ∨ Q) ⊣⊢ ▷ P ∨ ▷ Q := by
   constructor
-  · refine (later_mono or_alt.mp).trans ?_
-    refine .trans ?_ or_alt.mpr
+  · refine (later_mono or_exists_bool.mp).trans ?_
+    refine .trans ?_ or_exists_bool.mpr
     refine later_exists.mpr.trans (exists_mono ?_)
     exact (·.casesOn .rfl .rfl)
-  · refine .trans ?_ (later_mono or_alt.mpr)
+  · refine .trans ?_ (later_mono or_exists_bool.mpr)
     refine .trans ?_ later_exists.mp
-    refine  or_alt.mp.trans (exists_mono ?_)
+    refine  or_exists_bool.mp.trans (exists_mono ?_)
     exact (·.casesOn .rfl .rfl)
 
 theorem later_impl [BI PROP] {P Q : PROP} : ▷ (P → Q) ⊢ ▷ P → ▷ Q :=
@@ -213,10 +213,10 @@ theorem laterN_intro [BI PROP] (n : Nat) {P : PROP} : P ⊢ ▷^[n] P := by
   | zero => exact .rfl
   | succ n ih => exact ih.trans later_intro
 
-theorem laterN_true [BI PROP] (n : Nat) : ▷^[n] True ⊣⊢ (True : PROP) :=
+theorem laterN_true [BI PROP] (n : Nat) : ▷^[n] True ⊣⊢@{PROP} True :=
   ⟨true_intro, laterN_intro n⟩
 
-theorem laterN_emp [BI PROP] [BIAffine PROP] (n : Nat) : ▷^[n] emp ⊣⊢ (emp : PROP) :=
+theorem laterN_emp [BI PROP] [BIAffine PROP] (n : Nat) : ▷^[n] emp ⊣⊢@{PROP} emp :=
   (laterN_congr n true_emp.symm).trans $ (laterN_true n).trans true_emp
 
 theorem laterN_forall [BI PROP] (n : Nat) {Φ : α → PROP} : ▷^[n] (∀ a, Φ a) ⊣⊢ (∀ a, ▷^[n] Φ a) := by
@@ -255,7 +255,8 @@ theorem laterN_wand [BI PROP] (n : Nat) {P Q : PROP} : ▷^[n] (P -∗ Q) ⊢ �
   wand_intro' <| (laterN_sep n).2.trans <| laterN_mono n wand_elim_r
 
 theorem laterN_iff [BI PROP] (n : Nat) {P Q : PROP} : ▷^[n] (P ↔ Q) ⊢ (▷^[n] P ↔ ▷^[n] Q) :=
-  (laterN_and n).1.trans <| and_intro (and_elim_l.trans (laterN_impl n)) (and_elim_r.trans (laterN_impl n))
+  (laterN_and n).1.trans <|
+    and_intro (and_elim_l.trans (laterN_impl n)) (and_elim_r.trans (laterN_impl n))
 
 theorem laterN_persistently [BI PROP] (n : Nat) {P : PROP} : ▷^[n] <pers> P ⊣⊢ <pers> ▷^[n] P := by
   induction n with
@@ -314,7 +315,8 @@ theorem except0_emp [BI PROP] [BIAffine PROP] : ◇ emp ⊣⊢ (emp : PROP) :=
   (except0_congr true_emp.symm).trans <| except0_true.trans true_emp
 
 theorem except0_or [BI PROP] {P Q : PROP} : ◇ (P ∨ Q) ⊣⊢ ◇ P ∨ ◇ Q :=
-  ⟨or_elim (or_intro_l.trans or_intro_l) (or_elim (or_intro_l.trans (or_mono_l or_intro_r)) (or_intro_r.trans (or_mono_r or_intro_r))),
+  ⟨or_elim (or_intro_l.trans or_intro_l)
+    (or_elim (or_intro_l.trans (or_mono_l or_intro_r)) (or_intro_r.trans (or_mono_r or_intro_r))),
    or_elim (or_mono .rfl or_intro_l) (or_mono .rfl or_intro_r)⟩
 
 theorem except0_and [BI PROP] {P Q : PROP} : ◇ (P ∧ Q) ⊣⊢ ◇ P ∧ ◇ Q :=
@@ -341,16 +343,17 @@ theorem except0_sep [BI PROP] {P Q : PROP} : ◇ (P ∗ Q) ⊣⊢ ◇ P ∗ ◇ 
         apply sep_comm.1
 
 theorem except0_forall [BI PROP] {Φ : α → PROP} : ◇ (∀ a, Φ a) ⊣⊢ ∀ a, ◇ Φ a := by
-  constructor
-  · exact forall_intro fun a => except0_mono (forall_elim a)
-  · calc _ ⊢ ▷ (∀ a, Φ a) ∧ (∀ a, ◇ Φ a) :=
-      and_intro ((forall_mono λ _ => (or_elim (later_mono false_elim) later_intro)).trans later_forall.2) .rfl
-         _ ⊢ _ := (and_mono_l later_false_em).trans <| and_or_r.1.trans <| or_elim
-          (and_elim_l.trans or_intro_l)
-          (or_intro_r' <| forall_intro λ a => imp_elim' <|
-            (forall_elim a).trans <| or_elim
-              (imp_intro (imp_elim_r.trans <| forall_elim a))
-              (imp_intro and_elim_l))
+  refine ⟨forall_intro (except0_mono <| forall_elim ·), ?_⟩
+  refine (and_intro ((forall_mono λ _ =>
+           (or_elim (later_mono false_elim) later_intro)).trans later_forall.2) .rfl).trans ?_
+  refine and_mono_l later_false_em |>.trans ?_
+  refine and_or_r.1.trans ?_
+  refine or_elim ?_ ?_
+  · exact and_elim_l.trans or_intro_l
+  · refine or_intro_r' ?_
+    refine forall_intro λ a => ?_
+    refine imp_elim' <| forall_elim a |>.trans ?_
+    refine or_elim (imp_intro <| imp_elim_r.trans <| forall_elim a) (imp_intro and_elim_l)
 
 theorem except0_exists_2 [BI PROP] {Φ : α → PROP} : (∃ a, ◇ Φ a) ⊢ ◇ ∃ a, Φ a :=
   exists_elim fun a => except0_mono (exists_intro a)

@@ -182,6 +182,8 @@ macro:25 "⊢@{ " PROP:term " } " P:term:25 : term =>
   ``(EmpValid (PROP:=$PROP) iprop($P))
 /-- Bidirectional entailment on separation logic propositions. -/
 macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(BiEntails iprop($P) iprop($Q))
+macro:25 P:term:29 " ⊣⊢@{ " PROP:term " } " Q:term:29 : term =>
+  ``(BiEntails (PROP:=$PROP) iprop($P) iprop($Q))
 
 delab_rule BIBase.EmpValid
   | `($_ $P) => do ``(⊢ $(← unpackIprop P))

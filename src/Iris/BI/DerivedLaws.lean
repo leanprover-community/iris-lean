@@ -206,8 +206,10 @@ theorem exists_unit [BI PROP] {Ψ : Unit → PROP} : (∃ x, Ψ x) ⊣⊢ Ψ () 
   ⟨exists_elim fun () => .rfl, exists_intro ()⟩
 
 theorem exists_exists [BI PROP] {Ψ : α → β → PROP} : (∃ x y, Ψ x y) ⊣⊢ (∃ y x, Ψ x y) :=
-  ⟨exists_elim fun x => exists_elim fun y => (exists_intro (Ψ:=λ x => Ψ x y) x ).trans (exists_intro (Ψ:=λ y => (∃ x, Ψ x y)) y),
-   exists_elim fun y => exists_elim fun x => (exists_intro (Ψ:=λ y => Ψ x y) y).trans (exists_intro (Ψ:=λ x => (∃ y, Ψ x y)) x)⟩
+  ⟨exists_elim fun x => exists_elim fun y =>
+     (exists_intro (Ψ:=λ x => Ψ x y) x).trans (exists_intro (Ψ:=λ y => (∃ x, Ψ x y)) y),
+   exists_elim fun y => exists_elim fun x =>
+     (exists_intro (Ψ:=λ y => Ψ x y) y).trans (exists_intro (Ψ:=λ x => (∃ y, Ψ x y)) x)⟩
 
 theorem forall_forall [BI PROP] {Ψ : α → β → PROP} : (∀ x y, Ψ x y) ⊣⊢ (∀ y x, Ψ x y) :=
   ⟨forall_intro fun y => forall_intro fun x => (forall_elim x).trans (forall_elim y),
@@ -250,12 +252,12 @@ theorem or_exists [BI PROP] {Φ Ψ : α → PROP} : (∃ a, Φ a ∨ Ψ a) ⊣�
   ⟨exists_elim fun a => or_elim (or_intro_l' (exists_intro a)) (or_intro_r' (exists_intro a)),
    or_elim (exists_mono fun _ => or_intro_l) (exists_mono fun _ => or_intro_r)⟩
 
-theorem and_alt [BI PROP] {P Q : PROP} :
+theorem and_forall_bool [BI PROP] {P Q : PROP} :
     P ∧ Q ⊣⊢ «forall» (fun b : Bool => if b then P else Q) :=
   ⟨forall_intro (·.casesOn and_elim_r and_elim_l),
    and_intro (forall_elim true) (forall_elim false)⟩
 
-theorem or_alt [BI PROP] {P Q : PROP} :
+theorem or_exists_bool [BI PROP] {P Q : PROP} :
     P ∨ Q ⊣⊢ «exists» (fun b : Bool => if b then P else Q) :=
   ⟨or_elim (exists_intro (Ψ:=λ b => if b then P else Q) true)
            (exists_intro (Ψ:=λ b => if b then P else Q) false),

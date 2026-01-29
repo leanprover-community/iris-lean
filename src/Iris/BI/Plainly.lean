@@ -92,8 +92,8 @@ theorem plainly_forall_2 {Ψ : α → PROP} : (∀ a, ■ (Ψ a)) ⊢ ■ (∀ a
 theorem plainly_persistently_elim : ■ <pers> P ⊣⊢ ■ P := by
   constructor
   · refine (true_and.2.trans <| and_mono emp_intro .rfl).trans ?_
-    refine .trans ?_ (mono <| and_alt.2.trans persistently_and_emp_elim)
-    refine and_alt.1.trans ?_
+    refine .trans ?_ (mono <| and_forall_bool.2.trans persistently_and_emp_elim)
+    refine and_forall_bool.1.trans ?_
     refine .trans ?_ plainly_forall_2
     refine forall_mono ?_
     exact (·.casesOn .rfl .rfl)
@@ -160,20 +160,20 @@ theorem plainly_exists [BIPlainlyExists PROP] {Ψ : α → PROP} : ■ (∃ a, �
 
 theorem plainly_and : ■ (P ∧ Q) ⊣⊢ ■ P ∧ ■ Q := by
   constructor
-  · refine (mono and_alt.mp).trans (.trans ?_ and_alt.mpr)
+  · refine (mono and_forall_bool.mp).trans (.trans ?_ and_forall_bool.mpr)
     exact plainly_forall.mp.trans (forall_mono (·.casesOn .rfl .rfl))
-  · refine (and_alt.mp).trans (.trans ?_ (mono <| and_alt.mpr))
+  · refine (and_forall_bool.mp).trans (.trans ?_ (mono <| and_forall_bool.mpr))
     refine .trans (forall_mono ?_) plainly_forall.mpr
     exact (·.casesOn .rfl .rfl)
 
 theorem plainly_or_2 : ■ P ∨ ■ Q ⊢ ■ (P ∨ Q) := by
-  refine or_alt.mp.trans (.trans ?_ (mono <| or_alt.mpr))
+  refine or_exists_bool.mp.trans (.trans ?_ (mono <| or_exists_bool.mpr))
   refine .trans (exists_mono ?_) plainly_exists_2
   exact (·.casesOn .rfl .rfl)
 
 theorem plainly_or [BIPlainlyExists PROP] : ■ (P ∨ Q) ⊣⊢ ■ P ∨ ■ Q := by
   refine ⟨?_, plainly_or_2⟩
-  refine (mono or_alt.mp).trans (.trans ?_ or_alt.mpr)
+  refine (mono or_exists_bool.mp).trans (.trans ?_ or_exists_bool.mpr)
   exact plainly_exists_1.trans <| exists_mono (·.casesOn .rfl .rfl)
 
 theorem plainly_impl : ■ (P → Q) ⊢ ■ P → ■ Q := by
