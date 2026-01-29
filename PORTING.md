@@ -16,8 +16,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] CMRA
   - [ ] Updates
   - [ ] Functors
-- [ ] `big_op.v`
-  - TBD (Zongyuan?)
+- [x] `big_op.v`
+  - [x] `bigOpL`, `bigOpM` definitions and lemmas
 - [ ] `cmra.v`
   - [x] Lemmas
   - [ ] Total CMRA construction
@@ -72,7 +72,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `max_prefix_list.v` 
   - [ ] Lemmas
   - [ ] Functors
-- [ ] `monoid.v`
+- [x] `monoid.v`
 - [ ] `mra.v`
 - [x] `numbers.v`
 - [ ]  `ofe.v`
@@ -199,7 +199,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `algebra.v`
 - `ascii.v`
 - [x] `bi.v`
-- [ ] `big_op.v`
+- [x] `big_op.v`
+  - [x] `big_sepL`, `big_sepM` definitions and lemmas
 - [ ] `cmra.v`
 - [x] `derived_connectives.v`
 - [ ] `derived_laws.v`
