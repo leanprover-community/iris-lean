@@ -118,6 +118,9 @@ open BIUpdate
 theorem bupd_frame_l {P Q : PROP} : iprop(P ∗ |==> Q ⊢ |==> (P ∗ Q)) :=
   sep_symm.trans <| frame_r.trans <| mono sep_symm
 
+theorem bupd_frame_r {P Q : PROP} : iprop(|==> P ∗ Q ⊢ |==> (P ∗ Q)) :=
+  frame_r
+
 theorem bupd_wand_l {P Q : PROP} : iprop((P -∗ Q) ∗ (|==> P) ⊢ |==> Q) :=
   bupd_frame_l.trans <| mono <| wand_elim .rfl
 
@@ -136,10 +139,10 @@ theorem bupd_or {P Q: PROP} : iprop((|==> P) ∨ (|==> Q) ⊢ |==> (P ∨ Q)) :=
 theorem bupd_and {P Q : PROP} : iprop((|==> (P ∧ Q)) ⊢ (|==> P) ∧ (|==> Q)) :=
   and_intro (mono and_elim_l) (mono and_elim_r)
 
-theorem bupd_exist {A : Type} {Φ : A → PROP} : (∃ x : A, |==> Φ x) ⊢ |==> ∃ x : A, Φ x :=
+theorem bupd_exist {Φ : A → PROP} : (∃ x : A, |==> Φ x) ⊢ |==> ∃ x : A, Φ x :=
   exists_elim (mono <| exists_intro ·)
 
-theorem bupd_forall {A : Type} {Φ : A → PROP} :
+theorem bupd_forall {Φ : A → PROP} :
     iprop(|==> «forall» fun x : A => Φ x) ⊢ «forall» fun x : A => iprop(|==> Φ x) :=
   forall_intro (mono <| forall_elim ·)
 
@@ -156,7 +159,7 @@ variable [BIPlainly PROP] [BIBUpdatePlainly PROP]
 theorem bupd_elim {P : PROP} [Plain P] : |==> P ⊢ P :=
   (mono Plain.plain).trans BIBUpdatePlainly.bupd_plainly
 
-theorem bupd_plain_forall {A : Type} (Φ : A → PROP) [∀ x, Plain (Φ x)] :
+theorem bupd_plain_forall (Φ : A → PROP) [∀ x, Plain (Φ x)] :
     (|==> ∀ x, Φ x) ⊣⊢ (∀ x, |==> Φ x) := by
   refine ⟨bupd_forall, ?_⟩
   refine .trans ?_ intro

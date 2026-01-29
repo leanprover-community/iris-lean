@@ -29,6 +29,6 @@ export Intuitionistic (intuitionistic)
 
 /-- Require that the proposition `P` does not depend on the step index -/
 class Timeless [BI PROP] (P : PROP) where
-  timeless : ⊢ ▷ P ∨ ◇ P
+  timeless : ▷ P ⊢ ◇ P
 
 end Iris.BI
