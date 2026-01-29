@@ -256,12 +256,16 @@ theorem and_forall_bool [BI PROP] {P Q : PROP} :
     P ∧ Q ⊣⊢ «forall» (fun b : Bool => if b then P else Q) :=
   ⟨forall_intro (·.casesOn and_elim_r and_elim_l),
    and_intro (forall_elim true) (forall_elim false)⟩
+@[deprecated and_forall_bool (since := "2026-01-29") ]
+abbrev and_alt := @and_forall_bool -- name used by Iris Rocq
 
 theorem or_exists_bool [BI PROP] {P Q : PROP} :
     P ∨ Q ⊣⊢ «exists» (fun b : Bool => if b then P else Q) :=
   ⟨or_elim (exists_intro (Ψ:=λ b => if b then P else Q) true)
            (exists_intro (Ψ:=λ b => if b then P else Q) false),
    exists_elim (Bool.rec or_intro_r or_intro_l ·)⟩
+@[deprecated or_exists_bool (since := "2026-01-29") ]
+abbrev or_alt := @or_exists_bool -- name used by Iris Rocq
 
 instance [BI PROP] : LawfulBigOp and (iprop(True) : PROP) BiEntails where
   refl := .rfl
