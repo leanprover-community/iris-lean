@@ -242,6 +242,19 @@ instance instUnboundedHeapAssocList : UnboundedHeap (AssocList V) Nat V where
   notFull_empty := by simp [notFull]
   notFull_set_fresh {t v H} := by simp [notFull]
 
+instance {V1 V2 : Type _} : HasHeapMap (AssocList V1) (AssocList V2) Nat V1 V2 where
+  hhmap f L := L.map f
+  hhmap_get {L k f} := by
+    induction L with
+    | empty =>
+      simp_all [Store.get, map]
+    | set n' v' t' IH =>
+      simp_all [Store.get]
+      cases h1 : f n' v' <;> simp <;> split <;> rename_i h2 <;> simp_all
+    | remove n' t' IH =>
+      simp_all [Store.get]
+      split <;> simp [Option.bind]
+
 end AssociationLists
 
 section Lemmas

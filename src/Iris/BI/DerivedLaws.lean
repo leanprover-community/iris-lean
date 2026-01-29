@@ -488,6 +488,9 @@ instance sep_affine [BI PROP] (P Q : PROP) [Affine P] [Affine Q] : Affine iprop(
 instance affinely_affine [BI PROP] (P : PROP) : Affine iprop(<affine> P) where
   affine := affinely_elim_emp
 
+instance [BIBase PROP] : Inhabited PROP where
+  default := emp
+
 /-! # Absorbing -/
 
 theorem absorbingly_ne [BI PROP] : OFE.NonExpansive (@absorbingly PROP _) where
@@ -1650,3 +1653,21 @@ theorem loeb_wand_intuitionistically [BI PROP] [BILoeb PROP] {P : PROP} :
 theorem loeb_wand [BI PROP] [BILoeb PROP] {P : PROP} : □ (▷ P -∗ P) ⊢ P :=
   (intuitionistically_mono (wand_mono intuitionistically_elim .rfl)).trans
     loeb_wand_intuitionistically
+
+open Iris BI OFE Contractive in
+instance [BI PROP] [BILaterContractive PROP] : BILoeb PROP where
+  loeb_weak {P} HP := by
+    let Hc : Contractive (fun Q => iprop((▷ Q) → P)) := ⟨fun H => imp_ne.ne (distLater_dist H) .rfl⟩
+    let Flöb : PROP -c> PROP := { f := fun Q => iprop((▷ Q) → P), contractive := Hc }
+    suffices HP : iprop(▷ (fixpoint Flöb) ⊢ P) by
+      refine entails_impl_true.mp HP |>.trans ?_
+      refine equiv_iff.mp (fixpoint_unfold Flöb) |>.mpr |>.trans ?_
+      exact later_intro.trans HP
+    refine .trans ?_ ((later_mono HP).trans HP)
+    suffices Hcut : later (fixpoint Flöb) ⊢ later (later (later (fixpoint Flöb))) → later (later P) by
+      exact and_intro (later_intro.trans later_intro) Hcut |>.trans imp_elim_r
+    refine .trans (later_mono ?_) later_impl
+    refine .trans ?_ later_impl
+    refine .trans ?_ later_intro
+    refine equiv_iff.mp ?_ |>.mp
+    exact fixpoint_unfold Flöb
