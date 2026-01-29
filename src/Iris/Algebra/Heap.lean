@@ -508,11 +508,28 @@ def Heap.mapC [CMRA α] [CMRA β] (f : α -C> β) : CMRA.Hom (H α) (H β) where
     cases (Store.get x k) <;> simp
     apply CMRA.Hom.validN
   pcore m := by
-    simp [map', Option.map, CMRA.pcore]
-    sorry
-  op m1 m2 n := by
-    simp [map']
-    sorry
+    -- Reduce the core law to pointwise heaps and apply the CMRA core law on values.
+    intro k
+    simp [Heap.map', hhmap_get, get_hmap]
+    cases h : Store.get m k with
+    | none => simp
+    | some v =>
+        simp
+        cases hpcore : CMRA.pcore v <;>
+          simpa [Option.map, Option.bind, hpcore] using (CMRA.Hom.pcore f v)
+  op m1 m2 := by
+    -- Preserve the heap op by a key-wise case split and CMRA hom op.
+    intro k
+    simp [Heap.map', hhmap_get, get_merge, CMRA.op]
+    cases h1 : Store.get m1 k with
+    | none =>
+        cases h2 : Store.get m2 k <;> simp
+    | some v1 =>
+        cases h2 : Store.get m2 k with
+        | none => simp
+        | some v2 =>
+            simp
+            simpa using (CMRA.Hom.op f v1 v2)
 
 end HeapMap
 
@@ -528,22 +545,40 @@ instance {F} [COFE.OFunctor F] : COFE.OFunctor (HeapOF H F) where
     intros
     apply Heap.map_ne
     apply COFE.OFunctor.map_ne.ne <;> simp_all
-  map_comp := by
-    sorry
-  map_id := by
-    sorry
+  map_comp f g f' g' x := by
+    -- Pointwise reasoning: reduce to the underlying functor map_comp.
+    intro k
+    simp [Heap.mapO, Heap.map', hhmap_get]
+    cases h : Store.get x k <;> simp [COFE.OFunctor.map_comp]
+  map_id x := by
+    -- Pointwise reasoning: reduce to the underlying functor map_id.
+    intro k
+    simp [Heap.mapO, Heap.map', hhmap_get]
+    cases h : Store.get x k <;> simp [COFE.OFunctor.map_id]
 
 instance {F} [RFunctor F] : URFunctor (HeapOF H F) where
   map f g := Heap.mapC H (RFunctor.map f g)
   map_ne := by
-    sorry
-  map_comp := by
-    sorry
-  map_id := by
-    sorry
+    -- Non-expansiveness follows from the underlying functor map_ne.
+    intros
+    constructor
+    intros
+    apply Heap.map_ne
+    apply RFunctor.map_ne.ne <;> simp_all
+  map_comp f g f' g' x := by
+    -- Pointwise reasoning: reduce to the underlying functor map_comp.
+    intro k
+    simp [Heap.mapC, Heap.map', hhmap_get]
+    cases h : Store.get x k <;> simp [RFunctor.map_comp]
+  map_id x := by
+    -- Pointwise reasoning: reduce to the underlying functor map_id.
+    intro k
+    simp [Heap.mapC, Heap.map', hhmap_get]
+    cases h : Store.get x k <;> simp [RFunctor.map_id]
 
 instance {F} [RFunctorContractive F] : URFunctorContractive (HeapOF H F) where
   map_contractive.1 H m := by
+    -- Contractiveness lifts through heap mapping.
     apply Heap.map_ne _ _
     apply (RFunctorContractive.map_contractive.1 H)
 

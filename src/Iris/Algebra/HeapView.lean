@@ -517,13 +517,71 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
       simp
       apply RFunctor.map_ne.ne <;> simp_all
   map_id x := by
-    -- rw [View.map_id]
-    sorry
+    -- Reduce to View.map and show both components are the identity.
+    simp only [View.mapC]
+    conv => rhs; rw [← View.map_id (R := HeapR F K (T _ _) H) x]
+    apply View.map_ext
+    · intro m
+      -- Auth part: heap map over id is identity.
+      intro k
+      simp [Heap.mapO, Heap.map', hhmap_get]
+      cases h : Store.get m k <;> simp [RFunctor.map_id]
+    · intro m
+      -- Frag part: heap map over Prod.mapC id is identity.
+      intro k
+      simp [Heap.mapC, Heap.map', hhmap_get, Prod.mapC, Prod.map]
+      cases h : Store.get m k with
+      | none => simp
+      | some v =>
+          cases v with
+          | mk dq v =>
+              constructor
+              · rfl
+              · simpa using (RFunctor.map_id (F := T) (x := v))
   map_comp f g f' g' x := by
-    sorry
+    -- Reduce to View.map and compare component maps via map_comp.
+    simp only [View.mapC]
+    haveI :
+        OFE.NonExpansive
+          ((Heap.mapO H (RFunctor.map (F := T) g g').toHom).f ∘
+            (Heap.mapO H (RFunctor.map (F := T) f f').toHom).f) :=
+      (OFE.Hom.comp
+        (Heap.mapO H (RFunctor.map (F := T) g g').toHom)
+        (Heap.mapO H (RFunctor.map (F := T) f f').toHom)) |>.ne
+    conv => rhs; rw [← View.map_compose (R' := HeapR F K (T _ _) H)]
+    apply View.map_ext
+    · intro m
+      -- Auth part: heap map composition follows RFunctor.map_comp.
+      intro k
+      simp [Heap.mapO, Heap.map', hhmap_get]
+      cases h : Store.get m k <;> simp [RFunctor.map_comp]
+    · intro m
+      -- Frag part: heap map composition follows RFunctor.map_comp.
+      intro k
+      simp [Heap.mapC, Heap.map', hhmap_get, Prod.mapC, Prod.map]
+      cases h : Store.get m k with
+      | none => simp
+      | some v =>
+          cases v with
+          | mk dq v =>
+              constructor
+              · rfl
+              · simpa using (RFunctor.map_comp (F := T) f g f' g' (x := v))
 
 instance {T} [RFunctorContractive T] : URFunctorContractive (HeapViewURF (F := F) (H := H) T) where
-  map_contractive.1 H _ := sorry
+  map_contractive.1 H _ := by
+    -- Contractiveness lifts through View.map and heap mapping.
+    simp
+    apply View.map_ne
+    · intro m
+      apply Heap.map_ne
+      exact (RFunctorContractive.map_contractive.1 H)
+    · intro m
+      apply Heap.map_ne
+      intro a
+      apply Prod.map_ne
+      · intro _; simp
+      · intro v; exact (RFunctorContractive.map_contractive.1 H) v
 
 end heapViewFunctor
 
