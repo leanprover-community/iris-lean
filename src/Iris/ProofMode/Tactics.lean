@@ -10,6 +10,7 @@ import Iris.ProofMode.Tactics.Exists
 import Iris.ProofMode.Tactics.Have
 import Iris.ProofMode.Tactics.Intro
 import Iris.ProofMode.Tactics.LeftRight
+import Iris.ProofMode.Tactics.ModIntro
 import Iris.ProofMode.Tactics.Pure
 import Iris.ProofMode.Tactics.Rename
 import Iris.ProofMode.Tactics.Specialize

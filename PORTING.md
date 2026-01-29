@@ -269,7 +269,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `class_instances_updates.v` (InstancesUpdates.lean)
   - [x] Basic instances for bupd
   - [ ] Basic instances for fupd
-  - [ ] FromModal bupd
+  - [x] FromModal bupd
   - [ ] FromModal fupd
   - [ ] ElimModal bupd
   - [ ] ElimModal fupd
@@ -353,7 +353,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] iRight
   - [x] iSplit(L/R)
   - [x] iExists
-  - [ ] iModIntro
+  - [x] iModIntro
   - [ ] iNext (with later credits)
   - [ ] iMod
   - [ ] iDestruct (Lean: icases)
@@ -385,7 +385,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IModalElim
   - [ ] IRewrite
   - [ ] IPureIntro
-  - [ ] IModalIntro
+  - [x] IModalIntro
   - [ ] ISimpl
   - [ ] IDone
   - [ ] IForall

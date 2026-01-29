@@ -5,6 +5,7 @@ Authors: Lars König
 -/
 import Iris.BI
 import Iris.ProofMode.SynthInstance
+import Iris.ProofMode.Modalities
 
 namespace Iris.ProofMode
 open Iris.BI
@@ -146,5 +147,10 @@ export IsExcept0 (is_except0)
 class IntoExcept0 [BI PROP] (P : PROP) (Q : outParam PROP) where
   into_except0 : P ⊢ ◇ Q
 export IntoExcept0 (into_except0)
+
+@[ipm_class]
+class FromModal {PROP1 PROP2} [BI PROP1] [BI PROP2] (φ : outParam $ Prop) (M : outParam $ Modality PROP1 PROP2) (sel : semiOutParam PROP1) (P : PROP2) (Q : outParam $ PROP1) where
+  from_modal : φ → M.M Q ⊢ P
+export FromModal (from_modal)
 
 end Iris.ProofMode

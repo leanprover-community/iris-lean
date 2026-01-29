@@ -36,3 +36,6 @@ instance sep_intuitionistic [BI PROP] (P Q : PROP) [Intuitionistic P] [Intuition
 
 instance intuitionistically_intuitionistic [BI PROP] (P : PROP) : Intuitionistic iprop(□ P) where
   intuitionistic := intuitionistically_idem.2
+
+instance intuitionisticallyIf_true_intuitionistic [BI PROP] (P : PROP) : Intuitionistic iprop(□?true P)
+  := inferInstanceAs (Intuitionistic iprop(□ P))

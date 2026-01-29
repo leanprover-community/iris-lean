@@ -57,3 +57,7 @@ instance intoForall_bupd [BIUpdate PROP] (P : PROP) (Φ : α → PROP)
 instance isExcept0_bupd [BIUpdate PROP] (P : PROP)
     [h : IsExcept0 P] : IsExcept0 iprop(|==> P) where
   is_except0 := bupd_except0.trans <| BIUpdate.mono h.1
+
+instance fromModal_bupd [BIUpdate PROP] (P : PROP) :
+    FromModal True modality_id iprop(|==> P) iprop(|==> P) P where
+  from_modal := by simp [modality_id]; exact BIUpdate.intro

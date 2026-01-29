@@ -966,6 +966,9 @@ instance intuitionistically_affine [BI PROP] (P : PROP) : Affine iprop(□ P) :=
 instance intuitionistically_persistent [BI PROP] (P : PROP) : Persistent iprop(□ P) :=
   inferInstanceAs (Persistent iprop(<affine> _))
 
+instance intuitionisticallyIf_persistent [BI PROP] (P : PROP) : Persistent iprop(□?true P) :=
+  inferInstanceAs (Persistent iprop(□ _))
+
 theorem intuitionistically_def [BI PROP] {P : PROP} : iprop(□ P) = iprop(<affine> <pers> P) := rfl
 
 theorem intuitionistically_elim_emp [BI PROP] {P : PROP} : □ P ⊢ emp := affinely_elim_emp
@@ -1402,6 +1405,9 @@ theorem intuitionisticallyIf_mono {p : Bool} [BI PROP] {P Q : PROP} (h : P ⊢ Q
 theorem intuitionisticallyIf_congr {p : Bool} [BI PROP] {P Q : PROP}
     (h : P ⊣⊢ Q) : □?p P ⊣⊢ □?p Q :=
   ⟨intuitionisticallyIf_mono h.1, intuitionisticallyIf_mono h.2⟩
+
+instance (priority := default + 10) intuitionisticallyIf_true_affine [BI PROP] (P : PROP) :
+    Affine iprop(□?true P) := inferInstanceAs (Affine iprop(□ _))
 
 instance intuitionisticallyIf_affine (p : Bool) [BI PROP] (P : PROP) [Affine P] :
     Affine iprop(□?p P) := by

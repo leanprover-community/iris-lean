@@ -1286,3 +1286,77 @@ example [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
   icases H with ⟨HA, HB⟩
 
 end cases
+
+section imodintro
+
+/-- Tests `imodintro` for absorbing (intuitionistic: id, spatial: id) -/
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <absorb> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP2
+
+/-- Tests `iintro` for introducing modalities -/
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <absorb> P := by
+  iintro ⟨□HP1, HP2⟩ !>
+  iexact HP2
+
+/-- Tests `imodintro` for persistently (intuitionistic: id, spatial: clear) -/
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <pers> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP1
+
+/-- Tests `imodintro` for affinely (intuitionistic: id, spatial: forall Affine) -/
+example [BI PROP] (P : PROP) : □ P ∗ <affine> P ⊢ <affine> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP2
+
+/- Tests `imodintro` for affinely (intuitionistic: id, spatial: forall Affine) failing -/
+/-- error: imodintro: hypothesis HP2 : P does not satisfy Affine -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <affine> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+
+/-- Tests `imodintro` for intuitionistically (intuitionistic: id, spatial: isEmpty) -/
+example [BI PROP] (P : PROP) : □ P ∗ □ P ⊢ □ P := by
+  iintro ⟨□HP1, □HP2⟩
+  imodintro
+  iexact HP2
+
+/- Tests `imodintro` for intuitionistically (intuitionistic: id, spatial: isEmpty) failing -/
+/-- error: imodintro: spatial context is not empty -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : □ P ∗ □ P ⊢ □ P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+
+/-- Tests `imodintro` for bupd (intuitionistic: id, spatial: id) -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) : □ P ∗ P ⊢ |==> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP2
+
+/-- Tests `imodintro` with specifying the pattern -/
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <absorb> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro (<absorb> _)
+  iexact HP2
+
+/- Tests `imodintro` for no modality -/
+/-- error: imodintro: P is not a modality -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+
+/- Tests `imodintro` with specifying the wrong pattern -/
+set_option pp.mvars false in
+/-- error: imodintro: iprop(<absorb> P) is not a modality matching iprop(□ ?_) -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <absorb> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro (□ _)
+
+end imodintro

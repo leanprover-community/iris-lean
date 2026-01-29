@@ -5,6 +5,7 @@ Authors: Lars König, Mario Carneiro
 -/
 import Iris.BI
 import Iris.ProofMode.Classes
+import Iris.ProofMode.ModalityInstances
 import Iris.Std.TC
 
 namespace Iris.ProofMode
@@ -618,3 +619,25 @@ instance fromPure_absorbingly (a : Bool) [BI PROP] (P : PROP) (φ : Prop)
     [h : FromPure a P φ] : FromPure false iprop(<absorb> P) φ where
   from_pure := absorbingly_affinely_intro_of_persistent.trans <|
     absorbingly_mono <| affinely_affinelyIf.trans h.1
+
+-- FromModal
+instance (priority := default + 10) fromModal_affinely [BI PROP] (P : PROP) :
+  FromModal True modality_affinely iprop(<affine> P) iprop(<affine> P) P where
+  from_modal := by simp [modality_affinely]
+
+instance (priority := default + 10) fromModal_persistently [BI PROP] (P : PROP) :
+  FromModal True modality_persistently iprop(<pers> P) iprop(<pers> P) P where
+  from_modal := by simp [modality_persistently]
+
+instance (priority := default + 20) fromModal_intuitionistically [BI PROP] (P : PROP) :
+  FromModal True modality_intuitionistically iprop(□ P) iprop(□ P) P where
+  from_modal := by simp [modality_intuitionistically]
+
+@[ipm_backtrack]
+instance (priority := default + 30) fromModal_intuitionistically_affine_bi [BI PROP] [BIAffine PROP] (P : PROP) :
+  FromModal True modality_persistently iprop(□ P) iprop(□ P) P where
+  from_modal := by simp [modality_persistently]; apply intuitionistically_iff_persistently.2
+
+instance fromModal_absorbingly [BI PROP] (P : PROP) :
+  FromModal True modality_id iprop(<absorb> P) iprop(<absorb> P) P where
+  from_modal := by simp [modality_id]; apply absorbingly_intro
