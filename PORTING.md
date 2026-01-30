@@ -260,12 +260,16 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `class_instances_internal_eq.v`
 - [ ] `class_instances_later.v` (InstancesLater.lean)
   - [x] basic instances
-  - [ ] FromModal
+  - [x] FromModal
   - [ ] ElimModal
   - [ ] AddModal
-  - [ ] IntoLater
+  - [x] IntoLater
 - [ ] `class_instances_make.v`
-- [ ] `class_instances_plainly.v`
+- [ ] `class_instances_plainly.v` (InstancesPlainly.lean)
+  - [x] basic instances
+  - [x] FromModal
+  - [ ] IntoExcept0
+  - [ ] IntoLaterN
 - [ ] `class_instances_updates.v` (InstancesUpdates.lean)
   - [x] Basic instances for bupd
   - [ ] Basic instances for fupd
@@ -283,7 +287,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] FromPure
   - [ ] IntoInternalEq
   - [x] IntoPersistent
-  - [ ] FromModal
+  - [x] FromModal
   - [x] FromAffinely
   - [x] IntoAbsorbingly
   - [x] IntoWand
@@ -307,8 +311,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] AddModal
   - [ ] Frame
   - [x] IntoExcept0
-  - [ ] MaybeIntoLaterN
-  - [ ] IntoLaterN
+  - [x] MaybeIntoLaterN / IntoLaterN
   - [ ] IntoEmbed
   - [x] AsEmpValid
   - [ ] AsEmpValid0
@@ -318,7 +321,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] ElimInv
 - [ ] `classes_make.v`
 - [ ] `coq_tactics.v` / `ltac_tactics.v` (split into the files in Tactics/)
-  - [ ] iSolveSideCondition
+  - [x] iSolveSideCondition
   - [ ] iStartProof
     - [x] basic
     - [ ] with bi specified

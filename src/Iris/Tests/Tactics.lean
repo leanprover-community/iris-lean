@@ -1332,10 +1332,35 @@ example [BI PROP] (P : PROP) : □ P ∗ □ P ⊢ □ P := by
   iintro ⟨□HP1, HP2⟩
   imodintro
 
+/-- Tests `imodintro` for plain (intuitionistic: .forall Plain, spatial: clear) -/
+example [BI PROP] [BIPlainly PROP] (P : PROP) [Plain P] : □ P ∗ P ⊢ ■ P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP1
+
 /-- Tests `imodintro` for bupd (intuitionistic: id, spatial: id) -/
 example [BI PROP] [BIUpdate PROP] (P : PROP) : □ P ∗ P ⊢ |==> P := by
   iintro ⟨□HP1, HP2⟩
   imodintro
+  iexact HP2
+
+/-- Tests `imodintro` for later (both: transform) -/
+example [BI PROP] (P : PROP) : □ ▷ P ∗ ▷ P ⊢ ▷ P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP2
+
+/-- Tests `imodintro` for later n (both: transform) -/
+example [BI PROP] (P : PROP) : □ ▷^[n] P ∗ ▷^[n] P ⊢ ▷^[n] P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP2
+
+/-- Tests `imodintro` for complex later n (both: transform) -/
+example [BI PROP] (P : PROP) : □ ▷^[n] P ∗ ▷^[n] P ⊢ ▷^[n] P := by
+  iintro H
+  imodintro
+  icases H with ⟨-, HP2⟩
   iexact HP2
 
 /-- Tests `imodintro` with specifying the pattern -/

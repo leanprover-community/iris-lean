@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Michael Sammler
 -/
 import Iris.BI
 import Iris.ProofMode.SynthInstance
@@ -152,5 +152,22 @@ export IntoExcept0 (into_except0)
 class FromModal {PROP1 PROP2} [BI PROP1] [BI PROP2] (φ : outParam $ Prop) (M : outParam $ Modality PROP1 PROP2) (sel : semiOutParam PROP1) (P : PROP2) (Q : outParam $ PROP1) where
   from_modal : φ → M.M Q ⊢ P
 export FromModal (from_modal)
+
+
+/-- `IntoLaterN` turns `P` into `▷^[n] Q`.
+The Boolean [only_head] indicates whether laters should only be stripped in
+head position or also below other logical connectives. For [inext] it should
+strip laters below other logical connectives, but this should not happen while
+framing.
+
+The Rocq version uses an `MaybeIntoLaterN` typeclass that avoids unfolding definitions
+for searches that do not make progress. But this is not necessary in Lean since Lean
+TC synthesis does not unfold definitions by default.
+
+This classes is deliberately not an ipm_class to use the more efficient TC synthesis.
+-/
+class IntoLaterN [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam PROP) where
+  into_laterN : P ⊢ ▷^[n] Q
+export IntoLaterN (into_laterN)
 
 end Iris.ProofMode

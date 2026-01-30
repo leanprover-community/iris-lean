@@ -6,6 +6,7 @@ Authors: Markus de Medeiros, Michael Sammler
 import Iris.BI
 import Iris.BI.DerivedLaws
 import Iris.ProofMode.Modalities
+import Iris.ProofMode.Classes
 
 namespace Iris.ProofMode
 open Iris.BI
@@ -52,5 +53,25 @@ def modality_intuitionistically : Modality PROP PROP where
   emp := intuitionistic
   mono := (intuitionistically_mono ·)
   sep := intuitionistically_sep_2
+
+def modality_plainly [BIPlainly PROP] : Modality PROP PROP where
+  M := plainly
+  action
+  | true => .forall Plain
+  | false => .clear
+  spec
+  | true => λ _ _ => (intuitionistically_mono Plain.plain).trans intuitionistically_plainly
+  | false => λ _ => plainly_absorbing _
+  emp := plainly_emp_2
+  mono := (BIPlainly.mono ·)
+  sep := plainly_sep_2
+
+def modality_laterN (n : Nat) : Modality PROP PROP where
+  M := BIBase.laterN n
+  action := λ _ => .transform (IntoLaterN false n)
+  spec := λ _ _ _ h => (intuitionisticallyIf_mono (h.1)).trans (laterN_intuitionisticallyIf_2 n)
+  emp := laterN_intro n
+  mono := (laterN_mono n ·)
+  sep := (laterN_sep n).2
 
 end Modalities
