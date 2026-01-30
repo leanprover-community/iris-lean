@@ -5,6 +5,8 @@ Authors: Michael Sammler
 -/
 import Iris.BI
 import Iris.ProofMode.Classes
+import Iris.ProofMode.ClassesMake
+import Iris.ProofMode.ModalityInstances
 import Iris.Std.TC
 
 namespace Iris.ProofMode
@@ -214,6 +216,20 @@ instance isExcept0_except0 [BI PROP] (P : PROP) : IsExcept0 iprop(◇ P) where
 instance isExcept0_later [BI PROP] (P : PROP) : IsExcept0 iprop(▷ P) where
   is_except0 := except0_later
 
+/-- FromModal -/
+
+instance fromModal_later [BI PROP] (P : PROP) :
+  FromModal True (modality_laterN 1) iprop(▷^[1] P) iprop(▷ P) P where
+  from_modal _ := .rfl
+
+instance fromModal_laterN [BI PROP] (P : PROP) n :
+  FromModal True (modality_laterN n) iprop(▷^[n] P) iprop(▷^[n] P) P where
+  from_modal _ := .rfl
+
+instance fromModal_except0 [BI PROP] (P : PROP) :
+  FromModal True modality_id iprop(◇ P) iprop(◇ P) P where
+  from_modal _ := except0_intro
+
 /-- IntoExcept0 -/
 
 instance intoExcept0_except0 [BI PROP] (P : PROP) : IntoExcept0 iprop(◇ P) P where
@@ -243,5 +259,74 @@ instance intoExcept0_persistently [BI PROP] (P Q : PROP)
     [h : IntoExcept0 P Q] : IntoExcept0 iprop(<pers> P) iprop(<pers> Q) where
   into_except0 := (persistently_mono h.1).trans except0_persistently.2
 
+/-- ElimModal -/
+@[ipm_backtrack]
+instance (priority := default - 10) elimModal_timeless [BI PROP] p (P P' Q : PROP) [IntoExcept0 P P'] [IsExcept0 Q] :
+  ElimModal True p p P P' Q Q where
+  elim_modal _ := ((sep_mono ((intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf_2) except0_intro).trans $ except0_sep.2.trans (except0_mono wand_elim_r)).trans is_except0
+
+/-- IntoLaterN -/
+instance (priority := low) intoLaterN_default [BI PROP] only_head n (P : PROP) :
+  IntoLaterN only_head n P P where
+  into_laterN := laterN_intro n
+
+instance (priority := high) intoLaterN_default_0 [BI PROP] only_head (P : PROP) :
+  IntoLaterN only_head 0 P P where
+  into_laterN := laterN_intro 0
+
+instance intoLaterN_later [BI PROP] only_head n n' m' (P Q lQ : PROP)
+    [h1 : NatCancel n 1 n' m']
+    [h2 : IntoLaterN only_head n' P Q]
+    [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷ P) lQ where
+  into_laterN := (later_mono h2.1).trans $ (later_laterN _).2.trans $ by
+    rw [h1.1]
+    apply (laterN_add _ _).1.trans (laterN_mono _ h3.1.1)
+
+instance intoLaterN_laterN [BI PROP] only_head n m n' m' (P Q lQ : PROP)
+    [h1 : NatCancel n m n' m']
+    [h2 : IntoLaterN only_head n' P Q]
+    [h3 : MakeLaterN m' Q lQ] : IntoLaterN only_head n iprop(▷^[m] P) lQ where
+  into_laterN := (laterN_mono _ h2.1).trans $ (laterN_add _ _).2.trans $ by
+    rw [Nat.add_comm, h1.1]
+    apply (laterN_add _ _).1.trans (laterN_mono _ h3.1.1)
+
+instance intoLaterN_and [BI PROP] n (P1 P2 Q1 Q2 : PROP)
+    [h1 : IntoLaterN false n P1 Q1] [h2 : IntoLaterN false n P2 Q2] :
+    IntoLaterN false n iprop(P1 ∧ P2) iprop(Q1 ∧ Q2) where
+  into_laterN := (and_mono h1.1 h2.1).trans (laterN_and n).2
+
+instance intoLaterN_forall [BI PROP] n (Φ Ψ : α → PROP)
+    [h : ∀ x, IntoLaterN false n (Φ x) (Ψ x)] : IntoLaterN false n iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
+  into_laterN := (forall_mono fun x => (h x).1).trans (laterN_forall n).2
+
+instance intoLaterN_exists [BI PROP] n (Φ Ψ : α → PROP)
+    [h : ∀ x, IntoLaterN false n (Φ x) (Ψ x)] : IntoLaterN false n iprop(∃ x, Φ x) iprop(∃ x, Ψ x) where
+  into_laterN := (exists_mono fun x => (h x).1).trans (laterN_exists_2 n)
+
+instance intoLaterN_or [BI PROP] n (P1 P2 Q1 Q2 : PROP)
+    [h1 : IntoLaterN false n P1 Q1] [h2 : IntoLaterN false n P2 Q2] :
+    IntoLaterN false n iprop(P1 ∨ P2) iprop(Q1 ∨ Q2) where
+  into_laterN := (or_mono h1.1 h2.1).trans (laterN_or n).2
+
+instance intoLaterN_affinely [BI PROP] n (P Q : PROP)
+    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(<affine> P) iprop(<affine> Q) where
+  into_laterN := (affinely_mono h.1).trans (laterN_affinely_2 n)
+
+instance intoLaterN_intuitionistically [BI PROP] n (P Q : PROP)
+    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(□ P) iprop(□ Q) where
+  into_laterN := (intuitionistically_mono h.1).trans (laterN_intuitionistically_2 n)
+
+instance intoLaterN_absorbingly [BI PROP] n (P Q : PROP)
+    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(<absorb> P) iprop(<absorb> Q) where
+  into_laterN := (absorbingly_mono h.1).trans (laterN_absorbingly n).2
+
+instance intoLaterN_persistently [BI PROP] n (P Q : PROP)
+    [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(<pers> P) iprop(<pers> Q) where
+  into_laterN := (persistently_mono h.1).trans (laterN_persistently n).2
+
+instance intoLaterN_sep [BI PROP] n (P1 P2 Q1 Q2 : PROP)
+    [h1 : IntoLaterN false n P1 Q1] [h2 : IntoLaterN false n P2 Q2] :
+    IntoLaterN false n iprop(P1 ∗ P2) iprop(Q1 ∗ Q2) where
+  into_laterN := (sep_mono h1.1 h2.1).trans (laterN_sep n).2
 
 end Iris.ProofMode

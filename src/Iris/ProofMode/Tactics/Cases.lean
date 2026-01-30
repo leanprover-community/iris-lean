@@ -9,6 +9,7 @@ import Iris.ProofMode.Tactics.Basic
 import Iris.ProofMode.Tactics.Clear
 import Iris.ProofMode.Tactics.Pure
 import Iris.ProofMode.Tactics.HaveCore
+import Iris.ProofMode.Tactics.Mod
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
@@ -222,6 +223,11 @@ partial def iCasesCore
     iCasesSpatial bi P Q A' p fun B' =>
       iCasesCore hyps Q q(false) B' B' ⟨⟩ arg @k
 
+  | .mod arg =>
+    iModCore bi P Q p A' fun p' A' Q' =>
+      have ⟨A'', eq⟩ := mkIntuitionisticIf bi p' A'
+      iCasesCore hyps Q' p' A'' A' eq arg @k
+
 elab "icases" colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => do
   -- parse syntax
   let pmt ← liftMacroM <| PMTerm.parse pmt
@@ -235,6 +241,9 @@ elab "icases" colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => do
   let pf2 ← iCasesCore bi hyps goal p B A eq pat (λ hyps => addBIGoal hyps goal)
 
   mvar.assign q(($pf).trans $pf2)
+
+macro "imod" colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => `(tactic | icases $pmt with >$pat)
+macro "imod" colGt hyp:ident : tactic => `(tactic | imod $hyp:ident with $hyp:ident)
 
 -- TODO: remove these shortcuts if they are not used
 macro "iintuitionistic" hyp:ident : tactic => `(tactic | icases $hyp:ident with □$hyp:ident)
