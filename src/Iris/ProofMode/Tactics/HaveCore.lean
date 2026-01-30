@@ -49,7 +49,7 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     let val ← instantiateMVars <| ← elabTerm tm none mayPostpone
     let ty ← instantiateMVars <| ← inferType val
 
-    let ⟨newMVars, _, _⟩ ← forallMetaTelescopeReducing ty
+    let ⟨newMVars, _, _⟩ ← forallMetaTelescope ty
     let val := mkAppN val newMVars
     -- TOOD: should we call postprocessAppMVars?
     let newMVarIds ← newMVars.map Expr.mvarId! |>.filterM fun mvarId => not <$> mvarId.isAssigned

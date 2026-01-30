@@ -20,7 +20,8 @@ variable {GF} [E0 : ElemG GF F0]
 
 private theorem autoverse : ⊢
     (|==> ∃ (γ : GName), iOwn (F := F0) γ (toAgree ⟨"Paul Durham"⟩) : IProp GF) := by
-  apply iOwn_alloc
+  istart
+  iapply iOwn_alloc
   exact fun _ => trivial
 
 example : ⊢ |==> ∃ (γ0 γ1 : GName) (s0 s1 : String),
