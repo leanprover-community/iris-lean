@@ -358,6 +358,7 @@ theorem ownI_persistent (i : Positive) (P : IProp GF) :
       gmap_view_frag (GF := GF) (M := M) (F := F) i .discard
         (toAgree (invariant_unfold (GF := GF) P))))
 
+
 /-! ## Invariant Lookup Helper -/
 
 omit [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in

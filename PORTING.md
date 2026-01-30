@@ -174,7 +174,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/ghost_map.v`
 - [ ] `lib/ghost_var.v`
 - [ ] `lib/gset_bij.v`
-- [ ] `lib/invariants.v`
+- [x] `lib/invariants.v`
 - [ ] `lib/iprop.v`
   - [x] Definition
   - [ ] subG 

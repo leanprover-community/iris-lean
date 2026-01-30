@@ -57,10 +57,10 @@ section
 /-! ## Definition -/
 
 /-- Coerce mask predicates to `CoPset` for `ownE`. -/
-private abbrev mask (E : Iris.Set Positive) : CoPset := ⟨E⟩
+abbrev mask (E : Iris.Set Positive) : CoPset := ⟨E⟩
 
 /-- Fix `wsat` to the current ghost state parameters. -/
-private noncomputable def wsat' (W : WsatGS GF) : IProp GF :=
+noncomputable abbrev wsat' (W : WsatGS GF) : IProp GF :=
   wsat (GF := GF) (M := M) (F := F) W
 
 /-- Alias to expose `M`/`F` in typeclass-driven instances. -/
@@ -131,6 +131,37 @@ private theorem fupd_from_split {W : WsatGS GF}
   refine (sep_mono .rfl (sep_mono hown .rfl)).trans ?_
   exact (except0_intro).trans BIUpdate.intro
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+/-- Non-expansiveness of `uPred_fupd` in its postcondition. -/
+theorem uPred_fupd_ne {W : WsatGS GF}
+    (E1 E2 : Iris.Set Positive) :
+    OFE.NonExpansive (uPred_fupd (M := M) (F := F) W E1 E2) := by
+  -- Push non-expansiveness through wand, bupd, except-0, and sep.
+  refine ⟨?_⟩
+  intro n P Q hPQ
+  unfold uPred_fupd
+  have hsep :
+      BIBase.sep (wsat' (M := M) (F := F) W)
+          (BIBase.sep (ownE W (mask E2)) P) ≡{n}≡
+        BIBase.sep (wsat' (M := M) (F := F) W)
+          (BIBase.sep (ownE W (mask E2)) Q) :=
+    (sep_ne.ne .rfl (sep_ne.ne .rfl hPQ))
+  have hex :
+      BIBase.except0 (BIBase.sep (wsat' (M := M) (F := F) W)
+          (BIBase.sep (ownE W (mask E2)) P)) ≡{n}≡
+        BIBase.except0 (BIBase.sep (wsat' (M := M) (F := F) W)
+          (BIBase.sep (ownE W (mask E2)) Q)) :=
+    (except0_ne.ne hsep)
+  have hbupd :
+      BUpd.bupd (PROP := IProp GF)
+          (BIBase.except0 (BIBase.sep (wsat' (M := M) (F := F) W)
+            (BIBase.sep (ownE W (mask E2)) P))) ≡{n}≡
+        BUpd.bupd (PROP := IProp GF)
+          (BIBase.except0 (BIBase.sep (wsat' (M := M) (F := F) W)
+            (BIBase.sep (ownE W (mask E2)) Q))) :=
+    (OFE.NonExpansive.ne (f := BUpd.bupd (PROP := IProp GF)) hex)
+  exact (wand_ne.ne .rfl hbupd)
+
 /-! ## Mask Introduction -/
 
 omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
@@ -164,6 +195,97 @@ theorem fupd_intro_mask {W : WsatGS GF}
   refine (sep_assoc (P := wsat' (M := M) (F := F) W) (Q := ownE W (mask E2))
     (R := uPred_fupd (M := M) (F := F) W E2 E1 P)).1.trans ?_
   exact (except0_intro).trans BIUpdate.intro
+
+/-! ## Mask Framing -/
+
+omit [DecidableEq Positive] [FiniteMapLaws Positive M]
+  [ElemG GF (COFE.constOF GSetDisj)] in
+/-- Split a union mask into disjoint components. -/
+private theorem ownE_union_split {W : WsatGS GF}
+    (E1 Ef : Iris.Set Positive)
+    (hdisj : CoPset.Disjoint (mask E1) (mask Ef)) :
+    ownE W (mask (fun x => E1 x ∨ Ef x)) ⊣⊢
+      BIBase.sep (ownE W (mask E1)) (ownE W (mask Ef)) := by
+  -- use the `ownE_op` equivalence on the union
+  simpa using (ownE_op (W := W) (E₁ := mask E1) (E₂ := mask Ef) hdisj)
+
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+/-- Frame a mask through `except0` and rejoin the result. -/
+private theorem fupd_mask_frame_r_frame {W : WsatGS GF}
+    (E2 Ef : Iris.Set Positive) (P : IProp GF) :
+    BIBase.sep (BIBase.except0 (BIBase.sep (wsat' (M := M) (F := F) W)
+      (BIBase.sep (ownE W (mask E2)) P))) (ownE W (mask Ef)) ⊢
+      BIBase.except0 (BIBase.sep (wsat' (M := M) (F := F) W)
+        (BIBase.sep (ownE W (mask (fun x => E2 x ∨ Ef x))) P)) := by
+  -- push the frame under `except0`, then recombine the masks
+  refine (except0_frame_r).trans ?_
+  refine except0_mono ?_
+  refine (sep_assoc (P := wsat' (M := M) (F := F) W)
+    (Q := BIBase.sep (ownE W (mask E2)) P) (R := ownE W (mask Ef))).1.trans ?_
+  refine (sep_mono .rfl
+    (sep_right_comm (P := ownE W (mask E2)) (Q := P) (R := ownE W (mask Ef))).1).trans ?_
+  refine (sep_assoc (P := wsat' (M := M) (F := F) W)
+    (Q := BIBase.sep (ownE W (mask E2)) (ownE W (mask Ef))) (R := P)).2.trans ?_
+  have hdisj :
+      BIBase.sep (ownE W (mask E2)) (ownE W (mask Ef)) ⊢
+        BIBase.pure (CoPset.Disjoint (mask E2) (mask Ef)) :=
+    ownE_disjoint (W := W) (E₁ := mask E2) (E₂ := mask Ef)
+  have hjoin :
+      BIBase.sep (ownE W (mask E2)) (ownE W (mask Ef)) ⊢
+        ownE W (mask (fun x => E2 x ∨ Ef x)) := by
+    -- use the derived disjointness to rejoin the masks
+    refine pure_elim (PROP := IProp GF)
+      (φ := CoPset.Disjoint (mask E2) (mask Ef))
+      (Q := BIBase.sep (ownE W (mask E2)) (ownE W (mask Ef)))
+      (R := ownE W (mask (fun x => E2 x ∨ Ef x))) ?_ ?_
+    · exact hdisj
+    · intro hdisj'
+      simpa using (ownE_op (W := W) (E₁ := mask E2) (E₂ := mask Ef) hdisj').2
+  refine (sep_mono (PROP := IProp GF)
+    (sep_mono (PROP := IProp GF) .rfl hjoin) .rfl).trans ?_
+  exact (sep_assoc (P := wsat' (M := M) (F := F) W)
+    (Q := ownE W (mask (fun x => E2 x ∨ Ef x))) (R := P)).1
+
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+/-- Apply a fancy update to its mask resources. -/
+private theorem fupd_apply {W : WsatGS GF}
+    (E1 E2 : Iris.Set Positive) (P : IProp GF) :
+    BIBase.sep (uPred_fupd (M := M) (F := F) W E1 E2 P)
+        (BIBase.sep (wsat' (M := M) (F := F) W) (ownE W (mask E1))) ⊢
+      BUpd.bupd (BIBase.except0 (BIBase.sep (wsat' (M := M) (F := F) W)
+        (BIBase.sep (ownE W (mask E2)) P))) := by
+  -- eliminate the fupd wand on the shared mask
+  unfold uPred_fupd
+  exact (wand_elim_l (PROP := IProp GF))
+
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+/-- Frame a disjoint mask onto a fancy update. -/
+theorem fupd_mask_frame_r {W : WsatGS GF}
+    (E1 E2 Ef : Iris.Set Positive) (P : IProp GF)
+    (hdisj1 : CoPset.Disjoint (mask E1) (mask Ef)) :
+    uPred_fupd (M := M) (F := F) W E1 E2 P ⊢
+      uPred_fupd (M := M) (F := F) W
+        (fun x => E1 x ∨ Ef x) (fun x => E2 x ∨ Ef x) P := by
+  -- Apply the fupd and frame the extra mask through bupd/except-0.
+  unfold uPred_fupd
+  refine wand_intro ?_
+  refine (sep_mono .rfl (sep_mono .rfl
+    (ownE_union_split (W := W) (E1 := E1) (Ef := Ef) hdisj1).1)).trans ?_
+  refine (sep_mono .rfl
+    (sep_assoc (P := wsat' (M := M) (F := F) W)
+      (Q := ownE W (mask E1)) (R := ownE W (mask Ef))).2).trans ?_
+  refine (sep_assoc (P := uPred_fupd (M := M) (F := F) W E1 E2 P)
+    (Q := BIBase.sep (wsat' (M := M) (F := F) W) (ownE W (mask E1)))
+    (R := ownE W (mask Ef))).2.trans ?_
+  refine (sep_mono (fupd_apply (W := W) (E1 := E1) (E2 := E2) (P := P)) .rfl).trans ?_
+  refine (BIUpdate.frame_r (PROP := IProp GF)
+    (P := BIBase.except0 (BIBase.sep (wsat' (M := M) (F := F) W)
+      (BIBase.sep (ownE W (mask E2)) P)))
+    (R := ownE W (mask Ef))).trans ?_
+  have hframe :=
+    fupd_mask_frame_r_frame (M := M) (F := F)
+      (W := W) (E2 := E2) (Ef := Ef) (P := P)
+  exact (BIUpdate.mono (PROP := IProp GF) hframe)
 
 /-! ## Monotonicity and Composition -/
 

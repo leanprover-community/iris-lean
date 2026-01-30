@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
 import Iris.BI
+import Iris.Std.Namespace
 import Iris.ProofMode.SynthInstance
 
 namespace Iris.ProofMode
@@ -146,5 +147,27 @@ export IsExcept0 (is_except0)
 class IntoExcept0 [BI PROP] (P : PROP) (Q : outParam PROP) where
   into_except0 : P ⊢ ◇ Q
 export IntoExcept0 (into_except0)
+
+/-! ## Invariants and Accessors -/
+
+/-- Extract the namespace associated with an invariant assertion. -/
+@[ipm_class]
+class IntoInv [BI PROP] (P : PROP) (N : outParam Namespace) : Prop where
+  -- marker class: no fields, only carries the namespace
+
+/-- Accessor packaging for proof mode elimination. -/
+def accessor [BI PROP] {X : Type _} (M1 M2 : PROP → PROP)
+    (α β : X → PROP) (mγ : X → Option PROP) : PROP :=
+  -- `default emp` (via `Option.getD`) when no closing shift is provided.
+  M1 (BIBase.exists fun x =>
+    BIBase.sep (α x)
+      (BIBase.wand (β x) (M2 (Option.getD (mγ x) (BIBase.emp)))))
+
+/-- Typeclass for assertions that can be turned into accessors. -/
+@[ipm_class]
+class IntoAcc [BI PROP] {X : Type _} (Pacc : PROP) (φ : Prop) (Pin : PROP)
+    (M1 M2 : PROP → PROP) (α β : X → PROP) (mγ : X → Option PROP) : Prop where
+  -- Produce an accessor under the required side-condition.
+  into_acc : φ → Pacc ⊢ Pin -∗ accessor M1 M2 α β mγ
 
 end Iris.ProofMode
