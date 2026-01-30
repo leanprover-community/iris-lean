@@ -165,8 +165,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/boxes.v`
 - [ ] `lib/cancelable_invariants.v`
 - [ ] `lib/fancy_updates.v`
-  - [ ] FUpd instance
-  - [ ] Soundness
+  - [x] FUpd instance
+  - [x] Soundness
   - [ ] ProofMode instances
 - [ ] `lib/fancy_updates_from_vs.v`
 - [ ] `lib/gen_heap.v`
