@@ -641,3 +641,18 @@ instance (priority := default + 30) fromModal_intuitionistically_affine_bi [BI P
 instance fromModal_absorbingly [BI PROP] (P : PROP) :
   FromModal True modality_id iprop(<absorb> P) iprop(<absorb> P) P where
   from_modal := by simp [modality_id]; apply absorbingly_intro
+
+-- ElimModal
+instance elimModal_wand [BI PROP] φ p p' (P P' Q Q' R : PROP) [h : ElimModal φ p p' P P' Q Q'] :
+   ElimModal φ p p' P P' iprop(R -∗ Q) iprop(R -∗ Q') where
+   elim_modal hφ := by
+     apply wand_intro ((sep_assoc.1.trans $ sep_mono_r $ wand_elim $ wand_intro' $ wand_intro' $ sep_assoc.2.trans _).trans (h.1 hφ))
+     apply (sep_mono_l sep_comm.1).trans (sep_assoc.1.trans $ wand_elim' $ wand_elim' .rfl)
+
+instance elimModal_forall [BI PROP] φ p p' P P' (Φ Ψ : α → PROP) [h : ∀ x, ElimModal φ p p' P P' (Φ x) (Ψ x)] :
+  ElimModal φ p p' P P' iprop(∀ x, Φ x) iprop(∀ x, Ψ x) where
+  elim_modal hφ := forall_intro λ a => Entails.trans (sep_mono_r (wand_mono_r (forall_elim a))) ((h a).1 hφ)
+
+instance elimModal_absorbingly_here [BI PROP] p (P Q : PROP) [Absorbing Q] :
+  ElimModal True p false iprop(<absorb> P) P Q Q where
+  elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans $ absorbingly_sep_l.1.trans $ absorbing_absorbingly.1.trans wand_elim_r

@@ -1385,3 +1385,45 @@ example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <absorb> P := by
   imodintro (□ _)
 
 end imodintro
+
+section imod
+
+/-- Tests `imod` for bupd -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) : |==> P ⊢ |==> P := by
+  iintro HP
+  imod HP
+  iexact HP
+
+/-- Tests `imod` removing later before timeless propositions -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) [Timeless P] : ▷ P ⊢ ◇ P := by
+  iintro HP
+  imod HP
+  iexact HP
+
+/-- Tests `imod` for bupd under wand -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) : |==> P ⊢ emp -∗ |==> P := by
+  iintro HP
+  imod HP
+  iintro _
+  iexact HP
+
+/-- Tests `imod` with destructuring pattern -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) : |==> (P ∗ emp) ⊢ |==> P := by
+  iintro HP
+  imod HP with ⟨HP, _⟩
+  iexact HP
+
+/-- Tests `icases` with mod pattern -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) : emp ∗ |==> P ⊢ |==> P := by
+  iintro HP
+  icases HP with ⟨_, >HP⟩
+  iexact HP
+
+/- Tests `imod` for no modality -/
+/-- error: imod: P is not a modality -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : P ⊢ P := by
+  iintro HP
+  imod HP
+
+end imod

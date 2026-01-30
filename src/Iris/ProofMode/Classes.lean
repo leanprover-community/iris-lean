@@ -153,6 +153,11 @@ class FromModal {PROP1 PROP2} [BI PROP1] [BI PROP2] (φ : outParam $ Prop) (M : 
   from_modal : φ → M.M Q ⊢ P
 export FromModal (from_modal)
 
+@[ipm_class]
+class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (p' : outParam Bool) (P : PROP) (P' : outParam PROP) (Q : PROP) (Q' : outParam PROP) where
+  elim_modal : φ → □?p P ∗ (□?p' P' -∗ Q') ⊢ Q
+export ElimModal (elim_modal)
+
 
 /-- `IntoLaterN` turns `P` into `▷^[n] Q`.
 The Boolean [only_head] indicates whether laters should only be stripped in

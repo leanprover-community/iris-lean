@@ -251,7 +251,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] instances for big ops
   - [ ] MaybeCombineSepAs instances
   - [ ] CombineSepGives instances
-  - [ ] ElimModal instances
+  - [x] ElimModal instances
   - [ ] AddModal instances
   - [ ] ElimInv instances
 - [ ] `class_instances_cmra.v`
@@ -261,7 +261,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `class_instances_later.v` (InstancesLater.lean)
   - [x] basic instances
   - [x] FromModal
-  - [ ] ElimModal
+  - [x] ElimModal
   - [ ] AddModal
   - [x] IntoLater
 - [ ] `class_instances_make.v`
@@ -275,7 +275,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] Basic instances for fupd
   - [x] FromModal bupd
   - [ ] FromModal fupd
-  - [ ] ElimModal bupd
+  - [x] ElimModal bupd
   - [ ] ElimModal fupd
   - [ ] AddModal bupd
   - [ ] AddModal fupd
@@ -307,7 +307,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] CombineSepAs
   - [ ] MaybeCombineSepAs
   - [ ] CombineSepGives
-  - [ ] ElimModal
+  - [x] ElimModal
   - [ ] AddModal
   - [ ] Frame
   - [x] IntoExcept0
@@ -368,7 +368,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
     - [ ] all intro patterns (see below)
   - [ ] iInduction
   - [ ] iLöb
-  - [ ] iAssert (Lean: ihave _ : _)
+  - [x] iAssert (Lean: ihave _ : _)
   - [ ] iRewrite
   - [ ] iInv
   - [ ] iAccu
@@ -385,7 +385,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] IPure
   - [x] IIntuitionistic
   - [x] ISpatial
-  - [ ] IModalElim
+  - [x] IModalElim
   - [ ] IRewrite
   - [ ] IPureIntro
   - [x] IModalIntro

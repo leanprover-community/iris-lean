@@ -31,19 +31,11 @@ example : ⊢ |==> ∃ (γ0 γ1 : GName) (s0 s1 : String),
   let v1 : F0.ap (IProp GF) := toAgree ⟨"string1"⟩
 
   -- Allocate the resources
-  refine emp_sep.mpr.trans <| (sep_mono (iOwn_alloc v1 (fun _ => trivial)) .rfl).trans ?_
-  refine emp_sep.mpr.trans <| (sep_mono (iOwn_alloc v0 (fun _ => trivial)) .rfl).trans ?_
-
-  -- Eliminate the bupds (by hand, until iMod is implemented)
-  refine BIUpdate.frame_r.trans ?_
-  refine BIUpdate.mono (sep_mono .rfl BIUpdate.frame_r) |>.trans ?_
-  refine BIUpdate.mono bupd_frame_l |>.trans ?_
-  refine BIUpdate.trans.trans ?_
-  refine BIUpdate.mono ?_
+  imod iOwn_alloc v1 (fun _ => trivial) with ⟨%γ1, Hγ1⟩
+  imod iOwn_alloc v0 (fun _ => trivial) with ⟨%γ0, Hγ0⟩
+  imodintro
 
   -- Complete the Iris proof
-  istart
-  iintro ⟨⟨%γ0, Hγ0⟩, ⟨%γ1, Hγ1⟩, -⟩
   iexists γ0, γ1, "string0", "string1"
   isplitl [Hγ0]
   · iexact Hγ0

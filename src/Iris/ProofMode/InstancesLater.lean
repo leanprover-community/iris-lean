@@ -259,6 +259,12 @@ instance intoExcept0_persistently [BI PROP] (P Q : PROP)
     [h : IntoExcept0 P Q] : IntoExcept0 iprop(<pers> P) iprop(<pers> Q) where
   into_except0 := (persistently_mono h.1).trans except0_persistently.2
 
+/-- ElimModal -/
+@[ipm_backtrack]
+instance (priority := default - 10) elimModal_timeless [BI PROP] p (P P' Q : PROP) [IntoExcept0 P P'] [IsExcept0 Q] :
+  ElimModal True p p P P' Q Q where
+  elim_modal _ := ((sep_mono ((intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf_2) except0_intro).trans $ except0_sep.2.trans (except0_mono wand_elim_r)).trans is_except0
+
 /-- IntoLaterN -/
 instance (priority := low) intoLaterN_default [BI PROP] only_head n (P : PROP) :
   IntoLaterN only_head n P P where
