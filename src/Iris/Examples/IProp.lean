@@ -152,17 +152,15 @@ theorem wp_unfold (e : Expr) (Φ : Value → IProp GF) :
 /- Now, we can derive some example proof rules. First let's prove a rule for pure deterministic steps: -/
 example (e e' : Expr) Φ (Hstep : ∀ {s : State}, @step _ _ Value _ (e, s) = (e', s)) :
     wp e' Φ ⊢ wp e Φ := by
-  refine .trans ?_ (equiv_iff.mp (@wp_unfold Expr State Value _ GF _ _ _).symm).mp
   iintro Hspec
+  iapply wp_unfold
   iright
   iintro %s Hs
   iexists e', s
   isplitr
   · ipure_intro
     exact Hstep
-  · refine .trans ?_ later_intro      -- FIXME: once iNext is implemented
-    refine .trans ?_ BIUpdate.intro   -- FIXME: once iModIntro is implemented
-    iintro ⟨Hspec, Hs⟩
+  · iintro !> !>
     isplitl [Hs]
     · iexact Hs
     · iexact Hspec
@@ -176,21 +174,18 @@ example (e e' : Expr) (P P' : IProp GF) Φ
       (Hstep : ∀ s, iprop(P ∗ @state_interp State GF _ s ⊢ ∃ s',
           ⌜@step _ _ Value _ (e, s) = (e', s')⌝ ∗ |==> (P' ∗ @state_interp State GF _ s'))) :
     P ∗ (P' -∗ wp e' Φ) ⊢ wp e Φ := by
-  refine .trans ?_ (equiv_iff.mp (@wp_unfold Expr State Value _ GF _ _ _).symm).mp
   iintro ⟨HP, Hspec⟩
+  iapply wp_unfold
   iright
   iintro %s Hs
-  istop -- FIXME: iHave bug?
-  refine .trans (sep_mono (sep_mono (wand_intro (Hstep s)) .rfl) .rfl) ?_
-  iintro ⟨⟨Hcont, Hspec⟩, HP⟩
-  icases Hcont $$ HP with ⟨%s', %Hstep, Hupd⟩
+  ihave ⟨%s', %Hstep, Hupd⟩ := Hstep s $$ [HP, Hs]
+  . isplitl [HP] <;> iassumption
   iexists e', s'
   isplitr
   · ipure_intro; exact Hstep
-  refine .trans ?_ later_intro   -- FIXME: once iNext is implemented
-  refine .trans bupd_frame_l ?_  -- FIXME: once iMod is implemented
-  refine BIUpdate.mono ?_        -- FIXME: once iMod is implemented
-  iintro ⟨Hspec, HP', Hs⟩
+  iintro !>
+  imod Hupd with ⟨HP', Hs⟩
+  iintro !>
   isplitl [Hs]
   · iexact Hs
   · iapply Hspec $$ HP'

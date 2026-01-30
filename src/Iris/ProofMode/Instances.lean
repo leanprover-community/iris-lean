@@ -18,8 +18,11 @@ instance (priority := default + 10) asEmpValidEmpValid
 instance asEmpValid_entails [BI PROP] d (P Q : PROP) : AsEmpValid d (P ⊢ Q) iprop(P -∗ Q) where
   as_emp_valid := ⟨λ _ => entails_wand, λ _ => wand_entails⟩
 
-instance asEmpValid_equiv [BI PROP] (P Q : PROP) : AsEmpValid d (P ⊣⊢ Q) iprop(P ∗-∗ Q) where
+instance asEmpValid_bientails [BI PROP] (P Q : PROP) : AsEmpValid d (P ⊣⊢ Q) iprop(P ∗-∗ Q) where
   as_emp_valid := ⟨λ _ => equiv_wandIff, λ _ => wandIff_equiv⟩
+
+instance asEmpValid_equiv [BI PROP] (P Q : PROP) : AsEmpValid d (P ≡ Q) iprop(P ∗-∗ Q) where
+  as_emp_valid := ⟨λ _ h => equiv_wandIff (equiv_iff.1 h), λ _ h => (equiv_iff.2 (wandIff_equiv h))⟩
 
 -- FromImp
 instance fromImp_imp [BI PROP] (P1 P2 : PROP) : FromImp iprop(P1 → P2) P1 P2 := ⟨.rfl⟩
@@ -48,6 +51,9 @@ instance intoWand_and_l (p q : Bool) [BI PROP] ioP ioQ (R1 R2 P' Q' : PROP)
 instance intoWand_and_r (p q : Bool) [BI PROP] ioP ioQ (R1 R2 P' Q' : PROP)
     [h : IntoWand p q R2 ioP P' ioQ Q'] : IntoWand p q iprop(R1 ∧ R2) ioP P' ioQ Q' where
   into_wand := (intuitionisticallyIf_mono and_elim_r).trans h.1
+
+instance intoWand_wandIff (p q : Bool) [BI PROP] ioP ioQ (R1 R2 P' Q' : PROP)
+    [h : IntoWand p q iprop((R1 -∗ R2) ∧ (R2 -∗ R1)) ioP P' ioQ Q'] : IntoWand p q iprop(R1 ∗-∗ R2) ioP P' ioQ Q' := h
 
 -- The set_option is ok since this is an instance for an IPM class and thus can create mvars.
 set_option synthInstance.checkSynthOrder false in
@@ -184,6 +190,9 @@ instance intoExists_persistently [BI PROP] {P : PROP} (Φ : α → PROP) [h : In
 instance (priority := default - 10) fromAnd_and [BI PROP] (P1 P2 : PROP) :
     FromAnd iprop(P1 ∧ P2) P1 P2 := ⟨.rfl⟩
 
+instance fromAnd_wandIff [BI PROP] (P1 P2 P1' P2' : PROP) [h : FromAnd iprop((P1 -∗ P2) ∧ (P2 -∗ P1)) P1' P2']:
+    FromAnd iprop(P1 ∗-∗ P2) P1' P2' := h
+
 @[ipm_backtrack]
 instance (priority := default + 30) fromAnd_sep_persistent_l [BI PROP] (P1 P1' P2 : PROP)
     [Persistent P1] [h : IntoAbsorbingly P1' P1] : FromAnd iprop(P1 ∗ P2) P1' P2 where
@@ -215,6 +224,9 @@ instance (priority := default + 10) fromAnd_persistently_sep [BI PROP] (P Q1 Q2 
 -- IntoAnd
 instance (priority := default - 10) intoAnd_and (p : Bool) [BI PROP] (P Q : PROP) :
     IntoAnd p iprop(P ∧ Q) P Q := ⟨.rfl⟩
+
+instance intoAnd_wandIff [BI PROP] p (P1 P2 P1' P2' : PROP) [h : IntoAnd p iprop((P1 -∗ P2) ∧ (P2 -∗ P1)) P1' P2']:
+    IntoAnd p iprop(P1 ∗-∗ P2) P1' P2' := h
 
 @[ipm_backtrack]
 instance intoAnd_and_affine_l [BI PROP] (P Q Q' : PROP) [Affine P]
