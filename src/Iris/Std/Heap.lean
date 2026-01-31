@@ -51,8 +51,8 @@ theorem IsoFunStore.ext [Store T K V] [IsoFunStore T K V] {t1 t2 : T}
   rw [← of_fun_get (t := t1), ← of_fun_get (t := t2)]
   simp only [funext H]
 
-theorem IsoFunStore.store_eq_of_Equiv [Store T K V] [IsoFunStore T K V] {t1 t2 : T}
-    (H : Store.Equiv t1 t2) : t1 = t2 := IsoFunStore.ext <| congrFun H
+-- theorem IsoFunStore.store_eq_of_Equiv [Store T K V] [IsoFunStore T K V] {t1 t2 : T}
+--     (H : Store.Equiv t1 t2) : t1 = t2 := IsoFunStore.ext <| congrFun H
 
 /-- Stores of type T1 can be coerced to stores of type T2. -/
 class HasStoreMap (T1 T2 : Type _) (K V1 V2 : outParam (Type _)) [Store T1 K V1] [Store T2 K V2] where
@@ -79,7 +79,7 @@ export HasHeapMap (hhmap hhmap_get)
 
 /-- Heap extends PartialMap with heap-specific operations for separation logic.
     The heap stores optional values, where `none` represents unallocated locations. -/
-class Heap (K : outParam (Type _)) (M : Type _ → Type _) extends PartialMap K M where
+class Heap (K : outParam (Type _)) (M : Type _ → Type _) extends PartialMap M K where
   /-- Map operation that can optionally remove entries. -/
   hmap (f : K → V → Option V) : M V → M V
   /-- Merge two heaps with a combining operation. -/
@@ -100,7 +100,7 @@ theorem hmap_unalloc [Heap K M] {m : M V} (H : get? m k = none) : get? (hmap f m
 /-- The heap of a single point (singleton with optional value). -/
 def Heap.point [Heap K M] (k : K) (v : Option V) : M V :=
   match v with
-  | some v' => insert empty k v'
+  | some v' => PartialMap.insert empty k v'
   | none => empty
 
 /-- The domain of a heap is the set of keys that map to .some values. -/
@@ -108,18 +108,18 @@ def Heap.dom [Heap K M] (m : M V) : K → Prop := fun k => (get? m k).isSome
 
 @[simp] def Heap.union [Heap K M] : M V → M V → M V := merge (fun v _ => v)
 
-theorem Heap.point_get?_eq [Heap K M] [DecidableEq K] [LawfulPartialMap K M] (H : k = k') : get? (point k (some v) : M V) k' = some v := by
-  rw [point, H]
-  exact PartialMapLaws.get?_insert_same _ _ _
+theorem Heap.point_get?_eq [Heap K M] [DecidableEq K] [LawfulPartialMap M K] (H : k = k') : get? (point k (some v) : M V) k' = some v :=
+  get?_insert_eq  H
 
-theorem Heap.point_get?_ne [Heap K M] [DecidableEq K] [LawfulPartialMap K M] (H : k ≠ k') :
+
+theorem Heap.point_get?_ne [Heap K M] [DecidableEq K] [LawfulPartialMap M K] (H : k ≠ k') :
     get? (point k (some v) : M V) k' = none := by
   rw [point]
-  rw [PartialMapLaws.get?_insert_ne _ _ _ _ H]
-  exact PartialMapLaws.get?_empty k'
+  rw [get?_insert_ne H]
+  exact get?_empty k'
 
 open Classical in
-theorem Heap.get?_point [Heap K M] [DecidableEq K] [LawfulPartialMap K M] {k k' : K} {v : V} :
+theorem Heap.get?_point [Heap K M] [DecidableEq K] [LawfulPartialMap M K] {k k' : K} {v : V} :
     get? (point k (some v) : M V) k' = if k = k' then some v else none := by
   by_cases h : k = k'
   · rw [if_pos h, h]; exact Heap.point_get?_eq rfl

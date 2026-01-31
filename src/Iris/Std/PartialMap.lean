@@ -82,7 +82,7 @@ scoped macro_rules
 scoped infix:50 " ##ₘ " => PartialMap.disjoint
 
 /-- Laws that a partial map implementation must satisfy. -/
-class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
+class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _)) [PartialMap M K] where
   get?_empty k : get? (empty : M V) k = none
   get?_insert_eq {m : M V} {k k' v} : k = k' → get? (insert m k v) k' = some v
   get?_insert_ne {m : M V} {k k' v} : k ≠ k' → get? (insert m k v) k' = get? m k'
@@ -105,6 +105,24 @@ theorem subset_trans {m₁ m₂ m₃ : M V} (h₁ : m₁ ⊆ m₂) (h₂ : m₂ 
 theorem disjoint_comm {m₁ m₂ : M V} (h : disjoint m₁ m₂) : disjoint m₂ m₁ :=
   fun k ⟨h₂, h₁⟩ => h k ⟨h₁, h₂⟩
 
+theorem forall_mono (P Q : K → V → Prop) {m : M V} :
+    PartialMap.all P m → (∀ k v, P k v → Q k v) → PartialMap.all Q m :=
+  fun hp himpl k v hget => himpl k v (hp k v hget)
+
+theorem disjoint_iff (m₁ m₂ : M V) :
+    m₁ ##ₘ m₂ ↔ ∀ k, get? m₁ k = none ∨ get? m₂ k = none := by
+  constructor
+  · intro hdisj k
+    by_cases h1 : (get? m₁ k).isSome
+    · by_cases h2 : (get? m₂ k).isSome
+      · exact absurd ⟨h1, h2⟩ (hdisj k)
+      · simp only [Option.not_isSome_iff_eq_none] at h2; right; assumption
+    · simp only [Option.not_isSome_iff_eq_none] at h1; left; assumption
+  · intro h k ⟨hs1, hs2⟩
+    cases h k with
+    | inl h1 => simp [h1] at hs1
+    | inr h2 => simp [h2] at hs2
+
 end PartialMap
 
 class ExtensionalPartialMap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
@@ -115,7 +133,7 @@ namespace LawfulPartialMap
 open PartialMap
 
 variable {K V : Type _} {M : Type _ → Type _}
-variable [LawfulPartialMap M K]
+variable [PartialMap M K] [LawfulPartialMap M K]
 
 theorem get?_insert [DecidableEq K] {m : M V} {k k' : K} {v : V} :
     get? (insert m k v) k' = if k = k' then some v else get? m k' := by
@@ -324,10 +342,6 @@ theorem forall_empty (P : K → V → Prop) : PartialMap.all P (empty : M V) := 
   rw [get?_empty k] at h
   cases h
 
-theorem forall_mono (P Q : K → V → Prop) {m : M V} :
-    PartialMap.all P m → (∀ k v, P k v → Q k v) → PartialMap.all Q m :=
-  fun hp himpl k v hget => himpl k v (hp k v hget)
-
 theorem forall_insert_of_forall (P : K → V → Prop) {m : M V} {i : K} {x : V} :
     PartialMap.all P (insert m i x) → P i x :=
   fun hfa => hfa _ _ (get?_insert_eq rfl)
@@ -375,20 +389,6 @@ theorem forall_delete (P : K → V → Prop) {m : M V} {i : K} :
   · simp [get?_delete_eq hik] at hget
   · rw [get?_delete_ne hik] at hget
     exact hfa k v hget
-
-theorem disjoint_iff (m₁ m₂ : M V) :
-    m₁ ##ₘ m₂ ↔ ∀ k, get? m₁ k = none ∨ get? m₂ k = none := by
-  constructor
-  · intro hdisj k
-    by_cases h1 : (get? m₁ k).isSome
-    · by_cases h2 : (get? m₂ k).isSome
-      · exact absurd ⟨h1, h2⟩ (hdisj k)
-      · simp only [Option.not_isSome_iff_eq_none] at h2; right; assumption
-    · simp only [Option.not_isSome_iff_eq_none] at h1; left; assumption
-  · intro h k ⟨hs1, hs2⟩
-    cases h k with
-    | inl h1 => simp [h1] at hs1
-    | inr h2 => simp [h2] at hs2
 
 theorem disjoint_insert_left {m₁ m₂ : M V} {i : K} {x : V} :
     get? m₂ i = none →

@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Zongyuan Liu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Zongyuan Liu
+Authors: Zongyuan Liu, Markus de Medeiros
 -/
 
 import Iris.Std.PartialMap
@@ -19,7 +19,7 @@ namespace Iris.Std
 /-- The type `M` represents a finite map from keys of type `K` to values of type `V`.
     Extends `PartialMap` with operations for converting to/from lists. -/
 class FiniteMap (K : outParam (Type u)) (M : Type u' → Type _)
-    extends PartialMap K M where
+    extends PartialMap M K where
   /-- Convert the map to a list of key-value pairs. -/
   toList : M V → List (K × V)
   /-- Construct a map from a list of key-value pairs. -/
@@ -88,9 +88,9 @@ def firstKey (m : M V) (i : K) : Prop :=
 end FiniteMap
 
 /-- Laws that a finite map implementation must satisfy.
-    Extends PartialMapLaws with laws specific to list conversion. -/
+    Extends LawfulPartialMap with laws specific to list conversion. -/
 class FiniteMapLaws (K : (outParam (Type u))) (M : Type u' → Type _)
-    [DecidableEq K] [FiniteMap K M] extends LawfulPartialMap K M where
+    [DecidableEq K] [FiniteMap K M] extends LawfulPartialMap M K where
   ofList_nil : (ofList [] : M V) = ∅
   ofList_cons : ∀ (k : K) (v : V) (l : List (K × V)),
     (ofList ((k, v) :: l) : M V) = insert (ofList l) k v
@@ -137,48 +137,35 @@ namespace FiniteMapLaws
 variable {K : Type u} {V : Type u'} {M : Type u' → Type _}
 variable [DecidableEq K] [FiniteMap K M] [FiniteMapLaws K M]
 
+/-- Extensionality for maps: two maps are equal if they agree on all keys. -/
+theorem ext [ExtensionalPartialMap M K] {m₁ m₂ : M V} (h : ∀ k, get? m₁ k = get? m₂ k) : m₁ = m₂ := by
+  apply ExtensionalPartialMap.equiv_iff_eq.mp
+  exact h
+
 private theorem mem_of_get?_ofList (l : List (K × V)) (k : K) (v : V) :
     get? (ofList l : M V) k = some v → (k, v) ∈ l := by
   intro h
   induction l with
   | nil =>
-    simp [ofList_nil, EmptyCollection.emptyCollection, get?_empty] at h
+    rw [ofList_nil] at h
+    simp only [EmptyCollection.emptyCollection] at h
+    have : get? (empty : M V) k = none := get?_empty k
+    rw [this] at h
+    cases h
   | cons kv kvs ih =>
     rw [ofList_cons] at h
     by_cases heq : kv.1 = k
     · suffices kv = (k, v) by rw [← this]; exact List.Mem.head _
       ext <;> simp [heq]
-      exact Option.some.inj (by rw [heq, get?_insert_same] at h; exact h)
-    · exact List.Mem.tail _ (ih (by rw [get?_insert_ne _ _ _ _ heq] at h; exact h))
+      have : get? (insert (ofList kvs) k kv.snd) k = some v := by rw [← heq]; exact h
+      rw [get?_insert_eq rfl] at this
+      exact Option.some.inj this
+    · have : get? (insert (ofList kvs) kv.1 kv.snd) k = get? (ofList kvs) k := get?_insert_ne heq
+      rw [this] at h
+      exact List.Mem.tail _ (ih h)
 
 theorem nodup_toList (m : M V): (toList m).Nodup :=
   (toList_spec m).1
-
-
-private theorem mem_of_get?_ofList' (l : List (K × V)) (k : K) (v : V) (hnodup: (l.map Prod.fst).Nodup):
-   (k, v) ∈ l → get? (ofList l : M V) k = some v := by
-  intro h
-  induction l with
-  | nil => simp [] at h
-  | cons kv kvs ih =>
-    sorry
-    -- rw [ofList_cons]
-    -- rw [PartialMapLaws.get?_insert_some]
-    -- simp only [List.mem_cons, List.map_cons, List.nodup_cons] at h hnodup
-    -- split
-    -- · next heq =>
-    --   rcases h with ⟨rfl, rfl⟩ | hmem
-    --   · rfl
-    --   · exfalso
-    --     have : k ∈ kvs.map Prod.fst := by
-    --       rw [List.mem_map]
-    --       exact ⟨(k, v), hmem, rfl⟩
-    --     rw [← heq] at this
-    --     exact hnodup.1 this
-    -- · next hne =>
-    --   rcases h with ⟨rfl, rfl⟩ | hmem
-    --   · contradiction
-    --   · exact ih hnodup.2 hmem
 
 /-- If a list has no duplicates and the projection is injective on list elements,
     then the mapped list has no duplicates. -/
@@ -207,20 +194,10 @@ theorem nodup_toList_keys (m : M V) : (toList m).map Prod.fst |>.Nodup := by
   rw [hv1] at hv2
   cases hv2;rfl
 
-theorem mem_toList (m : M V) : ∀ k v, (k, v) ∈ toList m ↔ get? m k = some v :=
-  (toList_spec m).2
+theorem mem_toList (m : M V) (k : K) (v : V) : (k, v) ∈ toList m ↔ get? m k = some v :=
+  (toList_spec m).2 k v
 
-theorem mem_of_mem_ofList (l : List (K × V)) (i : K) (x : V) :
-    get? (ofList l : M V) i = some x → (i, x) ∈ l := by
-  induction l with
-  | nil => sorry -- simp [ofList_nil, get?_empty]
-  | cons kv l ih => sorry
-    -- obtain ⟨k, v⟩ := kv
-    -- simp [ofList_cons, get?_insert]
-    -- intro h; split at h
-    -- · next heq => cases h; simp [← heq]
-    -- · next _ => exact .inr (ih h)
-
+/-- Membership characterization for ofList (right-to-left direction). -/
 theorem mem_ofList_of_mem (l : List (K × V)) (i : K) (x : V) :
     (l.map Prod.fst).Nodup → (i, x) ∈ l → get? (ofList l : M V) i = some x := by
   intro hnodup hmem
@@ -230,16 +207,17 @@ theorem mem_ofList_of_mem (l : List (K × V)) (i : K) (x : V) :
     obtain ⟨k, v⟩ := kv
     simp [ofList_cons, List.map_cons, List.nodup_cons] at hnodup hmem ⊢
     rcases hmem with ⟨rfl, rfl⟩ | hmem
-    · rw [get?_insert_same]
-    · rw [get?_insert_ne, ih hnodup.2 hmem]
-      intro heq; subst heq
-      exact hnodup.1 _ hmem
+    · exact get?_insert_eq rfl
+    · have hne : k ≠ i := by
+        intro heq; subst heq
+        exact hnodup.1 _ hmem
+      rw [get?_insert_ne hne, ih hnodup.2 hmem]
 
 theorem mem_ofList (l : List (K × V)) i x (hnodup : (l.map Prod.fst).Nodup):
    (i,x) ∈ l ↔ get? (ofList l : M V) i = some x := by
     constructor
     apply mem_ofList_of_mem; exact hnodup
-    apply mem_of_mem_ofList
+    apply mem_of_get?_ofList
 
 theorem ofList_injective [DecidableEq V] (l1 l2 : List (K × V)) :
     (l1.map Prod.fst).Nodup → (l2.map Prod.fst).Nodup →
@@ -253,7 +231,7 @@ theorem ofList_injective [DecidableEq V] (l1 l2 : List (K × V)) :
       mem_ofList (M := M) (K := K) l2 i x hnodup2]
   rw [heq]
 
-theorem ofList_toList (m : M V) :
+theorem ofList_toList (m : M V) [ExtensionalPartialMap M K] :
     ofList (toList m) = m := by
   apply ext (K := K)
   intro i
@@ -293,43 +271,27 @@ theorem toList_perm_of_get?_eq [DecidableEq V] {m₁ m₂ : M V}
 /-- toList of insert and insert-after-delete are permutations of each other. -/
 theorem toList_insert_delete [DecidableEq V] (m : M V) (k : K) (v : V) :
     (toList (insert m k v)).Perm (toList (insert (delete m k) k v)) :=
-  toList_perm_of_get?_eq (fun k' => (PartialMapLaws.get?_insert_delete m k k' v).symm)
+  toList_perm_of_get?_eq (fun k' => LawfulPartialMap.get?_insert_delete_same.symm)
 
 /-- Insert is idempotent for the same key-value. -/
+/-- Insert overwrites previous value for the same key. -/
 theorem insert_insert (m : M V) (k : K) (v v' : V) :
     get? (insert (insert m k v) k v') = get? (insert m k v' : M V) := by
   funext k'
   by_cases h : k = k'
-  · simp [h, get?_insert_same]
-  · simp [get?_insert_ne _ _ _ _ h]
+  · subst h; simp [get?_insert_eq rfl]
+  · simp [get?_insert_ne h]
 
-/-- Deleting from empty is empty. -/
-theorem delete_empty_eq (k : K) :
-    get? (delete (∅ : M V) k) = get? (∅ : M V) := by
-  funext k'
-  by_cases h : k = k'
-  · subst h
-    rw [get?_delete_same]
-    simp [EmptyCollection.emptyCollection]
-    rw [get?_empty]
-  · rw [get?_delete_ne _ _ _ h]
-
+/-- Value at a key after insert must equal the inserted value. -/
 theorem get?_insert_rev (m : M V) (i : K) (x y : V) :
     get? (insert m i x) i = some y → x = y := by
-  simp [get?_insert_same]
-
-theorem insert_get? (m : M V) (i : K) (x : V) :
-    get? m i = some x → (∀ k, get? (insert m i x) k = get? m k) := by
-  intro h k
-  by_cases hk : i = k
-  · subst hk; simp only [get?_insert_same, h]
-  · simp [get?_insert_ne _ _ _ _ hk]
+  simp [get?_insert_eq rfl]
 
 theorem toList_empty : toList (∅ : M V) = [] := by
   apply List.eq_nil_iff_forall_not_mem.mpr
   intro ⟨i, x⟩ hmem
   have h1 : get? (∅ : M V) i = some x := (mem_toList _ i x).mp hmem
-  have h2 : get? (∅ : M V) i = none := get?_empty i
+  have h2 : get? (∅ : M V) i = none := get?_empty (M := M) i
   rw [h2] at h1
   cases h1
 
@@ -344,51 +306,13 @@ theorem toList_insert [DecidableEq V] : ∀ (m : M V) k v, get? m k = none →
 theorem toList_delete [DecidableEq V] (m : M V) (k : K) (v : V) (h : get? m k = some v) :
     (toList m).Perm ((k, v) :: toList (delete m k)) := by
   have heq : toList m = toList (insert (delete m k) k v) := by
-    rw [PartialMapLaws.insert_delete_cancel m k v h]
+    rw [LawfulPartialMap.insert_delete_cancel m k v h]
   rw [heq]
   apply toList_insert
-  exact get?_delete_same m k
+  exact get?_delete_eq rfl m k
 
-theorem delete_insert_cancel (m : M V) (i : K) (x : V) :
-    get? m i = none → delete (insert m i x) i = m := by
-  intro h
-  apply PartialMapLaws.ext
-  intro j
-  by_cases hij : i = j
-  · subst hij
-    simp [get?_delete_same, h]
-  · simp [get?_delete_ne _ _ _ hij, get?_insert_ne _ _ _ _ hij]
-
-
-theorem delete_subset_of_mem (m : M V) (i : K) (v : V) :
-    get? m i = some v → delete m i ⊆ m ∧ delete m i ≠ m := by
-  intro hi
-  constructor
-  · exact PartialMapLaws.delete_subset_self m i
-  · intro heq
-    have : get? (delete m i) i = get? m i := by rw [heq]
-    simp [get?_delete_same, hi] at this
-
-theorem subset_insert (m : M V) (i : K) (x : V) :
-    get? m i = none → m ⊆ insert m i x := by
-  intro hi k v hk
-  by_cases hik : i = k
-  · subst hik
-    simp [hi] at hk
-  · simp [get?_insert_ne _ _ _ _ hik, hk]
-
-theorem subset_insert_of_not_mem (m : M V) (i : K) (x : V) :
-    get? m i = none → m ⊆ insert m i x ∧ m ≠ insert m i x := by
-  intro hi
-  constructor
-  · apply subset_insert m i x hi
-  · intro heq
-    have h2 : get? (insert m i x) i = some x := get?_insert_same m i x
-    rw [← heq, hi] at h2
-    cases h2
-
-theorem forall_iff_toList (P : K → V → Prop) (m : M V) :
-    PartialMap.Forall P m ↔ ∀ kv ∈ toList m, P kv.1 kv.2 := by
+theorem all_iff_toList (P : K → V → Prop) (m : M V) :
+    PartialMap.all P m ↔ ∀ kv ∈ toList m, P kv.1 kv.2 := by
   constructor
   · intro hfa kv hmem
     apply hfa kv.1 kv.2 ((mem_toList m kv.1 kv.2).mp hmem)
@@ -556,9 +480,9 @@ theorem zipWith_insert [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
   intro k
   by_cases h : k = i
   · subst h
-    simp only [get?_insert_same, get?_zipWith]
+    simp only [get?_insert_eq rfl, get?_zipWith]
   · have h' : i ≠ k := Ne.symm h
-    simp only [get?_zipWith, get?_insert_ne _ _ _ _ h']
+    simp only [get?_zipWith, get?_insert_ne h']
 
 theorem zipWith_delete [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
     (f : V → V' → V'') (m1 : M V) (m2 : M V') (i : K) :
@@ -568,9 +492,9 @@ theorem zipWith_delete [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
   intro k
   by_cases h : k = i
   · subst h
-    simp only [get?_delete_same, get?_zipWith]
+    simp only [get?_delete_eq rfl, get?_zipWith]
   · have h' : i ≠ k := Ne.symm h
-    simp only [get?_zipWith, get?_delete_ne _ i k h']
+    simp only [get?_zipWith, get?_delete_ne h']
 
 theorem zipWith_comm [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
     (f : V → V' → V'') (m1 : M V) (m2 : M V') :
@@ -629,7 +553,7 @@ theorem isSome_zipWith [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
 /-- Zipping two empty maps yields an empty map. -/
 theorem zip_empty [DecidableEq V] [DecidableEq V'] :
     FiniteMap.zip (∅ : M V) (∅ : M V') = ∅ := by
-  apply PartialMapLaws.ext
+  apply LawfulPartialMap.ext
   intro k
   unfold FiniteMap.zip
   have h1 : get? (∅ : M V) k = none := get?_empty k
@@ -728,7 +652,7 @@ theorem get?_union : ∀ (m₁ m₂ : M V) k,
       obtain ⟨k', v'⟩ := p
       rw [List.map_cons, List.nodup_cons] at hnodup
       simp only [List.foldl, List.lookup]
-      rw [ih hnodup.2, PartialMapLaws.get?_insert]
+      rw [ih hnodup.2, LawfulPartialMap.get?_insert]
       by_cases heq : k = k'
       · subst heq
         have : List.lookup k tail = none := by
@@ -796,8 +720,8 @@ theorem union_insert_left (m1 m2 : M V) (i : K) (x : V) :
   funext k
   by_cases hik : i = k
   · subst hik
-    simp [get?_insert_same, get?_union]
-  · simp [get?_insert_ne _ _ _ _ hik, get?_union]
+    simp [get?_insert_eq rfl, get?_union]
+  · simp [get?_insert_ne hik, get?_union]
 
 end FiniteMapLaws
 
@@ -806,7 +730,7 @@ namespace FiniteMap
 variable {K : Type v} {M : Type u → _}  [FiniteMap K M]
 
 theorem disjoint_empty_right [DecidableEq K] [FiniteMapLaws K M] (m : M V) : m ##ₘ (∅ : M V) :=
-  PartialMap.disjoint_comm (PartialMapLaws.disjoint_empty_left (K:= K) m)
+  PartialMap.disjoint_comm (LawfulPartialMap.disjoint_empty_left (K:= K) m)
 
 /-- `m₂` and `m₁ \ m₂` are disjoint. -/
 theorem disjoint_difference_right [DecidableEq K] [FiniteMapLaws K M] [FiniteMapLawsSelf K M]
@@ -817,7 +741,7 @@ theorem disjoint_difference_right [DecidableEq K] [FiniteMapLaws K M] [FiniteMap
 
 theorem union_difference_cancel [DecidableEq K] [FiniteMapLaws K M] [FiniteMapLawsSelf K M]
     (m₁ m₂ : M V) (hsub : m₂ ⊆ m₁) : m₂ ∪ (m₁ \ m₂) = m₁ := by
-  apply PartialMapLaws.ext
+  apply LawfulPartialMap.ext
   intro k
   rw [FiniteMapLaws.get?_union, FiniteMapLaws.get?_difference]
   cases hm2 : get? m₂ k with
