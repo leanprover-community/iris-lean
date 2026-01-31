@@ -163,7 +163,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Later lemmas
   - [x] Update lemmas
 - [ ] `lib/boxes.v`
-- [ ] `lib/cancelable_invariants.v`
+- [x] `lib/cancelable_invariants.v`
 - [ ] `lib/fancy_updates.v`
   - [x] FUpd instance
   - [x] Soundness
