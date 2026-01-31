@@ -63,7 +63,7 @@ def all (P : K → V → Prop) (m : M V) : Prop :=
   ∀ k v, get? m k = some v → P k v
 
 /-- Two PartalMaps are pointwise equivalent. -/
-@[simp] def equiv (m1 m2 : M V) : Prop := get? m1 = get? m2
+@[simp] def equiv (m1 m2 : M V) : Prop := ∀ k, get? m1 k = get? m2 k
 
 instance instEquivTrans : Trans equiv (@equiv K V M _) equiv := ⟨by simp_all⟩
 
@@ -82,7 +82,7 @@ scoped macro_rules
 scoped infix:50 " ##ₘ " => PartialMap.disjoint
 
 /-- Laws that a partial map implementation must satisfy. -/
-class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _)) [PartialMap M K] where
+class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
   get?_empty k : get? (empty : M V) k = none
   get?_insert_eq {m : M V} {k k' v} : k = k' → get? (insert m k v) k' = some v
   get?_insert_ne {m : M V} {k k' v} : k ≠ k' → get? (insert m k v) k' = get? m k'
@@ -90,10 +90,15 @@ class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _)) [PartialM
   get?_delete_ne {m : M V} {k k'} : k ≠ k' → get? (delete m k) k' = get? m k'
 export LawfulPartialMap (get?_empty get?_insert_eq get?_insert_ne get?_delete_eq get?_delete_ne)
 
+class ExtensionalPartialMap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
+  equiv_iff_eq {m₁ m₂ : M V} : PartialMap.equiv m₁ m₂ ↔ m₁ = m₂
+
 namespace LawfulPartialMap
 
+open PartialMap
+
 variable {K V : Type _} {M : Type _ → Type _}
-variable [PartialMap M K] [LawfulPartialMap M K]
+variable [LawfulPartialMap M K]
 
 theorem get?_insert [DecidableEq K] {m : M V} {k k' : K} {v : V} :
     get? (insert m k v) k' = if k = k' then some v else get? m k' := by
@@ -127,120 +132,90 @@ theorem get?_singleton [DecidableEq K] {k k' : K} {v : V} :
 
 theorem empty_subset (m : M V) : (∅ : M V) ⊆ m := by
   intro k v H
-  simp [show get? (∅ : M V) k = none from get?_empty k] at H
-
-
--- Here
-
+  simp [show get? (∅ : M V) k = none from get?_empty (M := M) k] at H
 
 theorem disjoint_empty_left (m : M V) : (∅ : M V) ##ₘ m := by
   intro k ⟨h₁, _⟩
-  have : get? (∅ : M V) k = none := get?_empty k
-  rw [this] at h₁
-  cases h₁
+  simp [show get? (∅ : M V) k = none from get?_empty k] at h₁
 
-theorem get?_insert_some (m : M V) (i j : K) (x y : V) :
+theorem disjoint_empty_right (m : M V) : m ##ₘ (∅ : M V) := by
+  intro k ⟨_, h₂⟩
+  simp [show get? (∅ : M V) k = none from get?_empty k] at h₂
+
+open Classical in
+theorem get?_insert_some_iff {m : M V} {i j : K} {x y : V} :
     get? (insert m i x) j = some y ↔ (i = j ∧ x = y) ∨ (i ≠ j ∧ get? m j = some y) := by
-  rw [get?_insert]
-  split <;> simp_all
+  rw [get?_insert]; split <;> simp_all
 
-theorem get?_insert_isSome (m : M V) (i j : K) (x : V) :
-    (get? (insert m i x) j).isSome ↔ i = j ∨ (i ≠ j ∧ (get? m j).isSome) := by
-  rw [get?_insert]
-  split <;> simp_all
-
-theorem get?_insert_none (m : M V) (i j : K) (x : V) :
+open Classical in
+theorem get?_insert_none_iff {m : M V} {i j : K} {x : V} :
     get? (insert m i x) j = none ↔ get? m j = none ∧ i ≠ j := by
-  rw [get?_insert]
-  split <;> simp_all
+  rw [get?_insert]; split <;> simp_all
 
-theorem get?_delete_some (m : M V) (i j : K) (y : V) :
+open Classical in
+theorem get?_delete_some_iff {m : M V} {i j : K} {y : V} :
     get? (delete m i) j = some y ↔ i ≠ j ∧ get? m j = some y := by
-  rw [get?_delete]
-  split <;> simp_all
+  rw [get?_delete]; split <;> simp_all
 
-theorem get?_delete_isSome (m : M V) (i j : K) :
-    (get? (delete m i) j).isSome ↔ i ≠ j ∧ (get? m j).isSome := by
-  rw [get?_delete]
-  split <;> simp_all
-
-theorem get?_delete_none (m : M V) (i j : K) :
+open Classical in
+theorem get?_delete_none_iff {m : M V} {i j : K} :
     get? (delete m i) j = none ↔ i = j ∨ get? m j = none := by
-  rw [get?_delete]
-  split <;> simp_all
+  rw [get?_delete]; split <;> simp_all
 
-theorem insert_delete_cancel (m : M V) (i : K) (x : V) :
-    get? m i = some x → insert (delete m i) i x = m := by
-  intro h
-  apply LawfulPartialMap.ext (M := M) (K := K) (V := V)
+theorem insert_delete_cancel {m : M V} {i : K} {v : V} (H : get? m i = some v) :
+    insert (delete m i) i v ≡ₘ m := by
+  intros j
+  by_cases h : i = j
+  · rw [get?_insert_eq h, ← H, h]
+  · rw [get?_insert_ne h, get?_delete_ne h]
+
+theorem delete_insert_cancel {m : M V} {i : K} {x : V} (H : get? m i = none) :
+    delete (insert m i x) i ≡ₘ m := by
   intro j
-  by_cases hij : i = j
-  · subst hij
-    simp [get?_insert_same, h]
-  · simp [get?_insert_ne _ _ _ _ hij, get?_delete_ne _ _ _ hij]
+  by_cases h : i = j
+  · rw [get?_delete_eq h, ← H, h]
+  · rw [get?_delete_ne h, get?_insert_ne h]
 
-theorem delete_insert_cancel (m : M V) (i : K) (x : V) :
-    get? m i = none → delete (insert m i x) i = m := by
-  intro h
-  apply LawfulPartialMap.ext (M := M) (K := K) (V := V)
+theorem eq_empty_iff {m : M V} : (m ≡ₘ ∅) ↔ ∀ k, get? m k = none :=
+  ⟨fun h k => (h k) ▸ get?_empty k, fun h k => (h k) ▸ (get?_empty k).symm⟩
+
+theorem delete_delete {m : M V} {i : K} :
+    delete (delete m i) i ≡ₘ delete m i := by
   intro j
-  by_cases hij : i = j
-  · subst hij
-    simp [get?_delete_same, h]
-  · simp [get?_delete_ne _ _ _ hij, get?_insert_ne _ _ _ _ hij]
+  by_cases h : i = j
+  · rw [get?_delete_eq h, get?_delete_eq h]
+  · rw [get?_delete_ne h]
 
-/-- Empty map is characterized by all lookups returning none. -/
-theorem eq_empty_iff (m : M V) : m = ∅ ↔ ∀ k, get? m k = none := by
-  constructor
-  · intro h k
-    rw [h]
-    exact get?_empty k
-  · intro h
-    apply LawfulPartialMap.ext (M := M) (K := K) (V := V)
-    intro k
-    rw [h k]
-    exact (get?_empty k).symm
-
-theorem delete_delete_same (m : M V) (i : K) :
-    delete (delete m i) i = delete m i := by
-  apply LawfulPartialMap.ext (M := M) (K := K) (V := V)
-  intro j
-  by_cases hij : i = j
-  · subst hij
-    simp [get?_delete_same]
-  · simp [get?_delete_ne _ _ _ hij]
-
-theorem delete_delete_comm (m : M V) (i j : K) :
-    delete (delete m i) j = delete (delete m j) i := by
-  apply LawfulPartialMap.ext (M := M) (K := K) (V := V)
-  intro k
-  by_cases hik : i = k <;> by_cases hjk : j = k <;> simp [get?_delete, *]
-
-theorem insert_insert_same (m : M V) (i : K) (x y : V) :
-    insert (insert m i x) i y = insert m i y := by
-  apply LawfulPartialMap.ext (M := M) (K := K) (V := V)
-  intro j
-  by_cases hij : i = j
-  · subst hij
-    rw [get?_insert_same, get?_insert_same]
-  · rw [get?_insert_ne _ _ _ _ hij, get?_insert_ne _ _ _ _ hij, get?_insert_ne _ _ _ _ hij]
-
-theorem insert_delete (m : M V) (i : K) (x : V) :
-    insert (delete m i) i x = insert m i x := by
-  apply LawfulPartialMap.ext (M := M) (K := K) (V := V)
-  intro j
-  by_cases hij : i = j
-  · subst hij
-    rw [get?_insert_same, get?_insert_same]
-  · rw [get?_insert_ne _ _ _ _ hij, get?_delete_ne _ _ _ hij, get?_insert_ne _ _ _ _ hij]
-
-theorem insert_insert_comm (m : M V) (i j : K) (x y : V) :
-    i ≠ j → insert (insert m i x) j y = insert (insert m j y) i x := by
-  intro hij
-  apply LawfulPartialMap.ext (M := M) (K := K) (V := V)
+theorem delete_delete_comm {m : M V} {i j : K} :
+    delete (delete m i) j ≡ₘ delete (delete m j) i := by
   intro k
   by_cases hik : i = k <;> by_cases hjk : j = k
-  · subst hik hjk; exact absurd rfl hij
+  · rw [get?_delete_eq hik, get?_delete_eq hjk]
+  · rw [get?_delete_eq hik, get?_delete_ne hjk, get?_delete_eq hik]
+  · rw [get?_delete_ne hik, get?_delete_eq hjk, get?_delete_eq hjk]
+  · rw [get?_delete_ne hik, get?_delete_ne hjk, get?_delete_ne hik, get?_delete_ne hjk]
+
+theorem insert_insert_same {m : M V} {i : K} {x y : V} :
+    insert (insert m i x) i y ≡ₘ insert m i y := by
+  intro j
+  by_cases h : i = j
+  · rw [get?_insert_eq h, get?_insert_eq h]
+  · rw [get?_insert_ne h, get?_insert_ne h, get?_insert_ne h]
+
+theorem insert_delete {m : M V} {i : K} {x : V} :
+    insert (delete m i) i x ≡ₘ insert m i x := by
+  intro j
+  by_cases h : i = j
+  · rw [get?_insert_eq h, get?_insert_eq h]
+  · rw [get?_insert_ne h, get?_delete_ne h, get?_insert_ne h]
+
+-- Here
+
+theorem insert_insert_comm {m : M V} {i j : K} {x y : V} (H : i ≠ j) :
+    insert (insert m i x) j y ≡ₘ insert (insert m j y) i x := by
+  intro k
+  by_cases hik : i = k <;> by_cases hjk : j = k
+  · subst hik hjk; exact False.elim (H rfl)
   · subst hik; simp [get?_insert, hjk]
   · subst hjk; simp [get?_insert, hik]
   · simp [get?_insert, hik, hjk]
@@ -518,9 +493,6 @@ theorem subset_trans {m₁ m₂ m₃ : M V} (h₁ : m₁ ⊆ m₂) (h₂ : m₂ 
 theorem disjoint_comm {m₁ m₂ : M V} (h : disjoint m₁ m₂) : disjoint m₂ m₁ :=
   fun k ⟨h₂, h₁⟩ => h k ⟨h₁, h₂⟩
 
-theorem disjoint_empty_right [DecidableEq K] [LawfulPartialMap M K] (m : M V) :
-    m ##ₘ (∅ : M V) :=
-  disjoint_comm (LawfulPartialMap.disjoint_empty_left (K := K) m)
 
 end PartialMap
 
