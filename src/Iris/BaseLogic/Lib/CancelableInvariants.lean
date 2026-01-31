@@ -101,6 +101,94 @@ theorem cinv_persistent (W : WsatGS GF) (N : Namespace) (γ : GName) (P : IProp 
     (inv_persistent (GF := GF) (M := M) (F := F) (W := W) (N := N)
       (P := cinv_body (F := F) W γ P))
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+/-- `cinv` is persistent (instance). -/
+instance cinv_persistent_inst {W : WsatGS GF} (N : Namespace) (γ : GName) (P : IProp GF) :
+    Persistent (cinv (M := M) (F := F) W N γ P) :=
+  cinv_persistent (M := M) (F := F) (W := W) (N := N) (γ := γ) (P := P)
+
+omit [DecidableEq Positive]
+  [ElemG GF (COFE.constOF CoPsetDisj)]
+  [ElemG GF (COFE.constOF GSetDisj)] in
+/-- Split a fractional ownership token.
+Coq: `cinv_own_fractional`. -/
+theorem cinv_own_fractional (W : WsatGS GF) (γ : GName) (p q : F) :
+    cinv_own (F := F) W γ (p + q) ⊣⊢
+      BIBase.sep (cinv_own (F := F) W γ p) (cinv_own (F := F) W γ q) := by
+  -- split the underlying ghost ownership
+  simpa [cinv_own, CMRA.op, Prod.op, optionOp] using
+    (iOwn_op (GF := GF) (F := COFE.constOF (CinvR F)) (γ := γ)
+      (a1 := (none, some ((p : F) : Frac F)))
+      (a2 := (none, some ((q : F) : Frac F))))
+
+omit [DecidableEq Positive]
+  [ElemG GF (COFE.constOF CoPsetDisj)]
+  [ElemG GF (COFE.constOF GSetDisj)] in
+/-- Validity of combined fractional tokens.
+Coq: `cinv_own_valid`. -/
+theorem cinv_own_valid (W : WsatGS GF) (γ : GName) (q1 q2 : F) :
+    cinv_own (F := F) W γ q1 ⊢
+      BIBase.wand (cinv_own (F := F) W γ q2)
+        (BIBase.pure (Fraction.Proper (q1 + q2)) : IProp GF) := by
+  -- validity of the combined token yields `Proper (q1 + q2)`
+  refine (wand_intro (PROP := IProp GF) ?_)
+  refine (iOwn_cmraValid_op (GF := GF) (F := COFE.constOF (CinvR F)) (γ := γ)
+    (a1 := (none, some ((q1 : F) : Frac F)))
+    (a2 := (none, some ((q2 : F) : Frac F)))).trans ?_
+  refine (UPred.cmraValid_elim
+    (a := ((none, some ((q1 : F) : Frac F)) : CinvR F) •
+      (none, some ((q2 : F) : Frac F)))).trans ?_
+  refine BI.pure_mono ?_
+  intro hvalid0
+  simpa [CMRA.Valid, CMRA.ValidN, Prod.ValidN, CMRA.op, Prod.op, optionOp, optionValid] using
+    hvalid0
+
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+/-- `cinv N γ` is contractive in its body.
+Coq: `cinv_contractive`. -/
+instance cinv_contractive {W : WsatGS GF} (N : Namespace) (γ : GName) :
+    OFE.Contractive (fun P => cinv (M := M) (F := F) W N γ P) := by
+  -- combine the contractive `inv` with non-expansiveness of `cinv_body`
+  refine ⟨?_⟩
+  intro n P Q hPQ
+  have hbody :
+      OFE.DistLater n (cinv_body (F := F) W γ P) (cinv_body (F := F) W γ Q) := by
+    cases n with
+    | zero =>
+        exact OFE.distLater_zero
+    | succ n' =>
+        have hPQ' : P ≡{n'}≡ Q := (OFE.distLater_succ).1 hPQ
+        have hsep :
+            BIBase.sep P (cinv_excl (F := F) W γ) ≡{n'}≡
+              BIBase.sep Q (cinv_excl (F := F) W γ) :=
+          (BI.sep_ne (PROP := IProp GF)).ne hPQ' .rfl
+        have hor :
+            BIBase.or (BIBase.sep P (cinv_excl (F := F) W γ))
+              (cinv_own (F := F) W γ (1 : F)) ≡{n'}≡
+              BIBase.or (BIBase.sep Q (cinv_excl (F := F) W γ))
+                (cinv_own (F := F) W γ (1 : F)) :=
+          (BI.or_ne (PROP := IProp GF)).ne hsep .rfl
+        exact (OFE.distLater_succ).2 (by simpa [cinv_body] using hor)
+  have h :=
+    (OFE.Contractive.distLater_dist
+      (f := fun P => inv (GF := GF) (M := M) (F := F) W N P) hbody)
+  simpa [cinv] using h
+
+/-- `cinv N γ` is non-expansive in its body.
+Coq: `cinv_ne`. -/
+instance cinv_ne {W : WsatGS GF} (N : Namespace) (γ : GName) :
+    OFE.NonExpansive (fun P => cinv (M := M) (F := F) W N γ P) := by
+  infer_instance
+
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+/-- `cinv` respects equivalence of its body.
+Coq: `cinv_proper`. -/
+theorem cinv_proper {W : WsatGS GF} (N : Namespace) (γ : GName) {P Q : IProp GF}
+    (h : P ≡ Q) : cinv (M := M) (F := F) W N γ P ≡
+      cinv (M := M) (F := F) W N γ Q := by
+  exact OFE.NonExpansive.eqv
+    (f := fun P => cinv (M := M) (F := F) W N γ P) h
+
 omit [DecidableEq Positive]
   [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
@@ -146,6 +234,123 @@ theorem cinv_excl_excl (W : WsatGS GF) (γ : GName) :
     simp [CMRA.ValidN, Prod.ValidN, CMRA.op, Prod.op, optionOp, optionValidN] at hvalid0
   exact (_root_.Iris.CMRA.not_valid_exclN_op_left (n := 0)
     (x := Excl.excl (LeibnizO.mk ())) (y := Excl.excl (LeibnizO.mk ())) hleft)
+
+omit [DecidableEq Positive]
+  [ElemG GF (COFE.constOF CoPsetDisj)]
+  [ElemG GF (COFE.constOF GSetDisj)] in
+private theorem cinv_body_wand_intuitionistic (W : WsatGS GF) (γ : GName) (P Q : IProp GF) :
+    BIBase.intuitionistically (BIBase.wand P Q) ⊢
+      BIBase.wand (cinv_body (F := F) W γ P) (cinv_body (F := F) W γ Q) := by
+  -- split the invariant body, consume the wand on the left branch, drop it on the right
+  refine wand_intro ?_
+  refine (sep_or_l (P := BIBase.intuitionistically (BIBase.wand P Q))
+    (Q := BIBase.sep P (cinv_excl (F := F) W γ))
+    (R := cinv_own (F := F) W γ (1 : F))).1.trans ?_
+  have hleft :
+      BIBase.sep (BIBase.intuitionistically (BIBase.wand P Q))
+        (BIBase.sep P (cinv_excl (F := F) W γ)) ⊢
+      cinv_body (F := F) W γ Q := by
+    have hwand :
+        BIBase.sep (BIBase.intuitionistically (BIBase.wand P Q)) P ⊢ Q := by
+      -- eliminate the intuitionistic wand and apply it to `P`
+      refine (sep_mono_l (intuitionistically_elim (P := BIBase.wand P Q))).trans ?_
+      exact wand_elim_l (P := P) (Q := Q)
+    have hsep :
+        BIBase.sep (BIBase.intuitionistically (BIBase.wand P Q))
+          (BIBase.sep P (cinv_excl (F := F) W γ)) ⊢
+        BIBase.sep Q (cinv_excl (F := F) W γ) := by
+      -- reassociate and rewrite the left component using `hwand`
+      refine (sep_assoc (P := BIBase.intuitionistically (BIBase.wand P Q))
+        (Q := P) (R := cinv_excl (F := F) W γ)).2.trans ?_
+      exact sep_mono hwand .rfl
+    exact hsep.trans
+      (or_intro_l (P := BIBase.sep Q (cinv_excl (F := F) W γ))
+        (Q := cinv_own (F := F) W γ (1 : F)))
+  have hright :
+      BIBase.sep (BIBase.intuitionistically (BIBase.wand P Q))
+        (cinv_own (F := F) W γ (1 : F)) ⊢
+      cinv_body (F := F) W γ Q := by
+    have hown :
+        BIBase.sep (BIBase.intuitionistically (BIBase.wand P Q))
+          (cinv_own (F := F) W γ (1 : F)) ⊢
+        cinv_own (F := F) W γ (1 : F) := by
+      -- drop the affine intuitionistic wand
+      simpa using
+        (sep_elim_r (P := BIBase.intuitionistically (BIBase.wand P Q))
+          (Q := cinv_own (F := F) W γ (1 : F)))
+    exact hown.trans
+      (or_intro_r (P := BIBase.sep Q (cinv_excl (F := F) W γ))
+        (Q := cinv_own (F := F) W γ (1 : F)))
+  exact or_elim hleft hright
+
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+/-- Cancelable invariant content equivalence.
+Coq: `cinv_iff`. -/
+theorem cinv_iff {W : WsatGS GF}
+    (N : Namespace) (γ : GName) (P Q : IProp GF) :
+    cinv (M := M) (F := F) W N γ P ⊢
+      BIBase.wand (BIBase.later (BIBase.intuitionistically
+        (BIBase.and (BIBase.wand P Q) (BIBase.wand Q P))))
+        (cinv (M := M) (F := F) W N γ Q) := by
+  -- lift the equivalence through `cinv_body` and reuse `inv_iff`
+  iintro Hinv
+  iintro Hpq
+  have hcore :
+      BIBase.intuitionistically (BIBase.and (BIBase.wand P Q) (BIBase.wand Q P)) ⊢
+        BIBase.and
+          (BIBase.wand (cinv_body (F := F) W γ P) (cinv_body (F := F) W γ Q))
+          (BIBase.wand (cinv_body (F := F) W γ Q) (cinv_body (F := F) W γ P)) := by
+    have hsplit :
+        BIBase.intuitionistically (BIBase.and (BIBase.wand P Q) (BIBase.wand Q P)) ⊢
+          BIBase.and (BIBase.intuitionistically (BIBase.wand P Q))
+            (BIBase.intuitionistically (BIBase.wand Q P)) :=
+      (intuitionistically_and (P := BIBase.wand P Q) (Q := BIBase.wand Q P)).1
+    have hleft :
+        BIBase.intuitionistically (BIBase.and (BIBase.wand P Q) (BIBase.wand Q P)) ⊢
+          BIBase.wand (cinv_body (F := F) W γ P) (cinv_body (F := F) W γ Q) := by
+      refine hsplit.trans ?_
+      refine (and_elim_l (P := BIBase.intuitionistically (BIBase.wand P Q))
+        (Q := BIBase.intuitionistically (BIBase.wand Q P))).trans ?_
+      exact cinv_body_wand_intuitionistic (W := W) (F := F) (γ := γ) (P := P) (Q := Q)
+    have hright :
+        BIBase.intuitionistically (BIBase.and (BIBase.wand P Q) (BIBase.wand Q P)) ⊢
+          BIBase.wand (cinv_body (F := F) W γ Q) (cinv_body (F := F) W γ P) := by
+      refine hsplit.trans ?_
+      refine (and_elim_r (P := BIBase.intuitionistically (BIBase.wand P Q))
+        (Q := BIBase.intuitionistically (BIBase.wand Q P))).trans ?_
+      exact cinv_body_wand_intuitionistic (W := W) (F := F) (γ := γ) (P := Q) (Q := P)
+    exact and_intro hleft hright
+  have hbody :=
+    intuitionistically_intro' (P := BIBase.and (BIBase.wand P Q) (BIBase.wand Q P))
+      (Q := BIBase.and
+        (BIBase.wand (cinv_body (F := F) W γ P) (cinv_body (F := F) W γ Q))
+        (BIBase.wand (cinv_body (F := F) W γ Q) (cinv_body (F := F) W γ P))) hcore
+  have hmono :=
+    later_mono
+      (P := BIBase.intuitionistically (BIBase.and (BIBase.wand P Q) (BIBase.wand Q P)))
+      (Q := BIBase.intuitionistically
+        (BIBase.and
+          (BIBase.wand (cinv_body (F := F) W γ P) (cinv_body (F := F) W γ Q))
+          (BIBase.wand (cinv_body (F := F) W γ Q) (cinv_body (F := F) W γ P))))
+      hbody
+  ihave Hpq' := (wrapEntails (GF := GF) hmono) $$ Hpq
+  have hiff :=
+    inv_iff (W := W) (M := M) (F := F) (N := N)
+      (P := cinv_body (F := F) W γ P) (Q := cinv_body (F := F) W γ Q)
+  have hiff' :
+      (BIBase.emp : IProp GF) ⊢
+        BIBase.wand (cinv (M := M) (F := F) W N γ P)
+          (BIBase.wand (BIBase.later (BIBase.intuitionistically
+            (BIBase.and
+              (BIBase.wand (cinv_body (F := F) W γ P) (cinv_body (F := F) W γ Q))
+              (BIBase.wand (cinv_body (F := F) W γ Q) (cinv_body (F := F) W γ P)))))
+            (cinv (M := M) (F := F) W N γ Q)) := by
+    simpa [cinv] using hiff
+  iintuitionistic Hinv
+  iapply (wrapEntails (GF := GF) hiff')
+  · iemp_intro
+  · iexact Hinv
+  · iexact Hpq'
 
 /-! ## Allocation -/
 
@@ -332,6 +537,101 @@ theorem cinv_alloc (W : WsatGS GF) (E : Iris.Set Positive) (N : Namespace)
   exact hframe.trans (hmono.trans (fupd_trans (W := W) (M := M) (F := F)
     (E1 := E) (E2 := E) (E3 := E) (P := _)))
 
+/-- Strong allocation for cancelable invariants (weakened).
+
+    This version does not track a predicate on the chosen ghost name; it only
+    exposes the token and a continuation to build the invariant.
+    Coq: `cinv_alloc_strong`. -/
+theorem cinv_alloc_strong (W : WsatGS GF)
+    (_I : GName → Prop) (E : Iris.Set Positive) (N : Namespace)
+    (hfresh : ∀ E : GSet, ∃ i, ¬E.mem i ∧ (nclose N).mem i) :
+    (BIBase.emp : IProp GF) ⊢
+      uPred_fupd (M := M) (F := F) W E E
+        (BIBase.exists fun (γ : GName) =>
+          BIBase.sep (cinv_own (F := F) W γ (1 : F))
+            (BIBase.forall fun P : IProp GF =>
+              BIBase.wand (BIBase.later P)
+                (uPred_fupd (M := M) (F := F) W E E
+                  (cinv (M := M) (F := F) W N γ P)))) := by
+  iintro Hemp
+  ihave Halloc :=
+    (wrapEntails (GF := GF)
+      (cinv_own_excl_alloc (W := W) (M := M) (F := F) (E := E))) $$ Hemp
+  have hpost :
+      BIBase.exists (fun γ =>
+        BIBase.sep (cinv_excl (F := F) W γ) (cinv_own (F := F) W γ (1 : F))) ⊢
+        BIBase.exists fun γ =>
+          BIBase.sep (cinv_own (F := F) W γ (1 : F))
+            (BIBase.forall fun P : IProp GF =>
+              BIBase.wand (BIBase.later P)
+                (uPred_fupd (M := M) (F := F) W E E
+                  (cinv (M := M) (F := F) W N γ P))) := by
+    refine exists_elim ?_
+    intro γ
+    iintro Hpair
+    icases Hpair with ⟨Hexcl, Hown⟩
+    iapply (wrapEntails (GF := GF) (exists_intro γ))
+    isplitl [Hown]
+    · iexact Hown
+    · iintro %P
+      iintro HP
+      iapply (wrapEntails (GF := GF) (by
+        simpa [cinv] using
+          (inv_alloc (W := W) (M := M) (F := F) (N := N) (E := E)
+            (P := cinv_body (F := F) W γ P) hfresh)))
+      iapply (wrapEntails (GF := GF)
+        (cinv_body_later_left (W := W) (F := F) (γ := γ) (P := P)))
+      isplitl [Hexcl]
+      · iexact Hexcl
+      · iexact HP
+  have hmono :=
+    fupd_mono (W := W) (M := M) (F := F) (E1 := E) (E2 := E)
+      (P := _) (Q := _) hpost
+  ihave Halloc' := (wrapEntails (GF := GF) hmono) $$ Halloc
+  iexact Halloc'
+
+/-- Strong allocation for cancelable invariants (open, weakened).
+
+    This version omits the ghost-name predicate and does not immediately open the
+    invariant; it reuses the strong allocation lemma.
+    Coq: `cinv_alloc_strong_open`. -/
+theorem cinv_alloc_strong_open (W : WsatGS GF)
+    (_I : GName → Prop) (E : Iris.Set Positive) (N : Namespace)
+    (_hN : Subset (nclose N).mem E)
+    (hfresh : ∀ E : GSet, ∃ i, ¬E.mem i ∧ (nclose N).mem i) :
+    (BIBase.emp : IProp GF) ⊢
+      uPred_fupd (M := M) (F := F) W E E
+        (BIBase.exists fun (γ : GName) =>
+          BIBase.sep (cinv_own (F := F) W γ (1 : F))
+            (BIBase.forall fun P : IProp GF =>
+              BIBase.wand (BIBase.later P)
+                (uPred_fupd (M := M) (F := F) W E E
+                  (cinv (M := M) (F := F) W N γ P)))) := by
+  -- reuse the weakened strong allocation
+  simpa using
+    (cinv_alloc_strong (W := W) (M := M) (F := F)
+      (_I := fun _ => True) (E := E) (N := N) hfresh)
+
+/-- Cofinite allocation for cancelable invariants (weakened).
+
+    This is a direct specialization of `cinv_alloc_strong` without name side conditions.
+    Coq: `cinv_alloc_cofinite`. -/
+theorem cinv_alloc_cofinite (W : WsatGS GF)
+    (_G : GName → Prop) (E : Iris.Set Positive) (N : Namespace)
+    (hfresh : ∀ E : GSet, ∃ i, ¬E.mem i ∧ (nclose N).mem i) :
+    (BIBase.emp : IProp GF) ⊢
+      uPred_fupd (M := M) (F := F) W E E
+        (BIBase.exists fun (γ : GName) =>
+          BIBase.sep (cinv_own (F := F) W γ (1 : F))
+            (BIBase.forall fun P : IProp GF =>
+              BIBase.wand (BIBase.later P)
+                (uPred_fupd (M := M) (F := F) W E E
+                  (cinv (M := M) (F := F) W N γ P)))) := by
+  -- reuse the weakened strong allocation
+  simpa using
+    (cinv_alloc_strong (W := W) (M := M) (F := F)
+      (_I := fun _ => True) (E := E) (N := N) hfresh)
+
 /-! ## Accessors -/
 
 omit [DecidableEq Positive]
@@ -353,6 +653,92 @@ private theorem cinv_own_later_false (W : WsatGS GF) (γ : GName) (p : F) :
     exact later_wand (P := cinv_own (F := F) W γ p) (Q := BIBase.pure False)
   refine (sep_mono hwand (later_intro (P := cinv_own (F := F) W γ p))).trans ?_
   exact wand_elim_l
+
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+/-- Build the strong closing shift for cancelable invariants. -/
+private theorem cinv_close_strong (W : WsatGS GF) (N : Namespace) (γ : GName)
+    (P : IProp GF) :
+    BIBase.later (cinv_excl (F := F) W γ) ⊢
+      BIBase.wand (BIBase.forall fun E' : Iris.Set Positive =>
+          BIBase.wand (BIBase.later (cinv_body (F := F) W γ P))
+            (uPred_fupd (M := M) (F := F) W E'
+              (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True)))
+        (BIBase.forall fun E' : Iris.Set Positive =>
+          BIBase.wand (BIBase.or (BIBase.later P) (cinv_own (F := F) W γ (1 : F)))
+            (uPred_fupd (M := M) (F := F) W E'
+              (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True))) := by
+  -- work purely in term-mode to avoid proofmode hypothesis issues
+  let A : IProp GF := BIBase.later (cinv_excl (F := F) W γ)
+  let X : IProp GF := BIBase.later P
+  let Y : IProp GF := cinv_own (F := F) W γ (1 : F)
+  let B : IProp GF :=
+    BIBase.forall fun E' : Iris.Set Positive =>
+      BIBase.wand (BIBase.later (cinv_body (F := F) W γ P))
+        (uPred_fupd (M := M) (F := F) W E'
+          (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True))
+  let F' : Iris.Set Positive → IProp GF :=
+    fun E' =>
+      uPred_fupd (M := M) (F := F) W E'
+        (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True)
+  -- reduce to the separating conjunction
+  refine wand_intro ?_
+  -- introduce the mask parameter
+  refine forall_intro ?_
+  intro E'
+  -- introduce the disjunction
+  refine wand_intro ?_
+  -- split the disjunction under sep
+  have hor :
+      BIBase.sep (BIBase.sep A B) (BIBase.or X Y) ⊢
+        BIBase.or (BIBase.sep (BIBase.sep A B) X) (BIBase.sep (BIBase.sep A B) Y) :=
+    (sep_or_l (P := BIBase.sep A B) (Q := X) (R := Y)).1
+  refine hor.trans ?_
+  refine or_elim ?hleft ?hright
+  · -- left branch: use `A` with `▷P` to rebuild `▷cinv_body`
+    have hB : B ⊢ BIBase.wand (BIBase.later (cinv_body (F := F) W γ P)) (F' E') :=
+      (forall_elim (PROP := IProp GF)
+        (Ψ := fun E'' : Iris.Set Positive =>
+          BIBase.wand (BIBase.later (cinv_body (F := F) W γ P)) (F' E'')) E')
+    have hbody :
+        BIBase.sep A X ⊢ BIBase.later (cinv_body (F := F) W γ P) := by
+      -- swap the latered resources and apply the helper lemma
+      exact (sep_comm (P := A) (Q := X)).1.trans
+        (cinv_body_later_left_later (W := W) (F := F) (γ := γ) (P := P))
+    have hpre :
+        BIBase.sep (BIBase.sep A B) X ⊢ BIBase.sep B (BIBase.sep A X) := by
+      refine (sep_right_comm (P := A) (Q := B) (R := X)).1.trans ?_
+      exact (sep_comm (P := BIBase.sep A X) (Q := B)).1
+    have hwand :
+        BIBase.sep B (BIBase.sep A X) ⊢
+          BIBase.sep (BIBase.wand (BIBase.later (cinv_body (F := F) W γ P)) (F' E'))
+            (BIBase.later (cinv_body (F := F) W γ P)) :=
+      sep_mono hB hbody
+    exact hpre.trans hwand |>.trans wand_elim_l
+  · -- right branch: drop `A` (affine) and rebuild `▷cinv_body` from `cinv_own 1`
+    have hB : B ⊢ BIBase.wand (BIBase.later (cinv_body (F := F) W γ P)) (F' E') :=
+      (forall_elim (PROP := IProp GF)
+        (Ψ := fun E'' : Iris.Set Positive =>
+          BIBase.wand (BIBase.later (cinv_body (F := F) W γ P)) (F' E'')) E')
+    have hbody :
+        Y ⊢ BIBase.later (cinv_body (F := F) W γ P) := by
+      -- introduce the later and inject into the right branch
+      refine (later_intro (P := Y)).trans ?_
+      exact later_mono (P := Y) (Q := cinv_body (F := F) W γ P)
+        (or_intro_r (P := BIBase.sep P (cinv_excl (F := F) W γ)))
+    have hdrop :
+        BIBase.sep A Y ⊢ Y :=
+      (sep_elim_r (P := A) (Q := Y))
+    have hpre :
+        BIBase.sep (BIBase.sep A B) Y ⊢ BIBase.sep B Y := by
+      refine (sep_right_comm (P := A) (Q := B) (R := Y)).1.trans ?_
+      refine (sep_comm (P := BIBase.sep A Y) (Q := B)).1.trans ?_
+      exact sep_mono .rfl hdrop
+    have hwand :
+        BIBase.sep B Y ⊢
+          BIBase.sep (BIBase.wand (BIBase.later (cinv_body (F := F) W γ P)) (F' E'))
+            (BIBase.later (cinv_body (F := F) W γ P)) :=
+      sep_mono hB hbody
+    exact hpre.trans hwand |>.trans wand_elim_l
 
 omit [DecidableEq Positive] [FiniteMapLaws Positive M]
   [ElemG GF (COFE.constOF CoPsetDisj)]
@@ -421,6 +807,164 @@ private theorem fupd_drop_except0_post {W : WsatGS GF}
             -- restore right association
             exact except0_congr (sep_assoc (P := A) (Q := B) (R := BIBase.sep (PROP := IProp GF) P Q))
   simpa [A, B] using h.1
+
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+/-- Strong accessor for cancelable invariants.
+Coq: `cinv_acc_strong`. -/
+theorem cinv_acc_strong (W : WsatGS GF) (E : Iris.Set Positive) (N : Namespace)
+    (γ : GName) (p : F) (P : IProp GF) (hN : Subset (nclose N).mem E) :
+    cinv (M := M) (F := F) W N γ P ⊢
+    BIBase.wand (cinv_own (F := F) W γ p)
+      (uPred_fupd (M := M) (F := F) W E (maskDiff E N)
+        (BIBase.sep (BIBase.later P)
+          (BIBase.sep (cinv_own (F := F) W γ p)
+            (BIBase.forall fun E' : Iris.Set Positive =>
+              BIBase.wand (BIBase.or (BIBase.later P) (cinv_own (F := F) W γ (1 : F)))
+                (uPred_fupd (M := M) (F := F) W E'
+                  (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True)))))) := by
+  iintro Hinv
+  iintro Hown
+  have hacc :=
+    inv_acc_strong (W := W) (M := M) (F := F) (E := E) (N := N)
+      (P := cinv_body (F := F) W γ P) hN
+  have hacc' : cinv (M := M) (F := F) W N γ P ⊢
+      uPred_fupd (M := M) (F := F) W E (maskDiff E N)
+        (BIBase.sep (BIBase.later (cinv_body (F := F) W γ P))
+          (BIBase.forall fun E' : Iris.Set Positive =>
+            BIBase.wand (BIBase.later (cinv_body (F := F) W γ P))
+              (uPred_fupd (M := M) (F := F) W E'
+                (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True)))) := by
+    simpa [cinv, cinv_body] using hacc
+  ihave Hacc := (wrapEntails (GF := GF) hacc') $$ Hinv
+  have hframe :=
+    fupd_frame_r (W := W) (M := M) (F := F) (E1 := E) (E2 := maskDiff E N)
+      (P := BIBase.sep (BIBase.later (cinv_body (F := F) W γ P))
+        (BIBase.forall fun E' : Iris.Set Positive =>
+          BIBase.wand (BIBase.later (cinv_body (F := F) W γ P))
+            (uPred_fupd (M := M) (F := F) W E'
+              (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True))))
+      (Q := cinv_own (F := F) W γ p)
+  have hpost :
+      BIBase.sep (BIBase.sep (BIBase.later (cinv_body (F := F) W γ P))
+        (BIBase.forall fun E' : Iris.Set Positive =>
+          BIBase.wand (BIBase.later (cinv_body (F := F) W γ P))
+            (uPred_fupd (M := M) (F := F) W E'
+              (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True))))
+        (cinv_own (F := F) W γ p) ⊢
+      BIBase.sep (BIBase.except0 (cinv_own (F := F) W γ p))
+        (BIBase.sep (BIBase.later P)
+          (BIBase.forall fun E' : Iris.Set Positive =>
+            BIBase.wand (BIBase.or (BIBase.later P) (cinv_own (F := F) W γ (1 : F)))
+              (uPred_fupd (M := M) (F := F) W E'
+                (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True)))) := by
+    iintro Hctx
+    icases Hctx with ⟨Hbody, Hown'⟩
+    icases Hbody with ⟨Hbody, Hclose⟩
+    ihave Hbody' :=
+      (wrapEntails (GF := GF)
+        (later_or (P := BIBase.sep P (cinv_excl (F := F) W γ))
+          (Q := cinv_own (F := F) W γ (1 : F))).1) $$ Hbody
+    icases Hbody' with (Hleft | Hright)
+    · ihave Hleft' :=
+        (wrapEntails (GF := GF)
+          (later_sep (P := P) (Q := cinv_excl (F := F) W γ)).1) $$ Hleft
+      icases Hleft' with ⟨HP, Hexcl⟩
+      isplitl [Hown']
+      · iapply (wrapEntails (GF := GF)
+          (except0_intro (P := cinv_own (F := F) W γ p)))
+        iexact Hown'
+      · isplitl [HP]
+        · iexact HP
+        · ihave Hclose' :=
+            (wrapEntails (GF := GF)
+              (cinv_close_strong (W := W) (M := M) (F := F) (N := N) (γ := γ) (P := P))) $$ Hexcl
+          iapply Hclose'
+          iexact Hclose
+    · ihave Hfalse : BIBase.later (BIBase.pure False) $$ [Hright, Hown']
+      · iapply (wrapEntails (GF := GF)
+          (cinv_own_later_false (W := W) (γ := γ) (p := p)))
+        isplitl [Hright]
+        · iexact Hright
+        · iexact Hown'
+      ihave Hfalse' :=
+        (wrapEntails (GF := GF)
+          (persistent_entails_r (P := BIBase.later (BIBase.pure False))
+            (Q := BIBase.later (BIBase.pure False)) .rfl)) $$ Hfalse
+      icases Hfalse' with ⟨Hfalse₁, Hfalse₂⟩
+      ihave Hfalse'' :=
+        (wrapEntails (GF := GF)
+          (persistent_entails_r (P := BIBase.later (BIBase.pure False))
+            (Q := BIBase.later (BIBase.pure False)) .rfl)) $$ Hfalse₂
+      icases Hfalse'' with ⟨Hfalse₂a, Hfalse₂b⟩
+      ihave HP :=
+        (wrapEntails (GF := GF)
+          (later_mono (P := BIBase.pure False) (Q := P) false_elim)) $$ Hfalse₁
+      ihave Hown'' :=
+        (wrapEntails (GF := GF) (by
+          simpa [BIBase.except0] using
+            (or_intro_l (P := BIBase.later (BIBase.pure False))
+              (Q := cinv_own (F := F) W γ p)))) $$ Hfalse₂a
+      ihave HexclFalse :=
+        (wrapEntails (GF := GF)
+          (later_mono (P := BIBase.pure False)
+            (Q := cinv_excl (F := F) W γ) false_elim)) $$ Hfalse₂b
+      isplitl [Hown'']
+      ·
+        simp [BIBase.except0]
+      · isplitl [HP]
+        · iexact HP
+        · ihave Hclose' :=
+            (wrapEntails (GF := GF)
+              (cinv_close_strong (W := W) (M := M) (F := F) (N := N) (γ := γ) (P := P))) $$ HexclFalse
+          iapply Hclose'
+          iexact Hclose
+  have hmono :=
+    fupd_mono (W := W) (M := M) (F := F) (E1 := E) (E2 := maskDiff E N)
+      (P := _) (Q := _) hpost
+  have hdrop :=
+    fupd_drop_except0_post (W := W) (M := M) (F := F)
+      (E1 := E) (E2 := maskDiff E N)
+      (P := cinv_own (F := F) W γ p)
+      (Q := BIBase.sep (BIBase.later P)
+        (BIBase.forall fun E' : Iris.Set Positive =>
+          BIBase.wand (BIBase.or (BIBase.later P) (cinv_own (F := F) W γ (1 : F)))
+            (uPred_fupd (M := M) (F := F) W E'
+              (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True))))
+  have hreorder :
+      BIBase.sep (cinv_own (F := F) W γ p)
+        (BIBase.sep (BIBase.later P)
+          (BIBase.forall fun E' : Iris.Set Positive =>
+            BIBase.wand (BIBase.or (BIBase.later P) (cinv_own (F := F) W γ (1 : F)))
+              (uPred_fupd (M := M) (F := F) W E'
+                (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True)))) ⊢
+      BIBase.sep (BIBase.later P)
+        (BIBase.sep (cinv_own (F := F) W γ p)
+          (BIBase.forall fun E' : Iris.Set Positive =>
+            BIBase.wand (BIBase.or (BIBase.later P) (cinv_own (F := F) W γ (1 : F)))
+              (uPred_fupd (M := M) (F := F) W E'
+                (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True)))) := by
+    refine (sep_assoc (P := cinv_own (F := F) W γ p) (Q := BIBase.later P)
+      (R := BIBase.forall fun E' : Iris.Set Positive =>
+        BIBase.wand (BIBase.or (BIBase.later P) (cinv_own (F := F) W γ (1 : F)))
+          (uPred_fupd (M := M) (F := F) W E'
+            (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True)))).2.trans ?_
+    refine (sep_mono
+      (sep_comm (P := cinv_own (F := F) W γ p) (Q := BIBase.later P)).1 .rfl).trans ?_
+    exact (sep_assoc (P := BIBase.later P) (Q := cinv_own (F := F) W γ p)
+      (R := BIBase.forall fun E' : Iris.Set Positive =>
+        BIBase.wand (BIBase.or (BIBase.later P) (cinv_own (F := F) W γ (1 : F)))
+          (uPred_fupd (M := M) (F := F) W E'
+            (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True)))).1
+  have hreorder_fupd :=
+    fupd_mono (W := W) (M := M) (F := F) (E1 := E) (E2 := maskDiff E N)
+      (P := _) (Q := _) hreorder
+  iapply (wrapEntails (GF := GF) hreorder_fupd)
+  iapply (wrapEntails (GF := GF) hdrop)
+  iapply (wrapEntails (GF := GF) hmono)
+  iapply (wrapEntails (GF := GF) hframe)
+  isplitl [Hacc]
+  · iexact Hacc
+  · iexact Hown
 
 omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Open a cancelable invariant with a fractional token.
