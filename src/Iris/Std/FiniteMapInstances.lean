@@ -10,15 +10,21 @@ import Std
 /-! ## FiniteMap Instance for Std.ExtTreeMap
 
 This file instantiates the abstract finite map interface `Iris.Std.FiniteMap` with Lean's `Std.ExtTreeMap`.
+ExtTreeMap provides both PartialMap (via get?/insert/delete) and FiniteMap (via toList/ofList) operations.
 -/
 namespace Iris.Std
 
-/-- Instance of FiniteMap for Std.ExtTreeMap. -/
+/-- PartialMap instance for Std.ExtTreeMap. -/
 instance {K : Type u} [Ord K] [Std.TransCmp (α := K) compare] [Std.LawfulEqCmp (α := K) compare] [DecidableEq K]:
-    FiniteMap K (Std.ExtTreeMap K) where
+    PartialMap K (Std.ExtTreeMap K) where
   get? m k := m.get? k
   insert m k v := m.insert k v
   delete m k := m.erase k
+  empty := Std.ExtTreeMap.empty
+
+/-- FiniteMap instance for Std.ExtTreeMap (extends PartialMap). -/
+instance {K : Type u} [Ord K] [Std.TransCmp (α := K) compare] [Std.LawfulEqCmp (α := K) compare] [DecidableEq K]:
+    FiniteMap K (Std.ExtTreeMap K) where
   toList m := m.toList
   ofList l := Std.ExtTreeMap.ofList l.reverse
   fold := fun f init m => m.foldr f init
@@ -27,42 +33,44 @@ namespace FiniteMapInst
 
 variable {K : Type _} [Ord K] [Std.TransCmp (α := K) compare] [Std.LawfulEqCmp (α := K) compare] [DecidableEq K]
 
-/-- The FiniteMapLaws instance for ExtTreeMap. -/
-instance : FiniteMapLaws K (Std.ExtTreeMap K) where
+/-- The PartialMapLaws instance for ExtTreeMap. -/
+instance : PartialMapLaws K (Std.ExtTreeMap K) where
   ext := by
     intro m₁ m₂ h
     apply Std.ExtTreeMap.ext_getElem?
 
   get?_empty := by
     intro k
-    simp [FiniteMap.get?]
+    simp [PartialMap.get?]
 
   get?_insert_same := by
     intro m k v
-    simp [FiniteMap.get?, FiniteMap.insert]
+    simp [PartialMap.get?, PartialMap.insert]
 
   get?_insert_ne := by
     intro m _ k k' h
-    simp [FiniteMap.get?, FiniteMap.insert, Std.ExtTreeMap.getElem?_insert]
+    simp [PartialMap.get?, PartialMap.insert, Std.ExtTreeMap.getElem?_insert]
     intro h h'
     trivial
 
   get?_delete_same := by
     intro m k
-    simp [FiniteMap.get?, FiniteMap.delete]
+    simp [PartialMap.get?, PartialMap.delete]
 
   get?_delete_ne := by
     intro m k k' h h'
-    simp [FiniteMap.get?, FiniteMap.delete, Std.ExtTreeMap.getElem?_erase]
+    simp [PartialMap.get?, PartialMap.delete, Std.ExtTreeMap.getElem?_erase]
     intro h h'
     trivial
 
+/-- The FiniteMapLaws instance for ExtTreeMap (extends PartialMapLaws). -/
+instance : FiniteMapLaws K (Std.ExtTreeMap K) where
   ofList_nil := by
     simp [FiniteMap.ofList]
 
   ofList_cons := by
     intro k v l l_1
-    simp only [FiniteMap.ofList, FiniteMap.insert]
+    simp only [FiniteMap.ofList, PartialMap.insert]
     rw [List.reverse_cons, Std.ExtTreeMap.ofList_eq_insertMany_empty, Std.ExtTreeMap.ofList_eq_insertMany_empty, Std.ExtTreeMap.insertMany_append, Std.ExtTreeMap.insertMany_list_singleton]
 
   toList_spec := by
@@ -77,7 +85,7 @@ instance : FiniteMapLaws K (Std.ExtTreeMap K) where
       have : compare a.1 a.1 = .eq := Std.LawfulEqCmp.compare_eq_iff_eq.mpr rfl
       exact hne this
     · intro i x
-      simp only [FiniteMap.toList, FiniteMap.get?]
+      simp only [FiniteMap.toList, PartialMap.get?]
       exact Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some
 
 

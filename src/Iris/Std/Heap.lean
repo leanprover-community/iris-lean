@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
 
+import Iris.Std.PartialMap
+
 /-! ## Generic stores and heaps -/
 
 section Store
@@ -71,6 +73,8 @@ end Store
 
 section Heap
 
+open Iris.Std
+
 /-- Map between heaps that preserves non-allocations. -/
 class HasHeapMap (T1 T2 : Type _) (K V1 V2 : outParam (Type _))
    [Store T1 K (Option V1)] [Store T2 K (Option V2)] where
@@ -78,56 +82,65 @@ class HasHeapMap (T1 T2 : Type _) (K V1 V2 : outParam (Type _))
   hhmap_get (f : K → V1 → Option V2) : get (hhmap f t) k = (get t k).bind (f k)
 export HasHeapMap (hhmap hhmap_get)
 
-class Heap (T : Type _) (K V : outParam (Type _)) extends Store T K (Option V) where
-  empty : T
-  hmap (f : K → V → Option V) : T → T
-  merge (op : V → V → V) : T → T → T
-  get_empty : get empty k = none
-  get_hmap : get (hmap f t) k = (get t k).bind (f k)
-  get_merge : get (merge op t1 t2) k = Option.merge op (get t1 k) (get t2 k)
-export Heap (empty hmap merge get_empty get_hmap get_merge)
+/-- Heap extends PartialMap with heap-specific operations for separation logic.
+    The heap stores optional values, where `none` represents unallocated locations. -/
+class Heap (K : outParam (Type _)) (M : Type _ → Type _) extends PartialMap K M where
+  /-- Map operation that can optionally remove entries. -/
+  hmap (f : K → V → Option V) : M V → M V
+  /-- Merge two heaps with a combining operation. -/
+  merge (op : V → V → V) : M V → M V → M V
+  /-- get? on hmap applies the function to present values. -/
+  get?_hmap : get? (hmap f m) k = (get? m k).bind (f k)
+  /-- get? on merge combines values using Option.merge. -/
+  get?_merge : get? (merge op m₁ m₂) k = Option.merge op (get? m₁ k) (get? m₂ k)
 
-theorem hmap_alloc [Heap T K V] {t : T} (H : get t k = some v) : get (hmap f t) k = f k v := by
-  simp [get_hmap, H]
+export Heap (hmap merge get?_hmap get?_merge)
 
-theorem hmap_unalloc [Heap T K V] {t : T} (H : get t k = none) : get (hmap f t) k = none := by
-  simp [get_hmap, H]
+theorem hmap_alloc [Heap K M] {m : M V} (H : get? m k = some v) : get? (hmap f m) k = f k v := by
+  simp [get?_hmap, H]
 
-/-- The heap of a single point -/
-def Heap.point [Heap T K V] (k : K) (v : Option V) : T := set empty k v
+theorem hmap_unalloc [Heap K M] {m : M V} (H : get? m k = none) : get? (hmap f m) k = none := by
+  simp [get?_hmap, H]
 
-/-- Delete an element from a heap by setting its value to .none -/
-def Heap.delete [Heap T K V] (t : T) (k : K) : T := set t k none
+/-- The heap of a single point (singleton with optional value). -/
+def Heap.point [Heap K M] (k : K) (v : Option V) : M V :=
+  match v with
+  | some v' => insert empty k v'
+  | none => empty
 
 /-- The domain of a heap is the set of keys that map to .some values. -/
-def Heap.dom [Heap T K V] (t : T) : K → Prop := fun k => (get t k).isSome
+def Heap.dom [Heap K M] (m : M V) : K → Prop := fun k => (get? m k).isSome
 
-@[simp] def Heap.union [Heap T K V] : T → T → T := merge (fun v _ => v)
+@[simp] def Heap.union [Heap K M] : M V → M V → M V := merge (fun v _ => v)
 
-theorem Heap.point_get_eq [Heap T K V] (H : k = k') : get (point k v : T) k' = v := by
-  rw [point, get_set_eq H]
+theorem Heap.point_get?_eq [Heap K M] [DecidableEq K] [PartialMapLaws K M] (H : k = k') : get? (point k (some v) : M V) k' = some v := by
+  rw [point, H]
+  exact PartialMapLaws.get?_insert_same _ _ _
 
-theorem Heap.point_get_ne [Heap T K V] (H : k ≠ k') : get (point k v : T) k' = none := by
-  rw [point, get_set_ne H, get_empty]
+theorem Heap.point_get?_ne [Heap K M] [DecidableEq K] [PartialMapLaws K M] (H : k ≠ k') :
+    get? (point k (some v) : M V) k' = none := by
+  rw [point]
+  rw [PartialMapLaws.get?_insert_ne _ _ _ _ H]
+  exact PartialMapLaws.get?_empty k'
 
 open Classical in
-theorem Heap.get_point [Heap T K V] {k k' : K} {v : Option V} :
-    get (point k v : T) k' = if k = k' then v else .none := by
+theorem Heap.get?_point [Heap K M] [DecidableEq K] [PartialMapLaws K M] {k k' : K} {v : V} :
+    get? (point k (some v) : M V) k' = if k = k' then some v else none := by
   by_cases h : k = k'
-  · rw [if_pos h, point_get_eq h]
-  · rw [if_neg h, point_get_ne h]
+  · rw [if_pos h, h]; exact Heap.point_get?_eq rfl
+  · rw [if_neg h]; exact Heap.point_get?_ne h
 
 /-- An AllocHeap is a heap which can allocate elements under some condition. -/
-class AllocHeap (T : Type _) (K V : outParam (Type _)) extends Heap T K V where
-  notFull : T → Prop
-  fresh {t : T} : notFull t → K
-  get_fresh {H : notFull t} : get t (fresh H) = none
-export AllocHeap (notFull fresh get_fresh)
+class AllocHeap (K : outParam (Type _)) (M : Type _ → Type _) extends Heap K M where
+  notFull : M V → Prop
+  fresh {m : M V} : notFull m → K
+  get?_fresh {m : M V} {H : notFull m} : get? m (fresh H) = none
+export AllocHeap (notFull fresh get?_fresh)
 
 /-- An UnboundedHeap is a heap which can allocate an unbounded number of elements starting at empty. -/
-class UnboundedHeap (T : Type _) (K V : outParam (Type _)) extends AllocHeap T K V where
-  notFull_empty : notFull (empty : T)
-  notFull_set_fresh {H : notFull t} : notFull (set t (fresh H) v)
-export UnboundedHeap (notFull_empty notFull_set_fresh)
+class UnboundedHeap (K : outParam (Type _)) (M : Type _ → Type _) extends AllocHeap K M where
+  notFull_empty : notFull (empty : M V)
+  notFull_insert_fresh {m : M V} {H : notFull m} : notFull (insert m (fresh H) v)
+export UnboundedHeap (notFull_empty notFull_insert_fresh)
 
 end Heap

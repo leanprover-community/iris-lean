@@ -58,14 +58,19 @@ section FunHeap
 
 variable {K V : Type _} [DecidableEq K]
 
-/-- Functions to Option form a heap. -/
-instance instHeapFun : Heap (K → Option V) K V where
+/-- PartialMap instance for functions returning Option. -/
+instance instPartialMapFun : PartialMap K (fun _ => K → Option V) where
+  get? f k := f k
+  insert f k v := fun k' => if k = k' then some v else f k'
+  delete f k := fun k' => if k = k' then none else f k'
   empty := fun _ => none
+
+/-- Functions to Option form a heap. -/
+instance instHeapFun : Heap K (fun _ => K → Option V) where
   hmap f t k := (t k).bind (f k)
   merge op t1 t2 k := Option.merge op (t1 k) (t2 k)
-  get_empty := rfl
-  get_hmap := rfl
-  get_merge := rfl
+  get?_hmap := rfl
+  get?_merge := rfl
 
 end FunHeap
 
@@ -74,18 +79,18 @@ noncomputable section ClassicalAllocHeap
 
 open Classical
 
-instance instClassicalAllocHeap : AllocHeap (K → Option V) K V where
+instance instClassicalAllocHeap : AllocHeap K (fun _ => K → Option V) where
   notFull f := infinite <| cosupport f
   fresh := choose ∘ coinfinite_exists_next
-  get_fresh {_ H} := choose_spec <| coinfinite_exists_next H
+  get?_fresh {_ H} := choose_spec <| coinfinite_exists_next H
 
-instance instClassicalUnboundedHeap [InfiniteType K] : UnboundedHeap (K → Option V) K V where
+instance instClassicalUnboundedHeap [InfiniteType K] : UnboundedHeap K (fun _ => K → Option V) where
   notFull_empty := by
-    simp [notFull, infinite, cosupport, empty]
+    simp [notFull, infinite, cosupport, PartialMap.empty]
     exact ⟨InfiniteType.enum, fun n m a => InfiniteType.enum_inj n m a⟩
-  notFull_set_fresh {t v H} := by
-    refine cofinite_alter_cofinite (Hs := H) (p' := fresh (T := K → Option V) H) ?_
-    simp [Store.set]
+  notFull_insert_fresh {t v H} := by
+    refine cofinite_alter_cofinite (Hs := H) (p' := fresh H) ?_
+    simp [PartialMap.insert]
     grind
 
 end ClassicalAllocHeap
@@ -198,6 +203,13 @@ instance AssocList.instStoreAssocList : Store (AssocList V) Nat (Option V) where
   get_set_eq He := by simp only [lookup_update, fset, if_pos He]
   get_set_ne He := by simp only [lookup_update, fset, if_neg He]
 
+/-- PartialMap instance for AssocList. -/
+instance AssocList.instPartialMapAssocList : PartialMap Nat (fun _ => AssocList V) where
+  get? f k := f.lookup k
+  insert f k v := f.set k (some v)
+  delete f k := f.remove k
+  empty := .empty
+
 /-- Lift a binary operation to `Option`, treating `none` as an identity element. -/
 abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
   match v1, v2 with
@@ -206,26 +218,24 @@ abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
   | none, some v2 => some v2
   | none, none => none
 
-instance AssocList.instHeapAssocList : Heap (AssocList V) Nat V where
+instance AssocList.instHeapAssocList : Heap Nat (fun _ => AssocList V) where
   hmap h f := f.map h
-  get_hmap := by
+  get?_hmap := by
     intro f t k
     induction t with
     | empty =>
-      simp_all [Store.get, map]
+      simp_all [PartialMap.get?, map]
     | set n' v' t' IH =>
-      simp_all [Store.get]
+      simp_all [PartialMap.get?]
       cases h1 : f n' v' <;> simp <;> split <;> rename_i h2 <;> simp_all
     | remove n' t' IH =>
-      simp_all [Store.get]
+      simp_all [PartialMap.get?]
       split <;> simp [Option.bind]
-  empty := .empty
-  get_empty := by simp [Store.get]
   merge op t1 t2 :=
     construct (fun n => op_lift op (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
-  get_merge := by
+  get?_merge := by
     intro op t1 t2 k
-    simp [Store.get, AssocList.construct_get, Option.merge, op_lift]
+    simp [PartialMap.get?, AssocList.construct_get, Option.merge, op_lift]
     split
     · rename_i h
       cases t1.lookup k <;> cases t2.lookup k <;> simp_all
@@ -233,14 +243,14 @@ instance AssocList.instHeapAssocList : Heap (AssocList V) Nat V where
       rw [AssocList.fresh_lookup_ge _ _ (by omega : t1.fresh ≤ k)]
       rw [AssocList.fresh_lookup_ge _ _ (by omega : t2.fresh ≤ k)]
 
-instance instAllocHeapAssocList : AllocHeap (AssocList V) Nat V where
+instance instAllocHeapAssocList : AllocHeap Nat (fun _ => AssocList V) where
   notFull _ := True
   fresh {f} _ := f.fresh
-  get_fresh {f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
+  get?_fresh {f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
 
-instance instUnboundedHeapAssocList : UnboundedHeap (AssocList V) Nat V where
+instance instUnboundedHeapAssocList : UnboundedHeap Nat (fun _ => AssocList V) where
   notFull_empty := by simp [notFull]
-  notFull_set_fresh {t v H} := by simp [notFull]
+  notFull_insert_fresh {t v H} := by simp [notFull]
 
 end AssociationLists
 
