@@ -90,7 +90,7 @@ end FiniteMap
 /-- Laws that a finite map implementation must satisfy.
     Extends PartialMapLaws with laws specific to list conversion. -/
 class FiniteMapLaws (K : (outParam (Type u))) (M : Type u' → Type _)
-    [DecidableEq K] [FiniteMap K M] extends PartialMapLaws K M where
+    [DecidableEq K] [FiniteMap K M] extends LawfulPartialMap K M where
   ofList_nil : (ofList [] : M V) = ∅
   ofList_cons : ∀ (k : K) (v : V) (l : List (K × V)),
     (ofList ((k, v) :: l) : M V) = insert (ofList l) k v

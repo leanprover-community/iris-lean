@@ -29,11 +29,6 @@ theorem Store.get_set [Store T K V] {t : T} {k k' : K} {v : V} :
 def Store.all [Store T K V] (P : K → V → Prop) : T → Prop :=
   fun t => ∀ k, P k (get t k)
 
-/-- Two Stores are pointwise equivalent. -/
-@[simp] def Store.Equiv [Store T K V] (t1 t2 : T) : Prop := get t1 = get t2
-
-instance Store.Equiv_trans [Store T K V] : Trans Equiv (Equiv (T := T)) Equiv := ⟨by simp_all⟩
-
 /-- RepFunStore: The type T can represent all functions that satisfy Rep.
 For instance, this holds with `rep _ = True` when `T = K → V`. On the other hand, when
 `T = list (K × Option V)` representing a partial function with an association list, this holds
@@ -113,18 +108,18 @@ def Heap.dom [Heap K M] (m : M V) : K → Prop := fun k => (get? m k).isSome
 
 @[simp] def Heap.union [Heap K M] : M V → M V → M V := merge (fun v _ => v)
 
-theorem Heap.point_get?_eq [Heap K M] [DecidableEq K] [PartialMapLaws K M] (H : k = k') : get? (point k (some v) : M V) k' = some v := by
+theorem Heap.point_get?_eq [Heap K M] [DecidableEq K] [LawfulPartialMap K M] (H : k = k') : get? (point k (some v) : M V) k' = some v := by
   rw [point, H]
   exact PartialMapLaws.get?_insert_same _ _ _
 
-theorem Heap.point_get?_ne [Heap K M] [DecidableEq K] [PartialMapLaws K M] (H : k ≠ k') :
+theorem Heap.point_get?_ne [Heap K M] [DecidableEq K] [LawfulPartialMap K M] (H : k ≠ k') :
     get? (point k (some v) : M V) k' = none := by
   rw [point]
   rw [PartialMapLaws.get?_insert_ne _ _ _ _ H]
   exact PartialMapLaws.get?_empty k'
 
 open Classical in
-theorem Heap.get?_point [Heap K M] [DecidableEq K] [PartialMapLaws K M] {k k' : K} {v : V} :
+theorem Heap.get?_point [Heap K M] [DecidableEq K] [LawfulPartialMap K M] {k k' : K} {v : V} :
     get? (point k (some v) : M V) k' = if k = k' then some v else none := by
   by_cases h : k = k'
   · rw [if_pos h, h]; exact Heap.point_get?_eq rfl
