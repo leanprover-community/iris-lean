@@ -232,7 +232,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `updates.v`
   - [x] FUpd class
   - [ ] Big op lemmas
-- [ ] `weakestpre.v`
+- [x] `weakestpre.v`
 - [ ] `lib/atomic.v`
 - [ ] `lib/core.v`
 - [ ] `lib/counterexamples.v`
@@ -423,6 +423,6 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 
 - Program Logic
   - Final decisions about what to port from this folder have not been made yet.
-  - [ ] `language.v`
+  - [x] `language.v`
   - [ ] `ectx_language.v`
   - [ ] `ectxi_language.v`

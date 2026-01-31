@@ -106,17 +106,33 @@ def not_stuck (e : Λ.expr) (σ : Λ.state) : Prop :=
 /-- Coq: `reducible_not_val` in `language.v`. -/
 theorem reducible_not_val (e : Λ.expr) (σ : Λ.state) :
     reducible e σ → Λ.to_val e = none :=
-  sorry
+  by
+  -- unpack the step and use `val_stuck` to rule out values
+  rintro ⟨κ, e', σ', efs, hstep⟩
+  exact val_stuck (e := e) (σ := σ) (κ := κ) (e' := e') (σ' := σ') (efs := efs) hstep
 
 /-- Coq: `val_irreducible` in `language.v`. -/
 theorem val_irreducible (e : Λ.expr) (σ : Λ.state) :
     (∃ v, Λ.to_val e = some v) → irreducible e σ :=
-  sorry
+  by
+  -- a value cannot step, since any step would contradict `to_val`
+  rintro ⟨v, hv⟩ κ e' σ' efs hstep
+  have hnone : Λ.to_val e = none :=
+    val_stuck (e := e) (σ := σ) (κ := κ) (e' := e') (σ' := σ') (efs := efs) hstep
+  have : False := by simpa [hv] using hnone
+  exact this.elim
 
 /-- Coq: `not_reducible` in `language.v`. -/
 theorem not_reducible (e : Λ.expr) (σ : Λ.state) :
     ¬reducible e σ ↔ irreducible e σ :=
-  sorry
+  by
+  -- unfold `reducible` and push negation through the existential
+  constructor
+  · intro h κ e' σ' efs hstep
+    exact h ⟨κ, e', σ', efs, hstep⟩
+  · intro h hred
+    rcases hred with ⟨κ, e', σ', efs, hstep⟩
+    exact h κ e' σ' efs hstep
 
 /-! ## Atomicity -/
 
@@ -145,7 +161,17 @@ class Atomic (a : Atomicity) (e : Λ.expr) : Prop where
 /-- Coq: `strongly_atomic_atomic` in `language.v`. -/
 theorem strongly_atomic_atomic (e : Λ.expr) (a : Atomicity)
     [Atomic Atomicity.stronglyAtomic e] : Atomic a e :=
-  sorry
+  by
+  -- strong atomicity implies the weak form by `val_irreducible`
+  refine ⟨?_⟩
+  intro σ e' κ σ' efs hstep
+  have hstrong :
+      ∃ v, Λ.to_val e' = some v :=
+    Atomic.atomic (a := Atomicity.stronglyAtomic) (e := e) σ e' κ σ' efs hstep
+  cases a with
+  | stronglyAtomic => exact hstrong
+  | weaklyAtomic =>
+      exact val_irreducible (e := e') (σ := σ') hstrong
 
 /-! ## Language Context -/
 
@@ -168,19 +194,37 @@ class LanguageCtx (K : Λ.expr → Λ.expr) where
 theorem reducible_fill (K : Λ.expr → Λ.expr) [LanguageCtx K]
     (e : Λ.expr) (σ : Λ.state) :
     reducible e σ → reducible (K e) σ :=
-  sorry
+  by
+  -- lift the primitive step through the evaluation context
+  rintro ⟨κ, e', σ', efs, hstep⟩
+  exact ⟨κ, K e', σ', efs,
+    LanguageCtx.fill_step (K := K) (e1 := e) (σ1 := σ) (κ := κ)
+      (e2 := e') (σ2 := σ') (efs := efs) hstep⟩
 
 /-- Coq: `reducible_fill_inv` in `language.v`. -/
 theorem reducible_fill_inv (K : Λ.expr → Λ.expr) [LanguageCtx K]
     (e : Λ.expr) (σ : Λ.state) :
     Λ.to_val e = none → reducible (K e) σ → reducible e σ :=
-  sorry
+  by
+  -- invert the context step to recover a step of the hole expression
+  intro hval hred
+  rcases hred with ⟨κ, e', σ', efs, hstep⟩
+  rcases LanguageCtx.fill_step_inv (K := K) (e1' := e) (σ1 := σ)
+    (κ := κ) (e2 := e') (σ2 := σ') (efs := efs) hval hstep with
+    ⟨e2', _hEq, hstep'⟩
+  exact ⟨κ, e2', σ', efs, hstep'⟩
 
 /-- Coq: `irreducible_fill` in `language.v`. -/
 theorem irreducible_fill (K : Λ.expr → Λ.expr) [LanguageCtx K]
     (e : Λ.expr) (σ : Λ.state) :
     Λ.to_val e = none → irreducible e σ → irreducible (K e) σ :=
-  sorry
+  by
+  -- any step of `K e` would invert to a step of `e`
+  intro hval hir κ e' σ' efs hstep
+  rcases LanguageCtx.fill_step_inv (K := K) (e1' := e) (σ1 := σ)
+    (κ := κ) (e2 := e') (σ2 := σ') (efs := efs) hval hstep with
+    ⟨e2', _hEq, hstep'⟩
+  exact hir κ e2' σ' efs hstep'
 
 /-! ## Pure Steps -/
 
