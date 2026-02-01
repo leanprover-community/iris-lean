@@ -46,8 +46,8 @@ open Iris Iris.Algebra Iris.Std Iris.BI
 
 variable {GF : BundledGFunctors} {M : Type _ → Type _} {F : Type _}
 variable [UFraction F]
-variable [FiniteMap Positive M] [DecidableEq Positive]
-variable [FiniteMapLaws Positive M] [HeapFiniteMap Positive M]
+variable [FiniteMap Positive M]
+variable [HeapFiniteMap Positive M]
 variable [ElemG GF (InvF GF M F)]
 variable [ElemG GF (COFE.constOF CoPsetDisj)]
 variable [ElemG GF (COFE.constOF GSetDisj)]
@@ -88,8 +88,7 @@ noncomputable def uPred_fupd (_W : WsatGS GF)
     Coq: `uPred_bi_fupd` -/
 noncomputable instance instFUpdIProp
     (M : Type _ → Type _) (F : Type _)
-    [UFraction F] [FiniteMap Positive M] [FiniteMapLaws Positive M]
-    [HeapFiniteMap Positive M] [ElemG GF (InvF GF M F)]
+    [UFraction F] [FiniteMap Positive M] [HeapFiniteMap Positive M] [ElemG GF (InvF GF M F)]
     [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)]
     (W : WsatGS GF) :
     FUpd (IPropWsat GF M F) Positive where
@@ -97,7 +96,7 @@ noncomputable instance instFUpdIProp
 
 /-! ## Helpers -/
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF GSetDisj)] in
+omit [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Split an enabled mask using subset decomposition. -/
 private theorem ownE_split_subset {W : WsatGS GF}
     (E1 E2 : Iris.Set Positive) (h : Subset E2 E1) :
@@ -109,7 +108,6 @@ private theorem ownE_split_subset {W : WsatGS GF}
   refine ⟨E3, ?_⟩
   simpa [hE] using (ownE_op (W := W) (E₁ := mask E2) (E₂ := E3) hdisj)
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Build a fancy update when we can rejoin the mask split. -/
 private theorem fupd_from_split {W : WsatGS GF}
     (E1 E2 : Iris.Set Positive) (E3 : CoPset)
@@ -131,7 +129,6 @@ private theorem fupd_from_split {W : WsatGS GF}
   refine (sep_mono .rfl (sep_mono hown .rfl)).trans ?_
   exact (except0_intro).trans BIUpdate.intro
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Non-expansiveness of `uPred_fupd` in its postcondition. -/
 theorem uPred_fupd_ne {W : WsatGS GF}
     (E1 E2 : Iris.Set Positive) :
@@ -164,7 +161,6 @@ theorem uPred_fupd_ne {W : WsatGS GF}
 
 /-! ## Mask Introduction -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Weaken the mask: if `E2 ⊆ E1`, then `P ⊢ |={E1,E2}=> |={E2,E1}=> P`.
 
     Coq: `fupd_intro_mask` (part of `BiFUpdMixin`) -/
@@ -196,10 +192,22 @@ theorem fupd_intro_mask {W : WsatGS GF}
     (R := uPred_fupd (M := M) (F := F) W E2 E1 P)).1.trans ?_
   exact (except0_intro).trans BIUpdate.intro
 
+/-- Close a mask after opening a subset.
+
+    Coq: `fupd_mask_subseteq` -/
+theorem fupd_mask_subseteq {W : WsatGS GF}
+    (E1 E2 : Iris.Set Positive) (h : Subset E2 E1) :
+    (True : IProp GF) ⊢
+      uPred_fupd (M := M) (F := F) W E1 E2
+        (uPred_fupd (M := M) (F := F) W E2 E1 (BIBase.emp : IProp GF)) := by
+  -- use `fupd_intro_mask` with `emp`, and `True ⊣⊢ emp` in affine logics
+  have hemp : (True : IProp GF) ⊢ (BIBase.emp : IProp GF) :=
+    (true_emp (PROP := IProp GF)).1
+  exact hemp.trans (fupd_intro_mask (W := W) (E1 := E1) (E2 := E2) h (P := BIBase.emp))
+
 /-! ## Mask Framing -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M]
-  [ElemG GF (COFE.constOF GSetDisj)] in
+omit [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Split a union mask into disjoint components. -/
 private theorem ownE_union_split {W : WsatGS GF}
     (E1 Ef : Iris.Set Positive)
@@ -209,7 +217,6 @@ private theorem ownE_union_split {W : WsatGS GF}
   -- use the `ownE_op` equivalence on the union
   simpa using (ownE_op (W := W) (E₁ := mask E1) (E₂ := mask Ef) hdisj)
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Frame a mask through `except0` and rejoin the result. -/
 private theorem fupd_mask_frame_r_frame {W : WsatGS GF}
     (E2 Ef : Iris.Set Positive) (P : IProp GF) :
@@ -246,7 +253,6 @@ private theorem fupd_mask_frame_r_frame {W : WsatGS GF}
   exact (sep_assoc (P := wsat' (M := M) (F := F) W)
     (Q := ownE W (mask (fun x => E2 x ∨ Ef x))) (R := P)).1
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Apply a fancy update to its mask resources. -/
 private theorem fupd_apply {W : WsatGS GF}
     (E1 E2 : Iris.Set Positive) (P : IProp GF) :
@@ -258,7 +264,6 @@ private theorem fupd_apply {W : WsatGS GF}
   unfold uPred_fupd
   exact (wand_elim_l (PROP := IProp GF))
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Frame a disjoint mask onto a fancy update. -/
 theorem fupd_mask_frame_r {W : WsatGS GF}
     (E1 E2 Ef : Iris.Set Positive) (P : IProp GF)
@@ -289,7 +294,6 @@ theorem fupd_mask_frame_r {W : WsatGS GF}
 
 /-! ## Monotonicity and Composition -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Monotonicity of fancy updates.
 
     Coq: `fupd_mono` (part of `BiFUpdMixin`) -/
@@ -303,7 +307,6 @@ theorem fupd_mono {W : WsatGS GF}
   refine except0_mono ?_
   exact sep_mono .rfl (sep_mono .rfl h)
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Apply a nested fancy update under except-0. -/
 private theorem fupd_except0_bind {W : WsatGS GF}
     (E2 E3 : Iris.Set Positive) (P : IProp GF) :
@@ -336,7 +339,7 @@ private theorem fupd_except0_bind {W : WsatGS GF}
       (wsat' (M := M) (F := F) W) (BIBase.sep (ownE W (mask E3)) P))))
   exact hstep.trans (BIUpdate.mono except0_idemp.1)
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF GSetDisj)] in
+omit [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Shrink a top mask to any subset (dropping the remainder). -/
 private theorem ownE_from_top {W : WsatGS GF}
     (E : Iris.Set Positive) :
@@ -349,7 +352,7 @@ private theorem ownE_from_top {W : WsatGS GF}
   refine (hsplit.1).trans ?_
   exact (sep_elim_l (P := ownE W (mask E)) (Q := ownE W E3))
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF GSetDisj)] in
+omit [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Shrink a mask along subset by discarding the remainder. -/
 private theorem ownE_shrink {W : WsatGS GF}
     (E1 E2 : Iris.Set Positive) (h : Subset E1 E2) :
@@ -360,7 +363,7 @@ private theorem ownE_shrink {W : WsatGS GF}
   refine (hsplit.1).trans ?_
   exact (sep_elim_l (P := ownE W (mask E1)) (Q := ownE W E3))
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
+omit [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Plainness is preserved by the later modality. -/
 private theorem later_plain {P : IProp GF} [Plain P] :
     Plain (BIBase.later P) := by
@@ -368,7 +371,6 @@ private theorem later_plain {P : IProp GF} [Plain P] :
   refine ⟨(later_mono (Plain.plain (P := P))).trans ?_⟩
   exact (later_plainly (P := P)).1
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Transitivity of fancy updates.
 
     Coq: `fupd_trans` (part of `BiFUpdMixin`) -/
@@ -393,7 +395,6 @@ theorem fupd_trans {W : WsatGS GF}
 
 /-! ## Frame Rule -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Frame rule for fancy updates: framing preserves disjointness of masks.
 
     Coq: `fupd_frame_r` (part of `BiFUpdMixin`) -/
@@ -435,7 +436,6 @@ theorem fupd_frame_r {W : WsatGS GF}
 
 /-! ## BUpd / FUpd Interaction -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Basic updates lift to fancy updates.
 
     Coq: `uPred_bi_bupd_fupd` -/
@@ -457,7 +457,6 @@ theorem bupd_fupd {W : WsatGS GF}
 
 /-! ## Mask Weakening -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Mask shrinking for fancy updates: if `E1 ⊆ E2`, we can weaken to `E1`.
 
     Coq: `fupd_plain_mask` (from `BiFUpdSbi`) -/
@@ -472,6 +471,10 @@ theorem fupd_plain_mask {W : WsatGS GF}
   exact sep_mono .rfl (sep_mono (ownE_shrink (W := W) (E1 := E1) (E2 := E2) h) .rfl)
 
 /-! ## Soundness -/
+
+section
+
+variable [FiniteMapLaws Positive M]
 
 /-- Soundness of the fancy update (no later credits): if for any world
     satisfaction we can establish `P` via a fancy update, then `P` holds
@@ -550,6 +553,8 @@ theorem step_fupdN_soundness_no_lc
     (BIBase.emp : IProp GF) ⊢ P := by
   -- specialize soundness to `⊤`/`∅` masks
   exact fupd_soundness_no_lc (E1 := Iris.Set.univ) (E2 := fun _ => False) (P := P) h
+
+end
 
 end
 

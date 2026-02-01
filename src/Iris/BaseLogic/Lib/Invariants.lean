@@ -37,8 +37,7 @@ open Iris Iris.Algebra Iris.Std Iris.BI
 
 variable {GF : BundledGFunctors} {M : Type _ → Type _} {F : Type _}
 variable [UFraction F]
-variable [FiniteMap Positive M] [DecidableEq Positive]
-variable [FiniteMapLaws Positive M] [HeapFiniteMap Positive M]
+variable [FiniteMap Positive M] variable [FiniteMapLaws Positive M] [HeapFiniteMap Positive M]
 variable [ElemG GF (InvF GF M F)]
 variable [ElemG GF (COFE.constOF CoPsetDisj)]
 variable [ElemG GF (COFE.constOF GSetDisj)]
@@ -292,8 +291,7 @@ private theorem own_inv_to_inv {W : WsatGS GF}
   intro hsubset
   exact (own_inv_acc (W := W) (N := N) (E := E) (P := P) hsubset)
 
-omit [UFraction F] [FiniteMap Positive M] [DecidableEq Positive]
-  [FiniteMapLaws Positive M] [HeapFiniteMap Positive M]
+omit [UFraction F] [FiniteMap Positive M]   [FiniteMapLaws Positive M] [HeapFiniteMap Positive M]
   [ElemG GF (InvF GF M F)] [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem except0_sep_idemp {P Q R : IProp GF} :
@@ -321,7 +319,7 @@ private theorem except0_sep_idemp {P Q R : IProp GF} :
           -- pull except0 back out
           exact (except0_sep (P := P) (Q := BIBase.sep Q R)).symm
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem fupd_drop_except0_post {W : WsatGS GF}
     (E1 E2 : Iris.Set Positive) (P Q : IProp GF) :
     uPred_fupd (M := M) (F := F) W E1 E2
@@ -354,7 +352,7 @@ private theorem fupd_drop_except0_post {W : WsatGS GF}
 
 /-! ## Properties -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- `inv N P` is persistent.
 
     Coq: `inv_persistent` -/
@@ -376,7 +374,7 @@ instance inv_persistent_inst {W : WsatGS GF} (N : Namespace) (P : IProp GF) :
     Persistent (inv (GF := GF) (M := M) (F := F) W N P) :=
   ⟨inv_persistent (W := W) (N := N) (P := P)⟩
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Non-expansive core of `inv` over a latered parameter. -/
 private theorem invBody_ne {W : WsatGS GF} (N : Namespace) :
     OFE.NonExpansive (invBody (GF := GF) (M := M) (F := F) W N) := by
@@ -422,7 +420,7 @@ instance inv_ne {W : WsatGS GF} (N : Namespace) :
   -- contractive functions are non-expansive
   infer_instance
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- `inv` respects equivalence of its body. -/
 theorem inv_proper {W : WsatGS GF} (N : Namespace) {P Q : IProp GF}
     (h : P ≡ Q) : inv (GF := GF) (M := M) (F := F) W N P ≡
@@ -729,7 +727,7 @@ theorem inv_alloc_open {W : WsatGS GF}
 
 /-! ## Access -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Open an invariant: given `↑N ⊆ E`, access `▷ P` with a closing view shift.
 
     Proof strategy: unfold `inv` definition, apply the universally quantified
@@ -764,7 +762,7 @@ theorem inv_acc {W : WsatGS GF}
   refine (sep_mono .rfl hwand).trans ?_
   exact wand_elim_r
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Access a timeless invariant: strip the `▷` when `P` is timeless.
 
     Coq: `inv_acc_timeless` -/
@@ -807,13 +805,13 @@ theorem inv_acc_timeless {W : WsatGS GF}
 
 /-! ## Derived Properties -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem maskDiff_self (N : Namespace) :
     maskDiff (nclose N).mem N = (fun _ => False) := by
   -- membership is contradictory for the same namespace
   funext i; simp [maskDiff]
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem mask_union_diff (N : Namespace) (E : Iris.Set Positive)
     (h : Subset (nclose N).mem E) :
     (fun x => (nclose N).mem x ∨ maskDiff E N x) = E := by
@@ -834,13 +832,13 @@ private abbrev maskDiff2 (E : Iris.Set Positive) (N1 N2 : Namespace) :
   -- drop both namespaces from the mask
   fun x => E x ∧ ¬(nclose N1).mem x ∧ ¬(nclose N2).mem x
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem maskDiff2_eq (E : Iris.Set Positive) (N1 N2 : Namespace) :
     maskDiff (maskDiff E N1) N2 = maskDiff2 E N1 N2 := by
   -- unfold nested differences and reassociate
   funext i; simp [maskDiff, maskDiff2, and_assoc]
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem maskDiff2_subset_of_union (E : Iris.Set Positive)
     (N1 N2 N : Namespace)
     (hsubset : Subset (fun x => (nclose N1).mem x ∨ (nclose N2).mem x) (nclose N).mem) :
@@ -853,7 +851,7 @@ private theorem maskDiff2_subset_of_union (E : Iris.Set Positive)
     intro hN2; exact hi.2 (hsubset _ (Or.inr hN2))
   exact ⟨hi.1, hN1, hN2⟩
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem nclose_subset_maskDiff (E : Iris.Set Positive)
     (N1 N2 : Namespace)
     (hdisj : CoPset.Disjoint (nclose N1) (nclose N2))
@@ -865,7 +863,7 @@ private theorem nclose_subset_maskDiff (E : Iris.Set Positive)
     intro hN1; exact (hdisj i) ⟨hN1, hi⟩
   exact ⟨hE _ hi, hN1⟩
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem fupd_from_split' {W : WsatGS GF}
     (E1 E2 : Iris.Set Positive) (E3 : CoPset)
     (hE : mask E1 = mask E2 ∪ E3) (hdisj : CoPset.Disjoint (mask E2) E3)
@@ -886,7 +884,7 @@ private theorem fupd_from_split' {W : WsatGS GF}
   refine (sep_mono .rfl (sep_mono hown .rfl)).trans ?_
   exact (except0_intro).trans BIUpdate.intro
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem fupd_mask_intro {W : WsatGS GF}
     (E1 E2 : Iris.Set Positive) (h : Subset E2 E1) (P : IProp GF) :
     BIBase.wand (uPred_fupd (M := M) (F := F) W E2 E1 (BIBase.emp : IProp GF)) P ⊢
@@ -936,7 +934,7 @@ private theorem fupd_mask_intro {W : WsatGS GF}
             (BIBase.sep (ownE W (mask E2)) P))))
   exact (sep_mono .rfl hwand).trans hupd
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem fupd_wand_r {W : WsatGS GF}
     (E1 E2 : Iris.Set Positive) (P Q : IProp GF) :
     BIBase.sep (uPred_fupd (M := M) (F := F) W E1 E2 P) (BIBase.wand P Q) ⊢
@@ -951,13 +949,13 @@ private theorem fupd_wand_r {W : WsatGS GF}
       (P := P) (Q := BIBase.wand P Q)))
   iexact H
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem maskDiff_union_right (E : Iris.Set Positive) (N : Namespace) :
     (fun x => maskDiff (nclose N).mem N x ∨ maskDiff E N x) = maskDiff E N := by
   -- the left disjunct is always false
   funext i; simp [maskDiff]
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem inv_close_strong {W : WsatGS GF}
     (N : Namespace) (P : IProp GF) :
     BIBase.wand (BIBase.later P)
@@ -997,7 +995,7 @@ private theorem inv_close_strong {W : WsatGS GF}
 
 /-! ### Combination and Splitting -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M]
+omit [FiniteMapLaws Positive M]
   [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem later_dup (P : IProp GF) :
     BIBase.persistently (BIBase.wand P (BIBase.sep P P)) ⊢
@@ -1019,7 +1017,7 @@ private theorem later_dup (P : IProp GF) :
     (later_sep (P := P) (Q := P)).1) $$ Hwand
   iexact Hsplit
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M]
+omit [FiniteMapLaws Positive M]
   [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem inv_split_l_transform (P Q : IProp GF) :
     (BIBase.emp : IProp GF) ⊢
@@ -1057,7 +1055,7 @@ private theorem inv_split_l_transform (P Q : IProp GF) :
     (intuitionistically_emp (PROP := IProp GF)).2
   exact (hemp.trans hboxed).trans (later_intro (P := _))
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem inv_acc_strong_frame {W : WsatGS GF}
     (E : Iris.Set Positive) (N : Namespace) (P : IProp GF)
     (h : Subset (nclose N).mem E) :
@@ -1086,7 +1084,7 @@ private theorem inv_acc_strong_frame {W : WsatGS GF}
             (nclose N).mem (BIBase.pure True))))
       hdisj)
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem inv_acc_strong_post {W : WsatGS GF}
     (N : Namespace) (P : IProp GF) :
     BIBase.sep (BIBase.later P)
@@ -1101,7 +1099,7 @@ private theorem inv_acc_strong_post {W : WsatGS GF}
   -- keep the later and strengthen the closing wand
   exact sep_mono .rfl (inv_close_strong (W := W) (N := N) (P := P))
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 private theorem inv_acc_strong_mono {W : WsatGS GF}
     (E : Iris.Set Positive) (N : Namespace) (P : IProp GF) :
     uPred_fupd (M := M) (F := F) W E (maskDiff E N)
@@ -1128,7 +1126,7 @@ private theorem inv_acc_strong_mono {W : WsatGS GF}
             (fun x => (nclose N).mem x ∨ E' x) (BIBase.pure True))))
     (inv_acc_strong_post (W := W) (N := N) (P := P))
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Combine disjoint invariants into a larger namespace.
 
     Coq: `inv_combine` -/
@@ -1291,7 +1289,7 @@ theorem inv_combine {W : WsatGS GF}
   · iexact HinvP
   · iexact HinvQ
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Combine invariants using a duplicable left component.
 
     Coq: `inv_combine_dup_l` -/
@@ -1434,7 +1432,7 @@ theorem inv_combine_dup_l {W : WsatGS GF}
     · iexact HinvP
     · iexact HinvQ
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Invariants are except-0.
 
     Coq: `except_0_inv` -/
@@ -1484,20 +1482,20 @@ theorem except_0_inv {W : WsatGS GF}
 
 /-! ### Proof Mode Integration -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 instance is_except0_inv {W : WsatGS GF} (N : Namespace) (P : IProp GF) :
     Iris.ProofMode.IsExcept0 (PROP := IProp GF)
       (inv (GF := GF) (M := M) (F := F) W N P) := by
   -- reuse the derived lemma
   exact ⟨except_0_inv (W := W) (N := N) (P := P)⟩
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 instance into_inv_inv {W : WsatGS GF} (N : Namespace) (P : IProp GF) :
     Iris.ProofMode.IntoInv (PROP := IProp GF)
       (inv (GF := GF) (M := M) (F := F) W N P) N :=
   ⟨⟩
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 instance into_acc_inv {W : WsatGS GF}
     (E : Iris.Set Positive) (N : Namespace) (P : IProp GF) :
     Iris.ProofMode.IntoAcc (PROP := IProp GF) (X := Unit)
@@ -1526,7 +1524,7 @@ instance into_acc_inv {W : WsatGS GF}
   iapply (wrapEntails (GF := GF) (hacc.trans hmono))
   iexact Hinv
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Strong invariant accessor: closing under any mask extension.
 
     Coq: `inv_acc_strong` -/
@@ -1555,7 +1553,7 @@ theorem inv_acc_strong {W : WsatGS GF}
     (inv_acc_strong_mono (W := W) (E := E) (N := N) (P := P)))
   iexact Hacc'
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Alter the content of an invariant.
 
     Coq: `inv_alter` -/
@@ -1697,7 +1695,7 @@ theorem inv_alter {W : WsatGS GF}
 private abbrev iffWand (P Q : IProp GF) : IProp GF :=
   BIBase.and (BIBase.wand P Q) (BIBase.wand Q P)
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem iff_wand_left (P Q : IProp GF) :
     BIBase.intuitionistically (iffWand P Q) ⊢ BIBase.wand P Q := by
@@ -1705,7 +1703,7 @@ private theorem iff_wand_left (P Q : IProp GF) :
   exact (intuitionistically_elim (P := iffWand P Q)).trans
     (and_elim_l (P := BIBase.wand P Q) (Q := BIBase.wand Q P))
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem iff_wand_right (P Q : IProp GF) :
     BIBase.intuitionistically (iffWand P Q) ⊢ BIBase.wand Q P := by
@@ -1713,7 +1711,7 @@ private theorem iff_wand_right (P Q : IProp GF) :
   exact (intuitionistically_elim (P := iffWand P Q)).trans
     (and_elim_r (P := BIBase.wand P Q) (Q := BIBase.wand Q P))
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem iff_to_sep_wand (P Q : IProp GF) :
     BIBase.intuitionistically (iffWand P Q) ⊢
@@ -1733,7 +1731,7 @@ private theorem iff_to_sep_wand (P Q : IProp GF) :
   refine (sep_mono (iff_wand_right (P := P) (Q := Q)) hQ).trans ?_
   exact sep_comm.1
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Invariant content equivalence.
 
     Coq: `inv_iff` -/
@@ -1769,7 +1767,7 @@ theorem inv_iff {W : WsatGS GF}
   ispecialize Hinv' $$ Hpq'
   iexact Hinv'
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Split an invariant on the left component.
 
     Coq: `inv_split_l` -/
@@ -1818,7 +1816,7 @@ theorem inv_split_l {W : WsatGS GF}
   refine (sep_mono .rfl hwand).trans ?_
   exact wand_elim_r
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Split an invariant on the right component.
 
     Coq: `inv_split_r` -/
@@ -1846,7 +1844,7 @@ theorem inv_split_r {W : WsatGS GF}
     exact hBi.1
   exact hcomm.trans (inv_split_l (W := W) (M := M) (F := F) (N := N) (P := Q) (Q := P))
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Split an invariant into two components.
 
     Coq: `inv_split` -/

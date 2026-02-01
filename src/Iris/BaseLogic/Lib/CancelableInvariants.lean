@@ -33,7 +33,7 @@ abbrev CinvR (F : Type _) : Type _ :=
 
 variable {GF : BundledGFunctors} {M : Type _ → Type _} {F : Type _}
 variable [UFraction F]
-variable [FiniteMap Positive M] [DecidableEq Positive]
+variable [FiniteMap Positive M]
 variable [FiniteMapLaws Positive M] [HeapFiniteMap Positive M]
 variable [ElemG GF (InvF GF M F)]
 variable [ElemG GF (COFE.constOF CoPsetDisj)]
@@ -90,7 +90,7 @@ noncomputable def cinv (W : WsatGS GF) (N : Namespace) (γ : GName) (P : IProp G
 
 /-! ## Properties -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- `cinv` is persistent (inherits from `inv`).
 Coq: `cinv_persistent`. -/
 theorem cinv_persistent (W : WsatGS GF) (N : Namespace) (γ : GName) (P : IProp GF) :
@@ -101,14 +101,13 @@ theorem cinv_persistent (W : WsatGS GF) (N : Namespace) (γ : GName) (P : IProp 
     (inv_persistent (GF := GF) (M := M) (F := F) (W := W) (N := N)
       (P := cinv_body (F := F) W γ P))
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- `cinv` is persistent (instance). -/
 instance cinv_persistent_inst {W : WsatGS GF} (N : Namespace) (γ : GName) (P : IProp GF) :
     Persistent (cinv (M := M) (F := F) W N γ P) :=
   cinv_persistent (M := M) (F := F) (W := W) (N := N) (γ := γ) (P := P)
 
-omit [DecidableEq Positive]
-  [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Split a fractional ownership token.
 Coq: `cinv_own_fractional`. -/
@@ -121,8 +120,7 @@ theorem cinv_own_fractional (W : WsatGS GF) (γ : GName) (p q : F) :
       (a1 := (none, some ((p : F) : Frac F)))
       (a2 := (none, some ((q : F) : Frac F))))
 
-omit [DecidableEq Positive]
-  [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Validity of combined fractional tokens.
 Coq: `cinv_own_valid`. -/
@@ -143,7 +141,7 @@ theorem cinv_own_valid (W : WsatGS GF) (γ : GName) (q1 q2 : F) :
   simpa [CMRA.Valid, CMRA.ValidN, Prod.ValidN, CMRA.op, Prod.op, optionOp, optionValid] using
     hvalid0
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- `cinv N γ` is contractive in its body.
 Coq: `cinv_contractive`. -/
 instance cinv_contractive {W : WsatGS GF} (N : Namespace) (γ : GName) :
@@ -180,7 +178,7 @@ instance cinv_ne {W : WsatGS GF} (N : Namespace) (γ : GName) :
     OFE.NonExpansive (fun P => cinv (M := M) (F := F) W N γ P) := by
   infer_instance
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- `cinv` respects equivalence of its body.
 Coq: `cinv_proper`. -/
 theorem cinv_proper {W : WsatGS GF} (N : Namespace) (γ : GName) {P Q : IProp GF}
@@ -189,8 +187,7 @@ theorem cinv_proper {W : WsatGS GF} (N : Namespace) (γ : GName) {P Q : IProp GF
   exact OFE.NonExpansive.eqv
     (f := fun P => cinv (M := M) (F := F) W N γ P) h
 
-omit [DecidableEq Positive]
-  [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Two full ownership tokens are contradictory.
 Coq: `cinv_own_1_l`. -/
@@ -211,8 +208,7 @@ theorem cinv_own_1_l (W : WsatGS GF) (γ : GName) (q : F) :
     simpa [CMRA.ValidN, Prod.ValidN, CMRA.op, Prod.op, optionOp] using hvalid0
   exact (UFraction.one_whole (α := F)).2 ⟨q, hproper⟩
 
-omit [DecidableEq Positive]
-  [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Two exclusive tokens are contradictory.
 Coq: `cinv_excl_excl`. -/
@@ -235,8 +231,7 @@ theorem cinv_excl_excl (W : WsatGS GF) (γ : GName) :
   exact (_root_.Iris.CMRA.not_valid_exclN_op_left (n := 0)
     (x := Excl.excl (LeibnizO.mk ())) (y := Excl.excl (LeibnizO.mk ())) hleft)
 
-omit [DecidableEq Positive]
-  [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem cinv_body_wand_intuitionistic (W : WsatGS GF) (γ : GName) (P Q : IProp GF) :
     BIBase.intuitionistically (BIBase.wand P Q) ⊢
@@ -283,7 +278,7 @@ private theorem cinv_body_wand_intuitionistic (W : WsatGS GF) (γ : GName) (P Q 
         (Q := cinv_own (F := F) W γ (1 : F)))
   exact or_elim hleft hright
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Cancelable invariant content equivalence.
 Coq: `cinv_iff`. -/
 theorem cinv_iff {W : WsatGS GF}
@@ -354,7 +349,6 @@ theorem cinv_iff {W : WsatGS GF}
 
 /-! ## Allocation -/
 
-omit [DecidableEq Positive] in
 /-- Validity of the combined ghost token. -/
 private theorem cinv_token_valid :
     ✓ ((some (Excl.excl (LeibnizO.mk ())), some ((1 : F) : Frac F)) : CinvR F) := by
@@ -364,7 +358,7 @@ private theorem cinv_token_valid :
   · simpa [CMRA.Valid, optionValid] using
       (UFraction.one_whole (α := F)).1
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Allocate an exclusive token together with the full fractional token. -/
 private theorem cinv_own_excl_alloc (W : WsatGS GF) (E : Iris.Set Positive) :
     (BIBase.emp : IProp GF) ⊢
@@ -413,8 +407,7 @@ private theorem cinv_own_excl_alloc (W : WsatGS GF) (E : Iris.Set Positive) :
   exact halloc'.trans (fupd_mono (W := W) (M := M) (F := F) (E1 := E) (E2 := E)
     (P := _) (Q := _) hsplit)
 
-omit [DecidableEq Positive]
-  [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Build the later'd invariant body from the left branch. -/
 private theorem cinv_body_later_left (W : WsatGS GF) (γ : GName) (P : IProp GF) :
@@ -431,8 +424,7 @@ private theorem cinv_body_later_left (W : WsatGS GF) (γ : GName) (P : IProp GF)
     (Q := cinv_body (F := F) W γ P)
     (or_intro_l (Q := cinv_own (F := F) W γ (1 : F))))
 
-omit [DecidableEq Positive]
-  [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Build the later'd body from two latered components. -/
 private theorem cinv_body_later_left_later (W : WsatGS GF) (γ : GName) (P : IProp GF) :
@@ -634,8 +626,7 @@ theorem cinv_alloc_cofinite (W : WsatGS GF)
 
 /-! ## Accessors -/
 
-omit [DecidableEq Positive]
-  [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Right branch yields a contradiction with any external fraction. -/
 private theorem cinv_own_later_false (W : WsatGS GF) (γ : GName) (p : F) :
@@ -654,7 +645,7 @@ private theorem cinv_own_later_false (W : WsatGS GF) (γ : GName) (p : F) :
   refine (sep_mono hwand (later_intro (P := cinv_own (F := F) W γ p))).trans ?_
   exact wand_elim_l
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Build the strong closing shift for cancelable invariants. -/
 private theorem cinv_close_strong (W : WsatGS GF) (N : Namespace) (γ : GName)
     (P : IProp GF) :
@@ -740,7 +731,7 @@ private theorem cinv_close_strong (W : WsatGS GF) (N : Namespace) (γ : GName)
       sep_mono hB hbody
     exact hpre.trans hwand |>.trans wand_elim_l
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M]
+omit [FiniteMapLaws Positive M]
   [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Cancel a nested `except0` inside a separating conjunction.
@@ -772,7 +763,7 @@ private theorem except0_sep_idemp (P Q R : IProp GF) :
           -- pull except0 back out
           exact (except0_sep (P := P) (Q := BIBase.sep Q R)).symm
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M]
+omit [FiniteMapLaws Positive M]
   [ElemG GF (COFE.constOF (CinvR F))] in
 /-- Drop an extra `except0` under `fupd`.
 
@@ -808,7 +799,7 @@ private theorem fupd_drop_except0_post {W : WsatGS GF}
             exact except0_congr (sep_assoc (P := A) (Q := B) (R := BIBase.sep (PROP := IProp GF) P Q))
   simpa [A, B] using h.1
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Strong accessor for cancelable invariants.
 Coq: `cinv_acc_strong`. -/
 theorem cinv_acc_strong (W : WsatGS GF) (E : Iris.Set Positive) (N : Namespace)
@@ -966,7 +957,7 @@ theorem cinv_acc_strong (W : WsatGS GF) (E : Iris.Set Positive) (N : Namespace)
   · iexact Hacc
   · iexact Hown
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Open a cancelable invariant with a fractional token.
 Coq: `cinv_acc`. -/
 theorem cinv_acc (W : WsatGS GF) (E : Iris.Set Positive) (N : Namespace)
@@ -1122,7 +1113,7 @@ theorem cinv_acc (W : WsatGS GF) (E : Iris.Set Positive) (N : Namespace)
   · iexact Hown
   -- done: `fupd_mono` applied directly to the framed access
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- This is the `cinv_acc` accessor specialized to the full token.
 Coq: `cinv_acc_1` (non-atomic) — we use the atomic accessor in this model. -/
 theorem cinv_acc_1 (W : WsatGS GF) (E : Iris.Set Positive) (N : Namespace)
@@ -1140,7 +1131,7 @@ theorem cinv_acc_1 (W : WsatGS GF) (E : Iris.Set Positive) (N : Namespace)
     (cinv_acc (W := W) (M := M) (F := F)
       (E := E) (N := N) (γ := γ) (p := (1 : F)) (P := P) hN)
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Cancel an invariant: open with the full token (atomic accessor).
 
 This is a weakened version of Coq's `cinv_cancel`, since we only have the
@@ -1162,7 +1153,7 @@ theorem cinv_cancel (W : WsatGS GF) (E : Iris.Set Positive) (N : Namespace)
 
 /-! ## Proof Mode Integration -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- `cinv` can be opened by `iInv`. -/
 instance into_inv_cinv {W : WsatGS GF} (N : Namespace) (γ : GName) (P : IProp GF) :
     Iris.ProofMode.IntoInv (PROP := IProp GF)
@@ -1170,7 +1161,7 @@ instance into_inv_cinv {W : WsatGS GF} (N : Namespace) (γ : GName) (P : IProp G
   -- marker instance carries only the namespace
   exact ⟨⟩
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
+omit [FiniteMapLaws Positive M] in
 /-- Accessor instance for cancelable invariants. -/
 instance into_acc_cinv {W : WsatGS GF}
     (E : Iris.Set Positive) (N : Namespace) (γ : GName) (P : IProp GF) (p : F) :

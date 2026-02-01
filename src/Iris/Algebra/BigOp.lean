@@ -26,17 +26,19 @@ def bigOpL {M : Type u} {A : Type v} (op : M → M → M) (unit : M)
 
 namespace BigOpL
 
-variable {M : Type _} {A : Type _} [OFE M] {op : M → M → M} {unit : M} [Monoid M op unit]
+variable {M : Type _} {A : Type _} {op : M → M → M} {unit : M}
 
-omit [OFE M] [Monoid M op unit] in
 /-- Corresponds to Rocq's `big_opL_nil`. -/
 @[simp] theorem nil (Φ : Nat → A → M) :
     bigOpL op unit Φ ([] : List A) = unit := rfl
 
-omit [OFE M] [Monoid M op unit] in
 /-- Corresponds to Rocq's `big_opL_cons`. -/
 @[simp] theorem cons (Φ : Nat → A → M) (x : A) (xs : List A) :
     bigOpL op unit Φ (x :: xs) = op (Φ 0 x) (bigOpL op unit (fun n => Φ (n + 1)) xs) := rfl
+
+section
+
+variable [OFE M] [Monoid M op unit]
 
 /-- Corresponds to Rocq's `big_opL_singleton`. -/
 @[simp] theorem singleton (Φ : Nat → A → M) (x : A) :
@@ -102,7 +104,7 @@ theorem append (Φ : Nat → A → M) (l₁ l₂ : List A) :
 /-- Corresponds to Rocq's `big_opL_snoc`. -/
 theorem snoc (Φ : Nat → A → M) (l : List A) (x : A) :
     bigOpL op unit Φ (l ++ [x]) ≡ op (bigOpL op unit Φ l) (Φ l.length x) := by
-  have h := @append M A _ op unit _ Φ l [x]
+  have h := append (M := M) (A := A) (op := op) (unit := unit) (Φ := Φ) l [x]
   simp only [cons, nil, Nat.zero_add] at h
   have hr : op (Φ l.length x) unit ≡ Φ l.length x := Monoid.op_right_id (Φ l.length x)
   exact Monoid.op_congr_r hr |> Equiv.trans h
@@ -133,21 +135,6 @@ theorem map {B : Type v} (h : A → B) (Φ : Nat → B → M) (l : List A) :
     simp only [List.map_cons, cons]
     exact Monoid.op_proper Equiv.rfl (ih (fun n => Φ (n + 1)))
 
-omit [OFE M] [Monoid M op unit] in
-/-- Corresponds to Rocq's `big_opL_closed`. -/
-theorem closed (P : M → Prop) (Φ : Nat → A → M) (l : List A)
-    (hunit : P unit)
-    (hop : ∀ x y, P x → P y → P (op x y))
-    (hf : ∀ i x, l[i]? = some x → P (Φ i x)) :
-    P (bigOpL op unit Φ l) := by
-  induction l generalizing Φ with
-  | nil => exact hunit
-  | cons y ys ih =>
-    simp only [cons]
-    have h0 : P (Φ 0 y) := hf 0 y rfl
-    have htail : ∀ i x, ys[i]? = some x → P (Φ (i + 1) x) := fun i x hget => hf (i + 1) x hget
-    exact hop _ _ h0 (ih _ htail)
-
 /-- Corresponds to Rocq's `big_opL_permutation`. -/
 theorem perm (Φ : A → M) {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
     bigOpL op unit (fun _ => Φ) l₁ ≡ bigOpL op unit (fun _ => Φ) l₂ := by
@@ -162,7 +149,8 @@ theorem take_drop (Φ : Nat → A → M) (l : List A) (n : Nat) :
     bigOpL op unit Φ l ≡
       op (bigOpL op unit Φ (l.take n)) (bigOpL op unit (fun k => Φ (n + k)) (l.drop n)) := by
   by_cases hn : n ≤ l.length
-  · have h := @append M A _ op unit _ Φ (l.take n) (l.drop n)
+  · have h := append (M := M) (A := A) (op := op) (unit := unit) (Φ := Φ)
+      (l.take n) (l.drop n)
     simp only [List.take_append_drop, List.length_take_of_le hn, Nat.add_comm] at h
     exact h
   · simp only [Nat.not_le] at hn
@@ -191,7 +179,22 @@ theorem bind {B : Type v} (h : A → List B) (Φ : B → M) (l : List A) :
     simp only [List.flatMap_cons, cons]
     exact Equiv.trans (append _ _ _) (Monoid.op_congr_r ih)
 
-omit [OFE M] [Monoid M op unit] in
+end
+
+/-- Corresponds to Rocq's `big_opL_closed`. -/
+theorem closed (P : M → Prop) (Φ : Nat → A → M) (l : List A)
+    (hunit : P unit)
+    (hop : ∀ x y, P x → P y → P (op x y))
+    (hf : ∀ i x, l[i]? = some x → P (Φ i x)) :
+    P (bigOpL op unit Φ l) := by
+  induction l generalizing Φ with
+  | nil => exact hunit
+  | cons y ys ih =>
+    simp only [cons]
+    have h0 : P (Φ 0 y) := hf 0 y rfl
+    have htail : ∀ i x, ys[i]? = some x → P (Φ (i + 1) x) := fun i x hget => hf (i + 1) x hget
+    exact hop _ _ h0 (ih _ htail)
+
 /-- Corresponds to Rocq's `big_opL_gen_proper_2`. -/
 theorem gen_proper_2 {B : Type v} (R : M → M → Prop)
     (Φ : Nat → A → M) (Ψ : Nat → B → M) (l₁ : List A) (l₂ : List B)
@@ -216,7 +219,6 @@ theorem gen_proper_2 {B : Type v} (R : M → M → Prop)
           R (Φ (i + 1) a) (Ψ (i + 1) b) := fun i a b ha hb => hf (i + 1) a b ha hb
       exact hop _ _ _ _ h0 (ih (fun n => Φ (n + 1)) (fun n => Ψ (n + 1)) ys hlen htail)
 
-omit [OFE M] [Monoid M op unit] in
 /-- Corresponds to Rocq's `big_opL_gen_proper`. -/
 theorem gen_proper (R : M → M → Prop)
     (Φ Ψ : Nat → A → M) (l : List A)
@@ -239,7 +241,6 @@ theorem gen_proper (R : M → M → Prop)
       rw [hxz, hyz]
       exact hf k z hget
 
-omit [OFE M] [Monoid M op unit] in
 /-- Corresponds to Rocq's `big_opL_ext`. -/
 theorem ext {Φ Ψ : Nat → A → M} {l : List A}
     (h : ∀ i x, l[i]? = some x → Φ i x = Ψ i x) :
@@ -251,7 +252,6 @@ theorem ext {Φ Ψ : Nat → A → M} {l : List A}
       rw [ha, hb]
     · apply h
 
-omit [OFE M] [Monoid M op unit] in
 /-- Corresponds to Rocq's `big_opL_consZ_l`. -/
 theorem cons_int_l (Φ : Int → A → M) (x : A) (l : List A) :
     bigOpL op unit (fun k => Φ k) (x :: l) =
@@ -263,13 +263,16 @@ theorem cons_int_l (Φ : Int → A → M) (x : A) (l : List A) :
   congr 1
   omega
 
-omit [OFE M] [Monoid M op unit] in
 /-- Corresponds to Rocq's `big_opL_consZ_r`. -/
 theorem cons_int_r (Φ : Int → A → M) (x : A) (l : List A) :
     bigOpL op unit (fun k => Φ k) (x :: l) =
     op (Φ 0 x) (bigOpL op unit (fun k y => Φ ((k : Int) + 1) y) l) := by
   simp only [cons]
   rfl
+
+section
+
+variable [OFE M] [Monoid M op unit]
 
 /-- Corresponds to Rocq's `big_opL_proper_2`. -/
 theorem proper_2 [OFE A] (Φ Ψ : Nat → A → M) (l₁ l₂ : List A)
@@ -421,28 +424,85 @@ theorem commute_weak {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
       have hih := ih (fun n => Φ (n + 1)) (List.cons_ne_nil y ys)
       exact hom.rel_trans hhom (hom.op_proper (hom.rel_refl _) hih)
 
+end
+
 end BigOpL
 
 namespace BigOpM
 
 open Iris.Std
 
-variable {M : Type u} [OFE M] {op : M → M → M} {unit : M} [Monoid M op unit]
+variable {M : Type u} {op : M → M → M} {unit : M}
 variable {M' : Type _ → Type _} {K : Type _} {V : Type _}
-variable [DecidableEq K] [DecidableEq V] [FiniteMap K M'] [FiniteMapLaws K M']
+
+section
+variable [FiniteMap K M']
 
 /-- Corresponds to Rocq's `big_opM`. -/
 def bigOpM (Φ : K → V → M) (m : M' V) : M :=
   bigOpL op unit (fun _ kv => Φ kv.1 kv.2) (FiniteMap.toList m)
 
-omit [OFE M] [Monoid M op unit] [DecidableEq V] in
+end
+
+section
+variable [OFE M] [FiniteMap K M']
+
+/-- Corresponds to Rocq's `big_opM_map_to_list`. -/
+theorem to_list (Φ : K → V → M) (m : M' V) :
+    bigOpM (op := op) (unit := unit) Φ m ≡
+    bigOpL op unit (fun _ kx => Φ kx.1 kx.2) (FiniteMap.toList m) := by
+  simp only [bigOpM]
+  rfl
+
+end
+
+section
+variable [FiniteMap K M'] [OFE M] [Monoid M op unit]
+
+/-- Corresponds to Rocq's `big_opM_op`. -/
+theorem op_distr (Φ Ψ : K → V → M) (m : M' V) :
+    bigOpM (op := op) (unit := unit) (fun k x => op (Φ k x) (Ψ k x)) m ≡
+    op (bigOpM (op := op) (unit := unit) Φ m) (bigOpM (op := op) (unit := unit) Ψ m) := by
+  simp only [bigOpM]
+  have h := BigOpL.op_distr (op := op) (unit := unit)
+    (fun _ kv => Φ kv.1 kv.2) (fun _ kv => Ψ kv.1 kv.2) (FiniteMap.toList m)
+  exact h
+
+end
+
+section
+variable [OFE M] [Monoid M op unit]
+
+private theorem filter_list_aux (Φ : K × V → M) (φ : K → V → Bool) (l : List (K × V)) :
+    bigOpL op unit (fun _ kv => Φ kv) (l.filter (fun kv => φ kv.1 kv.2)) ≡
+    bigOpL op unit (fun _ kv => if φ kv.1 kv.2 then Φ kv else unit) l := by
+  induction l with
+  | nil => simp only [List.filter, BigOpL.nil]; exact Equiv.rfl
+  | cons kv kvs ih =>
+    simp only [List.filter]
+    cases hp : φ kv.1 kv.2 with
+    | false =>
+      simp only [BigOpL.cons, hp]
+      exact Equiv.trans ih (Equiv.symm (Monoid.op_left_id _))
+    | true =>
+      simp only [BigOpL.cons, hp]
+      exact Monoid.op_congr_r ih
+
+end
+
+section
+variable [DecidableEq K] [FiniteMap K M'] [FiniteMapLaws K M']
+
 /-- Corresponds to Rocq's `big_opM_empty`. -/
 @[simp] theorem empty (Φ : K → V → M) :
     bigOpM (op := op) (unit := unit) Φ (∅ : M' V) = unit := by
   simp only [bigOpM, FiniteMapLaws.toList_empty, BigOpL.nil]
 
+section
+variable [OFE M] [Monoid M op unit]
+
 /-- Corresponds to Rocq's `big_opM_insert`. -/
-theorem insert (Φ : K → V → M) (m : M' V) (i : K) (x : V) :
+theorem insert [DecidableEq V] (Φ : K → V → M) (m : M' V) (i : K) (x : V) :
     FiniteMap.get? m i = none →
     bigOpM (op := op) (unit := unit) Φ (FiniteMap.insert m i x) ≡
       op (Φ i x) (bigOpM (op := op) (unit := unit) Φ m) := by
@@ -456,7 +516,7 @@ theorem insert (Φ : K → V → M) (m : M' V) (i : K) (x : V) :
   exact heq
 
 /-- Corresponds to Rocq's `big_opM_delete`. -/
-theorem delete (Φ : K → V → M) (m : M' V) (i : K) (x : V) :
+theorem delete [DecidableEq V] (Φ : K → V → M) (m : M' V) (i : K) (x : V) :
     FiniteMap.get? m i = some x →
     bigOpM (op := op) (unit := unit) Φ m ≡
       op (Φ i x) (bigOpM (op := op) (unit := unit) Φ (FiniteMap.delete m i)) := by
@@ -523,7 +583,8 @@ theorem gen_proper_2 {B : Type w} [DecidableEq B] (R : M → M → Prop)
       exact hR_equiv.trans (hR_sub _ _ (insert Φ' m1' k x1 hm1'k))
         (hR_equiv.trans (hR_op _ _ _ _ hfg_k h_IH) (hR_sub _ _ (Equiv.symm (delete Ψ' m2' k x2 hm2k))))
 
-omit [Monoid M op unit] [DecidableEq V] in
+end
+
 /-- Corresponds to Rocq's `big_opM_gen_proper`. -/
 theorem gen_proper {M : Type u} {op : M → M → M} {unit : M} (R : M → M → Prop)
     (Φ Ψ : K → V → M) (m : M' V)
@@ -545,7 +606,6 @@ theorem gen_proper {M : Type u} {op : M → M → M} {unit : M} (R : M → M →
     have := FiniteMapLaws.mem_toList m x.1 x.2 |>.mp this
     exact hf x.1 x.2 this
 
-omit [DecidableEq V] in
 /-- Corresponds to Rocq's `big_opM_ext`. -/
 theorem ext {M : Type u} (op : M → M → M) (unit : M) (Φ Ψ : K → V → M) (m : M' V)
     (hf : ∀ k x, FiniteMap.get? m k = some x → Φ k x = Ψ k x) :
@@ -555,7 +615,9 @@ theorem ext {M : Type u} (op : M → M → M) (unit : M) (Φ Ψ : K → V → M)
   · intros _ _ _ _ ha hb; rw [ha, hb]
   · exact hf
 
-omit [DecidableEq V] in
+section
+variable [OFE M] [Monoid M op unit]
+
 /-- Corresponds to Rocq's `big_opM_ne`. -/
 theorem ne (Φ Ψ : K → V → M) (m : M' V) (n : Nat)
     (hf : ∀ k x, FiniteMap.get? m k = some x → Φ k x ≡{n}≡ Ψ k x) :
@@ -565,7 +627,6 @@ theorem ne (Φ Ψ : K → V → M) (m : M' V) (n : Nat)
   · intros a a' b b' ha hb; exact Monoid.op_ne_dist ha hb
   · exact hf
 
-omit [DecidableEq V] in
 /-- Corresponds to Rocq's `big_opM_proper`. -/
 theorem proper (Φ Ψ : K → V → M) (m : M' V)
     (hf : ∀ k x, FiniteMap.get? m k = some x → Φ k x ≡ Ψ k x) :
@@ -575,9 +636,8 @@ theorem proper (Φ Ψ : K → V → M) (m : M' V)
   · intros a a' b b' ha hb; exact Monoid.op_proper ha hb
   · exact hf
 
-omit [DecidableEq V] in
 /-- Corresponds to Rocq's `big_opM_proper_2`. -/
-theorem proper_2 [OFE A] (Φ : K → A → M) (Ψ : K → A → M) (m1 m2 : M' A)
+theorem proper_2 [OFE A] [DecidableEq A] (Φ : K → A → M) (Ψ : K → A → M) (m1 m2 : M' A)
     (hm : ∀ k, FiniteMap.get? m1 k = FiniteMap.get? m2 k)
     (hf : ∀ k y1 y2,
       FiniteMap.get? m1 k = some y1 →
@@ -605,7 +665,6 @@ theorem proper_2 [OFE A] (Φ : K → A → M) (Ψ : K → A → M) (m1 m2 : M' A
         cases hlk
         exact hf k y1 y1 hm1k hm2k Equiv.rfl
 
-omit [DecidableEq V] in
 /-- Corresponds to Rocq's `big_opM_ne'` instance. -/
 theorem ne_pointwise (Φ Ψ : K → V → M) (m : M' V) (n : Nat)
     (hf : ∀ k x, Φ k x ≡{n}≡ Ψ k x) :
@@ -614,7 +673,6 @@ theorem ne_pointwise (Φ Ψ : K → V → M) (m : M' V) (n : Nat)
   intros k x _
   exact hf k x
 
-omit [DecidableEq V] in
 /-- Corresponds to Rocq's `big_opM_proper'` instance. -/
 theorem proper_pointwise (Φ Ψ : K → V → M) (m : M' V)
     (hf : ∀ k x, Φ k x ≡ Ψ k x) :
@@ -623,16 +681,8 @@ theorem proper_pointwise (Φ Ψ : K → V → M) (m : M' V)
   intros k x _
   exact hf k x
 
-omit [Monoid M op unit] [DecidableEq K] [DecidableEq V] [FiniteMapLaws K M'] in
-/-- Corresponds to Rocq's `big_opM_map_to_list`. -/
-theorem to_list (Φ : K → V → M) (m : M' V) :
-    bigOpM (op := op) (unit := unit) Φ m ≡
-    bigOpL op unit (fun _ kx => Φ kx.1 kx.2) (FiniteMap.toList m) := by
-  simp only [bigOpM]
-  rfl
-
 /-- Corresponds to Rocq's `big_opM_list_to_map`. -/
-theorem of_list (Φ : K → V → M) (l : List (K × V))
+theorem of_list [DecidableEq V] (Φ : K → V → M) (l : List (K × V))
     (hnodup : (l.map Prod.fst).Nodup) :
     bigOpM (op := op) (unit := unit) Φ (FiniteMap.ofList l : M' V) ≡
     bigOpL op unit (fun _ kx => Φ kx.1 kx.2) l := by
@@ -642,7 +692,7 @@ theorem of_list (Φ : K → V → M) (l : List (K × V))
   exact FiniteMapLaws.toList_ofList l hnodup
 
 /-- Corresponds to Rocq's `big_opM_singleton`. -/
-theorem singleton (Φ : K → V → M) (i : K) (x : V) :
+theorem singleton [DecidableEq V] (Φ : K → V → M) (i : K) (x : V) :
     bigOpM (op := op) (unit := unit) Φ (FiniteMap.singleton (M := M') i x) ≡ Φ i x := by
   have : FiniteMap.get? (∅ : M' V) i = none := FiniteMapLaws.get?_empty i
   have := insert (op := op) (unit := unit) Φ (∅ : M' V) i x this
@@ -650,7 +700,7 @@ theorem singleton (Φ : K → V → M) (i : K) (x : V) :
   exact Equiv.trans this (Monoid.op_right_id (Φ i x))
 
 /-- Corresponds to Rocq's `big_opM_unit`. -/
-theorem unit_const (m : M' V) :
+theorem unit_const [DecidableEq V] (m : M' V) :
     bigOpM (op := op) (unit := unit) (fun _ _ => unit) m ≡ unit := by
   refine FiniteMapLaws.induction_on
     (P := fun (m' : M' V) => bigOpM (op := op) (unit := unit) (fun _ _ => unit) m' ≡ unit)
@@ -664,7 +714,6 @@ theorem unit_const (m : M' V) :
     have h_ins := insert (op := op) (unit := unit) (fun _ _ => unit) m' i x hm'
     exact Equiv.trans h_ins (Equiv.trans (Monoid.op_proper Equiv.rfl IH) (Monoid.op_left_id unit))
 
-omit [DecidableEq V] in
 /-- Corresponds to Rocq's `big_opM_fmap`. -/
 theorem map {B : Type w} [DecidableEq B] (h : V → B) (Φ : K → B → M) (m : M' V) :
     bigOpM (op := op) (unit := unit) Φ (FiniteMap.map h m) ≡
@@ -677,7 +726,6 @@ theorem map {B : Type w} [DecidableEq B] (h : V → B) (Φ : K → B → M) (m :
   apply Equiv.trans h1
   exact BigOpL.map (op := op) (unit := unit) (fun kv => (kv.1, h kv.2)) (fun _ kv => Φ kv.1 kv.2) (FiniteMap.toList m)
 
-omit [DecidableEq V] in
 /-- Corresponds to Rocq's `big_opM_omap`. -/
 theorem filter_map [FiniteMapLawsSelf K M'] (h : V → Option V) (Φ : K → V → M) (m : M' V) :
     bigOpM (op := op) (unit := unit) Φ (FiniteMap.filterMap h m) ≡
@@ -705,14 +753,14 @@ theorem filter_map [FiniteMapLawsSelf K M'] (h : V → Option V) (Φ : K → V �
   cases hkv : h kv.2 <;> simp [Option.elim, Option.map]
 
 /-- Corresponds to Rocq's `big_opM_insert_delete`. -/
-theorem insert_delete (Φ : K → V → M) (m : M' V) (i : K) (x : V) :
+theorem insert_delete [DecidableEq V] (Φ : K → V → M) (m : M' V) (i : K) (x : V) :
     bigOpM (op := op) (unit := unit) Φ (FiniteMap.insert m i x) ≡
       op (Φ i x) (bigOpM (op := op) (unit := unit) Φ (FiniteMap.delete m i)) := by
   rw [← FiniteMapLaws.insert_delete m i x]
   exact insert Φ (FiniteMap.delete m i) i x (FiniteMapLaws.get?_delete_same m i)
 
 /-- Corresponds to Rocq's `big_opM_insert_override`. -/
-theorem insert_override (Φ : K → A → M) (m : M' A) (i : K) (x x' : A) :
+theorem insert_override [DecidableEq A] (Φ : K → A → M) (m : M' A) (i : K) (x x' : A) :
     FiniteMap.get? m i = some x → Φ i x ≡ Φ i x' →
     bigOpM (op := op) (unit := unit) Φ (FiniteMap.insert m i x') ≡
       bigOpM (op := op) (unit := unit) Φ m := by
@@ -723,7 +771,7 @@ theorem insert_override (Φ : K → A → M) (m : M' A) (i : K) (x x' : A) :
   exact Equiv.symm (delete Φ m i x hi)
 
 /-- Corresponds to Rocq's `big_opM_fn_insert`. -/
-theorem fn_insert {B : Type w} [DecidableEq B] (g : K → V → B → M) (f : K → B) (m : M' V)
+theorem fn_insert [DecidableEq V] {B : Type w} [DecidableEq B] (g : K → V → B → M) (f : K → B) (m : M' V)
     (i : K) (x : V) (b : B) (hi : FiniteMap.get? m i = none) :
     bigOpM (op := op) (unit := unit) (fun k y => g k y (if k = i then b else f k))
       (FiniteMap.insert m i x) ≡
@@ -738,7 +786,7 @@ theorem fn_insert {B : Type w} [DecidableEq B] (g : K → V → B → M) (f : K 
     simp [hne]
 
 /-- Corresponds to Rocq's `big_opM_fn_insert'`. -/
-theorem fn_insert' (f : K → M) (m : M' V) (i : K) (x : V) (P : M)
+theorem fn_insert' [DecidableEq V] (f : K → M) (m : M' V) (i : K) (x : V) (P : M)
     (hi : FiniteMap.get? m i = none) :
     bigOpM (op := op) (unit := unit) (fun k _ => if k = i then P else f k)
       (FiniteMap.insert m i x) ≡
@@ -753,23 +801,6 @@ theorem fn_insert' (f : K → M) (m : M' V) (i : K) (x : V) (P : M)
     simp [hne]
 
 
-omit [DecidableEq K] [DecidableEq V] in
-private theorem filter_list_aux (Φ : K × V → M) (φ : K → V → Bool) (l : List (K × V)) :
-    bigOpL op unit (fun _ kv => Φ kv) (l.filter (fun kv => φ kv.1 kv.2)) ≡
-    bigOpL op unit (fun _ kv => if φ kv.1 kv.2 then Φ kv else unit) l := by
-  induction l with
-  | nil => simp only [List.filter, BigOpL.nil]; exact Equiv.rfl
-  | cons kv kvs ih =>
-    simp only [List.filter]
-    cases hp : φ kv.1 kv.2 with
-    | false =>
-      simp only [BigOpL.cons, hp]
-      exact Equiv.trans ih (Equiv.symm (Monoid.op_left_id _))
-    | true =>
-      simp only [BigOpL.cons, hp]
-      exact Monoid.op_congr_r ih
-
-omit [DecidableEq V] in
 /-- Corresponds to Rocq's `big_opM_filter'`. -/
 theorem filter' [FiniteMapLawsSelf K M'] (φ : K → V → Bool) (Φ : K → V → M) (m : M' V) :
     bigOpM (op := op) (unit := unit) Φ (FiniteMap.filter φ m) ≡
@@ -785,7 +816,7 @@ theorem filter' [FiniteMapLawsSelf K M'] (φ : K → V → Bool) (Φ : K → V �
   exact filter_list_aux (fun kv => Φ kv.1 kv.2) φ (FiniteMap.toList m)
 
 /-- Corresponds to Rocq's `big_opM_union`. -/
-theorem union (Φ : K → V → M) (m1 m2 : M' V) (hdisj : m1 ##ₘ m2) :
+theorem union [DecidableEq V] (Φ : K → V → M) (m1 m2 : M' V) (hdisj : m1 ##ₘ m2) :
     bigOpM (op := op) (unit := unit) Φ (m1 ∪ m2) ≡
     op (bigOpM (op := op) (unit := unit) Φ m1) (bigOpM (op := op) (unit := unit) Φ m2) := by
   apply FiniteMapLaws.induction_on (P := fun m1 =>
@@ -806,17 +837,7 @@ theorem union (Φ : K → V → M) (m1 m2 : M' V) (hdisj : m1 ##ₘ m2) :
     exact Monoid.op_congr_l (insert Φ m i x hi_none).symm
   · exact hdisj
 
-omit [DecidableEq V] [DecidableEq K] [FiniteMapLaws K M'] in
-/-- Corresponds to Rocq's `big_opM_op`. -/
-theorem op_distr (Φ Ψ : K → V → M) (m : M' V) :
-    bigOpM (op := op) (unit := unit) (fun k x => op (Φ k x) (Ψ k x)) m ≡
-    op (bigOpM (op := op) (unit := unit) Φ m) (bigOpM (op := op) (unit := unit) Ψ m) := by
-  simp only [bigOpM]
-  have h := BigOpL.op_distr (op := op) (unit := unit)
-    (fun _ kv => Φ kv.1 kv.2) (fun _ kv => Ψ kv.1 kv.2) (FiniteMap.toList m)
-  exact h
-
-private theorem closed_aux (P : M → Prop) (Φ : K → V → M)
+private theorem closed_aux [DecidableEq V] (P : M → Prop) (Φ : K → V → M)
     (hproper : ∀ x y, x ≡ y → (P x ↔ P y))
     (hunit : P unit)
     (hop : ∀ x y, P x → P y → P (op x y)) :
@@ -849,7 +870,7 @@ private theorem closed_aux (P : M → Prop) (Φ : K → V → M)
         exact Option.noConfusion hm''
 
 /-- Corresponds to Rocq's `big_opM_closed`. -/
-theorem closed (P : M → Prop) (Φ : K → V → M) (m : M' V)
+theorem closed [DecidableEq V] (P : M → Prop) (Φ : K → V → M) (m : M' V)
     (hproper : ∀ x y, x ≡ y → (P x ↔ P y))
     (hunit : P unit)
     (hop : ∀ x y, P x → P y → P (op x y))
@@ -857,7 +878,6 @@ theorem closed (P : M → Prop) (Φ : K → V → M) (m : M' V)
     P (bigOpM (op := op) (unit := unit) Φ m) :=
   closed_aux P Φ hproper hunit hop m hf
 
-omit [DecidableEq V] in
 /-- Corresponds to Rocq's `big_opM_kmap`. -/
 theorem kmap {M'' : Type _ → Type _} {K' : Type _} [DecidableEq K'] [FiniteMap K' M'']
     [FiniteMapLaws K' M''] [FiniteMapKmapLaws K K' M' M'']
@@ -872,7 +892,6 @@ theorem kmap {M'' : Type _ → Type _} {K' : Type _} [DecidableEq K'] [FiniteMap
   apply Equiv.trans h1
   exact BigOpL.map (op := op) (unit := unit) (fun kv => (h kv.1, kv.2)) (fun _ kv => Φ kv.1 kv.2) (FiniteMap.toList m)
 
-omit [DecidableEq V] in
 /-- Corresponds to Rocq's `big_opM_map_seq`. -/
 theorem map_seq {M'' : Type w → Type _} [FiniteMap Nat M''] [FiniteMapLaws Nat M'']
     [FiniteMapSeqLaws M'']
@@ -925,6 +944,10 @@ theorem sep_zip {A : Type _} {B : Type _}
   simp only [FiniteMap.zip]
   exact sep_zip_with (op := op) (unit := unit) Prod.mk Prod.fst Prod.snd h1 h2 m1 m2
     (fun _ _ => rfl) (fun _ _ => rfl) hdom
+
+end
+
+end
 
 end BigOpM
 

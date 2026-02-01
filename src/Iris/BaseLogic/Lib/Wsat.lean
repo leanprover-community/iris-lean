@@ -81,8 +81,7 @@ structure WsatGS (GF : BundledGFunctors) where
 
 variable {GF : BundledGFunctors} {M : Type _ → Type _} {F : Type _}
 variable [UFraction F]
-variable [FiniteMap Positive M] [DecidableEq Positive]
-variable [FiniteMapLaws Positive M]
+variable [FiniteMap Positive M] variable [FiniteMapLaws Positive M]
 variable [HeapFiniteMap Positive M]
 variable [ElemG GF (COFE.constOF CoPsetDisj)]
 variable [ElemG GF (COFE.constOF GSetDisj)]
@@ -228,7 +227,7 @@ instance fromExists_wsat (W : WsatGS GF) :
 
 /-! ## Enabled Mask Properties -/
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF GSetDisj)] in
+omit [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Allocate an empty enabled mask. -/
 theorem ownE_empty : (BIBase.emp : IProp GF) ⊢ BUpd.bupd (ownE W ∅) := by
   -- `CoPsetDisj.coPset ∅` is definitionally the unit
@@ -237,7 +236,7 @@ theorem ownE_empty : (BIBase.emp : IProp GF) ⊢ BUpd.bupd (ownE W ∅) := by
   simpa [ownE] using
     (iOwn_unit (GF := GF) (F := COFE.constOF CoPsetDisj) (γ := W.enabled_name))
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF GSetDisj)] in
+omit [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Disjoint union of enabled masks splits into separating conjunction. -/
 theorem ownE_op (E₁ E₂ : CoPset) (h : E₁.Disjoint E₂) :
     ownE W (E₁.union E₂) ⊣⊢ BIBase.sep (ownE W E₁) (ownE W E₂) := by
@@ -249,7 +248,7 @@ theorem ownE_op (E₁ E₂ : CoPset) (h : E₁.Disjoint E₂) :
     (iOwn_op (GF := GF) (F := COFE.constOF CoPsetDisj) (γ := W.enabled_name)
       (a1 := CoPsetDisj.coPset E₁) (a2 := CoPsetDisj.coPset E₂))
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF GSetDisj)] in
+omit [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Enabled masks in separating conjunction must be disjoint. -/
 theorem ownE_disjoint (E₁ E₂ : CoPset) :
     BIBase.sep (ownE W E₁) (ownE W E₂) ⊢
@@ -266,7 +265,7 @@ theorem ownE_disjoint (E₁ E₂ : CoPset) :
     CMRA.discrete_valid hvalid0
   exact (coPset_disj_valid_op).1 hvalid
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF GSetDisj)] in
+omit [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Cannot own the same singleton enabled token twice. -/
 theorem ownE_singleton_twice (i : Positive) :
     BIBase.sep (ownE W (CoPset.singleton i)) (ownE W (CoPset.singleton i)) ⊢
@@ -281,7 +280,7 @@ theorem ownE_singleton_twice (i : Positive) :
 
 /-! ## Disabled Token Properties -/
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)] in
+omit [ElemG GF (COFE.constOF CoPsetDisj)] in
 /-- Allocate empty disabled tokens. -/
 theorem ownD_empty : (BIBase.emp : IProp GF) ⊢ BUpd.bupd (ownD W ∅) := by
   -- allocate the unit for the `GSetDisj` ghost cell
@@ -290,12 +289,12 @@ theorem ownD_empty : (BIBase.emp : IProp GF) ⊢ BUpd.bupd (ownD W ∅) := by
   simpa [ownD] using
     (iOwn_unit (GF := GF) (F := COFE.constOF GSetDisj) (γ := W.disabled_name))
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)] in
+omit [ElemG GF (COFE.constOF CoPsetDisj)] in
 private theorem ownD_emptyE :
     IPropEntails (GF := GF) (BIBase.emp : IProp GF) (BUpd.bupd (ownD W ∅)) := by
   exact ⟨ownD_empty (W := W)⟩
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)] in
+omit [ElemG GF (COFE.constOF CoPsetDisj)] in
 /-- Disjoint union of disabled tokens splits into separating conjunction. -/
 theorem ownD_op (E₁ E₂ : GSet) (h : E₁.Disjoint E₂) :
     ownD W (E₁.union E₂) ⊣⊢ BIBase.sep (ownD W E₁) (ownD W E₂) := by
@@ -307,7 +306,7 @@ theorem ownD_op (E₁ E₂ : GSet) (h : E₁.Disjoint E₂) :
     (iOwn_op (GF := GF) (F := COFE.constOF GSetDisj) (γ := W.disabled_name)
       (a1 := GSetDisj.gset E₁) (a2 := GSetDisj.gset E₂))
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)] in
+omit [ElemG GF (COFE.constOF CoPsetDisj)] in
 /-- Disabled tokens in separating conjunction must be disjoint. -/
 theorem ownD_disjoint (E₁ E₂ : GSet) :
     BIBase.sep (ownD W E₁) (ownD W E₂) ⊢
@@ -324,7 +323,7 @@ theorem ownD_disjoint (E₁ E₂ : GSet) :
     CMRA.discrete_valid hvalid0
   exact (gset_disj_valid_op).1 hvalid
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)] in
+omit [ElemG GF (COFE.constOF CoPsetDisj)] in
 /-- Cannot own the same singleton disabled token twice. -/
 theorem ownD_singleton_twice (i : Positive) :
     BIBase.sep (ownD W (GSet.singleton i)) (ownD W (GSet.singleton i)) ⊢
@@ -339,7 +338,7 @@ theorem ownD_singleton_twice (i : Positive) :
 
 /-! ## Invariant Properties -/
 
-omit [DecidableEq Positive] [FiniteMapLaws Positive M]
+omit [FiniteMapLaws Positive M]
     [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
 /-- `ownI` is persistent. -/
 theorem ownI_persistent (i : Positive) (P : IProp GF) :
@@ -501,7 +500,7 @@ private theorem invariant_lookupE (I : M (IPropU GF)) (i : Positive) (P : IProp 
 
 /-! ## Later Equality Helpers -/
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
     [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem later_eq_symm (P Q : IProp GF) :
     BIBase.later (IPropEq (GF := GF) Q P) ⊢ BIBase.later (IPropEq (GF := GF) P Q) := by
@@ -513,7 +512,7 @@ private theorem later_eq_symm (P Q : IProp GF) :
   | succ n' =>
       simpa [BIBase.later, UPred.later, IPropEq, UPred.eq] using hEq.symm
 
-omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)]
+omit [ElemG GF (COFE.constOF CoPsetDisj)]
     [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem later_eq_elim (P Q : IProp GF) :
     BIBase.sep (BIBase.later P) (BIBase.later (IPropEq (GF := GF) P Q)) ⊢ BIBase.later Q := by
@@ -540,7 +539,6 @@ private theorem later_eq_elim (P Q : IProp GF) :
 
 /-! ## GSet Disjoint Allocation Helper -/
 
-omit [DecidableEq Positive] in
 private theorem gset_disj_alloc_empty_updateP_strong' (P : Positive → Prop)
     (Hfresh : ∀ E : GSet, ∃ i, ¬E.mem i ∧ P i) :
     (GSetDisj.gset (∅ : GSet) : GSetDisj) ~~>:

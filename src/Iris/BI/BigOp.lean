@@ -119,6 +119,26 @@ theorem big_sepL_mono {A : Type _} {Φ Ψ : Nat → A → PROP} {l : List A}
     -- unfold the head and apply `sep_mono`
     simpa [big_sepL_cons] using sep_mono hhead ht
 
+/-- Non-expansiveness of `big_sepL` in its predicate.
+Coq: `big_sepL_ne` in `bi/big_op.v`. -/
+theorem big_sepL_ne {A : Type _} {Φ Ψ : Nat → A → PROP} {l : List A}
+    (h : ∀ i x, l[i]? = some x → Φ i x ≡{n}≡ Ψ i x) :
+    big_sepL Φ l ≡{n}≡ big_sepL Ψ l := by
+  -- induct on the list and use `sep_ne` at each step
+  induction l generalizing Φ Ψ with
+  | nil =>
+      -- both sides are `emp`
+      simp [big_sepL_nil]
+  | cons x xs ih =>
+      have hhead : Φ 0 x ≡{n}≡ Ψ 0 x := h 0 x rfl
+      have htail : ∀ i y, xs[i]? = some y → Φ (i + 1) y ≡{n}≡ Ψ (i + 1) y := by
+        -- shift indices for the tail
+        intro i y hget
+        exact h (i + 1) y hget
+      have ht : big_sepL (fun k => Φ (k + 1)) xs ≡{n}≡
+          big_sepL (fun k => Ψ (k + 1)) xs := ih htail
+      simpa [big_sepL_cons] using (BI.sep_ne (PROP := PROP)).ne hhead ht
+
 /-- Append distributes: `[∗ list](l₁ ++ l₂) ⊣⊢ [∗ list]l₁ ∗ [∗ list]l₂`. -/
 theorem big_sepL_app {A : Type _} (Φ : Nat → A → PROP) (l₁ l₂ : List A) :
     big_sepL Φ (l₁ ++ l₂) ⊣⊢
