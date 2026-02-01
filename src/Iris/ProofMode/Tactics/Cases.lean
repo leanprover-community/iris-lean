@@ -157,9 +157,9 @@ def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p 
   let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B' $A' $p)
   return q(spatial_elim (A := $A') $(← k B'))
 
-theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
+private theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
 
-  -- TODO: Why does this function require both A and A' instead of just A'?
+-- TODO: Why does this function require both A and A' instead of just A'?
 variable {u : Level} {prop : Q(Type u)} (bi : Q(BI $prop)) in
 partial def iCasesCore
     {P} (hyps : Hyps bi P) (Q : Q($prop)) (p : Q(Bool))

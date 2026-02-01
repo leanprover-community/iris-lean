@@ -1356,6 +1356,12 @@ example [BI PROP] (P : PROP) : □ ▷^[n] P ∗ ▷^[n] P ⊢ ▷^[n] P := by
   imodintro
   iexact HP2
 
+/-- Tests `imodintro` for later n (NatCancel) -/
+example [BI PROP] (P : PROP) : □ ▷^[5] P ∗ ▷^[3] P ⊢ ▷^[4] P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP2
+
 /-- Tests `imodintro` for complex later n (both: transform) -/
 example [BI PROP] (P : PROP) : □ ▷^[n] P ∗ ▷^[n] P ⊢ ▷^[n] P := by
   iintro H
@@ -1383,6 +1389,13 @@ set_option pp.mvars false in
 example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <absorb> P := by
   iintro ⟨□HP1, HP2⟩
   imodintro (□ _)
+
+/-- Tests `imodintro` with nested modalities -/
+example [BI PROP] (P : PROP) : □ P ⊢ □ <pers> P := by
+  iintro □HP
+  imodintro
+  imodintro
+  iexact HP
 
 end imodintro
 
@@ -1426,4 +1439,22 @@ example [BI PROP] (P : PROP) : P ⊢ P := by
   iintro HP
   imod HP
 
+/-- Tests `imod` eliminating nested modalities -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) : |==> |==> P ⊢ |==> P := by
+  iintro HP
+  imod HP
+  imod HP
+  iexact HP
+
 end imod
+
+section inext
+
+/- Tests `inext` failing on non-later goal -/
+/-- error: imodintro: P is not a modality matching iprop(▷^[?m.31]?m.32) -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : P ⊢ P := by
+  iintro HP
+  inext
+
+end inext

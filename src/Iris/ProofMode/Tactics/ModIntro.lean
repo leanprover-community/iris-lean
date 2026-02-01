@@ -10,14 +10,14 @@ namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 /-- Reified version of ModalityAction -/
-inductive ModalityActionQ (PROP1 : Q(Type u)) (PROP2 : Q(Type u)) : Type where
+private inductive ModalityActionQ (PROP1 : Q(Type u)) (PROP2 : Q(Type u)) : Type where
 | isEmpty
 | forall (C : Q($PROP1 → Prop))
 | transform (C : Q($PROP2 → $PROP1 → Prop))
 | clear
 | id
 
-def ModalityActionQ.parse {prop1 prop2 : Q(Type u)} (act : Q(ModalityAction $prop1 $prop2)) :
+private def ModalityActionQ.parse {prop1 prop2 : Q(Type u)} (act : Q(ModalityAction $prop1 $prop2)) :
   ProofModeM (ModalityActionQ prop1 prop2) := do
   let act ← whnf q($act)
   match_expr act with
@@ -66,7 +66,21 @@ private theorem modaction_sep [BI PROP1] [bi2: BI PROP2] {elhs erhs elhs' erhs'}
   (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(elhs' ∗ erhs') := (sep_mono h1 h2).trans M.sep
 
 
-private def iModAction {prop1 : Q(Type u)} (bi1 : Q(BI $prop1)) {e}
+/--
+Applies modality actions to transform proof mode context.
+
+# Parameters
+- `hyps` - Context in `prop2`
+- `M` - Modality being introduced (`prop1 → prop2`)
+- `act` - Modality action depending on persistence flag
+
+# Returns
+A tuple containing:
+- Transformed context term
+- Transformed context `hyps'` in `prop1`
+- Proof of `hyps ⊢ M hyps'`
+-/
+private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
   (hyps : @Hyps u prop2 bi2 e) (M : Q(Modality $prop1 $prop2)) (act : Bool → ModalityActionQ prop1 prop2) :
   ProofModeM ((e' : _) × Hyps bi1 e' × Q($e ⊢ $(M).M $e')) :=
   match hyps with
@@ -80,6 +94,7 @@ private def iModAction {prop1 : Q(Type u)} (bi1 : Q(BI $prop1)) {e}
       have : $bi1 =Q $bi2 := ⟨⟩
       let .some hC ← trySynthInstanceQ q($C $ty)
         | throwError "imodintro: hypothesis {name} : {ty} does not satisfy {C}"
+      -- bridge through defeq since `M.action` cannot unify directly with the pattern (same in other cases)
       have heq : Q(@ModalityAction.forall $prop1 $C = .forall $C) := q(Eq.refl (ModalityAction.forall $C))
       have heq : Q($(M).action $p = .forall $C) := heq
       return ⟨_, .mkHyp bi1 name uniq p ty, q(modaction_forall $M $heq $hC)⟩
@@ -101,36 +116,52 @@ private def iModAction {prop1 : Q(Type u)} (bi1 : Q(BI $prop1)) {e}
       have heq : Q($(M).action $p = .id) := heq
       return ⟨_, .mkHyp bi1 name uniq p ty, q(modaction_id $M $heq)⟩
   | .sep _ _ _ _ lhs rhs => do
-    let ⟨_, lhs', pflhs⟩ ← iModAction bi1 lhs M act
-    let ⟨_, rhs', pfrhs⟩ ← iModAction bi1 rhs M act
+    let ⟨_, lhs', pflhs⟩ ← iModAction lhs M act
+    let ⟨_, rhs', pfrhs⟩ ← iModAction rhs M act
     -- TODO: make pruning emp part of mkSep?
     if let .emp _ := lhs' then
-      -- TODO: why do we need to specify bi2 here?
-      return ⟨_, rhs', q(modaction_sep_emp_l (bi2:=$bi2) $pflhs $pfrhs)⟩
+      return ⟨_, rhs', q(modaction_sep_emp_l $pflhs $pfrhs)⟩
     if let .emp _ := rhs' then
-      return ⟨_, lhs', q(modaction_sep_emp_r (bi2:=$bi2) $pflhs $pfrhs)⟩
-    return ⟨_, .mkSep lhs' rhs', q(modaction_sep (bi2:=$bi2) $pflhs $pfrhs)⟩
+      return ⟨_, lhs', q(modaction_sep_emp_r $pflhs $pfrhs)⟩
+    return ⟨_, .mkSep lhs' rhs', q(modaction_sep $pflhs $pfrhs)⟩
 
 private theorem modintro [BI PROP1] [BI PROP2] {e e'} {Φ M sel} {P : PROP2} {Q : PROP1} [FromModal Φ M sel P Q]
   (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P :=
     (h1.trans (M.mono h2)).trans (from_modal sel hΦ)
 
+/-- Introduce a modality by applying modality actions to transform hypotheses.
+
+# Parameters
+- `hyps` : Context
+- `goal` - Goal
+- `sel` - Selector term to match against specific modality patterns
+- `k` - Continuation that receives the transformed context `P` and goal `Q`,
+  and produces a proof of `P ⊢ Q`
+
+# Returns
+Proof term of `hyps ⊢ goal`
+-/
 def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop)) (sel : TSyntax `term)
   (k : ∀ {prop' bi' P}, @Hyps u prop' bi' P → ∀ Q : Q($prop'), ProofModeM Q($P ⊢ $Q))
    : ProofModeM (Q($e ⊢ $goal)) := do
-    let prop1 : Quoted q(Type u) ← mkFreshExprMVarQ q(Type u)
-    let bi1 : Quoted q(BI $prop1) ← mkFreshExprMVarQ q(BI $prop1)
-    let Φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
-    let M : Q(Modality $prop1 $prop) ← mkFreshExprMVarQ q(Modality $prop1 $prop)
-    let sel : Q($prop1) ← elabTermEnsuringTypeQ (← `(term | iprop($sel))) prop1
-    let Q : Quoted q($prop1) ← mkFreshExprMVarQ q($prop1)
-    let .some _ ← ProofModeM.trySynthInstanceQ q(@FromModal $prop1 $prop $bi1 $bi $Φ $M $sel $goal $Q)
+    let prop' : Q(Type u) ← mkFreshExprMVarQ q(Type u)
+    let bi' ← mkFreshExprMVarQ q(BI $prop')
+    let Φ ← mkFreshExprMVarQ q(Prop)
+    let M ← mkFreshExprMVarQ q(Modality $prop' $prop)
+    let sel ← elabTermEnsuringTypeQ (← `(term | iprop($sel))) prop'
+    let Q ← mkFreshExprMVarQ q($prop')
+    -- `M Q ⊢ goal`
+    let .some _ ← ProofModeM.trySynthInstanceQ q(@FromModal $prop' $prop $bi' $bi $Φ $M $sel $goal $Q)
       | throwError "imodintro: {goal} is not a modality{if sel.isMVar then m!"" else m!" matching {sel}"}"
-    let hΦ : Q($Φ) ← mkFreshExprMVarQ q($Φ)
+    -- show the side condition
+    let hΦ ← mkFreshExprMVarQ q($Φ)
     iSolveSideconditionAt hΦ.mvarId!
+    -- pre-compute the actions
     let iact ← ModalityActionQ.parse q($(M).action true)
     let sact ← ModalityActionQ.parse q($(M).action false)
-    let ⟨_, hyps', pf⟩ ← iModAction bi1 hyps M (λ p => if p then iact else sact)
+    -- perform modality actions, get transformed context `hyps'` and `pf : hyps ⊢ M hyps'`
+    let ⟨_, hyps', pf⟩ ← iModAction hyps M (λ p => if p then iact else sact)
+    -- get proof `hyps' ⊢ Q`
     let pf' ← k hyps' Q
     return q(modintro (sel:=$sel) $pf $pf' $hΦ)
 
