@@ -106,29 +106,7 @@ theorem ofList_nil : (FiniteMap.ofList [] : M V) = ∅ := by
 theorem ofList_cons (k : K) (v : V) (l : List (K × V)) :
     PartialMap.equiv (FiniteMap.ofList ((k, v) :: l) : M V) (insert (FiniteMap.ofList l) k v) := by
   simp only [FiniteMap.ofList, List.foldl_cons]
-  sorry  -- This requires proving that foldl commutes with insert, which is non-trivial
-
-theorem toList_filterMap (m : M V) (f : V → Option V) :
-    (toList (FiniteMap.filterMap (M := M) f m)).Perm
-      ((toList m).filterMap (fun kv => (f kv.2).map (kv.1, ·))) := by
-  sorry  -- This requires toList_ofList which is defined later
-
-theorem toList_filter (m : M V) (φ : K → V → Bool) :
-    (toList (FiniteMap.filter (M := M) φ m)).Perm
-      ((toList m).filter (fun kv => φ kv.1 kv.2)) := by
-  sorry  -- This requires toList_ofList which is defined later
-
-theorem toList_kmap {K' : Type _} [DecidableEq K'] {M' : Type _ → Type _} [FiniteMap K' M'] [LawfulFiniteMap K' M']
-    (f : K → K') (m : M V) (hinj : ∀ {x y}, f x = f y → x = y) :
-    (toList (FiniteMap.kmap (M' := M') f m)).Perm
-      ((toList m).map (fun (k, v) => (f k, v))) := by
-  sorry  -- This requires toList_ofList which is defined later
-
-theorem toList_map_seq {M : Type _ → Type _} [FiniteMap Nat M] [LawfulFiniteMap Nat M]
-    (start : Nat) (l : List V) :
-    (toList (FiniteMap.map_seq start l : M V)).Perm
-      ((List.range' start l.length).zip l) := by
-  sorry  -- This requires toList_ofList which is defined later
+  sorry  -- Complex proof about foldl commutativity
 
 variable {V : Type _}
 
@@ -258,6 +236,35 @@ theorem ofList_toList (m : M V) : PartialMap.equiv (FiniteMap.ofList (toList m))
     · intro hmem
       have hget : get? (FiniteMap.ofList l : M V) i = some x := (mem_ofList l i x hnodup).mp hmem
       exact (mem_toList (FiniteMap.ofList l : M V) i x).mpr hget
+
+theorem toList_filterMap [DecidableEq V] (m : M V) (f : V → Option V) :
+    (toList (FiniteMap.filterMap (M := M) f m)).Perm
+      ((toList m).filterMap (fun kv => (f kv.2).map (kv.1, ·))) := by
+  unfold FiniteMap.filterMap
+  apply toList_ofList
+  sorry  -- Need to show filterMap preserves Nodup on keys
+
+theorem toList_filter [DecidableEq V] (m : M V) (φ : K → V → Bool) :
+    (toList (FiniteMap.filter (M := M) φ m)).Perm
+      ((toList m).filter (fun kv => φ kv.1 kv.2)) := by
+  unfold FiniteMap.filter
+  apply toList_ofList
+  sorry  -- Need to show filter preserves Nodup on keys
+
+theorem toList_kmap [DecidableEq V] {K' : Type _} [DecidableEq K'] {M' : Type _ → Type _} [FiniteMap K' M'] [LawfulFiniteMap K' M']
+    (f : K → K') (m : M V) (hinj : ∀ {x y}, f x = f y → x = y) :
+    (toList (FiniteMap.kmap (M' := M') f m)).Perm
+      ((toList m).map (fun (k, v) => (f k, v))) := by
+  unfold FiniteMap.kmap
+  apply toList_ofList
+  sorry  -- Need to show map with injective function preserves Nodup
+
+theorem toList_map_seq [DecidableEq V] {M : Type _ → Type _} [FiniteMap Nat M] [LawfulFiniteMap Nat M]
+    (start : Nat) (l : List V) :
+    (toList (FiniteMap.map_seq start l : M V)).Perm
+      ((List.range' start l.length).zip l) := by
+  unfold FiniteMap.map_seq
+  sorry  -- Complex proof involving mapIdx and zip equivalence
 
 /-- Two maps with the same get? behavior have permutation-equivalent toLists. -/
 theorem toList_perm_of_get?_eq [DecidableEq V] {m₁ m₂ : M V}
