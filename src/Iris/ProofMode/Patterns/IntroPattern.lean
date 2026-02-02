@@ -11,12 +11,15 @@ open Lean
 declare_syntax_cat introPat
 
 syntax icasesPat : introPat
+syntax "!>" : introPat
 
 inductive IntroPat
   | intro (case : iCasesPat)
+  | modintro
   deriving Repr, Inhabited
 
 partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
   match ← expandMacros term with
   | `(introPat| $case:icasesPat) => return (term, .intro (← iCasesPat.parse case))
+  | `(introPat| !>) => return (term, .modintro)
   | _ => Macro.throwUnsupported
