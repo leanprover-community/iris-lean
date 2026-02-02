@@ -1506,6 +1506,11 @@ theorem affinelyIf_of_intuitionisticallyIf {p : Bool} [BI PROP] {P : PROP} : □
   | false => .rfl
   | true => affinely_of_intuitionistically
 
+theorem persistentlyIf_of_intuitionisticallyIf {p : Bool} [BI PROP] {P : PROP} : □?p P ⊢ <pers>?p P :=
+  match p with
+  | false => .rfl
+  | true => persistently_of_intuitionistically
+
 /-! # Properties of persistent propositions -/
 
 theorem persistent_congr [BI PROP] {P Q : PROP} (H : P ⊣⊢ Q) : Persistent P ↔ Persistent Q :=
