@@ -267,7 +267,7 @@ private theorem stuckness_pred_mono {s1 s2 : Stuckness}
 
 /-- Non-value case of the WP pre-fixpoint.
 Coq: non-value branch of `wp_pre` in `weakestpre.v`. -/
-private noncomputable def wp_pre_step
+noncomputable def wp_pre_step
     (s : Stuckness)
     (wp : Iris.Set Positive → Λ.expr → (Λ.val → IProp GF) → IProp GF)
     (E : Iris.Set Positive) (e : Λ.expr) (Φ : Λ.val → IProp GF) : IProp GF :=
