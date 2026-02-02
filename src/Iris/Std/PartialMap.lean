@@ -165,6 +165,11 @@ theorem get?_singleton [DecidableEq K] {k k' : K} {v : V} :
   · exact get?_singleton_eq h
   · exact get?_singleton_ne h
 
+/-- Value at a key after insert must equal the inserted value. -/
+theorem get?_insert_rev {m : M V} {i : K} {x y : V} :
+    get? (insert m i x) i = some y → x = y := by
+  simp [get?_insert_eq rfl]
+
 theorem empty_subset (m : M V) : (∅ : M V) ⊆ m := by
   intro k v H
   simp [show get? (∅ : M V) k = none from get?_empty (M := M) k] at H
