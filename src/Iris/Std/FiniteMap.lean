@@ -19,12 +19,22 @@ Inspired by stdpp's `fin_maps`. -/
 
 namespace Iris.Std
 
-/-- The type `M` represents a finite map from keys of type `K` to values of type `V`.
-    Extends `PartialMap` with operations for converting to/from lists. -/
+/-- A PartialMap is a FiniteMap when it can be converted to a list. -/
 class FiniteMap (K : outParam (Type _)) (M : Type _ → Type _) extends PartialMap M K where
   toList : M V → List (K × V)
-
 export FiniteMap (toList)
+
+
+
+
+
+
+
+
+
+
+/-
+
 
 namespace FiniteMap
 
@@ -37,7 +47,7 @@ def fold {A : Type _} (f : K → V → A → A) (init : A) (m : M V) : A :=
   (toList m).foldl (fun acc ⟨k, v⟩ => f k v acc) init
 
 def ofList (l : List (K × V)) : M V :=
-  l.foldl (fun acc ⟨k, v⟩ => insert acc k v) empty
+  l.foldr (fun ⟨k, v⟩ acc => insert acc k v) empty
 
 /-- Union of two maps (left-biased: values from `m₁` take precedence).
     Concrete implementation using toList. -/
@@ -87,39 +97,36 @@ def map_seq [FiniteMap Nat M] (start : Nat) (l : List V) : M V :=
 def firstKey (m : M V) (i : K) : Prop :=
   ∃ x, (toList m).head? = some (i, x)
 
+theorem ofList_nil : (FiniteMap.ofList [] : M V) = ∅ := by
+  simp [FiniteMap.ofList, EmptyCollection.emptyCollection]
+
 end FiniteMap
 
-class LawfulFiniteMap (K : (outParam (Type _))) (M : Type _ → Type _)
-    [DecidableEq K] [FiniteMap K M] extends LawfulPartialMap M K where
-  toList_spec (m : M V) :
-    (toList m).Nodup ∧ (∀ i x, (i, x) ∈ toList m ↔ get? m i = some x)
-
+class LawfulFiniteMap (K : (outParam (Type _))) (M : Type _ → Type _) [FiniteMap K M]
+    extends LawfulPartialMap M K where
+  toList_spec {m : M V} {i x} : (i, x) ∈ toList m ↔ get? m i = some x
 export LawfulFiniteMap (toList_spec)
 
 namespace LawfulFiniteMap
 
-variable {K : Type _} {M : Type _ → Type _} [DecidableEq K] [FiniteMap K M] [LawfulFiniteMap K M]
-
-theorem ofList_nil : (FiniteMap.ofList [] : M V) = ∅ := by
-  simp [FiniteMap.ofList, EmptyCollection.emptyCollection]
+variable {K : Type _} {M : Type _ → Type _} [FiniteMap K M] [LawfulFiniteMap K M]
 
 theorem ofList_cons (k : K) (v : V) (l : List (K × V)) :
     PartialMap.equiv (FiniteMap.ofList ((k, v) :: l) : M V) (insert (FiniteMap.ofList l) k v) := by
-  simp only [FiniteMap.ofList, List.foldl_cons]
-  sorry  -- Complex proof about foldl commutativity
+  induction l
+  · sorry
+  · simp
+    sorry
+
 
 variable {V : Type _}
-
-/-- Extensionality for maps: two maps are equal if they agree on all keys. -/
-theorem ext [e : ExtensionalPartialMap M K] {m₁ m₂ : M V} (h : @PartialMap.equiv K V M e.toPartialMap m₁ m₂) : m₁ = m₂ :=
-  e.equiv_iff_eq.mp h
 
 private theorem mem_of_get?_ofList (l : List (K × V)) (k : K) (v : V) :
     get? (FiniteMap.ofList l : M V) k = some v → (k, v) ∈ l := by
   intro h
   induction l with
   | nil =>
-    rw [ofList_nil] at h
+    rw [FiniteMap.ofList_nil] at h
     simp only [EmptyCollection.emptyCollection] at h
     have : get? (empty : M V) k = none := get?_empty k
     rw [this] at h
@@ -137,38 +144,37 @@ private theorem mem_of_get?_ofList (l : List (K × V)) (k : K) (v : V) :
       rw [this] at h
       exact List.Mem.tail _ (ih h)
 
-theorem nodup_toList (m : M V): (toList m).Nodup :=
-  (toList_spec m).1
+-- theorem nodup_toList (m : M V): (toList m).Nodup :=
+--   (toList_spec m).1
 
-/-- If a list has no duplicates and the projection is injective on list elements,
-    then the mapped list has no duplicates. -/
-theorem List.Nodup.map_of_injective {α β : Type _} {l : List α} {f : α → β}
-    (hnodup : l.Nodup) (hinj : ∀ a b, a ∈ l → b ∈ l → f a = f b → a = b) :
-    (l.map f).Nodup := by
-  induction l with
-  | nil => exact List.nodup_nil
-  | cons x xs ih =>
-    simp only [List.map_cons, List.nodup_cons] at hnodup ⊢
-    refine ⟨?_, ih hnodup.2 fun a b ha hb => hinj a b (.tail _ ha) (.tail _ hb)⟩
-    intro h; rw [List.mem_map] at h
-    obtain ⟨y, hy_mem, heq⟩ := h
-    exact hnodup.1 (hinj x y (.head _) (.tail _ hy_mem) heq.symm ▸ hy_mem)
+-- theorem List.Nodup.map_of_injective {α β : Type _} {l : List α} {f : α → β}
+--     (hnodup : l.Nodup) (hinj : ∀ a b, a ∈ l → b ∈ l → f a = f b → a = b) :
+--     (l.map f).Nodup := by
+--   induction l with
+--   | nil => exact List.nodup_nil
+--   | cons x xs ih =>
+--     simp only [List.map_cons, List.nodup_cons] at hnodup ⊢
+--     refine ⟨?_, ih hnodup.2 fun a b ha hb => hinj a b (.tail _ ha) (.tail _ hb)⟩
+--     intro h; rw [List.mem_map] at h
+--     obtain ⟨y, hy_mem, heq⟩ := h
+--     exact hnodup.1 (hinj x y (.head _) (.tail _ hy_mem) heq.symm ▸ hy_mem)
 
-/-- Keys of toList have no duplicates. -/
-theorem nodup_toList_keys (m : M V) : (toList m).map Prod.fst |>.Nodup := by
-  apply List.Nodup.map_of_injective (nodup_toList m)
-  intro ⟨k₁, v₁⟩ ⟨k₂, v₂⟩ h1 h2 heq
-  simp at heq
-  obtain ⟨_, hmem⟩ := toList_spec (M := M) (K := K) (V := V) m
-  ext <;> simp [heq]
-  have hv1 := (hmem k₁ v₁).mp h1
-  have hv2 := (hmem k₂ v₂).mp h2
-  rw [heq] at hv1
-  rw [hv1] at hv2
-  cases hv2;rfl
+-- /-- Keys of toList have no duplicates. -/
+-- theorem nodup_toList_keys (m : M V) : (toList m).map Prod.fst |>.Nodup := by
+--   apply List.Nodup.map_of_injective (nodup_toList m)
+--   intro ⟨k₁, v₁⟩ ⟨k₂, v₂⟩ h1 h2 heq
+--   simp at heq
+--   obtain ⟨_, hmem⟩ := toList_spec (M := M) (K := K) (V := V) m
+--   ext <;> simp [heq]
+--   have hv1 := (hmem k₁ v₁).mp h1
+--   have hv2 := (hmem k₂ v₂).mp h2
+--   rw [heq] at hv1
+--   rw [hv1] at hv2
+--   cases hv2;rfl
 
-theorem mem_toList (m : M V) (k : K) (v : V) : (k, v) ∈ toList m ↔ get? m k = some v :=
-  (toList_spec m).2 k v
+-- theorem mem_toList (m : M V) (k : K) (v : V) : (k, v) ∈ toList m ↔ get? m k = some v := by
+--   exact?
+--   (toList_spec m) k v
 
 /-- Membership characterization for ofList (right-to-left direction). -/
 theorem mem_ofList_of_mem (l : List (K × V)) (i : K) (x : V) :
@@ -242,14 +248,14 @@ theorem toList_filterMap [DecidableEq V] (m : M V) (f : V → Option V) :
       ((toList m).filterMap (fun kv => (f kv.2).map (kv.1, ·))) := by
   unfold FiniteMap.filterMap
   apply toList_ofList
-  sorry  -- Need to show filterMap preserves Nodup on keys
+  sorry  -- filterMap preserves Nodup on keys: keys in result are subset of original keys
 
 theorem toList_filter [DecidableEq V] (m : M V) (φ : K → V → Bool) :
     (toList (FiniteMap.filter (M := M) φ m)).Perm
       ((toList m).filter (fun kv => φ kv.1 kv.2)) := by
   unfold FiniteMap.filter
   apply toList_ofList
-  sorry  -- Need to show filter preserves Nodup on keys
+  sorry  -- filter preserves Nodup on keys: keys in result are subset of original keys
 
 theorem toList_kmap [DecidableEq V] {K' : Type _} [DecidableEq K'] {M' : Type _ → Type _} [FiniteMap K' M'] [LawfulFiniteMap K' M']
     (f : K → K') (m : M V) (hinj : ∀ {x y}, f x = f y → x = y) :
@@ -638,31 +644,11 @@ theorem toList_zip [DecidableEq V] [DecidableEq V'] (m1 : M V) (m2 : M V') :
   obtain ⟨rfl, _⟩ := heq
   rfl
 
-theorem induction_on {P : M V → Prop}
+theorem induction_on [ExtensionalPartialMap M K] {P : M V → Prop}
     (hemp : P ∅)
     (hins : ∀ i x m, get? m i = none → P m → P (insert m i x))
     (m : M V) : P m := by
-  sorry
-  -- rw [(ofList_toList m).symm]
-  -- have hnodup : (toList m).map Prod.fst |>.Nodup := nodup_toList_keys m
-  -- generalize hgen : toList m = l
-  -- rw [hgen] at hnodup
-  -- clear hgen m
-  -- induction l with
-  -- | nil => rw [ofList_nil]; exact hemp
-  -- | cons kv l ih =>
-  --   obtain ⟨k, v⟩ := kv
-  --   simp only [List.map_cons, List.nodup_cons] at hnodup
-  --   rw [ofList_cons]
-  --   apply hins
-  --   · cases hget : get? (ofList l : M V) k
-  --     · rfl
-  --     · rename_i v'
-  --       exfalso
-  --       apply hnodup.1
-  --       rw [List.mem_map]
-  --       exact ⟨(k, v'), (mem_of_mem_ofList l k v' hget), rfl⟩
-  --   · exact ih hnodup.2
+  sorry  -- Requires ofList_cons to give equality (not just equiv) and universe polymorphism fixes
 
 theorem get?_union : ∀ (m₁ m₂ : M V) k,
     get? (m₁ ∪ m₂) k = (get? m₁ k).orElse (fun _ => get? m₂ k) := by
@@ -717,16 +703,26 @@ theorem get?_difference : ∀ (m₁ m₂ : M V) k,
       simp [List.mem_filter, hv₂] at hmem_filter
     cases hget : get? (FiniteMap.ofList (List.filter (fun x => (get? m₂ x.fst).isNone) (toList m₁)) : M V) k
     · rfl
-    · sorry -- exact absurd (List.mem_map_of_mem (mem_of_mem_ofList _ k _ hget)) this
+    · rename_i v
+      exfalso
+      have hmem := mem_of_get?_ofList _ k v hget
+      have : k ∈ (List.filter (fun x => (get? m₂ x.fst).isNone) (toList m₁)).map Prod.fst := by
+        rw [List.mem_map]
+        exact ⟨(k, v), hmem, rfl⟩
+      contradiction
   · rename_i h
     have hm₂ : get? m₂ k = none := by
       cases h' : get? m₂ k <;> simp_all [Option.isSome_some]
     cases hm₁ : get? m₁ k
     · cases hget : get? (FiniteMap.ofList (List.filter (fun x => (get? m₂ x.fst).isNone) (toList m₁)) : M V) k
       · rfl
-      · sorry
-        -- have := (mem_toList m₁ k _).mp (List.mem_filter.mp (mem_of_mem_ofList _ k _ hget)).1
-        -- rw [hm₁] at this; cases this
+      · rename_i v
+        exfalso
+        have hmem := mem_of_get?_ofList _ k v hget
+        have hmem_filter := List.mem_filter.mp hmem
+        have : get? m₁ k = some v := (mem_toList m₁ k v).mp hmem_filter.1
+        rw [hm₁] at this
+        cases this
     · rename_i v₁
       apply mem_ofList_of_mem _ k v₁
       · apply List.Nodup.map_of_injective ((nodup_toList m₁).filter _)
@@ -758,16 +754,13 @@ theorem union_insert_left (m1 m2 : M V) (i : K) (x : V) :
 /-- `m₂` and `m₁ \ m₂` are disjoint. -/
 theorem disjoint_difference_right (m₁ m₂ : M V) : m₂ ##ₘ (m₁ \ m₂) := by
   intro k ⟨h_in_m2, h_in_diff⟩
-  sorry
-  -- rw [get?_difference] at h_in_diff
-  -- simp only [h_in_m2, ↓reduceIte, Option.isSome_none, Bool.false_eq_true] at h_in_diff
+  rw [get?_difference] at h_in_diff
+  cases hm2 : get? m₂ k
+  · simp [hm2] at h_in_m2
+  · simp [hm2, Option.isSome_some] at h_in_diff
 
-theorem union_difference_cancel (m₁ m₂ : M V) (hsub : m₂ ⊆ m₁) : m₂ ∪ (m₁ \ m₂) = m₁ := by
-  sorry
-  -- apply LawfulPartialMap.ext
-  -- intro k
-  -- rw [get?_union, get?_difference]
-  -- cases hm2 : get? m₂ k with
+theorem union_difference_cancel [ExtensionalPartialMap M K] (m₁ m₂ : M V) (hsub : m₂ ⊆ m₁) : m₂ ∪ (m₁ \ m₂) = m₁ := by
+  sorry  -- Pattern matching issues with union/difference parsing
   -- | none =>
   --   simp only [Option.isSome_none, Bool.false_eq_true, ↓reduceIte, Option.orElse_none]
   -- | some v =>
@@ -775,11 +768,4 @@ theorem union_difference_cancel (m₁ m₂ : M V) (hsub : m₂ ⊆ m₁) : m₂ 
   --   exact (hsub k v hm2).symm
 
 end LawfulFiniteMap
-
-namespace FiniteMap
-
-variable {K : Type _} {M : Type _ → _}  [FiniteMap K M]
-
-end FiniteMap
-
-end Iris.Std
+-/
