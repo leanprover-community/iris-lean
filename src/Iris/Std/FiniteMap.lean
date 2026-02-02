@@ -12,30 +12,32 @@ import Iris.Std.List
 This file defines an abstract interface for finite maps with finite support,
 extending the base PartialMap interface with list conversion operations.
 
+Note that the operations in this file are derived from the `toList` predicate, and therefore
+may not be identical to similarly named constructions for any given instance.
+
 Inspired by stdpp's `fin_maps`. -/
 
 namespace Iris.Std
 
 /-- The type `M` represents a finite map from keys of type `K` to values of type `V`.
     Extends `PartialMap` with operations for converting to/from lists. -/
-class FiniteMap (K : outParam (Type u)) (M : Type u' → Type _)
-    extends PartialMap M K where
-  /-- Convert the map to a list of key-value pairs. -/
+class FiniteMap (K : outParam (Type _)) (M : Type _ → Type _) extends PartialMap M K where
   toList : M V → List (K × V)
-  /-- Construct a map from a list of key-value pairs. -/
-  ofList : List (K × V) → M V
-  /-- Fold over all key-value pairs in the map.
-      The order of folding depends on the internal representation. -/
-  fold {A : Type u'} : (K → V → A → A) → A → M V → A
 
-export FiniteMap (toList ofList fold)
+export FiniteMap (toList)
 
 namespace FiniteMap
 
-variable {K : Type u} {V : Type u'} {M : Type u' → Type _} [FiniteMap K M]
+variable {K V : Type  } {M : Type _ → Type _} [FiniteMap K M]
 
 /-- Singleton map: a map with a single key-value pair. -/
 abbrev singleton (k : K) (v : V) : M V := PartialMap.singleton k v
+
+def fold {A : Type _} (f : K → V → A → A) (init : A) (m : M V) : A :=
+  (toList m).foldl (fun acc ⟨k, v⟩ => f k v acc) init
+
+def ofList (l : List (K × V)) : M V :=
+  l.foldl (fun acc ⟨k, v⟩ => insert acc k v) empty
 
 /-- Union of two maps (left-biased: values from `m₁` take precedence).
     Concrete implementation using toList. -/
@@ -74,7 +76,7 @@ def difference (m₁ m₂ : M V) : M V :=
 instance : SDiff (M V) := ⟨difference⟩
 
 /-- Transform keys of a map using an injective function. -/
-def kmap {K' : Type u} {M' : Type u' → _} [FiniteMap K' M'] (f : K → K') (m : M V) : (M' V) :=
+def kmap {K' : Type _} {M' : Type _ → _} [FiniteMap K' M'] (f : K → K') (m : M V) : (M' V) :=
   ofList ((toList m).map (fun (k, v) => (f k, v)))
 
 /-- Convert a list to a map with sequential natural number keys starting from `start`. -/
@@ -89,16 +91,16 @@ end FiniteMap
 
 /-- Laws that a finite map implementation must satisfy.
     Extends LawfulPartialMap with laws specific to list conversion. -/
-class FiniteMapLaws (K : (outParam (Type u))) (M : Type u' → Type _)
+class FiniteMapLaws (K : (outParam (Type _))) (M : Type _ → Type _)
     [DecidableEq K] [FiniteMap K M] extends LawfulPartialMap M K where
-  ofList_nil : (ofList [] : M V) = ∅
+  ofList_nil : (FiniteMap.ofList [] : M V) = ∅
   ofList_cons : ∀ (k : K) (v : V) (l : List (K × V)),
-    (ofList ((k, v) :: l) : M V) = insert (ofList l) k v
+    (FiniteMap.ofList ((k, v) :: l) : M V) = insert (FiniteMap.ofList l) k v
   toList_spec (m : M V) :
     (toList m).Nodup ∧ (∀ i x, (i, x) ∈ toList m ↔ get? m i = some x)
 
 /-- Self-referential extended laws. -/
-class FiniteMapLawsSelf (K : outParam (Type u)) (M : Type u' → Type _)
+class FiniteMapLawsSelf (K : outParam (Type _)) (M : Type _ → Type _)
     [DecidableEq K] [FiniteMap K M] [FiniteMapLaws K M] where
   /-- toList of filterMap is related to filterMap over toList. -/
   toList_filterMap : ∀ (m : M V) (f : V → Option V),
@@ -110,7 +112,7 @@ class FiniteMapLawsSelf (K : outParam (Type u)) (M : Type u' → Type _)
       ((toList m).filter (fun kv => φ kv.1 kv.2))
 
 /-- Laws for kmap operation. -/
-class FiniteMapKmapLaws (K : outParam (Type u)) (K' : outParam (Type u)) (M : Type u' → Type _) (M' : Type u' → Type _)
+class FiniteMapKmapLaws (K : outParam (Type _)) (K' : outParam (Type _)) (M : Type _ → Type _) (M' : Type _ → Type _)
     [DecidableEq K] [DecidableEq K'] [FiniteMap K M] [FiniteMap K' M']
     [FiniteMapLaws K M] [FiniteMapLaws K' M'] where
   /-- toList of kmap is related to mapping over toList. -/
@@ -120,7 +122,7 @@ class FiniteMapKmapLaws (K : outParam (Type u)) (K' : outParam (Type u)) (M : Ty
       ((toList m).map (fun (k, v) => (f k, v)))
 
 /-- Laws for map_seq operation. -/
-class FiniteMapSeqLaws (M : Type u → Type _) [FiniteMap Nat M] [FiniteMapLaws Nat M] where
+class FiniteMapSeqLaws (M : Type _ → Type _) [FiniteMap Nat M] [FiniteMapLaws Nat M] where
   /-- toList of map_seq is related to zip with sequence. -/
   toList_map_seq : ∀ (start : Nat) (l : List V),
     (toList (FiniteMap.map_seq start l : M V)).Perm
@@ -134,7 +136,7 @@ export FiniteMapSeqLaws (toList_map_seq)
 
 namespace FiniteMapLaws
 
-variable {K : Type u} {V : Type u'} {M : Type u' → Type _}
+variable {K : Type _} {V : Type _} {M : Type _ → Type _}
 variable [DecidableEq K] [FiniteMap K M] [FiniteMapLaws K M]
 
 /-- Extensionality for maps: two maps are equal if they agree on all keys. -/
@@ -144,7 +146,7 @@ theorem ext [ExtensionalPartialMap M K] {m₁ m₂ : M V} (h : ∀ k, get? m₁ 
   -- exact h
 
 private theorem mem_of_get?_ofList (l : List (K × V)) (k : K) (v : V) :
-    get? (ofList l : M V) k = some v → (k, v) ∈ l := by
+    get? (FiniteMap.ofList l : M V) k = some v → (k, v) ∈ l := by
   sorry
   -- intro h
   -- induction l with
@@ -201,7 +203,7 @@ theorem mem_toList (m : M V) (k : K) (v : V) : (k, v) ∈ toList m ↔ get? m k 
 
 /-- Membership characterization for ofList (right-to-left direction). -/
 theorem mem_ofList_of_mem (l : List (K × V)) (i : K) (x : V) :
-    (l.map Prod.fst).Nodup → (i, x) ∈ l → get? (ofList l : M V) i = some x := by
+    (l.map Prod.fst).Nodup → (i, x) ∈ l → get? (FiniteMap.ofList l : M V) i = some x := by
   intro hnodup hmem
   induction l with
   | nil => simp at hmem
@@ -216,14 +218,14 @@ theorem mem_ofList_of_mem (l : List (K × V)) (i : K) (x : V) :
       rw [get?_insert_ne hne, ih hnodup.2 hmem]
 
 theorem mem_ofList (l : List (K × V)) i x (hnodup : (l.map Prod.fst).Nodup):
-   (i,x) ∈ l ↔ get? (ofList l : M V) i = some x := by
+   (i,x) ∈ l ↔ get? (FiniteMap.ofList l : M V) i = some x := by
     constructor
     apply mem_ofList_of_mem; exact hnodup
     apply mem_of_get?_ofList
 
 theorem ofList_injective [DecidableEq V] (l1 l2 : List (K × V)) :
     (l1.map Prod.fst).Nodup → (l2.map Prod.fst).Nodup →
-    (ofList l1 : M V) = ofList l2 → l1.Perm l2 := by
+    (FiniteMap.ofList l1 : M V) = FiniteMap.ofList l2 → l1.Perm l2 := by
   intro hnodup1 hnodup2 heq
   apply List.perm_of_nodup_of_mem_iff
   · exact List.nodup_of_nodup_map_fst l1 hnodup1
@@ -234,7 +236,7 @@ theorem ofList_injective [DecidableEq V] (l1 l2 : List (K × V)) :
   rw [heq]
 
 theorem ofList_toList (m : M V) [ExtensionalPartialMap M K] :
-    ofList (toList m) = m := by
+    FiniteMap.ofList (toList m) = m := by
   sorry
   -- apply ext (K := K)
   -- intro i
@@ -254,10 +256,10 @@ theorem ofList_toList (m : M V) [ExtensionalPartialMap M K] :
   --   rw [this]
 
  theorem toList_ofList [DecidableEq V] : ∀ (l : List (K × V)), (l.map Prod.fst).Nodup →
-    (toList (ofList l : M V)).Perm l := by
+    (toList (FiniteMap.ofList l : M V)).Perm l := by
   intro l hnodup
   apply ofList_injective (M := M) (K:=K)
-  · exact nodup_toList_keys (M := M) (K := K) (V := V) (ofList l)
+  · exact nodup_toList_keys (M := M) (K := K) (V := V) (FiniteMap.ofList l)
   · exact hnodup
   sorry
   -- rw [ofList_toList]
@@ -407,7 +409,7 @@ theorem get?_zipWith [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
     cases heq' : get? m2 ki <;> simp [heq'] at heq
     exact heq.1.symm
   cases h1 : get? m1 k
-  · simp; cases h' : get? (ofList _ : M V'') k
+  · simp; cases h' : get? (FiniteMap.ofList _ : M V'') k
     · rfl
     · rename_i v_result
       have hmem := (mem_ofList (M := M) (V := V'') _ k v_result hnodup).mpr h'
@@ -420,7 +422,7 @@ theorem get?_zipWith [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
       cases this
   · rename_i v1
     cases h2 : get? m2 k
-    · simp; cases h' : get? (ofList _ : M V'') k
+    · simp; cases h' : get? (FiniteMap.ofList _ : M V'') k
       · rfl
       · rename_i v_result
         have hmem := (mem_ofList (M := M) (V := V'') _ k v_result hnodup).mpr h'
@@ -540,7 +542,7 @@ theorem zip_map [DecidableEq V] [DecidableEq V'] {V'' V''' : Type _} [DecidableE
   -- cases h1 : get? m1 k <;> cases h2 : get? m2 k <;> simp
 
 /-- Zipping fst and snd projections of a map recovers the original map. -/
-theorem zip_fst_snd {V' : Type u'} [DecidableEq V] [DecidableEq V'] (m : M (V × V')) :
+theorem zip_fst_snd {V' : Type _} [DecidableEq V] [DecidableEq V'] (m : M (V × V')) :
     FiniteMap.zip (FiniteMap.map Prod.fst m) (FiniteMap.map Prod.snd m) = m := by
   sorry
   -- apply ext
@@ -699,14 +701,14 @@ theorem get?_difference : ∀ (m₁ m₂ : M V) k,
       intro hmem
       obtain ⟨⟨k', v'⟩, hmem_filter, rfl⟩ := List.mem_map.mp hmem
       simp [List.mem_filter, hv₂] at hmem_filter
-    cases hget : get? (ofList (List.filter (fun x => (get? m₂ x.fst).isNone) (toList m₁)) : M V) k
+    cases hget : get? (FiniteMap.ofList (List.filter (fun x => (get? m₂ x.fst).isNone) (toList m₁)) : M V) k
     · rfl
     · sorry -- exact absurd (List.mem_map_of_mem (mem_of_mem_ofList _ k _ hget)) this
   · rename_i h
     have hm₂ : get? m₂ k = none := by
       cases h' : get? m₂ k <;> simp_all [Option.isSome_some]
     cases hm₁ : get? m₁ k
-    · cases hget : get? (ofList (List.filter (fun x => (get? m₂ x.fst).isNone) (toList m₁)) : M V) k
+    · cases hget : get? (FiniteMap.ofList (List.filter (fun x => (get? m₂ x.fst).isNone) (toList m₁)) : M V) k
       · rfl
       · sorry
         -- have := (mem_toList m₁ k _).mp (List.mem_filter.mp (mem_of_mem_ofList _ k _ hget)).1
@@ -738,7 +740,7 @@ end FiniteMapLaws
 
 namespace FiniteMap
 
-variable {K : Type v} {M : Type u → _}  [FiniteMap K M]
+variable {K : Type _} {M : Type _ → _}  [FiniteMap K M]
 
 /-- `m₂` and `m₁ \ m₂` are disjoint. -/
 theorem disjoint_difference_right [DecidableEq K] [FiniteMapLaws K M] [FiniteMapLawsSelf K M]
