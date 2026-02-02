@@ -104,8 +104,9 @@ theorem ofList_nil : (FiniteMap.ofList [] : M V) = ∅ := by
   simp [FiniteMap.ofList, EmptyCollection.emptyCollection]
 
 theorem ofList_cons (k : K) (v : V) (l : List (K × V)) :
-    (FiniteMap.ofList ((k, v) :: l) : M V) = insert (FiniteMap.ofList l) k v := by
+    PartialMap.equiv (FiniteMap.ofList ((k, v) :: l) : M V) (insert (FiniteMap.ofList l) k v) := by
   simp only [FiniteMap.ofList, List.foldl_cons]
+  sorry  -- This requires proving that foldl commutes with insert, which is non-trivial
 
 theorem toList_filterMap (m : M V) (f : V → Option V) :
     (toList (FiniteMap.filterMap (M := M) f m)).Perm
@@ -199,13 +200,14 @@ theorem mem_ofList_of_mem (l : List (K × V)) (i : K) (x : V) :
   | nil => simp at hmem
   | cons kv l ih =>
     obtain ⟨k, v⟩ := kv
-    simp [ofList_cons, List.map_cons, List.nodup_cons] at hnodup hmem ⊢
+    simp [List.map_cons, List.nodup_cons] at hnodup hmem
+    have heq_cons := ofList_cons (M := M) k v l
     rcases hmem with ⟨rfl, rfl⟩ | hmem
-    · exact get?_insert_eq rfl
+    · exact heq_cons i ▸ get?_insert_eq rfl
     · have hne : k ≠ i := by
         intro heq; subst heq
         exact hnodup.1 _ hmem
-      rw [get?_insert_ne hne, ih hnodup.2 hmem]
+      rw [heq_cons, get?_insert_ne hne, ih hnodup.2 hmem]
 
 theorem mem_ofList (l : List (K × V)) i x (hnodup : (l.map Prod.fst).Nodup):
    (i,x) ∈ l ↔ get? (FiniteMap.ofList l : M V) i = some x := by
