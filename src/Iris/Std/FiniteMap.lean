@@ -105,7 +105,7 @@ theorem ofList_nil : (FiniteMap.ofList [] : M V) = ∅ := by
 
 theorem ofList_cons (k : K) (v : V) (l : List (K × V)) :
     (FiniteMap.ofList ((k, v) :: l) : M V) = insert (FiniteMap.ofList l) k v := by
-  sorry  -- Requires proof about foldl commutativity with insert
+  simp only [FiniteMap.ofList, List.foldl_cons]
 
 theorem toList_filterMap (m : M V) (f : V → Option V) :
     (toList (FiniteMap.filterMap (M := M) f m)).Perm
@@ -132,33 +132,31 @@ theorem toList_map_seq {M : Type _ → Type _} [FiniteMap Nat M] [LawfulFiniteMa
 variable {V : Type _}
 
 /-- Extensionality for maps: two maps are equal if they agree on all keys. -/
-theorem ext [ExtensionalPartialMap M K] {m₁ m₂ : M V} (h : ∀ k, get? m₁ k = get? m₂ k) : m₁ = m₂ := by
-  sorry
-  -- apply ExtensionalPartialMap.equiv_iff_eq.mp
-  -- exact h
+theorem ext [e : ExtensionalPartialMap M K] {m₁ m₂ : M V} (h : @PartialMap.equiv K V M e.toPartialMap m₁ m₂) : m₁ = m₂ :=
+  e.equiv_iff_eq.mp h
 
 private theorem mem_of_get?_ofList (l : List (K × V)) (k : K) (v : V) :
     get? (FiniteMap.ofList l : M V) k = some v → (k, v) ∈ l := by
-  sorry
-  -- intro h
-  -- induction l with
-  -- | nil =>
-  --   rw [ofList_nil] at h
-  --   simp only [EmptyCollection.emptyCollection] at h
-  --   have : get? (empty : M V) k = none := get?_empty k
-  --   rw [this] at h
-  --   cases h
-  -- | cons kv kvs ih =>
-  --   rw [ofList_cons] at h
-  --   by_cases heq : kv.1 = k
-  --   · suffices kv = (k, v) by rw [← this]; exact List.Mem.head _
-  --     ext <;> simp [heq]
-  --     have : get? (insert (ofList kvs) k kv.snd) k = some v := by rw [← heq]; exact h
-  --     rw [get?_insert_eq rfl] at this
-  --     exact Option.some.inj this
-  --   · have : get? (insert (ofList kvs) kv.1 kv.snd) k = get? (ofList kvs) k := get?_insert_ne heq
-  --     rw [this] at h
-  --     exact List.Mem.tail _ (ih h)
+  intro h
+  induction l with
+  | nil =>
+    rw [ofList_nil] at h
+    simp only [EmptyCollection.emptyCollection] at h
+    have : get? (empty : M V) k = none := get?_empty k
+    rw [this] at h
+    cases h
+  | cons kv kvs ih =>
+    rw [ofList_cons] at h
+    by_cases heq : kv.1 = k
+    · suffices kv = (k, v) by rw [← this]; exact List.Mem.head _
+      ext <;> simp [heq]
+      have : get? (insert (FiniteMap.ofList kvs : M V) kv.1 kv.snd) kv.1 = some v := by
+        rw [← heq] at h; exact h
+      rw [get?_insert_eq rfl] at this
+      exact Option.some.inj this
+    · have : get? (insert (FiniteMap.ofList kvs : M V) kv.1 kv.snd) k = get? (FiniteMap.ofList kvs : M V) k := get?_insert_ne heq
+      rw [this] at h
+      exact List.Mem.tail _ (ih h)
 
 theorem nodup_toList (m : M V): (toList m).Nodup :=
   (toList_spec m).1
@@ -292,22 +290,52 @@ theorem toList_empty : toList (∅ : M V) = [] := by
 
 theorem toList_insert [DecidableEq V] : ∀ (m : M V) k v, get? m k = none →
     (toList (insert m k v)).Perm ((k, v) :: toList m) := by
-  sorry
-  -- intro m k v hk_none
-  -- apply ofList_injective
-  -- · exact nodup_toList_keys _
-  -- · simp only [List.map_cons, List.nodup_cons, nodup_toList_keys m]
-  --   simp [mem_toList, hk_none]
-  -- · rw [ofList_toList, ofList_cons, ofList_toList]
+  intro m k v hk_none
+  apply List.perm_of_nodup_of_mem_iff
+  · exact nodup_toList _
+  · simp only [List.nodup_cons]
+    constructor
+    · intro hmem
+      have : get? m k = some v := (mem_toList m k v).mp hmem
+      rw [hk_none] at this
+      cases this
+    · exact nodup_toList m
+  · intro ⟨k', v'⟩
+    simp only [List.mem_cons]
+    constructor
+    · intro hmem
+      have : get? (insert m k v) k' = some v' := (mem_toList _ k' v').mp hmem
+      by_cases h : k = k'
+      · subst h
+        rw [get?_insert_eq rfl] at this
+        left
+        simp [Option.some.inj this]
+      · rw [get?_insert_ne h] at this
+        right
+        exact (mem_toList m k' v').mpr this
+    · intro hmem
+      cases hmem with
+      | inl h =>
+        simp only [Prod.mk.injEq] at h
+        obtain ⟨hk, hv⟩ := h
+        subst hk hv
+        exact (mem_toList (insert m k' v') k' v').mpr (get?_insert_eq rfl)
+      | inr hmem =>
+        have hget : get? m k' = some v' := (mem_toList m k' v').mp hmem
+        have hne : k ≠ k' := by
+          intro heq; subst heq
+          rw [hk_none] at hget
+          cases hget
+        have : get? (insert m k v) k' = some v' := by rw [get?_insert_ne hne]; exact hget
+        exact (mem_toList (insert m k v) k' v').mpr this
 
 theorem toList_delete [DecidableEq V] (m : M V) (k : K) (v : V) (h : get? m k = some v) :
     (toList m).Perm ((k, v) :: toList (delete m k)) := by
-  have heq : toList m = toList (insert (delete m k) k v) := by
-    sorry
-    -- rw [LawfulPartialMap.insert_delete_cancel m k v h]
-  rw [heq]
-  apply toList_insert
-  sorry -- exact get?_delete_eq rfl m k
+  have heq : (toList m).Perm (toList (insert (delete m k) k v)) := by
+    apply toList_perm_of_get?_eq
+    intro k'
+    exact (LawfulPartialMap.insert_delete_cancel h k').symm
+  exact heq.trans (toList_insert (delete m k) k v (get?_delete_eq rfl))
 
 theorem all_iff_toList (P : K → V → Prop) (m : M V) :
     PartialMap.all P m ↔ ∀ kv ∈ toList m, P kv.1 kv.2 := by
@@ -439,116 +467,98 @@ theorem map_zipWith_right [DecidableEq V] {V' V'' : Type _} [DecidableEq V'] [De
     (f : V → V' → V'') (g1 : V'' → V) (m1 : M V) (m2 : M V')
     (hg1 : ∀ x y, g1 (f x y) = x)
     (hdom : ∀ k, (get? m1 k).isSome ↔ (get? m2 k).isSome) :
-    FiniteMap.map g1 (FiniteMap.zipWith f m1 m2) = m1 := by
-  sorry
-  -- apply ext
-  -- intro k
-  -- rw [get?_map, get?_zipWith]
-  -- cases h1 : get? m1 k with
-  -- | none => simp
-  -- | some x =>
-  --   cases h2' : get? m2 k with
-  --   | none =>
-  --     have : (get? m2 k).isSome = true := (hdom k).mp (by simp [h1])
-  --     simp [h2'] at this
-  --   | some y => simp [hg1]
+    PartialMap.equiv (FiniteMap.map g1 (FiniteMap.zipWith f m1 m2)) m1 := by
+  intro k
+  rw [get?_map, get?_zipWith]
+  cases h1 : get? m1 k with
+  | none => simp
+  | some x =>
+    cases h2' : get? m2 k with
+    | none =>
+      have : (get? m2 k).isSome = true := (hdom k).mp (by simp [h1])
+      simp [h2'] at this
+    | some y => simp [hg1]
 
 theorem map_zipWith_left [DecidableEq V] [DecidableEq V'] {V'' : Type _} [DecidableEq V'']
     (f : V → V' → V'') (g2 : V'' → V') (m1 : M V) (m2 : M V')
     (hg2 : ∀ x y, g2 (f x y) = y)
     (hdom : ∀ k, (get? m1 k).isSome ↔ (get? m2 k).isSome) :
-    FiniteMap.map g2 (FiniteMap.zipWith f m1 m2) = m2 := by
-  sorry
-  -- apply ext
-  -- intro k
-  -- rw [get?_map, get?_zipWith]
-  -- cases h2 : get? m2 k with
-  -- | none => simp
-  -- | some y =>
-  --   cases h1' : get? m1 k with
-  --   | none =>
-  --     have : (get? m1 k).isSome = true := (hdom k).mpr (by simp [h2])
-  --     simp [h1'] at this
-  --   | some x => simp [hg2]
+    PartialMap.equiv (FiniteMap.map g2 (FiniteMap.zipWith f m1 m2)) m2 := by
+  intro k
+  rw [get?_map, get?_zipWith]
+  cases h2 : get? m2 k with
+  | none => simp
+  | some y =>
+    cases h1' : get? m1 k with
+    | none =>
+      have : (get? m1 k).isSome = true := (hdom k).mpr (by simp [h2])
+      simp [h1'] at this
+    | some x => simp [hg2]
 
 /-- Insert distributes over zipWith. -/
 theorem zipWith_insert [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
     (f : V → V' → V'') (m1 : M V) (m2 : M V') (i : K) (x : V) (y : V') :
-    FiniteMap.zipWith f (insert m1 i x) (insert m2 i y) =
-    insert (FiniteMap.zipWith f m1 m2) i (f x y) := by
-  sorry
-  -- apply ext
-  -- intro k
-  -- by_cases h : k = i
-  -- · subst h
-  --   simp only [get?_insert_eq rfl, get?_zipWith]
-  -- · have h' : i ≠ k := Ne.symm h
-  --   simp only [get?_zipWith, get?_insert_ne h']
+    PartialMap.equiv (FiniteMap.zipWith f (insert m1 i x) (insert m2 i y))
+      (insert (FiniteMap.zipWith f m1 m2) i (f x y)) := by
+  intro k
+  by_cases h : k = i
+  · subst h
+    simp only [get?_insert_eq rfl, get?_zipWith]
+  · have h' : i ≠ k := Ne.symm h
+    simp only [get?_zipWith, get?_insert_ne h']
 
 theorem zipWith_delete [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
     (f : V → V' → V'') (m1 : M V) (m2 : M V') (i : K) :
-    FiniteMap.zipWith f (delete m1 i) (delete m2 i) =
-    delete (FiniteMap.zipWith f m1 m2) i := by
-  sorry
-  -- apply ext
-  -- intro k
-  -- by_cases h : k = i
-  -- · subst h
-  --   simp only [get?_delete_eq rfl, get?_zipWith]
-  -- · have h' : i ≠ k := Ne.symm h
-  --   simp only [get?_zipWith, get?_delete_ne h']
+    PartialMap.equiv (FiniteMap.zipWith f (delete m1 i) (delete m2 i))
+      (delete (FiniteMap.zipWith f m1 m2) i) := by
+  intro k
+  by_cases h : k = i
+  · subst h
+    simp only [get?_delete_eq rfl, get?_zipWith]
+  · have h' : i ≠ k := Ne.symm h
+    simp only [get?_zipWith, get?_delete_ne h']
 
 theorem zipWith_comm [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
     (f : V → V' → V'') (m1 : M V) (m2 : M V') :
-    FiniteMap.zipWith (fun x y => f y x) m2 m1 = FiniteMap.zipWith f m1 m2 := by
-  sorry
-  -- apply ext
-  -- intro k
-  -- rw [get?_zipWith, get?_zipWith]
-  -- cases get? m1 k <;> cases get? m2 k <;> simp
+    PartialMap.equiv (FiniteMap.zipWith (fun x y => f y x) m2 m1) (FiniteMap.zipWith f m1 m2) := by
+  intro k
+  rw [get?_zipWith, get?_zipWith]
+  cases get? m1 k <;> cases get? m2 k <;> simp
 
 theorem zip_comm [DecidableEq V] [DecidableEq V']
     (m1 : M V) (m2 : M V') :
-    FiniteMap.zip m2 m1 = FiniteMap.map Prod.swap (FiniteMap.zip m1 m2) := by
-  sorry
-  -- apply ext
-  -- intro k
-  -- unfold FiniteMap.zip
-  -- rw [get?_map, get?_zipWith, get?_zipWith]
-  -- cases get? m1 k <;> cases get? m2 k <;> simp [Prod.swap]
+    PartialMap.equiv (FiniteMap.zip m2 m1) (FiniteMap.map Prod.swap (FiniteMap.zip m1 m2)) := by
+  intro k
+  unfold FiniteMap.zip
+  rw [get?_map, get?_zipWith, get?_zipWith]
+  cases get? m1 k <;> cases get? m2 k <;> simp [Prod.swap]
 
 /-- Mapping with id is identity. -/
 theorem map_id [DecidableEq V] (m : M V) :
-    FiniteMap.map id m = m := by
-  sorry
-  -- apply ext
-  -- intro k
-  -- rw [get?_map]
-  -- cases get? m k <;> simp
+    PartialMap.equiv (FiniteMap.map id m) m := by
+  intro k
+  rw [get?_map]
+  cases get? m k <;> simp
 
 /-- Mapping over a zip is the same as zipping the mapped maps. -/
 theorem zip_map [DecidableEq V] [DecidableEq V'] {V'' V''' : Type _} [DecidableEq V''] [DecidableEq V''']
     (f : V → V'') (g : V' → V''') (m1 : M V) (m2 : M V') :
-    FiniteMap.zip (FiniteMap.map f m1) (FiniteMap.map g m2) =
-    FiniteMap.map (fun (x, y) => (f x, g y)) (FiniteMap.zip m1 m2) := by
-  sorry
-  -- apply ext
-  -- intro k
-  -- unfold FiniteMap.zip
-  -- rw [get?_zipWith, get?_map, get?_map, get?_map, get?_zipWith]
-  -- cases h1 : get? m1 k <;> cases h2 : get? m2 k <;> simp
+    PartialMap.equiv (FiniteMap.zip (FiniteMap.map f m1) (FiniteMap.map g m2))
+      (FiniteMap.map (fun (x, y) => (f x, g y)) (FiniteMap.zip m1 m2)) := by
+  intro k
+  unfold FiniteMap.zip
+  rw [get?_zipWith, get?_map, get?_map, get?_map, get?_zipWith]
+  cases h1 : get? m1 k <;> cases h2 : get? m2 k <;> simp
 
 /-- Zipping fst and snd projections of a map recovers the original map. -/
 theorem zip_fst_snd {V' : Type _} [DecidableEq V] [DecidableEq V'] (m : M (V × V')) :
-    FiniteMap.zip (FiniteMap.map Prod.fst m) (FiniteMap.map Prod.snd m) = m := by
-  sorry
-  -- apply ext
-  -- intro k
-  -- unfold FiniteMap.zip
-  -- rw [get?_zipWith, get?_map, get?_map]
-  -- cases h : get? m k with
-  -- | none => simp
-  -- | some p => cases p; simp
+    PartialMap.equiv (FiniteMap.zip (FiniteMap.map Prod.fst m) (FiniteMap.map Prod.snd m)) m := by
+  intro k
+  unfold FiniteMap.zip
+  rw [get?_zipWith, get?_map, get?_map]
+  cases h : get? m k with
+  | none => simp
+  | some p => cases p; simp
 
 theorem isSome_zipWith [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
     (f : V → V' → V'') (m1 : M V) (m2 : M V') (k : K) :
@@ -559,15 +569,13 @@ theorem isSome_zipWith [DecidableEq V] [DecidableEq V'] [DecidableEq V'']
 
 /-- Zipping two empty maps yields an empty map. -/
 theorem zip_empty [DecidableEq V] [DecidableEq V'] :
-    FiniteMap.zip (∅ : M V) (∅ : M V') = ∅ := by
-  sorry
-  -- apply LawfulPartialMap.ext
-  -- intro k
-  -- unfold FiniteMap.zip
-  -- have h1 : get? (∅ : M V) k = none := get?_empty k
-  -- have h2 : get? (∅ : M V') k = none := get?_empty k
-  -- have h3 : get? (∅ : M (V × V')) k = none := get?_empty k
-  -- rw [get?_zipWith, h1, h2, h3]
+    PartialMap.equiv (FiniteMap.zip (∅ : M V) (∅ : M V')) ∅ := by
+  intro k
+  unfold FiniteMap.zip
+  have h1 : get? (∅ : M V) k = none := get?_empty k
+  have h2 : get? (∅ : M V') k = none := get?_empty k
+  have h3 : get? (∅ : M (V × V')) k = none := get?_empty k
+  rw [get?_zipWith, h1, h2, h3]
 
 /-- Lookup in a zipped map. -/
 theorem get?_zip [DecidableEq V] [DecidableEq V'] (m1 : M V) (m2 : M V') (k : K) :
@@ -582,8 +590,8 @@ theorem get?_zip [DecidableEq V] [DecidableEq V'] (m1 : M V) (m2 : M V') (k : K)
 theorem zip_insert [DecidableEq V] [DecidableEq V']
     (m1 : M V) (m2 : M V') (i : K) (x : V) (y : V') :
     get? m1 i = none → get? m2 i = none →
-    FiniteMap.zip (insert m1 i x) (insert m2 i y) =
-    insert (FiniteMap.zip m1 m2) i (x, y) := by
+    PartialMap.equiv (FiniteMap.zip (insert m1 i x) (insert m2 i y))
+      (insert (FiniteMap.zip m1 m2) i (x, y)) := by
   intro h1 h2
   unfold FiniteMap.zip
   exact zipWith_insert Prod.mk m1 m2 i x y
@@ -591,8 +599,8 @@ theorem zip_insert [DecidableEq V] [DecidableEq V']
 /-- Delete distributes over zip. -/
 theorem zip_delete [DecidableEq V] [DecidableEq V']
     (m1 : M V) (m2 : M V') (i : K) :
-    FiniteMap.zip (delete m1 i) (delete m2 i) =
-    delete (FiniteMap.zip m1 m2) i := by
+    PartialMap.equiv (FiniteMap.zip (delete m1 i) (delete m2 i))
+      (delete (FiniteMap.zip m1 m2) i) := by
   unfold FiniteMap.zip
   exact zipWith_delete Prod.mk m1 m2 i
 
