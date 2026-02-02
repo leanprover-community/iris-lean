@@ -227,33 +227,37 @@ theorem ofList_injective [DecidableEq V] (l1 l2 : List (K × V)) :
       mem_ofList (M := M) (K := K) l2 i x hnodup2]
   rw [heq]
 
-theorem ofList_toList (m : M V) : FiniteMap.ofList (toList m) = m := by
-  sorry
-  -- apply ext (K := K)
-  -- intro i
-  -- cases heq : get? m i
-  -- · cases heq' : get? (ofList (toList m) : M V) i
-  --   · rfl
-  --   · rename_i val
-  --     have hmem : (i, val) ∈ toList m :=
-  --       (mem_ofList (M := M) (K := K) (toList m) i val (nodup_toList_keys m)).mpr heq'
-  --     have : get? m i = some val := (mem_toList m i val).mp hmem
-  --     rw [heq] at this
-  --     cases this
-  -- · rename_i val
-  --   have hmem : (i, val) ∈ toList m := (mem_toList m i val).mpr heq
-  --   have : get? (ofList (toList m) : M V) i = some val :=
-  --     (mem_ofList (M := M) (K := K) (toList m) i val (nodup_toList_keys m)).mp hmem
-  --   rw [this]
+theorem ofList_toList (m : M V) : PartialMap.equiv (FiniteMap.ofList (toList m)) m := by
+  intro i
+  cases heq : get? m i
+  · cases heq' : get? (FiniteMap.ofList (toList m) : M V) i
+    · rfl
+    · rename_i val
+      have hmem : (i, val) ∈ toList m :=
+        (mem_ofList (toList m) i val (nodup_toList_keys m)).mpr heq'
+      have : get? m i = some val := (mem_toList m i val).mp hmem
+      rw [heq] at this
+      cases this
+  · rename_i val
+    have hmem : (i, val) ∈ toList m := (mem_toList m i val).mpr heq
+    have : get? (FiniteMap.ofList (toList m) : M V) i = some val :=
+      (mem_ofList (toList m) i val (nodup_toList_keys m)).mp hmem
+    rw [this]
 
  theorem toList_ofList [DecidableEq V] : ∀ (l : List (K × V)), (l.map Prod.fst).Nodup →
     (toList (FiniteMap.ofList l : M V)).Perm l := by
   intro l hnodup
-  apply ofList_injective (M := M) (K:=K)
-  · exact nodup_toList_keys (M := M) (K := K) (V := V) (FiniteMap.ofList l)
-  · exact hnodup
-  sorry
-  -- rw [ofList_toList]
+  apply List.perm_of_nodup_of_mem_iff
+  · exact nodup_toList (FiniteMap.ofList l : M V)
+  · exact List.nodup_of_nodup_map_fst l hnodup
+  · intro ⟨i, x⟩
+    constructor
+    · intro hmem
+      have hget : get? (FiniteMap.ofList l : M V) i = some x := (mem_toList (FiniteMap.ofList l : M V) i x).mp hmem
+      exact (mem_ofList l i x hnodup).mpr hget
+    · intro hmem
+      have hget : get? (FiniteMap.ofList l : M V) i = some x := (mem_ofList l i x hnodup).mp hmem
+      exact (mem_toList (FiniteMap.ofList l : M V) i x).mpr hget
 
 /-- Two maps with the same get? behavior have permutation-equivalent toLists. -/
 theorem toList_perm_of_get?_eq [DecidableEq V] {m₁ m₂ : M V}
