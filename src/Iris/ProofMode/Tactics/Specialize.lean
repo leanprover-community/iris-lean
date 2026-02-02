@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 import Iris.ProofMode.Patterns.ProofModeTerm
+import Iris.ProofMode.Patterns.CasesPattern
 import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
@@ -75,12 +76,34 @@ private def SpecializeState.process_wand :
     let pf := q(specialize_wand_subgoal $out₂ $pf $h' $pf')
     return { e := el', hyps := hypsl', p := q(false), out := out₂, pf }
 
+/-- `iCasesPat.should_try_dup_context` determines when iSpecializeCore should try to duplicate the separation context.
+The duplication only works if the conclusion of the specialization is persistent.
+
+TODO: This also needs to check that there are no modality addition patterns in `pat` once they are implemented.
+-/
+def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
+  match pat with
+  | .intuitionistic _ => true
+  | .pure _ => true
+  | _ => false
+
+private theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B}
+  (h : P ∗ □?pa A ⊢ P' ∗ □?pb B)
+  (h2 : pa = true ∨ Affine A)
+  [IntoPersistently pb B B']
+  : P ∗ □?pa A ⊢ P ∗ □ B' := by
+    apply Entails.trans _ persistently_and_intuitionistically_sep_r.1
+    apply and_intro
+    · cases h2 <;> subst_eqs <;> apply sep_elim_l
+    · apply h.trans $ (sep_mono_r (persistentlyIf_of_intuitionisticallyIf.trans into_persistently)).trans sep_elim_r
+
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.
 
 ## Parameters
 - `hyps`: Current proof mode hypothesis context
 - `pa`: Persistence flag for `A`
 - `spats`: List of specialization patterns to apply sequentially
+- `try_dup_context`: Boolean whether specialize should try to duplicate the context. See [iCasesPat.should_try_dup_context]
 
 ## Returns
 A tuple containing:
@@ -90,11 +113,23 @@ A tuple containing:
 - `B`: Resulting proposition after applying all patterns
 - `pf`: Proof of `hyps ∗ □?pa A ⊢ hyps' ∗ □?pb B`
 -/
-def iSpecializeCore {e} (hyps : @Hyps u prop bi e) (pa : Q(Bool)) (A : Q($prop)) (spats : List SpecPat) :
+def iSpecializeCore {e} (hyps : @Hyps u prop bi e) (pa : Q(Bool)) (A : Q($prop)) (spats : List SpecPat) (try_dup_context : Bool := false) :
   ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) × Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
   let state := { hyps, out := A, p := pa, pf := q(.rfl), .. }
-  let state ← spats.foldlM SpecializeState.process_wand state
-  return ⟨_, state.hyps, state.p, state.out, state.pf⟩
+  let ⟨_, hyps', pb, B, pf⟩ ← spats.foldlM SpecializeState.process_wand state
+  if try_dup_context then
+    let B' : Q($prop) ← mkFreshExprMVarQ q($prop)
+    let .some _ ← trySynthInstanceQ q(IntoPersistently $pb $B $B')
+      | return ⟨_, hyps', pb, B, pf⟩
+    have af : MetaM (Option Q($pa = true ∨ Affine $A)) :=
+      match matchBool pa with
+      | .inl _ => return some q(.inl (.refl _))
+      | .inr _ => do
+        let .some h ← trySynthInstanceQ q(Affine $A) | return none
+        return some q(.inr $h)
+    let some af ← af | return ⟨_, hyps', pb, B, pf⟩
+    return ⟨_, hyps, q(true), B', q(specialize_dup_context $pf $af)⟩
+  return ⟨_, hyps', pb, B, pf⟩
 
 elab "ispecialize" colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
