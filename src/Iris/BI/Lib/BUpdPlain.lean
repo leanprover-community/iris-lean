@@ -4,6 +4,7 @@ import Iris.Algebra.Updates
 import Iris.ProofMode.Classes
 import Iris.ProofMode.Tactics
 import Iris.ProofMode.Display
+import Iris.ProofMode.InstancesUpdates
 
 namespace Iris
 open Iris.Std BI
@@ -40,12 +41,10 @@ theorem BUpdPlain_mono {P Q : PROP} : (P ⊢ Q) → (BUpdPlain P ⊢ BUpdPlain Q
   intros H
   unfold BUpdPlain
   iintro R %HQR Hp
-  have H1 : ⊢ iprop(Q -∗ ■ HQR) -∗ iprop(P -∗ ■ HQR) := by
-    iintro H Hp
-    iapply H
-    iapply H $$ Hp
   iapply R
-  iapply H1 $$ Hp
+  iintro HP
+  iapply Hp
+  iapply H $$ HP
 
 theorem BUpdPlain_idemp {P : PROP} : BUpdPlain (BUpdPlain P) ⊢ BUpdPlain P := by
   unfold BUpdPlain
@@ -68,15 +67,14 @@ theorem BUpdPlain_plainly {P : PROP} : BUpdPlain iprop(■ P) ⊢ (■ P) := by
   unfold BUpdPlain
   iintro H
   iapply H
-  exact wand_rfl
+  iapply wand_rfl
 
 /- BiBUpdPlainly entails the alternative definition -/
 theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdatePlainly PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P := by
   unfold BUpdPlain
   iintro HP %_ Hx
-  iapply bupd_elim
-  iapply bupd_wand_l
-  isplitl [Hx] <;> iassumption
+  imod HP
+  iapply Hx $$ HP
 
 -- We get the usual rule for frame preserving updates if we have an [own]
 -- connective satisfying the following rule w.r.t. interaction with plainly.

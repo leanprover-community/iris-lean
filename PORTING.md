@@ -251,7 +251,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] instances for big ops
   - [ ] MaybeCombineSepAs instances
   - [ ] CombineSepGives instances
-  - [ ] ElimModal instances
+  - [x] ElimModal instances
   - [ ] AddModal instances
   - [ ] ElimInv instances
 - [ ] `class_instances_cmra.v`
@@ -260,18 +260,22 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `class_instances_internal_eq.v`
 - [ ] `class_instances_later.v` (InstancesLater.lean)
   - [x] basic instances
-  - [ ] FromModal
-  - [ ] ElimModal
+  - [x] FromModal
+  - [x] ElimModal
   - [ ] AddModal
-  - [ ] IntoLater
+  - [x] IntoLater
 - [ ] `class_instances_make.v`
-- [ ] `class_instances_plainly.v`
+- [ ] `class_instances_plainly.v` (InstancesPlainly.lean)
+  - [x] basic instances
+  - [x] FromModal
+  - [ ] IntoExcept0
+  - [ ] IntoLaterN
 - [ ] `class_instances_updates.v` (InstancesUpdates.lean)
   - [x] Basic instances for bupd
   - [ ] Basic instances for fupd
-  - [ ] FromModal bupd
+  - [x] FromModal bupd
   - [ ] FromModal fupd
-  - [ ] ElimModal bupd
+  - [x] ElimModal bupd
   - [ ] ElimModal fupd
   - [ ] AddModal bupd
   - [ ] AddModal fupd
@@ -283,7 +287,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] FromPure
   - [ ] IntoInternalEq
   - [x] IntoPersistent
-  - [ ] FromModal
+  - [x] FromModal
   - [x] FromAffinely
   - [x] IntoAbsorbingly
   - [x] IntoWand
@@ -303,12 +307,11 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] CombineSepAs
   - [ ] MaybeCombineSepAs
   - [ ] CombineSepGives
-  - [ ] ElimModal
+  - [x] ElimModal
   - [ ] AddModal
   - [ ] Frame
   - [x] IntoExcept0
-  - [ ] MaybeIntoLaterN
-  - [ ] IntoLaterN
+  - [x] MaybeIntoLaterN / IntoLaterN
   - [ ] IntoEmbed
   - [x] AsEmpValid
   - [ ] AsEmpValid0
@@ -318,7 +321,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] ElimInv
 - [ ] `classes_make.v`
 - [ ] `coq_tactics.v` / `ltac_tactics.v` (split into the files in Tactics/)
-  - [ ] iSolveSideCondition
+  - [x] iSolveSideCondition
   - [ ] iStartProof
     - [x] basic
     - [ ] with bi specified
@@ -353,7 +356,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] iRight
   - [x] iSplit(L/R)
   - [x] iExists
-  - [ ] iModIntro
+  - [x] iModIntro
   - [ ] iNext (with later credits)
   - [ ] iMod
   - [ ] iDestruct (Lean: icases)
@@ -365,7 +368,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
     - [ ] all intro patterns (see below)
   - [ ] iInduction
   - [ ] iLöb
-  - [ ] iAssert (Lean: ihave _ : _)
+  - [x] iAssert (Lean: ihave _ : _)
   - [ ] iRewrite
   - [ ] iInv
   - [ ] iAccu
@@ -382,10 +385,10 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] IPure
   - [x] IIntuitionistic
   - [x] ISpatial
-  - [ ] IModalElim
+  - [x] IModalElim
   - [ ] IRewrite
   - [ ] IPureIntro
-  - [ ] IModalIntro
+  - [x] IModalIntro
   - [ ] ISimpl
   - [ ] IDone
   - [ ] IForall
