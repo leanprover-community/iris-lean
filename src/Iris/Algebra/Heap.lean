@@ -8,8 +8,9 @@ import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
 import Iris.Std.Set
 import Iris.Std.Heap
+import Iris.Std.PartialMap
 
-open Iris
+open Iris Std
 
 section OFE
 
@@ -17,32 +18,35 @@ open OFE
 
 namespace Store
 
-instance instOFE [Store T K V] [OFE V] : OFE T where
-  Equiv s0 s1  := get s0 ≡ get s1
-  Dist n s0 s1 := get s0 ≡{n}≡ get s1
+instance instOFE [PartialMap M K] [OFE V] : OFE (M V) where
+  Equiv s0 s1  := get? s0 ≡ get? s1
+  Dist n s0 s1 := get? s0 ≡{n}≡ get? s1
   dist_eqv     := ⟨fun _ => .of_eq rfl, (·.symm), (·.trans ·)⟩
   equiv_dist   := equiv_dist
   dist_lt      := dist_lt
 
-@[simp] def toMap [Store T K V] [OFE V] : T -n> (K → V) where
-  f x := get x
+@[simp] def toMap [PartialMap M K] [OFE V] : (M V) -n> (K → Option V) where
+  f x := get? x
   ne.1 {_ _ _} H k := H k
 
-@[simp] def ofMap [Store T K V] [R : RepFunStore T K V] [OFE V] : {f : K → V // R.rep f} -n> T where
+@[simp] def ofMap [PartialMap M K] [R : RepFunMap M K] [OFE V] :  (K → Option V) -n> (M V) where
   f x := of_fun x
   ne.1 {_ _ _} H k := by simp only [get_of_fun, H k]
 
-instance get_ne [Store T K V] [OFE V] (k : K) : NonExpansive (get · k : T → V) where
+instance get_ne [PartialMap M K] [OFE V] (k : K) : NonExpansive (get? · k : M V → Option V) where
   ne {_ _ _} Ht := Ht k
 
-instance [Store T K V] [OFE V] (k : K) : NonExpansive₂ (set · k · : T → V → T) where
+instance [PartialMap M K] [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive₂ (insert · k · : M V → V → M V) where
   ne {_ _ _} Hv {_ _} Ht k' := by
     by_cases h : k = k'
-    · simp [get_set_eq h, Ht]
-    · simp [get_set_ne h, Hv k']
+    · simp [get?_insert_eq h, Ht]
+    · simp [get?_insert_ne h, Hv k']
 
-theorem eqv_of_Equiv [OFE V] [Store T K V] {t1 t2 : T} (H : Store.Equiv t1 t2) : t1 ≡ t2 :=
-  (.of_eq <| congrFun H ·)
+theorem eqv_of_Equiv [OFE V] [PartialMap M K] {t1 t2 : M V} (H : PartialMap.equiv t1 t2) : t1 ≡ t2 :=
+  (.of_eq <| H ·)
+
+
+
 
 instance [Heap T K V] [OFE V] (op : V → V → V) [NonExpansive₂ op] :
     NonExpansive₂ (merge (T := T) op) where
