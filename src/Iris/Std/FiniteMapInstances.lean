@@ -7,6 +7,7 @@ import Iris.Std.FiniteMap
 import Iris.Std.List
 import Std
 
+/-
 /-! ## FiniteMap Instance for Std.ExtTreeMap
 
 This file instantiates the abstract finite map interface `Iris.Std.FiniteMap` with Lean's `Std.ExtTreeMap`.
@@ -171,3 +172,4 @@ instance [Std.TransCmp (α := Nat) compare] [Std.LawfulEqCmp (α := Nat) compare
 end FiniteMapInst
 
 end Iris.Std
+-/

@@ -8,6 +8,7 @@ import Iris.Std.Heap
 import Iris.Std.Infinite
 import Std.Data.TreeMap
 import Std.Data.ExtTreeMap
+/-
 
 /-!
 # Heap Instances for Standard Types
@@ -452,3 +453,4 @@ instance instHeapExtTreeMap : Heap (ExtTreeMap K V compare) K V where
 end HeapInstance
 
 end Std.ExtTreeMap
+-/
