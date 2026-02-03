@@ -23,7 +23,7 @@ under `▷` (via the step-taking fancy update `|={∅}▷=>^n`).
 ## Definition
 
 ```
-wp_pre s wp E e Φ :=
+wp_pre W s wp W E e Φ :=
   match to_val e with
   | Some v => |={E}=> Φ v
   | None => ∀ σ ns κ κs nt,
@@ -31,8 +31,8 @@ wp_pre s wp E e Φ :=
         ⌜if s is NotStuck then reducible e σ else True⌝ ∗
         ∀ e2 σ2 efs, ⌜prim_step e σ κ e2 σ2 efs⌝ ={∅}▷=∗^(S n) |={∅,E}=>
         state_interp σ2 (S ns) κs (length efs + nt) ∗
-        wp E e2 Φ ∗
-        [∗ list] ef ∈ efs, wp ⊤ ef fork_post
+        wp W E e2 Φ ∗
+        [∗ list] ef ∈ efs, wp W ⊤ ef fork_post
   end
 ```
 
@@ -83,39 +83,42 @@ class IrisGS (Λ : Language) (GF : BundledGFunctors) where
     state_interp σ ns κs nt ⊢ state_interp σ (ns + 1) κs nt
 
 variable [inst : IrisGS Λ GF]
+variable {W : WsatGS GF}
 
-private noncomputable abbrev fupd' (E1 E2 : Iris.Set Positive) (P : IProp GF) : IProp GF :=
-  uPred_fupd (M := M) (F := F) (@IrisGS.wsatGS Λ GF inst) E1 E2 P
+private noncomputable abbrev fupd' (W : WsatGS GF)
+    (E1 E2 : Iris.Set Positive) (P : IPropWsat GF M F) : IPropWsat GF M F :=
+  uPred_fupd (M := M) (F := F) W E1 E2 P
 
 private abbrev maskEmpty : Iris.Set Positive := fun _ => False
 
-private theorem fupd_idem (E : Iris.Set Positive) (P : IProp GF) :
-    fupd' (Λ := Λ) (M := M) (F := F) E E
-        (fupd' (Λ := Λ) (M := M) (F := F) E E P) ⊢
-      fupd' (Λ := Λ) (M := M) (F := F) E E P := by
+private theorem fupd_idem (E : Iris.Set Positive) (P : IPropWsat GF M F) :
+    fupd' W E E
+        (fupd' W E E P) ⊢
+      fupd' W E E P := by
   simpa using
-    (fupd_trans (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := E) (E2 := E) (E3 := E) (P := P))
+    (Iris.BaseLogic.fupd_trans (W := W) (M := M) (F := F)
+      (E1 := E) (E2 := E) (E3 := E) (P := P))
 
-private theorem fupd_intro (E : Iris.Set Positive) (P : IProp GF) :
-    P ⊢ fupd' (Λ := Λ) (M := M) (F := F) E E P := by
+private theorem fupd_intro (E : Iris.Set Positive) (P : IPropWsat GF M F) :
+    P ⊢ fupd' W E E P := by
   have hsubset : Subset E E := by
     intro _ hx; exact hx
   have hintro :=
-    fupd_intro_mask (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := E) (E2 := E) hsubset (P := P)
+    Iris.BaseLogic.fupd_intro_mask (W := W) (M := M) (F := F)
+      (E1 := E) (E2 := E) hsubset (P := P)
   have htrans :=
-    fupd_trans (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := E) (E2 := E) (E3 := E) (P := P)
+    Iris.BaseLogic.fupd_trans (W := W) (M := M) (F := F)
+      (E1 := E) (E2 := E) (E3 := E) (P := P)
   exact hintro.trans htrans
 
 private abbrev maskDiff (E1 E2 : Iris.Set Positive) : Iris.Set Positive :=
   -- points in `E2` but not in `E1`
   fun i => E2 i ∧ ¬E1 i
 
-private theorem fupd_mask_mono (E1 E2 : Iris.Set Positive) (h : Subset E1 E2) (P : IProp GF) :
-    fupd' (Λ := Λ) (M := M) (F := F) E1 E1 P ⊢
-      fupd' (Λ := Λ) (M := M) (F := F) E2 E2 P := by
+private theorem fupd_mask_mono (E1 E2 : Iris.Set Positive) (h : Subset E1 E2)
+    (P : IPropWsat GF M F) :
+    fupd' W E1 E1 P ⊢
+      fupd' W E2 E2 P := by
   -- frame the mask difference, then rejoin
   let Ef : Iris.Set Positive := maskDiff E1 E2
   have hdisj : CoPset.Disjoint (mask E1) (mask Ef) := by
@@ -134,116 +137,117 @@ private theorem fupd_mask_mono (E1 E2 : Iris.Set Positive) (h : Subset E1 E2) (P
       · exact Or.inl hE1
       · exact Or.inr ⟨hE2, hE1⟩
   have hframe :=
-    fupd_mask_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := E1) (E2 := E1) (Ef := Ef) (P := P) hdisj
+    Iris.BaseLogic.fupd_mask_frame_r (W := W) (M := M) (F := F)
+      (E1 := E1) (E2 := E1) (Ef := Ef) (P := P) hdisj
   have hframe' :
-      fupd' (Λ := Λ) (M := M) (F := F) E1 E1 P ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) (Iris.union E1 Ef) (Iris.union E1 Ef) P := by
+      fupd' W E1 E1 P ⊢
+      fupd' W (Iris.union E1 Ef) (Iris.union E1 Ef) P := by
     simpa [Iris.union] using hframe
   simpa [hunion] using hframe'
 
-private theorem fupd_close_mask (E1 E2 : Iris.Set Positive) (P : IProp GF) :
-    fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
-        (BIBase.sep P (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))) ⊢
-      fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E2 P := by
-  -- close the mask using the framed update and `fupd_trans`
+private theorem fupd_close_mask (E1 E2 : Iris.Set Positive) (P : IPropWsat GF M F) :
+    fupd' W maskEmpty E1
+        (BIBase.sep P (fupd' W E1 E2 (BIBase.emp : IProp GF))) ⊢
+      fupd' W maskEmpty E2 P := by
+  -- close the mask using the framed update and `Iris.BaseLogic.fupd_trans`
   have hframe :
-      BIBase.sep (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)) P ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) E1 E2 P := by
+      BIBase.sep (fupd' W E1 E2 (BIBase.emp : IProp GF)) P ⊢
+        fupd' W E1 E2 P := by
     have hmono :
-        fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.sep (BIBase.emp : IProp GF) P) ⊢
-          fupd' (Λ := Λ) (M := M) (F := F) E1 E2 P :=
-      fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-        (M := M) (F := F) (E1 := E1) (E2 := E2)
+        fupd' W E1 E2 (BIBase.sep (BIBase.emp : IProp GF) P) ⊢
+          fupd' W E1 E2 P :=
+      Iris.BaseLogic.fupd_mono (W := W) (M := M) (F := F)
+        (E1 := E1) (E2 := E2)
         (P := BIBase.sep (BIBase.emp : IProp GF) P) (Q := P) (emp_sep (P := P)).1
-    exact (fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
+    exact (Iris.BaseLogic.fupd_frame_r (W := W)
       (M := M) (F := F) (E1 := E1) (E2 := E2)
       (P := BIBase.emp) (Q := P)).trans hmono
   have hframe' :
-      BIBase.sep P (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)) ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) E1 E2 P := by
+      BIBase.sep P (fupd' W E1 E2 (BIBase.emp : IProp GF)) ⊢
+        fupd' W E1 E2 P := by
     exact sep_symm.trans hframe
   have hmono :
-      fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
-          (BIBase.sep P (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))) ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
-          (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 P) :=
-    fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := maskEmpty) (E2 := E1)
-      (P := BIBase.sep P (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)))
-      (Q := fupd' (Λ := Λ) (M := M) (F := F) E1 E2 P) hframe'
+      fupd' W maskEmpty E1
+          (BIBase.sep P (fupd' W E1 E2 (BIBase.emp : IProp GF))) ⊢
+        fupd' W maskEmpty E1
+          (fupd' W E1 E2 P) :=
+    Iris.BaseLogic.fupd_mono (W := W) (M := M) (F := F)
+      (E1 := maskEmpty) (E2 := E1)
+      (P := BIBase.sep P (fupd' W E1 E2 (BIBase.emp : IProp GF)))
+      (Q := fupd' W E1 E2 P) hframe'
   exact hmono.trans <|
-    fupd_trans (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := maskEmpty) (E2 := E1) (E3 := E2) (P := P)
+    Iris.BaseLogic.fupd_trans (W := W) (M := M) (F := F)
+      (E1 := maskEmpty) (E2 := E1) (E3 := E2) (P := P)
 
 private theorem fupd_mask_subseteq_apply (E1 E2 : Iris.Set Positive)
-    (h : Subset E1 E2) (P : IProp GF) :
-    fupd' (Λ := Λ) (M := M) (F := F) E1 maskEmpty P ⊢
-      fupd' (Λ := Λ) (M := M) (F := F) E2 maskEmpty
-        (BIBase.sep P (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))) := by
+    (h : Subset E1 E2) (P : IPropWsat GF M F) :
+    fupd' W E1 maskEmpty P ⊢
+      fupd' W E2 maskEmpty
+        (BIBase.sep P (fupd' W E1 E2 (BIBase.emp : IProp GF))) := by
   -- open the larger mask, frame the computation, then re-close
   have hclose : (True : IProp GF) ⊢
-      fupd' (Λ := Λ) (M := M) (F := F) E2 E1
-        (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)) :=
-    fupd_mask_subseteq (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := E2) (E2 := E1) h
-  refine (true_sep_2 (PROP := IProp GF) (P := fupd' (Λ := Λ) (M := M) (F := F) E1 maskEmpty P)).trans ?_
+      fupd' W E2 E1
+        (fupd' W E1 E2 (BIBase.emp : IProp GF)) :=
+    Iris.BaseLogic.fupd_mask_subseteq (W := W) (M := M) (F := F)
+      (E1 := E2) (E2 := E1) h
+  refine (true_sep_2 (PROP := IProp GF) (P := fupd' W E1 maskEmpty P)).trans ?_
   refine (sep_mono hclose .rfl).trans ?_
-  refine (fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-    (M := M) (F := F) (E1 := E2) (E2 := E1)
-    (P := fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))
-    (Q := fupd' (Λ := Λ) (M := M) (F := F) E1 maskEmpty P)).trans ?_
-  refine (fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-    (M := M) (F := F) (E1 := E2) (E2 := E1) (P := _)
-    (Q := fupd' (Λ := Λ) (M := M) (F := F) E1 maskEmpty
-      (BIBase.sep P (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)))) ?_).trans ?_
+  refine (Iris.BaseLogic.fupd_frame_r (W := W) (M := M) (F := F)
+    (E1 := E2) (E2 := E1)
+    (P := fupd' W E1 E2 (BIBase.emp : IProp GF))
+    (Q := fupd' W E1 maskEmpty P)).trans ?_
+  refine (Iris.BaseLogic.fupd_mono (W := W) (M := M) (F := F)
+    (E1 := E2) (E2 := E1) (P := _)
+    (Q := fupd' W E1 maskEmpty
+      (BIBase.sep P (fupd' W E1 E2 (BIBase.emp : IProp GF)))) ?_).trans ?_
   · -- move the closing update inside the inner `fupd`
     refine (sep_symm.trans ?_)
-    exact fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := E1) (E2 := maskEmpty)
-      (P := P) (Q := fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))
+    exact Iris.BaseLogic.fupd_frame_r (W := W) (M := M) (F := F)
+      (E1 := E1) (E2 := maskEmpty)
+      (P := P) (Q := fupd' W E1 E2 (BIBase.emp : IProp GF))
   -- compose the nested updates to close the mask
-  exact fupd_trans (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-    (M := M) (F := F) (E1 := E2) (E2 := E1) (E3 := maskEmpty)
-    (P := BIBase.sep P (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)))
+  exact Iris.BaseLogic.fupd_trans (W := W) (M := M) (F := F)
+    (E1 := E2) (E2 := E1) (E3 := maskEmpty)
+    (P := BIBase.sep P (fupd' W E1 E2 (BIBase.emp : IProp GF)))
 
 private theorem fupd_forall {A : Type _} (E1 E2 : Iris.Set Positive)
-    (Φ : A → IProp GF) :
-    fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.forall Φ) ⊢
-      BIBase.forall fun a => fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (Φ a) := by
+    (Φ : A → IPropWsat GF M F) :
+    fupd' W E1 E2 (BIBase.forall Φ) ⊢
+      BIBase.forall fun a => fupd' W E1 E2 (Φ a) := by
   -- commute `fupd` with `∀` using monotonicity
   refine forall_intro ?_; intro a
   have hmono :
       BIBase.forall Φ ⊢ Φ a :=
     forall_elim (PROP := IProp GF) (Ψ := Φ) a
-  exact (fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-    (M := M) (F := F) (E1 := E1) (E2 := E2) (P := BIBase.forall Φ) (Q := Φ a) hmono)
+  exact (Iris.BaseLogic.fupd_mono (W := W) (M := M) (F := F)
+    (E1 := E1) (E2 := E2) (P := BIBase.forall Φ) (Q := Φ a) hmono)
 
-private theorem fupd_wand (E1 E2 : Iris.Set Positive) (P Q : IProp GF) :
-    fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.wand P Q) ⊢
-      BIBase.wand P (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 Q) := by
+private theorem fupd_wand (E1 E2 : Iris.Set Positive)
+    (P Q : IPropWsat GF M F) :
+    fupd' W E1 E2 (BIBase.wand P Q) ⊢
+      BIBase.wand P (fupd' W E1 E2 Q) := by
   -- frame a premise through the update, then eliminate the wand
   refine wand_intro ?_
   have hframe :
-      BIBase.sep (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.wand P Q)) P ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.sep (BIBase.wand P Q) P) :=
-    fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := E1) (E2 := E2) (P := BIBase.wand P Q) (Q := P)
+      BIBase.sep (fupd' W E1 E2 (BIBase.wand P Q)) P ⊢
+        fupd' W E1 E2 (BIBase.sep (BIBase.wand P Q) P) :=
+    Iris.BaseLogic.fupd_frame_r (W := W) (M := M) (F := F)
+      (E1 := E1) (E2 := E2) (P := BIBase.wand P Q) (Q := P)
   have hmono :
       BIBase.sep (BIBase.wand P Q) P ⊢ Q :=
     wand_elim_l (P := P) (Q := Q)
   exact (hframe.trans
-    (fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := E1) (E2 := E2)
+    (Iris.BaseLogic.fupd_mono (W := W) (M := M) (F := F)
+      (E1 := E1) (E2 := E2)
       (P := BIBase.sep (BIBase.wand P Q) P) (Q := Q) hmono))
 
 /-! ## WP Helpers -/
 
-private abbrev fork_post : Λ.val → IProp GF :=
+private abbrev fork_post : Λ.val → IPropWsat GF M F :=
   IrisGS.fork_post (Λ := Λ) (GF := GF)
 
 private abbrev state_interp (σ : Λ.state) (ns : Nat)
-    (κs : List Λ.observation) (nt : Nat) : IProp GF :=
+    (κs : List Λ.observation) (nt : Nat) : IPropWsat GF M F :=
   IrisGS.state_interp (Λ := Λ) (GF := GF) σ ns κs nt
 
 private abbrev stuckness_pred (s : Stuckness) (e : Λ.expr) (σ : Λ.state) : Prop :=
@@ -266,11 +270,11 @@ private theorem stuckness_pred_mono {s1 s2 : Stuckness}
 /-! ## WP Pre-fixpoint -/
 
 /-- Non-value case of the WP pre-fixpoint.
-Coq: non-value branch of `wp_pre` in `weakestpre.v`. -/
-noncomputable def wp_pre_step
+Coq: non-value branch of `wp_pre W` in `weakestpre.v`. -/
+noncomputable def wp_pre_step (W : WsatGS GF)
     (s : Stuckness)
-    (wp : Iris.Set Positive → Λ.expr → (Λ.val → IProp GF) → IProp GF)
-    (E : Iris.Set Positive) (e : Λ.expr) (Φ : Λ.val → IProp GF) : IProp GF :=
+    (wp : Iris.Set Positive → Λ.expr → (Λ.val → IPropWsat GF M F) → IPropWsat GF M F)
+    (E : Iris.Set Positive) (e : Λ.expr) (Φ : Λ.val → IPropWsat GF M F) : IPropWsat GF M F :=
   -- quantify over the machine state and require a step + recursive WP
   BIBase.forall fun σ : Λ.state =>
     BIBase.forall fun ns : Nat =>
@@ -278,38 +282,40 @@ noncomputable def wp_pre_step
         BIBase.forall fun κs : List Λ.observation =>
           BIBase.forall fun nt : Nat =>
             BIBase.wand (state_interp σ ns (κ ++ κs) nt) <|
-              fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty <|
+              fupd' W E maskEmpty <|
                 BIBase.sep (BIBase.pure (stuckness_pred s e σ)) <|
                   BIBase.forall fun e2 : Λ.expr =>
                     BIBase.forall fun σ2 : Λ.state =>
                       BIBase.forall fun efs : List Λ.expr =>
                         BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)) <|
-                          fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E <|
+                          fupd' W maskEmpty E <|
                             BIBase.later <|
                               BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt)) <|
                                 BIBase.sep (wp E e2 Φ)
                                   (big_sepL (fun _ ef => wp Iris.Set.univ ef fork_post) efs)
 
-/-- The pre-fixpoint for weakest preconditions. Takes the recursive `wp` as
+/-- The pre-fixpoint for weakest preconditions. Takes the recursive `wp W` as
 a parameter. In the value case, returns `|={E}=> Φ v`. In the step case,
 requires stepping and recursive WP for the continuation.
-Coq: `wp_pre` in `weakestpre.v`. -/
-noncomputable def wp_pre
+Coq: `wp_pre W` in `weakestpre.v`. -/
+noncomputable def wp_pre (W : WsatGS GF)
     (s : Stuckness)
-    (wp : Iris.Set Positive → Λ.expr → (Λ.val → IProp GF) → IProp GF)
-    (E : Iris.Set Positive) (e : Λ.expr) (Φ : Λ.val → IProp GF) : IProp GF :=
+    (wp : Iris.Set Positive → Λ.expr → (Λ.val → IPropWsat GF M F) → IPropWsat GF M F)
+    (E : Iris.Set Positive) (e : Λ.expr) (Φ : Λ.val → IPropWsat GF M F) : IPropWsat GF M F :=
   match Λ.to_val e with
-  | some v => fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v)
-  | none => wp_pre_step (Λ := Λ) (GF := GF) (M := M) (F := F) s wp E e Φ
+  | some v => fupd' W E E (Φ v)
+  | none => wp_pre_step W s wp E e Φ
 
-private noncomputable abbrev wp_pre_s
+private noncomputable abbrev wp_pre_s (W : WsatGS GF)
     (s : Stuckness)
-    (wp : Iris.Set Positive → Λ.expr → (Λ.val → IProp GF) → IProp GF)
-    (E : Iris.Set Positive) (e : Λ.expr) (Φ : Λ.val → IProp GF) : IProp GF :=
-  wp_pre (Λ := Λ) (GF := GF) (M := M) (F := F) s wp E e Φ
+    (wp : Iris.Set Positive → Λ.expr → (Λ.val → IPropWsat GF M F) → IPropWsat GF M F)
+    (E : Iris.Set Positive) (e : Λ.expr) (Φ : Λ.val → IPropWsat GF M F) : IPropWsat GF M F :=
+  wp_pre W s wp E e Φ
 
-private theorem wp_pre_contractive (s : Stuckness) :
-    OFE.Contractive (fun wp => wp_pre (Λ := Λ) (GF := GF) (M := M) (F := F) s wp) := by
+private theorem wp_pre_contractive (W : WsatGS GF) (s : Stuckness) :
+    OFE.Contractive (fun (wp :
+      Iris.Set Positive → Λ.expr → (Λ.val → IPropWsat GF M F) → IPropWsat GF M F) =>
+      wp_pre W s wp) := by
   -- the recursive calls are guarded by `▷`, so contractiveness holds
   refine ⟨?_⟩
   intro n wp wp' _hwp E e Φ
@@ -331,8 +337,8 @@ private theorem wp_pre_contractive (s : Stuckness) :
       refine (forall_ne (PROP := IProp GF)) ?_
       intro nt
       refine (wand_ne.ne .rfl ?_)
-      refine (uPred_fupd_ne (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-        (M := M) (F := F) (E1 := E) (E2 := maskEmpty)).ne ?_
+      refine (uPred_fupd_ne (W := W) (M := M) (F := F)
+        (E1 := E) (E2 := maskEmpty)).ne ?_
       refine (sep_ne.ne .rfl ?_)
       refine (forall_ne (PROP := IProp GF)) ?_
       intro e2
@@ -381,101 +387,101 @@ private theorem wp_pre_contractive (s : Stuckness) :
                   (big_sepL (fun _ ef => wp' Iris.Set.univ ef fork_post) efs))) :=
         (OFE.Contractive.distLater_dist
           (f := BIBase.later (PROP := IProp GF)) hcont)
-      exact (uPred_fupd_ne (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-        (M := M) (F := F) (E1 := maskEmpty) (E2 := E)).ne hlater
+      exact (uPred_fupd_ne (W := W) (M := M) (F := F)
+        (E1 := maskEmpty) (E2 := E)).ne hlater
 
-private noncomputable abbrev wp_pre_all
-    (wp : Stuckness → Iris.Set Positive → Λ.expr → (Λ.val → IProp GF) → IProp GF)
-    (s : Stuckness) : Iris.Set Positive → Λ.expr → (Λ.val → IProp GF) → IProp GF :=
-  fun E e Φ => wp_pre (Λ := Λ) (GF := GF) (M := M) (F := F) s (wp s) E e Φ
+private noncomputable abbrev wp_pre_all (W : WsatGS GF)
+    (wp : Stuckness → Iris.Set Positive → Λ.expr → (Λ.val → IPropWsat GF M F) → IPropWsat GF M F)
+    (s : Stuckness) : Iris.Set Positive → Λ.expr → (Λ.val → IPropWsat GF M F) → IPropWsat GF M F :=
+  fun E e Φ => wp_pre W s (wp s) E e Φ
 
-private theorem wp_pre_all_contractive :
-    OFE.Contractive (fun wp => wp_pre_all (Λ := Λ) (GF := GF) (M := M) (F := F) wp) := by
+private theorem wp_pre_all_contractive (W : WsatGS GF) :
+    OFE.Contractive (fun (wp :
+      Stuckness → Iris.Set Positive → Λ.expr → (Λ.val → IPropWsat GF M F) → IPropWsat GF M F) =>
+      wp_pre_all W wp) := by
   -- contractiveness follows pointwise from `wp_pre_contractive`
   refine ⟨?_⟩
   intro n wp wp' hwp s E e Φ
   have hwp_s : OFE.DistLater n (wp s) (wp' s) := by
     intro m hm; exact hwp m hm s
-  exact (wp_pre_contractive (Λ := Λ) (GF := GF) (M := M) (F := F) s).distLater_dist
+  exact (wp_pre_contractive W s).distLater_dist
     hwp_s E e Φ
 
 /-! ## WP Fixpoint -/
 
-/-- The weakest precondition, defined as the fixpoint of `wp_pre`.
-The fixpoint is well-founded because `wp_pre` is contractive: the
-recursive call to `wp` appears under `▷`.
+/-- The weakest precondition, defined as the fixpoint of `wp_pre W`.
+The fixpoint is well-founded because `wp_pre W` is contractive: the
+recursive call to `wp W` appears under `▷`.
 Coq: `wp_def` in `weakestpre.v`. -/
-noncomputable def wp
+noncomputable def wp (W : WsatGS GF)
     (s : Stuckness) (E : Iris.Set Positive)
-    (e : Λ.expr) (Φ : Λ.val → IProp GF) : IProp GF :=
+    (e : Λ.expr) (Φ : Λ.val → IPropWsat GF M F) : IPropWsat GF M F :=
   let WpF :
-      (Stuckness → Iris.Set Positive → Λ.expr → (Λ.val → IProp GF) → IProp GF) -c>
-      (Stuckness → Iris.Set Positive → Λ.expr → (Λ.val → IProp GF) → IProp GF) :=
-    { f := fun wp => wp_pre_all (Λ := Λ) (GF := GF) (M := M) (F := F) wp,
-      contractive := wp_pre_all_contractive (Λ := Λ) (GF := GF) (M := M) (F := F) }
+      (Stuckness → Iris.Set Positive → Λ.expr → (Λ.val → IPropWsat GF M F) → IPropWsat GF M F) -c>
+      (Stuckness → Iris.Set Positive → Λ.expr → (Λ.val → IPropWsat GF M F) → IPropWsat GF M F) :=
+    { f := fun wp => wp_pre_all W wp,
+      contractive := wp_pre_all_contractive W }
   (OFE.ContractiveHom.fixpoint WpF) s E e Φ
 
-private noncomputable abbrev wp_s (s : Stuckness) :
-    Iris.Set Positive → Λ.expr → (Λ.val → IProp GF) → IProp GF :=
-  wp (Λ := Λ) (GF := GF) (M := M) (F := F) s
+private noncomputable abbrev wp_s (W : WsatGS GF) (s : Stuckness) :
+    Iris.Set Positive → Λ.expr → (Λ.val → IPropWsat GF M F) → IPropWsat GF M F :=
+  wp W s
 
 /-! ## Unfold -/
 
 /-- Unfold the WP fixpoint one step.
 Coq: `wp_unfold` in `weakestpre.v`. -/
 theorem wp_unfold (s : Stuckness) (E : Iris.Set Positive)
-    (e : Λ.expr) (Φ : Λ.val → IProp GF) :
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ ⊣⊢
-      wp_pre (Λ := Λ) (GF := GF) (M := M) (F := F) s (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s)
+    (e : Λ.expr) (Φ : Λ.val → IPropWsat GF M F) :
+    wp_s W s E e Φ ⊣⊢
+      wp_pre W s (wp_s W s)
         E e Φ :=
   by
   -- unfold the fixpoint equation and specialize it to `E`, `e`, and `Φ`
   let WpF :
-      (Stuckness → Iris.Set Positive → Λ.expr → (Λ.val → IProp GF) → IProp GF) -c>
-      (Stuckness → Iris.Set Positive → Λ.expr → (Λ.val → IProp GF) → IProp GF) :=
-    { f := fun wp => wp_pre_all (Λ := Λ) (GF := GF) (M := M) (F := F) wp,
-      contractive := wp_pre_all_contractive (Λ := Λ) (GF := GF) (M := M) (F := F) }
+      (Stuckness → Iris.Set Positive → Λ.expr → (Λ.val → IPropWsat GF M F) → IPropWsat GF M F) -c>
+      (Stuckness → Iris.Set Positive → Λ.expr → (Λ.val → IPropWsat GF M F) → IPropWsat GF M F) :=
+    { f := fun wp => wp_pre_all W wp,
+      contractive := wp_pre_all_contractive W }
   have hfix :
       (OFE.ContractiveHom.fixpoint WpF) s E e Φ ≡
-        wp_pre (Λ := Λ) (GF := GF) (M := M) (F := F) s
+        wp_pre W s
           (OFE.ContractiveHom.fixpoint WpF s) E e Φ := by
     -- `fixpoint_unfold` gives equivalence on the whole function, specialize it
     have h := (fixpoint_unfold (f := WpF))
     simpa [WpF] using (h s E e Φ)
-  -- convert OFE equivalence to `⊣⊢` and unfold `wp`
-  simpa [wp_s, wp, WpF] using (BI.equiv_iff (PROP := IProp GF)).1 hfix
+  -- convert OFE equivalence to `⊣⊢` and unfold `wp W`
+  simpa [wp_s W, wp W, WpF] using (BI.equiv_iff (PROP := IProp GF)).1 hfix
 
 /-! ## Core Rules -/
 
 /-- Value case: `WP of_val v @ s; E {{ Φ }} ⊣⊢ |={E}=> Φ v`.
-Coq: `wp_value_fupd'` in `weakestpre.v`. -/
+Coq: `wp_value_fupd' W` in `weakestpre.v`. -/
 theorem wp_value_fupd (s : Stuckness) (E : Iris.Set Positive)
-    (Φ : Λ.val → IProp GF) (v : Λ.val) :
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (Λ.of_val v) Φ ⊣⊢
-      fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v) :=
+    (Φ : Λ.val → IPropWsat GF M F) (v : Λ.val) :
+    wp_s W s E (Λ.of_val v) Φ ⊣⊢
+      fupd' W E E (Φ v) :=
   by
   -- unfold the WP and simplify the value case
-  have h := wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F) (s := s) (E := E)
+  have h := wp_unfold (W := W) (s := s) (E := E)
     (e := Λ.of_val v) (Φ := Φ)
   simpa [wp_pre, to_of_val] using h
 
 private abbrev wp_post (E : Iris.Set Positive)
-    (Φ Ψ : Λ.val → IProp GF) : IProp GF :=
+    (Φ Ψ : Λ.val → IPropWsat GF M F) : IPropWsat GF M F :=
   BIBase.forall fun v =>
     BIBase.wand (Φ v)
-      (fupd' (Λ := Λ) (M := M) (F := F) E E (Ψ v))
+      (fupd' W E E (Ψ v))
 
 private theorem wp_post_fork :
     (BIBase.pure True : IProp GF) ⊢
-      wp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-        Iris.Set.univ fork_post fork_post := by
+      wp_post Iris.Set.univ fork_post fork_post := by
   -- build the postcondition transformer for forked threads
   refine forall_intro ?_; intro v
   refine wand_intro ?_
   -- drop the `True` frame before introducing the update
   refine (sep_elim_r (PROP := IProp GF) (P := (BIBase.pure True : IProp GF)) (Q := fork_post v)).trans ?_
-  exact fupd_intro (Λ := Λ) (GF := GF) (M := M) (F := F)
-    (E := Iris.Set.univ) (P := fork_post v)
+  exact fupd_intro (E := Iris.Set.univ) (P := fork_post v)
 
 omit [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem later_big_sepL {A : Type _}
@@ -504,79 +510,79 @@ private theorem later_big_sepL {A : Type _}
 private theorem wp_strong_mono_value
     (E1 E2 : Iris.Set Positive) (Φ Ψ : Λ.val → IProp GF)
     (v : Λ.val) (hE : Subset E1 E2) :
-    BIBase.sep (fupd' (Λ := Λ) (M := M) (F := F) E1 E1 (Φ v))
-        (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) ⊢
-      fupd' (Λ := Λ) (M := M) (F := F) E2 E2 (Ψ v) := by
+    BIBase.sep (fupd' W E1 E1 (Φ v))
+        (wp_post E2 Φ Ψ) ⊢
+      fupd' W E2 E2 (Ψ v) := by
   -- push the postcondition transformer through the masked update
   have hΦv :
-      wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ ⊢
+      wp_post E2 Φ Ψ ⊢
         BIBase.wand (Φ v)
-          (fupd' (Λ := Λ) (M := M) (F := F) E2 E2 (Ψ v)) :=
+          (fupd' W E2 E2 (Ψ v)) :=
     forall_elim (PROP := IProp GF)
       (Ψ := fun v => BIBase.wand (Φ v)
-        (fupd' (Λ := Λ) (M := M) (F := F) E2 E2 (Ψ v))) v
+        (fupd' W E2 E2 (Ψ v))) v
   have hpost :
       BIBase.sep (Φ v)
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) E2 E2 (Ψ v) :=
+          (wp_post E2 Φ Ψ) ⊢
+        fupd' W E2 E2 (Ψ v) :=
     (sep_mono .rfl hΦv).trans
       (wand_elim_r (P := Φ v)
-        (Q := fupd' (Λ := Λ) (M := M) (F := F) E2 E2 (Ψ v)))
+        (Q := fupd' W E2 E2 (Ψ v)))
   have hmask :
-      fupd' (Λ := Λ) (M := M) (F := F) E1 E1 (Φ v) ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) E2 E2 (Φ v) :=
-    fupd_mask_mono (Λ := Λ) (M := M) (F := F) (E1 := E1) (E2 := E2) hE (P := Φ v)
+      fupd' W E1 E1 (Φ v) ⊢
+        fupd' W E2 E2 (Φ v) :=
+    fupd_mask_mono (E1 := E1) (E2 := E2) hE (P := Φ v)
   have hframe :
-      BIBase.sep (fupd' (Λ := Λ) (M := M) (F := F) E2 E2 (Φ v))
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) E2 E2
+      BIBase.sep (fupd' W E2 E2 (Φ v))
+          (wp_post E2 Φ Ψ) ⊢
+        fupd' W E2 E2
           (BIBase.sep (Φ v)
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)) :=
-    fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := E2) (E2 := E2) (P := Φ v)
-      (Q := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
+            (wp_post E2 Φ Ψ)) :=
+    Iris.BaseLogic.fupd_frame_r 
+      (E1 := E2) (E2 := E2) (P := Φ v)
+      (Q := wp_post E2 Φ Ψ)
   have hmono :
-      fupd' (Λ := Λ) (M := M) (F := F) E2 E2
+      fupd' W E2 E2
           (BIBase.sep (Φ v)
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)) ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) E2 E2
-          (fupd' (Λ := Λ) (M := M) (F := F) E2 E2 (Ψ v)) :=
-    fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := E2) (E2 := E2)
+            (wp_post E2 Φ Ψ)) ⊢
+        fupd' W E2 E2
+          (fupd' W E2 E2 (Ψ v)) :=
+    Iris.BaseLogic.fupd_mono 
+      (E1 := E2) (E2 := E2)
       (P := BIBase.sep (Φ v)
-        (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
-      (Q := fupd' (Λ := Λ) (M := M) (F := F) E2 E2 (Ψ v)) hpost
+        (wp_post E2 Φ Ψ))
+      (Q := fupd' W E2 E2 (Ψ v)) hpost
   have hcollapse :
-      fupd' (Λ := Λ) (M := M) (F := F) E2 E2
-          (fupd' (Λ := Λ) (M := M) (F := F) E2 E2 (Ψ v)) ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) E2 E2 (Ψ v) :=
-    fupd_idem (Λ := Λ) (M := M) (F := F) (E := E2) (P := Ψ v)
+      fupd' W E2 E2
+          (fupd' W E2 E2 (Ψ v)) ⊢
+        fupd' W E2 E2 (Ψ v) :=
+    fupd_idem (E := E2) (P := Ψ v)
   exact (sep_mono hmask .rfl).trans (hframe.trans (hmono.trans hcollapse))
 
 private def wp_strong_mono_body : IProp GF :=
   -- strong monotonicity packaged as an Iris proposition
-  BIBase.forall fun s1 =>
-    BIBase.forall fun s2 =>
-      BIBase.forall fun E1 =>
-        BIBase.forall fun E2 =>
-          BIBase.forall fun e =>
-            BIBase.forall fun Φ =>
-              BIBase.forall fun Ψ =>
+  BIBase.forall (fun s1 : Stuckness =>
+    BIBase.forall (fun s2 : Stuckness =>
+      BIBase.forall (fun E1 : Iris.Set Positive =>
+        BIBase.forall (fun E2 : Iris.Set Positive =>
+          BIBase.forall (fun e : Λ.expr =>
+            BIBase.forall (fun Φ : Λ.val → IProp GF =>
+              BIBase.forall (fun Ψ : Λ.val → IProp GF =>
                 BIBase.wand (BIBase.pure (stuckness_le s1 s2))
                   (BIBase.wand (BIBase.pure (Subset E1 E2))
-                    (BIBase.wand (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-                      (BIBase.wand (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
-                        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ))))
+                    (BIBase.wand (wp_s W s1 E1 e Φ)
+                      (BIBase.wand (wp_post E2 Φ Ψ)
+                        (wp_s W s2 E2 e Ψ)))))))))))
 
 private theorem wp_strong_mono_body_elim
     (s1 s2 : Stuckness) (E1 E2 : Iris.Set Positive)
     (e : Λ.expr) (Φ Ψ : Λ.val → IProp GF) :
-    wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F) ⊢
+    wp_strong_mono_body ⊢
       BIBase.wand (BIBase.pure (stuckness_le s1 s2))
         (BIBase.wand (BIBase.pure (Subset E1 E2))
-          (BIBase.wand (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-            (BIBase.wand (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ)))) := by
+          (BIBase.wand (wp_s W s1 E1 e Φ)
+            (BIBase.wand (wp_post E2 Φ Ψ)
+              (wp_s W s2 E2 e Ψ)))) := by
   -- eliminate the binders of `wp_strong_mono_body`
   refine (forall_elim (PROP := IProp GF) (Ψ := fun s1 => _) s1).trans ?_
   refine (forall_elim (PROP := IProp GF) (Ψ := fun s2 => _) s2).trans ?_
@@ -589,16 +595,15 @@ private theorem wp_strong_mono_body_elim
 private theorem wp_strong_mono_body_later_elim
     (s1 s2 : Stuckness) (E1 E2 : Iris.Set Positive)
     (e : Λ.expr) (Φ Ψ : Λ.val → IProp GF) :
-    BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F)) ⊢
+    BIBase.later (wp_strong_mono_body ) ⊢
       BIBase.later
         (BIBase.wand (BIBase.pure (stuckness_le s1 s2))
           (BIBase.wand (BIBase.pure (Subset E1 E2))
-            (BIBase.wand (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-              (BIBase.wand (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ))))) := by
+            (BIBase.wand (wp_s W s1 E1 e Φ)
+              (BIBase.wand (wp_post E2 Φ Ψ)
+                (wp_s W s2 E2 e Ψ))))) := by
   -- lift the non-later elimination through `▷`
-  exact later_mono (wp_strong_mono_body_elim (Λ := Λ) (GF := GF) (M := M) (F := F)
-    (s1 := s1) (s2 := s2) (E1 := E1) (E2 := E2) (e := e) (Φ := Φ) (Ψ := Ψ))
+  exact later_mono (wp_strong_mono_body_elim (s1 := s1) (s2 := s2) (E1 := E1) (E2 := E2) (e := e) (Φ := Φ) (Ψ := Ψ))
 
 omit [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem later_wand_elim (P Q : IProp GF) :
@@ -664,62 +669,61 @@ private theorem wp_strong_mono_later
     (hS : stuckness_le s1 s2) (hE : Subset E1 E2) :
     BIBase.sep
         (BIBase.intuitionistically
-          (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
-        (BIBase.sep (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ))
-          (BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) ⊢
-      BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ) := by
+          (BIBase.later (wp_strong_mono_body )))
+        (BIBase.sep (BIBase.later (wp_s W s1 E1 e Φ))
+          (BIBase.later (wp_post E2 Φ Ψ))) ⊢
+      BIBase.later (wp_s W s2 E2 e Ψ) := by
   -- unwrap the intuitionistic hypothesis and discharge the pure premises under `▷`
   have hIH :
       BIBase.sep
           (BIBase.intuitionistically
-            (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
-          (BIBase.sep (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ))
-            (BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) ⊢
+            (BIBase.later (wp_strong_mono_body )))
+          (BIBase.sep (BIBase.later (wp_s W s1 E1 e Φ))
+            (BIBase.later (wp_post E2 Φ Ψ))) ⊢
         BIBase.sep
-          (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F)))
-          (BIBase.sep (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ))
-            (BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) :=
+          (BIBase.later (wp_strong_mono_body ))
+          (BIBase.sep (BIBase.later (wp_s W s1 E1 e Φ))
+            (BIBase.later (wp_post E2 Φ Ψ))) :=
     sep_mono (intuitionistically_elim (PROP := IProp GF)) .rfl
   let rest :=
-    BIBase.wand (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-      (BIBase.wand (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
-        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ))
+    BIBase.wand (wp_s W s1 E1 e Φ)
+      (BIBase.wand (wp_post E2 Φ Ψ)
+        (wp_s W s2 E2 e Ψ))
   have hwand :
       BIBase.sep
-          (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F)))
-          (BIBase.sep (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ))
-            (BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) ⊢
+          (BIBase.later (wp_strong_mono_body ))
+          (BIBase.sep (BIBase.later (wp_s W s1 E1 e Φ))
+            (BIBase.later (wp_post E2 Φ Ψ))) ⊢
         BIBase.sep
           (BIBase.later
             (BIBase.wand (BIBase.pure (stuckness_le s1 s2))
               (BIBase.wand (BIBase.pure (Subset E1 E2)) rest)))
-          (BIBase.sep (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ))
-            (BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) :=
-    sep_mono (wp_strong_mono_body_later_elim (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s1 := s1) (s2 := s2) (E1 := E1) (E2 := E2) (e := e) (Φ := Φ) (Ψ := Ψ)) .rfl
+          (BIBase.sep (BIBase.later (wp_s W s1 E1 e Φ))
+            (BIBase.later (wp_post E2 Φ Ψ))) :=
+    sep_mono (wp_strong_mono_body_later_elim (s1 := s1) (s2 := s2) (E1 := E1) (E2 := E2) (e := e) (Φ := Φ) (Ψ := Ψ)) .rfl
   have hpure :
       BIBase.sep
           (BIBase.later
             (BIBase.wand (BIBase.pure (stuckness_le s1 s2))
               (BIBase.wand (BIBase.pure (Subset E1 E2)) rest)))
-          (BIBase.sep (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ))
-            (BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) ⊢
+          (BIBase.sep (BIBase.later (wp_s W s1 E1 e Φ))
+            (BIBase.later (wp_post E2 Φ Ψ))) ⊢
         BIBase.sep (BIBase.later rest)
-          (BIBase.sep (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ))
-            (BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) :=
+          (BIBase.sep (BIBase.later (wp_s W s1 E1 e Φ))
+            (BIBase.later (wp_post E2 Φ Ψ))) :=
     wp_strong_mono_later_pures (φ := stuckness_le s1 s2) (ψ := Subset E1 E2) hS hE
       (Q := rest)
-      (R := BIBase.sep (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ))
-        (BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)))
+      (R := BIBase.sep (BIBase.later (wp_s W s1 E1 e Φ))
+        (BIBase.later (wp_post E2 Φ Ψ)))
   have hmain :
       BIBase.sep (BIBase.later rest)
-          (BIBase.sep (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ))
-            (BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) ⊢
-        BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ) :=
+          (BIBase.sep (BIBase.later (wp_s W s1 E1 e Φ))
+            (BIBase.later (wp_post E2 Φ Ψ))) ⊢
+        BIBase.later (wp_s W s2 E2 e Ψ) :=
     wp_strong_mono_later_twice
-      (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-      (Q := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
-      (R := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ)
+      (P := wp_s W s1 E1 e Φ)
+      (Q := wp_post E2 Φ Ψ)
+      (R := wp_s W s2 E2 e Ψ)
   exact hIH.trans (hwand.trans (hpure.trans hmain))
 
 private theorem wp_strong_mono_fork_later
@@ -727,51 +731,44 @@ private theorem wp_strong_mono_fork_later
     (hS : stuckness_le s1 s2) :
     BIBase.sep
         (BIBase.intuitionistically
-          (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
-        (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)) ⊢
-      BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post) := by
+          (BIBase.later (wp_strong_mono_body )))
+        (BIBase.later (wp_s W s1 Iris.Set.univ ef fork_post)) ⊢
+      BIBase.later (wp_s W s2 Iris.Set.univ ef fork_post) := by
   -- insert the fork postcondition and reuse `wp_strong_mono_later`
   have hpost :
       (True : IProp GF) ⊢
-        wp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-          Iris.Set.univ fork_post fork_post :=
-    wp_post_fork (Λ := Λ) (GF := GF) (M := M) (F := F)
-  have hsubset : Subset (Iris.Set.univ : Iris.Set Positive) Iris.Set.univ := by
+        wp_post Iris.Set.univ fork_post fork_post :=
+    wp_post_fork have hsubset : Subset (Iris.Set.univ : Iris.Set Positive) Iris.Set.univ := by
     intro _ hx; exact hx
   have hadd :
       BIBase.sep
           (BIBase.intuitionistically
-            (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
-          (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)) ⊢
+            (BIBase.later (wp_strong_mono_body )))
+          (BIBase.later (wp_s W s1 Iris.Set.univ ef fork_post)) ⊢
         BIBase.sep
           (BIBase.intuitionistically
-            (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+            (BIBase.later (wp_strong_mono_body )))
           (BIBase.sep
-            (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post))
-            (BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-              Iris.Set.univ fork_post fork_post))) := by
-    refine (sep_later_intro (P := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-      Iris.Set.univ fork_post fork_post)
+            (BIBase.later (wp_s W s1 Iris.Set.univ ef fork_post))
+            (BIBase.later (wp_post Iris.Set.univ fork_post fork_post))) := by
+    refine (sep_later_intro (P := wp_post Iris.Set.univ fork_post fork_post)
       (Q := BIBase.sep
         (BIBase.intuitionistically
-          (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
-        (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)))
+          (BIBase.later (wp_strong_mono_body )))
+        (BIBase.later (wp_s W s1 Iris.Set.univ ef fork_post)))
       hpost).trans ?_
     refine (sep_comm
-      (P := BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-        Iris.Set.univ fork_post fork_post))
+      (P := BIBase.later (wp_post Iris.Set.univ fork_post fork_post))
       (Q := BIBase.sep
         (BIBase.intuitionistically
-          (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
-        (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)))).1.trans ?_
+          (BIBase.later (wp_strong_mono_body )))
+        (BIBase.later (wp_s W s1 Iris.Set.univ ef fork_post)))).1.trans ?_
     exact (sep_assoc
       (P := BIBase.intuitionistically
-        (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
-      (Q := BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post))
-      (R := BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-        Iris.Set.univ fork_post fork_post))).1
-  have hmain := wp_strong_mono_later (Λ := Λ) (GF := GF) (M := M) (F := F)
-    (s1 := s1) (s2 := s2) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
+        (BIBase.later (wp_strong_mono_body )))
+      (Q := BIBase.later (wp_s W s1 Iris.Set.univ ef fork_post))
+      (R := BIBase.later (wp_post Iris.Set.univ fork_post fork_post))).1
+  have hmain := wp_strong_mono_later (s1 := s1) (s2 := s2) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
     (e := ef) (Φ := fork_post) (Ψ := fork_post) hS hsubset
   exact hadd.trans hmain
 
@@ -779,115 +776,112 @@ private theorem wp_strong_mono_forks_later_aux
     (s1 s2 : Stuckness) (efs : List Λ.expr) (hS : stuckness_le s1 s2) :
     BIBase.sep
         (BIBase.intuitionistically
-          (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+          (BIBase.later (wp_strong_mono_body )))
         (big_sepL (fun _ ef =>
-          BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)) efs) ⊢
+          BIBase.later (wp_s W s1 Iris.Set.univ ef fork_post)) efs) ⊢
       big_sepL (fun _ ef =>
-        BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post)) efs := by
+        BIBase.later (wp_s W s2 Iris.Set.univ ef fork_post)) efs := by
   -- push the intuitionistic IH down the list, duplicating it for head/tail
   induction efs with
   | nil =>
       simpa [big_sepL_nil] using
         (sep_elim_r (P := BIBase.intuitionistically
-          (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+          (BIBase.later (wp_strong_mono_body )))
           (Q := (BIBase.emp : IProp GF)))
   | cons ef efs ih =>
       simp [big_sepL_cons]
       have hdup :
           BIBase.intuitionistically
-              (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))) ⊢
+              (BIBase.later (wp_strong_mono_body )) ⊢
             BIBase.sep
               (BIBase.intuitionistically
-                (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+                (BIBase.later (wp_strong_mono_body )))
               (BIBase.intuitionistically
-                (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F)))) :=
+                (BIBase.later (wp_strong_mono_body ))) :=
         (intuitionistically_sep_idem
-          (P := BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F)))).2
+          (P := BIBase.later (wp_strong_mono_body ))).2
       have hcomm :
           BIBase.sep
               (BIBase.sep
                 (BIBase.intuitionistically
-                  (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+                  (BIBase.later (wp_strong_mono_body )))
                 (BIBase.intuitionistically
-                  (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F)))))
+                  (BIBase.later (wp_strong_mono_body ))))
               (BIBase.sep
                 (BIBase.later
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post))
+                  (wp_s W s1 Iris.Set.univ ef fork_post))
                 (big_sepL (fun _ ef =>
-                  BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)) efs)) ⊢
+                  BIBase.later (wp_s W s1 Iris.Set.univ ef fork_post)) efs)) ⊢
             BIBase.sep
               (BIBase.sep
                 (BIBase.intuitionistically
-                  (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+                  (BIBase.later (wp_strong_mono_body )))
                 (BIBase.later
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)))
+                  (wp_s W s1 Iris.Set.univ ef fork_post)))
               (BIBase.sep
                 (BIBase.intuitionistically
-                  (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+                  (BIBase.later (wp_strong_mono_body )))
                 (big_sepL (fun _ ef =>
-                  BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)) efs)) :=
+                  BIBase.later (wp_s W s1 Iris.Set.univ ef fork_post)) efs)) :=
         (sep_sep_sep_comm (PROP := IProp GF)
           (P := BIBase.intuitionistically
-            (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+            (BIBase.later (wp_strong_mono_body )))
           (Q := BIBase.intuitionistically
-            (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+            (BIBase.later (wp_strong_mono_body )))
           (R := BIBase.later
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post))
+            (wp_s W s1 Iris.Set.univ ef fork_post))
           (S := big_sepL (fun _ ef =>
-            BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)) efs)).1
+            BIBase.later (wp_s W s1 Iris.Set.univ ef fork_post)) efs)).1
       refine (sep_mono hdup .rfl).trans (hcomm.trans ?_)
       refine sep_mono ?_ ih
-      exact wp_strong_mono_fork_later (Λ := Λ) (GF := GF) (M := M) (F := F)
-        (s1 := s1) (s2 := s2) (ef := ef) hS
+      exact wp_strong_mono_fork_later (s1 := s1) (s2 := s2) (ef := ef) hS
 
 private theorem wp_strong_mono_forks_later
     (s1 s2 : Stuckness) (efs : List Λ.expr) (hS : stuckness_le s1 s2) :
     BIBase.sep
         (BIBase.intuitionistically
-          (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+          (BIBase.later (wp_strong_mono_body )))
         (BIBase.later (big_sepL (fun _ ef =>
-          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post) efs)) ⊢
+          wp_s W s1 Iris.Set.univ ef fork_post) efs)) ⊢
       BIBase.later (big_sepL (fun _ ef =>
-        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post) efs) := by
+        wp_s W s2 Iris.Set.univ ef fork_post) efs) := by
   -- distribute `▷` over the forked WPs, use the list lemma, then rewrap
   refine (sep_mono .rfl (later_big_sepL
     (Φ := fun _ ef =>
-      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+      wp_s W s1 Iris.Set.univ ef fork_post)
     (l := efs)).1).trans ?_
-  refine (wp_strong_mono_forks_later_aux (Λ := Λ) (GF := GF) (M := M) (F := F)
-    (s1 := s1) (s2 := s2) (efs := efs) hS).trans ?_
+  refine (wp_strong_mono_forks_later_aux (s1 := s1) (s2 := s2) (efs := efs) hS).trans ?_
   exact (later_big_sepL
     (Φ := fun _ ef =>
-      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post)
+      wp_s W s2 Iris.Set.univ ef fork_post)
     (l := efs)).2
 
 private abbrev wp_pre_view
     (s : Stuckness) (E : Iris.Set Positive) (e : Λ.expr) (Φ : Λ.val → IProp GF)
     (σ : Λ.state) (ns : Nat) (κ κs : List Λ.observation) (nt : Nat) : IProp GF :=
   BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-    (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty
+    (fupd' W E maskEmpty
       (BIBase.sep (BIBase.pure (stuckness_pred s e σ))
         (BIBase.forall fun e2 : Λ.expr =>
           BIBase.forall fun σ2 : Λ.state =>
             BIBase.forall fun efs : List Λ.expr =>
               BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs))
-                (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                (fupd' W maskEmpty E
                   (BIBase.later
                     (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                      (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2 Φ)
+                      (BIBase.sep (wp_s W s E e2 Φ)
                         (big_sepL (fun _ ef =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s Iris.Set.univ ef fork_post)
+                          wp_s W s Iris.Set.univ ef fork_post)
                           efs))))))))
 
 private theorem wp_pre_elim
     (s : Stuckness) (E : Iris.Set Positive) (e : Λ.expr) (Φ : Λ.val → IProp GF)
     (σ : Λ.state) (ns : Nat) (κ κs : List Λ.observation) (nt : Nat)
     (hto : Λ.to_val e = none) :
-    wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e Φ ⊢
-      wp_pre_view (Λ := Λ) (GF := GF) (M := M) (F := F)
-        s E e Φ σ ns κ κs nt := by
-  -- specialize the binders in `wp_pre` to expose the state interpretation
+    wp_pre_s W s
+        (wp_s W s) E e Φ ⊢
+      wp_pre_view s E e Φ σ ns κ κs nt := by
+  -- specialize the binders in `wp_pre W` to expose the state interpretation
   have hσ :=
     forall_elim (PROP := IProp GF)
       (Ψ := fun σ =>
@@ -895,35 +889,30 @@ private theorem wp_pre_elim
           BIBase.forall fun κ =>
             BIBase.forall fun κs =>
               BIBase.forall fun nt =>
-                wp_pre_view (Λ := Λ) (GF := GF) (M := M) (F := F)
-                  s E e Φ σ ns κ κs nt) σ
+                wp_pre_view s E e Φ σ ns κ κs nt) σ
   have hns :=
     forall_elim (PROP := IProp GF)
       (Ψ := fun ns =>
         BIBase.forall fun κ =>
           BIBase.forall fun κs =>
             BIBase.forall fun nt =>
-              wp_pre_view (Λ := Λ) (GF := GF) (M := M) (F := F)
-                s E e Φ σ ns κ κs nt) ns
+              wp_pre_view s E e Φ σ ns κ κs nt) ns
   have hκ :=
     forall_elim (PROP := IProp GF)
       (Ψ := fun κ =>
         BIBase.forall fun κs =>
           BIBase.forall fun nt =>
-            wp_pre_view (Λ := Λ) (GF := GF) (M := M) (F := F)
-              s E e Φ σ ns κ κs nt) κ
+            wp_pre_view s E e Φ σ ns κ κs nt) κ
   have hκs :=
     forall_elim (PROP := IProp GF)
       (Ψ := fun κs =>
         BIBase.forall fun nt =>
-          wp_pre_view (Λ := Λ) (GF := GF) (M := M) (F := F)
-            s E e Φ σ ns κ κs nt) κs
+          wp_pre_view s E e Φ σ ns κ κs nt) κs
   have hnt :=
     forall_elim (PROP := IProp GF)
       (Ψ := fun nt =>
-        wp_pre_view (Λ := Λ) (GF := GF) (M := M) (F := F)
-          s E e Φ σ ns κ κs nt) nt
-  simpa [wp_pre, hto, wp_pre_step, wp_pre_view] using
+        wp_pre_view s E e Φ σ ns κ κs nt) nt
+  simpa [wp_pre W, hto, wp_pre_step W, wp_pre_view] using
     hσ.trans (hns.trans (hκ.trans (hκs.trans hnt)))
 
 private theorem wp_strong_mono_step
@@ -933,15 +922,15 @@ private theorem wp_strong_mono_step
     (hto : Λ.to_val e = none) :
     BIBase.sep
         (BIBase.intuitionistically
-          (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+          (BIBase.later (wp_strong_mono_body )))
         (BIBase.sep
-          (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)) ⊢
-      wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2
-        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2) E2 e Ψ := by
+          (wp_pre_s W s1
+            (wp_s W s1) E1 e Φ)
+          (wp_post E2 Φ Ψ)) ⊢
+      wp_pre_s W s2
+        (wp_s W s2) E2 e Ψ := by
   -- unfold the non-value branch and transform the continuation
-  simp [wp_pre, hto, wp_pre_step]
+  simp [wp_pre W, hto, wp_pre_step W]
   refine forall_intro (PROP := IProp GF) ?_; intro σ
   refine forall_intro (PROP := IProp GF) ?_; intro ns
   refine forall_intro (PROP := IProp GF) ?_; intro κ
@@ -950,83 +939,82 @@ private theorem wp_strong_mono_step
   refine wand_intro ?_
   let IH : IProp GF :=
     BIBase.intuitionistically
-      (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F)))
+      (BIBase.later (wp_strong_mono_body ))
   let Q1 : IProp GF :=
     BIBase.forall fun e2 : Λ.expr =>
       BIBase.forall fun σ2 : Λ.state =>
         BIBase.forall fun efs : List Λ.expr =>
           BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs))
-            (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
+            (fupd' W maskEmpty E1
               (BIBase.later
                 (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                  (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                  (BIBase.sep (wp_s W s1 E1 e2 Φ)
                     (big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                      wp_s W s1 Iris.Set.univ ef fork_post)
                       efs)))))
   let Q2 : IProp GF :=
     BIBase.forall fun e2 : Λ.expr =>
       BIBase.forall fun σ2 : Λ.state =>
         BIBase.forall fun efs : List Λ.expr =>
           BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs))
-            (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E2
+            (fupd' W maskEmpty E2
               (BIBase.later
                 (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                  (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e2 Ψ)
+                  (BIBase.sep (wp_s W s2 E2 e2 Ψ)
                     (big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post)
+                      wp_s W s2 Iris.Set.univ ef fork_post)
                       efs)))))
   let P0 : IProp GF :=
     BIBase.sep (BIBase.pure (stuckness_pred s1 e σ)) Q1
   let P1 : IProp GF :=
     BIBase.sep P0
       (BIBase.sep
-        (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)
+        (wp_post E2 Φ Ψ) IH)
   -- open the left WP using the state interpretation
   have hpre :
       BIBase.sep
-          (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
+          (wp_pre_s W s1
+            (wp_s W s1) E1 e Φ)
           (state_interp σ ns (κ ++ κs) nt) ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) E1 maskEmpty P0 := by
+        fupd' W E1 maskEmpty P0 := by
     have hview :=
-      wp_pre_elim (Λ := Λ) (GF := GF) (M := M) (F := F)
-        (s := s1) (E := E1) (e := e) (Φ := Φ)
+      wp_pre_elim (s := s1) (E := E1) (e := e) (Φ := Φ)
         (σ := σ) (ns := ns) (κ := κ) (κs := κs) (nt := nt) hto
     exact (sep_mono hview .rfl).trans (wand_elim_l (PROP := IProp GF))
   -- widen the mask and add the closing update
   have hmask :=
-    fupd_mask_subseteq_apply (Λ := Λ) (M := M) (F := F) (E1 := E1) (E2 := E2) hE
+    fupd_mask_subseteq_apply (E1 := E1) (E2 := E2) hE
       (P := P1)
   -- transform the post-step continuation and close the mask
   have hpost_pure :
       BIBase.sep P1
-          (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)) ⊢
+          (fupd' W E1 E2 (BIBase.emp : IProp GF)) ⊢
         BIBase.sep (BIBase.pure (stuckness_pred s2 e σ)) Q2 := by
     -- rearrange to expose the pure premise and continuation
     have hassoc :
         BIBase.sep P1
-            (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)) ⊢
+            (fupd' W E1 E2 (BIBase.emp : IProp GF)) ⊢
           BIBase.sep (BIBase.pure (stuckness_pred s1 e σ))
             (BIBase.sep Q1
               (BIBase.sep
                 (BIBase.sep
-                  (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)
-                (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)))) := by
+                  (wp_post E2 Φ Ψ) IH)
+                (fupd' W E1 E2 (BIBase.emp : IProp GF)))) := by
       -- expand `P1` and reassociate to expose the pure premise
       dsimp [P1, P0]
       refine (sep_assoc (PROP := IProp GF)
         (P := BIBase.sep (BIBase.pure (stuckness_pred s1 e σ)) Q1)
         (Q := BIBase.sep
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)
-        (R := fupd' (Λ := Λ) (M := M) (F := F) E1 E2
+          (wp_post E2 Φ Ψ) IH)
+        (R := fupd' W E1 E2
           (BIBase.emp : IProp GF))).1.trans ?_
       exact (sep_assoc (PROP := IProp GF)
         (P := BIBase.pure (stuckness_pred s1 e σ))
         (Q := Q1)
         (R := BIBase.sep
           (BIBase.sep
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)
-          (fupd' (Λ := Λ) (M := M) (F := F) E1 E2
+            (wp_post E2 Φ Ψ) IH)
+          (fupd' W E1 E2
             (BIBase.emp : IProp GF)))).1
     refine hassoc.trans ?_
     refine (sep_mono (PROP := IProp GF)
@@ -1035,8 +1023,8 @@ private theorem wp_strong_mono_step
       (P' := BIBase.sep Q1
         (BIBase.sep
           (BIBase.sep
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)
-          (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))))
+            (wp_post E2 Φ Ψ) IH)
+          (fupd' W E1 E2 (BIBase.emp : IProp GF))))
       (Q' := Q2)
       (pure_mono (PROP := IProp GF)
         (stuckness_pred_mono (s1 := s1) (s2 := s2) hS e σ)) ?_)
@@ -1048,12 +1036,12 @@ private theorem wp_strong_mono_step
     -- apply the step continuation and frame IH/wp_post
     have hstep :
         BIBase.sep Q1 (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)) ⊢
-          fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
+          fupd' W maskEmpty E1
             (BIBase.later
               (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                (BIBase.sep (wp_s W s1 E1 e2 Φ)
                   (big_sepL (fun _ ef =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                    wp_s W s1 Iris.Set.univ ef fork_post)
                     efs)))) := by
       have h1 :=
         forall_elim (PROP := IProp GF)
@@ -1061,35 +1049,35 @@ private theorem wp_strong_mono_step
             BIBase.forall fun σ2 : Λ.state =>
               BIBase.forall fun efs : List Λ.expr =>
                 BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs))
-                  (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
+                  (fupd' W maskEmpty E1
                     (BIBase.later
                       (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                        (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                        (BIBase.sep (wp_s W s1 E1 e2 Φ)
                           (big_sepL (fun _ ef =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                            wp_s W s1 Iris.Set.univ ef fork_post)
                             efs)))))) e2
       have h2 :=
         forall_elim (PROP := IProp GF)
           (Ψ := fun σ2 : Λ.state =>
             BIBase.forall fun efs : List Λ.expr =>
               BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs))
-                (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
+                (fupd' W maskEmpty E1
                   (BIBase.later
                     (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                      (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                      (BIBase.sep (wp_s W s1 E1 e2 Φ)
                         (big_sepL (fun _ ef =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                          wp_s W s1 Iris.Set.univ ef fork_post)
                           efs)))))) σ2
       have h3 :=
         forall_elim (PROP := IProp GF)
           (Ψ := fun efs : List Λ.expr =>
             BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs))
-              (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
+              (fupd' W maskEmpty E1
                 (BIBase.later
                   (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                    (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                    (BIBase.sep (wp_s W s1 E1 e2 Φ)
                       (big_sepL (fun _ ef =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                        wp_s W s1 Iris.Set.univ ef fork_post)
                         efs)))))) efs
       have h123 := h1.trans (h2.trans h3)
       exact (sep_mono h123 .rfl).trans (wand_elim_l (PROP := IProp GF))
@@ -1097,319 +1085,317 @@ private theorem wp_strong_mono_step
         BIBase.sep
             (BIBase.sep Q1
               (BIBase.sep
-                (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
+                (wp_post E2 Φ Ψ) IH))
             (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)) ⊢
           BIBase.sep
             (BIBase.sep Q1 (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)))
             (BIBase.sep
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH) := by
+              (wp_post E2 Φ Ψ) IH) := by
       exact (sep_right_comm (PROP := IProp GF)
         (P := Q1)
         (Q := BIBase.sep
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)
+          (wp_post E2 Φ Ψ) IH)
         (R := BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs))).1
     have hframe0 :
         BIBase.sep
-            (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
+            (fupd' W maskEmpty E1
               (BIBase.later
                 (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                  (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                  (BIBase.sep (wp_s W s1 E1 e2 Φ)
                     (big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                      wp_s W s1 Iris.Set.univ ef fork_post)
                       efs)))))
             (BIBase.sep
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH) ⊢
-          fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
+              (wp_post E2 Φ Ψ) IH) ⊢
+          fupd' W maskEmpty E1
             (BIBase.sep
               (BIBase.later
                 (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                  (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                  (BIBase.sep (wp_s W s1 E1 e2 Φ)
                     (big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                      wp_s W s1 Iris.Set.univ ef fork_post)
                       efs))))
               (BIBase.sep
-                (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)) :=
-      fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-        (M := M) (F := F) (E1 := maskEmpty) (E2 := E1)
+                (wp_post E2 Φ Ψ) IH)) :=
+      Iris.BaseLogic.fupd_frame_r 
+        (E1 := maskEmpty) (E2 := E1)
         (P := BIBase.later
           (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-            (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+            (BIBase.sep (wp_s W s1 E1 e2 Φ)
               (big_sepL (fun _ ef =>
-                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                wp_s W s1 Iris.Set.univ ef fork_post)
                 efs))))
         (Q := BIBase.sep
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)
+          (wp_post E2 Φ Ψ) IH)
     -- frame the closing update through the step
     have hframe :
         BIBase.sep
-            (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
+            (fupd' W maskEmpty E1
               (BIBase.sep
                 (BIBase.later
                   (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                    (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                    (BIBase.sep (wp_s W s1 E1 e2 Φ)
                       (big_sepL (fun _ ef =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                        wp_s W s1 Iris.Set.univ ef fork_post)
                         efs))))
                 (BIBase.sep
-                  (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)))
-            (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)) ⊢
-          fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
+                  (wp_post E2 Φ Ψ) IH)))
+            (fupd' W E1 E2 (BIBase.emp : IProp GF)) ⊢
+          fupd' W maskEmpty E1
             (BIBase.sep
               (BIBase.sep
                 (BIBase.later
                   (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                    (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                    (BIBase.sep (wp_s W s1 E1 e2 Φ)
                       (big_sepL (fun _ ef =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                        wp_s W s1 Iris.Set.univ ef fork_post)
                         efs))))
                 (BIBase.sep
-                  (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
-              (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))) :=
-      fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-        (M := M) (F := F) (E1 := maskEmpty) (E2 := E1)
+                  (wp_post E2 Φ Ψ) IH))
+              (fupd' W E1 E2 (BIBase.emp : IProp GF))) :=
+      Iris.BaseLogic.fupd_frame_r 
+        (E1 := maskEmpty) (E2 := E1)
         (P := BIBase.sep
           (BIBase.later
             (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-              (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+              (BIBase.sep (wp_s W s1 E1 e2 Φ)
                 (big_sepL (fun _ ef =>
-                  wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                  wp_s W s1 Iris.Set.univ ef fork_post)
                   efs))))
           (BIBase.sep
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
-        (Q := fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))
+            (wp_post E2 Φ Ψ) IH))
+        (Q := fupd' W E1 E2 (BIBase.emp : IProp GF))
     have hmono :
         BIBase.sep
             (BIBase.later
               (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                (BIBase.sep (wp_s W s1 E1 e2 Φ)
                   (big_sepL (fun _ ef =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                    wp_s W s1 Iris.Set.univ ef fork_post)
                     efs))))
             (BIBase.sep
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH) ⊢
+              (wp_post E2 Φ Ψ) IH) ⊢
           BIBase.later
             (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-              (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e2 Ψ)
+              (BIBase.sep (wp_s W s2 E2 e2 Ψ)
                 (big_sepL (fun _ ef =>
-                  wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post)
+                  wp_s W s2 Iris.Set.univ ef fork_post)
                   efs))) := by
       -- use the intuitionistic Löb hypothesis for the main and forked WPs
       have hmain :
           BIBase.sep
               (BIBase.intuitionistically
-                (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+                (BIBase.later (wp_strong_mono_body )))
               (BIBase.sep
-                (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ))
-                (BIBase.later (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) ⊢
-            BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e2 Ψ) :=
-        wp_strong_mono_later (Λ := Λ) (GF := GF) (M := M) (F := F)
-          (s1 := s1) (s2 := s2) (E1 := E1) (E2 := E2)
+                (BIBase.later (wp_s W s1 E1 e2 Φ))
+                (BIBase.later (wp_post E2 Φ Ψ))) ⊢
+            BIBase.later (wp_s W s2 E2 e2 Ψ) :=
+        wp_strong_mono_later (s1 := s1) (s2 := s2) (E1 := E1) (E2 := E2)
           (e := e2) (Φ := Φ) (Ψ := Ψ) hS hE
       have hfork :
           BIBase.sep
               (BIBase.intuitionistically
-                (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))))
+                (BIBase.later (wp_strong_mono_body )))
               (BIBase.later (big_sepL (fun _ ef =>
-                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post) efs)) ⊢
+                wp_s W s1 Iris.Set.univ ef fork_post) efs)) ⊢
             BIBase.later (big_sepL (fun _ ef =>
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post) efs) :=
-        wp_strong_mono_forks_later (Λ := Λ) (GF := GF) (M := M) (F := F)
-          (s1 := s1) (s2 := s2) (efs := efs) hS
+              wp_s W s2 Iris.Set.univ ef fork_post) efs) :=
+        wp_strong_mono_forks_later (s1 := s1) (s2 := s2) (efs := efs) hS
       have hcont :
           BIBase.sep
               (BIBase.sep
-                (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)
+                (wp_post E2 Φ Ψ) IH)
               (BIBase.later
-                (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                (BIBase.sep (wp_s W s1 E1 e2 Φ)
                   (big_sepL (fun _ ef =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                    wp_s W s1 Iris.Set.univ ef fork_post)
                     efs))) ⊢
             BIBase.later
-              (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e2 Ψ)
+              (BIBase.sep (wp_s W s2 E2 e2 Ψ)
                 (big_sepL (fun _ ef =>
-                  wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post)
+                  wp_s W s2 Iris.Set.univ ef fork_post)
                   efs)) := by
         -- turn `wp_post` into `▷ wp_post` and split the later continuation
         have hpostlater :
             BIBase.sep
-                (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH ⊢
+                (wp_post E2 Φ Ψ) IH ⊢
               BIBase.sep
                 (BIBase.later
-                  (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)) IH :=
+                  (wp_post E2 Φ Ψ)) IH :=
           sep_mono (later_intro (PROP := IProp GF)
-            (P := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)) .rfl
+            (P := wp_post E2 Φ Ψ)) .rfl
         refine (sep_mono hpostlater (later_sep (PROP := IProp GF)
-          (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+          (P := wp_s W s1 E1 e2 Φ)
           (Q := big_sepL (fun _ ef =>
-            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post) efs)).1).trans ?_
+            wp_s W s1 Iris.Set.univ ef fork_post) efs)).1).trans ?_
         -- now: (▷ wp_post ∗ IH) ∗ (▷ wp_s1 ∗ ▷ big_sepL)
         have hdup :
             IH ⊢ BIBase.sep IH IH :=
           (intuitionistically_sep_idem
-            (P := BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F)))).2
+            (P := BIBase.later (wp_strong_mono_body ))).2
         refine (sep_assoc (PROP := IProp GF)
           (P := BIBase.later
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
+            (wp_post E2 Φ Ψ))
           (Q := IH)
           (R := BIBase.sep
-            (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ))
+            (BIBase.later (wp_s W s1 E1 e2 Φ))
             (BIBase.later (big_sepL (fun _ ef =>
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+              wp_s W s1 Iris.Set.univ ef fork_post)
               efs)))).1.trans ?_
         refine (sep_mono .rfl (sep_mono hdup .rfl)).trans ?_
         refine (sep_mono .rfl (sep_sep_sep_comm (PROP := IProp GF)
           (P := IH)
           (Q := IH)
-          (R := BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ))
+          (R := BIBase.later (wp_s W s1 E1 e2 Φ))
           (S := BIBase.later (big_sepL (fun _ ef =>
-            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+            wp_s W s1 Iris.Set.univ ef fork_post)
             efs))).1).trans ?_
         -- regroup for `hmain` and `hfork`
         refine (sep_assoc (PROP := IProp GF)
           (P := BIBase.later
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
+            (wp_post E2 Φ Ψ))
           (Q := BIBase.sep IH
-            (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)))
+            (BIBase.later (wp_s W s1 E1 e2 Φ)))
           (R := BIBase.sep IH
             (BIBase.later (big_sepL (fun _ ef =>
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+              wp_s W s1 Iris.Set.univ ef fork_post)
               efs)))).2.trans ?_
         have hleft :
             BIBase.sep
                 (BIBase.later
-                  (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
+                  (wp_post E2 Φ Ψ))
                 (BIBase.sep IH
-                  (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ))) ⊢
+                  (BIBase.later (wp_s W s1 E1 e2 Φ))) ⊢
               BIBase.sep IH
                 (BIBase.sep
-                  (BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ))
+                  (BIBase.later (wp_s W s1 E1 e2 Φ))
                   (BIBase.later
-                    (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) := by
+                    (wp_post E2 Φ Ψ))) := by
           refine (sep_left_comm (PROP := IProp GF)
             (P := BIBase.later
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
+              (wp_post E2 Φ Ψ))
             (Q := IH)
-            (R := BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ))).1.trans ?_
+            (R := BIBase.later (wp_s W s1 E1 e2 Φ))).1.trans ?_
           refine (sep_assoc (PROP := IProp GF)
             (P := IH)
             (Q := BIBase.later
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
-            (R := BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ))).2.trans ?_
+              (wp_post E2 Φ Ψ))
+            (R := BIBase.later (wp_s W s1 E1 e2 Φ))).2.trans ?_
           refine (sep_right_comm (PROP := IProp GF)
             (P := IH)
             (Q := BIBase.later
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
-            (R := BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ))).1.trans ?_
+              (wp_post E2 Φ Ψ))
+            (R := BIBase.later (wp_s W s1 E1 e2 Φ))).1.trans ?_
           exact (sep_assoc (PROP := IProp GF)
             (P := IH)
-            (Q := BIBase.later (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ))
+            (Q := BIBase.later (wp_s W s1 E1 e2 Φ))
             (R := BIBase.later
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))).1
+              (wp_post E2 Φ Ψ))).1
         refine (sep_mono hleft .rfl).trans ?_
         refine (sep_mono hmain hfork).trans ?_
         exact (later_sep (PROP := IProp GF)
-          (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e2 Ψ)
+          (P := wp_s W s2 E2 e2 Ψ)
           (Q := big_sepL (fun _ ef =>
-            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post)
+            wp_s W s2 Iris.Set.univ ef fork_post)
             efs)).2
       -- split state and continuation, apply `hcont`, then reassemble
       refine (sep_mono (later_sep (PROP := IProp GF)
         (P := state_interp σ2 (ns + 1) κs (efs.length + nt))
-        (Q := BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+        (Q := BIBase.sep (wp_s W s1 E1 e2 Φ)
           (big_sepL (fun _ ef =>
-            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post) efs))).1 .rfl).trans ?_
+            wp_s W s1 Iris.Set.univ ef fork_post) efs))).1 .rfl).trans ?_
       refine (sep_right_comm (PROP := IProp GF)
         (P := BIBase.later (state_interp σ2 (ns + 1) κs (efs.length + nt)))
         (Q := BIBase.later
-          (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+          (BIBase.sep (wp_s W s1 E1 e2 Φ)
             (big_sepL (fun _ ef =>
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post) efs)))
+              wp_s W s1 Iris.Set.univ ef fork_post) efs)))
         (R := BIBase.sep
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)).1.trans ?_
+          (wp_post E2 Φ Ψ) IH)).1.trans ?_
       refine (sep_assoc (PROP := IProp GF)
         (P := BIBase.later (state_interp σ2 (ns + 1) κs (efs.length + nt)))
         (Q := BIBase.sep
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)
+          (wp_post E2 Φ Ψ) IH)
         (R := BIBase.later
-          (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+          (BIBase.sep (wp_s W s1 E1 e2 Φ)
             (big_sepL (fun _ ef =>
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post) efs)))).1.trans ?_
+              wp_s W s1 Iris.Set.univ ef fork_post) efs)))).1.trans ?_
       refine (sep_mono .rfl hcont).trans ?_
       exact (later_sep (PROP := IProp GF)
         (P := state_interp σ2 (ns + 1) κs (efs.length + nt))
-        (Q := BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e2 Ψ)
+        (Q := BIBase.sep (wp_s W s2 E2 e2 Ψ)
           (big_sepL (fun _ ef =>
-            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post) efs))).2
+            wp_s W s2 Iris.Set.univ ef fork_post) efs))).2
     -- apply the step continuation, frame `wp_post`/IH and the closing update
     have hprep :
         BIBase.sep
             (BIBase.sep Q1
               (BIBase.sep
                 (BIBase.sep
-                  (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)
-                (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))))
+                  (wp_post E2 Φ Ψ) IH)
+                (fupd' W E1 E2 (BIBase.emp : IProp GF))))
             (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)) ⊢
           BIBase.sep
             (BIBase.sep
               (BIBase.sep Q1 (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)))
               (BIBase.sep
-                (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
-            (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)) := by
+                (wp_post E2 Φ Ψ) IH))
+            (fupd' W E1 E2 (BIBase.emp : IProp GF)) := by
       have hassoc :
           BIBase.sep
               (BIBase.sep Q1
                 (BIBase.sep
                   (BIBase.sep
-                    (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)
-                  (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))))
+                    (wp_post E2 Φ Ψ) IH)
+                  (fupd' W E1 E2 (BIBase.emp : IProp GF))))
               (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)) ⊢
             BIBase.sep
               (BIBase.sep
                 (BIBase.sep Q1
                   (BIBase.sep
-                    (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
-                (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)))
+                    (wp_post E2 Φ Ψ) IH))
+                (fupd' W E1 E2 (BIBase.emp : IProp GF)))
               (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)) :=
         sep_mono (sep_assoc (PROP := IProp GF)
           (P := Q1)
           (Q := BIBase.sep
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH)
-          (R := fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))).2 .rfl
+            (wp_post E2 Φ Ψ) IH)
+          (R := fupd' W E1 E2 (BIBase.emp : IProp GF))).2 .rfl
       have hswap_f :
           BIBase.sep
               (BIBase.sep
                 (BIBase.sep Q1
                   (BIBase.sep
-                    (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
-                (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)))
+                    (wp_post E2 Φ Ψ) IH))
+                (fupd' W E1 E2 (BIBase.emp : IProp GF)))
               (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)) ⊢
             BIBase.sep
               (BIBase.sep
                 (BIBase.sep Q1
                   (BIBase.sep
-                    (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
+                    (wp_post E2 Φ Ψ) IH))
                 (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)))
-              (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)) :=
+              (fupd' W E1 E2 (BIBase.emp : IProp GF)) :=
         (sep_right_comm (PROP := IProp GF)
           (P := BIBase.sep Q1
             (BIBase.sep
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
-          (Q := fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))
+              (wp_post E2 Φ Ψ) IH))
+          (Q := fupd' W E1 E2 (BIBase.emp : IProp GF))
           (R := BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs))).1
       have hswap2 :
           BIBase.sep
               (BIBase.sep
                 (BIBase.sep Q1
                   (BIBase.sep
-                    (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
+                    (wp_post E2 Φ Ψ) IH))
                 (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)))
-              (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)) ⊢
+              (fupd' W E1 E2 (BIBase.emp : IProp GF)) ⊢
             BIBase.sep
               (BIBase.sep
                 (BIBase.sep Q1 (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)))
                 (BIBase.sep
-                  (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
-              (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)) :=
+                  (wp_post E2 Φ Ψ) IH))
+              (fupd' W E1 E2 (BIBase.emp : IProp GF)) :=
         sep_mono hswap .rfl
       exact hassoc.trans (hswap_f.trans hswap2)
     refine hprep.trans ?_
@@ -1417,233 +1403,232 @@ private theorem wp_strong_mono_step
     refine (sep_mono hframe0 .rfl).trans ?_
     -- close the mask after updating the continuation
     have hmid :
-        fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
+        fupd' W maskEmpty E1
             (BIBase.sep
               (BIBase.sep
                 (BIBase.later
                   (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                    (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                    (BIBase.sep (wp_s W s1 E1 e2 Φ)
                       (big_sepL (fun _ ef =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                        wp_s W s1 Iris.Set.univ ef fork_post)
                         efs))))
                 (BIBase.sep
-                  (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
-              (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))) ⊢
-          fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
+                  (wp_post E2 Φ Ψ) IH))
+              (fupd' W E1 E2 (BIBase.emp : IProp GF))) ⊢
+          fupd' W maskEmpty E1
             (BIBase.sep
               (BIBase.later
                 (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                  (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e2 Ψ)
+                  (BIBase.sep (wp_s W s2 E2 e2 Ψ)
                     (big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post)
+                      wp_s W s2 Iris.Set.univ ef fork_post)
                       efs))))
-              (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))) :=
-      fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-        (M := M) (F := F) (E1 := maskEmpty) (E2 := E1)
+              (fupd' W E1 E2 (BIBase.emp : IProp GF))) :=
+      Iris.BaseLogic.fupd_mono 
+        (E1 := maskEmpty) (E2 := E1)
         (P := BIBase.sep
           (BIBase.sep
             (BIBase.later
               (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e2 Φ)
+                (BIBase.sep (wp_s W s1 E1 e2 Φ)
                   (big_sepL (fun _ ef =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 Iris.Set.univ ef fork_post)
+                    wp_s W s1 Iris.Set.univ ef fork_post)
                     efs))))
             (BIBase.sep
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
-          (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)))
+              (wp_post E2 Φ Ψ) IH))
+          (fupd' W E1 E2 (BIBase.emp : IProp GF)))
         (Q := BIBase.sep
           (BIBase.later
             (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-              (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e2 Ψ)
+              (BIBase.sep (wp_s W s2 E2 e2 Ψ)
                 (big_sepL (fun _ ef =>
-                  wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post)
+                  wp_s W s2 Iris.Set.univ ef fork_post)
                   efs))))
-          (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)))
+          (fupd' W E1 E2 (BIBase.emp : IProp GF)))
         (sep_mono hmono .rfl)
     have hclose :
-        fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E1
+        fupd' W maskEmpty E1
             (BIBase.sep
               (BIBase.later
                 (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                  (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e2 Ψ)
+                  (BIBase.sep (wp_s W s2 E2 e2 Ψ)
                     (big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post)
+                      wp_s W s2 Iris.Set.univ ef fork_post)
                       efs))))
-              (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))) ⊢
-          fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E2
+              (fupd' W E1 E2 (BIBase.emp : IProp GF))) ⊢
+          fupd' W maskEmpty E2
             (BIBase.later
               (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-                (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e2 Ψ)
+                (BIBase.sep (wp_s W s2 E2 e2 Ψ)
                   (big_sepL (fun _ ef =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post)
+                    wp_s W s2 Iris.Set.univ ef fork_post)
                     efs)))) :=
-      fupd_close_mask (Λ := Λ) (M := M) (F := F)
-        (E1 := E1) (E2 := E2)
+      fupd_close_mask (E1 := E1) (E2 := E2)
         (P := BIBase.later
           (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
-            (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e2 Ψ)
+            (BIBase.sep (wp_s W s2 E2 e2 Ψ)
               (big_sepL (fun _ ef =>
-                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 Iris.Set.univ ef fork_post)
+                wp_s W s2 Iris.Set.univ ef fork_post)
                 efs))))
     exact hframe.trans (hmid.trans hclose)
   have hpost :
-      fupd' (Λ := Λ) (M := M) (F := F) E2 maskEmpty
+      fupd' W E2 maskEmpty
           (BIBase.sep P1
-            (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF))) ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) E2 maskEmpty
+            (fupd' W E1 E2 (BIBase.emp : IProp GF))) ⊢
+        fupd' W E2 maskEmpty
           (BIBase.sep (BIBase.pure (stuckness_pred s2 e σ)) Q2) :=
-    fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-      (M := M) (F := F) (E1 := E2) (E2 := maskEmpty)
+    Iris.BaseLogic.fupd_mono 
+      (E1 := E2) (E2 := maskEmpty)
       (P := BIBase.sep P1
-        (fupd' (Λ := Λ) (M := M) (F := F) E1 E2 (BIBase.emp : IProp GF)))
+        (fupd' W E1 E2 (BIBase.emp : IProp GF)))
       (Q := BIBase.sep (BIBase.pure (stuckness_pred s2 e σ)) Q2) hpost_pure
   have hperm :
       BIBase.sep
           (BIBase.sep IH
-            (BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)))
+            (BIBase.sep (wp_pre_s W s1
+              (wp_s W s1) E1 e Φ)
+              (wp_post E2 Φ Ψ)))
           (state_interp σ ns (κ ++ κs) nt) ⊢
         BIBase.sep
           (BIBase.sep
-            (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
+            (wp_pre_s W s1
+              (wp_s W s1) E1 e Φ)
             (state_interp σ ns (κ ++ κs) nt))
           (BIBase.sep
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH) := by
+            (wp_post E2 Φ Ψ) IH) := by
     have h1 :
         BIBase.sep
             (BIBase.sep IH
-              (BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-                (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)))
+              (BIBase.sep (wp_pre_s W s1
+                (wp_s W s1) E1 e Φ)
+                (wp_post E2 Φ Ψ)))
             (state_interp σ ns (κ ++ κs) nt) ⊢
           BIBase.sep
             (BIBase.sep
               (BIBase.sep IH
-                (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ))
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
+                (wp_pre_s W s1
+                  (wp_s W s1) E1 e Φ))
+              (wp_post E2 Φ Ψ))
             (state_interp σ ns (κ ++ κs) nt) :=
       sep_mono (sep_assoc (PROP := IProp GF)
         (P := IH)
-        (Q := wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-        (R := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)).2 .rfl
+        (Q := wp_pre_s W s1
+          (wp_s W s1) E1 e Φ)
+        (R := wp_post E2 Φ Ψ)).2 .rfl
     have h2 :
         BIBase.sep
             (BIBase.sep
               (BIBase.sep IH
-                (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ))
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
+                (wp_pre_s W s1
+                  (wp_s W s1) E1 e Φ))
+              (wp_post E2 Φ Ψ))
             (state_interp σ ns (κ ++ κs) nt) ⊢
           BIBase.sep
             (BIBase.sep IH
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
+              (wp_post E2 Φ Ψ))
             (BIBase.sep
-              (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
+              (wp_pre_s W s1
+                (wp_s W s1) E1 e Φ)
               (state_interp σ ns (κ ++ κs) nt)) := by
       have h2a :
           BIBase.sep
               (BIBase.sep
                 (BIBase.sep IH
-                  (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                    (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ))
-                (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
+                  (wp_pre_s W s1
+                    (wp_s W s1) E1 e Φ))
+                (wp_post E2 Φ Ψ))
               (state_interp σ ns (κ ++ κs) nt) ⊢
             BIBase.sep
               (BIBase.sep IH
-                (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ))
+                (wp_pre_s W s1
+                  (wp_s W s1) E1 e Φ))
               (BIBase.sep
-                (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
+                (wp_post E2 Φ Ψ)
                 (state_interp σ ns (κ ++ κs) nt)) :=
         (sep_assoc (PROP := IProp GF)
           (P := BIBase.sep IH
-            (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ))
-          (Q := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
+            (wp_pre_s W s1
+              (wp_s W s1) E1 e Φ))
+          (Q := wp_post E2 Φ Ψ)
           (R := state_interp σ ns (κ ++ κs) nt)).1
       have h2b :
           BIBase.sep
               (BIBase.sep IH
-                (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ))
+                (wp_pre_s W s1
+                  (wp_s W s1) E1 e Φ))
               (BIBase.sep
-                (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
+                (wp_post E2 Φ Ψ)
                 (state_interp σ ns (κ ++ κs) nt)) ⊢
             BIBase.sep
               (BIBase.sep IH
-                (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
+                (wp_post E2 Φ Ψ))
               (BIBase.sep
-                (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
+                (wp_pre_s W s1
+                  (wp_s W s1) E1 e Φ)
                 (state_interp σ ns (κ ++ κs) nt)) :=
         (sep_sep_sep_comm (PROP := IProp GF)
           (P := IH)
-          (Q := wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-          (R := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
+          (Q := wp_pre_s W s1
+            (wp_s W s1) E1 e Φ)
+          (R := wp_post E2 Φ Ψ)
           (S := state_interp σ ns (κ ++ κs) nt)).1
       exact h2a.trans h2b
     have h3 :
         BIBase.sep
             (BIBase.sep IH
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
+              (wp_post E2 Φ Ψ))
             (BIBase.sep
-              (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
+              (wp_pre_s W s1
+                (wp_s W s1) E1 e Φ)
               (state_interp σ ns (κ ++ κs) nt)) ⊢
           BIBase.sep
             (BIBase.sep
-              (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
+              (wp_pre_s W s1
+                (wp_s W s1) E1 e Φ)
               (state_interp σ ns (κ ++ κs) nt))
             (BIBase.sep
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH) := by
+              (wp_post E2 Φ Ψ) IH) := by
       refine (sep_comm (PROP := IProp GF)
         (P := BIBase.sep IH
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
+          (wp_post E2 Φ Ψ))
         (Q := BIBase.sep
-          (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
+          (wp_pre_s W s1
+            (wp_s W s1) E1 e Φ)
           (state_interp σ ns (κ ++ κs) nt))).1.trans ?_
       refine sep_mono .rfl ?_
       exact (sep_comm (PROP := IProp GF)
         (P := IH)
-        (Q := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)).1
+        (Q := wp_post E2 Φ Ψ)).1
     exact h1.trans (h2.trans h3)
   have hframe_pre :
       BIBase.sep
-          (fupd' (Λ := Λ) (M := M) (F := F) E1 maskEmpty P0)
+          (fupd' W E1 maskEmpty P0)
           (BIBase.sep
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH) ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) E1 maskEmpty P1 := by
+            (wp_post E2 Φ Ψ) IH) ⊢
+        fupd' W E1 maskEmpty P1 := by
     simpa [P1] using
-      (fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-        (M := M) (F := F) (E1 := E1) (E2 := maskEmpty)
+      (Iris.BaseLogic.fupd_frame_r 
+        (E1 := E1) (E2 := maskEmpty)
         (P := P0)
         (Q := BIBase.sep
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH))
+          (wp_post E2 Φ Ψ) IH))
   have hpre' :
       BIBase.sep
           (BIBase.sep
-            (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
+            (wp_pre_s W s1
+              (wp_s W s1) E1 e Φ)
             (state_interp σ ns (κ ++ κs) nt))
           (BIBase.sep
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) IH) ⊢
-        fupd' (Λ := Λ) (M := M) (F := F) E1 maskEmpty P1 :=
+            (wp_post E2 Φ Ψ) IH) ⊢
+        fupd' W E1 maskEmpty P1 :=
     (sep_mono hpre .rfl).trans hframe_pre
-  -- rewrite the `wp_pre` unfoldings in the framed chain
+  -- rewrite the `wp_pre W` unfoldings in the framed chain
   have hperm' := by
     -- use the non-value unfolding to align with the goal
-    simpa [wp_pre, hto, wp_pre_step] using hperm
+    simpa [wp_pre W, hto, wp_pre_step W] using hperm
   have hpre'' := by
     -- again, unfold the non-value case to match the goal shape
-    simpa [wp_pre, hto, wp_pre_step] using hpre'
+    simpa [wp_pre W, hto, wp_pre_step W] using hpre'
   exact hperm'.trans (hpre''.trans (hmask.trans hpost))
 
 /-! ## Strong Monotonicity (Löb) -/
@@ -1671,8 +1656,8 @@ private theorem pure_sep_elim_second (φ ψ : Prop) (P : IProp GF) :
 
 private theorem wp_strong_mono_body_step :
     BIBase.intuitionistically
-        (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F))) ⊢
-      wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F) := by
+        (BIBase.later (wp_strong_mono_body )) ⊢
+      wp_strong_mono_body := by
   -- prove the body pointwise and use the non-value step lemma
   refine forall_intro (PROP := IProp GF) ?_; intro s1
   refine forall_intro (PROP := IProp GF) ?_; intro s2
@@ -1686,64 +1671,62 @@ private theorem wp_strong_mono_body_step :
   refine wand_intro ?_
   refine wand_intro ?_
   have hwpΦ :
-      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ ⊢
-        wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ :=
-    (wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s := s1) (E := E1) (e := e) (Φ := Φ)).1
+      wp_s W s1 E1 e Φ ⊢
+        wp_pre_s W s1
+          (wp_s W s1) E1 e Φ :=
+    (wp_unfold (s := s1) (E := E1) (e := e) (Φ := Φ)).1
   have hwpΨ :
-      wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2) E2 e Ψ ⊢
-        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ :=
-    (wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s := s2) (E := E2) (e := e) (Φ := Ψ)).2
-  -- frame `wp_pre` conversion under the pure assumptions
+      wp_pre_s W s2
+          (wp_s W s2) E2 e Ψ ⊢
+        wp_s W s2 E2 e Ψ :=
+    (wp_unfold (s := s2) (E := E2) (e := e) (Φ := Ψ)).2
+  -- frame `wp_pre W` conversion under the pure assumptions
   have hpre :
       BIBase.sep (BIBase.pure (stuckness_le s1 s2))
           (BIBase.sep (BIBase.pure (Subset E1 E2))
-            (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) ⊢
+            (BIBase.sep (wp_s W s1 E1 e Φ)
+              (wp_post E2 Φ Ψ))) ⊢
         BIBase.sep (BIBase.pure (stuckness_le s1 s2))
           (BIBase.sep (BIBase.pure (Subset E1 E2))
-            (BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) :=
+            (BIBase.sep (wp_pre_s W s1
+                (wp_s W s1) E1 e Φ)
+              (wp_post E2 Φ Ψ))) :=
     (sep_mono .rfl <| sep_mono .rfl <| sep_mono hwpΦ .rfl)
   let IH : IProp GF :=
     BIBase.intuitionistically
-      (BIBase.later (wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F)))
-  -- reassociate the left context, then apply the `wp_pre` unfolding
+      (BIBase.later (wp_strong_mono_body ))
+  -- reassociate the left context, then apply the `wp_pre W` unfolding
   have hassoc0 :
       BIBase.sep
           (BIBase.sep
             (BIBase.sep
               (BIBase.sep IH (BIBase.pure (stuckness_le s1 s2)))
               (BIBase.pure (Subset E1 E2)))
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ))
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) ⊢
+            (wp_s W s1 E1 e Φ))
+          (wp_post E2 Φ Ψ) ⊢
         BIBase.sep IH
           (BIBase.sep (BIBase.pure (stuckness_le s1 s2))
             (BIBase.sep (BIBase.pure (Subset E1 E2))
-              (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-                (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)))) := by
-    -- reassociate to group `wp_s`/`wp_post`, then expose `IH`
+              (BIBase.sep (wp_s W s1 E1 e Φ)
+                (wp_post E2 Φ Ψ)))) := by
+    -- reassociate to group `wp_s W`/`wp_post`, then expose `IH`
     refine (sep_assoc (PROP := IProp GF)
       (P := BIBase.sep
         (BIBase.sep IH (BIBase.pure (stuckness_le s1 s2)))
         (BIBase.pure (Subset E1 E2)))
-      (Q := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-      (R := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)).1.trans ?_
+      (Q := wp_s W s1 E1 e Φ)
+      (R := wp_post E2 Φ Ψ)).1.trans ?_
     refine (sep_assoc (PROP := IProp GF)
       (P := BIBase.sep IH (BIBase.pure (stuckness_le s1 s2)))
       (Q := BIBase.pure (Subset E1 E2))
-      (R := BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-        (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))).1.trans ?_
+      (R := BIBase.sep (wp_s W s1 E1 e Φ)
+        (wp_post E2 Φ Ψ))).1.trans ?_
     exact (sep_assoc (PROP := IProp GF)
       (P := IH)
       (Q := BIBase.pure (stuckness_le s1 s2))
       (R := BIBase.sep (BIBase.pure (Subset E1 E2))
-        (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)))).1
+        (BIBase.sep (wp_s W s1 E1 e Φ)
+          (wp_post E2 Φ Ψ)))).1
   refine hassoc0.trans ?_
   refine (sep_mono .rfl hpre).trans ?_
   -- consume the pure assumptions and apply the step lemma
@@ -1752,14 +1735,14 @@ private theorem wp_strong_mono_body_step :
       (P := IH)
       (Q := BIBase.sep (BIBase.pure (stuckness_le s1 s2))
         (BIBase.sep (BIBase.pure (Subset E1 E2))
-          (BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))))).trans
+          (BIBase.sep (wp_pre_s W s1
+              (wp_s W s1) E1 e Φ)
+            (wp_post E2 Φ Ψ))))).trans
       (pure_sep_elim_left (φ := stuckness_le s1 s2)
         (P := BIBase.sep (BIBase.pure (Subset E1 E2))
-          (BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)))))
+          (BIBase.sep (wp_pre_s W s1
+              (wp_s W s1) E1 e Φ)
+            (wp_post E2 Φ Ψ)))))
     (h2 := ?_)).trans hwpΨ
   intro hS
   refine (pure_elim (φ := Subset E1 E2)
@@ -1767,92 +1750,88 @@ private theorem wp_strong_mono_body_step :
       (P := IH)
       (Q := BIBase.sep (BIBase.pure (stuckness_le s1 s2))
         (BIBase.sep (BIBase.pure (Subset E1 E2))
-          (BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))))).trans
+          (BIBase.sep (wp_pre_s W s1
+              (wp_s W s1) E1 e Φ)
+            (wp_post E2 Φ Ψ))))).trans
       (pure_sep_elim_second (φ := stuckness_le s1 s2) (ψ := Subset E1 E2)
-        (P := BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))))
+        (P := BIBase.sep (wp_pre_s W s1
+            (wp_s W s1) E1 e Φ)
+          (wp_post E2 Φ Ψ))))
     (h2 := ?_))
   intro hE
   have hstep :
       BIBase.sep IH
-        (BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)) ⊢
-      wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2
-        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2) E2 e Ψ := by
+        (BIBase.sep (wp_pre_s W s1
+            (wp_s W s1) E1 e Φ)
+          (wp_post E2 Φ Ψ)) ⊢
+      wp_pre_s W s2
+        (wp_s W s2) E2 e Ψ := by
     cases hto : Λ.to_val e with
     | some v =>
         have hpre' :
-            wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ ⊢
-              fupd' (Λ := Λ) (M := M) (F := F) E1 E1 (Φ v) := by
-          simp [wp_pre, hto]
+            wp_pre_s W s1
+                (wp_s W s1) E1 e Φ ⊢
+              fupd' W E1 E1 (Φ v) := by
+          simp [wp_pre W, hto]
         have hval :=
           (sep_mono hpre' .rfl).trans
-            (wp_strong_mono_value (Λ := Λ) (GF := GF) (M := M) (F := F)
-              (E1 := E1) (E2 := E2) (Φ := Φ) (Ψ := Ψ) (v := v) hE)
+            (wp_strong_mono_value (E1 := E1) (E2 := E2) (Φ := Φ) (Ψ := Ψ) (v := v) hE)
         have hpost' :
-            fupd' (Λ := Λ) (M := M) (F := F) E2 E2 (Ψ v) ⊢
-              wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2) E2 e Ψ := by
-          simp [wp_pre, hto]
+            fupd' W E2 E2 (Ψ v) ⊢
+              wp_pre_s W s2
+                (wp_s W s2) E2 e Ψ := by
+          simp [wp_pre W, hto]
         have hmain := hval.trans hpost'
         exact (sep_elim_r (PROP := IProp GF)
           (P := IH)
-          (Q := BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))).trans hmain
+          (Q := BIBase.sep (wp_pre_s W s1
+              (wp_s W s1) E1 e Φ)
+            (wp_post E2 Φ Ψ))).trans hmain
     | none =>
-        exact wp_strong_mono_step (Λ := Λ) (GF := GF) (M := M) (F := F)
-          (s1 := s1) (s2 := s2) (E1 := E1) (E2 := E2)
+        exact wp_strong_mono_step (s1 := s1) (s2 := s2) (E1 := E1) (E2 := E2)
           (e := e) (Φ := Φ) (Ψ := Ψ) hS hE hto
   -- thread the framed conversion and apply the step result
   have hdrop_pures :
       BIBase.sep (BIBase.pure (stuckness_le s1 s2))
           (BIBase.sep (BIBase.pure (Subset E1 E2))
-            (BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-              (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))) ⊢
-        BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) := by
+            (BIBase.sep (wp_pre_s W s1
+                (wp_s W s1) E1 e Φ)
+              (wp_post E2 Φ Ψ))) ⊢
+        BIBase.sep (wp_pre_s W s1
+            (wp_s W s1) E1 e Φ)
+          (wp_post E2 Φ Ψ) := by
     refine (sep_elim_r (PROP := IProp GF)
       (P := BIBase.pure (stuckness_le s1 s2))
       (Q := BIBase.sep (BIBase.pure (Subset E1 E2))
-        (BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)))).trans ?_
+        (BIBase.sep (wp_pre_s W s1
+            (wp_s W s1) E1 e Φ)
+          (wp_post E2 Φ Ψ)))).trans ?_
     exact sep_elim_r (PROP := IProp GF)
       (P := BIBase.pure (Subset E1 E2))
-      (Q := BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-        (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))
+      (Q := BIBase.sep (wp_pre_s W s1
+          (wp_s W s1) E1 e Φ)
+        (wp_post E2 Φ Ψ))
   have hdrop :
       BIBase.sep IH
           (BIBase.sep (BIBase.pure (stuckness_le s1 s2))
             (BIBase.sep (BIBase.pure (Subset E1 E2))
-              (BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-                (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)))) ⊢
+              (BIBase.sep (wp_pre_s W s1
+                  (wp_s W s1) E1 e Φ)
+                (wp_post E2 Φ Ψ)))) ⊢
         BIBase.sep IH
-          (BIBase.sep (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1) E1 e Φ)
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)) :=
+          (BIBase.sep (wp_pre_s W s1
+              (wp_s W s1) E1 e Φ)
+            (wp_post E2 Φ Ψ)) :=
     sep_mono .rfl hdrop_pures
   exact hdrop.trans hstep
 
 private theorem wp_strong_mono_body_loeb :
     (True : IProp GF) ⊢
-      wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F) := by
+      wp_strong_mono_body := by
   let P :=
-    wp_strong_mono_body (Λ := Λ) (GF := GF) (M := M) (F := F)
-  have hstep :
+    wp_strong_mono_body have hstep :
       BIBase.intuitionistically (BIBase.later P) ⊢ P :=
-    wp_strong_mono_body_step (Λ := Λ) (GF := GF) (M := M) (F := F)
-  have hstep_box :
+    wp_strong_mono_body_step have hstep_box :
       BIBase.intuitionistically (BIBase.later P) ⊢
         BIBase.intuitionistically P :=
     intuitionistically_intro' (P := BIBase.later P) (Q := P) hstep
@@ -1875,78 +1854,77 @@ theorem wp_strong_mono (s1 s2 : Stuckness) (E1 E2 : Iris.Set Positive)
     (e : Λ.expr) (Φ Ψ : Λ.val → IProp GF) :
     stuckness_le s1 s2 →
     Subset E1 E2 →
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ ⊢
+    wp_s W s1 E1 e Φ ⊢
       BIBase.wand
-        (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
-        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ) := by
+        (wp_post E2 Φ Ψ)
+        (wp_s W s2 E2 e Ψ) := by
   intro hS hE
   let W : IProp GF :=
     BIBase.wand (BIBase.pure (stuckness_le s1 s2))
       (BIBase.wand (BIBase.pure (Subset E1 E2))
-        (BIBase.wand (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-          (BIBase.wand (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ))))
+        (BIBase.wand (wp_s W s1 E1 e Φ)
+          (BIBase.wand (wp_post E2 Φ Ψ)
+            (wp_s W s2 E2 e Ψ))))
   let P0 : IProp GF :=
     BIBase.sep (BIBase.pure (stuckness_le s1 s2))
       (BIBase.sep (BIBase.pure (Subset E1 E2))
-        (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)))
+        (BIBase.sep (wp_s W s1 E1 e Φ)
+          (wp_post E2 Φ Ψ)))
   have hW :
       (True : IProp GF) ⊢ W :=
-    (wp_strong_mono_body_loeb (Λ := Λ) (GF := GF) (M := M) (F := F)).trans
-      (wp_strong_mono_body_elim (Λ := Λ) (GF := GF) (M := M) (F := F)
-        (s1 := s1) (s2 := s2) (E1 := E1) (E2 := E2)
+    (wp_strong_mono_body_loeb ).trans
+      (wp_strong_mono_body_elim (s1 := s1) (s2 := s2) (E1 := E1) (E2 := E2)
         (e := e) (Φ := Φ) (Ψ := Ψ))
   have hS' : (True : IProp GF) ⊢ BIBase.pure (stuckness_le s1 s2) := pure_intro hS
   have hE' : (True : IProp GF) ⊢ BIBase.pure (Subset E1 E2) := pure_intro hE
   have hframeS :
-      BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) ⊢
+      BIBase.sep (wp_s W s1 E1 e Φ)
+          (wp_post E2 Φ Ψ) ⊢
         BIBase.sep (BIBase.pure (stuckness_le s1 s2))
-          (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-            (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)) := by
+          (BIBase.sep (wp_s W s1 E1 e Φ)
+            (wp_post E2 Φ Ψ)) := by
     refine (true_sep_2 (PROP := IProp GF)
-      (P := BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-        (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))).trans ?_
+      (P := BIBase.sep (wp_s W s1 E1 e Φ)
+        (wp_post E2 Φ Ψ))).trans ?_
     exact sep_mono hS' .rfl
   have hframe :
-      BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ) ⊢ P0 := by
+      BIBase.sep (wp_s W s1 E1 e Φ)
+          (wp_post E2 Φ Ψ) ⊢ P0 := by
     refine hframeS.trans ?_
     refine (true_sep_2 (PROP := IProp GF)
       (P := BIBase.sep (BIBase.pure (stuckness_le s1 s2))
-        (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)))).trans ?_
+        (BIBase.sep (wp_s W s1 E1 e Φ)
+          (wp_post E2 Φ Ψ)))).trans ?_
     refine (sep_mono hE' .rfl).trans ?_
     exact (sep_left_comm (PROP := IProp GF)
       (P := BIBase.pure (Subset E1 E2))
       (Q := BIBase.pure (stuckness_le s1 s2))
-      (R := BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-        (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))).1
+      (R := BIBase.sep (wp_s W s1 E1 e Φ)
+        (wp_post E2 Φ Ψ))).1
   have happly :
       BIBase.sep W P0 ⊢
-        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ := by
+        wp_s W s2 E2 e Ψ := by
     refine (sep_assoc (PROP := IProp GF)
       (P := W) (Q := BIBase.pure (stuckness_le s1 s2))
       (R := BIBase.sep (BIBase.pure (Subset E1 E2))
-        (BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)))).2.trans ?_
+        (BIBase.sep (wp_s W s1 E1 e Φ)
+          (wp_post E2 Φ Ψ)))).2.trans ?_
     refine (sep_mono (wand_elim_l (PROP := IProp GF)) .rfl).trans ?_
     refine (sep_assoc (PROP := IProp GF)
       (P := BIBase.wand (BIBase.pure (Subset E1 E2))
-        (BIBase.wand (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-          (BIBase.wand (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ))))
+        (BIBase.wand (wp_s W s1 E1 e Φ)
+          (BIBase.wand (wp_post E2 Φ Ψ)
+            (wp_s W s2 E2 e Ψ))))
       (Q := BIBase.pure (Subset E1 E2))
-      (R := BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-        (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ))).2.trans ?_
+      (R := BIBase.sep (wp_s W s1 E1 e Φ)
+        (wp_post E2 Φ Ψ))).2.trans ?_
     refine (sep_mono (wand_elim_l (PROP := IProp GF)) .rfl).trans ?_
     refine (sep_assoc (PROP := IProp GF)
-      (P := BIBase.wand (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-        (BIBase.wand (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s2 E2 e Ψ)))
-      (Q := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s1 E1 e Φ)
-      (R := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E2 Φ Ψ)).2.trans ?_
+      (P := BIBase.wand (wp_s W s1 E1 e Φ)
+        (BIBase.wand (wp_post E2 Φ Ψ)
+          (wp_s W s2 E2 e Ψ)))
+      (Q := wp_s W s1 E1 e Φ)
+      (R := wp_post E2 Φ Ψ)).2.trans ?_
     refine (sep_mono (wand_elim_l (PROP := IProp GF)) .rfl).trans ?_
     exact wand_elim_l (PROP := IProp GF)
   refine wand_intro ?_
@@ -1958,52 +1936,50 @@ theorem wp_strong_mono (s1 s2 : Stuckness) (E1 E2 : Iris.Set Positive)
 Coq: `fupd_wp` in `weakestpre.v`. -/
 theorem fupd_wp (s : Stuckness) (E : Iris.Set Positive)
     (e : Λ.expr) (Φ : Λ.val → IProp GF) :
-    fupd' (Λ := Λ) (M := M) (F := F) E E
-      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ) ⊢
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ :=
+    fupd' W E E
+      (wp_s W s E e Φ) ⊢
+    wp_s W s E e Φ :=
   by
   have hwp_pre :
-      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ ⊢
-        wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e Φ :=
-    (wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s := s) (E := E) (e := e) (Φ := Φ)).1
+      wp_s W s E e Φ ⊢
+        wp_pre_s W s
+          (wp_s W s) E e Φ :=
+    (wp_unfold (s := s) (E := E) (e := e) (Φ := Φ)).1
   have hwp :
-      wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e Φ ⊢
-        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ :=
-    (wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s := s) (E := E) (e := e) (Φ := Φ)).2
-  refine (fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-    (M := M) (F := F) (E1 := E) (E2 := E)
-    (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ)
-    (Q := wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e Φ) hwp_pre).trans ?_
+      wp_pre_s W s
+          (wp_s W s) E e Φ ⊢
+        wp_s W s E e Φ :=
+    (wp_unfold (s := s) (E := E) (e := e) (Φ := Φ)).2
+  refine (Iris.BaseLogic.fupd_mono 
+    (E1 := E) (E2 := E)
+    (P := wp_s W s E e Φ)
+    (Q := wp_pre_s W s
+      (wp_s W s) E e Φ) hwp_pre).trans ?_
   have hcollapse :
-      fupd' (Λ := Λ) (M := M) (F := F) E E
-          (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e Φ) ⊢
-        wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e Φ := by
+      fupd' W E E
+          (wp_pre_s W s
+            (wp_s W s) E e Φ) ⊢
+        wp_pre_s W s
+          (wp_s W s) E e Φ := by
     cases hto : Λ.to_val e with
     | some v =>
-        simpa [wp_pre, hto] using
-          (fupd_idem (Λ := Λ) (M := M) (F := F) (E := E) (P := Φ v))
+        simpa [wp_pre W, hto] using
+          (fupd_idem (E := E) (P := Φ v))
     | none =>
         -- push the outer update through binders and collapse the nested update
-        simp [wp_pre, hto, wp_pre_step]
+        simp [wp_pre W, hto, wp_pre_step W]
         let Qcont (σ : Λ.state) (ns : Nat) (κ : List Λ.observation)
             (κs : List Λ.observation) (nt : Nat) : IProp GF :=
           BIBase.forall fun e2 : Λ.expr =>
             BIBase.forall fun σ2 : Λ.state =>
               BIBase.forall fun efs : List Λ.expr =>
                 BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)) <|
-                  fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E <|
+                  fupd' W maskEmpty E <|
                     BIBase.later <|
                       BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt)) <|
-                        BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2 Φ)
+                        BIBase.sep (wp_s W s E e2 Φ)
                           (big_sepL (fun _ ef =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s Iris.Set.univ ef fork_post)
+                            wp_s W s Iris.Set.univ ef fork_post)
                             efs)
         let Pσ (σ : Λ.state) : IProp GF :=
           BIBase.forall fun ns : Nat =>
@@ -2011,94 +1987,89 @@ theorem fupd_wp (s : Stuckness) (E : Iris.Set Positive)
               BIBase.forall fun κs : List Λ.observation =>
                 BIBase.forall fun nt : Nat =>
                   BIBase.wand (state_interp σ ns (κ ++ κs) nt) <|
-                    fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty <|
+                    fupd' W E maskEmpty <|
                       BIBase.sep (BIBase.pure (stuckness_pred s e σ))
                         (Qcont σ ns κ κs nt)
         have hσ :
-            fupd' (Λ := Λ) (M := M) (F := F) E E (BIBase.forall Pσ) ⊢
-              BIBase.forall fun a => fupd' (Λ := Λ) (M := M) (F := F) E E (Pσ a) := by
+            fupd' W E E (BIBase.forall Pσ) ⊢
+              BIBase.forall fun a => fupd' W E E (Pσ a) := by
           simpa using
-            (fupd_forall (Λ := Λ) (GF := GF) (M := M) (F := F)
-              (A := Λ.state) (E1 := E) (E2 := E) (Φ := Pσ))
+            (fupd_forall (A := Λ.state) (E1 := E) (E2 := E) (Φ := Pσ))
         refine hσ.trans ?_
         refine forall_intro (PROP := IProp GF) ?_; intro σ
         have hσ' :=
           forall_elim (PROP := IProp GF)
-            (Ψ := fun σ => fupd' (Λ := Λ) (M := M) (F := F) E E (Pσ σ)) σ
+            (Ψ := fun σ => fupd' W E E (Pσ σ)) σ
         refine hσ'.trans ?_
         let Pns (ns : Nat) : IProp GF :=
           BIBase.forall fun κ : List Λ.observation =>
             BIBase.forall fun κs : List Λ.observation =>
               BIBase.forall fun nt : Nat =>
                 BIBase.wand (state_interp σ ns (κ ++ κs) nt) <|
-                  fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty <|
+                  fupd' W E maskEmpty <|
                     BIBase.sep (BIBase.pure (stuckness_pred s e σ))
                       (Qcont σ ns κ κs nt)
         have hns :
-            fupd' (Λ := Λ) (M := M) (F := F) E E (BIBase.forall Pns) ⊢
-              BIBase.forall fun a => fupd' (Λ := Λ) (M := M) (F := F) E E (Pns a) := by
+            fupd' W E E (BIBase.forall Pns) ⊢
+              BIBase.forall fun a => fupd' W E E (Pns a) := by
           simpa using
-            (fupd_forall (Λ := Λ) (GF := GF) (M := M) (F := F)
-              (A := Nat) (E1 := E) (E2 := E) (Φ := Pns))
+            (fupd_forall (A := Nat) (E1 := E) (E2 := E) (Φ := Pns))
         refine hns.trans ?_
         refine forall_intro (PROP := IProp GF) ?_; intro ns
         have hns' :=
           forall_elim (PROP := IProp GF)
-            (Ψ := fun ns => fupd' (Λ := Λ) (M := M) (F := F) E E (Pns ns)) ns
+            (Ψ := fun ns => fupd' W E E (Pns ns)) ns
         refine hns'.trans ?_
         let Pκ (κ : List Λ.observation) : IProp GF :=
           BIBase.forall fun κs : List Λ.observation =>
             BIBase.forall fun nt : Nat =>
               BIBase.wand (state_interp σ ns (κ ++ κs) nt) <|
-                fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty <|
+                fupd' W E maskEmpty <|
                   BIBase.sep (BIBase.pure (stuckness_pred s e σ))
                     (Qcont σ ns κ κs nt)
         have hκ :
-            fupd' (Λ := Λ) (M := M) (F := F) E E (BIBase.forall Pκ) ⊢
-              BIBase.forall fun a => fupd' (Λ := Λ) (M := M) (F := F) E E (Pκ a) := by
+            fupd' W E E (BIBase.forall Pκ) ⊢
+              BIBase.forall fun a => fupd' W E E (Pκ a) := by
           simpa using
-            (fupd_forall (Λ := Λ) (GF := GF) (M := M) (F := F)
-              (A := List Λ.observation) (E1 := E) (E2 := E) (Φ := Pκ))
+            (fupd_forall (A := List Λ.observation) (E1 := E) (E2 := E) (Φ := Pκ))
         refine hκ.trans ?_
         refine forall_intro (PROP := IProp GF) ?_; intro κ
         have hκ' :=
           forall_elim (PROP := IProp GF)
-            (Ψ := fun κ => fupd' (Λ := Λ) (M := M) (F := F) E E (Pκ κ)) κ
+            (Ψ := fun κ => fupd' W E E (Pκ κ)) κ
         refine hκ'.trans ?_
         let Pκs (κs : List Λ.observation) : IProp GF :=
           BIBase.forall fun nt : Nat =>
             BIBase.wand (state_interp σ ns (κ ++ κs) nt) <|
-              fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty <|
+              fupd' W E maskEmpty <|
                 BIBase.sep (BIBase.pure (stuckness_pred s e σ))
                   (Qcont σ ns κ κs nt)
         have hκs :
-            fupd' (Λ := Λ) (M := M) (F := F) E E (BIBase.forall Pκs) ⊢
-              BIBase.forall fun a => fupd' (Λ := Λ) (M := M) (F := F) E E (Pκs a) := by
+            fupd' W E E (BIBase.forall Pκs) ⊢
+              BIBase.forall fun a => fupd' W E E (Pκs a) := by
           simpa using
-            (fupd_forall (Λ := Λ) (GF := GF) (M := M) (F := F)
-              (A := List Λ.observation) (E1 := E) (E2 := E) (Φ := Pκs))
+            (fupd_forall (A := List Λ.observation) (E1 := E) (E2 := E) (Φ := Pκs))
         refine hκs.trans ?_
         refine forall_intro (PROP := IProp GF) ?_; intro κs
         have hκs' :=
           forall_elim (PROP := IProp GF)
-            (Ψ := fun κs => fupd' (Λ := Λ) (M := M) (F := F) E E (Pκs κs)) κs
+            (Ψ := fun κs => fupd' W E E (Pκs κs)) κs
         refine hκs'.trans ?_
         let Pnt (nt : Nat) : IProp GF :=
           BIBase.wand (state_interp σ ns (κ ++ κs) nt) <|
-            fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty <|
+            fupd' W E maskEmpty <|
               BIBase.sep (BIBase.pure (stuckness_pred s e σ))
                 (Qcont σ ns κ κs nt)
         have hnt :
-            fupd' (Λ := Λ) (M := M) (F := F) E E (BIBase.forall Pnt) ⊢
-              BIBase.forall fun a => fupd' (Λ := Λ) (M := M) (F := F) E E (Pnt a) := by
+            fupd' W E E (BIBase.forall Pnt) ⊢
+              BIBase.forall fun a => fupd' W E E (Pnt a) := by
           simpa using
-            (fupd_forall (Λ := Λ) (GF := GF) (M := M) (F := F)
-              (A := Nat) (E1 := E) (E2 := E) (Φ := Pnt))
+            (fupd_forall (A := Nat) (E1 := E) (E2 := E) (Φ := Pnt))
         refine hnt.trans ?_
         refine forall_intro (PROP := IProp GF) ?_; intro nt
         have hnt' :=
           forall_elim (PROP := IProp GF)
-            (Ψ := fun nt => fupd' (Λ := Λ) (M := M) (F := F) E E (Pnt nt)) nt
+            (Ψ := fun nt => fupd' W E E (Pnt nt)) nt
         refine hnt'.trans ?_
         -- collapse the outer `fupd` under the wand
         let Pstep : IProp GF :=
@@ -2106,19 +2077,19 @@ theorem fupd_wp (s : Stuckness) (E : Iris.Set Positive)
             (Qcont σ ns κ κs nt)
         refine (fupd_wand (E1 := E) (E2 := E)
           (P := state_interp σ ns (κ ++ κs) nt)
-          (Q := fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty Pstep)).trans ?_
+          (Q := fupd' W E maskEmpty Pstep)).trans ?_
         refine (wand_mono_r (PROP := IProp GF) ?_)
-        exact fupd_trans (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-          (M := M) (F := F) (E1 := E) (E2 := E) (E3 := maskEmpty) (P := Pstep)
+        exact Iris.BaseLogic.fupd_trans 
+          (E1 := E) (E2 := E) (E3 := maskEmpty) (P := Pstep)
   exact hcollapse.trans hwp
 
 /-- Postcondition update can be absorbed.
 Coq: `wp_fupd` in `weakestpre.v`. -/
 theorem wp_fupd (s : Stuckness) (E : Iris.Set Positive)
     (e : Λ.expr) (Φ : Λ.val → IProp GF) :
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-      (fun v => fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v)) ⊢
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ :=
+    wp_s W s E e
+      (fun v => fupd' W E E (Φ v)) ⊢
+    wp_s W s E e Φ :=
   by
   -- apply strong monotonicity with the identity postcondition transformer
   have hS : stuckness_le s s := by
@@ -2126,42 +2097,41 @@ theorem wp_fupd (s : Stuckness) (E : Iris.Set Positive)
   have hE : Subset E E := by
     intro i hi; exact hi
   have hmono :=
-    wp_strong_mono (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s1 := s) (s2 := s) (E1 := E) (E2 := E) (e := e)
-      (Φ := fun v => fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v))
+    wp_strong_mono (s1 := s) (s2 := s) (E1 := E) (E2 := E) (e := e)
+      (Φ := fun v => fupd' W E E (Φ v))
       (Ψ := Φ) hS hE
   have hpost :
       (True : IProp GF) ⊢
-        wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E
-          (fun v => fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v)) Φ := by
+        wp_post E
+          (fun v => fupd' W E E (Φ v)) Φ := by
     -- the postcondition transformer is just `P -∗ P`
     refine forall_intro ?_; intro v
     exact wand_rfl
   have hframe :
-      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-          (fun v => fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v)) ⊢
+      wp_s W s E e
+          (fun v => fupd' W E E (Φ v)) ⊢
         BIBase.sep
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E
-            (fun v => fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v)) Φ)
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-            (fun v => fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v))) := by
+          (wp_post E
+            (fun v => fupd' W E E (Φ v)) Φ)
+          (wp_s W s E e
+            (fun v => fupd' W E E (Φ v))) := by
     -- insert the transformer via `True`
     refine (true_sep_2 (PROP := IProp GF)
-      (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-        (fun v => fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v)))).trans ?_
+      (P := wp_s W s E e
+        (fun v => fupd' W E E (Φ v)))).trans ?_
     exact sep_mono hpost .rfl
   refine hframe.trans ?_
   refine (sep_mono (PROP := IProp GF)
-    (P := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E
-      (fun v => fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v)) Φ)
-    (Q := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E
-      (fun v => fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v)) Φ)
-    (P' := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-      (fun v => fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v)))
+    (P := wp_post E
+      (fun v => fupd' W E E (Φ v)) Φ)
+    (Q := wp_post E
+      (fun v => fupd' W E E (Φ v)) Φ)
+    (P' := wp_s W s E e
+      (fun v => fupd' W E E (Φ v)))
     (Q' := BIBase.wand
-      (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E
-        (fun v => fupd' (Λ := Λ) (M := M) (F := F) E E (Φ v)) Φ)
-      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ)) .rfl hmono).trans ?_
+      (wp_post E
+        (fun v => fupd' W E E (Φ v)) Φ)
+      (wp_s W s E e Φ)) .rfl hmono).trans ?_
   exact wand_elim_r (PROP := IProp GF)
 
 /-- Bind rule: compositionality via evaluation contexts.
@@ -2169,25 +2139,25 @@ Coq: `wp_bind` in `weakestpre.v`. -/
 theorem wp_bind (K : Λ.expr → Λ.expr) [LanguageCtx K]
     (s : Stuckness) (E : Iris.Set Positive)
     (e : Λ.expr) (Φ : Λ.val → IProp GF) :
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-      (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ) ⊢
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ :=
+    wp_s W s E e
+      (fun v => wp_s W s E (K (Λ.of_val v)) Φ) ⊢
+    wp_s W s E (K e) Φ :=
   by
   let post : Λ.val → IProp GF :=
-    fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ
+    fun v => wp_s W s E (K (Λ.of_val v)) Φ
   let P : IProp GF :=
     BIBase.forall fun E =>
       BIBase.forall fun e =>
         BIBase.forall fun Φ =>
           BIBase.wand
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-              (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ))
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ)
+            (wp_s W s E e
+              (fun v => wp_s W s E (K (Λ.of_val v)) Φ))
+            (wp_s W s E (K e) Φ)
   have hPelim (E : Iris.Set Positive) (e : Λ.expr) (Φ : Λ.val → IProp GF) :
       P ⊢ BIBase.wand
-        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-          (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ))
-        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ) := by
+        (wp_s W s E e
+          (fun v => wp_s W s E (K (Λ.of_val v)) Φ))
+        (wp_s W s E (K e) Φ) := by
     refine (forall_elim (PROP := IProp GF) (Ψ := fun E => _) E).trans ?_
     refine (forall_elim (PROP := IProp GF) (Ψ := fun e => _) e).trans ?_
     exact (forall_elim (PROP := IProp GF) (Ψ := fun Φ => _) Φ)
@@ -2198,50 +2168,50 @@ theorem wp_bind (K : Λ.expr → Λ.expr) [LanguageCtx K]
     cases hto : Λ.to_val e with
     | some v =>
         have hval :
-            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-                (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ) ⊢
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ := by
+            wp_s W s E e
+                (fun v => wp_s W s E (K (Λ.of_val v)) Φ) ⊢
+              wp_s W s E (K e) Φ := by
           have hstep :
-              fupd' (Λ := Λ) (M := M) (F := F) E E
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ) ⊢
-                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ :=
-            fupd_wp (Λ := Λ) (GF := GF) (M := M) (F := F) (s := s) (E := E)
+              fupd' W E E
+                  (wp_s W s E (K (Λ.of_val v)) Φ) ⊢
+                wp_s W s E (K (Λ.of_val v)) Φ :=
+            fupd_wp (s := s) (E := E)
               (e := K (Λ.of_val v)) (Φ := Φ)
           have hK : K e = K (Λ.of_val v) := by
             simp [of_to_val e v hto]
           have hwpK' :
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ ⊢
-                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ := by
+              wp_s W s E (K (Λ.of_val v)) Φ ⊢
+                wp_s W s E (K e) Φ := by
             simp [hK]
           have hpre :
-              wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e
+              wp_pre_s W s
+                  (wp_s W s) E e
                   (fun v =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ) ⊢
-                fupd' (Λ := Λ) (M := M) (F := F) E E
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ) := by
-            simp [wp_pre, hto]
+                    wp_s W s E (K (Λ.of_val v)) Φ) ⊢
+                fupd' W E E
+                  (wp_s W s E (K (Λ.of_val v)) Φ) := by
+            simp [wp_pre W, hto]
           have hwp :
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-                  (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ) ⊢
-                wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e
+              wp_s W s E e
+                  (fun v => wp_s W s E (K (Λ.of_val v)) Φ) ⊢
+                wp_pre_s W s
+                  (wp_s W s) E e
                   (fun v =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ) :=
-            (wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F) (s := s) (E := E) (e := e)
+                    wp_s W s E (K (Λ.of_val v)) Φ) :=
+            (wp_unfold (s := s) (E := E) (e := e)
               (Φ := fun v =>
-                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ)).1
+                wp_s W s E (K (Λ.of_val v)) Φ)).1
           exact hwp.trans (hpre.trans (hstep.trans hwpK'))
         have htrue :
             (True : IProp GF) ⊢ BIBase.wand
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-                (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ))
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ) := by
+              (wp_s W s E e
+                (fun v => wp_s W s E (K (Λ.of_val v)) Φ))
+              (wp_s W s E (K e) Φ) := by
           refine wand_intro (PROP := IProp GF) ?_
           -- drop `True`, then use the value case
           exact (sep_elim_r (PROP := IProp GF) (P := (BIBase.pure True))
-            (Q := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-              (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ))).trans
+            (Q := wp_s W s E e
+              (fun v => wp_s W s E (K (Λ.of_val v)) Φ))).trans
             hval
         exact (true_intro (P := BIBase.intuitionistically (BIBase.later P))).trans htrue
     | none =>
@@ -2249,58 +2219,55 @@ theorem wp_bind (K : Λ.expr → Λ.expr) [LanguageCtx K]
           BIBase.intuitionistically (BIBase.later P)
         refine wand_intro (PROP := IProp GF) ?_
         have hwp :
-            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-                (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ) ⊢
-              wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e
+            wp_s W s E e
+                (fun v => wp_s W s E (K (Λ.of_val v)) Φ) ⊢
+              wp_pre_s W s
+                (wp_s W s) E e
                 (fun v =>
-                  wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ) :=
-          (wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F) (s := s) (E := E) (e := e)
+                  wp_s W s E (K (Λ.of_val v)) Φ) :=
+          (wp_unfold (s := s) (E := E) (e := e)
             (Φ := fun v =>
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ)).1
+              wp_s W s E (K (Λ.of_val v)) Φ)).1
         have hwpK :
-            wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E (K e) Φ ⊢
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ :=
-          (wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F)
-            (s := s) (E := E) (e := K e) (Φ := Φ)).2
+            wp_pre_s W s
+                (wp_s W s) E (K e) Φ ⊢
+              wp_s W s E (K e) Φ :=
+          (wp_unfold (s := s) (E := E) (e := K e) (Φ := Φ)).2
         refine (sep_mono (PROP := IProp GF) .rfl hwp).trans ?_
         have htoK : Λ.to_val (K e) = none :=
           LanguageCtx.fill_not_val (K := K) e hto
         have hpre :
             BIBase.sep IH
-                (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e
+                (wp_pre_s W s
+                  (wp_s W s) E e
                   (fun v =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ)) ⊢
-              wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E (K e) Φ := by
-          -- unfold only the right-hand `wp_pre`
-          simp [wp_pre, htoK, wp_pre_step]
+                    wp_s W s E (K (Λ.of_val v)) Φ)) ⊢
+              wp_pre_s W s
+                (wp_s W s) E (K e) Φ := by
+          -- unfold only the right-hand `wp_pre W`
+          simp [wp_pre W, htoK, wp_pre_step W]
           -- specialize the right-hand binders
           refine forall_intro (PROP := IProp GF) ?_; intro σ
           refine forall_intro (PROP := IProp GF) ?_; intro ns
           refine forall_intro (PROP := IProp GF) ?_; intro κ
           refine forall_intro (PROP := IProp GF) ?_; intro κs
           refine forall_intro (PROP := IProp GF) ?_; intro nt
-          -- open the left wp_pre
+          -- open the left wp_pre W
           have hview :=
-            wp_pre_elim (Λ := Λ) (GF := GF) (M := M) (F := F)
-              (s := s) (E := E) (e := e)
+            wp_pre_elim (s := s) (E := E) (e := e)
               (Φ := fun v =>
-                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ)
+                wp_s W s E (K (Λ.of_val v)) Φ)
               (σ := σ) (ns := ns) (κ := κ) (κs := κs) (nt := nt) hto
           have hleft :
               BIBase.sep IH
-                  (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                    (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e
+                  (wp_pre_s W s
+                    (wp_s W s) E e
                     (fun v =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ)) ⊢
+                      wp_s W s E (K (Λ.of_val v)) Φ)) ⊢
                 BIBase.sep IH
-                  (wp_pre_view (Λ := Λ) (GF := GF) (M := M) (F := F)
-                    s E e
+                  (wp_pre_view s E e
                     (fun v =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ)
+                      wp_s W s E (K (Λ.of_val v)) Φ)
                     σ ns κ κs nt) :=
             sep_mono (PROP := IProp GF) .rfl hview
           refine hleft.trans ?_
@@ -2310,29 +2277,29 @@ theorem wp_bind (K : Λ.expr → Λ.expr) [LanguageCtx K]
               BIBase.forall fun σ2 : Λ.state =>
                 BIBase.forall fun efs : List Λ.expr =>
                   BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs))
-                    (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                    (fupd' W maskEmpty E
                       (BIBase.later
                         (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                           (BIBase.sep
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                            (wp_s W s E e2
                               (fun v =>
-                                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                                wp_s W s E
                                   (K (Λ.of_val v)) Φ))
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs)))))
           let Q2 : IProp GF :=
             BIBase.forall fun e2 : Λ.expr =>
               BIBase.forall fun σ2 : Λ.state =>
                 BIBase.forall fun efs : List Λ.expr =>
                   BIBase.wand (BIBase.pure (Λ.prim_step (K e) σ κ e2 σ2 efs))
-                    (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                    (fupd' W maskEmpty E
                       (BIBase.later
                         (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                           (BIBase.sep
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2 Φ)
+                            (wp_s W s E e2 Φ)
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs)))))
           let P0 : IProp GF :=
             BIBase.sep (BIBase.pure (stuckness_pred s e σ)) Q1
@@ -2346,50 +2313,50 @@ theorem wp_bind (K : Λ.expr → Λ.expr) [LanguageCtx K]
               BIBase.sep (state_interp σ ns (κ ++ κs) nt)
                   (BIBase.sep IH
                     (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                      (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))) ⊢
+                      (fupd' W E maskEmpty P0))) ⊢
                 BIBase.sep IH
                   (BIBase.sep (state_interp σ ns (κ ++ κs) nt)
                     (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                      (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))) := by
+                      (fupd' W E maskEmpty P0))) := by
             simpa [sep_assoc] using
               (sep_left_comm (PROP := IProp GF)
                 (P := state_interp σ ns (κ ++ κs) nt) (Q := IH)
                 (R := BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                  (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))).1
+                  (fupd' W E maskEmpty P0))).1
           have hpre :
               BIBase.sep (state_interp σ ns (κ ++ κs) nt)
                   (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                    (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0)) ⊢
-                fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0 := by
+                    (fupd' W E maskEmpty P0)) ⊢
+                fupd' W E maskEmpty P0 := by
             simpa using
               (wand_elim_r (PROP := IProp GF)
                 (P := state_interp σ ns (κ ++ κs) nt)
-                (Q := fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))
+                (Q := fupd' W E maskEmpty P0))
           have hpre' :
               BIBase.sep (state_interp σ ns (κ ++ κs) nt)
                   (BIBase.sep IH
                     (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                      (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))) ⊢
-                BIBase.sep IH (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0) := by
+                      (fupd' W E maskEmpty P0))) ⊢
+                BIBase.sep IH (fupd' W E maskEmpty P0) := by
             exact hassoc.trans (sep_mono (PROP := IProp GF) .rfl hpre)
           have hswap :
-              BIBase.sep IH (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0) ⊢
-                BIBase.sep (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0) IH :=
+              BIBase.sep IH (fupd' W E maskEmpty P0) ⊢
+                BIBase.sep (fupd' W E maskEmpty P0) IH :=
             (sep_comm (PROP := IProp GF)
               (P := IH)
-              (Q := fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0)).1
+              (Q := fupd' W E maskEmpty P0)).1
           have hpre'' :
               BIBase.sep (state_interp σ ns (κ ++ κs) nt)
                   (BIBase.sep IH
                     (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                      (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))) ⊢
-                BIBase.sep (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0) IH :=
+                      (fupd' W E maskEmpty P0))) ⊢
+                BIBase.sep (fupd' W E maskEmpty P0) IH :=
             hpre'.trans hswap
           have hframe :
-              BIBase.sep (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0) IH ⊢
-                fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty (BIBase.sep P0 IH) :=
-            fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-              (M := M) (F := F) (E1 := E) (E2 := maskEmpty)
+              BIBase.sep (fupd' W E maskEmpty P0) IH ⊢
+                fupd' W E maskEmpty (BIBase.sep P0 IH) :=
+            Iris.BaseLogic.fupd_frame_r 
+              (E1 := E) (E2 := maskEmpty)
               (P := P0) (Q := IH)
           have hpred :
               ∀ σ, stuckness_pred s e σ → stuckness_pred s (K e) σ := by
@@ -2462,16 +2429,16 @@ theorem wp_bind (K : Λ.expr → Λ.expr) [LanguageCtx K]
                 (R := IH)).2
             have hcont :
                 BIBase.sep Q1 (BIBase.pure (Λ.prim_step e σ κ e2' σ2 efs)) ⊢
-                  fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                  fupd' W maskEmpty E
                     (BIBase.later
                       (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                         (BIBase.sep
-                          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                          (wp_s W s E e2'
                             (fun v =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                              wp_s W s E
                                 (K (Λ.of_val v)) Φ))
                           (big_sepL (fun _ ef =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                            wp_s W s
                               Iris.Set.univ ef fork_post) efs)))) := by
               have h1 :=
                 forall_elim (PROP := IProp GF)
@@ -2479,47 +2446,47 @@ theorem wp_bind (K : Λ.expr → Λ.expr) [LanguageCtx K]
                     BIBase.forall fun σ2 : Λ.state =>
                       BIBase.forall fun efs : List Λ.expr =>
                         BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs))
-                          (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                          (fupd' W maskEmpty E
                             (BIBase.later
                               (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                                 (BIBase.sep
-                                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                                  (wp_s W s E e2
                                     (fun v =>
-                                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                                      wp_s W s E
                                         (K (Λ.of_val v)) Φ))
                                   (big_sepL (fun _ ef =>
-                                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                                    wp_s W s
                                       Iris.Set.univ ef fork_post) efs)))))) e2'
               have h2 :=
                 forall_elim (PROP := IProp GF)
                   (Ψ := fun σ2 : Λ.state =>
                     BIBase.forall fun efs : List Λ.expr =>
                       BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2' σ2 efs))
-                        (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                        (fupd' W maskEmpty E
                           (BIBase.later
                             (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                               (BIBase.sep
-                                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                                (wp_s W s E e2'
                                   (fun v =>
-                                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                                    wp_s W s E
                                       (K (Λ.of_val v)) Φ))
                                 (big_sepL (fun _ ef =>
-                                  wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                                  wp_s W s
                                     Iris.Set.univ ef fork_post) efs)))))) σ2
               have h3 :=
                 forall_elim (PROP := IProp GF)
                   (Ψ := fun efs : List Λ.expr =>
                     BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2' σ2 efs))
-                      (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                      (fupd' W maskEmpty E
                         (BIBase.later
                           (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                             (BIBase.sep
-                              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                              (wp_s W s E e2'
                                 (fun v =>
-                                  wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                                  wp_s W s E
                                     (K (Λ.of_val v)) Φ))
                               (big_sepL (fun _ ef =>
-                                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                                wp_s W s
                                   Iris.Set.univ ef fork_post) efs)))))) efs
               have h123 := h1.trans (h2.trans h3)
               exact (sep_mono (PROP := IProp GF) h123 .rfl).trans
@@ -2528,134 +2495,134 @@ theorem wp_bind (K : Λ.expr → Λ.expr) [LanguageCtx K]
             have happly :
                 BIBase.sep (BIBase.sep Q1 (BIBase.pure (Λ.prim_step e σ κ e2' σ2 efs))) IH ⊢
                   BIBase.sep
-                    (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                    (fupd' W maskEmpty E
                       (BIBase.later
                         (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                           (BIBase.sep
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                            (wp_s W s E e2'
                               (fun v =>
-                                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                                wp_s W s E
                                   (K (Λ.of_val v)) Φ))
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs)))))
                     IH :=
               sep_mono (PROP := IProp GF) hcont .rfl
             have hframe :
                 BIBase.sep
-                    (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                    (fupd' W maskEmpty E
                       (BIBase.later
                         (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                           (BIBase.sep
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                            (wp_s W s E e2'
                               (fun v =>
-                                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                                wp_s W s E
                                   (K (Λ.of_val v)) Φ))
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs)))))
                     IH ⊢
-                  fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                  fupd' W maskEmpty E
                     (BIBase.sep
                       (BIBase.later
                         (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                           (BIBase.sep
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                            (wp_s W s E e2'
                               (fun v =>
-                                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                                wp_s W s E
                                   (K (Λ.of_val v)) Φ))
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs))))
                       IH) :=
-              fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-                (M := M) (F := F) (E1 := maskEmpty) (E2 := E)
+              Iris.BaseLogic.fupd_frame_r 
+                (E1 := maskEmpty) (E2 := E)
                 (P := BIBase.later
                   (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                     (BIBase.sep
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                      (wp_s W s E e2'
                         (fun v =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                          wp_s W s E
                             (K (Λ.of_val v)) Φ))
                       (big_sepL (fun _ ef =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                        wp_s W s
                           Iris.Set.univ ef fork_post) efs))))
                 (Q := IH)
             have hIHlater :
                 BIBase.sep IH
                     (BIBase.later
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                      (wp_s W s E e2'
                         (fun v =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                          wp_s W s E
                             (K (Λ.of_val v)) Φ))) ⊢
                   BIBase.later
-                    (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2') Φ) := by
+                    (wp_s W s E (K e2') Φ) := by
               have hPelim' :
                   BIBase.later P ⊢ BIBase.later
                     (BIBase.wand
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                      (wp_s W s E e2'
                         (fun v =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                          wp_s W s E
                             (K (Λ.of_val v)) Φ))
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2') Φ)) :=
+                      (wp_s W s E (K e2') Φ)) :=
                 later_mono (hPelim (E := E) (e := e2') (Φ := Φ))
               have hwand :
                   IH ⊢ BIBase.later
                     (BIBase.wand
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                      (wp_s W s E e2'
                         (fun v =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                          wp_s W s E
                             (K (Λ.of_val v)) Φ))
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2') Φ)) :=
+                      (wp_s W s E (K e2') Φ)) :=
                 (intuitionistically_elim (PROP := IProp GF) (P := BIBase.later P)).trans hPelim'
               exact (sep_mono (PROP := IProp GF) hwand .rfl).trans
-                (later_wand_elim (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                (later_wand_elim (P := wp_s W s E e2'
                   (fun v =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                    wp_s W s E
                       (K (Λ.of_val v)) Φ))
-                  (Q := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2') Φ))
+                  (Q := wp_s W s E (K e2') Φ))
             have hinner :
                 BIBase.sep
                     (BIBase.later
                       (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                         (BIBase.sep
-                          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                          (wp_s W s E e2'
                             (fun v =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                              wp_s W s E
                                 (K (Λ.of_val v)) Φ))
                           (big_sepL (fun _ ef =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                            wp_s W s
                               Iris.Set.univ ef fork_post) efs))))
                     IH ⊢
                   BIBase.later
                     (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                       (BIBase.sep
-                        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2') Φ)
+                        (wp_s W s E (K e2') Φ)
                         (big_sepL (fun _ ef =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                          wp_s W s
                             Iris.Set.univ ef fork_post) efs))) := by
               -- split the later and use IH on the main WP
               refine (sep_mono (PROP := IProp GF)
                 (later_sep (PROP := IProp GF)
                   (P := state_interp σ2 (ns + 1) κs (efs.length + nt))
                   (Q := BIBase.sep
-                    (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                    (wp_s W s E e2'
                       (fun v =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                        wp_s W s E
                           (K (Λ.of_val v)) Φ))
                     (big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                      wp_s W s
                         Iris.Set.univ ef fork_post) efs))).1 .rfl).trans ?_
               refine (sep_assoc (PROP := IProp GF)
                 (P := BIBase.later (state_interp σ2 (ns + 1) κs (efs.length + nt)))
                 (Q := BIBase.later
                   (BIBase.sep
-                    (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                    (wp_s W s E e2'
                       (fun v =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                        wp_s W s E
                           (K (Λ.of_val v)) Φ))
                     (big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                      wp_s W s
                         Iris.Set.univ ef fork_post) efs)))
                 (R := IH)).1.trans ?_
               -- handle the continuation part
@@ -2663,154 +2630,154 @@ theorem wp_bind (K : Λ.expr → Λ.expr) [LanguageCtx K]
                   BIBase.sep
                       (BIBase.later
                         (BIBase.sep
-                          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                          (wp_s W s E e2'
                             (fun v =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                              wp_s W s E
                                 (K (Λ.of_val v)) Φ))
                           (big_sepL (fun _ ef =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                            wp_s W s
                               Iris.Set.univ ef fork_post) efs)))
                       IH ⊢
                     BIBase.later
                       (BIBase.sep
-                        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2') Φ)
+                        (wp_s W s E (K e2') Φ)
                         (big_sepL (fun _ ef =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                          wp_s W s
                             Iris.Set.univ ef fork_post) efs)) := by
                 refine (sep_mono (PROP := IProp GF)
                   (later_sep (PROP := IProp GF)
-                    (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                    (P := wp_s W s E e2'
                       (fun v =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                        wp_s W s E
                           (K (Λ.of_val v)) Φ))
                     (Q := big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                      wp_s W s
                         Iris.Set.univ ef fork_post) efs)).1 .rfl).trans ?_
                 refine (sep_assoc (PROP := IProp GF)
                   (P := BIBase.later
-                    (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                    (wp_s W s E e2'
                       (fun v =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                        wp_s W s E
                           (K (Λ.of_val v)) Φ)))
                   (Q := BIBase.later
                     (big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                      wp_s W s
                         Iris.Set.univ ef fork_post) efs))
                   (R := IH)).1.trans ?_
                 -- move IH next to the main WP
                 have hswap :
                     BIBase.sep
                         (BIBase.later
-                          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                          (wp_s W s E e2'
                             (fun v =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                              wp_s W s E
                                 (K (Λ.of_val v)) Φ)))
                         (BIBase.sep
                           (BIBase.later
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs))
                           IH) ⊢
                       BIBase.sep
                         (BIBase.sep IH
                           (BIBase.later
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                            (wp_s W s E e2'
                               (fun v =>
-                                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                                wp_s W s E
                                   (K (Λ.of_val v)) Φ))))
                         (BIBase.later
                           (big_sepL (fun _ ef =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                            wp_s W s
                               Iris.Set.univ ef fork_post) efs)) := by
                   refine (sep_assoc (PROP := IProp GF)
                     (P := BIBase.later
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                      (wp_s W s E e2'
                         (fun v =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                          wp_s W s E
                             (K (Λ.of_val v)) Φ)))
                     (Q := BIBase.later
                       (big_sepL (fun _ ef =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                        wp_s W s
                           Iris.Set.univ ef fork_post) efs))
                     (R := IH)).2.trans ?_
                   refine (sep_right_comm (PROP := IProp GF)
                     (P := BIBase.later
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                      (wp_s W s E e2'
                         (fun v =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                          wp_s W s E
                             (K (Λ.of_val v)) Φ)))
                     (Q := BIBase.later
                       (big_sepL (fun _ ef =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                        wp_s W s
                           Iris.Set.univ ef fork_post) efs))
                     (R := IH)).1.trans ?_
                   -- swap inside the left component
                   exact (sep_mono (PROP := IProp GF)
                     (sep_comm (PROP := IProp GF)
                       (P := BIBase.later
-                        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                        (wp_s W s E e2'
                           (fun v =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                            wp_s W s E
                               (K (Λ.of_val v)) Φ)))
                       (Q := IH)).1 .rfl)
                 refine hswap.trans ?_
                 refine (sep_mono (PROP := IProp GF) (hIHlater) .rfl).trans ?_
                 exact (later_sep (PROP := IProp GF)
-                  (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2') Φ)
+                  (P := wp_s W s E (K e2') Φ)
                   (Q := big_sepL (fun _ ef =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                    wp_s W s
                       Iris.Set.univ ef fork_post) efs)).2
               -- combine the state part and the continuation
               refine (sep_mono (PROP := IProp GF) .rfl hcont).trans ?_
               exact (later_sep (PROP := IProp GF)
                 (P := state_interp σ2 (ns + 1) κs (efs.length + nt))
                 (Q := BIBase.sep
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2') Φ)
+                  (wp_s W s E (K e2') Φ)
                   (big_sepL (fun _ ef =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                    wp_s W s
                       Iris.Set.univ ef fork_post) efs))).2
             have hmono :
-                fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                fupd' W maskEmpty E
                     (BIBase.sep
                       (BIBase.later
                         (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                           (BIBase.sep
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                            (wp_s W s E e2'
                               (fun v =>
-                                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                                wp_s W s E
                                   (K (Λ.of_val v)) Φ))
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs))))
                       IH) ⊢
-                  fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                  fupd' W maskEmpty E
                     (BIBase.later
                       (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                         (BIBase.sep
-                          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2') Φ)
+                          (wp_s W s E (K e2') Φ)
                           (big_sepL (fun _ ef =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                            wp_s W s
                               Iris.Set.univ ef fork_post) efs)))) :=
-              fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-                (M := M) (F := F) (E1 := maskEmpty) (E2 := E)
+              Iris.BaseLogic.fupd_mono 
+                (E1 := maskEmpty) (E2 := E)
                 (P := BIBase.sep
                   (BIBase.later
                     (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                       (BIBase.sep
-                        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2'
+                        (wp_s W s E e2'
                           (fun v =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                            wp_s W s E
                               (K (Λ.of_val v)) Φ))
                         (big_sepL (fun _ ef =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                          wp_s W s
                             Iris.Set.univ ef fork_post) efs))))
                   IH)
                 (Q := BIBase.later
                   (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                     (BIBase.sep
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2') Φ)
+                      (wp_s W s E (K e2') Φ)
                       (big_sepL (fun _ ef =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                        wp_s W s
                           Iris.Set.univ ef fork_post) efs)))) hinner
             have hfinal' :=
               hdrop.trans (hinsert.trans (hswap.trans (happly.trans (hframe.trans hmono))))
@@ -2825,25 +2792,25 @@ theorem wp_bind (K : Λ.expr → Λ.expr) [LanguageCtx K]
             exact sep_mono (PROP := IProp GF)
               (pure_mono (PROP := IProp GF) (hpred σ)) hQ
           have hmono :
-              fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty (BIBase.sep P0 IH) ⊢
-                fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P1 :=
-            fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-              (M := M) (F := F) (E1 := E) (E2 := maskEmpty)
+              fupd' W E maskEmpty (BIBase.sep P0 IH) ⊢
+                fupd' W E maskEmpty P1 :=
+            Iris.BaseLogic.fupd_mono 
+              (E1 := E) (E2 := maskEmpty)
               (P := BIBase.sep P0 IH) (Q := P1) hpost
           -- commute to match the `state_interp ∗ (IH ∗ wand)` ordering
           have hswap0 :
               BIBase.sep (BIBase.sep IH
                     (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                      (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0)))
+                      (fupd' W E maskEmpty P0)))
                 (state_interp σ ns (κ ++ κs) nt) ⊢
                 BIBase.sep (state_interp σ ns (κ ++ κs) nt)
                   (BIBase.sep IH
                     (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                      (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))) :=
+                      (fupd' W E maskEmpty P0))) :=
             (sep_comm (PROP := IProp GF)
               (P := BIBase.sep IH
                 (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                  (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0)))
+                  (fupd' W E maskEmpty P0)))
               (Q := state_interp σ ns (κ ++ κs) nt)).1
           exact hswap0.trans (hpre''.trans (hframe.trans hmono))
         exact hpre.trans hwpK
@@ -2865,24 +2832,24 @@ theorem wp_bind (K : Λ.expr → Λ.expr) [LanguageCtx K]
   have hwand :
       (True : IProp GF) ⊢
         BIBase.wand
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-            (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ))
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ) :=
+          (wp_s W s E e
+            (fun v => wp_s W s E (K (Λ.of_val v)) Φ))
+          (wp_s W s E (K e) Φ) :=
     hP.trans (hPelim (E := E) (e := e) (Φ := Φ))
   have hframe :
-      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-          (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ) ⊢
+      wp_s W s E e
+          (fun v => wp_s W s E (K (Λ.of_val v)) Φ) ⊢
         BIBase.sep
           (BIBase.wand
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-              (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+            (wp_s W s E e
+              (fun v => wp_s W s E
                 (K (Λ.of_val v)) Φ))
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ))
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-            (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ)) := by
+            (wp_s W s E (K e) Φ))
+          (wp_s W s E e
+            (fun v => wp_s W s E (K (Λ.of_val v)) Φ)) := by
     refine (true_sep_2 (PROP := IProp GF)
-      (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-        (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+      (P := wp_s W s E e
+        (fun v => wp_s W s E
           (K (Λ.of_val v)) Φ))).trans ?_
     exact sep_mono (PROP := IProp GF) hwand .rfl
   exact hframe.trans (wand_elim_l (PROP := IProp GF))
@@ -2892,25 +2859,25 @@ Coq: `wp_bind_inv` in `weakestpre.v`. -/
 theorem wp_bind_inv (K : Λ.expr → Λ.expr) [LanguageCtx K]
     (s : Stuckness) (E : Iris.Set Positive)
     (e : Λ.expr) (Φ : Λ.val → IProp GF) :
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ ⊢
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-      (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ) :=
+    wp_s W s E (K e) Φ ⊢
+    wp_s W s E e
+      (fun v => wp_s W s E (K (Λ.of_val v)) Φ) :=
   by
   let post : Λ.val → IProp GF :=
-    fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ
+    fun v => wp_s W s E (K (Λ.of_val v)) Φ
   let P : IProp GF :=
     BIBase.forall fun E =>
       BIBase.forall fun e =>
         BIBase.forall fun Φ =>
           BIBase.wand
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ)
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-              (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ))
+            (wp_s W s E (K e) Φ)
+            (wp_s W s E e
+              (fun v => wp_s W s E (K (Λ.of_val v)) Φ))
   have hPelim (E : Iris.Set Positive) (e : Λ.expr) (Φ : Λ.val → IProp GF) :
       P ⊢ BIBase.wand
-        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ)
-        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-          (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ)) := by
+        (wp_s W s E (K e) Φ)
+        (wp_s W s E e
+          (fun v => wp_s W s E (K (Λ.of_val v)) Φ)) := by
     refine (forall_elim (PROP := IProp GF) (Ψ := fun E => _) E).trans ?_
     refine (forall_elim (PROP := IProp GF) (Ψ := fun e => _) e).trans ?_
     exact (forall_elim (PROP := IProp GF) (Ψ := fun Φ => _) Φ)
@@ -2921,48 +2888,48 @@ theorem wp_bind_inv (K : Λ.expr → Λ.expr) [LanguageCtx K]
     cases hto : Λ.to_val e with
     | some v =>
         have hval :
-            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ ⊢
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-                (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+            wp_s W s E (K e) Φ ⊢
+              wp_s W s E e
+                (fun v => wp_s W s E
                   (K (Λ.of_val v)) Φ) := by
           have hK : K e = K (Λ.of_val v) := by
             simp [of_to_val e v hto]
           have hpre :
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ ⊢
-                fupd' (Λ := Λ) (M := M) (F := F) E E
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K (Λ.of_val v)) Φ) := by
+              wp_s W s E (K e) Φ ⊢
+                fupd' W E E
+                  (wp_s W s E (K (Λ.of_val v)) Φ) := by
             simpa [hK] using
-              (fupd_intro (Λ := Λ) (M := M) (F := F) (E := E)
-                (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+              (fupd_intro (E := E)
+                (P := wp_s W s E
                   (K (Λ.of_val v)) Φ))
           have hpre' :
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ ⊢
-                wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e
-                  (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+              wp_s W s E (K e) Φ ⊢
+                wp_pre_s W s
+                  (wp_s W s) E e
+                  (fun v => wp_s W s E
                     (K (Λ.of_val v)) Φ) := by
-            simpa [wp_pre, hto] using hpre
+            simpa [wp_pre W, hto] using hpre
           have hwp :
-              wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e
-                  (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+              wp_pre_s W s
+                  (wp_s W s) E e
+                  (fun v => wp_s W s E
                     (K (Λ.of_val v)) Φ) ⊢
-                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-                  (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                wp_s W s E e
+                  (fun v => wp_s W s E
                     (K (Λ.of_val v)) Φ) :=
-            (wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F) (s := s) (E := E) (e := e)
-              (Φ := fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+            (wp_unfold (s := s) (E := E) (e := e)
+              (Φ := fun v => wp_s W s E
                 (K (Λ.of_val v)) Φ)).2
           exact hpre'.trans hwp
         have htrue :
             (True : IProp GF) ⊢ BIBase.wand
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ)
-              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-                (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+              (wp_s W s E (K e) Φ)
+              (wp_s W s E e
+                (fun v => wp_s W s E
                   (K (Λ.of_val v)) Φ)) := by
           refine wand_intro (PROP := IProp GF) ?_
           exact (sep_elim_r (PROP := IProp GF) (P := (BIBase.pure True))
-            (Q := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ)).trans
+            (Q := wp_s W s E (K e) Φ)).trans
             hval
         exact (true_intro (P := BIBase.intuitionistically (BIBase.later P))).trans htrue
     | none =>
@@ -2970,50 +2937,49 @@ theorem wp_bind_inv (K : Λ.expr → Λ.expr) [LanguageCtx K]
           BIBase.intuitionistically (BIBase.later P)
         refine wand_intro (PROP := IProp GF) ?_
         have hwp :
-            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ ⊢
-              wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E (K e) Φ :=
-          (wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F) (s := s) (E := E)
+            wp_s W s E (K e) Φ ⊢
+              wp_pre_s W s
+                (wp_s W s) E (K e) Φ :=
+          (wp_unfold (s := s) (E := E)
             (e := K e) (Φ := Φ)).1
         have hwpK :
-            wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e
-                (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+            wp_pre_s W s
+                (wp_s W s) E e
+                (fun v => wp_s W s E
                   (K (Λ.of_val v)) Φ) ⊢
-              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-                (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+              wp_s W s E e
+                (fun v => wp_s W s E
                   (K (Λ.of_val v)) Φ) :=
-          (wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F) (s := s) (E := E) (e := e)
-            (Φ := fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+          (wp_unfold (s := s) (E := E) (e := e)
+            (Φ := fun v => wp_s W s E
               (K (Λ.of_val v)) Φ)).2
         refine (sep_mono (PROP := IProp GF) .rfl hwp).trans ?_
         have htoK : Λ.to_val (K e) = none :=
           LanguageCtx.fill_not_val (K := K) e hto
         have hpre :
             BIBase.sep IH
-                (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E (K e) Φ) ⊢
-              wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E e
-                (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                (wp_pre_s W s
+                  (wp_s W s) E (K e) Φ) ⊢
+              wp_pre_s W s
+                (wp_s W s) E e
+                (fun v => wp_s W s E
                   (K (Λ.of_val v)) Φ) := by
-          -- unfold only the right-hand `wp_pre`
-          simp [wp_pre, hto, wp_pre_step]
+          -- unfold only the right-hand `wp_pre W`
+          simp [wp_pre W, hto, wp_pre_step W]
           refine forall_intro (PROP := IProp GF) ?_; intro σ
           refine forall_intro (PROP := IProp GF) ?_; intro ns
           refine forall_intro (PROP := IProp GF) ?_; intro κ
           refine forall_intro (PROP := IProp GF) ?_; intro κs
           refine forall_intro (PROP := IProp GF) ?_; intro nt
           have hview :=
-            wp_pre_elim (Λ := Λ) (GF := GF) (M := M) (F := F)
-              (s := s) (E := E) (e := K e) (Φ := Φ)
+            wp_pre_elim (s := s) (E := E) (e := K e) (Φ := Φ)
               (σ := σ) (ns := ns) (κ := κ) (κs := κs) (nt := nt) htoK
           have hleft :
               BIBase.sep IH
-                  (wp_pre_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                    (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s) E (K e) Φ) ⊢
+                  (wp_pre_s W s
+                    (wp_s W s) E (K e) Φ) ⊢
                 BIBase.sep IH
-                  (wp_pre_view (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ
+                  (wp_pre_view s E (K e) Φ
                     σ ns κ κs nt) :=
             sep_mono (PROP := IProp GF) .rfl hview
           refine hleft.trans ?_
@@ -3022,29 +2988,29 @@ theorem wp_bind_inv (K : Λ.expr → Λ.expr) [LanguageCtx K]
               BIBase.forall fun σ2 : Λ.state =>
                 BIBase.forall fun efs : List Λ.expr =>
                   BIBase.wand (BIBase.pure (Λ.prim_step (K e) σ κ e2 σ2 efs))
-                    (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                    (fupd' W maskEmpty E
                       (BIBase.later
                         (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                           (BIBase.sep
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2 Φ)
+                            (wp_s W s E e2 Φ)
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs)))))
           let Q2 : IProp GF :=
             BIBase.forall fun e2 : Λ.expr =>
               BIBase.forall fun σ2 : Λ.state =>
                 BIBase.forall fun efs : List Λ.expr =>
                   BIBase.wand (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs))
-                    (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                    (fupd' W maskEmpty E
                       (BIBase.later
                         (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                           (BIBase.sep
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                            (wp_s W s E e2
                               (fun v =>
-                                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                                wp_s W s E
                                   (K (Λ.of_val v)) Φ))
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs)))))
           let P0 : IProp GF :=
             BIBase.sep (BIBase.pure (stuckness_pred s (K e) σ)) Q1
@@ -3056,50 +3022,50 @@ theorem wp_bind_inv (K : Λ.expr → Λ.expr) [LanguageCtx K]
               BIBase.sep (state_interp σ ns (κ ++ κs) nt)
                   (BIBase.sep IH
                     (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                      (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))) ⊢
+                      (fupd' W E maskEmpty P0))) ⊢
                 BIBase.sep IH
                   (BIBase.sep (state_interp σ ns (κ ++ κs) nt)
                     (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                      (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))) := by
+                      (fupd' W E maskEmpty P0))) := by
             simpa [sep_assoc] using
               (sep_left_comm (PROP := IProp GF)
                 (P := state_interp σ ns (κ ++ κs) nt) (Q := IH)
                 (R := BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                  (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))).1
+                  (fupd' W E maskEmpty P0))).1
           have hpre0 :
               BIBase.sep (state_interp σ ns (κ ++ κs) nt)
                   (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                    (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0)) ⊢
-                fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0 := by
+                    (fupd' W E maskEmpty P0)) ⊢
+                fupd' W E maskEmpty P0 := by
             simpa using
               (wand_elim_r (PROP := IProp GF)
                 (P := state_interp σ ns (κ ++ κs) nt)
-                (Q := fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))
+                (Q := fupd' W E maskEmpty P0))
           have hpre' :
               BIBase.sep (state_interp σ ns (κ ++ κs) nt)
                   (BIBase.sep IH
                     (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                      (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))) ⊢
-                BIBase.sep IH (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0) := by
+                      (fupd' W E maskEmpty P0))) ⊢
+                BIBase.sep IH (fupd' W E maskEmpty P0) := by
             exact hassoc.trans (sep_mono (PROP := IProp GF) .rfl hpre0)
           have hswap :
-              BIBase.sep IH (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0) ⊢
-                BIBase.sep (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0) IH :=
+              BIBase.sep IH (fupd' W E maskEmpty P0) ⊢
+                BIBase.sep (fupd' W E maskEmpty P0) IH :=
             (sep_comm (PROP := IProp GF)
               (P := IH)
-              (Q := fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0)).1
+              (Q := fupd' W E maskEmpty P0)).1
           have hpre'' :
               BIBase.sep (state_interp σ ns (κ ++ κs) nt)
                   (BIBase.sep IH
                     (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                      (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))) ⊢
-                BIBase.sep (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0) IH :=
+                      (fupd' W E maskEmpty P0))) ⊢
+                BIBase.sep (fupd' W E maskEmpty P0) IH :=
             hpre'.trans hswap
           have hframe :
-              BIBase.sep (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0) IH ⊢
-                fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty (BIBase.sep P0 IH) :=
-            fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-              (M := M) (F := F) (E1 := E) (E2 := maskEmpty)
+              BIBase.sep (fupd' W E maskEmpty P0) IH ⊢
+                fupd' W E maskEmpty (BIBase.sep P0 IH) :=
+            Iris.BaseLogic.fupd_frame_r 
+              (E1 := E) (E2 := maskEmpty)
               (P := P0) (Q := IH)
           have hpred :
               ∀ σ, stuckness_pred s (K e) σ → stuckness_pred s e σ := by
@@ -3123,13 +3089,13 @@ theorem wp_bind_inv (K : Λ.expr → Λ.expr) [LanguageCtx K]
                   (e2 := e2) (σ2 := σ2) (efs := efs) hstep
             have hcont :
                 BIBase.sep Q1 (BIBase.pure (Λ.prim_step (K e) σ κ (K e2) σ2 efs)) ⊢
-                  fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                  fupd' W maskEmpty E
                     (BIBase.later
                       (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                         (BIBase.sep
-                          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                          (wp_s W s E (K e2) Φ)
                           (big_sepL (fun _ ef =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                            wp_s W s
                               Iris.Set.univ ef fork_post) efs)))) := by
               have h1 :=
                 forall_elim (PROP := IProp GF)
@@ -3137,38 +3103,38 @@ theorem wp_bind_inv (K : Λ.expr → Λ.expr) [LanguageCtx K]
                     BIBase.forall fun σ2 : Λ.state =>
                       BIBase.forall fun efs : List Λ.expr =>
                         BIBase.wand (BIBase.pure (Λ.prim_step (K e) σ κ e2 σ2 efs))
-                          (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                          (fupd' W maskEmpty E
                             (BIBase.later
                               (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                                 (BIBase.sep
-                                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2 Φ)
+                                  (wp_s W s E e2 Φ)
                                   (big_sepL (fun _ ef =>
-                                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                                    wp_s W s
                                       Iris.Set.univ ef fork_post) efs)))))) (K e2)
               have h2 :=
                 forall_elim (PROP := IProp GF)
                   (Ψ := fun σ2 : Λ.state =>
                     BIBase.forall fun efs : List Λ.expr =>
                       BIBase.wand (BIBase.pure (Λ.prim_step (K e) σ κ (K e2) σ2 efs))
-                        (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                        (fupd' W maskEmpty E
                           (BIBase.later
                             (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                               (BIBase.sep
-                                (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                                (wp_s W s E (K e2) Φ)
                                 (big_sepL (fun _ ef =>
-                                  wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                                  wp_s W s
                                     Iris.Set.univ ef fork_post) efs)))))) σ2
               have h3 :=
                 forall_elim (PROP := IProp GF)
                   (Ψ := fun efs : List Λ.expr =>
                     BIBase.wand (BIBase.pure (Λ.prim_step (K e) σ κ (K e2) σ2 efs))
-                      (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                      (fupd' W maskEmpty E
                         (BIBase.later
                           (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                             (BIBase.sep
-                              (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                              (wp_s W s E (K e2) Φ)
                               (big_sepL (fun _ ef =>
-                                wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                                wp_s W s
                                   Iris.Set.univ ef fork_post) efs)))))) efs
               have h123 := h1.trans (h2.trans h3)
               exact (sep_mono (PROP := IProp GF) h123 .rfl).trans
@@ -3176,13 +3142,13 @@ theorem wp_bind_inv (K : Λ.expr → Λ.expr) [LanguageCtx K]
             have happly :
                 BIBase.sep (BIBase.sep Q1 IH) (BIBase.pure (Λ.prim_step e σ κ e2 σ2 efs)) ⊢
                   BIBase.sep
-                    (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                    (fupd' W maskEmpty E
                       (BIBase.later
                         (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                           (BIBase.sep
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                            (wp_s W s E (K e2) Φ)
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs)))))
                     IH := by
               refine (sep_mono (PROP := IProp GF) .rfl hstepK).trans ?_
@@ -3197,240 +3163,240 @@ theorem wp_bind_inv (K : Λ.expr → Λ.expr) [LanguageCtx K]
               exact hswap.trans (sep_mono (PROP := IProp GF) hcont .rfl)
             have hframe :
                 BIBase.sep
-                    (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                    (fupd' W maskEmpty E
                       (BIBase.later
                         (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                           (BIBase.sep
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                            (wp_s W s E (K e2) Φ)
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs)))))
                     IH ⊢
-                  fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                  fupd' W maskEmpty E
                     (BIBase.sep
                       (BIBase.later
                         (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                           (BIBase.sep
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                            (wp_s W s E (K e2) Φ)
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs))))
                       IH) :=
-              fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-                (M := M) (F := F) (E1 := maskEmpty) (E2 := E)
+              Iris.BaseLogic.fupd_frame_r 
+                (E1 := maskEmpty) (E2 := E)
                 (P := BIBase.later
                   (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                     (BIBase.sep
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                      (wp_s W s E (K e2) Φ)
                       (big_sepL (fun _ ef =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                        wp_s W s
                           Iris.Set.univ ef fork_post) efs))))
                 (Q := IH)
             have hIHlater :
                 BIBase.sep IH
                     (BIBase.later
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)) ⊢
+                      (wp_s W s E (K e2) Φ)) ⊢
                   BIBase.later
-                    (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                    (wp_s W s E e2
                       (fun v =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                        wp_s W s E
                           (K (Λ.of_val v)) Φ)) := by
               have hPelim' :
                   BIBase.later P ⊢ BIBase.later
                     (BIBase.wand
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                      (wp_s W s E (K e2) Φ)
+                      (wp_s W s E e2
                         (fun v =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                          wp_s W s E
                             (K (Λ.of_val v)) Φ))) :=
                 later_mono (hPelim (E := E) (e := e2) (Φ := Φ))
               have hwand :
                   IH ⊢ BIBase.later
                     (BIBase.wand
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                      (wp_s W s E (K e2) Φ)
+                      (wp_s W s E e2
                         (fun v =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                          wp_s W s E
                             (K (Λ.of_val v)) Φ))) :=
                 (intuitionistically_elim (PROP := IProp GF) (P := BIBase.later P)).trans hPelim'
               exact (sep_mono (PROP := IProp GF) hwand .rfl).trans
-                (later_wand_elim (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
-                  (Q := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                (later_wand_elim (P := wp_s W s E (K e2) Φ)
+                  (Q := wp_s W s E e2
                     (fun v =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                      wp_s W s E
                         (K (Λ.of_val v)) Φ)))
             have hinner :
                 BIBase.sep
                     (BIBase.later
                       (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                         (BIBase.sep
-                          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                          (wp_s W s E (K e2) Φ)
                           (big_sepL (fun _ ef =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                            wp_s W s
                               Iris.Set.univ ef fork_post) efs))))
                     IH ⊢
                   BIBase.later
                     (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                       (BIBase.sep
-                        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                        (wp_s W s E e2
                           (fun v =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                            wp_s W s E
                               (K (Λ.of_val v)) Φ))
                         (big_sepL (fun _ ef =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                          wp_s W s
                             Iris.Set.univ ef fork_post) efs))) := by
               refine (sep_mono (PROP := IProp GF)
                 (later_sep (PROP := IProp GF)
                   (P := state_interp σ2 (ns + 1) κs (efs.length + nt))
                   (Q := BIBase.sep
-                    (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                    (wp_s W s E (K e2) Φ)
                     (big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                      wp_s W s
                         Iris.Set.univ ef fork_post) efs))).1 .rfl).trans ?_
               refine (sep_assoc (PROP := IProp GF)
                 (P := BIBase.later (state_interp σ2 (ns + 1) κs (efs.length + nt)))
                 (Q := BIBase.later
                   (BIBase.sep
-                    (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                    (wp_s W s E (K e2) Φ)
                     (big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                      wp_s W s
                         Iris.Set.univ ef fork_post) efs)))
                 (R := IH)).1.trans ?_
               have hcont :
                   BIBase.sep
                       (BIBase.later
                         (BIBase.sep
-                          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                          (wp_s W s E (K e2) Φ)
                           (big_sepL (fun _ ef =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                            wp_s W s
                               Iris.Set.univ ef fork_post) efs)))
                       IH ⊢
                     BIBase.later
                       (BIBase.sep
-                        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                        (wp_s W s E e2
                           (fun v =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                            wp_s W s E
                               (K (Λ.of_val v)) Φ))
                         (big_sepL (fun _ ef =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                          wp_s W s
                             Iris.Set.univ ef fork_post) efs)) := by
                 refine (sep_mono (PROP := IProp GF)
                   (later_sep (PROP := IProp GF)
-                    (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                    (P := wp_s W s E (K e2) Φ)
                     (Q := big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                      wp_s W s
                         Iris.Set.univ ef fork_post) efs)).1 .rfl).trans ?_
                 refine (sep_assoc (PROP := IProp GF)
                   (P := BIBase.later
-                    (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ))
+                    (wp_s W s E (K e2) Φ))
                   (Q := BIBase.later
                     (big_sepL (fun _ ef =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                      wp_s W s
                         Iris.Set.univ ef fork_post) efs))
                   (R := IH)).1.trans ?_
                 -- move IH next to the main WP
                 have hswap :
                     BIBase.sep
                         (BIBase.later
-                          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ))
+                          (wp_s W s E (K e2) Φ))
                         (BIBase.sep
                           (BIBase.later
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs))
                           IH) ⊢
                       BIBase.sep
                         (BIBase.sep IH
                           (BIBase.later
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)))
+                            (wp_s W s E (K e2) Φ)))
                         (BIBase.later
                           (big_sepL (fun _ ef =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                            wp_s W s
                               Iris.Set.univ ef fork_post) efs)) := by
                   refine (sep_assoc (PROP := IProp GF)
                     (P := BIBase.later
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ))
+                      (wp_s W s E (K e2) Φ))
                     (Q := BIBase.later
                       (big_sepL (fun _ ef =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                        wp_s W s
                           Iris.Set.univ ef fork_post) efs))
                     (R := IH)).2.trans ?_
                   refine (sep_right_comm (PROP := IProp GF)
                     (P := BIBase.later
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ))
+                      (wp_s W s E (K e2) Φ))
                     (Q := BIBase.later
                       (big_sepL (fun _ ef =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                        wp_s W s
                           Iris.Set.univ ef fork_post) efs))
                     (R := IH)).1.trans ?_
                   exact (sep_mono (PROP := IProp GF)
                     (sep_comm (PROP := IProp GF)
                       (P := BIBase.later
-                        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ))
+                        (wp_s W s E (K e2) Φ))
                       (Q := IH)).1 .rfl)
                 refine hswap.trans ?_
                 refine (sep_mono (PROP := IProp GF) hIHlater .rfl).trans ?_
                 exact (later_sep (PROP := IProp GF)
-                  (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                  (P := wp_s W s E e2
                     (fun v =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                      wp_s W s E
                         (K (Λ.of_val v)) Φ))
                   (Q := big_sepL (fun _ ef =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                    wp_s W s
                       Iris.Set.univ ef fork_post) efs)).2
               refine (sep_mono (PROP := IProp GF) .rfl hcont).trans ?_
               exact (later_sep (PROP := IProp GF)
                 (P := state_interp σ2 (ns + 1) κs (efs.length + nt))
                 (Q := BIBase.sep
-                  (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                  (wp_s W s E e2
                     (fun v =>
-                      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                      wp_s W s E
                         (K (Λ.of_val v)) Φ))
                   (big_sepL (fun _ ef =>
-                    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                    wp_s W s
                       Iris.Set.univ ef fork_post) efs))).2
             have hmono :
-                fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                fupd' W maskEmpty E
                     (BIBase.sep
                       (BIBase.later
                         (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                           (BIBase.sep
-                            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                            (wp_s W s E (K e2) Φ)
                             (big_sepL (fun _ ef =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                              wp_s W s
                                 Iris.Set.univ ef fork_post) efs))))
                       IH) ⊢
-                  fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E
+                  fupd' W maskEmpty E
                     (BIBase.later
                       (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                         (BIBase.sep
-                          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                          (wp_s W s E e2
                             (fun v =>
-                              wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                              wp_s W s E
                                 (K (Λ.of_val v)) Φ))
                           (big_sepL (fun _ ef =>
-                            wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                            wp_s W s
                               Iris.Set.univ ef fork_post) efs)))) :=
-              fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-                (M := M) (F := F) (E1 := maskEmpty) (E2 := E)
+              Iris.BaseLogic.fupd_mono 
+                (E1 := maskEmpty) (E2 := E)
                 (P := BIBase.sep
                   (BIBase.later
                     (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                       (BIBase.sep
-                        (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e2) Φ)
+                        (wp_s W s E (K e2) Φ)
                         (big_sepL (fun _ ef =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                          wp_s W s
                             Iris.Set.univ ef fork_post) efs))))
                   IH)
                 (Q := BIBase.later
                   (BIBase.sep (state_interp σ2 (ns + 1) κs (efs.length + nt))
                     (BIBase.sep
-                      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e2
+                      (wp_s W s E e2
                         (fun v =>
-                          wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+                          wp_s W s E
                             (K (Λ.of_val v)) Φ))
                       (big_sepL (fun _ ef =>
-                        wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s
+                        wp_s W s
                           Iris.Set.univ ef fork_post) efs)))) hinner
             exact (happly.trans (hframe.trans hmono))
           have hpost :
@@ -3441,24 +3407,24 @@ theorem wp_bind_inv (K : Λ.expr → Λ.expr) [LanguageCtx K]
             exact sep_mono (PROP := IProp GF)
               (pure_mono (PROP := IProp GF) (hpred σ)) hQ
           have hmono :
-              fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty (BIBase.sep P0 IH) ⊢
-                fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P1 :=
-            fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
-              (M := M) (F := F) (E1 := E) (E2 := maskEmpty)
+              fupd' W E maskEmpty (BIBase.sep P0 IH) ⊢
+                fupd' W E maskEmpty P1 :=
+            Iris.BaseLogic.fupd_mono 
+              (E1 := E) (E2 := maskEmpty)
               (P := BIBase.sep P0 IH) (Q := P1) hpost
           have hswap0 :
               BIBase.sep (BIBase.sep IH
                     (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                      (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0)))
+                      (fupd' W E maskEmpty P0)))
                 (state_interp σ ns (κ ++ κs) nt) ⊢
                 BIBase.sep (state_interp σ ns (κ ++ κs) nt)
                   (BIBase.sep IH
                     (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                      (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0))) :=
+                      (fupd' W E maskEmpty P0))) :=
             (sep_comm (PROP := IProp GF)
               (P := BIBase.sep IH
                 (BIBase.wand (state_interp σ ns (κ ++ κs) nt)
-                  (fupd' (Λ := Λ) (M := M) (F := F) E maskEmpty P0)))
+                  (fupd' W E maskEmpty P0)))
               (Q := state_interp σ ns (κ ++ κs) nt)).1
           exact hswap0.trans (hpre''.trans (hframe.trans hmono))
         exact hpre.trans hwpK
@@ -3480,22 +3446,22 @@ theorem wp_bind_inv (K : Λ.expr → Λ.expr) [LanguageCtx K]
   have hwand :
       (True : IProp GF) ⊢
         BIBase.wand
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ)
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-            (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+          (wp_s W s E (K e) Φ)
+          (wp_s W s E e
+            (fun v => wp_s W s E
               (K (Λ.of_val v)) Φ)) :=
     hP.trans (hPelim (E := E) (e := e) (Φ := Φ))
   have hframe :
-      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ ⊢
+      wp_s W s E (K e) Φ ⊢
         BIBase.sep
           (BIBase.wand
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ)
-            (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
-              (fun v => wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E
+            (wp_s W s E (K e) Φ)
+            (wp_s W s E e
+              (fun v => wp_s W s E
                 (K (Λ.of_val v)) Φ)))
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ) := by
+          (wp_s W s E (K e) Φ) := by
     refine (true_sep_2 (PROP := IProp GF)
-      (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E (K e) Φ)).trans ?_
+      (P := wp_s W s E (K e) Φ)).trans ?_
     exact sep_mono (PROP := IProp GF) hwand .rfl
   exact hframe.trans (wand_elim_l (PROP := IProp GF))
 
@@ -3506,8 +3472,8 @@ Coq: `wp_mono` in `weakestpre.v`. -/
 theorem wp_mono (s : Stuckness) (E : Iris.Set Positive)
     (e : Λ.expr) (Φ Ψ : Λ.val → IProp GF)
     (h : ∀ v, Φ v ⊢ Ψ v) :
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ ⊢
-      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Ψ :=
+    wp_s W s E e Φ ⊢
+      wp_s W s E e Ψ :=
   by
   -- use strong monotonicity with a pure postcondition transformer
   have hS : stuckness_le s s := by
@@ -3515,43 +3481,42 @@ theorem wp_mono (s : Stuckness) (E : Iris.Set Positive)
   have hE : Subset E E := by
     intro i hi; exact hi
   have hmono :=
-    wp_strong_mono (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s1 := s) (s2 := s) (E1 := E) (E2 := E) (e := e) (Φ := Φ) (Ψ := Ψ) hS hE
+    wp_strong_mono (s1 := s) (s2 := s) (E1 := E) (E2 := E) (e := e) (Φ := Φ) (Ψ := Ψ) hS hE
   have hpost :
-      (True : IProp GF) ⊢ wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ Ψ := by
+      (True : IProp GF) ⊢ wp_post E Φ Ψ := by
     -- lift the pointwise entailment under `fupd`
     refine forall_intro ?_; intro v
     have hΦ :
-        Φ v ⊢ fupd' (Λ := Λ) (M := M) (F := F) E E (Ψ v) :=
+        Φ v ⊢ fupd' W E E (Ψ v) :=
       (h v).trans
-        (fupd_intro (Λ := Λ) (M := M) (F := F) (E := E) (P := Ψ v))
+        (fupd_intro (E := E) (P := Ψ v))
     exact (wand_rfl (P := Φ v)).trans
       (wand_mono_r (PROP := IProp GF) (h := hΦ))
   have hframe :
-      wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ ⊢
+      wp_s W s E e Φ ⊢
         BIBase.sep
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ Ψ)
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ) := by
+          (wp_post E Φ Ψ)
+          (wp_s W s E e Φ) := by
     -- add the postcondition transformer via `True`
     refine (true_sep_2 (PROP := IProp GF)
-      (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ)).trans ?_
+      (P := wp_s W s E e Φ)).trans ?_
     exact sep_mono hpost .rfl
   refine hframe.trans ?_
   refine (sep_mono (PROP := IProp GF)
-    (P := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ Ψ)
-    (Q := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ Ψ)
-    (P' := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ)
+    (P := wp_post E Φ Ψ)
+    (Q := wp_post E Φ Ψ)
+    (P' := wp_s W s E e Φ)
     (Q' := BIBase.wand
-      (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ Ψ)
-      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Ψ)) .rfl hmono).trans ?_
+      (wp_post E Φ Ψ)
+      (wp_s W s E e Ψ)) .rfl hmono).trans ?_
   exact wand_elim_r (PROP := IProp GF)
 
 /-- Frame rule (left).
 Coq: `wp_frame_l` in `weakestpre.v`. -/
 theorem wp_frame_l (s : Stuckness) (E : Iris.Set Positive)
     (e : Λ.expr) (Φ : Λ.val → IProp GF) (R : IProp GF) :
-    BIBase.sep R (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ) ⊢
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e (fun v => BIBase.sep R (Φ v)) :=
+    BIBase.sep R (wp_s W s E e Φ) ⊢
+    wp_s W s E e (fun v => BIBase.sep R (Φ v)) :=
   by
   -- use strong monotonicity and frame `R` into the postcondition
   have hS : stuckness_le s s := by
@@ -3559,36 +3524,35 @@ theorem wp_frame_l (s : Stuckness) (E : Iris.Set Positive)
   have hE : Subset E E := by
     intro i hi; exact hi
   have hmono :=
-    wp_strong_mono (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s1 := s) (s2 := s) (E1 := E) (E2 := E) (e := e)
+    wp_strong_mono (s1 := s) (s2 := s) (E1 := E) (E2 := E) (e := e)
       (Φ := Φ) (Ψ := fun v => BIBase.sep R (Φ v)) hS hE
   have hpost :
       R ⊢
-        wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ
+        wp_post E Φ
           (fun v => BIBase.sep R (Φ v)) := by
     -- build the transformer `Φ v -∗ |={E}=> R ∗ Φ v` from `R`
     refine forall_intro ?_; intro v
     refine wand_intro ?_
-    exact fupd_intro (Λ := Λ) (M := M) (F := F) (E := E)
+    exact fupd_intro (E := E)
       (P := BIBase.sep R (Φ v))
   have hframe :
-      BIBase.sep R (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ) ⊢
+      BIBase.sep R (wp_s W s E e Φ) ⊢
         BIBase.sep
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ
+          (wp_post E Φ
             (fun v => BIBase.sep R (Φ v)))
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ) :=
+          (wp_s W s E e Φ) :=
     sep_mono hpost .rfl
   refine hframe.trans ?_
   refine (sep_mono (PROP := IProp GF)
-    (P := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ
+    (P := wp_post E Φ
       (fun v => BIBase.sep R (Φ v)))
-    (Q := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ
+    (Q := wp_post E Φ
       (fun v => BIBase.sep R (Φ v)))
-    (P' := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ)
+    (P' := wp_s W s E e Φ)
     (Q' := BIBase.wand
-      (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ
+      (wp_post E Φ
         (fun v => BIBase.sep R (Φ v)))
-      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
+      (wp_s W s E e
         (fun v => BIBase.sep R (Φ v)))) .rfl hmono).trans ?_
   exact wand_elim_r (PROP := IProp GF)
 
@@ -3596,8 +3560,8 @@ theorem wp_frame_l (s : Stuckness) (E : Iris.Set Positive)
 Coq: `wp_frame_r` in `weakestpre.v`. -/
 theorem wp_frame_r (s : Stuckness) (E : Iris.Set Positive)
     (e : Λ.expr) (Φ : Λ.val → IProp GF) (R : IProp GF) :
-    BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ) R ⊢
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e (fun v => BIBase.sep (Φ v) R) :=
+    BIBase.sep (wp_s W s E e Φ) R ⊢
+    wp_s W s E e (fun v => BIBase.sep (Φ v) R) :=
   by
   -- mirror the left frame rule using commutativity
   have hS : stuckness_le s s := by
@@ -3605,44 +3569,43 @@ theorem wp_frame_r (s : Stuckness) (E : Iris.Set Positive)
   have hE : Subset E E := by
     intro i hi; exact hi
   have hmono :=
-    wp_strong_mono (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s1 := s) (s2 := s) (E1 := E) (E2 := E) (e := e)
+    wp_strong_mono (s1 := s) (s2 := s) (E1 := E) (E2 := E) (e := e)
       (Φ := Φ) (Ψ := fun v => BIBase.sep (Φ v) R) hS hE
   have hpost :
       R ⊢
-        wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ
+        wp_post E Φ
           (fun v => BIBase.sep (Φ v) R) := by
     -- build the transformer `Φ v -∗ |={E}=> Φ v ∗ R` from `R`
     refine forall_intro ?_; intro v
     refine wand_intro ?_
     exact (sep_comm (PROP := IProp GF)
       (P := R) (Q := Φ v)).1.trans
-        (fupd_intro (Λ := Λ) (M := M) (F := F) (E := E)
+        (fupd_intro (E := E)
           (P := BIBase.sep (Φ v) R))
   have hswap :
-      BIBase.sep (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ) R ⊢
-        BIBase.sep R (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ) :=
+      BIBase.sep (wp_s W s E e Φ) R ⊢
+        BIBase.sep R (wp_s W s E e Φ) :=
     (sep_comm (PROP := IProp GF)
-      (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ) (Q := R)).1
+      (P := wp_s W s E e Φ) (Q := R)).1
   have hframe :
-      BIBase.sep R (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ) ⊢
+      BIBase.sep R (wp_s W s E e Φ) ⊢
         BIBase.sep
-          (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ
+          (wp_post E Φ
             (fun v => BIBase.sep (Φ v) R))
-          (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ) :=
+          (wp_s W s E e Φ) :=
     sep_mono hpost .rfl
   refine hswap.trans ?_
   refine hframe.trans ?_
   refine (sep_mono (PROP := IProp GF)
-    (P := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ
+    (P := wp_post E Φ
       (fun v => BIBase.sep (Φ v) R))
-    (Q := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ
+    (Q := wp_post E Φ
       (fun v => BIBase.sep (Φ v) R))
-    (P' := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ)
+    (P' := wp_s W s E e Φ)
     (Q' := BIBase.wand
-      (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ
+      (wp_post E Φ
         (fun v => BIBase.sep (Φ v) R))
-      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e
+      (wp_s W s E e
         (fun v => BIBase.sep (Φ v) R))) .rfl hmono).trans ?_
   exact wand_elim_r (PROP := IProp GF)
 
@@ -3650,10 +3613,10 @@ theorem wp_frame_r (s : Stuckness) (E : Iris.Set Positive)
 Coq: `wp_wand` in `weakestpre.v`. -/
 theorem wp_wand (s : Stuckness) (E : Iris.Set Positive)
     (e : Λ.expr) (Φ Ψ : Λ.val → IProp GF) :
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ ⊢
+    wp_s W s E e Φ ⊢
     BIBase.wand
       (BIBase.forall fun v => BIBase.wand (Φ v) (Ψ v))
-      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Ψ) :=
+      (wp_s W s E e Ψ) :=
   by
   -- use strong monotonicity and lift the wand under `fupd`
   have hS : stuckness_le s s := by
@@ -3661,45 +3624,44 @@ theorem wp_wand (s : Stuckness) (E : Iris.Set Positive)
   have hE : Subset E E := by
     intro i hi; exact hi
   have hmono :=
-    wp_strong_mono (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s1 := s) (s2 := s) (E1 := E) (E2 := E) (e := e) (Φ := Φ) (Ψ := Ψ) hS hE
+    wp_strong_mono (s1 := s) (s2 := s) (E1 := E) (E2 := E) (e := e) (Φ := Φ) (Ψ := Ψ) hS hE
   refine wand_intro ?_
   -- turn the wand assumption into a `wp_post`, then eliminate
   have hpost :
       BIBase.forall (PROP := IProp GF) (fun v => BIBase.wand (Φ v) (Ψ v)) ⊢
-        wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ Ψ := by
+        wp_post E Φ Ψ := by
     refine forall_mono ?_; intro v
     refine (wand_mono_r (PROP := IProp GF)) ?_
-    exact fupd_intro (Λ := Λ) (M := M) (F := F) (E := E) (P := Ψ v)
-  -- swap to `H1 ∗ wp_s` before applying the transformer
+    exact fupd_intro (E := E) (P := Ψ v)
+  -- swap to `H1 ∗ wp_s W` before applying the transformer
   refine (sep_comm (PROP := IProp GF)
-    (P := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ)
+    (P := wp_s W s E e Φ)
     (Q := BIBase.forall (PROP := IProp GF) (fun v => BIBase.wand (Φ v) (Ψ v)))).1.trans ?_
   refine (sep_mono hpost .rfl).trans ?_
   refine (sep_mono (PROP := IProp GF)
-    (P := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ Ψ)
-    (Q := wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ Ψ)
-    (P' := wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Φ)
+    (P := wp_post E Φ Ψ)
+    (Q := wp_post E Φ Ψ)
+    (P' := wp_s W s E e Φ)
     (Q' := BIBase.wand
-      (wp_post (Λ := Λ) (GF := GF) (M := M) (F := F) E Φ Ψ)
-      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E e Ψ)) .rfl hmono).trans ?_
+      (wp_post E Φ Ψ)
+      (wp_s W s E e Ψ)) .rfl hmono).trans ?_
   exact wand_elim_r (PROP := IProp GF)
 
 /-- Atomic expression rule: open invariants around an atomic step.
 Coq: `wp_atomic` in `weakestpre.v`. -/
 theorem wp_atomic (s : Stuckness) (E1 E2 : Iris.Set Positive)
     (e : Λ.expr) (Φ : Λ.val → IProp GF)
-    [Atomic (Λ := Λ) (match s with | .notStuck => .stronglyAtomic | .maybeStuck => .weaklyAtomic) e] :
+    [Atomic (match s with | .notStuck => .stronglyAtomic | .maybeStuck => .weaklyAtomic) e] :
     E1 = E2 →
-    fupd' (Λ := Λ) (M := M) (F := F) E1 E2
-      (wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E2 e
-        (fun v => fupd' (Λ := Λ) (M := M) (F := F) E2 E1 (Φ v))) ⊢
-    wp_s (Λ := Λ) (GF := GF) (M := M) (F := F) s E1 e Φ :=
+    fupd' W E1 E2
+      (wp_s W s E2 e
+        (fun v => fupd' W E2 E1 (Φ v))) ⊢
+    wp_s W s E1 e Φ :=
   by
   intro hE
   subst hE
-  refine (fupd_wp (Λ := Λ) (GF := GF) (M := M) (F := F) (s := s) (E := E1) (e := e)
-    (Φ := fun v => fupd' (Λ := Λ) (M := M) (F := F) E1 E1 (Φ v))).trans ?_
-  exact wp_fupd (Λ := Λ) (GF := GF) (M := M) (F := F) (s := s) (E := E1) (e := e) (Φ := Φ)
+  refine (fupd_wp (s := s) (E := E1) (e := e)
+    (Φ := fun v => fupd' W E1 E1 (Φ v))).trans ?_
+  exact wp_fupd (s := s) (E := E1) (e := e) (Φ := Φ)
 
 end Iris.ProgramLogic

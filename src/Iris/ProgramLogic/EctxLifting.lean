@@ -46,6 +46,7 @@ variable [ElemG GF (COFE.constOF GSetDisj)]
 
 variable {Λ : EctxLanguage}
 variable [inst : IrisGS (ectx_lang Λ) GF]
+variable {W : WsatGS GF}
 
 /-! ## Base Step Lifting -/
 
@@ -114,7 +115,7 @@ theorem wp_lift_atomic_base_step_fupd (s : Stuckness) (E1 E2 : Iris.Set Positive
     (hv : Λ.to_val e1 = none) :
     E1 = E2 →
     wp_pre (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (M := M) (F := F) (Λ := ectx_lang Λ) s) E1 e1
-      (fun v => uPred_fupd (M := M) (F := F) (@IrisGS.wsatGS (ectx_lang Λ) GF inst) E2 E1 (Φ v))
+      (fun v => uPred_fupd (M := M) (F := F) W E2 E1 (Φ v))
     ⊢ wp (M := M) (F := F) (Λ := ectx_lang Λ) s E1 e1 Φ :=
   by
     -- mask-changing atomic step (simplified to equality)
@@ -143,7 +144,7 @@ theorem wp_lift_atomic_base_step_no_fork_fupd (s : Stuckness) (E1 E2 : Iris.Set 
     (hv : Λ.to_val e1 = none) :
     E1 = E2 →
     wp_pre (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (M := M) (F := F) (Λ := ectx_lang Λ) s) E1 e1
-      (fun v => uPred_fupd (M := M) (F := F) (@IrisGS.wsatGS (ectx_lang Λ) GF inst) E2 E1 (Φ v))
+      (fun v => uPred_fupd (M := M) (F := F) W E2 E1 (Φ v))
     ⊢ wp (M := M) (F := F) (Λ := ectx_lang Λ) s E1 e1 Φ :=
   by
     -- same proof as the general atomic base-step rule

@@ -45,11 +45,12 @@ variable [ElemG GF (COFE.constOF GSetDisj)]
 
 variable {Λ : Language}
 variable [inst : IrisGS Λ GF]
+variable {W : WsatGS GF}
 
 /-! ## FUpd Helpers -/
 
 private noncomputable abbrev fupd' (E1 E2 : Iris.Set Positive) (P : IProp GF) : IProp GF :=
-  uPred_fupd (M := M) (F := F) (@IrisGS.wsatGS Λ GF inst) E1 E2 P
+  uPred_fupd (M := M) (F := F) W E1 E2 P
 
 private abbrev maskEmpty : Iris.Set Positive := fun _ => False
 
@@ -122,10 +123,10 @@ private theorem fupd_wand_r (E1 E2 : Iris.Set Positive) (P Q : IProp GF) :
       fupd' (Λ := Λ) (M := M) (F := F) E1 E2 Q :=
   by
     -- frame the wand inside, then eliminate it under `fupd_mono`
-    refine (fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
+    refine (fupd_frame_r (W := W)
       (M := M) (F := F) (E1 := E1) (E2 := E2) (P := P)
       (Q := BIBase.wand P Q)).trans ?_
-    exact fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
+    exact fupd_mono (W := W)
       (M := M) (F := F) (E1 := E1) (E2 := E2)
       (P := BIBase.sep P (BIBase.wand P Q)) (Q := Q)
       (wand_elim_r (P := P) (Q := Q))
@@ -143,7 +144,7 @@ private theorem fupd_mask_intro (E1 E2 : Iris.Set Positive) (h : Subset E2 E1)
         (True : IProp GF) ⊢
           fupd' (Λ := Λ) (M := M) (F := F) E1 E2
             (fupd' (Λ := Λ) (M := M) (F := F) E2 E1 (BIBase.emp : IProp GF)) :=
-      fupd_mask_subseteq (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
+      fupd_mask_subseteq (W := W)
         (M := M) (F := F) (E1 := E1) (E2 := E2) h
     refine (true_sep_2 (PROP := IProp GF)
       (P := BIBase.wand (fupd' (Λ := Λ) (M := M) (F := F) E2 E1 (BIBase.emp : IProp GF)) P)).trans ?_
@@ -157,10 +158,10 @@ private theorem fupd_close_emp (E : Iris.Set Positive) (P : IProp GF) :
       fupd' (Λ := Λ) (M := M) (F := F) maskEmpty E P :=
   by
     -- frame `P` under the update, then drop `emp`
-    refine (fupd_frame_r (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
+    refine (fupd_frame_r (W := W)
       (M := M) (F := F) (E1 := maskEmpty) (E2 := E) (P := (BIBase.emp : IProp GF))
       (Q := P)).trans ?_
-    exact fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
+    exact fupd_mono (W := W)
       (M := M) (F := F) (E1 := maskEmpty) (E2 := E)
       (P := BIBase.sep (BIBase.emp : IProp GF) P) (Q := P) (emp_sep (P := P)).1
 
@@ -172,10 +173,10 @@ private theorem fupd_intro (E : Iris.Set Positive) (P : IProp GF) :
     have hsubset : Subset E E := by
       intro _ h; exact h
     have hmask :=
-      fupd_intro_mask (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
+      fupd_intro_mask (W := W)
         (M := M) (F := F) (E1 := E) (E2 := E) hsubset (P := P)
     exact hmask.trans <|
-      fupd_trans (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
+      fupd_trans (W := W)
         (M := M) (F := F) (E1 := E) (E2 := E) (E3 := E) (P := P)
 
 /-! ## Pure Helpers -/
@@ -347,7 +348,7 @@ private theorem fupd_later_add_emp {s : Stuckness} {E : Iris.Set Positive}
           (isep (wp (M := M) (F := F) s E e2 Φ) (BIBase.emp : IProp GF)))) :=
   by
     -- lift `later_add_emp` through the fancy update
-    exact fupd_mono (W := IrisGS.wsatGS (Λ := Λ) (GF := GF))
+    exact fupd_mono (W := W)
       (M := M) (F := F) (E1 := maskEmpty) (E2 := E)
       (P := ilater (isep (state_interp σ (ns + 1) κs nt)
         (wp (M := M) (F := F) s E e2 Φ)))
@@ -766,7 +767,7 @@ theorem wp_lift_atomic_step_fupd (s : Stuckness) (E1 E2 : Iris.Set Positive)
     (hv : Λ.to_val e1 = none) :
     E1 = E2 →
     wp_pre (M := M) (F := F) s (wp (M := M) (F := F) s) E1 e1
-      (fun v => uPred_fupd (M := M) (F := F) (@IrisGS.wsatGS Λ GF inst) E2 E1 (Φ v))
+      (fun v => uPred_fupd (M := M) (F := F) W E2 E1 (Φ v))
     ⊢ wp (M := M) (F := F) s E1 e1 Φ :=
   by
     -- reduce to the non-atomic step rule and absorb the postcondition update
@@ -775,7 +776,7 @@ theorem wp_lift_atomic_step_fupd (s : Stuckness) (E1 E2 : Iris.Set Positive)
     have hstep :=
       wp_lift_step_fupd (Λ := Λ) (M := M) (F := F)
         (s := s) (E := E1) (Φ := fun v =>
-          uPred_fupd (M := M) (F := F) (@IrisGS.wsatGS Λ GF inst) E1 E1 (Φ v))
+          uPred_fupd (M := M) (F := F) W E1 E1 (Φ v))
         (e1 := e1) hv
     exact hstep.trans <|
       wp_fupd (Λ := Λ) (GF := GF) (M := M) (F := F)
