@@ -438,25 +438,8 @@ theorem wptp_rebuild_prep
   have htail := wptp_rebuild_tail (Λ := Λ) (GF := GF) (M := M) (F := F)
     (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
     (Φs := Φs) (Φ := Φ) hlen
-  let P := wptp_rebuild_head (Λ := Λ) (GF := GF) (M := M) (F := F)
-    (s := s) (t1 := t1) (Φs := Φs)
-  let Q := BIBase.sep
-    (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e2 Φ)
-    (BIBase.sep
-      (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F)
-        s t2 Φs (t1.length + 1))
-      (big_sepL (fun _ ef =>
-        wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) efs))
-  let P' := wptp_rebuild_head_ext (Λ := Λ) (GF := GF) (M := M) (F := F)
-    (s := s) (t1 := t1) (efs := efs) (Φs := Φs)
-  let Q' := BIBase.sep
-    (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e2 Φ)
-    (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F)
-      s (t2 ++ efs) (Φs ++ List.replicate efs.length fork_post)
-      (t1.length + 1))
-  have hsep : BIBase.sep P Q ⊢ BIBase.sep P' Q' :=
-    sep_mono (PROP := IProp GF) hleft htail
-  simpa [wptp_rebuild_left, wptp_rebuild_right, P, Q, P', Q'] using hsep
+  have hsep := sep_mono (PROP := IProp GF) hleft htail
+  simpa [wptp_rebuild_left, wptp_rebuild_right] using hsep
 
 theorem wptp_rebuild
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)

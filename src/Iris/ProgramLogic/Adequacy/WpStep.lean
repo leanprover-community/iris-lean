@@ -168,91 +168,51 @@ theorem adq_wp_step_cont (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : N
     (e2 := e2) (σ2 := σ2) (efs := efs) (nt := nt) (Φ := Φ) hstep
   exact hpure.trans (sep_mono .rfl hwand) |>.trans (wand_elim_r (PROP := IProp GF))
 
-/-- Helper: compose the pre-step and continuation updates. -/
-theorem adq_wp_step_after_cont (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : Nat)
-    (κ : List Λ.observation) (κs : List Λ.observation)
-    (e2 : Λ.expr) (σ2 : Λ.state) (efs : List Λ.expr) (nt : Nat)
-    (Φ : Λ.val → IProp GF)
-    (hpre :
-      BIBase.sep
-        (IrisGS.state_interp (Λ := Λ) (GF := GF) σ1 ns (κ ++ κs) nt)
-        (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e1 Φ) ⊢
-      fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ maskEmpty
-        (BIBase.sep (BIBase.pure (stuckness_pred s e1 σ1))
-          (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
-            (s := s) (e1 := e1) (σ1 := σ1) (κ := κ) (Φ := Φ)
-            (ns := ns) (κs := κs) (nt := nt)))
-    (hcont :
-      BIBase.sep (BIBase.pure (stuckness_pred s e1 σ1))
-        (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
-          (s := s) (e1 := e1) (σ1 := σ1) (κ := κ) (Φ := Φ)
-          (ns := ns) (κs := κs) (nt := nt)) ⊢
-      fupd' (Λ := Λ) (M := M) (F := F) maskEmpty Iris.Set.univ
-        (adq_wp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-          (s := s) (e2 := e2) (σ2 := σ2) (efs := efs)
-          (ns := ns) (κs := κs) (nt := nt) (Φ := Φ))) :
-    BIBase.sep
-        (IrisGS.state_interp (Λ := Λ) (GF := GF) σ1 ns (κ ++ κs) nt)
-        (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e1 Φ)
-      ⊢ uPred_fupd (M := M) (F := F) W
-          Iris.Set.univ Iris.Set.univ
-          (adq_wp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-            (s := s) (e2 := e2) (σ2 := σ2) (efs := efs)
-            (ns := ns) (κs := κs) (nt := nt) (Φ := Φ)) := by
-  -- lift the continuation through the outer update and compose
-  let hmono :=
-    fupd_mono (W := W)
-      (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := maskEmpty)
-      (P := BIBase.sep
-        (BIBase.pure (stuckness_pred s e1 σ1))
-        (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
-          (s := s) (e1 := e1) (σ1 := σ1) (κ := κ) (Φ := Φ)
-          (ns := ns) (κs := κs) (nt := nt)))
-      (Q := fupd' (Λ := Λ) (M := M) (F := F) maskEmpty Iris.Set.univ
-        (adq_wp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-          (s := s) (e2 := e2) (σ2 := σ2) (efs := efs)
-          (ns := ns) (κs := κs) (nt := nt) (Φ := Φ))) hcont
-  have htrans :=
-    fupd_trans (W := W)
-      (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := maskEmpty)
-      (E3 := Iris.Set.univ)
-      (P := adq_wp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-        (s := s) (e2 := e2) (σ2 := σ2) (efs := efs)
-        (ns := ns) (κs := κs) (nt := nt) (Φ := Φ))
-  exact hpre.trans (hmono.trans htrans)
-
 /-! ## Single Step -/
+
+/-- Helper: lift the step continuation through the outer `fupd`. -/
+theorem adq_wp_step_finish (P Q : IProp GF)
+    (hcont : P ⊢ fupd' (Λ := Λ) (M := M) (F := F) maskEmpty Iris.Set.univ Q) :
+    fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ maskEmpty P ⊢
+      uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ Q := by
+  -- lift under `fupd` and compose the update masks
+  exact (fupd_mono (W := W)
+    (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := maskEmpty)
+    (P := P) (Q := fupd' (Λ := Λ) (M := M) (F := F) maskEmpty Iris.Set.univ Q) hcont).trans
+    (fupd_trans (W := W)
+      (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := maskEmpty)
+      (E3 := Iris.Set.univ) (P := Q))
 
 /-- A single primitive step preserves the weakest precondition.
 Given a step `e1 → e2` producing new threads `efs`, the state
 interpretation and WP transfer to the post-state.
 Coq: `wp_step` in `adequacy.v`. -/
 theorem adq_wp_step (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : Nat)
-    (κ : List Λ.observation) (κs : List Λ.observation)
-    (e2 : Λ.expr) (σ2 : Λ.state) (efs : List Λ.expr) (nt : Nat)
-    (Φ : Λ.val → IProp GF)
+    (κ : List Λ.observation) (κs : List Λ.observation) (e2 : Λ.expr) (σ2 : Λ.state)
+    (efs : List Λ.expr) (nt : Nat) (Φ : Λ.val → IProp GF)
     (hstep : Λ.prim_step e1 σ1 κ e2 σ2 efs) :
-    BIBase.sep
-      (IrisGS.state_interp (Λ := Λ) (GF := GF) σ1 ns (κ ++ κs) nt)
-      (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e1 Φ)
-    ⊢ uPred_fupd (M := M) (F := F) W
-        Iris.Set.univ Iris.Set.univ
+    adq_wp_step_pre_prop (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (e1 := e1) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs)
+        (nt := nt) (Φ := Φ) ⊢
+      uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
         (adq_wp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F)
           (s := s) (e2 := e2) (σ2 := σ2) (efs := efs)
           (ns := ns) (κs := κs) (nt := nt) (Φ := Φ)) :=
   by
     -- unfold the WP step case and apply the concrete primitive step
-    have hv : Λ.to_val e1 = none :=
-      val_stuck (Λ := Λ) (e := e1) (σ := σ1) (κ := κ) (e' := e2) (σ' := σ2) (efs := efs) hstep
+    have hv : Λ.to_val e1 = none := val_stuck (Λ := Λ) (e := e1) (σ := σ1) (κ := κ) (e' := e2) (σ' := σ2) (efs := efs) hstep
     have hpre := adq_wp_step_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s := s) (e1 := e1) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs) (nt := nt)
-      (Φ := Φ) hv
+      (s := s) (e1 := e1) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs) (nt := nt) (Φ := Φ) hv
     have hcont := adq_wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
       (s := s) (e1 := e1) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs)
       (e2 := e2) (σ2 := σ2) (efs := efs) (nt := nt) (Φ := Φ) hstep
-    exact adq_wp_step_after_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s := s) (e1 := e1) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs)
-      (e2 := e2) (σ2 := σ2) (efs := efs) (nt := nt) (Φ := Φ) hpre hcont
+    -- lift the continuation through the outer update and compose
+    let P := adq_wp_step_cont_prop (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (s := s) (e1 := e1) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs) (nt := nt) (Φ := Φ)
+    let Q := adq_wp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (s := s) (e2 := e2) (σ2 := σ2) (efs := efs) (ns := ns) (κs := κs) (nt := nt) (Φ := Φ)
+    exact hpre.trans (adq_wp_step_finish (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (P := P) (Q := Q) hcont)
 
 
 end Iris.ProgramLogic

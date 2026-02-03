@@ -175,13 +175,9 @@ theorem wptp_step_apply
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
     (σ1 σ2 : Λ.state) (ns : Nat) (κ : List Λ.observation) (κs : List Λ.observation)
     (nt : Nat) (hstep : Λ.prim_step e1 σ1 κ e2 σ2 efs) :
-    BIBase.sep
-        (BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ1 ns (κ ++ κs) nt)
-          (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e1 Φ))
-        (BIBase.sep
-          (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s t1 Φs 0)
-          (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F)
-            s t2 Φs (t1.length + 1))) ⊢
+    wptp_step_split_tgt (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (t1 := t1) (t2 := t2) (e1 := e1) (Φs := Φs) (Φ := Φ)
+        (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs) (nt := nt) ⊢
       fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ Iris.Set.univ
         (wptp_step_post_body (Λ := Λ) (GF := GF) (M := M) (F := F)
           (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
@@ -205,22 +201,21 @@ theorem wptp_step_apply
         (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F)
           s t2 Φs (t1.length + 1))))
 
-theorem wptp_step_frame
+/-- Helper: combine split and apply for `wptp_step_frame`. -/
+theorem wptp_step_frame_apply
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e1 e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
     (σ1 σ2 : Λ.state) (ns : Nat) (κ : List Λ.observation) (κs : List Λ.observation)
     (nt : Nat) (hstep : Λ.prim_step e1 σ1 κ e2 σ2 efs)
-    (hlen : Φs.length = t1.length + t2.length + 1)
     (hget : Φs[t1.length]? = some Φ) :
-    BIBase.sep
-      (state_interp (Λ := Λ) (GF := GF) σ1 ns (κ ++ κs) nt)
-      (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F)
-        s (t1 ++ e1 :: t2) Φs 0) ⊢
+    wptp_step_split_src (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (t1 := t1) (t2 := t2) (e1 := e1) (Φs := Φs) (Φ := Φ)
+        (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs) (nt := nt) ⊢
       fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ Iris.Set.univ
-        (wptp_step_post_target (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (wptp_step_post_body (Λ := Λ) (GF := GF) (M := M) (F := F)
           (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
           (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt)) := by
-  -- split the middle thread, step it, then rebuild the pool
+  -- split the middle thread, then apply the step rule
   have hsplit := wptp_step_split (Λ := Λ) (GF := GF) (M := M) (F := F)
     (s := s) (t1 := t1) (t2 := t2) (e1 := e1) (Φs := Φs) (Φ := Φ)
     (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs) (nt := nt) hget
@@ -228,20 +223,60 @@ theorem wptp_step_frame
     (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e1 := e1) (e2 := e2)
     (Φs := Φs) (Φ := Φ) (σ1 := σ1) (σ2 := σ2) (ns := ns)
     (κ := κ) (κs := κs) (nt := nt) hstep
-  have hpost := wptp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+  exact hsplit.trans happly
+
+/-- Helper: lift the rebuild lemma under `fupd`. -/
+theorem wptp_step_frame_post
+    (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
+    (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
+    (σ2 : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt : Nat)
+    (hlen : Φs.length = t1.length + t2.length + 1)
+    (hget : Φs[t1.length]? = some Φ) :
+    fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ Iris.Set.univ
+        (wptp_step_post_body (Λ := Λ) (GF := GF) (M := M) (F := F)
+          (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
+          (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt)) ⊢
+      fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ Iris.Set.univ
+        (wptp_step_post_target (Λ := Λ) (GF := GF) (M := M) (F := F)
+          (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
+          (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt)) := by
+  -- lift `wptp_step_post` under the outer `fupd`
+  exact fupd_mono (W := W)
+    (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
+    (P := wptp_step_post_body (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
+      (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt))
+    (Q := wptp_step_post_target (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
+      (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt))
+    (wptp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
+      (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt) hlen hget)
+
+theorem wptp_step_frame
+    (s : Stuckness) (t1 t2 efs : List Λ.expr) (e1 e2 : Λ.expr)
+    (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
+    (σ1 σ2 : Λ.state) (ns : Nat) (κ : List Λ.observation) (κs : List Λ.observation)
+    (nt : Nat) (hstep : Λ.prim_step e1 σ1 κ e2 σ2 efs)
+    (hlen : Φs.length = t1.length + t2.length + 1)
+    (hget : Φs[t1.length]? = some Φ) :
+    wptp_step_split_src (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (t1 := t1) (t2 := t2) (e1 := e1) (Φs := Φs) (Φ := Φ)
+        (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs) (nt := nt) ⊢
+      fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ Iris.Set.univ
+        (wptp_step_post_target (Λ := Λ) (GF := GF) (M := M) (F := F)
+          (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
+          (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt)) := by
+  -- split the middle thread, step it, then rebuild the pool
+  have happly := wptp_step_frame_apply (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e1 := e1) (e2 := e2)
+    (Φs := Φs) (Φ := Φ) (σ1 := σ1) (σ2 := σ2) (ns := ns)
+    (κ := κ) (κs := κs) (nt := nt) hstep hget
+  have hpost := wptp_step_frame_post (Λ := Λ) (GF := GF) (M := M) (F := F)
     (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
-    (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt) hlen hget
-  let P := wptp_step_post_body (Λ := Λ) (GF := GF) (M := M) (F := F)
-    (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
-    (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt)
-  let Q := wptp_step_post_target (Λ := Λ) (GF := GF) (M := M) (F := F)
-    (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
-    (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt)
-  have hmono :=
-    fupd_mono (W := W)
-      (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
-      (P := P) (Q := Q) hpost
-  exact hsplit.trans (happly.trans hmono)
+    (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs)
+    (nt := nt) hlen hget
+  exact happly.trans hpost
 
 /-! ## Thread Pool Step -/
 
@@ -302,6 +337,37 @@ theorem wptp_step_len_true_frame
   have hmain := (sep_mono (PROP := IProp GF) .rfl hbody).trans hframe
   simpa [List.singleton_append, List.append_assoc] using hmain
 
+/-- Helper: precondition for `wptp_step_len_true`. -/
+noncomputable abbrev wptp_step_len_pre
+    (s : Stuckness) (es1 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
+    (σ1 : Λ.state) (ns : Nat) (κ : List Λ.observation) (κs : List Λ.observation) (nt : Nat) :
+    IProp GF :=
+  -- state interpretation paired with the pool WP
+  BIBase.sep
+    (state_interp (Λ := Λ) (GF := GF) σ1 ns (κ ++ κs) nt)
+    (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es1 Φs)
+
+/-- Helper: post-step body for `wptp_step_len_true`. -/
+noncomputable abbrev wptp_step_len_body
+    (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
+    (Φs : List (Λ.val → IProp GF)) (σ2 : Λ.state) (ns : Nat)
+    (κs : List Λ.observation) (nt : Nat) : IProp GF :=
+  -- later-guarded state interpretation and rebuilt pool
+  BIBase.later
+    (BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
+      (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s
+        (t1 ++ [e2] ++ t2 ++ efs)
+        (Φs ++ List.replicate efs.length fork_post)))
+
+/-- Helper: `wptp_post` target for `wptp_step_len_true`. -/
+noncomputable abbrev wptp_step_len_post
+    (s : Stuckness) (es2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
+    (σ2 : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt : Nat) : IProp GF :=
+  -- later-guarded thread-pool postcondition
+  BIBase.later
+    (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+      s es2 Φs σ2 (ns + 1) κs nt)
+
 /-- Helper: package a `wptp_post` existential under `▷`. -/
 theorem wptp_post_later_intro
     (s : Stuckness) (es : List Λ.expr) (Φs : List (Λ.val → IProp GF))
@@ -318,45 +384,73 @@ theorem wptp_post_later_intro
   refine exists_intro' (a := nt') ?_
   simpa [Nat.add_comm] using (.rfl : _ ⊢ _)
 
+/-- Helper: lift the post body to `wptp_post` in the atomic case. -/
+theorem wptp_step_len_true_atomic_post
+    (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
+    (Φs : List (Λ.val → IProp GF)) (σ2 : Λ.state) (ns : Nat)
+    (κs : List Λ.observation) (nt : Nat) :
+    wptp_step_len_body (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
+        (Φs := Φs) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt) ⊢
+      wptp_step_len_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (es2 := t1 ++ [e2] ++ t2 ++ efs) (Φs := Φs)
+        (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt) := by
+  -- package the `wptp_post` existential under `▷`
+  exact wptp_post_later_intro (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (s := s) (es := t1 ++ [e2] ++ t2 ++ efs) (Φs := Φs)
+    (σ := σ2) (ns := ns + 1) (κs := κs) (nt := nt) (nt' := efs.length)
+
+/-- Helper: atomic step case for `wptp_step_len_true`. -/
+theorem wptp_step_len_true_atomic
+    (s : Stuckness) (t1 t2 efs : List Λ.expr) (e1 e2 : Λ.expr)
+    (Φs : List (Λ.val → IProp GF))
+    (σ1 σ2 : Λ.state) (ns : Nat) (κ : List Λ.observation) (κs : List Λ.observation)
+    (nt : Nat) (hprim : Λ.prim_step e1 σ1 κ e2 σ2 efs)
+    (hlen : (t1 ++ [e1] ++ t2).length = Φs.length) :
+    wptp_step_len_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (es1 := t1 ++ [e1] ++ t2) (Φs := Φs)
+        (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs) (nt := nt) ⊢
+      fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ Iris.Set.univ
+        (wptp_step_len_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+          (s := s) (es2 := t1 ++ [e2] ++ t2 ++ efs) (Φs := Φs)
+          (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt)) := by
+  -- rebuild the pool and package the `wptp_post`
+  have hlen' : Φs.length = t1.length + t2.length + 1 := by
+    simpa [List.length_append, List.length_cons, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hlen.symm
+  rcases wptp_lookup_middle (t1 := t1) (t2 := t2) (Φs := Φs) hlen' with ⟨Φ, hget⟩
+  have hmain := wptp_step_len_true_frame (Λ := Λ) (GF := GF) (M := M) (F := F) (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e1 := e1) (e2 := e2) (Φs := Φs) (Φ := Φ) (σ1 := σ1) (σ2 := σ2) (ns := ns) (κ := κ) (κs := κs) (nt := nt) hprim hlen' hget
+  have hpost := wptp_step_len_true_atomic_post (Λ := Λ) (GF := GF) (M := M) (F := F) (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2) (Φs := Φs) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt)
+  exact hmain.trans <|
+    fupd_mono (W := W)
+      (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
+      (P := wptp_step_len_body (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
+        (Φs := Φs) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt))
+      (Q := wptp_step_len_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (es2 := t1 ++ [e2] ++ t2 ++ efs) (Φs := Φs)
+        (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt)) hpost
+
 theorem wptp_step_len_true (s : Stuckness) (es1 es2 : List Λ.expr)
     (κ : List Λ.observation) (κs : List Λ.observation)
     (σ1 : Λ.state) (ns : Nat) (σ2 : Λ.state) (nt : Nat)
     (Φs : List (Λ.val → IProp GF))
     (hstep : step (Λ := Λ) (es1, σ1) κ (es2, σ2))
     (hlen : es1.length = Φs.length) :
-    BIBase.sep
-      (state_interp (Λ := Λ) (GF := GF) σ1 ns (κ ++ κs) nt)
-      (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es1 Φs) ⊢
+    wptp_step_len_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (es1 := es1) (Φs := Φs) (σ1 := σ1) (ns := ns)
+        (κ := κ) (κs := κs) (nt := nt) ⊢
       fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ Iris.Set.univ
-        (BIBase.later
-          (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-            s es2 Φs σ2 (ns + 1) κs nt)) := by
+        (wptp_step_len_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+          (s := s) (es2 := es2) (Φs := Φs) (σ2 := σ2) (ns := ns)
+          (κs := κs) (nt := nt)) := by
   -- focus the stepping thread, then rebuild the pool and add the existential
   classical
   cases hstep with
   | step_atomic e1 σ1' e2 σ2' efs t1 t2 _ hprim =>
-      have hlen' : Φs.length = t1.length + t2.length + 1 := by
-        simpa [List.length_append, List.length_cons, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hlen.symm
-      rcases wptp_lookup_middle (t1 := t1) (t2 := t2) (Φs := Φs) hlen' with ⟨Φ, hget⟩
-      have hmain := wptp_step_len_true_frame (Λ := Λ) (GF := GF) (M := M) (F := F)
+      exact wptp_step_len_true_atomic (Λ := Λ) (GF := GF) (M := M) (F := F)
         (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e1 := e1) (e2 := e2)
-        (Φs := Φs) (Φ := Φ) (σ1 := σ1) (σ2 := σ2) (ns := ns)
-        (κ := κ) (κs := κs) (nt := nt) hprim hlen' hget
-      have hpost :=
-        wptp_post_later_intro (Λ := Λ) (GF := GF) (M := M) (F := F)
-          (s := s) (es := t1 ++ [e2] ++ t2 ++ efs) (Φs := Φs)
-          (σ := σ2) (ns := ns + 1) (κs := κs) (nt := nt) (nt' := efs.length)
-      exact hmain.trans <|
-        fupd_mono (W := W)
-          (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
-          (P := BIBase.later
-            (BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
-              (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s
-                (t1 ++ [e2] ++ t2 ++ efs)
-                (Φs ++ List.replicate efs.length fork_post))))
-          (Q := BIBase.later
-            (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-              s (t1 ++ [e2] ++ t2 ++ efs) Φs σ2 (ns + 1) κs nt)) hpost
+        (Φs := Φs) (σ1 := σ1) (σ2 := σ2) (ns := ns) (κ := κ) (κs := κs)
+        (nt := nt) hprim (by simpa using hlen)
 
 theorem wptp_step' (s : Stuckness) (es1 es2 : List Λ.expr)
     (κ : List Λ.observation) (κs : List Λ.observation)

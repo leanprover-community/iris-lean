@@ -28,6 +28,72 @@ variable [ElemG GF (COFE.constOF GSetDisj)]
 variable {Λ : Language}
 variable [inst : IrisGS Λ GF]
 variable {W : WsatGS GF}
+
+noncomputable abbrev wptp_step_post_inner_src
+    (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
+    (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
+    (σ2 : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt : Nat) : IProp GF :=
+  -- inner state and body layout before rebuilding `wptp`
+  BIBase.sep
+    (BIBase.sep
+      (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
+      (BIBase.sep (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e2 Φ)
+        (big_sepL (fun _ ef =>
+          wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) efs)))
+    (BIBase.sep
+      (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s t1 Φs 0)
+      (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s t2 Φs (t1.length + 1)))
+
+noncomputable abbrev wptp_step_post_inner_tgt
+    (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
+    (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
+    (σ2 : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt : Nat) : IProp GF :=
+  -- rebuilt `wptp` in the post-state
+  BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
+    (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s
+      (t1 ++ e2 :: t2 ++ efs)
+      (Φs ++ List.replicate efs.length fork_post))
+
+noncomputable abbrev wptp_step_post_src
+    (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
+    (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
+    (σ2 : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt : Nat) : IProp GF :=
+  -- `later`-wrapped variant of `wptp_step_post_inner_src`
+  BIBase.sep
+    (BIBase.later
+      (BIBase.sep
+        (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
+        (BIBase.sep (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e2 Φ)
+          (big_sepL (fun _ ef =>
+            wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) efs))))
+    (BIBase.sep
+      (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s t1 Φs 0)
+      (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s t2 Φs (t1.length + 1)))
+
+noncomputable abbrev wptp_step_post_tgt
+    (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
+    (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
+    (σ2 : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt : Nat) : IProp GF :=
+  -- `later`-wrapped variant of `wptp_step_post_inner_tgt`
+  BIBase.later
+    (BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
+      (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s
+        (t1 ++ e2 :: t2 ++ efs)
+        (Φs ++ List.replicate efs.length fork_post)))
+
+noncomputable abbrev wptp_split_fork_pre
+    (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF)) : IProp GF :=
+  -- precondition for rebuilding a forked pool
+  BIBase.sep
+      (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs)
+      (big_sepL (fun _ ef =>
+        wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) t2)
+
+noncomputable abbrev wptp_split_fork_post
+    (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF)) : IProp GF :=
+  -- combined `wptp` after reattaching forked threads
+  wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s (es ++ t2)
+    (Φs ++ List.replicate t2.length fork_post)
 theorem wptp_step_post_push (X A C : IProp GF) :
     BIBase.sep (BIBase.later X) (BIBase.sep A C) ⊢
       BIBase.later (BIBase.sep X (BIBase.sep A C)) := by
@@ -42,19 +108,12 @@ theorem wptp_step_post_inner
     (σ2 : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt : Nat)
     (hlen : Φs.length = t1.length + t2.length + 1)
     (hget : Φs[t1.length]? = some Φ) :
-    BIBase.sep
-        (BIBase.sep
-          (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
-          (BIBase.sep (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e2 Φ)
-            (big_sepL (fun _ ef =>
-              wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) efs)))
-        (BIBase.sep
-          (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s t1 Φs 0)
-          (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s t2 Φs (t1.length + 1))) ⊢
-      BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
-        (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s
-          (t1 ++ e2 :: t2 ++ efs)
-          (Φs ++ List.replicate efs.length fork_post)) := by
+    wptp_step_post_inner_src (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
+        (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt) ⊢
+      wptp_step_post_inner_tgt (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
+        (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt) := by
   -- reorder the pieces and rebuild the thread pool
   have hreorder := (sep_reorder_for_rebuild
     (P := state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
@@ -75,21 +134,12 @@ theorem wptp_step_post
     (σ2 : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt : Nat)
     (hlen : Φs.length = t1.length + t2.length + 1)
     (hget : Φs[t1.length]? = some Φ) :
-    BIBase.sep
-        (BIBase.later
-          (BIBase.sep
-            (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
-            (BIBase.sep (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e2 Φ)
-              (big_sepL (fun _ ef =>
-                wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) efs))))
-        (BIBase.sep
-          (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s t1 Φs 0)
-          (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s t2 Φs (t1.length + 1))) ⊢
-      BIBase.later
-        (BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
-          (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s
-            (t1 ++ e2 :: t2 ++ efs)
-            (Φs ++ List.replicate efs.length fork_post))) := by
+    wptp_step_post_src (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
+        (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt) ⊢
+      wptp_step_post_tgt (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
+        (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt) := by
   -- push under `▷` then apply the rebuild lemma inside
   let X :=
     BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
@@ -144,25 +194,14 @@ theorem wptp_split_fork_left
 theorem wptp_split_fork_right
     (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (hlen : es.length = Φs.length) :
-    BIBase.sep
-        (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs)
-        (big_sepL (fun _ ef =>
-          wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) t2) ⊢
-      wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s (es ++ t2)
-        (Φs ++ List.replicate t2.length fork_post) := by
+    wptp_split_fork_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (es := es) (t2 := t2) (Φs := Φs) ⊢
+      wptp_split_fork_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (es := es) (t2 := t2) (Φs := Φs) := by
   -- rebuild the combined `wptp` from the body and length equality
-  have hbody' :
-      wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs ⊢
-        wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs 0 :=
-    wptp_body_of_wptp (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s := s) (es := es) (Φs := Φs)
-  have hcomb :
-      BIBase.sep
-          (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs 0)
-          (big_sepL (fun _ ef =>
-            wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) t2) ⊢
-        wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s (es ++ t2)
-          (Φs ++ List.replicate t2.length fork_post) 0 :=
+  have hbody' := wptp_body_of_wptp (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (s := s) (es := es) (Φs := Φs)
+  have hcomb :=
     (wptp_body_at_append_fork (Λ := Λ) (GF := GF) (M := M) (F := F)
       (s := s) (t2 := es) (efs := t2) (Φs := Φs) (k := 0)
       (hlen := by simpa [Nat.zero_add, hlen, List.length_append, List.length_replicate])).2
@@ -170,13 +209,8 @@ theorem wptp_split_fork_right
       (es ++ t2).length =
         (Φs ++ List.replicate t2.length fork_post).length := by
     simpa [hlen, List.length_append, List.length_replicate, Nat.add_assoc, Nat.add_left_comm]
-  have hwrap :
-      wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s (es ++ t2)
-          (Φs ++ List.replicate t2.length fork_post) 0 ⊢
-        wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s (es ++ t2)
-          (Φs ++ List.replicate t2.length fork_post) :=
-    wptp_of_body (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s := s) (es := es ++ t2) (Φs := Φs ++ List.replicate t2.length fork_post) hlen'
+  have hwrap := wptp_of_body (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (s := s) (es := es ++ t2) (Φs := Φs ++ List.replicate t2.length fork_post) hlen'
   exact (sep_mono (PROP := IProp GF) hbody' .rfl).trans (hcomb.trans hwrap)
 
 theorem wptp_split_fork

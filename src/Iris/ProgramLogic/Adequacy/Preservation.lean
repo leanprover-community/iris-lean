@@ -73,6 +73,89 @@ theorem wptp_preservation_later
     simpa [List.append_assoc, Nat.add_assoc] using
       ih'.trans (step_fupdN_mono (Λ := Λ) (GF := GF) (M := M) (F := F) n hmerge))
 
+/-- Helper: finish the successor step of `step_fupdN`. -/
+theorem step_fupdN_succ_finish (P mid X : IProp GF) (n : Nat)
+    (hstep' :
+      P ⊢ fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ Iris.Set.univ
+        (BIBase.later mid))
+    (hmono :
+      BIBase.later mid ⊢
+        BIBase.later (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n X)) :
+    P ⊢ step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (n + 1) X := by
+  -- push the refinement under the outer `fupd`
+  have hmono' :=
+    fupd_mono (W := W)
+      (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
+      (P := BIBase.later mid)
+      (Q := BIBase.later (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n X)) hmono
+  simpa [step_fupdN, fupd'] using hstep'.trans hmono'
+
+/-- Helper: precondition for preservation statements. -/
+noncomputable abbrev wptp_preservation_pre
+    (s : Stuckness) (es : List Λ.expr) (Φs : List (Λ.val → IProp GF))
+    (σ : Λ.state) (ns : Nat) (κs κs' : List Λ.observation) (nt : Nat) : IProp GF :=
+  -- state interpretation with the pool WP
+  BIBase.sep
+    (IrisGS.state_interp (Λ := Λ) (GF := GF) σ ns (κs ++ κs') nt)
+    (wptp (M := M) (F := F) (Λ := Λ) s es Φs)
+
+/-- Helper: postcondition for preservation statements. -/
+noncomputable abbrev wptp_preservation_post
+    (s : Stuckness) (n : Nat) (es : List Λ.expr) (Φs : List (Λ.val → IProp GF))
+    (σ : Λ.state) (ns : Nat) (κs' : List Λ.observation) (nt : Nat) : IProp GF :=
+  -- `step_fupdN` wrapped `wptp_post`
+  step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
+    (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+      s es Φs σ (n + ns) κs' nt)
+
+/-- Helper: single-step `fupd` for the successor case. -/
+theorem wptp_preservation_succ_step
+    (s : Stuckness) (κ κs_tail κs' : List Λ.observation)
+    (es1 es_mid : List Λ.expr) (σ1 σ_mid : Λ.state)
+    (ns nt : Nat) (Φs : List (Λ.val → IProp GF))
+    (hstep : step (Λ := Λ) (es1, σ1) κ (es_mid, σ_mid)) :
+    wptp_preservation_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (es := es1) (Φs := Φs) (σ := σ1) (ns := ns)
+        (κs := κ ++ κs_tail) (κs' := κs') (nt := nt) ⊢
+      fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ Iris.Set.univ
+        (BIBase.later
+          (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+            s es_mid Φs σ_mid (ns + 1) (κs_tail ++ κs') nt)) := by
+  -- specialize `wptp_step'` and rewrite the trace shape
+  simpa [List.append_assoc] using
+    wptp_step' (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (s := s) (es1 := es1) (es2 := es_mid) (κ := κ)
+      (κs := κs_tail ++ κs') (σ1 := σ1) (ns := ns)
+      (σ2 := σ_mid) (nt := nt) (Φs := Φs) hstep
+
+/-- Helper: successor step of `wptp_preservation`. -/
+theorem wptp_preservation_succ
+    (s : Stuckness) (n : Nat) (κ κs_tail κs' : List Λ.observation)
+    (es1 es_mid es2 : List Λ.expr) (σ1 σ_mid σ2 : Λ.state)
+    (ns nt : Nat) (Φs : List (Λ.val → IProp GF))
+    (ih : WptpPreservationIH (Λ := Λ) (GF := GF) (M := M) (F := F) s n κs')
+    (hstep : step (Λ := Λ) (es1, σ1) κ (es_mid, σ_mid))
+    (hrest : nsteps (Λ := Λ) n (es_mid, σ_mid) κs_tail (es2, σ2)) :
+    wptp_preservation_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (es := es1) (Φs := Φs) (σ := σ1) (ns := ns)
+        (κs := κ ++ κs_tail) (κs' := κs') (nt := nt) ⊢
+      wptp_preservation_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (n := n + 1) (es := es2) (Φs := Φs) (σ := σ2)
+        (ns := ns) (κs' := κs') (nt := nt) := by
+  -- step once, then lift the induction hypothesis under `▷`
+  have hstep' := wptp_preservation_succ_step (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (s := s) (κ := κ) (κs_tail := κs_tail) (κs' := κs')
+    (es1 := es1) (es_mid := es_mid) (σ1 := σ1) (σ_mid := σ_mid)
+    (ns := ns) (nt := nt) (Φs := Φs) hstep
+  have hmono :=
+    wptp_preservation_later (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (s := s) (n := n) (κs_tail := κs_tail) (κs' := κs')
+      (es_mid := es_mid) (es2 := es2) (σ_mid := σ_mid) (σ2 := σ2)
+      (ns := ns) (nt := nt) (Φs := Φs) (ih := ih) hrest
+  simpa [List.append_assoc, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+    (step_fupdN_succ_finish (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (P := _) (mid := _) (X := _) (n := n) hstep' hmono)
+
 /-- Multi-step preservation: after `n` steps, the thread pool WP
 and state interpretation are preserved (modulo fupd and later).
 Coq: `wptp_preservation` in `adequacy.v`. -/
@@ -81,12 +164,12 @@ theorem wptp_preservation (s : Stuckness) (n : Nat)
     (σ1 : Λ.state) (ns : Nat) (σ2 : Λ.state) (nt : Nat)
     (Φs : List (Λ.val → IProp GF))
     (hsteps : nsteps (Λ := Λ) n (es1, σ1) κs (es2, σ2)) :
-    BIBase.sep
-      (IrisGS.state_interp (Λ := Λ) (GF := GF) σ1 ns (κs ++ κs') nt)
-      (wptp (M := M) (F := F) (Λ := Λ) s es1 Φs)
-    ⊢ step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
-        (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-          s es2 Φs σ2 (n + ns) κs' nt) := by
+    wptp_preservation_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (es := es1) (Φs := Φs) (σ := σ1) (ns := ns)
+        (κs := κs) (κs' := κs') (nt := nt) ⊢
+      wptp_preservation_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (n := n) (es := es2) (Φs := Φs) (σ := σ2)
+        (ns := ns) (κs' := κs') (nt := nt) := by
   -- induct on the execution trace, generalizing `ns`/`nt`/`Φs`
   induction n generalizing es1 es2 κs σ1 σ2 Φs ns nt with
   | zero =>
@@ -98,30 +181,11 @@ theorem wptp_preservation (s : Stuckness) (n : Nat)
       cases hsteps with
       | nsteps_l n' ρ1 ρ2 ρ3 κ κs_tail hstep hrest =>
           rcases ρ2 with ⟨es_mid, σ_mid⟩
-          have hstep' :=
-            (by
-              simpa [List.append_assoc] using
-                wptp_step' (Λ := Λ) (GF := GF) (M := M) (F := F)
-                  (s := s) (es1 := es1) (es2 := es_mid) (κ := κ)
-                  (κs := κs_tail ++ κs') (σ1 := σ1) (ns := ns)
-                  (σ2 := σ_mid) (nt := nt) (Φs := Φs) hstep)
-          have hmono :=
-            wptp_preservation_later (Λ := Λ) (GF := GF) (M := M) (F := F)
-              (s := s) (n := n) (κs_tail := κs_tail) (κs' := κs')
-              (es_mid := es_mid) (es2 := es2) (σ_mid := σ_mid) (σ2 := σ2)
-              (ns := ns) (nt := nt) (Φs := Φs) (ih := ih) hrest
-          have hmono' :=
-            fupd_mono (W := W)
-              (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
-              (P := BIBase.later
-                (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-                  s es_mid Φs σ_mid (ns + 1) (κs_tail ++ κs') nt))
-              (Q := BIBase.later
-                (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
-                  (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
-                    s es2 Φs σ2 (n + (ns + 1)) κs' nt))) hmono
-          simpa [fupd', step_fupdN, List.append_assoc, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
-            using hstep'.trans hmono'
+          exact wptp_preservation_succ (Λ := Λ) (GF := GF) (M := M) (F := F)
+            (s := s) (n := n) (κ := κ) (κs_tail := κs_tail) (κs' := κs')
+            (es1 := es1) (es_mid := es_mid) (es2 := es2)
+            (σ1 := σ1) (σ_mid := σ_mid) (σ2 := σ2)
+            (ns := ns) (nt := nt) (Φs := Φs) (ih := ih) hstep hrest
 
 /-! ## Wptp Progress -/
 
@@ -153,6 +217,16 @@ theorem wptp_post_not_stuck_wp_of_get
       (Q := wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F)
         .notStuck t2 (Φs ++ List.replicate nt' fork_post) (t1.length + 1)))
 
+/-- Helper: precondition for not-stuck extraction from `wptp`. -/
+noncomputable abbrev wptp_post_not_stuck_pre
+    (es2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
+    (σ2 : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt nt' : Nat) : IProp GF :=
+  -- state interpretation paired with the extended thread pool
+  BIBase.sep
+    (state_interp (Λ := Λ) (GF := GF) σ2 ns κs (nt + nt'))
+    (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) .notStuck es2
+      (Φs ++ List.replicate nt' fork_post))
+
 /-- Helper: frame a WP with the state interpretation to derive not-stuck. -/
 theorem wptp_post_not_stuck_frame
     (es2 : List Λ.expr) (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -182,15 +256,60 @@ theorem wptp_post_not_stuck_frame
     (wp_not_stuck' (Λ := Λ) (GF := GF) (M := M) (F := F)
       (e := e2) (σ := σ2) (ns := ns) (κs := κs) (nt := nt + nt') (Φ := Φ))
 
+/-- Helper: map reducibility to `not_stuck` in the step case. -/
+theorem wp_not_stuck_step_mono (e : Λ.expr) (σ : Λ.state) (ns : Nat)
+    (κs : List Λ.observation) (nt : Nat) (Φ : Λ.val → IProp GF) :
+    BIBase.sep (BIBase.pure (reducible e σ))
+        (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+          (s := .notStuck) (e1 := e) (σ1 := σ) (κ := [])
+          (Φ := Φ) (ns := ns) (κs := κs) (nt := nt)) ⊢
+      BIBase.pure (not_stuck e σ) := by
+  -- drop the continuation and lift reducibility into `not_stuck`
+  exact (sep_elim_l (P := BIBase.pure (reducible e σ))
+    (Q := wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (s := .notStuck) (e1 := e) (σ1 := σ) (κ := [])
+      (Φ := Φ) (ns := ns) (κs := κs) (nt := nt))).trans
+    (pure_mono fun h => Or.inr h)
+
+/-- Helper: the length-known branch of `wptp_post_not_stuck_aux`. -/
+theorem wptp_post_not_stuck_aux_core
+    (es2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
+    (σ2 : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt nt' : Nat)
+    (e2 : Λ.expr) (hemem : e2 ∈ es2)
+    (hlen' : es2.length = (Φs ++ List.replicate nt' fork_post).length) :
+    wptp_post_not_stuck_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (es2 := es2) (Φs := Φs) (σ2 := σ2) (ns := ns) (κs := κs)
+        (nt := nt) (nt' := nt') ⊢
+      uPred_fupd (M := M) (F := F) W
+        Iris.Set.univ maskEmpty (BIBase.pure (not_stuck e2 σ2)) := by
+  -- split the list, locate the focused thread, then apply `wp_not_stuck'`
+  rcases mem_split hemem with ⟨t1, t2, ht⟩
+  have hlen_es : es2.length = t1.length + t2.length + 1 := by
+    simpa [ht, List.length_append, List.length_cons, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+  have hlen'' : (Φs ++ List.replicate nt' fork_post).length = t1.length + t2.length + 1 :=
+    hlen'.symm.trans hlen_es
+  rcases wptp_lookup_middle (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (t1 := t1) (t2 := t2) (Φs := Φs ++ List.replicate nt' fork_post) hlen'' with ⟨Φ, hget⟩
+  have hwp :
+      wptp (Λ := Λ) (GF := GF) (M := M) (F := F) .notStuck es2
+          (Φs ++ List.replicate nt' fork_post) ⊢
+        wp (M := M) (F := F) (Λ := Λ) .notStuck Iris.Set.univ e2 Φ := by
+    simpa [ht] using
+      (wptp_post_not_stuck_wp_of_get (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (t1 := t1) (t2 := t2) (e2 := e2) (Φs := Φs) (Φ := Φ)
+        (nt' := nt') hget)
+  exact wptp_post_not_stuck_frame (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (es2 := es2) (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs)
+    (nt := nt) (nt' := nt') (e2 := e2) hwp
+
 /-- Helper: extract not-stuck from a concrete `wptp` instance. -/
 theorem wptp_post_not_stuck_aux
     (es2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt nt' : Nat)
     (e2 : Λ.expr) (hemem : e2 ∈ es2) :
-    BIBase.sep
-        (state_interp (Λ := Λ) (GF := GF) σ2 ns κs (nt + nt'))
-        (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) .notStuck es2
-          (Φs ++ List.replicate nt' fork_post)) ⊢
+    wptp_post_not_stuck_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (es2 := es2) (Φs := Φs) (σ2 := σ2) (ns := ns) (κs := κs)
+        (nt := nt) (nt' := nt') ⊢
       uPred_fupd (M := M) (F := F) W
         Iris.Set.univ maskEmpty (BIBase.pure (not_stuck e2 σ2)) := by
   -- derive the relevant WP and apply `wp_not_stuck'`
@@ -206,30 +325,9 @@ theorem wptp_post_not_stuck_aux
       (Q := wptp (Λ := Λ) (GF := GF) (M := M) (F := F) .notStuck es2
         (Φs ++ List.replicate nt' fork_post))).trans hlen
   · intro hlen'
-    rcases mem_split hemem with ⟨t1, t2, ht⟩
-    have hlt_es : t1.length < es2.length := by
-      have hlt : t1.length < t1.length + 1 := Nat.lt_succ_self _
-      have hle : t1.length + 1 ≤ t1.length + 1 + t2.length := Nat.le_add_right _ _
-      have hlen_es : es2.length = t1.length + 1 + t2.length := by
-        simpa [ht, List.length_append, List.length_cons, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
-      exact Nat.lt_of_lt_of_le hlt (by simpa [hlen_es] using hle)
-    have hlt : t1.length < (Φs ++ List.replicate nt' fork_post).length := by
-      simpa [hlen'] using hlt_es
-    let Φ := (Φs ++ List.replicate nt' fork_post).get ⟨t1.length, hlt⟩
-    have hget :
-        (Φs ++ List.replicate nt' fork_post)[t1.length]? = some Φ :=
-      get?_eq_some_of_lt (l := Φs ++ List.replicate nt' fork_post) (i := t1.length) hlt
-    have hwp :
-        wptp (Λ := Λ) (GF := GF) (M := M) (F := F) .notStuck es2
-            (Φs ++ List.replicate nt' fork_post) ⊢
-          wp (M := M) (F := F) (Λ := Λ) .notStuck Iris.Set.univ e2 Φ := by
-      simpa [ht] using
-        (wptp_post_not_stuck_wp_of_get (Λ := Λ) (GF := GF) (M := M) (F := F)
-          (t1 := t1) (t2 := t2) (e2 := e2) (Φs := Φs) (Φ := Φ)
-          (nt' := nt') hget)
-    exact wptp_post_not_stuck_frame (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (es2 := es2) (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs)
-      (nt := nt) (nt' := nt') (e2 := e2) hwp
+    exact wptp_post_not_stuck_aux_core (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (es2 := es2) (Φs := Φs) (σ2 := σ2) (ns := ns) (κs := κs)
+      (nt := nt) (nt' := nt') (e2 := e2) hemem hlen'
 
 theorem wptp_post_not_stuck
     (es2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
@@ -275,22 +373,40 @@ theorem wptp_progress (n : Nat)
   exact hpres.trans (step_fupdN_mono (Λ := Λ) (GF := GF) (M := M) (F := F) n hmono)
 
 /-- Helper: build the `step_fupdN` chain for `wp_progress`. -/
+theorem wp_progress_fupd_elim (n : Nat)
+    (es : List Λ.expr) (σ1 : Λ.state) (κs : List Λ.observation)
+    (t2 : List Λ.expr) (σ2 : Λ.state) (e2 : Λ.expr)
+    (hsteps : nsteps (Λ := Λ) n (es, σ1) κs (t2, σ2)) (hemem : e2 ∈ t2) :
+    BIBase.«exists» fun (Φs : List (Λ.val → IProp GF)) =>
+        BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
+          (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) .notStuck es Φs) ⊢
+      step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
+        (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+          (BIBase.pure (not_stuck e2 σ2))) := by
+  -- pick the existential witness and apply `wptp_progress`
+  refine exists_elim ?_
+  intro Φs
+  exact wptp_progress (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (n := n) (es1 := es) (es2 := t2) (κs := κs) (κs' := [])
+    (σ1 := σ1) (ns := 0) (σ2 := σ2) (nt := 0)
+    (Φs := Φs) (e2 := e2) hsteps hemem
+
+/-- Helper: build the `step_fupdN` chain for `wp_progress`. -/
 theorem wp_progress_fupd (n : Nat)
     (es : List Λ.expr) (σ1 : Λ.state) (κs : List Λ.observation)
     (t2 : List Λ.expr) (σ2 : Λ.state) (e2 : Λ.expr)
-    (Hwp : ∀ W : WsatGS GF,
-      (BIBase.emp : IProp GF) ⊢
-        uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-          (BIBase.«exists» fun (Φs : List (Λ.val → IProp GF)) =>
-            BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
-              (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) .notStuck es Φs)))
+    (Hwp : ∀ W : WsatGS GF, (BIBase.emp : IProp GF) ⊢
+      uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+        (BIBase.«exists» fun (Φs : List (Λ.val → IProp GF)) =>
+          BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
+            (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) .notStuck es Φs)))
     (hsteps : nsteps (Λ := Λ) n (es, σ1) κs (t2, σ2))
     (hemem : e2 ∈ t2) :
     (BIBase.emp : IProp GF) ⊢
       uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
         (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
           (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
-            (BIBase.pure (not_stuck e2 σ2)))) := by
+          (BIBase.pure (not_stuck e2 σ2)))) := by
   -- specialize the existential and apply `wptp_progress`
   refine (Hwp W).trans ?_
   refine fupd_mono (W := W)
@@ -301,46 +417,51 @@ theorem wp_progress_fupd (n : Nat)
     (Q := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
       (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
         (BIBase.pure (not_stuck e2 σ2)))) ?_
-  refine exists_elim ?_
-  intro Φs
-  exact wptp_progress (Λ := Λ) (GF := GF) (M := M) (F := F)
-    (n := n) (es1 := es) (es2 := t2) (κs := κs) (κs' := [])
-    (σ1 := σ1) (ns := 0) (σ2 := σ2) (nt := 0)
-    (Φs := Φs) (e2 := e2) hsteps hemem
+  exact wp_progress_fupd_elim (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (n := n) (es := es) (σ1 := σ1) (κs := κs)
+    (t2 := t2) (σ2 := σ2) (e2 := e2) hsteps hemem
 
 /-- Helper: extract `not_stuck` from the `step_fupdN` chain. -/
-theorem wp_progress_soundness (n : Nat) (σ2 : Λ.state) (e2 : Λ.expr)
-    (hmono :
-      (BIBase.emp : IProp GF) ⊢
-        uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-          (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
-            (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
-              (BIBase.pure (not_stuck e2 σ2))))) :
-    not_stuck e2 σ2 := by
-  -- peel updates and apply pure soundness
-  have hstep :
-      (BIBase.emp : IProp GF) ⊢
-        step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
+theorem wp_progress_soundness_pure (n : Nat) (σ2 : Λ.state) (e2 : Λ.expr)
+    (hmono : (BIBase.emp : IProp GF) ⊢
+      uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+        (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
           (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
-            (BIBase.pure (not_stuck e2 σ2))) :=
+            (BIBase.pure (not_stuck e2 σ2))))) :
+    (True : IProp GF) ⊢ BIBase.pure (not_stuck e2 σ2) := by
+  -- peel `fupd` and `step_fupdN` to reach a pure goal
+  have hstep : (BIBase.emp : IProp GF) ⊢
+      step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
+        (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+          (BIBase.pure (not_stuck e2 σ2))) :=
     fupd_soundness_no_lc (M := M) (F := F) (GF := GF)
       (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
       (P := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
         (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
           (BIBase.pure (not_stuck e2 σ2)))) (h := fun _ => hmono)
-  have hplain :
-      (BIBase.emp : IProp GF) ⊢
-        uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
-          (BIBase.pure (not_stuck e2 σ2)) :=
+  have hplain : (BIBase.emp : IProp GF) ⊢
+      uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+        (BIBase.pure (not_stuck e2 σ2)) :=
     step_fupdN_soundness (Λ := Λ) (GF := GF) (M := M) (F := F)
       (P := uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
         (BIBase.pure (not_stuck e2 σ2))) (n := n) (h := fun _ => hstep)
-  have htrue :
-      (True : IProp GF) ⊢ BIBase.pure (not_stuck e2 σ2) :=
-    (true_emp (PROP := IProp GF)).1.trans <|
-      fupd_soundness_no_lc (M := M) (F := F) (GF := GF)
-        (E1 := Iris.Set.univ) (E2 := maskEmpty) (P := BIBase.pure (not_stuck e2 σ2))
-        (h := fun _ => hplain)
+  exact (true_emp (PROP := IProp GF)).1.trans <|
+    fupd_soundness_no_lc (M := M) (F := F) (GF := GF)
+      (E1 := Iris.Set.univ) (E2 := maskEmpty) (P := BIBase.pure (not_stuck e2 σ2))
+      (h := fun _ => hplain)
+
+/-- Helper: extract `not_stuck` from the `step_fupdN` chain. -/
+theorem wp_progress_soundness (n : Nat) (σ2 : Λ.state) (e2 : Λ.expr)
+    (hmono : (BIBase.emp : IProp GF) ⊢
+      uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+        (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
+          (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+            (BIBase.pure (not_stuck e2 σ2))))) :
+    not_stuck e2 σ2 := by
+  -- peel updates and apply pure soundness
+  have htrue :=
+    wp_progress_soundness_pure (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (n := n) (σ2 := σ2) (e2 := e2) hmono
   exact UPred.pure_soundness (P := not_stuck e2 σ2) htrue
 
 theorem wp_progress (n : Nat)
@@ -398,18 +519,8 @@ theorem wp_not_stuck_step (e : Λ.expr) (σ : Λ.state) (ns : Nat)
   have hpre := adq_wp_step_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
     (s := .notStuck) (e1 := e) (σ1 := σ) (ns := ns)
     (κ := []) (κs := κs) (nt := nt) (Φ := Φ) hto
-  have hmono :
-      BIBase.sep (BIBase.pure (reducible e σ))
-          (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
-            (s := .notStuck) (e1 := e) (σ1 := σ) (κ := [])
-            (Φ := Φ) (ns := ns) (κs := κs) (nt := nt)) ⊢
-        BIBase.pure (not_stuck e σ) := by
-    -- drop the continuation and lift reducibility
-    exact (sep_elim_l (P := BIBase.pure (reducible e σ))
-      (Q := wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
-        (s := .notStuck) (e1 := e) (σ1 := σ) (κ := [])
-        (Φ := Φ) (ns := ns) (κs := κs) (nt := nt))).trans
-      (pure_mono fun h => Or.inr h)
+  have hmono := wp_not_stuck_step_mono (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (e := e) (σ := σ) (ns := ns) (κs := κs) (nt := nt) (Φ := Φ)
   exact hpre.trans <|
     fupd_mono (W := W)
       (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := maskEmpty)
