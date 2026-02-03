@@ -358,7 +358,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] iExists
   - [x] iModIntro
   - [ ] iNext (with later credits)
-  - [ ] iMod
+  - [x] iMod
   - [ ] iDestruct (Lean: icases)
     - [x] basic
     - [ ] all destruct patterns (see below)
