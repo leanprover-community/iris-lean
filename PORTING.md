@@ -424,5 +424,6 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - Program Logic
   - Final decisions about what to port from this folder have not been made yet.
   - [x] `language.v`
+  - [x] `adequacy.v`
   - [ ] `ectx_language.v`
   - [ ] `ectxi_language.v`

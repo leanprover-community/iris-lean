@@ -46,6 +46,7 @@ variable [ElemG GF (COFE.constOF GSetDisj)]
 
 variable {Λ : EctxLanguage}
 variable [inst : IrisGS (ectx_lang Λ) GF]
+variable {W : WsatGS GF}
 
 /-! ## Base Step Lifting -/
 
@@ -56,11 +57,11 @@ Coq: `wp_lift_base_step_fupd` in `ectx_lifting.v`. -/
 theorem wp_lift_base_step_fupd (s : Stuckness) (E : Iris.Set Positive)
     (Φ : (ectx_lang Λ).val → IProp GF) (e1 : Λ.expr)
     (hv : Λ.to_val e1 = none) :
-    wp_pre (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (M := M) (F := F) (Λ := ectx_lang Λ) s) E e1 Φ
-    ⊢ wp (M := M) (F := F) (Λ := ectx_lang Λ) s E e1 Φ :=
+    wp_pre (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s) E e1 Φ
+    ⊢ wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s E e1 Φ :=
   by
     -- base-step lifting is the generic step rule for `ectx_lang`
-    simpa using wp_lift_step_fupd (Λ := ectx_lang Λ) (M := M) (F := F)
+    simpa using wp_lift_step_fupd (Λ := ectx_lang Λ) (M := M) (F := F) (W := W)
       (s := s) (E := E) (Φ := Φ) (e1 := e1) hv
 
 omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
@@ -69,11 +70,11 @@ Coq: `wp_lift_base_step` in `ectx_lifting.v`. -/
 theorem wp_lift_base_step (s : Stuckness) (E : Iris.Set Positive)
     (Φ : (ectx_lang Λ).val → IProp GF) (e1 : Λ.expr)
     (hv : Λ.to_val e1 = none) :
-    wp_pre (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (M := M) (F := F) (Λ := ectx_lang Λ) s) E e1 Φ
-    ⊢ wp (M := M) (F := F) (Λ := ectx_lang Λ) s E e1 Φ :=
+    wp_pre (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s) E e1 Φ
+    ⊢ wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s E e1 Φ :=
   by
     -- reuse the pure step lemma on the derived language
-    simpa using wp_lift_step (Λ := ectx_lang Λ) (M := M) (F := F)
+    simpa using wp_lift_step (Λ := ectx_lang Λ) (M := M) (F := F) (W := W)
       (s := s) (E := E) (Φ := Φ) (e1 := e1) hv
 
 omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
@@ -84,12 +85,12 @@ theorem wp_lift_base_stuck (E : Iris.Set Positive)
     (hv : Λ.to_val e = none)
     (hsub : sub_redexes_are_values e)
     (hstuck : ∀ σ, base_stuck e σ) :
-    BIBase.pure True ⊢ wp (M := M) (F := F) (Λ := ectx_lang Λ) .maybeStuck E e Φ :=
+    BIBase.pure True ⊢ wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) .maybeStuck E e Φ :=
   by
     -- reduce to the primitive stuckness lemma via `base_stuck_stuck`
     have hstuck' : ∀ σ, stuck (Λ := ectx_lang Λ) e σ := by
       intro σ; exact base_stuck_stuck (Λ := Λ) e σ (hstuck σ) hsub
-    exact wp_lift_stuck (Λ := ectx_lang Λ) (M := M) (F := F)
+    exact wp_lift_stuck (Λ := ectx_lang Λ) (M := M) (F := F) (W := W)
       (_s := .maybeStuck) (E := E) (Φ := Φ) (e := e) hv hstuck'
 
 omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
@@ -100,10 +101,10 @@ theorem wp_lift_pure_base_stuck [Inhabited Λ.state]
     (hv : Λ.to_val e = none)
     (hsub : sub_redexes_are_values e)
     (hstuck : ∀ σ, base_stuck e σ) :
-    BIBase.pure True ⊢ wp (M := M) (F := F) (Λ := ectx_lang Λ) .maybeStuck E e Φ :=
+    BIBase.pure True ⊢ wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) .maybeStuck E e Φ :=
   by
     -- reuse the non-pure base-stuck lifting rule
-    exact wp_lift_base_stuck (Λ := Λ) (M := M) (F := F)
+    exact wp_lift_base_stuck (Λ := Λ) (M := M) (F := F) (W := W)
       (E := E) (Φ := Φ) (e := e) hv hsub hstuck
 
 omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
@@ -113,13 +114,13 @@ theorem wp_lift_atomic_base_step_fupd (s : Stuckness) (E1 E2 : Iris.Set Positive
     (Φ : (ectx_lang Λ).val → IProp GF) (e1 : Λ.expr)
     (hv : Λ.to_val e1 = none) :
     E1 = E2 →
-    wp_pre (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (M := M) (F := F) (Λ := ectx_lang Λ) s) E1 e1
-      (fun v => uPred_fupd (M := M) (F := F) (@IrisGS.wsatGS (ectx_lang Λ) GF inst) E2 E1 (Φ v))
-    ⊢ wp (M := M) (F := F) (Λ := ectx_lang Λ) s E1 e1 Φ :=
+    wp_pre (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s) E1 e1
+      (fun v => uPred_fupd (M := M) (F := F) W E2 E1 (Φ v))
+    ⊢ wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s E1 e1 Φ :=
   by
     -- mask-changing atomic step (simplified to equality)
     intro hE
-    simpa using wp_lift_atomic_step_fupd (Λ := ectx_lang Λ) (M := M) (F := F)
+    simpa using wp_lift_atomic_step_fupd (Λ := ectx_lang Λ) (M := M) (F := F) (W := W)
       (s := s) (E1 := E1) (E2 := E2) (Φ := Φ) (e1 := e1) hv hE
 
 omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
@@ -128,11 +129,11 @@ Coq: `wp_lift_atomic_base_step` in `ectx_lifting.v`. -/
 theorem wp_lift_atomic_base_step (s : Stuckness) (E : Iris.Set Positive)
     (Φ : (ectx_lang Λ).val → IProp GF) (e1 : Λ.expr)
     (hv : Λ.to_val e1 = none) :
-    wp_pre (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (M := M) (F := F) (Λ := ectx_lang Λ) s) E e1 Φ
-    ⊢ wp (M := M) (F := F) (Λ := ectx_lang Λ) s E e1 Φ :=
+    wp_pre (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s) E e1 Φ
+    ⊢ wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s E e1 Φ :=
   by
     -- atomic case is identical to the generic step rule here
-    simpa using wp_lift_atomic_step (Λ := ectx_lang Λ) (M := M) (F := F)
+    simpa using wp_lift_atomic_step (Λ := ectx_lang Λ) (M := M) (F := F) (W := W)
       (s := s) (E := E) (Φ := Φ) (e1 := e1) hv
 
 omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
@@ -142,13 +143,13 @@ theorem wp_lift_atomic_base_step_no_fork_fupd (s : Stuckness) (E1 E2 : Iris.Set 
     (Φ : (ectx_lang Λ).val → IProp GF) (e1 : Λ.expr)
     (hv : Λ.to_val e1 = none) :
     E1 = E2 →
-    wp_pre (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (M := M) (F := F) (Λ := ectx_lang Λ) s) E1 e1
-      (fun v => uPred_fupd (M := M) (F := F) (@IrisGS.wsatGS (ectx_lang Λ) GF inst) E2 E1 (Φ v))
-    ⊢ wp (M := M) (F := F) (Λ := ectx_lang Λ) s E1 e1 Φ :=
+    wp_pre (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s) E1 e1
+      (fun v => uPred_fupd (M := M) (F := F) W E2 E1 (Φ v))
+    ⊢ wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s E1 e1 Φ :=
   by
     -- same proof as the general atomic base-step rule
     intro hE
-    simpa using wp_lift_atomic_base_step_fupd (Λ := Λ) (M := M) (F := F)
+    simpa using wp_lift_atomic_base_step_fupd (Λ := Λ) (M := M) (F := F) (W := W)
       (s := s) (E1 := E1) (E2 := E2) (Φ := Φ) (e1 := e1) hv hE
 
 omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
@@ -157,11 +158,11 @@ Coq: `wp_lift_atomic_base_step_no_fork` in `ectx_lifting.v`. -/
 theorem wp_lift_atomic_base_step_no_fork (s : Stuckness) (E : Iris.Set Positive)
     (Φ : (ectx_lang Λ).val → IProp GF) (e1 : Λ.expr)
     (hv : Λ.to_val e1 = none) :
-    wp_pre (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (M := M) (F := F) (Λ := ectx_lang Λ) s) E e1 Φ
-    ⊢ wp (M := M) (F := F) (Λ := ectx_lang Λ) s E e1 Φ :=
+    wp_pre (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s (wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s) E e1 Φ
+    ⊢ wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s E e1 Φ :=
   by
     -- no-fork variant collapses to the same step rule here
-    simpa using wp_lift_atomic_base_step (Λ := Λ) (M := M) (F := F)
+    simpa using wp_lift_atomic_base_step (Λ := Λ) (M := M) (F := F) (W := W)
       (s := s) (E := E) (Φ := Φ) (e1 := e1) hv
 
 omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
@@ -174,8 +175,8 @@ theorem wp_lift_pure_det_base_step_no_fork [Inhabited Λ.state]
     (hred : ∀ σ1, base_reducible e1 σ1)
     (hstep : ∀ σ1 κ e2' σ2 efs',
       Λ.base_step e1 σ1 κ e2' σ2 efs' → κ = [] ∧ σ2 = σ1 ∧ e2' = e2 ∧ efs' = []) :
-    BIBase.later (wp (M := M) (F := F) (Λ := ectx_lang Λ) s E e2 Φ)
-    ⊢ wp (M := M) (F := F) (Λ := ectx_lang Λ) s E e1 Φ :=
+    BIBase.later (wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s E e2 Φ)
+    ⊢ wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s E e1 Φ :=
   by
     -- reduce to the primitive deterministic step lemma
     have hstep' : ∀ σ1 κ e2' σ2 efs',
@@ -191,7 +192,7 @@ theorem wp_lift_pure_det_base_step_no_fork [Inhabited Λ.state]
       simpa using (inferInstance : Inhabited Λ.state)
     have _ := inst'
     -- discharge the safety obligation directly for the derived language
-    refine wp_lift_pure_det_step_no_fork (Λ := ectx_lang Λ) (M := M) (F := F)
+    refine wp_lift_pure_det_step_no_fork (Λ := ectx_lang Λ) (M := M) (F := F) (W := W)
       (s := s) (E := E) (Φ := Φ) (e1 := e1) (e2 := e2) ?_ hstep'
     intro σ1; cases s with
     | notStuck =>
@@ -211,11 +212,11 @@ theorem wp_lift_pure_det_base_step_no_fork' [Inhabited Λ.state]
     (hred : ∀ σ1, base_reducible e1 σ1)
     (hstep : ∀ σ1 κ e2' σ2 efs',
       Λ.base_step e1 σ1 κ e2' σ2 efs' → κ = [] ∧ σ2 = σ1 ∧ e2' = e2 ∧ efs' = []) :
-    BIBase.later (wp (M := M) (F := F) (Λ := ectx_lang Λ) s E e2 Φ)
-    ⊢ wp (M := M) (F := F) (Λ := ectx_lang Λ) s E e1 Φ :=
+    BIBase.later (wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s E e2 Φ)
+    ⊢ wp (W := W) (M := M) (F := F) (Λ := ectx_lang Λ) s E e1 Φ :=
   by
     -- reuse the unprimed deterministic base-step lemma
-    simpa using wp_lift_pure_det_base_step_no_fork (Λ := Λ) (M := M) (F := F)
+    simpa using wp_lift_pure_det_base_step_no_fork (Λ := Λ) (M := M) (F := F) (W := W)
       (s := s) (E := E) (Φ := Φ) (e1 := e1) (e2 := e2) hv hred hstep
 
 end Iris.ProgramLogic
