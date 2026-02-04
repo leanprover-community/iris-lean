@@ -229,15 +229,12 @@ instance instStoreCMRA : CMRA (M V) where
     · refine Hm.trans ?_
       simp [get?_merge, CMRA.op, optionOp, Option.merge, get?_bindAlter]
       rw [hF]
+      -- FIXME
       cases z1 <;> cases z2 <;> simp_all
-      · cases h : (get? y2 i) <;> simp
-        simp [h] at Hz2
-      · cases h : (get? y1 i) <;> simp
-        simp [h] at Hz1
-      · cases h : (get? y2 i) <;> simp
-        simp [h] at Hz2
-        cases h : (get? y1 i) <;> simp
-        simp [h] at Hz1
+      · cases h : (get? y2 i) <;> simp; simp [h] at Hz2
+      · cases h : (get? y1 i) <;> simp; simp [h] at Hz1
+      · cases h : (get? y2 i) <;> simp; simp [h] at Hz2
+        cases h : (get? y1 i) <;> simp; simp [h] at Hz1
     · cases h : get? y1 i
       · rw [get?_bindAlter]
         simp [h]
@@ -262,7 +259,9 @@ end CMRA
 
 namespace Heap
 
-open PartialMap
+-- TODO: Fix namespaces
+-- TODO: Fix unnecessary Open Classical's
+open PartialMap LawfulPartialMap
 
 variable {K V : Type _} [Heap M K] [CMRA V]
 
@@ -276,26 +275,29 @@ theorem validN_get?_validN {m : M V} (Hv : ✓{n} m) (He : get? m i ≡{n}≡ so
 theorem valid_get?_valid {m : M V} (Hv : ✓ m) (He : get? m i ≡ some x) : ✓ x :=
   valid_iff_validN.mpr (fun _ => validN_get?_validN Hv.validN He.dist)
 
+open Classical in
 theorem insert_validN {m : M V} (Hx : ✓{n} x) (Hm : ✓{n} m) : ✓{n} (insert m i x) := by
   intro k
-  sorry
-  -- rw [get?_insert]; split; rename_i He
-  -- · exact Hx
-  -- · apply Hm
+  rw [get?_insert]; split
+  · exact Hx
+  · apply Hm
 
 theorem insert_valid {m : M V} (Hx : ✓ x) (Hm : ✓ m) : ✓ (insert m i x) :=
   valid_iff_validN.mpr (fun _ => insert_validN Hx.validN Hm.validN)
 
+open Classical in
 theorem singleton_valid_iff : ✓ (singleton i x : M V) ↔ ✓ x := by
   refine ⟨fun H => ?_, fun H k => ?_⟩
   · specialize H i; rw [get?_singleton_eq rfl] at H; trivial
   · rw [get?_singleton]; split <;> trivial
 
+open Classical in
 theorem singleton_validN_iff : ✓{n} (singleton i x : M V) ↔ ✓{n} x := by
   refine ⟨fun H => ?_, fun H k => ?_⟩
   · specialize H i; rw [get?_singleton_eq rfl] at H; trivial
   · rw [get?_singleton]; split <;> trivial
 
+open Classical in
 theorem delete_validN {m : M V} (Hv : ✓{n} m) : ✓{n} (delete m i) := by
   intro k
   rw [get?_delete]; split
@@ -305,17 +307,20 @@ theorem delete_validN {m : M V} (Hv : ✓{n} m) : ✓{n} (delete m i) := by
 theorem delete_valid {m : M V} (Hv : ✓ m) : ✓ (delete m i) :=
   valid_iff_validN.mpr (fun _ => delete_validN Hv.validN)
 
+open Classical in
 theorem insert_equiv_singleton_op_singleton {m : M V} (Hemp : get? m i = none) :
     equiv (insert m i x) (singleton i x • m) := by
   refine (fun k => ?_)
   simp [CMRA.op, Heap.op, get?_merge, Option.merge, get?_singleton, get?_insert]
   split <;> rename_i He
-  · rw [← He, Hemp]; cases x <;> rfl
+  · rw [← He, Hemp]
   · cases (get? m k) <;> rfl
 
 theorem insert_eq_singleton_op_singleton [IsoFunMap M K] {m : M V} (Hemp : get? m i = none) :
     insert m i x = singleton i x • m :=
   IsoFunStore.ext (insert_equiv_singleton_op_singleton Hemp)
+
+-- Here
 
 theorem core_singleton_equiv {i : K} {x : V} {cx : V} (Hpcore : pcore x = some cx) :
     equiv (core <| singleton i (some x) : M (Option V)) (singleton i (some cx)) := by
