@@ -45,7 +45,7 @@ instance [PartialMap M K] [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive�
 theorem eqv_of_Equiv [OFE V] [PartialMap M K] {t1 t2 : M V} (H : PartialMap.equiv t1 t2) : t1 ≡ t2 :=
   (.of_eq <| H ·)
 
-instance [Heap M K] [OFE V] (op : V → V → V) [NonExpansive₂ op] :
+instance [Heap M K] [OFE V] (op : K → V → V → V) [∀ k, NonExpansive₂ (op k)] :
     NonExpansive₂ (merge (M := M) op) where
   ne _ {_ _} Ht {_ _} Hs k := by simp only [get?_merge]; exact NonExpansive₂.ne (Ht k) (Hs k)
 
@@ -54,23 +54,43 @@ instance [Heap M K] [OFE V] (op : V → V → V) [NonExpansive₂ op] :
 --   ne _ {_ _} H k := by simp only [get_dmap]; exact NonExpansive.ne (H k)
 
 /-- Project a chain of stores through its kth coordinate to a chain of values. -/
-def chain [Heap M K] [OFE V] (k : K) (c : Chain (M V)) : Chain (Option V) where
+def chain [PartialMap M K] [OFE V] (k : K) (c : Chain (M V)) : Chain (Option V) where
   chain i := get? (c i) k
   cauchy Hni := c.cauchy Hni k
 
-theorem chain_get [Heap M K] [OFE V] (k : K) (c : Chain (M V)) :
+
+-- class Heap (T : Type _) (K V : outParam (Type _)) extends Store T K (Option V) where
+--   empty : T
+--   hmap (f : K → V → Option V) : T → T
+--   merge (op : V → V → V) : T → T → T
+--   get_empty : get empty k = none
+--   get_hmap : get (hmap f t) k = (get t k).bind (f k)
+--   get_merge : get (merge op t1 t2) k = Option.merge op (get t1 k) (get t2 k)
+-- export Heap (empty hmap merge get_empty get_hmap get_merge)
+--
+-- theorem hmap_alloc [Heap T K V] {t : T} (H : get t k = some v) : get (hmap f t) k = f k v := by
+--   simp [get_hmap, H]
+--
+-- theorem hmap_unalloc [Heap T K V] {t : T} (H : get t k = none) : get (hmap f t) k = none := by
+--   simp [get_hmap, H]
+
+
+-- get?_map {m : M V} {f : K → V → Option V'} {k} :
+--   get? (f k <$> m) k = (get? m k).bind (f k)
+
+
+theorem chain_get [PartialMap M K] [OFE V] (k : K) (c : Chain (M V)) :
     (chain k c) i = get? (c i) k := by simp [chain]
 
 end Store
 
-instance Heap.instCOFE [Functor M] [Heap M K] [COFE V] : COFE (M V) where
-  compl c := (fun v => sorry) <$> (c 0) --  <$> (c 0) -- (fun x y => COFE.compl <| c.map ⟨PartialMap.get?, Store.get_ne y⟩)
+instance Heap.instCOFE [PartialMap M K] [LawfulPartialMap M K] [COFE V] : COFE (M V) where
+  compl c := bindAlter (fun _ => COFE.compl <| c.map ⟨_, Store.get_ne ·⟩) (c 0)
   conv_compl {_ c} k := by
-    sorry
-    -- rw [get_hmap]
-    -- rcases H : get (c.chain 0) k
-    -- · simp [← Store.chain_get, chain_none_const (c := Store.chain k c) (n := 0) (H▸rfl)]
-    -- · exact IsCOFE.conv_compl
+    rw [get?_bindAlter]
+    rcases H : get? (c.chain 0) k
+    · simp [← Store.chain_get, chain_none_const (c := Store.chain k c) (n := 0) (H▸rfl)]
+    · exact IsCOFE.conv_compl
 
 end OFE
 
@@ -79,15 +99,15 @@ open CMRA
 
 /- ## A CMRA on Heaps -/
 
-namespace Store
+namespace Heap
 
-variable [PartialMap M K] [CMRA V]
+variable [Heap M K] [CMRA V]
 
-@[simp] def op (s1 s2 : T) : T := merge (K := K) CMRA.op s1 s2
-@[simp] def unit : T := empty
-@[simp] def pcore (s : T) : Option T := some <| hmap (fun _ => CMRA.pcore) s
-@[simp] def valid (s : T) : Prop := ∀ k, ✓ (get s k : Option V)
-@[simp] def validN (n : Nat) (s : T) : Prop := ∀ k, ✓{n} (get s k : Option V)
+@[simp] def op (s1 s2 : M V) : M V := merge (K := K) (fun _ => CMRA.op) s1 s2
+@[simp] def unit : M V := empty
+@[simp] def pcore (s : M V) : Option (M V) := some <| bindAlter (fun _ => CMRA.pcore) s
+@[simp] def valid (s : M V) : Prop := ∀ k, ✓ get? s k
+@[simp] def validN (n : Nat) (s : M V) : Prop := ∀ k, ✓{n} get? s k
 
 theorem lookup_incN {n} {m1 m2 : T} :
     (∃ (z : T), m2 ≡{n}≡ op m1 z) ↔
@@ -223,7 +243,7 @@ instance instStoreUCMRA : UCMRA T where
   unit_left_id _ := by simp [CMRA.op, Heap.get_merge, get_empty]
   pcore_unit _ := by simp [hmap_unalloc, get_empty]
 
-end Store
+end Heap
 end CMRA
 
 namespace Heap

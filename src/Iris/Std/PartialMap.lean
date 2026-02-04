@@ -34,7 +34,8 @@ class PartialMap (M : Type _ → Type _) (K : outParam (Type _)) where
   insert : M V → K → V → M V
   delete : M V → K → M V
   empty : M V
-export PartialMap (get? insert delete empty)
+  bindAlter : (K → V → Option V') → M V → M V'
+export PartialMap (get? insert delete empty bindAlter)
 
 namespace PartialMap
 
@@ -88,21 +89,15 @@ class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _)) [PartialM
   get?_insert_ne {m : M V} {k k' v} : k ≠ k' → get? (insert m k v) k' = get? m k'
   get?_delete_eq {m : M V} {k k'} : k = k' → get? (delete m k) k' = none
   get?_delete_ne {m : M V} {k k'} : k ≠ k' → get? (delete m k) k' = get? m k'
-export LawfulPartialMap (get?_empty get?_insert_eq get?_insert_ne get?_delete_eq get?_delete_ne)
+  get?_bindAlter {m : M V} {f : K → V → Option V'} : get? (bindAlter f m) k = (get? m k).bind (f k)
+export LawfulPartialMap (get?_empty get?_insert_eq get?_insert_ne get?_delete_eq get?_delete_ne
+  get?_bindAlter )
 
-/-- A functorial partial map is a partial map, whose functor map function preserves the non-allocation
-    of elements. -/
-class FunctorialPartialMap (M : Type _ → Type _) (K : outParam (Type _))
-    extends PartialMap M K, Functor M where
-  get?_map {m : M V} {f : K → V → Option V'} {k} :
-    get? (f k <$> m) k = (get? m k).bind (f k)
-export FunctorialPartialMap (get?_map)
-
-theorem map_some [FunctorialPartialMap M K] {m : M V} {f : K → V → Option V'} (H : get? m k = some v) :
-    get? (f k <$> m) k = f k v := by simp [get?_map, H]
-
-theorem map_none [FunctorialPartialMap M K] {m : M V} {f : K → V → Option V'} (H : get? m k = none) :
-    get? (f k <$> m) k = none := by simp [get?_map, H]
+-- theorem map_some [FunctorialPartialMap M K] {m : M V} {f : K → V → Option V'} (H : get? m k = some v) :
+--     get? (f k <$> m) k = f k v := by simp [get?_map, H]
+--
+-- theorem map_none [FunctorialPartialMap M K] {m : M V} {f : K → V → Option V'} (H : get? m k = none) :
+--     get? (f k <$> m) k = none := by simp [get?_map, H]
 
 namespace PartialMap
 

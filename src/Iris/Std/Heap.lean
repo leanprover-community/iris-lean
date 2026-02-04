@@ -80,12 +80,11 @@ open Iris.Std
 
 /-- Heap extends PartialMap with heap-specific operations for separation logic.
     The heap stores optional values, where `none` represents unallocated locations. -/
-class Heap (M : Type _ → Type _) (K : outParam (Type _))
-    extends FunctorialPartialMap M K where
+class Heap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
   /-- Merge two heaps with a combining operation. -/
-  merge (op : V1 → V2 → V) : M V1 → M V2 → M V
+  merge (op : K → V1 → V2 → V) : M V1 → M V2 → M V
   /-- get? on merge combines values using Option.merge. -/
-  get?_merge : get? (merge op m₁ m₂) k = Option.merge op (get? m₁ k) (get? m₂ k)
+  get?_merge : get? (merge op m₁ m₂) k = Option.merge (op k) (get? m₁ k) (get? m₂ k)
 export Heap (merge get?_merge)
 
 -- Changed to: singleton
@@ -99,7 +98,7 @@ export Heap (merge get?_merge)
 def Heap.dom [Heap M K] (m : M V) : K → Prop := fun k => (get? m k).isSome
 
 -- Should this be part of the typeclass, or should we use this derived one?
-@[simp] def Heap.union [Heap M K] : M V → M V → M V := merge (fun v _ => v)
+@[simp] def Heap.union [Heap M K] : M V → M V → M V := merge (fun _ v _ => v)
 
 /-- An AllocHeap is a heap which can allocate elements under some condition. -/
 class AllocHeap (M : Type _ → Type _) (K : outParam (Type _)) extends Heap M K where
