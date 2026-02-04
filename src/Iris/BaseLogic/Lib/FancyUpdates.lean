@@ -434,6 +434,44 @@ theorem fupd_frame_r {W : WsatGS GF}
       (sep_assoc (P := ownE W (mask E2)) (Q := P) (R := Q)).1)
   exact (BIUpdate.mono (PROP := IProp GF) hframe)
 
+/-! ## Except-0 -/
+
+/-- Except-0 elimination for fancy updates.
+
+    Coq: `except_0_fupd`. -/
+theorem fupd_except0 {W : WsatGS GF}
+    (E1 E2 : Iris.Set Positive) (P : IProp GF) :
+    BIBase.except0 (uPred_fupd (M := M) (F := F) W E1 E2 P) ⊢
+      uPred_fupd (M := M) (F := F) W E1 E2 P := by
+  -- unfold the wand and push `◇` through the update structure
+  unfold uPred_fupd
+  refine wand_intro ?_
+  let A : IProp GF :=
+    BIBase.sep (wsat' (M := M) (F := F) W) (ownE W (mask E1))
+  let S : IProp GF :=
+    BIBase.sep (wsat' (M := M) (F := F) W) (BIBase.sep (ownE W (mask E2)) P)
+  have hframe :
+      BIBase.sep (BIBase.except0 (BIBase.wand A (BUpd.bupd (BIBase.except0 S)))) A ⊢
+        BIBase.except0 (BIBase.sep (BIBase.wand A (BUpd.bupd (BIBase.except0 S))) A) := by
+    -- frame the mask resources under except-0
+    exact except0_frame_r
+  have hwand :
+      BIBase.except0 (BIBase.sep (BIBase.wand A (BUpd.bupd (BIBase.except0 S))) A) ⊢
+        BIBase.except0 (BUpd.bupd (BIBase.except0 S)) := by
+    -- eliminate the wand inside except-0
+    exact except0_mono (wand_elim_l (PROP := IProp GF))
+  have hbupd :
+      BIBase.except0 (BUpd.bupd (BIBase.except0 S)) ⊢
+        BUpd.bupd (BIBase.except0 (BIBase.except0 S)) := by
+    -- commute except-0 across the basic update
+    exact bupd_except0 (PROP := IProp GF)
+  have hcollapse :
+      BUpd.bupd (BIBase.except0 (BIBase.except0 S)) ⊢
+        BUpd.bupd (BIBase.except0 S) := by
+    -- collapse nested except-0
+    exact BIUpdate.mono (PROP := IProp GF) (except0_idemp.1)
+  exact hframe.trans (hwand.trans (hbupd.trans hcollapse))
+
 /-! ## BUpd / FUpd Interaction -/
 
 /-- Basic updates lift to fancy updates.

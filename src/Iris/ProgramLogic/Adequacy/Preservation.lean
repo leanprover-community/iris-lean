@@ -80,15 +80,19 @@ theorem step_fupdN_succ_finish (P mid X : IProp GF) (n : Nat)
         (BIBase.later mid))
     (hmono :
       BIBase.later mid ⊢
-        BIBase.later (step_fupdN (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F) n X)) :
+        BIBase.later
+          (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+            (step_fupdN (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F) n X))) :
     P ⊢ step_fupdN (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F) (n + 1) X := by
   -- push the refinement under the outer `fupd`
   have hmono' :=
     Iris.BaseLogic.fupd_mono (W := W)
       (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
       (P := BIBase.later mid)
-      (Q := BIBase.later (step_fupdN (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F) n X)) hmono
-  simpa [step_fupdN, fupd'] using hstep'.trans hmono'
+      (Q := BIBase.later
+        (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+          (step_fupdN (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F) n X))) hmono
+  simpa [step_fupdN, Iris.BI.step_fupdN, fupd'] using hstep'.trans hmono'
 
 /-- Helper: precondition for preservation statements. -/
 noncomputable abbrev wptp_preservation_pre
@@ -147,11 +151,19 @@ theorem wptp_preservation_succ
     (s := s) (κ := κ) (κs_tail := κs_tail) (κs' := κs')
     (es1 := es1) (es_mid := es_mid) (σ1 := σ1) (σ_mid := σ_mid)
     (ns := ns) (nt := nt) (Φs := Φs) hstep
-  have hmono :=
+  have hlater :=
     wptp_preservation_later (Λ := Λ) (GF := GF) (M := M) (F := F)
       (s := s) (n := n) (κs_tail := κs_tail) (κs' := κs')
       (es_mid := es_mid) (es2 := es2) (σ_mid := σ_mid) (σ2 := σ2)
       (ns := ns) (nt := nt) (Φs := Φs) (ih := ih) hrest
+  have hintro :=
+    fupd_intro (W := W) (GF := GF) (M := M) (F := F)
+      (E := Iris.Set.univ)
+      (P := step_fupdN (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F) n
+        (wptp_post (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F)
+          s es2 Φs σ2 (n + ns) κs' nt))
+  have hmono :=
+    hlater.trans (later_mono (PROP := IProp GF) hintro)
   simpa [wptp_preservation_post, List.append_assoc, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
     (step_fupdN_succ_finish (Λ := Λ) (GF := GF) (M := M) (F := F)
       (P := _) (mid := _) (X := _) (n := n) hstep' hmono)
