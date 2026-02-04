@@ -169,9 +169,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Soundness
   - [ ] ProofMode instances
 - [ ] `lib/fancy_updates_from_vs.v`
-- [ ] `lib/gen_heap.v`
+- [~] `lib/gen_heap.v` — stubs (`GenHeap.lean`)
 - [ ] `lib/gen_inv_heap.v`
-- [ ] `lib/ghost_map.v`
+- [~] `lib/ghost_map.v` — stubs (`GhostMap.lean`)
 - [ ] `lib/ghost_var.v`
 - [ ] `lib/gset_bij.v`
 - [x] `lib/invariants.v`
