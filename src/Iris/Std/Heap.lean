@@ -80,7 +80,7 @@ open Iris.Std
 
 /-- Heap extends PartialMap with heap-specific operations for separation logic.
     The heap stores optional values, where `none` represents unallocated locations. -/
-class Heap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
+class Heap (M : Type _ → Type _) (K : outParam (Type _)) extends LawfulPartialMap M K where
   /-- Merge two heaps with a combining operation. -/
   merge (op : K → V1 → V2 → V) : M V1 → M V2 → M V
   /-- get? on merge combines values using Option.merge. -/

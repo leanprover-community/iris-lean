@@ -83,7 +83,7 @@ scoped macro_rules
 scoped infix:50 " ##ₘ " => PartialMap.disjoint
 
 /-- Laws that a partial map implementation must satisfy. -/
-class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _)) [PartialMap M K] where
+class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
   get?_empty k : get? (empty : M V) k = none
   get?_insert_eq {m : M V} {k k' v} : k = k' → get? (insert m k v) k' = some v
   get?_insert_ne {m : M V} {k k' v} : k ≠ k' → get? (insert m k v) k' = get? m k'
@@ -142,7 +142,7 @@ namespace LawfulPartialMap
 open PartialMap
 
 variable {K V : Type _} {M : Type _ → Type _}
-variable [PartialMap M K] [LawfulPartialMap M K]
+variable [LawfulPartialMap M K]
 
 theorem get?_insert [DecidableEq K] {m : M V} {k k' : K} {v : V} :
     get? (insert m k v) k' = if k = k' then some v else get? m k' := by
