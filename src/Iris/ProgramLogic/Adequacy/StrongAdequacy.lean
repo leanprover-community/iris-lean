@@ -117,6 +117,62 @@ theorem wp_strong_adequacy_step
 
 end StrongAdequacy
 
+/-- Helper: `n = 0` case for `wp_strong_adequacy_finish`. -/
+theorem wp_strong_adequacy_finish_zero (φ : Prop)
+    (hstep : ∀ W : WsatGS GF,
+      (BIBase.emp : IProp GF) ⊢
+        step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) 0
+          (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ))) :
+    φ := by
+  -- discharge the single fupd and apply pure soundness
+  have hplain :
+      ∀ W : WsatGS GF,
+        (BIBase.emp : IProp GF) ⊢
+          uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ) := by
+    intro W
+    simpa [step_fupdN] using (hstep W)
+  have htrue :
+      (True : IProp GF) ⊢ (BIBase.pure φ) :=
+    (true_emp (PROP := IProp GF)).1.trans <|
+      fupd_soundness_no_lc (M := M) (F := F) (GF := GF)
+        (E1 := Iris.Set.univ) (E2 := maskEmpty) (P := BIBase.pure φ)
+        (h := hplain)
+  exact UPred.pure_soundness (P := φ) htrue
+
+/-- Helper: `n = n+1` case for `wp_strong_adequacy_finish`. -/
+theorem wp_strong_adequacy_finish_succ (n : Nat) (φ : Prop)
+    (hstep : ∀ W : WsatGS GF,
+      (BIBase.emp : IProp GF) ⊢
+        step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (n + 1)
+          (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ))) :
+    φ := by
+  -- strip the trailing fupd and apply step-fupd soundness
+  have houter :
+      ∀ W : WsatGS GF,
+        (BIBase.emp : IProp GF) ⊢
+          uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+            (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+              (BIBase.pure φ)) := by
+    intro W
+    have hplainW :
+        (BIBase.emp : IProp GF) ⊢
+          step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+            (BIBase.pure φ) :=
+      (hstep W).trans (step_fupdN_strip_fupd (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (W := W) (n := n) (P := BIBase.pure φ))
+    exact hplainW.trans (fupd_intro (W := W) (M := M) (F := F)
+      (E := Iris.Set.univ)
+      (P := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (W := W) (n + 1) (BIBase.pure φ)))
+  have hplain :
+      (BIBase.emp : IProp GF) ⊢ BIBase.pure φ :=
+    step_fupdN_soundness (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (P := BIBase.pure φ) (n := n + 1) (h := houter)
+  have htrue :
+      (True : IProp GF) ⊢ (BIBase.pure φ) :=
+    (true_emp (PROP := IProp GF)).1.trans hplain
+  exact UPred.pure_soundness (P := φ) htrue
+
 /-- Helper: conclude strong adequacy from the step-indexed soundness chain. -/
 theorem wp_strong_adequacy_finish (n : Nat) (φ : Prop)
     (hstep : ∀ W : WsatGS GF,
@@ -124,81 +180,14 @@ theorem wp_strong_adequacy_finish (n : Nat) (φ : Prop)
         step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
           (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ))) :
     φ := by
-  -- split on `n` to eliminate the trailing `fupd`
+  -- split on `n` and dispatch to the specialized helpers
   cases n with
   | zero =>
-      have hplain :
-          ∀ W : WsatGS GF,
-            (BIBase.emp : IProp GF) ⊢
-              uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ) := by
-        intro W
-        simpa [step_fupdN] using (hstep W)
-      have htrue :
-          (True : IProp GF) ⊢ (BIBase.pure φ) :=
-        (true_emp (PROP := IProp GF)).1.trans <|
-          fupd_soundness_no_lc (M := M) (F := F) (GF := GF)
-            (E1 := Iris.Set.univ) (E2 := maskEmpty) (P := BIBase.pure φ)
-            (h := hplain)
-      exact UPred.pure_soundness (P := φ) htrue
+      exact wp_strong_adequacy_finish_zero (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (φ := φ) hstep
   | succ n =>
-      have houter :
-          ∀ W : WsatGS GF,
-            (BIBase.emp : IProp GF) ⊢
-              uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-                (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-                  (BIBase.pure φ)) := by
-        intro W
-        have hsubset : Subset maskEmpty Iris.Set.univ := by
-          intro _ hfalse; exact False.elim hfalse
-        have hmask :
-            uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ) ⊢
-              uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-                (BIBase.pure φ) :=
-          Iris.BaseLogic.fupd_plain_mask (W := W)
-            (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := maskEmpty)
-            hsubset (P := BIBase.pure φ)
-        have hmono' :
-            step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-                (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ)) ⊢
-              step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-                (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ (BIBase.pure φ)) :=
-          step_fupdN_mono (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F)
-            (n := n + 1) hmask
-        have hstrip :
-            step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-                (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ (BIBase.pure φ)) ⊢
-              step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-                (BIBase.pure φ) :=
-          (step_fupdN_succ_fupd (Λ := Λ) (GF := GF) (M := M) (F := F)
-            (W := W) (n := n) (P := BIBase.pure φ)).2
-        have hinner :
-            step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-                (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ)) ⊢
-              step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-                (BIBase.pure φ) :=
-          hmono'.trans hstrip
-        have hstepW :
-            (BIBase.emp : IProp GF) ⊢
-              step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-                (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ)) := by
-          simpa using (hstep W)
-        have hplainW :
-            (BIBase.emp : IProp GF) ⊢
-              step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-                (BIBase.pure φ) :=
-          hstepW.trans hinner
-        exact hplainW.trans (fupd_intro (W := W) (M := M) (F := F)
-          (E := Iris.Set.univ)
-          (P := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F)
-            (W := W) (n + 1) (BIBase.pure φ)))
-      have hplain :
-          (BIBase.emp : IProp GF) ⊢ BIBase.pure φ :=
-        step_fupdN_soundness (Λ := Λ) (GF := GF) (M := M) (F := F)
-          (P := BIBase.pure φ) (n := n + 1) (h := houter)
-      have htrue :
-          (True : IProp GF) ⊢ (BIBase.pure φ) :=
-        (true_emp (PROP := IProp GF)).1.trans hplain
-      exact UPred.pure_soundness (P := φ) htrue
+      exact wp_strong_adequacy_finish_succ (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (n := n) (φ := φ) hstep
 
 /-- The main strong adequacy theorem of Iris.
 Given an Iris proof of the weakest precondition for a thread pool,

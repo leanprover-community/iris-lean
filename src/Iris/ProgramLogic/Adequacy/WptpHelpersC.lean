@@ -131,10 +131,11 @@ theorem wptp_preservation_core
         (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
           s t2 Φs σ2 n [] 0) := by
   -- specialize preservation to an empty fork suffix
-  simpa [List.append_nil] using
-    wptp_preservation (Λ := Λ) (GF := GF) (M := M) (F := F)
+  have hpres :=
+    wptp_preservation (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (n := n) (es1 := es) (es2 := t2) (κs := κs) (κs' := [])
       (σ1 := σ1) (ns := 0) (σ2 := σ2) (nt := 0) (Φs := Φs) hsteps
+  simpa [List.append_nil] using hpres
 
 theorem wptp_preservation_frame
     (s : Stuckness) (es : List Λ.expr) (σ1 : Λ.state) (κs : List Λ.observation)
@@ -170,12 +171,12 @@ theorem wptp_preservation_frame
 theorem apply_cont
     (s : Stuckness) (es t2 es' t2' : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (n : Nat) (φ : Prop)
-    (hcont : adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
-      (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))
     (hsplit : t2 = es' ++ t2')
     (hlen_es : es'.length = es.length)
     (hns : ∀ e2, s = .notStuck → e2 ∈ t2 → not_stuck e2 σ2) :
-    BIBase.sep hcont
+  BIBase.sep
+        (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
+          (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))
         (BIBase.sep
           (state_interp (Λ := Λ) (GF := GF) σ2 n [] t2'.length)
           (BIBase.sep
@@ -184,14 +185,11 @@ theorem apply_cont
               wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) t2')))
       ⊢ uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ) := by
   iintro ⟨Hcont, Hσ, Hwp, Hfork⟩ -- apply the stored continuation
-  ispecialize Hcont $$ es'
-  ispecialize Hcont $$ t2'
-  ispecialize Hcont $$ []
-  · ipure_intro; exact hsplit
-  ispecialize Hcont $$ []
-  · ipure_intro; exact hlen_es
-  ispecialize Hcont $$ []
-  · ipure_intro; exact hns
+  ispecialize Hcont $$ %es'
+  ispecialize Hcont $$ %t2'
+  ispecialize Hcont $$ %hsplit
+  ispecialize Hcont $$ %hlen_es
+  ispecialize Hcont $$ %hns
   ispecialize Hcont $$ Hσ
   ispecialize Hcont $$ Hwp
   ispecialize Hcont $$ Hfork
@@ -200,12 +198,12 @@ theorem apply_cont
 theorem wptp_post_apply_core
     (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (n nt' : Nat) (φ : Prop)
-    (hcont : adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
-      (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))
     (hlen_init : es.length = Φs.length)
     (hns : ∀ e2, s = .notStuck → e2 ∈ t2 → not_stuck e2 σ2)
     (hlen_t2 : t2.length = Φs.length + nt') :
-    BIBase.sep hcont
+  BIBase.sep
+        (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
+          (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))
         (BIBase.sep
           (state_interp (Λ := Λ) (GF := GF) σ2 n [] nt')
           (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t2
@@ -219,27 +217,30 @@ theorem wptp_post_apply_core
     have ht2 : t2.length = es.length + nt' := by simpa [hlen_init] using hlen_t2
     simpa [es'] using length_take_eq (es := es) (t2 := t2) (n := nt') ht2
   have hres :=
-    wptp_post_split_resources (Λ := Λ) (GF := GF) (M := M) (F := F)
+    wptp_post_split_resources (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (es := es) (t2 := t2) (Φs := Φs)
       (σ2 := σ2) (n := n) (nt' := nt') hlen_init hlen_t2
   have happly :=
     apply_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (s := s) (es := es) (t2 := t2) (es' := es') (t2' := t2') (Φs := Φs)
-      (σ2 := σ2) (n := n) (φ := φ) hcont hsplit hlen_es hns
+      (s := s) (es := es) (t2 := t2) (es' := es') (t2' := t2') (Φs := Φs) (W := W)
+      (σ2 := σ2) (n := n) (φ := φ) hsplit hlen_es hns
   exact (sep_mono (PROP := IProp GF) .rfl hres).trans happly
 
 theorem wptp_post_apply
     (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (n : Nat) (φ : Prop)
-    (hcont : adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
-      (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))
     (hlen_init : es.length = Φs.length)
     (hns : ∀ e2, s = .notStuck → e2 ∈ t2 → not_stuck e2 σ2) :
-    BIBase.sep hcont
+    BIBase.sep
+        (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
+          (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))
         (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
           s t2 Φs σ2 n [] 0) ⊢
       uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ) := by
-  refine (sep_exists_l (P := hcont) (Ψ := fun nt' => -- open the post-state existential
+  let cont :=
+    adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
+      (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ)
+  refine (sep_exists_l (P := cont) (Ψ := fun nt' => -- open the post-state existential
     BIBase.sep
       (state_interp (Λ := Λ) (GF := GF) σ2 n [] (0 + nt'))
       (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t2
@@ -247,14 +248,27 @@ theorem wptp_post_apply
   refine exists_elim ?_
   intro nt'
   have hlenP :=
-    wptp_post_len (Λ := Λ) (GF := GF) (M := M) (F := F)
+    wptp_post_len (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (t2 := t2) (Φs := Φs) (σ2 := σ2) (n := n) (nt' := nt')
+  have hlenP' :
+      BIBase.sep cont
+          (BIBase.sep
+            (state_interp (Λ := Λ) (GF := GF) σ2 n [] (0 + nt'))
+            (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t2
+              (Φs ++ List.replicate nt' fork_post))) ⊢
+        BIBase.pure (t2.length = Φs.length + nt') :=
+    (sep_elim_r
+      (P := cont)
+      (Q := BIBase.sep
+        (state_interp (Λ := Λ) (GF := GF) σ2 n [] (0 + nt'))
+        (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t2
+          (Φs ++ List.replicate nt' fork_post)))).trans hlenP
   refine pure_elim (PROP := IProp GF)
-    (φ := t2.length = Φs.length + nt') hlenP ?_
+    (φ := t2.length = Φs.length + nt') hlenP' ?_
   intro hlen_t2
   exact wptp_post_apply_core (Λ := Λ) (GF := GF) (M := M) (F := F)
     (s := s) (es := es) (t2 := t2) (Φs := Φs)
-    (σ2 := σ2) (n := n) (nt' := nt') (φ := φ) hcont hlen_init hns hlen_t2
+    (σ2 := σ2) (n := n) (nt' := nt') (φ := φ) hlen_init hns hlen_t2
 
 theorem wp_progress_drop_cont
     (es : List Λ.expr) (σ1 : Λ.state) (κs : List Λ.observation)
@@ -282,9 +296,12 @@ theorem wp_progress_drop_cont
       BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
         (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) .notStuck es Φs)) ?_
   refine exists_elim ?_; intro Φs
-  exact adequacy_cont_drop (Λ := Λ) (GF := GF) (M := M) (F := F)
-    (s := .notStuck) (es := es) (Φs := Φs) (σ1 := σ1) (κs := κs)
-    (t2 := t2) (σ2 := σ2) (n := n) (φ := φ)
+  refine exists_intro' (a := Φs) ?_
+  -- peel the continuation and rebuild the existential witness
+  simpa [adequacy_pre] using
+    (adequacy_cont_drop (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (s := .notStuck) (es := es) (Φs := Φs) (σ1 := σ1) (κs := κs)
+      (t2 := t2) (σ2 := σ2) (n := n) (φ := φ))
 
 theorem wp_progress_from_strong
     (s : Stuckness) (es : List Λ.expr) (σ1 : Λ.state) (κs : List Λ.observation)

@@ -19,7 +19,7 @@ open Iris Iris.Algebra Iris.Std Iris.BI Iris.BaseLogic
 
 variable {GF : BundledGFunctors} {M : Type _ → Type _} {F : Type _}
 variable [UFraction F]
-variable [FiniteMap Positive M] [DecidableEq Positive]
+variable [FiniteMap Positive M]
 variable [FiniteMapLaws Positive M] [HeapFiniteMap Positive M]
 variable [ElemG GF (InvF GF M F)]
 variable [ElemG GF (COFE.constOF CoPsetDisj)]
@@ -28,6 +28,19 @@ variable [ElemG GF (COFE.constOF GSetDisj)]
 variable {Λ : Language}
 variable [inst : IrisGS Λ GF]
 variable {W : WsatGS GF}
+
+/-- Alias exposing `W` for local `BIFUpdate` instances. -/
+abbrev IPropWsatW (W : WsatGS GF) : Type _ := IPropWsat GF M F
+
+noncomputable instance instBIFUpdateIPropW (W : WsatGS GF) :
+    BIFUpdate (IPropWsatW (GF := GF) (M := M) (F := F) W) Positive :=
+  Iris.BaseLogic.instBIFUpdateIProp (GF := GF) (M := M) (F := F) (W := W)
+
+noncomputable instance instBIFUpdatePlainlyIPropW (W : WsatGS GF) :
+    @BIFUpdatePlainly (IPropWsatW (GF := GF) (M := M) (F := F) W) Positive _
+      (instBIFUpdateIPropW (GF := GF) (M := M) (F := F) (W := W)) _ := by
+  simpa [IPropWsatW] using
+    (Iris.BaseLogic.instBIFUpdatePlainlyIProp (GF := GF) (M := M) (F := F) (W := W))
 /-! ## FUpd Helpers -/
 
 theorem fupd_intro (E : Iris.Set Positive) (P : IProp GF) :
@@ -87,8 +100,9 @@ theorem step_fupdN_plain {W : WsatGS GF} (n : Nat) (P : IProp GF) [Plain P] :
       fupd' (W := W) (M := M) (F := F) Iris.Set.univ Iris.Set.univ
         (BIBase.laterN (PROP := IProp GF) n (BIBase.except0 (PROP := IProp GF) P)) := by
   -- unfold to the BI step-fupd chain and apply the generic lemma
-  simpa [step_fupdN, Iris.BI.step_fupdN, fupd'] using
-    (Iris.BI.step_fupdN_plain (PROP := IProp GF) (MASK := Positive)
+  simpa [IPropWsatW, Iris.BaseLogic.IPropWsat, step_fupdN, Iris.step_fupdN, fupd'] using
+    (Iris.step_fupdN_plain (PROP := IPropWsatW (GF := GF) (M := M) (F := F) W)
+      (MASK := Positive)
       (Eo := Iris.Set.univ) (Ei := Iris.Set.univ) (n := n) (P := P))
 
 /-- Helper: lift `step_fupdN_plain` through an outer `fupd`. -/
@@ -119,7 +133,8 @@ theorem step_fupdN_intro {W : WsatGS GF} (n : Nat) (P : IProp GF) :
   -- iterate fupd/later introductions along the recursion
   induction n with
   | zero =>
-      simpa [step_fupdN]
+      dsimp [step_fupdN]
+      exact BIBase.Entails.rfl
   | succ n ih =>
       have hinner :
           P ⊢ uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
@@ -143,81 +158,6 @@ theorem step_fupdN_intro {W : WsatGS GF} (n : Nat) (P : IProp GF) :
             (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
               (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n P))))
       simpa [step_fupdN] using houter
-
-/-! ## Plain Step-FUpd Rewrites -/
-
-/-- `step_fupdN` commutes with a final `fupd` once a step is taken.
-
-    Coq: `step_fupdN_S_fupd` in `updates.v`. -/
-theorem step_fupdN_succ_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) :
-    step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1) P ⊣⊢
-      step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-        (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ P) := by
-  -- lift `step_fupd_fupd` through the iterated step-fupd chain
-  induction n with
-  | zero =>
-      simpa [step_fupdN, Iris.BI.step_fupdN, fupd'] using
-        (Iris.BI.step_fupd_fupd (PROP := IProp GF) (MASK := Positive)
-          (Eo := Iris.Set.univ) (Ei := Iris.Set.univ) (P := P))
-  | succ n ih =>
-      constructor
-      · -- forward direction: apply monotonicity under one outer step
-        have hmono :=
-          Iris.BI.step_fupd_mono (PROP := IProp GF) (MASK := Positive)
-            (Eo := Iris.Set.univ) (Ei := Iris.Set.univ)
-            (P := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
-              (n + 1) P)
-            (Q := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
-              (n + 1)
-              (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ P)) ih.1
-        simpa [step_fupdN, Iris.BI.step_fupdN, fupd'] using hmono
-      · -- backward direction: apply monotonicity under one outer step
-        have hmono :=
-          Iris.BI.step_fupd_mono (PROP := IProp GF) (MASK := Positive)
-            (Eo := Iris.Set.univ) (Ei := Iris.Set.univ)
-            (P := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
-              (n + 1)
-              (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ P))
-            (Q := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
-              (n + 1) P) ih.2
-        simpa [step_fupdN, Iris.BI.step_fupdN, fupd'] using hmono
-
-/-- Strip a final `fupd` inside a non-zero `step_fupdN` chain for plain goals. -/
-theorem step_fupdN_strip_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) [Plain P] :
-    step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-        (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty P) ⊢
-      step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1) P := by
-  -- shrink the mask to `⊤`, then use `step_fupdN_succ_fupd`
-  have hsubset : Subset maskEmpty Iris.Set.univ := by
-    intro _ hfalse; exact False.elim hfalse
-  have hmask :
-      uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty P ⊢
-        uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ P :=
-    Iris.BaseLogic.fupd_plain_mask (W := W)
-      (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := maskEmpty)
-      hsubset (P := P)
-  have hmono :=
-    step_fupdN_mono (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (n := n + 1) hmask
-  exact hmono.trans
-    (step_fupdN_succ_fupd (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (W := W) (n := n) (P := P)).2
-
-/-- Lift `step_fupdN_strip_fupd` through an outer `fupd`. -/
-theorem fupd_step_fupdN_strip_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) [Plain P] :
-    uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-        (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-          (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty P)) ⊢
-      uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-        (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1) P) := by
-  -- apply `fupd_mono` to the stripped chain
-  exact Iris.BaseLogic.fupd_mono (W := W)
-    (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
-    (P := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
-      (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty P))
-    (Q := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1) P)
-    (step_fupdN_strip_fupd (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (W := W) (n := n) (P := P))
 
 theorem step_fupdN_mono {W : WsatGS GF} (n : Nat) {P Q : IProp GF} (h : P ⊢ Q) :
     step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n P ⊢
@@ -306,9 +246,8 @@ theorem step_fupdN_frame_r {W : WsatGS GF} (n : Nat) (P Q : IProp GF) :
   induction n with -- push framing under each `step_fupdN` layer
   | zero =>
       -- base: `step_fupdN 0` is identity
-      simpa [step_fupdN] using
-        (BIBase.Entails.of_eq (PROP := IProp GF)
-          (P := BIBase.sep P Q) (Q := BIBase.sep P Q) rfl)
+      dsimp [step_fupdN]
+      exact BIBase.Entails.rfl
   | succ n ih =>
       have hinside :=
         step_fupdN_frame_r_later (GF := GF) (M := M) (F := F) (W := W)
@@ -333,6 +272,82 @@ theorem step_fupdN_frame_r {W : WsatGS GF} (n : Nat) (P Q : IProp GF) :
                 (BIBase.sep P Q))))
           hinside
       simpa [step_fupdN] using hframe.trans hmono
+
+/-! ## Plain Step-FUpd Rewrites -/
+
+/-- `step_fupdN` commutes with a final `fupd` once a step is taken.
+
+    Coq: `step_fupdN_S_fupd` in `updates.v`. -/
+theorem step_fupdN_succ_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) :
+    step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1) P ⊣⊢
+      step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+        (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ P) := by
+  -- lift `step_fupd_fupd` through the iterated step-fupd chain
+  induction n with
+  | zero =>
+      simpa [IPropWsatW, Iris.BaseLogic.IPropWsat, step_fupdN, Iris.step_fupdN, fupd'] using
+        (Iris.step_fupd_fupd (PROP := IPropWsatW (GF := GF) (M := M) (F := F) W)
+          (MASK := Positive)
+          (Eo := Iris.Set.univ) (Ei := Iris.Set.univ) (P := P))
+  | succ n ih =>
+      constructor
+      · -- forward direction: apply monotonicity under one outer step
+        have hmono :=
+          Iris.step_fupd_mono (PROP := IPropWsatW (GF := GF) (M := M) (F := F) W)
+            (MASK := Positive)
+            (Eo := Iris.Set.univ) (Ei := Iris.Set.univ)
+            (P := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
+              (n + 1) P)
+            (Q := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
+              (n + 1)
+              (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ P)) ih.1
+        simpa [IPropWsatW, Iris.BaseLogic.IPropWsat, step_fupdN, Iris.step_fupdN, fupd'] using hmono
+      · -- backward direction: apply monotonicity under one outer step
+        have hmono :=
+          Iris.step_fupd_mono (PROP := IPropWsatW (GF := GF) (M := M) (F := F) W)
+            (MASK := Positive)
+            (Eo := Iris.Set.univ) (Ei := Iris.Set.univ)
+            (P := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
+              (n + 1)
+              (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ P))
+            (Q := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
+              (n + 1) P) ih.2
+        simpa [IPropWsatW, Iris.BaseLogic.IPropWsat, step_fupdN, Iris.step_fupdN, fupd'] using hmono
+
+/-- Strip a final `fupd` inside a non-zero `step_fupdN` chain for plain goals. -/
+theorem step_fupdN_strip_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) [Plain P] :
+    step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+        (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty P) ⊢
+      step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1) P := by
+  -- eliminate the final `fupd` using plainness
+  have hmask :
+      uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty P ⊢
+        uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ P :=
+    Iris.fupd_plain_mask (PROP := IPropWsatW (GF := GF) (M := M) (F := F) W)
+      (MASK := Positive)
+      (E := Iris.Set.univ) (E' := maskEmpty) (P := P)
+  have hmono :=
+    step_fupdN_mono (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (n := n + 1) hmask
+  exact hmono.trans
+    (step_fupdN_succ_fupd (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (W := W) (n := n) (P := P)).2
+
+/-- Lift `step_fupdN_strip_fupd` through an outer `fupd`. -/
+theorem fupd_step_fupdN_strip_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) [Plain P] :
+    uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+        (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+          (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty P)) ⊢
+      uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+        (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1) P) := by
+  -- apply `fupd_mono` to the stripped chain
+  exact Iris.BaseLogic.fupd_mono (W := W)
+    (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
+    (P := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+      (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty P))
+    (Q := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1) P)
+    (step_fupdN_strip_fupd (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (W := W) (n := n) (P := P))
 
 /-- Helper: strip `▷^[n]` from `True` using `later_soundness`. -/
 theorem laterN_soundness (n : Nat) (P : IProp GF)
@@ -366,6 +381,7 @@ theorem laterN_except0_to_later (n : Nat) (P : IProp GF) :
 
 /-- Strip a `step_fupdN` chain to obtain `▷^[n] ◇ P`. -/
 theorem step_fupdN_soundness_later (P : IProp GF) [Plain P] (n : Nat)
+    [FiniteMapLaws Positive M]
     (h : ∀ W : WsatGS GF,
       (BIBase.emp : IProp GF) ⊢
         uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
@@ -385,26 +401,11 @@ theorem step_fupdN_soundness_later (P : IProp GF) [Plain P] (n : Nat)
     intro W
     exact (h W).trans (step_fupdN_plain_fupd (Λ := Λ) (GF := GF) (M := M) (F := F)
       (W := W) (n := n) (P := P))
+  have instFML : FiniteMapLaws Positive M := inferInstance
   exact fupd_soundness_no_lc (M := M) (F := F) (GF := GF)
     (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
     (P := BIBase.laterN (PROP := IProp GF) n (BIBase.except0 (PROP := IProp GF) P))
     (h := hstep)
-
-/-- Soundness step: peel one `step_fupdN` layer and rebuild the chain. -/
-theorem step_fupdN_soundness_step (P : IProp GF) [Plain P] (n : Nat)
-    (h : ∀ W : WsatGS GF,
-      (BIBase.emp : IProp GF) ⊢
-        uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-          (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1) P)) :
-    (BIBase.emp : IProp GF) ⊢ step_fupdN (Λ := Λ) (GF := GF) (M := M)
-      (F := F) (W := W) n P := by
-  -- strip to `P` and re-introduce the chain
-  have hP :
-      (BIBase.emp : IProp GF) ⊢ P :=
-    step_fupdN_soundness (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (P := P) (n := n + 1) (h := h)
-  exact hP.trans (step_fupdN_intro (Λ := Λ) (GF := GF) (M := M) (F := F)
-    (W := W) (n := n) (P := P))
 
 /-- Soundness: extract a plain proposition from the step-fupd chain. -/
 theorem step_fupdN_soundness (P : IProp GF) [Plain P] (n : Nat)
@@ -422,13 +423,29 @@ theorem step_fupdN_soundness (P : IProp GF) [Plain P] (n : Nat)
   have hnext :
       (BIBase.emp : IProp GF) ⊢
         BIBase.laterN (PROP := IProp GF) (n + 1) P :=
-    hlate.trans (laterN_except0_to_later (PROP := IProp GF) (n := n) (P := P))
+    hlate.trans (laterN_except0_to_later (n := n) (P := P))
   have htrue :
       (True : IProp GF) ⊢ BIBase.laterN (PROP := IProp GF) (n + 1) P :=
     (true_emp (PROP := IProp GF)).1.trans hnext
   have hP : (True : IProp GF) ⊢ P :=
     laterN_soundness (n := n + 1) (P := P) htrue
   exact (true_emp (PROP := IProp GF)).2.trans hP
+
+/-- Soundness step: peel one `step_fupdN` layer and rebuild the chain. -/
+theorem step_fupdN_soundness_step (P : IProp GF) [Plain P] (n : Nat)
+    (h : ∀ W : WsatGS GF,
+      (BIBase.emp : IProp GF) ⊢
+        uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+          (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1) P)) :
+    (BIBase.emp : IProp GF) ⊢ step_fupdN (Λ := Λ) (GF := GF) (M := M)
+      (F := F) (W := W) n P := by
+  -- strip to `P` and re-introduce the chain
+  have hP :
+      (BIBase.emp : IProp GF) ⊢ P :=
+    step_fupdN_soundness (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (P := P) (n := n + 1) (h := h)
+  exact hP.trans (step_fupdN_intro (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (W := W) (n := n) (P := P))
 
 
 end Iris.ProgramLogic
