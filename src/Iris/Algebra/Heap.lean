@@ -45,34 +45,32 @@ instance [PartialMap M K] [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive�
 theorem eqv_of_Equiv [OFE V] [PartialMap M K] {t1 t2 : M V} (H : PartialMap.equiv t1 t2) : t1 ≡ t2 :=
   (.of_eq <| H ·)
 
+instance [Heap M K] [OFE V] (op : V → V → V) [NonExpansive₂ op] :
+    NonExpansive₂ (merge (M := M) op) where
+  ne _ {_ _} Ht {_ _} Hs k := by simp only [get?_merge]; exact NonExpansive₂.ne (Ht k) (Hs k)
 
-
-
-instance [Heap T K V] [OFE V] (op : V → V → V) [NonExpansive₂ op] :
-    NonExpansive₂ (merge (T := T) op) where
-  ne _ {_ _} Ht {_ _} Hs k := by simp only [get_merge]; exact NonExpansive₂.ne (Ht k) (Hs k)
-
-instance [Store T1 K V1] [Store T2 K V2] [OFE V1] [OFE V2] (f : K → V1 → V2)
-  [∀ k, NonExpansive (f k)] [HasStoreMap T1 T2 K V1 V2] : NonExpansive (dmap f : T1 → T2) where
-  ne _ {_ _} H k := by simp only [get_dmap]; exact NonExpansive.ne (H k)
+-- instance [Store T1 K V1] [Store T2 K V2] [OFE V1] [OFE V2] (f : K → V1 → V2)
+--   [∀ k, NonExpansive (f k)] [HasStoreMap T1 T2 K V1 V2] : NonExpansive (dmap f : T1 → T2) where
+--   ne _ {_ _} H k := by simp only [get_dmap]; exact NonExpansive.ne (H k)
 
 /-- Project a chain of stores through its kth coordinate to a chain of values. -/
-def chain [Store T K V] [OFE V] (k : K) (c : Chain T) : Chain V where
-  chain i := get (c i) k
+def chain [Heap M K] [OFE V] (k : K) (c : Chain (M V)) : Chain (Option V) where
+  chain i := get? (c i) k
   cauchy Hni := c.cauchy Hni k
 
-theorem chain_get [Store T K V] [OFE V] (k : K) (c : Chain T) :
-    (chain k c) i = get (c i) k := by simp [chain]
+theorem chain_get [Heap M K] [OFE V] (k : K) (c : Chain (M V)) :
+    (chain k c) i = get? (c i) k := by simp [chain]
 
 end Store
 
-instance Heap.instCOFE [Heap T K V] [COFE V] : COFE T where
-  compl c := hmap (fun _ => COFE.compl <| c.map ⟨_, Store.get_ne ·⟩) (c 0)
+instance Heap.instCOFE [Functor M] [Heap M K] [COFE V] : COFE (M V) where
+  compl c := (fun v => sorry) <$> (c 0) --  <$> (c 0) -- (fun x y => COFE.compl <| c.map ⟨PartialMap.get?, Store.get_ne y⟩)
   conv_compl {_ c} k := by
-    rw [get_hmap]
-    rcases H : get (c.chain 0) k
-    · simp [← Store.chain_get, chain_none_const (c := Store.chain k c) (n := 0) (H▸rfl)]
-    · exact IsCOFE.conv_compl
+    sorry
+    -- rw [get_hmap]
+    -- rcases H : get (c.chain 0) k
+    -- · simp [← Store.chain_get, chain_none_const (c := Store.chain k c) (n := 0) (H▸rfl)]
+    -- · exact IsCOFE.conv_compl
 
 end OFE
 
@@ -83,7 +81,7 @@ open CMRA
 
 namespace Store
 
-variable [Heap T K V] [CMRA V]
+variable [PartialMap M K] [CMRA V]
 
 @[simp] def op (s1 s2 : T) : T := merge (K := K) CMRA.op s1 s2
 @[simp] def unit : T := empty
@@ -230,7 +228,7 @@ end CMRA
 
 namespace Heap
 
-variable {K V : Type _} [Heap T K V] [CMRA V]
+variable {K V : Type _} [PartialMap M K] [CMRA V]
 
 open CMRA Store
 
@@ -461,7 +459,7 @@ theorem inc_dom_inc {m1 m2 : T} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (dom 
   revert Hz
   cases get m1 i <;> cases get m2 i <;> cases z <;> simp [CMRA.op, optionOp]
 
-nonrec instance [HD : CMRA.Discrete V] [Heap T K V] : Discrete T where
+nonrec instance [HD : CMRA.Discrete V] [PartialMap M K] : Discrete T where
   discrete_0 {_ _} H := (OFE.Discrete.discrete_0 <| H ·)
   discrete_valid {_} := (CMRA.Discrete.discrete_valid <| · ·)
 
