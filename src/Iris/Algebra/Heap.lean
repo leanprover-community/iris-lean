@@ -320,79 +320,59 @@ theorem insert_eq_singleton_op_singleton [IsoFunMap M K] {m : M V} (Hemp : get? 
     insert m i x = singleton i x • m :=
   IsoFunStore.ext (insert_equiv_singleton_op_singleton Hemp)
 
--- Here
-
-theorem core_singleton_equiv {i : K} {x : V} {cx : V} (Hpcore : pcore x = some cx) :
-    equiv (core <| singleton i (some x) : M (Option V)) (singleton i (some cx)) := by
-  refine funext fun k => ?_
+open Classical in
+theorem core_singleton_equiv {i : K} {x : V} {cx : V} (Hpcore : CMRA.pcore x = some cx) :
+    equiv (core <| singleton i x : M V) (singleton i cx) := by
+  refine fun k => ?_
   simp [← Hpcore, core, CMRA.pcore, get?_singleton, get?_bindAlter]
   split <;> rfl
 
-theorem singleton_core_eq [IsoFunMap M K] {i : K} {x : V} {cx} (Hpcore : pcore x = some cx) :
-    core (singleton i (some x) : M (Option V)) = singleton i (some cx)  :=
+theorem singleton_core_eq [IsoFunMap M K] {i : K} {x : V} {cx} (Hpcore : CMRA.pcore x = some cx) :
+    core (singleton i x : M V) = singleton i cx  :=
   IsoFunStore.ext (core_singleton_equiv Hpcore)
 
-theorem singleton_core_eqv {i : K} {x : V} {cx} (Hpcore : pcore x ≡ some cx) :
-    core (singleton i (some x) : M (Option V)) ≡ singleton i (some cx) := by
+open Classical in
+theorem singleton_core_eqv {i : K} {x : V} {cx} (Hpcore : CMRA.pcore x ≡ some cx) :
+    core (singleton i x : M V) ≡ singleton i cx := by
   intro k
   simp [core, CMRA.pcore, get?_singleton, get?_bindAlter]
   split <;> trivial
 
 theorem singleton_core_total [IsTotal V] {i : K} {x : V} :
-    equiv (core <| singleton i (some x) : M (Option V)) ((singleton i (some (core x)))) := by
-  obtain ⟨_, Hxc⟩ := total x
-  apply (core_singleton_equiv Hxc).trans
-  simp [core, Hxc]
+    equiv (core <| singleton i x : M V) ((singleton i (core x))) :=
+  core_singleton_equiv (pcore_eq_core x)
 
 theorem singleton_core_total_eq [IsTotal V] [IsoFunMap M K] {i : K} {x : V} :
-    core (singleton i (some x) : M (Option V)) = singleton i (some (core x)) :=
+    core (singleton i x : M V) = singleton i (core x) :=
   IsoFunStore.ext singleton_core_total
 
+open Classical in
 theorem singleton_op_singleton {i : K} {x y : V} :
-    equiv ((singleton i (some x) : M (Option V)) • (singleton i (some y))) ((singleton i (some (x • y)))) := by
+    equiv ((singleton i x : M V) • (singleton i y)) (singleton i (x • y)) := by
   refine fun k => ?_
   simp only [CMRA.op, Heap.op, get?_merge, get?_singleton]
   split <;> simp [Option.merge]
 
 theorem singleton_op_singleton_eq [IsoFunMap M K] {i : K} {x y : V} :
-    (singleton i (some x) : M (Option V)) • (singleton i (some y)) = (singleton i (some (x • y))) :=
+    (singleton i x : M V) • (singleton i y) = (singleton i (x • y)) :=
   IsoFunStore.ext singleton_op_singleton
 
-instance {m : M (Option V)} [∀ x : V, CoreId x] : CoreId m where
+instance {m : M V} [I : ∀ x : V, CoreId x] : CoreId m where
   core_id i := by
     rw [get?_bindAlter]
     cases get? m i <;> simp
     exact core_id
 
-instance [CoreId (x : V)] : CoreId (singleton i (some x) : M (Option V)) where
+open Classical in
+instance [CoreId (x : V)] : CoreId (singleton i x : M V) where
   core_id k := by
     simp [get?_bindAlter, get?_singleton]
     split <;> simp
     exact core_id
 
-theorem singleton_incN_iff {m : M (Option V)} :
-    (singleton i (some x)) ≼{n} m ↔ ∃ y, (get? m i ≡{n}≡ some y) ∧ some x ≼{n} some y := by
-  refine ⟨fun ⟨z, Hz⟩ => ?_, fun ⟨y, Hy, z, Hz⟩ => ?_⟩
-  · specialize Hz i
-    simp [CMRA.op, Heap.op, get?_merge, get?_singleton_eq rfl, Option.merge] at Hz
-    rcases He : get? z i with (_|v)
-    · exists x
-      simp [He] at Hz
-      exact ⟨Hz, incN_refl (some x)⟩
-    · exists (x • v)
-      simp [He] at Hz
-      refine ⟨Hz, ?_⟩
-      exists v
-  · exists insert m i z
-    intro j
-    simp [CMRA.op, get?_merge, get?_singleton, get?_insert]
-    split <;> rename_i He
-    · refine (He ▸ Hy).trans (Hz.trans ?_)
-      cases z <;> simp [CMRA.op, optionOp]
-    · simp
-
-theorem singleton_inc_iff {m : M (Option V)} :
-    (singleton i (some x)) ≼ m ↔ ∃ y, (get? m i ≡ some y) ∧ some x ≼ some y := by
+open Classical in
+theorem singleton_incN_iff {m : M V} :
+    (singleton i x) ≼{n} m ↔ ∃ y, (get? m i ≡{n}≡ some y) ∧ some x ≼{n} some y := by
   refine ⟨fun ⟨z, Hz⟩ => ?_, fun ⟨y, Hy, z, Hz⟩ => ?_⟩
   · specialize Hz i; revert Hz
     simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_eq rfl]
@@ -401,22 +381,67 @@ theorem singleton_inc_iff {m : M (Option V)} :
       exists x
     · refine (⟨x • v, ·, ?_⟩)
       exists v
-  · exists insert m i z
-    intro j
-    simp [CMRA.op, get?_merge, get?_singleton, get?_insert]
-    split <;> rename_i He
-    · refine (He ▸ Hy).trans (Hz.trans ?_)
-      cases z <;> simp [CMRA.op, optionOp]
-    · simp
+  · cases z
+    · exists (PartialMap.delete m i)
+      intros j
+      simp [CMRA.op, get?_merge, get?_singleton, get?_delete]
+      split
+      · rename_i h
+        simp
+        refine (h ▸ Hy).trans <| Hz.trans ?_
+        simp [CMRA.op]
+      · simp
+    · rename_i z
+      exists (PartialMap.insert m i z)
+      intros j
+      simp [CMRA.op, get?_merge, get?_singleton, get?_insert]
+      split
+      · rename_i h
+        simp
+        refine (h ▸ Hy).trans <| Hz.trans ?_
+        simp [CMRA.op]
+      · simp
 
-theorem exclusive_singleton_inc_iff {m : M (Option V)} (He : Exclusive x) (Hv : ✓ m) :
-    (singleton i (some x)) ≼ m ↔ (get? m i ≡ some x) := by
+open Classical in
+theorem singleton_inc_iff {m : M V} :
+    (singleton i x) ≼ m ↔ ∃ y, (get? m i ≡ some y) ∧ some x ≼ some y := by
+  refine ⟨fun ⟨z, Hz⟩ => ?_, fun ⟨y, Hy, z, Hz⟩ => ?_⟩
+  · specialize Hz i; revert Hz
+    simp only [CMRA.op, Heap.op, get?_merge, get?_singleton_eq rfl]
+    rcases get? z i with (_|v)
+    · intro _
+      exists x
+    · refine (⟨x • v, ·, ?_⟩)
+      exists v
+  · cases z
+    · exists (PartialMap.delete m i)
+      intros j
+      simp [CMRA.op, get?_merge, get?_singleton, get?_delete]
+      split
+      · rename_i h
+        simp
+        refine (h ▸ Hy).trans <| Hz.trans ?_
+        simp [CMRA.op]
+      · simp
+    · rename_i z
+      exists (PartialMap.insert m i z)
+      intros j
+      simp [CMRA.op, get?_merge, get?_singleton, get?_insert]
+      split
+      · rename_i h
+        simp
+        refine (h ▸ Hy).trans <| Hz.trans ?_
+        simp [CMRA.op]
+      · simp
+
+theorem exclusive_singleton_inc_iff {m : M V} (He : Exclusive x) (Hv : ✓ m) :
+    (singleton i x) ≼ m ↔ (get? m i ≡ some x) := by
   refine singleton_inc_iff.trans ⟨fun ⟨y, Hy, Hxy⟩ => ?_, fun _ => ?_⟩
   · suffices x ≡ y by exact Hy.trans <| this.symm
     exact Option.eqv_of_inc_exclusive Hxy <| valid_get?_valid Hv Hy
   · exists x
 
-theorem singleton_inc_singleton_iff : (singleton i (some x) : M (Option V)) ≼ (singleton i (some y)) ↔ some x ≼ some y := by
+theorem singleton_inc_singleton_iff : (singleton i x : M V) ≼ (singleton i y : M V) ↔ some x ≼ some y := by
   refine singleton_inc_iff.trans ⟨fun ⟨z, Hz, Hxz⟩ => ?_, fun H => ?_⟩
   · refine inc_of_inc_of_eqv Hxz ?_
     refine .trans Hz.symm ?_
@@ -424,13 +449,16 @@ theorem singleton_inc_singleton_iff : (singleton i (some x) : M (Option V)) ≼ 
   · refine ⟨y, ?_, H⟩
     exact .of_eq <| get?_singleton_eq rfl
 
-theorem total_singleton_inc_singleton_iff [IsTotal V] : (singleton i (some x) : M (Option V)) ≼ (singleton i (some y)) ↔ x ≼ y :=
+theorem total_singleton_inc_singleton_iff [IsTotal V] :
+    (singleton i x : M V) ≼ (singleton i y) ↔ x ≼ y :=
   singleton_inc_singleton_iff.trans <| Option.some_inc_some_iff_isTotal
 
-theorem singleton_inc_singleton_mono (Hinc : x ≼ y) : (singleton i (some x) : M (Option V)) ≼ (singleton i (some y)) :=
+theorem singleton_inc_singleton_mono (Hinc : x ≼ y) :
+    (singleton i x : M V) ≼ (singleton i y) :=
   singleton_inc_singleton_iff.mpr <| Option.some_inc_some_iff.mpr <| .inr Hinc
 
-instance [H : Cancelable (some x)] : Cancelable (singleton i (some x) : M (Option V)) where
+open Classical in
+instance [H : Cancelable (some x)] : Cancelable (singleton i x : M V) where
   cancelableN {n m1 m2} Hv He j := by
     specialize Hv j; revert Hv
     specialize He j; revert He
@@ -443,7 +471,7 @@ instance [H : Cancelable (some x)] : Cancelable (singleton i (some x) : M (Optio
       all_goals simp_all [CMRA.op, optionOp]
     · cases get? m1 j <;> cases get? m2 j <;> simp_all
 
-instance {m : M (Option V)} [Hid : ∀ x : V, IdFree x] [Hc : ∀ x : V, Cancelable x] : Cancelable m where
+instance {m : M V} [Hid : ∀ x : V, IdFree x] [Hc : ∀ x : V, Cancelable x] : Cancelable m where
   cancelableN {n m1 m2} Hv He i := by
     apply cancelableN (x := get? m i)
     · specialize Hv i; revert Hv
@@ -453,31 +481,30 @@ instance {m : M (Option V)} [Hid : ∀ x : V, IdFree x] [Hc : ∀ x : V, Cancela
       simp [Heap.get?_merge, CMRA.op, Heap.op, optionOp]
       cases get? m i <;> cases get? m1 i <;> cases get? m2 i <;> simp_all
 
-theorem insert_op_equiv {m1 m2 : M (Option V)} :
-    Equiv ((insert (m1 • m2) i (x • y))) (insert m1 i x • insert m2 i y) := by
-  refine funext fun j => ?_
+theorem insert_op_equiv {m1 m2 : M V} :
+    equiv ((insert (m1 • m2) i (x • y))) (insert m1 i x • insert m2 i y) := by
+  refine fun j => ?_
   by_cases He : i = j
-  · simp [CMRA.op, get?_insert_eq He, get?_merge, optionOp]
-    cases x <;> cases y <;> simp_all
+  · simp [CMRA.op, get?_insert_eq He, get?_merge]
   · simp [CMRA.op, get?_insert_ne He, get?_merge]
 
 theorem insert_op_eq [IsoFunMap M K] {m1 m2 : M (Option V)} :
     (insert (m1 • m2) i (x • y)) = (insert m1 i x • insert m2 i y) :=
   IsoFunStore.ext insert_op_equiv
 
-theorem disjoint_op_equiv_union {m1 m2 : M (Option V)} (Hd : Set.Disjoint (dom m1) (dom m2)) :
-    Equiv (m1 • m2) (union m1 m2) := by
-  refine funext fun j => ?_
+theorem disjoint_op_equiv_union {m1 m2 : M V} (Hd : Set.Disjoint (dom m1) (dom m2)) :
+    equiv (m1 • m2) (union m1 m2) := by
+  refine fun j => ?_
   simp [CMRA.op, Heap.op, Heap.get?_merge]
   rcases _ : get? m1 j <;> cases _ : get? m2 j <;> simp_all
   refine (Hd j ?_).elim
   simp_all [dom]
 
-theorem disjoint_op_eq_union [IsoFunMap M K] {m1 m2 : M (Option V)} (H : Set.Disjoint (dom m1) (dom m2)) :
+theorem disjoint_op_eq_union [IsoFunMap M K] {m1 m2 : M V} (H : Set.Disjoint (dom m1) (dom m2)) :
     m1 • m2 = Heap.union m1 m2 :=
   IsoFunStore.ext (disjoint_op_equiv_union H)
 
-theorem valid0_disjoint_dom {m1 m2 : M (Option V)} (Hv : ✓{0} (m1 • m2)) (H : ∀ {k x}, get? m1 k = some x → Exclusive x) :
+theorem valid0_disjoint_dom {m1 m2 : M V} (Hv : ✓{0} (m1 • m2)) (H : ∀ {k x}, get? m1 k = some x → Exclusive x) :
     Set.Disjoint (dom m1) (dom m2) := by
   rintro k
   simp only [dom, Option.isSome]
@@ -487,15 +514,15 @@ theorem valid0_disjoint_dom {m1 m2 : M (Option V)} (Hv : ✓{0} (m1 • m2)) (H 
   simp [CMRA.op, CMRA.ValidN] at Hv; specialize Hv k; revert Hv
   simp [Heap.get?_merge, HX, HY]
 
-theorem valid_disjoint_dom {m1 m2 : M (Option V)} (Hv : ✓ (m1 • m2)) (H : ∀ {k x}, get? m1 k = some x → Exclusive x) :
+theorem valid_disjoint_dom {m1 m2 : M V} (Hv : ✓ (m1 • m2)) (H : ∀ {k x}, get? m1 k = some x → Exclusive x) :
     Set.Disjoint (dom m1) (dom m2) :=
   valid0_disjoint_dom (Valid.validN Hv) H
 
-theorem dom_op_union (m1 m2 : M (Option V)) : dom (m1 • m2) = Set.Union (dom m1) (dom m2) := by
+theorem dom_op_union (m1 m2 : M V) : dom (m1 • m2) = Set.Union (dom m1) (dom m2) := by
   refine funext fun k => ?_
   cases get? m1 k <;> cases get? m2 k <;> simp_all [CMRA.op, dom, Set.Union, get?_merge]
 
-theorem inc_dom_inc {m1 m2 : M (Option V)} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (dom m2) := by
+theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (dom m2) := by
   intro i
   unfold Heap.dom
   rcases lookup_inc.mp Hinc i with ⟨z, Hz⟩
