@@ -76,6 +76,7 @@ noncomputable abbrev adq_wp_step_cont_prop
       (s := s) (e1 := e1) (σ1 := σ1) (κ := κ) (Φ := Φ)
       (ns := ns) (κs := κs) (nt := nt))
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem adq_wp_step_pre (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : Nat)
     (κ : List Λ.observation) (κs : List Λ.observation) (nt : Nat)
     (Φ : Λ.val → IProp GF) (hv : Λ.to_val e1 = none) :
@@ -104,6 +105,7 @@ theorem adq_wp_step_pre (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : Na
   refine (forall_elim (PROP := IProp GF) (Ψ := fun κs => _) κs).trans ?_
   exact (forall_elim (PROP := IProp GF) (Ψ := fun nt => _) nt)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wp_step_cont_wand (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : Nat)
     (κ : List Λ.observation) (κs : List Λ.observation)
     (e2 : Λ.expr) (σ2 : Λ.state) (efs : List Λ.expr) (nt : Nat)
@@ -124,6 +126,7 @@ theorem wp_step_cont_wand (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : 
   refine (forall_elim (PROP := IProp GF) (Ψ := fun σ2 => _) σ2).trans ?_
   exact (forall_elim (PROP := IProp GF) (Ψ := fun efs => _) efs)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wp_step_cont_pure (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : Nat)
     (κ : List Λ.observation) (κs : List Λ.observation)
     (e2 : Λ.expr) (σ2 : Λ.state) (efs : List Λ.expr) (nt : Nat)
@@ -143,6 +146,7 @@ theorem wp_step_cont_pure (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : 
       (ns := ns) (κs := κs) (nt := nt))).trans
     (sep_mono (pure_intro hstep) .rfl)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem adq_wp_step_cont (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : Nat)
     (κ : List Λ.observation) (κs : List Λ.observation)
     (e2 : Λ.expr) (σ2 : Λ.state) (efs : List Λ.expr) (nt : Nat)
@@ -170,6 +174,7 @@ theorem adq_wp_step_cont (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : N
 
 /-! ## Single Step -/
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Helper: lift the step continuation through the outer `fupd`. -/
 theorem adq_wp_step_finish (P Q : IProp GF)
     (hcont : P ⊢ fupd' (W := W) (M := M) (F := F) maskEmpty Iris.Set.univ Q) :
@@ -183,6 +188,7 @@ theorem adq_wp_step_finish (P Q : IProp GF)
       (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := maskEmpty)
       (E3 := Iris.Set.univ) (P := Q))
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- A single primitive step preserves the weakest precondition.
 Given a step `e1 → e2` producing new threads `efs`, the state
 interpretation and WP transfer to the post-state.

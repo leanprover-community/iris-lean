@@ -30,6 +30,7 @@ variable [inst : IrisGS Λ GF]
 variable {W : WsatGS GF}
 /-! ## Wptp Helpers -/
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_length (s : Stuckness) (es : List Λ.expr)
     (Φs : List (Λ.val → IProp GF)) :
     wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs ⊢
@@ -38,6 +39,7 @@ theorem wptp_length (s : Stuckness) (es : List Λ.expr)
   exact sep_elim_l (P := BIBase.pure (es.length = Φs.length))
     (Q := wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs 0)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_body_of_wptp (s : Stuckness) (es : List Λ.expr)
     (Φs : List (Λ.val → IProp GF)) :
     wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs ⊢
@@ -46,12 +48,14 @@ theorem wptp_body_of_wptp (s : Stuckness) (es : List Λ.expr)
   exact sep_elim_r (P := BIBase.pure (es.length = Φs.length))
     (Q := wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs 0)
 
+omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
 theorem sep_pure_intro {φ : Prop} (P : IProp GF) (h : φ) :
     P ⊢ BIBase.sep (BIBase.pure φ) P := by
   -- insert `True` then replace it with the desired pure fact
   exact (true_sep_2 (PROP := IProp GF) (P := P)).trans
     (sep_mono (pure_intro h) .rfl)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_of_body (s : Stuckness) (es : List Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (hlen : es.length = Φs.length) :
     wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs 0 ⊢
@@ -60,6 +64,7 @@ theorem wptp_of_body (s : Stuckness) (es : List Λ.expr)
   simpa [wptp] using (sep_pure_intro (P := wptp_body_at (Λ := Λ) (GF := GF)
     (M := M) (F := F) s es Φs 0) hlen)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_singleton_intro (s : Stuckness) (e : Λ.expr)
     (Φ : Λ.val → IProp GF) :
     wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e Φ ⊢
@@ -77,6 +82,7 @@ theorem wptp_singleton_intro (s : Stuckness) (e : Λ.expr)
     wptp_of_body (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (es := [e]) (Φs := [Φ]) hlen
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_singleton_elim (s : Stuckness) (e : Λ.expr)
     (Φ : Λ.val → IProp GF) :
     wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s [e] [Φ] ⊢
@@ -93,6 +99,7 @@ theorem wptp_singleton_elim (s : Stuckness) (e : Λ.expr)
         (P := wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e Φ)).1
   exact hbody.trans hemp
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Helper: shift the index argument of `wptp_body_at_fn`. -/
 private theorem wptp_body_at_fn_shift
     (s : Stuckness) (Φs : List (Λ.val → IProp GF)) (k n : Nat) :
@@ -101,8 +108,9 @@ private theorem wptp_body_at_fn_shift
       wptp_body_at_fn (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s Φs (n + k) := by
   -- re-associate the list index offset
   funext i e
-  simp [wptp_body_at_fn, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+  simp [wptp_body_at_fn, Nat.add_left_comm, Nat.add_comm]
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_body_at_split_middle
     (s : Stuckness) (t1 t2 : List Λ.expr) (e1 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (k : Nat) :
@@ -123,6 +131,7 @@ theorem wptp_body_at_split_middle
   simpa [wptp_body_at_unfold, wptp_body_at_fn, wptp_body_at_fn_shift, big_sepL_cons,
     Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using happ
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_body_at_middle
     (s : Stuckness) (t1 t2 : List Λ.expr) (e : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (k : Nat) (Φ : Λ.val → IProp GF)
@@ -139,6 +148,7 @@ theorem wptp_body_at_middle
     (M := M) (F := F) (W := W) (s := s) (t1 := t1) (t2 := t2) (e1 := e)
     (Φs := Φs) (k := k))
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_body_at_append_left
     (s : Stuckness) (es : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (k n : Nat) (hle : k + es.length ≤ Φs.length) :
@@ -156,7 +166,7 @@ theorem wptp_body_at_append_left
       exact Nat.lt_of_lt_of_le hlt'' (by simpa [Nat.add_comm] using hle)
     have hget' := get?_append_left (l₁ := Φs) (l₂ := List.replicate n fork_post)
       (i := i + k) hlt
-    simpa [wptp_body_at_fn, hget']
+    simp [wptp_body_at_fn, hget']
   · refine big_sepL_mono ?_
     intro i e hget
     have hi := get?_lt_of_eq_some hget
@@ -167,8 +177,9 @@ theorem wptp_body_at_append_left
       exact Nat.lt_of_lt_of_le hlt'' (by simpa [Nat.add_comm] using hle)
     have hget' := get?_append_left (l₁ := Φs) (l₂ := List.replicate n fork_post)
       (i := i + k) hlt
-    simpa [wptp_body_at_fn, hget']
+    simp [wptp_body_at_fn, hget']
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_body_at_replicate
     (s : Stuckness) (es : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (k : Nat) (hlen : Φs.length = k) :
@@ -183,14 +194,15 @@ theorem wptp_body_at_replicate
     have hi := get?_lt_of_eq_some hget
     have hsome := get?_append_replicate (Φs := Φs) (n := es.length) (a := fork_post)
       (i := i) (k := k) (hlen := hlen) hi
-    simpa [wptp_body_at_fn, hsome]
+    simp [wptp_body_at_fn, hsome]
   · refine big_sepL_mono ?_
     intro i ef hget
     have hi := get?_lt_of_eq_some hget
     have hsome := get?_append_replicate (Φs := Φs) (n := es.length) (a := fork_post)
       (i := i) (k := k) (hlen := hlen) hi
-    simpa [wptp_body_at_fn, hsome]
+    simp [wptp_body_at_fn, hsome]
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Helper: split the explicit big-sep over an append. -/
 private theorem wptp_body_at_append_split_big_sep
     (s : Stuckness) (t2 efs : List Λ.expr) (Φs : List (Λ.val → IProp GF))
@@ -220,6 +232,7 @@ private theorem wptp_body_at_append_split_big_sep
       (Φ := wptp_body_at_fn (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s
         (Φs ++ List.replicate efs.length fork_post) k) t2 efs)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_body_at_append_split
     (s : Stuckness) (t2 efs : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (k : Nat) :
@@ -235,6 +248,7 @@ theorem wptp_body_at_append_split
     (wptp_body_at_append_split_big_sep (Λ := Λ) (GF := GF)
       (M := M) (F := F) (W := W) (s := s) (t2 := t2) (efs := efs) (Φs := Φs) (k := k))
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_body_at_append_fork_left
     (s : Stuckness) (t2 efs : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (k : Nat) (hlen : Φs.length = k + t2.length) :
@@ -246,7 +260,7 @@ theorem wptp_body_at_append_fork_left
         (Φs ++ List.replicate efs.length fork_post) k := by
   -- rewrite the left and right components, then rejoin the split
   have hle : k + t2.length ≤ Φs.length := by
-    simpa [hlen] using Nat.le_refl (k + t2.length)
+    simp [hlen]
   have hleft := wptp_body_at_append_left (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
     (s := s) (es := t2) (Φs := Φs) (k := k) (n := efs.length) hle
   have hright := wptp_body_at_replicate (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
@@ -266,6 +280,7 @@ theorem wptp_body_at_append_fork_left
       (wptp_body_at_append_split (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (t2 := t2) (efs := efs) (Φs := Φs) (k := k)).symm.1
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_body_at_append_fork_right
     (s : Stuckness) (t2 efs : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (k : Nat) (hlen : Φs.length = k + t2.length) :
@@ -277,7 +292,7 @@ theorem wptp_body_at_append_fork_right
           wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) efs) := by
   -- split, then rewrite the two sides back to the original shape
   have hle : k + t2.length ≤ Φs.length := by
-    simpa [hlen] using Nat.le_refl (k + t2.length)
+    simp [hlen]
   have hleft := wptp_body_at_append_left (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
     (s := s) (es := t2) (Φs := Φs) (k := k) (n := efs.length) hle
   have hright := wptp_body_at_replicate (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
@@ -305,6 +320,7 @@ theorem wptp_body_at_append_fork_right
         (s := s) (t2 := t2) (efs := efs) (Φs := Φs) (k := k)).1
   exact hsplit.trans hsep
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_body_at_append_fork
     (s : Stuckness) (t2 efs : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (k : Nat) (hlen : Φs.length = k + t2.length) :
@@ -321,6 +337,7 @@ theorem wptp_body_at_append_fork
     wptp_body_at_append_fork_right (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (t2 := t2) (efs := efs) (Φs := Φs) (k := k) hlen⟩
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_tail_fork
     (s : Stuckness) (t1 t2 efs : List Λ.expr)
     (Φs : List (Λ.val → IProp GF))
@@ -339,6 +356,7 @@ theorem wptp_tail_fork
     (s := s) (t2 := t2) (efs := efs) (Φs := Φs)
     (k := t1.length + 1) (hlen := hlen')).1
 
+omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
 theorem wptp_append_lookup
     (t1 t2 efs : List Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -349,11 +367,12 @@ theorem wptp_append_lookup
   have hlt : t1.length < Φs.length := by
     have hlt' : t1.length < t1.length + 1 + t2.length := by
       exact Nat.lt_of_lt_of_le (Nat.lt_succ_self _) (Nat.le_add_right _ _)
-    simpa [hlen, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hlt'
+    simp [hlen, Nat.add_assoc]
   simpa [hget] using
     (get?_append_left (l₁ := Φs) (l₂ := List.replicate efs.length fork_post)
       (i := t1.length) hlt)
 
+omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] inst in
 theorem wptp_lookup_middle
     (t1 t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (hlen : Φs.length = t1.length + t2.length + 1) :
@@ -362,10 +381,11 @@ theorem wptp_lookup_middle
   have hlt : t1.length < Φs.length := by
     have hlt' : t1.length < t1.length + 1 + t2.length := by
       exact Nat.lt_of_lt_of_le (Nat.lt_succ_self _) (Nat.le_add_right _ _)
-    simpa [hlen, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hlt'
+    simp [hlen, Nat.add_assoc]
   refine ⟨Φs.get ⟨t1.length, hlt⟩, ?_⟩
   exact get?_eq_some_of_lt (l := Φs) hlt
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_middle_append
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -394,6 +414,7 @@ theorem wptp_middle_append
       (Φs := Φs ++ List.replicate efs.length fork_post) (k := 0) (Φ := Φ) hget0).2
   simpa [Nat.zero_add, Nat.add_assoc, List.append_assoc] using hmid
 
+omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
 theorem wptp_rebuild_len
     (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF))
@@ -404,6 +425,7 @@ theorem wptp_rebuild_len
   simp [List.length_append, List.length_cons, List.length_replicate, hlen,
     Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_rebuild_tail
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -473,6 +495,7 @@ noncomputable abbrev wptp_rebuild_head_ext
   wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
     s t1 (Φs ++ List.replicate efs.length fork_post) 0
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_rebuild_prep
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -495,6 +518,7 @@ theorem wptp_rebuild_prep
   have hsep := sep_mono (PROP := IProp GF) hleft htail
   simpa [wptp_rebuild_left, wptp_rebuild_right] using hsep
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_rebuild
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -509,7 +533,7 @@ theorem wptp_rebuild
     -- `t1.length` is within the left prefix of `Φs`
     have hle' : t1.length ≤ t1.length + t2.length + 1 :=
       Nat.le_trans (Nat.le_add_right _ _) (Nat.le_add_right _ _)
-    simpa [hlen, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hle'
+    simp [hlen, Nat.add_assoc]
   have hleft := wptp_body_at_append_left (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
     (s := s) (es := t1) (Φs := Φs) (k := 0) (n := efs.length) (by simpa using hle)
   have hprep := wptp_rebuild_prep (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
@@ -525,6 +549,7 @@ theorem wptp_rebuild
       (s := s) (es := t1 ++ e2 :: t2 ++ efs)
       (Φs := Φs ++ List.replicate efs.length fork_post) hlen2)
 
+omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
 theorem sep_reorder_for_rebuild
     (P A B C D : IProp GF) :
     BIBase.sep (BIBase.sep P (BIBase.sep B D)) (BIBase.sep A C) ⊣⊢

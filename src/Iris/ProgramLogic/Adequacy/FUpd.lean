@@ -30,7 +30,7 @@ variable [inst : IrisGS Λ GF]
 variable {W : WsatGS GF}
 
 /-- Alias exposing `W` for local `BIFUpdate` instances. -/
-abbrev IPropWsatW (W : WsatGS GF) : Type _ := IPropWsat GF M F
+abbrev IPropWsatW (_W : WsatGS GF) : Type _ := IPropWsat GF M F
 
 noncomputable instance instBIFUpdateIPropW (W : WsatGS GF) :
     BIFUpdate (IPropWsatW (GF := GF) (M := M) (F := F) W) Positive :=
@@ -43,6 +43,7 @@ noncomputable instance instBIFUpdatePlainlyIPropW (W : WsatGS GF) :
     (Iris.BaseLogic.instBIFUpdatePlainlyIProp (GF := GF) (M := M) (F := F) (W := W))
 /-! ## FUpd Helpers -/
 
+omit [FiniteMapLaws Positive M] in
 theorem fupd_intro (E : Iris.Set Positive) (P : IProp GF) :
     P ⊢ fupd' (W := W) (M := M) (F := F) E E P := by
   -- introduce a nested update and then collapse it
@@ -55,6 +56,7 @@ theorem fupd_intro (E : Iris.Set Positive) (P : IProp GF) :
     Iris.BaseLogic.fupd_trans (W := W)
       (M := M) (F := F) (E1 := E) (E2 := E) (E3 := E) (P := P)
 
+omit [FiniteMapLaws Positive M] in
 theorem fupd_intro_univ_empty (P : IProp GF) :
     P ⊢ fupd' (W := W) (M := M) (F := F) Iris.Set.univ maskEmpty P := by
   -- open to the empty mask, shrink, then compose
@@ -82,6 +84,7 @@ theorem fupd_intro_univ_empty (P : IProp GF) :
       (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := maskEmpty)
       (E3 := maskEmpty) (P := P))
 
+set_option linter.unusedVariables false in
 noncomputable def step_fupdN {Λ : Language} {W : WsatGS GF} (n : Nat) (P : IProp GF) :
     IProp GF :=
   -- iterate the Coq-style step-fupd: `|={E}=> ▷ |={E}=>` `n` times
@@ -92,6 +95,7 @@ noncomputable def step_fupdN {Λ : Language} {W : WsatGS GF} (n : Nat) (P : IPro
           (fupd' (W := W) (M := M) (F := F) Iris.Set.univ Iris.Set.univ Q))
     n
 
+omit [FiniteMapLaws Positive M] inst in
 /-- Adequacy-local `step_fupdN_plain` specialized to the top mask.
 
     Coq: `step_fupdN_plain` in `updates.v`. -/
@@ -105,6 +109,7 @@ theorem step_fupdN_plain {W : WsatGS GF} (n : Nat) (P : IProp GF) [Plain P] :
       (MASK := Positive)
       (Eo := Iris.Set.univ) (Ei := Iris.Set.univ) (n := n) (P := P))
 
+omit [FiniteMapLaws Positive M] inst in
 /-- Helper: lift `step_fupdN_plain` through an outer `fupd`. -/
 theorem step_fupdN_plain_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) [Plain P] :
     uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
@@ -127,6 +132,7 @@ theorem step_fupdN_plain_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) [Plain P]
       (P := BIBase.laterN (PROP := IProp GF) n (BIBase.except0 (PROP := IProp GF) P))
   exact hmono.trans htrans
 
+omit [FiniteMapLaws Positive M] inst in
 /-- Introduce the `step_fupdN` chain from a plain goal. -/
 theorem step_fupdN_intro {W : WsatGS GF} (n : Nat) (P : IProp GF) :
     P ⊢ step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n P := by
@@ -159,6 +165,7 @@ theorem step_fupdN_intro {W : WsatGS GF} (n : Nat) (P : IProp GF) :
               (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n P))))
       simpa [step_fupdN] using houter
 
+omit [FiniteMapLaws Positive M] inst in
 theorem step_fupdN_mono {W : WsatGS GF} (n : Nat) {P Q : IProp GF} (h : P ⊢ Q) :
     step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n P ⊢
       step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n Q := by
@@ -196,6 +203,7 @@ theorem step_fupdN_mono {W : WsatGS GF} (n : Nat) {P Q : IProp GF} (h : P ⊢ Q)
               (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n Q))) hlater
       simpa [step_fupdN] using houter
 
+omit [FiniteMapLaws Positive M] inst in
 theorem step_fupdN_frame_r_later {W : WsatGS GF} (n : Nat) (P Q : IProp GF)
     (ih :
       BIBase.sep (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n P) Q ⊢
@@ -240,6 +248,7 @@ theorem step_fupdN_frame_r_later {W : WsatGS GF} (n : Nat) (P Q : IProp GF)
         (BIBase.sep P Q)) ih
   exact hsep.trans (later_mono (PROP := IProp GF) hframe)
 
+omit [FiniteMapLaws Positive M] inst in
 theorem step_fupdN_frame_r {W : WsatGS GF} (n : Nat) (P Q : IProp GF) :
     BIBase.sep (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n P) Q ⊢
       step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n (BIBase.sep P Q) := by
@@ -275,6 +284,7 @@ theorem step_fupdN_frame_r {W : WsatGS GF} (n : Nat) (P Q : IProp GF) :
 
 /-! ## Plain Step-FUpd Rewrites -/
 
+omit [FiniteMapLaws Positive M] inst in
 /-- `step_fupdN` commutes with a final `fupd` once a step is taken.
 
     Coq: `step_fupdN_S_fupd` in `updates.v`. -/
@@ -314,6 +324,7 @@ theorem step_fupdN_succ_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) :
               (n + 1) P) ih.2
         simpa [IPropWsatW, Iris.BaseLogic.IPropWsat, step_fupdN, Iris.step_fupdN, fupd'] using hmono
 
+omit [FiniteMapLaws Positive M] inst in
 /-- Strip a final `fupd` inside a non-zero `step_fupdN` chain for plain goals. -/
 theorem step_fupdN_strip_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) [Plain P] :
     step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
@@ -333,6 +344,7 @@ theorem step_fupdN_strip_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) [Plain P]
     (step_fupdN_succ_fupd (Λ := Λ) (GF := GF) (M := M) (F := F)
       (W := W) (n := n) (P := P)).2
 
+omit [FiniteMapLaws Positive M] inst in
 /-- Lift `step_fupdN_strip_fupd` through an outer `fupd`. -/
 theorem fupd_step_fupdN_strip_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) [Plain P] :
     uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
@@ -349,6 +361,7 @@ theorem fupd_step_fupdN_strip_fupd {W : WsatGS GF} (n : Nat) (P : IProp GF) [Pla
     (step_fupdN_strip_fupd (Λ := Λ) (GF := GF) (M := M) (F := F)
       (W := W) (n := n) (P := P))
 
+omit [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Helper: strip `▷^[n]` from `True` using `later_soundness`. -/
 theorem laterN_soundness (n : Nat) (P : IProp GF)
     (h : (True : IProp GF) ⊢ BIBase.laterN (PROP := IProp GF) n P) :
@@ -367,6 +380,7 @@ theorem laterN_soundness (n : Nat) (P : IProp GF)
         UPred.later_soundness hstep
       exact ih hnext
 
+omit [ElemG GF (COFE.constOF CoPsetDisj)] [ElemG GF (COFE.constOF GSetDisj)] in
 /-- Helper: turn `▷^[n] ◇ P` into `▷^[n+1] P`. -/
 theorem laterN_except0_to_later (n : Nat) (P : IProp GF) :
     BIBase.laterN (PROP := IProp GF) n (BIBase.except0 (PROP := IProp GF) P) ⊢
@@ -379,6 +393,7 @@ theorem laterN_except0_to_later (n : Nat) (P : IProp GF) :
   exact hmono.trans
     (laterN_later (PROP := IProp GF) (n := n) (P := P)).2
 
+omit [FiniteMapLaws Positive M] inst in
 /-- Strip a `step_fupdN` chain to obtain `▷^[n] ◇ P`. -/
 theorem step_fupdN_soundness_later (P : IProp GF) [Plain P] (n : Nat)
     [FiniteMapLaws Positive M]
@@ -407,6 +422,7 @@ theorem step_fupdN_soundness_later (P : IProp GF) [Plain P] (n : Nat)
     (P := BIBase.laterN (PROP := IProp GF) n (BIBase.except0 (PROP := IProp GF) P))
     (h := hstep)
 
+omit inst in
 /-- Soundness: extract a plain proposition from the step-fupd chain. -/
 theorem step_fupdN_soundness (P : IProp GF) [Plain P] (n : Nat)
     (h : ∀ W : WsatGS GF,
@@ -431,6 +447,7 @@ theorem step_fupdN_soundness (P : IProp GF) [Plain P] (n : Nat)
     laterN_soundness (n := n + 1) (P := P) htrue
   exact (true_emp (PROP := IProp GF)).2.trans hP
 
+omit inst in
 /-- Soundness step: peel one `step_fupdN` layer and rebuild the chain. -/
 theorem step_fupdN_soundness_step (P : IProp GF) [Plain P] (n : Nat)
     (h : ∀ W : WsatGS GF,

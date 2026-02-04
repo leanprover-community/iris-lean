@@ -508,6 +508,7 @@ private theorem later_big_sepL {A : Type _}
         exact (later_sep (PROP := IProp GF) (P := Φ 0 x)
           (Q := big_sepL (fun n => Φ (n + 1)) xs)).2
 
+omit inst in
 private theorem wp_strong_mono_value
     (E1 E2 : Iris.Set Positive) (Φ Ψ : Λ.val → IPropWsat GF M F)
     (v : Λ.val) (hE : Subset E1 E2) :

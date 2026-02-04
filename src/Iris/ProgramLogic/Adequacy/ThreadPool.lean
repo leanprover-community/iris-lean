@@ -90,6 +90,7 @@ noncomputable def wptp_body_at {W : WsatGS GF}
   big_sepL (PROP := IProp GF) (wptp_body_at_fn (Λ := Λ) (GF := GF)
     (M := M) (F := F) (W := W) s Φs k) es
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Unfold `wptp_body_at` to the underlying big_sepL. -/
 @[simp] theorem wptp_body_at_unfold {W : WsatGS GF}
     (s : Stuckness) (es : List Λ.expr)
@@ -121,6 +122,7 @@ noncomputable abbrev wptp_post {W : WsatGS GF}
 
 /-! ## List Helpers -/
 
+omit [DecidableEq Positive] in
 theorem get?_append_left {α : Type _} (l₁ l₂ : List α) (i : Nat)
     (h : i < l₁.length) :
     (l₁ ++ l₂)[i]? = l₁[i]? := by
@@ -137,6 +139,7 @@ theorem get?_append_left {α : Type _} (l₁ l₂ : List α) (i : Nat)
             simpa [List.length] using Nat.lt_of_succ_lt_succ h
           simpa using ih (i := i) h'
 
+omit [DecidableEq Positive] in
 theorem get?_append_right {α : Type _} (l₁ l₂ : List α) (i : Nat)
     (h : l₁.length ≤ i) :
     (l₁ ++ l₂)[i]? = l₂[i - l₁.length]? := by
@@ -153,6 +156,7 @@ theorem get?_append_right {α : Type _} (l₁ l₂ : List α) (i : Nat)
             simpa [List.length] using Nat.le_of_succ_le_succ h
           simpa [List.length, Nat.succ_sub_succ] using ih (i := i) h'
 
+omit [DecidableEq Positive] in
 theorem get?_replicate {α : Type _} (n : Nat) (a : α) (i : Nat)
     (h : i < n) :
     (List.replicate n a)[i]? = some a := by
@@ -169,6 +173,7 @@ theorem get?_replicate {α : Type _} (n : Nat) (a : α) (i : Nat)
             simpa using Nat.lt_of_succ_lt_succ h
           simpa using ih (i := i) h'
 
+omit [DecidableEq Positive] in
 theorem get?_lt_of_eq_some {α : Type _} {l : List α} {i : Nat} {a : α}
     (h : l[i]? = some a) : i < l.length := by
   -- show any successful lookup is in range
@@ -187,6 +192,7 @@ theorem get?_lt_of_eq_some {α : Type _} {l : List α} {i : Nat} {a : α}
           have hi := ih (i := i) h'
           simpa [List.length] using Nat.succ_lt_succ hi
 
+omit [DecidableEq Positive] in
 theorem get?_eq_some_of_lt {α : Type _} (l : List α) {i : Nat}
     (h : i < l.length) :
     l[i]? = some (l.get ⟨i, h⟩) := by
@@ -201,8 +207,9 @@ theorem get?_eq_some_of_lt {α : Type _} (l : List α) {i : Nat}
       | succ i =>
           have hi : i < xs.length := by
             simpa [List.length] using Nat.lt_of_succ_lt_succ h
-          simpa using ih (i := i) hi
+          simp
 
+omit [DecidableEq Positive] in
 theorem append_replicate {α : Type _} (Φs : List α) (n m : Nat) (a : α) :
     Φs ++ List.replicate n a ++ List.replicate m a =
       Φs ++ List.replicate (n + m) a := by
@@ -214,23 +221,26 @@ theorem append_replicate {α : Type _} (Φs : List α) (n m : Nat) (a : α) :
     _ = Φs ++ List.replicate (n + m) a := by
           simp
 
+omit [DecidableEq Positive] in
 theorem length_take_eq {α : Type _} (es t2 : List α) (n : Nat)
     (hlen : t2.length = es.length + n) :
     (t2.take es.length).length = es.length := by
   -- bound the take length by the given equation
   have hle : es.length ≤ t2.length := by
-    simpa [hlen] using (Nat.le_add_right es.length n)
+    simp [hlen]
   simpa using (List.length_take_of_le (l := t2) (i := es.length) hle)
 
+omit [DecidableEq Positive] in
 theorem length_drop_eq {α : Type _} (es t2 : List α) (n : Nat)
     (hlen : t2.length = es.length + n) :
     (t2.drop es.length).length = n := by
   -- turn the drop length into subtraction
   calc
     (t2.drop es.length).length = t2.length - es.length := by simp
-    _ = (es.length + n) - es.length := by simpa [hlen]
+    _ = (es.length + n) - es.length := by simp [hlen]
     _ = n := by simp
 
+omit [DecidableEq Positive] in
 theorem list_length_eq_one {α : Type _} (l : List α) (h : l.length = 1) :
     ∃ a, l = [a] := by
   -- split on the shape of the list
@@ -244,21 +254,23 @@ theorem list_length_eq_one {α : Type _} (l : List α) (h : l.length = 1) :
       | cons b l =>
           cases h
 
+omit [DecidableEq Positive] in
 theorem get?_append_replicate {α : Type _} (Φs : List α) (n : Nat) (a : α)
     (i k : Nat) (hlen : Φs.length = k) (hi : i < n) :
     (Φs ++ List.replicate n a)[i + k]? = some a := by
   -- reduce to the replicate suffix and apply `get?_replicate`
   have hle : Φs.length ≤ i + k := by
-    simpa [hlen] using Nat.le_add_left k i
+    simp [hlen]
   have hget := get?_append_right (l₁ := Φs) (l₂ := List.replicate n a) (i := i + k) hle
   have hsub : i + k - Φs.length = i := by
-    simpa [hlen] using Nat.add_sub_cancel_right i k
+    simp [hlen]
   have hget' :
       (Φs ++ List.replicate n a)[i + k]? = (List.replicate n a)[i]? := by
     -- rewrite the shifted index into the replicate suffix
     simpa [hsub] using hget
   exact hget'.trans (get?_replicate (n := n) (a := a) (i := i) hi)
 
+omit [DecidableEq Positive] in
 theorem mem_split {α : Type _} {a : α} {l : List α} (h : a ∈ l) :
     ∃ t1 t2, l = t1 ++ a :: t2 := by
   -- split the list at the first occurrence of `a`

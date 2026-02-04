@@ -44,6 +44,7 @@ noncomputable abbrev wptp_step_post_inner_src
       (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t1 Φs 0)
       (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t2 Φs (t1.length + 1)))
 
+set_option linter.unusedVariables false in
 noncomputable abbrev wptp_step_post_inner_tgt
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -70,6 +71,7 @@ noncomputable abbrev wptp_step_post_src
       (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t1 Φs 0)
       (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t2 Φs (t1.length + 1)))
 
+set_option linter.unusedVariables false in
 noncomputable abbrev wptp_step_post_tgt
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -94,6 +96,8 @@ noncomputable abbrev wptp_split_fork_post
   -- combined `wptp` after reattaching forked threads
   wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s (es ++ t2)
     (Φs ++ List.replicate t2.length fork_post)
+omit [DecidableEq Positive] [ElemG GF (COFE.constOF CoPsetDisj)]
+    [ElemG GF (COFE.constOF GSetDisj)] in
 theorem wptp_step_post_push (X A C : IProp GF) :
     BIBase.sep (BIBase.later X) (BIBase.sep A C) ⊢
       BIBase.later (BIBase.sep X (BIBase.sep A C)) := by
@@ -102,6 +106,7 @@ theorem wptp_step_post_push (X A C : IProp GF) :
   exact (sep_mono (PROP := IProp GF) .rfl hlat).trans
     (later_sep (P := X) (Q := BIBase.sep A C)).2
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_step_post_inner
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -128,6 +133,7 @@ theorem wptp_step_post_inner
         (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
         (Φs := Φs) (Φ := Φ) hlen hget)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_step_post
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -156,6 +162,7 @@ theorem wptp_step_post
     hlen hget
   exact hpush.trans (later_mono (PROP := IProp GF) hinner)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_post_merge
     (s : Stuckness) (es : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt nt' : Nat) :
@@ -167,8 +174,9 @@ theorem wptp_post_merge
   refine exists_elim ?_
   intro nt''
   refine exists_intro' (a := nt' + nt'') ?_
-  simpa [append_replicate, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using (.rfl : _ ⊢ _)
+  simp [Nat.add_left_comm, Nat.add_comm]
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_split_fork_left
     (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (hlen : es.length = Φs.length) :
@@ -183,7 +191,7 @@ theorem wptp_split_fork_left
     (s := s) (es := es ++ t2) (Φs := Φs ++ List.replicate t2.length fork_post)
   have hsplit := (wptp_body_at_append_fork (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
     (s := s) (t2 := es) (efs := t2) (Φs := Φs) (k := 0)
-    (hlen := by simpa [Nat.zero_add, hlen, List.length_append, List.length_replicate])).2
+    (hlen := by simp [Nat.zero_add, hlen])).2
   have hleft :
       wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs 0 ⊢
         wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs :=
@@ -191,6 +199,7 @@ theorem wptp_split_fork_left
       (s := s) (es := es) (Φs := Φs) hlen
   exact (hbody.trans hsplit).trans (sep_mono (PROP := IProp GF) hleft .rfl)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_split_fork_right
     (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (hlen : es.length = Φs.length) :
@@ -204,15 +213,16 @@ theorem wptp_split_fork_right
   have hcomb :=
     (wptp_body_at_append_fork (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (t2 := es) (efs := t2) (Φs := Φs) (k := 0)
-      (hlen := by simpa [Nat.zero_add, hlen, List.length_append, List.length_replicate])).1
+      (hlen := by simp [Nat.zero_add, hlen])).1
   have hlen' :
       (es ++ t2).length =
         (Φs ++ List.replicate t2.length fork_post).length := by
-    simpa [hlen, List.length_append, List.length_replicate, Nat.add_assoc, Nat.add_left_comm]
+    simp [hlen, List.length_append, List.length_replicate]
   have hwrap := wptp_of_body (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
     (s := s) (es := es ++ t2) (Φs := Φs ++ List.replicate t2.length fork_post) hlen'
   exact (sep_mono (PROP := IProp GF) hbody' .rfl).trans (hcomb.trans hwrap)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_split_fork
     (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (hlen : es.length = Φs.length) :
@@ -229,6 +239,7 @@ theorem wptp_split_fork
     wptp_split_fork_right (Λ := Λ) (GF := GF) (M := M) (F := F)
       (s := s) (es := es) (t2 := t2) (Φs := Φs) hlen⟩
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_split_take_drop
     (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (nt' : Nat) (hlen_init : es.length = Φs.length)
@@ -243,13 +254,13 @@ theorem wptp_split_take_drop
   let es' := t2.take es.length -- split the pool at the original length
   let t2' := t2.drop es.length
   have ht2 : t2.length = es.length + nt' := by -- normalize the length equation
-    simpa [hlen_init] using hlen_t2
+    simp [hlen_init, hlen_t2]
   have hsplit : t2 = es' ++ t2' := by
-    simpa [es', t2'] using (List.take_append_drop es.length t2).symm
+    simp [es', t2']
   have hlen_es : es'.length = es.length := by
     simpa [es'] using length_take_eq (es := es) (t2 := t2) (n := nt') ht2
   have hlen_esΦ : es'.length = Φs.length := by
-    simpa [hlen_es, hlen_init]
+    simp [hlen_es, hlen_init]
   have hlen_drop : t2'.length = nt' := by
     simpa [t2'] using length_drop_eq (es := es) (t2 := t2) (n := nt') ht2
   have hsplit_wptp :=
@@ -266,6 +277,7 @@ theorem wptp_split_take_drop
     simpa [hsplit, hlen_drop] using hsplit_wptp
   simpa [es', t2'] using hsplit_wptp'
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_post_split_resources
     (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (n nt' : Nat)
@@ -289,12 +301,13 @@ theorem wptp_post_split_resources
   have hstate :
       state_interp (Λ := Λ) (GF := GF) σ2 n [] nt' ⊢
         state_interp (Λ := Λ) (GF := GF) σ2 n [] (t2.drop es.length).length := by
-    simpa [hlen_drop]
+    simp [hlen_drop]
   have hsplit :=
     wptp_split_take_drop (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (es := es) (t2 := t2) (Φs := Φs) (nt' := nt') hlen_init hlen_t2
   exact sep_mono (PROP := IProp GF) hstate hsplit.1
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_post_len
     (s : Stuckness) (t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (n nt' : Nat) :

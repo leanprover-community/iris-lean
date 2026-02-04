@@ -253,7 +253,9 @@ private theorem later_wp_of_step {s : Stuckness} {E : Iris.Set Positive}
     refine (sep_mono hstep hwand).trans ?_
     exact wand_elim_r (PROP := IPropWsat GF M F)
 
-omit [DecidableEq Positive]
+omit [UFraction F] [FiniteMap Positive M] [HeapFiniteMap Positive M]
+  [ElemG GF (InvF GF M F)]
+  [DecidableEq Positive]
   [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem later_state_interp_step
@@ -301,7 +303,9 @@ private theorem pure_step_later {s : Stuckness} {E : Iris.Set Positive}
       (P := state_interp σ (ns + 1) κs nt)
       (Q := wp (W := W) s E e2 Φ)).2
 
-omit [DecidableEq Positive]
+omit [UFraction F] [FiniteMap Positive M] [HeapFiniteMap Positive M]
+  [ElemG GF (InvF GF M F)]
+  [DecidableEq Positive]
   [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)]
   [IrisGS Λ GF] in
@@ -582,7 +586,9 @@ private theorem pure_det_to_cont {s : Stuckness} {E : Iris.Set Positive}
     subst he2
     exact sep_elim_l
 
-omit [DecidableEq Positive]
+omit [UFraction F] [FiniteMap Positive M] [HeapFiniteMap Positive M]
+  [ElemG GF (InvF GF M F)]
+  [DecidableEq Positive]
   [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)]
   [IrisGS Λ GF] in
@@ -596,7 +602,9 @@ private theorem prim_step_elim (e : Λ.expr) (σ : Λ.state) (κ : List Λ.obser
     intro hstep
     exact False.elim (hstuck.2 κ e2 σ2 efs hstep)
 
-omit [DecidableEq Positive]
+omit [UFraction F] [FiniteMap Positive M] [HeapFiniteMap Positive M]
+  [ElemG GF (InvF GF M F)]
+  [DecidableEq Positive]
   [ElemG GF (COFE.constOF CoPsetDisj)]
   [ElemG GF (COFE.constOF GSetDisj)] in
 private theorem pure_true_sep (Q : IPropWsat GF M F) (hQ : (True : IPropWsat GF M F) ⊢ Q) :

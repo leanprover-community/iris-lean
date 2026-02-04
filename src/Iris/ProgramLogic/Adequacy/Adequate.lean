@@ -18,7 +18,7 @@ open Iris Iris.Algebra Iris.Std Iris.BI Iris.BaseLogic
 
 variable {GF : BundledGFunctors} {M : Type _ → Type _} {F : Type _}
 variable [UFraction F]
-variable [FiniteMap Positive M] [DecidableEq Positive]
+variable [FiniteMap Positive M]
 variable [FiniteMapLaws Positive M] [HeapFiniteMap Positive M]
 variable [ElemG GF (InvF GF M F)]
 variable [ElemG GF (COFE.constOF CoPsetDisj)]

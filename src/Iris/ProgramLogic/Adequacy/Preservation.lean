@@ -42,6 +42,7 @@ abbrev WptpPreservationIH (s : Stuckness) (n : Nat) (κs' : List Λ.observation)
         (wptp_post (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F)
           s es2 Φs σ2 (n + ns) κs' nt)
 
+omit [FiniteMapLaws Positive M] in
 /-- Helper: lift the induction hypothesis under `▷` and merge forked posts. -/
 theorem wptp_preservation_later
     (s : Stuckness) (n : Nat) (κs_tail κs' : List Λ.observation)
@@ -73,6 +74,7 @@ theorem wptp_preservation_later
     simpa [List.append_assoc, Nat.add_assoc] using
       ih'.trans (step_fupdN_mono (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F) n hmerge))
 
+omit [FiniteMapLaws Positive M] inst in
 /-- Helper: finish the successor step of `step_fupdN`. -/
 theorem step_fupdN_succ_finish (P mid X : IProp GF) (n : Nat)
     (hstep' :
@@ -112,6 +114,7 @@ noncomputable abbrev wptp_preservation_post
     (wptp_post (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F)
       s es Φs σ (n + ns) κs' nt)
 
+omit [FiniteMapLaws Positive M] in
 /-- Helper: single-step `fupd` for the successor case. -/
 theorem wptp_preservation_succ_step
     (s : Stuckness) (κ κs_tail κs' : List Λ.observation)
@@ -132,6 +135,7 @@ theorem wptp_preservation_succ_step
       (κs := κs_tail ++ κs') (σ1 := σ1) (ns := ns)
       (σ2 := σ_mid) (nt := nt) (Φs := Φs) hstep
 
+omit [FiniteMapLaws Positive M] in
 /-- Helper: successor step of `wptp_preservation`. -/
 theorem wptp_preservation_succ
     (s : Stuckness) (n : Nat) (κ κs_tail κs' : List Λ.observation)
@@ -168,6 +172,7 @@ theorem wptp_preservation_succ
     (step_fupdN_succ_finish (Λ := Λ) (GF := GF) (M := M) (F := F)
       (P := _) (mid := _) (X := _) (n := n) hstep' hmono)
 
+omit [FiniteMapLaws Positive M] in
 /-- Multi-step preservation: after `n` steps, the thread pool WP
 and state interpretation are preserved (modulo fupd and later).
 Coq: `wptp_preservation` in `adequacy.v`. -/
@@ -188,8 +193,8 @@ theorem wptp_preservation (s : Stuckness) (n : Nat)
       cases hsteps with
       | nsteps_refl ρ =>
           refine exists_intro' (a := 0) ?_
-          simp [wptp_preservation_pre, wptp_preservation_post, step_fupdN, wptp_post,
-            List.append_nil, Nat.add_comm, Nat.add_assoc]
+          simp [wptp_preservation_pre,
+            List.append_nil, Nat.add_comm]
   | succ n ih =>
       cases hsteps with
       | nsteps_l n' ρ1 ρ2 ρ3 κ κs_tail hstep hrest =>
@@ -209,6 +214,7 @@ theorem wptp_preservation (s : Stuckness) (n : Nat)
 
 /-! ## Wptp Progress -/
 
+omit [FiniteMapLaws Positive M] in
 /-- Helper: extract a single-thread WP from a thread pool. -/
 theorem wptp_post_not_stuck_wp_of_get
     (t1 t2 : List Λ.expr) (e2 : Λ.expr)
@@ -251,6 +257,7 @@ theorem wptp_post_not_stuck_wp_of_get
 
 /-! ## Not Stuck -/
 
+omit [FiniteMapLaws Positive M] in
 /-- Helper: map reducibility to `not_stuck` in the step case. -/
 theorem wp_not_stuck_step_mono (e : Λ.expr) (σ : Λ.state) (ns : Nat)
     (κs : List Λ.observation) (nt : Nat) (Φ : Λ.val → IProp GF) :
@@ -266,6 +273,7 @@ theorem wp_not_stuck_step_mono (e : Λ.expr) (σ : Λ.state) (ns : Nat)
       (Φ := Φ) (ns := ns) (κs := κs) (nt := nt))).trans
     (pure_mono fun h => Or.inr h)
 
+omit [FiniteMapLaws Positive M] in
 /-- Helper: WP not-stuck in the value case. -/
 theorem wp_not_stuck_value (e : Λ.expr) (σ : Λ.state) (ns : Nat)
     (κs : List Λ.observation) (nt : Nat) (Φ : Λ.val → IProp GF)
@@ -286,6 +294,7 @@ theorem wp_not_stuck_value (e : Λ.expr) (σ : Λ.state) (ns : Nat)
     hpure.trans (fupd_intro_univ_empty (W := W) (GF := GF) (M := M) (F := F)
       (P := BIBase.pure (not_stuck e σ)))
 
+omit [FiniteMapLaws Positive M] in
 /-- Helper: WP not-stuck in the non-value case. -/
 theorem wp_not_stuck_step (e : Λ.expr) (σ : Λ.state) (ns : Nat)
     (κs : List Λ.observation) (nt : Nat) (Φ : Λ.val → IProp GF)
@@ -310,6 +319,7 @@ theorem wp_not_stuck_step (e : Λ.expr) (σ : Λ.state) (ns : Nat)
           (Φ := Φ) (ns := ns) (κs := κs) (nt := nt)))
       (Q := BIBase.pure (not_stuck e σ)) hmono
 
+omit [FiniteMapLaws Positive M] in
 /-- WP at `NotStuck` stuckness implies the expression is not stuck.
 Coq: `wp_not_stuck` in `adequacy.v`. -/
 theorem wp_not_stuck' (e : Λ.expr) (σ : Λ.state) (ns : Nat)
@@ -342,6 +352,7 @@ noncomputable abbrev wptp_post_not_stuck_pre
     (wptp (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F) .notStuck es2
       (Φs ++ List.replicate nt' fork_post))
 
+omit [FiniteMapLaws Positive M] in
 /-- Helper: frame a WP with the state interpretation to derive not-stuck. -/
 theorem wptp_post_not_stuck_frame
     (es2 : List Λ.expr) (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -371,6 +382,7 @@ theorem wptp_post_not_stuck_frame
     (wp_not_stuck' (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (e := e2) (σ := σ2) (ns := ns) (κs := κs) (nt := nt + nt') (Φ := Φ))
 
+omit [FiniteMapLaws Positive M] in
 /-- Helper: the length-known branch of `wptp_post_not_stuck_aux`. -/
 theorem wptp_post_not_stuck_aux_core
     (es2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
@@ -385,7 +397,7 @@ theorem wptp_post_not_stuck_aux_core
   -- split the list, locate the focused thread, then apply `wp_not_stuck'`
   rcases mem_split hemem with ⟨t1, t2, ht⟩
   have hlen_es : es2.length = t1.length + t2.length + 1 := by
-    simpa [ht, List.length_append, List.length_cons, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+    simp [ht, List.length_append, List.length_cons, Nat.add_assoc]
   have hlen'' : (Φs ++ List.replicate nt' fork_post).length = t1.length + t2.length + 1 :=
     hlen'.symm.trans hlen_es
   rcases wptp_lookup_middle (Λ := Λ) (GF := GF)
@@ -402,6 +414,7 @@ theorem wptp_post_not_stuck_aux_core
     (es2 := es2) (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs)
     (nt := nt) (nt' := nt') (e2 := e2) hwp
 
+omit [FiniteMapLaws Positive M] in
 /-- Helper: extract not-stuck from a concrete `wptp` instance. -/
 theorem wptp_post_not_stuck_aux
     (es2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
@@ -429,6 +442,7 @@ theorem wptp_post_not_stuck_aux
       (es2 := es2) (Φs := Φs) (σ2 := σ2) (ns := ns) (κs := κs)
       (nt := nt) (nt' := nt') (e2 := e2) hemem hlen'
 
+omit [FiniteMapLaws Positive M] in
 theorem wptp_post_not_stuck
     (es2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (ns : Nat) (κs : List Λ.observation) (nt : Nat)
@@ -445,6 +459,7 @@ theorem wptp_post_not_stuck
     (es2 := es2) (Φs := Φs) (σ2 := σ2) (ns := ns) (κs := κs)
     (nt := nt) (nt' := nt') (e2 := e2) hemem
 
+omit [FiniteMapLaws Positive M] in
 theorem wptp_progress (n : Nat)
     (es1 es2 : List Λ.expr) (κs κs' : List Λ.observation)
     (σ1 : Λ.state) (ns : Nat) (σ2 : Λ.state) (nt : Nat)
@@ -472,6 +487,7 @@ theorem wptp_progress (n : Nat)
       (κs := κs') (nt := nt) (e2 := e2) hemem
   exact hpres.trans (step_fupdN_mono (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F) n hmono)
 
+omit [FiniteMapLaws Positive M] in
 /-- Helper: build the `step_fupdN` chain for `wp_progress`. -/
 theorem wp_progress_fupd_elim (n : Nat)
     (es : List Λ.expr) (σ1 : Λ.state) (κs : List Λ.observation)
@@ -494,6 +510,7 @@ theorem wp_progress_fupd_elim (n : Nat)
   -- normalize the empty trace suffix
   simpa [List.append_nil] using hprogress
 
+omit [FiniteMapLaws Positive M] in
 /-- Helper: build the `step_fupdN` chain for `wp_progress`. -/
 theorem wp_progress_fupd (n : Nat)
     (es : List Λ.expr) (σ1 : Λ.state) (κs : List Λ.observation)
@@ -526,6 +543,7 @@ theorem wp_progress_fupd (n : Nat)
     (n := n) (es := es) (σ1 := σ1) (κs := κs)
     (t2 := t2) (σ2 := σ2) (e2 := e2) hsteps hemem
 
+omit inst in
 /-- Helper: `n = 0` case for `wp_progress_soundness_pure`. -/
 theorem wp_progress_soundness_pure_zero (σ2 : Λ.state) (e2 : Λ.expr)
     (hmono : ∀ W : WsatGS GF,
@@ -557,6 +575,7 @@ theorem wp_progress_soundness_pure_zero (σ2 : Λ.state) (e2 : Λ.expr)
         exact hmono0.trans htrans)
   exact (true_emp (PROP := IProp GF)).1.trans hplain
 
+omit inst in
 /-- Helper: `n = n+1` case for `wp_progress_soundness_pure`. -/
 theorem wp_progress_soundness_pure_succ (n : Nat) (σ2 : Λ.state) (e2 : Λ.expr)
     (hmono : ∀ W : WsatGS GF,
@@ -586,6 +605,7 @@ theorem wp_progress_soundness_pure_succ (n : Nat) (σ2 : Λ.state) (e2 : Λ.expr
       (P := BIBase.pure (not_stuck e2 σ2)) (n := n + 1) (h := hstep)
   exact (true_emp (PROP := IProp GF)).1.trans hplain
 
+omit inst in
 /-- Helper: extract `not_stuck` from the `step_fupdN` chain. -/
 theorem wp_progress_soundness_pure (n : Nat) (σ2 : Λ.state) (e2 : Λ.expr)
     (hmono : ∀ W : WsatGS GF,
@@ -604,6 +624,7 @@ theorem wp_progress_soundness_pure (n : Nat) (σ2 : Λ.state) (e2 : Λ.expr)
       exact wp_progress_soundness_pure_succ (Λ := Λ) (GF := GF) (M := M) (F := F)
         (n := n) (σ2 := σ2) (e2 := e2) hmono
 
+omit inst in
 /-- Helper: extract `not_stuck` from the `step_fupdN` chain. -/
 theorem wp_progress_soundness (n : Nat) (σ2 : Λ.state) (e2 : Λ.expr)
     (hmono : ∀ W : WsatGS GF,

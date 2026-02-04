@@ -49,6 +49,7 @@ noncomputable abbrev wptp_step_post_body
       (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         s t2 Φs (t1.length + 1)))
 
+set_option linter.unusedVariables false in
 noncomputable abbrev wptp_step_post_target
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -60,6 +61,7 @@ noncomputable abbrev wptp_step_post_target
         (t1 ++ e2 :: t2 ++ efs)
         (Φs ++ List.replicate efs.length fork_post)))
 
+set_option linter.unusedVariables false in
 noncomputable abbrev wptp_step_split_src
     (s : Stuckness) (t1 t2 : List Λ.expr) (e1 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -98,6 +100,7 @@ noncomputable abbrev wptp_step_split_tgt
       (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         s t2 Φs (t1.length + 1)))
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_step_split_body
     (s : Stuckness) (t1 t2 : List Λ.expr) (e1 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -137,6 +140,7 @@ theorem wptp_step_split_body
     sep_mono (PROP := IProp GF) .rfl hsplit'
   simpa [P, Q] using hbody
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_step_split_reorder
     (s : Stuckness) (t1 t2 : List Λ.expr) (e1 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -162,6 +166,7 @@ theorem wptp_step_split_reorder
       s t2 Φs (t1.length + 1))).1
   exact hassoc.trans hswap
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_step_split
     (s : Stuckness) (t1 t2 : List Λ.expr) (e1 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -182,6 +187,7 @@ theorem wptp_step_split
     (Φs := Φs) (Φ := Φ) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs) (nt := nt)
   exact hbody.trans hreorder
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_step_apply
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e1 e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -213,6 +219,7 @@ theorem wptp_step_apply
         (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
           s t2 Φs (t1.length + 1))))
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Helper: combine split and apply for `wptp_step_frame`. -/
 theorem wptp_step_frame_apply
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e1 e2 : Λ.expr)
@@ -237,6 +244,7 @@ theorem wptp_step_frame_apply
     (κ := κ) (κs := κs) (nt := nt) hstep
   exact hsplit.trans happly
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Helper: lift the rebuild lemma under `fupd`. -/
 theorem wptp_step_frame_post
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
@@ -265,6 +273,7 @@ theorem wptp_step_frame_post
       (s := s) (t1 := t1) (t2 := t2) (efs := efs) (e2 := e2)
       (Φs := Φs) (Φ := Φ) (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt) hlen hget)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_step_frame
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e1 e2 : Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (Φ : Λ.val → IProp GF)
@@ -292,6 +301,7 @@ theorem wptp_step_frame
 
 /-! ## Thread Pool Step -/
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- A step of the thread pool preserves the thread pool WP.
 Coq: `wptp_step` in `adequacy.v`. -/
 theorem wptp_step_len_false (s : Stuckness) (es1 es2 : List Λ.expr)
@@ -322,6 +332,7 @@ theorem wptp_step_len_false (s : Stuckness) (es1 es2 : List Λ.expr)
     intro h; exact (False.elim (hlen h))
   exact pure_elim (φ := es1.length = Φs.length) hlenP hkill
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Helper: step a focused thread starting from a full `wptp`. -/
 theorem wptp_step_len_true_frame
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e1 e2 : Λ.expr)
@@ -381,6 +392,7 @@ noncomputable abbrev wptp_step_len_post
     (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       s es2 Φs σ2 (ns + 1) κs nt)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Helper: package a `wptp_post` existential under `▷`. -/
 theorem wptp_post_later_intro
     (s : Stuckness) (es : List Λ.expr) (Φs : List (Λ.val → IProp GF))
@@ -395,8 +407,9 @@ theorem wptp_post_later_intro
   -- introduce the existential fork count under the `later`
   refine later_mono ?_
   refine exists_intro' (a := nt') ?_
-  simpa [Nat.add_comm] using (.rfl : _ ⊢ _)
+  simp [Nat.add_comm]
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Helper: lift the post body to `wptp_post` in the atomic case. -/
 theorem wptp_step_len_true_atomic_post
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e2 : Λ.expr)
@@ -413,6 +426,7 @@ theorem wptp_step_len_true_atomic_post
     (s := s) (es := t1 ++ [e2] ++ t2 ++ efs) (Φs := Φs)
     (σ := σ2) (ns := ns + 1) (κs := κs) (nt := nt) (nt' := efs.length)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 /-- Helper: atomic step case for `wptp_step_len_true`. -/
 theorem wptp_step_len_true_atomic
     (s : Stuckness) (t1 t2 efs : List Λ.expr) (e1 e2 : Λ.expr)
@@ -448,6 +462,7 @@ theorem wptp_step_len_true_atomic
         (s := s) (es2 := t1 ++ [e2] ++ t2 ++ efs) (Φs := Φs)
         (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt)) hpost
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_step_len_true (s : Stuckness) (es1 es2 : List Λ.expr)
     (κ : List Λ.observation) (κs : List Λ.observation)
     (σ1 : Λ.state) (ns : Nat) (σ2 : Λ.state) (nt : Nat)
@@ -470,6 +485,7 @@ theorem wptp_step_len_true (s : Stuckness) (es1 es2 : List Λ.expr)
         (Φs := Φs) (σ1 := σ1) (σ2 := σ2) (ns := ns) (κ := κ) (κs := κs)
         (nt := nt) hprim (by simpa using hlen)
 
+omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
 theorem wptp_step' (s : Stuckness) (es1 es2 : List Λ.expr)
     (κ : List Λ.observation) (κs : List Λ.observation)
     (σ1 : Λ.state) (ns : Nat) (σ2 : Λ.state) (nt : Nat)

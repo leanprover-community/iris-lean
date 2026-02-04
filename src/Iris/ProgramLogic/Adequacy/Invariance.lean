@@ -18,7 +18,7 @@ open Iris Iris.Algebra Iris.Std Iris.BI Iris.BaseLogic
 
 variable {GF : BundledGFunctors} {M : Type _ → Type _} {F : Type _}
 variable [UFraction F]
-variable [FiniteMap Positive M] [DecidableEq Positive]
+variable [FiniteMap Positive M]
 variable [FiniteMapLaws Positive M] [HeapFiniteMap Positive M]
 variable [ElemG GF (InvF GF M F)]
 variable [ElemG GF (COFE.constOF CoPsetDisj)]
@@ -39,7 +39,7 @@ theorem wp_invariance (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state)
         uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
           (BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
             (BIBase.sep
-              (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e1
+              (wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e1
                 (fun _ => BIBase.pure True))
               (BIBase.wand
                 (state_interp (Λ := Λ) (GF := GF) σ2 ns [] (t2.length - 1))

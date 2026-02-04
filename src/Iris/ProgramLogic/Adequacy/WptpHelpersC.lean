@@ -21,7 +21,7 @@ open Iris Iris.Algebra Iris.Std Iris.BI Iris.BaseLogic
 
 variable {GF : BundledGFunctors} {M : Type _ → Type _} {F : Type _}
 variable [UFraction F]
-variable [FiniteMap Positive M] [DecidableEq Positive]
+variable [FiniteMap Positive M]
 variable [FiniteMapLaws Positive M] [HeapFiniteMap Positive M]
 variable [ElemG GF (InvF GF M F)]
 variable [ElemG GF (COFE.constOF CoPsetDisj)]
@@ -79,6 +79,7 @@ noncomputable abbrev adequacy_post
     (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))
 
+omit [FiniteMapLaws Positive M] in
 theorem adequacy_cont_drop
     (s : Stuckness) (es : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ1 : Λ.state) (κs : List Λ.observation) (t2 : List Λ.expr) (σ2 : Λ.state)
@@ -98,6 +99,7 @@ theorem adequacy_cont_drop
       (Q := adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ)))
 
+omit [FiniteMapLaws Positive M] in
 theorem wptp_len_from_pre
     (s : Stuckness) (es : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ1 : Λ.state) (κs : List Λ.observation) (t2 : List Λ.expr) (σ2 : Λ.state)
@@ -120,6 +122,7 @@ theorem wptp_len_from_pre
       (wptp_length (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (es := es) (Φs := Φs)))
 
+omit [FiniteMapLaws Positive M] in
 theorem wptp_preservation_core
     (s : Stuckness) (es : List Λ.expr) (σ1 : Λ.state) (κs : List Λ.observation)
     (t2 : List Λ.expr) (σ2 : Λ.state) (n : Nat) (Φs : List (Λ.val → IProp GF))
@@ -135,8 +138,9 @@ theorem wptp_preservation_core
     wptp_preservation (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (n := n) (es1 := es) (es2 := t2) (κs := κs) (κs' := [])
       (σ1 := σ1) (ns := 0) (σ2 := σ2) (nt := 0) (Φs := Φs) hsteps
-  simpa [List.append_nil] using hpres
+  simpa [wptp_preservation_pre, wptp_preservation_post, List.append_nil, Nat.add_zero] using hpres
 
+omit [FiniteMapLaws Positive M] in
 theorem wptp_preservation_frame
     (s : Stuckness) (es : List Λ.expr) (σ1 : Λ.state) (κs : List Λ.observation)
     (t2 : List Λ.expr) (σ2 : Λ.state) (n : Nat)
@@ -168,6 +172,7 @@ theorem wptp_preservation_frame
       (step_fupdN_frame_r (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n := n)
         (P := post) (Q := cont)))
 
+omit [FiniteMapLaws Positive M] in
 theorem apply_cont
     (s : Stuckness) (es t2 es' t2' : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (n : Nat) (φ : Prop)
@@ -195,6 +200,7 @@ theorem apply_cont
   ispecialize Hcont $$ Hfork
   iexact Hcont
 
+omit [FiniteMapLaws Positive M] in
 theorem wptp_post_apply_core
     (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (n nt' : Nat) (φ : Prop)
@@ -212,7 +218,7 @@ theorem wptp_post_apply_core
   let es' := t2.take es.length -- isolate the original threads
   let t2' := t2.drop es.length
   have hsplit : t2 = es' ++ t2' := by
-    simpa [es', t2'] using (List.take_append_drop es.length t2).symm
+    simp [es', t2']
   have hlen_es : es'.length = es.length := by
     have ht2 : t2.length = es.length + nt' := by simpa [hlen_init] using hlen_t2
     simpa [es'] using length_take_eq (es := es) (t2 := t2) (n := nt') ht2
@@ -226,6 +232,7 @@ theorem wptp_post_apply_core
       (σ2 := σ2) (n := n) (φ := φ) hsplit hlen_es hns
   exact (sep_mono (PROP := IProp GF) .rfl hres).trans happly
 
+omit [FiniteMapLaws Positive M] in
 theorem wptp_post_apply
     (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (n : Nat) (φ : Prop)
@@ -247,20 +254,21 @@ theorem wptp_post_apply
         (Φs ++ List.replicate nt' fork_post)))).1.trans ?_
   refine exists_elim ?_
   intro nt'
+  simp only [Nat.zero_add]
   have hlenP :=
     wptp_post_len (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (t2 := t2) (Φs := Φs) (σ2 := σ2) (n := n) (nt' := nt')
   have hlenP' :
       BIBase.sep cont
           (BIBase.sep
-            (state_interp (Λ := Λ) (GF := GF) σ2 n [] (0 + nt'))
+            (state_interp (Λ := Λ) (GF := GF) σ2 n [] nt')
             (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t2
               (Φs ++ List.replicate nt' fork_post))) ⊢
         BIBase.pure (t2.length = Φs.length + nt') :=
     (sep_elim_r
       (P := cont)
       (Q := BIBase.sep
-        (state_interp (Λ := Λ) (GF := GF) σ2 n [] (0 + nt'))
+        (state_interp (Λ := Λ) (GF := GF) σ2 n [] nt')
         (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t2
           (Φs ++ List.replicate nt' fork_post)))).trans hlenP
   refine pure_elim (PROP := IProp GF)
@@ -270,6 +278,7 @@ theorem wptp_post_apply
     (s := s) (es := es) (t2 := t2) (Φs := Φs)
     (σ2 := σ2) (n := n) (nt' := nt') (φ := φ) hlen_init hns hlen_t2
 
+omit [FiniteMapLaws Positive M] in
 theorem wp_progress_drop_cont
     (es : List Λ.expr) (σ1 : Λ.state) (κs : List Λ.observation)
     (t2 : List Λ.expr) (σ2 : Λ.state) (n : Nat) (φ : Prop)
