@@ -502,12 +502,14 @@ theorem wp_progress_fupd (n : Nat)
             (wptp (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F) .notStuck es Φs)))
     (hsteps : nsteps (Λ := Λ) n (es, σ1) κs (t2, σ2))
     (hemem : e2 ∈ t2) :
-    (BIBase.emp : IProp GF) ⊢
-      uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-        (step_fupdN (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F) n
-          (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
-          (BIBase.pure (not_stuck e2 σ2)))) := by
+    ∀ W : WsatGS GF,
+      (BIBase.emp : IProp GF) ⊢
+        uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+          (step_fupdN (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F) n
+            (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+            (BIBase.pure (not_stuck e2 σ2)))) := by
   -- specialize the existential and apply `wptp_progress`
+  intro W
   refine (Hwp W).trans ?_
   refine Iris.BaseLogic.fupd_mono (W := W)
     (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
@@ -523,40 +525,109 @@ theorem wp_progress_fupd (n : Nat)
 
 /-- Helper: extract `not_stuck` from the `step_fupdN` chain. -/
 theorem wp_progress_soundness_pure (n : Nat) (σ2 : Λ.state) (e2 : Λ.expr)
-    (hmono : (BIBase.emp : IProp GF) ⊢
-      uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-        (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
-          (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
-            (BIBase.pure (not_stuck e2 σ2))))) :
+    (hmono : ∀ W : WsatGS GF,
+      (BIBase.emp : IProp GF) ⊢
+        uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+          (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
+            (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+              (BIBase.pure (not_stuck e2 σ2))))) :
     (True : IProp GF) ⊢ BIBase.pure (not_stuck e2 σ2) := by
-  -- peel `fupd` and `step_fupdN` to reach a pure goal
-  have hstep : (BIBase.emp : IProp GF) ⊢
-      step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
-        (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
-          (BIBase.pure (not_stuck e2 σ2))) :=
-    fupd_soundness_no_lc (M := M) (F := F) (GF := GF)
-      (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
-      (P := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
-        (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
-          (BIBase.pure (not_stuck e2 σ2)))) (h := fun _ => hmono)
-  have hplain : (BIBase.emp : IProp GF) ⊢
-      uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
-        (BIBase.pure (not_stuck e2 σ2)) :=
-    step_fupdN_soundness (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (P := uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
-        (BIBase.pure (not_stuck e2 σ2))) (n := n) (h := fun _ => hstep)
-  exact (true_emp (PROP := IProp GF)).1.trans <|
-    fupd_soundness_no_lc (M := M) (F := F) (GF := GF)
-      (E1 := Iris.Set.univ) (E2 := maskEmpty) (P := BIBase.pure (not_stuck e2 σ2))
-      (h := fun _ => hplain)
+  -- split on `n` to eliminate the trailing `fupd`
+  cases n with
+  | zero =>
+      have hstep :
+          ∀ W : WsatGS GF,
+            (BIBase.emp : IProp GF) ⊢
+              uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+                (BIBase.pure (not_stuck e2 σ2)) := by
+        intro W
+        have hmono0 :
+            (BIBase.emp : IProp GF) ⊢
+              uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+                (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+                  (BIBase.pure (not_stuck e2 σ2))) := by
+          simpa [step_fupdN] using (hmono W)
+        have htrans :=
+          Iris.BaseLogic.fupd_trans (W := W)
+            (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
+            (E3 := maskEmpty) (P := BIBase.pure (not_stuck e2 σ2))
+        exact hmono0.trans htrans
+      have hplain :
+          (BIBase.emp : IProp GF) ⊢ BIBase.pure (not_stuck e2 σ2) :=
+        fupd_soundness_no_lc (M := M) (F := F) (GF := GF)
+          (E1 := Iris.Set.univ) (E2 := maskEmpty)
+          (P := BIBase.pure (not_stuck e2 σ2)) (h := hstep)
+      exact (true_emp (PROP := IProp GF)).1.trans hplain
+  | succ n =>
+      have hstep :
+          ∀ W : WsatGS GF,
+            (BIBase.emp : IProp GF) ⊢
+              uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+                (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+                  (BIBase.pure (not_stuck e2 σ2))) := by
+        intro W
+        have hsubset : Subset maskEmpty Iris.Set.univ := by
+          intro _ hfalse; exact False.elim hfalse
+        have hmask :
+            uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+                (BIBase.pure (not_stuck e2 σ2)) ⊢
+              uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+                (BIBase.pure (not_stuck e2 σ2)) :=
+          Iris.BaseLogic.fupd_plain_mask (W := W)
+            (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := maskEmpty)
+            hsubset (P := BIBase.pure (not_stuck e2 σ2))
+        have hmono' :
+            step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+                (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+                  (BIBase.pure (not_stuck e2 σ2))) ⊢
+              step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+                (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+                  (BIBase.pure (not_stuck e2 σ2))) :=
+          step_fupdN_mono (W := W) (Λ := Λ) (GF := GF) (M := M) (F := F)
+            (n := n + 1) hmask
+        have hstrip :
+            step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+                (uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+                  (BIBase.pure (not_stuck e2 σ2))) ⊢
+              step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+                (BIBase.pure (not_stuck e2 σ2)) :=
+          (step_fupdN_succ_fupd (Λ := Λ) (GF := GF) (M := M) (F := F)
+            (W := W) (n := n) (P := BIBase.pure (not_stuck e2 σ2))).2
+        have hinner : step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+            (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+              (BIBase.pure (not_stuck e2 σ2))) ⊢
+            step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+              (BIBase.pure (not_stuck e2 σ2)) :=
+          hmono'.trans hstrip
+        have hmonoW :
+            (BIBase.emp : IProp GF) ⊢
+              uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+                (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+                  (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+                    (BIBase.pure (not_stuck e2 σ2)))) := by
+          simpa using (hmono W)
+        exact hmonoW.trans <|
+          Iris.BaseLogic.fupd_mono (W := W)
+            (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
+            (P := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+              (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+                (BIBase.pure (not_stuck e2 σ2))))
+            (Q := step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n + 1)
+              (BIBase.pure (not_stuck e2 σ2))) hinner
+      have hplain :
+          (BIBase.emp : IProp GF) ⊢ BIBase.pure (not_stuck e2 σ2) :=
+        step_fupdN_soundness (Λ := Λ) (GF := GF) (M := M) (F := F)
+          (P := BIBase.pure (not_stuck e2 σ2)) (n := n + 1) (h := hstep)
+      exact (true_emp (PROP := IProp GF)).1.trans hplain
 
 /-- Helper: extract `not_stuck` from the `step_fupdN` chain. -/
 theorem wp_progress_soundness (n : Nat) (σ2 : Λ.state) (e2 : Λ.expr)
-    (hmono : (BIBase.emp : IProp GF) ⊢
-      uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-        (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
-          (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
-            (BIBase.pure (not_stuck e2 σ2))))) :
+    (hmono : ∀ W : WsatGS GF,
+      (BIBase.emp : IProp GF) ⊢
+        uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
+          (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
+            (uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty
+              (BIBase.pure (not_stuck e2 σ2))))) :
     not_stuck e2 σ2 := by
   -- peel updates and apply pure soundness
   have htrue :=
@@ -578,7 +649,7 @@ theorem wp_progress (n : Nat)
     not_stuck e2 σ2 := by
   -- run preservation and soundness to extract not-stuck at the meta-level
   have hmono :=
-    wp_progress_fupd (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
+    wp_progress_fupd (Λ := Λ) (GF := GF) (M := M) (F := F)
       (n := n) (es := es) (σ1 := σ1) (κs := κs)
       (t2 := t2) (σ2 := σ2) (e2 := e2) Hwp hsteps hemem
   exact wp_progress_soundness (Λ := Λ) (GF := GF) (M := M) (F := F)
