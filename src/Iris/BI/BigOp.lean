@@ -142,7 +142,7 @@ theorem big_sepL_ne {A : Type _} {Φ Ψ : Nat → A → PROP} {l : List A}
 /-- Append distributes: `[∗ list](l₁ ++ l₂) ⊣⊢ [∗ list]l₁ ∗ [∗ list]l₂`. -/
 theorem big_sepL_app {A : Type _} (Φ : Nat → A → PROP) (l₁ l₂ : List A) :
     big_sepL Φ (l₁ ++ l₂) ⊣⊢
-      BIBase.sep (big_sepL Φ l₁) (big_sepL (fun n => Φ (n + l₁.length)) l₂) := by
+      BIBase.sep (big_sepL Φ l₁) (big_sepL (fun i => Φ (i + l₁.length)) l₂) := by
   -- use the algebraic append lemma and translate equivalence
   have h : big_sepL Φ (l₁ ++ l₂) ≡
       BIBase.sep (big_sepL Φ l₁) (big_sepL (fun n => Φ (n + l₁.length)) l₂) := by

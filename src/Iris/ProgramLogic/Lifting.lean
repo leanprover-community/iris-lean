@@ -99,7 +99,7 @@ private noncomputable abbrev fork_posts (W : WsatGS GF)
   -- combine forked thread WPs
   big_sepL (fun _ ef => wp_fork W s ef) efs
 
-private noncomputable abbrev step_post W (W : WsatGS GF) (s : Stuckness) (E : Iris.Set Positive)
+private noncomputable abbrev step_post (W : WsatGS GF) (s : Stuckness) (E : Iris.Set Positive)
     (Φ : Λ.val → IPropWsat GF M F) (σ2 : Λ.state)
     (ns : Nat) (κs : List Λ.observation) (nt : Nat)
     (e2 : Λ.expr) (efs : List Λ.expr) : IPropWsat GF M F :=
@@ -109,7 +109,7 @@ private noncomputable abbrev step_post W (W : WsatGS GF) (s : Stuckness) (E : Ir
       (isep (wp (W := W) s E e2 Φ)
         (fork_posts W s efs)))
 
-private abbrev pure_step_cont_pred W (W : WsatGS GF) (s : Stuckness) (E : Iris.Set Positive)
+private abbrev pure_step_cont_pred (W : WsatGS GF) (s : Stuckness) (E : Iris.Set Positive)
     (e1 : Λ.expr) (Φ : Λ.val → IPropWsat GF M F) : IPropWsat GF M F :=
   -- standard pure-step continuation predicate
   iforall fun κ : List Λ.observation =>
@@ -259,13 +259,13 @@ omit [DecidableEq Positive]
 private theorem later_state_interp_step
     (σ : Λ.state) (ns : Nat) (κ : List Λ.observation)
     (κs : List Λ.observation) (nt : Nat) (hκ : κ = []) :
-    (IrisGS.state_interp (Λ := Λ) (GF := GF) σ ns (κ ++ κs) nt : IPropWsat GF M F) ⊢
-      ilater (IrisGS.state_interp (Λ := Λ) (GF := GF) σ (ns + 1) κs nt) :=
+    (inst.state_interp σ ns (κ ++ κs) nt : IPropWsat GF M F) ⊢
+      BIBase.later (PROP := IPropWsat GF M F)
+        (inst.state_interp σ (ns + 1) κs nt : IPropWsat GF M F) :=
   by
     -- rewrite the trace and apply monotonicity under `▷`
     subst hκ
-    exact (IrisGS.state_interp_mono (Λ := Λ) (GF := GF)
-      (σ := σ) (ns := ns) (κs := κs) (nt := nt)).trans
+    exact (inst.state_interp_mono (σ := σ) (ns := ns) (κs := κs) (nt := nt)).trans
       (later_intro (PROP := IPropWsat GF M F))
 
 omit [DecidableEq Positive] [FiniteMapLaws Positive M] in
@@ -282,11 +282,11 @@ private theorem pure_step_later {s : Stuckness} {E : Iris.Set Positive}
   by
     -- combine the stepped WP with the monotone state interpretation
     have hwp :=
-      later_wp_of_step (s := s) (E := E) (e1 := e1) (Φ := Φ)
+      later_wp_of_step (W := W) (s := s) (E := E) (e1 := e1) (Φ := Φ)
         (κ := []) (e2 := e2) (efs := []) (σ := σ)
     have hstate :=
-      later_state_interp_step (GF := GF) (σ := σ) (ns := ns)
-        (κ := []) (κs := κs) (nt := nt) rfl
+      later_state_interp_step (GF := GF) (M := M) (F := F)
+        (σ := σ) (ns := ns) (κ := []) (κs := κs) (nt := nt) rfl
     have hsep : isep
         (isep (ilater (pure_step_cont_pred W s E e1 Φ))
           (ipure (Λ.prim_step e1 σ [] e2 σ [])))
@@ -460,10 +460,12 @@ private theorem pure_step_pre_wand {s : Stuckness} {E : Iris.Set Positive}
   by
     -- add the pure stuckness fact and reuse the step continuation
     -- specialize the stuckness and step continuations to this language instance
-    have hpure := pure_step_stuckness (Λ := Λ) (GF := GF) (s := s) (e1 := e1)
+    have hpure :=
+      pure_step_stuckness (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (s := s) (e1 := e1)
       hsafe (σ := σ)
     have hcont :=
-      pure_step_cont
+      pure_step_cont (W := W)
         (s := s) (E := E) (e1 := e1) (Φ := Φ)
         hstep (σ := σ) (ns := ns) (κ := κ) (κs := κs) (nt := nt)
     refine (true_sep_2 (PROP := IPropWsat GF M F)
@@ -509,7 +511,7 @@ private theorem pure_step_pre {s : Stuckness} {E : Iris.Set Positive}
                 (step_post W (s := s) (E := E) (Φ := Φ)
                   (σ2 := σ2) (ns := ns) (κs := κs) (nt := nt) (e2 := e2) (efs := efs)))
     have hmask :=
-      fupd_mask_intro
+      fupd_mask_intro (W := W)
         (E1 := E) (E2 := maskEmpty) hsubset
         (P := isep (ipure (stuckness_pred s e1 σ)) Q)
     have hwand :
@@ -677,7 +679,7 @@ private theorem wp_pre_stuck (E : Iris.Set Positive)
         exact (sep_elim_l (P := ipure True)
           (Q := fupd' W maskEmpty E (BIBase.emp : IPropWsat GF M F))).trans hsep
       exact hwand.trans
-        (fupd_mask_intro (E1 := E) (E2 := maskEmpty)
+        (fupd_mask_intro (W := W) (E1 := E) (E2 := maskEmpty)
           hsubset (P := isep (ipure True) Q))
     exact (sep_elim_l (P := ipure True)
       (Q := state_interp σ ns (κ ++ κs) nt)).trans hmask
@@ -777,7 +779,7 @@ theorem wp_lift_atomic_step_fupd (s : Stuckness) (E1 E2 : Iris.Set Positive)
     intro hE
     subst hE
     have hstep :=
-      wp_lift_step_fupd
+      wp_lift_step_fupd (W := W) (M := M) (F := F)
         (s := s) (E := E1) (Φ := fun v =>
           uPred_fupd (M := M) (F := F) W E1 E1 (Φ v))
         (e1 := e1) hv

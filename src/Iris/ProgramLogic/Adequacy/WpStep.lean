@@ -38,13 +38,13 @@ noncomputable abbrev wp_step_cont (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state
     BIBase.forall fun σ2 : Λ.state =>
       BIBase.forall fun efs : List Λ.expr =>
         BIBase.wand (BIBase.pure (Λ.prim_step e1 σ1 κ e2 σ2 efs)) <|
-          fupd' (Λ := Λ) (M := M) (F := F) maskEmpty Iris.Set.univ <|
+          fupd' (W := W) (M := M) (F := F) maskEmpty Iris.Set.univ <|
             BIBase.later <|
               BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
                 (BIBase.sep
-                  (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e2 Φ)
+                  (wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e2 Φ)
                 (big_sepL (fun _ ef =>
-                    wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) efs))
+                    wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) efs))
 
 noncomputable abbrev adq_wp_step_post
     (s : Stuckness) (e2 : Λ.expr) (σ2 : Λ.state) (efs : List Λ.expr)
@@ -53,9 +53,9 @@ noncomputable abbrev adq_wp_step_post
   BIBase.later <|
     BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
       (BIBase.sep
-        (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e2 Φ)
+        (wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e2 Φ)
         (big_sepL (fun _ ef =>
-          wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) efs))
+          wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) efs))
 
 noncomputable abbrev adq_wp_step_pre_prop
     (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : Nat)
@@ -64,7 +64,7 @@ noncomputable abbrev adq_wp_step_pre_prop
   -- precondition: state interpretation and focused WP
   BIBase.sep
     (IrisGS.state_interp (Λ := Λ) (GF := GF) σ1 ns (κ ++ κs) nt)
-    (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e1 Φ)
+    (wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e1 Φ)
 
 noncomputable abbrev adq_wp_step_cont_prop
     (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : Nat)
@@ -72,7 +72,7 @@ noncomputable abbrev adq_wp_step_cont_prop
     (Φ : Λ.val → IProp GF) : IProp GF :=
   -- precondition for the step continuation
   BIBase.sep (BIBase.pure (stuckness_pred s e1 σ1))
-    (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (e1 := e1) (σ1 := σ1) (κ := κ) (Φ := Φ)
       (ns := ns) (κs := κs) (nt := nt))
 
@@ -81,18 +81,18 @@ theorem adq_wp_step_pre (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : Na
     (Φ : Λ.val → IProp GF) (hv : Λ.to_val e1 = none) :
     BIBase.sep
       (state_interp (Λ := Λ) (GF := GF) σ1 ns (κ ++ κs) nt)
-      (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e1 Φ)
-    ⊢ fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ maskEmpty
+      (wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e1 Φ)
+    ⊢ fupd' (W := W) (M := M) (F := F) Iris.Set.univ maskEmpty
         (BIBase.sep (BIBase.pure (stuckness_pred s e1 σ1))
-          (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+          (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
             (s := s) (e1 := e1) (σ1 := σ1) (κ := κ) (Φ := Φ)
             (ns := ns) (κs := κs) (nt := nt))) := by
   -- unfold the WP and specialize the step case
   have hwp :
-      wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e1 Φ ⊢
-        wp_pre (Λ := Λ) (GF := GF) (M := M) (F := F) s
-          (wp (M := M) (F := F) (Λ := Λ) s) Iris.Set.univ e1 Φ :=
-    (wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F)
+      wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e1 Φ ⊢
+        wp_pre (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s
+          (wp (W := W) (M := M) (F := F) (Λ := Λ) s) Iris.Set.univ e1 Φ :=
+    (wp_unfold (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (E := Iris.Set.univ) (e := e1) (Φ := Φ)).1
   refine (sep_mono_r hwp).trans ?_
   -- specialize the quantified state parameters, then apply the wand
@@ -108,17 +108,17 @@ theorem wp_step_cont_wand (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : 
     (κ : List Λ.observation) (κs : List Λ.observation)
     (e2 : Λ.expr) (σ2 : Λ.state) (efs : List Λ.expr) (nt : Nat)
     (Φ : Λ.val → IProp GF) :
-    wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+    wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (e1 := e1) (σ1 := σ1) (κ := κ) (Φ := Φ)
         (ns := ns) (κs := κs) (nt := nt) ⊢
       BIBase.wand (BIBase.pure (Λ.prim_step e1 σ1 κ e2 σ2 efs))
-        (fupd' (Λ := Λ) (M := M) (F := F) maskEmpty Iris.Set.univ
+        (fupd' (W := W) (M := M) (F := F) maskEmpty Iris.Set.univ
           (BIBase.later
             (BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ2 (ns + 1) κs (efs.length + nt))
               (BIBase.sep
-                (wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e2 Φ)
+                (wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e2 Φ)
                 (big_sepL (fun _ ef =>
-                  wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) efs))))) := by
+                  wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) efs))))) := by
   -- specialize the nested `∀` binders
   refine (forall_elim (PROP := IProp GF) (Ψ := fun e2 => _) e2).trans ?_
   refine (forall_elim (PROP := IProp GF) (Ψ := fun σ2 => _) σ2).trans ?_
@@ -129,16 +129,16 @@ theorem wp_step_cont_pure (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : 
     (e2 : Λ.expr) (σ2 : Λ.state) (efs : List Λ.expr) (nt : Nat)
     (Φ : Λ.val → IProp GF)
     (hstep : Λ.prim_step e1 σ1 κ e2 σ2 efs) :
-    wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+    wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (e1 := e1) (σ1 := σ1) (κ := κ) (Φ := Φ)
         (ns := ns) (κs := κs) (nt := nt) ⊢
       BIBase.sep (BIBase.pure (Λ.prim_step e1 σ1 κ e2 σ2 efs))
-        (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
           (s := s) (e1 := e1) (σ1 := σ1) (κ := κ) (Φ := Φ)
           (ns := ns) (κs := κs) (nt := nt)) := by
   -- insert the pure step using `True ∗ P`
   exact (true_sep_2 (PROP := IProp GF)
-    (P := wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (P := wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (e1 := e1) (σ1 := σ1) (κ := κ) (Φ := Φ)
       (ns := ns) (κs := κs) (nt := nt))).trans
     (sep_mono (pure_intro hstep) .rfl)
@@ -149,21 +149,21 @@ theorem adq_wp_step_cont (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : N
     (Φ : Λ.val → IProp GF)
     (hstep : Λ.prim_step e1 σ1 κ e2 σ2 efs) :
     BIBase.sep (BIBase.pure (stuckness_pred s e1 σ1))
-      (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (e1 := e1) (σ1 := σ1) (κ := κ) (Φ := Φ)
         (ns := ns) (κs := κs) (nt := nt))
-    ⊢ fupd' (Λ := Λ) (M := M) (F := F) maskEmpty Iris.Set.univ
-        (adq_wp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+    ⊢ fupd' (W := W) (M := M) (F := F) maskEmpty Iris.Set.univ
+        (adq_wp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
           (s := s) (e2 := e2) (σ2 := σ2) (efs := efs)
           (ns := ns) (κs := κs) (nt := nt) (Φ := Φ)) := by
   -- drop the stuckness predicate and apply the step continuation
-  refine (sep_elim_r (P := BIBase.pure _) (Q := wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+  refine (sep_elim_r (P := BIBase.pure _) (Q := wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
     (s := s) (e1 := e1) (σ1 := σ1) (κ := κ) (Φ := Φ)
     (ns := ns) (κs := κs) (nt := nt))).trans ?_
-  have hwand := wp_step_cont_wand (Λ := Λ) (GF := GF) (M := M) (F := F)
+  have hwand := wp_step_cont_wand (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
     (s := s) (e1 := e1) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs)
     (e2 := e2) (σ2 := σ2) (efs := efs) (nt := nt) (Φ := Φ)
-  have hpure := wp_step_cont_pure (Λ := Λ) (GF := GF) (M := M) (F := F)
+  have hpure := wp_step_cont_pure (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
     (s := s) (e1 := e1) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs)
     (e2 := e2) (σ2 := σ2) (efs := efs) (nt := nt) (Φ := Φ) hstep
   exact hpure.trans (sep_mono .rfl hwand) |>.trans (wand_elim_r (PROP := IProp GF))
@@ -172,14 +172,14 @@ theorem adq_wp_step_cont (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : N
 
 /-- Helper: lift the step continuation through the outer `fupd`. -/
 theorem adq_wp_step_finish (P Q : IProp GF)
-    (hcont : P ⊢ fupd' (Λ := Λ) (M := M) (F := F) maskEmpty Iris.Set.univ Q) :
-    fupd' (Λ := Λ) (M := M) (F := F) Iris.Set.univ maskEmpty P ⊢
+    (hcont : P ⊢ fupd' (W := W) (M := M) (F := F) maskEmpty Iris.Set.univ Q) :
+    fupd' (W := W) (M := M) (F := F) Iris.Set.univ maskEmpty P ⊢
       uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ Q := by
   -- lift under `fupd` and compose the update masks
-  exact (fupd_mono (W := W)
+  exact (Iris.BaseLogic.fupd_mono (W := W)
     (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := maskEmpty)
-    (P := P) (Q := fupd' (Λ := Λ) (M := M) (F := F) maskEmpty Iris.Set.univ Q) hcont).trans
-    (fupd_trans (W := W)
+    (P := P) (Q := fupd' (W := W) (M := M) (F := F) maskEmpty Iris.Set.univ Q) hcont).trans
+    (Iris.BaseLogic.fupd_trans (W := W)
       (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := maskEmpty)
       (E3 := Iris.Set.univ) (P := Q))
 
@@ -191,28 +191,27 @@ theorem adq_wp_step (s : Stuckness) (e1 : Λ.expr) (σ1 : Λ.state) (ns : Nat)
     (κ : List Λ.observation) (κs : List Λ.observation) (e2 : Λ.expr) (σ2 : Λ.state)
     (efs : List Λ.expr) (nt : Nat) (Φ : Λ.val → IProp GF)
     (hstep : Λ.prim_step e1 σ1 κ e2 σ2 efs) :
-    adq_wp_step_pre_prop (Λ := Λ) (GF := GF) (M := M) (F := F)
+    adq_wp_step_pre_prop (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (e1 := e1) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs)
         (nt := nt) (Φ := Φ) ⊢
       uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-        (adq_wp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (adq_wp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
           (s := s) (e2 := e2) (σ2 := σ2) (efs := efs)
           (ns := ns) (κs := κs) (nt := nt) (Φ := Φ)) :=
   by
     -- unfold the WP step case and apply the concrete primitive step
     have hv : Λ.to_val e1 = none := val_stuck (Λ := Λ) (e := e1) (σ := σ1) (κ := κ) (e' := e2) (σ' := σ2) (efs := efs) hstep
-    have hpre := adq_wp_step_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
+    have hpre := adq_wp_step_pre (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (e1 := e1) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs) (nt := nt) (Φ := Φ) hv
-    have hcont := adq_wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+    have hcont := adq_wp_step_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (e1 := e1) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs)
       (e2 := e2) (σ2 := σ2) (efs := efs) (nt := nt) (Φ := Φ) hstep
     -- lift the continuation through the outer update and compose
-    let P := adq_wp_step_cont_prop (Λ := Λ) (GF := GF) (M := M) (F := F)
+    let P := adq_wp_step_cont_prop (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (e1 := e1) (σ1 := σ1) (ns := ns) (κ := κ) (κs := κs) (nt := nt) (Φ := Φ)
-    let Q := adq_wp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+    let Q := adq_wp_step_post (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (e2 := e2) (σ2 := σ2) (efs := efs) (ns := ns) (κs := κs) (nt := nt) (Φ := Φ)
-    exact hpre.trans (adq_wp_step_finish (Λ := Λ) (GF := GF) (M := M) (F := F)
-      (P := P) (Q := Q) hcont)
+    exact hpre.trans (adq_wp_step_finish (P := P) (Q := Q) hcont)
 
 
 end Iris.ProgramLogic

@@ -3,7 +3,9 @@ Copyright (c) 2026 Sam Hart. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Sam Hart
 -/
+import Iris.ProgramLogic.Adequacy.FUpd
 import Iris.ProgramLogic.Adequacy.WptpHelpersB
+import Iris.ProgramLogic.Adequacy.Preservation
 
 /-! # Adequacy: Thread Pool Helpers (C)
 
@@ -40,10 +42,10 @@ noncomputable abbrev adequacy_cont
         (BIBase.pure (∀ e2, s = .notStuck → e2 ∈ t2 → not_stuck e2 σ2)) <|
       BIBase.wand (state_interp (Λ := Λ) (GF := GF) σ2 n [] t2'.length) <|
       BIBase.wand
-        (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es' Φs) <|
+        (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es' Φs) <|
       BIBase.wand
         (big_sepL (fun _ ef =>
-          wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) t2') <|
+          wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) t2') <|
       uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ)
 
 noncomputable abbrev adequacy_pre
@@ -53,8 +55,8 @@ noncomputable abbrev adequacy_pre
   -- precondition: initial state interpretation, pool WP, and continuation
   BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
     (BIBase.sep
-      (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs)
-      (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs)
+      (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (es := es) (t2 := t2) (σ2 := σ2)
         (n := n) (Φs := Φs) (φ := φ)))
 
@@ -63,7 +65,7 @@ noncomputable abbrev adequacy_inv
     (t2 : List Λ.expr) (σ2 : Λ.state) (n : Nat) (φ : Prop) : IProp GF :=
   -- existentially package the postconditions for the thread pool
   BIBase.«exists» fun (Φs : List (Λ.val → IProp GF)) =>
-    adequacy_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
+    adequacy_pre (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (es := es) (σ1 := σ1) (κs := κs)
       (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ)
 
@@ -72,9 +74,9 @@ noncomputable abbrev adequacy_post
     (Φs : List (Λ.val → IProp GF)) (φ : Prop) : IProp GF :=
   -- postcondition: final state interpretation, post WPs, and continuation
   BIBase.sep
-    (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       s t2 Φs σ2 n [] 0)
-    (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))
 
 theorem adequacy_cont_drop
@@ -83,17 +85,17 @@ theorem adequacy_cont_drop
     (n : Nat) (φ : Prop) :
     BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
         (BIBase.sep
-          (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs)
-          (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+          (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs)
+          (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
             (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))) ⊢
       BIBase.sep
         (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
-        (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs) := by
+        (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs) := by
   -- discard the continuation from the precondition
   exact sep_mono (PROP := IProp GF) .rfl
     (sep_elim_l
-      (P := wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs)
-      (Q := adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (P := wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs)
+      (Q := adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ)))
 
 theorem wptp_len_from_pre
@@ -102,20 +104,20 @@ theorem wptp_len_from_pre
     (n : Nat) (φ : Prop) :
     BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
         (BIBase.sep
-          (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs)
-          (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+          (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs)
+          (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
             (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))) ⊢
       BIBase.pure (es.length = Φs.length) := by
   -- extract the length equality hidden in `wptp`
   exact (sep_elim_r (P := state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
     (Q := BIBase.sep
-      (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs)
-      (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs)
+      (adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ)))).trans
-    ((sep_elim_l (P := wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs)
-      (Q := adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+    ((sep_elim_l (P := wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs)
+      (Q := adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))).trans
-      (wptp_length (Λ := Λ) (GF := GF) (M := M) (F := F)
+      (wptp_length (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (es := es) (Φs := Φs)))
 
 theorem wptp_preservation_core
@@ -124,9 +126,9 @@ theorem wptp_preservation_core
     (hsteps : nsteps (Λ := Λ) n (es, σ1) κs (t2, σ2)) :
     BIBase.sep
         (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
-        (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs) ⊢
-      step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
-        (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs) ⊢
+      step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n
+        (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
           s t2 Φs σ2 n [] 0) := by
   -- specialize preservation to an empty fork suffix
   simpa [List.append_nil] using
@@ -139,36 +141,36 @@ theorem wptp_preservation_frame
     (t2 : List Λ.expr) (σ2 : Λ.state) (n : Nat)
     (Φs : List (Λ.val → IProp GF)) (φ : Prop)
   (hsteps : nsteps (Λ := Λ) n (es, σ1) κs (t2, σ2)) :
-    adequacy_pre (Λ := Λ) (GF := GF) (M := M) (F := F)
+    adequacy_pre (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
         (s := s) (es := es) (σ1 := σ1) (κs := κs)
         (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ) ⊢
-      step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n
-        (adequacy_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+      step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n
+        (adequacy_post (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
           (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ)) := by
-  let cont := adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) -- frame continuation
+  let cont := adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) -- frame continuation
     (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ)
-  let post := wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F) s t2 Φs σ2 n [] 0
+  let post := wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t2 Φs σ2 n [] 0
   have hmono :
       BIBase.sep
           (BIBase.sep
             (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
-            (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs)) cont ⊢
+            (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs)) cont ⊢
         BIBase.sep
-          (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) n post) cont :=
+          (step_fupdN (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) n post) cont :=
     sep_mono (PROP := IProp GF)
       (wptp_preservation_core (Λ := Λ) (GF := GF) (M := M) (F := F)
         (s := s) (es := es) (σ1 := σ1) (κs := κs) (t2 := t2) (σ2 := σ2)
         (n := n) (Φs := Φs) hsteps) .rfl
   exact (sep_assoc (P := state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
-    (Q := wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs) (R := cont)).2.trans
+    (Q := wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs) (R := cont)).2.trans
     (hmono.trans
-      (step_fupdN_frame_r (Λ := Λ) (GF := GF) (M := M) (F := F) (n := n)
+      (step_fupdN_frame_r (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) (n := n)
         (P := post) (Q := cont)))
 
 theorem apply_cont
     (s : Stuckness) (es t2 es' t2' : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (n : Nat) (φ : Prop)
-    (hcont : adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (hcont : adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))
     (hsplit : t2 = es' ++ t2')
     (hlen_es : es'.length = es.length)
@@ -177,9 +179,9 @@ theorem apply_cont
         (BIBase.sep
           (state_interp (Λ := Λ) (GF := GF) σ2 n [] t2'.length)
           (BIBase.sep
-            (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es' Φs)
+            (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es' Φs)
             (big_sepL (fun _ ef =>
-              wp (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) t2')))
+              wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ ef fork_post) t2')))
       ⊢ uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ) := by
   iintro ⟨Hcont, Hσ, Hwp, Hfork⟩ -- apply the stored continuation
   ispecialize Hcont $$ es'
@@ -198,7 +200,7 @@ theorem apply_cont
 theorem wptp_post_apply_core
     (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (n nt' : Nat) (φ : Prop)
-    (hcont : adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (hcont : adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))
     (hlen_init : es.length = Φs.length)
     (hns : ∀ e2, s = .notStuck → e2 ∈ t2 → not_stuck e2 σ2)
@@ -206,7 +208,7 @@ theorem wptp_post_apply_core
     BIBase.sep hcont
         (BIBase.sep
           (state_interp (Λ := Λ) (GF := GF) σ2 n [] nt')
-          (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s t2
+          (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t2
             (Φs ++ List.replicate nt' fork_post))) ⊢
       uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ) := by
   let es' := t2.take es.length -- isolate the original threads
@@ -229,18 +231,18 @@ theorem wptp_post_apply_core
 theorem wptp_post_apply
     (s : Stuckness) (es t2 : List Λ.expr) (Φs : List (Λ.val → IProp GF))
     (σ2 : Λ.state) (n : Nat) (φ : Prop)
-    (hcont : adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (hcont : adequacy_cont (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := s) (es := es) (t2 := t2) (σ2 := σ2) (n := n) (Φs := Φs) (φ := φ))
     (hlen_init : es.length = Φs.length)
     (hns : ∀ e2, s = .notStuck → e2 ∈ t2 → not_stuck e2 σ2) :
     BIBase.sep hcont
-        (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F)
+        (wptp_post (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
           s t2 Φs σ2 n [] 0) ⊢
       uPred_fupd (M := M) (F := F) W Iris.Set.univ maskEmpty (BIBase.pure φ) := by
   refine (sep_exists_l (P := hcont) (Ψ := fun nt' => -- open the post-state existential
     BIBase.sep
       (state_interp (Λ := Λ) (GF := GF) σ2 n [] (0 + nt'))
-      (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s t2
+      (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s t2
         (Φs ++ List.replicate nt' fork_post)))).1.trans ?_
   refine exists_elim ?_
   intro nt'
@@ -260,7 +262,7 @@ theorem wp_progress_drop_cont
     (Hwp : ∀ W : WsatGS GF,
       (BIBase.emp : IProp GF) ⊢
         uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-          (adequacy_inv (Λ := Λ) (GF := GF) (M := M) (F := F)
+          (adequacy_inv (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
             (s := .notStuck) (es := es) (σ1 := σ1) (κs := κs)
             (t2 := t2) (σ2 := σ2) (n := n) (φ := φ))) :
     ∀ W : WsatGS GF,
@@ -268,17 +270,17 @@ theorem wp_progress_drop_cont
         uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
           (BIBase.«exists» fun (Φs : List (Λ.val → IProp GF)) =>
             BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
-              (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) .notStuck es Φs)) := by
+              (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) .notStuck es Φs)) := by
   intro W -- drop the continuation to obtain the plain pool WP
   refine (Hwp W).trans ?_
-  refine fupd_mono (W := W)
+  refine Iris.BaseLogic.fupd_mono (W := W)
     (M := M) (F := F) (E1 := Iris.Set.univ) (E2 := Iris.Set.univ)
-    (P := adequacy_inv (Λ := Λ) (GF := GF) (M := M) (F := F)
+    (P := adequacy_inv (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
       (s := .notStuck) (es := es) (σ1 := σ1) (κs := κs)
       (t2 := t2) (σ2 := σ2) (n := n) (φ := φ))
     (Q := BIBase.«exists» fun (Φs : List (Λ.val → IProp GF)) =>
       BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ1 0 κs 0)
-        (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) .notStuck es Φs)) ?_
+        (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) .notStuck es Φs)) ?_
   refine exists_elim ?_; intro Φs
   exact adequacy_cont_drop (Λ := Λ) (GF := GF) (M := M) (F := F)
     (s := .notStuck) (es := es) (Φs := Φs) (σ1 := σ1) (κs := κs)
@@ -290,7 +292,7 @@ theorem wp_progress_from_strong
     (Hwp : ∀ W : WsatGS GF,
       (BIBase.emp : IProp GF) ⊢
         uPred_fupd (M := M) (F := F) W Iris.Set.univ Iris.Set.univ
-          (adequacy_inv (Λ := Λ) (GF := GF) (M := M) (F := F)
+          (adequacy_inv (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W)
             (s := s) (es := es) (σ1 := σ1) (κs := κs)
             (t2 := t2) (σ2 := σ2) (n := n) (φ := φ)))
     (hsteps : nsteps (Λ := Λ) n (es, σ1) κs (t2, σ2)) :

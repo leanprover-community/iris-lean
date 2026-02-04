@@ -73,14 +73,32 @@ We define it as the big separating conjunction over paired lists. -/
 
 /-- Body of the thread pool WP with an index offset.
 Coq: `big_sepL` list indexing in `adequacy.v`. -/
+noncomputable def wptp_body_at_fn {W : WsatGS GF} (s : Stuckness)
+    (Φs : List (Λ.val → IProp GF)) (k : Nat) : Nat → Λ.expr → IProp GF :=
+  -- index into `Φs` with the given offset
+  fun i e =>
+    match Φs[i + k]? with
+    | some Φ => wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e Φ
+    | none => BIBase.emp
+
+/-- Body of the thread pool WP with an index offset.
+Coq: `big_sepL` list indexing in `adequacy.v`. -/
 noncomputable def wptp_body_at {W : WsatGS GF}
     (s : Stuckness) (es : List Λ.expr)
     (Φs : List (Λ.val → IProp GF)) (k : Nat) : IProp GF :=
   -- index into `Φs` with the given offset
-  big_sepL (fun i e =>
-    match Φs[i + k]? with
-    | some Φ => wp (W := W) (M := M) (F := F) (Λ := Λ) s Iris.Set.univ e Φ
-    | none => BIBase.emp) es
+  big_sepL (PROP := IProp GF) (wptp_body_at_fn (Λ := Λ) (GF := GF)
+    (M := M) (F := F) (W := W) s Φs k) es
+
+/-- Unfold `wptp_body_at` to the underlying big_sepL. -/
+@[simp] theorem wptp_body_at_unfold {W : WsatGS GF}
+    (s : Stuckness) (es : List Λ.expr)
+    (Φs : List (Λ.val → IProp GF)) (k : Nat) :
+    wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs k =
+      big_sepL (PROP := IProp GF)
+        (wptp_body_at_fn (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s Φs k) es := by
+  -- unfold the definition
+  rfl
 
 /-- Thread pool weakest precondition: the big separating conjunction of
 per-thread WPs over the thread pool.
@@ -90,7 +108,7 @@ noncomputable def wptp {W : WsatGS GF}
     (Φs : List (Λ.val → IProp GF)) : IProp GF :=
   -- track list-length equality explicitly (as in `big_sepL2`)
   BIBase.sep (BIBase.pure (es.length = Φs.length))
-    (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) s es Φs 0)
+    (wptp_body_at (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es Φs 0)
 
 noncomputable abbrev wptp_post {W : WsatGS GF}
     (s : Stuckness) (es : List Λ.expr) (Φs : List (Λ.val → IProp GF))
@@ -98,7 +116,7 @@ noncomputable abbrev wptp_post {W : WsatGS GF}
   -- package the post-state interpretation with a fork-extended `wptp`
   BIBase.«exists» fun nt' =>
     BIBase.sep (state_interp (Λ := Λ) (GF := GF) σ ns κs (nt + nt'))
-      (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) s es
+      (wptp (Λ := Λ) (GF := GF) (M := M) (F := F) (W := W) s es
         (Φs ++ List.replicate nt' fork_post))
 
 /-! ## List Helpers -/
@@ -202,7 +220,7 @@ theorem length_take_eq {α : Type _} (es t2 : List α) (n : Nat)
   -- bound the take length by the given equation
   have hle : es.length ≤ t2.length := by
     simpa [hlen] using (Nat.le_add_right es.length n)
-  simpa using (List.length_take_of_le (l := t2) (n := es.length) hle)
+  simpa using (List.length_take_of_le (l := t2) (i := es.length) hle)
 
 theorem length_drop_eq {α : Type _} (es t2 : List α) (n : Nat)
     (hlen : t2.length = es.length + n) :
