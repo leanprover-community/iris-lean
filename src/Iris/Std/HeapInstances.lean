@@ -88,7 +88,6 @@ end ClassicalAllocHeap
 
 end Iris.Std
 
-/-
 section AssociationLists
 
 /-- An association list represented as a sequence of set and remove operations. -/
@@ -189,18 +188,13 @@ theorem AssocList.construct_get (f : Nat → Option V) (N : Nat) :
     · simp [lookup]; grind
     · grind
 
-instance AssocList.instStoreAssocList : Store (AssocList V) Nat (Option V) where
-  get := lookup
-  set := update
-  get_set_eq He := by simp only [lookup_update, fset, if_pos He]
-  get_set_ne He := by simp only [lookup_update, fset, if_neg He]
-
 /-- PartialMap instance for AssocList. -/
-instance AssocList.instPartialMapAssocList : PartialMap Nat (fun _ => AssocList V) where
+instance AssocList.instPartialMapAssocList : Iris.Std.PartialMap AssocList Nat where
   get? f k := f.lookup k
-  insert f k v := f.set k (some v)
-  delete f k := f.remove k
+  insert f k v := f.update k (some v)
+  delete f k := f.update k none
   empty := .empty
+  bindAlter f m := m.map f
 
 /-- Lift a binary operation to `Option`, treating `none` as an identity element. -/
 abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
@@ -210,24 +204,28 @@ abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
   | none, some v2 => some v2
   | none, none => none
 
-instance AssocList.instHeapAssocList : Heap Nat (fun _ => AssocList V) where
-  hmap h f := f.map h
-  get?_hmap := by
-    intro f t k
+instance AssocList.instLawfulPartialMapAssocList : Iris.Std.LawfulPartialMap AssocList Nat where
+  get?_empty := by simp [Iris.Std.get?]
+  get?_insert_eq := by simp [Iris.Std.get?, Iris.Std.insert]; grind
+  get?_insert_ne := by simp [Iris.Std.get?, Iris.Std.insert]; grind
+  get?_delete_eq := by simp [Iris.Std.get?, Iris.Std.delete]
+  get?_delete_ne := by simp [Iris.Std.get?, Iris.Std.delete]; grind
+  get?_bindAlter {_ _ n t f} := by
     induction t with
-    | empty =>
-      simp_all [PartialMap.get?, map]
+    | empty => simp_all [Iris.Std.get?, Iris.Std.bindAlter, AssocList.map]
     | set n' v' t' IH =>
-      simp_all [PartialMap.get?]
+      simp_all [Iris.Std.get?, Iris.Std.bindAlter]
       cases h1 : f n' v' <;> simp <;> split <;> rename_i h2 <;> simp_all
     | remove n' t' IH =>
-      simp_all [PartialMap.get?]
+      simp_all [Iris.Std.get?, Iris.Std.bindAlter]
       split <;> simp [Option.bind]
+
+instance AssocList.instHeapAssocList : Heap AssocList Nat where
   merge op t1 t2 :=
-    construct (fun n => op_lift op (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
+    construct (fun n => op_lift (op n) (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
   get?_merge := by
-    intro op t1 t2 k
-    simp [PartialMap.get?, AssocList.construct_get, Option.merge, op_lift]
+    intro _ op t1 t2 k
+    simp [Iris.Std.PartialMap.get?, AssocList.construct_get, Option.merge, op_lift]
     split
     · rename_i h
       cases t1.lookup k <;> cases t2.lookup k <;> simp_all
@@ -235,12 +233,12 @@ instance AssocList.instHeapAssocList : Heap Nat (fun _ => AssocList V) where
       rw [AssocList.fresh_lookup_ge _ _ (by omega : t1.fresh ≤ k)]
       rw [AssocList.fresh_lookup_ge _ _ (by omega : t2.fresh ≤ k)]
 
-instance instAllocHeapAssocList : AllocHeap Nat (fun _ => AssocList V) where
+instance instAllocHeapAssocList : AllocHeap AssocList Nat where
   notFull _ := True
-  fresh {f} _ := f.fresh
-  get?_fresh {f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
+  fresh {_ f} _ := f.fresh
+  get?_fresh {_ f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
 
-instance instUnboundedHeapAssocList : UnboundedHeap Nat (fun _ => AssocList V) where
+instance instUnboundedHeapAssocList : UnboundedHeap AssocList Nat where
   notFull_empty := by simp [notFull]
   notFull_insert_fresh {t v H} := by simp [notFull]
 
@@ -272,6 +270,7 @@ def Option.insertOrMerge (f : V → V → V) (v : V) (o : Option V) : Option V :
 
 end Lemmas
 
+/-
 namespace Std.TreeMap
 
 /-! ## TreeMap Heap Instance -/
