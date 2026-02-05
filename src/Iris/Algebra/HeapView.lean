@@ -343,7 +343,7 @@ theorem update_auth_op_frag
   refine auth_one_op_frag_update fun n bf Hrel j ⟨df, va⟩ => ?_
   simp [CMRA.op, get?_merge]
   by_cases h : k = j
-  · simp only [singleton, get?_insert_eq h, Option.some.injEq, exists_eq_left']
+  · simp only [get?_insert_eq h, Option.some.injEq, exists_eq_left']
     intro Hbf
     specialize Hrel k ((dq, v) •? Std.PartialMap.get? bf k) ?G
     case G =>
@@ -372,9 +372,22 @@ theorem update_auth_op_frag
         exact Hval'
     · rw [← Hbf]
       suffices HF : some ((dq', v') •? Std.PartialMap.get? bf j) ≼{n} some (dq' •? Option.map Prod.fst f, mv') by
+        subst h
+        rename_i HH
+        simp [f] at HH
         apply incN_trans ?_ HF
         simp [Option.merge, CMRA.op?]
-        sorry
+        split <;> simp_all
+        · rename_i H1 H2
+          simp [← H1, get?_singleton_eq rfl]
+          exact incN_refl _
+        · rename_i H1 H2
+          exfalso
+          simp [get?_singleton_eq rfl] at H1
+        · rename_i H1 H2
+          simp [get?_singleton_eq rfl] at H1
+          simp [← H1]
+          exact incN_refl _
       refine Option.some_incN_some_iff_opM.mpr ?_
       exists f'
       refine (dist_prod_ext rfl Hincl').trans ?_
