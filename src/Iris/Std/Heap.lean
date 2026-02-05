@@ -82,7 +82,7 @@ open Iris.Std
     The heap stores optional values, where `none` represents unallocated locations. -/
 class Heap (M : Type _ → Type _) (K : outParam (Type _)) extends LawfulPartialMap M K where
   /-- Merge two heaps with a combining operation. -/
-  merge (op : K → V1 → V2 → V) : M V1 → M V2 → M V
+  merge (op : K → V → V → V) : M V → M V → M V
   /-- get? on merge combines values using Option.merge. -/
   get?_merge : get? (merge op m₁ m₂) k = Option.merge (op k) (get? m₁ k) (get? m₂ k)
 export Heap (merge get?_merge)

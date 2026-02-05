@@ -5,10 +5,10 @@ Authors: Alok Singh, Markus de Medeiros
 -/
 
 import Iris.Std.Heap
+import Iris.Std.PartialMap
 import Iris.Std.Infinite
 import Std.Data.TreeMap
 import Std.Data.ExtTreeMap
-/-
 
 /-!
 # Heap Instances for Standard Types
@@ -34,62 +34,52 @@ section FunStore
 variable {K V : Type _} [DecidableEq K]
 
 /-- Functions form a total store. -/
-instance instStoreFun : Store (K → V) K V where
-  get t k := t k
-  set t k v := fun k' => if k = k' then v else t k'
-  get_set_eq {t k k' v} h := by grind
-  get_set_ne {t k k' v} h := by grind
+instance instPartialMapFun : PartialMap (K → Option ·) K where
+  get? t k := t k
+  insert t k v := fun k' => if k = k' then some v else t k'
+  delete t k := fun k' => if k = k' then none else t k'
+  empty := fun _ => none
+  bindAlter f t k := (t k).bind (f k)
+
+instance : LawfulPartialMap (K → Option ·) K where
+  get?_empty := by simp [get?, empty]
+  get?_insert_eq := by simp [get?, insert]; grind
+  get?_insert_ne := by simp [get?, insert]; grind
+  get?_delete_eq := by simp [get?, delete]
+  get?_delete_ne := by simp [get?, delete]; grind
+  get?_bindAlter := by simp [get?, bindAlter]
+
+instance : ExtensionalPartialMap (K → Option ·) K where
+  equiv_iff_eq := ⟨funext, congrFun⟩
+
 
 /-- Functions represent all functions (trivially). -/
-instance instRepFunStoreFun : RepFunStore (K → V) K V where
-  rep _ := True
-  rep_get _ := trivial
-  of_fun f := f.val
-  get_of_fun := rfl
-
-/-- Functions are isomorphic to themselves. -/
-instance instIsoFunStoreFun : IsoFunStore (K → V) K V where
-  of_fun_get := rfl
+instance instRepFunStoreFun : Heap (K → Option ·) K where
+  merge f m1 m2 k :=
+    match m1 k, m2 k with
+    | none, none => none
+    | some x, none => some x
+    | none, some y => some y
+    | some x, some y => some <| f k x y
+  get?_merge {_ _ _ _ _} := by simp [get?]; split <;> simp_all
 
 end FunStore
-
-/-! ## Functions into Option Heap Instance -/
-
-section FunHeap
-
-variable {K V : Type _} [DecidableEq K]
-
-/-- PartialMap instance for functions returning Option. -/
-instance instPartialMapFun : PartialMap K (fun _ => K → Option V) where
-  get? f k := f k
-  insert f k v := fun k' => if k = k' then some v else f k'
-  delete f k := fun k' => if k = k' then none else f k'
-  empty := fun _ => none
-
-/-- Functions to Option form a heap. -/
-instance instHeapFun : Heap K (fun _ => K → Option V) where
-  hmap f t k := (t k).bind (f k)
-  merge op t1 t2 k := Option.merge op (t1 k) (t2 k)
-  get?_hmap := rfl
-  get?_merge := rfl
-
-end FunHeap
 
 /-! ## (Noncomputable) Allocation in an infinite function type -/
 noncomputable section ClassicalAllocHeap
 
 open Classical
 
-instance instClassicalAllocHeap : AllocHeap K (fun _ => K → Option V) where
+instance instClassicalAllocHeap : AllocHeap (K → Option ·) K where
   notFull f := infinite <| cosupport f
   fresh := choose ∘ coinfinite_exists_next
-  get?_fresh {_ H} := choose_spec <| coinfinite_exists_next H
+  get?_fresh {_ _ H} := choose_spec <| coinfinite_exists_next H
 
-instance instClassicalUnboundedHeap [InfiniteType K] : UnboundedHeap K (fun _ => K → Option V) where
+instance instClassicalUnboundedHeap [InfiniteType K] : UnboundedHeap (K → Option ·) K where
   notFull_empty := by
     simp [notFull, infinite, cosupport, PartialMap.empty]
     exact ⟨InfiniteType.enum, fun n m a => InfiniteType.enum_inj n m a⟩
-  notFull_insert_fresh {t v H} := by
+  notFull_insert_fresh {_ t v H} := by
     refine cofinite_alter_cofinite (Hs := H) (p' := fresh H) ?_
     simp [PartialMap.insert]
     grind
@@ -98,6 +88,7 @@ end ClassicalAllocHeap
 
 end Iris.Std
 
+/-
 section AssociationLists
 
 /-- An association list represented as a sequence of set and remove operations. -/
