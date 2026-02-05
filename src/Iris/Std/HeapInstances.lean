@@ -270,7 +270,6 @@ def Option.insertOrMerge (f : V → V → V) (v : V) (o : Option V) : Option V :
 
 end Lemmas
 
-/-
 namespace Std.TreeMap
 
 /-! ## TreeMap Heap Instance -/
@@ -278,15 +277,17 @@ namespace Std.TreeMap
 section HeapInstance
 
 open Option Std.DTreeMap.Internal.Impl List TransCmp OrientedCmp LawfulEqCmp Ordering
+open Iris.Std
 
 variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
 
 /-- TreeMap forms a Store with Option values. -/
-instance instStoreTreeMap : Store (TreeMap K V compare) K (Option V) where
-  get t k := t[k]?
-  set t k v := t.alter k (fun _ => v)
-  get_set_eq {t k k' v} h := by grind
-  get_set_ne {t k k' v} h := by grind
+instance instStoreTreeMap : PartialMap (TreeMap K · compare) K where
+  get? t k := t[k]?
+  insert t k v := t.alter k (fun _ => some v)
+  delete t k := t.alter k (fun _ => none)
+  empty := ∅
+  bindAlter f t := t.filterMap f
 
 private theorem get?_foldl_alter_impl_sigma {l : List ((_ : K) × V)}
     (hinit : init.WF) (hl : l.Pairwise (fun x y => ¬ (compare x.1 y.1).isEq)) :
@@ -388,13 +389,17 @@ theorem getElem?_mergeWith' {t₁ t₂ : TreeMap K V compare} {f : K → V → V
     simp [← hval, hfind]
     simp [eq_of_compare hkv_cmp]
 
-instance instHeapTreeMap : Heap (TreeMap K V compare) K V where
-  empty := {}
-  hmap f t := t.filterMap f
-  merge op t1 t2 := t1.mergeWith (fun _ v1 v2 => op v1 v2) t2
-  get_empty := rfl
-  get_hmap {f t k} := by show (filterMap f t)[k]? = t[k]?.bind (f k); simp
-  get_merge := getElem?_mergeWith'
+instance : LawfulPartialMap (TreeMap K · compare) K where
+  get?_empty := by simp [Iris.Std.get?, Iris.Std.empty]
+  get?_insert_eq := by simp [Iris.Std.get?, Iris.Std.insert]; grind
+  get?_insert_ne := by simp [Iris.Std.get?, Iris.Std.insert]; grind
+  get?_delete_eq := by simp [Iris.Std.get?, Iris.Std.delete]
+  get?_delete_ne := by simp [Iris.Std.get?, Iris.Std.delete]; grind
+  get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
+
+instance : Heap (TreeMap K · compare) K where
+  merge op t1 t2 := t1.mergeWith op t2
+  get?_merge := getElem?_mergeWith'
 
 end HeapInstance
 
@@ -406,7 +411,7 @@ namespace Std.ExtTreeMap
 
 section HeapInstance
 
-open Option Std.ExtDTreeMap List TransCmp OrientedCmp LawfulEqCmp Ordering
+open Option Std.ExtDTreeMap List TransCmp OrientedCmp LawfulEqCmp Ordering Iris.Std
 
 variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
 
@@ -414,11 +419,13 @@ variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
 
 Note: This requires that `cmp k k' = .eq` implies `k = k'` (i.e., `LawfulEqCmp`).
 -/
-instance instStoreExtTreeMap : Store (ExtTreeMap K V compare) K (Option V) where
-  get t k := t[k]?
-  set t k v := t.alter k (fun _ => v)
-  get_set_eq {t k k' v} h := by grind
-  get_set_ne {t k k' v} h := by grind
+
+instance : PartialMap (ExtTreeMap K · compare) K where
+  get? t k := t[k]?
+  insert t k v := t.alter k (fun _ => some v)
+  delete t k := t.alter k (fun _ => none)
+  empty := ∅
+  bindAlter f t := t.filterMap f
 
 @[simp]
 theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
@@ -432,15 +439,18 @@ theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
   | _ m₁ => induction q₂ using Quotient.ind with
     | _ m₂ => exact Std.TreeMap.getElem?_mergeWith'
 
-instance instHeapExtTreeMap : Heap (ExtTreeMap K V compare) K V where
-  empty := {}
-  hmap f t := t.filterMap f
-  merge op t1 t2 := t1.mergeWith (fun _ => op) t2
-  get_empty := rfl
-  get_hmap {f t k} := by show (filterMap f t)[k]? = t[k]?.bind (f k); grind
-  get_merge := getElem?_mergeWith'
+instance : LawfulPartialMap (ExtTreeMap K · compare) K where
+  get?_empty := by simp [Iris.Std.get?, Iris.Std.empty]
+  get?_insert_eq := by simp [Iris.Std.get?, Iris.Std.insert]; grind
+  get?_insert_ne := by simp [Iris.Std.get?, Iris.Std.insert]; grind
+  get?_delete_eq := by simp [Iris.Std.get?, Iris.Std.delete]
+  get?_delete_ne := by simp [Iris.Std.get?, Iris.Std.delete]; grind
+  get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
+
+instance instHeapExtTreeMap : Heap (ExtTreeMap K · compare) K where
+  merge op t1 t2 := t1.mergeWith op t2
+  get?_merge := getElem?_mergeWith'
 
 end HeapInstance
 
 end Std.ExtTreeMap
--/
