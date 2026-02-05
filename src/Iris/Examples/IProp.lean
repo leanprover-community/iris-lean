@@ -172,7 +172,7 @@ example (e e' : Expr) Φ (Hstep : ∀ {s : State}, @step _ _ Value _ (e, s) = (e
    Then, it suffies to have access to P, and show that access to P' is enough to verify e'. -/
 example (e e' : Expr) (P P' : IProp GF) Φ
       (Hstep : ∀ s, iprop(P ∗ @state_interp State GF _ s ⊢ ∃ s',
-          ⌜@step _ _ Value _ (e, s) = (e', s')⌝ ∗ |==> (P' ∗ @state_interp State GF _ s'))) :
+          ⌜ step Value (e, s) = (e', s')⌝ ∗ |==> (P' ∗ @state_interp State GF _ s'))) :
     P ∗ (P' -∗ wp e' Φ) ⊢ wp e Φ := by
   iintro ⟨HP, Hspec⟩
   iapply wp_unfold
@@ -189,6 +189,23 @@ example (e e' : Expr) (P P' : IProp GF) Φ
   isplitl [Hs]
   · iexact Hs
   · iapply Hspec $$ HP'
+
+/- Looping programs, by Löb induction -/
+example (e : Expr) Φ (Hloop : ∀ σ : State, step Value (e, σ) = (e, σ)) :
+    ⊢ wp e Φ := by
+  iapply BILoeb.loeb_weak
+  iintro HLöb
+  iapply wp_unfold
+  iright
+  iintro %s Hs
+  iexists e, s
+  isplitr
+  · ipure_intro; exact Hloop s
+  iintro !> !>
+  isplitl [Hs]
+  · iassumption
+  · iassumption
+  · exact true_intro
 
 end Example3
 
