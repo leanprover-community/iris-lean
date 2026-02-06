@@ -1367,13 +1367,15 @@ theorem validN_snd {n} {x : α × β} (h : ✓{n} x) : ✓{n} x.snd := h.right
 
 theorem incN_iff {n} (a a' : α) (b b' : β) :
     a ≼{n} a' ∧ b ≼{n} b' ↔ (a, b) ≼{n} (a', b') := by
-  constructor <;>simp [CMRA.IncludedN]
-  · rintro x ha y hb
-    exists x, y
-  · rintro x y ⟨ha, hb⟩
+  constructor
+  · simp [CMRA.IncludedN]
+    rintro x hx y hy
+    exact ⟨x, ⟨y, ⟨hx, hy⟩⟩⟩
+  · simp [CMRA.IncludedN]
+    rintro x y ⟨ha, hb⟩
     constructor
-    exists x
-    exists y
+    · exact ⟨x, Option.dist_of_some_dist_some ha⟩
+    · exact ⟨y, Option.dist_of_some_dist_some hb⟩
 
 instance [CMRA.Discrete α] [CMRA.Discrete β]: CMRA.Discrete (α × β) where
   discrete_valid := by
@@ -1385,77 +1387,75 @@ end Prod
 
 section ProdOF
 
+open COFE
+
 variable [OFE A] [OFE A'] [OFE B] [OFE B']
 
-instance (f : A → A') (g : B → B') [NonExpansive f] [NonExpansive g] : NonExpansive (Prod.map f g) where
-  ne := by
-    rintro _ _ _ ⟨_, _⟩
-    constructor <;> simp <;>
-    apply (inferInstance : NonExpansive _).ne <;>
-    assumption
+
+instance (f : A → A') (g : B → B') [NonExpansive f] [NonExpansive g] :
+    NonExpansive (Prod.map f g) where
+  ne _ _ _ H := by
+    constructor
+    · rw [Prod.map_fst]
+      exact NonExpansive.ne H.1
+    · rw [Prod.map_snd]
+      exact NonExpansive.ne H.2
 
 omit [OFE A] [OFE B] in
-theorem Prod.map_ext (f f' : A → A') (g g' : B → B') :
-    (∀ a, f a ≡ f' a) → (∀ a, g a ≡ g' a) → Prod.map f g x ≡ Prod.map f' g' x := by
-  intros
-  cases x
-  constructor <;> simp_all
+theorem Prod.map_ext {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡ f' a)
+    (Hg : ∀ a, g a ≡ g' a) : Prod.map f g x ≡ Prod.map f' g' x :=
+  ⟨Hf x.fst, Hg x.snd⟩
 
 omit [OFE A] [OFE B] in
-theorem Prod.map_ne (f f' : A → A') (g g' : B → B') :
-    (∀ a, f a ≡{n}≡ f' a) → (∀ a, g a ≡{n}≡ g' a) → Prod.map f g x ≡{n}≡ Prod.map f' g' x := by
-  intros
-  cases x
-  constructor <;> simp_all
+theorem Prod.map_ne {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡{n}≡ f' a)
+    (Hg : ∀ a, g a ≡{n}≡ g' a) : Prod.map f g x ≡{n}≡ Prod.map f' g' x :=
+  ⟨Hf x.fst, Hg x.snd⟩
 
 instance Prod.mapO (f : A -n> A') (g : B -n> B') : A × B -n> A' × B' where
-  f := Prod.map f g
+  f := .map f g
   ne := inferInstance
 
-abbrev ProdOF (F1 : COFE.OFunctorPre) (F2 : COFE.OFunctorPre) : COFE.OFunctorPre :=
-  fun A B => (F1 A B) × (F2 A B)
+abbrev ProdOF (F1 F2 : OFunctorPre) : OFunctorPre := fun A B => (F1 A B) × (F2 A B)
 
-instance [OF1: COFE.OFunctor F1] [OF2: COFE.OFunctor F2] : COFE.OFunctor (ProdOF F1 F2) where
+open OFunctor in
+instance [OFunctor F1] [OFunctor F2] : OFunctor (ProdOF F1 F2) where
   cofe := inferInstance
-  map f g := Prod.mapO (OF1.map f g) (OF2.map f g)
-  map_ne.ne _ _ _ Hx _ _ Hy _ := by
-    constructor <;> apply COFE.OFunctor.map_ne.ne <;> assumption
-  map_id x := by
-    constructor <;> apply COFE.OFunctor.map_id
-  map_comp f g f' g' x := by
-    constructor <;> apply COFE.OFunctor.map_comp
+  map f g := Prod.mapO (map f g) (map f g)
+  map_ne.ne _ _ _ Hx _ _ Hy _ := ⟨map_ne.ne Hx Hy _, map_ne.ne Hx Hy _⟩
+  map_id _ := ⟨map_id _, map_id _⟩
+  map_comp _ _ _ _ _ := ⟨map_comp .., map_comp ..⟩
 
-instance [COFE.OFunctorContractive F1] [COFE.OFunctorContractive F2] : COFE.OFunctorContractive (ProdOF F1 F2) where
-  map_contractive.1 H _ := by
-    apply Prod.map_ne <;> intro <;> apply COFE.OFunctorContractive.map_contractive.1 <;> assumption
+open OFunctorContractive in
+instance [OFunctorContractive F1] [OFunctorContractive F2] : OFunctorContractive (ProdOF F1 F2) where
+  map_contractive.1 H _ :=
+    Prod.map_ne (fun _ => map_contractive.1 H _) (fun _ => map_contractive.1 H _)
 
 end ProdOF
 
-section ProdMorph
+section ProdMor
+
+open CMRA
 
 variable [CMRA A] [CMRA A'] [CMRA B] [CMRA B']
 
 instance Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
   f := Prod.map f g
   ne := inferInstance
-  validN {n x} hval := by
-    simp [CMRA.ValidN, ValidN] at hval ⊢
-    cases hval
-    constructor <;> apply CMRA.Hom.validN <;> assumption
+  validN {n x} := fun ⟨h1, h2⟩ => ⟨Hom.validN _ h1, Hom.validN _ h2⟩
   pcore x := by
     simp [Option.map, Prod.map, CMRA.pcore, pcore]
-    have h2 := CMRA.Hom.pcore g x.snd
-    have h1 := CMRA.Hom.pcore f x.fst
-    rcases h : (CMRA.pcore x.fst) with _ | x1
-    · rcases _ : CMRA.pcore (f.f x.fst) <;> simp_all
-    · rcases h' : (CMRA.pcore x.snd) with _ | x2 <;>
-      rcases _ : CMRA.pcore (f.f x.fst) <;>
-      rcases _ : CMRA.pcore (g.f x.snd) <;> simp_all
-      constructor <;> simp_all
-  op x y := by
-    constructor <;> apply CMRA.Hom.op
+    have h2 := Hom.pcore g x.snd
+    have h1 := Hom.pcore f x.fst
+    cases _ : CMRA.pcore x.fst
+    · cases _ : CMRA.pcore (f.f x.fst) <;> simp_all
+    · cases _ : CMRA.pcore x.snd <;>
+      cases _ : CMRA.pcore (f.f x.fst) <;>
+      cases _ : CMRA.pcore (g.f x.snd) <;>
+      simp_all
+      exact ⟨Option.equiv_of_some_equiv_some h1, Option.equiv_of_some_equiv_some h2⟩
+  op x y := ⟨CMRA.Hom.op .., CMRA.Hom.op ..⟩
 
-end ProdMorph
+end ProdMor
 
 section optionOF
 

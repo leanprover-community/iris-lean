@@ -516,7 +516,7 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
     apply View.map_ne
     · refine fun _ => Heap.map_ne _ _ _ (RFunctor.map_ne.ne ?_ ?_) <;> simp_all
     · refine fun _ => Heap.map_ne _ _ _ ?_
-      exact fun _ => Prod.map_ne _ _ _ _ (fun _ => rfl) (RFunctor.map_ne.ne Hx Hy)
+      exact fun _ => Prod.map_ne (fun _ => rfl) (RFunctor.map_ne.ne Hx Hy)
   map_id x := by
     rw (config := { occs := .pos [2]}) [<- (View.map_id x)]
     apply View.map_ext
@@ -537,14 +537,14 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
       exact (OFE.Equiv.symm (Heap.map_compose _ _ _ _))
       apply Heap.map_ext
       rw [Prod.map_comp_map]
-      apply (fun _ => Prod.map_ext _ _ _ _ _ _) <;> simp
+      apply (fun _ => Prod.map_ext _ _) <;> simp
       exact (fun _ x => OFE.Equiv.symm (RFunctor.map_comp _ _ _ _ x))
 
 instance {T} [RFunctorContractive T] : URFunctorContractive (HeapViewURF (F := F) (H := H) T) where
   map_contractive.1 H _ := by
     apply View.map_ne <;> intros <;> apply Heap.map_ne
     · exact (RFunctorContractive.map_contractive.1 H)
-    · exact (fun _ => Prod.map_ne _ _ _ _ (fun _ => rfl) (RFunctorContractive.map_contractive.1 H))
+    · exact (fun _ => Prod.map_ne (fun _ => rfl) (RFunctorContractive.map_contractive.1 H))
 
 end heapViewFunctor
 
