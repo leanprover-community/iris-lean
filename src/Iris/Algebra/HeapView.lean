@@ -529,9 +529,9 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
   map_id x := by
     rw (config := { occs := .pos [2] }) [<- (View.map_id x)]
     apply View.map_ext
-    · exact (COFE.OFunctor.map_id (F := PartialMapOF H T))
+    · exact COFE.OFunctor.map_id (F := PartialMapOF H T)
     · intro b
-      refine (Equiv.trans ?_ (map_id _ b))
+      refine .trans ?_ (map_id _ b)
       refine equiv_dist.mpr (fun n => ?_)
       apply PartialMap.map_ne
       exact fun _ => ⟨rfl, Equiv.dist (RFunctor.map_id _)⟩
@@ -542,13 +542,11 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
     · apply (inferInstance : URFunctor (PartialMapOF H T)).map_comp
     · simp [Prod.mapC, CMRA.Hom.id, PartialMap.mapC]
       intro
-      symm
-      apply OFE.Equiv.trans
-      exact (OFE.Equiv.symm (PartialMap.map_compose _ _ _ _))
+      refine .trans ?_ (PartialMap.map_compose _ _ _ _)
       apply PartialMap.map_ext
       rw [Prod.map_comp_map]
       apply (fun _ => Prod.map_ext _ _) <;> simp
-      exact (fun _ x => OFE.Equiv.symm (RFunctor.map_comp _ _ _ _ x))
+      exact (fun _ => RFunctor.map_comp _ _ _ _)
 
 instance {T} [RFunctorContractive T] : URFunctorContractive (HeapViewURF (F := F) (H := H) T) where
   map_contractive.1 H _ := by
