@@ -55,7 +55,7 @@ variable {F} [UFraction F]
 
 /- Define an OFunctor for the heap. -/
 abbrev F1 : OFunctorPre :=
-  constOF <| HeapView F Nat (Agree (LeibnizO String)) AssocList
+  constOF <| HeapView F Nat (Agree (LeibnizO String)) Iris.Std.AssocList
 
 /- Our OFunctor is present in the global list of OFunctors. -/
 variable {GF} [ElemG GF (F1 (F := F))]

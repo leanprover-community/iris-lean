@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alok Singh, Markus de Medeiros
 -/
 
-import Iris.Std.Heap
+import Iris.Std.PartialMap
 import Iris.Std.Infinite
 import Std.Data.TreeMap
 import Std.Data.ExtTreeMap
@@ -12,85 +12,74 @@ import Std.Data.ExtTreeMap
 /-!
 # Heap Instances for Standard Types
 
-This file provides a library of `Store`, `Heap`, `AllocHeap`, and `UnboundedHeap`
+This file provides a library of `PartialMap`, `Heap`, and `UnboundedHeap`
 instances for types from the Lean standard library.
 
 ## Instances
-- Plain functions: `Store`, `IsoFunStore`
+- Plain functions: `PartialMap`, `IsoFunMap`
 - Functions into `Option`: `Heap`
 - Classical functions into `Option`: `UnboundedHeap`
 - Association lists: `UnboundedHeap`
-- `TreeMap`: `Heap`
-- `ExtTreeMap`: `Heap`
+- `TreeMap`: `PartialMap`
+- `ExtTreeMap`: `PartialMap`
 -/
 
 namespace Iris.Std
 
-/-! ## Function Store Instance -/
+/-! ## Function PartialMap Instance -/
 
-section FunStore
-
-variable {K V : Type _} [DecidableEq K]
-
-/-- Functions form a total store. -/
-instance instStoreFun : Store (K → V) K V where
-  get t k := t k
-  set t k v := fun k' => if k = k' then v else t k'
-  get_set_eq {t k k' v} h := by grind
-  get_set_ne {t k k' v} h := by grind
-
-/-- Functions represent all functions (trivially). -/
-instance instRepFunStoreFun : RepFunStore (K → V) K V where
-  rep _ := True
-  rep_get _ := trivial
-  of_fun f := f.val
-  get_of_fun := rfl
-
-/-- Functions are isomorphic to themselves. -/
-instance instIsoFunStoreFun : IsoFunStore (K → V) K V where
-  of_fun_get := rfl
-
-end FunStore
-
-/-! ## Functions into Option Heap Instance -/
-
-section FunHeap
+section FunPartialMap
 
 variable {K V : Type _} [DecidableEq K]
 
-/-- Functions to Option form a heap. -/
-instance instHeapFun : Heap (K → Option V) K V where
+/-- Functions form a partial map. -/
+instance instPartialMapFun : PartialMap (K → Option ·) K where
+  get? t k := t k
+  insert t k v := fun k' => if k = k' then some v else t k'
+  delete t k := fun k' => if k = k' then none else t k'
   empty := fun _ => none
-  hmap f t k := (t k).bind (f k)
-  merge op t1 t2 k := Option.merge op (t1 k) (t2 k)
-  get_empty := rfl
-  get_hmap := rfl
-  get_merge := rfl
+  bindAlter f t k := (t k).bind (f k)
+  merge f m1 m2 k :=
+    match m1 k, m2 k with
+    | none, none => none
+    | some x, none => some x
+    | none, some y => some y
+    | some x, some y => some <| f k x y
 
-end FunHeap
+instance : LawfulPartialMap (K → Option ·) K where
+  get?_empty := by simp [get?, empty]
+  get?_insert_eq := by simp [get?, insert]; grind
+  get?_insert_ne := by simp [get?, insert]; grind
+  get?_delete_eq := by simp [get?, delete]
+  get?_delete_ne := by simp [get?, delete]; grind
+  get?_bindAlter := by simp [get?, bindAlter]
+  get?_merge {_ _ _ _ _} := by simp [get?, merge]; split <;> simp_all
+
+instance : ExtensionalPartialMap (K → Option ·) K where
+  equiv_iff_eq := ⟨funext, congrFun⟩
+
+end FunPartialMap
 
 /-! ## (Noncomputable) Allocation in an infinite function type -/
 noncomputable section ClassicalAllocHeap
 
 open Classical
 
-instance instClassicalAllocHeap : AllocHeap (K → Option V) K V where
+instance instClassicalAllocHeap : Heap (K → Option ·) K where
   notFull f := infinite <| cosupport f
   fresh := choose ∘ coinfinite_exists_next
-  get_fresh {_ H} := choose_spec <| coinfinite_exists_next H
+  get?_fresh {_ _ H} := choose_spec <| coinfinite_exists_next H
 
-instance instClassicalUnboundedHeap [InfiniteType K] : UnboundedHeap (K → Option V) K V where
+instance instClassicalUnboundedHeap [InfiniteType K] : UnboundedHeap (K → Option ·) K where
   notFull_empty := by
-    simp [notFull, infinite, cosupport, empty]
+    simp [notFull, infinite, cosupport, PartialMap.empty]
     exact ⟨InfiniteType.enum, fun n m a => InfiniteType.enum_inj n m a⟩
-  notFull_set_fresh {t v H} := by
-    refine cofinite_alter_cofinite (Hs := H) (p' := fresh (T := K → Option V) H) ?_
-    simp [Store.set]
+  notFull_insert_fresh {_ t v h} := by
+    refine cofinite_alter_cofinite (Hs := h) (p' := fresh h) ?_
+    simp [PartialMap.insert]
     grind
 
 end ClassicalAllocHeap
-
-end Iris.Std
 
 section AssociationLists
 
@@ -168,14 +157,14 @@ theorem AssocList.fresh_lookup_ge (f : AssocList V) n :
 theorem AssocList.construct_get (f : Nat → Option V) (N : Nat) :
     lookup (construct f N) = construct_spec f N := by
   funext k
-  rcases Nat.lt_or_ge k N with HL | HG
+  rcases Nat.lt_or_ge k N with hl | hg
   · induction N <;> simp
     rename_i N' IH
     split <;> rename_i h
     · simp only [lookup]; split
       · simp_all
       · rw [IH (by omega)]; simp; omega
-    · rw [if_pos HL]
+    · rw [if_pos hl]
       if h : k < N' then
         simp [IH h]; omega
       else
@@ -192,12 +181,6 @@ theorem AssocList.construct_get (f : Nat → Option V) (N : Nat) :
     · simp [lookup]; grind
     · grind
 
-instance AssocList.instStoreAssocList : Store (AssocList V) Nat (Option V) where
-  get := lookup
-  set := update
-  get_set_eq He := by simp only [lookup_update, fset, if_pos He]
-  get_set_ne He := by simp only [lookup_update, fset, if_neg He]
-
 /-- Lift a binary operation to `Option`, treating `none` as an identity element. -/
 abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
   match v1, v2 with
@@ -206,56 +189,53 @@ abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
   | none, some v2 => some v2
   | none, none => none
 
-instance AssocList.instHeapAssocList : Heap (AssocList V) Nat V where
-  hmap h f := f.map h
-  get_hmap := by
-    intro f t k
+/-- PartialMap instance for AssocList. -/
+instance AssocList.instPartialMapAssocList : Iris.Std.PartialMap AssocList Nat where
+  get? f k := f.lookup k
+  insert f k v := f.update k (some v)
+  delete f k := f.update k none
+  empty := .empty
+  bindAlter f m := m.map f
+  merge op t1 t2 :=
+    construct (fun n => op_lift (op n) (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
+
+instance AssocList.instLawfulPartialMapAssocList : Iris.Std.LawfulPartialMap AssocList Nat where
+  get?_empty := by simp [get?]
+  get?_insert_eq := by simp [get?, insert]; grind
+  get?_insert_ne := by simp [get?, insert]; grind
+  get?_delete_eq := by simp [get?, delete]
+  get?_delete_ne := by simp [get?, delete]; grind
+  get?_bindAlter {_ _ n t f} := by
     induction t with
-    | empty =>
-      simp_all [Store.get, map]
+    | empty => simp_all [get?, bindAlter, AssocList.map]
     | set n' v' t' IH =>
-      simp_all [Store.get]
+      simp_all [get?, bindAlter]
       cases h1 : f n' v' <;> simp <;> split <;> rename_i h2 <;> simp_all
     | remove n' t' IH =>
-      simp_all [Store.get]
+      simp_all [get?, bindAlter]
       split <;> simp [Option.bind]
-  empty := .empty
-  get_empty := by simp [Store.get]
-  merge op t1 t2 :=
-    construct (fun n => op_lift op (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
-  get_merge := by
-    intro op t1 t2 k
-    simp [Store.get, AssocList.construct_get, Option.merge, op_lift]
+  get?_merge := by
+    intro _ op t1 t2 k
+    simp [PartialMap.get?, merge, construct_get, Option.merge, op_lift]
     split
     · rename_i h
       cases t1.lookup k <;> cases t2.lookup k <;> simp_all
     · rename_i h
-      rw [AssocList.fresh_lookup_ge _ _ (by omega : t1.fresh ≤ k)]
-      rw [AssocList.fresh_lookup_ge _ _ (by omega : t2.fresh ≤ k)]
+      rw [fresh_lookup_ge _ _ (by omega : t1.fresh ≤ k)]
+      rw [fresh_lookup_ge _ _ (by omega : t2.fresh ≤ k)]
 
-instance instAllocHeapAssocList : AllocHeap (AssocList V) Nat V where
+instance instAllocHeapAssocList : Iris.Std.Heap AssocList Nat where
   notFull _ := True
-  fresh {f} _ := f.fresh
-  get_fresh {f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
+  fresh {_ f} _ := f.fresh
+  get?_fresh {_ f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
 
-instance instUnboundedHeapAssocList : UnboundedHeap (AssocList V) Nat V where
+instance instUnboundedHeapAssocList : Iris.Std.UnboundedHeap AssocList Nat where
   notFull_empty := by simp [notFull]
-  notFull_set_fresh {t v H} := by simp [notFull]
-
-instance {V1 V2 : Type _} : HasHeapMap (AssocList V1) (AssocList V2) Nat V1 V2 where
-  hhmap f L := L.map f
-  hhmap_get {L k f} := by
-    induction L with
-    | empty =>
-      simp_all [Store.get, map]
-    | set n' v' t' IH =>
-      simp_all [Store.get]
-      cases h1 : f n' v' <;> simp <;> split <;> rename_i h2 <;> simp_all
-    | remove n' t' IH =>
-      simp_all [Store.get]
-      split <;> simp [Option.bind]
+  notFull_insert_fresh {t v h} := by simp [notFull]
 
 end AssociationLists
+
+end Iris.Std
 
 section Lemmas
 
@@ -290,15 +270,18 @@ namespace Std.TreeMap
 section HeapInstance
 
 open Option Std.DTreeMap.Internal.Impl List TransCmp OrientedCmp LawfulEqCmp Ordering
+open Iris.Std
 
 variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
 
 /-- TreeMap forms a Store with Option values. -/
-instance instStoreTreeMap : Store (TreeMap K V compare) K (Option V) where
-  get t k := t[k]?
-  set t k v := t.alter k (fun _ => v)
-  get_set_eq {t k k' v} h := by grind
-  get_set_ne {t k k' v} h := by grind
+instance instStoreTreeMap : PartialMap (TreeMap K · compare) K where
+  get? t k := t[k]?
+  insert t k v := t.alter k (fun _ => some v)
+  delete t k := t.alter k (fun _ => none)
+  empty := ∅
+  bindAlter f t := t.filterMap f
+  merge op t1 t2 := t1.mergeWith op t2
 
 private theorem get?_foldl_alter_impl_sigma {l : List ((_ : K) × V)}
     (hinit : init.WF) (hl : l.Pairwise (fun x y => ¬ (compare x.1 y.1).isEq)) :
@@ -312,11 +295,11 @@ private theorem get?_foldl_alter_impl_sigma {l : List ((_ : K) × V)}
     rw [foldl_cons, IH (WF.constAlter! hinit) (hl.tail), Const.get?_alter! hinit]
     by_cases h : compare hd.1 k = .eq <;> simp [h]
     rw [← Const.get?_congr hinit h]
-    have Hhead_none : tl.find? (fun x => (compare x.1 k).isEq) = none := by
+    have hhead_none : tl.find? (fun x => (compare x.1 k).isEq) = none := by
       refine find?_eq_none.mpr fun _ hkv He => rel_of_pairwise_cons hl hkv ?_
       refine isEq_iff_eq_eq.mpr <| compare_eq_iff_eq.mpr ?_
       rw [eq_of_compare h, compare_eq_iff_eq.mp <| isEq_iff_eq_eq.mp He]
-    rw [Hhead_none, map_none, pairMerge_none_right]
+    rw [hhead_none, map_none, pairMerge_none_right]
 
 private theorem getElem?_foldl_alter {l : List (K × V)} {init : TreeMap K V compare}
     (hl : l.Pairwise (fun a b => compare a.1 b.1 ≠ .eq)) :
@@ -400,13 +383,14 @@ theorem getElem?_mergeWith' {t₁ t₂ : TreeMap K V compare} {f : K → V → V
     simp [← hval, hfind]
     simp [eq_of_compare hkv_cmp]
 
-instance instHeapTreeMap : Heap (TreeMap K V compare) K V where
-  empty := {}
-  hmap f t := t.filterMap f
-  merge op t1 t2 := t1.mergeWith (fun _ v1 v2 => op v1 v2) t2
-  get_empty := rfl
-  get_hmap {f t k} := by show (filterMap f t)[k]? = t[k]?.bind (f k); simp
-  get_merge := getElem?_mergeWith'
+instance : LawfulPartialMap (TreeMap K · compare) K where
+  get?_empty := by simp [Iris.Std.get?, Iris.Std.empty]
+  get?_insert_eq := by simp [Iris.Std.get?, Iris.Std.insert]; grind
+  get?_insert_ne := by simp [Iris.Std.get?, Iris.Std.insert]; grind
+  get?_delete_eq := by simp [Iris.Std.get?, Iris.Std.delete]
+  get?_delete_ne := by simp [Iris.Std.get?, Iris.Std.delete]; grind
+  get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
+  get?_merge := getElem?_mergeWith'
 
 end HeapInstance
 
@@ -418,7 +402,7 @@ namespace Std.ExtTreeMap
 
 section HeapInstance
 
-open Option Std.ExtDTreeMap List TransCmp OrientedCmp LawfulEqCmp Ordering
+open Option Std.ExtDTreeMap List TransCmp OrientedCmp LawfulEqCmp Ordering Iris.Std
 
 variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
 
@@ -426,11 +410,14 @@ variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
 
 Note: This requires that `cmp k k' = .eq` implies `k = k'` (i.e., `LawfulEqCmp`).
 -/
-instance instStoreExtTreeMap : Store (ExtTreeMap K V compare) K (Option V) where
-  get t k := t[k]?
-  set t k v := t.alter k (fun _ => v)
-  get_set_eq {t k k' v} h := by grind
-  get_set_ne {t k k' v} h := by grind
+
+instance : PartialMap (ExtTreeMap K · compare) K where
+  get? t k := t[k]?
+  insert t k v := t.alter k (fun _ => some v)
+  delete t k := t.alter k (fun _ => none)
+  empty := ∅
+  bindAlter f t := t.filterMap f
+  merge op t1 t2 := t1.mergeWith op t2
 
 @[simp]
 theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
@@ -444,13 +431,14 @@ theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
   | _ m₁ => induction q₂ using Quotient.ind with
     | _ m₂ => exact Std.TreeMap.getElem?_mergeWith'
 
-instance instHeapExtTreeMap : Heap (ExtTreeMap K V compare) K V where
-  empty := {}
-  hmap f t := t.filterMap f
-  merge op t1 t2 := t1.mergeWith (fun _ => op) t2
-  get_empty := rfl
-  get_hmap {f t k} := by show (filterMap f t)[k]? = t[k]?.bind (f k); grind
-  get_merge := getElem?_mergeWith'
+instance : LawfulPartialMap (ExtTreeMap K · compare) K where
+  get?_empty := by simp [Iris.Std.get?, Iris.Std.empty]
+  get?_insert_eq := by simp [Iris.Std.get?, Iris.Std.insert]; grind
+  get?_insert_ne := by simp [Iris.Std.get?, Iris.Std.insert]; grind
+  get?_delete_eq := by simp [Iris.Std.get?, Iris.Std.delete]
+  get?_delete_ne := by simp [Iris.Std.get?, Iris.Std.delete]; grind
+  get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
+  get?_merge := getElem?_mergeWith'
 
 end HeapInstance
 
