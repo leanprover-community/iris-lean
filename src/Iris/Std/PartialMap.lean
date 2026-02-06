@@ -135,12 +135,6 @@ class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _)) extends P
 export LawfulPartialMap (get?_empty get?_insert_eq get?_insert_ne get?_delete_eq get?_delete_ne
   get?_bindAlter get?_merge)
 
--- theorem map_some [FunctorialPartialMap M K] {m : M V} {f : K → V → Option V'} (H : get? m k = some v) :
---     get? (f k <$> m) k = f k v := by simp [get?_map, H]
---
--- theorem map_none [FunctorialPartialMap M K] {m : M V} {f : K → V → Option V'} (H : get? m k = none) :
---     get? (f k <$> m) k = none := by simp [get?_map, H]
-
 namespace PartialMap
 
 variable {K : Type _} {M : Type _ → Type _} [PartialMap M K]

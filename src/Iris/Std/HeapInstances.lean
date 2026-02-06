@@ -12,27 +12,27 @@ import Std.Data.ExtTreeMap
 /-!
 # Heap Instances for Standard Types
 
-This file provides a library of `Store`, `Heap`, `AllocHeap`, and `UnboundedHeap`
+This file provides a library of `PartialMap`, `Heap`, and `UnboundedHeap`
 instances for types from the Lean standard library.
 
 ## Instances
-- Plain functions: `Store`, `IsoFunStore`
+- Plain functions: `PartialMap`, `IsoFunMap`
 - Functions into `Option`: `Heap`
 - Classical functions into `Option`: `UnboundedHeap`
 - Association lists: `UnboundedHeap`
-- `TreeMap`: `Heap`
-- `ExtTreeMap`: `Heap`
+- `TreeMap`: `PartialMap`
+- `ExtTreeMap`: `PartialMap`
 -/
 
 namespace Iris.Std
 
-/-! ## Function Store Instance -/
+/-! ## Function PartialMap Instance -/
 
-section FunStore
+section FunPartialMap
 
 variable {K V : Type _} [DecidableEq K]
 
-/-- Functions form a total store. -/
+/-- Functions form a partial map. -/
 instance instPartialMapFun : PartialMap (K → Option ·) K where
   get? t k := t k
   insert t k v := fun k' => if k = k' then some v else t k'
@@ -58,7 +58,7 @@ instance : LawfulPartialMap (K → Option ·) K where
 instance : ExtensionalPartialMap (K → Option ·) K where
   equiv_iff_eq := ⟨funext, congrFun⟩
 
-end FunStore
+end FunPartialMap
 
 /-! ## (Noncomputable) Allocation in an infinite function type -/
 noncomputable section ClassicalAllocHeap
@@ -74,8 +74,8 @@ instance instClassicalUnboundedHeap [InfiniteType K] : UnboundedHeap (K → Opti
   notFull_empty := by
     simp [notFull, infinite, cosupport, PartialMap.empty]
     exact ⟨InfiniteType.enum, fun n m a => InfiniteType.enum_inj n m a⟩
-  notFull_insert_fresh {_ t v H} := by
-    refine cofinite_alter_cofinite (Hs := H) (p' := fresh H) ?_
+  notFull_insert_fresh {_ t v h} := by
+    refine cofinite_alter_cofinite (Hs := h) (p' := fresh h) ?_
     simp [PartialMap.insert]
     grind
 
@@ -159,14 +159,14 @@ theorem AssocList.fresh_lookup_ge (f : AssocList V) n :
 theorem AssocList.construct_get (f : Nat → Option V) (N : Nat) :
     lookup (construct f N) = construct_spec f N := by
   funext k
-  rcases Nat.lt_or_ge k N with HL | HG
+  rcases Nat.lt_or_ge k N with hl | hg
   · induction N <;> simp
     rename_i N' IH
     split <;> rename_i h
     · simp only [lookup]; split
       · simp_all
       · rw [IH (by omega)]; simp; omega
-    · rw [if_pos HL]
+    · rw [if_pos hl]
       if h : k < N' then
         simp [IH h]; omega
       else
@@ -233,7 +233,7 @@ instance instAllocHeapAssocList : Iris.Std.Heap AssocList Nat where
 
 instance instUnboundedHeapAssocList : Iris.Std.UnboundedHeap AssocList Nat where
   notFull_empty := by simp [Iris.Std.notFull]
-  notFull_insert_fresh {t v H} := by simp [Iris.Std.notFull]
+  notFull_insert_fresh {t v h} := by simp [Iris.Std.notFull]
 
 end AssociationLists
 
@@ -295,11 +295,11 @@ private theorem get?_foldl_alter_impl_sigma {l : List ((_ : K) × V)}
     rw [foldl_cons, IH (WF.constAlter! hinit) (hl.tail), Const.get?_alter! hinit]
     by_cases h : compare hd.1 k = .eq <;> simp [h]
     rw [← Const.get?_congr hinit h]
-    have Hhead_none : tl.find? (fun x => (compare x.1 k).isEq) = none := by
+    have hhead_none : tl.find? (fun x => (compare x.1 k).isEq) = none := by
       refine find?_eq_none.mpr fun _ hkv He => rel_of_pairwise_cons hl hkv ?_
       refine isEq_iff_eq_eq.mpr <| compare_eq_iff_eq.mpr ?_
       rw [eq_of_compare h, compare_eq_iff_eq.mp <| isEq_iff_eq_eq.mp He]
-    rw [Hhead_none, map_none, pairMerge_none_right]
+    rw [hhead_none, map_none, pairMerge_none_right]
 
 private theorem getElem?_foldl_alter {l : List (K × V)} {init : TreeMap K V compare}
     (hl : l.Pairwise (fun a b => compare a.1 b.1 ≠ .eq)) :
