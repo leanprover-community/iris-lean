@@ -4,8 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu, Markus de Medeiros
 -/
 
-import Iris.Std.List
-
 /-! ## Partial Maps
 
 This file defines the base abstraction for partial maps (maps from keys to optional values).
