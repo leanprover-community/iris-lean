@@ -48,35 +48,10 @@ instance [LawfulPartialMap M K] [OFE V] (op : K → V → V → V) [∀ k, NonEx
     NonExpansive₂ (merge (M := M) op) where
   ne _ {_ _} Ht {_ _} Hs k := by simp only [get?_merge]; exact NonExpansive₂.ne (Ht k) (Hs k)
 
--- instance [Store T1 K V1] [Store T2 K V2] [OFE V1] [OFE V2] (f : K → V1 → V2)
---   [∀ k, NonExpansive (f k)] [HasStoreMap T1 T2 K V1 V2] : NonExpansive (dmap f : T1 → T2) where
---   ne _ {_ _} H k := by simp only [get_dmap]; exact NonExpansive.ne (H k)
-
 /-- Project a chain of stores through its kth coordinate to a chain of values. -/
 def chain [PartialMap M K] [OFE V] (k : K) (c : Chain (M V)) : Chain (Option V) where
   chain i := get? (c i) k
   cauchy Hni := c.cauchy Hni k
-
-
--- class Heap (T : Type _) (K V : outParam (Type _)) extends Store T K (Option V) where
---   empty : T
---   hmap (f : K → V → Option V) : T → T
---   merge (op : V → V → V) : T → T → T
---   get_empty : get empty k = none
---   get_hmap : get (hmap f t) k = (get t k).bind (f k)
---   get_merge : get (merge op t1 t2) k = Option.merge op (get t1 k) (get t2 k)
--- export Heap (empty hmap merge get_empty get_hmap get_merge)
---
--- theorem hmap_alloc [Heap T K V] {t : T} (H : get t k = some v) : get (hmap f t) k = f k v := by
---   simp [get_hmap, H]
---
--- theorem hmap_unalloc [Heap T K V] {t : T} (H : get t k = none) : get (hmap f t) k = none := by
---   simp [get_hmap, H]
-
-
--- get?_map {m : M V} {f : K → V → Option V'} {k} :
---   get? (f k <$> m) k = (get? m k).bind (f k)
-
 
 theorem chain_get [PartialMap M K] [OFE V] (k : K) (c : Chain (M V)) :
     (chain k c) i = get? (c i) k := by simp [chain]
@@ -227,7 +202,6 @@ instance instStoreCMRA : CMRA (M V) where
     · refine Hm.trans ?_
       simp [get?_merge, CMRA.op, optionOp, Option.merge, get?_bindAlter]
       rw [hF]
-      -- FIXME
       cases z1 <;> cases z2 <;> simp_all
       · cases h : (get? y2 i) <;> simp; simp [h] at Hz2
       · cases h : (get? y1 i) <;> simp; simp [h] at Hz1
@@ -257,8 +231,6 @@ end CMRA
 
 namespace Heap
 
--- TODO: Fix namespaces
--- TODO: Fix unnecessary Open Classical's
 open PartialMap LawfulPartialMap
 
 variable {K V : Type _} [LawfulPartialMap M K] [CMRA V]
@@ -537,54 +509,50 @@ section HeapFunctor
 
 variable {K} (H : Type _ → Type _) [LawfulPartialMap H K]
 
-section HeapMap
+namespace PartialMap
 
-def Heap.map (f : α → β) : H α → H β := PartialMap.bindAlter (fun _ a => some <| f a)
+def map (f : α → β) : H α → H β := PartialMap.bindAlter (fun _ a => some <| f a)
 
-instance [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonExpansive (Heap.map H f) where
+instance [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonExpansive (map H f) where
   ne := by
-    simp only [OFE.Dist, Option.Forall₂, Heap.map, get?_bindAlter, Option.bind]
-    intro n m1 m2
-    apply forall_imp
-    intro k
+    simp only [OFE.Dist, Option.Forall₂, map, get?_bindAlter, Option.bind]
+    refine fun n m1 m2 => forall_imp fun k => ?_
     cases get? m1 k <;> cases get? m2 k <;> simp
     apply OFE.NonExpansive.ne
 
-def Heap.map_id [OFE α] (a : H α):
-    Heap.map H id a ≡ a := by
-  simp [OFE.Equiv, Heap.map, get?_bindAlter, Option.bind, Option.Forall₂]
+def map_id [OFE α] (a : H α):
+    PartialMap.map H id a ≡ a := by
+  simp [OFE.Equiv, PartialMap.map, get?_bindAlter, Option.bind, Option.Forall₂]
   intro x
-  rcases (get? a x) <;> simp
+  rcases get? a x <;> simp
 
-def Heap.mapO [OFE α] [OFE β] (f : α -n> β) : OFE.Hom (H α) (H β) where
-  f := Heap.map H f
+def mapO [OFE α] [OFE β] (f : α -n> β) : OFE.Hom (H α) (H β) where
+  f := map H f
   ne := inferInstance
 
-def Heap.map_ext [OFE α] [OFE β] (f g : α -> β) (heq: f ≡ g) :
-    Heap.map H f m ≡ Heap.map H g m := by
+def map_ext [OFE α] [OFE β] {f g : α -> β} (heq : f ≡ g) : map H f m ≡ map H g m := by
   intro k
-  simp [Heap.map, get?_bindAlter, Option.bind]
+  simp [map, get?_bindAlter, Option.bind]
   cases get? m k <;> simp
   exact heq _
 
-def Heap.map_ne [OFE α] [OFE β] (f g : α -> β) (heq: f ≡{n}≡ g) :
-    Heap.map H f m ≡{n}≡ Heap.map H g m := by
-  simp [OFE.Dist, Option.Forall₂, Heap.map, get?_bindAlter]
+def map_ne [OFE α] [OFE β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H f m ≡{n}≡ map H g m := by
+  simp [OFE.Dist, Option.Forall₂, map, get?_bindAlter]
   intro k
   cases get? m k <;> simp
   exact heq _
 
-def Heap.map_compose [OFE α] [OFE β] [OFE γ] (f : α -> β) (g : β -> γ) m :
-    Heap.map H (g.comp f) m ≡ Heap.map H g (Heap.map H f m) := by
+def map_compose [OFE α] [OFE β] [OFE γ] (f : α -> β) (g : β -> γ) m :
+    map H (g.comp f) m ≡ map H g (map H f m) := by
   intro k
-  simp [Heap.map, get?_bindAlter]
+  simp [map, get?_bindAlter]
   cases get? m k <;> simp
 
-def Heap.mapC [CMRA α] [CMRA β] (f : α -C> β) : CMRA.Hom (H α) (H β) where
-  f := Heap.map H f
+def mapC [CMRA α] [CMRA β] (f : α -C> β) : CMRA.Hom (H α) (H β) where
+  f := PartialMap.map H f
   ne := inferInstance
   validN {n x} := by
-    simp only [Heap.map, CMRA.ValidN, Heap.validN, optionValidN]
+    simp only [map, CMRA.ValidN, Heap.validN, optionValidN]
     apply forall_imp
     intro k
     rw [get?_bindAlter]
@@ -592,69 +560,61 @@ def Heap.mapC [CMRA α] [CMRA β] (f : α -C> β) : CMRA.Hom (H α) (H β) where
     apply CMRA.Hom.validN
   pcore m := by
     intro x
-    simp [Heap.map, get?_bindAlter]
+    simp [map, get?_bindAlter]
     rcases get? m x with _|v <;> simp
     have h : (CMRA.pcore v).bind (fun a => some (f a)) = (CMRA.pcore v).map f := by
       rw [Option.map_eq_bind]
       rfl
     rw [h]
-    exact (CMRA.Hom.pcore f v)
+    exact CMRA.Hom.pcore f v
   op m1 m2 n := by
-    simp [CMRA.op, Heap.map, get?_bindAlter, get?_merge, Option.merge]
+    simp [CMRA.op, map, get?_bindAlter, get?_merge, Option.merge]
     cases get? m1 n <;> cases get? m2 n <;> simp
     apply CMRA.Hom.op
 
-end HeapMap
-
-abbrev HeapOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
+abbrev PartialMapOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => H (F A B)
 
-instance {F} [COFE.OFunctor F] : COFE.OFunctor (HeapOF H F) where
+instance {F} [COFE.OFunctor F] : COFE.OFunctor (PartialMapOF H F) where
   cofe := inferInstance
-  map f g := Heap.mapO H (COFE.OFunctor.map f g)
+  map f g := mapO H (COFE.OFunctor.map f g)
   map_ne {_} _ _ _ _ _ _ _ := by
     constructor
     intros _ _ _ _ _ _ _ _
-    apply Heap.map_ne
+    apply map_ne
     apply COFE.OFunctor.map_ne.ne <;> simp_all
   map_id x := by
-    symm
-    apply OFE.Equiv.trans
-    · exact (OFE.Equiv.symm (Heap.map_id H x))
-    · apply Heap.map_ext
-      exact (fun _ => OFE.Equiv.symm (COFE.OFunctor.map_id _))
+    refine .trans ?_ (map_id H x)
+    apply map_ext
+    exact (fun _ => COFE.OFunctor.map_id _)
   map_comp f g f' g' m := by
-    simp [Heap.mapO, Heap.map]
-    symm
-    intro x
-    simp [get?_bindAlter]
-    cases (get? m x) <;> simp
-    exact OFE.Equiv.symm (COFE.OFunctor.map_comp f g f' g' _)
-
-instance {F} [RFunctor F] : URFunctor (HeapOF H F) where
-  map f g := Heap.mapC H (RFunctor.map f g)
-  map_ne {_} _ _ _ _ _ _ _ := by
-    constructor
-    intros _ _ _ _ _ _ _ _
-    apply Heap.map_ne
-    apply RFunctor.map_ne.ne <;> simp_all
-  map_id x := by
-    symm
-    apply OFE.Equiv.trans
-    · exact (OFE.Equiv.symm (Heap.map_id H x))
-    · apply Heap.map_ext
-      exact (fun _ => OFE.Equiv.symm (RFunctor.map_id _))
-  map_comp f g f' g' m := by
-    simp [Heap.mapC, Heap.map]
-    symm
+    simp [mapO, map]
     intro x
     simp [get?_bindAlter]
     cases get? m x <;> simp
-    exact OFE.Equiv.symm (RFunctor.map_comp f g f' g' _)
+    exact COFE.OFunctor.map_comp f g f' g' _
 
-instance {F} [RFunctorContractive F] : URFunctorContractive (HeapOF H F) where
+instance {F} [RFunctor F] : URFunctor (PartialMapOF H F) where
+  map f g := mapC H (RFunctor.map f g)
+  map_ne {_} _ _ _ _ _ _ _ := by
+    constructor
+    intros _ _ _ _ _ _ _ _
+    apply map_ne
+    apply RFunctor.map_ne.ne <;> simp_all
+  map_id x := by
+    refine .trans ?_ (map_id H x)
+    apply map_ext
+    exact (fun _ => RFunctor.map_id _)
+  map_comp f g f' g' m := by
+    simp [mapC, map]
+    intro x
+    simp [get?_bindAlter]
+    cases get? m x <;> simp
+    exact (RFunctor.map_comp ..)
+
+instance {F} [RFunctorContractive F] : URFunctorContractive (PartialMapOF H F) where
   map_contractive.1 H m := by
-    apply Heap.map_ne _ _
-    apply (RFunctorContractive.map_contractive.1 H)
+    apply map_ne _ _
+    exact (RFunctorContractive.map_contractive.1 H)
 
-end HeapFunctor
+end PartialMap
