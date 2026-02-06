@@ -13,9 +13,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] CMRA 
   - [x] Functors
 - [ ] `auth.v`
-  - [ ] CMRA
-  - [ ] Updates
-  - [ ] Functors
+  - [x] CMRA
+  - [x] Updates
+  - [x] Functors
 - [ ] `big_op.v`
   - TBD (Zongyuan?)
 - [ ] `cmra.v`

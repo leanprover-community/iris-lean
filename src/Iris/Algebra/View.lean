@@ -641,7 +641,20 @@ theorem auth_alloc (Hup : ∀ n bf, R n a bf → R n a (b • bf)) :
     refine CMRA.op_ne.ne ?_
     exact (CMRA.unit_left_id_dist _)
 
--- TODO: Local update lemma
+theorem view_local_update {a a' : A} {b0 b1 b0' b1' : B}
+    (Hup : (b0, b1) ~l~> (b0', b1'))
+    (Hrel : ∀ n, R n a b0 → R n a' b0') :
+    ((●V a : View F R) • ◯V b0, (●V a) • ◯V b1) ~l~> ((●V a') • ◯V b0', (●V a') • ◯V b1') := by
+  rw [local_update_unital]
+  rintro n ⟨(_ | ⟨dq, ag'⟩), bf⟩ Hv Heq <;> rw [auth_one_op_frag_validN_iff] at Hv
+  · refine ⟨auth_one_op_frag_validN_iff.mpr (Hrel n Hv), ⟨.rfl, ?_⟩⟩
+    refine .trans ?_ (unit_left_id_dist b1').symm.op_l
+    refine unit_left_id_dist b0' |>.trans ?_
+    refine (local_update_unital.mp Hup _ _ (IsViewRel.rel_validN _ _ _ Hv) ?_).2
+    exact (unit_left_id_dist b0).symm.trans Heq.2 |>.trans (unit_left_id_dist b1).op_l
+  · refine ((UFraction.one_whole (α := F)).2 ?_).elim
+    refine DFrac.valid_own_op (validN_ne Heq ?_).1
+    exact auth_one_op_frag_validN_iff.mpr Hv
 
 end Updates
 
