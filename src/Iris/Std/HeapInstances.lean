@@ -81,8 +81,6 @@ instance instClassicalUnboundedHeap [InfiniteType K] : UnboundedHeap (K → Opti
 
 end ClassicalAllocHeap
 
-end Iris.Std
-
 section AssociationLists
 
 /-- An association list represented as a sequence of set and remove operations. -/
@@ -202,29 +200,29 @@ instance AssocList.instPartialMapAssocList : Iris.Std.PartialMap AssocList Nat w
     construct (fun n => op_lift (op n) (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
 
 instance AssocList.instLawfulPartialMapAssocList : Iris.Std.LawfulPartialMap AssocList Nat where
-  get?_empty := by simp [Iris.Std.get?]
-  get?_insert_eq := by simp [Iris.Std.get?, Iris.Std.insert]; grind
-  get?_insert_ne := by simp [Iris.Std.get?, Iris.Std.insert]; grind
-  get?_delete_eq := by simp [Iris.Std.get?, Iris.Std.delete]
-  get?_delete_ne := by simp [Iris.Std.get?, Iris.Std.delete]; grind
+  get?_empty := by simp [get?]
+  get?_insert_eq := by simp [get?, insert]; grind
+  get?_insert_ne := by simp [get?, insert]; grind
+  get?_delete_eq := by simp [get?, delete]
+  get?_delete_ne := by simp [get?, delete]; grind
   get?_bindAlter {_ _ n t f} := by
     induction t with
-    | empty => simp_all [Iris.Std.get?, Iris.Std.bindAlter, AssocList.map]
+    | empty => simp_all [get?, bindAlter, AssocList.map]
     | set n' v' t' IH =>
-      simp_all [Iris.Std.get?, Iris.Std.bindAlter]
+      simp_all [get?, bindAlter]
       cases h1 : f n' v' <;> simp <;> split <;> rename_i h2 <;> simp_all
     | remove n' t' IH =>
-      simp_all [Iris.Std.get?, Iris.Std.bindAlter]
+      simp_all [get?, bindAlter]
       split <;> simp [Option.bind]
   get?_merge := by
     intro _ op t1 t2 k
-    simp [Iris.Std.PartialMap.get?, Iris.Std.merge, AssocList.construct_get, Option.merge, op_lift]
+    simp [PartialMap.get?, merge, construct_get, Option.merge, op_lift]
     split
     · rename_i h
       cases t1.lookup k <;> cases t2.lookup k <;> simp_all
     · rename_i h
-      rw [AssocList.fresh_lookup_ge _ _ (by omega : t1.fresh ≤ k)]
-      rw [AssocList.fresh_lookup_ge _ _ (by omega : t2.fresh ≤ k)]
+      rw [fresh_lookup_ge _ _ (by omega : t1.fresh ≤ k)]
+      rw [fresh_lookup_ge _ _ (by omega : t2.fresh ≤ k)]
 
 instance instAllocHeapAssocList : Iris.Std.Heap AssocList Nat where
   notFull _ := True
@@ -232,10 +230,12 @@ instance instAllocHeapAssocList : Iris.Std.Heap AssocList Nat where
   get?_fresh {_ f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
 
 instance instUnboundedHeapAssocList : Iris.Std.UnboundedHeap AssocList Nat where
-  notFull_empty := by simp [Iris.Std.notFull]
-  notFull_insert_fresh {t v h} := by simp [Iris.Std.notFull]
+  notFull_empty := by simp [notFull]
+  notFull_insert_fresh {t v h} := by simp [notFull]
 
 end AssociationLists
+
+end Iris.Std
 
 section Lemmas
 
