@@ -33,7 +33,7 @@ open Iris
 section heapView
 open Std PartialMap Heap OFE CMRA
 
-variable (F K V : Type _) (H : Type _ → Type _) [UFraction F] [Heap H K] [CMRA V]
+variable (F K V : Type _) (H : Type _ → Type _) [UFraction F] [LawfulPartialMap H K] [CMRA V]
 
 /-- The view relation for heaps: relates a model heap to a fragment heap at step index `n`. -/
 def HeapR (n : Nat) (m : H V) (f : H (DFrac F × V)) : Prop :=
@@ -115,13 +115,12 @@ end heapView
 
 namespace HeapView
 
-open Heap OFE View One DFrac CMRA UFraction PartialMap Std.LawfulPartialMap
+open Heap OFE View One DFrac CMRA UFraction PartialMap Std LawfulPartialMap
 
-variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [Heap H K] [CMRA V]
+variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [LawfulPartialMap H K] [CMRA V]
 
 /-- Authoritative (fractional) ownership over an entire heap. -/
 def Auth (dq : DFrac F) (m : H V) : HeapView F K V H := ●V{dq} m
-
 
 /-- Fragmental (fractional) ownership over an allocated element in the heap. -/
 def Frag (k : K) (dq : DFrac F) (v : V) : HeapView F K V H := ◯V (Std.PartialMap.singleton k (dq, v))

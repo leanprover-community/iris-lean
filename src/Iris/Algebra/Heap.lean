@@ -7,7 +7,6 @@ Authors: Markus de Medeiros, Puming Liu
 import Iris.Algebra.CMRA
 import Iris.Algebra.OFE
 import Iris.Std.Set
-import Iris.Std.Heap
 import Iris.Std.PartialMap
 
 open Iris Std
@@ -45,7 +44,7 @@ instance [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive₂ (insert · k �
 theorem eqv_of_Equiv [OFE V] [PartialMap M K] {t1 t2 : M V} (H : PartialMap.equiv t1 t2) : t1 ≡ t2 :=
   (.of_eq <| H ·)
 
-instance [Heap M K] [OFE V] (op : K → V → V → V) [∀ k, NonExpansive₂ (op k)] :
+instance [LawfulPartialMap M K] [OFE V] (op : K → V → V → V) [∀ k, NonExpansive₂ (op k)] :
     NonExpansive₂ (merge (M := M) op) where
   ne _ {_ _} Ht {_ _} Hs k := by simp only [get?_merge]; exact NonExpansive₂.ne (Ht k) (Hs k)
 
@@ -103,8 +102,7 @@ namespace Heap
 
 open PartialMap
 
-variable [Heap M K] [CMRA V]
-
+variable [LawfulPartialMap M K] [CMRA V]
 
 @[simp] def op (s1 s2 : M V) : M V := merge (K := K) (fun _ => CMRA.op) s1 s2
 @[simp] def unit : M V := empty
@@ -176,7 +174,7 @@ instance instStoreCMRA : CMRA (M V) where
     cases get? x k <;> cases get? y k <;> cases get? z k <;> simp
     exact assoc
   comm {x y} k := by
-    simp [op, Heap.get?_merge]
+    simp [op, get?_merge]
     cases get? x k <;> cases get? y k <;> simp
     exact comm
   pcore_op_left {x cx} H k := by
@@ -251,7 +249,7 @@ instance instStoreCMRA : CMRA (M V) where
 instance instStoreUCMRA : UCMRA (M V) where
   unit := unit
   unit_valid := by simp [CMRA.Valid, get?_empty]
-  unit_left_id _ := by simp [CMRA.op, Heap.get?_merge, get?_empty]
+  unit_left_id _ := by simp [CMRA.op, get?_merge, get?_empty]
   pcore_unit _ := by simp [get?_bindAlter, get?_empty]
 
 end Heap
@@ -263,7 +261,7 @@ namespace Heap
 -- TODO: Fix unnecessary Open Classical's
 open PartialMap LawfulPartialMap
 
-variable {K V : Type _} [Heap M K] [CMRA V]
+variable {K V : Type _} [LawfulPartialMap M K] [CMRA V]
 
 open CMRA
 
@@ -475,10 +473,10 @@ instance {m : M V} [Hid : ∀ x : V, IdFree x] [Hc : ∀ x : V, Cancelable x] : 
   cancelableN {n m1 m2} Hv He i := by
     apply cancelableN (x := get? m i)
     · specialize Hv i; revert Hv
-      simp [CMRA.op, Heap.op, Heap.get?_merge, optionOp]
+      simp [CMRA.op, Heap.op, get?_merge, optionOp]
       cases _ : get? m i <;> cases _ : get? m1 i <;> simp_all
     · specialize He i; revert He
-      simp [Heap.get?_merge, CMRA.op, Heap.op, optionOp]
+      simp [get?_merge, CMRA.op, Heap.op, optionOp]
       cases get? m i <;> cases get? m1 i <;> cases get? m2 i <;> simp_all
 
 theorem insert_op_equiv {m1 m2 : M V} :
@@ -495,13 +493,13 @@ theorem insert_op_eq [IsoFunMap M K] {m1 m2 : M (Option V)} :
 theorem disjoint_op_equiv_union {m1 m2 : M V} (Hd : Set.Disjoint (dom m1) (dom m2)) :
     equiv (m1 • m2) (union m1 m2) := by
   refine fun j => ?_
-  simp [CMRA.op, Heap.op, Heap.get?_merge]
+  simp [CMRA.op, Heap.op, get?_merge]
   rcases _ : get? m1 j <;> cases _ : get? m2 j <;> simp_all
   refine (Hd j ?_).elim
   simp_all [dom]
 
 theorem disjoint_op_eq_union [IsoFunMap M K] {m1 m2 : M V} (H : Set.Disjoint (dom m1) (dom m2)) :
-    m1 • m2 = Heap.union m1 m2 :=
+    m1 • m2 = union m1 m2 :=
   IsoFunStore.ext (disjoint_op_equiv_union H)
 
 theorem valid0_disjoint_dom {m1 m2 : M V} (Hv : ✓{0} (m1 • m2)) (H : ∀ {k x}, get? m1 k = some x → Exclusive x) :
@@ -512,7 +510,7 @@ theorem valid0_disjoint_dom {m1 m2 : M V} (Hv : ✓{0} (m1 • m2)) (H : ∀ {k 
   rcases HY : get? m2 k with (_|y) <;> simp
   apply (H HX).1 y
   simp [CMRA.op, CMRA.ValidN] at Hv; specialize Hv k; revert Hv
-  simp [Heap.get?_merge, HX, HY]
+  simp [get?_merge, HX, HY]
 
 theorem valid_disjoint_dom {m1 m2 : M V} (Hv : ✓ (m1 • m2)) (H : ∀ {k x}, get? m1 k = some x → Exclusive x) :
     Set.Disjoint (dom m1) (dom m2) :=
@@ -524,7 +522,7 @@ theorem dom_op_union (m1 m2 : M V) : dom (m1 • m2) = Set.Union (dom m1) (dom m
 
 theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (dom m2) := by
   intro i
-  unfold Heap.dom
+  unfold dom
   rcases lookup_inc.mp Hinc i with ⟨z, Hz⟩
   revert Hz
   cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [CMRA.op, optionOp]
@@ -537,7 +535,7 @@ end Heap
 
 section HeapFunctor
 
-variable {K} (H : Type _ → Type _) [Heap H K]
+variable {K} (H : Type _ → Type _) [LawfulPartialMap H K]
 
 section HeapMap
 

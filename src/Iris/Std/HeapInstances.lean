@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alok Singh, Markus de Medeiros
 -/
 
-import Iris.Std.Heap
 import Iris.Std.PartialMap
 import Iris.Std.Infinite
 import Std.Data.TreeMap
@@ -40,6 +39,12 @@ instance instPartialMapFun : PartialMap (K → Option ·) K where
   delete t k := fun k' => if k = k' then none else t k'
   empty := fun _ => none
   bindAlter f t k := (t k).bind (f k)
+  merge f m1 m2 k :=
+    match m1 k, m2 k with
+    | none, none => none
+    | some x, none => some x
+    | none, some y => some y
+    | some x, some y => some <| f k x y
 
 instance : LawfulPartialMap (K → Option ·) K where
   get?_empty := by simp [get?, empty]
@@ -48,20 +53,10 @@ instance : LawfulPartialMap (K → Option ·) K where
   get?_delete_eq := by simp [get?, delete]
   get?_delete_ne := by simp [get?, delete]; grind
   get?_bindAlter := by simp [get?, bindAlter]
+  get?_merge {_ _ _ _ _} := by simp [get?, merge]; split <;> simp_all
 
 instance : ExtensionalPartialMap (K → Option ·) K where
   equiv_iff_eq := ⟨funext, congrFun⟩
-
-
-/-- Functions represent all functions (trivially). -/
-instance instRepFunStoreFun : Heap (K → Option ·) K where
-  merge f m1 m2 k :=
-    match m1 k, m2 k with
-    | none, none => none
-    | some x, none => some x
-    | none, some y => some y
-    | some x, some y => some <| f k x y
-  get?_merge {_ _ _ _ _} := by simp [get?]; split <;> simp_all
 
 end FunStore
 
@@ -70,7 +65,7 @@ noncomputable section ClassicalAllocHeap
 
 open Classical
 
-instance instClassicalAllocHeap : AllocHeap (K → Option ·) K where
+instance instClassicalAllocHeap : Heap (K → Option ·) K where
   notFull f := infinite <| cosupport f
   fresh := choose ∘ coinfinite_exists_next
   get?_fresh {_ _ H} := choose_spec <| coinfinite_exists_next H
@@ -188,14 +183,6 @@ theorem AssocList.construct_get (f : Nat → Option V) (N : Nat) :
     · simp [lookup]; grind
     · grind
 
-/-- PartialMap instance for AssocList. -/
-instance AssocList.instPartialMapAssocList : Iris.Std.PartialMap AssocList Nat where
-  get? f k := f.lookup k
-  insert f k v := f.update k (some v)
-  delete f k := f.update k none
-  empty := .empty
-  bindAlter f m := m.map f
-
 /-- Lift a binary operation to `Option`, treating `none` as an identity element. -/
 abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
   match v1, v2 with
@@ -203,6 +190,16 @@ abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
   | some v1, none => some v1
   | none, some v2 => some v2
   | none, none => none
+
+/-- PartialMap instance for AssocList. -/
+instance AssocList.instPartialMapAssocList : Iris.Std.PartialMap AssocList Nat where
+  get? f k := f.lookup k
+  insert f k v := f.update k (some v)
+  delete f k := f.update k none
+  empty := .empty
+  bindAlter f m := m.map f
+  merge op t1 t2 :=
+    construct (fun n => op_lift (op n) (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
 
 instance AssocList.instLawfulPartialMapAssocList : Iris.Std.LawfulPartialMap AssocList Nat where
   get?_empty := by simp [Iris.Std.get?]
@@ -219,13 +216,9 @@ instance AssocList.instLawfulPartialMapAssocList : Iris.Std.LawfulPartialMap Ass
     | remove n' t' IH =>
       simp_all [Iris.Std.get?, Iris.Std.bindAlter]
       split <;> simp [Option.bind]
-
-instance AssocList.instHeapAssocList : Heap AssocList Nat where
-  merge op t1 t2 :=
-    construct (fun n => op_lift (op n) (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
   get?_merge := by
     intro _ op t1 t2 k
-    simp [Iris.Std.PartialMap.get?, AssocList.construct_get, Option.merge, op_lift]
+    simp [Iris.Std.PartialMap.get?, Iris.Std.merge, AssocList.construct_get, Option.merge, op_lift]
     split
     · rename_i h
       cases t1.lookup k <;> cases t2.lookup k <;> simp_all
@@ -233,14 +226,14 @@ instance AssocList.instHeapAssocList : Heap AssocList Nat where
       rw [AssocList.fresh_lookup_ge _ _ (by omega : t1.fresh ≤ k)]
       rw [AssocList.fresh_lookup_ge _ _ (by omega : t2.fresh ≤ k)]
 
-instance instAllocHeapAssocList : AllocHeap AssocList Nat where
+instance instAllocHeapAssocList : Iris.Std.Heap AssocList Nat where
   notFull _ := True
   fresh {_ f} _ := f.fresh
   get?_fresh {_ f _} := fresh_lookup_ge f f.fresh (f.fresh.le_refl)
 
-instance instUnboundedHeapAssocList : UnboundedHeap AssocList Nat where
-  notFull_empty := by simp [notFull]
-  notFull_insert_fresh {t v H} := by simp [notFull]
+instance instUnboundedHeapAssocList : Iris.Std.UnboundedHeap AssocList Nat where
+  notFull_empty := by simp [Iris.Std.notFull]
+  notFull_insert_fresh {t v H} := by simp [Iris.Std.notFull]
 
 end AssociationLists
 
@@ -288,6 +281,7 @@ instance instStoreTreeMap : PartialMap (TreeMap K · compare) K where
   delete t k := t.alter k (fun _ => none)
   empty := ∅
   bindAlter f t := t.filterMap f
+  merge op t1 t2 := t1.mergeWith op t2
 
 private theorem get?_foldl_alter_impl_sigma {l : List ((_ : K) × V)}
     (hinit : init.WF) (hl : l.Pairwise (fun x y => ¬ (compare x.1 y.1).isEq)) :
@@ -396,9 +390,6 @@ instance : LawfulPartialMap (TreeMap K · compare) K where
   get?_delete_eq := by simp [Iris.Std.get?, Iris.Std.delete]
   get?_delete_ne := by simp [Iris.Std.get?, Iris.Std.delete]; grind
   get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
-
-instance : Heap (TreeMap K · compare) K where
-  merge op t1 t2 := t1.mergeWith op t2
   get?_merge := getElem?_mergeWith'
 
 end HeapInstance
@@ -426,6 +417,7 @@ instance : PartialMap (ExtTreeMap K · compare) K where
   delete t k := t.alter k (fun _ => none)
   empty := ∅
   bindAlter f t := t.filterMap f
+  merge op t1 t2 := t1.mergeWith op t2
 
 @[simp]
 theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
@@ -446,9 +438,6 @@ instance : LawfulPartialMap (ExtTreeMap K · compare) K where
   get?_delete_eq := by simp [Iris.Std.get?, Iris.Std.delete]
   get?_delete_ne := by simp [Iris.Std.get?, Iris.Std.delete]; grind
   get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
-
-instance instHeapExtTreeMap : Heap (ExtTreeMap K · compare) K where
-  merge op t1 t2 := t1.mergeWith op t2
   get?_merge := getElem?_mergeWith'
 
 end HeapInstance

@@ -33,7 +33,41 @@ class PartialMap (M : Type _ → Type _) (K : outParam (Type _)) where
   delete : M V → K → M V
   empty : M V
   bindAlter : (K → V → Option V') → M V → M V'
-export PartialMap (get? insert delete empty bindAlter)
+  merge (op : K → V → V → V) : M V → M V → M V
+export PartialMap (get? insert delete empty bindAlter merge)
+
+/-- RepFunMap: The map T is capable of representing all partial functions out of K. -/
+class RepFunMap (T : Type _ → Type _) (K : outParam (Type _)) [PartialMap T K] where
+  of_fun : (K → Option V) → T V
+  get_of_fun (f : K → Option V) (k : K) : get? (of_fun f) k = f k
+export RepFunMap (of_fun get_of_fun)
+
+/-- IsoFunStore: The map T is isomorphic to the type of functions out of `K`. In other words,
+    equality of T is the same as equality of functions, so the CMRA on these partial functions
+    is leibniz. -/
+class IsoFunMap (T : Type _  → Type _) (K : outParam (Type _)) [PartialMap T K]
+  extends RepFunMap T K where
+  of_fun_get {t : T V} : of_fun (get? t) = t
+export IsoFunMap (of_fun_get)
+
+theorem IsoFunStore.ext [PartialMap T K] [IsoFunMap T K] {t1 t2 : T V}
+    (H : ∀ k, get? t1 k = get? t2 k) : t1 = t2 := by
+  rw [← of_fun_get (t := t1), ← of_fun_get (t := t2)]
+  simp only [funext H]
+
+/-- An AllocHeap is a heap which can allocate elements under some condition. -/
+class Heap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
+  notFull : M V → Prop
+  fresh {m : M V} : notFull m → K
+  get?_fresh {m : M V} {H : notFull m} : get? m (fresh H) = none
+export Heap (notFull fresh get?_fresh)
+
+/-- An UnboundedHeap is a heap which can allocate an unbounded number of elements starting at empty. -/
+class UnboundedHeap (M : Type _ → Type _) (K : outParam (Type _)) extends Heap M K where
+  notFull_empty : notFull (empty : M V)
+  notFull_insert_fresh {m : M V} {H : notFull m} : notFull (insert m (fresh H) v)
+export UnboundedHeap (notFull_empty notFull_insert_fresh)
+
 
 namespace PartialMap
 
@@ -60,6 +94,12 @@ instance : Membership K (M V) := ⟨fun m k => (get? m k).isSome⟩
 /-- Universal quantification over map entries. -/
 def all (P : K → V → Prop) (m : M V) : Prop :=
   ∀ k v, get? m k = some v → P k v
+
+/-- The domain of a heap is the set of keys that map to .some values. -/
+def dom (m : M V) : K → Prop := fun k => (get? m k).isSome
+
+-- Should this be part of the typeclass, or should we use this derived one?
+@[simp] def union : M V → M V → M V := merge (fun _ v _ => v)
 
 /-- Two PartalMaps are pointwise equivalent. -/
 @[simp] def equiv (m1 m2 : M V) : Prop := ∀ k, get? m1 k = get? m2 k
@@ -88,8 +128,9 @@ class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _)) extends P
   get?_delete_eq {m : M V} {k k'} : k = k' → get? (delete m k) k' = none
   get?_delete_ne {m : M V} {k k'} : k ≠ k' → get? (delete m k) k' = get? m k'
   get?_bindAlter {m : M V} {f : K → V → Option V'} : get? (bindAlter f m) k = (get? m k).bind (f k)
+  get?_merge : get? (merge op m₁ m₂) k = Option.merge (op k) (get? m₁ k) (get? m₂ k)
 export LawfulPartialMap (get?_empty get?_insert_eq get?_insert_ne get?_delete_eq get?_delete_ne
-  get?_bindAlter )
+  get?_bindAlter get?_merge)
 
 -- theorem map_some [FunctorialPartialMap M K] {m : M V} {f : K → V → Option V'} (H : get? m k = some v) :
 --     get? (f k <$> m) k = f k v := by simp [get?_map, H]
@@ -459,5 +500,4 @@ theorem disjoint_singleton_right {m : M V} {i : K} {x : V} :
   · simp [PartialMap.singleton, get?_insert_ne hik, get?_empty] at hs2
 
 end LawfulPartialMap
-
 end Iris.Std
