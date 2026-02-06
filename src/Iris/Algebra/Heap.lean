@@ -316,7 +316,7 @@ theorem insert_equiv_singleton_op_singleton {m : M V} (Hemp : get? m i = none) :
 
 theorem insert_eq_singleton_op_singleton [IsoFunMap M K] {m : M V} (Hemp : get? m i = none) :
     insert m i x = singleton i x • m :=
-  IsoFunStore.ext (insert_equiv_singleton_op_singleton Hemp)
+  IsoFunMap.ext (insert_equiv_singleton_op_singleton Hemp)
 
 open Classical in
 theorem core_singleton_equiv {i : K} {x : V} {cx : V} (Hpcore : CMRA.pcore x = some cx) :
@@ -327,7 +327,7 @@ theorem core_singleton_equiv {i : K} {x : V} {cx : V} (Hpcore : CMRA.pcore x = s
 
 theorem singleton_core_eq [IsoFunMap M K] {i : K} {x : V} {cx} (Hpcore : CMRA.pcore x = some cx) :
     core (singleton i x : M V) = singleton i cx  :=
-  IsoFunStore.ext (core_singleton_equiv Hpcore)
+  IsoFunMap.ext (core_singleton_equiv Hpcore)
 
 open Classical in
 theorem singleton_core_eqv {i : K} {x : V} {cx} (Hpcore : CMRA.pcore x ≡ some cx) :
@@ -342,7 +342,7 @@ theorem singleton_core_total [IsTotal V] {i : K} {x : V} :
 
 theorem singleton_core_total_eq [IsTotal V] [IsoFunMap M K] {i : K} {x : V} :
     core (singleton i x : M V) = singleton i (core x) :=
-  IsoFunStore.ext singleton_core_total
+  IsoFunMap.ext singleton_core_total
 
 open Classical in
 theorem singleton_op_singleton {i : K} {x y : V} :
@@ -353,7 +353,7 @@ theorem singleton_op_singleton {i : K} {x y : V} :
 
 theorem singleton_op_singleton_eq [IsoFunMap M K] {i : K} {x y : V} :
     (singleton i x : M V) • (singleton i y) = (singleton i (x • y)) :=
-  IsoFunStore.ext singleton_op_singleton
+  IsoFunMap.ext singleton_op_singleton
 
 instance {m : M V} [I : ∀ x : V, CoreId x] : CoreId m where
   core_id i := by
@@ -488,7 +488,7 @@ theorem insert_op_equiv {m1 m2 : M V} :
 
 theorem insert_op_eq [IsoFunMap M K] {m1 m2 : M (Option V)} :
     (insert (m1 • m2) i (x • y)) = (insert m1 i x • insert m2 i y) :=
-  IsoFunStore.ext insert_op_equiv
+  IsoFunMap.ext insert_op_equiv
 
 theorem disjoint_op_equiv_union {m1 m2 : M V} (Hd : Set.Disjoint (dom m1) (dom m2)) :
     equiv (m1 • m2) (union m1 m2) := by
@@ -500,7 +500,7 @@ theorem disjoint_op_equiv_union {m1 m2 : M V} (Hd : Set.Disjoint (dom m1) (dom m
 
 theorem disjoint_op_eq_union [IsoFunMap M K] {m1 m2 : M V} (H : Set.Disjoint (dom m1) (dom m2)) :
     m1 • m2 = union m1 m2 :=
-  IsoFunStore.ext (disjoint_op_equiv_union H)
+  IsoFunMap.ext (disjoint_op_equiv_union H)
 
 theorem valid0_disjoint_dom {m1 m2 : M V} (Hv : ✓{0} (m1 • m2)) (H : ∀ {k x}, get? m1 k = some x → Exclusive x) :
     Set.Disjoint (dom m1) (dom m2) := by
