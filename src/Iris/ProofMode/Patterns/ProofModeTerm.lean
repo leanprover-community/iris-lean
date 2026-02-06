@@ -26,3 +26,5 @@ partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
 where
   parseSpats (spats : Syntax.TSepArray `specPat ",") : MacroM (List SpecPat) :=
       return (← spats.getElems.toList.mapM fun pat => SpecPat.parse pat.raw)
+
+def PMTerm.is_nontrivial (pmt : PMTerm) : Bool := !pmt.spats.isEmpty

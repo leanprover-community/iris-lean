@@ -228,13 +228,14 @@ partial def iCasesCore
       have ⟨A'', eq⟩ := mkIntuitionisticIf bi p' A'
       iCasesCore hyps Q' p' A'' A' eq arg @k
 
-elab "icases" colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => do
+elab "icases" keep:("+keep")? colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => do
   -- parse syntax
   let pmt ← liftMacroM <| PMTerm.parse pmt
   let pat ← liftMacroM <| iCasesPat.parse pat
   ProofModeM.runTactic λ mvar { bi, goal, hyps, .. } => do
 
-  let ⟨_, hyps, p, A, pf⟩ ← iHave hyps pmt false
+  -- We keep the persistent hypothesis if it is required by the user (+keep is set by ihave) or if we perform specialization
+  let ⟨_, hyps, p, A, pf⟩ ← iHave hyps pmt (keep.isSome || pmt.is_nontrivial) (try_dup_context := pat.should_try_dup_context)
 
   -- process pattern
   have ⟨B, eq⟩ := mkIntuitionisticIf bi p A
