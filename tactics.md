@@ -6,9 +6,8 @@
 | `istop`                                | Stop the proof mode.                                                                                                                                                                                                                 |
 | `irename` *nameFrom* `into` *nameTo*   | Rename the hypothesis *nameFrom* to *nameTo*.                                                                                                                                                                                        |
 | `iclear` *hyp*                         | Discard the hypothesis *hyp*.                                                                                                                                                                                                        |
-| `iexists` *x*                          | Resolve an existential quantifier in the goal by introducing the variable *x*.                                                                                                                                                       |
+| `iexists` *x*                          | Instantiate an existential quantifier in the goal with *x*.                                                                                                                                                                          |
 | `iexact` *hyp*                         | Solve the goal with the hypothesis *hyp*.                                                                                                                                                                                            |
-| `iassumption_lean`                     | Solve the goal with a hypothesis of the type `⊢ Q` from the Lean context.                                                                                                                                                            |
 | `iassumption`                          | Solve the goal with a hypothesis from any context (pure, intuitionistic or spatial).                                                                                                                                                 |
 | `iex_falso`                            | Change the goal to `False`.                                                                                                                                                                                                          |
 | `ipure` *hyp*                          | Move the hypothesis *hyp* to the pure context.                                                                                                                                                                                       |
@@ -16,15 +15,19 @@
 | `ispatial` *hyp*                       | Move the hypothesis *hyp* to the spatial context.                                                                                                                                                                                    |
 | `iemp_intro`                           | Solve the goal if it is `emp` and discard all hypotheses.                                                                                                                                                                            |
 | `ipure_intro`                          | Turn a goal of the form `⌜φ⌝` into a Lean goal `φ`.                                                                                                                                                                                  |
-| `ispecialize` *hyp* *args* `as` *name* | Specialize the wand or universal quantifier *hyp* with the hypotheses and variables *args* and assign the name *name* to the resulting hypothesis.                                                                                   |
+| `ispecialize` *pmTerm*                 | Specialize an hypothesis according to the proof mode term *pmTerm*.                                                                                                                                                                  |
 | `isplit`                               | Split a conjunction (e.g. `∧`) into two goals, using the entire spatial context for both of them.                                                                                                                                    |
-| `isplit`{`l`\|`r`}                    | Split a separating conjunction (e.g. `∗`) into two goals, using the entire spatial context for the left (`l`) or right (`r`) side.                                                                                                   |
-| `isplit`{`l`\|`r`} `[`*hyps*`]`       | Split a separating conjunction (e.g. `∗`) into two goals, using the hypotheses *hyps* as the spatial context for the left (`l`) or right (`r`) side. The remaining hypotheses in the spatial context are used for the opposite side. |
+| `isplit`{`l`\|`r`}                     | Split a separating conjunction (e.g. `∗`) into two goals, using the entire spatial context for the left (`l`) or right (`r`) side.                                                                                                   |
+| `isplit`{`l`\|`r`} `[`*hyps*`]`        | Split a separating conjunction (e.g. `∗`) into two goals, using the hypotheses *hyps* as the spatial context for the left (`l`) or right (`r`) side. The remaining hypotheses in the spatial context are used for the opposite side. |
 | `ileft`<br>`iright`                    | Choose to prove the left (`ileft`) or right (`iright`) side of a disjunction in the goal.                                                                                                                                            |
-| `icases` *hyp* `with` *cases-pat*      | Destruct the hypothesis *hyp* using the cases pattern *cases-pat*.                                                                                                                                                                   |
-| `iintro` *cases-pats*                  | Introduce up to multiple hypotheses and destruct them using the cases patterns *cases-pats*.                                                                                                                                         |
+| `icases` *pmTerm* `with` *cases-pat*   | Destruct *pmTerm* using the cases pattern *cases-pat*.                                                                                                                                                                               |
+| `imod` *pmTerm* with *cases-pat*       | Eliminate the modality at the top of *pmTerm* and destruct the result using *cases-pat*.                                                                                                                                             |
+| `iintro` *intro-pats*                  | Introduce up to multiple hypotheses using the intro patterns *intro-pats*.                                                                                                                                                           |
+| `imodintro`                            | Introduce the modality at the top of goal.                                                                                                                                                                                           |
+| `inext`                                | Introduce a later modality at the top of goal.                                                                                                                                                                                           |
 | `iapply` *pmTerm*                      | Match the conclusion of the current goal against the conclusion of the *pmTerm* and generates goals for each of its premises, moving all unused spatial hypotheses to the last premise.                                              |
-| `ipose` *pmTerm* `as` *name*           | Move *pmTerm* into the Iris context with the name *name*.                                                                                                                                                                               |
+| `ihave` *name* := *pmTerm*             | Move *pmTerm* into the Iris context with the name *name*.                                                                                                                                                                               |
+| `ihave` *name* : *term* $$ *spec-pat*  | Assert *term* as *name* and prove it using *spec-pat*.                                                                                                                                                                               |
 
 ## Cases Patterns
 
@@ -36,7 +39,8 @@
 | `(`*pat_1* [`\|` *pat_2*]...`)` | Destruct a disjunction and recursively destruct its arguments in separate goals using the patterns *pat_i*. The parentheses can be omitted if this pattern is not on the top level. |
 | `⌜`*name*`⌝`                    | Move the hypothesis to the pure context and rename it to *name*.                                                                                                                    |
 | `□` *pat*                       | Move the hypothesis to the intuitionistic context and further destruct it using the pattern *pat*.                                                                                  |
-| `-□` *pat*                      | Move the hypothesis to the spatial context and further destruct it using the pattern *pat*.                                                                                         |
+| `∗` *pat*                      | Move the hypothesis to the spatial context and further destruct it using the pattern *pat*.                                                                                         |
+| `>` *pat*                       | Eliminate the modality at the top of the hypothesis and further destruct the result using the pattern *pat*.                                                                        |
 
 Example:
 ```lean
@@ -47,18 +51,26 @@ P1 ∗ (□ P2 ∨ P2) ∗ (P3 ∧ P3')
 -- (there are of course other valid patterns for destructing the shown hypothesis)
 ```
 
+## Intro Patterns
+
+| Pattern                         | Description                                                                                                                                                                         |
+|---------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| *cases-pat*                     | Introduce an hypothesis and destruct it following *cases-pat*.                                                                                                                      |
+| `!>`                            | Introduce the modality at the top of the goal.                                                                                                                                      |
+
 ## Specialization Patterns
 
 | Pattern                         | Description                                                                                                                                                                         |
 |---------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `H`                             | Use the hypothesis `H`, which should match the premise exactly.                                                                                                                                               |
-| `[H1, ..., HN]`                 | Generate a goal with the hypotheses `[H1, ..., HN]`                                                                                                                                                                |
-| `[H1, ..., HN]` as *str*        | Generate a goal named *str* with the hypotheses `[H1, ..., HN]`.                                                                                                                                                            |
+| `H`                             | Use the hypothesis `H`, which should match the premise exactly.                                                                                                                     |
+| `[H1, ..., HN]`                 | Generate a goal with the hypotheses `[H1, ..., HN]`                                                                                                                                 |
+| `[H1, ..., HN]` as *str*        | Generate a goal named *str* with the hypotheses `[H1, ..., HN]`.                                                                                                                    |
+| `%t`                            | Use the pure term `t` to instantiate the hypothesis.                                                                                                                                |
 
 ## Proof Mode Terms
 
 Proof mode terms (*pmTerm*) are of the form
 ```
-(H $! t1 ... tn with "specPat1 ... specPatN")
+(H $$ specPat1, ..., specPatN)
 ```
-where `H` is a hypothesis or Lean term whose conclusion is an entailment, `t1 ... tn` are Lean terms for the instantiation of universal quantifiers, and `specPat1 ... specPatN` are specialization patterns.
+where `H` is a hypothesis or Lean term whose conclusion is an entailment, and `specPat1, ..., specPatN` are specialization patterns.

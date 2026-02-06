@@ -17,6 +17,7 @@ syntax "(" icasesPatAlts ")" : icasesPat
 syntax "⌜" binderIdent "⌝" : icasesPat
 syntax "□" icasesPat : icasesPat
 syntax "∗" icasesPat : icasesPat
+syntax ">" icasesPat : icasesPat
 
 macro "%" pat:binderIdent : icasesPat => `(icasesPat| ⌜$pat⌝)
 macro "#" pat:icasesPat : icasesPat => `(icasesPat| □ $pat)
@@ -32,6 +33,7 @@ inductive iCasesPat
   | pure           (pat : TSyntax ``binderIdent)
   | intuitionistic (pat : iCasesPat)
   | spatial        (pat : iCasesPat)
+  | mod            (pat : iCasesPat)
   deriving Repr, Inhabited
 
 partial def iCasesPat.parse (pat : TSyntax `icasesPat) : MacroM iCasesPat := do
@@ -46,6 +48,7 @@ where
   | `(icasesPat| ⌜$pat⌝) => some <| .pure pat
   | `(icasesPat| □$pat) => go pat |>.map .intuitionistic
   | `(icasesPat| ∗$pat) => go pat |>.map .spatial
+  | `(icasesPat| >$pat) => go pat |>.map .mod
   | `(icasesPat| ($pat)) => goAlts pat
   | _ => none
   goAlts : TSyntax ``icasesPatAlts → Option iCasesPat
