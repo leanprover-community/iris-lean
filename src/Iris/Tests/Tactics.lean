@@ -430,6 +430,11 @@ example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) 
   iapply H $$ %by exact a, %b, [HP]
   iapply HP
 
+/-- Tests `iapply` with pure hypothesis -/
+example [BI PROP] (Q : α → PROP) (a b : α) : (∀ x, ∀ y, ⌜x = a⌝ -∗ Q y) ⊢ Q b := by
+  iintro H
+  iapply H $$ %_, %b, %rfl
+
 /-- error: ispecialize: iprop(P a -∗ Q b) is not a lean premise -/
 #guard_msgs in
 example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
@@ -494,6 +499,13 @@ example [BI PROP] (P Q : Nat → PROP) :
 example [BI PROP] (P Q : Nat → PROP) :
   (P 1 ∧ Q 1) ⊢ Q 1 := by
   iintro H
+  iapply H
+
+/- Tests `iapply` exact matching, but not affine -/
+/-- error: iapply: the context P is not affine and goal not absorbing -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : Q ⊢ P -∗ Q := by
+  iintro H HP
   iapply H
 
 end apply
@@ -577,6 +589,21 @@ example [BI PROP] (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q
   ihave H' := H $$ %a, %b, [HP]
   . iexact HP
   iexact H'
+
+/-- Tests `ihave` with cases pattern -/
+example [BI PROP] (P Q : PROP) : ⊢ (□P ∗ Q) -∗ Q := by
+  iintro H
+  ihave ⟨□_, HQ⟩ := H
+  iexact HQ
+
+/-- Tests `ihave` assert -/
+example [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
+  iintro HP Hwand
+  ihave ⟨HQ, _⟩ : (Q ∗ emp) $$ [Hwand, HP]
+  . isplit
+    . iapply Hwand $$ HP
+    . ipure_intro; trivial
+  iexact HQ
 
 end ihave
 
@@ -1259,3 +1286,176 @@ example [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
   icases H with ⟨HA, HB⟩
 
 end cases
+
+section imodintro
+
+/-- Tests `imodintro` for absorbing (intuitionistic: id, spatial: id) -/
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <absorb> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP2
+
+/-- Tests `iintro` for introducing modalities -/
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <absorb> P := by
+  iintro ⟨□HP1, HP2⟩ !>
+  iexact HP2
+
+/-- Tests `imodintro` for persistently (intuitionistic: id, spatial: clear) -/
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <pers> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP1
+
+/-- Tests `imodintro` for affinely (intuitionistic: id, spatial: forall Affine) -/
+example [BI PROP] (P : PROP) : □ P ∗ <affine> P ⊢ <affine> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP2
+
+/- Tests `imodintro` for affinely (intuitionistic: id, spatial: forall Affine) failing -/
+/-- error: imodintro: hypothesis HP2 : P does not satisfy Affine -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <affine> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+
+/-- Tests `imodintro` for intuitionistically (intuitionistic: id, spatial: isEmpty) -/
+example [BI PROP] (P : PROP) : □ P ∗ □ P ⊢ □ P := by
+  iintro ⟨□HP1, □HP2⟩
+  imodintro
+  iexact HP2
+
+/- Tests `imodintro` for intuitionistically (intuitionistic: id, spatial: isEmpty) failing -/
+/-- error: imodintro: spatial context is not empty -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : □ P ∗ □ P ⊢ □ P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+
+/-- Tests `imodintro` for plain (intuitionistic: .forall Plain, spatial: clear) -/
+example [BI PROP] [BIPlainly PROP] (P : PROP) [Plain P] : □ P ∗ P ⊢ ■ P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP1
+
+/-- Tests `imodintro` for bupd (intuitionistic: id, spatial: id) -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) : □ P ∗ P ⊢ |==> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP2
+
+/-- Tests `imodintro` for later (both: transform) -/
+example [BI PROP] (P : PROP) : □ ▷ P ∗ ▷ P ⊢ ▷ P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP2
+
+/-- Tests `imodintro` for later n (both: transform) -/
+example [BI PROP] (P : PROP) : □ ▷^[n] P ∗ ▷^[n] P ⊢ ▷^[n] P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP2
+
+/-- Tests `imodintro` for later n (NatCancel) -/
+example [BI PROP] (P : PROP) : □ ▷^[5] P ∗ ▷^[3] P ⊢ ▷^[4] P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+  iexact HP2
+
+/-- Tests `imodintro` for complex later n (both: transform) -/
+example [BI PROP] (P : PROP) : □ ▷^[n] P ∗ ▷^[n] P ⊢ ▷^[n] P := by
+  iintro H
+  imodintro
+  icases H with ⟨-, HP2⟩
+  iexact HP2
+
+/-- Tests `imodintro` with specifying the pattern -/
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <absorb> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro (<absorb> _)
+  iexact HP2
+
+/- Tests `imodintro` for no modality -/
+/-- error: imodintro: P is not a modality -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro
+
+/- Tests `imodintro` with specifying the wrong pattern -/
+set_option pp.mvars false in
+/-- error: imodintro: iprop(<absorb> P) is not a modality matching iprop(□ ?_) -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : □ P ∗ P ⊢ <absorb> P := by
+  iintro ⟨□HP1, HP2⟩
+  imodintro (□ _)
+
+/-- Tests `imodintro` with nested modalities -/
+example [BI PROP] (P : PROP) : □ P ⊢ □ <pers> P := by
+  iintro □HP
+  imodintro
+  imodintro
+  iexact HP
+
+end imodintro
+
+section imod
+
+/-- Tests `imod` for bupd -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) : |==> P ⊢ |==> P := by
+  iintro HP
+  imod HP
+  iexact HP
+
+/-- Tests `imod` removing later before timeless propositions -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) [Timeless P] : ▷ P ⊢ ◇ P := by
+  iintro HP
+  imod HP
+  iexact HP
+
+/-- Tests `imod` for bupd under wand -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) : |==> P ⊢ emp -∗ |==> P := by
+  iintro HP
+  imod HP
+  iintro _
+  iexact HP
+
+/-- Tests `imod` with destructuring pattern -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) : |==> (P ∗ emp) ⊢ |==> P := by
+  iintro HP
+  imod HP with ⟨HP, _⟩
+  iexact HP
+
+/-- Tests `icases` with mod pattern -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) : emp ∗ |==> P ⊢ |==> P := by
+  iintro HP
+  icases HP with ⟨_, >HP⟩
+  iexact HP
+
+/- Tests `imod` for no modality -/
+/-- error: imod: P is not a modality -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : P ⊢ P := by
+  iintro HP
+  imod HP
+
+/-- Tests `imod` eliminating nested modalities -/
+example [BI PROP] [BIUpdate PROP] (P : PROP) : |==> |==> P ⊢ |==> P := by
+  iintro HP
+  imod HP
+  imod HP
+  iexact HP
+
+end imod
+
+section inext
+
+/- Tests `inext` failing on non-later goal -/
+set_option pp.mvars false in
+/-- error: imodintro: P is not a modality matching iprop(▷^[?_]?_) -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : P ⊢ P := by
+  iintro HP
+  inext
+
+end inext

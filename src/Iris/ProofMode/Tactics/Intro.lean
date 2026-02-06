@@ -5,6 +5,7 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 import Iris.ProofMode.Patterns.IntroPattern
 import Iris.ProofMode.Tactics.Cases
+import Iris.ProofMode.Tactics.ModIntro
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
@@ -44,12 +45,14 @@ private theorem imp_intro_spatial [BI PROP] {P Q A1 A2 B : PROP}
 private theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
     [FromWand Q A1 A2] (h : P ∗ A1 ⊢ A2) : P ⊢ Q := (wand_intro h).trans from_wand
 
-variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
-partial def iIntroCore
+partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat)) :
     ProofModeM (Q($P ⊢ $Q)) := do
   match pats with
   | [] => addBIGoal hyps Q
+  | (ref, .modintro) :: pats =>
+    withRef ref do
+    iModIntroCore hyps Q (← `(_)) (iIntroCore · · pats)
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar
@@ -107,7 +110,7 @@ elab "iintro" pats:(colGt introPat)* : tactic => do
   -- parse syntax
   let pats ← liftMacroM <| pats.mapM <| IntroPat.parse
 
-  ProofModeM.runTactic λ mvar { bi, hyps, goal, .. } => do
-  let pf ← iIntroCore bi hyps goal pats.toList
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  let pf ← iIntroCore hyps goal pats.toList
 
   mvar.assign pf
