@@ -476,7 +476,7 @@ end heapUpdates
 
 section heapViewFunctor
 
-variable [∀ α β, HasHeapMap (H α) (H β) K α β]
+open Iris.Std
 
 theorem heapR_map_eq [OFE A] [OFE B] [OFE A'] [OFE B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
     (n : Nat) (m : H (T A B)) (mv : H (DFrac F × T A B)) :
@@ -485,9 +485,9 @@ theorem heapR_map_eq [OFE A] [OFE B] [OFE A'] [OFE B'] [RFunctor T] (f : A' -n> 
       ((Heap.mapO H (RFunctor.map f g).toHom).f m)
       ((Heap.mapC H (Prod.mapC (CMRA.Hom.id (α := DFrac F))
       (RFunctor.map (F:=T) f g))).f mv) := by
-  simp [HeapR, Heap.mapC, Heap.mapO, Heap.map, CMRA.Hom.id, OFE.Hom.id, Prod.mapC, hhmap_get]
+  simp [HeapR, Heap.mapC, Heap.mapO, Heap.map, CMRA.Hom.id, OFE.Hom.id, Prod.mapC, get?_bindAlter]
   intros hr k a b
-  rcases h : Store.get mv k with _ | ⟨a,b⟩ <;> simp
+  rcases h : get? mv k with _ | ⟨a,b⟩ <;> simp
   rintro rfl rfl
   obtain ⟨v, hq, ⟨fr, ⟨hv1, hv2⟩, ho⟩⟩ := hr k a b h
   exists (RFunctor.map f g).f v
@@ -525,7 +525,7 @@ instance {T} [RFunctor T] : URFunctor (HeapViewURF (F := F) (H := H) T) where
     · refine fun _ => Heap.map_ne _ _ _ ?_
       exact fun _ => Prod.map_ne (fun _ => rfl) (RFunctor.map_ne.ne Hx Hy)
   map_id x := by
-    rw (config := { occs := .pos [2]}) [<- (View.map_id x)]
+    rw (config := { occs := .pos [2] }) [<- (View.map_id x)]
     apply View.map_ext
     · exact (COFE.OFunctor.map_id (F := HeapOF H T))
     · intro b
