@@ -25,7 +25,7 @@ Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.
 
 ## Parameters
 - `hyps`: Current proof mode hypothesis context
-- `keep`: If `true` and `tm` is an Iris hypothesis, keep it in the context;
+- `keep`: If `true` and `tm` is a persistent Iris hypothesis, keep it in the context;
   if `false`, remove it
 - `mayPostpone`: If `true`, allow postponing elaboration of metavariables in `tm`
 
@@ -33,7 +33,7 @@ Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.
 A tuple containing:
 - `e'`: Proposition for `hyps'`
 - `hyps'`: Updated hypothesis context
-- `p`: Persistence flag for the output (always `false` for Lean terms, inherited for Iris hypotheses)
+- `p`: Persistence flag for the output (always `true` for Lean terms, inherited for Iris hypotheses)
 - `out`: Asserted proposition
 - `pf`: Proof of `hyps ⊢ hyps' ∗ □?p out`
 -/
