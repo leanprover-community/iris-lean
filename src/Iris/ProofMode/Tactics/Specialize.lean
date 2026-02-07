@@ -108,16 +108,17 @@ private theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B}
 ## Returns
 A tuple containing:
 - `e`: Proposition for `hyps'`
-- `hyps'`: Updated hypothesis context
-- `pb`: Persistence flag for `B`
+- `hyps'`: Updated hypothesis context, =`hyps` if context duplication succeeds
+- `pb`: Persistence flag for `B`, =`true` if context duplication succeeds
 - `B`: Resulting proposition after applying all patterns
-- `pf`: Proof of `hyps ∗ □?pa A ⊢ hyps' ∗ □?pb B`
+- `pf`: Proof of `hyps ∗ □?pa A ⊢ hyps' ∗ □?pb B`, =`hyps ∗ □?pa A ⊢ hyps ∗ □ B` if context duplication succeeds
 -/
 def iSpecializeCore {e} (hyps : @Hyps u prop bi e) (pa : Q(Bool)) (A : Q($prop)) (spats : List SpecPat) (try_dup_context : Bool := false) :
   ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) × Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
   let state := { hyps, out := A, p := pa, pf := q(.rfl), .. }
   let ⟨_, hyps', pb, B, pf⟩ ← spats.foldlM SpecializeState.process_wand state
   if try_dup_context then
+    -- context duplication succeeds if `B` is persistent, and `A` is persistent or affine
     let B' : Q($prop) ← mkFreshExprMVarQ q($prop)
     let .some _ ← trySynthInstanceQ q(IntoPersistently $pb $B $B')
       | return ⟨_, hyps', pb, B, pf⟩
