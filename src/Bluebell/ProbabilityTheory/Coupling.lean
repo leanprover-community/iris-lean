@@ -163,7 +163,16 @@ theorem Lift.map {p : PMF α} {q : PMF β} {R : Set (α × β)}
 theorem IsCoupling.symm {c : PMF (α × β)} {p : PMF α} {q : PMF β}
     (hc : IsCoupling c p q) :
     IsCoupling (c.map Prod.swap) q p := by
-  constructor <;> sorry
+  exact {
+    map_fst := by
+      rw [PMF.map_comp]
+      have : Prod.fst ∘ Prod.swap = @Prod.snd α β := by ext ⟨a, b⟩; rfl
+      rw [this]; exact hc.map_snd
+    map_snd := by
+      rw [PMF.map_comp]
+      have : Prod.snd ∘ Prod.swap = @Prod.fst α β := by ext ⟨a, b⟩; rfl
+      rw [this]; exact hc.map_fst
+  }
 
 /-- Symmetry for relational lifting. -/
 theorem Lift.symm {p : PMF α} {q : PMF β} {R : Set (α × β)}
