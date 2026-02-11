@@ -254,17 +254,16 @@ def Lift (p : PMF α) (R : Set (α × β)) (q : PMF β) : Prop :=
 theorem IsCoupling.map
     {c : PMF (α × β)} {p : PMF α} {q : PMF β}
     (hc : IsCoupling c p q) (f : α → γ) (g : β → δ) :
-    IsCoupling (c.map (fun x => (f x.1, g x.2))) (p.map f) (q.map g) := by
-  exact {
-    map_fst := by
-      rw [PMF.map_comp]
-      have : Prod.fst ∘ (fun x => (f x.1, g x.2)) = f ∘ Prod.fst := by ext ⟨a, b⟩; rfl
-      rw [this, ← PMF.map_comp]; congr 1; exact hc.map_fst
-    map_snd := by
-      rw [PMF.map_comp]
-      have : Prod.snd ∘ (fun x => (f x.1, g x.2)) = g ∘ Prod.snd := by ext ⟨a, b⟩; rfl
-      rw [this, ← PMF.map_comp]; congr 1; exact hc.map_snd
-  }
+    IsCoupling (c.map (fun x => (f x.1, g x.2))) (p.map f) (q.map g) := {
+  map_fst := by
+    rw [PMF.map_comp]
+    have : Prod.fst ∘ (fun x => (f x.1, g x.2)) = f ∘ Prod.fst := by ext ⟨a, b⟩; rfl
+    rw [this, ← PMF.map_comp]; congr 1; exact hc.map_fst
+  map_snd := by
+    rw [PMF.map_comp]
+    have : Prod.snd ∘ (fun x => (f x.1, g x.2)) = g ∘ Prod.snd := by ext ⟨a, b⟩; rfl
+    rw [this, ← PMF.map_comp]; congr 1; exact hc.map_snd
+}
 
 /-- Lifting is preserved by post-processing functions, under relational image. -/
 theorem Lift.map {p : PMF α} {q : PMF β} {R : Set (α × β)}
@@ -284,17 +283,16 @@ theorem Lift.map {p : PMF α} {q : PMF β} {R : Set (α × β)}
 /-- Symmetry: swap a coupling. -/
 theorem IsCoupling.symm {c : PMF (α × β)} {p : PMF α} {q : PMF β}
     (hc : IsCoupling c p q) :
-    IsCoupling (c.map Prod.swap) q p := by
-  exact {
-    map_fst := by
-      rw [PMF.map_comp]
-      have : Prod.fst ∘ Prod.swap = @Prod.snd α β := by ext ⟨a, b⟩; rfl
-      rw [this]; exact hc.map_snd
-    map_snd := by
-      rw [PMF.map_comp]
-      have : Prod.snd ∘ Prod.swap = @Prod.fst α β := by ext ⟨a, b⟩; rfl
-      rw [this]; exact hc.map_fst
-  }
+    IsCoupling (c.map Prod.swap) q p := {
+  map_fst := by
+    rw [PMF.map_comp]
+    have : Prod.fst ∘ Prod.swap = @Prod.snd α β := by ext ⟨a, b⟩; rfl
+    rw [this]; exact hc.map_snd
+  map_snd := by
+    rw [PMF.map_comp]
+    have : Prod.snd ∘ Prod.swap = @Prod.fst α β := by ext ⟨a, b⟩; rfl
+    rw [this]; exact hc.map_fst
+}
 
 /-- Symmetry for relational lifting. -/
 theorem Lift.symm {p : PMF α} {q : PMF β} {R : Set (α × β)}
@@ -337,9 +335,7 @@ theorem Lift.graph (p : PMF α) (f : α → β) :
     simp only [Set.mem_setOf_eq]
     have hmem : (a, b) ∈ (PMF.map (fun a => (a, f a)) p).support := (PMF.mem_support_iff _ _).mpr hx
     obtain ⟨a', ha', heq⟩ := (PMF.mem_support_map_iff _ p _).mp hmem
-    simp only [Prod.mk.injEq] at heq
-    obtain ⟨rfl, rfl⟩ := heq
-    rfl
+    grind
 
 /-- Pure/pure coupling under a relation. -/
 theorem Lift.pure_pure {a : α} {b : β} {R : Set (α × β)}
