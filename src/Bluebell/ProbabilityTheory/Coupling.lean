@@ -321,16 +321,16 @@ theorem IsCoupling.map
     (hc : IsCoupling c p q) (f : α → γ) (g : β → δ) :
     IsCoupling (Prod.map f g <$> c) (f <$> p) (g <$> q) := by
   constructor
-  · simp only [← comp_map]; rw [show Prod.fst ∘ Prod.map f g = f ∘ Prod.fst from by ext ⟨a, b⟩; rfl, comp_map, hc.map_fst]
-  · simp only [← comp_map]; rw [show Prod.snd ∘ Prod.map f g = g ∘ Prod.snd from by ext ⟨a, b⟩; rfl, comp_map, hc.map_snd]
+  · simp only [← comp_map]; rw [show Prod.fst ∘ Prod.map f g = f ∘ Prod.fst from rfl, comp_map, hc.map_fst]
+  · simp only [← comp_map]; rw [show Prod.snd ∘ Prod.map f g = g ∘ Prod.snd from rfl, comp_map, hc.map_snd]
 
 /-- Symmetry for SPMF couplings. -/
 theorem IsCoupling.symm {c : SPMF (α × β)} {p : SPMF α} {q : SPMF β}
     (hc : IsCoupling c p q) :
     IsCoupling (Prod.swap.{u, u} <$> c) q p := by
   constructor
-  · simp only [← comp_map]; rw [show Prod.fst ∘ @Prod.swap α β = Prod.snd from by ext ⟨a, b⟩; rfl, hc.map_snd]
-  · simp only [← comp_map]; rw [show Prod.snd ∘ @Prod.swap α β = Prod.fst from by ext ⟨a, b⟩; rfl, hc.map_fst]
+  · simp only [← comp_map]; rw [show Prod.fst ∘ @Prod.swap α β = Prod.snd from rfl, hc.map_snd]
+  · simp only [← comp_map]; rw [show Prod.snd ∘ @Prod.swap α β = Prod.fst from rfl, hc.map_fst]
 
 /-- Monadic bind rule for relational lifting (PRHL bind). -/
 theorem Lift.bind {p : SPMF α} {q : SPMF β} {R : Set (α × β)}
