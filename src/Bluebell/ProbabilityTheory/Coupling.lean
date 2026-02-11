@@ -82,51 +82,29 @@ theorem IsCoupling.pure_iff {α β : Type u} {a : α} {b : β} {c : SPMF (α × 
     rw [OptionT.run_map] at h2r
     simp only [OptionT.run_pure] at h1r h2r
     rw [PMF.monad_map_eq_map] at h1r h2r
-    -- h1r : PMF.map (Option.map Prod.fst) (OptionT.run c) = PMF.pure (some a)
-    -- h2r : PMF.map (Option.map Prod.snd) (OptionT.run c) = PMF.pure (some b)
-    -- Support of c must be {some (a, b)}
     have hsupp : (OptionT.run c).support ⊆ {some (a, b)} := by
       intro x hx
-      simp only [Set.mem_singleton_iff]
-      have hfst_supp : Option.map Prod.fst x ∈ (PMF.map (Option.map Prod.fst) (OptionT.run c)).support :=
-        (PMF.mem_support_map_iff _ _ _).mpr ⟨x, hx, rfl⟩
-      rw [h1r] at hfst_supp
-      have hsnd_supp : Option.map Prod.snd x ∈ (PMF.map (Option.map Prod.snd) (OptionT.run c)).support :=
-        (PMF.mem_support_map_iff _ _ _).mpr ⟨x, hx, rfl⟩
-      rw [h2r] at hsnd_supp
-      have hfst_eq : Option.map Prod.fst x = some a :=
-        (PMF.mem_support_pure_iff (some a) (Option.map Prod.fst x)).mp hfst_supp
-      have hsnd_eq : Option.map Prod.snd x = some b :=
-        (PMF.mem_support_pure_iff (some b) (Option.map Prod.snd x)).mp hsnd_supp
+      have hfst : Option.map Prod.fst x = some a := by
+        have h := (PMF.mem_support_map_iff (Option.map Prod.fst) _ _).mpr ⟨x, hx, rfl⟩
+        rw [h1r] at h; exact (PMF.mem_support_pure_iff _ _).mp h
+      have hsnd : Option.map Prod.snd x = some b := by
+        have h := (PMF.mem_support_map_iff (Option.map Prod.snd) _ _).mpr ⟨x, hx, rfl⟩
+        rw [h2r] at h; exact (PMF.mem_support_pure_iff _ _).mp h
       cases x with
-      | none => simp at hfst_eq
-      | some p =>
-        simp at hfst_eq hsnd_eq
-        exact congr_arg some (Prod.ext hfst_eq hsnd_eq)
-    -- c.support is nonempty, so c.support = {some (a, b)}
-    have hsupp_eq : (OptionT.run c).support = {some (a, b)} := by
-      apply Set.Subset.antisymm hsupp
-      intro x hx; simp at hx; subst hx
-      rcases (OptionT.run c).support_nonempty with ⟨y, hy⟩
-      have := hsupp hy; simp at this; subst this; exact hy
-    have hval : (OptionT.run c) (some (a, b)) = 1 := (PMF.apply_eq_one_iff _ _).mpr hsupp_eq
-    -- Conclude by ext
+      | none => simp at hfst
+      | some p => simp at hfst hsnd; exact congr_arg some (Prod.ext hfst hsnd)
+    have hsupp_eq : (OptionT.run c).support = {some (a, b)} :=
+      (OptionT.run c).support_nonempty.subset_singleton_iff.mp hsupp
     show OptionT.run c = OptionT.run (pure (a, b))
     rw [OptionT.run_pure]
     ext x
     change (OptionT.run c) x = (PMF.pure (some (a, b))) x
     rw [PMF.pure_apply]
-    cases x with
-    | none =>
-      simp only [reduceCtorEq, ↓reduceIte]
-      have : none ∉ (OptionT.run c).support := by rw [hsupp_eq]; simp
+    by_cases h : x = some (a, b)
+    · subst h; simp [(PMF.apply_eq_one_iff _ _).mpr hsupp_eq]
+    · simp only [h, ↓reduceIte]
+      have : x ∉ (OptionT.run c).support := by rw [hsupp_eq]; simp [h]
       rwa [PMF.mem_support_iff, not_not] at this
-    | some p =>
-      by_cases h : p = (a, b)
-      · subst h; simp [hval]
-      · simp only [Option.some.injEq, h, ↓reduceIte]
-        have : some p ∉ (OptionT.run c).support := by rw [hsupp_eq]; simp [h]
-        rwa [PMF.mem_support_iff, not_not] at this
   · intro h; constructor <;> simp [h]
 
 theorem IsCoupling.none_iff {α β : Type u} {c : SPMF (α × β)} :
@@ -134,39 +112,28 @@ theorem IsCoupling.none_iff {α β : Type u} {c : SPMF (α × β)} :
   simp [failure]
   constructor
   · intro ⟨h1, _⟩
-    -- h1 : Prod.fst <$> c = OptionT.fail, suffices to show c = OptionT.fail
     have h1r := congrArg OptionT.run h1
     rw [OptionT.run_map] at h1r
-    -- h1r : PMF.map (Option.map Prod.fst) (OptionT.run c) = OptionT.run OptionT.fail
     rw [PMF.monad_map_eq_map] at h1r
-    -- Support of c must be {none}
     have hsupp : (OptionT.run c).support ⊆ {none} := by
       intro x hx
-      simp only [Set.mem_singleton_iff]
-      have hfst_supp : Option.map Prod.fst x ∈ (PMF.map (Option.map Prod.fst) (OptionT.run c)).support :=
-        (PMF.mem_support_map_iff _ _ _).mpr ⟨x, hx, rfl⟩
-      rw [h1r] at hfst_supp
-      have := (PMF.mem_support_pure_iff _ _).mp hfst_supp
+      have hfst : Option.map Prod.fst x = none := by
+        have h := (PMF.mem_support_map_iff (Option.map Prod.fst) _ _).mpr ⟨x, hx, rfl⟩
+        rw [h1r] at h; exact (PMF.mem_support_pure_iff _ _).mp h
       cases x with
       | none => rfl
-      | some _ => simp at this
-    have hsupp_eq : (OptionT.run c).support = {none} := by
-      apply Set.Subset.antisymm hsupp
-      intro x hx; simp at hx; subst hx
-      rcases (OptionT.run c).support_nonempty with ⟨y, hy⟩
-      have := hsupp hy; simp at this; subst this; exact hy
+      | some _ => simp at hfst
+    have hsupp_eq : (OptionT.run c).support = {none} :=
+      (OptionT.run c).support_nonempty.subset_singleton_iff.mp hsupp
     show OptionT.run c = OptionT.run OptionT.fail
     ext x
     change (OptionT.run c) x = (PMF.pure none) x
     rw [PMF.pure_apply]
-    cases x with
-    | none =>
-      have := (PMF.apply_eq_one_iff _ _).mpr hsupp_eq
-      simp [this]
-    | some p =>
-      have : some p ∉ (OptionT.run c).support := by rw [hsupp_eq]; simp
-      rw [PMF.mem_support_iff, not_not] at this
-      simp [this]
+    by_cases h : x = none
+    · subst h; simp [(PMF.apply_eq_one_iff _ _).mpr hsupp_eq]
+    · simp only [h, ↓reduceIte]
+      have : x ∉ (OptionT.run c).support := by rw [hsupp_eq]; simp [h]
+      rwa [PMF.mem_support_iff, not_not] at this
   · intro h; subst h; constructor <;> { ext x; simp [OptionT.fail] }
 
 /-- Main theorem about coupling and bind operations -/
@@ -183,8 +150,6 @@ theorem IsCoupling.bind {α₁ α₂ β₁ β₂ : Type u}
     intro γ m k₁ k₂ hk
     show OptionT.run (m >>= k₁) = OptionT.run (m >>= k₂)
     simp only [OptionT.run_bind]
-    -- Goal: Option.elimM m.run (pure none) (OptionT.run ∘ k₁) = ... k₂
-    -- Show the continuations fed to Option.elimM agree on support
     suffices h : ∀ x, m.1 x ≠ 0 →
         x.elim (pure none) (fun ab => OptionT.run (k₁ ab)) =
         x.elim (pure none) (fun ab => OptionT.run (k₂ ab)) by
@@ -256,13 +221,9 @@ theorem IsCoupling.map
     (hc : IsCoupling c p q) (f : α → γ) (g : β → δ) :
     IsCoupling (c.map (fun x => (f x.1, g x.2))) (p.map f) (q.map g) := {
   map_fst := by
-    rw [PMF.map_comp]
-    have : Prod.fst ∘ (fun x => (f x.1, g x.2)) = f ∘ Prod.fst := by ext ⟨a, b⟩; rfl
-    rw [this, ← PMF.map_comp]; congr 1; exact hc.map_fst
+    rw [PMF.map_comp, show Prod.fst ∘ (fun x => (f x.1, g x.2)) = f ∘ Prod.fst from rfl, ← PMF.map_comp, hc.map_fst]
   map_snd := by
-    rw [PMF.map_comp]
-    have : Prod.snd ∘ (fun x => (f x.1, g x.2)) = g ∘ Prod.snd := by ext ⟨a, b⟩; rfl
-    rw [this, ← PMF.map_comp]; congr 1; exact hc.map_snd
+    rw [PMF.map_comp, show Prod.snd ∘ (fun x => (f x.1, g x.2)) = g ∘ Prod.snd from rfl, ← PMF.map_comp, hc.map_snd]
 }
 
 /-- Lifting is preserved by post-processing functions, under relational image. -/
@@ -275,9 +236,7 @@ theorem Lift.map {p : PMF α} {q : PMF β} {R : Set (α × β)}
   rcases hpq with ⟨c, hc, hsupp⟩
   refine ⟨_, IsCoupling.map (hc) f g, ?_⟩
   intro y hy
-  have hmem : y ∈ (PMF.map (fun x => (f x.1, g x.2)) c).support := (PMF.mem_support_iff _ y).mpr hy
-  obtain ⟨⟨a, b⟩, hab, hfg⟩ := (PMF.mem_support_map_iff _ c y).mp hmem
-  subst hfg
+  obtain ⟨⟨a, b⟩, hab, rfl⟩ := (PMF.mem_support_map_iff _ c y).mp ((PMF.mem_support_iff _ y).mpr hy)
   exact hR a b (hsupp _ ((PMF.mem_support_iff c (a, b)).mp hab))
 
 /-- Symmetry: swap a coupling. -/
@@ -285,13 +244,9 @@ theorem IsCoupling.symm {c : PMF (α × β)} {p : PMF α} {q : PMF β}
     (hc : IsCoupling c p q) :
     IsCoupling (c.map Prod.swap) q p := {
   map_fst := by
-    rw [PMF.map_comp]
-    have : Prod.fst ∘ Prod.swap = @Prod.snd α β := by ext ⟨a, b⟩; rfl
-    rw [this]; exact hc.map_snd
+    rw [PMF.map_comp, show Prod.fst ∘ Prod.swap = @Prod.snd α β from rfl, hc.map_snd]
   map_snd := by
-    rw [PMF.map_comp]
-    have : Prod.snd ∘ Prod.swap = @Prod.fst α β := by ext ⟨a, b⟩; rfl
-    rw [this]; exact hc.map_fst
+    rw [PMF.map_comp, show Prod.snd ∘ Prod.swap = @Prod.fst α β from rfl, hc.map_fst]
 }
 
 /-- Symmetry for relational lifting. -/
@@ -301,10 +256,7 @@ theorem Lift.symm {p : PMF α} {q : PMF β} {R : Set (α × β)}
   refine ⟨_, (IsCoupling.symm hc), ?_⟩
   intro y hy
   simp only [Set.mem_preimage]
-  have hmem : y ∈ (PMF.map Prod.swap c).support := (PMF.mem_support_iff _ y).mpr hy
-  obtain ⟨⟨a, b⟩, hab, hswap⟩ := (PMF.mem_support_map_iff Prod.swap c y).mp hmem
-  simp only [Prod.swap_prod_mk] at hswap
-  obtain ⟨rfl, rfl⟩ := hswap
+  obtain ⟨⟨a, b⟩, hab, rfl⟩ := (PMF.mem_support_map_iff Prod.swap c y).mp ((PMF.mem_support_iff _ y).mpr hy)
   exact hsupp _ ((PMF.mem_support_iff c (a, b)).mp hab)
 
 /-- Product (independent) coupling: pair samples of `p` and `q`. -/
@@ -327,9 +279,7 @@ theorem Lift.graph (p : PMF α) (f : α → β) :
     Lift p {x : α × β | x.2 = f x.1} (p.map f) := by
   refine ⟨p.map (fun a => (a, f a)), ?_, ?_⟩
   · constructor
-    · rw [PMF.map_comp]
-      have : Prod.fst ∘ (fun a => (a, f a)) = id := by ext a; rfl
-      rw [this, PMF.map_id]
+    · rw [PMF.map_comp, show Prod.fst ∘ (fun a => (a, f a)) = id from rfl, PMF.map_id]
     · rw [PMF.map_comp]; congr 1
   · intro ⟨a, b⟩ hx
     simp only [Set.mem_setOf_eq]
@@ -371,24 +321,16 @@ theorem IsCoupling.map
     (hc : IsCoupling c p q) (f : α → γ) (g : β → δ) :
     IsCoupling (Prod.map f g <$> c) (f <$> p) (g <$> q) := by
   constructor
-  · simp only [← comp_map]
-    have : Prod.fst ∘ Prod.map f g = f ∘ Prod.fst := by ext ⟨a, b⟩; rfl
-    rw [this, comp_map]; congr 1; exact hc.map_fst
-  · simp only [← comp_map]
-    have : Prod.snd ∘ Prod.map f g = g ∘ Prod.snd := by ext ⟨a, b⟩; rfl
-    rw [this, comp_map]; congr 1; exact hc.map_snd
+  · simp only [← comp_map]; rw [show Prod.fst ∘ Prod.map f g = f ∘ Prod.fst from by ext ⟨a, b⟩; rfl, comp_map, hc.map_fst]
+  · simp only [← comp_map]; rw [show Prod.snd ∘ Prod.map f g = g ∘ Prod.snd from by ext ⟨a, b⟩; rfl, comp_map, hc.map_snd]
 
 /-- Symmetry for SPMF couplings. -/
 theorem IsCoupling.symm {c : SPMF (α × β)} {p : SPMF α} {q : SPMF β}
     (hc : IsCoupling c p q) :
     IsCoupling (Prod.swap.{u, u} <$> c) q p := by
   constructor
-  · simp only [← comp_map]
-    have : Prod.fst ∘ @Prod.swap α β = Prod.snd := by ext ⟨a, b⟩; rfl
-    rw [this]; exact hc.map_snd
-  · simp only [← comp_map]
-    have : Prod.snd ∘ @Prod.swap α β = Prod.fst := by ext ⟨a, b⟩; rfl
-    rw [this]; exact hc.map_fst
+  · simp only [← comp_map]; rw [show Prod.fst ∘ @Prod.swap α β = Prod.snd from by ext ⟨a, b⟩; rfl, hc.map_snd]
+  · simp only [← comp_map]; rw [show Prod.snd ∘ @Prod.swap α β = Prod.fst from by ext ⟨a, b⟩; rfl, hc.map_fst]
 
 /-- Monadic bind rule for relational lifting (PRHL bind). -/
 theorem Lift.bind {p : SPMF α} {q : SPMF β} {R : Set (α × β)}
