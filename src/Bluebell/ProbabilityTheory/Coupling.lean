@@ -280,7 +280,7 @@ theorem Lift.graph (p : PMF α) (f : α → β) :
   refine ⟨p.map (fun a => (a, f a)), ?_, ?_⟩
   · constructor
     · rw [PMF.map_comp, show Prod.fst ∘ (fun a => (a, f a)) = id from rfl, PMF.map_id]
-    · rw [PMF.map_comp]; congr 1
+    · rw [PMF.map_comp]; rfl
   · intro ⟨a, b⟩ hx
     simp only [Set.mem_setOf_eq]
     have hmem : (a, b) ∈ (PMF.map (fun a => (a, f a)) p).support := (PMF.mem_support_iff _ _).mpr hx
