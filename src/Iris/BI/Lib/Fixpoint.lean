@@ -73,37 +73,34 @@ theorem least_fixpoint_affine (H : ∀ x, Affine (F (fun _ => emp) x)) (x : A) :
     Affine (bi_least_fixpoint F x) := by
   constructor
   -- FIXME: Proofmode bug when trying to iapply (not an emp valid)
-  -- revert x; iapply H
   -- Error: ∀ (x : A), bi_least_fixpoint F x ⊢ emp is not an emp valid
-  refine .trans ?_ <|
-         wand_elim <| (wand_elim <| least_fixpoint_iter (Φ := fun _ => emp) F).trans (forall_elim x)
+  refine .trans ?_ <| wand_elim <| (wand_elim <| least_fixpoint_iter (Φ := fun _ => emp) F).trans (forall_elim x)
   iintro H
   isplitr [H]
   · isplit
     · exact true_intro
     · iintro !> %y H
-      ihave HY := (H y).affine
-      iapply HY
+      iapply (H y).affine
       iexact H
   · iexact H
-
---   Lemma least_fixpoint_affine :
---     (∀ x, Affine (F (λ _, emp%I) x)) →
---     ∀ x, Affine (bi_least_fixpoint F x).
---   Proof.
---     intros ?. rewrite /Affine. iApply least_fixpoint_iter.
---     by iIntros "!> %y HF".
---   Qed.
 
 theorem least_fixpoint_absorbing (H : ∀ Φ, (∀ x, Absorbing (Φ x)) → (∀ x, Absorbing (F Φ x))) (x : A) :
     Absorbing (bi_least_fixpoint F x) := by
   constructor
   simp only [absorbingly]
   iapply wand_elim'
-  revert x
+  have X := @least_fixpoint_iter PROP A _ _ F (fun _ => (iprop(True -∗ bi_least_fixpoint F x))) _
+  have Y := wand_elim <| (wand_elim X).trans (forall_elim x)
+  refine .trans ?_ Y
+  clear X Y
+  iintro H
+  isplitr
+  · iintro
+    sorry
+  · iexact H
   -- FIXME: least_fixpoint_iter should be applicible here.
   -- iapply least_fixpoint_iter
-  sorry
+
 --   Lemma least_fixpoint_absorbing :
 --     (∀ Φ, (∀ x, Absorbing (Φ x)) → (∀ x, Absorbing (F Φ x))) →
 --     ∀ x, Absorbing (bi_least_fixpoint F x).
