@@ -348,7 +348,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] iPoseProof (Lean: ihave _ := _)
   - [ ] iSpecialize
     - [x] basic functionality
-    - [ ] duplicate context for persistent conclusion
+    - [x] duplicate context for persistent conclusion
           (includes other tactics using specialization)
     - [ ] all specialization patterns (see below)
   - [x] iApply

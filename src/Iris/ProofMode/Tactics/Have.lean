@@ -10,7 +10,7 @@ import Iris.ProofMode.Tactics.Cases
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-macro "ihave" colGt pat:icasesPat " := " pmt:pmTerm : tactic => `(tactic | icases $pmt with $pat)
+macro "ihave" colGt pat:icasesPat " := " pmt:pmTerm : tactic => `(tactic | icases +keep $pmt with $pat)
 
 private theorem ihave_assert [BI PROP] {A B C : PROP}
   (h1 : A ∗ □ (B -∗ B) ⊢ C) : A ⊢ C :=
@@ -23,7 +23,7 @@ elab "ihave" colGt pat:icasesPat " : " P:term "$$" spat:specPat : tactic => do
   ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
   let P ← elabTermEnsuringTypeQ (← `(iprop($P))) prop
   --  establish `P` with `spat`
-  let ⟨_, hyps', p, A, pf⟩ ← iSpecializeCore hyps q(true) q(iprop($P -∗ $P)) [spat]
+  let ⟨_, hyps', p, A, pf⟩ ← iSpecializeCore hyps q(true) q(iprop($P -∗ $P)) [spat] (try_dup_context := pat.should_try_dup_context)
   have ⟨B, eq⟩ := mkIntuitionisticIf bi p A
   let pf2 ← iCasesCore bi hyps' goal p B A eq pat (λ hyps => addBIGoal hyps goal)
   mvar.assign q(ihave_assert (($pf).trans $pf2))
