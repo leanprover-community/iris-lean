@@ -112,34 +112,30 @@ theorem least_fixpoint_absorbing [BIMonoPred F]
   iapply HF
   exact true_intro
 
-theorem least_fixpoint_persistent_affine
-    (H1 : ∀ Φ, (∀ x, Affine (Φ x)) → (∀ x, Affine (F Φ x)))
-    (H2 : ∀ Φ, (∀ x, Persistent (Φ x)) → (∀ x, Persistent (F Φ x)))
+theorem least_fixpoint_persistent_affine [BIMonoPred F]
+    (HAffine : ∀ Φ, (∀ x, Affine (Φ x)) → (∀ x, Affine (F Φ x)))
+    (HPersistent : ∀ Φ, (∀ x, Persistent (Φ x)) → (∀ x, Persistent (F Φ x)))
     (x : A) : Persistent (bi_least_fixpoint F x) := by
   constructor
   refine .trans ?_ persistently_of_intuitionistically
-  istart
-  letI _ : NonExpansive fun x => iprop(□ bi_least_fixpoint F x) := sorry
-  have X := @least_fixpoint_iter PROP A _ _ F  (fun x => iprop(□ bi_least_fixpoint F x)) _
-  have Y := (wand_entails X).trans (forall_elim x)
-  refine .trans ?_ Y
-  clear X Y
-  sorry
-
-
---  Lemma least_fixpoint_persistent_affine :
---      →
---      →
---     ∀ x, Persistent (bi_least_fixpoint F x).
---   Proof using Type*.
---     intros ?? x. rewrite /Persistent -intuitionistically_into_persistently_1.
---     revert x. iApply least_fixpoint_iter; first solve_proper.
---     iIntros "!> %y #HF !>". iApply least_fixpoint_unfold.
---     iApply (bi_mono_pred with "[] HF"); first solve_proper.
---     by iIntros "!> %x #?".
---   Qed.
-
-
+  revert x
+  letI _ : NonExpansive fun x => iprop(□ bi_least_fixpoint F x) :=
+    ⟨fun _ _ _ H => intuitionistically_ne.ne (NonExpansive.ne H)⟩
+  iapply least_fixpoint_iter
+  · infer_instance
+  iintro !> %y HY
+  letI _ : Persistent (F (fun x => iprop(□ bi_least_fixpoint F x)) y) :=
+    HPersistent _ (fun x => ⟨persistent⟩) _
+  letI _ : Affine (F (fun x => iprop(□ bi_least_fixpoint F x)) y) :=
+    HAffine _ (fun x => intuitionistically_affine (bi_least_fixpoint F x)) _
+  iintuitionistic HY
+  iintro !>
+  iapply least_fixpoint_unfold
+  · infer_instance
+  iapply (mono_pred (Φ := fun x => iprop(□ bi_least_fixpoint F x)))
+  · iintro !> %_ #Hx
+    iexact Hx
+  · exact intuitionistically_elim
 
 end LeastFixpoint
 
