@@ -78,39 +78,40 @@ theorem least_fixpoint_affine (H : ∀ x, Affine (F (fun _ => emp) x)) (x : A) :
   iapply (H y).affine
   iexact H
 
-theorem least_fixpoint_absorbing (H : ∀ Φ, (∀ x, Absorbing (Φ x)) → (∀ x, Absorbing (F Φ x))) (x : A) :
+theorem least_fixpoint_absorbing [BIMonoPred F]
+    (H : ∀ Φ, (∀ x, Absorbing (Φ x)) → (∀ x, Absorbing (F Φ x))) (x : A) :
     Absorbing (bi_least_fixpoint F x) := by
   constructor
-  simp only [absorbingly]
   iapply wand_elim'
-  have X := @least_fixpoint_iter PROP A _ _ F (fun _ => (iprop(True -∗ bi_least_fixpoint F x))) _
-  have Y := wand_elim <| (wand_elim X).trans (forall_elim x)
-  refine .trans ?_ Y
-  clear X Y
-  iintro H
-  isplitr
-  · iintro
-    sorry
-  · iexact H
-  -- FIXME: least_fixpoint_iter should be applicible here.
-  -- iapply least_fixpoint_iter
+  revert x
+  letI _ : NonExpansive fun x => iprop(True -∗ bi_least_fixpoint F x) :=
+    ⟨fun _ _ _ H => wand_ne.ne .rfl (NonExpansive.ne H)⟩
+  iapply least_fixpoint_iter
+  · infer_instance -- FIXME: Should iapply infer this?
+  iintro !> %y HF HT
+  iapply least_fixpoint_unfold
+  · infer_instance -- FIXME: Should iapply infer this?
+  ihave HF : F (fun x : A => iprop(True -∗ bi_least_fixpoint F x)) y $$ [HF, HT]
+  · -- The Rocq code for this case is
+    -- { by iClear "Htrue". }
+    -- But this doesn't work with our iclear:
+    -- iclear HT
+    -- -- > iclear: iprop(True) is not affine and the goal not absorbing
 
---   Lemma least_fixpoint_absorbing :
---     (∀ Φ, (∀ x, Absorbing (Φ x)) → (∀ x, Absorbing (F Φ x))) →
---     ∀ x, Absorbing (bi_least_fixpoint F x).
---   Proof using Type*.
---     intros ? x. rewrite /Absorbing /bi_absorbingly.
---     apply wand_elim_r'. revert x.
---     iApply least_fixpoint_iter; first solve_proper.
---     iIntros "!> %y HF Htrue". iApply least_fixpoint_unfold.
---     iAssert (F (λ x : A, True -∗ bi_least_fixpoint F x) y)%I with "[-]" as "HF".
---     { by iClear "Htrue". }
---     iApply (bi_mono_pred with "[] HF"); first solve_proper.
---     iIntros "!> %x HF". by iApply "HF".
---   Qed.
+    -- Manual proof:
+    -- FIXME: Should this be inferrable?
+    have Habsorb : (∀ (x : A), Absorbing iprop(True -∗ bi_least_fixpoint F x)) := by
+      refine fun x => ⟨?_⟩
+      simp only [absorbingly] -- FIXME: Slightly annoying to have to unfold before destructing
+      iintro ⟨_, HW⟩ _
+      iapply HW
+      exact true_intro
+    exact sep_comm.mp.trans (H _ Habsorb _).absorbing
+  iapply mono_pred (Φ := (fun x : A => iprop(True -∗ bi_least_fixpoint F x))) $$ [], HF
+  iintro !> %x HF
+  iapply HF
+  exact true_intro
 
-
--- □ ∀ y : A, F (λ x : A, <pers> bi_least_fixpoint F x) y -∗ <pers> bi_least_fixpoint F y
 theorem least_fixpoint_persistent_affine
     (H1 : ∀ Φ, (∀ x, Affine (Φ x)) → (∀ x, Affine (F Φ x)))
     (H2 : ∀ Φ, (∀ x, Persistent (Φ x)) → (∀ x, Persistent (F Φ x)))
