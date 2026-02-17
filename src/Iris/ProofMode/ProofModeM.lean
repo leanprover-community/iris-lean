@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler
+Authors: Michael Sammler, Zongyuan Liu
 -/
 import Iris.ProofMode.Expr
 import Iris.ProofMode.Classes
@@ -90,7 +90,7 @@ def ProofModeM.runTactic (x : MVarId → IrisGoal → ProofModeM α) (s : ProofM
   let (res, {goals}) ← StateRefT'.run (x mvar g) s
 
   -- make sure to synthesize everything postponed
-  Term.synthesizeSyntheticMVarsNoPostponing
+  Term.synthesizeSyntheticMVarsNoPostponing (ignoreStuckTC := true)
 
   -- put the goals that depend on other goals last
   let dependees ← goals.foldlM (λ m g => do

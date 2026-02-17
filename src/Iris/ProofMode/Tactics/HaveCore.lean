@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler
+Authors: Michael Sammler, Zongyuan Liu
 -/
 import Iris.ProofMode.Patterns.ProofModeTerm
 import Iris.ProofMode.Tactics.Basic
@@ -55,6 +55,12 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     let newMVarIds ← newMVars.map Expr.mvarId! |>.filterM fun mvarId => not <$> mvarId.isAssigned
     let otherMVarIds ← getMVarsNoDelayed val
     let otherMVarIds := otherMVarIds.filter (!newMVarIds.contains ·)
+
+    -- register tc mvars, so that `synthesizeSyntheticMVars` (in `ProofModeM.runTactic`) can resolve them
+    for mvar in newMVars do
+      if (← isSyntheticMVar mvar) && !(← mvar.mvarId!.isAssigned) then
+        Term.registerSyntheticMVarWithCurrRef mvar.mvarId! (.typeClass .none)
+
     for mvar in newMVarIds ++ otherMVarIds do
       addMVarGoal mvar
 
