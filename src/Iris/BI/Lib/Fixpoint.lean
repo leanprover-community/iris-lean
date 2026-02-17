@@ -72,17 +72,11 @@ theorem least_fixpoint_iter {Φ : A → PROP} [I : NonExpansive Φ] :
 theorem least_fixpoint_affine (H : ∀ x, Affine (F (fun _ => emp) x)) (x : A) :
     Affine (bi_least_fixpoint F x) := by
   constructor
-  -- FIXME: Proofmode bug when trying to iapply (not an emp valid)
-  -- Error: ∀ (x : A), bi_least_fixpoint F x ⊢ emp is not an emp valid
-  refine .trans ?_ <| wand_elim <| (wand_elim <| least_fixpoint_iter (Φ := fun _ => emp) F).trans (forall_elim x)
-  iintro H
-  isplitr [H]
-  · isplit
-    · exact true_intro
-    · iintro !> %y H
-      iapply (H y).affine
-      iexact H
-  · iexact H
+  revert x
+  iapply least_fixpoint_iter (Φ := fun _ => emp)
+  iintro !> %y H
+  iapply (H y).affine
+  iexact H
 
 theorem least_fixpoint_absorbing (H : ∀ Φ, (∀ x, Absorbing (Φ x)) → (∀ x, Absorbing (F Φ x))) (x : A) :
     Absorbing (bi_least_fixpoint F x) := by
