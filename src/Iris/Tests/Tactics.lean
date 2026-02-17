@@ -518,6 +518,13 @@ example [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
   ihave HQ := H
   iexact HQ
 
+/-- Tests `ihave` with Lean hypothesis introducing into persistent context -/
+example [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q ∗ Q := by
+  ihave HQ := H
+  isplitl
+  · iexact HQ
+  · iexact HQ
+
 /-- Tests `ihave` with forall specialization via case -/
 example [BI PROP] (Q : Nat → PROP) (H : ∀ x, ⊢ Q x) : ⊢ Q 1 := by
   ihave HQ := H
@@ -596,6 +603,14 @@ example [BI PROP] (P Q : PROP) : ⊢ (□P ∗ Q) -∗ Q := by
   ihave ⟨□_, HQ⟩ := H
   iexact HQ
 
+/-- Tests `ihave` not removing a destructed hyp -/
+example [BI PROP] [BIAffine PROP] (Q : PROP) :
+  □ (Q ∗ Q) ⊢ (□ (Q ∗ Q) ∗ □ Q) ∗ □ Q := by
+  iintro □HQ
+  ihave ⟨HQ, HQ2⟩ := HQ
+  istop
+  exact .rfl
+
 /-- Tests `ihave` assert -/
 example [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
   iintro HP Hwand
@@ -604,6 +619,15 @@ example [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
     . iapply Hwand $$ HP
     . ipure_intro; trivial
   iexact HQ
+
+/-- Tests `ihave` assert duplicating the context -/
+example [BI PROP] (P Q : PROP) (h : P ⊢ □ Q) : ⊢ P -∗ P ∗ Q := by
+  iintro HP
+  ihave □HQ : □Q $$ [HP]
+  · iapply h $$ HP
+  isplitl
+  · iexact HP
+  · iexact HQ
 
 end ihave
 
@@ -1258,6 +1282,22 @@ example [BI PROP] P (Q : Nat → PROP) :
   iintro Hwand HP
   icases Hwand $$ HP with ⟨%_, -, HQ⟩
   iexact HQ
+
+/-- Tests `icases` duplicating the context -/
+example [BI PROP] (Q : PROP) (n : Nat) :
+  □ (∀ x, Q -∗ ⌜x = n⌝) ⊢ Q -∗ False := by
+  iintro □Hwand HQ
+  icases Hwand $$ %1, HQ with %_
+  icases Hwand $$ %2, HQ with %_
+  grind
+
+/-- Tests `icases` removing a destructed hyp -/
+example [BI PROP] [BIAffine PROP] (Q : PROP) :
+  □ (Q ∗ Q) ⊢ □ Q ∗ □ Q := by
+  iintro □HQ
+  icases HQ with ⟨HQ, HQ2⟩
+  istop
+  exact .rfl
 
 /-- Tests `icases` with False -/
 example [BI PROP] (Q : PROP) : False ⊢ Q := by

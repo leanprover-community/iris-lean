@@ -24,6 +24,10 @@ instance asEmpValid_bientails [BI PROP] (P Q : PROP) : AsEmpValid d (P ⊣⊢ Q)
 instance asEmpValid_equiv [BI PROP] (P Q : PROP) : AsEmpValid d (P ≡ Q) iprop(P ∗-∗ Q) where
   as_emp_valid := ⟨λ _ h => equiv_wandIff (equiv_iff.1 h), λ _ h => (equiv_iff.2 (wandIff_equiv h))⟩
 
+instance asEmpValid_forall {α} [BI PROP] (Φ : α → Prop) (P : α → PROP)
+  [hP : ∀ x, AsEmpValid d (Φ x) iprop(P x)] : AsEmpValid d (∀ x, Φ x) iprop(∀ x, P x) where
+  as_emp_valid := ⟨λ hd h => forall_intro λ x => (hP x).1.1 hd (h x), λ hd h x => (hP x).1.2 hd $ h.trans (forall_elim x)⟩
+
 -- FromImp
 instance fromImp_imp [BI PROP] (P1 P2 : PROP) : FromImp iprop(P1 → P2) P1 P2 := ⟨.rfl⟩
 -- FromWand
