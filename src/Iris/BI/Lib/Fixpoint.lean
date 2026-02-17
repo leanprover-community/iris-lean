@@ -25,7 +25,6 @@ abbrev bi_least_fixpoint [BI PROP] [OFE A] (F : (A → PROP) → (A → PROP)) (
 def bi_greatest_fixpoint [BI PROP] [OFE A] (F : (A → PROP) → (A → PROP)) (x : A) : PROP :=
   iprop(∃ (Φ : A -n> PROP), □ (∀ x, Φ x -∗ F Φ x) ∗ Φ x)
 
-
 /-- Porting note: The Rocq version of this theorem has an additional
   `∀ Φ, NonExpansive Φ → NonExpansive (F Φ)` hypothesis. Not sure why! -/
 instance [BI PROP] [OFE A] {F : (A → PROP) → (A → PROP)} : NonExpansive (bi_least_fixpoint F) where
@@ -69,139 +68,150 @@ theorem least_fixpoint_iter {Φ : A → PROP} [I : NonExpansive Φ] :
   iapply HF $$ %(Hom.mk Φ I)
   iexact HΦ
 
-theorem least_fixpoint_affine (H : ∀ x, Affine (F (fun _ => emp) x)) (x : A) :
-    Affine (bi_least_fixpoint F x) := by
-  constructor
-  revert x
-  iapply least_fixpoint_iter (Φ := fun _ => emp)
-  iintro !> %y H
-  iapply (H y).affine
-  iexact H
+instance least_fixpoint_affine [Ia : ∀ x, Affine (F (fun _ => emp) x)] {x : A} :
+    Affine (bi_least_fixpoint F x) where
+  affine := by
+    revert x
+    iapply least_fixpoint_iter (Φ := fun _ => emp)
+    iintro !> %y H
+    iapply (Ia y).affine $$ H
 
-theorem least_fixpoint_absorbing [BIMonoPred F]
-    (H : ∀ Φ, [∀ x, Absorbing (Φ x)] → (∀ x, Absorbing (F Φ x))) (x : A) :
-    Absorbing (bi_least_fixpoint F x) := by
-  constructor
-  iapply wand_elim'
-  revert x
-  letI _ : NonExpansive fun x => iprop(True -∗ bi_least_fixpoint F x) :=
-    ⟨fun _ _ _ H => wand_ne.ne .rfl (NonExpansive.ne H)⟩
+instance least_fixpoint_absorbing [BIMonoPred F]
+    [∀ Φ, [∀ x, Absorbing (Φ x)] → (∀ x, Absorbing (F Φ x))] {x : A} :
+    Absorbing (bi_least_fixpoint F x) where
+  absorbing := by
+    iapply wand_elim'
+    revert x
+    letI _ : NonExpansive fun x => iprop(True -∗ bi_least_fixpoint F x) :=
+      ⟨fun _ _ _ H => wand_ne.ne .rfl (NonExpansive.ne H)⟩
+    iapply least_fixpoint_iter
+    · infer_instance -- FIXME: Issue #156
+    iintro !> %y HF HT
+    iapply least_fixpoint_unfold
+    · infer_instance -- FIXME: Issue #156
+    iapply mono_pred (Φ := (fun x : A => iprop(True -∗ bi_least_fixpoint F x))) $$ [], [HF, HT]
+    · iintro !> %x HF
+      iapply HF
+      exact true_intro
+    · iclear HT
+      iexact HF
+
+instance least_fixpoint_persistent_affine [BIMonoPred F]
+    [∀ Φ, [∀ x, Affine (Φ x)] → (∀ x, Affine (F Φ x))]
+    [∀ Φ, [∀ x, Persistent (Φ x)] → (∀ x, Persistent (F Φ x))]
+    {x : A} : Persistent (bi_least_fixpoint F x) where
+  persistent := by
+    refine .trans ?_ persistently_of_intuitionistically
+    revert x
+    letI _ : NonExpansive fun x => iprop(□ bi_least_fixpoint F x) :=
+      ⟨fun _ _ _ H => intuitionistically_ne.ne (NonExpansive.ne H)⟩
+    iapply least_fixpoint_iter
+    · infer_instance -- FIXME: Issue #156
+    iintro !> %y #HY !>
+    iapply least_fixpoint_unfold
+    · infer_instance -- FIXME: Issue #156
+    iapply mono_pred (Φ := fun x => iprop(□ bi_least_fixpoint F x))
+    · iintro !> %_ #Hx
+      iexact Hx
+    · exact intuitionistically_elim
+
+instance least_fixpoint_persistent_absorbing [BIMonoPred F]
+    [Habsorb : ∀ Φ, [∀ x, Absorbing (Φ x)] → (∀ x, Absorbing (F Φ x))]
+    [∀ Φ, [∀ x, Persistent (Φ x)] → (∀ x, Persistent (F Φ x))]
+    {x : A} : Persistent (bi_least_fixpoint F x) where
+  persistent := by
+    revert x
+    letI _ : NonExpansive fun x => iprop(<pers> bi_least_fixpoint F x) :=
+      ⟨fun _ _ _ H => persistently_ne.ne <| NonExpansive.ne H⟩
+    iapply least_fixpoint_iter
+    · infer_instance -- FIXME: Issue #156
+    iintro !> %y #HF !>
+    iapply least_fixpoint_unfold
+    · infer_instance -- FIXME: Issue #156
+    iapply mono_pred (Φ := fun x => iprop(<pers> bi_least_fixpoint F x)) $$ [], HF
+    letI _ := @least_fixpoint_absorbing _ _ _ _ _ _ Habsorb
+    iintro !> %x #H
+    iexact H
+
+theorem least_fixpoint_strong_mono (G : (A → PROP) → (A → PROP)) [BIMonoPred G] :
+    ⊢ □ (∀ Φ x, F Φ x -∗ G Φ x) -∗ ∀ x, bi_least_fixpoint F x -∗ bi_least_fixpoint G x := by
+  iintro #Hmon
   iapply least_fixpoint_iter
-  · infer_instance -- FIXME: Should iapply infer this?
-  iintro !> %y HF HT
+  · infer_instance -- FIXME: Issue #156
+  iintro !> %y IH
   iapply least_fixpoint_unfold
-  · infer_instance -- FIXME: Should iapply infer this?
-  ihave HF : F (fun x : A => iprop(True -∗ bi_least_fixpoint F x)) y $$ [HF, HT]
-  · iclear HT
-    iexact HF
-  iapply mono_pred (Φ := (fun x : A => iprop(True -∗ bi_least_fixpoint F x))) $$ [], HF
-  iintro !> %x HF
-  iapply HF
-  exact true_intro
+  · infer_instance -- FIXME: Issue #156
+  iapply Hmon $$ IH
 
-theorem least_fixpoint_persistent_affine [BIMonoPred F]
-    (HAffine : ∀ Φ, [∀ x, Affine (Φ x)] → (∀ x, Affine (F Φ x)))
-    (HPersistent : ∀ Φ, [∀ x, Persistent (Φ x)] → (∀ x, Persistent (F Φ x)))
-    (x : A) : Persistent (bi_least_fixpoint F x) := by
-  constructor
-  refine .trans ?_ persistently_of_intuitionistically
-  revert x
-  letI _ : NonExpansive fun x => iprop(□ bi_least_fixpoint F x) :=
-    ⟨fun _ _ _ H => intuitionistically_ne.ne (NonExpansive.ne H)⟩
+section Strong
+
+variable [IF : BIMonoPred F] (Φ : A → PROP) [IN : NonExpansive Φ]
+
+local instance wf_pred_mono :
+    BIMonoPred (fun (Ψ : A → PROP) (a : A) => iprop(Φ a ∧ F Ψ a)) where
+  mono_pred := by
+    intro Ψ Ψ' Hne Hne'
+    iintro #HM %x Ha
+    isplit
+    · icases Ha with ⟨H, -⟩
+      iexact H
+    · icases Ha with ⟨-, H⟩
+      iapply (mono_pred (F := F) (Φ := Ψ)) $$ [], H
+      iexact HM
+  mono_pred_ne.ne _ _ _ H := and_ne.ne (NonExpansive.ne H) (NonExpansive.ne H)
+
+theorem least_fixpoint_ind_wf :
+    ⊢ □ (∀ y, F (bi_least_fixpoint (fun Ψ a => iprop(Φ a ∧ F Ψ a))) y -∗ Φ y) -∗
+    ∀ x, bi_least_fixpoint F x -∗ Φ x := by
+  iintro #HM %x
+  -- Porting note: Generalized rewriting in the left-hand side of the wand in the goal.
+  ihave Hthis : (F (bi_least_fixpoint F) x -∗ Φ x) -∗ (bi_least_fixpoint F x -∗ Φ x) $$ []
+  · iintro H1 H2
+    iapply H1
+    iapply least_fixpoint_unfold
+    · infer_instance
+    iexact H2
+  iapply Hthis
+  iintro HF
+  iapply HM
+  iapply mono_pred (Φ := (bi_least_fixpoint F)) $$ [], HF
+  imodintro
   iapply least_fixpoint_iter
-  · infer_instance
-  iintro !> %y HY
-  iintuitionistic HY
-  iintro !>
+  · infer_instance -- FIXME: Issue #156
+  iintro !> %y Hy
   iapply least_fixpoint_unfold
-  · infer_instance
-  iapply (mono_pred (Φ := fun x => iprop(□ bi_least_fixpoint F x)))
-  · iintro !> %_ #Hx
-    iexact Hx
-  · exact intuitionistically_elim
+  · exact wf_pred_mono (F := F) (Φ := Φ)
+  isplit
+  · iapply HM $$ Hy
+  · iexact Hy
 
+theorem least_fixpoint_ind :
+    ⊢ □ (∀ y, F (fun x => iprop(Φ x ∧ bi_least_fixpoint F x)) y -∗ Φ y) -∗
+      ∀ x, bi_least_fixpoint F x -∗ Φ x := by
+  iintro #HM
+  iapply least_fixpoint_ind_wf
+  · infer_instance
+  · infer_instance
+  iintro !> %y Hy
+  iapply HM
+  letI _ : NonExpansive fun x => iprop(Φ x ∧ bi_least_fixpoint F x) :=
+    ⟨fun _ _ _ H => and_ne.ne (NonExpansive.ne H) (NonExpansive.ne H)⟩
+  iapply mono_pred (Φ := (bi_least_fixpoint fun Ψ a => iprop(Φ a ∧ F Ψ a))) $$ [], Hy
+  iintro !> %x Hx
+  isplit
+  · iclear HM
+    exact (least_fixpoint_unfold_1 ..).trans and_elim_l
+  · iapply least_fixpoint_strong_mono $$ [], Hx
+    · infer_instance
+    iintro !> %_ %_ ⟨-, H⟩
+    iexact H
+
+end Strong
 end LeastFixpoint
 
 
 
 
-
---
---  Lemma least_fixpoint_persistent_absorbing :
---     (∀ Φ, (∀ x, Absorbing (Φ x)) → (∀ x, Absorbing (F Φ x))) →
---     (∀ Φ, (∀ x, Persistent (Φ x)) → (∀ x, Persistent (F Φ x))) →
---     ∀ x, Persistent (bi_least_fixpoint F x).
---   Proof using Type*.
---     intros ??. pose proof (least_fixpoint_absorbing _). unfold Persistent.
---     iApply least_fixpoint_iter; first solve_proper.
---     iIntros "!> %y #HF !>". rewrite least_fixpoint_unfold.
---     iApply (bi_mono_pred with "[] HF"); first solve_proper.
---     by iIntros "!> %x #?".
---   Qed.
--- End least.
---
--- Lemma least_fixpoint_strong_mono
---     {PROP : bi} {A : ofe} (F : (A → PROP) → (A → PROP)) `{!BiMonoPred F}
---     (G : (A → PROP) → (A → PROP)) `{!BiMonoPred G} :
---   □ (∀ Φ x, F Φ x -∗ G Φ x) -∗
---   ∀ x, bi_least_fixpoint F x -∗ bi_least_fixpoint G x.
--- Proof.
---   iIntros "#Hmon". iApply least_fixpoint_iter.
---   iIntros "!>" (y) "IH". iApply least_fixpoint_unfold.
---   by iApply "Hmon".
--- Qed.
---
--- (** In addition to [least_fixpoint_iter], we provide two derived, stronger
--- induction principles:
---
--- - [least_fixpoint_ind] allows to assume [F (λ x, Φ x ∧ bi_least_fixpoint F x) y]
---   when proving the inductive step.
---   Intuitively, it does not only offer the induction hypothesis ([Φ] under an
---   application of [F]), but also the induction predicate [bi_least_fixpoint F]
---   itself (under an application of [F]).
--- - [least_fixpoint_ind_wf] intuitively corresponds to a kind of well-founded
---   induction. It provides the hypothesis [F (bi_least_fixpoint (λ Ψ a, Φ a ∧ F Ψ a)) y]
---   and thus allows to assume the induction hypothesis not just below one
---   application of [F], but below any positive number (by unfolding the least
---   fixpoint). The unfolding lemma [least_fixpoint_unfold] as well as
---   [least_fixpoint_strong_mono] can be useful to work with the hypothesis. *)
---
--- Section least_ind.
---   Context {PROP : bi} {A : ofe} (F : (A → PROP) → (A → PROP)) `{!BiMonoPred F}.
---
---   Local Lemma Private_wf_pred_mono `{!NonExpansive Φ} :
---     BiMonoPred (λ (Ψ : A → PROP) (a : A), Φ a ∧ F Ψ a)%I.
---   Proof using Type*.
---     split; last solve_proper.
---     intros Ψ Ψ' Hne Hne'. iIntros "#Mon" (x) "Ha". iSplit; first by iDestruct "Ha" as "[$ _]".
---     iDestruct "Ha" as "[_ Hr]". iApply (bi_mono_pred with "[] Hr"). by iModIntro.
---   Qed.
---   Local Existing Instance Private_wf_pred_mono.
---
---   Lemma least_fixpoint_ind_wf (Φ : A → PROP) `{!NonExpansive Φ} :
---     □ (∀ y, F (bi_least_fixpoint (λ Ψ a, Φ a ∧ F Ψ a)) y -∗ Φ y) -∗
---     ∀ x, bi_least_fixpoint F x -∗ Φ x.
---   Proof using Type*.
---     iIntros "#Hmon" (x). rewrite least_fixpoint_unfold. iIntros "Hx".
---     iApply "Hmon". iApply (bi_mono_pred with "[] Hx").
---     iModIntro. iApply least_fixpoint_iter.
---     iIntros "!> %y Hy". rewrite least_fixpoint_unfold.
---     iSplit; last done. by iApply "Hmon".
---   Qed.
---
---   Lemma least_fixpoint_ind (Φ : A → PROP) `{!NonExpansive Φ} :
---     □ (∀ y, F (λ x, Φ x ∧ bi_least_fixpoint F x) y -∗ Φ y) -∗
---     ∀ x, bi_least_fixpoint F x -∗ Φ x.
---   Proof using Type*.
---     iIntros "#Hmon". iApply least_fixpoint_ind_wf. iIntros "!> %y Hy".
---     iApply "Hmon". iApply (bi_mono_pred with "[] Hy"). { solve_proper. }
---     iIntros "!> %x Hx". iSplit.
---     - rewrite least_fixpoint_unfold. iDestruct "Hx" as "[$ _]".
---     - iApply (least_fixpoint_strong_mono with "[] Hx"). iIntros "!>" (??) "[_ $]".
---   Qed.
--- End least_ind.
---
---
 -- Lemma greatest_fixpoint_ne_outer {PROP : bi} {A : ofe}
 --     (F1 : (A → PROP) → (A → PROP)) (F2 : (A → PROP) → (A → PROP)):
 --   (∀ Φ x n, F1 Φ x ≡{n}≡ F2 Φ x) → ∀ x1 x2 n,
