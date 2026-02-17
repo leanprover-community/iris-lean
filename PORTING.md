@@ -237,6 +237,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/counterexamples.v`
 - [ ] `lib/fixpoint_banach.v`
 - [ ] `lib/fixpoint_mono.v`
+  - [x] Least fixpoints + induction 
+  - [ ] Greatest fixpoints + coinduction
 - [ ] `lib/fractional.v`
 - [ ] `lib/laterable.v`
 - [ ] `lib/relations.v`
