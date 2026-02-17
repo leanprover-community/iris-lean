@@ -79,7 +79,7 @@ theorem least_fixpoint_affine (H : ∀ x, Affine (F (fun _ => emp) x)) (x : A) :
   iexact H
 
 theorem least_fixpoint_absorbing [BIMonoPred F]
-    (H : ∀ Φ, (∀ x, Absorbing (Φ x)) → (∀ x, Absorbing (F Φ x))) (x : A) :
+    (H : ∀ Φ, [∀ x, Absorbing (Φ x)] → (∀ x, Absorbing (F Φ x))) (x : A) :
     Absorbing (bi_least_fixpoint F x) := by
   constructor
   iapply wand_elim'
@@ -92,29 +92,16 @@ theorem least_fixpoint_absorbing [BIMonoPred F]
   iapply least_fixpoint_unfold
   · infer_instance -- FIXME: Should iapply infer this?
   ihave HF : F (fun x : A => iprop(True -∗ bi_least_fixpoint F x)) y $$ [HF, HT]
-  · -- The Rocq code for this case is
-    -- { by iClear "Htrue". }
-    -- But this doesn't work with our iclear:
-    -- iclear HT
-    -- -- > iclear: iprop(True) is not affine and the goal not absorbing
-
-    -- Manual proof:
-    -- FIXME: Should this be inferrable?
-    have Habsorb : (∀ (x : A), Absorbing iprop(True -∗ bi_least_fixpoint F x)) := by
-      refine fun x => ⟨?_⟩
-      simp only [absorbingly] -- FIXME: Slightly annoying to have to unfold before destructing
-      iintro ⟨_, HW⟩ _
-      iapply HW
-      exact true_intro
-    exact sep_comm.mp.trans (H _ Habsorb _).absorbing
+  · iclear HT
+    iexact HF
   iapply mono_pred (Φ := (fun x : A => iprop(True -∗ bi_least_fixpoint F x))) $$ [], HF
   iintro !> %x HF
   iapply HF
   exact true_intro
 
 theorem least_fixpoint_persistent_affine [BIMonoPred F]
-    (HAffine : ∀ Φ, (∀ x, Affine (Φ x)) → (∀ x, Affine (F Φ x)))
-    (HPersistent : ∀ Φ, (∀ x, Persistent (Φ x)) → (∀ x, Persistent (F Φ x)))
+    (HAffine : ∀ Φ, [∀ x, Affine (Φ x)] → (∀ x, Affine (F Φ x)))
+    (HPersistent : ∀ Φ, [∀ x, Persistent (Φ x)] → (∀ x, Persistent (F Φ x)))
     (x : A) : Persistent (bi_least_fixpoint F x) := by
   constructor
   refine .trans ?_ persistently_of_intuitionistically
@@ -124,10 +111,6 @@ theorem least_fixpoint_persistent_affine [BIMonoPred F]
   iapply least_fixpoint_iter
   · infer_instance
   iintro !> %y HY
-  letI _ : Persistent (F (fun x => iprop(□ bi_least_fixpoint F x)) y) :=
-    HPersistent _ (fun x => ⟨persistent⟩) _
-  letI _ : Affine (F (fun x => iprop(□ bi_least_fixpoint F x)) y) :=
-    HAffine _ (fun x => intuitionistically_affine (bi_least_fixpoint F x)) _
   iintuitionistic HY
   iintro !>
   iapply least_fixpoint_unfold
