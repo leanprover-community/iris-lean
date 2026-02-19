@@ -778,17 +778,21 @@ theorem toList_perm_of_get?_eq {m₁ m₂ : M V} (h : ∀ k, get? m₁ k = get? 
 
 theorem toList_insert {m : M V} {k : K} {v : V} (h : get? m k = none) :
     (toList (M := M) (K := K) (insert m k v)).Perm ((k, v) :: toList (M := M) (K := K) m) := by
-  refine (List.perm_ext_iff_of_nodup ?_ ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
-  · sorry
-  · sorry
+  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  · refine List.nodup_cons.mpr ⟨?_, nodup_toList⟩
+    intro H
+    cases h ▸ toList_get.mp H
   · sorry
   · sorry
 
 theorem toList_delete {m : M V} {k : K} {v : V} (h : get? m k = some v) :
     (toList (M := M) (K := K) m).Perm ((k, v) :: toList (M := M) (K := K) (delete m k)) := by
-  refine (List.perm_ext_iff_of_nodup ?_ ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
-  · sorry
-  · sorry
+  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  · refine List.nodup_cons.mpr ⟨?_, nodup_toList⟩
+    intro H
+    have Hget := toList_get.mp H
+    rw [get?_delete_eq rfl] at Hget
+    cases Hget
   · sorry
   · sorry
 
@@ -826,8 +830,7 @@ theorem toList_insert_delete {m : M V} {k : K} {v : V} :
 theorem toList_map {f : V → V'} {m : M V} :
     (toList (M := M) (K := K) (PartialMap.map f m)).Perm
       ((toList m).map (fun kv => (kv.1, f kv.2))) := by
-  refine (List.perm_ext_iff_of_nodup ?_ ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
-  · sorry
+  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
   · sorry
   · sorry
   · sorry
