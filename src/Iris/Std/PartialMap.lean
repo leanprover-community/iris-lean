@@ -716,11 +716,17 @@ theorem ofList_toList {m : M V} : PartialMap.equiv (ofList (toList (K := K) m)) 
 
 theorem mem_of_mem_ofList {l : List (K × V)} {i : K} {x : V} :
     get? (ofList l : M V) i = some x → (i, x) ∈ l := by
-  sorry
-
-theorem mem_ofList_of_mem {l : List (K × V)} {i : K} {x : V} :
-    (l.map Prod.fst).Nodup → (i, x) ∈ l → get? (ofList l : M V) i = some x := by
-  sorry
+  induction l
+  · simp [ofList, get?_empty]
+  · rename_i h t IH
+    obtain ⟨k, v⟩ := h
+    rw [ofList_cons]
+    by_cases He : k = i
+    · rw [get?_insert_eq He, He]
+      rintro ⟨rfl⟩
+      exact List.mem_cons_self
+    · rw [get?_insert_ne He]
+      exact fun H => List.mem_cons_of_mem (k, v) (IH H)
 
 theorem toList_ofList {l : List (K × V)} (Hdup : NoDupKeys l) :
     (toList (M := M) (K := K) (ofList l : M V)).Perm l := by
@@ -764,7 +770,7 @@ theorem all_iff_toList {P : K → V → Prop} {m : M V} :
 
 theorem mem_ofList {l : List (K × V)} {i : K} {x : V} (hnodup : (l.map Prod.fst).Nodup) :
     (i, x) ∈ l ↔ get? (ofList l : M V) i = some x :=
-  ⟨mem_ofList_of_mem hnodup, mem_of_mem_ofList⟩
+  ⟨(get?_ofList_some · hnodup), mem_of_mem_ofList⟩
 
 theorem ofList_injective {l₁ l₂ : List (K × V)}
     (hnodup1 : (l₁.map Prod.fst).Nodup) (hnodup2 : (l₂.map Prod.fst).Nodup) :
@@ -774,10 +780,10 @@ theorem ofList_injective {l₁ l₂ : List (K × V)}
   refine fun ⟨k, v⟩ => ⟨fun H => ?_, fun H => ?_⟩
   · apply mem_of_mem_ofList (M := M)
     rw [← He k]
-    exact mem_ofList_of_mem (List.nodup_iff_pairwise_ne.mpr hnodup1) H
+    exact get?_ofList_some H (List.nodup_iff_pairwise_ne.mpr hnodup1)
   · apply mem_of_mem_ofList (M := M)
     rw [He k]
-    exact mem_ofList_of_mem (List.nodup_iff_pairwise_ne.mpr hnodup2) H
+    exact get?_ofList_some H (List.nodup_iff_pairwise_ne.mpr hnodup2)
 
 theorem toList_insert_delete {m : M V} {k : K} {v : V} :
     (toList (M := M) (K := K) (insert m k v)).Perm
