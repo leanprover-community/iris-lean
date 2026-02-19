@@ -778,23 +778,61 @@ theorem toList_perm_of_get?_eq {m₁ m₂ : M V} (h : ∀ k, get? m₁ k = get? 
 
 theorem toList_insert {m : M V} {k : K} {v : V} (h : get? m k = none) :
     (toList (M := M) (K := K) (insert m k v)).Perm ((k, v) :: toList (M := M) (K := K) m) := by
-  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k', v'⟩ => ⟨?_, ?_⟩
   · refine List.nodup_cons.mpr ⟨?_, nodup_toList⟩
     intro H
     cases h ▸ toList_get.mp H
-  · sorry
-  · sorry
+  · intro H
+    have H' := toList_get.mp H
+    by_cases He : k = k'
+    · rw [get?_insert_eq He] at H'
+      obtain ⟨rfl⟩ := H'
+      rw [He]
+      exact List.mem_cons_self
+    · refine List.mem_cons_of_mem (k, v) ?_
+      refine toList_get.mpr ?_
+      rw [get?_insert_ne He] at H'
+      exact H'
+  · intro H
+    cases H
+    · exact toList_get.mpr (get?_insert_eq rfl)
+    · rename_i H
+      by_cases He : k = k'
+      · exfalso
+        subst He
+        cases h ▸ toList_get.mp H
+      · refine toList_get.mpr ?_
+        rw [get?_insert_ne He]
+        refine toList_get.mp H
 
 theorem toList_delete {m : M V} {k : K} {v : V} (h : get? m k = some v) :
     (toList (M := M) (K := K) m).Perm ((k, v) :: toList (M := M) (K := K) (delete m k)) := by
-  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k', v'⟩ => ⟨?_, ?_⟩
   · refine List.nodup_cons.mpr ⟨?_, nodup_toList⟩
     intro H
     have Hget := toList_get.mp H
     rw [get?_delete_eq rfl] at Hget
     cases Hget
-  · sorry
-  · sorry
+  · intro H
+    by_cases He : k = k'
+    · subst He
+      obtain ⟨rfl⟩ := h ▸ toList_get.mp H
+      exact List.mem_cons_self
+    · refine List.mem_cons_of_mem (k, v) ?_
+      refine toList_get.mpr ?_
+      rw [get?_delete_ne He]
+      refine toList_get.mp H
+  · intro H
+    cases H
+    · exact toList_get.mpr h
+    · rename_i H'
+      refine toList_get.mpr ?_
+      have H'' := toList_get.mp H'
+      by_cases He : k = k'
+      · rw [get?_delete_eq He] at H''
+        cases H''
+      · rw [get?_delete_ne He] at H''
+        exact H''
 
 theorem all_iff_toList {P : K → V → Prop} {m : M V} :
     PartialMap.all P m ↔ ∀ kv ∈ toList m, P kv.1 kv.2 :=
@@ -827,13 +865,13 @@ theorem toList_insert_delete {m : M V} {k : K} {v : V} :
   · simp [LawfulPartialMap.get?_insert_eq h]
   · simp [LawfulPartialMap.get?_insert_ne h, LawfulPartialMap.get?_delete_ne h]
 
-theorem toList_map {f : V → V'} {m : M V} :
-    (toList (M := M) (K := K) (PartialMap.map f m)).Perm
-      ((toList m).map (fun kv => (kv.1, f kv.2))) := by
-  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
-  · sorry
-  · sorry
-  · sorry
+-- theorem toList_map {f : V → V'} {m : M V} :
+--     (toList (M := M) (K := K) (PartialMap.map f m)).Perm
+--       ((toList m).map (fun kv => (kv.1, f kv.2))) := by
+--   refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+--   · sorry
+--   · sorry
+--   · sorry
 
 end LawfulFiniteMap
 
