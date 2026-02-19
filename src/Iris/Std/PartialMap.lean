@@ -1,3 +1,5 @@
+import Batteries.Data.List.Perm
+
 /-
 Copyright (c) 2026 Zongyuan Liu, Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
@@ -26,6 +28,10 @@ than intensionally about map equalities. PartialMaps are free to be non-uniquely
 -/
 namespace Iris.Std
 
+-- NB. Copied from Mathlib
+theorem List.Nodup.of_map (f : α → β) {l : List α} : List.Nodup (List.map f l) → List.Nodup l := by
+  refine (List.Pairwise.of_map f) fun _ _ => mt <| fun a => (congrArg f ∘ fun _ => a) α
+
 /-- Base typeclass for partial maps: maps from keys `K` to optional values `V`. -/
 class PartialMap (M : Type _ → Type _) (K : outParam (Type _)) where
   get? : M V → K → Option V
@@ -36,29 +42,11 @@ class PartialMap (M : Type _ → Type _) (K : outParam (Type _)) where
   merge (op : K → V → V → V) : M V → M V → M V
 export PartialMap (get? insert delete empty bindAlter merge)
 
-/-- A FiniteMap is a PartialMap with a mapFold operation. Like in Stdpp, the order in which the
-elements are passed into the fold is unspecified. -/
+/-- A FiniteMap is a PartialMap with a toList operation. Like in Stdpp, the order in which the
+elements are passed into the list is unspecified. -/
 class FiniteMap M K extends PartialMap M K where
-  mapFold {A} : (K → V → A → A) → A → M V → A
-export FiniteMap (mapFold)
-
-namespace FiniteMap
-
-variable {K V : Type _} {M : Type _ → Type _} [FiniteMap M K]
-
-/-- Convert the map to a list of key-value pairs. The order is unspecified. -/
-def toList (m : M V) : List (K × V) :=
-  mapFold (fun k v acc => (k, v) :: acc) [] m
-
-/-- Construct a map from a list of key-value pairs. Later entries override earlier ones. -/
-def ofList (l : List (K × V)) : M V :=
-  l.foldl (fun acc (k, v) => insert acc k v) empty
-
-/-- Convert a list to a map with sequential natural number keys starting from `start`. -/
-def map_seq [FiniteMap M Nat] (start : Nat) (l : List V) : M V :=
-  ofList (l.mapIdx (fun i v => (start + i, v)))
-
-end FiniteMap
+  toList : M V → List (K × V)
+export FiniteMap (toList)
 
 /-- RepFunMap: The map T is capable of representing all partial functions out of K. -/
 class RepFunMap (T : Type _ → Type _) (K : outParam (Type _)) [PartialMap T K] where
@@ -110,6 +98,11 @@ def disjoint (m₁ m₂ : M V) : Prop := ∀ k, ¬((get? m₁ k).isSome ∧ (get
 
 /-- Submap relation: `m₁` is a submap of `m₂` if every key-value pair in `m₁` is also in `m₂`. -/
 def submap (m₁ m₂ : M V) : Prop := ∀ k v, get? m₁ k = some v → get? m₂ k = some v
+
+/-- Construct a map from a list of key-value pairs. Later entries override earlier ones. -/
+def ofList (l : List (K × V)) : M V :=
+  l.foldr (fun (k, v) acc => insert acc k v) empty
+
 
 instance : HasSubset (M V) := ⟨submap⟩
 
@@ -179,17 +172,30 @@ class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _)) extends P
 export LawfulPartialMap (get?_empty get?_insert_eq get?_insert_ne get?_delete_eq get?_delete_ne
   get?_bindAlter get?_merge)
 
+/-- An association list has no duplicate keys -/
+def NoDupKeys (L : List (K × A)) : Prop := L.map (·.1) |>.Nodup
+
 class LawfulFiniteMap M K extends LawfulPartialMap M K, FiniteMap M K where
-  mapFold_empty {f : K → V → A → A} : mapFold f a ∅ = a
-  mapFold_ind {P : M A → Prop}:
-    P ∅ →
-    (∀ i x m,
-      get? m i = none →
-      (∀ A' B (f : K → A' → B → B) (g : A → A') b x',
-        mapFold f b (insert (PartialMap.map g m) i x') = f i x' (mapFold f b (PartialMap.map g m))) →
-      P m →
-      P (insert m i x)) →
-    ∀ m, P m
+  toList_empty : toList (∅ : M V) = []
+  toList_noDupKeys : NoDupKeys (toList (m : M V))
+  toList_get : (k, v) ∈ toList m ↔ get? m k = some v
+export LawfulFiniteMap (toList_empty toList_noDupKeys toList_get)
+
+namespace FiniteMap
+
+variable {K V : Type _} {M : Type _ → Type _} [FiniteMap M K]
+
+-- /-- Convert the map to a list of key-value pairs. The order is unspecified. -/
+-- def toList (m : M V) : List (K × V) :=
+--   mapFold (fun k v acc => (k, v) :: acc) [] m
+
+def mapFold {A : Type _} (f : K → V → A → A) (a : A) (m : M V) : A :=
+  List.foldl (fun a' ⟨k, v⟩ => f k v a') a (toList (K := K) m)
+
+/-- Convert a list to a map with sequential natural number keys starting from `start`. -/
+def map_seq [FiniteMap M Nat] (start : Nat) (l : List V) : M V :=
+  PartialMap.ofList (l.mapIdx (fun i v => (start + i, v)))
+end FiniteMap
 
 namespace PartialMap
 
@@ -624,6 +630,45 @@ theorem get?_filter {φ : K → V → Bool} {m : M V} {k : K} :
     get? (filter φ m) k = (get? m k).bind (fun v => if φ k v then some v else none) := by
   simp [Option.bind, filter, get?_bindAlter]
 
+theorem ofList_cons {L : List (K × V)} : ofList (M := M) ((k, v) :: L) = insert (ofList L) k v :=
+  rfl
+
+theorem noDupKeys_cons {L : List (K × V)} : NoDupKeys (h :: L) → NoDupKeys L := by
+  unfold NoDupKeys
+  grind
+
+theorem noDupKeys_inj {L : List (K × V)} (Hdup : NoDupKeys L) (Hin : (k, v) ∈ L)
+    (Hin' : (k, v') ∈ L) : v = v' := by
+  sorry
+
+theorem get?_ofList_some {L : List (K × V)} :
+    (k, v) ∈ L → NoDupKeys L → get? (ofList (M := M) L) k = some v := by
+  induction L
+  · simp
+  rename_i h t IH
+  obtain ⟨k', v'⟩ := h
+  intro Hin Hdup
+  rw [ofList_cons]
+  rcases List.eq_or_mem_of_mem_cons Hin with ⟨rfl, rfl⟩|Hin'
+  · rw [get?_insert_eq rfl]
+  · rw [get?_insert_some_iff]
+    by_cases Hk : k' = k
+    · exact .inl ⟨Hk, (noDupKeys_inj Hdup Hin (Hk ▸ List.mem_cons_self)).symm⟩
+    · exact .inr ⟨Ne.intro Hk, IH Hin' (noDupKeys_cons Hdup)⟩
+
+theorem get?_ofList_none {L : List (K × V)} :
+    (¬ ∃ v, (k, v) ∈ L) → NoDupKeys L → get? (ofList (M := M) L) k = none  := by
+  induction L
+  · simp [ofList, get?_empty]
+  rename_i h t IH
+  obtain ⟨k', v'⟩ := h
+  intro Hin Hdup
+  rw [ofList_cons]
+  by_cases h : k' = k
+  · exact (Hin ⟨v', h ▸ List.mem_cons_self⟩).elim
+  · rw [get?_insert_ne h]
+    exact IH (by grind) (noDupKeys_cons Hdup)
+
 end LawfulPartialMap
 
 
@@ -632,44 +677,42 @@ section LawfulFiniteMap
 variable {K V : Type _} {M : Type _ → Type _}
 variable [LawfulFiniteMap M K]
 
-open FiniteMap LawfulFiniteMap PartialMap
+open FiniteMap LawfulFiniteMap PartialMap LawfulPartialMap
 
-theorem toList_empty : toList (M := M) (K := K) (∅ : M V) = [] := mapFold_empty
+-- TODO: These should be theorems
+-- mapFold_empty {f : K → V → A → A} : mapFold f a ∅ = a
+-- mapFold_ind {P : M A → Prop}:
+--   P ∅ →
+--   (∀ i x m,
+--     get? m i = none →
+--     (∀ A' B (f : K → A' → B → B) (g : A → A') b x',
+--       mapFold f b (insert (PartialMap.map g m) i x') = f i x' (mapFold f b (PartialMap.map g m))) →
+--     P m →
+--     P (insert m i x)) →
+--   ∀ m, P m
 
-theorem mem_toList {m : M V} {k : K} {v : V} :
-    (k, v) ∈ toList m ↔ get? m k = some v := by
-  sorry
+theorem toList_get?_none {m : M V} : (∀ v, (k, v) ∉ toList (K := K) m) ↔ get? m k = none := by
+  constructor
+  · intro Hn
+    refine Option.eq_none_iff_forall_ne_some.mpr ?_
+    exact fun v' Hsome => Hn v' <| toList_get.mpr Hsome
+  · intro Hn v Hk
+    cases Hn ▸ toList_get.mp Hk
 
-theorem nodup_toList {m : M V} : (toList (M := M) (K := K) m).Nodup := by
-  sorry
+theorem NoDupKeys_noDup {L : List (K × V)} : NoDupKeys L → L.Nodup := by
+  refine fun H => List.Nodup.of_map (fun x => x.fst) ?_
+  exact H
 
-theorem nodup_toList_keys {m : M V} : ((toList (M := M) (K := K) m).map Prod.fst).Nodup := by
-  sorry
+theorem nodup_toList {m : M V} : (toList (K := K) m).Nodup :=
+  NoDupKeys_noDup toList_noDupKeys
 
-theorem ofList_toList {m : M V} : PartialMap.equiv (ofList (toList (M := M) (K := K) m)) m := by
-  sorry
-
-theorem toList_ofList {l : List (K × V)} (hnodup : (l.map Prod.fst).Nodup) :
-    (toList (M := M) (K := K) (ofList l : M V)).Perm l := by
-  sorry
-
-theorem toList_perm_of_get?_eq {m₁ m₂ : M V} (h : ∀ k, get? m₁ k = get? m₂ k) :
-    (toList (M := M) (K := K) m₁).Perm (toList (M := M) (K := K) m₂) := by
-  sorry
-
-theorem toList_insert {m : M V} {k : K} {v : V} (h : get? m k = none) :
-    (toList (M := M) (K := K) (insert m k v)).Perm ((k, v) :: toList (M := M) (K := K) m) := by
-  sorry
-
-theorem toList_delete {m : M V} {k : K} {v : V} (h : get? m k = some v) :
-    (toList (M := M) (K := K) m).Perm ((k, v) :: toList (M := M) (K := K) (delete m k)) := by
-  sorry
-
-theorem all_iff_toList {P : K → V → Prop} {m : M V} :
-    PartialMap.all P m ↔ ∀ kv ∈ toList m, P kv.1 kv.2 := by
-  refine ⟨fun H ⟨k, v⟩ Hm => ?_, fun hall k v hget => hall (k, v) (mem_toList.mpr hget)⟩
-  rw [mem_toList] at Hm
-  exact H k v Hm
+theorem ofList_toList {m : M V} : PartialMap.equiv (ofList (toList (K := K) m)) m := by
+  intro k
+  rcases h : get? m k with _|v
+  · refine get?_ofList_none ?_ toList_noDupKeys
+    intro ⟨v, Hk⟩
+    cases h ▸ toList_get.mp Hk
+  · exact get?_ofList_some (toList_get.mpr h) toList_noDupKeys
 
 theorem mem_of_mem_ofList {l : List (K × V)} {i : K} {x : V} :
     get? (ofList l : M V) i = some x → (i, x) ∈ l := by
@@ -679,6 +722,46 @@ theorem mem_ofList_of_mem {l : List (K × V)} {i : K} {x : V} :
     (l.map Prod.fst).Nodup → (i, x) ∈ l → get? (ofList l : M V) i = some x := by
   sorry
 
+theorem toList_ofList {l : List (K × V)} (Hdup : NoDupKeys l) :
+    (toList (M := M) (K := K) (ofList l : M V)).Perm l := by
+  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  · exact NoDupKeys_noDup Hdup
+  · exact (mem_of_mem_ofList <| toList_get.mp ·)
+  · exact (toList_get.mpr <| get?_ofList_some · Hdup)
+
+theorem toList_perm_of_get?_eq {m₁ m₂ : M V} (h : ∀ k, get? m₁ k = get? m₂ k) :
+    (toList (M := M) (K := K) m₁).Perm (toList (M := M) (K := K) m₂) := by
+  refine (List.perm_ext_iff_of_nodup nodup_toList nodup_toList).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  · intro H
+    refine toList_get.mpr ?_
+    rw [← h k]
+    exact toList_get.mp H
+  · intro H
+    refine toList_get.mpr ?_
+    rw [h k]
+    exact toList_get.mp H
+
+theorem toList_insert {m : M V} {k : K} {v : V} (h : get? m k = none) :
+    (toList (M := M) (K := K) (insert m k v)).Perm ((k, v) :: toList (M := M) (K := K) m) := by
+  refine (List.perm_ext_iff_of_nodup ?_ ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  · sorry
+  · sorry
+  · sorry
+  · sorry
+
+theorem toList_delete {m : M V} {k : K} {v : V} (h : get? m k = some v) :
+    (toList (M := M) (K := K) m).Perm ((k, v) :: toList (M := M) (K := K) (delete m k)) := by
+  refine (List.perm_ext_iff_of_nodup ?_ ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  · sorry
+  · sorry
+  · sorry
+  · sorry
+
+theorem all_iff_toList {P : K → V → Prop} {m : M V} :
+    PartialMap.all P m ↔ ∀ kv ∈ toList m, P kv.1 kv.2 :=
+  ⟨fun H ⟨k, v⟩ Hm => H k v (toList_get.mp Hm),
+   fun H k v hg => H (k, v) (toList_get.mpr hg)⟩
+
 theorem mem_ofList {l : List (K × V)} {i : K} {x : V} (hnodup : (l.map Prod.fst).Nodup) :
     (i, x) ∈ l ↔ get? (ofList l : M V) i = some x :=
   ⟨mem_ofList_of_mem hnodup, mem_of_mem_ofList⟩
@@ -686,7 +769,15 @@ theorem mem_ofList {l : List (K × V)} {i : K} {x : V} (hnodup : (l.map Prod.fst
 theorem ofList_injective {l₁ l₂ : List (K × V)}
     (hnodup1 : (l₁.map Prod.fst).Nodup) (hnodup2 : (l₂.map Prod.fst).Nodup) :
     PartialMap.equiv (ofList l₁ : M V) (ofList l₂) → l₁.Perm l₂ := by
-  sorry
+  intro He
+  refine (List.perm_ext_iff_of_nodup (NoDupKeys_noDup hnodup1) (NoDupKeys_noDup hnodup2)).mpr ?_
+  refine fun ⟨k, v⟩ => ⟨fun H => ?_, fun H => ?_⟩
+  · apply mem_of_mem_ofList (M := M)
+    rw [← He k]
+    exact mem_ofList_of_mem (List.nodup_iff_pairwise_ne.mpr hnodup1) H
+  · apply mem_of_mem_ofList (M := M)
+    rw [He k]
+    exact mem_ofList_of_mem (List.nodup_iff_pairwise_ne.mpr hnodup2) H
 
 theorem toList_insert_delete {m : M V} {k : K} {v : V} :
     (toList (M := M) (K := K) (insert m k v)).Perm
@@ -700,8 +791,11 @@ theorem toList_insert_delete {m : M V} {k : K} {v : V} :
 theorem toList_map {f : V → V'} {m : M V} :
     (toList (M := M) (K := K) (PartialMap.map f m)).Perm
       ((toList m).map (fun kv => (kv.1, f kv.2))) := by
-  -- NOTE: Ignore this for now!
-  sorry
+  refine (List.perm_ext_iff_of_nodup ?_ ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  · sorry
+  · sorry
+  · sorry
+  · sorry
 
 end LawfulFiniteMap
 
