@@ -153,6 +153,12 @@ def filter (φ : K → V → Bool) : M V → M V :=
 def difference (m₁ m₂ : M V) : M V :=
   bindAlter (fun k v => if (get? m₂ k).isSome then none else some v) m₁
 
+def zip (m₁ : M V) (m₂ : M V') : M (V × V') :=
+  bindAlter (fun k v => (get? m₂ k).bind fun v' => some (v, v')) m₁
+
+def zipWith (f : V → V' → V'') (m₁ : M V) (m₂ : M V') : M V'' :=
+  bindAlter (fun k v => (get? m₂ k).bind fun v' => some <| f v v') m₁
+
 instance : SDiff (M V) := ⟨difference⟩
 
 /-- Two PartalMaps are pointwise equivalent. -/
@@ -644,6 +650,16 @@ theorem get?_filter {φ : K → V → Bool} {m : M V} {k : K} :
     get? (filter φ m) k = (get? m k).bind (fun v => if φ k v then some v else none) := by
   simp [Option.bind, filter, get?_bindAlter]
 
+theorem get?_zipWith {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K} :
+    get? (zipWith f m₁ m₂) k = (get? m₁ k).bind fun v₁ => (get? m₂ k).map fun v₂ => f v₁ v₂ := by
+  simp [zipWith, get?_bindAlter]
+  cases h1 : get? m₁ k <;> cases h2 : get? m₂ k <;> simp [Option.bind]
+
+theorem get?_zip {m₁ : M V} {m₂ : M V'} {k : K} :
+    get? (zip m₁ m₂) k = (get? m₁ k).bind fun v₁ => (get? m₂ k).map fun v₂ => (v₁, v₂) := by
+  simp [zip, get?_bindAlter]
+  cases h1 : get? m₁ k <;> cases h2 : get? m₂ k <;> simp [Option.bind]
+
 theorem ofList_cons {L : List (K × V)} : ofList (M := M) ((k, v) :: L) = insert (ofList L) k v :=
   rfl
 
@@ -865,13 +881,30 @@ theorem toList_insert_delete {m : M V} {k : K} {v : V} :
   · simp [LawfulPartialMap.get?_insert_eq h]
   · simp [LawfulPartialMap.get?_insert_ne h, LawfulPartialMap.get?_delete_ne h]
 
--- theorem toList_map {f : V → V'} {m : M V} :
---     (toList (M := M) (K := K) (PartialMap.map f m)).Perm
---       ((toList m).map (fun kv => (kv.1, f kv.2))) := by
---   refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
---   · sorry
---   · sorry
---   · sorry
+theorem toList_map {f : V → V'} {m : M V} :
+    (toList (M := M) (K := K) (PartialMap.map f m)).Perm
+      ((toList m).map (fun kv => (kv.1, f kv.2))) := by
+  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  · sorry
+  · sorry
+  · sorry
+
+theorem toList_filterMap {f : V → Option V} {m : M V} :
+    (toList (M := M) (K := K) (PartialMap.filterMap f m)).Perm
+      ((toList m).filterMap (fun kv => (f kv.2).map (kv.1, ·))) := by
+  sorry
+
+theorem toList_filter {φ : K → V → Bool} {m : M V} :
+    (toList (M := M) (K := K) (PartialMap.filter φ m)).Perm
+      ((toList m).filter (fun kv => φ kv.1 kv.2)) := by
+  sorry
+
+-- Note: kmap is not implemented, so toList_kmap is not included
+
+theorem toList_map_seq [FiniteMap M Nat] (start : Nat) (l : List V) :
+    (toList (M := M) (K := Nat) (FiniteMap.map_seq start l : M V)).Perm
+      ((List.range' start l.length).zip l) := by
+  sorry
 
 end LawfulFiniteMap
 
