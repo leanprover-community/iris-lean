@@ -660,6 +660,71 @@ theorem get?_zip {m₁ : M V} {m₂ : M V'} {k : K} :
   simp [zip, get?_bindAlter]
   cases h1 : get? m₁ k <;> cases h2 : get? m₂ k <;> simp [Option.bind]
 
+theorem map_zipWith_right {f : V → V' → V''} {g : V''' → V'} {m₁ : M V} {m₂ : M V'''} :
+    PartialMap.map (fun (v, w) => f v (g w)) (zip m₁ m₂) ≡ₘ
+      zipWith f m₁ (PartialMap.map g m₂) := by
+  sorry
+
+theorem map_zipWith_left {f : V → V' → V''} {g : V''' → V} {m₁ : M V'''} {m₂ : M V'} :
+    PartialMap.map (fun (w, v) => f (g w) v) (zip m₁ m₂) ≡ₘ
+      zipWith f (PartialMap.map g m₁) m₂ := by
+  sorry
+
+theorem zipWith_insert {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K} {v : V} {v' : V'} :
+    zipWith f (insert m₁ k v) (insert m₂ k v') ≡ₘ
+      insert (zipWith f m₁ m₂) k (f v v') := by
+  sorry
+
+theorem zipWith_delete {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K} :
+    zipWith f (delete m₁ k) (delete m₂ k) ≡ₘ delete (zipWith f m₁ m₂) k := by
+  sorry
+
+theorem zipWith_comm {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} :
+    (∀ v v', f v v' = f v v') →
+    zipWith f m₁ m₂ ≡ₘ zipWith f m₁ m₂ := by
+  sorry
+
+-- Note: zip_comm has universe level issues due to non-commutative max in Prod universes
+-- theorem zip_comm {m₁ : M V} {m₂ : M V'} :
+--     PartialMap.map Prod.swap (zip m₁ m₂) ≡ₘ zip m₂ m₁ := by
+--   sorry
+
+theorem zip_map {f : V → V'} {g : V → V''} {m : M V} :
+    zip (PartialMap.map f m) (PartialMap.map g m) ≡ₘ
+      PartialMap.map (fun v => (f v, g v)) m := by
+  sorry
+
+theorem zip_fst_snd {m : M (V × V')} :
+    zip (PartialMap.map Prod.fst m) (PartialMap.map Prod.snd m) ≡ₘ m := by
+  sorry
+
+theorem isSome_zipWith {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K} :
+    (get? (zipWith f m₁ m₂) k).isSome ↔
+      (get? m₁ k).isSome ∧ (get? m₂ k).isSome := by
+  sorry
+
+theorem zip_empty_left {m : M V'} :
+    zip (∅ : M V) m ≡ₘ ∅ := by
+  sorry
+
+theorem zip_empty_right {m : M V} :
+    zip m (∅ : M V') ≡ₘ ∅ := by
+  sorry
+
+-- FIXME: universe issue
+-- theorem zip_insert {m₁ : M V} {m₂ : M V'} {k : K} {v : V} {v' : V'} :
+--     zip (insert m₁ k v) (insert m₂ k v') ≡ₘ insert (zip m₁ m₂) k (v, v') := by
+--   sorry
+
+-- FIXME: universe issue
+-- theorem zip_delete {m₁ : M V} {m₂ : M V'} {k : K} :
+--     zip (delete m₁ k) (delete m₂ k) ≡ₘ delete (zip m₁ m₂) k := by
+--   sorry
+
+theorem isSome_zip {m₁ : M V} {m₂ : M V'} {k : K} :
+    (get? (zip m₁ m₂) k).isSome ↔ (get? m₁ k).isSome ∧ (get? m₂ k).isSome := by
+  sorry
+
 theorem ofList_cons {L : List (K × V)} : ofList (M := M) ((k, v) :: L) = insert (ofList L) k v :=
   rfl
 
@@ -904,6 +969,12 @@ theorem toList_filter {φ : K → V → Bool} {m : M V} :
 theorem toList_map_seq [FiniteMap M Nat] (start : Nat) (l : List V) :
     (toList (M := M) (K := Nat) (FiniteMap.map_seq start l : M V)).Perm
       ((List.range' start l.length).zip l) := by
+  sorry
+
+theorem toList_zip {m₁ : M V} {m₂ : M V'} :
+    (toList (M := M) (K := K) (PartialMap.zip m₁ m₂)).Perm
+      ((toList m₁).filterMap fun kv₁ =>
+        (get? m₂ kv₁.1).map fun v₂ => (kv₁.1, (kv₁.2, v₂))) := by
   sorry
 
 end LawfulFiniteMap
