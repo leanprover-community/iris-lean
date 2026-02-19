@@ -611,6 +611,14 @@ theorem map_id {m : M V} :
   rw [get?_map]
   cases get? m k <;> simp
 
+theorem get?_filterMap {f : V → Option V} {m : M V} {k : K} :
+    get? (filterMap f m) k = (get? m k).bind f := by
+  simp [filterMap, get?_bindAlter]
+
+theorem get?_filter {φ : K → V → Bool} {m : M V} {k : K} :
+    get? (filter φ m) k = (get? m k).bind (fun v => if φ k v then some v else none) := by
+  simp [Option.bind, filter, get?_bindAlter]
+
 end LawfulPartialMap
 
 
@@ -619,7 +627,70 @@ section LawfulFiniteMap
 variable {K V : Type _} {M : Type _ → Type _}
 variable [LawfulFiniteMap M K]
 
-open FiniteMap
+open FiniteMap LawfulFiniteMap PartialMap
+
+theorem toList_empty : toList (M := M) (K := K) (∅ : M V) = [] := mapFold_empty
+
+theorem mem_toList {m : M V} {k : K} {v : V} :
+    (k, v) ∈ toList m ↔ get? m k = some v := by
+  sorry
+
+theorem nodup_toList {m : M V} : (toList (M := M) (K := K) m).Nodup := by
+  sorry
+
+theorem nodup_toList_keys {m : M V} : ((toList (M := M) (K := K) m).map Prod.fst).Nodup := by
+  sorry
+
+theorem ofList_toList {m : M V} : PartialMap.equiv (ofList (toList (M := M) (K := K) m)) m := by
+  sorry
+
+theorem toList_ofList {l : List (K × V)} (hnodup : (l.map Prod.fst).Nodup) :
+    (toList (M := M) (K := K) (ofList l : M V)).Perm l := by
+  sorry
+
+theorem toList_perm_of_get?_eq {m₁ m₂ : M V} (h : ∀ k, get? m₁ k = get? m₂ k) :
+    (toList (M := M) (K := K) m₁).Perm (toList (M := M) (K := K) m₂) := by
+  sorry
+
+theorem toList_insert {m : M V} {k : K} {v : V} (h : get? m k = none) :
+    (toList (M := M) (K := K) (insert m k v)).Perm ((k, v) :: toList (M := M) (K := K) m) := by
+  sorry
+
+theorem toList_delete {m : M V} {k : K} {v : V} (h : get? m k = some v) :
+    (toList (M := M) (K := K) m).Perm ((k, v) :: toList (M := M) (K := K) (delete m k)) := by
+  sorry
+
+theorem all_iff_toList {P : K → V → Prop} {m : M V} :
+    PartialMap.all P m ↔ ∀ kv ∈ toList m, P kv.1 kv.2 := by
+  refine ⟨fun H ⟨k, v⟩ Hm => ?_, fun hall k v hget => hall (k, v) (mem_toList.mpr hget)⟩
+  rw [mem_toList] at Hm
+  exact H k v Hm
+
+theorem mem_of_mem_ofList {l : List (K × V)} {i : K} {x : V} :
+    get? (ofList l : M V) i = some x → (i, x) ∈ l := by
+  sorry
+
+theorem mem_ofList_of_mem {l : List (K × V)} {i : K} {x : V} :
+    (l.map Prod.fst).Nodup → (i, x) ∈ l → get? (ofList l : M V) i = some x := by
+  sorry
+
+theorem mem_ofList {l : List (K × V)} {i : K} {x : V} (hnodup : (l.map Prod.fst).Nodup) :
+    (i, x) ∈ l ↔ get? (ofList l : M V) i = some x :=
+  ⟨mem_ofList_of_mem hnodup, mem_of_mem_ofList⟩
+
+theorem ofList_injective {l₁ l₂ : List (K × V)}
+    (hnodup1 : (l₁.map Prod.fst).Nodup) (hnodup2 : (l₂.map Prod.fst).Nodup) :
+    PartialMap.equiv (ofList l₁ : M V) (ofList l₂) → l₁.Perm l₂ := by
+  sorry
+
+theorem toList_insert_delete {m : M V} {k : K} {v : V} :
+    (toList (M := M) (K := K) (insert m k v)).Perm
+      (toList (M := M) (K := K) (insert (delete m k) k v)) := by
+  apply toList_perm_of_get?_eq
+  intro k'
+  by_cases h : k = k'
+  · simp [LawfulPartialMap.get?_insert_eq h]
+  · simp [LawfulPartialMap.get?_insert_ne h, LawfulPartialMap.get?_delete_ne h]
 
 theorem toList_map {f : V → V'} {m : M V} :
     (toList (M := M) (K := K) (PartialMap.map f m)).Perm
