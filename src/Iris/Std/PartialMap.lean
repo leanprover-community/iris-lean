@@ -587,10 +587,15 @@ theorem union_difference_cancel {m₁ m₂ : M V} (h : m₂ ⊆ m₁) :
     simp [Option.merge]
     exact (h k v hm2).symm
 
+theorem get?_union {m₁ m₂ : M V} {k : K} :
+    get? (union m₁ m₂) k = (get? m₁ k).orElse (fun _ => get? m₂ k) := by
+  simp only [PartialMap.union, get?_merge]
+  cases get? m₁ k <;> cases get? m₂ k <;> simp [Option.merge, Option.orElse]
+
 theorem get?_union_none {m₁ m₂ : M V} {i : K} :
     get? (union m₁ m₂) i = none ↔ get? m₁ i = none ∧ get? m₂ i = none := by
-  simp only [PartialMap.union, get?_merge]
-  cases h1 : get? m₁ i <;> cases h2 : get? m₂ i <;> simp [Option.merge]
+  rw [get?_union]
+  cases h1 : get? m₁ i <;> cases h2 : get? m₂ i <;> simp [Option.orElse]
 
 theorem union_insert_left {m₁ m₂ : M V} {i : K} {x : V} :
     insert (union m₁ m₂) i x ≡ₘ union (insert m₁ i x) m₂ := by
