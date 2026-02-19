@@ -6,7 +6,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu, Markus de Medeiros
 -/
 
-/-! ## Partial Maps
+/-! ## Partial Mas
 
 This file defines the base abstraction for partial maps (maps from keys to optional values).
 Both `FiniteMap` and `Heap` extend this base interface.
@@ -31,6 +31,20 @@ namespace Iris.Std
 -- NB. Copied from Mathlib
 theorem List.Nodup.of_map (f : α → β) {l : List α} : List.Nodup (List.map f l) → List.Nodup l := by
   refine (List.Pairwise.of_map f) fun _ _ => mt <| fun a => (congrArg f ∘ fun _ => a) α
+
+-- NB. Copied from Mathlib
+theorem Pairwise.forall {l : List α} {R : α → α → Prop} (hR : ∀ {a b}, R a b ↔ a ≠ b)
+    (hl : l.Pairwise (· ≠ ·)) : ∀ ⦃a⦄, a ∈ l → ∀ ⦃b⦄, b ∈ l → a ≠ b → R a b := by
+  induction l with
+  | nil => simp
+  | cons a l ih =>
+    simp only [List.mem_cons]
+    rintro x (rfl | hx) y (rfl | hy)
+    · simp
+    · exact fun a => hR.mpr a
+    · exact fun a => hR.mpr a
+    · refine ih (List.Pairwise.of_cons hl) hx hy
+
 
 /-- Base typeclass for partial maps: maps from keys `K` to optional values `V`. -/
 class PartialMap (M : Type _ → Type _) (K : outParam (Type _)) where
@@ -639,7 +653,22 @@ theorem noDupKeys_cons {L : List (K × V)} : NoDupKeys (h :: L) → NoDupKeys L 
 
 theorem noDupKeys_inj {L : List (K × V)} (Hdup : NoDupKeys L) (Hin : (k, v) ∈ L)
     (Hin' : (k, v') ∈ L) : v = v' := by
-  sorry
+  induction L with
+  | nil => cases Hin
+  | cons h t IH =>
+    obtain ⟨k₀, v₀⟩ := h
+    simp [NoDupKeys, List.map_cons] at Hdup
+    obtain ⟨hnotin, ht⟩ := Hdup
+    simp at Hin Hin'
+    cases Hin with
+    | inl heq =>
+      cases Hin' with
+      | inl heq' => exact heq.2.trans heq'.2.symm
+      | inr hmem => grind
+    | inr hmem =>
+      cases Hin' with
+      | inl heq' => grind
+      | inr hmem' => exact IH ht hmem hmem'
 
 theorem get?_ofList_some {L : List (K × V)} :
     (k, v) ∈ L → NoDupKeys L → get? (ofList (M := M) L) k = some v := by
