@@ -161,8 +161,6 @@ scoped syntax term " ≡ₘ " term : term
 scoped macro_rules
   | `($m₁ ≡ₘ $m₂) => `(PartialMap.equiv $m₁ $m₂)
 
-end PartialMap
-
 /-- Iris notation for singleton map: `{[k := v]}` -/
 scoped syntax "{[" term " := " term "]}" : term
 scoped macro_rules
@@ -170,50 +168,6 @@ scoped macro_rules
 
 /-- Iris notation for map disjointness: `m₁ ##ₘ m₂` -/
 scoped infix:50 " ##ₘ " => PartialMap.disjoint
-
-/-- Laws that a partial map implementation must satisfy. -/
-class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _))
-    extends PartialMap M K where
-  get?_empty k : get? (empty : M V) k = none
-  get?_insert_eq {m : M V} {k k' v} : k = k' → get? (insert m k v) k' = some v
-  get?_insert_ne {m : M V} {k k' v} : k ≠ k' → get? (insert m k v) k' = get? m k'
-  get?_delete_eq {m : M V} {k k'} : k = k' → get? (delete m k) k' = none
-  get?_delete_ne {m : M V} {k k'} : k ≠ k' → get? (delete m k) k' = get? m k'
-  get?_bindAlter {m : M V} {f : K → V → Option V'} :
-      get? (bindAlter f m) k = (get? m k).bind (f k)
-  get?_merge :
-      get? (merge op m₁ m₂) k = Option.merge (op k) (get? m₁ k) (get? m₂ k)
-export LawfulPartialMap (get?_empty get?_insert_eq get?_insert_ne get?_delete_eq
-  get?_delete_ne get?_bindAlter get?_merge)
-
-/-- An association list has no duplicate keys -/
-def NoDupKeys (L : List (K × A)) : Prop := L.map (·.1) |>.Nodup
-
-class LawfulFiniteMap M K extends LawfulPartialMap M K, FiniteMap M K where
-  toList_empty : toList (∅ : M V) = []
-  toList_noDupKeys : NoDupKeys (toList (m : M V))
-  toList_get : (k, v) ∈ toList m ↔ get? m k = some v
-export LawfulFiniteMap (toList_empty toList_noDupKeys toList_get)
-
-namespace FiniteMap
-
-variable {K V : Type _} {M : Type _ → Type _} [FiniteMap M K]
-
--- /-- Convert the map to a list of key-value pairs. The order is unspecified. -/
--- def toList (m : M V) : List (K × V) :=
---   mapFold (fun k v acc => (k, v) :: acc) [] m
-
-def mapFold {A : Type _} (f : K → V → A → A) (a : A) (m : M V) : A :=
-  List.foldl (fun a' ⟨k, v⟩ => f k v a') a (toList (K := K) m)
-
-/-- Convert a list to a map with sequential natural number keys starting from `start`. -/
-def map_seq [FiniteMap M Nat] (start : Nat) (l : List V) : M V :=
-  PartialMap.ofList (l.mapIdx (fun i v => (start + i, v)))
-end FiniteMap
-
-namespace PartialMap
-
-variable {K : Type _} {M : Type _ → Type _} [PartialMap M K]
 
 /-- Submap is reflexive. -/
 theorem subset_refl (m : M V) : m ⊆ m := fun _ _ h => h
@@ -247,15 +201,55 @@ theorem disjoint_iff (m₁ m₂ : M V) :
 
 end PartialMap
 
+/-- An association list has no duplicate keys -/
+def NoDupKeys (L : List (K × A)) : Prop := L.map (·.1) |>.Nodup
+
 class ExtensionalPartialMap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
   equiv_iff_eq {m₁ m₂ : M V} : PartialMap.equiv m₁ m₂ ↔ m₁ = m₂
+
+/-- Laws that a partial map implementation must satisfy. -/
+class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _))
+    extends PartialMap M K where
+  get?_empty k : get? (empty : M V) k = none
+  get?_insert_eq {m : M V} {k k' v} : k = k' → get? (insert m k v) k' = some v
+  get?_insert_ne {m : M V} {k k' v} : k ≠ k' → get? (insert m k v) k' = get? m k'
+  get?_delete_eq {m : M V} {k k'} : k = k' → get? (delete m k) k' = none
+  get?_delete_ne {m : M V} {k k'} : k ≠ k' → get? (delete m k) k' = get? m k'
+  get?_bindAlter {m : M V} {f : K → V → Option V'} :
+      get? (bindAlter f m) k = (get? m k).bind (f k)
+  get?_merge :
+      get? (merge op m₁ m₂) k = Option.merge (op k) (get? m₁ k) (get? m₂ k)
+export LawfulPartialMap (get?_empty get?_insert_eq get?_insert_ne get?_delete_eq
+  get?_delete_ne get?_bindAlter get?_merge)
+
+class LawfulFiniteMap M K extends LawfulPartialMap M K, FiniteMap M K where
+  toList_empty : toList (∅ : M V) = []
+  toList_noDupKeys : NoDupKeys (toList (m : M V))
+  toList_get : (k, v) ∈ toList m ↔ get? m k = some v
+export LawfulFiniteMap (toList_empty toList_noDupKeys toList_get)
+
+namespace FiniteMap
+
+variable {K V : Type _} {M : Type _ → Type _} [FiniteMap M K]
+
+-- /-- Convert the map to a list of key-value pairs. The order is unspecified. -/
+-- def toList (m : M V) : List (K × V) :=
+--   mapFold (fun k v acc => (k, v) :: acc) [] m
+
+def mapFold {A : Type _} (f : K → V → A → A) (a : A) (m : M V) : A :=
+  List.foldl (fun a' ⟨k, v⟩ => f k v a') a (toList (K := K) m)
+
+/-- Convert a list to a map with sequential natural number keys starting from `start`. -/
+def map_seq [FiniteMap M Nat] (start : Nat) (l : List V) : M V :=
+  PartialMap.ofList (l.mapIdx (fun i v => (start + i, v)))
+
+end FiniteMap
 
 namespace LawfulPartialMap
 
 open PartialMap
 
-variable {K V : Type _} {M : Type _ → Type _}
-variable [LawfulPartialMap M K]
+variable {K V : Type _} {M : Type _ → Type _} [LawfulPartialMap M K]
 
 theorem get?_insert [DecidableEq K] {m : M V} {k k' : K} {v : V} :
     get? (insert m k v) k' = if k = k' then some v else get? m k' := by
@@ -787,11 +781,9 @@ theorem get?_ofList_none {L : List (K × V)}
 
 end LawfulPartialMap
 
+namespace LawfulFiniteMap
 
-section LawfulFiniteMap
-
-variable {K V : Type _} {M : Type _ → Type _}
-variable [LawfulFiniteMap M K]
+variable {K V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
 
 open FiniteMap LawfulFiniteMap PartialMap LawfulPartialMap
 
