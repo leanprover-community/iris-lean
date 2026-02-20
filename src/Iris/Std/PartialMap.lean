@@ -1,4 +1,5 @@
 import Batteries.Data.List.Perm
+import Iris.Std.FromMathlib
 
 /-
 Copyright (c) 2026 Zongyuan Liu, Markus de Medeiros. All rights reserved.
@@ -6,7 +7,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu, Markus de Medeiros
 -/
 
-/-! ## Partial Mas
+/-! ## Partial Maps
 
 This file defines the base abstraction for partial maps (maps from keys to optional values).
 Both `FiniteMap` and `Heap` extend this base interface.
@@ -27,23 +28,6 @@ be unique, ie. all constructions reason extensionally about the get? function ra
 than intensionally about map equalities. PartialMaps are free to be non-uniquely represented.
 -/
 namespace Iris.Std
-
--- NB. Copied from Mathlib
-theorem List.Nodup.of_map (f : α → β) {l : List α} : List.Nodup (List.map f l) → List.Nodup l := by
-  refine (List.Pairwise.of_map f) fun _ _ => mt <| fun a => (congrArg f ∘ fun _ => a) α
-
--- NB. Copied from Mathlib
-theorem Pairwise.forall {l : List α} {R : α → α → Prop} (hR : ∀ {a b}, R a b ↔ a ≠ b)
-    (hl : l.Pairwise (· ≠ ·)) : ∀ ⦃a⦄, a ∈ l → ∀ ⦃b⦄, b ∈ l → a ≠ b → R a b := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    simp only [List.mem_cons]
-    rintro x (rfl | hx) y (rfl | hy)
-    · simp
-    · exact fun a => hR.mpr a
-    · exact fun a => hR.mpr a
-    · refine ih (List.Pairwise.of_cons hl) hx hy
 
 
 /-- Base typeclass for partial maps: maps from keys `K` to optional values `V`. -/
@@ -153,11 +137,11 @@ def filter (φ : K → V → Bool) : M V → M V :=
 def difference (m₁ m₂ : M V) : M V :=
   bindAlter (fun k v => if (get? m₂ k).isSome then none else some v) m₁
 
-def zip (m₁ : M V) (m₂ : M V') : M (V × V') :=
-  bindAlter (fun k v => (get? m₂ k).bind fun v' => some (v, v')) m₁
-
 def zipWith (f : V → V' → V'') (m₁ : M V) (m₂ : M V') : M V'' :=
   bindAlter (fun k v => (get? m₂ k).bind fun v' => some <| f v v') m₁
+
+def zip (m₁ : M V) (m₂ : M V') : M (V × V') :=
+  zipWith (fun x y => (x, y)) m₁ m₂
 
 instance : SDiff (M V) := ⟨difference⟩
 
@@ -657,21 +641,21 @@ theorem get?_zipWith {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K} :
 
 theorem get?_zip {m₁ : M V} {m₂ : M V'} {k : K} :
     get? (zip m₁ m₂) k = (get? m₁ k).bind fun v₁ => (get? m₂ k).map fun v₂ => (v₁, v₂) := by
-  simp [zip, get?_bindAlter]
+  simp [zip, zipWith, get?_bindAlter]
   cases h1 : get? m₁ k <;> cases h2 : get? m₂ k <;> simp [Option.bind]
 
 theorem map_zipWith_right {f : V → V' → V''} {g : V''' → V'} {m₁ : M V} {m₂ : M V'''} :
     PartialMap.map (fun (v, w) => f v (g w)) (zip m₁ m₂) ≡ₘ
       zipWith f m₁ (PartialMap.map g m₂) := by
   intro k
-  simp [get?_map, get?_zip, get?_zipWith, get?_bindAlter]
+  simp [get?_map, get?_zip, get?_zipWith]
   cases get? m₁ k <;> cases get? m₂ k <;> simp [Option.bind, Option.map]
 
 theorem map_zipWith_left {f : V → V' → V''} {g : V''' → V} {m₁ : M V'''} {m₂ : M V'} :
     PartialMap.map (fun (w, v) => f (g w) v) (zip m₁ m₂) ≡ₘ
       zipWith f (PartialMap.map g m₁) m₂ := by
   intro k
-  simp [get?_map, get?_zip, get?_zipWith, get?_bindAlter]
+  simp [get?_map, get?_zip, get?_zipWith]
   cases get? m₁ k <;> cases get? m₂ k <;> simp [Option.bind, Option.map]
 
 theorem zipWith_insert {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K} {v : V} {v' : V'} :
@@ -696,7 +680,7 @@ theorem zipWith_comm {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} :
     zipWith f m₁ m₂ ≡ₘ zipWith f m₁ m₂ := by
   intro _; intro _; rfl
 
--- Note: zip_comm has universe level issues due to non-commutative max in Prod universes
+-- -- FIXME: universe issue
 -- theorem zip_comm {m₁ : M V} {m₂ : M V'} :
 --     PartialMap.map Prod.swap (zip m₁ m₂) ≡ₘ zip m₂ m₁ := by
 --   sorry
@@ -705,13 +689,13 @@ theorem zip_map {f : V → V'} {g : V → V''} {m : M V} :
     zip (PartialMap.map f m) (PartialMap.map g m) ≡ₘ
       PartialMap.map (fun v => (f v, g v)) m := by
   intro k
-  simp [zip, get?_map, get?_bindAlter]
+  simp [zip, get?_map, zipWith, get?_bindAlter]
   cases get? m k <;> simp [Option.bind, Option.map]
 
 theorem zip_fst_snd {m : M (V × V')} :
     zip (PartialMap.map Prod.fst m) (PartialMap.map Prod.snd m) ≡ₘ m := by
   intro k
-  simp [zip, get?_map, get?_bindAlter]
+  simp [zip, zipWith, get?_map, get?_bindAlter]
   cases h : get? m k <;> simp [Option.bind, Option.map]
 
 theorem isSome_zipWith {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K} :
@@ -723,15 +707,15 @@ theorem isSome_zipWith {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K}
 theorem zip_empty_left {m : M V'} :
     zip (empty : M V) m ≡ₘ empty := by
   intro k
-  simp only [zip, get?_bindAlter, get?_empty, Option.bind]
+  simp only [zip, zipWith, get?_bindAlter, get?_empty, Option.bind]
 
 theorem zip_empty_right {m : M V} :
     zip m (empty : M V') ≡ₘ empty := by
   intro k
-  simp only [zip, get?_bindAlter, get?_empty, Option.bind]
+  simp only [zip, zipWith, get?_bindAlter, get?_empty, Option.bind]
   cases h : get? m k <;> simp
 
--- FIXME: universe issue
+-- -- FIXME: universe issue
 -- theorem zip_insert {m₁ : M V} {m₂ : M V'} {k : K} {v : V} {v' : V'} :
 --     zip (insert m₁ k v) (insert m₂ k v') ≡ₘ insert (zip m₁ m₂) k (v, v') := by
 --   sorry
@@ -831,7 +815,7 @@ theorem toList_get?_none {m : M V} : (∀ v, (k, v) ∉ toList (K := K) m) ↔ g
     cases Hn ▸ toList_get.mp Hk
 
 theorem NoDupKeys_noDup {L : List (K × V)} : NoDupKeys L → L.Nodup := by
-  refine fun H => List.Nodup.of_map (fun x => x.fst) ?_
+  refine fun H => FromMathlib.List.Nodup.of_map (fun x => x.fst) ?_
   exact H
 
 theorem nodup_toList {m : M V} : (toList (K := K) m).Nodup :=
@@ -881,9 +865,8 @@ theorem toList_perm_of_get?_eq {m₁ m₂ : M V} (h : ∀ k, get? m₁ k = get? 
 theorem toList_insert {m : M V} {k : K} {v : V} (h : get? m k = none) :
     (toList (M := M) (K := K) (insert m k v)).Perm ((k, v) :: toList (M := M) (K := K) m) := by
   refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k', v'⟩ => ⟨?_, ?_⟩
-  · refine List.nodup_cons.mpr ⟨?_, nodup_toList⟩
-    intro H
-    cases h ▸ toList_get.mp H
+  · refine  List.nodup_cons.mpr ⟨?_, nodup_toList⟩
+    exact fun H => Option.some_ne_none _ (h ▸ toList_get.mp H).symm
   · intro H
     have H' := toList_get.mp H
     by_cases He : k = k'
@@ -967,36 +950,100 @@ theorem toList_insert_delete {m : M V} {k : K} {v : V} :
   · simp [LawfulPartialMap.get?_insert_eq h]
   · simp [LawfulPartialMap.get?_insert_ne h, LawfulPartialMap.get?_delete_ne h]
 
-theorem toList_map {f : V → V'} {m : M V} :
+theorem toList_map {f : V → V'} {m : M V}  :
     (toList (M := M) (K := K) (PartialMap.map f m)).Perm
       ((toList m).map (fun kv => (kv.1, f kv.2))) := by
   refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
-  · sorry
-  · sorry
-  · sorry
+  · refine FromMathlib.Nodup.map_on ?_ nodup_toList
+    rintro ⟨x₁, y₁⟩ H₁ ⟨x₂, y₂⟩ H₂
+    simp only [Prod.mk.injEq, and_imp]
+    rintro rfl _
+    exact ⟨rfl, noDupKeys_inj toList_noDupKeys H₁ H₂⟩
+  · intro H
+    refine List.mem_map.mpr ?_
+    have H' := toList_get.mp H
+    rw [get?_map] at H'
+    obtain ⟨v, Ha₁, Ha₂⟩ := Option.map_eq_some_iff.mp H'
+    exact ⟨⟨k, v⟩, toList_get.mpr Ha₁, Prod.ext rfl Ha₂⟩
+  · intro H
+    obtain ⟨a, Ha₁, Ha₂⟩ := List.mem_map.mp H
+    obtain ⟨rfl, H⟩ := Ha₂
+    refine toList_get.mpr ?_
+    rw [get?_map, toList_get.mp Ha₁]
+    rfl
 
-theorem toList_filterMap {f : V → Option V} {m : M V} :
+theorem toList_filterMap {f : V → Option V} {m : M V} (HI : Function.Injective f) :
     (toList (M := M) (K := K) (PartialMap.filterMap f m)).Perm
       ((toList m).filterMap (fun kv => (f kv.2).map (kv.1, ·))) := by
-  sorry
+  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  · refine FromMathlib.Nodup.filterMap ?_ nodup_toList
+    simp only [Option.mem_def, Option.map_eq_some_iff, forall_exists_index, and_imp,
+      forall_apply_eq_imp_iff₂, Prod.mk.injEq, Prod.forall]
+    rintro _ _ _ _ _ H1 _ H2 rfl rfl
+    exact ⟨rfl, HI (H2 ▸ H1)⟩
+  · intro H
+    refine List.mem_filterMap.mpr ?_
+    have H' := toList_get.mp H
+    simp [get?_filterMap] at H'
+    obtain ⟨v', Ha₁, Ha₂⟩ := Option.bind_eq_some_iff.mp H'
+    simp only [Option.map_eq_some_iff]
+    exact ⟨(k, v'), toList_get.mpr Ha₁, v, Ha₂, rfl⟩
+  · intro H
+    obtain ⟨a, Ha₁, Ha₂⟩ := List.mem_filterMap.mp H
+    refine toList_get.mpr ?_
+    rw [get?_filterMap]
+    refine Option.bind_eq_some_iff.mpr ?_
+    simp at Ha₂
+    obtain ⟨H', rfl⟩ := Ha₂
+    refine ⟨a.snd, toList_get.mp Ha₁, H'⟩
 
 theorem toList_filter {φ : K → V → Bool} {m : M V} :
     (toList (M := M) (K := K) (PartialMap.filter φ m)).Perm
       ((toList m).filter (fun kv => φ kv.1 kv.2)) := by
-  sorry
-
--- Note: kmap is not implemented, so toList_kmap is not included
-
-theorem toList_map_seq [FiniteMap M Nat] (start : Nat) (l : List V) :
-    (toList (M := M) (K := Nat) (FiniteMap.map_seq start l : M V)).Perm
-      ((List.range' start l.length).zip l) := by
-  sorry
+  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  · exact FromMathlib.Nodup.filter ?_ (nodup_toList (M := M) (K := K))
+  · intro H
+    refine List.mem_filter.mpr ?_
+    have H' := toList_get.mp H
+    simp only [get?_filter] at H'
+    obtain ⟨v', Ha₁, Ha₂⟩ := Option.bind_eq_some_iff.mp H'
+    by_cases h : φ k v'
+    · simp only [h, ↓reduceIte, Option.some.injEq] at Ha₂
+      subst Ha₂
+      exact ⟨toList_get.mpr Ha₁, h⟩
+    · simp [h] at Ha₂
+  · intro H
+    refine toList_get.mpr ?_
+    simp only [List.mem_filter] at H
+    simp [get?_filter, toList_get.mp H.1, H.2]
 
 theorem toList_zip {m₁ : M V} {m₂ : M V'} :
     (toList (M := M) (K := K) (PartialMap.zip m₁ m₂)).Perm
       ((toList m₁).filterMap fun kv₁ =>
         (get? m₂ kv₁.1).map fun v₂ => (kv₁.1, (kv₁.2, v₂))) := by
-  sorry
+  refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
+  · refine FromMathlib.Nodup.filterMap ?_ nodup_toList
+    simp only [Option.mem_def, Option.map_eq_some_iff, forall_exists_index, and_imp,
+      forall_apply_eq_imp_iff₂, Prod.mk.injEq, Prod.forall]
+    rintro _ _ _ _ _ _ _ _ rfl rfl rfl; exact ⟨rfl, rfl⟩
+  · intro H
+    refine List.mem_filterMap.mpr ?_
+    have H' := toList_get.mp H
+    simp [get?_zip] at H'
+    obtain ⟨v', Ha₁, Ha₂⟩ := Option.bind_eq_some_iff.mp H'
+    simp only [Option.map_eq_some_iff]
+    simp only [Option.map_eq_some_iff] at Ha₂
+    obtain ⟨b, Hb₁, Hb₂⟩ := Ha₂
+    exact ⟨(k, v'), toList_get.mpr Ha₁, _, Hb₁, Prod.ext rfl Hb₂⟩
+  · intro H
+    obtain ⟨a, Ha₁, Ha₂⟩ := List.mem_filterMap.mp H
+    refine toList_get.mpr ?_
+    rw [get?_zip]
+    refine Option.bind_eq_some_iff.mpr ?_
+    simp at Ha₂
+    obtain ⟨b, Hb₁, rfl, rfl⟩ := Ha₂
+    refine ⟨a.2, toList_get.mp Ha₁, ?_⟩
+    simp [Hb₁]
 
 end LawfulFiniteMap
 
