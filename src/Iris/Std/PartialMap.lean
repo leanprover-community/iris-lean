@@ -30,7 +30,6 @@ represented.
 -/
 namespace Iris.Std
 
-
 /-- Base typeclass for partial maps: maps from keys `K` to optional values `V`. -/
 class PartialMap (M : Type _ → Type _) (K : outParam (Type _)) where
   get? : M V → K → Option V
@@ -57,7 +56,7 @@ export RepFunMap (of_fun get_of_fun)
 /-- IsoFunStore: The map T is isomorphic to the type of functions out of `K`. In
 other words, equality of T is the same as equality of functions, so the CMRA on
 these partial functions is leibniz. -/
-class IsoFunMap (T : Type _  → Type _) (K : outParam (Type _)) [PartialMap T K]
+class IsoFunMap (T : Type _ → Type _) (K : outParam (Type _)) [PartialMap T K]
   extends RepFunMap T K where
   of_fun_get {t : T V} : of_fun (get? t) = t
 export IsoFunMap (of_fun_get)
