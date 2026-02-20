@@ -392,6 +392,32 @@ instance : LawfulPartialMap (TreeMap K · compare) K where
   get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
   get?_merge := getElem?_mergeWith'
 
+instance : FiniteMap (TreeMap K · compare) K where
+  toList t := t.toList
+
+instance : LawfulFiniteMap (TreeMap K · compare) K where
+  toList_empty := rfl
+  toList_noDupKeys := by
+    intro V m
+    have h' : Pairwise (fun a b => ¬compare a b = eq) (m.toList.map (·.1)) := by
+      refine pairwise_map.mpr ?_
+      refine (distinct_keys_toList (t := m)).imp ?_
+      intro _ _ hab
+      exact hab
+    refine h'.imp ?_
+    intro a b hab
+    rw [compare_eq_iff_eq] at hab
+    exact hab
+  toList_get := by
+    intro V m k v
+    constructor
+    · intro h
+      exact getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mpr ⟨k, compare_self, h⟩
+    · intro h
+      obtain ⟨_, hcmp, hmem⟩ := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp h
+      rw [compare_eq_iff_eq.mp hcmp]
+      exact hmem
+
 end HeapInstance
 
 end Std.TreeMap
