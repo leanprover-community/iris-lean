@@ -83,7 +83,6 @@ class UnboundedHeap (M : Type _ → Type _) (K : outParam (Type _)) extends Heap
   notFull_insert_fresh {m : M V} {H : notFull m} : notFull (insert m (fresh H) v)
 export UnboundedHeap (notFull_empty notFull_insert_fresh)
 
-
 namespace PartialMap
 
 variable {K V M} [PartialMap M K]
@@ -204,7 +203,8 @@ end PartialMap
 /-- An association list has no duplicate keys -/
 def NoDupKeys (L : List (K × A)) : Prop := L.map (·.1) |>.Nodup
 
-class ExtensionalPartialMap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
+class ExtensionalPartialMap (M : Type _ → Type _) (K : outParam (Type _))
+    extends PartialMap M K where
   equiv_iff_eq {m₁ m₂ : M V} : PartialMap.equiv m₁ m₂ ↔ m₁ = m₂
 
 /-- Laws that a partial map implementation must satisfy. -/
