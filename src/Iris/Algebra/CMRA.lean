@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mario Carneiro, Сухарик (@suhr), Markus de Medeiros
+Authors: Mario Carneiro, Сухарик (@suhr), Markus de Medeiros, Puming Liu
 -/
 import Iris.Algebra.OFE
 
@@ -93,6 +93,16 @@ class UCMRA (α : Type _) extends CMRA α where
   unit_valid : ✓ unit
   unit_left_id : unit • x ≡ x
   pcore_unit : pcore unit ≡ some unit
+
+class IsUnit [CMRA α] (ε : α) : Prop where
+  unit_valid : ✓ ε
+  unit_left_id : ε • x ≡ x
+  pcore_unit : CMRA.pcore ε ≡ some ε
+
+instance [UCMRA α] : IsUnit (UCMRA.unit : α) where
+  unit_valid := UCMRA.unit_valid
+  unit_left_id := UCMRA.unit_left_id
+  pcore_unit := UCMRA.pcore_unit
 
 namespace CMRA
 variable [CMRA α]
@@ -190,6 +200,7 @@ theorem op_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz ≡ x • (
 
 theorem op_opM_assoc_dist (x y : α) (mz : Option α) : (x • y) •? mz ≡{n}≡ x • (y •? mz) := by
   unfold op?; cases mz <;> simp [assoc.dist, Dist.symm]
+
 
 /-! ## Validity -/
 
@@ -884,9 +895,6 @@ class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
   map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-variable (F T) in
-def RFunctor.ap [RFunctor F] [OFE T] := F T T
-
 attribute [instance] RFunctor.cmra
 
 
@@ -1042,8 +1050,8 @@ instance cmraOption : CMRA (Option α) where
     rename_i x
     rcases x1, x2, x with ⟨_|_, _|_, _|_⟩ <;> simp_all [op_right_dist]
   pcore_ne {n} x y cx H := by
-    simp only [some.injEq]; rintro rfl
-    rcases x, y with ⟨_|x, _|y⟩ <;> simp_all [Dist, Forall₂]
+    simp only [Option.some.injEq]; rintro rfl
+    rcases x, y with ⟨_|x, _|y⟩ <;> simp_all [Dist, Option.Forall₂]
     cases Hv : pcore x <;> cases Hv' : pcore y <;> simp only []
     · cases pcore_ne H.symm Hv'; simp_all
     · cases pcore_ne H Hv; simp_all
@@ -1051,7 +1059,7 @@ instance cmraOption : CMRA (Option α) where
       cases Hv.symm.trans Hw1
       exact Hw2.symm
   validN_ne {n} x y H := by
-    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Dist, Forall₂]
+    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Dist, Option.Forall₂]
     exact Dist.validN H |>.mp
   valid_iff_validN {x} := by
     rcases x with ⟨_|_⟩ <;> simp [valid_iff_validN]
@@ -1067,7 +1075,7 @@ instance cmraOption : CMRA (Option α) where
   pcore_op_left {x cx} := by
     rcases x, cx with ⟨_|_, _|_⟩ <;> simp_all [pcore_op_left]
   pcore_idem := by
-    rintro (_|x) <;> simp [Equiv, Forall₂]
+    rintro (_|x) <;> simp [Equiv, Option.Forall₂]
     rcases H : pcore x with _|y <;> simp
     obtain ⟨z, Hz1, Hz2⟩ := equiv_some (pcore_idem H)
     simp [Hz1, Hz2]
@@ -1263,8 +1271,8 @@ theorem some_incN_some_iff_opM {a b : α} : some a ≼{n} some b ↔ ∃ mc, b �
 
 instance [CMRA.Discrete α] : CMRA.Discrete (Option α) where
   discrete_valid {x} := by
-    cases x <;> simp [Valid]
-    exact (discrete_valid ·)
+    cases x <;> simp [Valid, optionValid]
+    exact (CMRA.discrete_valid ·)
 
 end Option
 end option
@@ -1365,6 +1373,18 @@ theorem valid_snd {x : α × β} (h : ✓ x) : ✓ x.snd := h.right
 theorem validN_fst {n} {x : α × β} (h : ✓{n} x) : ✓{n} x.fst := h.left
 theorem validN_snd {n} {x : α × β} (h : ✓{n} x) : ✓{n} x.snd := h.right
 
+theorem incN_iff {n} (a a' : α) (b b' : β) :
+    a ≼{n} a' ∧ b ≼{n} b' ↔ (a, b) ≼{n} (a', b') := by
+  constructor
+  · simp [CMRA.IncludedN]
+    rintro x hx y hy
+    exact ⟨x, ⟨y, ⟨hx, hy⟩⟩⟩
+  · simp [CMRA.IncludedN]
+    rintro x y ⟨ha, hb⟩
+    constructor
+    · exact ⟨x, Option.dist_of_some_dist_some ha⟩
+    · exact ⟨y, Option.dist_of_some_dist_some hb⟩
+
 instance [CMRA.Discrete α] [CMRA.Discrete β]: CMRA.Discrete (α × β) where
   discrete_valid := by
     rintro ⟨_, _⟩
@@ -1372,6 +1392,78 @@ instance [CMRA.Discrete α] [CMRA.Discrete β]: CMRA.Discrete (α × β) where
     exact (⟨CMRA.discrete_valid ·, CMRA.discrete_valid ·⟩)
 
 end Prod
+
+section ProdOF
+
+open COFE
+
+variable [OFE A] [OFE A'] [OFE B] [OFE B']
+
+
+instance (f : A → A') (g : B → B') [NonExpansive f] [NonExpansive g] :
+    NonExpansive (Prod.map f g) where
+  ne _ _ _ H := by
+    constructor
+    · rw [Prod.map_fst]
+      exact NonExpansive.ne H.1
+    · rw [Prod.map_snd]
+      exact NonExpansive.ne H.2
+
+omit [OFE A] [OFE B] in
+theorem Prod.map_ext {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡ f' a)
+    (Hg : ∀ a, g a ≡ g' a) : Prod.map f g x ≡ Prod.map f' g' x :=
+  ⟨Hf x.fst, Hg x.snd⟩
+
+omit [OFE A] [OFE B] in
+theorem Prod.map_ne {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡{n}≡ f' a)
+    (Hg : ∀ a, g a ≡{n}≡ g' a) : Prod.map f g x ≡{n}≡ Prod.map f' g' x :=
+  ⟨Hf x.fst, Hg x.snd⟩
+
+instance Prod.mapO (f : A -n> A') (g : B -n> B') : A × B -n> A' × B' where
+  f := .map f g
+  ne := inferInstance
+
+abbrev ProdOF (F1 F2 : OFunctorPre) : OFunctorPre := fun A B => (F1 A B) × (F2 A B)
+
+open OFunctor in
+instance [OFunctor F1] [OFunctor F2] : OFunctor (ProdOF F1 F2) where
+  cofe := inferInstance
+  map f g := Prod.mapO (map f g) (map f g)
+  map_ne.ne _ _ _ Hx _ _ Hy _ := ⟨map_ne.ne Hx Hy _, map_ne.ne Hx Hy _⟩
+  map_id _ := ⟨map_id _, map_id _⟩
+  map_comp _ _ _ _ _ := ⟨map_comp .., map_comp ..⟩
+
+open OFunctorContractive in
+instance [OFunctorContractive F1] [OFunctorContractive F2] : OFunctorContractive (ProdOF F1 F2) where
+  map_contractive.1 H _ :=
+    Prod.map_ne (fun _ => map_contractive.1 H _) (fun _ => map_contractive.1 H _)
+
+end ProdOF
+
+section ProdMor
+
+open CMRA
+
+variable [CMRA A] [CMRA A'] [CMRA B] [CMRA B']
+
+instance Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
+  f := Prod.map f g
+  ne := inferInstance
+  validN {n x} := fun ⟨h1, h2⟩ => ⟨Hom.validN _ h1, Hom.validN _ h2⟩
+  pcore x := by
+    simp [Option.map, Prod.map, CMRA.pcore, pcore]
+    have h2 := Hom.pcore g x.snd
+    have h1 := Hom.pcore f x.fst
+    cases _ : CMRA.pcore x.fst
+    · cases _ : CMRA.pcore (f.f x.fst) <;> simp_all
+    · cases _ : CMRA.pcore x.snd <;>
+      cases _ : CMRA.pcore (f.f x.fst) <;>
+      cases _ : CMRA.pcore (g.f x.snd) <;>
+      simp_all
+      exact ⟨Option.equiv_of_some_equiv_some h1, Option.equiv_of_some_equiv_some h2⟩
+  op x y := ⟨CMRA.Hom.op .., CMRA.Hom.op ..⟩
+
+end ProdMor
 
 section optionOF
 
@@ -1403,27 +1495,3 @@ instance urFunctorContractiveOptionOF
   map_contractive.1 := COFE.OFunctorContractive.map_contractive.1
 
 end optionOF
-
-section GenMap
-
-/-
-The OFE over gmaps is eqivalent to a non-depdenent discrete function to an `Option` type with a
-`Leibniz` OFE.
-In this setting, the CMRA is always unital, and as a consquence the oFunctors do not require
-unitality in order to act as a `URFunctor(Contractive)`.
--/
-
-variable (α β : Type _) [UCMRA β] [Leibniz β]
-
-abbrev GenMap := α → Option β
-
--- #synth CMRA (Option β)
--- #synth CMRA (α -d> (Option β))
--- #synth UCMRA (α -d> (Option β))
--- The synthesized UMRA here has unit (fun x => ε) = (fun x => none).
--- For us, this is equivalent to the Rocq-iris unit ∅.
-
-abbrev GenMapOF (C : Type _) (F : COFE.OFunctorPre) :=
-  DiscreteFunOF fun (_ : C) => OptionOF F
-
-end GenMap

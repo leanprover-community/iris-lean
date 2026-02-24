@@ -47,15 +47,20 @@ theorem zeroSupport_op (p₁ p₂ : Permission α F) :
     zeroSupport (fun a => p₁ a • p₂ a) =
       (fun a => p₁ a = DFrac.discard ∧ p₂ a = DFrac.discard) := by
   funext a
-  simp [zeroSupport, DFrac_CMRA, op]
-  split <;> simp_all
+  simp only [zeroSupport, CMRA.op, DFrac.op]
+  apply propext
+  constructor
+  · intro h; split at h <;> simp_all
+  · rintro ⟨h₁, h₂⟩; simp [h₁, h₂]
 
 /-- Non-zero support implication: if the op is non-zero at `a`, then at least one side is non-zero. -/
 theorem nonZeroSupport_op_imp (p₁ p₂ : Permission α F) :
     ∀ a, (p₁ a • p₂ a) ≠ DFrac.discard → (p₁ a ≠ DFrac.discard ∨ p₂ a ≠ DFrac.discard) := by
   intro a h
-  simp [DFrac_CMRA, op] at h
-  split at h <;> simp_all
+  simp only [CMRA.op, DFrac.op] at h
+  by_contra hc
+  push_neg at hc
+  exact h (by simp [hc.1, hc.2])
 
 /-- The `one` permission has empty zero-support (as a predicate). -/
 @[simp] theorem zeroSupport_one :

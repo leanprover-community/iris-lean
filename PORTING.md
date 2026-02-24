@@ -1,0 +1,434 @@
+# Status of the Iris-Lean port
+
+This file describes the state of the Iris-Lean port relative to the Rocq implementation.
+Each item in this list is organized the Rocq file containing it. 
+Once all tasks contained file are done, **and** once the file has been double checked for any missing lemmas, it can be marked complete.
+PR's which update this list by splitting large tasks into smaller parts, or double-checking files for completeness are welcome! 
+
+Some porting tasks will require other tasks as dependencies, the GitHub issues page lists the tasks that are accessible, and prioritised. 
+
+## Algebra
+
+- [ ] `agree.v`
+  - [x] CMRA 
+  - [x] Functors
+- [ ] `auth.v`
+  - [x] CMRA
+  - [x] Updates
+  - [x] Functors
+- [ ] `big_op.v`
+  - TBD (Zongyuan?)
+- [ ] `cmra.v`
+  - [x] Lemmas
+  - [ ] Total CMRA construction
+  - [x] CMRA Morphisms
+  - [x] Functors
+  - [ ] Discrete CMRA construction
+  - [ ] Resource algebra construction
+  - [x] Unit 
+  - [x] Empty
+  - [x] Product
+  - [x] Option
+  - [x] Discrete
+  - [x] Isomorphisms
+- [ ] `cmra_big_op.v` 
+- [ ] `coPset.v`
+  - [ ] coPset definition
+  - [ ] CMRA
+- [x] `cofe_solver.v` 
+- [ ] `csum.v`
+  - [ ] CMRA
+  - [ ] Updates
+  - [ ] Functors
+- [ ] `dfrac.v`
+  - [x] CMRA
+  - [x] Updates
+- [ ] `dyn_reservation_map.v`
+  - [ ] CMRA
+  - [ ] Updates
+- [ ] `excl.v`
+  - [x] CMRA
+  - [x] Functors
+- [ ] `frac.v`
+  - [x] CMRA
+- [ ] `functions.v` (nb. contained in `CMRA.lean`)
+  - [x] CMRA
+  - [ ] Updates
+- [ ] `gmap.v` (nb. generalized in `Heap.lean`)
+  - [x] CMRA
+  - [ ] Updates
+  - [x] Functors
+- [ ] `gmultiset.v` 
+  - [ ] CMRA
+  - [ ] Updates
+- [ ] `gset.v` 
+  - [ ] CMRA
+  - [ ] Updates
+- [ ] `list.v` 
+  - Is this an instance of the `Heap` CMRA?
+  - [ ] CMRA
+  - [ ] Functors
+- [x] `local_updates.v`
+- [ ] `max_prefix_list.v` 
+  - [ ] Lemmas
+  - [ ] Functors
+- [ ] `monoid.v`
+- [ ] `mra.v`
+- [x] `numbers.v`
+- [ ]  `ofe.v`
+  - [x] Definitions
+  - [ ] Contractivity tactic
+  - [x] Fixpoints
+  - [x] Mutual fixpoints
+  - [x] Unit
+  - [x] Emtpy
+  - [x] Product
+  - [ ] Sum
+  - [x] Discrete
+  - [x] Leibniz
+  - [x] Option
+  - [x] Later
+  - [x] Discrete functions
+  - [x] Isomorphisms
+  - [ ] Sigma 
+- [ ] `proofmode_classes.v`
+  - [ ] IsOp
+- [ ] `reservation_map.v`
+  - [ ] CMRA
+  - [ ] Updates
+- [ ] `stepindex.v`
+- [ ] `stepindex_finite.v`
+- [ ] `sts.v`
+  - [ ] CMRA
+  - [ ] Updates
+- [ ] `ufrac.v` (nb. contained in `Frac.lean`)
+- [ ] `updates.v`
+  - [x] Lemmas
+  - [x] Updates
+  - [x] Isomorphisms
+  - [x] Product
+  - [x] Option
+- [ ] `vector.v` 
+  - [ ] CMRA
+  - [ ] Functors
+- [] `view.v` 
+  - [x] CMRA
+  - [x] Updates
+  - [x] Functors
+- [ ] `lib/dfrac_agree.v` 
+  - [ ] Lemmas
+  - [ ] Updates
+- [ ] `lib/excl_auth.v` 
+  - [ ] Lemmas
+  - [ ] Updates
+  - [ ] Functors
+- [ ] `lib/frac_auth.v` 
+  - [ ] Lemmas
+  - [ ] Updates
+  - [ ] Functors
+- [] `lib/gmap_view.v` (nb. generalized in `HeapView.lean`)
+  - [x] CMRA
+  - [x] Updates
+  - [x] Functors
+- [ ] `lib/gset_bij.v` 
+- [ ] `lib/mono_Z.v` (nb. generalize to `MonoNumbers.lean`)
+- [ ] `lib/mono_list.v` 
+  - [ ] Lemmas
+  - [ ] Functors
+- [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
+- [ ] `lib/ufrac_auth.v` 
+  - [ ] Lemmas
+  - [ ] Updates
+  - [ ] Functors
+
+## Base Logic 
+- [x] `base_logic.v`
+- [ ] `bi.v` (nb. contained in `Instances/UPred/Instance.lean`)
+  - [x] BI instance
+  - [ ] BI Persistently instance
+  - [x] BI Later instance
+  - [ ] SBI instance
+  - [x] BUPd instance
+  - [ ] Additional instances
+- [x] `bupd_alt.v` (nb. contained in `BI/Lib/BUpdPlain.lean`)
+- [ ] `derived.v`
+  - [x] Modalities 
+- [ ] `proofmode.v`
+  - [ ] class instances
+- [ ] `upred.v` (nb. contained in `Algebra/UPred.lean` and `Instances/UPred/Instance.lean`)
+  - [x] CMRA 
+  - [x] Functors
+  - [x] Primitives and nonexpansivity
+  - Example: SIProp embedding
+  - [x] Later lemmas
+  - [x] Update lemmas
+- [ ] `lib/boxes.v`
+- [ ] `lib/cancelable_invariants.v`
+- [ ] `lib/fancy_updates.v`
+  - [ ] FUpd instance
+  - [ ] Soundness
+  - [ ] ProofMode instances
+- [ ] `lib/fancy_updates_from_vs.v`
+- [ ] `lib/gen_heap.v`
+- [ ] `lib/gen_inv_heap.v`
+- [ ] `lib/ghost_map.v`
+- [ ] `lib/ghost_var.v`
+- [ ] `lib/gset_bij.v`
+- [ ] `lib/invariants.v`
+- [ ] `lib/iprop.v`
+  - [x] Definition
+  - [ ] subG 
+  - [x] Functor solution
+- [ ] `lib/later_credits.v`
+- [ ] `lib/mono_Z.v` (nb. generalize to `MonoNumbers.lean`)
+- [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
+- [ ] `lib/na_invariants.v`
+- [ ] `lib/own.v`
+  - [x] Definition
+  - [x] Updates
+  - [ ] Big ops
+  - [ ] Proofmode instances
+  - [ ] Own/Forall lemmas
+- [ ] `lib/proph_map.v`
+- [ ] `lib/saved_prop.v`
+- [ ] `lib/token.v`
+- [ ] `lib/wsat.v`
+
+## BI
+
+- [ ] `algebra.v`
+- `ascii.v`
+- [x] `bi.v`
+- [ ] `big_op.v`
+- [ ] `cmra.v`
+- [x] `derived_connectives.v`
+- [ ] `derived_laws.v`
+- [ ] `derived_laws_later.v`
+  - [x] Base lemmas
+  - [x] Löb induction definition
+  - [x] Löb classes
+  - [x] Except 0 lemmas
+  - [ ] Timeless lemmas
+  - [ ] Big Op lemmas
+- [ ] `embedding.v`
+- [ ] `extensions.v`
+  - [ ] BIPureForall
+- [ ] `interface.v` 
+  - [ ] Later instances
+- [ ] `internal_eq.v`
+- [ ] `monopred.v`
+  - [ ] COFE
+  - [ ] BI instance
+  - [ ] Extension instnaces
+- [x] `notation.v`
+- [ ] `plainly.v`
+  - [x] plainly lemmas
+  - [ ] big op lemmas
+  - [ ] internal eq lemmas
+- [ ] `sbi.v`
+- [ ] `sbi_unfold.v`
+- [ ] `telescopes.v`
+- [ ] `updates.v`
+  - [x] FUpd class
+  - [ ] Big op lemmas
+- [ ] `weakestpre.v`
+- [ ] `lib/atomic.v`
+- [ ] `lib/core.v`
+- [ ] `lib/counterexamples.v`
+- [ ] `lib/fixpoint_banach.v`
+- [x] `lib/fixpoint_mono.v`
+  - [x] Least fixpoints + induction 
+  - [x] Greatest fixpoints + coinduction
+- [ ] `lib/fractional.v`
+- [ ] `lib/laterable.v`
+- [ ] `lib/relations.v`
+
+## ProofMode 
+
+- [-] `base.v`
+  (helper functions that are not necessary / different in Lean)
+- [ ] `class_instances.v` (Instances.lean)
+  - [x] instances for basic connectives
+  - [ ] instances for telescopes
+  - [ ] instances for big ops
+  - [ ] MaybeCombineSepAs instances
+  - [ ] CombineSepGives instances
+  - [x] ElimModal instances
+  - [ ] AddModal instances
+  - [ ] ElimInv instances
+- [ ] `class_instances_cmra.v`
+- [ ] `class_instances_embedding.v`
+- [ ] `class_instances_frame.v`
+- [ ] `class_instances_internal_eq.v`
+- [ ] `class_instances_later.v` (InstancesLater.lean)
+  - [x] basic instances
+  - [x] FromModal
+  - [x] ElimModal
+  - [ ] AddModal
+  - [x] IntoLater
+- [ ] `class_instances_make.v`
+- [ ] `class_instances_plainly.v` (InstancesPlainly.lean)
+  - [x] basic instances
+  - [x] FromModal
+  - [ ] IntoExcept0
+  - [ ] IntoLaterN
+- [ ] `class_instances_updates.v` (InstancesUpdates.lean)
+  - [x] Basic instances for bupd
+  - [ ] Basic instances for fupd
+  - [x] FromModal bupd
+  - [ ] FromModal fupd
+  - [x] ElimModal bupd
+  - [ ] ElimModal fupd
+  - [ ] AddModal bupd
+  - [ ] AddModal fupd
+  - [ ] ElimAcc bupd
+  - [ ] ElimAcc fupd
+- [ ] `classes.v` (Classes.lean)
+  - [x] FromAssumption
+  - [x] IntoPure
+  - [x] FromPure
+  - [ ] IntoInternalEq
+  - [x] IntoPersistent
+  - [x] FromModal
+  - [x] FromAffinely
+  - [x] IntoAbsorbingly
+  - [x] IntoWand
+  - [x] FromWand
+  - [x] FromImpl
+  - [x] FromSep
+  - [x] FromAnd
+  - [x] IntoAnd
+  - [x] IntoSep
+  - [x] FromOr
+  - [x] IntoOr
+  - [x] FromExist
+  - [x] IntoExist
+  - [x] IntoForall
+  - [x] FromForall
+  - [x] IsExcept0
+  - [ ] CombineSepAs
+  - [ ] MaybeCombineSepAs
+  - [ ] CombineSepGives
+  - [x] ElimModal
+  - [ ] AddModal
+  - [ ] Frame
+  - [x] IntoExcept0
+  - [x] MaybeIntoLaterN / IntoLaterN
+  - [ ] IntoEmbed
+  - [x] AsEmpValid
+  - [ ] AsEmpValid0
+  - [ ] IntoInv
+  - [ ] ElimAcc
+  - [ ] IntoAcc
+  - [ ] ElimInv
+- [ ] `classes_make.v`
+- [ ] `coq_tactics.v` / `ltac_tactics.v` (split into the files in Tactics/)
+  - [x] iSolveSideCondition
+  - [ ] iStartProof
+    - [x] basic
+    - [ ] with bi specified
+  - [x] iStopProof
+  - [x] iRename
+  - [ ] iClear
+    - [x] basic
+    - [ ] selection patterns
+  - [ ] iEval
+  - [ ] iSimpl
+  - [ ] iUnfold
+  - [x] iExact
+  - [x] iAssumption
+  - [-] iAssumptionCoq (iassumption_lean removed in https://github.com/leanprover-community/iris-lean/commit/b02fb8306b2c66aaa336b8ee2bc5eca0cdc5c899#diff-3289e4079a39b1d9a75ba9ee8532ef1c0a855d66a8e54fc5895585d0a32d12ee can be added back if necessary)
+  - [x] iExFalso
+  - [ ] iPure
+    - [x] basic
+    - [ ] pure destructuring patterns 
+          (also for other tactics using ipure)
+  - [x] iEmpIntro
+  - [x] iPureIntro
+  - [ ] iFrame
+  - [ ] iRevert
+  - [x] iPoseProof (Lean: ihave _ := _)
+  - [ ] iSpecialize
+    - [x] basic functionality
+    - [x] duplicate context for persistent conclusion
+          (includes other tactics using specialization)
+    - [ ] all specialization patterns (see below)
+  - [x] iApply
+  - [x] iLeft
+  - [x] iRight
+  - [x] iSplit(L/R)
+  - [x] iExists
+  - [x] iModIntro
+  - [ ] iNext (with later credits)
+  - [x] iMod
+  - [ ] iDestruct (Lean: icases)
+    - [x] basic
+    - [ ] all destruct patterns (see below)
+  - [ ] iCombine
+  - [ ] iIntros
+    - [x] basic
+    - [ ] all intro patterns (see below)
+  - [ ] iInduction
+  - [ ] iLöb
+  - [x] iAssert (Lean: ihave _ : _)
+  - [ ] iRewrite
+  - [ ] iInv
+  - [ ] iAccu
+  - [ ] rules for trivial
+- [x] `environments.v` (corresponds to Hyps / Entails')
+- [-] `ident_name.v` (not needed)
+- [ ] `intro_patterns.v` 
+  (split into Patterns/CasesPattern.lean / Patterns/IntroPattern.lean)
+  - [x] IIdent
+  - [x] IFresh
+  - [x] IDrop
+  - [ ] IFrame
+  - [x] IList
+  - [x] IPure
+  - [x] IIntuitionistic
+  - [x] ISpatial
+  - [x] IModalElim
+  - [ ] IRewrite
+  - [ ] IPureIntro
+  - [x] IModalIntro
+  - [ ] ISimpl
+  - [ ] IDone
+  - [ ] IForall
+  - [ ] IAll
+  - [ ] IClear
+  - [ ] IClearFrame
+- [ ] `modalities.v`
+- [ ] `modality_instances.v`
+- [ ] `monpred.v`
+- [x] `proofmode.v` (ProofMode.lean)
+- [-] `reduction.v` (not necessary in Lean)
+- [ ] `sel_patterns.v`
+- [ ] `spec_patterns.v`
+  - [x] SIdent
+  - [x] SPureGoal
+  - [ ] SGoal
+    - [ ] Kind
+    - [ ] Negate
+    - [ ] Frame
+    - [x] Hyps
+    - [ ] Done
+  - [ ] SAutoFrame
+- [-] `string_ident.v` (not necessary in Lean)
+- [-] `tokens.v` (not necessary in Lean)
+
+## Examples
+
+- SI Logic 
+  - [ ] `si_logic/siprop.v`
+  - [ ] `si_logic/bi.v`
+    - [ ] BI instance 
+    - [ ] BI Persistently instance
+    - [ ] BI Later instance
+
+- Program Logic
+  - Final decisions about what to port from this folder have not been made yet.
+  - [ ] `language.v`
+  - [ ] `ectx_language.v`
+  - [ ] `ectxi_language.v`
+
+

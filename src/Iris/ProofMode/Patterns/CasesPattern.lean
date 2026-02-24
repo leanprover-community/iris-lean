@@ -14,22 +14,26 @@ syntax binderIdent : icasesPat
 syntax "-" : icasesPat
 syntax "⟨" icasesPatAlts,* "⟩" : icasesPat
 syntax "(" icasesPatAlts ")" : icasesPat
-syntax "⌜" icasesPat "⌝" : icasesPat
+syntax "⌜" binderIdent "⌝" : icasesPat
 syntax "□" icasesPat : icasesPat
 syntax "∗" icasesPat : icasesPat
+syntax ">" icasesPat : icasesPat
 
-macro "%" pat:icasesPat : icasesPat => `(icasesPat| ⌜$pat⌝)
+macro "%" pat:binderIdent : icasesPat => `(icasesPat| ⌜$pat⌝)
 macro "#" pat:icasesPat : icasesPat => `(icasesPat| □ $pat)
 macro "*" pat:icasesPat : icasesPat => `(icasesPat| ∗ $pat)
 
+-- TODO: attach syntax to iCasesPat such that one can use withRef to
+-- associate the errors with the right part of the syntax
 inductive iCasesPat
   | one (name : TSyntax ``binderIdent)
   | clear
   | conjunction (args : List iCasesPat)
   | disjunction (args : List iCasesPat)
-  | pure           (pat : iCasesPat)
+  | pure           (pat : TSyntax ``binderIdent)
   | intuitionistic (pat : iCasesPat)
   | spatial        (pat : iCasesPat)
+  | mod            (pat : iCasesPat)
   deriving Repr, Inhabited
 
 partial def iCasesPat.parse (pat : TSyntax `icasesPat) : MacroM iCasesPat := do
@@ -41,9 +45,10 @@ where
   | `(icasesPat| $name:binderIdent) => some <| .one name
   | `(icasesPat| -) => some <| .clear
   | `(icasesPat| ⟨$[$args],*⟩) => args.mapM goAlts |>.map (.conjunction ·.toList)
-  | `(icasesPat| ⌜$pat⌝) => go pat |>.map .pure
+  | `(icasesPat| ⌜$pat⌝) => some <| .pure pat
   | `(icasesPat| □$pat) => go pat |>.map .intuitionistic
   | `(icasesPat| ∗$pat) => go pat |>.map .spatial
+  | `(icasesPat| >$pat) => go pat |>.map .mod
   | `(icasesPat| ($pat)) => goAlts pat
   | _ => none
   goAlts : TSyntax ``icasesPatAlts → Option iCasesPat

@@ -13,8 +13,8 @@ theorem proof_example_1 [BI PROP] (P Q R : PROP) (Φ : α → PROP) :
   P ∗ Q ∗ □ R ⊢ □ (R -∗ ∃ x, Φ x) -∗ ∃ x, Φ x ∗ P ∗ Q
 := by
   iintro ⟨HP, HQ, □HR⟩ □HRΦ
-  ihave HΦ := HRΦ with HR
-  icases HΦ with ⟨x, _HΦ⟩
+  ihave HΦ := HRΦ $$ HR
+  icases HΦ with ⟨%x, _HΦ⟩
   iexists x
   isplitr
   · iassumption

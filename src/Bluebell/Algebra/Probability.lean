@@ -102,7 +102,7 @@ def compatiblePerm {α V F : Type*} [UFraction F]
 /-- The op of two DFrac values is `discard` iff both are `discard`. -/
 theorem DFrac.op_eq_discard_iff {F : Type*} [UFraction F] (x y : Iris.DFrac F) :
     x • y = Iris.DFrac.discard ↔ x = Iris.DFrac.discard ∧ y = Iris.DFrac.discard := by
-  cases x <;> cases y <;> simp [Iris.DFrac_CMRA, Iris.op]
+  cases x <;> cases y <;> simp [Iris.CMRA.op, Iris.DFrac.op]
 
 /-- If the independent product exists and the factors are compatible with `p₁,p₂`,
 then the product is compatible with the pointwise permission op `p₁ • p₂`. -/

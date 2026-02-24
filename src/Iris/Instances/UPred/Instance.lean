@@ -424,6 +424,9 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
       _ ≡{n}≡ (m1 • m2) • (w2 • w1) := CMRA.assoc.dist
       _ ≡{n}≡ (m1 • m2) • (w1 • w2) := CMRA.comm.op_r.dist
 
+theorem ownM_eqv {m1 m2 : M} (H : m1 ≡ m2) : ownM m1 ⊣⊢ ownM m2 :=
+  ⟨fun _ _ _ => (CMRA.incN_iff_left H.dist).mp, fun _ _ _ => (CMRA.incN_iff_left H.dist).mpr⟩
+
 theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : (cmraValid m : UPred M) ⊢ False :=
   fun n _ _ => H n
 
@@ -457,6 +460,14 @@ theorem later_soundness : iprop(True ⊢ ▷ P) → iprop((True : UPred M) ⊢ P
 theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (CMRA.core a) :=
   fun _ _ _ H => CMRA.core_incN_core H
 
+instance : Persistent (ownM (CMRA.core a) : UPred M) where
+  persistent := by
+    refine .trans (persistently_ownM_core _) ?_
+    refine persistently_mono ?_
+    refine equiv_iff.mp ?_ |>.mp
+    refine OFE.NonExpansive.eqv ?_
+    exact CMRA.core_idem a
+
 theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   (x ~~>: Φ) → ownM x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ ownM y := by
   intro Hup n x2 Hv ⟨x3, Hx⟩ k yf Hk Hyf
@@ -488,6 +499,9 @@ theorem cmra_cmraValid_weaken [CMRA A] (a b : A) :
 theorem cmraValid_entails [CMRA A] [CMRA B] {a : A} {b : B} (Hv : ∀ n, ✓{n} a → ✓{n} b) :
     (cmraValid a : UPred M) ⊢ cmraValid b :=
   fun _ _ _ H => Hv _ H
+
+instance [CMRA A] {a : A} : Persistent (UPred.cmraValid a : UPred M) where
+  persistent := fun _ _ _ a => a
 
 instance : BIAffine (UPred M) := ⟨by infer_instance⟩
 

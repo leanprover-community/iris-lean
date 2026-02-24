@@ -11,24 +11,20 @@ open Lean
 declare_syntax_cat pmTerm
 
 syntax term : pmTerm
-syntax term "with" specPat,+ : pmTerm
-syntax term "$!" term,+ : pmTerm
-syntax term "$!" term,+ "with" specPat,+ : pmTerm
+syntax term "$$" specPat,+ : pmTerm
 
 structure PMTerm where
   term : Term
-  terms : List Term
   spats : List SpecPat
   deriving Repr, Inhabited
 
 partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
   match ← expandMacros term with
-  | `(pmTerm| $trm:term) => return ⟨trm, [], []⟩
-  | `(pmTerm| $trm:term with $spats,*) => return ⟨trm, [], ← parseSpats spats⟩
-  | `(pmTerm| $trm:term $! $ts,*) => return ⟨trm, ts.getElems.toList, []⟩
-  | `(pmTerm| $trm:term $! $ts,* with $spats,*) =>
-    return ⟨trm, ts.getElems.toList, ← parseSpats spats⟩
+  | `(pmTerm| $trm:term) => return ⟨trm, []⟩
+  | `(pmTerm| $trm:term $$ $spats,*) => return ⟨trm, ← parseSpats spats⟩
   | _ => Macro.throwUnsupported
 where
   parseSpats (spats : Syntax.TSepArray `specPat ",") : MacroM (List SpecPat) :=
       return (← spats.getElems.toList.mapM fun pat => SpecPat.parse pat.raw)
+
+def PMTerm.is_nontrivial (pmt : PMTerm) : Bool := !pmt.spats.isEmpty

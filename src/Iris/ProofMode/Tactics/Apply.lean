@@ -4,41 +4,53 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser, Michael Sammler
 -/
 import Iris.ProofMode.Patterns.ProofModeTerm
-import Iris.ProofMode.Tactics.Split
-import Iris.ProofMode.Tactics.Have
+import Iris.ProofMode.Tactics.Assumption
+import Iris.ProofMode.Tactics.HaveCore
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-theorem tac_apply [BI PROP] {p} {P Q P' Q1 R : PROP}
-    (h1 : P ⊣⊢ P' ∗ □?p Q) (h2 : P' ⊢ Q1)
-    [h3 : IntoWand p false Q Q1 R] : P ⊢ R :=
-      h1.1.trans (Entails.trans (sep_mono_l h2) (wand_elim' h3.1))
+private theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
+    (h1 : P ⊢ Q1)
+    [h2 : IntoWand p false Q .out Q1 .in R] : P ∗ □?p Q ⊢ R :=
+      (Entails.trans (sep_mono_l h1) (wand_elim' h2.1))
 
-partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} (gs : Goals bi) {e} (hyps : Hyps bi e) (goal : Q($prop)) (uniq : Name) : TacticM Q($e ⊢ $goal) := do
-  let ⟨_, hyps', _, out, p, _, pf⟩ := hyps.remove true uniq
-  let A ← mkFreshExprMVarQ q($prop)
-  if let LOption.some _ ← trySynthInstanceQ q(IntoWand $p false $out $A $goal) then
-     let pf' ← gs.addGoal hyps' A
-     return q(tac_apply $pf $pf')
+/--
+Apply a hypothesis `A` to the `goal` by eliminating the wands recursively
 
-  let some ⟨_, hyps'', pf''⟩ ← try? <| iSpecializeCore gs hyps uniq [] [.goal [] .anonymous] | throwError m!"iapply: cannot apply {out} to {goal}"
-  let pf''' ← iApplyCore gs hyps'' goal uniq
-  return q($(pf'').trans $pf''')
+## Parameters
+- `hyps`: The current proof mode hypothesis context
+- `p`: Persistence flag for `A`
+
+## Returns
+The proof of `hyps ∗ □?p A ⊢ goal`
+-/
+partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e) (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) : ProofModeM Q($e ∗ □?$p $A ⊢ $goal) := do
+  let B ← mkFreshExprMVarQ q($prop)
+  -- if `A := ?B -∗ goal`, add `B` as a new subgoal and conclude `goal`
+  if let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $A .out $B .in $goal) then
+     let pf ← addBIGoal hyps B
+     return q(apply $pf)
+
+  -- otherwise, if `A` has the form `?P -∗ ?B`, create a subgoal for `P` and continue with ?B
+  let some ⟨_, hyps', pb, B, pf⟩ ← try? <| iSpecializeCore hyps p A [.goal [] .anonymous]
+    | throwError m!"iapply: cannot apply {A} to {goal}"
+  let pf' ← iApplyCore hyps' pb B goal
+  return q($(pf).trans $pf')
 
 elab "iapply" colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
-  let (mvar, { bi, hyps, goal, .. }) ← istart (← getMainGoal)
-  mvar.withContext do
-  let gs ← Goals.new bi
-  let ⟨uniq, _, hyps, pf⟩ ← iHave gs hyps pmt (← `(binderIdent|_)) true
-  let ⟨e', _, _, out, p, _, pf'⟩ := hyps.remove true uniq
-  if let (some _, some _) := (← try? <| synthInstanceQ q(FromAssumption $p $out $goal),
-                              ← try? <| synthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))) then
-    -- behave like iexact
-    mvar.assign q($(pf).trans (assumption (Q := $goal) $pf'))
-    replaceMainGoal (← gs.getGoals)
-  else
-    let pf' ← iApplyCore gs hyps goal uniq
-    mvar.assign q($(pf).trans $pf')
-    replaceMainGoal (← gs.getGoals)
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+  -- elaborate the proof mode term `pmt` to the hypothesis `out`
+  let ⟨e, hyps', p, out, pf⟩ ← iHave hyps pmt true (mayPostpone := true)
+  -- if `□?p out` directly matches goal, behave like `iexact`
+  if let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption $p .in $out $goal) then
+    -- ensure the context can be discarded
+    let LOption.some _ ← trySynthInstanceQ q(TCOr (Affine $e) (Absorbing $goal))
+      | throwError "iapply: the context {e} is not affine and goal not absorbing"
+    have rfl : Q($e ∗ □?$p $out ⊣⊢ $e ∗ □?$p $out) := q(.rfl)
+    mvar.assign q($(pf).trans (assumption (Q := $goal) $(rfl)))
+    return
+  -- otherwise, `out` should be a wand, handled by `iApplyCore`
+  let pf' ← iApplyCore hyps' p out goal
+  mvar.assign q($(pf).trans $pf')

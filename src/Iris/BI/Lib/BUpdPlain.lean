@@ -4,6 +4,7 @@ import Iris.Algebra.Updates
 import Iris.ProofMode.Classes
 import Iris.ProofMode.Tactics
 import Iris.ProofMode.Display
+import Iris.ProofMode.InstancesUpdates
 
 namespace Iris
 open Iris.Std BI
@@ -33,37 +34,29 @@ instance BUpdPlain_ne : NonExpansive (BUpdPlain (PROP := PROP)) where
 theorem BUpdPlain_intro {P : PROP} : P ⊢ BUpdPlain P := by
   iintro Hp
   unfold BUpdPlain
-  iintro _ H
-  iapply H
-  iexact Hp
+  iintro %_ H
+  iapply H $$ Hp
 
 theorem BUpdPlain_mono {P Q : PROP} : (P ⊢ Q) → (BUpdPlain P ⊢ BUpdPlain Q) := by
   intros H
   unfold BUpdPlain
-  iintro R HQR
-  iintro Hp
-  have H1 : ⊢ iprop(Q -∗ ■ HQR) -∗ iprop(P -∗ ■ HQR) := by
-    iintro H
-    iintro Hp
-    iapply H
-    apply H
-  iintro ⟨Ha, H2⟩
-  iapply Ha $! HQR
-  iapply H1
-  iexact H2
+  iintro R %HQR Hp
+  iapply R
+  iintro HP
+  iapply Hp
+  iapply H $$ HP
 
 theorem BUpdPlain_idemp {P : PROP} : BUpdPlain (BUpdPlain P) ⊢ BUpdPlain P := by
   unfold BUpdPlain
-  iintro Hp R H
-  iapply Hp $! R
+  iintro Hp %R H
+  iapply Hp
   iintro Hp
-  iapply Hp $! R
-  iassumption
+  iapply Hp $$ H
 
 theorem BUpdPlain_frame_r {P Q : PROP} : BUpdPlain P ∗ Q ⊢ (BUpdPlain iprop(P ∗ Q)) := by
   unfold BUpdPlain
-  iintro ⟨Hp, Hq⟩ R H
-  iapply Hp $! R
+  iintro ⟨Hp, Hq⟩ %R H
+  iapply Hp
   iintro Hp
   iapply H
   isplitl [Hp]
@@ -73,16 +66,15 @@ theorem BUpdPlain_frame_r {P Q : PROP} : BUpdPlain P ∗ Q ⊢ (BUpdPlain iprop(
 theorem BUpdPlain_plainly {P : PROP} : BUpdPlain iprop(■ P) ⊢ (■ P) := by
   unfold BUpdPlain
   iintro H
-  iapply H $! P
-  exact wand_rfl
+  iapply H
+  iapply wand_rfl
 
 /- BiBUpdPlainly entails the alternative definition -/
 theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdatePlainly PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P := by
   unfold BUpdPlain
-  iintro _ _ _
-  refine BIUpdate.frame_r.trans ?_
-  refine (BIUpdate.mono sep_symm).trans ?_
-  exact (BIUpdate.mono <| wand_elim .rfl).trans bupd_elim
+  iintro HP %_ Hx
+  imod HP
+  iapply Hx $$ HP
 
 -- We get the usual rule for frame preserving updates if we have an [own]
 -- connective satisfying the following rule w.r.t. interaction with plainly.
@@ -94,12 +86,11 @@ theorem own_updateP [UCMRA M] {own : M → PROP} {x : M} {Φ : M → Prop}
     own x ⊢ BUpdPlain iprop(∃ y, ⌜Φ y⌝ ∧ own y) := by
   iintro Hx
   unfold BUpdPlain
-  iintro R H
+  iintro %R H
   iapply own_updateP_plainly x Φ R Hup
   isplitl [Hx]
   · iexact Hx
-  iintro y ⌜HΦ⌝
-  iintro Hy
+  iintro %y %HΦ Hy
   iapply H
   iexists y
   isplit
