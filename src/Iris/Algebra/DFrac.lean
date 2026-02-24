@@ -161,12 +161,6 @@ instance : CMRA.Discrete (DFrac F) where
 
 theorem is_discrete {q : DFrac F} : OFE.DiscreteE q := ⟨congrArg id⟩
 
-instance : CMRA.Discrete (DFrac F) where
-  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
-
-instance : CMRA.Discrete (DFrac F) where
-  discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
-
 theorem DFrac.update_discard {dq : DFrac F} : dq ~~> .discard := by
   intros n q H
   apply (CMRA.valid_iff_validN' n).mp
