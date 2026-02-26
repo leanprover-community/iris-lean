@@ -10,16 +10,10 @@ import Iris.BI.Classes
 import Iris.BI.DerivedLaws
 import Iris.Algebra
 import Iris.BI.Plainly
+import Iris.Std.CoPset
 
 namespace Iris
 open Iris.Std BI
-
---TODO: Which type should we use for sets of masks?
-def Set (α : Type _) := α → Prop
-def Set.univ {α : Type _} : Set α := fun _ => True
-def Subset (x y : Set α) : Prop := ∀ a, x a → y a
-def Disjoint (x y : Set α) : Prop := ∀ a, ¬(x a ∧ y a)
-def union (x y : Set α) : Set α := fun a => x a ∨ y a
 
 class BUpd (PROP : Type _) where
   bupd : PROP → PROP
@@ -37,8 +31,8 @@ delab_rule BUpd.bupd
 -- delab_rule WandUpdate ??
 --   | `($_ $P $Q) => ``(iprop($P ==∗ $Q))
 
-class FUpd (PROP : Type _) (MASK : Type _) where
-  fupd : Set MASK → Set MASK → PROP → PROP
+class FUpd (PROP : Type _) where
+  fupd : CoPset → CoPset → PROP → PROP
 export FUpd (fupd)
 
 syntax "|={ " term " , " term " }=> " term : term
@@ -87,26 +81,26 @@ class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
   trans {P : PROP} : iprop(|==> |==> P ⊢ |==> P)
   frame_r {P R : PROP} : iprop((|==> P) ∗ R ⊢ |==> (P ∗ R))
 
-class BIFUpdate (PROP MASK : Type _) [BI PROP] extends FUpd PROP MASK where
-  [ne {E1 E2 : Set MASK} : OFE.NonExpansive (FUpd.fupd E1 E2 (PROP := PROP))]
-  subset {E1 E2 : Set MASK} : Subset E2 E1 → ⊢ |={E1, E2}=> |={E2, E1}=> (emp : PROP)
-  except0 {E1 E2 : Set MASK} (P : PROP) : (◇ |={E1, E2}=> P) ⊢ |={E1, E2}=> P
-  trans {E1 E2 E3 : Set MASK} (P : PROP) : (|={E1, E2}=> |={E2, E3}=> P) ⊢ |={E1, E3}=> P
-  mask_frame_r' {E1 E2 Ef : Set MASK} (P : PROP) :
-    Disjoint E1 Ef → (|={E1,E2}=> ⌜Disjoint E2 Ef⌝ → P) ⊢ |={union E1 Ef, union E2 Ef}=> P
-  frame_r {E1 E2 : Set MASK} (P R : PROP) :
+class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
+  [ne {E1 E2 : CoPset} : OFE.NonExpansive (FUpd.fupd E1 E2 (PROP := PROP))]
+  subset {E1 E2 : CoPset} : Subset E2 E1 → ⊢ |={E1, E2}=> |={E2, E1}=> (emp : PROP)
+  except0 {E1 E2 : CoPset} (P : PROP) : (◇ |={E1, E2}=> P) ⊢ |={E1, E2}=> P
+  trans {E1 E2 E3 : CoPset} (P : PROP) : (|={E1, E2}=> |={E2, E3}=> P) ⊢ |={E1, E3}=> P
+  mask_frame_r' {E1 E2 Ef : CoPset} (P : PROP) :
+    E1 ## Ef → (|={E1,E2}=> ⌜E2 ## Ef⌝ → P) ⊢ |={CoPset.union E1 Ef, CoPset.union E2 Ef}=> P
+  frame_r {E1 E2 : CoPset} (P R : PROP) :
     iprop((|={E1, E2}=> P) ∗ R ⊢ |={E1, E2}=> P ∗ R)
 
-class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP MASK] where
-  fupd_of_bupd {P : PROP} {E : Set MASK} : iprop(⊢ |==> P) → iprop(⊢ |={E}=> P)
+class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] where
+  fupd_of_bupd {P : PROP} {E : CoPset} : iprop(⊢ |==> P) → iprop(⊢ |={E}=> P)
 
 class BIBUpdatePlainly (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIPlainly PROP] where
   bupd_plainly {P : PROP} : iprop((|==> ■ P)) ⊢ P
 
-class BIFUpdatePlainly (PROP MASK : Type _) [BI PROP] [BIFUpdate PROP MASK] [BIPlainly PROP] where
-  fupd_plainly_keep_l (E E' : Set MASK) (P R : PROP) : (R ={E,E'}=∗ ■ P) ∗ R ⊢ |={E}=> P ∗ R
-  fupd_plainly_later (E : Set MASK) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P
-  fupd_plainly_sForall_2 (E : Set MASK) (Φ : PROP → Prop) :
+class BIFUpdatePlainly (PROP : Type _) [BI PROP] [BIFUpdate PROP] [BIPlainly PROP] where
+  fupd_plainly_keep_l (E E' : CoPset) (P R : PROP) : (R ={E,E'}=∗ ■ P) ∗ R ⊢ |={E}=> P ∗ R
+  fupd_plainly_later (E : CoPset) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P
+  fupd_plainly_sForall_2 (E : CoPset) (Φ : PROP → Prop) :
     (∀ p, ⌜Φ p⌝ → |={E}=> ■ p) ⊢ |={E}=> sForall Φ
 
 section BUpdLaws

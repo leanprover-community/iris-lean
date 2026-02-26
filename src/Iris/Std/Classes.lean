@@ -56,4 +56,13 @@ class Antisymmetric (R : Relation α) (S : outParam <| Relation α) where
   antisymm {x y : α} : (left : S x y) → (right : S y x) → R x y
 export Antisymmetric (antisymm)
 
+class Disjoint (α : Type u) where
+  disjoint : α -> α -> Prop
+export Disjoint (disjoint)
+infix:50 " ## " => Disjoint.disjoint
+
+class Injective (f : A -> B) where
+  inj : ∀ (a a' : A), f a = f a' -> a = a'
+export Injective (inj)
+
 end Iris.Std
