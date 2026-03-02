@@ -823,6 +823,31 @@ theorem ofList_toList [DecidableEq K] {m : M V} :
     cases h ▸ toList_get.mp Hk
   · exact get?_ofList_some (toList_get.mpr h) toList_noDupKeys
 
+private theorem induction_on_aux
+    {P : M V → Prop}
+    (hemp : P PartialMap.empty)
+    (hins : ∀ i x m, get? m i = none → P m → P (PartialMap.insert m i x))
+    (l : List (K × V)) (hnd : NoDupKeys l) : P (ofList l) := by
+  induction l with
+  | nil => simpa [ofList] using hemp
+  | cons kv rest ih =>
+    rw [ofList_cons]
+    apply hins kv.1 kv.2
+    · have hnd_rest := noDupKeys_cons hnd
+      refine get?_ofList_none (M := M) ?_ hnd_rest
+      intro ⟨v, hv⟩
+      have hnotin : kv.1 ∉ rest.map Prod.fst :=
+        (List.nodup_cons.mp hnd).1
+      exact hnotin (List.mem_map_of_mem (f := Prod.fst) (a := (kv.1, v)) hv)
+    · exact ih (noDupKeys_cons hnd)
+
+theorem induction_on [DecidableEq K] {P : M V → Prop}
+    (hequiv : ∀ m₁ m₂, PartialMap.equiv m₁ m₂ → P m₁ → P m₂)
+    (hemp : P PartialMap.empty)
+    (hins : ∀ i x m, get? m i = none → P m → P (PartialMap.insert m i x))
+    (m : M V) : P m :=
+  hequiv _ _ ofList_toList (induction_on_aux hemp hins (toList (K := K) m) toList_noDupKeys)
+
 theorem mem_of_mem_ofList [DecidableEq K] {l : List (K × V)} {i : K} {x : V}
     (H : get? (ofList l : M V) i = some x) : (i, x) ∈ l := by
   induction l
