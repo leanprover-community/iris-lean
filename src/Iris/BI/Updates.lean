@@ -3,14 +3,17 @@ Copyright (c) 2025 Markus de Medeiros, Remy Seassau. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Remy Seassau
 -/
+module
 
-import Iris.BI.BI
-import Iris.BI.BIBase
-import Iris.BI.Classes
-import Iris.BI.DerivedLaws
-import Iris.Algebra
-import Iris.BI.Plainly
-import Iris.Std.CoPset
+public import Iris.BI.BI
+public import Iris.BI.BIBase
+public import Iris.BI.Classes
+public import Iris.BI.DerivedLaws
+public import Iris.Algebra
+public import Iris.BI.Plainly
+public import Iris.Std.CoPset
+
+@[expose] public section
 
 namespace Iris
 open Iris.Std BI

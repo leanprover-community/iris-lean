@@ -1,8 +1,10 @@
-import Iris.BI.Classes
-import Iris.BI.DerivedLaws
-import Iris.BI.DerivedLawsLater
-import Iris.BI.Extensions
-import Iris.BI.Instances
-import Iris.BI.BI
-import Iris.BI.Notation
-import Iris.BI.Updates
+module
+
+public import Iris.BI.Classes
+public import Iris.BI.DerivedLaws
+public import Iris.BI.DerivedLawsLater
+public import Iris.BI.Extensions
+public import Iris.BI.Instances
+public import Iris.BI.BI
+public import Iris.BI.Notation
+public import Iris.BI.Updates

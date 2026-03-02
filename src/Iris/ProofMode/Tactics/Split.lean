@@ -3,12 +3,16 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
-import Iris.ProofMode.Tactics.Basic
+module
+
+public meta import Iris.ProofMode.Tactics.Basic
+
+public meta section
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI
 
-private theorem from_and_intro [BI PROP] {P Q A1 A2 : PROP} [inst : FromAnd Q A1 A2]
+theorem from_and_intro [BI PROP] {P Q A1 A2 : PROP} [inst : FromAnd Q A1 A2]
     (h1 : P ⊢ A1) (h2 : P ⊢ A2) : P ⊢ Q :=
   (and_intro h1 h2).trans inst.1
 
@@ -22,7 +26,7 @@ elab "isplit" : tactic => do
   let m2 ← addBIGoal hyps A2
   mvar.assign q(from_and_intro (Q := $goal) $m1 $m2)
 
-private theorem sep_split [BI PROP] {P P1 P2 Q Q1 Q2 : PROP} [inst : FromSep Q Q1 Q2]
+theorem sep_split [BI PROP] {P P1 P2 Q Q1 Q2 : PROP} [inst : FromSep Q Q1 Q2]
     (h : P ⊣⊢ P1 ∗ P2) (h1 : P1 ⊢ Q1) (h2 : P2 ⊢ Q2) : P ⊢ Q :=
   h.1.trans <| (sep_mono h1 h2).trans inst.1
 

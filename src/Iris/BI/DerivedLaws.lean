@@ -3,12 +3,16 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Markus de Medeiros, Michael Sammler
 -/
-import Iris.BI.Classes
-import Iris.BI.Extensions
-import Iris.BI.BI
-import Iris.Std.Classes
-import Iris.Std.Rewrite
-import Iris.Std.TC
+module
+
+public import Iris.BI.Classes
+public import Iris.BI.Extensions
+public import Iris.BI.BI
+public import Iris.Std.Classes
+public import Iris.Std.Rewrite
+public import Iris.Std.TC
+
+@[expose] public section
 
 namespace Iris.BI
 open Iris.Std BI

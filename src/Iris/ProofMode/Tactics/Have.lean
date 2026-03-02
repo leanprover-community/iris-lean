@@ -3,16 +3,20 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-import Iris.ProofMode.Patterns.CasesPattern
-import Iris.ProofMode.Tactics.HaveCore
-import Iris.ProofMode.Tactics.Cases
+module
+
+public meta import Iris.ProofMode.Patterns.CasesPattern
+public meta import Iris.ProofMode.Tactics.HaveCore
+public meta import Iris.ProofMode.Tactics.Cases
+
+public meta section
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 macro "ihave" colGt pat:icasesPat " := " pmt:pmTerm : tactic => `(tactic | icases +keep $pmt with $pat)
 
-private theorem ihave_assert [BI PROP] {A B C : PROP}
+theorem ihave_assert [BI PROP] {A B C : PROP}
   (h1 : A ∗ □ (B -∗ B) ⊢ C) : A ⊢ C :=
     (and_intro .rfl (persistently_emp_intro.trans (persistently_mono $ wand_intro emp_sep.1))).trans
       $ persistently_and_intuitionistically_sep_r.1.trans h1

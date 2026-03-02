@@ -3,12 +3,16 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
-import Iris.ProofMode.Tactics.Basic
+module
+
+public meta import Iris.ProofMode.Tactics.Basic
+
+public meta section
 
 namespace Iris.ProofMode
 open Lean Elab.Tactic Meta Qq BI Std
 
-private theorem from_or_l [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
+theorem from_or_l [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A1) : P ⊢ Q :=
   (or_intro_l' h1).trans inst.1
 
@@ -23,7 +27,7 @@ elab "ileft" : tactic => do
   let m : Q($e ⊢ $A1) ← addBIGoal hyps A1
   mvar.assign q(from_or_l (Q := $goal) $m)
 
-private theorem from_or_r [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
+theorem from_or_r [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A2) : P ⊢ Q :=
   (or_intro_r' h1).trans inst.1
 

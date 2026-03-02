@@ -3,14 +3,18 @@ Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser, Michael Sammler
 -/
-import Iris.ProofMode.Patterns.ProofModeTerm
-import Iris.ProofMode.Tactics.Assumption
-import Iris.ProofMode.Tactics.HaveCore
+module
+
+public meta import Iris.ProofMode.Patterns.ProofModeTerm
+public meta import Iris.ProofMode.Tactics.Assumption
+public meta import Iris.ProofMode.Tactics.HaveCore
+
+public meta section
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-private theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
+theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
     (h1 : P ⊢ Q1)
     [h2 : IntoWand p false Q .out Q1 .in R] : P ∗ □?p Q ⊢ R :=
       (Entails.trans (sep_mono_l h1) (wand_elim' h2.1))

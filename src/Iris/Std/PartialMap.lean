@@ -1,3 +1,5 @@
+module
+
 import Batteries.Data.List.Perm
 import Iris.Std.FromMathlib
 
@@ -6,6 +8,7 @@ Copyright (c) 2026 Zongyuan Liu, Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu, Markus de Medeiros
 -/
+
 
 /-! ## Partial Maps
 
@@ -28,6 +31,9 @@ be unique, ie. all constructions reason extensionally about the get? function ra
 than intensionally about map equalities. PartialMaps are free to be non-uniquely
 represented.
 -/
+
+@[expose] public section
+
 namespace Iris.Std
 
 /-- Base typeclass for partial maps: maps from keys `K` to optional values `V`. -/

@@ -3,18 +3,22 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
-import Iris.ProofMode.Patterns.ProofModeTerm
-import Iris.ProofMode.Patterns.CasesPattern
-import Iris.ProofMode.Tactics.Basic
-import Iris.ProofMode.Tactics.Clear
-import Iris.ProofMode.Tactics.Pure
-import Iris.ProofMode.Tactics.HaveCore
-import Iris.ProofMode.Tactics.Mod
+module
+
+public meta import Iris.ProofMode.Patterns.ProofModeTerm
+public meta import Iris.ProofMode.Patterns.CasesPattern
+public meta import Iris.ProofMode.Tactics.Basic
+public meta import Iris.ProofMode.Tactics.Clear
+public meta import Iris.ProofMode.Tactics.Pure
+public meta import Iris.ProofMode.Tactics.HaveCore
+public meta import Iris.ProofMode.Tactics.Mod
+
+public meta section
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-private theorem false_elim' [BI PROP] {P Q : PROP} : P ∗ □?p False ⊢ Q :=
+theorem false_elim' [BI PROP] {P Q : PROP} : P ∗ □?p False ⊢ Q :=
   wand_elim' <| intuitionisticallyIf_elim.trans false_elim
 
 def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
@@ -27,7 +31,7 @@ def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
     throwError "icases: cannot destruct {A'} as an empty conjunct"
 
 
-private theorem exists_elim' [BI PROP] {p} {P A Q : PROP} {Φ : α → PROP} [inst : IntoExists A Φ]
+theorem exists_elim' [BI PROP] {p} {P A Q : PROP} {Φ : α → PROP} [inst : IntoExists A Φ]
     (h : ∀ a, P ∗ □?p Φ a ⊢ Q) : P ∗ □?p A ⊢ Q :=
   (sep_mono_r <| (intuitionisticallyIf_mono inst.1).trans intuitionisticallyIf_exists.1).trans <| sep_exists_l.1.trans (exists_elim h)
 
@@ -50,11 +54,11 @@ def iCasesExists {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : 
     return q(exists_elim' (A := $A') $pf)
 
 
-private theorem sep_and_elim_l [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
+theorem sep_and_elim_l [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
     (h : P ∗ □?p A1 ⊢ Q) : P ∗ □?p A ⊢ Q :=
   (sep_mono_r <| inst.1.trans <| intuitionisticallyIf_mono and_elim_l).trans h
 
-private theorem sep_and_elim_r [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
+theorem sep_and_elim_r [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
     (h : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
   (sep_mono_r <| inst.1.trans <| intuitionisticallyIf_mono and_elim_r).trans h
 
@@ -72,11 +76,11 @@ def iCasesAndLR {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q
     have ⟨A1', _⟩ := mkIntuitionisticIf bi p A1
     return some q(sep_and_elim_l $(← k A1' A1 ⟨⟩))
 
-private theorem sep_elim_spatial [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoSep A A1 A2]
+theorem sep_elim_spatial [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoSep A A1 A2]
     (h : P ∗ A1 ⊢ A2 -∗ Q) : P ∗ A ⊢ Q :=
   (sep_mono_r inst.1).trans <| sep_assoc.2.trans <| wand_elim h
 
-private theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd true A A1 A2]
+theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd true A A1 A2]
     (h : P ∗ □ A1 ⊢ □ A2 -∗ Q) : P ∗ □ A ⊢ Q :=
   (sep_mono_r <| inst.1.trans intuitionistically_and_sep.1).trans <|
   sep_assoc.2.trans <| wand_elim h
@@ -107,7 +111,7 @@ def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
       return q(wand_intro $pf)
     return q(sep_elim_spatial (A := $A') $pf)
 
-private theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
+theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
     (h1 : P ∗ □?p A1 ⊢ Q) (h2 : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
   (sep_mono_r <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1).trans <| BI.sep_or_l.1.trans <| or_elim h1 h2
 
@@ -124,11 +128,11 @@ def iCasesOr {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bo
   let pf2 ← k2 A2' A2 ⟨⟩
   return q(or_elim' (A := $A') $pf1 $pf2)
 
-private theorem intuitionistic_elim_spatial [BI PROP] {A A' Q : PROP}
+theorem intuitionistic_elim_spatial [BI PROP] {A A' Q : PROP}
     [IntoPersistently false A A'] [TCOr (Affine A) (Absorbing Q)]
     (h : P ∗ □ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_r to_persistent_spatial).apply h
 
-private theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP} [IntoPersistently true A A']
+theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP} [IntoPersistently true A A']
     (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q := intuitionistic_elim_spatial h
 
 def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
@@ -145,7 +149,7 @@ def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($pro
       | throwError "icases: {A'} not affine and the goal not absorbing"
     return q(intuitionistic_elim_spatial (A := $A') $(← k B'))
 
-private theorem spatial_elim [BI PROP] {p} {A A' Q : PROP} [FromAffinely A' A p]
+theorem spatial_elim [BI PROP] {p} {A A' Q : PROP} [FromAffinely A' A p]
     (h : P ∗ A' ⊢ Q) : P ∗ □?p A ⊢ Q :=
       (sep_mono_r <| (affinelyIf_of_intuitionisticallyIf).trans from_affinely).trans h
 
@@ -157,7 +161,7 @@ def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p 
   let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B' $A' $p)
   return q(spatial_elim (A := $A') $(← k B'))
 
-private theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
+theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
 
 -- TODO: Why does this function require both A and A' instead of just A'?
 variable {u : Level} {prop : Q(Type u)} (bi : Q(BI $prop)) in

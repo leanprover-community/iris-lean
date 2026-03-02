@@ -1,12 +1,14 @@
-import Iris.ProofMode.Classes
-import Iris.ProofMode.ClassesMake
-import Iris.ProofMode.Display
-import Iris.ProofMode.Expr
-import Iris.ProofMode.Instances
-import Iris.ProofMode.InstancesLater
-import Iris.ProofMode.InstancesMake
-import Iris.ProofMode.InstancesPlainly
-import Iris.ProofMode.InstancesUpdates
-import Iris.ProofMode.Patterns
-import Iris.ProofMode.Tactics
-import Iris.ProofMode.UnifHints
+module
+
+public import Iris.ProofMode.Classes
+public import Iris.ProofMode.ClassesMake
+public meta import Iris.ProofMode.Display
+public meta import Iris.ProofMode.Expr
+public import Iris.ProofMode.Instances
+public import Iris.ProofMode.InstancesLater
+public import Iris.ProofMode.InstancesMake
+public import Iris.ProofMode.InstancesPlainly
+public import Iris.ProofMode.InstancesUpdates
+public import Iris.ProofMode.Patterns
+public meta import Iris.ProofMode.Tactics
+public import Iris.ProofMode.UnifHints

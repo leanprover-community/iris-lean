@@ -3,7 +3,11 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Michael Sammler
 -/
-import Iris.BI
+module
+
+public import Iris.BI
+
+@[expose] public section
 
 namespace Iris.ProofMode
 open Iris.BI

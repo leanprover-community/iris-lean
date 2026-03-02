@@ -3,10 +3,14 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
-import Iris.ProofMode.Expr
-import Iris.ProofMode.Classes
-import Iris.ProofMode.ProofModeM
-import Iris.ProofMode.SynthInstance
+module
+
+public meta import Iris.ProofMode.Expr
+public import Iris.ProofMode.Classes
+public meta import Iris.ProofMode.ProofModeM
+public meta import Iris.ProofMode.SynthInstance
+
+public meta section
 
 namespace Iris.ProofMode
 open Lean Elab.Tactic Meta Qq BI Std
