@@ -5,8 +5,8 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
-public import Iris.BI
-public import Iris.ProofMode.Classes
+import Iris.BI
+import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode

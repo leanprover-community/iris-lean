@@ -5,7 +5,7 @@ Authors: Michael Sammler
 -/
 module
 
-public import Iris.BI
+import Iris.BI
 public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.Tactics.HaveCore
 public meta import Iris.ProofMode.Tactics.Cases

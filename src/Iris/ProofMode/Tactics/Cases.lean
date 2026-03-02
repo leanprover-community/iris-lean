@@ -5,13 +5,13 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
-public meta import Iris.ProofMode.Patterns.ProofModeTerm
-public meta import Iris.ProofMode.Patterns.CasesPattern
-public meta import Iris.ProofMode.Tactics.Basic
-public meta import Iris.ProofMode.Tactics.Clear
-public meta import Iris.ProofMode.Tactics.Pure
-public meta import Iris.ProofMode.Tactics.HaveCore
+meta import Iris.ProofMode.Patterns.ProofModeTerm
+meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.Tactics.Mod
+public meta import Iris.ProofMode.Tactics.Pure
+public meta import Iris.ProofMode.Tactics.Clear
+public meta import Iris.ProofMode.Tactics.Basic
+public meta import Iris.ProofMode.Tactics.HaveCore
 
 namespace Iris.ProofMode
 

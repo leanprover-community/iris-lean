@@ -5,8 +5,8 @@ Authors: Michael Sammler
 -/
 module
 
+import Iris.ProofMode.Modalities
 public meta import Iris.ProofMode.Tactics.Basic
-public import Iris.ProofMode.Modalities
 
 namespace Iris.ProofMode
 

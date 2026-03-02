@@ -5,7 +5,6 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
-public meta import Iris.ProofMode.Tactics.Basic
 public meta import Iris.ProofMode.Tactics.Assumption
 
 namespace Iris.ProofMode

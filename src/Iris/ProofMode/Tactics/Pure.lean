@@ -29,7 +29,6 @@ theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
   pure_elim_spatial h h'
 
-
 public meta section
 open Lean Elab Tactic Meta Qq
 

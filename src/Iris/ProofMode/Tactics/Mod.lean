@@ -5,7 +5,7 @@ Authors: Michael Sammler
 -/
 module
 
-public import Iris.BI
+import Iris.BI
 public import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Tactics.Basic
 

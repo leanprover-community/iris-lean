@@ -5,8 +5,8 @@ Authors: Michael Sammler, Zongyuan Liu
 -/
 module
 
-public import Iris.BI
-public import Iris.ProofMode.Classes
+import Iris.BI
+import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Patterns.ProofModeTerm
 public meta import Iris.ProofMode.Tactics.Basic
 public meta import Iris.ProofMode.Tactics.Specialize
