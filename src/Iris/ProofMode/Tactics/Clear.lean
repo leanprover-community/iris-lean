@@ -9,7 +9,7 @@ public import Iris.BI
 public import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Tactics.Basic
 
-@[expose] public section
+public section
 
 namespace Iris.ProofMode
 open Iris.BI Iris.Std

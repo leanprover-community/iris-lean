@@ -8,7 +8,7 @@ module
 public import Iris.BI
 public meta import Iris.ProofMode.Tactics.Basic
 
-@[expose] public section
+public section
 
 namespace Iris.ProofMode
 open Iris.BI

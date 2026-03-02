@@ -10,7 +10,7 @@ public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.Tactics.HaveCore
 public meta import Iris.ProofMode.Tactics.Cases
 
-@[expose] public section
+public section
 
 namespace Iris.ProofMode
 open Iris.BI

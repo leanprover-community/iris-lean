@@ -11,7 +11,7 @@ public meta import Iris.ProofMode.Patterns.ProofModeTerm
 public meta import Iris.ProofMode.Tactics.Assumption
 public meta import Iris.ProofMode.Tactics.HaveCore
 
-@[expose] public section
+public section
 
 namespace Iris.ProofMode
 open Iris.BI

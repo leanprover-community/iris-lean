@@ -17,7 +17,7 @@ public meta import Iris.ProofMode.Tactics.Specialize
    depends on `iHave` in this file.
 -/
 
-@[expose] public section
+public section
 
 namespace Iris.ProofMode
 open Iris.BI
