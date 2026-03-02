@@ -17,22 +17,18 @@ public meta import Iris.ProofMode.Tactics.Specialize
    depends on `iHave` in this file.
 -/
 
-public section
 
 namespace Iris.ProofMode
-open Iris.BI
+
+public section
+open BI
 
 theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ P] (h : φ) : Q ⊢ Q ∗ □ P :=
   sep_emp.2.trans (sep_mono_r $ intuitionistically_emp.2.trans (intuitionistically_mono (asEmpValid_1 _ h)))
 
-end Iris.ProofMode
-end
-
 public meta section
-
-namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq Std
 
 /--
 Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.

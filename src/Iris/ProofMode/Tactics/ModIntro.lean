@@ -8,10 +8,10 @@ module
 public meta import Iris.ProofMode.Tactics.Basic
 public import Iris.ProofMode.Modalities
 
-public meta section
-
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
+
+public section
+open Qq BI Std
 
 /-- Reified version of ModalityAction -/
 inductive ModalityActionQ (PROP1 : Q(Type u)) (PROP2 : Q(Type u)) : Type where
@@ -20,17 +20,6 @@ inductive ModalityActionQ (PROP1 : Q(Type u)) (PROP2 : Q(Type u)) : Type where
 | transform (C : Q($PROP2 → $PROP1 → Prop))
 | clear
 | id
-
-private def parseModalityActionQ {prop1 prop2 : Q(Type u)} (act : Q(ModalityAction $prop1 $prop2)) :
-  ProofModeM (ModalityActionQ prop1 prop2) := do
-  let act ← whnf q($act)
-  match_expr act with
-  | ModalityAction.isEmpty _ _ => return .isEmpty
-  | ModalityAction.forall _ C => return .forall C
-  | ModalityAction.transform _ _ C => return .transform C
-  | ModalityAction.clear _ _ => return .clear
-  | ModalityAction.id _ => return .id
-  | _ => throwError "imodintro: unknown modality action {act}"
 
 theorem modaction_forall [BI PROP] {p P} (M : Modality PROP PROP) {C} (h : M.action p = .forall C) (hC : C P)
   : □?p P ⊢ M.M iprop(□?p P) := by
@@ -59,7 +48,6 @@ theorem modaction_id [BI PROP] {p P} (M : Modality PROP PROP) (h : M.action p = 
     rw [h] at hs
     apply hs
 
-
 theorem modaction_sep_emp_l [BI PROP1] [bi2: BI PROP2] {elhs erhs erhs'} {M : Modality PROP1 PROP2}
   (h1 : elhs ⊢ M.M emp) (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(erhs') := (sep_mono h1 h2).trans $ M.sep.trans (M.mono emp_sep.1)
 
@@ -69,6 +57,23 @@ theorem modaction_sep_emp_r [BI PROP1] [bi2: BI PROP2] {elhs elhs' erhs} {M : Mo
 theorem modaction_sep [BI PROP1] [bi2: BI PROP2] {elhs erhs elhs' erhs'} {M : Modality PROP1 PROP2}
   (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(elhs' ∗ erhs') := (sep_mono h1 h2).trans M.sep
 
+theorem modintro [BI PROP1] [BI PROP2] {e e'} {Φ M sel} {P : PROP2} {Q : PROP1} [FromModal Φ M sel P Q]
+  (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P :=
+    (h1.trans (M.mono h2)).trans (from_modal sel hΦ)
+
+public meta section
+open Lean Elab Tactic Meta
+
+private def parseModalityActionQ {prop1 prop2 : Q(Type u)} (act : Q(ModalityAction $prop1 $prop2)) :
+  ProofModeM (ModalityActionQ prop1 prop2) := do
+  let act ← whnf q($act)
+  match_expr act with
+  | ModalityAction.isEmpty _ _ => return .isEmpty
+  | ModalityAction.forall _ C => return .forall C
+  | ModalityAction.transform _ _ C => return .transform C
+  | ModalityAction.clear _ _ => return .clear
+  | ModalityAction.id _ => return .id
+  | _ => throwError "imodintro: unknown modality action {act}"
 
 /--
 Applies modality actions to transform proof mode context.
@@ -128,10 +133,6 @@ private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
     if let .emp _ := rhs' then
       return ⟨_, lhs', q(modaction_sep_emp_r $pflhs $pfrhs)⟩
     return ⟨_, .mkSep lhs' rhs', q(modaction_sep $pflhs $pfrhs)⟩
-
-theorem modintro [BI PROP1] [BI PROP2] {e e'} {Φ M sel} {P : PROP2} {Q : PROP1} [FromModal Φ M sel P Q]
-  (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P :=
-    (h1.trans (M.mono h2)).trans (from_modal sel hΦ)
 
 /-- Introduce a modality by applying modality actions to transform hypotheses.
 

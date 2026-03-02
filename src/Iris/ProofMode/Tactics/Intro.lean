@@ -9,10 +9,10 @@ public meta import Iris.ProofMode.Patterns.IntroPattern
 public meta import Iris.ProofMode.Tactics.Cases
 public meta import Iris.ProofMode.Tactics.ModIntro
 
-public meta section
-
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
+
+public section
+open BI Std
 
 theorem imp_intro_drop [BI PROP] {P Q A1 A2 : PROP} [inst : FromImp Q A1 A2] (h : P ⊢ A2) : P ⊢ Q :=
   BI.imp_intro (and_elim_l' h) |>.trans inst.1
@@ -48,6 +48,9 @@ theorem imp_intro_spatial [BI PROP] {P Q A1 A2 B : PROP}
 
 theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
     [FromWand Q A1 A2] (h : P ∗ A1 ⊢ A2) : P ⊢ Q := (wand_intro h).trans from_wand
+
+public meta section
+open Lean Elab Tactic Meta Qq BI Std
 
 private partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat)) :

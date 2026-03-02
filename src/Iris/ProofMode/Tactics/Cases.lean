@@ -13,13 +13,54 @@ public meta import Iris.ProofMode.Tactics.Pure
 public meta import Iris.ProofMode.Tactics.HaveCore
 public meta import Iris.ProofMode.Tactics.Mod
 
-public meta section
-
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
+
+public section
+open BI Std
 
 theorem false_elim' [BI PROP] {P Q : PROP} : P ∗ □?p False ⊢ Q :=
   wand_elim' <| intuitionisticallyIf_elim.trans false_elim
+
+theorem exists_elim' [BI PROP] {p} {P A Q : PROP} {Φ : α → PROP} [inst : IntoExists A Φ]
+    (h : ∀ a, P ∗ □?p Φ a ⊢ Q) : P ∗ □?p A ⊢ Q :=
+  (sep_mono_r <| (intuitionisticallyIf_mono inst.1).trans intuitionisticallyIf_exists.1).trans <| sep_exists_l.1.trans (exists_elim h)
+
+theorem sep_and_elim_l [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
+    (h : P ∗ □?p A1 ⊢ Q) : P ∗ □?p A ⊢ Q :=
+  (sep_mono_r <| inst.1.trans <| intuitionisticallyIf_mono and_elim_l).trans h
+
+theorem sep_and_elim_r [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
+    (h : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
+  (sep_mono_r <| inst.1.trans <| intuitionisticallyIf_mono and_elim_r).trans h
+
+theorem sep_elim_spatial [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoSep A A1 A2]
+    (h : P ∗ A1 ⊢ A2 -∗ Q) : P ∗ A ⊢ Q :=
+  (sep_mono_r inst.1).trans <| sep_assoc.2.trans <| wand_elim h
+
+theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd true A A1 A2]
+    (h : P ∗ □ A1 ⊢ □ A2 -∗ Q) : P ∗ □ A ⊢ Q :=
+  (sep_mono_r <| inst.1.trans intuitionistically_and_sep.1).trans <|
+  sep_assoc.2.trans <| wand_elim h
+
+theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
+    (h1 : P ∗ □?p A1 ⊢ Q) (h2 : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
+  (sep_mono_r <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1).trans <| BI.sep_or_l.1.trans <| or_elim h1 h2
+
+theorem intuitionistic_elim_spatial [BI PROP] {A A' Q : PROP}
+    [IntoPersistently false A A'] [TCOr (Affine A) (Absorbing Q)]
+    (h : P ∗ □ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_r to_persistent_spatial).apply h
+
+theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP} [IntoPersistently true A A']
+    (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q := intuitionistic_elim_spatial h
+
+theorem spatial_elim [BI PROP] {p} {A A' Q : PROP} [FromAffinely A' A p]
+    (h : P ∗ A' ⊢ Q) : P ∗ □?p A ⊢ Q :=
+      (sep_mono_r <| (affinelyIf_of_intuitionisticallyIf).trans from_affinely).trans h
+
+theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
+
+public meta section
+open Lean Elab Tactic Meta Qq Std
 
 private def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
     {P} (_hyps : Hyps bi P) (Q A' : Q($prop)) (p : Q(Bool))
@@ -29,11 +70,6 @@ private def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
     return q(false_elim')
   else
     throwError "icases: cannot destruct {A'} as an empty conjunct"
-
-
-theorem exists_elim' [BI PROP] {p} {P A Q : PROP} {Φ : α → PROP} [inst : IntoExists A Φ]
-    (h : ∀ a, P ∗ □?p Φ a ⊢ Q) : P ∗ □?p A ⊢ Q :=
-  (sep_mono_r <| (intuitionisticallyIf_mono inst.1).trans intuitionisticallyIf_exists.1).trans <| sep_exists_l.1.trans (exists_elim h)
 
 private def iCasesExists {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
     (name : TSyntax ``binderIdent)
@@ -53,15 +89,6 @@ private def iCasesExists {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop
     let pf : Q(∀ x, $P ∗ □?$p $Φ x ⊢ $Q) ← mkLambdaFVars #[x] <|← k B B' ⟨⟩
     return q(exists_elim' (A := $A') $pf)
 
-
-theorem sep_and_elim_l [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
-    (h : P ∗ □?p A1 ⊢ Q) : P ∗ □?p A ⊢ Q :=
-  (sep_mono_r <| inst.1.trans <| intuitionisticallyIf_mono and_elim_l).trans h
-
-theorem sep_and_elim_r [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
-    (h : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
-  (sep_mono_r <| inst.1.trans <| intuitionisticallyIf_mono and_elim_r).trans h
-
 private def iCasesAndLR {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool)) (right : Bool)
   (k : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → ProofModeM Q($P ∗ $B ⊢ $Q)) :
     ProofModeM (Option Q($P ∗ □?$p $A' ⊢ $Q)) := do
@@ -75,15 +102,6 @@ private def iCasesAndLR {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)
   else
     have ⟨A1', _⟩ := mkIntuitionisticIf bi p A1
     return some q(sep_and_elim_l $(← k A1' A1 ⟨⟩))
-
-theorem sep_elim_spatial [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoSep A A1 A2]
-    (h : P ∗ A1 ⊢ A2 -∗ Q) : P ∗ A ⊢ Q :=
-  (sep_mono_r inst.1).trans <| sep_assoc.2.trans <| wand_elim h
-
-theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd true A A1 A2]
-    (h : P ∗ □ A1 ⊢ □ A2 -∗ Q) : P ∗ □ A ⊢ Q :=
-  (sep_mono_r <| inst.1.trans intuitionistically_and_sep.1).trans <|
-  sep_assoc.2.trans <| wand_elim h
 
 private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
     {P} (hyps : Hyps bi P) (Q A' : Q($prop)) (p : Q(Bool))
@@ -111,10 +129,6 @@ private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
       return q(wand_intro $pf)
     return q(sep_elim_spatial (A := $A') $pf)
 
-theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
-    (h1 : P ∗ □?p A1 ⊢ Q) (h2 : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
-  (sep_mono_r <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1).trans <| BI.sep_or_l.1.trans <| or_elim h1 h2
-
 private def iCasesOr {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
     (k1 k2 : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → ProofModeM Q($P ∗ $B ⊢ $Q)) :
     ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
@@ -127,13 +141,6 @@ private def iCasesOr {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (
   let pf1 ← k1 A1' A1 ⟨⟩
   let pf2 ← k2 A2' A2 ⟨⟩
   return q(or_elim' (A := $A') $pf1 $pf2)
-
-theorem intuitionistic_elim_spatial [BI PROP] {A A' Q : PROP}
-    [IntoPersistently false A A'] [TCOr (Affine A) (Absorbing Q)]
-    (h : P ∗ □ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_r to_persistent_spatial).apply h
-
-theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP} [IntoPersistently true A A']
-    (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q := intuitionistic_elim_spatial h
 
 private def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
     (k : (B' : Q($prop)) → ProofModeM Q($P ∗ □ $B' ⊢ $Q)) :
@@ -149,10 +156,6 @@ private def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' 
       | throwError "icases: {A'} not affine and the goal not absorbing"
     return q(intuitionistic_elim_spatial (A := $A') $(← k B'))
 
-theorem spatial_elim [BI PROP] {p} {A A' Q : PROP} [FromAffinely A' A p]
-    (h : P ∗ A' ⊢ Q) : P ∗ □?p A ⊢ Q :=
-      (sep_mono_r <| (affinelyIf_of_intuitionisticallyIf).trans from_affinely).trans h
-
 private def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
     (k : (B' : Q($prop)) → ProofModeM Q($P ∗ $B' ⊢ $Q)) :
     ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
@@ -160,8 +163,6 @@ private def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($pr
   -- this should always succeed
   let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B' $A' $p)
   return q(spatial_elim (A := $A') $(← k B'))
-
-theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
 
 -- TODO: Why does this function require both A and A' instead of just A'?
 variable {u : Level} {prop : Q(Type u)} (bi : Q(BI $prop)) in

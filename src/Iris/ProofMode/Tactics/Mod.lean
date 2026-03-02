@@ -9,22 +9,17 @@ public import Iris.BI
 public import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Tactics.Basic
 
-public section
-
 namespace Iris.ProofMode
-open Iris.BI
+
+public section
+open BI
 
 theorem mod [BI PROP] {e} {Φ} {p p'} {A A' Q Q' : PROP} [he : ElimModal Φ p p' A A' Q Q']
   (h1 : e ∗ □?p' A' ⊢ Q') (hΦ : Φ) : e ∗ □?p A ⊢ Q :=
     (sep_comm.1.trans (sep_mono_r (wand_intro h1))).trans (he.1 hΦ)
 
-end Iris.ProofMode
-end
-
 public meta section
-
-namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq Std
 
 /--
 Eliminate a modality from `A` by transforming the goal from `P ∗ □?p A ⊢ Q` to `P ∗ □?p' A' ⊢ Q'`,

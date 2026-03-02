@@ -8,10 +8,10 @@ module
 public import Iris.ProofMode.Instances
 public meta import Iris.ProofMode.Tactics.Basic
 
-public meta section
-
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
+
+public section
+open BI Std
 
 theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [hA : IntoPure A φ] [or : TCOr (Affine A) (Absorbing Q)]
@@ -28,6 +28,10 @@ theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
 theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
   pure_elim_spatial h h'
+
+
+public meta section
+open Lean Elab Tactic Meta Qq
 
 def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
     (P P' : Q($prop)) (p : Q(Bool)) (A Q : Q($prop)) (name : TSyntax ``binderIdent) (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))

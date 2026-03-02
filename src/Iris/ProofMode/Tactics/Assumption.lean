@@ -9,22 +9,16 @@ public import Iris.BI
 public import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Tactics.Basic
 
-public section
-
 namespace Iris.ProofMode
-open Iris.BI Iris.Std
+public section
+open BI Std
 
 theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p .in A Q]
   [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q :=
   h.1.trans <| (sep_mono_r inst.1).trans sep_elim_r
 
-end Iris.ProofMode
-end
-
 public meta section
-
-namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq
 
 elab "iassumption" : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do

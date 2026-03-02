@@ -9,10 +9,10 @@ public import Iris.BI
 public import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Tactics.Basic
 
-public section
-
 namespace Iris.ProofMode
-open Iris.BI
+
+public section
+open BI
 
 theorem from_and_intro [BI PROP] {P Q A1 A2 : PROP} [inst : FromAnd Q A1 A2]
     (h1 : P ⊢ A1) (h2 : P ⊢ A2) : P ⊢ Q :=
@@ -22,13 +22,8 @@ theorem sep_split [BI PROP] {P P1 P2 Q Q1 Q2 : PROP} [inst : FromSep Q Q1 Q2]
     (h : P ⊣⊢ P1 ∗ P2) (h1 : P1 ⊢ Q1) (h2 : P2 ⊢ Q2) : P ⊢ Q :=
   h.1.trans <| (sep_mono h1 h2).trans inst.1
 
-end Iris.ProofMode
-end
-
 public meta section
-
-namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI
+open Lean Elab Tactic Meta Qq
 
 elab "isplit" : tactic => do
   ProofModeM.runTactic λ mvar { prop, hyps, goal, .. } => do

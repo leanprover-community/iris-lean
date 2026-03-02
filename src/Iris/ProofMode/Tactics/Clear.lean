@@ -9,10 +9,10 @@ public import Iris.BI
 public import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Tactics.Basic
 
-public section
-
 namespace Iris.ProofMode
-open Iris.BI Iris.Std
+
+public section
+open BI Std
 
 theorem clear_spatial [BI PROP] {P P' A Q : PROP} [TCOr (Affine A) (Absorbing Q)]
     (h_rem : P ⊣⊢ P' ∗ A) (h : P' ⊢ Q) : P ⊢ Q :=
@@ -21,13 +21,8 @@ theorem clear_spatial [BI PROP] {P P' A Q : PROP} [TCOr (Affine A) (Absorbing Q)
 theorem clear_intuitionistic [BI PROP] {P P' A Q : PROP}
     (h_rem : P ⊣⊢ P' ∗ □ A) (h : P' ⊢ Q) : P ⊢ Q := clear_spatial h_rem h
 
-end Iris.ProofMode
-end
-
 public meta section
-
-namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq
 
 def iClearCore {prop : Q(Type u)} (_bi : Q(BI $prop)) (e e' : Q($prop))
     (p : Q(Bool)) (out goal : Q($prop))

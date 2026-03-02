@@ -11,23 +11,18 @@ public meta import Iris.ProofMode.Patterns.ProofModeTerm
 public meta import Iris.ProofMode.Tactics.Assumption
 public meta import Iris.ProofMode.Tactics.HaveCore
 
-public section
-
 namespace Iris.ProofMode
-open Iris.BI
+
+public section
+open BI
 
 theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
     (h1 : P ⊢ Q1)
     [h2 : IntoWand p false Q .out Q1 .in R] : P ∗ □?p Q ⊢ R :=
       (Entails.trans (sep_mono_l h1) (wand_elim' h2.1))
 
-end Iris.ProofMode
-end
-
 public meta section
-
-namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq Std
 
 /--
 Apply a hypothesis `A` to the `goal` by eliminating the wands recursively

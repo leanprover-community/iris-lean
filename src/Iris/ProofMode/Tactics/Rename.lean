@@ -7,9 +7,9 @@ module
 
 public meta import Iris.ProofMode.Tactics.Basic
 
-public meta section
-
 namespace Iris.ProofMode
+
+public meta section
 open Lean Elab Tactic Qq
 
 elab "irename" colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do

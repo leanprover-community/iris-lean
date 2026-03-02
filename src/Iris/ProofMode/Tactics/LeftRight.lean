@@ -9,10 +9,10 @@ public import Iris.BI
 public import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Tactics.Basic
 
-public section
-
 namespace Iris.ProofMode
-open Iris.BI
+
+public section
+open BI
 
 theorem from_or_l [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A1) : P ⊢ Q :=
@@ -22,13 +22,8 @@ theorem from_or_r [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A2) : P ⊢ Q :=
   (or_intro_r' h1).trans inst.1
 
-end Iris.ProofMode
-end
-
 public meta section
-
-namespace Iris.ProofMode
-open Lean Elab.Tactic Meta Qq BI Std
+open Lean Elab.Tactic Meta Qq Std
 
 elab "ileft" : tactic => do
   ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do

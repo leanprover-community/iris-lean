@@ -8,9 +8,9 @@ module
 public meta import Iris.ProofMode.Tactics.Basic
 public meta import Iris.ProofMode.Tactics.Assumption
 
-public meta section
-
 namespace Iris.ProofMode
+
+public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
 elab "iexact" colGt hyp:ident : tactic => do

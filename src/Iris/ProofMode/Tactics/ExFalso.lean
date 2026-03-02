@@ -8,20 +8,15 @@ module
 public import Iris.BI
 public meta import Iris.ProofMode.Tactics.Basic
 
-public section
-
 namespace Iris.ProofMode
-open Iris.BI
+
+public section
+open BI
 
 theorem exfalso [BI PROP] {P Q : PROP} (h : P ⊢ False) : P ⊢ Q := h.trans false_elim
 
-end Iris.ProofMode
-end
-
 public meta section
-
-namespace Iris.ProofMode
-open Lean Elab.Tactic Meta Qq BI
+open Lean Elab.Tactic Meta Qq
 
 elab "iexfalso" : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
