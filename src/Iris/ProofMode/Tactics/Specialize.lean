@@ -41,7 +41,7 @@ theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Sort _} {�
     [inst : IntoForall P Φ] (h : A1 ⊢ A2 ∗ □?p P) (a : α) : A1 ⊢ A2 ∗ □?p (Φ a) := by
   refine h.trans <| sep_mono_r <| intuitionisticallyIf_mono <| inst.1.trans (forall_elim a)
 
-def SpecializeState.process_wand :
+private def processWand :
     @SpecializeState u prop bi orig → SpecPat → ProofModeM (SpecializeState bi orig)
   | { hyps, p, out, pf, .. }, .ident i => do
     let uniq ← hyps.findWithInfo i
@@ -120,7 +120,7 @@ A tuple containing:
 def iSpecializeCore {e} (hyps : @Hyps u prop bi e) (pa : Q(Bool)) (A : Q($prop)) (spats : List SpecPat) (try_dup_context : Bool := false) :
   ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) × Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
   let state := { hyps, out := A, p := pa, pf := q(.rfl), .. }
-  let ⟨_, hyps', pb, B, pf⟩ ← spats.foldlM SpecializeState.process_wand state
+  let ⟨_, hyps', pb, B, pf⟩ ← spats.foldlM processWand state
   if try_dup_context then
     -- context duplication succeeds if `B` is persistent, and `A` is persistent or affine
     let B' : Q($prop) ← mkFreshExprMVarQ q($prop)

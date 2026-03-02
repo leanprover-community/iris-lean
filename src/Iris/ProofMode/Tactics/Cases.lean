@@ -21,7 +21,7 @@ open Lean Elab Tactic Meta Qq BI Std
 theorem false_elim' [BI PROP] {P Q : PROP} : P ∗ □?p False ⊢ Q :=
   wand_elim' <| intuitionisticallyIf_elim.trans false_elim
 
-def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
+private def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
     {P} (_hyps : Hyps bi P) (Q A' : Q($prop)) (p : Q(Bool))
     (_k : ∀ {P}, Hyps bi P → ProofModeM Q($P ⊢ $Q)) :
     ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
@@ -35,7 +35,7 @@ theorem exists_elim' [BI PROP] {p} {P A Q : PROP} {Φ : α → PROP} [inst : Int
     (h : ∀ a, P ∗ □?p Φ a ⊢ Q) : P ∗ □?p A ⊢ Q :=
   (sep_mono_r <| (intuitionisticallyIf_mono inst.1).trans intuitionisticallyIf_exists.1).trans <| sep_exists_l.1.trans (exists_elim h)
 
-def iCasesExists {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
+private def iCasesExists {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
     (name : TSyntax ``binderIdent)
     (k : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → ProofModeM Q($P ∗ $B ⊢ $Q)) :
     ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
@@ -62,7 +62,7 @@ theorem sep_and_elim_r [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
     (h : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
   (sep_mono_r <| inst.1.trans <| intuitionisticallyIf_mono and_elim_r).trans h
 
-def iCasesAndLR {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool)) (right : Bool)
+private def iCasesAndLR {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool)) (right : Bool)
   (k : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → ProofModeM Q($P ∗ $B ⊢ $Q)) :
     ProofModeM (Option Q($P ∗ □?$p $A' ⊢ $Q)) := do
   let A1 ← mkFreshExprMVarQ q($prop)
@@ -85,7 +85,7 @@ theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd t
   (sep_mono_r <| inst.1.trans intuitionistically_and_sep.1).trans <|
   sep_assoc.2.trans <| wand_elim h
 
-def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
+private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
     {P} (hyps : Hyps bi P) (Q A' : Q($prop)) (p : Q(Bool))
     (k : ∀ {P}, Hyps bi P → ProofModeM Q($P ⊢ $Q))
     (k1 k2 : ∀ {P}, Hyps bi P → (Q B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) →
@@ -115,7 +115,7 @@ theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
     (h1 : P ∗ □?p A1 ⊢ Q) (h2 : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
   (sep_mono_r <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1).trans <| BI.sep_or_l.1.trans <| or_elim h1 h2
 
-def iCasesOr {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
+private def iCasesOr {prop : Q(Type u)} (bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
     (k1 k2 : (B B' : Q($prop)) → (_ : $B =Q iprop(□?$p $B')) → ProofModeM Q($P ∗ $B ⊢ $Q)) :
     ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   let A1 ← mkFreshExprMVarQ q($prop)
@@ -135,7 +135,7 @@ theorem intuitionistic_elim_spatial [BI PROP] {A A' Q : PROP}
 theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP} [IntoPersistently true A A']
     (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q := intuitionistic_elim_spatial h
 
-def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
+private def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
     (k : (B' : Q($prop)) → ProofModeM Q($P ∗ □ $B' ⊢ $Q)) :
     ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   let B' ← mkFreshExprMVarQ q($prop)
@@ -153,7 +153,7 @@ theorem spatial_elim [BI PROP] {p} {A A' Q : PROP} [FromAffinely A' A p]
     (h : P ∗ A' ⊢ Q) : P ∗ □?p A ⊢ Q :=
       (sep_mono_r <| (affinelyIf_of_intuitionisticallyIf).trans from_affinely).trans h
 
-def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
+private def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q A' : Q($prop)) (p : Q(Bool))
     (k : (B' : Q($prop)) → ProofModeM Q($P ∗ $B' ⊢ $Q)) :
     ProofModeM (Q($P ∗ □?$p $A' ⊢ $Q)) := do
   let B' ← mkFreshExprMVarQ q($prop)

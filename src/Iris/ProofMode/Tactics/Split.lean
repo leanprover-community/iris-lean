@@ -33,7 +33,7 @@ theorem sep_split [BI PROP] {P P1 P2 Q Q1 Q2 : PROP} [inst : FromSep Q Q1 Q2]
 inductive splitSide where
 | splitLeft | splitRight
 
-def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : TacticM Unit := do
+private def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : TacticM Unit := do
   let splitRight := match side with
     | .splitLeft => false
     | .splitRight => true

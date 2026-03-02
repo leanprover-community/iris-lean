@@ -29,7 +29,7 @@ Apply a hypothesis `A` to the `goal` by eliminating the wands recursively
 ## Returns
 The proof of `hyps ∗ □?p A ⊢ goal`
 -/
-partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e) (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) : ProofModeM Q($e ∗ □?$p $A ⊢ $goal) := do
+private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e) (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) : ProofModeM Q($e ∗ □?$p $A ⊢ $goal) := do
   let B ← mkFreshExprMVarQ q($prop)
   -- if `A := ?B -∗ goal`, add `B` as a new subgoal and conclude `goal`
   if let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $A .out $B .in $goal) then

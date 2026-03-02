@@ -21,7 +21,7 @@ inductive ModalityActionQ (PROP1 : Q(Type u)) (PROP2 : Q(Type u)) : Type where
 | clear
 | id
 
-def ModalityActionQ.parse {prop1 prop2 : Q(Type u)} (act : Q(ModalityAction $prop1 $prop2)) :
+private def parseModalityActionQ {prop1 prop2 : Q(Type u)} (act : Q(ModalityAction $prop1 $prop2)) :
   ProofModeM (ModalityActionQ prop1 prop2) := do
   let act ← whnf q($act)
   match_expr act with
@@ -84,7 +84,7 @@ A tuple containing:
 - Transformed context `hyps'` in `prop1`
 - Proof of `hyps ⊢ M hyps'`
 -/
-def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
+private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
   (hyps : @Hyps u prop2 bi2 e) (M : Q(Modality $prop1 $prop2)) (act : Bool → ModalityActionQ prop1 prop2) :
   ProofModeM ((e' : _) × Hyps bi1 e' × Q($e ⊢ $(M).M $e')) :=
   match hyps with
@@ -161,8 +161,8 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop)) (sel : TSynta
     let hΦ ← mkFreshExprMVarQ q($Φ)
     iSolveSideconditionAt hΦ.mvarId!
     -- pre-compute the actions
-    let iact ← ModalityActionQ.parse q($(M).action true)
-    let sact ← ModalityActionQ.parse q($(M).action false)
+    let iact ← parseModalityActionQ q($(M).action true)
+    let sact ← parseModalityActionQ q($(M).action false)
     -- perform modality actions, get transformed context `hyps'` and `pf : hyps ⊢ M hyps'`
     let ⟨_, hyps', pf⟩ ← iModAction hyps M (λ p => if p then iact else sact)
     -- get proof `hyps' ⊢ Q`

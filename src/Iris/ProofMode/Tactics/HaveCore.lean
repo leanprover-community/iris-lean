@@ -41,7 +41,7 @@ A tuple containing:
 - `out`: Asserted proposition
 - `pf`: Proof of `hyps ⊢ hyps' ∗ □?p out`
 -/
-def iHaveCore {e} (hyps : @Hyps u prop bi e)
+private def iHaveCore {e} (hyps : @Hyps u prop bi e)
   (tm : Term) (keep : Bool) (mayPostpone : Bool) :
   ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
   if let some uniq ← try? <| hyps.findWithInfo ⟨tm⟩ then
