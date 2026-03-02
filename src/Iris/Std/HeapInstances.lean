@@ -290,13 +290,13 @@ private theorem get?_foldl_alter_impl_sigma {l : List ((_ : K) × V)}
         ((l.find? (fun x => (compare x.1 k).isEq)).map (fun kv => (kv.1, kv.2))) := by
   induction l generalizing init with
   | nil =>
-    simp [foldl_nil]
+    simp [List.foldl_nil]
   | cons hd tl IH =>
-    rw [foldl_cons, IH (WF.constAlter! hinit) (hl.tail), Const.get?_alter! hinit]
+    rw [List.foldl_cons, IH (WF.constAlter! hinit) (hl.tail), Const.get?_alter! hinit]
     by_cases h : compare hd.1 k = .eq <;> simp [h]
     rw [← Const.get?_congr hinit h]
     have hhead_none : tl.find? (fun x => (compare x.1 k).isEq) = none := by
-      refine find?_eq_none.mpr fun _ hkv He => rel_of_pairwise_cons hl hkv ?_
+      refine List.find?_eq_none.mpr fun _ hkv He => List.rel_of_pairwise_cons hl hkv ?_
       refine isEq_iff_eq_eq.mpr <| compare_eq_iff_eq.mpr ?_
       rw [eq_of_compare h, compare_eq_iff_eq.mp <| isEq_iff_eq_eq.mp He]
     rw [hhead_none, map_none, pairMerge_none_right]
@@ -309,11 +309,11 @@ private theorem getElem?_foldl_alter {l : List (K × V)} {init : TreeMap K V com
   | nil =>
     simp
   | cons hd tl ih =>
-    rw [foldl_cons, ih (hl.tail)]
+    rw [List.foldl_cons, ih (hl.tail)]
     by_cases heq : compare hd.1 k = .eq
     · have htl : tl.find? (fun kv => (compare kv.1 k).isEq) = none := by
-        refine find?_eq_none.mpr fun kv hkv h => ?_
-        refine rel_of_pairwise_cons hl hkv (eq_trans heq ?_)
+        refine List.find?_eq_none.mpr fun kv hkv h => ?_
+        refine List.rel_of_pairwise_cons hl hkv (eq_trans heq ?_)
         rw [compare_eq_iff_eq.mp <| isEq_iff_eq_eq.mp h]
         exact compare_self
       simp [getElem?_congr (eq_symm heq), htl, heq]
@@ -346,7 +346,7 @@ private theorem getElem?_mergeWith_eq_foldl {t₁ t₂ : TreeMap K V compare}
     fun l => by induction l with grind [isEq]
   rw [hfind_map]
   refine get?_foldl_alter_impl_sigma t₁.inner.wf ?_
-  refine (pairwise_map.mp <|
+  refine (List.pairwise_map.mp <|
     SameKeys.ordered_iff_pairwise_keys.mp t₂.inner.wf.ordered).imp ?_
   rintro hlt heq H
   simp [H]
@@ -373,11 +373,11 @@ theorem getElem?_mergeWith' {t₁ t₂ : TreeMap K V compare} {f : K → V → V
       getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp h
     have hpred : (compare k' k).isEq = true := by simp [eq_symm hcmp]
     obtain ⟨kv, hfind⟩ := isSome_iff_exists.mp <|
-      find?_isSome (p := fun kv => (compare kv.1 k).isEq) |>.mpr ⟨(k', v), hmem, hpred⟩
+      List.find?_isSome (p := fun kv => (compare kv.1 k).isEq) |>.mpr ⟨(k', v), hmem, hpred⟩
     have hkv_cmp : compare kv.1 k = .eq := by
       simpa [beq_iff_eq] using List.find?_some hfind
     have hval : kv.2 = v := by grind
-    have hfind : find? (fun kv => (compare kv.fst k).isEq) t₂.toList =
+    have hfind : List.find? (fun kv => (compare kv.fst k).isEq) t₂.toList =
         some (kv.fst, v) := by
       simp [← hval, ← hfind]
     simp [← hval, hfind]
@@ -391,6 +391,32 @@ instance : LawfulPartialMap (TreeMap K · compare) K where
   get?_delete_ne := by simp [Iris.Std.get?, Iris.Std.delete]; grind
   get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
   get?_merge := getElem?_mergeWith'
+
+instance : FiniteMap (TreeMap K · compare) K where
+  toList t := t.toList
+
+instance : LawfulFiniteMap (TreeMap K · compare) K where
+  toList_empty := rfl
+  toList_noDupKeys := by
+    intro V m
+    have h' : List.Pairwise (fun a b => ¬compare a b = eq) (m.toList.map (·.1)) := by
+      refine List.pairwise_map.mpr ?_
+      refine (distinct_keys_toList (t := m)).imp ?_
+      intro _ _ hab
+      exact hab
+    refine h'.imp ?_
+    intro a b hab
+    rw [compare_eq_iff_eq] at hab
+    exact hab
+  toList_get := by
+    intro V m k v
+    constructor
+    · intro h
+      exact getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mpr ⟨k, compare_self, h⟩
+    · intro h
+      obtain ⟨_, hcmp, hmem⟩ := getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList.mp h
+      rw [compare_eq_iff_eq.mp hcmp]
+      exact hmem
 
 end HeapInstance
 
