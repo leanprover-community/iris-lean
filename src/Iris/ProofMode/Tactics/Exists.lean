@@ -5,16 +5,26 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
+public import Iris.BI
+public import Iris.ProofMode.Classes
 public meta import Iris.ProofMode.Tactics.Basic
+
+@[expose] public section
+
+namespace Iris.ProofMode
+open Iris.BI
+
+theorem exists_intro' [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExists P Φ]
+    (a : α) (h : P ⊢ Q) : Φ a ⊢ Q :=
+  ((exists_intro a).trans inst.1).trans h
+
+end Iris.ProofMode
+end
 
 public meta section
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI
-
-theorem exists_intro' [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExists P Φ]
-    (a : α) (h : P ⊢ Q) : Φ a ⊢ Q :=
-  ((exists_intro a).trans inst.1).trans h
 
 elab "iexists" xs:term,+ : tactic => do
   -- resolve existential quantifier with the given argument

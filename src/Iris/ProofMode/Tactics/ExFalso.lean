@@ -5,14 +5,23 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
+public import Iris.BI
 public meta import Iris.ProofMode.Tactics.Basic
+
+@[expose] public section
+
+namespace Iris.ProofMode
+open Iris.BI
+
+theorem exfalso [BI PROP] {P Q : PROP} (h : P ⊢ False) : P ⊢ Q := h.trans false_elim
+
+end Iris.ProofMode
+end
 
 public meta section
 
 namespace Iris.ProofMode
 open Lean Elab.Tactic Meta Qq BI
-
-theorem exfalso [BI PROP] {P Q : PROP} (h : P ⊢ False) : P ⊢ Q := h.trans false_elim
 
 elab "iexfalso" : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do

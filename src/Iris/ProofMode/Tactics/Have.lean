@@ -5,9 +5,23 @@ Authors: Michael Sammler
 -/
 module
 
+public import Iris.BI
 public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.Tactics.HaveCore
 public meta import Iris.ProofMode.Tactics.Cases
+
+@[expose] public section
+
+namespace Iris.ProofMode
+open Iris.BI
+
+theorem ihave_assert [BI PROP] {A B C : PROP}
+  (h1 : A ∗ □ (B -∗ B) ⊢ C) : A ⊢ C :=
+    (and_intro .rfl (persistently_emp_intro.trans (persistently_mono $ wand_intro emp_sep.1))).trans
+      $ persistently_and_intuitionistically_sep_r.1.trans h1
+
+end Iris.ProofMode
+end
 
 public meta section
 
@@ -15,11 +29,6 @@ namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
 macro "ihave" colGt pat:icasesPat " := " pmt:pmTerm : tactic => `(tactic | icases +keep $pmt with $pat)
-
-theorem ihave_assert [BI PROP] {A B C : PROP}
-  (h1 : A ∗ □ (B -∗ B) ⊢ C) : A ⊢ C :=
-    (and_intro .rfl (persistently_emp_intro.trans (persistently_mono $ wand_intro emp_sep.1))).trans
-      $ persistently_and_intuitionistically_sep_r.1.trans h1
 
 elab "ihave" colGt pat:icasesPat " : " P:term "$$" spat:specPat : tactic => do
   let spat ← liftMacroM <| SpecPat.parse spat
