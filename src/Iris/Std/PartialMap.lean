@@ -1,13 +1,12 @@
-module
-
-import Batteries.Data.List.Perm
-import Iris.Std.FromMathlib
-
 /-
 Copyright (c) 2026 Zongyuan Liu, Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu, Markus de Medeiros
 -/
+module
+
+import Batteries.Data.List.Perm
+import Iris.Std.FromMathlib
 
 
 /-! ## Partial Maps
@@ -1066,6 +1065,5 @@ theorem toList_zip {m₁ : M V} {m₂ : M V'} :
     simp [Hb₁]
 
 end LawfulFiniteMap
-
 
 end Iris.Std
