@@ -31,7 +31,7 @@ theorem nclose_subseteq [Pos.Countable A] N (x : A) : (↑N.@x : CoPset) ⊆ (�
   obtain ⟨ q', Heq ⟩ :=
     (Pos.flatten_suffix N (ndot N x) (by exists [Pos.Countable.encode x]))
   exists (q ++ q')
-  rewrite [Pos.app_assoc_l.assoc, <- Heq]
+  rewrite [Pos.app_assoc.assoc, <- Heq]
   rfl
 
 theorem nclose_subseteq' [Pos.Countable A] E (N : Namespace) (x : A) : (↑N : CoPset) ⊆ E -> (↑(N.@x) : CoPset) ⊆ E := by
@@ -46,8 +46,8 @@ theorem ndot_ne_disjoint [Pos.Countable A] (N : Namespace) (x y : A) :
   rewrite [CoPset.elem_suffixes]; rewrite [CoPset.elem_suffixes]
   rintro ⟨ qx, Heqx ⟩; rintro ⟨ qy, Heqy ⟩
   rewrite [Heqx] at Heqy
-  have := Pos.flatten_suffix_eq qx qy (N.@x) (N.@y) (by simp [ndot, List.length]) Heqy
-  simp [ndot, Pos.Countable.encode] at this
+  have := Pos.flatten_suffix_eq qx qy (N.@x) (N.@y) (by simp [ndot]) Heqy
+  simp [ndot] at this
   have := (Pos.encode_inj.inj _ _ this)
   exact Hxy this
 
@@ -64,11 +64,7 @@ theorem ndot_preserve_disjoint_r [Pos.Countable A] (N : Namespace) (E : CoPset) 
   apply ndot_preserve_disjoint_l
   symm; assumption
 
+attribute [grind unfold] instDisjointCoPset in
 theorem CoPset.difference_difference (X1 X2 X3 Y : CoPset) :
   (X1 \ X2) \ X3 ## Y -> X1 \ (X2 ∪ X3) ## Y := by
-  -- Long term, this should be solvable with one automatic tactic
-  intros Hdisj p Hnin Hin
-  apply (Hdisj p _ Hin)
-  obtain ⟨ HX1, HXU ⟩ := (in_diff p X1 (X2 ∪ X3)).1 Hnin
-  obtain ⟨ HX2, HX3 ⟩ := (not_in_union p X2 X3).1 HXU
-  simp [in_diff]; simp [*]
+  grind only [= in_diff, = not_in_union]

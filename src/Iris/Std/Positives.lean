@@ -25,12 +25,12 @@ macro_rules
   | `($p ~0) => `(xO $p)
 
 @[app_unexpander xI]
-def unexpand_Pos_xI : Lean.PrettyPrinter.Unexpander
+def unexpandPosXI : Lean.PrettyPrinter.Unexpander
   | `($_ $p) => `($p~1)
   | _ => throw ()
 
 @[app_unexpander xO]
-def unexpand_Pos_x0 : Lean.PrettyPrinter.Unexpander
+def unexpandPosXO : Lean.PrettyPrinter.Unexpander
   | `($_ $p) => `($p~0)
   | _ => throw ()
 
@@ -46,7 +46,7 @@ mutual
 /-- Addition -/
 def add x y :=
   match x, y with
-    | p~1, q~1 => (add_carry p q)~0
+    | p~1, q~1 => (addCarry p q)~0
     | p~1, q~0 => (add p q)~1
     | p~1, xH => (succ p)~0
     | p~0, q~1 => (add p q)~1
@@ -56,12 +56,12 @@ def add x y :=
     | xH, q~0 => q~1
     | xH, xH => P1~0
 
-def add_carry x y :=
+def addCarry x y :=
   match x, y with
-    | p~1, q~1 => (add_carry p q)~1
-    | p~1, q~0 => (add_carry p q)~0
+    | p~1, q~1 => (addCarry p q)~1
+    | p~1, q~0 => (addCarry p q)~0
     | p~1, xH => (succ p)~1
-    | p~0, q~1 => (add_carry p q)~0
+    | p~0, q~1 => (addCarry p q)~0
     | p~0, q~0 => (add p q)~1
     | p~0, xH => (succ p)~0
     | xH, q~1 => (succ q)~1
@@ -73,7 +73,7 @@ instance : Add Pos where add := Pos.add
 
 /-- Multiplication -/
 def mul : Pos → Pos → Pos
-  | xH,     q       => q
+  | xH,    q       => q
   | p~0,   q       => xO (mul p q)
   | p~1,   q       => add (xO (mul p q)) q
 
@@ -114,26 +114,30 @@ def app (p1 p2 : Pos) : Pos :=
 @[reducible]
 instance : HAppend Pos Pos Pos where hAppend := Pos.app
 
-instance app_assoc_l : @Std.Associative Pos (.++.) where
+instance app_assoc : @Std.Associative Pos (.++.) where
   assoc _ _ p := by induction p <;> simp_all [HAppend.hAppend, app]
 
 @[simp]
 theorem app_1_left_id (p : Pos) : app P1 p = p := by
-  induction p <;> simp [HAppend.hAppend, app] <;> assumption
+  induction p <;> simp [app] <;> assumption
 
-instance app_1_l : @Std.LawfulLeftIdentity Pos Pos (app) P1 where
+@[simp]
+theorem app_1_right_id (p : Pos) : app p P1 = p := by
+  induction p <;> simp [app] <;> assumption
+
+instance app_1_l : @Std.LawfulLeftIdentity Pos Pos (.++.) P1 where
   left_id p := app_1_left_id p
 
-def reverse_go (p1 p2 : Pos) : Pos :=
+def reverseGo (p1 p2 : Pos) : Pos :=
   match p2 with
   | xH => p1
-  | p2~0 => reverse_go (p1~0) p2
-  | p2~1 => reverse_go (p1~1) p2
-def reverse : Pos → Pos := reverse_go P1
+  | p2~0 => reverseGo (p1~0) p2
+  | p2~1 => reverseGo (p1~1) p2
+def reverse : Pos → Pos := reverseGo P1
 
 theorem reverse_go_app (p1 p2 p3 : Pos) :
-  reverse_go p1 (p2 ++ p3) = reverse_go p1 p3 ++ reverse_go P1 p2 := by
-  have helper : ∀ p1 p2 p3, reverse_go (p2 ++ p3) p1 = p2 ++ (reverse_go p3 p1) := by
+  reverseGo p1 (p2 ++ p3) = reverseGo p1 p3 ++ reverseGo P1 p2 := by
+  have helper : ∀ p1 p2 p3, reverseGo (p2 ++ p3) p1 = p2 ++ (reverseGo p3 p1) := by
     intro p1
     induction p1 with
     | xI p1 IH =>
@@ -147,15 +151,12 @@ theorem reverse_go_app (p1 p2 p3 : Pos) :
 
   induction p3 generalizing p1 p2 with
   | xI p3 IH =>
-    simp [reverse_go, HAppend.hAppend, app]
     exact IH (p1~1) p2
   | xO p3 IH =>
-    simp [reverse_go, HAppend.hAppend, app]
     exact IH (p1~0) p2
   | xH =>
-    simp [reverse_go]
     rewrite [<- helper]
-    simp [HAppend.hAppend, app]
+    rfl
 
 theorem reverse_app (p1 p2 : Pos) :
   reverse (p1 ++ p2) = reverse p2 ++ reverse p1 := by
@@ -178,10 +179,10 @@ strings) into a single positive and go in the other direction as well. This is
 for example used for the countable instance of lists and in namespaces.
 The main functions are [flatten] and [unflatten]. -/
 
-def flatten_go (xs : List Pos) (acc : Pos) : Pos :=
+def flattenGo (xs : List Pos) (acc : Pos) : Pos :=
   match xs with
   | [] => acc
-  | x :: xs => flatten_go xs (acc~1~0 ++ reverse (dup x))
+  | x :: xs => flattenGo xs (acc~1~0 ++ reverse (dup x))
 
 /-- Flatten a list of positives into a single positive by duplicating the bits
 of each element, so that:
@@ -191,78 +192,74 @@ of each element, so that:
 
 and then separating each element with [10]. -/
 def flatten (xs : List Pos) : Pos :=
-  flatten_go xs P1
+  flattenGo xs P1
 
-def unflatten_go
+def unflattenGo
         (p : Pos)
         (acc_xs : List Pos)
         (acc_elm : Pos)
   : Option (List Pos) :=
   match p with
   | xH => some acc_xs
-  | p'~0~0 => unflatten_go p' acc_xs (acc_elm~0)
-  | p'~1~1 => unflatten_go p' acc_xs (acc_elm~1)
-  | p'~1~0 => unflatten_go p' (acc_elm :: acc_xs) P1
+  | p'~0~0 => unflattenGo p' acc_xs (acc_elm~0)
+  | p'~1~1 => unflattenGo p' acc_xs (acc_elm~1)
+  | p'~1~0 => unflattenGo p' (acc_elm :: acc_xs) P1
   | _ => none
 
 /-- Unflatten a positive into a list of positives, assuming the encoding
 used by [flatten]. -/
 def unflatten (p : Pos) : Option (List Pos) :=
-  unflatten_go p [] P1
+  unflattenGo p [] P1
 
 theorem flatten_go_app xs acc :
-    flatten_go xs acc = acc ++ flatten_go xs P1 := by
+    flattenGo xs acc = acc ++ flattenGo xs P1 := by
   induction xs generalizing acc with
   | nil => rfl
   | cons x xs IH =>
-    simp [flatten_go]
+    simp [flattenGo]
     rewrite [IH]
     rewrite [IH (P1~1~0 ++ x.dup.reverse)]
-    simp only [<- app_assoc_l.assoc]
-    simp [HAppend.hAppend, app]
+    simp only [<- app_assoc.assoc]
+    rfl
 
 theorem unflatten_go_app (p : Pos) suffix xs acc :
-  unflatten_go (suffix ++ reverse (dup p)) xs acc =
-  unflatten_go suffix xs (acc ++ p) := by
+  unflattenGo (suffix ++ reverse (dup p)) xs acc =
+  unflattenGo suffix xs (acc ++ p) := by
   induction p generalizing suffix acc with
   | xI p IH =>
     simp [dup]
     rewrite [reverse_xI]; rewrite [reverse_xI]
-    simp only [<- app_assoc_l.assoc]
+    simp only [<- app_assoc.assoc]
     rewrite [IH]
     rfl
   | xO p IH =>
     simp [dup]
     rewrite [reverse_x0]; rewrite [reverse_x0]
-    simp only [<- app_assoc_l.assoc]
+    simp only [<- app_assoc.assoc]
     rewrite [IH]
     rfl
   | xH => rfl
 
 theorem unflatten_flatten_go suffix xs acc :
-  unflatten_go (suffix ++ flatten_go xs P1) acc P1 =
-  unflatten_go suffix (xs ++ acc) P1 := by
+  unflattenGo (suffix ++ flattenGo xs P1) acc P1 =
+  unflattenGo suffix (xs ++ acc) P1 := by
   revert suffix acc
   induction xs with
   | nil => intros suff acc; rfl
   | cons x xs IH =>
-    simp [flatten_go]
     intros suff acc
-    rewrite [flatten_go_app]
-    rewrite [<- app_assoc_l.assoc]
-    rewrite [IH]
-    rewrite [<- app_assoc_l.assoc]
+    simp only [flattenGo]
+    rewrite [List.cons_append, flatten_go_app]
+    rewrite [<- app_assoc.assoc, IH, <- app_assoc.assoc]
     rewrite [unflatten_go_app]
-    simp [HAppend.hAppend, app]
+    rewrite [app_1_l.left_id]
     rfl
 
 theorem unflatten_flatten xs :
   unflatten (flatten xs) = some xs := by
   unfold flatten; unfold unflatten
-  rewrite [<- (app_1_l.left_id (flatten_go xs P1))]
-  have := unflatten_flatten_go P1 xs []
-  simp [HAppend.hAppend] at this
-  simp [this, Append.append]
+  rewrite [<- (app_1_l.left_id (flattenGo xs P1))]
+  rewrite [unflatten_flatten_go P1 xs [], List.append_nil]
   rfl
 
 theorem flatten_app xs ys :
@@ -270,12 +267,16 @@ theorem flatten_app xs ys :
   unfold flatten
   induction xs generalizing ys with
   | nil =>
-    simp [flatten_go, HAppend.hAppend]; rfl
+    simp only [flattenGo]
+    rewrite [app_1_l.left_id]
+    rfl
   | cons x xs IH =>
-    simp [flatten_go]
-    rewrite [flatten_go_app]; rewrite [flatten_go_app xs]
+    rewrite [List.cons_append]
+    simp only [flattenGo]
+    rewrite [flatten_go_app (xs ++ ys), flatten_go_app xs]
     rewrite [IH]
-    simp [app_assoc_l.assoc]
+    rewrite [<-app_assoc.assoc]
+    rfl
 
 theorem flatten_cons x xs :
   flatten (x :: xs)
@@ -317,17 +318,15 @@ theorem dup_app p q : dup (p ++ q) = dup p ++ dup q := by
 theorem reverse_dup (p : Pos) :
   reverse (dup p) = dup (reverse p) := by
   have hdup := dup_app
-  have hassoc := app_assoc_l.assoc
-  simp [HAppend.hAppend, app] at hdup hassoc
+  have hassoc := app_assoc.assoc
+  simp at hdup hassoc
   induction p with
   | xI p IH =>
-    simp [dup]
-    simp [reverse_xI, HAppend.hAppend, app]
+    simp only [dup, reverse_xI]
     rewrite [<- hassoc, IH, hdup]
     rfl
   | xO p IH =>
-    simp [dup]
-    simp [reverse_x0, HAppend.hAppend, app]
+    simp only [dup, reverse_x0]
     rewrite [<- hassoc, IH, hdup]
     rfl
   | xH => rfl
@@ -338,11 +337,11 @@ theorem dup_suffix_eq p q s1 s2 :
   | xI p IH =>
     intros Heq
     cases q <;> simp_all [HAppend.hAppend, app, dup] <;> rename Pos => q
-    rewrite [IH q]; rfl; simp [Heq]
+    rewrite [IH q] <;> rfl
   | xO p IH =>
     intros Heq
     cases q <;> simp_all [HAppend.hAppend, app, dup] <;> rename Pos => q
-    rewrite [IH q]; rfl; simp [Heq]
+    rewrite [IH q] <;> rfl
   | xH => cases q <;> simp [HAppend.hAppend, app, dup]
 
 theorem flatten_suffix_eq p1 p2 (xs ys : List Pos) :
@@ -354,18 +353,16 @@ theorem flatten_suffix_eq p1 p2 (xs ys : List Pos) :
   | cons x xs IH =>
     rcases ys with _ | ⟨ y, ys ⟩; intros Hlen _; simp [List.length] at Hlen;
     rewrite [flatten_cons]
-    rewrite [<- app_assoc_l.assoc]; rewrite [<- app_assoc_l.assoc]
+    rewrite [<- app_assoc.assoc, <- app_assoc.assoc]
     rewrite [flatten_cons]
-    rewrite [<- app_assoc_l.assoc]; rewrite [<- app_assoc_l.assoc]
+    rewrite [<- app_assoc.assoc, <- app_assoc.assoc]
     intros Hlen Hl
     have Heq : xs = ys := by apply IH; simp_all []; apply Hl
     rewrite [Heq]; congr; rewrite [Heq] at Hl
     replace Hl := (app_inj (flatten ys)).inj _ _ Hl
-    rewrite [reverse_dup] at Hl
-    rewrite [reverse_dup] at Hl
+    rewrite [reverse_dup, reverse_dup] at Hl
     replace Hl := (dup_suffix_eq _ _ p1 p2 Hl)
     apply (rev_inj.inj _ _ Hl)
-
 
 class Countable (A : Type) where
   encode : A -> Pos
@@ -388,11 +385,14 @@ instance [Countable A] : Countable (List A) where
     List.mapM Countable.decode positives
   decode_encode := by
     intros xs
-    rewrite [Pos.unflatten_flatten]; simp
+    rewrite [Pos.unflatten_flatten]
+    rewrite [Option.bind_eq_bind, Option.bind_some, List.mapM_map]
     induction xs with
     | nil => rfl
     | cons x xs IH =>
-      simp [List.map]; rewrite [IH]; rewrite [Countable.decode_encode]; simp
+      rewrite [List.mapM_cons, Function.comp_apply, Option.pure_def, Option.bind_eq_bind]
+      rewrite [IH, Countable.decode_encode]
+      rfl
 
 instance : Countable Pos where
   encode := id
