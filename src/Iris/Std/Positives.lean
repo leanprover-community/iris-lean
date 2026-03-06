@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 Remy Seassau. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
+
 import Iris.Std.Classes
 /-- [Pos] is a datatype representing the strictly positive integers
    in a binary way. Starting from 1 (represented by [xH]), one can
