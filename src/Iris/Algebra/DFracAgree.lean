@@ -67,6 +67,49 @@ theorem fracAgree_op_validN (n : Nat) (q1 q2 : F) (a1 a2 : A) :
       ✓{n} (DFrac.own q1 • DFrac.own q2 : DFrac F) ∧ a1 ≡{n}≡ a2 :=
   dfracAgree_op_validN (F := F) (A := A) n (DFrac.own q1) (DFrac.own q2) a1 a2
 
+theorem dfracAgree_included (d1 d2 : DFrac F) (a1 a2 : A) :
+    toDFracAgree (F := F) (A := A) d1 a1 ≼ toDFracAgree d2 a2 ↔
+      (d1 ≼ d2) ∧ a1 ≡ a2 := by
+  change (((d1, toAgree a1) : DFracAgree F A) ≼ (d2, toAgree a2)) ↔
+    (d1 ≼ d2) ∧ a1 ≡ a2
+  constructor
+  · rintro ⟨z, hz⟩
+    refine ⟨⟨z.1, OFE.equiv_fst hz⟩, ?_⟩
+    exact (Agree.toAgree_included).1 ⟨z.2, OFE.equiv_snd hz⟩
+  · rintro ⟨hd, ha⟩
+    rcases hd with ⟨zd, hzd⟩
+    rcases (Agree.toAgree_included).2 ha with ⟨za, hza⟩
+    exact ⟨(zd, za), OFE.equiv_prod_ext hzd hza⟩
+
+theorem dfracAgree_included_L [Leibniz A] (d1 d2 : DFrac F) (a1 a2 : A) :
+    toDFracAgree (F := F) (A := A) d1 a1 ≼ toDFracAgree d2 a2 ↔
+      (d1 ≼ d2) ∧ a1 = a2 := by
+  simpa using dfracAgree_included (F := F) (A := A) d1 d2 a1 a2
+
+theorem dfracAgree_includedN (n : Nat) (d1 d2 : DFrac F) (a1 a2 : A) :
+    toDFracAgree (F := F) (A := A) d1 a1 ≼{n} toDFracAgree d2 a2 ↔
+      (d1 ≼ d2) ∧ a1 ≡{n}≡ a2 := by
+  change (((d1, toAgree a1) : DFracAgree F A) ≼{n} (d2, toAgree a2)) ↔
+    (d1 ≼ d2) ∧ a1 ≡{n}≡ a2
+  rw [← Prod.incN_iff]
+  rw [CMRA.inc_iff_incN (α := DFrac F) n]
+  simp
+
+theorem fracAgree_included (q1 q2 : F) (a1 a2 : A) :
+    toFracAgree (F := F) (A := A) q1 a1 ≼ toFracAgree q2 a2 ↔
+      ((DFrac.own q1 : DFrac F) ≼ DFrac.own q2) ∧ a1 ≡ a2 :=
+  dfracAgree_included (F := F) (A := A) (DFrac.own q1) (DFrac.own q2) a1 a2
+
+theorem fracAgree_included_L [Leibniz A] (q1 q2 : F) (a1 a2 : A) :
+    toFracAgree (F := F) (A := A) q1 a1 ≼ toFracAgree q2 a2 ↔
+      ((DFrac.own q1 : DFrac F) ≼ DFrac.own q2) ∧ a1 = a2 :=
+  dfracAgree_included_L (F := F) (A := A) (DFrac.own q1) (DFrac.own q2) a1 a2
+
+theorem fracAgree_includedN (n : Nat) (q1 q2 : F) (a1 a2 : A) :
+    toFracAgree (F := F) (A := A) q1 a1 ≼{n} toFracAgree q2 a2 ↔
+      ((DFrac.own q1 : DFrac F) ≼ DFrac.own q2) ∧ a1 ≡{n}≡ a2 :=
+  dfracAgree_includedN (F := F) (A := A) n (DFrac.own q1) (DFrac.own q2) a1 a2
+
 theorem dfracAgree_update_2 (d1 d2 : DFrac F) (a1 a2 a' : A)
     (hd : d1 • d2 = DFrac.own (One.one : F)) :
     toDFracAgree (F := F) (A := A) d1 a1 • toDFracAgree d2 a2 ~~>

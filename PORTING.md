@@ -116,7 +116,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Updates
   - [x] Functors
 - [ ] `lib/dfrac_agree.v` 
-  - [ ] Lemmas
+  - [x] Lemmas
   - [x] Updates
 - [ ] `lib/excl_auth.v` 
   - [ ] Lemmas
