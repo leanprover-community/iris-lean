@@ -105,4 +105,26 @@ theorem dfracAgree_unpersist [IsSplitFraction F] (a : A) :
 
 end DFracAgree
 
+section dfracAgree_rfunctor
+
+open COFE
+
+abbrev DFracAgreeRF (Q : Type _) [UFraction Q] (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
+  ProdOF (constOF (DFrac Q)) (AgreeRF F)
+
+instance {Q F} [UFraction Q] [COFE.OFunctor F] : RFunctor (DFracAgreeRF Q F) where
+  map f g := Prod.mapC (CMRA.Hom.id (α := DFrac Q)) (RFunctor.map f g)
+  map_ne.ne _ _ _ Hx _ _ Hy _ := Prod.map_ne (fun _ => rfl) (fun _ => RFunctor.map_ne.ne Hx Hy _)
+  map_id x := by
+    cases x
+    exact OFE.equiv_prod_ext (OFE.Equiv.of_eq rfl) (RFunctor.map_id _)
+  map_comp f g f' g' x := by
+    cases x
+    exact OFE.equiv_prod_ext (OFE.Equiv.of_eq rfl) (RFunctor.map_comp f g f' g' _)
+
+instance {Q F} [UFraction Q] [COFE.OFunctorContractive F] : RFunctorContractive (DFracAgreeRF Q F) where
+  map_contractive.1 H _ := Prod.map_ne (fun _ => rfl) (fun _ => RFunctorContractive.map_contractive.1 H _)
+
+end dfracAgree_rfunctor
+
 end Iris
