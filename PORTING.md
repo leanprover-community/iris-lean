@@ -119,9 +119,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] Lemmas
   - [ ] Updates
 - [ ] `lib/excl_auth.v` 
-  - [ ] Lemmas
-  - [ ] Updates
-  - [ ] Functors
+  - [x] Lemmas
+  - [x] Updates
+  - [x] Functors
 - [ ] `lib/frac_auth.v` 
   - [ ] Lemmas
   - [ ] Updates
