@@ -38,6 +38,8 @@ def «exists» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sExists f
 /-- Entailment on separation logic propositions. -/
 macro:25 P:term:29 " ⊢ " Q:term:25 : term => ``(BIBase.Entails iprop($P) iprop($Q))
 
+macro:25 P:term:29 " ⊢@{ " PROP:term "} " Q:term:25 : term => ``(BIBase.Entails (PROP:=$PROP) iprop($P) iprop($Q))
+
 delab_rule BIBase.Entails
   | `($_ $P $Q) => do ``($(← unpackIprop P) ⊢ $(← unpackIprop Q))
 
@@ -98,6 +100,8 @@ delab_rule BIBase.wand
   | `($_ $P $Q) => do ``(iprop($(← unpackIprop P) -∗ $(← unpackIprop Q)))
 delab_rule BIBase.persistently
   | `($_ $P) => do ``(iprop(<pers> $(← unpackIprop P)))
+delab_rule BIBase.later
+  | `($_ $P) => do ``(iprop(▷ $(← unpackIprop P)))
 
 delab_rule BIBase.pure
   | `($_ True) => ``(iprop($(mkIdent `True)))
@@ -170,13 +174,19 @@ structure BiEntails [BIBase PROP] (P Q : PROP) where
   mp : P ⊢ Q
   mpr : Q ⊢ P
 
+def EmpValid [BIBase PROP] (P : PROP) : Prop := emp ⊢ P
+
 /-- Entailment on separation logic propositions with an empty context. -/
-macro:25 "⊢ " P:term:25 : term => ``(emp ⊢ $P)
+macro:25 "⊢ " P:term:25 : term => ``(EmpValid iprop($P))
+macro:25 "⊢@{ " PROP:term " } " P:term:25 : term =>
+  ``(EmpValid (PROP:=$PROP) iprop($P))
 /-- Bidirectional entailment on separation logic propositions. -/
 macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(BiEntails iprop($P) iprop($Q))
+macro:25 P:term:29 " ⊣⊢@{ " PROP:term " } " Q:term:29 : term =>
+  ``(BiEntails (PROP:=$PROP) iprop($P) iprop($Q))
 
-delab_rule BIBase.Entails
-  | `($_ iprop(emp) $P) => do ``(⊢ $(← unpackIprop P))
+delab_rule BIBase.EmpValid
+  | `($_ $P) => do ``(⊢ $(← unpackIprop P))
 
 delab_rule BIBase.BiEntails
   | `($_ $P $Q) => do ``($(← unpackIprop P) ⊣⊢ $(← unpackIprop Q))
@@ -229,17 +239,25 @@ def intuitionisticallyIf (p : Bool) (P : PROP) := if p then □ P else P
 ```
 -/
 syntax:max "□?"        term:max ppHardSpace term:40 : term
+/-- Conditional later modality.
+```
+def laterIf (p : Bool) (P : PROP) := if p then ▷ P else P
+```
+-/
+syntax:max "▷?"        term:max ppHardSpace term:40 : term
 
 def persistentlyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <pers> P else P)
 def affinelyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <affine> P else P)
 def absorbinglyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <absorb> P else P)
 def intuitionisticallyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then □ P else P)
+def laterIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then ▷ P else P)
 
 macro_rules
   | `(iprop(<pers>?$p $P))   => ``(persistentlyIf $p iprop($P))
   | `(iprop(<affine>?$p $P)) => ``(affinelyIf $p iprop($P))
   | `(iprop(<absorb>?$p $P)) => ``(absorbinglyIf $p iprop($P))
   | `(iprop(□?$p $P))        => ``(intuitionisticallyIf $p iprop($P))
+  | `(iprop(▷?$p $P))        => ``(laterIf $p iprop($P))
 
 delab_rule persistentlyIf
   | `($_ $p $P) => do ``(iprop(<pers>?$p $(← unpackIprop P)))
@@ -249,6 +267,8 @@ delab_rule absorbinglyIf
   | `($_ $p $P) => do ``(iprop(<absorb>?$p $(← unpackIprop P)))
 delab_rule intuitionisticallyIf
   | `($_ $p $P) => do ``(iprop(□?$p $(← unpackIprop P)))
+delab_rule laterIf
+  | `($_ $p $P) => do ``(iprop(▷?$p $(← unpackIprop P)))
 
 /-- Fold the conjunction `∧` over a list of separation logic propositions. -/
 def bigAnd [BIBase PROP] (Ps : List PROP) : PROP := bigOp and iprop(True) Ps
@@ -285,4 +305,3 @@ macro_rules
 
 delab_rule except0
   | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
-

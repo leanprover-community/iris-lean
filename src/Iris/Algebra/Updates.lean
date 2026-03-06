@@ -110,7 +110,7 @@ theorem UpdateP.op {P Q R : α → Prop} {x y}
   exact ⟨z • w, pqr z w pz pw, CMRA.validN_ne (CMRA.op_opM_assoc_dist z w mz).symm vz⟩
 
 theorem UpdateP.op' {P Q : α → Prop} {x y : α} (uxp : x ~~>: P) (uyq : y ~~>: Q) :
-    x • y ~~>: λ t ↦ ∃ z w, t = (z • w : α) ∧ P z ∧ Q w :=
+    (x • y : α) ~~>: λ t ↦ ∃ z w, t = (z • w : α) ∧ P z ∧ Q w :=
   .op uxp uyq fun z w pz qw => ⟨z, w, rfl, pz, qw⟩
 
 theorem Update.op {x₁ x₂ y₁ y₂ : α} (xy₁ : x₁ ~~> y₁) (xy₂ : x₂ ~~> y₂) : x₁ • x₂ ~~> y₁ • y₂ :=

@@ -18,10 +18,10 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 /-- info: P ⊢ Q : Prop -/
 #guard_msgs in #check P ⊢ Q
 
-/-- info: iprop(emp) : ?m.103 -/
+/-- info: iprop(emp) : ?m.2 -/
 #guard_msgs in #check iprop(emp)
 
-/-- info: iprop(⌜φ⌝) : ?m.144 -/
+/-- info: iprop(⌜φ⌝) : ?m.2 -/
 #guard_msgs in #check iprop(⌜φ⌝)
 
 /-- info: iprop(P ∧ Q) : PROP -/
@@ -86,9 +86,9 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 /-- info: iprop(P ∗ <pers> Q) : PROP -/
 #guard_msgs in #check iprop(P ∗ (<pers> Q))
 
-/-- info: iprop(True) : ?m.1425 -/
+/-- info: iprop(True) : ?m.2 -/
 #guard_msgs in #check iprop(True)
-/-- info: iprop(False) : ?m.1466 -/
+/-- info: iprop(False) : ?m.2 -/
 #guard_msgs in #check iprop(False)
 
 /-- info: iprop(¬P) : PROP -/

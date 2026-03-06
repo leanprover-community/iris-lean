@@ -284,6 +284,29 @@ instance [OFE α] [Leibniz α] : Leibniz (Option α) where
     | none, none, _ => rfl
     | some _, some _, h => congrArg some (Leibniz.eq_of_eqv h)
 
+instance [OFE α] [Discrete α] : Discrete (Option α) where
+  discrete_0 {x y} H :=
+    match x, y with
+    | none, none => H
+    | some _, some _ => some_eqv_some.mpr (discrete_0 H)
+
+instance OFE.Option.some.ne [OFE α] : OFE.NonExpansive (some : α → Option α) := ⟨fun _ _ _ => id⟩
+
+theorem Option.some_is_discrete [OFE α] {a : α} (Ha : DiscreteE a) : DiscreteE (some a) := by
+  constructor
+  rintro (_|_) H
+  · exact H
+  · exact Ha.discrete H
+
+theorem Option.none_is_discrete [OFE α] : DiscreteE (none : Option α) := by
+  constructor; rintro (_|_) <;> simp
+
+instance Option.merge_ne [OFE α] {op : α → α → α} [NonExpansive₂ op] :
+    NonExpansive₂ (Option.merge op) where
+  ne n x1 x2 Hx y1 y2 Hy := by
+    rcases x1, x2, y1, y2 with ⟨_|_, _|_, _|_, _|_⟩ <;> simp_all
+    exact NonExpansive₂.ne Hx Hy
+
 abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
 
 instance [OFEFun (β : α → _)] : OFE ((x : α) → β x) where
@@ -348,6 +371,19 @@ theorem dist_fst {n} [OFE α] [OFE β] {x y : α × β} (h : x ≡{n}≡ y) : x.
 theorem dist_snd {n} [OFE α] [OFE β] {x y : α × β} (h : x ≡{n}≡ y) : x.snd ≡{n}≡ y.snd := h.right
 theorem dist_prod_ext {n} [OFE α] [OFE β] {x₁ x₂ : α} {y₁ y₂ : β}
     (ex : x₁ ≡{n}≡ x₂) (ey : y₁ ≡{n}≡ y₂) : (x₁, y₁) ≡{n}≡ (x₂, y₂) := ⟨ex, ey⟩
+
+theorem prod.is_discrete [OFE α] [OFE β] {a : α} {b : β} (Ha : DiscreteE a) (Hb : DiscreteE b) :
+    DiscreteE (a, b) := by
+  constructor
+  intro y H; refine ⟨Ha.discrete H.1, Hb.discrete H.2⟩
+
+instance [OFE α] [OFE β] [Discrete α] [Discrete β] : Discrete (α × β) where
+  discrete_0 H := by
+    constructor
+    · apply Discrete.discrete_0
+      apply H.1
+    · apply Discrete.discrete_0
+      apply H.2
 
 /-- An isomorphism between two OFEs is a pair of morphisms whose composition is equivalent to the
 identity morphism. -/
@@ -458,6 +494,40 @@ theorem map_comp [OFE α] [OFE β] [OFE γ] {f : α -n> β} {g : β -n> γ} {c :
 
 end Chain
 
+/-- If a chain of Option is ever none, is the constant none chain. -/
+theorem chain_none_const [OFE V] {c : Chain (Option V)} (H : c n = none) :
+    c = Chain.const none := by
+  rcases c with ⟨c, Hc⟩
+  congr 1; refine funext (fun k => ?_)
+  rcases Nat.le_or_ge n k with (Hnk|Hnk)
+  · suffices c k ≡{n}≡ c n by cases _ : c k <;> simp_all
+    exact Hc Hnk
+  · suffices c k ≡{k}≡ c n by cases _ : c k <;> simp_all
+    exact (Hc Hnk).symm
+
+/-- If a chain of Option is ever some, it is the lift a chain by some. -/
+def chain_option_some [OFE V] {c : Chain (Option V)} (H : c n = some v) :
+    ∃ c' : Chain V, c = Chain.map ⟨some, OFE.Option.some.ne⟩ c' := by
+  have HVc (k) : ∃ v', c k = some v' := by
+    rcases h : c.chain k with (_|v')
+    · simp [chain_none_const h] at H
+    · exists v'
+  let c' : Chain V :=
+    ⟨fun n => Classical.choose <| HVc n,
+     by
+       intro n i Hni
+       have HR := c.cauchy Hni
+       rw [Classical.choose_spec (HVc n), Classical.choose_spec (HVc i)] at HR
+       exact HR ⟩
+  exists c'
+  rcases hcc : c with ⟨cc, Hcc⟩
+  simp only [Chain.map, Chain.mk.injEq]
+  refine funext (fun i => ?_)
+  simp only [c']
+  have Hchoose := Classical.choose_spec (HVc i)
+  rw [← Hchoose]
+  simp [hcc]
+
 /-- Complete ordered family of equivalences -/
 class IsCOFE (α : Type _) [OFE α] where
   compl : Chain α → α
@@ -533,7 +603,7 @@ abbrev constOF (B : Type) : OFunctorPre := fun _ _ _ _ => B
 instance oFunctorConstOF [OFE B] : OFunctor (constOF B) where
   cofe := _
   map _ _ := ⟨id, id_ne⟩
-  map_ne := by intros; constructor; simp [NonExpansive₂]
+  map_ne := by intros; constructor; simp
   map_id := by simp
   map_comp := by simp
 
@@ -600,6 +670,11 @@ def optionMap {α β : Type _} [OFE α] [OFE β] (f : α -n> β) : Option α -n>
   rintro _ ⟨⟩ ⟨⟩ H <;> simp_all [Dist, Option.Forall₂]
   exact f.ne.ne H
 
+theorem Option.map_forall₂ {α β : Type _} [OFE α] [OFE β] (f : α → β) [hf : OFE.NonExpansive f]
+    {o1 o2 : Option α} (h : o1 ≡ o2) : o1.map f ≡ o2.map f := by
+  cases o1 <;> cases o2 <;> simp_all []
+  exact hf.eqv h
+
 end Option
 
 section OptionOF
@@ -617,16 +692,16 @@ instance oFunctorOption [OFunctor F] : OFunctor (OptionOF F) where
     cases z <;> simp [optionMap, Dist, Option.Forall₂]
     apply OFunctor.map_ne.ne Hx Hy
   map_id z := by
-    cases z <;> simp [optionMap, Dist, Equiv, Option.Forall₂]
+    cases z <;> simp [optionMap, Equiv, Option.Forall₂]
     apply OFunctor.map_id
   map_comp _ _ _ _ z := by
-    cases z <;> simp [optionMap, Dist, Equiv, Option.Forall₂]
+    cases z <;> simp [optionMap, Equiv, Option.Forall₂]
     apply OFunctor.map_comp
 
 instance [OFunctorContractive F] : OFunctorContractive (OptionOF F) where
   map_contractive.1 H z := by
     have := (OFunctorContractive.map_contractive (F := F)).distLater_dist H
-    cases z <;> simp_all [optionMap, Dist, Equiv, Option.Forall₂, Function.uncurry, OFunctor.map]
+    cases z <;> simp_all [optionMap, Dist, Option.Forall₂, Function.uncurry, OFunctor.map]
 
 end OptionOF
 
@@ -732,6 +807,109 @@ theorem OFE.ContractiveHom.fixpoint_ind [COFE α] [Inhabited α] (f : α -c> α)
 
 end Fixpoint
 
+section FixpointAB
+
+open OFE
+
+instance [OFE α] [OFE β] [OFE γ] : CoeFun (α -c> β -n> γ) (fun _ => α → β → γ) := ⟨fun f x => (f.f x).f⟩
+instance [OFE α] [OFE β] [OFE γ] : CoeFun (α -c> β -c> γ) (fun _ => α → β → γ) := ⟨fun f x => (f.f x).f⟩
+
+/-- A Contractive function with NonExpansive function codomain is NonExpansive₂. -/
+instance ne₂_of_contractive_ne [OFE α] [OFE β] [OFE γ] (fA : α -c> β -n> γ) : NonExpansive₂ fA where
+  ne n x₁ x₂ Hx y₁ y₂ Hy := by
+    refine .trans ?_ ((fA.f x₂).ne.ne Hy)
+    apply fA.ne.ne Hx
+
+/-- A Contractive function with Contractive function codomain is NonExpansive₂. -/
+instance ne₂_of_contractive [OFE α] [OFE β] [OFE γ] (fB : α -c> β -c> γ) : NonExpansive₂ fB where
+  ne n x₁ x₂ Hx y₁ y₂ Hy := by
+    refine .trans ?_ ((fB.f x₂).ne.ne Hy)
+    apply fB.ne.ne Hx
+
+def fixpointAB [COFE α] [COFE β] [Inhabited α] [Inhabited β] (fB : α -c> β -c> β) (x : α) : β := by
+  let con_hom : β -c> β := {
+    f := fB x,
+    contractive := ⟨fB.f x |>.contractive.distLater_dist⟩
+  }
+  exact con_hom.fixpoint
+
+theorem fixpointAB_contractive [COFE α] [COFE β] [Inhabited α] [Inhabited β] (fB : α -c> β -c> β) :
+    Contractive (fixpointAB fB) where
+  distLater_dist {n _ _} Dl := by
+    apply ContractiveHom.fixpoint_ne.ne
+    apply fB.contractive.distLater_dist
+    exact Dl
+
+def fixpointAA [COFE α] [COFE β] [Inhabited α] [Inhabited β] (fA : α -c> β -n> α)
+    (fB : α -c> β -c> β) (x : α) : α :=
+  fA x (fixpointAB fB x)
+
+theorem fixpointAA_contractive [COFE α] [COFE β] [Inhabited α] [Inhabited β]
+    (fA : α -c> β -n> α) (fB : α -c> β -c> β) : Contractive (fixpointAA fA fB) where
+  distLater_dist {_ _ x₂} Dl := by
+    refine .trans ?_ ((fA.f x₂).ne.ne ((fixpointAB_contractive fB).distLater_dist Dl))
+    apply fA.contractive.distLater_dist
+    exact Dl
+
+def fixpointA [COFE α] [COFE β] [Inhabited α] [Inhabited β] (fA : α -c> β -n> α)
+    (fB : α -c> β -c> β) : α := by
+  let con_hom : α -c> α := {
+    f := fixpointAA fA fB,
+    contractive := ⟨(fixpointAA_contractive fA fB).distLater_dist⟩
+  }
+  exact con_hom.fixpoint
+
+def fixpointB [COFE α] [COFE β] [Inhabited α] [Inhabited β]
+    (fA : α -c> β -n> α) (fB : α -c> β -c> β) : β :=
+  fixpointAB fB <| fixpointA fA fB
+
+theorem fixpointA_unfold [COFE α] [COFE β] [Inhabited α] [Inhabited β]
+    (fA : α -c> β -n> α) (fB : α -c> β -c> β) :
+    fA (fixpointA fA fB) (fixpointB fA fB) ≡ (fixpointA fA fB) := by
+  exact .symm (fixpoint_unfold _)
+
+theorem fixpointB_unfold [COFE α] [COFE β] [Inhabited α] [Inhabited β]
+    (fA : α -c> β -n> α) (fB : α -c> β -c> β) :
+    fB (fixpointA fA fB) (fixpointB fA fB) ≡ (fixpointB fA fB) := by
+  exact .symm (fixpoint_unfold _)
+
+theorem fixpointA_unique [COFE α] [COFE β] [Inhabited α] [Inhabited β]
+    (fA : α -c> β -n> α) (fB : α -c> β -c> β) (Hp : fA p q ≡ p) (Hq : fB p q ≡ q) :
+    p ≡ (fixpointA fA fB) := by
+  refine Hp.symm.trans ?_
+  apply fixpoint_unique
+  have := ne₂_of_contractive_ne fA
+  refine NonExpansive₂.eqv (f := fA) Hp.symm ?_
+  apply fixpoint_unique
+  have := ne₂_of_contractive fB
+  exact Hq.symm.trans (NonExpansive₂.eqv (f := fB) Hp.symm .rfl)
+
+theorem fixpointB_unique [COFE α] [COFE β] [Inhabited α] [Inhabited β]
+    (fA : α -c> β -n> α) (fB : α -c> β -c> β) (Hp : fA p q ≡ p) (Hq : fB p q ≡ q) :
+    q ≡ (fixpointB fA fB) := by
+  apply fixpoint_unique
+  have := ne₂_of_contractive fB
+  refine Hq.symm.trans (NonExpansive₂.eqv (f := fB) ?_ .rfl)
+  exact fixpointA_unique fA fB Hp Hq
+
+instance fixpointA_ne [COFE α] [COFE β] [Inhabited α] [Inhabited β] :
+    NonExpansive₂ (fixpointA (α := α) (β := β)) where
+  ne n fA fA' HfA fB fB' HfB := by
+    apply OFE.ContractiveHom.fixpoint_ne.ne
+    intro z₁
+    refine ((ne₂_of_contractive_ne fA).ne .rfl ?_).trans (HfA z₁ _)
+    exact ContractiveHom.fixpoint_ne.ne (HfB z₁)
+
+instance fixpointB_ne [COFE α] [COFE β] [Inhabited α] [Inhabited β] :
+    NonExpansive₂ (fixpointB (α := α) (β := β)) where
+  ne n fA fA' HfA fB fB' HfB := by
+    apply ContractiveHom.fixpoint_ne.ne
+    intro z₁
+    refine ((ne₂_of_contractive fB).ne ?_ .rfl).trans (HfB _ z₁)
+    exact fixpointA_ne.ne HfA HfB
+
+end FixpointAB
+
 section Later
 
 structure Later (A : Type u) : Type (u+1) where
@@ -788,3 +966,23 @@ instance [OFunctorContractive F] : OFunctorContractive (LaterOF F) where
     simp_all only [Dist, DistLater, Function.uncurry, OFunctor.map, laterMap]
 
 end LaterOF
+
+section subtype
+
+instance [OFE α] {P : α → Prop} : OFE { x : α // P x } where
+  Equiv := (·.val ≡ ·.val)
+  Dist n := (·.val ≡{n}≡ ·.val)
+  dist_eqv := {
+    refl x := dist_eqv.refl x.val
+    symm H := H.symm
+    trans H1 H2 := H1.trans H2
+  }
+  equiv_dist := equiv_dist
+  dist_lt := dist_lt
+
+end subtype
+
+theorem OFE.cast_dist [Iα : OFE α] [Iβ : OFE β] {x y : α}
+    (Ht : α = β) (HIt : Iα = Ht ▸ Iβ)  (H : x ≡{n}≡ y) :
+    (Ht ▸ x) ≡{n}≡ (Ht ▸ y) := by
+  subst Ht; subst HIt; exact H

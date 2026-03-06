@@ -22,8 +22,7 @@ macro_rules
       | [(name, [])] => pure name
       | _           => throwUnsupported
 
-    let (p : TSyntaxArray `term) := p
-    if p.any (· matches `(`($$_))) then
+    if p.any fun t : TSyntax _ ↦ t matches `(`($$_)) then
       `(@[app_unexpander $(mkIdent f)]
         def unexpand : Lean.PrettyPrinter.Unexpander
           $[| $p => $s]*)
