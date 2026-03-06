@@ -2,6 +2,7 @@ import Iris.Algebra.Agree
 import Iris.Algebra.CMRA
 import Iris.Algebra.COFESolver
 import Iris.Algebra.DFrac
+import Iris.Algebra.DFracAgree
 import Iris.Algebra.Excl
 import Iris.Algebra.Frac
 import Iris.Algebra.GenMap
