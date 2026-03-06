@@ -157,7 +157,8 @@ theorem take_drop (Φ : Nat → A → M) (l : List A) (n : Nat) :
     simp only [List.take_append_drop, List.length_take_of_le hn, Nat.add_comm] at this
     exact this
   · simp only [Nat.not_le] at hn
-    simp only [List.drop_eq_nil_of_le (Nat.le_of_lt hn), List.take_of_length_le (Nat.le_of_lt hn), nil]
+    simp only [List.drop_eq_nil_of_le (Nat.le_of_lt hn)
+             , List.take_of_length_le (Nat.le_of_lt hn), nil]
     exact Equiv.symm (MonoidOps.op_right_id _)
 
 theorem filter_map {B : Type v} (h : A → Option B) (Φ : B → M) (l : List A) :
@@ -439,7 +440,8 @@ theorem ext {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op u
 theorem dist (Φ Ψ : K → V → M) (m : M' V) (n : Nat)
     (hf : ∀ k x, get? m k = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([^ op map] k ↦ x ∈ m, Φ k x) ≡{n}≡ ([^ op map] k ↦ x ∈ m, Ψ k x) :=
-  gen_proper (R := (· ≡{n}≡ ·)) _ _ _ (fun _ => Dist.rfl) (fun _ _ _ _ => MonoidOps.op_ne_dist) hf
+  gen_proper (R := (· ≡{n}≡ ·)) _ _ _ (fun _ => Dist.rfl)
+    (fun _ _ _ _ => MonoidOps.op_ne_dist) hf
 
 theorem proper (Φ Ψ : K → V → M) (m : M' V)
     (hf : ∀ k x, get? m k = some x → Φ k x ≡ Ψ k x) :
@@ -454,7 +456,8 @@ theorem proper_2 [DecidableEq K] [OFE A] (Φ : K → A → M) (Ψ : K → A → 
       y1 ≡ y2 →
       Φ k y1 ≡ Ψ k y2) :
     ([^ op map] k ↦ x ∈ m1, Φ k x) ≡ ([^ op map] k ↦ x ∈ m2, Ψ k x) := by
-  apply gen_proper_2 (R := (· ≡ ·)) _ _ _ _ (fun _ _ h => h) equiv_eqv (fun _ _ _ _ => MonoidOps.op_proper)
+  apply gen_proper_2 (R := (· ≡ ·)) _ _ _ _ (fun _ _ h => h) equiv_eqv
+    (fun _ _ _ _ => MonoidOps.op_proper)
   intro k
   have hlk := hm k
   cases hm1k : get? m1 k with

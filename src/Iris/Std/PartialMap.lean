@@ -84,7 +84,7 @@ export UnboundedHeap (notFull_empty notFull_insert_fresh)
 
 namespace PartialMap
 
-variable {K V M} [PartialMap M K]
+variable {K} {V : Type u} {M} [PartialMap M K]
 
 /-- The empty partial map can be written as `∅`. -/
 instance : EmptyCollection (M V) := ⟨PartialMap.empty⟩
@@ -143,7 +143,7 @@ def difference (m₁ m₂ : M V) : M V :=
 def zipWith (f : V → V' → V'') (m₁ : M V) (m₂ : M V') : M V'' :=
   bindAlter (fun k v => (get? m₂ k).bind fun v' => some <| f v v') m₁
 
-def zip (m₁ : M V) (m₂ : M V') : M (V × V') :=
+def zip {V' : Type u} (m₁ : M V) (m₂ : M V') : M (V × V') :=
   zipWith (fun x y => (x, y)) m₁ m₂
 
 /-- Partial maps support the set difference operation `\` via difference. -/
@@ -155,9 +155,7 @@ instance : SDiff (M V) := ⟨difference⟩
 /-- Pointwise equivalence is transitive. -/
 instance instEquivTrans : Trans equiv (@equiv K V M _) equiv := ⟨by simp_all⟩
 
-scoped syntax term " ≡ₘ " term : term
-scoped macro_rules
-  | `($m₁ ≡ₘ $m₂) => `(PartialMap.equiv $m₁ $m₂)
+scoped infix:50 " ≡ₘ " => PartialMap.equiv
 
 /-- Iris notation for singleton map: `{[k := v]}` -/
 scoped syntax "{[" term " := " term "]}" : term
@@ -231,16 +229,8 @@ namespace FiniteMap
 
 variable {K V : Type _} {M : Type _ → Type _} [FiniteMap M K]
 
--- /-- Convert the map to a list of key-value pairs. The order is unspecified. -/
--- def toList (m : M V) : List (K × V) :=
---   mapFold (fun k v acc => (k, v) :: acc) [] m
-
 def mapFold {A : Type _} (f : K → V → A → A) (a : A) (m : M V) : A :=
   List.foldl (fun a' ⟨k, v⟩ => f k v a') a (toList (K := K) m)
-
-/-- Convert a list to a map with sequential natural number keys starting from `start`. -/
-def map_seq [FiniteMap M Nat] (start : Nat) (l : List V) : M V :=
-  PartialMap.ofList (l.mapIdx (fun i v => (start + i, v)))
 
 end FiniteMap
 
@@ -268,10 +258,12 @@ theorem get?_insert_delete_same {m : M V} {k k' : K} {v : V} :
   · simp [h, get?_insert_eq]
   · simp [get?_insert_ne h, get?_delete_ne h]
 
-theorem get?_singleton_eq {k k' : K} {v : V} (h : k = k') : get? ({[k := v]} : M V) k' = some v := by
+theorem get?_singleton_eq {k k' : K} {v : V} (h : k = k') :
+  get? ({[k := v]} : M V) k' = some v := by
   simp [PartialMap.singleton, get?_insert_eq h]
 
-theorem get?_singleton_ne {k k' : K} {v : V} (h : k ≠ k') : get? ({[k := v]} : M V) k' = none := by
+theorem get?_singleton_ne {k k' : K} {v : V} (h : k ≠ k') :
+  get? ({[k := v]} : M V) k' = none := by
   simp [PartialMap.singleton, get?_insert_ne h, get?_empty]
 
 theorem get?_singleton [DecidableEq K] {k k' : K} {v : V} :
@@ -298,7 +290,8 @@ theorem disjoint_empty_right (m : M V) : m ##ₘ (∅ : M V) := by
   simp [show get? (∅ : M V) k = none from get?_empty k] at h₂
 
 theorem get?_insert_some_iff [DecidableEq K] {m : M V} {i j : K} {x y : V} :
-    get? (insert m i x) j = some y ↔ (i = j ∧ x = y) ∨ (i ≠ j ∧ get? m j = some y) := by
+    get? (insert m i x) j = some y
+    ↔ (i = j ∧ x = y) ∨ (i ≠ j ∧ get? m j = some y) := by
   rw [get?_insert]; split <;> simp_all
 
 theorem get?_insert_none_iff [DecidableEq K] {m : M V} {i j : K} {x : V} :
@@ -421,7 +414,8 @@ theorem subset_insert {m : M V} {i : K} {x : V} (h : get? m i = none) :
   · rw [get?_insert_ne hik]
     exact hk
 
-theorem delete_subset_delete {m₁ m₂ : M V} {i : K} (h : m₁ ⊆ m₂) : delete m₁ i ⊆ delete m₂ i := by
+theorem delete_subset_delete {m₁ m₂ : M V} {i : K} (h : m₁ ⊆ m₂) :
+  delete m₁ i ⊆ delete m₂ i := by
   intro k v hk
   by_cases hik : i = k
   · rw [get?_delete_eq hik] at hk
@@ -438,9 +432,11 @@ theorem insert_subset_insert {m₁ m₂ : M V} {i : K} {x : V} (h : m₁ ⊆ m�
   · rw [get?_insert_ne hik] at hk ⊢
     exact h k v hk
 
-theorem singleton_ne_empty {i : K} {x : V} : ¬({[i := x]} ≡ₘ (∅ : M V)) := insert_ne_empty
+theorem singleton_ne_empty {i : K} {x : V} : ¬({[i := x]} ≡ₘ (∅ : M V))
+  := insert_ne_empty
 
-theorem delete_singleton_eq {i : K} {x : V} : delete ({[i := x]} : M V) i ≡ₘ empty := by
+theorem delete_singleton_eq {i : K} {x : V} :
+  delete ({[i := x]} : M V) i ≡ₘ empty := by
   intro j
   by_cases h : i = j
   · rw [get?_delete_eq h, get?_empty]
@@ -484,7 +480,8 @@ theorem all_insert (P : K → V → Prop) {m : M V} {i : K} {x : V}
     simp [get?_insert_ne hik] at hget
     assumption
 
-theorem all_insert_iff (P : K → V → Prop) {m : M V} {i : K} {x : V} (hi : get? m i = none) :
+theorem all_insert_iff (P : K → V → Prop) {m : M V} {i : K} {x : V}
+    (hi : get? m i = none) :
     (PartialMap.all P (insert m i x) ↔ P i x ∧ PartialMap.all P m) :=
   ⟨fun h => ⟨all_insert_of_all P h, all_of_all_insert P hi h⟩,
    fun ⟨hpix, h⟩ => all_insert P hpix h⟩
@@ -607,7 +604,8 @@ theorem union_insert_left {m₁ m₂ : M V} {i : K} {x : V} :
   intro k
   by_cases hik : i = k
   · subst hik
-    cases h : get? m₂ i <;> simp [get?_insert_eq rfl, PartialMap.union, get?_merge, Option.merge, h]
+    cases h : get? m₂ i <;> simp [get?_insert_eq rfl, PartialMap.union
+                                , get?_merge, Option.merge, h]
   · simp [get?_insert_ne hik, PartialMap.union, get?_merge]
 
 theorem get?_map {f : V → V'} {m : M V} {k : K} :
@@ -626,11 +624,13 @@ theorem get?_filterMap {f : V → Option V} {m : M V} {k : K} :
   simp [filterMap, get?_bindAlter]
 
 theorem get?_filter {φ : K → V → Bool} {m : M V} {k : K} :
-    get? (filter φ m) k = (get? m k).bind (fun v => if φ k v then some v else none) := by
+    get? (filter φ m) k
+    = (get? m k).bind (fun v => if φ k v then some v else none) := by
   simp [Option.bind, filter, get?_bindAlter]
 
 theorem get?_zipWith {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K} :
-    get? (zipWith f m₁ m₂) k = (get? m₁ k).bind fun v₁ => (get? m₂ k).map fun v₂ => f v₁ v₂ := by
+    get? (zipWith f m₁ m₂) k
+    = (get? m₁ k).bind fun v₁ => (get? m₂ k).map fun v₂ => f v₁ v₂ := by
   simp [zipWith, get?_bindAlter]
   cases h1 : get? m₁ k <;> cases h2 : get? m₂ k <;> simp [Option.bind]
 
@@ -639,21 +639,24 @@ theorem get?_zip {m₁ : M V} {m₂ : M V'} {k : K} :
   simp [zip, zipWith, get?_bindAlter]
   cases h1 : get? m₁ k <;> cases h2 : get? m₂ k <;> simp [Option.bind]
 
-theorem map_zipWith_right {f : V → V' → V''} {g : V''' → V'} {m₁ : M V} {m₂ : M V'''} :
+theorem map_zipWith_right {f : V → V' → V''} {g : V''' → V'}
+    {m₁ : M V} {m₂ : M V'''} :
     PartialMap.map (fun (v, w) => f v (g w)) (zip m₁ m₂) ≡ₘ
       zipWith f m₁ (PartialMap.map g m₂) := by
   intro k
   simp [get?_map, get?_zip, get?_zipWith]
   cases get? m₁ k <;> cases get? m₂ k <;> simp [Option.bind, Option.map]
 
-theorem map_zipWith_left {f : V → V' → V''} {g : V''' → V} {m₁ : M V'''} {m₂ : M V'} :
+theorem map_zipWith_left {f : V → V' → V''} {g : V''' → V}
+    {m₁ : M V'''} {m₂ : M V'} :
     PartialMap.map (fun (w, v) => f (g w) v) (zip m₁ m₂) ≡ₘ
       zipWith f (PartialMap.map g m₁) m₂ := by
   intro k
   simp [get?_map, get?_zip, get?_zipWith]
   cases get? m₁ k <;> cases get? m₂ k <;> simp [Option.bind, Option.map]
 
-theorem zipWith_insert {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K} {v : V} {v' : V'} :
+theorem zipWith_insert {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K}
+    {v : V} {v' : V'} :
     zipWith f (insert m₁ k v) (insert m₂ k v') ≡ₘ
       insert (zipWith f m₁ m₂) k (f v v') := by
   intro k'
@@ -675,10 +678,11 @@ theorem zipWith_comm {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} :
     zipWith f m₁ m₂ ≡ₘ zipWith f m₁ m₂ := by
   intro _; intro _; rfl
 
--- -- FIXME: universe issue
--- theorem zip_comm {m₁ : M V} {m₂ : M V'} :
---     PartialMap.map Prod.swap (zip m₁ m₂) ≡ₘ zip m₂ m₁ := by
---   sorry
+theorem zip_comm {m₁ : M V} {m₂ : M V'} :
+    PartialMap.map Prod.swap (zip m₁ m₂) ≡ₘ zip m₂ m₁ := by
+  intro k
+  simp [get?_map, get?_zip]
+  cases get? m₁ k <;> cases get? m₂ k <;> simp [Option.bind, Option.map]
 
 theorem zip_map {f : V → V'} {g : V → V''} {m : M V} :
     zip (PartialMap.map f m) (PartialMap.map g m) ≡ₘ
@@ -710,22 +714,29 @@ theorem zip_empty_right {m : M V} :
   simp only [zip, zipWith, get?_bindAlter, get?_empty, Option.bind]
   cases h : get? m k <;> simp
 
--- -- FIXME: universe issue
--- theorem zip_insert {m₁ : M V} {m₂ : M V'} {k : K} {v : V} {v' : V'} :
---     zip (insert m₁ k v) (insert m₂ k v') ≡ₘ insert (zip m₁ m₂) k (v, v') := by
---   sorry
+theorem zip_insert {m₁ : M V} {m₂ : M V'} {k : K} {v : V} {v' : V'} :
+    zip (insert m₁ k v) (insert m₂ k v') ≡ₘ insert (zip m₁ m₂) k (v, v') := by
+  intro k'
+  by_cases h : k = k'
+  · subst h
+    simp [get?_zip, get?_insert_eq rfl]
+  · simp [get?_zip, get?_insert_ne h]
 
--- FIXME: universe issue
--- theorem zip_delete {m₁ : M V} {m₂ : M V'} {k : K} :
---     zip (delete m₁ k) (delete m₂ k) ≡ₘ delete (zip m₁ m₂) k := by
---   sorry
+theorem zip_delete {m₁ : M V} {m₂ : M V'} {k : K} :
+    zip (delete m₁ k) (delete m₂ k) ≡ₘ delete (zip m₁ m₂) k := by
+  intro k'
+  by_cases h : k = k'
+  · subst h
+    simp [get?_zip, get?_delete_eq rfl]
+  · simp [get?_zip, get?_delete_ne h]
 
 theorem isSome_zip {m₁ : M V} {m₂ : M V'} {k : K} :
     (get? (zip m₁ m₂) k).isSome ↔ (get? m₁ k).isSome ∧ (get? m₂ k).isSome := by
   rw [get?_zip]
   cases h1 : get? m₁ k <;> cases h2 : get? m₂ k <;> simp
 
-theorem ofList_cons {L : List (K × V)} : ofList (M := M) ((k, v) :: L) = insert (ofList L) k v :=
+theorem ofList_cons {L : List (K × V)} :
+  ofList (M := M) ((k, v) :: L) = insert (ofList L) k v :=
   rfl
 
 theorem noDupKeys_cons {L : List (K × V)} : NoDupKeys (h :: L) → NoDupKeys L := by
@@ -786,8 +797,13 @@ variable {K V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
 
 open FiniteMap LawfulFiniteMap PartialMap LawfulPartialMap
 
+theorem mapFold_empty {f : K → V → A → A} :
+  mapFold f a (∅ : M V) = a := by
+  simp only [mapFold, Std.toList, toList_empty (M := M) (K := K) (V := V)]
+  rfl
+
 -- TODO: These should be theorems
--- mapFold_empty {f : K → V → A → A} : mapFold f a ∅ = a
+-- NOTE: This one is not provable without P respecting equivalence
 -- mapFold_ind {P : M A → Prop}:
 --   P ∅ →
 --   (∀ i x m,
@@ -799,7 +815,8 @@ open FiniteMap LawfulFiniteMap PartialMap LawfulPartialMap
 --     P (insert m i x)) →
 --   ∀ m, P m
 
-theorem toList_get?_none {m : M V} : (∀ v, (k, v) ∉ toList (K := K) m) ↔ get? m k = none := by
+theorem toList_get?_none {m : M V} :
+  (∀ v, (k, v) ∉ toList (K := K) m) ↔ get? m k = none := by
   constructor
   · intro Hn
     refine Option.eq_none_iff_forall_ne_some.mpr ?_
@@ -823,6 +840,7 @@ theorem ofList_toList [DecidableEq K] {m : M V} :
     cases h ▸ toList_get.mp Hk
   · exact get?_ofList_some (toList_get.mpr h) toList_noDupKeys
 
+@[elab_as_elim]
 theorem induction_on [DecidableEq K] {P : M V → Prop}
     (hequiv : ∀ m₁ m₂, PartialMap.equiv m₁ m₂ → P m₁ → P m₂)
     (hemp : P PartialMap.empty)
@@ -838,7 +856,8 @@ theorem induction_on [DecidableEq K] {P : M V → Prop}
     apply hins kv.1 kv.2
     · refine get?_ofList_none (M := M) ?_ (noDupKeys_cons hnd)
       intro ⟨v, hv⟩
-      exact (List.nodup_cons.mp hnd).1 (List.mem_map_of_mem (f := Prod.fst) (a := (kv.1, v)) hv)
+      exact (List.nodup_cons.mp hnd).1
+        (List.mem_map_of_mem (f := Prod.fst) (a := (kv.1, v)) hv)
     · exact ih (noDupKeys_cons hnd)
 
 theorem mem_of_mem_ofList [DecidableEq K] {l : List (K × V)} {i : K} {x : V}
@@ -1061,5 +1080,445 @@ theorem toList_zip {m₁ : M V} {m₂ : M V'} :
 
 end LawfulFiniteMap
 
+/-- Remap keys in a map from one key type to another. -/
+def kmap {K1 K2 : Type _} {V : Type _} {M1 : Type _ → Type _} {M2 : Type _ → Type _}
+    [LawfulFiniteMap M1 K1] [LawfulFiniteMap M2 K2]
+    (f : K1 → K2) (m : M1 V) : M2 V :=
+  PartialMap.ofList ((toList (K := K1) m).map (Prod.map f id))
+
+theorem no_dup_keys_prod_map {K1 K2 : Type _} {V : Type _}
+  {M1 : Type _ → Type _} {M2 : Type _ → Type _}
+  [DecidableEq K1] [DecidableEq K2]
+  [LawfulFiniteMap M1 K1] [LawfulFiniteMap M2 K2]
+  {m : M1 V} {f : K1 → K2} (hinj : Function.Injective f) {g : V → V} :
+  NoDupKeys (toList (K := K1) m)
+    → NoDupKeys (List.map (Prod.map f g) (toList m)) := by
+  simp only [NoDupKeys]
+  rw [List.map_map]
+  intro H
+  apply FromMathlib.Nodup.map_on
+  · rintro ⟨k, x⟩ Hin ⟨k', x'⟩ Hin'; dsimp; intro heq
+    rw [hinj heq]; rw [hinj heq] at Hin
+    rw [LawfulPartialMap.noDupKeys_inj LawfulFiniteMap.toList_noDupKeys Hin Hin']
+  · apply FromMathlib.List.Nodup.of_map _ H
+
+namespace Kmap
+
+open PartialMap LawfulPartialMap LawfulFiniteMap
+
+variable {K1 K2 : Type _} {V : Type _} {M1 : Type _ → Type _} {M2 : Type _ → Type _}
+variable [DecidableEq K1] [DecidableEq K2]
+variable [LawfulFiniteMap M1 K1] [LawfulFiniteMap M2 K2]
+variable (f : K1 → K2)
+
+theorem get?_kmap_some (hinj : Function.Injective f) (m : M1 V) (j : K2) (x : V) :
+    get? (kmap (M2 := M2) f m) j = some x ↔ ∃ i, j = f i ∧ get? m i = some x := by
+  constructor
+  · intro h
+    have ⟨a, heq1, heq2⟩ : ∃ a, (a, x) ∈ toList m ∧ f a = j := by
+      have this := mem_of_mem_ofList h
+      rw [List.mem_map] at this
+      obtain ⟨⟨a, b⟩, hin, heq⟩ := this; dsimp at heq; rw [Prod.mk.injEq] at heq
+      exists a; rw [<-heq.right]; apply And.intro; assumption
+      exact heq.left
+    exists a; rw [heq2, <-h]; apply And.intro; simp
+    simp only [kmap]
+    rw [get?_ofList_some (v := x)]
+    · rw [<-toList_get]; exact heq1
+    · rw [List.mem_map]
+      exists ⟨a, x⟩; apply And.intro; assumption
+      dsimp; rw [<-heq2]
+    · apply no_dup_keys_prod_map (M2 := M2) hinj
+      apply toList_noDupKeys
+  · intro ⟨i, heq, hget⟩
+    subst heq; rw [<-hget]
+    simp only [kmap]
+    rw [get?_ofList_some (v := x)]; symm; assumption
+    · rw [List.mem_map]
+      exists ⟨i, x⟩; apply And.intro;
+        apply toList_get.mpr; assumption
+      dsimp
+    · apply no_dup_keys_prod_map (M2 := M2) hinj
+      apply toList_noDupKeys
+
+theorem get?_kmap_isSome (hinj : Function.Injective f) (m : M1 V) (j : K2) :
+    (get? (kmap (M2 := M2) f m) j).isSome ↔ ∃ i, j = f i ∧ (get? m i).isSome := by
+  constructor
+  · intro h
+    have ⟨a, h⟩ := Option.isSome_iff_exists.mp h
+    rw [get?_kmap_some f hinj m j] at h
+    obtain ⟨i, heq1, heq2⟩ := h
+    exists i; apply And.intro; assumption
+    rw [Option.isSome_iff_exists]
+    exists a
+  · intro ⟨i, heq, h⟩
+    have ⟨a, h⟩ := Option.isSome_iff_exists.mp h
+    rw [Option.isSome_iff_exists]
+    exists a
+    rw [get?_kmap_some f hinj m j]
+    exists i
+
+theorem get?_kmap_none (hinj : Function.Injective f) (m : M1 V) (j : K2) :
+    get? (kmap (M2 := M2) f m) j = none ↔ ∀ i, j = f i → get? m i = none := by
+  constructor
+  · intro g i heq
+    rw [<-toList_get?_none]
+    intro v h
+    rw [<-toList_get?_none] at g
+    apply g v
+    rw [heq]
+    apply toList_get.mpr
+    rw [get?_kmap_some _ hinj]
+    exists i; apply And.intro; rfl
+    apply toList_get.mp; assumption
+  · intro g
+    rw [<-toList_get?_none]
+    intro v h
+    rw [toList_get, get?_kmap_some _ hinj] at h
+    obtain ⟨i, heq, hget⟩ := h
+    rw [g i heq] at hget
+    simp at hget
+
+theorem get?_kmap (hinj : Function.Injective f) (m : M1 V) (i : K1) :
+    get? (kmap (M2 := M2) f m) (f i) = get? m i := by
+  cases h : get? m i
+  · rw [get?_kmap_none f hinj]
+    intro i' heq
+    rw [<-hinj heq]
+    assumption
+  · rw [get?_kmap_some f hinj, <-h]
+    exists i
+
+theorem kmap_empty (hinj : Function.Injective f) :
+  kmap (M1 := M1) (M2 := M2) f (∅ : M1 V) ≡ₘ ∅ := by
+  rw [eq_empty_iff]
+  intro k
+  rw [get?_kmap_none _ hinj]
+  intro i heq
+  exact get?_empty i
+
+theorem kmap_injective (hinj : Function.Injective f) (m1 m2 : M1 V) :
+    kmap (M2 := M2) f m1 ≡ₘ kmap (M2 := M2) f m2
+    → m1 ≡ₘ m2 := by
+  intro heq
+  apply induction_on (K := K1) (P := fun m1 => ∀ m2,
+    kmap (M2 := M2) f m1 ≡ₘ kmap (M2 := M2) f m2
+    → m1 ≡ₘ m2)
+  · intro m₁ m₂ heqm hP m2' heq'
+    intro k
+    specialize (heq' (f k))
+    rw [get?_kmap _ hinj, get?_kmap _ hinj] at heq'
+    rw [<-heq']
+  · intro m2' heq'
+    intro k'
+    specialize (heq' (f k'))
+    rw [get?_kmap _ hinj, get?_kmap _ hinj] at heq'
+    exact heq'
+  · intro k x m' hm' IH m2' heq'
+    intro k'
+    specialize (heq' (f k'))
+    rw [get?_kmap _ hinj, get?_kmap _ hinj] at heq'
+    exact heq'
+  · exact heq
+
+theorem kmap_insert (hinj : Function.Injective f) (m : M1 V) (k : K1) (x : V) :
+    get? m k = none →
+    kmap f (insert m k x) ≡ₘ insert (kmap (M2 := M2) f m) (f k) x := by
+  intro hk j
+  by_cases h : f k = j
+  · subst h
+    rw [get?_insert_eq rfl, get?_kmap _ hinj, get?_insert_eq rfl]
+  · rw [get?_insert_ne h]
+    cases g : get? (kmap (M2 := M2) f (insert m k x)) j
+    · rw [get?_kmap_none _ hinj] at g
+      symm
+      rw [get?_kmap_none _ hinj]
+      intro i heq
+      specialize g i heq
+      rw [heq] at h
+      rw [get?_insert_ne] at g; assumption
+      intro j
+      apply h
+      rw [j]
+    · rw [get?_kmap_some _ hinj] at g
+      obtain ⟨i, heq, hget⟩ := g
+      rw [heq] at h
+      symm
+      rw [get?_kmap_some _ hinj]
+      exists i; apply And.intro; assumption
+      rw [get?_insert_ne] at hget; assumption
+      intro j
+      apply h
+      rw [j]
+
+  theorem kmap_compose [DecidableEq K3] [LawfulFiniteMap M3 K3]
+    (hinj_f : Function.Injective f) (g : K2 → K3)
+    (hinj_g : Function.Injective g) (m : M1 V) :
+    kmap g (kmap (M2 := M2) f m) ≡ₘ kmap (M2 := M3) (g ∘ f) m := by
+  intro k
+  have hinj_fg : Function.Injective (g ∘ f) := Function.Injective.comp hinj_g hinj_f
+  cases h : get? (kmap g (M2 := M3) (kmap (M2 := M2) f m)) k
+  · symm
+    rw [get?_kmap_none _ hinj_fg]
+    intro i heq
+    rw [get?_kmap_none _ hinj_g] at h
+    specialize (h (f i) heq)
+    rw [get?_kmap_none _ hinj_f] at h
+    apply h _ rfl
+  · symm
+    rw [get?_kmap_some _ hinj_fg]
+    rw [get?_kmap_some _ hinj_g] at h
+    obtain ⟨j, heq_j, h⟩ := h
+    rw [get?_kmap_some _ hinj_f] at h
+    obtain ⟨i, heq_i, h⟩ := h
+    exists i; apply And.intro; simp only [heq_i, heq_j, Function.comp_apply]
+    assumption
+
+  theorem kmap_id {m : M1 V} : kmap (K2 := K1) (M2 := M1) id m ≡ₘ m := by
+    intro k
+    simp only [kmap]
+    rw [Prod.map_id, List.map_id]
+    apply ofList_toList (M := M1) (m := m) k
+
+  theorem kmap_union (hinj : Function.Injective f)
+    (m₁ m₂ : M1 V) :
+    kmap f (m₁ ∪ m₂) ≡ₘ (kmap (M2 := M2) f m₁) ∪ (kmap f m₂) := by
+    intro k
+    simp only [Union.union]
+    rw [get?_union (m₁ := kmap f m₁) (m₂ := kmap f m₂) (k := k)]
+    cases h : get? (kmap (M2 := M2) f (union m₁ m₂)) k
+    · symm
+      rw [Option.orElse_eq_or, Option.or_eq_none_iff]
+      rw [get?_kmap_none _ hinj, get?_kmap_none _ hinj]
+      rw [get?_kmap_none _ hinj] at h
+      apply And.intro
+      · intro i heq
+        specialize h i heq
+        rw [get?_union (m₁ := m₁) (m₂ := m₂) (k := i)] at h
+        rw [Option.orElse_eq_or, Option.or_eq_none_iff] at h
+        apply h.left
+      · intro i heq
+        specialize h i heq
+        rw [get?_union (m₁ := m₁) (m₂ := m₂) (k := i)] at h
+        rw [Option.orElse_eq_or, Option.or_eq_none_iff] at h
+        apply h.right
+    · symm
+      rw [Option.orElse_eq_or, Option.or_eq_some_iff]
+      rw [get?_kmap_some _ hinj] at h
+      obtain ⟨i, heq, h⟩ := h
+      rw [get?_union (m₁ := m₁) (m₂ := m₂) (k := i)] at h
+      rw [Option.orElse_eq_or, Option.or_eq_some_iff] at h
+      cases h with
+      | inl h =>
+        left
+        rw [heq, get?_kmap_some _ hinj]
+        exists i
+      | inr h =>
+        right
+        rw [heq, get?_kmap_some _ hinj, get?_kmap_none _ hinj]
+        apply And.intro
+        · intro j heq'
+          rw [<-hinj heq', h.left]
+        · exists i; apply And.intro; simp
+          exact h.right
+
+  theorem kmap_delete (hinj : Function.Injective f)
+    (i : K1) (m : M1 V) :
+    kmap f (delete m i) ≡ₘ delete (kmap (M2 := M2) f m) (f i) := by
+    intro j
+    by_cases h : f i = j
+    · subst h
+      rw [get?_delete_eq rfl, get?_kmap_none _ hinj]
+      intro k heq
+      rw [hinj heq, get?_delete_eq rfl]
+    · rw [get?_delete_ne h]
+      cases g : get? (kmap (M2 := M2) f m) j
+      · rw [get?_kmap_none _ hinj] at g
+        rw [get?_kmap_none _ hinj]
+        intro k heq
+        rw [get?_delete_ne]
+        · apply g _ heq
+        · intro c; rw [heq, c] at h; apply h rfl
+      · rw [get?_kmap_some _ hinj] at g
+        obtain ⟨k, heq, g⟩ := g
+        rw [get?_kmap_some _ hinj]
+        exists k; apply And.intro; assumption
+        rw [get?_delete_ne, g]
+        intro c; rw [heq, c] at h; apply h rfl
+
+  theorem kmap_singleton (hinj : Function.Injective f) (k : K1) (x : V) :
+    kmap (M2 := M2) f (singleton (M := M1) k x) ≡ₘ singleton (f k) x := by
+    intro j
+    by_cases h : f k = j
+    · subst h
+      rw [get?_kmap _ hinj, get?_singleton_eq rfl, get?_singleton_eq rfl]
+    · rw [get?_singleton_ne h, get?_kmap_none _ hinj]
+      intro i heq
+      rw [get?_singleton_ne]
+      intro c; rw [heq, c] at h; apply h rfl
+
+  theorem kmap_mem (hinj : Function.Injective f) (m : M1 V) (k : K1) :
+    k ∈ m ↔ f k ∈ kmap (M2 := M2) f m := by
+    simp only [Membership.mem]
+    rw [get?_kmap_isSome _ hinj]
+    apply Iff.intro
+    · intro h
+      exists k
+    · intro h
+      obtain ⟨i, heq, hget⟩ := h
+      rw [hinj heq]
+      assumption
+
+  theorem kmap_dom (hinj : Function.Injective f) (m : M1 V) :
+    dom (kmap (M2 := M2) f m) = (fun k => ∃ j, k = f j ∧ dom m j) := by
+    ext j
+    simp only [dom]
+    rw [get?_kmap_isSome _ hinj]
+
+  theorem kmap_bindAlter (hinj : Function.Injective f) (g : K2 → V → Option V') (m : M1 V) :
+    kmap f (bindAlter (g ∘ f) m) ≡ₘ bindAlter g (kmap (M2 := M2) f m) := by
+    intro k
+    rw [get?_bindAlter]
+    cases h : get? (kmap (M2 := M2) f m) k
+    · rw [Option.bind_none, get?_kmap_none _ hinj]
+      intro i heq
+      rw [get?_kmap_none _ hinj] at h
+      rw [get?_bindAlter]
+      rw [Option.bind_eq_none_iff]
+      intro a g
+      specialize h i heq
+      cases h ▸ g
+    · rw [Option.bind_some]
+      rw [get?_kmap_some _ hinj] at h
+      obtain ⟨i, heq, h⟩ := h
+      rw [heq, get?_kmap _ hinj]
+      rw [get?_bindAlter, h, Option.bind_some]
+      rfl
+
+  theorem kmap_map (hinj : Function.Injective f)
+    (g : V → V') (m : M1 V) :
+    kmap f (map g m) ≡ₘ map g (kmap (M2 := M2) f m) := by
+    intro k
+    simp only [map]
+    rw [<-kmap_bindAlter (M2 := M2) _ hinj (fun k v => some (g v)) m k]
+    rfl
+
+  theorem kmap_filterMap (hinj : Function.Injective f)
+    (g : V → Option V) (m : M1 V) :
+    kmap f (filterMap g m) ≡ₘ filterMap g (kmap (M2 := M2) f m) := by
+    intro k
+    simp only [filterMap]
+    rw [<-kmap_bindAlter (M2 := M2) _ hinj (fun k v => g v) m k]
+    rfl
+
+  theorem kmap_filter (hinj : Function.Injective f) (φ : K2 → V → Bool)  (m : M1 V) :
+    kmap f (filter (fun k v => φ (f k) v) m) ≡ₘ filter φ (kmap (M2 := M2) f m) := by
+    intro k
+    simp only [filter]
+    rw [<-kmap_bindAlter (M2 := M2) _ hinj (fun k v => if φ k v = true then some v else none) m k]
+    rfl
+
+  theorem kmap_disjoint (hinj : Function.Injective f) (m₁ m₂ : M1 V) :
+    (kmap (M2 := M2) f m₁) ##ₘ (kmap f m₂) ↔ m₁ ##ₘ m₂ := by
+    simp only [PartialMap.disjoint]
+    apply Iff.intro
+    · intro h i heq
+      apply h (f i)
+      rw [get?_kmap_isSome _ hinj, get?_kmap_isSome _ hinj]
+      apply And.intro
+      · exists i; apply And.intro; rfl
+        rw [heq.left]
+      · exists i; apply And.intro; rfl
+        rw [heq.right]
+    · intro h k heq
+      rw [get?_kmap_isSome _ hinj, get?_kmap_isSome _ hinj] at heq
+      obtain ⟨i, heq1, h1⟩ := heq.left
+      obtain ⟨j, heq2, h2⟩ := heq.right
+      cases (hinj (heq1 ▸ heq2))
+      apply h i
+      rw [h1, h2]; simp
+
+  theorem kmap_submap (hinj : Function.Injective f) (m₁ m₂ : M1 V) :
+    (kmap (M2 := M2) f m₁) ⊆ (kmap f m₂) ↔ m₁ ⊆ m₂ := by
+    simp only [HasSubset.Subset]
+    apply Iff.intro
+    · intro h i v hget
+      specialize h (f i) v
+      rw [get?_kmap_some _ hinj, get?_kmap_some _ hinj] at h
+      have hyp : ∃ i_1, f i = f i_1 ∧ get? m₁ i_1 = some v := by
+        exists i
+      obtain ⟨j, heq, hget⟩ := h hyp
+      rw [hinj heq]
+      exact hget
+    · intro h i v hget
+      rw [get?_kmap_some _ hinj]
+      rw [get?_kmap_some _ hinj] at hget
+      obtain ⟨j, heq, hget⟩ := hget
+      exists j; apply And.intro; assumption
+      apply h _ _ hget
+
+  theorem kmap_all (hinj : Function.Injective f) (P : K2 → V → Prop) (m : M1 V) :
+    all (P ∘ f) m ↔ all P (kmap (M2 := M2) f m) := by
+    apply Iff.intro
+    · intro h i v
+      rw [get?_kmap_some _ hinj]
+      intro h
+      obtain ⟨j, heq, hget⟩ := h
+      rw [heq]; apply h _ _ hget
+    · intro h i v
+      specialize h (f i) v
+      rw [get?_kmap _ hinj] at h
+      apply h
+
+  theorem kmap_zipWith (hinj : Function.Injective f)
+    (h : V → V' → V'')
+    (m₁ : M1 V) (m₂ : M1 V') :
+    kmap (M2 := M2) f (zipWith h m₁ m₂)
+    ≡ₘ zipWith h (kmap (M2 := M2) f m₁) (kmap (M2 := M2) f m₂) := by
+    intro k
+    simp only [zipWith]
+    rw [<-kmap_bindAlter (M2 := M2) _ hinj _ m₁ k]
+    congr
+    ext j v x
+    rw [Function.comp_apply]
+    rw [get?_kmap _ hinj]
+
+  theorem kmap_difference (hinj : Function.Injective f) (m₁ m₂ : M1 V) :
+    kmap f (m₁ \ m₂) ≡ₘ (kmap (M2 := M2) f m₁) \ (kmap f m₂) := by
+    intro k
+    rw [get?_difference (m₁ := kmap f m₁) (m₂ := kmap f m₂) (k := k)]
+    cases h : get? (kmap (M2 := M2) f (m₁ \ m₂)) k
+    · rw [get?_kmap_none _ hinj] at h
+      symm
+      simp only [ite_eq_left_iff, Bool.not_eq_true, Option.isSome_eq_false_iff,
+        Option.isNone_iff_eq_none]
+      intro g
+      rw [get?_kmap_none _ hinj]
+      intro i heq
+      specialize h i heq
+      rw [get?_kmap_none _ hinj] at g
+      specialize g i heq
+      rw [get?_difference (m₁ := m₁) (m₂ := m₂) (k := i)] at h
+      rw [g, Option.isSome_none] at h
+      simp only [Bool.false_eq_true] at h
+      apply h
+    · rw [get?_kmap_some _ hinj] at h
+      symm
+      simp only [Option.ite_none_left_eq_some, Bool.not_eq_true
+        , Option.isSome_eq_false_iff, Option.isNone_iff_eq_none]
+      obtain ⟨i, heq, h⟩ := h
+      rw [get?_difference (m₁ := m₁) (m₂ := m₂) (k := i)] at h
+      rw [Option.ite_none_left_eq_some] at h
+      rw [get?_kmap_none _ hinj, get?_kmap_some _ hinj, heq]
+      simp only [Bool.not_eq_true, Option.isSome_eq_false_iff
+        , Option.isNone_iff_eq_none] at h
+      apply And.intro
+      · intro j heq
+        rw [<-hinj heq]
+        rw [h.left]
+      · exists i; apply And.intro; rfl
+        rw [h.right]
+
+end Kmap
 
 end Iris.Std
