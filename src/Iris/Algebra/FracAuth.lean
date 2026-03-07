@@ -193,11 +193,15 @@ theorem fracAuth_frag_op (q1 q2 : Q) (a1 a2 : A) :
   change (◯ fracAuthElem (((q1 + q2 : Q)) : Frac Q) (a1 • a2) : FracAuth Q A) ≡
       (◯ fracAuthElem ((q1 : Q) : Frac Q) a1 : FracAuth Q A) •
         (◯ fracAuthElem ((q2 : Q) : Frac Q) a2 : FracAuth Q A)
-  exact OFE.Equiv.of_eq <| by
-    simpa [fracAuthElem, CMRA.op] using
-      (Auth.frag_op (F := Q)
-        (b1 := fracAuthElem ((q1 : Q) : Frac Q) a1)
-        (b2 := fracAuthElem ((q2 : Q) : Frac Q) a2)).symm
+  have h := (Auth.frag_op (F := Q)
+    (b1 := fracAuthElem ((q1 : Q) : Frac Q) a1)
+    (b2 := fracAuthElem ((q2 : Q) : Frac Q) a2)).symm
+  have h' :
+      (◯ fracAuthElem (((q1 + q2 : Q)) : Frac Q) (a1 • a2) : FracAuth Q A) =
+        (◯ fracAuthElem ((q1 : Q) : Frac Q) a1 : FracAuth Q A) •
+          (◯ fracAuthElem ((q2 : Q) : Frac Q) a2 : FracAuth Q A) := by
+    simpa [fracAuthElem, CMRA.op] using h
+  exact OFE.Equiv.of_eq h'
 
 theorem fracAuth_auth_dfrac_op_validN (n : Nat) (dq1 dq2 : DFrac Q) (a b : A) :
     ✓{n} (fracAuthAuth (Q := Q) dq1 a • fracAuthAuth dq2 b) →
