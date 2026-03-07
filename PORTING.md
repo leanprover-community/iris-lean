@@ -123,9 +123,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] Updates
   - [ ] Functors
 - [ ] `lib/frac_auth.v` 
-  - [ ] Lemmas
-  - [ ] Updates
-  - [ ] Functors
+  - [x] Lemmas
+  - [x] Updates
+  - [x] Functors
 - [] `lib/gmap_view.v` (nb. generalized in `HeapView.lean`)
   - [x] CMRA
   - [x] Updates
