@@ -15,8 +15,7 @@ This file defines big operators (fold operations) at the abstract OFE level.
 These are parameterized by a monoid operation and include theorems about their properties.
 -/
 
-open OFE
-open Iris.Std
+open OFE Iris.Std
 
 def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     (Φ : Nat → A → M) (l : List A) : M :=
@@ -24,9 +23,8 @@ def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [Mo
   | [] => unit
   | x :: xs => op (Φ 0 x) (bigOpL op (fun n => Φ (n + 1)) xs)
 
-def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
-{K : Type _} {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K]
-(m : M' V) : M :=
+def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
+    {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K] (m : M' V) : M :=
   bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList (K := K) m)
 
 /-- Big op over list with index: `[^ op list] k ↦ x ∈ l, P` -/
@@ -49,138 +47,117 @@ namespace BigOpL
 
 variable {M : Type _} {A : Type _} [OFE M] {op : M → M → M} {unit : M} [MonoidOps op unit]
 
-@[simp] theorem nil (Φ : Nat → A → M) :
-    ([^ op list] k ↦ x ∈ ([] : List A), Φ k x) = unit := rfl
+open MonoidOps
 
-@[simp] theorem cons (Φ : Nat → A → M) (a : A) (as : List A) :
+@[simp] theorem bigOpL_nil (Φ : Nat → A → M) : ([^ op list] k ↦ x ∈ ([] : List A), Φ k x) = unit := rfl
+
+@[simp] theorem bigOpL_cons (Φ : Nat → A → M) (a : A) (as : List A) :
     ([^ op list] k ↦ x ∈ a :: as, Φ k x) = op (Φ 0 a) ([^ op list] k ↦ x ∈ as, Φ (k + 1) x) := rfl
 
-@[simp] theorem singleton (Φ : Nat → A → M) (a : A) :
+@[simp] theorem bigOpL_singleton (Φ : Nat → A → M) (a : A) :
     ([^ op list] k ↦ x ∈ [a], Φ k x) ≡ Φ 0 a := by
-  simp only [cons, nil]; exact MonoidOps.op_right_id
+  simp [bigOpL_cons, bigOpL_nil]
 
-theorem congr {Φ Ψ : Nat → A → M} {l : List A}
+theorem bigOpL_equiv {Φ Ψ : Nat → A → M} {l : List A}
     (h : ∀ i x, l[i]? = some x → Φ i x ≡ Ψ i x) :
     ([^ op list] k ↦ x ∈ l, Φ k x) ≡ ([^ op list] k ↦ x ∈ l, Ψ k x) := by
   induction l generalizing Φ Ψ with
-  | nil => exact Equiv.rfl
+  | nil => exact .rfl
   | cons y ys ih =>
-    simp only [cons]
-    apply MonoidOps.op_proper (h 0 y rfl)
-    exact ih fun i x hget => h (i + 1) x hget
+    simpa only [bigOpL_cons] using op_proper (h _ _ rfl) (ih fun _ _ hget => h _ _ hget)
 
-theorem congr_dist {Φ Ψ : Nat → A → M} {l : List A} {n : Nat}
+theorem bigOpL_dist {Φ Ψ : Nat → A → M} {l : List A} {n : Nat}
     (h : ∀ i x, l[i]? = some x → Φ i x ≡{n}≡ Ψ i x) :
     ([^ op list] k ↦ x ∈ l, Φ k x) ≡{n}≡ ([^ op list] k ↦ x ∈ l, Ψ k x) := by
   induction l generalizing Φ Ψ with
-  | nil => exact Dist.rfl
+  | nil => exact .rfl
   | cons y ys ih =>
-    simp only [cons]
-    apply MonoidOps.op_dist (h 0 y rfl)
-    exact ih fun i x hget => h (i + 1) x hget
+    simpa only [bigOpL_cons] using op_dist (h _ _ rfl) (ih fun _ _ hget => h _ _ hget)
 
 /-- Congruence when the functions are equivalent on all indices. -/
-theorem congr_forall {Φ Ψ : Nat → A → M} {l : List A}
+theorem bigOpL_equiv_of_forall_equiv {Φ Ψ : Nat → A → M} {l : List A}
     (h : ∀ i x, Φ i x ≡ Ψ i x) :
     ([^ op list] k ↦ x ∈ l, Φ k x) ≡ ([^ op list] k ↦ x ∈ l, Ψ k x) :=
-  congr (fun i x _ => h i x)
+  bigOpL_equiv (fun i x _ => h i x)
 
-theorem append (Φ : Nat → A → M) (l₁ l₂ : List A) :
+theorem bigOpL_append_equiv (Φ : Nat → A → M) (l₁ l₂ : List A) :
     ([^ op list] k ↦ x ∈ l₁ ++ l₂, Φ k x) ≡
-      op ([^ op list] k ↦ x ∈ l₁, Φ k x) ([^ op list] k ↦ x ∈ l₂, Φ (k + l₁.length) x) := by
+    op ([^ op list] k ↦ x ∈ l₁, Φ k x) ([^ op list] k ↦ x ∈ l₂, Φ (k + l₁.length) x) := by
   induction l₁ generalizing Φ with
-  | nil => simp only [nil]; exact MonoidOps.op_left_id.symm
+  | nil => simp only [bigOpL_nil]; exact op_left_id.symm
   | cons x xs ih =>
-    simp only [List.cons_append, cons, List.length_cons]
-    apply (MonoidOps.op_congr_right (ih _)).trans
+    simp only [List.cons_append, bigOpL_cons, List.length_cons]
+    refine (op_congr_right (ih _)).trans ?_
     simp only [show ∀ n, n + xs.length + 1 = n + (xs.length + 1) from by omega]
-    exact MonoidOps.op_assoc.symm
+    exact op_assoc.symm
 
-theorem snoc (Φ : Nat → A → M) (l : List A) (a : A) :
+theorem bigOpL_snoc_equiv (Φ : Nat → A → M) (l : List A) (a : A) :
     ([^ op list] k ↦ x ∈ l ++ [a], Φ k x) ≡ op ([^ op list] k ↦ x ∈ l, Φ k x) (Φ l.length a) := by
-  have := append (op := op) Φ l [a]
-  simp only [cons, nil, Nat.zero_add] at this
-  refine this.trans ?_
-  exact MonoidOps.op_congr_right MonoidOps.op_right_id
+  refine .trans ?_ (op_congr_right (op_right_id (op := op)))
+  refine .trans (bigOpL_append_equiv (op := op) Φ l [a]) ?_
+  simp
 
-theorem const_unit (l : List A) :
+theorem bigOpL_const_unit_equiv {l : List A} :
     ([^ op list] _x ∈ l, unit) ≡ unit := by
   induction l with
-  | nil => exact Equiv.rfl
-  | cons _ _ ih =>
-    simp only [cons]
-    exact MonoidOps.op_left_id.trans ih
+  | nil => exact .rfl
+  | cons _ _ ih => simpa only [bigOpL_cons] using op_left_id.trans ih
 
-theorem op_distrib (Φ Ψ : Nat → A → M) (l : List A) :
+theorem bigOpL_op_equiv (Φ Ψ : Nat → A → M) (l : List A) :
     ([^ op list] k ↦ x ∈ l, op (Φ k x) (Ψ k x)) ≡
-      op ([^ op list] k ↦ x ∈ l, Φ k x) ([^ op list] k ↦ x ∈ l, Ψ k x) := by
+    op ([^ op list] k ↦ x ∈ l, Φ k x) ([^ op list] k ↦ x ∈ l, Ψ k x) := by
   induction l generalizing Φ Ψ with
-  | nil => simp only [nil]; exact MonoidOps.op_left_id.symm
-  | cons x xs ih =>
-    simp only [cons]
-    refine (MonoidOps.op_congr_right (ih _ _)).trans ?_
-    exact MonoidOps.op_op_op_comm
+  | nil => simpa only [bigOpL_nil] using op_left_id.symm
+  | cons x xs ih => simpa only [bigOpL_cons] using (op_congr_right (ih _ _)).trans op_op_op_comm
 
-theorem map {B : Type v} (h : A → B) (Φ : Nat → B → M) (l : List A) :
+theorem bigOpL_map_equiv {B : Type v} (h : A → B) (Φ : Nat → B → M) (l : List A) :
     ([^ op list] k ↦ x ∈ l.map h, Φ k x) ≡ ([^ op list] k ↦ x ∈ l, Φ k (h x)) := by
   induction l generalizing Φ with
-  | nil => exact Equiv.rfl
-  | cons x xs ih =>
-    simp only [List.map_cons, cons]
-    exact MonoidOps.op_proper Equiv.rfl (ih _)
+  | nil => exact .rfl
+  | cons _ _ ih => simpa only [List.map_cons, bigOpL_cons] using op_proper .rfl (ih _)
 
-theorem closed (P : M → Prop) (Φ : Nat → A → M) (l : List A)
-    (hunit : P unit)
-    (hop : ∀ x y, P x → P y → P (op x y))
-    (hf : ∀ i x, l[i]? = some x → P (Φ i x)) :
+/-- Applying bigOpL with an operation closed under P will remain in P. -/
+theorem bigOpL_closed (P : M → Prop) (Φ : Nat → A → M) (l : List A) (hunit : P unit)
+    (hop : ∀ x y, P x → P y → P (op x y)) (hf : ∀ i x, l[i]? = some x → P (Φ i x)) :
     P ([^ op list] k ↦ x ∈ l, Φ k x) := by
   induction l generalizing Φ with
   | nil => exact hunit
   | cons y ys ih =>
-    simp only [cons]
-    exact hop _ _ (hf 0 y rfl) (ih _ fun i x hget => hf (i + 1) x hget)
+    simpa only [bigOpL_cons] using hop _ _ (hf 0 y rfl) (ih _ fun i x hget => hf (i + 1) x hget)
 
-theorem perm (Φ : A → M) {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
+theorem bigOpL_equiv_of_perm (Φ : A → M) {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
     ([^ op list] x ∈ l₁, Φ x) ≡ ([^ op list] x ∈ l₂, Φ x) := by
   induction hp with
-  | nil => exact Equiv.rfl
-  | cons _ _ ih => simp only [cons]; exact MonoidOps.op_congr_right ih
-  | swap _ _ _ => simp only [cons]; exact MonoidOps.op_left_comm (unit := unit)
-  | trans _ _ ih1 ih2 => exact Equiv.trans ih1 ih2
+  | nil => exact .rfl
+  | cons _ _ ih => simpa only [bigOpL_cons] using op_congr_right ih
+  | swap _ _ _ => simpa only [bigOpL_cons] using op_left_comm
+  | trans _ _ ih1 ih2 => exact ih1.trans ih2
 
-theorem take_drop (Φ : Nat → A → M) (l : List A) (n : Nat) :
+theorem bigOpL_take_drop_equiv (Φ : Nat → A → M) (l : List A) (n : Nat) :
     ([^ op list] k ↦ x ∈ l, Φ k x) ≡
-      op ([^ op list] k ↦ x ∈ l.take n, Φ k x) ([^ op list] k ↦ x ∈ l.drop n, Φ (n + k) x) := by
+    op ([^ op list] k ↦ x ∈ l.take n, Φ k x) ([^ op list] k ↦ x ∈ l.drop n, Φ (n + k) x) := by
   by_cases hn : n ≤ l.length
-  · have := append (op := op) Φ (l.take n) (l.drop n)
-    simp only [List.take_append_drop, List.length_take_of_le hn, Nat.add_comm] at this
-    exact this
-  · simp only [Nat.not_le] at hn
-    simp only [List.drop_eq_nil_of_le (Nat.le_of_lt hn), List.take_of_length_le (Nat.le_of_lt hn), nil]
-    exact MonoidOps.op_right_id.symm
+  · simpa [List.length_take_of_le hn, Nat.add_comm] using bigOpL_append_equiv _ (l.take n) (l.drop n)
+  · have hn : l.length ≤ n := Nat.le_of_lt $ Nat.lt_of_not_le hn
+    simpa [List.drop_eq_nil_of_le hn, List.take_of_length_le hn] using op_right_id.symm
 
-theorem filter_map {B : Type v} (h : A → Option B) (Φ : B → M) (l : List A) :
-    ([^ op list] x ∈ l.filterMap h, Φ x) ≡
-      ([^ op list] x ∈ l, (h x).elim unit Φ) := by
+theorem bigOpL_filterMap_equiv {B : Type v} (h : A → Option B) (Φ : B → M) (l : List A) :
+    ([^ op list] x ∈ l.filterMap h, Φ x) ≡ ([^ op list] x ∈ l, (h x).elim unit Φ) := by
   induction l with
-  | nil => exact Equiv.rfl
+  | nil => exact .rfl
   | cons x xs ih =>
     simp only [List.filterMap_cons]
-    cases hx : h x <;> simp only [hx, Option.elim, cons]
-    · exact Equiv.trans ih MonoidOps.op_left_id.symm
-    · exact MonoidOps.op_congr_right ih
+    cases hx : h x
+    · simpa [hx] using ih.trans op_left_id.symm
+    · simpa [hx] using op_congr_right ih
 
-theorem bind {B : Type v} (h : A → List B) (Φ : B → M) (l : List A) :
-    ([^ op list] x ∈ l.flatMap h, Φ x) ≡
-      ([^ op list] x ∈ l, [^ op list] y ∈ h x, Φ y) := by
+theorem bipOpL_flatMap_equiv {B : Type v} (h : A → List B) (Φ : B → M) (l : List A) :
+    ([^ op list] x ∈ l.flatMap h, Φ x) ≡ ([^ op list] x ∈ l, [^ op list] y ∈ h x, Φ y) := by
   induction l with
-  | nil => exact Equiv.rfl
-  | cons x xs ih =>
-    simp only [List.flatMap_cons, cons]
-    refine (append _ _ _).trans ?_
-    exact MonoidOps.op_congr_right ih
+  | nil => exact .rfl
+  | cons x xs ih => exact (bigOpL_append_equiv ..).trans (op_congr_right ih)
 
-theorem gen_proper_2 {B : Type v} (R : M → M → Prop)
+theorem bigOpL_gen_proper_2 {B : Type v} (R : M → M → Prop)
     (Φ : Nat → A → M) (Ψ : Nat → B → M) (l₁ : List A) (l₂ : List B)
     (hunit : R unit unit)
     (hop : ∀ a a' b b', R a a' → R b b' → R (op a b) (op a' b'))
@@ -190,69 +167,64 @@ theorem gen_proper_2 {B : Type v} (R : M → M → Prop)
   induction l₁ generalizing l₂ Φ Ψ with
   | nil =>
     cases l₂ with
-    | nil => simp only [nil]; exact hunit
+    | nil => simp only [bigOpL_nil]; exact hunit
     | cons _ _ => simp at hlen
   | cons x xs ih =>
     cases l₂ with
     | nil => simp at hlen
     | cons y ys =>
       simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen
-      simp only [cons]
+      simp only [bigOpL_cons]
       exact hop _ _ _ _ (hf 0 x y rfl rfl)
         (ih _ _ _ hlen fun i a b ha hb => hf (i + 1) a b ha hb)
 
-theorem gen_proper (R : M → M → Prop)
+theorem bigOpL_gen_proper (R : M → M → Prop)
     (Φ Ψ : Nat → A → M) (l : List A)
     (hR_refl : ∀ x, R x x)
     (hR_op : ∀ a a' b b', R a a' → R b b' → R (op a b) (op a' b'))
     (hf : ∀ k y, l[k]? = some y → R (Φ k y) (Ψ k y)) :
     R ([^ op list] k ↦ x ∈ l, Φ k x) ([^ op list] k ↦ x ∈ l, Ψ k x) := by
-  apply gen_proper_2 R Φ Ψ l l (hR_refl unit) hR_op rfl
+  apply bigOpL_gen_proper_2 R Φ Ψ l l (hR_refl unit) hR_op rfl
   intro k x y hx hy; rw [hx] at hy; cases hy; exact hf k x hx
 
-theorem ext {Φ Ψ : Nat → A → M} {l : List A}
+theorem bigOpL_ext {Φ Ψ : Nat → A → M} {l : List A}
     (h : ∀ i x, l[i]? = some x → Φ i x = Ψ i x) :
     ([^ op list] k ↦ x ∈ l, Φ k x) = ([^ op list] k ↦ x ∈ l, Ψ k x) :=
-  gen_proper (· = ·) _ _ _ (fun _ => rfl) (fun _ _ _ _ ha hb => ha ▸ hb ▸ rfl) h
+  bigOpL_gen_proper (· = ·) _ _ _ (fun _ => rfl) (fun _ _ _ _ ha hb => ha ▸ hb ▸ rfl) h
 
-theorem proper_2 [OFE A] (Φ Ψ : Nat → A → M) (l₁ l₂ : List A)
+theorem bigOpL_proper_2 [OFE A] (Φ Ψ : Nat → A → M) (l₁ l₂ : List A)
     (hlen : l₁.length = l₂.length)
     (hf : ∀ (k : Nat) (y₁ y₂ : A), l₁[k]? = some y₁ → l₂[k]? = some y₂ → Φ k y₁ ≡ Ψ k y₂) :
     ([^ op list] k ↦ x ∈ l₁, Φ k x) ≡ ([^ op list] k ↦ x ∈ l₂, Ψ k x) :=
-  gen_proper_2 (· ≡ ·) Φ Ψ l₁ l₂ Equiv.rfl (fun _ _ _ _ => MonoidOps.op_proper) hlen hf
+  bigOpL_gen_proper_2 (· ≡ ·) Φ Ψ l₁ l₂ .rfl (fun _ _ _ _ => op_proper) hlen hf
 
-theorem zipIdx (Φ : A × Nat → M) (n : Nat) (l : List A) :
-    ([^ op list] x ∈ l.zipIdx n, Φ x) ≡
-      ([^ op list] k ↦ x ∈ l, Φ (x, n + k)) := by
+theorem bigOpL_zipIdx_equiv (Φ : A × Nat → M) (n : Nat) (l : List A) :
+    ([^ op list] x ∈ l.zipIdx n, Φ x) ≡ ([^ op list] k ↦ x ∈ l, Φ (x, n + k)) := by
   induction l generalizing n with
-  | nil => simp only [nil]; exact Equiv.rfl
+  | nil => simp [bigOpL_nil]
   | cons x xs ih =>
-    simp only [cons, Nat.add_zero]
-    exact MonoidOps.op_proper Equiv.rfl
-      ((ih (n + 1)).trans (congr_forall fun i _ => by simp [Nat.add_assoc, Nat.add_comm 1 i]))
+    refine op_proper .rfl ((ih (n + 1)).trans (bigOpL_equiv_of_forall_equiv fun i _ => ?_))
+    simp [Nat.add_assoc, Nat.add_comm 1 i]
 
-theorem zipIdxInt (Φ : A × Int → M) (n : Int) (l : List A) :
-    ([^ op list] x ∈ Std.List.zipIdxInt l n, Φ x) ≡
-      ([^ op list] k ↦ x ∈ l, Φ (x, n + (k : Int))) := by
-  unfold Std.List.zipIdxInt
+theorem bigOpL_zipIdxInt_equiv (Φ : A × Int → M) (n : Int) (l : List A) :
+    ([^ op list] x ∈ List.zipIdxInt l n, Φ x) ≡ ([^ op list] k ↦ x ∈ l, Φ (x, n + (k : Int))) := by
   suffices ∀ m, bigOpL op (fun _ => Φ) (l.mapIdx (fun i v => (v, (i : Int) + m))) ≡
                 bigOpL op (fun i x => Φ (x, m + (i : Int))) l from this n
   intro m
   induction l generalizing m with
-  | nil => simp only [List.mapIdx, nil]; exact Equiv.rfl
+  | nil => simpa [List.mapIdx, bigOpL_nil] using .rfl
   | cons x xs ih =>
-    simp only [List.mapIdx_cons, cons]
-    apply MonoidOps.op_proper
+    simp only [List.mapIdx_cons, bigOpL_cons]
+    apply op_proper
     · show Φ (x, (0 : Int) + m) ≡ Φ (x, m + (0 : Int))
       rw [Int.zero_add, Int.add_zero]
-    · rw [show (List.mapIdx (fun i v => (v, ↑(i + 1) + m)) xs) =
-              (List.mapIdx (fun i v => (v, ↑i + (m + 1))) xs) from by
-        apply List.ext_getElem (by simp only [List.length_mapIdx])
-        intro n hn1 hn2
-        simp only [List.getElem_mapIdx]; congr 1; omega]
-      apply (ih (m + 1)).trans
-      apply congr_forall fun i _ => ?_
+    · have Harg : (fun (i : Nat) (v : A) => (v, ↑(i + 1) + m)) =
+                  (fun (i : Nat) (v : A) => (v, ↑i + (m + 1))) := by grind
+      rw [Harg]
+      refine (ih (m + 1)).trans (bigOpL_equiv_of_forall_equiv fun i _ => ?_)
       rw [show m + 1 + (i : Int) = m + ((i + 1 : Nat) : Int) from by omega]
+
+-- markusde: HERE
 
 theorem sep_zipWith {B C : Type _}
     (f : A → B → C) (g1 : C → A) (g2 : C → B)
@@ -265,16 +237,16 @@ theorem sep_zipWith {B C : Type _}
   induction l₁ generalizing l₂ Φ Ψ with
   | nil =>
     cases l₂ with
-    | nil => simp only [List.zipWith_nil_left, nil]; exact MonoidOps.op_left_id.symm
+    | nil => simp only [List.zipWith_nil_left, bigOpL_nil]; exact op_left_id.symm
     | cons _ _ => simp at hlen
   | cons x xs ih =>
     cases l₂ with
     | nil => simp at hlen
     | cons y ys =>
       simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen
-      simp only [List.zipWith_cons_cons, cons, hg1, hg2]
-      refine (MonoidOps.op_congr_right (ih _ _ _ hlen)).trans ?_
-      exact MonoidOps.op_op_op_comm
+      simp only [List.zipWith_cons_cons, bigOpL_cons, hg1, hg2]
+      refine (op_congr_right (ih _ _ _ hlen)).trans ?_
+      exact op_op_op_comm
 
 /-- Big op over zipped list with separated functions. -/
 theorem sep_zip {B : Type v} (Φ : Nat → A → M) (Ψ : Nat → B → M) (l₁ : List A) (l₂ : List B)
@@ -295,9 +267,9 @@ theorem hom {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
     (Φ : Nat → B → M₁) (l : List B) :
     R (f ([^ op₁ list] k ↦ x ∈ l, Φ k x)) ([^ op₂ list] k ↦ x ∈ l, f (Φ k x)) := by
   induction l generalizing Φ with
-  | nil => simp only [nil]; exact hom.map_unit
+  | nil => simp only [bigOpL_nil]; exact hom.map_unit
   | cons x xs ih =>
-    simp only [cons]
+    simp only [bigOpL_cons]
     apply hom.rel_trans (hom.map_op _ _)
     exact hom.op_proper (hom.rel_refl _) (ih _)
 
@@ -309,12 +281,12 @@ theorem hom_weak {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
   induction l generalizing Φ with
   | nil => exact absurd rfl hne
   | cons x xs ih =>
-    simp only [cons]
+    simp only [bigOpL_cons]
     cases xs with
     | nil =>
-      simp only [nil]
+      simp only [bigOpL_nil]
       haveI : NonExpansive f := hom.map_ne
-      apply (hom.rel_proper (NonExpansive.eqv MonoidOps.op_right_id) MonoidOps.op_right_id).mpr
+      apply (hom.rel_proper (NonExpansive.eqv op_right_id) op_right_id).mpr
       exact hom.rel_refl _
     | cons y ys =>
       apply hom.rel_trans (hom.map_op _ _)
@@ -330,11 +302,13 @@ variable {M : Type u} [OFE M] {op : M → M → M} {unit : M} [MonoidOps op unit
 variable {M' : Type _ → Type _} {K : Type _} {V : Type _}
 variable [LawfulFiniteMap M' K]
 
+open BigOpL MonoidOps
+
 theorem equiv (Φ : K → V → M) (m₁ m₂ : M' V)
     (h : m₁ ≡ₘ m₂) :
     ([^ op map] k ↦ x ∈ m₁, Φ k x) ≡ ([^ op map] k ↦ x ∈ m₂, Φ k x) := by
   simp only [bigOpM]
-  exact BigOpL.perm _ (LawfulFiniteMap.toList_perm_of_get?_eq h)
+  exact bigOpL_equiv_of_perm _ (LawfulFiniteMap.toList_perm_of_get?_eq h)
 
 @[simp] theorem empty (Φ : K → V → M) :
     ([^ op map] k ↦ x ∈ (∅ : M' V), Φ k x) = unit := by
@@ -347,7 +321,7 @@ theorem insert (Φ : K → V → M) (m : M' V) (i : K) (x : V) :
       op (Φ i x) ([^ op map] k ↦ v ∈ m, Φ k v) := by
   intro hi
   simp only [bigOpM]
-  exact BigOpL.perm _ (LawfulFiniteMap.toList_insert (v := x) hi)
+  exact bigOpL_equiv_of_perm _ (LawfulFiniteMap.toList_insert (v := x) hi)
 
 theorem delete (Φ : K → V → M) (m : M' V) (i : K) (x : V) :
     get? m i = some x →
@@ -424,7 +398,7 @@ theorem gen_proper {M : Type u} [OFE M] {op : M → M → M} {unit : M} [MonoidO
     (hf : ∀ k x, get? m k = some x → R (Φ k x) (Ψ k x)) :
     R ([^ op map] k ↦ x ∈ m, Φ k x) ([^ op map] k ↦ x ∈ m, Ψ k x) := by
   simp only [bigOpM]
-  apply BigOpL.gen_proper_2 R _ _ _ _ (hR_refl unit) hR_op rfl
+  apply bigOpL_gen_proper_2 R _ _ _ _ (hR_refl unit) hR_op rfl
   intro i x y hx hy; rw [hx] at hy; cases hy
   exact hf x.1 x.2 (toList_get.mp (List.mem_iff_getElem?.mpr ⟨i, hx⟩))
 
@@ -437,12 +411,12 @@ theorem ext {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op u
 theorem dist (Φ Ψ : K → V → M) (m : M' V) (n : Nat)
     (hf : ∀ k x, get? m k = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([^ op map] k ↦ x ∈ m, Φ k x) ≡{n}≡ ([^ op map] k ↦ x ∈ m, Ψ k x) :=
-  gen_proper (R := (· ≡{n}≡ ·)) _ _ _ (fun _ => Dist.rfl) (fun _ _ _ _ => MonoidOps.op_dist) hf
+  gen_proper (R := (· ≡{n}≡ ·)) _ _ _ (fun _ => Dist.rfl) (fun _ _ _ _ => op_dist) hf
 
 theorem proper (Φ Ψ : K → V → M) (m : M' V)
     (hf : ∀ k x, get? m k = some x → Φ k x ≡ Ψ k x) :
     ([^ op map] k ↦ x ∈ m, Φ k x) ≡ ([^ op map] k ↦ x ∈ m, Ψ k x) :=
-  gen_proper (R := (· ≡ ·)) _ _ _ (fun _ => Equiv.rfl) (fun _ _ _ _ => MonoidOps.op_proper) hf
+  gen_proper (R := (· ≡ ·)) _ _ _ (fun _ => Equiv.rfl) (fun _ _ _ _ => op_proper) hf
 
 theorem proper_2 [DecidableEq K] [OFE A] (Φ : K → A → M) (Ψ : K → A → M) (m1 m2 : M' A)
     (hm : ∀ k, get? m1 k = get? m2 k)
@@ -452,7 +426,7 @@ theorem proper_2 [DecidableEq K] [OFE A] (Φ : K → A → M) (Ψ : K → A → 
       y1 ≡ y2 →
       Φ k y1 ≡ Ψ k y2) :
     ([^ op map] k ↦ x ∈ m1, Φ k x) ≡ ([^ op map] k ↦ x ∈ m2, Ψ k x) := by
-  apply gen_proper_2 (R := (· ≡ ·)) _ _ _ _ (fun _ _ h => h) equiv_eqv (fun _ _ _ _ => MonoidOps.op_proper)
+  apply gen_proper_2 (R := (· ≡ ·)) _ _ _ _ (fun _ _ h => h) equiv_eqv (fun _ _ _ _ => op_proper)
   intro k
   have hlk := hm k
   cases hm1k : get? m1 k with
@@ -473,22 +447,22 @@ theorem proper_pointwise (Φ Ψ : K → V → M) (m : M' V)
     ([^ op map] k ↦ x ∈ m, Φ k x) ≡ ([^ op map] k ↦ x ∈ m, Ψ k x) :=
     proper _ _ _ fun k x _ => hf k x
 
-theorem to_list (Φ : K → V → M) (m : M' V) :
+theorem toList (Φ : K → V → M) (m : M' V) :
     ([^ op map] k ↦ x ∈ m, Φ k x) ≡
-      ([^ op list] kx ∈ toList (K := K) m, Φ kx.1 kx.2) := by rfl
+    ([^ op list] kx ∈ LawfulFiniteMap.toList (K := K) m, Φ kx.1 kx.2) := by rfl
 
-theorem of_list [DecidableEq K] (Φ : K → V → M) (l : List (K × V))
+theorem ofList [DecidableEq K] (Φ : K → V → M) (l : List (K × V))
     (hnodup : NoDupKeys l) :
     ([^ op map] k ↦ x ∈ (PartialMap.ofList l : M' V), Φ k x) ≡
       ([^ op list] kx ∈ l, Φ kx.1 kx.2) := by
   simp only [bigOpM]
-  exact BigOpL.perm _ (LawfulFiniteMap.toList_ofList hnodup)
+  exact bigOpL_equiv_of_perm _ (LawfulFiniteMap.toList_ofList hnodup)
 
 theorem singleton (Φ : K → V → M) (i : K) (x : V) :
     ([^ op map] k ↦ v ∈ ({[i := x]} : M' V), Φ k v) ≡ Φ i x := by
   rw [show ({[i := x]} : M' V) = PartialMap.insert (∅ : M' V) i x from rfl]
   apply (insert Φ (∅ : M' V) i x (get?_empty i)).trans
-  rw [empty]; exact MonoidOps.op_right_id
+  rw [empty]; exact op_right_id
 
 theorem const_unit [DecidableEq K] (m : M' V) :
     bigOpM op (fun (_ : K) _ => unit) m ≡ unit := by
@@ -500,24 +474,24 @@ theorem const_unit [DecidableEq K] (m : M' V) :
   · show P (∅ : M' V); show _ ≡ _; rw [empty]
   · intro i x m' hm' IH
     refine (insert _ _ _ _ hm').trans ?_
-    refine (MonoidOps.op_proper Equiv.rfl IH).trans ?_
-    exact MonoidOps.op_left_id
+    refine (op_proper Equiv.rfl IH).trans ?_
+    exact op_left_id
 
 theorem map (h : V → B) (Φ : K → B → M) (m : M' V) :
     ([^ op map] k ↦ x ∈ PartialMap.map h m, Φ k x) ≡
       ([^ op map] k ↦ v ∈ m, Φ k (h v)) := by
   simp only [bigOpM]
-  refine (BigOpL.perm _ LawfulFiniteMap.toList_map).trans ?_
-  exact BigOpL.map (op := op) _ _ (toList (K := K) m)
+  refine (bigOpL_equiv_of_perm _ LawfulFiniteMap.toList_map).trans ?_
+  exact bigOpL_map_equiv (op := op) _ _ (LawfulFiniteMap.toList (K := K) m)
 
-theorem filter_map (h : V → Option V) (Φ : K → V → M) (m : M' V)
+theorem filterMap (h : V → Option V) (Φ : K → V → M) (m : M' V)
     (hinj : Function.Injective h) :
     ([^ op map] k ↦ x ∈ PartialMap.filterMap h m, Φ k x) ≡
       ([^ op map] k ↦ v ∈ m, (h v).elim unit (Φ k)) := by
   simp only [bigOpM]
-  refine (BigOpL.perm _ (LawfulFiniteMap.toList_filterMap hinj)).trans ?_
-  refine (BigOpL.filter_map (op := op) _ _ _).trans ?_
-  exact BigOpL.congr_forall fun _ kv => by cases hkv : h kv.2 <;> simp [Option.elim, Option.map]
+  refine (bigOpL_equiv_of_perm _ (LawfulFiniteMap.toList_filterMap hinj)).trans ?_
+  refine (bigOpL_filterMap_equiv (op := op) _ _ _).trans ?_
+  exact bigOpL_equiv_of_forall_equiv fun _ kv => by cases hkv : h kv.2 <;> simp [Option.elim, Option.map]
 
 theorem insert_delete (Φ : K → V → M) (m : M' V) (i : K) (x : V) :
     ([^ op map] k ↦ v ∈ PartialMap.insert m i x, Φ k v) ≡
@@ -531,27 +505,27 @@ theorem insert_override (Φ : K → A → M) (m : M' A) (i : K) (x x' : A) :
       ([^ op map] k ↦ v ∈ m, Φ k v) := by
   intro hi hΦ
   refine (insert_delete Φ m i x').trans ?_
-  refine (MonoidOps.op_proper hΦ.symm Equiv.rfl).trans ?_
+  refine (op_proper hΦ.symm Equiv.rfl).trans ?_
   exact (delete Φ m i x hi).symm
 
 theorem fn_insert [DecidableEq K] {B : Type w} (g : K → V → B → M) (f : K → B) (m : M' V)
     (i : K) (x : V) (b : B) (hi : get? m i = none) :
     ([^ op map] k ↦ y ∈ PartialMap.insert m i x, g k y (if k = i then b else f k)) ≡
     op (g i x b) ([^ op map] k ↦ y ∈ m, g k y (f k)) := by
-  refine (insert _ m i x hi).trans (MonoidOps.op_proper (by simp) (proper _ _ _ fun k y hk => ?_))
+  refine (insert _ m i x hi).trans (op_proper (by simp) (proper _ _ _ fun k y hk => ?_))
   simp [show k ≠ i from fun heq => by subst heq; rw [hi] at hk; cases hk]
 
 theorem fn_insert' [DecidableEq K] (f : K → M) (m : M' V) (i : K) (x : V) (P : M)
     (hi : get? m i = none) :
     ([^ op map] k ↦ _v ∈ PartialMap.insert m i x, if k = i then P else f k) ≡
     op P ([^ op map] k ↦ _v ∈ m, f k) := by
-  refine (insert _ m i x hi).trans (MonoidOps.op_proper (by simp) (proper _ _ _ fun k _ hk => ?_))
+  refine (insert _ m i x hi).trans (op_proper (by simp) (proper _ _ _ fun k _ hk => ?_))
   simp [show k ≠ i from fun heq => by subst heq; rw [hi] at hk; cases hk]
 
 theorem filter (φ : K → V → Bool) (Φ : K → V → M) (m : M' V) :
     ([^ op map] k ↦ x ∈ PartialMap.filter φ m, Φ k x) ≡ ([^ op map] k ↦ x ∈ m, if φ k x then Φ k x else unit) := by
   unfold bigOpM
-  refine (BigOpL.perm _ LawfulFiniteMap.toList_filter).trans ?_
+  refine (bigOpL_equiv_of_perm _ LawfulFiniteMap.toList_filter).trans ?_
   suffices ∀ l : List (K × V),
       bigOpL op (fun _ kv => Φ kv.1 kv.2) (l.filter (fun kv => φ kv.1 kv.2)) ≡
       bigOpL op (fun _ kv => if φ kv.1 kv.2 then Φ kv.1 kv.2 else unit) l from this _
@@ -562,11 +536,11 @@ theorem filter (φ : K → V → Bool) (Φ : K → V → M) (m : M' V) :
     simp only [List.filter]
     cases hp : φ kv.1 kv.2 with
     | false =>
-      simp only [BigOpL.cons, hp]
-      exact Equiv.trans ih MonoidOps.op_left_id.symm
+      simp only [bigOpL_cons, hp]
+      exact Equiv.trans ih op_left_id.symm
     | true =>
-      simp only [BigOpL.cons, hp, ite_true]
-      exact MonoidOps.op_congr_right ih
+      simp only [bigOpL_cons, hp, ite_true]
+      exact op_congr_right ih
 
 theorem union [DecidableEq K] (Φ : K → V → M) (m1 m2 : M' V) (hdisj : m1 ##ₘ m2) :
     ([^ op map] k ↦ x ∈ m1 ∪ m2, Φ k x) ≡ op ([^ op map] k ↦ x ∈ m1, Φ k x) ([^ op map] k ↦ x ∈ m2, Φ k x) := by
@@ -584,10 +558,10 @@ theorem union [DecidableEq K] (Φ : K → V → M) (m1 m2 : M' V) (hdisj : m1 ##
       (fun k => by rw [LawfulPartialMap.get?_union, LawfulPartialMap.get?_union, heq k])
     refine hunion_eq.symm.trans ?_
     refine (hP hdisj'').trans ?_
-    exact MonoidOps.op_proper (BigOpM.equiv Φ m₁ m₂' heq) Equiv.rfl
+    exact op_proper (BigOpM.equiv Φ m₁ m₂' heq) Equiv.rfl
   · show P (∅ : M' V)
     intro _; rw [empty]
-    refine Equiv.trans ?_ MonoidOps.op_left_id.symm
+    refine Equiv.trans ?_ op_left_id.symm
     apply BigOpM.equiv Φ _ _
     intro k; show get? (PartialMap.union (∅ : M' V) m2) k = get? m2 k
     rw [LawfulPartialMap.get?_union, show get? (∅ : M' V) k = none from get?_empty k]; simp
@@ -604,14 +578,14 @@ theorem union [DecidableEq K] (Φ : K → V → M) (m1 m2 : M' V) (hdisj : m1 ##
       · rwa [get?_insert_ne h], hk2⟩
     refine (BigOpM.equiv Φ _ _ fun k => (LawfulPartialMap.union_insert_left k).symm).trans ?_
     refine (insert Φ (m ∪ m2) i x hi_union).trans ?_
-    refine (MonoidOps.op_congr_right (IH hdisj_inner)).trans ?_
-    refine MonoidOps.op_assoc.symm.trans ?_
-    exact MonoidOps.op_congr_left (insert Φ m i x hi_none).symm
+    refine (op_congr_right (IH hdisj_inner)).trans ?_
+    refine op_assoc.symm.trans ?_
+    exact op_congr_left (insert Φ m i x hi_none).symm
 
 theorem op_distrib (Φ Ψ : K → V → M) (m : M' V) :
     ([^ op map] k ↦ x ∈ m, op (Φ k x) (Ψ k x)) ≡
     op ([^ op map] k ↦ x ∈ m, Φ k x) ([^ op map] k ↦ x ∈ m, Ψ k x) := by
-  simp only [bigOpM]; exact BigOpL.op_distrib _ _ _
+  simp only [bigOpM]; exact bigOpL_op_equiv _ _ _
 
 theorem closed [DecidableEq K] (P : M → Prop) (Φ : K → V → M) (m : M' V)
     (hproper : ∀ x y, x ≡ y → (P x ↔ P y))
@@ -649,7 +623,7 @@ theorem sep_zipWith {A : Type _} {B : Type _} {C : Type _}
     op ([^ op map] k ↦ x ∈ m1, h1 k x) ([^ op map] k ↦ x ∈ m2, h2 k x) := by
   refine (op_distrib (fun k xy => h1 k (g1 xy)) (fun k xy => h2 k (g2 xy))
     (PartialMap.zipWith f m1 m2)).trans ?_
-  apply MonoidOps.op_proper
+  apply op_proper
   · refine (map g1 h1 (PartialMap.zipWith f m1 m2)).symm.trans ?_
     apply BigOpM.equiv h1 _ _
     intro k
