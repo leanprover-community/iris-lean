@@ -1,13 +1,27 @@
 /-
 Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler
+Authors: Michael Sammler, Yunsong Yang
 -/
 import Iris.BI
 import Iris.ProofMode.ClassesMake
 
 namespace Iris.ProofMode
 open Iris.BI
+
+/- MakeAffinely -/
+
+instance (priority := high) makeAffinely_affine [BI PROP] (P : PROP) [Affine P] :
+  MakeAffinely P P where
+  make_affinely := affine_affinely P
+
+instance makeAffinely_True [BI PROP] :
+  MakeAffinely (PROP := PROP) iprop(True) iprop(emp) where
+  make_affinely := affinely_true
+
+instance (priority := low) makeAffinely_default [BI PROP] (P : PROP) :
+  MakeAffinely P iprop(<affine> P) where
+  make_affinely := .rfl
 
 /- MakeLaterN -/
 

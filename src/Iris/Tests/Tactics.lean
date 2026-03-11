@@ -181,42 +181,47 @@ example [BI PROP] (P Q : PROP) : ⊢ P → Q := by
 example [BI PROP] (P : PROP) : ⊢ P -∗ P → P := by
   iintro HP1 HP2
 
-
 end intro
 
 -- revert
 namespace revert
 
-theorem spatial [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) : P ⊢ Q := by
+/-- Tests `irevert` with a spatial proposition -/
+example [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) : P ⊢ Q := by
   iintro HP
   irevert HP
   exact H
 
-theorem intuitionistic [BI PROP] (P : PROP) (H : ⊢ □ P -∗ P) : □ P ⊢ P := by
+/-- Tests `irevert` with a intuitionistic proposition -/
+example [BI PROP] (P : PROP) (H : ⊢ □ P -∗ P) : □ P ⊢ P := by
   iintro □HP
   irevert HP
   exact H
 
-theorem pure [BI PROP] (P : PROP) (Hφ : φ) : ⊢ (⌜φ⌝ -∗ P) -∗ P := by
+/-- Tests `irevert` with a pure proposition -/
+example [BI PROP] (P : PROP) (Hφ : φ) : ⊢ (<affine> ⌜φ⌝ -∗ P) -∗ P := by
   iintro H
   irevert Hφ
   iexact H
 
-theorem «forall» [BI PROP] (x : α) (Φ : α → PROP) : ⊢ (∀ x, Φ x) → Φ x := by
+/-- Tests `irevert` with a forall proposition -/
+example [BI PROP] (x : α) (Φ : α → PROP) : ⊢ (∀ x, Φ x) → Φ x := by
   iintro H
   irevert x
   iexact H
 
+/-- Tests `irevert` with multiple spatial propositions -/
 theorem multiple_spatial [BI PROP] (P Q : PROP) :
-    ⊢ (P -∗ P) -∗ P -∗ <affine> Q -∗ P := by
+    ⊢ (P -∗ <affine> Q -∗ P) -∗ P -∗ <affine> Q -∗ P := by
   iintro H HP HQ
-  irevert HP
+  irevert HP HQ
   iexact H
 
+/-- Tests `irevert` with multiple intuitionistic propositions -/
 theorem multiple_intuitionistic [BI PROP] (P Q : PROP) :
-    ⊢ (□ P -∗ P) -∗ □ P -∗ <affine> Q -∗ P := by
+    ⊢ (□ P -∗ <affine> Q -∗ P) -∗ □ P -∗ <affine> Q -∗ P := by
   iintro H □HP HQ
-  irevert HP
+  irevert HP HQ
   iexact H
 
 end revert
@@ -242,7 +247,6 @@ example [BI PROP] : ⊢@{PROP} ⌜∃ x, x ∨ False⌝ := by
   iexists True
   ipure_intro
   exact Or.inl True.intro
-
 
 /-- Tests `iexists` with a named metavariable -/
 example [BI PROP] : ⊢@{PROP} ∃ x, ⌜x = 42⌝ := by
