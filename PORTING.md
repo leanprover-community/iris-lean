@@ -101,7 +101,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `sts.v`
   - [ ] CMRA
   - [ ] Updates
-- [ ] `ufrac.v` (nb. contained in `Frac.lean`)
+- [x] `ufrac.v` (nb. in `UFrac.lean`)
 - [ ] `updates.v`
   - [x] Lemmas
   - [x] Updates
