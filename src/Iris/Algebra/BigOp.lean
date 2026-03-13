@@ -112,14 +112,12 @@ theorem bigOpL_equiv_of_perm (Φ : A → M) {l₁ l₂ : List A} (hp : l₁.Perm
   | .swap _ _ _ => op_left_comm
   | .trans h1 h2 => bigOpL_equiv_of_perm Φ h1 |>.trans (bigOpL_equiv_of_perm Φ h2)
 
--- markusde 2: here
-
 theorem bigOpL_take_drop_equiv (Φ : Nat → A → M) (l : List A) (n : Nat) :
     ([^ op list] k ↦ x ∈ l, Φ k x) ≡
     op ([^ op list] k ↦ x ∈ l.take n, Φ k x) ([^ op list] k ↦ x ∈ l.drop n, Φ (n + k) x) := by
   by_cases hn : n ≤ l.length
-  · simpa [List.length_take_of_le hn, Nat.add_comm] using bigOpL_append_equiv _ (l.take n) (l.drop n)
-  · have hn : l.length ≤ n := Nat.le_of_lt $ Nat.lt_of_not_le hn
+  · simpa [hn, Nat.add_comm] using bigOpL_append_equiv _ (l.take n) (l.drop n)
+  · have hn : l.length ≤ n := Nat.le_of_not_ge hn
     simpa [List.drop_eq_nil_of_le hn, List.take_of_length_le hn] using op_right_id.symm
 
 theorem bigOpL_filterMap_equiv {B : Type v} (h : A → Option B) (Φ : B → M) (l : List A) :
@@ -127,87 +125,63 @@ theorem bigOpL_filterMap_equiv {B : Type v} (h : A → Option B) (Φ : B → M) 
   induction l with
   | nil => exact .rfl
   | cons x xs ih =>
-    simp only [List.filterMap_cons]
     cases hx : h x
     · simpa [hx] using ih.trans op_left_id.symm
     · simpa [hx] using op_congr_right ih
 
 theorem bigOpL_flatMap_equiv {B : Type v} (h : A → List B) (Φ : B → M) (l : List A) :
-    ([^ op list] x ∈ l.flatMap h, Φ x) ≡ ([^ op list] x ∈ l, [^ op list] y ∈ h x, Φ y) := by
-  induction l with
-  | nil => exact .rfl
-  | cons x xs ih => exact (bigOpL_append_equiv ..).trans (op_congr_right ih)
+    ([^ op list] x ∈ l.flatMap h, Φ x) ≡ ([^ op list] x ∈ l, [^ op list] y ∈ h x, Φ y) :=
+  match l with
+  | .nil => .rfl
+  | .cons _ _ => (bigOpL_append_equiv ..).trans (op_congr_right <| bigOpL_flatMap_equiv ..)
 
-theorem bigOpL_gen_proper_2 {B : Type v} (R : M → M → Prop)
-    (Φ : Nat → A → M) (Ψ : Nat → B → M) (l₁ : List A) (l₂ : List B)
-    (hunit : R unit unit)
-    (hop : ∀ {a a' b b'}, R a a' → R b b' → R (op a b) (op a' b'))
-    (hlen : l₁.length = l₂.length)
-    (hf : ∀ i, ∀ x y, l₁[i]? = some x → l₂[i]? = some y → R (Φ i x) (Ψ i y)) :
+theorem bigOpL_gen_proper_2 {B : Type v} (R : M → M → Prop) {Φ : Nat → A → M}
+    {Ψ : Nat → B → M} {l₁ : List A} {l₂ : List B} (hunit : R unit unit)
+    (hop : ∀ {a a' b b'}, R a a' → R b b' → R (op a b) (op a' b')) (hlen : l₁.length = l₂.length)
+    (hf : ∀ {i x y}, l₁[i]? = some x → l₂[i]? = some y → R (Φ i x) (Ψ i y)) :
     R ([^ op list] k ↦ x ∈ l₁, Φ k x) ([^ op list] k ↦ x ∈ l₂, Ψ k x) := by
   induction l₁ generalizing l₂ Φ Ψ with
-  | nil =>
-    cases l₂ with
-    | nil => simpa only [bigOpL_nil] using hunit
-    | cons _ _ => simp at hlen
-  | cons x xs ih =>
-    cases l₂ with
+  | nil => cases l₂ with | nil => exact hunit | cons _ _ => simp at hlen
+  | cons _ _ ih => cases l₂ with
     | nil => simp at hlen
-    | cons y ys =>
-      simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen
-      simp only [bigOpL_cons]
-      exact hop (hf 0 x y rfl rfl)
-        (ih _ _ _ hlen fun i a b ha hb => hf (i + 1) a b ha hb)
+    | cons y ys => exact hop (hf rfl rfl) (ih (Nat.add_right_cancel hlen) (hf · ·))
 
-theorem bigOpL_gen_proper (R : M → M → Prop)
-    (Φ Ψ : Nat → A → M) (l : List A)
-    (hR_refl : ∀ x, R x x)
-    (hR_op : ∀ {a a' b b'}, R a a' → R b b' → R (op a b) (op a' b'))
-    (hf : ∀ k y, l[k]? = some y → R (Φ k y) (Ψ k y)) :
+theorem bigOpL_gen_proper (R : M → M → Prop) {Φ Ψ : Nat → A → M} {l : List A}
+    (hR_refl : ∀ {x}, R x x) (hR_op : ∀ {a a' b b'}, R a a' → R b b' → R (op a b) (op a' b'))
+    (hf : ∀ {k y}, l[k]? = some y → R (Φ k y) (Ψ k y)) :
     R ([^ op list] k ↦ x ∈ l, Φ k x) ([^ op list] k ↦ x ∈ l, Ψ k x) := by
-  refine bigOpL_gen_proper_2 R Φ Ψ l l (hR_refl unit) hR_op rfl ?_
-  intro _ _ _ hx hy
+  refine bigOpL_gen_proper_2 R hR_refl hR_op rfl (fun hx hy => ?_)
   obtain ⟨rfl⟩ := hx ▸ hy
-  exact hf _ _ hx
+  exact hf hx
 
-theorem bigOpL_ext {Φ Ψ : Nat → A → M} {l : List A}
-    (h : ∀ i x, l[i]? = some x → Φ i x = Ψ i x) :
+theorem bigOpL_ext {Φ Ψ : Nat → A → M} {l : List A} (h : ∀ {i x}, l[i]? = some x → Φ i x = Ψ i x) :
     ([^ op list] k ↦ x ∈ l, Φ k x) = ([^ op list] k ↦ x ∈ l, Ψ k x) :=
-  bigOpL_gen_proper (· = ·) _ _ _ (fun _ => rfl) (· ▸ · ▸ rfl) h
+  bigOpL_gen_proper (· = ·) rfl (· ▸ · ▸ rfl) h
 
-theorem bigOpL_proper_2 [OFE A] (Φ Ψ : Nat → A → M) (l₁ l₂ : List A)
-    (hlen : l₁.length = l₂.length)
-    (hf : ∀ (k : Nat) (y₁ y₂ : A), l₁[k]? = some y₁ → l₂[k]? = some y₂ → Φ k y₁ ≡ Ψ k y₂) :
+theorem bigOpL_proper_2 [OFE A] {Φ Ψ : Nat → A → M} {l₁ l₂ : List A} (hlen : l₁.length = l₂.length)
+    (hf : ∀ {k y₁ y₂}, l₁[k]? = some y₁ → l₂[k]? = some y₂ → Φ k y₁ ≡ Ψ k y₂) :
     ([^ op list] k ↦ x ∈ l₁, Φ k x) ≡ ([^ op list] k ↦ x ∈ l₂, Ψ k x) :=
-  bigOpL_gen_proper_2 (· ≡ ·) Φ Ψ l₁ l₂ .rfl op_proper hlen hf
+  bigOpL_gen_proper_2 (· ≡ ·) .rfl op_proper hlen hf
 
 theorem bigOpL_zipIdx_equiv (Φ : A × Nat → M) (n : Nat) (l : List A) :
-    ([^ op list] x ∈ l.zipIdx n, Φ x) ≡ ([^ op list] k ↦ x ∈ l, Φ (x, n + k)) := by
-  induction l generalizing n with
-  | nil => simp [bigOpL_nil]
-  | cons x xs ih =>
-    refine op_proper .rfl ((ih (n + 1)).trans (bigOpL_equiv_of_forall_equiv @fun i _ => ?_))
-    -- TODO: This can be fixed for sure
-    simp [Nat.add_assoc, Nat.add_comm 1 i]
+    ([^ op list] x ∈ l.zipIdx n, Φ x) ≡ ([^ op list] k ↦ x ∈ l, Φ (x, n + k)) :=
+  match l with
+  | .nil => .rfl
+  | .cons _ _ => op_proper .rfl <| (bigOpL_zipIdx_equiv _ (n + 1) _).trans (.of_eq <| by grind)
 
 theorem bigOpL_zipIdxInt_equiv (Φ : A × Int → M) (n : Int) (l : List A) :
     ([^ op list] x ∈ List.zipIdxInt l n, Φ x) ≡ ([^ op list] k ↦ x ∈ l, Φ (x, n + (k : Int))) := by
-  suffices ∀ m, bigOpL op (fun _ => Φ) (l.mapIdx (fun i v => (v, (i : Int) + m))) ≡
-                bigOpL op (fun i x => Φ (x, m + (i : Int))) l from this n
-  intro m
-  induction l generalizing m with
-  | nil => simpa [List.mapIdx, bigOpL_nil] using .rfl
+  change bigOpL op (fun _ => Φ) (l.mapIdx (fun i v => (v, (i : Int) + n)))
+       ≡ bigOpL op (fun i x => Φ (x, n + (i : Int))) l
+  induction l generalizing n with
+  | nil => exact .rfl
   | cons x xs ih =>
-    simp only [List.mapIdx_cons, bigOpL_cons]
-    apply op_proper
-    · show Φ (x, (0 : Int) + m) ≡ Φ (x, m + (0 : Int))
-      rw [Int.zero_add, Int.add_zero]
-    · have Harg : (fun (i : Nat) (v : A) => (v, ↑(i + 1) + m)) =
-                  (fun (i : Nat) (v : A) => (v, ↑i + (m + 1))) := by grind
-      rw [Harg]
-      -- TODO: This can be fixed for sure
-      refine (ih (m + 1)).trans (bigOpL_equiv_of_forall_equiv @fun i _ => ?_)
-      rw [show m + 1 + (i : Int) = m + ((i + 1 : Nat) : Int) from by omega]
+    rw [List.mapIdx_cons]
+    refine op_proper (by simp) ?_
+    rw [show (fun (i : Nat) v => (v, ↑(i + 1) + n)) = fun (i : Nat) v => (v, ↑i + (n + 1)) by grind]
+    exact ih _ |>.trans (bigOpL_equiv_of_forall_equiv <| .of_eq (by grind))
+
+-- markusde 2 : Here
 
 theorem bigOpL_zipWith_op_equiv {B C : Type _} {f : A → B → C} {g1 : C → A} {g2 : C → B}
     {l₁ : List A} {l₂ : List B} (Φ : Nat → A → M) (Ψ : Nat → B → M)
@@ -364,7 +338,7 @@ theorem bigOpM_gen_proper {M : Type u} [OFE M] {op : M → M → M} {unit : M} [
     (hR_refl : ∀ x, R x x) (hR_op : ∀ {a a' b b'}, R a a' → R b b' → R (op a b) (op a' b'))
     (hf : ∀ k x, get? m k = some x → R (Φ k x) (Ψ k x)) :
     R ([^ op map] k ↦ x ∈ m, Φ k x) ([^ op map] k ↦ x ∈ m, Ψ k x) := by
-  refine bigOpL_gen_proper_2 R _ _ _ _ (hR_refl unit) hR_op rfl ?_
+  refine bigOpL_gen_proper_2 R (hR_refl unit) hR_op rfl ?_
   intro i x y hx hy
   obtain ⟨rfl⟩ := hx ▸ hy
   exact hf x.1 x.2 (toList_get.mp <| List.mem_iff_getElem?.mpr ⟨i, hx⟩)
