@@ -180,8 +180,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] subG 
   - [x] Functor solution
 - [ ] `lib/later_credits.v`
-- [ ] `lib/mono_Z.v` (nb. generalize to `MonoNumbers.lean`)
-- [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
+- [x] `lib/mono_Z.v` (nb. generalized to `MonoInt.lean` + `MonoNumbers.lean`)
+- [x] `lib/mono_nat.v` (nb. generalized to `MonoNat.lean` + `MonoNumbers.lean`)
 - [ ] `lib/na_invariants.v`
 - [ ] `lib/own.v`
   - [x] Definition
