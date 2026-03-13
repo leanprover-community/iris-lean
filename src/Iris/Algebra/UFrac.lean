@@ -7,7 +7,7 @@ open Fraction OFE Add CMRA
 
 /-- Unbounded fractions over the same carrier as `Frac`, but with trivial validity
 and no core. This matches Coq's `ufracR`. -/
-def UFrac (α : Type _) := LeibnizO α
+abbrev UFrac (α : Type _) := LeibnizO α
 
 instance [Add α] : Coe α (UFrac α) := ⟨(⟨·⟩)⟩
 @[simp] instance : COFE (UFrac α) := inferInstanceAs (COFE (LeibnizO α))
