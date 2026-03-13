@@ -40,6 +40,8 @@ instance : Std.LawfulIdentity (α := MaxNat) Add.add 0 where
 
 instance : CMRA MaxNat := inferInstanceAs (CMRA MaxNat)
 instance : CMRA.Discrete MaxNat := inferInstanceAs (CMRA.Discrete MaxNat)
+instance : CMRA.IsTotal MaxNat where
+  total x := ⟨x, rfl⟩
 instance : UCMRA MaxNat where
   unit := 0
   unit_valid := trivial
@@ -110,6 +112,8 @@ instance : Std.IdempotentOp (α := MaxInt) Add.add where
 
 instance : CMRA MaxInt := inferInstanceAs (CMRA MaxInt)
 instance : CMRA.Discrete MaxInt := inferInstanceAs (CMRA.Discrete MaxInt)
+instance : CMRA.IsTotal MaxInt where
+  total x := ⟨x, rfl⟩
 
 namespace MaxInt
 
