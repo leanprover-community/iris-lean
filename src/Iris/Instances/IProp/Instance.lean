@@ -87,6 +87,14 @@ instance ElemG.unbundle.ne {E : ElemG GF F} [OFE T] :
     OFE.NonExpansive (E.unbundle (T := T)) where
   ne {_ _ _} H := OFE.transpAp_eqv_mp (E.transpMap T) (E.transpClass T) H
 
+theorem ElemG.bundle_discreteE {GF : BundledGFunctors} [RFunctorContractive F] (E : ElemG GF F)
+    {v : F.ap (IProp GF)} [DiscreteE v] : DiscreteE (E.bundle v) where
+  discrete hz :=
+    ((ElemG.bundle.ne (T := IProp GF)).eqv
+      (DiscreteE.discrete ((E.unbundle_bundle v).dist.symm.trans
+        ((ElemG.unbundle.ne (T := IProp GF)).ne hz)))).trans
+      (E.bundle_unbundle _)
+
 theorem bundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : F.ap (IProp GF)) :
   E.bundle (a2 • ac) ≡ E.bundle a2 • E.bundle ac := by
   apply Equiv.symm
@@ -157,6 +165,11 @@ theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
   apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+
+theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v) :
+    OFE.DiscreteE (unfoldi.f v) where
+  discrete h := (OFE.NonExpansive.eqv (f := unfoldi.f) (hv.discrete
+    ((foldi_unfoldi v).dist.symm.trans (OFE.NonExpansive.ne h)))).trans (unfoldi_foldi _)
 
 theorem IProp.foldi_op (x y : FF.api τ (IPre FF)) : foldi (x • y) ≡ foldi x • foldi y :=
   RFunctor.map (IProp.unfold FF) (IProp.fold FF) |>.op _ _
