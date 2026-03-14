@@ -82,7 +82,7 @@ class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M�
     [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
     (R : M₂ → M₂ → Prop) (f : M₁ → M₂) where
   /-- The relation is reflexive -/
-  rel_refl : ∀ a : M₂, R a a
+  rel_refl : ∀ {a : M₂}, R a a
   /-- The relation is transitive -/
   rel_trans : ∀ {a b c : M₂}, R a b → R b c → R a c
   /-- The relation is proper with respect to equivalence -/
@@ -92,7 +92,7 @@ class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M�
   /-- The function is non-expansive -/
   map_ne : NonExpansive f
   /-- The homomorphism property -/
-  map_op : ∀ x y, R (f (op₁ x y)) (op₂ (f x) (f y))
+  map_op : ∀ {x y}, R (f (op₁ x y)) (op₂ (f x) (f y))
 
 /-- A monoid homomorphism preserves both the operation and the unit. -/
 class MonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
