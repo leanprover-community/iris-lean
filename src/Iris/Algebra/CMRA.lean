@@ -1457,9 +1457,29 @@ instance Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
 
 end ProdMor
 
+section ProdRF
+
+open RFunctor
+
+instance instRFunctorProdOF [RFunctor F1] [RFunctor F2] : RFunctor (ProdOF F1 F2) where
+  map f g := Prod.mapC (map f g) (map f g)
+  map_ne.ne _ _ _ Hx _ _ Hy _ :=
+    Prod.map_ne (fun _ => map_ne.ne Hx Hy _) (fun _ => map_ne.ne Hx Hy _)
+  map_id _ := ⟨map_id _, map_id _⟩
+  map_comp _ _ _ _ _ := ⟨map_comp .., map_comp ..⟩
+
+instance instRFunctorContractiveProdOF
+    [RFunctorContractive F1] [RFunctorContractive F2] :
+    RFunctorContractive (ProdOF F1 F2) where
+  map_contractive.1 H _ :=
+    Prod.map_ne (fun _ => RFunctorContractive.map_contractive.1 H _)
+      (fun _ => RFunctorContractive.map_contractive.1 H _)
+
+end ProdRF
+
 section optionOF
 
-variable (F : COFE.OFunctorPre)
+variable {F : COFE.OFunctorPre}
 
 instance urFunctorOptionOF [RFunctor F] : URFunctor (OptionOF F) where
   cmra {α β} := ucmraOption
