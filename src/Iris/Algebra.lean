@@ -8,6 +8,7 @@ import Iris.Algebra.GenMap
 import Iris.Algebra.LocalUpdates
 import Iris.Algebra.IProp
 import Iris.Algebra.MaxPrefixList
+import Iris.Algebra.MonoList
 import Iris.Algebra.OFE
 import Iris.Algebra.Updates
 import Iris.Algebra.UPred
