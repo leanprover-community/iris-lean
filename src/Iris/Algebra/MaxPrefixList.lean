@@ -29,6 +29,24 @@ theorem toMaxPrefixList_valid {A : Type _} [OFE A] (l : List A) : ✓ toMaxPrefi
 theorem toMaxPrefixList_validN {A : Type _} [OFE A] (n : Nat) (l : List A) : ✓{n} toMaxPrefixList l :=
   (toMaxPrefixList_valid (A := A) l).validN
 
+theorem toMaxPrefixList_dist_inj {A : Type _} [OFE A] {l1 l2 : List A} :
+    toMaxPrefixList (A := A) l1 ≡{n}≡ toMaxPrefixList l2 → l1 ≡{n}≡ l2 := by
+  intro h
+  intro i
+  specialize h i
+  unfold toMaxPrefixList at h
+  cases h1 : l1[i]? <;> cases h2 : l2[i]? <;> simp [h1, h2] at h ⊢
+  exact Agree.toAgree_injN h
+
+theorem toMaxPrefixList_inj {A : Type _} [OFE A] {l1 l2 : List A} :
+    toMaxPrefixList (A := A) l1 ≡ toMaxPrefixList l2 → l1 ≡ l2 := by
+  intro h
+  intro i
+  specialize h i
+  unfold toMaxPrefixList at h
+  cases h1 : l1[i]? <;> cases h2 : l2[i]? <;> simp [h1, h2] at h ⊢
+  exact Agree.toAgree_inj h
+
 theorem toMaxPrefixList_app {A : Type _} [OFE A] (l1 l2 : List A) :
     toMaxPrefixList (A := A) (l1 ++ l2) ≡
       toMaxPrefixList l1 • shiftMaxPrefixList l1.length l2 := by
