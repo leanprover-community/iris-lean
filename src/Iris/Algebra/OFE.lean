@@ -307,6 +307,37 @@ instance Option.merge_ne [OFE α] {op : α → α → α} [NonExpansive₂ op] :
     rcases x1, x2, y1, y2 with ⟨_|_, _|_, _|_, _|_⟩ <;> simp_all
     exact NonExpansive₂.ne Hx Hy
 
+instance [OFE α] : OFE (List α) where
+  Equiv xs ys := ∀ i : Nat, xs[i]? ≡ ys[i]?
+  Dist n xs ys := ∀ i : Nat, xs[i]? ≡{n}≡ ys[i]?
+  dist_eqv := {
+    refl := by intro xs i; exact Dist.rfl
+    symm := by intro xs ys h i; exact Dist.symm (h i)
+    trans := by intro xs ys zs h1 h2 i; exact Dist.trans (h1 i) (h2 i)
+  }
+  equiv_dist := by
+    refine ⟨?_, ?_⟩
+    · intro h n i
+      exact (h i).dist
+    · intro h i
+      exact OFE.equiv_dist.2 fun n => h n i
+  dist_lt := fun h hm i => Dist.lt (h i) hm
+
+instance [OFE α] [OFE.Discrete α] : OFE.Discrete (List α) where
+  discrete_0 h := by
+    intro i
+    exact OFE.Discrete.discrete_0 (h (i : Nat))
+
+instance [OFE α] [Leibniz α] : Leibniz (List α) where
+  eq_of_eqv h := by
+    apply List.ext_getElem?
+    intro i
+    exact OFE.Leibniz.eq_of_eqv (α := Option α) (h (i : Nat))
+
+theorem List.equiv_getElem? [OFE α] {xs ys : List α} : xs ≡ ys ↔ ∀ i : Nat, xs[i]? ≡ ys[i]? := .rfl
+
+theorem List.dist_getElem? [OFE α] {xs ys : List α} : xs ≡{n}≡ ys ↔ ∀ i : Nat, xs[i]? ≡{n}≡ ys[i]? := .rfl
+
 abbrev OFEFun {α : Type _} (β : α → Type _) := ∀ a, OFE (β a)
 
 instance [OFEFun (β : α → _)] : OFE ((x : α) → β x) where
