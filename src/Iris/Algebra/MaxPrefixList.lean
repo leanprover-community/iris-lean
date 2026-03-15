@@ -112,6 +112,51 @@ theorem toMaxPrefixList_op_validN_aux {A : Type _} [OFE A] (n : Nat) (l1 l2 : Li
     have hs : l1.length + (i - l1.length) = i := Nat.add_sub_of_le hge
     simpa [hs]
 
+theorem toMaxPrefixList_op_validN {A : Type _} [OFE A] (n : Nat) (l1 l2 : List A) :
+    ✓{n} (toMaxPrefixList (A := A) l1 • toMaxPrefixList l2) ↔
+      (∃ t, l2 ≡{n}≡ l1 ++ t) ∨ (∃ t, l1 ≡{n}≡ l2 ++ t) := by
+  constructor
+  · intro h
+    by_cases hlen : l1.length ≤ l2.length
+    · left
+      exact ⟨List.drop l1.length l2, toMaxPrefixList_op_validN_aux (A := A) n l1 l2 hlen h⟩
+    · right
+      have hcomm : ✓{n} (toMaxPrefixList (A := A) l2 • toMaxPrefixList l1) := CMRA.validN_ne (CMRA.comm.dist) h
+      have hlen' : l2.length ≤ l1.length := Nat.le_of_lt (Nat.lt_of_not_ge hlen)
+      exact ⟨List.drop l2.length l1, toMaxPrefixList_op_validN_aux (A := A) n l2 l1 hlen' hcomm⟩
+  · rintro (⟨t, ht⟩ | ⟨t, ht⟩)
+    · have hp : l1 <+: l1 ++ t := ⟨t, rfl⟩
+      have hEqMap : toMaxPrefixList (A := A) l2 ≡{n}≡ toMaxPrefixList (l1 ++ t) := toMaxPrefixList_ne.ne ht
+      have hvalid : ✓{n} (toMaxPrefixList (A := A) l1 • toMaxPrefixList (l1 ++ t)) :=
+        (toMaxPrefixList_op_l (A := A) hp).dist.validN.mpr (toMaxPrefixList_validN (A := A) n (l1 ++ t))
+      exact CMRA.validN_ne ((hEqMap.op_r).symm) hvalid
+    · have hp : l2 <+: l2 ++ t := ⟨t, rfl⟩
+      have hEqMap : toMaxPrefixList (A := A) l1 ≡{n}≡ toMaxPrefixList (l2 ++ t) := toMaxPrefixList_ne.ne ht
+      have hvalid : ✓{n} (toMaxPrefixList (A := A) (l2 ++ t) • toMaxPrefixList l2) :=
+        (toMaxPrefixList_op_r (A := A) hp).dist.validN.mpr (toMaxPrefixList_validN (A := A) n (l2 ++ t))
+      exact CMRA.validN_ne ((hEqMap.op_l).symm) hvalid
+
+theorem toMaxPrefixList_op_valid {A : Type _} [OFE A] (l1 l2 : List A) :
+    ✓ (toMaxPrefixList (A := A) l1 • toMaxPrefixList l2) ↔
+      (∃ t, l2 ≡ l1 ++ t) ∨ (∃ t, l1 ≡ l2 ++ t) := by
+  rw [CMRA.valid_iff_validN]
+  constructor
+  · intro h
+    by_cases hlen : l1.length ≤ l2.length
+    · left
+      refine ⟨List.drop l1.length l2, ?_⟩
+      exact OFE.equiv_dist.2 fun n => toMaxPrefixList_op_validN_aux (A := A) n l1 l2 hlen (h n)
+    · right
+      have hlen' : l2.length ≤ l1.length := Nat.le_of_lt (Nat.lt_of_not_ge hlen)
+      refine ⟨List.drop l2.length l1, ?_⟩
+      exact OFE.equiv_dist.2 fun n =>
+        toMaxPrefixList_op_validN_aux (A := A) n l2 l1 hlen' (CMRA.validN_ne (CMRA.comm.dist) (h n))
+  · intro h n
+    exact (toMaxPrefixList_op_validN (A := A) n l1 l2).2 <|
+      match h with
+      | Or.inl ⟨t, ht⟩ => Or.inl ⟨t, ht.dist⟩
+      | Or.inr ⟨t, ht⟩ => Or.inr ⟨t, ht.dist⟩
+
 theorem toMaxPrefixList_mono {A : Type _} [OFE A] {l1 l2 : List A} :
     l1 <+: l2 → toMaxPrefixList l1 ≼ toMaxPrefixList l2 := by
   intro h
