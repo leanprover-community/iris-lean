@@ -14,6 +14,14 @@ def toMaxPrefixList {A : Type _} [OFE A] (l : List A) : MaxPrefixList A :=
 def shiftMaxPrefixList {A : Type _} [OFE A] (start : Nat) (l : List A) : MaxPrefixList A :=
   ⟨fun i => if _h : start ≤ i then (l[i - start]?).map toAgree else none⟩
 
+instance toMaxPrefixList_ne {A : Type _} [OFE A] : NonExpansive (toMaxPrefixList (A := A)) where
+  ne := by
+    intro n x1 x2 h i
+    unfold toMaxPrefixList
+    specialize h i
+    cases h1 : x1[i]? <;> cases h2 : x2[i]? <;> simp [h1, h2] at h ⊢
+    exact OFE.NonExpansive.ne h
+
 theorem toMaxPrefixList_valid {A : Type _} [OFE A] (l : List A) : ✓ toMaxPrefixList l := by
   constructor
   · intro i
@@ -83,6 +91,26 @@ theorem toMaxPrefixList_op_r {A : Type _} [OFE A] {l1 l2 : List A} :
     l1 <+: l2 → toMaxPrefixList l2 • toMaxPrefixList l1 ≡ toMaxPrefixList l2 := by
   intro h
   exact comm.trans (toMaxPrefixList_op_l (A := A) h)
+
+theorem toMaxPrefixList_op_validN_aux {A : Type _} [OFE A] (n : Nat) (l1 l2 : List A) :
+    l1.length ≤ l2.length →
+      ✓{n} (toMaxPrefixList (A := A) l1 • toMaxPrefixList l2) →
+        l2 ≡{n}≡ l1 ++ List.drop l1.length l2 := by
+  intro hlen hvalid
+  intro i
+  by_cases hi : i < l1.length
+  · have hi2 : i < l2.length := Nat.lt_of_lt_of_le hi hlen
+    have hv : ✓{n} (Option.map toAgree l1[i]? • Option.map toAgree l2[i]?) := by
+      simpa [toMaxPrefixList, CMRA.op] using hvalid.1 i
+    have h1 : l1[i]? = some l1[i] := List.getElem?_eq_getElem hi
+    have h2 : l2[i]? = some l2[i] := List.getElem?_eq_getElem hi2
+    rw [List.getElem?_append_left hi, h1, h2]
+    rw [h1, h2] at hv
+    exact (Agree.toAgree_op_validN_iff_dist (a := l1[i]) (b := l2[i])).1 hv |>.symm
+  · have hge : l1.length ≤ i := Nat.le_of_not_lt hi
+    rw [List.getElem?_append_right hge, List.getElem?_drop]
+    have hs : l1.length + (i - l1.length) = i := Nat.add_sub_of_le hge
+    simpa [hs]
 
 theorem toMaxPrefixList_mono {A : Type _} [OFE A] {l1 l2 : List A} :
     l1 <+: l2 → toMaxPrefixList l1 ≼ toMaxPrefixList l2 := by
