@@ -17,6 +17,16 @@ def monoListAuth (dq : DFrac Q) (l : List A) : MonoListRes Q A :=
 def monoListLb (l : List A) : MonoListRes Q A :=
   Auth.frag (toMaxPrefixList l)
 
+theorem monoListLbDistInj {l1 l2 : List A} :
+    monoListLb (Q := Q) l1 ≡{n}≡ monoListLb l2 → l1 ≡{n}≡ l2 := by
+  intro h
+  exact toMaxPrefixList_dist_inj (A := A) ((Auth.frag_dist_inj (F := Q) h))
+
+theorem monoListLbInj {l1 l2 : List A} :
+    monoListLb (Q := Q) l1 ≡ monoListLb l2 → l1 ≡ l2 := by
+  intro h
+  exact toMaxPrefixList_inj (A := A) ((Auth.frag_inj (F := Q) h))
+
 theorem monoListAuthDfracValidN (n : Nat) (dq : DFrac Q) (l : List A) :
     ✓{n} (monoListAuth (Q := Q) dq l) ↔ ✓ dq := by
   unfold monoListAuth
