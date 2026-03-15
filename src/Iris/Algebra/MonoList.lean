@@ -121,6 +121,52 @@ theorem monoListLbOpValid (l1 l2 : List A) :
         (b1 := toMaxPrefixList l1) (b2 := toMaxPrefixList l2)).symm)
       ((Auth.frag_valid (F := Q) (b := toMaxPrefixList l1 • toMaxPrefixList l2)).2 hEq)
 
+theorem monoListBothDfracValidN (n : Nat) (dq : DFrac Q) (l1 l2 : List A) :
+    ✓{n} (monoListAuth (Q := Q) dq l1 • monoListLb (Q := Q) l2) ↔
+      ✓ dq ∧ ∃ t, l1 ≡{n}≡ l2 ++ t := by
+  let a := toMaxPrefixList (A := A) l1
+  let b := toMaxPrefixList (A := A) l2
+  have hEq : monoListAuth (Q := Q) dq l1 • monoListLb (Q := Q) l2 ≡
+      (((Auth.auth dq a) • Auth.frag ((a • b : MaxPrefixList A)) : MonoListRes Q A)) := by
+    unfold monoListAuth monoListLb
+    have hAssoc : (((Auth.auth dq a) • Auth.frag a) • Auth.frag b : MonoListRes Q A) ≡
+        ((Auth.auth dq a) • (Auth.frag a • Auth.frag b) : MonoListRes Q A) := assoc.symm
+    have hFrag : ((Auth.auth dq a) • (Auth.frag a • Auth.frag b) : MonoListRes Q A) ≡
+        (((Auth.auth dq a) • Auth.frag ((a • b : MaxPrefixList A)) : MonoListRes Q A)) :=
+      (OFE.Equiv.of_eq (Auth.frag_op (F := Q) (b1 := a) (b2 := b)).symm).op_r
+    exact hAssoc.trans hFrag
+  constructor
+  · intro h
+    have h' : ✓{n} (((Auth.auth dq a) • Auth.frag ((a • b : MaxPrefixList A)) : MonoListRes Q A)) := hEq.dist.validN.mp h
+    have hBoth := (Auth.both_dfrac_validN (F := Q) (dq := dq) (a := a) (b := (a • b))).1 h'
+    have hvalidAB : ✓{n} (a • b) := CMRA.validN_of_incN hBoth.2.1 (toMaxPrefixList_validN (A := A) n l1)
+    rcases (toMaxPrefixList_op_validN (A := A) n l1 l2).1 hvalidAB with hleft | hright
+    · rcases hleft with ⟨t, ht⟩
+      have hp : l1 <+: l1 ++ t := ⟨t, rfl⟩
+      have hmap : b ≡{n}≡ toMaxPrefixList (A := A) (l1 ++ t) := toMaxPrefixList_ne.ne ht
+      have hop : a • toMaxPrefixList (A := A) (l1 ++ t) ≡{n}≡ toMaxPrefixList (A := A) (l1 ++ t) :=
+        (toMaxPrefixList_op_l (A := A) hp).dist
+      have hab_eq : a • b ≡{n}≡ b := (hmap.op_r).trans (hop.trans hmap.symm)
+      have hbinc : b ≼{n} a := (hab_eq.incN_l).1 hBoth.2.1
+      rcases (toMaxPrefixList_includedN (A := A) n l2 l1).1 hbinc with ⟨u, hu⟩
+      exact ⟨hBoth.1, ⟨u, hu⟩⟩
+    · exact ⟨hBoth.1, hright⟩
+  · rintro ⟨hdq, ⟨t, ht⟩⟩
+    have hmap : a ≡{n}≡ toMaxPrefixList (A := A) (l2 ++ t) := toMaxPrefixList_ne.ne ht
+    have hp : l2 <+: l2 ++ t := ⟨t, rfl⟩
+    have hop : toMaxPrefixList (A := A) (l2 ++ t) • b ≡{n}≡ toMaxPrefixList (A := A) (l2 ++ t) :=
+      (toMaxPrefixList_op_r (A := A) hp).dist
+    have hincl : a • b ≼{n} a := by
+      refine ⟨CMRA.unit, ?_⟩
+      calc
+        a ≡{n}≡ toMaxPrefixList (A := A) (l2 ++ t) := hmap
+        _ ≡{n}≡ toMaxPrefixList (A := A) (l2 ++ t) • b := hop.symm
+        _ ≡{n}≡ a • b := (hmap.op_l).symm
+        _ ≡{n}≡ (a • b) • CMRA.unit := (CMRA.unit_right_id_dist (a • b)).symm
+    have hBoth : ✓{n} (((Auth.auth dq a) • Auth.frag ((a • b : MaxPrefixList A)) : MonoListRes Q A)) :=
+      (Auth.both_dfrac_validN (F := Q) (dq := dq) (a := a) (b := (a • b))).2 ⟨hdq, hincl, toMaxPrefixList_validN (A := A) n l1⟩
+    exact hEq.dist.validN.mpr hBoth
+
 theorem monoListIncluded (dq : DFrac Q) (l : List A) :
     monoListLb (Q := Q) l ≼ monoListAuth (Q := Q) dq l := by
   unfold monoListLb monoListAuth
