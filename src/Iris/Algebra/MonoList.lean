@@ -84,6 +84,43 @@ theorem monoListLbMono {l1 l2 : List A} :
   intro h
   exact Auth.frag_inc_of_inc (toMaxPrefixList_mono (A := A) h)
 
+theorem monoListLbOpValidN (n : Nat) (l1 l2 : List A) :
+    ✓{n} (monoListLb (Q := Q) l1 • monoListLb l2) ↔
+      (∃ t, l2 ≡{n}≡ l1 ++ t) ∨ (∃ t, l1 ≡{n}≡ l2 ++ t) := by
+  unfold monoListLb
+  constructor
+  · intro h
+    have hEq : ✓{n} (Auth.frag (toMaxPrefixList l1 • toMaxPrefixList l2) : MonoListRes Q A) := by
+      exact (OFE.Equiv.of_eq (Auth.frag_op (F := Q)
+        (b1 := toMaxPrefixList l1) (b2 := toMaxPrefixList l2)).symm).dist.validN.mpr h
+    exact (Auth.frag_validN (F := Q) (b := toMaxPrefixList l1 • toMaxPrefixList l2)).1 hEq |>
+      (toMaxPrefixList_op_validN (A := A) n l1 l2).1
+  · intro h
+    have hEq : ✓{n} (toMaxPrefixList (A := A) l1 • toMaxPrefixList l2) := (toMaxPrefixList_op_validN (A := A) n l1 l2).2 h
+    exact (OFE.Equiv.of_eq (Auth.frag_op (F := Q)
+      (b1 := toMaxPrefixList l1) (b2 := toMaxPrefixList l2)).symm).dist.validN.mp <|
+      (Auth.frag_validN (F := Q) (b := toMaxPrefixList l1 • toMaxPrefixList l2)).2 hEq
+
+theorem monoListLbOpValid (l1 l2 : List A) :
+    ✓ (monoListLb (Q := Q) l1 • monoListLb l2) ↔
+      (∃ t, l2 ≡ l1 ++ t) ∨ (∃ t, l1 ≡ l2 ++ t) := by
+  unfold monoListLb
+  constructor
+  · intro h
+    have hEq : ✓ (Auth.frag (toMaxPrefixList l1 • toMaxPrefixList l2) : MonoListRes Q A) := by
+      exact CMRA.valid_of_eqv
+        (OFE.Equiv.of_eq (Auth.frag_op (F := Q)
+          (b1 := toMaxPrefixList l1) (b2 := toMaxPrefixList l2)).symm)
+        h
+    exact (Auth.frag_valid (F := Q) (b := toMaxPrefixList l1 • toMaxPrefixList l2)).1 hEq |>
+      (toMaxPrefixList_op_valid (A := A) l1 l2).1
+  · intro h
+    have hEq : ✓ (toMaxPrefixList (A := A) l1 • toMaxPrefixList l2) := (toMaxPrefixList_op_valid (A := A) l1 l2).2 h
+    exact CMRA.valid_of_eqv
+      (OFE.Equiv.of_eq (Auth.frag_op (F := Q)
+        (b1 := toMaxPrefixList l1) (b2 := toMaxPrefixList l2)).symm)
+      ((Auth.frag_valid (F := Q) (b := toMaxPrefixList l1 • toMaxPrefixList l2)).2 hEq)
+
 theorem monoListIncluded (dq : DFrac Q) (l : List A) :
     monoListLb (Q := Q) l ≼ monoListAuth (Q := Q) dq l := by
   unfold monoListLb monoListAuth
