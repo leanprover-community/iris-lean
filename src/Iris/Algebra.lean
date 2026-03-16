@@ -3,6 +3,7 @@ import Iris.Algebra.CMRA
 import Iris.Algebra.COFESolver
 import Iris.Algebra.DFrac
 import Iris.Algebra.Excl
+import Iris.Algebra.ExclAuth
 import Iris.Algebra.Frac
 import Iris.Algebra.GenMap
 import Iris.Algebra.LocalUpdates
