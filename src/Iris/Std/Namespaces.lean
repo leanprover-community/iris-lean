@@ -1,6 +1,7 @@
 /-
 Copyright (c) 2026 Remy Seassau. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 -/
 
 import Iris.Std.CoPset
@@ -9,6 +10,7 @@ import Iris.Std.Positives
 abbrev Namespace := List Pos
 
 instance : DecidableEq Namespace := by infer_instance
+
 instance : Pos.Countable Namespace := by infer_instance
 
 def nroot : Namespace := List.nil
@@ -30,46 +32,35 @@ theorem nclose_root : ↑nroot = CoPset.full := by rfl
 
 theorem nclose_subseteq [Pos.Countable A] N (x : A) : (↑N.@x : CoPset) ⊆ (↑N : CoPset) := by
   intros p
-  simp [nclose, ndot]
-  rewrite [CoPset.elem_suffixes]; rewrite [CoPset.elem_suffixes]
-  rintro ⟨ q, Heq ⟩; rewrite [Heq]
-  obtain ⟨ q', Heq ⟩ :=
-    (Pos.flatten_suffix N (ndot N x) (by exists [Pos.Countable.encode x]))
-  exists (q ++ q')
+  simp only [nclose, CoPset.elem_suffixes]
+  rintro ⟨q, rfl⟩
+  obtain ⟨q', Heq⟩ := Pos.flatten_suffix N (ndot N x) (by exists [Pos.Countable.encode x])
+  exists q ++ q'
   rewrite [Pos.app_assoc.assoc, <- Heq]
   rfl
 
-theorem nclose_subseteq' [Pos.Countable A] E (N : Namespace) (x : A) : (↑N : CoPset) ⊆ E -> (↑(N.@x) : CoPset) ⊆ E := by
-  intro Hsubset
-  apply CoPset.subseteq_trans
-  apply nclose_subseteq
-  assumption
+theorem nclose_subseteq' [Pos.Countable A] {N : Namespace} (x : A) (Hs : (↑N : CoPset) ⊆ E) :
+    (↑(N.@x) : CoPset) ⊆ E :=
+  CoPset.subseteq_trans (nclose_subseteq _ _) Hs
 
-theorem ndot_ne_disjoint [Pos.Countable A] (N : Namespace) (x y : A) :
-  x ≠ y -> N.@x ## N.@y := by
-  intros Hxy p; simp [nclose];
-  rewrite [CoPset.elem_suffixes]; rewrite [CoPset.elem_suffixes]
-  rintro ⟨ qx, Heqx ⟩; rintro ⟨ qy, Heqy ⟩
-  rewrite [Heqx] at Heqy
-  have := Pos.flatten_suffix_eq qx qy (N.@x) (N.@y) (by simp [ndot]) Heqy
-  simp [ndot] at this
-  have := (Pos.encode_inj.inj _ _ this)
-  exact Hxy this
+theorem ndot_ne_disjoint [Pos.Countable A] (N : Namespace) {x y : A} (Hxy : x ≠ y) :
+    N.@x ## N.@y := by
+  intros p
+  simp only [nclose, CoPset.elem_suffixes]
+  rintro ⟨qx, Heqx⟩ ⟨qy, Heqy⟩
+  refine Hxy (Pos.encode_inj.inj _ _ ?_)
+  have _ := Pos.flatten_suffix_eq (by simp [ndot]) (Heqx ▸ Heqy)
+  simp_all [ndot]
 
-theorem ndot_preserve_disjoint_l [Pos.Countable A] (N : Namespace) (E : CoPset) (x : A) :
-  ↑N ## E → ↑(N.@x) ## E := by
-  have := nclose_subseteq N x
-  simp [Iris.Std.disjoint]; simp [Subset] at this
-  intros Hdisj p; exact fun a_1 => Hdisj p (this p a_1)
+theorem ndot_preserve_disjoint_l [Pos.Countable A] {N : Namespace} {E : CoPset} (x : A)
+    (Hdisj : ↑N ## E) : ↑(N.@x) ## E :=
+  fun p => Hdisj p ∘ (nclose_subseteq N x _)
 
-theorem ndot_preserve_disjoint_r [Pos.Countable A] (N : Namespace) (E : CoPset) (x : A) :
-  E ## ↑N → E ## ↑(N.@x) := by
-  intros
-  symm
-  apply ndot_preserve_disjoint_l
-  symm; assumption
+theorem ndot_preserve_disjoint_r [Pos.Countable A] {N : Namespace} {E : CoPset} (x : A)
+    (Hdisj : E ## ↑N) : E ## ↑(N.@x) :=
+   disj_symm _ _ <| ndot_preserve_disjoint_l x <| disj_symm _ _ Hdisj
 
 attribute [grind unfold] instDisjointCoPset in
 theorem CoPset.difference_difference (X1 X2 X3 Y : CoPset) :
-  (X1 \ X2) \ X3 ## Y -> X1 \ (X2 ∪ X3) ## Y := by
+    (X1 \ X2) \ X3 ## Y -> X1 \ (X2 ∪ X3) ## Y := by
   grind only [= in_diff, = not_in_union]
