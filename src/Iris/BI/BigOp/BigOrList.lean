@@ -37,29 +37,25 @@ theorem snoc {Φ : Nat → A → PROP} {l : List A} {x : A} :
   equiv_iff.mp (bigOpL_snoc_equiv Φ l x)
 
 theorem mono {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ k x, l[k]? = some x → Φ k x ⊢ Ψ k x) :
-    ([∨list] k ↦ x ∈ l, Φ k x) ⊢ [∨list] k ↦ x ∈ l, Ψ k x := by
-  induction l generalizing Φ Ψ with
-  | nil => exact Entails.rfl
-  | cons y ys ih =>
-    simp only [bigOrL, bigOpL]
-    exact or_mono (h 0 y rfl) (ih fun k x hget => h (k + 1) x hget)
+    ([∨list] k ↦ x ∈ l, Φ k x) ⊢ [∨list] k ↦ x ∈ l, Ψ k x :=
+  bigOpL_gen_proper (· ⊢ ·) .rfl or_mono (h _ _ ·)
 
-theorem proper {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ≡ Ψ k x) :
+theorem equiv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ≡ Ψ k x) :
     ([∨list] k ↦ x ∈ l, Φ k x) ≡ [∨list] k ↦ x ∈ l, Ψ k x := bigOpL_equiv h
 
-theorem congr {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, Φ k x ≡ Ψ k x) :
+theorem equiv_of_forall_equiv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, Φ k x ≡ Ψ k x) :
     ([∨list] k ↦ x ∈ l, Φ k x) ≡ [∨list] k ↦ x ∈ l, Ψ k x := bigOpL_equiv_of_forall_equiv h
 
 theorem false_l {l : List A} :
     ([∨list] _k ∈ l, iprop(False : PROP)) ≡ iprop(False) := bigOpL_const_unit_equiv
 
-theorem or' {Φ Ψ : Nat → A → PROP} {l : List A} :
+theorem or_equiv {Φ Ψ : Nat → A → PROP} {l : List A} :
     ([∨list] k ↦ x ∈ l, iprop(Φ k x ∨ Ψ k x)) ≡
       iprop(([∨list] k ↦ x ∈ l, Φ k x) ∨ [∨list] k ↦ x ∈ l, Ψ k x) := bigOpL_op_equiv Φ Ψ l
 
-theorem or_2 {Φ Ψ : Nat → A → PROP} {l : List A} :
+theorem or_equiv_symm {Φ Ψ : Nat → A → PROP} {l : List A} :
     iprop(([∨list] k ↦ x ∈ l, Φ k x) ∨ [∨list] k ↦ x ∈ l, Ψ k x) ≡
-      [∨list] k ↦ x ∈ l, iprop(Φ k x ∨ Ψ k x) := or'.symm
+      [∨list] k ↦ x ∈ l, iprop(Φ k x ∨ Ψ k x) := or_equiv.symm
 
 theorem take_drop {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
     ([∨list] k ↦ x ∈ l, Φ k x) ≡
@@ -74,28 +70,21 @@ theorem intro {Φ : Nat → A → PROP} {l : List A} {k : Nat} {x : A}
     Φ k x ⊢ [∨list] i ↦ y ∈ l, Φ i y := by
   induction l generalizing k Φ with
   | nil => simp at h
-  | cons y ys ih =>
-    simp only [bigOpL]
-    cases k with
-    | zero =>
-      simp at h
-      subst h
-      exact or_intro_l
-    | succ j =>
-      simp at h
-      exact (ih (Φ := fun n => Φ (n + 1)) h).trans or_intro_r
+  | cons _ _ ih => cases k with
+    | zero => simp at h; subst h; exact or_intro_l
+    | succ => simp at h; exact (ih (Φ := fun n => Φ (n + 1)) h).trans or_intro_r
+
+private theorem exist_fwd {Φ : Nat → A → PROP} {l : List A} :
+    ([∨list] k ↦ x ∈ l, Φ k x) ⊢ ∃ k, ∃ x, iprop(⌜l[k]? = some x⌝ ∧ Φ k x) :=
+  match l with
+  | [] => false_elim
+  | _ :: _ => or_elim
+      (exists_intro' 0 (exists_intro' _ (and_intro (pure_intro rfl) .rfl)))
+      (exist_fwd.trans (exists_elim fun k => exists_intro' (k + 1) .rfl))
 
 theorem exist {Φ : Nat → A → PROP} {l : List A} :
-    ([∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ ∃ k, ∃ x, iprop(⌜l[k]? = some x⌝ ∧ Φ k x) := by
-  constructor
-  · induction l generalizing Φ with
-    | nil => simp only [bigOpL]; exact false_elim
-    | cons y ys ih =>
-      simp only [bigOpL]
-      apply or_elim
-      · exact exists_intro' 0 (exists_intro' y (and_intro (pure_intro rfl) .rfl))
-      · refine ih.trans (exists_elim fun k => exists_intro' (k + 1) .rfl)
-  · exact exists_elim fun k => exists_elim fun x => pure_elim_l (intro ·)
+    ([∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ ∃ k, ∃ x, iprop(⌜l[k]? = some x⌝ ∧ Φ k x) :=
+  ⟨exist_fwd, exists_elim fun _ => exists_elim fun _ => pure_elim_l (intro ·)⟩
 
 theorem pure {φ : Nat → A → Prop} {l : List A} :
     ([∨list] k ↦ x ∈ l, (⌜φ k x⌝ : PROP)) ⊣⊢ (⌜∃ k x, l[k]? = some x ∧ φ k x⌝ : PROP) :=
@@ -111,25 +100,17 @@ theorem sep_l {P : PROP} {Φ : Nat → A → PROP} {l : List A} :
 
 theorem sep_r {Φ : Nat → A → PROP} {P : PROP} {l : List A} :
     (([∨list] k ↦ x ∈ l, Φ k x) ∗ P) ⊣⊢ [∨list] k ↦ x ∈ l, (Φ k x ∗ P) :=
-  sep_comm.trans <| sep_l.trans (equiv_iff.mp (congr (equiv_iff.mpr sep_comm)))
+  sep_comm.trans <| sep_l.trans (equiv_iff.mp (equiv_of_forall_equiv (equiv_iff.mpr sep_comm)))
 
 theorem elem_of {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
-    Φ x ⊢ [∨list] y ∈ l, Φ y := by
-  induction l with
-  | nil => simp at h
-  | cons y ys ih =>
-    simp only [bigOpL]
-    cases h with
-    | head => exact or_intro_l
-    | tail _ hmem => exact (ih hmem).trans or_intro_r
+    Φ x ⊢ [∨list] y ∈ l, Φ y :=
+  match l, h with
+  | _ :: _, .head .. => or_intro_l
+  | _ :: _, .tail _ hmem => (elem_of hmem).trans or_intro_r
 
 theorem bind {B : Type _} (f : A → List B) {Φ : B → PROP} {l : List A} :
-    ([∨list] y ∈ (l.flatMap f), Φ y) ⊣⊢ [∨list] x ∈ l, [∨list] y ∈ (f x), Φ y := by
-  induction l with
-  | nil => exact .rfl
-  | cons x xs ih =>
-    simp only [List.flatMap_cons, bigOrL, bigOpL]
-    exact app.trans (or_congr .rfl ih)
+    ([∨list] y ∈ (l.flatMap f), Φ y) ⊣⊢ [∨list] x ∈ l, [∨list] y ∈ (f x), Φ y :=
+  equiv_iff.mp (bigOpL_flatMap_equiv f Φ l)
 
 theorem persistently {Φ : Nat → A → PROP} {l : List A} :
     (<pers> [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, <pers> Φ k x :=
@@ -155,10 +136,10 @@ theorem later {Φ : Nat → A → PROP} {l : List A} (hne : l ≠ []) :
   }) Φ hne
 
 theorem laterN {Φ : Nat → A → PROP} {l : List A} {n : Nat} (hne : l ≠ []) :
-    (▷^[n] [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ▷^[n] Φ k x := by
-  induction n with
-  | zero => exact .rfl
-  | succ m ih => exact (later_congr ih).trans (later hne)
+    (▷^[n] [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ▷^[n] Φ k x :=
+  match n with
+  | 0 => .rfl
+  | _ + 1 => (later_congr (laterN hne)).trans (later hne)
 
 theorem perm {Φ : A → PROP} {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
     ([∨list] x ∈ l₁, Φ x) ≡ [∨list] x ∈ l₂, Φ x := bigOpL_equiv_of_perm Φ hp
@@ -169,46 +150,25 @@ theorem submseteq {Φ : A → PROP} {l₁ l₂ l : List A} (h : (l₁ ++ l).Perm
     ((app (Φ := fun _ => Φ) (l₁ := l₁) (l₂ := l)).2).trans
       (equiv_iff.mp (perm (Φ := Φ) h)).1
 
-theorem mono' {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ k x, Φ k x ⊢ Ψ k x) :
+theorem mono_of_forall {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ k x, Φ k x ⊢ Ψ k x) :
     ([∨list] k ↦ x ∈ l, Φ k x) ⊢ [∨list] k ↦ x ∈ l, Ψ k x := mono fun k x _ => h k x
 
 theorem id_mono' {l₁ l₂ : List PROP}
     (hlen : l₁.length = l₂.length)
     (h : ∀ (i : Nat) (P Q : PROP), l₁[i]? = some P → l₂[i]? = some Q → P ⊢ Q) :
-    ([∨list] P ∈ l₁, P) ⊢ [∨list] P ∈ l₂, P := by
-  induction l₁ generalizing l₂ with
-  | nil =>
-    cases l₂ with
-    | nil => exact Entails.rfl
-    | cons _ _ => simp at hlen
-  | cons P Ps ih =>
-    cases l₂ with
-    | nil => simp at hlen
-    | cons Q Qs =>
-      simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen
-      simp only [bigOpL]
-      exact or_mono (h 0 P Q rfl rfl)
-        (ih hlen fun i P' Q' hp hq => h (i + 1) P' Q' hp hq)
+    ([∨list] P ∈ l₁, P) ⊢ [∨list] P ∈ l₂, P :=
+  bigOpL_gen_proper_2 (· ⊢ ·) .rfl or_mono hlen (h _ _ _ · ·)
 
 instance nil_persistent {Φ : Nat → A → PROP} :
-    Persistent ([∨list] k ↦ x ∈ ([] : List A), Φ k x) := by
-  simp only [bigOpL]
-  infer_instance
+    Persistent ([∨list] k ↦ x ∈ ([] : List A), Φ k x) where
+  persistent := false_elim
 
 theorem persistent_cond {Φ : Nat → A → PROP} {l : List A}
     (h : ∀ k x, l[k]? = some x → Persistent (Φ k x)) :
     Persistent ([∨list] k ↦ x ∈ l, Φ k x) where
-  persistent := by
-    induction l generalizing Φ with
-    | nil =>
-      simp only [bigOpL]
-      exact (false_elim (P := iprop(<pers> (False : PROP))))
-    | cons y ys ih =>
-      simp only [bigOpL]
-      have htail : ∀ k x, ys[k]? = some x → Persistent (Φ (k + 1) x) := fun k x hget => h (k + 1) x hget
-      apply or_elim
-      · exact (h 0 y rfl).persistent.trans (persistently_mono or_intro_l)
-      · exact (ih htail).trans (persistently_mono or_intro_r)
+  persistent := bigOpL_closed (P := fun Q => Q ⊢ <pers> Q) false_elim
+    (fun hx hy => or_elim (hx.trans (persistently_mono or_intro_l))
+      (hy.trans (persistently_mono or_intro_r))) (fun hget => (h _ _ hget).persistent)
 
 instance persistent {Φ : Nat → A → PROP} {l : List A} [∀ k x, Persistent (Φ k x)] :
     Persistent ([∨list] k ↦ x ∈ l, Φ k x) := persistent_cond fun _ _ _ => inferInstance
