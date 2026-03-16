@@ -29,10 +29,10 @@ following operations:
 consulted to determine whether a number of the form [2i] or [2i+1]
 is a member of the set. -/
 
-private inductive CoPsetRaw where
+inductive CoPsetRaw where
   | leaf : Bool → CoPsetRaw
   | node : Bool → CoPsetRaw → CoPsetRaw → CoPsetRaw
-deriving DecidableEq
+  deriving DecidableEq
 
 /-- The type of raw trees (above) offers several representations of the
 empty set and several representations of the full set. In order to
@@ -45,10 +45,11 @@ def coPsetWf (t : CoPsetRaw) : Bool :=
   | .node false (.leaf false) (.leaf false) => false
   | .node _ l r => coPsetWf l && coPsetWf r
 
-theorem node_wf_l b l r : coPsetWf (.node b l r) -> coPsetWf l := by
+theorem node_wf_l {b l r} : coPsetWf (.node b l r) -> coPsetWf l := by
   cases b <;> rcases l with ⟨⟨⟩⟩ | _ <;> rcases r with ⟨⟨⟩⟩ | _ <;>
   simp_all [coPsetWf]
-theorem node_wf_r b l r : coPsetWf (.node b l r) -> coPsetWf r := by
+
+theorem node_wf_r {b l r} : coPsetWf (.node b l r) -> coPsetWf r := by
   cases b <;> rcases l with ⟨⟨⟩⟩ | _ <;> rcases r with ⟨⟨⟩⟩ | _ <;>
   simp_all [coPsetWf]
 
@@ -59,10 +60,9 @@ def CoPsetRaw.node' (b : Bool) (l r : CoPsetRaw) : CoPsetRaw :=
   | false, .leaf false, .leaf false => .leaf false
   | _, _, _ => .node b l r
 
-theorem node'_wf b l r :
-  coPsetWf l -> coPsetWf r -> coPsetWf (CoPsetRaw.node' b l r) := by
-  cases b <;> rcases l with ⟨ ⟨⟩ ⟩ | _ <;> rcases r with ⟨ ⟨⟩ ⟩ | _ <;>
-  simp [CoPsetRaw.node', coPsetWf] <;> exact fun a_6 a_7 => ⟨a_6, a_7⟩
+theorem node'_wf {b l r} : coPsetWf l -> coPsetWf r -> coPsetWf (CoPsetRaw.node' b l r) := by
+  cases b <;> rcases l with ⟨⟨⟩⟩ | _ <;> rcases r with ⟨⟨⟩⟩ | _ <;>
+  simp [CoPsetRaw.node', coPsetWf] <;> exact (⟨·, ·⟩)
 
 open CoPsetRaw
 
@@ -72,15 +72,14 @@ def CoPsetRaw.ElemOf : Pos → CoPsetRaw → Bool
   | .xH, node b _ _ => b
   | p~0, node _ l _ => CoPsetRaw.ElemOf p l
   | p~1, node _ _ r => CoPsetRaw.ElemOf p r
+
 instance : Membership Pos CoPsetRaw  where
   mem := fun t p => CoPsetRaw.ElemOf p t
 
 theorem elem_of_node b l r (p : Pos) :
-  (CoPsetRaw.ElemOf p (CoPsetRaw.node' b l r))
-  = (CoPsetRaw.ElemOf p (CoPsetRaw.node b l r)) := by
+  (CoPsetRaw.ElemOf p (CoPsetRaw.node' b l r)) = (CoPsetRaw.ElemOf p (CoPsetRaw.node b l r)) := by
   cases p <;> cases b <;> rcases l with ⟨⟨⟩⟩ | _ <;> rcases r with ⟨⟨⟩⟩ | _ <;>
   simp [node', CoPsetRaw.ElemOf]
-
 
 /-- Singleton. -/
 def CoPsetRaw.Singleton : Pos → CoPsetRaw
@@ -94,8 +93,8 @@ def CoPsetRaw.Union : CoPsetRaw → CoPsetRaw → CoPsetRaw
   | t, leaf false => t
   | leaf true, _ => leaf true
   | _, leaf true => leaf true
-  | node b1 l1 r1, node b2 l2 r2 =>
-    node' (b1 || b2) (Union l1 l2) (Union r1 r2)
+  | node b1 l1 r1, node b2 l2 r2 => node' (b1 || b2) (Union l1 l2) (Union r1 r2)
+
 instance : Union CoPsetRaw where union := CoPsetRaw.Union
 
 /-- Intersection -/
@@ -104,8 +103,8 @@ def CoPsetRaw.Intersection : CoPsetRaw → CoPsetRaw → CoPsetRaw
   | t, leaf true => t
   | leaf false, _ => leaf false
   | _, leaf false => leaf false
-  | node b1 l1 r1, node b2 l2 r2 =>
-    node' (b1 && b2) (Intersection l1 l2) (Intersection r1 r2)
+  | node b1 l1 r1, node b2 l2 r2 => node' (b1 && b2) (Intersection l1 l2) (Intersection r1 r2)
+
 instance : Inter CoPsetRaw where inter := CoPsetRaw.Intersection
 
 /-- Complement -/
@@ -121,22 +120,18 @@ theorem coPsetSingleton_wf p : coPsetWf (CoPsetRaw.Singleton p) := by
   · apply node'_wf; assumption; simp [coPsetWf]
   · simp
 
-theorem coPsetUnion_wf t1 t2 :
-  coPsetWf t1 -> coPsetWf t2 -> coPsetWf (t1 ∪ t2) := by
-  revert t2; induction t1 with
+theorem coPsetUnion_wf t1 t2 : coPsetWf t1 -> coPsetWf t2 -> coPsetWf (t1 ∪ t2) := by
+  induction t1 generalizing t2 with
   | leaf b =>
-    intros t2 Hwf1 Hwf2; cases b <;> simp only [Union.union, CoPsetRaw.Union]
+    intros Hwf1 Hwf2; cases b <;> simp only [Union.union, CoPsetRaw.Union]
     · assumption
     · rcases t2 with ⟨⟨⟩⟩ | _ <;> simp [CoPsetRaw.Union, coPsetWf]
   | node b l r IH1 IH2 =>
-    intros t2 Hwf1 Hwf2; rcases t2 with ⟨⟨⟩⟩ | _
-    <;> simp only [Union.union, CoPsetRaw.Union, coPsetWf]
+    intros Hwf1 Hwf2; rcases t2 with ⟨⟨⟩⟩ | _ <;> simp only [Union.union, CoPsetRaw.Union, coPsetWf]
     · assumption
-    · apply node'_wf
-      · apply IH1; exact node_wf_l b l r Hwf1
-        exact node_wf_l _ _ _ Hwf2
-      · apply IH2; exact node_wf_r b l r Hwf1
-        exact node_wf_r _ _ _ Hwf2
+    · refine node'_wf ?_ ?_
+      · exact IH1 _ (node_wf_l Hwf1) (node_wf_l Hwf2)
+      · exact IH2 _ (node_wf_r Hwf1) (node_wf_r Hwf2)
 
 theorem coPsetIntersection_wf t1 t2 :
   coPsetWf t1 -> coPsetWf t2 -> coPsetWf (t1 ∩ t2) := by
@@ -150,11 +145,9 @@ theorem coPsetIntersection_wf t1 t2 :
     intros t2 Hwf1 Hwf2; rcases t2 with ⟨⟨⟩⟩ | _
     <;> simp only [Inter.inter, CoPsetRaw.Intersection, coPsetWf]
     · assumption
-    · apply node'_wf
-      · apply IH1; exact node_wf_l b l r Hwf1
-        exact node_wf_l _ _ _ Hwf2
-      · apply IH2; exact node_wf_r b l r Hwf1
-        exact node_wf_r _ _ _ Hwf2
+    · refine node'_wf ?_ ?_
+      · exact IH1 _ (node_wf_l Hwf1) (node_wf_l Hwf2)
+      · exact IH2 _ (node_wf_r Hwf1) (node_wf_r Hwf2)
 
 theorem coPsetComplement_wf t : coPsetWf (CoPsetRaw.Complement t) := by
   induction t with
@@ -175,28 +168,27 @@ namespace CoPset
 /-- All operations are refined at the level of [CoPset] -/
 
 def empty : CoPset := ⟨CoPsetRaw.leaf false, rfl⟩
+
 instance : EmptyCollection CoPset where emptyCollection := CoPset.empty
 
 def full : CoPset := ⟨CoPsetRaw.leaf true, rfl⟩
 
-def singleton (p : Pos) : CoPset :=
-  ⟨CoPsetRaw.Singleton p, coPsetSingleton_wf p⟩
+def singleton (p : Pos) : CoPset := ⟨CoPsetRaw.Singleton p, coPsetSingleton_wf p⟩
 
-def union (X Y : CoPset) : CoPset :=
-  ⟨CoPsetRaw.Union X.tree Y.tree, coPsetUnion_wf _ _ X.wf Y.wf⟩
+def union (X Y : CoPset) : CoPset := ⟨CoPsetRaw.Union X.tree Y.tree, coPsetUnion_wf _ _ X.wf Y.wf⟩
+
 instance : Union CoPset where union := CoPset.union
 
 def inter (X Y : CoPset) : CoPset :=
   ⟨CoPsetRaw.Intersection X.tree Y.tree, coPsetIntersection_wf _ _ X.wf Y.wf⟩
+
 instance : Inter CoPset where inter := CoPset.inter
 
-def complement (X : CoPset) : CoPset :=
-  ⟨CoPsetRaw.Complement X.tree, coPsetComplement_wf _⟩
+def complement (X : CoPset) : CoPset := ⟨CoPsetRaw.Complement X.tree, coPsetComplement_wf _⟩
 
 def diff (X Y : CoPset) : CoPset := X ∩ (complement Y)
 
-def mem (p : Pos) (X : CoPset) : Bool :=
-  CoPsetRaw.ElemOf p X.tree
+def mem (p : Pos) (X : CoPset) : Bool := CoPsetRaw.ElemOf p X.tree
 
 instance : HasSubset CoPset where
   Subset t1 t2 := ∀ (p : Pos), p ∈ t1 -> p ∈ t2
@@ -204,128 +196,98 @@ instance : HasSubset CoPset where
 instance : SDiff CoPset where
   sdiff := CoPset.diff
 
-theorem in_inter p (X Y : CoPset) :
-  p ∈ X ∩ Y <-> p ∈ X ∧ p ∈ Y := by
+theorem in_inter p (X Y : CoPset) : p ∈ X ∩ Y <-> p ∈ X ∧ p ∈ Y := by
   simp only [Inter.inter, inter, Membership.mem]
   constructor
   · rcases X with ⟨X, xwf⟩; rcases Y with ⟨Y, ywf⟩; dsimp
     induction p generalizing X Y with
     | xI p IH =>
       rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
-      simp only [Intersection] <;> intros Hnin <;>
-      simp_all [CoPsetRaw.ElemOf]
-      apply (IH _ (node_wf_r _ _ _ xwf) _ (node_wf_r _ _ _ ywf))
-      rewrite [elem_of_node] at Hnin; simp_all [ElemOf]
+      simp only [Intersection] <;> intros Hnin <;> simp_all [CoPsetRaw.ElemOf]
+      refine IH _ (node_wf_r xwf) _ (node_wf_r ywf) ?_
+      rewrite [elem_of_node] at Hnin
+      simp_all [ElemOf]
     | xO p IH =>
       rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
-      simp only [Intersection] <;> intros Hnin <;>
-      simp_all [CoPsetRaw.ElemOf]
-      apply (IH _ (node_wf_l _ _ _ xwf) _ (node_wf_l _ _ _ ywf))
-      rewrite [elem_of_node] at Hnin; simp_all [ElemOf]
+      simp only [Intersection] <;> intros Hnin <;> simp_all [CoPsetRaw.ElemOf]
+      refine IH _ (node_wf_l xwf) _ (node_wf_l ywf) ?_
+      rewrite [elem_of_node] at Hnin
+      simp_all [ElemOf]
     | xH =>
       rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
       simp [Intersection, ElemOf, elem_of_node]
-
   · rcases X with ⟨X, xwf⟩; rcases Y with ⟨Y, ywf⟩; simp []
     induction p generalizing X Y with
     | xI p IH =>
       rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
       simp [ElemOf, elem_of_node, Intersection]
-      apply (IH _ (node_wf_r _ _ _ xwf) _ (node_wf_r _ _ _ ywf))
+      exact (IH _ (node_wf_r xwf) _ (node_wf_r ywf))
     | xO p IH =>
       rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
       simp [ElemOf, elem_of_node, Intersection]
-      apply (IH _ (node_wf_l _ _ _ xwf) _ (node_wf_l _ _ _ ywf))
+      exact (IH _ (node_wf_l xwf) _ (node_wf_l ywf))
     | xH =>
       rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
       simp [ElemOf, elem_of_node, Intersection]
-      exact fun a_6 a_7 => ⟨a_6, a_7⟩
+      exact (⟨·, ·⟩)
 
-theorem in_complement p (X : CoPset) :
-  p ∈ complement X <-> p ∉ X := by
-  simp [complement]
-  simp [Membership.mem]
-  rcases X with ⟨X, xwf⟩; simp []
+theorem in_complement {X : CoPset} : p ∈ complement X <-> p ∉ X := by
+  rcases X with ⟨X, xwf⟩
+  simp only [complement, Membership.mem, Bool.not_eq_true, Bool.coe_true_iff_false]
   induction p generalizing X with
     | xI p IH =>
       rcases X with ⟨⟨⟩⟩ | _ <;>
-      simp [CoPsetRaw.Complement, CoPsetRaw.ElemOf, elem_of_node]
-      apply IH; apply node_wf_r _ _ _ xwf
+      simp only [CoPsetRaw.Complement, CoPsetRaw.ElemOf, elem_of_node]
+      exact IH _ (node_wf_r xwf)
     | xO p IH =>
       rcases X with ⟨⟨⟩⟩ | _ <;>
-      simp [CoPsetRaw.Complement, CoPsetRaw.ElemOf, elem_of_node]
-      apply IH; apply node_wf_l _ _ _ xwf
+      simp only [CoPsetRaw.Complement, CoPsetRaw.ElemOf, elem_of_node]
+      exact IH _ (node_wf_l xwf)
     | xH =>
-      rcases X with ⟨⟨⟩⟩ | _ <;> simp [CoPsetRaw.Complement, CoPsetRaw.ElemOf, elem_of_node]
+      rcases X with ⟨⟨⟩⟩ | _ <;> simp only [CoPsetRaw.Complement, CoPsetRaw.ElemOf, elem_of_node]
 
-theorem in_diff p (X Y : CoPset) :
-  p ∈ X \ Y <-> p ∈ X ∧ p ∉ Y := by
-  simp [SDiff.sdiff, CoPset.diff]
-  constructor
-  · intros Hnin; obtain ⟨ Hx, Hy ⟩ := (in_inter p X (complement Y)).1 Hnin
-    constructor
-    · exact Hx
-    · exact ((in_complement p Y).1 Hy)
-  · rintro ⟨ Hx, Hy ⟩
-    simp only [in_inter]
-    constructor
-    · exact Hx
-    · exact ((in_complement p Y).2 Hy)
+theorem in_diff {p} {X Y : CoPset} : p ∈ X \ Y <-> p ∈ X ∧ p ∉ Y := by
+  refine ⟨fun Hnin => ?_, fun ⟨Hx, Hy⟩ => ?_⟩
+  · obtain ⟨Hx, Hy⟩ := in_inter p X (complement Y) |>.mp Hnin
+    exact ⟨Hx, in_complement.mp Hy⟩
+  · simpa only [SDiff.sdiff, CoPset.diff, in_inter] using ⟨Hx, in_complement.mpr Hy⟩
 
-theorem in_union p (X Y : CoPset) :
-  p ∈ X ∪ Y <-> p ∈ X ∨ p ∈ Y := by
+theorem in_union {X Y : CoPset} : p ∈ X ∪ Y <-> p ∈ X ∨ p ∈ Y := by
   rcases X with ⟨X, xwf⟩; rcases Y with ⟨Y, ywf⟩
-  simp [Membership.mem]
+  simp only [Membership.mem]
   constructor
+  · induction p generalizing X Y with
+    | xI p IH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp_all [Union.union, union, CoPsetRaw.Union, elem_of_node]
+      exact IH _ (node_wf_r xwf) _ (node_wf_r ywf)
+    | xO p IH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp_all [Union.union, union, CoPsetRaw.Union, elem_of_node]
+      exact IH _ (node_wf_l xwf) _ (node_wf_l ywf)
+    | xH =>
+      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
+      simp [Union.union, union, CoPsetRaw.Union, ElemOf, elem_of_node]
   · induction p generalizing X Y with
     | xI p IH =>
       rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
       simp_all [Union.union, union, CoPsetRaw.Union, ElemOf, elem_of_node]
-      <;> intros Hin
-      apply (IH _ (node_wf_r _ _ _ xwf) _ (node_wf_r _ _ _ ywf))
-      apply Hin
+      exact IH _ (node_wf_r xwf) _ (node_wf_r ywf)
     | xO p IH =>
       rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
-      simp_all [ElemOf, Union.union, union, CoPsetRaw.Union]
-      simp_all [elem_of_node, CoPsetRaw.ElemOf]; intros Hin
-      apply (IH _ (node_wf_l _ _ _ xwf) _ (node_wf_l _ _ _ ywf))
-      apply Hin
+      simp_all [Union.union, union, CoPsetRaw.Union, ElemOf, elem_of_node]
+      exact IH _ (node_wf_l xwf) _ (node_wf_l ywf)
     | xH =>
       rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
-      simp [Union.union, union, CoPsetRaw.Union, ElemOf, elem_of_node]
+      simp_all [Union.union, union, CoPsetRaw.Union, ElemOf, elem_of_node]
 
-  · induction p generalizing X Y with
-    | xI p IH =>
-      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
-      simp_all [Union.union, union, CoPsetRaw.Union, ElemOf, elem_of_node] <;> intros Hin <;>
-      apply (IH _ (node_wf_r _ _ _ xwf) _ (node_wf_r _ _ _ ywf) Hin)
-    | xO p IH =>
-      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
-      simp_all [ElemOf, Union.union, union, CoPsetRaw.Union]
-      simp_all [elem_of_node, CoPsetRaw.ElemOf]; intros Hin
-      apply (IH _ (node_wf_l _ _ _ xwf) _ (node_wf_l _ _ _ ywf) Hin)
-    | xH =>
-      rcases X with ⟨⟨⟩⟩ | _ <;> rcases Y with ⟨⟨⟩⟩ | _ <;>
-      simp [Union.union, union, CoPsetRaw.Union, ElemOf, elem_of_node]
+theorem not_in_union {p} {X1 X2 : CoPset} : ¬ p ∈ X1 ∪ X2 <-> ¬ p ∈ X1 ∧ ¬ p ∈ X2 := by
+  refine ⟨fun Hu => ?_, fun ⟨H1, H2⟩ Hu => ?_⟩
+  · exact ⟨(Hu <| in_union.mpr <| .inl ·), (Hu <| in_union.mpr <| .inr ·)⟩
+  · exact in_union.mp Hu |>.elim H1 H2
 
-theorem not_in_union p (X1 X2 : CoPset) :
-  ¬ p ∈ X1 ∪ X2 <-> ¬ p ∈ X1 ∧ ¬ p ∈ X2 := by
-  constructor
-  · intros Hunion; constructor <;> intro Hnin <;>
-    apply Hunion <;> simp [in_union]
-    · left; assumption
-    · right; assumption
-  · rintro ⟨ Hnin1, Hnin2 ⟩; intro Hunion; simp [in_union] at Hunion
-    cases Hunion
-    · apply Hnin1; assumption
-    · apply Hnin2; assumption
-
-theorem subseteq_trans (X Y Z : CoPset) :
-  X ⊆ Y ->
-  Y ⊆ Z ->
-  X ⊆ Z := by
-  intros Hxy Hyz p Hx
-  exact Hyz p (Hxy p Hx)
+theorem subseteq_trans {X Y Z : CoPset} (Hxy : X ⊆ Y) (Hyz : Y ⊆ Z) : X ⊆ Z :=
+  fun p => (Hyz p) ∘ (Hxy p)
 
 def CoPsetRaw.isFinite : CoPsetRaw → Bool
   | CoPsetRaw.leaf b => !b
@@ -371,27 +333,27 @@ theorem coPsetSuffixes_wf p : coPsetWf (CoPsetRaw.suffixesRaw p) := by
 
 def suffixes (p : Pos) : CoPset :=
   ⟨CoPsetRaw.suffixesRaw p, coPsetSuffixes_wf p⟩
-theorem elem_suffixes p q : p ∈ suffixes q <-> ∃ q', p = q' ++ q := by
+
+theorem elem_suffixes {p q} : p ∈ suffixes q <-> ∃ q', p = q' ++ q := by
   constructor
   · induction q generalizing p with
     | xI q IH =>
-      simp only [suffixes, CoPsetRaw.suffixesRaw, Membership.mem]
-      rewrite [elem_of_node]
-      intros Hin; cases p <;> simp [CoPsetRaw.ElemOf] at Hin
-      obtain ⟨ q', Heq ⟩ := (IH _ Hin)
-      exists q'; rewrite [Heq]; rfl
+      simp only [suffixes, CoPsetRaw.suffixesRaw, Membership.mem, elem_of_node]
+      intros Hin
+      cases p <;> simp [CoPsetRaw.ElemOf] at Hin
+      obtain ⟨q', rfl⟩ := IH Hin
+      exact ⟨q', rfl⟩
     | xO q IH =>
-      simp only [suffixes, CoPsetRaw.suffixesRaw, Membership.mem]
-      rewrite [elem_of_node]
-      intros Hin; cases p <;> simp [CoPsetRaw.ElemOf] at Hin
-      obtain ⟨ q', Heq ⟩ := (IH _ Hin)
-      exists q'; rewrite [Heq]; rfl
-    | xH =>
-      intro _; exists p
-  · intros Heq; rcases Heq with ⟨ q', Heq ⟩; rewrite [Heq]
+      simp only [suffixes, CoPsetRaw.suffixesRaw, Membership.mem, elem_of_node]
+      intros Hin
+      cases p <;> simp [CoPsetRaw.ElemOf] at Hin
+      obtain ⟨q', rfl⟩ := IH Hin
+      exact ⟨q', rfl⟩
+    | xH => intro _; exists p
+  · rintro ⟨q', rfl⟩
     simp only [suffixes, Membership.mem]
-    induction q generalizing p <;> simp [CoPsetRaw.suffixesRaw, elem_of_node] <;>
-    simp_all [HAppend.hAppend, Pos.app, CoPsetRaw.ElemOf]
+    induction q <;>
+    simp_all [CoPsetRaw.suffixesRaw, elem_of_node, HAppend.hAppend, Pos.app, CoPsetRaw.ElemOf]
 
 /-- Splitting a set -/
 
@@ -412,21 +374,18 @@ def rightRaw : CoPsetRaw → CoPsetRaw
 theorem left_wf t : coPsetWf (leftRaw t) := by
   induction t with
   | leaf b => cases b <;> simp [leftRaw, coPsetWf]
-  | node b l r => simp [leftRaw]; apply node'_wf <;> assumption
+  | node b l r => simp only [leftRaw]; apply node'_wf <;> assumption
 
 theorem right_wf t : coPsetWf (rightRaw t) := by
   induction t with
   | leaf b => cases b <;> simp [rightRaw, coPsetWf]
-  | node b l r => simp [rightRaw]; apply node'_wf <;> assumption
+  | node b l r => simp only [rightRaw]; apply node'_wf <;> assumption
 
-def splitLeft (X : CoPset) : CoPset :=
-  ⟨leftRaw X.tree, left_wf _⟩
+def splitLeft (X : CoPset) : CoPset := ⟨leftRaw X.tree, left_wf _⟩
 
-def splitRight (X : CoPset) : CoPset :=
-  ⟨rightRaw X.tree, right_wf _⟩
+def splitRight (X : CoPset) : CoPset := ⟨rightRaw X.tree, right_wf _⟩
 
-def split (X : CoPset) : CoPset × CoPset :=
-  (splitLeft X, splitRight X)
+def split (X : CoPset) : CoPset × CoPset := (splitLeft X, splitRight X)
 
 end CoPset
 
