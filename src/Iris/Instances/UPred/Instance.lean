@@ -10,6 +10,7 @@ import Iris.Algebra.CMRA
 import Iris.Algebra.UPred
 import Iris.Algebra.Updates
 import Iris.BI.Lib.BUpdPlain
+import Iris.Std.RocqAlias
 
 section UPredInstance
 
@@ -480,7 +481,15 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   · exists y
   · exact ⟨HΦy, CMRA.incN_op_left k y x3⟩
 
--- TODO: later_ownM, ownM_forall (needs internal eq)
+-- TODO: ownM_forall (needs internal eq)
+
+@[rocq_alias ownM_timeless]
+instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where
+  timeless
+    | 0, _, _, _ => .inl trivial
+    | n + 1, x, Hv, ⟨y, Hxy⟩ =>
+      let ⟨a', y', Hx, Ha', _⟩ := CMRA.extend (CMRA.validN_succ Hv) Hxy
+      .inr ⟨y', (Hx.trans (OFE.DiscreteE.discrete (Ha'.symm.le n.zero_le)).symm.op_l).dist⟩
 
 theorem cmraValid_intro [CMRA A] {P : UPred M} (a : A) (Ha : ✓ a) : P ⊢ cmraValid a :=
   fun _ _ _ _ => CMRA.Valid.validN Ha

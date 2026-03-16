@@ -7,6 +7,7 @@ Authors: Markus de Medeiros, Zongyuan Liu, Remy Seassau
 import Iris.BI
 import Iris.Algebra
 import Iris.Instances.UPred
+import Iris.Std.RocqAlias
 namespace Iris
 
 open COFE
@@ -478,6 +479,33 @@ theorem iSingleton_op_validN_at_γ {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
     obtain ⟨_, H_inf⟩ := Hv E.τ
     apply H_inf
 
+@[rocq_alias iRes_singleton_discrete]
+instance iSingleton_discreteE {v : F.ap (IProp GF)} [OFE.DiscreteE v] :
+    OFE.DiscreteE (iSingleton F γ v) where
+  discrete {w} H τ := by
+    simp only [iSingleton] at ⊢
+    split
+    next h =>
+      subst h; intro k; have Hk := (H E.τ) k
+      simp only [iSingleton, ↓reduceDIte] at Hk
+      by_cases hk : k = γ
+      · subst hk
+        rw [GenMap.singleton_map_in] at Hk ⊢
+        rcases hw : (w E.τ).car k with _ | x <;> rw [hw] at Hk
+        · exact Hk
+        · simp only [OFE.Equiv] at ⊢
+          refine (NonExpansive.eqv ?_).trans (IProp.unfoldi_foldi x)
+          refine (NonExpansive.eqv ?_).trans (ElemG.bundle_unbundle E _)
+          refine OFE.DiscreteE.discrete ?_
+          refine (ElemG.unbundle_bundle E v).dist.symm.trans ?_
+          refine NonExpansive.ne <| (IProp.foldi_unfoldi _).dist.symm.trans (NonExpansive.ne Hk)
+      · rw [GenMap.singleton_map_none hk] at Hk ⊢
+        exact Option.none_is_discrete.discrete Hk
+    next h =>
+      intro k; have Hk := (H τ) k
+      simp [iSingleton, dif_neg h, GenMap.empty_map_lookup] at Hk ⊢
+      exact Option.none_is_discrete.discrete Hk
+
 end iSingleton
 
 def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IProp GF :=
@@ -535,6 +563,10 @@ instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : BI.Persistent (iOwn γ a) where
     refine equiv_iff.mp ?_ |>.mp
     refine NonExpansive.eqv ?_
     apply CMRA.core_eqv_self
+
+@[rocq_alias own_timeless]
+instance iOwn_timeless {a : F.ap (IProp GF)} [OFE.DiscreteE a] : BI.Timeless (iOwn γ a) :=
+  _root_.UPred.ownM_timeless (iSingleton F γ a)
 
 theorem validN_iSingleton_op {mf : IResUR GF} {y} :
     ✓{n} mf →
@@ -681,6 +713,21 @@ theorem iOwn_update {γ} {a a' : F.ap (IProp GF)} (Hupd : a ~~> a') : iOwn γ a 
   apply BI.pure_elim (a' = m) BI.sep_elim_l
   rintro rfl
   exact BI.sep_elim_r
+
+@[rocq_alias own_valid_3]
+theorem iOwn_cmraValid_op_op {a1 a2 a3 : F.ap (IProp GF)} :
+    iOwn γ a1 ∗ iOwn γ a2 ∗ iOwn γ a3 ⊢ UPred.cmraValid ((a1 • a2) • a3) :=
+  BI.sep_assoc.symm.1.trans ((BI.sep_mono_l iOwn_op.mpr).trans iOwn_cmraValid_op)
+
+@[rocq_alias own_update_2]
+theorem iOwn_update_op {γ} {a1 a2 a' : F.ap (IProp GF)} (Hupd : a1 • a2 ~~> a') :
+    iOwn γ a1 ∗ iOwn γ a2 ⊢ |==> iOwn γ a' :=
+  iOwn_op.mpr.trans (iOwn_update Hupd)
+
+@[rocq_alias own_update_3]
+theorem iOwn_update_op_op {γ} {a1 a2 a3 a' : F.ap (IProp GF)} (Hupd : (a1 • a2) • a3 ~~> a') :
+    iOwn γ a1 ∗ iOwn γ a2 ∗ iOwn γ a3 ⊢ |==> iOwn γ a' :=
+  BI.sep_assoc.symm.1.trans ((BI.sep_mono_l iOwn_op.mpr).trans (iOwn_update_op Hupd))
 
 theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn γ ε := by
   unfold iOwn
