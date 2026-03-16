@@ -267,8 +267,7 @@ theorem bigOpM_delete_equiv (Φ : K → V → M) {m : M' V} {i : K} {x : V} (hi 
 open Classical in
 theorem bigOpM_gen_proper_2 {A : Type _} {B : Type _} {R : M → M → Prop}
     {Φ : K → A → M} {Ψ : K → B → M} {m1 : M' A} {m2 : M' B}
-    (hR_sub : ∀ {x y}, x ≡ y → R x y)
-    (hR_equiv : Equivalence R)
+    (hR_sub : ∀ {x y}, x ≡ y → R x y) (hR_equiv : Equivalence R)
     (hR_op : ∀ {a a' b b'}, R a a' → R b b' → R (op a b) (op a' b'))
     (hdom : ∀ k, (get? m1 k).isSome = (get? m2 k).isSome)
     (hf : ∀ {k y1 y2}, get? m1 k = some y1 → get? m2 k = some y2 → R (Φ k y1) (Ψ k y2)) :
@@ -281,14 +280,14 @@ theorem bigOpM_gen_proper_2 {A : Type _} {B : Type _} {R : M → M → Prop}
   suffices h : P m1 from h m2 hdom hf
   apply LawfulFiniteMap.induction_on (K := K) (P := P)
   · intro m₁ m₂ heq hP m2' hdom' hf'
-    exact hR_equiv.trans (hR_sub (bigOpM_equiv_of_perm Φ heq).symm)
-      (hP m2' (fun k => by rw [heq k]; exact hdom' k) (fun h1 h2 => hf' ((heq _) ▸ h1) h2))
+    refine hR_equiv.trans (hR_sub (bigOpM_equiv_of_perm Φ heq).symm) ?_
+    exact hP m2' (fun k => heq k ▸ hdom' k) (hf' <| (heq _) ▸ ·)
   · show P (∅ : M' A)
     intro m2' hdom' _
     rw [bigOpM_empty]
-    exact hR_sub <| (bigOpM_equiv_of_perm Ψ (eq_empty_iff.mpr fun k => by
-      simpa [show get? (∅ : M' A) k = none from get?_empty k] using hdom' k)).trans
-        (.of_eq (bigOpM_empty Ψ)) |>.symm
+    refine hR_sub <| (bigOpM_equiv_of_perm Ψ ?_).trans (.of_eq (bigOpM_empty Ψ)) |>.symm
+    refine eq_empty_iff.mpr fun k => ?_
+    simpa [show get? (∅ : M' A) k = none from get?_empty k] using hdom' k
   · intro k x1 m1' hm1'k IH m2' hdom' hf'
     obtain ⟨x2, hm2k⟩ := Option.isSome_iff_exists.mp <| by
       simpa [get?_insert_eq (k := k) rfl] using (hdom' k).symm
@@ -297,7 +296,7 @@ theorem bigOpM_gen_proper_2 {A : Type _} {B : Type _} {R : M → M → Prop}
     exact hR_op (hf' (get?_insert_eq rfl) hm2k) <| IH _ (fun k' => by
       by_cases hkk' : k = k'
       · subst hkk'; simp [get?_delete_eq rfl, hm1'k]
-      · have := hdom' k'; rw [get?_insert_ne hkk'] at this; rw [get?_delete_ne hkk']; exact this)
+      · rw [get?_delete_ne hkk']; simpa [get?_insert_ne hkk'] using hdom' k')
       (fun {k' _ _} h1' h2' => by
         have hkk' : k ≠ k' := fun h => by subst h; rw [hm1'k] at h1'; cases h1'
         exact hf' (by rwa [get?_insert_ne hkk']) (by rwa [get?_delete_ne hkk'] at h2'))
@@ -353,7 +352,7 @@ theorem bigOpM_singleton_equiv (Φ : K → V → M) (i : K) (x : V) :
 
 theorem bigOpM_const_unit_equiv [DecidableEq K] (m : M' V) :
     bigOpM (K := K) op (fun _ _ => unit) m ≡ unit :=
-bigOpL_const_unit_equiv
+  bigOpL_const_unit_equiv
 
 theorem bigOpM_map_equiv (h : V → B) (Φ : K → B → M) (m : M' V) :
     ([^ op map] k ↦ x ∈ PartialMap.map h m, Φ k x) ≡ ([^ op map] k ↦ v ∈ m, Φ k (h v)) :=
@@ -402,20 +401,22 @@ theorem bigOpM_filter_equiv (φ : K → V → Bool) (Φ : K → V → M) (m : M'
 theorem toList_union_perm [DecidableEq K] {m1 m2 : M' V} (hdisj : m1 ##ₘ m2) :
     (toList (K := K) (m1 ∪ m2)).Perm (toList (K := K) m1 ++ toList (K := K) m2) := by
   refine (List.perm_ext_iff_of_nodup LawfulFiniteMap.nodup_toList ?_).mpr fun ⟨k, v⟩ => ?_
-  · exact List.nodup_append.mpr ⟨LawfulFiniteMap.nodup_toList, LawfulFiniteMap.nodup_toList,
-      fun ⟨k, _⟩ h1 _ h2 hne => by
-        subst hne
-        exact ((PartialMap.disjoint_iff m1 m2).mp hdisj k).elim
-          (fun h => absurd (toList_get.mp h1) (by simp [h]))
-          (fun h => absurd (toList_get.mp h2) (by simp [h]))⟩
-  · rw [List.mem_append]; constructor <;> intro h
+  · refine List.nodup_append.mpr ⟨LawfulFiniteMap.nodup_toList, LawfulFiniteMap.nodup_toList, ?_⟩
+    rintro ⟨k, _⟩ h1 _ h2 rfl
+    refine (PartialMap.disjoint_iff m1 m2).mp hdisj k |>.elim ?_ ?_
+    · exact (fun h => absurd (toList_get.mp h1) (by simp [h]))
+    · exact (fun h => absurd (toList_get.mp h2) (by simp [h]))
+  · rw [List.mem_append]
+    refine ⟨fun h => ?_, fun h => ?_⟩
     · have hg : get? (PartialMap.union m1 m2) k = some v := toList_get.mp h
       rw [get?_union] at hg
       cases hm1 : get? m1 k <;> simp_all [Option.orElse]
       · exact .inr (toList_get.mpr hg)
       · exact .inl (toList_get.mpr hm1)
-    · refine toList_get.mpr ?_; show get? (PartialMap.union m1 m2) k = some v
-      rw [get?_union]; rcases h with h | h
+    · refine toList_get.mpr ?_
+      show get? (PartialMap.union m1 m2) k = some v
+      rw [get?_union]
+      rcases h with h | h
       · simp [toList_get.mp h, Option.orElse]
       · rcases (PartialMap.disjoint_iff m1 m2).mp hdisj k with h1 | h1
         · simp [h1, toList_get.mp h, Option.orElse]
@@ -448,12 +449,11 @@ theorem bigOpM_sep_zipWith_equiv {A : Type _} {B : Type _} {C : Type _}
     ([^ op map] k ↦ xy ∈ PartialMap.zipWith f m1 m2, op (h1 k (g1 xy)) (h2 k (g2 xy))) ≡
     op ([^ op map] k ↦ x ∈ m1, h1 k x) ([^ op map] k ↦ x ∈ m2, h2 k x) := by
   refine (bigOpM_op_equiv (fun k xy => h1 k (g1 xy)) (fun k xy => h2 k (g2 xy)) _).trans ?_
-  have hdom' : ∀ k, (get? m1 k).isSome = (get? m2 k).isSome :=
-    fun k => Bool.eq_iff_iff.mpr (hdom k)
+  have hdom' : ∀ k, (get? m1 k).isSome = (get? m2 k).isSome := (Bool.eq_iff_iff.mpr <| hdom ·)
   apply op_proper <;> {
     refine (bigOpM_map_equiv _ _ _).symm.trans (bigOpM_equiv_of_perm _ fun k => ?_)
     simp only [get?_map, get?_zipWith]
-    have := hdom' k
+    have _ := hdom' k
     cases h1k : get? m1 k <;> cases h2k : get? m2 k <;>
       simp_all [Option.bind, Option.map] }
 
