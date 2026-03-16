@@ -207,3 +207,25 @@ theorem Frac.le_of_inc {p q : Frac α} (H : p ≼ q) : p ≤ q :=
   lt_le (inc_iff_lt.mp H)
 
 end NumericFraction
+
+/-- Positive naturals, the simplest `UFraction` instance. -/
+def PNat := { n : Nat // 0 < n }
+
+namespace PNat
+
+instance : One PNat := ⟨⟨1, Nat.one_pos⟩⟩
+instance : Add PNat := ⟨fun a b => ⟨a.1 + b.1, Nat.add_pos_left a.2 b.1⟩⟩
+instance : LE PNat := ⟨fun a b => a.1 ≤ b.1⟩
+instance : LT PNat := ⟨fun a b => a.1 < b.1⟩
+
+instance : NumericFraction PNat where
+  add_comm _ _ := Subtype.ext (Nat.add_comm ..)
+  add_assoc _ _ _ := Subtype.ext (Nat.add_assoc ..).symm
+  add_left_cancel h := Subtype.ext (Nat.add_left_cancel (Subtype.ext_iff.mp h))
+  le_def.mp h := Nat.eq_or_lt_of_le h |>.elim (.inl ∘ Subtype.ext) .inr
+  le_def.mpr h := h.elim (· ▸ Nat.le_refl _) Nat.le_of_lt
+  lt_def.mp h := ⟨⟨_, Nat.sub_pos_of_lt h⟩, Subtype.ext (Nat.add_sub_cancel' (Nat.le_of_lt h))⟩
+  lt_def.mpr := fun ⟨c, h⟩ => h ▸ Nat.lt_add_of_pos_right c.2
+  lt_irrefl := Nat.lt_irrefl _
+
+end PNat
