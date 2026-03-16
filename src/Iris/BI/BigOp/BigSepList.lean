@@ -48,11 +48,7 @@ theorem mono {Φ Ψ : Nat → A → PROP} {l : List A}
   | nil => exact .rfl
   | cons y ys ih =>
     simp only [bigOpL]
-    apply sep_mono
-    · exact h 0 y rfl
-    · apply ih
-      intro k x hget
-      exact h (k + 1) x hget
+    exact sep_mono (h 0 y rfl) (ih fun k x hget => h (k + 1) x hget)
 
 theorem proper {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ≡ Ψ k x) :
     ([∗list] k ↦ x ∈ l, Φ k x) ≡ [∗list] k ↦ x ∈ l, Ψ k x := bigOpL_equiv h
@@ -82,11 +78,8 @@ theorem id_mono' {Ps Qs : List PROP} (hlen : Ps.length = Qs.length)
     | nil => simp at hlen
     | cons Q Qs' =>
       simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen
-      apply sep_mono
-      · exact h 0 P Q rfl rfl
-      · apply ih hlen
-        intro i P' Q' hP' hQ'
-        exact h (i + 1) P' Q' hP' hQ'
+      exact sep_mono (h 0 P Q rfl rfl)
+        (ih hlen fun i P' Q' hP' hQ' => h (i + 1) P' Q' hP' hQ')
 
 instance persistent {Φ : Nat → A → PROP} {l : List A} [∀ k x, Persistent (Φ k x)] :
     Persistent ([∗list] k ↦ x ∈ l, Φ k x) where
@@ -108,13 +101,9 @@ theorem persistent_id {Ps : List PROP} (hPs : ∀ P, P ∈ Ps → Persistent P) 
     induction Ps with
     | nil => exact persistently_emp_2
     | cons P Ps' ih =>
-      have hP : Persistent P := hPs P List.mem_cons_self
       have hPs' : ∀ Q, Q ∈ Ps' → Persistent Q := fun Q hQ => hPs Q (List.mem_cons_of_mem _ hQ)
-      have : Persistent (bigSepL (fun _ (P : PROP) => P) Ps') := ⟨ih hPs'⟩
-      have h1 : P ⊢ <pers> P := hP.persistent
-      have h2 : bigSepL (fun _ (P : PROP) => P) Ps' ⊢ <pers> bigSepL (fun _ (P : PROP) => P) Ps' :=
-        this.persistent
-      exact (sep_mono h1 h2).trans persistently_sep_2
+      exact (sep_mono (hPs P List.mem_cons_self).persistent
+        (Persistent.mk (ih hPs')).persistent).trans persistently_sep_2
 
 theorem affine_id {Ps : List PROP} (hPs : ∀ P, P ∈ Ps → Affine P) :
     Affine ([∗list] P ∈ Ps, P) where
@@ -122,12 +111,9 @@ theorem affine_id {Ps : List PROP} (hPs : ∀ P, P ∈ Ps → Affine P) :
     induction Ps with
     | nil => exact .rfl
     | cons P Ps' ih =>
-      have hP : Affine P := hPs P List.mem_cons_self
       have hPs' : ∀ Q, Q ∈ Ps' → Affine Q := fun Q hQ => hPs Q (List.mem_cons_of_mem _ hQ)
-      have : Affine (bigSepL (fun _ (P : PROP) => P) Ps') := ⟨ih hPs'⟩
-      have h1 : P ⊢ emp := hP.affine
-      have h2 : bigSepL (fun _ (P : PROP) => P) Ps' ⊢ emp := this.affine
-      exact (sep_mono h1 h2).trans sep_emp.1
+      exact (sep_mono (hPs P List.mem_cons_self).affine
+        (Affine.mk (ih hPs')).affine).trans sep_emp.1
 
 theorem persistent_cond {Φ : Nat → A → PROP} {l : List A}
     (h : ∀ k x, l[k]? = some x → Persistent (Φ k x)) :
@@ -136,14 +122,10 @@ theorem persistent_cond {Φ : Nat → A → PROP} {l : List A}
     induction l generalizing Φ with
     | nil => exact persistently_emp_2
     | cons y ys ih =>
-      have h0 : Persistent (Φ 0 y) := h 0 y rfl
       have hrest : ∀ k x, ys[k]? = some x → Persistent (Φ (k + 1) x) :=
         fun k x hget => h (k + 1) x hget
-      have h1 : Φ 0 y ⊢ <pers> Φ 0 y := h0.persistent
-      have hPers : Persistent (bigSepL (fun n => Φ (n + 1)) ys) := ⟨ih hrest⟩
-      have h2 : bigSepL (fun n => Φ (n + 1)) ys ⊢ <pers> bigSepL (fun n => Φ (n + 1)) ys :=
-        hPers.persistent
-      exact (sep_mono h1 h2).trans persistently_sep_2
+      exact (sep_mono (h 0 y rfl).persistent
+        (Persistent.mk (ih hrest)).persistent).trans persistently_sep_2
 
 theorem affine_cond {Φ : Nat → A → PROP} {l : List A}
     (h : ∀ {k x}, l[k]? = some x → Affine (Φ k x)) :
@@ -515,17 +497,12 @@ theorem sepL {B : Type _} (Φ : Nat → A → Nat → B → PROP) (l₁ : List A
   induction l₁ generalizing Φ with
   | nil =>
     simp only [bigOpL]
-    constructor
-    · exact Entails.rfl.trans (equiv_iff.mp (bigOpL_const_unit_equiv)).2
-    · exact (equiv_iff.mp (bigOpL_const_unit_equiv)).1
+    exact ⟨(equiv_iff.mp bigOpL_const_unit_equiv).2, (equiv_iff.mp bigOpL_const_unit_equiv).1⟩
   | cons x xs ih =>
     simp only [bigOpL]
     have ih' := ih (fun i a j b => Φ (i + 1) a j b)
-    constructor
-    · refine (sep_mono_r ih'.1).trans ?_
-      exact equiv_iff.mp (bigOpL_op_equiv _ _ _) |>.2
-    · refine equiv_iff.mp (bigOpL_op_equiv _ _ _) |>.1.trans ?_
-      exact sep_mono_r ih'.2
+    exact ⟨(sep_mono_r ih'.1).trans (equiv_iff.mp (bigOpL_op_equiv _ _ _)).2,
+           (equiv_iff.mp (bigOpL_op_equiv _ _ _)).1.trans (sep_mono_r ih'.2)⟩
 
 end BigSepL
 
@@ -674,17 +651,14 @@ theorem mono {Φ Ψ : Nat → A → B → PROP} {l1 : List A} {l2 : List B}
 
 theorem proper {Φ Ψ : Nat → A → B → PROP} {l1 : List A} {l2 : List B}
     (h : ∀ k x1 x2, l1[k]? = some x1 → l2[k]? = some x2 → Φ k x1 x2 ⊣⊢ Ψ k x1 x2) :
-    ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊣⊢ ([∗list] k ↦ x1;x2 ∈ l1;l2, Ψ k x1 x2) := by
-  constructor
-  · apply mono; intro k x1 x2 h1 h2; exact ((h k x1 x2 h1 h2)).1
-  · apply mono; intro k x1 x2 h1 h2; exact ((h k x1 x2 h1 h2)).2
+    ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊣⊢ ([∗list] k ↦ x1;x2 ∈ l1;l2, Ψ k x1 x2) :=
+  ⟨mono fun {k x1 x2} h1 h2 => (h k x1 x2 h1 h2).1,
+   mono fun {k x1 x2} h1 h2 => (h k x1 x2 h1 h2).2⟩
 
 theorem congr {Φ Ψ : Nat → A → B → PROP} {l1 : List A} {l2 : List B}
     (h : ∀ k x1 x2, Φ k x1 x2 ⊣⊢ Ψ k x1 x2) :
-    ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊣⊢ ([∗list] k ↦ x1;x2 ∈ l1;l2, Ψ k x1 x2) := by
-  apply proper
-  intro k x1 x2 _ _
-  exact h k x1 x2
+    ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊣⊢ ([∗list] k ↦ x1;x2 ∈ l1;l2, Ψ k x1 x2) :=
+  proper fun k x1 x2 _ _ => h k x1 x2
 
 theorem ne {Φ Ψ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} {n : Nat}
     (h : ∀ {k x1 x2}, l1[k]? = some x1 → l2[k]? = some x2 → Φ k x1 x2 ≡{n}≡ Ψ k x1 x2) :
@@ -811,11 +785,8 @@ theorem app' {Φ : Nat → A → B → PROP} {l1a l1b : List A} {l2a l2b : List 
       have hcongr : ([∗list] n ↦ y1;y2 ∈ l1b;l2b, Φ (n + (xs1.length + 1)) y1 y2) ⊣⊢
                    ([∗list] n ↦ y1;y2 ∈ l1b;l2b, Φ (n + xs1.length + 1) y1 y2) :=
         congr fun n _ _ => by simp only [Nat.add_assoc]; exact BiEntails.rfl
-      refine (sep_mono_l hcongr.1).trans ?_
-      refine sep_symm.trans ?_
-      refine sep_assoc.1.trans ?_
-      refine (sep_mono_r sep_symm).trans ?_
-      exact sep_mono_r (ih (Φ := fun n => Φ (n + 1)))
+      exact (sep_mono_l hcongr.1).trans sep_symm |>.trans sep_assoc.1 |>.trans
+        (sep_mono_r sep_symm) |>.trans (sep_mono_r (ih (Φ := fun n => Φ (n + 1))))
 
 private theorem app_inv_core {Φ : Nat → A → B → PROP} {l1a l1b : List A} {l2a l2b : List B}
     (hlen : l1a.length = l2a.length ∨ l1b.length = l2b.length) :
@@ -1040,15 +1011,13 @@ theorem impl {Φ Ψ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} :
       iprop(□ (∀ k, ∀ x1, ∀ x2,
         iprop(⌜l1[k]? = some x1⌝ → ⌜l2[k]? = some x2⌝ → Φ k x1 x2 -∗ Ψ k x1 x2))) -∗
       ([∗list] k ↦ x1;x2 ∈ l1;l2, Ψ k x1 x2) := by
-  refine wand_intro ?_
-  have hlen_extract : ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊢
-      iprop(⌜l1.length = l2.length⌝ ∧ bigSepL2 Φ l1 l2) := and_self.2.trans (and_mono_l length)
-  refine (sep_mono_l hlen_extract).trans ((sep_mono_l persistent_and_affinely_sep_l.1).trans
-    (sep_assoc.1.trans (persistent_and_affinely_sep_l.symm.1.trans ?_)))
-  refine pure_elim_l fun hlen => ?_
-  have hwands := (and_intro (pure_intro hlen) Entails.rfl).trans
-    (intro (Φ := fun k x1 x2 => iprop(Φ k x1 x2 -∗ Ψ k x1 x2)))
-  exact (sep_mono_r hwands).trans (sep_2.1.trans (mono fun _ _ => wand_elim_r))
+  refine wand_intro <| (sep_mono_l (and_self.2.trans (and_mono_l length))).trans <|
+    (sep_mono_l persistent_and_affinely_sep_l.1).trans <|
+    sep_assoc.1.trans <| persistent_and_affinely_sep_l.symm.1.trans <|
+    pure_elim_l fun hlen =>
+    (sep_mono_r ((and_intro (pure_intro hlen) Entails.rfl).trans
+      (intro (Φ := fun k x1 x2 => iprop(Φ k x1 x2 -∗ Ψ k x1 x2))))).trans
+    (sep_2.1.trans (mono fun _ _ => wand_elim_r))
 
 theorem forall' [BIAffine PROP] {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : List B}
     (hPersistent : ∀ k x1 x2, Persistent (Φ k x1 x2)) :

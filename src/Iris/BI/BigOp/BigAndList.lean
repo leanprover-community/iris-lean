@@ -41,11 +41,7 @@ theorem mono {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ k x, l[k]? = som
   induction l generalizing Φ Ψ with
   | nil => exact Entails.rfl
   | cons y ys ih =>
-    apply and_mono
-    · exact h 0 y rfl
-    · apply ih
-      intro k x hget
-      exact h (k + 1) x hget
+    exact and_mono (h 0 y rfl) (ih fun k x hget => h (k + 1) x hget)
 
 theorem proper {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ≡ Ψ k x) :
     ([∧list] k ↦ x ∈ l, Φ k x) ≡ [∧list] k ↦ x ∈ l, Ψ k x := bigOpL_equiv h
@@ -62,9 +58,7 @@ instance persistent {Φ : Nat → A → PROP} {l : List A} [∀ k x, Persistent 
       exact persistently_true.2
     | cons x xs ih =>
       simp only [bigOpL]
-      have h1 : Φ 0 x ⊢ <pers> Φ 0 x := Persistent.persistent
-      have h2 : ([∧list] n ↦ y ∈ xs, Φ (n + 1) y) ⊢ <pers> [∧list] n ↦ y ∈ xs, Φ (n + 1) y := ih
-      exact (and_mono h1 h2).trans persistently_and.2
+      exact (and_mono Persistent.persistent ih).trans persistently_and.2
 
 instance affine {Φ : Nat → A → PROP} {l : List A} [BIAffine PROP] :
     Affine ([∧list] k ↦ x ∈ l, Φ k x) where
@@ -126,18 +120,17 @@ theorem intro {P : PROP} {Φ : Nat → A → PROP} {l : List A} (h : ∀ k x, l[
 theorem forall' {Φ : Nat → A → PROP} {l : List A} :
     ([∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ ∀ k, ∀ x, iprop(⌜l[k]? = some x⌝ → Φ k x) := by
   constructor
-  · apply forall_intro; intro k
-    apply forall_intro; intro x
-    refine imp_intro <| and_comm.1.trans <| pure_elim_l (lookup ·)
+  · exact forall_intro fun k => forall_intro fun x =>
+      imp_intro <| and_comm.1.trans <| pure_elim_l (lookup ·)
   · induction l generalizing Φ with
     | nil => exact true_intro
     | cons y ys ih =>
       simp only [bigOpL]
-      apply and_intro
-      · exact (forall_elim 0).trans <| (forall_elim y).trans <|
-          (imp_congr_l (pure_true rfl)).1.trans true_imp.1
-      · refine Entails.trans ?_ (ih (Φ := fun k x => Φ (k + 1) x))
-        exact forall_intro fun k => forall_intro fun x => (forall_elim (k + 1)).trans (forall_elim x)
+      exact and_intro
+        ((forall_elim 0).trans <| (forall_elim y).trans <|
+          (imp_congr_l (pure_true rfl)).1.trans true_imp.1)
+        ((forall_intro fun k => forall_intro fun x => (forall_elim (k + 1)).trans (forall_elim x)).trans
+          (ih (Φ := fun k x => Φ (k + 1) x)))
 
 theorem impl {Φ Ψ : Nat → A → PROP} {l : List A} :
     ([∧list] k ↦ x ∈ l, Φ k x) ∧ (∀ k x, ⌜l[k]? = some x⌝ → Φ k x → Ψ k x) ⊢

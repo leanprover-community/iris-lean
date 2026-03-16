@@ -42,11 +42,7 @@ theorem mono {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ k x, l[k]? = som
   | nil => exact Entails.rfl
   | cons y ys ih =>
     simp only [bigOrL, bigOpL]
-    apply or_mono
-    · exact h 0 y rfl
-    · apply ih
-      intro k x hget
-      exact h (k + 1) x hget
+    exact or_mono (h 0 y rfl) (ih fun k x hget => h (k + 1) x hget)
 
 theorem proper {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ≡ Ψ k x) :
     ([∨list] k ↦ x ∈ l, Φ k x) ≡ [∨list] k ↦ x ∈ l, Ψ k x := bigOpL_equiv h
@@ -168,13 +164,10 @@ theorem perm {Φ : A → PROP} {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
     ([∨list] x ∈ l₁, Φ x) ≡ [∨list] x ∈ l₂, Φ x := bigOpL_equiv_of_perm Φ hp
 
 theorem submseteq {Φ : A → PROP} {l₁ l₂ l : List A} (h : (l₁ ++ l).Perm l₂) :
-    ([∨list] x ∈ l₁, Φ x) ⊢ [∨list] x ∈ l₂, Φ x := by
-  have hperm := (equiv_iff.mp (perm (Φ := Φ) h)).1
-  have step1 : ([∨list] x ∈ l₁, Φ x) ⊢ ([∨list] x ∈ l₁, Φ x) ∨ [∨list] x ∈ l, Φ x :=
-    or_intro_l (Q := [∨list] x ∈ l, Φ x)
-  have step2 : (([∨list] x ∈ l₁, Φ x) ∨ [∨list] x ∈ l, Φ x) ⊢ [∨list] x ∈ (l₁ ++ l), Φ x :=
-    (app (Φ := fun _ => Φ) (l₁ := l₁) (l₂ := l)).2
-  exact step1.trans (step2.trans hperm)
+    ([∨list] x ∈ l₁, Φ x) ⊢ [∨list] x ∈ l₂, Φ x :=
+  (or_intro_l (Q := [∨list] x ∈ l, Φ x)).trans <|
+    ((app (Φ := fun _ => Φ) (l₁ := l₁) (l₂ := l)).2).trans
+      (equiv_iff.mp (perm (Φ := Φ) h)).1
 
 theorem mono' {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ k x, Φ k x ⊢ Ψ k x) :
     ([∨list] k ↦ x ∈ l, Φ k x) ⊢ [∨list] k ↦ x ∈ l, Ψ k x := mono fun k x _ => h k x
@@ -194,10 +187,8 @@ theorem id_mono' {l₁ l₂ : List PROP}
     | cons Q Qs =>
       simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen
       simp only [bigOpL]
-      have h0 : P ⊢ Q := h 0 P Q rfl rfl
-      have htail : ∀ (i : Nat) (P' Q' : PROP), Ps[i]? = some P' → Qs[i]? = some Q' → P' ⊢ Q' :=
-        fun i P' Q' hp hq => h (i + 1) P' Q' hp hq
-      exact or_mono h0 (ih hlen htail)
+      exact or_mono (h 0 P Q rfl rfl)
+        (ih hlen fun i P' Q' hp hq => h (i + 1) P' Q' hp hq)
 
 instance nil_persistent {Φ : Nat → A → PROP} :
     Persistent ([∨list] k ↦ x ∈ ([] : List A), Φ k x) := by
@@ -214,12 +205,10 @@ theorem persistent_cond {Φ : Nat → A → PROP} {l : List A}
       exact (false_elim (P := iprop(<pers> (False : PROP))))
     | cons y ys ih =>
       simp only [bigOpL]
-      have h0 : Persistent (Φ 0 y) := h 0 y rfl
       have htail : ∀ k x, ys[k]? = some x → Persistent (Φ (k + 1) x) := fun k x hget => h (k + 1) x hget
-      have iha := ih htail
       apply or_elim
-      · exact h0.persistent.trans (persistently_mono or_intro_l)
-      · exact iha.trans (persistently_mono or_intro_r)
+      · exact (h 0 y rfl).persistent.trans (persistently_mono or_intro_l)
+      · exact (ih htail).trans (persistently_mono or_intro_r)
 
 instance persistent {Φ : Nat → A → PROP} {l : List A} [∀ k x, Persistent (Φ k x)] :
     Persistent ([∨list] k ↦ x ∈ l, Φ k x) := persistent_cond fun _ _ _ => inferInstance
