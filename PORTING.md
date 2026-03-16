@@ -17,7 +17,11 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Updates
   - [x] Functors
 - [ ] `big_op.v`
-  - TBD (Zongyuan?)
+  - [x] Lists
+  - [x] Maps
+  - [ ] Sets
+  - [ ] Multisets
+  - [ ] Homomorphisms
 - [ ] `cmra.v`
   - [x] Lemmas
   - [ ] Total CMRA construction
@@ -72,7 +76,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `max_prefix_list.v` 
   - [ ] Lemmas
   - [ ] Functors
-- [ ] `monoid.v`
+- [x] `monoid.v`
 - [ ] `mra.v`
 - [x] `numbers.v`
 - [ ]  `ofe.v`
@@ -430,5 +434,3 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] `language.v`
   - [ ] `ectx_language.v`
   - [ ] `ectxi_language.v`
-
-
