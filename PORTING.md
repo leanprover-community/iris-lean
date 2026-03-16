@@ -37,7 +37,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Isomorphisms
 - [ ] `cmra_big_op.v` 
 - [ ] `coPset.v`
-  - [ ] coPset definition
+  - [x] coPset definition
   - [ ] CMRA
 - [x] `cofe_solver.v` 
 - [ ] `csum.v`
