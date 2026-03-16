@@ -186,6 +186,17 @@ end intro
 -- revert
 namespace revert
 
+/-- Tests `irevert` order and names -/
+example [BI PROP] (P Q : PROP) : ⊢ P -∗ Q -∗ P ∗ Q := by
+  iintro H1 H2
+  -- irevert P Q H1 H2
+  sorry
+
+example [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) : P ⊢ Q := by
+  iintro HP
+  irevert HP
+  exact H
+
 /-- Tests `irevert` with a spatial proposition -/
 example [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) : P ⊢ Q := by
   iintro HP
@@ -211,19 +222,25 @@ example [BI PROP] (x : α) (Φ : α → PROP) : ⊢ (∀ x, Φ x) → Φ x := by
   iexact H
 
 /-- Tests `irevert` with multiple spatial propositions -/
-theorem multiple_spatial [BI PROP] (P Q : PROP) :
+example [BI PROP] (P Q : PROP) :
     ⊢ (P -∗ <affine> Q -∗ P) -∗ P -∗ <affine> Q -∗ P := by
   iintro H HP HQ
   irevert HP HQ
   iexact H
 
 /-- Tests `irevert` with multiple intuitionistic propositions -/
-theorem multiple_intuitionistic [BI PROP] (P Q : PROP) :
+example [BI PROP] (P Q : PROP) :
     ⊢ (□ P -∗ <affine> Q -∗ P) -∗ □ P -∗ <affine> Q -∗ P := by
   iintro H □HP HQ
   irevert HP HQ
   iexact H
 
+-- theorem fail [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
+--   iintro %x %_ H
+--   irevert x
+--   sorry
+
+  -- irevert x
 end revert
 
 -- exists
