@@ -6,31 +6,62 @@ Authors: Markus de Medeiros
 import Lean
 
 /-!
-# Rocq Alias Command
+# Rocq Alias Attribute
 
-A command for creating `@[deprecated]` aliases at the root namespace with the exact Rocq name,
+An attribute for creating aliases in the `Rocq` namespace with the exact Rocq name,
 used to document Rocq↔Lean name correspondence when porting Iris.
 
 ## Usage
 
 ```
 namespace ExclAuth
+@[rocq_alias excl_auth_agreeN]
 theorem agreeN ... := ...
-rocq_alias excl_auth_agreeN := ExclAuth.agreeN
 end ExclAuth
 ```
 
-This creates a root-level `excl_auth_agreeN` that is a deprecated alias for `ExclAuth.agreeN`.
+This creates `Rocq.excl_auth_agreeN` as a `@[deprecated]` alias for `ExclAuth.agreeN`.
 -/
 
-open Lean
+open Lean Elab Command
 
-/-- Creates a `@[deprecated]` `abbrev` at the root namespace with the given Rocq name,
-    pointing to the given Lean declaration. -/
-syntax "rocq_alias " ident " := " ident : command
+/-- Creates a `@[deprecated]` alias in the `Rocq` namespace with the given Rocq name. -/
+syntax (name := rocq_alias) "rocq_alias" ident : attr
 
-macro_rules
-  | `(rocq_alias $rocqName := $leanName) => do
-    let rootName := mkIdentFrom rocqName (`_root_ ++ rocqName.getId)
-    `(@[deprecated $leanName (since := "")]
-      abbrev $rootName := @$leanName)
+initialize registerBuiltinAttribute {
+  name := `rocq_alias
+  descr := "Creates a @[deprecated] alias in the Rocq namespace for Rocq↔Lean name correspondence"
+  applicationTime := .afterTypeChecking
+  add := fun declName stx _kind => do
+    let `(attr| rocq_alias $rocqId) := stx
+      | throwError "invalid @[rocq_alias] syntax"
+    let aliasName := `Rocq ++ rocqId.getId
+    let env ← getEnv
+    if env.find? aliasName |>.isSome then
+      throwError s!"duplicate rocq_alias: `{aliasName}` already exists"
+    let some info := env.find? declName
+      | throwError s!"unknown declaration '{declName}'"
+    let levels := info.levelParams.map mkLevelParam
+    let value := mkConst declName levels
+    match info with
+    | .thmInfo val =>
+      addDecl (.thmDecl {
+        name := aliasName
+        levelParams := val.levelParams
+        type := val.type
+        value := value
+      })
+    | _ =>
+      addDecl (.defnDecl {
+        name := aliasName
+        levelParams := info.levelParams
+        type := info.type
+        value := value
+        hints := .abbrev
+        safety := .safe
+      })
+    Elab.addDeclarationRangesFromSyntax aliasName stx rocqId
+    let declIdent := mkIdent declName
+    let depStx ← `(attr| deprecated $declIdent (since := "ported into iris-lean"))
+    Attribute.add aliasName `deprecated depStx .global
+}
