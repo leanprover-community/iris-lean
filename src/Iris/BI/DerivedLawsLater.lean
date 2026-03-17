@@ -10,6 +10,7 @@ import Iris.BI.DerivedLaws
 import Iris.Std.Classes
 import Iris.Std.Rewrite
 import Iris.Std.TC
+import Iris.Std.RocqAlias
 
 namespace Iris.BI
 open Iris.Std BI
@@ -410,3 +411,14 @@ instance except0_persistent [BI PROP] (P : PROP) [Persistent P] : Persistent ipr
 
 instance except0_absorbing [BI PROP] (P : PROP) [Absorbing P] : Absorbing iprop(◇ P) :=
   inferInstanceAs (Absorbing iprop(_ ∨ _))
+
+@[rocq_alias pure_timeless]
+instance pure_timeless [BI PROP] (φ : Prop) : Timeless (PROP := PROP) (BIBase.pure φ) where
+  timeless :=
+    -- ▷ ⌜φ⌝ ⊢ ▷ (∃ _ : φ, True) ⊢ ▷ False ∨ (∃ _ : φ, ▷ True) ⊢ ▷ False ∨ ⌜φ⌝
+    (later_mono (pure_elim' fun h =>
+      true_intro.trans
+        (exists_intro (Ψ := fun _ : φ => (BIBase.pure True : PROP)) h))).trans <|
+    later_exists_false.trans <|
+    or_mono_r (exists_elim fun h =>
+      (later_true.1.trans true_intro).trans (pure_intro h))

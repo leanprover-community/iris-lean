@@ -3,6 +3,7 @@ Copyright (c) 2023 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mario Carneiro
 -/
+import Iris.Std.RocqAlias
 
 namespace Iris
 
@@ -384,6 +385,22 @@ instance [OFE α] [OFE β] [Discrete α] [Discrete β] : Discrete (α × β) whe
       apply H.1
     · apply Discrete.discrete_0
       apply H.2
+
+@[rocq_alias sig_ofe_mixin]
+instance [OFE α] (P : α → Prop) : OFE (Subtype P) where
+  Equiv x y := x.val ≡ y.val
+  Dist n x y := x.val ≡{n}≡ y.val
+  dist_eqv := ⟨fun _ => .rfl, Dist.symm, Dist.trans⟩
+  equiv_dist := equiv_dist
+  dist_lt := dist_lt
+
+@[rocq_alias sig_discrete]
+instance [OFE α] [Discrete α] (P : α → Prop) : Discrete (Subtype P) where
+  discrete_0 h := @Discrete.discrete_0 α _ _ _ _ h
+
+@[rocq_alias proj1_sig_ne]
+instance [OFE α] (P : α → Prop) : NonExpansive (Subtype.val : Subtype P → α) where
+  ne {_ _ _} := id
 
 /-- An isomorphism between two OFEs is a pair of morphisms whose composition is equivalent to the
 identity morphism. -/
@@ -912,7 +929,7 @@ end FixpointAB
 
 section Later
 
-structure Later (A : Type u) : Type (u+1) where
+structure Later (A : Type u) : Type u where
   next :: car : A
 
 instance isOFE_later [OFE A] : OFE (Later A) where
@@ -924,7 +941,7 @@ instance isOFE_later [OFE A] : OFE (Later A) where
     exact ⟨by simp +contextual, fun H n => H (Nat.succ n) n (by simp)⟩
   dist_lt Hxy Hmn _ Hkm := Hxy _ (Nat.lt_trans Hkm Hmn)
 
-instance NextContractive {A : Type} [OFE A] : Contractive (@Later.next A) where
+instance NextContractive {A : Type _} [OFE A] : Contractive (@Later.next A) where
   distLater_dist := id
 
 def laterChain [OFE A] (c : Chain (Later A)) : Chain A where
