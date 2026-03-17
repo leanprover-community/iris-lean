@@ -13,7 +13,7 @@ import Iris.Std.RocqAlias
 import Iris.Std.TC
 
 namespace Iris
-open BI OFE
+open BI OFE Iris.Std
 
 universe u
 
@@ -30,7 +30,7 @@ class BIInternalEq (PROP : Type _) [BI PROP] extends InternalEq PROP where
     P ⊢ internalEq a a
   rewrite {A : Type u} [OFE A] (a b : A) (Ψ : A → PROP) [NonExpansive Ψ] :
     internalEq a b ⊢ Ψ a → Ψ b
-  discrete_eq_1 {A : Type u} [OFE A] (a b : A) [Std.TCOr (DiscreteE a) (DiscreteE b)] :
+  discrete_eq_1 {A : Type u} [OFE A] (a b : A) [TCOr (DiscreteE a) (DiscreteE b)] :
     internalEq a b ⊢ ⌜a ≡ b⌝
   sig_equivI_1 {A : Type u} [OFE A] (P : A → Prop) (x y : Subtype P) :
     internalEq x.val y.val ⊢ internalEq x y
@@ -54,12 +54,10 @@ class BIInternalEq (PROP : Type _) [BI PROP] extends InternalEq PROP where
 attribute [instance] BIInternalEq.ne
 
 namespace BI
-open Iris.Std
 
 section InternalEqLaws
 
-variable [BI PROP] [BIInternalEq PROP]
-variable {P Q : PROP}
+variable [BI PROP] [BIInternalEq PROP] {P Q : PROP}
 
 @[rocq_alias internal_eq_refl]
 theorem internalEq_refl {A : Type u} [OFE A] (P : PROP) (a : A) :
@@ -363,7 +361,8 @@ theorem internalEq_soundness {A : Type u} [OFE A] (x y : A) :
 
 @[rocq_alias internal_eq_entails]
 theorem internalEq_entails {A B : Type u} [OFE A] [OFE B] (a₁ a₂ : A) (b₁ b₂ : B) :
-    Iff (internalEq a₁ a₂ ⊢@{PROP} internalEq b₁ b₂) (∀ n, a₁ ≡{n}≡ a₂ → b₁ ≡{n}≡ b₂) :=
+    Iff (internalEq a₁ a₂ ⊢@{PROP} internalEq b₁ b₂)
+      (∀ n, a₁ ≡{n}≡ a₂ → b₁ ≡{n}≡ b₂) :=
   BIInternalEq.entails a₁ a₂ b₁ b₂
 
 @[rocq_alias ne_internal_eq]
@@ -389,7 +388,8 @@ theorem ne_2_internalEq {A B C : Type u} [OFE A] [OFE B] [OFE C] (f : A → B �
 
 @[rocq_alias contractive_internal_eq]
 theorem contractive_internalEq {A B : Type u} [OFE A] [OFE B] (f : A → B) :
-    Iff (Contractive f) (∀ x₁ x₂, ▷ internalEq x₁ x₂ ⊢@{PROP} internalEq (f x₁) (f x₂)) := by
+    Iff (Contractive f)
+      (∀ x₁ x₂, ▷ internalEq x₁ x₂ ⊢@{PROP} internalEq (f x₁) (f x₂)) := by
   constructor
   · intro _ x₁ x₂
     exact f_equivI_contractive f x₁ x₂
