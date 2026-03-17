@@ -102,15 +102,8 @@ theorem impl {Φ Ψ : Nat → A → PROP} {l : List A} :
 
 theorem persistently {Φ : Nat → A → PROP} {l : List A} :
     (<pers> [∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, <pers> Φ k x :=
-  equiv_iff.mp <| bigOpL_hom (H := {
-    rel_refl := .rfl
-    rel_trans := .trans
-    rel_proper := fun ha hb => ⟨fun h => ha.symm.trans (h.trans hb), fun h => ha.trans (h.trans hb.symm)⟩
-    op_proper := fun ha hb => MonoidOps.op_proper ha hb
-    map_ne := persistently_ne
-    map_op := equiv_iff.mpr persistently_and
-    map_unit := equiv_iff.mpr persistently_true
-  }) Φ l
+  equiv_iff.mp <| bigOpL_hom (H := MonoidHomomorphism.ofEquiv persistently_ne
+    (equiv_iff.mpr persistently_and) (equiv_iff.mpr persistently_true)) Φ l
 
 theorem pure_intro {φ : Nat → A → Prop} {l : List A} :
     ([∧list] k ↦ x ∈ l, (⌜φ k x⌝ : PROP)) ⊢ ⌜∀ k x, l[k]? = some x → φ k x⌝ :=
@@ -140,15 +133,8 @@ theorem bind {B : Type _} (f : A → List B) {Φ : B → PROP} {l : List A} :
 
 theorem later {Φ : Nat → A → PROP} {l : List A} :
     (▷ [∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, (▷ Φ k x) :=
-  equiv_iff.mp <| bigOpL_hom (H := {
-    rel_refl := .rfl
-    rel_trans := .trans
-    rel_proper := fun ha hb => ⟨fun h => ha.symm.trans (h.trans hb), fun h => ha.trans (h.trans hb.symm)⟩
-    op_proper := fun ha hb => MonoidOps.op_proper ha hb
-    map_ne := later_ne
-    map_op := equiv_iff.mpr later_and
-    map_unit := equiv_iff.mpr later_true
-  }) Φ l
+  equiv_iff.mp <| bigOpL_hom (H := MonoidHomomorphism.ofEquiv later_ne
+    (equiv_iff.mpr later_and) (equiv_iff.mpr later_true)) Φ l
 
 theorem laterN {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
     (▷^[n] [∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, ▷^[n] Φ k x :=

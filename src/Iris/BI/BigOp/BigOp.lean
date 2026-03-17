@@ -37,6 +37,33 @@ instance orMonoidOps [BI PROP] : MonoidOps (or (PROP := PROP)) iprop(False) wher
   op_comm := equiv_iff.mpr or_comm
   op_left_id := equiv_iff.mpr false_or
 
+/-! ## Homomorphism helpers for OFE equivalence -/
+
+/-- Build a `MonoidHomomorphism` for OFE equivalence from just the essential fields. -/
+def MonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
+    {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
+    (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) ≡ op₂ (f x) (f y))
+    (hunit : f u₁ ≡ u₂) : MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) f where
+  rel_refl := .rfl
+  rel_trans := .trans
+  rel_proper ha hb := ⟨fun h => ha.symm.trans (h.trans hb), fun h => ha.trans (h.trans hb.symm)⟩
+  op_proper ha hb := MonoidOps.op_proper ha hb
+  map_ne := hne
+  map_op := hop
+  map_unit := hunit
+
+/-- Build a `WeakMonoidHomomorphism` for OFE equivalence from just the essential fields. -/
+def WeakMonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
+    {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
+    (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) ≡ op₂ (f x) (f y)) :
+    WeakMonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) f where
+  rel_refl := .rfl
+  rel_trans := .trans
+  rel_proper ha hb := ⟨fun h => ha.symm.trans (h.trans hb), fun h => ha.trans (h.trans hb.symm)⟩
+  op_proper ha hb := MonoidOps.op_proper ha hb
+  map_ne := hne
+  map_op := hop
+
 /-- Big separating conjunction over a list with index access. -/
 abbrev bigSepL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : PROP :=
   bigOpL sep Φ l
