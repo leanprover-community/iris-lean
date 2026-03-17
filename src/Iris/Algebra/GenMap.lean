@@ -13,7 +13,7 @@ open OFE
 section GenMap
 
 /- The OFE over gmaps is equivalent to a non-dependent discrete function to an `Option` type with a
-`Leibniz` OFE of keys, and an infinite number of unallocated elements.
+`Leibniz` OFE of keys, and a finite number of allocated elements.
 
 In this setting, the CMRA is always unital, and as a consequence the oFunctors do not require
 unitality in order to act as a `URFunctor(Contractive)`.
@@ -21,77 +21,67 @@ unitality in order to act as a `URFunctor(Contractive)`.
 GenMap is only intended to be used in the construction of the core IProp model. It is a stripped-down
 version of the generic heap constructions, which you should use instead. -/
 
-def alter [DecidableEq α] (f : α → β) (a : α) (b : β) : α → β :=
+def alter (f : Nat → β) (a : Nat) (b : β) : Nat → β :=
   fun a' => if a = a' then b else f a'
 
-structure Enum (P : α → Prop) (enum : Nat → α) : Prop where
-  inc {n} : P (enum n)
-  inj {n m} : enum n = enum m → n = m
+/-- A GenMap is a partial map from `Nat` to `β` with finite support.
+The `bound` field witnesses that all keys ≥ some `N` map to `none`. -/
+structure GenMap (β : Type _) where
+  car : Nat → Option β
+  bound : ∃ N, ∀ k, N ≤ k → car k = none
 
-def poke [DecidableEq α] (enum : Nat → α) (n : Nat) : Nat → α :=
-  fun n' => if n' < n then enum n' else enum (n' + 1)
-
-def Infinite (P : α → Prop) : Prop := ∃ e, Enum P e
-
-def IsFree {β : α → Type _} (f : (a : α) → Option (β a)) : α → Prop := fun a => f a = none
-
-theorem alter_isFree_infinite [DecidableEq α] {f : α → Option β} (H : Infinite (IsFree f)) :
-    Infinite (IsFree (alter f a b)) := by
-  rcases H with ⟨enum, Henum_inc, Henum_inj⟩
-  rcases Classical.em (∃ n₀, enum n₀ = a) with (⟨n₀, Hin⟩|Hout)
-  · refine ⟨poke enum n₀, @fun n => ?_, @fun n m => ?_⟩
-    · simp [alter, IsFree]; split <;> rename_i h <;> revert h <;> simp [poke]
-      · split <;> intro H <;> specialize Henum_inj (Hin ▸ H) <;> omega
-      · split <;> refine fun _ => Henum_inc
-    · simp [poke]
-      split <;> split
-      all_goals intro H <;> specialize Henum_inj H <;> grind
-  · refine ⟨enum, @fun n => ?_, @fun n m Heq => ?_⟩
-    · simp only [not_exists] at Hout; specialize Hout n
-      simp only [IsFree, alter] at ⊢
-      split
-      · rename_i h; exact (Hout h.symm).elim
-      · exact Henum_inc
-    · exact Henum_inj Heq
-
-theorem Infinite.mono {P Q : α → Prop} (H : Infinite P) (Hmono : ∀ a, P a → Q a) : Infinite Q := by
-  rcases H with ⟨enum, Henum_inc, Henum_inj⟩
-  exact ⟨enum, Hmono (enum _) Henum_inc, Henum_inj⟩
-
-theorem Infinite.nat_true : Infinite fun (_ : Nat) => True := ⟨id, trivial, id⟩
-
-section GenMapImpl
-
-structure GenMap (α β : Type _) where
-  car : α → Option β
-
-instance : CoeFun (GenMap α β) (fun _ => α → Option β) where
+instance : CoeFun (GenMap β) (fun _ => Nat → Option β) where
   coe := GenMap.car
 
-nonrec def GenMap.alter [DecidableEq α] (g : GenMap α β) (a : α) (b : Option β) : GenMap α β where
+nonrec def GenMap.alter (g : GenMap β) (a : Nat) (b : Option β) : GenMap β where
   car := alter g.car a b
+  bound := by
+    obtain ⟨N, hN⟩ := g.bound
+    exact ⟨max N (a + 1), fun k hk => by
+      simp only [Iris.alter]
+      split
+      · next heq => subst heq; omega
+      · exact hN k (by omega)⟩
 
-def GenMap.empty [DecidableEq α] : GenMap α β := ⟨fun _ => none⟩
+def GenMap.empty : GenMap β := ⟨fun _ => none, ⟨0, fun _ _ => rfl⟩⟩
 
-def GenMap.singleton [DecidableEq α] (x : α) (y : β) : GenMap α β :=
+def GenMap.singleton (x : Nat) (y : β) : GenMap β :=
   empty.alter x y
 
-theorem GenMap.empty_map_lookup [DecidableEq α] (γ : α) :
-  (GenMap.empty : GenMap α β).car γ = none := rfl
+theorem GenMap.empty_map_lookup (γ : Nat) :
+  (GenMap.empty : GenMap β).car γ = none := rfl
 
-theorem GenMap.singleton_map_in [DecidableEq α] (x : α) (y : β) :
+theorem GenMap.singleton_map_in (x : Nat) (y : β) :
   (GenMap.singleton x y).car x = some y := by
   simp [GenMap.singleton, GenMap.alter, GenMap.empty, Iris.alter]
 
-theorem GenMap.singleton_map_none [DecidableEq α] {x : α} {y : β} {x' : α} (h : x' ≠ x) :
+theorem GenMap.singleton_map_none {x : Nat} {y : β} {x' : Nat} (h : x' ≠ x) :
     (GenMap.singleton x y).car x' = none := by
   simp [GenMap.singleton, GenMap.alter, Iris.alter, GenMap.empty]
   intro heq; subst heq; contradiction
 
-section OFE
-variable (α β : Type _) [OFE β]
+/-- Any GenMap has a fresh key (one mapping to `none`). -/
+theorem GenMap.exists_fresh (g : GenMap β) : ∃ k, g.car k = none := by
+  obtain ⟨N, hN⟩ := g.bound
+  exact ⟨N, hN N (Nat.le_refl N)⟩
 
-instance instOFE_GenMap : OFE (GenMap α β) where
+/-- Given a GenMap and a predicate that is satisfied by infinitely many naturals
+(witnessed by: for any N, there exists k ≥ N with P k), we can find a fresh key
+satisfying P. -/
+theorem GenMap.exists_fresh_sat (g : GenMap β) {P : Nat → Prop}
+    (hP : ∀ N, ∃ k, N ≤ k ∧ P k) : ∃ k, g.car k = none ∧ P k := by
+  obtain ⟨N, hN⟩ := g.bound
+  obtain ⟨k, hk_ge, hk_P⟩ := hP N
+  exact ⟨k, hN k hk_ge, hk_P⟩
+
+/-- `IsFree f a` means key `a` maps to `none` in `f`. Retained for compatibility
+with downstream proofs that pattern-match on this. -/
+def IsFree {β : α → Type _} (f : (a : α) → Option (β a)) : α → Prop := fun a => f a = none
+
+section OFE
+variable (β : Type _) [OFE β]
+
+instance instOFE_GenMap : OFE (GenMap β) where
   Equiv := (·.car ≡ ·.car)
   Dist n := (·.car ≡{n}≡ ·.car)
   dist_eqv.refl _ := Dist.of_eq rfl
@@ -104,36 +94,64 @@ end OFE
 section CMRA
 open CMRA GenMap
 
-variable (α β : Type _) [CMRA β]
+variable (β : Type _) [CMRA β]
 
-instance instCMRA_GenMap : CMRA (GenMap α β) where
-  pcore x := Option.map GenMap.mk <| CMRA.pcore x.car
-  op x y := GenMap.mk (x.car • y.car)
-  ValidN n x := ✓{n} x.car ∧ (Infinite (IsFree x.car))
-  Valid x := ✓ x.car ∧ (Infinite (IsFree x.car))
-  op_ne.ne {_ _ _} H := op_ne (α := α → Option β) |>.ne H
+private theorem op_bound (x y : GenMap β) :
+    ∃ N, ∀ k, N ≤ k → (x.car • y.car) k = none := by
+  obtain ⟨Nx, hx⟩ := x.bound
+  obtain ⟨Ny, hy⟩ := y.bound
+  exact ⟨max Nx Ny, fun k hk => by
+    simp [CMRA.op, optionOp, hx k (by omega), hy k (by omega)]⟩
+
+private theorem pcore_bound (x : GenMap β) (cx : Nat → Option β)
+    (hpc : CMRA.pcore x.car = some cx) :
+    ∃ N, ∀ k, N ≤ k → cx k = none := by
+  obtain ⟨N, hN⟩ := x.bound
+  have hcx : cx = fun k => CMRA.core (x.car k) := by
+    have := Option.some.inj hpc; exact this.symm
+  exact ⟨N, fun k hk => by
+    rw [hcx]; simp [CMRA.core, CMRA.pcore, optionCore, hN k hk]⟩
+
+private theorem extend_bound {n : Nat} {x : GenMap β}
+    {y1 y2 : Nat → Option β} (Hv : ✓{n} x.car) (He : x.car ≡{n}≡ y1 • y2) :
+    let F k := CMRA.extend (Hv k) (He k)
+    (∃ N, ∀ k, N ≤ k → (fun k => (F k).1) k = none) ∧
+    (∃ N, ∀ k, N ≤ k → (fun k => (F k).2.1) k = none) := by
+  obtain ⟨N, hN⟩ := x.bound
+  have aux : ∀ k, N ≤ k → ∀ (z₁ z₂ : Option β),
+      x.car k ≡ z₁ • z₂ → z₁ = none ∧ z₂ = none := by
+    intro k hk z₁ z₂ hp1
+    have hxk := hN k hk
+    have hp1' : none ≡ z₁ • z₂ := hxk ▸ hp1
+    cases z₁ <;> cases z₂ <;> simp_all [CMRA.op, optionOp, OFE.Equiv, Option.Forall₂]
+  constructor
+  · exact ⟨N, fun k hk => (aux k hk _ _ (CMRA.extend (Hv k) (He k)).2.2.1).1⟩
+  · exact ⟨N, fun k hk => (aux k hk _ _ (CMRA.extend (Hv k) (He k)).2.2.1).2⟩
+
+private def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
+  some ⟨fun k => CMRA.core (x.car k), by
+    obtain ⟨N, hN⟩ := x.bound
+    exact ⟨N, fun k hk => by
+      simp [CMRA.core, CMRA.pcore, optionCore, hN k hk]⟩⟩
+
+instance instCMRA_GenMap : CMRA (GenMap β) where
+  pcore := pcore_genmap β
+  op x y := ⟨x.car • y.car, op_bound β x y⟩
+  ValidN n x := ✓{n} x.car
+  Valid x := ✓ x.car
+  op_ne.ne {_ _ _} H := op_ne (α := Nat → Option β) |>.ne H
   pcore_ne {n x y cx} H Hm := by
-    have Hm' : (pcore x.car) = some cx.car := by
-      rcases h : (pcore x.car) <;> simp_all
-      rw [← Hm]
-    rcases pcore_ne H Hm' with ⟨cy', Hcy'1, Hcy'2⟩
-    exact ⟨⟨cy'⟩, by simp [Hcy'1], Hcy'2⟩
-  validN_ne {n x y H} := by
-    refine fun ⟨Hv, ⟨e, Hf, Hi⟩⟩ => ⟨Dist.validN H |>.mp Hv, ?_⟩
-    refine ⟨e, @fun n => ?_, Hi⟩
-    specialize H (e n); specialize @Hf n; revert H Hf
-    cases _ : x.car (e n) <;> cases _ : y.car (e n) <;>
-    simp_all [IsFree, OFE.Dist, Option.Forall₂]
-  valid_iff_validN {x} := by
-    refine ⟨fun ⟨Hv, Hi⟩ n => ⟨Hv.validN, Hi⟩, fun H => ⟨?_, H 0 |>.2⟩⟩
-    exact valid_iff_validN.mpr (H · |>.1)
-  validN_succ {x n} := fun ⟨Hv, Hi⟩ => ⟨validN_succ Hv, Hi⟩
-  validN_op_left {n x y} := by
-    simp; rintro Hv Hf
-    refine ⟨validN_op_left Hv, ?_⟩
-    refine Infinite.mono Hf (fun a => ?_)
-    simp [IsFree, op, optionOp]
-    cases _ : x.car a <;> cases _ : y.car a  <;> simp
+    have hcx : cx.car = fun k => CMRA.core (x.car k) := by
+      simp [pcore_genmap] at Hm; exact (congrArg GenMap.car Hm).symm
+    refine ⟨⟨fun k => CMRA.core (y.car k), ?_⟩, by simp [pcore_genmap], fun k => ?_⟩
+    · obtain ⟨N, hN⟩ := y.bound
+      exact ⟨N, fun k hk => by simp [CMRA.core, CMRA.pcore, optionCore, hN k hk]⟩
+    · rw [hcx]; exact (H k).core
+  validN_ne {n x y H} := Dist.validN H |>.mp
+  valid_iff_validN {x} :=
+    ⟨fun Hv n => Hv.validN, fun H => valid_iff_validN.mpr (H ·)⟩
+  validN_succ {x n} := validN_succ
+  validN_op_left {n x y} := validN_op_left
   assoc {x y z} a := by
     cases _ : x.car a <;> cases _ : y.car a <;> cases _ : z.car a <;>
       simp_all [op, OFE.Equiv, Option.Forall₂, optionOp]
@@ -143,57 +161,85 @@ instance instCMRA_GenMap : CMRA (GenMap α β) where
       simp_all [op, OFE.Equiv, Option.Forall₂, optionOp]
     exact comm
   pcore_op_left {x cx} H := by
-    rcases x with ⟨x⟩; rcases cx with ⟨cx⟩
-    have _ := pcore_op_left (x := x) (cx := cx)
-    simp_all [OFE.Equiv]
+    have hcx : cx.car = fun k => CMRA.core (x.car k) := by
+      simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
+    intro k
+    have : cx.car k = CMRA.core (x.car k) := congrFun hcx k
+    simp only [CMRA.op, optionOp, this]
+    exact core_op (x.car k)
   pcore_idem {x cx} H := by
-    rcases x with ⟨x⟩; rcases cx with ⟨cx⟩
-    simp_all [OFE.Equiv, Option.Forall₂, Option.map]
-    apply pcore_idem (x := x) (cx := cx)
-    simp [pcore, H]
-  pcore_op_mono {x cx} := by
-    rcases x with ⟨x⟩; rcases cx with ⟨cx⟩; simp
-    refine fun H ⟨y⟩ => ?_
-    rcases pcore_op_mono (x := x) (cx := cx) H y with ⟨cy, Hcy⟩
-    refine ⟨.mk cy, Hcy⟩
+    have hcx : cx.car = fun k => CMRA.core (x.car k) := by
+      simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
+    simp only [pcore_genmap, OFE.Equiv, Option.Forall₂]
+    intro k
+    have : cx.car k = CMRA.core (x.car k) := congrFun hcx k
+    simp only [this]; exact core_idem (x.car k)
+  pcore_op_mono {x cx} H y := by
+    have hcx : cx.car = fun k => CMRA.core (x.car k) := by
+      simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
+    have hpc_fun : CMRA.pcore x.car = some cx.car := by rw [hcx]; rfl
+    rcases pcore_op_mono hpc_fun y.car with ⟨cy, Hcy⟩
+    refine ⟨⟨cy, ?_⟩, ?_⟩
+    · obtain ⟨N, hN⟩ := (op_bound β x y)
+      exact ⟨N, fun k hk => by
+        have hxyk := hN k hk
+        simp [CMRA.op, optionOp] at hxyk
+        cases hx : x.car k <;> cases hy : y.car k <;> simp_all
+        have hcxy : CMRA.core (x.car • y.car) k = none := by
+          simp [CMRA.core, CMRA.pcore, optionCore, hx, hy, CMRA.op, optionOp]
+        -- From Hcy at k: core ((x•y) k) ≡ (core (x k) • cy k)
+        -- hcxy says LHS is none; core (x k) = none since x k = none
+        -- So none ≡ (none • cy k) = cy k. If cy k = some _, contradiction.
+        have hHeqk := Hcy k
+        simp only [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp, hx, hy, Option.bind] at hHeqk
+        cases hcy : cy k <;> simp_all⟩
+    · intro k
+      have hHeqk := Hcy k
+      simp [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp] at hHeqk ⊢
+      exact hHeqk
   extend {n x y1 y2} := by
-    rintro ⟨Hv, _⟩ H
-    rcases extend Hv H with ⟨z1, z2, _, _, _⟩
-    exists .mk z1
-    exists .mk z2
+    rintro Hv H
+    have eb := extend_bound β Hv H
+    let F k := CMRA.extend (Hv k) (H k)
+    exact ⟨⟨fun k => (F k).1, eb.1⟩, ⟨fun k => (F k).2.1, eb.2⟩,
+      fun k => (F k).2.2.1, fun k => (F k).2.2.2.1, fun k => (F k).2.2.2.2⟩
 
-instance instUCMRA_GenMap : UCMRA (GenMap Nat β) where
+instance instUCMRA_GenMap : UCMRA (GenMap β) where
   unit := GenMap.empty
-  unit_valid := ⟨fun _ => trivial, ⟨id, rfl, id⟩⟩
-  unit_left_id := by simp [op, empty, optionOp]
-  pcore_unit := by simp [pcore, empty, core, optionCore]
+  unit_valid := fun _ => trivial
+  unit_left_id {x} k := by
+    simp only [CMRA.op, optionOp, empty]
+    cases x.car k <;> simp [OFE.Equiv, Option.Forall₂]
+  pcore_unit k := by
+    simp [OFE.Equiv, Option.Forall₂, empty, CMRA.core, CMRA.pcore, optionCore]
 
-instance : IsTotal (GenMap Nat β) := unit_total
+instance : IsTotal (GenMap β) := unit_total
 
-theorem GenMap.alter_valid [DecidableEq α] {g : GenMap α β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
+theorem GenMap.alter_valid {g : GenMap β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
     ✓{n} g.alter a b := by
-  rcases g with ⟨g⟩ <;> simp [alter]
-  rcases Hg with ⟨Hv, Hi⟩
-  refine ⟨fun _ => ?_, alter_isFree_infinite Hi⟩
-  simp [Iris.alter] <;> split
+  intro k; simp only [GenMap.alter, Iris.alter]; split
   · exact Hb
-  · exact Hv _
+  · exact Hg k
 
-theorem GenMap.valid_exists_fresh {g : GenMap α β} (Hv : ✓{n} g) : ∃ a : α, g.car a = none := by
-  rcases Hv with ⟨_, e, He_inc, _⟩
-  exact ⟨e 0, He_inc⟩
+theorem GenMap.valid_exists_fresh {g : GenMap β} (_Hv : ✓{n} g) : ∃ a : Nat, g.car a = none :=
+  g.exists_fresh
 
-theorem GenMap.singleton_map_op [DecidableEq α] (x : α) (y1 y2 : β) :
-    (singleton x y1 : GenMap α β) • singleton x y2 = singleton x (y1 • y2) := by
-  apply congrArg GenMap.mk
-  funext γ
+omit [CMRA β] in
+@[ext] theorem GenMap.ext {a b : GenMap β} (h : a.car = b.car) : a = b := by
+  rcases a with ⟨ca, ba⟩; rcases b with ⟨cb, bb⟩; simp at h; subst h; rfl
+
+theorem GenMap.singleton_map_op (x : Nat) (y1 y2 : β) :
+    (singleton x y1 : GenMap β) • singleton x y2 = singleton x (y1 • y2) := by
+  apply GenMap.ext; funext γ
   simp only [CMRA.op, optionOp]
   by_cases h : γ = x
   · subst h; simp [singleton, empty, alter, Iris.alter]
-  · simp [singleton, empty, alter, Iris.alter]; grind
+  · simp only [singleton, empty, alter, Iris.alter]
+    have : x ≠ γ := (h ∘ Eq.symm)
+    simp [if_neg this]
 
-theorem GenMap.singleton_map_pcore [DecidableEq α] (x : α) (y : β) (γ : α) :
-    ((singleton x y : GenMap α β).car γ).bind pcore =
+theorem GenMap.singleton_map_pcore (x : Nat) (y : β) (γ : Nat) :
+    ((singleton x y : GenMap β).car γ).bind pcore =
     if γ = x then pcore y else none := by
   by_cases h : γ = x
   · subst h
@@ -201,29 +247,33 @@ theorem GenMap.singleton_map_pcore [DecidableEq α] (x : α) (y : β) (γ : α) 
   · simp_all [singleton_map_none h]
 
 -- Validity lemmas for singleton_map
-theorem GenMap.validN_singleton_map_in [DecidableEq α] (x : α) (y : β) (n : Nat) :
+theorem GenMap.validN_singleton_map_in (x : Nat) (y : β) (n : Nat) :
     ✓{n} (singleton x y).car x → ✓{n} y := by
   rw [singleton_map_in]
   simp [ValidN, optionValidN]
 
-theorem GenMap.op_singleton_comm [DecidableEq α] {mf : GenMap α β} {x : α} (y : β) :
+theorem GenMap.op_singleton_comm {mf : GenMap β} {x : Nat} (y : β) :
   IsFree mf.car x →
   (GenMap.singleton x y) • mf ≡ mf.alter x (some y) := by
   intro H_free k
+  simp only [IsFree] at H_free
   by_cases heq : k = x
-  · subst heq; simp only [op, alter, Iris.alter, singleton, empty_map_lookup, optionOp, ↓reduceIte]; rw [H_free]
-  · simp [op, alter, Iris.alter, singleton, empty_map_lookup, if_neg (heq ∘ Eq.symm), optionOp]
+  · subst heq
+    simp only [CMRA.op, optionOp, GenMap.alter, Iris.alter, singleton, empty, ↓reduceIte]
+    rw [H_free]
+  · simp only [CMRA.op, optionOp, GenMap.alter, Iris.alter, singleton, empty]
+    have : x ≠ k := heq ∘ Eq.symm
+    rw [if_neg this, if_neg this]
 
-theorem GenMap.validN_op_comm [DecidableEq α] {m mf : GenMap α β} (x : α) (y : β) (H : IsFree mf.car x) :
-  ✓{n} m.alter x y • mf ↔ ✓{n} (m • mf).alter x y := by
+theorem GenMap.validN_op_comm {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree mf.car x) :
+  ✓{n} m.alter x (some y) • mf ↔ ✓{n} (m • mf).alter x (some y) := by
   apply Dist.validN
-  intro k; simp [IsFree] at H
+  intro k; simp only [IsFree] at H
   by_cases heq : k = x
-  · -- Case: k = x
-    subst heq
-    simp [CMRA.op, GenMap.alter, Iris.alter, H, optionOp]
-  · -- Case: k ≠ γ
-    simp only [CMRA.op, alter, Iris.alter]
+  · subst heq
+    simp only [CMRA.op, GenMap.alter, Iris.alter, ↓reduceIte, optionOp]
+    rw [H]
+  · simp only [CMRA.op, alter, Iris.alter]
     have : x ≠ k := heq ∘ Eq.symm
     rw [if_neg this, if_neg this]
 
@@ -232,11 +282,13 @@ end CMRA
 section OFunctors
 open COFE CMRA
 
-abbrev GenMapOF (C : Type _) (F : OFunctorPre) : OFunctorPre :=
-  fun A B _ _ => GenMap C (F A B)
+abbrev GenMapOF (F : OFunctorPre) : OFunctorPre :=
+  fun A B _ _ => GenMap (F A B)
 
-abbrev GenMap.lift [OFE α] [OFE β] (f : α -n> β) : GenMap T α -n> GenMap T β where
-  f g := .mk fun t => Option.map f (g.car t)
+abbrev GenMap.lift [OFE α] [OFE β] (f : α -n> β) : GenMap α -n> GenMap β where
+  f g := ⟨fun t => Option.map f (g.car t), by
+    obtain ⟨N, hN⟩ := g.bound
+    exact ⟨N, fun k hk => by simp [Option.map, hN k hk]⟩⟩
   ne.ne {n x1 x2} H γ := by
     specialize H γ
     simp [Option.map]
@@ -244,8 +296,8 @@ abbrev GenMap.lift [OFE α] [OFE β] (f : α -n> β) : GenMap T α -n> GenMap T 
     exact NonExpansive.ne H
 
 instance instOFunctor_GenMapOF (F : OFunctorPre) [OFunctor F] :
-    OFunctor (GenMapOF Nat F) where
-  cofe {A B _ _} := instOFE_GenMap Nat (F A B)
+    OFunctor (GenMapOF F) where
+  cofe {A B _ _} := instOFE_GenMap (F A B)
   map f₁ f₂ := GenMap.lift <| OFunctor.map (F := F) f₁ f₂
   map_ne.ne {n x1 x2} Hx {y1 y2} Hy k γ := by
     simp only [OFE.Dist, Option.Forall₂, Option.map]
@@ -257,48 +309,53 @@ instance instOFunctor_GenMapOF (F : OFunctorPre) [OFunctor F] :
     simp only [Option.map]; cases _ : x.car γ <;> simp [OFunctor.map_comp]
 
 instance GenMapOF_instURFunctor (F : COFE.OFunctorPre) [RFunctor F] :
-    URFunctor (GenMapOF Nat F) where
+    URFunctor (GenMapOF F) where
   map f g := {
     toHom := GenMap.lift <| OFunctor.map f g
-    validN {n x} hv := by
-      rcases hv with ⟨hv, ⟨e, Hf, Hi⟩⟩
-      refine ⟨fun z => ?_, ⟨e, @fun n => ?_, Hi⟩⟩
-      · cases h : x.car z with
-        | none => simp [Option.map, ValidN, optionValidN, h]
-        | some v =>
-          simp only [Option.map, ValidN, optionValidN, h]
-          have Hvalid := @(URFunctor.map (F := OptionOF F) f g).validN n v
-          simp only [CMRA.ValidN, optionValidN, URFunctor.map] at Hvalid
-          have hv' := hv z; simp only [h, ValidN, optionValidN] at hv'
-          exact Hvalid hv'
-      · simp_all [IsFree, Option.map]
+    validN {n x} hv z := by
+      cases h : x.car z with
+      | none => simp [Option.map, h, CMRA.ValidN, optionValidN]
+      | some v =>
+        simp only [Option.map, CMRA.ValidN, optionValidN, h]
+        have Hvalid := @(URFunctor.map (F := OptionOF F) f g).validN n v
+        simp only [CMRA.ValidN, optionValidN, URFunctor.map] at Hvalid
+        have hv' := hv z; simp only [h, CMRA.ValidN, optionValidN] at hv'
+        exact Hvalid hv'
     pcore x γ := by
+      -- Need: Option.map (lift (map f g)) (pcore_genmap x) at γ ≡ pcore_genmap (lift (map f g) x) at γ
+      -- Both sides reduce pointwise to comparing Option.map (map f g) (core (x.car γ)) vs core (Option.map (map f g) (x.car γ))
+      -- This follows from the OptionOF F pcore morphism property
       have Hcore := @(URFunctor.map (F := OptionOF F) f g).pcore (x.car γ)
-      simp only [Option.map] at Hcore ⊢
-      cases h : (x.car γ) <;> simp [CMRA.core, Option.getD, optionCore] at Hcore ⊢
-      rename_i v
-      simp [OFE.Equiv, Option.Forall₂, URFunctor.map, Option.bind, h, optionCore,
-            OFunctor.map, optionMap, Option.map] at Hcore
-      cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v) <;>
-        simp_all [RFunctor.toOFunctor]
+      simp only [CMRA.pcore, optionCore, Option.bind, Option.map, URFunctor.map,
+                 OFunctor.map, optionMap, CMRA.core] at Hcore ⊢
+      cases h : (x.car γ) with
+      | none => simp
+      | some v =>
+        simp only [h] at Hcore ⊢
+        cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v) <;>
+          simp_all [RFunctor.toOFunctor, OFE.Equiv, Option.Forall₂]
     op z x γ := by
       have Hop := @(URFunctor.map (F := OptionOF F) f g).op (z.car γ) (x.car γ)
-      simp only [Option.map, RFunctor.toOFunctor, op, optionOp, URFunctor.map] at Hop ⊢
-      cases h : z.car γ <;> cases h' : x.car γ <;> simp_all [OFunctor.map, optionMap]
+      simp only [Option.map, RFunctor.toOFunctor, CMRA.op, optionOp, URFunctor.map] at Hop ⊢
+      cases h : z.car γ <;> cases h' : x.car γ <;>
+        simp_all [OFunctor.map, optionMap, OFE.Equiv, Option.Forall₂]
   }
   map_ne.ne := OFunctor.map_ne.ne
   map_id := OFunctor.map_id
   map_comp := OFunctor.map_comp
 
 instance GenMapOF_instURFC (F : COFE.OFunctorPre) [HURF : RFunctorContractive F] :
-    URFunctorContractive (GenMapOF Nat F) where
-  map_contractive.1 h x n := by
+    URFunctorContractive (GenMapOF F) where
+  map_contractive.1 h x γ := by
     rename_i n x' y'
-    let Heqv := @(URFunctorContractive.map_contractive (F := OptionOF F)).1 _ x' y' h (x.car n)
-    simp [Function.uncurry, URFunctor.map, Option.map] at Heqv ⊢
-    cases h : x.car n <;> simp
-    rw [h] at Heqv
+    have Heqv := @(URFunctorContractive.map_contractive (F := OptionOF F)).1 _ x' y' h (x.car γ)
+    simp only [Function.uncurry, URFunctor.map, Option.map] at Heqv ⊢
+    cases hc : x.car γ <;> simp [OFE.Dist, Option.Forall₂]
+    rw [hc] at Heqv
     exact Heqv
 
 end OFunctors
 
+end GenMap
+
+end Iris
