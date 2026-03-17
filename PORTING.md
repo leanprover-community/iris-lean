@@ -271,6 +271,18 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] AddModal
   - [x] IntoLater
 - [ ] `class_instances_make.v`
+  - [ ] Affine 
+  - [ ] Absorbing
+  - [ ] Embed
+  - [ ] Sep
+  - [ ] And 
+  - [ ] Or 
+  - [x] Affinely
+  - [x] Absorbingly
+  - [x] Persistenly
+  - [x] Intuitionistically
+  - [x] Later
+  - [ ] Except-0
 - [ ] `class_instances_plainly.v` (InstancesPlainly.lean)
   - [x] basic instances
   - [x] FromModal
@@ -350,7 +362,10 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] iEmpIntro
   - [x] iPureIntro
   - [ ] iFrame
-  - [x] iRevert
+  - [ ] iRevert
+    - [x] basic
+    - [ ] `intoIH` revert
+    - [ ] selection patterns
   - [x] iPoseProof (Lean: ihave _ := _)
   - [ ] iSpecialize
     - [x] basic functionality
