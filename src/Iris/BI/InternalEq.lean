@@ -8,6 +8,7 @@ import Iris.BI.BI
 import Iris.BI.DerivedLaws
 import Iris.BI.DerivedLawsLater
 import Iris.BI.Extensions
+import Iris.Algebra.Csum
 import Iris.Algebra.Excl
 import Iris.Std.RocqAlias
 import Iris.Std.TC
@@ -220,7 +221,32 @@ theorem sig_equivI {A : Type u} [OFE A] (P : A → Prop) (x y : Subtype P) :
 
 -- sum_equivI: omitted, Sum OFE not available
 -- sigT_equivI: omitted, SigmaT OFE not available
--- csum_equivI: omitted, CSum is being ported concurrently
+
+@[rocq_alias csum_equivI]
+theorem csum_equivI {A B : Type u} [OFE A] [OFE B] (sx sy : Csum A B) :
+    internalEq sx sy ⊣⊢@{PROP}
+      match sx, sy with
+      | .inl x, .inl y => internalEq x y
+      | .inr x, .inr y => internalEq x y
+      | .invalid, .invalid => BIBase.pure True
+      | _, _ => BIBase.pure False := by
+  constructor
+  · refine @internalEq_rewrite' PROP _ _ _ _ _ sx sy (fun sy' =>
+      match sx, sy' with
+      | .inl x, .inl y => internalEq x y
+      | .inr x, .inr y => internalEq x y
+      | .invalid, .invalid => BIBase.pure True
+      | _, _ => BIBase.pure False) ?_ .rfl ?_
+    · refine ⟨fun {n x' y'} (h : Csum.Dist n x' y') => ?_⟩
+      cases sx <;> cases x' <;> cases y' <;> first
+        | exact (BIInternalEq.ne _).ne Dist.rfl h
+        | exact Dist.rfl
+        | exact h.elim
+    · cases sx <;> first | exact internalEq_refl _ _ | exact true_intro
+  · cases sx <;> cases sy <;> first
+      | exact f_equivI _ _ _
+      | exact internalEq_refl _ _
+      | exact false_elim
 
 private theorem discreteFun_equivI_mp {A : Type u} {B : A → Type u} [OFEFun B]
     (f g : (x : A) → B x) :
