@@ -213,6 +213,12 @@ example [BI PROP] (P : PROP) (Hφ : φ) : ⊢ (<affine> ⌜φ⌝ -∗ P) -∗ P 
   irevert Hφ
   iexact H
 
+/-- Tests `irevert` of a pure proposition in affine BI does not add `<affine>`. -/
+example [BI PROP] [BIAffine PROP] (P : PROP) (Hφ : φ) : ⊢ (⌜φ⌝ -∗ P) -∗ P := by
+  iintro H
+  irevert Hφ
+  iexact H
+
 /-- Tests `irevert` with a forall proposition -/
 example [BI PROP] (x : α) (Φ : α → PROP) : ⊢ (∀ x, Φ x) → Φ x := by
   iintro H
@@ -246,6 +252,19 @@ example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
   irevert x H
+
+/-- Tests `irevert` with mixed Lean/proofmode hypotheses and dependencies. -/
+example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
+  iintro %x %hp H
+  irevert x hp H
+  iintro %x %hp H
+  iexact H
+
+/-- Tests `irevert` of a pure hypothesis in affine BI does not add `<affine>`. -/
+example [BI PROP] [BIAffine PROP] (P : PROP) (Hφ : φ) : ⊢ (⌜φ⌝ -∗ P) -∗ P := by
+  iintro H
+  irevert Hφ
+  iexact H
 
 end revert
 

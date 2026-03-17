@@ -350,7 +350,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] iEmpIntro
   - [x] iPureIntro
   - [ ] iFrame
-  - [ ] iRevert
+  - [x] iRevert
   - [x] iPoseProof (Lean: ihave _ := _)
   - [ ] iSpecialize
     - [x] basic functionality
