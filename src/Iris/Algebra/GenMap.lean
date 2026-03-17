@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors:
 -/
 import Iris.Algebra.OFE
 import Iris.Algebra.CMRA
@@ -12,14 +12,17 @@ open OFE
 
 section GenMap
 
-/- The OFE over gmaps is equivalent to a non-dependent discrete function to an `Option` type with a
+/-! ## GenMap
+
+The OFE over gmaps is equivalent to a non-dependent discrete function to an `Option` type with a
 `Leibniz` OFE of keys, and a finite number of allocated elements.
 
 In this setting, the CMRA is always unital, and as a consequence the oFunctors do not require
 unitality in order to act as a `URFunctor(Contractive)`.
 
-GenMap is only intended to be used in the construction of the core IProp model. It is a stripped-down
-version of the generic heap constructions, which you should use instead. -/
+GenMap is only intended to be used in the construction of the core IProp model.
+It is a stripped-down version of the generic heap constructions, which you should
+use instead. -/
 
 def alter (f : Nat → β) (a : Nat) (b : β) : Nat → β :=
   fun a' => if a = a' then b else f a'
@@ -48,17 +51,17 @@ def GenMap.empty : GenMap β := ⟨fun _ => none, ⟨0, fun _ _ => rfl⟩⟩
 def GenMap.singleton (x : Nat) (y : β) : GenMap β :=
   empty.alter x y
 
-theorem GenMap.empty_map_lookup (γ : Nat) :
-  (GenMap.empty : GenMap β).car γ = none := rfl
+theorem GenMap.empty_map_lookup (γ : Nat) : (GenMap.empty : GenMap β).car γ = none := rfl
 
 theorem GenMap.singleton_map_in (x : Nat) (y : β) :
-  (GenMap.singleton x y).car x = some y := by
+    (GenMap.singleton x y).car x = some y := by
   simp [GenMap.singleton, GenMap.alter, GenMap.empty, Iris.alter]
 
 theorem GenMap.singleton_map_none {x : Nat} {y : β} {x' : Nat} (h : x' ≠ x) :
     (GenMap.singleton x y).car x' = none := by
   simp [GenMap.singleton, GenMap.alter, Iris.alter, GenMap.empty]
-  intro heq; subst heq; contradiction
+  rintro rfl
+  contradiction
 
 /-- Any GenMap has a fresh key (one mapping to `none`). -/
 theorem GenMap.exists_fresh (g : GenMap β) : ∃ k, g.car k = none := by
@@ -76,7 +79,10 @@ theorem GenMap.exists_fresh_sat (g : GenMap β) {P : Nat → Prop}
 
 /-- `IsFree f a` means key `a` maps to `none` in `f`. Retained for compatibility
 with downstream proofs that pattern-match on this. -/
-def IsFree {β : α → Type _} (f : (a : α) → Option (β a)) : α → Prop := fun a => f a = none
+def IsFree {β : α → Type _} (f : (a : α) → Option (β a)) : α → Prop :=
+  fun a => f a = none
+
+/-! ## OFE -/
 
 section OFE
 variable (β : Type _) [OFE β]
@@ -90,6 +96,13 @@ instance instOFE_GenMap : OFE (GenMap β) where
   equiv_dist := equiv_dist
   dist_lt := Dist.lt
 end OFE
+
+@[ext] theorem GenMap.ext {a b : GenMap β} (h : a.car = b.car) : a = b := by
+  obtain ⟨ca, ba⟩ := a
+  obtain ⟨cb, bb⟩ := b
+  simp at h; subst h; rfl
+
+/-! ## CMRA -/
 
 section CMRA
 open CMRA GenMap
@@ -107,8 +120,7 @@ private theorem pcore_bound (x : GenMap β) (cx : Nat → Option β)
     (hpc : CMRA.pcore x.car = some cx) :
     ∃ N, ∀ k, N ≤ k → cx k = none := by
   obtain ⟨N, hN⟩ := x.bound
-  have hcx : cx = fun k => CMRA.core (x.car k) := by
-    have := Option.some.inj hpc; exact this.symm
+  have hcx : cx = fun k => CMRA.core (x.car k) := (Option.some.inj hpc).symm
   exact ⟨N, fun k hk => by
     rw [hcx]; simp [CMRA.core, CMRA.pcore, optionCore, hN k hk]⟩
 
@@ -178,27 +190,25 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
     have hcx : cx.car = fun k => CMRA.core (x.car k) := by
       simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
     have hpc_fun : CMRA.pcore x.car = some cx.car := by rw [hcx]; rfl
-    rcases pcore_op_mono hpc_fun y.car with ⟨cy, Hcy⟩
+    obtain ⟨cy, Hcy⟩ := pcore_op_mono hpc_fun y.car
     refine ⟨⟨cy, ?_⟩, ?_⟩
-    · obtain ⟨N, hN⟩ := (op_bound β x y)
+    · obtain ⟨N, hN⟩ := op_bound β x y
       exact ⟨N, fun k hk => by
         have hxyk := hN k hk
         simp [CMRA.op, optionOp] at hxyk
         cases hx : x.car k <;> cases hy : y.car k <;> simp_all
         have hcxy : CMRA.core (x.car • y.car) k = none := by
           simp [CMRA.core, CMRA.pcore, optionCore, hx, hy, CMRA.op, optionOp]
-        -- From Hcy at k: core ((x•y) k) ≡ (core (x k) • cy k)
-        -- hcxy says LHS is none; core (x k) = none since x k = none
-        -- So none ≡ (none • cy k) = cy k. If cy k = some _, contradiction.
         have hHeqk := Hcy k
-        simp only [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp, hx, hy, Option.bind] at hHeqk
+        simp only [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp,
+          hx, hy, Option.bind] at hHeqk
         cases hcy : cy k <;> simp_all⟩
     · intro k
       have hHeqk := Hcy k
       simp [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp] at hHeqk ⊢
       exact hHeqk
   extend {n x y1 y2} := by
-    rintro Hv H
+    intro Hv H
     have eb := extend_bound β Hv H
     let F k := CMRA.extend (Hv k) (H k)
     exact ⟨⟨fun k => (F k).1, eb.1⟩, ⟨fun k => (F k).2.1, eb.2⟩,
@@ -206,7 +216,7 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
 
 instance instUCMRA_GenMap : UCMRA (GenMap β) where
   unit := GenMap.empty
-  unit_valid := fun _ => trivial
+  unit_valid _ := trivial
   unit_left_id {x} k := by
     simp only [CMRA.op, optionOp, empty]
     cases x.car k <;> simp [OFE.Equiv, Option.Forall₂]
@@ -217,25 +227,24 @@ instance : IsTotal (GenMap β) := unit_total
 
 theorem GenMap.alter_valid {g : GenMap β} (Hb : ✓{n} b) (Hg : ✓{n} g) :
     ✓{n} g.alter a b := by
-  intro k; simp only [GenMap.alter, Iris.alter]; split
+  intro k
+  simp only [GenMap.alter, Iris.alter]
+  split
   · exact Hb
   · exact Hg k
 
 theorem GenMap.valid_exists_fresh {g : GenMap β} (_Hv : ✓{n} g) : ∃ a : Nat, g.car a = none :=
   g.exists_fresh
 
-omit [CMRA β] in
-@[ext] theorem GenMap.ext {a b : GenMap β} (h : a.car = b.car) : a = b := by
-  rcases a with ⟨ca, ba⟩; rcases b with ⟨cb, bb⟩; simp at h; subst h; rfl
-
 theorem GenMap.singleton_map_op (x : Nat) (y1 y2 : β) :
     (singleton x y1 : GenMap β) • singleton x y2 = singleton x (y1 • y2) := by
-  apply GenMap.ext; funext γ
+  apply GenMap.ext
+  funext γ
   simp only [CMRA.op, optionOp]
   by_cases h : γ = x
   · subst h; simp [singleton, empty, alter, Iris.alter]
   · simp only [singleton, empty, alter, Iris.alter]
-    have : x ≠ γ := (h ∘ Eq.symm)
+    have : x ≠ γ := Ne.symm h
     simp [if_neg this]
 
 theorem GenMap.singleton_map_pcore (x : Nat) (y : β) (γ : Nat) :
@@ -246,38 +255,40 @@ theorem GenMap.singleton_map_pcore (x : Nat) (y : β) (γ : Nat) :
     simp [singleton_map_in]
   · simp_all [singleton_map_none h]
 
--- Validity lemmas for singleton_map
 theorem GenMap.validN_singleton_map_in (x : Nat) (y : β) (n : Nat) :
     ✓{n} (singleton x y).car x → ✓{n} y := by
   rw [singleton_map_in]
   simp [ValidN, optionValidN]
 
-theorem GenMap.op_singleton_comm {mf : GenMap β} {x : Nat} (y : β) :
-  IsFree mf.car x →
-  (GenMap.singleton x y) • mf ≡ mf.alter x (some y) := by
-  intro H_free k
+theorem GenMap.op_singleton_comm {mf : GenMap β} {x : Nat} (y : β)
+    (H_free : IsFree mf.car x) :
+    GenMap.singleton x y • mf ≡ mf.alter x (some y) := by
+  intro k
   simp only [IsFree] at H_free
   by_cases heq : k = x
   · subst heq
-    simp only [CMRA.op, optionOp, GenMap.alter, Iris.alter, singleton, empty, ↓reduceIte]
+    simp only [CMRA.op, optionOp, alter, Iris.alter, singleton, empty, ↓reduceIte]
     rw [H_free]
-  · simp only [CMRA.op, optionOp, GenMap.alter, Iris.alter, singleton, empty]
-    have : x ≠ k := heq ∘ Eq.symm
+  · simp only [CMRA.op, optionOp, alter, Iris.alter, singleton, empty]
+    have : x ≠ k := Ne.symm heq
     rw [if_neg this, if_neg this]
 
 theorem GenMap.validN_op_comm {m mf : GenMap β} (x : Nat) (y : β) (H : IsFree mf.car x) :
-  ✓{n} m.alter x (some y) • mf ↔ ✓{n} (m • mf).alter x (some y) := by
+    ✓{n} m.alter x (some y) • mf ↔ ✓{n} (m • mf).alter x (some y) := by
   apply Dist.validN
-  intro k; simp only [IsFree] at H
+  intro k
+  simp only [IsFree] at H
   by_cases heq : k = x
   · subst heq
-    simp only [CMRA.op, GenMap.alter, Iris.alter, ↓reduceIte, optionOp]
+    simp only [CMRA.op, alter, Iris.alter, ↓reduceIte, optionOp]
     rw [H]
   · simp only [CMRA.op, alter, Iris.alter]
-    have : x ≠ k := heq ∘ Eq.symm
+    have : x ≠ k := Ne.symm heq
     rw [if_neg this, if_neg this]
 
 end CMRA
+
+/-! ## OFunctors -/
 
 section OFunctors
 open COFE CMRA
@@ -308,7 +319,7 @@ instance instOFunctor_GenMapOF (F : OFunctorPre) [OFunctor F] :
   map_comp _ _ _ _ x γ := by
     simp only [Option.map]; cases _ : x.car γ <;> simp [OFunctor.map_comp]
 
-instance GenMapOF_instURFunctor (F : COFE.OFunctorPre) [RFunctor F] :
+instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
     URFunctor (GenMapOF F) where
   map f g := {
     toHom := GenMap.lift <| OFunctor.map f g
@@ -319,16 +330,14 @@ instance GenMapOF_instURFunctor (F : COFE.OFunctorPre) [RFunctor F] :
         simp only [Option.map, CMRA.ValidN, optionValidN, h]
         have Hvalid := @(URFunctor.map (F := OptionOF F) f g).validN n v
         simp only [CMRA.ValidN, optionValidN, URFunctor.map] at Hvalid
-        have hv' := hv z; simp only [h, CMRA.ValidN, optionValidN] at hv'
+        have hv' := hv z
+        simp only [h, CMRA.ValidN, optionValidN] at hv'
         exact Hvalid hv'
     pcore x γ := by
-      -- Need: Option.map (lift (map f g)) (pcore_genmap x) at γ ≡ pcore_genmap (lift (map f g) x) at γ
-      -- Both sides reduce pointwise to comparing Option.map (map f g) (core (x.car γ)) vs core (Option.map (map f g) (x.car γ))
-      -- This follows from the OptionOF F pcore morphism property
       have Hcore := @(URFunctor.map (F := OptionOF F) f g).pcore (x.car γ)
       simp only [CMRA.pcore, optionCore, Option.bind, Option.map, URFunctor.map,
                  OFunctor.map, optionMap, CMRA.core] at Hcore ⊢
-      cases h : (x.car γ) with
+      cases h : x.car γ with
       | none => simp
       | some v =>
         simp only [h] at Hcore ⊢
@@ -344,10 +353,10 @@ instance GenMapOF_instURFunctor (F : COFE.OFunctorPre) [RFunctor F] :
   map_id := OFunctor.map_id
   map_comp := OFunctor.map_comp
 
-instance GenMapOF_instURFC (F : COFE.OFunctorPre) [HURF : RFunctorContractive F] :
+instance instURFunctorContractive_GenMapOF (F : COFE.OFunctorPre) [RFunctorContractive F] :
     URFunctorContractive (GenMapOF F) where
   map_contractive.1 h x γ := by
-    rename_i n x' y'
+    next n x' y' =>
     have Heqv := @(URFunctorContractive.map_contractive (F := OptionOF F)).1 _ x' y' h (x.car γ)
     simp only [Function.uncurry, URFunctor.map, Option.map] at Heqv ⊢
     cases hc : x.car γ <;> simp [OFE.Dist, Option.Forall₂]
