@@ -36,80 +36,27 @@ theorem Csum.dist_eqv [OFE α] [OFE β] {n} : Equivalence (Csum.Dist (α := α) 
     | inl => exact Dist.rfl
     | inr => exact Dist.rfl
     | invalid => trivial
-  symm {x y} h := by
-    cases x with
-    | inl => cases y with
-      | inl => exact Dist.symm h
-      | _ => exact h
-    | inr => cases y with
-      | inr => exact Dist.symm h
-      | _ => exact h
-    | invalid => cases y with
-      | invalid => trivial
-      | _ => exact h
+  symm {x y} h := by cases x <;> cases y <;> first | trivial | exact h.symm | exact h
   trans {x y z} h₁ h₂ := by
-    cases x with
-    | inl => cases y with
-      | inl => cases z with
-        | inl => exact Dist.trans h₁ h₂
-        | _ => exact h₂.elim
-      | _ => exact h₁.elim
-    | inr => cases y with
-      | inr => cases z with
-        | inr => exact Dist.trans h₁ h₂
-        | _ => exact h₂.elim
-      | _ => exact h₁.elim
-    | invalid => cases y with
-      | invalid => cases z with
-        | invalid => trivial
-        | _ => exact h₂.elim
-      | _ => exact h₁.elim
+    cases x <;> cases y <;> cases z <;>
+      first | trivial | exact h₁.trans h₂ | exact h₂.elim | exact h₁.elim
 
 instance [OFE α] [OFE β] : OFE (Csum α β) where
   Equiv := Csum.Equiv
   Dist := Csum.Dist
   dist_eqv := Csum.dist_eqv
   equiv_dist {x y} := by
-    constructor
-    · intro h n
-      cases x with
-      | inl => cases y with
-        | inl => exact Equiv.dist h
-        | _ => exact h
-      | inr => cases y with
-        | inr => exact Equiv.dist h
-        | _ => exact h
-      | invalid => cases y with
-        | invalid => trivial
-        | _ => exact h
-    · intro h
-      cases x with
-      | inl => cases y with
-        | inl => exact equiv_dist.mpr h
-        | _ => exact (h 0).elim
-      | inr => cases y with
-        | inr => exact equiv_dist.mpr h
-        | _ => exact (h 0).elim
-      | invalid => cases y with
-        | invalid => trivial
-        | _ => exact (h 0).elim
+    refine ⟨fun h _ => ?_, fun h => ?_⟩
+    · cases x <;> cases y <;> first | exact Equiv.dist h | trivial
+    · cases x <;> cases y <;> first | exact equiv_dist.mpr h | exact (h 0).elim | trivial
   dist_lt {n x y m} hn hlt := by
-    cases x with
-    | inl => cases y with
-      | inl => exact Dist.lt hn hlt
-      | _ => exact hn.elim
-    | inr => cases y with
-      | inr => exact Dist.lt hn hlt
-      | _ => exact hn.elim
-    | invalid => cases y with
-      | invalid => trivial
-      | _ => exact hn.elim
+    cases x <;> cases y <;> first | exact Dist.lt hn hlt | exact hn.elim | trivial
 
 instance [OFE α] [OFE β] : NonExpansive (inl (α := α) (β := β)) where
-  ne _ _ _ h := h
+  ne _ _ _:= id
 
 instance [OFE α] [OFE β] : NonExpansive (inr (α := α) (β := β)) where
-  ne _ _ _ h := h
+  ne _ _ _ := id
 
 @[rocq_alias Cinl_inj]
 theorem Csum.inl_inj [OFE α] [OFE β] {a a' : α} (h : (inl (β := β) a) ≡ inl a') : a ≡ a' := h
@@ -126,79 +73,43 @@ theorem Csum.inr_injN [OFE α] [OFE β] {b b' : β} (h : (inr (α := α) b) ≡{
     b ≡{n}≡ b' := h
 
 instance [OFE α] [OFE β] [OFE.Discrete α] [OFE.Discrete β] : OFE.Discrete (Csum α β) where
-  discrete_0 {x y} h := by
-    cases x with
-    | inl => cases y with
-      | inl => exact discrete_0 (α := α) h
-      | _ => exact h
-    | inr => cases y with
-      | inr => exact discrete_0 (α := β) h
-      | _ => exact h
-    | invalid => cases y with
-      | invalid => trivial
-      | _ => exact h
+  discrete_0 {x y} h := by cases x <;> cases y <;>
+    first | exact discrete_0 (α := α) h | exact discrete_0 (α := β) h | trivial
 
 instance [OFE α] [OFE β] [OFE.Leibniz α] [OFE.Leibniz β] : OFE.Leibniz (Csum α β) where
-  eq_of_eqv {x y} h := by
-    cases x with
-    | inl => cases y with
-      | inl => exact congrArg _ (eq_of_eqv h)
-      | _ => exact h.elim
-    | inr => cases y with
-      | inr => exact congrArg _ (eq_of_eqv h)
-      | _ => exact h.elim
-    | invalid => cases y with
-      | invalid => rfl
-      | _ => exact h.elim
+  eq_of_eqv {x y} h := by cases x <;> cases y <;>
+    first | exact congrArg _ (eq_of_eqv h) | exact h.elim | rfl
 
 instance [OFE α] [OFE β] {a : α} [DiscreteE a] : DiscreteE (inl (β := β) a) where
-  discrete {x} h := by
-    cases x with
-    | inl => exact DiscreteE.discrete (x := a) h
-    | _ => exact h
+  discrete {x} h := by cases x with | inl => exact DiscreteE.discrete (x := a) h | _ => exact h
 
 instance [OFE α] [OFE β] {b : β} [DiscreteE b] : DiscreteE (inr (α := α) b) where
-  discrete {x} h := by
-    cases x with
-    | inr => exact DiscreteE.discrete (x := b) h
-    | _ => exact h
+  discrete {x} h := by cases x with | inr => exact DiscreteE.discrete (x := b) h | _ => exact h
 
 instance [OFE α] [OFE β] : DiscreteE (@invalid α β) where
   discrete {x} h := by cases x with | _ => exact h
 
 /-! ## COFE -/
 
-@[simp] def Csum.getInlD (x : Csum α β) (dflt : α) : α :=
-  match x with
-  | inl a => a
-  | _ => dflt
+@[simp] def Csum.getInlD (x : Csum α β) (d : α) : α :=
+  match x with | inl a => a | _ => d
 
-@[simp] def Csum.getInrD (x : Csum α β) (dflt : β) : β :=
-  match x with
-  | inr b => b
-  | _ => dflt
+@[simp] def Csum.getInrD (x : Csum α β) (d : β) : β :=
+  match x with | inr b => b | _ => d
 
 @[rocq_alias csum_chain_l]
 def csumChainL [OFE α] [OFE β] (c : Chain (Csum α β)) (a : α) : Chain α where
   chain n := (c n).getInlD a
   cauchy {n i} h := by
-    simp only [Csum.getInlD]
-    have hc := c.cauchy h
-    revert hc
-    cases c.chain i
-    all_goals cases c.chain n
-    all_goals simp [OFE.Dist]
+    have hc := c.cauchy h; revert hc
+    cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist]
 
 @[rocq_alias csum_chain_r]
 def csumChainR [OFE α] [OFE β] (c : Chain (Csum α β)) (b : β) : Chain β where
   chain n := (c n).getInrD b
   cauchy {n i} h := by
-    simp only [Csum.getInrD]
-    have hc := c.cauchy h
-    revert hc
-    cases c.chain i
-    all_goals cases c.chain n
-    all_goals simp [OFE.Dist]
+    have hc := c.cauchy h; revert hc
+    cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist]
 
 instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
   compl c :=
@@ -209,26 +120,15 @@ instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
   conv_compl {n c} := by
     have h0n := c.cauchy (Nat.zero_le n)
     revert h0n
-    rcases e0 : c.chain 0 with a | b | _
-    · rcases en : c.chain n with a' | b' | _
-      · intro h0n
-        show IsCOFE.compl (csumChainL c a) ≡{n}≡ a'
-        refine Dist.trans COFE.conv_compl ?_
-        simp [csumChainL, en]
-      · exact id
-      · exact id
-    · rcases en : c.chain n with a' | b' | _
-      · exact id
-      · intro h0n
-        show IsCOFE.compl (csumChainR c b) ≡{n}≡ b'
-        refine Dist.trans COFE.conv_compl ?_
-        simp [csumChainR, en]
-      · exact id
-    · rcases en : c.chain n with a' | b' | _
-      · exact id
-      · exact id
-      · intro
-        trivial
+    rcases e0 : c.chain 0 with a|b|_ <;> rcases en : c.chain n with a'|b'|_ <;> try (· exact id)
+    · intro _
+      show IsCOFE.compl (csumChainL c a) ≡{n}≡ a'
+      refine Dist.trans COFE.conv_compl ?_
+      simp [csumChainL, en]
+    · intro _
+      show IsCOFE.compl (csumChainR c b) ≡{n}≡ b'
+      refine Dist.trans COFE.conv_compl ?_
+      simp [csumChainR, en]
 
 /-! ## CMRA -/
 
@@ -263,112 +163,37 @@ theorem Csum.inr_op [CMRA α] [CMRA β] (b b' : β) :
 private theorem pcore_map_inl_eq [CMRA α] {a : α} {cx : Csum α β}
     (h : (CMRA.pcore a).map Csum.inl = some cx) :
     ∃ ca, CMRA.pcore a = some ca ∧ cx = inl ca := by
-  cases hpa : CMRA.pcore a with
-  | none => simp_all
-  | some => simp_all
+  cases _ : CMRA.pcore a <;> simp_all
 
 private theorem pcore_map_inr_eq [CMRA β] {b : β} {cx : Csum α β}
     (h : (CMRA.pcore b).map Csum.inr = some cx) :
     ∃ cb, CMRA.pcore b = some cb ∧ cx = inr cb := by
-  cases hpb : CMRA.pcore b with
-  | none => simp_all
-  | some => simp_all
+  cases _ : CMRA.pcore b <;> simp_all
 
 instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
   pcore := Csum.pcore
   op := Csum.op
   Valid := Csum.valid
   ValidN := Csum.validN
-  op_ne {x} := ⟨fun {n y₁ y₂} hy => by
-    cases x with
-    | inl a => cases y₁ with
-      | inl => cases y₂ with
-        | inl => exact Dist.op_r hy
-        | _ => exact hy
-      | _ => cases y₂ with
-        | _ => trivial
-    | inr b => cases y₁ with
-      | inr => cases y₂ with
-        | inr => exact Dist.op_r hy
-        | _ => exact hy
-      | _ => cases y₂ with
-        | _ => trivial
-    | invalid => cases y₁ with
-      | _ => cases y₂ with
-        | _ => trivial⟩
+  op_ne {x} := ⟨fun {n y₁ y₂} hy => by cases x <;> cases y₁ <;> cases y₂ <;>
+    first | exact Dist.op_r hy | exact hy | trivial⟩
   pcore_ne {n x y cx} hxy hpx := by
-    cases x with
-    | inl a => cases y with
-      | inl a' =>
-        obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx
-        obtain ⟨cy, hcy, ecy⟩ := CMRA.pcore_ne hxy hpa
-        exact ⟨inl cy, by simp [Csum.pcore, hcy], ecy⟩
-      | inr => exact hxy.elim
-      | invalid => exact hxy.elim
-    | inr b => cases y with
-      | inr b' =>
-        obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
-        obtain ⟨cy, hcy, ecy⟩ := CMRA.pcore_ne hxy hpb
-        exact ⟨inr cy, by simp [Csum.pcore, hcy], ecy⟩
-      | inl => exact hxy.elim
-      | invalid => exact hxy.elim
-    | invalid => cases y with
-      | invalid =>
-        simp [Csum.pcore] at hpx
-        subst hpx
-        exact ⟨invalid, rfl, trivial⟩
-      | inl => exact hxy.elim
-      | inr => exact hxy.elim
+    cases x <;> cases y <;> try exact hxy.elim
+    · obtain ⟨ca, hpa, rfl⟩ := pcore_map_inl_eq hpx
+      obtain ⟨cy, hcy, ecy⟩ := CMRA.pcore_ne hxy hpa
+      exact ⟨inl cy, by simp [Csum.pcore, hcy], ecy⟩
+    · obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
+      obtain ⟨cy, hcy, ecy⟩ := CMRA.pcore_ne hxy hpb
+      exact ⟨inr cy, by simp [Csum.pcore, hcy], ecy⟩
+    · simp only [Csum.pcore, Option.some.injEq] at hpx
+      exact ⟨invalid, rfl, hpx ▸ trivial⟩
   validN_ne {n x y} h hv := by
-    cases x with
-    | inl => cases y with
-      | inl => exact CMRA.validN_ne h hv
-      | _ => exact h.elim
-    | inr => cases y with
-      | inr => exact CMRA.validN_ne h hv
-      | _ => exact h.elim
-    | invalid => cases y with
-      | invalid => trivial
-      | _ => exact h.elim
-  valid_iff_validN {x} := by
-    cases x with
-    | inl => simp [CMRA.valid_iff_validN]
-    | inr => simp [CMRA.valid_iff_validN]
-    | invalid => simp
-  validN_succ := by
-    intro x _ h
-    show Csum.validN _ x
-    cases x with
-    | inl => exact CMRA.validN_succ h
-    | inr => exact CMRA.validN_succ h
-    | invalid => exact h
-  assoc {x y z} := by
-    cases x with
-    | inl => cases y with
-      | inl => cases z with
-        | inl => exact CMRA.assoc
-        | _ => trivial
-      | _ => cases z with
-        | _ => trivial
-    | inr => cases y with
-      | inr => cases z with
-        | inr => exact CMRA.assoc
-        | _ => trivial
-      | _ => cases z with
-        | _ => trivial
-    | invalid => cases y with
-      | _ => cases z with
-        | _ => trivial
-  comm {x y} := by
-    cases x with
-    | inl => cases y with
-      | inl => exact CMRA.comm
-      | _ => trivial
-    | inr => cases y with
-      | inr => exact CMRA.comm
-      | _ => trivial
-    | invalid => cases y with
-      | _ => trivial
+    cases x <;> cases y <;> first | exact CMRA.validN_ne h hv | exact h.elim | trivial
+  valid_iff_validN {x} := by cases x <;> simp [CMRA.valid_iff_validN]
+  validN_succ {x _} h := by cases x with | inl | inr => exact CMRA.validN_succ h | invalid => exact h
+  assoc {x y z} := by cases x <;> cases y <;> cases z <;> first | trivial | exact CMRA.assoc
+  comm {x y} := by cases x <;> cases y <;> first | trivial | exact CMRA.comm
+  -- TODO: Cleanup
   pcore_op_left {x cx} hpx := by
     cases x with
     | inl a =>
@@ -378,9 +203,9 @@ instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
       exact CMRA.pcore_op_left hpb
     | invalid =>
-      simp [Csum.pcore] at hpx
-      subst hpx
-      trivial
+      simp only [Csum.pcore, Option.some.injEq] at hpx
+      exact hpx ▸ trivial
+  -- TODO: Cleanup
   pcore_idem {x cx} hpx := by
     cases x with
     | inl a =>
@@ -390,9 +215,9 @@ instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
       obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
       exact Option.map_forall₂ inr (CMRA.pcore_idem hpb)
     | invalid =>
-      simp [Csum.pcore] at hpx
-      subst hpx
-      simp [Csum.pcore]
+      simp only [Csum.pcore, Option.some.injEq] at hpx
+      exact hpx ▸ trivial
+  -- TODO: Cleanup
   pcore_op_mono {x cx} hpx y := by
     cases x with
     | inl a => cases y with
@@ -406,6 +231,7 @@ instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
       | invalid =>
         obtain ⟨ca, _, rfl⟩ := pcore_map_inl_eq hpx
         exact ⟨invalid, trivial⟩
+  -- TODO: Cleanup
     | inr b => cases y with
       | inr b' =>
         obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx
@@ -418,39 +244,16 @@ instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
         obtain ⟨cb, _, rfl⟩ := pcore_map_inr_eq hpx
         exact ⟨invalid, trivial⟩
     | invalid =>
-      simp [Csum.pcore] at hpx
-      subst hpx
-      exact ⟨invalid, trivial⟩
+      simp only [Csum.pcore, Option.some.injEq] at hpx
+      exact hpx ▸ ⟨invalid, trivial⟩
   validN_op_left {n x y} h := by
-    cases x with
-    | inl => cases y with
-      | inl => exact CMRA.validN_op_left h
-      | _ => exact h.elim
-    | inr => cases y with
-      | inr => exact CMRA.validN_op_left h
-      | _ => exact h.elim
-    | invalid => exact h.elim
+    cases x <;> cases y <;> first | exact CMRA.validN_op_left h | exact h.elim
   extend {n x y₁ y₂} hv he := by
-    cases x with
-    | inl a => cases y₁ with
-      | inl => cases y₂ with
-        | inl =>
-          obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := CMRA.extend hv he
-          exact ⟨inl z₁, inl z₂, hz, hz₁, hz₂⟩
-        | _ => exact he.elim
-      | _ => cases y₂ with
-        | _ => exact he.elim
-    | inr b => cases y₁ with
-      | inr => cases y₂ with
-        | inr =>
-          obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := CMRA.extend hv he
-          exact ⟨inr z₁, inr z₂, hz, hz₁, hz₂⟩
-        | _ => exact he.elim
-      | _ => cases y₂ with
-        | _ => exact he.elim
-    | invalid => cases y₁ with
-      | _ => cases y₂ with
-        | _ => exact hv.elim
+    cases x <;> cases y₁ <;> cases y₂ <;> first
+      | exact he.elim
+      | exact hv.elim
+      | (obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := CMRA.extend hv he; exact ⟨inl z₁, inl z₂, hz, hz₁, hz₂⟩)
+      | (obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := CMRA.extend hv he; exact ⟨inr z₁, inr z₂, hz, hz₁, hz₂⟩)
 
 @[rocq_alias Cinl_valid]
 theorem Csum.inl_valid [CMRA α] [CMRA β] {a : α} : ✓ (inl (β := β) a) ↔ ✓ a := .rfl
@@ -462,15 +265,11 @@ theorem Csum.inr_valid [CMRA α] [CMRA β] {b : β} : ✓ (inr (α := α) b) ↔
 
 instance [CMRA α] [CMRA β] [CMRA.Discrete α] [CMRA.Discrete β] :
     CMRA.Discrete (Csum α β) where
-  discrete_valid {x} hv := by
-    cases x with
-    | inl a =>
-      show ✓ a
-      exact CMRA.discrete_valid hv
-    | inr b =>
-      show ✓ b
-      exact CMRA.discrete_valid hv
-    | invalid => exact hv
+  discrete_valid {x} hv :=
+    match x with
+    | inl a => CMRA.discrete_valid (x := a) hv
+    | inr b => CMRA.discrete_valid (x := b) hv
+    | invalid => hv
 
 /-! ## CoreId -/
 
@@ -483,52 +282,34 @@ instance [CMRA α] [CMRA β] {b : β} [CoreId b] : CoreId (inr (α := α) b) whe
 /-! ## Exclusive -/
 
 instance [CMRA α] [CMRA β] {a : α} [Exclusive a] : Exclusive (inl (β := β) a) where
-  exclusive0_l y h := by
-    cases y with
-    | inl a' => exact Exclusive.exclusive0_l (x := a) a' h
-    | inr => exact h
-    | invalid => exact h
+  exclusive0_l | inl a' => Exclusive.exclusive0_l a' | inr _ | invalid => id
 
 instance [CMRA α] [CMRA β] {b : β} [Exclusive b] : Exclusive (inr (α := α) b) where
-  exclusive0_l y h := by
-    cases y with
-    | inr b' => exact Exclusive.exclusive0_l (x := b) b' h
-    | inl => exact h
-    | invalid => exact h
+  exclusive0_l | inr b' => Exclusive.exclusive0_l b' | inl _ | invalid => id
 
 /-! ## Cancelable -/
 
 instance [CMRA α] [CMRA β] {a : α} [Cancelable a] : Cancelable (inl (β := β) a) where
   cancelableN {n y z} hv he := by
     cases y with
-    | inl => cases z with
-      | inl => exact cancelableN (x := a) hv he
-      | _ => exact he
-    | _ => cases z with
-      | _ => trivial
+    | inl => cases z with | inl => exact cancelableN (x := a) hv he | _ => exact he
+    | _ => trivial
 
 instance [CMRA α] [CMRA β] {b : β} [Cancelable b] : Cancelable (inr (α := α) b) where
   cancelableN {n y z} hv he := by
     cases y with
-    | inr => cases z with
-      | inr => exact cancelableN (x := b) hv he
-      | _ => exact he
-    | _ => cases z with
-      | _ => trivial
+    | inr => cases z with | inr => exact cancelableN (x := b) hv he | _ => exact he
+    | _ => trivial
 
 /-! ## IdFree -/
 
 instance [CMRA α] [CMRA β] {a : α} [IdFree a] : IdFree (inl (β := β) a) where
-  id_free0_r y hv he := by
-    cases y with
-    | inl a' => exact id_free0_r (x := a) _ hv he
-    | _ => trivial
+  id_free0_r y hv he := by cases y with | inl a' => exact id_free0_r (x := a) _ hv he | _ => trivial
 
 instance [CMRA α] [CMRA β] {b : β} [IdFree b] : IdFree (inr (α := α) b) where
-  id_free0_r y hv he := by
-    cases y with
-    | inr b' => exact id_free0_r (x := b) _ hv he
-    | _ => trivial
+  id_free0_r y hv he := by cases y with | inr b' => exact id_free0_r (x := b) _ hv he | _ => trivial
+
+-- TODO: Cleanup everything below
 
 /-! ## Included -/
 
@@ -762,10 +543,7 @@ theorem csum_map_id {x : Csum α β} : Csum.map id id x = x := by
 @[rocq_alias csum_map_compose]
 theorem csum_map_compose (f : α → α') (f' : α' → α'') (g : β → β') (g' : β' → β'')
     (x : Csum α β) : Csum.map (f' ∘ f) (g' ∘ g) x = Csum.map f' g' (Csum.map f g x) := by
-  cases x with
-  | inl => simp
-  | inr => simp
-  | invalid => simp
+  cases x <;> simp
 
 @[rocq_alias csum_map_ext]
 theorem csum_map_ext [OFE α] [OFE α'] [OFE β] [OFE β'] (f f' : α → α') (g g' : β → β')
