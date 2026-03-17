@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Oliver Soeser, Michael Sammler
+Authors: Lars König, Oliver Soeser, Michael Sammler, Yunsong Yang
 -/
 import Iris.BI
 import Iris.ProofMode
@@ -189,13 +189,11 @@ namespace revert
 /-- Tests `irevert` order and names -/
 example [BI PROP] (P Q : PROP) : ⊢ P -∗ Q -∗ P ∗ Q := by
   iintro H1 H2
-  -- irevert P Q H1 H2
-  sorry
-
-example [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) : P ⊢ Q := by
-  iintro HP
-  irevert HP
-  exact H
+  irevert P Q H1 H2
+  iintro %P %Q H1 H2
+  isplitl [H1]
+  · iexact H1
+  · iexact H2
 
 /-- Tests `irevert` with a spatial proposition -/
 example [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) : P ⊢ Q := by
@@ -235,12 +233,20 @@ example [BI PROP] (P Q : PROP) :
   irevert HP HQ
   iexact H
 
--- theorem fail [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
---   iintro %x %_ H
---   irevert x
---   sorry
+/- Tests `irevert` failing with dependency -/
+/-- error: irevert: proofmode hypothesis H depends on x -/
+#guard_msgs in
+example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
+  iintro %x %hp H
+  irevert x
 
-  -- irevert x
+/- Tests `irevert` failing with dependency -/
+/-- error: irevert: Lean hypothesis hp depends on x -/
+#guard_msgs in
+example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
+  iintro %x %hp H
+  irevert x H
+
 end revert
 
 -- exists

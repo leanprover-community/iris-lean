@@ -64,58 +64,73 @@ private theorem ih_revert [BI PROP] {Δ P Q : PROP} {φ : Prop} (hφ : φ)
     and_intro hP' <| intuitionistically_elim.trans hPQ
   exact hΔ.trans <| hAnd.trans (imp_elim_r (P := iprop(<pers> P)) (Q := Q))
 
-private def iRevertHypCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e e' : Q($prop)}
-    (out goal : Q($prop)) (pf : Q($e ⊣⊢ $e' ∗ $out)) :
-    ProofModeM (Q(($e' ⊢ iprop($out -∗ $goal)) → ($e ⊢ $goal))) := do
-  return q(wand_revert (Q:=$goal) $pf)
-
-private def iRevertOne (mvar : MVarId) (hyp : TSyntax `ident) : ProofModeM MVarId := do
-  let (mvar, { u, prop, bi, e, hyps, goal, .. }) ← startProofMode mvar
+/-
+  Revert a proofmode `hypothesis` by removing it from the context
+  and turning it into a wand premise of a new subgoal.
+-/
+private def iRevertProofModeHyp (mvar : MVarId) (hyp : TSyntax `ident) : ProofModeM MVarId := do
+  let (mvar, { u, hyps, goal, .. }) ← startProofMode mvar
   mvar.withContext do
-    if let some (uniq, _, _) := hyps.find? hyp.getId then
-      -- Remove current goal
-      modify fun s => { s with goals := s.goals.filter (· != mvar) }
+    let some (uniq, _, _) := hyps.find? hyp.getId
+      | throwError "irevert: {hyp.getId} is not in context"
+    let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true uniq
+    let subgoal : Q($e' ⊢ $out -∗ $goal) ← addBIGoal hyps' q(wand $out $goal)
+    mvar.assign q(wand_revert $pf $subgoal)
+    modify fun s => { s with goals := s.goals.filter (· != mvar) }
+    return subgoal.mvarId!
 
-      -- Target lives in proofmode context
-      let ⟨e', hyps', out, _, _, _, pf⟩ := hyps.remove true uniq
-      let subgoal : Q($e' ⊢ $out -∗ $goal) ← addBIGoal hyps' q(wand $out $goal)
-      mvar.assign q(wand_revert $pf $subgoal)
-      return subgoal.mvarId!
-    else
-      -- Target lives in Lean context (two cases: Prop / non-Prop)
-      let f ← getFVarId hyp
-      let some ldecl := (← getLCtx).find? f
-        | throwError "irevert: {hyp.getId} not in scope"
+/-- Revert a Lean local variable and translate the resulting goal back into proofmode. -/
+private def iRevertLeanHyp (mvar : MVarId) (f : FVarId) : ProofModeM MVarId := do
+  let (mvar, { prop, bi, e, hyps, goal, .. }) ← startProofMode mvar
+  mvar.withContext do
+    let some ldecl := (← getLCtx).find? f
+      | throwError "irevert: variable not in scope"
 
-      let v : Level ← Meta.getLevel ldecl.type
-      have α : Q(Sort v) := ldecl.type
+    let v : Level ← Meta.getLevel ldecl.type
+    have α : Q(Sort v) := ldecl.type
 
-      let (_, mvarId) ← mvar.revert #[f]
-      mvarId.withContext do
-        -- Prop case
-        -- TODO: add [ih_revert] case we need to check whether spatial context is empty
-        if ← Meta.isProp α then
-          have φ : Q(Prop) := α
-          let p : Q($prop) := q(iprop(<affine> ⌜$φ⌝))
-          let hA : Q(MakeAffinely iprop(⌜$φ⌝) $p) ←
-            synthInstanceQ q(MakeAffinely iprop(⌜$φ⌝) $p)
-          let subgoal : Q($e ⊢ iprop($p -∗ $goal)) ← addBIGoal hyps q(iprop($p -∗ $goal))
-          mvarId.assign q(@pure_revert $prop $bi $e iprop(<affine> ⌜$φ⌝) $goal $φ $hA $subgoal)
-          return subgoal.mvarId!
-        else
-        -- Non-Prop case
-          let Φ : Q($α → $prop) ← mapForallTelescope' (λ t _ => do
-              let some ig := parseIrisGoal? t
-                | throwError "irevert: not in proof mode"
-              pure ig.goal
-            ) (Expr.mvar mvarId)
+    let (_, mvarId) ← mvar.revert #[f]
+    mvarId.withContext do
+      if ← Meta.isProp α then
+        have φ : Q(Prop) := α
+        let p : Q($prop) := q(iprop(<affine> ⌜$φ⌝))
+        let hA : Q(MakeAffinely iprop(⌜$φ⌝) $p) ←
+          synthInstanceQ q(MakeAffinely iprop(⌜$φ⌝) $p)
+        let subgoal : Q($e ⊢ iprop($p -∗ $goal)) ← addBIGoal hyps q(iprop($p -∗ $goal))
+        mvarId.assign q(@pure_revert $prop $bi $e iprop(<affine> ⌜$φ⌝) $goal $φ $hA $subgoal)
+        modify fun s => { s with goals := s.goals.filter (· != mvar) }
+        return subgoal.mvarId!
+      else
+        let Φ : Q($α → $prop) ← mapForallTelescope' (λ t _ => do
+            let some ig := parseIrisGoal? t
+              | throwError "irevert: not in proof mode"
+            pure ig.goal
+          ) (Expr.mvar mvarId)
 
-          let subgoal : Q($e ⊢ BI.forall $Φ) ← addBIGoal hyps q(BI.forall $Φ)
-          mvarId.assign q(@forall_revert $prop _ $bi $e $Φ $subgoal)
-          return subgoal.mvarId!
+        let subgoal : Q($e ⊢ BI.forall $Φ) ← addBIGoal hyps q(BI.forall $Φ)
+        mvarId.assign q(@forall_revert $prop _ $bi $e $Φ $subgoal)
+        modify fun s => { s with goals := s.goals.filter (· != mvar) }
+        return subgoal.mvarId!
+
+def iRevertCore (mvar : MVarId) (hyp : TSyntax `ident) : ProofModeM MVarId := do
+  let (mvar, { hyps, .. }) ← startProofMode mvar
+  if let some _ := hyps.find? hyp.getId then iRevertProofModeHyp mvar hyp
+  else
+    mvar.withContext do
+      -- Reject reverting `f` if any proofmode hypothesis or Lean local declaration
+      -- still depends on it, and report the first dependency we find.
+      let f := (← getLocalDeclFromUserName hyp.getId).fvarId
+      if let some (name, _, _, _) := hyps.findDependencyOnFVar f then
+        throwError "irevert: proofmode hypothesis {name} depends on {hyp.getId}"
+      let lctx ← getLCtx
+      let toRevert ← collectForwardDeps #[mkFVar f] false
+      if let some dep := toRevert.find? (fun e => e.fvarId! != f) then
+        let depDecl := lctx.getFVar! dep
+        throwError "irevert: Lean hypothesis {depDecl.userName} depends on {hyp.getId}"
+      iRevertLeanHyp mvar f
 
 elab "irevert" hyps:(colGt ident)+ : tactic => do
   ProofModeM.runTactic λ mvar _ => do
     let mut mvar := mvar
     for hyp in hyps.reverse do
-      mvar ← iRevertOne mvar hyp
+      mvar ← iRevertCore mvar hyp
