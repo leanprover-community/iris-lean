@@ -28,7 +28,7 @@ def BundledGFunctors.set (GF : BundledGFunctors) (i : Nat) (FB : Σ F, RFunctorC
 abbrev GName := Nat
 
 abbrev IResF (GF : BundledGFunctors) : OFunctorPre :=
-  DiscreteFunOF (fun i => GenMapOF GName (GF i).fst)
+  DiscreteFunOF (fun i => GenMapOF (GF i).fst)
 
 instance (GF : BundledGFunctors) (i : GName) : RFunctorContractive ((GF i).fst) := (GF i).snd
 
@@ -40,10 +40,10 @@ def IPre : Type _ := OFunctor.Fix (UPredOF (IResF GF))
 
 instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
-def IResUR : Type := (i : GType) → GenMap Nat (GF i |>.fst (IPre GF) (IPre GF))
+def IResUR : Type := (i : GType) → GenMap (GF i |>.fst (IPre GF) (IPre GF))
 
 instance : UCMRA (IResUR GF) :=
-  ucmraDiscreteFunO (β := fun (i : GType) => GenMap GName (GF i |>.fst (IPre GF) (IPre GF)))
+  ucmraDiscreteFunO (β := fun (i : GType) => GenMap (GF i |>.fst (IPre GF) (IPre GF)))
 
 abbrev IProp := UPred (IResUR GF)
 
