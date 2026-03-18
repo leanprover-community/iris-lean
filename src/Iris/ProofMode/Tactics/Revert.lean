@@ -3,28 +3,34 @@ Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser, Yunsong Yang
 -/
-import Iris.ProofMode.Tactics.Cases
-import Iris.ProofMode.ClassesMake
-import Iris.ProofMode.InstancesMake
+module
+
+public import Iris.ProofMode.ClassesMake
+public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
 
-private theorem wand_revert [BI PROP] {Δ Δ' P Q : PROP}
+public section
+open BI Std
+
+theorem wand_revert [BI PROP] {Δ Δ' P Q : PROP}
     (h1 : Δ ⊣⊢ Δ' ∗ P) (h2 : Δ' ⊢ P -∗ Q) : Δ ⊢ Q :=
   h1.mp.trans (wand_elim h2)
 
-private theorem forall_revert {α} [BI PROP] {Δ : PROP} {Ψ : α → PROP}
+theorem forall_revert {α} [BI PROP] {Δ : PROP} {Ψ : α → PROP}
     (h : Δ ⊢ BI.forall Ψ) : ∀ x, Δ ⊢ Ψ x :=
   λ x => h.trans (forall_elim x)
 
-private theorem pure_revert [BI PROP] {Δ P Q : PROP} {φ : Prop}
+theorem pure_revert [BI PROP] {Δ P Q : PROP} {φ : Prop}
     [hA : MakeAffinely iprop(⌜φ⌝) P]
     (h : Δ ⊢ P -∗ Q) : φ → Δ ⊢ Q := by
   intro hp
   have hA : (emp : PROP) ⊢ P :=
     (affinely_emp.mpr.trans <| affinely_mono <| pure_intro hp).trans (hA.make_affinely.mp)
   exact (sep_emp.mpr.trans (sep_mono .rfl hA)).trans (wand_elim h)
+
+public meta section
+open Lean Elab Tactic Meta Qq
 
 /--
   `reverted` collects lean variables already reverted. This is necessary for dependency checks

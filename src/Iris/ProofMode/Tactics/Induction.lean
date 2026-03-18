@@ -3,11 +3,15 @@ Copyright (c) 2026 Yunsong Yang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yunsong Yang
 -/
-import Iris.ProofMode.ClassesMake
-import Iris.ProofMode.InstancesMake
+module
+
+public import Iris.ProofMode.ClassesMake
+public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
+
+public section
+open BI Std
 
 /-
   `IntoIH φ P Q` describes how to turn a pure induction hypothesis `φ` into a proofmode
@@ -40,8 +44,7 @@ instance intoIH_imp [BI PROP] (φ ψ : Prop) (Δ P Q : PROP)
     refine persistent_and_affinely_sep_r.2.trans ?_
     exact pure_elim_r (fun hφ => h2.into_ih (hImp hφ))
 
-@[rocq_alias tac_revert_ih]
-private theorem ih_revert [BI PROP] {Δ P Q : PROP} {φ : Prop} (hφ : φ)
+theorem ih_revert [BI PROP] {Δ P Q : PROP} {φ : Prop} (hφ : φ)
     [hP : IntoIH φ Δ P]
     (hΔ : Δ ⊢ □ Δ)
     (hPQ : Δ ⊢ iprop(<pers> P → Q)) :
@@ -51,3 +54,6 @@ private theorem ih_revert [BI PROP] {Δ P Q : PROP} {φ : Prop} (hφ : φ)
   have hAnd : □ Δ ⊢ iprop(<pers> P ∧ (<pers> P → Q)) :=
     and_intro hP' <| intuitionistically_elim.trans hPQ
   exact hΔ.trans <| hAnd.trans (imp_elim_r (P := iprop(<pers> P)) (Q := Q))
+
+public meta section
+open Lean Elab Tactic Meta Qq
