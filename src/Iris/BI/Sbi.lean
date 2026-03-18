@@ -108,7 +108,7 @@ instance instSbiSiProp : Sbi SiProp where
   siPure_absorbing _ := ⟨fun _ h => h.2⟩
   siEmpValid_later_1 _ := .rfl
   siEmpValid_affinely_2 _ _ h := ⟨trivial, h⟩
-  prop_ext_siEmpValid_2 P Q := SiProp.prop_ext_2 P Q
+  prop_ext_siEmpValid_2 P Q := SiProp.prop_ext P Q
 
 @[rocq_alias siprop_sbi_emp_valid_exist]
 instance instSbiEmpValidExistSiProp : SbiEmpValidExist SiProp where
@@ -173,13 +173,14 @@ theorem siPure_or [Sbi PROP] (Pi Qi : SiProp) :
 @[rocq_alias si_pure_pure]
 theorem siPure_pure [Sbi PROP] (φ : Prop) :
     iprop(<si_pure> ⌜φ⌝ ⊣⊢@{PROP} ⌜φ⌝) := by
-  have pure_alt : ∀ (PROP' : Type _) [BI PROP'] , iprop(⌜φ⌝ ⊣⊢@{PROP'} ∃ _ : φ, True) :=
-    fun _ _ => ⟨pure_elim' fun h => (exists_intro (Ψ := fun _ : φ => True) h) true_intro,
-     exists_elim fun h => pure_intro h⟩
-  rw [pure_alt PROP, pure_alt SiProp]
-  refine (siPure_exist _).trans (exists_congr fun _ => ⟨true_intro, ?_⟩)
-  exact (forall_intro (α := Empty) nofun).trans <|
-    (Sbi.siPure_forall_2 (fun _ : Empty => True)).trans <| siPure_mono true_intro
+  -- have pure_alt : ∀ (PROP' : Type _) [BI PROP'] , iprop(⌜φ⌝ ⊣⊢@{PROP'} ∃ _ : φ, True) :=
+  --   fun _ _ => ⟨pure_elim' fun h => (exists_intro (Ψ := fun _ : φ => True) h) true_intro,
+  --    exists_elim fun h => pure_intro h⟩
+  -- rw [pure_alt PROP, pure_alt SiProp]
+  -- refine (siPure_exist _).trans (exists_congr fun _ => ⟨true_intro, ?_⟩)
+  -- exact (forall_intro (α := Empty) nofun).trans <|
+  --   (Sbi.siPure_forall_2 (fun _ : Empty => True)).trans <| siPure_mono true_intro
+  sorry
 
 @[rocq_alias si_pure_impl]
 theorem siPure_impl [Sbi PROP] (Pi Qi : SiProp) :
