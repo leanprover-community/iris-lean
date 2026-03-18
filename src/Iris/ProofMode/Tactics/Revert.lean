@@ -10,49 +10,6 @@ import Iris.ProofMode.InstancesMake
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
 
-/-
-  `IntoIH φ P Q` describes how to turn a pure induction hypothesis `φ` into a proofmode
-  hypothesis `Q` under an intuitionistic BI context `□ P`.
-  This class is intended for implementing `iinduction`
--/
-@[ipm_class]
-class IntoIH [BI PROP] (φ : Prop) (P : PROP) (Q : outParam PROP) where
-  into_ih : φ → □ P ⊢ Q
-
--- TODO: two more instances [into_ih_Forall] and [into_ih_Forall2]
--- have not been implemented
-instance intoIH_entails [BI PROP] (P Q : PROP) : IntoIH (P ⊢ Q) P Q where
-  into_ih := λ hpq => intuitionistically_elim.trans hpq
-instance intoIH_forall [BI PROP] (φ : α → Prop) (P : PROP) (Φ : α → PROP)
-    [h : ∀ x, IntoIH (φ x) P (Φ x)] :
-    IntoIH (∀ x, φ x) P (BI.forall Φ) where
-  into_ih := by
-    intro hφ
-    apply forall_intro
-    intro x
-    exact (h x).into_ih (hφ x)
-instance intoIH_imp [BI PROP] (φ ψ : Prop) (Δ P Q : PROP)
-    [h1 : MakeAffinely iprop(⌜φ⌝) P]
-    [h2 : IntoIH ψ Δ Q] :
-    IntoIH (φ → ψ) Δ iprop(P -∗ Q) where
-  into_ih := by
-    intro hImp
-    apply wand_intro
-    refine (sep_mono_r h1.make_affinely.mpr).trans ?_
-    refine persistent_and_affinely_sep_r.2.trans ?_
-    exact pure_elim_r (fun hφ => h2.into_ih (hImp hφ))
-
-private theorem ih_revert [BI PROP] {Δ P Q : PROP} {φ : Prop} (hφ : φ)
-    [hP : IntoIH φ Δ P]
-    (hΔ : Δ ⊢ □ Δ)
-    (hPQ : Δ ⊢ iprop(<pers> P → Q)) :
-    Δ ⊢ Q := by
-  have hP' : □ Δ ⊢ <pers> P :=
-    (intuitionistically_intro' (hP.into_ih hφ)).trans persistently_of_intuitionistically
-  have hAnd : □ Δ ⊢ iprop(<pers> P ∧ (<pers> P → Q)) :=
-    and_intro hP' <| intuitionistically_elim.trans hPQ
-  exact hΔ.trans <| hAnd.trans (imp_elim_r (P := iprop(<pers> P)) (Q := Q))
-
 private theorem wand_revert [BI PROP] {Δ Δ' P Q : PROP}
     (h1 : Δ ⊣⊢ Δ' ∗ P) (h2 : Δ' ⊢ P -∗ Q) : Δ ⊢ Q :=
   h1.mp.trans (wand_elim h2)
@@ -108,11 +65,10 @@ private def RevertState.revertLeanPropHyp
     ProofModeM (RevertState bi origE origGoal) := do
   let { e, hyps, goal, reverted, pf := pf0 } := st
   let P ← mkFreshExprMVarQ prop
-  let hA : Q(MakeAffinely iprop(⌜$φ⌝) $P) ← synthInstanceQ q(MakeAffinely iprop(⌜$φ⌝) $P)
+  let _hA : Q(MakeAffinely iprop(⌜$φ⌝) $P) ← synthInstanceQ q(MakeAffinely iprop(⌜$φ⌝) $P)
   let hp : Q($φ) := mkFVar f
   let goal' : Q($prop) := q(iprop($P -∗ $goal))
-  let pf' : Q(($e ⊢ $goal') → ($origE ⊢ $origGoal)) :=
-    q(fun h =>$pf0 ((@pure_revert $prop $bi $e $P $goal $φ $hA h) $hp))
+  let pf' : Q(($e ⊢ $goal') → ($origE ⊢ $origGoal)) := q(fun h =>$pf0 ((pure_revert h) $hp))
   return { e := e
          , hyps := hyps
          , goal := goal'
@@ -125,16 +81,11 @@ private def RevertState.revertLeanForallHyp
     ProofModeM (RevertState bi origE origGoal) := do
   let { e, hyps, goal, reverted, pf := pf0 } := st
   let x : Q($α) := mkFVar f
-  let ΦExpr ← mkLambdaFVars #[x] goal
-  let some Φ ← checkTypeQ ΦExpr q($α → $prop)
-    | throwError "irevert: failed to construct forall body"
+  have Φ : Q($α → $prop) := ← mkLambdaFVars #[x] goal
   let goal' : Q($prop) := q(BI.forall $Φ)
-  let pf'Expr ← withLocalDeclDQ `h q($e ⊢ BI.forall $Φ) fun h => do
-    let step ← mkAppM ``forall_revert #[h]
-    let oldGoalProof ← mkExpectedTypeHint (mkApp step x) q($e ⊢ $goal)
-    mkLambdaFVars #[h] (mkApp pf0 oldGoalProof)
-  let some pf' ← checkTypeQ pf'Expr q(($e ⊢ $goal') → ($origE ⊢ $origGoal))
-    | throwError "irevert: failed to construct forall revert proof"
+  have pf' : Q(($e ⊢ $goal') → ($origE ⊢ $origGoal)) :=
+    ← withLocalDeclDQ `h q($e ⊢ BI.forall $Φ) fun h => do
+      mkLambdaFVars #[h] (mkApp pf0 (← mkAppM ``forall_revert #[h, x]))
   return { e := e
          , hyps := hyps
          , goal := goal'
@@ -143,27 +94,30 @@ private def RevertState.revertLeanForallHyp
 
 /-- Revert a Lean local after checking proofmode and local-context dependencies. -/
 private def RevertState.revertLeanHyp
-    (mvar : MVarId) (st : @RevertState u prop bi origE origGoal) (hyp : TSyntax `ident) :
+    (st : @RevertState u prop bi origE origGoal) (hyp : TSyntax `ident) :
     ProofModeM (RevertState bi origE origGoal) := do
-  mvar.withContext do
-    let ldecl ← st.checkLeanDependencies hyp
-    let f := ldecl.fvarId
-    let v : Level ← Meta.getLevel ldecl.type
-    have α : Q(Sort v) := ldecl.type
-    if ← Meta.isProp α then
-      have φ : Q(Prop) := α
-      st.revertLeanPropHyp f φ
-    else
-      st.revertLeanForallHyp f α
+  let ldecl ← st.checkLeanDependencies hyp
+  let f := ldecl.fvarId
+  let v : Level ← Meta.getLevel ldecl.type
+  have α : Q(Sort v) := ldecl.type
+  if ← Meta.isProp α then
+    have φ : Q(Prop) := α
+    st.revertLeanPropHyp f φ
+  else
+    st.revertLeanForallHyp f α
 
 elab "irevert" hs:(colGt ident)+ : tactic => do
   ProofModeM.runTactic fun mvar { bi, e, hyps, goal, .. } => do
-    let init : RevertState bi e goal :=
-      { e := e, hyps := hyps, goal := goal, reverted := #[], pf := q(id) }
+    let init : RevertState bi e goal := { e, hyps, goal, pf := q(id) }
     let st ← hs.reverse.toList.foldlM (init := init) fun st hyp => do
       if let some _ := st.hyps.find? hyp.getId then
         st.revertProofModeHyp hyp
       else
-        st.revertLeanHyp mvar hyp
-    let finalGoal : Q($st.e ⊢ $st.goal) ← addBIGoal st.hyps st.goal
+        st.revertLeanHyp hyp
+    let finalGoal0 : Q($st.e ⊢ $st.goal) ← addBIGoal st.hyps st.goal
+    -- Clear the reverted variables from the context
+    let finalGoalId ← finalGoal0.mvarId!.withContext do
+      st.reverted.reverse.foldrM (init := finalGoal0.mvarId!) fun fvarId goal => goal.clear fvarId
+    modify fun s => { s with goals := s.goals.map (fun goal => if goal == finalGoal0.mvarId! then finalGoalId else goal) }
+    have finalGoal : Q($st.e ⊢ $st.goal) := Expr.mvar finalGoalId
     mvar.assign q($st.pf $finalGoal)

@@ -260,12 +260,6 @@ example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗
   iintro %x %hp H
   iexact H
 
-/-- Tests `irevert` of a pure hypothesis in affine BI does not add `<affine>`. -/
-example [BI PROP] [BIAffine PROP] (P : PROP) (Hφ : φ) : ⊢ (⌜φ⌝ -∗ P) -∗ P := by
-  iintro H
-  irevert Hφ
-  iexact H
-
 end revert
 
 -- exists
