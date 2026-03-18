@@ -30,33 +30,41 @@ namespace SiProp
 
 /-! ## Connective definitions -/
 
+@[rocq_alias siProp_pure]
 def Pure (φ : Prop) : SiProp where
   holds _ := φ
   closed h _ := h
 
+@[rocq_alias siProp_and]
 def And (P Q : SiProp) : SiProp where
   holds n := P.holds n ∧ Q.holds n
   closed h hle := ⟨P.closed h.1 hle, Q.closed h.2 hle⟩
 
+@[rocq_alias siProp_or]
 def Or (P Q : SiProp) : SiProp where
   holds n := P.holds n ∨ Q.holds n
   closed h hle := h.imp (P.closed · hle) (Q.closed · hle)
 
+@[rocq_alias siProp_downclose]
 def DownClose (Pi : Nat → Prop) : SiProp where
   holds n := ∀ n', n' ≤ n → Pi n'
   closed h _ n' _ := h n' (by omega)
 
+@[rocq_alias siProp_impl]
 def Imp (P Q : SiProp) : SiProp :=
   DownClose fun n => P.holds n → Q.holds n
 
-def All (Φ : SiProp → Prop) : SiProp where
+@[rocq_alias siProp_forall]
+def Forall (Φ : SiProp → Prop) : SiProp where
   holds n := ∀ P, Φ P → P.holds n
   closed h hle P hP := P.closed (h P hP) hle
 
+@[rocq_alias siProp_exist]
 def Exist (Φ : SiProp → Prop) : SiProp where
   holds n := ∃ P, Φ P ∧ P.holds n
   closed := fun ⟨P, hP, hh⟩ hle => ⟨P, hP, P.closed hh hle⟩
 
+@[rocq_alias siProp_later]
 def Later (P : SiProp) : SiProp where
   holds n := match n with | 0 => True | n + 1 => P.holds n
   closed {n₁ n₂} h hle := by
@@ -93,7 +101,7 @@ instance : BIBase SiProp where
   and := And
   or := Or
   imp := Imp
-  sForall := All
+  sForall := Forall
   sExists := Exist
   sep := And
   wand := Imp
@@ -185,6 +193,10 @@ instance instBI : BI SiProp where
       match n' with
       | .zero => P.closed hP (Nat.zero_le _)
       | .succ _ => absurd hF id
+
+@[rocq_alias pure_ne]
+theorem iff_pure_dist {Φ Ψ : Prop} (H : Φ ↔ Ψ) : Pure Φ ≡{n}≡ Pure Ψ := fun _ => iff_comm.mp H.symm
+
 
 /-! ## Extra BI instances -/
 
