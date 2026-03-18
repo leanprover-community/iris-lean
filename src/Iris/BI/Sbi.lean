@@ -50,12 +50,12 @@ delab_rule SiEmpValid.siEmpValid
 /-- The `Sbi` class: a BI with step-indexed structure. -/
 @[rocq_alias Sbi]
 class Sbi (PROP : Type _) extends BI PROP, SiPure PROP, SiEmpValid PROP where
-  siPure_ne : NonExpansive (α := SiProp) (β := PROP) siPure
-  siEmpValid_ne : NonExpansive (α := PROP) (β := SiProp) siEmpValid
-  siPure_mono {Pi Qi : SiProp} :
-    (Pi ⊢@{SiProp} Qi) → iprop(<si_pure> Pi ⊢@{PROP} <si_pure> Qi)
-  siEmpValid_mono {P Q : PROP} :
-    (P ⊢@{PROP} Q) → iprop(<si_emp_valid> P ⊢@{SiProp} <si_emp_valid> Q)
+  siPure_ne : NonExpansive (α := SiProp) (β := PROP) SiPure.siPure
+  siEmpValid_ne : NonExpansive (α := PROP) (β := SiProp) SiEmpValid.siEmpValid
+  siPure_mono {Pi Qi : SiProp} (H : Pi ⊢@{SiProp} Qi) :
+    iprop(<si_pure> Pi ⊢@{PROP} <si_pure> Qi)
+  siEmpValid_mono {P Q : PROP} (H : P ⊢@{PROP} Q) :
+    iprop(<si_emp_valid> P ⊢@{SiProp} <si_emp_valid> Q)
   siEmpValid_siPure (Pi : SiProp) :
     iprop(<si_emp_valid> (<si_pure> Pi : PROP) ⊣⊢@{SiProp} Pi)
   siPure_siEmpValid (P : PROP) :
@@ -121,22 +121,19 @@ instance instSbiEmpValidExistSiProp : SbiEmpValidExist SiProp where
 @[rocq_alias si_pure_persistent]
 instance siPure_persistent [Sbi PROP] (Pi : SiProp) :
     Persistent (PROP := PROP) iprop(<si_pure> Pi) where
-  persistent := by
-    rw [show iprop(<si_pure> Pi) = iprop(<si_pure> Pi) from rfl]
-    refine .trans ?_ (siPure_siEmpValid (PROP := PROP) _)
-    exact siPure_mono (siEmpValid_siPure (PROP := PROP) Pi).mpr
+  persistent :=
+    calc   iprop(<si_pure> Pi)
+      _ ⊢@{PROP} <si_pure> <si_emp_valid> <si_pure> Pi := siPure_mono (siEmpValid_siPure Pi).mpr
+      _ ⊢@{PROP} <pers> <si_pure> Pi := siPure_siEmpValid _
 
 /-! ### Commuting rules of `siPure` -/
 
--- The next 4 theorems use `siPure_forall_2` and need explicit universe linking
--- to avoid a same-file universe unification issue. See the `universe ... in` pattern.
-
-universe u_sbi u_a in
 @[rocq_alias si_pure_forall]
-theorem siPure_forall {PROP : Type u_sbi} [Sbi PROP] {A : Type u_a} (Φi : A → SiProp) :
-    iprop(<si_pure> (∀ x, Φi x) ⊣⊢@{PROP} ∀ x, <si_pure> Φi x) :=
-  -- ⟨forall_intro fun x => siPure_mono (forall_elim x), Sbi.siPure_forall_2 Φi⟩
+theorem siPure_forall [Sbi PROP] {A : Type _} (Φi : A → SiProp) :
+    iprop(<si_pure> (∀ x, Φi x) ⊣⊢@{PROP} ∀ x, <si_pure> Φi x) := by
+  refine ⟨forall_intro fun x => siPure_mono (forall_elim x), ?_⟩
   sorry
+  -- refine @Sbi.siPure_forall_2 (PROP := PROP) _ _ _
 
 @[rocq_alias si_pure_exist]
 theorem siPure_exist [Sbi PROP] {A : Type _} (Φi : A → SiProp) :
