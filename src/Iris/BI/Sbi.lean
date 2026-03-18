@@ -172,9 +172,14 @@ theorem siPure_or [Sbi PROP] (Pi Qi : SiProp) :
 
 @[rocq_alias si_pure_pure]
 theorem siPure_pure [Sbi PROP] (φ : Prop) :
-    iprop(<si_pure> ⌜φ⌝ ⊣⊢@{PROP} ⌜φ⌝) :=
-  -- Rocq uses pure_alt: ⌜φ⌝ ⊣⊢ ∃ _ : φ, True. Needs siPure_exist + siPure_forall_2 at Empty.
-  sorry
+    iprop(<si_pure> ⌜φ⌝ ⊣⊢@{PROP} ⌜φ⌝) := by
+  have pure_alt : ∀ (PROP' : Type _) [BI PROP'] , iprop(⌜φ⌝ ⊣⊢@{PROP'} ∃ _ : φ, True) :=
+    fun _ _ => ⟨pure_elim' fun h => (exists_intro (Ψ := fun _ : φ => True) h) true_intro,
+     exists_elim fun h => pure_intro h⟩
+  rw [pure_alt PROP, pure_alt SiProp]
+  refine (siPure_exist _).trans (exists_congr fun _ => ⟨true_intro, ?_⟩)
+  exact (forall_intro (α := Empty) nofun).trans <|
+    (Sbi.siPure_forall_2 (fun _ : Empty => True)).trans <| siPure_mono true_intro
 
 @[rocq_alias si_pure_impl]
 theorem siPure_impl [Sbi PROP] (Pi Qi : SiProp) :
@@ -326,8 +331,13 @@ theorem siEmpValid_or {PROP : Type u_sbi₄} [Sbi PROP]
 
 @[rocq_alias si_emp_valid_impl_si_pure]
 theorem siEmpValid_impl_siPure [Sbi PROP] (Pi : SiProp) (Q : PROP) :
-    iprop((Pi → <si_emp_valid> Q) ⊢@{SiProp} <si_emp_valid> (<si_pure> Pi → Q)) := by
-  sorry
+    iprop((Pi → <si_emp_valid> Q) ⊢@{SiProp} <si_emp_valid> (<si_pure> Pi → Q)) :=
+  (siEmpValid_siPure (PROP := PROP) _).mpr.trans <|
+    (siEmpValid_affinely _).mpr.trans <|
+    siEmpValid_mono <| imp_intro' <|
+    affinely_and_r.mp.trans <|
+    (affinely_mono <| (siPure_and _ _).mpr.trans <| siPure_mono imp_elim_r).trans <|
+    affinely_siPure_siEmpValid _
 
 @[rocq_alias si_emp_valid_sep]
 theorem siEmpValid_sep [Sbi PROP] [BIPositive PROP] (P Q : PROP) :
