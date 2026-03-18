@@ -26,6 +26,10 @@ private theorem pure_revert [BI PROP] {Δ P Q : PROP} {φ : Prop}
     (affinely_emp.mpr.trans <| affinely_mono <| pure_intro hp).trans (hA.make_affinely.mp)
   exact (sep_emp.mpr.trans (sep_mono .rfl hA)).trans (wand_elim h)
 
+/--
+  Lean locals reverted through the accumulator are only reflected in the transformed BI goal at first.
+  We record them here so later dependency checks can ignore them and the final subgoal can clear them.
+-/
 private structure RevertState {prop : Q(Type u)} (bi : Q(BI $prop)) (origE origGoal : Q($prop)) where
   (e : Q($prop)) (hyps : Hyps bi e) (goal : Q($prop))
   (reverted : Array FVarId := #[])
@@ -114,10 +118,10 @@ elab "irevert" hs:(colGt ident)+ : tactic => do
         st.revertProofModeHyp hyp
       else
         st.revertLeanHyp hyp
-    let finalGoal0 : Q($st.e ⊢ $st.goal) ← addBIGoal st.hyps st.goal
-    -- Clear the reverted variables from the context
-    let finalGoalId ← finalGoal0.mvarId!.withContext do
-      st.reverted.reverse.foldrM (init := finalGoal0.mvarId!) fun fvarId goal => goal.clear fvarId
-    modify fun s => { s with goals := s.goals.map (fun goal => if goal == finalGoal0.mvarId! then finalGoalId else goal) }
+
+    -- Clear Lean locals already reverted into the accumulated BI goal from the final generated subgoal.
+    let finalGoalId ← (← mkBIGoal st.hyps st.goal).mvarId!.tryClearMany st.reverted.reverse
+    addMVarGoal finalGoalId
+
     have finalGoal : Q($st.e ⊢ $st.goal) := Expr.mvar finalGoalId
     mvar.assign q($st.pf $finalGoal)
