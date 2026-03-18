@@ -3,12 +3,15 @@ Copyright (c) 2026 Remy Seassau. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 -/
+module
 
-import Iris.Std.Classes
+public import Iris.Std.Classes
+
+@[expose] public section
+
 /-- [Pos] is a datatype representing the strictly positive integers
    in a binary way. Starting from 1 (represented by [xH]), one can
    add a new least significant digit via [xO] (digit 0) or [xI] (digit 1). -/
-
 inductive Pos where
 | xI : Pos -> Pos
 | xO : Pos -> Pos
@@ -31,12 +34,12 @@ macro_rules
   | `($p ~0) => `(xO $p)
 
 @[app_unexpander xI]
-def unexpandPosXI : Lean.PrettyPrinter.Unexpander
+meta def unexpandPosXI : Lean.PrettyPrinter.Unexpander
   | `($_ $p) => `($p~1)
   | _ => throw ()
 
 @[app_unexpander xO]
-def unexpandPosXO : Lean.PrettyPrinter.Unexpander
+meta def unexpandPosXO : Lean.PrettyPrinter.Unexpander
   | `($_ $p) => `($p~0)
   | _ => throw ()
 

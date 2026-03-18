@@ -1,2 +1,4 @@
-import Iris.Instances.Classical
-import Iris.Instances.Data
+module
+
+public import Iris.Instances.Classical
+public import Iris.Instances.Data

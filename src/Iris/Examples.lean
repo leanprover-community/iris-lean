@@ -1,1 +1,3 @@
-import Iris.Examples.Proofs
+module
+
+public import Iris.Examples.Proofs

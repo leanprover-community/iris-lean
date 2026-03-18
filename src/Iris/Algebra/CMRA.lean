@@ -3,7 +3,11 @@ Copyright (c) 2025 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mario Carneiro, Сухарик (@suhr), Markus de Medeiros, Puming Liu
 -/
-import Iris.Algebra.OFE
+module
+
+public import Iris.Algebra.OFE
+
+@[expose] public section
 
 namespace Iris
 open OFE

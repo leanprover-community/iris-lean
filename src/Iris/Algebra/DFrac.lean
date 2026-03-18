@@ -3,12 +3,15 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Mario Carneiro
 -/
+module
 
-import Iris.Algebra.CMRA
-import Iris.Algebra.OFE
-import Iris.Algebra.Frac
-import Iris.Algebra.Updates
-import Iris.Algebra.LocalUpdates
+public import Iris.Algebra.CMRA
+public import Iris.Algebra.OFE
+public import Iris.Algebra.Frac
+public import Iris.Algebra.Updates
+public import Iris.Algebra.LocalUpdates
+
+@[expose] public section
 
 namespace Iris
 

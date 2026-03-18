@@ -3,9 +3,13 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
-import Iris.ProofMode.Tactics.Basic
+module
+
+public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
+
+public meta section
 open Lean Elab Tactic Qq
 
 elab "irename" colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do

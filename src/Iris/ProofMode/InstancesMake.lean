@@ -3,8 +3,12 @@ Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Yunsong Yang
 -/
-import Iris.BI
-import Iris.ProofMode.ClassesMake
+module
+
+public import Iris.BI
+public import Iris.ProofMode.ClassesMake
+
+@[expose] public section
 
 namespace Iris.ProofMode
 open Iris.BI
