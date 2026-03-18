@@ -31,41 +31,41 @@ namespace SiProp
 /-! ## Connective definitions -/
 
 @[rocq_alias siProp_pure]
-def Pure (φ : Prop) : SiProp where
+def pure (φ : Prop) : SiProp where
   holds _ := φ
   closed h _ := h
 
 @[rocq_alias siProp_and]
-def And (P Q : SiProp) : SiProp where
+def and (P Q : SiProp) : SiProp where
   holds n := P.holds n ∧ Q.holds n
   closed h hle := ⟨P.closed h.1 hle, Q.closed h.2 hle⟩
 
 @[rocq_alias siProp_or]
-def Or (P Q : SiProp) : SiProp where
+def or (P Q : SiProp) : SiProp where
   holds n := P.holds n ∨ Q.holds n
   closed h hle := h.imp (P.closed · hle) (Q.closed · hle)
 
 @[rocq_alias siProp_downclose]
-def DownClose (Pi : Nat → Prop) : SiProp where
+def downClose (Pi : Nat → Prop) : SiProp where
   holds n := ∀ n', n' ≤ n → Pi n'
   closed h _ n' _ := h n' (by omega)
 
 @[rocq_alias siProp_impl]
-def Imp (P Q : SiProp) : SiProp :=
-  DownClose fun n => P.holds n → Q.holds n
+def imp (P Q : SiProp) : SiProp :=
+  downClose fun n => P.holds n → Q.holds n
 
 @[rocq_alias siProp_forall]
-def Forall (Φ : SiProp → Prop) : SiProp where
+def all (Φ : SiProp → Prop) : SiProp where
   holds n := ∀ P, Φ P → P.holds n
   closed h hle P hP := P.closed (h P hP) hle
 
 @[rocq_alias siProp_exist]
-def Exist (Φ : SiProp → Prop) : SiProp where
+def exist (Φ : SiProp → Prop) : SiProp where
   holds n := ∃ P, Φ P ∧ P.holds n
   closed := fun ⟨P, hP, hh⟩ hle => ⟨P, hP, P.closed hh hle⟩
 
 @[rocq_alias siProp_later]
-def Later (P : SiProp) : SiProp where
+def later (P : SiProp) : SiProp where
   holds n := match n with | 0 => True | n + 1 => P.holds n
   closed {n₁ n₂} h hle := by
     cases n₂ with
@@ -75,7 +75,7 @@ def Later (P : SiProp) : SiProp where
 /-! ## OFE / COFE / BIBase instances -/
 
 @[rocq_alias siProp_entails]
-def Entails (P Q : SiProp) : Prop := ∀ n, P.holds n → Q.holds n
+def entails (P Q : SiProp) : Prop := ∀ n, P.holds n → Q.holds n
 
 instance : OFE SiProp where
   Equiv P Q := ∀ {n}, P.holds n ↔ Q.holds n
@@ -95,18 +95,18 @@ instance : IsCOFE SiProp where
   conv_compl {_ c} _ hle := c.cauchy hle .refl |>.symm
 
 instance : BIBase SiProp where
-  Entails := SiProp.Entails
-  emp := Pure True
-  pure := Pure
-  and := And
-  or := Or
-  imp := Imp
-  sForall := Forall
-  sExists := Exist
-  sep := And
-  wand := Imp
+  Entails := SiProp.entails
+  emp := SiProp.pure True
+  pure := SiProp.pure
+  and := SiProp.and
+  or := SiProp.or
+  imp := SiProp.imp
+  sForall := SiProp.all
+  sExists := SiProp.exist
+  sep := SiProp.and
+  wand := SiProp.imp
   persistently P := P
-  later := Later
+  later := SiProp.later
 
 instance : Std.Preorder (BIBase.Entails (PROP := SiProp)) where
   refl _ h := h
@@ -195,7 +195,7 @@ instance instBI : BI SiProp where
       | .succ _ => absurd hF id
 
 @[rocq_alias pure_ne]
-theorem iff_pure_dist {Φ Ψ : Prop} (H : Φ ↔ Ψ) : Pure Φ ≡{n}≡ Pure Ψ := fun _ => iff_comm.mp H.symm
+theorem pure_dist_of_iff {Φ Ψ : Prop} (H : Φ ↔ Ψ) : pure Φ ≡{n}≡ pure Ψ := fun _ => iff_comm.mp H.symm
 
 
 /-! ## Extra BI instances -/
@@ -224,7 +224,7 @@ def internalEq [OFE A] (a₁ a₂ : A) : SiProp where
   closed h hle := Dist.le h hle
 
 @[rocq_alias internal_eq_ne]
-instance internalEq_ne [OFE A] : NonExpansive₂ (internalEq (A := A)) where
+instance instNonExpansive₂InternalEq [OFE A] : NonExpansive₂ (internalEq (A := A)) where
   ne _ _ _ h₁ _ _ h₂ _ hle :=
     ⟨fun heq => (Dist.le h₁ hle).symm.trans (heq.trans (Dist.le h₂ hle)),
      fun heq => (Dist.le h₁ hle).trans (heq.trans (Dist.le h₂ hle).symm)⟩
@@ -239,7 +239,7 @@ theorem internalEq_rewrite [OFE A] (a b : A) (Ψ : A → SiProp) [HΨ : NonExpan
   fun _ hab _ hle => (HΨ.ne (.le hab hle) .refl).mp
 
 @[rocq_alias prop_ext_2]
-theorem prop_ext_2 (P Q : SiProp) : (P → Q) ∧ (Q → P) ⊢ internalEq P Q :=
+theorem prop_ext (P Q : SiProp) : (P → Q) ∧ (Q → P) ⊢ internalEq P Q :=
   fun _ ⟨hPQ, hQP⟩ n' hle => ⟨hPQ n' hle, hQP n' hle⟩
 
 @[rocq_alias internal_eq_entails]
@@ -248,29 +248,29 @@ theorem internalEq_entails [OFE A] [OFE B] (a₁ a₂ : A) (b₁ b₂ : B) :
   Iff.rfl
 
 @[rocq_alias fun_extI]
-theorem fun_extI [OFEFun (B : A → _)] (g₁ g₂ : (x : A) → B x) :
+theorem fun_ext_internalEq [OFEFun (B : A → _)] (g₁ g₂ : (x : A) → B x) :
     (∀ (i : A), internalEq (g₁ i) (g₂ i)) ⊢ internalEq g₁ g₂ :=
   fun _ h x => h _ ⟨x, rfl⟩
 
 @[rocq_alias sig_equivI_1]
-theorem sig_equivI_1 [OFE A] (P : A → Prop) (x y : { a : A // P a }) :
+theorem sig_equiv_internalEq [OFE A] (P : A → Prop) (x y : { a : A // P a }) :
     internalEq x.val y.val ⊢ internalEq x y :=
   fun _ => id
 
 @[rocq_alias discrete_eq_1]
-theorem discrete_eq_1 [OFE A] (a b : A) [Idisc : Std.TCOr (DiscreteE a) (DiscreteE b)] :
+theorem discrete_eq_internalEq [OFE A] (a b : A) [Idisc : Std.TCOr (DiscreteE a) (DiscreteE b)] :
     internalEq a b ⊢ ⌜a ≡ b⌝ := by
   cases Idisc with
   | l => exact fun _ hab => DiscreteE.discrete (hab.le (Nat.zero_le _))
   | r => exact fun _ hab => (DiscreteE.discrete (hab.le (Nat.zero_le _)).symm).symm
 
 @[rocq_alias later_equivI_1]
-theorem later_equivI_1 [OFE A] (x y : A) :
+theorem later_equiv_internalEq_mp [OFE A] (x y : A) :
     internalEq (Later.next x) (Later.next y) ⊢ ▷ internalEq x y :=
   fun n h => match n with | .zero => trivial | .succ n => h n n.lt_succ_self
 
 @[rocq_alias later_equivI_2]
-theorem later_equivI_2 [OFE A] (x y : A) :
+theorem later_equiv_internalEq_mpr [OFE A] (x y : A) :
     ▷ internalEq x y ⊢ internalEq (Later.next x) (Later.next y) := by
   intro n hP m hlt
   cases n with
@@ -285,7 +285,7 @@ def cmraValid [CMRA A] (a : A) : SiProp where
   closed h hle := CMRA.validN_of_le hle h
 
 @[rocq_alias cmra_valid_ne]
-instance cmraValid_ne [CMRA A] : NonExpansive (cmraValid (A := A)) where
+instance instNonExpansiveCmraValid [CMRA A] : NonExpansive (cmraValid (A := A)) where
   ne _ _ _ h _ hle := ⟨CMRA.validN_ne (Dist.le h hle), CMRA.validN_ne (Dist.le h hle).symm⟩
 
 @[rocq_alias cmra_valid_intro]
@@ -302,7 +302,7 @@ theorem cmraValid_weaken [CMRA A] (a b : A) : cmraValid (a • b) ⊢ cmraValid 
   fun _ => CMRA.validN_op_left
 
 @[rocq_alias valid_entails]
-theorem valid_entails [CMRA A] [CMRA B] (a : A) (b : B) :
+theorem cmraValid_entails_iff [CMRA A] [CMRA B] (a : A) (b : B) :
     (cmraValid a ⊢ cmraValid b) ↔ ∀ n, ✓{n} a → ✓{n} b :=
   .rfl
 
