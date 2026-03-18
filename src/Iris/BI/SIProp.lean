@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 import Iris.BI.BI
 import Iris.BI.Extensions
@@ -15,9 +15,6 @@ import Iris.Std.RocqAlias
 
 The type `SiProp` defines "plain" step-indexed propositions, on which we define the
 usual connectives of higher-order logic and prove that these satisfy the axioms of BI.
-
-We pick `∗` and `-∗` to coincide with `∧` and `→`, and `<pers>` to be the identity.
-This makes `SiProp` an affine BI where every proposition is persistent.
 -/
 
 namespace Iris
@@ -33,80 +30,75 @@ namespace SiProp
 
 /-! ## Connective definitions -/
 
-private def siPure (φ : Prop) : SiProp where
+def Pure (φ : Prop) : SiProp where
   holds _ := φ
   closed h _ := h
 
-private def siAnd (P Q : SiProp) : SiProp where
+def And (P Q : SiProp) : SiProp where
   holds n := P.holds n ∧ Q.holds n
   closed h hle := ⟨P.closed h.1 hle, Q.closed h.2 hle⟩
 
-private def siOr (P Q : SiProp) : SiProp where
+def Or (P Q : SiProp) : SiProp where
   holds n := P.holds n ∨ Q.holds n
   closed h hle := h.imp (P.closed · hle) (Q.closed · hle)
 
-private def downclose (Pi : Nat → Prop) : SiProp where
+def DownClose (Pi : Nat → Prop) : SiProp where
   holds n := ∀ n', n' ≤ n → Pi n'
-  closed h hle n' hn' := h n' (Nat.le_trans hn' hle)
+  closed h _ n' _ := h n' (by omega)
 
-private def siImpl (P Q : SiProp) : SiProp :=
-  downclose fun n => P.holds n → Q.holds n
+def Imp (P Q : SiProp) : SiProp :=
+  DownClose fun n => P.holds n → Q.holds n
 
-private def siSForall (Φ : SiProp → Prop) : SiProp where
+def All (Φ : SiProp → Prop) : SiProp where
   holds n := ∀ P, Φ P → P.holds n
   closed h hle P hP := P.closed (h P hP) hle
 
-private def siSExists (Φ : SiProp → Prop) : SiProp where
+def Exist (Φ : SiProp → Prop) : SiProp where
   holds n := ∃ P, Φ P ∧ P.holds n
   closed := fun ⟨P, hP, hh⟩ hle => ⟨P, hP, P.closed hh hle⟩
 
-private def siLater (P : SiProp) : SiProp where
+def Later (P : SiProp) : SiProp where
   holds n := match n with | 0 => True | n + 1 => P.holds n
-  closed := by
-    intro n₁ n₂ h hle
+  closed {n₁ n₂} h hle := by
     cases n₂ with
     | zero => trivial
-    | succ n₂ =>
-      cases n₁ with
-      | zero => omega
-      | succ n₁ => exact P.closed h (Nat.le_of_succ_le_succ hle)
+    | succ n₂ => cases n₁ with | zero => omega | succ n₁ => exact P.closed h (by omega)
 
 /-! ## OFE / COFE / BIBase instances -/
 
 @[rocq_alias siProp_entails]
-protected def Entails (P Q : SiProp) : Prop := ∀ n, P.holds n → Q.holds n
+def Entails (P Q : SiProp) : Prop := ∀ n, P.holds n → Q.holds n
 
 instance : OFE SiProp where
-  Equiv P Q := ∀ n, P.holds n ↔ Q.holds n
-  Dist n P Q := ∀ m, m ≤ n → (P.holds m ↔ Q.holds m)
-  dist_eqv := ⟨
-    fun _ _ _ => Iff.rfl,
-    fun h _ hle => (h _ hle).symm,
-    fun h₁ h₂ _ hle => (h₁ _ hle).trans (h₂ _ hle)⟩
-  equiv_dist := ⟨
-    fun heq _ _ _ => heq _,
-    fun h n => h n n Nat.le.refl⟩
-  dist_lt h hm _ hle := h _ (Nat.le_trans hle (Nat.le_of_lt hm))
+  Equiv P Q := ∀ {n}, P.holds n ↔ Q.holds n
+  Dist n P Q := ∀ {m}, m ≤ n → (P.holds m ↔ Q.holds m)
+  dist_eqv.refl _ _ _ := Iff.rfl
+  dist_eqv.symm h _ hle := (h hle).symm
+  dist_eqv.trans h₁ h₂ _ hle := (h₁ hle).trans (h₂ hle)
+  equiv_dist.mp heq _ _ _ := heq
+  equiv_dist.mpr h n := h n .refl
+  dist_lt h _ _ _ := h (by omega)
 
 instance : IsCOFE SiProp where
-  compl c := ⟨fun n => (c n).holds n, fun {n₁ _} h hle =>
-    (c.cauchy hle _ Nat.le.refl).mp ((c n₁).closed h hle)⟩
-  conv_compl {_ c} _ hle :=
-    (c.cauchy hle _ Nat.le.refl).symm
+  compl c := {
+    holds n := (c n).holds n
+    closed {n₁ _} h hle := (c.cauchy hle .refl).mp (c n₁ |>.closed h hle)
+  }
+  conv_compl {_ c} _ hle := c.cauchy hle .refl |>.symm
 
 instance : BIBase SiProp where
   Entails := SiProp.Entails
-  emp := siPure True
-  pure := siPure
-  and := siAnd
-  or := siOr
-  imp := siImpl
-  sForall := siSForall
-  sExists := siSExists
-  sep := siAnd
-  wand := siImpl
+  emp := Pure True
+  pure := Pure
+  and := And
+  or := Or
+  imp := Imp
+  sForall := All
+  sExists := Exist
+  sep := And
+  wand := Imp
   persistently P := P
-  later := siLater
+  later := Later
 
 instance : Std.Preorder (BIBase.Entails (PROP := SiProp)) where
   refl _ h := h
@@ -117,76 +109,55 @@ instance : Std.Preorder (BIBase.Entails (PROP := SiProp)) where
 @[rocq_alias siPropI]
 instance instBI : BI SiProp where
   entails_preorder := inferInstance
-  equiv_iff := ⟨
-    fun heq => ⟨fun n => (heq n).mp, fun n => (heq n).mpr⟩,
-    fun ⟨hPQ, hQP⟩ n => ⟨hPQ n, hQP n⟩⟩
-  -- NonExpansive
-  and_ne.ne _ _ _ h₁ _ _ h₂ m hle :=
-    ⟨And.imp (h₁ m hle).mp (h₂ m hle).mp, And.imp (h₁ m hle).mpr (h₂ m hle).mpr⟩
-  or_ne.ne _ _ _ h₁ _ _ h₂ m hle :=
-    ⟨Or.imp (h₁ m hle).mp (h₂ m hle).mp, Or.imp (h₁ m hle).mpr (h₂ m hle).mpr⟩
-  imp_ne.ne _ _ _ h₁ _ _ h₂ m hle :=
-    ⟨fun hpq n' hn' hP =>
-      (h₂ n' (Nat.le_trans hn' hle)).mp (hpq n' hn' ((h₁ n' (Nat.le_trans hn' hle)).mpr hP)),
-     fun hpq n' hn' hP =>
-      (h₂ n' (Nat.le_trans hn' hle)).mpr (hpq n' hn' ((h₁ n' (Nat.le_trans hn' hle)).mp hP))⟩
-  sForall_ne := by
-    intro n P₁ P₂ ⟨hlr₁, hlr₂⟩ m hle
-    constructor
-    · intro h Q hQ
-      obtain ⟨P, hP, hPQ⟩ := hlr₂ Q hQ
-      exact (hPQ _ hle).mp (h P hP)
-    · intro h P hP
-      obtain ⟨Q, hQ, hPQ⟩ := hlr₁ P hP
-      exact (hPQ _ hle).mpr (h Q hQ)
-  sExists_ne := by
-    intro n P₁ P₂ ⟨hlr₁, hlr₂⟩ m hle
-    constructor
+  equiv_iff.mp heq := ⟨fun _ => heq.mp, fun _ => heq.mpr⟩
+  equiv_iff.mpr H n := ⟨H.1 n, H.2 n⟩
+  and_ne.ne _ _ _ h₁ _ _ h₂ m h := ⟨.imp (h₁ h).mp (h₂ h).mp, .imp (h₁ h).mpr (h₂ h).mpr⟩
+  or_ne.ne _ _ _ h₁ _ _ h₂ m h := ⟨.imp (h₁ h).mp (h₂ h).mp, .imp (h₁ h).mpr (h₂ h).mpr⟩
+  imp_ne.ne _ _ _ h₁ _ _ h₂ m hle := {
+    mp hpq n' hn' hP := h₂ (by omega) |>.mp <| hpq n' hn' <| (h₁ (by omega)).mpr hP
+    mpr hpq n' hn' hP := h₂ (by omega) |>.mpr <| hpq n' hn' <| (h₁ (by omega)).mp hP
+  }
+  sForall_ne {_ _ _} H _ hle := by
+    refine ⟨fun h Q hQ => ?_, fun h P hP => ?_⟩
+    · obtain ⟨P, hP, hPQ⟩ := H.2 _ hQ
+      exact (hPQ hle).mp (h _ hP)
+    · obtain ⟨Q, hQ, hPQ⟩ := H.1 P hP
+      exact (hPQ hle).mpr (h _ hQ)
+  sExists_ne {_ _ _} H m hle := by
+    refine ⟨?_, ?_⟩
     · rintro ⟨P, hP, hPm⟩
-      obtain ⟨Q, hQ, hPQ⟩ := hlr₁ P hP
-      exact ⟨Q, hQ, (hPQ _ hle).mp hPm⟩
+      obtain ⟨Q, hQ, hPQ⟩ := H.1 P hP
+      exact ⟨Q, hQ, (hPQ hle).mp hPm⟩
     · rintro ⟨Q, hQ, hQm⟩
-      obtain ⟨P, hP, hPQ⟩ := hlr₂ Q hQ
-      exact ⟨P, hP, (hPQ _ hle).mpr hQm⟩
-  sep_ne.ne _ _ _ h₁ _ _ h₂ m hle :=
-    ⟨And.imp (h₁ m hle).mp (h₂ m hle).mp, And.imp (h₁ m hle).mpr (h₂ m hle).mpr⟩
-  wand_ne.ne _ _ _ h₁ _ _ h₂ m hle :=
-    ⟨fun hpq n' hn' hP =>
-      (h₂ n' (Nat.le_trans hn' hle)).mp (hpq n' hn' ((h₁ n' (Nat.le_trans hn' hle)).mpr hP)),
-     fun hpq n' hn' hP =>
-      (h₂ n' (Nat.le_trans hn' hle)).mpr (hpq n' hn' ((h₁ n' (Nat.le_trans hn' hle)).mp hP))⟩
-  persistently_ne.ne _ _ _ h m hle := h m hle
-  later_ne.ne _ _ _ h m hle := by
-    cases m with
-    | zero => exact Iff.rfl
-    | succ k => exact h k (Nat.le_trans (Nat.le_succ k) hle)
-  -- Pure
+      obtain ⟨P, hP, hPQ⟩ := H.2 Q hQ
+      exact ⟨P, hP, (hPQ hle).mpr hQm⟩
+  sep_ne.ne _ _ _ h₁ _ _ h₂ m hle := ⟨.imp (h₁ hle).mp (h₂ hle).mp, .imp (h₁ hle).mpr (h₂ hle).mpr⟩
+  wand_ne.ne _ _ _ h₁ _ _ h₂ m hle := {
+    mp hpq n' hn' hP := h₂ (by omega) |>.mp <| hpq n' hn' <| (h₁ (by omega)).mpr hP
+    mpr hpq n' hn' hP := h₂ (by omega) |>.mpr <| hpq n' hn' <| (h₁ (by omega)).mp hP
+  }
+  persistently_ne.ne _ _ _ h m hle := h hle
+  later_ne.ne _ _ _ h m hle := match m with | .zero => .rfl | .succ _ => h (by omega)
   pure_intro h _ _ := h
   pure_elim' h _ hφ := h hφ _ trivial
-  -- And
   and_elim_l _ h := h.1
   and_elim_r _ h := h.2
   and_intro h₁ h₂ _ h := ⟨h₁ _ h, h₂ _ h⟩
-  -- Or
-  or_intro_l _ h := Or.inl h
-  or_intro_r _ h := Or.inr h
+  or_intro_l _ h := .inl h
+  or_intro_r _ h := .inr h
   or_elim h₁ h₂ _ h := h.elim (h₁ _) (h₂ _)
-  -- Impl
-  imp_intro := fun {P _ _} h n hP n' hle hQ => h n' ⟨P.closed hP hle, hQ⟩
-  imp_elim h n hPQ := h n hPQ.1 n Nat.le.refl hPQ.2
-  -- Forall / Exists
+  imp_intro {P _ _} h n hP n' hle hQ := h n' ⟨P.closed hP hle, hQ⟩
+  imp_elim h n hPQ := h n hPQ.1 n .refl hPQ.2
   sForall_intro h _ hP P hΨ := h P hΨ _ hP
   sForall_elim h _ hF := hF _ h
   sExists_intro h _ hP := ⟨_, h, hP⟩
   sExists_elim h := fun _ ⟨_, hΨ, hP⟩ => h _ hΨ _ hP
-  -- Sep / Wand (= And / Impl for siProp)
   sep_mono h₁ h₂ _ hPQ := ⟨h₁ _ hPQ.1, h₂ _ hPQ.2⟩
   emp_sep := ⟨fun _ hPQ => hPQ.2, fun _ hP => ⟨trivial, hP⟩⟩
   sep_symm _ hPQ := ⟨hPQ.2, hPQ.1⟩
   sep_assoc_l _ hPQR := ⟨hPQR.1.1, hPQR.1.2, hPQR.2⟩
   wand_intro := fun {P _ _} h n hP n' hle hQ => h n' ⟨P.closed hP hle, hQ⟩
-  wand_elim h n hPQ := h n hPQ.1 n Nat.le.refl hPQ.2
-  -- Persistently (identity for siProp)
+  wand_elim h n hPQ := h n hPQ.1 n .refl hPQ.2
   persistently_mono h := h
   persistently_idem_2 _ h := h
   persistently_emp_2 _ h := h
@@ -194,47 +165,26 @@ instance instBI : BI SiProp where
   persistently_sExists_1 := fun _ ⟨P, hΨ, hPn⟩ => ⟨_, ⟨P, rfl⟩, hΨ, hPn⟩
   persistently_absorb_l _ h := h.1
   persistently_and_l _ h := h
-  -- Later
-  later_mono h n hlP := by
+  later_mono h n hlP := match n with | .zero => trivial | .succ _ => h _ hlP
+  later_intro {P} n hP := match n with | .zero => trivial | .succ _ => P.closed hP (by omega)
+  later_sForall_2 n h := match n with | .zero => trivial | .succ _ => (h _ ⟨·, rfl⟩ _ .refl)
+  later_sExists_false {Φ} n h := by
     cases n with
-    | zero => trivial
-    | succ => exact h _ hlP
-  later_intro {P} n hP := by
-    cases n with
-    | zero => trivial
-    | succ => exact P.closed hP (Nat.le_succ _)
-  later_sForall_2 := by
-    intro Φ n h
-    cases n with
-    | zero => trivial
-    | succ n =>
-      intro P hΦP
-      exact h (siImpl (siPure (Φ P)) (siLater P)) ⟨P, rfl⟩ (n + 1) Nat.le.refl hΦP
-  later_sExists_false := by
-    intro Φ n h
-    cases n with
-    | zero => exact Or.inl trivial
+    | zero => exact .inl trivial
     | succ n =>
       obtain ⟨P, hΦP, hPn⟩ := h
-      exact Or.inr ⟨_, ⟨P, rfl⟩, hΦP, hPn⟩
-  later_sep := by
-    intro P Q; constructor
-    · rintro (_|n) h
-      · exact ⟨trivial, trivial⟩
-      · exact h
-    · rintro (_|n) ⟨hP, hQ⟩
-      · trivial
-      · exact ⟨hP, hQ⟩
-  later_persistently := ⟨fun _ h => h, fun _ h => h⟩
-  later_false_em {P} := by
-    intro n hP
-    cases n with
-    | zero => exact Or.inl trivial
-    | succ n =>
-      refine Or.inr fun n' hle hF => ?_
-      cases n' with
-      | zero => exact P.closed hP (Nat.zero_le _)
-      | succ => exact absurd hF id
+      exact .inr ⟨_, ⟨P, rfl⟩, hΦP, hPn⟩
+  later_sep.mp := fun n h => match n with | .zero => ⟨trivial, trivial⟩ | .succ _ => h
+  later_sep.mpr := fun n h => match n with | .zero => trivial | .succ _ => h
+  later_persistently := ⟨fun _ => id, fun _ => id⟩
+  later_false_em {P} n hP :=
+    match n with
+    | .zero => .inl trivial
+    | .succ n =>
+      .inr fun n' hle hF =>
+      match n' with
+      | .zero => P.closed hP (Nat.zero_le _)
+      | .succ _ => absurd hF id
 
 /-! ## Extra BI instances -/
 
@@ -244,22 +194,15 @@ instance instBIAffine : BIAffine SiProp where
 
 @[rocq_alias siProp_pure_forall]
 instance instBIPureForall : Iris.BI.BIPureForall SiProp where
-  pure_forall_2 φ _ h := fun a => h _ ⟨a, rfl⟩
+  pure_forall_2 _ _ h := fun a => h _ ⟨a, rfl⟩
 
 @[rocq_alias siProp_later_contractive]
 instance instBILaterContractive : BILaterContractive SiProp where
-  distLater_dist {n P Q} h := by
-    intro m hle
-    show (siLater P).holds m ↔ (siLater Q).holds m
-    cases m with
-    | zero => exact Iff.rfl
-    | succ k =>
-      show P.holds k ↔ Q.holds k
-      exact h k (Nat.lt_of_succ_le hle) k Nat.le.refl
+  distLater_dist h m hle := match m with | .zero => .rfl | .succ k => h k (by omega) .refl
 
 @[rocq_alias siProp_persistent]
 instance instPersistent (P : SiProp) : Persistent P where
-  persistent := fun _ h => h
+  persistent _ := id
 
 /-! ## Internal equality -/
 
@@ -279,11 +222,9 @@ theorem internalEq_refl [OFE A] (P : SiProp) (a : A) : P ⊢ internalEq a a :=
   fun _ _ => Dist.rfl
 
 @[rocq_alias internal_eq_rewrite]
-theorem internalEq_rewrite [OFE A] (a b : A) (Ψ : A → SiProp)
-    [NonExpansive Ψ] : internalEq a b ⊢ Ψ a → Ψ b := by
-  intro n hab n' hle hΨa
-  have h : Ψ a ≡{n'}≡ Ψ b := NonExpansive.ne (Dist.le hab hle)
-  exact (h n' Nat.le.refl).mp hΨa
+theorem internalEq_rewrite [OFE A] (a b : A) (Ψ : A → SiProp) [HΨ : NonExpansive Ψ] :
+    internalEq a b ⊢ Ψ a → Ψ b :=
+  fun _ hab _ hle => (HΨ.ne (.le hab hle) .refl).mp
 
 @[rocq_alias prop_ext_2]
 theorem prop_ext_2 (P Q : SiProp) : (P → Q) ∧ (Q → P) ⊢ internalEq P Q :=
@@ -302,23 +243,19 @@ theorem fun_extI [OFEFun (B : A → _)] (g₁ g₂ : (x : A) → B x) :
 @[rocq_alias sig_equivI_1]
 theorem sig_equivI_1 [OFE A] (P : A → Prop) (x y : { a : A // P a }) :
     internalEq x.val y.val ⊢ internalEq x y :=
-  fun _ h => h
+  fun _ => id
 
 @[rocq_alias discrete_eq_1]
-theorem discrete_eq_1 [OFE A] (a b : A) [Std.TCOr (DiscreteE a) (DiscreteE b)] :
+theorem discrete_eq_1 [OFE A] (a b : A) [Idisc : Std.TCOr (DiscreteE a) (DiscreteE b)] :
     internalEq a b ⊢ ⌜a ≡ b⌝ := by
-  intro n hab
-  cases ‹Std.TCOr (DiscreteE a) (DiscreteE b)› with
-  | l => exact DiscreteE.discrete (hab.le (Nat.zero_le _))
-  | r => exact (DiscreteE.discrete (hab.le (Nat.zero_le _)).symm).symm
+  cases Idisc with
+  | l => exact fun _ hab => DiscreteE.discrete (hab.le (Nat.zero_le _))
+  | r => exact fun _ hab => (DiscreteE.discrete (hab.le (Nat.zero_le _)).symm).symm
 
 @[rocq_alias later_equivI_1]
 theorem later_equivI_1 [OFE A] (x y : A) :
-    internalEq (Later.next x) (Later.next y) ⊢ ▷ internalEq x y := by
-  intro n heq
-  cases n with
-  | zero => trivial
-  | succ n => exact heq n (Nat.lt_succ_self n)
+    internalEq (Later.next x) (Later.next y) ⊢ ▷ internalEq x y :=
+  fun n h => match n with | .zero => trivial | .succ n => h n n.lt_succ_self
 
 @[rocq_alias later_equivI_2]
 theorem later_equivI_2 [OFE A] (x y : A) :
@@ -326,7 +263,7 @@ theorem later_equivI_2 [OFE A] (x y : A) :
   intro n hP m hlt
   cases n with
   | zero => omega
-  | succ n => exact Dist.le hP (Nat.le_of_lt_succ hlt)
+  | succ n => exact .le hP (Nat.le_of_lt_succ hlt)
 
 /-! ## CMRA validity -/
 
@@ -337,9 +274,7 @@ def cmraValid [CMRA A] (a : A) : SiProp where
 
 @[rocq_alias cmra_valid_ne]
 instance cmraValid_ne [CMRA A] : NonExpansive (cmraValid (A := A)) where
-  ne _ _ _ h _ hle :=
-    ⟨fun hv => CMRA.validN_ne (Dist.le h hle) hv,
-     fun hv => CMRA.validN_ne (Dist.le h hle).symm hv⟩
+  ne _ _ _ h _ hle := ⟨CMRA.validN_ne (Dist.le h hle), CMRA.validN_ne (Dist.le h hle).symm⟩
 
 @[rocq_alias cmra_valid_intro]
 theorem cmraValid_intro [CMRA A] (P : SiProp) (a : A) (h : CMRA.Valid a) :
@@ -348,26 +283,24 @@ theorem cmraValid_intro [CMRA A] (P : SiProp) (a : A) (h : CMRA.Valid a) :
 
 @[rocq_alias cmra_valid_elim]
 theorem cmraValid_elim [CMRA A] (a : A) : cmraValid a ⊢ ⌜✓{0} a⌝ :=
-  fun _ hv => CMRA.validN_of_le (Nat.zero_le _) hv
+  fun _ => CMRA.validN_of_le (Nat.zero_le _)
 
 @[rocq_alias cmra_valid_weaken]
 theorem cmraValid_weaken [CMRA A] (a b : A) : cmraValid (a • b) ⊢ cmraValid a :=
-  fun _ hv => CMRA.validN_op_left hv
+  fun _ => CMRA.validN_op_left
 
 @[rocq_alias valid_entails]
 theorem valid_entails [CMRA A] [CMRA B] (a : A) (b : B) :
     (cmraValid a ⊢ cmraValid b) ↔ ∀ n, ✓{n} a → ✓{n} b :=
-  Iff.rfl
+  .rfl
 
 /-! ## Soundness lemmas -/
 
 @[rocq_alias pure_soundness]
-theorem pure_soundness {φ : Prop} (h : True ⊢@{SiProp} ⌜φ⌝) : φ :=
-  h 0 trivial
+theorem pure_soundness {φ : Prop} (h : True ⊢@{SiProp} ⌜φ⌝) : φ := h 0 trivial
 
 @[rocq_alias internal_eq_soundness]
-theorem internalEq_soundness [OFE A] {x y : A}
-    (h : True ⊢@{SiProp} internalEq x y) : x ≡ y :=
+theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢@{SiProp} internalEq x y) : x ≡ y :=
   equiv_dist.mpr fun n => h n trivial
 
 @[rocq_alias later_soundness]
