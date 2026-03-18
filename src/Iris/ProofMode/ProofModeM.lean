@@ -3,8 +3,12 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Zongyuan Liu
 -/
-import Iris.ProofMode.Expr
-import Iris.ProofMode.Classes
+module
+
+public meta import Iris.ProofMode.Expr
+public import Iris.ProofMode.Classes
+
+public meta section
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std

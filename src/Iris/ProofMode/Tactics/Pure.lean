@@ -3,13 +3,17 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
-import Iris.ProofMode.Instances
-import Iris.ProofMode.Tactics.Basic
+module
+
+public import Iris.ProofMode.Instances
+public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
 
-private theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
+public section
+open BI Std
+
+theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [hA : IntoPure A φ] [or : TCOr (Affine A) (Absorbing Q)]
     (h : P ⊣⊢ P' ∗ A) (h_entails : φ → P' ⊢ Q) : P ⊢ Q :=
   h.1.trans <| match or with
@@ -21,9 +25,12 @@ private theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
     absorbingly_sep_lr.2.trans <| persistent_and_affinely_sep_r.2.trans <|
     pure_elim_r fun hφ => (absorbingly_mono <| h_entails hφ).trans absorbing
 
-private theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
+theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
   pure_elim_spatial h h'
+
+public meta section
+open Lean Elab Tactic Meta Qq
 
 def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
     (P P' : Q($prop)) (p : Q(Bool)) (A Q : Q($prop)) (name : TSyntax ``binderIdent) (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))
@@ -64,11 +71,11 @@ elab "iemp_intro" : tactic => do
     | throwError "iemp_intro: context is not affine"
   mvar.assign q(affine (P := $e))
 
-private theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
+theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
     [h : FromPure true Q φ] [Affine P] (hφ : φ) : P ⊢ Q :=
   (affine.trans (eq_true hφ ▸ affinely_true.2)).trans h.1
 
-private theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
+theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
     [h : FromPure false Q φ] (hφ : φ) : P ⊢ Q :=
   (pure_intro hφ).trans h.1
 

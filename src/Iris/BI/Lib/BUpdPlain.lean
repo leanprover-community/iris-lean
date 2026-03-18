@@ -1,10 +1,14 @@
-import Iris.Std
-import Iris.BI
-import Iris.Algebra.Updates
-import Iris.ProofMode.Classes
-import Iris.ProofMode.Tactics
-import Iris.ProofMode.Display
-import Iris.ProofMode.InstancesUpdates
+module
+
+public import Iris.Std
+public import Iris.BI
+public import Iris.Algebra.Updates
+public import Iris.ProofMode.Classes
+public import Iris.ProofMode.Tactics
+public import Iris.ProofMode.Display
+public import Iris.ProofMode.InstancesUpdates
+
+@[expose] public section
 
 namespace Iris
 open Iris.Std BI

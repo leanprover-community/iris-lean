@@ -3,17 +3,26 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
-import Iris.ProofMode.Tactics.Basic
+module
+
+import Iris.BI
+import Iris.ProofMode.Classes
+public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
 
-private theorem clear_spatial [BI PROP] {P P' A Q : PROP} [TCOr (Affine A) (Absorbing Q)]
+public section
+open BI Std
+
+theorem clear_spatial [BI PROP] {P P' A Q : PROP} [TCOr (Affine A) (Absorbing Q)]
     (h_rem : P ⊣⊢ P' ∗ A) (h : P' ⊢ Q) : P ⊢ Q :=
   h_rem.1.trans <| (sep_mono_l h).trans sep_elim_l
 
-private theorem clear_intuitionistic [BI PROP] {P P' A Q : PROP}
+theorem clear_intuitionistic [BI PROP] {P P' A Q : PROP}
     (h_rem : P ⊣⊢ P' ∗ □ A) (h : P' ⊢ Q) : P ⊢ Q := clear_spatial h_rem h
+
+public meta section
+open Lean Elab Tactic Meta Qq
 
 def iClearCore {prop : Q(Type u)} (_bi : Q(BI $prop)) (e e' : Q($prop))
     (p : Q(Bool)) (out goal : Q($prop))

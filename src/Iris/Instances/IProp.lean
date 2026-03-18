@@ -1,1 +1,3 @@
-import Iris.Instances.IProp.Instance
+module
+
+public import Iris.Instances.IProp.Instance

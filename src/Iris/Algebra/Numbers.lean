@@ -3,10 +3,11 @@ Copyright (c) 2025 Shreyas Srinivas. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Shreyas Srinivas, Markus de Medeiros
 -/
+module
 
-import Iris.Algebra.CMRA
-import Iris.Algebra.OFE
-import Iris.Algebra.LocalUpdates
+public import Iris.Algebra.CMRA
+public import Iris.Algebra.OFE
+public import Iris.Algebra.LocalUpdates
 
 /-! ## Numbers CMRA
 Simple CMRA's for commutative monoids.
@@ -16,6 +17,8 @@ There are three variants:
 - "Universal core": every element is a core (eg. (ℕ, max))
 - "No core": there is no core (eg. (PNat, +))
 -/
+
+@[expose] public section
 
 open Std
 

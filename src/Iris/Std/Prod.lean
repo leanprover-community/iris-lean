@@ -3,6 +3,10 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
+module
+
+@[expose] public section
+
 namespace Prod
 
 /-- Apply `f` to all elements of a tuple. All elements of the tuple must have the same type `α`. -/
