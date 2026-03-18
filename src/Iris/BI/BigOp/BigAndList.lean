@@ -7,6 +7,7 @@ module
 
 public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
+meta import Iris.Std.RocqAlias
 
 public section
 
@@ -148,6 +149,69 @@ theorem bigAndL_laterN {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
 
 theorem bigAndL_perm {Φ : A → PROP} {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
     ([∧list] x ∈ l₁, Φ x) ≡ [∧list] x ∈ l₂, Φ x := bigOpL_equiv_of_perm Φ hp
+
+@[rocq_alias big_andL_submseteq]
+theorem bigAndL_submseteq {Φ : A → PROP} {l₁ l₂ l : List A} (h : (l₁ ++ l).Perm l₂) :
+    ([∧list] x ∈ l₂, Φ x) ⊢ [∧list] x ∈ l₁, Φ x :=
+  (equiv_iff.mp (bigAndL_perm (Φ := Φ) h)).2.trans <|
+    (bigAndL_app (Φ := fun _ => Φ) (l₁ := l₁) (l₂ := l)).1.trans and_elim_l
+
+@[rocq_alias big_andL_ne]
+theorem bigAndL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : Nat}
+    (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
+    ([∧list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∧list] k ↦ x ∈ l, Ψ k x := bigOpL_dist h
+
+@[rocq_alias big_andL_mono']
+theorem bigAndL_mono_of_forall {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ k x, Φ k x ⊢ Ψ k x) :
+    ([∧list] k ↦ x ∈ l, Φ k x) ⊢ [∧list] k ↦ x ∈ l, Ψ k x := bigAndL_mono fun k x _ => h k x
+
+@[rocq_alias big_andL_id_mono']
+theorem bigAndL_id_mono' {l₁ l₂ : List PROP} (hlen : l₁.length = l₂.length)
+    (h : ∀ (i : Nat) (P Q : PROP), l₁[i]? = some P → l₂[i]? = some Q → P ⊢ Q) :
+    ([∧list] P ∈ l₁, P) ⊢ [∧list] P ∈ l₂, P :=
+  bigOpL_gen_proper_2 (· ⊢ ·) .rfl and_mono hlen (h _ _ _ · ·)
+
+@[rocq_alias big_andL_nil_absorbing]
+instance bigAndL_nil_absorbing {Φ : Nat → A → PROP} :
+    Absorbing ([∧list] k ↦ x ∈ ([] : List A), Φ k x) where
+  absorbing := by simp only [bigOpL]; exact Absorbing.absorbing
+
+@[rocq_alias big_andL_absorbing]
+theorem bigAndL_absorbing {Φ : Nat → A → PROP} {l : List A} (h : ∀ k x, l[k]? = some x → Absorbing (Φ k x)) :
+    Absorbing ([∧list] k ↦ x ∈ l, Φ k x) where
+  absorbing := bigOpL_closed (P := fun Q => <absorb> Q ⊢ Q) true_intro
+    (fun hx hy => absorbingly_and_1.trans (and_mono hx hy))
+    (fun hget => (h _ _ hget).absorbing)
+
+@[rocq_alias big_andL_absorbing']
+instance bigAndL_absorbing' {Φ : Nat → A → PROP} {l : List A} [∀ k x, Absorbing (Φ k x)] :
+    Absorbing ([∧list] k ↦ x ∈ l, Φ k x) :=
+  bigAndL_absorbing fun _ _ _ => inferInstance
+
+@[rocq_alias big_andL_nil_persistent]
+instance bigAndL_nil_persistent {Φ : Nat → A → PROP} :
+    Persistent ([∧list] k ↦ x ∈ ([] : List A), Φ k x) where
+  persistent := by simp only [bigOpL]; exact Persistent.persistent
+
+@[rocq_alias big_andL_persistent]
+theorem bigAndL_persistent {Φ : Nat → A → PROP} {l : List A} (h : ∀ k x, l[k]? = some x → Persistent (Φ k x)) :
+    Persistent ([∧list] k ↦ x ∈ l, Φ k x) where
+  persistent := bigOpL_closed (P := fun Q => Q ⊢ <pers> Q) persistently_true.2
+    (fun hx hy => (and_mono hx hy).trans persistently_and.2)
+    (fun hget => (h _ _ hget).persistent)
+
+@[rocq_alias big_andL_timeless]
+theorem bigAndL_timeless {Φ : Nat → A → PROP} {l : List A} (h : ∀ k x, l[k]? = some x → Timeless (Φ k x)) :
+    Timeless ([∧list] k ↦ x ∈ l, Φ k x) where
+  timeless := bigOpL_closed (P := fun Q => ▷ Q ⊢ ◇ Q)
+    (later_true.1.trans except0_true.2)
+    (fun hx hy => later_and.1.trans ((and_mono hx hy).trans except0_and.2))
+    (fun hget => (h _ _ hget).timeless)
+
+@[rocq_alias big_andL_timeless']
+instance bigAndL_timeless' {Φ : Nat → A → PROP} {l : List A} [∀ k x, Timeless (Φ k x)] :
+    Timeless ([∧list] k ↦ x ∈ l, Φ k x) :=
+  bigAndL_timeless fun _ _ _ => inferInstance
 
 end BigAndL
 

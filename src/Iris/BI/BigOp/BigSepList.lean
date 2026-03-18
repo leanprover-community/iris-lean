@@ -9,6 +9,7 @@ public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
 import Iris.BI.Instances
 import Iris.Std.TC
+meta import Iris.Std.RocqAlias
 
 public section
 
@@ -107,11 +108,42 @@ theorem bigSepL_affine_cond {Φ : Nat → A → PROP} {l : List A}
   affine := bigOpL_closed (P := fun Q => Q ⊢ emp) .rfl
     (fun hx hy => (sep_mono hx hy).trans sep_emp.1) (fun hget => (h hget).affine)
 
+@[rocq_alias big_sepL_nil_persistent]
+instance bigSepL_nil_persistent {Φ : Nat → A → PROP} :
+    Persistent ([∗list] k ↦ x ∈ ([] : List A), Φ k x) where
+  persistent := by simp only [bigOpL]; exact Persistent.persistent
+
+@[rocq_alias big_sepL_nil_affine]
+instance bigSepL_nil_affine_inst {Φ : Nat → A → PROP} :
+    Affine ([∗list] k ↦ x ∈ ([] : List A), Φ k x) where
+  affine := by simp only [bigOpL]; exact Affine.affine
+
 instance bigSepL_nil_timeless [Timeless (emp : PROP)] {Φ : Nat → A → PROP} :
     Timeless ([∗list] k ↦ x ∈ ([] : List A), Φ k x) where
   timeless := by simp only [bigOpL]; exact Timeless.timeless
 
-theorem bigSepL_emp_l {l : List A} :
+@[rocq_alias big_sepL_timeless]
+theorem bigSepL_timeless [Timeless (emp : PROP)] {Φ : Nat → A → PROP} {l : List A}
+    (h : ∀ k x, l[k]? = some x → Timeless (Φ k x)) :
+    Timeless ([∗list] k ↦ x ∈ l, Φ k x) where
+  timeless := bigOpL_closed (P := fun Q => ▷ Q ⊢ ◇ Q) Timeless.timeless
+    (fun hx hy => later_sep.1.trans ((sep_mono hx hy).trans except0_sep.2))
+    (fun hget => (h _ _ hget).timeless)
+
+@[rocq_alias big_sepL_timeless']
+instance bigSepL_timeless' [Timeless (emp : PROP)] {Φ : Nat → A → PROP} {l : List A}
+    [∀ k x, Timeless (Φ k x)] :
+    Timeless ([∗list] k ↦ x ∈ l, Φ k x) := bigSepL_timeless fun _ _ _ => inferInstance
+
+@[rocq_alias big_sepL_timeless_id]
+theorem bigSepL_timeless_id [Timeless (emp : PROP)] {Ps : List PROP}
+    (hPs : ∀ P, P ∈ Ps → Timeless P) :
+    Timeless ([∗list] P ∈ Ps, P) where
+  timeless := bigOpL_closed (P := fun Q => ▷ Q ⊢ ◇ Q) Timeless.timeless
+    (fun hx hy => later_sep.1.trans ((sep_mono hx hy).trans except0_sep.2))
+    (fun hget => (hPs _ (List.mem_iff_getElem?.mpr ⟨_, hget⟩)).timeless)
+
+theorem bigSepL_emp {l : List A} :
     ([∗list] _x ∈ l, (emp : PROP)) ⊣⊢ emp := equiv_iff.mp (bigOpL_const_unit_equiv)
 
 theorem bigSepL_sep_equiv {Φ Ψ : Nat → A → PROP} {l : List A} :
@@ -391,7 +423,7 @@ theorem bigSepL_zip_with {B C : Type _} (f : A → B → C) {Φ : Nat → C → 
   induction l₁ generalizing l₂ Φ with
   | nil => exact .rfl
   | cons _ _ ih => cases l₂ with
-    | nil => exact emp_sep.symm.trans (sep_congr_r bigSepL_emp_l.symm)
+    | nil => exact emp_sep.symm.trans (sep_congr_r bigSepL_emp.symm)
     | cons _ _ => exact sep_congr_r ih
 
 theorem bigSepL_comm {B : Type _} (Φ : Nat → A → Nat → B → PROP) (l₁ : List A) (l₂ : List B) :

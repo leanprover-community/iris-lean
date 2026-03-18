@@ -7,6 +7,7 @@ module
 
 public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
+meta import Iris.Std.RocqAlias
 
 public section
 namespace Iris.BI
@@ -47,6 +48,11 @@ theorem bigOrL_equiv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l
 
 theorem bigOrL_equiv_of_forall_equiv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, Φ k x ≡ Ψ k x) :
     ([∨list] k ↦ x ∈ l, Φ k x) ≡ [∨list] k ↦ x ∈ l, Ψ k x := bigOpL_equiv_of_forall_equiv h
+
+@[rocq_alias big_orL_ne]
+theorem bigOrL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : Nat}
+    (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
+    ([∨list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∨list] k ↦ x ∈ l, Ψ k x := bigOpL_dist h
 
 theorem bigOrL_false_l {l : List A} :
     ([∨list] _k ∈ l, iprop(False : PROP)) ≡ iprop(False) := bigOpL_const_unit_equiv
@@ -161,6 +167,24 @@ theorem bigOrL_persistent_cond {Φ : Nat → A → PROP} {l : List A}
 
 instance bigOrL_persistent {Φ : Nat → A → PROP} {l : List A} [∀ k x, Persistent (Φ k x)] :
     Persistent ([∨list] k ↦ x ∈ l, Φ k x) := bigOrL_persistent_cond fun _ _ _ => inferInstance
+
+@[rocq_alias big_orL_nil_timeless]
+instance bigOrL_nil_timeless {Φ : Nat → A → PROP} :
+    Timeless ([∨list] k ↦ x ∈ ([] : List A), Φ k x) where
+  timeless := by simp only [bigOpL]; exact or_intro_l
+
+@[rocq_alias big_orL_timeless]
+theorem bigOrL_timeless {Φ : Nat → A → PROP} {l : List A}
+    (h : ∀ k x, l[k]? = some x → Timeless (Φ k x)) :
+    Timeless ([∨list] k ↦ x ∈ l, Φ k x) where
+  timeless := bigOpL_closed (P := fun Q => ▷ Q ⊢ ◇ Q) or_intro_l
+    (fun hx hy => later_or.1.trans ((or_mono hx hy).trans except0_or.2))
+    (fun hget => (h _ _ hget).timeless)
+
+@[rocq_alias big_orL_timeless']
+instance bigOrL_timeless' {Φ : Nat → A → PROP} {l : List A}
+    [∀ k x, Timeless (Φ k x)] :
+    Timeless ([∨list] k ↦ x ∈ l, Φ k x) := bigOrL_timeless fun _ _ _ => inferInstance
 
 theorem bigOrL_zip_seq {Φ : A × Nat → PROP} {n : Nat} {l : List A} :
     ([∨list] xy ∈ l.zipIdx n, Φ xy) ≡ [∨list] i ↦ x ∈ l, Φ (x, n + i) := bigOpL_zipIdx_equiv Φ n l

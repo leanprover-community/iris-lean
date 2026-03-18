@@ -563,7 +563,7 @@ theorem compl_map [COFE α] [COFE β] (f : α -n> β) (c : Chain α) :
 def ofDiscrete (Equiv : α → α → Prop) (equiv_eqv : Equivalence Equiv) : COFE α :=
   let _ := OFE.ofDiscrete Equiv equiv_eqv
   { compl := fun c => c 0
-    conv_compl := fun {x c} => equiv_eqv.2 (c.cauchy (Nat.zero_le x)) }
+    conv_compl := fun {_ c} => equiv_eqv.2 (c.cauchy (Nat.zero_le _)) }
 
 instance [COFE α] : COFE (ULift α) where
   compl c := ⟨compl (c.map uliftDownHom)⟩
