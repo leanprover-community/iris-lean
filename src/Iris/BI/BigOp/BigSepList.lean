@@ -3,16 +3,18 @@ Copyright (c) 2025 Zongyuan Liu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
-import Iris.BI.BigOp.BigOp
+module
+
+public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
 import Iris.BI.Instances
 import Iris.Std.TC
 
+public section
+
 namespace Iris.BI
 
-open Iris.Algebra BigOpL
-open Iris.Std
-open BIBase
+open Iris.Algebra BigOpL Iris.Std BIBase
 
 /-! # Big Separating Conjunction over Lists -/
 

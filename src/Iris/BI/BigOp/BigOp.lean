@@ -3,19 +3,18 @@ Copyright (c) 2025 Zongyuan Liu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
-import Iris.Algebra.BigOp
-import Iris.BI.DerivedLaws
+module
+
+public import Iris.Algebra.Monoid
+public import Iris.Algebra.BigOp
+public import Iris.BI.DerivedLaws
 import Lean
 
 namespace Iris.BI
 
-open Iris.Algebra
-open Iris.Std
-open OFE
-open BIBase
-open Lean PrettyPrinter Delaborator SubExpr
+public section List
+open Iris.Algebra Iris.Std OFE BIBase
 
-section List
 
 /-! ## MonoidOps instances for BI connectives -/
 
@@ -40,7 +39,7 @@ instance orMonoidOps [BI PROP] : MonoidOps (or (PROP := PROP)) iprop(False) wher
 /-! ## Homomorphism helpers for OFE equivalence -/
 
 /-- Build a `MonoidHomomorphism` for OFE equivalence from just the essential fields. -/
-def MonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
+@[expose] def MonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
     (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) ≡ op₂ (f x) (f y))
     (hunit : f u₁ ≡ u₂) : MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) f where
@@ -53,7 +52,7 @@ def MonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
   map_unit := hunit
 
 /-- Build a `WeakMonoidHomomorphism` for OFE equivalence from just the essential fields. -/
-def WeakMonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
+@[expose] def WeakMonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
     (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) ≡ op₂ (f x) (f y)) :
     WeakMonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) f where
@@ -76,6 +75,10 @@ abbrev bigAndL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : P
 abbrev bigOrL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : PROP :=
   bigOpL or Φ l
 
+end List
+
+public meta section
+open Lean PrettyPrinter Delaborator SubExpr
 /-! ## Notation -/
 
 -- Notation for bigSepL without index
@@ -207,6 +210,6 @@ def delabBigOrL : Delab := do
       `([∨list]  $k ↦ $x ∈ $l, $P $x)
   | _ => failure
 
-end List
+end
 
 end Iris.BI
