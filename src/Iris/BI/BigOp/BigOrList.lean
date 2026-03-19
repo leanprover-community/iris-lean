@@ -60,9 +60,6 @@ theorem bigOrL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : Nat}
     (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∨list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∨list] k ↦ x ∈ l, Ψ k x := bigOpL_dist h
 
-theorem bigOrL_false_l {l : List A} :
-    ([∨list] _k ∈ l, iprop(False : PROP)) ≡ iprop(False) := bigOpL_const_unit_equiv
-
 @[rocq_alias big_orL_or]
 theorem bigOrL_or_equiv {Φ Ψ : Nat → A → PROP} {l : List A} :
     ([∨list] k ↦ x ∈ l, iprop(Φ k x ∨ Ψ k x)) ≡
@@ -110,7 +107,7 @@ theorem bigOrL_pure {φ : Nat → A → Prop} {l : List A} :
   bigOrL_exist.trans <| (exists_congr fun _ => (exists_congr fun _ => pure_and).trans pure_exists).trans pure_exists
 
 @[rocq_alias big_orL_sep_l]
-theorem bigOrL_sep_l {P : PROP} {Φ : Nat → A → PROP} {l : List A} :
+theorem bigOrL_sep_left {P : PROP} {Φ : Nat → A → PROP} {l : List A} :
     (P ∗ [∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, (P ∗ Φ k x) :=
   (sep_congr .rfl bigOrL_exist).trans <| sep_exists_l.trans <| (exists_congr fun _ =>
     sep_exists_l.trans <| exists_congr fun _ =>
@@ -119,16 +116,14 @@ theorem bigOrL_sep_l {P : PROP} {Φ : Nat → A → PROP} {l : List A} :
           sep_assoc.trans persistent_and_affinely_sep_l.symm).trans bigOrL_exist.symm
 
 @[rocq_alias big_orL_sep_r]
-theorem bigOrL_sep_r {Φ : Nat → A → PROP} {P : PROP} {l : List A} :
+theorem bigOrL_sep_right {Φ : Nat → A → PROP} {P : PROP} {l : List A} :
     (([∨list] k ↦ x ∈ l, Φ k x) ∗ P) ⊣⊢ [∨list] k ↦ x ∈ l, (Φ k x ∗ P) :=
-  sep_comm.trans <| bigOrL_sep_l.trans (equiv_iff.mp (bigOrL_equiv_of_forall_equiv (equiv_iff.mpr sep_comm)))
+  sep_comm.trans <| bigOrL_sep_left.trans (equiv_iff.mp (bigOrL_equiv_of_forall_equiv (equiv_iff.mpr sep_comm)))
 
 @[rocq_alias big_orL_elem_of]
 theorem bigOrL_elem_of {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
     Φ x ⊢ [∨list] y ∈ l, Φ y :=
-  match l, h with
-  | _ :: _, .head .. => or_intro_l
-  | _ :: _, .tail _ hmem => (bigOrL_elem_of hmem).trans or_intro_r
+  match l, h with | _ :: _, .head .. => or_intro_l | _ :: _, .tail _ hmem => (bigOrL_elem_of hmem).trans or_intro_r
 
 @[rocq_alias big_orL_bind]
 theorem bigOrL_bind {B : Type _} (f : A → List B) {Φ : B → PROP} {l : List A} :

@@ -21,9 +21,13 @@ variable {PROP : Type _} [BI PROP] {A : Type _}
 
 namespace BigAndL
 
-@[simp, rocq_alias big_andL_nil, rocq_alias big_andL_nil']
+@[simp, rocq_alias big_andL_nil]
 theorem bigAndL_nil {Φ : Nat → A → PROP} :
     ([∧list] k ↦ x ∈ ([] : List A), Φ k x) ⊣⊢ iprop(True) := .rfl
+
+@[rocq_alias big_andL_nil']
+theorem bigAndL_nil' {P} {Φ : Nat → A → PROP} :
+   P ⊢ ([∧list] k ↦ x ∈ ([] : List A), Φ k x) := true_intro
 
 @[rocq_alias big_andL_cons]
 theorem bigAndL_cons {Φ : Nat → A → PROP} {x : A} {xs : List A} :
@@ -67,9 +71,6 @@ instance bigAndL_affine_inst {Φ : Nat → A → PROP} {l : List A} [BIAffine PR
   affine := bigOpL_closed (P := fun Q => Q ⊢ emp) true_emp.1
     (fun hx _ => and_elim_l.trans hx) (fun _ => Affine.affine)
 
-theorem bigAndL_true_l {l : List A} :
-    ([∧list] _x ∈ l, iprop(True : PROP)) ≡ iprop(True) := bigOpL_const_unit_equiv
-
 @[rocq_alias big_andL_and]
 theorem bigAndL_and_equiv {Φ Ψ : Nat → A → PROP} {l : List A} :
     ([∧list] k ↦ x ∈ l, iprop(Φ k x ∧ Ψ k x)) ≡
@@ -79,13 +80,8 @@ theorem bigAndL_and_equiv_symm {Φ Ψ : Nat → A → PROP} {l : List A} :
     iprop(([∧list] k ↦ x ∈ l, Φ k x) ∧ [∧list] k ↦ x ∈ l, Ψ k x) ≡
       [∧list] k ↦ x ∈ l, iprop(Φ k x ∧ Ψ k x) := bigAndL_and_equiv.symm
 
-theorem bigAndL_take_drop {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
-    ([∧list] k ↦ x ∈ l, Φ k x) ≡
-      iprop(([∧list] k ↦ x ∈ (l.take n), Φ k x) ∧ [∧list] k ↦ x ∈ (l.drop n), Φ (n + k) x) :=
-  bigOpL_take_drop_equiv Φ l n
-
 @[rocq_alias big_andL_fmap]
-theorem bigAndL_fmap {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : List A} :
+theorem bigAndL_map {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : List A} :
     ([∧list] k ↦ y ∈ (l.map f), Φ k y) ≡ [∧list] k ↦ x ∈ l, Φ k (f x) := bigOpL_map_equiv f Φ l
 
 @[rocq_alias big_andL_lookup]
@@ -101,7 +97,7 @@ theorem bigAndL_intro {P : PROP} {Φ : Nat → A → PROP} {l : List A} (h : ∀
   bigOpL_closed (P := (P ⊢ ·)) true_intro and_intro (h _ _ ·)
 
 @[rocq_alias big_andL_forall]
-theorem bigAndL_forall' {Φ : Nat → A → PROP} {l : List A} :
+theorem bigAndL_forall {Φ : Nat → A → PROP} {l : List A} :
     ([∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ ∀ k, ∀ x, iprop(⌜l[k]? = some x⌝ → Φ k x) :=
   ⟨forall_intro fun _ => forall_intro fun _ =>
       imp_intro <| and_comm.1.trans <| pure_elim_l (bigAndL_lookup ·),
@@ -126,14 +122,14 @@ theorem bigAndL_persistently {Φ : Nat → A → PROP} {l : List A} :
 @[rocq_alias big_andL_pure_1]
 theorem bigAndL_pure_intro {φ : Nat → A → Prop} {l : List A} :
     ([∧list] k ↦ x ∈ l, (⌜φ k x⌝ : PROP)) ⊢ ⌜∀ k x, l[k]? = some x → φ k x⌝ :=
-  bigAndL_forall'.1.trans <| (forall_mono fun _ => forall_mono fun _ => pure_imp.1).trans <|
+  bigAndL_forall.1.trans <| (forall_mono fun _ => forall_mono fun _ => pure_imp.1).trans <|
     (forall_mono fun _ => pure_forall.1).trans pure_forall.1
 
 @[rocq_alias big_andL_pure_2]
 theorem bigAndL_pure_elim {φ : Nat → A → Prop} {l : List A} :
     (⌜∀ k x, l[k]? = some x → φ k x⌝ : PROP) ⊢ [∧list] k ↦ x ∈ l, ⌜φ k x⌝ :=
   pure_forall_2.trans <| (forall_mono fun _ => pure_forall_2).trans <|
-    (forall_mono fun _ => forall_mono fun _ => pure_imp_2).trans bigAndL_forall'.2
+    (forall_mono fun _ => forall_mono fun _ => pure_imp_2).trans bigAndL_forall.2
 
 @[rocq_alias big_andL_pure]
 theorem bigAndL_pure {φ : Nat → A → Prop} {l : List A} :
