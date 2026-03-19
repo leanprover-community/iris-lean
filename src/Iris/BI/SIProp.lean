@@ -306,6 +306,15 @@ theorem cmraValid_entails_iff [CMRA A] [CMRA B] (a : A) (b : B) :
     (cmraValid a ⊢ cmraValid b) ↔ ∀ n, ✓{n} a → ✓{n} b :=
   .rfl
 
+instance cmraValid_timeless [CMRA A] [CMRA.Discrete A] (a : A) :
+    Timeless (cmraValid a : SiProp) where
+  timeless := fun n h => by
+    cases n with
+    | zero => left; trivial
+    | succ n =>
+      right
+      exact (CMRA.discrete_valid (CMRA.validN_of_le (Nat.zero_le n) h)).validN
+
 /-! ## Soundness lemmas -/
 
 @[rocq_alias pure_soundness]

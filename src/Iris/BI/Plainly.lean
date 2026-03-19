@@ -1,77 +1,35 @@
 /-
 Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros
+Authors:
 -/
 
-import Iris.BI.Classes
-import Iris.BI.BI
-import Iris.BI.DerivedLaws
-import Iris.Algebra
+import Iris.BI.Sbi
 
 namespace Iris
 open BI
 
-class Plainly (PROP : Type _) where
-  plainly : PROP → PROP
-export Plainly(plainly)
-
-syntax "■ " term:40 : term
-
-macro_rules
-  | `(iprop(■ $P))  => ``(Plainly.plainly iprop($P))
-
-delab_rule Plainly.plainly
-  | `($_ $P) => do ``(iprop(■ $(← Iris.BI.unpackIprop P)))
-
-def Plainly.plainlyIf [Iris.BI.BIBase PROP] [Plainly PROP] (p : Bool) (P : PROP) : PROP :=
-  iprop(if p then ■ P else P)
-
-syntax:max "■?" term:max ppHardSpace term:40 : term
-
-macro_rules
-  | `(iprop(■? $p $P))  => ``(Plainly.plainlyIf $p iprop($P))
-
-delab_rule Plainly.plainlyIf
-  | `($_ $p $P) => do ``(iprop(■? $p $(← Iris.BI.unpackIprop P)))
-
-
--- FIXME: These names are inconsistent
-class BIPlainly (PROP : Type _) [Iris.BI PROP] extends Plainly PROP where
-  [ne : Iris.OFE.NonExpansive (Plainly.plainly (PROP := PROP))]
-  mono {P Q : PROP} : (P ⊢ Q) → ■ P ⊢ ■ Q
-  elim_persistently {P : PROP} : ■ P ⊢ <pers> P
-  idem {P : PROP} : ■ P ⊢ ■ ■ P
-  plainly_sForall_2 {Φ : PROP → Prop} : (∀ p, ⌜Φ p⌝ → ■ p) ⊢ ■ sForall Φ
-  plainly_impl_plainly {P Q : PROP} : (■ P → ■ Q) ⊢ ■ (■ P → Q)
-  emp_intro {P : PROP} : P ⊢ ■ emp
-  plainly_absorb {P Q : PROP} : ■ P ∗ Q ⊢ ■ P
-  later_plainly {P : PROP} : ▷ ■ P ⊣⊢ ■ ▷ P
-
-class BIPersistentlyImplPlainly (PROP : Type _) [Iris.BI PROP] [BIPlainly PROP] where
-  pers_impl_plainly (P Q : PROP) : (■ P → <pers> Q) ⊢ <pers> (■ P → Q)
-
-class BIPlainlyExists (PROP : Type _) [Iris.BI PROP] [BIPlainly PROP] where
-  plainly_sExists_1 {Φ : PROP → Prop} : ■ sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ ■ p
-
 namespace BI
 open Iris.Std
 
-export BIPlainly (plainly_sForall_2 plainly_impl_plainly plainly_absorb later_plainly)
-export BIPersistentlyImplPlainly (pers_impl_plainly)
-export BIPlainlyExists (plainly_sExists_1)
-
-class Plain [BI PROP] [Plainly PROP] [BIPlainly PROP] (P : PROP) where
+class Plain [BI PROP] [BIBase.Plainly PROP] (P : PROP) where
   plain : P ⊢ ■ P
 
-instance [BI PROP] [BIPlainly PROP] (P : PROP) : Plain iprop(■ P) :=
-  ⟨BIPlainly.idem⟩
-
 section PlainlyLaws
-open BIPlainly
 
-variable [BI PROP] [BIPlainly PROP]
+variable [Sbi PROP]
 variable {P Q R : PROP}
+
+-- Local abbreviations for the Sbi-derived primitives, matching old BIPlainly field names
+private abbrev mono := @plainly_mono_sbi PROP _
+private abbrev elim_persistently := @plainly_elim_persistently_sbi PROP _
+private abbrev idem := @plainly_idemp_2_sbi PROP _
+private abbrev emp_intro := @plainly_emp_intro_sbi PROP _
+private abbrev plainly_absorb := @plainly_absorb_sbi PROP _
+private abbrev later_plainly := @later_plainly_sbi PROP _
+private abbrev plainly_impl_plainly := @plainly_impl_plainly_sbi PROP _
+
+instance (P : PROP) : Plain iprop(■ P) := ⟨idem⟩
 
 theorem affinely_plainly_elim : <affine> ■ P ⊢ P :=
   (affinely_mono elim_persistently).trans persistently_and_emp_elim
@@ -80,14 +38,8 @@ theorem persistently_elim_plainly : <pers> ■ P ⊣⊢ ■ P :=
   ⟨absorbingly_of_persistently.trans <| sep_symm.trans plainly_absorb,
    idem.trans elim_persistently⟩
 
-theorem plainly_forall_2 {Ψ : α → PROP} : (∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a) := by
-  refine (forall_intro ?_).trans plainly_sForall_2
-  intro P
-  refine imp_intro' ?_
-  refine and_comm.mp.trans <| imp_elim' <| pure_elim _ .rfl ?_
-  rintro ⟨_, Ha⟩
-  rewrite [← Ha]
-  exact imp_intro' <| and_elim_l.trans <| forall_elim _
+theorem plainly_forall_2 {A : Type _} {Ψ : A → PROP} : (∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a) :=
+  plainly_forall_2_sbi _
 
 theorem plainly_persistently_elim : ■ <pers> P ⊣⊢ ■ P := by
   constructor
@@ -142,20 +94,17 @@ theorem plainly_pure {φ} : ■ ⌜φ⌝ ⊣⊢ (⌜φ⌝ : PROP) := by
   · exact forall_intro Empty.rec
   · exact plainly_forall_2.trans (mono <| pure_intro φ)
 
-theorem plainly_forall {Ψ : α → PROP} : ■ (∀ a, Ψ a) ⊣⊢ ∀ a, ■ (Ψ a) :=
+theorem plainly_forall {A : Type _} {Ψ : A → PROP} : ■ (∀ a, Ψ a) ⊣⊢ ∀ a, ■ (Ψ a) :=
   ⟨forall_intro (mono <| forall_elim ·), plainly_forall_2⟩
 
 theorem plainly_exists_2 {α : Sort _} {Ψ : α → PROP} : (∃ a, ■ (Ψ a)) ⊢ ■ (∃ a, Ψ a) :=
   exists_elim (mono <| exists_intro ·)
 
-theorem plainly_exists_1 [BIPlainlyExists PROP] {Ψ : α → PROP} :
-    ■ (∃ a, Ψ a) ⊢ ∃ a, ■ (Ψ a) := by
-  refine plainly_sExists_1.trans ?_
-  refine exists_elim fun p => imp_elim <| pure_elim' ?_
-  rintro ⟨a, rfl⟩
-  exact imp_intro' <| exists_intro' a and_elim_l
+theorem plainly_exists_1 [SbiEmpValidExist PROP] {A : Type _} {Ψ : A → PROP} :
+    ■ (∃ a, Ψ a) ⊢ ∃ a, ■ (Ψ a) :=
+  plainly_exist_1_sbi _
 
-theorem plainly_exists [BIPlainlyExists PROP] {Ψ : α → PROP} : ■ (∃ a, Ψ a) ⊣⊢ ∃ a, ■ (Ψ a) :=
+theorem plainly_exists [SbiEmpValidExist PROP] {A : Type _} {Ψ : A → PROP} : ■ (∃ a, Ψ a) ⊣⊢ ∃ a, ■ (Ψ a) :=
   ⟨plainly_exists_1, plainly_exists_2⟩
 
 theorem plainly_and : ■ (P ∧ Q) ⊣⊢ ■ P ∧ ■ Q := by
@@ -171,7 +120,7 @@ theorem plainly_or_2 : ■ P ∨ ■ Q ⊢ ■ (P ∨ Q) := by
   refine .trans (exists_mono ?_) plainly_exists_2
   exact (·.casesOn .rfl .rfl)
 
-theorem plainly_or [BIPlainlyExists PROP] : ■ (P ∨ Q) ⊣⊢ ■ P ∨ ■ Q := by
+theorem plainly_or [SbiEmpValidExist PROP] : ■ (P ∨ Q) ⊣⊢ ■ P ∨ ■ Q := by
   refine ⟨?_, plainly_or_2⟩
   refine (mono or_exists_bool.mp).trans (.trans ?_ or_exists_bool.mpr)
   exact plainly_exists_1.trans <| exists_mono (·.casesOn .rfl .rfl)
@@ -265,11 +214,11 @@ theorem impl_wand_affinely_plainly : (■ P → Q) ⊣⊢ (<affine> ■ P -∗ Q
     refine .trans ?_ intuitionistically_wand.mp
     exact wand_mono_l affinely_of_intuitionistically
 
-theorem persistently_wand_affinely_plainly [BIPersistentlyImplPlainly PROP] :
+theorem persistently_wand_affinely_plainly :
     (<affine> ■ P -∗ <pers> Q) ⊢ <pers> (<affine> ■ P -∗ Q) := by
-  refine impl_wand_affinely_plainly.mpr.trans  ?_
+  refine impl_wand_affinely_plainly.mpr.trans ?_
   refine .trans ?_ (persistently_mono impl_wand_affinely_plainly.mp)
-  exact pers_impl_plainly _ _
+  exact persistently_impl_plainly_sbi
 
 theorem plainly_wand_affinely_plainly : (<affine> ■ P -∗ ■ Q) ⊢ ■ (<affine> ■ P -∗ Q) := by
   refine impl_wand_affinely_plainly.mpr.trans ?_
@@ -304,6 +253,13 @@ end AffineBI
 
 instance plainly_absorbing (P : PROP) : Absorbing iprop(■ P) where
   absorbing := absorbingly_elim_plainly.1
+
+@[rocq_alias plainly_si_pure]
+theorem plainly_siPure (Pi : SiProp) :
+    iprop(■ (<si_pure> Pi : PROP) ⊣⊢ <si_pure> Pi) := by
+  show iprop(<si_pure> <si_emp_valid> (<si_pure> Pi : PROP) ⊣⊢ <si_pure> Pi)
+  exact ⟨siPure_mono (siEmpValid_siPure (PROP := PROP) Pi).mp,
+         siPure_mono (siEmpValid_siPure (PROP := PROP) Pi).mpr⟩
 
 end PlainlyLaws
 

@@ -80,7 +80,7 @@ notation k:50 " ↦[" γ:50 "] " v:50 => points_to γ k v
 example {γ : GName} : 5 ↦[γ] "A" ∗ 5 ↦[γ] "B" ⊢ False := by
   refine iOwn_op.mpr.trans ?_
   refine iOwn_cmraValid.trans ?_
-  refine (UPred.cmraValid_elim _).trans ?_
+  refine (internalCmraValid_elim _).trans ?_
   iintro %H
   have _ := dist_inj <| toAgree_op_validN_iff_dist.mp <|
     (frag_op_validN_iff.mp H).2

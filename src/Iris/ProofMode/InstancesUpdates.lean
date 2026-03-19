@@ -66,12 +66,19 @@ instance elimModal_bupd [BIUpdate PROP] p (P Q : PROP) :
   ElimModal True p false iprop(|==> P) P iprop(|==> Q) iprop(|==> Q) where
   elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans $ bupd_frame_r.trans $ (BIUpdate.mono wand_elim_r).trans BIUpdate.trans
 
+end Iris.ProofMode
+
+namespace Iris.ProofMode
+open Iris.BI Iris.Std
+
+variable {PROP} [Sbi PROP] [BIUpdate PROP] [BIBUpdatePlainly PROP]
+
 @[ipm_backtrack]
-instance elimModal_bupd_plain_goal [BIUpdate PROP] [BIPlainly PROP] [BIBUpdatePlainly PROP] p (P Q : PROP) [Plain Q] :
+instance elimModal_bupd_plain_goal p (P Q : PROP) [Plain Q] :
   ElimModal True p false iprop(|==> P) P Q Q where
   elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans $ bupd_frame_r.trans $ (BIUpdate.mono wand_elim_r).trans bupd_elim
 
 @[ipm_backtrack]
-instance elimModal_bupd_plain [BIUpdate PROP] [BIPlainly PROP] [BIBUpdatePlainly PROP] p (P Q : PROP) [Plain P] :
+instance elimModal_bupd_plain p (P Q : PROP) [Plain P] :
   ElimModal True p p iprop(|==> P) P Q Q where
   elim_modal _ := (sep_mono_l (intuitionisticallyIf_mono bupd_elim)).trans wand_elim_r
