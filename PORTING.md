@@ -271,18 +271,18 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] AddModal
   - [x] IntoLater
 - [ ] `class_instances_make.v`
-  - [ ] Affine 
-  - [ ] Absorbing
-  - [ ] Embed
-  - [ ] Sep
-  - [ ] And 
-  - [ ] Or 
-  - [x] Affinely
-  - [x] Absorbingly
-  - [x] Persistenly
-  - [x] Intuitionistically
-  - [x] Later
-  - [ ] Except-0
+  - [ ] QuickAffine
+  - [ ] QuickAbsorbing
+  - [ ] MakeEmbed
+  - [ ] MakeSep
+  - [ ] MakeAnd
+  - [ ] MakeOr
+  - [x] MakeAffinely
+  - [x] MakeIntuitionistically
+  - [x] MakeAbsorbingly
+  - [x] MakePersistenly
+  - [x] MakeLaterN
+  - [ ] MakeExcept0
 - [ ] `class_instances_plainly.v` (InstancesPlainly.lean)
   - [x] basic instances
   - [x] FromModal
@@ -338,6 +338,18 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IntoAcc
   - [ ] ElimInv
 - [ ] `classes_make.v`
+  - [ ] QuickAffine
+  - [ ] QuickAbsorbing
+  - [ ] MakeEmbed
+  - [ ] MakeSep
+  - [ ] MakeAnd
+  - [ ] MakeOr
+  - [x] MakeAffinely
+  - [x] MakeIntuitionistically
+  - [x] MakeAbsorbingly
+  - [x] MakePersistenly
+  - [x] MakeLaterN
+  - [ ] MakeExcept0
 - [ ] `coq_tactics.v` / `ltac_tactics.v` (split into the files in Tactics/)
   - [x] iSolveSideCondition
   - [ ] iStartProof

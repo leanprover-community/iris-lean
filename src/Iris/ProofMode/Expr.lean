@@ -322,7 +322,6 @@ end replace
 
 section dependency
 
---
 partial def Hyps.findDependencyOnFVar {prop : Q(Type u)} {bi : Q(BI $prop)}
     (fvarId : FVarId) : ∀ {e}, Hyps bi e → Option (Name × Name × Q(Bool) × Q($prop))
   | _, .emp _ => none

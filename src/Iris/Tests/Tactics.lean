@@ -243,6 +243,13 @@ example [BI PROP] (P Q : PROP) :
   irevert HP HQ
   iexact H
 
+/-- Tests `irevert` with mixed Lean/proofmode hypotheses and dependencies. -/
+example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
+  iintro %x %hp H
+  irevert x hp H
+  iintro %x %hp H
+  iexact H
+
 /- Tests `irevert` failing with dependency -/
 /-- error: irevert: proofmode hypothesis H depends on x -/
 #guard_msgs in
@@ -256,13 +263,6 @@ example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
   irevert x H
-
-/-- Tests `irevert` with mixed Lean/proofmode hypotheses and dependencies. -/
-example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
-  iintro %x %hp H
-  irevert x hp H
-  iintro %x %hp H
-  iexact H
 
 end revert
 
