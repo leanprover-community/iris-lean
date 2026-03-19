@@ -6,7 +6,7 @@ Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 module
 
 public import Iris.Std.Positives
-import Iris.Std.Classes
+public import Iris.Std.GenSets
 
 @[expose] public section
 
@@ -169,6 +169,117 @@ instance : Membership Pos CoPset where mem E p := p ∈ E.tree
 
 namespace CoPset
 
+/-- Helper: if a well-formed tree has uniform membership, it must be a leaf.
+    Corresponds to `coPLeaf_wf` in Rocq Iris. -/
+private theorem coPsetLeaf_wf : ∀ (t : CoPsetRaw) (b : Bool),
+    coPsetWf t = true → (∀ p, ElemOf p t = b) → t = .leaf b := by
+  intro t b Hwf Hall
+  cases t with
+  | leaf b' =>
+    congr
+    exact Hall .xH
+  | node b' l r =>
+    exfalso
+    have hb : b' = b := Hall .xH
+    have hl : ∀ p, ElemOf p l = b := fun p => by
+      have := Hall (.xO p); simp [ElemOf] at this; exact this
+    have hr : ∀ p, ElemOf p r = b := fun p => by
+      have := Hall (.xI p); simp [ElemOf] at this; exact this
+    have hl_leaf : l = .leaf b := coPsetLeaf_wf l b (node_wf_l Hwf) hl
+    have hr_leaf : r = .leaf b := coPsetLeaf_wf r b (node_wf_r Hwf) hr
+    rw [hb, hl_leaf, hr_leaf] at Hwf
+    cases b <;> simp [coPsetWf] at Hwf
+
+/-- Two CoPsetRaw trees are equal if they have the same membership function
+    and both are well-formed. -/
+private theorem coPsetRaw_eq (t1 t2 : CoPsetRaw) :
+    (∀ p, ElemOf p t1 = ElemOf p t2) →
+    coPsetWf t1 = true → coPsetWf t2 = true → t1 = t2 := by
+  intro Ht Hwf1 Hwf2
+  match t1, t2 with
+  | .leaf b1, .leaf b2 =>
+    congr 1
+    exact Ht .xH
+  | .leaf b1, .node b2 l2 r2 =>
+    cases b1 <;> cases b2
+    <;> rcases l2 with ⟨⟨⟩⟩ | ⟨_, _, _⟩
+    <;> rcases r2 with ⟨⟨⟩⟩ | ⟨_, _, _⟩
+    <;> (have h1 := Ht (.xH);
+         have h2 := Ht (.xI .xH);
+         have h3 := Ht (.xO .xH);
+         dsimp [ElemOf] at h1 h2 h3;
+         cases h1 <;> cases h2 <;> cases h3)
+    · simp [coPsetWf] at Hwf2
+    · symm
+      apply coPsetLeaf_wf _ false Hwf2
+      intro p; specialize (Ht p); simp only [ElemOf, Bool.false_eq] at Ht; apply Ht
+    · symm
+      apply coPsetLeaf_wf _ false Hwf2
+      intro p; specialize (Ht p); simp only [ElemOf, Bool.false_eq] at Ht; apply Ht
+    · symm
+      apply coPsetLeaf_wf _ false Hwf2
+      intro p; specialize (Ht p); simp only [ElemOf, Bool.false_eq] at Ht; apply Ht
+    · simp [coPsetWf] at Hwf2
+    · symm
+      apply coPsetLeaf_wf _ true Hwf2
+      intro p; specialize (Ht p); simp only [ElemOf, Bool.true_eq] at Ht; apply Ht
+    · symm
+      apply coPsetLeaf_wf _ true Hwf2
+      intro p; specialize (Ht p); simp only [ElemOf, Bool.true_eq] at Ht; apply Ht
+    · symm
+      apply coPsetLeaf_wf _ true Hwf2
+      intro p; specialize (Ht p); simp only [ElemOf, Bool.true_eq] at Ht; apply Ht
+  | .node b1 l1 r1, .leaf b2 =>
+    cases b1 <;> cases b2
+    <;> rcases l1 with ⟨⟨⟩⟩ | ⟨_, _, _⟩
+    <;> rcases r1 with ⟨⟨⟩⟩ | ⟨_, _, _⟩
+    <;> (have h1 := Ht (.xH);
+         have h2 := Ht (.xI .xH);
+         have h3 := Ht (.xO .xH);
+         dsimp [ElemOf] at h1 h2 h3;
+         cases h1 <;> cases h2 <;> cases h3)
+    · simp [coPsetWf] at Hwf1
+    · apply coPsetLeaf_wf _ false Hwf1
+      intro p; specialize (Ht p); simp only [ElemOf] at Ht; apply Ht
+    · apply coPsetLeaf_wf _ false Hwf1
+      intro p; specialize (Ht p); simp only [ElemOf] at Ht; apply Ht
+    · apply coPsetLeaf_wf _ false Hwf1
+      intro p; specialize (Ht p); simp only [ElemOf] at Ht; apply Ht
+    · simp [coPsetWf] at Hwf1
+    · apply coPsetLeaf_wf _ true Hwf1
+      intro p; specialize (Ht p); simp only [ElemOf] at Ht; apply Ht
+    · apply coPsetLeaf_wf _ true Hwf1
+      intro p; specialize (Ht p); simp only [ElemOf] at Ht; apply Ht
+    · apply coPsetLeaf_wf _ true Hwf1
+      intro p; specialize (Ht p); simp only [ElemOf] at Ht; apply Ht
+  | .node b1 l1 r1, .node b2 l2 r2 =>
+    have hb : b1 = b2 := Ht .xH
+    have hl : l1 = l2 := by
+      apply coPsetRaw_eq
+      · intro p; exact Ht (.xO p)
+      · exact node_wf_l Hwf1
+      · exact node_wf_l Hwf2
+    have hr : r1 = r2 := by
+      apply coPsetRaw_eq
+      · intro p; exact Ht (.xI p)
+      · exact node_wf_r Hwf1
+      · exact node_wf_r Hwf2
+    congr
+
+instance : Membership Pos CoPset where mem E p := p ∈ E.tree
+
+/-- All operations are refined at the level of [CoPset] -/
+
+@[ext]
+theorem ext {X Y : CoPset} (H : ∀ p, p ∈ X <-> p ∈ Y) : X = Y := by
+  rcases X with ⟨X, xwf⟩; rcases Y with ⟨Y, ywf⟩
+  simp only [CoPset.mk.injEq]
+  apply coPsetRaw_eq
+  · intro p; specialize (H p); simp only [Membership.mem, Bool.coe_iff_coe] at H
+    exact H
+  · exact xwf
+  · exact ywf
+
 /-- All operations are refined at the level of [CoPset] -/
 
 def empty : CoPset := ⟨CoPsetRaw.leaf false, rfl⟩
@@ -178,6 +289,9 @@ instance : EmptyCollection CoPset where emptyCollection := CoPset.empty
 def full : CoPset := ⟨CoPsetRaw.leaf true, rfl⟩
 
 def singleton (p : Pos) : CoPset := ⟨CoPsetRaw.Singleton p, coPsetSingleton_wf p⟩
+
+instance : Singleton Pos CoPset where
+  singleton := CoPset.singleton
 
 def union (X Y : CoPset) : CoPset := ⟨CoPsetRaw.Union X.tree Y.tree, coPsetUnion_wf _ _ X.wf Y.wf⟩
 
@@ -200,7 +314,50 @@ instance : HasSubset CoPset where
 instance : SDiff CoPset where
   sdiff := CoPset.diff
 
-theorem in_inter p (X Y : CoPset) : p ∈ X ∩ Y <-> p ∈ X ∧ p ∈ Y := by
+theorem mem_empty {p : Pos} : p ∉ (∅ : CoPset) := by
+  simp only [Membership.mem, EmptyCollection.emptyCollection, CoPset.empty]
+  cases p <;> simp [CoPsetRaw.ElemOf]
+
+theorem mem_full {p : Pos} : p ∈ full := by
+  simp only [Membership.mem, full, CoPsetRaw.ElemOf]
+
+theorem in_singleton {p q : Pos} : p ∈ ({q} : CoPset) ↔ p = q := by
+  constructor
+  · intro h
+    simp only [Singleton.singleton, CoPset.singleton, Membership.mem] at h
+    induction q generalizing p with
+    | xH =>
+      cases p <;> simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf] at h <;> rfl
+    | xO q' IH =>
+      cases p with
+      | xH => simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node] at h
+      | xO p' =>
+        simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node] at h
+        have := IH h
+        rw [this]
+      | xI p' => simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node] at h
+    | xI q' IH =>
+      cases p with
+      | xH => simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node] at h
+      | xO p' => simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node] at h
+      | xI p' =>
+        simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node] at h
+        have := IH h
+        rw [this]
+  · intro h
+    simp only [Singleton.singleton, CoPset.singleton, Membership.mem]
+    subst h
+    induction p with
+    | xH => simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf]
+    | xO p' IH =>
+      simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node]
+      exact IH
+    | xI p' IH =>
+      simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node]
+      exact IH
+
+
+theorem in_inter {p : Pos} {X Y : CoPset} : p ∈ X ∩ Y <-> p ∈ X ∧ p ∈ Y := by
   simp only [Inter.inter, inter, Membership.mem]
   constructor
   · rcases X with ⟨X, xwf⟩; rcases Y with ⟨Y, ywf⟩; dsimp
@@ -252,7 +409,7 @@ theorem in_complement {X : CoPset} : p ∈ complement X <-> p ∉ X := by
 
 theorem in_diff {p} {X Y : CoPset} : p ∈ X \ Y <-> p ∈ X ∧ p ∉ Y := by
   refine ⟨fun Hnin => ?_, fun ⟨Hx, Hy⟩ => ?_⟩
-  · obtain ⟨Hx, Hy⟩ := in_inter p X (complement Y) |>.mp Hnin
+  · obtain ⟨Hx, Hy⟩ := in_inter |>.mp Hnin
     exact ⟨Hx, in_complement.mp Hy⟩
   · simpa only [SDiff.sdiff, CoPset.diff, in_inter] using ⟨Hx, in_complement.mpr Hy⟩
 
@@ -393,10 +550,18 @@ def split (X : CoPset) : CoPset × CoPset := (splitLeft X, splitRight X)
 
 end CoPset
 
-instance : Iris.Std.Disjoint CoPset where
-  disjoint s t := ∀ p, p ∈ s -> p ∈ t -> False
+instance : Iris.Std.Set CoPset Pos where
 
-@[symm]
-theorem disj_symm (E1 E2 : CoPset) :
-  E1 ## E2 -> E2 ## E1 := by
-  exact fun Hdisj p HE1 HE2 => Hdisj p HE2 HE1
+instance : Iris.Std.LawfulSet CoPset Pos where
+  ext _ _ h := CoPset.ext h
+  mem_empty := CoPset.mem_empty
+  mem_singleton := CoPset.in_singleton
+  mem_union := CoPset.in_union
+  mem_inter := CoPset.in_inter
+  mem_diff := CoPset.in_diff
+
+instance : DecidableEq CoPset := by
+  intro X Y
+  rcases X, Y with ⟨⟨X⟩, ⟨Y⟩⟩
+  simp
+  infer_instance
