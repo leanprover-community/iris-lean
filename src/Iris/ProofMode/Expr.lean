@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Mario Carneiro, Michael Sammler
+Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 -/
 module
 
@@ -319,6 +319,19 @@ def Hyps.replace : ∀ {e}, Hyps bi e → m (ReplaceHyp bi Q)
       | .none => pure .none
 
 end replace
+
+section dependency
+
+partial def Hyps.findDependencyOnFVar {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (fvarId : FVarId) : ∀ {e}, Hyps bi e → Option (Name × Name × Q(Bool) × Q($prop))
+  | _, .emp _ => none
+  | _, .sep _ _ _ _ lhs rhs =>
+      lhs.findDependencyOnFVar fvarId <|> rhs.findDependencyOnFVar fvarId
+  | _, .hyp _ name uniq p ty _ =>
+      if (ty : Expr).containsFVar fvarId then some (name, uniq, p, ty)
+      else none
+
+end dependency
 
 end hyps
 

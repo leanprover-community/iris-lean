@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Oliver Soeser, Michael Sammler
+Authors: Lars König, Oliver Soeser, Michael Sammler, Yunsong Yang
 -/
 module
 
@@ -185,8 +185,86 @@ example [BI PROP] (P Q : PROP) : ⊢ P → Q := by
 example [BI PROP] (P : PROP) : ⊢ P -∗ P → P := by
   iintro HP1 HP2
 
-
 end intro
+
+-- revert
+namespace revert
+
+/-- Tests `irevert` order and names -/
+example [BI PROP] (P Q : PROP) : ⊢ P -∗ Q -∗ P ∗ Q := by
+  iintro H1 H2
+  irevert P Q H1 H2
+  iintro %P %Q H1 H2
+  isplitl [H1]
+  · iexact H1
+  · iexact H2
+
+/-- Tests `irevert` with a spatial proposition -/
+example [BI PROP] (P Q : PROP) (H : ⊢ P -∗ Q) : P ⊢ Q := by
+  iintro HP
+  irevert HP
+  exact H
+
+/-- Tests `irevert` with a intuitionistic proposition -/
+example [BI PROP] (P : PROP) (H : ⊢ □ P -∗ P) : □ P ⊢ P := by
+  iintro □HP
+  irevert HP
+  exact H
+
+/-- Tests `irevert` with a pure proposition -/
+example [BI PROP] (P : PROP) (Hφ : φ) : ⊢ (<affine> ⌜φ⌝ -∗ P) -∗ P := by
+  iintro H
+  irevert Hφ
+  iexact H
+
+/-- Tests `irevert` of a pure proposition in affine BI does not add `<affine>`. -/
+example [BI PROP] [BIAffine PROP] (P : PROP) (Hφ : φ) : ⊢ (⌜φ⌝ -∗ P) -∗ P := by
+  iintro H
+  irevert Hφ
+  iexact H
+
+/-- Tests `irevert` with a forall proposition -/
+example [BI PROP] (x : α) (Φ : α → PROP) : ⊢ (∀ x, Φ x) → Φ x := by
+  iintro H
+  irevert x
+  iexact H
+
+/-- Tests `irevert` with multiple spatial propositions -/
+example [BI PROP] (P Q : PROP) :
+    ⊢ (P -∗ <affine> Q -∗ P) -∗ P -∗ <affine> Q -∗ P := by
+  iintro H HP HQ
+  irevert HP HQ
+  iexact H
+
+/-- Tests `irevert` with multiple intuitionistic propositions -/
+example [BI PROP] (P Q : PROP) :
+    ⊢ (□ P -∗ <affine> Q -∗ P) -∗ □ P -∗ <affine> Q -∗ P := by
+  iintro H □HP HQ
+  irevert HP HQ
+  iexact H
+
+/-- Tests `irevert` with mixed Lean/proofmode hypotheses and dependencies. -/
+example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
+  iintro %x %hp H
+  irevert x hp H
+  iintro %x %hp H
+  iexact H
+
+/- Tests `irevert` failing with dependency -/
+/-- error: irevert: proofmode hypothesis H depends on x -/
+#guard_msgs in
+example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
+  iintro %x %hp H
+  irevert x
+
+/- Tests `irevert` failing with dependency -/
+/-- error: irevert: Lean hypothesis hp depends on x -/
+#guard_msgs in
+example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
+  iintro %x %hp H
+  irevert x H
+
+end revert
 
 -- exists
 namespace «exists»
@@ -209,7 +287,6 @@ example [BI PROP] : ⊢@{PROP} ⌜∃ x, x ∨ False⌝ := by
   iexists True
   ipure_intro
   exact Or.inl True.intro
-
 
 /-- Tests `iexists` with a named metavariable -/
 example [BI PROP] : ⊢@{PROP} ∃ x, ⌜x = 42⌝ := by
