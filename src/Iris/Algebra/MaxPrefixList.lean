@@ -14,6 +14,13 @@ def toMaxPrefixList {A : Type _} [OFE A] (l : List A) : MaxPrefixList A :=
 def shiftMaxPrefixList {A : Type _} [OFE A] (start : Nat) (l : List A) : MaxPrefixList A :=
   ⟨fun i => if _h : start ≤ i then (l[i - start]?).map toAgree else none⟩
 
+instance {A : Type _} [OFE A] (m : MaxPrefixList A) : CoreId m := by
+  rw [CMRA.coreId_iff_core_eqv_self]
+  show (core m).car ≡ m.car
+  intro i
+  change core (m.car i) ≡ m.car i
+  cases h : m.car i <;> rfl
+
 instance toMaxPrefixList_ne {A : Type _} [OFE A] : NonExpansive (toMaxPrefixList (A := A)) where
   ne := by
     intro n x1 x2 h i
@@ -207,6 +214,52 @@ theorem toMaxPrefixList_includedN {A : Type _} [OFE A] (n : Nat) (l1 l2 : List A
     have hstep : toMaxPrefixList (A := A) l1 ≼{n} toMaxPrefixList (l1 ++ t) := (happ.incN_r).mpr hbase
     have hmap : toMaxPrefixList (A := A) (l1 ++ t) ≡{n}≡ toMaxPrefixList l2 := toMaxPrefixList_ne.ne ht.symm
     exact (hmap.incN_r).mp hstep
+
+theorem toMaxPrefixList_included {A : Type _} [OFE A] (l1 l2 : List A) :
+    toMaxPrefixList (A := A) l1 ≼ toMaxPrefixList l2 ↔ ∃ t, l2 ≡ l1 ++ t := by
+  constructor
+  · intro h
+    rcases h with ⟨z, hz⟩
+    refine ⟨List.drop l1.length l2, ?_⟩
+    intro i
+    by_cases hi : i < l1.length
+    · have h1 : l1[i]? = some l1[i] := List.getElem?_eq_getElem hi
+      rw [List.getElem?_append_left hi, h1]
+      have hiinc : some (toAgree l1[i]) ≼ (toMaxPrefixList (A := A) l2).car i := by
+        refine ⟨z.car i, ?_⟩
+        simpa [toMaxPrefixList, CMRA.op, h1] using hz i
+      cases h2 : l2[i]? with
+      | none =>
+          have : some (toAgree l1[i]) ≼ none := by simpa [toMaxPrefixList, h2] using hiinc
+          rcases this with ⟨w, hEq⟩
+          cases w with
+          | none => exact False.elim (not_none_eqv_some hEq)
+          | some val => exact False.elim (not_none_eqv_some hEq)
+      | some y =>
+          have hiinc' : some (toAgree l1[i]) ≼ some (toAgree y) := by
+            simpa [toMaxPrefixList, h2] using hiinc
+          have hagree : toAgree l1[i] ≼ toAgree y := Option.some_inc_some_iff_isTotal.mp hiinc'
+          have hy : l1[i] ≡ y := Agree.toAgree_included.mp hagree
+          have hi2 : i < l2.length := (List.getElem?_eq_some_iff.mp h2).1
+          simpa [List.getElem?_eq_getElem hi2, h2] using hy.symm
+    · have hge : l1.length ≤ i := Nat.le_of_not_lt hi
+      rw [List.getElem?_append_right hge, List.getElem?_drop]
+      have hs : l1.length + (i - l1.length) = i := Nat.add_sub_of_le hge
+      simpa [hs]
+  · rintro ⟨t, ht⟩
+    refine ⟨shiftMaxPrefixList (A := A) l1.length t, ?_⟩
+    calc
+      toMaxPrefixList (A := A) l2 ≡ toMaxPrefixList (l1 ++ t) := OFE.NonExpansive.eqv ht
+      _ ≡ toMaxPrefixList l1 • shiftMaxPrefixList l1.length t := toMaxPrefixList_app (A := A) l1 t
+
+theorem toMaxPrefixList_included_L {A : Type _} [OFE A] [Leibniz A] (l1 l2 : List A) :
+    toMaxPrefixList (A := A) l1 ≼ toMaxPrefixList l2 ↔ l1 <+: l2 := by
+  rw [toMaxPrefixList_included]
+  constructor
+  · rintro ⟨t, ht⟩
+    exact ⟨t, Leibniz.eq_of_eqv ht.symm⟩
+  · rintro ⟨t, rfl⟩
+    exact ⟨t, Equiv.rfl⟩
 
 theorem maxPrefixList_localUpdate {A : Type _} [OFE A] {l1 l2 : List A} :
     l1 <+: l2 →
