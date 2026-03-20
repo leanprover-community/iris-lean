@@ -75,6 +75,13 @@ abbrev bigAndL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : P
 abbrev bigOrL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : PROP :=
   bigOpL or Φ l
 
+@[expose] def bigSepL2 [BI PROP] {A B : Type _} (Φ : Nat → A → B → PROP)
+    (l1 : List A) (l2 : List B) : PROP :=
+  match l1, l2 with
+  | [], [] => emp
+  | x1 :: xs1, x2 :: xs2 => sep (Φ 0 x1 x2) (bigSepL2 (fun n => Φ (n + 1)) xs1 xs2)
+  | _, _ => iprop(False)
+
 end List
 
 public meta section
@@ -107,6 +114,8 @@ macro_rules
   | `([∧list] $k:ident ↦ $x:ident ∈ $l, $P) => `(bigAndL (fun $k $x => $P) $l)
   | `([∨list] $x:ident ∈ $l, $P) => `(bigOrL (fun _ $x => $P) $l)
   | `([∨list] $k:ident ↦ $x:ident ∈ $l, $P) => `(bigOrL (fun $k $x => $P) $l)
+  | `([∗list] $x1:ident;$x2:ident ∈ $l1;$l2, $P) => `(bigSepL2 (fun _ $x1 $x2 => $P) $l1 $l2)
+  | `([∗list] $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P) => `(bigSepL2 (fun $k $x1 $x2 => $P) $l1 $l2)
 
 -- iprop macro rules
 macro_rules
@@ -116,6 +125,33 @@ macro_rules
   | `(iprop([∧list] $k:ident ↦ $x:ident ∈ $l, $P)) => `(bigAndL (fun $k $x => iprop($P)) $l)
   | `(iprop([∨list] $x:ident ∈ $l, $P)) => `(bigOrL (fun _ $x => iprop($P)) $l)
   | `(iprop([∨list] $k:ident ↦ $x:ident ∈ $l, $P)) => `(bigOrL (fun $k $x => iprop($P)) $l)
+  | `(iprop([∗list] $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => `(bigSepL2 (fun _ $x1 $x2 => iprop($P)) $l1 $l2)
+  | `(iprop([∗list] $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => `(bigSepL2 (fun $k $x1 $x2 => iprop($P)) $l1 $l2)
+
+/-- Helper to delaborate a bigOpL-shaped lambda body into list notation.
+    `opConst` is checked against the `op` argument; `mkWithIdx` / `mkNoIdx` build syntax. -/
+private def delabBigOpLBody (fn : Expr) (lArg phiArg : Nat)
+    (mkWithIdx : Ident → Ident → TSyntax `term → TSyntax `term → DelabM (TSyntax `term))
+    (mkNoIdx : Ident → TSyntax `term → TSyntax `term → DelabM (TSyntax `term)) : Delab := do
+  let l ← withNaryArg lArg delab
+  match fn with
+  | .lam xn _ body _ =>
+    match body with
+    | .lam yn _ fnBody _ =>
+      let xUsed := fnBody.hasLooseBVar 1
+      let y := mkIdent yn
+      let P ← withNaryArg phiArg <| withBindingBody xn <| withBindingBody yn <| delab
+      if xUsed then
+        let x := mkIdent xn
+        mkWithIdx x y l P
+      else
+        mkNoIdx y l P
+    | _ =>
+      let k := mkIdent xn
+      let x := mkIdent `x
+      let P ← withNaryArg phiArg <| withBindingBody xn <| delab
+      mkWithIdx k x l (← `($P $x))
+  | _ => failure
 
 /-- Delaborator for `bigSepL` with index -/
 @[delab app.Iris.BI.bigSepL]
@@ -123,34 +159,11 @@ def delabBigSepL : Delab := do
   let e ← getExpr
   unless e.isApp do failure
   unless e.getAppFn.isConstOf ``bigSepL do failure
-
   let args := e.getAppArgs
   unless args.size == 5 do failure
-  let l ← withNaryArg 4 delab
-  let fn := args[3]!
-
-  match fn with
-  | .lam xn _ body _ =>
-    match body with
-    | .lam yn _ fnBody _ =>
-      -- Check if index variable is used
-      let xUsed := fnBody.hasLooseBVar 1
-      let y := mkIdent yn
-      let P ← withNaryArg 3 <| withBindingBody yn <| withBindingBody xn <| delab
-
-      if xUsed then
-        let x := mkIdent xn
-        `([∗list]  $x ↦ $y ∈ $l, $P)
-      else
-        `([∗list]  $y ∈ $l, $P)
-    | _ =>
-      -- Single-parameter lambda: fun n => Φ (n + 1) where Φ : Nat → A → PROP
-      -- Show it with both index and element variable
-      let k := mkIdent xn
-      let x := mkIdent `x
-      let P ← withNaryArg 3 <| withBindingBody xn <| delab
-      `([∗list]  $k ↦ $x ∈ $l, $P $x)
-  | _ => failure
+  delabBigOpLBody args[3]! 4 3
+    (fun x y l P => `([∗list]  $x ↦ $y ∈ $l, $P))
+    (fun y l P => `([∗list]  $y ∈ $l, $P))
 
 /-- Delaborator for `bigAndL` with index -/
 @[delab app.Iris.BI.bigAndL]
@@ -160,26 +173,9 @@ def delabBigAndL : Delab := do
   unless e.getAppFn.isConstOf ``bigAndL do failure
   let args := e.getAppArgs
   unless args.size == 5 do failure
-  let l ← withNaryArg 4 delab
-  let fn := args[3]!
-  match fn with
-  | .lam xn _ body _ =>
-    match body with
-    | .lam yn _ fnBody _ =>
-      let xUsed := fnBody.hasLooseBVar 1
-      let y := mkIdent yn
-      let P ← withNaryArg 3 <| withBindingBody yn <| withBindingBody xn <| delab
-      if xUsed then
-        let x := mkIdent xn
-        `([∧list]  $x ↦ $y ∈ $l, $P)
-      else
-        `([∧list]  $y ∈ $l, $P)
-    | _ =>
-      let k := mkIdent xn
-      let x := mkIdent `x
-      let P ← withNaryArg 3 <| withBindingBody xn <| delab
-      `([∧list]  $k ↦ $x ∈ $l, $P $x)
-  | _ => failure
+  delabBigOpLBody args[3]! 4 3
+    (fun x y l P => `([∧list]  $x ↦ $y ∈ $l, $P))
+    (fun y l P => `([∧list]  $y ∈ $l, $P))
 
 /-- Delaborator for `bigOrL` with index -/
 @[delab app.Iris.BI.bigOrL]
@@ -189,26 +185,67 @@ def delabBigOrL : Delab := do
   unless e.getAppFn.isConstOf ``bigOrL do failure
   let args := e.getAppArgs
   unless args.size == 5 do failure
-  let l ← withNaryArg 4 delab
-  let fn := args[3]!
+  delabBigOpLBody args[3]! 4 3
+    (fun x y l P => `([∨list]  $x ↦ $y ∈ $l, $P))
+    (fun y l P => `([∨list]  $y ∈ $l, $P))
+
+/-- Delaborator for `bigSepL2` -/
+@[delab app.Iris.BI.bigSepL2]
+def delabBigSepL2 : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``bigSepL2 do failure
+  let args := e.getAppArgs
+  unless args.size == 7 do failure
+  let fn := args[4]!
+  let l1 ← withNaryArg 5 delab
+  let l2 ← withNaryArg 6 delab
   match fn with
-  | .lam xn _ body _ =>
-    match body with
-    | .lam yn _ fnBody _ =>
-      let xUsed := fnBody.hasLooseBVar 1
-      let y := mkIdent yn
-      let P ← withNaryArg 3 <| withBindingBody yn <| withBindingBody xn <| delab
-      if xUsed then
-        let x := mkIdent xn
-        `([∨list]  $x ↦ $y ∈ $l, $P)
-      else
-        `([∨list]  $y ∈ $l, $P)
-    | _ =>
-      let k := mkIdent xn
-      let x := mkIdent `x
-      let P ← withNaryArg 3 <| withBindingBody xn <| delab
-      `([∨list]  $k ↦ $x ∈ $l, $P $x)
+  | .lam kn _ body1 _ =>
+    match body1 with
+    | .lam x1n _ body2 _ =>
+      match body2 with
+      | .lam x2n _ fnBody _ =>
+        let kUsed := fnBody.hasLooseBVar 2
+        let x1 := mkIdent x1n
+        let x2 := mkIdent x2n
+        let P ← withNaryArg 4 <| withBindingBody kn <| withBindingBody x1n <|
+          withBindingBody x2n <| delab
+        if kUsed then
+          let k := mkIdent kn
+          `([∗list]  $k ↦ $x1;$x2 ∈ $l1;$l2, $P)
+        else
+          `([∗list]  $x1;$x2 ∈ $l1;$l2, $P)
+      | _ => failure
+    | _ => failure
   | _ => failure
+
+/-- Delaborator for `bigOpL` applied to `sep`/`and`/`or` — catches cases where
+    `bigSepL`/`bigAndL`/`bigOrL` abbrevs are unfolded. -/
+@[delab app.Iris.Algebra.bigOpL]
+def delabBigOpL : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``Iris.Algebra.bigOpL do failure
+  let args := e.getAppArgs
+  unless args.size == 8 do failure
+  let op := args[3]!
+  -- Determine which BI connective the op is
+  let opName := op.getAppFn.constName?
+  if opName == some ``BIBase.sep then
+    delabBigOpLBody args[6]! 7 6
+      (fun x y l P => `([∗list]  $x ↦ $y ∈ $l, $P))
+      (fun y l P => `([∗list]  $y ∈ $l, $P))
+  else if opName == some ``BIBase.and then
+    delabBigOpLBody args[6]! 7 6
+      (fun x y l P => `([∧list]  $x ↦ $y ∈ $l, $P))
+      (fun y l P => `([∧list]  $y ∈ $l, $P))
+  else if opName == some ``BIBase.or then
+    delabBigOpLBody args[6]! 7 6
+      (fun x y l P => `([∨list]  $x ↦ $y ∈ $l, $P))
+      (fun y l P => `([∨list]  $y ∈ $l, $P))
+  else
+    failure
 
 end
 

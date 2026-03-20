@@ -79,8 +79,7 @@ theorem bigOrL_map {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : Lis
     ([∨list] k ↦ y ∈ (l.map f), Φ k y) ≡ [∨list] k ↦ x ∈ l, Φ k (f x) := bigOpL_map_equiv f Φ l
 
 @[rocq_alias big_orL_intro]
-theorem bigOrL_intro {Φ : Nat → A → PROP} {l : List A} {k : Nat} {x : A}
-    (h : l[k]? = some x) :
+theorem bigOrL_intro {Φ : Nat → A → PROP} {l : List A} {k : Nat} {x : A} (h : l[k]? = some x) :
     Φ k x ⊢ [∨list] i ↦ y ∈ l, Φ i y := by
   induction l generalizing k Φ with
   | nil => simp at h
@@ -89,7 +88,7 @@ theorem bigOrL_intro {Φ : Nat → A → PROP} {l : List A} {k : Nat} {x : A}
     | succ => simp at h; exact (ih (Φ := fun n => Φ (n + 1)) h).trans or_intro_r
 
 private theorem bigOrL_exist_fwd {Φ : Nat → A → PROP} {l : List A} :
-    ([∨list] k ↦ x ∈ l, Φ k x) ⊢ ∃ k, ∃ x, iprop(⌜l[k]? = some x⌝ ∧ Φ k x) :=
+    ([∨list] k ↦ x ∈ l, Φ k x) ⊢ ∃ k, ∃ x, ⌜l[k]? = some x⌝ ∧ Φ k x :=
   match l with
   | [] => false_elim
   | _ :: _ => or_elim
@@ -119,8 +118,8 @@ theorem bigOrL_sep_left {P : PROP} {Φ : Nat → A → PROP} {l : List A} :
 @[rocq_alias big_orL_sep_r]
 theorem bigOrL_sep_right {Φ : Nat → A → PROP} {P : PROP} {l : List A} :
     (([∨list] k ↦ x ∈ l, Φ k x) ∗ P) ⊣⊢ [∨list] k ↦ x ∈ l, (Φ k x ∗ P) :=
-  sep_comm.trans <|
-    bigOrL_sep_left.trans (equiv_iff.mp (bigOrL_equiv_of_forall_equiv (equiv_iff.mpr sep_comm)))
+  sep_comm.trans <| bigOrL_sep_left.trans
+  (equiv_iff.mp (bigOrL_equiv_of_forall_equiv (equiv_iff.mpr sep_comm)))
 
 @[rocq_alias big_orL_elem_of]
 theorem bigOrL_elem_of {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
@@ -180,7 +179,7 @@ instance bigOrL_nil_persistent {Φ : Nat → A → PROP} :
   persistent := false_elim
 
 @[rocq_alias big_orL_persistent]
-theorem bigOrL_persistent_cond {Φ : Nat → A → PROP} {l : List A}
+theorem bigOrL_persistent {Φ : Nat → A → PROP} {l : List A}
     (h : ∀ k x, l[k]? = some x → Persistent (Φ k x)) :
     Persistent ([∨list] k ↦ x ∈ l, Φ k x) where
   persistent := bigOpL_closed (P := fun Q => Q ⊢ <pers> Q) false_elim
@@ -188,8 +187,8 @@ theorem bigOrL_persistent_cond {Φ : Nat → A → PROP} {l : List A}
       (hy.trans (persistently_mono or_intro_r))) (fun hget => (h _ _ hget).persistent)
 
 @[rocq_alias big_orL_persistent']
-instance bigOrL_persistent {Φ : Nat → A → PROP} {l : List A} [∀ k x, Persistent (Φ k x)] :
-    Persistent ([∨list] k ↦ x ∈ l, Φ k x) := bigOrL_persistent_cond fun _ _ _ => inferInstance
+instance bigOrL_persistent_inst {Φ : Nat → A → PROP} {l : List A} [∀ k x, Persistent (Φ k x)] :
+    Persistent ([∨list] k ↦ x ∈ l, Φ k x) := bigOrL_persistent fun _ _ _ => inferInstance
 
 @[rocq_alias big_orL_nil_timeless]
 instance bigOrL_nil_timeless {Φ : Nat → A → PROP} :
@@ -205,8 +204,7 @@ theorem bigOrL_timeless {Φ : Nat → A → PROP} {l : List A}
     (fun hget => (h _ _ hget).timeless)
 
 @[rocq_alias big_orL_timeless']
-instance bigOrL_timeless' {Φ : Nat → A → PROP} {l : List A}
-    [∀ k x, Timeless (Φ k x)] :
+instance bigOrL_timeless_inst {Φ : Nat → A → PROP} {l : List A} [∀ k x, Timeless (Φ k x)] :
     Timeless ([∨list] k ↦ x ∈ l, Φ k x) := bigOrL_timeless fun _ _ _ => inferInstance
 
 @[rocq_alias big_orL_zip_seq]
