@@ -88,6 +88,29 @@ theorem monoListAuthLbOp (dq : DFrac Q) (l : List A) :
         unfold monoListLb monoListAuth
         exact ⟨Auth.auth dq (toMaxPrefixList l), comm⟩)).symm
 
+theorem monoListAuthDfracOp (dq1 dq2 : DFrac Q) (l : List A) :
+    monoListAuth (Q := Q) (dq1 • dq2) l ≡
+      monoListAuth dq1 l • monoListAuth dq2 l := by
+  let a : MaxPrefixList A := toMaxPrefixList (A := A) l
+  let x1 : MonoListRes Q A := Auth.auth (F := Q) dq1 a
+  let x2 : MonoListRes Q A := Auth.auth (F := Q) dq2 a
+  let f : MonoListRes Q A := Auth.frag a
+  have hGroup : ((x1 • f) • (x2 • f) : MonoListRes Q A) ≡ ((x1 • x2) • (f • f) : MonoListRes Q A) := by
+    calc
+      ((x1 • f) • (x2 • f) : MonoListRes Q A) ≡ (((x1 • f) • x2) • f : MonoListRes Q A) := assoc
+      _ ≡ (((x1 • x2) • f) • f : MonoListRes Q A) := by
+            exact (calc
+              (((x1 • f) • x2) : MonoListRes Q A) ≡ (x1 • (f • x2) : MonoListRes Q A) := assoc.symm
+              _ ≡ (x1 • (x2 • f) : MonoListRes Q A) := by exact OFE.Equiv.op_r comm
+              _ ≡ (((x1 • x2) • f) : MonoListRes Q A) := assoc).op_l
+      _ ≡ ((x1 • x2) • (f • f) : MonoListRes Q A) := assoc.symm
+  change ((Auth.auth (F := Q) (dq1 • dq2) a) • f : MonoListRes Q A) ≡ ((x1 • f) • (x2 • f) : MonoListRes Q A)
+  calc
+    ((Auth.auth (F := Q) (dq1 • dq2) a) • f : MonoListRes Q A)
+        ≡ ((x1 • x2) • f : MonoListRes Q A) := (Auth.auth_dfrac_op (F := Q) (dq1 := dq1) (dq2 := dq2) (a := a)).op_l
+    _ ≡ ((x1 • x2) • (f • f) : MonoListRes Q A) := (CMRA.op_self f).symm.op_r
+    _ ≡ ((x1 • f) • (x2 • f) : MonoListRes Q A) := hGroup.symm
+
 theorem monoListLbOpL {l1 l2 : List A} :
     l1 <+: l2 → monoListLb (Q := Q) l1 • monoListLb l2 ≡ monoListLb l2 := by
   intro h
@@ -363,6 +386,16 @@ theorem monoListAuthOpValid (l1 l2 : List A) :
     exact (monoListAuthOpValidN (Q := Q) 0 l1 l2).1 (h 0)
   · intro h n
     exact False.elim h
+
+theorem monoListAuthDfracOpValid_L [Leibniz A] (dq1 dq2 : DFrac Q) (l1 l2 : List A) :
+    ✓ (monoListAuth (Q := Q) dq1 l1 • monoListAuth dq2 l2) ↔
+      ✓ (dq1 • dq2) ∧ l1 = l2 := by
+  rw [monoListAuthDfracOpValid]
+  simpa using (show ✓ (dq1 • dq2) ∧ l1 ≡ l2 ↔ ✓ (dq1 • dq2) ∧ l1 = l2 by simp)
+
+theorem monoListAuthOpValid_L [Leibniz A] (l1 l2 : List A) :
+    ✓ (monoListAuth (Q := Q) (DFrac.own (1 : Q)) l1 • monoListAuth (DFrac.own (1 : Q)) l2) ↔ False := by
+  exact monoListAuthOpValid (Q := Q) l1 l2
 
 theorem monoListIncluded (dq : DFrac Q) (l : List A) :
     monoListLb (Q := Q) l ≼ monoListAuth (Q := Q) dq l := by
