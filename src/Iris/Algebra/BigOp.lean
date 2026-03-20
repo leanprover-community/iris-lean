@@ -3,9 +3,11 @@ Copyright (c) 2026 Zongyuan Liu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu, Markus de Medeiros
 -/
-import Iris.Algebra.Monoid
-import Iris.Std.List
-import Iris.Std.PartialMap
+module
+
+public import Iris.Algebra.Monoid
+import Batteries.Data.List.Perm
+public import Iris.Std.PartialMap
 
 namespace Iris.Algebra
 
@@ -17,13 +19,13 @@ These are parameterized by a monoid operation and include theorems about their p
 
 open OFE Iris.Std
 
-def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+@[expose] public def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     (Φ : Nat → A → M) (l : List A) : M :=
   match l with
   | [] => unit
   | x :: xs => op (Φ 0 x) (bigOpL op (fun n => Φ (n + 1)) xs)
 
-def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
+@[expose] public def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
     {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K] (m : M' V) : M :=
   bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList (K := K) m)
 
@@ -43,6 +45,7 @@ scoped macro_rules
   | `([^ $o map] $k ↦ $x ∈ $m, $P) => `(bigOpM $o (fun $k $x => $P) $m)
   | `([^ $o map] $x ∈ $m, $P) => `(bigOpM $o (fun _ $x => $P) $m)
 
+public section
 namespace BigOpL
 
 variable {M : Type _} {A : Type _} [OFE M] {op : M → M → M} {unit : M} [MonoidOps op unit]
@@ -177,18 +180,6 @@ theorem bigOpL_zipIdx_equiv (Φ : A × Nat → M) (n : Nat) (l : List A) :
   match l with
   | .nil => .rfl
   | .cons _ _ => op_proper .rfl <| (bigOpL_zipIdx_equiv _ (n + 1) _).trans (.of_eq <| by grind)
-
-theorem bigOpL_zipIdxInt_equiv (Φ : A × Int → M) (n : Int) (l : List A) :
-    ([^ op list] x ∈ List.zipIdxInt l n, Φ x) ≡ ([^ op list] k ↦ x ∈ l, Φ (x, n + (k : Int))) := by
-  change bigOpL op (fun _ => Φ) (l.mapIdx (fun i v => (v, (i : Int) + n)))
-       ≡ bigOpL op (fun i x => Φ (x, n + (i : Int))) l
-  induction l generalizing n with
-  | nil => exact .rfl
-  | cons x xs ih =>
-    rw [List.mapIdx_cons]
-    refine op_proper (by simp) ?_
-    rw [show (fun (i : Nat) v => (v, ↑(i + 1) + n)) = fun (i : Nat) v => (v, ↑i + (n + 1)) by grind]
-    exact ih _ |>.trans (bigOpL_equiv_of_forall_equiv <| .of_eq (by grind))
 
 theorem bigOpL_zipWith_op_equiv {B C : Type _} {f : A → B → C} {g1 : C → A} {g2 : C → B}
     {l₁ : List A} {l₂ : List B} {Φ : Nat → A → M} {Ψ : Nat → B → M} (hg1 : ∀ {x y}, g1 (f x y) = x)
@@ -465,5 +456,7 @@ theorem bigOpM_sep_zip_equiv {A : Type _} {B : Type _}
   bigOpM_sep_zipWith_equiv _ _ rfl rfl hdom
 
 end BigOpM
+
+end
 
 end Iris.Algebra
