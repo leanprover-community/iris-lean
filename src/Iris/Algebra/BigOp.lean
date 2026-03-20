@@ -1,11 +1,12 @@
 /-
 Copyright (c) 2026 Zongyuan Liu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Zongyuan Liu, Markus de Medeiros
+Authors: Zongyuan Liu, Markus de Medeiros, Sergei Stepanenko
 -/
 import Iris.Algebra.Monoid
 import Iris.Std.List
 import Iris.Std.PartialMap
+import Iris.Std.GenSets
 
 namespace Iris.Algebra
 
@@ -27,6 +28,10 @@ def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op un
     {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K] (m : M' V) : M :=
   bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList (K := K) m)
 
+def bigOpS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+    {A : Type _} {S : Type _} [FiniteSet S A] (Φ : A → M) (m : S) : M :=
+  bigOpL op (fun _ x => Φ x) (toList m)
+
 /-- Big op over list with index: `[^ op list] k ↦ x ∈ l, P` -/
 scoped syntax atomic("[^") term " list]" ident " ↦ " ident " ∈ " term ", " term : term
 /-- Big op over list without index: `[^ op list] x ∈ l, P` -/
@@ -37,9 +42,13 @@ scoped syntax atomic("[^") term " map]" ident " ↦ " ident " ∈ " term ", " te
 /-- Big op over map without key: `[^ op map] x ∈ m, P` -/
 scoped syntax atomic("[^") term " map]" ident " ∈ " term ", " term : term
 
+/-- Big op over set without index: `[^ op set] x ∈ l, P` -/
+scoped syntax atomic("[^") term " set]" ident " ∈ " term ", " term : term
+
 scoped macro_rules
   | `([^ $o list] $k ↦ $x ∈ $l, $P) => `(bigOpL $o (fun $k $x => $P) $l)
   | `([^ $o list] $x ∈ $l, $P) => `(bigOpL $o (fun _ $x => $P) $l)
+  | `([^ $o set] $x ∈ $l, $P) => `(bigOpS $o (fun $x => $P) $l)
   | `([^ $o map] $k ↦ $x ∈ $m, $P) => `(bigOpM $o (fun $k $x => $P) $m)
   | `([^ $o map] $x ∈ $m, $P) => `(bigOpM $o (fun _ $x => $P) $m)
 
@@ -253,7 +262,7 @@ theorem bigOpM_equiv_of_perm (Φ : K → V → M) {m₁ m₂ : M' V} (h : m₁ �
   bigOpL_equiv_of_perm _ (LawfulFiniteMap.toList_perm_of_get?_eq h)
 
 @[simp] theorem bigOpM_empty (Φ : K → V → M) : ([^ op map] k ↦ x ∈ (∅ : M' V), Φ k x) = unit := by
-  simp [bigOpM, toList, toList_empty]
+  simp [bigOpM, FiniteMap.toList, toList_empty]
 
 theorem bigOpM_insert_equiv (Φ : K → V → M) {m : M' V} {i : K} (x : V) (hi : get? m i = none) :
     ([^ op map] k ↦ v ∈ insert m i x, Φ k v) ≡ op (Φ i x) ([^ op map] k ↦ v ∈ m, Φ k v) :=
@@ -465,5 +474,156 @@ theorem bigOpM_sep_zip_equiv {A : Type _} {B : Type _}
   bigOpM_sep_zipWith_equiv _ _ rfl rfl hdom
 
 end BigOpM
+
+namespace BigOpS
+
+variable {M : Type _} {A : Type _} {S : Type _} [OFE M] {op : M → M → M} {unit : M}
+  [MonoidOps op unit] [LawfulFiniteSet S A]
+
+open BigOpL MonoidOps LawfulSet FiniteSet
+
+@[simp] theorem bigOpS_empty {Φ : A → M} :
+    ([^ op set] x ∈ (∅ : S), Φ x) = unit := by
+  simp only [bigOpS, toList_empty, bigOpL_nil]
+
+theorem bigOpS_bigOpL (Φ : A → M) (s : S)
+  : ([^ op set] x ∈ s, Φ x) ≡ ([^ op list] x ∈ toList s, Φ x) := by
+  simp only [bigOpS]
+  generalize toList s = l
+  induction l with
+  | nil => simp
+  | cons x xs IH =>
+    simp only [bigOpL_cons]
+    apply op_congr_right IH
+
+theorem bigOpS_insert {Φ : A → M} {s : S} {x : A} (Hnin : x ∉ s) :
+  ([^ op set] x ∈ ({x} ∪ s), Φ x) ≡ op (Φ x) ([^ op set] x ∈ s, Φ x) := by
+  apply (bigOpS_bigOpL Φ _).trans
+  apply (bigOpL_equiv_of_perm Φ (toList_insert_perm Hnin)).trans
+  simp only [bigOpL_cons]
+  apply (op_congr_right (bigOpS_bigOpL Φ _).symm)
+
+theorem bigOpS_const_unit (s : S) :
+    ([^ op set] _x ∈ s, unit) ≡ unit := by
+  induction s using set_ind with
+  | hemp => simp [bigOpS_empty]
+  | hadd x X hnin IH =>
+    rw [insert_union]
+    apply (bigOpS_insert hnin).trans
+    apply op_left_id.trans IH
+
+theorem bigOpS_singleton {Φ : A → M} {a : A} :
+    ([^ op set] x ∈ ({a} : S), Φ x) ≡ Φ a := by
+  simp only [bigOpS, toList_singleton]; apply bigOpL_singleton_equiv
+
+theorem bigOpS_union {Φ : A → M} {s₁ s₂ : S} (Hdisj : s₁ ## s₂) :
+  ([^ op set] x ∈ (s₁ ∪ s₂), Φ x) ≡ op ([^ op set] x ∈ s₁, Φ x) ([^ op set] x ∈ s₂, Φ x) := by
+  induction s₁ using set_ind with
+  | hemp =>
+    simp only [union_empty_left, bigOpS_empty]
+    apply op_left_id.symm
+  | hadd x X Hnin IH =>
+    rw [insert_union, <-union_assoc]
+    rw [insert_union, disjoint_union_left, disjoint_singleton_left] at Hdisj
+    have nunion : x ∉ X ∪ s₂ := by
+      rw [mem_union]; rintro (h|h)
+      · apply Hnin h
+      · apply Hdisj.left h
+    apply (bigOpS_insert nunion).trans
+    apply (op_congr_right (IH Hdisj.right)).trans
+    symm
+    apply (op_congr_left (bigOpS_insert Hnin)).trans
+    apply op_assoc
+
+theorem bigOpS_equiv_of_forall_equiv {Φ Ψ : A → M} {s : S}
+    (h : ∀ x, Φ x ≡ Ψ x) :
+    ([^ op set] x ∈ s, Φ x) ≡ ([^ op set] x ∈ s, Ψ x) := by
+  apply (bigOpS_bigOpL Φ _).trans; symm; apply (bigOpS_bigOpL Ψ _).trans
+  apply bigOpL_equiv_of_forall_equiv
+  intro i x
+  symm; apply h
+
+theorem bigOpS_dist {Φ Ψ : A → M} {s : S} {n : Nat}
+    (h : ∀ x, x ∈ s → Φ x ≡{n}≡ Ψ x) :
+    ([^ op set] x ∈ s, Φ x) ≡{n}≡ ([^ op set] x ∈ s, Ψ x) := by
+  apply ((bigOpS_bigOpL Φ _).dist).trans; symm; apply ((bigOpS_bigOpL Ψ _).dist).trans
+  apply bigOpL_dist
+  intro i x hin
+  symm; apply h
+  rw [←Std.mem_toList, List.mem_iff_getElem?]
+  exists i
+
+theorem bigOpS_op_equiv (Φ Ψ : A → M) (s : S) :
+    ([^ op set] x ∈ s, op (Φ x) (Ψ x)) ≡
+      op ([^ op set] x ∈ s, Φ x) ([^ op set] x ∈ s, Ψ x) := by
+  apply (bigOpS_bigOpL _ _).trans
+  apply bigOpL_op_equiv
+
+theorem bigOpS_closed (P : M → Prop) (Φ : A → M) (s : S)
+    (hunit : P unit)
+    (hop : ∀ x y, P x → P y → P (op x y))
+    (hf : ∀ x, x ∈ s → P (Φ x)) :
+    P ([^ op set] x ∈ s, Φ x) := by
+  unfold bigOpS
+  generalize hg : toList s = l
+  have htoList : ∀ x, x ∈ l → P (Φ x) := by
+    intro x hx
+    apply hf
+    rw [←FiniteSet.mem_toList, hg]
+    exact hx
+  clear hf hg s
+  suffices ∀ b, P b → P (bigOpL op (fun x x_1 => (fun x => Φ x) x_1) l) by exact this unit hunit
+  intro b hb
+  induction l generalizing b with
+  | nil => simp only [bigOpL_nil]; exact hunit
+  | cons y ys ih =>
+    simp only [bigOpL_cons]
+    apply hop; apply htoList _ (List.mem_cons.mpr (Or.inl rfl))
+    apply ih
+    · intro x Hxin
+      apply htoList x (List.mem_cons.mpr (Or.inr Hxin))
+    · apply hop
+      · apply htoList y (List.mem_cons.mpr (Or.inl rfl))
+      · assumption
+
+theorem bigOpS_gen_proper (R : M → M → Prop) {Φ Ψ : A → M} {s : S}
+    (hR_refl : ∀ {x}, R x x) (hR_op : ∀ {a a' b b'}, R a a' → R b b' → R (op a b) (op a' b'))
+    (hf : ∀ {y}, y ∈ s → R (Φ y) (Ψ y)) :
+    R ([^ op set] x ∈ s, Φ x) ([^ op set] x ∈ s, Ψ x) := by
+  refine bigOpL_gen_proper R hR_refl hR_op (fun hy => ?_)
+  apply hf
+  rw [←FiniteSet.mem_toList]
+  apply List.mem_of_getElem? hy
+
+theorem bigOpS_ext {Φ Ψ : A → M} {s : S}
+    (h : ∀ {x}, x ∈ s → Φ x = Ψ x) :
+    ([^ op set] x ∈ s, Φ x) = ([^ op set] x ∈ s, Ψ x) :=
+  bigOpS_gen_proper (· = ·) rfl (· ▸ · ▸ rfl) h
+
+variable {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
+variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
+variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
+
+theorem hom {B : Type w} {S' : Type _} [LawfulFiniteSet S' B] {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
+    (hom : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R f)
+    (Φ : B → M₁) (s : S') :
+    R (f ([^ op₁ set] x ∈ s, Φ x)) ([^ op₂ set] x ∈ s, f (Φ x)) := by
+  rw [hom.rel_proper (hom.map_ne.eqv (bigOpS_bigOpL Φ s)) Equiv.rfl]
+  apply (hom.rel_trans (bigOpL_hom (H := hom) (fun x y => Φ y) (toList s)))
+  rw [hom.rel_proper (bigOpS_bigOpL _ s).symm Equiv.rfl]
+  apply hom.rel_refl
+
+theorem hom_weak {B : Type w} {S' : Type _} [LawfulFiniteSet S' B] {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
+    (hom : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f)
+    (Φ : B → M₁) (s : S') (hne : s ≠ ∅) :
+    R (f ([^ op₁ set] x ∈ s, Φ x)) ([^ op₂ set] x ∈ s, f (Φ x)) := by
+  rw [hom.rel_proper (hom.map_ne.eqv (bigOpS_bigOpL Φ s)) Equiv.rfl]
+  apply (hom.rel_trans (bigOpL_hom_weak (H := hom) (fun x y => Φ y) _))
+  · rw [hom.rel_proper (bigOpS_bigOpL _ s).symm Equiv.rfl]
+    apply hom.rel_refl
+  · intro heq
+    apply hne; ext i; simp only [←FiniteSet.mem_toList, heq, toList_empty]
+
+end BigOpS
 
 end Iris.Algebra
