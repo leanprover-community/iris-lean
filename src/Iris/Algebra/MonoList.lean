@@ -17,6 +17,19 @@ def monoListAuth (dq : DFrac Q) (l : List A) : MonoListRes Q A :=
 def monoListLb (l : List A) : MonoListRes Q A :=
   Auth.frag (toMaxPrefixList l)
 
+instance monoListAuth_ne (dq : DFrac Q) : NonExpansive (@monoListAuth Q A _ _ dq) where
+  ne := by
+    intro n x y h
+    unfold monoListAuth
+    exact (Auth.auth_ne (F := Q) (dq := dq)).ne (toMaxPrefixList_ne.ne h) |>.op
+      ((Auth.frag_ne (F := Q)).ne (toMaxPrefixList_ne.ne h))
+
+instance monoListLb_ne : NonExpansive (@monoListLb Q A _ _) where
+  ne := by
+    intro n x y h
+    unfold monoListLb
+    exact (Auth.frag_ne (F := Q)).ne (toMaxPrefixList_ne.ne h)
+
 instance monoListLb_coreId (l : List A) : CoreId (monoListLb (Q := Q) l) := by
   unfold monoListLb
   infer_instance
@@ -64,6 +77,16 @@ theorem monoListAuthValidN (n : Nat) (l : List A) :
     ✓{n} (monoListAuth (Q := Q) (DFrac.own (1 : Q)) l) := by
   rw [monoListAuthDfracValidN]
   exact DFrac.valid_own_one
+
+theorem monoListAuthLbOp (dq : DFrac Q) (l : List A) :
+    monoListAuth (Q := Q) dq l ≡ monoListAuth dq l • monoListLb l := by
+  simpa [monoListAuth, monoListLb] using
+    (CMRA.op_core_left_of_inc
+      (x := monoListLb (Q := Q) l)
+      (y := monoListAuth (Q := Q) dq l)
+      (by
+        unfold monoListLb monoListAuth
+        exact ⟨Auth.auth dq (toMaxPrefixList l), comm⟩)).symm
 
 theorem monoListLbOpL {l1 l2 : List A} :
     l1 <+: l2 → monoListLb (Q := Q) l1 • monoListLb l2 ≡ monoListLb l2 := by
@@ -263,6 +286,83 @@ theorem monoListLbOpValid_1_L [Leibniz A] (l1 l2 : List A) :
 theorem monoListLbOpValid_2_L [Leibniz A] (l1 l2 : List A) :
     l1 <+: l2 ∨ l2 <+: l1 → ✓ (monoListLb (Q := Q) l1 • monoListLb l2) :=
   (monoListLbOpValid_L (Q := Q) l1 l2).2
+
+theorem monoListAuthDfracOpValidN (n : Nat) (dq1 dq2 : DFrac Q) (l1 l2 : List A) :
+    ✓{n} (monoListAuth (Q := Q) dq1 l1 • monoListAuth dq2 l2) ↔
+      ✓ (dq1 • dq2) ∧ l1 ≡{n}≡ l2 := by
+  let a : MaxPrefixList A := toMaxPrefixList (A := A) l1
+  let b : MaxPrefixList A := toMaxPrefixList (A := A) l2
+  let x1 : MonoListRes Q A := Auth.auth (F := Q) dq1 a
+  let x2 : MonoListRes Q A := Auth.auth (F := Q) dq2 b
+  let f1 : MonoListRes Q A := Auth.frag a
+  let f2 : MonoListRes Q A := Auth.frag b
+  have hEq : ((x1 • f1) • (x2 • f2) : MonoListRes Q A) ≡ ((x1 • x2) • (f1 • f2) : MonoListRes Q A) := by
+    calc
+      ((x1 • f1) • (x2 • f2) : MonoListRes Q A) ≡ (((x1 • f1) • x2) • f2 : MonoListRes Q A) := assoc
+      _ ≡ (((x1 • x2) • f1) • f2 : MonoListRes Q A) := by
+            exact (calc
+              (((x1 • f1) • x2) : MonoListRes Q A) ≡ (x1 • (f1 • x2) : MonoListRes Q A) := assoc.symm
+              _ ≡ (x1 • (x2 • f1) : MonoListRes Q A) := by exact OFE.Equiv.op_r comm
+              _ ≡ (((x1 • x2) • f1) : MonoListRes Q A) := assoc).op_l
+      _ ≡ ((x1 • x2) • (f1 • f2) : MonoListRes Q A) := assoc.symm
+  change ✓{n} ((x1 • f1) • (x2 • f2) : MonoListRes Q A) ↔ ✓ (dq1 • dq2) ∧ l1 ≡{n}≡ l2
+  constructor
+  · intro h
+    have h' : ✓{n} (((x1 • x2) • (f1 • f2)) : MonoListRes Q A) := hEq.symm.dist.validN.mp h
+    have hxx : ✓{n} ((x1 • x2) : MonoListRes Q A) := CMRA.validN_op_left h'
+    obtain ⟨hdq, hab, _⟩ := (Auth.auth_dfrac_op_validN (F := Q) (a1 := a) (a2 := b)).1 hxx
+    exact ⟨hdq, toMaxPrefixList_dist_inj (A := A) hab⟩
+  · rintro ⟨hdq, hl⟩
+    have hab : a ≡{n}≡ b := toMaxPrefixList_ne.ne hl
+    have hxxeq : ((x1 • x2) : MonoListRes Q A) ≡{n}≡ (Auth.auth (F := Q) (dq1 • dq2) a : MonoListRes Q A) := by
+      calc
+        ((x1 • x2) : MonoListRes Q A) ≡{n}≡ ((Auth.auth (F := Q) dq1 a) • Auth.auth dq2 a : MonoListRes Q A) := by
+          exact (Auth.auth_ne (F := Q) (dq := dq2)).ne hab.symm |>.op_r
+        _ ≡{n}≡ (Auth.auth (F := Q) (dq1 • dq2) a : MonoListRes Q A) :=
+          (Auth.auth_dfrac_op (F := Q) (dq1 := dq1) (dq2 := dq2) (a := a)).dist.symm
+    have hffeq : ((f1 • f2) : MonoListRes Q A) ≡{n}≡ (f1 : MonoListRes Q A) := by
+      calc
+        ((f1 • f2) : MonoListRes Q A) ≡{n}≡ ((f1 • f1) : MonoListRes Q A) := by
+          exact (Auth.frag_ne (F := Q)).ne hab.symm |>.op_r
+        _ ≡{n}≡ (f1 : MonoListRes Q A) := (CMRA.op_self f1).dist
+    have hmono :
+        ((x1 • x2) • (f1 • f2) : MonoListRes Q A) ≡{n}≡
+          ((Auth.auth (F := Q) (dq1 • dq2) a) • f1 : MonoListRes Q A) :=
+      hxxeq.op hffeq
+    have hvalid : ✓{n} (((Auth.auth (F := Q) (dq1 • dq2) a) • f1) : MonoListRes Q A) := by
+      change ✓{n} (monoListAuth (Q := Q) (dq1 • dq2) l1)
+      rw [monoListAuthDfracValidN]
+      exact hdq
+    exact hEq.dist.validN.mpr <| hmono.validN.mpr hvalid
+
+theorem monoListAuthOpValidN (n : Nat) (l1 l2 : List A) :
+    ✓{n} (monoListAuth (Q := Q) (DFrac.own (1 : Q)) l1 • monoListAuth (DFrac.own (1 : Q)) l2) ↔ False := by
+  rw [monoListAuthDfracOpValidN]
+  constructor
+  · rintro ⟨hdq, _⟩
+    exact (UFraction.one_whole (α := Q)).2 <| DFrac.valid_own_op (dq := DFrac.own (1 : Q)) (q := (1 : Q)) hdq
+  · intro h
+    exact False.elim h
+
+theorem monoListAuthDfracOpValid (dq1 dq2 : DFrac Q) (l1 l2 : List A) :
+    ✓ (monoListAuth (Q := Q) dq1 l1 • monoListAuth dq2 l2) ↔
+      ✓ (dq1 • dq2) ∧ l1 ≡ l2 := by
+  rw [CMRA.valid_iff_validN]
+  constructor
+  · intro h
+    refine ⟨((monoListAuthDfracOpValidN (Q := Q) 0 dq1 dq2 l1 l2).1 (h 0)).1, ?_⟩
+    exact OFE.equiv_dist.2 fun n => ((monoListAuthDfracOpValidN (Q := Q) n dq1 dq2 l1 l2).1 (h n)).2
+  · rintro ⟨hdq, hl⟩ n
+    exact (monoListAuthDfracOpValidN (Q := Q) n dq1 dq2 l1 l2).2 ⟨hdq, hl.dist⟩
+
+theorem monoListAuthOpValid (l1 l2 : List A) :
+    ✓ (monoListAuth (Q := Q) (DFrac.own (1 : Q)) l1 • monoListAuth (DFrac.own (1 : Q)) l2) ↔ False := by
+  rw [CMRA.valid_iff_validN]
+  constructor
+  · intro h
+    exact (monoListAuthOpValidN (Q := Q) 0 l1 l2).1 (h 0)
+  · intro h n
+    exact False.elim h
 
 theorem monoListIncluded (dq : DFrac Q) (l : List A) :
     monoListLb (Q := Q) l ≼ monoListAuth (Q := Q) dq l := by
