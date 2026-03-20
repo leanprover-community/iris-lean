@@ -69,9 +69,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] CMRA
   - [ ] Functors
 - [x] `local_updates.v`
-- [ ] `max_prefix_list.v` 
-  - [ ] Lemmas
-  - [ ] Functors
+- [x] `max_prefix_list.v` 
+  - [x] Lemmas
+  - [x] Functors
 - [ ] `monoid.v`
 - [ ] `mra.v`
 - [x] `numbers.v`
@@ -132,9 +132,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Functors
 - [ ] `lib/gset_bij.v` 
 - [ ] `lib/mono_Z.v` (nb. generalize to `MonoNumbers.lean`)
-- [ ] `lib/mono_list.v` 
-  - [ ] Lemmas
-  - [ ] Functors
+- [x] `lib/mono_list.v` 
+  - [x] Lemmas
+  - [x] Functors
 - [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
 - [ ] `lib/ufrac_auth.v` 
   - [ ] Lemmas
