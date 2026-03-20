@@ -7,10 +7,16 @@ module
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
 public import Iris.Algebra.LocalUpdates
-public import Iris.Std.Set
 public import Iris.Std.GenSets
 
 @[expose] public section
+
+/-! ## Set algebra
+
+This file defines an set algebra.
+In comparison to Rocq, we have a single algebra for both gset and copset.
+The set should satisfy the usual set axioms, as in LawfulSet and have decidable disjointedness.
+-/
 
 open Iris Std
 
@@ -134,15 +140,16 @@ theorem comm {x y : GenSetDisjO S} : op x y ≡ op y x := by
   then
     have H' : y ## x := by symm; assumption
     simp [H, H', union_comm]
-  else simp [H]
-       intro c; apply H (disjoint_symm c)
+  else
+    simp [H]
+    intro c; apply H (disjoint_symm c)
 
 theorem pcore_op_left {x : GenSetDisjO S} : pcore x = some cx → op cx x ≡ x := by
   rcases x with ⟨x | _⟩ <;> rcases cx with ⟨cx | _⟩ <;> simp [op, pcore, unit]
-  intro H; rw [<-H]; simp [disjoint_empty_left]
+  rintro ⟨⟩; simp [disjoint_empty_left]
 
 theorem pcore_op_mono {x : GenSetDisjO S} : pcore x = some cx → ∀ y, ∃ cy, pcore (op x y) ≡ some (op cx cy) := by
-  rcases x with ⟨x | _⟩ <;> simp [pcore] <;> intro H y <;> rw [<-H]
+  rcases x with ⟨x | _⟩ <;> simp only [pcore, Option.some.injEq, leibniz] <;> rintro ⟨⟩ y
   <;> (exists unit; simp only [unit, op, disjoint_empty_left, ↓reduceIte, union_idem])
 
 def extend {x y₁ y₂ : GenSetDisjO S} (H : x ≡{n}≡ op y₁ y₂) :
@@ -187,8 +194,7 @@ theorem set_disj_included (X Y : S) :
     rcases Z with ⟨Z | _⟩
     · if H : X ## Z
       then
-        simp [CMRA.op, op, H] at HZ
-        rw [HZ]
+        simp [CMRA.op, op, H] at HZ; rw [HZ]
         intro p Hp; rw [mem_union]; left; exact Hp
       else
         simp [CMRA.op, op, H] at HZ
@@ -229,7 +235,6 @@ theorem set_disj_dealloc_local_update (X Y : S) :
     (gen_set_valid X, gen_set_valid Y) ~l~> (gen_set_valid (X \ Y), gen_set_valid ∅) := by
   apply LocalUpdate.total_valid
   intro vx vy inc
-  have Hsub : Y ⊆ X := set_disj_included Y X |>.mp inc
   apply (local_update_unital_discrete _ _ _ _).mpr
   intro z HX heq
   constructor
@@ -243,13 +248,11 @@ theorem set_disj_dealloc_local_update (X Y : S) :
              grind only
         else simp [Hdisj] at heq
 
-theorem set_disj_dealloc_empty_local_update (X Z : S) (Hdisj : Z ## X) :
+theorem set_disj_dealloc_empty_local_update (X Z : S)  :
     (gen_set_valid Z • gen_set_valid X, gen_set_valid Z) ~l~>
     (gen_set_valid X, gen_set_valid ∅) := by
   apply LocalUpdate.total_valid
-  intro _ _ _
-  have Hvalid : ✓ (gen_set_valid Z • gen_set_valid X) := by
-    simp [CMRA.Valid, valid, CMRA.op, op, Hdisj]
+  intro Hdisj _ _; rw [set_disj_valid_op] at Hdisj
   have Heq : X = (Z ∪ X) \ Z := by
     ext a; rw [mem_diff, mem_union]
     constructor
@@ -264,12 +267,12 @@ theorem set_disj_dealloc_empty_local_update (X Z : S) (Hdisj : Z ## X) :
   conv => rhs; rw [Heq]
   exact set_disj_dealloc_local_update (Z ∪ X) Z
 
-theorem set_disj_dealloc_op_local_update (X Y Z : S) (Hdisj : Z ## X) :
+theorem set_disj_dealloc_op_local_update (X Y Z : S) :
     (gen_set_valid Z • gen_set_valid X, gen_set_valid Z • gen_set_valid Y) ~l~>
     (gen_set_valid X, gen_set_valid Y) := by
   conv => rhs; rw [show gen_set_valid Y ≡ UCMRA.unit • gen_set_valid Y by apply CMRA.unit_left_id.symm]
   apply LocalUpdate.op_frame
-  exact set_disj_dealloc_empty_local_update X Z Hdisj
+  exact set_disj_dealloc_empty_local_update X Z
 
 theorem set_disj_alloc_op_local_update (X Y Z : S) (Hdisj : Z ## X) :
     (gen_set_valid X, gen_set_valid Y) ~l~>
@@ -328,7 +331,7 @@ theorem pcore_ne {x y : GenSetO S} : x ≡{n}≡ y → pcore x = some cx →
   ∃ cy, pcore y = some cy ∧ cx ≡{n}≡ cy := by
   intro H1 H2
   exists y
-  simp [pcore] at *
+  simp only [pcore, Option.some.injEq, true_and] at H2 ⊢
   rw [<-H2]
   exact H1
 
@@ -362,15 +365,13 @@ theorem comm {x y : GenSetO S} : op x y ≡ op y x := by
   simp [op, union_comm]
 
 theorem pcore_op_left {x : GenSetO S} : pcore x = some cx → op cx x ≡ x := by
-  simp [pcore, op]
-  intro H; rw [<-H]
-  simp [union_idem]
+  simp only [pcore, Option.some.injEq, op, leibniz]
+  rintro ⟨⟩; simp [union_idem]
 
 theorem pcore_op_mono {x : GenSetO S} : pcore x = some cx → ∀ y, ∃ cy, pcore (op x y) ≡ some (op cx cy) := by
-  simp [pcore]
-  intro H y
+  simp only [pcore, Option.some.injEq, leibniz]
+  rintro ⟨⟩ y
   exists y
-  simp [op, <-H]
 
 def extend {x y₁ y₂ : GenSetO S} (H : x ≡{n}≡ op y₁ y₂) :
     Σ' z₁ z₂, x ≡ op z₁ z₂ ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂ := by
