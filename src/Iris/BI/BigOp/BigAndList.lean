@@ -212,7 +212,8 @@ instance bigAndL_nil_persistent {Φ : Nat → A → PROP} :
   persistent := by simp only [bigOpL]; exact Persistent.persistent
 
 @[rocq_alias big_andL_persistent]
-theorem bigAndL_persistent {Φ : Nat → A → PROP} {l : List A} (h : ∀ k x, l[k]? = some x → Persistent (Φ k x)) :
+theorem bigAndL_persistent {Φ : Nat → A → PROP} {l : List A}
+    (h : ∀ k x, l[k]? = some x → Persistent (Φ k x)) :
     Persistent ([∧list] k ↦ x ∈ l, Φ k x) where
   persistent := bigOpL_closed (P := fun Q => Q ⊢ <pers> Q) persistently_true.2
     (fun hx hy => (and_mono hx hy).trans persistently_and.2)

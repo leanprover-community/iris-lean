@@ -75,7 +75,7 @@ theorem bigOrL_take_drop {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
   bigOpL_take_drop_equiv Φ l n
 
 @[rocq_alias big_orL_fmap]
-theorem bigOrL_fmap {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : List A} :
+theorem bigOrL_map {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : List A} :
     ([∨list] k ↦ y ∈ (l.map f), Φ k y) ≡ [∨list] k ↦ x ∈ l, Φ k (f x) := bigOpL_map_equiv f Φ l
 
 @[rocq_alias big_orL_intro]
@@ -104,7 +104,8 @@ theorem bigOrL_exist {Φ : Nat → A → PROP} {l : List A} :
 @[rocq_alias big_orL_pure]
 theorem bigOrL_pure {φ : Nat → A → Prop} {l : List A} :
     ([∨list] k ↦ x ∈ l, (⌜φ k x⌝ : PROP)) ⊣⊢ (⌜∃ k x, l[k]? = some x ∧ φ k x⌝ : PROP) :=
-  bigOrL_exist.trans <| (exists_congr fun _ => (exists_congr fun _ => pure_and).trans pure_exists).trans pure_exists
+  bigOrL_exist.trans <|
+    (exists_congr fun _ => (exists_congr fun _ => pure_and).trans pure_exists).trans pure_exists
 
 @[rocq_alias big_orL_sep_l]
 theorem bigOrL_sep_left {P : PROP} {Φ : Nat → A → PROP} {l : List A} :
@@ -118,12 +119,15 @@ theorem bigOrL_sep_left {P : PROP} {Φ : Nat → A → PROP} {l : List A} :
 @[rocq_alias big_orL_sep_r]
 theorem bigOrL_sep_right {Φ : Nat → A → PROP} {P : PROP} {l : List A} :
     (([∨list] k ↦ x ∈ l, Φ k x) ∗ P) ⊣⊢ [∨list] k ↦ x ∈ l, (Φ k x ∗ P) :=
-  sep_comm.trans <| bigOrL_sep_left.trans (equiv_iff.mp (bigOrL_equiv_of_forall_equiv (equiv_iff.mpr sep_comm)))
+  sep_comm.trans <|
+    bigOrL_sep_left.trans (equiv_iff.mp (bigOrL_equiv_of_forall_equiv (equiv_iff.mpr sep_comm)))
 
 @[rocq_alias big_orL_elem_of]
 theorem bigOrL_elem_of {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
     Φ x ⊢ [∨list] y ∈ l, Φ y :=
-  match l, h with | _ :: _, .head .. => or_intro_l | _ :: _, .tail _ hmem => (bigOrL_elem_of hmem).trans or_intro_r
+  match l, h with
+  | _ :: _, .head .. => or_intro_l
+  | _ :: _, .tail _ hmem => (bigOrL_elem_of hmem).trans or_intro_r
 
 @[rocq_alias big_orL_bind]
 theorem bigOrL_bind {B : Type _} (f : A → List B) {Φ : B → PROP} {l : List A} :
