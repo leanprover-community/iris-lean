@@ -834,6 +834,10 @@ theorem mem_toList {k : A} {m : S} : k ∈ toList m ↔ k ∈ m := by
   simp only [toList]
   exact LawfulFiniteSet.mem_toList
 
+theorem toList_nodup {m : S} : (toList m).Nodup := by
+  simp only [toList]
+  exact LawfulFiniteSet.toList_nodup
+
 /-- toList of empty set is empty. -/
 theorem toList_empty : toList (∅ : S) = [] := by
   have hnodup : (toList (∅ : S)).Nodup := LawfulFiniteSet.toList_nodup
@@ -957,12 +961,10 @@ theorem toList_map_perm {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
   simp only [map]
   have hnodup : (List.map f (toList s)).Nodup := by
     apply nodup_map_of_injective hinj
-    exact LawfulFiniteSet.toList_nodup
-  apply List.Perm.of_mem
-  · exact LawfulFiniteSet.toList_nodup
-  · exact hnodup
-  · intro x
-    rw [mem_toList, <-mem_ofList]
+    exact toList_nodup
+  apply (List.perm_ext_iff_of_nodup toList_nodup hnodup).mpr
+  intro x
+  simp [mem_toList, <-mem_ofList]
 
 /-- Permutation-equivalent lists convert to the same set. -/
 theorem ofList_congr {l l' : List A} :
@@ -1224,37 +1226,33 @@ private theorem foldl_cons_comm {β : Type _} {f : β → A → β}
 
 theorem toList_insert_perm {a : A} {s : S} (h : a ∉ s) :
     (toList (insert a s)).Perm (a :: toList s) := by
-  apply List.Perm.of_mem
-  · exact LawfulFiniteSet.toList_nodup
+  apply (List.perm_ext_iff_of_nodup toList_nodup _).mpr
+  · intro x
+    rw [mem_toList, mem_insert, List.mem_cons, mem_toList]
   · apply List.nodup_cons.mpr
     constructor
     · rw [mem_toList]; exact h
     · exact LawfulFiniteSet.toList_nodup
-  · intro x
-    rw [mem_toList, mem_insert, List.mem_cons, mem_toList]
 
 theorem toList_ofList {l : List A} (H : List.Nodup l) :
   List.Perm l (toList (ofList l : S)) := by
-  apply List.Perm.of_mem
-  · assumption
-  · apply toList_nodup
-  · intro x; rw [mem_toList, <-mem_ofList]
+  apply (List.perm_ext_iff_of_nodup H toList_nodup).mpr
+  intro x; rw [mem_toList, <-mem_ofList]
 
 theorem toList_union_perm {s t : S} (hdisj : s ## t) :
     (toList (s ∪ t)).Perm (toList s ++ toList t) := by
-  apply List.Perm.of_mem
-  · exact LawfulFiniteSet.toList_nodup
+  apply (List.perm_ext_iff_of_nodup toList_nodup _).mpr
+  · intro x
+    rw [mem_toList, mem_union, List.mem_append, mem_toList, mem_toList]
   · apply List.nodup_append.mpr
     constructor
-    · exact LawfulFiniteSet.toList_nodup
+    · exact toList_nodup
     · constructor
-      · exact LawfulFiniteSet.toList_nodup
+      · exact toList_nodup
       · intro a ha b hb heq
         subst heq
         rw [mem_toList] at ha hb
         exact hdisj a ⟨ha, hb⟩
-  · intro x
-    rw [mem_toList, mem_union, List.mem_append, mem_toList, mem_toList]
 
 theorem fold_insert {β : Type _} {f : β → A → β}
     (hcomm : ∀ b x y, f (f b x) y = f (f b y) x)
