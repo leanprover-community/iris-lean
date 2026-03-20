@@ -36,7 +36,7 @@ class Set (S : Type _) (A : outParam (Type _)) extends
   Membership A S, Singleton A S, Union S
   , Inter S, SDiff S, EmptyCollection S
 
-/-- Laws that a finite set implementation must satisfy. -/
+/-- Laws that a set implementation must satisfy. -/
 class LawfulSet (S : Type _) (A : outParam (Type _)) extends Set S A where
   /-- Set extensionality: sets with same membership are equal. -/
   ext : ∀ (X Y : S), (∀ x, x ∈ X ↔ x ∈ Y) → X = Y
@@ -69,8 +69,7 @@ instance : HasSubset S := ⟨fun S₁ S₂ => ∀ x, x ∈ S₁ → x ∈ S₂�
     is in `S₂` but they are not equal. -/
 instance : HasSSubset S := ⟨fun S₁ S₂ => S₁ ≠ S₂ ∧ ∀ x, x ∈ S₁ → x ∈ S₂⟩
 
-/-- Two sets are disjoint if they share no common elements.
-    Corresponds to Rocq's `S₁ ## S₂`. -/
+/-- Two sets are disjoint if they share no common elements. -/
 instance : Disjoint S where
   disjoint S₁ S₂ := ∀ x, ¬(x ∈ S₁ ∧ x ∈ S₂)
 
@@ -110,8 +109,7 @@ theorem mem_delete {s : S} {x y : A} : x ∈ (delete y s) ↔ (x ∈ s ∧ x ≠
 
 /-! ### Extensionality and equality -/
 
-/-- Two sets are equal if they are subsets of each other (antisymmetry of subset).
-    Corresponds to Rocq's `set_equiv_spec`. -/
+/-- Two sets are equal if they are subsets of each other (antisymmetry of subset). -/
 theorem eq_subset {X Y : S} : X ⊆ Y → Y ⊆ X → X = Y := by
   intro H1 H2
   ext x
@@ -167,7 +165,7 @@ theorem insert_idem {s : S} {x : A} : x ∈ s → insert x s = s := by
 theorem insert_insert {s : S} {x : A} : insert x (insert x s) = insert x s := by
   apply insert_idem; rw [mem_insert]; left; rfl
 
-/-- Insert operations commute. Corresponds to Rocq's `union_comm_L`. -/
+/-- Insert operations commute. -/
 theorem insert_comm {s : S} {x y : A} : insert x (insert y s) = insert y (insert x s) := by
   ext z; rw [mem_insert, mem_insert, mem_insert, mem_insert]; grind only
 
@@ -301,67 +299,65 @@ theorem delete_diff {s : S} {x : A} : delete x s = s \ {x} := by
 
 /-! ### Union and Intersection operations -/
 
-/-- Union is commutative. Corresponds to Rocq's `union_comm`. -/
+/-- Union is commutative. -/
 @[symm]
 theorem union_comm {s₁ s₂ : S} : s₁ ∪ s₂ = s₂ ∪ s₁ := by
   ext x; simp [mem_union]; grind only
 
-/-- Intersection is commutative. Corresponds to Rocq's `intersection_comm`. -/
+/-- Intersection is commutative. -/
 @[symm]
 theorem inter_comm {s₁ s₂ : S} : s₁ ∩ s₂ = s₂ ∩ s₁ := by
   ext x; simp [mem_inter]; grind only
 
-/-- Union is associative. Corresponds to Rocq's `union_assoc_L`. -/
+/-- Union is associative. -/
 theorem union_assoc {s₁ s₂ s₃ : S} : s₁ ∪ (s₂ ∪ s₃) = s₁ ∪ s₂ ∪ s₃ := by
   ext x; simp [mem_union]; grind only
 
-/-- Intersection is associative. Corresponds to Rocq's `intersection_assoc_L`. -/
+/-- Intersection is associative. -/
 theorem inter_assoc {s₁ s₂ s₃ : S} : s₁ ∩ (s₂ ∩ s₃) = s₁ ∩ s₂ ∩ s₃ := by
   ext x; simp [mem_inter]; grind only
 
-/-- Empty set is left identity for union. Corresponds to Rocq's `union_empty_l`. -/
+/-- Empty set is left identity for union. -/
 @[simp]
 theorem union_empty_left {s : S} : ∅ ∪ s = s := by
   ext x; simp [mem_union, mem_empty]
 
-/-- Empty set is right identity for union. Corresponds to Rocq's `union_empty_r`. -/
+/-- Empty set is right identity for union. -/
 @[simp]
 theorem union_empty_right {s : S} : s ∪ ∅ = s := by
   ext x; simp [mem_union, mem_empty]
 
-/-- Intersection with empty set is empty. Corresponds to Rocq's `intersection_empty_l`. -/
+/-- Intersection with empty set is empty. -/
 @[simp]
 theorem inter_empty_left {s : S} : ∅ ∩ s = ∅ := by
   ext x; simp [mem_inter, mem_empty]
 
-/-- Intersection with empty set is empty. Corresponds to Rocq's `intersection_empty_r`. -/
+/-- Intersection with empty set is empty. -/
 @[simp]
 theorem inter_empty_right {s : S} : s ∩ ∅ = ∅ := by
   ext x; simp [mem_inter, mem_empty]
 
-/-- Intersection distributes over union (left distributivity).
-    Corresponds to Rocq's `intersection_union_l`. -/
+/-- Intersection distributes over union (left distributivity). -/
 theorem inter_union_distrib {s₁ s₂ s₃ : S} : s₁ ∩ (s₂ ∪ s₃) = (s₁ ∩ s₂) ∪ (s₁ ∩ s₃) := by
   ext x; simp [mem_inter, mem_union]; grind only
 
-/-- Union distributes over intersection (left distributivity).
-    Corresponds to Rocq's `union_intersection_l`. -/
+/-- Union distributes over intersection (left distributivity). -/
 theorem union_inter_distrib {s₁ s₂ s₃ : S} : s₁ ∪ (s₂ ∩ s₃) = (s₁ ∪ s₂) ∩ (s₁ ∪ s₃) := by
   ext x; simp [mem_inter, mem_union]; grind only
 
-/-- Union is idempotent. Corresponds to Rocq's `union_idemp`. -/
+/-- Union is idempotent. -/
 @[simp]
 theorem union_idem {s : S} : s ∪ s = s := by
   ext x; rw [mem_union]; simp
 
-/-- Intersection is idempotent. Corresponds to Rocq's `intersection_idemp`. -/
+/-- Intersection is idempotent. -/
 @[simp]
 theorem inter_idem {s : S} : s ∩ s = s := by
   ext x; rw [mem_inter]; simp
 
 /-! ### Subset relations -/
 
-/-- Empty set is a subset of every set. Corresponds to Rocq's `empty_subseteq`. -/
+/-- Empty set is a subset of every set. -/
 @[simp]
 theorem empty_subset {s : S} : ∅ ⊆ s := by
   intro y; simp [mem_empty]
@@ -374,19 +370,18 @@ theorem insert_subset_subset {s₁ s₂ : S} {x : A} :
   | inl G => left; assumption
   | inr G => right; apply H _ G
 
-/-- Subset relation is reflexive. Corresponds to Rocq's `subseteq_refl`. -/
+/-- Subset relation is reflexive. -/
 @[refl]
 theorem subset_refl {s : S} : s ⊆ s := by
   intro x _; assumption
 
-/-- Subset relation is transitive. Corresponds to Rocq's `subseteq_trans`. -/
+/-- Subset relation is transitive. -/
 theorem subset_trans {s₁ s₂ s₃ : S} : s₁ ⊆ s₂ → s₂ ⊆ s₃ → s₁ ⊆ s₃ := by
   intro h1 h2 x hx; exact h2 _ (h1 _ hx)
 
 /-! ### Disjointness -/
 
-/-- Disjoint sets have empty intersection and vice versa.
-    Corresponds to Rocq's `disjoint_intersection`. -/
+/-- Disjoint sets have empty intersection and vice versa. -/
 theorem disjoint_intersection {X Y : S} : X ## Y ↔ X ∩ Y = ∅ := by
   simp only [Disjoint.disjoint]
   apply Iff.intro
@@ -397,18 +392,18 @@ theorem disjoint_intersection {X Y : S} : X ## Y ↔ X ∩ Y = ∅ := by
     rw [<-mem_inter, H]
     apply mem_empty
 
-/-- Disjointness is symmetric. Corresponds to Rocq's `disjoint_sym`. -/
+/-- Disjointness is symmetric.  -/
 theorem disjoint_comm {s₁ s₂ : S} : s₁ ## s₂ ↔ s₂ ## s₁ := by
   simp only [Disjoint.disjoint]; apply Iff.intro <;> (intro h x ⟨hx1, hx2⟩; exact h x ⟨hx2, hx1⟩)
 
 @[symm]
 theorem disjoint_symm {s₁ s₂ : S} : s₁ ## s₂ → s₂ ## s₁ := disjoint_comm.mp
 
-/-- Empty set is disjoint with any set (left). Corresponds to Rocq's `disjoint_empty_l`. -/
+/-- Empty set is disjoint with any set (left). -/
 theorem disjoint_empty_left {s : S} : ∅ ## s := by
   intro x ⟨h, _⟩; exact mem_empty h
 
-/-- Empty set is disjoint with any set (right). Corresponds to Rocq's `disjoint_empty_r`. -/
+/-- Empty set is disjoint with any set (right).  -/
 theorem disjoint_empty_right {s : S} : s ## ∅ := by
   intro x ⟨_, h⟩; exact mem_empty h
 
@@ -457,25 +452,25 @@ instance disjoint_dec [DecidableEq S] : ∀ {E1 E2 : S}, Decidable (E1 ## E2) :=
 
 /-! ### Difference operations -/
 
-/-- Difference with empty set is identity. Corresponds to Rocq's `difference_empty`. -/
+/-- Difference with empty set is identity. -/
 @[simp]
 theorem diff_empty {s : S} :
   s \ ∅ = s := by
   ext x; rw [mem_diff]; simp [mem_empty]
 
-/-- Self-difference is empty. Corresponds to Rocq's `difference_diag`. -/
+/-- Self-difference is empty. -/
 @[simp]
 theorem diff_all {s : S} :
   s \ s = ∅ := by
   ext x; rw [mem_diff]; simp [mem_empty]
 
-/-- Difference is a subset of the left set. Corresponds to Rocq's `difference_subseteq`. -/
+/-- Difference is a subset of the left set. -/
 theorem diff_subset_left {s₁ s₂ : S} :
   s₁ \ s₂ ⊆ s₁ := by
   intro y G; rw [mem_diff] at G
   exact G.left
 
-/-- Difference with disjoint set is identity. Corresponds to Rocq's `difference_disjoint`. -/
+/-- Difference with disjoint set is identity. -/
 theorem diff_subset_disj {s₁ s₂ : S} :
   s₁ ## s₂ → s₁ \ s₂ = s₁ := by
   intro H
@@ -491,8 +486,7 @@ theorem diff_subset_disj {s₁ s₂ : S} :
       exact ⟨G, hin⟩
     · exact ⟨G, hin⟩
 
-/-- A superset can be decomposed into the subset and its difference.
-    Corresponds to Rocq's `union_difference`. -/
+/-- A superset can be decomposed into the subset and its difference. -/
 theorem diff_subset_decomp {s₁ s₂ : S} :
   s₁ ⊆ s₂ → s₂ = (s₂ \ s₁) ∪ s₁ := by
   intro H
@@ -529,32 +523,31 @@ theorem inter_diff {s₁ s₂ s₃ : S} : (s₁ ∩ s₂) \ s₃ = s₁ ∩ (s�
 
 /-! ### Additional subset lemmas -/
 
-/-- A set is a subset of itself with an element inserted.
-    Corresponds to Rocq's `subseteq_union_1`. -/
+/-- A set is a subset of itself with an element inserted. -/
 theorem insert_subset {s : S} {x : A} :
   s ⊆ insert x s := by
   intro y G; rw [mem_insert]
   right; assumption
 
-/-- Left set is a subset of union. Corresponds to Rocq's `subseteq_union_l`. -/
+/-- Left set is a subset of union. -/
 theorem union_subset_left {s₁ s₂ : S} :
   s₁ ⊆ s₁ ∪ s₂ := by
   intro y G; rw [mem_union]
   left; assumption
 
-/-- Right set is a subset of union. Corresponds to Rocq's `subseteq_union_r`. -/
+/-- Right set is a subset of union. -/
 theorem union_subset_right {s₁ s₂ : S} :
   s₂ ⊆ s₁ ∪ s₂ := by
   intro y G; rw [mem_union]
   right; assumption
 
-/-- Intersection is a subset of left set. Corresponds to Rocq's `intersection_subseteq_l`. -/
+/-- Intersection is a subset of left set. -/
 theorem inter_subset_left {s₁ s₂ : S} :
   s₁ ∩ s₂ ⊆ s₁ := by
   intro y G; rw [mem_inter] at G
   exact G.left
 
-/-- Intersection is a subset of right set. Corresponds to Rocq's `intersection_subseteq_r`. -/
+/-- Intersection is a subset of right set. -/
 theorem inter_subset_right {s₁ s₂ : S} :
   s₁ ∩ s₂ ⊆ s₂ := by
   intro y G; rw [mem_inter] at G
@@ -611,26 +604,26 @@ theorem inter_subset_absorption {s₁ s₂ : S} : s₁ ⊆ s₂ → s₁ ∩ s�
 
 /-! ### Predicates (setForall and setExists) -/
 
-/-- Forall predicate on sets. Corresponds to Rocq's `set_Forall`. -/
+/-- Forall predicate on sets. -/
 def setForall (P : A → Prop) (X : S) : Prop :=
   ∀ x, x ∈ X → P x
 
-/-- Exists predicate on sets. Corresponds to Rocq's `set_Exists`. -/
+/-- Exists predicate on sets. -/
 def setExists (P : A → Prop) (X : S) : Prop :=
   ∃ x, x ∈ X ∧ P x
 
-/-- setForall holds trivially for empty set. Corresponds to Rocq's `set_Forall_empty`. -/
+/-- setForall holds trivially for empty set. -/
 theorem setForall_empty {P : A → Prop} : setForall P (∅ : S) ↔ True := by
   simp [setForall]; intro x h; grind only [mem_empty]
 
-/-- setForall for singleton reduces to the predicate. Corresponds to Rocq's `set_Forall_singleton`. -/
+/-- setForall for singleton reduces to the predicate. -/
 theorem setForall_singleton {P : A → Prop} {x : A} :
   setForall P ({x} : S) ↔ P x := by
   simp [setForall]; apply Iff.intro
   · intro h; apply h; rw [mem_singleton]
   · intro h y hy; rw [mem_singleton] at hy; subst hy; exact h
 
-/-- setForall distributes over union. Corresponds to Rocq's `set_Forall_union`. -/
+/-- setForall distributes over union. -/
 theorem setForall_union {P : A → Prop} {s₁ s₂ : S} :
   setForall P (s₁ ∪ s₂) ↔ setForall P s₁ ∧ setForall P s₂ := by
   simp [setForall]; apply Iff.intro
@@ -641,18 +634,18 @@ theorem setForall_union {P : A → Prop} {s₁ s₂ : S} :
     | inl hx => exact h1 _ hx
     | inr hx => exact h2 _ hx
 
-/-- setExists is false for empty set. Corresponds to Rocq's `set_Exists_empty`. -/
+/-- setExists is false for empty set. -/
 theorem setExists_empty {P : A → Prop} : setExists P (∅ : S) ↔ False := by
   simp [setExists, mem_empty]
 
-/-- setExists for singleton reduces to the predicate. Corresponds to Rocq's `set_Exists_singleton`. -/
+/-- setExists for singleton reduces to the predicate. -/
 theorem setExists_singleton {P : A → Prop} {x : A} :
   setExists P ({x} : S) ↔ P x := by
   simp [setExists]; apply Iff.intro
   · intro ⟨y, hy, hP⟩; rw [mem_singleton] at hy; subst hy; exact hP
   · intro h; exists x; apply And.intro; rw [mem_singleton]; exact h
 
-/-- setExists distributes over union. Corresponds to Rocq's `set_Exists_union`. -/
+/-- setExists distributes over union. -/
 theorem setExists_union {P : A → Prop} {s₁ s₂ : S} :
   setExists P (s₁ ∪ s₂) ↔ setExists P s₁ ∨ setExists P s₂ := by
   simp [setExists]; apply Iff.intro
@@ -777,8 +770,7 @@ theorem ofList_nil : ofList [] = (∅ : S) := by
 theorem ofList_cons : ofList (x :: xs) = insert x ((ofList xs) : S) := by
   simp [ofList]; exact ofListExtend_cons_comm
 
-/-- Membership in list corresponds to membership in converted set.
-    Corresponds to Rocq's `elem_of_list_to_set`. -/
+/-- Membership in list corresponds to membership in converted set. -/
 theorem mem_ofList {x : A} {xs : List A} : x ∈ xs ↔ x ∈ (ofList xs : S) := by
   induction xs with
   | nil =>
@@ -788,8 +780,7 @@ theorem mem_ofList {x : A} {xs : List A} : x ∈ xs ↔ x ∈ (ofList xs : S) :=
     simp only [List.mem_cons, ofList_cons, mem_insert]
     grind only
 
-/-- Converting concatenated lists yields union of converted lists.
-    Corresponds to Rocq's `list_to_set_app`. -/
+/-- Converting concatenated lists yields union of converted lists. -/
 theorem ofList_concat {xs ys : List A} : (ofList (xs ++ ys) : S) = ofList xs ∪ ofList ys := by
   ext p; simp [mem_union, <-mem_ofList, <-mem_ofList, <-mem_ofList]
 
@@ -801,27 +792,22 @@ namespace FiniteSet
 
 open LawfulSet
 
-/-- Map operation on sets. Maps a function over all elements.
-    Corresponds to Rocq's `set_map`. -/
+/-- Map operation on sets. Maps a function over all elements. -/
 def map {S S' : Type _} {A B : Type _}
   [FiniteSet S A] [FiniteSet S' B]
   (f : A → B) (s : S) : S' :=
   ofList (S := S') (A := B) (List.map f (toList s))
 
-/-- Bind operation on sets. Flatmap a function over all elements.
-    Corresponds to Rocq's `set_bind`. -/
+/-- Bind operation on sets. Flatmap a function over all elements. -/
 def bind {S S' : Type _} {A B : Type _} [FiniteSet S A] [FiniteSet S' B]
   (f : A → S') (s : S) : S' :=
   ofList (List.flatMap (fun x => toList (f x)) (toList s))
 
-/-- The cardinality (size) of a finite set, defined as the length of its list representation.
-    Corresponds to Rocq's `size`. -/
+/-- The cardinality (size) of a finite set, defined as the length of its list representation. -/
 def size {S : Type _} {A : Type _} [FiniteSet S A] (s : S) : Nat :=
   (toList s).length
 
-/-- Fold over a finite set with a left-commutative operation.
-    The operation must be left-commutative to ensure the result is independent
-    of the order of elements. -/
+/-- Fold over a finite set. -/
 def fold [FiniteSet S A] {β : Type _} (f : β → A → β)
     (init : β) (s : S) : β :=
   (toList s).foldl f init
@@ -883,40 +869,38 @@ theorem mem_toList_union :
   intro x
   rw [mem_toList, mem_union, List.mem_append, mem_toList, mem_toList]
 
-/-- Converting a set to canonical form and back yields the original set.
-    Corresponds to Rocq's `list_to_set_to_list`. -/
+/-- Converting a set to canonical form and back yields the original set. -/
 theorem ofList_toList {m : S} :
   (ofList (toList m)) = m := by
   ext k
   rw [<-mem_ofList, mem_toList]
 
-/-- Membership in mapped set. Corresponds to Rocq's `elem_of_map`. -/
+/-- Membership in mapped set. -/
 theorem mem_map {S' : Type _} {B : Type _} [LawfulFiniteSet S' B] (f : A → B) (s : S) (x : B) :
   x ∈ map (S' := S') f s ↔ ∃ y, f y = x ∧ y ∈ s := by
   simp only [map, <-mem_ofList, List.mem_map, mem_toList]
   grind only
 
-/-- Mapping over empty set yields empty set. Corresponds to Rocq's `map_empty`. -/
+/-- Mapping over empty set yields empty set. -/
 @[simp]
 theorem map_empty {S' : Type _} {B : Type _} [LawfulFiniteSet S' B] (f : A → B) :
   map (S' := S') f (∅ : S) = ∅ := by
   ext x; rw [mem_map]; simp [mem_empty]
 
-/-- Mapping identity yields original set. Corresponds to Rocq's `map_id`. -/
+/-- Mapping identity yields original set. -/
 @[simp]
 theorem map_id {S' : Type _} {B : Type _} [LawfulFiniteSet S' B] (s : S) :
   map (S' := S) id s = s := by
   ext x; rw [mem_map]; simp
 
-/-- Mapping composed functions equals composing mapped functions.
-    Corresponds to Rocq's `map_compose`. -/
+/-- Mapping composed functions equals composing mapped functions. -/
 theorem map_comp {S' S'' : Type _} {B C : Type _}
   [LawfulFiniteSet S' B] [LawfulFiniteSet S'' C]
   (f : A → B) (g : B → C) (s : S) :
   map (S' := S'') (g ∘ f) s = map (S' := S'') g (map (S' := S') f s) := by
   ext x; rw [mem_map, mem_map]; grind [mem_map]
 
-/-- Map distributes over union. Corresponds to Rocq's `map_union`. -/
+/-- Map distributes over union. -/
 theorem map_union {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
     (f : A → B) (s₁ s₂ : S) :
   map (S' := S') f (s₁ ∪ s₂) = map f s₁ ∪ map f s₂ := by
@@ -927,7 +911,7 @@ theorem map_union {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
     | inr hx => right; exists x
   · grind only [mem_union]
 
-/-- Map over singleton. Corresponds to Rocq's `map_singleton`. -/
+/-- Map over singleton. -/
 theorem map_singleton {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
     (f : A → B) (x : A) :
   map (S' := S') f ({x} : S) = {f x} := by
@@ -977,20 +961,20 @@ theorem ofList_congr {l l' : List A} :
   rw [<-mem_ofList, <-mem_ofList]
   induction H <;> grind only [List.mem_cons]
 
-/-- Membership in bind. Corresponds to Rocq's `elem_of_set_bind`. -/
+/-- Membership in bind. -/
 theorem mem_bind [LawfulFiniteSet S' B]
     (f : A → S') (X : S) (y : B) :
     y ∈ bind (S' := S') f X ↔ ∃ x, x ∈ X ∧ y ∈ (f x) := by
   simp only [bind, <-mem_ofList, List.mem_flatMap, mem_toList]
 
-/-- Bind over empty set is empty. Corresponds to Rocq's `bind_empty`. -/
+/-- Bind over empty set is empty. -/
 @[simp]
 theorem bind_empty [LawfulFiniteSet S' B]
     (f : A → S') :
   bind (S' := S') f (∅ : S) = ∅ := by
   ext y; rw [mem_bind]; simp [mem_empty]
 
-/-- Bind over singleton. Corresponds to Rocq's `bind_singleton`. -/
+/-- Bind over singleton. -/
 @[simp]
 theorem bind_singleton [LawfulFiniteSet S' B]
     (f : A → S') (x : A) :
@@ -999,7 +983,7 @@ theorem bind_singleton [LawfulFiniteSet S' B]
   · intro ⟨z, hz, hy⟩; rw [mem_singleton] at hz; subst hz; exact hy
   · intro hy; exists x; apply And.intro; rw [mem_singleton]; exact hy
 
-/-- Bind distributes over union. Corresponds to Rocq's `bind_union`. -/
+/-- Bind distributes over union. -/
 theorem bind_union [LawfulFiniteSet S' B]
     (f : A → S') (s₁ s₂ : S) :
   bind (S' := S') f (s₁ ∪ s₂) = bind f s₁ ∪ bind f s₂ := by
@@ -1079,7 +1063,7 @@ theorem filter_delete (p : A → Bool) (x : A) (s : S) :
   ext y
   grind only [mem_filter, mem_delete]
 
-/-- A set has size 0 iff it is empty. Corresponds to Rocq's `size_empty_iff`. -/
+/-- A set has size 0 iff it is empty. -/
 theorem size_empty {X : S} : size X = 0 ↔ X = ∅ := by
   simp only [size]
   apply Iff.intro
@@ -1096,7 +1080,6 @@ theorem size_empty {X : S} : size X = 0 ↔ X = ∅ := by
     rw [toList_empty]
     simp [List.length_nil]
 
-/-- Corresponds to Rocq's `set_choose`. -/
 theorem set_choose (X : S) (h : size X ≠ 0) : ∃ x, x ∈ X := by
   unfold size at h
   cases hlist : toList X with
@@ -1110,7 +1093,6 @@ theorem set_choose (X : S) (h : size X ≠ 0) : ∃ x, x ∈ X := by
     rw [<-mem_toList, hlist]
     simp [List.mem_cons]
 
-/-- Corresponds to Rocq's `size_union`. -/
 theorem size_union {X Y : S} (h : X ## Y) : size X + size Y = size (X ∪ Y) := by
   simp only [size, <-List.length_append]
   have h_disj : ∀ x, x ∈ toList X → x ∉ toList Y := by
@@ -1148,7 +1130,7 @@ theorem size_union {X Y : S} (h : X ## Y) : size X + size Y = size (X ∪ Y) := 
 
   rw [this]
 
-/-- Proper subsets have strictly smaller size. Corresponds to Rocq's `subseteq_size`. -/
+/-- Proper subsets have strictly smaller size. -/
 theorem size_ssubset {X Y : S} (h : X ⊂ Y) : size X < size Y := by
   have heq : Y = Y \ X ∪ X := by
     apply diff_subset_decomp
@@ -1177,13 +1159,13 @@ theorem size_ssubset {X Y : S} (h : X ⊂ Y) : size X < size Y := by
   · rw [disjoint_intersection]
     ext p; rw [mem_inter, mem_diff]; simp [mem_empty]
 
-/-- Size of singleton is 1. Corresponds to Rocq's `size_singleton`. -/
+/-- Size of singleton is 1. -/
 theorem size_singleton {x : A} : size ({x} : S) = 1 := by
   unfold size
   rw [toList_singleton]
   rfl
 
-/-- Size of insert when element not present. Corresponds to Rocq's `size_union_alt`. -/
+/-- Size of insert when element not present. -/
 theorem size_insert_not_mem {s : S} {x : A} :
   x ∉ s → size (insert x s) = size s + 1 := by
   intro h
@@ -1204,7 +1186,7 @@ theorem size_insert_mem {s : S} {x : A} :
 theorem size_pos {s : S} : s ≠ ∅ → size s > 0 := by
   intro h; simp only [ne_eq, ← size_empty] at h; omega
 
-/-- Subset implies size inequality. Corresponds to Rocq's `subseteq_size`. -/
+/-- Subset implies size inequality. -/
 theorem size_subset {s₁ s₂ : S} : s₁ ⊆ s₂ → size s₁ ≤ size s₂ := by
   intro h
   by_cases heq : s₁ = s₂
@@ -1212,16 +1194,14 @@ theorem size_subset {s₁ s₂ : S} : s₁ ⊆ s₂ → size s₁ ≤ size s₂ 
   · have : s₁ ⊂ s₂ := by rw [ssubset_subset]; exact ⟨h, heq⟩
     exact Nat.le_of_lt (size_ssubset this)
 
-/-- Well-founded relation on finite sets based on proper subset.
-    Corresponds to Rocq's `set_wf`. -/
+/-- Well-founded relation on finite sets based on proper subset. -/
 theorem set_wf : WellFounded (SSubset (α := S)) := by
   apply Subrelation.wf
   · intro X Y hrel
     exact (size_ssubset hrel)
   · exact (measure (size (S := S) (A := A))).wf
 
-/-- Induction principle for finite sets.
-    Corresponds to Rocq's `set_ind`. -/
+/-- Induction principle for finite sets. -/
 theorem set_ind {P : S → Prop}
     (hemp : P ∅)
     (hadd : ∀ x X, x ∉ X → P X → P (insert x X))
@@ -1340,8 +1320,6 @@ theorem fold_union {β : Type _} {f : β → A → β}
     fold f init (s ∪ t) = fold f (fold f init s) t := by
   simp only [fold]
   rw [foldl_perm hcomm (toList_union_perm hdisj), List.foldl_append]
-
-
 
 /-- Membership in a finite set is decidable when element equality is decidable. -/
 instance [DecidableEq A] {x : A} {s : S} : Decidable (x ∈ s) := by
