@@ -42,8 +42,64 @@ instance : OFE.Discrete (GMultiset K) where
 private def addCounts (_ : K) (n m : PosNat) : PosNat :=
   ⟨n.1 + m.1, Nat.add_pos_left n.2 _⟩
 
+private def optCount : Option PosNat → Nat
+  | none => 0
+  | some n => n.1
+
+private theorem optCount_inj {a b : Option PosNat} : optCount a = optCount b → a = b := by
+  intro h
+  cases a with
+  | none =>
+      cases b with
+      | none => rfl
+      | some b => exact False.elim <| Nat.ne_of_gt b.property h.symm
+  | some a =>
+      cases b with
+      | none => exact False.elim <| Nat.ne_of_gt a.property h
+      | some b =>
+          apply congrArg some
+          exact Subtype.ext h
+
+omit [Ord K] [Std.TransOrd K] [Std.LawfulEqOrd K] in
+private theorem optCount_merge {K : Type _} (k : K) (a b : Option PosNat) :
+    optCount (Option.merge (addCounts k) a b) = optCount a + optCount b := by
+  cases a <;> cases b <;> simp [optCount, Option.merge, addCounts]
+
+omit [Ord K] [Std.TransOrd K] [Std.LawfulEqOrd K] in
+private theorem optMerge_assoc {K : Type _} (k : K) (a b c : Option PosNat) :
+    Option.merge (addCounts k) a (Option.merge (addCounts k) b c) =
+      Option.merge (addCounts k) (Option.merge (addCounts k) a b) c := by
+  apply optCount_inj
+  simp [optCount_merge, Nat.add_assoc]
+
+omit [Ord K] [Std.TransOrd K] [Std.LawfulEqOrd K] in
+private theorem optMerge_comm {K : Type _} (k : K) (a b : Option PosNat) :
+    Option.merge (addCounts k) a b = Option.merge (addCounts k) b a := by
+  apply optCount_inj
+  simp [optCount_merge, Nat.add_comm]
+
+omit [Ord K] [Std.TransOrd K] [Std.LawfulEqOrd K] in
+private theorem optMerge_right_cancel {K : Type _} (k : K) {a b c : Option PosNat} :
+    Option.merge (addCounts k) a c = Option.merge (addCounts k) b c → a = b := by
+  intro h
+  have hc := congrArg optCount h
+  rw [optCount_merge, optCount_merge] at hc
+  exact optCount_inj (Nat.add_right_cancel hc)
+
 private abbrev opG (X Y : GMultiset K) : GMultiset K :=
   { car := Iris.Std.merge (M := fun V => Std.TreeMap K V compare) (K := K) addCounts X.car Y.car }
+
+private theorem get?_opG (X Y : GMultiset K) (k : K) :
+    Iris.Std.get? (M := fun V => Std.TreeMap K V compare) (opG X Y).car k =
+      Option.merge (addCounts k)
+        (Iris.Std.get? (M := fun V => Std.TreeMap K V compare) X.car k)
+        (Iris.Std.get? (M := fun V => Std.TreeMap K V compare) Y.car k) := by
+  change Iris.Std.get? (M := fun V => Std.TreeMap K V compare)
+      (Iris.Std.merge (M := fun V => Std.TreeMap K V compare) (K := K) addCounts X.car Y.car) k =
+    Option.merge (addCounts k)
+      (Iris.Std.get? (M := fun V => Std.TreeMap K V compare) X.car k)
+      (Iris.Std.get? (M := fun V => Std.TreeMap K V compare) Y.car k)
+  rw [LawfulPartialMap.get?_merge]
 
 private theorem empty_op_empty_eqv :
     (empty (K := K)) ≡ opG (empty (K := K)) (empty (K := K)) := by
@@ -67,10 +123,7 @@ private theorem op_assoc_eqv (X Y Z : GMultiset K) :
       (Iris.Std.merge (M := fun V => Std.TreeMap K V compare) (K := K) addCounts
         (Iris.Std.merge (M := fun V => Std.TreeMap K V compare) (K := K) addCounts X.car Y.car) Z.car) k)
   repeat rw [LawfulPartialMap.get?_merge]
-  cases hx : Iris.Std.get? (M := fun V => Std.TreeMap K V compare) X.car k <;>
-    cases hy : Iris.Std.get? (M := fun V => Std.TreeMap K V compare) Y.car k <;>
-    cases hz : Iris.Std.get? (M := fun V => Std.TreeMap K V compare) Z.car k <;>
-    simp [addCounts, Option.merge, Nat.add_assoc]
+  exact optMerge_assoc k _ _ _
 
 private theorem op_comm_eqv (X Y : GMultiset K) :
     opG X Y ≡ opG Y X := by
@@ -80,9 +133,7 @@ private theorem op_comm_eqv (X Y : GMultiset K) :
     Iris.Std.get? (M := fun V => Std.TreeMap K V compare)
       (Iris.Std.merge (M := fun V => Std.TreeMap K V compare) (K := K) addCounts Y.car X.car) k)
   repeat rw [LawfulPartialMap.get?_merge]
-  cases hx : Iris.Std.get? (M := fun V => Std.TreeMap K V compare) X.car k <;>
-    cases hy : Iris.Std.get? (M := fun V => Std.TreeMap K V compare) Y.car k <;>
-    simp [addCounts, Option.merge, Nat.add_comm]
+  exact optMerge_comm k _ _
 
 instance opG_ne (x : GMultiset K) : NonExpansive (opG x) where
   ne := by
@@ -170,6 +221,51 @@ instance : UCMRA (GMultiset K) where
 theorem gMultiset_update (X Y : GMultiset K) : X ~~> Y := by
   intro _ _ _
   trivial
+
+@[simp] theorem get?_op (X Y : GMultiset K) (k : K) :
+    Iris.Std.get? (M := fun V => Std.TreeMap K V compare) (X • Y).car k =
+      Option.merge (addCounts k)
+        (Iris.Std.get? (M := fun V => Std.TreeMap K V compare) X.car k)
+        (Iris.Std.get? (M := fun V => Std.TreeMap K V compare) Y.car k) := by
+  show Iris.Std.get? (M := fun V => Std.TreeMap K V compare) (opG X Y).car k =
+      Option.merge (addCounts k)
+        (Iris.Std.get? (M := fun V => Std.TreeMap K V compare) X.car k)
+        (Iris.Std.get? (M := fun V => Std.TreeMap K V compare) Y.car k)
+  exact get?_opG X Y k
+
+theorem gMultiset_localUpdate {X Y X' Y' : GMultiset K}
+    (hxy : X • Y' ≡ X' • Y) :
+    (X, Y) ~l~> (X', Y') := by
+  refine (local_update_unital_discrete X Y X' Y').mpr ?_
+  intro Z _ hXZ
+  refine ⟨trivial, ?_⟩
+  intro k
+  let f : Option PosNat → Option PosNat → Option PosNat := Option.merge (addCounts k)
+  have hxyk0 :
+      Iris.Std.get? (M := fun V => Std.TreeMap K V compare) (X' • Y).car k =
+        Iris.Std.get? (M := fun V => Std.TreeMap K V compare) (X • Y').car k := by
+    exact (hxy k).symm
+  have hxyk : f X'.car[k]? Y.car[k]? = f X.car[k]? Y'.car[k]? := by
+    simpa [f] using hxyk0
+  have hXZk0 :
+      Iris.Std.get? (M := fun V => Std.TreeMap K V compare) X.car k =
+        Iris.Std.get? (M := fun V => Std.TreeMap K V compare) (Y • Z).car k := by
+    exact hXZ k
+  have hXZk : X.car[k]? = f Y.car[k]? Z.car[k]? := by
+    simpa [f] using hXZk0
+  have hstep : f X'.car[k]? Y.car[k]? = f (f Y'.car[k]? Z.car[k]?) Y.car[k]? := by
+    calc
+      f X'.car[k]? Y.car[k]? = f X.car[k]? Y'.car[k]? := hxyk
+      _ = f (f Y.car[k]? Z.car[k]?) Y'.car[k]? := by rw [hXZk]
+      _ = f Y.car[k]? (f Z.car[k]? Y'.car[k]?) := (optMerge_assoc k _ _ _).symm
+      _ = f Y.car[k]? (f Y'.car[k]? Z.car[k]?) := by
+            simpa [f] using congrArg (f Y.car[k]?) (optMerge_comm k Z.car[k]? Y'.car[k]?)
+      _ = f (f Y'.car[k]? Z.car[k]?) Y.car[k]? := optMerge_comm k _ _
+  have hfinal :=
+    optMerge_right_cancel (k := k) (a := X'.car[k]?) (b := f Y'.car[k]? Z.car[k]?) (c := Y.car[k]?) hstep
+  change Iris.Std.get? (M := fun V => Std.TreeMap K V compare) X'.car k =
+    Iris.Std.get? (M := fun V => Std.TreeMap K V compare) (Y' • Z).car k
+  simpa [f] using hfinal
 
 end GMultiset
 

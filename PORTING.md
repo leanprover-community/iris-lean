@@ -60,7 +60,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Functors
 - [ ] `gmultiset.v` 
   - [x] CMRA
-  - [ ] Updates
+  - [x] Updates
 - [ ] `gset.v` 
   - [ ] CMRA
   - [ ] Updates
@@ -430,4 +430,3 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] `language.v`
   - [ ] `ectx_language.v`
   - [ ] `ectxi_language.v`
-
