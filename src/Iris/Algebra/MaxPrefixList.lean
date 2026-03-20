@@ -99,6 +99,23 @@ theorem toMaxPrefixList_op_r {A : Type _} [OFE A] {l1 l2 : List A} :
   intro h
   exact comm.trans (toMaxPrefixList_op_l (A := A) h)
 
+theorem maxPrefixList_included_includedN {A : Type _} [OFE A] (m1 m2 : MaxPrefixList A) :
+    m1 ≼ m2 ↔ ∀ n, m1 ≼{n} m2 := by
+  constructor
+  · intro h n
+    exact CMRA.incN_of_inc n h
+  · intro h
+    refine ⟨m2, ?_⟩
+    exact OFE.equiv_dist.2 fun n => by
+      rcases h n with ⟨z, hz⟩
+      have hm : m1 • m2 ≡{n}≡ m2 := by
+        calc
+          m1 • m2 ≡{n}≡ m1 • (m1 • z) := hz.op_r
+          _ ≡{n}≡ (m1 • m1) • z := CMRA.op_assocN
+          _ ≡{n}≡ m1 • z := (CMRA.op_self (m1 : MaxPrefixList A)).dist.op_l
+          _ ≡{n}≡ m2 := hz.symm
+      exact hm.symm
+
 theorem toMaxPrefixList_op_validN_aux {A : Type _} [OFE A] (n : Nat) (l1 l2 : List A) :
     l1.length ≤ l2.length →
       ✓{n} (toMaxPrefixList (A := A) l1 • toMaxPrefixList l2) →
