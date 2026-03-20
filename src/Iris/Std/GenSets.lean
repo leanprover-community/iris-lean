@@ -8,6 +8,7 @@ module
 public import Iris.Std.Classes
 import Batteries.Data.List.Perm
 import Iris.Std.List
+import Iris.Std.RocqAlias
 
 @[expose] public section
 
@@ -310,11 +311,11 @@ theorem union_comm {s₁ s₂ : S} : s₁ ∪ s₂ = s₂ ∪ s₁ := by
 theorem inter_comm {s₁ s₂ : S} : s₁ ∩ s₂ = s₂ ∩ s₁ := by
   ext x; simp [mem_inter]; grind only
 
-/-- Union is associative. Corresponds to Rocq's `union_assoc`. -/
+/-- Union is associative. Corresponds to Rocq's `union_assoc_L`. -/
 theorem union_assoc {s₁ s₂ s₃ : S} : s₁ ∪ (s₂ ∪ s₃) = s₁ ∪ s₂ ∪ s₃ := by
   ext x; simp [mem_union]; grind only
 
-/-- Intersection is associative. Corresponds to Rocq's `intersection_assoc`. -/
+/-- Intersection is associative. Corresponds to Rocq's `intersection_assoc_L`. -/
 theorem inter_assoc {s₁ s₂ s₃ : S} : s₁ ∩ (s₂ ∩ s₃) = s₁ ∩ s₂ ∩ s₃ := by
   ext x; simp [mem_inter]; grind only
 
@@ -825,6 +826,9 @@ def fold [FiniteSet S A] {β : Type _} (f : β → A → β)
     (init : β) (s : S) : β :=
   (toList s).foldl f init
 
+def filter [FiniteSet S A] (p : A → Bool) (s : S) : S :=
+  ofList ((toList s).filter p)
+
 section FinLemmas
 
 variable {S : Type _} {A : Type _} [inst : LawfulFiniteSet S A]
@@ -1002,6 +1006,79 @@ theorem bind_union [LawfulFiniteSet S' B]
   ext y; rw [mem_bind, mem_union, mem_bind, mem_bind]
   apply Iff.intro <;> grind only [mem_union]
 
+/-- Membership in filtered set. -/
+theorem mem_filter (p : A → Bool) (s : S) (x : A) :
+  x ∈ filter p s ↔ x ∈ s ∧ p x := by
+  simp only [filter, <-mem_ofList, List.mem_filter, mem_toList]
+
+/-- Filter over empty set is empty. -/
+@[simp]
+theorem filter_empty (p : A → Bool) :
+  filter p (∅ : S) = ∅ := by
+  ext x; rw [mem_filter]; simp [mem_empty]
+
+/-- Filter over singleton. -/
+theorem filter_singleton (p : A → Bool) (x : A) :
+  filter p ({x} : S) = if p x then {x} else ∅ := by
+  ext y
+  rw [mem_filter, mem_singleton]
+  by_cases hp : p x
+  · grind only [mem_singleton]
+  · grind only [mem_singleton, mem_empty]
+
+/-- Filter distributes over union. -/
+theorem filter_union (p : A → Bool) (s₁ s₂ : S) :
+  filter p (s₁ ∪ s₂) = filter p s₁ ∪ filter p s₂ := by
+  ext x
+  grind only [mem_filter, mem_union, mem_union, mem_filter, mem_filter]
+
+/-- Filter with always-true predicate is identity. -/
+theorem filter_true (s : S) :
+  filter (fun _ => true) s = s := by
+  ext x; rw [mem_filter]; simp
+
+/-- Filter with always-false predicate is empty. -/
+theorem filter_false (s : S) :
+  filter (fun _ => false) s = ∅ := by
+  ext x; rw [mem_filter]; simp [mem_empty]
+
+/-- Consecutive filters can be combined. -/
+theorem filter_filter (p q : A → Bool) (s : S) :
+  filter p (filter q s) = filter (fun x => p x && q x) s := by
+  ext x
+  rw [mem_filter, mem_filter, mem_filter]
+  simp [Bool.and_eq_true]
+  grind only
+
+/-- Filter distributes over difference. -/
+theorem filter_diff (p : A → Bool) (s₁ s₂ : S) :
+  filter p (s₁ \ s₂) = filter p s₁ \ filter p s₂ := by
+  ext x
+  grind only [mem_filter, mem_diff]
+
+/-- Filter distributes over intersection. -/
+theorem filter_inter (p : A → Bool) (s₁ s₂ : S) :
+  filter p (s₁ ∩ s₂) = filter p s₁ ∩ filter p s₂ := by
+  ext x
+  grind only [mem_filter, mem_inter]
+
+/-- Filter over insert. -/
+theorem filter_insert (p : A → Bool) (x : A) (s : S) :
+  filter p (insert x s) = if p x then insert x (filter p s) else filter p s := by
+  ext y
+  rw [mem_filter, mem_insert]
+  by_cases hp : p x
+  · simp [hp, mem_insert, mem_filter]
+    grind only
+  · simp [hp, mem_filter]
+    grind only
+
+/-- Filter over delete. -/
+theorem filter_delete (p : A → Bool) (x : A) (s : S) :
+  filter p (delete x s) = delete x (filter p s) := by
+  ext y
+  grind only [mem_filter, mem_delete]
+
 /-- A set has size 0 iff it is empty. Corresponds to Rocq's `size_empty_iff`. -/
 theorem size_empty {X : S} : size X = 0 ↔ X = ∅ := by
   simp only [size]
@@ -1111,7 +1188,6 @@ theorem size_insert_not_mem {s : S} {x : A} :
   x ∉ s → size (insert x s) = size s + 1 := by
   intro h
   rw [insert_union]
-  -- Use size_union with disjointness proof
   have hdisj : {x} ## s := by
     rw [disjoint_singleton_left]
     exact h
@@ -1126,12 +1202,7 @@ theorem size_insert_mem {s : S} {x : A} :
 
 /-- Non-empty sets have positive size. -/
 theorem size_pos {s : S} : s ≠ ∅ → size s > 0 := by
-  intro h
-  rw [nonempty_iff] at h
-  obtain ⟨x, hx⟩ := h
-  have : size s ≠ 0 := by
-    intro h; rw [size_empty] at h; subst h; exact mem_empty hx
-  omega
+  intro h; simp only [ne_eq, ← size_empty] at h; omega
 
 /-- Subset implies size inequality. Corresponds to Rocq's `subseteq_size`. -/
 theorem size_subset {s₁ s₂ : S} : s₁ ⊆ s₂ → size s₁ ≤ size s₂ := by
@@ -1269,6 +1340,8 @@ theorem fold_union {β : Type _} {f : β → A → β}
     fold f init (s ∪ t) = fold f (fold f init s) t := by
   simp only [fold]
   rw [foldl_perm hcomm (toList_union_perm hdisj), List.foldl_append]
+
+
 
 /-- Membership in a finite set is decidable when element equality is decidable. -/
 instance [DecidableEq A] {x : A} {s : S} : Decidable (x ∈ s) := by
