@@ -190,6 +190,7 @@ private theorem coPsetLeaf_wf : ∀ (t : CoPsetRaw) (b : Bool),
     rw [hb, hl_leaf, hr_leaf] at Hwf
     cases b <;> simp [coPsetWf] at Hwf
 
+-- FIXME: grotesque
 /-- Two CoPsetRaw trees are equal if they have the same membership function
     and both are well-formed. -/
 private theorem coPsetRaw_eq (t1 t2 : CoPsetRaw) :
@@ -279,8 +280,6 @@ theorem ext {X Y : CoPset} (H : ∀ p, p ∈ X <-> p ∈ Y) : X = Y := by
     exact H
   · exact xwf
   · exact ywf
-
-/-- All operations are refined at the level of [CoPset] -/
 
 def empty : CoPset := ⟨CoPsetRaw.leaf false, rfl⟩
 
