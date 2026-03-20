@@ -391,7 +391,7 @@ theorem monoListAuthDfracOpValid_L [Leibniz A] (dq1 dq2 : DFrac Q) (l1 l2 : List
     ✓ (monoListAuth (Q := Q) dq1 l1 • monoListAuth dq2 l2) ↔
       ✓ (dq1 • dq2) ∧ l1 = l2 := by
   rw [monoListAuthDfracOpValid]
-  simpa using (show ✓ (dq1 • dq2) ∧ l1 ≡ l2 ↔ ✓ (dq1 • dq2) ∧ l1 = l2 by simp)
+  simp
 
 theorem monoListAuthOpValid_L [Leibniz A] (l1 l2 : List A) :
     ✓ (monoListAuth (Q := Q) (DFrac.own (1 : Q)) l1 • monoListAuth (DFrac.own (1 : Q)) l2) ↔ False := by

@@ -134,7 +134,7 @@ theorem toMaxPrefixList_op_validN_aux {A : Type _} [OFE A] (n : Nat) (l1 l2 : Li
   · have hge : l1.length ≤ i := Nat.le_of_not_lt hi
     rw [List.getElem?_append_right hge, List.getElem?_drop]
     have hs : l1.length + (i - l1.length) = i := Nat.add_sub_of_le hge
-    simpa [hs]
+    simp [hs]
 
 theorem toMaxPrefixList_op_validN {A : Type _} [OFE A] (n : Nat) (l1 l2 : List A) :
     ✓{n} (toMaxPrefixList (A := A) l1 • toMaxPrefixList l2) ↔
@@ -190,7 +190,7 @@ theorem toMaxPrefixList_mono {A : Type _} [OFE A] {l1 l2 : List A} :
       toMaxPrefixList l1 • z := by
     simpa [z] using toMaxPrefixList_app (A := A) l1 (List.drop l1.length l2)
   refine ⟨z, ?_⟩
-  exact (OFE.Equiv.of_eq (by simpa [hl])).trans happ
+  exact (OFE.Equiv.of_eq (by simp [hl])).trans happ
 
 theorem toMaxPrefixList_includedN {A : Type _} [OFE A] (n : Nat) (l1 l2 : List A) :
     toMaxPrefixList (A := A) l1 ≼{n} toMaxPrefixList l2 ↔ ∃ t, l2 ≡{n}≡ l1 ++ t := by
@@ -222,7 +222,7 @@ theorem toMaxPrefixList_includedN {A : Type _} [OFE A] (n : Nat) (l1 l2 : List A
     · have hge : l1.length ≤ i := Nat.le_of_not_lt hi
       rw [List.getElem?_append_right hge, List.getElem?_drop]
       have hs : l1.length + (i - l1.length) = i := Nat.add_sub_of_le hge
-      simpa [hs]
+      simp [hs]
   · rintro ⟨t, ht⟩
     have happ : toMaxPrefixList (A := A) (l1 ++ t) ≡{n}≡
         (toMaxPrefixList l1 • shiftMaxPrefixList l1.length t) := (toMaxPrefixList_app (A := A) l1 t).dist
@@ -262,7 +262,7 @@ theorem toMaxPrefixList_included {A : Type _} [OFE A] (l1 l2 : List A) :
     · have hge : l1.length ≤ i := Nat.le_of_not_lt hi
       rw [List.getElem?_append_right hge, List.getElem?_drop]
       have hs : l1.length + (i - l1.length) = i := Nat.add_sub_of_le hge
-      simpa [hs]
+      simp [hs]
   · rintro ⟨t, ht⟩
     refine ⟨shiftMaxPrefixList (A := A) l1.length t, ?_⟩
     calc
