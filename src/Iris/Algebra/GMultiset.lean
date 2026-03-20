@@ -8,8 +8,10 @@ namespace Iris
 open OFE CMRA
 open Iris.Std PartialMap LawfulPartialMap
 
+abbrev PosNat := { n : Nat // 0 < n }
+
 structure GMultiset (K : Type _) [Ord K] [Std.TransOrd K] [Std.LawfulEqOrd K] where
-  car : Std.TreeMap K Nat compare
+  car : Std.TreeMap K PosNat compare
 
 namespace GMultiset
 
@@ -19,7 +21,7 @@ def equiv (X Y : GMultiset K) : Prop :=
   ∀ k : K, X.car[k]? = Y.car[k]?
 
 abbrev empty : GMultiset K :=
-  { car := (∅ : Std.TreeMap K Nat compare) }
+  { car := (∅ : Std.TreeMap K PosNat compare) }
 
 instance : OFE (GMultiset K) :=
   OFE.ofDiscrete equiv (by
@@ -37,7 +39,8 @@ instance : OFE (GMultiset K) :=
 instance : OFE.Discrete (GMultiset K) where
   discrete_0 h := h
 
-private def addCounts (_ : K) (n m : Nat) : Nat := n + m
+private def addCounts (_ : K) (n m : PosNat) : PosNat :=
+  ⟨n.1 + m.1, Nat.add_pos_left n.2 _⟩
 
 private abbrev opG (X Y : GMultiset K) : GMultiset K :=
   { car := Iris.Std.merge (M := fun V => Std.TreeMap K V compare) (K := K) addCounts X.car Y.car }
@@ -47,9 +50,9 @@ private theorem empty_op_empty_eqv :
   intro k
   change none = Iris.Std.get? (M := fun V => Std.TreeMap K V compare)
     (Iris.Std.merge (M := fun V => Std.TreeMap K V compare) (K := K) addCounts
-      ((∅ : Std.TreeMap K Nat compare)) ((∅ : Std.TreeMap K Nat compare))) k
+      ((∅ : Std.TreeMap K PosNat compare)) ((∅ : Std.TreeMap K PosNat compare))) k
   have h0 : Iris.Std.get? (M := fun V => Std.TreeMap K V compare)
-      ((∅ : Std.TreeMap K Nat compare)) k = none :=
+      ((∅ : Std.TreeMap K PosNat compare)) k = none :=
     LawfulPartialMap.get?_empty (M := fun V => Std.TreeMap K V compare) (K := K) k
   rw [LawfulPartialMap.get?_merge]
   simp [h0, Option.merge]
@@ -120,10 +123,10 @@ instance : CMRA (GMultiset K) where
     cases hcx
     change (Iris.Std.get? (M := fun V => Std.TreeMap K V compare)
       (Iris.Std.merge (M := fun V => Std.TreeMap K V compare) (K := K) addCounts
-        ((∅ : Std.TreeMap K Nat compare)) x.car) i =
+        ((∅ : Std.TreeMap K PosNat compare)) x.car) i =
       Iris.Std.get? (M := fun V => Std.TreeMap K V compare) x.car i)
     have h0 : Iris.Std.get? (M := fun V => Std.TreeMap K V compare)
-        ((∅ : Std.TreeMap K Nat compare)) i = none :=
+        ((∅ : Std.TreeMap K PosNat compare)) i = none :=
       LawfulPartialMap.get?_empty (M := fun V => Std.TreeMap K V compare) (K := K) i
     rw [LawfulPartialMap.get?_merge, h0]
     cases hx : Iris.Std.get? (M := fun V => Std.TreeMap K V compare) x.car i <;>
@@ -153,10 +156,10 @@ instance : UCMRA (GMultiset K) where
     intro i
     change (Iris.Std.get? (M := fun V => Std.TreeMap K V compare)
       (Iris.Std.merge (M := fun V => Std.TreeMap K V compare) (K := K) addCounts
-        ((∅ : Std.TreeMap K Nat compare)) x.car) i =
+        ((∅ : Std.TreeMap K PosNat compare)) x.car) i =
       Iris.Std.get? (M := fun V => Std.TreeMap K V compare) x.car i)
     have h0 : Iris.Std.get? (M := fun V => Std.TreeMap K V compare)
-        ((∅ : Std.TreeMap K Nat compare)) i = none :=
+        ((∅ : Std.TreeMap K PosNat compare)) i = none :=
       LawfulPartialMap.get?_empty (M := fun V => Std.TreeMap K V compare) (K := K) i
     rw [LawfulPartialMap.get?_merge, h0]
     cases hx : Iris.Std.get? (M := fun V => Std.TreeMap K V compare) x.car i <;>
