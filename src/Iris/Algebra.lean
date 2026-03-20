@@ -5,6 +5,7 @@ import Iris.Algebra.DFrac
 import Iris.Algebra.Excl
 import Iris.Algebra.Frac
 import Iris.Algebra.GenMap
+import Iris.Algebra.GMultiset
 import Iris.Algebra.LocalUpdates
 import Iris.Algebra.IProp
 import Iris.Algebra.OFE
