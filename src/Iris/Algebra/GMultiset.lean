@@ -86,6 +86,16 @@ private theorem optMerge_right_cancel {K : Type _} (k : K) {a b c : Option PosNa
   rw [optCount_merge, optCount_merge] at hc
   exact optCount_inj (Nat.add_right_cancel hc)
 
+omit [Ord K] [Std.TransOrd K] [Std.LawfulEqOrd K] in
+private theorem optMerge_left_cancel {K : Type _} (k : K) {a b c : Option PosNat} :
+    Option.merge (addCounts k) c a = Option.merge (addCounts k) c b → a = b := by
+  intro h
+  apply optMerge_right_cancel (k := k) (c := c)
+  calc
+    Option.merge (addCounts k) a c = Option.merge (addCounts k) c a := optMerge_comm k _ _
+    _ = Option.merge (addCounts k) c b := h
+    _ = Option.merge (addCounts k) b c := optMerge_comm k _ _
+
 private abbrev opG (X Y : GMultiset K) : GMultiset K :=
   { car := Iris.Std.merge (M := fun V => Std.TreeMap K V compare) (K := K) addCounts X.car Y.car }
 
@@ -266,6 +276,21 @@ theorem gMultiset_localUpdate {X Y X' Y' : GMultiset K}
   change Iris.Std.get? (M := fun V => Std.TreeMap K V compare) X'.car k =
     Iris.Std.get? (M := fun V => Std.TreeMap K V compare) (Y' • Z).car k
   simpa [f] using hfinal
+
+instance (X : GMultiset K) : Cancelable X where
+  cancelableN {n y z} _ h := by
+    intro k
+    have hk : Iris.Std.get? (M := fun V => Std.TreeMap K V compare) (X • y).car k =
+        Iris.Std.get? (M := fun V => Std.TreeMap K V compare) (X • z).car k := h k
+    rw [get?_op, get?_op] at hk
+    exact optMerge_left_cancel (k := k) hk
+
+theorem gMultiset_localUpdate_alloc (X Y X' : GMultiset K) :
+    (X, Y) ~l~> (X • X', Y • X') := by
+  apply gMultiset_localUpdate
+  calc
+    X • (Y • X') ≡ X • (X' • Y) := by exact (comm (x := Y) (y := X')).op_r
+    _ ≡ (X • X') • Y := assoc
 
 end GMultiset
 
