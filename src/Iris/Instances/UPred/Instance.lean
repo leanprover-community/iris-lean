@@ -485,6 +485,20 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
 
 -- TODO: later_ownM, ownM_forall (needs internal eq)
 
+instance ownM_timeless {a : M} [OFE.DiscreteE a] : BI.Timeless (UPred.ownM a) where
+  timeless := by
+    intro n x Hv Hlater
+    cases n with
+    | zero => exact .inl trivial
+    | succ k =>
+      right
+      obtain ⟨c, Hc⟩ := Hlater
+      obtain ⟨z₁, z₂, Hx, Hz₁, _⟩ := CMRA.extend (CMRA.validN_succ Hv) Hc
+      refine ⟨z₂, ?_⟩
+      calc x ≡{k + 1}≡ z₁ • z₂ := Hx.dist
+           _ ≡{k + 1}≡ a • z₂ :=
+              (OFE.DiscreteE.discrete (Hz₁.symm.le (Nat.zero_le k))).dist.symm.op_l
+
 theorem cmraValid_intro [CMRA A] {P : UPred M} (a : A) (Ha : ✓ a) : P ⊢ cmraValid a :=
   fun _ _ _ _ => CMRA.Valid.validN Ha
 
