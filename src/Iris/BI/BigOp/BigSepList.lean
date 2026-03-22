@@ -269,14 +269,14 @@ theorem bigSepL_insert_acc {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x :
   (bigSepL_lookup_acc h).1
 
 @[rocq_alias big_sepL_elem_of_acc]
-theorem bigSepL_elem_of_acc {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
+theorem bigSepL_mem_acc {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
     ([∗list] y ∈ l, Φ y) ⊢ Φ x ∗ (Φ x -∗ [∗list] y ∈ l, Φ y) := by
   obtain ⟨i, hi, hget⟩ := List.mem_iff_getElem.mp h
   conv => rhs; rw [← show l.set i x = l from hget ▸ List.set_getElem_self hi]
   exact (bigSepL_lookup_acc (List.getElem?_eq_some_iff.mpr ⟨hi, hget⟩)).1.trans (sep_mono_r (forall_elim x))
 
 @[rocq_alias big_sepL_elem_of]
-theorem bigSepL_elem_of {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
+theorem bigSepL_mem {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
     [TCOr (∀ y, Affine (Φ y)) (Absorbing (Φ x))] → ([∗list] y ∈ l, Φ y) ⊢ Φ x
   | TCOr.l | TCOr.r =>
     let ⟨_, hi, hget⟩ := List.mem_iff_getElem.mp h
