@@ -28,6 +28,7 @@
 | `iapply` *pmTerm*                          | Match the conclusion of the current goal against the conclusion of the *pmTerm* and generates goals for each of its premises, moving all unused spatial hypotheses to the last premise.                                              |
 | `ihave` *cases-pat* := *pmTerm*            | Move *pmTerm* into the Iris context using *cases-pat*. (In contrast to `icases`, `ihave` does not remove the hypothesis from the Iris context.)                                                                                      |
 | `ihave` *cases-pat* : *term* $$ *spec-pat* | Assert *term* as *cases-pat* and prove it using *spec-pat*.                                                                                                                                                                          |
+| `irevert` *hyp*                        | Revert the hypothesis *hyp*.                                                                                                                                                                                                         |
 
 ## Cases Patterns
 
