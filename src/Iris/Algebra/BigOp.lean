@@ -7,6 +7,7 @@ module
 
 public import Iris.Algebra.Monoid
 import Batteries.Data.List.Perm
+public import Iris.Std.List
 public import Iris.Std.PartialMap
 
 namespace Iris.Algebra
@@ -180,6 +181,18 @@ theorem bigOpL_zipIdx_equiv (Φ : A × Nat → M) (n : Nat) (l : List A) :
   match l with
   | .nil => .rfl
   | .cons _ _ => op_proper .rfl <| (bigOpL_zipIdx_equiv _ (n + 1) _).trans (.of_eq <| by grind)
+
+theorem bigOpL_zipIdxInt_equiv (Φ : A × Int → M) (n : Int) (l : List A) :
+    ([^ op list] x ∈ List.zipIdxInt l n, Φ x) ≡ ([^ op list] k ↦ x ∈ l, Φ (x, n + (k : Int))) := by
+  change bigOpL op (fun _ => Φ) (l.mapIdx (fun i v => (v, (i : Int) + n)))
+       ≡ bigOpL op (fun i x => Φ (x, n + (i : Int))) l
+  induction l generalizing n with
+  | nil => exact .rfl
+  | cons x xs ih =>
+    rw [List.mapIdx_cons]
+    refine op_proper (by simp) ?_
+    rw [show (fun (i : Nat) v => (v, ↑(i + 1) + n)) = fun (i : Nat) v => (v, ↑i + (n + 1)) by grind]
+    exact ih _ |>.trans (bigOpL_equiv_of_forall_equiv <| .of_eq (by grind))
 
 theorem bigOpL_zipWith_op_equiv {B C : Type _} {f : A → B → C} {g1 : C → A} {g2 : C → B}
     {l₁ : List A} {l₂ : List B} {Φ : Nat → A → M} {Ψ : Nat → B → M} (hg1 : ∀ {x y}, g1 (f x y) = x)
