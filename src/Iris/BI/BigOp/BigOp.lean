@@ -137,10 +137,13 @@ private def delabBigOpLBody (fn : Expr) (lArg phiArg : Nat)
   match fn with
   | .lam xn _ body _ =>
     match body with
-    | .lam yn _ fnBody _ =>
-      let xUsed := fnBody.hasLooseBVar 1
+    | .lam yn _ _ _ =>
+      let (xUsed, P) ← withNaryArg phiArg <|
+        withBindingBody' xn (fun xFVar => return xFVar.fvarId!) fun xFVarId => do
+          let xUsed := (← getExpr).bindingBody!.containsFVar xFVarId
+          let P ← withBindingBody yn delab
+          return (xUsed, P)
       let y := mkIdent yn
-      let P ← withNaryArg phiArg <| withBindingBody xn <| withBindingBody yn <| delab
       if xUsed then
         let x := mkIdent xn
         mkWithIdx x y l P
@@ -205,12 +208,15 @@ def delabBigSepL2 : Delab := do
     match body1 with
     | .lam x1n _ body2 _ =>
       match body2 with
-      | .lam x2n _ fnBody _ =>
-        let kUsed := fnBody.hasLooseBVar 2
+      | .lam x2n _ _ _ =>
+        let (kUsed, P) ← withNaryArg 4 <|
+          withBindingBody' kn (fun kFVar => return kFVar.fvarId!) fun kFVarId => do
+            let innerBody := (← getExpr).bindingBody!.bindingBody!
+            let kUsed := innerBody.containsFVar kFVarId
+            let P ← withBindingBody x1n <| withBindingBody x2n <| delab
+            return (kUsed, P)
         let x1 := mkIdent x1n
         let x2 := mkIdent x2n
-        let P ← withNaryArg 4 <| withBindingBody kn <| withBindingBody x1n <|
-          withBindingBody x2n <| delab
         if kUsed then
           let k := mkIdent kn
           `([∗list]  $k ↦ $x1;$x2 ∈ $l1;$l2, $P)
@@ -248,5 +254,46 @@ def delabBigOpL : Delab := do
     failure
 
 end
+
+section Tests
+open Iris.Std OFE BIBase
+variable [BI PROP] (P : Nat → PROP) (Q : Nat → Nat → PROP) (l l1 l2 : List Nat)
+(Q' : Nat → Nat → Nat → PROP)
+
+/-! ## Delaborator round-trip tests -/
+
+-- bigSepL without index
+/-- info: [∗list] x ∈ l, P x : PROP -/
+#guard_msgs in #check [∗list] x ∈ l, P x
+
+-- bigSepL with index
+/-- info: [∗list] k ↦ x ∈ l, Q k x : PROP -/
+#guard_msgs in #check [∗list] k ↦ x ∈ l, Q k x
+
+-- bigAndL without index
+/-- info: [∧list] x ∈ l, P x : PROP -/
+#guard_msgs in #check [∧list] x ∈ l, P x
+
+-- bigAndL with index
+/-- info: [∧list] k ↦ x ∈ l, Q k x : PROP -/
+#guard_msgs in #check [∧list] k ↦ x ∈ l, Q k x
+
+-- bigOrL without index
+/-- info: [∨list] x ∈ l, P x : PROP -/
+#guard_msgs in #check [∨list] x ∈ l, P x
+
+-- bigOrL with index
+/-- info: [∨list] k ↦ x ∈ l, Q k x : PROP -/
+#guard_msgs in #check [∨list] k ↦ x ∈ l, Q k x
+
+-- bigSepL2 without index
+/-- info: [∗list] x;y ∈ l1;l2, Q x y : PROP -/
+#guard_msgs in #check [∗list] x;y ∈ l1;l2, Q x y
+
+-- bigSepL2 with index
+/-- info: [∗list] k ↦ x;y ∈ l1;l2, Q' k x y : PROP -/
+#guard_msgs in #check [∗list] k ↦ x;y ∈ l1;l2, Q' k x y
+
+end Tests
 
 end Iris.BI
