@@ -255,15 +255,15 @@ theorem bigSepL_lookup_acc {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x :
        (sep_mono_r (forall_elim _)).trans wand_elim_r⟩
   | _ :: _, _ + 1, h => by
     simp only [List.getElem?_cons_succ] at h
-    have hset := (List.getElem?_eq_some_iff.mp h).2 ▸
-      List.set_getElem_self (List.getElem?_eq_some_iff.mp h).1
-    refine ⟨(sep_mono_r (bigSepL_lookup_acc h).1).trans <| sep_assoc.2.trans <|
-      (sep_mono_l sep_comm.1).trans <| sep_assoc.1.trans <| sep_mono_r <|
-      forall_intro fun y => wand_intro <| sep_assoc.1.trans <| sep_mono_r <|
-      (sep_mono_l (forall_elim y)).trans <| sep_comm.1.trans wand_elim_r, ?_⟩
-    refine (sep_mono_r (forall_elim x)).trans ?_
-    conv => rhs; rw [← hset]
-    exact wand_elim_r
+    refine ⟨?_, ?_⟩
+    · refine (sep_mono_r (bigSepL_lookup_acc h).1).trans <| sep_assoc.2.trans <|
+      (sep_mono_l sep_comm.1).trans <| sep_assoc.1.trans <| sep_mono_r ?_
+      refine forall_intro fun y => wand_intro <| sep_assoc.1.trans <| sep_mono_r <|
+      (sep_mono_l (forall_elim y)).trans <| sep_comm.1.trans wand_elim_r
+    · have hset := (List.getElem?_eq_some_iff.mp h).2 ▸
+        List.set_getElem_self (List.getElem?_eq_some_iff.mp h).1
+      refine (sep_mono_r (forall_elim x)).trans <| ?_
+      simpa [hset] using wand_elim_r
 
 @[rocq_alias big_sepL_lookup]
 theorem bigSepL_lookup {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x : A} (h : l[i]? = some x) :
@@ -283,10 +283,10 @@ theorem bigSepL_insert_acc {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x :
 @[rocq_alias big_sepL_elem_of_acc]
 theorem bigSepL_mem_acc {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
     ([∗list] y ∈ l, Φ y) ⊢ Φ x ∗ (Φ x -∗ [∗list] y ∈ l, Φ y) := by
-  obtain ⟨i, hi, hget⟩ := List.mem_iff_getElem.mp h
-  conv => rhs; rw [← show l.set i x = l from hget ▸ List.set_getElem_self hi]
-  exact (bigSepL_lookup_acc <| List.getElem?_eq_some_iff.mpr ⟨hi, hget⟩).1.trans <|
-   sep_mono_r <| forall_elim x
+  obtain ⟨i, hi, hget⟩ := List.mem_iff_getElem.mp h ; subst hget
+  refine (bigSepL_lookup_acc <| List.getElem?_eq_some_iff.mpr ⟨hi, rfl⟩).1.trans <|
+   sep_mono_r <| (forall_elim l[i]).trans <| wand_mono .rfl ?_
+  simpa only [List.set_getElem_self hi] using .rfl
 
 @[rocq_alias big_sepL_elem_of]
 theorem bigSepL_mem {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
@@ -316,12 +316,11 @@ theorem bigSepL_delete_cond {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x 
 theorem bigSepL_delete [BIAffine PROP] {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x : A}
     (h : l[i]? = some x) :
     ([∗list] k ↦ y ∈ l, Φ k y) ⊣⊢ Φ i x ∗ [∗list] k ↦ y ∈ l, ⌜k ≠ i⌝ → Φ k y := by
-  have hmono : ∀ {k y}, (if k = i then emp else Φ k y) ⊣⊢ iprop(⌜k ≠ i⌝ → Φ k y) := fun {k y} => by
-    by_cases hki : k = i <;> simp only [hki, ne_eq, not_true_eq_false, not_false_eq_true]
-    · exact ⟨imp_intro' <| pure_elim_l fun hf => hf.elim, Affine.affine⟩
-    · exact true_imp.symm
-  exact (bigSepL_delete_cond h).trans <|
-    sep_congr_r <| equiv_iff.mp <| bigSepL_equiv fun _ => equiv_iff.mpr hmono
+  refine (bigSepL_delete_cond h).trans <|
+    sep_congr_r <| equiv_iff.mp <| bigSepL_equiv fun {k _} _ => equiv_iff.mpr ?_
+  by_cases hki : k = i <;> simp only [hki, ne_eq, not_true_eq_false, not_false_eq_true]
+  · exact ⟨imp_intro' <| pure_elim_l fun hf => hf.elim, Affine.affine⟩
+  · exact true_imp.symm
 
 @[rocq_alias big_sepL_intro]
 theorem bigSepL_intro {P : PROP} {Φ : Nat → A → PROP} {l : List A} [Intuitionistic P]
@@ -1208,16 +1207,15 @@ theorem bigSepL2_dist_2 [OFE A] [OFE B]
       l2[k]? = some y2 → l2'[k]? = some y2' → y2 ≡{n}≡ y2' →
       Φ k y1 y2 ≡{n}≡ Ψ k y1' y2') :
     ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ≡{n}≡
-      ([∗list] k ↦ x1;x2 ∈ l1';l2', Ψ k x1 x2) :=
+      ([∗list] k ↦ x1;x2 ∈ l1';l2', Ψ k x1 x2) := by
   match l1, l1', l2, l2' with
-  | [], [], [], [] | [], [], _ :: _, _ :: _ | _ :: _, _ :: _, [], [] => .rfl
-  | _ :: _, [], _, _ | [], _ :: _, _, _ => by simp at hl1
-  | [], [], [], _ :: _ | [], [], _ :: _, []
-  | _ :: _, _ :: _, [], _ :: _ | _ :: _, _ :: _, _ :: _, [] => by simp at hl2
+  | [], [], [], [] | [], [], _ :: _, _ :: _ | _ :: _, _ :: _, [], [] => exact .rfl
+  | _ :: _, _ :: _, [], _ :: _ | _ :: _, _ :: _, _ :: _, [] | [], [], [], _ :: _ | [], [], _ :: _, [] => simp at hl2
+  | [], _ :: _, _, _ | _ :: _, [], _, _ => simp at hl1
   | _ :: _, _ :: _, _ :: _, _ :: _ =>
-    sep_ne.ne (hf rfl rfl (@hel1 0 _ _ rfl rfl) rfl rfl (@hel2 0 _ _ rfl rfl)) <|
-    bigSepL2_dist_2 (by simpa using hl1) (by simpa using hl2)
-      (fun {k} => @hel1 <| k + 1) (fun {k} => @hel2 <| k + 1) (fun {k} => @hf <| k + 1)
+    exact sep_ne.ne (hf rfl rfl (@hel1 0 _ _ rfl rfl) rfl rfl (@hel2 0 _ _ rfl rfl)) <|
+      bigSepL2_dist_2 (by simpa using hl1) (by simpa using hl2)
+        (fun {k} => @hel1 (k + 1)) (fun {k} => @hel2 (k + 1)) (fun {k} => @hf (k + 1))
 
 @[rocq_alias big_sepL2_proper_2]
 theorem bigSepL2_proper_2 [OFE A] [OFE B]
