@@ -357,9 +357,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
     - [ ] with bi specified
   - [x] iStopProof
   - [x] iRename
-  - [ ] iClear
+  - [x] iClear
     - [x] basic
-    - [ ] selection patterns
+    - [x] selection patterns
   - [ ] iEval
   - [ ] iSimpl
   - [ ] iUnfold
@@ -377,7 +377,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] iRevert
     - [x] basic
     - [ ] `intoIH` revert
-    - [ ] selection patterns
+    - [x] selection patterns
   - [x] iPoseProof (Lean: ihave _ := _)
   - [ ] iSpecialize
     - [x] basic functionality
