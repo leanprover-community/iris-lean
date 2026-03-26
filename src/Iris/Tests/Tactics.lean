@@ -71,12 +71,76 @@ example [BI PROP] (P Q : PROP) : <affine> P ⊢ Q -∗ Q := by
   iclear HP
   iexact HQ
 
+/-- Tests clearing all intuitionistic hypotheses with `iclear #` -/
+example [BI PROP] (P Q R : PROP) : □ P ∗ □ Q ⊢ R -∗ R := by
+  iintro ⟨□HP, □HQ⟩ HR
+  iclear #
+  iexact HR
+
+/-- Tests clearing all spatial hypotheses with `iclear ∗` -/
+example [BI PROP] (P Q R : PROP) : <affine> P ∗ <affine> Q ⊢ <affine> R -∗ emp := by
+  iintro ⟨HP, HQ⟩ HR
+  iclear ∗
+  iemp_intro
+
+/-- Tests clearing a Lean variable with `iclear %x` -/
+example [BI PROP] (_x : α) (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iclear %_x
+  iexact HQ
+
+/-- Tests clearing all Lean pure hypotheses with `iclear %` -/
+example [BI PROP] (φ ψ : Prop) (_hφ : φ) (_hψ : ψ) (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iclear %
+  iexact HQ
+
+/-- Tests clearing proofmode and Lean contexts at the same time. -/
+example [BI PROP] (_x : α) (_hφ : φ) (P Q : PROP) : □ P ⊢ Q -∗ Q := by
+  iintro □HP
+  iintro HQ
+  iclear HP %_x %_hφ
+  iexact HQ
+
+/-- Tests clearing `%`, `#`, and `∗` at the same time. -/
+example [BI PROP] (_hφ : φ) (P Q R : PROP) : □ P ∗ <affine> Q ⊢ <affine> R -∗ emp := by
+  iintro ⟨□HP, HQ⟩
+  iintro HR
+  iclear % # ∗
+  iemp_intro
+
+/-- Tests clearing dependent Lean locals when the dependency comes first. -/
+example [BI PROP] (x : α) (_hx : x = x) (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iclear %x %_hx
+  iexact HQ
+
+/-- Tests clearing dependent Lean locals when the dependent hypothesis comes first. -/
+example [BI PROP] (x : α) (_hx : x = x) (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iclear %_hx %x
+  iexact HQ
+
 /- Tests `iclear` failing -/
 /-- error: iclear: P is not affine and the goal not absorbing -/
 #guard_msgs in
 example [BI PROP] (P Q : PROP) : P ⊢ Q -∗ Q := by
   iintro HP HQ
   iclear HP
+
+/- Tests `iclear` failing with a dependent Lean variable -/
+/-- error: iclear: proofmode hypothesis HQ depends on x -/
+#guard_msgs in
+example [BI PROP] (x : α) (Q : α → PROP) : Q x ⊢ Q x := by
+  iintro HQ
+  iclear %x
+
+/- Tests `iclear` failing with a dependent Lean hypothesis. -/
+/-- error: iclear: Lean hypothesis hx depends on x -/
+#guard_msgs in
+example [BI PROP] (x : α) (hx : x = x) (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iclear %x
 
 end clear
 

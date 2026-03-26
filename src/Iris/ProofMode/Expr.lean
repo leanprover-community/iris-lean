@@ -97,6 +97,18 @@ partial def Hyps.find? {u prop bi} (name : Name) :
   | _, .hyp _ name' uniq p ty _ => if name == name' then (uniq, p, ty) else none
   | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
 
+partial def Hyps.allSpatial {u prop bi} :
+    ∀ {s}, @Hyps u prop bi s → List Name
+  | _, .emp _ => []
+  | _, .hyp _ _ uniq p _ _ => if isTrue p then [] else [uniq]
+  | _, .sep _ _ _ _ lhs rhs => rhs.allSpatial ++ lhs.allSpatial
+
+partial def Hyps.allIntuitionistic {u prop bi} :
+    ∀ {s}, @Hyps u prop bi s → List Name
+  | _, .emp _ => []
+  | _, .hyp _ _ uniq p _ _ => if isTrue p then [uniq] else []
+  | _, .sep _ _ _ _ lhs rhs => rhs.allIntuitionistic ++ lhs.allIntuitionistic
+
 variable (oldUniq new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .emp _ => none
