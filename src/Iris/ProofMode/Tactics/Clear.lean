@@ -79,12 +79,11 @@ private def classifyClearTargets (hyps : Hyps bi e) (pats : List SelPat) :
 elab "iclear" pats:(colGt selPat)* : tactic => do
   let pats ← liftMacroM <| pats.mapM <| SelPat.parse
 
-  ProofModeM.runTactic λ mvar { prop, bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do
   let (uniqs, fvars) ← classifyClearTargets hyps pats.toList
 
   -- Clear the selected Iris hypotheses first, updating the proof-mode context and proof term.
-  let init : ClearState (prop := prop) (bi := bi) e goal :=
-    { e := e, hyps := hyps, pf := q(fun h => h) }
+  let init : ClearState e goal := { e, hyps, pf := q(fun h => h) }
   let st ← uniqs.foldlM (init := init)
     fun st uniq => st.clearProofModeHyp uniq
 

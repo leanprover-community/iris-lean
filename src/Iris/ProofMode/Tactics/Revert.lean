@@ -6,6 +6,7 @@ Authors: Oliver Soeser, Yunsong Yang
 module
 
 public import Iris.ProofMode.ClassesMake
+public meta import Iris.ProofMode.Patterns.SelPattern
 public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
@@ -32,44 +33,68 @@ theorem pure_revert [BI PROP] {Δ P Q : PROP} {φ : Prop}
 public meta section
 open Lean Elab Tactic Meta Qq
 
+private def classifyRevertTargets (hyps : Hyps bi e) (pats : List SelPat) :
+    ProofModeM (List (Name ⊕ FVarId)) := do
+  let targets ← pats.foldlM (init := []) fun acc pat => do
+    let targets ←
+      match pat with
+      | .ident name =>
+          pure [Sum.inl (← hyps.findWithInfo name)]
+      | .leanIdent name => do
+          let ldecl ← getLocalDeclFromUserName name.getId
+          pure [Sum.inr ldecl.fvarId]
+      | .intuitionistic =>
+          pure <| hyps.allIntuitionistic.reverse.map Sum.inl
+      | .spatial =>
+          pure <| hyps.allSpatial.reverse.map Sum.inl
+      | .pure =>
+          -- `%` selects user-facing Lean pure assumptions, so we skip internal locals and keep only `Prop` hypotheses.
+          let fvars ← (← getLCtx).foldlM (init := []) fun acc ldecl => do
+            if ldecl.isAuxDecl || ldecl.isImplementationDetail then
+              return acc
+            if ← isProp ldecl.type then
+              return ldecl.fvarId :: acc
+            return acc
+          pure <| fvars.reverse.map Sum.inr
+    return acc ++ targets
+  return targets.eraseDups
+
 /--
   `reverted` collects lean variables already reverted. This is necessary for dependency checks
   since they are only cleared from the Lean context for the final goal.
 -/
-private structure RevertState {prop : Q(Type u)} (bi : Q(BI $prop)) (origE origGoal : Q($prop)) where
+private structure RevertState {prop : Q(Type u)} {bi : Q(BI $prop)} (origE origGoal : Q($prop)) where
   (e : Q($prop)) (hyps : Hyps bi e) (goal : Q($prop))
   (reverted : Array FVarId := #[])
   pf : Q(($e ⊢ $goal) → ($origE ⊢ $origGoal))
 
 /-- Revert a proofmode hypothesis by turning it into a wand premise. -/
 private def RevertState.revertProofModeHyp
-    : @RevertState u prop bi origE origGoal → TSyntax `ident →
-      ProofModeM (RevertState bi origE origGoal)
-  | { hyps, goal, reverted, pf, .. }, hyp => do
-    let uniq ← hyps.findWithInfo hyp
+    : @RevertState u prop bi origE origGoal → Name →
+      ProofModeM (@RevertState u prop bi origE origGoal)
+  | { hyps, goal, reverted, pf, .. }, uniq => do
     let ⟨e', hyps', out, _, _, _, hΔ⟩ := hyps.remove true uniq
     return { e := e', hyps := hyps', goal := q(wand $out $goal), reverted,
              pf := q(fun h => $pf (wand_revert $hΔ h)) }
 
-/-- Check that reverting the Lean local named by `hyp` will not leave dangling dependencies. -/
+/-- Check that reverting the Lean local identified by `f` will not leave dangling dependencies. -/
 private def RevertState.checkLeanDependencies
-    : @RevertState u prop bi origE origGoal → TSyntax `ident → MetaM LocalDecl
-  | { hyps, reverted, .. }, hyp => do
-    let ldecl ← getLocalDeclFromUserName hyp.getId
-    let f := ldecl.fvarId
+    : @RevertState u prop bi origE origGoal → FVarId → MetaM LocalDecl
+  | { hyps, reverted, .. }, f => do
+    let ldecl ← f.getDecl
     if let some (name, _, _, _) := hyps.findDependencyOnFVar f then
-      throwError "irevert: proofmode hypothesis {name} depends on {hyp.getId}"
+      throwError "irevert: proofmode hypothesis {name} depends on {ldecl.userName}"
     let deps ← collectForwardDeps #[mkFVar f] false
     -- check if there is a dependency on a variable that has not been reverted before
     if let some dep := deps.find? (fun e => e.fvarId! != f && !reverted.contains e.fvarId!) then
       let depDecl := (← getLCtx).getFVar! dep
-      throwError "irevert: Lean hypothesis {depDecl.userName} depends on {hyp.getId}"
+      throwError "irevert: Lean hypothesis {depDecl.userName} depends on {ldecl.userName}"
     return ldecl
 
 /-- Revert a Lean proposition by turning it into the `MakeAffinely` pure premise. -/
 private def RevertState.revertLeanPropHyp
     (st : @RevertState u prop bi origE origGoal) (f : FVarId) (φ : Q(Prop)) :
-    ProofModeM (RevertState bi origE origGoal) := do
+    ProofModeM (@RevertState u prop bi origE origGoal) := do
   let { e, hyps, goal, reverted, pf } := st
   let P ← mkFreshExprMVarQ prop
   let _hA : Q(MakeAffinely iprop(⌜$φ⌝) $P) ← synthInstanceQ q(MakeAffinely iprop(⌜$φ⌝) $P)
@@ -81,7 +106,7 @@ private def RevertState.revertLeanPropHyp
 /-- Revert a Lean non-`Prop` local by turning the current goal into a forall. -/
 private def RevertState.revertLeanForallHyp
     (st : @RevertState u prop bi origE origGoal) (f : FVarId) (α : Q(Sort v)) :
-    ProofModeM (RevertState bi origE origGoal) := do
+    ProofModeM (@RevertState u prop bi origE origGoal) := do
   let { e, hyps, goal, reverted, pf } := st
   let x : Q($α) := mkFVar f
   have Φ : Q($α → $prop) := ← mkLambdaFVars #[x] goal
@@ -93,10 +118,9 @@ private def RevertState.revertLeanForallHyp
 
 /-- Revert a Lean local after checking proofmode and local-context dependencies. -/
 private def RevertState.revertLeanHyp
-    (st : @RevertState u prop bi origE origGoal) (hyp : TSyntax `ident) :
-    ProofModeM (RevertState bi origE origGoal) := do
-  let ldecl ← st.checkLeanDependencies hyp
-  let f := ldecl.fvarId
+    (st : @RevertState u prop bi origE origGoal) (f : FVarId) :
+    ProofModeM (@RevertState u prop bi origE origGoal) := do
+  let ldecl ← st.checkLeanDependencies f
   let v : Level ← Meta.getLevel ldecl.type
   have α : Q(Sort v) := ldecl.type
   if ← Meta.isProp α then
@@ -105,17 +129,22 @@ private def RevertState.revertLeanHyp
   else
     st.revertLeanForallHyp f α
 
--- TODO: when extending this to selection patterns, consider adding a selection pattern %x for pure hypotheses such that it is syntactically clear whether an argument of irevert refers to a pure or an Iris hypothesis
-elab "irevert" hs:(colGt ident)+ : tactic => do
-  ProofModeM.runTactic fun mvar { bi, e, hyps, goal, .. } => do
-    let init : RevertState bi e goal := { e, hyps, goal, pf := q(id) }
-    let st ← hs.reverse.toList.foldlM (init := init) fun st hyp => do
-      if let some _ := st.hyps.find? hyp.getId then
-        st.revertProofModeHyp hyp
-      else
-        st.revertLeanHyp hyp
+elab "irevert" pats:(colGt selPat)+ : tactic => do
+  let pats ← liftMacroM <| pats.mapM <| SelPat.parse
 
-    -- Clear Lean locals already reverted into the accumulated BI goal from the final generated subgoal.
-    let finalGoalId ← (← mkBIGoal st.hyps st.goal).mvarId!.tryClearMany st.reverted.reverse
+  ProofModeM.runTactic fun mvar { e, hyps, goal, .. } => do
+    let targets ← classifyRevertTargets hyps pats.toList
+    let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
+    let st ← targets.reverse.foldlM (init := init) fun st target => do
+      match target with
+      | .inl uniq => st.revertProofModeHyp uniq
+      | .inr fvar => st.revertLeanHyp fvar
+
+    let finalGoal ← mkBIGoal st.hyps st.goal
+    -- Sanity check: after the dependency precheck, all reverted Lean locals should clear.
+    let reverted := st.reverted.reverse
+    let (finalGoalId, cleared) ← finalGoal.mvarId!.tryClearMany' reverted
+    unless cleared.size == reverted.size do
+      throwError "irevert: internal error: failed to clear all reverted Lean hypotheses"
     addMVarGoal finalGoalId
     mvar.assign (mkApp st.pf (Expr.mvar finalGoalId))

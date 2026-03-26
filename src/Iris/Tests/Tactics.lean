@@ -257,7 +257,7 @@ namespace revert
 /-- Tests `irevert` order and names -/
 example [BI PROP] (P Q : PROP) : ⊢ P -∗ Q -∗ P ∗ Q := by
   iintro H1 H2
-  irevert P Q H1 H2
+  irevert %P %Q H1 H2
   iintro %P %Q H1 H2
   isplitl [H1]
   · iexact H1
@@ -278,19 +278,19 @@ example [BI PROP] (P : PROP) (H : ⊢ □ P -∗ P) : □ P ⊢ P := by
 /-- Tests `irevert` with a pure proposition -/
 example [BI PROP] (P : PROP) (Hφ : φ) : ⊢ (<affine> ⌜φ⌝ -∗ P) -∗ P := by
   iintro H
-  irevert Hφ
+  irevert %Hφ
   iexact H
 
 /-- Tests `irevert` of a pure proposition in affine BI does not add `<affine>`. -/
 example [BI PROP] [BIAffine PROP] (P : PROP) (Hφ : φ) : ⊢ (⌜φ⌝ -∗ P) -∗ P := by
   iintro H
-  irevert Hφ
+  irevert %Hφ
   iexact H
 
 /-- Tests `irevert` with a forall proposition -/
 example [BI PROP] (x : α) (Φ : α → PROP) : ⊢ (∀ x, Φ x) → Φ x := by
   iintro H
-  irevert x
+  irevert %x
   iexact H
 
 /-- Tests `irevert` with multiple spatial propositions -/
@@ -307,10 +307,35 @@ example [BI PROP] (P Q : PROP) :
   irevert HP HQ
   iexact H
 
+/-- Tests `irevert ∗` with all spatial hypotheses. -/
+example [BI PROP] (P Q : PROP) (H : ⊢ P -∗ <affine> Q -∗ P) : P ∗ <affine> Q ⊢ P := by
+  iintro ⟨HP, HQ⟩
+  irevert ∗
+  exact H
+
+/-- Tests `irevert #` with all intuitionistic hypotheses. -/
+example [BI PROP] (P Q : PROP) (H : ⊢ □ P -∗ □ Q -∗ P) : □ P ∗ □ Q ⊢ P := by
+  iintro ⟨□HP, □HQ⟩
+  irevert #
+  exact H
+
+/-- Tests `irevert %` with all Lean pure hypotheses. -/
+example [BI PROP] (P : PROP) (Hφ : φ) (Hψ : ψ) : ⊢ (<affine> ⌜φ⌝ -∗ <affine> ⌜ψ⌝ -∗ P) -∗ P := by
+  iintro H
+  irevert %
+  iexact H
+
+/-- Tests `irevert % # ∗` with Lean pure, intuitionistic, and spatial hypotheses together. -/
+example {φ ψ : Prop} [BI PROP] (P Q : PROP) (Hφ : φ) (Hψ : ψ) : □ P ∗ <affine> Q ⊢ P := by
+  iintro ⟨□HP, HQ⟩
+  irevert % # ∗
+  iintro %hφ ⌜hψ⌝ □HP _HQ
+  iexact HP
+
 /-- Tests `irevert` with mixed Lean/proofmode hypotheses and dependencies. -/
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
-  irevert x hp H
+  irevert %x %hp H
   iintro %x %hp H
   iexact H
 
@@ -319,14 +344,14 @@ example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗
 #guard_msgs in
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
-  irevert x
+  irevert %x
 
 /- Tests `irevert` failing with dependency -/
 /-- error: irevert: Lean hypothesis hp depends on x -/
 #guard_msgs in
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
-  irevert x H
+  irevert %x H
 
 end revert
 
