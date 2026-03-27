@@ -142,6 +142,12 @@ example [BI PROP] (x : α) (hx : x = x) (Q : PROP) : Q ⊢ Q := by
   iintro HQ
   iclear %x
 
+/- Tests `iclear` failing when the goal depends on a Lean variable. -/
+/-- error: iclear: goal depends on x -/
+#guard_msgs in
+example [BI PROP] (x : α) (Q : α → PROP) : ⊢ Q x := by
+  iclear %x
+
 end clear
 
 -- intro

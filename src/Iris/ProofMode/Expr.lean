@@ -343,6 +343,25 @@ partial def Hyps.findDependencyOnFVar {prop : Q(Type u)} {bi : Q(BI $prop)}
       if (ty : Expr).containsFVar fvarId then some (name, uniq, p, ty)
       else none
 
+/-- Check that removing the Lean local `fvarId` leaves no dangling dependencies in the
+proofmode context, an optional goal, or remaining Lean locals not accepted by `allowedDep`. -/
+def Hyps.checkRemovableFVar {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (tac : String) (fvarId : FVarId)
+    (goal? : Option Expr := none) (allowedDep : FVarId → Bool := fun _ => false) :
+    MetaM LocalDecl := do
+  let ldecl ← fvarId.getDecl
+  if let some (name, _, _, _) := hyps.findDependencyOnFVar fvarId then
+    throwError "{tac}: proofmode hypothesis {name} depends on {ldecl.userName}"
+  if let some goal := goal? then
+    let goal ← instantiateMVars goal
+    if goal.containsFVar fvarId then
+      throwError "{tac}: goal depends on {ldecl.userName}"
+  let deps ← collectForwardDeps #[mkFVar fvarId] false
+  if let some dep := deps.find? (fun e => e.fvarId! != fvarId && !allowedDep e.fvarId!) then
+    let depDecl := (← getLCtx).getFVar! dep
+    throwError "{tac}: Lean hypothesis {depDecl.userName} depends on {ldecl.userName}"
+  return ldecl
+
 end dependency
 
 end hyps

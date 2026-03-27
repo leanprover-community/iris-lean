@@ -5,12 +5,12 @@ Authors: Yunsong Yang
 -/
 module
 
-public import Lean.Data.Name
+public meta import Iris.ProofMode.ProofModeM
 
 @[expose] public section
 
 namespace Iris.ProofMode
-open Lean
+open Lean Meta Std
 
 declare_syntax_cat selPat
 
@@ -40,5 +40,43 @@ where
   | `(selPat| ∗) => some .spatial
   | `(selPat| $name:ident) => some <| .ident name
   | _ => none
+
+public meta section
+
+abbrev SelTarget := Name ⊕ FVarId
+
+/-- Resolve selection patterns to concrete proofmode hypotheses (`.inl`) and Lean locals (`.inr`). -/
+def resolveSelTargets (hyps : Hyps bi e) (pats : List SelPat) :
+    ProofModeM (List SelTarget) := do
+  let targetsRev ← pats.foldlM (init := []) fun acc pat => do
+    match pat with
+    | .ident name =>
+        return .inl (← hyps.findWithInfo name) :: acc
+    | .leanIdent name => do
+        let ldecl ← getLocalDeclFromUserName name.getId
+        return .inr ldecl.fvarId :: acc
+    | .intuitionistic =>
+        return hyps.allIntuitionistic.map .inl ++ acc
+    | .spatial =>
+        return hyps.allSpatial.map .inl ++ acc
+    | .pure => do
+        -- `%` selects user-facing Lean pure assumptions, so we keep only `Prop` hypotheses.
+        let fvars ← (← getLCtx).foldlM (init := []) fun acc ldecl => do
+          if ldecl.isAuxDecl || ldecl.isImplementationDetail then
+            return acc
+          if ← isProp ldecl.type then
+            return ldecl.fvarId :: acc
+          return acc
+        return fvars.map .inr ++ acc
+  return targetsRev.reverse.eraseDups
+
+/-- Split elaborated selection targets into proofmode hypotheses and Lean locals, preserving order. -/
+def splitSelTargets (targets : List SelTarget) : List Name × List FVarId :=
+  targets.foldr (init := ([], [])) fun target (uniqs, fvars) =>
+    match target with
+    | .inl uniq => (uniq :: uniqs, fvars)
+    | .inr fvar => (uniqs, fvar :: fvars)
+
+end
 
 end Iris.ProofMode
