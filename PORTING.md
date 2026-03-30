@@ -204,6 +204,10 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - `ascii.v`
 - [x] `bi.v`
 - [ ] `big_op.v`
+  - [x] Lists
+  - [ ] Maps
+  - [ ] Sets
+  - [ ] Multisets
 - [ ] `cmra.v`
 - [x] `derived_connectives.v`
 - [ ] `derived_laws.v`
@@ -271,6 +275,18 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] AddModal
   - [x] IntoLater
 - [ ] `class_instances_make.v`
+  - [ ] QuickAffine
+  - [ ] QuickAbsorbing
+  - [ ] MakeEmbed
+  - [ ] MakeSep
+  - [ ] MakeAnd
+  - [ ] MakeOr
+  - [x] MakeAffinely
+  - [x] MakeIntuitionistically
+  - [x] MakeAbsorbingly
+  - [x] MakePersistenly
+  - [x] MakeLaterN
+  - [ ] MakeExcept0
 - [ ] `class_instances_plainly.v` (InstancesPlainly.lean)
   - [x] basic instances
   - [x] FromModal
@@ -326,6 +342,18 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IntoAcc
   - [ ] ElimInv
 - [ ] `classes_make.v`
+  - [ ] QuickAffine
+  - [ ] QuickAbsorbing
+  - [ ] MakeEmbed
+  - [ ] MakeSep
+  - [ ] MakeAnd
+  - [ ] MakeOr
+  - [x] MakeAffinely
+  - [x] MakeIntuitionistically
+  - [x] MakeAbsorbingly
+  - [x] MakePersistenly
+  - [x] MakeLaterN
+  - [ ] MakeExcept0
 - [ ] `coq_tactics.v` / `ltac_tactics.v` (split into the files in Tactics/)
   - [x] iSolveSideCondition
   - [ ] iStartProof
@@ -351,6 +379,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] iPureIntro
   - [ ] iFrame
   - [ ] iRevert
+    - [x] basic
+    - [ ] `intoIH` revert
+    - [ ] selection patterns
   - [x] iPoseProof (Lean: ihave _ := _)
   - [ ] iSpecialize
     - [x] basic functionality

@@ -3,8 +3,12 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-import Qq
-import Iris.BI
+module
+
+public import Qq
+public import Iris.BI
+
+public meta section
 
 /-
 This file implements a custom typeclass synthesis algorithm that is used for the proof mode typeclasses.
@@ -70,7 +74,7 @@ initialize registerBuiltinAttribute {
 }
 
 
-private partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
+partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
   withIncRecDepth do
     let backtrackSet := ipmBacktrackExt.getState (← getEnv)
     let mvarType  ← inferType mvar
@@ -103,7 +107,7 @@ private partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) :=
         return res
     return none
 
-private def synthInstanceMain (type : Expr) (_maxResultSize : Nat) : MetaM (Option Expr) :=
+def synthInstanceMain (type : Expr) (_maxResultSize : Nat) : MetaM (Option Expr) :=
   withCurrHeartbeats do
      let mvar ← mkFreshExprMVar type
      tryCatchRuntimeEx (do
@@ -115,7 +119,7 @@ private def synthInstanceMain (type : Expr) (_maxResultSize : Nat) : MetaM (Opti
          else
            throw ex
 
-private def synthInstanceCore? (type : Expr) (maxResultSize? : Option Nat := none) : MetaM (Option Expr) := do
+def synthInstanceCore? (type : Expr) (maxResultSize? : Option Nat := none) : MetaM (Option Expr) := do
   let opts ← getOptions
   let maxResultSize := maxResultSize?.getD (synthInstance.maxSize.get opts)
   withTraceNode `Meta.synthInstance

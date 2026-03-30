@@ -1,19 +1,24 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Mario Carneiro, Michael Sammler
+Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 -/
-import Qq
-import Iris.BI
-import Iris.ProofMode.Classes
-import Iris.Std
+module
+
+public meta import Qq
+public import Iris.BI
+public import Iris.ProofMode.Classes
+public import Iris.Std
+public meta import Iris.Std.Expr
+
+public meta section
 
 namespace Iris.ProofMode
 open Iris.BI Iris.Std
 open Lean Lean.Expr Lean.Meta Qq
 
-@[match_pattern] def nameAnnotation := `name
-@[match_pattern] def uniqAnnotation := `uniq
+@[expose, match_pattern] def nameAnnotation := `name
+@[expose, match_pattern] def uniqAnnotation := `uniq
 
 def parseName? : Expr → Option (Name × Name × Expr)
   | .mdata ⟨[(nameAnnotation, .ofName name), (uniqAnnotation, .ofName uniq)]⟩ e => do
@@ -112,32 +117,32 @@ def Hyps.select (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (Name × Q(Bo
   | _, .sep _ _ _ _ lhs rhs => try Hyps.select ty rhs catch _ => Hyps.select ty lhs
 
 
-private theorem intuitionistically_sep_dup [BI PROP] {P : PROP} : □ P ⊣⊢ □ P ∗ □ P :=
+theorem intuitionistically_sep_dup [BI PROP] {P : PROP} : □ P ⊣⊢ □ P ∗ □ P :=
   intuitionistically_sep_idem.symm
 
-private theorem sep_emp_rev [BI PROP] {P : PROP} : P ⊣⊢ P ∗ emp := sep_emp.symm
+theorem sep_emp_rev [BI PROP] {P : PROP} : P ⊣⊢ P ∗ emp := sep_emp.symm
 
-private theorem emp_sep_rev [BI PROP] {P : PROP} : P ⊣⊢ emp ∗ P := emp_sep.symm
+theorem emp_sep_rev [BI PROP] {P : PROP} : P ⊣⊢ emp ∗ P := emp_sep.symm
 
 section split
 
-private theorem split_es [BI PROP] {Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : emp ∗ Q ⊣⊢ Q1 ∗ Q2 :=
+theorem split_es [BI PROP] {Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : emp ∗ Q ⊣⊢ Q1 ∗ Q2 :=
   emp_sep.trans h
-private theorem split_ls [BI PROP] {P Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ (P ∗ Q1) ∗ Q2 :=
+theorem split_ls [BI PROP] {P Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ (P ∗ Q1) ∗ Q2 :=
   (sep_congr_r h).trans sep_assoc.symm
-private theorem split_rs [BI PROP] {P Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ Q1 ∗ (P ∗ Q2) :=
+theorem split_rs [BI PROP] {P Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ Q1 ∗ (P ∗ Q2) :=
   (sep_congr_r h).trans sep_left_comm
-private theorem split_se [BI PROP] {P P1 P2 : PROP} (h : P ⊣⊢ P1 ∗ P2) : P ∗ emp ⊣⊢ P1 ∗ P2 :=
+theorem split_se [BI PROP] {P P1 P2 : PROP} (h : P ⊣⊢ P1 ∗ P2) : P ∗ emp ⊣⊢ P1 ∗ P2 :=
   sep_emp.trans h
-private theorem split_sl [BI PROP] {P Q P1 P2 : PROP} (h : P ⊣⊢ P1 ∗ P2) : P ∗ Q ⊣⊢ (P1 ∗ Q) ∗ P2 :=
+theorem split_sl [BI PROP] {P Q P1 P2 : PROP} (h : P ⊣⊢ P1 ∗ P2) : P ∗ Q ⊣⊢ (P1 ∗ Q) ∗ P2 :=
   (sep_congr_l h).trans sep_right_comm
-private theorem split_sr [BI PROP] {P Q P1 P2 : PROP} (h : P ⊣⊢ P1 ∗ P2) : P ∗ Q ⊣⊢ P1 ∗ (P2 ∗ Q) :=
+theorem split_sr [BI PROP] {P Q P1 P2 : PROP} (h : P ⊣⊢ P1 ∗ P2) : P ∗ Q ⊣⊢ P1 ∗ (P2 ∗ Q) :=
   (sep_congr_l h).trans sep_assoc
-private theorem split_ss [BI PROP] {P Q P1 P2 Q1 Q2 : PROP}
+theorem split_ss [BI PROP] {P Q P1 P2 Q1 Q2 : PROP}
     (h1 : P ⊣⊢ P1 ∗ P2) (h2 : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ (P1 ∗ Q1) ∗ (P2 ∗ Q2) :=
   (sep_congr h1 h2).trans sep_sep_sep_comm
 
-private inductive SplitResult {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
+inductive SplitResult {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
   | emp (_ : $e =Q BI.emp)
   | left
   | right
@@ -145,7 +150,7 @@ private inductive SplitResult {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop
           (pf : Q($e ⊣⊢ $elhs ∗ $erhs))
 
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) (toRight : Name → Name → Bool) in
-private def Hyps.splitCore : ∀ {e}, Hyps bi e → SplitResult bi e
+def Hyps.splitCore : ∀ {e}, Hyps bi e → SplitResult bi e
   | _, .emp _ => .emp ⟨⟩
   | ehyp, h@(.hyp _ name uniq b ty _) =>
     match matchBool b with
@@ -188,23 +193,23 @@ structure RemoveHyp {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
   (pf : Q($e ⊣⊢ $e' ∗ $out))
   deriving Inhabited
 
-private inductive RemoveHypCore {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) (α : Type) where
+inductive RemoveHypCore {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) (α : Type) where
   | none
   | one (a : α) (out' : Q($prop)) (p : Q(Bool)) (eq : $e =Q iprop(□?$p $out'))
   | main (a : α) (_ : RemoveHyp bi e)
 
-private theorem remove_l [BI PROP] {P P' Q R : PROP} (h : P ⊣⊢ P' ∗ R) :
+theorem remove_l [BI PROP] {P P' Q R : PROP} (h : P ⊣⊢ P' ∗ R) :
     P ∗ Q ⊣⊢ (P' ∗ Q) ∗ R :=
   (sep_congr_l h).trans sep_right_comm
 
-private theorem remove_r [BI PROP] {P Q Q' R : PROP} (h : Q ⊣⊢ Q' ∗ R) :
+theorem remove_r [BI PROP] {P Q Q' R : PROP} (h : Q ⊣⊢ Q' ∗ R) :
     P ∗ Q ⊣⊢ (P ∗ Q') ∗ R :=
   (sep_congr_r h).trans sep_assoc.symm
 
 variable [Monad m] {prop : Q(Type u)} (bi : Q(BI $prop)) (rp : Bool)
   (check : Name → Name → Q(Bool) → Q($prop) → m (Option α)) in
 /-- If `rp` is true, the hyp will be removed even if it is in the intuitionistic context. -/
-private def Hyps.removeCore : ∀ {e}, Hyps bi e → m (RemoveHypCore bi e α)
+def Hyps.removeCore : ∀ {e}, Hyps bi e → m (RemoveHypCore bi e α)
   | _, .emp _ => pure .none
   | e, h@(.hyp _ name uniq p ty _) => do
     if let some a ← check name uniq p ty then
@@ -314,6 +319,19 @@ def Hyps.replace : ∀ {e}, Hyps bi e → m (ReplaceHyp bi Q)
       | .none => pure .none
 
 end replace
+
+section dependency
+
+partial def Hyps.findDependencyOnFVar {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (fvarId : FVarId) : ∀ {e}, Hyps bi e → Option (Name × Name × Q(Bool) × Q($prop))
+  | _, .emp _ => none
+  | _, .sep _ _ _ _ lhs rhs =>
+      lhs.findDependencyOnFVar fvarId <|> rhs.findDependencyOnFVar fvarId
+  | _, .hyp _ name uniq p ty _ =>
+      if (ty : Expr).containsFVar fvarId then some (name, uniq, p, ty)
+      else none
+
+end dependency
 
 end hyps
 

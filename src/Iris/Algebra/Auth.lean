@@ -3,8 +3,10 @@ Copyright (c) 2025 Alexander Bai. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Bai
 -/
-import Iris.Algebra.View
-import Iris.Algebra.LocalUpdates
+module
+
+public import Iris.Algebra.View
+public import Iris.Algebra.LocalUpdates
 
 /-!
 # Authoritative Camera
@@ -13,6 +15,8 @@ The authoritative camera has 2 types of elements:
 - the authoritative element `●{dq} a`
 -  and the fragment `◯ b`
 -/
+
+@[expose] public section
 
 open Iris
 

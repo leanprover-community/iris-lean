@@ -3,9 +3,11 @@ Copyright (c) 2025. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
-import Iris.Algebra.Auth
-import Iris.Algebra.Excl
-import Iris.Std.RocqAlias
+module
+
+public import Iris.Algebra.Auth
+public import Iris.Algebra.Excl
+meta import Iris.Std.RocqAlias
 
 /-!
 # Exclusive Authoritative CMRA
@@ -24,16 +26,16 @@ namespace ExclAuth
 variable [OFE A]
 
 @[rocq_alias excl_authR]
-abbrev ExclAuthR := Auth PNat (Option (Excl A))
+public abbrev ExclAuthR := Auth PNat (Option (Excl A))
 
 @[rocq_alias excl_authUR]
-abbrev ExclAuthUR := Auth PNat (Option (Excl A))
+public abbrev ExclAuthUR := Auth PNat (Option (Excl A))
 
 @[rocq_alias excl_auth_auth]
-abbrev auth (a : A) : ExclAuthR (A := A) := ● (some (excl a))
+public abbrev auth (a : A) : ExclAuthR (A := A) := ● (some (excl a))
 
 @[rocq_alias excl_auth_frag]
-abbrev frag (a : A) : ExclAuthR (A := A) := ◯ (some (excl a))
+public abbrev frag (a : A) : ExclAuthR (A := A) := ◯ (some (excl a))
 
 scoped notation "●E " a => ExclAuth.auth a
 scoped notation "◯E " a => ExclAuth.frag a
