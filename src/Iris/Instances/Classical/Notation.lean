@@ -3,7 +3,11 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
-import Iris.Instances.Classical.Instance
+module
+
+public import Iris.Instances.Classical.Instance
+
+@[expose] public section
 
 namespace Iris.Instances.Classical
 open Iris.Instances.Data

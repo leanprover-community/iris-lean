@@ -3,11 +3,15 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.BI.Notation
-import Iris.Std.Classes
-import Iris.Std.DelabRule
-import Iris.Std.Rewrite
-import Iris.Std.BigOp
+module
+
+public meta import Iris.BI.Notation
+public import Iris.Std.Classes
+public meta import Iris.Std.DelabRule
+public meta import Iris.Std.Rewrite
+public import Iris.Std.BigOp
+
+@[expose] public section
 
 namespace Iris.BI
 open Iris.Std

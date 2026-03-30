@@ -3,10 +3,13 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Zongyuan Liu, Remy Seassau
 -/
+module
 
-import Iris.BI
-import Iris.Algebra
-import Iris.Instances.UPred
+public import Iris.BI
+public import Iris.Algebra
+public import Iris.Instances.UPred
+
+@[expose] public section
 namespace Iris
 
 open COFE

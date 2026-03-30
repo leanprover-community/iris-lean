@@ -3,10 +3,12 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Puming Liu
 -/
-import Iris.Algebra.Heap
-import Iris.Algebra.View
-import Iris.Algebra.DFrac
-import Iris.Algebra.Frac
+module
+
+public import Iris.Algebra.Heap
+public import Iris.Algebra.View
+public import Iris.Algebra.DFrac
+public import Iris.Algebra.Frac
 
 /-!
 # Heap Views
@@ -27,6 +29,8 @@ It provides authoritative and fragmental ownership over heap elements with fract
 * `HeapView.update_one_delete`: Deletion update lemma
 * `HeapView.update_replace`: Replacement update lemma
 -/
+
+@[expose] public section
 
 open Iris
 

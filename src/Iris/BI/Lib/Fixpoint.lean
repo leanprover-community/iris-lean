@@ -3,9 +3,12 @@ Copyright (c) 2026 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
+module
 
-import Iris.BI
-import Iris.ProofMode
+public import Iris.BI
+public import Iris.ProofMode
+
+@[expose] public section
 
 namespace Iris
 open Iris.Std BI OFE

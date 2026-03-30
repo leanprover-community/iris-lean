@@ -3,8 +3,12 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.Algebra.OFE
-import Iris.BI.BIBase
+module
+
+public import Iris.Algebra.OFE
+public import Iris.BI.BIBase
+
+@[expose] public section
 
 namespace Iris
 open Iris.Std OFE

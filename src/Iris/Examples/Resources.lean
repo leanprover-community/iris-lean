@@ -3,11 +3,15 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
-import Iris.ProofMode
-import Iris.Algebra.IProp
-import Iris.Instances.UPred.Instance
-import Iris.Instances.IProp.Instance
-import Iris.Algebra.Agree
+module
+
+public import Iris.ProofMode
+public import Iris.Algebra.IProp
+public import Iris.Instances.UPred.Instance
+public import Iris.Instances.IProp.Instance
+public import Iris.Algebra.Agree
+
+@[expose] public section
 
 namespace Iris.Examples
 open Iris.BI COFE

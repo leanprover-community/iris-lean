@@ -3,13 +3,16 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Mario Carneiro
 -/
+module
 
-import Iris.BI
-import Iris.Algebra.OFE
-import Iris.Algebra.CMRA
-import Iris.Algebra.UPred
-import Iris.Algebra.Updates
-import Iris.BI.Lib.BUpdPlain
+public import Iris.BI
+public import Iris.Algebra.OFE
+public import Iris.Algebra.CMRA
+public import Iris.Algebra.UPred
+public import Iris.Algebra.Updates
+public import Iris.BI.Lib.BUpdPlain
+
+@[expose] public section
 
 section UPredInstance
 

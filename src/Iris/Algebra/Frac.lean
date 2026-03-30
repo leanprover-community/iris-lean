@@ -3,9 +3,10 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Shreyas Srinivas, Mario Carneiro
 -/
+module
 
-import Iris.Algebra.CMRA
-import Iris.Algebra.OFE
+public import Iris.Algebra.CMRA
+public import Iris.Algebra.OFE
 
 /-!
 # The Frac CMRA
@@ -13,6 +14,8 @@ import Iris.Algebra.OFE
 This CMRA captures the notion of fractional ownership of another resource.
 Traditionally the underlying set is assumed to be the half open interval $$(0,1]$$.
 -/
+
+@[expose] public section
 
 namespace Iris
 

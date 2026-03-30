@@ -1,3 +1,5 @@
-import Iris.Algebra.Lib.DFracAgree
-import Iris.Algebra.Lib.ExclAuth
-import Iris.Algebra.Lib.FracAuth
+module
+
+public import Iris.Algebra.Lib.DFracAgree
+public import Iris.Algebra.Lib.ExclAuth
+public import Iris.Algebra.Lib.FracAuth

@@ -3,19 +3,27 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-import Iris.ProofMode.Patterns.CasesPattern
-import Iris.ProofMode.Tactics.HaveCore
-import Iris.ProofMode.Tactics.Cases
+module
+
+import Iris.BI
+public meta import Iris.ProofMode.Patterns.CasesPattern
+public meta import Iris.ProofMode.Tactics.HaveCore
+public meta import Iris.ProofMode.Tactics.Cases
 
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
 
-macro "ihave" colGt pat:icasesPat " := " pmt:pmTerm : tactic => `(tactic | icases +keep $pmt with $pat)
+public section
+open BI
 
-private theorem ihave_assert [BI PROP] {A B C : PROP}
+theorem ihave_assert [BI PROP] {A B C : PROP}
   (h1 : A ∗ □ (B -∗ B) ⊢ C) : A ⊢ C :=
     (and_intro .rfl (persistently_emp_intro.trans (persistently_mono $ wand_intro emp_sep.1))).trans
       $ persistently_and_intuitionistically_sep_r.1.trans h1
+
+public meta section
+open Lean Elab Tactic Meta Qq
+
+macro "ihave" colGt pat:icasesPat " := " pmt:pmTerm : tactic => `(tactic | icases +keep $pmt with $pat)
 
 elab "ihave" colGt pat:icasesPat " : " P:term "$$" spat:specPat : tactic => do
   let spat ← liftMacroM <| SpecPat.parse spat
