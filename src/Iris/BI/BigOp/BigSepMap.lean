@@ -16,7 +16,7 @@ public section
 
 namespace Iris.BI
 
-open Iris.Algebra BigOpL BigOpM BIBase Iris.Std BigSepL
+open Iris.Algebra BigOpL BigOpM BIBase Iris.Std BigSepL LawfulPartialMap
 open scoped PartialMap
 
 /-! # Big Separating Conjunction over Maps
@@ -68,9 +68,9 @@ theorem bigSepM_delete {Φ : K → V → PROP} {m : M V} {i : K} {x : V}
 
 @[rocq_alias big_sepM_mono]
 theorem bigSepM_mono {Φ Ψ : K → V → PROP} {m : M V}
-    (h : ∀ k v, get? m k = some v → Φ k v ⊢ Ψ k v) :
+    (h : ∀ {k v}, get? m k = some v → Φ k v ⊢ Ψ k v) :
     ([∗map] k ↦ x ∈ m, Φ k x) ⊢ [∗map] k ↦ x ∈ m, Ψ k x :=
-  bigOpM_gen_proper .rfl sep_mono (h _ _ ·)
+  bigOpM_gen_proper .rfl sep_mono h
 
 @[rocq_alias big_sepM_proper]
 theorem bigSepM_equiv {Φ Ψ : K → V → PROP} {m : M V}
@@ -91,15 +91,15 @@ theorem bigSepM_dist {Φ Ψ : K → V → PROP} {m : M V} {n : Nat}
 
 @[rocq_alias big_sepM_mono']
 theorem bigSepM_mono_of_forall {Φ Ψ : K → V → PROP} {m : M V}
-    (h : ∀ k x, Φ k x ⊢ Ψ k x) :
+    (h : ∀ {k x}, Φ k x ⊢ Ψ k x) :
     ([∗map] k ↦ x ∈ m, Φ k x) ⊢ [∗map] k ↦ x ∈ m, Ψ k x :=
-  bigSepM_mono fun k x _ => h k x
+  bigSepM_mono fun _ => h
 
 @[rocq_alias big_sepM_flip_mono]
 theorem bigSepM_flip_mono {Φ Ψ : K → V → PROP} {m : M V}
-    (h : ∀ k x, Ψ k x ⊢ Φ k x) :
+    (h : ∀ {k x}, Ψ k x ⊢ Φ k x) :
     ([∗map] k ↦ x ∈ m, Ψ k x) ⊢ [∗map] k ↦ x ∈ m, Φ k x :=
-  bigSepM_mono fun k x _ => h k x
+  bigSepM_mono fun _ => h
 
 /-! ## Typeclass Instances -/
 
@@ -211,14 +211,14 @@ theorem bigSepM_sep_equiv_symm {Φ Ψ : K → V → PROP} {m : M V} :
 theorem bigSepM_and {Φ Ψ : K → V → PROP} {m : M V} :
     ([∗map] k ↦ x ∈ m, iprop(Φ k x ∧ Ψ k x)) ⊢
       ([∗map] k ↦ x ∈ m, Φ k x) ∧ [∗map] k ↦ x ∈ m, Ψ k x :=
-  and_intro (bigSepM_mono fun _ _ _ => and_elim_l) (bigSepM_mono fun _ _ _ => and_elim_r)
+  and_intro (bigSepM_mono fun _ => and_elim_l) (bigSepM_mono fun _ => and_elim_r)
 
 @[rocq_alias big_sepM_wand]
 theorem bigSepM_wand {Φ Ψ : K → V → PROP} {m : M V} :
     ([∗map] k ↦ x ∈ m, Φ k x) ⊢
       ([∗map] k ↦ x ∈ m, iprop(Φ k x -∗ Ψ k x)) -∗ [∗map] k ↦ x ∈ m, Ψ k x :=
   wand_intro <| (equiv_iff.mp bigSepM_sep_equiv.symm).1.trans <|
-    bigSepM_mono fun _ _ _ => wand_elim_r
+    bigSepM_mono fun _ => wand_elim_r
 
 /-! ## Lookup Lemmas -/
 
@@ -346,7 +346,7 @@ theorem bigSepM_impl {Φ Ψ : K → V → PROP} {m : M V} :
       □ (∀ k v, iprop(⌜get? m k = some v⌝ → Φ k v -∗ Ψ k v)) -∗
       [∗map] k ↦ x ∈ m, Ψ k x := by
   refine wand_intro <| (sep_mono_r ?_).trans <| (equiv_iff.mp bigSepM_sep_equiv.symm).1.trans <|
-    bigSepM_mono fun _ _ _ => wand_elim_r
+    bigSepM_mono fun _ => wand_elim_r
   exact bigSepM_intro (m := m) fun k x hget => intuitionistically_elim.trans <|
     ((forall_elim k).trans <| forall_elim x).trans <|
     (imp_mono_l <| pure_mono fun _ => hget).trans true_imp.1
@@ -361,7 +361,6 @@ theorem bigSepM_dup {P : PROP} [Affine P] {m : M V} :
 @[rocq_alias big_sepM_pure_1]
 theorem bigSepM_pure_intro {φ : K → V → Prop} {m : M V} :
     ([∗map] k ↦ x ∈ m, (⌜φ k x⌝ : PROP)) ⊢ ⌜PartialMap.all φ m⌝ := by
-  -- bigSepM unfolds to bigOpL over toList
   show bigOpL sep (fun _ (kv : K × V) => (pure (PROP := PROP) (φ kv.1 kv.2))) (toList m) ⊢ _
   exact (bigSepL_pure_intro (l := toList (K := K) m)).trans <| pure_mono fun h k v hget =>
     let ⟨idx, hidx⟩ := List.mem_iff_getElem.mp (toList_get (M := M).mpr hget)
@@ -384,7 +383,7 @@ theorem bigSepM_pure [BIAffine PROP] {φ : K → V → Prop} {m : M V} :
     ([∗map] k ↦ x ∈ m, (⌜φ k x⌝ : PROP)) ⊣⊢ ⌜PartialMap.all φ m⌝ :=
   ⟨bigSepM_pure_intro,
    (affine_affinely _).2.trans <|
-    bigSepM_affinely_pure_elim.trans (bigSepM_mono fun _ _ _ => affinely_elim)⟩
+    bigSepM_affinely_pure_elim.trans (bigSepM_mono fun _ => affinely_elim)⟩
 
 /-! ## Map Conversion -/
 
@@ -407,19 +406,19 @@ theorem bigSepM_persistently {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
     (<pers> [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, <pers> Φ k x :=
   letI := MonoidHomomorphism.ofEquiv (PROP := PROP) persistently_ne
        (equiv_iff.mpr persistently_sep) (equiv_iff.mpr persistently_emp')
-  equiv_iff.mp <| bigOpL_hom _ (toList (K := K) m)
+  equiv_iff.mp <| bigOpL_hom _ (toList m)
 
 @[rocq_alias big_sepM_later]
 theorem bigSepM_later {Φ : K → V → PROP} {m : M V} [BIAffine PROP] :
     (▷ [∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ [∗map] k ↦ x ∈ m, (▷ Φ k x) :=
   letI := MonoidHomomorphism.ofEquiv (PROP := PROP) later_ne
     (equiv_iff.mpr later_sep) (equiv_iff.mpr later_emp)
-  equiv_iff.mp <| bigOpL_hom _ (toList (K := K) m)
+  equiv_iff.mp <| bigOpL_hom _ (toList m)
 
 @[rocq_alias big_sepM_later_2]
 theorem bigSepM_later_2 {Φ : K → V → PROP} {m : M V} :
     ([∗map] k ↦ x ∈ m, ▷ Φ k x) ⊢ iprop(▷ [∗map] k ↦ x ∈ m, Φ k x) :=
-  bigOpM_gen_proper (R := fun a b => a ⊢ later b) (Φ := fun k x => later (Φ k x)) (Ψ := Φ) (m := m)
+  bigOpM_gen_proper (R := fun a b => a ⊢ later b) (Φ := fun k x => later (Φ k x)) (Ψ := Φ)
     later_intro (fun h1 h2 => (sep_mono h1 h2).trans later_sep.2) (fun _ => .rfl)
 
 @[rocq_alias big_sepM_laterN]
@@ -431,8 +430,6 @@ theorem bigSepM_laterN {Φ : K → V → PROP} {m : M V} {n : Nat} [BIAffine PRO
 theorem bigSepM_laterN_2 {Φ : K → V → PROP} {m : M V} {n : Nat} :
     ([∗map] k ↦ x ∈ m, ▷^[n] Φ k x) ⊢ (▷^[n] [∗map] k ↦ x ∈ m, Φ k x) :=
   match n with | 0 => .rfl | _ + 1 => bigSepM_later_2.trans <| later_mono bigSepM_laterN_2
-
-/-! ## Map Transformations -/
 
 @[rocq_alias big_sepM_fmap]
 theorem bigSepM_map {Φ : K → V → PROP} {m : M V} {f : V → V} :
@@ -473,8 +470,6 @@ theorem bigSepM_union [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V}
       ([∗map] k ↦ y ∈ m₁, Φ k y) ∗ [∗map] k ↦ y ∈ m₂, Φ k y :=
   equiv_iff.mp (bigOpM_union_equiv Φ m₁ m₂ hdisj)
 
-/-! ## Lookup Acc Impl -/
-
 @[rocq_alias big_sepM_lookup_acc_impl]
 theorem bigSepM_lookup_acc_impl [DecidableEq K] {Φ : K → V → PROP} {m : M V} {i : K} {x : V}
     (h : get? m i = some x) :
@@ -487,26 +482,111 @@ theorem bigSepM_lookup_acc_impl [DecidableEq K] {Φ : K → V → PROP} {m : M V
       bigSepM_intro (Φ := fun k v => if k = i then emp else iprop(Φ k v -∗ Ψ k v))
         (m := delete m i) fun k v hget' => ?_
       ).trans <| (equiv_iff.mp bigSepM_sep_equiv.symm).1.trans <|
-      bigSepM_mono fun k v hdel => ?_).trans (bigSepM_delete h).2
-  · -- Prove the intro goal for each entry of delete m i
-    have hki : k ≠ i := fun heq => by subst heq; simp [get?_delete_eq] at hget'
+      bigSepM_mono fun {k v} hdel => ?_).trans (bigSepM_delete h).2
+  · have hki : k ≠ i := fun heq => by subst heq; simp [get?_delete_eq] at hget'
     simp only [show (k = i) = False from eq_false hki, ite_false]
     exact intuitionistically_elim.trans <| ((forall_elim k).trans <| forall_elim v).trans <|
       ((and_intro (pure_intro (show get? (m : M V) k = some v from
         (get?_delete_ne (Ne.symm hki)).symm.trans hget')) .rfl).trans
         imp_elim_r).trans <|
       ((and_intro (pure_intro hki) .rfl).trans imp_elim_r)
-  · -- Combine the sep results: k from delete m i, so k ≠ i
-    have hki : k ≠ i := fun heq => by subst heq; simp [get?_delete_eq] at hdel
+  · have hki : k ≠ i := fun heq => by subst heq; simp [get?_delete_eq] at hdel
     simp only [show (k = i) = False from eq_false hki, ite_false]
     exact wand_elim_r
 
--- TODO: `big_sepM_sep_zip_with`, `big_sepM_sep_zip` — the algebra-level
--- `bigOpM_sep_zipWith_equiv` / `bigOpM_sep_zip_equiv` exist, but the BI-level
--- port requires cross-map permutation witnesses that are not yet derived.
+@[rocq_alias big_sepM_sep_zip_with]
+theorem bigSepM_sep_zipWith {A B C : Type _}
+    {f : A → B → C} {g₁ : C → A} {g₂ : C → B}
+    {Φ₁ : K → A → PROP} {Φ₂ : K → B → PROP}
+    {m₁ : M A} {m₂ : M B}
+    (hg₁ : ∀ {x y}, g₁ (f x y) = x) (hg₂ : ∀ {x y}, g₂ (f x y) = y)
+    (hdom : ∀ k, (get? m₁ k).isSome ↔ (get? m₂ k).isSome) :
+    ([∗map] k ↦ xy ∈ PartialMap.zipWith f m₁ m₂, Φ₁ k (g₁ xy) ∗ Φ₂ k (g₂ xy)) ⊣⊢
+      ([∗map] k ↦ x ∈ m₁, Φ₁ k x) ∗ [∗map] k ↦ y ∈ m₂, Φ₂ k y :=
+  equiv_iff.mp (bigOpM_sep_zipWith_equiv Φ₁ Φ₂ hg₁ hg₂ hdom)
 
--- TODO: `big_sepM_impl_strong` — requires induction over the second map
--- (`LawfulFiniteMap.induction_on`) interleaved with filter rewrites; deferred.
+@[rocq_alias big_sepM_sep_zip]
+theorem bigSepM_sep_zip {A B : Type _}
+    {Φ₁ : K → A → PROP} {Φ₂ : K → B → PROP}
+    {m₁ : M A} {m₂ : M B}
+    (hdom : ∀ k, (get? m₁ k).isSome ↔ (get? m₂ k).isSome) :
+    ([∗map] k ↦ xy ∈ PartialMap.zip m₁ m₂, Φ₁ k xy.1 ∗ Φ₂ k xy.2) ⊣⊢
+      ([∗map] k ↦ x ∈ m₁, Φ₁ k x) ∗ [∗map] k ↦ y ∈ m₂, Φ₂ k y :=
+  equiv_iff.mp (bigOpM_sep_zip_equiv Φ₁ Φ₂ hdom)
+
+@[rocq_alias big_sepM_impl_strong]
+theorem bigSepM_impl_strong [DecidableEq K]
+    {M₂ : Type _ → Type _} {V₂ : Type _} [LawfulFiniteMap M₂ K]
+    {Φ : K → V → PROP} {Ψ : K → V₂ → PROP} {m₁ : M V} {m₂ : M₂ V₂} :
+    ([∗map] k ↦ x ∈ m₁, Φ k x) ⊢
+      □ (∀ k, ∀ y, (match get? m₁ k with | some x => Φ k x | none => emp) -∗
+         iprop(⌜get? m₂ k = some y⌝ → Ψ k y)) -∗
+      ([∗map] k ↦ y ∈ m₂, Ψ k y) ∗
+        [∗map] k ↦ x ∈ PartialMap.filter (fun k _ => (get? m₂ k).isNone) m₁, Φ k x := by
+  refine wand_intro ?_
+  let P : M₂ V₂ → Prop := fun m₂ => ∀ (m₁ : M V),
+      ([∗map] k ↦ x ∈ m₁, Φ k x) ∗
+      □ (∀ k y, (match get? m₁ k with | some x => Φ k x | none => emp) -∗
+         iprop(⌜get? m₂ k = some y⌝ → Ψ k y))
+      ⊢ ([∗map] k ↦ y ∈ m₂, Ψ k y) ∗
+          [∗map] k ↦ x ∈ PartialMap.filter (fun k _ => (get? m₂ k).isNone) m₁, Φ k x
+  suffices h : P m₂ from h m₁
+  refine LawfulFiniteMap.induction_on (K := K) ?_ ?_ ?_ m₂
+  · refine fun _ _ heq IH m₁ => (sep_mono_r ?_).trans (IH m₁) |>.trans
+        (sep_mono (equiv_iff.mp (bigOpM_equiv_of_perm Ψ heq)).1
+          (equiv_iff.mp (bigOpM_equiv_of_perm Φ ?_)).1)
+    exact intuitionistically_mono <| forall_mono fun k => forall_mono fun y =>
+      wand_mono_r <| imp_intro' <| pure_elim_l fun hget =>
+        (and_intro (pure_intro (heq k ▸ hget)) .rfl).trans imp_elim_r
+    exact fun k => by simp only [get?_filter]; congr 1; cases get? m₁ k <;> simp [heq k]
+  · exact fun m₁ => (sep_mono_r Affine.affine).trans sep_emp.1 |>.trans
+      (equiv_iff.mp (bigOpM_equiv_of_perm Φ (fun k => by
+        rw [get?_filter]; cases get? m₁ k with | none => rfl | some v => simp [get?_empty k]))).2
+      |>.trans sep_emp.2 |>.trans (sep_comm.1.trans (sep_mono_l bigSepM_empty.2))
+  · refine fun i y m₂'' hi IH m₁ => ((sep_mono_r intuitionistically_sep_idem.2).trans sep_assoc.2).trans ?_
+    cases hm₁i : get? m₁ i with
+    | none =>
+      refine (sep_mono_r (intuitionistically_elim.trans <| (forall_elim i).trans <|
+          (forall_elim y).trans <| by simp only [hm₁i, get?_insert_eq rfl]; exact
+          (wand_mono_r true_imp.1).trans (emp_sep.2.trans (sep_comm.1.trans wand_elim_l)))).trans ?_
+      refine (sep_mono_l (sep_mono_r (intuitionistically_mono <| forall_mono fun k =>
+          forall_mono fun y' => wand_mono_r <| imp_intro' <| pure_elim_l fun hget =>
+            let hne : k ≠ i := fun h => absurd (h ▸ hget) (by simp [hi])
+            (and_intro (pure_intro ((get?_insert_ne hne.symm).trans hget)) .rfl).trans
+              imp_elim_r))).trans ?_
+      refine (sep_mono_l (IH m₁)).trans <| sep_assoc.1.trans <|
+        (sep_mono_r sep_comm.1).trans <| sep_assoc.2.trans <|
+        (sep_mono_l (sep_comm.1.trans (bigSepM_insert hi).2)).trans ?_
+      refine sep_mono_r (equiv_iff.mp (bigOpM_equiv_of_perm Φ (fun k => ?_))).2
+      simp only [get?_filter]; cases hk : get? m₁ k with
+      | none => simp
+      | some v =>
+        have hne : i ≠ k := fun h => by subst h; exact absurd hk (by simp [hm₁i])
+        simp [Option.bind_some, get?_insert_ne hne]
+    | some x =>
+      refine (sep_mono_l (sep_mono_l (bigSepM_delete hm₁i).1)).trans <|
+        (sep_mono_l sep_assoc.1).trans <| sep_assoc.1.trans <|
+        (sep_mono_r (sep_mono_l sep_comm.1)).trans <| (sep_mono_r sep_assoc.1).trans <|
+        sep_assoc.2.trans ?_
+      refine (sep_mono_l ((sep_mono_r intuitionistically_elim).trans <|
+          (sep_mono_r <| (forall_elim i).trans (forall_elim y)).trans <| by
+            simp only [hm₁i, get?_insert_eq rfl]
+            exact (sep_mono_r (wand_mono_r true_imp.1)).trans wand_elim_r)).trans ?_
+      refine (sep_mono_r (sep_mono_r ?hweaken)).trans <|
+        (sep_mono_r (IH (delete m₁ i))).trans ?_
+      case hweaken =>
+        exact intuitionistically_mono <| forall_mono fun k => forall_mono fun y' =>
+          wand_intro <| imp_intro' <| pure_elim_l fun hget => by
+            have hne : i ≠ k := fun h => by subst h; exact absurd hget (by simp [hi])
+            rw [get?_delete_ne hne]
+            exact (sep_mono_l (wand_mono_r <|
+              (and_intro (pure_intro ((get?_insert_ne hne).trans hget)) .rfl).trans
+                imp_elim_r)).trans wand_elim_l
+      refine (sep_mono_r (sep_mono_r (equiv_iff.mp (bigOpM_equiv_of_perm Φ (fun k => ?_))).2)).trans <|
+        sep_assoc.2.trans (sep_mono_l (bigSepM_insert hi).2)
+      simp only [get?_filter]; by_cases hki : k = i
+      · subst hki; simp [get?_insert_eq rfl, get?_delete_eq rfl]
+      · simp only [get?_insert_ne (Ne.symm hki), get?_delete_ne (Ne.symm hki)]
 
 -- TODO: `big_sepM_subseteq` requires set difference infrastructure which is not
 -- yet available.
