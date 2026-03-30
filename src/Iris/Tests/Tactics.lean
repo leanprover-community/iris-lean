@@ -1454,7 +1454,7 @@ example [BI PROP] (P : PROP) : □ P ∗ □ P ⊢ □ P := by
   imodintro
 
 /-- Tests `imodintro` for plain (intuitionistic: .forall Plain, spatial: clear) -/
-example [BI PROP] [BIPlainly PROP] (P : PROP) [Plain P] : □ P ∗ P ⊢ ■ P := by
+example [Sbi PROP] (P : PROP) [Plain P] : □ P ∗ P ⊢ ■ P := by
   iintro ⟨□HP1, HP2⟩
   imodintro
   iexact HP1

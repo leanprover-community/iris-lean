@@ -454,11 +454,11 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 ## Examples
 
 - SI Logic 
-  - [ ] `si_logic/siprop.v`
-  - [ ] `si_logic/bi.v`
-    - [ ] BI instance 
-    - [ ] BI Persistently instance
-    - [ ] BI Later instance
+  - [x] `si_logic/siprop.v`
+  - [x] `si_logic/bi.v`
+    - [x] BI instance 
+    - [x] BI Persistently instance
+    - [x] BI Later instance
 
 - Program Logic
   - Final decisions about what to port from this folder have not been made yet.

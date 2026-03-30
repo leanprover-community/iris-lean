@@ -97,10 +97,10 @@ class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
 class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] where
   fupd_of_bupd {P : PROP} {E : CoPset} : iprop(⊢ |==> P) → iprop(⊢ |={E}=> P)
 
-class BIBUpdatePlainly (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIPlainly PROP] where
+class BIBUpdatePlainly (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] where
   bupd_plainly {P : PROP} : iprop((|==> ■ P)) ⊢ P
 
-class BIFUpdatePlainly (PROP : Type _) [BI PROP] [BIFUpdate PROP] [BIPlainly PROP] where
+class BIFUpdatePlainly (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
   fupd_plainly_keep_l (E E' : CoPset) (P R : PROP) : (R ={E,E'}=∗ ■ P) ∗ R ⊢ |={E}=> P ∗ R
   fupd_plainly_later (E : CoPset) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P
   fupd_plainly_sForall_2 (E : CoPset) (Φ : PROP → Prop) :
@@ -149,9 +149,13 @@ theorem bupd_except0 {P : PROP} : iprop(◇ (|==> P) ⊢ (|==> ◇ P)) :=
 instance {P : PROP} [Absorbing P] : Absorbing iprop(|==> P) :=
   ⟨bupd_frame_l.trans <| mono sep_elim_r⟩
 
+end BUpdLaws
+
 section BUpdPlainlyLaws
 
-variable [BIPlainly PROP] [BIBUpdatePlainly PROP]
+variable [Sbi PROP] [BIUpdate PROP] [BIBUpdatePlainly PROP]
+
+open BIUpdate
 
 theorem bupd_elim {P : PROP} [Plain P] : |==> P ⊢ P :=
   (mono Plain.plain).trans BIBUpdatePlainly.bupd_plainly
@@ -163,7 +167,6 @@ theorem bupd_plain_forall (Φ : A → PROP) [∀ x, Plain (Φ x)] :
   exact (forall_intro fun a => (forall_elim a).trans  bupd_elim)
 
 instance {P : PROP} [Plain P] : Plain iprop(|==> P) :=
-  ⟨(mono Plain.plain).trans <| (bupd_elim).trans <| BIPlainly.mono intro⟩
+  ⟨(mono Plain.plain).trans <| (bupd_elim).trans <| plainly_mono intro⟩
 
 end BUpdPlainlyLaws
-end BUpdLaws
