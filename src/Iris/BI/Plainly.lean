@@ -262,11 +262,9 @@ instance plainly_absorbing (P : PROP) : Absorbing iprop(■ P) where
   absorbing := absorbingly_elim_plainly.1
 
 @[rocq_alias plainly_si_pure]
-theorem plainly_siPure (Pi : SiProp) :
-    iprop(■ (<si_pure> Pi : PROP) ⊣⊢ <si_pure> Pi) := by
-  show iprop(<si_pure> <si_emp_valid> (<si_pure> Pi : PROP) ⊣⊢ <si_pure> Pi)
-  exact ⟨siPure_mono (siEmpValid_siPure (PROP := PROP) Pi).mp,
-         siPure_mono (siEmpValid_siPure (PROP := PROP) Pi).mpr⟩
+theorem plainly_siPure {Pi : SiProp} :
+    iprop(■ (<si_pure> Pi : PROP) ⊣⊢ <si_pure> Pi) :=
+  ⟨siPure_mono siEmpValid_siPure.mp, siPure_mono siEmpValid_siPure.mpr⟩
 
 end PlainlyLaws
 

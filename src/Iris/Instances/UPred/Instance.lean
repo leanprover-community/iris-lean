@@ -369,22 +369,22 @@ instance : Sbi (UPred M) where
   siEmpValid_ne.ne _ _ _ H := fun Hn => H _ _ Hn CMRA.unit_validN
   siPure_mono H _ _ _ hp := H _ hp
   siEmpValid_mono H _ hp := H _ _ CMRA.unit_validN hp
-  siEmpValid_siPure _ := ⟨fun _ => id, fun _ => id⟩
-  siPure_siEmpValid P n x _ H := by
+  siEmpValid_siPure := ⟨fun _ => id, fun _ => id⟩
+  siPure_siEmpValid {P n x _} H := by
     refine P.mono H ?_ n.le_refl
     exact CMRA.incN_unit
-  siPure_imp_mpr _ _ _ _ Hv HPQ m hle hPi :=
+  siPure_imp_mpr {_ _ _ _} Hv HPQ m hle hPi :=
     HPQ m _ (CMRA.inc_refl _) hle (CMRA.validN_of_le hle Hv) hPi
-  siPure_sForall_mpr _ _ _ hv H _ := H _ ⟨_, rfl⟩ _ _ .rfl (Nat.le_refl _) hv
-  persistently_imp_siPure _ Q n x Hx HPQ n' x' Hx' Hn Hv H := by
+  siPure_sForall_mpr {_ _ _} hv H _ := H _ ⟨_, rfl⟩ _ _ .rfl (Nat.le_refl _) hv
+  persistently_imp_siPure {_} Q n x Hx HPQ n' x' Hx' Hn Hv H := by
     apply Q.mono _ (CMRA.incN_of_inc _ Hx') n'.le_refl
     apply HPQ _ _ CMRA.Included.rfl Hn (CMRA.validN_of_le Hn Hx)
     exact H
-  siPure_later _ := ⟨fun _ _ _ => id, fun _ _ _ => id⟩
+  siPure_later := ⟨fun _ _ _ => id, fun _ _ _ => id⟩
   siPure_absorbing _ := ⟨fun _ _ _ ⟨_, _, _, _, h⟩ => h⟩
-  siEmpValid_later_mp _ := fun _ => id
-  siEmpValid_affinely_mpr _ _ h := ⟨trivial, h⟩
-  prop_ext_siEmpValid P Q _ h n x hn hv := by
+  siEmpValid_later_mp := fun _ => id
+  siEmpValid_affinely_mpr _ h := ⟨trivial, h⟩
+  prop_ext_siEmpValid {P Q _} h n x hn hv := by
     have hvu : ✓{n} ((UCMRA.unit : M) • x) :=
       (UCMRA.unit_left_id (x := x)).dist.validN.mpr hv
     exact ⟨fun hp => (uPred_ne (UCMRA.unit_left_id (x := x)).dist).mp

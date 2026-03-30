@@ -514,38 +514,37 @@ theorem plainly_mono_sbi {P Q : PROP} (h : P ⊢ Q) : iprop(■ P ⊢ ■ Q) :=
 
 @[rocq_alias plainly_elim_persistently]
 theorem plainly_elim_persistently_sbi {P : PROP} : iprop(■ P ⊢ <pers> P) :=
-  siPure_siEmpValid P
+  siPure_siEmpValid
 
 @[rocq_alias plainly_idemp_2]
 theorem plainly_idemp_2_sbi {P : PROP} : iprop(■ P ⊢ ■ ■ P) :=
-  siPure_mono (siEmpValid_siPure (PROP := PROP) _).mpr
+  siPure_mono siEmpValid_siPure.mpr
 
 @[rocq_alias plainly_forall_2]
 theorem plainly_forall_2_sbi {A : Type _} (Ψ : A → PROP) :
     iprop((∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a)) := by
   show iprop((∀ a, <si_pure> <si_emp_valid> Ψ a) ⊢ <si_pure> <si_emp_valid> (∀ a, Ψ a))
-  exact (siPure_forall _).mpr.trans <| siPure_mono (siEmpValid_forall _).mpr
+  exact siPure_forall.mpr.trans <| siPure_mono siEmpValid_forall.mpr
 
 @[rocq_alias plainly_exist_1]
 theorem plainly_exist_1_sbi [SbiEmpValidExist PROP] {A : Type _} (Ψ : A → PROP) :
     iprop(■ (∃ a, Ψ a) ⊢ ∃ a, ■ (Ψ a)) := by
   show iprop(<si_pure> <si_emp_valid> (∃ a, Ψ a) ⊢ ∃ a, <si_pure> <si_emp_valid> (Ψ a))
-  exact (siPure_mono (siEmpValid_exist _).mp).trans (siPure_exist _).mp
+  exact (siPure_mono siEmpValid_exist.mp).trans siPure_exist.mp
 
 @[rocq_alias plainly_impl_plainly]
 theorem plainly_impl_plainly_sbi {P Q : PROP} :
     iprop((■ P → ■ Q) ⊢ ■ (■ P → Q)) := by
   show iprop((<si_pure> <si_emp_valid> P → <si_pure> <si_emp_valid> Q)
     ⊢ <si_pure> <si_emp_valid> (<si_pure> <si_emp_valid> P → Q))
-  exact (siPure_imp_mpr _ _).trans <| siPure_mono <|
-    siEmpValid_imp_siPure _ _
+  exact siPure_imp_mpr.trans <| siPure_mono <| siEmpValid_imp_siPure
 
 @[rocq_alias plainly_emp_intro]
 theorem plainly_emp_intro_sbi {P : PROP} : iprop(P ⊢ ■ emp) := by
   show iprop(P ⊢ <si_pure> <si_emp_valid> emp)
   exact true_intro.trans <|
-    (siPure_pure (PROP := PROP) True).mpr.trans <|
-    siPure_mono (siEmpValid_emp (PROP := PROP)).mpr
+    siPure_pure.mpr.trans <|
+    siPure_mono siEmpValid_emp.mpr
 
 @[rocq_alias plainly_absorb]
 theorem plainly_absorb_sbi {P Q : PROP} : iprop(■ P ∗ Q ⊢ ■ P) := by
@@ -555,13 +554,13 @@ theorem plainly_absorb_sbi {P Q : PROP} : iprop(■ P ∗ Q ⊢ ■ P) := by
 @[rocq_alias later_plainly]
 theorem later_plainly_sbi {P : PROP} : iprop(▷ ■ P ⊣⊢ ■ ▷ P) := by
   show iprop(▷ <si_pure> <si_emp_valid> P ⊣⊢ <si_pure> <si_emp_valid> (▷ P))
-  exact (siPure_later _).symm.trans
-    ⟨siPure_mono (siEmpValid_later _).mpr, siPure_mono (siEmpValid_later _).mp⟩
+  exact siPure_later.symm.trans
+    ⟨siPure_mono siEmpValid_later.mpr, siPure_mono siEmpValid_later.mp⟩
 
 @[rocq_alias persistently_impl_si_pure_plainly]
 theorem persistently_impl_plainly_sbi {P Q : PROP} :
     iprop((■ P → <pers> Q) ⊢ <pers> (■ P → Q)) :=
-  persistently_imp_siPure _ _
+  persistently_imp_siPure
 
 -- TODO: re-evaluate whether plainly_sForall_2_sbi is needed once sForall infrastructure matures.
 -- This is Lean-specific (no Rocq counterpart) since Rocq uses impredicative polymorphic ∀.
@@ -579,8 +578,8 @@ theorem plainly_sExists_1_sbi [SbiEmpValidExist PROP] {Φ : PROP → Prop} :
     iprop(■ sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ ■ p) := by
   show iprop(<si_pure> <si_emp_valid> sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ <si_pure> <si_emp_valid> p)
   exact (siPure_mono (SbiEmpValidExist.siEmpValid_sExists_1 Φ)).trans <|
-    (siPure_exist _).mp.trans <|
-    exists_mono fun p => (siPure_and _ _).mp.trans (and_mono_l (siPure_pure _).mp)
+    siPure_exist.mp.trans <|
+    exists_mono fun p => siPure_and.mp.trans (and_mono_l siPure_pure.mp)
 
 end PlainlyFromSbi
 

@@ -3,9 +3,13 @@ Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors:
 -/
-import Iris.BI.Sbi
-import Iris.BI.Plainly
-import Iris.Std.RocqAlias
+module
+
+public import Iris.BI.Sbi
+public import Iris.BI.Plainly
+public import Iris.Std.RocqAlias
+
+@[expose] public section
 
 /-!
 # Generic CMRA validity in a BI logic
@@ -31,13 +35,11 @@ instance internalCmraValid_ne : NonExpansive (internalCmraValid (PROP := PROP) (
 @[rocq_alias internal_cmra_valid_intro]
 theorem internalCmraValid_intro (P : PROP) (a : A) (h : CMRA.Valid a) :
     P ⊢ internalCmraValid a :=
-  true_intro.trans <|
-    (siPure_pure (PROP := PROP) True).mpr.trans <|
-    siPure_mono (cmraValid_intro _ a h)
+  true_intro.trans <| siPure_pure.mpr.trans <| siPure_mono (cmraValid_intro _ a h)
 
 @[rocq_alias internal_cmra_valid_elim]
 theorem internalCmraValid_elim (a : A) : internalCmraValid a ⊢@{PROP} ⌜✓{0} a⌝ :=
-  (siPure_mono (cmraValid_elim a)).trans (siPure_pure _).mp
+  (siPure_mono (cmraValid_elim a)).trans siPure_pure.mp
 
 @[rocq_alias internal_cmra_valid_weaken]
 theorem internalCmraValid_weaken (a b : A) :
@@ -47,7 +49,7 @@ theorem internalCmraValid_weaken (a b : A) :
 @[rocq_alias internal_cmra_valid_entails]
 theorem internalCmraValid_entails [CMRA B] (a : A) (b : B) :
     (internalCmraValid a ⊢@{PROP} internalCmraValid b) ↔ ∀ n, ✓{n} a → ✓{n} b :=
-  (siPure_entails _ _).trans (cmraValid_entails_iff a b)
+  siPure_entails.trans (cmraValid_entails_iff a b)
 
 @[rocq_alias si_pure_internal_cmra_valid]
 theorem siPure_internalCmraValid (a : A) :
@@ -57,12 +59,12 @@ theorem siPure_internalCmraValid (a : A) :
 @[rocq_alias persistently_internal_cmra_valid]
 theorem persistently_internalCmraValid (a : A) :
     iprop(<pers> internalCmraValid a ⊣⊢@{PROP} internalCmraValid a) :=
-  persistently_siPure _
+  persistently_siPure
 
 @[rocq_alias plainly_internal_cmra_valid]
 theorem plainly_internalCmraValid (a : A) :
     iprop(■ internalCmraValid a ⊣⊢@{PROP} internalCmraValid a) :=
-  plainly_siPure _
+  plainly_siPure
 
 @[rocq_alias intuitionistically_internal_cmra_valid]
 theorem intuitionistically_internalCmraValid [BIAffine PROP] (a : A) :
