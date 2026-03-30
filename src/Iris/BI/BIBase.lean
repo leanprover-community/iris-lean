@@ -311,7 +311,7 @@ delab_rule except0
   | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
 
 
-/-- Plainly modality carrier class. -/
+/-- Plainly modality -/
 class Plainly (PROP : Type _) where
   plainly : PROP → PROP
 export Plainly (plainly)
