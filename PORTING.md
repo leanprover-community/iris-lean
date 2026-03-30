@@ -205,7 +205,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [x] `bi.v`
 - [ ] `big_op.v`
   - [x] Lists
-  - [ ] Maps
+  - [x] Maps
   - [ ] Sets
   - [ ] Multisets
 - [ ] `cmra.v`
