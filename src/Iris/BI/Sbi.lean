@@ -179,7 +179,11 @@ theorem siPure_or [Sbi PROP] {Pi Qi : SiProp} :
 theorem pure_iff_exists_PLift [BI PROP] {φ : Prop} : ⌜φ⌝ ⊣⊢@{PROP} ∃ _ : PLift φ, True :=
   ⟨pure_elim' (exists_intro (Ψ := fun _ => iprop(True)) <| .up ·), exists_elim (pure_intro ·.down)⟩
 
--- Here
+theorem true_siPure [Sbi PROP] : True ⊢@{PROP} <si_pure> True :=
+  calc iprop(True)
+    _ ⊢ ∀ (_ : Empty), <si_pure> ⌜True⌝ := forall_intro nofun
+    _ ⊢ <si_pure> ∀ (_ : Empty), ⌜True⌝ := siPure_forall_mpr
+    _ ⊢ <si_pure> True := siPure_mono true_intro
 
 @[rocq_alias si_pure_pure]
 theorem siPure_pure [Sbi PROP] {φ : Prop} : <si_pure> ⌜φ⌝ ⊣⊢@{PROP} ⌜φ⌝ := by
@@ -191,11 +195,11 @@ theorem siPure_pure [Sbi PROP] {φ : Prop} : <si_pure> ⌜φ⌝ ⊣⊢@{PROP} �
       _ ⊢ ⌜φ⌝ := pure_iff_exists_PLift.mpr
   · calc iprop(⌜φ⌝)
       _ ⊢ ∃ _ : PLift φ, True := pure_iff_exists_PLift.mp
-      _ ⊢ ∃ _ : PLift φ, ∀ (_ : Empty), <si_pure> ⌜True⌝ := exists_mono fun _ => forall_intro nofun
-      _ ⊢ ∃ _ : PLift φ, <si_pure> True :=
-          exists_mono fun _ => siPure_forall_mpr.trans <| siPure_mono true_intro
+      _ ⊢ ∃ _ : PLift φ, <si_pure> True := exists_mono fun _ => true_siPure
       _ ⊢ <si_pure> ∃ _ : PLift φ, True := siPure_exist.mpr
       _ ⊢ <si_pure> ⌜φ⌝ := siPure_mono pure_iff_exists_PLift.mpr
+
+-- Here
 
 @[rocq_alias si_pure_impl]
 theorem siPure_imp [Sbi PROP] (Pi Qi : SiProp) :
