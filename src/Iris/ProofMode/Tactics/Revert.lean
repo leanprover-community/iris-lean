@@ -90,21 +90,15 @@ private def RevertState.revertLeanHyp
     st.revertLeanForallHyp f α
 
 elab "irevert" pats:(colGt selPat)+ : tactic => do
-  let pats ← liftMacroM <| pats.mapM <| SelPat.parse
+  let pats ← liftMacroM <| SelPat.parse pats
 
   ProofModeM.runTactic fun mvar { e, hyps, goal, .. } => do
-    let targets ← resolveSelTargets hyps pats.toList
+    let targets ← SelPat.resolve hyps pats
     let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
     let st ← targets.reverse.foldlM (init := init) fun st target => do
       match target with
       | .inl uniq => st.revertProofModeHyp uniq
       | .inr fvar => st.revertLeanHyp fvar
 
-    let finalGoal ← mkBIGoal st.hyps st.goal
-    -- Sanity check: after the dependency precheck, all reverted Lean locals should clear.
-    let reverted := st.reverted.reverse
-    let (finalGoalId, cleared) ← finalGoal.mvarId!.tryClearMany' reverted
-    unless cleared.size == reverted.size do
-      throwError "irevert: internal error: failed to clear all reverted Lean hypotheses"
-    addMVarGoal finalGoalId
-    mvar.assign (mkApp st.pf (Expr.mvar finalGoalId))
+    let pf' ← addBIGoalWithoutFVars st.hyps st.goal st.reverted.reverse
+    mvar.assign q($(st.pf) $pf')

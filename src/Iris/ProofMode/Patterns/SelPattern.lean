@@ -28,7 +28,7 @@ inductive SelPat
   | leanIdent (name : Ident)
   deriving Repr, Inhabited
 
-partial def SelPat.parse (pat : Syntax) : MacroM SelPat := do
+partial def SelPat.parseOne (pat : TSyntax `selPat) : MacroM SelPat := do
   match go ⟨← expandMacros pat⟩ with
   | none => Macro.throwUnsupported
   | some pat => return pat
@@ -41,41 +41,38 @@ where
   | `(selPat| $name:ident) => some <| .ident name
   | _ => none
 
+partial def SelPat.parse (pats : TSyntaxArray `selPat) : MacroM (List SelPat) := do
+  return (← pats.mapM SelPat.parseOne).toList
+
 public meta section
 
 abbrev SelTarget := Name ⊕ FVarId
 
 /-- Resolve selection patterns to concrete proofmode hypotheses (`.inl`) and Lean locals (`.inr`). -/
-def resolveSelTargets (hyps : Hyps bi e) (pats : List SelPat) :
-    ProofModeM (List SelTarget) := do
-  let targetsRev ← pats.foldlM (init := []) fun acc pat => do
-    match pat with
-    | .ident name =>
-        return .inl (← hyps.findWithInfo name) :: acc
-    | .leanIdent name => do
-        let ldecl ← getLocalDeclFromUserName name.getId
-        return .inr ldecl.fvarId :: acc
-    | .intuitionistic =>
-        return hyps.allIntuitionistic.map .inl ++ acc
-    | .spatial =>
-        return hyps.allSpatial.map .inl ++ acc
-    | .pure => do
-        -- `%` selects user-facing Lean pure assumptions, so we keep only `Prop` hypotheses.
-        let fvars ← (← getLCtx).foldlM (init := []) fun acc ldecl => do
-          if ldecl.isAuxDecl || ldecl.isImplementationDetail then
-            return acc
-          if ← isProp ldecl.type then
-            return ldecl.fvarId :: acc
-          return acc
-        return fvars.map .inr ++ acc
-  return targetsRev.reverse.eraseDups
+def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget)
+  | .ident name =>
+      return [.inl (← hyps.findWithInfo name)]
+  | .leanIdent name => do
+      let ldecl ← getLocalDeclFromUserName name.getId
+      return [.inr ldecl.fvarId]
+  | .intuitionistic =>
+      return hyps.intuitionisticUniqs.map .inl
+  | .spatial =>
+      return hyps.spatialUniqs.map .inl
+  | .pure => do
+      -- `%` selects user-facing Lean pure assumptions, so we keep only `Prop` hypotheses.
+      let mut hyps := #[]
+      for ldecl in ← getLCtx do
+        if ldecl.isAuxDecl || ldecl.isImplementationDetail then
+          continue
+        if ! (← isProp ldecl.type) then
+          continue
+        hyps := hyps.push (.inr ldecl.fvarId)
+      return hyps.toList
 
-/-- Split elaborated selection targets into proofmode hypotheses and Lean locals, preserving order. -/
-def splitSelTargets (targets : List SelTarget) : List Name × List FVarId :=
-  targets.foldr (init := ([], [])) fun target (uniqs, fvars) =>
-    match target with
-    | .inl uniq => (uniq :: uniqs, fvars)
-    | .inr fvar => (uniqs, fvar :: fvars)
+def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) :
+    ProofModeM (List SelTarget) := do
+  return (← pats.flatMapM (SelPat.resolveOne hyps)).eraseDups
 
 end
 

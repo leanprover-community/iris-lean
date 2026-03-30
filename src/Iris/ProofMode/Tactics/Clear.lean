@@ -35,41 +35,32 @@ def iClearCore {prop : Q(Type u)} (_bi : Q(BI $prop)) (e e' : Q($prop))
         | throwError "iclear: {out} is not affine and the goal not absorbing"
       return q(clear_spatial (A:=$out) $pf)
 
-private structure ClearState {prop : Q(Type u)} {bi : Q(BI $prop)} (origE goal : Q($prop)) where
+private structure ClearState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (origE goal : Q($prop)) where
   (e : Q($prop)) (hyps : Hyps bi e)
   pf : Q(($e ⊢ $goal) → ($origE ⊢ $goal))
 
-private def ClearState.clearProofModeHyp {origE goal} :
+private def ClearState.clearProofModeHyp {u prop bi origE goal} :
     @ClearState u prop bi origE goal → Name →
     ProofModeM (@ClearState u prop bi origE goal)
   | { e, hyps, pf }, uniq => do
       let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove true uniq
       let step ← iClearCore bi e e' p out' goal hrem
-      let pf' : Q(($e' ⊢ $goal) → ($origE ⊢ $goal)) :=
-        ← withLocalDeclDQ `h q($e' ⊢ $goal) fun h => do
-          mkLambdaFVars #[h] <| mkApp pf <| mkApp step h
-      return { e := e', hyps := hyps', pf := pf' }
+      let pf' : Q(($e' ⊢ $goal) → ($origE ⊢ $goal)) := q(λ h => $pf ($step h))
+      return {  e := e', hyps := hyps', pf := pf' }
 
 elab "iclear" pats:(colGt selPat)+ : tactic => do
-  let pats ← liftMacroM <| pats.mapM <| SelPat.parse
+  let pats ← liftMacroM <| SelPat.parse pats
 
   ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do
-  let (uniqs, fvars) := splitSelTargets (← resolveSelTargets hyps pats.toList)
+  let (uniqs, fvars) := (← SelPat.resolve hyps pats).partitionMap id
 
   -- Clear the selected Iris hypotheses first, updating the proof-mode context and proof term.
-  let init : ClearState e goal := { e, hyps, pf := q(fun h => h) }
-  let st ← uniqs.foldlM (init := init)
-    fun st uniq => st.clearProofModeHyp uniq
+  let mut st : ClearState e goal := { e, hyps, pf := q(fun h => h) }
+  for uniq in uniqs do st ← st.clearProofModeHyp uniq
 
   -- Lean locals are cleared afterwards; first ensure no remaining hypothesis or goal depends on them.
   for fvar in fvars do
     let _ ← st.hyps.checkRemovableFVar "iclear" fvar (some goal) fvars.contains
 
-  let finalGoal ← mkBIGoal st.hyps goal
-  -- Sanity check: after the dependency precheck, all selected Lean locals should clear.
-  let fvars := fvars.reverse.toArray
-  let (finalGoalId, cleared) ← finalGoal.mvarId!.tryClearMany' fvars
-  unless cleared.size == fvars.size do
-    throwError "iclear: internal error: failed to clear all selected Lean hypotheses"
-  addMVarGoal finalGoalId
-  mvar.assign (mkApp st.pf (Expr.mvar finalGoalId))
+  let pf' ← addBIGoalWithoutFVars st.hyps goal fvars.reverse.toArray
+  mvar.assign q($(st.pf) $pf')
