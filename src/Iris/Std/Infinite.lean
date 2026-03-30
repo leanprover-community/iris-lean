@@ -3,6 +3,9 @@ Copyright (c) 2023 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
+module
+
+@[expose] public section
 
 /-- A set S is infinite if there exists an injection from Nat into the set of elements
   such that S holds. -/

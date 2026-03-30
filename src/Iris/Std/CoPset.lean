@@ -3,9 +3,12 @@ Copyright (c) 2026 Remy Seassau. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 -/
+module
 
-import Iris.Std.Positives
+public import Iris.Std.Positives
 import Iris.Std.Classes
+
+@[expose] public section
 
 /- This file implements an abstract type [CoPset] of (possibly infinite) sets
 of positive binary natural numbers ([Pos]). This type supports the

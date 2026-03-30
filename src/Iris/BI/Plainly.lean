@@ -3,11 +3,14 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
+module
 
-import Iris.BI.Classes
-import Iris.BI.BI
-import Iris.BI.DerivedLaws
-import Iris.Algebra
+public import Iris.BI.Classes
+public import Iris.BI.BI
+public import Iris.BI.DerivedLaws
+public import Iris.Algebra
+
+@[expose] public section
 
 namespace Iris
 open BI

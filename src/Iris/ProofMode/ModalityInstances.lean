@@ -3,10 +3,14 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Michael Sammler
 -/
-import Iris.BI
-import Iris.BI.DerivedLaws
-import Iris.ProofMode.Modalities
-import Iris.ProofMode.Classes
+module
+
+public import Iris.BI
+public import Iris.BI.DerivedLaws
+public import Iris.ProofMode.Modalities
+public import Iris.ProofMode.Classes
+
+@[expose] public section
 
 namespace Iris.ProofMode
 open Iris.BI

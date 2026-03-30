@@ -3,10 +3,14 @@ Copyright (c) 2025. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
-import Iris.Algebra.CMRA
-import Iris.Algebra.Updates
-import Iris.Algebra.LocalUpdates
-import Iris.Std.RocqAlias
+module
+
+public import Iris.Algebra.CMRA
+public import Iris.Algebra.Updates
+public import Iris.Algebra.LocalUpdates
+meta import Iris.Std.RocqAlias
+
+@[expose] public section
 
 namespace Iris
 
@@ -517,7 +521,7 @@ theorem oMap_ne [OFE α] [OFE α'] [OFE β] [OFE β'] :
 abbrev OF (Fa Fb : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => Csum (Fa A B) (Fb A B)
 
-private def cMap [CMRA α] [CMRA α'] [CMRA β] [CMRA β']
+def cMap [CMRA α] [CMRA α'] [CMRA β] [CMRA β']
     (fa : α -C> α') (fb : β -C> β') : Csum α β -C> Csum α' β' where
   f := map fa fb
   ne := (oMap fa.toHom fb.toHom).ne
