@@ -293,24 +293,24 @@ instance instNonExpansiveCmraValid [CMRA A] : NonExpansive (cmraValid (A := A)) 
   ne _ _ _ h _ hle := ⟨CMRA.validN_ne (Dist.le h hle), CMRA.validN_ne (Dist.le h hle).symm⟩
 
 @[rocq_alias cmra_valid_intro]
-theorem cmraValid_intro [CMRA A] (P : SiProp) (a : A) (h : CMRA.Valid a) :
+theorem cmraValid_intro [CMRA A] {P : SiProp} {a : A} (h : CMRA.Valid a) :
     P ⊢ cmraValid a :=
   fun n _ => (CMRA.valid_iff_validN.mp h) n
 
 @[rocq_alias cmra_valid_elim]
-theorem cmraValid_elim [CMRA A] (a : A) : cmraValid a ⊢ ⌜✓{0} a⌝ :=
+theorem cmraValid_elim [CMRA A] {a : A} : cmraValid a ⊢ ⌜✓{0} a⌝ :=
   fun _ => CMRA.validN_of_le (Nat.zero_le _)
 
 @[rocq_alias cmra_valid_weaken]
-theorem cmraValid_weaken [CMRA A] (a b : A) : cmraValid (a • b) ⊢ cmraValid a :=
+theorem cmraValid_weaken [CMRA A] {a b : A} : cmraValid (a • b) ⊢ cmraValid a :=
   fun _ => CMRA.validN_op_left
 
 @[rocq_alias valid_entails]
-theorem cmraValid_entails_iff [CMRA A] [CMRA B] (a : A) (b : B) :
+theorem cmraValid_entails_iff [CMRA A] [CMRA B] {a : A} {b : B} :
     (cmraValid a ⊢ cmraValid b) ↔ ∀ n, ✓{n} a → ✓{n} b :=
   .rfl
 
-instance cmraValid_timeless [CMRA A] [CMRA.Discrete A] (a : A) :
+instance cmraValid_timeless [CMRA A] [CMRA.Discrete A] {a : A} :
     Timeless (cmraValid a : SiProp) where
   timeless := fun n h => by
     cases n with

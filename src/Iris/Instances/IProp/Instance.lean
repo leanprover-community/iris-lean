@@ -519,7 +519,7 @@ theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOw
   next => simp [GenMap.empty_map_lookup]; exact Dist.op_l Dist.rfl
 
 theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a :=
-  (UPred.ownM_valid _).trans ((internalCmraValid_entails _ _).mpr fun _ => validN_of_iSingleton)
+  (UPred.ownM_valid _).trans (internalCmraValid_entails.mpr fun _ => validN_of_iSingleton)
 
 theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} :
     iOwn γ a1 ∗ iOwn γ a2 ⊢ internalCmraValid (a1 • a2) :=
