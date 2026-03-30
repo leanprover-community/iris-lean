@@ -77,5 +77,5 @@ def modality_plainly [Sbi PROP] : Modality PROP PROP where
   | true => λ _ _ => (intuitionistically_mono Plain.plain).trans intuitionistically_plainly
   | false => λ _ => plainly_absorbing _
   emp := plainly_emp_2
-  mono := (plainly_mono_sbi ·)
+  mono := (plainly_mono ·)
   sep := plainly_sep_2

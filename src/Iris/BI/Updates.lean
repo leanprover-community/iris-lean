@@ -167,6 +167,6 @@ theorem bupd_plain_forall (Φ : A → PROP) [∀ x, Plain (Φ x)] :
   exact (forall_intro fun a => (forall_elim a).trans  bupd_elim)
 
 instance {P : PROP} [Plain P] : Plain iprop(|==> P) :=
-  ⟨(mono Plain.plain).trans <| (bupd_elim).trans <| plainly_mono_sbi intro⟩
+  ⟨(mono Plain.plain).trans <| (bupd_elim).trans <| plainly_mono intro⟩
 
 end BUpdPlainlyLaws

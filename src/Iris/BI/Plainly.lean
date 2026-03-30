@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
@@ -27,36 +27,29 @@ section PlainlyLaws
 variable [Sbi PROP]
 variable {P Q R : PROP}
 
--- Local abbreviations for the Sbi-derived primitives, matching old BIPlainly field names
-private abbrev mono := @plainly_mono_sbi PROP _
-private abbrev elim_persistently := @plainly_elim_persistently_sbi PROP _
-private abbrev idem := @plainly_idemp_2_sbi PROP _
-private abbrev emp_intro := @plainly_emp_intro_sbi PROP _
-private abbrev plainly_absorb := @plainly_absorb_sbi PROP _
-private abbrev later_plainly := @later_plainly_sbi PROP _
-private abbrev plainly_impl_plainly := @plainly_impl_plainly_sbi PROP _
-
-instance (P : PROP) : Plain iprop(■ P) := ⟨idem⟩
+instance (P : PROP) : Plain iprop(■ P) := ⟨plainly_idemp_2⟩
 
 theorem affinely_plainly_elim : <affine> ■ P ⊢ P :=
-  (affinely_mono elim_persistently).trans persistently_and_emp_elim
+  (affinely_mono plainly_elim_persistently).trans persistently_and_emp_elim
 
 theorem persistently_elim_plainly : <pers> ■ P ⊣⊢ ■ P :=
   ⟨absorbingly_of_persistently.trans <| sep_symm.trans plainly_absorb,
-   idem.trans elim_persistently⟩
+   plainly_idemp_2.trans plainly_elim_persistently⟩
 
-theorem plainly_forall_2 {A : Type _} {Ψ : A → PROP} : (∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a) :=
-  plainly_forall_2_sbi _
+nonrec theorem plainly_forall_2 {A : Type _} {Ψ : A → PROP} : (∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a) :=
+  plainly_forall_2 _
 
 theorem plainly_persistently_elim : ■ <pers> P ⊣⊢ ■ P := by
-  constructor
-  · refine (true_and.2.trans <| and_mono emp_intro .rfl).trans ?_
-    refine .trans ?_ (mono <| and_forall_bool.2.trans persistently_and_emp_elim)
-    refine and_forall_bool.1.trans ?_
-    refine .trans ?_ plainly_forall_2
-    refine forall_mono ?_
-    exact (·.casesOn .rfl .rfl)
-  · exact idem.trans <| mono elim_persistently
+  refine ⟨?_, plainly_idemp_2.trans <| plainly_mono plainly_elim_persistently⟩
+  calc iprop(■ <pers> P)
+    _ ⊢ ■ emp ∧ ■ <pers> P := true_and.2.trans <| and_mono plainly_emp_intro .rfl
+    _ ⊢ ∀ (b : Bool), if b then ■ emp else ■ <pers> P := and_forall_bool.1
+    _ ⊢ ∀ (b : Bool), ■ (if b then emp else <pers> P) := forall_mono (·.casesOn .rfl .rfl)
+    _ ⊢ ■ ∀ (b : Bool), if b then emp else <pers> P := plainly_forall_2
+    _ ⊢ ■ (emp ∧ <pers> P) := plainly_mono and_forall_bool.2
+    _ ⊢ ■ P := plainly_mono persistently_and_emp_elim
+
+-- Here
 
 theorem absorbingly_elim_plainly : <absorb> ■ P ⊣⊢ ■ P := by
   constructor
@@ -68,7 +61,7 @@ theorem absorbingly_elim_plainly : <absorb> ■ P ⊣⊢ ■ P := by
     exact .trans .rfl absorbingly_persistently.2
 
 theorem plainly_and_sep_elim : ■ P ∧ Q ⊢ (emp ∧ P) ∗ Q :=
-  (and_mono elim_persistently .rfl).trans persistently_and_sep_elim_emp
+  (and_mono plainly_elim_persistently .rfl).trans persistently_and_sep_elim_emp
 
 theorem plainly_and_sep_assoc : ■ P ∧ (Q ∗ R) ⊣⊢ (■ P ∧ Q) ∗ R := by
   constructor
@@ -80,63 +73,63 @@ theorem plainly_and_sep_assoc : ■ P ∧ (Q ∗ R) ⊣⊢ (■ P ∧ Q) ∗ R :
     exact persistently_and_sep_assoc.2
 
 theorem plainly_and_emp_elim : emp ∧ ■ P ⊢ P :=
-  (and_mono .rfl elim_persistently).trans persistently_and_emp_elim
+  (and_mono .rfl plainly_elim_persistently).trans persistently_and_emp_elim
 
 theorem plainly_into_absorbingly : ■ P ⊢ <absorb> P :=
-  elim_persistently.trans absorbingly_of_persistently
+  plainly_elim_persistently.trans absorbingly_of_persistently
 
 theorem plainly_elim [Absorbing P] : ■ P ⊢ P :=
-  elim_persistently.trans persistently_elim
+  plainly_elim_persistently.trans persistently_elim
 
 theorem plainly_idemp : ■ ■ P ⊣⊢ ■ P :=
-  ⟨plainly_into_absorbingly.trans absorbingly_elim_plainly.1, idem⟩
+  ⟨plainly_into_absorbingly.trans absorbingly_elim_plainly.1, plainly_idemp_2⟩
 
 theorem plainly_intro' (H : ■ P ⊢ Q) : ■ P ⊢ ■ Q :=
-  plainly_idemp.2.trans <| mono <| H
+  plainly_idemp.2.trans <| plainly_mono <| H
 
 theorem plainly_pure {φ} : ■ ⌜φ⌝ ⊣⊢ (⌜φ⌝ : PROP) := by
-  refine ⟨elim_persistently.trans persistently_elim, ?_⟩
+  refine ⟨plainly_elim_persistently.trans persistently_elim, ?_⟩
   refine pure_elim' fun φ => ?_
   apply Entails.trans (Q := «forall» (fun x : Empty => iprop(■ True)))
   · exact forall_intro Empty.rec
-  · exact plainly_forall_2.trans (mono <| pure_intro φ)
+  · exact plainly_forall_2.trans (plainly_mono <| pure_intro φ)
 
 theorem plainly_forall {A : Type _} {Ψ : A → PROP} : ■ (∀ a, Ψ a) ⊣⊢ ∀ a, ■ (Ψ a) :=
-  ⟨forall_intro (mono <| forall_elim ·), plainly_forall_2⟩
+  ⟨forall_intro (plainly_mono <| forall_elim ·), plainly_forall_2⟩
 
 theorem plainly_exists_2 {α : Sort _} {Ψ : α → PROP} : (∃ a, ■ (Ψ a)) ⊢ ■ (∃ a, Ψ a) :=
-  exists_elim (mono <| exists_intro ·)
+  exists_elim (plainly_mono <| exists_intro ·)
 
 theorem plainly_exists_1 [SbiEmpValidExist PROP] {A : Type _} {Ψ : A → PROP} :
     ■ (∃ a, Ψ a) ⊢ ∃ a, ■ (Ψ a) :=
-  plainly_exist_1_sbi _
+  plainly_exist_1 _
 
 theorem plainly_exists [SbiEmpValidExist PROP] {A : Type _} {Ψ : A → PROP} : ■ (∃ a, Ψ a) ⊣⊢ ∃ a, ■ (Ψ a) :=
   ⟨plainly_exists_1, plainly_exists_2⟩
 
 theorem plainly_and : ■ (P ∧ Q) ⊣⊢ ■ P ∧ ■ Q := by
   constructor
-  · refine (mono and_forall_bool.mp).trans (.trans ?_ and_forall_bool.mpr)
+  · refine (plainly_mono and_forall_bool.mp).trans (.trans ?_ and_forall_bool.mpr)
     exact plainly_forall.mp.trans (forall_mono (·.casesOn .rfl .rfl))
-  · refine (and_forall_bool.mp).trans (.trans ?_ (mono <| and_forall_bool.mpr))
+  · refine (and_forall_bool.mp).trans (.trans ?_ (plainly_mono <| and_forall_bool.mpr))
     refine .trans (forall_mono ?_) plainly_forall.mpr
     exact (·.casesOn .rfl .rfl)
 
 theorem plainly_or_2 : ■ P ∨ ■ Q ⊢ ■ (P ∨ Q) := by
-  refine or_exists_bool.mp.trans (.trans ?_ (mono <| or_exists_bool.mpr))
+  refine or_exists_bool.mp.trans (.trans ?_ (plainly_mono <| or_exists_bool.mpr))
   refine .trans (exists_mono ?_) plainly_exists_2
   exact (·.casesOn .rfl .rfl)
 
 theorem plainly_or [SbiEmpValidExist PROP] : ■ (P ∨ Q) ⊣⊢ ■ P ∨ ■ Q := by
   refine ⟨?_, plainly_or_2⟩
-  refine (mono or_exists_bool.mp).trans (.trans ?_ or_exists_bool.mpr)
+  refine (plainly_mono or_exists_bool.mp).trans (.trans ?_ or_exists_bool.mpr)
   exact plainly_exists_1.trans <| exists_mono (·.casesOn .rfl .rfl)
 
 theorem plainly_impl : ■ (P → Q) ⊢ ■ P → ■ Q := by
   refine imp_intro' <| plainly_and.mpr.trans ?_
-  exact mono imp_elim_r
+  exact plainly_mono imp_elim_r
 
-theorem plainly_emp_2 : (emp : PROP) ⊢ ■ emp := emp_intro
+theorem plainly_emp_2 : (emp : PROP) ⊢ ■ emp := plainly_emp_intro
 
 theorem plainly_sep_dup : ■ P ⊣⊢ ■ P ∗ ■ P := by
   refine ⟨?_, plainly_absorb⟩
@@ -152,14 +145,14 @@ theorem plainly_and_sep_r_1 : P ∧ ■ Q ⊢ P ∗ ■ Q :=
   and_comm.1.trans <| plainly_and_sep_l_1.trans sep_symm
 
 theorem plainly_true_emp : ■ True ⊣⊢ ■ (emp : PROP) :=
-  ⟨emp_intro, mono true_intro⟩
+  ⟨plainly_emp_intro, plainly_mono true_intro⟩
 
 theorem plainly_and_sep : ■ (P ∧ Q) ⊢ ■ (P ∗ Q) := by
-  refine (plainly_and.mp.trans <| (and_mono idem .rfl).trans plainly_and.mpr).trans ?_
-  refine (mono <| and_mono .rfl emp_sep.mpr).trans ?_
-  refine (mono <| plainly_and_sep_assoc.1).trans ?_
-  refine (mono <| sep_mono and_comm.mp .rfl).trans ?_
-  exact (mono <| sep_mono plainly_and_emp_elim .rfl).trans .rfl
+  refine (plainly_and.mp.trans <| (and_mono plainly_idemp_2 .rfl).trans plainly_and.mpr).trans ?_
+  refine (plainly_mono <| and_mono .rfl emp_sep.mpr).trans ?_
+  refine (plainly_mono <| plainly_and_sep_assoc.1).trans ?_
+  refine (plainly_mono <| sep_mono and_comm.mp .rfl).trans ?_
+  exact (plainly_mono <| sep_mono plainly_and_emp_elim .rfl).trans .rfl
 
 theorem plainly_affinely_elim : ■ <affine> P ⊣⊢ ■ P := by
   constructor
@@ -187,14 +180,14 @@ theorem plainly_sep_2 : ■ P ∗ ■ Q ⊢ ■ (P ∗ Q) :=
 theorem plainly_sep [BIPositive PROP] : ■ (P ∗ Q) ⊣⊢ ■ P ∗ ■ Q := by
   refine ⟨?_, plainly_sep_2⟩
   refine plainly_affinely_elim.mpr.trans ?_
-  refine (mono <| affinely_sep.mp).trans ?_
+  refine (plainly_mono <| affinely_sep.mp).trans ?_
   refine .trans ?_ and_sep_plainly.mp
-  refine and_intro (mono ?_) (mono ?_)
+  refine and_intro (plainly_mono ?_) (plainly_mono ?_)
   · exact ((sep_mono .rfl affinely_elim_emp).trans sep_emp.mp).trans affinely_elim
   · exact ((sep_mono affinely_elim_emp .rfl).trans emp_sep.mp).trans affinely_elim
 
 theorem plainly_wand : ■ (P -∗ Q) ⊢ ■ P -∗ ■ Q :=
-  wand_intro <| plainly_sep_2.trans (mono wand_elim_l)
+  wand_intro <| plainly_sep_2.trans (plainly_mono wand_elim_l)
 
 theorem plainly_entails_l (H : P ⊢ ■ Q) : P ⊢ ■ Q ∗ P :=
   (and_intro H .rfl).trans plainly_and_sep_l_1
@@ -225,11 +218,11 @@ theorem persistently_wand_affinely_plainly :
     (<affine> ■ P -∗ <pers> Q) ⊢ <pers> (<affine> ■ P -∗ Q) := by
   refine impl_wand_affinely_plainly.mpr.trans ?_
   refine .trans ?_ (persistently_mono impl_wand_affinely_plainly.mp)
-  exact persistently_impl_plainly_sbi
+  exact persistently_impl_plainly
 
 theorem plainly_wand_affinely_plainly : (<affine> ■ P -∗ ■ Q) ⊢ ■ (<affine> ■ P -∗ Q) := by
   refine impl_wand_affinely_plainly.mpr.trans ?_
-  refine .trans ?_ (mono impl_wand_affinely_plainly.mp)
+  refine .trans ?_ (plainly_mono impl_wand_affinely_plainly.mp)
   exact plainly_impl_plainly
 
 section AffineBI

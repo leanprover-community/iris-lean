@@ -23,20 +23,20 @@ instance fromAssumption_plainly_l_true [Sbi PROP] (P Q : PROP)
 
 instance fromAssumption_plainly_l_false [Sbi PROP] [BIAffine PROP] (P Q : PROP)
     [h : FromAssumption true .in P Q] : FromAssumption false .in iprop(■ P) Q where
-  from_assumption := plainly_elim_persistently_sbi.trans <|
+  from_assumption := plainly_elim_persistently.trans <|
     intuitionistically_iff_persistently.2.trans h.1
 
 /-- FromPure -/
 
 instance fromPure_plainly [Sbi PROP] (P : PROP) (φ : Prop)
     [h : FromPure false P φ] : FromPure false iprop(■ P) φ where
-  from_pure := plainly_pure.2.trans (plainly_mono_sbi h.1)
+  from_pure := plainly_pure.2.trans (plainly_mono h.1)
 
 /-- IntoPure -/
 
 instance intoPure_plainly [Sbi PROP] (P : PROP) (φ : Prop)
     [h : IntoPure P φ] : IntoPure iprop(■ P) φ where
-  into_pure := (plainly_mono_sbi h.1).trans plainly_elim
+  into_pure := (plainly_mono h.1).trans plainly_elim
 
 /-- IntoWand -/
 
@@ -53,13 +53,13 @@ instance intoWand_plainly_false [Sbi PROP] (q : Bool) ioP ioQ (R P Q : PROP)
 
 instance fromAnd_plainly [Sbi PROP] (P Q1 Q2 : PROP)
     [h : FromAnd P Q1 Q2] : FromAnd iprop(■ P) iprop(■ Q1) iprop(■ Q2) where
-  from_and := plainly_and.2.trans (plainly_mono_sbi h.1)
+  from_and := plainly_and.2.trans (plainly_mono h.1)
 
 /-- FromSep -/
 
 instance fromSep_plainly [Sbi PROP] (P Q1 Q2 : PROP)
     [h : FromSep P Q1 Q2] : FromSep iprop(■ P) iprop(■ Q1) iprop(■ Q2) where
-  from_sep := plainly_sep_2.trans (plainly_mono_sbi h.1)
+  from_sep := plainly_sep_2.trans (plainly_mono h.1)
 
 /-- IntoAnd -/
 
@@ -67,62 +67,62 @@ instance intoAnd_plainly [Sbi PROP] (p : Bool) (P Q1 Q2 : PROP)
     [h : IntoAnd p P Q1 Q2] : IntoAnd p iprop(■ P) iprop(■ Q1) iprop(■ Q2) where
   into_and := by
     cases p <;> simp only [intuitionisticallyIf, Bool.false_eq_true, ↓reduceIte]
-    · exact (plainly_mono_sbi h.1).trans plainly_and.1
+    · exact (plainly_mono h.1).trans plainly_and.1
     · apply (intuitionistically_idem).2.trans (intuitionistically_mono _)
-      apply (intuitionistically_plainly.trans (plainly_mono_sbi h.1)).trans _
+      apply (intuitionistically_plainly.trans (plainly_mono h.1)).trans _
       apply Entails.trans _ (plainly_and.1)
-      apply plainly_mono_sbi
+      apply plainly_mono
       apply intuitionistically_elim
 
 /-- IntoSep -/
 
 instance intoSep_plainly [Sbi PROP] [BIPositive PROP] (P Q1 Q2 : PROP)
     [h : IntoSep P Q1 Q2] : IntoSep iprop(■ P) iprop(■ Q1) iprop(■ Q2) where
-  into_sep := (plainly_mono_sbi h.1).trans plainly_sep.1
+  into_sep := (plainly_mono h.1).trans plainly_sep.1
 
 instance intoSep_plainly_affine [Sbi PROP] (P Q1 Q2 : PROP)
     [h : IntoSep P Q1 Q2]
     [TCOr (Affine Q1) (Absorbing Q2)] [TCOr (Affine Q2) (Absorbing Q1)] :
     IntoSep iprop(■ P) iprop(■ Q1) iprop(■ Q2) where
-  into_sep := (plainly_mono_sbi (h.1.trans sep_and)).trans <|
+  into_sep := (plainly_mono (h.1.trans sep_and)).trans <|
     plainly_and.1.trans and_sep_plainly.1
 
 /-- FromOr -/
 
 instance fromOr_plainly [Sbi PROP] (P Q1 Q2 : PROP)
     [h : FromOr P Q1 Q2] : FromOr iprop(■ P) iprop(■ Q1) iprop(■ Q2) where
-  from_or := plainly_or_2.trans (plainly_mono_sbi h.1)
+  from_or := plainly_or_2.trans (plainly_mono h.1)
 
 /-- IntoOr -/
 
 instance intoOr_plainly [Sbi PROP] [SbiEmpValidExist PROP] (P Q1 Q2 : PROP)
     [h : IntoOr P Q1 Q2] : IntoOr iprop(■ P) iprop(■ Q1) iprop(■ Q2) where
-  into_or := (plainly_mono_sbi h.1).trans plainly_or.1
+  into_or := (plainly_mono h.1).trans plainly_or.1
 
 /-- FromExists -/
 
 instance fromExists_plainly [Sbi PROP] (P : PROP) (Φ : α → PROP)
     [h : FromExists P Φ] : FromExists iprop(■ P) (fun a => iprop(■ Φ a)) where
-  from_exists := plainly_exists_2.trans (plainly_mono_sbi h.1)
+  from_exists := plainly_exists_2.trans (plainly_mono h.1)
 
 /-- IntoExists -/
 
 instance intoExists_plainly [Sbi PROP] [SbiEmpValidExist PROP] (P : PROP)
     {α : Type _} (Φ : α → PROP) [h : IntoExists P Φ] :
     IntoExists iprop(■ P) (fun a => iprop(■ Φ a)) where
-  into_exists := (plainly_mono_sbi h.1).trans plainly_exists_1
+  into_exists := (plainly_mono h.1).trans plainly_exists_1
 
 /-- IntoForall -/
 
 instance intoForall_plainly [Sbi PROP] (P : PROP) {α : Type _} (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(■ P) (fun a => iprop(■ Φ a)) where
-  into_forall := (plainly_mono_sbi h.1).trans plainly_forall.1
+  into_forall := (plainly_mono h.1).trans plainly_forall.1
 
 /-- FromForall -/
 
 instance fromForall_plainly [Sbi PROP] (P : PROP) {α : Type _} (Φ : α → PROP)
     [h : FromForall P Φ] : FromForall iprop(■ P) (fun a => iprop(■ Φ a)) where
-  from_forall := plainly_forall.2.trans (plainly_mono_sbi h.1)
+  from_forall := plainly_forall.2.trans (plainly_mono h.1)
 
 /-- FromModal -/
 
