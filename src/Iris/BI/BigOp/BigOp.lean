@@ -310,20 +310,8 @@ def delabBigAndM : Delab := do
     (fun k x m P => `([∧map]  $k ↦ $x ∈ $m, $P))
     (fun x m P => `([∧map]  $x ∈ $m, $P))
 
-/-- Delaborator for `bigOrM` -/
-@[delab app.Iris.BI.bigOrM]
-def delabBigOrM : Delab := do
-  let e ← getExpr
-  unless e.isApp do failure
-  unless e.getAppFn.isConstOf ``bigOrM do failure
-  let args := e.getAppArgs
-  unless args.size == 8 do failure
-  delabBigOpMBody args[6]! 7 6
-    (fun k x m P => `([∨map]  $k ↦ $x ∈ $m, $P))
-    (fun x m P => `([∨map]  $x ∈ $m, $P))
-
-/-- Delaborator for `bigOpM` applied to `sep`/`and`/`or` — catches cases where
-    `bigSepM`/`bigAndM`/`bigOrM` abbrevs are unfolded. -/
+/-- Delaborator for `bigOpM` applied to `sep`/`and` — catches cases where
+    `bigSepM`/`bigAndM` abbrevs are unfolded. -/
 @[delab app.Iris.Algebra.bigOpM]
 def delabBigOpM : Delab := do
   let e ← getExpr
