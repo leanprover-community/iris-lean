@@ -204,6 +204,10 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - `ascii.v`
 - [x] `bi.v`
 - [ ] `big_op.v`
+  - [x] Lists
+  - [ ] Maps
+  - [ ] Sets
+  - [ ] Multisets
 - [ ] `cmra.v`
 - [x] `derived_connectives.v`
 - [ ] `derived_laws.v`
