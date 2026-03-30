@@ -84,6 +84,21 @@ abbrev bigOrL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : PR
 
 end List
 
+public section Map
+open Iris.Algebra Iris.Std OFE BIBase
+
+/-- Big separating conjunction over a map with key access. -/
+abbrev bigSepM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
+    (Φ : K → V → PROP) (m : M V) : PROP :=
+  bigOpM sep Φ m
+
+/-- Big conjunction over a map with key access. -/
+abbrev bigAndM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
+    (Φ : K → V → PROP) (m : M V) : PROP :=
+  bigOpM and Φ m
+
+end Map
+
 public meta section
 open Lean PrettyPrinter Delaborator SubExpr
 /-! ## Notation -/
@@ -107,6 +122,16 @@ syntax "[∨list] " ident " ∈ " term ", " term : term
 -- Notation for bigOrL with index
 syntax "[∨list] " ident " ↦ " ident " ∈ " term ", " term : term
 
+-- Notation for bigSepM without key
+syntax "[∗map] " ident " ∈ " term ", " term : term
+-- Notation for bigSepM with key
+syntax "[∗map] " ident " ↦ " ident " ∈ " term ", " term : term
+
+-- Notation for bigAndM without key
+syntax "[∧map] " ident " ∈ " term ", " term : term
+-- Notation for bigAndM with key
+syntax "[∧map] " ident " ↦ " ident " ∈ " term ", " term : term
+
 macro_rules
   | `([∗list] $x:ident ∈ $l, $P) => `(bigSepL (fun _ $x => $P) $l)
   | `([∗list] $k:ident ↦ $x:ident ∈ $l, $P) => `(bigSepL (fun $k $x => $P) $l)
@@ -116,6 +141,10 @@ macro_rules
   | `([∨list] $k:ident ↦ $x:ident ∈ $l, $P) => `(bigOrL (fun $k $x => $P) $l)
   | `([∗list] $x1:ident;$x2:ident ∈ $l1;$l2, $P) => `(bigSepL2 (fun _ $x1 $x2 => $P) $l1 $l2)
   | `([∗list] $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P) => `(bigSepL2 (fun $k $x1 $x2 => $P) $l1 $l2)
+  | `([∗map] $x:ident ∈ $m, $P) => `(bigSepM (fun _ $x => $P) $m)
+  | `([∗map] $k:ident ↦ $x:ident ∈ $m, $P) => `(bigSepM (fun $k $x => $P) $m)
+  | `([∧map] $x:ident ∈ $m, $P) => `(bigAndM (fun _ $x => $P) $m)
+  | `([∧map] $k:ident ↦ $x:ident ∈ $m, $P) => `(bigAndM (fun $k $x => $P) $m)
 
 -- iprop macro rules
 macro_rules
@@ -127,6 +156,10 @@ macro_rules
   | `(iprop([∨list] $k:ident ↦ $x:ident ∈ $l, $P)) => `(bigOrL (fun $k $x => iprop($P)) $l)
   | `(iprop([∗list] $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => `(bigSepL2 (fun _ $x1 $x2 => iprop($P)) $l1 $l2)
   | `(iprop([∗list] $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => `(bigSepL2 (fun $k $x1 $x2 => iprop($P)) $l1 $l2)
+  | `(iprop([∗map] $x:ident ∈ $m, $P)) => `(bigSepM (fun _ $x => iprop($P)) $m)
+  | `(iprop([∗map] $k:ident ↦ $x:ident ∈ $m, $P)) => `(bigSepM (fun $k $x => iprop($P)) $m)
+  | `(iprop([∧map] $x:ident ∈ $m, $P)) => `(bigAndM (fun _ $x => iprop($P)) $m)
+  | `(iprop([∧map] $k:ident ↦ $x:ident ∈ $m, $P)) => `(bigAndM (fun $k $x => iprop($P)) $m)
 
 /-- Helper to delaborate a bigOpL-shaped lambda body into list notation.
     `opConst` is checked against the `op` argument; `mkWithIdx` / `mkNoIdx` build syntax. -/
@@ -226,6 +259,91 @@ def delabBigSepL2 : Delab := do
     | _ => failure
   | _ => failure
 
+/-- Helper to delaborate a bigOpM-shaped lambda body into map notation. -/
+private def delabBigOpMBody (fn : Expr) (mArg phiArg : Nat)
+    (mkWithKey : Ident → Ident → TSyntax `term → TSyntax `term → DelabM (TSyntax `term))
+    (mkNoKey : Ident → TSyntax `term → TSyntax `term → DelabM (TSyntax `term)) : Delab := do
+  let m ← withNaryArg mArg delab
+  match fn with
+  | .lam kn _ body _ =>
+    match body with
+    | .lam vn _ _ _ =>
+      let (kUsed, P) ← withNaryArg phiArg <|
+        withBindingBody' kn (fun kFVar => return kFVar.fvarId!) fun kFVarId => do
+          let kUsed := (← getExpr).bindingBody!.containsFVar kFVarId
+          let P ← withBindingBody vn delab
+          return (kUsed, P)
+      let v := mkIdent vn
+      if kUsed then
+        let k := mkIdent kn
+        mkWithKey k v m P
+      else
+        mkNoKey v m P
+    | _ =>
+      let k := mkIdent kn
+      let x := mkIdent `x
+      let P ← withNaryArg phiArg <| withBindingBody kn <| delab
+      mkWithKey k x m (← `($P $x))
+  | _ => failure
+
+/-- Delaborator for `bigSepM` -/
+@[delab app.Iris.BI.bigSepM]
+def delabBigSepM : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``bigSepM do failure
+  let args := e.getAppArgs
+  unless args.size == 8 do failure
+  delabBigOpMBody args[6]! 7 6
+    (fun k x m P => `([∗map]  $k ↦ $x ∈ $m, $P))
+    (fun x m P => `([∗map]  $x ∈ $m, $P))
+
+/-- Delaborator for `bigAndM` -/
+@[delab app.Iris.BI.bigAndM]
+def delabBigAndM : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``bigAndM do failure
+  let args := e.getAppArgs
+  unless args.size == 8 do failure
+  delabBigOpMBody args[6]! 7 6
+    (fun k x m P => `([∧map]  $k ↦ $x ∈ $m, $P))
+    (fun x m P => `([∧map]  $x ∈ $m, $P))
+
+/-- Delaborator for `bigOrM` -/
+@[delab app.Iris.BI.bigOrM]
+def delabBigOrM : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``bigOrM do failure
+  let args := e.getAppArgs
+  unless args.size == 8 do failure
+  delabBigOpMBody args[6]! 7 6
+    (fun k x m P => `([∨map]  $k ↦ $x ∈ $m, $P))
+    (fun x m P => `([∨map]  $x ∈ $m, $P))
+
+/-- Delaborator for `bigOpM` applied to `sep`/`and`/`or` — catches cases where
+    `bigSepM`/`bigAndM`/`bigOrM` abbrevs are unfolded. -/
+@[delab app.Iris.Algebra.bigOpM]
+def delabBigOpM : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``Iris.Algebra.bigOpM do failure
+  let args := e.getAppArgs
+  unless args.size == 11 do failure
+  let op := args[3]!
+  let opName := op.getAppFn.constName?
+  if opName == some ``BIBase.sep then
+    delabBigOpMBody args[7]! 10 7
+      (fun k x m P => `([∗map]  $k ↦ $x ∈ $m, $P))
+      (fun x m P => `([∗map]  $x ∈ $m, $P))
+  else if opName == some ``BIBase.and then
+    delabBigOpMBody args[7]! 10 7
+      (fun k x m P => `([∧map]  $k ↦ $x ∈ $m, $P))
+      (fun x m P => `([∧map]  $x ∈ $m, $P))
+  else
+    failure
+
 /-- Delaborator for `bigOpL` applied to `sep`/`and`/`or` — catches cases where
     `bigSepL`/`bigAndL`/`bigOrL` abbrevs are unfolded. -/
 @[delab app.Iris.Algebra.bigOpL]
@@ -295,5 +413,28 @@ variable [BI PROP] (P : Nat → PROP) (Q : Nat → Nat → PROP) (l l1 l2 : List
 #guard_msgs in #check [∗list] k ↦ x;y ∈ l1;l2, Q' k x y
 
 end Tests
+
+section MapTests
+open Iris.Std OFE BIBase
+variable [BI PROP] {K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
+  (P : Nat → PROP) (Q : K → Nat → PROP) (m : M Nat)
+
+-- bigSepM without key
+/-- info: [∗map] x ∈ m, P x : PROP -/
+#guard_msgs in #check [∗map] x ∈ m, P x
+
+-- bigSepM with key
+/-- info: [∗map] k ↦ x ∈ m, Q k x : PROP -/
+#guard_msgs in #check [∗map] k ↦ x ∈ m, Q k x
+
+-- bigAndM without key
+/-- info: [∧map] x ∈ m, P x : PROP -/
+#guard_msgs in #check [∧map] x ∈ m, P x
+
+-- bigAndM with key
+/-- info: [∧map] k ↦ x ∈ m, Q k x : PROP -/
+#guard_msgs in #check [∧map] k ↦ x ∈ m, Q k x
+
+end MapTests
 
 end Iris.BI
