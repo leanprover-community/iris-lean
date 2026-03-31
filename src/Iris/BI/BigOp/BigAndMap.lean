@@ -158,7 +158,7 @@ theorem bigAndM_lookup_dom {Φ : K → PROP} {m : M V} {i : K} {x : V}
   bigAndM_lookup h
 
 @[rocq_alias big_andM_insert_2]
-theorem bigAndM_insert_2 {Φ : K → V → PROP} {m : M V} {i : K} {x : V} :
+theorem bigAndM_insert_elim {Φ : K → V → PROP} {m : M V} {i : K} {x : V} :
     Φ i x ∧ ([∧map] k ↦ v ∈ m, Φ k v) ⊢ [∧map] k ↦ v ∈ insert m i x, Φ k v :=
   match hm : get? m i with
   | none => (bigAndM_insert hm).2
@@ -219,7 +219,7 @@ theorem bigAndM_pure_elim {φ : K → V → Prop} {m : M V} :
 
 @[rocq_alias big_andM_pure]
 theorem bigAndM_pure {φ : K → V → Prop} {m : M V} :
-    ([∧map] k ↦ x ∈ m, (⌜φ k x⌝ : PROP)) ⊣⊢ ⌜PartialMap.all φ m⌝ :=
+    ([∧map] k ↦ x ∈ m, ⌜φ k x⌝ : PROP) ⊣⊢ ⌜PartialMap.all φ m⌝ :=
   ⟨bigAndM_pure_intro, bigAndM_pure_elim⟩
 
 @[rocq_alias big_andM_later]
@@ -265,8 +265,8 @@ theorem bigAndM_filter {Φ : K → V → PROP} {m : M V} (p : K → V → Bool) 
       [∧map] k ↦ x ∈ m, iprop(⌜p k x = true⌝ → Φ k x) :=
   (bigAndM_filter_cond p).trans <| bigOpM_proper fun {k x} _ => by
     match hp : p k x with
-    | false => simp; exact equiv_iff.mpr ⟨imp_intro' <| pure_elim_l False.elim, true_intro⟩
-    | true => simp; exact equiv_iff.mpr true_imp.symm
+    | false => simpa using equiv_iff.mpr ⟨imp_intro' <| pure_elim_l False.elim, true_intro⟩
+    | true => simpa using equiv_iff.mpr true_imp.symm
 
 @[rocq_alias big_andM_union]
 theorem bigAndM_union [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V} (hdisj : m₁ ##ₘ m₂) :
