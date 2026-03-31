@@ -45,6 +45,19 @@ def addBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
   modify ({goals := ·.goals.push m.mvarId!})
   pure m
 
+/-- Create a new BI goal with the given hypotheses and goal, but without some fvars, and add it to the proof mode state.
+It is the responsibility of the user of this function to check that the variables to clear can actually be cleared (e.g. using
+`Hyps.checkRemovableFVar`). -/
+def addBIGoalWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
+  let goal ← mkBIGoal hyps goal name
+  let (clearedGoalId, cleared) ← goal.mvarId!.tryClearMany' toClear
+  unless cleared.size == toClear.size do
+    -- this should not happen since the caller of this function should call Hyps.checkRemovableFVar first
+    throwError "internal error: failed to clear all selected Lean hypotheses"
+  modify ({goals := ·.goals.push clearedGoalId})
+  return Expr.mvar clearedGoalId
+
 /-- Add an existing metavariable as a goal to the proof mode state if it is not already assigned or present. -/
 def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do
   if ← m.isAssignedOrDelayedAssigned then
