@@ -97,6 +97,18 @@ partial def Hyps.find? {u prop bi} (name : Name) :
   | _, .hyp _ name' uniq p ty _ => if name == name' then (uniq, p, ty) else none
   | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
 
+partial def Hyps.spatialUniqs {u prop bi} :
+    ∀ {s}, @Hyps u prop bi s → List Name
+  | _, .emp _ => []
+  | _, .hyp _ _ uniq p _ _ => if isTrue p then [] else [uniq]
+  | _, .sep _ _ _ _ lhs rhs => lhs.spatialUniqs ++ rhs.spatialUniqs
+
+partial def Hyps.intuitionisticUniqs {u prop bi} :
+    ∀ {s}, @Hyps u prop bi s → List Name
+  | _, .emp _ => []
+  | _, .hyp _ _ uniq p _ _ => if isTrue p then [uniq] else []
+  | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticUniqs ++ rhs.intuitionisticUniqs
+
 variable (oldUniq new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .emp _ => none
@@ -330,6 +342,25 @@ partial def Hyps.findDependencyOnFVar {prop : Q(Type u)} {bi : Q(BI $prop)}
   | _, .hyp _ name uniq p ty _ =>
       if (ty : Expr).containsFVar fvarId then some (name, uniq, p, ty)
       else none
+
+/-- Check that removing the Lean local `fvarId` leaves no dangling dependencies in the
+proofmode context, an optional goal, or remaining Lean locals not accepted by `allowedDep`. -/
+def Hyps.checkRemovableFVar {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (tac : String) (fvarId : FVarId)
+    (goal? : Option Expr := none) (allowedDep : FVarId → Bool := fun _ => false) :
+    MetaM LocalDecl := do
+  let ldecl ← fvarId.getDecl
+  if let some (name, _, _, _) := hyps.findDependencyOnFVar fvarId then
+    throwError "{tac}: proofmode hypothesis {name} depends on {ldecl.userName}"
+  if let some goal := goal? then
+    let goal ← instantiateMVars goal
+    if goal.containsFVar fvarId then
+      throwError "{tac}: goal depends on {ldecl.userName}"
+  let deps ← collectForwardDeps #[mkFVar fvarId] false
+  if let some dep := deps.find? (fun e => e.fvarId! != fvarId && !allowedDep e.fvarId!) then
+    let depDecl := (← getLCtx).getFVar! dep
+    throwError "{tac}: Lean hypothesis {depDecl.userName} depends on {ldecl.userName}"
+  return ldecl
 
 end dependency
 

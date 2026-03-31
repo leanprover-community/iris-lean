@@ -361,9 +361,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
     - [ ] with bi specified
   - [x] iStopProof
   - [x] iRename
-  - [ ] iClear
+  - [x] iClear
     - [x] basic
-    - [ ] selection patterns
+    - [x] selection patterns
   - [ ] iEval
   - [ ] iSimpl
   - [ ] iUnfold
@@ -381,7 +381,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] iRevert
     - [x] basic
     - [ ] `intoIH` revert
-    - [ ] selection patterns
+    - [x] selection patterns
   - [x] iPoseProof (Lean: ihave _ := _)
   - [ ] iSpecialize
     - [x] basic functionality
@@ -437,7 +437,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `monpred.v`
 - [x] `proofmode.v` (ProofMode.lean)
 - [-] `reduction.v` (not necessary in Lean)
-- [ ] `sel_patterns.v`
+- [x] `sel_patterns.v`
 - [ ] `spec_patterns.v`
   - [x] SIdent
   - [x] SPureGoal
