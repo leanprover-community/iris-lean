@@ -3,10 +3,13 @@ Copyright (c) 2026 Zongyuan Liu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu, Markus de Medeiros, Sergei Stepanenko
 -/
-import Iris.Algebra.Monoid
-import Iris.Std.List
-import Iris.Std.PartialMap
-import Iris.Std.GenSets
+module
+
+public import Iris.Algebra.Monoid
+import Batteries.Data.List.Perm
+public import Iris.Std.List
+public import Iris.Std.PartialMap
+public import Iris.Std.GenSets
 
 namespace Iris.Algebra
 
@@ -18,13 +21,13 @@ These are parameterized by a monoid operation and include theorems about their p
 
 open OFE Iris.Std
 
-def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+@[expose] public def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     (Φ : Nat → A → M) (l : List A) : M :=
   match l with
   | [] => unit
   | x :: xs => op (Φ 0 x) (bigOpL op (fun n => Φ (n + 1)) xs)
 
-def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
+@[expose] public def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
     {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K] (m : M' V) : M :=
   bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList (K := K) m)
 
@@ -52,6 +55,7 @@ scoped macro_rules
   | `([^ $o map] $k ↦ $x ∈ $m, $P) => `(bigOpM $o (fun $k $x => $P) $m)
   | `([^ $o map] $x ∈ $m, $P) => `(bigOpM $o (fun _ $x => $P) $m)
 
+public section
 namespace BigOpL
 
 variable {M : Type _} {A : Type _} [OFE M] {op : M → M → M} {unit : M} [MonoidOps op unit]

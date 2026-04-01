@@ -204,6 +204,10 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - `ascii.v`
 - [x] `bi.v`
 - [ ] `big_op.v`
+  - [x] Lists
+  - [ ] Maps
+  - [ ] Sets
+  - [ ] Multisets
 - [ ] `cmra.v`
 - [x] `derived_connectives.v`
 - [ ] `derived_laws.v`
@@ -357,9 +361,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
     - [ ] with bi specified
   - [x] iStopProof
   - [x] iRename
-  - [ ] iClear
+  - [x] iClear
     - [x] basic
-    - [ ] selection patterns
+    - [x] selection patterns
   - [ ] iEval
   - [ ] iSimpl
   - [ ] iUnfold
@@ -377,7 +381,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] iRevert
     - [x] basic
     - [ ] `intoIH` revert
-    - [ ] selection patterns
+    - [x] selection patterns
   - [x] iPoseProof (Lean: ihave _ := _)
   - [ ] iSpecialize
     - [x] basic functionality
@@ -433,7 +437,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `monpred.v`
 - [x] `proofmode.v` (ProofMode.lean)
 - [-] `reduction.v` (not necessary in Lean)
-- [ ] `sel_patterns.v`
+- [x] `sel_patterns.v`
 - [ ] `spec_patterns.v`
   - [x] SIdent
   - [x] SPureGoal
@@ -450,11 +454,11 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 ## Examples
 
 - SI Logic 
-  - [ ] `si_logic/siprop.v`
-  - [ ] `si_logic/bi.v`
-    - [ ] BI instance 
-    - [ ] BI Persistently instance
-    - [ ] BI Later instance
+  - [x] `si_logic/siprop.v`
+  - [x] `si_logic/bi.v`
+    - [x] BI instance 
+    - [x] BI Persistently instance
+    - [x] BI Later instance
 
 - Program Logic
   - Final decisions about what to port from this folder have not been made yet.

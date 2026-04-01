@@ -71,12 +71,82 @@ example [BI PROP] (P Q : PROP) : <affine> P ⊢ Q -∗ Q := by
   iclear HP
   iexact HQ
 
+/-- Tests clearing all intuitionistic hypotheses with `iclear #` -/
+example [BI PROP] (P Q R : PROP) : □ P ∗ □ Q ⊢ R -∗ R := by
+  iintro ⟨□HP, □HQ⟩ HR
+  iclear #
+  iexact HR
+
+/-- Tests clearing all spatial hypotheses with `iclear ∗` -/
+example [BI PROP] (P Q R : PROP) : <affine> P ∗ <affine> Q ⊢ <affine> R -∗ emp := by
+  iintro ⟨HP, HQ⟩ HR
+  iclear ∗
+  iemp_intro
+
+/-- Tests clearing a Lean variable with `iclear %x` -/
+example [BI PROP] (_x : α) (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iclear %_x
+  iexact HQ
+
+/-- Tests clearing all Lean pure hypotheses with `iclear %` -/
+example [BI PROP] (φ ψ : Prop) (_hφ : φ) (_hψ : ψ) (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iclear %
+  iexact HQ
+
+/-- Tests clearing proofmode and Lean contexts at the same time. -/
+example [BI PROP] (_x : α) (_hφ : φ) (P Q : PROP) : □ P ⊢ Q -∗ Q := by
+  iintro □HP
+  iintro HQ
+  iclear HP %_x %_hφ
+  iexact HQ
+
+/-- Tests clearing `%`, `#`, and `∗` at the same time. -/
+example [BI PROP] (_hφ : φ) (P Q R : PROP) : □ P ∗ <affine> Q ⊢ <affine> R -∗ emp := by
+  iintro ⟨□HP, HQ⟩
+  iintro HR
+  iclear % # ∗
+  iemp_intro
+
+/-- Tests clearing dependent Lean locals when the dependency comes first. -/
+example [BI PROP] (x : α) (_hx : x = x) (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iclear %x %_hx
+  iexact HQ
+
+/-- Tests clearing dependent Lean locals when the dependent hypothesis comes first. -/
+example [BI PROP] (x : α) (_hx : x = x) (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iclear %_hx %x
+  iexact HQ
+
 /- Tests `iclear` failing -/
 /-- error: iclear: P is not affine and the goal not absorbing -/
 #guard_msgs in
 example [BI PROP] (P Q : PROP) : P ⊢ Q -∗ Q := by
   iintro HP HQ
   iclear HP
+
+/- Tests `iclear` failing with a dependent Lean variable -/
+/-- error: iclear: proofmode hypothesis HQ depends on x -/
+#guard_msgs in
+example [BI PROP] (x : α) (Q : α → PROP) : Q x ⊢ Q x := by
+  iintro HQ
+  iclear %x
+
+/- Tests `iclear` failing with a dependent Lean hypothesis. -/
+/-- error: iclear: Lean hypothesis hx depends on x -/
+#guard_msgs in
+example [BI PROP] (x : α) (hx : x = x) (Q : PROP) : Q ⊢ Q := by
+  iintro HQ
+  iclear %x
+
+/- Tests `iclear` failing when the goal depends on a Lean variable. -/
+/-- error: iclear: goal depends on x -/
+#guard_msgs in
+example [BI PROP] (x : α) (Q : α → PROP) : ⊢ Q x := by
+  iclear %x
 
 end clear
 
@@ -193,7 +263,7 @@ namespace revert
 /-- Tests `irevert` order and names -/
 example [BI PROP] (P Q : PROP) : ⊢ P -∗ Q -∗ P ∗ Q := by
   iintro H1 H2
-  irevert P Q H1 H2
+  irevert %P %Q H1 H2
   iintro %P %Q H1 H2
   isplitl [H1]
   · iexact H1
@@ -214,19 +284,19 @@ example [BI PROP] (P : PROP) (H : ⊢ □ P -∗ P) : □ P ⊢ P := by
 /-- Tests `irevert` with a pure proposition -/
 example [BI PROP] (P : PROP) (Hφ : φ) : ⊢ (<affine> ⌜φ⌝ -∗ P) -∗ P := by
   iintro H
-  irevert Hφ
+  irevert %Hφ
   iexact H
 
 /-- Tests `irevert` of a pure proposition in affine BI does not add `<affine>`. -/
 example [BI PROP] [BIAffine PROP] (P : PROP) (Hφ : φ) : ⊢ (⌜φ⌝ -∗ P) -∗ P := by
   iintro H
-  irevert Hφ
+  irevert %Hφ
   iexact H
 
 /-- Tests `irevert` with a forall proposition -/
 example [BI PROP] (x : α) (Φ : α → PROP) : ⊢ (∀ x, Φ x) → Φ x := by
   iintro H
-  irevert x
+  irevert %x
   iexact H
 
 /-- Tests `irevert` with multiple spatial propositions -/
@@ -243,10 +313,35 @@ example [BI PROP] (P Q : PROP) :
   irevert HP HQ
   iexact H
 
+/-- Tests `irevert ∗` with all spatial hypotheses. -/
+example [BI PROP] (P Q : PROP) (H : ⊢ P -∗ <affine> Q -∗ P) : P ∗ <affine> Q ⊢ P := by
+  iintro ⟨HP, HQ⟩
+  irevert ∗
+  exact H
+
+/-- Tests `irevert #` with all intuitionistic hypotheses. -/
+example [BI PROP] (P Q : PROP) (H : ⊢ □ P -∗ □ Q -∗ P) : □ P ∗ □ Q ⊢ P := by
+  iintro ⟨□HP, □HQ⟩
+  irevert #
+  exact H
+
+/-- Tests `irevert %` with all Lean pure hypotheses. -/
+example [BI PROP] (P : PROP) (Hφ : φ) (Hψ : ψ) : ⊢ (<affine> ⌜φ⌝ -∗ <affine> ⌜ψ⌝ -∗ P) -∗ P := by
+  iintro H
+  irevert %
+  iexact H
+
+/-- Tests `irevert % # ∗` with Lean pure, intuitionistic, and spatial hypotheses together. -/
+example {φ ψ : Prop} [BI PROP] (P Q : PROP) (Hφ : φ) (Hψ : ψ) : □ P ∗ <affine> Q ⊢ P := by
+  iintro ⟨□HP, HQ⟩
+  irevert % # ∗
+  iintro %hφ ⌜hψ⌝ □HP _HQ
+  iexact HP
+
 /-- Tests `irevert` with mixed Lean/proofmode hypotheses and dependencies. -/
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
-  irevert x hp H
+  irevert %x %hp H
   iintro %x %hp H
   iexact H
 
@@ -255,14 +350,14 @@ example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗
 #guard_msgs in
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
-  irevert x
+  irevert %x
 
 /- Tests `irevert` failing with dependency -/
 /-- error: irevert: Lean hypothesis hp depends on x -/
 #guard_msgs in
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
-  irevert x H
+  irevert %x H
 
 end revert
 
@@ -1454,7 +1549,7 @@ example [BI PROP] (P : PROP) : □ P ∗ □ P ⊢ □ P := by
   imodintro
 
 /-- Tests `imodintro` for plain (intuitionistic: .forall Plain, spatial: clear) -/
-example [BI PROP] [BIPlainly PROP] (P : PROP) [Plain P] : □ P ∗ P ⊢ ■ P := by
+example [Sbi PROP] (P : PROP) [Plain P] : □ P ∗ P ⊢ ■ P := by
   iintro ⟨□HP1, HP2⟩
   imodintro
   iexact HP1
