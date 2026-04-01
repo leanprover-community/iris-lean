@@ -84,6 +84,11 @@ export LawfulFiniteSet (mem_toList toList_nodup)
 
 end FiniteSet
 
+class DecidableDisj (S : Type _) [LawfulSet S A] where
+  decide_disj : ∀ X₁ X₂ : S, Decidable (X₁ ## X₂)
+
+instance [LawfulSet S A] [DecidableDisj S] {X₁ X₂ : S} : Decidable (X₁ ## X₂) := DecidableDisj.decide_disj X₁ X₂
+
 namespace LawfulSet
 
 section GenLemmas
@@ -155,7 +160,7 @@ theorem mem_insert_ne : ∀ {s : S} {x y : A}, x ≠ y →
 theorem insert_union_comm {s₁ s₂ : S} {x : A} : insert x s₁ ∪ s₂ = insert x (s₁ ∪ s₂) := by
   ext y
   rw [mem_union, mem_insert, mem_insert, mem_union]
-  grind only
+  grind
 
 /-- Inserting an element that's already present doesn't change the set. -/
 theorem insert_idem {s : S} {x : A} : x ∈ s → insert x s = s := by
@@ -167,7 +172,7 @@ theorem insert_insert {s : S} {x : A} : insert x (insert x s) = insert x s := by
 
 /-- Insert operations commute. -/
 theorem insert_comm {s : S} {x y : A} : insert x (insert y s) = insert y (insert x s) := by
-  ext z; rw [mem_insert, mem_insert, mem_insert, mem_insert]; grind only
+  ext z; rw [mem_insert, mem_insert, mem_insert, mem_insert]; grind
 
 /-- Inserting into empty set yields singleton. -/
 @[simp]
@@ -204,58 +209,44 @@ theorem mem_diff_singleton : ∀ {s : S} {x y : A},
 theorem delete_notin {s : S} {x : A} (h : x ∉ s) : delete x s = s := by
   ext y
   rw [mem_delete]
-  apply Iff.intro
-  · intro ⟨hy, _⟩; exact hy
-  · intro hy; exact ⟨hy, fun heq => h (heq ▸ hy)⟩
+  exact ⟨fun ⟨hy, _⟩ => hy, fun hy => ⟨hy, fun heq => h (heq ▸ hy)⟩⟩
 
 /-- Deleting an element and then inserting it back. -/
 theorem insert_delete {s : S} {x : A} (h : x ∈ s) : insert x (delete x s) = s := by
   ext y
   rw [mem_insert, mem_delete]
-  constructor
-  · intro hh
-    cases hh with
-    | inl heq => exact heq ▸ h
-    | inr hhy => exact hhy.1
-  · intro hy
-    by_cases heq : y = x
-    · left; exact heq
-    · right; exact ⟨hy, heq⟩
+  exact ⟨fun hh => Or.elim hh (fun heq => heq ▸ h) (fun hhy => hhy.1)
+    , fun hy => Or.elim (Classical.em (y = x)) (fun heq => .inl heq) (fun hneq => .inr ⟨hy, hneq⟩)⟩
 
 /-- Deleting an element from a set, then the result doesn't contain it. -/
 theorem not_mem_delete {s : S} {x : A} : x ∉ delete x s := by
   rw [mem_delete]
-  intro ⟨_, hh⟩
-  exact hh rfl
+  exact (·.2 rfl)
 
 /-- Delete is idempotent. -/
 theorem delete_delete {s : S} {x : A} : delete x (delete x s) = delete x s := by
   ext y
   rw [mem_delete, mem_delete]
-  constructor
-  · intro ⟨hhy, hne⟩; exact hhy
-  · intro hhy; exact ⟨hhy, hhy.2⟩
+  exact ⟨fun ⟨hhy, hne⟩ => hhy, fun hhy => ⟨hhy, hhy.2⟩⟩
 
 /-- Deleting commutes. -/
 theorem delete_comm {s : S} {x y : A} : delete x (delete y s) = delete y (delete x s) := by
   ext z
   rw [mem_delete, mem_delete, mem_delete, mem_delete]
-  constructor
-  · intro ⟨⟨hz, hne1⟩, hne2⟩; exact ⟨⟨hz, hne2⟩, hne1⟩
-  · intro ⟨⟨hz, hne1⟩, hne2⟩; exact ⟨⟨hz, hne2⟩, hne1⟩
+  exact ⟨fun ⟨⟨hz, hne1⟩, hne2⟩ => ⟨⟨hz, hne2⟩, hne1⟩
+    , fun ⟨⟨hz, hne1⟩, hne2⟩ => ⟨⟨hz, hne2⟩, hne1⟩⟩
 
 /-- Deleting from empty set yields empty set. -/
 @[simp]
 theorem delete_empty {x : A} : delete x (∅ : S) = ∅ := by
   ext y
-  rw [mem_delete]
-  simp [mem_empty]
+  simp [mem_delete, mem_empty]
 
 /-- Delete distributes over union. -/
 theorem delete_union {s₁ s₂ : S} {x : A} :
     delete x (s₁ ∪ s₂) = delete x s₁ ∪ delete x s₂ := by
   ext y
-  rw [mem_delete, mem_union, mem_union, mem_delete, mem_delete]
+  simp only [mem_delete, mem_union]
   constructor
   · intro ⟨hh, hne⟩
     cases hh with
@@ -263,8 +254,8 @@ theorem delete_union {s₁ s₂ : S} {x : A} :
     | inr hh => right; exact ⟨hh, hne⟩
   · intro hh
     cases hh with
-    | inl hhy => exact ⟨Or.inl hhy.1, hhy.2⟩
-    | inr hhy => exact ⟨Or.inr hhy.1, hhy.2⟩
+    | inl hhy => exact ⟨.inl hhy.1, hhy.2⟩
+    | inr hhy => exact ⟨.inr hhy.1, hhy.2⟩
 
 /-- Delete from singleton: empty if same element, singleton otherwise. -/
 theorem delete_singleton [DecidableEq A] {x y : A} :
@@ -433,8 +424,8 @@ theorem disjoint_union_left {s₁ s₂ t : S} : (s₁ ∪ s₂) ## t ↔ s₁ ##
   simp only [Disjoint.disjoint]
   apply Iff.intro
   · intro h; apply And.intro
-    · intro x ⟨hx1, hx2⟩; exact h x ⟨(mem_union.mpr (Or.inl hx1)), hx2⟩
-    · intro x ⟨hx1, hx2⟩; exact h x ⟨(mem_union.mpr (Or.inr hx1)), hx2⟩
+    · intro x ⟨hx1, hx2⟩; exact h x ⟨(mem_union.mpr (.inl hx1)), hx2⟩
+    · intro x ⟨hx1, hx2⟩; exact h x ⟨(mem_union.mpr (.inr hx1)), hx2⟩
   · intro ⟨h1, h2⟩ x ⟨hx1, hx2⟩
     rw [mem_union] at hx1; cases hx1 with
     | inl hx1 => exact h1 x ⟨hx1, hx2⟩
@@ -445,10 +436,11 @@ theorem disjoint_union_right {s₁ s₂ t : S} : t ## (s₁ ∪ s₂) ↔ t ## s
   rw [disjoint_comm, disjoint_union_left, disjoint_comm (s₂ := s₁), disjoint_comm (s₂ := s₂)]
 
 /-- Disjointness is decidable when set equality is decidable. -/
-instance disjoint_dec [DecidableEq S] : ∀ {E1 E2 : S}, Decidable (E1 ## E2) := by
-  intro E1 E2
-  rw [disjoint_intersection]
-  infer_instance
+instance disjoint_dec [DecidableEq S] : DecidableDisj S where
+  decide_disj := by
+    intro E1 E2
+    rw [disjoint_intersection]
+    infer_instance
 
 /-! ### Difference operations -/
 

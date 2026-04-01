@@ -180,17 +180,13 @@ private theorem coPsetLeaf_wf : ∀ (t : CoPsetRaw) (b : Bool),
     exact Hall .xH
   | node b' l r =>
     exfalso
-    have hb : b' = b := Hall .xH
-    have hl : ∀ p, ElemOf p l = b := fun p => by
-      have := Hall (.xO p); simp [ElemOf] at this; exact this
-    have hr : ∀ p, ElemOf p r = b := fun p => by
-      have := Hall (.xI p); simp [ElemOf] at this; exact this
-    have hl_leaf : l = .leaf b := coPsetLeaf_wf l b (node_wf_l Hwf) hl
-    have hr_leaf : r = .leaf b := coPsetLeaf_wf r b (node_wf_r Hwf) hr
-    rw [hb, hl_leaf, hr_leaf] at Hwf
-    cases b <;> simp [coPsetWf] at Hwf
+    suffices Hwf : (coPsetWf (node b (leaf b) (leaf b))) by
+      cases b <;> simp [coPsetWf] at Hwf
+    rw [show l = .leaf b by exact coPsetLeaf_wf l b (node_wf_l Hwf) (fun p => Hall (.xO p))] at Hwf
+    rw [show r = .leaf b by exact coPsetLeaf_wf r b (node_wf_r Hwf) (fun p => Hall (.xI p))] at Hwf
+    rw [show b' = b by exact Hall .xH] at Hwf
+    exact Hwf
 
--- FIXME: grotesque
 /-- Two CoPsetRaw trees are equal if they have the same membership function
     and both are well-formed. -/
 private theorem coPsetRaw_eq (t1 t2 : CoPsetRaw) :
@@ -198,74 +194,19 @@ private theorem coPsetRaw_eq (t1 t2 : CoPsetRaw) :
     coPsetWf t1 = true → coPsetWf t2 = true → t1 = t2 := by
   intro Ht Hwf1 Hwf2
   match t1, t2 with
-  | .leaf b1, .leaf b2 =>
-    congr 1
-    exact Ht .xH
+  | .leaf b1, .leaf b2 => congr 1; exact Ht .xH
   | .leaf b1, .node b2 l2 r2 =>
-    cases b1 <;> cases b2
-    <;> rcases l2 with ⟨⟨⟩⟩ | ⟨_, _, _⟩
-    <;> rcases r2 with ⟨⟨⟩⟩ | ⟨_, _, _⟩
-    <;> (have h1 := Ht (.xH);
-         have h2 := Ht (.xI .xH);
-         have h3 := Ht (.xO .xH);
-         dsimp [ElemOf] at h1 h2 h3;
-         cases h1 <;> cases h2 <;> cases h3)
-    · simp [coPsetWf] at Hwf2
-    · symm
-      apply coPsetLeaf_wf _ false Hwf2
-      intro p; specialize (Ht p); simp only [ElemOf, Bool.false_eq] at Ht; apply Ht
-    · symm
-      apply coPsetLeaf_wf _ false Hwf2
-      intro p; specialize (Ht p); simp only [ElemOf, Bool.false_eq] at Ht; apply Ht
-    · symm
-      apply coPsetLeaf_wf _ false Hwf2
-      intro p; specialize (Ht p); simp only [ElemOf, Bool.false_eq] at Ht; apply Ht
-    · simp [coPsetWf] at Hwf2
-    · symm
-      apply coPsetLeaf_wf _ true Hwf2
-      intro p; specialize (Ht p); simp only [ElemOf, Bool.true_eq] at Ht; apply Ht
-    · symm
-      apply coPsetLeaf_wf _ true Hwf2
-      intro p; specialize (Ht p); simp only [ElemOf, Bool.true_eq] at Ht; apply Ht
-    · symm
-      apply coPsetLeaf_wf _ true Hwf2
-      intro p; specialize (Ht p); simp only [ElemOf, Bool.true_eq] at Ht; apply Ht
+    simp only [ElemOf] at Ht
+    exact .symm (coPsetLeaf_wf _ b1 Hwf2 (fun p => .symm (Ht p)))
   | .node b1 l1 r1, .leaf b2 =>
-    cases b1 <;> cases b2
-    <;> rcases l1 with ⟨⟨⟩⟩ | ⟨_, _, _⟩
-    <;> rcases r1 with ⟨⟨⟩⟩ | ⟨_, _, _⟩
-    <;> (have h1 := Ht (.xH);
-         have h2 := Ht (.xI .xH);
-         have h3 := Ht (.xO .xH);
-         dsimp [ElemOf] at h1 h2 h3;
-         cases h1 <;> cases h2 <;> cases h3)
-    · simp [coPsetWf] at Hwf1
-    · apply coPsetLeaf_wf _ false Hwf1
-      intro p; specialize (Ht p); simp only [ElemOf] at Ht; apply Ht
-    · apply coPsetLeaf_wf _ false Hwf1
-      intro p; specialize (Ht p); simp only [ElemOf] at Ht; apply Ht
-    · apply coPsetLeaf_wf _ false Hwf1
-      intro p; specialize (Ht p); simp only [ElemOf] at Ht; apply Ht
-    · simp [coPsetWf] at Hwf1
-    · apply coPsetLeaf_wf _ true Hwf1
-      intro p; specialize (Ht p); simp only [ElemOf] at Ht; apply Ht
-    · apply coPsetLeaf_wf _ true Hwf1
-      intro p; specialize (Ht p); simp only [ElemOf] at Ht; apply Ht
-    · apply coPsetLeaf_wf _ true Hwf1
-      intro p; specialize (Ht p); simp only [ElemOf] at Ht; apply Ht
+    simp only [ElemOf] at Ht
+    exact (coPsetLeaf_wf _ b2 Hwf1 Ht)
   | .node b1 l1 r1, .node b2 l2 r2 =>
-    have hb : b1 = b2 := Ht .xH
-    have hl : l1 = l2 := by
-      apply coPsetRaw_eq
-      · intro p; exact Ht (.xO p)
-      · exact node_wf_l Hwf1
-      · exact node_wf_l Hwf2
-    have hr : r1 = r2 := by
-      apply coPsetRaw_eq
-      · intro p; exact Ht (.xI p)
-      · exact node_wf_r Hwf1
-      · exact node_wf_r Hwf2
-    congr
+    rw [show b1 = b2 by exact Ht .xH]
+    rw [show l1 = l2 by
+      exact coPsetRaw_eq _ _ (fun p => Ht (.xO p)) (node_wf_l Hwf1) (node_wf_l Hwf2)]
+    rw [show r1 = r2 by
+      exact coPsetRaw_eq _ _ (fun p => Ht (.xI p)) (node_wf_r Hwf1) (node_wf_r Hwf2)]
 
 instance : Membership Pos CoPset where mem E p := p ∈ E.tree
 
@@ -275,11 +216,8 @@ instance : Membership Pos CoPset where mem E p := p ∈ E.tree
 theorem ext {X Y : CoPset} (H : ∀ p, p ∈ X <-> p ∈ Y) : X = Y := by
   rcases X with ⟨X, xwf⟩; rcases Y with ⟨Y, ywf⟩
   simp only [CoPset.mk.injEq]
-  apply coPsetRaw_eq
-  · intro p; specialize (H p); simp only [Membership.mem, Bool.coe_iff_coe] at H
-    exact H
-  · exact xwf
-  · exact ywf
+  simp only [Membership.mem, Bool.coe_iff_coe] at H
+  exact (coPsetRaw_eq _ _ (fun p => H p) xwf ywf)
 
 def empty : CoPset := ⟨CoPsetRaw.leaf false, rfl⟩
 
