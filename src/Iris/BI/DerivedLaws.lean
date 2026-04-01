@@ -431,6 +431,9 @@ theorem pure_elim_r [BI PROP] {φ : Prop} {Q R : PROP} (h : φ → Q ⊢ R) : Q 
 
 theorem pure_true [BI PROP] {φ : Prop} (h : φ) : ⌜φ⌝ ⊣⊢ (True : PROP) := eq_true h ▸ .rfl
 
+theorem pure_imp_elim [BI PROP] {φ : Prop} {R : PROP} (h : φ) : (⌜φ⌝ → R) ⊢ R :=
+  (and_intro .rfl (pure_intro h)).trans imp_elim_l
+
 theorem pure_and [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∧ (⌜φ2⌝ : PROP) ⊣⊢ ⌜φ1 ∧ φ2⌝ :=
   ⟨pure_elim φ1 and_elim_l fun h => and_elim_r' <| pure_mono <| And.intro h,
    and_intro (pure_mono And.left) (pure_mono And.right)⟩
