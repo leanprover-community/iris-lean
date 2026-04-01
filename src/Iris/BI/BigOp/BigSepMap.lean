@@ -523,14 +523,14 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
         refine emp_sep.2.trans ?_
         refine sep_comm.1.trans ?_
         exact wand_elim_l
-      refine (sep_mono_r (intuitionistically_elim.trans <|
-        (forall_elim i).trans <| (forall_elim y).trans H')).trans ?_
-      refine (sep_mono_l <| sep_mono_r <| intuitionistically_mono <|
-        forall_mono fun k => forall_mono fun y' => wand_mono_r <|
-          imp_intro' <| pure_elim_l fun hget =>
-            pure_imp_elim ((get?_insert_ne (hne_of_get hget).symm).trans hget)).trans ?_
+      refine (sep_mono_r (intuitionistically_elim.trans <| (forall_elim i).trans <| (forall_elim y).trans H')).trans ?_
+      have H (k y') : (⌜get? (insert m₂'' i y) k = some y'⌝ → Ψ k y') ⊢ ⌜get? m₂'' k = some y'⌝ → Ψ k y' :=
+        imp_intro' <| pure_elim_l fun hget => pure_imp_elim ((get?_insert_ne (hne_of_get hget).symm).trans hget)
+      refine (sep_mono_l <| sep_mono_r <| intuitionistically_mono <| forall_mono fun k => forall_mono fun y' => wand_mono_r <| H k y').trans ?_
       refine (sep_mono_l <| IH m₁).trans ?_
-      refine sep_assoc.1.trans <| (sep_mono_r sep_comm.1).trans <| sep_assoc.2.trans ?_
+      refine sep_assoc.1.trans ?_
+      refine (sep_mono_r sep_comm.1).trans ?_
+      refine sep_assoc.2.trans ?_
       refine (sep_mono_l <| sep_comm.1.trans (bigSepM_insert hi).2).trans ?_
       refine sep_mono_r (equiv_iff.mp <| bigOpM_equiv_of_perm Φ fun k => ?_).2
       by_cases heq : i = k <;> simp_all [get?_filter, get?_insert]
@@ -541,20 +541,17 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
       refine (sep_mono_r <| sep_mono_l sep_comm.1).trans ?_
       refine (sep_mono_r sep_assoc.1).trans ?_
       refine sep_assoc.2.trans ?_
-      -- Specialize □ hypothesis at key i: match reduces to Φ i x, wand eliminates
-      refine (sep_mono_l <| (sep_mono_r intuitionistically_elim).trans <|
-        (sep_mono_r <| (forall_elim i).trans <| forall_elim y).trans <| by
-          simpa [hm₁i, get?_insert_eq rfl] using
-            (sep_mono_r <| wand_mono_r true_imp.1).trans wand_elim_r).trans ?_
-      -- Transform □ hypothesis for remaining keys (insert → delete map), then apply IH
-      refine (sep_mono_r <| sep_mono_r <| intuitionistically_mono <|
-        forall_mono fun k => forall_mono fun y' =>
-          wand_intro <| imp_intro' <| pure_elim_l fun hget => by
-            let hne : i ≠ k := (hne_of_get hget).symm
-            simpa [get?_delete_ne hne] using
-              (sep_mono_l <| wand_mono_r <|
-                pure_imp_elim ((get?_insert_ne hne).trans hget)).trans wand_elim_l).trans <|
-        (sep_mono_r <| IH (delete m₁ i)).trans ?_
+      have H : Φ i x ∗ ((get? m₁ i).elim emp (Φ i) -∗ ⌜get? (insert m₂'' i y) i = some y⌝ → Ψ i y) ⊢ Ψ i y := by
+        simpa [hm₁i, get?_insert_eq rfl] using (sep_mono_r <| wand_mono_r true_imp.1).trans wand_elim_r
+      refine (sep_mono_l <| (sep_mono_r intuitionistically_elim).trans <| (sep_mono_r <| (forall_elim i).trans <| forall_elim y).trans H).trans ?_
+      have hadapt (k : K) (y' : V₂) :
+          ((get? m₁ k).elim emp (Φ k) -∗ ⌜get? (insert m₂'' i y) k = some y'⌝ → Ψ k y') ⊢
+          (get? (delete m₁ i) k).elim emp (Φ k) -∗ ⌜get? m₂'' k = some y'⌝ → Ψ k y' :=
+        wand_intro <| imp_intro' <| pure_elim_l fun hget => by
+          let hne : i ≠ k := (hne_of_get hget).symm
+          simp only [get?_delete_ne hne]
+          exact (sep_mono_l <| wand_mono_r <| pure_imp_elim ((get?_insert_ne hne).trans hget)).trans wand_elim_l
+      refine (sep_mono_r <| sep_mono_r <| intuitionistically_mono <| forall_mono fun k => forall_mono fun y' => hadapt k y').trans <| (sep_mono_r <| IH (delete m₁ i)).trans ?_
       refine .trans ?_ <| sep_assoc.2.trans <| sep_mono_l (bigSepM_insert hi).2
       refine sep_mono_r <| sep_mono_r (equiv_iff.mp <| bigOpM_equiv_of_perm Φ fun k => ?_).2
       by_cases hki : i = k <;> simp_all [get?_filter, get?_insert, get?_delete]
