@@ -118,9 +118,7 @@ theorem mem_delete {s : S} {x y : A} : x ∈ (delete y s) ↔ (x ∈ s ∧ x ≠
 theorem eq_subset {X Y : S} : X ⊆ Y → Y ⊆ X → X = Y := by
   intro H1 H2
   ext x
-  apply Iff.intro
-  · apply H1 x
-  · apply H2 x
+  exact ⟨H1 x, H2 x⟩
 
 /-- Proper subset is equivalent to subset plus inequality. -/
 theorem ssubset_subset  {X Y : S} : (X ⊂ Y) ↔ (X ⊆ Y ∧ X ≠ Y) := by
@@ -268,7 +266,7 @@ theorem delete_singleton [DecidableEq A] {x y : A} :
   · simp only [h, ite_false]
     ext z
     rw [mem_delete, mem_singleton]
-    apply Iff.intro
+    constructor
     · intro ⟨heq, _⟩; exact heq
     · intro heq; exact ⟨heq, fun hz => h (heq.symm.trans hz).symm⟩
 
@@ -375,17 +373,13 @@ theorem subset_trans {s₁ s₂ s₃ : S} : s₁ ⊆ s₂ → s₂ ⊆ s₃ → 
 /-- Disjoint sets have empty intersection and vice versa. -/
 theorem disjoint_intersection {X Y : S} : X ## Y ↔ X ∩ Y = ∅ := by
   simp only [Disjoint.disjoint]
-  apply Iff.intro
-  · intro H
-    ext x; rw [mem_inter]
-    simp [H, mem_empty]
-  · intro H x
-    rw [<-mem_inter, H]
-    apply mem_empty
+  exact ⟨fun H => by ext x; rw [mem_inter]; simp [H, mem_empty],
+         fun H x => by rw [<-mem_inter, H]; exact mem_empty⟩
 
 /-- Disjointness is symmetric.  -/
 theorem disjoint_comm {s₁ s₂ : S} : s₁ ## s₂ ↔ s₂ ## s₁ := by
-  simp only [Disjoint.disjoint]; apply Iff.intro <;> (intro h x ⟨hx1, hx2⟩; exact h x ⟨hx2, hx1⟩)
+  simp only [Disjoint.disjoint]
+  exact ⟨fun h x ⟨hx1, hx2⟩ => h x ⟨hx2, hx1⟩, fun h x ⟨hx1, hx2⟩ => h x ⟨hx2, hx1⟩⟩
 
 @[symm]
 theorem disjoint_symm {s₁ s₂ : S} : s₁ ## s₂ → s₂ ## s₁ := disjoint_comm.mp
@@ -401,7 +395,7 @@ theorem disjoint_empty_right {s : S} : s ## ∅ := by
 /-- Singleton disjointness. -/
 theorem disjoint_singleton_left {s : S} {x : A} : {x} ## s ↔ x ∉ s := by
   simp only [Disjoint.disjoint]
-  apply Iff.intro
+  constructor
   · intro h hx; exact h x ⟨(mem_singleton.mpr rfl), hx⟩
   · intro h y ⟨hy1, hy2⟩; rw [mem_singleton] at hy1; subst hy1; exact h hy2
 
@@ -422,8 +416,8 @@ theorem disjoint_subset_right {s₁ s₂ t : S} : s₁ ⊆ s₂ → t ## s₂ �
 /-- Union is disjoint iff both parts are disjoint. -/
 theorem disjoint_union_left {s₁ s₂ t : S} : (s₁ ∪ s₂) ## t ↔ s₁ ## t ∧ s₂ ## t := by
   simp only [Disjoint.disjoint]
-  apply Iff.intro
-  · intro h; apply And.intro
+  constructor
+  · intro h; constructor
     · intro x ⟨hx1, hx2⟩; exact h x ⟨(mem_union.mpr (.inl hx1)), hx2⟩
     · intro x ⟨hx1, hx2⟩; exact h x ⟨(mem_union.mpr (.inr hx1)), hx2⟩
   · intro ⟨h1, h2⟩ x ⟨hx1, hx2⟩
@@ -468,7 +462,7 @@ theorem diff_subset_disj {s₁ s₂ : S} :
   intro H
   ext x; rw [mem_diff]
   rw [disjoint_intersection] at H
-  apply Iff.intro
+  constructor
   · rintro ⟨G, _⟩; assumption
   · intro G
     by_cases hin : x ∈ s₂
@@ -483,17 +477,15 @@ theorem diff_subset_decomp {s₁ s₂ : S} :
   s₁ ⊆ s₂ → s₂ = (s₂ \ s₁) ∪ s₁ := by
   intro H
   ext x; rw [mem_union, mem_diff]
-  apply Iff.intro
+  constructor
   · intro G
     by_cases J : x ∈ s₁
-    · right; assumption
+    · right; exact J
     · left; exact ⟨G, J⟩
   · intro G
     cases G with
-    | inl G =>
-      exact G.left
-    | inr G =>
-      apply H _ G
+    | inl G => exact G.left
+    | inr G => exact H _ G
 
 /-- De Morgan's law: difference distributes over union. -/
 theorem diff_union {s₁ s₂ s₃ : S} : s₁ \ (s₂ ∪ s₃) = (s₁ \ s₂) ∩ (s₁ \ s₃) := by
@@ -557,32 +549,31 @@ theorem not_mem_of_not_mem_subset {s₁ s₂ : S} {x : A} : s₁ ⊆ s₂ → x 
 
 /-- Empty iff every element is not a member. -/
 theorem eq_empty_iff {s : S} : s = ∅ ↔ ∀ x, x ∉ s := by
-  apply Iff.intro
+  constructor
   · intro h x; subst h; exact mem_empty
   · intro h; ext x; simp [mem_empty]; exact h x
 
 /-- Non-empty iff there exists a member. -/
 theorem nonempty_iff {s : S} : s ≠ ∅ ↔ ∃ x, x ∈ s := by
-  apply Iff.intro
+  constructor
   · intro H
     by_cases G : ∃ x, x ∈ s
     · assumption
-    · exfalso
-      apply H
-      ext p; grind only [mem_empty]
+    · refine (H ?_).elim
+      ext p; grind [mem_empty]
   · rintro ⟨x, G⟩
-    grind only [mem_empty]
+    grind [mem_empty]
 
 /-- Singleton equality. -/
 theorem singleton_eq_singleton {x y : A} : ({x} : S) = {y} ↔ x = y := by
-  apply Iff.intro
+  constructor
   · intro h; have : x ∈ ({y} : S) := by rw [<-h, mem_singleton]
     rw [mem_singleton] at this; exact this
   · rintro ⟨⟩; rfl
 
 /-- Union with subset absorption. -/
 theorem union_subset_absorption {s₁ s₂ : S} : s₁ ⊆ s₂ → s₁ ∪ s₂ = s₂ := by
-  intro h; ext x; rw [mem_union]; apply Iff.intro
+  intro h; ext x; rw [mem_union]; constructor
   · intro hx; cases hx with
     | inl hx => exact h _ hx
     | inr hx => exact hx
@@ -590,9 +581,8 @@ theorem union_subset_absorption {s₁ s₂ : S} : s₁ ⊆ s₂ → s₁ ∪ s�
 
 /-- Intersection with subset absorption. -/
 theorem inter_subset_absorption {s₁ s₂ : S} : s₁ ⊆ s₂ → s₁ ∩ s₂ = s₁ := by
-  intro h; ext x; rw [mem_inter]; apply Iff.intro
-  · intro ⟨hx, _⟩; exact hx
-  · intro hx; exact ⟨hx, h _ hx⟩
+  intro h; ext x; rw [mem_inter]
+  exact ⟨fun ⟨hx, _⟩ => hx, fun hx => ⟨hx, h _ hx⟩⟩
 
 /-! ### Predicates (setForall and setExists) -/
 
@@ -611,15 +601,15 @@ theorem setForall_empty {P : A → Prop} : setForall P (∅ : S) ↔ True := by
 /-- setForall for singleton reduces to the predicate. -/
 theorem setForall_singleton {P : A → Prop} {x : A} :
   setForall P ({x} : S) ↔ P x := by
-  simp [setForall]; apply Iff.intro
+  simp [setForall]; constructor
   · intro h; apply h; rw [mem_singleton]
   · intro h y hy; rw [mem_singleton] at hy; subst hy; exact h
 
 /-- setForall distributes over union. -/
 theorem setForall_union {P : A → Prop} {s₁ s₂ : S} :
   setForall P (s₁ ∪ s₂) ↔ setForall P s₁ ∧ setForall P s₂ := by
-  simp [setForall]; apply Iff.intro
-  · intro h; apply And.intro
+  simp [setForall]; constructor
+  · intro h; constructor
     · intro x hx; apply h; rw [mem_union]; left; exact hx
     · intro x hx; apply h; rw [mem_union]; right; exact hx
   · intro ⟨h1, h2⟩ x hx; rw [mem_union] at hx; cases hx with
@@ -633,18 +623,18 @@ theorem setExists_empty {P : A → Prop} : setExists P (∅ : S) ↔ False := by
 /-- setExists for singleton reduces to the predicate. -/
 theorem setExists_singleton {P : A → Prop} {x : A} :
   setExists P ({x} : S) ↔ P x := by
-  simp [setExists]; apply Iff.intro
+  simp [setExists]; constructor
   · intro ⟨y, hy, hP⟩; rw [mem_singleton] at hy; subst hy; exact hP
-  · intro h; exists x; apply And.intro; rw [mem_singleton]; exact h
+  · intro h; exists x; constructor; rw [mem_singleton]; exact h
 
 /-- setExists distributes over union. -/
 theorem setExists_union {P : A → Prop} {s₁ s₂ : S} :
   setExists P (s₁ ∪ s₂) ↔ setExists P s₁ ∨ setExists P s₂ := by
-  simp [setExists]; apply Iff.intro
+  simp [setExists]; constructor
   · intro ⟨x, hx, hP⟩; rw [mem_union] at hx; cases hx with
     | inl hx => left; exists x
     | inr hx => right; exists x
-  · grind only [mem_union]
+  · grind [mem_union]
 
 /-- Relationship between setForall and setExists. -/
 theorem setForall_not_setExists {P : A → Prop} {s : S} :
@@ -695,7 +685,7 @@ private theorem ofListExtend_classify {s : S} {xs : List A} :
     simp only [ofListExtend_cons]
     rw [IH]
     ext z; rw [mem_union, mem_insert]
-    apply Iff.intro
+    constructor
     · intro G
       rw [mem_union]
       cases G with
@@ -727,7 +717,7 @@ private theorem ofListExtend_classify {s : S} {xs : List A} :
           cases G with
           | inl G =>
             simp [mem_singleton] at G
-            exfalso; apply heq G
+            apply (heq G).elim
           | inr G =>
             assumption
 
@@ -742,15 +732,15 @@ private theorem ofListExtend_cons_comm {s : S} {x : A} {xs : List A} :
     rw [mem_insert]; left; rfl
   · simp only [mem_insert_ne (fun c => heq (Eq.symm c))]
     rw [ofListExtend_cons]
-    apply Iff.intro
+    constructor
     · intro H
       rw [ofListExtend_classify, mem_union]; rw [ofListExtend_classify, mem_union] at H
       rw [mem_insert_ne (fun c => heq (Eq.symm c))] at H
-      apply H
+      exact H
     · intro H
       apply ofListExtend_subset_subset (s₁ := s)
       · apply insert_subset
-      · apply H
+      · exact H
 
 /-- Converting empty list to set yields empty set. -/
 @[simp]
@@ -767,10 +757,10 @@ theorem mem_ofList {x : A} {xs : List A} : x ∈ xs ↔ x ∈ (ofList xs : S) :=
   induction xs with
   | nil =>
     simp only [ofList_nil, List.not_mem_nil]
-    exact Iff.intro (fun h => h.elim) (fun h => mem_empty h)
+    exact ⟨(fun h => h.elim), (fun h => mem_empty h)⟩
   | cons y ys IH =>
     simp only [List.mem_cons, ofList_cons, mem_insert]
-    grind only
+    grind
 
 /-- Converting concatenated lists yields union of converted lists. -/
 theorem ofList_concat {xs ys : List A} : (ofList (xs ++ ys) : S) = ofList xs ∪ ofList ys := by
@@ -871,7 +861,7 @@ theorem ofList_toList {m : S} :
 theorem mem_map {S' : Type _} {B : Type _} [LawfulFiniteSet S' B] (f : A → B) (s : S) (x : B) :
   x ∈ map (S' := S') f s ↔ ∃ y, f y = x ∧ y ∈ s := by
   simp only [map, <-mem_ofList, List.mem_map, mem_toList]
-  grind only
+  grind
 
 /-- Mapping over empty set yields empty set. -/
 @[simp]
@@ -897,7 +887,7 @@ theorem map_union {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
     (f : A → B) (s₁ s₂ : S) :
   map (S' := S') f (s₁ ∪ s₂) = map f s₁ ∪ map f s₂ := by
   ext y; rw [mem_map, mem_union, mem_map, mem_map]
-  apply Iff.intro
+  constructor
   · intro ⟨x, hf, hx⟩; rw [mem_union] at hx; cases hx with
     | inl hx => left; exists x
     | inr hx => right; exists x
@@ -908,9 +898,9 @@ theorem map_singleton {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
     (f : A → B) (x : A) :
   map (S' := S') f ({x} : S) = {f x} := by
   ext y; rw [mem_map, mem_singleton]
-  apply Iff.intro
+  constructor
   · intro ⟨z, hf, hz⟩; rw [mem_singleton] at hz; subst hz; exact (Eq.symm hf)
-  · intro h; subst h; exists x; apply And.intro rfl; rw [mem_singleton]
+  · intro h; subst h; exists x; refine ⟨rfl, ?_⟩; rw [mem_singleton]
 
 /-- Map preserves subset relation. -/
 theorem map_subset {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
@@ -971,9 +961,9 @@ theorem bind_empty [LawfulFiniteSet S' B]
 theorem bind_singleton [LawfulFiniteSet S' B]
     (f : A → S') (x : A) :
   bind (S' := S') f ({x} : S) = f x := by
-  ext y; rw [mem_bind]; apply Iff.intro
+  ext y; rw [mem_bind]; constructor
   · intro ⟨z, hz, hy⟩; rw [mem_singleton] at hz; subst hz; exact hy
-  · intro hy; exists x; apply And.intro; rw [mem_singleton]; exact hy
+  · intro hy; exists x; constructor; rw [mem_singleton]; exact hy
 
 /-- Bind distributes over union. -/
 theorem bind_union [LawfulFiniteSet S' B]
@@ -1058,7 +1048,7 @@ theorem filter_delete (p : A → Bool) (x : A) (s : S) :
 /-- A set has size 0 iff it is empty. -/
 theorem size_empty {X : S} : size X = 0 ↔ X = ∅ := by
   simp only [size]
-  apply Iff.intro
+  constructor
   · intro heq
     ext x; simp [mem_empty]
     rw [<-mem_toList]
@@ -1136,9 +1126,8 @@ theorem size_ssubset {X Y : S} (h : X ⊂ Y) : size X < size Y := by
       rw [ssubset_subset] at h
       apply h.right
       ext x
-      apply Iff.intro
-      · intro J
-        apply h.left _ J
+      constructor
+      · intro J; exact h.left _ J
       · intro J
         by_cases hin : x ∈ X
         · assumption
@@ -1146,7 +1135,7 @@ theorem size_ssubset {X Y : S} (h : X ⊂ Y) : size X < size Y := by
           have : x ∈ Y \ X ↔ x ∈ (∅ : S) := by
             rw [G]
           rw [mem_diff] at this
-          grind only [mem_empty]
+          grind [mem_empty]
     omega
   · rw [disjoint_intersection]
     ext p; rw [mem_inter, mem_diff]; simp [mem_empty]
@@ -1213,18 +1202,18 @@ theorem set_ind {P : S → Prop}
       apply IH
       subst Y'
       rw [ssubset_subset]
-      apply And.intro
+      constructor
       · intro p; rw [mem_diff, mem_singleton]
         grind only
       · intro H; rw [<-H] at hmem
         rw [mem_diff, mem_singleton] at hmem
-        apply hmem.right rfl
+        exact hmem.right rfl
     have heq : Y =  {x} ∪ Y' := by
       ext z
       subst Y'
       rw [mem_union, mem_singleton, mem_diff, mem_singleton]
       rw [mem_diff, mem_singleton] at hnotin
-      grind only
+      grind
     have : P ({x} ∪ Y') := by
       rw [singleton_insert, insert_union_comm, union_empty_left]
       apply hadd
@@ -1320,7 +1309,7 @@ instance [DecidableEq A] {x : A} {s : S} : Decidable (x ∈ s) := by
 
 /-- Two sets are equal iff their list representations are equal. -/
 theorem toList_eq_iff {s₁ s₂ : S} : (toList s₁ = toList s₂) = (s₁ = s₂) := by
-  ext; apply Iff.intro
+  ext; constructor
   · intro heq
     ext x; rw [<-mem_toList, <-mem_toList, heq]
   · rintro ⟨⟩

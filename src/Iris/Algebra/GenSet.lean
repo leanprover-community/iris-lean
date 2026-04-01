@@ -40,7 +40,7 @@ end Def
 
 namespace GenSetDisj
 
-abbrev gen_set_valid : S → GenSetDisjO S := fun X => .mk (.set_valid X)
+abbrev gen_set_valid : S → GenSetDisjO S := fun X => ⟨.set_valid X⟩
 
 section dec_disj
 
@@ -134,13 +134,15 @@ theorem set_disj_included (X Y : S) :
   · intro ⟨Z, HZ⟩
     rcases Z with ⟨Z | _⟩
     · by_cases H : X ## Z
-      · simp [CMRA.op, op, H] at HZ; rw [HZ]
+      · simp [CMRA.op, op, H, ↓reduceIte] at HZ; rw [HZ]
         intro p Hp; rw [mem_union]; left; exact Hp
       · simp [CMRA.op, op, H] at HZ
     · simp [CMRA.op, op] at HZ
   · intro Hsub
     exists gen_set_valid (Y \ X)
-    simp [CMRA.op, op, show X ## (Y \ X) by intro p ⟨H1, H2⟩; rw [mem_diff] at H2; exact H2.right H1]
+    simp only [leibniz, LeibnizO.mk.injEq, ↓reduceIte, CMRA.op, op
+      , show X ## (Y \ X) by intro p ⟨H1, H2⟩; rw [mem_diff] at H2; exact H2.right H1]
+    rw [set_valid.injEq]
     ext p; rw [mem_union, mem_diff]
     constructor
     · intro G
@@ -254,7 +256,7 @@ namespace GenSet
 
 variable {S : Type _} [LawfulSet S A]
 
-abbrev gen_set_valid : S → GenSetO S := fun X => .mk X
+abbrev gen_set_valid : S → GenSetO S := fun X => ⟨X⟩
 
 def unit : GenSetO S := gen_set_valid ∅
 
