@@ -31,7 +31,7 @@ open OFE Iris.Std
     {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K] (m : M' V) : M :=
   bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList (K := K) m)
 
-def bigOpS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+@[expose] public def bigOpS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     {A : Type _} {S : Type _} [FiniteSet S A] (Φ : A → M) (m : S) : M :=
   bigOpL op (fun _ x => Φ x) (toList m)
 
@@ -617,5 +617,7 @@ theorem hom_weak {B : Type w} {S' : Type _} [LawfulFiniteSet S' B] {R : M₂ →
     exact hom.rel_refl
 
 end BigOpS
+
+end
 
 end Iris.Algebra

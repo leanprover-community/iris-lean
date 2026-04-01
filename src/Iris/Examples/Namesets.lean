@@ -28,7 +28,7 @@ variable [Std.TransCmp cmp] [Std.LawfulEqCmp cmp]
 -- Concrete set implementation
 def SetImpl α cmp := Std.ExtTreeSet α cmp
 instance : LawfulSet (SetImpl α cmp) α := inferInstanceAs (LawfulSet (Std.ExtTreeSet α cmp) α)
-instance : ∀ X₁ X₂ : SetImpl α cmp, Decidable (X₁ ## X₂) := by simp only [SetImpl]; infer_instance
+instance : DecidableDisj (SetImpl α cmp) := inferInstanceAs (DecidableDisj (Std.ExtTreeSet α cmp))
 
 @[simp]
 def MySet (S : SetImpl α cmp) : GenSetDisjO (SetImpl α cmp) := GenSetDisj.gen_set_valid S
