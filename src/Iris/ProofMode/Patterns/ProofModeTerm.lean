@@ -15,7 +15,7 @@ open Lean
 declare_syntax_cat pmTerm
 
 syntax term : pmTerm
-syntax term "$$" specPat,+ : pmTerm
+syntax term "$$" (colGt specPat)+ : pmTerm
 
 structure PMTerm where
   term : Term
@@ -25,10 +25,10 @@ structure PMTerm where
 partial def PMTerm.parse (term : Syntax) : MacroM PMTerm := do
   match ← expandMacros term with
   | `(pmTerm| $trm:term) => return ⟨trm, []⟩
-  | `(pmTerm| $trm:term $$ $spats,*) => return ⟨trm, ← parseSpats spats⟩
+  | `(pmTerm| $trm:term $$ $[$spats:specPat]*) => return ⟨trm, ← parseSpats spats⟩
   | _ => Macro.throwUnsupported
 where
-  parseSpats (spats : Syntax.TSepArray `specPat ",") : MacroM (List SpecPat) :=
-      return (← spats.getElems.toList.mapM fun pat => SpecPat.parse pat.raw)
+  parseSpats (spats : TSyntaxArray `specPat) : MacroM (List SpecPat) :=
+      return (← spats.toList.mapM fun pat => SpecPat.parse pat.raw)
 
 def PMTerm.is_nontrivial (pmt : PMTerm) : Bool := !pmt.spats.isEmpty
