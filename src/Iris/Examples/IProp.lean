@@ -182,7 +182,7 @@ example (e e' : Expr) (P P' : IProp GF) Φ
   iapply wp_unfold
   iright
   iintro %s Hs
-  ihave ⟨%s', %Hstep, Hupd⟩ := Hstep s $$ [HP, Hs]
+  ihave ⟨%s', %Hstep, Hupd⟩ := Hstep s $$ [HP Hs]
   . isplitl [HP] <;> iassumption
   iexists e', s'
   isplitr

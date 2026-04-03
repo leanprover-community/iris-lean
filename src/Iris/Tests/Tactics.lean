@@ -491,12 +491,12 @@ example [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
 /-- Tests `iapply` with multiple hypotheses -/
 example [BI PROP] (P Q R : PROP) : ⊢ P -∗ Q -∗ (P -∗ Q -∗ R) -∗ R := by
   iintro HP HQ H
-  iapply H $$ HP, HQ
+  iapply H $$ HP HQ
 
 /-- Tests `iapply` with nested wand application -/
 example [BI PROP] (P Q R S : PROP) : ⊢ (P -∗ Q) -∗ P -∗ R -∗ (Q -∗ R -∗ S) -∗ S := by
   iintro HPQ HP HR H
-  iapply H $$ [HPQ, HP], HR
+  iapply H $$ [HPQ HP] HR
   iapply HPQ $$ HP
 
 /-- Tests `iapply` with intuitionistic exact -/
@@ -512,7 +512,7 @@ example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) -∗ Q := by
 /-- Tests `iapply` with multiple intuitionistic hypotheses and subgoals -/
 example [BI PROP] (P Q R : PROP) : ⊢ □ P -∗ Q -∗ □ (P -∗ Q -∗ □ R) -∗ R := by
   iintro □HP HQ □H
-  iapply H $$ [], [HQ] as Q
+  iapply H $$ [] [HQ] as Q
   case Q => iexact HQ
   iexact HP
 
@@ -572,13 +572,13 @@ example [BI PROP] (P Q : PROP) (H1 : P ⊢ Q) (H2 : Q ⊢ R) : P ⊢ R := by
 /-- Tests `iapply` with Lean wand entailment and subgoal -/
 example [BI PROP] (P Q R : PROP) (H : P ⊢ Q -∗ R) (HP : ⊢ P) : ⊢ Q -∗ R := by
   iintro HQ
-  iapply H $$ [], HQ
+  iapply H $$ [] HQ
   iapply HP
 
 /-- Tests `iapply` with lemma and subgoal -/
 example [BI PROP] (P Q R : PROP) (H : P ∗ Q ⊢ R) (HP : ⊢ P) : ⊢ Q -∗ R := by
   iintro HQ
-  iapply (wand_intro H) $$ [], HQ
+  iapply (wand_intro H) $$ [] HQ
   iapply HP
 
 /-- Tests `iapply` with forall -/
@@ -593,29 +593,29 @@ example [BI PROP] (P : α → PROP) (a : α) (H : ∀ x, ⊢ P x) : ⊢ P a := b
 /-- Tests `iapply` with forall specialization -/
 example [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
   iintro HP
-  iapply H $$ %a, %b, HP
+  iapply H $$ %a %b HP
 
 /-- Tests `iapply` with forall specialization from hypothesis -/
 example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  iapply H $$ %a, %b, HP
+  iapply H $$ %a %b HP
 
 /-- Tests `iapply` with tactic -/
 example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  iapply H $$ %by exact a, %b, [HP]
+  iapply H $$ %(by exact a) %b [HP]
   iapply HP
 
 /-- Tests `iapply` with pure hypothesis -/
 example [BI PROP] (Q : α → PROP) (a b : α) : (∀ x, ∀ y, ⌜x = a⌝ -∗ Q y) ⊢ Q b := by
   iintro H
-  iapply H $$ %_, %b, %rfl
+  iapply H $$ %_ %b %rfl
 
 /-- error: ispecialize: iprop(P a -∗ Q b) is not a lean premise -/
 #guard_msgs in
 example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  iapply H $$ %a, %b, %_, HP
+  iapply H $$ %a %b %_ HP
 
 /-- Tests `iapply` using unification for foralls -/
 example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
@@ -625,7 +625,7 @@ example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) 
 /-- Tests `iapply` using manually created metavariables -/
 example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  iapply H $$ %?_, %?_, HP
+  iapply H $$ %?_ %?_ HP
 
 /-- Tests `iapply` using unification in two steps, instantiating metavars  -/
 example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
@@ -636,12 +636,12 @@ example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) 
 /-- Tests `iapply` with intuitionistic forall from Lean -/
 example [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
   iintro HP
-  iapply H $$ %a, HP
+  iapply H $$ %a HP
 
 /-- Tests `iapply` with intuitionistic forall from hypothesis -/
 example [BI PROP] (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  iapply H $$ %a, %b, HP
+  iapply H $$ %a %b HP
 
 /-- Tests `iapply` with two wands and subgoals -/
 example [BI PROP] (P Q : Nat → PROP) :
@@ -751,25 +751,25 @@ example [BI PROP] (P Q : PROP) (H : P ⊢ Q) : ⊢ P -∗ Q := by
 /-- Tests `ihave` with forall specialization from Lean -/
 example [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
   iintro HP
-  ihave H' := H $$ %a, %b
+  ihave H' := H $$ %a %b
   iapply H' $$ HP
 
 /-- Tests `ihave` with forall specialization from hypothesis -/
 example [BI PROP] (P Q : α → PROP) (a b : α) : (∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  ihave H' := H $$ %a, %b, HP
+  ihave H' := H $$ %a %b HP
   iexact H'
 
 /-- Tests `ihave` with intuitionistic forall specialization from Lean -/
 example [BI PROP] (P Q : α → PROP) (a b : α) (H : ⊢ □ ∀ x, ∀ y, P x -∗ Q y) : P a ⊢ Q b := by
   iintro HP
-  ihave H' := H $$ %a, %b
+  ihave H' := H $$ %a %b
   iapply H' $$ HP
 
 /-- Tests `ihave` with intuitionistic forall specialization and subgoal -/
 example [BI PROP] (P Q : α → PROP) (a b : α) : (□ ∀ x, ∀ y, P x -∗ Q y) ⊢ P a -∗ Q b := by
   iintro H HP
-  ihave H' := H $$ %a, %b, [HP]
+  ihave H' := H $$ %a %b [HP]
   . iexact HP
   iexact H'
 
@@ -790,7 +790,7 @@ example [BI PROP] [BIAffine PROP] (Q : PROP) :
 /-- Tests `ihave` assert -/
 example [BI PROP] (P Q : PROP) : ⊢ P -∗ (P -∗ Q) -∗ Q := by
   iintro HP Hwand
-  ihave ⟨HQ, _⟩ : (Q ∗ emp) $$ [Hwand, HP]
+  ihave ⟨HQ, _⟩ : (Q ∗ emp) $$ [Hwand HP]
   . isplit
     . iapply Hwand $$ HP
     . ipure_intro; trivial
@@ -999,9 +999,9 @@ example [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
   iexact HPQ
 
 /-- Tests `ispecialize` with named subgoal -/
-example [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
+example [BI PROP] (Q : PROP) : P ⊢ (⌜True⌝ -∗ P -∗ ⌜True⌝ -∗ Q) -∗ Q := by
   iintro HP HPQ
-  ispecialize HPQ $$ [HP] as G
+  ispecialize HPQ $$ %True.intro [HP] as G %True.intro
   case G => iexact HP
   iexact HPQ
 
@@ -1045,13 +1045,13 @@ example [BI PROP] (Q : PROP) : P ⊢ □ (P -∗ Q) -∗ Q := by
 /-- Tests `ispecialize` with multiple spatial arguments -/
 example [BI PROP] (Q : PROP) : ⊢ P1 -∗ P2 -∗ (P1 -∗ P2 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HPQ
-  ispecialize HPQ $$ HP1, HP2
+  ispecialize HPQ $$ HP1 HP2
   iexact HPQ
 
 /-- Tests `ispecialize` with multiple subgoals -/
 example [BI PROP] (Q : PROP) : ⊢ P1 -∗ P2 -∗ (P1 -∗ P2 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HPQ
-  ispecialize HPQ $$ [HP1], [HP2]
+  ispecialize HPQ $$ [HP1] [HP2]
   . iexact HP1
   . iexact HP2
   iexact HPQ
@@ -1060,14 +1060,14 @@ example [BI PROP] (Q : PROP) : ⊢ P1 -∗ P2 -∗ (P1 -∗ P2 -∗ Q) -∗ Q :=
 example [BI PROP] (Q : PROP) :
     ⊢ □ P1 -∗ □ P2 -∗ □ (P1 -∗ □ P2 -∗ Q) -∗ □ Q := by
   iintro □HP1 □HP2 □HPQ
-  ispecialize HPQ $$ HP1, HP2
+  ispecialize HPQ $$ HP1 HP2
   iexact HPQ
 
 /-- Tests `ispecialize` with mixed spatial and intuitionistic arguments -/
 example [BI PROP] (Q : PROP) :
     ⊢ P1 -∗ □ P2 -∗ P3 -∗ □ (P1 -∗ P2 -∗ P3 -∗ Q) -∗ Q := by
   iintro HP1 □HP2 HP3 HPQ
-  ispecialize HPQ $$ HP1, HP2, HP3
+  ispecialize HPQ $$ HP1 HP2 HP3
   iexact HPQ
 
 /-- Tests `ispecialize` with forall in spatial context -/
@@ -1092,27 +1092,27 @@ example [BI PROP] (Q : Nat → PROP) : ⊢ (∀ x, □ Q x) -∗ □ Q y := by
 example [BI PROP] (Q : Nat → Nat → PROP) :
     ⊢ (∀ x, ∀ y, Q x y) -∗ Q x y := by
   iintro HQ
-  ispecialize HQ $$ %x, %y
+  ispecialize HQ $$ %x %y
   iexact HQ
 
 /-- Tests `ispecialize` with multiple forall in intuitionistic context -/
 example [BI PROP] (Q : Nat → Nat → PROP) :
     ⊢ □ (∀ x, ∀ y, Q x y) -∗ □ Q x y := by
   iintro □HQ
-  ispecialize HQ $$ %x, %y
+  ispecialize HQ $$ %x %y
   iexact HQ
 
 /-- Tests `ispecialize` with nested forall and intuitionistic -/
 example [BI PROP] (Q : Nat → Nat → PROP) : ⊢ (∀ x, □ (∀ y, Q x y)) -∗ □ Q x y := by
   iintro HQ
-  ispecialize HQ $$ %x, %y
+  ispecialize HQ $$ %x %y
   iexact HQ
 
 /-- Tests `ispecialize` with mixed forall and wand specialization -/
 example [BI PROP] (Q : Nat → PROP) :
     ⊢ □ P1 -∗ P2 -∗ (□ P1 -∗ (∀ x, P2 -∗ Q x)) -∗ Q y := by
   iintro □HP1 HP2 HPQ
-  ispecialize HPQ $$ HP1, %y, HP2
+  ispecialize HPQ $$ HP1 %y HP2
   iexact HPQ
 
 /-- Tests `ispecialize` with pure True wand using `.intro` -/
@@ -1133,14 +1133,14 @@ example [BI PROP] (P : PROP) :
 example [BI PROP] (P Q : PROP) :
     ⊢ (∀ x, P -∗ ⌜x = 1⌝ -∗ Q) -∗ P -∗ Q := by
   iintro H HP
-  ispecialize H $$ %_, HP, %rfl
+  ispecialize H $$ %_ HP %rfl
   iexact H
 
 /-- Tests `ispecialize` with pure subgoal -/
 example [BI PROP] (P Q : PROP) :
     ⊢ (∀ x, P -∗ ⌜x = 1⌝ -∗ Q) -∗ P -∗ Q := by
   iintro H HP
-  ispecialize H $$ %_, HP, %_
+  ispecialize H $$ %_ HP %_
   · rfl
   iexact H
 
@@ -1463,8 +1463,8 @@ example [BI PROP] P (Q : Nat → PROP) :
 example [BI PROP] (Q : PROP) (n : Nat) :
   □ (∀ x, Q -∗ ⌜x = n⌝) ⊢ Q -∗ False := by
   iintro □Hwand HQ
-  icases Hwand $$ %1, HQ with %_
-  icases Hwand $$ %2, HQ with %_
+  icases Hwand $$ %1 HQ with %_
+  icases Hwand $$ %2 HQ with %_
   grind
 
 /-- Tests `icases` removing a destructed hyp -/
