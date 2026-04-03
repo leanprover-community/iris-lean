@@ -33,13 +33,12 @@ namespace Iris.Std
 /-- Abstract set interface.
 The type constructor `S` represents a set of elements of type `A`.  -/
 class Set (S : Type _) (A : outParam (Type _)) extends
-  Membership A S, Singleton A S, Union S
-  , Inter S, SDiff S, EmptyCollection S
+  Membership A S, Singleton A S, Union S, Inter S, SDiff S, EmptyCollection S
 
 /-- Laws that a set implementation must satisfy. -/
 class LawfulSet (S : Type _) (A : outParam (Type _)) extends Set S A where
   /-- Set extensionality: sets with same membership are equal. -/
-  ext : ∀ (X Y : S), (∀ x, x ∈ X ↔ x ∈ Y) → X = Y
+  ext : ∀ {X Y : S}, (∀ x, x ∈ X ↔ x ∈ Y) → X = Y
   /-- Membership in empty set is always false. -/
   mem_empty : ∀ {x : A}, x ∉ (∅ : S)
   /-- Membership in singleton: true iff equal. -/
@@ -53,8 +52,7 @@ class LawfulSet (S : Type _) (A : outParam (Type _)) extends Set S A where
   /-- Membership in difference: x ∈ X \ Y ↔ x ∈ X ∧ x ∉ Y -/
   mem_diff : ∀ {X Y : S} {x : A},
     x ∈ (X \ Y) ↔ (x ∈ X ∧ x ∉ Y)
-  export LawfulSet (mem_empty mem_singleton
-    mem_union mem_inter mem_diff)
+  export LawfulSet (mem_empty mem_singleton mem_union mem_inter mem_diff)
 
 attribute [ext] LawfulSet.ext
 
@@ -246,14 +244,8 @@ theorem delete_union {s₁ s₂ : S} {x : A} :
   ext y
   simp only [mem_delete, mem_union]
   constructor
-  · intro ⟨hh, hne⟩
-    cases hh with
-    | inl hh => left; exact ⟨hh, hne⟩
-    | inr hh => right; exact ⟨hh, hne⟩
-  · intro hh
-    cases hh with
-    | inl hhy => exact ⟨.inl hhy.1, hhy.2⟩
-    | inr hhy => exact ⟨.inr hhy.1, hhy.2⟩
+  · exact fun ⟨hh, hne⟩ => hh.casesOn (.inl ⟨·, hne⟩) (.inr ⟨·, hne⟩)
+  · exact (·.casesOn (fun h => ⟨.inl h.1, h.2⟩) (fun h => ⟨.inr h.1, h.2⟩))
 
 /-- Delete from singleton: empty if same element, singleton otherwise. -/
 theorem delete_singleton [DecidableEq A] {x y : A} :
@@ -266,9 +258,7 @@ theorem delete_singleton [DecidableEq A] {x y : A} :
   · simp only [h, ite_false]
     ext z
     rw [mem_delete, mem_singleton]
-    constructor
-    · intro ⟨heq, _⟩; exact heq
-    · intro heq; exact ⟨heq, fun hz => h (heq.symm.trans hz).symm⟩
+    exact ⟨(·.1), fun heq => ⟨heq, fun hz => h (heq.symm.trans hz).symm⟩⟩
 
 /-- Deleting preserves subset relation. -/
 theorem delete_subset_delete {s₁ s₂ : S} {x : A} :
@@ -352,12 +342,10 @@ theorem empty_subset {s : S} : ∅ ⊆ s := by
   intro y; simp [mem_empty]
 
 /-- Insert preserves subset relation. -/
-theorem insert_subset_subset {s₁ s₂ : S} {x : A} :
-  s₁ ⊆ s₂ → insert x s₁ ⊆ insert x s₂ := by
-  intro H y; rw [mem_insert, mem_insert]
-  intro G; cases G with
-  | inl G => left; assumption
-  | inr G => right; apply H _ G
+theorem insert_subset_subset {s₁ s₂ : S} {x : A} (H : s₁ ⊆ s₂) : insert x s₁ ⊆ insert x s₂ := by
+  intro y
+  rw [mem_insert, mem_insert]
+  exact (·.casesOn (Or.intro_right _ · |>.symm) (.inr <| H _ ·))
 
 /-- Subset relation is reflexive. -/
 @[refl]
@@ -418,10 +406,11 @@ theorem disjoint_union_left {s₁ s₂ t : S} : (s₁ ∪ s₂) ## t ↔ s₁ ##
   simp only [Disjoint.disjoint]
   constructor
   · intro h; constructor
-    · intro x ⟨hx1, hx2⟩; exact h x ⟨(mem_union.mpr (.inl hx1)), hx2⟩
-    · intro x ⟨hx1, hx2⟩; exact h x ⟨(mem_union.mpr (.inr hx1)), hx2⟩
+    · exact fun x ⟨hx1, hx2⟩ => h x ⟨(mem_union.mpr (.inl hx1)), hx2⟩
+    · exact fun x ⟨hx1, hx2⟩ => h x ⟨(mem_union.mpr (.inr hx1)), hx2⟩
   · intro ⟨h1, h2⟩ x ⟨hx1, hx2⟩
-    rw [mem_union] at hx1; cases hx1 with
+    rw [mem_union] at hx1
+    cases hx1 with
     | inl hx1 => exact h1 x ⟨hx1, hx2⟩
     | inr hx1 => exact h2 x ⟨hx1, hx2⟩
 
@@ -431,8 +420,7 @@ theorem disjoint_union_right {s₁ s₂ t : S} : t ## (s₁ ∪ s₂) ↔ t ## s
 
 /-- Disjointness is decidable when set equality is decidable. -/
 instance disjoint_dec [DecidableEq S] : DecidableDisj S where
-  decide_disj := by
-    intro E1 E2
+  decide_disj E1 E2 := by
     rw [disjoint_intersection]
     infer_instance
 
@@ -440,52 +428,39 @@ instance disjoint_dec [DecidableEq S] : DecidableDisj S where
 
 /-- Difference with empty set is identity. -/
 @[simp]
-theorem diff_empty {s : S} :
-  s \ ∅ = s := by
+theorem diff_empty {s : S} : s \ ∅ = s := by
   ext x; rw [mem_diff]; simp [mem_empty]
 
 /-- Self-difference is empty. -/
 @[simp]
-theorem diff_all {s : S} :
-  s \ s = ∅ := by
+theorem diff_all {s : S} : s \ s = ∅ := by
   ext x; rw [mem_diff]; simp [mem_empty]
 
 /-- Difference is a subset of the left set. -/
-theorem diff_subset_left {s₁ s₂ : S} :
-  s₁ \ s₂ ⊆ s₁ := by
+theorem diff_subset_left {s₁ s₂ : S} : s₁ \ s₂ ⊆ s₁ := by
   intro y G; rw [mem_diff] at G
   exact G.left
 
 /-- Difference with disjoint set is identity. -/
-theorem diff_subset_disj {s₁ s₂ : S} :
-  s₁ ## s₂ → s₁ \ s₂ = s₁ := by
-  intro H
+theorem diff_subset_disj {s₁ s₂ : S} (H : s₁ ## s₂) : s₁ \ s₂ = s₁ := by
   ext x; rw [mem_diff]
   rw [disjoint_intersection] at H
-  constructor
-  · rintro ⟨G, _⟩; assumption
-  · intro G
-    by_cases hin : x ∈ s₂
-    · exfalso
-      apply (mem_empty (S := S) (x := x))
-      rw [<-H, mem_inter]
-      exact ⟨G, hin⟩
-    · exact ⟨G, hin⟩
+  refine ⟨(·.1), fun G => ?_⟩
+  by_cases hin : x ∈ s₂
+  · exfalso
+    apply (mem_empty (S := S) (x := x))
+    rw [<-H, mem_inter]
+    exact ⟨G, hin⟩
+  · exact ⟨G, hin⟩
 
 /-- A superset can be decomposed into the subset and its difference. -/
-theorem diff_subset_decomp {s₁ s₂ : S} :
-  s₁ ⊆ s₂ → s₂ = (s₂ \ s₁) ∪ s₁ := by
-  intro H
-  ext x; rw [mem_union, mem_diff]
-  constructor
-  · intro G
-    by_cases J : x ∈ s₁
-    · right; exact J
-    · left; exact ⟨G, J⟩
-  · intro G
-    cases G with
-    | inl G => exact G.left
-    | inr G => exact H _ G
+theorem diff_subset_decomp {s₁ s₂ : S} (H : s₁ ⊆ s₂) : s₂ = (s₂ \ s₁) ∪ s₁ := by
+  ext x
+  rw [mem_union, mem_diff]
+  refine ⟨fun G => ?_, (·.casesOn (·.left) (H _ ·))⟩
+  by_cases J : x ∈ s₁
+  · exact .inr J
+  · exact .inl ⟨G, J⟩
 
 /-- De Morgan's law: difference distributes over union. -/
 theorem diff_union {s₁ s₂ s₃ : S} : s₁ \ (s₂ ∪ s₃) = (s₁ \ s₂) ∩ (s₁ \ s₃) := by
@@ -508,32 +483,27 @@ theorem inter_diff {s₁ s₂ s₃ : S} : (s₁ ∩ s₂) \ s₃ = s₁ ∩ (s�
 /-! ### Additional subset lemmas -/
 
 /-- A set is a subset of itself with an element inserted. -/
-theorem insert_subset {s : S} {x : A} :
-  s ⊆ insert x s := by
+theorem insert_subset {s : S} {x : A} : s ⊆ insert x s := by
   intro y G; rw [mem_insert]
   right; assumption
 
 /-- Left set is a subset of union. -/
-theorem union_subset_left {s₁ s₂ : S} :
-  s₁ ⊆ s₁ ∪ s₂ := by
+theorem union_subset_left {s₁ s₂ : S} : s₁ ⊆ s₁ ∪ s₂ := by
   intro y G; rw [mem_union]
   left; assumption
 
 /-- Right set is a subset of union. -/
-theorem union_subset_right {s₁ s₂ : S} :
-  s₂ ⊆ s₁ ∪ s₂ := by
+theorem union_subset_right {s₁ s₂ : S} : s₂ ⊆ s₁ ∪ s₂ := by
   intro y G; rw [mem_union]
   right; assumption
 
 /-- Intersection is a subset of left set. -/
-theorem inter_subset_left {s₁ s₂ : S} :
-  s₁ ∩ s₂ ⊆ s₁ := by
+theorem inter_subset_left {s₁ s₂ : S} : s₁ ∩ s₂ ⊆ s₁ := by
   intro y G; rw [mem_inter] at G
   exact G.left
 
 /-- Intersection is a subset of right set. -/
-theorem inter_subset_right {s₁ s₂ : S} :
-  s₁ ∩ s₂ ⊆ s₂ := by
+theorem inter_subset_right {s₁ s₂ : S} : s₁ ∩ s₂ ⊆ s₂ := by
   intro y G; rw [mem_inter] at G
   exact G.right
 
@@ -573,11 +543,7 @@ theorem singleton_eq_singleton {x y : A} : ({x} : S) = {y} ↔ x = y := by
 
 /-- Union with subset absorption. -/
 theorem union_subset_absorption {s₁ s₂ : S} : s₁ ⊆ s₂ → s₁ ∪ s₂ = s₂ := by
-  intro h; ext x; rw [mem_union]; constructor
-  · intro hx; cases hx with
-    | inl hx => exact h _ hx
-    | inr hx => exact hx
-  · intro hx; right; exact hx
+  intro h; ext x; rw [mem_union]; exact ⟨(·.casesOn (h _) id) , .inr⟩
 
 /-- Intersection with subset absorption. -/
 theorem inter_subset_absorption {s₁ s₂ : S} : s₁ ⊆ s₂ → s₁ ∩ s₂ = s₁ := by
@@ -676,6 +642,7 @@ private theorem ofListExtend_cons {s : S} {x : A} {xs : List A} :
     ofListExtend (x :: xs) s = ofListExtend xs (insert x s) := by
   simp [ofListExtend, List.foldl_cons]
 
+-- FIXME: Golf
 private theorem ofListExtend_classify {s : S} {xs : List A} :
     ofListExtend xs s = s ∪ ofListExtend xs (∅ : S) := by
   induction xs generalizing s with
@@ -684,7 +651,8 @@ private theorem ofListExtend_classify {s : S} {xs : List A} :
   | cons x xs IH =>
     simp only [ofListExtend_cons]
     rw [IH]
-    ext z; rw [mem_union, mem_insert]
+    ext z
+    rw [mem_union, mem_insert]
     constructor
     · intro G
       rw [mem_union]
@@ -721,6 +689,7 @@ private theorem ofListExtend_classify {s : S} {xs : List A} :
           | inr G =>
             assumption
 
+-- FIXME: Golf
 private theorem ofListExtend_cons_comm {s : S} {x : A} {xs : List A} :
   ofListExtend (x :: xs) s = insert x (ofListExtend xs s) := by
   ext y
@@ -755,9 +724,7 @@ theorem ofList_cons : ofList (x :: xs) = insert x ((ofList xs) : S) := by
 /-- Membership in list corresponds to membership in converted set. -/
 theorem mem_ofList {x : A} {xs : List A} : x ∈ xs ↔ x ∈ (ofList xs : S) := by
   induction xs with
-  | nil =>
-    simp only [ofList_nil, List.not_mem_nil]
-    exact ⟨(fun h => h.elim), (fun h => mem_empty h)⟩
+  | nil => simpa only [ofList_nil, List.not_mem_nil] using ⟨(·.elim), mem_empty⟩
   | cons y ys IH =>
     simp only [List.mem_cons, ofList_cons, mem_insert]
     grind
@@ -775,14 +742,11 @@ namespace FiniteSet
 open LawfulSet
 
 /-- Map operation on sets. Maps a function over all elements. -/
-def map {S S' : Type _} {A B : Type _}
-  [FiniteSet S A] [FiniteSet S' B]
-  (f : A → B) (s : S) : S' :=
+def map {S S' : Type _} {A B : Type _} [FiniteSet S A] [FiniteSet S' B] (f : A → B) (s : S) : S' :=
   ofList (S := S') (A := B) (List.map f (toList s))
 
 /-- Bind operation on sets. Flatmap a function over all elements. -/
-def bind {S S' : Type _} {A B : Type _} [FiniteSet S A] [FiniteSet S' B]
-  (f : A → S') (s : S) : S' :=
+def bind {S S' : Type _} {A B : Type _} [FiniteSet S A] [FiniteSet S' B] (f : A → S') (s : S) : S' :=
   ofList (List.flatMap (fun x => toList (f x)) (toList s))
 
 /-- The cardinality (size) of a finite set, defined as the length of its list representation. -/
@@ -790,8 +754,7 @@ def size {S : Type _} {A : Type _} [FiniteSet S A] (s : S) : Nat :=
   (toList s).length
 
 /-- Fold over a finite set. -/
-def fold [FiniteSet S A] {β : Type _} (f : β → A → β)
-    (init : β) (s : S) : β :=
+def fold [FiniteSet S A] {β : Type _} (f : β → A → β) (init : β) (s : S) : β :=
   (toList s).foldl f init
 
 def filter [FiniteSet S A] (p : A → Bool) (s : S) : S :=
@@ -816,11 +779,11 @@ theorem toList_empty : toList (∅ : S) = [] := by
   cases h : toList (∅ : S) with
   | nil => rfl
   | cons x xs =>
-    exfalso
     have : x ∈ toList (∅ : S) := by rw [h]; simp [List.mem_cons]
     rw [mem_toList] at this
-    exact mem_empty this
+    exact mem_empty this |>.elim
 
+-- FIXME: Golf
 theorem toList_singleton {x : A} : toList ({x} : S) = [x] := by
   have hnodup : (toList ({x} : S)).Nodup := LawfulFiniteSet.toList_nodup
   cases h : toList ({x} : S) with
@@ -846,46 +809,41 @@ theorem toList_singleton {x : A} : toList ({x} : S) = [x] := by
       simp [List.mem_cons] at hnodup'
 
 /-- Membership in toList of union corresponds to membership in concatenated lists. -/
-theorem mem_toList_union :
-  ∀ x, x ∈ toList (s₁ ∪ s₂ : S) ↔ x ∈ toList s₁ ++ toList s₂ := by
-  intro x
+theorem mem_toList_union {x} : x ∈ toList (s₁ ∪ s₂ : S) ↔ x ∈ toList s₁ ++ toList s₂ := by
   rw [mem_toList, mem_union, List.mem_append, mem_toList, mem_toList]
 
 /-- Converting a set to canonical form and back yields the original set. -/
-theorem ofList_toList {m : S} :
-  (ofList (toList m)) = m := by
+theorem ofList_toList {m : S} : (ofList (toList m)) = m := by
   ext k
   rw [<-mem_ofList, mem_toList]
 
 /-- Membership in mapped set. -/
 theorem mem_map {S' : Type _} {B : Type _} [LawfulFiniteSet S' B] (f : A → B) (s : S) (x : B) :
-  x ∈ map (S' := S') f s ↔ ∃ y, f y = x ∧ y ∈ s := by
+    x ∈ map (S' := S') f s ↔ ∃ y, f y = x ∧ y ∈ s := by
   simp only [map, <-mem_ofList, List.mem_map, mem_toList]
   grind
 
 /-- Mapping over empty set yields empty set. -/
 @[simp]
 theorem map_empty {S' : Type _} {B : Type _} [LawfulFiniteSet S' B] (f : A → B) :
-  map (S' := S') f (∅ : S) = ∅ := by
+    map (S' := S') f (∅ : S) = ∅ := by
   ext x; rw [mem_map]; simp [mem_empty]
 
 /-- Mapping identity yields original set. -/
 @[simp]
 theorem map_id {S' : Type _} {B : Type _} [LawfulFiniteSet S' B] (s : S) :
-  map (S' := S) id s = s := by
+    map (S' := S) id s = s := by
   ext x; rw [mem_map]; simp
 
 /-- Mapping composed functions equals composing mapped functions. -/
-theorem map_comp {S' S'' : Type _} {B C : Type _}
-  [LawfulFiniteSet S' B] [LawfulFiniteSet S'' C]
+theorem map_comp {S' S'' : Type _} {B C : Type _} [LawfulFiniteSet S' B] [LawfulFiniteSet S'' C]
   (f : A → B) (g : B → C) (s : S) :
-  map (S' := S'') (g ∘ f) s = map (S' := S'') g (map (S' := S') f s) := by
+    map (S' := S'') (g ∘ f) s = map (S' := S'') g (map (S' := S') f s) := by
   ext x; rw [mem_map, mem_map]; grind [mem_map]
 
 /-- Map distributes over union. -/
-theorem map_union {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
-    (f : A → B) (s₁ s₂ : S) :
-  map (S' := S') f (s₁ ∪ s₂) = map f s₁ ∪ map f s₂ := by
+theorem map_union {S' : Type _} {B : Type _} [LawfulFiniteSet S' B] (f : A → B) (s₁ s₂ : S) :
+    map (S' := S') f (s₁ ∪ s₂) = map f s₁ ∪ map f s₂ := by
   ext y; rw [mem_map, mem_union, mem_map, mem_map]
   constructor
   · intro ⟨x, hf, hx⟩; rw [mem_union] at hx; cases hx with
@@ -911,8 +869,7 @@ theorem map_subset {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
   exists x; exact ⟨hf, h _ hx⟩
 
 private theorem nodup_map_of_injective {B : Type _} {f : A → B} {l : List A}
-    (hinj : Injective f) (hnodup : l.Nodup) :
-    (l.map f).Nodup := by
+    (hinj : Injective f) (hnodup : l.Nodup) : (l.map f).Nodup := by
   induction l with
   | nil => simp [List.Nodup]
   | cons x xs ih =>
@@ -937,30 +894,27 @@ theorem toList_map_perm {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
   simp [mem_toList, <-mem_ofList]
 
 /-- Permutation-equivalent lists convert to the same set. -/
-theorem ofList_congr {l l' : List A} :
-  List.Perm l l' → (ofList l : S) = ofList l' := by
-  intro H; ext x
+theorem ofList_congr {l l' : List A} (H : List.Perm l l') :
+    (ofList l : S) = ofList l' := by
+  ext x
   rw [<-mem_ofList, <-mem_ofList]
   induction H <;> grind only [List.mem_cons]
 
 /-- Membership in bind. -/
-theorem mem_bind [LawfulFiniteSet S' B]
-    (f : A → S') (X : S) (y : B) :
+theorem mem_bind [LawfulFiniteSet S' B] (f : A → S') (X : S) (y : B) :
     y ∈ bind (S' := S') f X ↔ ∃ x, x ∈ X ∧ y ∈ (f x) := by
   simp only [bind, <-mem_ofList, List.mem_flatMap, mem_toList]
 
 /-- Bind over empty set is empty. -/
 @[simp]
-theorem bind_empty [LawfulFiniteSet S' B]
-    (f : A → S') :
-  bind (S' := S') f (∅ : S) = ∅ := by
+theorem bind_empty [LawfulFiniteSet S' B] (f : A → S') :
+    bind (S' := S') f (∅ : S) = ∅ := by
   ext y; rw [mem_bind]; simp [mem_empty]
 
 /-- Bind over singleton. -/
 @[simp]
-theorem bind_singleton [LawfulFiniteSet S' B]
-    (f : A → S') (x : A) :
-  bind (S' := S') f ({x} : S) = f x := by
+theorem bind_singleton [LawfulFiniteSet S' B] (f : A → S') (x : A) :
+    bind (S' := S') f ({x} : S) = f x := by
   ext y; rw [mem_bind]; constructor
   · intro ⟨z, hz, hy⟩; rw [mem_singleton] at hz; subst hz; exact hy
   · intro hy; exists x; constructor; rw [mem_singleton]; exact hy
@@ -973,19 +927,16 @@ theorem bind_union [LawfulFiniteSet S' B]
   apply Iff.intro <;> grind only [mem_union]
 
 /-- Membership in filtered set. -/
-theorem mem_filter (p : A → Bool) (s : S) (x : A) :
-  x ∈ filter p s ↔ x ∈ s ∧ p x := by
+theorem mem_filter (p : A → Bool) (s : S) (x : A) : x ∈ filter p s ↔ x ∈ s ∧ p x := by
   simp only [filter, <-mem_ofList, List.mem_filter, mem_toList]
 
 /-- Filter over empty set is empty. -/
 @[simp]
-theorem filter_empty (p : A → Bool) :
-  filter p (∅ : S) = ∅ := by
+theorem filter_empty (p : A → Bool) : filter p (∅ : S) = ∅ := by
   ext x; rw [mem_filter]; simp [mem_empty]
 
 /-- Filter over singleton. -/
-theorem filter_singleton (p : A → Bool) (x : A) :
-  filter p ({x} : S) = if p x then {x} else ∅ := by
+theorem filter_singleton (p : A → Bool) (x : A) : filter p ({x} : S) = if p x then {x} else ∅ := by
   ext y
   rw [mem_filter, mem_singleton]
   by_cases hp : p x
@@ -994,23 +945,21 @@ theorem filter_singleton (p : A → Bool) (x : A) :
 
 /-- Filter distributes over union. -/
 theorem filter_union (p : A → Bool) (s₁ s₂ : S) :
-  filter p (s₁ ∪ s₂) = filter p s₁ ∪ filter p s₂ := by
+    filter p (s₁ ∪ s₂) = filter p s₁ ∪ filter p s₂ := by
   ext x
   grind only [mem_filter, mem_union, mem_union, mem_filter, mem_filter]
 
 /-- Filter with always-true predicate is identity. -/
-theorem filter_true (s : S) :
-  filter (fun _ => true) s = s := by
+theorem filter_true (s : S) : filter (fun _ => true) s = s := by
   ext x; rw [mem_filter]; simp
 
 /-- Filter with always-false predicate is empty. -/
-theorem filter_false (s : S) :
-  filter (fun _ => false) s = ∅ := by
+theorem filter_false (s : S) : filter (fun _ => false) s = ∅ := by
   ext x; rw [mem_filter]; simp [mem_empty]
 
 /-- Consecutive filters can be combined. -/
 theorem filter_filter (p q : A → Bool) (s : S) :
-  filter p (filter q s) = filter (fun x => p x && q x) s := by
+    filter p (filter q s) = filter (fun x => p x && q x) s := by
   ext x
   rw [mem_filter, mem_filter, mem_filter]
   simp [Bool.and_eq_true]
@@ -1018,19 +967,19 @@ theorem filter_filter (p q : A → Bool) (s : S) :
 
 /-- Filter distributes over difference. -/
 theorem filter_diff (p : A → Bool) (s₁ s₂ : S) :
-  filter p (s₁ \ s₂) = filter p s₁ \ filter p s₂ := by
+    filter p (s₁ \ s₂) = filter p s₁ \ filter p s₂ := by
   ext x
   grind only [mem_filter, mem_diff]
 
 /-- Filter distributes over intersection. -/
 theorem filter_inter (p : A → Bool) (s₁ s₂ : S) :
-  filter p (s₁ ∩ s₂) = filter p s₁ ∩ filter p s₂ := by
+    filter p (s₁ ∩ s₂) = filter p s₁ ∩ filter p s₂ := by
   ext x
   grind only [mem_filter, mem_inter]
 
 /-- Filter over insert. -/
 theorem filter_insert (p : A → Bool) (x : A) (s : S) :
-  filter p (insert x s) = if p x then insert x (filter p s) else filter p s := by
+    filter p (insert x s) = if p x then insert x (filter p s) else filter p s := by
   ext y
   rw [mem_filter, mem_insert]
   by_cases hp : p x
@@ -1041,10 +990,11 @@ theorem filter_insert (p : A → Bool) (x : A) (s : S) :
 
 /-- Filter over delete. -/
 theorem filter_delete (p : A → Bool) (x : A) (s : S) :
-  filter p (delete x s) = delete x (filter p s) := by
+    filter p (delete x s) = delete x (filter p s) := by
   ext y
   grind only [mem_filter, mem_delete]
 
+-- FIXME: Golf
 /-- A set has size 0 iff it is empty. -/
 theorem size_empty {X : S} : size X = 0 ↔ X = ∅ := by
   simp only [size]
@@ -1075,6 +1025,7 @@ theorem set_choose (X : S) (h : size X ≠ 0) : ∃ x, x ∈ X := by
     rw [<-mem_toList, hlist]
     simp [List.mem_cons]
 
+-- FIXME: Golf
 theorem size_union {X Y : S} (h : X ## Y) : size X + size Y = size (X ∪ Y) := by
   simp only [size, <-List.length_append]
   have h_disj : ∀ x, x ∈ toList X → x ∉ toList Y := by
@@ -1112,6 +1063,7 @@ theorem size_union {X Y : S} (h : X ## Y) : size X + size Y = size (X ∪ Y) := 
 
   rw [this]
 
+-- FIXME: Golf
 /-- Proper subsets have strictly smaller size. -/
 theorem size_ssubset {X Y : S} (h : X ⊂ Y) : size X < size Y := by
   have heq : Y = Y \ X ∪ X := by
@@ -1182,6 +1134,7 @@ theorem set_wf : WellFounded (SSubset (α := S)) := by
     exact (size_ssubset hrel)
   · exact (measure (size (S := S) (A := A))).wf
 
+-- FIXME: Golf
 /-- Induction principle for finite sets. -/
 theorem set_ind {P : S → Prop}
     (hemp : P ∅)
@@ -1271,6 +1224,7 @@ theorem toList_ofList {l : List A} (H : List.Nodup l) :
   apply (List.perm_ext_iff_of_nodup H toList_nodup).mpr
   intro x; rw [mem_toList, <-mem_ofList]
 
+-- FIXME: Golf
 theorem toList_union_perm {s t : S} (hdisj : s ## t) :
     (toList (s ∪ t)).Perm (toList s ++ toList t) := by
   apply (List.perm_ext_iff_of_nodup toList_nodup _).mpr
@@ -1304,21 +1258,21 @@ theorem fold_union {β : Type _} {f : β → A → β}
 
 /-- Membership in a finite set is decidable when element equality is decidable. -/
 instance [DecidableEq A] {x : A} {s : S} : Decidable (x ∈ s) := by
-  rw [<-mem_toList]
+  rw [← mem_toList]
   infer_instance
 
 /-- Two sets are equal iff their list representations are equal. -/
 theorem toList_eq_iff {s₁ s₂ : S} : (toList s₁ = toList s₂) = (s₁ = s₂) := by
   ext; constructor
   · intro heq
-    ext x; rw [<-mem_toList, <-mem_toList, heq]
+    ext x; rw [← mem_toList, ← mem_toList, heq]
   · rintro ⟨⟩
     rfl
 
 /-- Equality of finite sets is decidable when element equality is decidable. -/
 instance [DecidableEq A] : DecidableEq S := by
   intro X Y
-  rw [<-toList_eq_iff]
+  rw [← toList_eq_iff]
   infer_instance
 
 end FinLemmas

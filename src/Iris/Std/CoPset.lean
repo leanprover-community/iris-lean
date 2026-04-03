@@ -470,7 +470,7 @@ end CoPset
 instance : Iris.Std.Set CoPset Pos where
 
 instance : Iris.Std.LawfulSet CoPset Pos where
-  ext _ _ h := CoPset.ext h
+  ext h := CoPset.ext h
   mem_empty := CoPset.mem_empty
   mem_singleton := CoPset.in_singleton
   mem_union := CoPset.in_union

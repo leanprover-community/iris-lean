@@ -27,7 +27,7 @@ theorem mem_singleton_extTreeSet {α : Type _} {cmp : α → α → Ordering} [S
 
 instance {α : Type _} {cmp : α → α → Ordering} [Std.TransCmp cmp] [Std.LawfulEqCmp cmp] :
     LawfulSet (Std.ExtTreeSet α cmp) α where
-  ext _ _ h := Std.ExtTreeSet.ext_mem h
+  ext h := Std.ExtTreeSet.ext_mem h
   mem_empty := Std.ExtTreeSet.not_mem_empty
   mem_singleton := mem_singleton_extTreeSet
   mem_union := Std.ExtTreeSet.mem_union_iff
