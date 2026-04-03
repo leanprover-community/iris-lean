@@ -19,7 +19,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `big_op.v`
   - [x] Lists
   - [x] Maps
-  - [ ] Sets
+  - [x] Sets
   - [ ] Multisets
   - [ ] Homomorphisms
 - [ ] `cmra.v`
@@ -66,7 +66,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] CMRA
   - [ ] Updates
 - [ ] `gset.v` 
-  - [ ] CMRA
+  - [x] CMRA
   - [ ] Updates
 - [ ] `list.v` 
   - Is this an instance of the `Heap` CMRA?
