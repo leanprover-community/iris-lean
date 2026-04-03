@@ -527,6 +527,7 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
       have H (k y') : (⌜get? (insert m₂'' i y) k = some y'⌝ → Ψ k y') ⊢ ⌜get? m₂'' k = some y'⌝ → Ψ k y' :=
         imp_intro' <| pure_elim_l fun hget => pure_imp_elim ((get?_insert_ne (hne_of_get hget).symm).trans hget)
       refine (sep_mono_l <| sep_mono_r <| intuitionistically_mono <| forall_mono fun k => forall_mono fun y' => wand_mono_r <| H k y').trans ?_
+      -- Tail
       refine (sep_mono_l <| IH m₁).trans ?_
       refine sep_assoc.1.trans ?_
       refine (sep_mono_r sep_comm.1).trans ?_
@@ -551,6 +552,7 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
           let hne : i ≠ k := (hne_of_get hget).symm
           simp only [get?_delete_ne hne]
           exact (sep_mono_l <| wand_mono_r <| pure_imp_elim ((get?_insert_ne hne).trans hget)).trans wand_elim_l
+      -- Tail
       refine (sep_mono_r <| sep_mono_r <| intuitionistically_mono <| forall_mono fun k => forall_mono fun y' => hadapt k y').trans <| (sep_mono_r <| IH (delete m₁ i)).trans ?_
       refine .trans ?_ <| sep_assoc.2.trans <| sep_mono_l (bigSepM_insert hi).2
       refine sep_mono_r <| sep_mono_r (equiv_iff.mp <| bigOpM_equiv_of_perm Φ fun k => ?_).2
