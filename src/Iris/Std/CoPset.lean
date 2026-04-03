@@ -71,7 +71,7 @@ theorem node'_wf {b l r} : coPsetWf l -> coPsetWf r -> coPsetWf (CoPsetRaw.node'
 open CoPsetRaw
 
 /-- The membership test. -/
-def CoPsetRaw.ElemOf : Pos → CoPsetRaw → Bool
+@[simp] def CoPsetRaw.ElemOf : Pos → CoPsetRaw → Bool
   | _, leaf b => b
   | .xH, node b _ _ => b
   | p~0, node _ l _ => CoPsetRaw.ElemOf p l
@@ -86,13 +86,13 @@ theorem elem_of_node b l r (p : Pos) :
   simp [node', CoPsetRaw.ElemOf]
 
 /-- Singleton. -/
-def CoPsetRaw.Singleton : Pos → CoPsetRaw
+@[simp] def CoPsetRaw.Singleton : Pos → CoPsetRaw
   | .xH => node true (leaf false) (leaf false)
   | p~0 => node' false (Singleton p) (leaf false)
   | p~1 => node' false (leaf false) (Singleton p)
 
 /-- Union -/
-def CoPsetRaw.Union : CoPsetRaw → CoPsetRaw → CoPsetRaw
+@[simp] def CoPsetRaw.Union : CoPsetRaw → CoPsetRaw → CoPsetRaw
   | leaf false, t => t
   | t, leaf false => t
   | leaf true, _ => leaf true
@@ -102,7 +102,7 @@ def CoPsetRaw.Union : CoPsetRaw → CoPsetRaw → CoPsetRaw
 instance : Union CoPsetRaw where union := CoPsetRaw.Union
 
 /-- Intersection -/
-def CoPsetRaw.Intersection : CoPsetRaw → CoPsetRaw → CoPsetRaw
+@[simp] def CoPsetRaw.Intersection : CoPsetRaw → CoPsetRaw → CoPsetRaw
   | leaf true, t => t
   | t, leaf true => t
   | leaf false, _ => leaf false
@@ -112,7 +112,7 @@ def CoPsetRaw.Intersection : CoPsetRaw → CoPsetRaw → CoPsetRaw
 instance : Inter CoPsetRaw where inter := CoPsetRaw.Intersection
 
 /-- Complement -/
-def CoPsetRaw.Complement : CoPsetRaw → CoPsetRaw
+@[simp] def CoPsetRaw.Complement : CoPsetRaw → CoPsetRaw
   | leaf b => leaf (!b)
   | node b l r => node' (!b) (Complement l) (Complement r)
 
@@ -171,42 +171,35 @@ namespace CoPset
 
 /-- Helper: if a well-formed tree has uniform membership, it must be a leaf.
     Corresponds to `coPLeaf_wf` in Rocq Iris. -/
-private theorem coPsetLeaf_wf : ∀ (t : CoPsetRaw) (b : Bool),
-    coPsetWf t = true → (∀ p, ElemOf p t = b) → t = .leaf b := by
-  intro t b Hwf Hall
+theorem coPsetLeaf_wf {t : CoPsetRaw} {b : Bool} (Hwf : coPsetWf t = true)
+    (Hall : ∀ p, ElemOf p t = b) : t = .leaf b := by
   cases t with
-  | leaf b' =>
-    congr
-    exact Hall .xH
+  | leaf b' => exact congrArg _ (Hall .xH)
   | node b' l r =>
-    exfalso
-    suffices Hwf : (coPsetWf (node b (leaf b) (leaf b))) by
-      cases b <;> simp [coPsetWf] at Hwf
-    rw [show l = .leaf b by exact coPsetLeaf_wf l b (node_wf_l Hwf) (fun p => Hall (.xO p))] at Hwf
-    rw [show r = .leaf b by exact coPsetLeaf_wf r b (node_wf_r Hwf) (fun p => Hall (.xI p))] at Hwf
-    rw [show b' = b by exact Hall .xH] at Hwf
-    exact Hwf
+    suffices Hwf : (coPsetWf (node b (leaf b) (leaf b))) by cases b <;> simp [coPsetWf] at Hwf
+    rw [← Hwf]
+    congr
+    · exact Hall .xH |>.symm
+    · exact coPsetLeaf_wf (node_wf_l Hwf) (Hall <| .xO ·) |>.symm
+    · exact coPsetLeaf_wf (node_wf_r Hwf) (Hall <| .xI ·) |>.symm
 
 /-- Two CoPsetRaw trees are equal if they have the same membership function
     and both are well-formed. -/
-private theorem coPsetRaw_eq (t1 t2 : CoPsetRaw) :
-    (∀ p, ElemOf p t1 = ElemOf p t2) →
-    coPsetWf t1 = true → coPsetWf t2 = true → t1 = t2 := by
-  intro Ht Hwf1 Hwf2
+theorem coPsetRaw_eq {t1 t2 : CoPsetRaw} (Ht : ∀ p, ElemOf p t1 = ElemOf p t2)
+    (Hwf1 : coPsetWf t1 = true) (Hwf2 : coPsetWf t2 = true) : t1 = t2 := by
   match t1, t2 with
   | .leaf b1, .leaf b2 => congr 1; exact Ht .xH
   | .leaf b1, .node b2 l2 r2 =>
     simp only [ElemOf] at Ht
-    exact .symm (coPsetLeaf_wf _ b1 Hwf2 (fun p => .symm (Ht p)))
+    exact coPsetLeaf_wf Hwf2 (fun p => .symm (Ht p)) |>.symm
   | .node b1 l1 r1, .leaf b2 =>
     simp only [ElemOf] at Ht
-    exact (coPsetLeaf_wf _ b2 Hwf1 Ht)
+    exact (coPsetLeaf_wf Hwf1 Ht)
   | .node b1 l1 r1, .node b2 l2 r2 =>
-    rw [show b1 = b2 by exact Ht .xH]
-    rw [show l1 = l2 by
-      exact coPsetRaw_eq _ _ (fun p => Ht (.xO p)) (node_wf_l Hwf1) (node_wf_l Hwf2)]
-    rw [show r1 = r2 by
-      exact coPsetRaw_eq _ _ (fun p => Ht (.xI p)) (node_wf_r Hwf1) (node_wf_r Hwf2)]
+    congr
+    · exact Ht .xH
+    · exact coPsetRaw_eq (Ht <| .xO ·) (node_wf_l Hwf1) (node_wf_l Hwf2)
+    · exact coPsetRaw_eq (Ht <| .xI ·) (node_wf_r Hwf1) (node_wf_r Hwf2)
 
 instance : Membership Pos CoPset where mem E p := p ∈ E.tree
 
@@ -215,9 +208,9 @@ instance : Membership Pos CoPset where mem E p := p ∈ E.tree
 @[ext]
 theorem ext {X Y : CoPset} (H : ∀ p, p ∈ X <-> p ∈ Y) : X = Y := by
   rcases X with ⟨X, xwf⟩; rcases Y with ⟨Y, ywf⟩
-  simp only [CoPset.mk.injEq]
   simp only [Membership.mem, Bool.coe_iff_coe] at H
-  exact (coPsetRaw_eq _ _ (fun p => H p) xwf ywf)
+  congr 1
+  exact coPsetRaw_eq H xwf ywf
 
 def empty : CoPset := ⟨CoPsetRaw.leaf false, rfl⟩
 
@@ -225,7 +218,7 @@ instance : EmptyCollection CoPset where emptyCollection := CoPset.empty
 
 def full : CoPset := ⟨CoPsetRaw.leaf true, rfl⟩
 
-def singleton (p : Pos) : CoPset := ⟨CoPsetRaw.Singleton p, coPsetSingleton_wf p⟩
+@[simp] def singleton (p : Pos) : CoPset := ⟨CoPsetRaw.Singleton p, coPsetSingleton_wf p⟩
 
 instance : Singleton Pos CoPset where
   singleton := CoPset.singleton
@@ -259,39 +252,26 @@ theorem mem_full {p : Pos} : p ∈ full := by
   simp only [Membership.mem, full, CoPsetRaw.ElemOf]
 
 theorem in_singleton {p q : Pos} : p ∈ ({q} : CoPset) ↔ p = q := by
-  constructor
-  · intro h
-    simp only [Singleton.singleton, CoPset.singleton, Membership.mem] at h
+  refine ⟨fun h => ?_, fun h => ?_⟩
+  · simp only [Singleton.singleton, Membership.mem] at h
     induction q generalizing p with
-    | xH =>
-      cases p <;> simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf] at h <;> rfl
+    | xH => cases p <;> simp at h <;> rfl
     | xO q' IH =>
       cases p with
-      | xH => simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node] at h
-      | xO p' =>
-        simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node] at h
-        have := IH h
-        rw [this]
-      | xI p' => simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node] at h
+      | xH => simp [elem_of_node] at h
+      | xO p' => simp [elem_of_node] at h;  rw [IH h]
+      | xI p' => simp [elem_of_node] at h
     | xI q' IH =>
       cases p with
-      | xH => simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node] at h
-      | xO p' => simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node] at h
-      | xI p' =>
-        simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node] at h
-        have := IH h
-        rw [this]
-  · intro h
-    simp only [Singleton.singleton, CoPset.singleton, Membership.mem]
-    subst h
+      | xH => simp [elem_of_node] at h
+      | xO p' => simp [elem_of_node] at h
+      | xI p' => simp [elem_of_node] at h;  rw [IH h]
+  · subst h
+    simp only [Singleton.singleton, Membership.mem]
     induction p with
-    | xH => simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf]
-    | xO p' IH =>
-      simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node]
-      exact IH
-    | xI p' IH =>
-      simp [CoPsetRaw.Singleton, CoPsetRaw.ElemOf, elem_of_node]
-      exact IH
+    | xH => simp
+    | xO p' IH => simpa [elem_of_node]
+    | xI p' IH => simpa [elem_of_node]
 
 
 theorem in_inter {p : Pos} {X Y : CoPset} : p ∈ X ∩ Y <-> p ∈ X ∧ p ∈ Y := by
@@ -498,7 +478,6 @@ instance : Iris.Std.LawfulSet CoPset Pos where
   mem_diff := CoPset.in_diff
 
 instance : DecidableEq CoPset := by
-  intro X Y
-  rcases X, Y with ⟨⟨X⟩, ⟨Y⟩⟩
-  simp
+  rintro ⟨X⟩ ⟨Y⟩
+  rw [CoPset.mk.injEq]
   infer_instance
