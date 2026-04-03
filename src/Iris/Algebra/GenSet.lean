@@ -106,8 +106,7 @@ instance : UCMRA (GenSetDisjO S) where
 
 -- Here
 
-theorem set_disj_included (X Y : S) :
-   gen_set_valid X ≼ gen_set_valid Y ↔ X ⊆ Y := by
+theorem included_iff_subset {X Y : S} : gen_set_valid X ≼ gen_set_valid Y ↔ X ⊆ Y := by
   simp only [CMRA.Included]
   constructor
   · intro ⟨Z, HZ⟩
@@ -132,21 +131,21 @@ theorem set_disj_included (X Y : S) :
       · exact Hsub _ G
       · exact G.left
 
-theorem set_disj_union (X Y : S) (Hdisj : X ## Y) :
-  (gen_set_valid X) • (gen_set_valid Y) ≡ gen_set_valid (X ∪ Y) := by
+theorem disj_op_union (X Y : S) (Hdisj : X ## Y) :
+    (gen_set_valid X) • (gen_set_valid Y) ≡ gen_set_valid (X ∪ Y) := by
   simp only [CMRA.op, Hdisj, ↓reduceIte, gen_set_valid]; rfl
 
-theorem set_disj_valid_op (X Y : S) :
+theorem valid_op_iff_disj (X Y : S) :
     ✓ ((gen_set_valid X) • (gen_set_valid Y)) ↔ X ## Y := by
   simp only [CMRA.op, CMRA.Valid]
   by_cases H : X ## Y <;> simp [H]
 
-theorem set_disj_valid_inv_l (X : S) (Y : GenSetDisjO S) :
+theorem valid_inv_l (X : S) (Y : GenSetDisjO S) :
     ✓ ((gen_set_valid X) • Y) → ∃ Y', Y = gen_set_valid Y' ∧ X ## Y' := by
   simp only [CMRA.op, CMRA.Valid]
   rcases Y with ⟨Y | _⟩ <;> simp <;> by_cases H : X ## Y <;> simp [H]
 
-theorem set_disj_dealloc_local_update (X Y : S) :
+theorem localUpdate_dealloc (X Y : S) :
     (gen_set_valid X, gen_set_valid Y) ~l~> (gen_set_valid (X \ Y), gen_set_valid ∅) := by
   apply LocalUpdate.total_valid
   intro vx vy inc
@@ -166,11 +165,11 @@ theorem set_disj_dealloc_local_update (X Y : S) :
     · simp only [CMRA.op, leibniz] at heq
       cases heq
 
-theorem set_disj_dealloc_empty_local_update (X Z : S)  :
+theorem localUpdate_dealloc_empty (X Z : S)  :
     (gen_set_valid Z • gen_set_valid X, gen_set_valid Z) ~l~>
     (gen_set_valid X, gen_set_valid ∅) := by
   apply LocalUpdate.total_valid
-  intro Hdisj _ _; rw [set_disj_valid_op] at Hdisj
+  intro Hdisj _ _; rw [valid_op_iff_disj] at Hdisj
   have Heq : X = (Z ∪ X) \ Z := by
     ext a; rw [mem_diff, mem_union]
     constructor
@@ -181,41 +180,41 @@ theorem set_disj_dealloc_empty_local_update (X Z : S)  :
       rcases Ha with Ha | Ha
       · exact (Ha' Ha).elim
       · exact Ha
-  rw [set_disj_union Z X Hdisj]
+  rw [disj_op_union Z X Hdisj]
   conv => rhs; rw [Heq]
-  exact set_disj_dealloc_local_update (Z ∪ X) Z
+  exact localUpdate_dealloc (Z ∪ X) Z
 
-theorem set_disj_dealloc_op_local_update (X Y Z : S) :
+theorem localUpdate_op_l (X Y Z : S) :
     (gen_set_valid Z • gen_set_valid X, gen_set_valid Z • gen_set_valid Y) ~l~>
     (gen_set_valid X, gen_set_valid Y) := by
   conv => rhs; rw [show gen_set_valid Y ≡ UCMRA.unit • gen_set_valid Y by apply CMRA.unit_left_id.symm]
   apply LocalUpdate.op_frame
-  exact set_disj_dealloc_empty_local_update X Z
+  exact localUpdate_dealloc_empty X Z
 
-theorem set_disj_alloc_op_local_update (X Y Z : S) (Hdisj : Z ## X) :
+theorem localUpdate_op_r (X Y Z : S) (Hdisj : Z ## X) :
     (gen_set_valid X, gen_set_valid Y) ~l~>
     (gen_set_valid Z • gen_set_valid X, gen_set_valid Z • gen_set_valid Y) := by
   apply LocalUpdate.op_discrete
   intro vx
   simp [CMRA.Valid, CMRA.op, Hdisj]
 
-theorem set_disj_alloc_local_update (X Y Z : S) (Hdisj : Z ## X) :
+theorem localUpdate_union_r_of_disj (X Y Z : S) (Hdisj : Z ## X) :
     (gen_set_valid X, gen_set_valid Y) ~l~>
     (gen_set_valid (Z ∪ X), gen_set_valid (Z ∪ Y)) := by
   apply LocalUpdate.total_valid
   intro vx vy inc
   have HdisjY : Z ## Y := by
-    have Hsub : Y ⊆ X := set_disj_included Y X |>.mp inc
+    have Hsub : Y ⊆ X := included_iff_subset.mp inc
     intro a ⟨Hz, Hy⟩
     exact Hdisj a ⟨Hz, Hsub _ Hy⟩
-  rw [←set_disj_union Z X Hdisj, ←set_disj_union Z Y HdisjY]
-  exact set_disj_alloc_op_local_update X Y Z Hdisj
+  rw [←disj_op_union Z X Hdisj, ←disj_op_union Z Y HdisjY]
+  exact localUpdate_op_r X Y Z Hdisj
 
-theorem set_disj_alloc_empty_local_update (X Z : S) (Hdisj : Z ## X) :
+theorem localUpdate_alloc_empty_of_disj (X Z : S) (Hdisj : Z ## X) :
     (gen_set_valid X, gen_set_valid ∅) ~l~>
     (gen_set_valid (Z ∪ X), gen_set_valid Z) := by
   rw [show gen_set_valid Z ≡ gen_set_valid (Z ∪ ∅) by simp [union_empty_right]]
-  exact set_disj_alloc_local_update X ∅ Z Hdisj
+  exact localUpdate_union_r_of_disj X ∅ Z Hdisj
 
 end dec_disj
 
@@ -283,15 +282,15 @@ instance : UCMRA (GenSetO S) where
   unit_left_id := by simp [CMRA.op, op, unit, union_empty_left]
   pcore_unit := by simp [CMRA.pcore, pcore, unit]
 
-theorem set_op (X Y : GenSetO S) : X • Y ≡ gen_set_valid (X.car ∪ Y.car) := by
+theorem op_union (X Y : GenSetO S) : X • Y ≡ gen_set_valid (X.car ∪ Y.car) := by
   simp [CMRA.op, op]
 
-theorem set_core (X : GenSetO S) : CMRA.core X ≡ X := by
+theorem core_equiv (X : GenSetO S) : CMRA.core X ≡ X := by
   unfold CMRA.core
   change (pcore X).getD X ≡ X
   simp [pcore]
 
-theorem set_included (X Y : S) : gen_set_valid X ≼ gen_set_valid Y ↔ X ⊆ Y := by
+theorem included_iff_subset (X Y : S) : gen_set_valid X ≼ gen_set_valid Y ↔ X ⊆ Y := by
   simp only [CMRA.Included]
   constructor
   · intro ⟨Z, HZ⟩

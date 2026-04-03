@@ -16,7 +16,7 @@ public import Iris.Std.GenSets
 @[expose] public section
 
 namespace Iris.Examples.Set
-open Iris.BI COFE Std.LawfulSet Iris.Std
+open Iris.BI COFE Std.LawfulSet Iris.Std GenSetDisj
 
 section sets
 -- This section demonstrates an example of using set algebra operations
@@ -42,7 +42,7 @@ example {x y : α} : SetOwn {x, y} ⊢ (SetOwn ({x} : SetImpl α cmp) -∗ False
   apply (UPred.ownM_valid _).trans
   apply UPred.ownM_always_invalid_elim
   intro n H
-  simp only [MySet, ←CMRA.valid_iff_validN', GenSetDisj.set_disj_valid_op] at H
+  simp only [MySet, ←CMRA.valid_iff_validN', valid_op_iff_disj] at H
   apply H x; grind only [insert_union, mem_union, mem_singleton]
 
 abbrev gname := Pos
@@ -59,7 +59,7 @@ example {x y : gname} : CoPSetOwn {x, y} ⊢ (CoPSetOwn CoPset.full -∗ False) 
   apply (UPred.ownM_valid _).trans
   apply UPred.ownM_always_invalid_elim
   intro n H
-  simp only [MyCoPSet, ←CMRA.valid_iff_validN', GenSetDisj.set_disj_valid_op] at H
+  simp only [MyCoPSet, ←CMRA.valid_iff_validN', valid_op_iff_disj] at H
   apply H x; grind only [mem_singleton, mem_insert, CoPset.mem_full]
 
 end sets
