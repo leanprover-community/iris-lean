@@ -16,7 +16,7 @@ public import Iris.Std.GenSets
 @[expose] public section
 
 namespace Iris.Examples.Set
-open Iris.BI COFE Std.LawfulSet Iris.Std GenSetDisj
+open Iris.BI COFE Std.LawfulSet Iris.Std DisjointLeibnizSet
 
 section sets
 -- This section demonstrates an example of using set algebra operations
@@ -31,8 +31,8 @@ instance : LawfulSet (SetImpl α cmp) α := inferInstanceAs (LawfulSet (Std.ExtT
 instance : DecidableDisj (SetImpl α cmp) := inferInstanceAs (DecidableDisj (Std.ExtTreeSet α cmp))
 
 @[simp]
-def MySet (S : SetImpl α cmp) : GenSetDisjO (SetImpl α cmp) := GenSetDisj.gen_set_valid S
-def SetOwn (S : SetImpl α cmp) : UPred (GenSetDisjO (SetImpl α cmp)) := UPred.ownM (MySet S)
+def MySet (S : SetImpl α cmp) : DisjointLeibnizSet (SetImpl α cmp) := .valid S
+def SetOwn (S : SetImpl α cmp) : UPred (DisjointLeibnizSet (SetImpl α cmp)) := UPred.ownM (MySet S)
 
 -- Example: Owning overlapping sets leads to a contradiction.
 example {x y : α} : SetOwn {x, y} ⊢ (SetOwn ({x} : SetImpl α cmp) -∗ False) := by
@@ -48,8 +48,8 @@ example {x y : α} : SetOwn {x, y} ⊢ (SetOwn ({x} : SetImpl α cmp) -∗ False
 abbrev gname := Pos
 
 @[simp]
-def MyCoPSet (S : CoPset) : GenSetDisjO CoPset := GenSetDisj.gen_set_valid S
-def CoPSetOwn (S : CoPset) : UPred (GenSetDisjO CoPset) := UPred.ownM (MyCoPSet S)
+def MyCoPSet (S : CoPset) : DisjointLeibnizSet CoPset := .valid S
+def CoPSetOwn (S : CoPset) : UPred (DisjointLeibnizSet CoPset) := UPred.ownM (MyCoPSet S)
 
 -- Example: Owning a subset and the full set simultaneously leads to a contradiction.
 example {x y : gname} : CoPSetOwn {x, y} ⊢ (CoPSetOwn CoPset.full -∗ False) := by
