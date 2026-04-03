@@ -999,9 +999,9 @@ example [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
   iexact HPQ
 
 /-- Tests `ispecialize` with named subgoal -/
-example [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
+example [BI PROP] (Q : PROP) : P ⊢ (⌜True⌝ -∗ P -∗ ⌜True⌝ -∗ Q) -∗ Q := by
   iintro HP HPQ
-  ispecialize HPQ $$ [HP] as G
+  ispecialize HPQ $$ %True.intro [HP] as G %True.intro
   case G => iexact HP
   iexact HPQ
 
