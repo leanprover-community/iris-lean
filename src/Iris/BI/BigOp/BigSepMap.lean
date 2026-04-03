@@ -434,6 +434,7 @@ theorem bigSepM_subseteq [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M 
   (equiv_iff.mp <| bigOpM_equiv_of_perm Φ <| union_difference_cancel h).2.trans <|
   (bigSepM_union disjoint_difference_right).1.trans sep_elim_l
 
+-- FIXME: Refactor for readability
 @[rocq_alias big_sepM_lookup_acc_impl]
 theorem bigSepM_lookup_acc_impl [DecidableEq K] {Φ : K → V → PROP} {m : M V} {i : K} {x : V}
     (h : get? m i = some x) :
@@ -476,6 +477,8 @@ theorem bigSepM_sep_zip {A B : Type _}
       ([∗map] k ↦ x ∈ m₁, Φ₁ k x) ∗ [∗map] k ↦ y ∈ m₂, Φ₂ k y :=
   equiv_iff.mp <| bigOpM_sep_zip_equiv Φ₁ Φ₂ hdom
 
+
+-- FIXME: Refactor for readability
 @[rocq_alias big_sepM_impl_strong]
 theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : Type _}
     [LawfulFiniteMap M₂ K] {Φ : K → V → PROP} {Ψ : K → V₂ → PROP} {m₁ : M V} {m₂ : M₂ V₂} :
