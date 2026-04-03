@@ -420,10 +420,10 @@ instance except0_absorbing [BI PROP] (P : PROP) [Absorbing P] : Absorbing iprop(
 @[rocq_alias pure_timeless]
 instance pure_timeless [BI PROP] (φ : Prop) : Timeless (PROP := PROP) (BIBase.pure φ) where
   timeless :=
-    -- ▷ ⌜φ⌝ ⊢ ▷ (∃ _ : φ, True) ⊢ ▷ False ∨ (∃ _ : φ, ▷ True) ⊢ ▷ False ∨ ⌜φ⌝
-    (later_mono (pure_elim' fun h =>
-      true_intro.trans
-        (exists_intro (Ψ := fun _ : φ => (BIBase.pure True : PROP)) h))).trans <|
-    later_exists_false.trans <|
-    or_mono_r (exists_elim fun h =>
-      (later_true.1.trans true_intro).trans (pure_intro h))
+    calc iprop(▷ ⌜φ⌝)
+      _ ⊢@{PROP} ▷ ∃ (_a : φ), True :=
+        later_mono (pure_elim' (true_intro.trans <| exists_intro (Ψ := fun _ => iprop(⌜True⌝)) ·))
+      _ ⊢ ▷ False ∨ ∃ (_a : φ), ▷ True :=
+        later_exists_false
+      _ ⊢ ◇ ⌜φ⌝ :=
+        or_mono_r (exists_elim ((later_true.1.trans true_intro).trans <| pure_intro ·))
