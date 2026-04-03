@@ -6,7 +6,7 @@ module
 
 public import Iris.ProofMode
 public import Iris.Algebra.IProp
-public import Iris.Algebra.GenSet
+public import Iris.Algebra.LeibnizSet
 public import Iris.Instances.UPred.Instance
 public import Iris.Instances.IProp.Instance
 public import Iris.Std.GenSetsInstances
