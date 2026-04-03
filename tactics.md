@@ -28,6 +28,7 @@
 | `iapply` *pmTerm*                          | Match the conclusion of the current goal against the conclusion of the *pmTerm* and generates goals for each of its premises, moving all unused spatial hypotheses to the last premise.                                              |
 | `ihave` *cases-pat* := *pmTerm*            | Move *pmTerm* into the Iris context using *cases-pat*. (In contrast to `icases`, `ihave` does not remove the hypothesis from the Iris context.)                                                                                      |
 | `ihave` *cases-pat* : *term* $$ *spec-pat* | Assert *term* as *cases-pat* and prove it using *spec-pat*.                                                                                                                                                                          |
+| `irevert` *hyp*                        | Revert the hypothesis *hyp*.                                                                                                                                                                                                         |
 
 ## Cases Patterns
 
@@ -63,8 +64,8 @@ P1 ∗ (□ P2 ∨ P2) ∗ (P3 ∧ P3')
 | Pattern                         | Description                                                                                                                                                                         |
 |---------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `H`                             | Use the hypothesis `H`, which should match the premise exactly.                                                                                                                     |
-| `[H1, ..., HN]`                 | Generate a goal with the hypotheses `[H1, ..., HN]`                                                                                                                                 |
-| `[H1, ..., HN]` as *str*        | Generate a goal named *str* with the hypotheses `[H1, ..., HN]`.                                                                                                                    |
+| `[H1 ... HN]`                   | Generate a goal with the hypotheses `[H1, ..., HN]`                                                                                                                                 |
+| `[H1 ... HN]` as *str*          | Generate a goal named *str* with the hypotheses `[H1, ..., HN]`.                                                                                                                    |
 | `%t`                            | Use the pure term `t` to instantiate the hypothesis.                                                                                                                                |
 
 In general, the hypotheses passed to a subgoal are not available for proving the main goal.
@@ -74,6 +75,6 @@ However, if one uses the `icases` tactic with a persistent cases pattern or the 
 
 Proof mode terms (*pmTerm*) are of the form
 ```
-(H $$ specPat1, ..., specPatN)
+(H $$ specPat1 ... specPatN)
 ```
-where `H` is a hypothesis or Lean term whose conclusion is an entailment, and `specPat1, ..., specPatN` are specialization patterns.
+where `H` is a hypothesis or Lean term whose conclusion is an entailment, and `specPat1 ... specPatN` are specialization patterns.

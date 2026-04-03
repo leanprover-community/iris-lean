@@ -3,14 +3,19 @@ Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-import Iris.BI.Classes
-import Iris.BI.Extensions
-import Iris.BI.BI
-import Iris.BI.DerivedLaws
-import Iris.Std.Classes
-import Iris.Std.Rewrite
-import Iris.Std.TC
-import Iris.Std.RocqAlias
+module
+
+public import Iris.BI.Classes
+public import Iris.BI.Extensions
+public import Iris.BI.BI
+public import Iris.BI.DerivedLaws
+public import Iris.Std.Classes
+public import Iris.Std.Rewrite
+public import Iris.Std.TC
+public import Iris.Std.RocqAlias
+
+
+@[expose] public section
 
 namespace Iris.BI
 open Iris.Std BI

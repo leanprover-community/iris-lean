@@ -3,12 +3,16 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Markus de Medeiros, Michael Sammler
 -/
-import Iris.BI.Classes
-import Iris.BI.Extensions
-import Iris.BI.BI
-import Iris.Std.Classes
-import Iris.Std.Rewrite
-import Iris.Std.TC
+module
+
+public import Iris.BI.Classes
+public import Iris.BI.Extensions
+public import Iris.BI.BI
+public import Iris.Std.Classes
+public import Iris.Std.Rewrite
+public import Iris.Std.TC
+
+@[expose] public section
 
 namespace Iris.BI
 open Iris.Std BI
@@ -426,6 +430,9 @@ theorem pure_elim_r [BI PROP] {φ : Prop} {Q R : PROP} (h : φ → Q ⊢ R) : Q 
   and_comm.1.trans (pure_elim_l h)
 
 theorem pure_true [BI PROP] {φ : Prop} (h : φ) : ⌜φ⌝ ⊣⊢ (True : PROP) := eq_true h ▸ .rfl
+
+theorem pure_imp_elim [BI PROP] {φ : Prop} {R : PROP} (h : φ) : (⌜φ⌝ → R) ⊢ R :=
+  (and_intro .rfl (pure_intro h)).trans imp_elim_l
 
 theorem pure_and [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∧ (⌜φ2⌝ : PROP) ⊣⊢ ⌜φ1 ∧ φ2⌝ :=
   ⟨pure_elim φ1 and_elim_l fun h => and_elim_r' <| pure_mono <| And.intro h,

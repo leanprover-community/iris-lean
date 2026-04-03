@@ -3,10 +3,14 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.BI
-import Iris.ProofMode.Classes
-import Iris.ProofMode.ModalityInstances
-import Iris.Std.TC
+module
+
+public import Iris.BI
+public import Iris.ProofMode.Classes
+public import Iris.ProofMode.ModalityInstances
+public import Iris.Std.TC
+
+@[expose] public section
 
 namespace Iris.ProofMode
 open Iris.BI Iris.Std

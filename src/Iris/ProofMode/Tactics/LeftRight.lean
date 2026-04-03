@@ -3,14 +3,27 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
-import Iris.ProofMode.Tactics.Basic
+module
+
+import Iris.BI
+import Iris.ProofMode.Classes
+public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
-open Lean Elab.Tactic Meta Qq BI Std
 
-private theorem from_or_l [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
+public section
+open BI
+
+theorem from_or_l [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A1) : P ⊢ Q :=
   (or_intro_l' h1).trans inst.1
+
+theorem from_or_r [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
+    (h1 : P ⊢ A2) : P ⊢ Q :=
+  (or_intro_r' h1).trans inst.1
+
+public meta section
+open Lean Elab.Tactic Meta Qq Std
 
 elab "ileft" : tactic => do
   ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do
@@ -22,10 +35,6 @@ elab "ileft" : tactic => do
 
   let m : Q($e ⊢ $A1) ← addBIGoal hyps A1
   mvar.assign q(from_or_l (Q := $goal) $m)
-
-private theorem from_or_r [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
-    (h1 : P ⊢ A2) : P ⊢ Q :=
-  (or_intro_r' h1).trans inst.1
 
 elab "iright" : tactic => do
   ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do

@@ -3,7 +3,11 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
-import Lean.PrettyPrinter.Delaborator
+module
+
+public meta import Lean.PrettyPrinter.Delaborator
+
+public meta section
 
 namespace Iris.BI
 open Lean Lean.Macro

@@ -3,7 +3,11 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
-import Iris.BI.BIBase
+module
+
+public import Iris.BI.BIBase
+
+@[expose] public section
 
 namespace Iris.Tests
 open Iris.BI

@@ -3,9 +3,12 @@ Copyright (c) 2026 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
+module
 
-import Iris.BI
-import Iris.ProofMode
+public import Iris.BI
+public import Iris.ProofMode
+
+@[expose] public section
 
 namespace Iris
 open Iris.Std BI OFE
@@ -49,7 +52,7 @@ theorem least_fixpoint_unfold_2 [BIMonoPred F] {x} :
     F (bi_least_fixpoint F) x ⊢ bi_least_fixpoint F x := by
   iintro Hf %Φ #Hincl
   iapply Hincl
-  iapply mono_pred (Φ := bi_least_fixpoint F) $$ [], [Hf]
+  iapply mono_pred (Φ := bi_least_fixpoint F) $$ [] [Hf]
   · iintro !> %_ H
     iapply H
     iexact Hincl
@@ -61,7 +64,7 @@ theorem least_fixpoint_unfold_1 {x} [BIMonoPred F] :
   ispecialize Hf $$ %(Hom.mk (F (bi_least_fixpoint F)) mono_pred_ne)
   iapply Hf
   iintro !> %y Hy
-  iapply mono_pred (Φ := F (bi_least_fixpoint F)) $$ [], [Hy]
+  iapply mono_pred (Φ := F (bi_least_fixpoint F)) $$ [] [Hy]
   · iintro !> %z Hz
     apply least_fixpoint_unfold_2
   · iexact Hy
@@ -95,7 +98,7 @@ instance least_fixpoint_absorbing [BIMonoPred F]
     iapply least_fixpoint_iter
     iintro !> %y HF HT
     iapply least_fixpoint_unfold
-    iapply mono_pred (Φ := (fun x : A => iprop(True -∗ bi_least_fixpoint F x))) $$ [], [HF, HT]
+    iapply mono_pred (Φ := (fun x : A => iprop(True -∗ bi_least_fixpoint F x))) $$ [] [HF HT]
     · iintro !> %x HF
       iapply HF
       exact true_intro
@@ -130,7 +133,7 @@ instance least_fixpoint_persistent_absorbing [BIMonoPred F]
     iapply least_fixpoint_iter
     iintro !> %y #HF !>
     iapply least_fixpoint_unfold
-    iapply mono_pred (Φ := fun x => iprop(<pers> bi_least_fixpoint F x)) $$ [], HF
+    iapply mono_pred (Φ := fun x => iprop(<pers> bi_least_fixpoint F x)) $$ [] HF
     letI _ := @least_fixpoint_absorbing _ _ _ _ _ _ Habsorb
     iintro !> %x #H
     iexact H
@@ -156,7 +159,7 @@ local instance wf_pred_mono :
     · icases Ha with ⟨H, -⟩
       iexact H
     · icases Ha with ⟨-, H⟩
-      iapply (mono_pred (F := F) (Φ := Ψ)) $$ [], H
+      iapply (mono_pred (F := F) (Φ := Ψ)) $$ [] H
       iexact HM
   mono_pred_ne.ne _ _ _ H := and_ne.ne (NonExpansive.ne H) (NonExpansive.ne H)
 
@@ -173,7 +176,7 @@ theorem least_fixpoint_ind_wf :
   iapply Hthis
   iintro HF
   iapply HM
-  iapply mono_pred (Φ := (bi_least_fixpoint F)) $$ [], HF
+  iapply mono_pred (Φ := (bi_least_fixpoint F)) $$ [] HF
   imodintro
   iapply least_fixpoint_iter
   iintro !> %y Hy
@@ -191,12 +194,12 @@ theorem least_fixpoint_ind :
   iapply HM
   letI _ : NonExpansive fun x => iprop(Φ x ∧ bi_least_fixpoint F x) :=
     ⟨fun _ _ _ H => and_ne.ne (NonExpansive.ne H) (NonExpansive.ne H)⟩
-  iapply mono_pred (Φ := (bi_least_fixpoint fun Ψ a => iprop(Φ a ∧ F Ψ a))) $$ [], Hy
+  iapply mono_pred (Φ := (bi_least_fixpoint fun Ψ a => iprop(Φ a ∧ F Ψ a))) $$ [] Hy
   iintro !> %x Hx
   isplit
   · iclear HM
     exact (least_fixpoint_unfold_1 ..).trans and_elim_l
-  · iapply least_fixpoint_strong_mono $$ [], Hx
+  · iapply least_fixpoint_strong_mono $$ [] Hx
     iintro !> %_ %_ ⟨-, H⟩
     iexact H
 
@@ -220,7 +223,7 @@ theorem greatest_fixpoint_ne_outer {F1 F2 : (A → PROP) → (A → PROP)}
 theorem greatest_fixpoint_unfold_1 {x} [BIMonoPred F] :
     bi_greatest_fixpoint F x ⊢ F (bi_greatest_fixpoint F) x := by
   iintro ⟨%Φ, #Hincl, HΦ⟩
-  iapply mono_pred (Φ := Φ) $$ [], [HΦ]
+  iapply mono_pred (Φ := Φ) $$ [] [HΦ]
   · iintro !> %_ H
     iexists Φ
     isplitr
@@ -234,7 +237,7 @@ theorem greatest_fixpoint_unfold_2 {x} [BIMonoPred F] :
   iexists (Hom.mk (F (bi_greatest_fixpoint F)) mono_pred_ne)
   isplitr
   · iintro !> %y Hy
-    iapply mono_pred (Φ := (bi_greatest_fixpoint F)) $$ [], Hy
+    iapply mono_pred (Φ := (bi_greatest_fixpoint F)) $$ [] Hy
     iintro !> %z Hz
     iapply greatest_fixpoint_unfold_1 $$ Hz
   · iexact Hf
@@ -262,7 +265,7 @@ instance greatest_fixpoint_absorbing [BIMonoPred F]
     iintro !> %y >HF
     ihave HF : F (bi_greatest_fixpoint F) y $$ [HF]
     · iapply greatest_fixpoint_unfold_1 $$ HF
-    iapply mono_pred $$ [], HF
+    iapply mono_pred $$ [] HF
     iintro !> %_ HF !>
     iassumption
 
@@ -285,7 +288,7 @@ local instance paco_mono : BIMonoPred (fun (Ψ : A → PROP) (a : A) => iprop(Φ
     · ileft
       iexact H
     · iright
-      iapply mono_pred (Φ := Ψ) $$ Hmon, H
+      iapply mono_pred (Φ := Ψ) $$ Hmon H
   mono_pred_ne.ne _ _ _ H := or_ne.ne (NonExpansive.ne H) (NonExpansive.ne H)
 
 theorem greatest_fixpoint_paco :
@@ -293,9 +296,9 @@ theorem greatest_fixpoint_paco :
       ∀ x, Φ x -∗ bi_greatest_fixpoint F x := by
   iintro #Hmon %x HΦ
   iapply greatest_fixpoint_unfold_2
-  iapply mono_pred (Φ := (bi_greatest_fixpoint fun Ψ a => iprop(Φ a ∨ F Ψ a))) $$ [], [HΦ]
+  iapply mono_pred (Φ := (bi_greatest_fixpoint fun Ψ a => iprop(Φ a ∨ F Ψ a))) $$ [] [HΦ]
   · iintro !> %y Hy
-    iapply greatest_fixpoint_coiter $$ [], Hy
+    iapply greatest_fixpoint_coiter $$ [] Hy
     iintro !> %z Hz
     ihave Hcase : Φ z ∨ F (bi_greatest_fixpoint (fun Ψ a => iprop(Φ a ∨ F Ψ a))) z $$ [Hz]
     · iapply greatest_fixpoint_unfold_1 $$ Hz
@@ -314,12 +317,12 @@ theorem greatest_fixpoint_coind [_HF : NonExpansive F] :
     ⟨fun _ _ _ H x => or_ne.ne (.of_eq rfl) (_HF.ne H x)⟩
   letI _ : NonExpansive fun x => iprop(Φ x ∨ bi_greatest_fixpoint F x) :=
     ⟨fun _ _ _ H => or_ne.ne (NonExpansive.ne H) (NonExpansive.ne H)⟩
-  iapply mono_pred (Φ := (fun x => iprop(Φ x ∨ bi_greatest_fixpoint F x))) $$ [], [Ha, Hy]
+  iapply mono_pred (Φ := (fun x => iprop(Φ x ∨ bi_greatest_fixpoint F x))) $$ [] [Ha Hy]
   · iintro !> %x ⟨HΦ|Hf⟩
     · iapply greatest_fixpoint_unfold_2
       ileft
       iexact HΦ
-    · iapply greatest_fixpoint_strong_mono (F := F) $$ [], Hf
+    · iapply greatest_fixpoint_strong_mono (F := F) $$ [] Hf
       iintro !> %_ %_ HF
       iright
       iexact HF

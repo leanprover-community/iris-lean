@@ -1,11 +1,13 @@
-import Iris.Std.Classes
-import Iris.Std.Expr
-import Iris.Std.HeapInstances
-import Iris.Std.Infinite
-import Iris.Std.Nat
-import Iris.Std.Prod
-import Iris.Std.Qq
-import Iris.Std.Rewrite
-import Iris.Std.Tactic
-import Iris.Std.TC
-import Iris.Std.Try
+module
+
+public import Iris.Std.Classes
+public import Iris.Std.Expr
+public import Iris.Std.HeapInstances
+public import Iris.Std.Infinite
+public import Iris.Std.Nat
+public import Iris.Std.Prod
+public import Iris.Std.Qq
+public import Iris.Std.Rewrite
+public import Iris.Std.Tactic
+public import Iris.Std.TC
+public import Iris.Std.Try

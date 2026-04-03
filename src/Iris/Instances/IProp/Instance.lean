@@ -3,10 +3,13 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Zongyuan Liu, Remy Seassau
 -/
+module
 
-import Iris.BI
-import Iris.Algebra
-import Iris.Instances.UPred
+public import Iris.BI
+public import Iris.Algebra
+public import Iris.Instances.UPred
+
+@[expose] public section
 namespace Iris
 
 open COFE
@@ -515,16 +518,17 @@ theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOw
     · simp only [singleton_map_none heq, CMRA.op, optionOp, Dist.rfl]
   next => simp [GenMap.empty_map_lookup]; exact Dist.op_l Dist.rfl
 
-theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ UPred.cmraValid a :=
-  (UPred.ownM_valid _).trans (UPred.valid_entails fun _ => validN_of_iSingleton)
+theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a :=
+  (UPred.ownM_valid _).trans (internalCmraValid_entails.mpr fun _ => validN_of_iSingleton)
 
-theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} : iOwn γ a1 ∗ iOwn γ a2 ⊢ UPred.cmraValid (a1 • a2) :=
+theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} :
+    iOwn γ a1 ∗ iOwn γ a2 ⊢ internalCmraValid (a1 • a2) :=
   iOwn_op.mpr.trans iOwn_cmraValid
 
-theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ UPred.cmraValid a :=
+theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ internalCmraValid a :=
   BI.persistent_entails_l iOwn_cmraValid
 
-theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ UPred.cmraValid a ∗ iOwn γ a :=
+theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a ∗ iOwn γ a :=
   BI.persistent_entails_r iOwn_cmraValid
 
 instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : BI.Persistent (iOwn γ a) where

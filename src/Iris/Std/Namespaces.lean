@@ -3,9 +3,12 @@ Copyright (c) 2026 Remy Seassau. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 -/
+module
 
-import Iris.Std.CoPset
-import Iris.Std.Positives
+public import Iris.Std.CoPset
+public import Iris.Std.Positives
+
+public section
 
 abbrev Namespace := List Pos
 
@@ -47,20 +50,21 @@ theorem ndot_ne_disjoint [Pos.Countable A] (N : Namespace) {x y : A} (Hxy : x �
     N.@x ## N.@y := by
   intros p
   simp only [nclose, CoPset.elem_suffixes]
-  rintro ⟨qx, Heqx⟩ ⟨qy, Heqy⟩
+  rintro ⟨⟨qx, Heqx⟩, ⟨qy, Heqy⟩⟩
   refine Hxy (Pos.encode_inj.inj _ _ ?_)
   have _ := Pos.flatten_suffix_eq (by simp [ndot]) (Heqx ▸ Heqy)
   simp_all [ndot]
 
 theorem ndot_preserve_disjoint_l [Pos.Countable A] {N : Namespace} {E : CoPset} (x : A)
     (Hdisj : ↑N ## E) : ↑(N.@x) ## E :=
-  fun p => Hdisj p ∘ (nclose_subseteq N x _)
+  fun p c => Hdisj p ⟨nclose_subseteq N x _ c.left, c.right⟩
 
 theorem ndot_preserve_disjoint_r [Pos.Countable A] {N : Namespace} {E : CoPset} (x : A)
     (Hdisj : E ## ↑N) : E ## ↑(N.@x) :=
-   disj_symm _ _ <| ndot_preserve_disjoint_l x <| disj_symm _ _ Hdisj
+   Iris.Std.LawfulSet.disjoint_comm.mp <| ndot_preserve_disjoint_l x <| Iris.Std.LawfulSet.disjoint_comm.mp Hdisj
 
-attribute [grind unfold] instDisjointCoPset in
+open Iris.Std in
+attribute [grind unfold] instDisjoint in
 theorem CoPset.difference_difference (X1 X2 X3 Y : CoPset) :
     (X1 \ X2) \ X3 ## Y -> X1 \ (X2 ∪ X3) ## Y := by
-  grind only [= in_diff, = not_in_union]
+  grind [LawfulSet.mem_diff, LawfulSet.mem_union, Disjoint.disjoint]

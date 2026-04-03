@@ -3,11 +3,12 @@ Copyright (c) 2025 Alok Singh. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alok Singh, Markus de Medeiros
 -/
+module
 
-import Iris.Std.PartialMap
-import Iris.Std.Infinite
-import Std.Data.TreeMap
-import Std.Data.ExtTreeMap
+public import Iris.Std.PartialMap
+public import Iris.Std.Infinite
+public import Std.Data.TreeMap
+public import Std.Data.ExtTreeMap
 
 /-!
 # Heap Instances for Standard Types
@@ -23,6 +24,8 @@ instances for types from the Lean standard library.
 - `TreeMap`: `PartialMap`
 - `ExtTreeMap`: `PartialMap`
 -/
+
+@[expose] public section
 
 namespace Iris.Std
 

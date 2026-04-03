@@ -1,10 +1,14 @@
-import Iris.Std
-import Iris.BI
-import Iris.Algebra.Updates
-import Iris.ProofMode.Classes
-import Iris.ProofMode.Tactics
-import Iris.ProofMode.Display
-import Iris.ProofMode.InstancesUpdates
+module
+
+public import Iris.Std
+public import Iris.BI
+public import Iris.Algebra.Updates
+public import Iris.ProofMode.Classes
+public import Iris.ProofMode.Tactics
+public import Iris.ProofMode.Display
+public import Iris.ProofMode.InstancesUpdates
+
+@[expose] public section
 
 namespace Iris
 open Iris.Std BI
@@ -12,21 +16,21 @@ open Iris.Std BI
 /-! This file contains an alternative version of basic updates.
 
 Namely, this definition is an expression in terms of the plain modality [■],
-which can be used to instanstiate BUpd for any BIPlainly BI.
+which can be used to instantiate BUpd for any Sbi BI.
 
 cf. https://gitlab.mpi-sws.org/iris/iris/merge_requests/211
 -/
 
 namespace BUpdPlain
 
-def BUpdPlain [BIBase PROP] [Plainly PROP] (P : PROP) : PROP :=
+def BUpdPlain [BIBase PROP] [BIBase.Plainly PROP] (P : PROP) : PROP :=
   iprop(∀ R, (P -∗ ■ R) -∗ ■ R)
 
 section BupdPlainDef
 
 open OFE
 
-variable [BI PROP] [BIPlainly PROP]
+variable [Sbi PROP]
 
 instance BUpdPlain_ne : NonExpansive (BUpdPlain (PROP := PROP)) where
   ne _ _ _ H := forall_ne fun _ => wand_ne.ne (wand_ne.ne H .rfl) .rfl

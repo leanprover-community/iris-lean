@@ -19,7 +19,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `big_op.v`
   - [x] Lists
   - [x] Maps
-  - [ ] Sets
+  - [x] Sets
   - [ ] Multisets
   - [ ] Homomorphisms
 - [ ] `cmra.v`
@@ -66,7 +66,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] CMRA
   - [ ] Updates
 - [ ] `gset.v` 
-  - [ ] CMRA
+  - [x] CMRA
   - [ ] Updates
 - [ ] `list.v` 
   - Is this an instance of the `Heap` CMRA?
@@ -204,6 +204,10 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - `ascii.v`
 - [x] `bi.v`
 - [ ] `big_op.v`
+  - [x] Lists
+  - [x] Maps
+  - [ ] Sets
+  - [ ] Multisets
 - [ ] `cmra.v`
 - [x] `derived_connectives.v`
 - [ ] `derived_laws.v`
@@ -271,6 +275,18 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] AddModal
   - [x] IntoLater
 - [ ] `class_instances_make.v`
+  - [ ] QuickAffine
+  - [ ] QuickAbsorbing
+  - [ ] MakeEmbed
+  - [ ] MakeSep
+  - [ ] MakeAnd
+  - [ ] MakeOr
+  - [x] MakeAffinely
+  - [x] MakeIntuitionistically
+  - [x] MakeAbsorbingly
+  - [x] MakePersistenly
+  - [x] MakeLaterN
+  - [ ] MakeExcept0
 - [ ] `class_instances_plainly.v` (InstancesPlainly.lean)
   - [x] basic instances
   - [x] FromModal
@@ -326,6 +342,18 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IntoAcc
   - [ ] ElimInv
 - [ ] `classes_make.v`
+  - [ ] QuickAffine
+  - [ ] QuickAbsorbing
+  - [ ] MakeEmbed
+  - [ ] MakeSep
+  - [ ] MakeAnd
+  - [ ] MakeOr
+  - [x] MakeAffinely
+  - [x] MakeIntuitionistically
+  - [x] MakeAbsorbingly
+  - [x] MakePersistenly
+  - [x] MakeLaterN
+  - [ ] MakeExcept0
 - [ ] `coq_tactics.v` / `ltac_tactics.v` (split into the files in Tactics/)
   - [x] iSolveSideCondition
   - [ ] iStartProof
@@ -333,9 +361,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
     - [ ] with bi specified
   - [x] iStopProof
   - [x] iRename
-  - [ ] iClear
+  - [x] iClear
     - [x] basic
-    - [ ] selection patterns
+    - [x] selection patterns
   - [ ] iEval
   - [ ] iSimpl
   - [ ] iUnfold
@@ -351,6 +379,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] iPureIntro
   - [ ] iFrame
   - [ ] iRevert
+    - [x] basic
+    - [ ] `intoIH` revert
+    - [x] selection patterns
   - [x] iPoseProof (Lean: ihave _ := _)
   - [ ] iSpecialize
     - [x] basic functionality
@@ -406,7 +437,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `monpred.v`
 - [x] `proofmode.v` (ProofMode.lean)
 - [-] `reduction.v` (not necessary in Lean)
-- [ ] `sel_patterns.v`
+- [x] `sel_patterns.v`
 - [ ] `spec_patterns.v`
   - [x] SIdent
   - [x] SPureGoal
@@ -423,11 +454,11 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 ## Examples
 
 - SI Logic 
-  - [ ] `si_logic/siprop.v`
-  - [ ] `si_logic/bi.v`
-    - [ ] BI instance 
-    - [ ] BI Persistently instance
-    - [ ] BI Later instance
+  - [x] `si_logic/siprop.v`
+  - [x] `si_logic/bi.v`
+    - [x] BI instance 
+    - [x] BI Persistently instance
+    - [x] BI Later instance
 
 - Program Logic
   - Final decisions about what to port from this folder have not been made yet.

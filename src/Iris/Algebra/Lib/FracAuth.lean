@@ -3,9 +3,11 @@ Copyright (c) 2025 Iris contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
-import Iris.Algebra.Auth
+module
+
+public import Iris.Algebra.Auth
 import Iris.Algebra.LocalUpdates
-import Iris.Std.RocqAlias
+meta import Iris.Std.RocqAlias
 
 /-!
 # Fractional Authoritative Camera
@@ -22,28 +24,28 @@ open Iris OFE CMRA UCMRA Auth Option
 /-! ## Definitions -/
 
 @[rocq_alias frac_authR]
-abbrev FracAuth [UFraction F] [CMRA A] := Auth F (Option (Frac F × A))
+public abbrev FracAuth [UFraction F] [CMRA A] := Auth F (Option (Frac F × A))
 
 namespace FracAuth
 
 variable [UFraction F] [CMRA A]
 
 @[rocq_alias frac_auth_auth]
-abbrev auth (dq : DFrac F) (a : A) : FracAuth (F := F) (A := A) := Auth.auth dq (some (⟨One.one⟩, a))
+public abbrev auth (dq : DFrac F) (a : A) : FracAuth (F := F) (A := A) := Auth.auth dq (some (⟨One.one⟩, a))
 
 @[rocq_alias frac_auth_frag]
-abbrev frag (q : Frac F) (a : A) : FracAuth (F := F) (A := A) := Auth.frag (some (q, a))
+public abbrev frag (q : Frac F) (a : A) : FracAuth (F := F) (A := A) := Auth.frag (some (q, a))
 
-abbrev fragFull (a : A) : FracAuth (F := F) (A := A) := frag ⟨One.one⟩ a
+public abbrev fragFull (a : A) : FracAuth (F := F) (A := A) := frag ⟨One.one⟩ a
 
 notation "●F{" dq "} " a => auth dq a
 notation "●F " a => auth (DFrac.own One.one) a
 notation "◯F{" q "} " a => frag q a
 notation "◯F " a => fragFull a
 
-private abbrev fracOne : Frac F := ⟨One.one⟩
+abbrev fracOne : Frac F := ⟨One.one⟩
 
-private instance frac_one_exclusive (b : A) : Exclusive (fracOne (F := F), b) where
+instance frac_one_exclusive (b : A) : Exclusive (fracOne (F := F), b) where
   exclusive0_l y h := absurd h.1 (not_exists.mp UFraction.one_whole.2 y.1.1)
 
 /-! ## NonExpansive instances -/
