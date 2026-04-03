@@ -40,92 +40,71 @@ end Def
 
 namespace GenSetDisj
 
-abbrev gen_set_valid : S → GenSetDisjO S := fun X => ⟨.set_valid X⟩
+abbrev gen_set_valid : S → GenSetDisjO S := (⟨.set_valid ·⟩)
 
 section dec_disj
 
 variable {S : Type _} [LawfulSet S A] [DecidableDisj S]
 
-def unit : GenSetDisjO S := gen_set_valid ∅
-
-def pcore : GenSetDisjO S → Option (GenSetDisjO S) := fun _ => some unit
-
-def valid (x : GenSetDisjO S) : Prop :=
-  match x.car with
-  | .set_valid _ => True
-  | _ => False
-
-def validN : Nat → GenSetDisjO S → Prop := fun _ x => valid x
-
-def op (x y : GenSetDisjO S) : GenSetDisjO S :=
-  match x.car, y.car with
-  | .set_valid x, .set_valid y => if (x ## y) then ⟨.set_valid (x ∪ y)⟩ else ⟨.set_invalid⟩
-  | _, _ => ⟨.set_invalid⟩
-
-instance op_ne {x : GenSetDisjO S} : OFE.NonExpansive (op x) where
-  ne _ _ _ H := by rw [H]
-
-theorem assoc {x y z : GenSetDisjO S} : op x (op y z) ≡ op (op x y) z := by
-  rcases x, y, z with ⟨⟨⟨x⟩ | _⟩, ⟨⟨y⟩ | _⟩, ⟨⟨z⟩ | _⟩⟩ <;> simp [op]
-  by_cases H : y ## z
-  · simp only [H, ↓reduceIte]
-    by_cases G : x ## y
-    · simp [G, ↓reduceIte]
-      by_cases J : x ## z
-      · simp [↓reduceIte, union_assoc
-          , show x ## y ∪ z by
-              symm; rw [disjoint_union_left]; exact ⟨disjoint_symm G, disjoint_symm J⟩
-          , show x ∪ y ## z by rw [disjoint_union_left]; exact ⟨J, H⟩]
-      · simp [↓reduceIte
-          , show ¬ x ## y ∪ z by
-              intro C; rw [disjoint_comm, disjoint_union_left] at C; exact (J (disjoint_symm C.right))
-          , show ¬ x ∪ y ## z by
-              intro C; rw [disjoint_comm, disjoint_union_right] at C; exact (J (disjoint_symm C.left))]
-    · simp only [G, ↓reduceIte, ite_eq_right_iff, LeibnizO.mk.injEq, reduceCtorEq, imp_false]
-      intro C; symm at C; rw [disjoint_union_left] at C
-      exact (G (disjoint_symm C.left))
-  · simp only [H, ↓reduceIte]
-    by_cases G : x ## y
-    · simp only [G, ↓reduceIte, right_eq_ite_iff, LeibnizO.mk.injEq, reduceCtorEq, imp_false]
-      intro C; rw [disjoint_union_left] at C; exact H C.right
-    · simp [G]
-
-theorem comm {x y : GenSetDisjO S} : op x y ≡ op y x := by
-  rcases x, y with ⟨⟨⟨x⟩ | _⟩, ⟨⟨y⟩ | _⟩⟩ <;> simp [op]
-  by_cases H : x ## y
-  · simp [H, union_comm, show y ## x by symm; assumption]
-  · simp [H]; intro c; exact H (disjoint_symm c)
-
 instance : CMRA (GenSetDisjO S) where
-  pcore := pcore
-  op := op
-  ValidN := validN
-  Valid := valid
-  op_ne := op_ne
+  pcore _ := some (gen_set_valid ∅)
+  op x y :=
+    match x.car, y.car with
+    | .set_valid x, .set_valid y => if x ## y then ⟨.set_valid (x ∪ y)⟩ else ⟨.set_invalid⟩
+    | _, _ => ⟨.set_invalid⟩
+  ValidN _ x := match x.car with | .set_valid _ => True | _ => False
+  Valid x := match x.car with | .set_valid _ => True | _ => False
+  op_ne.ne _ _ _ H := by rw [H]
   pcore_ne {_ _ _ cx} _ H := ⟨cx, H, rfl⟩
   validN_ne H G := H ▸ G
   valid_iff_validN := ⟨(fun _ => ·), (· 0)⟩
   validN_succ := id
-  validN_op_left {_ x y} := by rcases x, y with ⟨⟨⟨x⟩ | _⟩, ⟨⟨y⟩ | _⟩⟩ <;> simp [op, validN, valid]
-  assoc := assoc
-  comm := comm
+  validN_op_left {_ x y} := by rcases x, y with ⟨⟨⟨x⟩ | _⟩, ⟨⟨y⟩ | _⟩⟩ <;> simp
+  assoc {x y z} := by
+    rcases x, y, z with ⟨⟨⟨x⟩ | _⟩, ⟨⟨y⟩ | _⟩, ⟨⟨z⟩ | _⟩⟩ <;> (try · simp)
+    simp only [leibniz]
+    by_cases hyz : y ## z <;> by_cases hxy : x ## y <;>
+      by_cases hxyzL : x ## y ∪ z <;> by_cases hxyzR : x ∪ y ## z <;>
+    all_goals simp only [hyz, hxy, hxyzL, hxyzR, ↓reduceIte, LeibnizO.mk.injEq, set_valid.injEq]
+    · exact union_assoc
+    · have ⟨_, h⟩ := disjoint_union_right.mp hxyzL
+      exact hxyzR (disjoint_union_left.mpr ⟨h, hyz⟩) |>.elim
+    · have ⟨h, _⟩ := disjoint_union_left.mp hxyzR
+      exact hxyzL (disjoint_union_right.mpr ⟨hxy, h⟩) |>.elim
+    · have ⟨h, _⟩ := disjoint_union_right.mp hxyzL
+      exact hxy h |>.elim
+    · have ⟨h, _⟩ := disjoint_union_right.mp hxyzL
+      exact hxy h |>.elim
+    · have ⟨_, h⟩ := disjoint_union_left.mp hxyzR
+      exact hyz h |>.elim
+    · have ⟨_, h⟩ := disjoint_union_left.mp hxyzR
+      exact hyz h |>.elim
+  comm {x y} := by
+    rcases x, y with ⟨⟨⟨x⟩ | _⟩, ⟨⟨y⟩ | _⟩⟩ <;> (try · simp)
+    by_cases H : x ## y
+    · simp [H, disjoint_symm H, union_comm]
+    · simpa [H] using (H <| disjoint_symm ·)
   pcore_op_left {cx x} := by
-    rcases x with ⟨x | _⟩ <;> rcases cx with ⟨cx | _⟩ <;> simp [op, pcore, unit]
-    rintro ⟨⟩; simp [disjoint_empty_left]
-  pcore_idem {x cx} := by rcases x with ⟨x | _⟩ <;> rcases cx with ⟨cx | _⟩ <;> simp [pcore, unit]
+    rcases x with ⟨x | _⟩ <;> rcases cx with ⟨cx | _⟩ <;> (try · simp)
+    rintro ⟨⟩
+    simp [disjoint_empty_left]
+  pcore_idem {x cx} := by rcases x with ⟨x | _⟩ <;> rcases cx with ⟨cx | _⟩ <;> simp
   pcore_op_mono {_ x} := by
-    rcases x with ⟨x | _⟩ <;> simp only [pcore, Option.some.injEq, leibniz] <;> rintro ⟨⟩ y
-    <;> (exists unit; simp only [unit, op, disjoint_empty_left, ↓reduceIte, union_idem])
+    rcases x with ⟨x | _⟩ <;> rintro ⟨⟩ y
+    exists (gen_set_valid ∅)
+    simp [disjoint_empty_left]
   extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨h, rfl, rfl⟩⟩
 
 instance : CMRA.Discrete (GenSetDisjO S) where
   discrete_valid {_} := id
 
 instance : UCMRA (GenSetDisjO S) where
-  unit := unit
-  unit_valid := by simp [unit, CMRA.Valid, valid]
-  unit_left_id {x} := by rcases x with ⟨x | _⟩ <;> simp [op, unit, disjoint_empty_left, CMRA.op]
-  pcore_unit := by simp [unit, CMRA.pcore, pcore]
+  unit := gen_set_valid ∅
+  unit_valid := by simp [CMRA.Valid]
+  unit_left_id {x} := by rcases x with ⟨x | _⟩ <;> simp [disjoint_empty_left, CMRA.op]
+  pcore_unit := by simp [CMRA.pcore]
+
+-- Here
 
 theorem set_disj_included (X Y : S) :
    gen_set_valid X ≼ gen_set_valid Y ↔ X ⊆ Y := by
@@ -134,13 +113,13 @@ theorem set_disj_included (X Y : S) :
   · intro ⟨Z, HZ⟩
     rcases Z with ⟨Z | _⟩
     · by_cases H : X ## Z
-      · simp [CMRA.op, op, H, ↓reduceIte] at HZ; rw [HZ]
+      · simp [CMRA.op, H, ↓reduceIte] at HZ; rw [HZ]
         intro p Hp; rw [mem_union]; left; exact Hp
-      · simp [CMRA.op, op, H] at HZ
-    · simp [CMRA.op, op] at HZ
+      · simp [CMRA.op, H] at HZ
+    · simp [CMRA.op] at HZ
   · intro Hsub
     exists gen_set_valid (Y \ X)
-    simp only [leibniz, LeibnizO.mk.injEq, ↓reduceIte, CMRA.op, op
+    simp only [leibniz, LeibnizO.mk.injEq, ↓reduceIte, CMRA.op
       , show X ## (Y \ X) by intro p ⟨H1, H2⟩; rw [mem_diff] at H2; exact H2.right H1]
     rw [set_valid.injEq]
     ext p; rw [mem_union, mem_diff]
@@ -155,16 +134,16 @@ theorem set_disj_included (X Y : S) :
 
 theorem set_disj_union (X Y : S) (Hdisj : X ## Y) :
   (gen_set_valid X) • (gen_set_valid Y) ≡ gen_set_valid (X ∪ Y) := by
-  simp only [CMRA.op, op, Hdisj, ↓reduceIte, gen_set_valid]; rfl
+  simp only [CMRA.op, Hdisj, ↓reduceIte, gen_set_valid]; rfl
 
 theorem set_disj_valid_op (X Y : S) :
     ✓ ((gen_set_valid X) • (gen_set_valid Y)) ↔ X ## Y := by
-  simp only [CMRA.op, op, CMRA.Valid, valid]
+  simp only [CMRA.op, CMRA.Valid]
   by_cases H : X ## Y <;> simp [H]
 
 theorem set_disj_valid_inv_l (X : S) (Y : GenSetDisjO S) :
     ✓ ((gen_set_valid X) • Y) → ∃ Y', Y = gen_set_valid Y' ∧ X ## Y' := by
-  simp only [CMRA.op, op, CMRA.Valid, valid]
+  simp only [CMRA.op, CMRA.Valid]
   rcases Y with ⟨Y | _⟩ <;> simp <;> by_cases H : X ## Y <;> simp [H]
 
 theorem set_disj_dealloc_local_update (X Y : S) :
@@ -174,9 +153,9 @@ theorem set_disj_dealloc_local_update (X Y : S) :
   apply (local_update_unital_discrete _ _ _ _).mpr
   intro z HX heq
   constructor
-  · simp [CMRA.Valid, valid]
+  · simp [CMRA.Valid]
   · rcases z with ⟨z|_⟩
-    · simp only [CMRA.op, op, leibniz, disjoint_empty_left, ↓reduceIte, union_empty_left,
+    · simp only [CMRA.op, leibniz, disjoint_empty_left, ↓reduceIte, union_empty_left,
       LeibnizO.mk.injEq, set_valid.injEq] at heq ⊢
       by_cases Hdisj : Y ## z <;> simp only [Hdisj, ↓reduceIte] at heq
       · simp only [LeibnizO.mk.injEq, set_valid.injEq] at heq
@@ -184,7 +163,7 @@ theorem set_disj_dealloc_local_update (X Y : S) :
         specialize (Hdisj i)
         grind
       · cases heq
-    · simp only [CMRA.op, op, leibniz] at heq
+    · simp only [CMRA.op, leibniz] at heq
       cases heq
 
 theorem set_disj_dealloc_empty_local_update (X Z : S)  :
@@ -218,7 +197,7 @@ theorem set_disj_alloc_op_local_update (X Y Z : S) (Hdisj : Z ## X) :
     (gen_set_valid Z • gen_set_valid X, gen_set_valid Z • gen_set_valid Y) := by
   apply LocalUpdate.op_discrete
   intro vx
-  simp [CMRA.Valid, valid, CMRA.op, op, Hdisj]
+  simp [CMRA.Valid, CMRA.op, Hdisj]
 
 theorem set_disj_alloc_local_update (X Y Z : S) (Hdisj : Z ## X) :
     (gen_set_valid X, gen_set_valid Y) ~l~>
