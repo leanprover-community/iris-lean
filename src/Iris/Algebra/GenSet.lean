@@ -11,11 +11,9 @@ public import Iris.Std.GenSets
 
 @[expose] public section
 
-/-! ## Set algebra
-
-This file defines an set algebra.
-In comparison to Rocq, we have a single algebra for both gset and copset.
-The set should satisfy the usual set axioms, as in LawfulSet and have decidable disjointedness.
+/-! ## Leibniz Set algebras
+This file defines an set algebra, subsuming both gset and copset from Iris-Rocq.
+To simplify the interface, only sets of with a Leibniz OFE are supported.
 -/
 
 open Iris Std
@@ -104,43 +102,32 @@ instance : UCMRA (GenSetDisjO S) where
   unit_left_id {x} := by rcases x with ⟨x | _⟩ <;> simp [disjoint_empty_left, CMRA.op]
   pcore_unit := by simp [CMRA.pcore]
 
--- Here
-
 theorem included_iff_subset {X Y : S} : gen_set_valid X ≼ gen_set_valid Y ↔ X ⊆ Y := by
-  simp only [CMRA.Included]
-  constructor
-  · intro ⟨Z, HZ⟩
-    rcases Z with ⟨Z | _⟩
+  refine ⟨?_, ?_⟩
+  · rintro ⟨⟨Z | _⟩, HZ⟩
     · by_cases H : X ## Z
-      · simp [CMRA.op, H, ↓reduceIte] at HZ; rw [HZ]
-        intro p Hp; rw [mem_union]; left; exact Hp
+      · obtain rfl : Y = X ∪ Z := by simp_all [CMRA.op]
+        exact fun _ => (mem_union.mpr <| .inl ·)
       · simp [CMRA.op, H] at HZ
     · simp [CMRA.op] at HZ
   · intro Hsub
     exists gen_set_valid (Y \ X)
-    simp only [leibniz, LeibnizO.mk.injEq, ↓reduceIte, CMRA.op
-      , show X ## (Y \ X) by intro p ⟨H1, H2⟩; rw [mem_diff] at H2; exact H2.right H1]
-    rw [set_valid.injEq]
+    suffices Y = X ∪ Y \ X by
+      have H : X ## (Y \ X) := fun _ H => (mem_diff.mp H.2).right H.1
+      simpa [CMRA.op, H]
     ext p; rw [mem_union, mem_diff]
-    constructor
-    · intro G
-      by_cases H : (p ∈ X)
-      · left; exact H
-      · right; exact ⟨G, H⟩
-    · rintro (G|G)
-      · exact Hsub _ G
-      · exact G.left
+    refine ⟨by grind, (·.casesOn (Hsub _) (·.left))⟩
 
-theorem disj_op_union (X Y : S) (Hdisj : X ## Y) :
+theorem disj_op_union {X Y : S} (Hdisj : X ## Y) :
     (gen_set_valid X) • (gen_set_valid Y) ≡ gen_set_valid (X ∪ Y) := by
-  simp only [CMRA.op, Hdisj, ↓reduceIte, gen_set_valid]; rfl
+  simp [CMRA.op, Hdisj]
 
-theorem valid_op_iff_disj (X Y : S) :
-    ✓ ((gen_set_valid X) • (gen_set_valid Y)) ↔ X ## Y := by
-  simp only [CMRA.op, CMRA.Valid]
-  by_cases H : X ## Y <;> simp [H]
+theorem valid_op_iff_disj {X Y : S} : ✓ ((gen_set_valid X) • (gen_set_valid Y)) ↔ X ## Y := by
+  by_cases H : X ## Y <;> simp [H, CMRA.op, CMRA.Valid]
 
-theorem valid_inv_l (X : S) (Y : GenSetDisjO S) :
+-- Here
+
+theorem valid_inv_l {X : S} {Y : GenSetDisjO S} :
     ✓ ((gen_set_valid X) • Y) → ∃ Y', Y = gen_set_valid Y' ∧ X ## Y' := by
   simp only [CMRA.op, CMRA.Valid]
   rcases Y with ⟨Y | _⟩ <;> simp <;> by_cases H : X ## Y <;> simp [H]
@@ -180,7 +167,7 @@ theorem localUpdate_dealloc_empty (X Z : S)  :
       rcases Ha with Ha | Ha
       · exact (Ha' Ha).elim
       · exact Ha
-  rw [disj_op_union Z X Hdisj]
+  rw [disj_op_union Hdisj]
   conv => rhs; rw [Heq]
   exact localUpdate_dealloc (Z ∪ X) Z
 
@@ -207,7 +194,7 @@ theorem localUpdate_union_r_of_disj (X Y Z : S) (Hdisj : Z ## X) :
     have Hsub : Y ⊆ X := included_iff_subset.mp inc
     intro a ⟨Hz, Hy⟩
     exact Hdisj a ⟨Hz, Hsub _ Hy⟩
-  rw [←disj_op_union Z X Hdisj, ←disj_op_union Z Y HdisjY]
+  rw [←disj_op_union Hdisj, ←disj_op_union HdisjY]
   exact localUpdate_op_r X Y Z Hdisj
 
 theorem localUpdate_alloc_empty_of_disj (X Z : S) (Hdisj : Z ## X) :
