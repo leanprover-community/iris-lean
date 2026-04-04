@@ -603,7 +603,9 @@ theorem iOwn_alloc_strong_dep (f : GName → F.ap (IProp GF)) (P : GName → Pro
     subst Hm
     exact BI.exists_intro' γ (BI.persistent_entails_r (BI.pure_intro HPγ))
 
-private theorem list_not_mem_of_gt_max (G : List Nat) (k : Nat) (hk : G.foldr max 0 < k) : k ∉ G := by
+
+private theorem list_not_mem_of_gt_max (G : List Nat) (k : Nat) (hk : G.foldr max 0 < k) :
+    k ∉ G := by
   intro hmem
   induction G with
   | nil => simp at hmem
@@ -614,8 +616,8 @@ private theorem list_not_mem_of_gt_max (G : List Nat) (k : Nat) (hk : G.foldr ma
     · exact ih (by omega) hmem
 
 private theorem list_fresh_above (G : List Nat) (N : Nat) :
-    ∃ k, N ≤ k ∧ k ∉ G := by
-  exact ⟨max N (G.foldr max 0 + 1), by omega,
+    ∃ k, N ≤ k ∧ k ∉ G :=
+  ⟨max N (G.foldr max 0 + 1), Nat.le_max_left ..,
     list_not_mem_of_gt_max G _ (by omega)⟩
 
 @[rocq_alias own_alloc_cofinite_dep]

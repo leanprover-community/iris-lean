@@ -160,6 +160,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `proofmode.v`
   - [ ] class instances
 - [ ] `upred.v` (nb. contained in `Algebra/UPred.lean` and `Instances/UPred/Instance.lean`)
+  - Missing: new `later_ownM`, `later_own`
   - [x] CMRA 
   - [x] Functors
   - [x] Primitives and nonexpansivity
@@ -188,6 +189,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
 - [ ] `lib/na_invariants.v`
 - [ ] `lib/own.v`
+  - Missing: `later_internal_eq_iRes_singleton`
   - [x] Definition
   - [x] Updates
   - [ ] Big ops
