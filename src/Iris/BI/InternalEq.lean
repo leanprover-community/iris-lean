@@ -334,19 +334,17 @@ theorem siPure_internalEq {A : Type _} [OFE A] (x y : A) :
 
 @[rocq_alias prop_ext_si_emp_valid_2]
 theorem prop_ext_siEmpValid_mpr (P Q : PROP) :
-    <si_emp_valid> iprop(P ∗-∗ Q) ⊢@{SiProp} SiProp.internalEq P Q :=
+    iprop(<si_emp_valid> (P ∗-∗ Q)) ⊢@{SiProp} SiProp.internalEq P Q :=
   prop_ext_siEmpValid
-
--- Here
 
 @[rocq_alias prop_ext_si_emp_valid]
 theorem prop_ext_siEmpValid_equiv (P Q : PROP) :
-    SiProp.internalEq P Q ⊣⊢@{SiProp} <si_emp_valid> iprop(P ∗-∗ Q) := by
+    SiProp.internalEq P Q ⊣⊢@{SiProp} <si_emp_valid> (P ∗-∗ Q) := by
   letI _ : NonExpansive (fun Q : PROP => iprop(<si_pure> <si_emp_valid> (P ∗-∗ Q))) :=
     ((Sbi.siPure_ne (PROP := PROP)).comp Sbi.siEmpValid_ne).comp (NonExpansive₂.ne_right wandIff P)
   refine ⟨?_, prop_ext_siEmpValid⟩
   rw [← siPure_entails (PROP := PROP)]
-  change internalEq P Q ⊢@{PROP} <si_pure> iprop(<si_emp_valid> iprop(P ∗-∗ Q))
+  change internalEq P Q ⊢@{PROP} <si_pure> <si_emp_valid> (P ∗-∗ Q)
   refine rewrite' (fun Q => iprop(<si_pure> <si_emp_valid> (P ∗-∗ Q))) .rfl ?_
   refine (pure_intro trivial).trans <| ?_
   refine siPure_pure.mpr.trans (siPure_mono ?_)
@@ -357,11 +355,11 @@ theorem later_equivI_prop_mpr (P Q : PROP) :
     ▷ internalEq P Q ⊢ internalEq (PROP := PROP) (BIBase.later P) (BIBase.later Q) := by
   show iprop(▷ <si_pure> (SiProp.internalEq P Q) ⊢ <si_pure> (SiProp.internalEq (BIBase.later P) (BIBase.later Q)))
   calc iprop(▷ <si_pure> (SiProp.internalEq P Q))
-    _ ⊢ <si_pure> iprop(▷ (SiProp.internalEq P Q)) := siPure_later.mpr
-    _ ⊢ <si_pure> iprop(▷ (<si_emp_valid> iprop(P ∗-∗ Q))) :=
+    _ ⊢ <si_pure> ▷ (SiProp.internalEq P Q) := siPure_later.mpr
+    _ ⊢ <si_pure> ▷ (<si_emp_valid> (P ∗-∗ Q)) :=
         siPure_mono (later_mono (prop_ext_siEmpValid_equiv P Q).mp)
-    _ ⊢ <si_pure> iprop(<si_emp_valid> iprop(▷ (P ∗-∗ Q))) := siPure_mono siEmpValid_later.mpr
-    _ ⊢ <si_pure> iprop(<si_emp_valid> iprop(▷ P ∗-∗ ▷ Q)) := siPure_mono (siEmpValid_mono later_wand_iff)
+    _ ⊢ <si_pure> <si_emp_valid> ▷ (P ∗-∗ Q) := siPure_mono siEmpValid_later.mpr
+    _ ⊢ <si_pure> <si_emp_valid> (▷ P ∗-∗ ▷ Q) := siPure_mono (siEmpValid_mono later_wand_iff)
     _ ⊢ <si_pure> (SiProp.internalEq (BIBase.later P) (BIBase.later Q)) :=
         siPure_mono (prop_ext_siEmpValid_equiv _ _).mpr
 
@@ -393,8 +391,7 @@ theorem ne_2_internalEq {A B C : Type u} [OFE A] [OFE B] [OFE C] (f : A → B �
     letI _ := hf.uncurry
     exact (prod_equivI (PROP := PROP) (x₁, y₁) (x₂, y₂) |>.2).trans
       (of_internalEquiv_ne (Function.uncurry f))
-  · intro hf
-    exact ⟨fun {_ x₁ x₂} hx {y₁ y₂} hy =>
+  · exact fun hf => ⟨fun {_ x₁ x₂} hx {y₁ y₂} hy =>
       internalEq_entails.mp (prod_equivI _ _ |>.1 |>.trans (hf ..)) _ (dist_prod_ext hx hy)⟩
 
 @[rocq_alias contractive_internal_eq]
