@@ -3,9 +3,13 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Michael Sammler
 -/
-import Iris.BI
-import Iris.ProofMode.SynthInstance
-import Iris.ProofMode.Modalities
+module
+
+public import Iris.BI
+public meta import Iris.ProofMode.SynthInstance
+public import Iris.ProofMode.Modalities
+
+@[expose] public section
 
 namespace Iris.ProofMode
 open Iris.BI

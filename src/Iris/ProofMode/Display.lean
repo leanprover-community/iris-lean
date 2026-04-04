@@ -3,10 +3,14 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.BI.Notation
-import Iris.ProofMode.Expr
+module
 
-import Lean.PrettyPrinter.Delaborator
+public meta import Iris.BI.Notation
+public meta import Iris.ProofMode.Expr
+
+public meta import Lean.PrettyPrinter.Delaborator
+
+public meta section
 
 namespace Iris.ProofMode
 open Iris.BI Qq

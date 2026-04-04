@@ -3,18 +3,18 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
-import Iris.ProofMode.Patterns.ProofModeTerm
-import Iris.ProofMode.Patterns.CasesPattern
-import Iris.ProofMode.Tactics.Basic
+module
+
+public meta import Iris.ProofMode.Patterns.ProofModeTerm
+public meta import Iris.ProofMode.Patterns.CasesPattern
+public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
 
-private structure SpecializeState {prop : Q(Type u)} (bi : Q(BI $prop)) (orig : Q($prop)) where
-  (e : Q($prop)) (hyps : Hyps bi e) (p : Q(Bool)) (out : Q($prop))
-  pf : Q($orig ⊢ $e ∗ □?$p $out)
+public section
+open BI
 
-private theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
+theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊣⊢ A3 ∗ □?p P1)
     [h3 : IntoWand q p Q .in P1 .out P2] :
     A1 ⊢ A3 ∗ □?(p && q) P2 := by
@@ -27,17 +27,34 @@ private theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
 
 -- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
-private theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 : PROP} P2
+theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 : PROP} P2
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊣⊢ A3 ∗ A4) (h3 : A4 ⊢ P1)
     [inst : IntoWand q false Q .out P1 .out P2] : A1 ⊢ A3 ∗ P2 := by
   refine h1.trans <| (sep_mono_l h2.1).trans <| sep_assoc.1.trans (sep_mono_r ((sep_mono_l h3).trans ?_))
   exact (sep_mono_r inst.1).trans wand_elim_r
 
-private theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Sort _} {Φ : α → PROP}
+theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     [inst : IntoForall P Φ] (h : A1 ⊢ A2 ∗ □?p P) (a : α) : A1 ⊢ A2 ∗ □?p (Φ a) := by
   refine h.trans <| sep_mono_r <| intuitionisticallyIf_mono <| inst.1.trans (forall_elim a)
 
-private def SpecializeState.process_wand :
+theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B}
+  (h : P ∗ □?pa A ⊢ P' ∗ □?pb B)
+  (h2 : pa = true ∨ Affine A)
+  [IntoPersistently pb B B']
+  : P ∗ □?pa A ⊢ P ∗ □ B' := by
+    apply Entails.trans _ persistently_and_intuitionistically_sep_r.1
+    apply and_intro
+    · cases h2 <;> subst_eqs <;> apply sep_elim_l
+    · apply h.trans $ (sep_mono_r (persistentlyIf_of_intuitionisticallyIf.trans into_persistently)).trans sep_elim_r
+
+public meta section
+open Lean Elab Tactic Meta Qq Std
+
+structure SpecializeState {prop : Q(Type u)} (bi : Q(BI $prop)) (orig : Q($prop)) where
+  (e : Q($prop)) (hyps : Hyps bi e) (p : Q(Bool)) (out : Q($prop))
+  pf : Q($orig ⊢ $e ∗ □?$p $out)
+
+private def processWand :
     @SpecializeState u prop bi orig → SpecPat → ProofModeM (SpecializeState bi orig)
   | { hyps, p, out, pf, .. }, .ident i => do
     let uniq ← hyps.findWithInfo i
@@ -87,16 +104,6 @@ def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
   | .pure _ => true
   | _ => false
 
-private theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B}
-  (h : P ∗ □?pa A ⊢ P' ∗ □?pb B)
-  (h2 : pa = true ∨ Affine A)
-  [IntoPersistently pb B B']
-  : P ∗ □?pa A ⊢ P ∗ □ B' := by
-    apply Entails.trans _ persistently_and_intuitionistically_sep_r.1
-    apply and_intro
-    · cases h2 <;> subst_eqs <;> apply sep_elim_l
-    · apply h.trans $ (sep_mono_r (persistentlyIf_of_intuitionisticallyIf.trans into_persistently)).trans sep_elim_r
-
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.
 
 ## Parameters
@@ -116,7 +123,7 @@ A tuple containing:
 def iSpecializeCore {e} (hyps : @Hyps u prop bi e) (pa : Q(Bool)) (A : Q($prop)) (spats : List SpecPat) (try_dup_context : Bool := false) :
   ProofModeM ((e' : _) × Hyps bi e' × (pb : Q(Bool)) × (B : Q($prop)) × Q($e ∗ □?$pa $A ⊢ $e' ∗ □?$pb $B)) := do
   let state := { hyps, out := A, p := pa, pf := q(.rfl), .. }
-  let ⟨_, hyps', pb, B, pf⟩ ← spats.foldlM SpecializeState.process_wand state
+  let ⟨_, hyps', pb, B, pf⟩ ← spats.foldlM processWand state
   if try_dup_context then
     -- context duplication succeeds if `B` is persistent, and `A` is persistent or affine
     let B' : Q($prop) ← mkFreshExprMVarQ q($prop)

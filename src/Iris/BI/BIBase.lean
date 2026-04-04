@@ -3,11 +3,15 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro
 -/
-import Iris.BI.Notation
-import Iris.Std.Classes
-import Iris.Std.DelabRule
-import Iris.Std.Rewrite
-import Iris.Std.BigOp
+module
+
+public meta import Iris.BI.Notation
+public import Iris.Std.Classes
+public meta import Iris.Std.DelabRule
+public meta import Iris.Std.Rewrite
+public import Iris.Std.BigOp
+
+@[expose] public section
 
 namespace Iris.BI
 open Iris.Std
@@ -305,3 +309,28 @@ macro_rules
 
 delab_rule except0
   | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
+
+
+/-- Plainly modality -/
+class Plainly (PROP : Type _) where
+  plainly : PROP → PROP
+export Plainly (plainly)
+
+syntax "■ " term:40 : term
+
+macro_rules
+  | `(iprop(■ $P))  => ``(Plainly.plainly iprop($P))
+
+delab_rule Plainly.plainly
+  | `($_ $P) => do ``(iprop(■ $(← Iris.BI.unpackIprop P)))
+
+def Plainly.plainlyIf [BIBase PROP] [Plainly PROP] (p : Bool) (P : PROP) : PROP :=
+  iprop(if p then ■ P else P)
+
+syntax:max "■?" term:max ppHardSpace term:40 : term
+
+macro_rules
+  | `(iprop(■? $p $P))  => ``(Plainly.plainlyIf $p iprop($P))
+
+delab_rule Plainly.plainlyIf
+  | `($_ $p $P) => do ``(iprop(■? $p $(← Iris.BI.unpackIprop P)))

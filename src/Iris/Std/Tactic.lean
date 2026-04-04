@@ -3,8 +3,12 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
-import Lean.Elab.Tactic
-import Lean.Meta.Tactic.Util
+module
+
+public meta import Lean.Elab.Tactic
+public meta import Lean.Meta.Tactic.Util
+
+public meta section
 
 namespace Iris.Std
 open Lean Lean.Elab.Tactic Lean.Meta

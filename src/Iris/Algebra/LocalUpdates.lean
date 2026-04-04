@@ -3,7 +3,11 @@ Copyright (c) 2025 Сухарик. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Сухарик (@suhr), Mario Carneiro
 -/
-import Iris.Algebra.CMRA
+module
+
+public import Iris.Algebra.CMRA
+
+@[expose] public section
 
 namespace Iris
 

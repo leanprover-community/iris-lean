@@ -3,9 +3,13 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Zongyuan Liu
 -/
-import Iris.ProofMode.Patterns.ProofModeTerm
-import Iris.ProofMode.Tactics.Basic
-import Iris.ProofMode.Tactics.Specialize
+module
+
+import Iris.BI
+import Iris.ProofMode.Classes
+public meta import Iris.ProofMode.Patterns.ProofModeTerm
+public meta import Iris.ProofMode.Tactics.Basic
+public meta import Iris.ProofMode.Tactics.Specialize
 
 /- This file contains the `iHave` function for asserting a ProofModeTerm.
    It is separate from the implementation of `ihave` in `Have.lean` since
@@ -13,12 +17,18 @@ import Iris.ProofMode.Tactics.Specialize
    depends on `iHave` in this file.
 -/
 
-namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
 
-private theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
+namespace Iris.ProofMode
+
+public section
+open BI
+
+theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ P] (h : φ) : Q ⊢ Q ∗ □ P :=
   sep_emp.2.trans (sep_mono_r $ intuitionistically_emp.2.trans (intuitionistically_mono (asEmpValid_1 _ h)))
+
+public meta section
+open Lean Elab Tactic Meta Qq Std
 
 /--
 Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.

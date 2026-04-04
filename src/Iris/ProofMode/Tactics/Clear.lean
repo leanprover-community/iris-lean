@@ -1,19 +1,29 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Mario Carneiro, Michael Sammler
+Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 -/
-import Iris.ProofMode.Tactics.Basic
+module
+
+import Iris.BI
+import Iris.ProofMode.Classes
+public meta import Iris.ProofMode.Patterns.SelPattern
+public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
 
-private theorem clear_spatial [BI PROP] {P P' A Q : PROP} [TCOr (Affine A) (Absorbing Q)]
+public section
+open BI Std
+
+theorem clear_spatial [BI PROP] {P P' A Q : PROP} [TCOr (Affine A) (Absorbing Q)]
     (h_rem : P ⊣⊢ P' ∗ A) (h : P' ⊢ Q) : P ⊢ Q :=
   h_rem.1.trans <| (sep_mono_l h).trans sep_elim_l
 
-private theorem clear_intuitionistic [BI PROP] {P P' A Q : PROP}
+theorem clear_intuitionistic [BI PROP] {P P' A Q : PROP}
     (h_rem : P ⊣⊢ P' ∗ □ A) (h : P' ⊢ Q) : P ⊢ Q := clear_spatial h_rem h
+
+public meta section
+open Lean Elab Tactic Meta Qq
 
 def iClearCore {prop : Q(Type u)} (_bi : Q(BI $prop)) (e e' : Q($prop))
     (p : Q(Bool)) (out goal : Q($prop))
@@ -25,10 +35,32 @@ def iClearCore {prop : Q(Type u)} (_bi : Q(BI $prop)) (e e' : Q($prop))
         | throwError "iclear: {out} is not affine and the goal not absorbing"
       return q(clear_spatial (A:=$out) $pf)
 
-elab "iclear" colGt hyp:ident : tactic => do
-  ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do
+private structure ClearState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (origE goal : Q($prop)) where
+  (e : Q($prop)) (hyps : Hyps bi e)
+  pf : Q(($e ⊢ $goal) → ($origE ⊢ $goal))
 
-  let uniq ← hyps.findWithInfo hyp
-  let ⟨e', hyps', _, out', p, _, pf⟩ := hyps.remove true uniq
-  let m ← addBIGoal hyps' goal
-  mvar.assign ((← iClearCore bi e e' p out' goal pf).app m)
+private def ClearState.clearProofModeHyp {u prop bi origE goal} :
+    @ClearState u prop bi origE goal → Name →
+    ProofModeM (@ClearState u prop bi origE goal)
+  | { e, hyps, pf }, uniq => do
+      let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove true uniq
+      let step ← iClearCore bi e e' p out' goal hrem
+      let pf' : Q(($e' ⊢ $goal) → ($origE ⊢ $goal)) := q(λ h => $pf ($step h))
+      return {  e := e', hyps := hyps', pf := pf' }
+
+elab "iclear" pats:(colGt selPat)+ : tactic => do
+  let pats ← liftMacroM <| SelPat.parse pats
+
+  ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do
+  let (uniqs, fvars) := (← SelPat.resolve hyps pats).partitionMap id
+
+  -- Clear the selected Iris hypotheses first, updating the proof-mode context and proof term.
+  let mut st : ClearState e goal := { e, hyps, pf := q(fun h => h) }
+  for uniq in uniqs do st ← st.clearProofModeHyp uniq
+
+  -- Lean locals are cleared afterwards; first ensure no remaining hypothesis or goal depends on them.
+  for fvar in fvars do
+    let _ ← st.hyps.checkRemovableFVar "iclear" fvar (some goal) fvars.contains
+
+  let pf' ← addBIGoalWithoutFVars st.hyps goal fvars.reverse.toArray
+  mvar.assign q($(st.pf) $pf')

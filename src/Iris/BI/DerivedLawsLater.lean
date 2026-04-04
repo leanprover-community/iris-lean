@@ -3,13 +3,19 @@ Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-import Iris.BI.Classes
-import Iris.BI.Extensions
-import Iris.BI.BI
-import Iris.BI.DerivedLaws
-import Iris.Std.Classes
-import Iris.Std.Rewrite
-import Iris.Std.TC
+module
+
+public import Iris.BI.Classes
+public import Iris.BI.Extensions
+public import Iris.BI.BI
+public import Iris.BI.DerivedLaws
+public import Iris.Std.Classes
+public import Iris.Std.Rewrite
+public import Iris.Std.TC
+public import Iris.Std.RocqAlias
+
+
+@[expose] public section
 
 namespace Iris.BI
 open Iris.Std BI
@@ -410,3 +416,14 @@ instance except0_persistent [BI PROP] (P : PROP) [Persistent P] : Persistent ipr
 
 instance except0_absorbing [BI PROP] (P : PROP) [Absorbing P] : Absorbing iprop(◇ P) :=
   inferInstanceAs (Absorbing iprop(_ ∨ _))
+
+@[rocq_alias pure_timeless]
+instance pure_timeless [BI PROP] (φ : Prop) : Timeless (PROP := PROP) (BIBase.pure φ) where
+  timeless :=
+    calc iprop(▷ ⌜φ⌝)
+      _ ⊢@{PROP} ▷ ∃ (_a : φ), True :=
+        later_mono (pure_elim' (true_intro.trans <| exists_intro (Ψ := fun _ => iprop(⌜True⌝)) ·))
+      _ ⊢ ▷ False ∨ ∃ (_a : φ), ▷ True :=
+        later_exists_false
+      _ ⊢ ◇ ⌜φ⌝ :=
+        or_mono_r (exists_elim ((later_true.1.trans true_intro).trans <| pure_intro ·))

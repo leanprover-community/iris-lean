@@ -1,4 +1,7 @@
-import Iris.ProofMode.Patterns.CasesPattern
-import Iris.ProofMode.Patterns.IntroPattern
-import Iris.ProofMode.Patterns.ProofModeTerm
-import Iris.ProofMode.Patterns.SpecPattern
+module
+
+public import Iris.ProofMode.Patterns.CasesPattern
+public import Iris.ProofMode.Patterns.IntroPattern
+public import Iris.ProofMode.Patterns.ProofModeTerm
+public import Iris.ProofMode.Patterns.SelPattern
+public import Iris.ProofMode.Patterns.SpecPattern

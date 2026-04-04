@@ -3,10 +3,14 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Michael Sammler
 -/
-import Iris.BI
-import Iris.BI.DerivedLaws
-import Iris.ProofMode.Modalities
-import Iris.ProofMode.Classes
+module
+
+public import Iris.BI
+public import Iris.BI.DerivedLaws
+public import Iris.ProofMode.Modalities
+public import Iris.ProofMode.Classes
+
+@[expose] public section
 
 namespace Iris.ProofMode
 open Iris.BI
@@ -54,18 +58,6 @@ def modality_intuitionistically : Modality PROP PROP where
   mono := (intuitionistically_mono ·)
   sep := intuitionistically_sep_2
 
-def modality_plainly [BIPlainly PROP] : Modality PROP PROP where
-  M := plainly
-  action
-  | true => .forall Plain
-  | false => .clear
-  spec
-  | true => λ _ _ => (intuitionistically_mono Plain.plain).trans intuitionistically_plainly
-  | false => λ _ => plainly_absorbing _
-  emp := plainly_emp_2
-  mono := (BIPlainly.mono ·)
-  sep := plainly_sep_2
-
 def modality_laterN (n : Nat) : Modality PROP PROP where
   M := BIBase.laterN n
   action := λ _ => .transform (IntoLaterN false n)
@@ -75,3 +67,15 @@ def modality_laterN (n : Nat) : Modality PROP PROP where
   sep := (laterN_sep n).2
 
 end Modalities
+
+def modality_plainly [Sbi PROP] : Modality PROP PROP where
+  M := BIBase.Plainly.plainly
+  action
+  | true => .forall Plain
+  | false => .clear
+  spec
+  | true => λ _ _ => (intuitionistically_mono Plain.plain).trans intuitionistically_plainly
+  | false => λ _ => plainly_absorbing _
+  emp := plainly_emp_2
+  mono := (plainly_mono ·)
+  sep := plainly_sep_2

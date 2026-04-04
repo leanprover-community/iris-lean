@@ -3,11 +3,15 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
-import Iris.BI
-import Iris.ProofMode
-import Iris.Instances.IProp
-import Iris.Algebra
-import Iris.Std.HeapInstances
+module
+
+public import Iris.BI
+public import Iris.ProofMode
+public import Iris.Instances.IProp
+public import Iris.Algebra
+public import Iris.Std.HeapInstances
+
+@[expose] public section
 
 namespace Iris.Examples
 open Iris.BI COFE
@@ -80,7 +84,7 @@ notation k:50 " ↦[" γ:50 "] " v:50 => points_to γ k v
 example {γ : GName} : 5 ↦[γ] "A" ∗ 5 ↦[γ] "B" ⊢ False := by
   refine iOwn_op.mpr.trans ?_
   refine iOwn_cmraValid.trans ?_
-  refine (UPred.cmraValid_elim _).trans ?_
+  refine (internalCmraValid_elim _).trans ?_
   iintro %H
   have _ := dist_inj <| toAgree_op_validN_iff_dist.mp <|
     (frag_op_validN_iff.mp H).2
@@ -178,7 +182,7 @@ example (e e' : Expr) (P P' : IProp GF) Φ
   iapply wp_unfold
   iright
   iintro %s Hs
-  ihave ⟨%s', %Hstep, Hupd⟩ := Hstep s $$ [HP, Hs]
+  ihave ⟨%s', %Hstep, Hupd⟩ := Hstep s $$ [HP Hs]
   . isplitl [HP] <;> iassumption
   iexists e', s'
   isplitr
