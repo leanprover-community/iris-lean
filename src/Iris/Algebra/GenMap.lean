@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2025 Mario Carneiro. All rights reserved.
+Copyright (c) 2025. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors:
+Authors: Markus de Medeiros
 -/
 module
 
@@ -44,11 +44,11 @@ nonrec def GenMap.alter (g : GenMap β) (a : Nat) (b : Option β) : GenMap β wh
   car := alter g.car a b
   bound := by
     obtain ⟨N, hN⟩ := g.bound
-    exact ⟨max N (a + 1), fun k hk => by
-      simp only [Iris.alter]
-      split
-      · next heq => subst heq; omega
-      · exact hN k (by omega)⟩
+    refine ⟨max N (a + 1), fun k hk => ?_⟩
+    simp only [Iris.alter]
+    split
+    next heq => subst heq; omega
+    next => exact hN k (by omega)
 
 def GenMap.empty : GenMap β := ⟨fun _ => none, ⟨0, fun _ _ => rfl⟩⟩
 
@@ -117,16 +117,17 @@ theorem op_bound (x y : GenMap β) :
     ∃ N, ∀ k, N ≤ k → (x.car • y.car) k = none := by
   obtain ⟨Nx, hx⟩ := x.bound
   obtain ⟨Ny, hy⟩ := y.bound
-  exact ⟨max Nx Ny, fun k hk => by
-    simp [CMRA.op, optionOp, hx k (by omega), hy k (by omega)]⟩
+  refine ⟨max Nx Ny, fun k hk => ?_⟩
+  simp [CMRA.op, optionOp, hx k (by omega), hy k (by omega)]
 
 theorem pcore_bound (x : GenMap β) (cx : Nat → Option β)
     (hpc : CMRA.pcore x.car = some cx) :
     ∃ N, ∀ k, N ≤ k → cx k = none := by
   obtain ⟨N, hN⟩ := x.bound
   have hcx : cx = fun k => CMRA.core (x.car k) := (Option.some.inj hpc).symm
-  exact ⟨N, fun k hk => by
-    rw [hcx]; simp [CMRA.core, CMRA.pcore, optionCore, hN k hk]⟩
+  refine ⟨N, fun k hk => ?_⟩
+  rw [hcx]
+  simp [CMRA.core, CMRA.pcore, optionCore, hN k hk]
 
 theorem extend_bound {n : Nat} {x : GenMap β}
     {y1 y2 : Nat → Option β} (Hv : ✓{n} x.car) (He : x.car ≡{n}≡ y1 • y2) :
@@ -137,8 +138,7 @@ theorem extend_bound {n : Nat} {x : GenMap β}
   have aux : ∀ k, N ≤ k → ∀ (z₁ z₂ : Option β),
       x.car k ≡ z₁ • z₂ → z₁ = none ∧ z₂ = none := by
     intro k hk z₁ z₂ hp1
-    have hxk := hN k hk
-    have hp1' : none ≡ z₁ • z₂ := hxk ▸ hp1
+    have _ : none ≡ z₁ • z₂ := (hN k hk) ▸ hp1
     cases z₁ <;> cases z₂ <;> simp_all [CMRA.op, optionOp, OFE.Equiv, Option.Forall₂]
   constructor
   · exact ⟨N, fun k hk => (aux k hk _ _ (CMRA.extend (Hv k) (He k)).2.2.1).1⟩
@@ -147,8 +147,8 @@ theorem extend_bound {n : Nat} {x : GenMap β}
 def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
   some ⟨fun k => CMRA.core (x.car k), by
     obtain ⟨N, hN⟩ := x.bound
-    exact ⟨N, fun k hk => by
-      simp [CMRA.core, CMRA.pcore, optionCore, hN k hk]⟩⟩
+    refine ⟨N, fun k hk => ?_⟩
+    simp [CMRA.core, CMRA.pcore, optionCore, hN k hk]⟩
 
 instance instCMRA_GenMap : CMRA (GenMap β) where
   pcore := pcore_genmap β
@@ -157,12 +157,12 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
   Valid x := ✓ x.car
   op_ne.ne {_ _ _} H := op_ne (α := Nat → Option β) |>.ne H
   pcore_ne {n x y cx} H Hm := by
-    have hcx : cx.car = fun k => CMRA.core (x.car k) := by
-      simp [pcore_genmap] at Hm; exact (congrArg GenMap.car Hm).symm
     refine ⟨⟨fun k => CMRA.core (y.car k), ?_⟩, by simp [pcore_genmap], fun k => ?_⟩
     · obtain ⟨N, hN⟩ := y.bound
       exact ⟨N, fun k hk => by simp [CMRA.core, CMRA.pcore, optionCore, hN k hk]⟩
-    · rw [hcx]; exact (H k).core
+    · suffices hcx : cx.car = fun k => CMRA.core (x.car k) by rw [hcx]; exact (H k).core
+      simp only [pcore_genmap, Option.some.injEq] at Hm
+      exact (congrArg GenMap.car Hm).symm
   validN_ne {n x y H} := Dist.validN H |>.mp
   valid_iff_validN {x} :=
     ⟨fun Hv n => Hv.validN, fun H => valid_iff_validN.mpr (H ·)⟩
@@ -180,16 +180,17 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
     have hcx : cx.car = fun k => CMRA.core (x.car k) := by
       simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
     intro k
-    have : cx.car k = CMRA.core (x.car k) := congrFun hcx k
-    simp only [CMRA.op, optionOp, this]
+    have H : cx.car k = CMRA.core (x.car k) := congrFun hcx k
+    simp only [CMRA.op, optionOp, H]
     exact core_op (x.car k)
   pcore_idem {x cx} H := by
     have hcx : cx.car = fun k => CMRA.core (x.car k) := by
       simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
     simp only [pcore_genmap, OFE.Equiv, Option.Forall₂]
     intro k
-    have : cx.car k = CMRA.core (x.car k) := congrFun hcx k
-    simp only [this]; exact core_idem (x.car k)
+    have H : cx.car k = CMRA.core (x.car k) := congrFun hcx k
+    simp only [H]
+    exact core_idem (x.car k)
   pcore_op_mono {x cx} H y := by
     have hcx : cx.car = fun k => CMRA.core (x.car k) := by
       simp [pcore_genmap] at H; exact (congrArg GenMap.car H).symm
@@ -197,16 +198,16 @@ instance instCMRA_GenMap : CMRA (GenMap β) where
     obtain ⟨cy, Hcy⟩ := pcore_op_mono hpc_fun y.car
     refine ⟨⟨cy, ?_⟩, ?_⟩
     · obtain ⟨N, hN⟩ := op_bound β x y
-      exact ⟨N, fun k hk => by
-        have hxyk := hN k hk
-        simp [CMRA.op, optionOp] at hxyk
-        cases hx : x.car k <;> cases hy : y.car k <;> simp_all
-        have hcxy : CMRA.core (x.car • y.car) k = none := by
-          simp [CMRA.core, CMRA.pcore, optionCore, hx, hy, CMRA.op, optionOp]
-        have hHeqk := Hcy k
-        simp only [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp,
-          hx, hy, Option.bind] at hHeqk
-        cases hcy : cy k <;> simp_all⟩
+      refine ⟨N, fun k hk => ?_⟩
+      have hxyk := hN k hk
+      simp [CMRA.op, optionOp] at hxyk
+      cases hx : x.car k <;> cases hy : y.car k <;> simp_all
+      have hcxy : CMRA.core (x.car • y.car) k = none := by
+        simp [CMRA.core, CMRA.pcore, optionCore, hx, hy, CMRA.op, optionOp]
+      have hHeqk := Hcy k
+      simp only [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp,
+        hx, hy, Option.bind] at hHeqk
+      cases hcy : cy k <;> simp_all
     · intro k
       have hHeqk := Hcy k
       simp [CMRA.core, CMRA.pcore, optionCore, CMRA.op, optionOp] at hHeqk ⊢
