@@ -60,6 +60,11 @@ class NonExpansive [OFE α] [OFE β] (f : α → β) where
 
 instance id_ne [OFE α] : NonExpansive (@id α) := ⟨fun _ _ _ h => h⟩
 
+/-- Note: Not an instance, as any function can be decomposed as a composition in multiple ways. -/
+theorem NonExpansive.comp [OFE α] [OFE β] [OFE γ] {g : β → γ} {f : α → β}
+    (hg : NonExpansive g) (hf : NonExpansive f) : NonExpansive (g ∘ f) :=
+  ⟨fun {_ _ _} h => hg.ne (hf.ne h)⟩
+
 /-- A non-expansive function preserves equivalence. -/
 theorem NonExpansive.eqv [OFE α] [OFE β] {f : α → β} [NonExpansive f]
     ⦃x₁ x₂⦄ (h : x₁ ≡ x₂) : f x₁ ≡ f x₂ :=
@@ -72,6 +77,16 @@ class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) where
 theorem NonExpansive₂.eqv [OFE α] [OFE β] [OFE γ] {f : α → β → γ} [NonExpansive₂ f]
     ⦃x₁ x₂⦄ (hx : x₁ ≡ x₂) ⦃y₁ y₂⦄ (hy : y₁ ≡ y₂) : f x₁ y₁ ≡ f x₂ y₂ :=
   equiv_dist.2 fun _ => ne hx.dist hy.dist
+
+/-- Note: Not an instance, for symmetry with NonExpansive₂.ne_left, which cannot be an instance. -/
+theorem NonExpansive₂.ne_right [OFE α] [OFE β] [OFE γ] (f : α → β → γ) [NonExpansive₂ f]
+    (a : α) : NonExpansive (f a) :=
+  ⟨fun {_ _ _} h => ne Dist.rfl h⟩
+
+/-- Note: Not an instance, due to instance coherence problems. -/
+theorem NonExpansive₂.ne_left [OFE α] [OFE β] [OFE γ] (f : α → β → γ) [NonExpansive₂ f]
+    (b : β) : NonExpansive (f · b) :=
+  ⟨fun {_ _ _} h => ne h Dist.rfl⟩
 
 /-- `DistLater n x y` means that `x` and `y` are `m`-equivalent for all `m < n`. -/
 def DistLater [OFE α] (n : Nat) (x y : α) : Prop := ∀ m, m < n → x ≡{m}≡ y
@@ -376,6 +391,25 @@ theorem dist_fst {n} [OFE α] [OFE β] {x y : α × β} (h : x ≡{n}≡ y) : x.
 theorem dist_snd {n} [OFE α] [OFE β] {x y : α × β} (h : x ≡{n}≡ y) : x.snd ≡{n}≡ y.snd := h.right
 theorem dist_prod_ext {n} [OFE α] [OFE β] {x₁ x₂ : α} {y₁ y₂ : β}
     (ex : x₁ ≡{n}≡ x₂) (ey : y₁ ≡{n}≡ y₂) : (x₁, y₁) ≡{n}≡ (x₂, y₂) := ⟨ex, ey⟩
+
+/-- Note: Not an instance, due to instance coherence problems. -/
+theorem prod_mk_ne_left [OFE α] [OFE β] (b : β) : NonExpansive (β := α × β) (·, b) :=
+  ⟨fun {_ _ _} h => dist_prod_ext h Dist.rfl⟩
+
+/-- Note: Not an instance, due to instance coherence problems. -/
+theorem prod_mk_ne_right [OFE α] [OFE β] (a : α) : NonExpansive (β := α × β) (a, ·) :=
+  ⟨fun {_ _ _} h => dist_prod_ext Dist.rfl h⟩
+
+instance [OFE α] [OFE β] : NonExpansive (Prod.fst (α := α) (β := β)) :=
+  ⟨fun {_ _ _} h => dist_fst h⟩
+
+instance [OFE α] [OFE β] : NonExpansive (Prod.snd (α := α) (β := β)) :=
+  ⟨fun {_ _ _} h => dist_snd h⟩
+
+/-- Note: Not an instance, due to instance coherence problems. -/
+theorem NonExpansive₂.uncurry [OFE α] [OFE β] [OFE γ] {f : α → β → γ} (hf : NonExpansive₂ f) :
+    NonExpansive (Function.uncurry f) :=
+  ⟨fun {_ _ _} (h : _ ∧ _) => hf.ne h.1 h.2⟩
 
 theorem prod.is_discrete [OFE α] [OFE β] {a : α} {b : β} (Ha : DiscreteE a) (Hb : DiscreteE b) :
     DiscreteE (a, b) := by
