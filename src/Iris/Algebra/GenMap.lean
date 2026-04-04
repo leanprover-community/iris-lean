@@ -113,14 +113,14 @@ open CMRA GenMap
 
 variable (β : Type _) [CMRA β]
 
-private theorem op_bound (x y : GenMap β) :
+theorem op_bound (x y : GenMap β) :
     ∃ N, ∀ k, N ≤ k → (x.car • y.car) k = none := by
   obtain ⟨Nx, hx⟩ := x.bound
   obtain ⟨Ny, hy⟩ := y.bound
   exact ⟨max Nx Ny, fun k hk => by
     simp [CMRA.op, optionOp, hx k (by omega), hy k (by omega)]⟩
 
-private theorem pcore_bound (x : GenMap β) (cx : Nat → Option β)
+theorem pcore_bound (x : GenMap β) (cx : Nat → Option β)
     (hpc : CMRA.pcore x.car = some cx) :
     ∃ N, ∀ k, N ≤ k → cx k = none := by
   obtain ⟨N, hN⟩ := x.bound
@@ -128,7 +128,7 @@ private theorem pcore_bound (x : GenMap β) (cx : Nat → Option β)
   exact ⟨N, fun k hk => by
     rw [hcx]; simp [CMRA.core, CMRA.pcore, optionCore, hN k hk]⟩
 
-private theorem extend_bound {n : Nat} {x : GenMap β}
+theorem extend_bound {n : Nat} {x : GenMap β}
     {y1 y2 : Nat → Option β} (Hv : ✓{n} x.car) (He : x.car ≡{n}≡ y1 • y2) :
     let F k := CMRA.extend (Hv k) (He k)
     (∃ N, ∀ k, N ≤ k → (fun k => (F k).1) k = none) ∧
@@ -144,7 +144,7 @@ private theorem extend_bound {n : Nat} {x : GenMap β}
   · exact ⟨N, fun k hk => (aux k hk _ _ (CMRA.extend (Hv k) (He k)).2.2.1).1⟩
   · exact ⟨N, fun k hk => (aux k hk _ _ (CMRA.extend (Hv k) (He k)).2.2.1).2⟩
 
-private def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
+def pcore_genmap (x : GenMap β) : Option (GenMap β) :=
   some ⟨fun k => CMRA.core (x.car k), by
     obtain ⟨N, hN⟩ := x.bound
     exact ⟨N, fun k hk => by

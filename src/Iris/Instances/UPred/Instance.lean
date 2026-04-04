@@ -502,8 +502,8 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
 instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where
   timeless
     | 0, _, _, _ => .inl trivial
-    | n + 1, x, Hv, ⟨y, Hxy⟩ =>
-      let ⟨a', y', Hx, Ha', _⟩ := CMRA.extend (CMRA.validN_succ Hv) Hxy
+    | n + 1, _x, Hv, ⟨_y, Hxy⟩ =>
+      let ⟨_a', y', Hx, Ha', _⟩ := CMRA.extend (CMRA.validN_succ Hv) Hxy
       .inr ⟨y', (Hx.trans (OFE.DiscreteE.discrete (Ha'.symm.le n.zero_le)).symm.op_l).dist⟩
 
 instance : BIAffine (UPred M) := ⟨by infer_instance⟩
