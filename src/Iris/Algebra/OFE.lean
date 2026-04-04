@@ -210,6 +210,10 @@ protected def Hom.comp [OFE α] [OFE β] [OFE γ] (g : β -n> γ) (f : α -n> β
 theorem Hom.comp_assoc [OFE α] [OFE β] [OFE γ] [OFE δ]
     (h : γ -n> δ) (g : β -n> γ) (f : α -n> β) : (h.comp g).comp f = h.comp (g.comp f) := rfl
 
+/-- Construct a `Hom` from a subtype bundling a function with its nonexpansiveness proof. -/
+def Hom.ofSubtype [OFE α] [OFE β] (f : { f : α → β // NonExpansive f }) : α -n> β :=
+  ⟨f.val, f.property⟩
+
 @[ext] structure ContractiveHom (α β : Type _) [OFE α] [OFE β] extends Hom α β where
   [contractive : Contractive f]
   ne := ne_of_contractive f
@@ -317,6 +321,13 @@ theorem Option.some_is_discrete [OFE α] {a : α} (Ha : DiscreteE a) : DiscreteE
   rintro (_|_) H
   · exact H
   · exact Ha.discrete H
+
+/-- Note: Not an instance, due to instance coherence problems. -/
+theorem Option.ne_match [OFE α] {B : Type _} [OFE B]
+    (f : α → B) (hf : NonExpansive f) (g : B) :
+    NonExpansive (fun x : Option α => match x with | some a => f a | none => g) :=
+  ⟨fun {n x' y'} (h : Option.Forall₂ (Dist n) x' y') =>
+    match x', y', h with | some _, some _, h => hf.ne h | none, none, _ => Dist.rfl⟩
 
 theorem Option.none_is_discrete [OFE α] : DiscreteE (none : Option α) := by
   constructor; rintro (_|_) <;> simp
@@ -439,6 +450,16 @@ instance [OFE α] [Discrete α] (P : α → Prop) : Discrete (Subtype P) where
 @[rocq_alias proj1_sig_ne]
 instance [OFE α] (P : α → Prop) : NonExpansive (Subtype.val : Subtype P → α) where
   ne {_ _ _} := id
+
+instance Hom.ofSubtype_ne [OFE α] [OFE β] : NonExpansive (Hom.ofSubtype (α := α) (β := β)) :=
+  ⟨fun {_ _ _} h => h⟩
+
+/-- Extract the underlying subtype from a `Hom`. -/
+def Hom.toSubtype [OFE α] [OFE β] (f : α -n> β) : { f : α → β // NonExpansive f } :=
+  ⟨f.f, f.ne⟩
+
+instance Hom.toSubtype_ne [OFE α] [OFE β] : NonExpansive (Hom.toSubtype (α := α) (β := β)) :=
+  ⟨fun {_ _ _} h => h⟩
 
 /-- An isomorphism between two OFEs is a pair of morphisms whose composition is equivalent to the
 identity morphism. -/
