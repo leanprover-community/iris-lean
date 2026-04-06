@@ -225,8 +225,27 @@ theorem bigSepS_impl {Φ Ψ : A → PROP} {X : S} :
       (forall_elim x).trans <| (imp_mono_l <| pure_mono fun _ => hx).trans true_imp.1).trans ?_
   exact bigSepS_sep.symm.1.trans <| bigSepS_mono fun _ _ => wand_elim_r
 
--- TODO: big_sepS_forall
--- Requires `Persistent` + `BIAffine` interaction with `bigSepS_elem_of` and `bigSepS_intro`.
+@[rocq_alias big_sepS_forall]
+theorem bigSepS_forall [BIAffine PROP] {Φ : A → PROP} {X : S}
+    [hPers : ∀ x, Persistent (Φ x)] :
+    ([∗set] x ∈ X, Φ x) ⊣⊢ (∀ x, ⌜x ∈ X⌝ → Φ x) := by
+  constructor
+  · exact forall_intro fun x => imp_intro' <| pure_elim_l fun hmem =>
+      (bigSepS_elem_of_acc hmem).trans <|
+        (sep_mono_l Persistent.persistent).trans <|
+        sep_comm.1.trans <| persistently_absorb_r.trans persistently_elim
+  · induction X using FiniteSet.set_ind with
+    | hemp => exact bigSepS_empty_intro
+    | hadd a s hnin ih =>
+      haveI : Persistent (Φ a) := hPers a
+      apply Entails.trans _ (bigSepS_insert hnin).2
+      apply Entails.trans _ persistent_and_sep_1
+      apply BI.and_intro
+      · exact (forall_elim a).trans
+            ((and_intro (pure_intro (mem_insert.mpr (.inl rfl))) .rfl).trans imp_elim_r)
+      · exact (forall_mono (fun (x : A) => imp_mono_l
+            (pure_mono (fun (hx : x ∈ s) => mem_insert.mpr (.inr hx))
+            : (⌜x ∈ s⌝ : PROP) ⊢ ⌜x ∈ Insert.insert a s⌝))).trans ih
 
 /-! ## Modal Operators -/
 
@@ -334,33 +353,175 @@ theorem bigSepS_list_to_set {Φ : A → PROP} {l : List A}
 
 /-! ## Filter -/
 
--- TODO: big_sepS_filter', big_sepS_filter, big_sepS_filter_acc', big_sepS_filter_acc
--- These require `FiniteSet.filter` interaction with `bigOpS` which needs additional
--- infrastructure (e.g., `toList_filter` permutation lemmas for bigOpS).
+@[rocq_alias big_sepS_filter']
+theorem bigSepS_filter' (φ : A → Bool) {Φ : A → PROP} {X : S} :
+    ([∗set] y ∈ FiniteSet.filter φ X, Φ y) ⊣⊢
+    ([∗set] y ∈ X, if φ y then Φ y else emp) :=
+  bigSepS_elements.trans <|
+    (bigSepL_perm (Iris.Std.FiniteSet.toList_filter_perm φ X)).trans <|
+    (equiv_iff.mp (bigOpL_filter_equiv φ Φ (FiniteSet.toList X))).trans <|
+    bigSepS_elements.symm
+
+@[rocq_alias big_sepS_filter]
+theorem bigSepS_filter [BIAffine PROP] (φ : A → Bool) {Φ : A → PROP} {X : S} :
+    ([∗set] y ∈ FiniteSet.filter φ X, Φ y) ⊣⊢
+    ([∗set] y ∈ X, ⌜φ y⌝ → Φ y) :=
+  (bigSepS_filter' φ).trans <| bigSepS_equiv fun y _ => by
+    cases hp : φ y <;> simp
+    · exact ⟨imp_intro' <| pure_elim_l (fun hf => nomatch hf), Affine.affine⟩
+    · exact true_imp.symm
+
+@[rocq_alias big_sepS_filter_acc']
+theorem bigSepS_filter_acc' (φ : A → Bool) {Φ : A → PROP} {X Y : S}
+    (h : ∀ y, y ∈ Y → φ y → y ∈ X) :
+    ([∗set] y ∈ X, Φ y) ⊢
+      ([∗set] y ∈ Y, if φ y then Φ y else emp) ∗
+      (([∗set] y ∈ Y, if φ y then Φ y else emp) -∗ [∗set] y ∈ X, Φ y) := by
+  -- filter φ Y ⊆ X
+  have hfilter_sub : FiniteSet.filter φ Y ⊆ X := fun z hz => by
+    have ⟨hz_Y, hz_φ⟩ := FiniteSet.mem_filter φ Y z |>.mp hz
+    exact h z hz_Y hz_φ
+  -- X = filter φ Y ∪ (X \ filter φ Y), disjoint
+  have hdisj : FiniteSet.filter φ Y ## (X \ FiniteSet.filter φ Y) :=
+    fun a ha => (mem_diff.mp ha.2).2 ha.1
+  have hdecomp : X = FiniteSet.filter φ Y ∪ (X \ FiniteSet.filter φ Y) :=
+    (diff_subset_decomp hfilter_sub).trans union_comm
+  -- Rewrite X as the union and split
+  rw [hdecomp]
+  refine (bigSepS_union hdisj).1.trans ?_
+  -- LHS: [∗set] filter ∗ [∗set] remainder
+  -- Transform via bigSepS_filter': [∗set] filter φ Y ⊣⊢ [∗set] Y, if φ y ...
+  have hfilt := bigSepS_filter' φ (Φ := Φ) (X := Y)
+  exact sep_mono hfilt.1 (wand_intro' <| (sep_mono_l hfilt.2).trans (bigSepS_union hdisj).2)
+
+@[rocq_alias big_sepS_filter_acc]
+theorem bigSepS_filter_acc [BIAffine PROP] (φ : A → Bool) {Φ : A → PROP} {X Y : S}
+    (h : ∀ y, y ∈ Y → φ y → y ∈ X) :
+    ([∗set] y ∈ X, Φ y) ⊢
+      ([∗set] y ∈ Y, ⌜φ y⌝ → Φ y) ∗
+      (([∗set] y ∈ Y, ⌜φ y⌝ → Φ y) -∗ [∗set] y ∈ X, Φ y) := by
+  have hequiv : ([∗set] y ∈ Y, if φ y then Φ y else emp) ⊣⊢
+      ([∗set] y ∈ Y, ⌜φ y⌝ → Φ y) := bigSepS_equiv fun y _ => by
+    cases hp : φ y <;> simp
+    · exact ⟨imp_intro' <| pure_elim_l (fun hf => nomatch hf), Affine.affine⟩
+    · exact true_imp.symm
+  exact (bigSepS_filter_acc' φ h).trans <|
+    sep_mono hequiv.1 (wand_mono hequiv.2 .rfl)
 
 /-! ## Union with Overlap -/
 
--- TODO: big_sepS_union_2, big_sepS_insert_2, big_sepS_insert_2'
--- These require `TCOr (Affine (Φ x)) (Absorbing (Φ x))` handling and
--- set induction with `set_ind` at the BI level, which is complex.
+@[rocq_alias big_sepS_union_2]
+theorem bigSepS_union_2 {Φ : A → PROP} {X Y : S}
+    [h : ∀ x, TCOr (Affine (Φ x)) (Absorbing (Φ x))] :
+    ⊢ ([∗set] y ∈ X, Φ y) -∗ ([∗set] y ∈ Y, Φ y) -∗ ([∗set] y ∈ X ∪ Y, Φ y) := by
+  apply entails_wand
+  apply wand_intro'
+  -- Goal: ([∗set] y ∈ Y, Φ y) ∗ ([∗set] y ∈ X, Φ y) ⊢ [∗set] y ∈ X ∪ Y, Φ y
+  induction X using FiniteSet.set_ind with
+  | hemp =>
+    simp only [union_empty_left]
+    exact (sep_mono_r bigSepS_empty.1).trans sep_emp.1
+  | hadd a s hnin ih =>
+    rw [show insert a s ∪ Y = insert a (s ∪ Y) from by
+      ext w; rw [mem_union, mem_insert, mem_insert, mem_union]; grind]
+    refine (sep_mono_r (bigSepS_insert hnin).1).trans ?_
+    -- Goal: ([∗set] y ∈ Y, Φ y) ∗ (Φ a ∗ [∗set] y ∈ s, Φ y) ⊢ [∗set] y ∈ insert a (s ∪ Y), Φ y
+    refine sep_left_comm.1.trans ?_
+    -- Goal: Φ a ∗ (([∗set] y ∈ Y, Φ y) ∗ [∗set] y ∈ s, Φ y) ⊢ [∗set] y ∈ insert a (s ∪ Y), Φ y
+    refine (sep_mono_r ih).trans ?_
+    -- Goal: Φ a ∗ [∗set] y ∈ s ∪ Y, Φ y ⊢ [∗set] y ∈ insert a (s ∪ Y), Φ y
+    by_cases ha : a ∈ Y
+    · -- a ∈ Y, so a ∈ s ∪ Y; need to drop the extra Φ a
+      have hmem_sY : a ∈ s ∪ Y := mem_union.mpr (.inr ha)
+      refine (sep_mono_r (bigSepS_delete hmem_sY).1).trans ?_
+      refine sep_assoc.2.trans ?_
+      refine (sep_mono_l sep_elim_l).trans ?_
+      -- Goal: Φ a ∗ [∗set] y ∈ (s ∪ Y) \ {a}, Φ y ⊢ [∗set] y ∈ insert a (s ∪ Y), Φ y
+      rw [show (s ∪ Y) \ {a} = insert a (s ∪ Y) \ {a} from by
+        ext w; simp only [mem_diff, mem_union, mem_insert, mem_singleton]; grind]
+      exact (bigSepS_delete (mem_insert.mpr (.inl rfl))).2
+    · -- a ∉ Y, so a ∉ s ∪ Y
+      have hnotin : a ∉ s ∪ Y := fun hmem => (mem_union.mp hmem).elim hnin ha
+      exact (bigSepS_insert hnotin).2
 
--- TODO: big_sepS_delete_2
--- Requires careful case analysis on membership and set equality reasoning.
+@[rocq_alias big_sepS_insert_2]
+theorem bigSepS_insert_2 {Φ : A → PROP} {X : S} {x : A}
+    [TCOr (Affine (Φ x)) (Absorbing (Φ x))]
+    [h : ∀ y, TCOr (Affine (Φ y)) (Absorbing (Φ y))] :
+    Φ x ⊢ ([∗set] y ∈ X, Φ y) -∗ ([∗set] y ∈ insert x X, Φ y) := by
+  rw [insert_union]
+  exact bigSepS_singleton.2.trans (wand_entails bigSepS_union_2)
+
+@[rocq_alias big_sepS_delete_2]
+theorem bigSepS_delete_2 {Φ : A → PROP} {X : S} {x : A}
+    [Affine (Φ x)] :
+    Φ x ⊢ ([∗set] y ∈ X \ {x}, Φ y) -∗ [∗set] y ∈ X, Φ y := by
+  apply wand_intro
+  by_cases hx : x ∈ X
+  · exact (bigSepS_delete hx).2
+  · -- x ∉ X, so X \ {x} = X; drop Φ x
+    have heq : X \ {x} = X := by
+      ext y; rw [mem_diff, mem_singleton]
+      exact ⟨And.left, fun hy => ⟨hy, fun heq => hx (heq ▸ hy)⟩⟩
+    rw [heq]
+    exact (sep_mono_l Affine.affine).trans emp_sep.1
 
 /-! ## Function Insertion -/
 
--- TODO: big_sepS_fn_insert, big_sepS_fn_insert'
--- These require a `fnInsert` helper and interaction with `bigSepS_insert`.
+@[rocq_alias big_sepS_fn_insert]
+theorem bigSepS_fn_insert [DecidableEq A] {B : Type _} {Ψ : A → B → PROP} {f : A → B}
+    {X : S} {x : A} {b : B}
+    (h : x ∉ X) :
+    ([∗set] y ∈ insert x X, Ψ y (if y = x then b else f y)) ⊣⊢
+      Ψ x b ∗ [∗set] y ∈ X, Ψ y (f y) := by
+  refine (bigSepS_insert h).trans ?_
+  simp only [ite_true]
+  exact sep_congr_r <| bigSepS_equiv fun y hy =>
+    have hne : y ≠ x := fun heq => h (heq ▸ hy)
+    by simp [hne]
+
+@[rocq_alias big_sepS_fn_insert']
+theorem bigSepS_fn_insert' [DecidableEq A] {Φ : A → PROP} {X : S} {x : A} {P : PROP}
+    (h : x ∉ X) :
+    ([∗set] y ∈ insert x X, if y = x then P else Φ y) ⊣⊢
+      P ∗ [∗set] y ∈ X, Φ y :=
+  bigSepS_fn_insert (Ψ := fun _ P => P) (f := Φ) (b := P) h
 
 /-! ## Dup -/
 
--- TODO: big_sepS_dup
--- Requires intuitionistic modality reasoning over set induction.
+@[rocq_alias big_sepS_dup]
+theorem bigSepS_dup {P : PROP} [hAff : Affine P] {X : S} :
+    ⊢ □ (P -∗ P ∗ P) -∗ P -∗ [∗set] _x ∈ X, P :=
+  entails_wand <| wand_intro' <|
+    sep_comm.1.trans <| bigSepL_dup.trans bigSepS_elements.2
 
 /-! ## Elem of acc impl -/
 
--- TODO: big_sepS_elem_of_acc_impl
--- Requires combining delete with universal quantification and wand introduction.
+@[rocq_alias big_sepS_elem_of_acc_impl]
+theorem bigSepS_elem_of_acc_impl {Φ : A → PROP} {X : S} {x : A}
+    (h : x ∈ X) :
+    ([∗set] y ∈ X, Φ y) ⊢
+    Φ x ∗
+    (∀ (Ψ : A → PROP),
+       (□ (∀ y, ⌜y ∈ X⌝ → ⌜x ≠ y⌝ → Φ y -∗ Ψ y)) -∗
+     Ψ x -∗
+     ([∗set] y ∈ X, Ψ y)) := by
+  refine (bigSepS_delete h).1.trans <| sep_mono_r ?_
+  apply forall_intro; intro Ψ
+  apply wand_intro; apply wand_intro
+  refine sep_comm.1.trans <| (sep_mono_r ?_).trans (bigSepS_delete (Φ := Ψ) h).2
+  refine (sep_mono_r <| bigSepS_intro (Φ := fun y => iprop(Φ y -∗ Ψ y))
+    (P := iprop(□ (∀ y, ⌜y ∈ X⌝ → ⌜x ≠ y⌝ → Φ y -∗ Ψ y)))
+    fun y hy => ?_).trans <|
+    (bigSepS_sep (Φ := Φ) (Ψ := fun y => iprop(Φ y -∗ Ψ y))).symm.1.trans <|
+    bigSepS_mono fun y _ => wand_elim_r
+  -- intro branch: from □(∀...) derive (Φ y -∗ Ψ y) for y ∈ X \ {x}
+  have hne : x ≠ y := fun heq => (mem_diff.mp hy).2 (mem_singleton.mpr heq.symm)
+  have hmem : y ∈ X := (mem_diff.mp hy).1
+  exact intuitionistically_elim.trans <|
+    (forall_elim y).trans <|
+    ((and_intro (pure_intro hmem) .rfl).trans imp_elim_r).trans <|
+    ((and_intro (pure_intro hne) .rfl).trans imp_elim_r)
 
 end BigSepS
 
