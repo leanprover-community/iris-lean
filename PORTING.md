@@ -434,7 +434,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IAll
   - [ ] IClear
   - [ ] IClearFrame
-- [ ] `modalities.v`
+- [x] `modalities.v`
 - [ ] `modality_instances.v`
 - [ ] `monpred.v`
 - [x] `proofmode.v` (ProofMode.lean)
