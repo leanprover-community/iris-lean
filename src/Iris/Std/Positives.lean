@@ -98,6 +98,17 @@ def toNat : Pos → Nat
 
 instance : CoeOut Pos Nat where coe := Pos.toNat
 
+theorem Pos_toNat_pos (a : Pos) : a.toNat > 0 := by
+  induction a with
+  | xH => simp [Pos.toNat]
+  | xI a' ih => simp [Pos.toNat]
+  | xO a' ih => simp [Pos.toNat]; omega
+theorem Pos_toNat_inj {a b : Pos} : a.toNat = b.toNat → a = b := by
+  intro h
+  induction a generalizing b
+  <;> (cases b
+    <;> (simp [Pos.toNat] at h; grind [Pos_toNat_pos]))
+
 def compare (a b : Pos) : Ordering :=
   Ord.compare (a.toNat) (b.toNat)
 
@@ -356,5 +367,29 @@ instance : Countable Pos where
   encode := id
   decode := some
   decode_encode _ := rfl
+
+instance : Ord Pos where
+  compare x y := Pos.compare x y
+
+instance : Std.TransOrd Pos where
+  eq_swap {a b} := by
+    simp only [Ord.compare, Pos.compare]
+    rw [compareOfLessAndEq_eq_swap] <;> grind
+  isLE_trans {a b c} := by
+    simp only [Ord.compare, Pos.compare]
+    have heq : ∀ x y, (compareOfLessAndEq x y).isLE = true ↔ x ≤ y :=
+      fun x y => isLE_compareOfLessAndEq Nat.le_antisymm Nat.not_le Nat.le_total
+    simp [heq]; grind
+
+instance : Std.LawfulEqOrd Pos where
+  eq_of_compare {a b} := by
+    simp only [Ord.compare, Pos.compare, compare]
+    rw [compareOfLessAndEq_eq_eq]
+    · intro h
+      apply Pos_toNat_inj h
+    · apply Nat.le_refl
+    · grind
+  compare_self {_} := by
+    simp [Ord.compare, Pos.compare, compareOfLessAndEq_eq_eq]
 
 end Pos
