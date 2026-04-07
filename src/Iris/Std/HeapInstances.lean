@@ -469,6 +469,26 @@ instance : LawfulPartialMap (ExtTreeMap K · compare) K where
   get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
   get?_merge := getElem?_mergeWith'
 
+instance : FiniteMap (ExtTreeMap K · compare) K where
+  toList t := t.toList
+
+instance : LawfulFiniteMap (ExtTreeMap K · compare) K where
+  toList_empty := rfl
+  toList_noDupKeys := by
+    intro V m
+    have h : List.Pairwise (fun a b => ¬compare a b = eq) (m.toList.map (·.1)) := by
+      refine List.pairwise_map.mpr ?_
+      refine (distinct_keys_toList (t := m)).imp ?_
+      intro _ _ hab
+      exact hab
+    refine h.imp ?_
+    intro a b hab
+    rw [compare_eq_iff_eq] at hab
+    exact hab
+  toList_get := by
+    intro V m k v
+    exact m.mem_toList_iff_getElem?_eq_some
+
 end HeapInstance
 
 end Std.ExtTreeMap
