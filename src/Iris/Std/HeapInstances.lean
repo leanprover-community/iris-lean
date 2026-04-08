@@ -474,25 +474,14 @@ instance : FiniteMap (ExtTreeMap K · compare) K where
 
 instance : LawfulFiniteMap (ExtTreeMap K · compare) K where
   toList_empty := rfl
-  toList_noDupKeys := by
-    intro V m
-    have h : List.Pairwise (fun a b => ¬compare a b = eq) (m.toList.map (·.1)) := by
-      refine List.pairwise_map.mpr ?_
-      refine (distinct_keys_toList (t := m)).imp ?_
-      intro _ _ hab
-      exact hab
-    refine h.imp ?_
-    intro a b hab
-    rw [compare_eq_iff_eq] at hab
-    exact hab
-  toList_get := by
-    intro V m k v
-    exact m.mem_toList_iff_getElem?_eq_some
+  toList_noDupKeys {V m} := by
+    suffices h : List.Pairwise (fun a b => ¬compare a b = eq) (m.toList.map (·.1)) by
+      refine h.imp (· <| LawfulEqOrd.compare_eq_iff_eq.mpr ·)
+    exact List.pairwise_map.mpr distinct_keys_toList
+  toList_get {_ m _ _} := m.mem_toList_iff_getElem?_eq_some
 
 instance : ExtensionalPartialMap (ExtTreeMap K · compare) K where
-  equiv_iff_eq {V m₁ m₂} := by
-    rw [ExtTreeMap.ext_getElem?_iff]
-    rfl
+  equiv_iff_eq {V m₁ m₂} := by rw [ExtTreeMap.ext_getElem?_iff]; rfl
 
 end HeapInstance
 

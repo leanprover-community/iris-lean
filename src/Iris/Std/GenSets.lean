@@ -1014,19 +1014,19 @@ theorem size_empty {X : S} : size X = 0 ↔ X = ∅ := by
     simp [List.length_nil]
 
 theorem fresh [InfiniteType A] (X : S) : ∃ a : A, a ∉ X := by
-  simp only [←mem_toList]
-  have ⟨n, hn⟩ : ∃ n, InfiniteType.enum n ∉ toList X := by
-    apply Classical.byContradiction
-    intro H; simp only [not_exists, Classical.not_not] at H
-    have hsub : List.map InfiniteType.enum (List.range ((toList X).length + 1)) ⊆ (toList X) := by
-      intro x hx; simp only [List.mem_map] at hx; obtain ⟨n, _, rfl⟩ := hx; exact H n
-    have hinj : (List.map (InfiniteType.enum (T := A)) (List.range ((toList X).length + 1))).Nodup :=
-      nodup_map_of_injective ⟨fun n m heq => InfiniteType.enum_inj n m heq⟩ List.nodup_range
-    have hlen : (List.map (InfiniteType.enum (T := A)) (List.range ((toList X).length + 1))).length > (toList X).length := by
-      simp only [List.length_map, List.length_range]; omega
-    have := List.Subperm.length_le (List.subperm_of_subset hinj hsub)
-    omega
-  exact ⟨InfiniteType.enum n, hn⟩
+  refine Classical.byContradiction fun Hcontra => ?_
+  simp only [not_exists, Classical.not_not] at Hcontra
+  let Nalloc := toList X |>.length
+  let L := List.range (Nalloc + 1)
+  have hnodup : L.map (InfiniteType.enum (T := A)) |>.Nodup :=
+    nodup_map_of_injective ⟨fun _ _ => InfiniteType.enum_inj _ _⟩ List.nodup_range
+  have hsub : L.map InfiniteType.enum ⊆ toList X := by
+    intro _ ha
+    obtain ⟨_, _, rfl⟩ := List.mem_map.mp ha
+    exact mem_toList.mpr (Hcontra _)
+  have H := List.subperm_of_subset hnodup hsub |>.length_le
+  simp only [List.length_map, Nalloc, L, List.length_range] at H
+  omega
 
 theorem set_choose (X : S) (h : size X ≠ 0) : ∃ x, x ∈ X := by
   unfold size at h
