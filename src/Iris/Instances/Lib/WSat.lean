@@ -82,47 +82,44 @@ instance (i : Pos) : Contractive (ownI (W := W) i) where
 instance (i : Pos) (P : IProp GF) : Persistent (ownI (W := W) i P) := by
   unfold ownI; infer_instance
 
--- Here
-
 end Definitions
 
 section ownE
 
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
-theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := by
-  unfold ownE; exact iOwn_unit (ε := UCMRA.unit)
+theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UCMRA.unit)
 
-theorem ownE_op (E1 E2 : CoPset) (Hdisj : E1 ## E2) :
-    ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
-  unfold ownE
-  simp only [show valid (E1 ∪ E2) = valid E1 • valid E2 from (disj_op_union Hdisj).symm]
-  exact iOwn_op
+theorem ownE_op {E1 E2} (Hdisj : E1 ## E2) : ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
+  refine .trans (.of_eq ?_) iOwn_op
+  rw [disj_op_union Hdisj]
+  rfl
 
-theorem ownE_disjoint (E1 E2 : CoPset) :
-    ownE E1 ∗ ownE E2 ⊢@{IProp GF} ⌜E1 ## E2⌝ := by
-  unfold ownE
+theorem ownE_disjoint {E1 E2} : ownE E1 ∗ ownE E2 ⊢@{IProp GF} ⌜E1 ## E2⌝ := by
   iintro ⟨H1, H2⟩
-  icases iOwn_op (E := W.enabled) $$ [H1 H2] with H;
+  icases iOwn_op (E := W.enabled) $$ [H1 H2] with H
+  · unfold ownE
     isplitl [H1] <;> iassumption
-  icases iOwn_cmraValid (E := W.enabled) $$ H with H
+  ihave H := iOwn_cmraValid (E := W.enabled) $$ H
   icases internalCmraValid_discrete (PROP := IProp GF) (A := DisjointLeibnizSet CoPset) $$ H with %H
   ipure_intro
   exact valid_op_iff_disj.mp H
 
-theorem ownE_op' (E1 E2 : CoPset) :
-    ⌜E1 ## E2⌝ ∧ ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
+theorem ownE_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
   constructor
   · iintro ⟨%Hdisj, H⟩
-    iapply (ownE_op E1 E2 Hdisj).mp $$ H
+    iapply (ownE_op Hdisj).mp $$ H
   · iintro ⟨H1, H2⟩
-    ihave %Hdisj : ⌜E1 ## E2⌝ $$ [H1 H2]; iapply ownE_disjoint $$ [H1 H2]; isplitl [H1] <;> iassumption
+    ihave %Hdisj : ⌜E1 ## E2⌝ $$ [H1 H2]
+    · iapply ownE_disjoint $$ [H1 H2]
+      isplitl [H1] <;> iassumption
     isplit
     · ipure_intro; assumption
-    · iapply (ownE_op E1 E2 Hdisj).mpr $$ [H1 H2]; isplitl [H1] <;> iassumption
+    · iapply (ownE_op Hdisj).mpr $$ [H1 H2]
+      isplitl [H1] <;> iassumption
 
-theorem ownE_singleton_twice (i : Pos) : ownE {i} ∗ ownE {i} ⊢@{IProp GF} False :=
-  (ownE_disjoint {i} {i}).trans (pure_mono fun h => h i (by simp [mem_singleton]))
+theorem ownE_singleton_singleton {i : Pos} : ownE {i} ∗ ownE {i} ⊢@{IProp GF} False :=
+  ownE_disjoint.trans (pure_mono fun h => h i (by simp [mem_singleton]))
 
 end ownE
 
@@ -130,42 +127,43 @@ section ownD
 
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
-theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := by
-  unfold ownD; exact iOwn_unit (ε := UCMRA.unit)
+theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UCMRA.unit)
 
-theorem ownD_op (E1 E2 : PosSet) (Hdisj : E1 ## E2) :
-    ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
-  unfold ownD
-  simp only [show valid (E1 ∪ E2) = valid E1 • valid E2 from (disj_op_union Hdisj).symm]
-  exact iOwn_op
+theorem ownD_op {E1 E2} (Hdisj : E1 ## E2) : ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
+  refine .trans (.of_eq ?_) iOwn_op
+  rw [disj_op_union Hdisj]
+  rfl
 
 theorem ownD_disjoint (E1 E2 : PosSet) :
     ownD E1 ∗ ownD E2 ⊢@{IProp GF}  ⌜E1 ## E2⌝ := by
   unfold ownD
   iintro ⟨H1, H2⟩
-  icases iOwn_op (E := W.disabled) $$ [H1 H2] with H;
-    isplitl [H1] <;> iassumption
-  icases iOwn_cmraValid (E := W.disabled) $$ H with H
+  icases iOwn_op (E := W.disabled) $$ [H1 H2] with H
+  · isplitl [H1] <;> iassumption
+  ihave H := iOwn_cmraValid (E := W.disabled) $$ H
   icases internalCmraValid_discrete (PROP := IProp GF) (A := DisjointLeibnizSet PosSet) $$ H with %H
   ipure_intro
   exact valid_op_iff_disj.mp H
 
-theorem ownD_op' (E1 E2 : PosSet) :
-    ⌜E1 ## E2⌝ ∧ ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
+theorem ownD_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
   constructor
   · iintro ⟨%Hdisj, H⟩
-    iapply (ownD_op E1 E2 Hdisj).mp $$ H
+    iapply (ownD_op Hdisj).mp $$ H
   · iintro ⟨H1, H2⟩
-    ihave %Hdisj : ⌜E1 ## E2⌝ $$ [H1 H2]; iapply ownD_disjoint $$ [H1 H2]; isplitl [H1] <;> iassumption
+    ihave %Hdisj : ⌜E1 ## E2⌝ $$ [H1 H2]
+    · iapply ownD_disjoint $$ [H1 H2]
+      isplitl [H1] <;> iassumption
     isplit
     · ipure_intro; assumption
-    · iapply (ownD_op E1 E2 Hdisj).mpr $$ [H1 H2]; isplitl [H1] <;> iassumption
+    · iapply (ownD_op Hdisj).mpr $$ [H1 H2]
+      isplitl [H1] <;> iassumption
 
-theorem ownD_singleton_twice (i : Pos) :
-    ownD {i} ∗ ownD {i} ⊢@{IProp GF} False :=
+theorem ownD_singleton_twice {i : Pos} : ownD {i} ∗ ownD {i} ⊢@{IProp GF} False :=
     (ownD_disjoint {i} {i}).trans (pure_mono fun h => h i (by simp))
 
 end ownD
+
+-- Here
 
 section operations
 
@@ -200,7 +198,7 @@ theorem ownI_open (i : Pos) (P : IProp GF) :
       · isplitl [HProp]
         · inext; iapply internalEq.rewrite (Ψ := fun x => x) (hΨ := OFE.id_ne) $$ H HProp
         · iassumption
-    · iexfalso; iapply ownE_singleton_twice i $$ [HE HE']; isplitl [HE] <;> iassumption
+    · iexfalso; iapply ownE_singleton_singleton $$ [HE HE']; isplitl [HE] <;> iassumption
 
 theorem ownI_close (i : Pos) (P : IProp GF) :
     wsat ∗ ownI i P ∗ ▷ P ∗ ownD {i} ⊢ wsat ∗ ownE {i} := by
@@ -208,7 +206,7 @@ theorem ownI_close (i : Pos) (P : IProp GF) :
   iintro ⟨⟨%I, Hown, Hmap⟩, #HI, HProp, HE⟩
   icases invariant_lookup I i P $$ [Hown HI] with #⟨%Q, %HEQ, #H⟩; isplit <;> iassumption
   icases bigSepM_delete (PROP := IProp GF) HEQ $$ Hmap with ⟨⟨⟨HProp, HD⟩ | HE'⟩, Hacc⟩
-  · iexfalso; iapply ownD_singleton_twice i $$ [HD HE]; isplitl [HE] <;> iassumption
+  · iexfalso; iapply ownD_singleton_twice $$ [HD HE]; isplitl [HE] <;> iassumption
   · isplitr [HE']
     · iexists I
       isplitl [Hown]; iassumption
