@@ -307,6 +307,9 @@ theorem Agree.toAgree_included {a b : α} : toAgree a ≼ toAgree b ↔ a ≡ b 
 theorem Agree.toAgree_included_L [OFE.Leibniz α] {a b : α} :
     toAgree a ≼ toAgree b ↔ a = b := by simp
 
+instance (a : α) : CMRA.CoreId (toAgree a) where
+  core_id := by simp [CMRA.pcore]
+
 instance {x : Agree α} : CMRA.Cancelable x where
   cancelableN {n y z} hval heq := by
     obtain ⟨a, ha⟩ := Agree.toAgree_uninjN (CMRA.validN_op_left hval)

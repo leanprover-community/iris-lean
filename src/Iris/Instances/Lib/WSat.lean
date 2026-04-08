@@ -14,192 +14,168 @@ public import Iris.Std.HeapInstances
 public import Iris.Instances.IProp
 
 @[expose] public section
+
 /-! ## World satisfaction
 This file defines the world satisfaction (wsat) predicate for Iris.
 -/
 
-namespace Iris.BaseLogic.WSat
+namespace Iris
 
-local instance [UFraction F] : CMRA.CoreId (DFrac.discard (F := F)) where
-  core_id := by simp [CMRA.pcore, DFrac.pcore]
-local instance [OFE α] (a : α) : CMRA.CoreId (toAgree a) where
-  core_id := by simp [CMRA.pcore]
+open Iris Std OFE COFE BI HeapView PartialMap DisjointLeibnizSet DFrac LawfulPartialMap BigSepM
+  HeapView
 
-open Iris Std OFE COFE BI HeapView
-
-section wsatGS
+section WsatGS
 
 abbrev PosSet := Std.ExtTreeSet Pos compare
-abbrev InvMap (x : Type) := Std.ExtTreeMap Pos x compare
 
-variable (GF : BundledGFunctors)
+abbrev InvMap (x : Type _) := Std.ExtTreeMap Pos x compare
 
-class wsatGpreS where
-  inv : ElemG GF (HeapViewURF (F := PNat) (H := InvMap) (AgreeRF (LaterOF (constOF (IProp GF)))))
+abbrev InvMapF (GF : BundledGFunctors) :=
+  HeapViewURF (F := PNat) (H := InvMap) (AgreeRF (LaterOF (constOF (IProp GF))))
+
+/-- Wsat inclusion typeclass (`GF` contains the necessary functors for wsat) -/
+class WsatGpreS (GF : BundledGFunctors) where
+  inv : ElemG GF (InvMapF GF)
   enabled : ElemG GF (constOF (DisjointLeibnizSet CoPset))
   disabled : ElemG GF (constOF (DisjointLeibnizSet PosSet))
 
-class wsatGS extends wsatGpreS GF where
+attribute [reducible, instance] WsatGpreS.inv
+attribute [reducible, instance] WsatGpreS.enabled
+attribute [reducible, instance] WsatGpreS.disabled
+
+/-- Wsat allocated class (Names in a global IProp resource for the Wsat resources). -/
+class WsatGS (GF : BundledGFunctors) extends WsatGpreS GF where
   invariant_name : GName
   enabled_name : GName
   disabled_name : GName
 
-end wsatGS
+end WsatGS
 
-section definitions
+section Definitions
 
-variable {GF : BundledGFunctors} (W : wsatGS GF)
-
-open Iris PartialMap HeapView DisjointLeibnizSet DFrac
+variable {GF : BundledGFunctors} [W : WsatGS GF]
 
 abbrev invariant_unfold (P : IProp GF) : Later (IProp GF) := Later.next P
 
 def ownI (i : Pos) (P : IProp GF) : IProp GF :=
-  haveI E : ElemG GF (HeapViewURF (AgreeRF (LaterOF (constOF (IProp GF))))) := W.inv
-  iOwn (E := E) W.invariant_name (Frag i discard (toAgree (invariant_unfold P)))
+  iOwn (E := W.inv) W.invariant_name (Frag i discard (toAgree (invariant_unfold P)))
 
 def ownE (S : CoPset) : IProp GF :=
-  haveI E : ElemG GF (constOF (DisjointLeibnizSet CoPset)) := W.enabled
-  iOwn (E := E) W.enabled_name (valid S)
+  iOwn (E := W.enabled) W.enabled_name (valid S)
 
 def ownD (S : PosSet) : IProp GF :=
-  haveI E : ElemG GF (constOF (DisjointLeibnizSet PosSet)) := W.disabled
-  iOwn (E := E) W.disabled_name (valid S)
+  iOwn (E := W.disabled) W.disabled_name (valid S)
 
-def wsat : IProp GF :=
-haveI E : ElemG GF (HeapViewURF (AgreeRF (LaterOF (constOF (IProp GF))))) := W.inv
-iprop(
+def wsat : IProp GF := iprop(
   ∃ I : InvMap (IProp GF),
-    iOwn (E := E)
-      W.invariant_name
-      (Auth (own 1) (map toAgree (map invariant_unfold I)))
-    ∗ [∗map] i ↦ Q ∈ I, (▷ Q ∗ ownD W {i}) ∨ ownE W {i}
-)
+    iOwn (E := W.inv) W.invariant_name (Auth (own 1) (map toAgree (map invariant_unfold I))) ∗
+    [∗map] i ↦ Q ∈ I, (▷ Q ∗ ownD {i}) ∨ ownE {i})
 
-end definitions
-
-section instances
-
-variable {GF : BundledGFunctors} (W : wsatGS GF)
-
-instance : Contractive (invariant_unfold (GF := GF)) := by
-  apply NextContractive
-
-instance (i : Pos) : Contractive (ownI W i) where
-  distLater_dist {n P Q} h := by
-    unfold ownI invariant_unfold
-    apply NonExpansive.ne; apply NonExpansive.ne; apply NonExpansive.ne
+instance (i : Pos) : Contractive (ownI (W := W) i) where
+  distLater_dist h := by
+    unfold ownI
+    refine NonExpansive.ne ?_
+    refine NonExpansive.ne ?_
+    refine NonExpansive.ne ?_
     exact Contractive.distLater_dist h
 
-instance (i : Pos) (P : IProp GF) : Persistent (ownI W i P) := by unfold ownI; infer_instance
+instance (i : Pos) (P : IProp GF) : Persistent (ownI (W := W) i P) := by
+  unfold ownI; infer_instance
 
-end instances
+-- Here
 
-section lemmas_ownE
+end Definitions
 
-variable {GF : BundledGFunctors} (W : wsatGS GF)
+section ownE
 
-open BI DisjointLeibnizSet Std
+variable {GF : BundledGFunctors} [W : WsatGS GF]
 
-theorem ownE_empty : ⊢ |==> ownE W ∅ := by
-  letI E : ElemG GF (constOF (DisjointLeibnizSet CoPset)) := W.enabled
+theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := by
   unfold ownE; exact iOwn_unit (ε := UCMRA.unit)
 
 theorem ownE_op (E1 E2 : CoPset) (Hdisj : E1 ## E2) :
-    ownE W (E1 ∪ E2) ⊣⊢ ownE W E1 ∗ ownE W E2 := by
-  letI : ElemG GF (constOF (DisjointLeibnizSet CoPset)) := W.enabled
+    ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
   unfold ownE
   simp only [show valid (E1 ∪ E2) = valid E1 • valid E2 from (disj_op_union Hdisj).symm]
   exact iOwn_op
 
 theorem ownE_disjoint (E1 E2 : CoPset) :
-    ownE W E1 ∗ ownE W E2 ⊢ ⌜E1 ## E2⌝ := by
-  letI E : ElemG GF (constOF (DisjointLeibnizSet CoPset)) := W.enabled
+    ownE E1 ∗ ownE E2 ⊢@{IProp GF} ⌜E1 ## E2⌝ := by
   unfold ownE
   iintro ⟨H1, H2⟩
-  icases iOwn_op (E := E) $$ [H1 H2] with H;
+  icases iOwn_op (E := W.enabled) $$ [H1 H2] with H;
     isplitl [H1] <;> iassumption
-  icases iOwn_cmraValid (E := E) $$ H with H
+  icases iOwn_cmraValid (E := W.enabled) $$ H with H
   icases internalCmraValid_discrete (PROP := IProp GF) (A := DisjointLeibnizSet CoPset) $$ H with %H
   ipure_intro
   exact valid_op_iff_disj.mp H
 
 theorem ownE_op' (E1 E2 : CoPset) :
-    ⌜E1 ## E2⌝ ∧ ownE W (E1 ∪ E2) ⊣⊢ ownE W E1 ∗ ownE W E2 := by
+    ⌜E1 ## E2⌝ ∧ ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
   constructor
   · iintro ⟨%Hdisj, H⟩
-    iapply (ownE_op W E1 E2 Hdisj).mp $$ H
+    iapply (ownE_op E1 E2 Hdisj).mp $$ H
   · iintro ⟨H1, H2⟩
     ihave %Hdisj : ⌜E1 ## E2⌝ $$ [H1 H2]; iapply ownE_disjoint $$ [H1 H2]; isplitl [H1] <;> iassumption
     isplit
     · ipure_intro; assumption
-    · iapply (ownE_op W E1 E2 Hdisj).mpr $$ [H1 H2]; isplitl [H1] <;> iassumption
+    · iapply (ownE_op E1 E2 Hdisj).mpr $$ [H1 H2]; isplitl [H1] <;> iassumption
 
-theorem ownE_singleton_twice (i : Pos) :
-    ownE W {i} ∗ ownE W {i} ⊢ False :=
-    (ownE_disjoint W {i} {i}).trans (pure_mono fun h => h i (by simp [mem_singleton]))
+theorem ownE_singleton_twice (i : Pos) : ownE {i} ∗ ownE {i} ⊢@{IProp GF} False :=
+  (ownE_disjoint {i} {i}).trans (pure_mono fun h => h i (by simp [mem_singleton]))
 
-end lemmas_ownE
+end ownE
 
-section lemmas_ownD
+section ownD
 
-variable {GF : BundledGFunctors} (W : wsatGS GF)
+variable {GF : BundledGFunctors} [W : WsatGS GF]
 
-open BI DisjointLeibnizSet Std
-
-theorem ownD_empty : ⊢ |==> ownD W ∅ := by
-  let E : ElemG GF (constOF (DisjointLeibnizSet PosSet)) := W.disabled
+theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := by
   unfold ownD; exact iOwn_unit (ε := UCMRA.unit)
 
 theorem ownD_op (E1 E2 : PosSet) (Hdisj : E1 ## E2) :
-    ownD W (E1 ∪ E2) ⊣⊢ ownD W E1 ∗ ownD W E2 := by
-  letI : ElemG GF (constOF (DisjointLeibnizSet PosSet)) := W.disabled
+    ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
   unfold ownD
   simp only [show valid (E1 ∪ E2) = valid E1 • valid E2 from (disj_op_union Hdisj).symm]
   exact iOwn_op
 
 theorem ownD_disjoint (E1 E2 : PosSet) :
-    ownD W E1 ∗ ownD W E2 ⊢ ⌜E1 ## E2⌝ := by
-  letI E : ElemG GF (constOF (DisjointLeibnizSet PosSet)) := W.disabled
+    ownD E1 ∗ ownD E2 ⊢@{IProp GF}  ⌜E1 ## E2⌝ := by
   unfold ownD
   iintro ⟨H1, H2⟩
-  icases iOwn_op (E := E) $$ [H1 H2] with H;
+  icases iOwn_op (E := W.disabled) $$ [H1 H2] with H;
     isplitl [H1] <;> iassumption
-  icases iOwn_cmraValid (E := E) $$ H with H
+  icases iOwn_cmraValid (E := W.disabled) $$ H with H
   icases internalCmraValid_discrete (PROP := IProp GF) (A := DisjointLeibnizSet PosSet) $$ H with %H
   ipure_intro
   exact valid_op_iff_disj.mp H
 
 theorem ownD_op' (E1 E2 : PosSet) :
-    ⌜E1 ## E2⌝ ∧ ownD W (E1 ∪ E2) ⊣⊢ ownD W E1 ∗ ownD W E2 := by
+    ⌜E1 ## E2⌝ ∧ ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
   constructor
   · iintro ⟨%Hdisj, H⟩
-    iapply (ownD_op W E1 E2 Hdisj).mp $$ H
+    iapply (ownD_op E1 E2 Hdisj).mp $$ H
   · iintro ⟨H1, H2⟩
     ihave %Hdisj : ⌜E1 ## E2⌝ $$ [H1 H2]; iapply ownD_disjoint $$ [H1 H2]; isplitl [H1] <;> iassumption
     isplit
     · ipure_intro; assumption
-    · iapply (ownD_op W E1 E2 Hdisj).mpr $$ [H1 H2]; isplitl [H1] <;> iassumption
+    · iapply (ownD_op E1 E2 Hdisj).mpr $$ [H1 H2]; isplitl [H1] <;> iassumption
 
 theorem ownD_singleton_twice (i : Pos) :
-    ownD W {i} ∗ ownD W {i} ⊢ False :=
-    (ownD_disjoint W {i} {i}).trans (pure_mono fun h => h i (by simp))
+    ownD {i} ∗ ownD {i} ⊢@{IProp GF} False :=
+    (ownD_disjoint {i} {i}).trans (pure_mono fun h => h i (by simp))
 
-end lemmas_ownD
+end ownD
 
-section lemmas_operations
+section operations
 
-variable {GF : BundledGFunctors} (W : wsatGS GF)
-
-open BI Iris PartialMap LawfulPartialMap BigSepM DFrac HeapView
+variable {GF : BundledGFunctors} [W : WsatGS GF]
 
 theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
-  haveI E : ElemG GF (HeapViewURF (AgreeRF (LaterOF (constOF (IProp GF))))) := W.inv
-  iOwn (E := E) W.invariant_name (Auth (own 1) (map toAgree (map invariant_unfold I)))
-  ∗ ownI W i P ⊢ ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ internalEq Q P := by
-  letI E : ElemG GF (HeapViewURF (AgreeRF (LaterOF (constOF (IProp GF))))) := W.inv
+  iOwn (E := W.inv) W.invariant_name (Auth (own 1) (map toAgree (map invariant_unfold I)))
+  ∗ ownI i P ⊢@{IProp GF}  ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ internalEq Q P := by
   unfold ownI
-  iintro H; icases iOwn_cmraValid_op (E := E) $$ H with H
+  iintro H; icases iOwn_cmraValid_op (E := W.inv) $$ H with H
   icases (auth_op_frag_validI_total (F := PNat) (PROP := (IProp GF)) (own 1)
           (map toAgree (map invariant_unfold I))) $$ H
     with ⟨%v', %dp', %Hdp, %Hlookup, H1, H2⟩
@@ -210,11 +186,10 @@ theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
   iapply later_equivI_mp; iapply internalEq.symm; iapply toAgree_includedI $$ H2
 
 theorem ownI_open (i : Pos) (P : IProp GF) :
-    wsat W ∗ ownI W i P ∗ ownE W {i} ⊢
-    wsat W ∗ ▷ P ∗ ownD W {i} := by
+    wsat ∗ ownI i P ∗ ownE {i} ⊢ wsat ∗ ▷ P ∗ ownD {i} := by
     unfold wsat
     iintro ⟨⟨%I, Hown, Hmap⟩, #HI, HE⟩
-    icases invariant_lookup W I i P $$ [Hown HI] with #⟨%Q, %HEQ, #H⟩; isplit <;> iassumption
+    icases invariant_lookup I i P $$ [Hown HI] with #⟨%Q, %HEQ, #H⟩; isplit <;> iassumption
     icases bigSepM_delete (PROP := IProp GF) HEQ $$ Hmap with ⟨⟨⟨HProp, HD⟩ | HE'⟩, Hacc⟩
     · isplitr [HProp HD]
       · iexists I
@@ -225,16 +200,15 @@ theorem ownI_open (i : Pos) (P : IProp GF) :
       · isplitl [HProp]
         · inext; iapply internalEq.rewrite (Ψ := fun x => x) (hΨ := OFE.id_ne) $$ H HProp
         · iassumption
-    · iexfalso; iapply ownE_singleton_twice W i $$ [HE HE']; isplitl [HE] <;> iassumption
+    · iexfalso; iapply ownE_singleton_twice i $$ [HE HE']; isplitl [HE] <;> iassumption
 
 theorem ownI_close (i : Pos) (P : IProp GF) :
-    wsat W ∗ ownI W i P ∗ ▷ P ∗ ownD W {i} ⊢
-    wsat W ∗ ownE W {i} := by
+    wsat ∗ ownI i P ∗ ▷ P ∗ ownD {i} ⊢ wsat ∗ ownE {i} := by
   unfold wsat
   iintro ⟨⟨%I, Hown, Hmap⟩, #HI, HProp, HE⟩
-  icases invariant_lookup W I i P $$ [Hown HI] with #⟨%Q, %HEQ, #H⟩; isplit <;> iassumption
+  icases invariant_lookup I i P $$ [Hown HI] with #⟨%Q, %HEQ, #H⟩; isplit <;> iassumption
   icases bigSepM_delete (PROP := IProp GF) HEQ $$ Hmap with ⟨⟨⟨HProp, HD⟩ | HE'⟩, Hacc⟩
-  · iexfalso; iapply ownD_singleton_twice W i $$ [HD HE]; isplitl [HE] <;> iassumption
+  · iexfalso; iapply ownD_singleton_twice i $$ [HD HE]; isplitl [HE] <;> iassumption
   · isplitr [HE']
     · iexists I
       isplitl [Hown]; iassumption
@@ -247,17 +221,17 @@ theorem ownI_close (i : Pos) (P : IProp GF) :
       iassumption
     · iapply HE'
 
-end lemmas_operations
+end operations
 
-section lemmas_allocation
+section allocation
 
-variable {GF : BundledGFunctors} (W : wsatGS GF)
+variable {GF : BundledGFunctors}
 
 open BI HeapView BigSepM Std.PartialMap DisjointLeibnizSet LawfulPartialMap FiniteMap LawfulFiniteMap
 
-theorem ownI_alloc (φ : Pos → Prop) (P : IProp GF)
+theorem ownI_alloc [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
     (Hfresh : ∀ E : PosSet, ∃ i, i ∉ E ∧ φ i) :
-    ⊢ wsat W ∗ ▷ P ==∗ ∃ i, ⌜φ i⌝ ∗ wsat W ∗ ownI W i P := by
+    ⊢ wsat ∗ ▷ P ==∗ ∃ i, ⌜φ i⌝ ∗ wsat ∗ ownI i P := by
   letI elem1 : ElemG GF (HeapViewURF (AgreeRF (LaterOF (constOF (IProp GF))))) := W.inv
   letI elem2 : ElemG GF (constOF (DisjointLeibnizSet CoPset)) := W.enabled
   letI elem3 : ElemG GF (constOF (DisjointLeibnizSet PosSet)) := W.disabled
@@ -298,10 +272,9 @@ theorem ownI_alloc (φ : Pos → Prop) (P : IProp GF)
           · iexact Hmap
       · iexact Hpt
 
-theorem ownI_alloc_open (φ : Pos → Prop) (P : IProp GF)
+theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
   (Hfresh : ∀ E : PosSet, ∃ i, i ∉ E ∧ φ i) :
-  ⊢ wsat W ==∗ ∃ i, ⌜φ i⌝ ∗ (ownE W {i} -∗ wsat W)
-    ∗ ownI W i P ∗ ownD W {i} := by
+  ⊢ wsat ==∗ ∃ i, ⌜φ i⌝ ∗ (ownE {i} -∗ wsat) ∗ ownI i P ∗ ownD {i} := by
   letI elem1 : ElemG GF (HeapViewURF (AgreeRF (LaterOF (constOF (IProp GF))))) := W.inv
   letI elem2 : ElemG GF (constOF (DisjointLeibnizSet CoPset)) := W.enabled
   letI elem3 : ElemG GF (constOF (DisjointLeibnizSet PosSet)) := W.disabled
@@ -343,8 +316,8 @@ theorem ownI_alloc_open (φ : Pos → Prop) (P : IProp GF)
           · iexact Hmap
       · unfold ownI; rw [HEQ]; isplit <;> iassumption
 
-theorem wsat_alloc [WP : wsatGpreS GF] :
-    ⊢ |==> ∃ (W : wsatGS GF), wsat W ∗ ownE W CoPset.full := by
+theorem wsat_alloc [WP : WsatGpreS GF] :
+    ⊢ |==> ∃ (W : WsatGS GF), wsat (W := W) ∗ ownE CoPset.full := by
   haveI elem1 : ElemG GF (HeapViewURF (AgreeRF (LaterOF (constOF (IProp GF))))) := WP.inv
   haveI elem2 : ElemG GF (constOF (DisjointLeibnizSet CoPset)) := WP.enabled
   haveI elem3 : ElemG GF (constOF (DisjointLeibnizSet PosSet)) := WP.disabled
@@ -352,7 +325,7 @@ theorem wsat_alloc [WP : wsatGpreS GF] :
   imod (iOwn_alloc (E := elem2) (valid CoPset.full)) with ⟨%γe, He⟩; exact ⟨⟩
   imod (iOwn_alloc (E := elem3) (valid ∅)) with ⟨%γd, Hd⟩; exact ⟨⟩
   imodintro
-  let W : wsatGS GF := { inv := elem1, enabled := elem2, disabled := elem3,
+  let W : WsatGS GF := { inv := elem1, enabled := elem2, disabled := elem3,
                          invariant_name := γ, enabled_name := γe, disabled_name := γd }
   iexists W
   unfold wsat
@@ -367,6 +340,6 @@ theorem wsat_alloc [WP : wsatGpreS GF] :
     · iapply bigSepM_empty; simp
   · unfold ownE; iexact He
 
-end lemmas_allocation
+end allocation
 
-end Iris.BaseLogic.WSat
+end Iris
