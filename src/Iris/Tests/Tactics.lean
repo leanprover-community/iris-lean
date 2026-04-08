@@ -512,7 +512,7 @@ example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) -∗ Q := by
 /-- Tests `iapply` with multiple intuitionistic hypotheses and subgoals -/
 example [BI PROP] (P Q R : PROP) : ⊢ □ P -∗ Q -∗ □ (P -∗ Q -∗ □ R) -∗ R := by
   iintro #HP HQ #H
-  iapply H $$ [], [HQ] as Q
+  iapply H $$ [] [HQ] as Q
   case Q => iexact HQ
   iexact HP
 
