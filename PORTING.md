@@ -237,8 +237,11 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `sbi_unfold.v`
 - [ ] `telescopes.v`
 - [ ] `updates.v`
-  - [x] FUpd class
-  - [ ] Big op lemmas
+  - [x] Bupd laws 
+  - [x] Fupd basic laws 
+  - [ ] Fupd mask change laws
+  - [ ] Fupd step derived rules 
+  - [ ] Fupd plainly general laws
 - [ ] `weakestpre.v`
 - [ ] `lib/atomic.v`
 - [ ] `lib/core.v`
@@ -261,6 +264,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] instances for big ops
   - [ ] MaybeCombineSepAs instances
   - [ ] CombineSepGives instances
+  - [x] FromModal instances
   - [x] ElimModal instances
   - [ ] AddModal instances
   - [ ] ElimInv instances
@@ -294,11 +298,11 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IntoLaterN
 - [ ] `class_instances_updates.v` (InstancesUpdates.lean)
   - [x] Basic instances for bupd
-  - [ ] Basic instances for fupd
+  - [x] Basic instances for fupd
   - [x] FromModal bupd
-  - [ ] FromModal fupd
+  - [x] FromModal fupd
   - [x] ElimModal bupd
-  - [ ] ElimModal fupd
+  - [x] ElimModal fupd
   - [ ] AddModal bupd
   - [ ] AddModal fupd
   - [ ] ElimAcc bupd
@@ -434,6 +438,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IClearFrame
 - [ ] `modalities.v`
 - [ ] `modality_instances.v`
+  - [ ] modality_embed 
+  - [x] others
 - [ ] `monpred.v`
 - [x] `proofmode.v` (ProofMode.lean)
 - [-] `reduction.v` (not necessary in Lean)
