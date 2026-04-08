@@ -27,7 +27,10 @@ variable [Std.TransCmp cmp] [Std.LawfulEqCmp cmp]
 
 -- Concrete set implementation
 def SetImpl α cmp := Std.ExtTreeSet α cmp
+
 instance : LawfulSet (SetImpl α cmp) α := inferInstanceAs (LawfulSet (Std.ExtTreeSet α cmp) α)
+
+-- @Sebastian here is the inferInstanceAs failure you considered might be a bug
 instance : DecidableDisj (SetImpl α cmp) := inferInstanceAs (DecidableDisj (Std.ExtTreeSet α cmp))
 
 @[simp]
