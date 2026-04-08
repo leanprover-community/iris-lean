@@ -3,7 +3,6 @@ Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
 This file defines the world satisfaction (wsat) predicate for Iris.
-It ports the invariant system from iris-coq's base_logic/lib/wsat.v.
 -/
 module
 
@@ -26,6 +25,18 @@ section wsatGS
 
 abbrev PosSet := Std.ExtTreeSet Pos compare
 abbrev InvMap (x : Type) := Std.ExtTreeMap Pos x compare
+
+-- TODO: move
+private def dom (m : InvMap x) : PosSet :=
+  LawfulSet.ofList (FiniteMap.mapFold (fun k _ acc => k :: acc) [] m)
+
+private theorem mem_dom {m : InvMap x} :
+  k ∈ dom m ↔ (get? m k).isSome := by
+  simp only [dom]
+  rw [←LawfulSet.mem_ofList]
+  simp only [FiniteMap.mapFold, List.foldl_flip_cons_eq_append, List.append_nil, List.mem_reverse,
+    List.mem_map, Prod.exists, exists_and_right, exists_eq_right, Option.isSome_iff_exists]
+  simp [←LawfulFiniteMap.toList_get]; rfl
 
 variable (GF : BundledGFunctors)
 
@@ -267,32 +278,103 @@ section lemmas_allocation
 
 variable {GF : BundledGFunctors} (W : wsatGS GF)
 
-open BI HeapView BigSepM Std.PartialMap DisjointLeibnizSet DFrac
+open BI HeapView BigSepM Std.PartialMap DisjointLeibnizSet LawfulPartialMap
 
 -- TODO: wrong prec ==∗ and *
--- TODO: dom should be a set
 theorem ownI_alloc (φ : Pos → Prop) (P : IProp GF)
     (Hfresh : ∀ E : PosSet, ∃ i, i ∉ E ∧ φ i) :
     ⊢ (wsat W ∗ ▷ P) ==∗ ∃ i, ⌜φ i⌝ ∗ wsat W ∗ ownI W i P := by
-  unfold wsat
-  iintro ⟨⟨%I, Hown⟩, HProp⟩
-  sorry
+  letI elem1 : ElemG GF (HeapViewURF (AgreeRF (LaterOF (constOF (IProp GF))))) := W.inv
+  letI elem2 : ElemG GF (constOF (DisjointLeibnizSet CoPset)) := W.enabled
+  letI elem3 : ElemG GF (constOF (DisjointLeibnizSet PosSet)) := W.disabled
+  unfold wsat ownI ownE
+  iintro ⟨⟨%I, ⟨Hown, Hmap⟩⟩, HProp⟩
+  imod ownD_empty (W := W) with HD; unfold ownD
+  imod iOwn_updateP (E := elem3)
+    (alloc_empty_updateP_strong' (fun i => (get? I i = .none) ∧ φ i) _) $$ HD with HD
+  · intro Y
+    have ⟨j, H⟩ := Hfresh (Y ∪ dom I)
+    simp only [mem_union, not_or] at H
+    obtain ⟨⟨HnotY, HnotDom⟩, Hφ⟩ := H
+    simp only [mem_dom, Bool.not_eq_true, Option.isSome_eq_false_iff, Option.isNone_iff_eq_none] at HnotDom
+    exists j
+  · icases HD with ⟨%X, %H, HD⟩; obtain ⟨j, HEQ, ⟨Hget, Hφ⟩⟩ := H
+    imod iOwn_update (E := elem1)
+      (update_one_alloc (k := j) (dq := .discard)
+        (m1 := map toAgree (map invariant_unfold I)) (v1 := toAgree (invariant_unfold P))
+        _ DFrac.valid_discard  _) $$ Hown with Hown
+    · simpa [get?_map]
+    · simp [CMRA.Valid, Agree.valid, Agree.validN, toAgree]
+    · icases iOwn_op (E := elem1) $$ Hown with ⟨Hown, Hpt⟩
+      imodintro
+      iexists j
+      isplit; ipure_intro; assumption
+      isplitr [Hpt]
+      · iexists insert I j P
+        isplitl [Hown]
+        · rw [show Std.insert (map toAgree (map invariant_unfold I)) j (toAgree (invariant_unfold P))
+            = map toAgree (map invariant_unfold (Std.insert I j P)) by
+              apply ExtensionalPartialMap.equiv_iff_eq.mp
+              intro k; simp only [get?_insert, get?_map, Option.map_map]
+              by_cases h : j = k <;> simp [h]]
+          iexact Hown
+        · iapply bigSepM_insert (PROP := IProp GF) (x := P) Hget $$ [Hmap HProp HD]
+          isplitl [HProp HD]
+          · rw [HEQ]; ileft; isplitl [HProp] <;> iassumption
+          · iexact Hmap
+      · iexact Hpt
 
--- TODO: dom should be a set
 theorem ownI_alloc_open (φ : Pos → Prop) (P : IProp GF)
   (Hfresh : ∀ E : PosSet, ∃ i, i ∉ E ∧ φ i) :
   ⊢ wsat W ==∗ ∃ i, ⌜φ i⌝ ∗ (ownE W {i} -∗ wsat W)
     ∗ ownI W i P ∗ ownD W {i} := by
+  letI elem1 : ElemG GF (HeapViewURF (AgreeRF (LaterOF (constOF (IProp GF))))) := W.inv
+  letI elem2 : ElemG GF (constOF (DisjointLeibnizSet CoPset)) := W.enabled
+  letI elem3 : ElemG GF (constOF (DisjointLeibnizSet PosSet)) := W.disabled
   unfold wsat
   iintro ⟨%I, Hown, Hmap⟩
-  sorry
+  imod ownD_empty (W := W) with HD; unfold ownD
+  imod iOwn_updateP (E := elem3)
+    (alloc_empty_updateP_strong' (fun i => (get? I i = .none) ∧ φ i) _) $$ HD with HD
+  · intro Y
+    have ⟨j, H⟩ := Hfresh (Y ∪ dom I)
+    simp only [mem_union, not_or] at H
+    obtain ⟨⟨HnotY, HnotDom⟩, Hφ⟩ := H
+    simp only [mem_dom, Bool.not_eq_true, Option.isSome_eq_false_iff, Option.isNone_iff_eq_none] at HnotDom
+    exists j
+  · icases HD with ⟨%X, %H, HD⟩; obtain ⟨j, HEQ, ⟨Hget, Hφ⟩⟩ := H
+    imod iOwn_update (E := elem1)
+      (update_one_alloc (k := j) (dq := .discard)
+        (m1 := map toAgree (map invariant_unfold I)) (v1 := toAgree (invariant_unfold P))
+        _ DFrac.valid_discard  _) $$ Hown with Hown
+    · simpa [get?_map]
+    · simp [CMRA.Valid, Agree.valid, Agree.validN, toAgree]
+    · icases iOwn_op (E := elem1) $$ Hown with ⟨Hown, Hpt⟩
+      imodintro
+      iexists j
+      isplit; ipure_intro; assumption
+      isplitr [Hpt HD]
+      · iintro HE; unfold ownE
+        iexists insert I j P
+        isplitl [Hown]
+        · rw [show Std.insert (map toAgree (map invariant_unfold I)) j (toAgree (invariant_unfold P))
+            = map toAgree (map invariant_unfold (Std.insert I j P)) by
+              apply ExtensionalPartialMap.equiv_iff_eq.mp
+              intro k; simp only [get?_insert, get?_map, Option.map_map]
+              by_cases h : j = k <;> simp [h]]
+          iexact Hown
+        · iapply bigSepM_insert (PROP := IProp GF) (x := P) Hget $$ [Hmap HE]
+          isplitl [HE]
+          · iright; iassumption
+          · iexact Hmap
+      · unfold ownI; rw [HEQ]; isplit <;> iassumption
 
 theorem wsat_alloc [WP : wsatGpreS GF] :
     ⊢ |==> ∃ (W : wsatGS GF), wsat W ∗ ownE W CoPset.full := by
   haveI elem1 : ElemG GF (HeapViewURF (AgreeRF (LaterOF (constOF (IProp GF))))) := WP.inv
   haveI elem2 : ElemG GF (constOF (DisjointLeibnizSet CoPset)) := WP.enabled
   haveI elem3 : ElemG GF (constOF (DisjointLeibnizSet PosSet)) := WP.disabled
-  imod (iOwn_alloc (E := elem1) (Auth (own 1) ∅)) with ⟨%γ, H⟩; apply auth_one_valid
+  imod (iOwn_alloc (E := elem1) (Auth (.own 1) ∅)) with ⟨%γ, H⟩; apply auth_one_valid
   imod (iOwn_alloc (E := elem2) (valid CoPset.full)) with ⟨%γe, He⟩; exact ⟨⟩
   imod (iOwn_alloc (E := elem3) (valid ∅)) with ⟨%γd, Hd⟩; exact ⟨⟩
   imodintro
