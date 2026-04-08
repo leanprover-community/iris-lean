@@ -283,11 +283,30 @@ instance GenMapOF_instURFunctor (F : COFE.OFunctorPre) [RFunctor F] :
       rename_i v
       simp [OFE.Equiv, Option.Forall₂, URFunctor.map, Option.bind, h, optionCore,
             OFunctor.map, optionMap, Option.map] at Hcore
-      cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v) <;>
-        simp_all [RFunctor.toOFunctor]
+      revert Hcore
+      cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v) <;> simp_all
+      intro h; exact h
+
+      -- revert Hcore
+      -- split <;> split
+      -- · rename_i he _ _ _ h
+      --   simp [h] at he
+      -- · rename_i he _ _ _ h
+      --   sorry
+      -- sorry
+
+      -- cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v)
+      -- · simp
+      -- · simp_all [RFunctor.toOFunctor]
+      --   rw [h''] at Hcore
+      --   simp_all [h'']
+      --   sorry
+      -- · sorry
+      -- · sorry
+      -- -- simp_all [RFunctor.toOFunctor]
     op z x γ := by
       have Hop := @(URFunctor.map (F := OptionOF F) f g).op (z.car γ) (x.car γ)
-      simp only [Option.map, RFunctor.toOFunctor, op, optionOp, URFunctor.map] at Hop ⊢
+      simp only [Option.map, op, optionOp, URFunctor.map] at Hop ⊢
       cases h : z.car γ <;> cases h' : x.car γ <;> simp_all [OFunctor.map, optionMap]
   }
   map_ne.ne := OFunctor.map_ne.ne

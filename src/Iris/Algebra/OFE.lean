@@ -129,6 +129,7 @@ instance [OFE α] [OFE β] {x : β} : Contractive (fun _ : α => x) where
   distLater_dist := fun _ => Dist.rfl
 
 /-- The discrete OFE obtained from an equivalence relation `Equiv` -/
+@[reducible]
 def ofDiscrete (Equiv : α → α → Prop) (equiv_eqv : Equivalence Equiv) : OFE α where
   Equiv := Equiv
   Dist _ := Equiv
@@ -578,6 +579,7 @@ theorem compl_map [COFE α] [COFE β] (f : α -n> β) (c : Chain α) :
   Discrete.discrete_0 conv_compl
 
 /-- The discrete COFE obtained from an equivalence relation `Equiv` -/
+@[reducible]
 def ofDiscrete (Equiv : α → α → Prop) (equiv_eqv : Equivalence Equiv) : COFE α :=
   let _ := OFE.ofDiscrete Equiv equiv_eqv
   { compl := fun c => c 0
@@ -617,7 +619,7 @@ class OFunctorContractive (F : OFunctorPre) extends OFunctor F where
   map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-attribute [instance] OFunctor.cofe
+attribute [reducible, instance] OFunctor.cofe
 
 abbrev constOF (B : Type) : OFunctorPre := fun _ _ _ _ => B
 
