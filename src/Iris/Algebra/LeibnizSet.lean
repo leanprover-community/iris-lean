@@ -7,7 +7,9 @@ module
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
 public import Iris.Algebra.LocalUpdates
+public import Iris.Algebra.Updates
 public import Iris.Std.GenSets
+public import Iris.Std.Infinite
 
 @[expose] public section
 
@@ -164,6 +166,67 @@ theorem localUpdate_alloc_empty_of_disj (X Z : S) (Hdisj : Z ## X) :
     (valid (Z ∪ X), valid Z) := by
   rw [show valid Z ≡ valid (Z ∪ ∅) by simp [union_empty_right]]
   exact localUpdate_union_r_of_disj X ∅ Z Hdisj
+
+theorem alloc_updateP_strong (P : A → Prop) (Q : DisjointLeibnizSet S → Prop) (X : S) :
+    (∀ Y, X ⊆ Y → ∃ j, j ∉ Y ∧ P j) →
+    (∀ i, i ∉ X → P i → Q (valid ({i} ∪ X))) →
+    valid X ~~>: Q := by
+    intro Hfresh HQ
+    apply UpdateP.discrete_total.mpr
+    intro Z H
+    have ⟨Y, Heq, Hdisj⟩ := valid_inv_l H
+    have ⟨y, Hnotin, HP⟩ := (Hfresh (X ∪ Y) (fun i Hi => mem_union.mpr (.inl Hi)))
+    exists (valid ({y} ∪ X)); constructor
+    · apply HQ _ (fun Hc => Hnotin (mem_union.mpr (.inl Hc))) HP
+    · rw [Heq]; apply valid_op_iff_disj.mpr
+      intro i; simp only [mem_union, mem_singleton, not_and]
+      rintro (G | G)
+      · subst G; exact (fun Hc => Hnotin (mem_union.mpr (.inr Hc)))
+      · specialize (Hdisj i); grind
+
+theorem alloc_updateP_strong' (P : A → Prop) (X : S) :
+  (∀ Y, X ⊆ Y → ∃ j, j ∉ Y ∧ P j) →
+  valid X ~~>: fun Y => ∃ i, Y = valid ({i} ∪ X) ∧ i ∉ X ∧ P i := by
+  intro Hfresh; apply alloc_updateP_strong P _ X Hfresh; grind
+
+theorem alloc_empty_updateP_strong (P : A → Prop) (Q : DisjointLeibnizSet S → Prop) :
+  (∀ Y : S, ∃ j, j ∉ Y ∧ P j) →
+  (∀ i : A, P i → Q (valid {i})) → valid ∅ ~~>: Q := by
+  intro Hfresh Hvalid
+  apply alloc_updateP_strong P Q _ (fun Y _ => Hfresh Y)
+  intro i _ HP; rw [union_empty_right]; exact Hvalid i HP
+
+theorem alloc_empty_updateP_strong' (P : A → Prop) :
+  (∀ Y : S, ∃ j, j ∉ Y ∧ P j) →
+  valid (∅ : S) ~~>: fun Y => ∃ i, Y = valid {i} ∧ P i := by
+  intro Hfresh
+  apply alloc_updateP_strong _ _ _ (fun Y _ => Hfresh Y)
+  intro i _ HP; exists i; rw [union_empty_right]; simp [HP]
+
+end DisjointLeibnizSet
+
+namespace DisjointLeibnizSet
+
+variable {S : Type _} [LawfulFiniteSet S A] [DecidableDisj S] [InfiniteType A]
+
+theorem alloc_updateP (Q : DisjointLeibnizSet S → Prop) X :
+  (∀ i, i ∉ X → Q (valid ({i} ∪ X))) → valid X ~~>: Q := by
+  intro Hvalid
+  apply alloc_updateP_strong (fun _ => True) _ X _ (fun i Hnotin _ => Hvalid i Hnotin)
+  intro Y Hsub; simp only [and_true]
+  exact FiniteSet.fresh Y
+
+theorem alloc_updateP' (X : S) :
+  valid X ~~>: fun Y => ∃ i : A, Y = valid ({i} ∪ X) ∧ i ∉ X := by
+  apply alloc_updateP; grind
+
+theorem alloc_empty_updateP (Q : DisjointLeibnizSet S → Prop) :
+  (∀ i, Q (valid {i})) → valid ∅ ~~>: Q := by
+  intro Hvalid; apply alloc_updateP Q ∅; intro i _; rw [union_empty_right]; apply Hvalid i
+
+theorem alloc_empty_updateP' :
+  valid (∅ : S) ~~>: fun Y => ∃ i, Y = valid {i} := by
+  apply alloc_empty_updateP _ (fun i => ⟨i, rfl⟩)
 
 end DisjointLeibnizSet
 
