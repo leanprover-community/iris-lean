@@ -43,8 +43,6 @@
 | `∗`*pat*                        | Move the hypothesis to the spatial context and further destruct it using the pattern *pat*.                                                                                         |
 | `>`*pat*                        | Eliminate the modality at the top of the hypothesis and further destruct the result using the pattern *pat*.                                                                        |
 
-The supported shorthand patterns are `%` for pure hypotheses and `#` for intuitionistic ones. The older spellings `⌜name⌝`, `□pat`, and `*pat` are no longer supported.
-
 Example:
 ```lean
 -- the hypothesis:
