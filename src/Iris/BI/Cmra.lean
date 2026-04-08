@@ -110,7 +110,7 @@ def internalCmraIncluded (a b : A) : PROP := siPure (∃ c, internalEq b (a • 
 instance internalCmraIncluded_ne :
     NonExpansive₂ (internalCmraIncluded (PROP := PROP) (A := A)) where
   ne n _ _ hx _ _ hy := by
-    apply siPure_ne.ne
+    refine siPure_ne.ne ?_
     apply (exists_ne (fun a => NonExpansive₂.ne hy (op_commN.trans ((op_ne.ne hx).trans op_commN))))
 
 @[rocq_alias internal_included_intro]
@@ -146,18 +146,17 @@ theorem intuitionistically_internalCmraIncluded [BIAffine PROP] {a b : A} :
 theorem internalCmraIncluded_discrete {a b : A} [CMRA.Discrete A] :
     internalCmraIncluded a b ⊣⊢@{PROP} ⌜a ≼ b⌝ := by
   haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
-  constructor
-  · calc internalCmraIncluded a b
-      _ ⊢ <si_pure> (∃ c, internalEq b (a • c)) := siPure_internalCmraIncluded.mp
-      _ ⊢ <si_pure> (∃ c, ⌜b ≡ a • c⌝) := siPure_mono <| exists_mono fun _ => discrete_eq_mp
-      _ ⊢ <si_pure> ⌜∃ c, b ≡ a • c⌝ := siPure_mono pure_exists.mp
-      _ ⊢ ⌜∃ c, b ≡ a • c⌝ := siPure_pure.mp
-      _ ⊢ ⌜a ≼ b⌝ := pure_mono fun ⟨c, h⟩ => ⟨c, h⟩
-  · exact pure_elim' internalCmraIncluded_intro
+  refine ⟨?_, pure_elim' internalCmraIncluded_intro⟩
+  calc internalCmraIncluded a b
+    _ ⊢ <si_pure> (∃ c, internalEq b (a • c)) := siPure_internalCmraIncluded.mp
+    _ ⊢ <si_pure> (∃ c, ⌜b ≡ a • c⌝) := siPure_mono <| exists_mono fun _ => discrete_eq_mp
+    _ ⊢ <si_pure> ⌜∃ c, b ≡ a • c⌝ := siPure_mono pure_exists.mp
+    _ ⊢ ⌜∃ c, b ≡ a • c⌝ := siPure_pure.mp
+    _ ⊢ ⌜a ≼ b⌝ := pure_mono fun ⟨c, h⟩ => ⟨c, h⟩
 
 @[rocq_alias internal_included_refl]
 theorem internalCmraIncluded_refl {a : A} [IsTotal A] : ⊢@{PROP} internalCmraIncluded a a :=
-  internalCmraIncluded_intro Included.rfl
+  internalCmraIncluded_intro .rfl
 
 @[rocq_alias internal_included_trans]
 theorem internalCmraIncluded_trans {a b c : A} :
