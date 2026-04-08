@@ -427,6 +427,12 @@ example [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
   iintro HQ
   iexact HQ
 
+/-- Tests `iexact` with fupd -/
+example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
+    (E : CoPset) (P : PROP) : P ⊢ |={E}=> P := by
+  iintro HP
+  iexact HP
+
 /- Tests `iexact` failing with not-affine assumption -/
 /-- error: iexact: context is not affine or goal is not absorbing -/
 #guard_msgs in
@@ -1652,7 +1658,7 @@ example [BI PROP] [BIUpdate PROP] (P : PROP) : P ⊢ |==> P := by
   iexact HP
 
 /-- Tests `imodintro` for fupd -/
-example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
+example [BI PROP] [BIFUpdate PROP]
     (E : CoPset) (P : PROP) : P ⊢ |={E}=> P := by
   iintro HP
   imodintro
@@ -1725,7 +1731,7 @@ example [BI PROP] (P : PROP) : ▷ P ⊢ ▷ P := by
   iexact HP
 
 /-- Tests `imodintro` for fupd then bupd -/
-example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
+example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP]
     (E : CoPset) (P : PROP) : P ⊢ |={E}=> |==> P := by
   iintro HP
   imodintro
@@ -1743,10 +1749,11 @@ example [BI PROP] [BIUpdate PROP] (P : PROP) : |==> P ⊢ |==> P := by
   iexact HP
 
 /-- Tests `imod` for fupd -/
-example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
-    (E : CoPset) (P : PROP) : ((|={E}=> P) ⊢ (|={E}=> P)) := by
+example [BI PROP] [BIFUpdate PROP]
+    (E : CoPset) (P : PROP) : (|={E}=> P) ⊢ |={E}=> P := by
   iintro HP
   imod HP
+  imodintro
   iexact HP
 
 /-- Tests `imod` removing later before timeless propositions -/
@@ -1763,11 +1770,11 @@ example [BI PROP] [BIUpdate PROP] (P : PROP) : |==> P ⊢ emp -∗ |==> P := by
   iexact HP
 
 /-- Tests `imod` for fupd under wand -/
-example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
+example [BI PROP] [BIFUpdate PROP]
     (E : CoPset) (P : PROP) : (|={E}=> P) ⊢ emp -∗ |={E}=> P := by
   iintro HP
   imod HP
-  iintro _
+  iintro _ !>
   iexact HP
 
 /-- Tests `imod` with destructuring pattern -/
@@ -1777,10 +1784,11 @@ example [BI PROP] [BIUpdate PROP] (P : PROP) : |==> (P ∗ emp) ⊢ |==> P := by
   iexact HP
 
 /-- Tests `imod` with destructuring pattern for fupd -/
-example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
+example [BI PROP] [BIFUpdate PROP]
     (E : CoPset) (P : PROP) : (|={E}=> P ∗ emp) ⊢ |={E}=> P := by
   iintro HP
   imod HP with ⟨HP, _⟩
+  imodintro
   iexact HP
 
 /-- Tests `icases` with mod pattern -/
@@ -1790,10 +1798,11 @@ example [BI PROP] [BIUpdate PROP] (P : PROP) : emp ∗ |==> P ⊢ |==> P := by
   iexact HP
 
 /-- Tests `icases` with mod pattern for fupd -/
-example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
+example [BI PROP] [BIFUpdate PROP]
     (E : CoPset) (P : PROP) : emp ∗ (|={E}=> P) ⊢ |={E}=> P := by
   iintro HP
   icases HP with ⟨_, >HP⟩
+  imodintro
   iexact HP
 
 /- Tests `imod` for no modality -/
@@ -1811,26 +1820,28 @@ example [BI PROP] [BIUpdate PROP] (P : PROP) : |==> |==> P ⊢ |==> P := by
   iexact HP
 
 /-- Tests `imod` eliminating nested fupd modalities -/
-example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
+example [BI PROP] [BIFUpdate PROP]
     (E : CoPset) (P : PROP) : (|={E}=> |={E}=> P) ⊢ |={E}=> P := by
   iintro HP
   imod HP
   imod HP
+  imodintro
   iexact HP
 
 /-- Tests `imod` for nested mask-changing fupd. -/
-example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP]
+example [BI PROP] [BIFUpdate PROP]
     (E1 E2 E3 : CoPset) (P : PROP) : (|={E1,E2}=> |={E2,E3}=> P) ⊢ |={E1,E3}=> P := by
   iintro HP
   imod HP
   iexact HP
 
 /-- Tests `imod` with destructuring nested separating conjunction -/
-example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
+example [BI PROP] [BIFUpdate PROP]
     (E1 E2 : CoPset) (P Q R : PROP) :
     (|={E1,E2}=> P ∗ Q ∗ R) ⊢ |={E1,E2}=> (P ∗ Q ∗ R) := by
   iintro HP
   imod HP with ⟨HP, HQ, HR⟩
+  imodintro
   isplitl [HP]
   · iexact HP
   isplitl [HQ]
@@ -1846,10 +1857,11 @@ example [BI PROP] (P Q : PROP) [Timeless P] : ▷ P ∗ Q ⊢ ◇ (P ∗ Q) := b
   · iexact HQ
 
 /-- Tests `imod` for fupd with intuitionistic hypothesis -/
-example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
+example [BI PROP] [BIFUpdate PROP]
     (E : CoPset) (P : PROP) : □ (|={E}=> P) ⊢ |={E}=> P := by
   iintro #HP
   imod HP
+  imodintro
   iexact HP
 
 end imod
