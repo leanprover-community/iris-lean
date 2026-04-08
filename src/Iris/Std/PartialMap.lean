@@ -1067,13 +1067,10 @@ theorem toList_zip {m₁ : M V} {m₂ : M V'} :
     refine ⟨a.2, toList_get.mp Ha₁, ?_⟩
     simp [Hb₁]
 
-theorem mem_dom_set [LawfulSet S K] {m : M V} :
-  k ∈ (dom_set m : S) ↔ (get? m k).isSome := by
-  simp only [dom_set]
-  rw [←LawfulSet.mem_ofList]
-  simp only [FiniteMap.mapFold, List.foldl_flip_cons_eq_append, List.append_nil, List.mem_reverse,
-    List.mem_map, Prod.exists, exists_and_right, exists_eq_right, Option.isSome_iff_exists]
-  simp [←LawfulFiniteMap.toList_get]; rfl
+theorem mem_dom_set [LawfulSet S K] {m : M V} : k ∈ (dom_set m : S) ↔ (get? m k).isSome := by
+  simp [dom_set, ←LawfulSet.mem_ofList, FiniteMap.mapFold, Option.isSome_iff_exists,
+    ←LawfulFiniteMap.toList_get]
+  rfl
 
 end LawfulFiniteMap
 
