@@ -459,7 +459,7 @@ theorem update_of_dfrac_update P (Hdq : dq ~~>: P) :
         simp [Dist, Option.Forall₂, CMRA.op?] <;>
         simp_all [CMRA.op, op?, Prod.op] <;>
         try exact Hincl.2
-      exact ⟨Heq.1.symm ▸ op_assocN, Heq.2.symm ▸ Hincl.2.trans op_assocN⟩
+      exact ⟨Heq.1.symm ▸ assoc_L, Heq.2.symm ▸ Hincl.2.trans op_assocN⟩
     · apply Hrel
       simp [CMRA.op, get?_merge, get?_singleton_ne h] at Heq ⊢
       exact Heq
