@@ -7,7 +7,7 @@ module
 
 import Batteries.Data.List.Perm
 import Iris.Std.FromMathlib
-
+public import Iris.Std.GenSets
 
 /-! ## Partial Maps
 
@@ -246,6 +246,9 @@ def mapFold {A : Type _} (f : K → V → A → A) (a : A) (m : M V) : A :=
 /-- Convert a list to a map with sequential natural number keys starting from `start`. -/
 def map_seq [FiniteMap M Nat] (start : Nat) (l : List V) : M V :=
   PartialMap.ofList (l.mapIdx (fun i v => (start + i, v)))
+
+def dom_set [LawfulSet S K] (m : M V) : S :=
+  LawfulSet.ofList (mapFold (fun k _ acc => k :: acc) [] m)
 
 end FiniteMap
 
@@ -1063,6 +1066,14 @@ theorem toList_zip {m₁ : M V} {m₂ : M V'} :
     obtain ⟨b, Hb₁, rfl, rfl⟩ := Ha₂
     refine ⟨a.2, toList_get.mp Ha₁, ?_⟩
     simp [Hb₁]
+
+theorem mem_dom_set [LawfulSet S K] {m : M V} :
+  k ∈ (dom_set m : S) ↔ (get? m k).isSome := by
+  simp only [dom_set]
+  rw [←LawfulSet.mem_ofList]
+  simp only [FiniteMap.mapFold, List.foldl_flip_cons_eq_append, List.append_nil, List.mem_reverse,
+    List.mem_map, Prod.exists, exists_and_right, exists_eq_right, Option.isSome_iff_exists]
+  simp [←LawfulFiniteMap.toList_get]; rfl
 
 end LawfulFiniteMap
 
