@@ -26,9 +26,9 @@ variable {α : Type _} {cmp : α → α → Ordering}
 variable [Std.TransCmp cmp] [Std.LawfulEqCmp cmp]
 
 -- Concrete set implementation
-def SetImpl α cmp := Std.ExtTreeSet α cmp
+abbrev SetImpl α cmp := Std.ExtTreeSet α cmp
 instance : LawfulSet (SetImpl α cmp) α := inferInstanceAs (LawfulSet (Std.ExtTreeSet α cmp) α)
-instance : DecidableDisj (SetImpl α cmp) := inferInstanceAs (DecidableDisj (Std.ExtTreeSet α cmp))
+instance : DecidableDisj (SetImpl α cmp) := disjoint_dec
 
 @[simp]
 def MySet (S : SetImpl α cmp) : DisjointLeibnizSet (SetImpl α cmp) := .valid S
@@ -43,7 +43,8 @@ example {x y : α} : SetOwn {x, y} ⊢ (SetOwn ({x} : SetImpl α cmp) -∗ False
   apply UPred.ownM_always_invalid_elim
   intro n H
   simp only [MySet, ←CMRA.valid_iff_validN', valid_op_iff_disj] at H
-  apply H x; grind only [insert_union, mem_union, mem_singleton]
+  apply H x
+  simp
 
 abbrev gname := Pos
 
