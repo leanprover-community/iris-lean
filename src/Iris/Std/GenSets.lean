@@ -6,6 +6,7 @@ Authors: Zongyuan Liu, Sergei Stepanenko
 module
 
 public import Iris.Std.Classes
+public import Iris.Std.Infinite
 import Batteries.Data.List.Perm
 import Iris.Std.List
 import Iris.Std.RocqAlias
@@ -1011,6 +1012,21 @@ theorem size_empty {X : S} : size X = 0 ↔ X = ∅ := by
   · intro heq; rw [heq]
     rw [toList_empty]
     simp [List.length_nil]
+
+theorem fresh [InfiniteType A] (X : S) : ∃ a : A, a ∉ X := by
+  simp only [←mem_toList]
+  have ⟨n, hn⟩ : ∃ n, InfiniteType.enum n ∉ toList X := by
+    apply Classical.byContradiction
+    intro H; simp only [not_exists, Classical.not_not] at H
+    have hsub : List.map InfiniteType.enum (List.range ((toList X).length + 1)) ⊆ (toList X) := by
+      intro x hx; simp only [List.mem_map] at hx; obtain ⟨n, _, rfl⟩ := hx; exact H n
+    have hinj : (List.map (InfiniteType.enum (T := A)) (List.range ((toList X).length + 1))).Nodup :=
+      nodup_map_of_injective ⟨fun n m heq => InfiniteType.enum_inj n m heq⟩ List.nodup_range
+    have hlen : (List.map (InfiniteType.enum (T := A)) (List.range ((toList X).length + 1))).length > (toList X).length := by
+      simp only [List.length_map, List.length_range]; omega
+    have := List.Subperm.length_le (List.subperm_of_subset hinj hsub)
+    omega
+  exact ⟨InfiniteType.enum n, hn⟩
 
 theorem set_choose (X : S) (h : size X ≠ 0) : ∃ x, x ∈ X := by
   unfold size at h
