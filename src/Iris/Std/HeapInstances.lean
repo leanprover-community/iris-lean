@@ -489,6 +489,11 @@ instance : LawfulFiniteMap (ExtTreeMap K · compare) K where
     intro V m k v
     exact m.mem_toList_iff_getElem?_eq_some
 
+instance : ExtensionalPartialMap (ExtTreeMap K · compare) K where
+  equiv_iff_eq {V m₁ m₂} := by
+    rw [ExtTreeMap.ext_getElem?_iff]
+    rfl
+
 end HeapInstance
 
 end Std.ExtTreeMap
