@@ -6,6 +6,7 @@ Authors: Zongyuan Liu, Sergei Stepanenko
 module
 
 public import Iris.Std.Classes
+public import Iris.Std.Infinite
 import Batteries.Data.List.Perm
 import Iris.Std.List
 import Iris.Std.RocqAlias
@@ -1011,6 +1012,21 @@ theorem size_empty {X : S} : size X = 0 ↔ X = ∅ := by
   · intro heq; rw [heq]
     rw [toList_empty]
     simp [List.length_nil]
+
+theorem fresh [InfiniteType A] (X : S) : ∃ a : A, a ∉ X := by
+  refine Classical.byContradiction fun Hcontra => ?_
+  simp only [not_exists, Classical.not_not] at Hcontra
+  let Nalloc := toList X |>.length
+  let L := List.range (Nalloc + 1)
+  have hnodup : L.map (InfiniteType.enum (T := A)) |>.Nodup :=
+    nodup_map_of_injective ⟨fun _ _ => InfiniteType.enum_inj _ _⟩ List.nodup_range
+  have hsub : L.map InfiniteType.enum ⊆ toList X := by
+    intro _ ha
+    obtain ⟨_, _, rfl⟩ := List.mem_map.mp ha
+    exact mem_toList.mpr (Hcontra _)
+  have H := List.subperm_of_subset hnodup hsub |>.length_le
+  simp only [List.length_map, Nalloc, L, List.length_range] at H
+  omega
 
 theorem set_choose (X : S) (h : size X ≠ 0) : ∃ x, x ∈ X := by
   unfold size at h

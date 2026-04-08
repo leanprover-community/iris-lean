@@ -23,7 +23,7 @@ class BUpd (PROP : Type _) where
 export BUpd (bupd)
 
 syntax "|==> " term:40 : term
-syntax term:26 " ==∗ " term:25 : term
+syntax:25 term:26 " ==∗ " term:25 : term
 
 macro_rules
   | `(iprop(|==> $P))  => ``(BUpd.bupd iprop($P))
