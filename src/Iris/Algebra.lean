@@ -7,6 +7,7 @@ public import Iris.Algebra.DFrac
 public import Iris.Algebra.Excl
 public import Iris.Algebra.Frac
 public import Iris.Algebra.GenMap
+public import Iris.Algebra.LeibnizSet
 public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.IProp
 public import Iris.Algebra.OFE

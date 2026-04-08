@@ -19,7 +19,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `big_op.v`
   - [x] Lists
   - [x] Maps
-  - [ ] Sets
+  - [x] Sets
   - [ ] Multisets
   - [ ] Homomorphisms
 - [ ] `cmra.v`
@@ -66,7 +66,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] CMRA
   - [ ] Updates
 - [ ] `gset.v` 
-  - [ ] CMRA
+  - [x] CMRA
   - [ ] Updates
 - [ ] `list.v` 
   - Is this an instance of the `Heap` CMRA?
@@ -160,6 +160,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `proofmode.v`
   - [ ] class instances
 - [ ] `upred.v` (nb. contained in `Algebra/UPred.lean` and `Instances/UPred/Instance.lean`)
+  - Missing: new `later_ownM`, `later_own`
   - [x] CMRA 
   - [x] Functors
   - [x] Primitives and nonexpansivity
@@ -188,6 +189,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
 - [ ] `lib/na_invariants.v`
 - [ ] `lib/own.v`
+  - Missing: `later_internal_eq_iRes_singleton`
   - [x] Definition
   - [x] Updates
   - [ ] Big ops
@@ -205,7 +207,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [x] `bi.v`
 - [ ] `big_op.v`
   - [x] Lists
-  - [ ] Maps
+  - [x] Maps
   - [ ] Sets
   - [ ] Multisets
 - [ ] `cmra.v`
@@ -436,7 +438,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IAll
   - [ ] IClear
   - [ ] IClearFrame
-- [ ] `modalities.v`
+- [x] `modalities.v`
 - [ ] `modality_instances.v`
   - [ ] modality_embed 
   - [x] others

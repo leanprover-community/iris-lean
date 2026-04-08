@@ -399,6 +399,12 @@ theorem wandIff_congr_r [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P ∗-∗
 
 theorem wandIff_refl [BI PROP] {P : PROP} : ⊢ P ∗-∗ P := and_intro wand_rfl wand_rfl
 
+instance iff_ne [BI PROP] : OFE.NonExpansive₂ (BIBase.iff (PROP := PROP)) :=
+  ⟨fun {_ _ _} h₁ {_ _} h₂ => and_ne.ne (imp_ne.ne h₁ h₂) (imp_ne.ne h₂ h₁)⟩
+
+instance wandIff_ne [BI PROP] : OFE.NonExpansive₂ (wandIff (PROP := PROP)) :=
+  ⟨fun {_ _ _} h₁ {_ _} h₂ => and_ne.ne (wand_ne.ne h₁ h₂) (wand_ne.ne h₂ h₁)⟩
+
 theorem wand_entails [BI PROP] {P Q : PROP} (h : ⊢ P -∗ Q) : P ⊢ Q :=
   emp_sep.2.trans (wand_elim h)
 
@@ -430,6 +436,9 @@ theorem pure_elim_r [BI PROP] {φ : Prop} {Q R : PROP} (h : φ → Q ⊢ R) : Q 
   and_comm.1.trans (pure_elim_l h)
 
 theorem pure_true [BI PROP] {φ : Prop} (h : φ) : ⌜φ⌝ ⊣⊢ (True : PROP) := eq_true h ▸ .rfl
+
+theorem pure_imp_elim [BI PROP] {φ : Prop} {R : PROP} (h : φ) : (⌜φ⌝ → R) ⊢ R :=
+  (and_intro .rfl (pure_intro h)).trans imp_elim_l
 
 theorem pure_and [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∧ (⌜φ2⌝ : PROP) ⊣⊢ ⌜φ1 ∧ φ2⌝ :=
   ⟨pure_elim φ1 and_elim_l fun h => and_elim_r' <| pure_mono <| And.intro h,
