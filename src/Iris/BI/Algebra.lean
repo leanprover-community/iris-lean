@@ -1,39 +1,22 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-
-### agree:
-- [x] agree_includedI
-- [x] to_agree_includedI
-- [] agree_equivI
-- [] agree_op_invI
-- [] to_agree_validI
-- [] to_agree_op_validI
-- [] to_agree_uninjI
-- [] agree_op_equiv_to_agreeI
-
-### other sections:
-- general algebra (ucmra_unit_validI, cmra_validI_op_r/l, cmra_later_opI, etc.)
-- gmap_ofe (gmap_equivI, gmap_union_equiv_eqI)
-- gmap_cmra (gmap_validI, singleton_validI)
-- list_ofe (list_equivI)
-- excl (excl_equivI, excl_validI, excl_includedI)
-- csum_ofe/csum_cmra (csum_equivI, csum_validI, csum_includedI)
-- view (view_both_dfrac_validI, view_both_validI, view_auth_validI, view_frag_validI)
-- auth (auth_auth_validI, auth_frag_validI, auth_both_validI, etc.)
-- excl_auth (excl_auth_agreeI)
-- dfrac_agree (dfrac_agree_validI, frac_agree_validI)
 -/
 module
 
 public import Iris.ProofMode
+/-! ## Algebra wrappers for BI
+
+This file provides introduction rules (BI entailments) for (some) CMRA operations and properties.
+-/
 
 @[expose] public section
 
 -- TODO: Need sbi_unfold to make these proofs less horrific
+namespace Iris
 section heap_view
 
-open Iris HeapView BI Std PartialMap LawfulPartialMap
+open HeapView BI Std PartialMap LawfulPartialMap BIBase.BiEntails
 
 variable {F K V : Type _} {H : Type _ → Type _}
 variable [UFraction F]
@@ -42,21 +25,20 @@ variable [CMRA V]
 
 @[rocq_alias gmap_view_both_dfrac_validI]
 theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac F) (m : H V) k dq v :
-  internalCmraValid (HeapView.Auth dp m • HeapView.Frag k dq v) ⊣⊢@{PROP}
+  internalCmraValid (Auth dp m • Frag k dq v) ⊣⊢@{PROP}
     ∃ v' dq', ⌜✓ dp⌝ ∧ ⌜get? m k = .some v'⌝ ∧ internalCmraValid (dq', v') ∧
       internalCmraIncluded (Option.some (dq, v)) (Option.some (dq', v')) := by
   unfold internalCmraValid internalCmraIncluded
-  refine BIBase.BiEntails.symm ((BIBase.BiEntails.symm
-      (siPure_exist.trans (BI.exists_congr
-        (fun v' => siPure_exist.trans (BI.exists_congr
-        (fun dq' => siPure_and.trans (BI.and_congr siPure_pure
-          (siPure_and.trans (BI.and_congr siPure_pure siPure_and))))))))).trans ?_ )
+  refine symm ((symm
+      (siPure_exist.trans (exists_congr
+        (fun v' => siPure_exist.trans (exists_congr
+        (fun dq' => siPure_and.trans (and_congr siPure_pure
+          (siPure_and.trans (and_congr siPure_pure siPure_and))))))))).trans ?_ )
   constructor
   · apply siPure_mono
     iintro ⟨%v', ⟨%dq', %Hdp', %Hlookup, H⟩⟩
-    refine siPure_and.mpr.trans (siPure_mono (BI.and_exists_l.mp.trans (BI.exists_elim (fun c => ?_))))
-    intro n ⟨h1, h2⟩
-    simp only at h1 h2 ⊢
+    refine siPure_and.mpr.trans (siPure_mono (and_exists_l.mp.trans (exists_elim (fun c => ?_))))
+    intro n ⟨h1, h2⟩; simp only at h1 h2 ⊢
     apply auth_op_frag_validN_iff.mpr
     exists v', dq'; simp [Hdp', Hlookup, h1]; exists c
   · apply siPure_mono
@@ -71,23 +53,23 @@ theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac F) (m : H V) k dq v :
 
 @[rocq_alias gmap_view_both_validI]
 theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac F) (m : H V) k v :
-  internalCmraValid (HeapView.Auth dp m • HeapView.Frag k (.own One.one) v) ⊣⊢@{PROP}
+  internalCmraValid (Auth dp m • Frag k (.own One.one) v) ⊣⊢@{PROP}
     ⌜✓ dp⌝ ∧ internalCmraValid v ∧ internalEq (get? m k) (.some v) := by
   unfold internalCmraValid internalEq
-  refine BIBase.BiEntails.symm
-    ((BI.and_congr_r siPure_and).symm.trans ((BI.and_congr_l siPure_pure).symm.trans (siPure_and.symm.trans ?_)))
+  refine symm ((and_congr_r siPure_and).symm.trans
+    ((and_congr_l siPure_pure).symm.trans (siPure_and.symm.trans ?_)))
   constructor
   <;> (apply siPure_mono; intro n; simp only [SiProp.cmraValid]; rw [auth_op_frag_one_validN_iff]; exact id)
 
 @[rocq_alias gmap_view_both_validI_total]
 theorem auth_op_frag_validI_total [Sbi PROP] [CMRA.IsTotal V] (dp : DFrac F) (m : H V) k dq v :
-  internalCmraValid (HeapView.Auth dp m • HeapView.Frag k dq v) ⊢@{PROP}
+  internalCmraValid (Auth dp m • Frag k dq v) ⊢@{PROP}
     ∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
       internalCmraValid v' ∧ internalCmraIncluded v v' := by
   unfold internalCmraValid internalCmraIncluded
-  refine Entails.trans ?_
-    (siPure_exist.trans (BI.exists_congr (fun v => siPure_and.trans (BI.and_congr siPure_pure
-      (siPure_and.trans (BI.and_congr siPure_pure (siPure_and.trans (BI.and_congr siPure_pure siPure_and)))))))).mp
+  refine trans ?_
+    (siPure_exist.trans (exists_congr (fun v => siPure_and.trans (and_congr siPure_pure
+      (siPure_and.trans (and_congr siPure_pure (siPure_and.trans (and_congr siPure_pure siPure_and)))))))).mp
   apply siPure_mono
   intro n; simp [SiProp.cmraValid]; intro hvalid
   have ⟨v', Hdp, Hdq, Hlookup, Hv', ⟨z, Hincl⟩⟩ := auth_op_frag_validN_total_iff hvalid
@@ -97,10 +79,10 @@ theorem auth_op_frag_validI_total [Sbi PROP] [CMRA.IsTotal V] (dp : DFrac F) (m 
 
 @[rocq_alias gmap_view_frag_op_validI]
 theorem frag_op_frag_validI [Sbi PROP] k dq1 dq2 v1 v2 :
-  internalCmraValid (HeapView.Frag (F := F) (H := H) (V := V) k dq1 v1 • HeapView.Frag k dq2 v2) ⊣⊢@{PROP}
+  internalCmraValid (Frag (F := F) (H := H) (V := V) k dq1 v1 • Frag k dq2 v2) ⊣⊢@{PROP}
     ⌜✓ (dq1 • dq2)⌝ ∧ internalCmraValid (v1 • v2) := by
   unfold internalCmraValid
-  refine (BIBase.BiEntails.symm ((BI.and_congr_l siPure_pure.symm).trans (siPure_and.symm.trans ?_)))
+  refine (symm ((and_congr_l siPure_pure.symm).trans (siPure_and.symm.trans ?_)))
   constructor
   <;> (apply siPure_mono; intro n; simp only [SiProp.cmraValid]; rw [frag_op_validN_iff]; exact id)
 
@@ -108,19 +90,76 @@ end heap_view
 
 section agree_inclusion
 
-open Iris BI Agree
+open Iris BI Agree OFE
 
 variable [Sbi PROP] [OFE A]
+
+@[rocq_alias agree_equivI]
+theorem agree_equivI (a b : A) :
+    internalEq (toAgree a) (toAgree b) ⊣⊢@{PROP} internalEq a b := by
+  unfold internalEq
+  constructor <;> apply siPure_mono <;> intro n
+  · exact Agree.toAgree_injN
+  · apply NonExpansive.ne
+
+@[rocq_alias agree_op_invI]
+theorem agree_op_invI (x y : Agree A) :
+    internalCmraValid (x • y) ⊢@{PROP} internalEq x y := by
+  unfold internalCmraValid internalEq
+  exact siPure_mono (fun n => op_invN)
+
+@[rocq_alias to_agree_validI]
+theorem toAgree_validI (a : A) :
+    ⊢@{PROP} internalCmraValid (toAgree a) := by
+  unfold internalCmraValid
+  apply internalCmraValid_intro
+  intro n; simp [validN, toAgree]
+
+@[rocq_alias to_agree_op_validI]
+theorem toAgree_op_validI (a b : A) :
+    internalCmraValid (toAgree a • toAgree b) ⊣⊢@{PROP} internalEq a b := by
+  unfold internalCmraValid internalEq
+  constructor <;> apply siPure_mono
+  · intro n; exact toAgree_op_validN_iff_dist.mp
+  · intro n; exact toAgree_op_validN_iff_dist.mpr
+
+@[rocq_alias to_agree_uninjI]
+theorem toAgree_uninjI (x : Agree A) :
+    internalCmraValid x ⊢@{PROP} ∃ a, internalEq (toAgree a) x := by
+  unfold internalCmraValid internalEq
+  refine trans (siPure_mono ?_) siPure_exist.mp
+  intro n hvalid
+  have ⟨a, heq⟩ := toAgree_uninjN hvalid
+  apply SiProp.instBI.sExists_intro; exists a
+  exact heq
+
+@[rocq_alias agree_op_equiv_to_agreeI]
+theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
+    internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq x y ∧ internalEq y (toAgree a) := by
+  have hxy : internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq x y := by
+    refine internalEq.rewrite' (fun o => internalCmraValid o) internalEq.symm ?_ |>.trans (agree_op_invI x y)
+    refine (absorbingly_internalEq (x • y) (toAgree a)).mpr.trans ?_
+    have valid_a : internalEq (x • y) (toAgree a) ⊢@{PROP} internalCmraValid (toAgree a) :=
+      emp_sep.2.trans (sep_mono_l (toAgree_validI a)) |>.trans sep_elim_l
+    refine (absorbingly_mono valid_a).trans absorbing
+  apply and_intro hxy
+  have hxa : internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq x (toAgree a) := by
+    letI : NonExpansive (x • ·) := CMRA.op_ne
+    have hxx_a : internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq (x • x) (toAgree a) :=
+      (and_intro (hxy.trans (internalEq.of_internalEquiv_ne (x • ·))) .rfl).trans internalEq.trans
+    have hxx_x : internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq (x • x) x :=
+      emp_sep.2.trans (sep_mono_l (internalEq.of_equiv Agree.idemp)) |>.trans sep_elim_l
+    refine (and_intro (hxx_x.trans internalEq.symm) hxx_a).trans internalEq.trans
+  refine (and_intro (hxy.trans internalEq.symm) hxa).trans internalEq.trans
 
 @[rocq_alias agree_includedI]
 theorem agree_includedI (x y : Agree A) :
     internalCmraIncluded x y ⊣⊢@{PROP} internalEq y (x • y) := by
   unfold internalCmraIncluded internalEq
   constructor
-  · refine siPure_mono (BI.exists_elim (fun c => ?_))
-    intro n Heq
-    exact (Agree.includedN.mp ⟨c, Heq⟩).trans op_commN
-  · refine siPure_mono (BI.exists_intro' y ?_)
+  · refine siPure_mono (exists_elim (fun c => ?_))
+    exact (fun n Heq => (includedN.mp ⟨c, Heq⟩).trans op_commN)
+  · refine siPure_mono (exists_intro' y ?_)
     exact entails_preorder.refl
 
 @[rocq_alias to_agree_includedI]
@@ -128,12 +167,12 @@ theorem toAgree_includedI (a b : A) :
     internalCmraIncluded (toAgree a) (toAgree b) ⊣⊢@{PROP} internalEq a b := by
   unfold internalCmraIncluded internalEq
   constructor
-  · refine siPure_mono (BI.exists_elim (fun c => ?_))
-    intro n Heq
-    exact Agree.toAgree_includedN.mp ⟨c, Heq⟩
+  · refine siPure_mono (exists_elim (fun c => ?_))
+    exact (fun n Heq => toAgree_includedN.mp ⟨c, Heq⟩)
   · refine siPure_mono ?_
     show SiProp.internalEq a b ⊢ (∃ c, SiProp.internalEq (toAgree b) (toAgree a • c))
-    refine BI.exists_intro' (toAgree a) ?_
-    exact internalEq_entails.mpr (fun n heq => OFE.instTransDist.trans (OFE.NonExpansive.ne heq.symm) (Agree.idemp.symm n))
+    refine exists_intro' (toAgree a) ?_
+    exact internalEq_entails.mpr (fun n heq => Dist.trans (NonExpansive.ne heq.symm) (idemp.symm n))
 
 end agree_inclusion
+end Iris
