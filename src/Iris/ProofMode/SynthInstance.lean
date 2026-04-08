@@ -80,20 +80,20 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
     let mvarType  ← inferType mvar
     let mvarType  ← instantiateMVars mvarType
     if !(ipmClassesExt.getState (← getEnv)).contains mvarType.getAppFn.constName then
-      return ← withTraceNode `Meta.synthInstance (return m!"{exceptOptionEmoji ·} switch to normal synthInstance") do
+      return ← withTraceNode `Meta.synthInstance (fun _ => return m!"switch to normal synthInstance") do
         let some e ← synthInstance? mvarType | return none
         mvar.mvarId!.assign e
         return some ()
 
     let mctx0 ← getMCtx
-    withTraceNode `Meta.synthInstance (return m!"{exceptOptionEmoji ·} new goal {MessageData.withMCtx mctx0 m!"{mvarType}"} => {mvarType}") do
+    withTraceNode `Meta.synthInstance (fun _ => return m!"new goal {MessageData.withMCtx mctx0 m!"{mvarType}"} => {mvarType}") do
     let instances ← SynthInstance.getInstances mvarType
     let mctx      ← getMCtx
     if instances.isEmpty then
       return none
     for inst in instances.reverse do
       let (res, match?) ← withTraceNode `Meta.synthInstance
-        (λ r => withMCtx mctx do return MessageData.withMCtx mctx m!"{exceptOptionEmoji (r.map (·.1))} apply {inst.val} to {← instantiateMVars (← inferType mvar)}") do
+        (fun _ => withMCtx mctx do return MessageData.withMCtx mctx m!"apply {inst.val} to {← instantiateMVars (← inferType mvar)}") do
         setMCtx mctx
         let some (mctx', subgoals) ← withAssignableSyntheticOpaque (SynthInstance.tryResolve mvar inst) | return (none, false)
         setMCtx mctx'
@@ -123,7 +123,7 @@ def synthInstanceCore? (type : Expr) (maxResultSize? : Option Nat := none) : Met
   let opts ← getOptions
   let maxResultSize := maxResultSize?.getD (synthInstance.maxSize.get opts)
   withTraceNode `Meta.synthInstance
-    (return m!"IPM: {exceptOptionEmoji ·} {← instantiateMVars type}") do
+    (fun _ => return  m!"IPM: {← instantiateMVars type}") do
   withConfig (fun config => { config with isDefEqStuckEx := true, transparency := TransparencyMode.instances,
                                           foApprox := true, ctxApprox := true, constApprox := false, univApprox := false }) do
   withInTypeClassResolution do

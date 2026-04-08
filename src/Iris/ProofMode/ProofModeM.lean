@@ -24,7 +24,7 @@ whole monad stack at every use site. May eventually be covered by `deriving`.
 -/
 @[always_inline]
 instance : Monad ProofModeM :=
-  let i := inferInstanceAs (Monad ProofModeM)
+  let i : Monad ProofModeM := inferInstance
   { pure := i.pure, bind := i.bind }
 
 instance : Inhabited (ProofModeM α) where
