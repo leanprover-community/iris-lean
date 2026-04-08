@@ -265,7 +265,7 @@ theorem ownI_alloc (φ : Pos → Prop) (P : IProp GF)
   iintro ⟨⟨%I, ⟨Hown, Hmap⟩⟩, HProp⟩
   imod ownD_empty (W := W) with HD; unfold ownD
   imod iOwn_updateP (E := elem3)
-    (alloc_empty_updateP_strong' (fun i => (get? I i = .none) ∧ φ i) _) $$ HD with HD
+    (alloc_empty_updateP_strong' (P := fun i => (get? I i = .none) ∧ φ i) _) $$ HD with HD
   · intro Y
     have ⟨j, H⟩ := Hfresh (Y ∪ dom_set I)
     simp only [mem_union, not_or] at H
@@ -309,7 +309,7 @@ theorem ownI_alloc_open (φ : Pos → Prop) (P : IProp GF)
   iintro ⟨%I, Hown, Hmap⟩
   imod ownD_empty (W := W) with HD; unfold ownD
   imod iOwn_updateP (E := elem3)
-    (alloc_empty_updateP_strong' (fun i => (get? I i = .none) ∧ φ i) _) $$ HD with HD
+    (alloc_empty_updateP_strong' (P := fun i => (get? I i = .none) ∧ φ i) _) $$ HD with HD
   · intro Y
     have ⟨j, H⟩ := Hfresh (Y ∪ dom_set I)
     simp only [mem_union, not_or] at H
@@ -359,11 +359,11 @@ theorem wsat_alloc [WP : wsatGpreS GF] :
   isplitr [He]
   · iexists empty
     isplitl
-    · iclear Hd; simp only [W]
-      rw [show (map toAgree (map invariant_unfold empty)) = empty by
-        apply ExtensionalPartialMap.equiv_iff_eq.mp
-        intro k; simp [get?_map, get?_empty, Option.map_none]]
-      iassumption
+    · iclear Hd
+      have : map toAgree (map invariant_unfold (empty : InvMap (IProp GF))) = empty :=
+        ExtensionalPartialMap.equiv_iff_eq.mp
+          (fun k => by simp [get?_map, get?_empty (M := InvMap)])
+      rw [this]; iassumption
     · iapply bigSepM_empty; simp
   · unfold ownE; iexact He
 
