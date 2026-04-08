@@ -891,7 +891,7 @@ class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
   map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-attribute [instance] RFunctor.cmra
+attribute [reducible, instance] RFunctor.cmra
 
 
 instance RFunctor.toOFunctor [R : RFunctor F] : COFE.OFunctor F where
@@ -927,7 +927,7 @@ class URFunctorContractive (F : COFE.OFunctorPre) extends URFunctor F where
   map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-attribute [instance] URFunctor.cmra
+attribute [reducible, instance] URFunctor.cmra
 
 instance URFunctor.toRFunctor [UF : URFunctor F] : RFunctor F where
   cmra     := URFunctor.cmra.toCMRA

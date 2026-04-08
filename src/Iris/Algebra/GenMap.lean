@@ -345,12 +345,11 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
       cases h : x.car γ with
       | none => simp
       | some v =>
-        simp only [h] at Hcore ⊢
-        cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v) <;>
-          simp_all [RFunctor.toOFunctor, OFE.Equiv, Option.Forall₂]
+        revert Hcore
+        cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v) <;> simp_all
     op z x γ := by
       have Hop := @(URFunctor.map (F := OptionOF F) f g).op (z.car γ) (x.car γ)
-      simp only [Option.map, RFunctor.toOFunctor, CMRA.op, optionOp, URFunctor.map] at Hop ⊢
+      simp only [Option.map, CMRA.op, optionOp, URFunctor.map] at Hop ⊢
       cases h : z.car γ <;> cases h' : x.car γ <;>
         simp_all [OFunctor.map, optionMap, OFE.Equiv, Option.Forall₂]
   }

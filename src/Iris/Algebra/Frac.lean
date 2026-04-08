@@ -113,7 +113,7 @@ instance [Fraction α] [CMRA α] {a : Frac α} (Hw : Whole a.1) : Exclusive a wh
 instance [Fraction α] {a : Frac α} : CMRA.Cancelable a where
   cancelableN {n x y} _ (H : a • x = a • y) := by
     refine Dist.of_eq <| LeibnizO.ext <| add_left_cancel (a := a.car) <| ?_
-    simpa [CMRA.op, Frac] using H
+    exact LeibnizO.eqv_inj H
 
 instance [Fraction α] {a : Frac α} : CMRA.IdFree a where
   id_free0_r b _ H := by

@@ -28,7 +28,7 @@ class BILoeb (PROP : Type _) [BI PROP] where
 class BILaterContractive (PROP : Type _) [BI PROP] extends OFE.Contractive later (α := PROP)
 
 class BIPureForall (PROP : Type _) [BI PROP] where
-  pure_forall_2 : ∀ {α : Sort _} (φ : α → Prop), (∀ a, ⌜φ a⌝) ⊢@{PROP} ⌜∀ a, φ a⌝
+  pure_forall_2 : ∀ {α : Sort u} (φ : α → Prop), (∀ a, ⌜φ a⌝) ⊢@{PROP} ⌜∀ a, φ a⌝
 
 class BIPersistentlyForall (PROP : Type _) [BI PROP] where
   persistently_sForall_2 (Ψ : PROP → Prop) : (∀ p, ⌜Ψ p⌝ → <pers> p) ⊢ <pers> (sForall Ψ)
