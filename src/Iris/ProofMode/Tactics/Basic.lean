@@ -16,9 +16,14 @@ namespace Iris.ProofMode
 open Lean Elab.Tactic Meta Qq BI Std
 
 def iSolveSideconditionAt (m : MVarId) : ProofModeM Unit := do
-  let gs ← evalTacticAt (← `(tactic | trivial)) m
-  if !gs.isEmpty then
-    throwError "isolvesidecondition: failed to solve sidecondition {← m.getType}"
+  let goal ← instantiateMVars (← m.getType)
+  match goal with
+  | .app (.const ``PMError _) (.lit (.strVal msg)) =>
+      throwError "{msg}"
+  | _ =>
+      let gs ← evalTacticAt (← `(tactic | trivial)) m
+      if !gs.isEmpty then
+        throwError "isolvesidecondition: failed to solve sidecondition {goal}"
 
 elab "istart" : tactic => do
   let (mvar, _) ← startProofMode (← getMainGoal)

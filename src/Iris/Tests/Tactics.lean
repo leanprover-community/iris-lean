@@ -1664,6 +1664,15 @@ example [BI PROP] [BIFUpdate PROP]
   imodintro
   iexact HP
 
+/- Tests `imodintro` for mask-changing fupd failing -/
+/-- error: Only non-mask-changing update modalities can be introduced directly.
+      Use `iapply (fupd_mask_intro ...)` to introduce a mask-changing fancy update. -/
+#guard_msgs in
+example [BI PROP] [BIFUpdate PROP]
+    (E1 E2 : CoPset) (P : PROP) : P ⊢ |={E1,E2}=> P := by
+  iintro HP
+  imodintro
+
 /-- Tests `imodintro` for bupd preserves both intuitionistic and spatial -/
 example [BI PROP] [BIUpdate PROP] (P Q : PROP) : □ P ∗ Q ⊢ |==> Q := by
   iintro ⟨#HP, HQ⟩
@@ -1755,6 +1764,15 @@ example [BI PROP] [BIFUpdate PROP]
   imod HP
   imodintro
   iexact HP
+
+/- Tests `imod` for fupd with mismatching masks failing -/
+/-- error: Goal and eliminated modality must have the same mask.
+      Use `BIFUpdate.subset` to adjust the goal mask before using `imod`. -/
+#guard_msgs in
+example [BI PROP] [BIFUpdate PROP]
+    (E0 E1 E2 E3 : CoPset) (P Q : PROP) : (|={E1,E2}=> P) ⊢ |={E0,E3}=> Q := by
+  iintro HP
+  imod HP
 
 /-- Tests `imod` removing later before timeless propositions -/
 example [BI PROP] [BIUpdate PROP] (P : PROP) [Timeless P] : ▷ P ⊢ ◇ P := by
