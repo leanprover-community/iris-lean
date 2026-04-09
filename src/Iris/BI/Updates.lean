@@ -287,7 +287,7 @@ theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP}:
   exact emp_sep.1.trans <| (fupd_mask_frame_r hdisj).trans <| by simp [subset_union_diff hE]
 
 theorem fupd_mask_subseteq_emptyset_difference {E1 E2 : CoPset} :
-    E2 ⊆ E1 → ⊢ |={E1,E2}=> |={∅,E1\E2}=> (emp: PROP) :=
+    E2 ⊆ E1 → ⊢@{PROP} |={E1,E2}=> |={∅,E1\E2}=> emp :=
   λ h => by
     simpa [union_comm, subset_union_diff h] using (fupd_mask_intro_subseteq empty_subset).trans <|
       fupd_mask_frame_r (P := iprop(|={∅,E1 \ E2}=> (emp : PROP))) (disjoint_symm <| disjoint_diff_right)
