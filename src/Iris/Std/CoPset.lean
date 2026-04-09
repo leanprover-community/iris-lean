@@ -6,6 +6,7 @@ Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 module
 
 public import Iris.Std.Positives
+public import Iris.Std.Classes
 public import Iris.Std.GenSets
 
 @[expose] public section
@@ -217,6 +218,8 @@ def empty : CoPset := ⟨CoPsetRaw.leaf false, rfl⟩
 instance : EmptyCollection CoPset where emptyCollection := CoPset.empty
 
 def full : CoPset := ⟨CoPsetRaw.leaf true, rfl⟩
+
+instance : Iris.Std.Top CoPset where top := CoPset.full
 
 @[simp] def singleton (p : Pos) : CoPset := ⟨CoPsetRaw.Singleton p, coPsetSingleton_wf p⟩
 

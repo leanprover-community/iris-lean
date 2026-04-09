@@ -192,7 +192,7 @@ section FUpdLaws
 
 variable [BI PROP] [BIFUpdate PROP]
 
-open BIFUpdate
+open BIFUpdate LawfulSet
 
 theorem fupd_mask_intro_subseteq {E1 E2 : CoPset} {P : PROP} : E2 ⊆ E1 → P ⊢ |={E1,E2}=> |={E2,E1}=> P :=
   λ h => (emp_sep.2.trans <| sep_mono_l <| subset h).trans <|
@@ -254,22 +254,47 @@ theorem fupd_mask_frame_r {E1 E2 Ef : CoPset} {P : PROP} :
     E1 ## Ef → (|={E1,E2}=> P) ⊢ |={E1 ∪ Ef,E2 ∪ Ef}=> P :=
   λ h => (mono <| imp_intro' and_elim_r).trans <| mask_frame_r' h
 
--- TODO: the following theorems can be proved only with CoPSet extensional-equality
--- theorem fupd_mask_frame {E E' E1 E2 : CoPset} {P : PROP} :
---     E1 ⊆ E → (|={E1,E2}=> |={E2 ∪ (E \ E1),E'}=> P) ⊢ |={E,E'}=> P := sorry
+theorem fupd_mask_mono {E1 E2 : CoPset} {P : PROP} :
+    E1 ⊆ E2 → (|={E1}=> P) ⊢ |={E2}=> P :=
+  λ h => by simpa [subset_union_diff h] using
+    (fupd_mask_frame_r (E2 := E1) (Ef := E2 \ E1) disjoint_diff_right)
 
--- theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP}:
---     E1 ⊆ E →
---     (|={E1,E1 \ E2}=> Q) ⊢
---     (Q -∗ |={E \ E2,E'}=> (∀ R, (|={E1 \ E2,E1}=> R) -∗ |={E \ E2,E}=> R) -∗  P) -∗
---     (|={E,E'}=> P) := sorry
+theorem fupd_mask_frame {E E' E1 E2 : CoPset} {P : PROP} :
+    E1 ⊆ E → (|={E1,E2}=> |={E2 ∪ (E \ E1),E'}=> P) ⊢ |={E,E'}=> P :=
+  λ h => by simpa [subset_union_diff h] using
+    ((fupd_mask_frame_r (P := iprop(|={E2 ∪ (E \ E1),E'}=> P)) disjoint_diff_right).trans trans)
 
--- theorem fupd_mask_mono {E1 E2 : CoPset} {P : PROP} :
---     E1 ⊆ E2 → (|={E1}=> P) ⊢ |={E2}=> P := sorry
+/-- A variant of [fupd_mask_frame] that works well for accessors:
+  Tailored to eliminate updates of the form [|={E1,E1∖E2}=> Q] and provides a way to transform the
+  closing view shift instead of letting you prove the same side-conditions twice. -/
+theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP}:
+    E1 ⊆ E → (|={E1,E1 \ E2}=> Q) ⊢
+    (Q -∗ |={E \ E2,E'}=> (∀ R, (|={E1 \ E2,E1}=> R) -∗ |={E \ E2,E}=> R) -∗  P) -∗
+    (|={E,E'}=> P) := λ hE => by
+  have hmask : E \ E2 ⊆ (E1 \ E2) ∪ (E \ E1) := by
+    intro x hx; rw [mem_diff] at hx
+    by_cases hx1 : x ∈ E1
+    · exact mem_union.2 <| .inl <| mem_diff.2 ⟨hx1, hx.2⟩
+    · exact mem_union.2 <| .inr <| mem_diff.2 ⟨hx.1, hx1⟩
+  have hdisj : (E1 \ E2) ## (E \ E1) := disjoint_subset_left diff_subset_left disjoint_diff_right
+  refine wand_intro <| fupd_frame_r.trans <| (BIFUpdate.mono wand_elim_r).trans ?_
+  refine (BIFUpdate.mono ?_).trans <| fupd_mask_frame hE
+  refine sep_emp.2.trans <| (sep_mono_r <| fupd_mask_intro_subseteq hmask).trans ?_
+  refine fupd_frame_l.trans <| (BIFUpdate.mono fupd_frame_r).trans <| fupd_elim ?_
+  refine BIFUpdate.mono <| sep_symm.trans ?_
+  refine (sep_mono ?_ .rfl).trans wand_elim_r
+  refine forall_intro λ R => wand_intro <| fupd_frame_r.trans <| fupd_elim ?_
+  exact emp_sep.1.trans <| (fupd_mask_frame_r hdisj).trans <| by simp [subset_union_diff hE]
 
--- theorem fupd_mask_subseteq_emptyset_difference {E1 E2 : CoPset} :
---     E2 ⊆ E1 → ⊢ |={E1,E2}=> |={∅,E1\E2}=> (emp: PROP) := sorry
+theorem fupd_mask_subseteq_emptyset_difference {E1 E2 : CoPset} :
+    E2 ⊆ E1 → ⊢ |={E1,E2}=> |={∅,E1\E2}=> (emp: PROP) :=
+  λ h => by
+    simpa [union_comm, subset_union_diff h] using (fupd_mask_intro_subseteq empty_subset).trans <|
+      fupd_mask_frame_r (P := iprop(|={∅,E1 \ E2}=> (emp : PROP))) (disjoint_symm <| disjoint_diff_right)
 
--- theorem fupd_trans_frame {E1 E2 E3 : CoPset} {P Q : PROP} : ((Q ={E2,E3}=∗ emp) ∗ |={E1,E2}=> (Q ∗ P)) ⊢ |={E1,E3}=> P := sorry
+theorem fupd_trans_frame {E1 E2 E3 : CoPset} {P Q : PROP} :
+    ((Q ={E2,E3}=∗ emp) ∗ |={E1,E2}=> (Q ∗ P)) ⊢ |={E1,E3}=> P :=
+  fupd_frame_l.trans <| fupd_elim <| ((sep_assoc.2.trans <| sep_mono_l sep_comm.1).trans <|
+    sep_mono_l wand_elim_r).trans <| fupd_frame_r.trans <| BIFUpdate.mono emp_sep.1
 
 end FUpdLaws

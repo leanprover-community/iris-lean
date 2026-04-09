@@ -163,7 +163,11 @@ section SBIFancyUpdate
 
 variable {PROP} [Sbi PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP] [BIAffine PROP]
 
--- instance fromForall_fupd E1 E2 (P : PROP) (Φ : α → PROP)
+-- TODO:
+-- `fromForall_fupd` needs a derived plain/fupd/forall lemma.
+-- `fromForall_stepFupd` additionally needs a step-fupd/forall theorem in `BI/Updates.lean`.
+-- instance fromForall_fupd E1 E2 (P : PROP) {α : Type _} (Φ : α → PROP)
+--     [hmask : TCOr (E1 = E2) (TCOr (E1 = ⊤) (E2 = ∅))]
 --     [h : FromForall P Φ] [∀ a, Plain (Φ a)] :
 --     FromForall iprop(|={E1,E2}=> P) (fun a => iprop(|={E1,E2}=> Φ a)) where
 --   from_forall := sorry
@@ -172,15 +176,5 @@ variable {PROP} [Sbi PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP] [BIAffine PR
 --     [h : FromForall P Φ] [∀ a, Plain (Φ a)] :
 --     FromForall iprop(|={E}▷=> P) (fun a => iprop(|={E}▷=> Φ a)) where
 --   from_forall := sorry
-
--- @[ipm_backtrack]
--- instance elimModal_fupd_plain_goal p E (P Q : PROP) [Plain Q] :
---     ElimModal True p false iprop(|={E}=> P) P Q Q where
---   elim_modal _ := sorry
-
--- @[ipm_backtrack]
--- instance elimModal_fupd_plain p E (P Q : PROP) [Plain P] :
---     ElimModal True p p iprop(|={E}=> P) P Q Q where
---   elim_modal _ := sorry
 
 end SBIFancyUpdate
