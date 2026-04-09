@@ -32,6 +32,5 @@ elab "ihave" colGt pat:icasesPat " : " P:term "$$" spat:specPat : tactic => do
   let P ← elabTermEnsuringTypeQ (← `(iprop($P))) prop
   --  establish `P` with `spat`
   let ⟨_, hyps', p, A, pf⟩ ← iSpecializeCore hyps q(true) q(iprop($P -∗ $P)) [spat] (try_dup_context := pat.should_try_dup_context)
-  have ⟨B, eq⟩ := mkIntuitionisticIf bi p A
-  let pf2 ← iCasesCore bi hyps' goal p B A eq pat (λ hyps => addBIGoal hyps goal)
+  let pf2 ← iCasesCore bi hyps' goal pat p A (addBIGoal · ·)
   mvar.assign q(ihave_assert (($pf).trans $pf2))

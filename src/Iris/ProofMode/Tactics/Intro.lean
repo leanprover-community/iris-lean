@@ -88,7 +88,7 @@ private partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     | .intuitionistic pat, some _ =>
       let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)
         | throwError "iintro: {A1} not persistent"
-      let pf ← iCasesCore bi hyps A2 q(true) q(iprop(□ $B)) B ⟨⟩ pat (iIntroCore · A2 pats)
+      let pf ← iCasesCore bi hyps A2 pat q(true) B (iIntroCore · · pats)
       return q(imp_intro_intuitionistic (Q := $Q) $pf)
     | .intuitionistic pat, none =>
       let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q $A1 $A2)
@@ -97,19 +97,19 @@ private partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
         | throwError "iintro: {A1} not persistent"
       let .some _ ← trySynthInstanceQ q(TCOr (Affine $A1) (Absorbing $A2))
         | throwError "iintro: {A1} not affine and the goal not absorbing"
-      let pf ← iCasesCore bi hyps A2 q(true) q(iprop(□ $B)) B ⟨⟩ pat (iIntroCore · A2 pats)
+      let pf ← iCasesCore bi hyps A2 pat q(true) B (iIntroCore · · pats)
       return q(wand_intro_intuitionistic (Q := $Q) $pf)
     | _, some _ =>
       -- should always succeed
       let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B $A1)
       let .some _ ← trySynthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
         | throwError "iintro: {A1} is not persistent and spatial context is non-empty"
-      let pf ← iCasesCore bi hyps A2 q(false) B B ⟨⟩ pat (iIntroCore · A2 pats)
+      let pf ← iCasesCore bi hyps A2 pat q(false) B (iIntroCore · · pats)
       return q(imp_intro_spatial (Q := $Q) $pf)
     | _, none =>
       let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q $A1 $A2)
         | throwError "iintro: {Q} not a wand"
-      let pf ← iCasesCore bi hyps A2 q(false) A1 A1 ⟨⟩ pat (iIntroCore · A2 pats)
+      let pf ← iCasesCore bi hyps A2 pat q(false) A1 (iIntroCore · · pats)
       return q(wand_intro_spatial (Q := $Q) $pf)
 
 

@@ -6,6 +6,7 @@ Authors: Zongyuan Liu, Sergei Stepanenko
 module
 
 public import Iris.Std.Classes
+public import Iris.Std.Infinite
 import Batteries.Data.List.Perm
 import Iris.Std.List
 import Iris.Std.RocqAlias
@@ -441,6 +442,12 @@ theorem diff_subset_left {s₁ s₂ : S} : s₁ \ s₂ ⊆ s₁ := by
   intro y G; rw [mem_diff] at G
   exact G.left
 
+/-- A set is disjoint from the part removed by taking a difference. -/
+theorem disjoint_diff_right {s₁ s₂ : S} : s₁ ## (s₂ \ s₁) := by
+  intro x ⟨hx1, hx2⟩
+  rw [mem_diff] at hx2
+  exact hx2.2 hx1
+
 /-- Difference with disjoint set is identity. -/
 theorem diff_subset_disj {s₁ s₂ : S} (H : s₁ ## s₂) : s₁ \ s₂ = s₁ := by
   ext x; rw [mem_diff]
@@ -461,6 +468,11 @@ theorem diff_subset_decomp {s₁ s₂ : S} (H : s₁ ⊆ s₂) : s₂ = (s₂ \ 
   by_cases J : x ∈ s₁
   · exact .inr J
   · exact .inl ⟨G, J⟩
+
+/-- A subset together with the remaining part reconstructs the larger set. -/
+theorem subset_union_diff {s₁ s₂ : S} (H : s₁ ⊆ s₂) : s₁ ∪ (s₂ \ s₁) = s₂ := by
+  rw [union_comm]
+  exact (diff_subset_decomp H).symm
 
 /-- De Morgan's law: difference distributes over union. -/
 theorem diff_union {s₁ s₂ s₃ : S} : s₁ \ (s₂ ∪ s₃) = (s₁ \ s₂) ∩ (s₁ \ s₃) := by
@@ -1019,6 +1031,21 @@ theorem size_empty {X : S} : size X = 0 ↔ X = ∅ := by
   · intro heq; rw [heq]
     rw [toList_empty]
     simp [List.length_nil]
+
+theorem fresh [InfiniteType A] (X : S) : ∃ a : A, a ∉ X := by
+  refine Classical.byContradiction fun Hcontra => ?_
+  simp only [not_exists, Classical.not_not] at Hcontra
+  let Nalloc := toList X |>.length
+  let L := List.range (Nalloc + 1)
+  have hnodup : L.map (InfiniteType.enum (T := A)) |>.Nodup :=
+    nodup_map_of_injective ⟨fun _ _ => InfiniteType.enum_inj _ _⟩ List.nodup_range
+  have hsub : L.map InfiniteType.enum ⊆ toList X := by
+    intro _ ha
+    obtain ⟨_, _, rfl⟩ := List.mem_map.mp ha
+    exact mem_toList.mpr (Hcontra _)
+  have H := List.subperm_of_subset hnodup hsub |>.length_le
+  simp only [List.length_map, Nalloc, L, List.length_range] at H
+  omega
 
 theorem set_choose (X : S) (h : size X ≠ 0) : ∃ x, x ∈ X := by
   unfold size at h
