@@ -9,7 +9,9 @@ public import Iris.BI.BigOp.BigOp
 import Iris.BI.BigOp.BigSepList
 import Iris.BI.DerivedLawsLater
 import Iris.BI.Instances
+import Iris.BI.BigOp.BigSepSet
 import Iris.Std.TC
+import Batteries.Data.List.Perm
 meta import Iris.Std.RocqAlias
 
 public section
@@ -564,8 +566,23 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
 -- TODO: `big_sepM_kmap` and `big_sepM_map_seq` require map operations
 -- which are not yet available in `PartialMap`.
 
--- TODO: `big_sepM_dom`, `big_sepM_ofSet`, and set-related lemmas require
--- infrastructure which is not yet available.
+/-! ## Map–Set Interaction -/
+
+section MapSet
+variable {S : Type _} [LawfulFiniteSet S K]
+
+@[rocq_alias big_sepM_dom]
+theorem bigSepM_dom {Φ : K → PROP} {m : M V} :
+    ([∗map] k ↦ _v ∈ m, Φ k) ⊣⊢ ([∗set] k ∈ (FiniteMap.dom_set m : S), Φ k) := by
+  unfold bigSepM bigSepS bigOpM bigOpS
+  exact equiv_iff.mp <|
+    ((bigOpL_map_equiv Prod.fst _ _).symm).trans
+    ((bigOpL_equiv_of_perm _ (LawfulFiniteMap.toList_dom_set_perm m)).symm)
+
+
+-- TODO: `big_sepM_gset_to_gmap` requires `gset_to_gmap`.
+
+end MapSet
 
 end BigSepM
 
