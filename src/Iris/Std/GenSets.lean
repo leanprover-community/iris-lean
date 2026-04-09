@@ -442,6 +442,12 @@ theorem diff_subset_left {s₁ s₂ : S} : s₁ \ s₂ ⊆ s₁ := by
   intro y G; rw [mem_diff] at G
   exact G.left
 
+/-- A set is disjoint from the part removed by taking a difference. -/
+theorem disjoint_diff_right {s₁ s₂ : S} : s₁ ## (s₂ \ s₁) := by
+  intro x ⟨hx1, hx2⟩
+  rw [mem_diff] at hx2
+  exact hx2.2 hx1
+
 /-- Difference with disjoint set is identity. -/
 theorem diff_subset_disj {s₁ s₂ : S} (H : s₁ ## s₂) : s₁ \ s₂ = s₁ := by
   ext x; rw [mem_diff]
@@ -462,6 +468,11 @@ theorem diff_subset_decomp {s₁ s₂ : S} (H : s₁ ⊆ s₂) : s₂ = (s₂ \ 
   by_cases J : x ∈ s₁
   · exact .inr J
   · exact .inl ⟨G, J⟩
+
+/-- A subset together with the remaining part reconstructs the larger set. -/
+theorem subset_union_diff {s₁ s₂ : S} (H : s₁ ⊆ s₂) : s₁ ∪ (s₂ \ s₁) = s₂ := by
+  rw [union_comm]
+  exact (diff_subset_decomp H).symm
 
 /-- De Morgan's law: difference distributes over union. -/
 theorem diff_union {s₁ s₂ s₃ : S} : s₁ \ (s₂ ∪ s₃) = (s₁ \ s₂) ∩ (s₁ \ s₃) := by
