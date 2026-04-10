@@ -500,6 +500,13 @@ instance intuitionistically_plain (P : PROP) [Plain P] : Plain iprop(□ P) :=
 instance absorbingly_plain (P : PROP) [Plain P] : Plain iprop(<absorb> P) :=
   inferInstanceAs (Plain iprop(True ∗ P))
 
+instance from_option_plain {A : Type _} (P : PROP)  (Ψ : A → PROP) (x? : Option A)
+  [hΨ : ∀ x, Plain (Ψ x)] [hP : Plain P] :
+    Plain (Option.elim x? P Ψ) :=
+  match x? with
+  | (x : A) => hΨ x
+  | .none   => hP
+
 @[rocq_alias si_pure_plain]
 instance si_pure_plain (P : SiProp) : Plain (PROP := PROP) (siPure P) where
   plain := plainly_siPure.2
