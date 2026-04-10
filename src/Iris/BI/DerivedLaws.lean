@@ -50,8 +50,10 @@ theorem mp [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q → R) (h2 : P ⊢ Q) : P ⊢ 
 theorem imp_elim' [BI PROP] {P Q R : PROP} (h : Q ⊢ P → R) : P ∧ Q ⊢ R :=
   and_symm.trans <| imp_elim h
 
+@[rocq_alias impl_elim_l]
 theorem imp_elim_l [BI PROP] {P Q : PROP} : (P → Q) ∧ P ⊢ Q := imp_elim .rfl
 
+@[rocq_alias impl_elim_r]
 theorem imp_elim_r [BI PROP] {P Q : PROP} : P ∧ (P → Q) ⊢ Q := imp_elim' .rfl
 
 theorem false_elim [BI PROP] {P : PROP} : False ⊢ P := pure_elim' False.elim
@@ -671,6 +673,7 @@ instance (priority := default + 10) biaffine_absorbing [BI PROP] [BIAffine PROP]
 theorem affine_affinely [BI PROP] (P : PROP) [Affine P] : <affine> P ⊣⊢ P :=
   ⟨affinely_elim, and_intro affine .rfl⟩
 
+@[rocq_alias True_emp_iff_BiAffine]
 theorem biaffine_iff_true_emp [BI PROP] : BIAffine PROP ↔ (True : PROP) ⊢ emp :=
   ⟨fun _ => affine, fun h => ⟨fun _ => ⟨true_intro.trans h⟩⟩⟩
 
@@ -1567,9 +1570,11 @@ theorem persistent_and_sep_1 [BI PROP] {P Q : PROP} :
   | TCOr.l => persistent_and_affinely_sep_l_1.trans (sep_mono_l affinely_elim)
   | TCOr.r => persistent_and_affinely_sep_r_1.trans (sep_mono_r affinely_elim)
 
+@[rocq_alias persistent_entails_l]
 theorem persistent_entails_r [BI PROP] {P Q : PROP} [Persistent Q] (H : P ⊢ Q) : P ⊢ Q ∗ P :=
   (and_intro H .rfl).trans persistent_and_sep_1
 
+@[rocq_alias persistent_entails_r]
 theorem persistent_entails_l [BI PROP] {P Q : PROP} [Persistent Q] (H : P ⊢ Q) : P ⊢ P ∗ Q :=
   (and_intro .rfl H).trans persistent_and_sep_1
 

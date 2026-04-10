@@ -498,6 +498,7 @@ theorem laterN_soundness [Sbi PROP] {P : PROP} {n : Nat} (h : emp ⊢ ▷^[n] P)
 
 In Rocq: `■ P := <si_pure> <si_emp_valid> P`. All BIPlainly axioms are derived. -/
 
+@[rocq_alias siProp_plain]
 instance instPlainlySbi [Sbi PROP] : BIBase.Plainly PROP where
   plainly P := SiPure.siPure (SiEmpValid.siEmpValid P)
 
@@ -557,7 +558,7 @@ theorem later_plainly {P : PROP} : iprop(▷ ■ P ⊣⊢ ■ ▷ P) := by
   exact siPure_later.symm.trans
     ⟨siPure_mono siEmpValid_later.mpr, siPure_mono siEmpValid_later.mp⟩
 
-@[rocq_alias persistently_impl_si_pure_plainly]
+@[rocq_alias persistently_impl_plainly]
 theorem persistently_impl_plainly {P Q : PROP} :
     iprop((■ P → <pers> Q) ⊢ <pers> (■ P → Q)) :=
   persistently_imp_siPure
