@@ -28,7 +28,7 @@ This creates `Rocq.excl_auth_agreeN` as a `@[deprecated]` alias for `ExclAuth.ag
 open Lean Elab Command
 
 /-- Creates a `@[deprecated]` alias in the `Rocq` namespace with the given Rocq name. -/
-syntax (name := rocq_alias) "rocq_alias" (ident <|> "↓") : attr
+syntax (name := rocq_alias) "rocq_alias" ident : attr
 
 initialize registerBuiltinAttribute {
   name := `rocq_alias
@@ -37,8 +37,7 @@ initialize registerBuiltinAttribute {
   add := fun declName stx _kind => do
     let `(attr| rocq_alias $rocqId) := stx
       | throwError "invalid @[rocq_alias] syntax"
-    let rocqName := if let `($x:ident) := rocqId then x.getId else declName
-    let aliasName := `Rocq ++ rocqName
+    let aliasName := `Rocq ++ rocqId.getId
     let env ← getEnv
     if env.find? aliasName |>.isSome then
       throwError s!"duplicate rocq_alias: `{aliasName}` already exists"
