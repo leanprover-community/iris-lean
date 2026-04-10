@@ -414,5 +414,3 @@ end datatypes
 end internalEqLaws
 
 end Iris.BI
-
-end
