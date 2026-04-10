@@ -419,7 +419,7 @@ instance except0_absorbing (P : PROP) [Absorbing P] : Absorbing iprop(◇ P) :=
   inferInstanceAs (Absorbing iprop(_ ∨ _))
 
 @[rocq_alias timeless_alt]
-theorem timeless_alt [BI PROP] [BILoeb PROP] {Q : PROP} :
+theorem timeless_alt [BILoeb PROP] {Q : PROP} :
     Timeless Q ↔ (∀ (P : PROP), (iprop(▷ False) ∧ P ⊢ Q) → (P ⊢ Q)) := by
   refine ⟨fun hTimeless P hPr => ?_, (⟨later_false_em.trans <| or_mono .rfl <| · _ imp_elim_r⟩)⟩
   refine .trans (imp_intro' ?_) loeb
