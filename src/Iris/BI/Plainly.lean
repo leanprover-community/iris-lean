@@ -654,12 +654,6 @@ instance internalEq_timeless (P Q : PROP) [Timeless P] [Timeless Q] : Timeless (
       _ ⊢ ◇ ■ (P ∗-∗ Q) := Timeless.timeless
       _ ⊢ ◇ internalEq P Q := except0_mono mpr
 
-theorem _root_.Iris.BI.BIBase.BiEntails.ofMono
-  [BI PROP1] [BI PROP2]
-  {mod : PROP1 → PROP2}
-  (mono : ∀{P Q}, iprop(P ⊢ Q) → iprop(mod P ⊢ mod Q))
-  : ∀ {P Q : PROP1}, P ⊣⊢ Q → mod P ⊣⊢ mod Q := fun h => ⟨mono h.1, mono h.2⟩
-
 @[rocq_alias laterN_plainly]
 theorem laterN_plainly n {P : PROP} : ▷^[n] ■ P ⊣⊢ ■ ▷^[n] P :=
   match n with
