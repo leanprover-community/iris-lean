@@ -390,11 +390,14 @@ theorem sep_exists_r [BI PROP] {Φ : α → PROP} {Q : PROP} : (∃ a, Φ a) ∗
 theorem wand_rfl [BI PROP] {P : PROP} : ⊢ P -∗ P := wand_intro emp_sep.1
 
 @[rocq_alias wand_curry]
-theorem wand_curry [BI PROP] {P Q R: PROP} : (P -∗ Q -∗ R) ⊣⊢ ((P ∗ Q) -∗ R) :=
-  have h {R}: (P ∗ Q) ∗ R ⊣⊢ Q ∗ P ∗ R
-    := ⟨sep_mono_l (sep_symm) |>.trans sep_assoc.1, sep_assoc.2.trans (sep_mono_l (sep_symm))⟩
-  ⟨wand_intro'              (h.1.trans (wand_elim' (wand_elim' .rfl))),
-   wand_intro' (wand_intro' (h.2.trans (wand_elim' .rfl)))⟩
+theorem wand_curry [BI PROP] {P Q R: PROP} : (P -∗ Q -∗ R) ⊣⊢ ((P ∗ Q) -∗ R) := by
+  refine ⟨?_, ?_⟩
+  · refine wand_intro' ?_
+    refine sep_mono_l (sep_symm) |>.trans sep_assoc.1 |>.trans ?_
+    exact wand_elim' (wand_elim' .rfl)
+  · refine wand_intro' <| wand_intro' ?_
+    refine sep_assoc.2.trans (sep_mono_l sep_symm) |>.trans ?_
+    exact wand_elim' .rfl
 
 @[rw_mono_rule]
 theorem wandIff_congr [BI PROP] {P P' Q Q' : PROP} (h1 : P ⊣⊢ Q) (h2 : P' ⊣⊢ Q') :
