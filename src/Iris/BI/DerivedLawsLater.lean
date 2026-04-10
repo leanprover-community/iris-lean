@@ -513,6 +513,10 @@ instance wand_timeless [BI PROP] [BILoeb PROP] {P Q : PROP} [Timeless Q] :
     _ ⊢ P ∗ (P -∗ Q) := sep_mono_r hR
     _ ⊢ Q := wand_elim_r
 
+instance wandIff_timeless [BI PROP] [BILoeb PROP] {P Q : PROP} [Timeless P] [Timeless Q] :
+    Timeless (PROP := PROP) (wandIff P Q) :=
+  inferInstanceAs (Timeless (PROP := PROP) iprop((P -∗ Q) ∧ (Q -∗ P)))
+
 @[rocq_alias forall_timeless]
 instance forall_timeless [BI PROP] {α : Type _} (Ψ : α → PROP) [∀ x, Timeless (Ψ x)] :
     Timeless (PROP := PROP) (BIBase.forall Ψ) where
