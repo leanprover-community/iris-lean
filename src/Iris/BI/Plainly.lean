@@ -460,11 +460,6 @@ instance forall_plain {A : Type _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] →
 instance exists_plain {A : Type _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∃ x, Ψ x) where
   plain := .trans (exists_mono (fun _ => plain)) plainly_exists_2
 
-#check plainly_impl_plainly
-#check impl_wand_affinely_plainly
-#check affinely_plainly_elim
-#check plainly_into_absorbingly
-
 @[rocq_alias impl_plain]
 instance impl_plain (P Q : PROP) [Absorbing P] [Plain P] [Plain Q] : Plain iprop(P → Q) where
   plain := calc iprop(P → Q)
@@ -504,8 +499,6 @@ instance intuitionistically_plain (P : PROP) [Plain P] : Plain iprop(□ P) :=
 @[rocq_alias absorbingly_plain]
 instance absorbingly_plain (P : PROP) [Plain P] : Plain iprop(<absorb> P) :=
   inferInstanceAs (Plain iprop(True ∗ P))
-
-#check siPure
 
 @[rocq_alias si_pure_plain]
 instance si_pure_plain (P : SiProp) : Plain (PROP := PROP) (siPure P) where
@@ -559,8 +552,6 @@ instance big_orL_plain {A} (Φ : Nat → A → PROP) l [h : ∀ k x, Plain (Φ k
 
 instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=
   inferInstanceAs (Timeless iprop(<si_pure> <si_emp_valid> P))
-
-  #check SiProp.internalEq_rewrite
 
 @[rocq_alias plainly_internal_eq]
 theorem plainly_internalEq {A} [OFE A](a b : A) : iprop(■ (SiProp.internalEq a b) ⊣⊢ SiProp.internalEq a b) := by
