@@ -574,11 +574,30 @@ variable {S : Type _} [LawfulFiniteSet S K]
 @[rocq_alias big_sepM_dom]
 theorem bigSepM_dom {Φ : K → PROP} {m : M V} :
     ([∗map] k ↦ _v ∈ m, Φ k) ⊣⊢ ([∗set] k ∈ (FiniteMap.dom_set m : S), Φ k) := by
-  unfold bigSepM bigSepS bigOpM bigOpS
   exact equiv_iff.mp <|
-    ((bigOpL_map_equiv Prod.fst _ _).symm).trans
-    ((bigOpL_equiv_of_perm _ (LawfulFiniteMap.toList_dom_set_perm m)).symm)
+    ((bigOpL_map_equiv Prod.fst _ _).symm).trans <|
+    (bigOpL_equiv_of_perm _ <| LawfulFiniteMap.toList_dom_set_perm m).symm
 
+@[rocq_alias big_sepM_impl_dom_subseteq]
+theorem bigSepM_impl_dom_subseteq [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : Type _}
+    [LawfulFiniteMap M₂ K] {Φ : K → V → PROP} {Ψ : K → V₂ → PROP}
+    {m₁ : M V} {m₂ : M₂ V₂}
+    (hdom : FiniteMap.dom_set (S := S) m₂ ⊆ FiniteMap.dom_set m₁) :
+    ([∗map] k ↦ x ∈ m₁, Φ k x) ⊢
+    □ (∀ k, ∀ x, ∀ y, ⌜get? m₁ k = some x⌝ → ⌜get? m₂ k = some y⌝ → Φ k x -∗ Ψ k y) -∗
+    ([∗map] k ↦ y ∈ m₂, Ψ k y) ∗
+      [∗map] k ↦ x ∈ filter (fun k _ => (get? m₂ k).isNone) m₁, Φ k x := by
+  refine wand_intro ?_
+  refine .trans ?_ bigSepM_impl_strong
+  refine sep_mono_r <| intuitionistically_mono <| forall_mono fun k => ?_
+  refine forall_intro fun y => ?_
+  refine wand_intro <| imp_intro' <| pure_elim_l fun hm₂ => ?_
+  refine (sep_mono_l ?_).trans wand_elim_l
+  obtain ⟨x, hx⟩ := Option.isSome_iff_exists.mp <|
+    LawfulFiniteMap.mem_dom_set (S := S) |>.mp <|
+    hdom k (LawfulFiniteMap.mem_dom_set.mpr (Option.isSome_iff_exists.mpr ⟨y, hm₂⟩))
+  exact hx ▸ ((forall_elim x).trans <| (forall_elim y).trans <|
+       (pure_imp_elim rfl).trans <| pure_imp_elim hm₂)
 
 -- TODO: `big_sepM_gset_to_gmap` requires `gset_to_gmap`.
 
