@@ -362,14 +362,17 @@ instance wand_persistent [Plain P][Persistent Q][Absorbing Q] :
     _ ⊢ <pers> (P -∗ Q)   := persistently_mono (wand_mono plain .rfl)
 
 @[rocq_alias limit_preserving_Plain]
-instance limit_preserving_Plain {A} [COFE A] (Φ : A → PROP) (Φne : OFE.NonExpansive Φ) :
- LimitPreserving (λ x ↦ Plain (Φ x)) := fun c h =>
- ⟨LimitPreserving.entails Φ (fun x => iprop(■ (Φ x))) (Φne) (.comp inferInstance Φne) c (fun n => h n |>.plain)⟩
+instance limitPreserving_plain {A} [COFE A] (Φ : A → PROP) (Φne : OFE.NonExpansive Φ) :
+ LimitPreserving (fun x => Plain (Φ x)) := by
+   letI _ : OFE.NonExpansive fun x => iprop(■ Φ x) := .comp inferInstance Φne
+   refine fun c h => ⟨?_⟩
+   refine LimitPreserving.entails _ (fun x => iprop(■ (Φ x))) _ ?_
+   exact (fun n => h n |>.plain)
 
 section BigOp
 
-theorem BiEntails_proper : ∀ {a a' b b' : PROP}, a ≡ a' → b ≡ b' → (a ⊣⊢ b ↔ a' ⊣⊢ b')
-:= fun aa' bb' =>
+theorem BiEntails_proper : ∀ {a a' b b' : PROP}, a ≡ a' → b ≡ b' → (a ⊣⊢ b ↔ a' ⊣⊢ b') :=
+  fun aa' bb' =>
     ⟨ fun h => equiv_iff.1 (aa'.symm.trans (equiv_iff.2 h) |>.trans bb')
     , fun h => equiv_iff.1 (aa'.trans (equiv_iff.2 h) |>.trans bb'.symm)⟩
 
@@ -418,18 +421,18 @@ instance plainly_or_homomorphism [SbiEmpValidExist PROP] :
 
 @[rocq_alias big_sepL_plainly]
 theorem big_sepL_plainly [BIAffine PROP] {A} (Φ : Nat → A → PROP) l :
-  iprop(■ ([∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, ■ (Φ k x)) :=
-    Algebra.BigOpL.big_opL_commute _ _
+    iprop(■ ([∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, ■ (Φ k x)) :=
+  (Algebra.BigOpL.bigOpL_hom ..)
 
 @[rocq_alias big_andL_plainly]
 theorem big_andL_plainly {A} (Φ : Nat → A → PROP) l :
-  iprop(■ ([∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, ■ (Φ k x)) :=
-    Algebra.BigOpL.big_opL_commute _ _
+    iprop(■ ([∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, ■ (Φ k x)) :=
+  (Algebra.BigOpL.bigOpL_hom ..)
 
 @[rocq_alias big_orL_plainly]
 theorem big_orL_plainly [SbiEmpValidExist PROP] {A} (Φ : Nat → A → PROP) l :
-  iprop(■ ([∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ■ (Φ k x)) :=
-    Algebra.BigOpL.big_opL_commute _ _
+    iprop(■ ([∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ■ (Φ k x)) :=
+  (Algebra.BigOpL.bigOpL_hom ..)
 
 end BigOp
 

@@ -1606,24 +1606,16 @@ theorem bigOp_and_cons [BI PROP] {P : PROP} {Ps : List PROP} :
 /-! # Limits -/
 
 @[rocq_alias limit_preserving_entails]
-theorem LimitPreserving.entails [BI PROP][COFE A] (Φ Ψ : A → PROP)
-  (Φne : OFE.NonExpansive Φ) (Ψne : OFE.NonExpansive Ψ) : LimitPreserving (λ x ↦ Φ x ⊢ Ψ x) :=
-      LimitPreserving.ext (λ x ↦ True ⊣⊢ (Φ x → Ψ x)) _
-        (fun {x} =>
-          ⟨ fun h => true_and.2.trans (imp_elim h.1)
-          , fun h => ⟨imp_intro <| true_and.1.trans h, true_intro⟩⟩
-        )
-        (
-          let f : A -n> PROP := ⟨λ x ↦ iprop(True), inferInstance⟩
-          let g : A -n> PROP := {
-             f := λ x ↦ iprop(Φ x → Ψ x),
-             ne := ⟨fun n {x x'} xx' => imp_ne.ne (Φne.ne xx') (Ψne.ne xx')⟩
-          }
-          by
-            intros c h'
-            apply equiv_iff.1
-            apply LimitPreserving.equiv f g
-            intros n
-            apply equiv_iff.2
-            apply h'
-          )
+theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : OFE.NonExpansive Φ]
+    [Ψne : OFE.NonExpansive Ψ] : LimitPreserving (λ x ↦ Φ x ⊢ Ψ x) := by
+  refine .ext (P := λ x ↦ True ⊣⊢ (Φ x → Ψ x)) (@fun x => ?_) ?_
+  · exact ⟨(true_and.2.trans <| imp_elim ·.1), (⟨imp_intro <| true_and.1.trans ·, true_intro⟩)⟩
+  · let f : A -n> PROP := ⟨λ x ↦ iprop(True), inferInstance⟩
+    let g : A -n> PROP := {
+       f x := iprop(Φ x → Ψ x),
+       ne.ne _ {_ _} x := imp_ne.ne (Φne.ne x) (Ψne.ne x)
+    }
+    refine fun c h' => ?_
+    refine equiv_iff.1 ?_
+    refine LimitPreserving.equiv f g _ ?_
+    exact (equiv_iff.mpr <| h' ·)
