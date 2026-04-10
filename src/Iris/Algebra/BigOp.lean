@@ -248,6 +248,34 @@ theorem bigOpL_hom_weak [H : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ 
   | .cons _ (.cons y ys) =>
     H.rel_trans (H.map_op) <| H.op_proper H.rel_refl <| bigOpL_hom_weak _ (List.cons_ne_nil y ys)
 
+theorem big_opL_commute1 {A}{R : M₂ → M₂ → Prop} {h : M₁ → M₂} [κ : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R h]
+      (f : Nat → A → M₁) l : l ≠ [] ->
+    R (h ([^op₁ list] k↦x ∈ l, f k x)) ([^op₂ list] k↦x ∈ l, h (f k x)) := by
+    intros l_nonempty
+    match l with
+    | [x] =>
+      dsimp only [bigOpL_cons, bigOpL_nil]
+      refine κ.rel_proper (a := h (f 0 x)) (b := h (f 0 x)) ?_ ?_ |>.1 ?_
+      · apply κ.map_ne.eqv op_right_id.symm;
+      · apply op_right_id.symm
+      · apply κ.rel_refl
+    | hd :: (hd' :: tl') =>
+      have h : (hd' :: tl') ≠ [] := by rintro ⟨⟩
+      generalize (hd' :: tl') = tl at h ⊢
+      apply κ.rel_trans κ.map_op
+      apply κ.op_proper
+      · exact κ.rel_refl
+      · apply big_opL_commute1 _ tl h
+
+theorem big_opL_commute {A}{R : M₂ → M₂ → Prop} {h : M₁ → M₂} [ι : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R h]
+      (f : Nat → A → M₁) l :
+    R (h ([^op₁ list] k↦x ∈ l, f k x)) ([^op₂ list] k↦x ∈ l, h (f k x)) := by
+    induction l generalizing f with
+    | nil => exact ι.map_unit
+    | cons hd tl IH =>
+      apply big_opL_commute1
+      rintro ⟨⟩
+
 end Hom
 end BigOpL
 

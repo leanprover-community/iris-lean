@@ -415,7 +415,7 @@ theorem siEmpValid_laterN [Sbi PROP] {n : Nat} {P : PROP} :
   n.casesOn .rfl (fun _ => siEmpValid_later.trans (later_congr siEmpValid_laterN))
 
 @[rocq_alias si_emp_valid_except_0]
-theorem siEmpValid_except0 [Sbi PROP] (P : PROP) :
+theorem siEmpValid_except0 [Sbi PROP] {P : PROP} :
     <si_emp_valid> (◇ P) ⊣⊢@{SiProp} ◇ <si_emp_valid> P := by
   constructor
   · refine (and_intro ((siEmpValid_mono except0_into_later).trans siEmpValid_later.mp) .rfl).trans ?_
@@ -442,7 +442,7 @@ instance siEmpValid_timeless [Sbi PROP] (P : PROP) [Timeless P] :
     calc iprop(▷ <si_emp_valid> P)
       _ ⊢ <si_emp_valid> (▷ P) := siEmpValid_later.mpr
       _ ⊢ <si_emp_valid> (◇ P) := siEmpValid_mono Timeless.timeless
-      _ ⊢ ◇ <si_emp_valid> P := (siEmpValid_except0 _).mp
+      _ ⊢ ◇ <si_emp_valid> P := siEmpValid_except0.mp
 
 @[rocq_alias si_emp_valid_emp_valid]
 theorem siEmpValid_emp_valid [Sbi PROP] {P : PROP} :
@@ -580,6 +580,19 @@ theorem plainly_sExists_1 [SbiEmpValidExist PROP] {Φ : PROP → Prop} :
   exact (siPure_mono (SbiEmpValidExist.siEmpValid_sExists_1 Φ)).trans <|
     siPure_exist.mp.trans <|
     exists_mono fun p => siPure_and.mp.trans (and_mono_l siPure_pure.mp)
+
+@[rocq_alias plainly_if_ne]
+instance instPlainlyIf_ne p: OFE.NonExpansive (BIBase.Plainly.plainlyIf (PROP := PROP) p) where
+  ne _ _ _ := fun h =>
+    match p with
+    | true => instPlainly_ne.ne h
+    | false => h
+
+@[rocq_alias plainly_if_mono]
+theorem plainly_if_mono p (P Q : PROP) : iprop(P ⊢ Q) → ■?p P ⊢ ■?p Q := fun h =>
+  match p with
+  | true => plainly_mono h
+  | false => h
 
 end PlainlyFromSbi
 

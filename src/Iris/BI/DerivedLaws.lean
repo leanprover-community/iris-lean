@@ -387,6 +387,12 @@ theorem sep_exists_r [BI PROP] {Φ : α → PROP} {Q : PROP} : (∃ a, Φ a) ∗
 
 theorem wand_rfl [BI PROP] {P : PROP} : ⊢ P -∗ P := wand_intro emp_sep.1
 
+theorem wand_curry [BI PROP] {P Q R: PROP} : (P -∗ Q -∗ R) ⊣⊢ ((P ∗ Q) -∗ R) :=
+  have h {R}: (P ∗ Q) ∗ R ⊣⊢ Q ∗ P ∗ R
+    := ⟨sep_mono_l (sep_symm) |>.trans sep_assoc.1, sep_assoc.2.trans (sep_mono_l (sep_symm))⟩
+  ⟨wand_intro'              (h.1.trans (wand_elim' (wand_elim' .rfl))),
+   wand_intro' (wand_intro' (h.2.trans (wand_elim' .rfl)))⟩
+
 @[rw_mono_rule]
 theorem wandIff_congr [BI PROP] {P P' Q Q' : PROP} (h1 : P ⊣⊢ Q) (h2 : P' ⊣⊢ Q') :
     (P ∗-∗ P') ⊣⊢ (Q ∗-∗ Q') := and_congr (wand_congr h1 h2) (wand_congr h2 h1)
@@ -1590,3 +1596,28 @@ theorem bigOp_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} :
 
 theorem bigOp_and_cons [BI PROP] {P : PROP} {Ps : List PROP} :
     [∧] (P :: Ps) ⊣⊢ P ∧ [∧] Ps := bigOp_cons
+
+/-! # Limits -/
+
+@[rocq_alias limit_preserving_entails]
+theorem LimitPreserving.entails [BI PROP][COFE A] (Φ Ψ : A → PROP)
+  (Φne : OFE.NonExpansive Φ) (Ψne : OFE.NonExpansive Ψ) : LimitPreserving (λ x ↦ Φ x ⊢ Ψ x) :=
+      LimitPreserving.ext (λ x ↦ True ⊣⊢ (Φ x → Ψ x)) _
+        (fun {x} =>
+          ⟨ fun h => true_and.2.trans (imp_elim h.1)
+          , fun h => ⟨imp_intro <| true_and.1.trans h, true_intro⟩⟩
+        )
+        (
+          let f : A -n> PROP := ⟨λ x ↦ iprop(True), inferInstance⟩
+          let g : A -n> PROP := {
+             f := λ x ↦ iprop(Φ x → Ψ x),
+             ne := ⟨fun n {x x'} xx' => imp_ne.ne (Φne.ne xx') (Ψne.ne xx')⟩
+          }
+          by
+            intros c h'
+            apply equiv_iff.1
+            apply LimitPreserving.equiv f g
+            intros n
+            apply equiv_iff.2
+            apply h'
+          )

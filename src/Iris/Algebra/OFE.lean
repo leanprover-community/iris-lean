@@ -818,6 +818,11 @@ theorem LimitPreserving.equiv [COFE α] [COFE β] (f g : α -n> β) :
   apply (Hfg _).dist.trans
   exact g.ne.ne COFE.conv_compl.symm
 
+@[rocq_alias limit_preserving_ext]
+theorem LimitPreserving.ext {α}[COFE α] (P Q : α -> Prop)(h : ∀ {x}, (P x ↔ Q x))
+ : LimitPreserving P → LimitPreserving Q := fun HP _ HQ =>
+    h.1 (HP _ (fun _ => h.2 (HQ _)))
+
 def Fixpoint.chain [OFE α] [Inhabited α] (f : α → α) [Contractive f] : Chain α where
   chain n := Nat.repeat f (n + 1) default
   cauchy {n} := by
