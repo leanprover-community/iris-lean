@@ -581,8 +581,7 @@ theorem bigSepM_dom {Φ : K → PROP} {m : M V} :
 @[rocq_alias big_sepM_impl_dom_subseteq]
 theorem bigSepM_impl_dom_subseteq [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : Type _}
     [LawfulFiniteMap M₂ K] {Φ : K → V → PROP} {Ψ : K → V₂ → PROP}
-    {m₁ : M V} {m₂ : M₂ V₂}
-    (hdom : FiniteMap.dom_set (S := S) m₂ ⊆ FiniteMap.dom_set m₁) :
+    {m₁ : M V} {m₂ : M₂ V₂} (hdom : FiniteMap.dom_set (S := S) m₂ ⊆ FiniteMap.dom_set m₁) :
     ([∗map] k ↦ x ∈ m₁, Φ k x) ⊢
     □ (∀ k, ∀ x, ∀ y, ⌜get? m₁ k = some x⌝ → ⌜get? m₂ k = some y⌝ → Φ k x -∗ Ψ k y) -∗
     ([∗map] k ↦ y ∈ m₂, Ψ k y) ∗

@@ -1009,10 +1009,9 @@ theorem filter_delete (p : A → Bool) (x : A) (s : S) :
 /-- toList of a filtered set is a permutation of filtering the list. -/
 theorem toList_filter_perm (p : A → Bool) (s : S) :
     (toList (filter p s)).Perm ((toList s).filter p) := by
-  have : ((toList s).filter p).Nodup := by simpa using List.Pairwise.filter p toList_nodup
-  apply (List.perm_ext_iff_of_nodup toList_nodup this).mpr
-  intro x
-  simp [mem_toList, mem_filter, List.mem_filter, mem_toList]
+  refine (List.perm_ext_iff_of_nodup toList_nodup ?_).mpr ?_
+  exact List.Pairwise.filter p toList_nodup
+  grind [mem_toList, mem_filter, mem_toList]
 
 -- FIXME: Golf
 /-- A set has size 0 iff it is empty. -/

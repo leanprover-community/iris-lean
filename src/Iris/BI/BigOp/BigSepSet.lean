@@ -353,7 +353,6 @@ theorem bigSepS_filter [BIAffine PROP] (φ : A → Bool) {Φ : A → PROP} {X : 
     · exact ⟨imp_intro' <| pure_elim_l (fun hf => nomatch hf), Affine.affine⟩
     · simp [true_imp.symm]
 
--- TODO:
 @[rocq_alias big_sepS_filter_acc']
 theorem bigSepS_filter_acc_cond (φ : A → Bool) {Φ : A → PROP} {X Y : S}
     (h : ∀ y, y ∈ Y → φ y → y ∈ X) :
@@ -362,13 +361,11 @@ theorem bigSepS_filter_acc_cond (φ : A → Bool) {Φ : A → PROP} {X Y : S}
       (([∗set] y ∈ Y, if φ y then Φ y else emp) -∗ [∗set] y ∈ X, Φ y) := by
   have hdisj : FiniteSet.filter φ Y ## (X \ FiniteSet.filter φ Y) :=
     fun a ha => (mem_diff.mp ha.2).2 ha.1
-  have hfilter_sub := fun z hz =>
-    let ⟨hz_Y, hz_φ⟩ := FiniteSet.mem_filter φ Y z |>.mp hz
-    h z hz_Y hz_φ
-  rw [(diff_subset_decomp hfilter_sub).trans union_comm]
-  have hfilt := bigSepS_filter_cond φ (Φ := Φ) (X := Y)
+  rw [(diff_subset_decomp (fun z hz => (FiniteSet.mem_filter φ Y z).mp hz |>.elim (h z))).trans
+    union_comm]
   exact (bigSepS_union hdisj).1.trans <|
-    sep_mono hfilt.1 (wand_intro' <| (sep_mono_l hfilt.2).trans (bigSepS_union hdisj).2)
+    sep_mono (bigSepS_filter_cond φ).1
+      (wand_intro' <| (sep_mono_l (bigSepS_filter_cond φ).2).trans (bigSepS_union hdisj).2)
 
 @[rocq_alias big_sepS_filter_acc]
 theorem bigSepS_filter_acc [BIAffine PROP] (φ : A → Bool) {Φ : A → PROP} {X Y : S}
@@ -383,26 +380,22 @@ theorem bigSepS_filter_acc [BIAffine PROP] (φ : A → Bool) {Φ : A → PROP} {
     · simp [true_imp.symm]
   exact (bigSepS_filter_acc_cond φ h).trans <| sep_mono hequiv.1 (wand_mono hequiv.2 .rfl)
 
--- TODO:
 @[rocq_alias big_sepS_union_2]
 theorem bigSepS_union_elim {Φ : A → PROP} {X Y : S}
     [∀ x, TCOr (Affine (Φ x)) (Absorbing (Φ x))] :
     ⊢ ([∗set] y ∈ X, Φ y) -∗ ([∗set] y ∈ Y, Φ y) -∗ ([∗set] y ∈ X ∪ Y, Φ y) := by
   apply entails_wand; apply wand_intro'
   induction X using FiniteSet.set_ind with
-  | hemp => simp only [union_empty_left]; exact (sep_mono_r bigSepS_empty.1).trans sep_emp.1
+  | hemp => rw [union_empty_left]; exact (sep_mono_r bigSepS_empty.1).trans sep_emp.1
   | hadd a s hnin ih =>
-    rw [show insert a s ∪ Y = insert a (s ∪ Y) from by
-      ext w; rw [mem_union, mem_insert, mem_insert, mem_union]; grind]
+    rw [insert_union_comm]
     refine (sep_mono_r (bigSepS_insert hnin).1).trans <|
       sep_left_comm.1.trans <| (sep_mono_r ih).trans ?_
     by_cases ha : a ∈ Y
-    · have hmem := mem_union.mpr (.inr ha : a ∈ s ∨ a ∈ Y)
-      have heq : (s ∪ Y) \ {a} = insert a (s ∪ Y) \ {a} := by
-        ext w; simp only [mem_diff, mem_union, mem_insert, mem_singleton]; grind
-      refine (sep_mono_r (bigSepS_delete hmem).1).trans <| sep_assoc.2.trans <|
-        (sep_mono_l sep_elim_l).trans ?_
-      rw [heq]; exact (bigSepS_delete (mem_insert.mpr (.inl rfl))).2
+    · rw [insert_idem (mem_union.mpr (.inr ha))]
+      exact (sep_mono_r (bigSepS_delete (mem_union.mpr (.inr ha))).1).trans <|
+        sep_assoc.2.trans <| (sep_mono_l sep_elim_l).trans
+        (bigSepS_delete (mem_union.mpr (.inr ha))).2
     · exact (bigSepS_insert (fun hmem => (mem_union.mp hmem).elim hnin ha)).2
 
 @[rocq_alias big_sepS_insert_2]
@@ -429,15 +422,14 @@ theorem bigSepS_delete_elim {Φ : A → PROP} {X : S} {x : A} [Affine (Φ x)] :
   · rw [show X \ {x} = X by ext y ; grind [mem_diff, mem_singleton]]
     exact (sep_mono_l Affine.affine).trans emp_sep.1
 
--- TODO:
 @[rocq_alias big_sepS_fn_insert]
 theorem bigSepS_fn_insert [DecidableEq A] {B : Type _} {Ψ : A → B → PROP} {f : A → B}
     {X : S} {x : A} {b : B} (h : x ∉ X) :
     ([∗set] y ∈ insert x X, Ψ y (if y = x then b else f y)) ⊣⊢
       Ψ x b ∗ [∗set] y ∈ X, Ψ y (f y) := by
-  refine (bigSepS_insert h).trans ?_
-  simp only [ite_true]
-  exact sep_congr_r <| bigSepS_equiv fun hy => by simp [show _ ≠ x from fun heq => h (heq ▸ hy)]
+  exact (bigSepS_insert h).trans <| sep_congr
+    (.of_eq (by simp))
+    (bigSepS_equiv fun hy => .of_eq (by simp [show _ ≠ x from fun heq => h (heq ▸ hy)]))
 
 @[rocq_alias big_sepS_fn_insert']
 theorem bigSepS_fn_insert_key [DecidableEq A] {Φ : A → PROP} {X : S} {x : A} {P : PROP} (h : x ∉ X) :
