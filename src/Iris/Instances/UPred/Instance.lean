@@ -111,15 +111,9 @@ def ownM (m : M) : UPred M where
          _  ≡{n₂}≡ (m • m₁) • m₂ := (Hm₁.le Hn).op_l
          _  ≡{n₂}≡ m • (m₁ • m₂) := CMRA.assoc.symm.dist
 
-instance : OFE.NonExpansive (ownM : M → UPred M) where
-  ne _ _ _ H _ _ Hn _ := OFE.Dist.incN (OFE.Dist.le H Hn) .rfl
-
-def cmraValid [CMRA A] (a : A) : UPred M where
+def cmraValid {A} [CMRA A] (a : A) : UPred M where
   holds n _ := ✓{n} a
   mono hv _ le := CMRA.validN_of_le le hv
-
-instance [CMRA A] : OFE.NonExpansive (cmraValid : A → UPred M) where
-  ne _ _ _ H _ _ Hn _ := (H.le Hn).validN
 
 def bupd (Q : UPred M) : UPred M where
   holds n x := ∀ k yf, k ≤ n → ✓{k} (x • yf) → ∃ x', ✓{k} (x' • yf) ∧ Q k x'
@@ -135,6 +129,33 @@ def bupd (Q : UPred M) : UPred M where
     refine Q.mono HQ' ?_ k.le_refl
     exact CMRA.incN_op_left k x' x3
 
+protected def emp : UPred M where
+  holds _ _ := True
+  mono _ _ _ := trivial
+
+end bidefs
+
+@[rocq_alias persistently_ne]
+instance persistently_ne : OFE.NonExpansive UPred.persistently (α := UPred M) where
+  ne _ _ _ H _ _ Hn Hx := H _ _ Hn (CMRA.validN_core Hx)
+
+@[rocq_alias later_contractive]
+instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
+  distLater_dist {n x y} Hl :=
+    match n with
+    | 0 => by intro; simp_all [UPred.later]
+    | n + 1 => fun
+      | 0 => by simp [UPred.later]
+      | n' + 1 => fun x' Hn' Hx' => Hl _ Hn' _ _ (Nat.le_refl _) (CMRA.validN_succ Hx')
+
+@[rocq_alias ownM_ne]
+instance ownM_ne : OFE.NonExpansive (ownM : M → UPred M) where
+  ne _ _ _ H _ _ Hn _ := OFE.Dist.incN (OFE.Dist.le H Hn) .rfl
+
+instance {A} [CMRA A] : OFE.NonExpansive (cmraValid : A → UPred M) where
+  ne _ _ _ H _ _ Hn _ := (H.le Hn).validN
+
+@[rocq_alias bupd_ne]
 instance bupd_ne : OFE.NonExpansive (bupd : UPred M → UPred M) where
   ne n x1 x2 Hx m y Hm Hv := by
     constructor
@@ -148,12 +169,6 @@ instance bupd_ne : OFE.NonExpansive (bupd : UPred M → UPred M) where
       refine ⟨x', ⟨Hx'1, ?_⟩⟩
       refine uPred_holds_ne ?_ k.le_refl (CMRA.validN_op_left Hx'1) Hx'2
       exact OFE.Dist.le Hx (Nat.le_trans Hk Hm)
-
-protected def emp : UPred M where
-  holds _ _ := True
-  mono _ _ _ := trivial
-
-end bidefs
 
 instance : BIBase (UPred M) where
   Entails      := UPred.Entails
@@ -179,14 +194,6 @@ theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
   refine uPred_holds_ne IsCOFE.conv_compl n.le_refl Hv ?_
   refine H _ _ _ Hv ?_
   exact uPred_holds_ne IsCOFE.conv_compl.symm n.le_refl Hv HP
-
-instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
-  distLater_dist {n x y} Hl :=
-    match n with
-    | 0 => by intro; simp_all [UPred.later]
-    | n + 1 => fun
-      | 0 => by simp [UPred.later]
-      | n' + 1 => fun x' Hn' Hx' => Hl _ Hn' _ _ (Nat.le_refl _) (CMRA.validN_succ Hx')
 
 instance : BI (UPred M) where
   entails_preorder := inferInstance
@@ -235,7 +242,7 @@ instance : BI (UPred M) where
     · refine (H' _ _ (Nat.le_trans Hn Hn') Hv).mpr ?_
       refine HE _ _ Hn Hv ?_
       exact (H _ _ (Nat.le_trans Hn Hn') (CMRA.validN_op_right Hv)).mp H''
-  persistently_ne.ne _ _ _ H _ _ Hn Hx := H _ _ Hn (CMRA.validN_core Hx)
+  persistently_ne := persistently_ne
   later_ne := inferInstanceAs (OFE.NonExpansive UPred.later)
   sForall_ne := fun ⟨HR1, HR2⟩ n' x' Hn' Hx' => by
     constructor
@@ -347,23 +354,11 @@ instance : BIPureForall (UPred M) where
 instance : BILaterContractive (UPred M) where
   toContractive := later_contractive
 
-@[rocq_alias uPred_affine]
 instance (P : UPred M) : Affine P where
   affine _ := by simp [emp, UPred.emp]
 
-instance : OFE.NonExpansive (bupd : UPred M → UPred M) where
-  ne {n} {x1 x2} H {n' x'} Hn' Hx' := by
-    constructor
-    · intro H' k yf Hk Hv
-      rcases H' k yf Hk Hv with ⟨x'', Hx''⟩
-      refine ⟨x'',⟨Hx''.1, ?_⟩⟩
-      apply uPred_holds_ne (H.symm.le (Nat.le_trans Hk Hn')) k.le_refl (CMRA.validN_op_left Hx''.1)
-      exact Hx''.2
-    · intro H' k yf Hk Hv
-      rcases H' k yf Hk Hv with ⟨x'', Hx''⟩
-      refine ⟨x'',⟨Hx''.1, ?_⟩⟩
-      apply uPred_holds_ne (H.le (Nat.le_trans Hk Hn')) k.le_refl (CMRA.validN_op_left Hx''.1)
-      exact Hx''.2
+@[rocq_alias uPred_affine]
+instance : BIAffine (UPred M) := ⟨by infer_instance⟩
 
 protected def uPredSiPure (Pi : SiProp) : UPred M where
   holds n _ := Pi.holds n
@@ -373,27 +368,88 @@ protected def uPredSiEmpValid (P : UPred M) : SiProp where
   holds n := P n UCMRA.unit
   closed h hle := P.mono h (CMRA.incN_refl _) hle
 
+@[rocq_alias si_pure_ne]
+instance uPredSiPure_ne : OFE.NonExpansive (UPred.uPredSiPure : SiProp → UPred M) where
+  ne _ _ _ hp _ _ hn _ := hp hn
+
+@[rocq_alias si_emp_valid_ne]
+instance uPredSiEmpValid_ne : OFE.NonExpansive (UPred.uPredSiEmpValid : UPred M → SiProp) where
+  ne _ _ _ h m hm := h m UCMRA.unit hm CMRA.unit_validN
+
+instance : SiPure (UPred M) := ⟨UPred.uPredSiPure⟩
+
+instance : SiEmpValid (UPred M) := ⟨UPred.uPredSiEmpValid⟩
+
+section SiPropEmbedding
+
+/-
+## Rules for the SiProp embedding
+-/
+
+@[rocq_alias si_pure_mono]
+theorem uPredSiPure_mono {Pi Qi : SiProp} (hpq : Pi ⊢ Qi) : <si_pure> Pi ⊢@{UPred M} <si_pure> Qi :=
+  fun n _ _ hp => hpq n hp
+
+@[rocq_alias si_emp_valid_mono]
+theorem uPredSiEmpValid_mono {P Q : UPred M} (h : P ⊢ Q) : <si_emp_valid> P ⊢ <si_emp_valid> Q :=
+  fun n hp => h n CMRA.unit CMRA.unit_validN hp
+
+@[rocq_alias si_pure_impl_2]
+theorem uPredSiPure_imp_mpr {Pi Qi : SiProp} :
+    (<si_pure> Pi → <si_pure> Qi) ⊢@{UPred M} <si_pure> (Pi → Qi) :=
+  fun _ x hv hpq m hle => hpq m x .rfl hle (CMRA.validN_of_le hle hv)
+
+@[rocq_alias si_pure_later]
+theorem uPredSiPure_later {Pi : SiProp} : <si_pure> (▷ Pi) ⊣⊢@{UPred M} ▷ <si_pure> Pi :=
+  ⟨fun _ _ _ hp => hp, fun _ _ _ hp => hp⟩
+
+@[rocq_alias si_emp_valid_later_1]
+theorem uPredSiEmpValid_later_mp {P : UPred M} : <si_emp_valid> (▷ P) ⊢ ▷ <si_emp_valid> P :=
+  fun _ hp => hp
+
+@[rocq_alias si_emp_valid_si_pure]
+theorem uPredSiEmpValid_uPredSiPure {Pi : SiProp} : <si_emp_valid> (<si_pure> Pi : UPred M) ⊣⊢ Pi :=
+  ⟨fun _ hp => hp, fun _ hp => hp⟩
+
+@[rocq_alias si_pure_si_emp_valid]
+theorem uPredSiPure_uPredSiEmpValid {P : UPred M} : <si_pure> <si_emp_valid> P ⊢ <pers> P :=
+  fun n _ _ hp => P.mono hp CMRA.incN_unit n.le_refl
+
+@[rocq_alias persistently_impl_si_pure]
+theorem persistently_imp_uPredSiPure {Pi : SiProp} {Q : UPred M} :
+    (<si_pure> Pi → <pers> Q) ⊢ <pers> (<si_pure> Pi → Q) := by
+  intro n x hnx hpq m y hinc hle _ hp
+  have hmx : ✓{m} x := CMRA.validN_of_le hle hnx
+  have hq := hpq m x .rfl hle hmx hp
+  exact (Q.mono hq hinc.incN m.le_refl)
+
+-- si_pure_forall_2 is already defined in Sbi.lean
+theorem uPredSiPure_forall_mpr {α : Type _} {Pi : α → SiProp} :
+    (∀ x, <si_pure> Pi x : UPred M) ⊢ <si_pure> (∀ x, Pi x) := by
+  rintro n x hv hp Ψ ⟨a, rfl⟩
+  exact hp iprop(<si_pure> Pi a) ⟨a, rfl⟩
+
+-- si_emp_valid_exist_1 is already defined in Sbi.lean
+theorem uPredSiEmpValid_exist_mp {α : Type _} {P : α → UPred M} :
+    (<si_emp_valid> (∃ x, P x) : SiProp) ⊢ ∃ x, <si_emp_valid> P x := by
+  rintro n ⟨Ψ, ⟨a, rfl⟩, hp⟩
+  exact ⟨iprop(<si_emp_valid> P a), ⟨a, rfl⟩, hp⟩
+
+end SiPropEmbedding
+
 instance : Sbi (UPred M) where
-  toSiPure := ⟨UPred.uPredSiPure⟩
-  toSiEmpValid := ⟨UPred.uPredSiEmpValid⟩
-  siPure_ne.ne _ _ _ H _ _ Hn _ := H Hn
-  siEmpValid_ne.ne _ _ _ H := fun Hn => H _ _ Hn CMRA.unit_validN
-  siPure_mono H _ _ _ hp := H _ hp
-  siEmpValid_mono H _ hp := H _ _ CMRA.unit_validN hp
-  siEmpValid_siPure := ⟨fun _ => id, fun _ => id⟩
-  siPure_siEmpValid {P n x _} H := by
-    refine P.mono H ?_ n.le_refl
-    exact CMRA.incN_unit
-  siPure_imp_mpr {_ _ _ _} Hv HPQ m hle hPi :=
-    HPQ m _ (CMRA.inc_refl _) hle (CMRA.validN_of_le hle Hv) hPi
+  siPure_ne := uPredSiPure_ne
+  siEmpValid_ne := uPredSiEmpValid_ne
+  siPure_mono := uPredSiPure_mono
+  siEmpValid_mono := uPredSiEmpValid_mono
+  siEmpValid_siPure := uPredSiEmpValid_uPredSiPure
+  siPure_siEmpValid := uPredSiPure_uPredSiEmpValid
+  siPure_imp_mpr := uPredSiPure_imp_mpr
   siPure_sForall_mpr {_ _ _} hv H _ := H _ ⟨_, rfl⟩ _ _ .rfl (Nat.le_refl _) hv
-  persistently_imp_siPure {_} Q n x Hx HPQ n' x' Hx' Hn Hv H := by
-    apply Q.mono _ (CMRA.incN_of_inc _ Hx') n'.le_refl
-    apply HPQ _ _ CMRA.Included.rfl Hn (CMRA.validN_of_le Hn Hx)
-    exact H
-  siPure_later := ⟨fun _ _ _ => id, fun _ _ _ => id⟩
+  persistently_imp_siPure := persistently_imp_uPredSiPure
+  siPure_later := uPredSiPure_later
   siPure_absorbing _ := ⟨fun _ _ _ ⟨_, _, _, _, h⟩ => h⟩
-  siEmpValid_later_mp := fun _ => id
+  siEmpValid_later_mp := uPredSiEmpValid_later_mp
   siEmpValid_affinely_mpr _ h := ⟨trivial, h⟩
   prop_ext_siEmpValid {P Q _} h n x hn hv := by
     have hvu : ✓{n} ((UCMRA.unit : M) • x) :=
@@ -500,7 +556,7 @@ theorem later_soundness : iprop(True ⊢ ▷ P) → iprop((True : UPred M) ⊢ P
 theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (CMRA.core a) :=
   fun _ _ _ H => CMRA.core_incN_core H
 
-instance : Persistent (ownM (CMRA.core a) : UPred M) where
+instance {a : M} : Persistent (ownM (CMRA.core a)) where
   persistent := by
     refine .trans (persistently_ownM_core _) ?_
     refine persistently_mono ?_
@@ -539,8 +595,6 @@ instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where
       let ⟨_a', y', Hx, Ha', _⟩ := CMRA.extend (CMRA.validN_succ Hv) Hxy
       .inr ⟨y', (Hx.trans (OFE.DiscreteE.discrete (Ha'.symm.le n.zero_le)).symm.op_l).dist⟩
 
-instance : BIAffine (UPred M) := ⟨by infer_instance⟩
-
 -- Ported from iris/iris/base_logic/derived.v
 
 @[rocq_alias plainly_cmra_valid_1]
@@ -548,8 +602,7 @@ theorem plainly_cmra_valid_1 [CMRA A] (a : A) : (cmraValid a : UPred M) ⊢ ■ 
   fun _ _ _ h => h
 
 @[rocq_alias persistently_cmra_valid_1]
-theorem persistently_cmra_valid_1 [CMRA A] (a : A) :
-    (cmraValid a : UPred M) ⊢ <pers> cmraValid a :=
+theorem persistently_cmra_valid_1 [CMRA A] (a : A) : (cmraValid a : UPred M) ⊢ <pers> cmraValid a :=
   (plainly_cmra_valid_1 a).trans plainly_elim_persistently
 
 @[rocq_alias intuitionistically_ownM]

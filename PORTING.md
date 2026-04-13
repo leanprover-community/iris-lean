@@ -147,20 +147,20 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 
 ## Base Logic 
 - [x] `base_logic.v`
-- [ ] `bi.v` (nb. contained in `Instances/UPred/Instance.lean`)
+- [x] `bi.v` (nb. contained in `Instances/UPred/Instance.lean`)
   - [x] BI instance
   - [x] BI Persistently instance
   - [x] BI Later instance
   - [x] SBI instance
   - [x] BUPd instance
-  - [ ] Additional instances
+  - [x] Additional instances
 - [x] `bupd_alt.v` (nb. contained in `BI/Lib/BUpdPlain.lean`)
 - [ ] `derived.v`
   - [x] Modalities 
 - [ ] `proofmode.v`
   - [ ] class instances
 - [ ] `upred.v` (nb. contained in `Algebra/UPred.lean` and `Instances/UPred/Instance.lean`)
-  - Missing: new `later_ownM`, `later_own`
+  - Missing: new `later_own`
   - [x] CMRA 
   - [x] Functors
   - [x] Primitives and nonexpansivity
