@@ -349,6 +349,17 @@ class Countable (A : Type) where
 instance some_inj {A} : Iris.Std.Injective (@some A) where
   inj _ _ := by rintro ⟨⟩; rfl
 
+instance {A} [Countable A] : DecidableEq A := by
+  open Countable in
+  intros x y
+  if h : encode x = encode y then
+    apply Decidable.isTrue
+    apply some_inj.inj
+    rw [←decode_encode, ←decode_encode, h]
+  else
+    apply isFalse
+    grind only
+
 instance encode_inj [c : Countable A] : Iris.Std.Injective (c.encode) where
   inj x _ Hxy := by
     apply some_inj.inj

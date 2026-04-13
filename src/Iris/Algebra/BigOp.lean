@@ -10,6 +10,7 @@ import Batteries.Data.List.Perm
 public import Iris.Std.List
 public import Iris.Std.PartialMap
 public import Iris.Std.GenSets
+public import Iris.Std.Positives
 
 namespace Iris.Algebra
 
@@ -478,6 +479,58 @@ theorem bigOpM_sep_zip_equiv {A : Type _} {B : Type _}
     ([^ op map] k ↦ xy ∈ PartialMap.zip m1 m2, op (h1 k xy.1) (h2 k xy.2)) ≡
     op ([^ op map] k ↦ x ∈ m1, h1 k x) ([^ op map] k ↦ x ∈ m2, h2 k x) :=
   bigOpM_sep_zipWith_equiv _ _ rfl rfl hdom
+
+variable [Pos.Countable K]
+variable {M₁} [OFE M₁]
+variable {M₂} [OFE M₂]
+variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
+variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
+
+theorem bigOpM_hom  {A} {R : M₂ → M₂ → Prop} {h : M₁ → M₂}
+  [ι : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R h]
+      (f : K → A → M₁) (m : M' A) :
+    R (h ([^op₁ map] k↦x ∈ m, f k x)) ([^op₂ map] k↦x ∈ m, h (f k x)) := by
+  induction m using Iris.Std.LawfulFiniteMap.induction_on (M := M') (K := K)
+  case hequiv m₁ m₂ m₁m₂ R_op₁op₂ =>
+    have h_op₁_m₁m₂ := ι.map_ne.eqv <| bigOpM_equiv_of_perm (op := op₁) f m₁m₂
+    have op₂_h_m₁m₂ := bigOpM_equiv_of_perm (op := op₂) (h <| f · ·) m₁m₂
+    apply ι.rel_proper h_op₁_m₁m₂ op₂_h_m₁m₂ |>.1 R_op₁op₂
+  case hemp =>
+    simp only [bigOpM_empty, ι.map_unit, show empty (M := M') (V := A) = ∅ from rfl]
+  case hins k v m get?_m_k IH =>
+    have eq₁ := ι.map_ne.eqv <| .symm <| bigOpM_insert_equiv (op := op₁) f v get?_m_k
+    have eq₂ := Equiv.symm <| bigOpM_insert_equiv (op := op₂) (h <| f · ·) v get?_m_k
+    apply ι.rel_proper eq₁ eq₂ |>.1
+    refine ι.rel_trans (ι.map_op) ?_
+    apply ι.op_proper ι.rel_refl IH
+
+theorem bigOpM_weak_hom  {A} {R : M₂ → M₂ → Prop} {h : M₁ → M₂}
+  [ι : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R h]
+      (f : K → A → M₁) (m : M' A) :
+    ¬ m ≡ₘ  ∅ → R (h ([^op₁ map] k↦x ∈ m, f k x)) ([^op₂ map] k↦x ∈ m, h (f k x)) := by
+  intros m_nonempty
+  induction m using Iris.Std.LawfulFiniteMap.induction_on (M := M') (K := K)
+  case hequiv m₁ m₂ m₁m₂ R_op₁op₂ =>
+    have h_op₁_m₁m₂ := ι.map_ne.eqv <| bigOpM_equiv_of_perm (op := op₁) f m₁m₂
+    have op₂_h_m₁m₂ := bigOpM_equiv_of_perm (op := op₂) (h <| f · ·) m₁m₂
+    apply ι.rel_proper h_op₁_m₁m₂ op₂_h_m₁m₂ |>.1 (R_op₁op₂ _)
+    intros h; apply m_nonempty; apply m₁m₂.symm.trans h
+  case hemp =>
+    exfalso; apply m_nonempty; apply PartialMap.equiv.refl
+  case hins k v m get?_m_k IH =>
+    have eq₁ := ι.map_ne.eqv <| .symm <| bigOpM_insert_equiv (op := op₁) f v get?_m_k
+    have eq₂ := Equiv.symm <| bigOpM_insert_equiv (op := op₂) (h <| f · ·) v get?_m_k
+    apply ι.rel_proper eq₁ eq₂ |>.1
+    if m_empty? : m ≡ₘ ∅ then
+      have op₁_m₁m₂ := bigOpM_equiv_of_perm (op := op₁) f m_empty?
+      have op₂_h_m₁m₂ := bigOpM_equiv_of_perm (op := op₂) (h <| f · ·) m_empty?
+      apply ι.rel_proper (ι.map_ne.eqv (op_proper .rfl op₁_m₁m₂)) (op_proper .rfl op₂_h_m₁m₂) |>.2
+      simp only [bigOpM_empty]
+      apply ι.rel_proper (ι.map_ne.eqv <| op_right_id (op := op₁)) op_right_id |>.2
+      apply ι.rel_refl
+    else
+      refine ι.rel_trans (ι.map_op) ?_
+      apply ι.op_proper ι.rel_refl (IH m_empty?)
 
 end BigOpM
 
