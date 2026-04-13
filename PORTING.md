@@ -149,9 +149,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [x] `base_logic.v`
 - [ ] `bi.v` (nb. contained in `Instances/UPred/Instance.lean`)
   - [x] BI instance
-  - [ ] BI Persistently instance
+  - [x] BI Persistently instance
   - [x] BI Later instance
-  - [ ] SBI instance
+  - [x] SBI instance
   - [x] BUPd instance
   - [ ] Additional instances
 - [x] `bupd_alt.v` (nb. contained in `BI/Lib/BUpdPlain.lean`)

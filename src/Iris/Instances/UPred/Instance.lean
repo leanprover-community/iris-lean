@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Markus de Medeiros, Mario Carneiro
+Authors: Markus de Medeiros, Mario Carneiro, Viet Anh Nguyen
 -/
 module
 
@@ -410,14 +410,11 @@ instance : SbiEmpValidExist (UPred M) where
     exact ⟨_, ⟨p, rfl⟩, hΨ, hp⟩
 
 /-- The Sbi-derived plainly on UPred unfolds to `UPred.plainly`. -/
-theorem plainly_eq_uPred_plainly (P : UPred M) :
-    iprop(■ P) = UPred.plainly P := by
-  ext; rfl
+theorem plainly_eq_uPred_plainly (P : UPred M) : iprop(■ P) = UPred.plainly P := rfl
 
 /-- The Sbi-derived `internalCmraValid` on UPred unfolds to `UPred.cmraValid`. -/
 theorem internalCmraValid_eq_uPred_cmraValid [CMRA A] (a : A) :
-    (internalCmraValid a : UPred M) = UPred.cmraValid a := by
-  ext; rfl
+    (internalCmraValid a : UPred M) = UPred.cmraValid a := rfl
 
 instance : BUpd (UPred M) := ⟨bupd⟩
 
@@ -440,6 +437,17 @@ instance : BIUpdate (UPred M) where
     refine ⟨x' • x2, CMRA.op_assocN.validN.1 Hx'1, x', x2, .rfl, Hx'2, ?_⟩
     exact R.mono HR (CMRA.incN_refl x2) Hk
 
+@[rocq_alias bupd_si_pure]
+theorem bupd_si_pure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure> Pi := by
+  intro n x Hx Hv
+  have L : ✓{n} x • UCMRA.unit := CMRA.unit_right_id.symm.dist.validN.1 Hx
+  let ⟨_, _, Hv'⟩ := Hv n UCMRA.unit n.le_refl L
+  exact Hv'
+
+@[rocq_alias uPred_bi_bupd_sbi]
+instance : BIBUpdateSbi (UPred M) where
+  bupd_si_pure := bupd_si_pure
+
 instance : BIBUpdatePlainly (UPred M) where
   bupd_plainly {P} n x Hx Hv := by
     have L : ✓{n} x • CMRA.unit := CMRA.unit_right_id.symm.dist.validN.1 Hx
@@ -447,8 +455,10 @@ instance : BIBUpdatePlainly (UPred M) where
     rw [plainly_eq_uPred_plainly] at Hx'
     exact P.mono Hx' CMRA.incN_unit n.le_refl
 
+@[rocq_alias ownM_valid]
 theorem ownM_valid (m : M) : ownM m ⊢ internalCmraValid m := fun _ _ h hp => hp.validN h
 
+@[rocq_alias ownM_op]
 theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
   constructor
   · intro n x Hv ⟨z, Hz⟩
@@ -474,6 +484,7 @@ theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : (internalCmra
 theorem intuitionistically_ownM_core (m : M) : ownM m ⊢ □ ownM (CMRA.core m) :=
   fun _ _ _ H' => ⟨trivial, CMRA.core_incN_core H'⟩
 
+@[rocq_alias ownM_unit]
 theorem ownM_unit P : P ⊢ □ ownM (CMRA.unit : M) :=
   fun _ _ _ _ => ⟨trivial, CMRA.incN_unit⟩
 
@@ -485,6 +496,7 @@ theorem later_soundness : iprop(True ⊢ ▷ P) → iprop((True : UPred M) ⊢ P
   refine UPred.mono _ ?_ CMRA.incN_unit (Nat.le_refl _)
   exact HP n.succ _ CMRA.unit_validN H
 
+@[rocq_alias persistently_ownM_core]
 theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (CMRA.core a) :=
   fun _ _ _ H => CMRA.core_incN_core H
 
@@ -496,6 +508,7 @@ instance : Persistent (ownM (CMRA.core a) : UPred M) where
     refine OFE.NonExpansive.eqv ?_
     exact CMRA.core_idem a
 
+@[rocq_alias bupd_ownM_updateP]
 theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   (x ~~>: Φ) → ownM x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ ownM y := by
   intro Hup n x2 Hv ⟨x3, Hx⟩ k yf Hk Hyf
@@ -508,6 +521,7 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   · exists y
   · exact ⟨HΦy, CMRA.incN_op_left k y x3⟩
 
+@[rocq_alias ownM_forall]
 theorem ownM_forall (f : A → M) :
   (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, ∃ xf, UPred.eq z (f a • xf)) := by
   intro n x Hv Hf

@@ -106,6 +106,9 @@ class BIFUpdatePlainly (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] whe
   fupd_plainly_sForall_2 (E : CoPset) (Φ : PROP → Prop) :
     (∀ p, ⌜Φ p⌝ → |={E}=> ■ p) ⊢ |={E}=> sForall Φ
 
+class BIBUpdateSbi (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] where
+  bupd_si_pure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
+
 section BUpdLaws
 
 variable [BI PROP] [BIUpdate PROP]
