@@ -27,6 +27,12 @@ instance entails_antisymm [BI PROP] : Antisymmetric (α := PROP) BiEntails Entai
 instance equiv_trans [BI PROP] : Trans (α := PROP) BiEntails BiEntails BiEntails where
   trans h1 h2 := h1.trans h2
 
+instance equiv_entails_trans [BI PROP] : Trans (α := PROP) BiEntails Entails Entails where
+  trans h1 h2 := h1.1.trans h2
+
+instance entails_equiv_trans [BI PROP] : Trans (α := PROP) Entails BiEntails Entails where
+  trans h1 h2 := h1.trans h2.1
+
 /-! # Logic -/
 
 theorem and_elim_l' [BI PROP] {P Q R : PROP} (h : P ⊢ R) : P ∧ Q ⊢ R := and_elim_l.trans h

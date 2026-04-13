@@ -5,15 +5,16 @@ Authors: Markus de Medeiros, Fernando Leal
 -/
 module
 
+public import Iris.Algebra
 public import Iris.BI.Sbi
 public import Iris.BI.Classes
-public import Iris.BI.BigOp.BigOp
+public import Iris.BI.BigOp
 public import Iris.BI.BI
 public import Iris.BI.BIBase
 public import Iris.BI.DerivedLaws
 public import Iris.BI.DerivedLawsLater
 public import Iris.BI.InternalEq
-public import Iris.Algebra
+public import Iris.Std.Positives
 
 @[expose] public section
 
@@ -420,19 +421,36 @@ instance plainly_or_homomorphism [SbiEmpValidExist PROP] :
   map_unit := plainly_pure
 
 @[rocq_alias big_sepL_plainly]
-theorem big_sepL_plainly [BIAffine PROP] {A} (Φ : Nat → A → PROP) l :
+theorem bigSepL_plainly [BIAffine PROP] {A} (Φ : Nat → A → PROP) l :
     iprop(■ ([∗list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∗list] k ↦ x ∈ l, ■ (Φ k x)) :=
   (Algebra.BigOpL.bigOpL_hom ..)
 
 @[rocq_alias big_andL_plainly]
-theorem big_andL_plainly {A} (Φ : Nat → A → PROP) l :
+theorem bigAndL_plainly {A} (Φ : Nat → A → PROP) l :
     iprop(■ ([∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, ■ (Φ k x)) :=
   (Algebra.BigOpL.bigOpL_hom ..)
 
 @[rocq_alias big_orL_plainly]
-theorem big_orL_plainly [SbiEmpValidExist PROP] {A} (Φ : Nat → A → PROP) l :
+theorem bigOrL_plainly [SbiEmpValidExist PROP] {A} (Φ : Nat → A → PROP) l :
     iprop(■ ([∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, ■ (Φ k x)) :=
   (Algebra.BigOpL.bigOpL_hom ..)
+
+@[rocq_alias big_sepL2_plainly]
+theorem bigSepL2_plainly [BIAffine PROP] {A B} (Φ : Nat → A → B → PROP) l₁ l₂ :
+    ■ ([∗list] k↦y₁;y₂ ∈ l₁;l₂, Φ k y₁ y₂)
+    ⊣⊢ [∗list] k↦y₁;y₂ ∈ l₁;l₂, ■ (Φ k y₁ y₂) :=
+  calc iprop(■ ([∗list] k↦y₁;y₂ ∈ l₁;l₂, Φ k y₁ y₂))
+    _ ⊣⊢ _ := .ofMono plainly_mono BigSepL2.bigSepL2_alt
+    _ ⊣⊢ _ := plainly_and
+    _ ⊣⊢ _ := .ofMono and_mono_l plainly_pure
+    _ ⊣⊢ _ := .ofMono and_mono_r (bigSepL_plainly _ _)
+    _ ⊣⊢ [∗list] k ↦ y₁;y₂ ∈ l₁;l₂, ■ (Φ k y₁ y₂) := .symm <| BigSepL2.bigSepL2_alt
+
+@[rocq_alias big_sepM_plainly]
+theorem bigSepM_plainly [BIAffine PROP] [Pos.Countable K] [LawfulFiniteMap M K]
+  {A} (Φ : K → A → PROP) (m : M A) :
+    ■ ([∗map] k↦x ∈ m, Φ k x) ⊣⊢ [∗map] k↦x ∈ m, ■ (Φ k x) :=
+  (Algebra.BigOpM.bigOpM_hom ..)
 
 end BigOp
 
@@ -560,6 +578,53 @@ instance big_orL_plain {A} (Φ : Nat → A → PROP) l [h : ∀ k x, Plain (Φ k
     | cons hd tl IH =>
       have : Plain iprop([∨list] k ↦ x ∈ tl, Φ (k + 1) x) := ⟨IH _⟩
       apply or_plain _ _ |>.plain
+
+@[rocq_alias big_sepL2_nil_plain]
+instance bigSepL2_nil_plain {A B} (Φ : Nat → A → B → PROP) :
+   Plain ([∗list] k ↦ x1;x2 ∈ [];[], Φ k x1 x2) := inferInstanceAs (Plain iprop(emp))
+
+#check BigSepL2.bigSepL2_alt
+
+@[rocq_alias big_sepL2_plain]
+instance bigSepL2_plain {A B} (Φ : Nat → A → B → PROP) l1 l2 [h : ∀ k x1 x2, Plain (Φ k x1 x2)] :
+   Plain ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) where
+   plain := by
+    apply BigSepL2.bigSepL2_alt.1.trans
+    apply (and_mono Plain.plain (Plain.plain)).trans
+    apply plainly_and.2.trans
+    refine (plainly_mono BigSepL2.bigSepL2_alt.2)
+
+@[rocq_alias big_sepM_empty_plain]
+instance  bigSepM_empty_plain {K} [Pos.Countable K] {M A} [LawfulFiniteMap M K] (Φ : K → A → PROP) :
+    Plain ([∗map] k↦x ∈ (∅ : M A), Φ k x) where
+  plain := by
+    simp only [Algebra.BigOpM.bigOpM_empty]
+    apply plain
+
+@[rocq_alias big_sepM_plain]
+instance  bigSepM__plain {K} [Pos.Countable K] {M A} [ι : LawfulFiniteMap M K] (Φ : K → A → PROP)
+  (m : M A) [h : ∀ k x, Plain (Φ k x)] :
+    Plain ([∗map] k↦x ∈ m, Φ k x) where
+  plain := by
+    induction m using Iris.Std.LawfulFiniteMap.induction_on (K := K) (M := M)
+    case hequiv m₁ m₂ m₁m₂ H =>
+      have h : iprop([∗map] k ↦ x ∈ m₁, Φ k x) ≡ [∗map] k ↦ x ∈ m₂, Φ k x :=
+          Algebra.BigOpM.bigOpM_equiv_of_perm (M' := M) _ m₁m₂
+      calc iprop([∗map] k ↦ x ∈ m₂, Φ k x)
+        _ ⊣⊢ [∗map] k ↦ x ∈ m₁, Φ k x := BI.equiv_iff.1 h |>.symm
+        _  ⊢ ■ [∗map] k ↦ x ∈ m₁, Φ k x := H
+        _ ⊣⊢ ■ [∗map] k ↦ x ∈ m₂, Φ k x := .ofMono plainly_mono <| BI.equiv_iff.1 h
+    case hemp =>
+      rw [show empty (M := M) (K := K) = ∅ from rfl]
+      simp only [Algebra.BigOpM.bigOpM_empty, plain]
+    case hins k v m get?_m_k IH=>
+      calc iprop([∗map] k ↦ x ∈ Std.insert m k v, Φ k x)
+        _ ⊣⊢ Φ k v ∗ [∗map] k ↦ x ∈  m, Φ k x :=
+            BI.equiv_iff.1 (Algebra.BigOpM.bigOpM_insert_equiv _ _ get?_m_k)
+        _  ⊢ ■ Φ k v ∗ ■ [∗map] k ↦ x ∈  m, Φ k x :=
+          sep_mono (h k v |>.plain) IH
+        _  ⊢ ■ (Φ k v ∗ [∗map] k ↦ x ∈  m, Φ k x) := plainly_sep_2
+        _  ⊢ ■ [∗map] k ↦ x ∈ Std.insert m k v, Φ k x := sorry
 
 instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=
   inferInstanceAs (Timeless iprop(<si_pure> <si_emp_valid> P))
