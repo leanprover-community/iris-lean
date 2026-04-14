@@ -423,17 +423,26 @@ theorem persistently_imp_uPredSiPure {Pi : SiProp} {Q : UPred M} :
   have hq := hpq m x .rfl hle hmx hp
   exact (Q.mono hq hinc.incN m.le_refl)
 
--- si_pure_forall_2 is already defined in Sbi.lean
+-- si_pure_forall_2 is already in Sbi.lean
 theorem uPredSiPure_forall_mpr {α : Type _} {Pi : α → SiProp} :
     (∀ x, <si_pure> Pi x : UPred M) ⊢ <si_pure> (∀ x, Pi x) := by
   rintro n x hv hp Ψ ⟨a, rfl⟩
   exact hp iprop(<si_pure> Pi a) ⟨a, rfl⟩
 
--- si_emp_valid_exist_1 is already defined in Sbi.lean
+-- si_emp_valid_exist_1 is already in Sbi.lean
 theorem uPredSiEmpValid_exist_mp {α : Type _} {P : α → UPred M} :
     (<si_emp_valid> (∃ x, P x) : SiProp) ⊢ ∃ x, <si_emp_valid> P x := by
   rintro n ⟨Ψ, ⟨a, rfl⟩, hp⟩
   exact ⟨iprop(<si_emp_valid> P a), ⟨a, rfl⟩, hp⟩
+
+-- prop_ext_2 is already in SIProp.lean
+theorem prop_ext_uPredSiEmpValid {P Q : UPred M} : <si_emp_valid> (P ∗-∗ Q) ⊢ SiProp.internalEq P Q := by
+  intro _ hpq n x hn hv
+  have hu : UCMRA.unit • x ≡{n}≡ x := UCMRA.unit_left_id.dist
+  have hvu : ✓{n} UCMRA.unit • x := hu.validN.mpr hv
+  constructor
+  · exact fun hp => (uPred_ne hu).mp (hpq.1 n x hn hvu hp)
+  · exact fun hq => (uPred_ne hu).mp (hpq.2 n x hn hvu hq)
 
 end SiPropEmbedding
 
@@ -451,13 +460,7 @@ instance : Sbi (UPred M) where
   siPure_absorbing _ := ⟨fun _ _ _ ⟨_, _, _, _, h⟩ => h⟩
   siEmpValid_later_mp := uPredSiEmpValid_later_mp
   siEmpValid_affinely_mpr _ h := ⟨trivial, h⟩
-  prop_ext_siEmpValid {P Q _} h n x hn hv := by
-    have hvu : ✓{n} ((UCMRA.unit : M) • x) :=
-      (UCMRA.unit_left_id (x := x)).dist.validN.mpr hv
-    exact ⟨fun hp => (uPred_ne (UCMRA.unit_left_id (x := x)).dist).mp
-             (h.1 n x hn hvu hp),
-           fun hq => (uPred_ne (UCMRA.unit_left_id (x := x)).dist).mp
-             (h.2 n x hn hvu hq)⟩
+  prop_ext_siEmpValid := prop_ext_uPredSiEmpValid
 
 @[rocq_alias uPred_sbi_emp_valid_exist]
 instance : SbiEmpValidExist (UPred M) where
