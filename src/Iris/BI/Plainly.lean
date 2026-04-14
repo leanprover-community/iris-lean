@@ -624,7 +624,9 @@ instance  bigSepM__plain {K} [Pos.Countable K] {M A} [ι : LawfulFiniteMap M K] 
         _  ⊢ ■ Φ k v ∗ ■ [∗map] k ↦ x ∈  m, Φ k x :=
           sep_mono (h k v |>.plain) IH
         _  ⊢ ■ (Φ k v ∗ [∗map] k ↦ x ∈  m, Φ k x) := plainly_sep_2
-        _  ⊢ ■ [∗map] k ↦ x ∈ Std.insert m k v, Φ k x := sorry
+        _ ⊣⊢ ■ [∗map] k ↦ x ∈ Std.insert m k v, Φ k x :=
+          .ofMono plainly_mono <|
+            BI.equiv_iff.1 (Algebra.BigOpM.bigOpM_insert_equiv _ _ get?_m_k) |>.symm
 
 instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=
   inferInstanceAs (Timeless iprop(<si_pure> <si_emp_valid> P))
