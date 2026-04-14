@@ -608,7 +608,7 @@ instance  bigSepM_empty_plain {K} [Pos.Countable K] {M A} [LawfulFiniteMap M K] 
     apply plain
 
 @[rocq_alias big_sepM_plain]
-instance  bigSepM__plain {K} [Pos.Countable K] {M A} [ι : LawfulFiniteMap M K] (Φ : K → A → PROP)
+instance  bigSepM__plain {K} [DecidableEq K] {M A} [ι : LawfulFiniteMap M K] (Φ : K → A → PROP)
   (m : M A) [h : ∀ k x, Plain (Φ k x)] :
     Plain ([∗map] k↦x ∈ m, Φ k x) where
   plain := by
