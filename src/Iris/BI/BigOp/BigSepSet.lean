@@ -26,37 +26,31 @@ variable {S : Type _} {A : Type _} [LawfulFiniteSet S A]
 namespace BigSepS
 
 @[rocq_alias big_sepS_mono]
-theorem bigSepS_mono {Φ Ψ : A → PROP} {X : S}
-    (h : ∀ {x}, x ∈ X → Φ x ⊢ Ψ x) :
+theorem bigSepS_mono {Φ Ψ : A → PROP} {X : S} (h : ∀ {x}, x ∈ X → Φ x ⊢ Ψ x) :
     ([∗set] x ∈ X, Φ x) ⊢ [∗set] x ∈ X, Ψ x :=
   bigOpS_gen_proper _ .rfl sep_mono fun hy => h hy
 
 @[rocq_alias big_sepS_ne]
-theorem bigSepS_ne {Φ Ψ : A → PROP} {X : S} {n : Nat}
-    (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
+theorem bigSepS_ne {Φ Ψ : A → PROP} {X : S} {n : Nat} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
     ([∗set] x ∈ X, Φ x) ≡{n}≡ ([∗set] x ∈ X, Ψ x) :=
   bigOpS_dist fun hy => h hy
 
 @[rocq_alias big_sepS_proper]
-theorem bigSepS_proper {Φ Ψ : A → PROP} {X : S}
-    (h : ∀ {x}, x ∈ X → Φ x ≡ Ψ x) :
+theorem bigSepS_proper {Φ Ψ : A → PROP} {X : S} (h : ∀ {x}, x ∈ X → Φ x ≡ Ψ x) :
     ([∗set] x ∈ X, Φ x) ≡ ([∗set] x ∈ X, Ψ x) :=
   bigOpS_gen_proper (· ≡ ·) .rfl MonoidOps.op_proper fun hy => h hy
 
-theorem bigSepS_equiv {Φ Ψ : A → PROP} {X : S}
-    (h : ∀ {x}, x ∈ X → Φ x ⊣⊢ Ψ x) :
+theorem bigSepS_equiv {Φ Ψ : A → PROP} {X : S} (h : ∀ {x}, x ∈ X → Φ x ⊣⊢ Ψ x) :
     ([∗set] x ∈ X, Φ x) ⊣⊢ ([∗set] x ∈ X, Ψ x) :=
   equiv_iff.mp <| bigSepS_proper fun hx => equiv_iff.mpr (h hx)
 
 @[rocq_alias big_sepS_mono']
-theorem bigSepS_mono_of_forall {Φ Ψ : A → PROP} {X : S}
-    (h : ∀ x, Φ x ⊢ Ψ x) :
+theorem bigSepS_mono_of_forall {Φ Ψ : A → PROP} {X : S} (h : ∀ x, Φ x ⊢ Ψ x) :
     ([∗set] x ∈ X, Φ x) ⊢ [∗set] x ∈ X, Ψ x :=
   bigSepS_mono fun {x} _ => h x
 
 @[rocq_alias big_sepS_flip_mono']
-theorem bigSepS_flip_mono {Φ Ψ : A → PROP} {X : S}
-    (h : ∀ x, Ψ x ⊢ Φ x) :
+theorem bigSepS_flip_mono {Φ Ψ : A → PROP} {X : S} (h : ∀ x, Ψ x ⊢ Φ x) :
     ([∗set] x ∈ X, Ψ x) ⊢ [∗set] x ∈ X, Φ x :=
   bigSepS_mono_of_forall h
 
@@ -66,8 +60,7 @@ theorem bigSepS_elements {Φ : A → PROP} {X : S} :
   equiv_iff.mp bigOpS_bigOpL
 
 @[simp, rocq_alias big_sepS_empty]
-theorem bigSepS_empty {Φ : A → PROP} :
-    ([∗set] x ∈ (∅ : S), Φ x) ⊣⊢ emp :=
+theorem bigSepS_empty {Φ : A → PROP} : ([∗set] x ∈ (∅ : S), Φ x) ⊣⊢ emp :=
   equiv_iff.mp <| .of_eq <| bigOpS_empty
 
 @[rocq_alias big_sepS_empty']
@@ -76,13 +69,11 @@ theorem bigSepS_empty_intro {P : PROP} [Affine P] {Φ : A → PROP} :
   Affine.affine.trans bigSepS_empty.2
 
 @[rocq_alias big_sepS_emp]
-theorem bigSepS_emp {X : S} :
-    ([∗set] _x ∈ X, (emp : PROP)) ⊣⊢ emp :=
+theorem bigSepS_emp {X : S} : ([∗set] _x ∈ X, (emp : PROP)) ⊣⊢ emp :=
   bigSepS_elements.trans bigSepL_emp
 
 @[rocq_alias big_sepS_singleton]
-theorem bigSepS_singleton {Φ : A → PROP} {x : A} :
-    ([∗set] y ∈ ({x} : S), Φ y) ⊣⊢ Φ x :=
+theorem bigSepS_singleton {Φ : A → PROP} {x : A} : ([∗set] y ∈ ({x} : S), Φ y) ⊣⊢ Φ x :=
   equiv_iff.mp bigOpS_singleton
 
 @[rocq_alias big_sepS_insert]
@@ -96,10 +87,9 @@ theorem bigSepS_union {Φ : A → PROP} {X Y : S} (h : X ## Y) :
   equiv_iff.mp <| bigOpS_union h
 
 @[rocq_alias big_sepS_delete]
-theorem bigSepS_delete {Φ : A → PROP} {X : S} {x : A}
-    (h : x ∈ X) :
+theorem bigSepS_delete {Φ : A → PROP} {X : S} {x : A} (h : x ∈ X) :
     ([∗set] y ∈ X, Φ y) ⊣⊢ Φ x ∗ [∗set] y ∈ X \ {x}, Φ y := by
-  rw (config := { occs := .pos [1] }) [(insert_delete h).symm]
+  conv=> lhs; rw [(insert_delete h).symm]
   exact bigSepS_insert not_mem_delete
 
 private theorem mem_of_getElem? {i : Nat} {x : A} {X : S}
@@ -113,20 +103,17 @@ theorem bigSepS_persistent {Φ : A → PROP} {X : S}
   persistent := bigOpS_closed (fun Q => Q ⊢ <pers> Q) Φ X persistently_emp_2
     (fun hx hy => (sep_mono hx hy).trans persistently_sep_2) (fun hm => (h hm).persistent)
 
-instance bigSepS_persistent_inst {Φ : A → PROP} {X : S}
-    [h : ∀ x, Persistent (Φ x)] :
+instance bigSepS_persistent_inst {Φ : A → PROP} {X : S} [h : ∀ x, Persistent (Φ x)] :
     Persistent ([∗set] x ∈ X, Φ x) :=
   bigSepS_persistent fun _ => h _
 
 @[rocq_alias big_sepS_affine]
-theorem bigSepS_affine {Φ : A → PROP} {X : S}
-    (h : ∀ {x}, x ∈ X → Affine (Φ x)) :
+theorem bigSepS_affine {Φ : A → PROP} {X : S} (h : ∀ {x}, x ∈ X → Affine (Φ x)) :
     Affine ([∗set] x ∈ X, Φ x) where
   affine := bigOpS_closed (fun Q => Q ⊢ emp) Φ X .rfl
     (fun hx hy => (sep_mono hx hy).trans sep_emp.1) (fun hm => (h hm).affine)
 
-instance bigSepS_affine_inst {Φ : A → PROP} {X : S}
-    [h : ∀ x, Affine (Φ x)] :
+instance bigSepS_affine_inst {Φ : A → PROP} {X : S} [h : ∀ x, Affine (Φ x)] :
     Affine ([∗set] x ∈ X, Φ x) :=
   bigSepS_affine fun _ => h _
 
@@ -226,8 +213,7 @@ theorem bigSepS_impl {Φ Ψ : A → PROP} {X : S} :
     (forall_elim _).trans <| (imp_mono_l <| pure_mono fun _ => hx).trans true_imp.1
 
 @[rocq_alias big_sepS_forall]
-theorem bigSepS_forall [BIAffine PROP] {Φ : A → PROP} {X : S}
-    [hPers : ∀ x, Persistent (Φ x)] :
+theorem bigSepS_forall [BIAffine PROP] {Φ : A → PROP} {X : S} [hPers : ∀ x, Persistent (Φ x)] :
     ([∗set] x ∈ X, Φ x) ⊣⊢ (∀ x, ⌜x ∈ X⌝ → Φ x) := by
   refine ⟨forall_intro fun x => imp_intro' ?_, ?_⟩
   · refine pure_elim_l fun hmem => (bigSepS_elem_of_acc hmem).trans ?_
@@ -252,8 +238,7 @@ theorem bigSepS_elem_of_acc_impl {Φ : A → PROP} {X : S} {x : A} (h : x ∈ X)
   refine (bigSepS_delete h).1.trans <| sep_mono_r ?_
   refine forall_intro fun Ψ => wand_intro <| wand_intro ?_
   refine sep_comm.1.trans <| (sep_mono_r ?_).trans (bigSepS_delete h).2
-  refine (sep_mono_r ?_).trans <| bigSepS_sep.symm.1.trans <|
-    bigSepS_mono fun _ => wand_elim_r
+  refine (sep_mono_r ?_).trans <| bigSepS_sep.symm.1.trans <| bigSepS_mono fun _ => wand_elim_r
   refine bigSepS_intro fun {y} hy => ?_
   refine intuitionistically_elim.trans <| (forall_elim y).trans ?_
   refine ((and_intro (pure_intro (mem_diff.mp hy).1) .rfl).trans imp_elim_r).trans ?_
@@ -381,8 +366,7 @@ theorem bigSepS_filter_acc [BIAffine PROP] (φ : A → Bool) {Φ : A → PROP} {
   exact (bigSepS_filter_acc_cond φ h).trans <| sep_mono hequiv.1 (wand_mono hequiv.2 .rfl)
 
 @[rocq_alias big_sepS_union_2]
-theorem bigSepS_union_elim {Φ : A → PROP} {X Y : S}
-    [∀ x, TCOr (Affine (Φ x)) (Absorbing (Φ x))] :
+theorem bigSepS_union_elim {Φ : A → PROP} {X Y : S} [∀ x, TCOr (Affine (Φ x)) (Absorbing (Φ x))] :
     ⊢ ([∗set] y ∈ X, Φ y) -∗ ([∗set] y ∈ Y, Φ y) -∗ ([∗set] y ∈ X ∪ Y, Φ y) := by
   apply entails_wand; apply wand_intro'
   induction X using FiniteSet.set_ind with
