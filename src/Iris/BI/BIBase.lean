@@ -10,6 +10,7 @@ public import Iris.Std.Classes
 public meta import Iris.Std.DelabRule
 public meta import Iris.Std.Rewrite
 public import Iris.Std.BigOp
+public meta import Iris.Std.RocqAlias
 
 @[expose] public section
 
@@ -324,6 +325,7 @@ macro_rules
 delab_rule Plainly.plainly
   | `($_ $P) => do ``(iprop(■ $(← Iris.BI.unpackIprop P)))
 
+@[rocq_alias plainly_if]
 def Plainly.plainlyIf [BIBase PROP] [Plainly PROP] (p : Bool) (P : PROP) : PROP :=
   iprop(if p then ■ P else P)
 
