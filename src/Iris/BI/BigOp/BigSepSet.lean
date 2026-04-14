@@ -305,9 +305,9 @@ theorem bigSepS_comm_set {B : Type _} {T : Type _} [LawfulFiniteSet T B]
     bigSepS_elements.symm
 
 @[rocq_alias big_sepS_sepM]
-theorem bigSepS_comm_map {B : Type _} {M : Type _ → Type _} {K : Type _}
-    [LawfulFiniteMap M K]
-    (Φ : A → K → B → PROP) (X : S) (m : M B) :
+theorem bigSepS_comm_map {B : Type _} {M : Type _ → Type _}
+    [μ : LawfulFiniteMap M]
+    (Φ : A → μ.K → B → PROP) (X : S) (m : M B) :
     ([∗set] x ∈ X, [∗map] k↦y ∈ m, Φ x k y) ⊣⊢
       ([∗map] k↦y ∈ m, [∗set] x ∈ X, Φ x k y) := by
   refine bigSepS_elements.trans ?_
