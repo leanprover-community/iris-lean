@@ -27,6 +27,12 @@ instance entails_antisymm [BI PROP] : Antisymmetric (α := PROP) BiEntails Entai
 instance equiv_trans [BI PROP] : Trans (α := PROP) BiEntails BiEntails BiEntails where
   trans h1 h2 := h1.trans h2
 
+instance equiv_entails_trans [BI PROP] : Trans (α := PROP) BiEntails Entails Entails where
+  trans h1 h2 := h1.1.trans h2
+
+instance entails_equiv_trans [BI PROP] : Trans (α := PROP) Entails BiEntails Entails where
+  trans h1 h2 := h1.trans h2.1
+
 /-! # Logic -/
 
 theorem and_elim_l' [BI PROP] {P Q R : PROP} (h : P ⊢ R) : P ∧ Q ⊢ R := and_elim_l.trans h
@@ -50,8 +56,10 @@ theorem mp [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q → R) (h2 : P ⊢ Q) : P ⊢ 
 theorem imp_elim' [BI PROP] {P Q R : PROP} (h : Q ⊢ P → R) : P ∧ Q ⊢ R :=
   and_symm.trans <| imp_elim h
 
+@[rocq_alias impl_elim_l]
 theorem imp_elim_l [BI PROP] {P Q : PROP} : (P → Q) ∧ P ⊢ Q := imp_elim .rfl
 
+@[rocq_alias impl_elim_r]
 theorem imp_elim_r [BI PROP] {P Q : PROP} : P ∧ (P → Q) ⊢ Q := imp_elim' .rfl
 
 theorem false_elim [BI PROP] {P : PROP} : False ⊢ P := pure_elim' False.elim
@@ -387,6 +395,16 @@ theorem sep_exists_r [BI PROP] {Φ : α → PROP} {Q : PROP} : (∃ a, Φ a) ∗
 
 theorem wand_rfl [BI PROP] {P : PROP} : ⊢ P -∗ P := wand_intro emp_sep.1
 
+@[rocq_alias wand_curry]
+theorem wand_curry [BI PROP] {P Q R: PROP} : (P -∗ Q -∗ R) ⊣⊢ ((P ∗ Q) -∗ R) := by
+  refine ⟨?_, ?_⟩
+  · refine wand_intro' ?_
+    refine sep_mono_l (sep_symm) |>.trans sep_assoc.1 |>.trans ?_
+    exact wand_elim' (wand_elim' .rfl)
+  · refine wand_intro' <| wand_intro' ?_
+    refine sep_assoc.2.trans (sep_mono_l sep_symm) |>.trans ?_
+    exact wand_elim' .rfl
+
 @[rw_mono_rule]
 theorem wandIff_congr [BI PROP] {P P' Q Q' : PROP} (h1 : P ⊣⊢ Q) (h2 : P' ⊣⊢ Q') :
     (P ∗-∗ P') ⊣⊢ (Q ∗-∗ Q') := and_congr (wand_congr h1 h2) (wand_congr h2 h1)
@@ -665,6 +683,7 @@ instance (priority := default + 10) biaffine_absorbing [BI PROP] [BIAffine PROP]
 theorem affine_affinely [BI PROP] (P : PROP) [Affine P] : <affine> P ⊣⊢ P :=
   ⟨affinely_elim, and_intro affine .rfl⟩
 
+@[rocq_alias True_emp_iff_BiAffine]
 theorem biaffine_iff_true_emp [BI PROP] : BIAffine PROP ↔ (True : PROP) ⊢ emp :=
   ⟨fun _ => affine, fun h => ⟨fun _ => ⟨true_intro.trans h⟩⟩⟩
 
@@ -1561,9 +1580,11 @@ theorem persistent_and_sep_1 [BI PROP] {P Q : PROP} :
   | TCOr.l => persistent_and_affinely_sep_l_1.trans (sep_mono_l affinely_elim)
   | TCOr.r => persistent_and_affinely_sep_r_1.trans (sep_mono_r affinely_elim)
 
+@[rocq_alias persistent_entails_l]
 theorem persistent_entails_r [BI PROP] {P Q : PROP} [Persistent Q] (H : P ⊢ Q) : P ⊢ Q ∗ P :=
   (and_intro H .rfl).trans persistent_and_sep_1
 
+@[rocq_alias persistent_entails_r]
 theorem persistent_entails_l [BI PROP] {P Q : PROP} [Persistent Q] (H : P ⊢ Q) : P ⊢ P ∗ Q :=
   (and_intro .rfl H).trans persistent_and_sep_1
 
@@ -1590,3 +1611,20 @@ theorem bigOp_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} :
 
 theorem bigOp_and_cons [BI PROP] {P : PROP} {Ps : List PROP} :
     [∧] (P :: Ps) ⊣⊢ P ∧ [∧] Ps := bigOp_cons
+
+/-! # Limits -/
+
+@[rocq_alias limit_preserving_entails]
+theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : OFE.NonExpansive Φ]
+    [Ψne : OFE.NonExpansive Ψ] : LimitPreserving (λ x ↦ Φ x ⊢ Ψ x) := by
+  refine .ext (P := λ x ↦ True ⊣⊢ (Φ x → Ψ x)) (@fun x => ?_) ?_
+  · exact ⟨(true_and.2.trans <| imp_elim ·.1), (⟨imp_intro <| true_and.1.trans ·, true_intro⟩)⟩
+  · let f : A -n> PROP := ⟨λ x ↦ iprop(True), inferInstance⟩
+    let g : A -n> PROP := {
+       f x := iprop(Φ x → Ψ x),
+       ne.ne _ {_ _} x := imp_ne.ne (Φne.ne x) (Ψne.ne x)
+    }
+    refine fun c h' => ?_
+    refine equiv_iff.1 ?_
+    refine LimitPreserving.equiv f g _ ?_
+    exact (equiv_iff.mpr <| h' ·)

@@ -157,10 +157,21 @@ instance : SDiff (M V) := ⟨difference⟩
 /-- Two PartialMaps are pointwise equivalent. -/
 @[simp] def equiv (m1 m2 : M V) : Prop := ∀ k, get? m1 k = get? m2 k
 
-/-- Pointwise equivalence is transitive. -/
-instance instEquivTrans : Trans equiv (@equiv K V M _) equiv := ⟨by simp_all⟩
+theorem equiv.refl : ∀ {a : M V}, equiv a a := by simp only [equiv, implies_true]
 
-scoped syntax term " ≡ₘ " term : term
+instance instEquivRefl : Reflexive (@equiv K V M _) := ⟨equiv.refl⟩
+
+theorem equiv.trans : ∀ {a b c : M V}, equiv a b → equiv b c → equiv a c := by simp_all
+
+/-- Pointwise equivalence is transitive. -/
+instance instEquivTrans : Trans equiv (@equiv K V M _) equiv := ⟨equiv.trans⟩
+
+@[simp] def equiv.symm :  ∀  (a b : M V), equiv a b → equiv b a :=
+  fun _ _ h k => (h k).symm
+
+instance instEquivSymm : Std.Symm (@equiv K V M _) := ⟨equiv.symm⟩
+
+scoped syntax term:65 " ≡ₘ " term:66 : term
 scoped macro_rules
   | `($m₁ ≡ₘ $m₂) => `(PartialMap.equiv $m₁ $m₂)
 

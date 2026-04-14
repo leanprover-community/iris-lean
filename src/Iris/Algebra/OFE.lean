@@ -795,7 +795,7 @@ theorem LimitPreserving.discrete [COFE α] {P : α → Prop} :
     (∀ {x y : α}, x ≡{0}≡ y → (P x → P y)) → LimitPreserving P :=
   fun Hdisc _ H => Hdisc COFE.conv_compl.symm (H _)
 
-theorem LimitPreserving.and [COFE α] {P Q : α → Prop}  (HP : LimitPreserving P)
+theorem LimitPreserving.and [COFE α] {P Q : α → Prop} (HP : LimitPreserving P)
     (HQ : LimitPreserving Q) : LimitPreserving fun a => P a ∧ Q a :=
   fun _ HPQ => ⟨HP _ (fun n => (HPQ n).left), HQ _ (fun n => (HPQ n).right)⟩
 
@@ -817,6 +817,10 @@ theorem LimitPreserving.equiv [COFE α] [COFE β] (f g : α -n> β) :
   apply (COFE.conv_compl' (Nat.le_refl n)).trans
   apply (Hfg _).dist.trans
   exact g.ne.ne COFE.conv_compl.symm
+
+@[rocq_alias limit_preserving_ext]
+theorem LimitPreserving.ext {α}[COFE α] {P Q : α -> Prop} (he : ∀ {x}, (P x ↔ Q x))
+    (hp : LimitPreserving P) : LimitPreserving Q := fun _ => (he.1 <| hp _ <| fun _ => he.2 <| · _)
 
 def Fixpoint.chain [OFE α] [Inhabited α] (f : α → α) [Contractive f] : Chain α where
   chain n := Nat.repeat f (n + 1) default
