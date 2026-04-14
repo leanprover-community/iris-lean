@@ -102,6 +102,11 @@ theorem BIBase.BiEntails.symm [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : Q ⊣⊢
 theorem BIBase.BiEntails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊣⊢ Q) (h2 : Q ⊣⊢ R) : P ⊣⊢ R :=
   ⟨h1.1.trans h2.1, h2.2.trans h1.2⟩
 
+theorem BIBase.BiEntails.ofMono [BI PROP1] [BI PROP2] {mod : PROP1 → PROP2}
+    (mono : ∀{P Q}, iprop(P ⊢ Q) → iprop(mod P ⊢ mod Q)) :
+    ∀ {P Q : PROP1}, P ⊣⊢ Q → mod P ⊣⊢ mod Q :=
+  fun h => ⟨mono h.1, mono h.2⟩
+
 export BIBase (
   Entails emp pure and or imp sForall sExists «forall» «exists» sep wand
   persistently BiEntails iff wandIff affinely absorbingly

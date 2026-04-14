@@ -442,6 +442,12 @@ theorem diff_subset_left {s₁ s₂ : S} : s₁ \ s₂ ⊆ s₁ := by
   intro y G; rw [mem_diff] at G
   exact G.left
 
+/-- A set is disjoint from the part removed by taking a difference. -/
+theorem disjoint_diff_right {s₁ s₂ : S} : s₁ ## (s₂ \ s₁) := by
+  intro x ⟨hx1, hx2⟩
+  rw [mem_diff] at hx2
+  exact hx2.2 hx1
+
 /-- Difference with disjoint set is identity. -/
 theorem diff_subset_disj {s₁ s₂ : S} (H : s₁ ## s₂) : s₁ \ s₂ = s₁ := by
   ext x; rw [mem_diff]
@@ -462,6 +468,11 @@ theorem diff_subset_decomp {s₁ s₂ : S} (H : s₁ ⊆ s₂) : s₂ = (s₂ \ 
   by_cases J : x ∈ s₁
   · exact .inr J
   · exact .inl ⟨G, J⟩
+
+/-- A subset together with the remaining part reconstructs the larger set. -/
+theorem subset_union_diff {s₁ s₂ : S} (H : s₁ ⊆ s₂) : s₁ ∪ (s₂ \ s₁) = s₂ := by
+  rw [union_comm]
+  exact (diff_subset_decomp H).symm
 
 /-- De Morgan's law: difference distributes over union. -/
 theorem diff_union {s₁ s₂ s₃ : S} : s₁ \ (s₂ ∪ s₃) = (s₁ \ s₂) ∩ (s₁ \ s₃) := by
@@ -994,6 +1005,13 @@ theorem filter_delete (p : A → Bool) (x : A) (s : S) :
     filter p (delete x s) = delete x (filter p s) := by
   ext y
   grind only [mem_filter, mem_delete]
+
+/-- toList of a filtered set is a permutation of filtering the list. -/
+theorem toList_filter_perm (p : A → Bool) (s : S) :
+    (toList (filter p s)).Perm ((toList s).filter p) := by
+  refine (List.perm_ext_iff_of_nodup toList_nodup ?_).mpr ?_
+  exact List.Pairwise.filter p toList_nodup
+  grind [mem_toList, mem_filter, mem_toList]
 
 -- FIXME: Golf
 /-- A set has size 0 iff it is empty. -/

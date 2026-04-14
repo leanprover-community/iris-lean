@@ -157,10 +157,21 @@ instance : SDiff (M V) := ⟨difference⟩
 /-- Two PartialMaps are pointwise equivalent. -/
 @[simp] def equiv (m1 m2 : M V) : Prop := ∀ k, get? m1 k = get? m2 k
 
-/-- Pointwise equivalence is transitive. -/
-instance instEquivTrans : Trans equiv (@equiv K V M _) equiv := ⟨by simp_all⟩
+theorem equiv.refl : ∀ {a : M V}, equiv a a := by simp only [equiv, implies_true]
 
-scoped syntax term " ≡ₘ " term : term
+instance instEquivRefl : Reflexive (@equiv K V M _) := ⟨equiv.refl⟩
+
+theorem equiv.trans : ∀ {a b c : M V}, equiv a b → equiv b c → equiv a c := by simp_all
+
+/-- Pointwise equivalence is transitive. -/
+instance instEquivTrans : Trans equiv (@equiv K V M _) equiv := ⟨equiv.trans⟩
+
+@[simp] def equiv.symm :  ∀  (a b : M V), equiv a b → equiv b a :=
+  fun _ _ h k => (h k).symm
+
+instance instEquivSymm : Std.Symm (@equiv K V M _) := ⟨equiv.symm⟩
+
+scoped syntax term:65 " ≡ₘ " term:66 : term
 scoped macro_rules
   | `($m₁ ≡ₘ $m₂) => `(PartialMap.equiv $m₁ $m₂)
 
@@ -1068,9 +1079,18 @@ theorem toList_zip {m₁ : M V} {m₂ : M V'} :
     simp [Hb₁]
 
 theorem mem_dom_set [LawfulSet S K] {m : M V} : k ∈ (dom_set m : S) ↔ (get? m k).isSome := by
-  simp [dom_set, ←LawfulSet.mem_ofList, FiniteMap.mapFold, Option.isSome_iff_exists,
-    ←LawfulFiniteMap.toList_get]
-  rfl
+  simpa [dom_set, ←LawfulSet.mem_ofList, FiniteMap.mapFold, Option.isSome_iff_exists,
+    ←LawfulFiniteMap.toList_get] using .rfl
+
+theorem toList_dom_set_perm [LawfulFiniteSet S K] (m : M V) :
+    (FiniteSet.toList (dom_set m : S)).Perm ((toList (K := K) m).map Prod.fst) := by
+  refine (List.perm_ext_iff_of_nodup FiniteSet.toList_nodup toList_noDupKeys).mpr fun x => ?_
+  simp only [FiniteSet.mem_toList, mem_dom_set, List.mem_map]
+  constructor
+  · intro h
+    obtain ⟨v, hv⟩ := Option.isSome_iff_exists.mp h
+    exact ⟨(x, v), toList_get.mpr hv, rfl⟩
+  · grind [toList_get]
 
 end LawfulFiniteMap
 

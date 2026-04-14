@@ -5,9 +5,6 @@ Authors: Markus de Medeiros, Michael Sammler
 -/
 module
 
-public import Iris.BI
-public import Iris.BI.DerivedLaws
-public import Iris.ProofMode.Modalities
 public import Iris.ProofMode.Classes
 
 @[expose] public section
@@ -17,9 +14,7 @@ open Iris.BI
 
 section Modalities
 
-variable [BI PROP]
-
-def modality_persistently : Modality PROP PROP where
+def modality_persistently [BI PROP] : Modality PROP PROP where
   M := persistently
   action
   | true => .id
@@ -31,7 +26,7 @@ def modality_persistently : Modality PROP PROP where
   mono := (persistently_mono ·)
   sep := persistently_sep_2
 
-def modality_affinely : Modality PROP PROP where
+def modality_affinely [BI PROP] : Modality PROP PROP where
   M := affinely
   action
   | true => .id
@@ -43,7 +38,7 @@ def modality_affinely : Modality PROP PROP where
   mono := (affinely_mono ·)
   sep := affinely_sep_2
 
-def modality_intuitionistically : Modality PROP PROP where
+def modality_intuitionistically [BI PROP] : Modality PROP PROP where
   M := intuitionistically
   action
   | true => .id
@@ -54,16 +49,6 @@ def modality_intuitionistically : Modality PROP PROP where
   emp := intuitionistic
   mono := (intuitionistically_mono ·)
   sep := intuitionistically_sep_2
-
-def modality_laterN (n : Nat) : Modality PROP PROP where
-  M := BIBase.laterN n
-  action := λ _ => .transform (IntoLaterN false n)
-  spec := λ _ _ _ h => (intuitionisticallyIf_mono (h.1)).trans (laterN_intuitionisticallyIf_2 n)
-  emp := laterN_intro n
-  mono := (laterN_mono n ·)
-  sep := (laterN_sep n).2
-
-end Modalities
 
 def modality_plainly [Sbi PROP] : Modality PROP PROP where
   M := BIBase.Plainly.plainly
@@ -76,3 +61,13 @@ def modality_plainly [Sbi PROP] : Modality PROP PROP where
   emp := plainly_emp_2
   mono := (plainly_mono ·)
   sep := plainly_sep_2
+
+def modality_laterN (n : Nat) [BI PROP] : Modality PROP PROP where
+  M := BIBase.laterN n
+  action := λ _ => .transform (IntoLaterN false n)
+  spec := λ _ _ _ h => (intuitionisticallyIf_mono (h.1)).trans (laterN_intuitionisticallyIf_2 n)
+  emp := laterN_intro n
+  mono := (laterN_mono n ·)
+  sep := (laterN_sep n).2
+
+end Modalities

@@ -10,6 +10,7 @@ import Batteries.Data.List.Perm
 public import Iris.Std.List
 public import Iris.Std.PartialMap
 public import Iris.Std.GenSets
+public import Iris.Std.Positives
 
 namespace Iris.Algebra
 
@@ -232,6 +233,7 @@ variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 variable {B : Type w} {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
 
 /-- Monoid homomorphisms distribute over big ops. -/
+@[rocq_alias big_opL_commute]
 theorem bigOpL_hom [H : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] (Φ : Nat → B → M₁) (l : List B) :
     R (f ([^ op₁ list] k ↦ x ∈ l, Φ k x)) ([^ op₂ list] k ↦ x ∈ l, f (Φ k x)) :=
   match l with
@@ -239,6 +241,7 @@ theorem bigOpL_hom [H : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] (Φ 
   | .cons _ _ => H.rel_trans H.map_op <| H.op_proper H.rel_refl <| (bigOpL_hom (H := H) ..)
 
 /-- Weak monoid homomorphisms distribute over non-empty big ops. -/
+@[rocq_alias big_opL_commute1]
 theorem bigOpL_hom_weak [H : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] {l : List B}
     (Φ : Nat → B → M₁) (hne : l ≠ []) :
     R (f ([^ op₁ list] k ↦ x ∈ l, Φ k x)) ([^ op₂ list] k ↦ x ∈ l, f (Φ k x)) :=
@@ -476,6 +479,24 @@ theorem bigOpM_sep_zip_equiv {A : Type _} {B : Type _}
     ([^ op map] k ↦ xy ∈ PartialMap.zip m1 m2, op (h1 k xy.1) (h2 k xy.2)) ≡
     op ([^ op map] k ↦ x ∈ m1, h1 k x) ([^ op map] k ↦ x ∈ m2, h2 k x) :=
   bigOpM_sep_zipWith_equiv _ _ rfl rfl hdom
+
+variable {M₁} [OFE M₁]
+variable {M₂} [OFE M₂]
+variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
+variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
+
+theorem bigOpM_hom  [ι : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R h] (f : K → A → M₁) (m : M' A) :
+    R (h ([^op₁ map] k↦x ∈ m, f k x)) ([^op₂ map] k↦x ∈ m, h (f k x)) := by
+  exact bigOpL_hom (H := ι) _ _
+
+theorem bigOpM_weak_hom [DecidableEq K] [ι : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R h]
+    (f : K → A → M₁) (m : M' A) (Hne : ¬ m ≡ₘ ∅) :
+    R (h ([^op₁ map] k↦x ∈ m, f k x)) ([^op₂ map] k↦x ∈ m, h (f k x)) := by
+  refine bigOpL_hom_weak (H := ι) _ ?_
+  refine fun Hk => Hne ?_
+  refine .trans LawfulFiniteMap.ofList_toList.symm ?_
+  rw [show (LawfulFiniteMap.toList (K := K) m) = [] from List.nil_eq.mpr Hk |>.symm]
+  exact .trans (congrFun rfl) (congrFun rfl )
 
 end BigOpM
 

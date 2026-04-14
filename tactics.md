@@ -11,7 +11,7 @@
 | `iassumption`                              | Solve the goal with a hypothesis from any context (pure, intuitionistic or spatial).                                                                                                                                                 |
 | `iex_falso`                                | Change the goal to `False`.                                                                                                                                                                                                          |
 | `ipure` *hyp*                              | Move the hypothesis *hyp* to the pure context.                                                                                                                                                                                       |
-| `iintuitionistic` *hyp*                    | Move the hypothesis *hyp* to the intuitionistic context.                                                                                                                                                                             |
+| `iintuitionistic` *hyp*                    | Move the hypothesis *hyp* to the intuitionistic context. Equivalent to `icases hyp with #hyp`.                                       |
 | `ispatial` *hyp*                           | Move the hypothesis *hyp* to the spatial context.                                                                                                                                                                                    |
 | `iemp_intro`                               | Solve the goal if it is `emp` and discard all hypotheses.                                                                                                                                                                            |
 | `ipure_intro`                              | Turn a goal of the form `⌜φ⌝` into a Lean goal `φ`.                                                                                                                                                                                  |
@@ -35,20 +35,20 @@
 | Pattern                         | Description                                                                                                                                                                         |
 |---------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | *name*                          | Rename the hypothesis to *name*.                                                                                                                                                    |
-| `_`                             | Drop the hypothesis.                                                                                                                                                                |
+| `-`                             | Drop the hypothesis.                                                                                                                                                                |
 | `⟨`*pat_1* [`,` *pat_2*]...`⟩`  | Destruct a (separating) conjunction and recursively destruct its arguments using the patterns *pat_i*.                                                                              |
 | `(`*pat_1* [`\|` *pat_2*]...`)` | Destruct a disjunction and recursively destruct its arguments in separate goals using the patterns *pat_i*. The parentheses can be omitted if this pattern is not on the top level. |
-| `⌜`*name*`⌝`                    | Move the hypothesis to the pure context and rename it to *name*.                                                                                                                    |
-| `□` *pat*                       | Move the hypothesis to the intuitionistic context and further destruct it using the pattern *pat*.                                                                                  |
-| `∗` *pat*                      | Move the hypothesis to the spatial context and further destruct it using the pattern *pat*.                                                                                         |
-| `>` *pat*                       | Eliminate the modality at the top of the hypothesis and further destruct the result using the pattern *pat*.                                                                        |
+| `%`*name*                       | Move the hypothesis to the pure context and rename it to *name*.                                                                                                                    |
+| `#`*pat*                        | Move the hypothesis to the intuitionistic context and further destruct it using the pattern *pat*.                                                                                  |
+| `∗`*pat*                        | Move the hypothesis to the spatial context and further destruct it using the pattern *pat*.                                                                                         |
+| `>`*pat*                        | Eliminate the modality at the top of the hypothesis and further destruct the result using the pattern *pat*.                                                                        |
 
 Example:
 ```lean
 -- the hypothesis:
 P1 ∗ (□ P2 ∨ P2) ∗ (P3 ∧ P3')
 -- can be destructed using the pattern:
-⟨HP1, □HP2 | HP2, ⟨HP3, _⟩⟩
+⟨HP1, #HP2 | HP2, ⟨HP3, -⟩⟩
 -- (there are of course other valid patterns for destructing the shown hypothesis)
 ```
 
