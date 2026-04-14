@@ -1079,9 +1079,18 @@ theorem toList_zip {m₁ : M V} {m₂ : M V'} :
     simp [Hb₁]
 
 theorem mem_dom_set [LawfulSet S K] {m : M V} : k ∈ (dom_set m : S) ↔ (get? m k).isSome := by
-  simp [dom_set, ←LawfulSet.mem_ofList, FiniteMap.mapFold, Option.isSome_iff_exists,
-    ←LawfulFiniteMap.toList_get]
-  rfl
+  simpa [dom_set, ←LawfulSet.mem_ofList, FiniteMap.mapFold, Option.isSome_iff_exists,
+    ←LawfulFiniteMap.toList_get] using .rfl
+
+theorem toList_dom_set_perm [LawfulFiniteSet S K] (m : M V) :
+    (FiniteSet.toList (dom_set m : S)).Perm ((toList (K := K) m).map Prod.fst) := by
+  refine (List.perm_ext_iff_of_nodup FiniteSet.toList_nodup toList_noDupKeys).mpr fun x => ?_
+  simp only [FiniteSet.mem_toList, mem_dom_set, List.mem_map]
+  constructor
+  · intro h
+    obtain ⟨v, hv⟩ := Option.isSome_iff_exists.mp h
+    exact ⟨(x, v), toList_get.mpr hv, rfl⟩
+  · grind [toList_get]
 
 end LawfulFiniteMap
 

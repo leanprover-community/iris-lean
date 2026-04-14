@@ -1006,6 +1006,13 @@ theorem filter_delete (p : A → Bool) (x : A) (s : S) :
   ext y
   grind only [mem_filter, mem_delete]
 
+/-- toList of a filtered set is a permutation of filtering the list. -/
+theorem toList_filter_perm (p : A → Bool) (s : S) :
+    (toList (filter p s)).Perm ((toList s).filter p) := by
+  refine (List.perm_ext_iff_of_nodup toList_nodup ?_).mpr ?_
+  exact List.Pairwise.filter p toList_nodup
+  grind [mem_toList, mem_filter, mem_toList]
+
 -- FIXME: Golf
 /-- A set has size 0 iff it is empty. -/
 theorem size_empty {X : S} : size X = 0 ↔ X = ∅ := by
