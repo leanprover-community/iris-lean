@@ -649,11 +649,11 @@ instance  bigSepS_plain {S} [Pos.Countable S] {A} [LawfulFiniteSet S A] (Φ : A 
     case hemp => simp only [BigOpS.bigOpS_empty, plain]
     case hadd x s x_s IH =>
       calc iprop([^ sep set] x ∈ insert x s, Φ x)
-        _ ⊣⊢ Φ x ∗ [^ sep set] x ∈  s, Φ x := BI.equiv_iff.1 (BigOpS.bigOpS_insert x_s)
+        _ ⊣⊢ Φ x ∗ [^ sep set] x ∈  s, Φ x := BI.equiv_iff.1 (BigOpS.insert x_s)
         _  ⊢ ■ Φ x ∗ ■ [^ sep set] x ∈ s, Φ x := sep_mono (h x |>.plain) IH
         _  ⊢ ■ (Φ x ∗ [^ sep set] x ∈ s, Φ x) := plainly_sep_2
         _ ⊣⊢ ■ [^ sep set] y ∈ insert x s, Φ y :=
-          .ofMono plainly_mono <| BI.equiv_iff.1 (BigOpS.bigOpS_insert x_s).symm
+          .ofMono plainly_mono <| BI.equiv_iff.1 (BigOpS.insert x_s).symm
 
 instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=
   inferInstanceAs (Timeless iprop(<si_pure> <si_emp_valid> P))

@@ -8,6 +8,7 @@ module
 public import Iris.Algebra.Monoid
 public import Iris.Algebra.BigOp
 public import Iris.BI.DerivedLaws
+meta import Iris.Std
 import Lean
 
 namespace Iris.BI
@@ -88,13 +89,13 @@ public section Map
 open Iris.Algebra Iris.Std OFE BIBase
 
 /-- Big separating conjunction over a map with key access. -/
-abbrev bigSepM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
-    (Φ : K → V → PROP) (m : M V) : PROP :=
+abbrev bigSepM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _} [μ : LawfulFiniteMap M]
+    (Φ : μ.K → V → PROP) (m : M V) : PROP :=
   bigOpM sep Φ m
 
 /-- Big conjunction over a map with key access. -/
-abbrev bigAndM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
-    (Φ : K → V → PROP) (m : M V) : PROP :=
+abbrev bigAndM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _} [μ : LawfulFiniteMap M]
+    (Φ : μ.K → V → PROP) (m : M V) : PROP :=
   bigOpM and Φ m
 
 end Map
@@ -111,6 +112,61 @@ end Set
 public meta section
 open Lean PrettyPrinter Delaborator SubExpr
 /-! ## Notation -/
+
+class ToList (X : Type _)(A : Type _) where
+  toList : X → List A
+
+instance [μ : Std.LawfulFiniteMap M]: ToList (M A) A where
+  toList m := Std.FiniteMap.toList m |>.map (·.2)
+
+instance [Std.LawfulFiniteSet S A]: ToList S A where
+  toList s := Std.FiniteSet.toList s
+
+instance : ToList (List A) A where
+  toList ls := ls
+
+syntax memBinder := ident " ∈ " term
+syntax memBinders := memBinder ("," ppSpace memBinder)*
+
+declare_syntax_cat iris_bigop
+syntax "✱" : iris_bigop
+syntax "⋁" : iris_bigop
+syntax "⋀" : iris_bigop
+
+syntax (name := iris.bigop) iris_bigop noWs "(" memBinders ")" "," ppSpace term : term
+
+def expandBigOp : TSyntax `iris_bigop → MacroM (TSyntax `ident)
+| `(iris_bigop| ✱ ) =>
+  return Lean.mkIdent ``sep
+| `(iris_bigop| ⋀ ) =>
+  return Lean.mkIdent ``and
+| `(iris_bigop| ⋁ ) =>
+  return Lean.mkIdent ``or
+| _ =>do Lean.Macro.throwUnsupported
+
+def expandMemBindersWith(body : TSyntax `term) : TSyntax ``memBinders → MacroM (TSyntax `term × TSyntax `term)
+| `(memBinders| $x ∈ $ls $[, $xs ∈ $lss]*) => do
+  let vars := (x :: xs.toList)
+  let mut func := body
+  for v in vars.reverse do
+    func := ←`(fun  _ $v => $func)
+  let mut ls := ←`(ToList.toList $ls)
+  for other in lss do
+    ls := ←`(List.zip $ls (ToList.toList $other))
+  return (func, ls)
+| _ => do Lean.Macro.throwUnsupported
+
+macro_rules
+  | `(iris.bigop| $op:iris_bigop( $xs:memBinders ), $body) => do
+    let op ← expandBigOp op
+    let (func, ls) ← expandMemBindersWith body xs
+    `(Algebra.bigOpL $op $func $ls)
+
+variable [BI PROP] (Φ : Nat → PROP)
+#check ⋀(x ∈ [1,2,4]), Φ x
+#check ⋁(x ∈ [1,2,4]), Φ x
+#check ✱(x ∈ [1,2,4]), Φ x
+
 
 -- Notation for bigSepL without index
 syntax "[∗list] " ident " ∈ " term ", " term : term

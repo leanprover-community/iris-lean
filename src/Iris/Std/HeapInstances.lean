@@ -36,7 +36,8 @@ section FunPartialMap
 variable {K V : Type _} [DecidableEq K]
 
 /-- Functions form a partial map. -/
-instance instPartialMapFun : PartialMap (K → Option ·) K where
+instance instPartialMapFun : PartialMap (K → Option ·) where
+  K := K
   get? t k := t k
   insert t k v := fun k' => if k = k' then some v else t k'
   delete t k := fun k' => if k = k' then none else t k'
@@ -49,7 +50,7 @@ instance instPartialMapFun : PartialMap (K → Option ·) K where
     | none, some y => some y
     | some x, some y => some <| f k x y
 
-instance : LawfulPartialMap (K → Option ·) K where
+instance : LawfulPartialMap (K → Option ·) where
   get?_empty := by simp [get?, empty]
   get?_insert_eq := by simp [get?, insert]; grind
   get?_insert_ne := by simp [get?, insert]; grind
@@ -193,7 +194,8 @@ abbrev op_lift (op : V → V → V) (v1 v2 : Option V) : Option V :=
   | none, none => none
 
 /-- PartialMap instance for AssocList. -/
-instance AssocList.instPartialMapAssocList : Iris.Std.PartialMap AssocList Nat where
+instance AssocList.instPartialMapAssocList : Iris.Std.PartialMap AssocList where
+  K := Nat
   get? f k := f.lookup k
   insert f k v := f.update k (some v)
   delete f k := f.update k none
@@ -202,7 +204,7 @@ instance AssocList.instPartialMapAssocList : Iris.Std.PartialMap AssocList Nat w
   merge op t1 t2 :=
     construct (fun n => op_lift (op n) (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
 
-instance AssocList.instLawfulPartialMapAssocList : Iris.Std.LawfulPartialMap AssocList Nat where
+instance AssocList.instLawfulPartialMapAssocList : Iris.Std.LawfulPartialMap AssocList where
   get?_empty := by simp [get?]
   get?_insert_eq := by simp [get?, insert]; grind
   get?_insert_ne := by simp [get?, insert]; grind
@@ -278,7 +280,8 @@ open Iris.Std
 variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
 
 /-- TreeMap forms a Store with Option values. -/
-instance instStoreTreeMap : PartialMap (TreeMap K · compare) K where
+instance instStoreTreeMap : PartialMap (TreeMap K · compare) where
+  K := K
   get? t k := t[k]?
   insert t k v := t.alter k (fun _ => some v)
   delete t k := t.alter k (fun _ => none)
@@ -386,7 +389,7 @@ theorem getElem?_mergeWith' {t₁ t₂ : TreeMap K V compare} {f : K → V → V
     simp [← hval, hfind]
     simp [eq_of_compare hkv_cmp]
 
-instance : LawfulPartialMap (TreeMap K · compare) K where
+instance : LawfulPartialMap (TreeMap K · compare) where
   get?_empty := by simp [Iris.Std.get?, Iris.Std.empty]
   get?_insert_eq := by simp [Iris.Std.get?, Iris.Std.insert]; grind
   get?_insert_ne := by simp [Iris.Std.get?, Iris.Std.insert]; grind
@@ -395,10 +398,10 @@ instance : LawfulPartialMap (TreeMap K · compare) K where
   get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
   get?_merge := getElem?_mergeWith'
 
-instance : FiniteMap (TreeMap K · compare) K where
+instance : FiniteMap (TreeMap K · compare) where
   toList t := t.toList
 
-instance : LawfulFiniteMap (TreeMap K · compare) K where
+instance : LawfulFiniteMap (TreeMap K · compare) where
   toList_empty := rfl
   toList_noDupKeys := by
     intro V m
@@ -440,7 +443,8 @@ variable {K V : Type _} [Ord K] [TransOrd K] [LawfulEqOrd K]
 Note: This requires that `cmp k k' = .eq` implies `k = k'` (i.e., `LawfulEqCmp`).
 -/
 
-instance : PartialMap (ExtTreeMap K · compare) K where
+instance : PartialMap (ExtTreeMap K · compare) where
+  K := K
   get? t k := t[k]?
   insert t k v := t.alter k (fun _ => some v)
   delete t k := t.alter k (fun _ => none)
@@ -460,7 +464,7 @@ theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
   | _ m₁ => induction q₂ using Quotient.ind with
     | _ m₂ => exact Std.TreeMap.getElem?_mergeWith'
 
-instance : LawfulPartialMap (ExtTreeMap K · compare) K where
+instance : LawfulPartialMap (ExtTreeMap K · compare) where
   get?_empty := by simp [Iris.Std.get?, Iris.Std.empty]
   get?_insert_eq := by simp [Iris.Std.get?, Iris.Std.insert]; grind
   get?_insert_ne := by simp [Iris.Std.get?, Iris.Std.insert]; grind
@@ -469,10 +473,10 @@ instance : LawfulPartialMap (ExtTreeMap K · compare) K where
   get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
   get?_merge := getElem?_mergeWith'
 
-instance : FiniteMap (ExtTreeMap K · compare) K where
+instance : FiniteMap (ExtTreeMap K · compare) where
   toList t := t.toList
 
-instance : LawfulFiniteMap (ExtTreeMap K · compare) K where
+instance : LawfulFiniteMap (ExtTreeMap K · compare) where
   toList_empty := rfl
   toList_noDupKeys {V m} := by
     suffices h : List.Pairwise (fun a b => ¬compare a b = eq) (m.toList.map (·.1)) by
