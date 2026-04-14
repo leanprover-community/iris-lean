@@ -330,7 +330,7 @@ theorem bigSepM_dup {P : PROP} [Affine P] {m : M V} :
 theorem bigSepM_pure_intro {φ : K → V → Prop} {m : M V} :
     ([∗map] k ↦ x ∈ m, (⌜φ k x⌝ : PROP)) ⊢ ⌜all φ m⌝ :=
   bigSepL_pure_intro.trans <| pure_mono fun h k v hget =>
-    let ⟨idx, hidx⟩ := List.mem_iff_getElem.mp <| toList_get (M := M).mpr hget
+    let ⟨idx, hidx⟩ := List.mem_iff_getElem.mp <| toList_get.mpr hget
     h idx ⟨k, v⟩ <| List.getElem?_eq_some_iff.mpr ⟨hidx.1, hidx.2⟩
 
 @[rocq_alias big_sepM_affinely_pure_2]
@@ -448,7 +448,7 @@ theorem bigSepM_lookup_acc_impl [DecidableEq K] {Φ : K → V → PROP} {m : M V
   refine wand_intro <| wand_intro <| sep_comm.1.trans <| ?_
   refine .trans ?_ (bigSepM_delete h).2
   have hki_of {k : K} {v : V} (hget : get? (delete m i) k = some v) : k ≠ i :=
-    fun heq => absurd hget.symm <| (get?_delete_eq (M := M) heq.symm) ▸ nofun
+    fun heq => absurd hget.symm <| (get?_delete_eq heq.symm) ▸ nofun
   refine (sep_mono_r <| (sep_mono_r <|
     bigSepM_intro (m := delete m i)
       (Φ := fun k v => if k = i then emp else iprop(Φ k v -∗ Ψ k v))

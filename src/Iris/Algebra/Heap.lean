@@ -48,7 +48,7 @@ theorem eqv_of_Equiv [OFE V] [μ : PartialMap M] {t1 t2 : M V} (H : PartialMap.e
   (.of_eq <| H ·)
 
 instance [μ : LawfulPartialMap M] [OFE V] (op : μ.K → V → V → V) [∀ k, NonExpansive₂ (op k)] :
-    NonExpansive₂ (merge (M := M) op) where
+    NonExpansive₂ (merge op) where
   ne _ {_ _} Ht {_ _} Hs k := by simp only [get?_merge]; exact NonExpansive₂.ne (Ht k) (Hs k)
 
 /-- Project a chain of stores through its kth coordinate to a chain of values. -/

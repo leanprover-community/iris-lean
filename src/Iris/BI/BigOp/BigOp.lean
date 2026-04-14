@@ -89,12 +89,12 @@ public section Map
 open Iris.Algebra Iris.Std OFE BIBase
 
 /-- Big separating conjunction over a map with key access. -/
-abbrev bigSepM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _} [μ : LawfulFiniteMap M]
+abbrev bigSepM [BI PROP] {V : Type _} {M : Type _ → Type _} [μ : LawfulFiniteMap M]
     (Φ : μ.K → V → PROP) (m : M V) : PROP :=
   bigOpM sep Φ m
 
 /-- Big conjunction over a map with key access. -/
-abbrev bigAndM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _} [μ : LawfulFiniteMap M]
+abbrev bigAndM [BI PROP] {V : Type _} {M : Type _ → Type _} [μ : LawfulFiniteMap M]
     (Φ : μ.K → V → PROP) (m : M V) : PROP :=
   bigOpM and Φ m
 
@@ -363,8 +363,8 @@ def delabBigSepM : Delab := do
   unless e.isApp do failure
   unless e.getAppFn.isConstOf ``bigSepM do failure
   let args := e.getAppArgs
-  unless args.size == 8 do failure
-  delabBigOpMBody args[6]! 7 6
+  unless args.size == 7 do failure
+  delabBigOpMBody args[5]! 6 5
     (fun k x m P => `([∗map]  $k ↦ $x ∈ $m, $P))
     (fun x m P => `([∗map]  $x ∈ $m, $P))
 
@@ -375,8 +375,8 @@ def delabBigAndM : Delab := do
   unless e.isApp do failure
   unless e.getAppFn.isConstOf ``bigAndM do failure
   let args := e.getAppArgs
-  unless args.size == 8 do failure
-  delabBigOpMBody args[6]! 7 6
+  unless args.size == 7 do failure
+  delabBigOpMBody args[5]! 6 5
     (fun k x m P => `([∧map]  $k ↦ $x ∈ $m, $P))
     (fun x m P => `([∧map]  $x ∈ $m, $P))
 
@@ -388,15 +388,15 @@ def delabBigOpM : Delab := do
   unless e.isApp do failure
   unless e.getAppFn.isConstOf ``Iris.Algebra.bigOpM do failure
   let args := e.getAppArgs
-  unless args.size == 11 do failure
-  let op := args[3]!
+  unless args.size == 10 do failure
+  let op := args[2]!
   let opName := op.getAppFn.constName?
   if opName == some ``BIBase.sep then
-    delabBigOpMBody args[7]! 10 7
+    delabBigOpMBody args[6]! 9 6
       (fun k x m P => `([∗map]  $k ↦ $x ∈ $m, $P))
       (fun x m P => `([∗map]  $x ∈ $m, $P))
   else if opName == some ``BIBase.and then
-    delabBigOpMBody args[7]! 10 7
+    delabBigOpMBody args[6]! 9 6
       (fun k x m P => `([∧map]  $k ↦ $x ∈ $m, $P))
       (fun x m P => `([∧map]  $x ∈ $m, $P))
   else
@@ -513,8 +513,8 @@ end Tests
 
 section MapTests
 open Iris.Std OFE BIBase
-variable [BI PROP] {K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
-  (P : Nat → PROP) (Q : K → Nat → PROP) (m : M Nat)
+variable {PROP} [BI PROP] {M : Type _ → Type _} [μ : LawfulFiniteMap M]
+  (P : Nat → PROP) (Q : μ.K → Nat → PROP) (m : M Nat)
 
 -- bigSepM without key
 /-- info: [∗map] x ∈ m, P x : PROP -/
