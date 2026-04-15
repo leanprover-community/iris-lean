@@ -238,7 +238,7 @@ theorem bigAndM_laterN {Φ : K → V → PROP} {m : M V} {n : Nat} :
 
 @[rocq_alias big_andM_map_to_list]
 theorem bigAndM_toList {Φ : K → V → PROP} {m : M V} :
-    ([∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ ([∧list] kv ∈ toList (K := K) m, Φ kv.1 kv.2) :=
+    ([∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ ([∧list] kv ∈ toList m, Φ kv.1 kv.2) :=
   .rfl
 
 @[rocq_alias big_andM_fmap]

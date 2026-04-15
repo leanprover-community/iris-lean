@@ -47,7 +47,7 @@ export PartialMap (get? insert delete empty bindAlter merge)
 
 /-- A FiniteMap is a PartialMap with a toList operation. Like in Stdpp, the order in
 which the elements are passed into the list is unspecified. -/
-class FiniteMap M K extends PartialMap M K where
+class FiniteMap (M : Type _ → Type _) (K : outParam (Type _)) extends PartialMap M K where
   toList : M V → List (K × V)
 export FiniteMap (toList)
 
@@ -237,7 +237,8 @@ class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _))
 export LawfulPartialMap (get?_empty get?_insert_eq get?_insert_ne get?_delete_eq
   get?_delete_ne get?_bindAlter get?_merge)
 
-class LawfulFiniteMap M K extends LawfulPartialMap M K, FiniteMap M K where
+class LawfulFiniteMap (M : Type _ → Type _) (K : outParam (Type _)) 
+    extends LawfulPartialMap M K, FiniteMap M K where
   toList_empty : toList (∅ : M V) = []
   toList_noDupKeys : NoDupKeys (toList (m : M V))
   toList_get : (k, v) ∈ toList m ↔ get? m k = some v
@@ -252,7 +253,7 @@ variable {K V : Type _} {M : Type _ → Type _} [FiniteMap M K]
 --   mapFold (fun k v acc => (k, v) :: acc) [] m
 
 def mapFold {A : Type _} (f : K → V → A → A) (a : A) (m : M V) : A :=
-  List.foldl (fun a' ⟨k, v⟩ => f k v a') a (toList (K := K) m)
+  List.foldl (fun a' ⟨k, v⟩ => f k v a') a (toList m)
 
 /-- Convert a list to a map with sequential natural number keys starting from `start`. -/
 def map_seq [FiniteMap M Nat] (start : Nat) (l : List V) : M V :=
@@ -306,7 +307,7 @@ theorem get?_insert_rev {m : M V} {i : K} {x y : V} :
 
 theorem empty_subset (m : M V) : (∅ : M V) ⊆ m := by
   intro k v h
-  simp [show get? (∅ : M V) k = none from get?_empty (M := M) k] at h
+  simp [show get? (∅ : M V) k = none from get?_empty k] at h
 
 theorem disjoint_empty_left (m : M V) : (∅ : M V) ##ₘ m := by
   intro k ⟨h₁, _⟩
@@ -818,7 +819,7 @@ open FiniteMap LawfulFiniteMap PartialMap LawfulPartialMap
 --     P (insert m i x)) →
 --   ∀ m, P m
 
-theorem toList_get?_none {m : M V} : (∀ v, (k, v) ∉ toList (K := K) m) ↔ get? m k = none := by
+theorem toList_get?_none {m : M V} : (∀ v, (k, v) ∉ toList m) ↔ get? m k = none := by
   constructor
   · intro Hn
     refine Option.eq_none_iff_forall_ne_some.mpr ?_
@@ -830,11 +831,11 @@ theorem NoDupKeys_noDup {L : List (K × V)} : NoDupKeys L → L.Nodup := by
   refine fun H => FromMathlib.List.Nodup.of_map (fun x => x.fst) ?_
   exact H
 
-theorem nodup_toList {m : M V} : (toList (K := K) m).Nodup :=
+theorem nodup_toList {m : M V} : (toList m).Nodup :=
   NoDupKeys_noDup toList_noDupKeys
 
 theorem ofList_toList [DecidableEq K] {m : M V} :
-    PartialMap.equiv (ofList (toList (K := K) m)) m := by
+    PartialMap.equiv (ofList (toList m)) m := by
   intro k
   rcases h : get? m k with _|v
   · refine get?_ofList_none ?_ toList_noDupKeys
@@ -855,7 +856,7 @@ theorem induction_on [DecidableEq K] {P : M V → Prop}
   | cons kv rest ih =>
     rw [ofList_cons]
     apply hins kv.1 kv.2
-    · refine get?_ofList_none (M := M) ?_ (noDupKeys_cons hnd)
+    · refine get?_ofList_none ?_ (noDupKeys_cons hnd)
       intro ⟨v, hv⟩
       exact (List.nodup_cons.mp hnd).1 (List.mem_map_of_mem (f := Prod.fst) (a := (kv.1, v)) hv)
     · exact ih (noDupKeys_cons hnd)
@@ -876,14 +877,14 @@ theorem mem_of_mem_ofList [DecidableEq K] {l : List (K × V)} {i : K} {x : V}
       exact List.mem_cons_of_mem (k, v) (IH H)
 
 theorem toList_ofList [DecidableEq K] {l : List (K × V)} (Hdup : NoDupKeys l) :
-    (toList (M := M) (K := K) (ofList l : M V)).Perm l := by
+    (toList (ofList l : M V)).Perm l := by
   refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
   · exact NoDupKeys_noDup Hdup
   · exact (mem_of_mem_ofList <| toList_get.mp ·)
   · exact (toList_get.mpr <| get?_ofList_some · Hdup)
 
 theorem toList_perm_of_get?_eq {m₁ m₂ : M V} (h : ∀ k, get? m₁ k = get? m₂ k) :
-    (toList (M := M) (K := K) m₁).Perm (toList (M := M) (K := K) m₂) := by
+    (toList m₁).Perm (toList m₂) := by
   refine (List.perm_ext_iff_of_nodup nodup_toList nodup_toList).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
   · intro H
     refine toList_get.mpr ?_
@@ -895,7 +896,7 @@ theorem toList_perm_of_get?_eq {m₁ m₂ : M V} (h : ∀ k, get? m₁ k = get? 
     exact toList_get.mp H
 
 theorem toList_insert {m : M V} {k : K} {v : V} (h : get? m k = none) :
-    (toList (M := M) (K := K) (insert m k v)).Perm ((k, v) :: toList (M := M) (K := K) m) := by
+    (toList (insert m k v)).Perm ((k, v) :: toList m) := by
   refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k', v'⟩ => ⟨?_, ?_⟩
   · refine  List.nodup_cons.mpr ⟨?_, nodup_toList⟩
     exact fun H => Option.some_ne_none _ (h ▸ toList_get.mp H).symm
@@ -923,7 +924,7 @@ theorem toList_insert {m : M V} {k : K} {v : V} (h : get? m k = none) :
         refine toList_get.mp H
 
 theorem toList_delete {m : M V} {k : K} {v : V} (h : get? m k = some v) :
-    (toList (M := M) (K := K) m).Perm ((k, v) :: toList (M := M) (K := K) (delete m k)) := by
+    (toList m).Perm ((k, v) :: toList (delete m k)) := by
   refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k', v'⟩ => ⟨?_, ?_⟩
   · refine List.nodup_cons.mpr ⟨?_, nodup_toList⟩
     intro H
@@ -975,8 +976,8 @@ theorem ofList_injective [DecidableEq K] {l₁ l₂ : List (K × V)}
     exact get?_ofList_some H (List.nodup_iff_pairwise_ne.mpr hnodup2)
 
 theorem toList_insert_delete {m : M V} {k : K} {v : V} :
-    (toList (M := M) (K := K) (insert m k v)).Perm
-      (toList (M := M) (K := K) (insert (delete m k) k v)) := by
+    (toList (insert m k v)).Perm
+      (toList (insert (delete m k) k v)) := by
   apply toList_perm_of_get?_eq
   intro k'
   by_cases h : k = k'
@@ -984,7 +985,7 @@ theorem toList_insert_delete {m : M V} {k : K} {v : V} :
   · simp [LawfulPartialMap.get?_insert_ne h, LawfulPartialMap.get?_delete_ne h]
 
 theorem toList_map {f : V → V'} {m : M V}  :
-    (toList (M := M) (K := K) (PartialMap.map f m)).Perm
+    (toList (PartialMap.map f m)).Perm
       ((toList m).map (fun kv => (kv.1, f kv.2))) := by
   refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
   · refine FromMathlib.Nodup.map_on ?_ nodup_toList
@@ -1006,7 +1007,7 @@ theorem toList_map {f : V → V'} {m : M V}  :
     rfl
 
 theorem toList_filterMap {f : V → Option V} {m : M V} (HI : Function.Injective f) :
-    (toList (M := M) (K := K) (PartialMap.filterMap f m)).Perm
+    (toList (PartialMap.filterMap f m)).Perm
       ((toList m).filterMap (fun kv => (f kv.2).map (kv.1, ·))) := by
   refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
   · refine FromMathlib.Nodup.filterMap ?_ nodup_toList
@@ -1031,10 +1032,10 @@ theorem toList_filterMap {f : V → Option V} {m : M V} (HI : Function.Injective
     refine ⟨a.snd, toList_get.mp Ha₁, H'⟩
 
 theorem toList_filter {φ : K → V → Bool} {m : M V} :
-    (toList (M := M) (K := K) (PartialMap.filter φ m)).Perm
+    (toList (PartialMap.filter φ m)).Perm
       ((toList m).filter (fun kv => φ kv.1 kv.2)) := by
   refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
-  · exact FromMathlib.Nodup.filter ?_ (nodup_toList (M := M) (K := K))
+  · exact FromMathlib.Nodup.filter ?_ (nodup_toList (M := M))
   · intro H
     refine List.mem_filter.mpr ?_
     have H' := toList_get.mp H
@@ -1051,7 +1052,7 @@ theorem toList_filter {φ : K → V → Bool} {m : M V} :
     simp [get?_filter, toList_get.mp H.1, H.2]
 
 theorem toList_zip {m₁ : M V} {m₂ : M V'} :
-    (toList (M := M) (K := K) (PartialMap.zip m₁ m₂)).Perm
+    (toList (M := M) (PartialMap.zip m₁ m₂)).Perm
       ((toList m₁).filterMap fun kv₁ =>
         (get? m₂ kv₁.1).map fun v₂ => (kv₁.1, (kv₁.2, v₂))) := by
   refine (List.perm_ext_iff_of_nodup nodup_toList ?_).mpr fun ⟨k, v⟩ => ⟨?_, ?_⟩
@@ -1083,7 +1084,7 @@ theorem mem_dom_set [LawfulSet S K] {m : M V} : k ∈ (dom_set m : S) ↔ (get? 
     ←LawfulFiniteMap.toList_get] using .rfl
 
 theorem toList_dom_set_perm [LawfulFiniteSet S K] (m : M V) :
-    (FiniteSet.toList (dom_set m : S)).Perm ((toList (K := K) m).map Prod.fst) := by
+    (FiniteSet.toList (dom_set m : S)).Perm ((toList m).map Prod.fst) := by
   refine (List.perm_ext_iff_of_nodup FiniteSet.toList_nodup toList_noDupKeys).mpr fun x => ?_
   simp only [FiniteSet.mem_toList, mem_dom_set, List.mem_map]
   constructor
