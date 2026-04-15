@@ -8,6 +8,7 @@ module
 public import Iris.BI.Classes
 public import Iris.BI.Extensions
 public import Iris.BI.BI
+public import Iris.Std.Nat
 public import Iris.Std.Classes
 public import Iris.Std.Rewrite
 public import Iris.Std.TC
@@ -1631,21 +1632,21 @@ theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : 
 
 theorem iter_modal_intro [BI PROP] (M : PROP → PROP) (n : Nat) {P : PROP} :
   (∀ Q, Q ⊢ M Q) →
-  P ⊢ Nat.fold n (fun _ _ x => M x) P := by
+  P ⊢ Nat.iter n (fun x => M x) P := by
   intro H
   induction n with
   | zero => simp
   | succ n IH =>
-    simp only [Nat.fold_succ]
+    simp only [Nat.iter_succ]
     exact .trans IH (H _)
 
 theorem iter_modal_mono [BI PROP] (M : PROP → PROP) (n : Nat) {P Q : PROP} :
   (∀ P Q, (P -∗ Q) ⊢ M P -∗ M Q) →
   (P -∗ Q) ⊢
-  Nat.fold n (fun _ _ x => M x) P -∗ Nat.fold n (fun _ _ x => M x) Q := by
+  Nat.iter n (fun x => M x) P -∗ Nat.iter n (fun x => M x) Q := by
   intro H
   induction n with
   | zero => simp
   | succ n IH =>
-    simp only [Nat.fold_succ]
+    simp only [Nat.iter_succ]
     exact .trans IH (H _ _)

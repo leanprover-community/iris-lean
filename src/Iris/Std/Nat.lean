@@ -19,4 +19,22 @@ theorem eq_of_not_lt_not_lt {a b : Nat} : ¬(a < b) → ¬(b < a) → a = b := b
   case inr =>
     contradiction
 
+def iter {A : Type} (n : Nat) (f : A → A) (x : A) : A := Nat.rec x (fun _ => f) n
+
+@[simp]
+theorem iter_zero {A : Type} (f : A → A) (x : A) :
+  iter 0 f x = x := by simp [iter]; rfl
+
+@[simp]
+theorem iter_succ {A : Type} (n : Nat) (f : A → A) (x : A) :
+  iter (n + 1) f x = f (iter n f x) := by simp [iter]
+
+theorem iter_add {A : Type} (n1 n2 : Nat) (f : A → A) (x : A) :
+  iter (n1 + n2) f x = iter n1 f (iter n2 f x) := by
+  induction n1 with
+  | zero => simp only [iter, Nat.zero_add]; rfl
+  | succ n IH =>
+    rw [show n + 1 + n2 = (n + n2) + 1 by omega]
+    simp [IH]
+
 end Nat

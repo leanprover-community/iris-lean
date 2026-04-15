@@ -100,8 +100,8 @@ theorem lc_decrease_supply {n m} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -�
   unfold lc_supply
   iexact H
 
-theorem lc_succ {n} : £ (Nat.succ n) ⊣⊢@{IProp GF} £ 1 ∗ £ n := by
-  rw [show Nat.succ n = 1 + n by simp [Nat.succ_eq_add_one, Nat.add_comm]]
+theorem lc_succ {n} : £ (.succ n) ⊣⊢@{IProp GF} £ 1 ∗ £ n := by
+  rw [show .succ n = 1 + n by simp [Nat.succ_eq_add_one, Nat.add_comm]]
   exact lc_split
 
 theorem lc_weaken {n} m : m ≤ n → ⊢@{IProp GF} £ n -∗ £ m := by
@@ -130,13 +130,13 @@ variable {GF : BundledGFunctors} [LcGS GF]
 instance (priority := default - 10) {n m} : FromSep (PROP := IProp GF) (£ (n + m)) (£ n) (£ m) where
   from_sep := lc_split.mpr
 
-instance (priority := default) {n} : FromSep (PROP := IProp GF) (£ (Nat.succ n)) (£ 1) (£ n) where
+instance (priority := default) {n} : FromSep (PROP := IProp GF) (£ (.succ n)) (£ 1) (£ n) where
   from_sep := lc_succ.mpr
 
 instance (priority := default - 10) {n m} : IntoSep (PROP := IProp GF) (£ (n + m)) (£ n) (£ m) where
   into_sep := lc_split.mp
 
-instance (priority := default) {n} : IntoSep (PROP := IProp GF) (£ (Nat.succ n)) (£ 1) (£ n) where
+instance (priority := default) {n} : IntoSep (PROP := IProp GF) (£ (.succ n)) (£ 1) (£ n) where
   into_sep := lc_succ.mp
 
 end ProofMode
@@ -307,7 +307,7 @@ variable {GF : BundledGFunctors} [LcGS GF]
 
 theorem le_upd_elim n (P : IProp GF) :
   ⊢@{IProp GF} lc_supply n -∗ (|==£> P)
-  -∗ Nat.fold n (fun _ _ P => iprop(|==> ▷ P)) iprop(|==> ◇ (∃ m, ⌜m ≤ n⌝ ∗ lc_supply m ∗ P)) := by
+  -∗ Nat.iter n (fun P => iprop(|==> ▷ P)) iprop(|==> ◇ (∃ m, ⌜m ≤ n⌝ ∗ lc_supply m ∗ P)) := by
   apply WellFounded.induction Nat.lt_wfRel.wf n
   intro n IH
   iintro Ha Hupd
@@ -315,7 +315,7 @@ theorem le_upd_elim n (P : IProp GF) :
   ihave Hupd := Hupd $$ %n Ha
   cases n with
   | zero =>
-    simp only [Nat.le_zero_eq, Nat.fold_zero]
+    simp only [Nat.le_zero_eq, Nat.iter_zero]
     imod Hupd with (⟨Ha, HP⟩|⟨%m, %Hlt, _⟩)
     · imodintro
       imodintro
@@ -325,7 +325,7 @@ theorem le_upd_elim n (P : IProp GF) :
       isplitl [Ha] <;> iassumption
     · exfalso; exact Nat.not_lt_zero m Hlt
   | succ n =>
-    simp only [Nat.fold_succ]
+    simp only [Nat.iter_succ]
     imod Hupd with (⟨Hc, HP⟩|Hupd)
     · imodintro
       inext
@@ -342,9 +342,8 @@ theorem le_upd_elim n (P : IProp GF) :
       icases Hrest with ⟨%Hstep, Hrest2⟩
       icases Hrest2 with ⟨Hown, LaterHupd⟩
       obtain ⟨k, Heq⟩ := Nat.exists_eq_add_of_lt Hstep
-      have : n = m + k := Nat.add_right_cancel Heq
-      subst this
-      rw [Nat.add_comm, Nat.fold_add]
+      rw [show n = m + k by exact Nat.add_right_cancel Heq]
+      rw [Nat.iter_add]
       inext
       ihave IH := (IH m (by simp [WellFoundedRelation.rel]; omega)) $$ Hown LaterHupd
       iapply iter_modal_mono $$ [] IH
@@ -365,10 +364,10 @@ theorem le_upd_elim n (P : IProp GF) :
 
 theorem le_upd_elim_complete n (P : IProp GF) :
   ⊢ lc_supply n -∗ (|==£> P)
-  -∗ Nat.fold (.succ n) (fun _ _ Q => iprop(|==> ▷ Q)) P := by
+  -∗ Nat.iter (.succ n) (fun Q => iprop(|==> ▷ Q)) P := by
   iintro Hlc Hupd
   ihave Hit := le_upd_elim (GF := GF) n P $$ Hlc Hupd
-  rw [show Nat.succ n = 1 + n by omega, Nat.fold_add]
+  rw [show Nat.succ n = n + 1 by omega, Nat.iter_add]
   iapply iter_modal_mono $$ [] Hit
   · intro P Q
     iintro Hent HP
@@ -376,7 +375,7 @@ theorem le_upd_elim_complete n (P : IProp GF) :
     imodintro
     inext
     iapply Hent $$ HP
-  simp only [Nat.fold_succ, Nat.fold_zero]
+  simp only [Nat.iter_succ, Nat.iter_zero]
   iintro Hupd
   imod Hupd
   imodintro
@@ -452,7 +451,7 @@ theorem lc_soundness [LcGpreS GF] m (P : IProp GF) [Plain P] :
   imod lc_alloc (GF := GF) m with ⟨%γ, H1, H2⟩
   ihave G := H $$ H2
   ihave G := le_upd_elim_complete (GF := GF) $$ H1 G
-  simp only [Nat.succ_eq_add_one, Nat.fold_succ]
+  simp only [Nat.succ_eq_add_one, Nat.iter_succ]
   imod G
   imodintro
   -- TODO: inext is too eager to remove all laters from the goal
@@ -462,10 +461,10 @@ theorem lc_soundness [LcGpreS GF] m (P : IProp GF) [Plain P] :
   istop
   induction m with
   | zero =>
-    simp only [Nat.zero_eq, Nat.fold_zero]
+    simp only [Nat.zero_eq, Nat.iter_zero]
     exact .rfl
   | succ m IH =>
-    simp only [Nat.succ_eq_add_one, Nat.fold_succ]
+    simp only [Nat.succ_eq_add_one, Nat.iter_succ]
     iintro H
     iapply later_laterN
     iapply bupd_elim
@@ -483,7 +482,7 @@ variable {GF : BundledGFunctors} [LcGS GF]
 def le_upd_if (b : Bool) : IProp GF → IProp GF :=
   if b then le_upd else bupd
 
-instance : NonExpansive (le_upd_if b (GF := GF)) := by
+instance le_upd_if_ne : NonExpansive (le_upd_if b (GF := GF)) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
 theorem le_upd_if_mono {P Q : IProp GF} : (P ⊢ Q) → (le_upd_if b P) ⊢ (le_upd_if b Q) := by

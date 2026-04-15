@@ -6,6 +6,7 @@ Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 module
 
 public import Iris.Std.Classes
+public import Iris.Std.Infinite
 
 @[expose] public section
 
@@ -115,8 +116,61 @@ def compare (a b : Pos) : Ordering :=
 def ofNat (n : Nat) : Pos :=
 match n with
 | 0 => P1
-| 1 => P1
 | (n + 1) => succ (ofNat n)
+
+theorem succ_inj : Function.Injective Pos.succ := by
+  have succ_not_xH : ∀ (a : Pos), a.succ ≠ xH := by
+    intro a; cases a <;> simp [succ]
+  intro a b H
+  induction a generalizing b with
+  | xH =>
+    cases b with
+    | xH => rfl
+    | xI b =>
+      simp only [succ, xO.injEq] at H
+      exact (succ_not_xH b H.symm).elim
+    | xO b => simp [succ] at H
+  | xI a IH =>
+    cases b with
+    | xH =>
+      simp [succ] at H
+      exact (succ_not_xH a H).elim
+    | xI b =>
+      simp only [succ, xO.injEq] at H
+      simp only [xI.injEq]
+      apply IH
+      rw [H]
+    | xO b => simp [succ] at H
+  | xO a IH =>
+    cases b with
+    | xH => simp [succ] at H
+    | xI b => simp [succ] at H
+    | xO b =>
+      simp only [succ, xI.injEq] at H
+      simp only [xO.injEq]
+      apply IH
+      rw [H]
+
+theorem Pos_ofNat_inj : Function.Injective Pos.ofNat := by
+  intro a b h
+  induction a generalizing b with
+  | zero =>
+    cases b with
+    | zero => rfl
+    | succ b =>
+      revert h
+      simp only [ofNat]
+      cases (ofNat b) <;> simp [Pos.succ]
+  | succ a IH =>
+    cases b with
+    | zero =>
+      revert h
+      simp only [ofNat]
+      cases (ofNat a) <;> simp [Pos.succ]
+    | succ b =>
+      simp only [ofNat] at h
+      rw [IH]
+      apply succ_inj.eq_iff.mp h
 
 instance : OfNat Pos n where ofNat := Pos.ofNat n
 
@@ -387,5 +441,9 @@ instance : Std.LawfulEqOrd Pos where
     exact Pos_toNat_inj
   compare_self {_} := by
     simp [Ord.compare, Pos.compare, compareOfLessAndEq_eq_eq]
+
+instance : InfiniteType Pos where
+  enum := ofNat
+  enum_inj _ _ H := Pos_ofNat_inj H
 
 end Pos

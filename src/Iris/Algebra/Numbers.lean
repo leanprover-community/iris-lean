@@ -91,7 +91,8 @@ theorem leftCancelAdd_local_update [LeftCancelAdd α] (h : add x y' = add x' y) 
 
 scoped instance {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
 
-scoped instance : CoreId (α := α) 0 := by sorry
+scoped instance : CoreId (α := α) 0 where
+  core_id := by rfl
 
 end CommMonoidLike
 

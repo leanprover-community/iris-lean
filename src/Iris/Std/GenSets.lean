@@ -745,6 +745,77 @@ theorem mem_ofList {x : A} {xs : List A} : x ∈ xs ↔ x ∈ (ofList xs : S) :=
 theorem ofList_concat {xs ys : List A} : (ofList (xs ++ ys) : S) = ofList xs ∪ ofList ys := by
   ext p; simp [mem_union, <-mem_ofList, <-mem_ofList, <-mem_ofList]
 
+/-! ### Finitness -/
+
+def setFinite (X : S) : Prop := ∃ xs : List A, ∀ x ∈ X, x ∈ xs
+
+def setInfinite (X : S) : Prop := ∀ xs : List A, ∃ x ∈ X, x ∉ xs
+
+theorem not_finite_infinite {X : S} : ¬ setFinite X ↔ setInfinite X := by simp [setFinite, setInfinite]
+
+theorem not_infinite_finite {X : S} : ¬ setInfinite X ↔ setFinite X := by simp [setFinite, setInfinite]
+
+theorem empty_finite : setFinite (∅ : S) := by
+  exists []; simp [mem_empty]
+
+theorem singleton_finite : setFinite ({x} : S) := by
+  exists [x]; simp [mem_singleton]
+
+theorem intersection_finite_l {X Y : S} : setFinite X → setFinite (X ∩ Y) := by
+  intro ⟨l, Hl⟩
+  exists l
+  intro x Hx
+  exact Hl x (mem_inter.mp Hx).left
+
+theorem intersection_finite_r {X Y : S} : setFinite Y → setFinite (X ∩ Y) := by
+  intro ⟨l, Hl⟩
+  exists l
+  intro x Hx
+  exact Hl x (mem_inter.mp Hx).right
+
+theorem union_finite {X Y : S} : setFinite X → setFinite Y → setFinite (X ∪ Y) := by
+  intro ⟨l, Hl⟩ ⟨k, Hk⟩
+  exists l ++ k
+  intro x Hx
+  simp only [List.mem_append]
+  simp only [mem_union] at Hx
+  cases Hx with
+  | inl Hx => exact (.inl (Hl x Hx))
+  | inr Hx => exact (.inr (Hk x Hx))
+
+theorem difference_finite {X Y : S} : setFinite X → setFinite (X \ Y) := by
+  intro ⟨l, Hl⟩
+  exists l
+  intro x Hx
+  exact Hl x (mem_diff.mp Hx).left
+
+theorem difference_finite_inv {X Y : S} :
+    setFinite Y → setFinite (X \ Y) → setFinite X := by
+  intro ⟨l, Hl⟩
+  intro ⟨k, Hk⟩
+  exists l ++ k
+  intro x Hx
+  by_cases Hy : x ∈ Y
+  · exact List.mem_append.mpr (.inl (Hl x Hy))
+  · exact List.mem_append.mpr (.inr (Hk x (mem_diff.mpr ⟨Hx, Hy⟩)))
+
+theorem difference_infinite {X Y : S} :
+    setInfinite X → setFinite Y → setInfinite (X \ Y) := by
+  intro Hinf ⟨l, Hl⟩ k
+  simp only [setInfinite] at Hinf
+  have ⟨x, ⟨Hx1, Hx2⟩⟩ := Hinf (l ++ k)
+  exists x
+  simp only [List.mem_append, not_or] at Hx2
+  simp only [mem_diff]
+  grind
+
+theorem diff_not_finite_finite_ne_empty {X Y : S} (hX : setInfinite X) (hY : setFinite Y) :
+    X \ Y ≠ ∅ := by
+  intro Heq
+  have H := difference_infinite hX hY
+  rw [Heq, ←not_finite_infinite] at H
+  exact (H empty_finite)
+
 end GenLemmas
 
 end LawfulSet
@@ -880,26 +951,12 @@ theorem map_subset {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
   obtain ⟨x, hf, hx⟩ := hy
   exists x; exact ⟨hf, h _ hx⟩
 
-private theorem nodup_map_of_injective {B : Type _} {f : A → B} {l : List A}
-    (hinj : Injective f) (hnodup : l.Nodup) : (l.map f).Nodup := by
-  induction l with
-  | nil => simp [List.Nodup]
-  | cons x xs ih =>
-    simp only [List.map_cons]
-    rw [List.nodup_cons] at hnodup ⊢
-    simp only [List.mem_map]
-    constructor
-    · intro ⟨y, hy, heq⟩
-      cases (hinj.inj _ _ heq.symm)
-      exact hnodup.1 hy
-    · exact ih hnodup.2
-
 theorem toList_map_perm {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
     {f : A → B} (s : S) (hinj : Injective f) :
     (toList (map (S' := S') f s)).Perm (List.map f (toList s)) := by
   simp only [map]
   have hnodup : (List.map f (toList s)).Nodup := by
-    apply nodup_map_of_injective hinj
+    apply List.nodup_map_of_injective hinj
     exact toList_nodup
   apply (List.perm_ext_iff_of_nodup toList_nodup hnodup).mpr
   intro x
@@ -1032,19 +1089,9 @@ theorem size_empty {X : S} : size X = 0 ↔ X = ∅ := by
     simp [List.length_nil]
 
 theorem fresh [InfiniteType A] (X : S) : ∃ a : A, a ∉ X := by
-  refine Classical.byContradiction fun Hcontra => ?_
-  simp only [not_exists, Classical.not_not] at Hcontra
-  let Nalloc := toList X |>.length
-  let L := List.range (Nalloc + 1)
-  have hnodup : L.map (InfiniteType.enum (T := A)) |>.Nodup :=
-    nodup_map_of_injective ⟨fun _ _ => InfiniteType.enum_inj _ _⟩ List.nodup_range
-  have hsub : L.map InfiniteType.enum ⊆ toList X := by
-    intro _ ha
-    obtain ⟨_, _, rfl⟩ := List.mem_map.mp ha
-    exact mem_toList.mpr (Hcontra _)
-  have H := List.subperm_of_subset hnodup hsub |>.length_le
-  simp only [List.length_map, Nalloc, L, List.length_range] at H
-  omega
+  have ⟨a, H⟩ := List.fresh (toList X)
+  exists a
+  simp [←mem_toList, H]
 
 theorem set_choose (X : S) (h : size X ≠ 0) : ∃ x, x ∈ X := by
   unfold size at h
@@ -1289,6 +1336,11 @@ theorem fold_union {β : Type _} {f : β → A → β}
     fold f init (s ∪ t) = fold f (fold f init s) t := by
   simp only [fold]
   rw [foldl_perm hcomm (toList_union_perm hdisj), List.foldl_append]
+
+theorem is_finite {X : S} : setFinite X := by
+  exists (toList X)
+  intro x
+  simp [mem_toList]
 
 /-- Membership in a finite set is decidable when element equality is decidable. -/
 instance [DecidableEq A] {x : A} {s : S} : Decidable (x ∈ s) := by

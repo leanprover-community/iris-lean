@@ -39,9 +39,9 @@ class FUpd (PROP : Type _) where
 export FUpd (fupd)
 
 syntax "|={" term "," term "}=> " term : term
-syntax term "={" term "," term "}=∗ " term : term
+syntax:25 term:26 "={" term "," term "}=∗ " term:25 : term
 syntax "|={" term "}=> " term : term
-syntax term "={" term "}=∗ " term : term
+syntax:25 term:26 "={" term "}=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={$E1,$E2}=> $P))  => ``(FUpd.fupd $E1 $E2 iprop($P))
@@ -56,9 +56,9 @@ delab_rule FUpd.fupd
       else ``(iprop(|={$E1,$E2}=> $P))
 
 syntax "|={" term "}[" term "]▷=> " term : term
-syntax term "={" term "}[" term "]▷=∗ " term : term
+syntax:25 term:26 "={" term "}[" term "]▷=∗ " term:25 : term
 syntax "|={" term "}▷=> " term : term
-syntax term "={" term "}▷=∗ " term : term
+syntax:25 term:26 "={" term "}▷=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={$E1}[$E2]▷=> $P))  => ``(iprop(|={$E1,$E2}=> ▷ (|={$E2,$E1}=> iprop($P))))
@@ -69,9 +69,9 @@ macro_rules
 -- Delab rules
 
 syntax "|={" term "}[" term "]▷^" term "=> " term : term
-syntax term "={" term "}[" term "]▷^" term "=∗ " term : term
+syntax:25 term:26 "={" term "}[" term "]▷^" term "=∗ " term:25 : term
 syntax "|={" term "}▷^" term "=> " term : term
-syntax term "={" term "}▷^" term "=∗ " term : term
+syntax:25 term:26 "={" term "}▷^" term "=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={$E1}[$E2]▷^$n=> $P))  => ``(iprop(|={$E1,$E2}=> ▷^[$n] (|={$E2,$E1}=> iprop($P))))
@@ -81,16 +81,16 @@ macro_rules
 
 -- Delab rules
 
-syntax "|={ " term " }[ " term " ]▷^" term "=> " term : term
-syntax term "={ " term " }[ " term " ]▷^" term "=∗ " term : term
-syntax "|={ " term " }▷^" term "=> " term : term
-syntax term "={ " term " }▷^" term "=∗ " term : term
+syntax "|={ " term " }[ " term " ]▷=>^[ " term " ]" term : term
+syntax:25 term:26 "={ " term " }[ " term " ]▷=∗^[ " term " ]" term:25 : term
+syntax "|={ " term " }▷=>^[ " term " ]" term : term
+syntax:25 term:26 "={ " term " }▷=∗^[ " term " ]" term:25 : term
 
 macro_rules
-  | `(iprop(|={ $E1 }[ $E2 ]▷^$n=> $P))  => ``(iprop(|={$E1, $E2}=> ▷^[$n] (|={ $E2, $E1 }=> iprop($P))))
-  | `(iprop($P ={ $E1 }[ $E2 ]▷^$n=∗ $Q))  => ``(iprop(iprop($P) -∗ |={$E1}[$E2]▷^$n=> iprop($Q)))
-  | `(iprop(|={ $E1 }▷^$n=> $P))  => ``(iprop(|={$E1}[$E1]▷^$n=> iprop($P)))
-  | `(iprop($P ={ $E1 }▷^$n=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷^$n=∗ iprop($Q)))
+  | `(iprop(|={ $E1 }[ $E2 ]▷=>^[ $n ] $P))  => ``(Nat.iter $n (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) iprop($P))
+  | `(iprop($P ={ $E1 }[ $E2 ]▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.iter $n (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) iprop($Q)))
+  | `(iprop(|={ $E1 }▷=>^[ $n ] $P))  => ``(Nat.iter $n (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) iprop($P))
+  | `(iprop($P ={ $E1 }▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.iter $n (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) iprop($Q)))
 
 -- Delab rules
 
@@ -118,10 +118,11 @@ class BIBUpdatePlainly (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] wher
   bupd_plainly {P : PROP} : (|==> ■ P) ⊢ P
 
 class BIFUpdatePlainly (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
+  fupd_plainly_mask_empty E (P : PROP) : (|={E,∅}=> ■ P) ⊢ |={E}=> P
   fupd_plainly_keep_l (E E' : CoPset) (P R : PROP) : (R ={E,E'}=∗ ■ P) ∗ R ⊢ |={E}=> P ∗ R
   fupd_plainly_later (E : CoPset) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P
   fupd_plainly_sForall_2 (E : CoPset) (Φ : PROP → Prop) :
-    (∀ p, ⌜Φ p⌝ → |={E}=> ■ p) ⊢ |={E}=> sForall Φ
+    (|={E}=> ■ sForall Φ) ⊢ |={E}=> sForall Φ
 
 class BIBUpdateSbi (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] where
   bupd_si_pure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
@@ -301,3 +302,79 @@ theorem fupd_trans_frame {E1 E2 E3 : CoPset} {P Q : PROP} :
     sep_mono_l wand_elim_r).trans <| fupd_frame_r.trans <| BIFUpdate.mono emp_sep.1
 
 end FUpdLaws
+
+section StepFUpdLaws
+
+variable [BI PROP] [BIFUpdate PROP]
+
+open BIFUpdate LawfulSet
+
+theorem step_fupd_fupd {Eo Ei : CoPset} {P : PROP} : (|={Eo}[Ei]▷=> P) ⊣⊢ (|={Eo}[Ei]▷=> |={Eo}=> P) := by
+  constructor
+  · exact mono <| later_mono <| mono fupd_intro
+  · exact mono <| later_mono BIFUpdate.trans
+
+end StepFUpdLaws
+
+section StepFUpdPlainlyLaws
+
+variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP]
+
+open BIFUpdate BIFUpdatePlainly
+
+theorem fupd_plain_mask {E E' : CoPset} {P : PROP} [Plain P] : (|={E,E'}=> P) ⊢ |={E}=> P := by
+  calc iprop(|={E,E'}=> P)
+    _ ⊢ iprop(|={E,E'}=> ■ P) := mono Plain.plain
+    _ ⊢ iprop(emp -∗ |={E,E'}=> ■ P) := wand_intro' emp_sep.1
+    _ ⊢ iprop(|={E}=> emp ∗ P) := sep_emp.2.trans <| (fupd_plainly_keep_l E E' P emp).trans <| mono sep_comm.1
+    _ ⊢ iprop(|={E}=> P) := mono emp_sep.mp
+
+theorem fupd_plain_later {E : CoPset} {P : PROP} [Plain P] : (▷ |={E}=> P) ⊢ |={E}=> ▷ ◇ P := by
+  calc iprop(▷ |={E}=> P)
+    _ ⊢ iprop(▷ |={E}=> ■ P) := later_mono (mono Plain.plain)
+    _ ⊢ iprop(|={E}=> ▷ ◇ P) := fupd_plainly_later E P
+
+instance plain_later_false : Plain iprop(▷ (False : PROP)) where
+  plain := (later_mono (false_elim (P := iprop(■ False)))).trans later_plainly.1
+
+instance plain_except0 {P : PROP} [Plain P] : Plain iprop(◇ P) where
+  plain := (or_mono plain_later_false.plain Plain.plain).trans plainly_or_2
+
+instance plain_later_except0 {P : PROP} [Plain P] : Plain iprop(▷ ◇ P) where
+  plain := (later_mono plain_except0.plain).trans later_plainly.1
+
+theorem step_fupd_plain {E1 E2 : CoPset} {P : PROP} [Plain P] :
+    (|={E1}[E2]▷=> P) ⊢ |={E1}=> ▷ ◇ P := by
+  show (|={E1,E2}=> ▷ (|={E2,E1}=> P)) ⊢ |={E1}=> ▷ ◇ P
+  suffices (|={E1,E2}=> ▷ (|={E2,E1}=> P)) ⊢ |={E1,E2}=> ▷ ◇ P by
+    exact this.trans fupd_plain_mask
+  apply fupd_elim
+  calc iprop(▷ (|={E2,E1}=> P))
+    _ ⊢ iprop(▷ (|={E2}=> P)) := later_mono fupd_plain_mask
+    _ ⊢ iprop(|={E2}=> ▷ ◇ P) := fupd_plain_later
+
+instance plain_laterN_except0 {P : PROP} [Plain P] (n : Nat) : Plain iprop(▷^[n] ◇ P) := by
+  induction n with
+  | zero => exact plain_except0
+  | succ n ih =>
+    refine ⟨?_⟩
+    calc iprop(▷ ▷^[n] ◇ P)
+      _ ⊢ iprop(▷ ■ (▷^[n] ◇ P)) := later_mono ih.plain
+      _ ⊢ iprop(■ ▷ (▷^[n] ◇ P)) := later_plainly.1
+
+theorem step_fupdN_plain {E1 E2 : CoPset} {n : Nat} {P : PROP} [Plain P] :
+    (|={E1}[E2]▷=>^[n] P) ⊢ |={E1}=> ▷^[n] ◇ P := by
+  induction n with
+  | zero =>
+    exact except0_intro.trans fupd_intro
+  | succ n ih =>
+    simp only [Nat.iter_succ]
+    calc iprop(|={E1}[E2]▷=> Nat.iter n (fun R => iprop(|={E1}[E2]▷=> R)) P)
+      _ ⊢ iprop(|={E1}[E2]▷=> |={E1}=> ▷^[n] ◇ P) := mono <| later_mono <| mono ih
+      _ ⊢ iprop(|={E1}[E2]▷=> ▷^[n] ◇ P) := step_fupd_fupd.2
+      _ ⊢ iprop(|={E1}=> ▷ ◇ (▷^[n] ◇ P)) := step_fupd_plain
+      _ ⊢ iprop(|={E1}=> ▷ ▷^[n] ◇ ◇ P) := mono <| later_mono <| except0_laterN n
+      _ ⊢ iprop(|={E1}=> ▷^[n+1] ◇ ◇ P) := .rfl
+      _ ⊢ iprop(|={E1}=> ▷^[n+1] ◇ P) := mono <| laterN_mono (n+1) except0_idemp.1
+
+end StepFUpdPlainlyLaws
