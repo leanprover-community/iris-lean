@@ -41,6 +41,7 @@ open ProofMode
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
+@[rocq_alias inv_contractive]
 instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
   distLater_dist {n x y} H := by
     simp only [inv]
@@ -57,8 +58,10 @@ instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
     · refine wand_ne.ne ?_ .rfl
       exact Contractive.distLater_dist H
 
+@[rocq_alias inv_ne]
 instance inv_ne (N : Namespace) : NonExpansive (inv (GF := GF) N) := ne_of_contractive _
 
+@[rocq_alias inv_persistent]
 instance inv_persistent (N : Namespace) (P : IProp GF) : Persistent (inv N P) := by
   simp only [inv]
   infer_instance
@@ -67,6 +70,7 @@ instance own_inv_persistent (N : Namespace) (P : IProp GF) : Persistent (own_inv
   simp only [own_inv]
   infer_instance
 
+@[rocq_alias except_0_inv]
 theorem except_0_inv (N : Namespace) (P : IProp GF) :
   ⊢ ◇ inv N P -∗ inv N P := by
   simp only [inv]
@@ -77,6 +81,7 @@ theorem except_0_inv (N : Namespace) (P : IProp GF) :
   iapply H
   ipure_intro; assumption
 
+@[rocq_alias is_except_0_inv]
 instance is_except_0_inv (N : Namespace) (P : IProp GF) : IsExcept0 (inv N P) where
   is_except0 := by iintro H; iapply except_0_inv $$ H
 
@@ -88,6 +93,7 @@ open Iris Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
+@[rocq_alias own_inv_acc]
 theorem own_inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) :
   ⊢ own_inv N P ={E, E \ ↑N}=∗ ▷ P ∗ (▷ P ={E \ ↑N, E}=∗ True) := by
   simp only [own_inv, fupd, uPred_fupd]
@@ -133,6 +139,7 @@ theorem own_inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆
   isplitl [HE]; iassumption
   apply true_intro
 
+@[rocq_alias own_inv_alloc]
 theorem own_inv_alloc (N : Namespace) (E : CoPset) (P : IProp GF) :
   ⊢ ▷ P ={E}=∗ own_inv N P := by
   simp only [own_inv, fupd, uPred_fupd]
@@ -148,6 +155,7 @@ theorem own_inv_alloc (N : Namespace) (E : CoPset) (P : IProp GF) :
     · ipure_intro; assumption
     · iassumption
 
+@[rocq_alias own_inv_alloc_open]
 theorem own_inv_alloc_open (N : Namespace) (E : CoPset) (P : IProp GF) (Hsub : ↑N ⊆ E) :
   ⊢ |={E, E \ ↑N}=> own_inv N P ∗ (▷P ={E \ ↑N, E}=∗ True) := by
   simp only [own_inv, fupd, uPred_fupd]
@@ -196,6 +204,7 @@ theorem own_inv_alloc_open (N : Namespace) (E : CoPset) (P : IProp GF) (Hsub : �
   isplitl [HE]; iassumption
   apply true_intro
 
+@[rocq_alias own_inv_to_inv]
 theorem own_inv_to_inv (M : Namespace) (P : IProp GF) :
   ⊢ own_inv M P -∗ inv M P := by
   simp only [inv]
@@ -210,6 +219,7 @@ section Allocation
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
+@[rocq_alias inv_alloc]
 theorem inv_alloc (N : Namespace) (E : CoPset) (P : IProp GF) :
   ⊢ ▷ P ={E}=∗ inv N P := by
   iintro HP
@@ -217,6 +227,7 @@ theorem inv_alloc (N : Namespace) (E : CoPset) (P : IProp GF) :
   imodintro
   iapply own_inv_to_inv $$ H
 
+@[rocq_alias inv_alloc_open]
 theorem inv_alloc_open (N : Namespace) (E : CoPset) (P : IProp GF) (Hsub : ↑N ⊆ E) :
   ⊢ |={E, E \ ↑N}=> inv N P ∗ (▷ P ={E \ ↑N, E}=∗ True) := by
   imod own_inv_alloc_open _ _ P Hsub (GF := GF) with ⟨Hown, Hcl⟩
@@ -233,6 +244,7 @@ open Iris Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
+@[rocq_alias inv_acc]
 theorem inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) :
   ⊢ inv N P ={E, E \ ↑N}=∗ ▷ P ∗ (▷ P ={E \ ↑N, E}=∗ True) := by
   simp only [inv]
@@ -240,6 +252,7 @@ theorem inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) 
   iapply HI $$ %E []
   ipure_intro; assumption
 
+@[rocq_alias inv_acc_strong]
 theorem inv_acc_strong (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) :
   ⊢ inv N P ={E, E \ ↑N}=∗ ▷ P ∗ ∀ E', ▷ P ={E', ↑N ∪ E'}=∗ True := by
   iintro Hinv
@@ -258,6 +271,7 @@ theorem inv_acc_strong (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N 
   imodintro
   iexact H
 
+@[rocq_alias inv_acc_timeless]
 theorem inv_acc_timeless (E : CoPset) (N : Namespace) (P : IProp GF) [Timeless P] (Hsub : ↑N ⊆ E) :
   ⊢ inv N P ={E, E \ ↑N}=∗ P ∗ (P ={E \ ↑N, E}=∗ True) := by
   iintro HI
@@ -274,6 +288,7 @@ section Modification
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
+@[rocq_alias inv_alter]
 theorem inv_alter (N : Namespace) (P Q : IProp GF) :
   ⊢ inv N P -∗ ▷ □ (P -∗ Q ∗ (Q -∗ P)) -∗ inv N Q := by
   simp only [inv]
@@ -289,6 +304,7 @@ theorem inv_alter (N : Namespace) (P Q : IProp GF) :
     iapply H
     iapply HQP $$ HQ
 
+@[rocq_alias inv_iff]
 theorem inv_iff (N : Namespace) (P Q : IProp GF) :
   ⊢ inv N P -∗ ▷ □ (P ↔ Q) -∗ inv N Q := by
   iintro #HI #HPQ
@@ -311,6 +327,7 @@ open Iris Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
+@[rocq_alias inv_combine]
 theorem inv_combine (N1 N2 N : Namespace) (P Q : IProp GF) (Hdisj : N1 ## N2) (Hsub : ↑N1 ∪ ↑N2 ⊆ (↑N : CoPset)) :
   ⊢ inv N1 P -∗ inv N2 Q -∗ inv N iprop(P ∗ Q) := by
   simp only [inv]
@@ -342,6 +359,7 @@ theorem inv_combine (N1 N2 N : Namespace) (P Q : IProp GF) (Hdisj : N1 ## N2) (H
   imodintro
   iassumption
 
+@[rocq_alias inv_combine_dup_l]
 theorem inv_combine_dup_l (N : Namespace) (P Q : IProp GF) :
   ⊢ □ (P -∗ (P ∗ P)) -∗ inv N P -∗ inv N Q -∗ inv N iprop(P ∗ Q) := by
   simp only [inv]
@@ -365,6 +383,7 @@ section Splitting
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
+@[rocq_alias inv_split_l]
 theorem inv_split_l (N : Namespace) (P Q : IProp GF) :
   ⊢ inv N iprop(P ∗ Q) -∗ inv N P := by
   iintro H
@@ -375,6 +394,7 @@ theorem inv_split_l (N : Namespace) (P Q : IProp GF) :
   iintro HP
   isplitl [HP] <;> iassumption
 
+@[rocq_alias inv_split_r]
 theorem inv_split_r (N : Namespace) (P Q : IProp GF) :
   ⊢ inv N iprop(P ∗ Q) -∗ inv N Q := by
   iintro H
@@ -385,6 +405,7 @@ theorem inv_split_r (N : Namespace) (P Q : IProp GF) :
   iintro HQ
   isplitl [HP] <;> iassumption
 
+@[rocq_alias inv_split]
 theorem inv_split (N : Namespace) (P Q : IProp GF) :
   ⊢ inv N iprop(P ∗ Q) -∗ inv N P ∗ inv N Q := by
   iintro #H

@@ -309,6 +309,7 @@ variable [BI PROP] [BIFUpdate PROP]
 
 open BIFUpdate LawfulSet
 
+@[rocq_alias step_fupd_fupd]
 theorem step_fupd_fupd {Eo Ei : CoPset} {P : PROP} : (|={Eo}[Ei]▷=> P) ⊣⊢ (|={Eo}[Ei]▷=> |={Eo}=> P) := by
   constructor
   · exact mono <| later_mono <| mono fupd_intro
@@ -322,6 +323,7 @@ variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP]
 
 open BIFUpdate BIFUpdatePlainly
 
+@[rocq_alias fupd_plain_mask]
 theorem fupd_plain_mask {E E' : CoPset} {P : PROP} [Plain P] : (|={E,E'}=> P) ⊢ |={E}=> P := by
   calc iprop(|={E,E'}=> P)
     _ ⊢ iprop(|={E,E'}=> ■ P) := mono Plain.plain
@@ -329,11 +331,13 @@ theorem fupd_plain_mask {E E' : CoPset} {P : PROP} [Plain P] : (|={E,E'}=> P) �
     _ ⊢ iprop(|={E}=> emp ∗ P) := sep_emp.2.trans <| (fupd_plainly_keep_l E E' P emp).trans <| mono sep_comm.1
     _ ⊢ iprop(|={E}=> P) := mono emp_sep.mp
 
+@[rocq_alias fupd_plain_later]
 theorem fupd_plain_later {E : CoPset} {P : PROP} [Plain P] : (▷ |={E}=> P) ⊢ |={E}=> ▷ ◇ P := by
   calc iprop(▷ |={E}=> P)
     _ ⊢ iprop(▷ |={E}=> ■ P) := later_mono (mono Plain.plain)
     _ ⊢ iprop(|={E}=> ▷ ◇ P) := fupd_plainly_later E P
 
+@[rocq_alias step_fupd_plain]
 theorem step_fupd_plain {E1 E2 : CoPset} {P : PROP} [Plain P] :
     (|={E1}[E2]▷=> P) ⊢ |={E1}=> ▷ ◇ P := by
   show (|={E1,E2}=> ▷ (|={E2,E1}=> P)) ⊢ |={E1}=> ▷ ◇ P
@@ -344,6 +348,7 @@ theorem step_fupd_plain {E1 E2 : CoPset} {P : PROP} [Plain P] :
     _ ⊢ iprop(▷ (|={E2}=> P)) := later_mono fupd_plain_mask
     _ ⊢ iprop(|={E2}=> ▷ ◇ P) := fupd_plain_later
 
+@[rocq_alias step_fupdN_plain]
 theorem step_fupdN_plain {E1 E2 : CoPset} {n : Nat} {P : PROP} [Plain P] :
     (|={E1}[E2]▷=>^[n] P) ⊢ |={E1}=> ▷^[n] ◇ P := by
   induction n with

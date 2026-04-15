@@ -67,6 +67,7 @@ section Instances
 
 open Std.LawfulSet
 
+@[rocq_alias uPred_bi_fupd]
 instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF]
   : BIFUpdate (IProp GF) where
   fupd := uPred_fupd
@@ -133,6 +134,7 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF]
     isplitl [H3]; iassumption
     iassumption
 
+@[rocq_alias uPred_bi_bupd_fupd]
 instance {GF : BundledGFunctors} [InvGS_gen hlc GF]
   : BIUpdateFUpdate (IProp GF) where
   fupd_of_bupd {_ _} := by
@@ -144,6 +146,7 @@ instance {GF : BundledGFunctors} [InvGS_gen hlc GF]
     isplitl [HE]; iassumption
     iassumption
 
+@[rocq_alias uPred_bi_fupd_sbi_no_lc]
 instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen false GF]
   : BIFUpdatePlainly (IProp GF) where
   fupd_plainly_mask_empty E P := by
@@ -200,6 +203,7 @@ section LaterCreditLemmas
 
 variable {GF : BundledGFunctors} [InvGS GF]
 
+@[rocq_alias lc_fupd_elim_later]
 theorem lc_fupd_elim_later {E : CoPset} {P : IProp GF} :
   ⊢ £ 1 -∗ (▷ P) -∗ |={E}=> P := by
   iintro Hcr HP
@@ -212,6 +216,7 @@ theorem lc_fupd_elim_later {E : CoPset} {P : IProp GF} :
   isplitl [HE]; iassumption
   iassumption
 
+@[rocq_alias lc_fupd_add_later]
 theorem lc_fupd_add_later {E : CoPset} {P : IProp GF} :
   ⊢ £ 1 -∗ (|={E}=> ▷ P) -∗ |={E}=> P := by
   iintro Hcr HP
@@ -226,6 +231,7 @@ theorem lc_fupd_add_later {E : CoPset} {P : IProp GF} :
   isplitl [H2]; iassumption
   iassumption
 
+@[rocq_alias lc_fupd_add_laterN]
 theorem lc_fupd_add_laterN (n : Nat) {E : CoPset} {P : IProp GF} :
   ⊢ £ n -∗ (|={E}=> ▷^[n] P) -∗ |={E}=> P := by
   induction n generalizing P with
@@ -250,6 +256,7 @@ open Std.LawfulSet
 
 variable {GF : BundledGFunctors}
 
+@[rocq_alias fupd_soundness_lc]
 theorem fupd_soundness_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P] :
  (∀ (_ : InvGS GF), ⊢ £ m -∗ |={E1,E2}=> P) → ⊢ P := by
   intro H
@@ -273,6 +280,7 @@ theorem fupd_soundness_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P
   iapply le_upd_later $$ Hcr [H]
   iapply except0_into_later $$ H
 
+@[rocq_alias fupd_soundness_no_lc]
 theorem fupd_soundness_no_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P] :
   (∀ (_ : InvGS_gen false GF), ⊢ £ m -∗ |={E1,E2}=> P) → ⊢ P := by
   intro H
@@ -296,6 +304,7 @@ theorem fupd_soundness_no_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plai
   iapply le_upd_later $$ Hcr [H]
   iapply except0_into_later $$ H
 
+@[rocq_alias fupd_soundness_gen]
 theorem fupd_soundness_gen (hlc : Bool) [InvGpreS GF]
   (m : Nat) {E1 E2 : CoPset} {P : IProp GF} [Plain P] :
   (∀ (_ : InvGS_gen hlc GF), ⊢ £ m -∗ |={E1,E2}=> P) → ⊢ P := by
@@ -309,6 +318,7 @@ section StepIndexed
 
 variable {GF : BundledGFunctors}
 
+@[rocq_alias step_fupdN_soundness_no_lc]
 theorem step_fupdN_soundness_no_lc [InvGpreS GF]
   (n m : Nat) {P : IProp GF} [Plain P] :
   (∀ (_ : InvGS_gen false GF),
@@ -335,6 +345,7 @@ theorem step_fupdN_soundness_no_lc [InvGpreS GF]
   inext
   imodintro; iassumption
 
+@[rocq_alias step_fupdN_soundness_lc]
 theorem step_fupdN_soundness_lc [InvGpreS GF]
   (n m : Nat) {P : IProp GF} [Plain P] :
   (∀ (_ : InvGS GF),
@@ -369,6 +380,7 @@ theorem step_fupdN_soundness_lc [InvGpreS GF]
     isplitl [Hcrs]; iassumption
     iassumption
 
+@[rocq_alias step_fupdN_soundness_gen]
 theorem step_fupdN_soundness_gen [InvGpreS GF]
   (n m : Nat) {P : IProp GF} [Plain P] hlc :
   (∀ (_ : InvGS_gen hlc GF),
@@ -377,6 +389,7 @@ theorem step_fupdN_soundness_gen [InvGpreS GF]
   · apply step_fupdN_soundness_no_lc
   · apply step_fupdN_soundness_lc
 
+@[rocq_alias step_fupdN_soundness_no_lc']
 theorem step_fupdN_soundness_no_lc' [InvGpreS GF]
   (n m : Nat) {P : IProp GF} [Plain P] :
   (∀ (_ : InvGS_gen false GF),
@@ -419,6 +432,7 @@ theorem step_fupdN_soundness_no_lc' [InvGpreS GF]
       imod H
       apply IH
 
+@[rocq_alias step_fupdN_soundness_lc']
 theorem step_fupdN_soundness_lc' [InvGpreS GF]
   (n m : Nat) {P : IProp GF} [Plain P] :
   (∀ (_ : InvGS GF),
