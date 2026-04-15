@@ -49,7 +49,7 @@ instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
     refine forall_ne (fun i => ?_)
     refine imp_ne.ne .rfl ?_
     refine wand_ne.ne .rfl ?_
-    refine Lc.le_upd_if_ne.ne ?_
+    refine le_upd_if_ne.ne ?_
     refine except0_ne.ne ?_
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne .rfl ?_

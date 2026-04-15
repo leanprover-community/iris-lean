@@ -18,7 +18,7 @@ TODO: missing instances for PM: frame_le_upd, from_assumption_le_upd, from_assum
 combine_sep_lc_add, combine_sep_lc_S_l
 -/
 
-namespace Iris.Lc
+namespace Iris
 
 open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
 open Iris OFE COFE BI Auth CommMonoidLike
@@ -170,7 +170,7 @@ instance : Contractive (le_upd_pre (GF := GF)) where
     refine exists_ne (fun m => ?_)
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne .rfl ?_
-    refine sbi_later_contractive.distLater_dist ?_
+    refine Contractive.distLater_dist ?_
     cases n
     · exact distLater_zero
     · exact distLater_succ.mpr (distLater_succ.mp H P)
@@ -196,8 +196,8 @@ instance : NonExpansive (le_upd (GF := GF)) where
   ne {n} := by
     apply WellFounded.induction Nat.lt_wfRel.wf n
     intro m IH P Q H
-    refine ((equiv_iff.mpr (le_upd_unfold (P := P))).dist (n := m)).trans ?_
-    refine .trans ?_ ((equiv_iff.mpr (le_upd_unfold (P := Q))).dist (n := m)).symm
+    refine ((equiv_iff.mpr le_upd_unfold).dist).trans ?_
+    refine .trans ?_ ((equiv_iff.mpr le_upd_unfold).dist).symm
     refine forall_ne (fun i => ?_)
     refine wand_ne.ne .rfl ?_
     refine UPred.bupd_ne.ne ?_
@@ -205,7 +205,7 @@ instance : NonExpansive (le_upd (GF := GF)) where
     refine exists_ne (fun m => ?_)
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne .rfl ?_
-    refine sbi_later_contractive.distLater_dist ?_
+    refine Contractive.distLater_dist ?_
     exact (fun k Hk => IH k Hk (H.lt Hk))
 
 @[rocq_alias bupd_le_upd]
@@ -594,4 +594,4 @@ instance {b} {p} {P Q : IProp GF} :
 
 end If
 
-end Iris.Lc
+end Iris

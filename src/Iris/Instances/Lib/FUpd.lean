@@ -16,9 +16,9 @@ public import Iris.BI.Plainly
 
 @[expose] public section
 
-namespace Iris.FUpd
+namespace Iris
 
-open Iris OFE COFE BI Auth Lc
+open Iris OFE COFE BI Auth
 
 section InvG
 
@@ -123,7 +123,7 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF]
     simp only [uPred_fupd]
     iintro ⟨H, Hx⟩ ⟨Hwsat, HE⟩
     ispecialize H $$ [Hwsat HE]; isplitl [Hwsat] <;> iassumption
-    ihave H := le_upd_if_frame_r (b := hlc) (GF := GF) $$ [H Hx]
+    ihave H := le_upd_if_frame_r (GF := GF) $$ [H Hx]
     · isplitl [H]
       · iexact H
       · iexact Hx
@@ -260,7 +260,7 @@ variable {GF : BundledGFunctors}
 theorem fupd_soundness_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P] :
  (∀ (_ : InvGS GF), ⊢ £ m -∗ |={E1,E2}=> P) → ⊢ P := by
   intro H
-  iapply lc_soundness (GF := GF) (m := .succ m)
+  iapply lc_soundness (.succ m) (GF := GF)
   intro Hc
   iintro ⟨Hcr, Hcrs⟩
   simp only [fupd, uPred_fupd, le_upd_if, ↓reduceIte] at H
@@ -284,7 +284,7 @@ theorem fupd_soundness_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P
 theorem fupd_soundness_no_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P] :
   (∀ (_ : InvGS_gen false GF), ⊢ £ m -∗ |={E1,E2}=> P) → ⊢ P := by
   intro H
-  iapply lc_soundness (GF := GF) (m := .succ m)
+  iapply lc_soundness (.succ m) (GF := GF)
   intro Hc
   iintro ⟨Hcr, Hcrs⟩
   simp only [fupd, uPred_fupd, le_upd_if, Bool.false_eq_true, ↓reduceIte] at H
@@ -316,6 +316,8 @@ end Soundness
 
 section StepIndexed
 
+open Iris Std LawfulSet BIFUpdatePlainly
+
 variable {GF : BundledGFunctors}
 
 @[rocq_alias step_fupdN_soundness_no_lc]
@@ -330,7 +332,7 @@ theorem step_fupdN_soundness_no_lc [InvGpreS GF]
   intro LC
   specialize H LC
   iintro Hcrds
-  iapply BIFUpdatePlainly.fupd_plainly_mask_empty
+  iapply fupd_plainly_mask_empty
   ihave H : £ m -∗ |={⊤,∅}=> n.iter (fun Q => iprop(|={∅}=> ▷ |={∅}=> Q)) P $$ []
   · iapply H
   clear H
@@ -356,7 +358,7 @@ theorem step_fupdN_soundness_lc [InvGpreS GF]
   specialize H LC
   iintro Hcrds
   icases lc_split (GF := GF) $$ Hcrds with ⟨Hcr1, Hcr2⟩
-  ihave H : £ m -∗ |={⊤,∅}=> n.iter (fun Q => iprop(|={∅}=> ▷ |={∅}=> Q)) P $$ []
+  ihave H : £ m -∗ |={⊤,∅}=> |={∅}▷=>^[n] P $$ []
   · iapply H
   imod H $$ Hcr1 with H
   clear H
@@ -372,7 +374,7 @@ theorem step_fupdN_soundness_lc [InvGpreS GF]
     iintro ⟨⟨Hcr, Hcrs⟩, >H⟩
     imod lc_fupd_elim_later (GF := GF) $$ Hcr H with H
     imod H
-    ihave IH : £ n ∗ n.iter (fun Q => iprop(|={∅}=> ▷ |={∅}=> Q)) P -∗ |={∅}=> P $$ []
+    ihave IH : £ n ∗ (|={∅}▷=>^[n] P) -∗ |={∅}=> P $$ []
     · refine wand_intro ?_
       refine sep_elim_r.trans ?_
       exact IH
@@ -402,7 +404,7 @@ theorem step_fupdN_soundness_no_lc' [InvGpreS GF]
   cases n with
   | zero =>
     simp only [Nat.iter_zero] at H ⊢
-    iapply fupd_mask_intro_discard Std.LawfulSet.empty_subset
+    iapply fupd_mask_intro_discard empty_subset
     ihave H : £ m -∗ P $$ []
     · apply H
     iapply H $$ Hcr
@@ -421,7 +423,7 @@ theorem step_fupdN_soundness_no_lc' [InvGpreS GF]
     | zero =>
       simp only [Nat.iter_zero]
       iintro HP
-      iapply fupd_mask_intro_discard Std.LawfulSet.empty_subset
+      iapply fupd_mask_intro_discard empty_subset
       iassumption
     | succ n IH =>
       simp only [Nat.iter_succ]
@@ -469,6 +471,6 @@ theorem step_fupdN_soundness_lc' [InvGpreS GF]
 
 end StepIndexed
 
-end Iris.FUpd
+end Iris
 
 end
