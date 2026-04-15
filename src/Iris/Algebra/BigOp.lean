@@ -30,7 +30,7 @@ open OFE Iris.Std
 
 @[expose] public def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
     {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K] (m : M' V) : M :=
-  bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList (K := K) m)
+  bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList m)
 
 @[expose] public def bigOpS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     {A : Type _} {S : Type _} [FiniteSet S A] (Φ : A → M) (m : S) : M :=
@@ -294,7 +294,7 @@ theorem bigOpM_gen_proper_2 {A : Type _} {B : Type _} {R : M → M → Prop}
     (∀ {k y1 y2}, get? m1' k = some y1 → get? m2' k = some y2 → R (Φ k y1) (Ψ k y2)) →
     R ([^ op map] k ↦ x ∈ m1', Φ k x) ([^ op map] k ↦ x ∈ m2', Ψ k x)
   suffices h : P m1 from h m2 hdom hf
-  apply LawfulFiniteMap.induction_on (K := K) (P := P)
+  apply LawfulFiniteMap.induction_on (P := P)
   · intro m₁ m₂ heq hP m2' hdom' hf'
     refine hR_equiv.trans (hR_sub (bigOpM_equiv_of_perm Φ heq).symm) ?_
     exact hP m2' (fun k => heq k ▸ hdom' k) (hf' <| (heq _) ▸ ·)
@@ -354,7 +354,7 @@ theorem bigOpM_proper_pointwise {Φ Ψ : K → V → M} (m : M' V) (hf : ∀ {k 
   bigOpM_proper (fun _ => hf)
 
 theorem bigOpM_toList_equiv (Φ : K → V → M) (m : M' V) :
-    ([^ op map] k ↦ x ∈ m, Φ k x) ≡ ([^ op list] kx ∈ toList (K := K) m, Φ kx.1 kx.2) :=
+    ([^ op map] k ↦ x ∈ m, Φ k x) ≡ ([^ op list] kx ∈ toList m, Φ kx.1 kx.2) :=
   .rfl
 
 theorem bigOpM_ofList_equiv [DecidableEq K] (Φ : K → V → M) (l : List (K × V)) (hd : NoDupKeys l) :
@@ -367,7 +367,7 @@ theorem bigOpM_singleton_equiv (Φ : K → V → M) (i : K) (x : V) :
   simpa only [bigOpM_empty] using op_right_id
 
 theorem bigOpM_const_unit_equiv [DecidableEq K] (m : M' V) :
-    bigOpM (K := K) op (fun _ _ => unit) m ≡ unit :=
+    bigOpM op (fun _ _ => unit) m ≡ unit :=
   bigOpL_const_unit_equiv
 
 theorem bigOpM_map_equiv (h : V → B) (Φ : K → B → M) (m : M' V) :
@@ -415,7 +415,7 @@ theorem bigOpM_filter_equiv (φ : K → V → Bool) (Φ : K → V → M) (m : M'
     (bigOpL_filter_equiv (fun (k, v) => φ k v) (fun (k, v) => Φ k v) _)
 
 theorem toList_union_perm [DecidableEq K] {m1 m2 : M' V} (hdisj : m1 ##ₘ m2) :
-    (toList (K := K) (m1 ∪ m2)).Perm (toList (K := K) m1 ++ toList (K := K) m2) := by
+    (toList (m1 ∪ m2)).Perm (toList m1 ++ toList m2) := by
   refine (List.perm_ext_iff_of_nodup LawfulFiniteMap.nodup_toList ?_).mpr fun ⟨k, v⟩ => ?_
   · refine List.nodup_append.mpr ⟨LawfulFiniteMap.nodup_toList, LawfulFiniteMap.nodup_toList, ?_⟩
     rintro ⟨k, _⟩ h1 _ h2 rfl
@@ -495,7 +495,7 @@ theorem bigOpM_weak_hom [DecidableEq K] [ι : WeakMonoidHomomorphism op₁ op₂
   refine bigOpL_hom_weak (H := ι) _ ?_
   refine fun Hk => Hne ?_
   refine .trans LawfulFiniteMap.ofList_toList.symm ?_
-  rw [show (LawfulFiniteMap.toList (K := K) m) = [] from List.nil_eq.mpr Hk |>.symm]
+  rw [show (LawfulFiniteMap.toList m) = [] from List.nil_eq.mpr Hk |>.symm]
   exact .trans (congrFun rfl) (congrFun rfl )
 
 end BigOpM

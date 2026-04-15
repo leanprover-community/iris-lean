@@ -351,7 +351,7 @@ theorem bigSepM_pure [BIAffine PROP] {φ : K → V → Prop} {m : M V} :
 
 @[rocq_alias big_sepM_map_to_list]
 theorem bigSepM_toList {Φ : K → V → PROP} {m : M V} :
-    ([∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ ([∗list] kv ∈ toList (K := K) m, Φ kv.1 kv.2) :=
+    ([∗map] k ↦ x ∈ m, Φ k x) ⊣⊢ ([∗list] kv ∈ toList m, Φ kv.1 kv.2) :=
   .rfl
 
 @[rocq_alias big_sepM_list_to_map]
@@ -494,7 +494,7 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
     ⊢ ([∗map] k ↦ y ∈ m₂, Ψ k y) ∗
       [∗map] k ↦ x ∈ filter (fun k _ => (get? m₂ k).isNone) m₁, Φ k x
   suffices P m₂ from this m₁
-  refine LawfulFiniteMap.induction_on (K := K) (fun _ _ heq IH m₁ => ?hequiv) ?hemp ?hind m₂
+  refine LawfulFiniteMap.induction_on (fun _ _ heq IH m₁ => ?hequiv) ?hemp ?hind m₂
   case hequiv =>
     refine (sep_mono_r ?_).trans <| (IH m₁).trans ?_
     · refine intuitionistically_mono ?_
