@@ -334,15 +334,6 @@ theorem fupd_plain_later {E : CoPset} {P : PROP} [Plain P] : (▷ |={E}=> P) ⊢
     _ ⊢ iprop(▷ |={E}=> ■ P) := later_mono (mono Plain.plain)
     _ ⊢ iprop(|={E}=> ▷ ◇ P) := fupd_plainly_later E P
 
-instance plain_later_false : Plain iprop(▷ (False : PROP)) where
-  plain := (later_mono (false_elim (P := iprop(■ False)))).trans later_plainly.1
-
-instance plain_except0 {P : PROP} [Plain P] : Plain iprop(◇ P) where
-  plain := (or_mono plain_later_false.plain Plain.plain).trans plainly_or_2
-
-instance plain_later_except0 {P : PROP} [Plain P] : Plain iprop(▷ ◇ P) where
-  plain := (later_mono plain_except0.plain).trans later_plainly.1
-
 theorem step_fupd_plain {E1 E2 : CoPset} {P : PROP} [Plain P] :
     (|={E1}[E2]▷=> P) ⊢ |={E1}=> ▷ ◇ P := by
   show (|={E1,E2}=> ▷ (|={E2,E1}=> P)) ⊢ |={E1}=> ▷ ◇ P
@@ -352,15 +343,6 @@ theorem step_fupd_plain {E1 E2 : CoPset} {P : PROP} [Plain P] :
   calc iprop(▷ (|={E2,E1}=> P))
     _ ⊢ iprop(▷ (|={E2}=> P)) := later_mono fupd_plain_mask
     _ ⊢ iprop(|={E2}=> ▷ ◇ P) := fupd_plain_later
-
-instance plain_laterN_except0 {P : PROP} [Plain P] (n : Nat) : Plain iprop(▷^[n] ◇ P) := by
-  induction n with
-  | zero => exact plain_except0
-  | succ n ih =>
-    refine ⟨?_⟩
-    calc iprop(▷ ▷^[n] ◇ P)
-      _ ⊢ iprop(▷ ■ (▷^[n] ◇ P)) := later_mono ih.plain
-      _ ⊢ iprop(■ ▷ (▷^[n] ◇ P)) := later_plainly.1
 
 theorem step_fupdN_plain {E1 E2 : CoPset} {n : Nat} {P : PROP} [Plain P] :
     (|={E1}[E2]▷=>^[n] P) ⊢ |={E1}=> ▷^[n] ◇ P := by
