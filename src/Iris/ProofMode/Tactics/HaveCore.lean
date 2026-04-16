@@ -74,12 +74,14 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     for mvar in newMVarIds ++ otherMVarIds do
       addMVarGoal mvar
 
-    -- TODO: can we do this without re typechecking?
-    let ⟨0, ty, val⟩ ← inferTypeQ val | throwError m!"{val} is not a Prop"
+    let ty ← instantiateMVars <| ← inferType val
+    if ! (← Meta.isProp ty) then throwError m!"ihave: {val} is not a Prop"
+    have ty : Q(Prop) := ty
+    have val : Q($ty) := val
 
     let hyp ← mkFreshExprMVarQ q($prop)
     let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty $hyp)
-      | throwError m!"{ty} is not an entailment"
+      | throwError m!"ihave: {ty} is not an entailment"
 
     return ⟨_, hyps, q(true), hyp, q(have_asEmpValid $val)⟩
 
