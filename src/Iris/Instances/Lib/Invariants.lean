@@ -185,7 +185,6 @@ theorem own_inv_alloc_open (N : Namespace) (E : CoPset) (P : IProp GF) (Hsub : �
     · ipure_intro; assumption
     · iexact HI
   iintro HP ⟨Hw, HE⟩
-
   icases ownI_close (GF := GF) $$ [HP Hw HD] with ⟨Hwsat, HE1⟩
   · isplitl [Hw]; iassumption
     isplitl [HI]; iassumption
@@ -267,8 +266,7 @@ theorem inv_acc_strong (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N 
   ispecialize H $$ HP
   icases fupd_mask_frame_r disjoint_empty_left (Ef := E') (PROP := IProp GF) $$ H with H
   rw [union_empty_left]
-  imod H
-  imodintro
+  imod H; imodintro
   iexact H
 
 @[rocq_alias inv_acc_timeless]
@@ -312,12 +310,10 @@ theorem inv_iff (N : Namespace) (P Q : IProp GF) :
   inext; imodintro; iintro HP
   isplitl [HP]
   · simp only [iff]
-    ihave ⟨HPQ', _⟩ := intuitionistically_elim (PROP := IProp GF) $$ HPQ
-    iapply HPQ' $$ HP
+    iapply HPQ $$ HP
   · iintro HQ
     simp only [iff]
-    ihave ⟨_, HPQ'⟩ := intuitionistically_elim (PROP := IProp GF) $$ HPQ
-    iapply HPQ' $$ HQ
+    iapply HPQ $$ HQ
 
 end Modification
 

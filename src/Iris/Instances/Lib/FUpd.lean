@@ -181,8 +181,7 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen fa
     imodintro
     isplitl [Hwsat]; iassumption
     isplitl [HE]; iassumption
-    imodintro
-    inext; imod HP; imodintro; iassumption
+    imodintro; inext; imod HP; imodintro; iassumption
   fupd_plainly_sForall_2 E P := by
     simp only [fupd, uPred_fupd, le_upd_if, Bool.false_eq_true, ↓reduceIte]
     iintro H ⟨Hwsat, HE⟩
@@ -190,8 +189,7 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen fa
     · imod H $$ [Hwsat HE] with ⟨_, _, H⟩
       · isplitl [Hwsat] <;> iassumption
       iexact H
-    imodintro
-    imod HP; imodintro
+    imodintro; imod HP; imodintro
     isplitl [Hwsat]; iassumption
     isplitl [HE]; iassumption
     iclear H
@@ -223,8 +221,8 @@ theorem lc_fupd_add_later {E : CoPset} {P : IProp GF} :
   simp only [fupd, uPred_fupd]
   iintro ⟨Hwsat, HE⟩
   simp only [le_upd_if, ↓reduceIte]
-  ihave >H := HP $$ [Hwsat HE]; isplitl [Hwsat] <;> iassumption
-  imod H with ⟨H1, H2, H3⟩
+  ihave >(>⟨H1, H2, H3⟩) := HP $$ [Hwsat HE]
+  · isplitl [Hwsat] <;> iassumption
   imod le_upd_later (GF := GF) $$ Hcr H3 with H3
   imodintro; imodintro
   isplitl [H1]; iassumption
@@ -243,8 +241,6 @@ theorem lc_fupd_add_laterN (n : Nat) {E : CoPset} {P : IProp GF} :
     iintro ⟨Hcr, Hcrs⟩ >HP
     ihave HP := (laterN_later n (PROP := IProp GF)).mp $$ HP
     iapply lc_fupd_add_later (GF := GF) $$ Hcr
-    ihave IH : £ n -∗ (|={E}=> ▷^[n]▷P) -∗ |={E}=> ▷P $$ []
-    · apply IH
     iapply IH $$ Hcrs [HP]
     imodintro; iexact HP
 
@@ -261,8 +257,7 @@ theorem fupd_soundness_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P
  (∀ (_ : InvGS GF), ⊢ £ m -∗ |={E1,E2}=> P) → ⊢ P := by
   intro H
   iapply lc_soundness (.succ m) (GF := GF)
-  intro Hc
-  iintro ⟨Hcr, Hcrs⟩
+  iintro %Hc ⟨Hcr, Hcrs⟩
   simp only [fupd, uPred_fupd, le_upd_if, ↓reduceIte] at H
   imod wsat_alloc (GF := GF) with ⟨%W, Hwsat, HE⟩
   let LC : InvGS GF := {
@@ -270,11 +265,8 @@ theorem fupd_soundness_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P
     toLcGS := Hc
   }
   specialize H LC
-  have Hsub : E1 ⊆ ⊤ := fun _ _ => CoPset.mem_full
-  rw [diff_subset_decomp Hsub]
+  rw [diff_subset_decomp (s₂ := ⊤) ((fun _ _ => CoPset.mem_full) : E1 ⊆ ⊤)]
   ihave ⟨HE1, HE2⟩ := (ownE_op (GF := GF) (disjoint_symm disjoint_diff_right)).mp $$ HE
-  ihave H : £ m -∗ wsat ∗ ownE E1 -∗ |==£> ◇ (wsat ∗ ownE E2 ∗ P) $$ []
-  · apply H
   imod H $$ Hcrs [Hwsat HE2] with ⟨_, _, H⟩
   · isplitl [Hwsat] <;> iassumption
   iapply le_upd_later $$ Hcr [H]
@@ -285,8 +277,7 @@ theorem fupd_soundness_no_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plai
   (∀ (_ : InvGS_gen false GF), ⊢ £ m -∗ |={E1,E2}=> P) → ⊢ P := by
   intro H
   iapply lc_soundness (.succ m) (GF := GF)
-  intro Hc
-  iintro ⟨Hcr, Hcrs⟩
+  iintro %Hc ⟨Hcr, Hcrs⟩
   simp only [fupd, uPred_fupd, le_upd_if, Bool.false_eq_true, ↓reduceIte] at H
   imod wsat_alloc (GF := GF) with ⟨%W, Hwsat, HE⟩
   let LC : InvGS_gen false GF := {
@@ -294,11 +285,8 @@ theorem fupd_soundness_no_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plai
     toLcGS := Hc
   }
   specialize H LC
-  have Hsub : E1 ⊆ ⊤ := fun _ _ => CoPset.mem_full
-  rw [diff_subset_decomp Hsub]
+  rw [diff_subset_decomp (s₂ := ⊤) ((fun _ _ => CoPset.mem_full) : E1 ⊆ ⊤)]
   ihave ⟨HE1, HE2⟩ := (ownE_op (GF := GF) (disjoint_symm disjoint_diff_right)).mp $$ HE
-  ihave H : £ m -∗ wsat ∗ ownE E1 -∗ |==> ◇ (wsat ∗ ownE E2 ∗ P) $$ []
-  · apply H
   imod H $$ Hcrs [Hwsat HE2] with ⟨_, _, H⟩
   · isplitl [Hwsat] <;> iassumption
   iapply le_upd_later $$ Hcr [H]
@@ -326,16 +314,13 @@ theorem step_fupdN_soundness_no_lc [InvGpreS GF]
   (∀ (_ : InvGS_gen false GF),
     ⊢ £ m -∗ |={⊤,∅}=> |={∅}▷=>^[n] P) → ⊢ P := by
   intro H
-  apply (laterN_soundness (n := .succ n))
+  apply laterN_soundness (n := .succ n)
   have : Persistent iprop(P) := plain_persistent
   apply fupd_soundness_no_lc (E1 := ⊤) (E2 := ⊤) (m := m)
   intro LC
   specialize H LC
   iintro Hcrds
   iapply fupd_plainly_mask_empty
-  ihave H : £ m -∗ |={⊤,∅}=> n.iter (fun Q => iprop(|={∅}=> ▷ |={∅}=> Q)) P $$ []
-  · iapply H
-  clear H
   imod H $$ Hcrds with H
   imod step_fupdN_plain (P := P) $$ H with H
   imodintro
@@ -358,8 +343,6 @@ theorem step_fupdN_soundness_lc [InvGpreS GF]
   specialize H LC
   iintro Hcrds
   icases lc_split (GF := GF) $$ Hcrds with ⟨Hcr1, Hcr2⟩
-  ihave H : £ m -∗ |={⊤,∅}=> |={∅}▷=>^[n] P $$ []
-  · iapply H
   imod H $$ Hcr1 with H
   clear H
   istop
@@ -372,8 +355,8 @@ theorem step_fupdN_soundness_lc [InvGpreS GF]
   | succ n IH =>
     simp only [Nat.iter_succ]
     iintro ⟨⟨Hcr, Hcrs⟩, >H⟩
-    imod lc_fupd_elim_later (GF := GF) $$ Hcr H with H
-    imod H
+    imod lc_fupd_elim_later (GF := GF) $$ Hcr H with >H
+    -- FIXME: direct iapply doesn't work
     ihave IH : £ n ∗ (|={∅}▷=>^[n] P) -∗ |={∅}=> P $$ []
     · refine wand_intro ?_
       refine sep_elim_r.trans ?_
@@ -405,17 +388,11 @@ theorem step_fupdN_soundness_no_lc' [InvGpreS GF]
   | zero =>
     simp only [Nat.iter_zero] at H ⊢
     iapply fupd_mask_intro_discard empty_subset
-    ihave H : £ m -∗ P $$ []
-    · apply H
     iapply H $$ Hcr
   | succ n =>
     simp only [Nat.iter_succ] at H ⊢
-    ihave H : £ m -∗ |={⊤,∅}=> ▷ |={∅,⊤}=> |={⊤}[∅]▷=>^[n] P $$ []
-    · apply H
     imod H $$ Hcr with H
-    imodintro
-    imodintro
-    inext
+    imodintro; imodintro; inext
     clear H
     imod H
     istop
@@ -428,9 +405,7 @@ theorem step_fupdN_soundness_no_lc' [InvGpreS GF]
     | succ n IH =>
       simp only [Nat.iter_succ]
       iintro >H
-      imodintro
-      imodintro
-      inext
+      imodintro; imodintro; inext
       imod H
       apply IH
 
@@ -445,8 +420,6 @@ theorem step_fupdN_soundness_lc' [InvGpreS GF]
   specialize H LC
   iintro Hcrds
   icases lc_split (GF := GF) $$ Hcrds with ⟨Hcr1, Hcr2⟩
-  ihave H : £ m -∗ |={⊤}[∅]▷=>^[n] P $$ []
-  · iapply H
   icases H $$ Hcr1 with H
   clear H
   istop
@@ -459,8 +432,8 @@ theorem step_fupdN_soundness_lc' [InvGpreS GF]
   | succ n IH =>
     simp only [Nat.iter_succ]
     iintro ⟨⟨Hcr, Hcrs⟩, >H⟩
-    imod lc_fupd_elim_later (GF := GF) $$ Hcr H with H
-    imod H
+    imod lc_fupd_elim_later (GF := GF) $$ Hcr H with >H
+    -- FIXME: direct iapply doesn't work
     ihave IH : £ n ∗ (|={⊤}[∅]▷=>^[n] P) -∗ |={⊤}=> P $$ []
     · refine wand_intro ?_
       refine sep_elim_r.trans ?_

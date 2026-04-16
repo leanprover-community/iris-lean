@@ -94,14 +94,13 @@ theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n �
 theorem lc_decrease_supply {n m} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -∗ |==> lc_supply m := by
   iintro H1 H2
   imod iOwn_update_op (E := LC.lc_elem)
-    (auth_update (leftCancelAdd_local_update (Eq.trans (Nat.add_assoc n m 0) (Nat.add_comm n m))))
+    (auth_update (leftCancelAdd_local_update ((Nat.add_assoc n m 0).trans (Nat.add_comm n m))))
     $$ [H1 H2] with H
   · unfold lc lc_supply
     isplitl [H1] <;> iassumption
   icases iOwn_op (E := LC.lc_elem) $$ H with ⟨H, _⟩
   imodintro
-  unfold lc_supply
-  iexact H
+  unfold lc_supply; iexact H
 
 @[rocq_alias lc_succ]
 theorem lc_succ {n} : £ (.succ n) ⊣⊢@{IProp GF} £ 1 ∗ £ n := by
@@ -213,8 +212,7 @@ theorem bupd_le_upd {P : IProp GF} : (|==> P) ⊢ (|==£> P) := by
   iintro H
   iapply le_upd_unfold
   iintro %n Hsupp
-  imod H
-  imodintro
+  imod H; imodintro
   ileft
   isplitl [Hsupp] <;> iassumption
 
@@ -229,8 +227,7 @@ theorem le_upd_intro {P : IProp GF} : P ⊢ |==£> P := by
 theorem le_upd_bind {P Q : IProp GF} :
   ⊢ (P -∗ |==£> Q) -∗ (|==£> P) -∗ (|==£> Q) := by
   iapply BILoeb.loeb_weak
-  iintro HLöb
-  iintro H G
+  iintro HLöb H G
   iapply le_upd_unfold
   iintro %n Hsupp
   imod le_upd_unfold (GF := GF) $$ G Hsupp with (⟨Hsupp, G⟩|⟨%m, %Hlt, Hsupp, G⟩)
@@ -342,8 +339,7 @@ theorem le_upd_elim n (P : IProp GF) :
   | zero =>
     simp only [Nat.le_zero_eq, Nat.iter_zero]
     imod Hupd with (⟨Ha, HP⟩|⟨%m, %Hlt, _⟩)
-    · imodintro
-      imodintro
+    · imodintro; imodintro
       iexists 0
       isplit
       · ipure_intro; rfl
@@ -352,12 +348,10 @@ theorem le_upd_elim n (P : IProp GF) :
   | succ n =>
     simp only [Nat.iter_succ]
     imod Hupd with (⟨Hc, HP⟩|Hupd)
-    · imodintro
-      inext
+    · imodintro; inext
       iapply iter_modal_intro $$ [Hc HP]
       · intro Q; iintro H; imodintro; inext; iexact H
-      imodintro
-      imodintro
+      imodintro; imodintro
       iexists n.succ
       isplit
       · ipure_intro; exact Nat.le_refl _
@@ -367,20 +361,16 @@ theorem le_upd_elim n (P : IProp GF) :
       icases Hrest with ⟨%Hstep, Hrest2⟩
       icases Hrest2 with ⟨Hown, LaterHupd⟩
       obtain ⟨k, Heq⟩ := Nat.exists_eq_add_of_lt Hstep
-      rw [show n = m + k by exact Nat.add_right_cancel Heq]
-      rw [Nat.iter_add]
+      rw [show n = m + k by exact Nat.add_right_cancel Heq, Nat.iter_add]
       inext
       ihave IH := (IH m (by simp [WellFoundedRelation.rel]; omega)) $$ Hown LaterHupd
       iapply iter_modal_mono $$ [] IH
-      · intro P Q
-        iintro H HP; imod HP; imodintro; inext; iapply H $$ HP
+      · iintro %P %Q H HP; imod HP; imodintro; inext; iapply H $$ HP
       iintro IH
       iapply iter_modal_intro $$ [IH]
-      · intro Q; iintro H; imodintro; inext; iexact H
-      imod IH
-      imodintro
-      imod IH with ⟨%m', %Hlt, H1, H2⟩
-      imodintro
+      · iintro %Q H; imodintro; inext; iexact H
+      imod IH; imodintro
+      imod IH with ⟨%m', %Hlt, H1, H2⟩; imodintro
       iexists m'
       isplit
       · ipure_intro
@@ -395,18 +385,13 @@ theorem le_upd_elim_complete n (P : IProp GF) :
   ihave Hit := le_upd_elim (GF := GF) n P $$ Hlc Hupd
   rw [show Nat.succ n = n + 1 by omega, Nat.iter_add]
   iapply iter_modal_mono $$ [] Hit
-  · intro P Q
-    iintro Hent HP
-    imod HP
-    imodintro
-    inext
+  · iintro %P %Q Hent HP
+    imod HP; imodintro; inext
     iapply Hent $$ HP
   simp only [Nat.iter_succ, Nat.iter_zero]
   iintro Hupd
-  imod Hupd
-  imodintro
-  imod Hupd
-  inext
+  imod Hupd; imodintro
+  imod Hupd; inext
   icases Hupd with ⟨%m, ⟨_, ⟨_, HP⟩⟩⟩
   iexact HP
 
@@ -479,17 +464,14 @@ theorem lc_soundness [LcGpreS GF] m (P : IProp GF) [Plain P] :
   intro H
   apply laterN_soundness (n := .succ m)
   refine .trans ?_ bupd_elim
-  iintro emp
-  iclear emp
+  iintro emp; iclear emp
   imod lc_alloc (GF := GF) m with ⟨%γ, H1, H2⟩
   ihave G := H $$ H2
   ihave G := le_upd_elim_complete (GF := GF) $$ H1 G
   simp only [Nat.succ_eq_add_one, Nat.iter_succ]
-  imod G
-  imodintro
+  imod G; imodintro
   -- TODO: inext is too eager to remove all laters from the goal
-  iapply later_laterN
-  inext
+  iapply later_laterN; inext
   clear H
   istop
   induction m with
@@ -501,9 +483,7 @@ theorem lc_soundness [LcGpreS GF] m (P : IProp GF) [Plain P] :
     iintro H
     iapply later_laterN
     iapply bupd_elim
-    imod H
-    imodintro
-    inext
+    imod H; imodintro; inext
     refine .trans .rfl IH
 
 section If
