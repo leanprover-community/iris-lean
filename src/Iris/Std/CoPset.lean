@@ -602,30 +602,16 @@ theorem isFinite_setFinite {X : CoPset} : isFinite X ↔ LawfulSet.setFinite X :
       · simp at Hl
         exact ((List.fresh l).choose_spec (Hl (List.fresh l).choose)).elim
   | node b l r IHl IHr =>
-    simp only [CoPsetRaw.isFinite, Bool.and_eq_true]
-    constructor
+    simp only [CoPsetRaw.isFinite, Bool.and_eq_true]; constructor
     · intro ⟨H1, H2⟩
-      have G1 := (IHl (node_wf_l wx)).mp H1
-      have G2 := (IHr (node_wf_r wx)).mp H2
-      exists (if b then [Pos.xH] else []) ++ G1.choose.map (·~0) ++ G2.choose.map (·~1)
-      intro x Hx
-      simp only [List.mem_append, List.mem_map]
-      simp only [Membership.mem] at Hx G1 G2
+      obtain ⟨l1, Hl1⟩ := (IHl (node_wf_l wx)).mp H1
+      obtain ⟨l2, Hl2⟩ := (IHr (node_wf_r wx)).mp H2
+      refine ⟨(if b then [Pos.xH] else []) ++ l1.map (·~0) ++ l2.map (·~1), fun x Hx => ?_⟩
+      simp only [List.mem_append, List.mem_map]; simp only [Membership.mem] at Hx Hl1 Hl2
       cases x with
-      | xH =>
-        cases b
-        · simp [CoPsetRaw.ElemOf] at Hx
-        · left; simp
-      | xO p =>
-        simp only [ElemOf] at Hx
-        left; right
-        exists p
-        exact ⟨G1.choose_spec p Hx, rfl⟩
-      | xI p =>
-        simp only [CoPsetRaw.ElemOf] at Hx
-        right
-        exists p
-        exact ⟨G2.choose_spec p Hx, rfl⟩
+      | xH => cases b; simp [CoPsetRaw.ElemOf] at Hx; left; simp
+      | xO p => simp only [ElemOf] at Hx; left; right; exact ⟨_, Hl1 _ Hx, rfl⟩
+      | xI p => simp only [ElemOf] at Hx; right; exact ⟨_, Hl2 _ Hx, rfl⟩
     · rintro ⟨k, Hk⟩
       rw [IHl (node_wf_l wx), IHr (node_wf_r wx)]
       simp only [Membership.mem] at Hk ⊢
