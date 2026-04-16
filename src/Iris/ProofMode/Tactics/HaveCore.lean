@@ -37,7 +37,6 @@ Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.
 - `hyps`: Current proof mode hypothesis context
 - `keep`: If `true` and `tm` is a persistent Iris hypothesis, keep it in the context;
   if `false`, remove it
-- `mayPostpone`: If `true`, allow postponing elaboration of metavariables in `tm`
 
 ## Returns
 A tuple containing:
@@ -48,7 +47,7 @@ A tuple containing:
 - `pf`: Proof of `hyps ⊢ hyps' ∗ □?p out`
 -/
 private def iHaveCore {e} (hyps : @Hyps u prop bi e)
-  (tm : Term) (keep : Bool) (mayPostpone : Bool) :
+  (tm : Term) (keep : Bool) :
   ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
   if let some uniq ← try? <| hyps.findWithInfo ⟨tm⟩ then
     -- assertion from the Iris context
@@ -56,7 +55,7 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     return ⟨_, hyps, p, out', q($pf.1)⟩
   else
     -- lean hypothesis
-    let val ← instantiateMVars <| ← elabTerm tm none mayPostpone
+    let val ← instantiateMVars <| ← elabTerm tm none (mayPostpone := true)
     let ty ← instantiateMVars <| ← inferType val
 
     let ⟨newMVars, _, _⟩ ← forallMetaTelescope ty
@@ -85,10 +84,10 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     return ⟨_, hyps, q(true), hyp, q(have_asEmpValid $val)⟩
 
 def iHave {e} (hyps : @Hyps u prop bi e)
-  (pmt : PMTerm) (keep : Bool) (try_dup_context : Bool := false) (mayPostpone := false) :
+  (pmt : PMTerm) (keep : Bool) (try_dup_context : Bool := false) :
   ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
   -- assert `term` as hypothesis `A`
-  let ⟨_, hyps', p, A, pf⟩ ← iHaveCore hyps pmt.term keep mayPostpone
+  let ⟨_, hyps', p, A, pf⟩ ← iHaveCore hyps pmt.term keep
   -- specialize `A` with `spats`
   let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p A pmt.spats (try_dup_context := try_dup_context)
   return ⟨_, hyps'', pb, B, q($(pf).trans $pf')⟩

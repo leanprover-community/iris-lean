@@ -51,7 +51,7 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
   -- elaborate the proof mode term `pmt` to the hypothesis `out`
-  let ⟨e, hyps', p, out, pf⟩ ← iHave hyps pmt true (mayPostpone := true)
+  let ⟨e, hyps', p, out, pf⟩ ← iHave hyps pmt true
   -- if `□?p out` directly matches goal, behave like `iexact`
   if let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption $p .in $out $goal) then
     -- ensure the context can be discarded
