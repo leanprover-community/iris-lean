@@ -79,7 +79,10 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
     let backtrackSet := ipmBacktrackExt.getState (← getEnv)
     let mvarType  ← inferType mvar
     let mvarType  ← instantiateMVars mvarType
-    if !(ipmClassesExt.getState (← getEnv)).contains mvarType.getAppFn.constName then
+    let bodyConstName ← forallTelescopeReducing mvarType fun _ typeBody => do
+      let typeBody ← whnf typeBody
+      return typeBody.getAppFn.constName
+    if !(ipmClassesExt.getState (← getEnv)).contains bodyConstName then
       return ← withTraceNode `Meta.synthInstance (λ _ => return m!"switch to normal synthInstance") do
         let some e ← synthInstance? mvarType | return none
         mvar.mvarId!.assign e
