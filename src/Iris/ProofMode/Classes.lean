@@ -32,7 +32,7 @@ inductive AsEmpValid.Direction where
   | from
 
 @[ipm_class]
-class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) {PROP : outParam (Type _)} (P : outParam PROP) [BI PROP] where
+class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) {PROP : semiOutParam (Type _)} (P : outParam PROP) [semiOutParam (BI PROP)] where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
 
 theorem asEmpValid_1 [BI PROP] (P : PROP) [AsEmpValid .into φ P] : φ → ⊢ P :=
