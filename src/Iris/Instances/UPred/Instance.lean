@@ -346,10 +346,6 @@ instance : BI (UPred M) where
 instance : BIPersistentlyForall (UPred M) where
   persistently_sForall_2 _ _ x hv h p hp := h _ ⟨p, rfl⟩ _ x (CMRA.inc_refl x) .refl hv hp
 
-@[rocq_alias uPred_pure_forall]
-instance : BIPureForall (UPred M) where
-  pure_forall_2 _ _ _ _ h a := h _ ⟨a, rfl⟩
-
 @[rocq_alias uPred_later_contractive]
 instance : BILaterContractive (UPred M) where
   toContractive := later_contractive

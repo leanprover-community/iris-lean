@@ -221,8 +221,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] Timeless lemmas
   - [ ] Big Op lemmas
 - [ ] `embedding.v`
-- [ ] `extensions.v`
-  - [ ] BIPureForall
+- [x] `extensions.v`
+  - [x] BIPureForall
 - [ ] `interface.v` 
   - [ ] Later instances
 - [ ] `internal_eq.v`

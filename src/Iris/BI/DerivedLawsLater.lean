@@ -133,7 +133,7 @@ theorem entails_impl_true {P Q : PROP} :
 
 theorem loeb [BILoeb PROP] {P : PROP} : (▷ P → P) ⊢ P := by
   apply entails_impl_true.mpr
-  apply BILoeb.loeb_weak
+  apply loeb_weak
   apply imp_intro
   apply (and_mono .rfl and_self.mpr).trans
   apply (and_mono .rfl (and_mono later_intro .rfl)).trans
