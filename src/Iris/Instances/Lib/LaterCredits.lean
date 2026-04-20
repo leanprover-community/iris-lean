@@ -39,7 +39,7 @@ scoped instance : UCMRA Credit := CommMonoidLike.instUCMRA
 scoped instance : CMRA.Discrete Credit := CommMonoidLike.instDiscrete
 scoped instance {a : Credit} : CMRA.Cancelable a := inferInstance
 
--- /-- Later credits inclusion typeclass (`GF` contains the necessary functors for later credits) -/
+/-- Later credits inclusion typeclass (`GF` contains the necessary functors for later credits) -/
 class LcGpreS (GF : BundledGFunctors) where
   lc_elem : ElemG GF (AuthURF (F := PNat) (constOF Credit))
 
@@ -68,10 +68,10 @@ section Operations
 
 variable {GF : BundledGFunctors} [LC : LcGS GF]
 
-theorem lc_split {n m} :
-  £ (n + m) ⊣⊢@{IProp GF} £ n ∗ £ m := by
-  refine .trans (.of_eq ?_) iOwn_op
-  rfl
+theorem lc_split {n m} : £ (n + m) ⊣⊢@{IProp GF} £ n ∗ £ m := by
+  -- FIXME: Timeout on iOwn_op. Why?
+  refine .trans ?_ iOwn_op
+  exact .rfl
 
 @[rocq_alias lc_zero]
 theorem lc_zero : ⊢@{IProp GF} |==> £ 0 := iOwn_unit (ε := UCMRA.unit)
@@ -79,15 +79,15 @@ theorem lc_zero : ⊢@{IProp GF} |==> £ 0 := iOwn_unit (ε := UCMRA.unit)
 @[rocq_alias lc_supply_bound]
 theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n ≤ m⌝ := by
   iintro Hsupp Hcred
-  icases iOwn_op (E := LC.lc_elem) $$ [Hsupp Hcred] with H
+  icases iOwn_op $$ [Hsupp Hcred] with H
   · unfold lc lc_supply
     isplitl [Hsupp] <;> iassumption
-  ihave H := iOwn_cmraValid (E := LC.lc_elem) $$ H
-  ihave ⟨H1, H2⟩ := auth_both_validI (F := PNat) (PROP := IProp GF) m n $$ H
-  ihave %H := internalCmraIncluded_discrete (PROP := IProp GF) (A := Credit) $$ H1
+  ihave H := iOwn_cmraValid $$ H
+  ihave ⟨H1, H2⟩ := auth_both_validI m n $$ H
+  ihave %H := internalCmraIncluded_discrete $$ H1
   ipure_intro
   obtain ⟨k, rfl⟩ := H
-  exact Nat.le_add_right n k
+  exact n.le_add_right k
 
 @[rocq_alias lc_decrease_supply]
 theorem lc_decrease_supply {n m} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -∗ |==> lc_supply m := by
@@ -97,7 +97,7 @@ theorem lc_decrease_supply {n m} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -�
     $$ [H1 H2] with H
   · unfold lc lc_supply
     isplitl [H1] <;> iassumption
-  icases iOwn_op (E := LC.lc_elem) $$ H with ⟨H, _⟩
+  icases iOwn_op $$ H with ⟨H, _⟩
   imodintro
   unfold lc_supply; iexact H
 
@@ -107,11 +107,10 @@ theorem lc_succ {n} : £ (.succ n) ⊣⊢@{IProp GF} £ 1 ∗ £ n := by
   exact lc_split
 
 @[rocq_alias lc_weaken]
-theorem lc_weaken {n} m : m ≤ n → ⊢@{IProp GF} £ n -∗ £ m := by
-  intro h
+theorem lc_weaken {n} m (h : m ≤ n) : ⊢@{IProp GF} £ n -∗ £ m := by
   obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le h
   iintro H
-  ihave ⟨H, _⟩ := lc_split (GF := GF) $$ H
+  ihave ⟨H, _⟩ := lc_split $$ H
   iexact H
 
 @[rocq_alias lc_timeless]
@@ -223,15 +222,14 @@ theorem le_upd_intro {P : IProp GF} : P ⊢ |==£> P := by
   iexact H
 
 @[rocq_alias le_upd_bind]
-theorem le_upd_bind {P Q : IProp GF} :
-  ⊢ (P -∗ |==£> Q) -∗ (|==£> P) -∗ (|==£> Q) := by
+theorem le_upd_bind {P Q : IProp GF} : ⊢ (P -∗ |==£> Q) -∗ (|==£> P) -∗ (|==£> Q) := by
   iapply BILoeb.loeb_weak
   iintro HLöb H G
   iapply le_upd_unfold
   iintro %n Hsupp
-  imod le_upd_unfold (GF := GF) $$ G Hsupp with (⟨Hsupp, G⟩|⟨%m, %Hlt, Hsupp, G⟩)
+  imod le_upd_unfold $$ G Hsupp with (⟨Hsupp, G⟩|⟨%m, %Hlt, Hsupp, G⟩)
   · ihave G := H $$ G
-    imod le_upd_unfold (GF := GF) $$ G Hsupp with (⟨Hsupp, G⟩|⟨%m, %Hlt, Hsupp, G⟩)
+    imod le_upd_unfold $$ G Hsupp with (⟨Hsupp, G⟩|⟨%m, %Hlt, Hsupp, G⟩)
     · imodintro
       ileft
       isplitl [Hsupp] <;> iassumption
@@ -252,17 +250,16 @@ theorem le_upd_bind {P Q : IProp GF} :
   ipure_intro; simp
 
 @[rocq_alias le_upd_later_elim]
-theorem le_upd_later_elim {P : IProp GF} :
-  ⊢ £ 1 -∗ (▷ |==£> P) -∗ |==£> P := by
+theorem le_upd_later_elim {P : IProp GF} : ⊢ £ 1 -∗ (▷ |==£> P) -∗ |==£> P := by
   iintro Hcr H
   iapply le_upd_unfold
   iintro %n Hsupp
-  ihave %H := lc_supply_bound (GF := GF) $$ Hsupp Hcr
+  ihave %H := lc_supply_bound $$ Hsupp Hcr
   cases n with
   | zero => exfalso; cases H
   | succ n =>
     rw [show n.succ = 1 + n by omega]
-    imod lc_decrease_supply (GF := GF) $$ Hsupp Hcr with Hsupp
+    imod lc_decrease_supply $$ Hsupp Hcr with Hsupp
     imodintro
     iright
     iexists n
@@ -271,8 +268,7 @@ theorem le_upd_later_elim {P : IProp GF} :
     isplitr [H] <;> iassumption
 
 @[rocq_alias le_upd_mono]
-theorem le_upd_mono {P Q : IProp GF} : (P ⊢ Q) → (|==£> P) ⊢ (|==£> Q) := by
-  intro Hent
+theorem le_upd_mono {P Q : IProp GF} (Hent : P ⊢ Q) : (|==£> P) ⊢ (|==£> Q) := by
   iintro H
   iapply le_upd_bind $$ [] H
   iintro H
@@ -295,7 +291,8 @@ theorem le_upd_frame_r {P R : IProp GF} : (|==£> P) ∗ R ⊢ |==£> (P ∗ R) 
 
 @[rocq_alias le_upd_frame_l]
 theorem le_upd_frame_l {P R : IProp GF} : R ∗ (|==£> P) ⊢ |==£> (R ∗ P) := by
-  refine .trans (.trans sep_comm.mp ?_) (le_upd_mono sep_comm.mp)
+  refine .trans ?_ (le_upd_mono sep_comm.mp)
+  refine (.trans sep_comm.mp ?_)
   iapply le_upd_frame_r
 
 @[rocq_alias le_upd_later]
@@ -327,12 +324,12 @@ variable {GF : BundledGFunctors} [LcGS GF]
 
 @[rocq_alias le_upd_elim]
 theorem le_upd_elim n (P : IProp GF) :
-  ⊢@{IProp GF} lc_supply n -∗ (|==£> P)
-  -∗ n.repeat (fun P => iprop(|==> ▷ P)) iprop(|==> ◇ (∃ m, ⌜m ≤ n⌝ ∗ lc_supply m ∗ P)) := by
+  ⊢@{IProp GF} lc_supply n -∗ (|==£> P) -∗
+    n.repeat (fun P => iprop(|==> ▷ P)) iprop(|==> ◇ (∃ m, ⌜m ≤ n⌝ ∗ lc_supply m ∗ P)) := by
   apply WellFounded.induction Nat.lt_wfRel.wf n
   intro n IH
   iintro Ha Hupd
-  icases le_upd_unfold (GF := GF) (P := P) $$ Hupd with Hupd
+  icases le_upd_unfold $$ Hupd with Hupd
   ihave Hupd := Hupd $$ %n Ha
   cases n with
   | zero =>
@@ -343,7 +340,7 @@ theorem le_upd_elim n (P : IProp GF) :
       isplit
       · ipure_intro; rfl
       isplitl [Ha] <;> iassumption
-    · exfalso; exact Nat.not_lt_zero m Hlt
+    · exfalso; exact m.not_lt_zero Hlt
   | succ n =>
     simp only [Nat.repeat]
     imod Hupd with (⟨Hc, HP⟩|Hupd)
@@ -356,13 +353,11 @@ theorem le_upd_elim n (P : IProp GF) :
       · ipure_intro; exact Nat.le_refl _
       isplitl [Hc] <;> iassumption
     · imodintro
-      icases Hupd with ⟨%m, Hrest⟩
-      icases Hrest with ⟨%Hstep, Hrest2⟩
-      icases Hrest2 with ⟨Hown, LaterHupd⟩
+      icases Hupd with ⟨%m, ⟨%Hstep, ⟨Hown, LaterHupd⟩⟩⟩
       obtain ⟨k, Heq⟩ := Nat.exists_eq_add_of_lt Hstep
       rw [show n = m + k by exact Nat.add_right_cancel Heq, Nat.repeat_add]
       inext
-      ihave IH := (IH m (by simp [WellFoundedRelation.rel]; omega)) $$ Hown LaterHupd
+      ihave IH := IH m (by simp [WellFoundedRelation.rel]; omega) $$ Hown LaterHupd
       iapply iter_modal_mono $$ [] IH
       · iintro %P %Q H HP; imod HP; imodintro; inext; iapply H $$ HP
       iintro IH
@@ -378,10 +373,9 @@ theorem le_upd_elim n (P : IProp GF) :
 
 @[rocq_alias le_upd_elim_complete]
 theorem le_upd_elim_complete n (P : IProp GF) :
-  ⊢ lc_supply n -∗ (|==£> P)
-  -∗ n.succ.repeat (fun Q => iprop(|==> ▷ Q)) P := by
+    ⊢ lc_supply n -∗ (|==£> P) -∗ n.succ.repeat (fun Q => iprop(|==> ▷ Q)) P := by
   iintro Hlc Hupd
-  ihave Hit := le_upd_elim (GF := GF) n P $$ Hlc Hupd
+  ihave Hit := le_upd_elim n P $$ Hlc Hupd
   rw [show Nat.succ n = n + 1 by omega, Nat.repeat_add]
   iapply iter_modal_mono $$ [] Hit
   · iintro %P %Q Hent HP
@@ -406,7 +400,8 @@ instance {P : IProp GF} : ElimModal True p false (bupd P) P (le_upd Q) (le_upd Q
       iapply bupd_le_upd $$ H1
 
 @[rocq_alias from_assumption_le_upd]
-instance from_assumption_le_upd {p} {P Q : IProp GF} [h : FromAssumption p ioP P Q] : FromAssumption p ioP P (le_upd Q) where
+instance from_assumption_le_upd {p} {P Q : IProp GF} [h : FromAssumption p ioP P Q] :
+    FromAssumption p ioP P (le_upd Q) where
   from_assumption := h.1.trans le_upd_intro
 
 @[rocq_alias from_pure_le_upd]
@@ -424,7 +419,7 @@ instance {P : IProp GF} [H : FromPure a P φ] : FromPure a (le_upd P) φ where
 instance {P : IProp GF} [H : IsExcept0 P] : IsExcept0 (le_upd P) where
   is_except0 := by
     iintro G
-    icases except_0_le_upd (GF := GF) $$ G with G
+    icases except_0_le_upd $$ G with G
     iapply le_upd_mono $$ G
     iapply H.is_except0
 
@@ -447,30 +442,26 @@ instance {P : IProp GF} : ElimModal True p false (le_upd P) P (le_upd Q) (le_upd
 end Internal
 
 @[rocq_alias lc_alloc]
-theorem lc_alloc [H : LcGpreS GF] n :
-  ⊢@{IProp GF} |==> ∃ _ : LcGS GF, lc_supply n ∗ £ n := by
-  imod (iOwn_alloc (E := H.lc_elem) ((● n) • (◯ n))
-    (auth_both_valid.mpr ⟨fun _ => .rfl, ⟨⟩⟩)) with ⟨%γLC, HOwn⟩
-  icases iOwn_op (E := H.lc_elem) $$ HOwn with ⟨HAuth, HFrag⟩
-  let LC : LcGS GF := {
-    lc_elem := H.lc_elem,
-    lc_name := γLC
-  }
+theorem lc_alloc [H : LcGpreS GF] n : ⊢@{IProp GF} |==> ∃ _ : LcGS GF, lc_supply n ∗ £ n := by
+  imod (iOwn_alloc (E := H.lc_elem) ((● n) • (◯ n)) (auth_both_valid.mpr ⟨fun _ => .rfl, ⟨⟩⟩))
+    with ⟨%γLC, HOwn⟩
+  icases iOwn_op $$ HOwn with ⟨HAuth, HFrag⟩
+  let LC : LcGS GF := { lc_elem := H.lc_elem, lc_name := γLC }
   iexists LC
   imodintro
   simp only [lc_supply, lc]
   isplitl [HAuth] <;> iassumption
 
 @[rocq_alias lc_soundness]
-theorem lc_soundness [LcGpreS GF] m (P : IProp GF) [Plain P] :
-  (∀ {_: LcGS GF}, ⊢ £ m -∗ |==£> P) → ⊢ P := by
-  intro H
-  apply laterN_soundness (n := .succ m)
+theorem lc_soundness [LcGpreS GF] m (P : IProp GF) [Plain P]  (H : ∀ {_: LcGS GF}, ⊢ £ m -∗ |==£> P) :
+    ⊢ P := by
+  apply laterN_soundness (n := m.succ)
   refine .trans ?_ bupd_elim
   iintro emp; iclear emp
   imod lc_alloc (GF := GF) m with ⟨%γ, H1, H2⟩
+  -- FIXME: Is it possible to support nested specializations? le_upd_elim_complete $$ H1 (H $$ H2)?
   ihave G := H $$ H2
-  ihave G := le_upd_elim_complete (GF := GF) $$ H1 G
+  ihave G := le_upd_elim_complete $$ H1 G
   simp only [Nat.succ_eq_add_one, Nat.repeat]
   imod G; imodintro
   -- TODO: inext is too eager to remove all laters from the goal
@@ -478,16 +469,14 @@ theorem lc_soundness [LcGpreS GF] m (P : IProp GF) [Plain P] :
   clear H
   istop
   induction m with
-  | zero =>
-    simp only [Nat.zero_eq, Nat.repeat]
-    exact .rfl
+  | zero => simpa only [Nat.zero_eq, Nat.repeat] using .rfl
   | succ m IH =>
     simp only [Nat.succ_eq_add_one, Nat.repeat]
     iintro H
     iapply later_laterN
     iapply bupd_elim
     imod H; imodintro; inext
-    refine .trans .rfl IH
+    exact IH
 
 section If
 
@@ -517,7 +506,7 @@ theorem le_upd_if_intro {b} {P : IProp GF} : P ⊢ le_upd_if b P := by
 
 @[rocq_alias le_upd_if_bind]
 theorem le_upd_if_bind {b} {P Q : IProp GF} :
-  ⊢ (P -∗ le_upd_if b Q) -∗ (le_upd_if b P) -∗ (le_upd_if b Q) := by
+    ⊢ (P -∗ le_upd_if b Q) -∗ (le_upd_if b P) -∗ (le_upd_if b Q) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte])
   · iintro H G
     imod G
