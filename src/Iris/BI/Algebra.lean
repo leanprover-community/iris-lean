@@ -208,24 +208,13 @@ theorem auth_dfrac_validI (dq : DFrac F) (a : A) :
     internalCmraValid (●{dq} a : Auth F A) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ internalCmraValid a := by
   refine .trans ?_ (and_congr_l siPure_pure)
   refine .trans ?_ siPure_and
-  constructor
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, auth_dfrac_validN]
-    exact id
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, auth_dfrac_validN]
-    exact id
+  refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
+  all_goals simpa only [SiProp.cmraValid, auth_dfrac_validN] using id
 
 @[rocq_alias auth_auth_validI]
-theorem auth_validI (a : A) :
-    internalCmraValid (● a : Auth F A) ⊣⊢@{PROP} internalCmraValid a := by
-  constructor
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, auth_validN]
-    exact id
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, auth_validN]
-    exact id
+theorem auth_validI (a : A) : internalCmraValid (● a : Auth F A) ⊣⊢@{PROP} internalCmraValid a := by
+  refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
+  all_goals simpa only [SiProp.cmraValid, auth_validN] using id
 
 @[rocq_alias auth_auth_dfrac_op_validI]
 theorem auth_dfrac_op_validI (dq1 dq2 : DFrac F) (a1 a2 : A) :
@@ -233,51 +222,31 @@ theorem auth_dfrac_op_validI (dq1 dq2 : DFrac F) (a1 a2 : A) :
       ⌜✓ (dq1 • dq2)⌝ ∧ internalEq a1 a2 ∧ internalCmraValid a1 := by
   refine .trans ?_ (and_congr_l siPure_pure)
   refine .trans ?_ (siPure_and.trans (and_congr_r siPure_and))
-  constructor
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, auth_dfrac_op_validN]
-    exact id
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, auth_dfrac_op_validN]
-    exact id
+  refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
+  all_goals simpa only [SiProp.cmraValid, auth_dfrac_op_validN] using id
 
 @[rocq_alias auth_frag_validI]
 theorem frag_validI (a : A) :
     internalCmraValid (◯ a : Auth F A) ⊣⊢@{PROP} internalCmraValid a := by
-  constructor
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, frag_validN]
-    exact id
-  · refine siPure_mono fun n => ?_
-    simp only [SiProp.cmraValid, frag_validN]
-    exact id
+  refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
+  all_goals simpa only [SiProp.cmraValid, frag_validN] using id
 
 @[rocq_alias auth_both_dfrac_validI]
 theorem both_dfrac_validI (dq : DFrac F) (a b : A) :
     internalCmraValid ((●{dq} a) • ◯ b) ⊣⊢@{PROP}
-      ⌜✓ dq⌝ ∧ internalCmraIncluded b a ∧ internalCmraValid a := by
-  suffices H : ⌜✓ dq⌝ ∧ internalCmraIncluded b a ∧ internalCmraValid a
-    ⊣⊢@{PROP} <si_pure> ∃ c, ((⌜✓ dq⌝ ∧ internalEq a (b • c)) ∧ SiProp.cmraValid a) by
-    refine .trans ?_ H.symm
-    constructor
-    · refine siPure_mono (fun n => ?_)
-      simp only [SiProp.cmraValid, both_dfrac_validN]
-      intro ⟨Hvalid, ⟨c, Hincl⟩, HvalidN⟩
-      apply SiProp.instBI.sExists_intro
-      · exists c
-      exact ⟨⟨Hvalid, Hincl⟩, HvalidN⟩
-    · refine siPure_mono ?_
-      apply exists_elim; intro c
-      intro n ⟨⟨Hvalid, Hincl⟩, HvalidN⟩
-      simp only [SiProp.cmraValid, both_dfrac_validN]
-      exact ⟨Hvalid, ⟨⟨c, Hincl⟩, HvalidN⟩⟩
-  refine .trans (and_congr_r siPure_and.symm) ?_
-  refine .trans (and_congr_l siPure_pure.symm) ?_
-  refine .trans siPure_and.symm ?_
+    ⌜✓ dq⌝ ∧ internalCmraIncluded b a ∧ internalCmraValid a := by
+  refine .trans ?_ <| siPure_and.trans (and_congr siPure_pure siPure_and)
   refine siPure_mono_bi ?_
-  refine .trans (and_congr_r BI.and_exists_r) ?_
-  refine .trans BI.and_exists_l ?_
-  refine exists_congr (fun _ => BI.and_assoc.symm)
+  refine .trans ?_ ((and_congr_r BI.and_exists_r).trans BI.and_exists_l).symm
+  refine ⟨siPure_mono fun n => ?_, ?_⟩
+  · simp only [both_dfrac_validN]
+    intro ⟨hv, ⟨c, hi⟩, hvn⟩
+    apply SiProp.instBI.sExists_intro
+    · exists c
+    · exact ⟨hv, ⟨hi, hvn⟩⟩
+  · refine siPure_mono ?_
+    refine exists_elim fun c n ⟨hv, ⟨hi, hvn⟩⟩ => ?_
+    exact both_dfrac_validN.mpr ⟨hv, (by exists c), hvn⟩
 
 @[rocq_alias auth_both_validI]
 theorem auth_both_validI (a b : A) :
@@ -286,17 +255,12 @@ theorem auth_both_validI (a b : A) :
   refine .trans ?_ siPure_and
   refine siPure_mono_bi ?_
   refine .trans ?_ BI.and_exists_r.symm
-  constructor
-  · intro n
-    simp only [SiProp.cmraValid, both_dfrac_validN]
-    intro ⟨Hvalid, ⟨⟨c, Hincl⟩, HvalidN⟩⟩
-    apply SiProp.instBI.sExists_intro
+  simp only [SiProp.cmraValid, both_dfrac_validN]
+  refine ⟨fun n ⟨_, ⟨⟨c, hi⟩, hvn⟩⟩ => ?_, ?_⟩
+  · apply SiProp.instBI.sExists_intro
     · exists c
-    exact ⟨Hincl, HvalidN⟩
-  · apply exists_elim; intro c
-    intro n ⟨Hincl, HvalidN⟩
-    simp only [SiProp.cmraValid, both_dfrac_validN]
-    exact ⟨DFrac.valid_own_one, ⟨⟨c, Hincl⟩, HvalidN⟩⟩
+    exact ⟨hi, hvn⟩
+  · exact exists_elim fun c n ⟨hi, hvn⟩ => ⟨DFrac.valid_own_one, ⟨⟨c, hi⟩, hvn⟩⟩
 
 end auth
 end Iris
