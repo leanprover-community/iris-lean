@@ -118,14 +118,14 @@ theorem bigAndL_persistently {Φ : Nat → A → PROP} {l : List A} :
 theorem bigAndL_pure_intro {φ : Nat → A → Prop} {l : List A} :
     ([∧list] k ↦ x ∈ l, (⌜φ k x⌝ : PROP)) ⊢ ⌜∀ k x, l[k]? = some x → φ k x⌝ := by
   refine bigAndL_forall.1.trans ?_
-  refine (forall_mono fun _ => (forall_mono fun _ => pure_imp.1).trans pure_forall.1).trans ?_
-  exact pure_forall.1
+  refine (forall_mono fun _ => (forall_mono fun _ => pure_imp.2).trans pure_forall.2).trans ?_
+  exact pure_forall.2
 
 @[rocq_alias big_andL_pure_2]
 theorem bigAndL_pure_elim {φ : Nat → A → Prop} {l : List A} :
     (⌜∀ k x, l[k]? = some x → φ k x⌝ : PROP) ⊢ [∧list] k ↦ x ∈ l, ⌜φ k x⌝ := by
-  refine pure_forall_2.trans ?_
-  refine (forall_mono fun _ => pure_forall_2.trans (forall_mono fun _ => pure_imp_2)).trans ?_
+  refine pure_forall.1.trans ?_
+  refine (forall_mono fun _ => pure_forall.1.trans (forall_mono fun _ => pure_imp.1)).trans ?_
   exact bigAndL_forall.2
 
 @[rocq_alias big_andL_pure]

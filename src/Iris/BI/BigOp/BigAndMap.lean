@@ -209,13 +209,13 @@ theorem bigAndM_persistently {Φ : K → V → PROP} {m : M V} :
 theorem bigAndM_pure_intro {φ : K → V → Prop} {m : M V} :
     ([∧map] k ↦ x ∈ m, ⌜φ k x⌝ : PROP) ⊢ ⌜PartialMap.all φ m⌝ :=
   bigAndM_forall.1.trans <|
-  (forall_mono fun _ => (forall_mono fun _ => pure_imp.1).trans pure_forall.1).trans pure_forall.1
+  (forall_mono fun _ => (forall_mono fun _ => pure_imp.2).trans pure_forall.2).trans pure_forall.2
 
 @[rocq_alias big_andM_pure_2]
 theorem bigAndM_pure_elim {φ : K → V → Prop} {m : M V} :
     (⌜PartialMap.all φ m⌝ : PROP) ⊢ [∧map] k ↦ x ∈ m, ⌜φ k x⌝ :=
-  pure_forall_2.trans <|
-  (forall_mono fun _ => pure_forall_2.trans <| forall_mono fun _ => pure_imp_2).trans bigAndM_forall.2
+  pure_forall.1.trans <|
+  (forall_mono fun _ => pure_forall.1.trans <| forall_mono fun _ => pure_imp.1).trans bigAndM_forall.2
 
 @[rocq_alias big_andM_pure]
 theorem bigAndM_pure {φ : K → V → Prop} {m : M V} :

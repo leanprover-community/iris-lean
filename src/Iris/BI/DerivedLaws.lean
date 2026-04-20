@@ -11,6 +11,7 @@ public import Iris.BI.BI
 public import Iris.Std.Classes
 public import Iris.Std.Rewrite
 public import Iris.Std.TC
+import Iris.Std.RocqIgnore
 
 @[expose] public section
 
@@ -466,20 +467,22 @@ theorem pure_or [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∨ (⌜φ2⌝ : PROP) �
   ⟨or_elim (pure_mono Or.inl) (pure_mono Or.inr),
    pure_elim' (·.elim (or_intro_l' ∘ pure_intro) (or_intro_r' ∘ pure_intro))⟩
 
-theorem pure_imp_2 [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊢ (⌜φ1⌝ → ⌜φ2⌝ : PROP) :=
-  imp_intro <| pure_and.1.trans <| pure_mono (And.elim id)
+#rocq_ignore bi.pure_impl_1 "Proven as pure_imp.1"
+#rocq_ignore bi.pure_impl_2 "Proven as pure_imp.2"
 
-theorem pure_imp [BI PROP] {φ1 φ2 : Prop} : (⌜φ1⌝ → ⌜φ2⌝ : PROP) ⊣⊢ ⌜φ1 → φ2⌝ := by
-  refine ⟨?_, pure_imp_2⟩
+@[rocq_alias bi.pure_impl]
+theorem pure_imp [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊣⊢@{PROP} (⌜φ1⌝ → ⌜φ2⌝)   := by
+  refine ⟨imp_intro <| pure_and.1.trans <| pure_mono (And.elim id), ?_⟩
   by_cases h : φ1
   · exact (mp .rfl (pure_intro h)).trans (pure_mono fun h _ => h)
   · exact pure_intro h.elim
 
-theorem pure_forall_2 [BI PROP] {φ : α → Prop} : ⌜∀ x, φ x⌝ ⊢ ∀ x, (⌜φ x⌝ : PROP) :=
-  forall_intro fun _ => pure_mono (· _)
+#rocq_ignore bi.pure_forall_1 "Proven as pure_forall.1"
+#rocq_ignore bi.pure_forall_2 "Proven as pure_forall.2"
 
-theorem pure_forall [BI PROP] {φ : α → Prop} : (∀ x, (⌜φ x⌝ : PROP)) ⊣⊢ ⌜∀ x, φ x⌝ := by
-  refine ⟨?_, pure_forall_2⟩
+@[rocq_alias bi.pure_forall]
+theorem pure_forall [BI PROP] {φ : α → Prop} :  ⌜∀ x, φ x⌝ ⊣⊢@{PROP} (∀ x, ⌜φ x⌝) := by
+  refine ⟨forall_intro fun _ => pure_mono (· _), ?_⟩
   by_cases h : ∃ x, ¬φ x
   · let ⟨x, h⟩ := h
     exact (forall_elim x).trans (pure_mono h.elim)
@@ -754,7 +757,7 @@ theorem pure_wand_2 [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊢ (⌜φ1�
   pure_elim' fun a => wand_intro <| absorbing.trans (pure_mono a)
 
 theorem pure_wand [BI PROP] {φ1 φ2 : Prop} : (⌜φ1⌝ -∗ (⌜φ2⌝ : PROP)) ⊣⊢ ⌜φ1 → φ2⌝ := by
-  refine ⟨(imp_intro' ?_).trans pure_imp.1, pure_wand_2⟩
+  refine ⟨(imp_intro' ?_).trans pure_imp.2, pure_wand_2⟩
   exact pure_elim_l fun h => true_sep_2.trans (eq_true h ▸ wand_elim_r)
 
 /-! # Properties of the persistence modality -/

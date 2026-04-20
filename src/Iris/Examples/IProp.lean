@@ -197,7 +197,7 @@ example (e e' : Expr) (P P' : IProp GF) Φ
 /- Looping programs, by Löb induction -/
 example (e : Expr) Φ (Hloop : ∀ σ : State, step Value (e, σ) = (e, σ)) :
     ⊢ wp e Φ := by
-  iapply BILoeb.loeb_weak
+  iapply loeb_weak
   iintro HLöb
   iapply wp_unfold
   iright
