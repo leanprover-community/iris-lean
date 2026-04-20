@@ -1434,6 +1434,15 @@ instance [OFunctorContractive F1] [OFunctorContractive F2] : OFunctorContractive
   map_contractive.1 H _ :=
     Prod.map_ne (fun _ => map_contractive.1 H _) (fun _ => map_contractive.1 H _)
 
+instance [OFunctor F1] [OFunctor F2] [LeibnizPreservingOFunctor F1] [LeibnizPreservingOFunctor F2] :
+    LeibnizPreservingOFunctor (ProdOF F1 F2) where
+  preserves_leibniz := {
+    eq_of_eqv := fun {x y} hequiv => by
+      ext
+      · exact eq_of_eqv hequiv.1
+      · exact eq_of_eqv hequiv.2
+  }
+
 end ProdOF
 
 section ProdMor

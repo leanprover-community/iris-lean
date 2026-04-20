@@ -1064,6 +1064,54 @@ instance [OFE α] {P : α → Prop} : OFE { x : α // P x } where
 
 end subtype
 
+section leibniz
+namespace COFE
+
+class LeibnizPreservingOFunctor (F : OFunctorPre) [OFunctor F] where
+  preserves_leibniz [OFE α] [OFE β] [Leibniz α] [Leibniz β] : Leibniz (F α β)
+
+instance LeibnizPreservingOFunctor.out {F : OFunctorPre} [OFunctor F] [LeibnizPreservingOFunctor F]
+  [OFE α] [OFE β] [Leibniz α] [Leibniz β] : Leibniz (F α β) where
+  eq_of_eqv {x y} hequiv := by
+    haveI := LeibnizPreservingOFunctor.preserves_leibniz (F := F) (α := α) (β := β)
+    exact eq_of_eqv hequiv
+
+instance [OFunctor F] [LeibnizPreservingOFunctor F] : LeibnizPreservingOFunctor (LaterOF F) where
+  preserves_leibniz := {
+    eq_of_eqv {x y} hequiv :=
+      match x, y with
+      | ⟨x⟩, ⟨y⟩ => by
+        simp only [Later.next.injEq]
+        simp only [Equiv] at hequiv
+        exact eq_of_eqv hequiv
+  }
+
+instance  [OFE T] [Leibniz T] : LeibnizPreservingOFunctor (constOF T) where
+  preserves_leibniz := {
+    eq_of_eqv {x y} hequiv := by simp only [leibniz] at hequiv; exact hequiv
+  }
+
+instance [OFunctor F] [LeibnizPreservingOFunctor F] : LeibnizPreservingOFunctor (OptionOF F) where
+  preserves_leibniz := {
+    eq_of_eqv {x y} hequiv :=
+      match x, y with
+      | some x, some y => by
+        simp only [Option.some.injEq]
+        simp only [Equiv] at hequiv
+        exact eq_of_eqv hequiv
+      | none, none => rfl
+      | some _, none => by simp at hequiv
+      | none, some _ => by simp at hequiv
+  }
+
+instance {C} (F : C → OFunctorPre) [∀ c, OFunctor (F c)] [∀ c, LeibnizPreservingOFunctor (F c)] : LeibnizPreservingOFunctor (DiscreteFunOF F) where
+  preserves_leibniz := {
+    eq_of_eqv {x y} hequiv := by ext c; exact eq_of_eqv (hequiv c)
+  }
+
+end COFE
+end leibniz
+
 theorem OFE.cast_dist [Iα : OFE α] [Iβ : OFE β] {x y : α}
     (Ht : α = β) (HIt : Iα = Ht ▸ Iβ)  (H : x ≡{n}≡ y) :
     (Ht ▸ x) ≡{n}≡ (Ht ▸ y) := by
