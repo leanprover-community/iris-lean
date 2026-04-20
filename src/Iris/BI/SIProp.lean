@@ -208,10 +208,6 @@ theorem pure_dist_of_iff {Φ Ψ : Prop} (H : Φ ↔ Ψ) : pure Φ ≡{n}≡ pure
 instance instBIAffine : BIAffine SiProp where
   affine _ := { affine := fun _ _ => trivial }
 
-@[rocq_alias siProp_pure_forall]
-instance instBIPureForall : Iris.BI.BIPureForall SiProp where
-  pure_forall_2 _ _ h := fun a => h _ ⟨a, rfl⟩
-
 @[rocq_alias siProp_later_contractive]
 instance instBILaterContractive : BILaterContractive SiProp where
   distLater_dist h m hle := match m with | .zero => .rfl | .succ k => h k (by omega) .refl

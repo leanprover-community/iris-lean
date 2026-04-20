@@ -5,6 +5,7 @@ Authors: Lars König
 -/
 module
 
+public import Iris.Std.RocqIgnore
 public import Iris.BI.Classes
 public import Iris.BI.BI
 
@@ -13,23 +14,28 @@ public import Iris.BI.BI
 namespace Iris.BI
 
 /-- Require that a separation logic with the carrier type `PROP` is an affine separation logic. -/
+@[rocq_alias BiAffine]
 class BIAffine (PROP : Type _) [BI PROP] where
   affine (P : PROP) : Affine P
 
 attribute [instance (default + 100)] BIAffine.affine
 
+@[rocq_alias BiPositive]
 class BIPositive (PROP : Type _) [BI PROP] where
   affinely_sep_l {P Q : PROP} : <affine> (P ∗ Q) ⊢ <affine> P ∗ Q
 export BIPositive (affinely_sep_l)
 
+@[rocq_alias BiLöb]
 class BILoeb (PROP : Type _) [BI PROP] where
   loeb_weak {P : PROP} : (▷ P ⊢ P) → True ⊢ P
+export BILoeb (loeb_weak)
 
+@[rocq_alias BiLaterContractive]
 class BILaterContractive (PROP : Type _) [BI PROP] extends OFE.Contractive later (α := PROP)
 
-class BIPureForall (PROP : Type _) [BI PROP] where
-  pure_forall_2 : ∀ {α : Sort u} (φ : α → Prop), (∀ a, ⌜φ a⌝) ⊢@{PROP} ⌜∀ a, φ a⌝
+#rocq_ignore BIPureForall "BIPureForall is provable for all BIs using classical logic, see pure_forall_2"
 
+@[rocq_alias BiPersistentlyForall]
 class BIPersistentlyForall (PROP : Type _) [BI PROP] where
   persistently_sForall_2 (Ψ : PROP → Prop) : (∀ p, ⌜Ψ p⌝ → <pers> p) ⊢ <pers> (sForall Ψ)
 
