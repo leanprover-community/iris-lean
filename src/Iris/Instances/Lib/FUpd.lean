@@ -348,12 +348,12 @@ theorem step_fupdN_soundness_lc [InvGpreS GF]
   istop
   induction n with
   | zero =>
-    simp only [Nat.iter_zero]
+    simp only [Nat.repeat]
     iintro ⟨_, HP⟩
     imodintro
     iassumption
   | succ n IH =>
-    simp only [Nat.iter_succ]
+    simp only [Nat.repeat]
     iintro ⟨⟨Hcr, Hcrs⟩, >H⟩
     imod lc_fupd_elim_later (GF := GF) $$ Hcr H with >H
     -- FIXME: direct iapply doesn't work
@@ -386,11 +386,11 @@ theorem step_fupdN_soundness_no_lc' [InvGpreS GF]
   iintro Hcr
   cases n with
   | zero =>
-    simp only [Nat.iter_zero] at H ⊢
+    simp only [Nat.repeat] at H ⊢
     iapply fupd_mask_intro_discard empty_subset
     iapply H $$ Hcr
   | succ n =>
-    simp only [Nat.iter_succ] at H ⊢
+    simp only [Nat.repeat] at H ⊢
     imod H $$ Hcr with H
     imodintro; imodintro; inext
     clear H
@@ -398,12 +398,12 @@ theorem step_fupdN_soundness_no_lc' [InvGpreS GF]
     istop
     induction n with
     | zero =>
-      simp only [Nat.iter_zero]
+      simp only [Nat.repeat]
       iintro HP
       iapply fupd_mask_intro_discard empty_subset
       iassumption
     | succ n IH =>
-      simp only [Nat.iter_succ]
+      simp only [Nat.repeat]
       iintro >H
       imodintro; imodintro; inext
       imod H
@@ -425,12 +425,12 @@ theorem step_fupdN_soundness_lc' [InvGpreS GF]
   istop
   induction n with
   | zero =>
-    simp only [Nat.iter_zero]
+    simp only [Nat.repeat]
     iintro ⟨_, HP⟩
     imodintro
     iassumption
   | succ n IH =>
-    simp only [Nat.iter_succ]
+    simp only [Nat.repeat]
     iintro ⟨⟨Hcr, Hcrs⟩, >H⟩
     imod lc_fupd_elim_later (GF := GF) $$ Hcr H with >H
     -- FIXME: direct iapply doesn't work

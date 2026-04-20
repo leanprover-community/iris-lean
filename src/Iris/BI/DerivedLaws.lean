@@ -1631,14 +1631,14 @@ theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : 
     exact (equiv_iff.mpr <| h' ·)
 
 theorem iter_modal_intro [BI PROP] (M : PROP → PROP) (n : Nat) {P : PROP} (H : ∀ {Q}, Q ⊢ M Q) :
-    P ⊢ n.iter (fun x => M x) P := by
+    P ⊢ n.repeat (fun x => M x) P := by
   induction n with
-  | zero => simp
-  | succ _ IH => simpa only [Nat.iter_succ] using IH.trans H
+  | zero => simp [Nat.repeat]
+  | succ _ IH => simpa only [Nat.repeat] using IH.trans H
 
 theorem iter_modal_mono [BI PROP] (M : PROP → PROP) (n : Nat) {P Q : PROP}
     (H : ∀ {P Q}, (P -∗ Q) ⊢ M P -∗ M Q) :
-    (P -∗ Q) ⊢ Nat.iter n (fun x => M x) P -∗ Nat.iter n (fun x => M x) Q := by
+    (P -∗ Q) ⊢ n.repeat (fun x => M x) P -∗ n.repeat (fun x => M x) Q := by
   induction n with
-  | zero => simp
-  | succ _ IH => simpa only [Nat.iter_succ] using IH.trans H
+  | zero => simp [Nat.repeat]
+  | succ _ IH => simpa only [Nat.repeat] using IH.trans H

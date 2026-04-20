@@ -328,7 +328,7 @@ variable {GF : BundledGFunctors} [LcGS GF]
 @[rocq_alias le_upd_elim]
 theorem le_upd_elim n (P : IProp GF) :
   ⊢@{IProp GF} lc_supply n -∗ (|==£> P)
-  -∗ Nat.iter n (fun P => iprop(|==> ▷ P)) iprop(|==> ◇ (∃ m, ⌜m ≤ n⌝ ∗ lc_supply m ∗ P)) := by
+  -∗ n.repeat (fun P => iprop(|==> ▷ P)) iprop(|==> ◇ (∃ m, ⌜m ≤ n⌝ ∗ lc_supply m ∗ P)) := by
   apply WellFounded.induction Nat.lt_wfRel.wf n
   intro n IH
   iintro Ha Hupd
@@ -336,7 +336,7 @@ theorem le_upd_elim n (P : IProp GF) :
   ihave Hupd := Hupd $$ %n Ha
   cases n with
   | zero =>
-    simp only [Nat.le_zero_eq, Nat.iter_zero]
+    simp only [Nat.le_zero_eq, Nat.repeat]
     imod Hupd with (⟨Ha, HP⟩|⟨%m, %Hlt, _⟩)
     · imodintro; imodintro
       iexists 0
@@ -345,7 +345,7 @@ theorem le_upd_elim n (P : IProp GF) :
       isplitl [Ha] <;> iassumption
     · exfalso; exact Nat.not_lt_zero m Hlt
   | succ n =>
-    simp only [Nat.iter_succ]
+    simp only [Nat.repeat]
     imod Hupd with (⟨Hc, HP⟩|Hupd)
     · imodintro; inext
       iapply iter_modal_intro $$ [Hc HP]
@@ -360,7 +360,7 @@ theorem le_upd_elim n (P : IProp GF) :
       icases Hrest with ⟨%Hstep, Hrest2⟩
       icases Hrest2 with ⟨Hown, LaterHupd⟩
       obtain ⟨k, Heq⟩ := Nat.exists_eq_add_of_lt Hstep
-      rw [show n = m + k by exact Nat.add_right_cancel Heq, Nat.iter_add]
+      rw [show n = m + k by exact Nat.add_right_cancel Heq, Nat.repeat_add]
       inext
       ihave IH := (IH m (by simp [WellFoundedRelation.rel]; omega)) $$ Hown LaterHupd
       iapply iter_modal_mono $$ [] IH
@@ -379,15 +379,15 @@ theorem le_upd_elim n (P : IProp GF) :
 @[rocq_alias le_upd_elim_complete]
 theorem le_upd_elim_complete n (P : IProp GF) :
   ⊢ lc_supply n -∗ (|==£> P)
-  -∗ Nat.iter (.succ n) (fun Q => iprop(|==> ▷ Q)) P := by
+  -∗ n.succ.repeat (fun Q => iprop(|==> ▷ Q)) P := by
   iintro Hlc Hupd
   ihave Hit := le_upd_elim (GF := GF) n P $$ Hlc Hupd
-  rw [show Nat.succ n = n + 1 by omega, Nat.iter_add]
+  rw [show Nat.succ n = n + 1 by omega, Nat.repeat_add]
   iapply iter_modal_mono $$ [] Hit
   · iintro %P %Q Hent HP
     imod HP; imodintro; inext
     iapply Hent $$ HP
-  simp only [Nat.iter_succ, Nat.iter_zero]
+  simp only [Nat.repeat]
   iintro Hupd
   imod Hupd; imodintro
   imod Hupd; inext
@@ -471,7 +471,7 @@ theorem lc_soundness [LcGpreS GF] m (P : IProp GF) [Plain P] :
   imod lc_alloc (GF := GF) m with ⟨%γ, H1, H2⟩
   ihave G := H $$ H2
   ihave G := le_upd_elim_complete (GF := GF) $$ H1 G
-  simp only [Nat.succ_eq_add_one, Nat.iter_succ]
+  simp only [Nat.succ_eq_add_one, Nat.repeat]
   imod G; imodintro
   -- TODO: inext is too eager to remove all laters from the goal
   iapply later_laterN; inext
@@ -479,10 +479,10 @@ theorem lc_soundness [LcGpreS GF] m (P : IProp GF) [Plain P] :
   istop
   induction m with
   | zero =>
-    simp only [Nat.zero_eq, Nat.iter_zero]
+    simp only [Nat.zero_eq, Nat.repeat]
     exact .rfl
   | succ m IH =>
-    simp only [Nat.succ_eq_add_one, Nat.iter_succ]
+    simp only [Nat.succ_eq_add_one, Nat.repeat]
     iintro H
     iapply later_laterN
     iapply bupd_elim

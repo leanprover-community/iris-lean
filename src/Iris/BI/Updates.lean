@@ -87,10 +87,10 @@ syntax "|={ " term " }▷=>^[ " term " ]" term : term
 syntax:25 term:26 "={ " term " }▷=∗^[ " term " ]" term:25 : term
 
 macro_rules
-  | `(iprop(|={ $E1 }[ $E2 ]▷=>^[ $n ] $P))  => ``(Nat.iter $n (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) iprop($P))
-  | `(iprop($P ={ $E1 }[ $E2 ]▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.iter $n (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) iprop($Q)))
-  | `(iprop(|={ $E1 }▷=>^[ $n ] $P))  => ``(Nat.iter $n (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) iprop($P))
-  | `(iprop($P ={ $E1 }▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.iter $n (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) iprop($Q)))
+  | `(iprop(|={ $E1 }[ $E2 ]▷=>^[ $n ] $P))  => ``(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) $n iprop($P))
+  | `(iprop($P ={ $E1 }[ $E2 ]▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q) $n) iprop($Q)))
+  | `(iprop(|={ $E1 }▷=>^[ $n ] $P))  => ``(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($P))
+  | `(iprop($P ={ $E1 }▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($Q)))
 
 -- Delab rules
 
@@ -343,7 +343,7 @@ theorem step_fupdN_plain {E1 E2 : CoPset} {n : Nat} {P : PROP} [Plain P] :
   induction n with
   | zero => exact except0_intro.trans fupd_intro
   | succ n ih =>
-    simp only [Nat.iter_succ]
+    simp only [Nat.repeat]
     refine (mono <| later_mono <| mono ih).trans ?_
     refine step_fupd_fupd.2.trans ?_
     refine step_fupd_plain.trans ?_
