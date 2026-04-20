@@ -7,11 +7,35 @@ public import Iris.Std.Relation
 public meta import Lean.PrettyPrinter.Delaborator
 public import Batteries.Data.List.Basic
 
+-- TODO: Not convinced if `of_val` should be `ToVal.coe` using `Coe`
+--       directly, or if some other typeclass should be preferred.
+-- TODO: Term levels for the different notations were chosen arbitrarily.
+--       Make sure they are adequate.
+-- TODO: Rename all `Context.fill` lemmas to something more consistent.
+--       In particular, for some other constructions they are referred to
+--       to as `_ctx`.
+-- TODO: Rethink steping notations (probabl drop `ₜ` for `primStep`)
+--       (e,σ)    -<obs>->ₜ        (e',σ',eₜ)  (primStep)
+--       (t,σ)    -<obs>->ₜₚ       (t',σ')     (Step)
+--       (t,σ)    -<obs>->ₜₚ^[n]   (t',σ')     (NSteps)
+--       (t,σ)    -·->ₜₚ           (t',σ')     (erasedStep)
+--         e      -ᵖ->               e'        (pureStep)
+--         e      -ᵖ->^[n]           e'        (iterate pureStep)
+--         e      -ᵖ->*              e'        (ReflTransGen pureStep)
+--         t      -ᵖ->ₜₚ*            t'        (Forall₂ (· -ᵖ->* ·))
+-- TODO: Add macro tests / consider making them all use `notation` over
+--       `macro`
+-- TODO: Ensure all the relevant `rocq_alias` are added
+-- TODO: Ask «Why chose List here? It seems any monoid would do.» for the
+--       observations being a `List Obs`.
+-- TODO: Consider renaming `ToVal` typeclass to something better, since
+--       it's not just the `toVal` operation it carries.
+
 @[expose] public section
 
-variable {Expr : Type e}{Val : Type v}{State : Type σ}{Obs : Type o}
-
 open FromMathlib
+
+variable {Expr : Type e}{Val : Type v}{State : Type σ}{Obs : Type o}
 
 -- DECISION: We assume that one Expr type maps to one Val type
 -- If this where to not be true, once could reuse the same API by simply
@@ -22,20 +46,24 @@ open FromMathlib
 
 class ToVal (Expr : Type e) (Val : outParam <| Type v ) where
   toVal : Expr → Option Val
-  [coe : Coe Val Expr] -- TODO: Not convinced if this should be `coe` directly
+  [coe : Coe Val Expr]
   /-- If `toVal` is defined for an expression, `coe` is its inverse -/
   coe_of_toVal_eq (e : Expr)(v : Val) : toVal e = some v → (v : Expr) = e
   /-- `toVal` is defined `coe`, and works as its inverse -/
   toVal_coe (v : Val) : toVal (v : Expr) = some v
 export ToVal (toVal)
 
+attribute [rocq_alias language.to_val] ToVal.toVal
 attribute [rocq_alias mixin_of_to_val] ToVal.coe_of_toVal_eq
 attribute [rocq_alias mixin_to_of_val, simp, grind =] ToVal.toVal_coe
 
+#rocq_ignore language.of_val "This function was implemented as a coercion from Expr to Val, so there is no need for an explicit `of_val` function."
+
 namespace ToVal
-instance [ToVal Expr Val] : Coe Val Expr := ToVal.coe
 
 variable [ToVal Expr Val]
+
+instance : Coe Val Expr := ToVal.coe
 
 @[grind! .]
 theorem toVal_eq_iff_coe (e : Expr)(v : Val): (v : Expr) = e ↔ toVal e = some v :=
@@ -44,14 +72,16 @@ theorem toVal_eq_iff_coe (e : Expr)(v : Val): (v : Expr) = e ↔ toVal e = some 
 end ToVal
 
 -- DECISION: Same decision as for `Val` ended up being made for
--- `Obs`, and probably `State` should follow next
+-- `Obs` and `State`
 
-class PrimStep(Expr : Type e)(State : outParam <| Type σ)(Obs : outParam <| Type o) where
+class PrimStep
+    (Expr : Type e)
+    (State : outParam (Type σ))
+    (Obs : outParam (Type o)) where
   /-- The primitive reduction relation of the language -/
   primStep   : Expr × State → Obs → Expr × State × List Expr → Prop
 
 namespace PrimStep
--- TODO: Term numbers chosen arbitrarily. Make sure they are adequate.
 @[inherit_doc PrimStep.primStep]
 scoped macro conf:term:40 " -<" noWs obs:term:max noWs ">->ₜ " conf':term:41 : term =>
  `(PrimStep.primStep $conf $obs $conf')
@@ -72,7 +102,7 @@ variable [PrimStep Expr State Obs]
 @[rocq_alias reducible]
 def reducible : Expr × State → Prop
 | (e, σ) => ∃ obs e' σ' eₜ,
-   (e, σ) -<obs>->ₜ (e', σ', eₜ)
+    (e, σ) -<obs>->ₜ (e', σ', eₜ)
 
 @[rocq_alias reducible_no_obs]
 def pureReducible [PrimStep Expr State (List Obs)] : Expr × State → Prop
@@ -90,17 +120,16 @@ def notStuck [ToVal Expr Val]: Expr × State → Prop
 
 end PureConfigurationTypes
 
--- DECISION: We assume that one (Expr, State) pair refers to exactly one
--- type of observations.
+-- DECISION: We assume that one `Expr` pair refers to exactly one
+-- type of observations `Obs` and states `State`.
 
 class Language
     (Expr  : Type e)
-    (State : outParam <| Type σ)
+    (State : outParam (Type σ))
     (Obs   : outParam (Type o))
     (Val   : outParam (Type v))
   extends
     PrimStep Expr State (List Obs),
-     -- ↑ Why chose List here? It seems any monoid would do.
     ToVal Expr Val where
   /-- Values in a language should not reduce -/
   val_stuck : ∀ {e} {σ : State} {obs e' σ' eₜ},
@@ -108,26 +137,24 @@ class Language
 
 attribute [rocq_alias mixin_val_stuck] Language.val_stuck
 
+namespace Language
+
+variable [Λ : Language Expr State Obs Val]
+
 inductive Atomicity where
 | WeaklyAtomic
 | StronglyAtomic
 
-class Atomic (a : Atomicity) (e : Expr)
-  [Language Expr State Obs Val] :
-    Prop where
+class Atomic (a : Atomicity) (e : Expr) : Prop where
   atomic : ∀ (σ : State) obs e' σ' eₜ,
     (e, σ) -<obs>->ₜ (e', σ', eₜ) →
     match a with
     | .WeaklyAtomic => ¬ reducible (e', σ')
     | .StronglyAtomic => (toVal e').isSome
 
-
-namespace Language
-variable [Λ : Language Expr State Obs Val]
 variable {e e': Expr}{σ σ': State}{v v' : Val}
 
--- TODO: Rename all `fill` lemmas to something more consistent
-/-- `K` models an evaluation context for the language -/
+/-- `Context K` says `K` models an evaluation context for the language -/
 class Context(K: Expr → Expr) where
   fill_toVal_eq_none : ∀ {e : Expr},
     toVal e = none → toVal (K e) = none
@@ -163,7 +190,7 @@ inductive Step : List Expr × State → List Obs → List Expr × State → Prop
     -- Since most lemmas about an element appearing in the middle of a list
     -- are in the shape `t₁ ++ e :: t₂`, this form is preferred.
 
-def step.of_primStep : ∀ {e σ}{obs : List Obs}{e'} {σ' : State} {eₜ},
+def Step.of_primStep : ∀ {e σ}{obs : List Obs}{e'} {σ' : State} {eₜ},
     (e, σ) -<obs>->ₜ (e', σ', eₜ) →
     ∀ {t₁ t₂: List Expr},
     Step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ') :=
@@ -192,14 +219,14 @@ inductive NSteps : Nat → List Expr × State → List Obs → List Expr × Stat
       NSteps (n+1) ρ₁ (obs ++ obs') ρ₃
 
 @[inherit_doc NSteps]
-scoped macro conf:term:40 " -<" noWs obs:term:max noWs ">->ₜₚ* " conf':term:41 : term =>
- `(Language.NSteps $conf ($obs) $conf')
+scoped macro conf:term:40 " -<" noWs obs:term:max noWs ">->ₜₚ^[" noWs n:term:max noWs "] " conf':term:41 : term =>
+ `(Language.NSteps $n $conf ($obs) $conf')
 
 open Lean PrettyPrinter Delaborator SubExpr in
 @[app_unexpander NSteps]
 meta def unexpandLanguageNsteps : Unexpander
-| `(Language.NSteps $conf $obs $conf') =>
-  `($conf -<$obs>->ₜₚ* $conf')
+| `(Language.NSteps $n $conf $obs $conf') =>
+  `($conf -<$obs>->ₜₚ^[$n] $conf')
 | _ => throw ()
 
 /-- A sequence of `Language.step`s with no observation information -/
@@ -212,8 +239,8 @@ scoped macro conf:term:40 " -·->ₜₚ " conf':term:41 : term =>
 open Lean PrettyPrinter Delaborator SubExpr in
 @[app_unexpander Language.erasedStep]
 meta def unexpandLanguageErasedStep : Unexpander
-| `(Language.erasedStep $conf $conf2) =>
-  `($conf -·->ₜₚ $conf2)
+| `(Language.erasedStep $conf $conf') =>
+  `($conf -·->ₜₚ $conf')
 | _ => throw ()
 
 @[rocq_alias not_reducible, grind =]
@@ -365,7 +392,7 @@ theorem perm_of_step (t₁ t₁' t₂ : List Expr) :
         apply (List.perm_cons e).mp
         exact (perm_middle.symm.trans t1perm).trans perm_middle
       _ ~ ps' ++ e' :: ss' := perm_middle.symm
-  · apply Language.step.of_primStep red
+  · apply Language.Step.of_primStep red
 
 @[grind =]
 private theorem _root_.List.getElem?_some_iff_append
@@ -429,8 +456,8 @@ scoped macro conf:term:40 " -ᵖ-> " conf':term:41 : term =>
 open Lean PrettyPrinter Delaborator SubExpr in
 @[app_unexpander Language.purePrimStep]
 meta def unexpandLanguagePurePrimStep : Unexpander
-| `(purePrimStep $conf $conf2) =>
-  `($conf -ᵖ-> $conf2)
+| `(purePrimStep $conf $conf') =>
+  `($conf -ᵖ-> $conf')
 | _ => throw ()
 
 /-- `e₁ -ᵖ->^[n] e₂` represents a sequence of `n` pure steps taken
@@ -611,9 +638,9 @@ theorem erasedStep_pureSteps (t₁ t₂ t₃ : List Expr) (σ₁ σ₂ : State) 
       getElem?_pos, Std.le_refl, List.getElem_append_right, Nat.sub_self, List.getElem_cons_zero,
       List.append_assoc, List.cons_append, List.set_append_right, List.set_cons_zero, and_self,
       length_ps, pstep]
-  · obtain ⟨pRed, uniqStep⟩ := firstPureStep
+  · left
+    obtain ⟨pRed, uniqStep⟩ := firstPureStep
     obtain ⟨rlf, rfl, rfl, rfl⟩ := uniqStep pstep
-    left
     have : e -ᵖ-> e' := by grind only [purePrimStep]
     simp only [pureSteps, List.append_nil, true_and]
     apply List.Forall₂.append ps_ps₃
