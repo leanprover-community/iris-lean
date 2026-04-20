@@ -29,8 +29,7 @@ class InvGpreS (GF : BundledGFunctors) where
 attribute [reducible, instance] InvGpreS.toWsatGpreS
 attribute [reducible, instance] InvGpreS.toLcGpreS
 
-class InvGS_gen (hlc : outParam Bool) (GF : BundledGFunctors)
-  extends InvGpreS GF where
+class InvGS_gen (hlc : outParam Bool) (GF : BundledGFunctors) extends InvGpreS GF where
   toWsatGS : WsatGS GF
   toLcGS : LcGS GF
 
@@ -48,8 +47,7 @@ variable {GF : BundledGFunctors} {hlc : Bool} [InvGS_gen hlc GF]
 def uPred_fupd (E1 E2 : CoPset) (P : IProp GF) : IProp GF :=
   iprop(wsat ∗ ownE E1 -∗ le_upd_if hlc iprop(◇ (wsat ∗ ownE E2 ∗ P)))
 
-instance {E1 E2 : CoPset}
-  : NonExpansive (uPred_fupd (GF := GF) (hlc := hlc) E1 E2) where
+instance {E1 E2 : CoPset} : NonExpansive (uPred_fupd (GF := GF) (hlc := hlc) E1 E2) where
   ne {_ _ _} h := by
     simp only [uPred_fupd]
     refine wand_ne.ne .rfl ?_
@@ -68,8 +66,7 @@ section Instances
 open Std.LawfulSet
 
 @[rocq_alias uPred_bi_fupd]
-instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF]
-  : BIFUpdate (IProp GF) where
+instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (IProp GF) where
   fupd := uPred_fupd
   subset Hsub := by
     simp only [uPred_fupd]
@@ -135,8 +132,7 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF]
     iassumption
 
 @[rocq_alias uPred_bi_bupd_fupd]
-instance {GF : BundledGFunctors} [InvGS_gen hlc GF]
-  : BIUpdateFUpdate (IProp GF) where
+instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIUpdateFUpdate (IProp GF) where
   fupd_of_bupd {_ _} := by
     iintro H
     simp only [fupd, uPred_fupd]
@@ -147,8 +143,8 @@ instance {GF : BundledGFunctors} [InvGS_gen hlc GF]
     iassumption
 
 @[rocq_alias uPred_bi_fupd_sbi_no_lc]
-instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen false GF]
-  : BIFUpdatePlainly (IProp GF) where
+instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen false GF] :
+    BIFUpdatePlainly (IProp GF) where
   fupd_plainly_mask_empty E P := by
     simp only [fupd, uPred_fupd, le_upd_if, Bool.false_eq_true, ↓reduceIte]
     iintro H G
@@ -202,8 +198,7 @@ section LaterCreditLemmas
 variable {GF : BundledGFunctors} [InvGS GF]
 
 @[rocq_alias lc_fupd_elim_later]
-theorem lc_fupd_elim_later {E : CoPset} {P : IProp GF} :
-  ⊢ £ 1 -∗ (▷ P) -∗ |={E}=> P := by
+theorem lc_fupd_elim_later {E : CoPset} {P : IProp GF} : ⊢ £ 1 -∗ (▷ P) -∗ |={E}=> P := by
   iintro Hcr HP
   simp only [fupd, uPred_fupd]
   iintro ⟨Hwsat, HE⟩
@@ -215,13 +210,13 @@ theorem lc_fupd_elim_later {E : CoPset} {P : IProp GF} :
   iassumption
 
 @[rocq_alias lc_fupd_add_later]
-theorem lc_fupd_add_later {E : CoPset} {P : IProp GF} :
-  ⊢ £ 1 -∗ (|={E}=> ▷ P) -∗ |={E}=> P := by
+theorem lc_fupd_add_later {E : CoPset} {P : IProp GF} : ⊢ £ 1 -∗ (|={E}=> ▷ P) -∗ |={E}=> P := by
   iintro Hcr HP
   simp only [fupd, uPred_fupd]
   iintro ⟨Hwsat, HE⟩
   simp only [le_upd_if, ↓reduceIte]
-  ihave >(>⟨H1, H2, H3⟩) := HP $$ [Hwsat HE]
+  -- FIXME: Is it possible to make >> work instead of adding the spaces between them?
+  ihave > > ⟨H1, H2, H3⟩ := HP $$ [Hwsat HE]
   · isplitl [Hwsat] <;> iassumption
   imod le_upd_later (GF := GF) $$ Hcr H3 with H3
   imodintro; imodintro
@@ -231,7 +226,7 @@ theorem lc_fupd_add_later {E : CoPset} {P : IProp GF} :
 
 @[rocq_alias lc_fupd_add_laterN]
 theorem lc_fupd_add_laterN (n : Nat) {E : CoPset} {P : IProp GF} :
-  ⊢ £ n -∗ (|={E}=> ▷^[n] P) -∗ |={E}=> P := by
+    ⊢ £ n -∗ (|={E}=> ▷^[n] P) -∗ |={E}=> P := by
   induction n generalizing P with
   | zero =>
     iintro _ >H
@@ -253,17 +248,13 @@ open Std.LawfulSet
 variable {GF : BundledGFunctors}
 
 @[rocq_alias fupd_soundness_lc]
-theorem fupd_soundness_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P] :
- (∀ (_ : InvGS GF), ⊢ £ m -∗ |={E1,E2}=> P) → ⊢ P := by
-  intro H
-  iapply lc_soundness (.succ m) (GF := GF)
+theorem fupd_soundness_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P]
+     (H : ∀ (_ : InvGS GF), ⊢ £ m -∗ |={E1,E2}=> P) : ⊢ P := by
+  iapply lc_soundness m.succ
   iintro %Hc ⟨Hcr, Hcrs⟩
   simp only [fupd, uPred_fupd, le_upd_if, ↓reduceIte] at H
   imod wsat_alloc (GF := GF) with ⟨%W, Hwsat, HE⟩
-  let LC : InvGS GF := {
-    toWsatGS := W
-    toLcGS := Hc
-  }
+  let LC : InvGS GF := { toWsatGS := W, toLcGS := Hc }
   specialize H LC
   rw [diff_subset_decomp (s₂ := ⊤) ((fun _ _ => CoPset.mem_full) : E1 ⊆ ⊤)]
   ihave ⟨HE1, HE2⟩ := (ownE_op (GF := GF) (disjoint_symm disjoint_diff_right)).mp $$ HE
@@ -273,17 +264,13 @@ theorem fupd_soundness_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P
   iapply except0_into_later $$ H
 
 @[rocq_alias fupd_soundness_no_lc]
-theorem fupd_soundness_no_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P] :
-  (∀ (_ : InvGS_gen false GF), ⊢ £ m -∗ |={E1,E2}=> P) → ⊢ P := by
-  intro H
-  iapply lc_soundness (.succ m) (GF := GF)
+theorem fupd_soundness_no_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P]
+    (H : ∀ (_ : InvGS_gen false GF), ⊢ £ m -∗ |={E1,E2}=> P) : ⊢ P := by
+  iapply lc_soundness m.succ (GF := GF)
   iintro %Hc ⟨Hcr, Hcrs⟩
   simp only [fupd, uPred_fupd, le_upd_if, Bool.false_eq_true, ↓reduceIte] at H
   imod wsat_alloc (GF := GF) with ⟨%W, Hwsat, HE⟩
-  let LC : InvGS_gen false GF := {
-    toWsatGS := W
-    toLcGS := Hc
-  }
+  let LC : InvGS_gen false GF := { toWsatGS := W, toLcGS := Hc }
   specialize H LC
   rw [diff_subset_decomp (s₂ := ⊤) ((fun _ _ => CoPset.mem_full) : E1 ⊆ ⊤)]
   ihave ⟨HE1, HE2⟩ := (ownE_op (GF := GF) (disjoint_symm disjoint_diff_right)).mp $$ HE
@@ -293,8 +280,7 @@ theorem fupd_soundness_no_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plai
   iapply except0_into_later $$ H
 
 @[rocq_alias fupd_soundness_gen]
-theorem fupd_soundness_gen (hlc : Bool) [InvGpreS GF]
-  (m : Nat) {E1 E2 : CoPset} {P : IProp GF} [Plain P] :
+theorem fupd_soundness_gen (hlc : Bool) [InvGpreS GF] (m : Nat) {E1 E2 : CoPset} {P : IProp GF} [Plain P] :
   (∀ (_ : InvGS_gen hlc GF), ⊢ £ m -∗ |={E1,E2}=> P) → ⊢ P := by
   cases hlc
   · apply fupd_soundness_no_lc
@@ -309,13 +295,10 @@ open Iris Std LawfulSet BIFUpdatePlainly
 variable {GF : BundledGFunctors}
 
 @[rocq_alias step_fupdN_soundness_no_lc]
-theorem step_fupdN_soundness_no_lc [InvGpreS GF]
-  (n m : Nat) {P : IProp GF} [Plain P] :
-  (∀ (_ : InvGS_gen false GF),
-    ⊢ £ m -∗ |={⊤,∅}=> |={∅}▷=>^[n] P) → ⊢ P := by
-  intro H
-  apply laterN_soundness (n := .succ n)
-  have : Persistent iprop(P) := plain_persistent
+theorem step_fupdN_soundness_no_lc [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P]
+    (H : ∀ (_ : InvGS_gen false GF), ⊢ £ m -∗ |={⊤,∅}=> |={∅}▷=>^[n] P) : ⊢ P := by
+  apply laterN_soundness (n := n.succ)
+  letI _ : Persistent iprop(P) := plain_persistent
   apply fupd_soundness_no_lc (E1 := ⊤) (E2 := ⊤) (m := m)
   intro LC
   specialize H LC
@@ -333,11 +316,8 @@ theorem step_fupdN_soundness_no_lc [InvGpreS GF]
   imodintro; iassumption
 
 @[rocq_alias step_fupdN_soundness_lc]
-theorem step_fupdN_soundness_lc [InvGpreS GF]
-  (n m : Nat) {P : IProp GF} [Plain P] :
-  (∀ (_ : InvGS GF),
-    ⊢ £ m -∗ |={⊤,∅}=> |={∅}▷=>^[n] P) → ⊢ P := by
-  intro H
+theorem step_fupdN_soundness_lc [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P]
+    (H : ∀ (_ : InvGS GF), ⊢ £ m -∗ |={⊤,∅}=> |={∅}▷=>^[n] P) : ⊢ P := by
   apply fupd_soundness_lc (E1 := ⊤) (E2 := ∅) (m := m + n)
   intro LC
   specialize H LC
@@ -366,20 +346,15 @@ theorem step_fupdN_soundness_lc [InvGpreS GF]
     iassumption
 
 @[rocq_alias step_fupdN_soundness_gen]
-theorem step_fupdN_soundness_gen [InvGpreS GF]
-  (n m : Nat) {P : IProp GF} [Plain P] hlc :
-  (∀ (_ : InvGS_gen hlc GF),
-    ⊢ £ m -∗ |={⊤,∅}=> |={∅}▷=>^[n] P) → ⊢ P := by
+theorem step_fupdN_soundness_gen [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] hlc :
+    (∀ (_ : InvGS_gen hlc GF), ⊢ £ m -∗ |={⊤,∅}=> |={∅}▷=>^[n] P) → ⊢ P := by
   cases hlc
   · apply step_fupdN_soundness_no_lc
   · apply step_fupdN_soundness_lc
 
 @[rocq_alias step_fupdN_soundness_no_lc']
-theorem step_fupdN_soundness_no_lc' [InvGpreS GF]
-  (n m : Nat) {P : IProp GF} [Plain P] :
-  (∀ (_ : InvGS_gen false GF),
-    ⊢ £ m -∗ |={⊤}[∅]▷=>^[n] P) → ⊢ P := by
-  intro H
+theorem step_fupdN_soundness_no_lc' [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P]
+    (H : ∀ (_ : InvGS_gen false GF), ⊢ £ m -∗ |={⊤}[∅]▷=>^[n] P) : ⊢ P := by
   apply step_fupdN_soundness_no_lc n m
   intro LC
   specialize H LC
@@ -410,11 +385,8 @@ theorem step_fupdN_soundness_no_lc' [InvGpreS GF]
       apply IH
 
 @[rocq_alias step_fupdN_soundness_lc']
-theorem step_fupdN_soundness_lc' [InvGpreS GF]
-  (n m : Nat) {P : IProp GF} [Plain P] :
-  (∀ (_ : InvGS GF),
-    ⊢ £ m -∗ |={⊤}[∅]▷=>^[n] P) → ⊢ P := by
-  intro H
+theorem step_fupdN_soundness_lc' [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P]
+    (H : ∀ (_ : InvGS GF), ⊢ £ m -∗ |={⊤}[∅]▷=>^[n] P) : ⊢ P := by
   apply fupd_soundness_lc (E1 := ⊤) (E2 := ⊤) (m := m + n)
   intro LC
   specialize H LC
