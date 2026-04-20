@@ -1,7 +1,5 @@
 module
 
--- TODO: Change propositions to start with an upper case letter.
-
 public import Iris.Std.RocqAlias
 public import Iris.Std.RocqIgnore
 public import Iris.Std.FromMathlib
@@ -152,12 +150,12 @@ instance : Context (Λ := Λ) (id (α := Expr)) where
 
 /-- A single atomic step in a threaded context -/
 @[grind]
-inductive step : List Expr × State → List Obs → List Expr × State → Prop
+inductive Step : List Expr × State → List Obs → List Expr × State → Prop
   where
   | atomic : ∀ e σ  obs e' σ' eₜ,
     (e, σ) -<obs>->ₜ (e', σ', eₜ) →
     ∀ (t₁ t₂: List Expr),
-    step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ')
+    Step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ')
     -- NOTE: Using `t₁ ++ e :: t₂` instead of `t₁ ++ [e] ++ t₂` because in
     -- Lean `[x] ++ xs` is not definitionallly equal to `x :: xs`. This is
     -- because `++` does not correspond to a function on lists, but a
@@ -168,44 +166,44 @@ inductive step : List Expr × State → List Obs → List Expr × State → Prop
 def step.of_primStep : ∀ {e σ}{obs : List Obs}{e'} {σ' : State} {eₜ},
     (e, σ) -<obs>->ₜ (e', σ', eₜ) →
     ∀ {t₁ t₂: List Expr},
-    step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ') :=
-  (Language.step.atomic _ _ _ _ _ _ · _ _)
+    Step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ') :=
+  (Language.Step.atomic _ _ _ _ _ _ · _ _)
 
-@[inherit_doc step]
+@[inherit_doc Step]
 scoped macro conf:term:40 " -<" noWs obs:term:max noWs ">->ₜₚ " conf':term:41 : term =>
- `(Language.step $conf $obs $conf')
+ `(Language.Step $conf $obs $conf')
 
 -- FIXME: Not displaying properly (?)
 open Lean PrettyPrinter Delaborator SubExpr in
-@[app_unexpander Language.step]
+@[app_unexpander Step]
 meta def unexpandLanguageStep : Unexpander
-| `(Language.step $conf $obs $conf') =>
+| `(Language.Step $conf $obs $conf') =>
   `($conf -<$obs>->ₜₚ $conf')
 | _ => throw ()
 
 /-- The (possibly zero) sequence of `Language.step`s -/
 @[grind]
-inductive nsteps : Nat → List Expr × State → List Obs → List Expr × State → Prop
+inductive NSteps : Nat → List Expr × State → List Obs → List Expr × State → Prop
   where
-  | refl (ρ : List Expr × State): nsteps 0 ρ [] ρ
+  | refl (ρ : List Expr × State): NSteps 0 ρ [] ρ
   | cons n (ρ₁ ρ₂ ρ₃ : List Expr × State) (obs obs' : List Obs) :
       ρ₁ -<obs>->ₜₚ ρ₂ →
-      nsteps n ρ₂ obs' ρ₃ →
-      nsteps (n+1) ρ₁ (obs ++ obs') ρ₃
+      NSteps n ρ₂ obs' ρ₃ →
+      NSteps (n+1) ρ₁ (obs ++ obs') ρ₃
 
-@[inherit_doc nsteps]
+@[inherit_doc NSteps]
 scoped macro conf:term:40 " -<" noWs obs:term:max noWs ">->ₜₚ* " conf':term:41 : term =>
- `(Language.nsteps $conf ($obs) $conf')
+ `(Language.NSteps $conf ($obs) $conf')
 
 open Lean PrettyPrinter Delaborator SubExpr in
-@[app_unexpander Language.nsteps]
+@[app_unexpander NSteps]
 meta def unexpandLanguageNsteps : Unexpander
-| `(Language.nsteps $conf $obs $conf') =>
+| `(Language.NSteps $conf $obs $conf') =>
   `($conf -<$obs>->ₜₚ* $conf')
 | _ => throw ()
 
 /-- A sequence of `Language.step`s with no observation information -/
-def erasedStep (ρ  ρ₂: List Expr × State) := ∃ obs, step ρ obs ρ₂
+def erasedStep (ρ  ρ₂: List Expr × State) := ∃ obs, Step ρ obs ρ₂
 
 @[inherit_doc erasedStep]
 scoped macro conf:term:40 " -·->ₜₚ " conf':term:41 : term =>
@@ -394,7 +392,7 @@ theorem step_update_of_getElem? {i obs efs} {t : List Expr} (σ₁ σ₂ : State
     (t, σ₁) -<obs>->ₜₚ (t.set i e' ++ efs, σ₂) := by
   grind only [= getElem?_neg, = getElem?_pos, = List.getElem?_some_iff_append,
     = List.getElem?_append, = List.getElem?_cons, = List.set_append, = List.set_cons_zero,
-    step.atomic]
+    Step.atomic]
 
 open List in
 @[rocq_alias erased_step_Permutation]
