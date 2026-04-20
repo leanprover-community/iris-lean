@@ -72,14 +72,14 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (I
     simp only [uPred_fupd]
     iintro ⟨Hwsat, HE⟩
     rw [diff_subset_decomp Hsub]
-    ihave ⟨HE1, HE2⟩ := (ownE_op (GF := GF) (disjoint_symm disjoint_diff_right)).mp $$ HE
+    ihave ⟨HE1, HE2⟩ := (ownE_op (disjoint_symm disjoint_diff_right)).mp $$ HE
     imodintro; imodintro
     isplitl [Hwsat]; iassumption
     isplitl [HE2]; iassumption
     iintro ⟨Hwsat, HE⟩
     imodintro; imodintro
     isplitl [Hwsat]; iassumption
-    ihave HE := (ownE_op (GF := GF) (disjoint_symm disjoint_diff_right)).mpr $$ [HE1 HE]
+    ihave HE := (ownE_op (disjoint_symm disjoint_diff_right)).mpr $$ [HE1 HE]
     · isplitl [HE1] <;> iassumption
     isplitl [HE]; iassumption
     simp
@@ -106,11 +106,11 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (I
   mask_frame_r' {_ _ _ _} Hdisj := by
     simp only [uPred_fupd]
     iintro H ⟨Hwsat, HE⟩
-    ihave ⟨HE1, HE2⟩ := ownE_op (GF := GF) Hdisj $$ HE
+    ihave ⟨HE1, HE2⟩ := ownE_op Hdisj $$ HE
     ihave >H := H $$ [Hwsat HE1]; isplitl [Hwsat] <;> iassumption
     imodintro
     imod H with ⟨H1, H2, H3⟩; imodintro
-    ihave ⟨%Hdisj, HE⟩ := (ownE_op_iff (GF := GF)).mpr $$ [H2 HE2]
+    ihave ⟨%Hdisj, HE⟩ := ownE_op_iff.mpr $$ [H2 HE2]
     · isplitl [H2] <;> iassumption
     isplitl [H1]; iassumption
     isplitl [HE]; iassumption
@@ -120,7 +120,7 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (I
     simp only [uPred_fupd]
     iintro ⟨H, Hx⟩ ⟨Hwsat, HE⟩
     ispecialize H $$ [Hwsat HE]; isplitl [Hwsat] <;> iassumption
-    ihave H := le_upd_if_frame_r (GF := GF) $$ [H Hx]
+    ihave H := le_upd_if_frame_r $$ [H Hx]
     · isplitl [H]
       · iexact H
       · iexact Hx
@@ -218,7 +218,7 @@ theorem lc_fupd_add_later {E : CoPset} {P : IProp GF} : ⊢ £ 1 -∗ (|={E}=> �
   -- FIXME: Is it possible to make >> work instead of adding the spaces between them?
   ihave > > ⟨H1, H2, H3⟩ := HP $$ [Hwsat HE]
   · isplitl [Hwsat] <;> iassumption
-  imod le_upd_later (GF := GF) $$ Hcr H3 with H3
+  imod le_upd_later $$ Hcr H3 with H3
   imodintro; imodintro
   isplitl [H1]; iassumption
   isplitl [H2]; iassumption
@@ -235,7 +235,7 @@ theorem lc_fupd_add_laterN (n : Nat) {E : CoPset} {P : IProp GF} :
   | succ n IH =>
     iintro ⟨Hcr, Hcrs⟩ >HP
     ihave HP := (laterN_later n (PROP := IProp GF)).mp $$ HP
-    iapply lc_fupd_add_later (GF := GF) $$ Hcr
+    iapply lc_fupd_add_later $$ Hcr
     iapply IH $$ Hcrs [HP]
     imodintro; iexact HP
 
@@ -253,11 +253,11 @@ theorem fupd_soundness_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P
   iapply lc_soundness m.succ
   iintro %Hc ⟨Hcr, Hcrs⟩
   simp only [fupd, uPred_fupd, le_upd_if, ↓reduceIte] at H
-  imod wsat_alloc (GF := GF) with ⟨%W, Hwsat, HE⟩
+  imod wsat_alloc with ⟨%W, Hwsat, HE⟩
   let LC : InvGS GF := { toWsatGS := W, toLcGS := Hc }
   specialize H LC
   rw [diff_subset_decomp (s₂ := ⊤) ((fun _ _ => CoPset.mem_full) : E1 ⊆ ⊤)]
-  ihave ⟨HE1, HE2⟩ := (ownE_op (GF := GF) (disjoint_symm disjoint_diff_right)).mp $$ HE
+  ihave ⟨HE1, HE2⟩ := (ownE_op (disjoint_symm disjoint_diff_right)).mp $$ HE
   imod H $$ Hcrs [Hwsat HE2] with ⟨_, _, H⟩
   · isplitl [Hwsat] <;> iassumption
   iapply le_upd_later $$ Hcr [H]
@@ -266,14 +266,14 @@ theorem fupd_soundness_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P
 @[rocq_alias fupd_soundness_no_lc]
 theorem fupd_soundness_no_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P]
     (H : ∀ (_ : InvGS_gen false GF), ⊢ £ m -∗ |={E1,E2}=> P) : ⊢ P := by
-  iapply lc_soundness m.succ (GF := GF)
+  iapply lc_soundness m.succ
   iintro %Hc ⟨Hcr, Hcrs⟩
   simp only [fupd, uPred_fupd, le_upd_if, Bool.false_eq_true, ↓reduceIte] at H
-  imod wsat_alloc (GF := GF) with ⟨%W, Hwsat, HE⟩
+  imod wsat_alloc with ⟨%W, Hwsat, HE⟩
   let LC : InvGS_gen false GF := { toWsatGS := W, toLcGS := Hc }
   specialize H LC
   rw [diff_subset_decomp (s₂ := ⊤) ((fun _ _ => CoPset.mem_full) : E1 ⊆ ⊤)]
-  ihave ⟨HE1, HE2⟩ := (ownE_op (GF := GF) (disjoint_symm disjoint_diff_right)).mp $$ HE
+  ihave ⟨HE1, HE2⟩ := (ownE_op (disjoint_symm disjoint_diff_right)).mp $$ HE
   imod H $$ Hcrs [Hwsat HE2] with ⟨_, _, H⟩
   · isplitl [Hwsat] <;> iassumption
   iapply le_upd_later $$ Hcr [H]
@@ -322,7 +322,7 @@ theorem step_fupdN_soundness_lc [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain 
   intro LC
   specialize H LC
   iintro Hcrds
-  icases lc_split (GF := GF) $$ Hcrds with ⟨Hcr1, Hcr2⟩
+  icases lc_split $$ Hcrds with ⟨Hcr1, Hcr2⟩
   imod H $$ Hcr1 with H
   clear H
   istop
@@ -335,7 +335,7 @@ theorem step_fupdN_soundness_lc [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain 
   | succ n IH =>
     simp only [Nat.repeat]
     iintro ⟨⟨Hcr, Hcrs⟩, >H⟩
-    imod lc_fupd_elim_later (GF := GF) $$ Hcr H with >H
+    imod lc_fupd_elim_later $$ Hcr H with >H
     -- FIXME: direct iapply doesn't work
     ihave IH : £ n ∗ (|={∅}▷=>^[n] P) -∗ |={∅}=> P $$ []
     · refine wand_intro ?_
@@ -391,7 +391,7 @@ theorem step_fupdN_soundness_lc' [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain
   intro LC
   specialize H LC
   iintro Hcrds
-  icases lc_split (GF := GF) $$ Hcrds with ⟨Hcr1, Hcr2⟩
+  icases lc_split $$ Hcrds with ⟨Hcr1, Hcr2⟩
   icases H $$ Hcr1 with H
   clear H
   istop
@@ -404,7 +404,7 @@ theorem step_fupdN_soundness_lc' [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain
   | succ n IH =>
     simp only [Nat.repeat]
     iintro ⟨⟨Hcr, Hcrs⟩, >H⟩
-    imod lc_fupd_elim_later (GF := GF) $$ Hcr H with >H
+    imod lc_fupd_elim_later $$ Hcr H with >H
     -- FIXME: direct iapply doesn't work
     ihave IH : £ n ∗ (|={⊤}[∅]▷=>^[n] P) -∗ |={⊤}=> P $$ []
     · refine wand_intro ?_
