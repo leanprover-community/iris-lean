@@ -1,0 +1,624 @@
+module
+
+-- TODO: Change propositions to start with an upper case letter.
+
+public import Iris.Std.RocqAlias
+public import Iris.Std.RocqIgnore
+public import Iris.Std.FromMathlib
+public import Iris.Std.Relation
+public meta import Lean.PrettyPrinter.Delaborator
+public import Batteries.Data.List.Basic
+
+@[expose] public section
+
+variable {Expr : Type e}{Val : Type v}{State : Type σ}{Obs : Type o}
+
+open FromMathlib
+
+-- DECISION: We assume that one Expr type maps to one Val type
+-- If this where to not be true, once could reuse the same API by simply
+-- adding some construction `WithVal Val Expr` which associates `Val` to
+-- `Expr`. Alternatively, one could make this dependency more explicit
+-- by having `Expr` depend on `Val`, but we don't make this choice here
+-- since it'd be cumbersome to write.
+
+class ToVal (Expr : Type e) (Val : outParam <| Type v ) where
+  toVal : Expr → Option Val
+  [coe : Coe Val Expr] -- TODO: Not convinced if this should be `coe` directly
+  /-- If `toVal` is defined for an expression, `coe` is its inverse -/
+  coe_of_toVal_eq (e : Expr)(v : Val) : toVal e = some v → (v : Expr) = e
+  /-- `toVal` is defined `coe`, and works as its inverse -/
+  toVal_coe (v : Val) : toVal (v : Expr) = some v
+export ToVal (toVal)
+
+attribute [rocq_alias mixin_of_to_val] ToVal.coe_of_toVal_eq
+attribute [rocq_alias mixin_to_of_val, simp, grind =] ToVal.toVal_coe
+
+namespace ToVal
+instance [ToVal Expr Val] : Coe Val Expr := ToVal.coe
+
+variable [ToVal Expr Val]
+
+@[grind! .]
+theorem toVal_eq_iff_coe (e : Expr)(v : Val): (v : Expr) = e ↔ toVal e = some v :=
+  ⟨(· ▸ ToVal.toVal_coe v), ToVal.coe_of_toVal_eq e v⟩
+
+end ToVal
+
+-- DECISION: Same decision as for `Val` ended up being made for
+-- `Obs`, and probably `State` should follow next
+
+class PrimStep(Expr : Type e)(State : outParam <| Type σ)(Obs : outParam <| Type o) where
+  /-- The primitive reduction relation of the language -/
+  primStep   : Expr × State → Obs → Expr × State × List Expr → Prop
+
+namespace PrimStep
+-- TODO: Term numbers chosen arbitrarily. Make sure they are adequate.
+@[inherit_doc PrimStep.primStep]
+scoped macro conf:term:40 " -<" noWs obs:term:max noWs ">->ₜ " conf':term:41 : term =>
+ `(PrimStep.primStep $conf $obs $conf')
+
+open Lean PrettyPrinter Delaborator SubExpr in
+@[app_unexpander PrimStep.primStep]
+meta def unexpandPrimStep : Unexpander
+| `(primStep $conf $obs $conf') =>
+  `($conf -<$obs>->ₜ $conf')
+| _ => throw ()
+
+end PrimStep
+open PrimStep
+
+section PureConfigurationTypes
+variable [PrimStep Expr State Obs]
+
+@[rocq_alias reducible]
+def reducible : Expr × State → Prop
+| (e, σ) => ∃ obs e' σ' eₜ,
+   (e, σ) -<obs>->ₜ (e', σ', eₜ)
+
+@[rocq_alias reducible_no_obs]
+def pureReducible [PrimStep Expr State (List Obs)] : Expr × State → Prop
+| (e, σ) => ∃ e' σ' eₜ,
+    (e, σ) -<[]>->ₜ (e', σ', eₜ)
+
+def irreducible : Expr × State → Prop
+| (e, σ) => ∀ obs e' σ' eₜ, ¬ (e, σ) -<obs>->ₜ (e', σ', eₜ)
+
+def stuck [ToVal Expr Val]: Expr × State → Prop
+| (e, σ) => toVal e = none ∧ irreducible (e, σ)
+
+def notStuck [ToVal Expr Val]: Expr × State → Prop
+| (e, σ) => (toVal e).isSome ∨ reducible (e, σ)
+
+end PureConfigurationTypes
+
+-- DECISION: We assume that one (Expr, State) pair refers to exactly one
+-- type of observations.
+
+class Language
+    (Expr  : Type e)
+    (State : outParam <| Type σ)
+    (Obs   : outParam (Type o))
+    (Val   : outParam (Type v))
+  extends
+    PrimStep Expr State (List Obs),
+     -- ↑ Why chose List here? It seems any monoid would do.
+    ToVal Expr Val where
+  /-- Values in a language should not reduce -/
+  val_stuck : ∀ {e} {σ : State} {obs e' σ' eₜ},
+    (e, σ) -<obs>->ₜ (e', σ', eₜ) → toVal e = none
+
+attribute [rocq_alias mixin_val_stuck] Language.val_stuck
+
+inductive Atomicity where
+| WeaklyAtomic
+| StronglyAtomic
+
+class Atomic (a : Atomicity) (e : Expr)
+  [Language Expr State Obs Val] :
+    Prop where
+  atomic : ∀ (σ : State) obs e' σ' eₜ,
+    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
+    match a with
+    | .WeaklyAtomic => ¬ reducible (e', σ')
+    | .StronglyAtomic => (toVal e').isSome
+
+
+namespace Language
+variable [Λ : Language Expr State Obs Val]
+variable {e e': Expr}{σ σ': State}{v v' : Val}
+
+-- TODO: Rename all `fill` lemmas to something more consistent
+/-- `K` models an evaluation context for the language -/
+class Context(K: Expr → Expr) where
+  fill_toVal_eq_none : ∀ {e : Expr},
+    toVal e = none → toVal (K e) = none
+  fill_primStep : ∀ {e} {σ : State} {obs e' σ' eₜ},
+    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
+    (K e, σ)-<obs>->ₜ(K e', σ', eₜ)
+  fill_primStep_inv : ∀ {e} {σ : State} {obs K_e' σ' eₜ},
+    toVal e = .none →
+    (K e, σ) -<obs>->ₜ (K_e', σ', eₜ) →
+    ∃ e', K_e' = K e' ∧ (e, σ) -<obs>->ₜ (e', σ', eₜ)
+
+attribute [rocq_alias fill_not_val] Context.fill_toVal_eq_none
+attribute [rocq_alias fill_step] Context.fill_primStep
+attribute [rocq_alias fill_step_inv] Context.fill_primStep_inv
+
+instance : Context (Λ := Λ) (id (α := Expr)) where
+  fill_toVal_eq_none e := by grind only [id]
+  fill_primStep      := by grind only [id]
+  fill_primStep_inv  := by grind only [id]
+
+/-- A single atomic step in a threaded context -/
+@[grind]
+inductive step : List Expr × State → List Obs → List Expr × State → Prop
+  where
+  | atomic : ∀ e σ  obs e' σ' eₜ,
+    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
+    ∀ (t₁ t₂: List Expr),
+    step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ')
+    -- NOTE: Using `t₁ ++ e :: t₂` instead of `t₁ ++ [e] ++ t₂` because in
+    -- Lean `[x] ++ xs` is not definitionallly equal to `x :: xs`. This is
+    -- because `++` does not correspond to a function on lists, but a
+    -- typeclass `Append.append` of which `List` has an instance.
+    -- Since most lemmas about an element appearing in the middle of a list
+    -- are in the shape `t₁ ++ e :: t₂`, this form is preferred.
+
+def step.of_primStep : ∀ {e σ}{obs : List Obs}{e'} {σ' : State} {eₜ},
+    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
+    ∀ {t₁ t₂: List Expr},
+    step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ') :=
+  (Language.step.atomic _ _ _ _ _ _ · _ _)
+
+@[inherit_doc step]
+scoped macro conf:term:40 " -<" noWs obs:term:max noWs ">->ₜₚ " conf':term:41 : term =>
+ `(Language.step $conf $obs $conf')
+
+-- FIXME: Not displaying properly (?)
+open Lean PrettyPrinter Delaborator SubExpr in
+@[app_unexpander Language.step]
+meta def unexpandLanguageStep : Unexpander
+| `(Language.step $conf $obs $conf') =>
+  `($conf -<$obs>->ₜₚ $conf')
+| _ => throw ()
+
+/-- The (possibly zero) sequence of `Language.step`s -/
+@[grind]
+inductive nsteps : Nat → List Expr × State → List Obs → List Expr × State → Prop
+  where
+  | refl (ρ : List Expr × State): nsteps 0 ρ [] ρ
+  | cons n (ρ₁ ρ₂ ρ₃ : List Expr × State) (obs obs' : List Obs) :
+      ρ₁ -<obs>->ₜₚ ρ₂ →
+      nsteps n ρ₂ obs' ρ₃ →
+      nsteps (n+1) ρ₁ (obs ++ obs') ρ₃
+
+@[inherit_doc nsteps]
+scoped macro conf:term:40 " -<" noWs obs:term:max noWs ">->ₜₚ* " conf':term:41 : term =>
+ `(Language.nsteps $conf ($obs) $conf')
+
+open Lean PrettyPrinter Delaborator SubExpr in
+@[app_unexpander Language.nsteps]
+meta def unexpandLanguageNsteps : Unexpander
+| `(Language.nsteps $conf $obs $conf') =>
+  `($conf -<$obs>->ₜₚ* $conf')
+| _ => throw ()
+
+/-- A sequence of `Language.step`s with no observation information -/
+def erasedStep (ρ  ρ₂: List Expr × State) := ∃ obs, step ρ obs ρ₂
+
+@[inherit_doc erasedStep]
+scoped macro conf:term:40 " -·->ₜₚ " conf':term:41 : term =>
+ `(Language.erasedStep $conf $conf')
+
+open Lean PrettyPrinter Delaborator SubExpr in
+@[app_unexpander Language.erasedStep]
+meta def unexpandLanguageErasedStep : Unexpander
+| `(Language.erasedStep $conf $conf2) =>
+  `($conf -·->ₜₚ $conf2)
+| _ => throw ()
+
+@[rocq_alias not_reducible, grind =]
+theorem not_reducible_iff_irreducible {e : Expr} {σ : State} :
+    (¬ reducible (e, σ)) ↔ irreducible (e, σ) := by
+  grind only [reducible, irreducible]
+
+@[rocq_alias reducible_not_val, grind .]
+theorem toVal_none_of_reducible :
+    reducible (e, σ) → toVal e = none := by
+  grind only [reducible, val_stuck]
+
+@[rocq_alias reducible_no_obs_reducible, grind .]
+theorem reducible_of_pureReducible :
+    pureReducible (e, σ) → reducible (e, σ) := by
+  grind only [pureReducible, reducible]
+
+@[rocq_alias val_irreducible]
+theorem val_irreducible :
+    (toVal e).isSome →
+    irreducible (e, σ) := by
+  grind only [irreducible, val_stuck, = Option.isSome_none]
+
+@[rocq_alias of_val_inj]
+instance [ι : ToVal Expr Val]: Function.Injective (ι.coe.coe) := by
+  intro x y h
+  simpa [ToVal.toVal_coe] using congrArg (toVal) h
+
+@[rocq_alias not_not_stuck, grind =]
+theorem not_not_suck {e : Expr} {σ : State} :
+    (¬ notStuck (e, σ)) ↔ stuck (e, σ) := by
+  dsimp [stuck, notStuck]
+  match h : (toVal e) with
+  | some v =>
+    simp only [Option.isSome_some, true_or, not_true_eq_false, reduceCtorEq, false_and]
+  | none =>
+    simp only [Option.isSome_none, Bool.false_eq_true, false_or, not_reducible_iff_irreducible,
+      true_and]
+
+@[rocq_alias strongly_atomic_atomic]
+theorem stronglyAtomic_atomic a :
+    Atomic (State := State) .StronglyAtomic e →
+    Atomic (State := State) a e := by
+  match a with
+  | .StronglyAtomic => intros; assumption
+  | .WeaklyAtomic =>
+    rintro ⟨h⟩
+    constructor
+    grind only [not_reducible_iff_irreducible, val_irreducible]
+
+@[rocq_alias reducible_fill]
+theorem reducible_fill (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
+    reducible (e,σ) → reducible ((K e), σ) :=
+  fun ⟨obs, e', σ', eₜ, h⟩ =>
+    ⟨obs, K e', σ', eₜ, Context.fill_primStep h⟩
+
+@[rocq_alias reducible_fill_inv]
+theorem reducible_fill_inv (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
+    toVal e = none → reducible (K e, σ) → reducible (e,σ) :=
+  fun toVal_none ⟨obs, _, σ', eₜ, K_red⟩ =>
+    have ⟨e₂, _, red⟩ := Context.fill_primStep_inv toVal_none K_red
+    ⟨obs, e₂, σ', eₜ, red⟩
+
+@[rocq_alias reducible_no_obs_fill]
+theorem pureReducible_fill (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
+    pureReducible (e, σ) →
+    pureReducible (K e, σ) :=
+  fun ⟨e', σ', eₜ, h⟩ =>
+    ⟨K e', σ', eₜ, Context.fill_primStep h⟩
+
+@[rocq_alias reducible_no_obs_fill_inv]
+theorem pureReducible_fill_inv (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
+    toVal e = none → pureReducible (K e, σ) → pureReducible (e,σ) :=
+  fun toVal_none ⟨_, σ', eₜ, K_red⟩ =>
+    have ⟨e₂, _, red⟩ := Context.fill_primStep_inv toVal_none K_red
+    ⟨e₂, σ', eₜ, red⟩
+
+@[rocq_alias irrreducible_fill]
+theorem irreducible_fill (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
+    toVal e = none →
+    irreducible (e, σ) →
+    irreducible (K e, σ) :=
+  fun toVal_none irred =>
+    not_reducible_iff_irreducible.1 <|
+    fun red =>
+    not_reducible_iff_irreducible.2 irred <|
+    reducible_fill_inv K toVal_none red
+
+@[rocq_alias irreducible_fill_inv]
+theorem irreducible_fill_inv {K : Expr → Expr} [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
+    irreducible (K e, σ) →
+    irreducible (e,σ) :=
+  fun irred =>
+    not_reducible_iff_irreducible.1 <|
+    fun red =>
+    not_reducible_iff_irreducible.2 irred <|
+    reducible_fill K red
+
+@[rocq_alias not_stuck_fill_inv]
+theorem notStuck_fill_inv (K : Expr → Expr) [Λ.Context K] :
+    notStuck (K e, σ) → notStuck (e, σ)  := by
+  intros hyp
+  dsimp only [notStuck]
+  match hyp with
+  | .inl hyp =>
+    simp [Option.isSome_iff_exists] at hyp ⊢
+    match h : toVal e with
+    | none =>
+      left
+      have := Context.fill_toVal_eq_none (K := K) h
+      grind only
+    | some v => grind only
+  | .inr hyp =>
+    match h₂ : toVal e with
+    | none =>
+      right
+      apply reducible_fill_inv K h₂ hyp
+    | some v =>
+      left
+      simp only [Option.isSome]
+
+@[rocq_alias stuck_fill]
+theorem stuck_fill (K : Expr → Expr) [Λ.Context K] :
+    stuck (e, σ) → stuck (K e, σ)  :=
+  fun ⟨toVal_e, irred⟩ =>
+    ⟨ Context.fill_toVal_eq_none toVal_e
+    , irreducible_fill K toVal_e irred⟩
+
+open List in
+@[rocq_alias step_Permutation]
+theorem perm_of_step (t₁ t₁' t₂ : List Expr) :
+    ∀ ⦃obs : List Obs⦄⦃σ₁ σ₂ : State⦄,
+    t₁ ~ t₁' →
+    (t₁, σ₁) -<obs>->ₜₚ (t₂, σ₂) →
+    ∃ t₂', t₂ ~ t₂'
+         ∧ (t₁', σ₁) -<obs>->ₜₚ (t₂', σ₂)
+     := by
+  rintro obs σ₁ σ₂ t1perm
+    ⟨e, σ₁, obs, e', σ₂, eₜ, red, ps, ss⟩
+  obtain ⟨ps', ss', rfl⟩ := t₁'.mem_iff_append.1 (show e ∈ t₁' from by
+    grind only [usr append_assoc, usr Perm.mem_iff, = cons_append, = mem_append, = mem_cons])
+  exists ps' ++ e' :: ss' ++ eₜ
+  constructor
+  · apply List.Perm.append_right
+    calc ps ++ e' :: ss
+      _ ~ e' :: (ps ++ ss) := perm_middle
+      _ ~ e' :: (ps' ++ ss') := by
+        apply (List.perm_cons e').mpr
+        apply (List.perm_cons e).mp
+        exact (perm_middle.symm.trans t1perm).trans perm_middle
+      _ ~ ps' ++ e' :: ss' := perm_middle.symm
+  · apply Language.step.of_primStep red
+
+@[grind =]
+private theorem _root_.List.getElem?_some_iff_append
+{a : α} {i : Nat} {l : List α} : l[i]? = some a ↔ ∃ s t : List α, l = s ++ a :: t ∧ s.length = i := by
+  constructor
+  · intros h
+    induction i generalizing l with
+    | zero =>
+      rcases l with _ | ⟨hd, tl⟩
+      · simp at h
+      · simpa using h
+    | succ i IH =>
+      rcases l with _ | ⟨hd, tl⟩
+      · simp at h
+      simp at h
+      grind only [=_ List.cons_append, = List.length_cons]
+  · rintro ⟨ps, ss, rfl, h2⟩
+    grind only [= List.getElem?_append, = List.getElem?_cons]
+
+@[rocq_alias step_insert]
+theorem step_update_of_getElem? {i obs efs} {t : List Expr} (σ₁ σ₂ : State):
+    t[i]? = some e →
+    (e, σ₁) -<obs>->ₜ (e', σ₂, efs) →
+    (t, σ₁) -<obs>->ₜₚ (t.set i e' ++ efs, σ₂) := by
+  grind only [= getElem?_neg, = getElem?_pos, = List.getElem?_some_iff_append,
+    = List.getElem?_append, = List.getElem?_cons, = List.set_append, = List.set_cons_zero,
+    step.atomic]
+
+open List in
+@[rocq_alias erased_step_Permutation]
+theorem perm_of_erasedStep (t₁ t₁' t₂ : List Expr) :
+    ∀ ⦃σ₁ σ₂ : State⦄,
+    t₁ ~ t₁' →
+    (t₁, σ₁) -·->ₜₚ (t₂, σ₂) →
+    ∃ t₂', t₂ ~ t₂'
+         ∧ (t₁', σ₁) -·->ₜₚ (t₂', σ₂)
+     :=
+  fun _ _ t1perm ⟨obs, red⟩ =>
+  have ⟨t₂', t2perm, red'⟩ := perm_of_step _ _ _ t1perm red
+  ⟨t₂', t2perm, obs, red'⟩
+
+/-- There is a pure step between `e₁` and `e₂` iff there is
+    a reduction step `(e₁, σ) -<[]>->ₜ (e₂, σ, [])` for some
+    σ and it is unique.
+
+    Intuitively, the reduction is deterministic and does not
+    depend on the environment.
+-/
+@[rocq_alias pure_step]
+def purePrimStep (e₁ e₂ : Expr) :=
+  (∀ σ : State, pureReducible (e₁, σ)) ∧
+  (∀ {σ₁ σ₂ : State} {obs e₂' eₜ},
+    (e₁, σ₁) -<obs>->ₜ (e₂', σ₂, eₜ) →
+    obs = [] ∧ σ₁ = σ₂ ∧ e₂ = e₂' ∧ eₜ = []
+  )
+
+@[inherit_doc purePrimStep]
+scoped macro conf:term:40 " -ᵖ-> " conf':term:41 : term =>
+  `(purePrimStep $conf $conf')
+
+open Lean PrettyPrinter Delaborator SubExpr in
+@[app_unexpander Language.purePrimStep]
+meta def unexpandLanguagePurePrimStep : Unexpander
+| `(purePrimStep $conf $conf2) =>
+  `($conf -ᵖ-> $conf2)
+| _ => throw ()
+
+/-- `e₁ -ᵖ->^[n] e₂` represents a sequence of `n` pure steps taken
+    from `e₁` up to `e₂`.
+-/
+scoped macro conf:term:40 " -ᵖ->^[" noWs n:term noWs "] " conf':term:41 : term =>
+  `(Relation.iterate purePrimStep $n $conf $conf')
+
+open Lean PrettyPrinter Delaborator SubExpr in
+@[app_unexpander Relation.iterate]
+meta def unexpandIterateLanguagePurePrimStep : Unexpander
+| `(Relation.iterate purePrimStep $n  $conf $conf') =>
+  `($conf -ᵖ->^[$n] $conf')
+| _ => throw ()
+
+private theorem _root_.ReflTrans_iff_exists_iterate {α : Type _} {R : α → α → Prop} :
+    ∀ {x y},
+    Relation.ReflTransGen R x y ↔ ∃ n, Relation.iterate R n x y := by
+  intros x y
+  constructor
+  · intros rtcR
+    induction rtcR with
+    | refl =>
+      exists 0; constructor
+    | tail rtcMid Rlast IH =>
+      obtain ⟨n, h⟩ := IH
+      exists (n+1)
+      apply Relation.iterate.tail _ h Rlast
+  · rintro ⟨n, itR⟩
+    induction itR with
+    | rfl => constructor
+    | tail z itMid Rlast IH =>
+      apply Relation.ReflTransGen.tail IH Rlast
+
+/-- `e₁ -ᵖ->* e₂` represents a sequence of some number of pure steps
+    taken from `e₁` up to `e₂`.
+-/
+scoped macro conf:term:40 " -ᵖ->* " conf':term:41 : term =>
+  `(Relation.ReflTransGen purePrimStep $conf $conf')
+
+open Lean PrettyPrinter Delaborator SubExpr in
+@[app_unexpander Relation.ReflTransGen]
+meta def unexpandReflTransGenLanguagePurePrimStep : Unexpander
+| `(Relation.ReflTransGen purePrimStep $conf $conf') =>
+  `($conf -ᵖ->* $conf')
+| _ => throw ()
+
+@[rocq_alias pure_steps_tp]
+def pureSteps (t₁ t₂ : List Expr) := List.Forall₂ (· -ᵖ->* ·) t₁ t₂
+
+/-- `e₁ -ᵖ->ₜₚ* e₂` represents a sequence of some number of pure steps
+    taken from `e₁` up to `e₂`.
+-/
+scoped macro conf:term:40 " -ᵖ->ₜₚ* " conf':term:41 : term =>
+  `(Language.pureSteps $conf $conf')
+
+open Lean PrettyPrinter Delaborator SubExpr in
+@[app_unexpander Language.pureSteps]
+meta def unexpandLanguagePureSteps : Unexpander
+| `(pureSteps $conf $conf') =>
+  `($conf -ᵖ->ₜₚ* $conf')
+| _ => throw ()
+
+class PureExec (φ : Prop) (n : Nat) (e₁ e₂ : Expr) : Prop where
+  pureExec : φ → e₁ -ᵖ->^[n] e₂
+
+@[rocq_alias pure_step_ctx]
+theorem purePrimStep_fill (K : Expr → Expr) [Context K] {e₁ e₂ : Expr} :
+    e₁ -ᵖ-> e₂ →
+    K e₁ -ᵖ-> K e₂ := by
+  rintro ⟨pRed,Hstep⟩
+  constructor
+  · exact (pureReducible_fill K <| pRed ·)
+  · intros σ₁ σ₂ obs K_e₂' eₜ primStep
+    have : toVal e₁ = none := by
+      apply toVal_none_of_reducible (σ := σ₁)
+      -- Any state works
+      apply reducible_of_pureReducible
+      apply pRed
+    obtain ⟨e₂', rfl, primStep⟩ := Context.fill_primStep_inv this primStep
+    grind only
+
+@[rocq_alias pure_step_nsteps_ctx]
+theorem iterate_purePrimStep_fill (K : Expr → Expr) [Context K] {e₁ e₂} :
+    e₁ -ᵖ->^[n] e₂ →
+    K e₁ -ᵖ->^[n] K e₂ := by
+  intro h
+  induction h with
+  | rfl => constructor
+  | tail y first last IH =>
+    apply Relation.iterate.tail (K y) IH (purePrimStep_fill K last)
+
+@[rocq_alias rtc_pure_step_ctx]
+theorem ReflTransGen_pureStep_fill (K : Expr → Expr) [Context K] {e₁ e₂} :
+    e₁ -ᵖ->* e₂ →
+    K e₁ -ᵖ->* K e₂ := by
+  intros h
+  replace ⟨n, h⟩:= ReflTrans_iff_exists_iterate.1 h
+  exact ReflTrans_iff_exists_iterate.2 ⟨n, iterate_purePrimStep_fill K h⟩
+
+@[rocq_alias pure_exec_ctx]
+theorem pureExec_fill (K : Expr → Expr) [Context K] {φ n e₁ e₂} :
+    PureExec φ n e₁ e₂ →
+    PureExec φ n (K e₁) (K e₂) := by
+  rintro ⟨h⟩
+  constructor
+  intros hφ
+  exact iterate_purePrimStep_fill K (h hφ)
+
+class IntoVal (e : Expr)(v : Val) where
+  into_val : (v : Expr) = e
+
+class AsVal (e : Expr) where
+  as_val : ∃ v, (v : Expr) = e
+
+#rocq_ignore as_vals_of_val "We have not yet implemented TCForall."
+
+@[rocq_alias as_val_is_Some]
+theorem as_val_isSome e :
+    (∃ v : Val, (v : Expr) = e) → (toVal e).isSome := by
+  grind only [!ToVal.toVal_eq_iff_coe, = Option.isSome_some]
+
+@[rocq_alias prim_step_not_stuck]
+theorem primStep_notStuck {e : Expr} {σ obs e' σ' eₜ} :
+    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
+    notStuck (e, σ) :=
+  fun h => .inr ⟨_, _, _, _, h⟩
+
+@[rocq_alias rtc_pure_step_val]
+theorem ReflTransGen_purePrimStep_val [Inhabited State] {v : Val} {e : Expr} :
+    (v: Expr) -ᵖ->* e →
+    toVal e = some v := by
+  intros h
+  induction h with
+  | refl => exact (ToVal.toVal_coe _)
+  | tail H1 H2 IH =>
+    obtain ⟨red, stepUniq⟩ := H2
+    have ⟨e', σ', eₜ, step⟩ := red default
+    grind only [Language.val_stuck]
+
+/--
+  Let thread pools `t₁` and `t₃` be such that each thread
+  in `t₁` makes (zero or more) pure steps to the
+  corresponding thread in `t₃`.
+
+  Let `t₂` be a thread pool such that `t₁` under state
+  `σ₁` makes a (single) step to threadpool `t₂` and
+  state `σ₂`.
+
+  In this situation, either the step from `t₁` to `t₂`
+  corresponds to one of the pure steps between `t₁` and
+  `t₃` or, there is an `i` such that the `i`-th thread
+  does not participate in the pure steps between `t₁`
+  and `t₃` and `t₂` corresponds t taking a step in the
+  `i`-th thread starting from `t₁`.
+-/
+theorem erasedStep_pureSteps (t₁ t₂ t₃ : List Expr) (σ₁ σ₂ : State) :
+    (t₁, σ₁)  -·->ₜₚ  (t₂, σ₂) →
+       t₁     -ᵖ->ₜₚ*    t₃ →
+    (σ₁ = σ₂ ∧ t₂ -ᵖ->ₜₚ* t₃) ∨ -- t₂ was actually obtained form a pure reduction
+    (∃ i e eₜ e' obs,
+      t₁[i]? = some e ∧
+      t₃[i]? = some e ∧
+      t₂ = t₁.set i e' ++ eₜ ∧
+      (e, σ₁) -<obs>->ₜ (e', σ₂, eₜ)
+    ) := by
+  rintro ⟨obs, ⟨e, σ₁, obs, e₂, σ₂, eₜ, pstep, ps, ss⟩⟩ Hps
+  obtain ⟨ps₃, e₃, ss₃, rfl, ss_ss₃, ps_ps₃, length_ps, e_e₃⟩ :=
+    show ∃ ps₃ e₃ ss₃, t₃ = ps₃ ++ e₃ :: ss₃
+         ∧ ss -ᵖ->ₜₚ* ss₃
+         ∧ ps -ᵖ->ₜₚ* ps₃ ∧ ps.length = ps₃.length
+         ∧ e -ᵖ->* e₃ from by
+      grind [pureSteps]
+  rcases Relation.ReflTransGen.cases_head e_e₃ with (rfl | ⟨e', firstPureStep, lastSteps⟩)
+  · right
+    exists (ps₃.length), e, eₜ, e₂, obs
+    simp only [List.length_append, List.length_cons, Nat.lt_add_right_iff_pos, Nat.zero_lt_succ,
+      getElem?_pos, Std.le_refl, List.getElem_append_right, Nat.sub_self, List.getElem_cons_zero,
+      List.append_assoc, List.cons_append, List.set_append_right, List.set_cons_zero, and_self,
+      length_ps, pstep]
+  · obtain ⟨pRed, uniqStep⟩ := firstPureStep
+    obtain ⟨rlf, rfl, rfl, rfl⟩ := uniqStep pstep
+    left
+    have : e -ᵖ-> e' := by grind only [purePrimStep]
+    simp only [pureSteps, List.append_nil, true_and]
+    apply List.Forall₂.append ps_ps₃
+    apply List.Forall₂.cons lastSteps ss_ss₃
+
+end Language
