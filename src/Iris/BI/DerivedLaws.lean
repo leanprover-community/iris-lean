@@ -1630,23 +1630,15 @@ theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : 
     refine LimitPreserving.equiv f g _ ?_
     exact (equiv_iff.mpr <| h' ·)
 
-theorem iter_modal_intro [BI PROP] (M : PROP → PROP) (n : Nat) {P : PROP} :
-  (∀ Q, Q ⊢ M Q) →
-  P ⊢ Nat.iter n (fun x => M x) P := by
-  intro H
+theorem iter_modal_intro [BI PROP] (M : PROP → PROP) (n : Nat) {P : PROP} (H : ∀ {Q}, Q ⊢ M Q) :
+    P ⊢ n.iter (fun x => M x) P := by
   induction n with
   | zero => simp
-  | succ n IH =>
-    simp only [Nat.iter_succ]
-    exact .trans IH (H _)
+  | succ _ IH => simpa only [Nat.iter_succ] using IH.trans H
 
-theorem iter_modal_mono [BI PROP] (M : PROP → PROP) (n : Nat) {P Q : PROP} :
-  (∀ P Q, (P -∗ Q) ⊢ M P -∗ M Q) →
-  (P -∗ Q) ⊢
-  Nat.iter n (fun x => M x) P -∗ Nat.iter n (fun x => M x) Q := by
-  intro H
+theorem iter_modal_mono [BI PROP] (M : PROP → PROP) (n : Nat) {P Q : PROP}
+    (H : ∀ {P Q}, (P -∗ Q) ⊢ M P -∗ M Q) :
+    (P -∗ Q) ⊢ Nat.iter n (fun x => M x) P -∗ Nat.iter n (fun x => M x) Q := by
   induction n with
   | zero => simp
-  | succ n IH =>
-    simp only [Nat.iter_succ]
-    exact .trans IH (H _ _)
+  | succ _ IH => simpa only [Nat.iter_succ] using IH.trans H
