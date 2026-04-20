@@ -7,8 +7,6 @@ public import Iris.Std.Relation
 public meta import Lean.PrettyPrinter.Delaborator
 public import Batteries.Data.List.Basic
 
--- TODO: Not convinced if `of_val` should be `ToVal.coe` using `Coe`
---       directly, or if some other typeclass should be preferred.
 -- TODO: Term levels for the different notations were chosen arbitrarily.
 --       Make sure they are adequate.
 -- TODO: Rename all `Context.fill` lemmas to something more consistent.
@@ -46,11 +44,11 @@ variable {Expr : Type e}{Val : Type v}{State : Type σ}{Obs : Type o}
 
 class ToVal (Expr : Type e) (Val : outParam <| Type v ) where
   toVal : Expr → Option Val
-  [coe : Coe Val Expr]
+  ofVal : Val → Expr
   /-- If `toVal` is defined for an expression, `coe` is its inverse -/
-  coe_of_toVal_eq (e : Expr)(v : Val) : toVal e = some v → (v : Expr) = e
+  coe_of_toVal_eq (e : Expr)(v : Val) : toVal e = some v → ofVal v = e
   /-- `toVal` is defined `coe`, and works as its inverse -/
-  toVal_coe (v : Val) : toVal (v : Expr) = some v
+  toVal_coe (v : Val) : toVal (ofVal v) = some v
 export ToVal (toVal)
 
 attribute [rocq_alias language.to_val] ToVal.toVal
@@ -63,7 +61,8 @@ namespace ToVal
 
 variable [ToVal Expr Val]
 
-instance : Coe Val Expr := ToVal.coe
+attribute [coe] ToVal.ofVal
+instance : Coe Val Expr where coe := ToVal.ofVal
 
 @[grind! .]
 theorem toVal_eq_iff_coe (e : Expr)(v : Val): (v : Expr) = e ↔ toVal e = some v :=
@@ -265,7 +264,7 @@ theorem val_irreducible :
   grind only [irreducible, val_stuck, = Option.isSome_none]
 
 @[rocq_alias of_val_inj]
-instance [ι : ToVal Expr Val]: Function.Injective (ι.coe.coe) := by
+instance [ι : ToVal Expr Val]: Function.Injective (ι.ofVal) := by
   intro x y h
   simpa [ToVal.toVal_coe] using congrArg (toVal) h
 
