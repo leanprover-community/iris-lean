@@ -9,6 +9,7 @@ public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
 public import Iris.Std.Set
 public import Iris.Std.PartialMap
+meta import Iris.Std.RocqPorting
 
 @[expose] public section
 

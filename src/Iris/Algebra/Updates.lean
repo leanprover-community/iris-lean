@@ -6,15 +6,18 @@ Authors: Сухарик (@suhr)
 module
 
 public import Iris.Algebra.CMRA
+meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
 namespace Iris
 
+@[rocq_alias cmra_updateP]
 def UpdateP [CMRA α] (x : α) (P : α → Prop) := ∀ n mz,
   ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
 infixr:50 " ~~>: " => UpdateP
 
+@[rocq_alias cmra_update]
 def Update [CMRA α] (x y : α) := ∀ n mz,
   ✓{n} (x •? mz) → ✓{n} (y •? mz)
 infixr:50 " ~~> " => Update
@@ -49,12 +52,14 @@ instance [CMRA α] : Trans OFE.Equiv Update Update (α := α) where
 instance [CMRA α] : Trans Update OFE.Equiv Update (α := α) where
   trans u e := Update.equiv_right e u
 
+@[rocq_alias cmra_update_updateP]
 theorem Update.of_updateP {x y : α} (h : x ~~>: (y = ·)) : x ~~> y :=
   fun n mz v => let ⟨_, e, v⟩ := (h n mz v); e ▸ v
 
 theorem UpdateP.of_update {x y : α} (h : x ~~> y) : x ~~>: (y = ·) :=
   fun n mz v => ⟨y, rfl, h n mz v⟩
 
+@[rocq_alias cmra_updateP_id]
 theorem UpdateP.id {P : α → Prop} {x} (h : P x) : x ~~>: P :=
   fun _ _ v => ⟨x, h, v⟩
 
@@ -63,15 +68,19 @@ theorem Update.id {x : α} : x ~~> x := fun _ _ h => h
 theorem Update.trans {x y z : α} (uxy : x ~~> y) (uyz : y ~~> z) : x ~~> z :=
   fun n mz v => uyz n mz (uxy n mz v)
 
+@[rocq_alias cmra_updateP_compose]
 theorem UpdateP.trans {x : α} (ux : x ~~>: P) (upq : ∀ y, P y → y ~~>: Q) : x ~~>: Q :=
   fun n mz v => let ⟨y, py, vy⟩ := ux n mz v; upq y py n mz vy
 
+@[rocq_alias cmra_updateP_compose_l]
 theorem Update.transP {x y : α} (uxy : x ~~> y) (uyq : y ~~>: Q) : x ~~>: Q :=
   fun n mz v => uyq n mz (uxy n mz v)
 
+@[rocq_alias cmra_updateP_weaken]
 theorem UpdateP.weaken {x : α} (uxp : x ~~>: P) (pq : ∀ y, P y → Q y) : x ~~>: Q :=
   fun n mz v => let ⟨y, py, vy⟩ := uxp n mz v; ⟨y, pq y py, vy⟩
 
+@[rocq_alias cmra_update_exclusive]
 theorem Update.exclusive {x y : α} [CMRA.Exclusive x] (vy : ✓ y) : x ~~> y :=
   fun _ _ P => CMRA.none_of_excl_valid_op P ▸ vy.validN
 
@@ -100,6 +109,7 @@ instance [CMRA α] : Trans Update UpdateP UpdateP (α := α) where
 --   Proper (cmra_update ==> flip cmra_update ==> flip impl) (@cmra_update SI A).
 -- Proof. Admitted. *)
 
+@[rocq_alias cmra_updateP_op]
 theorem UpdateP.op {P Q R : α → Prop} {x y}
     (uxp : x ~~>: P) (uyq : y ~~>: Q) (pqr : ∀z w, P z → Q w → R (z • w)) : x • y ~~>: R := by
   intro n mz v
@@ -113,10 +123,12 @@ theorem UpdateP.op {P Q R : α → Prop} {x y}
   let ⟨z, pz, vz⟩ := uxp n (some (w •? mz)) (CMRA.validN_ne e₂ vw)
   exact ⟨z • w, pqr z w pz pw, CMRA.validN_ne (CMRA.op_opM_assoc_dist z w mz).symm vz⟩
 
+@[rocq_alias cmra_updateP_op']
 theorem UpdateP.op' {P Q : α → Prop} {x y : α} (uxp : x ~~>: P) (uyq : y ~~>: Q) :
     (x • y : α) ~~>: λ t ↦ ∃ z w, t = (z • w : α) ∧ P z ∧ Q w :=
   .op uxp uyq fun z w pz qw => ⟨z, w, rfl, pz, qw⟩
 
+@[rocq_alias cmra_update_op]
 theorem Update.op {x₁ x₂ y₁ y₂ : α} (xy₁ : x₁ ~~> y₁) (xy₂ : x₂ ~~> y₂) : x₁ • x₂ ~~> y₁ • y₂ :=
   .of_updateP <| .op (.of_update xy₁) (.of_update xy₂) fun _ _ ez ew => ez ▸ ew ▸ rfl
 
@@ -136,17 +148,22 @@ theorem Update.op {x₁ x₂ y₁ y₂ : α} (xy₁ : x₁ ~~> y₁) (xy₂ : x�
 --   Proper (flip cmra_update ==> flip cmra_update ==> flip cmra_update) (op (A:=A)).
 -- Proof. Admitted. *)
 
+@[rocq_alias cmra_update_op_l]
 theorem Update.op_l {x y : α} : x • y ~~> x := fun _ _ => CMRA.validN_op_opM_left
 
+@[rocq_alias cmra_update_op_r]
 theorem Update.op_r {x y : α} : x • y ~~> y := fun _ _ => CMRA.validN_op_opM_right
 
+@[rocq_alias cmra_update_included]
 theorem Update.included {x y : α} : x ≼ y → y ~~> x := fun ⟨_, ez⟩ => .equiv_left ez.symm .op_l
 
+@[rocq_alias cmra_update_valid0]
 theorem Update.valid0 {x y : α} : (✓{0} x → x ~~> y) → x ~~> y :=
   fun h n mz v => h (CMRA.valid0_of_validN (CMRA.validN_opM v)) n mz v
 
 /-! ## Frame preserving updates for total and discete CMRAs -/
 
+@[rocq_alias cmra_total_updateP]
 theorem UpdateP.total [CMRA.IsTotal α] :
     x ~~>: P ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ∃ y, P y ∧ ✓{n} (y • z) where
   mp uxp := fun n z v => uxp n (some z) v
@@ -157,6 +174,7 @@ theorem UpdateP.total [CMRA.IsTotal α] :
       ⟨y, py, CMRA.validN_op_opM_left vy⟩
     | some z => h n z v
 
+@[rocq_alias cmra_total_update]
 theorem Update.total [CMRA.IsTotal α] :
     x ~~> y ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
   mp uxy := fun n z v => uxy n (some z) v
@@ -166,6 +184,7 @@ theorem Update.total [CMRA.IsTotal α] :
       CMRA.validN_op_opM_left $ h n (CMRA.core x) (CMRA.validN_ne (CMRA.op_core_dist x).symm v)
     | some z => h n z v
 
+@[rocq_alias cmra_discrete_updateP]
 theorem UpdateP.discrete [CMRA.Discrete α] :
     x ~~>: P ↔ ∀ (mz : Option α), ✓ (x •? mz) → ∃ y, P y ∧ ✓ (y •? mz) where
   mp uxp := fun mz v =>
@@ -175,11 +194,13 @@ theorem UpdateP.discrete [CMRA.Discrete α] :
     let ⟨y, py, vy⟩ := h mz ((CMRA.valid_iff_validN' n).mpr v)
     ⟨y, py, CMRA.Valid.validN vy⟩
 
+@[rocq_alias cmra_discrete_update]
 theorem Update.discrete [CMRA.Discrete α] {x y : α} :
     x ~~> y ↔ ∀ (mz : Option α), ✓ (x •? mz) → ✓ (y •? mz) where
   mp uxp := fun mz v => CMRA.discrete_valid $ uxp 0 mz (CMRA.Valid.validN v)
   mpr h := fun n mz v => CMRA.Valid.validN $ h mz ((CMRA.valid_iff_validN' n).mpr v)
 
+@[rocq_alias cmra_discrete_total_updateP]
 theorem UpdateP.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
     x ~~>: P ↔ ∀ (z : α), ✓ (x • z) → ∃ y, P y ∧ ✓ (y • z) where
   mp uxp := fun z vz =>
@@ -190,6 +211,7 @@ theorem UpdateP.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
       let ⟨y, py, vy⟩ := h z ((CMRA.valid_iff_validN' n).mpr v)
       ⟨y, py, CMRA.Valid.validN vy⟩
 
+@[rocq_alias cmra_discrete_total_update]
 theorem Update.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
     x ~~> y ↔ ∀ (z : α), ✓ (x • z) → ✓ (y • z) where
   mp uxp := fun z vz =>
@@ -211,6 +233,7 @@ theorem Update.discrete_total [CMRA.Discrete α] [CMRA.IsTotal α] :
 -- End cmra_transport.
 
 /-! ## Isomorphism -/
+@[rocq_alias iso_cmra_updateP]
 theorem UpdateP.iso
     (gf : ∀ x, g (f x) ≡ x)
     (g_op : ∀ y1 y2, g (y1 • y2) ≡ g y1 • g y2)
@@ -233,6 +256,7 @@ theorem UpdateP.iso
     | some z => (g_op x (f z)).trans (CMRA.op_right_eqv (g x) (gf z))
   exact ⟨g x, pq x px, CMRA.validN_ne this.dist ((g_validN n _).mpr vx)⟩
 
+@[rocq_alias iso_cmra_updateP']
 theorem UpdateP.iso'
     (gf : ∀ x, g (f x) ≡ x)
     (g_op : ∀ y1 y2, g (y1 • y2) ≡ g y1 • g y2)
@@ -242,6 +266,7 @@ theorem UpdateP.iso'
   .iso f g gf g_op g_validN uyp fun z pz => ⟨z, rfl, pz⟩
 
 /-! ## Lift -/
+@[rocq_alias cmra_update_lift_updateP]
 theorem Update.lift_updateP (x y : β)
     (H : ∀ P, x ~~>: P → g x ~~>: λ a' ↦ ∃ b', a' = g b' ∧ P b')
     (uxy : x ~~> y) : g x ~~> g y :=
@@ -251,6 +276,7 @@ theorem Update.lift_updateP (x y : β)
     ⟨z, hz.symm, vz⟩
 
 /-! ## Product -/
+@[rocq_alias prod_updateP]
 theorem UpdateP.prod {P : α → Prop} {Q : β → Prop} {R : α × β → Prop} {x : α × β}
     (uxp : x.fst ~~>: P) (uxq : x.snd ~~>: Q) (pq : ∀ a b, P a → Q b → R (a, b)) :
     x ~~>: R := by
@@ -265,14 +291,17 @@ theorem UpdateP.prod {P : α → Prop} {Q : β → Prop} {R : α × β → Prop}
     have ⟨y₂, qy, vy₂⟩ := uxq n (some z.snd) v.2
     exact ⟨(y₁, y₂), pq y₁ y₂ py qy, ⟨vy₁, vy₂⟩⟩
 
+@[rocq_alias prod_updateP']
 theorem UpdateP.prod' (P : α → Prop) (Q : β → Prop) (x : α × β)
     (uxp : x.fst ~~>: P) (uxq : x.snd ~~>: Q) : x ~~>: λ y ↦ P (y.fst) ∧ Q (y.snd) :=
   .prod uxp uxq fun _ _ px qy => ⟨px, qy⟩
 
+@[rocq_alias prod_update]
 theorem Update.prod (x : α × β) (uxy₁ : x.fst ~~> y.fst) (uxy₂ : x.snd ~~> y.snd) : x ~~> y :=
   .of_updateP <| .prod (.of_update uxy₁) (.of_update uxy₂) fun _ _ ya yb => Prod.ext ya yb
 
 /-! ## Option -/
+@[rocq_alias option_updateP]
 theorem UpdateP.option {P : α → Prop} {Q : Option α → Prop} {x : α}
     (uxp : x ~~>: P) (pq : ∀ y, P y → Q (some y)) : some x ~~>: Q := by
   intro n mz v
@@ -280,8 +309,10 @@ theorem UpdateP.option {P : α → Prop} {Q : Option α → Prop} {x : α}
   | none | some none => let ⟨w, pw, vw⟩ := uxp n none v; exact ⟨w, pq w pw, vw⟩
   | some (some z) => let ⟨w, pw, vw⟩ := uxp n (some z) v; exact ⟨w, pq w pw, vw⟩
 
+@[rocq_alias option_updateP']
 theorem UpdateP.option' (P : α → Prop) (x : α) (uxp : x ~~>: P) : some x ~~>: Option.rec False P :=
   .option uxp fun _ py => py
 
+@[rocq_alias option_update]
 theorem Update.option (x y : α) (uxy : x ~~> y) : some x ~~> some y :=
   .of_updateP <| .option (.of_update uxy) fun _ => congrArg some
