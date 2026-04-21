@@ -130,6 +130,7 @@ def bupd (Q : UPred M) : UPred M where
     refine Q.mono HQ' ?_ k.le_refl
     exact CMRA.incN_op_left k x' x3
 
+@[rocq_alias uPred_emp]
 protected def emp : UPred M where
   holds _ _ := True
   mono _ _ _ := trivial
@@ -149,7 +150,7 @@ instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
       | 0 => by simp [UPred.later]
       | n' + 1 => fun x' Hn' Hx' => Hl _ Hn' _ _ (Nat.le_refl _) (CMRA.validN_succ Hx')
 
-@[rocq_alias uPred_primitive.ownM_ne]
+@[rocq_alias uPred_primitive.ownM_ne, rocq_alias uPred.ownM_ne]
 instance ownM_ne : OFE.NonExpansive (ownM : M → UPred M) where
   ne _ _ _ H _ _ Hn _ := OFE.Dist.incN (OFE.Dist.le H Hn) .rfl
 
@@ -185,6 +186,23 @@ instance : BIBase (UPred M) where
   persistently := UPred.persistently
   later        := UPred.later
 
+
+#rocq_ignore uPred.uPred_emp_unseal "Not needed"
+#rocq_ignore uPred.uPred_pure_unseal "Not needed"
+#rocq_ignore uPred.uPred_si_pure_unseal "Not needed"
+#rocq_ignore uPred.uPred_si_emp_valid_unseal "Not needed"
+#rocq_ignore uPred.uPred_and_unseal "Not needed"
+#rocq_ignore uPred.uPred_or_unseal "Not needed"
+#rocq_ignore uPred.uPred_impl_unseal "Not needed"
+#rocq_ignore uPred.uPred_forall_unseal "Not needed"
+#rocq_ignore uPred.uPred_exist_unseal "Not needed"
+#rocq_ignore uPred.uPred_sep_unseal "Not needed"
+#rocq_ignore uPred.uPred_wand_unseal "Not needed"
+#rocq_ignore uPred.uPred_persistently_unseal "Not needed"
+#rocq_ignore uPred.uPred_later_unseal "Not needed"
+#rocq_ignore uPred.uPred_bupd_unseal "Not needed"
+#rocq_ignore uPred.uPred_unseal "Not needed"
+
 instance uPred_entails_preorder : Std.Preorder (Entails (PROP := UPred M)) where
   refl _ _ _ H := H
   trans H1 H2 _ _ Hv H := H2 _ _ Hv <| H1 _ _ Hv H
@@ -196,6 +214,7 @@ theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
   refine H _ _ _ Hv ?_
   exact uPred_holds_ne IsCOFE.conv_compl.symm n.le_refl Hv HP
 
+@[rocq_alias uPredI]
 instance : BI (UPred M) where
   entails_preorder := inferInstance
   equiv_iff {P Q} := by
@@ -343,9 +362,20 @@ instance : BI (UPred M) where
     | n+1, x, Hv, H => .inr fun
       | 0, x', Hx'le, Hn', Hv', _ => P.mono H Hx'le.incN (Nat.zero_le _)
 
+-- TODO: uPred_pure, Why don't we need it?
+-- TODO: pure_ne
+
+#rocq_ignore pure_intro "Inlined in uPredI construction"
+#rocq_ignore pure_elim' "Inlined in uPredI construction"
+#rocq_ignore uPred_bi_mixin "Inlined in uPredI construction"
+#rocq_ignore uPred_bi_later_mixin "Inlined in uPredI construction"
+#rocq_ignore uPred_bi_persistently_mixin "Inlined in uPredI construction"
+
 @[rocq_alias uPred_persistently_forall]
 instance : BIPersistentlyForall (UPred M) where
   persistently_sForall_2 _ _ x hv h p hp := h _ ⟨p, rfl⟩ _ x (CMRA.inc_refl x) .refl hv hp
+
+#rocq_ignore uPred_pure_forall "BiPureForall is not needed"
 
 @[rocq_alias uPred_later_contractive]
 instance : BILaterContractive (UPred M) where
@@ -432,7 +462,7 @@ theorem uPredSiEmpValid_exist_mp {α : Type _} {P : α → UPred M} :
   rintro n ⟨Ψ, ⟨a, rfl⟩, hp⟩
   exact ⟨iprop(<si_emp_valid> P a), ⟨a, rfl⟩, hp⟩
 
--- prop_ext_2 is already in SIProp.lean
+@[rocq_alias uPred_primitive.prop_ext_2]
 theorem prop_ext_uPredSiEmpValid {P Q : UPred M} : <si_emp_valid> (P ∗-∗ Q) ⊢ SiProp.internalEq P Q := by
   intro _ hpq n x hn hv
   have hu : UCMRA.unit • x ≡{n}≡ x := UCMRA.unit_left_id.dist
@@ -443,6 +473,7 @@ theorem prop_ext_uPredSiEmpValid {P Q : UPred M} : <si_emp_valid> (P ∗-∗ Q) 
 
 end SiPropEmbedding
 
+@[rocq_alias uPred_sbi]
 instance : Sbi (UPred M) where
   siPure_ne := uPredSiPure_ne
   siEmpValid_ne := uPredSiEmpValid_ne
@@ -458,6 +489,9 @@ instance : Sbi (UPred M) where
   siEmpValid_later_mp := uPredSiEmpValid_later_mp
   siEmpValid_affinely_mpr _ h := ⟨trivial, h⟩
   prop_ext_siEmpValid := prop_ext_uPredSiEmpValid
+
+#rocq_ignore uPred_sbi_mixin "Inlined in uPred_sbi construction"
+#rocq_ignore uPred_sbi_prop_ext_mixin "Inlined in uPred_sbi construction"
 
 @[rocq_alias uPred_sbi_emp_valid_exist]
 instance : SbiEmpValidExist (UPred M) where
@@ -493,6 +527,8 @@ instance : BIUpdate (UPred M) where
     refine ⟨x' • x2, CMRA.op_assocN.validN.1 Hx'1, x', x2, .rfl, Hx'2, ?_⟩
     exact R.mono HR (CMRA.incN_refl x2) Hk
 
+#rocq_ignore uPred_bupd_mixin "Inlined in BIUpdate instance construction"
+
 @[rocq_alias uPred_primitive.bupd_si_pure]
 theorem bupd_si_pure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure> Pi := by
   intro n x Hx Hv
@@ -511,10 +547,10 @@ instance : BIBUpdatePlainly (UPred M) where
     rw [plainly_eq_uPred_plainly] at Hx'
     exact P.mono Hx' CMRA.incN_unit n.le_refl
 
-@[rocq_alias uPred_primitive.ownM_valid]
+@[rocq_alias uPred_primitive.ownM_valid, rocq_alias uPred.ownM_valid]
 theorem ownM_valid (m : M) : ownM m ⊢ internalCmraValid m := fun _ _ h hp => hp.validN h
 
-@[rocq_alias uPred_primitive.ownM_op]
+@[rocq_alias uPred_primitive.ownM_op, rocq_alias uPred.ownM_op]
 theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
   constructor
   · intro n x Hv ⟨z, Hz⟩

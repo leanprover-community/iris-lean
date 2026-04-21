@@ -22,6 +22,10 @@ open Iris OFE COFE BI Auth
 
 section InvG
 
+@[rocq_alias has_lc]
+abbrev hasLc := Bool
+
+@[rocq_alias invGpreS]
 class InvGpreS (GF : BundledGFunctors) where
   toWsatGpreS : WsatGpreS GF
   toLcGpreS : LcGpreS GF
@@ -29,7 +33,8 @@ class InvGpreS (GF : BundledGFunctors) where
 attribute [reducible, instance] InvGpreS.toWsatGpreS
 attribute [reducible, instance] InvGpreS.toLcGpreS
 
-class InvGS_gen (hlc : outParam Bool) (GF : BundledGFunctors) extends InvGpreS GF where
+@[rocq_alias invGS_gen]
+class InvGS_gen (hlc : outParam hasLc) (GF : BundledGFunctors) extends InvGpreS GF where
   toWsatGS : WsatGS GF
   toLcGS : LcGS GF
 
@@ -38,12 +43,20 @@ attribute [reducible, instance] InvGS_gen.toLcGS
 
 abbrev InvGS := InvGS_gen true
 
+#rocq_ignore «invΣ» "Not needed"
+#rocq_ignore «subG_invΣ» "Not needed"
+
 end InvG
 
 section FUpd
 
 variable {GF : BundledGFunctors} {hlc : Bool} [InvGS_gen hlc GF]
 
+#rocq_ignore uPred_fupd_def "Not needed"
+#rocq_ignore uPred_fupd_aux "Not needed"
+#rocq_ignore uPred_fupd_unseal "Not needed"
+
+@[rocq_alias uPred_fupd]
 def uPred_fupd (E1 E2 : CoPset) (P : IProp GF) : IProp GF :=
   iprop(wsat ∗ ownE E1 -∗ le_upd_if hlc iprop(◇ (wsat ∗ ownE E2 ∗ P)))
 
@@ -64,6 +77,8 @@ end FUpd
 section Instances
 
 open Std.LawfulSet
+
+#rocq_ignore uPred_fupd_mixin "Not needed"
 
 @[rocq_alias uPred_bi_fupd]
 instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (IProp GF) where
@@ -252,6 +267,8 @@ theorem fupd_soundness_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P
   · isplitl [Hwsat] <;> iassumption
   iapply le_upd_later $$ Hcr [H]
   iapply except0_into_later $$ H
+
+#rocq_ignore fupd_soundness_no_lc_unfold "Proof inlined in fupd_soundness_no_lc"
 
 @[rocq_alias fupd_soundness_no_lc]
 theorem fupd_soundness_no_lc [InvGpreS GF] {E1 E2 : CoPset} {P : IProp GF} [Plain P]
