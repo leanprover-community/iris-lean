@@ -26,8 +26,6 @@ public import Batteries.Data.List.Basic
 --       observations being a `List Obs`.
 -- TODO: Consider renaming `ToVal` typeclass to something better, since
 --       it's not just the `toVal` operation it carries.
--- TODO: Move out of `FromMathlib` those definitions which don't actually
---       come from Mathlib!
 -- TODO: Consider changing `Language.NSteps` to use `Relation.iterate`
 --       instead of mirroring its structure
 
