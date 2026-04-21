@@ -8,15 +8,6 @@ public import Iris.Std.List
 public meta import Lean.PrettyPrinter.Delaborator
 public import Batteries.Data.List.Basic
 
--- TODO: Rethink steping notations (probabl drop `ₜ` for `primStep`)
---       (e,σ)    -<obs>->ₜ        (e',σ',eₜ)  (primStep)
---       (t,σ)    -<obs>->ₜₚ       (t',σ')     (Step)
---       (t,σ)    -<obs>->ₜₚ^[n]   (t',σ')     (NSteps)
---       (t,σ)    -·->ₜₚ           (t',σ')     (erasedStep)
---         e      -ᵖ->               e'        (pureStep)
---         e      -ᵖ->^[n]           e'        (iterate pureStep)
---         e      -ᵖ->*              e'        (ReflTransGen pureStep)
---         t      -ᵖ->ₜₚ*            t'        (Forall₂ (· -ᵖ->* ·))
 -- TODO: Ensure all the relevant `rocq_alias` are added
 -- TODO: Ask «Why chose List here? It seems any monoid would do.» for the
 --       observations being a `List Obs`.
@@ -84,7 +75,7 @@ class PrimStep
 namespace PrimStep
 
 @[inherit_doc PrimStep.primStep]
-scoped notation conf:40 " -<" obs:max ">->ₜ " conf':41  => PrimStep.primStep conf obs conf'
+scoped notation conf:40 " -<" obs:max ">-> " conf':41  => PrimStep.primStep conf obs conf'
 
 end PrimStep
 open PrimStep
@@ -95,15 +86,15 @@ variable [PrimStep Expr State Obs]
 @[rocq_alias reducible]
 def reducible : Expr × State → Prop
 | (e, σ) => ∃ obs e' σ' eₜ,
-    (e, σ) -<obs>->ₜ (e', σ', eₜ)
+    (e, σ) -<obs>-> (e', σ', eₜ)
 
 @[rocq_alias reducible_no_obs]
 def pureReducible [PrimStep Expr State (List Obs)] : Expr × State → Prop
 | (e, σ) => ∃ e' σ' eₜ,
-    (e, σ) -<[]>->ₜ (e', σ', eₜ)
+    (e, σ) -<[]>-> (e', σ', eₜ)
 
 def irreducible : Expr × State → Prop
-| (e, σ) => ∀ obs e' σ' eₜ, ¬ (e, σ) -<obs>->ₜ (e', σ', eₜ)
+| (e, σ) => ∀ obs e' σ' eₜ, ¬ (e, σ) -<obs>-> (e', σ', eₜ)
 
 def stuck [ToVal Expr Val]: Expr × State → Prop
 | (e, σ) => toVal e = none ∧ irreducible (e, σ)
@@ -126,7 +117,7 @@ class Language
     ToVal Expr Val where
   /-- Values in a language should not reduce -/
   val_stuck : ∀ {e} {σ : State} {obs e' σ' eₜ},
-    (e, σ) -<obs>->ₜ (e', σ', eₜ) → toVal e = none
+    (e, σ) -<obs>-> (e', σ', eₜ) → toVal e = none
 
 attribute [rocq_alias mixin_val_stuck] Language.val_stuck
 
@@ -140,7 +131,7 @@ inductive Atomicity where
 
 class Atomic (a : Atomicity) (e : Expr) : Prop where
   atomic : ∀ (σ : State) obs e' σ' eₜ,
-    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
+    (e, σ) -<obs>-> (e', σ', eₜ) →
     match a with
     | .WeaklyAtomic => ¬ reducible (e', σ')
     | .StronglyAtomic => (toVal e').isSome
@@ -152,7 +143,7 @@ variable {e e': Expr}{σ σ': State}{v v' : Val}
 inductive Step : List Expr × State → List Obs → List Expr × State → Prop
   where
   | atomic : ∀ e σ  obs e' σ' eₜ,
-    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
+    (e, σ) -<obs>-> (e', σ', eₜ) →
     ∀ (t₁ t₂: List Expr),
     Step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ')
     -- NOTE: Using `t₁ ++ e :: t₂` instead of `t₁ ++ [e] ++ t₂` because in
@@ -163,7 +154,7 @@ inductive Step : List Expr × State → List Obs → List Expr × State → Prop
     -- are in the shape `t₁ ++ e :: t₂`, this form is preferred.
 
 def Step.of_primStep : ∀ {e σ}{obs : List Obs}{e'} {σ' : State} {eₜ},
-    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
+    (e, σ) -<obs>-> (e', σ', eₜ) →
     ∀ {t₁ t₂: List Expr},
     Step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ') :=
   (Language.Step.atomic _ _ _ _ _ _ · _ _)
@@ -238,7 +229,7 @@ theorem stronglyAtomic_atomic a :
 
 @[rocq_alias prim_step_not_stuck]
 theorem primStep_notStuck {e : Expr} {σ obs e' σ' eₜ} :
-    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
+    (e, σ) -<obs>-> (e', σ', eₜ) →
     notStuck (e, σ) :=
   fun h => .inr ⟨_, _, _, _, h⟩
 end ReducibilityLemmas
@@ -248,12 +239,12 @@ class Context(K: Expr → Expr) where
   toVal_eq_none_fill : ∀ {e : Expr},
     toVal e = none → toVal (K e) = none
   primStep_fill : ∀ {e} {σ : State} {obs e' σ' eₜ},
-    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
-    (K e, σ)-<obs>->ₜ(K e', σ', eₜ)
+    (e, σ) -<obs>-> (e', σ', eₜ) →
+    (K e, σ) -<obs>-> (K e', σ', eₜ)
   primStep_fill_inv : ∀ {e} {σ : State} {obs K_e' σ' eₜ},
     toVal e = .none →
-    (K e, σ) -<obs>->ₜ (K_e', σ', eₜ) →
-    ∃ e', K_e' = K e' ∧ (e, σ) -<obs>->ₜ (e', σ', eₜ)
+    (K e, σ) -<obs>-> (K_e', σ', eₜ) →
+    ∃ e', K_e' = K e' ∧ (e, σ) -<obs>-> (e', σ', eₜ)
 
 attribute [rocq_alias fill_not_val] Context.toVal_eq_none_fill
 attribute [rocq_alias fill_step] Context.primStep_fill
@@ -374,7 +365,7 @@ theorem perm_of_step (t₁ t₁' t₂ : List Expr) :
 @[rocq_alias step_insert]
 theorem step_update_of_getElem? {i obs efs} {t : List Expr} (σ₁ σ₂ : State):
     t[i]? = some e →
-    (e, σ₁) -<obs>->ₜ (e', σ₂, efs) →
+    (e, σ₁) -<obs>-> (e', σ₂, efs) →
     (t, σ₁) -<obs>->ₜₚ (t.set i e' ++ efs, σ₂) := by
   grind only [= getElem?_neg, = getElem?_pos, = Iris.Std.List.getElem?_some_iff_append,
     = List.getElem?_append, = List.getElem?_cons, = List.set_append, = List.set_cons_zero,
@@ -396,7 +387,7 @@ theorem perm_of_erasedStep (t₁ t₁' t₂ : List Expr) :
 section PureSteps
 
 /-- There is a pure step between `e₁` and `e₂` iff there is
-    a reduction step `(e₁, σ) -<[]>->ₜ (e₂, σ, [])` for some
+    a reduction step `(e₁, σ) -<[]>-> (e₂, σ, [])` for some
     σ and it is unique.
 
     Intuitively, the reduction is deterministic and does not
@@ -406,7 +397,7 @@ section PureSteps
 def purePrimStep (e₁ e₂ : Expr) :=
   (∀ σ : State, pureReducible (e₁, σ)) ∧
   (∀ {σ₁ σ₂ : State} {obs e₂' eₜ},
-    (e₁, σ₁) -<obs>->ₜ (e₂', σ₂, eₜ) →
+    (e₁, σ₁) -<obs>-> (e₂', σ₂, eₜ) →
     obs = [] ∧ σ₁ = σ₂ ∧ e₂ = e₂' ∧ eₜ = []
   )
 
@@ -536,7 +527,7 @@ theorem erasedStep_pureSteps (t₁ t₂ t₃ : List Expr) (σ₁ σ₂ : State) 
       t₁[i]? = some e ∧
       t₃[i]? = some e ∧
       t₂ = t₁.set i e' ++ eₜ ∧
-      (e, σ₁) -<obs>->ₜ (e', σ₂, eₜ)
+      (e, σ₁) -<obs>-> (e', σ₂, eₜ)
     ) := by
   rintro ⟨obs, ⟨e, σ₁, obs, e₂, σ₂, eₜ, pstep, ps, ss⟩⟩ Hps
   obtain ⟨ps₃, e₃, ss₃, rfl, ss_ss₃, ps_ps₃, length_ps, e_e₃⟩ :=
@@ -568,7 +559,7 @@ open Language
 section notations
 
 /--
-info: (e, σ) -<obs>->ₜ (e, σ, []) : Prop
+info: (e, σ) -<obs>-> (e, σ, []) : Prop
 -/
 #guard_msgs in
 variable (e : Expr) (σ : State) (obs : Obs) [PrimStep Expr State Obs] in
