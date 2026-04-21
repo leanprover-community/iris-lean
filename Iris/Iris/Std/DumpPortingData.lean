@@ -65,7 +65,7 @@ meta def buildJson (aliases : Array (Name × Name))
     ("ignored_files", Json.arr ignoreFileArr), ("concepts", Json.arr conceptArr)]
 
 /-- Discover all `.lean` source files under a directory and convert to module names.
-    E.g., `src/Iris/BI/Sbi.lean` → `Iris.BI.Sbi` -/
+    E.g., `Iris/BI/Sbi.lean` → `Iris.BI.Sbi` -/
 meta partial def discoverModules (srcDir : System.FilePath) : IO (Array Name) := do
   let mut result : Array Name := #[]
   let mut worklist : Array (System.FilePath × Name) := #[(srcDir / "Iris", `Iris)]
@@ -88,7 +88,7 @@ public meta unsafe def main (args : List String) : IO Unit := do
   -- Discover all Iris .olean modules to bypass `module` re-export filtering.
   -- `module` files don't re-export declarations created by privately-imported
   -- metaprograms like @[rocq_alias], so we import every module directly.
-  let srcDir : System.FilePath := "src"
+  let srcDir : System.FilePath := "."
   let modules ← discoverModules srcDir
   let env ← importModules (modules.map ({ module := · }))
     {} (trustLevel := 1024) (loadExts := true)
