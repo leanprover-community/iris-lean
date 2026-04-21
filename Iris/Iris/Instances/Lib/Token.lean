@@ -32,21 +32,6 @@ variable {GF : BundledGFunctors} [TokenG GF]
 
 def token (γ : GName) : IProp GF := iOwn (F := TokenF) γ (excl ())
 
-private theorem Token.iSingleton_discreteE (γ : GName) (v : TokenF.ap (IProp GF)) [DiscreteE v] :
-    DiscreteE (iSingleton TokenF γ v) where
-  discrete {y} H τ' := by
-    specialize H τ'
-    simp only [iSingleton] at H ⊢
-    split
-    · next heq =>
-      subst heq
-      simp only [dite_true] at H ⊢
-      letI := IProp.unfoldi_discreteE (ElemG.bundle_discreteE TokenG.elemG (v := v))
-      exact GenMap.singleton_discreteE.discrete H
-    · next hne =>
-      simp only [hne, dite_false] at H ⊢
-      exact GenMap.empty_discreteE.discrete H
-
 instance token_timeless (γ : GName) : Timeless (token (GF := GF) γ) := by
   unfold token
   infer_instance
