@@ -1,5 +1,4 @@
 name = "iris"
-srcDir = "./src/"
 defaultTargets = ["Iris", "IrisTest"]
 
 [[require]]
@@ -21,6 +20,6 @@ globs = ["Iris.*"]
 
 [[lean_exe]]
 name = "dumpPortingData"
-srcDir = "../scripts"
+srcDir = "Iris/Std"
 root = "DumpPortingData"
 supportInterpreter = true

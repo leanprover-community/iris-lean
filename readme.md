@@ -12,7 +12,8 @@ Rocq formalization of Iris: https://gitlab.mpi-sws.org/iris/iris/
 Currently, Iris-Lean has support for 
 - *MoSeL*, the proof interface of Iris
 - `UPred`, the Iris base logic
-- A selection of the Iris resources
+- `IProp`, the standard model of Iris
+- A selection of the Iris resources, including invariants, later credis, and many more.
 
 MoSeL (in contrast to the older IPM) supports different separation logics as well. For more details on the proofmode, see [proofmode.md](proofmode.md).
 
@@ -23,23 +24,25 @@ MoSeL (in contrast to the older IPM) supports different separation logics as wel
 ```
 [[require]]
 name = "iris"
-git = "https://github.com/leanprover-community/iris-lean.git"
+git.url = "https://github.com/leanprover-community/iris-lean.git" 
+git.subDir = "IrisLean" 
 rev = "master"
 ```
-- The `unstable` tag will be periodically updated with features that are still in development:
+- To use Iris constructions based on mathlib, you can also import the math library
 ```
 [[require]]
 name = "iris"
-git = "https://github.com/leanprover-community/iris-lean.git"
-rev = "unstable"
+git.url = "https://github.com/leanprover-community/iris-lean.git" 
+git.subDir = "IrisLeanMath" 
+rev = "master"
 ```
+
 
 # Development
 
-This project started as part of Lars König's master's thesis at Karlsruhe Institute of Technology (KIT). It is currently being maintained by Mario Carneiro and Markus de Medeiros. 
+This project started as part of Lars König's master's thesis at Karlsruhe Institute of Technology (KIT). It is currently being maintained by a team of developers, coordinating on the [iris-lean channel](https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean) on the Lean Zulip. 
 
-For questions, contribution guidance, and development information, see the [iris-lean channel](https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean) on the Lean Zulip. We always welcome new contributors, and would be happy to help you find something to work on!
-
+We always welcome new contributors! For questions, contribution guidance, and development information, feel free to introduce yourself on the Zulip. 
 
 # Miscellaneous
 
