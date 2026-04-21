@@ -118,7 +118,6 @@ class BIBUpdatePlainly (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] wher
   bupd_plainly {P : PROP} : (|==> ■ P) ⊢ P
 
 class BIFUpdatePlainly (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
-  fupd_plainly_mask_empty E (P : PROP) : (|={E,∅}=> ■ P) ⊢ |={E}=> P
   fupd_plainly_keep_l (E E' : CoPset) (P R : PROP) : (R ={E,E'}=∗ ■ P) ∗ R ⊢ |={E}=> P ∗ R
   fupd_plainly_later (E : CoPset) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P
   fupd_plainly_sForall_2 (E : CoPset) (Φ : PROP → Prop) :
@@ -320,6 +319,11 @@ section StepFUpdPlainlyLaws
 variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP]
 
 open BIFUpdate BIFUpdatePlainly
+
+@[rocq_alias fupd_plainly_mask]
+theorem fupd_plainly_mask E E' {P : PROP} : (|={E,E'}=> ■ P) ⊢ |={E}=> P :=
+  (wand_intro' emp_sep.1).trans <|
+  (sep_emp.2.trans <| (fupd_plainly_keep_l E E' P emp).trans <| mono sep_emp.1)
 
 @[rocq_alias fupd_plain_mask]
 theorem fupd_plain_mask {E E' : CoPset} {P : PROP} [Plain P] : (|={E,E'}=> P) ⊢ |={E}=> P :=

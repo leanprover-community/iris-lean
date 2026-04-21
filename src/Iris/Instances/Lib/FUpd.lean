@@ -145,16 +145,6 @@ instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIUpdateFUpdate (IProp GF)
 @[rocq_alias uPred_bi_fupd_sbi_no_lc]
 instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen false GF] :
     BIFUpdatePlainly (IProp GF) where
-  fupd_plainly_mask_empty E P := by
-    simp only [fupd, uPred_fupd, le_upd_if, Bool.false_eq_true, ↓reduceIte]
-    iintro H G
-    ihave #>HP : ◇ ■ P $$ [H G]
-    · imod H $$ G with ⟨_, _, H⟩
-      iassumption
-    imodintro; imodintro
-    icases G with ⟨G1, G2⟩
-    isplitl [G1]; iassumption
-    isplitl [G2] <;> iassumption
   fupd_plainly_keep_l E E' P Q := by
     simp only [fupd, uPred_fupd, le_upd_if, Bool.false_eq_true, ↓reduceIte]
     iintro ⟨H, Hx⟩ ⟨Hwsat, HE⟩
@@ -303,7 +293,7 @@ theorem step_fupdN_soundness_no_lc [InvGpreS GF] (n m : Nat) {P : IProp GF} [Pla
   intro LC
   specialize H LC
   iintro Hcrds
-  iapply fupd_plainly_mask_empty
+  iapply fupd_plainly_mask (E' := ∅)
   imod H $$ Hcrds with H
   imod step_fupdN_plain $$ H with H
   imodintro
