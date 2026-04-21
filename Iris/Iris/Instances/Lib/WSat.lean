@@ -33,6 +33,7 @@ abbrev InvMap (x : Type _) := Std.ExtTreeMap Pos x compare
 abbrev InvMapF := HeapViewURF (F := PNat) (H := InvMap) (AgreeRF (LaterOF IdOF))
 
 /-- Wsat inclusion typeclass (`GF` contains the necessary functors for wsat) -/
+@[rocq_alias wsatGS.wsatGpreS]
 class WsatGpreS (GF : BundledGFunctors) where
   inv : ElemG GF InvMapF
   enabled : ElemG GF (constOF (DisjointLeibnizSet CoPset))
@@ -43,10 +44,14 @@ attribute [reducible, instance] WsatGpreS.enabled
 attribute [reducible, instance] WsatGpreS.disabled
 
 /-- Wsat allocated class (Names in a global IProp resource for the Wsat resources). -/
+@[rocq_alias wsatGS.wsatGS]
 class WsatGS (GF : BundledGFunctors) extends WsatGpreS GF where
   invariant_name : GName
   enabled_name : GName
   disabled_name : GName
+
+#rocq_ignore «wsatGS.wsatΣ» "Not needed"
+#rocq_ignore «wsatGS.subG_wsatΣ» "Not needed"
 
 end WsatGS
 
@@ -54,14 +59,18 @@ section Definitions
 
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
+@[rocq_alias invariant_unfold]
 abbrev invariant_unfold (P : IProp GF) : Later (IProp GF) := Later.next P
 
+@[rocq_alias ownI]
 def ownI (i : Pos) (P : IProp GF) : IProp GF :=
   iOwn (E := W.inv) W.invariant_name (Frag i discard (toAgree (invariant_unfold P)))
 
+@[rocq_alias ownE]
 def ownE (S : CoPset) : IProp GF :=
   iOwn (E := W.enabled) W.enabled_name (valid S)
 
+@[rocq_alias ownD]
 def ownD (S : PosSet) : IProp GF :=
   iOwn (E := W.disabled) W.disabled_name (valid S)
 
@@ -70,11 +79,15 @@ abbrev liftInv (I : InvMap (IProp GF)) := map toAgree (map invariant_unfold I)
 abbrev invMap (I : InvMap (IProp GF)) : InvMapF.ap (IProp GF) :=
   Auth (own 1) (liftInv I)
 
+@[rocq_alias wsat]
 def wsat : IProp GF := iprop(
   ∃ I : InvMap (IProp GF),
     iOwn (E := W.inv) W.invariant_name (invMap I) ∗
     [∗map] i ↦ Q ∈ I, (▷ Q ∗ ownD {i}) ∨ ownE {i})
 
+#rocq_ignore invariant_unfold_contractive "Only needed for ownI_contractive which is proved directly"
+
+@[rocq_alias ownI_contractive]
 instance (i : Pos) : Contractive (ownI (W := W) i) where
   distLater_dist h := by
     unfold ownI
@@ -83,6 +96,7 @@ instance (i : Pos) : Contractive (ownI (W := W) i) where
     refine NonExpansive.ne ?_
     exact Contractive.distLater_dist h
 
+@[rocq_alias ownI_persistent]
 instance (i : Pos) (P : IProp GF) : Persistent (ownI (W := W) i P) := by
   unfold ownI; infer_instance
 
@@ -92,13 +106,16 @@ section ownE
 
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
+@[rocq_alias ownE_empty]
 theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UCMRA.unit)
 
+@[rocq_alias ownE_op]
 theorem ownE_op {E1 E2} (Hdisj : E1 ## E2) : ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
   refine .trans (.of_eq ?_) iOwn_op
   rw [disj_op_union Hdisj]
   rfl
 
+@[rocq_alias ownE_disjoint]
 theorem ownE_disjoint {E1 E2} : ownE E1 ∗ ownE E2 ⊢@{IProp GF} ⌜E1 ## E2⌝ := by
   iintro ⟨H1, H2⟩
   icases iOwn_op $$ [H1 H2] with H
@@ -109,6 +126,7 @@ theorem ownE_disjoint {E1 E2} : ownE E1 ∗ ownE E2 ⊢@{IProp GF} ⌜E1 ## E2�
   ipure_intro
   exact valid_op_iff_disj.mp H
 
+@[rocq_alias ownE_op']
 theorem ownE_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
   constructor
   · iintro ⟨%Hdisj, H⟩
@@ -122,7 +140,8 @@ theorem ownE_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownE (E1 ∪ E2) ⊣⊢@{IProp 
     · iapply (ownE_op Hdisj).mpr $$ [H1 H2]
       isplitl [H1] <;> iassumption
 
-theorem ownE_singleton_singleton {i : Pos} : ownE {i} ∗ ownE {i} ⊢@{IProp GF} False :=
+@[rocq_alias ownE_singleton_twice]
+theorem ownE_singleton_twice {i : Pos} : ownE {i} ∗ ownE {i} ⊢@{IProp GF} False :=
   ownE_disjoint.trans (pure_mono fun h => h i (by simp [mem_singleton]))
 
 end ownE
@@ -131,13 +150,16 @@ section ownD
 
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
+@[rocq_alias ownD_empty]
 theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UCMRA.unit)
 
+@[rocq_alias ownD_op]
 theorem ownD_op {E1 E2} (Hdisj : E1 ## E2) : ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
   refine .trans (.of_eq ?_) iOwn_op
   rw [disj_op_union Hdisj]
   rfl
 
+@[rocq_alias ownD_disjoint]
 theorem ownD_disjoint (E1 E2 : PosSet) :
     ownD E1 ∗ ownD E2 ⊢@{IProp GF}  ⌜E1 ## E2⌝ := by
   unfold ownD
@@ -149,6 +171,7 @@ theorem ownD_disjoint (E1 E2 : PosSet) :
   ipure_intro
   exact valid_op_iff_disj.mp H
 
+@[rocq_alias ownD_op']
 theorem ownD_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
   constructor
   · iintro ⟨%Hdisj, H⟩
@@ -162,6 +185,7 @@ theorem ownD_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownD (E1 ∪ E2) ⊣⊢@{IProp 
     · iapply (ownD_op Hdisj).mpr $$ [H1 H2]
       isplitl [H1] <;> iassumption
 
+@[rocq_alias ownD_singleton_twice]
 theorem ownD_singleton_twice {i : Pos} : ownD {i} ∗ ownD {i} ⊢@{IProp GF} False :=
     (ownD_disjoint {i} {i}).trans (pure_mono fun h => h i (by simp))
 
@@ -171,6 +195,7 @@ section operations
 
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
+@[rocq_alias invariant_lookup]
 theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
     iOwn (E := W.inv) W.invariant_name (invMap I) ∗ ownI i P
     ⊢@{IProp GF} ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ internalEq Q P := by
@@ -190,6 +215,7 @@ theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
     rw [←Hagree]
     iapply toAgree_includedI $$ H2
 
+@[rocq_alias ownI_open]
 theorem ownI_open {i : Pos} {P : IProp GF} : wsat ∗ ownI i P ∗ ownE {i} ⊢ wsat ∗ ▷ P ∗ ownD {i} := by
   unfold wsat
   iintro ⟨⟨%I, Hown, Hmap⟩, #HI, HE⟩
@@ -209,9 +235,10 @@ theorem ownI_open {i : Pos} {P : IProp GF} : wsat ∗ ownI i P ∗ ownE {i} ⊢ 
         iapply internalEq.rewrite (Ψ := fun x => x) (hΨ := OFE.id_ne) $$ H HProp
       · iassumption
   · iexfalso
-    iapply ownE_singleton_singleton $$ [HE HE']
+    iapply ownE_singleton_twice $$ [HE HE']
     isplitl [HE] <;> iassumption
 
+@[rocq_alias ownI_close]
 theorem ownI_close {i : Pos} {P : IProp GF} : wsat ∗ ownI i P ∗ ▷ P ∗ ownD {i} ⊢ wsat ∗ ownE {i} := by
   unfold wsat
   iintro ⟨⟨%I, Hown, Hmap⟩, #HI, HProp, HE⟩
@@ -239,6 +266,7 @@ section allocation
 
 variable {GF : BundledGFunctors}
 
+@[rocq_alias ownI_alloc]
 theorem ownI_alloc [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
     (Hfresh : ∀ E : PosSet, ∃ i, i ∉ E ∧ φ i) :
     ⊢ wsat ∗ ▷ P ==∗ ∃ i, ⌜φ i⌝ ∗ wsat ∗ ownI i P := by
@@ -280,6 +308,7 @@ theorem ownI_alloc [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
       · iexact Hmap
   · iexact Hpt
 
+@[rocq_alias ownI_alloc_open]
 theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
   (Hfresh : ∀ E : PosSet, ∃ i, i ∉ E ∧ φ i) :
   ⊢ wsat ==∗ ∃ i, ⌜φ i⌝ ∗ (ownE {i} -∗ wsat) ∗ ownI i P ∗ ownD {i} := by
@@ -320,6 +349,7 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
       · iexact Hmap
   · unfold ownI; rw [HEQ]; isplit <;> iassumption
 
+@[rocq_alias wsat_alloc]
 theorem wsat_alloc [WP : WsatGpreS GF] :
     ⊢ |==> ∃ (W : WsatGS GF), wsat (W := W) ∗ ownE ⊤ := by
   imod (iOwn_alloc (E := WP.inv) (Auth (.own 1) empty) auth_one_valid) with ⟨%γ, H⟩

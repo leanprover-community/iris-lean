@@ -682,6 +682,10 @@ theorem prop_ext (P Q : PROP) : iprop(internalEq P Q ⊣⊢ ■ (P ∗-∗ Q)) :
   have ⟨mp, mpr⟩:= prop_ext_siEmpValid_equiv P Q
   ⟨siPure_mono mp, siPure_mono mpr⟩
 
+@[rocq_alias prop_ext_2]
+theorem prop_ext_symm (P Q : PROP) : iprop(■ (P ∗-∗ Q) ⊣⊢ internalEq P Q) :=
+  prop_ext P Q |>.symm
+
 @[rocq_alias plainly_alt]
 theorem plainly_alt (P : PROP) : ■ P ⊣⊢ internalEq iprop(<affine> P) iprop(emp) := by
   apply plainly_affinely_elim.symm.trans

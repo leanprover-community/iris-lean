@@ -40,13 +40,18 @@ scoped instance : CMRA.Discrete Credit := CommMonoidLike.instDiscrete
 scoped instance {a : Credit} : CMRA.Cancelable a := inferInstance
 
 /-- Later credits inclusion typeclass (`GF` contains the necessary functors for later credits) -/
+@[rocq_alias lcGpreS]
 class LcGpreS (GF : BundledGFunctors) where
   lc_elem : ElemG GF (AuthURF (F := PNat) (constOF Credit))
 
 attribute [reducible, instance] LcGpreS.lc_elem
 
+@[rocq_alias lcGS]
 class LcGS (GF : BundledGFunctors) extends LcGpreS GF where
   lc_name : GName
+
+#rocq_ignore «lcΣ» "Not needed"
+#rocq_ignore «subG_lcΣ» "Not needed"
 
 end LcGS
 
@@ -54,11 +59,21 @@ section Definitions
 
 variable {GF : BundledGFunctors} [LC : LcGS GF]
 
+#rocq_ignore lc_def "Not needed"
+#rocq_ignore lc_aux "Not needed"
+#rocq_ignore lc_unseal "Not needed"
+
+@[rocq_alias lc]
 def lc (i : Credit) : IProp GF :=
   iOwn (E := LC.lc_elem) LC.lc_name (◯ i)
 
 notation:max "£ " i:40 => lc i
 
+#rocq_ignore lc_supply_def "Not needed"
+#rocq_ignore lc_supply_aux "Not needed"
+#rocq_ignore lc_supply_unseal "Not needed"
+
+@[rocq_alias lc_supply]
 def lc_supply (i : Credit) : IProp GF :=
   iOwn (E := LC.lc_elem) LC.lc_name (● i)
 
@@ -68,6 +83,7 @@ section Operations
 
 variable {GF : BundledGFunctors} [LC : LcGS GF]
 
+@[rocq_alias lc_split]
 theorem lc_split {n m} : £ (n + m) ⊣⊢@{IProp GF} £ n ∗ £ m := by
   -- FIXME: Timeout on iOwn_op. Why?
   refine .trans ?_ iOwn_op
@@ -139,6 +155,8 @@ instance (priority := default - 10) {n m} : FromSep (PROP := IProp GF) (£ (n + 
 instance (priority := default) {n} : FromSep (PROP := IProp GF) (£ (.succ n)) (£ 1) (£ n) where
   from_sep := lc_succ.mpr
 
+-- TODO: combine_sep_lc_add, combine_sep_lc_S_l
+
 @[rocq_alias into_sep_lc_add]
 instance (priority := default - 10) {n m} : IntoSep (PROP := IProp GF) (£ (n + m)) (£ n) (£ m) where
   into_sep := lc_split.mp
@@ -172,6 +190,10 @@ instance {P : IProp GF} : Contractive (le_upd_pre P) where
     cases n
     · exact distLater_zero
     · exact distLater_succ.mpr (distLater_succ.mp H)
+
+#rocq_ignore le_upd.le_upd_def "Not needed"
+#rocq_ignore le_upd.le_upd_aux "Not needed"
+#rocq_ignore le_upd.le_upd_unseal "Not needed"
 
 @[rocq_alias le_upd.le_upd]
 def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
@@ -315,6 +337,8 @@ theorem except_0_le_upd {P : IProp GF} : ◇ (|==£> P) ⊢ |==£> (◇ P) := by
     iintro H
     iright
     iexact H
+
+#rocq_ignore le_upd.bi_bupd_mixin_le_upd "Only a safety check, not used"
 
 end Upd
 
@@ -498,7 +522,7 @@ def le_upd_if (b : Bool) : IProp GF → IProp GF :=
 instance le_upd_if_ne : NonExpansive (le_upd_if b (GF := GF)) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
-@[rocq_alias le_upd_if.le_upd_if_mono']
+@[rocq_alias le_upd_if.le_upd_if_mono]
 theorem le_upd_if_mono {P Q : IProp GF} : (P ⊢ Q) → (le_upd_if b P) ⊢ (le_upd_if b Q) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte])
   · intro H; iintro G
@@ -553,6 +577,10 @@ theorem except_0_le_upd_if {b} {P : IProp GF} : ◇ (le_upd_if b P) ⊢ le_upd_i
 @[rocq_alias le_upd_if.elim_bupd_le_upd_if]
 instance {b} {p} {P Q : IProp GF} : ElimModal True p false (bupd P) P (le_upd_if b Q) (le_upd_if b Q) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
+
+@[rocq_alias le_upd_if.from_assumption_le_upd_if]
+instance from_assumption_le_upd_if {p} {P Q : IProp GF} [h : FromAssumption p ioP P Q] : FromAssumption p ioP P (le_upd_if b Q) where
+  from_assumption := h.1.trans le_upd_if_intro
 
 @[rocq_alias le_upd_if.from_pure_le_upd_if]
 instance {b} {a} {P : IProp GF} φ [FromPure a P io φ] : FromPure a (le_upd_if b P) io φ := by
