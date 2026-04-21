@@ -57,7 +57,7 @@ theorem token_alloc_strong (P : GName → Prop) (HP : ∀ xs : List GName, ∃ x
   unfold token
   iapply iOwn_alloc_strong _ P _ trivial
   intro N
-  let choice := HP (List.range N)
+  have choice := HP (List.range N)
   exists choice.choose
   refine ⟨?_, choice.choose_spec.left⟩
   have hle := choice.choose_spec.right
