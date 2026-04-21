@@ -153,10 +153,11 @@ section Upd
 
 variable {GF : BundledGFunctors} [LcGS GF]
 
+@[rocq_alias le_upd.le_upd_pre]
 def le_upd_pre (le_upd : IProp GF → IProp GF) : IProp GF → IProp GF :=
   fun P => iprop(∀ n, lc_supply n ==∗ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd P))
 
-@[rocq_alias le_upd_pre_contractive]
+@[rocq_alias le_upd.le_upd_pre_contractive]
 instance : Contractive (le_upd_pre (GF := GF)) where
   distLater_dist {n x y} H P := by
     simp only [le_upd_pre]
@@ -172,6 +173,7 @@ instance : Contractive (le_upd_pre (GF := GF)) where
     · exact distLater_zero
     · exact distLater_succ.mpr (distLater_succ.mp H P)
 
+@[rocq_alias le_upd.le_upd]
 def le_upd : IProp GF → IProp GF := fixpoint le_upd_pre
 
 syntax:max "|==£> " term:40 : term
@@ -182,13 +184,13 @@ macro_rules
 delab_rule le_upd
 | `($_ $P) => do ``(iprop(|==£> $(← unpackIprop P)))
 
-@[rocq_alias le_upd_unfold]
+@[rocq_alias le_upd.le_upd_unfold]
 theorem le_upd_unfold {P : IProp GF} :
   (|==£> P) ⊣⊢
   ∀ n, lc_supply n ==∗ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd P) :=
     (equiv_iff.mp ((fixpoint_unfold ⟨le_upd_pre (GF := GF), inferInstance⟩) P)).trans .rfl
 
-@[rocq_alias le_upd_ne]
+@[rocq_alias le_upd.le_upd_ne]
 instance : NonExpansive (le_upd (GF := GF)) where
   ne {n} := by
     apply WellFounded.induction Nat.lt_wfRel.wf n
@@ -205,7 +207,7 @@ instance : NonExpansive (le_upd (GF := GF)) where
     refine Contractive.distLater_dist ?_
     exact (fun k Hk => IH k Hk (H.lt Hk))
 
-@[rocq_alias bupd_le_upd]
+@[rocq_alias le_upd.bupd_le_upd]
 theorem bupd_le_upd {P : IProp GF} : (|==> P) ⊢ (|==£> P) := by
   iintro H
   iapply le_upd_unfold
@@ -214,14 +216,14 @@ theorem bupd_le_upd {P : IProp GF} : (|==> P) ⊢ (|==£> P) := by
   ileft
   isplitl [Hsupp] <;> iassumption
 
-@[rocq_alias le_upd_intro]
+@[rocq_alias le_upd.le_upd_intro]
 theorem le_upd_intro {P : IProp GF} : P ⊢ |==£> P := by
   iintro H
   iapply bupd_le_upd
   imodintro
   iexact H
 
-@[rocq_alias le_upd_bind]
+@[rocq_alias le_upd.le_upd_bind]
 theorem le_upd_bind {P Q : IProp GF} : ⊢ (P -∗ |==£> Q) -∗ (|==£> P) -∗ (|==£> Q) := by
   iapply BILoeb.loeb_weak
   iintro HLöb H G
@@ -249,7 +251,7 @@ theorem le_upd_bind {P Q : IProp GF} : ⊢ (P -∗ |==£> Q) -∗ (|==£> P) -�
     iapply HLöb $$ H G
   ipure_intro; simp
 
-@[rocq_alias le_upd_later_elim]
+@[rocq_alias le_upd.le_upd_later_elim]
 theorem le_upd_later_elim {P : IProp GF} : ⊢ £ 1 -∗ (▷ |==£> P) -∗ |==£> P := by
   iintro Hcr H
   iapply le_upd_unfold
@@ -267,7 +269,7 @@ theorem le_upd_later_elim {P : IProp GF} : ⊢ £ 1 -∗ (▷ |==£> P) -∗ |==
     · ipure_intro; simp
     isplitr [H] <;> iassumption
 
-@[rocq_alias le_upd_mono]
+@[rocq_alias le_upd.le_upd_mono]
 theorem le_upd_mono {P Q : IProp GF} (Hent : P ⊢ Q) : (|==£> P) ⊢ (|==£> Q) := by
   iintro H
   iapply le_upd_bind $$ [] H
@@ -275,13 +277,13 @@ theorem le_upd_mono {P Q : IProp GF} (Hent : P ⊢ Q) : (|==£> P) ⊢ (|==£> Q
   iapply le_upd_intro
   apply Hent
 
-@[rocq_alias le_upd_trans]
+@[rocq_alias le_upd.le_upd_trans]
 theorem le_upd_trans {P : IProp GF} : (|==£> |==£> P) ⊢ |==£> P := by
   iintro H
   iapply le_upd_bind $$ [] H
   iintro H; iexact H
 
-@[rocq_alias le_upd_frame_r]
+@[rocq_alias le_upd.le_upd_frame_r]
 theorem le_upd_frame_r {P R : IProp GF} : (|==£> P) ∗ R ⊢ |==£> (P ∗ R) := by
   iintro ⟨H, HR⟩
   iapply le_upd_bind $$ [HR] H
@@ -289,20 +291,20 @@ theorem le_upd_frame_r {P R : IProp GF} : (|==£> P) ∗ R ⊢ |==£> (P ∗ R) 
   iapply le_upd_intro
   isplitl [HP] <;> iassumption
 
-@[rocq_alias le_upd_frame_l]
+@[rocq_alias le_upd.le_upd_frame_l]
 theorem le_upd_frame_l {P R : IProp GF} : R ∗ (|==£> P) ⊢ |==£> (R ∗ P) := by
   refine .trans ?_ (le_upd_mono sep_comm.mp)
   refine (.trans sep_comm.mp ?_)
   iapply le_upd_frame_r
 
-@[rocq_alias le_upd_later]
+@[rocq_alias le_upd.le_upd_later]
 theorem le_upd_later {P : IProp GF} : ⊢ £ 1 -∗ ▷ P -∗ |==£> P := by
   iintro H1 H2
   iapply le_upd_later_elim $$ H1
   inext
   iapply le_upd_intro $$ H2
 
-@[rocq_alias except_0_le_upd]
+@[rocq_alias le_upd.except_0_le_upd]
 theorem except_0_le_upd {P : IProp GF} : ◇ (|==£> P) ⊢ |==£> (◇ P) := by
   simp only [BIBase.except0]
   iintro (H|H)
@@ -322,7 +324,7 @@ open ProofMode
 
 variable {GF : BundledGFunctors} [LcGS GF]
 
-@[rocq_alias le_upd_elim]
+@[rocq_alias le_upd.le_upd_elim]
 theorem le_upd_elim n (P : IProp GF) :
   ⊢@{IProp GF} lc_supply n -∗ (|==£> P) -∗
     n.repeat (fun P => iprop(|==> ▷ P)) iprop(|==> ◇ (∃ m, ⌜m ≤ n⌝ ∗ lc_supply m ∗ P)) := by
@@ -371,7 +373,7 @@ theorem le_upd_elim n (P : IProp GF) :
         grind
       isplitl [H1] <;> iassumption
 
-@[rocq_alias le_upd_elim_complete]
+@[rocq_alias le_upd.le_upd_elim_complete]
 theorem le_upd_elim_complete n (P : IProp GF) :
     ⊢ lc_supply n -∗ (|==£> P) -∗ n.succ.repeat (fun Q => iprop(|==> ▷ Q)) P := by
   iintro Hlc Hupd
@@ -388,7 +390,7 @@ theorem le_upd_elim_complete n (P : IProp GF) :
   icases Hupd with ⟨%m, ⟨_, ⟨_, HP⟩⟩⟩
   iexact HP
 
-@[rocq_alias elim_bupd_le_upd]
+@[rocq_alias le_upd.elim_bupd_le_upd]
 instance {P : IProp GF} : ElimModal True p false (bupd P) P (le_upd Q) (le_upd Q) where
   elim_modal := by
     cases p <;> (dsimp; intro _)
@@ -399,12 +401,12 @@ instance {P : IProp GF} : ElimModal True p false (bupd P) P (le_upd Q) (le_upd Q
       iapply le_upd_bind $$ H2
       iapply bupd_le_upd $$ H1
 
-@[rocq_alias from_assumption_le_upd]
+@[rocq_alias le_upd.from_assumption_le_upd]
 instance from_assumption_le_upd {p} {P Q : IProp GF} [h : FromAssumption p ioP P Q] :
     FromAssumption p ioP P (le_upd Q) where
   from_assumption := h.1.trans le_upd_intro
 
-@[rocq_alias from_pure_le_upd]
+@[rocq_alias le_upd.from_pure_le_upd]
 instance {P : IProp GF} [H : FromPure a P φ] : FromPure a (le_upd P) φ where
   from_pure := by
     cases a <;> dsimp
@@ -415,7 +417,7 @@ instance {P : IProp GF} [H : FromPure a P φ] : FromPure a (le_upd P) φ where
       iapply le_upd_intro
       iapply H.from_pure $$ H
 
-@[rocq_alias is_except_0_le_upd]
+@[rocq_alias le_upd.is_except_0_le_upd]
 instance {P : IProp GF} [H : IsExcept0 P] : IsExcept0 (le_upd P) where
   is_except0 := by
     iintro G
@@ -423,13 +425,13 @@ instance {P : IProp GF} [H : IsExcept0 P] : IsExcept0 (le_upd P) where
     iapply le_upd_mono $$ G
     iapply H.is_except0
 
-@[rocq_alias from_modal_le_upd]
+@[rocq_alias le_upd.from_modal_le_upd]
 instance {P : IProp GF} : FromModal True modality_id (le_upd P) (le_upd P) P where
   from_modal := by
     simp only [modality_id, id_eq, forall_const]
     iapply le_upd_intro
 
-@[rocq_alias elim_modal_le_upd]
+@[rocq_alias le_upd.elim_modal_le_upd]
 instance {P : IProp GF} : ElimModal True p false (le_upd P) P (le_upd Q) (le_upd Q) where
   elim_modal := by
     intro _
@@ -441,7 +443,7 @@ instance {P : IProp GF} : ElimModal True p false (le_upd P) P (le_upd Q) (le_upd
 
 end Internal
 
-@[rocq_alias lc_alloc]
+@[rocq_alias le_upd.lc_alloc]
 theorem lc_alloc [H : LcGpreS GF] n : ⊢@{IProp GF} |==> ∃ _ : LcGS GF, lc_supply n ∗ £ n := by
   imod (iOwn_alloc (E := H.lc_elem) ((● n) • (◯ n)) (auth_both_valid.mpr ⟨fun _ => .rfl, ⟨⟩⟩))
     with ⟨%γLC, HOwn⟩
@@ -452,7 +454,7 @@ theorem lc_alloc [H : LcGpreS GF] n : ⊢@{IProp GF} |==> ∃ _ : LcGS GF, lc_su
   simp only [lc_supply, lc]
   isplitl [HAuth] <;> iassumption
 
-@[rocq_alias lc_soundness]
+@[rocq_alias le_upd.lc_soundness]
 theorem lc_soundness [LcGpreS GF] m (P : IProp GF) [Plain P]  (H : ∀ {_: LcGS GF}, ⊢ £ m -∗ |==£> P) :
     ⊢ P := by
   apply laterN_soundness (n := m.succ)
@@ -484,27 +486,28 @@ open ProofMode
 
 variable {GF : BundledGFunctors} [LcGS GF]
 
+@[rocq_alias le_upd_if.le_upd_if]
 def le_upd_if (b : Bool) : IProp GF → IProp GF :=
   if b then le_upd else bupd
 
-@[rocq_alias le_upd_if_ne]
+@[rocq_alias le_upd_if.le_upd_if_ne]
 instance le_upd_if_ne : NonExpansive (le_upd_if b (GF := GF)) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
-@[rocq_alias le_upd_if_mono']
+@[rocq_alias le_upd_if.le_upd_if_mono']
 theorem le_upd_if_mono {P Q : IProp GF} : (P ⊢ Q) → (le_upd_if b P) ⊢ (le_upd_if b Q) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte])
   · intro H; iintro G
     imod G; imodintro; iapply H $$ G
   · apply le_upd_mono
 
-@[rocq_alias le_upd_if_intro]
+@[rocq_alias le_upd_if.le_upd_if_intro]
 theorem le_upd_if_intro {b} {P : IProp GF} : P ⊢ le_upd_if b P := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte])
   · iintro H; imodintro; iassumption
   · apply le_upd_intro
 
-@[rocq_alias le_upd_if_bind]
+@[rocq_alias le_upd_if.le_upd_if_bind]
 theorem le_upd_if_bind {b} {P Q : IProp GF} :
     ⊢ (P -∗ le_upd_if b Q) -∗ (le_upd_if b P) -∗ (le_upd_if b Q) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte])
@@ -513,58 +516,58 @@ theorem le_upd_if_bind {b} {P Q : IProp GF} :
     iapply H $$ G
   · apply le_upd_bind
 
-@[rocq_alias le_upd_if_trans]
+@[rocq_alias le_upd_if.le_upd_if_trans]
 theorem le_upd_if_trans {b} {P : IProp GF} : (le_upd_if b (le_upd_if b P)) ⊢ le_upd_if b P := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte])
   · apply bupd_idem.mp
   · apply le_upd_trans
 
-@[rocq_alias le_upd_if_frame_r]
+@[rocq_alias le_upd_if.le_upd_if_frame_r]
 theorem le_upd_if_frame_r {b} {P R : IProp GF} : (le_upd_if b P) ∗ R ⊢ le_upd_if b iprop(P ∗ R) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte])
   · apply bupd_frame_r
   · apply le_upd_frame_r
 
-@[rocq_alias bupd_le_upd_if]
+@[rocq_alias le_upd_if.bupd_le_upd_if]
 theorem bupd_le_upd_if {b} {P : IProp GF} : (|==> P) ⊢ (le_upd_if b P) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte])
   · exact .rfl
   · apply bupd_le_upd
 
-@[rocq_alias le_upd_if_frame_l]
+@[rocq_alias le_upd_if.le_upd_if_frame_l]
 theorem le_upd_if_frame_l {b} {R Q : IProp GF} : (R ∗ le_upd_if b Q) ⊢ le_upd_if b iprop(R ∗ Q) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte])
   · apply bupd_frame_l
   · apply le_upd_frame_l
 
-@[rocq_alias except_0_le_upd_if]
+@[rocq_alias le_upd_if.except_0_le_upd_if]
 theorem except_0_le_upd_if {b} {P : IProp GF} : ◇ (le_upd_if b P) ⊢ le_upd_if b iprop(◇ P) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte])
   · apply bupd_except0
   · apply except_0_le_upd
 
-@[rocq_alias elim_bupd_le_upd_if]
+@[rocq_alias le_upd_if.elim_bupd_le_upd_if]
 instance {b} {p} {P Q : IProp GF} : ElimModal True p false (bupd P) P (le_upd_if b Q) (le_upd_if b Q) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
-@[rocq_alias from_pure_le_upd_if]
+@[rocq_alias le_upd_if.from_pure_le_upd_if]
 instance {b} {a} {P : IProp GF} φ [FromPure a P φ] : FromPure a (le_upd_if b P) φ := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
-@[rocq_alias is_except_0_le_upd_if]
+@[rocq_alias le_upd_if.is_except_0_le_upd_if]
 instance {b} {P : IProp GF} [IsExcept0 P] : IsExcept0 (le_upd_if b P) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
-@[rocq_alias from_modal_le_upd_if]
+@[rocq_alias le_upd_if.from_modal_le_upd_if]
 instance {b} {P : IProp GF} : FromModal True modality_id (le_upd_if b P) (le_upd_if b P) P := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
-@[rocq_alias elim_modal_le_upd_if]
+@[rocq_alias le_upd_if.elim_modal_le_upd_if]
 instance {b} {p} {P Q : IProp GF} :
   ElimModal True p false (le_upd_if b P) P (le_upd_if b Q) (le_upd_if b Q) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
-@[rocq_alias from_assumption_le_upd_if]
+@[rocq_alias le_upd_if.from_assumption_le_upd_if]
 instance from_assumption_le_upd_if {p} {P Q : IProp GF} [h : FromAssumption p ioP P Q] : FromAssumption p ioP P (le_upd_if b Q) where
   from_assumption := h.1.trans le_upd_if_intro
 
