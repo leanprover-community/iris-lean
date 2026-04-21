@@ -5,7 +5,7 @@ Authors: Mario Carneiro
 -/
 module
 
-public meta import Iris.Std.RocqAlias
+public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 

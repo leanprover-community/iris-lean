@@ -9,7 +9,7 @@ public import Iris.BI
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ModalityInstances
 public import Iris.Std.TC
-public import Iris.Std.RocqIgnore
+public import Iris.Std.RocqPorting
 
 @[expose] public section
 
