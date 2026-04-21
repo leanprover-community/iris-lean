@@ -39,7 +39,7 @@ from pathlib import Path
 DEFAULT_ROCQ_REVISION = (Path(__file__).parent / "ROCQ_REVISION").read_text().strip()
 
 # The Lean package root (contains lakefile.toml and .lake/).
-LEAN_PKG_DIR = Path(__file__).parent.parent / "IrisLean"
+LEAN_PKG_DIR = Path(__file__).parent.parent / "Iris"
 
 # Iris-Rocq is hosted on the MPI-SWS GitLab instance.
 GITLAB_PROJECT_ID = "iris%2Firis"  # URL-encoded "iris/iris"
