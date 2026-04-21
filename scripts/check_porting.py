@@ -300,7 +300,7 @@ def load_lean_data(json_path: str) -> LeanData:
         ConceptEntry(
             dir=c["folder"], feature=c["feature"],
             subfeature=c.get("subfeature") or "",
-            status=c["status"], reason=c["reason"],
+            status=parse_status(c["status"]), reason=c["reason"],
         )
         for c in data.get("concepts", [])
     ]
