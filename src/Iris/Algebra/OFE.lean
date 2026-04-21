@@ -646,6 +646,9 @@ instance [COFE α] : COFE (ULift α) where
   compl c := ⟨compl (c.map uliftDownHom)⟩
   conv_compl := conv_compl
 
+instance : Discrete Unit where
+  discrete_0 _ := .rfl
+
 instance : COFE Unit where
   compl _ := ()
   conv_compl := ⟨⟩

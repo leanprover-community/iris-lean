@@ -45,3 +45,7 @@ theorem coinfinite_exists_next {f : K → Option V} :
   exists enum 0
   simp [] at Henum
   grind
+
+instance : InfiniteType Nat where
+  enum := id
+  enum_inj _ _ H := H
