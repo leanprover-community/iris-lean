@@ -921,8 +921,8 @@ section Hom
 
 /-- A morphism between CMRAs, written `α -C> β`, is defined to be a non-expansive function which
 preserves `validN`, `pcore` and `op`. -/
-@[rocq_alias CmraMorphism]
-@[ext] structure Hom (α β : Type _) [CMRA α] [CMRA β] extends OFE.Hom α β where
+@[ext, rocq_alias CmraMorphism]
+structure Hom (α β : Type _) [CMRA α] [CMRA β] extends OFE.Hom α β where
   protected validN {n x} : ✓{n} x → ✓{n} (f x)
   protected pcore x : (pcore x).map f ≡ pcore (f x)
   protected op x y : f (x • y) ≡ f x • f y

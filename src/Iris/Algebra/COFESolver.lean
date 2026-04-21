@@ -6,7 +6,7 @@ Authors: Mario Carneiro
 module
 
 public import Iris.Algebra.OFE
-meta import Iris.Std.RocqPorting
+public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -19,14 +19,14 @@ variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 
 namespace Fix.Impl
 
-@[rocq_alias solver.A']
 variable (F) in
+@[rocq_alias solver.A']
 def A' : Nat → Σ α : Type u, COFE α
   | 0 => ⟨ULift Unit, inferInstance⟩
   | n+1 => let ⟨A, _⟩ := A' n; ⟨F A A, inferInstance⟩
 
-@[rocq_alias solver.A]
 variable (F) in
+@[rocq_alias solver.A]
 def A (n : Nat) : Type u := (A' F n).1
 
 @[rocq_alias solver.A_cofe]
@@ -58,9 +58,9 @@ theorem up_down {k} (x) : up F (k+1) (down F (k+1) x) ≡{k}≡ x := by
   | 0 => map_contractive.zero (x := (_, _)) (y := (_, _)) _ _
   | k+1 => map_contractive.succ (x := (_, _)) (y := (_, _)) _ ⟨up_down, up_down⟩ _
 
-@[rocq_alias solver.tower]
 variable (F) in
-@[ext] structure Tower : Type u where
+@[ext, rocq_alias solver.tower]
+structure Tower : Type u where
   val k : A F k
   protected down {k} : down F k (val (k+1)) ≡ val k
 
@@ -90,14 +90,14 @@ instance : COFE (Tower F) where
     exact (c.chain n).down.dist
   conv_compl _ := conv_compl
 
-@[rocq_alias solver.ff]
 variable (F) in
+@[rocq_alias solver.ff]
 def upN {k} : ∀ n, A F k -n> A F (k + n)
   | 0 => .id
   | n+1 => (up F (k + n)).comp (upN n)
 
-@[rocq_alias solver.gg]
 variable (F) in
+@[rocq_alias solver.gg]
 def downN {k} : ∀ n, A F (k + n) -n> A F k
   | 0 => .id
   | n+1 => (downN n).comp (down F (k + n))
@@ -281,8 +281,8 @@ def Tower.iso : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
 end Fix.Impl
 open Fix.Impl
 
-@[rocq_alias solver.T]
 variable (F) in
+@[rocq_alias solver.T]
 def Fix : Type u := Tower F
 
 instance : Inhabited (Fix F) := inferInstanceAs (Inhabited (Tower F))

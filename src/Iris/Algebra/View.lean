@@ -406,8 +406,8 @@ theorem auth_op_frag_valid_iff : ✓ ((●V{dq} a : View F R) • ◯V b) ↔ �
 theorem auth_one_op_frag_valid_iff : ✓ ((●V a : View F R) • ◯V b) ↔ ∀ n, R n a b :=
   auth_op_frag_valid_iff.trans <| and_iff_right_iff_imp.mpr (fun _ => valid_own_one)
 
-@[rocq_alias view_auth_dfrac_includedN]
 open CMRA in
+@[rocq_alias view_auth_dfrac_includedN]
 theorem auth_incN_auth_op_frag_iff : (●V{dq1} a1 : View F R) ≼{n} ((●V{dq2} a2) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := by
   refine ⟨?_, fun H => ?_⟩
   · simp only [Auth, Frag, CMRA.IncludedN, CMRA.op]
@@ -431,8 +431,8 @@ theorem auth_incN_auth_op_frag_iff : (●V{dq1} a1 : View F R) ≼{n} ((●V{dq2
       apply CMRA.op_ne.ne
       exact HRa2 ▸NonExpansive₂.ne rfl HRb.symm
 
-@[rocq_alias view_auth_dfrac_included]
 open CMRA in
+@[rocq_alias view_auth_dfrac_included]
 theorem auth_inc_auth_op_frag_iff : ((●V{dq1} a1 : View F R) ≼ (●V{dq2} a2 : View F R) • ◯V b) ↔ (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2 := by
   refine ⟨fun H => ⟨?_, ?_⟩, fun H => ?_⟩
   · exact auth_incN_auth_op_frag_iff (n := 0) |>.mp (CMRA.incN_of_inc _ H) |>.1
@@ -461,8 +461,8 @@ theorem auth_one_incN_auth_one_op_frag_iff : (●V a1 : View F R) ≼{n} ((●V 
 theorem auth_one_inc_auth_one_op_frag_iff : (●V a1 : View F R) ≼ ((●V a2) • ◯V b) ↔ a1 ≡ a2 :=
   auth_inc_auth_op_frag_iff.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
 
-@[rocq_alias view_frag_includedN]
 open CMRA in
+@[rocq_alias view_frag_includedN]
 theorem frag_incN_auth_op_frag_iff : (◯V b1 : View F R) ≼{n} ((●V{p} a) • ◯V b2) ↔ b1 ≼{n} b2 := by
   refine ⟨?_, ?_⟩
   · rintro ⟨xf, ⟨_, Hb⟩⟩
@@ -477,8 +477,8 @@ theorem frag_incN_auth_op_frag_iff : (◯V b1 : View F R) ≼{n} ((●V{p} a) �
          _ ≼{n} (●V{p} a) • ◯V b1 • bf := by rw [frag_op_eq]
          _ ≼{n} (●V{p} a) • ◯V b2 := incN_of_incN_of_dist .rfl (op_ne.ne (NonExpansive.ne Hbf.symm))
 
-@[rocq_alias view_frag_included]
 open CMRA in
+@[rocq_alias view_frag_included]
 theorem frag_inc_auth_op_frag_iff : (◯V b1 : View F R) ≼ ((●V{p} a) • ◯V b2) ↔ b1 ≼ b2 := by
   constructor
   · rintro ⟨xf, ⟨_, Hb⟩⟩
@@ -493,8 +493,8 @@ theorem frag_inc_auth_op_frag_iff : (◯V b1 : View F R) ≼ ((●V{p} a) • �
          _ ≼ (●V{p} a) • ◯V b1 • bf := by rw [frag_op_eq]
          _ ≼ (●V{p} a) • ◯V b2 := inc_of_inc_of_eqv .rfl (op_ne.eqv (NonExpansive.eqv Hbf.symm))
 
-@[rocq_alias view_both_dfrac_includedN]
 open CMRA in
+@[rocq_alias view_both_dfrac_includedN]
 theorem auth_op_frag_incN_auth_op_frag_iff :
     ((●V{dq1} a1 : View F R) • ◯V b1) ≼{n} ((●V{dq2} a2) • ◯V b2) ↔
       (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 ∧ b1 ≼{n} b2 := by
@@ -515,8 +515,8 @@ theorem auth_op_frag_incN_auth_op_frag_iff :
            refine CMRA.op_ne.ne (NonExpansive.ne ?_)
            exact H2.trans (equiv_dist.mp comm _) |>.symm
 
-@[rocq_alias view_both_dfrac_included]
 open CMRA in
+@[rocq_alias view_both_dfrac_included]
 theorem auth_op_frag_inc_auth_op_frag_iff : ((●V{dq1} a1 : View F R) • ◯V b1) ≼ ((●V{dq2} a2) • ◯V b2) ↔
       (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡ a2 ∧ b1 ≼ b2 := by
   refine ⟨fun H => ?_, fun ⟨H0, H1, ⟨bf, H2⟩⟩ => ?_⟩
@@ -749,8 +749,8 @@ theorem map_compose' [OFE A''] [OFE B''] {R'' : ViewRel A'' B''}
     View.map R'' (f'.comp f) (g'.comp g) v = View.map R'' f' g' (View.map R' f g v) :=
   map_compose f.f g.f f'.f g'.f v
 
-@[rocq_alias view_map_ext]
 omit [OFE B] in
+@[rocq_alias view_map_ext]
 theorem map_ext {f1 f2 : A → A'} {g1 g2 : B → B'} [OFE.NonExpansive f1] [OFE.NonExpansive f2]
     (v : View F R) (h1 : ∀ a, f1 a ≡ f2 a) (h2 : ∀ b, g1 b ≡ g2 b) :
     View.map R' f1 g1 v ≡ View.map R' f2 g2 v := by
