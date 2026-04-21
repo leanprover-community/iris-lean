@@ -1088,17 +1088,25 @@ section Id
 
 @[rocq_alias constRF]
 instance COFE.OFunctor.constOF_RFunctor [CMRA B] : RFunctor (constOF B) where
-  map f g := by
-    refine' { toHom := COFE.OFunctor.map f g, .. }
-      <;> intros <;> simp [COFE.OFunctor.map]; trivial
-  map_ne.ne := COFE.OFunctor.map_ne.ne
-  map_id := COFE.OFunctor.map_id
-  map_comp := COFE.OFunctor.map_comp
+  map f g := ⟨map f g, by simp [map], by simp [map], by simp [map]⟩
+  map_ne.ne := map_ne.ne
+  map_id := map_id
+  map_comp := map_comp
 
 @[rocq_alias constRF_contractive]
 instance OFunctor.constOF_RFunctorContractive [CMRA B] :
     RFunctorContractive (COFE.constOF B) where
   map_contractive.1 := by simp [Function.uncurry, RFunctor.map, COFE.OFunctor.map]
+
+instance COFE.OFunctor.constOF_URFunctor [UCMRA B] : URFunctor (constOF B) where
+  map f g := ⟨map f g, by simp [map], by simp [map], by simp [map]⟩
+  map_ne.ne := map_ne.ne
+  map_id := map_id
+  map_comp := map_comp
+
+instance OFunctor.constOF_URFunctorContractive [UCMRA B] :
+    URFunctorContractive (COFE.constOF B) where
+  map_contractive.1 := by simp [Function.uncurry, URFunctor.map, COFE.OFunctor.map]
 
 end Id
 

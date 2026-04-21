@@ -197,4 +197,70 @@ theorem toAgree_includedI (a b : A) :
     exact (NonExpansive.ne heq.symm).trans (idemp.symm n)
 
 end agree_inclusion
+
+section auth
+open Iris BI Auth
+
+variable [Sbi PROP] [UFraction F] [UCMRA A]
+
+@[rocq_alias auth_auth_dfrac_validI]
+theorem auth_dfrac_validI (dq : DFrac F) (a : A) :
+    internalCmraValid (●{dq} a : Auth F A) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ internalCmraValid a := by
+  refine .trans ?_ (and_congr_l siPure_pure)
+  refine .trans ?_ siPure_and
+  refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
+  all_goals simpa only [SiProp.cmraValid, auth_dfrac_validN] using id
+
+@[rocq_alias auth_auth_validI]
+theorem auth_validI (a : A) : internalCmraValid (● a : Auth F A) ⊣⊢@{PROP} internalCmraValid a := by
+  refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
+  all_goals simpa only [SiProp.cmraValid, auth_validN] using id
+
+@[rocq_alias auth_auth_dfrac_op_validI]
+theorem auth_dfrac_op_validI (dq1 dq2 : DFrac F) (a1 a2 : A) :
+    internalCmraValid ((●{dq1} a1) • (●{dq2} a2)) ⊣⊢@{PROP}
+      ⌜✓ (dq1 • dq2)⌝ ∧ internalEq a1 a2 ∧ internalCmraValid a1 := by
+  refine .trans ?_ (and_congr_l siPure_pure)
+  refine .trans ?_ (siPure_and.trans (and_congr_r siPure_and))
+  refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
+  all_goals simpa only [SiProp.cmraValid, auth_dfrac_op_validN] using id
+
+@[rocq_alias auth_frag_validI]
+theorem frag_validI (a : A) :
+    internalCmraValid (◯ a : Auth F A) ⊣⊢@{PROP} internalCmraValid a := by
+  refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
+  all_goals simpa only [SiProp.cmraValid, frag_validN] using id
+
+@[rocq_alias auth_both_dfrac_validI]
+theorem both_dfrac_validI (dq : DFrac F) (a b : A) :
+    internalCmraValid ((●{dq} a) • ◯ b) ⊣⊢@{PROP}
+    ⌜✓ dq⌝ ∧ internalCmraIncluded b a ∧ internalCmraValid a := by
+  refine .trans ?_ <| siPure_and.trans (and_congr siPure_pure siPure_and)
+  refine siPure_mono_bi ?_
+  refine .trans ?_ ((and_congr_r BI.and_exists_r).trans BI.and_exists_l).symm
+  refine ⟨siPure_mono fun n => ?_, ?_⟩
+  · simp only [both_dfrac_validN]
+    intro ⟨hv, ⟨c, hi⟩, hvn⟩
+    apply SiProp.instBI.sExists_intro
+    · exists c
+    · exact ⟨hv, ⟨hi, hvn⟩⟩
+  · refine siPure_mono ?_
+    refine exists_elim fun c n ⟨hv, ⟨hi, hvn⟩⟩ => ?_
+    exact both_dfrac_validN.mpr ⟨hv, (by exists c), hvn⟩
+
+@[rocq_alias auth_both_validI]
+theorem auth_both_validI (a b : A) :
+    internalCmraValid ((● a : Auth F A) • ◯ b) ⊣⊢@{PROP}
+      internalCmraIncluded b a ∧ internalCmraValid a := by
+  refine .trans ?_ siPure_and
+  refine siPure_mono_bi ?_
+  refine .trans ?_ BI.and_exists_r.symm
+  simp only [SiProp.cmraValid, both_dfrac_validN]
+  refine ⟨fun n ⟨_, ⟨⟨c, hi⟩, hvn⟩⟩ => ?_, ?_⟩
+  · apply SiProp.instBI.sExists_intro
+    · exists c
+    exact ⟨hi, hvn⟩
+  · exact exists_elim fun c n ⟨hi, hvn⟩ => ⟨DFrac.valid_own_one, ⟨⟨c, hi⟩, hvn⟩⟩
+
+end auth
 end Iris
