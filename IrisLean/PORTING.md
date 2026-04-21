@@ -170,8 +170,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/boxes.v`
 - [ ] `lib/cancelable_invariants.v`
 - [ ] `lib/fancy_updates.v`
-  - [ ] FUpd instance
-  - [ ] Soundness
+  - [x] FUpd instance
+  - [x] Soundness
   - [ ] ProofMode instances
 - [ ] `lib/fancy_updates_from_vs.v`
 - [ ] `lib/gen_heap.v`
@@ -180,11 +180,15 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/ghost_var.v`
 - [ ] `lib/gset_bij.v`
 - [ ] `lib/invariants.v`
+  - [x] Lemmas
+  - [ ] ProofMode instances
 - [ ] `lib/iprop.v`
   - [x] Definition
   - [ ] subG 
   - [x] Functor solution
 - [ ] `lib/later_credits.v`
+  - [x] Lemmas 
+  - [ ] ProofMode instances 
 - [ ] `lib/mono_Z.v` (nb. generalize to `MonoNumbers.lean`)
 - [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
 - [ ] `lib/na_invariants.v`
@@ -203,6 +207,15 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 ## BI
 
 - [ ] `algebra.v`
+  - [ ] Generic
+  - [ ] Map  
+  - [ ] Excl 
+  - [ ] List 
+  - [x] Agree 
+  - [ ] View 
+  - [ ] Frag 
+  - [x] Auth 
+  - [x] Heap View 
 - `ascii.v`
 - [x] `bi.v`
 - [ ] `big_op.v`

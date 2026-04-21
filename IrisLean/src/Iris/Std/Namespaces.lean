@@ -7,8 +7,9 @@ module
 
 public import Iris.Std.CoPset
 public import Iris.Std.Positives
+public import Iris.Std.GenSets
 
-public section
+@[expose] public section
 
 abbrev Namespace := List Pos
 
@@ -62,6 +63,30 @@ theorem ndot_preserve_disjoint_l [Pos.Countable A] {N : Namespace} {E : CoPset} 
 theorem ndot_preserve_disjoint_r [Pos.Countable A] {N : Namespace} {E : CoPset} (x : A)
     (Hdisj : E ## ↑N) : E ## ↑(N.@x) :=
    Iris.Std.LawfulSet.disjoint_comm.mp <| ndot_preserve_disjoint_l x <| Iris.Std.LawfulSet.disjoint_comm.mp Hdisj
+
+theorem nclose_not_finite (N : Namespace) : ¬CoPset.isFinite (↑N) := by
+  simp only [nclose]
+  exact CoPset.suffixes_not_finite (Pos.flatten N)
+
+theorem fresh_name {S : Type _} [Iris.Std.LawfulFiniteSet S Pos] (E : S) (N : Namespace) :
+  ∃ i, i ∉ E ∧ i ∈ (↑N : CoPset) := by
+  exists (CoPset.pick (↑N \ set_to_coPset E))
+  have hne : ↑N \ set_to_coPset E ≠ ∅ := by
+    apply Iris.Std.LawfulSet.diff_not_finite_finite_ne_empty
+    · simp [Iris.Std.LawfulSet.setInfinite]
+      intro l
+      have : ¬CoPset.isFinite (↑N) := nclose_not_finite N
+      rw [isFinite_setFinite] at this
+      simp [Iris.Std.LawfulSet.setFinite] at this
+      exact this l
+    · rw [← isFinite_setFinite]
+      exact set_to_coPset_finite E
+  have ⟨hiN, hiE⟩ := CoPset.in_diff.mp (CoPset.mem_pick (↑N \ set_to_coPset E) hne)
+  constructor
+  · intro hE
+    rw [← mem_set_to_coPset] at hE
+    exact hiE hE
+  · exact hiN
 
 open Iris.Std in
 attribute [grind unfold] instDisjoint in
