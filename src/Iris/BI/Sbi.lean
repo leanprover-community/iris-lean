@@ -131,6 +131,11 @@ theorem siPure_forall_mpr [Sbi PROP] {A : Type _} {Φi : A → SiProp} :
   refine (forall_intro fun _ => imp_intro' <| pure_elim_l ?_).trans siPure_sForall_mpr
   exact fun ⟨a, ha⟩ => ha ▸ forall_elim a
 
+@[rocq_alias si_pure_proper]
+theorem siPure_mono_bi [Sbi PROP] {Pi Qi : SiProp}
+    (H : Pi ⊣⊢@{SiProp} Qi) : <si_pure> Pi ⊣⊢@{PROP} <si_pure> Qi :=
+  ⟨siPure_mono H.mp, siPure_mono H.mpr⟩
+
 @[rocq_alias si_pure_forall]
 theorem siPure_forall [Sbi PROP] {A : Type _} {Φi : A → SiProp} :
     <si_pure> (∀ x, Φi x) ⊣⊢@{PROP} ∀ x, <si_pure> Φi x :=
