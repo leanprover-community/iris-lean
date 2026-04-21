@@ -8,9 +8,6 @@ public import Iris.Std.List
 public meta import Lean.PrettyPrinter.Delaborator
 public import Batteries.Data.List.Basic
 
--- TODO: Rename all `Context.fill` lemmas to something more consistent.
---       In particular, for some other constructions they are referred to
---       to as `_ctx`.
 -- TODO: Rethink steping notations (probabl drop `ₜ` for `primStep`)
 --       (e,σ)    -<obs>->ₜ        (e',σ',eₜ)  (primStep)
 --       (t,σ)    -<obs>->ₜₚ       (t',σ')     (Step)
@@ -150,27 +147,6 @@ class Atomic (a : Atomicity) (e : Expr) : Prop where
 
 variable {e e': Expr}{σ σ': State}{v v' : Val}
 
-/-- `Context K` says `K` models an evaluation context for the language -/
-class Context(K: Expr → Expr) where
-  fill_toVal_eq_none : ∀ {e : Expr},
-    toVal e = none → toVal (K e) = none
-  fill_primStep : ∀ {e} {σ : State} {obs e' σ' eₜ},
-    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
-    (K e, σ)-<obs>->ₜ(K e', σ', eₜ)
-  fill_primStep_inv : ∀ {e} {σ : State} {obs K_e' σ' eₜ},
-    toVal e = .none →
-    (K e, σ) -<obs>->ₜ (K_e', σ', eₜ) →
-    ∃ e', K_e' = K e' ∧ (e, σ) -<obs>->ₜ (e', σ', eₜ)
-
-attribute [rocq_alias fill_not_val] Context.fill_toVal_eq_none
-attribute [rocq_alias fill_step] Context.fill_primStep
-attribute [rocq_alias fill_step_inv] Context.fill_primStep_inv
-
-instance : Context (Λ := Λ) (id (α := Expr)) where
-  fill_toVal_eq_none e := by grind only [id]
-  fill_primStep      := by grind only [id]
-  fill_primStep_inv  := by grind only [id]
-
 /-- A single atomic step in a threaded context -/
 @[grind]
 inductive Step : List Expr × State → List Obs → List Expr × State → Prop
@@ -267,19 +243,40 @@ theorem primStep_notStuck {e : Expr} {σ obs e' σ' eₜ} :
   fun h => .inr ⟨_, _, _, _, h⟩
 end ReducibilityLemmas
 
-section ContextLemmas
+/-- `Context K` says `K` models an evaluation context for the language -/
+class Context(K: Expr → Expr) where
+  toVal_eq_none_fill : ∀ {e : Expr},
+    toVal e = none → toVal (K e) = none
+  primStep_fill : ∀ {e} {σ : State} {obs e' σ' eₜ},
+    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
+    (K e, σ)-<obs>->ₜ(K e', σ', eₜ)
+  primStep_fill_inv : ∀ {e} {σ : State} {obs K_e' σ' eₜ},
+    toVal e = .none →
+    (K e, σ) -<obs>->ₜ (K_e', σ', eₜ) →
+    ∃ e', K_e' = K e' ∧ (e, σ) -<obs>->ₜ (e', σ', eₜ)
+
+attribute [rocq_alias fill_not_val] Context.toVal_eq_none_fill
+attribute [rocq_alias fill_step] Context.primStep_fill
+attribute [rocq_alias fill_step_inv] Context.primStep_fill_inv
+
+namespace Context
+
+instance : Context (Λ := Λ) (id (α := Expr)) where
+  toVal_eq_none_fill e := by grind only [id]
+  primStep_fill      := by grind only [id]
+  primStep_fill_inv  := by grind only [id]
 
 @[rocq_alias reducible_fill]
 theorem reducible_fill (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
     reducible (e,σ) → reducible ((K e), σ) :=
   fun ⟨obs, e', σ', eₜ, h⟩ =>
-    ⟨obs, K e', σ', eₜ, Context.fill_primStep h⟩
+    ⟨obs, K e', σ', eₜ, primStep_fill h⟩
 
 @[rocq_alias reducible_fill_inv]
 theorem reducible_fill_inv (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
     toVal e = none → reducible (K e, σ) → reducible (e,σ) :=
   fun toVal_none ⟨obs, _, σ', eₜ, K_red⟩ =>
-    have ⟨e₂, _, red⟩ := Context.fill_primStep_inv toVal_none K_red
+    have ⟨e₂, _, red⟩ := primStep_fill_inv toVal_none K_red
     ⟨obs, e₂, σ', eₜ, red⟩
 
 @[rocq_alias reducible_no_obs_fill]
@@ -287,13 +284,13 @@ theorem pureReducible_fill (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃
     pureReducible (e, σ) →
     pureReducible (K e, σ) :=
   fun ⟨e', σ', eₜ, h⟩ =>
-    ⟨K e', σ', eₜ, Context.fill_primStep h⟩
+    ⟨K e', σ', eₜ, primStep_fill h⟩
 
 @[rocq_alias reducible_no_obs_fill_inv]
 theorem pureReducible_fill_inv (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
     toVal e = none → pureReducible (K e, σ) → pureReducible (e,σ) :=
   fun toVal_none ⟨_, σ', eₜ, K_red⟩ =>
-    have ⟨e₂, _, red⟩ := Context.fill_primStep_inv toVal_none K_red
+    have ⟨e₂, _, red⟩ := primStep_fill_inv toVal_none K_red
     ⟨e₂, σ', eₜ, red⟩
 
 @[rocq_alias irrreducible_fill]
@@ -328,7 +325,7 @@ theorem notStuck_fill_inv (K : Expr → Expr) [Λ.Context K] :
     match h : toVal e with
     | none =>
       left
-      have := Context.fill_toVal_eq_none (K := K) h
+      have := toVal_eq_none_fill (K := K) h
       grind only
     | some v => grind only
   | .inr hyp =>
@@ -344,10 +341,10 @@ theorem notStuck_fill_inv (K : Expr → Expr) [Λ.Context K] :
 theorem stuck_fill (K : Expr → Expr) [Λ.Context K] :
     stuck (e, σ) → stuck (K e, σ)  :=
   fun ⟨toVal_e, irred⟩ =>
-    ⟨ Context.fill_toVal_eq_none toVal_e
+    ⟨ toVal_eq_none_fill toVal_e
     , irreducible_fill K toVal_e irred⟩
 
-end ContextLemmas
+end Context
 
 open List in
 @[rocq_alias step_Permutation]
@@ -450,14 +447,14 @@ theorem purePrimStep_fill (K : Expr → Expr) [Context K] {e₁ e₂ : Expr} :
     K e₁ -ᵖ-> K e₂ := by
   rintro ⟨pRed,Hstep⟩
   constructor
-  · exact (pureReducible_fill K <| pRed ·)
+  · exact (Context.pureReducible_fill K <| pRed ·)
   · intros σ₁ σ₂ obs K_e₂' eₜ primStep
     have : toVal e₁ = none := by
       apply toVal_none_of_reducible (σ := σ₁)
       -- Any state works
       apply reducible_of_pureReducible
       apply pRed
-    obtain ⟨e₂', rfl, primStep⟩ := Context.fill_primStep_inv this primStep
+    obtain ⟨e₂', rfl, primStep⟩ := Context.primStep_fill_inv this primStep
     grind only
 
 @[rocq_alias pure_step_nsteps_ctx]
