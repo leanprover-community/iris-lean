@@ -33,9 +33,6 @@ jobs:
           use-mathlib-cache: true
 
   report:
-    # Generate and upload the porting report Pages artifact.
-    # Only runs on master; failures here don't block PRs.
-    if: github.ref == 'refs/heads/master'
     needs: build
     runs-on: ubuntu-latest
     steps:
