@@ -39,19 +39,16 @@ variable [UFraction F]
 @[rocq_alias dfrac_inhabited]
 instance : Inhabited (DFrac F) := ⟨discard⟩
 
-@[rocq_alias dfrac_valid_instance]
 def valid : DFrac F → Prop
   | .own f        => Proper f
   | .discard      => True
   | .ownDiscard f => Fractional f
 
-@[rocq_alias dfrac_pcore_instance]
 def pcore : DFrac F → Option (DFrac F)
   | own _        => none
   | .discard     => some discard
   | ownDiscard _ => some discard
 
-@[rocq_alias dfrac_op_instance]
 def op : DFrac F → DFrac F → DFrac F
   | .discard, .discard => discard
   | own f, .discard
