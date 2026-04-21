@@ -67,7 +67,7 @@ def log(msg: str) -> None:
 _DEF_KEYWORDS = (
     r"Definition|Lemma|Theorem|Instance|Class|Record|Structure|"
     r"Inductive|Fixpoint|CoFixpoint|Variant|Corollary|Proposition|"
-    r"Fact|Remark|Example"
+    r"Fact|Remark|Example|Canonical\s+Structure"
 )
 
 # Matches a named definition line. Captures the identifier (group 1).
@@ -92,7 +92,7 @@ _END_RE = re.compile(r"^\s*End\s+(\w+)\s*\.", re.MULTILINE)
 _SKIP_RE = re.compile(
     r"^\s*(?:Notation|Ltac|Ltac2|Tactic\s+Notation|Hint|Arguments|"
     r"Typeclasses\s+(?:Opaque|Transparent)|"
-    r"Existing\s+Instance|Params|Canonical|"
+    r"Existing\s+Instance|Params|"
     r"(?:Declare|Delimit|Bind|Open|Close)\s+Scope|"
     r"Coercion|Import|Export|Require|From|Set|Unset)\b"
 )
