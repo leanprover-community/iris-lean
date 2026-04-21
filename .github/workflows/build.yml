@@ -42,7 +42,6 @@ jobs:
           lake-package-directory: IrisLean
       - name: Read Rocq commit from revision file
         id: rocq-commit
-        working-directory: IrisLean
         run: |
           sha=$(cat scripts/ROCQ_REVISION)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
@@ -52,10 +51,9 @@ jobs:
           path: IrisLean/.lake/iris-rocq-cache
           key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
       - name: Generate porting report
-        working-directory: IrisLean
         run: |
-          mkdir -p ../_site
-          python3 scripts/check_porting.py --format html --lean-rev "${{ github.sha }}" -o ../_site/index.html
+          mkdir -p _site
+          python3 scripts/check_porting.py --format html --lean-rev "${{ github.sha }}" -o _site/index.html
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
 
