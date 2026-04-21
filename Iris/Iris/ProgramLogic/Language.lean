@@ -4,6 +4,7 @@ public import Iris.Std.RocqAlias
 public import Iris.Std.RocqIgnore
 public import Iris.Std.FromMathlib
 public import Iris.Std.Relation
+public import Iris.Std.List
 public meta import Lean.PrettyPrinter.Delaborator
 public import Batteries.Data.List.Basic
 
@@ -44,16 +45,16 @@ class ToVal (Expr : Type e) (Val : outParam <| Type v ) where
   toVal : Expr → Option Val
   ofVal : Val → Expr
   /-- If `toVal` is defined for an expression, `coe` is its inverse -/
-  coe_of_toVal_eq (e : Expr)(v : Val) : toVal e = some v → ofVal v = e
+  coe_of_toVal_eq_some (e : Expr)(v : Val) : toVal e = some v → ofVal v = e
   /-- `toVal` is defined `coe`, and works as its inverse -/
   toVal_coe (v : Val) : toVal (ofVal v) = some v
-export ToVal (toVal coe_of_toVal_eq toVal_coe)
+export ToVal (toVal coe_of_toVal_eq_some toVal_coe)
 
 attribute [rocq_alias language.to_val] ToVal.toVal
-attribute [rocq_alias mixin_of_to_val] ToVal.coe_of_toVal_eq
-attribute [rocq_alias mixin_to_of_val, simp, grind =] ToVal.toVal_coe
-
-#rocq_ignore language.of_val "This function was implemented as a coercion from Expr to Val, so there is no need for an explicit `of_val` function."
+attribute [rocq_alias language.of_val] ToVal.ofVal
+attribute [rocq_alias mixin_of_to_val] coe_of_toVal_eq_some
+attribute [rocq_alias mixin_to_of_val] ToVal.toVal_coe
+attribute [simp, grind =] ToVal.toVal_coe
 
 namespace ToVal
 
@@ -64,7 +65,12 @@ instance : Coe Val Expr where coe := ToVal.ofVal
 
 @[grind! .]
 theorem toVal_eq_iff_coe (e : Expr)(v : Val): (v : Expr) = e ↔ toVal e = some v :=
-  ⟨(· ▸ ToVal.toVal_coe v), ToVal.coe_of_toVal_eq e v⟩
+  ⟨(· ▸ ToVal.toVal_coe v), coe_of_toVal_eq_some e v⟩
+
+@[rocq_alias of_val_inj]
+instance [ι : ToVal Expr Val]: Function.Injective (ι.ofVal) := by
+  intro x y h
+  simpa [ToVal.toVal_coe] using congrArg (toVal) h
 
 end ToVal
 
@@ -209,6 +215,8 @@ def erasedStep (ρ  ρ₂: List Expr × State) := ∃ obs, Step ρ obs ρ₂
 @[inherit_doc erasedStep]
 scoped notation conf:40 " -·->ₜₚ " conf':41 => Language.erasedStep conf conf'
 
+section ReducibilityLemmas
+
 @[rocq_alias not_reducible, grind =]
 theorem not_reducible_iff_irreducible {e : Expr} {σ : State} :
     (¬ reducible (e, σ)) ↔ irreducible (e, σ) := by
@@ -229,11 +237,6 @@ theorem val_irreducible :
     (toVal e).isSome →
     irreducible (e, σ) := by
   grind only [irreducible, val_stuck, = Option.isSome_none]
-
-@[rocq_alias of_val_inj]
-instance [ι : ToVal Expr Val]: Function.Injective (ι.ofVal) := by
-  intro x y h
-  simpa [ToVal.toVal_coe] using congrArg (toVal) h
 
 @[rocq_alias not_not_stuck, grind =]
 theorem not_not_suck {e : Expr} {σ : State} :
@@ -256,6 +259,15 @@ theorem stronglyAtomic_atomic a :
     rintro ⟨h⟩
     constructor
     grind only [not_reducible_iff_irreducible, val_irreducible]
+
+@[rocq_alias prim_step_not_stuck]
+theorem primStep_notStuck {e : Expr} {σ obs e' σ' eₜ} :
+    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
+    notStuck (e, σ) :=
+  fun h => .inr ⟨_, _, _, _, h⟩
+end ReducibilityLemmas
+
+section ContextLemmas
 
 @[rocq_alias reducible_fill]
 theorem reducible_fill (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
@@ -335,6 +347,8 @@ theorem stuck_fill (K : Expr → Expr) [Λ.Context K] :
     ⟨ Context.fill_toVal_eq_none toVal_e
     , irreducible_fill K toVal_e irred⟩
 
+end ContextLemmas
+
 open List in
 @[rocq_alias step_Permutation]
 theorem perm_of_step (t₁ t₁' t₂ : List Expr) :
@@ -360,30 +374,12 @@ theorem perm_of_step (t₁ t₁' t₂ : List Expr) :
       _ ~ ps' ++ e' :: ss' := perm_middle.symm
   · apply Language.Step.of_primStep red
 
-@[grind =]
-private theorem _root_.List.getElem?_some_iff_append
-{a : α} {i : Nat} {l : List α} : l[i]? = some a ↔ ∃ s t : List α, l = s ++ a :: t ∧ s.length = i := by
-  constructor
-  · intros h
-    induction i generalizing l with
-    | zero =>
-      rcases l with _ | ⟨hd, tl⟩
-      · simp at h
-      · simpa using h
-    | succ i IH =>
-      rcases l with _ | ⟨hd, tl⟩
-      · simp at h
-      simp at h
-      grind only [=_ List.cons_append, = List.length_cons]
-  · rintro ⟨ps, ss, rfl, h2⟩
-    grind only [= List.getElem?_append, = List.getElem?_cons]
-
 @[rocq_alias step_insert]
 theorem step_update_of_getElem? {i obs efs} {t : List Expr} (σ₁ σ₂ : State):
     t[i]? = some e →
     (e, σ₁) -<obs>->ₜ (e', σ₂, efs) →
     (t, σ₁) -<obs>->ₜₚ (t.set i e' ++ efs, σ₂) := by
-  grind only [= getElem?_neg, = getElem?_pos, = List.getElem?_some_iff_append,
+  grind only [= getElem?_neg, = getElem?_pos, = Iris.Std.List.getElem?_some_iff_append,
     = List.getElem?_append, = List.getElem?_cons, = List.set_append, = List.set_cons_zero,
     Step.atomic]
 
@@ -399,6 +395,8 @@ theorem perm_of_erasedStep (t₁ t₁' t₂ : List Expr) :
   fun _ _ t1perm ⟨obs, red⟩ =>
   have ⟨t₂', t2perm, red'⟩ := perm_of_step _ _ _ t1perm red
   ⟨t₂', t2perm, obs, red'⟩
+
+section PureSteps
 
 /-- There is a pure step between `e₁` and `e₂` iff there is
     a reduction step `(e₁, σ) -<[]>->ₜ (e₂, σ, [])` for some
@@ -422,25 +420,6 @@ scoped notation conf:40 " -ᵖ-> " conf':41 => purePrimStep conf conf'
     from `e₁` up to `e₂`.
 -/
 scoped notation conf:40 " -ᵖ->^[" n "] " conf':41 => Relation.iterate purePrimStep n conf conf'
-
-private theorem _root_.ReflTrans_iff_exists_iterate {α : Type _} {R : α → α → Prop} :
-    ∀ {x y},
-    Relation.ReflTransGen R x y ↔ ∃ n, Relation.iterate R n x y := by
-  intros x y
-  constructor
-  · intros rtcR
-    induction rtcR with
-    | refl =>
-      exists 0; constructor
-    | tail rtcMid Rlast IH =>
-      obtain ⟨n, h⟩ := IH
-      exists (n+1)
-      apply Relation.iterate.tail _ h Rlast
-  · rintro ⟨n, itR⟩
-    induction itR with
-    | rfl => constructor
-    | tail z itMid Rlast IH =>
-      apply Relation.ReflTransGen.tail IH Rlast
 
 /-- `e₁ -ᵖ->* e₂` represents a sequence of some number of pure steps
     taken from `e₁` up to `e₂`.
@@ -496,8 +475,8 @@ theorem ReflTransGen_pureStep_fill (K : Expr → Expr) [Context K] {e₁ e₂} :
     e₁ -ᵖ->* e₂ →
     K e₁ -ᵖ->* K e₂ := by
   intros h
-  replace ⟨n, h⟩:= ReflTrans_iff_exists_iterate.1 h
-  exact ReflTrans_iff_exists_iterate.2 ⟨n, iterate_purePrimStep_fill K h⟩
+  replace ⟨n, h⟩:= Relation.ReflTrans_iff_exists_iterate.1 h
+  exact Relation.ReflTrans_iff_exists_iterate.2 ⟨n, iterate_purePrimStep_fill K h⟩
 
 @[rocq_alias pure_exec_ctx]
 theorem pureExec_fill (K : Expr → Expr) [Context K] {φ n e₁ e₂} :
@@ -507,6 +486,21 @@ theorem pureExec_fill (K : Expr → Expr) [Context K] {φ n e₁ e₂} :
   constructor
   intros hφ
   exact iterate_purePrimStep_fill K (h hφ)
+
+
+@[rocq_alias rtc_pure_step_val]
+theorem ReflTransGen_purePrimStep_val [Inhabited State] {v : Val} {e : Expr} :
+    (v: Expr) -ᵖ->* e →
+    toVal e = some v := by
+  intros h
+  induction h with
+  | refl => exact (ToVal.toVal_coe _)
+  | tail H1 H2 IH =>
+    obtain ⟨red, stepUniq⟩ := H2
+    have ⟨e', σ', eₜ, step⟩ := red default
+    grind only [Language.val_stuck]
+
+end PureSteps
 
 class IntoVal (e : Expr)(v : Val) where
   into_val : (v : Expr) = e
@@ -520,24 +514,6 @@ class AsVal (e : Expr) where
 theorem as_val_isSome e :
     (∃ v : Val, (v : Expr) = e) → (toVal e).isSome := by
   grind only [!ToVal.toVal_eq_iff_coe, = Option.isSome_some]
-
-@[rocq_alias prim_step_not_stuck]
-theorem primStep_notStuck {e : Expr} {σ obs e' σ' eₜ} :
-    (e, σ) -<obs>->ₜ (e', σ', eₜ) →
-    notStuck (e, σ) :=
-  fun h => .inr ⟨_, _, _, _, h⟩
-
-@[rocq_alias rtc_pure_step_val]
-theorem ReflTransGen_purePrimStep_val [Inhabited State] {v : Val} {e : Expr} :
-    (v: Expr) -ᵖ->* e →
-    toVal e = some v := by
-  intros h
-  induction h with
-  | refl => exact (ToVal.toVal_coe _)
-  | tail H1 H2 IH =>
-    obtain ⟨red, stepUniq⟩ := H2
-    have ⟨e', σ', eₜ, step⟩ := red default
-    grind only [Language.val_stuck]
 
 /--
   Let thread pools `t₁` and `t₃` be such that each thread
@@ -584,7 +560,7 @@ theorem erasedStep_pureSteps (t₁ t₂ t₃ : List Expr) (σ₁ σ₂ : State) 
     obtain ⟨rlf, rfl, rfl, rfl⟩ := uniqStep pstep
     have : e -ᵖ-> e' := by grind only [purePrimStep]
     simp only [pureSteps, List.append_nil, true_and]
-    apply List.Forall₂.append ps_ps₃
+    apply Iris.Std.List.Forall₂.append ps_ps₃
     apply List.Forall₂.cons lastSteps ss_ss₃
 
 end Language
