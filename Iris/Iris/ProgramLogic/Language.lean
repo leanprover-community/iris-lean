@@ -176,11 +176,40 @@ inductive NSteps : Nat → List Expr × State → List Obs → List Expr × Stat
 scoped notation conf:40 " -<" obs:max ">->ₜₚ^[" n:max "] " conf':41 =>
  Language.NSteps n conf obs conf'
 
-/-- A sequence of `Language.step`s with no observation information -/
+/-- A `Language.step`s with no observation information -/
+@[rocq_alias erased_step]
 def erasedStep (ρ  ρ₂: List Expr × State) := ∃ obs, Step ρ obs ρ₂
 
 @[inherit_doc erasedStep]
 scoped notation conf:40 " -·->ₜₚ " conf':41 => Language.erasedStep conf conf'
+
+/-- A sequence of `Language.erasedStep`s -/
+scoped notation conf:40 " -·->ₜₚ* " conf':41 =>
+  Relation.ReflTransGen erasedStep conf conf'
+
+open Relation in
+@[rocq_alias erased_step_nsteps]
+theorem erasedStep_NSteps (ρ₁ ρ₂ : List Expr × State) :
+    ρ₁ -·->ₜₚ* ρ₂ ↔ ∃ n obs, ρ₁ -<obs>->ₜₚ^[n] ρ₂ := by
+  constructor <;> intros hyp
+  · replace ⟨n, hyp⟩ := ReflTrans_iff_exists_iterate.1 hyp
+    exists n
+    induction hyp using Relation.Iterate.head_induction_on with
+    | rfl => exists []; constructor
+    | head ρ' firstStep lastSteps IH =>
+      replace ⟨obs, firstStep⟩ := firstStep
+      replace ⟨obs', IH⟩ := IH
+      exists (obs ++ obs')
+      constructor <;> assumption
+  · replace ⟨n, obs, hyp⟩ := hyp
+    apply ReflTrans_iff_exists_iterate.2
+    exists n
+    induction hyp with
+    | refl => constructor
+    | cons n ρ₁ ρ₂ ρ₃ obs obs' =>
+      apply Iterate.head
+      · exists obs
+      · assumption
 
 section ReducibilityLemmas
 
