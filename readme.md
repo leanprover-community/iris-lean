@@ -24,14 +24,16 @@ MoSeL (in contrast to the older IPM) supports different separation logics as wel
 ```
 [[require]]
 name = "iris"
-git = "https://github.com/leanprover-community/iris-lean.git" "IrisLean"
+git.url = "https://github.com/leanprover-community/iris-lean.git" 
+git.subDir = "IrisLean" 
 rev = "master"
 ```
 - To use Iris constructions based on mathlib, you can also import the math library
 ```
 [[require]]
 name = "iris"
-git = "https://github.com/leanprover-community/iris-lean.git" "IrisLeanMath"
+git.url = "https://github.com/leanprover-community/iris-lean.git" 
+git.subDir = "IrisLeanMath" 
 rev = "master"
 ```
 
