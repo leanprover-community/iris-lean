@@ -15,8 +15,6 @@ public import Batteries.Data.List.Basic
 --       observations being a `List Obs`.
 -- TODO: Consider renaming `ToVal` typeclass to something better, since
 --       it's not just the `toVal` operation it carries.
--- TODO: Consider changing `Language.NSteps` to use `Relation.iterate`
---       instead of mirroring its structure
 
 @[expose] public section
 
