@@ -234,7 +234,7 @@ theorem lc_fupd_add_laterN (n : Nat) {E : CoPset} {P : IProp GF} :
     imodintro; iexact H
   | succ n IH =>
     iintro ⟨Hcr, Hcrs⟩ >HP
-    ihave HP := (laterN_later n (PROP := IProp GF)).mp $$ HP
+    ihave HP := (laterN_later n).mp $$ HP
     iapply lc_fupd_add_later $$ Hcr
     iapply IH $$ Hcrs [HP]
     imodintro; iexact HP
@@ -305,7 +305,7 @@ theorem step_fupdN_soundness_no_lc [InvGpreS GF] (n m : Nat) {P : IProp GF} [Pla
   iintro Hcrds
   iapply fupd_plainly_mask_empty
   imod H $$ Hcrds with H
-  imod step_fupdN_plain (P := P) $$ H with H
+  imod step_fupdN_plain $$ H with H
   imodintro
   iapply plainly_mono (laterN_later _).mpr
   iapply laterN_plainly

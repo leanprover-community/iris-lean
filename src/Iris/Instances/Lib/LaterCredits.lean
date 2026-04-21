@@ -458,7 +458,7 @@ theorem lc_soundness [LcGpreS GF] m (P : IProp GF) [Plain P]  (H : ∀ {_: LcGS 
   apply laterN_soundness (n := m.succ)
   refine .trans ?_ bupd_elim
   iintro emp; iclear emp
-  imod lc_alloc (GF := GF) m with ⟨%γ, H1, H2⟩
+  imod lc_alloc m with ⟨%γ, H1, H2⟩
   -- FIXME: Is it possible to support nested specializations? le_upd_elim_complete $$ H1 (H $$ H2)?
   ihave G := H $$ H2
   ihave G := le_upd_elim_complete $$ H1 G

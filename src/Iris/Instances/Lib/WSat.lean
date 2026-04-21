@@ -102,11 +102,11 @@ theorem ownE_op {E1 E2} (Hdisj : E1 ## E2) : ownE (E1 ∪ E2) ⊣⊢@{IProp GF} 
 
 theorem ownE_disjoint {E1 E2} : ownE E1 ∗ ownE E2 ⊢@{IProp GF} ⌜E1 ## E2⌝ := by
   iintro ⟨H1, H2⟩
-  icases iOwn_op (E := W.enabled) $$ [H1 H2] with H
+  icases iOwn_op $$ [H1 H2] with H
   · unfold ownE
     isplitl [H1] <;> iassumption
-  ihave H := iOwn_cmraValid (E := W.enabled) $$ H
-  icases internalCmraValid_discrete (PROP := IProp GF) (A := DisjointLeibnizSet CoPset) $$ H with %H
+  ihave H := iOwn_cmraValid $$ H
+  icases internalCmraValid_discrete (A := DisjointLeibnizSet CoPset) $$ H with %H
   ipure_intro
   exact valid_op_iff_disj.mp H
 
@@ -143,10 +143,10 @@ theorem ownD_disjoint (E1 E2 : PosSet) :
     ownD E1 ∗ ownD E2 ⊢@{IProp GF}  ⌜E1 ## E2⌝ := by
   unfold ownD
   iintro ⟨H1, H2⟩
-  icases iOwn_op (E := W.disabled) $$ [H1 H2] with H
+  icases iOwn_op $$ [H1 H2] with H
   · isplitl [H1] <;> iassumption
-  ihave H := iOwn_cmraValid (E := W.disabled) $$ H
-  icases internalCmraValid_discrete (PROP := IProp GF) (A := DisjointLeibnizSet PosSet) $$ H with %H
+  ihave H := iOwn_cmraValid $$ H
+  icases internalCmraValid_discrete (A := DisjointLeibnizSet PosSet) $$ H with %H
   ipure_intro
   exact valid_op_iff_disj.mp H
 
@@ -177,9 +177,9 @@ theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
     ⊢@{IProp GF} ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ internalEq Q P := by
   unfold ownI
   iintro H
-  ihave H := iOwn_cmraValid_op (E := W.inv) $$ H
+  ihave H := iOwn_cmraValid_op $$ H
   ihave ⟨%v', %dp', %Hdp, %Hlookup, H1, H2⟩ :=
-    (auth_op_frag_validI_total (F := PNat) (PROP := IProp GF)
+    (auth_op_frag_validI_total (F := PNat)
       (own 1) (map toAgree (map invariant_unfold I))) $$ H
   simp only [get?_map, Option.map_map, Option.map_eq_some_iff, Function.comp_apply] at Hlookup
   have ⟨Q', Hget, Hagree⟩ := Hlookup
@@ -196,7 +196,7 @@ theorem ownI_open {i : Pos} {P : IProp GF} : wsat ∗ ownI i P ∗ ownE {i} ⊢ 
   iintro ⟨⟨%I, Hown, Hmap⟩, #HI, HE⟩
   icases invariant_lookup I i P $$ [Hown HI] with #⟨%Q, %HEQ, #H⟩
   · isplit <;> iassumption
-  icases bigSepM_delete (PROP := IProp GF) HEQ $$ Hmap with ⟨⟨⟨HProp, HD⟩ | HE'⟩, Hacc⟩
+  icases bigSepM_delete HEQ $$ Hmap with ⟨⟨⟨HProp, HD⟩ | HE'⟩, Hacc⟩
   · isplitr [HProp HD]
     · iexists I
       isplitl [Hown]
@@ -218,7 +218,7 @@ theorem ownI_close {i : Pos} {P : IProp GF} : wsat ∗ ownI i P ∗ ▷ P ∗ ow
   iintro ⟨⟨%I, Hown, Hmap⟩, #HI, HProp, HE⟩
   icases invariant_lookup I i P $$ [Hown HI] with #⟨%Q, %HEQ, #H⟩
   · isplit <;> iassumption
-  icases bigSepM_delete (PROP := IProp GF) HEQ $$ Hmap with ⟨⟨⟨HProp, HD⟩ | HE'⟩, Hacc⟩
+  icases bigSepM_delete HEQ $$ Hmap with ⟨⟨⟨HProp, HD⟩ | HE'⟩, Hacc⟩
   · iexfalso
     iapply ownD_singleton_twice $$ [HD HE]
     isplitl [HE] <;> iassumption
@@ -245,7 +245,7 @@ theorem ownI_alloc [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
     ⊢ wsat ∗ ▷ P ==∗ ∃ i, ⌜φ i⌝ ∗ wsat ∗ ownI i P := by
   unfold wsat ownI ownE
   iintro ⟨⟨%I, ⟨Hown, Hmap⟩⟩, HProp⟩
-  imod ownD_empty (W := W) with HD
+  imod ownD_empty with HD
   unfold ownD
   have HP (Y : PosSet) : ∃ j, ¬j ∈ Y ∧ (fun i => get? I i = none ∧ φ i) j := by
     have ⟨j, H⟩ := Hfresh (Y ∪ dom_set I)
@@ -253,12 +253,13 @@ theorem ownI_alloc [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
     obtain ⟨⟨HnotY, HnotDom⟩, Hφ⟩ := H
     have _ : get? I j = none := by simp [mem_dom_set] at HnotDom; assumption
     exists j
-  imod iOwn_updateP (E := W.disabled) (alloc_empty_updateP_strong' HP) $$ HD with ⟨%X, %Hpure, HD⟩
+  imod iOwn_updateP (alloc_empty_updateP_strong' HP) $$ HD with ⟨%X, %Hpure, HD⟩
   obtain ⟨j, HEQ, ⟨Hget, Hφ⟩⟩ := Hpure
+  -- FIXME: removing E causes a PM error
   imod iOwn_update (E := W.inv) (update_one_alloc (v1 := toAgree (invariant_unfold P)) _
       DFrac.valid_discard (fun _ => ⟨⟩)) $$ Hown with Hown
   · simpa [get?_map]
-  icases iOwn_op (E := W.inv) $$ Hown with ⟨Hown, Hpt⟩
+  icases iOwn_op $$ Hown with ⟨Hown, Hpt⟩
   imodintro
   iexists j
   isplit
@@ -272,7 +273,7 @@ theorem ownI_alloc [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
       refine ExtensionalPartialMap.equiv_iff_eq.mp fun k => ?_
       simp only [get?_insert, get?_map, Option.map_map]
       by_cases h : j = k <;> simp [h]
-    · iapply bigSepM_insert (PROP := IProp GF) (x := P) Hget $$ [Hmap HProp HD]
+    · iapply bigSepM_insert (x := P) Hget $$ [Hmap HProp HD]
       isplitl [HProp HD]
       · rw [HEQ]
         ileft
@@ -285,7 +286,7 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
   ⊢ wsat ==∗ ∃ i, ⌜φ i⌝ ∗ (ownE {i} -∗ wsat) ∗ ownI i P ∗ ownD {i} := by
   unfold wsat
   iintro ⟨%I, Hown, Hmap⟩
-  imod ownD_empty (W := W) with HD
+  imod ownD_empty with HD
   unfold ownD
   have HP (Y : PosSet) : ∃ j, ¬j ∈ Y ∧ (fun i => get? I i = none ∧ φ i) j := by
     have ⟨j, H⟩ := Hfresh (Y ∪ dom_set I)
@@ -293,12 +294,12 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
     obtain ⟨⟨HnotY, HnotDom⟩, Hφ⟩ := H
     have _ : get? I j = none := by simp [mem_dom_set] at HnotDom; assumption
     exists j
-  imod iOwn_updateP (E := W.disabled) (alloc_empty_updateP_strong' HP) $$ HD with ⟨%X, %Hpure, HD⟩
+  imod iOwn_updateP (alloc_empty_updateP_strong' HP) $$ HD with ⟨%X, %Hpure, HD⟩
   obtain ⟨j, HEQ, ⟨Hget, Hφ⟩⟩ := Hpure
   imod iOwn_update (E := W.inv) (update_one_alloc (v1 := toAgree (invariant_unfold P)) _
       DFrac.valid_discard (fun _ => ⟨⟩)) $$ Hown with Hown
   · simpa [get?_map]
-  icases iOwn_op (E := W.inv) $$ Hown with ⟨Hown, Hpt⟩
+  icases iOwn_op $$ Hown with ⟨Hown, Hpt⟩
   imodintro
   iexists j
   isplit
@@ -314,7 +315,7 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
       refine ExtensionalPartialMap.equiv_iff_eq.mp fun k => ?_
       simp only [get?_insert, get?_map, Option.map_map]
       by_cases h : j = k <;> simp [h]
-    · iapply bigSepM_insert (PROP := IProp GF) (x := P) Hget $$ [Hmap HE]
+    · iapply bigSepM_insert (x := P) Hget $$ [Hmap HE]
       isplitl [HE]
       · iright; iassumption
       · iexact Hmap
