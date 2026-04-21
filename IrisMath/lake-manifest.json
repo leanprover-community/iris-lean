@@ -6,7 +6,7 @@
    "name": "iris",
    "manifestFile": "lake-manifest.json",
    "inherited": false,
-   "dir": "../IrisLean/",
+   "dir": "../Iris/",
    "configFile": "lakefile.toml"},
   {"url": "https://github.com/leanprover-community/mathlib4",
    "type": "git",
