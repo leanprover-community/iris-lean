@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: leanprover/lean-action@v1
         with:
-          lake-package-directory: IrisLean
+          lake-package-directory: Iris
 
   build-math:
     needs: build
@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: leanprover/lean-action@v1
         with:
-          lake-package-directory: IrisLeanMath
+          lake-package-directory: IrisMath
           use-mathlib-cache: true
 
   report:
@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: leanprover/lean-action@v1
         with:
-          lake-package-directory: IrisLean
+          lake-package-directory: Iris
       - name: Read Rocq commit from revision file
         id: rocq-commit
         run: |
@@ -48,7 +48,7 @@ jobs:
       - name: Cache Rocq definitions
         uses: actions/cache@v4
         with:
-          path: IrisLean/.lake/iris-rocq-cache
+          path: Iris/.lake/iris-rocq-cache
           key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
       - name: Generate porting report
         run: |

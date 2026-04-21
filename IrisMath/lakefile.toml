@@ -16,7 +16,7 @@ rev = "v4.29.0"
 
 [[require]]
 name = "iris"
-path = "../IrisLean/"
+path = "../Iris/"
 
 [[lean_lib]]
 name = "IrisMath"
