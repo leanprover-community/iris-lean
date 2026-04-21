@@ -7,7 +7,7 @@ module
 
 public import Iris.Algebra.Auth
 public import Iris.Algebra.Excl
-meta import Iris.Std.RocqAlias
+meta import Iris.Std.RocqPorting
 
 /-!
 # Exclusive Authoritative CMRA

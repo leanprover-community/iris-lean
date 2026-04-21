@@ -7,7 +7,7 @@ module
 
 public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
-meta import Iris.Std.RocqAlias
+meta import Iris.Std.RocqPorting
 
 public section
 
@@ -79,7 +79,7 @@ theorem bigAndL_map {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : Li
     ([∧list] k ↦ y ∈ (l.map f), Φ k y) ≡ [∧list] k ↦ x ∈ l, Φ k (f x) :=
   bigOpL_map_equiv f Φ l
 
-@[rocq_alias bigAndL_lookup]
+@[rocq_alias big_andL_lookup]
 theorem bigAndL_lookup {Φ : Nat → A → PROP} {l : List A} {i : Nat} {x : A} (h : l[i]? = some x) :
     ([∧list] k ↦ y ∈ l, Φ k y) ⊢ Φ i x :=
   match l, i with

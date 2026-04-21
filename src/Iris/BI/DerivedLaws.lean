@@ -12,7 +12,7 @@ public import Iris.Std.Nat
 public import Iris.Std.Classes
 public import Iris.Std.Rewrite
 public import Iris.Std.TC
-import Iris.Std.RocqIgnore
+import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -58,10 +58,10 @@ theorem mp [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q → R) (h2 : P ⊢ Q) : P ⊢ 
 theorem imp_elim' [BI PROP] {P Q R : PROP} (h : Q ⊢ P → R) : P ∧ Q ⊢ R :=
   and_symm.trans <| imp_elim h
 
-@[rocq_alias impl_elim_l]
+@[rocq_alias bi.impl_elim_l]
 theorem imp_elim_l [BI PROP] {P Q : PROP} : (P → Q) ∧ P ⊢ Q := imp_elim .rfl
 
-@[rocq_alias impl_elim_r]
+@[rocq_alias bi.impl_elim_r]
 theorem imp_elim_r [BI PROP] {P Q : PROP} : P ∧ (P → Q) ⊢ Q := imp_elim' .rfl
 
 theorem false_elim [BI PROP] {P : PROP} : False ⊢ P := pure_elim' False.elim
@@ -397,7 +397,7 @@ theorem sep_exists_r [BI PROP] {Φ : α → PROP} {Q : PROP} : (∃ a, Φ a) ∗
 
 theorem wand_rfl [BI PROP] {P : PROP} : ⊢ P -∗ P := wand_intro emp_sep.1
 
-@[rocq_alias wand_curry]
+@[rocq_alias bi.wand_curry]
 theorem wand_curry [BI PROP] {P Q R: PROP} : (P -∗ Q -∗ R) ⊣⊢ ((P ∗ Q) -∗ R) := by
   refine ⟨?_, ?_⟩
   · refine wand_intro' ?_
@@ -479,7 +479,6 @@ theorem pure_imp [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊣⊢@{PROP} (�
   · exact pure_intro h.elim
 
 #rocq_ignore bi.pure_forall_1 "Proven as pure_forall.1"
-#rocq_ignore bi.pure_forall_2 "Proven as pure_forall.2"
 
 @[rocq_alias bi.pure_forall]
 theorem pure_forall [BI PROP] {φ : α → Prop} :  ⌜∀ x, φ x⌝ ⊣⊢@{PROP} (∀ x, ⌜φ x⌝) := by
@@ -687,7 +686,7 @@ instance (priority := default + 10) biaffine_absorbing [BI PROP] [BIAffine PROP]
 theorem affine_affinely [BI PROP] (P : PROP) [Affine P] : <affine> P ⊣⊢ P :=
   ⟨affinely_elim, and_intro affine .rfl⟩
 
-@[rocq_alias True_emp_iff_BiAffine]
+@[rocq_alias bi.True_emp_iff_BiAffine]
 theorem biaffine_iff_true_emp [BI PROP] : BIAffine PROP ↔ (True : PROP) ⊢ emp :=
   ⟨fun _ => affine, fun h => ⟨fun _ => ⟨true_intro.trans h⟩⟩⟩
 
@@ -1584,11 +1583,11 @@ theorem persistent_and_sep_1 [BI PROP] {P Q : PROP} :
   | TCOr.l => persistent_and_affinely_sep_l_1.trans (sep_mono_l affinely_elim)
   | TCOr.r => persistent_and_affinely_sep_r_1.trans (sep_mono_r affinely_elim)
 
-@[rocq_alias persistent_entails_l]
+@[rocq_alias bi.persistent_entails_l]
 theorem persistent_entails_r [BI PROP] {P Q : PROP} [Persistent Q] (H : P ⊢ Q) : P ⊢ Q ∗ P :=
   (and_intro H .rfl).trans persistent_and_sep_1
 
-@[rocq_alias persistent_entails_r]
+@[rocq_alias bi.persistent_entails_r]
 theorem persistent_entails_l [BI PROP] {P Q : PROP} [Persistent Q] (H : P ⊢ Q) : P ⊢ P ∗ Q :=
   (and_intro .rfl H).trans persistent_and_sep_1
 
@@ -1618,7 +1617,7 @@ theorem bigOp_and_cons [BI PROP] {P : PROP} {Ps : List PROP} :
 
 /-! # Limits -/
 
-@[rocq_alias limit_preserving_entails]
+@[rocq_alias bi.limit_preserving_entails]
 theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : OFE.NonExpansive Φ]
     [Ψne : OFE.NonExpansive Ψ] : LimitPreserving (λ x ↦ Φ x ⊢ Ψ x) := by
   refine .ext (P := λ x ↦ True ⊣⊢ (Φ x → Ψ x)) (@fun x => ?_) ?_

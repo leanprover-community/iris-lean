@@ -7,7 +7,7 @@ module
 
 public import Iris.Algebra.Auth
 import Iris.Algebra.LocalUpdates
-meta import Iris.Std.RocqAlias
+meta import Iris.Std.RocqPorting
 
 /-!
 # Fractional Authoritative Camera

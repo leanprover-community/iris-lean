@@ -7,7 +7,7 @@ module
 
 public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
-meta import Iris.Std.RocqAlias
+meta import Iris.Std.RocqPorting
 
 public section
 namespace Iris.BI
@@ -35,7 +35,7 @@ theorem bigOrL_singleton {Φ : Nat → A → PROP} {x : A} :
     ([∨list] k ↦ y ∈ [x], Φ k y) ⊣⊢ Φ 0 x :=
   equiv_iff.mp <| bigOpL_singleton_equiv Φ x
 
-@[rocq_alias big_orL_append]
+@[rocq_alias big_orL_app]
 theorem bigOrL_append {Φ : Nat → A → PROP} {l₁ l₂ : List A} :
     ([∨list] k ↦ x ∈ (l₁ ++ l₂), Φ k x) ⊣⊢
       ([∨list] k ↦ x ∈ l₁, Φ k x) ∨ [∨list] n ↦ x ∈ l₂, Φ (n + l₁.length) x :=

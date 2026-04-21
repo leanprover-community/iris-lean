@@ -8,7 +8,7 @@ module
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
-meta import Iris.Std.RocqAlias
+meta import Iris.Std.RocqPorting
 
 @[expose] public section
 

@@ -19,14 +19,17 @@ section BIBasicUpdate
 
 variable {PROP} [BI PROP] [BIUpdate PROP]
 
+@[rocq_alias from_assumption_bupd]
 instance fromAssumption_bupd p ioP (P Q : PROP)
     [h : FromAssumption p ioP P Q] : FromAssumption p ioP P iprop(|==> Q) where
   from_assumption := h.1.trans BIUpdate.intro
 
+@[rocq_alias from_pure_bupd]
 instance fromPure_bupd (a : Bool) (P : PROP) (φ : Prop)
     [h : FromPure a P φ] : FromPure a iprop(|==> P) φ where
   from_pure := h.1.trans BIUpdate.intro
 
+@[rocq_alias into_wand_bupd]
 instance intoWand_bupd (p q : Bool) ioP ioQ (R P Q : PROP)
     [h : IntoWand false false R ioP P ioQ Q] :
     IntoWand p q iprop(|==> R) ioP iprop(|==> P) ioQ iprop(|==> Q) where
@@ -34,6 +37,9 @@ instance intoWand_bupd (p q : Bool) ioP ioQ (R P Q : PROP)
     wand_intro <| (sep_mono (BIUpdate.mono h.1) intuitionisticallyIf_elim).trans <|
     bupd_sep.trans <| BIUpdate.mono wand_elim_l
 
+#rocq_ignore into_wand_bupd_args "IntoWand' is not used in Lean"
+
+@[rocq_alias into_wand_bupd_persistent]
 instance intoWand_bupd_persistent (p q : Bool) ioP ioQ (R P Q : PROP)
     [h : IntoWand false q R ioP P ioQ Q] :
     IntoWand p q iprop(|==> R) ioP P ioQ iprop(|==> Q) where
@@ -41,34 +47,42 @@ instance intoWand_bupd_persistent (p q : Bool) ioP ioQ (R P Q : PROP)
     wand_intro <| (sep_mono (BIUpdate.mono h.1) .rfl).trans <|
     bupd_frame_r.trans <| BIUpdate.mono wand_elim_l
 
+@[rocq_alias from_sep_bupd]
 instance fromSep_bupd (P Q1 Q2 : PROP)
     [h : FromSep P Q1 Q2] : FromSep iprop(|==> P) iprop(|==> Q1) iprop(|==> Q2) where
   from_sep := bupd_sep.trans (BIUpdate.mono h.1)
 
+@[rocq_alias from_or_bupd]
 instance fromOr_bupd (P Q1 Q2 : PROP)
     [h : FromOr P Q1 Q2] : FromOr iprop(|==> P) iprop(|==> Q1) iprop(|==> Q2) where
   from_or := bupd_or.trans (BIUpdate.mono h.1)
 
+@[rocq_alias into_and_bupd]
 instance intoAnd_bupd (P Q1 Q2 : PROP)
     [h : IntoAnd false P Q1 Q2] : IntoAnd false iprop(|==> P) iprop(|==> Q1) iprop(|==> Q2) where
   into_and := (BIUpdate.mono h.1).trans bupd_and
 
+@[rocq_alias from_exist_bupd]
 instance fromExists_bupd (P : PROP) (Φ : α → PROP)
     [h : FromExists P Φ] : FromExists iprop(|==> P) (fun a => iprop(|==> Φ a)) where
   from_exists := bupd_exist.trans (BIUpdate.mono h.1)
 
+@[rocq_alias into_forall_bupd]
 instance intoForall_bupd (P : PROP) (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(|==> P) (fun a => iprop(|==> Φ a)) where
   into_forall := (BIUpdate.mono h.1).trans bupd_forall
 
+@[rocq_alias is_except_0_bupd]
 instance isExcept0_bupd (P : PROP)
     [h : IsExcept0 P] : IsExcept0 iprop(|==> P) where
   is_except0 := bupd_except0.trans <| BIUpdate.mono h.1
 
+@[rocq_alias from_modal_bupd]
 instance fromModal_bupd (P : PROP) :
     FromModal True modality_id iprop(|==> P) iprop(|==> P) P where
   from_modal := by simp [modality_id]; exact BIUpdate.intro
 
+@[rocq_alias elim_modal_bupd]
 instance elimModal_bupd p (P Q : PROP) :
     ElimModal True p false iprop(|==> P) P iprop(|==> Q) iprop(|==> Q) where
   elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans <|
@@ -80,13 +94,13 @@ section SBIBasicUpdate
 
 variable {PROP} [Sbi PROP] [BIUpdate PROP] [BIBUpdatePlainly PROP]
 
-@[ipm_backtrack]
+@[ipm_backtrack, rocq_alias elim_modal_bupd_plain_goal]
 instance elimModal_bupd_plain_goal p (P Q : PROP) [Plain Q] :
     ElimModal True p false iprop(|==> P) P Q Q where
   elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans <|
     bupd_frame_r.trans <| (BIUpdate.mono wand_elim_r).trans bupd_elim
 
-@[ipm_backtrack]
+@[ipm_backtrack, rocq_alias elim_modal_bupd_plain]
 instance elimModal_bupd_plain p (P Q : PROP) [Plain P] :
     ElimModal True p p iprop(|==> P) P Q Q where
   elim_modal _ := (sep_mono_l (intuitionisticallyIf_mono bupd_elim)).trans wand_elim_r
@@ -97,14 +111,17 @@ section BIFancyUpdate
 
 variable {PROP} [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
 
+@[rocq_alias from_assumption_fupd]
 instance fromAssumption_fupd E p ioP (P Q : PROP)
     [h : FromAssumption p ioP P iprop(|==> Q)] : FromAssumption p ioP P iprop(|={E}=> Q) where
   from_assumption := h.from_assumption.trans BIUpdateFUpdate.fupd_of_bupd
 
+@[rocq_alias from_pure_fupd]
 instance fromPure_fupd E a (P : PROP) (φ : Prop)
     [h : FromPure a P φ] : FromPure a iprop(|={E}=> P) φ where
   from_pure := h.from_pure.trans <| fupd_intro
 
+@[rocq_alias into_wand_fupd]
 instance intoWand_fupd E (p q : Bool) ioP ioQ (R P Q : PROP)
     [h : IntoWand false false R ioP P ioQ Q] :
     IntoWand p q iprop(|={E}=> R) ioP iprop(|={E}=> P) ioQ iprop(|={E}=> Q) where
@@ -112,6 +129,7 @@ instance intoWand_fupd E (p q : Bool) ioP ioQ (R P Q : PROP)
     wand_intro <| (sep_mono (BIFUpdate.mono h.into_wand) intuitionisticallyIf_elim).trans <|
     fupd_sep.trans <| BIFUpdate.mono wand_elim_l
 
+@[rocq_alias into_wand_fupd_persistent]
 instance intoWand_fupd_persistent E1 E2 (p q : Bool) ioP ioQ (R P Q : PROP)
     [h : IntoWand false q R ioP P ioQ Q] :
     IntoWand p q iprop(|={E1,E2}=> R) ioP P ioQ iprop(|={E1,E2}=> Q) where
@@ -119,55 +137,68 @@ instance intoWand_fupd_persistent E1 E2 (p q : Bool) ioP ioQ (R P Q : PROP)
     wand_intro <| (sep_mono (BIFUpdate.mono h.into_wand) .rfl).trans <|
     fupd_frame_r.trans <| BIFUpdate.mono wand_elim_l
 
+#rocq_ignore into_wand_fupd_args "IntoWand' is not used in Lean"
+
+@[rocq_alias from_sep_fupd]
 instance fromSep_fupd E (P Q1 Q2 : PROP)
     [h : FromSep P Q1 Q2] : FromSep iprop(|={E}=> P) iprop(|={E}=> Q1) iprop(|={E}=> Q2) where
   from_sep := fupd_sep.trans <| BIFUpdate.mono h.from_sep
 
+@[rocq_alias from_or_fupd]
 instance fromOr_fupd E1 E2 (P Q1 Q2 : PROP)
     [h : FromOr P Q1 Q2] : FromOr iprop(|={E1,E2}=> P) iprop(|={E1,E2}=> Q1) iprop(|={E1,E2}=> Q2) where
   from_or := fupd_or.trans <| BIFUpdate.mono h.from_or
 
+@[rocq_alias into_and_fupd]
 instance intoAnd_fupd E1 E2 (P Q1 Q2 : PROP)
     [h : IntoAnd false P Q1 Q2] : IntoAnd false iprop(|={E1,E2}=> P) iprop(|={E1,E2}=> Q1) iprop(|={E1,E2}=> Q2) where
   into_and := (BIFUpdate.mono h.into_and).trans fupd_and
 
+@[rocq_alias from_exist_fupd]
 instance fromExists_fupd E1 E2 (P : PROP) (Φ : α → PROP)
     [h : FromExists P Φ] : FromExists iprop(|={E1,E2}=> P) (fun a => iprop(|={E1,E2}=> Φ a)) where
   from_exists := fupd_exist.trans <| (BIFUpdate.mono h.from_exists)
 
+@[rocq_alias into_forall_fupd]
 instance intoForall_fupd E1 E2 (P : PROP) (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(|={E1,E2}=> P) (fun a => iprop(|={E1,E2}=> Φ a)) where
   into_forall := (BIFUpdate.mono h.into_forall).trans fupd_forall
 
+@[rocq_alias is_except_0_fupd]
 instance isExcept0_fupd E1 E2 (P : PROP) : IsExcept0 iprop(|={E1,E2}=> P) where
   is_except0 := BIFUpdate.except0
 
+@[rocq_alias from_modal_fupd]
 instance fromModal_fupd E (P : PROP) :
     FromModal True modality_id iprop(|={E}=> P) iprop(|={E}=> P) P where
   from_modal := by simp [modality_id]; exact fupd_intro
 
+@[rocq_alias from_modal_fupd_wrong_mask]
 instance (priority := low) fromModal_fupd_wrongMask E1 E2 (P : PROP) :
     FromModal (PMError "Only non-mask-changing update modalities can be introduced directly.
       Use `iapply (fupd_mask_intro ...)` to introduce a mask-changing fancy update.")
       modality_id iprop(|={E1,E2}=> P) iprop(|={E1,E2}=> P) P where
   from_modal h := by cases h
 
+@[rocq_alias elim_modal_bupd_fupd]
 instance elimModal_bupd_fupd p E1 E2 (P Q : PROP) :
     ElimModal True p false iprop(|==> P) P iprop(|={E1,E2}=> Q) iprop(|={E1,E2}=> Q) where
   elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans <|
     (sep_mono_l BIUpdateFUpdate.fupd_of_bupd).trans <|
     fupd_frame_r.trans <| (BIFUpdate.mono wand_elim_r).trans BIFUpdate.trans
 
+@[rocq_alias elim_modal_fupd_fupd]
+instance (priority := high) elimModal_fupd_fupd p E1 E2 E3 (P Q : PROP) :
+    ElimModal True p false iprop(|={E1,E2}=> P) P iprop(|={E1,E3}=> Q) iprop(|={E2,E3}=> Q) where
+  elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans <|
+    fupd_frame_r.trans <| (BIFUpdate.mono wand_elim_r).trans BIFUpdate.trans
+
+@[rocq_alias elim_modal_fupd_fupd_wrong_mask]
 instance (priority := low) elimModal_fupd_fupd_wrongMask p E0 E1 E2 E3 (P Q : PROP) :
     ElimModal (PMError "Goal and eliminated modality must have the same mask.
       Use `BIFUpdate.subset` to adjust the goal mask before using `imod`.")
       p false iprop(|={E1,E2}=> P) iprop(False) iprop(|={E0,E3}=> Q) iprop(False) where
   elim_modal h := by cases h
-
-instance (priority := high) elimModal_fupd_fupd p E1 E2 E3 (P Q : PROP) :
-    ElimModal True p false iprop(|={E1,E2}=> P) P iprop(|={E1,E3}=> Q) iprop(|={E2,E3}=> Q) where
-  elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans <|
-    fupd_frame_r.trans <| (BIFUpdate.mono wand_elim_r).trans BIFUpdate.trans
 
 end BIFancyUpdate
 

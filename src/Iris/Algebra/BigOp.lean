@@ -388,6 +388,7 @@ theorem bigOpM_insert_delete_equiv (Φ : K → V → M) (m : M' V) (i : K) (x : 
   (bigOpM_equiv_of_perm _ (insert_delete · |>.symm)).trans
     (bigOpM_insert_equiv _ _ (get?_delete_eq rfl))
 
+@[rocq_alias big_opM_insert_override]
 theorem bigOpM_insert_override_equiv {Φ : K → A → M} {m : M' A}
     (hi : get? m i = some x) (hΦ : Φ i x ≡ Φ i x') :
     ([^ op map] k ↦ v ∈ insert m i x', Φ k v) ≡ ([^ op map] k ↦ v ∈ m, Φ k v) :=

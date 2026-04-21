@@ -9,7 +9,7 @@ public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
 import Iris.BI.Instances
 import Iris.Std.TC
-meta import Iris.Std.RocqAlias
+meta import Iris.Std.RocqPorting
 
 public section
 
@@ -83,12 +83,12 @@ theorem bigSepL_mono_of_forall {Φ Ψ : Nat → A → PROP} {l : List A} (h : �
     ([∗list] k ↦ x ∈ l, Φ k x) ⊢ [∗list] k ↦ x ∈ l, Ψ k x :=
   bigSepL_mono fun _ => h
 
-@[rocq_alias big_sepL_flip_mono]
+@[rocq_alias big_sepL_flip_mono']
 theorem bigSepL_flip_mono {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, Ψ k x ⊢ Φ k x) :
     ([∗list] k ↦ x ∈ l, Ψ k x) ⊢ [∗list] k ↦ x ∈ l, Φ k x :=
   bigSepL_mono fun _ => h
 
-@[rocq_alias big_sepL_id_mono]
+@[rocq_alias big_sepL_id_mono']
 theorem bigSepL_id_mono {Ps Qs : List PROP} (hlen : Ps.length = Qs.length)
     (h : ∀ (i : Nat) (P Q : PROP), Ps[i]? = some P → Qs[i]? = some Q → P ⊢ Q) :
     ([∗list] P ∈ Ps, P) ⊢ [∗list] Q ∈ Qs, Q :=
@@ -616,7 +616,7 @@ theorem bigSepL2_dist {Φ Ψ : Nat → A → B → PROP} {l1 : List A} {l2 : Lis
   | [], [] | [], _ :: _ | _ :: _, [] => .rfl
   | _ :: _, _ :: _ => sep_ne.ne (h rfl rfl) (bigSepL2_dist fun {k} => @h (k + 1))
 
-@[rocq_alias big_sepL2_flip_mono]
+@[rocq_alias big_sepL2_flip_mono']
 theorem bigSepL2_mono_of_forall {Φ Ψ : Nat → A → B → PROP} {l1 : List A} {l2 : List B}
     (h : ∀ {k x1 x2}, Φ k x1 x2 ⊢ Ψ k x1 x2) :
     ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊢ ([∗list] k ↦ x1;x2 ∈ l1;l2, Ψ k x1 x2) :=
@@ -1035,7 +1035,6 @@ theorem bigSepL2_later_1 [BIAffine PROP] {Φ : Nat → A → B → PROP} {l1 : L
   (and_mono .rfl except0_intro).trans <| except0_and.2.trans <|
   except0_mono (bigSepL2_alt (Φ := fun k x1 x2 => iprop(▷ Φ k x1 x2))).2
 
-@[rocq_alias big_sepL2_later]
 theorem bigSepL2_later [BIAffine PROP] {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : List B} :
     (▷ [∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) ⊣⊢ (◇ [∗list] k ↦ x1;x2 ∈ l1;l2, ▷ Φ k x1 x2) :=
   ⟨bigSepL2_later_1, (except0_mono bigSepL2_later_2).trans except0_later⟩

@@ -5,7 +5,7 @@ Authors: Lars König
 -/
 module
 
-public import Iris.Std.RocqIgnore
+public import Iris.Std.RocqPorting
 public import Iris.BI.Classes
 public import Iris.BI.BI
 
@@ -33,7 +33,7 @@ export BILoeb (loeb_weak)
 @[rocq_alias BiLaterContractive]
 class BILaterContractive (PROP : Type _) [BI PROP] extends OFE.Contractive later (α := PROP)
 
-#rocq_ignore BIPureForall "BIPureForall is provable for all BIs using classical logic, see pure_forall_2"
+#rocq_ignore BiPureForall "BIPureForall is provable for all BIs using classical logic, see pure_forall_2"
 
 @[rocq_alias BiPersistentlyForall]
 class BIPersistentlyForall (PROP : Type _) [BI PROP] where

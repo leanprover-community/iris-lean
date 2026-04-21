@@ -9,7 +9,7 @@ module
 public import Iris.BI
 public import Iris.Algebra
 public import Iris.Instances.UPred
-public meta import Iris.Std.RocqAlias
+public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 namespace Iris
