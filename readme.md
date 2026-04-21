@@ -27,7 +27,7 @@ More details about the status of our port can be found on our [tracking site](ht
 [[require]]
 name = "iris"
 git.url = "https://github.com/leanprover-community/iris-lean.git" 
-git.subDir = "IrisLean" 
+git.subDir = "Iris" 
 rev = "master"
 ```
 - To use Iris constructions based on mathlib, you can also import the math library
@@ -35,7 +35,7 @@ rev = "master"
 [[require]]
 name = "iris"
 git.url = "https://github.com/leanprover-community/iris-lean.git" 
-git.subDir = "IrisLeanMath" 
+git.subDir = "IrisLean" 
 rev = "master"
 ```
 
