@@ -38,9 +38,9 @@ rev = "master"
 
 # Development
 
-This project started as part of Lars König's master's thesis at Karlsruhe Institute of Technology (KIT). It is currently being maintained by Mario Carneiro and Markus de Medeiros. 
+This project started as part of Lars König's master's thesis at Karlsruhe Institute of Technology (KIT). It is currently being maintained by a team of developers, coordinating on the [iris-lean channel](https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean) on the Lean Zulip. 
 
-For questions, contribution guidance, and development information, see the [iris-lean channel](https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean) on the Lean Zulip. We always welcome new contributors, and would be happy to help you find something to work on!
+We always welcome new contributors! For questions, contribution guidance, and development information, feel free to introduce yourself on the Zulip. 
 
 # Miscellaneous
 
