@@ -267,7 +267,7 @@ class ConceptEntry:
     dir: str       # e.g. "proofmode/"
     feature: str   # e.g. "IPM Tactics"
     subfeature: str  # e.g. "iIntros" or "" for top-level
-    status: str    # "ported" | "missing"
+    status: str    # "ported" | "missing" | "blocked" | "unreachable" (should not happen)
     reason: str
 
 
@@ -278,7 +278,16 @@ class LeanData:
     ignored_files: dict[str, str]
     concepts: list[ConceptEntry]
 
-
+def parse_status(status : str | dict[str, list[str]]) -> str:
+    if type(status) is str:
+        # ported | missing
+        return status
+    elif type(status) is dict and [*status.keys()][0] == "depends_on":
+        # blocked
+        return "blocked"
+    else: # Should be unreachable
+        return "unreachable"
+    
 def load_lean_data(json_path: str) -> LeanData:
     """Load Lean alias/ignore/concept data from the JSON dump."""
     with open(json_path) as f:
@@ -293,7 +302,7 @@ def load_lean_data(json_path: str) -> LeanData:
         ConceptEntry(
             dir=c["folder"], feature=c["feature"],
             subfeature=c.get("subfeature") or "",
-            status=c["status"], reason=c["reason"],
+            status=parse_status(c["status"]), reason=c["reason"],
         )
         for c in data.get("concepts", [])
     ]
