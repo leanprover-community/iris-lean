@@ -60,6 +60,8 @@ class NonExpansive [OFE α] [OFE β] (f : α → β) where
 
 instance id_ne [OFE α] : NonExpansive (@id α) := ⟨fun _ _ _ h => h⟩
 
+instance const_ne [OFE α] [OFE β] {x : α} : NonExpansive (Function.const β x) := ⟨fun _ _ _ _ => .rfl⟩
+
 /-- Note: Not an instance, as any function can be decomposed as a composition in multiple ways. -/
 theorem NonExpansive.comp [OFE α] [OFE β] [OFE γ] {g : β → γ} {f : α → β}
     (hg : NonExpansive g) (hf : NonExpansive f) : NonExpansive (g ∘ f) :=
@@ -374,9 +376,20 @@ instance [OFE α] [OFE β] : OFE (α -c> β) where
   equiv_dist := equiv_dist
   dist_lt := dist_lt
 
+instance [OFE α] [OFE β] [Leibniz α] [Leibniz β] : Leibniz (α -n> β) where
+  eq_of_eqv {x y} H := by
+    ext i; exact eq_of_eqv (H i)
+
 def applyHom [OFEFun (β : α → _)] (x : α) : ((x : α) → β x) -n> β x where
   f f := f x
   ne.1 _ _ _ H := H x
+
+def applyNe [OFE α] [OFE β] (x : α) : (α -n> β) -n> β where
+  f f := f x
+  ne.1 _ _ _ H := H x
+
+instance [OFE α] [OFE β] : NonExpansive (applyNe (α := α) (β := β)) where
+  ne _ _ _ H f := f.ne.1 H
 
 def mapCodHom [OFEFun (β₁ : α → _)] [OFEFun β₂]
     (F : ∀ x, β₁ x -n> β₂ x) : ((x : α) → β₁ x) -n> ((x : α) → β₂ x) where
@@ -436,6 +449,103 @@ instance [OFE α] [OFE β] [Discrete α] [Discrete β] : Discrete (α × β) whe
     · apply Discrete.discrete_0
       apply H.2
 
+instance [OFE α] [OFE β] [Leibniz α] [Leibniz β] : Leibniz (α × β) where
+  eq_of_eqv {x y} H := match x, y with
+    | ⟨_, _⟩, ⟨_, _⟩ => Prod.ext (eq_of_eqv H.1) (eq_of_eqv H.2)
+
+@[rocq_alias sum_ofe_mixin]
+instance [OFE α] [OFE β] : OFE (α ⊕ β) where
+  Equiv a b := match a, b with
+    | .inl a, .inl b => a ≡ b
+    | .inr a, .inr b => a ≡ b
+    | _, _ => False
+  Dist n a b := match a, b with
+    | .inl a, .inl b => a ≡{n}≡ b
+    | .inr a, .inr b => a ≡{n}≡ b
+    | _, _ => False
+  dist_eqv := {
+    refl := fun
+      | .inl _ => dist_eqv.refl _
+      | .inr _ => dist_eqv.refl _
+    symm {a b} h := match a, b with
+    | .inl _, .inl _ => dist_eqv.symm h
+    | .inr _, .inr _ => dist_eqv.symm h
+    | .inr _, .inl _ => h
+    | .inl _, .inr _ => h
+    trans {a b c} h1 h2 := match a, b, c with
+    | .inl _, .inl _, .inl _ => dist_eqv.trans h1 h2
+    | .inr _, .inr _, .inr _ => dist_eqv.trans h1 h2
+    | .inr _, .inl _, _ => h1.elim
+    | .inl _, .inr _, _ => h1.elim
+    | _, .inr _, .inl _ => h2.elim
+  }
+  equiv_dist {a b} := match a, b with
+    | .inl _, .inl _ => equiv_dist
+    | .inr _, .inr _ => equiv_dist
+    | .inl _, .inr _ => ⟨(False.elim ·), fun x => x 0⟩
+    | .inr _, .inl _ => ⟨(False.elim ·), fun x => x 0⟩
+  dist_lt {_ a b} := match a, b with
+    | .inl _, .inl _ => dist_lt
+    | .inr _, .inr _ => dist_lt
+    | .inl _, .inr _ => (False.elim ·)
+    | .inr _, .inl _ => (False.elim ·)
+
+theorem equiv_inl [OFE α] [OFE β] {x y : α} (h : x ≡ y) : (.inl x : α ⊕ β) ≡ .inl y := h
+theorem equiv_inr [OFE α] [OFE β] {x y : β} (h : x ≡ y) : (.inr x : α ⊕ β) ≡ .inr y := h
+theorem equiv_ext_left [OFE α] [OFE β] {x y : α} (h : (.inl x : α ⊕ β) ≡ .inl y)
+  : x ≡ y := h
+theorem equiv_ext_right [OFE α] [OFE β] {x y : β} (h : (.inr x : α ⊕ β) ≡ .inr y)
+  : x ≡ y := h
+
+theorem dist_inl {n} [OFE α] [OFE β] (h : x ≡{n}≡ y) : (.inl x : α ⊕ β) ≡{n}≡ .inl y := h
+theorem dist_inr {n} [OFE α] [OFE β] {x y : β} (h : x ≡{n}≡ y) : (.inr x : α ⊕ β) ≡{n}≡ .inr y := h
+theorem dist_ext_left {n} [OFE α] [OFE β] {x y : α} (h : (.inl x : α ⊕ β) ≡{n}≡ .inl y)
+  : x ≡{n}≡ y := h
+theorem dist_ext_right {n} [OFE α] [OFE β] {x y : β} (h : (.inr x : α ⊕ β) ≡{n}≡ .inr y)
+  : x ≡{n}≡ y := h
+
+instance  [OFE α] [OFE β] : NonExpansive (Sum.inl (α := α) (β := β)) where
+  ne {_ _ _} H := dist_inl H
+
+instance  [OFE α] [OFE β] : NonExpansive (Sum.inr (α := α) (β := β)) where
+  ne {_ _ _} H := dist_inr H
+
+instance [OFE α] [OFE β] [OFE γ] {f₁ : α → γ} {f₂ : β → γ} [NonExpansive f₁] [NonExpansive f₂]
+  : NonExpansive (Sum.elim f₁ f₂) where
+  ne {_ x y} := match x, y with
+    | .inl _, .inl _ => (NonExpansive.ne (f := f₁) <| dist_ext_left ·)
+    | .inr _, .inr _ => (NonExpansive.ne (f := f₂) <| dist_ext_right ·)
+    | .inl _, .inr _ => (False.elim ·)
+    | .inr _, .inl _ => (False.elim ·)
+
+theorem sum.inl_is_discrete [OFE α] [OFE β] {a : α} (Ha : DiscreteE a) :
+    DiscreteE (.inl a : α ⊕ β) := by
+  constructor
+  rintro (_|_) H
+  · exact Ha.discrete H
+  · exact H.elim
+
+theorem sum.inr_is_discrete [OFE α] [OFE β] {a : β} (Ha : DiscreteE a) :
+    DiscreteE (.inr a : α ⊕ β) := by
+  constructor
+  rintro (_|_) H
+  · exact H.elim
+  · exact Ha.discrete H
+
+instance [OFE α] [OFE β] [Discrete α] [Discrete β] : Discrete (α ⊕ β) where
+  discrete_0 {x y} := match x, y with
+    | .inl _, .inl _ => (equiv_inl <| discrete_0 (α := α) <| dist_ext_left ·)
+    | .inr _, .inr _ => (equiv_inr <| discrete_0 (α := β) <| dist_ext_right ·)
+    | .inl _, .inr _ => (False.elim ·)
+    | .inr _, .inl _ => (False.elim ·)
+
+instance [OFE α] [OFE β] [Leibniz α] [Leibniz β] : Leibniz (α ⊕ β) where
+  eq_of_eqv {x y} := match x, y with
+    | .inl _, .inl _ => (Sum.inl.inj_iff.mpr <| eq_of_eqv (α := α) <| equiv_ext_left ·)
+    | .inr _, .inr _ => (Sum.inr.inj_iff.mpr <| eq_of_eqv (α := β) <| equiv_ext_right ·)
+    | .inl _, .inr _ => (False.elim ·)
+    | .inr _, .inl _ => (False.elim ·)
+
 @[rocq_alias sig_ofe_mixin]
 instance [OFE α] (P : α → Prop) : OFE (Subtype P) where
   Equiv x y := x.val ≡ y.val
@@ -461,6 +571,36 @@ def Hom.toSubtype [OFE α] [OFE β] (f : α -n> β) : { f : α → β // NonExpa
 
 instance Hom.toSubtype_ne [OFE α] [OFE β] : NonExpansive (Hom.toSubtype (α := α) (β := β)) :=
   ⟨fun {_ _ _} h => h⟩
+
+@[rocq_alias sigT_ofe_mixin]
+instance (P : α → Type _) [∀ x, OFE (P x)] : OFE (Sigma P) where
+  Equiv x y := ∀ n, ∃ heq : x.fst = y.fst, heq ▸ x.snd ≡{n}≡ y.snd
+  Dist n x y := ∃ heq : x.fst = y.fst, heq ▸ x.snd ≡{n}≡ y.snd
+  dist_eqv := {
+    refl _ := ⟨rfl, .rfl⟩
+    symm {x y} := match x, y with
+      | ⟨x, xH⟩, ⟨y, yH⟩ => fun
+        | ⟨heq, H⟩ =>
+          ⟨
+            heq.symm
+          , by simp at heq; subst heq; exact H.symm
+          ⟩
+    trans {x y z} := match x, y, z with
+      | ⟨x, xH⟩, ⟨y, yH⟩, ⟨z, zH⟩ => fun
+        | ⟨heq, H⟩, ⟨heq', H'⟩ =>
+          ⟨ heq.trans heq'
+          , by simp at heq heq'; subst heq; subst heq'; exact H.trans H'
+          ⟩
+  }
+  equiv_dist := ⟨id, id⟩
+  dist_lt {_ x y} := match x, y with
+    | ⟨x, xH⟩, ⟨y, yH⟩ => fun
+      | ⟨heq, H⟩ => fun hlt => ⟨heq, by simp at heq; subst heq; exact dist_lt H hlt⟩
+
+@[rocq_alias sigT_discrete]
+instance (P : α → Type _) [∀ x, OFE (P x)] [∀ x, Discrete (P x)] : Discrete (Sigma P) where
+  discrete_0 {x y} H := match x, y, H with
+    | ⟨x, xH⟩, ⟨y, yH⟩, ⟨heq, H⟩ => fun _ => ⟨heq, by simp at heq; subst heq; exact (discrete_0 H).dist⟩
 
 /-- An isomorphism between two OFEs is a pair of morphisms whose composition is equivalent to the
 identity morphism. -/
@@ -654,6 +794,39 @@ instance {α : Type _} (β : α → Type _) [∀ x, COFE (β x)] : COFE ((x : α
   compl c x := compl (c.map (applyHom x))
   conv_compl _ := IsCOFE.conv_compl
 
+instance [OFE α] [OFE β] [IsCOFE β] : IsCOFE (α -n> β) where
+  compl c :=
+    ⟨
+      fun x => compl (c.map (applyNe x))
+      , ⟨fun n _ _ H => by
+          refine conv_compl.trans (.trans ?_ conv_compl.symm)
+          exact NonExpansive.ne (f := c.chain n) H⟩
+    ⟩
+  conv_compl _ := IsCOFE.conv_compl
+
+instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (α × β) where
+  compl c := ⟨compl (c.map ⟨Prod.fst, inferInstance⟩), compl (c.map ⟨Prod.snd, inferInstance⟩)⟩
+  conv_compl := ⟨conv_compl, conv_compl⟩
+
+instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (α ⊕ β) where
+  compl c := match c 0 with
+    | .inl seed => .inl (compl (c.map ⟨Sum.elim id (Function.const _ seed), inferInstance⟩))
+    | .inr seed => .inr (compl (c.map ⟨Sum.elim (Function.const _ seed) id, inferInstance⟩))
+  conv_compl {n c} := by
+    cases h1 : c.chain 0 with
+    | inl seed =>
+      refine (dist_inl conv_compl).trans ?_
+      dsimp only [Chain.map_apply]
+      cases h2 : c.chain n with
+      | inl _ => simp
+      | inr _ => exact (h1 ▸ h2 ▸ c.cauchy (by omega : 0 ≤ n)).elim
+    | inr seed =>
+      refine (dist_inr conv_compl).trans ?_
+      dsimp only [Chain.map_apply]
+      cases h2 : c.chain n with
+      | inl _ => exact (h1 ▸ h2 ▸ c.cauchy (by omega : 0 ≤ n)).elim
+      | inr _ => simp
+
 abbrev OFunctorPre := ∀ α β [OFE α] [OFE β], Type _
 
 class OFunctor (F : OFunctorPre) where
@@ -782,6 +955,163 @@ instance [OFunctorContractive F] : OFunctorContractive (OptionOF F) where
     cases z <;> simp_all [optionMap, Dist, Option.Forall₂, Function.uncurry, OFunctor.map]
 
 end OptionOF
+
+section ProdOF
+
+open COFE
+
+variable [OFE A] [OFE A'] [OFE B] [OFE B']
+
+instance (f : A → A') (g : B → B') [NonExpansive f] [NonExpansive g] :
+    NonExpansive (Prod.map f g) where
+  ne _ _ _ H := by
+    constructor
+    · rw [Prod.map_fst]
+      exact NonExpansive.ne H.1
+    · rw [Prod.map_snd]
+      exact NonExpansive.ne H.2
+
+omit [OFE A] [OFE B] in
+theorem Prod.map_ext {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡ f' a)
+    (Hg : ∀ a, g a ≡ g' a) : Prod.map f g x ≡ Prod.map f' g' x :=
+  ⟨Hf x.fst, Hg x.snd⟩
+
+omit [OFE A] [OFE B] in
+theorem Prod.map_ne {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡{n}≡ f' a)
+    (Hg : ∀ a, g a ≡{n}≡ g' a) : Prod.map f g x ≡{n}≡ Prod.map f' g' x :=
+  ⟨Hf x.fst, Hg x.snd⟩
+
+instance Prod.mapO (f : A -n> A') (g : B -n> B') : A × B -n> A' × B' where
+  f := .map f g
+  ne := inferInstance
+
+abbrev ProdOF (F1 F2 : OFunctorPre) : OFunctorPre := fun A B => (F1 A B) × (F2 A B)
+
+open OFunctor in
+instance [OFunctor F1] [OFunctor F2] : OFunctor (ProdOF F1 F2) where
+  cofe := inferInstance
+  map f g := Prod.mapO (map f g) (map f g)
+  map_ne.ne _ _ _ Hx _ _ Hy _ := ⟨map_ne.ne Hx Hy _, map_ne.ne Hx Hy _⟩
+  map_id _ := ⟨map_id _, map_id _⟩
+  map_comp _ _ _ _ _ := ⟨map_comp .., map_comp ..⟩
+
+open OFunctorContractive in
+instance [OFunctorContractive F1] [OFunctorContractive F2] : OFunctorContractive (ProdOF F1 F2) where
+  map_contractive.1 H _ :=
+    Prod.map_ne (fun _ => map_contractive.1 H _) (fun _ => map_contractive.1 H _)
+
+end ProdOF
+
+section SumOF
+
+open COFE
+
+variable [OFE A] [OFE A'] [OFE B] [OFE B']
+
+instance (f : A → A') (g : B → B') [NonExpansive f] [NonExpansive g] :
+    NonExpansive (Sum.map f g) where
+  ne _ x y H := match x, y with
+    | .inl _, .inl _ => NonExpansive.ne (f := Sum.inl) (NonExpansive.ne (dist_ext_left H))
+    | .inr _, .inr _ => NonExpansive.ne (f := Sum.inr) (NonExpansive.ne (dist_ext_right H))
+
+omit [OFE A] [OFE B] in
+theorem Sum.map_ext {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡ f' a)
+    (Hg : ∀ a, g a ≡ g' a) : Sum.map f g x ≡ Sum.map f' g' x :=
+    match x with
+    | .inl _ => equiv_inl (Hf _)
+    | .inr _ => equiv_inr (Hg _)
+
+omit [OFE A] [OFE B] in
+theorem Sum.map_ne {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡{n}≡ f' a)
+    (Hg : ∀ a, g a ≡{n}≡ g' a) : Sum.map f g x ≡{n}≡ Sum.map f' g' x :=
+    match x with
+    | .inl _ => dist_inl (Hf _)
+    | .inr _ => dist_inr (Hg _)
+
+instance Sum.mapO (f : A -n> A') (g : B -n> B') : A ⊕ B -n> A' ⊕ B' where
+  f := .map f g
+  ne := inferInstance
+
+abbrev SumOF (F1 F2 : OFunctorPre) : OFunctorPre := fun A B => (F1 A B) ⊕ (F2 A B)
+
+open OFunctor in
+instance [OFunctor F1] [OFunctor F2] : OFunctor (SumOF F1 F2) where
+  cofe := inferInstance
+  map f g := Sum.mapO (map f g) (map f g)
+  map_ne.ne _ _ _ Hx _ _ Hy x := match x with
+    | .inl _ => dist_inl (map_ne.ne Hx Hy _)
+    | .inr _ => dist_inr (map_ne.ne Hx Hy _)
+  map_id x := match x with
+    | .inl _ => equiv_inl (map_id _)
+    | .inr _ => equiv_inr (map_id _)
+  map_comp _ _ _ _ x := match x with
+    | .inl _ => equiv_inl (map_comp ..)
+    | .inr _ => equiv_inr (map_comp ..)
+
+open OFunctorContractive in
+instance [OFunctorContractive F1] [OFunctorContractive F2] : OFunctorContractive (SumOF F1 F2) where
+  map_contractive.1 H _ :=
+    Sum.map_ne (fun _ => map_contractive.1 H _) (fun _ => map_contractive.1 H _)
+
+end SumOF
+
+section IdOF
+
+open COFE
+
+abbrev IdOF : OFunctorPre := fun (_ : Type _) (B : Type _) (_ : OFE _) (_ : OFE B) => B
+
+open OFunctor in
+instance : OFunctor IdOF where
+  cofe := inferInstance
+  map _ g := g
+  map_ne.ne _ _ _ _ _ _ Hy := Hy
+  map_id _ := .rfl
+  map_comp _ _ _ _ _ := .rfl
+
+end IdOF
+
+section MorOF
+
+open COFE
+
+variable [OFE A] [OFE A'] [OFE B] [OFE B']
+
+def Mor.map (pre : A' -n> A) (post : B -n> B') : (A -n> B) -n> (A' -n> B') where
+  f h := post.comp (h.comp pre)
+  ne.ne _ _ _ Hh := fun x => post.ne.ne (Hh (pre x))
+
+instance : NonExpansive₂ (Mor.map (A := A) (A' := A') (B := B) (B' := B')) where
+  ne {_ _ _} Hx {y₁ _} Hy f g :=
+    (NonExpansive.ne (f := y₁) (NonExpansive.ne (f := f) (Hx g))).trans (Hy _)
+
+abbrev MorOF (F1 F2 : OFunctorPre) [OFunctor F1] [OFunctor F2] : OFunctorPre :=
+  fun (A : Type _) (B : Type _) (_ : OFE A) (_ : OFE B) => @F1 B A _ _ -n> @F2 A B _ _
+
+open OFunctor in
+instance [OFunctor F1] [OFunctor F2] : OFunctor (MorOF F1 F2) where
+  cofe := inferInstance
+  map f g := Mor.map (map (F := F1) g f) (map (F := F2) f g)
+  map_ne.ne _ _ _ Hf _ _ Hg := NonExpansive₂.ne (map_ne.ne Hg Hf) (map_ne.ne Hf Hg)
+  map_id {_ _ _ _ _} _ := (map_id _).trans (NonExpansive.eqv (map_id _))
+  map_comp _ _ _ _ _ _ := (map_comp _ _ _ _ _).trans
+    (NonExpansive.eqv (NonExpansive.eqv (NonExpansive.eqv ((map_comp _ _ _ _ _).trans .rfl))))
+
+open OFunctorContractive in
+instance [OFunctorContractive F1] [OFunctorContractive F2] :
+    OFunctorContractive (MorOF F1 F2) where
+  map_contractive.1 {n} ab ab' h := match ab, ab' with
+    | ⟨a, b⟩, ⟨a', b'⟩ => by
+      simp only [Function.uncurry_apply_pair, OFunctor.map]
+      have h' : DistLater n (b, a) (b', a') := by
+        cases n with
+        | zero => exact distLater_zero
+        | succ _ => exact distLater_succ.mpr ⟨(distLater_succ.mp h).2, (distLater_succ.mp h).1⟩
+      refine NonExpansive₂.ne ?_ ?_
+      · exact (map_contractive (F := F1)).1 h'
+      · exact (map_contractive (F := F2)).1 h
+
+end MorOF
 
 section Fixpoint
 
@@ -1025,6 +1355,10 @@ def laterMap [OFE A] [OFE B] (f : A -n> B)  : Later A -n> Later B := by
   rintro _ ⟨⟩ ⟨⟩ H <;> simp_all only [Dist, DistLater]
   intros m Hlt; exact f.ne.ne (H m Hlt)
 
+instance [OFE α] [Leibniz α] : Leibniz (Later α) where
+  eq_of_eqv {x y} H := match x, y with
+    | ⟨_⟩, ⟨_⟩ => (Later.next.injEq _ _).mpr (eq_of_eqv (α := α) H)
+
 end Later
 
 section LaterOF
@@ -1042,27 +1376,11 @@ instance oFunctorLater [OFunctor F] : OFunctor (LaterOF F) where
   map_id _ := OFunctor.map_id _
   map_comp _ _ _ _ _ := OFunctor.map_comp ..
 
-instance [OFunctorContractive F] : OFunctorContractive (LaterOF F) where
-  map_contractive.1 H z m := Dist.lt <| by
-    have := (OFunctorContractive.map_contractive (F := F)).distLater_dist H
-    simp_all only [Dist, DistLater, Function.uncurry, OFunctor.map, laterMap]
+instance [OFunctor F] : OFunctorContractive (LaterOF F) where
+  map_contractive.1 H _ _ hlt :=
+    (OFunctor.map_ne (F := F)).ne (DistLater.dist_lt H hlt).1 (DistLater.dist_lt H hlt).2 _
 
 end LaterOF
-
-section subtype
-
-instance [OFE α] {P : α → Prop} : OFE { x : α // P x } where
-  Equiv := (·.val ≡ ·.val)
-  Dist n := (·.val ≡{n}≡ ·.val)
-  dist_eqv := {
-    refl x := dist_eqv.refl x.val
-    symm H := H.symm
-    trans H1 H2 := H1.trans H2
-  }
-  equiv_dist := equiv_dist
-  dist_lt := dist_lt
-
-end subtype
 
 section leibniz
 namespace COFE
@@ -1082,11 +1400,15 @@ instance [OFunctor F] [LeibnizPreservingOFunctor F] : LeibnizPreservingOFunctor 
       match x, y with
       | ⟨x⟩, ⟨y⟩ => by
         simp only [Later.next.injEq]
-        simp only [Equiv] at hequiv
         exact eq_of_eqv hequiv
   }
 
 instance  [OFE T] [Leibniz T] : LeibnizPreservingOFunctor (constOF T) where
+  preserves_leibniz := {
+    eq_of_eqv {x y} hequiv := by simp only [leibniz] at hequiv; exact hequiv
+  }
+
+instance  : LeibnizPreservingOFunctor IdOF where
   preserves_leibniz := {
     eq_of_eqv {x y} hequiv := by simp only [leibniz] at hequiv; exact hequiv
   }
@@ -1097,7 +1419,6 @@ instance [OFunctor F] [LeibnizPreservingOFunctor F] : LeibnizPreservingOFunctor 
       match x, y with
       | some x, some y => by
         simp only [Option.some.injEq]
-        simp only [Equiv] at hequiv
         exact eq_of_eqv hequiv
       | none, none => rfl
       | some _, none => by simp at hequiv
@@ -1107,6 +1428,29 @@ instance [OFunctor F] [LeibnizPreservingOFunctor F] : LeibnizPreservingOFunctor 
 instance {C} (F : C → OFunctorPre) [∀ c, OFunctor (F c)] [∀ c, LeibnizPreservingOFunctor (F c)] : LeibnizPreservingOFunctor (DiscreteFunOF F) where
   preserves_leibniz := {
     eq_of_eqv {x y} hequiv := by ext c; exact eq_of_eqv (hequiv c)
+  }
+
+instance [OFunctor F1] [OFunctor F2] [LeibnizPreservingOFunctor F1] [LeibnizPreservingOFunctor F2] :
+    LeibnizPreservingOFunctor (ProdOF F1 F2) where
+  preserves_leibniz := {
+    eq_of_eqv := fun {x y} hequiv => by
+      ext
+      · exact eq_of_eqv hequiv.1
+      · exact eq_of_eqv hequiv.2
+  }
+
+instance [OFunctor F1] [OFunctor F2] [LeibnizPreservingOFunctor F1] [LeibnizPreservingOFunctor F2] :
+    LeibnizPreservingOFunctor (SumOF F1 F2) where
+  preserves_leibniz := {
+    eq_of_eqv := fun {x y} hequiv => match x, y with
+      | .inl _, .inl _ => Sum.inl.inj_iff.mpr (eq_of_eqv (equiv_ext_left hequiv))
+      | .inr _, .inr _ => Sum.inr.inj_iff.mpr (eq_of_eqv (equiv_ext_right hequiv))
+  }
+
+instance [OFunctor F1] [OFunctor F2] [LeibnizPreservingOFunctor F1] [LeibnizPreservingOFunctor F2] :
+    LeibnizPreservingOFunctor (MorOF F1 F2) where
+  preserves_leibniz := {
+    eq_of_eqv := fun {x y} hequiv => by ext i; exact eq_of_eqv (hequiv i)
   }
 
 end COFE
