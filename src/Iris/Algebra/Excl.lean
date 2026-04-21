@@ -105,7 +105,7 @@ instance [OFE α] : DiscreteE (@invalid α) where
   | excl a => a
   | invalid => dflt
 
-@[simp] def Excl.map (f : α → β) : Excl α → Excl β
+@[simp, rocq_alias excl_map] def Excl.map (f : α → β) : Excl α → Excl β
   | excl a => excl (f a)
   | invalid => invalid
 
@@ -172,6 +172,7 @@ instance [OFE α] {x : Excl α} : CMRA.Exclusive x where exclusive0_l := fun _ a
 instance [OFE α] [OFE.Discrete α] : CMRA.Discrete (Excl α) where
   discrete_valid a := a
 
+@[rocq_alias ExclInvalid_included]
 theorem invalid_included [OFE α] (ea : Excl α) : ea ≼ invalid := by exists invalid
 
 /-! ## Functors -/

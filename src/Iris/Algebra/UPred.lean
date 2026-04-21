@@ -32,6 +32,7 @@ variable [UCMRA M]
 
 open UPred
 
+@[rocq_alias uPredO]
 instance : OFE (UPred M) where
   Equiv P Q := ∀ n x, ✓{n} x → (P n x ↔ Q n x)
   Dist n P Q := ∀ n' x, n' ≤ n → ✓{n'} x → (P n' x ↔ Q n' x)
@@ -59,6 +60,7 @@ theorem uPred_holds_ne {P Q : UPred M} {n₁ n₂ x}
     (HPQ : P ≡{n₂}≡ Q) (Hn : n₂ ≤ n₁) (Hx : ✓{n₂} x) (HQ : Q n₁ x) : P n₂ x :=
   (HPQ _ _ (Nat.le_refl _) Hx).mpr (Q.mono HQ .rfl Hn)
 
+@[rocq_alias uPred_cofe]
 instance : IsCOFE (UPred M) where
   compl c := {
     holds n x := ∀ n', n' ≤ n → ✓{n'} x → (c n') n' x

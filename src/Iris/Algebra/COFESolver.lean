@@ -66,6 +66,7 @@ structure Tower : Type u where
 
 instance : CoeFun (Tower F) (fun _ => ∀ k, A F k) := ⟨Tower.val⟩
 
+@[rocq_alias solver.tower_ofe_mixin]
 instance : OFE (Tower F) where
   Equiv f g := ∀ k, f k ≡ g k
   Dist n f g := ∀ k, f k ≡{n}≡ g k
@@ -82,6 +83,7 @@ def towerChain (c : Chain (Tower F)) (k : Nat) : Chain (A F k) where
   chain i := c.1 i k
   cauchy h := c.cauchy h k
 
+@[rocq_alias solver.tower_cofe]
 instance : COFE (Tower F) where
   compl c := by
     refine ⟨fun k => compl ⟨fun i => c.1 i k, fun h => c.cauchy h k⟩, ?_⟩
@@ -124,6 +126,7 @@ protected theorem Tower.downN (X : Tower F) : ∀ i, downN F i (X (k+i)) ≡ X k
   | 0 => .rfl
   | _+1 => ((downN ..).ne.eqv X.down).trans (X.downN _)
 
+@[rocq_alias solver.tower_car_ne]
 instance (k : Nat) : NonExpansive (fun X : Tower F => X.val k) := ⟨fun _ _ _ => (· _)⟩
 
 @[rocq_alias solver.project]
@@ -220,6 +223,7 @@ theorem Tower.embed_self (X : Tower F) :
     · cases show k=i+a from Nat.succ.inj eq
       exact (X.downN _).dist
 
+@[rocq_alias solver.tower_inhabited]
 instance : Inhabited (Tower F) := ⟨Tower.embed 0 ⟨()⟩⟩
 
 @[rocq_alias solver.unfold_chain]

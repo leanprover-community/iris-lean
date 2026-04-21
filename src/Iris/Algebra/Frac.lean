@@ -7,6 +7,7 @@ module
 
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
+meta import Iris.Std.RocqPorting
 
 /-!
 # The Frac CMRA
@@ -85,6 +86,7 @@ instance [Fraction α] : Coe α (Frac α) := ⟨(⟨·⟩)⟩
 @[simp] instance [Fraction α] : Add (Frac α) := ⟨fun x y => x.1 + y.1⟩
 instance : Leibniz (Frac α) := inferInstanceAs (Leibniz (LeibnizO α))
 
+@[rocq_alias fracR]
 instance Frac_CMRA [Fraction α] : CMRA (Frac α) where
   pcore _ := none
   op := Add.add
@@ -103,6 +105,7 @@ instance Frac_CMRA [Fraction α] : CMRA (Frac α) where
   pcore_op_mono := by simp
   extend {_ _ y1 y2} _ _ := by exists y1; exists y2
 
+@[rocq_alias frac_cmra_discrete]
 instance [Fraction α] : CMRA.Discrete (Frac α) where
   discrete_0 := id
   discrete_valid := id
@@ -110,11 +113,13 @@ instance [Fraction α] : CMRA.Discrete (Frac α) where
 instance [Fraction α] [CMRA α] {a : Frac α} (Hw : Whole a.1) : Exclusive a where
   exclusive0_l _ Hk := (not_exists.mp Hw.2) _ Hk
 
+@[rocq_alias frac_cancelable]
 instance [Fraction α] {a : Frac α} : CMRA.Cancelable a where
   cancelableN {n x y} _ (H : a • x = a • y) := by
     refine Dist.of_eq <| LeibnizO.ext <| add_left_cancel (a := a.car) <| ?_
     exact LeibnizO.eqv_inj H
 
+@[rocq_alias frac_id_free]
 instance [Fraction α] {a : Frac α} : CMRA.IdFree a where
   id_free0_r b _ H := by
     suffices (b + a).car = a.car from add_ne this.symm

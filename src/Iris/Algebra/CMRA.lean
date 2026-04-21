@@ -153,6 +153,7 @@ theorem coreId_of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : CoreId x₁) : C
     _        ≡ some x₁  := h.core_id
     _        ≡ some x₂  := e
 
+@[rocq_alias CoreId_proper]
 theorem coreId_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : CoreId x₁ ↔ CoreId x₂ :=
   ⟨coreId_of_eqv e, coreId_of_eqv e.symm⟩
 
@@ -224,12 +225,14 @@ theorem valid_mapN {x y : α} (f : ∀ n, ✓{n} x → ✓{n} y) (v : ✓ x) : �
 theorem validN_of_eqv {x y : α} : x ≡ y → ✓{n} x → ✓{n} y :=
   fun e v => validN_ne (equiv_dist.mp e n) v
 
+@[rocq_alias cmra_validN_ne']
 theorem validN_iff {x y : α} (e : x ≡{n}≡ y) : ✓{n} x ↔ ✓{n} y := ⟨validN_ne e, validN_ne e.symm⟩
 theorem _root_.Iris.OFE.Dist.validN : (x : α) ≡{n}≡ y → (✓{n} x ↔ ✓{n} y) := validN_iff
 
 theorem valid_of_eqv {x y : α} : x ≡ y → ✓ x → ✓ y :=
   fun e => valid_mapN fun _ => validN_of_eqv e
 
+@[rocq_alias cmra_valid_proper]
 theorem valid_iff {x y : α} (e : x ≡ y) : ✓ x ↔ ✓ y := ⟨valid_of_eqv e, valid_of_eqv e.symm⟩
 theorem _root_.Iris.OFE.Equiv.valid : (x : α) ≡ y → (✓ x ↔ ✓ y) := valid_iff
 
@@ -315,9 +318,11 @@ theorem pcore_idem' {x : α} {cx} (e : pcore x ≡ some cx) : pcore cx ≡ some 
     _        ≡ some y  := pcore_idem py
     _        ≡ some cx := ey
 
+@[rocq_alias cmra_pcore_dup]
 theorem pcore_op_self {x : α} {cx} (e : pcore x = some cx) : cx • cx ≡ cx :=
   pcore_op_right' (pcore_idem e)
 
+@[rocq_alias cmra_pcore_dup']
 theorem pcore_op_self' {x : α} {cx} (e : pcore x ≡ some cx) : cx • cx ≡ cx :=
   let ⟨z, pz, ez⟩ := equiv_some e
   have : z • z ≡ z := pcore_op_right' (pcore_idem pz)
@@ -364,6 +369,7 @@ theorem not_valid_of_excl_inc {x : α} [Exclusive x] {y} : x ≼ y → ¬✓ y
 theorem Exclusive.of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : Exclusive x₁) : Exclusive x₂ where
   exclusive0_l y := h.exclusive0_l y ∘ e.op_l.dist.validN.2
 
+@[rocq_alias Exclusive_proper]
 theorem exclusive_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : Exclusive x₁ ↔ Exclusive x₂ :=
   ⟨.of_eqv e, .of_eqv e.symm⟩
 theorem _root_.Iris.OFE.Dist.exclusive {x₁ x₂ : α} : x₁ ≡ x₂ → (Exclusive x₁ ↔ Exclusive x₂) :=
@@ -408,6 +414,7 @@ theorem inc_iff_right (e : (b : α) ≡ c) : a ≼ b ↔ a ≼ c :=
   ⟨(inc_of_inc_of_eqv · e), (inc_of_inc_of_eqv · e.symm)⟩
 theorem _root_.Iris.OFE.Equiv.inc_r : (b : α) ≡ c → (a ≼ b ↔ a ≼ c) := inc_iff_right
 
+@[rocq_alias cmra_included_proper]
 theorem inc_iff (ea : (a : α) ≡ a') (eb : (b : α) ≡ b') : a ≼ b ↔ a' ≼ b' :=
   (inc_iff_left ea).trans (inc_iff_right eb)
 theorem _root_.Iris.OFE.Equiv.inc : (a : α) ≡ a' → b ≡ b' → (a ≼ b ↔ a' ≼ b') := inc_iff
@@ -420,6 +427,7 @@ theorem incN_iff_right (e : (b : α) ≡{n}≡ c) : a ≼{n} b ↔ a ≼{n} c :=
   ⟨(incN_of_incN_of_dist · e), (incN_of_incN_of_dist · e.symm)⟩
 theorem _root_.Iris.OFE.Dist.incN_r : (b : α) ≡{n}≡ c → (a ≼{n} b ↔ a ≼{n} c) := incN_iff_right
 
+@[rocq_alias cmra_includedN_ne]
 theorem incN_iff (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n}≡ b') : a ≼{n} b ↔ a' ≼{n} b' :=
   (incN_iff_left ea).trans (incN_iff_right eb)
 theorem _root_.Iris.OFE.Dist.incN :
@@ -438,6 +446,7 @@ theorem Included.trans : (x : α) ≼ y → y ≼ z → x ≼ z := inc_trans
 instance : Trans (Included (α := α)) Included Included where
   trans := inc_trans
 
+@[rocq_alias cmra_includedN_trans]
 theorem incN_trans {x y z : α} : x ≼{n} y → y ≼{n} z → x ≼{n} z
   | ⟨w, (hw : y ≡{n}≡ x • w)⟩, ⟨t, (ht : z ≡{n}≡ y • t)⟩ =>
     suffices h : z ≡{n}≡ x • (w • t) from ⟨w • t, h⟩
@@ -546,6 +555,7 @@ theorem op_monoN {n} {x x' y y' : α} (hx : x ≼{n} x') (hy : y ≼{n} y') : x 
 theorem op_mono {x x' y y' : α} (hx : x ≼ x') (hy : y ≼ y') : x • y ≼ x' • y' :=
   (op_mono_left _ hx).trans (op_mono_right _ hy)
 
+@[rocq_alias core_id_dup]
 theorem op_self (x : α) [CoreId x] : x • x ≡ x := pcore_op_self' CoreId.core_id
 
 @[rocq_alias core_id_extract]
@@ -585,6 +595,7 @@ theorem core_op (x : α) : core x • x ≡ x := comm.trans (op_core x)
 theorem op_core_dist (x : α) : x • core x ≡{n}≡ x := (op_core x).dist
 theorem core_op_dist (x : α) : core x • x ≡{n}≡ x := (core_op x).dist
 
+@[rocq_alias cmra_core_dup]
 theorem core_op_core {x : α} : core x • core x ≡ core x :=
   pcore_op_self (pcore_eq_core x)
 @[rocq_alias cmra_core_validN]
@@ -721,6 +732,7 @@ theorem Cancelable.of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : Cancelable x
     have v_xw : ✓{n} x₁ • w := e.symm.op_l.dist.validN.1 v
     h.cancelableN v_xw <| e.dist.op_l.trans <| ee.trans e.symm.dist.op_l
 
+@[rocq_alias cancelable_proper]
 theorem cancelable_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : Cancelable x₁ ↔ Cancelable x₂ :=
   ⟨.of_eqv e, .of_eqv e.symm⟩
 theorem _root_.Iris.OFE.Equiv.cancelable {x₁ x₂ : α} : x₁ ≡ x₂ → (Cancelable x₁ ↔ Cancelable x₂) :=
@@ -762,6 +774,7 @@ theorem _root_.Iris.OFE.Dist.idFree {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) :
 theorem IdFree.of_eqv {x₁ x₂ : α} (e : x₁ ≡ x₂) (h : IdFree x₁) : IdFree x₂ :=
   h.of_dist e.dist (n := 0)
 
+@[rocq_alias id_free_proper]
 theorem idFree_iff {x₁ x₂ : α} (e : x₁ ≡ x₂) : IdFree x₁ ↔ IdFree x₂ :=
   e.dist.idFree (n := 0)
 theorem _root_.Iris.OFE.Equiv.idFree {x₁ x₂ : α} : x₁ ≡ x₂ → (IdFree x₁ ↔ IdFree x₂) :=
@@ -871,9 +884,11 @@ theorem op_opM_assoc_L {x y : α} {mz} : (x • y) •? mz = x • (y •? mz) :
 theorem pcore_op_right_L {x cx : α} (h : pcore x = some cx) : x • cx = x :=
   eq_of_eqv (pcore_op_right h)
 
+@[rocq_alias cmra_pcore_dup_L]
 theorem pcore_op_self_L {x cx : α} (h : pcore x = some cx) : cx • cx = cx :=
   eq_of_eqv (pcore_op_self h)
 
+@[rocq_alias core_id_dup_L]
 theorem core_id_dup_L {x : α} [CoreId x] : x • x = x :=
   eq_of_eqv (op_self x)
 
@@ -889,6 +904,7 @@ theorem core_op_L {x : α} [IsTotal α] : core x • x = x :=
 theorem core_idem_L {x : α} [IsTotal α] : core (core x) = core x :=
   eq_of_eqv (core_idem x)
 
+@[rocq_alias cmra_core_dup_L]
 theorem core_op_core_L {x : α} [IsTotal α] : core x • core x = core x :=
   eq_of_eqv core_op_core
 
@@ -1153,18 +1169,22 @@ open CMRA Option
 
 variable [CMRA α]
 
+@[rocq_alias option_pcore_instance]
 @[simp] def optionCore (x : Option α) : Option α := x.bind pcore
 
+@[rocq_alias option_op_instance]
 @[simp] def optionOp (x y : Option α) : Option α :=
   match x, y with
   | some x', some y' => some (CMRA.op x' y')
   | none, _ => y
   | _, none => x
 
+@[rocq_alias option_validN_instance]
 @[simp] def optionValidN (n : Nat) : Option α → Prop
   | some x => ✓{n} x
   | none => True
 
+@[rocq_alias option_valid_instance]
 @[simp] def optionValid : Option α → Prop
   | some x => ✓ x
   | none => True
@@ -1369,6 +1389,7 @@ theorem some_incN_some_iff_isTotal [IsTotal α] {a b : α} : some a ≼{n} some 
   · exact ⟨_, H.symm.trans (CMRA.op_core_dist a).symm⟩
   · exact H
 
+@[rocq_alias cancelable_Some]
 instance {a : α} [IdFree a] [Cancelable a] : Cancelable (some a) := by
   refine ⟨@fun n b c Hv He => ?_⟩
   rcases b, c with ⟨_|b, _|c⟩
@@ -1378,6 +1399,7 @@ instance {a : α} [IdFree a] [Cancelable a] : Cancelable (some a) := by
     exact valid0_of_validN (He.validN.mp Hv)
   · exact cancelableN (α := α) Hv He
 
+@[rocq_alias option_cancelable]
 instance {ma : Option α} [∀ a : α, IdFree a] [∀ a : α, Cancelable a] : Cancelable ma := by
   rcases ma with ⟨_|_⟩
   constructor
@@ -1451,16 +1473,20 @@ namespace Prod
 
 variable {α β : Type _} [CMRA α] [CMRA β]
 
+@[rocq_alias prod_pcore_instance]
 abbrev pcore (x : α × β) : Option (α × β) :=
   (CMRA.pcore x.fst).bind fun a =>
   (CMRA.pcore x.snd).bind fun b =>
   return (a, b)
 
+@[rocq_alias prod_op_instance]
 abbrev op (x y : α × β) : α × β :=
   (x.1 • y.1, x.2 • y.2)
 
+@[rocq_alias prod_validN_instance]
 abbrev ValidN n (x : α × β) := ✓{n} x.fst ∧ ✓{n} x.snd
 
+@[rocq_alias prod_valid_instance]
 abbrev Valid (x : α × β) := ✓ x.fst ∧ ✓ x.snd
 
 @[rocq_alias prodR]
@@ -1551,6 +1577,7 @@ open COFE
 variable [OFE A] [OFE A'] [OFE B] [OFE B']
 
 
+@[rocq_alias prod_map_ne]
 instance (f : A → A') (g : B → B') [NonExpansive f] [NonExpansive g] :
     NonExpansive (Prod.map f g) where
   ne _ _ _ H := by
@@ -1570,6 +1597,7 @@ theorem Prod.map_ne {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡{n}�
     (Hg : ∀ a, g a ≡{n}≡ g' a) : Prod.map f g x ≡{n}≡ Prod.map f' g' x :=
   ⟨Hf x.fst, Hg x.snd⟩
 
+@[rocq_alias prodO_map]
 instance Prod.mapO (f : A -n> A') (g : B -n> B') : A × B -n> A' × B' where
   f := .map f g
   ne := inferInstance
@@ -1577,6 +1605,7 @@ instance Prod.mapO (f : A -n> A') (g : B -n> B') : A × B -n> A' × B' where
 abbrev ProdOF (F1 F2 : OFunctorPre) : OFunctorPre := fun A B => (F1 A B) × (F2 A B)
 
 open OFunctor in
+@[rocq_alias prodOF]
 instance [OFunctor F1] [OFunctor F2] : OFunctor (ProdOF F1 F2) where
   cofe := inferInstance
   map f g := Prod.mapO (map f g) (map f g)
@@ -1585,6 +1614,7 @@ instance [OFunctor F1] [OFunctor F2] : OFunctor (ProdOF F1 F2) where
   map_comp _ _ _ _ _ := ⟨map_comp .., map_comp ..⟩
 
 open OFunctorContractive in
+@[rocq_alias prodOF_contractive]
 instance [OFunctorContractive F1] [OFunctorContractive F2] : OFunctorContractive (ProdOF F1 F2) where
   map_contractive.1 H _ :=
     Prod.map_ne (fun _ => map_contractive.1 H _) (fun _ => map_contractive.1 H _)
@@ -1597,6 +1627,7 @@ open CMRA
 
 variable [CMRA A] [CMRA A'] [CMRA B] [CMRA B']
 
+@[rocq_alias prod_map_cmra_morphism]
 instance Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
   f := Prod.map f g
   ne := inferInstance

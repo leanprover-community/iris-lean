@@ -28,6 +28,7 @@ attribute [simp] Agree.not_nil
 @[rocq_alias to_agree]
 def toAgree (a : α) : Agree α := ⟨[a], by simp⟩
 
+@[rocq_alias elem_of_agree]
 theorem mem_of_agree (x : Agree α) : ∃ a, a ∈ x.car := by
   rcases x with ⟨as, h⟩
   rcases as
@@ -96,12 +97,14 @@ def Agree.valid (x : Agree α) : Prop := ∀ n, x.validN n
 def Agree.op (x y : Agree α) : Agree α :=
   ⟨x.car ++ y.car, by apply List.append_ne_nil_of_left_ne_nil; exact x.not_nil⟩
 
+@[rocq_alias agree_comm]
 theorem Agree.op_comm {x y : Agree α} :  x.op y ≡ y.op x := by
   intro n; simp_all only [dist, op, List.mem_append]
   constructor <;> exact fun _ ha => ⟨_, ha.symm, .rfl⟩
 
 theorem Agree.op_commN {x y : Agree α} :  x.op y ≡{n}≡ y.op x := op_comm n
 
+@[rocq_alias agree_assoc]
 theorem Agree.op_assoc {x y z : Agree α} :  x.op (y.op z) ≡ (x.op y).op z := by
   intro n; simp_all only [dist, op, List.mem_append, List.append_assoc]
   constructor <;> (intro a ha; exists a)
@@ -110,6 +113,7 @@ theorem Agree.op_assoc {x y z : Agree α} :  x.op (y.op z) ≡ (x.op y).op z := 
 theorem Agree.idemp {x : Agree α} : x.op x ≡ x := by
   intro n; constructor <;> (intro a ha; exists a; simp_all [op])
 
+@[rocq_alias agree_validN_ne]
 theorem Agree.validN_ne {x y : Agree α} : x ≡{n}≡ y → x.validN n → y.validN n := by
   simp only [OFE.Dist, dist, validN_iff, and_imp]
   intro h₁ h₂ hn a ha b hb
@@ -118,6 +122,7 @@ theorem Agree.validN_ne {x y : Agree α} : x ≡{n}≡ y → x.validN n → y.va
   have ha'b' := hn _ ha' _ hb'
   exact ha'a.symm.trans (ha'b'.trans hb'b)
 
+@[rocq_alias agree_op_ne']
 theorem Agree.op_ne {x : Agree α} : OFE.NonExpansive x.op := by
   constructor; simp only [OFE.Dist, dist, op, List.mem_append, and_imp]
   intro n y₁ y₂ heq₁ heq₂; constructor
@@ -131,6 +136,7 @@ theorem Agree.op_ne {x : Agree α} : OFE.NonExpansive x.op := by
     · obtain ⟨b, hb, heq⟩ := heq₂ _ hy
       exists b; simp_all
 
+@[rocq_alias agree_op_ne]
 theorem Agree.op_ne₂ : OFE.NonExpansive₂ (Agree.op (α := α)) := by
   constructor
   intro n x₁ x₂ hx y₁ y₂ hy
@@ -147,6 +153,7 @@ theorem Agree.op_invN {x y : Agree α} : (x.op y).validN n → x ≡{n}≡ y := 
     obtain ⟨b, hb⟩ := mem_of_agree x
     exists b; simp_all
 
+@[rocq_alias agree_op_inv]
 theorem Agree.op_inv {x y : Agree α} : (x.op y).valid → x ≡ y := by
   simp [valid, equiv_def]
   intro h n

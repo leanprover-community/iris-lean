@@ -35,9 +35,11 @@ open IsViewRel DFrac
 
 variable [OFE A] [UCMRA B] {R : ViewRel A B} [IsViewRel R]
 
+@[rocq_alias view_rel_ne]
 theorem iff_of_dist (Ha : a1 ≡{n}≡ a2) (Hb : b1 ≡{n}≡ b2) : R n a1 b1 ↔ R n a2 b2 :=
   ⟨(mono · Ha Hb.symm.to_incN n.le_refl), (mono · Ha.symm Hb.to_incN n.le_refl)⟩
 
+@[rocq_alias view_rel_proper]
 theorem iff_of_equiv (Ha : a1 ≡ a2) (Hb : b1 ≡ b2) : R n a1 b1 ↔ R n a2 b2 :=
   iff_of_dist Ha.dist Hb.dist
 
@@ -64,7 +66,9 @@ section OFE
 open OFE UCMRA
 variable [OFE A] [OFE B] {R : ViewRel A B}
 
+@[rocq_alias view_equiv]
 def equiv (x y : View F R) : Prop := x.auth ≡ y.auth ∧ x.frag ≡ y.frag
+@[rocq_alias view_dist]
 def dist (n : Nat) (x y : View F R) : Prop := x.auth ≡{n}≡ y.auth ∧ x.frag ≡{n}≡ y.frag
 
 @[rocq_alias viewO]
@@ -81,25 +85,33 @@ instance : OFE (View F R) where
      fun H => ⟨equiv_dist.mpr (H · |>.1), equiv_dist.mpr (H · |>.2)⟩⟩
   dist_lt H Hn := ⟨dist_lt H.1 Hn, dist_lt H.2 Hn⟩
 
+@[rocq_alias View_ne]
 instance mk.ne : NonExpansive₂ (mk : _ → _ → View F R) := ⟨fun _ _ _ Ha _ _ Hb => ⟨Ha, Hb⟩⟩
+@[rocq_alias view_auth_proj_ne]
 instance auth.ne : NonExpansive (auth : View F R → _) := ⟨fun _ _ _ H => H.1⟩
+@[rocq_alias view_frag_proj_ne]
 instance frag.ne : NonExpansive (frag : View F R → _) := ⟨fun _ _ _ H => H.2⟩
 
+@[rocq_alias View_discrete]
 theorem discrete {ag : Option ((DFrac F) × Agree A)} (Ha : DiscreteE ag) (Hb : DiscreteE b) :
   DiscreteE (α := View F R) (mk ag b) := ⟨fun H => ⟨Ha.discrete H.1, Hb.discrete H.2⟩⟩
 
+@[rocq_alias view_ofe_discrete]
 instance [Discrete A] [Discrete B] : Discrete (View F R) where
   discrete_0 H := ⟨discrete_0 H.1, discrete_0 H.2⟩
 
+@[rocq_alias view_auth_dist_inj]
 theorem auth_inj_frac [UCMRA B] {q1 q2 : DFrac F} {a1 a2 : A} {n} (H : (●V{q1} a1 : View F R) ≡{n}≡ ●V{q2} a2) :
     q1 = q2 := H.1.1
 
 theorem dist_of_auth_dist [UCMRA B] {q1 q2 : DFrac F} {a1 a2 : A} {n} (H : (●V{q1} a1 : View F R) ≡{n}≡ ●V{q2} a2) :
     a1 ≡{n}≡ a2 := toAgree.inj H.1.2
 
+@[rocq_alias view_frag_dist_inj]
 theorem dist_of_frag_dist [UCMRA B] {b1 b2 : B} {n} (H : (◯V b1 : View F R) ≡{n}≡ ◯V b2) :
     b1 ≡{n}≡ b2 := H.2
 
+@[rocq_alias view_auth_discrete]
 theorem auth_discrete [UFraction F] [UCMRA B] {dq a} (Ha : DiscreteE a) (He : DiscreteE (unit : B)) :
     DiscreteE (●V{dq} a : View F R) := by
   refine discrete ?_ He
@@ -107,6 +119,7 @@ theorem auth_discrete [UFraction F] [UCMRA B] {dq a} (Ha : DiscreteE a) (He : Di
   refine prod.is_discrete DFrac.is_discrete ?_
   exact Agree.toAgree.is_discrete Ha
 
+@[rocq_alias view_frag_discrete]
 theorem frag_discrete [UCMRA B] (Hb : DiscreteE b) : (DiscreteE (◯V b : View F R)) :=
   discrete Option.none_is_discrete Hb
 
@@ -143,19 +156,23 @@ instance auth_ne₂ : NonExpansive₂ (Auth : DFrac F → A → View F R) where
 instance frag_ne : NonExpansive (Frag : B → View F R) where
   ne _ _ _ H := mk.ne.ne .rfl H
 
+@[rocq_alias view_valid_instance]
 @[simp] def Valid (v : View F R) : Prop :=
   match v.auth with
   | some (dq, ag) => ✓ dq ∧ (∀ n, ∃ a, ag ≡{n}≡ toAgree a ∧ R n a (frag v))
   | none => ∀ n, ∃ a, R n a (frag v)
 
+@[rocq_alias view_validN_instance]
 @[simp] def ValidN (n : Nat) (v : View F R) : Prop :=
   match v.auth with
   | some (dq, ag) => ✓{n} dq ∧ (∃ a, ag ≡{n}≡ toAgree a ∧ R n a (frag v))
   | none => ∃ a, R n a (frag v)
 
+@[rocq_alias view_pcore_instance]
 @[simp] def Pcore (v : View F R) : Option (View F R) :=
   some <| mk (CMRA.core v.auth) (CMRA.core v.frag)
 
+@[rocq_alias view_op_instance]
 @[simp] def Op (v1 v2 : View F R) : View F R :=
   mk (v1.auth • v2.auth) (v1.frag • v2.frag)
 
@@ -612,6 +629,7 @@ theorem auth_one_update (Hup : ∀ n bf, R n a bf → R n a' bf) :
   refine auth_one_op_frag_update (fun n bf H => ?_)
   exact IsViewRel.mono (Hup n _ H) .rfl .rfl n.le_refl
 
+@[rocq_alias view_updateP_auth_dfrac]
 theorem auth_updateP (Hupd : dq ~~>: P) :
     (●V{dq} a : View F R) ~~>: (fun k => ∃ dq', (k = ●V{dq'} a) ∧ P dq') := by
   refine UpdateP.total.mpr (fun n ⟨ag, bf⟩ => ?_)

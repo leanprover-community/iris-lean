@@ -36,18 +36,22 @@ open DFrac Fraction OFE.Discrete
 
 variable [UFraction F]
 
+@[rocq_alias dfrac_inhabited]
 instance : Inhabited (DFrac F) := ⟨discard⟩
 
+@[rocq_alias dfrac_valid_instance]
 def valid : DFrac F → Prop
   | .own f        => Proper f
   | .discard      => True
   | .ownDiscard f => Fractional f
 
+@[rocq_alias dfrac_pcore_instance]
 def pcore : DFrac F → Option (DFrac F)
   | own _        => none
   | .discard     => some discard
   | ownDiscard _ => some discard
 
+@[rocq_alias dfrac_op_instance]
 def op : DFrac F → DFrac F → DFrac F
   | .discard, .discard => discard
   | own f, .discard
@@ -148,20 +152,24 @@ instance {f : F} : CMRA.IdFree (own f) where
     any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
     exact (add_ne ((add_comm ..).trans Hxyz').symm).elim
 
+@[rocq_alias dfrac_valid_own_1]
 theorem valid_own_one : ✓ own (One.one : F) := UFraction.one_whole.1
 
+@[rocq_alias dfrac_valid_own_r]
 theorem valid_op_own {dq : DFrac F} {q : F} : ✓ dq • own q → Fractional q := by
   obtain y|_|y := dq
   · exact (⟨y, add_comm (α := F) .. ▸ ·⟩)
   · exact id
   · exact Fractional.of_add_right
 
+@[rocq_alias dfrac_valid_own_l]
 theorem valid_own_op {dq : DFrac F} {q : F} : ✓ own q • dq → Fractional q :=
   valid_op_own ∘ CMRA.valid_of_eqv (CMRA.comm (y := dq))
 
 @[rocq_alias dfrac_valid_discarded]
 theorem valid_discard : ✓ (discard : DFrac F) := by simp [CMRA.Valid, valid]
 
+@[rocq_alias dfrac_valid_own_discarded]
 theorem valid_own_op_discard {q : F} : ✓ own q • discard ↔ Fractional q := by
   simp [CMRA.op, op, CMRA.Valid, valid]
 

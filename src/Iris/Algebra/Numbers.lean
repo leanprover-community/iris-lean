@@ -8,6 +8,7 @@ module
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
 public import Iris.Algebra.LocalUpdates
+meta import Iris.Std.RocqPorting
 
 /-! ## Numbers CMRA
 Simple CMRA's for commutative monoids.

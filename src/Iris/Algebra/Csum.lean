@@ -47,6 +47,7 @@ theorem dist_eqv [OFE α] [OFE β] {n} : Equivalence (Csum.Dist (α := α) (β :
     cases x <;> cases y <;> cases z <;>
       first | trivial | exact h₁.trans h₂ | exact h₂.elim | exact h₁.elim
 
+@[rocq_alias csumO]
 instance [OFE α] [OFE β] : OFE (Csum α β) where
   Equiv := Csum.Equiv
   Dist := Csum.Dist
@@ -181,6 +182,7 @@ private theorem pcore_map_inr_eq [CMRA β] {b : β} {cx : Csum α β}
     ∃ cb, CMRA.pcore b = some cb ∧ cx = inr cb := by
   cases _ : CMRA.pcore b <;> simp_all
 
+@[rocq_alias csumR]
 instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
   pcore := Csum.pcore
   op := Csum.op
@@ -521,6 +523,7 @@ theorem oMap_ne [OFE α] [OFE α'] [OFE β] [OFE β'] :
 abbrev OF (Fa Fb : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => Csum (Fa A B) (Fb A B)
 
+@[rocq_alias csum_map_cmra_morphism]
 def cMap [CMRA α] [CMRA α'] [CMRA β] [CMRA β']
     (fa : α -C> α') (fb : β -C> β') : Csum α β -C> Csum α' β' where
   f := map fa fb

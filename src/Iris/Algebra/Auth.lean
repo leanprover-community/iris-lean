@@ -86,28 +86,36 @@ notation "●{" dq "} " a => auth dq a
 notation "● " a => authFull a
 notation "◯ " b => frag b
 
+@[rocq_alias auth_auth_ne]
 nonrec instance auth_ne {dq : DFrac F} : NonExpansive (auth dq : A → Auth F A) :=
   auth_ne
 
+@[rocq_alias auth_frag_ne]
 nonrec instance frag_ne : NonExpansive (frag : A → Auth F A) :=
   frag_ne
 
+@[rocq_alias auth_auth_dist_inj]
 nonrec theorem auth_dist_inj {n : Nat} {dq1 dq2 : DFrac F} {a1 a2 : A}
     (h : (●{dq1} a1) ≡{n}≡ ●{dq2} a2) : dq1 = dq2 ∧ a1 ≡{n}≡ a2 :=
   ⟨auth_inj_frac h, dist_of_auth_dist h⟩
 
+@[rocq_alias auth_auth_inj]
 theorem auth_inj {dq1 dq2 : DFrac F} {a1 a2 : A} (h : (●{dq1} a1) ≡ ●{dq2} a2) :
     dq1 = dq2 ∧ a1 ≡ a2 := ⟨h.1.1, equiv_dist.mpr fun _ => dist_of_auth_dist h.dist⟩
 
+@[rocq_alias auth_frag_dist_inj]
 theorem frag_dist_inj {n : Nat} {b1 b2 : A} (h : (◯ b1 : Auth F A) ≡{n}≡ ◯ b2) : b1 ≡{n}≡ b2 :=
   dist_of_frag_dist h
 
+@[rocq_alias auth_frag_inj]
 theorem frag_inj {b1 b2 : A} (h : (◯ b1 : Auth F A) ≡ ◯ b2) : b1 ≡ b2 :=
   equiv_dist.mpr fun _ => dist_of_frag_dist h.dist
 
+@[rocq_alias auth_auth_discrete]
 nonrec theorem auth_discrete {dq : DFrac F} {a : A} (ha : DiscreteE a) (hu : DiscreteE (unit : A)) :
     DiscreteE (●{dq} a) := auth_discrete ha hu
 
+@[rocq_alias auth_frag_discrete]
 nonrec theorem frag_discrete {a : A} (hb : DiscreteE a) : DiscreteE (◯ a : Auth F A) :=
   frag_discrete hb
 

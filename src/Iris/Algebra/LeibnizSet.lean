@@ -83,6 +83,7 @@ instance : CMRA (DisjointLeibnizSet S) where
     simp [disjoint_empty_left]
   extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨h, rfl, rfl⟩⟩
 
+@[rocq_alias gset_disj_cmra_discrete]
 instance : CMRA.Discrete (DisjointLeibnizSet S) where
   discrete_0 := id
   discrete_valid := id
