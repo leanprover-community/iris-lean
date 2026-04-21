@@ -55,10 +55,10 @@ instance [LawfulPartialMap M K] [OFE V] (op : K → V → V → V) [∀ k, NonEx
   ne _ {_ _} Ht {_ _} Hs k := by simp only [get?_merge]; exact NonExpansive₂.ne (Ht k) (Hs k)
 
 /-- Project a chain of stores through its kth coordinate to a chain of values. -/
+@[rocq_alias gmap_chain]
 def chain [PartialMap M K] [OFE V] (k : K) (c : Chain (M V)) : Chain (Option V) where
   chain i := get? (c i) k
   cauchy Hni := c.cauchy Hni k
-rocq_alias gmap_chain := PartialMap.chain
 
 theorem chain_get [PartialMap M K] [OFE V] (k : K) (c : Chain (M V)) :
     (chain k c) i = get? (c i) k := by simp [chain]
@@ -567,10 +567,10 @@ def map_id [OFE α] (a : H α):
   intro x
   rcases get? a x <;> simp
 
+@[rocq_alias gmapO_map]
 def mapO [OFE α] [OFE β] (f : α -n> β) : OFE.Hom (H α) (H β) where
   f := map H f
   ne := inferInstance
-rocq_alias gmapO_map := PartialMap.mapO
 
 def map_ext [OFE α] [OFE β] {f g : α -> β} (heq : f ≡ g) : map H f m ≡ map H g m := by
   intro k

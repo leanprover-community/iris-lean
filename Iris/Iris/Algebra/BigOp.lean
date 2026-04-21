@@ -23,20 +23,17 @@ These are parameterized by a monoid operation and include theorems about their p
 
 open OFE Iris.Std
 
-@[rocq_alias big_op.big_opL]
-@[expose] public def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+@[rocq_alias big_op.big_opL, expose] public def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     (Φ : Nat → A → M) (l : List A) : M :=
   match l with
   | [] => unit
   | x :: xs => op (Φ 0 x) (bigOpL op (fun n => Φ (n + 1)) xs)
 
-@[rocq_alias big_op.big_opM]
-@[expose] public def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
+@[rocq_alias big_op.big_opM, expose] public def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
     {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K] (m : M' V) : M :=
   bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList m)
 
-@[rocq_alias big_op.big_opS]
-@[expose] public def bigOpS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+@[rocq_alias big_op.big_opS, expose] public def bigOpS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     {A : Type _} {S : Type _} [FiniteSet S A] (Φ : A → M) (m : S) : M :=
   bigOpL op (fun _ x => Φ x) (toList m)
 
@@ -67,11 +64,11 @@ variable {M : Type _} {A : Type _} [OFE M] {op : M → M → M} {unit : M} [Mono
 
 open MonoidOps
 
-@[rocq_alias big_opL_nil]
-@[simp] theorem bigOpL_nil (Φ : Nat → A → M) : ([^ op list] k ↦ x ∈ ([] : List A), Φ k x) = unit := rfl
+@[rocq_alias big_opL_nil, simp]
+theorem bigOpL_nil (Φ : Nat → A → M) : ([^ op list] k ↦ x ∈ ([] : List A), Φ k x) = unit := rfl
 
-@[rocq_alias big_opL_cons]
-@[simp] theorem bigOpL_cons (Φ : Nat → A → M) (a : A) (as : List A) :
+@[rocq_alias big_opL_cons, simp]
+theorem bigOpL_cons (Φ : Nat → A → M) (a : A) (as : List A) :
     ([^ op list] k ↦ x ∈ a :: as, Φ k x) = op (Φ 0 a) ([^ op list] k ↦ x ∈ as, Φ (k + 1) x) := rfl
 
 @[rocq_alias big_opL_singleton]
@@ -293,8 +290,8 @@ theorem bigOpM_equiv_of_perm (Φ : K → V → M) {m₁ m₂ : M' V} (h : m₁ �
     ([^ op map] k ↦ x ∈ m₁, Φ k x) ≡ ([^ op map] k ↦ x ∈ m₂, Φ k x) :=
   bigOpL_equiv_of_perm _ (LawfulFiniteMap.toList_perm_of_get?_eq h)
 
-@[rocq_alias big_opM_empty]
-@[simp] theorem bigOpM_empty (Φ : K → V → M) : ([^ op map] k ↦ x ∈ (∅ : M' V), Φ k x) = unit := by
+@[rocq_alias big_opM_empty, simp]
+theorem bigOpM_empty (Φ : K → V → M) : ([^ op map] k ↦ x ∈ (∅ : M' V), Φ k x) = unit := by
   simp [bigOpM, FiniteMap.toList, toList_empty]
 
 @[rocq_alias big_opM_insert]
@@ -559,8 +556,8 @@ variable {M : Type _} {A : Type _} {S : Type _} [OFE M] {op : M → M → M} {un
 
 open BigOpL MonoidOps LawfulSet FiniteSet
 
-@[rocq_alias big_opS_empty]
-@[simp] theorem bigOpS_empty {Φ : A → M} :
+@[rocq_alias big_opS_empty, simp]
+theorem bigOpS_empty {Φ : A → M} :
     ([^ op set] x ∈ (∅ : S), Φ x) = unit := by
   simp [bigOpS, toList_empty]
 

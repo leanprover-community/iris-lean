@@ -1177,23 +1177,23 @@ open CMRA Option
 
 variable [CMRA α]
 
-@[rocq_alias option_pcore_instance]
-@[simp] def optionCore (x : Option α) : Option α := x.bind pcore
+@[rocq_alias option_pcore_instance, simp]
+def optionCore (x : Option α) : Option α := x.bind pcore
 
-@[rocq_alias option_op_instance]
-@[simp] def optionOp (x y : Option α) : Option α :=
+@[rocq_alias option_op_instance, simp]
+def optionOp (x y : Option α) : Option α :=
   match x, y with
   | some x', some y' => some (CMRA.op x' y')
   | none, _ => y
   | _, none => x
 
-@[rocq_alias option_validN_instance]
-@[simp] def optionValidN (n : Nat) : Option α → Prop
+@[rocq_alias option_validN_instance, simp]
+def optionValidN (n : Nat) : Option α → Prop
   | some x => ✓{n} x
   | none => True
 
-@[rocq_alias option_valid_instance]
-@[simp] def optionValid : Option α → Prop
+@[rocq_alias option_valid_instance, simp]
+def optionValid : Option α → Prop
   | some x => ✓ x
   | none => True
 

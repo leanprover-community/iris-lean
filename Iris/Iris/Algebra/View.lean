@@ -156,24 +156,24 @@ instance auth_ne₂ : NonExpansive₂ (Auth : DFrac F → A → View F R) where
 instance frag_ne : NonExpansive (Frag : B → View F R) where
   ne _ _ _ H := mk.ne.ne .rfl H
 
-@[rocq_alias view_valid_instance]
-@[simp] def Valid (v : View F R) : Prop :=
+@[rocq_alias view_valid_instance, simp]
+def Valid (v : View F R) : Prop :=
   match v.auth with
   | some (dq, ag) => ✓ dq ∧ (∀ n, ∃ a, ag ≡{n}≡ toAgree a ∧ R n a (frag v))
   | none => ∀ n, ∃ a, R n a (frag v)
 
-@[rocq_alias view_validN_instance]
-@[simp] def ValidN (n : Nat) (v : View F R) : Prop :=
+@[rocq_alias view_validN_instance, simp]
+def ValidN (n : Nat) (v : View F R) : Prop :=
   match v.auth with
   | some (dq, ag) => ✓{n} dq ∧ (∃ a, ag ≡{n}≡ toAgree a ∧ R n a (frag v))
   | none => ∃ a, R n a (frag v)
 
-@[rocq_alias view_pcore_instance]
-@[simp] def Pcore (v : View F R) : Option (View F R) :=
+@[rocq_alias view_pcore_instance, simp]
+def Pcore (v : View F R) : Option (View F R) :=
   some <| mk (CMRA.core v.auth) (CMRA.core v.frag)
 
-@[rocq_alias view_op_instance]
-@[simp] def Op (v1 v2 : View F R) : View F R :=
+@[rocq_alias view_op_instance, simp]
+def Op (v1 v2 : View F R) : View F R :=
   mk (v1.auth • v2.auth) (v1.frag • v2.frag)
 
 @[rocq_alias viewR]
