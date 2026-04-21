@@ -122,11 +122,8 @@ inductive Step : List Expr × State → List Obs → List Expr × State → Prop
     (e, σ) -<obs>-> (e', σ', eₜ) →
     ∀ (t₁ t₂: List Expr),
     Step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ')
-    -- NOTE: Using `t₁ ++ e :: t₂` instead of `t₁ ++ [e] ++ t₂` because in
-    -- Lean `[x] ++ xs` is not definitionallly equal to `x :: xs`. This is
-    -- because `++` does not correspond to a function on lists, but a
-    -- typeclass `Append.append` of which `List` has an instance.
-    -- Since most lemmas about an element appearing in the middle of a list
+    -- NOTE: Using `t₁ ++ e :: t₂` instead of `t₁ ++ [e] ++ t₂` because
+    -- most lemmas about an element appearing in the middle of a list
     -- are in the shape `t₁ ++ e :: t₂`, this form is preferred.
 
 def Step.of_primStep : ∀ {e σ}{obs : List Obs}{e'} {σ' : State} {eₜ},
