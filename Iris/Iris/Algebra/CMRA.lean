@@ -1177,22 +1177,22 @@ open CMRA Option
 
 variable [CMRA α]
 
-@[rocq_alias option_pcore_instance, simp]
+@[simp]
 def optionCore (x : Option α) : Option α := x.bind pcore
 
-@[rocq_alias option_op_instance, simp]
+@[simp]
 def optionOp (x y : Option α) : Option α :=
   match x, y with
   | some x', some y' => some (CMRA.op x' y')
   | none, _ => y
   | _, none => x
 
-@[rocq_alias option_validN_instance, simp]
+@[simp]
 def optionValidN (n : Nat) : Option α → Prop
   | some x => ✓{n} x
   | none => True
 
-@[rocq_alias option_valid_instance, simp]
+@[simp]
 def optionValid : Option α → Prop
   | some x => ✓ x
   | none => True
@@ -1481,20 +1481,16 @@ namespace Prod
 
 variable {α β : Type _} [CMRA α] [CMRA β]
 
-@[rocq_alias prod_pcore_instance]
 abbrev pcore (x : α × β) : Option (α × β) :=
   (CMRA.pcore x.fst).bind fun a =>
   (CMRA.pcore x.snd).bind fun b =>
   return (a, b)
 
-@[rocq_alias prod_op_instance]
 abbrev op (x y : α × β) : α × β :=
   (x.1 • y.1, x.2 • y.2)
 
-@[rocq_alias prod_validN_instance]
 abbrev ValidN n (x : α × β) := ✓{n} x.fst ∧ ✓{n} x.snd
 
-@[rocq_alias prod_valid_instance]
 abbrev Valid (x : α × β) := ✓ x.fst ∧ ✓ x.snd
 
 @[rocq_alias prodR]
@@ -1584,8 +1580,6 @@ open COFE
 
 variable [OFE A] [OFE A'] [OFE B] [OFE B']
 
-
-@[rocq_alias prod_map_ne]
 instance (f : A → A') (g : B → B') [NonExpansive f] [NonExpansive g] :
     NonExpansive (Prod.map f g) where
   ne _ _ _ H := by
