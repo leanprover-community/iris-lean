@@ -18,3 +18,9 @@ name = "Iris"
 [[lean_lib]]
 name = "IrisTest"
 globs = ["Iris.*"]
+
+[[lean_exe]]
+name = "dumpPortingData"
+srcDir = "../scripts"
+root = "DumpPortingData"
+supportInterpreter = true

@@ -11,7 +11,7 @@ public import Iris.BI.DerivedLaws
 public import Iris.BI.DerivedLawsLater
 public import Iris.BI.Extensions
 public import Iris.BI.SIProp
-public meta import Iris.Std.RocqAlias
+public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -330,7 +330,7 @@ theorem siEmpValid_exist_mpr [Sbi PROP] {A : Type _} {Φ : A → PROP} :
     (∃ x, <si_emp_valid> Φ x) ⊢@{SiProp} <si_emp_valid> (∃ x, Φ x) :=
   exists_elim fun x => siEmpValid_mono (exists_intro x)
 
-@[rocq_alias si_emp_valid_exist_1]
+@[rocq_alias uPred_primitive.si_emp_valid_exist_1]
 theorem siEmpValid_exist_mp [Sbi PROP] [SbiEmpValidExist PROP] {A : Type _} {Φ : A → PROP} :
     <si_emp_valid> (∃ x, Φ x) ⊢@{SiProp} ∃ x, <si_emp_valid> Φ x :=
   calc iprop(<si_emp_valid> (∃ x, Φ x))
@@ -476,13 +476,13 @@ theorem siPure_inj [Sbi PROP] {Pi Qi : SiProp} (h : <si_pure> Pi ⊣⊢@{PROP} <
     Pi ⊣⊢ Qi :=
   ⟨siPure_entails.mp h.mp, siPure_entails.mp h.mpr⟩
 
-@[rocq_alias sbi_pure_soundness]
+@[rocq_alias pure_soundness]
 theorem pure_soundness [Sbi PROP] {φ : Prop} (h : emp ⊢@{PROP} ⌜φ⌝) : φ := by
   refine SiProp.pure_soundness ?_
   refine (siPure_emp_valid (PROP := PROP)).mp ?_
   exact h.trans siPure_pure.mpr
 
-@[rocq_alias sbi_later_soundness]
+@[rocq_alias later_soundness]
 theorem later_soundness [Sbi PROP] {P : PROP} (h : emp ⊢ ▷ P) : emp ⊢ P := by
   refine siEmpValid_emp_valid.mp ?_
   refine SiProp.later_soundness ?_
@@ -574,7 +574,6 @@ theorem plainly_sForall_2_sbi {Φ : PROP → Prop} :
   sorry
 -/
 
-@[rocq_alias plainly_sExists_1_from_sbi]
 theorem plainly_sExists_1 [SbiEmpValidExist PROP] {Φ : PROP → Prop} :
     iprop(■ sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ ■ p) := by
   show iprop(<si_pure> <si_emp_valid> sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ <si_pure> <si_emp_valid> p)

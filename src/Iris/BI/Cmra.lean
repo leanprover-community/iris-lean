@@ -8,7 +8,7 @@ module
 public import Iris.BI.Sbi
 public import Iris.BI.Plainly
 public import Iris.BI.InternalEq
-public import Iris.Std.RocqAlias
+public import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -106,7 +106,7 @@ variable [Sbi PROP] [CMRA A]
 @[rocq_alias internal_included]
 def internalCmraIncluded (a b : A) : PROP := siPure (∃ c, internalEq b (a • c))
 
-@[rocq_alias internal_included_ne]
+@[rocq_alias internal_included_nonexpansive]
 instance internalCmraIncluded_ne :
     NonExpansive₂ (internalCmraIncluded (PROP := PROP) (A := A)) where
   ne n _ _ hx _ _ hy := by

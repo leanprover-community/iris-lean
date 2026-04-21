@@ -11,7 +11,8 @@ public import Iris.Algebra.CMRA
 public import Iris.Algebra.UPred
 public import Iris.Algebra.Updates
 public import Iris.BI.Lib.BUpdPlain
-public meta import Iris.Std.RocqAlias
+public meta import Iris.Std.RocqPorting
+public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -135,11 +136,11 @@ protected def emp : UPred M where
 
 end bidefs
 
-@[rocq_alias persistently_ne]
+@[rocq_alias uPred_primitive.persistently_ne]
 instance persistently_ne : OFE.NonExpansive UPred.persistently (α := UPred M) where
   ne _ _ _ H _ _ Hn Hx := H _ _ Hn (CMRA.validN_core Hx)
 
-@[rocq_alias later_contractive]
+@[rocq_alias uPred_primitive.later_contractive]
 instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
   distLater_dist {n x y} Hl :=
     match n with
@@ -148,14 +149,14 @@ instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
       | 0 => by simp [UPred.later]
       | n' + 1 => fun x' Hn' Hx' => Hl _ Hn' _ _ (Nat.le_refl _) (CMRA.validN_succ Hx')
 
-@[rocq_alias ownM_ne]
+@[rocq_alias uPred_primitive.ownM_ne]
 instance ownM_ne : OFE.NonExpansive (ownM : M → UPred M) where
   ne _ _ _ H _ _ Hn _ := OFE.Dist.incN (OFE.Dist.le H Hn) .rfl
 
 instance {A} [CMRA A] : OFE.NonExpansive (cmraValid : A → UPred M) where
   ne _ _ _ H _ _ Hn _ := (H.le Hn).validN
 
-@[rocq_alias bupd_ne]
+@[rocq_alias uPred_primitive.bupd_ne]
 instance bupd_ne : OFE.NonExpansive (bupd : UPred M → UPred M) where
   ne n x1 x2 Hx m y Hm Hv := by
     constructor
@@ -492,7 +493,7 @@ instance : BIUpdate (UPred M) where
     refine ⟨x' • x2, CMRA.op_assocN.validN.1 Hx'1, x', x2, .rfl, Hx'2, ?_⟩
     exact R.mono HR (CMRA.incN_refl x2) Hk
 
-@[rocq_alias bupd_si_pure]
+@[rocq_alias uPred_primitive.bupd_si_pure]
 theorem bupd_si_pure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure> Pi := by
   intro n x Hx Hv
   have L : ✓{n} x • UCMRA.unit := CMRA.unit_right_id.symm.dist.validN.1 Hx
@@ -510,10 +511,10 @@ instance : BIBUpdatePlainly (UPred M) where
     rw [plainly_eq_uPred_plainly] at Hx'
     exact P.mono Hx' CMRA.incN_unit n.le_refl
 
-@[rocq_alias ownM_valid]
+@[rocq_alias uPred_primitive.ownM_valid]
 theorem ownM_valid (m : M) : ownM m ⊢ internalCmraValid m := fun _ _ h hp => hp.validN h
 
-@[rocq_alias ownM_op]
+@[rocq_alias uPred_primitive.ownM_op]
 theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
   constructor
   · intro n x Hv ⟨z, Hz⟩
@@ -536,11 +537,11 @@ theorem ownM_eqv {m1 m2 : M} (H : m1 ≡ m2) : ownM m1 ⊣⊢ ownM m2 :=
 theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : internalCmraValid m ⊢@{UPred M} False :=
   fun n _ _ => H n
 
-@[rocq_alias ownM_unit]
+@[rocq_alias uPred.ownM_unit]
 theorem ownM_unit P : P ⊢ □ ownM (CMRA.unit : M) :=
   fun _ _ _ _ => ⟨trivial, CMRA.incN_unit⟩
 
-@[rocq_alias persistently_ownM_core]
+@[rocq_alias uPred.persistently_ownM_core]
 theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (CMRA.core a) :=
   fun _ _ _ => CMRA.core_incN_core
 
@@ -555,7 +556,7 @@ instance {a : M} : Persistent (ownM (CMRA.core a)) where
     refine OFE.NonExpansive.eqv ?_
     exact CMRA.core_idem a
 
-@[rocq_alias bupd_ownM_updateP]
+@[rocq_alias uPred.bupd_ownM_updateP]
 theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   (x ~~>: Φ) → ownM x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ ownM y := by
   intro Hup n x2 Hv ⟨x3, Hx⟩ k yf Hk Hyf
@@ -568,7 +569,7 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   · exists y
   · exact ⟨HΦy, CMRA.incN_op_left k y x3⟩
 
-@[rocq_alias ownM_forall]
+@[rocq_alias uPred.ownM_forall]
 theorem ownM_forall (f : A → M) :
   (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, ∃ xf, UPred.eq z (f a • xf)) := by
   intro n x Hv Hf
@@ -578,7 +579,7 @@ theorem ownM_forall (f : A → M) :
   rcases Hf (ownM (f a)) ⟨a, rfl⟩ with ⟨xf, Hxf⟩
   exact ⟨iprop(UPred.eq x (f a • xf)), ⟨xf, rfl⟩, Hxf⟩
 
-@[rocq_alias later_ownM]
+@[rocq_alias uPred.later_ownM]
 theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ <si_pure> (SiProp.internalEq a b)
   | 0, _, _, _ =>
     let Ψ := iprop(ownM UCMRA.unit ∧ ▷ <si_pure> (SiProp.internalEq a UCMRA.unit))
@@ -604,31 +605,31 @@ section derived
 ## Ported from base_logic/derived.v
 -/
 
-@[rocq_alias intuitionistically_ownM]
+@[rocq_alias uPred.intuitionistically_ownM]
 theorem intuitionistically_ownM (a : M) [CMRA.CoreId a] : □ ownM a ⊣⊢ ownM a := by
   refine ⟨intuitionistically_elim, ?_⟩
   refine (intuitionistically_ownM_core a).trans ?_
   refine intuitionistically_mono ?_
   exact (ownM_eqv (CMRA.core_eqv_self a).symm).mpr
 
-@[rocq_alias ownM_invalid]
+@[rocq_alias uPred.ownM_invalid]
 theorem ownM_invalid (a : M) (hnv : ¬ ✓{0} a) : ownM a ⊢ False :=
   (ownM_valid a).trans (internalCmraValid_elim a) |>.trans (pure_mono hnv)
 
-@[rocq_alias ownM_mono]
+@[rocq_alias uPred.ownM_mono]
 theorem ownM_mono {a b : M} (hinc : b ≼ a) : ownM a ⊢ ownM b :=
   fun n _ _ ha => CMRA.incN_trans (CMRA.incN_of_inc n hinc) ha
 
-@[rocq_alias ownM_unit']
+@[rocq_alias uPred.ownM_unit']
 theorem ownM_unit' : ownM UCMRA.unit ⊣⊢@{UPred M} True :=
   ⟨fun _ _ _ _ => trivial, fun _ _ _ _ => CMRA.incN_unit⟩
 
-@[rocq_alias bupd_ownM_update]
+@[rocq_alias uPred.bupd_ownM_update]
 theorem bupd_ownM_update {x y : M} (hupd : x ~~> y) : ownM x ⊢ |==> ownM y := by
   refine (bupd_ownM_updateP x (y = ·) (UpdateP.of_update hupd)).trans ?_
   exact BIUpdate.mono (exists_elim fun z => pure_elim_l fun hyz => hyz ▸ .rfl)
 
-@[rocq_alias ownM_timeless]
+@[rocq_alias uPred.ownM_timeless]
 instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where
   timeless
     | 0, _, _, _ => .inl trivial
@@ -636,13 +637,13 @@ instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where
       let ⟨_a', y', Hx, Ha', _⟩ := CMRA.extend (CMRA.validN_succ Hv) Hxy
       .inr ⟨y', (Hx.trans (OFE.DiscreteE.discrete (Ha'.symm.le n.zero_le)).symm.op_l).dist⟩
 
-@[rocq_alias ownM_persistent]
+@[rocq_alias uPred.ownM_persistent]
 instance ownM_persistent (a : M) [CMRA.CoreId a] : Persistent (ownM a) where
   persistent := by
     refine (persistently_ownM_core a).trans ?_
     exact persistently_mono (ownM_eqv (CMRA.core_eqv_self a)).mp
 
-@[rocq_alias bupd_soundness]
+@[rocq_alias uPred.bupd_soundness]
 theorem bupd_soundness {P : UPred M} [Plain P] : (⊢ |==> P) → ⊢ P :=
   fun h => h.trans bupd_elim
 

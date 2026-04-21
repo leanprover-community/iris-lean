@@ -7,7 +7,7 @@ module
 
 public import Iris.BI.BigOp.BigOp
 import Iris.BI.DerivedLawsLater
-meta import Iris.Std.RocqAlias
+meta import Iris.Std.RocqPorting
 
 public section
 
@@ -108,19 +108,16 @@ instance bigAndM_persistent_inst {Φ : K → V → PROP} {m : M V} [∀ k x, Per
     Persistent ([∧map] k ↦ x ∈ m, Φ k x) :=
   bigAndM_persistent fun _ => inferInstance
 
-@[rocq_alias big_andM_empty_absorbing]
 instance bigAndM_nil_absorbing_inst {Φ : K → V → PROP} :
     Absorbing ([∧map] k ↦ x ∈ (∅ : M V), Φ k x) where
   absorbing := (absorbingly_mono bigAndM_empty.1).trans <| Absorbing.absorbing.trans bigAndM_empty.2
 
-@[rocq_alias big_andM_absorbing]
 theorem bigAndM_absorbing {Φ : K → V → PROP} {m : M V}
     (h : ∀ {k x}, get? m k = some x → Absorbing (Φ k x)) :
     Absorbing ([∧map] k ↦ x ∈ m, Φ k x) where
   absorbing := bigOpM_closed (P := fun Q => <absorb> Q ⊢ Q) true_intro
     (absorbingly_and_1.trans <| and_mono · ·) (h · |>.absorbing)
 
-@[rocq_alias big_andM_absorbing']
 instance bigAndM_absorbing_inst {Φ : K → V → PROP} {m : M V} [∀ k x, Absorbing (Φ k x)] :
     Absorbing ([∧map] k ↦ x ∈ m, Φ k x) :=
   bigAndM_absorbing fun _ => inferInstance
@@ -236,7 +233,6 @@ theorem bigAndM_laterN {Φ : K → V → PROP} {m : M V} {n : Nat} :
   | 0 => .rfl
   | _ + 1 => (later_congr bigAndM_laterN).trans bigAndM_later
 
-@[rocq_alias big_andM_map_to_list]
 theorem bigAndM_toList {Φ : K → V → PROP} {m : M V} :
     ([∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ ([∧list] kv ∈ toList m, Φ kv.1 kv.2) :=
   .rfl
@@ -274,7 +270,6 @@ theorem bigAndM_union [DecidableEq K] {Φ : K → V → PROP} {m₁ m₂ : M V} 
       ([∧map] k ↦ y ∈ m₁, Φ k y) ∧ [∧map] k ↦ y ∈ m₂, Φ k y :=
   equiv_iff.mp <| bigOpM_union_equiv Φ m₁ m₂ hdisj
 
-@[rocq_alias big_andM_insert_override]
 theorem bigAndM_insert_override {Φ : K → V → PROP} {m : M V} {i : K} {x x' : V}
     (hi : get? m i = some x) (hΦ : Φ i x ≡ Φ i x') :
     ([∧map] k ↦ v ∈ insert m i x', Φ k v) ≡ ([∧map] k ↦ v ∈ m, Φ k v) :=

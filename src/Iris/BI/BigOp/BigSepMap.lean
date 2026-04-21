@@ -12,7 +12,7 @@ import Iris.BI.Instances
 import Iris.BI.BigOp.BigSepSet
 import Iris.Std.TC
 import Batteries.Data.List.Perm
-meta import Iris.Std.RocqAlias
+meta import Iris.Std.RocqPorting
 
 public section
 
@@ -89,7 +89,7 @@ theorem bigSepM_mono_of_forall {Φ Ψ : K → V → PROP} {m : M V}
     ([∗map] k ↦ x ∈ m, Φ k x) ⊢ [∗map] k ↦ x ∈ m, Ψ k x :=
   bigSepM_mono fun _ => h
 
-@[rocq_alias big_sepM_flip_mono]
+@[rocq_alias big_sepM_flip_mono']
 theorem bigSepM_flip_mono {Φ Ψ : K → V → PROP} {m : M V}
     (h : ∀ {k x}, Ψ k x ⊢ Φ k x) :
     ([∗map] k ↦ x ∈ m, Ψ k x) ⊢ [∗map] k ↦ x ∈ m, Φ k x :=
@@ -153,12 +153,10 @@ instance bigSepM_timeless_inst [Timeless (emp : PROP)] {Φ : K → V → PROP} {
     Timeless ([∗map] k ↦ x ∈ m, Φ k x) :=
   bigSepM_timeless fun _ => inferInstance
 
-@[rocq_alias big_sepM_empty_absorbing]
 instance bigSepM_nil_absorbing_inst [BIAffine PROP] {Φ : K → V → PROP} :
     Absorbing ([∗map] k ↦ x ∈ (∅ : M V), Φ k x) where
   absorbing := (absorbingly_mono bigSepM_empty.1).trans (absorbingly_emp.1.trans (true_emp.1.trans bigSepM_empty.2))
 
-@[rocq_alias big_sepM_absorbing]
 theorem bigSepM_absorbing [BIAffine PROP] {Φ : K → V → PROP} {m : M V}
     (h : ∀ {k x}, get? m k = some x → Absorbing (Φ k x)) :
     Absorbing ([∗map] k ↦ x ∈ m, Φ k x) where
@@ -166,13 +164,11 @@ theorem bigSepM_absorbing [BIAffine PROP] {Φ : K → V → PROP} {m : M V}
     (absorbingly_emp.1.trans true_emp.1)
     (fun hx hy => absorbingly_sep.1.trans (sep_mono hx hy)) (h · |>.absorbing)
 
-@[rocq_alias big_sepM_absorbing']
 instance bigSepM_absorbing_inst [BIAffine PROP] {Φ : K → V → PROP} {m : M V}
     [∀ k x, Absorbing (Φ k x)] :
     Absorbing ([∗map] k ↦ x ∈ m, Φ k x) :=
   bigSepM_absorbing fun _ => inferInstance
 
-@[rocq_alias big_sepM_emp]
 theorem bigSepM_emp [DecidableEq K] {m : M V} :
     bigSepM (fun (_ : K) (_ : V) => (emp : PROP)) m ⊣⊢ emp :=
   equiv_iff.mp <| bigOpM_const_unit_equiv m

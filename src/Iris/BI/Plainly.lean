@@ -487,7 +487,7 @@ instance or_plain (P Q : PROP)[Plain P] [Plain Q]: Plain iprop(P ∨ Q) where
 instance forall_plain {A : Type _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∀ x, Ψ x) where
   plain := .trans (forall_mono (fun _ => plain)) plainly_forall_2
 
-@[rocq_alias exists_plain]
+@[rocq_alias exist_plain]
 instance exists_plain {A : Type _} (Ψ : A → PROP) : [∀ x, Plain (Ψ x)] → Plain iprop(∃ x, Ψ x) where
   plain := .trans (exists_mono (fun _ => plain)) plainly_exists_2
 

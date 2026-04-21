@@ -12,7 +12,7 @@ public import Iris.BI.DerivedLaws
 public import Iris.Std.Classes
 public import Iris.Std.Rewrite
 public import Iris.Std.TC
-public import Iris.Std.RocqAlias
+public import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -418,7 +418,7 @@ instance except0_persistent (P : PROP) [Persistent P] : Persistent iprop(◇ P) 
 instance except0_absorbing (P : PROP) [Absorbing P] : Absorbing iprop(◇ P) :=
   inferInstanceAs (Absorbing iprop(_ ∨ _))
 
-@[rocq_alias timeless_alt]
+@[rocq_alias bi.timeless_alt]
 theorem timeless_alt [BILoeb PROP] {Q : PROP} :
     Timeless Q ↔ (∀ (P : PROP), (iprop(▷ False) ∧ P ⊢ Q) → (P ⊢ Q)) := by
   refine ⟨fun hTimeless P hPr => ?_, (⟨later_false_em.trans <| or_mono .rfl <| · _ imp_elim_r⟩)⟩
@@ -431,7 +431,7 @@ theorem timeless_alt [BILoeb PROP] {Q : PROP} :
     _ ⊢ (▷ False ∧ P) ∨ (Q ∧ P) := or_mono and_symm and_symm
     _ ⊢ Q := or_elim hPr and_elim_l
 
-@[rocq_alias pure_timeless]
+@[rocq_alias bi.pure_timeless]
 instance pure_timeless (φ : Prop) : Timeless (PROP := PROP) (BIBase.pure φ) where
   timeless :=
     calc iprop(▷ ⌜φ⌝)
@@ -442,7 +442,7 @@ instance pure_timeless (φ : Prop) : Timeless (PROP := PROP) (BIBase.pure φ) wh
       _ ⊢ ◇ ⌜φ⌝ :=
         or_mono_r (exists_elim ((later_true.1.trans true_intro).trans <| pure_intro ·))
 
-@[rocq_alias exist_timeless]
+@[rocq_alias bi.exist_timeless]
 instance exists_timeless [BI PROP] {α : Type _} (Ψ : α → PROP) [∀ x, Timeless (Ψ x)] :
     Timeless (PROP := PROP) (BIBase.exists Ψ) where
   timeless := by
@@ -452,11 +452,11 @@ instance exists_timeless [BI PROP] {α : Type _} (Ψ : α → PROP) [∀ x, Time
     refine Timeless.timeless.trans ?_
     exact except0_mono (exists_intro x)
 
-@[rocq_alias emp_timeless]
+@[rocq_alias bi.emp_timeless]
 instance emp_timeless [BI PROP] [BIAffine PROP] : Timeless (PROP := PROP) emp where
   timeless := later_emp.mp.trans except0_intro
 
-@[rocq_alias and_timeless]
+@[rocq_alias bi.and_timeless]
 instance and_timeless [BI PROP] {P Q : PROP} [Timeless P] [Timeless Q] :
     Timeless (PROP := PROP) (BIBase.and P Q) where
   timeless :=
@@ -465,7 +465,7 @@ instance and_timeless [BI PROP] {P Q : PROP} [Timeless P] [Timeless Q] :
       _ ⊢ ◇ P ∧ ◇ Q := and_mono Timeless.timeless Timeless.timeless
       _ ⊢ ◇ (P ∧ Q) := except0_and.mpr
 
-@[rocq_alias or_timeless]
+@[rocq_alias bi.or_timeless]
 instance or_timeless [BI PROP] {P Q : PROP} [Timeless P] [Timeless Q] :
     Timeless (PROP := PROP) (BIBase.or P Q) where
   timeless :=
@@ -474,7 +474,7 @@ instance or_timeless [BI PROP] {P Q : PROP} [Timeless P] [Timeless Q] :
       _ ⊢ ◇ P ∨ ◇ Q := or_mono Timeless.timeless Timeless.timeless
       _ ⊢ ◇ (P ∨ Q) := except0_or.mpr
 
-@[rocq_alias impl_timeless]
+@[rocq_alias bi.impl_timeless]
 instance impl_timeless [BI PROP] [BILoeb PROP] {P Q : PROP} [Timeless Q] :
     Timeless (PROP := PROP) (BIBase.imp P Q) := by
   refine timeless_alt.mpr @fun R hR => ?_
@@ -489,7 +489,7 @@ instance impl_timeless [BI PROP] [BILoeb PROP] {P Q : PROP} [Timeless Q] :
     _ ⊢ P ∧ (P → Q) := and_symm
     _ ⊢ Q := imp_elim_r
 
-@[rocq_alias sep_timeless]
+@[rocq_alias bi.sep_timeless]
 instance sep_timeless [BI PROP] {P Q : PROP} [Timeless P] [Timeless Q] :
     Timeless (PROP := PROP) (BIBase.sep P Q) where
   timeless :=
@@ -498,7 +498,7 @@ instance sep_timeless [BI PROP] {P Q : PROP} [Timeless P] [Timeless Q] :
       _ ⊢ ◇ P ∗ ◇ Q := sep_mono Timeless.timeless Timeless.timeless
       _ ⊢ ◇ (P ∗ Q) := except0_sep.mpr
 
-@[rocq_alias wand_timeless]
+@[rocq_alias bi.wand_timeless]
 instance wand_timeless [BI PROP] [BILoeb PROP] {P Q : PROP} [Timeless Q] :
     Timeless (PROP := PROP) (BIBase.wand P Q) := by
   refine timeless_alt.mpr fun R hR => ?_
@@ -517,7 +517,7 @@ instance wandIff_timeless [BI PROP] [BILoeb PROP] {P Q : PROP} [Timeless P] [Tim
     Timeless (PROP := PROP) (wandIff P Q) :=
   inferInstanceAs (Timeless (PROP := PROP) iprop((P -∗ Q) ∧ (Q -∗ P)))
 
-@[rocq_alias forall_timeless]
+@[rocq_alias bi.forall_timeless]
 instance forall_timeless [BI PROP] {α : Type _} (Ψ : α → PROP) [∀ x, Timeless (Ψ x)] :
     Timeless (PROP := PROP) (BIBase.forall Ψ) where
   timeless := by
@@ -525,7 +525,7 @@ instance forall_timeless [BI PROP] {α : Type _} (Ψ : α → PROP) [∀ x, Time
     refine (forall_mono fun x => Timeless.timeless).trans ?_
     exact except0_forall.mpr
 
-@[rocq_alias persistently_timeless]
+@[rocq_alias bi.persistently_timeless]
 instance persistently_timeless [BI PROP] {P : PROP} [Timeless P] :
     Timeless (PROP := PROP) iprop(<pers> P) where
   timeless :=
@@ -534,11 +534,11 @@ instance persistently_timeless [BI PROP] {P : PROP} [Timeless P] :
       _ ⊢ <pers> ◇ P := persistently_mono Timeless.timeless
       _ ⊢ ◇ <pers> P := except0_persistently.mpr
 
-@[rocq_alias affinely_timeless]
+@[rocq_alias bi.affinely_timeless]
 instance affinely_timeless [BI PROP] [Timeless (PROP := PROP) emp] {P : PROP} [Timeless P] :
     Timeless (PROP := PROP) iprop(<affine> P) := and_timeless
 
-@[rocq_alias absorbingly_timeless]
+@[rocq_alias bi.absorbingly_timeless]
 instance absorbingly_timeless [BI PROP] {P : PROP} [Timeless P] :
     Timeless (PROP := PROP) iprop(<absorb> P) where
   timeless :=
@@ -547,11 +547,11 @@ instance absorbingly_timeless [BI PROP] {P : PROP} [Timeless P] :
       _ ⊢ <absorb> ◇ P := absorbingly_mono Timeless.timeless
       _ ⊢ ◇ <absorb> P := except0_absorbingly.mpr
 
-@[rocq_alias intuitionistically_timeless]
+@[rocq_alias bi.intuitionistically_timeless]
 instance intuitionistically_timeless [BI PROP] [Timeless (PROP := PROP) emp] {P : PROP} [Timeless P] :
     Timeless (PROP := PROP) iprop(□ P) := affinely_timeless
 
-@[rocq_alias from_option_timeless]
+@[rocq_alias bi.from_option_timeless]
 instance from_option_timeless [BI PROP] {α : Type _} {Ψ : α → PROP} {P : PROP}
     [Timeless P] [∀ x, Timeless (Ψ x)] (mx : Option α) :
     Timeless (Option.elim mx P Ψ) :=
