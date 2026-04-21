@@ -13,9 +13,7 @@ public import Iris.Instances.IProp
 
 @[expose] public section
 
-/-! ## Later credits
-TODO: missing instances for PM: combine_sep_lc_add, combine_sep_lc_S_l
--/
+/-! ## Later credits -/
 
 namespace Iris
 
