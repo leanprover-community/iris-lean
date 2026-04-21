@@ -16,10 +16,30 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v6
-      # uses lean standard action, pointed at the IrisLean subdirectory
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: IrisLean
+
+  build-math:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: IrisLeanMath
+          use-mathlib-cache: true
+
+  report:
+    # Generate and upload the porting report Pages artifact.
+    # Only runs on master; failures here don't block PRs.
+    if: github.ref == 'refs/heads/master'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
       - uses: leanprover/lean-action@v1
         with:
           lake-package-directory: IrisLean
@@ -40,12 +60,11 @@ jobs:
           mkdir -p ../_site
           python3 scripts/check_porting.py --format html --lean-rev "${{ github.sha }}" -o ../_site/index.html
       - name: Upload Pages artifact
-        if: github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v3
 
   deploy:
     if: github.ref == 'refs/heads/master'
-    needs: build
+    needs: report
     runs-on: ubuntu-latest
     permissions:
       pages: write
