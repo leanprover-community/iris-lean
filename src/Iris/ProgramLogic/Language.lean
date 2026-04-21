@@ -21,13 +21,15 @@ public import Batteries.Data.List.Basic
 --         e      -ᵖ->^[n]           e'        (iterate pureStep)
 --         e      -ᵖ->*              e'        (ReflTransGen pureStep)
 --         t      -ᵖ->ₜₚ*            t'        (Forall₂ (· -ᵖ->* ·))
--- TODO: Add macro tests / consider making them all use `notation` over
---       `macro`
 -- TODO: Ensure all the relevant `rocq_alias` are added
 -- TODO: Ask «Why chose List here? It seems any monoid would do.» for the
 --       observations being a `List Obs`.
 -- TODO: Consider renaming `ToVal` typeclass to something better, since
 --       it's not just the `toVal` operation it carries.
+-- TODO: Move out of `FromMathlib` those definitions which don't actually
+--       come from Mathlib!
+-- TODO: Consider changing `Language.NSteps` to use `Relation.iterate`
+--       instead of mirroring its structure
 
 @[expose] public section
 
@@ -49,7 +51,7 @@ class ToVal (Expr : Type e) (Val : outParam <| Type v ) where
   coe_of_toVal_eq (e : Expr)(v : Val) : toVal e = some v → ofVal v = e
   /-- `toVal` is defined `coe`, and works as its inverse -/
   toVal_coe (v : Val) : toVal (ofVal v) = some v
-export ToVal (toVal)
+export ToVal (toVal coe_of_toVal_eq toVal_coe)
 
 attribute [rocq_alias language.to_val] ToVal.toVal
 attribute [rocq_alias mixin_of_to_val] ToVal.coe_of_toVal_eq
@@ -81,16 +83,9 @@ class PrimStep
   primStep   : Expr × State → Obs → Expr × State × List Expr → Prop
 
 namespace PrimStep
-@[inherit_doc PrimStep.primStep]
-scoped macro conf:term:40 " -<" noWs obs:term:max noWs ">->ₜ " conf':term:41 : term =>
- `(PrimStep.primStep $conf $obs $conf')
 
-open Lean PrettyPrinter Delaborator SubExpr in
-@[app_unexpander PrimStep.primStep]
-meta def unexpandPrimStep : Unexpander
-| `(primStep $conf $obs $conf') =>
-  `($conf -<$obs>->ₜ $conf')
-| _ => throw ()
+@[inherit_doc PrimStep.primStep]
+scoped notation conf:40 " -<" obs:max ">->ₜ " conf':41  => PrimStep.primStep conf obs conf'
 
 end PrimStep
 open PrimStep
@@ -196,16 +191,7 @@ def Step.of_primStep : ∀ {e σ}{obs : List Obs}{e'} {σ' : State} {eₜ},
   (Language.Step.atomic _ _ _ _ _ _ · _ _)
 
 @[inherit_doc Step]
-scoped macro conf:term:40 " -<" noWs obs:term:max noWs ">->ₜₚ " conf':term:41 : term =>
- `(Language.Step $conf $obs $conf')
-
--- FIXME: Not displaying properly (?)
-open Lean PrettyPrinter Delaborator SubExpr in
-@[app_unexpander Step]
-meta def unexpandLanguageStep : Unexpander
-| `(Language.Step $conf $obs $conf') =>
-  `($conf -<$obs>->ₜₚ $conf')
-| _ => throw ()
+scoped notation conf:40 " -<" obs:max ">->ₜₚ " conf':41 => Language.Step conf obs conf'
 
 /-- The (possibly zero) sequence of `Language.step`s -/
 @[grind]
@@ -218,29 +204,14 @@ inductive NSteps : Nat → List Expr × State → List Obs → List Expr × Stat
       NSteps (n+1) ρ₁ (obs ++ obs') ρ₃
 
 @[inherit_doc NSteps]
-scoped macro conf:term:40 " -<" noWs obs:term:max noWs ">->ₜₚ^[" noWs n:term:max noWs "] " conf':term:41 : term =>
- `(Language.NSteps $n $conf ($obs) $conf')
-
-open Lean PrettyPrinter Delaborator SubExpr in
-@[app_unexpander NSteps]
-meta def unexpandLanguageNsteps : Unexpander
-| `(Language.NSteps $n $conf $obs $conf') =>
-  `($conf -<$obs>->ₜₚ^[$n] $conf')
-| _ => throw ()
+scoped notation conf:40 " -<" obs:max ">->ₜₚ^[" n:max "] " conf':41 =>
+ Language.NSteps n conf obs conf'
 
 /-- A sequence of `Language.step`s with no observation information -/
 def erasedStep (ρ  ρ₂: List Expr × State) := ∃ obs, Step ρ obs ρ₂
 
 @[inherit_doc erasedStep]
-scoped macro conf:term:40 " -·->ₜₚ " conf':term:41 : term =>
- `(Language.erasedStep $conf $conf')
-
-open Lean PrettyPrinter Delaborator SubExpr in
-@[app_unexpander Language.erasedStep]
-meta def unexpandLanguageErasedStep : Unexpander
-| `(Language.erasedStep $conf $conf') =>
-  `($conf -·->ₜₚ $conf')
-| _ => throw ()
+scoped notation conf:40 " -·->ₜₚ " conf':41 => Language.erasedStep conf conf'
 
 @[rocq_alias not_reducible, grind =]
 theorem not_reducible_iff_irreducible {e : Expr} {σ : State} :
@@ -449,28 +420,12 @@ def purePrimStep (e₁ e₂ : Expr) :=
   )
 
 @[inherit_doc purePrimStep]
-scoped macro conf:term:40 " -ᵖ-> " conf':term:41 : term =>
-  `(purePrimStep $conf $conf')
-
-open Lean PrettyPrinter Delaborator SubExpr in
-@[app_unexpander Language.purePrimStep]
-meta def unexpandLanguagePurePrimStep : Unexpander
-| `(purePrimStep $conf $conf') =>
-  `($conf -ᵖ-> $conf')
-| _ => throw ()
+scoped notation conf:40 " -ᵖ-> " conf':41 => purePrimStep conf conf'
 
 /-- `e₁ -ᵖ->^[n] e₂` represents a sequence of `n` pure steps taken
     from `e₁` up to `e₂`.
 -/
-scoped macro conf:term:40 " -ᵖ->^[" noWs n:term noWs "] " conf':term:41 : term =>
-  `(Relation.iterate purePrimStep $n $conf $conf')
-
-open Lean PrettyPrinter Delaborator SubExpr in
-@[app_unexpander Relation.iterate]
-meta def unexpandIterateLanguagePurePrimStep : Unexpander
-| `(Relation.iterate purePrimStep $n  $conf $conf') =>
-  `($conf -ᵖ->^[$n] $conf')
-| _ => throw ()
+scoped notation conf:40 " -ᵖ->^[" n "] " conf':41 => Relation.iterate purePrimStep n conf conf'
 
 private theorem _root_.ReflTrans_iff_exists_iterate {α : Type _} {R : α → α → Prop} :
     ∀ {x y},
@@ -494,15 +449,7 @@ private theorem _root_.ReflTrans_iff_exists_iterate {α : Type _} {R : α → α
 /-- `e₁ -ᵖ->* e₂` represents a sequence of some number of pure steps
     taken from `e₁` up to `e₂`.
 -/
-scoped macro conf:term:40 " -ᵖ->* " conf':term:41 : term =>
-  `(Relation.ReflTransGen purePrimStep $conf $conf')
-
-open Lean PrettyPrinter Delaborator SubExpr in
-@[app_unexpander Relation.ReflTransGen]
-meta def unexpandReflTransGenLanguagePurePrimStep : Unexpander
-| `(Relation.ReflTransGen purePrimStep $conf $conf') =>
-  `($conf -ᵖ->* $conf')
-| _ => throw ()
+scoped notation conf:40 " -ᵖ->* " conf':41 => Relation.ReflTransGen purePrimStep conf conf'
 
 @[rocq_alias pure_steps_tp]
 def pureSteps (t₁ t₂ : List Expr) := List.Forall₂ (· -ᵖ->* ·) t₁ t₂
@@ -510,8 +457,7 @@ def pureSteps (t₁ t₂ : List Expr) := List.Forall₂ (· -ᵖ->* ·) t₁ t�
 /-- `e₁ -ᵖ->ₜₚ* e₂` represents a sequence of some number of pure steps
     taken from `e₁` up to `e₂`.
 -/
-scoped macro conf:term:40 " -ᵖ->ₜₚ* " conf':term:41 : term =>
-  `(Language.pureSteps $conf $conf')
+scoped notation conf:40 " -ᵖ->ₜₚ* " conf':41 => Language.pureSteps conf conf'
 
 open Lean PrettyPrinter Delaborator SubExpr in
 @[app_unexpander Language.pureSteps]
@@ -646,3 +592,75 @@ theorem erasedStep_pureSteps (t₁ t₂ t₃ : List Expr) (σ₁ σ₂ : State) 
     apply List.Forall₂.cons lastSteps ss_ss₃
 
 end Language
+
+section test
+open Language
+
+section notations
+
+/--
+info: (e, σ) -<obs>->ₜ (e, σ, []) : Prop
+-/
+#guard_msgs in
+variable (e : Expr) (σ : State) (obs : Obs) [PrimStep Expr State Obs] in
+#check (PrimStep.primStep (e, σ) obs (e,σ,[]))
+
+/--
+info: (t, σ) -<obs>->ₜₚ (t, σ) : Prop
+-/
+#guard_msgs in
+variable (t : List Expr) (σ : State) (obs : List Obs) [Language Expr State Obs Val] in
+#check (Language.Step (t, σ) obs (t,σ))
+
+/--
+info: (t, σ) -<obs>->ₜₚ^[0] (t, σ) : Prop
+-/
+#guard_msgs in
+variable (t : List Expr) (σ : State) (obs : List Obs) [Language Expr State Obs Val] in
+#check (Language.NSteps 0 (t, σ) obs (t,σ))
+
+/--
+info: (t, σ) -·->ₜₚ (t, σ) : Prop
+-/
+#guard_msgs in
+variable (t : List Expr) (σ : State) [Language Expr State Obs Val] in
+#check (Language.erasedStep (t, σ) (t,σ))
+
+/--
+info: e -ᵖ-> e : Prop
+-/
+#guard_msgs in
+variable (e : Expr) [Language Expr State Obs Val] in
+#check (Language.purePrimStep e e)
+
+/--
+info: e -ᵖ->^[0] e : Prop
+-/
+#guard_msgs in
+variable (e : Expr) [Language Expr State Obs Val] in
+#check (Relation.iterate Language.purePrimStep 0 e e)
+
+/--
+info: e -ᵖ->* e : Prop
+-/
+#guard_msgs in
+variable (e : Expr) [Language Expr State Obs Val] in
+#check (Relation.ReflTransGen Language.purePrimStep e e)
+
+/--
+info: e -ᵖ->* e : Prop
+-/
+#guard_msgs in
+variable (e : Expr) [Language Expr State Obs Val] in
+#check (Relation.ReflTransGen Language.purePrimStep e e)
+
+/--
+info: t -ᵖ->ₜₚ* t : Prop
+-/
+#guard_msgs in
+variable (t : List Expr) [Language Expr State Obs Val] in
+#check (Language.pureSteps t t)
+
+end notations
+
+end test
