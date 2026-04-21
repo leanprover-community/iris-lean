@@ -201,7 +201,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] Own/Forall lemmas
 - [ ] `lib/proph_map.v`
 - [ ] `lib/saved_prop.v`
-- [ ] `lib/token.v`
+- [x] `lib/token.v`
 - [x] `lib/wsat.v`
 
 ## BI
