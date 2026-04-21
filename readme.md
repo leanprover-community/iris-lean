@@ -17,6 +17,8 @@ Currently, Iris-Lean has support for
 
 MoSeL (in contrast to the older IPM) supports different separation logics as well. For more details on the proofmode, see [proofmode.md](proofmode.md).
 
+More details about the status of our port can be found on our [tracking site](https://leanprover-community.github.io/iris-lean/). 
+
 # Using Iris-Lean as a Dependency
 
 - Iris-Lean is updated in sync with Lean. The [releases](https://github.com/leanprover-community/iris-lean/releases) page includes tags for recent versions.
