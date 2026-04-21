@@ -1,7 +1,7 @@
 module
 
-public import Iris.Std.RocqAlias
-public import Iris.Std.RocqIgnore
+meta import Iris.Std.RocqAlias
+meta import Iris.Std.RocqIgnore
 public import Iris.Std.FromMathlib
 public import Iris.Std.Relation
 public import Iris.Std.List
