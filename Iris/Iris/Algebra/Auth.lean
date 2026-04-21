@@ -25,12 +25,8 @@ open OFE CMRA UCMRA View
 
 /-!
 ## Definition of the view relation for the authoritative camera.
-
-`auth_view_rel n a b` holds when `b ≼{n} a` and `✓{n} a`.
-
-Rocq: `auth_view_rel_raw`
 -/
-@[rocq_alias auth_view_rel]
+@[rocq_alias auth_view_rel_raw]
 def AuthViewRel [UCMRA A] : ViewRel A A := fun n a b => b ≼{n} a ∧ ✓{n} a
 
 namespace AuthViewRel
@@ -38,7 +34,7 @@ namespace AuthViewRel
 variable [UCMRA A]
 
 /-- Rocq: `auth_view_rel_raw_mono`, `auth_view_rel_raw_valid`, `auth_view_rel_raw_unit` -/
-instance : IsViewRel (AuthViewRel (A := A)) where
+instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) where
   mono := by
     intro _ a1 b1 n2 a2 b2 ⟨hinc, hv⟩ ha hb hn
     refine ⟨?_, validN_ne ha (validN_of_le hn hv)⟩
