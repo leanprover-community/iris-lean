@@ -4,9 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-@[expose] public section
+public import Batteries.Data.List.Basic
 
-module
 
 @[expose] public section
 
@@ -56,5 +55,41 @@ theorem Nodup.map_on {f : α → β} (H : ∀ x ∈ l, ∀ y ∈ l, f x = f y �
 /-- NB. Copied from Mathlib -/
 theorem Nodup.filter (p : α → Bool) {l} : List.Nodup l → List.Nodup (List.filter p l) := by
   simpa using List.Pairwise.filter p
+
+inductive Relation.ReflTransGen (r : α → α → Prop) (a : α) : α → Prop
+  | refl : ReflTransGen r a a
+  | tail {b c : α} : ReflTransGen r a b → r b c → ReflTransGen r a c
+
+namespace Relation.ReflTransGen
+
+theorem head (hab : r a b) (hbc : ReflTransGen r b c) : ReflTransGen r a c := by
+  induction hbc with
+  | refl => exact refl.tail hab
+  | tail _ hcd hac => exact hac.tail hcd
+
+@[elab_as_elim]
+theorem head_induction_on {motive : ∀ a : α, ReflTransGen r a b → Prop} {a : α}
+    (h : ReflTransGen r a b) (refl : motive b refl)
+    (head : ∀ {a c} (h' : r a c) (h : ReflTransGen r c b), motive c h → motive a (h.head h')) :
+    motive a h := by
+  induction h with
+  | refl => exact refl
+  | @tail b c _ hbc ih =>
+  apply ih
+  · exact head hbc _ refl
+  · exact fun h1 h2 ↦ head h1 (h2.tail hbc)
+
+theorem cases_head (h : ReflTransGen r a b) : a = b ∨ ∃ c, r a c ∧ ReflTransGen r c b := by
+  induction h using ReflTransGen.head_induction_on <;> grind
+
+end Relation.ReflTransGen
+
+@[grind .]
+theorem List.forall₂_zip : ∀ {l₁ l₂}, List.Forall₂ R l₁ l₂ → ∀ {a b}, (a, b) ∈ l₁.zip l₂ → R a b
+  | _, _, List.Forall₂.cons h₁ h₂, x, y, hx => by
+    rw [List.zip, List.zipWith, List.mem_cons] at hx
+    match hx with
+    | Or.inl rfl => exact h₁
+    | Or.inr h₃ => exact forall₂_zip h₂ h₃
 
 end FromMathlib
