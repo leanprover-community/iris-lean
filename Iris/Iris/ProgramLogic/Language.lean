@@ -8,7 +8,9 @@ public import Iris.Std.List
 public meta import Lean.PrettyPrinter.Delaborator
 public import Batteries.Data.List.Basic
 
--- TODO: Ensure all the relevant `rocq_alias` are added
+#rocq_ignore LanguageMixin "This feature was implemented differently using typeclasses"
+#rocq_ignore language      "This feature was implemented differently using typeclasses"
+
 -- TODO: Ask «Why chose List here? It seems any monoid would do.» for the
 --       observations being a `List Obs`.
 -- TODO: Consider renaming `ToVal` typeclass to something better, since
@@ -51,7 +53,7 @@ variable [ToVal Expr Val]
 attribute [coe] ToVal.ofVal
 instance : Coe Val Expr where coe := ToVal.ofVal
 
-@[grind! .]
+@[grind! ., rocq_alias of_to_val_flip]
 theorem toVal_eq_iff_coe (e : Expr)(v : Val): (v : Expr) = e ↔ toVal e = some v :=
   ⟨(· ▸ ToVal.toVal_coe v), coe_of_toVal_eq_some e v⟩
 
@@ -125,21 +127,10 @@ namespace Language
 
 variable [Λ : Language Expr State Obs Val]
 
-inductive Atomicity where
-| WeaklyAtomic
-| StronglyAtomic
-
-class Atomic (a : Atomicity) (e : Expr) : Prop where
-  atomic : ∀ (σ : State) obs e' σ' eₜ,
-    (e, σ) -<obs>-> (e', σ', eₜ) →
-    match a with
-    | .WeaklyAtomic => ¬ reducible (e', σ')
-    | .StronglyAtomic => (toVal e').isSome
-
 variable {e e': Expr}{σ σ': State}{v v' : Val}
 
 /-- A single atomic step in a threaded context -/
-@[grind]
+@[grind, rocq_alias step]
 inductive Step : List Expr × State → List Obs → List Expr × State → Prop
   where
   | atomic : ∀ e σ  obs e' σ' eₜ,
@@ -163,7 +154,7 @@ def Step.of_primStep : ∀ {e σ}{obs : List Obs}{e'} {σ' : State} {eₜ},
 scoped notation conf:40 " -<" obs:max ">->ₜₚ " conf':41 => Language.Step conf obs conf'
 
 /-- The (possibly zero) sequence of `Language.step`s -/
-@[grind]
+@[grind, rocq_alias nsteps]
 inductive NSteps : Nat → List Expr × State → List Obs → List Expr × State → Prop
   where
   | refl (ρ : List Expr × State): NSteps 0 ρ [] ρ
@@ -245,6 +236,28 @@ theorem not_not_suck {e : Expr} {σ : State} :
     simp only [Option.isSome_none, Bool.false_eq_true, false_or, not_reducible_iff_irreducible,
       true_and]
 
+@[rocq_alias prim_step_not_stuck]
+theorem primStep_notStuck {e : Expr} {σ obs e' σ' eₜ} :
+    (e, σ) -<obs>-> (e', σ', eₜ) →
+    notStuck (e, σ) :=
+  fun h => .inr ⟨_, _, _, _, h⟩
+end ReducibilityLemmas
+
+@[rocq_alias atomicity]
+inductive Atomicity where
+| WeaklyAtomic
+| StronglyAtomic
+
+#rocq_ignore stuckness_to_atomicity "There is no `Stuckness` implementation yet."
+
+@[rocq_alias Atomic]
+class Atomic (a : Atomicity) (e : Expr) : Prop where
+  atomic : ∀ (σ : State) obs e' σ' eₜ,
+    (e, σ) -<obs>-> (e', σ', eₜ) →
+    match a with
+    | .WeaklyAtomic => ¬ reducible (e', σ')
+    | .StronglyAtomic => (toVal e').isSome
+
 @[rocq_alias strongly_atomic_atomic]
 theorem stronglyAtomic_atomic a :
     Atomic (State := State) .StronglyAtomic e →
@@ -256,14 +269,9 @@ theorem stronglyAtomic_atomic a :
     constructor
     grind only [not_reducible_iff_irreducible, val_irreducible]
 
-@[rocq_alias prim_step_not_stuck]
-theorem primStep_notStuck {e : Expr} {σ obs e' σ' eₜ} :
-    (e, σ) -<obs>-> (e', σ', eₜ) →
-    notStuck (e, σ) :=
-  fun h => .inr ⟨_, _, _, _, h⟩
-end ReducibilityLemmas
 
 /-- `Context K` says `K` models an evaluation context for the language -/
+@[rocq_alias LanguageCtx]
 class Context(K: Expr → Expr) where
   toVal_eq_none_fill : ∀ {e : Expr},
     toVal e = none → toVal (K e) = none
@@ -436,7 +444,7 @@ scoped notation conf:40 " -ᵖ-> " conf':41 => purePrimStep conf conf'
 /-- `e₁ -ᵖ->^[n] e₂` represents a sequence of `n` pure steps taken
     from `e₁` up to `e₂`.
 -/
-scoped notation conf:40 " -ᵖ->^[" n "] " conf':41 => Relation.iterate purePrimStep n conf conf'
+scoped notation conf:40 " -ᵖ->^[" n "] " conf':41 => Relation.Iterate purePrimStep n conf conf'
 
 /-- `e₁ -ᵖ->* e₂` represents a sequence of some number of pure steps
     taken from `e₁` up to `e₂`.
@@ -444,7 +452,7 @@ scoped notation conf:40 " -ᵖ->^[" n "] " conf':41 => Relation.iterate purePrim
 scoped notation conf:40 " -ᵖ->* " conf':41 => Relation.ReflTransGen purePrimStep conf conf'
 
 @[rocq_alias pure_steps_tp]
-def pureSteps (t₁ t₂ : List Expr) := List.Forall₂ (· -ᵖ->* ·) t₁ t₂
+abbrev pureSteps (t₁ t₂ : List Expr) := List.Forall₂ (· -ᵖ->* ·) t₁ t₂
 
 /-- `e₁ -ᵖ->ₜₚ* e₂` represents a sequence of some number of pure steps
     taken from `e₁` up to `e₂`.
@@ -458,6 +466,7 @@ meta def unexpandLanguagePureSteps : Unexpander
   `($conf -ᵖ->ₜₚ* $conf')
 | _ => throw ()
 
+@[rocq_alias PureExec]
 class PureExec (φ : Prop) (n : Nat) (e₁ e₂ : Expr) : Prop where
   pureExec : φ → e₁ -ᵖ->^[n] e₂
 
@@ -485,7 +494,7 @@ theorem iterate_purePrimStep_fill (K : Expr → Expr) [Context K] {e₁ e₂} :
   induction h with
   | rfl => constructor
   | tail y first last IH =>
-    apply Relation.iterate.tail (K y) IH (purePrimStep_fill K last)
+    apply Relation.Iterate.tail (K y) IH (purePrimStep_fill K last)
 
 @[rocq_alias rtc_pure_step_ctx]
 theorem ReflTransGen_pureStep_fill (K : Expr → Expr) [Context K] {e₁ e₂} :
@@ -533,13 +542,13 @@ theorem as_val_isSome e :
   grind only [!ToVal.toVal_eq_iff_coe, = Option.isSome_some]
 
 /--
-  Let thread pools `t₁` and `t₃` be such that each thread
-  in `t₁` makes (zero or more) pure steps to the
-  corresponding thread in `t₃`.
-
   Let `t₂` be a thread pool such that `t₁` under state
   `σ₁` makes a (single) step to threadpool `t₂` and
   state `σ₂`.
+
+  Let thread pools `t₁` and `t₃` be such that each thread
+  in `t₁` makes (zero or more) pure steps to the
+  corresponding thread in `t₃`.
 
   In this situation, either the step from `t₁` to `t₂`
   corresponds to one of the pure steps between `t₁` and
@@ -552,7 +561,7 @@ theorem erasedStep_pureSteps (t₁ t₂ t₃ : List Expr) (σ₁ σ₂ : State) 
     (t₁, σ₁)  -·->ₜₚ  (t₂, σ₂) →
        t₁     -ᵖ->ₜₚ*    t₃ →
     (σ₁ = σ₂ ∧ t₂ -ᵖ->ₜₚ* t₃) ∨ -- t₂ was actually obtained form a pure reduction
-    (∃ i e eₜ e' obs,
+    (∃ i e eₜ e' obs,           -- t₃ didn't touch the expression e which changed in t₂
       t₁[i]? = some e ∧
       t₃[i]? = some e ∧
       t₂ = t₁.set i e' ++ eₜ ∧
@@ -564,7 +573,7 @@ theorem erasedStep_pureSteps (t₁ t₂ t₃ : List Expr) (σ₁ σ₂ : State) 
          ∧ ss -ᵖ->ₜₚ* ss₃
          ∧ ps -ᵖ->ₜₚ* ps₃ ∧ ps.length = ps₃.length
          ∧ e -ᵖ->* e₃ from by
-      grind [pureSteps]
+      grind
   rcases Relation.ReflTransGen.cases_head e_e₃ with (rfl | ⟨e', firstPureStep, lastSteps⟩)
   · right
     exists (ps₃.length), e, eₜ, e₂, obs
@@ -627,7 +636,7 @@ info: e -ᵖ->^[0] e : Prop
 -/
 #guard_msgs in
 variable (e : Expr) [Language Expr State Obs Val] in
-#check (Relation.iterate Language.purePrimStep 0 e e)
+#check (Relation.Iterate Language.purePrimStep 0 e e)
 
 /--
 info: e -ᵖ->* e : Prop
