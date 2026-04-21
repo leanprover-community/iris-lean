@@ -22,13 +22,6 @@ open FromMathlib
 
 variable {Expr : Type e}{Val : Type v}{State : Type σ}{Obs : Type o}
 
--- DECISION: We assume that one Expr type maps to one Val type
--- If this where to not be true, once could reuse the same API by simply
--- adding some construction `WithVal Val Expr` which associates `Val` to
--- `Expr`. Alternatively, one could make this dependency more explicit
--- by having `Expr` depend on `Val`, but we don't make this choice here
--- since it'd be cumbersome to write.
-
 class ToVal (Expr : Type e) (Val : outParam <| Type v ) where
   toVal : Expr → Option Val
   ofVal : Val → Expr
@@ -61,9 +54,6 @@ instance [ι : ToVal Expr Val]: Function.Injective (ι.ofVal) := by
   simpa [ToVal.toVal_coe] using congrArg (toVal) h
 
 end ToVal
-
--- DECISION: Same decision as for `Val` ended up being made for
--- `Obs` and `State`
 
 class PrimStep
     (Expr : Type e)
@@ -103,9 +93,6 @@ def notStuck [ToVal Expr Val]: Expr × State → Prop
 | (e, σ) => (toVal e).isSome ∨ reducible (e, σ)
 
 end PureConfigurationTypes
-
--- DECISION: We assume that one `Expr` pair refers to exactly one
--- type of observations `Obs` and states `State`.
 
 class Language
     (Expr  : Type e)
