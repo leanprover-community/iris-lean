@@ -278,7 +278,14 @@ class LeanData:
     ignored_files: dict[str, str]
     concepts: list[ConceptEntry]
 
-
+def parse_status(status : str | dict[str, list[str]]) -> str:
+    if type(status) is str:
+        return status
+    elif type(status) is dict:
+        return list(status.keys())[0]
+    else: # Should be unreachable
+        return "unreachable"
+    
 def load_lean_data(json_path: str) -> LeanData:
     """Load Lean alias/ignore/concept data from the JSON dump."""
     with open(json_path) as f:

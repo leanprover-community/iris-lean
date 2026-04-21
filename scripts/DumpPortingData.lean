@@ -46,6 +46,11 @@ meta def collectRocqAliases (env : Environment) : Array (Name × Name) :=
 private meta def nameToRocqStr (n : Name) : String :=
   n.toString (escape := false)
 
+meta def buildStatusJson : Status → Json 
+| .Ported => "ported"
+| .Missing => "missing"
+| .DependsOn ls => Json.mkObj [("depends_on", Json.arr <| ls.map (Json.str ·.toString))]
+
 /-- Build a JSON object from collected data. -/
 meta def buildJson (aliases : Array (Name × Name))
     (ignores : Array (Name × String))
@@ -60,7 +65,7 @@ meta def buildJson (aliases : Array (Name × Name))
   let conceptArr := concepts.map fun (folder, feature, sub, status, reason) =>
     Json.mkObj [("folder", folder), ("feature", feature),
       ("subfeature", match sub with | some s => Json.str s | none => Json.null),
-      ("status", status.toString), ("reason", reason)]
+      ("status", buildStatusJson status), ("reason", reason)]
   Json.mkObj [("aliases", Json.arr aliasArr), ("ignores", Json.arr ignoreArr),
     ("ignored_files", Json.arr ignoreFileArr), ("concepts", Json.arr conceptArr)]
 

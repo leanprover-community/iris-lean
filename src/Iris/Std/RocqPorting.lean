@@ -153,8 +153,13 @@ elab "#rocq_ignore_file" folder:ident file:str reason:str : command => do
   checkRocqFolder folder
   modifyEnv (rocqIgnoreFileExt.addEntry · (folder.getId.toString, file.getString, reason.getString))
 
+public inductive Status where
+  | Ported
+  | Missing
+  | DependsOn (deps: Array Name)
+
 /-- A concept entry: `(dir, feature, subfeature?, status, reason)`. -/
-public abbrev ConceptEntry := String × String × Option String × Name × String
+public abbrev ConceptEntry := String × String × Option String × Status × String
 
 /-- Environment extension tracking all `#rocq_concept` entries. -/
 public meta initialize rocqConceptExt : SimplePersistentEnvExtension ConceptEntry (Array ConceptEntry) ←
@@ -162,6 +167,17 @@ public meta initialize rocqConceptExt : SimplePersistentEnvExtension ConceptEntr
     addEntryFn := Array.push
     addImportedFn := fun es => es.foldl (fun acc a => a.foldl Array.push acc) #[]
   }
+
+public syntax status := "ported" <|> "missing" <|> ("depends_on" "[" ident,+ "]")
+
+syntax (name := rocq_concept) "#rocq_concept" ident str (str)? status str : command
+
+variable {m : Type → Type} [Monad m] [MonadError m] in
+meta def parseStatus : TSyntax `status → m Status 
+| `(status| ported) =>  return .Ported
+| `(status| missing) => return .Missing
+| `(status| depends_on [ $[$deps:ident],* ]) => return .DependsOn (deps.map (·.raw.getId))
+| stx => throwErrorAt stx s!"unsupported status: {stx.raw.getId}"
 
 /-- Track a Rocq concept (feature or sub-feature) that doesn't map to individual
 definitions. The folder is a top-level Rocq source directory keyword (`algebra`,
@@ -175,10 +191,8 @@ under the feature in the HTML report.
 ```
 -/
 @[expose]
-elab "#rocq_concept" folder:ident feature:str sub:(str)? status:ident reason:str : command => do
+elab "#rocq_concept" folder:ident feature:str sub:(str)? status:status reason:str : command => do
   checkRocqFolder folder
-  let statusName := status.getId
-  unless statusName == `ported || statusName == `missing do
-    throwErrorAt status "status must be 'ported' or 'missing', got '{statusName}'"
+  let status ← parseStatus status
   let sub := sub.map (·.getString)
-  modifyEnv (rocqConceptExt.addEntry · (folder.getId.toString, feature.getString, sub, statusName, reason.getString))
+  modifyEnv (rocqConceptExt.addEntry · (folder.getId.toString, feature.getString, sub, status, reason.getString))
