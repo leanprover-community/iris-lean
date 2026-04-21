@@ -19,22 +19,26 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      # uses lean standard action with all default input values
+      # uses lean standard action, pointed at the IrisLean subdirectory
       - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: IrisLean
       - name: Read Rocq commit from revision file
         id: rocq-commit
+        working-directory: IrisLean
         run: |
           sha=$(cat scripts/ROCQ_REVISION)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - name: Cache Rocq definitions
         uses: actions/cache@v4
         with:
-          path: .lake/iris-rocq-cache
+          path: IrisLean/.lake/iris-rocq-cache
           key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
       - name: Generate porting report
+        working-directory: IrisLean
         run: |
-          mkdir -p _site
-          python3 scripts/check_porting.py --format html --lean-rev "${{ github.sha }}" -o _site/index.html
+          mkdir -p ../_site
+          python3 scripts/check_porting.py --format html --lean-rev "${{ github.sha }}" -o ../_site/index.html
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v3
