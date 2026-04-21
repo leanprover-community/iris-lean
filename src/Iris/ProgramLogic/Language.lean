@@ -11,8 +11,6 @@ public import Batteries.Data.List.Basic
 #rocq_ignore LanguageMixin "This feature was implemented differently using typeclasses"
 #rocq_ignore language      "This feature was implemented differently using typeclasses"
 
--- TODO: Ask «Why chose List here? It seems any monoid would do.» for the
---       observations being a `List Obs`.
 -- TODO: Consider renaming `ToVal` typeclass to something better, since
 --       it's not just the `toVal` operation it carries.
 
