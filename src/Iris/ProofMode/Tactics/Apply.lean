@@ -3,17 +3,26 @@ Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser, Michael Sammler
 -/
-import Iris.ProofMode.Patterns.ProofModeTerm
-import Iris.ProofMode.Tactics.Assumption
-import Iris.ProofMode.Tactics.HaveCore
+module
+
+import Iris.BI
+import Iris.ProofMode.Classes
+meta import Iris.ProofMode.Patterns.ProofModeTerm
+meta import Iris.ProofMode.Tactics.Assumption
+public meta import Iris.ProofMode.Tactics.HaveCore
 
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
 
-private theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
+public section
+open BI
+
+theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
     (h1 : P ⊢ Q1)
     [h2 : IntoWand p false Q .out Q1 .in R] : P ∗ □?p Q ⊢ R :=
       (Entails.trans (sep_mono_l h1) (wand_elim' h2.1))
+
+public meta section
+open Lean Elab Tactic Meta Qq Std
 
 /--
 Apply a hypothesis `A` to the `goal` by eliminating the wands recursively
@@ -25,7 +34,7 @@ Apply a hypothesis `A` to the `goal` by eliminating the wands recursively
 ## Returns
 The proof of `hyps ∗ □?p A ⊢ goal`
 -/
-partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e) (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) : ProofModeM Q($e ∗ □?$p $A ⊢ $goal) := do
+private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e) (p : Q(Bool)) (A : Q($prop)) (goal : Q($prop)) : ProofModeM Q($e ∗ □?$p $A ⊢ $goal) := do
   let B ← mkFreshExprMVarQ q($prop)
   -- if `A := ?B -∗ goal`, add `B` as a new subgoal and conclude `goal`
   if let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $A .out $B .in $goal) then
@@ -42,7 +51,7 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
   -- elaborate the proof mode term `pmt` to the hypothesis `out`
-  let ⟨e, hyps', p, out, pf⟩ ← iHave hyps pmt true (mayPostpone := true)
+  let ⟨e, hyps', p, out, pf⟩ ← iHave hyps pmt true
   -- if `□?p out` directly matches goal, behave like `iexact`
   if let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption $p .in $out $goal) then
     -- ensure the context can be discarded

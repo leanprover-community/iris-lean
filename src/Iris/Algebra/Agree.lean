@@ -3,9 +3,12 @@ Copyright (c) 2025 Leo Stefanesco. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Leo Stefanesco, Puming Liu
 -/
+module
 
-import Iris.Algebra.CMRA
-import Iris.Algebra.OFE
+public import Iris.Algebra.CMRA
+public import Iris.Algebra.OFE
+
+@[expose] public section
 
 namespace Iris
 
@@ -303,6 +306,9 @@ theorem Agree.toAgree_included {a b : α} : toAgree a ≼ toAgree b ↔ a ≡ b 
 @[simp]
 theorem Agree.toAgree_included_L [OFE.Leibniz α] {a b : α} :
     toAgree a ≼ toAgree b ↔ a = b := by simp
+
+instance (a : α) : CMRA.CoreId (toAgree a) where
+  core_id := by simp [CMRA.pcore]
 
 instance {x : Agree α} : CMRA.Cancelable x where
   cancelableN {n y z} hval heq := by

@@ -3,12 +3,18 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Markus de Medeiros, Michael Sammler
 -/
-import Iris.BI.Classes
-import Iris.BI.Extensions
-import Iris.BI.BI
-import Iris.Std.Classes
-import Iris.Std.Rewrite
-import Iris.Std.TC
+module
+
+public import Iris.BI.Classes
+public import Iris.BI.Extensions
+public import Iris.BI.BI
+public import Iris.Std.Nat
+public import Iris.Std.Classes
+public import Iris.Std.Rewrite
+public import Iris.Std.TC
+import Iris.Std.RocqPorting
+
+@[expose] public section
 
 namespace Iris.BI
 open Iris.Std BI
@@ -22,6 +28,12 @@ instance entails_antisymm [BI PROP] : Antisymmetric (α := PROP) BiEntails Entai
 
 instance equiv_trans [BI PROP] : Trans (α := PROP) BiEntails BiEntails BiEntails where
   trans h1 h2 := h1.trans h2
+
+instance equiv_entails_trans [BI PROP] : Trans (α := PROP) BiEntails Entails Entails where
+  trans h1 h2 := h1.1.trans h2
+
+instance entails_equiv_trans [BI PROP] : Trans (α := PROP) Entails BiEntails Entails where
+  trans h1 h2 := h1.trans h2.1
 
 /-! # Logic -/
 
@@ -46,8 +58,10 @@ theorem mp [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q → R) (h2 : P ⊢ Q) : P ⊢ 
 theorem imp_elim' [BI PROP] {P Q R : PROP} (h : Q ⊢ P → R) : P ∧ Q ⊢ R :=
   and_symm.trans <| imp_elim h
 
+@[rocq_alias bi.impl_elim_l]
 theorem imp_elim_l [BI PROP] {P Q : PROP} : (P → Q) ∧ P ⊢ Q := imp_elim .rfl
 
+@[rocq_alias bi.impl_elim_r]
 theorem imp_elim_r [BI PROP] {P Q : PROP} : P ∧ (P → Q) ⊢ Q := imp_elim' .rfl
 
 theorem false_elim [BI PROP] {P : PROP} : False ⊢ P := pure_elim' False.elim
@@ -383,6 +397,16 @@ theorem sep_exists_r [BI PROP] {Φ : α → PROP} {Q : PROP} : (∃ a, Φ a) ∗
 
 theorem wand_rfl [BI PROP] {P : PROP} : ⊢ P -∗ P := wand_intro emp_sep.1
 
+@[rocq_alias bi.wand_curry]
+theorem wand_curry [BI PROP] {P Q R: PROP} : (P -∗ Q -∗ R) ⊣⊢ ((P ∗ Q) -∗ R) := by
+  refine ⟨?_, ?_⟩
+  · refine wand_intro' ?_
+    refine sep_mono_l (sep_symm) |>.trans sep_assoc.1 |>.trans ?_
+    exact wand_elim' (wand_elim' .rfl)
+  · refine wand_intro' <| wand_intro' ?_
+    refine sep_assoc.2.trans (sep_mono_l sep_symm) |>.trans ?_
+    exact wand_elim' .rfl
+
 @[rw_mono_rule]
 theorem wandIff_congr [BI PROP] {P P' Q Q' : PROP} (h1 : P ⊣⊢ Q) (h2 : P' ⊣⊢ Q') :
     (P ∗-∗ P') ⊣⊢ (Q ∗-∗ Q') := and_congr (wand_congr h1 h2) (wand_congr h2 h1)
@@ -394,6 +418,12 @@ theorem wandIff_congr_r [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P ∗-∗
   wandIff_congr .rfl h
 
 theorem wandIff_refl [BI PROP] {P : PROP} : ⊢ P ∗-∗ P := and_intro wand_rfl wand_rfl
+
+instance iff_ne [BI PROP] : OFE.NonExpansive₂ (BIBase.iff (PROP := PROP)) :=
+  ⟨fun {_ _ _} h₁ {_ _} h₂ => and_ne.ne (imp_ne.ne h₁ h₂) (imp_ne.ne h₂ h₁)⟩
+
+instance wandIff_ne [BI PROP] : OFE.NonExpansive₂ (wandIff (PROP := PROP)) :=
+  ⟨fun {_ _ _} h₁ {_ _} h₂ => and_ne.ne (wand_ne.ne h₁ h₂) (wand_ne.ne h₂ h₁)⟩
 
 theorem wand_entails [BI PROP] {P Q : PROP} (h : ⊢ P -∗ Q) : P ⊢ Q :=
   emp_sep.2.trans (wand_elim h)
@@ -427,6 +457,9 @@ theorem pure_elim_r [BI PROP] {φ : Prop} {Q R : PROP} (h : φ → Q ⊢ R) : Q 
 
 theorem pure_true [BI PROP] {φ : Prop} (h : φ) : ⌜φ⌝ ⊣⊢ (True : PROP) := eq_true h ▸ .rfl
 
+theorem pure_imp_elim [BI PROP] {φ : Prop} {R : PROP} (h : φ) : (⌜φ⌝ → R) ⊢ R :=
+  (and_intro .rfl (pure_intro h)).trans imp_elim_l
+
 theorem pure_and [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∧ (⌜φ2⌝ : PROP) ⊣⊢ ⌜φ1 ∧ φ2⌝ :=
   ⟨pure_elim φ1 and_elim_l fun h => and_elim_r' <| pure_mono <| And.intro h,
    and_intro (pure_mono And.left) (pure_mono And.right)⟩
@@ -435,20 +468,21 @@ theorem pure_or [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∨ (⌜φ2⌝ : PROP) �
   ⟨or_elim (pure_mono Or.inl) (pure_mono Or.inr),
    pure_elim' (·.elim (or_intro_l' ∘ pure_intro) (or_intro_r' ∘ pure_intro))⟩
 
-theorem pure_imp_2 [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊢ (⌜φ1⌝ → ⌜φ2⌝ : PROP) :=
-  imp_intro <| pure_and.1.trans <| pure_mono (And.elim id)
+#rocq_ignore bi.pure_impl_1 "Proven as pure_imp.1"
+#rocq_ignore bi.pure_impl_2 "Proven as pure_imp.2"
 
-theorem pure_imp [BI PROP] {φ1 φ2 : Prop} : (⌜φ1⌝ → ⌜φ2⌝ : PROP) ⊣⊢ ⌜φ1 → φ2⌝ := by
-  refine ⟨?_, pure_imp_2⟩
+@[rocq_alias bi.pure_impl]
+theorem pure_imp [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊣⊢@{PROP} (⌜φ1⌝ → ⌜φ2⌝)   := by
+  refine ⟨imp_intro <| pure_and.1.trans <| pure_mono (And.elim id), ?_⟩
   by_cases h : φ1
   · exact (mp .rfl (pure_intro h)).trans (pure_mono fun h _ => h)
   · exact pure_intro h.elim
 
-theorem pure_forall_2 [BI PROP] {φ : α → Prop} : ⌜∀ x, φ x⌝ ⊢ ∀ x, (⌜φ x⌝ : PROP) :=
-  forall_intro fun _ => pure_mono (· _)
+#rocq_ignore bi.pure_forall_1 "Proven as pure_forall.1"
 
-theorem pure_forall [BI PROP] {φ : α → Prop} : (∀ x, (⌜φ x⌝ : PROP)) ⊣⊢ ⌜∀ x, φ x⌝ := by
-  refine ⟨?_, pure_forall_2⟩
+@[rocq_alias bi.pure_forall]
+theorem pure_forall [BI PROP] {φ : α → Prop} :  ⌜∀ x, φ x⌝ ⊣⊢@{PROP} (∀ x, ⌜φ x⌝) := by
+  refine ⟨forall_intro fun _ => pure_mono (· _), ?_⟩
   by_cases h : ∃ x, ¬φ x
   · let ⟨x, h⟩ := h
     exact (forall_elim x).trans (pure_mono h.elim)
@@ -652,6 +686,7 @@ instance (priority := default + 10) biaffine_absorbing [BI PROP] [BIAffine PROP]
 theorem affine_affinely [BI PROP] (P : PROP) [Affine P] : <affine> P ⊣⊢ P :=
   ⟨affinely_elim, and_intro affine .rfl⟩
 
+@[rocq_alias bi.True_emp_iff_BiAffine]
 theorem biaffine_iff_true_emp [BI PROP] : BIAffine PROP ↔ (True : PROP) ⊢ emp :=
   ⟨fun _ => affine, fun h => ⟨fun _ => ⟨true_intro.trans h⟩⟩⟩
 
@@ -722,7 +757,7 @@ theorem pure_wand_2 [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊢ (⌜φ1�
   pure_elim' fun a => wand_intro <| absorbing.trans (pure_mono a)
 
 theorem pure_wand [BI PROP] {φ1 φ2 : Prop} : (⌜φ1⌝ -∗ (⌜φ2⌝ : PROP)) ⊣⊢ ⌜φ1 → φ2⌝ := by
-  refine ⟨(imp_intro' ?_).trans pure_imp.1, pure_wand_2⟩
+  refine ⟨(imp_intro' ?_).trans pure_imp.2, pure_wand_2⟩
   exact pure_elim_l fun h => true_sep_2.trans (eq_true h ▸ wand_elim_r)
 
 /-! # Properties of the persistence modality -/
@@ -1548,9 +1583,11 @@ theorem persistent_and_sep_1 [BI PROP] {P Q : PROP} :
   | TCOr.l => persistent_and_affinely_sep_l_1.trans (sep_mono_l affinely_elim)
   | TCOr.r => persistent_and_affinely_sep_r_1.trans (sep_mono_r affinely_elim)
 
+@[rocq_alias bi.persistent_entails_l]
 theorem persistent_entails_r [BI PROP] {P Q : PROP} [Persistent Q] (H : P ⊢ Q) : P ⊢ Q ∗ P :=
   (and_intro H .rfl).trans persistent_and_sep_1
 
+@[rocq_alias bi.persistent_entails_r]
 theorem persistent_entails_l [BI PROP] {P Q : PROP} [Persistent Q] (H : P ⊢ Q) : P ⊢ P ∗ Q :=
   (and_intro .rfl H).trans persistent_and_sep_1
 
@@ -1577,3 +1614,33 @@ theorem bigOp_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} :
 
 theorem bigOp_and_cons [BI PROP] {P : PROP} {Ps : List PROP} :
     [∧] (P :: Ps) ⊣⊢ P ∧ [∧] Ps := bigOp_cons
+
+/-! # Limits -/
+
+@[rocq_alias bi.limit_preserving_entails]
+theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : OFE.NonExpansive Φ]
+    [Ψne : OFE.NonExpansive Ψ] : LimitPreserving (λ x ↦ Φ x ⊢ Ψ x) := by
+  refine .ext (P := λ x ↦ True ⊣⊢ (Φ x → Ψ x)) (@fun x => ?_) ?_
+  · exact ⟨(true_and.2.trans <| imp_elim ·.1), (⟨imp_intro <| true_and.1.trans ·, true_intro⟩)⟩
+  · let f : A -n> PROP := ⟨λ x ↦ iprop(True), inferInstance⟩
+    let g : A -n> PROP := {
+       f x := iprop(Φ x → Ψ x),
+       ne.ne _ {_ _} x := imp_ne.ne (Φne.ne x) (Ψne.ne x)
+    }
+    refine fun c h' => ?_
+    refine equiv_iff.1 ?_
+    refine LimitPreserving.equiv f g _ ?_
+    exact (equiv_iff.mpr <| h' ·)
+
+theorem iter_modal_intro [BI PROP] (M : PROP → PROP) (n : Nat) {P : PROP} (H : ∀ {Q}, Q ⊢ M Q) :
+    P ⊢ n.repeat (fun x => M x) P := by
+  induction n with
+  | zero => simp [Nat.repeat]
+  | succ _ IH => simpa only [Nat.repeat] using IH.trans H
+
+theorem iter_modal_mono [BI PROP] (M : PROP → PROP) (n : Nat) {P Q : PROP}
+    (H : ∀ {P Q}, (P -∗ Q) ⊢ M P -∗ M Q) :
+    (P -∗ Q) ⊢ n.repeat (fun x => M x) P -∗ n.repeat (fun x => M x) Q := by
+  induction n with
+  | zero => simp [Nat.repeat]
+  | succ _ IH => simpa only [Nat.repeat] using IH.trans H

@@ -1,1 +1,3 @@
-import Iris.Instances.UPred.Instance
+module
+
+public import Iris.Instances.UPred.Instance

@@ -1,3 +1,5 @@
-import Iris.Tests.Instances
-import Iris.Tests.Notation
-import Iris.Tests.Tactics
+module
+
+public import Iris.Tests.Instances
+public import Iris.Tests.Notation
+public import Iris.Tests.Tactics

@@ -3,7 +3,11 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
-import Lean.Data.Name
+module
+
+public import Lean.Data.Name
+
+@[expose] public section
 
 namespace Iris.ProofMode
 open Lean
@@ -14,14 +18,10 @@ syntax binderIdent : icasesPat
 syntax "-" : icasesPat
 syntax "⟨" icasesPatAlts,* "⟩" : icasesPat
 syntax "(" icasesPatAlts ")" : icasesPat
-syntax "⌜" binderIdent "⌝" : icasesPat
-syntax "□" icasesPat : icasesPat
+syntax "%" binderIdent : icasesPat
+syntax "#" icasesPat : icasesPat
 syntax "∗" icasesPat : icasesPat
 syntax ">" icasesPat : icasesPat
-
-macro "%" pat:binderIdent : icasesPat => `(icasesPat| ⌜$pat⌝)
-macro "#" pat:icasesPat : icasesPat => `(icasesPat| □ $pat)
-macro "*" pat:icasesPat : icasesPat => `(icasesPat| ∗ $pat)
 
 -- TODO: attach syntax to iCasesPat such that one can use withRef to
 -- associate the errors with the right part of the syntax
@@ -45,8 +45,8 @@ where
   | `(icasesPat| $name:binderIdent) => some <| .one name
   | `(icasesPat| -) => some <| .clear
   | `(icasesPat| ⟨$[$args],*⟩) => args.mapM goAlts |>.map (.conjunction ·.toList)
-  | `(icasesPat| ⌜$pat⌝) => some <| .pure pat
-  | `(icasesPat| □$pat) => go pat |>.map .intuitionistic
+  | `(icasesPat| %$pat:binderIdent) => some <| .pure pat
+  | `(icasesPat| #$pat) => go pat |>.map .intuitionistic
   | `(icasesPat| ∗$pat) => go pat |>.map .spatial
   | `(icasesPat| >$pat) => go pat |>.map .mod
   | `(icasesPat| ($pat)) => goAlts pat

@@ -3,9 +3,10 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Shreyas Srinivas, Mario Carneiro
 -/
+module
 
-import Iris.Algebra.CMRA
-import Iris.Algebra.OFE
+public import Iris.Algebra.CMRA
+public import Iris.Algebra.OFE
 
 /-!
 # The Frac CMRA
@@ -13,6 +14,8 @@ import Iris.Algebra.OFE
 This CMRA captures the notion of fractional ownership of another resource.
 Traditionally the underlying set is assumed to be the half open interval $$(0,1]$$.
 -/
+
+@[expose] public section
 
 namespace Iris
 
@@ -110,7 +113,7 @@ instance [Fraction α] [CMRA α] {a : Frac α} (Hw : Whole a.1) : Exclusive a wh
 instance [Fraction α] {a : Frac α} : CMRA.Cancelable a where
   cancelableN {n x y} _ (H : a • x = a • y) := by
     refine Dist.of_eq <| LeibnizO.ext <| add_left_cancel (a := a.car) <| ?_
-    simpa [CMRA.op, Frac] using H
+    exact LeibnizO.eqv_inj H
 
 instance [Fraction α] {a : Frac α} : CMRA.IdFree a where
   id_free0_r b _ H := by

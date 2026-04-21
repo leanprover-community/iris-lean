@@ -3,11 +3,12 @@ Copyright (c) 2025 Alok Singh. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alok Singh, Markus de Medeiros
 -/
+module
 
-import Iris.Std.PartialMap
-import Iris.Std.Infinite
-import Std.Data.TreeMap
-import Std.Data.ExtTreeMap
+public import Iris.Std.PartialMap
+public import Iris.Std.Infinite
+public import Std.Data.TreeMap
+public import Std.Data.ExtTreeMap
 
 /-!
 # Heap Instances for Standard Types
@@ -23,6 +24,8 @@ instances for types from the Lean standard library.
 - `TreeMap`: `PartialMap`
 - `ExtTreeMap`: `PartialMap`
 -/
+
+@[expose] public section
 
 namespace Iris.Std
 
@@ -465,6 +468,20 @@ instance : LawfulPartialMap (ExtTreeMap K · compare) K where
   get?_delete_ne := by simp [Iris.Std.get?, Iris.Std.delete]; grind
   get?_bindAlter := by simp [Iris.Std.get?, Iris.Std.bindAlter]
   get?_merge := getElem?_mergeWith'
+
+instance : FiniteMap (ExtTreeMap K · compare) K where
+  toList t := t.toList
+
+instance : LawfulFiniteMap (ExtTreeMap K · compare) K where
+  toList_empty := rfl
+  toList_noDupKeys {V m} := by
+    suffices h : List.Pairwise (fun a b => ¬compare a b = eq) (m.toList.map (·.1)) by
+      refine h.imp (· <| LawfulEqOrd.compare_eq_iff_eq.mpr ·)
+    exact List.pairwise_map.mpr distinct_keys_toList
+  toList_get {_ m _ _} := m.mem_toList_iff_getElem?_eq_some
+
+instance : ExtensionalPartialMap (ExtTreeMap K · compare) K where
+  equiv_iff_eq {V m₁ m₂} := by rw [ExtTreeMap.ext_getElem?_iff]; rfl
 
 end HeapInstance
 

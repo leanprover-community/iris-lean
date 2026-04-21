@@ -3,9 +3,14 @@ Copyright (c) 2026 Remy Seassau. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 -/
+module
 
-import Iris.Std.Positives
-import Iris.Std.Classes
+public import Iris.Std.Positives
+public import Iris.Std.Classes
+public import Iris.Std.GenSets
+import Iris.Std.List
+
+@[expose] public section
 
 /- This file implements an abstract type [CoPset] of (possibly infinite) sets
 of positive binary natural numbers ([Pos]). This type supports the
@@ -68,7 +73,7 @@ theorem node'_wf {b l r} : coPsetWf l -> coPsetWf r -> coPsetWf (CoPsetRaw.node'
 open CoPsetRaw
 
 /-- The membership test. -/
-def CoPsetRaw.ElemOf : Pos → CoPsetRaw → Bool
+@[simp] def CoPsetRaw.ElemOf : Pos → CoPsetRaw → Bool
   | _, leaf b => b
   | .xH, node b _ _ => b
   | p~0, node _ l _ => CoPsetRaw.ElemOf p l
@@ -83,13 +88,13 @@ theorem elem_of_node b l r (p : Pos) :
   simp [node', CoPsetRaw.ElemOf]
 
 /-- Singleton. -/
-def CoPsetRaw.Singleton : Pos → CoPsetRaw
+@[simp] def CoPsetRaw.Singleton : Pos → CoPsetRaw
   | .xH => node true (leaf false) (leaf false)
   | p~0 => node' false (Singleton p) (leaf false)
   | p~1 => node' false (leaf false) (Singleton p)
 
 /-- Union -/
-def CoPsetRaw.Union : CoPsetRaw → CoPsetRaw → CoPsetRaw
+@[simp] def CoPsetRaw.Union : CoPsetRaw → CoPsetRaw → CoPsetRaw
   | leaf false, t => t
   | t, leaf false => t
   | leaf true, _ => leaf true
@@ -99,7 +104,7 @@ def CoPsetRaw.Union : CoPsetRaw → CoPsetRaw → CoPsetRaw
 instance : Union CoPsetRaw where union := CoPsetRaw.Union
 
 /-- Intersection -/
-def CoPsetRaw.Intersection : CoPsetRaw → CoPsetRaw → CoPsetRaw
+@[simp] def CoPsetRaw.Intersection : CoPsetRaw → CoPsetRaw → CoPsetRaw
   | leaf true, t => t
   | t, leaf true => t
   | leaf false, _ => leaf false
@@ -109,7 +114,7 @@ def CoPsetRaw.Intersection : CoPsetRaw → CoPsetRaw → CoPsetRaw
 instance : Inter CoPsetRaw where inter := CoPsetRaw.Intersection
 
 /-- Complement -/
-def CoPsetRaw.Complement : CoPsetRaw → CoPsetRaw
+@[simp] def CoPsetRaw.Complement : CoPsetRaw → CoPsetRaw
   | leaf b => leaf (!b)
   | node b l r => node' (!b) (Complement l) (Complement r)
 
@@ -166,7 +171,48 @@ instance : Membership Pos CoPset where mem E p := p ∈ E.tree
 
 namespace CoPset
 
+/-- Helper: if a well-formed tree has uniform membership, it must be a leaf.
+    Corresponds to `coPLeaf_wf` in Rocq Iris. -/
+theorem coPsetLeaf_wf {t : CoPsetRaw} {b : Bool} (Hwf : coPsetWf t = true)
+    (Hall : ∀ p, ElemOf p t = b) : t = .leaf b := by
+  cases t with
+  | leaf b' => exact congrArg _ (Hall .xH)
+  | node b' l r =>
+    suffices Hwf : (coPsetWf (node b (leaf b) (leaf b))) by cases b <;> simp [coPsetWf] at Hwf
+    rw [← Hwf]
+    congr
+    · exact Hall .xH |>.symm
+    · exact coPsetLeaf_wf (node_wf_l Hwf) (Hall <| .xO ·) |>.symm
+    · exact coPsetLeaf_wf (node_wf_r Hwf) (Hall <| .xI ·) |>.symm
+
+/-- Two CoPsetRaw trees are equal if they have the same membership function
+    and both are well-formed. -/
+theorem coPsetRaw_eq {t1 t2 : CoPsetRaw} (Ht : ∀ p, ElemOf p t1 = ElemOf p t2)
+    (Hwf1 : coPsetWf t1 = true) (Hwf2 : coPsetWf t2 = true) : t1 = t2 := by
+  match t1, t2 with
+  | .leaf b1, .leaf b2 => congr 1; exact Ht .xH
+  | .leaf b1, .node b2 l2 r2 =>
+    simp only [ElemOf] at Ht
+    exact coPsetLeaf_wf Hwf2 (fun p => .symm (Ht p)) |>.symm
+  | .node b1 l1 r1, .leaf b2 =>
+    simp only [ElemOf] at Ht
+    exact (coPsetLeaf_wf Hwf1 Ht)
+  | .node b1 l1 r1, .node b2 l2 r2 =>
+    congr
+    · exact Ht .xH
+    · exact coPsetRaw_eq (Ht <| .xO ·) (node_wf_l Hwf1) (node_wf_l Hwf2)
+    · exact coPsetRaw_eq (Ht <| .xI ·) (node_wf_r Hwf1) (node_wf_r Hwf2)
+
+instance : Membership Pos CoPset where mem E p := p ∈ E.tree
+
 /-- All operations are refined at the level of [CoPset] -/
+
+@[ext]
+theorem ext {X Y : CoPset} (H : ∀ p, p ∈ X <-> p ∈ Y) : X = Y := by
+  rcases X with ⟨X, xwf⟩; rcases Y with ⟨Y, ywf⟩
+  simp only [Membership.mem, Bool.coe_iff_coe] at H
+  congr 1
+  exact coPsetRaw_eq H xwf ywf
 
 def empty : CoPset := ⟨CoPsetRaw.leaf false, rfl⟩
 
@@ -174,7 +220,12 @@ instance : EmptyCollection CoPset where emptyCollection := CoPset.empty
 
 def full : CoPset := ⟨CoPsetRaw.leaf true, rfl⟩
 
-def singleton (p : Pos) : CoPset := ⟨CoPsetRaw.Singleton p, coPsetSingleton_wf p⟩
+instance : Iris.Std.Top CoPset where top := CoPset.full
+
+@[simp] def singleton (p : Pos) : CoPset := ⟨CoPsetRaw.Singleton p, coPsetSingleton_wf p⟩
+
+instance : Singleton Pos CoPset where
+  singleton := CoPset.singleton
 
 def union (X Y : CoPset) : CoPset := ⟨CoPsetRaw.Union X.tree Y.tree, coPsetUnion_wf _ _ X.wf Y.wf⟩
 
@@ -197,7 +248,37 @@ instance : HasSubset CoPset where
 instance : SDiff CoPset where
   sdiff := CoPset.diff
 
-theorem in_inter p (X Y : CoPset) : p ∈ X ∩ Y <-> p ∈ X ∧ p ∈ Y := by
+theorem mem_empty {p : Pos} : p ∉ (∅ : CoPset) := by
+  simp only [Membership.mem, EmptyCollection.emptyCollection, CoPset.empty]
+  cases p <;> simp [CoPsetRaw.ElemOf]
+
+theorem mem_full {p : Pos} : p ∈ full := by
+  simp only [Membership.mem, full, CoPsetRaw.ElemOf]
+
+theorem in_singleton {p q : Pos} : p ∈ ({q} : CoPset) ↔ p = q := by
+  refine ⟨fun h => ?_, fun h => ?_⟩
+  · simp only [Singleton.singleton, Membership.mem] at h
+    induction q generalizing p with
+    | xH => cases p <;> simp at h <;> rfl
+    | xO q' IH =>
+      cases p with
+      | xH => simp [elem_of_node] at h
+      | xO p' => simp [elem_of_node] at h;  rw [IH h]
+      | xI p' => simp [elem_of_node] at h
+    | xI q' IH =>
+      cases p with
+      | xH => simp [elem_of_node] at h
+      | xO p' => simp [elem_of_node] at h
+      | xI p' => simp [elem_of_node] at h;  rw [IH h]
+  · subst h
+    simp only [Singleton.singleton, Membership.mem]
+    induction p with
+    | xH => simp
+    | xO p' IH => simpa [elem_of_node]
+    | xI p' IH => simpa [elem_of_node]
+
+
+theorem in_inter {p : Pos} {X Y : CoPset} : p ∈ X ∩ Y <-> p ∈ X ∧ p ∈ Y := by
   simp only [Inter.inter, inter, Membership.mem]
   constructor
   · rcases X with ⟨X, xwf⟩; rcases Y with ⟨Y, ywf⟩; dsimp
@@ -249,7 +330,7 @@ theorem in_complement {X : CoPset} : p ∈ complement X <-> p ∉ X := by
 
 theorem in_diff {p} {X Y : CoPset} : p ∈ X \ Y <-> p ∈ X ∧ p ∉ Y := by
   refine ⟨fun Hnin => ?_, fun ⟨Hx, Hy⟩ => ?_⟩
-  · obtain ⟨Hx, Hy⟩ := in_inter p X (complement Y) |>.mp Hnin
+  · obtain ⟨Hx, Hy⟩ := in_inter |>.mp Hnin
     exact ⟨Hx, in_complement.mp Hy⟩
   · simpa only [SDiff.sdiff, CoPset.diff, in_inter] using ⟨Hx, in_complement.mpr Hy⟩
 
@@ -313,9 +394,78 @@ def CoPsetRaw.pickRaw : CoPsetRaw → Option Pos
     | some i => some (i~0)
     | none => Option.map (λ i => i~1) (pickRaw r)
 
-def CoPset.pick (X : CoPset) : Pos :=
+def pick (X : CoPset) : Pos :=
   (CoPsetRaw.pickRaw X.tree).getD Pos.P1
 
+theorem CoPsetRaw.pickRaw_elem_of (t : CoPsetRaw) (i : Pos) :
+    CoPsetRaw.pickRaw t = some i → CoPsetRaw.ElemOf i t := by
+  induction t generalizing i with
+  | leaf b =>
+    cases b <;> simp [CoPsetRaw.pickRaw, CoPsetRaw.ElemOf]
+  | node b l r ihl ihr =>
+    cases b
+    · simp only [pickRaw]
+      intro h
+      split at h
+      · simp only [Option.some.injEq] at h
+        subst h
+        simp only [ElemOf]
+        apply ihl
+        assumption
+      · simp only [Option.map] at h
+        split at h
+        · simp only [Option.some.injEq] at h
+          subst h
+          simp only [ElemOf]
+          apply ihr
+          assumption
+        · simp at h
+    · simp only [pickRaw, Option.some.injEq]
+      intro h
+      subst h
+      rfl
+
+theorem CoPsetRaw.pickRaw_none (t : CoPsetRaw) (i : Pos) :
+    CoPsetRaw.pickRaw t = none → ¬(CoPsetRaw.ElemOf i t) := by
+  induction t generalizing i with
+  | leaf b =>
+    cases b <;> simp [CoPsetRaw.pickRaw, CoPsetRaw.ElemOf]
+  | node b l r ihl ihr =>
+    cases b
+    · simp only [CoPsetRaw.pickRaw, Bool.not_eq_true]
+      intro h
+      split at h
+      · simp at h
+      · cases i with
+        | xH => simp [CoPsetRaw.ElemOf]
+        | xO p =>
+          simp only [ElemOf]
+          rw [Bool.eq_false_iff]
+          apply ihl; assumption
+        | xI p =>
+          simp only [ElemOf]
+          rw [Bool.eq_false_iff]
+          apply ihr
+          simp only [Option.map] at h
+          split at h
+          · simp at h
+          · assumption
+    · simp [CoPsetRaw.pickRaw]
+
+theorem mem_pick (X : CoPset) : X ≠ ∅ → pick X ∈ X := by
+  cases X with | mk tree wf =>
+  intro hne
+  simp only [Membership.mem, pick]
+  cases h : CoPsetRaw.pickRaw tree with
+  | some i => exact CoPsetRaw.pickRaw_elem_of tree i h
+  | none =>
+    exfalso
+    apply hne
+    ext p
+    simp only [Membership.mem, EmptyCollection.emptyCollection, empty, ElemOf, Bool.false_eq_true,
+      iff_false, Bool.not_eq_true]
+    rw [Bool.eq_false_iff]
+    exact CoPsetRaw.pickRaw_none tree p h
 
 -- Inverse suffix closure
 
@@ -356,6 +506,20 @@ theorem elem_suffixes {p q} : p ∈ suffixes q <-> ∃ q', p = q' ++ q := by
     induction q <;>
     simp_all [CoPsetRaw.suffixesRaw, elem_of_node, HAppend.hAppend, Pos.app, CoPsetRaw.ElemOf]
 
+theorem suffixesRaw_not_finite (p : Pos) : ¬CoPsetRaw.isFinite (CoPsetRaw.suffixesRaw p) := by
+  induction p with
+  | xH => simp [CoPsetRaw.suffixesRaw, CoPsetRaw.isFinite]
+  | xO p ih | xI p ih =>
+    simp only [CoPsetRaw.suffixesRaw, node']
+    split
+    · simp [CoPsetRaw.isFinite]
+    · simp [show CoPsetRaw.suffixesRaw p = leaf false by assumption, CoPsetRaw.isFinite] at ih
+    · simp [CoPsetRaw.isFinite, ih]
+
+theorem suffixes_not_finite (p : Pos) : ¬isFinite (suffixes p) := by
+  simp only [isFinite, suffixes]
+  exact suffixesRaw_not_finite p
+
 /-- Splitting a set -/
 
 /- Every infinite [X : CoPset] can be split into two disjoint parts, which are
@@ -390,10 +554,109 @@ def split (X : CoPset) : CoPset × CoPset := (splitLeft X, splitRight X)
 
 end CoPset
 
-instance : Iris.Std.Disjoint CoPset where
-  disjoint s t := ∀ p, p ∈ s -> p ∈ t -> False
+section Instances
 
-@[symm]
-theorem disj_symm (E1 E2 : CoPset) :
-  E1 ## E2 -> E2 ## E1 := by
-  exact fun Hdisj p HE1 HE2 => Hdisj p HE2 HE1
+open Iris Std CoPset
+
+instance : Set CoPset Pos where
+
+instance : LawfulSet CoPset Pos where
+  ext h := CoPset.ext h
+  mem_empty := CoPset.mem_empty
+  mem_singleton := CoPset.in_singleton
+  mem_union := CoPset.in_union
+  mem_inter := CoPset.in_inter
+  mem_diff := CoPset.in_diff
+
+instance : DecidableEq CoPset := by
+  rintro ⟨X⟩ ⟨Y⟩
+  rw [CoPset.mk.injEq]
+  infer_instance
+
+end Instances
+
+section Set
+
+open Iris Std CoPset
+
+def set_to_coPset {S : Type _} [LawfulFiniteSet S Pos] (X : S) : CoPset :=
+  LawfulSet.ofList (toList X)
+
+theorem mem_set_to_coPset {S : Type _} [LawfulFiniteSet S Pos] (X : S) i
+  : i ∈ set_to_coPset X ↔ i ∈ X := by
+  simp only [set_to_coPset]
+  rw [←LawfulSet.mem_ofList, ←mem_toList]
+  rfl
+
+theorem isFinite_setFinite {X : CoPset} : isFinite X ↔ LawfulSet.setFinite X := by
+  cases X with | mk tx wx =>
+  simp only [isFinite, LawfulSet.setFinite]
+  induction tx with
+  | leaf b =>
+    simp only [CoPsetRaw.isFinite, Bool.not_eq_eq_eq_not, Bool.not_true, Membership.mem, ElemOf]
+    constructor
+    · rintro ⟨⟩; exists []; intro _ H; cases H
+    · rintro ⟨l, Hl⟩
+      cases b
+      · rfl
+      · simp at Hl
+        exact ((List.fresh l).choose_spec (Hl (List.fresh l).choose)).elim
+  | node b l r IHl IHr =>
+    simp only [CoPsetRaw.isFinite, Bool.and_eq_true]; constructor
+    · intro ⟨H1, H2⟩
+      obtain ⟨l1, Hl1⟩ := (IHl (node_wf_l wx)).mp H1
+      obtain ⟨l2, Hl2⟩ := (IHr (node_wf_r wx)).mp H2
+      refine ⟨(if b then [Pos.xH] else []) ++ l1.map (·~0) ++ l2.map (·~1), fun x Hx => ?_⟩
+      simp only [List.mem_append, List.mem_map]; simp only [Membership.mem] at Hx Hl1 Hl2
+      cases x with
+      | xH => cases b; simp [CoPsetRaw.ElemOf] at Hx; left; simp
+      | xO p => simp only [ElemOf] at Hx; left; right; exact ⟨_, Hl1 _ Hx, rfl⟩
+      | xI p => simp only [ElemOf] at Hx; right; exact ⟨_, Hl2 _ Hx, rfl⟩
+    · rintro ⟨k, Hk⟩
+      rw [IHl (node_wf_l wx), IHr (node_wf_r wx)]
+      simp only [Membership.mem] at Hk ⊢
+      constructor
+      · exists k.filterMap (fun x => match x with | Pos.xO q => some q | _ => none)
+        intro p Hp
+        have Hmem : (p~0) ∈ k := Hk (p~0) Hp
+        clear Hk IHl IHr Hp
+        induction k with
+        | nil => cases Hmem
+        | cons x xs IH =>
+          simp only [List.filterMap]
+          cases Hmem with
+          | head => apply List.mem_cons.mpr; left; rfl
+          | tail _ Hmem' =>
+            cases x with
+            | xH => exact IH Hmem'
+            | xO q => right; exact IH Hmem'
+            | xI q => exact IH Hmem'
+      · exists k.filterMap (fun x => match x with | Pos.xI q => some q | _ => none)
+        intro p Hp
+        have Hmem : (p~1) ∈ k := Hk (p~1) Hp
+        clear Hk IHl IHr Hp
+        induction k with
+        | nil => cases Hmem
+        | cons x xs IH =>
+          simp only [List.filterMap]
+          cases Hmem with
+          | head => apply List.mem_cons.mpr; left; rfl
+          | tail _ Hmem' =>
+            cases x with
+            | xH => exact IH Hmem'
+            | xO q => exact IH Hmem'
+            | xI q => right; exact IH Hmem'
+
+theorem not_isFinite_setInfinite {X : CoPset} : ¬isFinite X ↔ LawfulSet.setInfinite X := by
+  rw [isFinite_setFinite, LawfulSet.not_finite_infinite]
+
+theorem set_to_coPset_finite {S : Type _} [LawfulFiniteSet S Pos] (X : S)
+  : isFinite (set_to_coPset X) := by
+    simp only [set_to_coPset]
+    induction (toList X) with
+    | nil => simp only [LawfulSet.ofList_nil, isFinite_setFinite]; exact LawfulSet.empty_finite
+    | cons x xs IH =>
+      simp only [LawfulSet.ofList_cons, LawfulSet.insert_union, isFinite_setFinite]
+      exact LawfulSet.union_finite LawfulSet.singleton_finite (isFinite_setFinite.mp IH)
+
+end Set

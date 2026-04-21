@@ -3,9 +3,13 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Zongyuan Liu
 -/
-import Iris.ProofMode.Patterns.ProofModeTerm
-import Iris.ProofMode.Tactics.Basic
-import Iris.ProofMode.Tactics.Specialize
+module
+
+import Iris.BI
+import Iris.ProofMode.Classes
+public meta import Iris.ProofMode.Patterns.ProofModeTerm
+public meta import Iris.ProofMode.Tactics.Basic
+public meta import Iris.ProofMode.Tactics.Specialize
 
 /- This file contains the `iHave` function for asserting a ProofModeTerm.
    It is separate from the implementation of `ihave` in `Have.lean` since
@@ -13,12 +17,18 @@ import Iris.ProofMode.Tactics.Specialize
    depends on `iHave` in this file.
 -/
 
-namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
 
-private theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
+namespace Iris.ProofMode
+
+public section
+open BI
+
+theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ P] (h : φ) : Q ⊢ Q ∗ □ P :=
   sep_emp.2.trans (sep_mono_r $ intuitionistically_emp.2.trans (intuitionistically_mono (asEmpValid_1 _ h)))
+
+public meta section
+open Lean Elab Tactic Meta Qq Std
 
 /--
 Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.
@@ -27,7 +37,6 @@ Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.
 - `hyps`: Current proof mode hypothesis context
 - `keep`: If `true` and `tm` is a persistent Iris hypothesis, keep it in the context;
   if `false`, remove it
-- `mayPostpone`: If `true`, allow postponing elaboration of metavariables in `tm`
 
 ## Returns
 A tuple containing:
@@ -38,7 +47,7 @@ A tuple containing:
 - `pf`: Proof of `hyps ⊢ hyps' ∗ □?p out`
 -/
 private def iHaveCore {e} (hyps : @Hyps u prop bi e)
-  (tm : Term) (keep : Bool) (mayPostpone : Bool) :
+  (tm : Term) (keep : Bool) :
   ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
   if let some uniq ← try? <| hyps.findWithInfo ⟨tm⟩ then
     -- assertion from the Iris context
@@ -46,7 +55,7 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     return ⟨_, hyps, p, out', q($pf.1)⟩
   else
     -- lean hypothesis
-    let val ← instantiateMVars <| ← elabTerm tm none mayPostpone
+    let val ← instantiateMVars <| ← elabTerm tm none (mayPostpone := true)
     let ty ← instantiateMVars <| ← inferType val
 
     let ⟨newMVars, _, _⟩ ← forallMetaTelescope ty
@@ -65,20 +74,22 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     for mvar in newMVarIds ++ otherMVarIds do
       addMVarGoal mvar
 
-    -- TODO: can we do this without re typechecking?
-    let ⟨0, ty, val⟩ ← inferTypeQ val | throwError m!"{val} is not a Prop"
+    let ty ← instantiateMVars <| ← inferType val
+    if ! (← Meta.isProp ty) then throwError m!"ihave: {val} is not a Prop"
+    have ty : Q(Prop) := ty
+    have val : Q($ty) := val
 
     let hyp ← mkFreshExprMVarQ q($prop)
     let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty $hyp)
-      | throwError m!"{ty} is not an entailment"
+      | throwError m!"ihave: {ty} is not an entailment"
 
     return ⟨_, hyps, q(true), hyp, q(have_asEmpValid $val)⟩
 
 def iHave {e} (hyps : @Hyps u prop bi e)
-  (pmt : PMTerm) (keep : Bool) (try_dup_context : Bool := false) (mayPostpone := false) :
+  (pmt : PMTerm) (keep : Bool) (try_dup_context : Bool := false) :
   ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
   -- assert `term` as hypothesis `A`
-  let ⟨_, hyps', p, A, pf⟩ ← iHaveCore hyps pmt.term keep mayPostpone
+  let ⟨_, hyps', p, A, pf⟩ ← iHaveCore hyps pmt.term keep
   -- specialize `A` with `spats`
   let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p A pmt.spats (try_dup_context := try_dup_context)
   return ⟨_, hyps'', pb, B, q($(pf).trans $pf')⟩

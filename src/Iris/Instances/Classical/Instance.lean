@@ -3,9 +3,13 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
-import Iris.BI
-import Iris.Instances.Data
-import Iris.Std.Equivalence
+module
+
+public import Iris.BI
+public import Iris.Instances.Data
+public import Iris.Std.Equivalence
+
+@[expose] public section
 
 namespace Iris.Instances.Classical
 open Iris.BI Iris.Instances.Data Std

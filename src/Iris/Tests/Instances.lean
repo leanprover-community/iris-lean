@@ -3,8 +3,12 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-import Iris.BI
-import Iris.ProofMode
+module
+
+public import Iris.BI
+public import Iris.ProofMode
+
+@[expose] public section
 
 namespace Iris.Tests
 open BI ProofMode
@@ -49,3 +53,40 @@ variable [BI PROP] (P1 P2 : Nat → PROP)
 #guard_msgs in #ipm_synth (IntoWand false false iprop(P1 _ -∗ P2 1) .in (P1 1) .out _)
 
 end mvars
+
+section trace
+
+variable [BI PROP] (P1 : PROP)
+
+/--
+info: solution: FromAssumption false InOut.out P1 P1, new goals: []
+---
+trace: [Meta.synthInstance] ✅️ IPM: FromAssumption false InOut.out P1 P1
+  [Meta.synthInstance] ✅️ new goal FromAssumption false InOut.out ?_ P1 => FromAssumption false InOut.out P1 P1
+    [Meta.synthInstance.instances] #[@fromAssumption_exact]
+    [Meta.synthInstance] ✅️ apply @fromAssumption_exact to FromAssumption false InOut.out ?_ P1
+      [Meta.synthInstance.tryResolve] ✅️ FromAssumption false InOut.out P1 P1 ≟ FromAssumption false InOut.out P1 P1
+      [Meta.synthInstance] ✅️ switch to normal synthInstance
+        [Meta.synthInstance] ✅️ BI PROP
+          [Meta.synthInstance] ✅️ new goal BI PROP
+            [Meta.synthInstance.instances] #[@Sbi.toBI, inst✝]
+          [Meta.synthInstance.apply] ✅️ apply inst✝ to BI PROP
+            [Meta.synthInstance.tryResolve] ✅️ BI PROP ≟ BI PROP
+            [Meta.synthInstance.answer] ✅️ BI PROP
+          [Meta.synthInstance] result inst✝
+  [Meta.synthInstance] result fromAssumption_exact false InOut.out P1
+---
+trace: [Meta.synthInstance] ✅️ BI PROP
+  [Meta.synthInstance] ✅️ new goal BI PROP
+    [Meta.synthInstance.instances] #[@Sbi.toBI, inst✝]
+  [Meta.synthInstance.apply] ✅️ apply inst✝ to BI PROP
+    [Meta.synthInstance.tryResolve] ✅️ BI PROP ≟ BI PROP
+    [Meta.synthInstance.answer] ✅️ BI PROP
+  [Meta.synthInstance] result inst✝
+-/
+#guard_msgs in
+set_option trace.Meta.synthInstance true in
+set_option pp.mvars false in
+#ipm_synth (FromAssumption false .out _ P1)
+
+end trace

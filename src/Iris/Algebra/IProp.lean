@@ -3,13 +3,16 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
+module
 
-import Iris.Algebra.CMRA
-import Iris.Algebra.OFE
-import Iris.Algebra.UPred
-import Iris.Algebra.GenMap
-import Iris.Algebra.COFESolver
-import Init.Data.Vector
+public import Iris.Algebra.CMRA
+public import Iris.Algebra.OFE
+public import Iris.Algebra.UPred
+public import Iris.Algebra.GenMap
+public import Iris.Algebra.COFESolver
+public import Init.Data.Vector
+
+@[expose] public section
 
 namespace Iris
 
@@ -28,7 +31,7 @@ def BundledGFunctors.set (GF : BundledGFunctors) (i : Nat) (FB : Σ F, RFunctorC
 abbrev GName := Nat
 
 abbrev IResF (GF : BundledGFunctors) : OFunctorPre :=
-  DiscreteFunOF (fun i => GenMapOF GName (GF i).fst)
+  DiscreteFunOF (fun i => GenMapOF (GF i).fst)
 
 instance (GF : BundledGFunctors) (i : GName) : RFunctorContractive ((GF i).fst) := (GF i).snd
 
@@ -40,10 +43,10 @@ def IPre : Type _ := OFunctor.Fix (UPredOF (IResF GF))
 
 instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
-def IResUR : Type := (i : GType) → GenMap Nat (GF i |>.fst (IPre GF) (IPre GF))
+def IResUR : Type := (i : GType) → GenMap (GF i |>.fst (IPre GF) (IPre GF))
 
 instance : UCMRA (IResUR GF) :=
-  ucmraDiscreteFunO (β := fun (i : GType) => GenMap GName (GF i |>.fst (IPre GF) (IPre GF)))
+  ucmraDiscreteFunO (β := fun (i : GType) => GenMap (GF i |>.fst (IPre GF) (IPre GF)))
 
 abbrev IProp := UPred (IResUR GF)
 

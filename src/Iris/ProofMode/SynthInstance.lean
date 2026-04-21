@@ -3,8 +3,12 @@ Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
-import Qq
-import Iris.BI
+module
+
+public import Qq
+public import Iris.BI
+
+public meta section
 
 /-
 This file implements a custom typeclass synthesis algorithm that is used for the proof mode typeclasses.
@@ -70,26 +74,29 @@ initialize registerBuiltinAttribute {
 }
 
 
-private partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
+partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
   withIncRecDepth do
     let backtrackSet := ipmBacktrackExt.getState (← getEnv)
     let mvarType  ← inferType mvar
     let mvarType  ← instantiateMVars mvarType
-    if !(ipmClassesExt.getState (← getEnv)).contains mvarType.getAppFn.constName then
-      return ← withTraceNode `Meta.synthInstance (return m!"{exceptOptionEmoji ·} switch to normal synthInstance") do
+    let bodyConstName ← forallTelescopeReducing mvarType fun _ typeBody => do
+      let typeBody ← whnf typeBody
+      return typeBody.getAppFn.constName
+    if !(ipmClassesExt.getState (← getEnv)).contains bodyConstName then
+      return ← withTraceNode `Meta.synthInstance (λ _ => return m!"switch to normal synthInstance") do
         let some e ← synthInstance? mvarType | return none
         mvar.mvarId!.assign e
         return some ()
 
     let mctx0 ← getMCtx
-    withTraceNode `Meta.synthInstance (return m!"{exceptOptionEmoji ·} new goal {MessageData.withMCtx mctx0 m!"{mvarType}"} => {mvarType}") do
+    withTraceNode `Meta.synthInstance (λ _ => return m!"new goal {MessageData.withMCtx mctx0 m!"{mvarType}"} => {mvarType}") do
     let instances ← SynthInstance.getInstances mvarType
     let mctx      ← getMCtx
     if instances.isEmpty then
       return none
     for inst in instances.reverse do
       let (res, match?) ← withTraceNode `Meta.synthInstance
-        (λ r => withMCtx mctx do return MessageData.withMCtx mctx m!"{exceptOptionEmoji (r.map (·.1))} apply {inst.val} to {← instantiateMVars (← inferType mvar)}") do
+        (λ _ => withMCtx mctx do return MessageData.withMCtx mctx m!"apply {inst.val} to {← instantiateMVars (← inferType mvar)}") do
         setMCtx mctx
         let some (mctx', subgoals) ← withAssignableSyntheticOpaque (SynthInstance.tryResolve mvar inst) | return (none, false)
         setMCtx mctx'
@@ -103,7 +110,7 @@ private partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) :=
         return res
     return none
 
-private def synthInstanceMain (type : Expr) (_maxResultSize : Nat) : MetaM (Option Expr) :=
+def synthInstanceMain (type : Expr) (_maxResultSize : Nat) : MetaM (Option Expr) :=
   withCurrHeartbeats do
      let mvar ← mkFreshExprMVar type
      tryCatchRuntimeEx (do
@@ -115,11 +122,11 @@ private def synthInstanceMain (type : Expr) (_maxResultSize : Nat) : MetaM (Opti
          else
            throw ex
 
-private def synthInstanceCore? (type : Expr) (maxResultSize? : Option Nat := none) : MetaM (Option Expr) := do
+def synthInstanceCore? (type : Expr) (maxResultSize? : Option Nat := none) : MetaM (Option Expr) := do
   let opts ← getOptions
   let maxResultSize := maxResultSize?.getD (synthInstance.maxSize.get opts)
   withTraceNode `Meta.synthInstance
-    (return m!"IPM: {exceptOptionEmoji ·} {← instantiateMVars type}") do
+    (λ _ => return m!"IPM: {← instantiateMVars type}") do
   withConfig (fun config => { config with isDefEqStuckEx := true, transparency := TransparencyMode.instances,
                                           foApprox := true, ctxApprox := true, constApprox := false, univApprox := false }) do
   withInTypeClassResolution do

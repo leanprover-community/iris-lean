@@ -1,18 +1,21 @@
 /- A description of the tactics can be found in `tactics.md`. -/
-import Iris.ProofMode.Tactics.Apply
-import Iris.ProofMode.Tactics.Assumption
-import Iris.ProofMode.Tactics.Basic
-import Iris.ProofMode.Tactics.Cases
-import Iris.ProofMode.Tactics.Clear
-import Iris.ProofMode.Tactics.Exact
-import Iris.ProofMode.Tactics.ExFalso
-import Iris.ProofMode.Tactics.Exists
-import Iris.ProofMode.Tactics.Have
-import Iris.ProofMode.Tactics.Intro
-import Iris.ProofMode.Tactics.LeftRight
-import Iris.ProofMode.Tactics.Mod
-import Iris.ProofMode.Tactics.ModIntro
-import Iris.ProofMode.Tactics.Pure
-import Iris.ProofMode.Tactics.Rename
-import Iris.ProofMode.Tactics.Specialize
-import Iris.ProofMode.Tactics.Split
+module
+
+public meta import Iris.ProofMode.Tactics.Apply
+public meta import Iris.ProofMode.Tactics.Assumption
+public meta import Iris.ProofMode.Tactics.Basic
+public meta import Iris.ProofMode.Tactics.Cases
+public meta import Iris.ProofMode.Tactics.Clear
+public meta import Iris.ProofMode.Tactics.Exact
+public meta import Iris.ProofMode.Tactics.ExFalso
+public meta import Iris.ProofMode.Tactics.Exists
+public meta import Iris.ProofMode.Tactics.Have
+public meta import Iris.ProofMode.Tactics.Intro
+public meta import Iris.ProofMode.Tactics.LeftRight
+public meta import Iris.ProofMode.Tactics.Mod
+public meta import Iris.ProofMode.Tactics.ModIntro
+public meta import Iris.ProofMode.Tactics.Pure
+public meta import Iris.ProofMode.Tactics.Rename
+public meta import Iris.ProofMode.Tactics.Revert
+public meta import Iris.ProofMode.Tactics.Specialize
+public meta import Iris.ProofMode.Tactics.Split

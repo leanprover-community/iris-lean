@@ -1,10 +1,14 @@
 /-
 Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler, Zongyuan Liu
+Authors: Michael Sammler, Zongyuan Liu, Yunsong Yang
 -/
-import Iris.ProofMode.Expr
-import Iris.ProofMode.Classes
+module
+
+public meta import Iris.ProofMode.Expr
+public import Iris.ProofMode.Classes
+
+public meta section
 
 namespace Iris.ProofMode
 open Lean Elab Tactic Meta Qq BI Std
@@ -20,20 +24,39 @@ whole monad stack at every use site. May eventually be covered by `deriving`.
 -/
 @[always_inline]
 instance : Monad ProofModeM :=
-  let i := inferInstanceAs (Monad ProofModeM)
+  letI i : Monad ProofModeM := inferInstance
   { pure := i.pure, bind := i.bind }
 
 instance : Inhabited (ProofModeM α) where
   default := throw default
 
-/-- Create a new BI goal with the given hypotheses and goal, and add it to the proof mode state. -/
-def addBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
+/-- Create a new BI goal without registering it in the proof mode state. -/
+def mkBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
   let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps, goal, .. }
   m.mvarId!.setUserName name
+  pure m
+
+/-- Create a new BI goal with the given hypotheses and goal, and add it to the proof mode state. -/
+def addBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
+  let m ← mkBIGoal hyps goal name
   modify ({goals := ·.goals.push m.mvarId!})
   pure m
+
+/-- Create a new BI goal with the given hypotheses and goal, but without some fvars, and add it to the proof mode state.
+It is the responsibility of the user of this function to check that the variables to clear can actually be cleared (e.g. using
+`Hyps.checkRemovableFVar`). -/
+def addBIGoalWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
+  let goal ← mkBIGoal hyps goal name
+  let (clearedGoalId, cleared) ← goal.mvarId!.tryClearMany' toClear
+  unless cleared.size == toClear.size do
+    -- this should not happen since the caller of this function should call Hyps.checkRemovableFVar first
+    throwError "internal error: failed to clear all selected Lean hypotheses"
+  modify ({goals := ·.goals.push clearedGoalId})
+  return Expr.mvar clearedGoalId
 
 /-- Add an existing metavariable as a goal to the proof mode state if it is not already assigned or present. -/
 def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do

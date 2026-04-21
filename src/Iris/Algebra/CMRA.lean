@@ -3,7 +3,11 @@ Copyright (c) 2025 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mario Carneiro, Сухарик (@suhr), Markus de Medeiros, Puming Liu
 -/
-import Iris.Algebra.OFE
+module
+
+public import Iris.Algebra.OFE
+
+@[expose] public section
 
 namespace Iris
 open OFE
@@ -887,7 +891,7 @@ class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
   map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-attribute [instance] RFunctor.cmra
+attribute [reducible, instance] RFunctor.cmra
 
 
 instance RFunctor.toOFunctor [R : RFunctor F] : COFE.OFunctor F where
@@ -923,7 +927,7 @@ class URFunctorContractive (F : COFE.OFunctorPre) extends URFunctor F where
   map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-attribute [instance] URFunctor.cmra
+attribute [reducible, instance] URFunctor.cmra
 
 instance URFunctor.toRFunctor [UF : URFunctor F] : RFunctor F where
   cmra     := URFunctor.cmra.toCMRA
@@ -941,16 +945,24 @@ end urFunctor
 section Id
 
 instance COFE.OFunctor.constOF_RFunctor [CMRA B] : RFunctor (constOF B) where
-  map f g := by
-    refine' { toHom := COFE.OFunctor.map f g, .. }
-      <;> intros <;> simp [COFE.OFunctor.map]; trivial
-  map_ne.ne := COFE.OFunctor.map_ne.ne
-  map_id := COFE.OFunctor.map_id
-  map_comp := COFE.OFunctor.map_comp
+  map f g := ⟨map f g, by simp [map], by simp [map], by simp [map]⟩
+  map_ne.ne := map_ne.ne
+  map_id := map_id
+  map_comp := map_comp
 
 instance OFunctor.constOF_RFunctorContractive [CMRA B] :
     RFunctorContractive (COFE.constOF B) where
   map_contractive.1 := by simp [Function.uncurry, RFunctor.map, COFE.OFunctor.map]
+
+instance COFE.OFunctor.constOF_URFunctor [UCMRA B] : URFunctor (constOF B) where
+  map f g := ⟨map f g, by simp [map], by simp [map], by simp [map]⟩
+  map_ne.ne := map_ne.ne
+  map_id := map_id
+  map_comp := map_comp
+
+instance OFunctor.constOF_URFunctorContractive [UCMRA B] :
+    URFunctorContractive (COFE.constOF B) where
+  map_contractive.1 := by simp [Function.uncurry, URFunctor.map, COFE.OFunctor.map]
 
 end Id
 
@@ -1457,9 +1469,29 @@ instance Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
 
 end ProdMor
 
+section ProdRF
+
+open RFunctor
+
+instance instRFunctorProdOF [RFunctor F1] [RFunctor F2] : RFunctor (ProdOF F1 F2) where
+  map f g := Prod.mapC (map f g) (map f g)
+  map_ne.ne _ _ _ Hx _ _ Hy _ :=
+    Prod.map_ne (fun _ => map_ne.ne Hx Hy _) (fun _ => map_ne.ne Hx Hy _)
+  map_id _ := ⟨map_id _, map_id _⟩
+  map_comp _ _ _ _ _ := ⟨map_comp .., map_comp ..⟩
+
+instance instRFunctorContractiveProdOF
+    [RFunctorContractive F1] [RFunctorContractive F2] :
+    RFunctorContractive (ProdOF F1 F2) where
+  map_contractive.1 H _ :=
+    Prod.map_ne (fun _ => RFunctorContractive.map_contractive.1 H _)
+      (fun _ => RFunctorContractive.map_contractive.1 H _)
+
+end ProdRF
+
 section optionOF
 
-variable (F : COFE.OFunctorPre)
+variable {F : COFE.OFunctorPre}
 
 instance urFunctorOptionOF [RFunctor F] : URFunctor (OptionOF F) where
   cmra {α β} := ucmraOption

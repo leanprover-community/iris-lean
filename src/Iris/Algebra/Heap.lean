@@ -3,11 +3,14 @@ Copyright (c) 2025 Markus de Medeiros. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros, Puming Liu
 -/
+module
 
-import Iris.Algebra.CMRA
-import Iris.Algebra.OFE
-import Iris.Std.Set
-import Iris.Std.PartialMap
+public import Iris.Algebra.CMRA
+public import Iris.Algebra.OFE
+public import Iris.Std.Set
+public import Iris.Std.PartialMap
+
+@[expose] public section
 
 open Iris Std
 
@@ -79,7 +82,7 @@ open PartialMap
 
 variable [LawfulPartialMap M K] [CMRA V]
 
-@[simp] def op (s1 s2 : M V) : M V := merge (K := K) (fun _ => CMRA.op) s1 s2
+@[simp] def op (s1 s2 : M V) : M V := merge (fun _ => CMRA.op) s1 s2
 @[simp] def unit : M V := empty
 @[simp] def pcore (s : M V) : Option (M V) := some <| bindAlter (fun _ => CMRA.pcore) s
 @[simp] def valid (s : M V) : Prop := ∀ k, ✓ get? s k

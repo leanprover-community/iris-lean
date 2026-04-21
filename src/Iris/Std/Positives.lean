@@ -3,12 +3,16 @@ Copyright (c) 2026 Remy Seassau. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 -/
+module
 
-import Iris.Std.Classes
+public import Iris.Std.Classes
+public import Iris.Std.Infinite
+
+@[expose] public section
+
 /-- [Pos] is a datatype representing the strictly positive integers
    in a binary way. Starting from 1 (represented by [xH]), one can
    add a new least significant digit via [xO] (digit 0) or [xI] (digit 1). -/
-
 inductive Pos where
 | xI : Pos -> Pos
 | xO : Pos -> Pos
@@ -31,12 +35,12 @@ macro_rules
   | `($p ~0) => `(xO $p)
 
 @[app_unexpander xI]
-def unexpandPosXI : Lean.PrettyPrinter.Unexpander
+meta def unexpandPosXI : Lean.PrettyPrinter.Unexpander
   | `($_ $p) => `($p~1)
   | _ => throw ()
 
 @[app_unexpander xO]
-def unexpandPosXO : Lean.PrettyPrinter.Unexpander
+meta def unexpandPosXO : Lean.PrettyPrinter.Unexpander
   | `($_ $p) => `($p~0)
   | _ => throw ()
 
@@ -95,6 +99,16 @@ def toNat : Pos → Nat
 
 instance : CoeOut Pos Nat where coe := Pos.toNat
 
+theorem Pos_toNat_pos (a : Pos) : 0 < a.toNat := by
+  induction a with
+  | xH => simp [Pos.toNat]
+  | xI a' ih => simp [Pos.toNat]
+  | xO a' ih => simp [Pos.toNat]; omega
+
+theorem Pos_toNat_inj {a b : Pos} (h : a.toNat = b.toNat) : a = b := by
+  induction a generalizing b <;> cases b
+  all_goals simp [Pos.toNat] at h; grind [Pos_toNat_pos]
+
 def compare (a b : Pos) : Ordering :=
   Ord.compare (a.toNat) (b.toNat)
 
@@ -102,8 +116,61 @@ def compare (a b : Pos) : Ordering :=
 def ofNat (n : Nat) : Pos :=
 match n with
 | 0 => P1
-| 1 => P1
 | (n + 1) => succ (ofNat n)
+
+theorem succ_inj : Function.Injective Pos.succ := by
+  have succ_not_xH : ∀ (a : Pos), a.succ ≠ xH := by
+    intro a; cases a <;> simp [succ]
+  intro a b H
+  induction a generalizing b with
+  | xH =>
+    cases b with
+    | xH => rfl
+    | xI b =>
+      simp only [succ, xO.injEq] at H
+      exact (succ_not_xH b H.symm).elim
+    | xO b => simp [succ] at H
+  | xI a IH =>
+    cases b with
+    | xH =>
+      simp [succ] at H
+      exact (succ_not_xH a H).elim
+    | xI b =>
+      simp only [succ, xO.injEq] at H
+      simp only [xI.injEq]
+      apply IH
+      rw [H]
+    | xO b => simp [succ] at H
+  | xO a IH =>
+    cases b with
+    | xH => simp [succ] at H
+    | xI b => simp [succ] at H
+    | xO b =>
+      simp only [succ, xI.injEq] at H
+      simp only [xO.injEq]
+      apply IH
+      rw [H]
+
+theorem Pos_ofNat_inj : Function.Injective Pos.ofNat := by
+  intro a b h
+  induction a generalizing b with
+  | zero =>
+    cases b with
+    | zero => rfl
+    | succ b =>
+      revert h
+      simp only [ofNat]
+      cases (ofNat b) <;> simp [Pos.succ]
+  | succ a IH =>
+    cases b with
+    | zero =>
+      revert h
+      simp only [ofNat]
+      cases (ofNat a) <;> simp [Pos.succ]
+    | succ b =>
+      simp only [ofNat] at h
+      rw [IH]
+      apply succ_inj.eq_iff.mp h
 
 instance : OfNat Pos n where ofNat := Pos.ofNat n
 
@@ -353,5 +420,30 @@ instance : Countable Pos where
   encode := id
   decode := some
   decode_encode _ := rfl
+
+instance : Ord Pos where
+  compare x y := Pos.compare x y
+
+instance : Std.TransOrd Pos where
+  eq_swap {a b} := by
+    simp only [Ord.compare, Pos.compare]
+    rw [compareOfLessAndEq_eq_swap] <;> omega
+  isLE_trans {a b c} := by
+    have heq : ∀ {x y}, (compareOfLessAndEq x y).isLE = true ↔ x ≤ y :=
+      isLE_compareOfLessAndEq Nat.le_antisymm Nat.not_le Nat.le_total
+    simp only [Ord.compare, Pos.compare, heq]
+    grind
+
+instance : Std.LawfulEqOrd Pos where
+  eq_of_compare {a b} := by
+    simp only [Ord.compare, compare]
+    rw [compareOfLessAndEq_eq_eq Nat.le_refl (by grind)]
+    exact Pos_toNat_inj
+  compare_self {_} := by
+    simp [Ord.compare, Pos.compare, compareOfLessAndEq_eq_eq]
+
+instance : InfiniteType Pos where
+  enum := ofNat
+  enum_inj _ _ H := Pos_ofNat_inj H
 
 end Pos

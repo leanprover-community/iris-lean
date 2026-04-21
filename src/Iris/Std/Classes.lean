@@ -3,11 +3,21 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
+module
+
+@[expose] public section
+
 namespace Iris.Std
 
 /-- Represents a binary relation with two arguments of the same type `α`. -/
 abbrev Relation (α : Type _) := α → α → Prop
 
+/-- Require that a type `α` has a distinguished top element. -/
+class Top (α : Type u) where
+  top : α
+export Top (top)
+
+notation "⊤" => top
 
 /-- Require that a relation `R` on `a` is reflexive. -/
 class Reflexive (R : Relation α) where

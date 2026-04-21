@@ -1,11 +1,16 @@
 /-
 Copyright (c) 2026 Zongyuan Liu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Zongyuan Liu, Markus de Medeiros
+Authors: Zongyuan Liu, Markus de Medeiros, Sergei Stepanenko
 -/
-import Iris.Algebra.Monoid
-import Iris.Std.List
-import Iris.Std.PartialMap
+module
+
+public import Iris.Algebra.Monoid
+import Batteries.Data.List.Perm
+public import Iris.Std.List
+public import Iris.Std.PartialMap
+public import Iris.Std.GenSets
+public import Iris.Std.Positives
 
 namespace Iris.Algebra
 
@@ -17,15 +22,19 @@ These are parameterized by a monoid operation and include theorems about their p
 
 open OFE Iris.Std
 
-def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+@[expose] public def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     (Φ : Nat → A → M) (l : List A) : M :=
   match l with
   | [] => unit
   | x :: xs => op (Φ 0 x) (bigOpL op (fun n => Φ (n + 1)) xs)
 
-def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
+@[expose] public def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
     {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K] (m : M' V) : M :=
-  bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList (K := K) m)
+  bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList m)
+
+@[expose] public def bigOpS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+    {A : Type _} {S : Type _} [FiniteSet S A] (Φ : A → M) (m : S) : M :=
+  bigOpL op (fun _ x => Φ x) (toList m)
 
 /-- Big op over list with index: `[^ op list] k ↦ x ∈ l, P` -/
 scoped syntax atomic("[^") term " list]" ident " ↦ " ident " ∈ " term ", " term : term
@@ -37,12 +46,17 @@ scoped syntax atomic("[^") term " map]" ident " ↦ " ident " ∈ " term ", " te
 /-- Big op over map without key: `[^ op map] x ∈ m, P` -/
 scoped syntax atomic("[^") term " map]" ident " ∈ " term ", " term : term
 
+/-- Big op over set without index: `[^ op set] x ∈ l, P` -/
+scoped syntax atomic("[^") term " set]" ident " ∈ " term ", " term : term
+
 scoped macro_rules
   | `([^ $o list] $k ↦ $x ∈ $l, $P) => `(bigOpL $o (fun $k $x => $P) $l)
   | `([^ $o list] $x ∈ $l, $P) => `(bigOpL $o (fun _ $x => $P) $l)
+  | `([^ $o set] $x ∈ $l, $P) => `(bigOpS $o (fun $x => $P) $l)
   | `([^ $o map] $k ↦ $x ∈ $m, $P) => `(bigOpM $o (fun $k $x => $P) $m)
   | `([^ $o map] $x ∈ $m, $P) => `(bigOpM $o (fun _ $x => $P) $m)
 
+public section
 namespace BigOpL
 
 variable {M : Type _} {A : Type _} [OFE M] {op : M → M → M} {unit : M} [MonoidOps op unit]
@@ -219,6 +233,7 @@ variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 variable {B : Type w} {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
 
 /-- Monoid homomorphisms distribute over big ops. -/
+@[rocq_alias big_opL_commute]
 theorem bigOpL_hom [H : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] (Φ : Nat → B → M₁) (l : List B) :
     R (f ([^ op₁ list] k ↦ x ∈ l, Φ k x)) ([^ op₂ list] k ↦ x ∈ l, f (Φ k x)) :=
   match l with
@@ -226,6 +241,7 @@ theorem bigOpL_hom [H : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] (Φ 
   | .cons _ _ => H.rel_trans H.map_op <| H.op_proper H.rel_refl <| (bigOpL_hom (H := H) ..)
 
 /-- Weak monoid homomorphisms distribute over non-empty big ops. -/
+@[rocq_alias big_opL_commute1]
 theorem bigOpL_hom_weak [H : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] {l : List B}
     (Φ : Nat → B → M₁) (hne : l ≠ []) :
     R (f ([^ op₁ list] k ↦ x ∈ l, Φ k x)) ([^ op₂ list] k ↦ x ∈ l, f (Φ k x)) :=
@@ -253,7 +269,7 @@ theorem bigOpM_equiv_of_perm (Φ : K → V → M) {m₁ m₂ : M' V} (h : m₁ �
   bigOpL_equiv_of_perm _ (LawfulFiniteMap.toList_perm_of_get?_eq h)
 
 @[simp] theorem bigOpM_empty (Φ : K → V → M) : ([^ op map] k ↦ x ∈ (∅ : M' V), Φ k x) = unit := by
-  simp [bigOpM, toList, toList_empty]
+  simp [bigOpM, FiniteMap.toList, toList_empty]
 
 theorem bigOpM_insert_equiv (Φ : K → V → M) {m : M' V} {i : K} (x : V) (hi : get? m i = none) :
     ([^ op map] k ↦ v ∈ insert m i x, Φ k v) ≡ op (Φ i x) ([^ op map] k ↦ v ∈ m, Φ k v) :=
@@ -278,7 +294,7 @@ theorem bigOpM_gen_proper_2 {A : Type _} {B : Type _} {R : M → M → Prop}
     (∀ {k y1 y2}, get? m1' k = some y1 → get? m2' k = some y2 → R (Φ k y1) (Ψ k y2)) →
     R ([^ op map] k ↦ x ∈ m1', Φ k x) ([^ op map] k ↦ x ∈ m2', Ψ k x)
   suffices h : P m1 from h m2 hdom hf
-  apply LawfulFiniteMap.induction_on (K := K) (P := P)
+  apply LawfulFiniteMap.induction_on (P := P)
   · intro m₁ m₂ heq hP m2' hdom' hf'
     refine hR_equiv.trans (hR_sub (bigOpM_equiv_of_perm Φ heq).symm) ?_
     exact hP m2' (fun k => heq k ▸ hdom' k) (hf' <| (heq _) ▸ ·)
@@ -338,7 +354,7 @@ theorem bigOpM_proper_pointwise {Φ Ψ : K → V → M} (m : M' V) (hf : ∀ {k 
   bigOpM_proper (fun _ => hf)
 
 theorem bigOpM_toList_equiv (Φ : K → V → M) (m : M' V) :
-    ([^ op map] k ↦ x ∈ m, Φ k x) ≡ ([^ op list] kx ∈ toList (K := K) m, Φ kx.1 kx.2) :=
+    ([^ op map] k ↦ x ∈ m, Φ k x) ≡ ([^ op list] kx ∈ toList m, Φ kx.1 kx.2) :=
   .rfl
 
 theorem bigOpM_ofList_equiv [DecidableEq K] (Φ : K → V → M) (l : List (K × V)) (hd : NoDupKeys l) :
@@ -351,7 +367,7 @@ theorem bigOpM_singleton_equiv (Φ : K → V → M) (i : K) (x : V) :
   simpa only [bigOpM_empty] using op_right_id
 
 theorem bigOpM_const_unit_equiv [DecidableEq K] (m : M' V) :
-    bigOpM (K := K) op (fun _ _ => unit) m ≡ unit :=
+    bigOpM op (fun _ _ => unit) m ≡ unit :=
   bigOpL_const_unit_equiv
 
 theorem bigOpM_map_equiv (h : V → B) (Φ : K → B → M) (m : M' V) :
@@ -372,6 +388,7 @@ theorem bigOpM_insert_delete_equiv (Φ : K → V → M) (m : M' V) (i : K) (x : 
   (bigOpM_equiv_of_perm _ (insert_delete · |>.symm)).trans
     (bigOpM_insert_equiv _ _ (get?_delete_eq rfl))
 
+@[rocq_alias big_opM_insert_override]
 theorem bigOpM_insert_override_equiv {Φ : K → A → M} {m : M' A}
     (hi : get? m i = some x) (hΦ : Φ i x ≡ Φ i x') :
     ([^ op map] k ↦ v ∈ insert m i x', Φ k v) ≡ ([^ op map] k ↦ v ∈ m, Φ k v) :=
@@ -399,7 +416,7 @@ theorem bigOpM_filter_equiv (φ : K → V → Bool) (Φ : K → V → M) (m : M'
     (bigOpL_filter_equiv (fun (k, v) => φ k v) (fun (k, v) => Φ k v) _)
 
 theorem toList_union_perm [DecidableEq K] {m1 m2 : M' V} (hdisj : m1 ##ₘ m2) :
-    (toList (K := K) (m1 ∪ m2)).Perm (toList (K := K) m1 ++ toList (K := K) m2) := by
+    (toList (m1 ∪ m2)).Perm (toList m1 ++ toList m2) := by
   refine (List.perm_ext_iff_of_nodup LawfulFiniteMap.nodup_toList ?_).mpr fun ⟨k, v⟩ => ?_
   · refine List.nodup_append.mpr ⟨LawfulFiniteMap.nodup_toList, LawfulFiniteMap.nodup_toList, ?_⟩
     rintro ⟨k, _⟩ h1 _ h2 rfl
@@ -464,6 +481,135 @@ theorem bigOpM_sep_zip_equiv {A : Type _} {B : Type _}
     op ([^ op map] k ↦ x ∈ m1, h1 k x) ([^ op map] k ↦ x ∈ m2, h2 k x) :=
   bigOpM_sep_zipWith_equiv _ _ rfl rfl hdom
 
+variable {M₁} [OFE M₁]
+variable {M₂} [OFE M₂]
+variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
+variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
+
+theorem bigOpM_hom  [ι : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R h] (f : K → A → M₁) (m : M' A) :
+    R (h ([^op₁ map] k↦x ∈ m, f k x)) ([^op₂ map] k↦x ∈ m, h (f k x)) := by
+  exact bigOpL_hom (H := ι) _ _
+
+theorem bigOpM_weak_hom [DecidableEq K] [ι : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R h]
+    (f : K → A → M₁) (m : M' A) (Hne : ¬ m ≡ₘ ∅) :
+    R (h ([^op₁ map] k↦x ∈ m, f k x)) ([^op₂ map] k↦x ∈ m, h (f k x)) := by
+  refine bigOpL_hom_weak (H := ι) _ ?_
+  refine fun Hk => Hne ?_
+  refine .trans LawfulFiniteMap.ofList_toList.symm ?_
+  rw [show (LawfulFiniteMap.toList m) = [] from List.nil_eq.mpr Hk |>.symm]
+  exact .trans (congrFun rfl) (congrFun rfl )
+
 end BigOpM
 
+namespace BigOpS
+
+variable {M : Type _} {A : Type _} {S : Type _} [OFE M] {op : M → M → M} {unit : M}
+  [MonoidOps op unit] [LawfulFiniteSet S A]
+
+open BigOpL MonoidOps LawfulSet FiniteSet
+
+@[simp] theorem bigOpS_empty {Φ : A → M} :
+    ([^ op set] x ∈ (∅ : S), Φ x) = unit := by
+  simp [bigOpS, toList_empty]
+
+theorem bigOpS_bigOpL {Φ : A → M} {s : S} :
+    ([^ op set] x ∈ s, Φ x) ≡ ([^ op list] x ∈ toList s, Φ x) := by
+  unfold bigOpS
+  cases toList s with
+  | nil => simp
+  | cons x xs => rw [bigOpL_cons]
+
+theorem bigOpS_insert {Φ : A → M} {s : S} {x : A} (Hnin : x ∉ s) :
+    ([^ op set] x ∈ ({x} ∪ s), Φ x) ≡ op (Φ x) ([^ op set] x ∈ s, Φ x) :=
+  bigOpL_equiv_of_perm _ (toList_insert_perm Hnin)
+
+theorem bigOpS_const_unit (s : S) : ([^ op set] _x ∈ s, unit) ≡ unit := by
+  induction s using set_ind with
+  | hemp => simp [bigOpS_empty]
+  | hadd a s hnin ih => exact (bigOpS_insert hnin).trans <| op_left_id.trans ih
+
+theorem bigOpS_singleton {Φ : A → M} {a : A} : ([^ op set] x ∈ ({a} : S), Φ x) ≡ Φ a := by
+  simpa only [bigOpS, toList_singleton] using (bigOpL_singleton_equiv ..)
+
+theorem bigOpS_union {Φ : A → M} {s₁ s₂ : S} (Hdisj : s₁ ## s₂) :
+  ([^ op set] x ∈ (s₁ ∪ s₂), Φ x) ≡ op ([^ op set] x ∈ s₁, Φ x) ([^ op set] x ∈ s₂, Φ x) := by
+  induction s₁ using set_ind with
+  | hemp => simpa only [union_empty_left, bigOpS_empty] using op_left_id.symm
+  | hadd a s has ih =>
+    have ⟨has₂, hss₂⟩ : ¬a ∈ s₂ ∧ s ## s₂ := by
+      rwa [insert_union, disjoint_union_left, disjoint_singleton_left] at Hdisj
+    have nunion : a ∉ s ∪ s₂ := by simpa only [mem_union] using (·.casesOn has has₂)
+    rw [insert_union, ← union_assoc]
+    refine bigOpS_insert nunion |>.trans <| .trans ?_ (op_congr_left (bigOpS_insert has).symm)
+    exact op_congr_right (ih hss₂) |>.trans op_assoc.symm
+
+theorem bigOpS_equiv_of_forall_equiv {Φ Ψ : A → M} {s : S} (h : ∀ {x}, Φ x ≡ Ψ x) :
+    ([^ op set] x ∈ s, Φ x) ≡ ([^ op set] x ∈ s, Ψ x) :=
+  bigOpL_equiv_of_forall_equiv h
+
+theorem bigOpS_dist {Φ Ψ : A → M} {s : S} {n : Nat} (h : ∀ {x}, x ∈ s → Φ x ≡{n}≡ Ψ x) :
+    ([^ op set] x ∈ s, Φ x) ≡{n}≡ ([^ op set] x ∈ s, Ψ x) := by
+  refine bigOpL_dist (fun {i _} _ => h ?_)
+  rw [←Std.mem_toList, List.mem_iff_getElem?]
+  exists i
+
+theorem bigOpS_op_equiv {Φ Ψ : A → M} {s : S} :
+    ([^ op set] x ∈ s, op (Φ x) (Ψ x)) ≡ op ([^ op set] x ∈ s, Φ x) ([^ op set] x ∈ s, Ψ x) :=
+  (bigOpS_bigOpL ..).trans (bigOpL_op_equiv ..)
+
+theorem bigOpS_closed (P : M → Prop) (Φ : A → M) (s : S)
+    (hunit : P unit)
+    (hop : ∀ {x y}, P x → P y → P (op x y))
+    (hf : ∀ {x}, x ∈ s → P (Φ x)) :
+    P ([^ op set] x ∈ s, Φ x) := by
+  unfold bigOpS
+  generalize hg : toList s = l
+  have htoList {x} : x ∈ l → P (Φ x) := by
+    refine fun hx => hf ?_
+    simpa [←FiniteSet.mem_toList, hg]
+  clear hf hg s
+  induction l with
+  | nil => exact hunit
+  | cons _ _ ih => exact hop (htoList List.mem_cons_self) (ih (htoList <| List.mem_cons_of_mem _ ·))
+
+theorem bigOpS_gen_proper (R : M → M → Prop) {Φ Ψ : A → M} {s : S}
+    (hR_refl : ∀ {x}, R x x) (hR_op : ∀ {a a' b b'}, R a a' → R b b' → R (op a b) (op a' b'))
+    (hf : ∀ {y}, y ∈ s → R (Φ y) (Ψ y)) :
+    R ([^ op set] x ∈ s, Φ x) ([^ op set] x ∈ s, Ψ x) := by
+  refine bigOpL_gen_proper _ hR_refl hR_op (fun hy => hf ?_)
+  rw [←FiniteSet.mem_toList]
+  exact List.mem_of_getElem? hy
+
+theorem bigOpS_ext {Φ Ψ : A → M} {s : S} (h : ∀ {x}, x ∈ s → Φ x = Ψ x) :
+    ([^ op set] x ∈ s, Φ x) = ([^ op set] x ∈ s, Ψ x) :=
+  bigOpS_gen_proper (· = ·) rfl (· ▸ · ▸ rfl) h
+
+section Homomorphism
+
+variable {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
+variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
+variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
+
+theorem hom {B : Type w} {S' : Type _} [LawfulFiniteSet S' B] {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
+    (hom : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R f) (Φ : B → M₁) (s : S') :
+    R (f ([^ op₁ set] x ∈ s, Φ x)) ([^ op₂ set] x ∈ s, f (Φ x)) := by
+  rw [hom.rel_proper (hom.map_ne.eqv bigOpS_bigOpL) .rfl]
+  refine hom.rel_trans (bigOpL_hom (H := hom) _ (toList s)) ?_
+  rw [hom.rel_proper bigOpS_bigOpL.symm .rfl]
+  exact hom.rel_refl
+
+theorem hom_weak {B : Type w} {S' : Type _} [LawfulFiniteSet S' B] {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
+    (hom : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f) (Φ : B → M₁) (s : S') (hne : s ≠ ∅) :
+    R (f ([^ op₁ set] x ∈ s, Φ x)) ([^ op₂ set] x ∈ s, f (Φ x)) := by
+  rw [hom.rel_proper (hom.map_ne.eqv bigOpS_bigOpL) .rfl]
+  refine (hom.rel_trans (bigOpL_hom_weak (H := hom) _ (fun heq => ?_))) ?_
+  · refine hne ?_
+    ext i
+    simp [←FiniteSet.mem_toList, heq, toList_empty]
+  · rw [hom.rel_proper bigOpS_bigOpL.symm .rfl]
+    exact hom.rel_refl
+
+end Homomorphism
+end BigOpS
+end
 end Iris.Algebra

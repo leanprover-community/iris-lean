@@ -19,7 +19,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `big_op.v`
   - [x] Lists
   - [x] Maps
-  - [ ] Sets
+  - [x] Sets
   - [ ] Multisets
   - [ ] Homomorphisms
 - [ ] `cmra.v`
@@ -40,10 +40,10 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] coPset definition
   - [ ] CMRA
 - [x] `cofe_solver.v` 
-- [ ] `csum.v`
-  - [ ] CMRA
-  - [ ] Updates
-  - [ ] Functors
+- [x] `csum.v`
+  - [x] CMRA
+  - [x] Updates
+  - [x] Functors
 - [ ] `dfrac.v`
   - [x] CMRA
   - [x] Updates
@@ -66,7 +66,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] CMRA
   - [ ] Updates
 - [ ] `gset.v` 
-  - [ ] CMRA
+  - [x] CMRA
   - [ ] Updates
 - [ ] `list.v` 
   - Is this an instance of the `Heap` CMRA?
@@ -119,17 +119,17 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] CMRA
   - [x] Updates
   - [x] Functors
-- [ ] `lib/dfrac_agree.v` 
-  - [ ] Lemmas
-  - [ ] Updates
+- [x] `lib/dfrac_agree.v` 
+  - [x] Lemmas
+  - [x] Updates
 - [x] `lib/excl_auth.v` 
   - [x] Lemmas
   - [x] Updates
   - [x] Functors
-- [ ] `lib/frac_auth.v` 
-  - [ ] Lemmas
-  - [ ] Updates
-  - [ ] Functors
+- [x] `lib/frac_auth.v` 
+  - [x] Lemmas
+  - [x] Updates
+  - [x] Functors
 - [] `lib/gmap_view.v` (nb. generalized in `HeapView.lean`)
   - [x] CMRA
   - [x] Updates
@@ -147,19 +147,20 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 
 ## Base Logic 
 - [x] `base_logic.v`
-- [ ] `bi.v` (nb. contained in `Instances/UPred/Instance.lean`)
+- [x] `bi.v` (nb. contained in `Instances/UPred/Instance.lean`)
   - [x] BI instance
-  - [ ] BI Persistently instance
+  - [x] BI Persistently instance
   - [x] BI Later instance
-  - [ ] SBI instance
+  - [x] SBI instance
   - [x] BUPd instance
-  - [ ] Additional instances
+  - [x] Additional instances
 - [x] `bupd_alt.v` (nb. contained in `BI/Lib/BUpdPlain.lean`)
 - [ ] `derived.v`
   - [x] Modalities 
 - [ ] `proofmode.v`
   - [ ] class instances
 - [ ] `upred.v` (nb. contained in `Algebra/UPred.lean` and `Instances/UPred/Instance.lean`)
+  - Missing: new `later_own`
   - [x] CMRA 
   - [x] Functors
   - [x] Primitives and nonexpansivity
@@ -169,8 +170,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/boxes.v`
 - [ ] `lib/cancelable_invariants.v`
 - [ ] `lib/fancy_updates.v`
-  - [ ] FUpd instance
-  - [ ] Soundness
+  - [x] FUpd instance
+  - [x] Soundness
   - [ ] ProofMode instances
 - [ ] `lib/fancy_updates_from_vs.v`
 - [ ] `lib/gen_heap.v`
@@ -179,15 +180,20 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/ghost_var.v`
 - [ ] `lib/gset_bij.v`
 - [ ] `lib/invariants.v`
+  - [x] Lemmas
+  - [ ] ProofMode instances
 - [ ] `lib/iprop.v`
   - [x] Definition
   - [ ] subG 
   - [x] Functor solution
 - [ ] `lib/later_credits.v`
+  - [x] Lemmas 
+  - [ ] ProofMode instances 
 - [ ] `lib/mono_Z.v` (nb. generalize to `MonoNumbers.lean`)
 - [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
 - [ ] `lib/na_invariants.v`
 - [ ] `lib/own.v`
+  - Missing: `later_internal_eq_iRes_singleton`
   - [x] Definition
   - [x] Updates
   - [ ] Big ops
@@ -196,14 +202,27 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/proph_map.v`
 - [ ] `lib/saved_prop.v`
 - [ ] `lib/token.v`
-- [ ] `lib/wsat.v`
+- [x] `lib/wsat.v`
 
 ## BI
 
 - [ ] `algebra.v`
+  - [ ] Generic
+  - [ ] Map  
+  - [ ] Excl 
+  - [ ] List 
+  - [x] Agree 
+  - [ ] View 
+  - [ ] Frag 
+  - [x] Auth 
+  - [x] Heap View 
 - `ascii.v`
 - [x] `bi.v`
 - [ ] `big_op.v`
+  - [x] Lists
+  - [x] Maps
+  - [x] Sets
+  - [ ] Multisets
 - [ ] `cmra.v`
 - [x] `derived_connectives.v`
 - [ ] `derived_laws.v`
@@ -215,8 +234,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] Timeless lemmas
   - [ ] Big Op lemmas
 - [ ] `embedding.v`
-- [ ] `extensions.v`
-  - [ ] BIPureForall
+- [x] `extensions.v`
+  - [x] BIPureForall
 - [ ] `interface.v` 
   - [ ] Later instances
 - [ ] `internal_eq.v`
@@ -228,13 +247,16 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `plainly.v`
   - [x] plainly lemmas
   - [ ] big op lemmas
-  - [ ] internal eq lemmas
+  - [x] internal eq lemmas
 - [ ] `sbi.v`
 - [ ] `sbi_unfold.v`
 - [ ] `telescopes.v`
 - [ ] `updates.v`
-  - [x] FUpd class
-  - [ ] Big op lemmas
+  - [x] Bupd laws 
+  - [x] Fupd basic laws 
+  - [ ] Fupd mask change laws
+  - [ ] Fupd step derived rules 
+  - [ ] Fupd plainly general laws
 - [ ] `weakestpre.v`
 - [ ] `lib/atomic.v`
 - [ ] `lib/core.v`
@@ -257,6 +279,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] instances for big ops
   - [ ] MaybeCombineSepAs instances
   - [ ] CombineSepGives instances
+  - [x] FromModal instances
   - [x] ElimModal instances
   - [ ] AddModal instances
   - [ ] ElimInv instances
@@ -271,6 +294,18 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] AddModal
   - [x] IntoLater
 - [ ] `class_instances_make.v`
+  - [ ] QuickAffine
+  - [ ] QuickAbsorbing
+  - [ ] MakeEmbed
+  - [ ] MakeSep
+  - [ ] MakeAnd
+  - [ ] MakeOr
+  - [x] MakeAffinely
+  - [x] MakeIntuitionistically
+  - [x] MakeAbsorbingly
+  - [x] MakePersistenly
+  - [x] MakeLaterN
+  - [ ] MakeExcept0
 - [ ] `class_instances_plainly.v` (InstancesPlainly.lean)
   - [x] basic instances
   - [x] FromModal
@@ -278,11 +313,11 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IntoLaterN
 - [ ] `class_instances_updates.v` (InstancesUpdates.lean)
   - [x] Basic instances for bupd
-  - [ ] Basic instances for fupd
+  - [x] Basic instances for fupd
   - [x] FromModal bupd
-  - [ ] FromModal fupd
+  - [x] FromModal fupd
   - [x] ElimModal bupd
-  - [ ] ElimModal fupd
+  - [x] ElimModal fupd
   - [ ] AddModal bupd
   - [ ] AddModal fupd
   - [ ] ElimAcc bupd
@@ -326,6 +361,18 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IntoAcc
   - [ ] ElimInv
 - [ ] `classes_make.v`
+  - [ ] QuickAffine
+  - [ ] QuickAbsorbing
+  - [ ] MakeEmbed
+  - [ ] MakeSep
+  - [ ] MakeAnd
+  - [ ] MakeOr
+  - [x] MakeAffinely
+  - [x] MakeIntuitionistically
+  - [x] MakeAbsorbingly
+  - [x] MakePersistenly
+  - [x] MakeLaterN
+  - [ ] MakeExcept0
 - [ ] `coq_tactics.v` / `ltac_tactics.v` (split into the files in Tactics/)
   - [x] iSolveSideCondition
   - [ ] iStartProof
@@ -333,9 +380,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
     - [ ] with bi specified
   - [x] iStopProof
   - [x] iRename
-  - [ ] iClear
+  - [x] iClear
     - [x] basic
-    - [ ] selection patterns
+    - [x] selection patterns
   - [ ] iEval
   - [ ] iSimpl
   - [ ] iUnfold
@@ -351,6 +398,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] iPureIntro
   - [ ] iFrame
   - [ ] iRevert
+    - [x] basic
+    - [ ] `intoIH` revert
+    - [x] selection patterns
   - [x] iPoseProof (Lean: ihave _ := _)
   - [ ] iSpecialize
     - [x] basic functionality
@@ -401,12 +451,14 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IAll
   - [ ] IClear
   - [ ] IClearFrame
-- [ ] `modalities.v`
+- [x] `modalities.v`
 - [ ] `modality_instances.v`
+  - [ ] modality_embed 
+  - [x] others
 - [ ] `monpred.v`
 - [x] `proofmode.v` (ProofMode.lean)
 - [-] `reduction.v` (not necessary in Lean)
-- [ ] `sel_patterns.v`
+- [x] `sel_patterns.v`
 - [ ] `spec_patterns.v`
   - [x] SIdent
   - [x] SPureGoal
@@ -423,11 +475,11 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 ## Examples
 
 - SI Logic 
-  - [ ] `si_logic/siprop.v`
-  - [ ] `si_logic/bi.v`
-    - [ ] BI instance 
-    - [ ] BI Persistently instance
-    - [ ] BI Later instance
+  - [x] `si_logic/siprop.v`
+  - [x] `si_logic/bi.v`
+    - [x] BI instance 
+    - [x] BI Persistently instance
+    - [x] BI Later instance
 
 - Program Logic
   - Final decisions about what to port from this folder have not been made yet.

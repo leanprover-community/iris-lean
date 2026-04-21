@@ -3,8 +3,11 @@ Copyright (c) 2025 Oliver Soeser. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oliver Soeser, Mario Carneiro
 -/
+module
 
-import Iris.Algebra.CMRA
+public import Iris.Algebra.CMRA
+
+@[expose] public section
 
 namespace Iris
 
@@ -57,6 +60,17 @@ instance [OFE α] : OFE (Excl α) where
 
 instance [OFE α] : NonExpansive excl (α := α) where
   ne _ _ _ a := a
+
+/-- Note: Not an instance, due to instance coherence problems. -/
+theorem Excl.ne_match [OFE α] {B : Type _} [OFE B]
+    (f : α → B) (hf : NonExpansive f) (g : B) :
+    NonExpansive (fun x : Excl α => match x with | .excl a => f a | .invalid => g) :=
+  ⟨fun {n x' y'} (h : Excl.Dist n x' y') =>
+    match x', y', h with
+    | .excl _, .excl _, h => hf.ne h
+    | .excl _, .invalid, h => h.elim
+    | .invalid, .excl _, h => h.elim
+    | .invalid, .invalid, _ => Dist.rfl⟩
 
 instance [OFE α] [Discrete α] : Discrete (Excl α) where
   discrete_0 {x y} h' := by

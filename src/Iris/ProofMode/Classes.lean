@@ -3,12 +3,20 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Michael Sammler
 -/
-import Iris.BI
-import Iris.ProofMode.SynthInstance
-import Iris.ProofMode.Modalities
+module
+
+public import Iris.BI
+public meta import Iris.ProofMode.SynthInstance
+public import Iris.ProofMode.Modalities
+
+@[expose] public section
 
 namespace Iris.ProofMode
 open Iris.BI
+
+/-- [PMError] is used as precondition on "failing" instances of typeclasses
+  that have pure preconditions (such as [ElimModal]) -/
+inductive PMError (msg : String) : Prop
 
 /-- [InOut] is used to dynamically determine whether a type class
 parameter is an input or an output. This is important for classes that
@@ -24,14 +32,13 @@ inductive AsEmpValid.Direction where
   | from
 
 @[ipm_class]
-class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) {PROP : outParam (Type _)} (P : outParam PROP) [BI PROP] where
+class AsEmpValid (d : AsEmpValid.Direction) (φ : Prop) {PROP : semiOutParam (Type _)} (P : outParam PROP) [semiOutParam (BI PROP)] where
   as_emp_valid : (d = .into → φ → ⊢ P) ∧ (d = .from → (⊢ P) → φ)
 
 theorem asEmpValid_1 [BI PROP] (P : PROP) [AsEmpValid .into φ P] : φ → ⊢ P :=
   AsEmpValid.as_emp_valid.1 rfl
 theorem asEmpValid_2 [BI PROP] (φ : Prop) [AsEmpValid .from φ (P : PROP)] : (⊢ P) → φ :=
   AsEmpValid.as_emp_valid.2 rfl
-
 
 /- Depending on the use case, type classes with the prefix `From` or `Into` are used. Type classes
 with the prefix `From` are used to generate one or more propositions *from* which the original
@@ -121,7 +128,6 @@ export FromAffinely (from_affinely)
 class IntoAbsorbingly [BI PROP] (P : outParam PROP) (Q : PROP) where
   into_absorbingly : P ⊢ <absorb> Q
 export IntoAbsorbingly (into_absorbingly)
-
 
 @[ipm_class]
 class FromAssumption (p : Bool) [BI PROP] (ioP : InOut) (P : semiOutParam PROP) (Q : PROP) where
