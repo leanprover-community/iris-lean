@@ -7,8 +7,6 @@ public import Iris.Std.Relation
 public meta import Lean.PrettyPrinter.Delaborator
 public import Batteries.Data.List.Basic
 
--- TODO: Term levels for the different notations were chosen arbitrarily.
---       Make sure they are adequate.
 -- TODO: Rename all `Context.fill` lemmas to something more consistent.
 --       In particular, for some other constructions they are referred to
 --       to as `_ctx`.
