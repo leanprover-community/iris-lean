@@ -267,7 +267,7 @@ class ConceptEntry:
     dir: str       # e.g. "proofmode/"
     feature: str   # e.g. "IPM Tactics"
     subfeature: str  # e.g. "iIntros" or "" for top-level
-    status: str    # "ported" | "missing"
+    status: str    # "ported" | "missing" | "blocked" | "unreachable" (should not happen)
     reason: str
 
 
@@ -280,9 +280,11 @@ class LeanData:
 
 def parse_status(status : str | dict[str, list[str]]) -> str:
     if type(status) is str:
+        # ported | missing
         return status
-    elif type(status) is dict:
-        return list(status.keys())[0]
+    elif type(status) is dict and [*status.keys()][0] == "depends_on":
+        # blocked
+        return "blocked"
     else: # Should be unreachable
         return "unreachable"
     
