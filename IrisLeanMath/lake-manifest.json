@@ -98,5 +98,5 @@
    "inputRev": "v4.29.0",
    "inherited": true,
    "configFile": "lakefile.toml"}],
- "name": "IrisLeanMath",
+ "name": "irismath",
  "lakeDir": ".lake"}
