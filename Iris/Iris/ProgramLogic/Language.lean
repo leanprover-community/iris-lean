@@ -1,7 +1,6 @@
 module
 
-meta import Iris.Std.RocqAlias
-meta import Iris.Std.RocqIgnore
+meta import Iris.Std.RocqPorting
 public import Iris.Std.FromMathlib
 public import Iris.Std.Relation
 public import Iris.Std.List
