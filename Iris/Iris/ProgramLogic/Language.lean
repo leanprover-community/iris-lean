@@ -13,6 +13,8 @@ public import Batteries.Data.List.Basic
 -- TODO: Consider renaming `ToVal` typeclass to something better, since
 --       it's not just the `toVal` operation it carries.
 
+namespace Iris.ProgramLogic
+
 @[expose] public section
 
 open FromMathlib
