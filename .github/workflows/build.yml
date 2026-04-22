@@ -21,6 +21,7 @@ jobs:
       - uses: leanprover/lean-action@v1
         with:
           lake-package-directory: Iris
+          build-args: "--wfail"
 
   build-math:
     needs: build
@@ -31,6 +32,7 @@ jobs:
         with:
           lake-package-directory: IrisMath
           use-mathlib-cache: true
+          build-args: "--wfail"
 
   report:
     needs: build
