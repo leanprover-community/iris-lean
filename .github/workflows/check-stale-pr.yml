@@ -1,0 +1,76 @@
+name: Check Stale Porting Entries (PR)
+
+on:
+  pull_request:
+    branches: ["master"]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-stale:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: Iris
+
+      - name: Read pinned Rocq commit
+        id: rocq-commit
+        run: echo "sha=$(cat scripts/ROCQ_REVISION)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Rocq definitions
+        uses: actions/cache@v4
+        with:
+          path: Iris/.lake/iris-rocq-cache
+          key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
+
+      - name: Generate stale report
+        run: |
+          python3 scripts/check_porting.py \
+            --format stale \
+            --rocq-commit "${{ steps.rocq-commit.outputs.sha }}" \
+            --lean-rev "${{ github.event.pull_request.head.sha }}" \
+            -o stale-report.txt
+
+      - name: Post stale report and fail if stale
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          marker='<!-- stale-porting-check -->'
+
+          if grep -q '^No stale entries\.$' stale-report.txt; then
+            echo "No stale entries."
+            exit 0
+          fi
+
+          {
+            echo "$marker"
+            echo "Stale porting entries detected against the pinned Iris-Rocq revision."
+            echo "Please update or remove the affected \`@[rocq_alias]\` / \`#rocq_ignore\` entries."
+            echo ""
+            echo '```'
+            cat stale-report.txt
+            echo '```'
+          } > comment-body.md
+
+          existing=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+            --jq "map(select(.body | startswith(\"$marker\"))) | .[0].id // empty")
+          if [ -n "$existing" ]; then
+            echo "Updating comment $existing"
+            gh api --method PATCH "repos/$REPO/issues/comments/$existing" \
+              -F body=@comment-body.md >/dev/null
+          else
+            echo "Posting new comment"
+            gh pr comment "$PR_NUMBER" --body-file comment-body.md
+          fi
+
+          echo "::error::Stale porting entries detected; see PR comment for the report."
+          exit 1
