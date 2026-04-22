@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   check-stale:
@@ -37,40 +36,22 @@ jobs:
             --lean-rev "${{ github.event.pull_request.head.sha }}" \
             -o stale-report.txt
 
-      - name: Post stale report and fail if stale
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
+      - name: Write job summary and fail if stale
         run: |
           set -euo pipefail
-          marker='<!-- stale-porting-check -->'
+
+          {
+            echo "## Stale porting entries"
+            echo ""
+            echo '```'
+            cat stale-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
           if grep -q '^No stale entries\.$' stale-report.txt; then
             echo "No stale entries."
             exit 0
           fi
 
-          {
-            echo "$marker"
-            echo "Stale porting entries detected against the pinned Iris-Rocq revision."
-            echo "Please update or remove the affected \`@[rocq_alias]\` / \`#rocq_ignore\` entries."
-            echo ""
-            echo '```'
-            cat stale-report.txt
-            echo '```'
-          } > comment-body.md
-
-          existing=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
-            --jq "map(select(.body | startswith(\"$marker\"))) | .[0].id // empty")
-          if [ -n "$existing" ]; then
-            echo "Updating comment $existing"
-            gh api --method PATCH "repos/$REPO/issues/comments/$existing" \
-              -F body=@comment-body.md >/dev/null
-          else
-            echo "Posting new comment"
-            gh pr comment "$PR_NUMBER" --body-file comment-body.md
-          fi
-
-          echo "::error::Stale porting entries detected; see PR comment for the report."
+          echo "::error::Stale porting entries detected; see the job summary for the report."
           exit 1
