@@ -1,0 +1,74 @@
+name: Check Stale Porting Entries
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: Iris
+
+      - name: Resolve Iris-Rocq master to a commit SHA
+        id: rocq-commit
+        run: |
+          sha=$(curl -fsSL \
+            "https://gitlab.mpi-sws.org/api/v4/projects/iris%2Firis/repository/commits/master" \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Rocq definitions
+        uses: actions/cache@v4
+        with:
+          path: Iris/.lake/iris-rocq-cache
+          key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
+
+      - name: Generate stale report
+        run: |
+          python3 scripts/check_porting.py \
+            --format stale \
+            --rocq-commit "${{ steps.rocq-commit.outputs.sha }}" \
+            --lean-rev "${{ github.sha }}" \
+            -o stale-report.txt
+
+      - name: Upsert stale-porting issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if grep -q '^No stale entries\.$' stale-report.txt; then
+            echo "No stale entries."
+            exit 0
+          fi
+
+          title="Stale porting entries against Iris Rocq master"
+          label="stale-porting"
+
+          {
+            echo "Detected by the nightly stale-porting check."
+            echo ""
+            echo "Workflow run: $RUN_URL"
+            echo ""
+            echo '```'
+            cat stale-report.txt
+            echo '```'
+          } > issue-body.md
+
+          existing=$(gh issue list --label "$label" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Updating issue #$existing"
+            gh issue edit "$existing" --title "$title" --body-file issue-body.md
+          else
+            echo "Opening new issue"
+            gh issue create --title "$title" --label "$label" --body-file issue-body.md
+          fi
