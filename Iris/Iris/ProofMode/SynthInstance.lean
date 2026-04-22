@@ -13,8 +13,14 @@ public meta section
 
 /-
 This file implements a custom typeclass synthesis algorithm that is used for the proof mode typeclasses.
+This custom typeclass synthesis is closer to Rocq typeclass search than Lean typeclass synthesis.
 This is necessary since proof mode typeclasses need to be able to instantiate and create new mvars, but the
 standard typeclass synthesis does not support this.
+
+Another problem with standard typeclass synthesis in Lean is that an mvar in an input position creates an IsDefEqStuck exception
+when matches against an instances with a term in the input position. This IsDefEqStuck exception completely terminates the synthesis
+without trying other instances. This creates problems for example for the `Make...` typeclasses that want to treat such cases as a
+normal matching failure that should not prevent other instances from matching.
 
 See also https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Issues.20with.20typeclasses.20in.20the.20proof.20mode/with/563410548 for discussion.
 
@@ -27,6 +33,9 @@ the IPM synthesis needs to be explicitly invoked via the functions in this file.
 
 The `ipm_backtrack` attribute on an instance tells the IPM synthesis to backtrack if instance instance can be applied, but
 its preconditions fail to synthesize. This is not enabled by default to avoid accidental exponential blow-ups.
+
+The `ipm_tactic_instance` attribute on a function of type `SynthTactic` declares a tactic that is used to solve synthesis problems for
+a given pattern. These tactics can call ipm synthesis recursively. See Tests/Instances.lean for examples.
 
 The `InOut` type in Classes.lean is used to dynamically determine, which parameters are inputs and which are outputs. IPM synthesis
 ignores `outParam` and `semiOutParam` annotations, but it is still recommended to add these annotations as documentation.
@@ -45,14 +54,13 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
     let backtrackSet := ipmBacktrackExt.getState (← getEnv)
     let mvarType  ← inferType mvar
     let mvarType  ← instantiateMVars mvarType
-    let bodyConstName ← forallTelescopeReducing mvarType fun _ typeBody => do
-      let typeBody ← whnf typeBody
-      return typeBody.getAppFn.constName
-    if !(ipmClassesExt.getState (← getEnv)).contains bodyConstName then
+    let some mvarInputs ← checkIPMSynthParams mvarType |
       return ← withTraceNode `Meta.synthInstance (λ _ => return m!"switch to normal synthInstance") do
-        let some e ← synthInstance? mvarType | return none
+        let .some e ← trySynthInstance mvarType | return none
         mvar.mvarId!.assign e
         return some ()
+    if mvarInputs.size != 0 then
+      trace[Meta.synthInstance.mvarInputs] m!"mvar inputs of {mvarType}: {mvarInputs}"
 
     let mctx0 ← getMCtx
     withTraceNode `Meta.synthInstance (λ _ => return m!"new goal {MessageData.withMCtx mctx0 m!"{mvarType}"} => {mvarType}") do
@@ -93,6 +101,14 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
     let instances ← SynthInstance.getInstances mvarType
     let mctx ← getMCtx
     for inst in instances.reverse do
+      -- check that all mvar inputs are also mvars in the instance
+      if mvarInputs.size != 0 then
+        let instType ← inferType inst.val
+        let instTypeArgs := instType.getForallBody.getAppArgs
+        if mvarInputs.any (λ i => !instTypeArgs[i]!.isBVar) then
+          trace[Meta.synthInstance] "skipping {inst.val} since it matches on an input mvar"
+          continue
+
       let (res, match?) ← withTraceNode `Meta.synthInstance
         (λ _ => withMCtx mctx do return MessageData.withMCtx mctx m!"apply {inst.val} to {← instantiateMVars (← inferType mvar)}") do
         setMCtx mctx
@@ -111,9 +127,15 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
 /-- This function should only be directly used by IPM tactic instances
 to initiate recursive searches. -/
 def synthInstanceRecursive (type : Expr) : MetaM (Option Expr) := do
+   let mctx ← getMCtx
    let mvar ← mkFreshExprMVar type
-   let some _ ← synthInstanceMainCore mvar | return none
-   return mvar
+   let res ← try
+       synthInstanceMainCore mvar
+     catch ex => setMCtx mctx; throw ex
+   if res.isSome then
+     return mvar
+   setMCtx mctx
+   return none
 
 /-- This function should only be directly used by IPM tactic instances
 to initiate recursive searches. -/
@@ -190,4 +212,5 @@ def ipm_synth_elab : Command.CommandElab
   | _ => throwUnsupportedSyntax
 
 initialize
+  registerTraceClass `Meta.synthInstance.mvarInputs (inherited := true)
   registerTraceClass `Meta.synthInstance.tactics (inherited := true)

@@ -8,11 +8,43 @@ module
 public import Iris.BI
 public import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Instances
+public import Iris.ProofMode.InstancesMake
 
 @[expose] public section
 
 namespace Iris.Tests
 open Lean Qq BI ProofMode
+
+/- Tests the mvar handling of synth and ipm_synth -/
+section mvars
+variable (PROP : Type u) [BI PROP]
+
+set_option pp.mvars false
+
+/-- info: None -/
+#guard_msgs in
+#ipm_synth QuickAbsorbing (PROP:=PROP) _
+
+-- check that ipm_synth does not accidentally instantiate input mvars
+/-- info: solution: MakeSep iprop(True) ?_ iprop(True ∗ ?_), new goals: [?_: PROP] -/
+#guard_msgs in
+#ipm_synth MakeSep (PROP:=PROP) iprop(True) _ _
+
+/-- info: solution: MakeIntuitionistically ?_ iprop(□ ?_), new goals: [?_: PROP] -/
+#guard_msgs in
+#ipm_synth MakeIntuitionistically (PROP:=PROP) _ _
+
+variable [BIAffine PROP]
+
+/-- info: solution: QuickAbsorbing ?_, new goals: [?_: PROP] -/
+#guard_msgs in
+#ipm_synth QuickAbsorbing (PROP:=PROP) _
+
+/-- info: solution: MakeSep iprop(True) ?_ ?_, new goals: [?_: PROP] -/
+#guard_msgs in
+#ipm_synth MakeSep (PROP:=PROP) iprop(True) _ _
+
+end mvars
 
 /- Test the backtracking of ipm_synth -/
 section backtracking
@@ -262,7 +294,7 @@ trace: [Meta.synthInstance] ❌️ IPM: TacticTest iprop(True) ?_
 #guard_msgs (substring := true) in
 set_option trace.Meta.synthInstance true in
 set_option pp.mvars false in
-#ipm_synth (TacticTest iprop(True) _)
+#ipm_synth (TacticTest (PROP:=PROP) iprop(True) _)
 
 
 end tactics

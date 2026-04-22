@@ -59,7 +59,7 @@ theorem modaction_sep [BI PROP1] [bi2: BI PROP2] {elhs erhs elhs' erhs'} {M : Mo
 
 theorem modintro [BI PROP1] [BI PROP2] {e e'} {Φ M sel} {P : PROP2} {Q : PROP1} [FromModal Φ M sel P Q]
   (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P :=
-    (h1.trans (M.mono h2)).trans (from_modal sel hΦ)
+    (h1.trans (M.mono h2)).trans (from_modal hΦ)
 
 public meta section
 open Lean Elab Tactic Meta

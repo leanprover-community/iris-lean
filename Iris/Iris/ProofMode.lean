@@ -5,6 +5,7 @@ public import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Display
 public meta import Iris.ProofMode.Expr
 public import Iris.ProofMode.Instances
+public import Iris.ProofMode.InstancesFrame
 public import Iris.ProofMode.InstancesLater
 public import Iris.ProofMode.InstancesMake
 public import Iris.ProofMode.InstancesPlainly

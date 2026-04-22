@@ -72,11 +72,11 @@ elab "iemp_intro" : tactic => do
   mvar.assign q(affine (P := $e))
 
 theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
-    [h : FromPure true Q φ] [Affine P] (hφ : φ) : P ⊢ Q :=
+    [h : FromPure true Q .out φ] [Affine P] (hφ : φ) : P ⊢ Q :=
   (affine.trans (eq_true hφ ▸ affinely_true.2)).trans h.1
 
 theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
-    [h : FromPure false Q φ] (hφ : φ) : P ⊢ Q :=
+    [h : FromPure false Q .out φ] (hφ : φ) : P ⊢ Q :=
   (pure_intro hφ).trans h.1
 
 elab "ipure_intro" : tactic => do
@@ -84,7 +84,7 @@ elab "ipure_intro" : tactic => do
 
   let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
-  let .some _ ← ProofModeM.trySynthInstanceQ q(FromPure $b $goal $φ)
+  let .some _ ← ProofModeM.trySynthInstanceQ q(FromPure $b $goal .out $φ)
     | throwError "ipure_intro: {goal} is not pure"
   let m : Q($φ) ← mkFreshExprMVar (← instantiateMVars φ)
   addMVarGoal m.mvarId!
