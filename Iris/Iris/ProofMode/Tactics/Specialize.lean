@@ -8,6 +8,7 @@ module
 public meta import Iris.ProofMode.Patterns.ProofModeTerm
 public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.Tactics.Basic
+public meta import Iris.ProofMode.Tactics.Frame
 
 namespace Iris.ProofMode
 
@@ -32,6 +33,12 @@ theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 : PROP} P
     [inst : IntoWand q false Q .out P1 .out P2] : A1 ⊢ A3 ∗ P2 := by
   refine h1.trans <| (sep_mono_l h2.1).trans <| sep_assoc.1.trans (sep_mono_r ((sep_mono_l h3).trans ?_))
   exact (sep_mono_r inst.1).trans wand_elim_r
+
+theorem specialize_wand_autoframe [BI PROP] {q : Bool} {A1 A2 A3 Q P1 : PROP} P2
+     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ A3 ∗ P1)
+     [inst : IntoWand q false Q .out P1 .out P2] : A1 ⊢ A3 ∗ P2 :=
+  h1.trans <| (sep_mono_l h2).trans <| sep_assoc.1.trans
+    (sep_mono_r ((sep_mono_r inst.into_wand).trans wand_elim_r))
 
 theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     [inst : IntoForall P Φ] (h : A1 ⊢ A2 ∗ □?p P) (a : α) : A1 ⊢ A2 ∗ □?p (Φ a) := by
@@ -80,18 +87,41 @@ private def processWand :
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
     return { e, hyps, p, out := out', pf := q(specialize_forall $pf $x) }
-  | { hyps, p, out, pf, .. }, .goal ns g => do
+  | { hyps, p, out, pf, .. }, .goal {kind, negate, frame:=f, hyps := hs} g => do
+    if kind != .spatial then
+      -- TODO
+      throwError "ispecialize: only spatial kind is supported at the moment"
     let mut uniqs : NameSet := {}
-    for name in ns do
+    for name in hs do
       uniqs := uniqs.insert (← hyps.findWithInfo name)
-    let ⟨el', _, hypsl', hypsr', h'⟩ := Hyps.split bi (λ _ uniq => uniqs.contains uniq) hyps
+    let mut frameUniqs : List Name := []
+    for name in f do
+      let uniq ← hyps.findWithInfo name
+      frameUniqs := uniq :: frameUniqs
+      if uniqs.contains uniq then
+        throwError "ispecialize: {name} used twice"
+    frameUniqs := frameUniqs.reverse
+    let ⟨el', _, hypsl', hypsr', pf'⟩ := Hyps.split bi (λ _ uniq => (negate ^^ uniqs.contains uniq) || frameUniqs.contains uniq) hyps
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
       | throwError m!"ispecialize: {out} is not a wand"
-    let pf' ← addBIGoal hypsr' out₁ g
-    let pf := q(specialize_wand_subgoal $out₂ $pf $h' $pf')
+    let res ← iFrame bi _ hypsr' out₁ (frameUniqs.map (⟨.inl ·, true⟩))
+    let pf'' ← res.finish (addBIGoal · · g)
+    let pf := q(specialize_wand_subgoal $out₂ $pf $pf' $pf'')
     return { e := el', hyps := hypsl', p := q(false), out := out₂, pf }
+
+  | { hyps, p, out, pf, .. }, .autoframe kind => do
+    if kind != .spatial then
+      -- TODO
+      throwError "ispecialize: only spatial kind is supported at the moment"
+    let out₁ ← mkFreshExprMVarQ prop
+    let out₂ ← mkFreshExprMVarQ prop
+    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
+      | throwError m!"ispecialize: {out} is not a wand"
+    let res ← iFrame bi _ hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
+    let ⟨_, hyps', pf'⟩ ← res.finishClose
+    return { e := _, hyps := hyps', p := q(false), out := out₂, pf := q(specialize_wand_autoframe $out₂ $pf $pf') }
 
 /-- `iCasesPat.should_try_dup_context` determines when iSpecializeCore should try to duplicate the separation context.
 The duplication only works if the conclusion of the specialization is persistent.

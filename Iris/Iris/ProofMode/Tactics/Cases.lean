@@ -12,6 +12,7 @@ public meta import Iris.ProofMode.Tactics.Pure
 public meta import Iris.ProofMode.Tactics.Clear
 public meta import Iris.ProofMode.Tactics.Basic
 public meta import Iris.ProofMode.Tactics.HaveCore
+public meta import Iris.ProofMode.Tactics.Frame
 
 namespace Iris.ProofMode
 
@@ -116,10 +117,10 @@ private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
     let goal' := q(iprop(□ $A2 -∗ $goal))
     let pf ← k1 hyps goal' A1 fun hyps goal' => do
       let goal'' ← mkFreshExprMVarQ q($prop)
-      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $goal' iprop(□ $A2) $goal'')
+      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in iprop(□ $A2) $goal'')
         | throwError "icases: internal error: {goal'} is not a wand"
       let pf ← k2 hyps goal'' A2 k
-      return q((wand_intro $pf).trans from_wand)
+      return q((wand_intro $pf).trans (from_wand .in (Q1:=iprop(□ $A2))))
     return q(and_elim_intuitionistic $pf)
   | .inr _ =>
     let .some _ ← ProofModeM.trySynthInstanceQ q(IntoSep $A $A1 $A2)
@@ -127,10 +128,10 @@ private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
     let goal' := q(iprop($A2 -∗ $goal))
     let pf ← k1 hyps goal' A1 fun hyps goal' => do
       let goal'' ← mkFreshExprMVarQ q($prop)
-      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $goal' $A2 $goal'')
+      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in $A2 $goal'')
         | throwError "icases: internal error: {goal'} is not a wand"
       let pf ← k2 hyps goal'' A2 k
-      return q((wand_intro $pf).trans from_wand)
+      return q((wand_intro $pf).trans (from_wand .in (Q1:=$A2)))
     return q(sep_elim_spatial (A := $A) $pf)
 
 /-- Destruct a disjunction hypothesis [A] into two cases and continue separately on each branch. -/
@@ -190,7 +191,7 @@ A proof of `hyps ∗ □?p A ⊢ goal`.
 -/
 partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat)
     (p : Q(Bool)) (A : Q($prop))
-    (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal)) :
+    (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal')) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) :=
   match pat with
   | .one name => do
@@ -205,6 +206,11 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
   | .clear => do
     let pf ← iClearCore bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl)
     pure q($pf $(← k hyps goal))
+
+  | .frame => do
+    let ⟨uniq, hyps'⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
+    let res ← iFrame bi _ hyps' goal [⟨.inl uniq, true⟩]
+    res.finish @k
 
   | .conjunction [arg] | .disjunction [arg] => iCasesCore hyps goal arg p A @k
 
