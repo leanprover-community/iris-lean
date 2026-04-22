@@ -13,7 +13,7 @@ Currently, Iris-Lean has support for
 - *MoSeL*, the proof interface of Iris
 - `UPred`, the Iris base logic
 - `IProp`, the standard model of Iris
-- A selection of the Iris resources, including invariants, later credis, and many more.
+- A selection of the Iris resources, including invariants, later credits, and many more.
 
 MoSeL (in contrast to the older IPM) supports different separation logics as well. For more details on the proofmode, see [proofmode.md](proofmode.md).
 
