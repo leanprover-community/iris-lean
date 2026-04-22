@@ -120,6 +120,12 @@ theorem DistLater.dist_lt [OFE α] {m n} {x y : α} (h : DistLater n x y) (hm : 
 theorem distLater_succ [OFE α] {n} {x y : α} : DistLater n.succ x y ↔ x ≡{n}≡ y :=
   ⟨(·.dist_lt (Nat.lt_succ_self _)), fun h1 _ h2 => h1.le (Nat.le_of_lt_succ h2)⟩
 
+theorem distLater_soundness [OFE α] {x y : α} (H : ∀ n, DistLater n x y → x ≡{n}≡ y) : x ≡ y := by
+  refine equiv_dist.mpr (fun n => ?_)
+  induction n with
+  | zero => exact H 0 distLater_zero
+  | succ n IH => exact H (n + 1) (distLater_succ.mpr IH)
+
 /-- A function `f : α → β` is contractive if it sends `DistLater n`-equivalent inputs to
 `n`-equivalent outputs. -/
 class Contractive [OFE α] [OFE β] (f : α → β) where
