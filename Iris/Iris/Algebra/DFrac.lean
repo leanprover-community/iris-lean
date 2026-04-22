@@ -10,12 +10,14 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.Frac
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
+meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
 namespace Iris
 
 /-- Knowledge about a discardable fraction. -/
+@[rocq_alias dfrac]
 inductive DFrac (F : Type _) where
 /-- Ownership of `F` plus knowledge that no fraction has been discarded. -/
 | own (f : F) : DFrac F
@@ -34,6 +36,7 @@ open DFrac Fraction OFE.Discrete
 
 variable [UFraction F]
 
+@[rocq_alias dfrac_inhabited]
 instance : Inhabited (DFrac F) := ⟨discard⟩
 
 def valid : DFrac F → Prop
@@ -109,6 +112,7 @@ theorem own_whole_exclusive {w : F} (Hw : Whole w) : CMRA.Exclusive (own w) wher
     · exact Hw.not_fractional
     · exact fun Hk => Hw.not_fractional Hk.of_add_left
 
+@[rocq_alias dfrac_full_exclusive]
 instance : CMRA.Exclusive (own (1 : F)) :=
   own_whole_exclusive <| UFraction.one_whole
 
@@ -128,6 +132,7 @@ instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (F := F) 
     · exact UFraction.one_whole.2 Hv2
     · exact UFraction.one_whole.2 <| Fractional.of_add_left Hv2
 
+@[rocq_alias dfrac_cancelable]
 instance {f : F} : CMRA.Cancelable (own f) where
   cancelableN {_} := by
     rintro ⟨⟩ ⟨⟩ <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
@@ -137,36 +142,45 @@ instance {f : F} : CMRA.Cancelable (own f) where
     · cases add_ne ((add_comm ..).trans Hxyz').symm
     · exact congrArg ownDiscard <| add_left_cancel Hxyz'
 
+@[rocq_alias dfrac_own_id_free]
 instance {f : F} : CMRA.IdFree (own f) where
   id_free0_r := by
     rintro (y|_|y) <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
     any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
     exact (add_ne ((add_comm ..).trans Hxyz').symm).elim
 
+@[rocq_alias dfrac_valid_own_1]
 theorem valid_own_one : ✓ own (One.one : F) := UFraction.one_whole.1
 
+@[rocq_alias dfrac_valid_own_r]
 theorem valid_op_own {dq : DFrac F} {q : F} : ✓ dq • own q → Fractional q := by
   obtain y|_|y := dq
   · exact (⟨y, add_comm (α := F) .. ▸ ·⟩)
   · exact id
   · exact Fractional.of_add_right
 
+@[rocq_alias dfrac_valid_own_l]
 theorem valid_own_op {dq : DFrac F} {q : F} : ✓ own q • dq → Fractional q :=
   valid_op_own ∘ CMRA.valid_of_eqv (CMRA.comm (y := dq))
 
+@[rocq_alias dfrac_valid_discarded]
 theorem valid_discard : ✓ (discard : DFrac F) := by simp [CMRA.Valid, valid]
 
+@[rocq_alias dfrac_valid_own_discarded]
 theorem valid_own_op_discard {q : F} : ✓ own q • discard ↔ Fractional q := by
   simp [CMRA.op, op, CMRA.Valid, valid]
 
+@[rocq_alias dfrac_cmra_discrete]
 instance : CMRA.Discrete (DFrac F) where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 
 theorem is_discrete {q : DFrac F} : OFE.DiscreteE q := ⟨congrArg id⟩
 
+@[rocq_alias dfrac_discarded_core_id]
 instance : CMRA.CoreId (DFrac.discard (F := F)) where
   core_id := by simp [CMRA.pcore, DFrac.pcore]
 
+@[rocq_alias dfrac_discard_update]
 theorem DFrac.update_discard {dq : DFrac F} : dq ~~> .discard := by
   intros n q H
   apply (CMRA.valid_iff_validN' n).mp
@@ -176,6 +190,7 @@ theorem DFrac.update_discard {dq : DFrac F} : dq ~~> .discard := by
   · cases dq <;> first | exact valid_op_own H | exact H
   · cases dq <;> first | exact Fractional.of_add_right H | exact H
 
+@[rocq_alias dfrac_undiscard_update]
 theorem DFrac.update_acquire [IsSplitFraction F] :
     (.discard : DFrac F) ~~>: fun k => ∃ q, k = .own q := by
   apply UpdateP.discrete.mpr

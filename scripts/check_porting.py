@@ -38,6 +38,9 @@ from pathlib import Path
 
 DEFAULT_ROCQ_REVISION = (Path(__file__).parent / "ROCQ_REVISION").read_text().strip()
 
+# The Lean package root (contains lakefile.toml and .lake/).
+LEAN_PKG_DIR = Path(__file__).parent.parent / "Iris"
+
 # Iris-Rocq is hosted on the MPI-SWS GitLab instance.
 GITLAB_PROJECT_ID = "iris%2Firis"  # URL-encoded "iris/iris"
 GITLAB_API_BASE = "https://gitlab.mpi-sws.org/api/v4"
@@ -255,6 +258,7 @@ def run_lake_dump(output_path: str = ".lake/porting_data.json") -> None:
     result = subprocess.run(
         ["lake", "exe", "dumpPortingData", output_path],
         capture_output=True, text=True,
+        cwd=LEAN_PKG_DIR,
     )
     if result.returncode != 0:
         log(f"Error running lake exe dumpPortingData:\n{result.stderr}")
@@ -722,8 +726,8 @@ def main():
                         help="Skip running lake exe dumpPortingData")
     parser.add_argument("--lean-rev", default="Local",
                         help="Iris-Lean revision label (default: Local)")
-    parser.add_argument("--cache-dir", default=".lake/iris-rocq-cache")
-    parser.add_argument("--lean-json", default=".lake/porting_data.json")
+    parser.add_argument("--cache-dir", default=str(LEAN_PKG_DIR / ".lake/iris-rocq-cache"))
+    parser.add_argument("--lean-json", default=str(LEAN_PKG_DIR / ".lake/porting_data.json"))
     args = parser.parse_args()
 
     # Step 1: Collect Lean-side data (rocq_alias + #rocq_ignore entries).
