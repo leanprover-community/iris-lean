@@ -14,7 +14,7 @@ public import Iris.Instances.IProp
 @[expose] public section
 
 /-! ## Later credits
-TODO: missing instances for PM: frame_le_upd, frame_le_upd_if, combine_sep_lc_add, combine_sep_lc_S_l
+TODO: missing instances for PM: combine_sep_lc_add, combine_sep_lc_S_l
 -/
 
 namespace Iris
@@ -441,6 +441,10 @@ instance {P : IProp GF} : ElimModal True p false (le_upd P) P (le_upd Q) (le_upd
     · iintro ⟨H1, H2⟩
       iapply le_upd_bind $$ H2 H1
 
+@[rocq_alias le_upd.frame_le_upd]
+instance {p} {P R Q : IProp GF} [hf : Frame p R P Q] : Frame p R (le_upd P) (le_upd Q) where
+  frame := le_upd_frame_l.trans <| le_upd_mono hf.frame
+
 end Internal
 
 @[rocq_alias le_upd.lc_alloc]
@@ -566,6 +570,10 @@ instance {b} {P : IProp GF} : FromModal True modality_id (le_upd_if b P) (le_upd
 instance {b} {p} {P Q : IProp GF} :
   ElimModal True p false (le_upd_if b P) P (le_upd_if b Q) (le_upd_if b Q) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
+
+@[rocq_alias le_upd_if.frame_le_upd_if]
+instance {p b} {P R Q : IProp GF} [hf : Frame p R P Q] : Frame p R (le_upd_if b P) (le_upd_if b Q) where
+  frame := le_upd_if_frame_l.trans <| le_upd_if_mono hf.frame
 
 @[rocq_alias le_upd_if.from_assumption_le_upd_if]
 instance from_assumption_le_upd_if {p} {P Q : IProp GF} [h : FromAssumption p ioP P Q] : FromAssumption p ioP P (le_upd_if b Q) where

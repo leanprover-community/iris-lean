@@ -166,6 +166,11 @@ class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (p' : outPara
   elim_modal : φ → □?p P ∗ (□?p' P' -∗ Q') ⊢ Q
 export ElimModal (elim_modal)
 
+@[ipm_class]
+class Frame {PROP} [BI PROP] (p : Bool) (R P : PROP) (Q : outParam PROP) where
+  frame : □?p R ∗ Q ⊢ P
+export Frame (frame)
+
 
 /-- `IntoLaterN` turns `P` into `▷^[n] Q`.
 The Boolean [only_head] indicates whether laters should only be stripped in

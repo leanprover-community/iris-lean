@@ -46,19 +46,22 @@ partial def SelPat.parse (pats : TSyntaxArray `selPat) : MacroM (List SelPat) :=
 
 public meta section
 
-abbrev SelTarget := Name ⊕ FVarId
+structure SelTarget where
+  target : Name ⊕ FVarId
+  /- Was this target specified explicitly or is it from a glob like ∗? -/
+  explicit : Bool
 
 /-- Resolve selection patterns to concrete proofmode hypotheses (`.inl`) and Lean locals (`.inr`). -/
 def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget)
   | .ident name =>
-      return [.inl (← hyps.findWithInfo name)]
+      return [⟨.inl (← hyps.findWithInfo name), true⟩]
   | .leanIdent name => do
       let ldecl ← getLocalDeclFromUserName name.getId
-      return [.inr ldecl.fvarId]
+      return [⟨.inr ldecl.fvarId, true⟩]
   | .intuitionistic =>
-      return hyps.intuitionisticUniqs.map .inl
+      return hyps.intuitionisticUniqs.map (⟨.inl ·, false⟩)
   | .spatial =>
-      return hyps.spatialUniqs.map .inl
+      return hyps.spatialUniqs.map (⟨.inl ·, false⟩)
   | .pure => do
       -- `%` selects user-facing Lean pure assumptions, so we keep only `Prop` hypotheses.
       let mut hyps := #[]
@@ -67,12 +70,13 @@ def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget
           continue
         if ! (← isProp ldecl.type) then
           continue
-        hyps := hyps.push (.inr ldecl.fvarId)
+        hyps := hyps.push (⟨.inr ldecl.fvarId, false⟩)
       return hyps.toList
 
 def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) :
     ProofModeM (List SelTarget) := do
-  return (← pats.flatMapM (SelPat.resolveOne hyps)).eraseDups
+  -- we want to remove duplicates and if an pattern is first explicitly specified and then non-explicitly, we want to remove the non-explicit version (but not the other way around)
+  return (← pats.flatMapM (SelPat.resolveOne hyps)).eraseDupsBy (λ snd fst => snd.target == fst.target && (fst.explicit == snd.explicit || fst.explicit))
 
 end
 

@@ -41,9 +41,7 @@ example : ⊢ |==> ∃ (γ0 γ1 : GName) (s0 s1 : String),
 
   -- Complete the Iris proof
   iexists γ0, γ1, "string0", "string1"
-  isplitl [Hγ0]
-  · iexact Hγ0
-  · iexact Hγ1
+  iframe
 
 
 end Example1
@@ -165,9 +163,7 @@ example (e e' : Expr) Φ (Hstep : ∀ {s : State}, @step _ _ Value _ (e, s) = (e
   · ipure_intro
     exact Hstep
   · iintro !> !>
-    isplitl [Hs]
-    · iexact Hs
-    · iexact Hspec
+    iframe
 
 /- The pattern of rules for stateful steps, for example, writing to a piece of memory.
    This style of rule applies when ownership over a resource P (eg. k ↦[γ] v) ensures that the state
@@ -183,16 +179,15 @@ example (e e' : Expr) (P P' : IProp GF) Φ
   iright
   iintro %s Hs
   ihave ⟨%s', %Hstep, Hupd⟩ := Hstep s $$ [HP Hs]
-  . isplitl [HP] <;> iassumption
+  . iframe
   iexists e', s'
   isplitr
   · ipure_intro; exact Hstep
   iintro !>
   imod Hupd with ⟨HP', Hs⟩
   iintro !>
-  isplitl [Hs]
-  · iexact Hs
-  · iapply Hspec $$ HP'
+  iframe
+  iapply Hspec $$ HP'
 
 /- Looping programs, by Löb induction -/
 example (e : Expr) Φ (Hloop : ∀ σ : State, step Value (e, σ) = (e, σ)) :
@@ -206,9 +201,7 @@ example (e : Expr) Φ (Hloop : ∀ σ : State, step Value (e, σ) = (e, σ)) :
   isplitr
   · ipure_intro; exact Hloop s
   iintro !> !>
-  isplitl [Hs]
-  · iassumption
-  · iassumption
+  iframe
   · exact true_intro
 
 end Example3

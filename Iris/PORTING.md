@@ -397,6 +397,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] iEmpIntro
   - [x] iPureIntro
   - [ ] iFrame
+    - [x] basic
+    - [ ] existential quantifiers
   - [ ] iRevert
     - [x] basic
     - [ ] `intoIH` revert
@@ -436,7 +438,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] IIdent
   - [x] IFresh
   - [x] IDrop
-  - [ ] IFrame
+  - [x] IFrame
   - [x] IList
   - [x] IPure
   - [x] IIntuitionistic

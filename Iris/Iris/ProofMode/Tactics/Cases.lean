@@ -12,6 +12,7 @@ public meta import Iris.ProofMode.Tactics.Pure
 public meta import Iris.ProofMode.Tactics.Clear
 public meta import Iris.ProofMode.Tactics.Basic
 public meta import Iris.ProofMode.Tactics.HaveCore
+public meta import Iris.ProofMode.Tactics.Frame
 
 namespace Iris.ProofMode
 
@@ -190,7 +191,7 @@ A proof of `hyps ∗ □?p A ⊢ goal`.
 -/
 partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat)
     (p : Q(Bool)) (A : Q($prop))
-    (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal)) :
+    (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal')) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) :=
   match pat with
   | .one name => do
@@ -205,6 +206,15 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
   | .clear => do
     let pf ← iClearCore bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl)
     pure q($pf $(← k hyps goal))
+
+  | .frame => do
+    let ⟨uniq, hyps'⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
+    let ⟨_, hyps'', goal'', pf⟩ ← iFrame bi _ hyps' goal [⟨.inl uniq, true⟩]
+    match pf with
+    | .inl pf =>
+      return q($pf $(← k hyps'' goal''))
+    | .inr pf =>
+      return q($pf)
 
   | .conjunction [arg] | .disjunction [arg] => iCasesCore hyps goal arg p A @k
 

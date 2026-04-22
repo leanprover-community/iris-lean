@@ -52,7 +52,7 @@ elab "iclear" pats:(colGt selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
   ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do
-  let (uniqs, fvars) := (← SelPat.resolve hyps pats).partitionMap id
+  let (uniqs, fvars) := (← SelPat.resolve hyps pats).partitionMap (·.target)
 
   -- Clear the selected Iris hypotheses first, updating the proof-mode context and proof term.
   let mut st : ClearState e goal := { e, hyps, pf := q(fun h => h) }

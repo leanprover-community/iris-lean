@@ -1255,6 +1255,18 @@ example [BI PROP] (P Q : PROP) : ⊢ P -∗ <affine> Q -∗ P := by
   icases HQ with -
   iexact HP
 
+/-- Tests `icases` to frame hypothesis -/
+example [BI PROP] (P : PROP) : ⊢ P -∗ P := by
+  iintro HP
+  icases HP with $
+
+/-- Tests `icases` to frame persistent hypothesis -/
+example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) -∗ P ∗ Q := by
+  iintro #HP Hwand
+  icases HP with $
+  iapply Hwand
+  iframe #
+
 /-- Tests `icases` with nested conjunction -/
 example [BI PROP] (Q : PROP) : □ (P1 ∧ P2 ∧ Q) ⊢ Q := by
   iintro #HP
@@ -1895,3 +1907,156 @@ example [BI PROP] (P : PROP) : P ⊢ P := by
   inext
 
 end inext
+
+section iframe
+
+/- Tests basic `iframe` -/
+example [BI PROP] (P : PROP) : P ⊢ P := by
+  iintro HP
+  iframe HP
+
+/- Tests `iframe` not closing goal with non-affine assumption -/
+/--
+error: unsolved goals
+PROP : Type u_1
+inst✝ : BI PROP
+P Q : PROP
+⊢ ⏎
+  ∗HQ : Q
+  ⊢ emp
+-/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ∗ Q ⊢ P := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+
+/- Tests `iframe` closing goal with absorbing goal -/
+example [BI PROP] (P Q : PROP) : <absorb> P ∗ Q ⊢ <absorb> P := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+
+/- Tests `iframe` with pure hyp -/
+example [BI PROP] (Q : PROP) :
+  1 = 1 →
+  Q ⊢ ⌜1 = 1⌝ := by
+  iintro %heq HQ
+  iframe %heq
+
+/- Tests `iframe` error with pure hyp mismatch -/
+/-- error: iframe: cannot frame ⌜1 = 2⌝ -/
+#guard_msgs in
+example [BI PROP] (Q : PROP) :
+  1 = 2 →
+  Q ⊢ ⌜1 = 1⌝ := by
+  iintro %heq HQ
+  iframe %heq
+
+/- Tests `iframe` error with non-prop -/
+/-- error: iframe: Q is not a Prop -/
+#guard_msgs in
+example [BI PROP] (Q : PROP) :
+  Q ⊢ ⌜1 = 1⌝ := by
+  iintro HQ
+  iframe %Q
+
+/- Tests `iframe` under star -/
+example [BI PROP] (P Q : PROP) : P ∗ Q ⊢ P ∗ Q := by
+  iintro ⟨HP, HQ⟩
+  iframe HP HQ
+
+/- Tests `iframe` under nested star -/
+example [BI PROP] (P Q : PROP) : P ∗ Q ∗ Q ⊢ (P ∗ Q) ∗ Q := by
+  iintro ⟨HP, HQ1, HQ2⟩
+  iframe HP
+  iframe HQ1 HQ2
+
+/- Tests `iframe` without explicit patterns -/
+example [BI PROP] (P Q : PROP) : P ∗ Q ∗ Q ⊢ (P ∗ Q) ∗ Q := by
+  iintro ⟨HP, HQ1, HQ2⟩
+  iframe
+
+/- Tests `iframe` with persistent hyp cancelling multiple times -/
+example [BI PROP] (P Q : PROP) : P ∗ □ Q ⊢ (P ∗ Q) ∗ Q := by
+  iintro ⟨HP, #HQ1⟩
+  iframe HQ1
+  iframe
+
+/- Tests `iframe` under and -/
+example [BI PROP] (P : PROP) : P ⊢ (P ∧ P) := by
+  iintro HP
+  iframe HP
+
+/- Tests `iframe` under and -/
+example [BI PROP] (P Q : PROP) [BIAffine PROP] : P ∗ Q ⊢ (P ∧ Q) := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+  iframe HQ
+
+/- Tests `iframe` under and for non-affine P failing -/
+/-- error: iframe: cannot frame P -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ∗ Q ⊢ (P ∧ Q) := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+
+/- Tests `iframe` under and for intuitionistic hyp -/
+example [BI PROP] (P Q : PROP) [Affine Q] : □ P ∗ Q ⊢ (P ∧ Q) := by
+  iintro ⟨#HP, HQ⟩
+  iframe HP
+  iframe HQ
+
+/- Tests `iframe` under or -/
+example [BI PROP] (P Q : PROP) : P ∗ Q ⊢ (P ∗ Q ∨ P ∗ Q) := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+  iframe HQ
+
+/- Tests `iframe` under or only left fails -/
+/-- error: iframe: cannot frame P -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ∗ Q ⊢ (P ∗ Q ∨ Q) := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+
+/- Tests `iframe` under or only left works if persistent -/
+example [BI PROP] (P Q : PROP) : □ P ∗ Q ⊢ (P ∗ Q ∨ Q) := by
+  iintro ⟨#HP, HQ⟩
+  iframe HP
+  iframe HQ
+
+/- Tests `iframe` under or solve left -/
+example [BI PROP] (P Q : PROP) [BIAffine PROP] : P ∗ Q ⊢ (P ∨ Q) := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+
+/- Tests `iframe` under or solve right -/
+example [BI PROP] (P Q : PROP) [BIAffine PROP] : P ∗ Q ⊢ (Q ∨ P) := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+
+/- Tests `iframe` under modalities -/
+example [BI PROP] (P : PROP) : □ P ⊢ <pers> <affine> <absorb> □ P := by
+  iintro #HP
+  iframe HP
+
+/- Tests `iframe` under more modalities -/
+example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] (P : PROP) [BIAffine PROP] E :
+  P ⊢ ▷ |==> |={E}=> P := by
+  iintro HP
+  iframe HP
+
+/- Tests `iframe` under magic wand -/
+example [BI PROP] (P Q : PROP) : P ⊢ Q -∗ P ∗ Q := by
+  iintro HP
+  iframe HP
+  iintro HQ
+  iframe HQ
+
+/- Tests `iframe` under implication -/
+example [BI PROP] (P Q : PROP) [BIAffine PROP] : P ⊢ □ Q → P ∗ Q := by
+  iintro HP
+  iframe HP
+  iintro #HQ
+  iframe HQ
+
+end iframe
