@@ -35,7 +35,7 @@ rev = "master"
 [[require]]
 name = "iris"
 git.url = "https://github.com/leanprover-community/iris-lean.git" 
-git.subDir = "IrisLean" 
+git.subDir = "IrisMath" 
 rev = "master"
 ```
 
