@@ -92,6 +92,7 @@ instance ElemG.unbundle.ne {E : ElemG GF F} [OFE T] :
     OFE.NonExpansive (E.unbundle (T := T)) where
   ne {_ _ _} H := OFE.transpAp_eqv_mp (E.transpMap T) (E.transpClass T) H
 
+omit I in
 theorem ElemG.bundle_discreteE {GF : BundledGFunctors} [RFunctorContractive F] (E : ElemG GF F)
     {v : F.ap (IProp GF)} [DiscreteE v] : DiscreteE (E.bundle v) where
   discrete hz :=
@@ -496,12 +497,12 @@ theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOw
 @[rocq_alias own_valid]
 theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a :=
   (UPred.ownM_valid _).trans (internalCmraValid_entails.mpr fun _ => validN_of_iSingleton)
-  
+
 @[rocq_alias own_valid_2]
 theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} :
     iOwn γ a1 ∗ iOwn γ a2 ⊢ internalCmraValid (a1 • a2) :=
   iOwn_op.mpr.trans iOwn_cmraValid
-  
+
 @[rocq_alias own_valid_r]
 theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ internalCmraValid a :=
   BI.persistent_entails_l iOwn_cmraValid
