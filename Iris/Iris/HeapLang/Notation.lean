@@ -117,7 +117,7 @@ syntax:100 "injr(" hl_exp ")" : hl_exp
 syntax:100 "allocn(" hl_exp ", " hl_exp ")" : hl_exp
 syntax:100 "ref(" hl_exp ")" : hl_exp
 syntax:100 "free(" hl_exp ")" : hl_exp
-syntax:100 "!" hl_exp:75 : hl_exp
+syntax:100 "!" hl_exp:100 : hl_exp
 syntax:15 hl_exp:16 " ← " hl_exp:15 : hl_exp
 syntax:100 "cmpXchg(" hl_exp ", " hl_exp ", " hl_exp ")" : hl_exp
 syntax:100 "xchg(" hl_exp ", " hl_exp ")" : hl_exp

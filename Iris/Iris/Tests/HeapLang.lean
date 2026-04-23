@@ -138,6 +138,14 @@ info: Exp.rec_ Binder.anon (Binder.named "x")
 set_option pp.explicit true in
 #check hl(λ x y, #1 + #2 +ₗ #3 - #4 * #5 / #6 % #7 & #8 | #9 ^ #10 <<< #11 >>> #12 <= #13 ≤ #14 < #15 = #16 + (-#17) + (~#18))
 
+/--
+info: Exp.binop BinOp.shiftl (Exp.var "x").load
+  (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))) : Exp
+-/
+#guard_msgs in
+set_option pp.explicit true in
+#check hl(!x <<< #1)
+
 /-- info: hl(if #1 then #2 else #3) : Exp -/
 #guard_msgs in
 #check hl(if #1 then #2 else #3)
