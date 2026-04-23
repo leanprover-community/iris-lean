@@ -161,7 +161,7 @@ theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) ≡ x 
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x := by
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
-  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold, -OFE.leibniz]
+  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
 
 theorem IProp.foldi_op (x y : FF.api τ (IPre FF)) : foldi (x • y) ≡ foldi x • foldi y :=
   RFunctor.map (IProp.unfold FF) (IProp.fold FF) |>.op _ _
@@ -462,7 +462,7 @@ theorem iOwn_op {a1 a2 : F.ap (IProp GF)} : iOwn γ (a1 • a2) ⊣⊢ iOwn γ a
 @[rocq_alias own_mono]
 theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOwn γ a2 := by
   rcases H with ⟨ac, Hac⟩
-  rintro n x ⟨clos, Hclos⟩
+  rintro n x Hv ⟨clos, Hclos⟩
   refine ⟨iSingleton F γ ac • clos, Hclos.trans <| fun τ' γ' => ?_⟩
   refine .trans ?_ CMRA.op_assocN.symm
   rw [iResUR_op_eval]
@@ -483,12 +483,12 @@ theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOw
 @[rocq_alias own_valid]
 theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a :=
   (UPred.ownM_valid _).trans (internalCmraValid_entails.mpr fun _ => validN_of_iSingleton)
-
+  
 @[rocq_alias own_valid_2]
 theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} :
     iOwn γ a1 ∗ iOwn γ a2 ⊢ internalCmraValid (a1 • a2) :=
   iOwn_op.mpr.trans iOwn_cmraValid
-
+  
 @[rocq_alias own_valid_r]
 theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ internalCmraValid a :=
   BI.persistent_entails_l iOwn_cmraValid
