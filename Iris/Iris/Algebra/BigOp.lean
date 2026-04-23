@@ -23,17 +23,17 @@ These are parameterized by a monoid operation and include theorems about their p
 
 open OFE Iris.Std
 
-@[rocq_alias big_op.big_opL, expose] public def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+@[rocq_alias big_opL, expose] public def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     (Φ : Nat → A → M) (l : List A) : M :=
   match l with
   | [] => unit
   | x :: xs => op (Φ 0 x) (bigOpL op (fun n => Φ (n + 1)) xs)
 
-@[rocq_alias big_op.big_opM, expose] public def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
+@[rocq_alias big_opM, expose] public def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
     {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K] (m : M' V) : M :=
   bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList m)
 
-@[rocq_alias big_op.big_opS, expose] public def bigOpS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+@[rocq_alias big_opS, expose] public def bigOpS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     {A : Type _} {S : Type _} [FiniteSet S A] (Φ : A → M) (m : S) : M :=
   bigOpL op (fun _ x => Φ x) (toList m)
 
