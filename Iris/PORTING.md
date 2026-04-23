@@ -261,7 +261,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/atomic.v`
 - [ ] `lib/core.v`
 - [ ] `lib/counterexamples.v`
-- [ ] `lib/fixpoint_banach.v`
+- [x] `lib/fixpoint_banach.v`
 - [x] `lib/fixpoint_mono.v`
   - [x] Least fixpoints + induction 
   - [x] Greatest fixpoints + coinduction
