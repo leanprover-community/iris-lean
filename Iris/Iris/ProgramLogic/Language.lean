@@ -12,6 +12,7 @@ public import Batteries.Data.List.Basic
 
 -- TODO: Consider renaming `ToVal` typeclass to something better, since
 --       it's not just the `toVal` operation it carries.
+-- TODO: Fix the namespaces where notations may be found.
 
 namespace Iris.ProgramLogic
 
@@ -66,10 +67,6 @@ namespace PrimStep
 @[inherit_doc PrimStep.primStep]
 scoped notation conf:40 " -<" obs:max ">-> " conf':41  => PrimStep.primStep conf obs conf'
 
-end PrimStep
-open PrimStep
-
-section PureConfigurationTypes
 variable [PrimStep Expr State Obs]
 
 @[rocq_alias reducible]
@@ -78,7 +75,7 @@ def reducible : Expr × State → Prop
     (e, σ) -<obs>-> (e', σ', eₜ)
 
 @[rocq_alias reducible_no_obs]
-def pureReducible [PrimStep Expr State (List Obs)] : Expr × State → Prop
+def reducibleNoObs [PrimStep Expr State (List Obs)] : Expr × State → Prop
 | (e, σ) => ∃ e' σ' eₜ,
     (e, σ) -<[]>-> (e', σ', eₜ)
 
@@ -91,7 +88,10 @@ def stuck [ToVal Expr Val]: Expr × State → Prop
 def notStuck [ToVal Expr Val]: Expr × State → Prop
 | (e, σ) => (toVal e).isSome ∨ reducible (e, σ)
 
-end PureConfigurationTypes
+end PrimStep
+
+open PrimStep
+
 
 class Language
     (Expr  : Type e)
@@ -190,21 +190,16 @@ theorem not_reducible_iff_irreducible {e : Expr} {σ : State} :
     (¬ reducible (e, σ)) ↔ irreducible (e, σ) := by
   grind only [reducible, irreducible]
 
-@[rocq_alias reducible_not_val, grind .]
-theorem toVal_none_of_reducible :
-    reducible (e, σ) → toVal e = none := by
-  grind only [reducible, val_stuck]
-
 @[rocq_alias reducible_no_obs_reducible, grind .]
-theorem reducible_of_pureReducible :
-    pureReducible (e, σ) → reducible (e, σ) := by
-  grind only [pureReducible, reducible]
+theorem reducible_of_reducibleNoObs :
+    reducibleNoObs (e, σ) → reducible (e, σ) := by
+  grind only [reducibleNoObs, reducible]
 
-@[rocq_alias val_irreducible]
-theorem val_irreducible :
-    (toVal e).isSome →
-    irreducible (e, σ) := by
-  grind only [irreducible, val_stuck, = Option.isSome_none]
+@[rocq_alias prim_step_not_stuck]
+theorem notStuck_of_primStep {e : Expr} {σ obs e' σ' eₜ} :
+    (e, σ) -<obs>-> (e', σ', eₜ) →
+    notStuck (e, σ) :=
+  fun h => .inr ⟨_, _, _, _, h⟩
 
 @[rocq_alias not_not_stuck, grind =]
 theorem not_not_suck {e : Expr} {σ : State} :
@@ -217,11 +212,17 @@ theorem not_not_suck {e : Expr} {σ : State} :
     simp only [Option.isSome_none, Bool.false_eq_true, false_or, not_reducible_iff_irreducible,
       true_and]
 
-@[rocq_alias prim_step_not_stuck]
-theorem primStep_notStuck {e : Expr} {σ obs e' σ' eₜ} :
-    (e, σ) -<obs>-> (e', σ', eₜ) →
-    notStuck (e, σ) :=
-  fun h => .inr ⟨_, _, _, _, h⟩
+@[rocq_alias reducible_not_val, grind .]
+theorem toVal_none_of_reducible :
+    reducible (e, σ) → toVal e = none := by
+  grind only [reducible, val_stuck]
+
+@[rocq_alias val_irreducible]
+theorem val_irreducible :
+    (toVal e).isSome →
+    irreducible (e, σ) := by
+  grind only [irreducible, val_stuck, = Option.isSome_none]
+
 end ReducibilityLemmas
 
 @[rocq_alias atomicity]
@@ -289,15 +290,15 @@ theorem reducible_fill_inv (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃
     ⟨obs, e₂, σ', eₜ, red⟩
 
 @[rocq_alias reducible_no_obs_fill]
-theorem pureReducible_fill (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
-    pureReducible (e, σ) →
-    pureReducible (K e, σ) :=
+theorem reducibleNoObs_fill (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
+    reducibleNoObs (e, σ) →
+    reducibleNoObs (K e, σ) :=
   fun ⟨e', σ', eₜ, h⟩ =>
     ⟨K e', σ', eₜ, primStep_fill h⟩
 
 @[rocq_alias reducible_no_obs_fill_inv]
-theorem pureReducible_fill_inv (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
-    toVal e = none → pureReducible (K e, σ) → pureReducible (e,σ) :=
+theorem reducibleNoObs_fill_inv (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
+    toVal e = none → reducibleNoObs (K e, σ) → reducibleNoObs (e,σ) :=
   fun toVal_none ⟨_, σ', eₜ, K_red⟩ =>
     have ⟨e₂, _, red⟩ := primStep_fill_inv toVal_none K_red
     ⟨e₂, σ', eₜ, red⟩
@@ -411,26 +412,25 @@ section PureSteps
     Intuitively, the reduction is deterministic and does not
     depend on the environment.
 -/
-@[rocq_alias pure_step]
-def purePrimStep (e₁ e₂ : Expr) :=
-  (∀ σ : State, pureReducible (e₁, σ)) ∧
-  (∀ {σ₁ σ₂ : State} {obs e₂' eₜ},
+@[rocq_alias pure_step] -- TODO: Why make this a record and not a regular proposition?
+structure PurePrimStep (e₁ e₂ : Expr) : Prop where
+  safe : ∀ σ : State, reducibleNoObs (e₁, σ)
+  deterministic : ∀ {σ₁ σ₂ : State} {obs e₂' eₜ},
     (e₁, σ₁) -<obs>-> (e₂', σ₂, eₜ) →
     obs = [] ∧ σ₁ = σ₂ ∧ e₂ = e₂' ∧ eₜ = []
-  )
 
-@[inherit_doc purePrimStep]
-scoped notation conf:40 " -ᵖ-> " conf':41 => purePrimStep conf conf'
+@[inherit_doc PurePrimStep]
+scoped notation conf:40 " -ᵖ-> " conf':41 => PurePrimStep conf conf'
 
 /-- `e₁ -ᵖ->^[n] e₂` represents a sequence of `n` pure steps taken
     from `e₁` up to `e₂`.
 -/
-scoped notation conf:40 " -ᵖ->^[" n "] " conf':41 => Relation.Iterate purePrimStep n conf conf'
+scoped notation conf:40 " -ᵖ->^[" n "] " conf':41 => Relation.Iterate PurePrimStep n conf conf'
 
 /-- `e₁ -ᵖ->* e₂` represents a sequence of some number of pure steps
     taken from `e₁` up to `e₂`.
 -/
-scoped notation conf:40 " -ᵖ->* " conf':41 => Relation.ReflTransGen purePrimStep conf conf'
+scoped notation conf:40 " -ᵖ->* " conf':41 => Relation.ReflTransGen PurePrimStep conf conf'
 
 @[rocq_alias pure_steps_tp]
 abbrev pureSteps (t₁ t₂ : List Expr) := List.Forall₂ (· -ᵖ->* ·) t₁ t₂
@@ -457,12 +457,12 @@ theorem purePrimStep_fill (K : Expr → Expr) [Context K] {e₁ e₂ : Expr} :
     K e₁ -ᵖ-> K e₂ := by
   rintro ⟨pRed,Hstep⟩
   constructor
-  · exact (Context.pureReducible_fill K <| pRed ·)
+  · exact (Context.reducibleNoObs_fill K <| pRed ·)
   · intros σ₁ σ₂ obs K_e₂' eₜ primStep
     have : toVal e₁ = none := by
       apply toVal_none_of_reducible (σ := σ₁)
       -- Any state works
-      apply reducible_of_pureReducible
+      apply reducible_of_reducibleNoObs
       apply pRed
     obtain ⟨e₂', rfl, primStep⟩ := Context.primStep_fill_inv this primStep
     grind only
@@ -565,7 +565,7 @@ theorem erasedStep_pureSteps (t₁ t₂ t₃ : List Expr) (σ₁ σ₂ : State) 
   · left
     obtain ⟨pRed, uniqStep⟩ := firstPureStep
     obtain ⟨rlf, rfl, rfl, rfl⟩ := uniqStep pstep
-    have : e -ᵖ-> e' := by grind only [purePrimStep]
+    have : e -ᵖ-> e' := by grind only [PurePrimStep]
     simp only [pureSteps, List.append_nil, true_and]
     apply Iris.Std.List.Forall₂.append ps_ps₃
     apply List.Forall₂.cons lastSteps ss_ss₃
@@ -610,28 +610,28 @@ info: e -ᵖ-> e : Prop
 -/
 #guard_msgs in
 variable (e : Expr) [Language Expr State Obs Val] in
-#check (Language.purePrimStep e e)
+#check (PurePrimStep e e)
 
 /--
 info: e -ᵖ->^[0] e : Prop
 -/
 #guard_msgs in
 variable (e : Expr) [Language Expr State Obs Val] in
-#check (Relation.Iterate Language.purePrimStep 0 e e)
+#check (Relation.Iterate PurePrimStep 0 e e)
 
 /--
 info: e -ᵖ->* e : Prop
 -/
 #guard_msgs in
 variable (e : Expr) [Language Expr State Obs Val] in
-#check (Relation.ReflTransGen Language.purePrimStep e e)
+#check (Relation.ReflTransGen PurePrimStep e e)
 
 /--
 info: e -ᵖ->* e : Prop
 -/
 #guard_msgs in
 variable (e : Expr) [Language Expr State Obs Val] in
-#check (Relation.ReflTransGen Language.purePrimStep e e)
+#check (Relation.ReflTransGen PurePrimStep e e)
 
 /--
 info: t -ᵖ->ₜₚ* t : Prop
