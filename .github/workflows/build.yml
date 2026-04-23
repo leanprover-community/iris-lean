@@ -7,11 +7,69 @@ on:
     branches: ["master"]
   workflow_dispatch:
 
+# Allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v6
-      # uses lean standard action with all default input values
       - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: Iris
+          build-args: "--wfail"
+
+  build-math:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: IrisMath
+          use-mathlib-cache: true
+          build-args: "--wfail"
+
+  report:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: Iris
+      - name: Read Rocq commit from revision file
+        id: rocq-commit
+        run: |
+          sha=$(cat scripts/ROCQ_REVISION)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - name: Cache Rocq definitions
+        uses: actions/cache@v4
+        with:
+          path: Iris/.lake/iris-rocq-cache
+          key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
+      - name: Generate porting report
+        run: |
+          mkdir -p _site
+          python3 scripts/check_porting.py --format html --lean-rev "${{ github.sha }}" -o _site/index.html
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    if: github.ref == 'refs/heads/master'
+    needs: report
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
