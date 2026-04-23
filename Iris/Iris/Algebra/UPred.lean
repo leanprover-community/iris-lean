@@ -25,11 +25,11 @@ def ValidAt.le {M : Type _} [UCMRA M] {n m : Nat} (Hle : m ≤ n) : ValidAt M n 
   fun v => ⟨v.val, validN_of_le Hle v.property⟩
 
 @[simp]
-theorem ValidAt.le_noop {M : Type _} [UCMRA M] {n m : Nat} {Hle : m ≤ n} {v : ValidAt M n} :
+theorem ValidAt.le_val {M : Type _} [UCMRA M] {n m : Nat} {Hle : m ≤ n} {v : ValidAt M n} :
   (v.le Hle).val = v.val := by rfl
 
 @[simp]
-theorem ValidAt.down_rfl {M : Type _} [UCMRA M] {n : Nat} {Hle : n ≤ n} {v : ValidAt M n} :
+theorem ValidAt.le_rfl {M : Type _} [UCMRA M] {n : Nat} {Hle : n ≤ n} {v : ValidAt M n} :
   v.le Hle = v := by rfl
 
 /-- The data of a UPred object is an indexed proposition over M (Bundled version) -/
