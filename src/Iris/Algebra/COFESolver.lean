@@ -356,12 +356,14 @@ end unique
 
 section leibniz
 
+open Iris.Leibniz
+
 variable [LeibnizPreservingOFunctor F]
 
-instance instLeibnizA0 : Leibniz (A F 0) where
+instance : Leibniz (A F 0) where
   eq_of_eqv {x y} _ := match x, y with | ⟨_⟩, ⟨_⟩ => rfl
 
-instance instLeibnizASucc (k : Nat) [Leibniz (A F k)] : Leibniz (A F (k+1)) where
+instance {k : Nat} [Leibniz (A F k)] : Leibniz (A F (k+1)) where
   eq_of_eqv {_ _} := by
     simp only [A, A'] at *
     exact eq_of_eqv (self := LeibnizPreservingOFunctor.out)
@@ -372,9 +374,9 @@ def LeibnizA (k : Nat) : Leibniz (A F k) :=
   | 0 => inferInstance
   | k+1 => haveI := LeibnizA k; inferInstance
 
-instance instLeibnizA {k : Nat} : Leibniz (A F k) := LeibnizA k
+instance {k : Nat} : Leibniz (A F k) := LeibnizA k
 
-instance instLeibnizTower : Leibniz (Tower F) where
+instance : Leibniz (Tower F) where
   eq_of_eqv {_ _} H := by ext n; exact eq_of_eqv (H n)
 
 instance : Leibniz (Fix F) := inferInstanceAs (Leibniz (Tower F))

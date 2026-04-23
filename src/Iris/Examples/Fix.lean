@@ -12,7 +12,7 @@ public import Iris.Algebra.COFESolver
 section Fix
 open Iris OFE COFE
 
-variable [OFE Val] [Leibniz Val] [OFE Err] [Leibniz Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err]
+variable [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err]
 
 abbrev DomF : OFunctorPre :=
   SumOF (constOF Val) (SumOF (constOF Err) (SumOF (LaterOF IdOF) (LaterOF (MorOF IdOF IdOF))))
@@ -22,7 +22,7 @@ instance : Inhabited (DomF (Val := Val) (Err := Err) (ULift Unit) (ULift Unit)) 
 end Fix
 
 open Iris OFE COFE in
-abbrev Dom (Val : Type _) (Err : Type _) [OFE Val] [Leibniz Val] [OFE Err] [Leibniz Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err] :=
+abbrev Dom (Val : Type _) (Err : Type _) [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err] :=
   OFunctor.Fix (DomF (Val := Val) (Err := Err))
 
 namespace Dom
