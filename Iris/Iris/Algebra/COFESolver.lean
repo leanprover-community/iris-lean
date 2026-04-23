@@ -298,4 +298,4 @@ instance : Leibniz (Fix F) := inferInstanceAs (Leibniz (Tower F))
 
 end leibniz
 
-attribute [irreducible] Fix Fix.fold Fix.unfold Fix.iso Fix.unique
+attribute [irreducible] Fix Fix.fold Fix.unfold Fix.iso
