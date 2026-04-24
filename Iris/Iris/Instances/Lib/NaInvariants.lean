@@ -90,7 +90,6 @@ nonrec theorem inv_iff {p : NaInvPoolName} {N : Namespace} {P Q : IProp GF} :
   isplit; (· ipure_intro; assumption)
   iapply inv_iff $$ HI
   inext; imodintro
-  unfold BI.iff
   isplit
   · iintro (⟨HP, Ho⟩ | Htok)
     · ileft
