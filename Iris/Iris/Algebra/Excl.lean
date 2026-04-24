@@ -199,7 +199,7 @@ theorem map_ne [OFE α] [OFE β] (f : α -n> β) : NonExpansive (map f) where
     have ⟨hne⟩ := f.ne
     exact hne h
 
-#rocq_ignore excl_proper "Derivable from NonExpansive.eqv"
+#rocq_ignore Excl_proper "Derivable from NonExpansive.eqv"
 
 @[rocq_alias excl_map_cmra_morphism]
 def hom [OFE α] [OFE β] (f : α -n> β) : Excl α -C> Excl β := by
