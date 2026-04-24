@@ -17,12 +17,11 @@ section agree
 
 variable {α : Type u}
 
-variable (α) in
-@[ext]
-structure Agree where
+@[rocq_alias agree, ext]
+structure Agree α where
   car : List α
   not_nil : car ≠ []
-
+attribute [rocq_alias agree_eq] Agree.ext
 attribute [simp] Agree.not_nil
 
 @[rocq_alias to_agree]
@@ -37,6 +36,7 @@ theorem mem_of_agree (x : Agree α) : ∃ a, a ∈ x.car := by
 
 variable [OFE α]
 
+@[rocq_alias agree_dist]
 def Agree.dist (n : Nat) (x y : Agree α) : Prop :=
   (∀ a ∈ x.car, ∃ b ∈ y.car, a ≡{n}≡ b) ∧
   (∀ b ∈ y.car, ∃ a ∈ x.car, a ≡{n}≡ b)
@@ -65,7 +65,8 @@ theorem Agree.dist_equiv : Equivalence (dist (α := α) n) where
       obtain ⟨a, ha, hd₂⟩ := h₁' b hb
       exact ⟨a, ha,  hd₂.trans hd₁⟩
 
-instance : OFE (Agree α) where
+@[rocq_alias agree_ofe_mixin]
+instance instOFE_agree : OFE (Agree α) where
   Equiv x y := ∀ n, Agree.dist n x y
   Dist := Agree.dist
   dist_eqv := Agree.dist_equiv
@@ -78,6 +79,9 @@ instance : OFE (Agree α) where
     · intro b hb
       obtain ⟨a, ha, hd⟩ := h₂ b hb
       exact ⟨a, ha, OFE.Dist.lt hd hlt⟩
+
+#rocq_ignore agreeO "Use Agree with a typeclass instance instead."
+#rocq_ignore agree_equiv "Defined in Agree OFE instance."
 
 theorem Agree.equiv_def {x y : Agree α} : x ≡ y ↔ ∀ n, Agree.dist n x y := .rfl
 theorem Agree.dist_def {x y : Agree α} : x ≡{n}≡ y ↔ Agree.dist n x y := .rfl
@@ -122,6 +126,8 @@ theorem Agree.validN_ne {x y : Agree α} : x ≡{n}≡ y → x.validN n → y.va
   have ha'b' := hn _ ha' _ hb'
   exact ha'a.symm.trans (ha'b'.trans hb'b)
 
+#rocq_ignore agree_validN_proper "Derivable from Agree.validN_ne using NonExpansive.eqv"
+
 @[rocq_alias agree_op_ne']
 theorem Agree.op_ne {x : Agree α} : OFE.NonExpansive x.op := by
   constructor; simp only [OFE.Dist, dist, op, List.mem_append, and_imp]
@@ -142,6 +148,8 @@ theorem Agree.op_ne₂ : OFE.NonExpansive₂ (Agree.op (α := α)) := by
   intro n x₁ x₂ hx y₁ y₂ hy
   exact op_ne.ne hy |>.trans (op_comm n) |>.trans (op_ne.ne hx) |>.trans (op_comm n)
 
+#rocq_ignore agree_op_proper "Derivable from Agree.op_ne₂ using NonExpansive₂.eqv"
+
 @[rocq_alias agree_op_invN]
 theorem Agree.op_invN {x y : Agree α} : (x.op y).validN n → x ≡{n}≡ y := by
   simp only [op, validN_iff, List.mem_append, OFE.Dist, dist]
@@ -153,27 +161,29 @@ theorem Agree.op_invN {x y : Agree α} : (x.op y).validN n → x ≡{n}≡ y := 
     obtain ⟨b, hb⟩ := mem_of_agree x
     exists b; simp_all
 
+#rocq_ignore to_agree_op_inv "Use the general op_invN theorem."
+
 @[rocq_alias agree_op_inv]
 theorem Agree.op_inv {x y : Agree α} : (x.op y).valid → x ≡ y := by
   simp [valid, equiv_def]
   intro h n
   exact op_invN (h n)
 
+#rocq_ignore to_agree_op_inv "Use the general op_inv theorem."
+
+@[rocq_alias agree_cmra_mixin]
 instance : CMRA (Agree α) where
   pcore := some
   op := Agree.op
   ValidN := Agree.validN
   Valid := Agree.valid
-
   op_ne := Agree.op_ne
   pcore_ne := by simp
   validN_ne := Agree.validN_ne
-
   valid_iff_validN := by rfl
   validN_succ := by
     simp [Agree.validN_iff]; intro x n hsuc a ha b hb
     exact (OFE.dist_lt (hsuc a ha b hb) (by omega))
-
   assoc := Agree.op_assoc
   comm := Agree.op_comm
   pcore_op_left := by simp [Agree.idemp]
@@ -189,9 +199,18 @@ instance : CMRA (Agree α) where
     have heq₃ : y₁.op y₂ ≡{n}≡ y₁ := Agree.op_ne.ne heq₂.symm |>.trans (Agree.idemp n)
     exact ⟨x, x, Agree.idemp.symm, heq₁.trans heq₃, heq₁.trans heq₃ |>.trans heq₂⟩
 
+#rocq_ignore agreeR "Use the plain Agree type with a typeclass instance instead."
+#rocq_ignore agree_op_instance "Use the CMRA instance instead."
+#rocq_ignore agree_pcore_instance "Use the CMRA instance instead."
+#rocq_ignore agree_validN_instance "Use the CMRA instance instead."
+#rocq_ignore agree_valid_instance "Use the CMRA instance instead."
+
 theorem Agree.op_def {x y : Agree α} : x • y = x.op y := rfl
 theorem Agree.validN_def {x : Agree α} : ✓{n} x ↔ x.validN n := .rfl
 theorem Agree.valid_def {x : Agree α} : ✓ x ↔ x.valid := .rfl
+
+@[rocq_alias agree_pcore]
+theorem Agree.pcore_some {x : Agree α} : CMRA.pcore x = some x := rfl
 
 @[rocq_alias agree_cmra_total]
 instance : CMRA.IsTotal (Agree α) where
@@ -376,8 +395,11 @@ theorem Agree.toAgree_op_valid_iff_equiv {a : α} : ✓ (toAgree a • toAgree b
 theorem toAgree_op_valid_iff_eq [OFE.Leibniz α] {a : α} :
     ✓ (toAgree a • toAgree b) ↔ a = b := by simp_all [Agree.toAgree_op_valid_iff_equiv]
 
+#rocq_ignore toAgree_op_inv_L "Use toAgree_op_valid_iff_eq"
+
 end agree
 
+@[rocq_alias agree_map]
 def Agree.map' {α β} (f : α → β) (a : Agree α) : Agree β := ⟨a.car.map f, by simp⟩
 
 section agree_map
@@ -398,7 +420,7 @@ instance : OFE.NonExpansive (Agree.map' f) where
       exact ⟨f b, ⟨b, hb, rfl⟩, OFE.NonExpansive.ne heq⟩
 
 variable (f) in
-@[rocq_alias agree_map]
+@[rocq_alias agree_map_morphism]
 def Agree.map : CMRA.Hom (Agree α) (Agree β) where
   f := map' f
   ne := inferInstance
@@ -415,6 +437,7 @@ def Agree.map : CMRA.Hom (Agree α) (Agree β) where
       · exact ⟨f b, .inl ⟨_, hb, rfl⟩, .rfl⟩
       · exact ⟨f b, .inr ⟨_, hb, rfl⟩, .rfl⟩
 
+@[rocq_alias agreeO_map_ne]
 theorem Agree.map_ne [OFE.NonExpansive g] (heq : ∀ a, f a ≡{n}≡ g a) :
     map f x ≡{n}≡ map g x := by
   simp only [map, map']
