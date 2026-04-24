@@ -169,7 +169,7 @@ theorem Agree.op_inv {x y : Agree α} : (x.op y).valid → x ≡ y := by
   intro h n
   exact op_invN (h n)
 
-#rocq_ignore to_agree_op_inv "Use the general op_inv theorem."
+#rocq_ignore to_agree_op_invN "Use the general op_inv theorem."
 
 @[rocq_alias agree_cmra_mixin]
 instance : CMRA (Agree α) where
@@ -231,8 +231,10 @@ instance [OFE.Discrete α] : CMRA.Discrete (Agree α) where
     exact fun a ha b hb => OFE.discrete_n (hval a ha b hb)
 
 @[rocq_alias to_agree_ne]
-instance : OFE.NonExpansive (@toAgree α) where
+instance instNonExpansive_toAgree : OFE.NonExpansive (@toAgree α) where
   ne n x₁ x₂ heq := by constructor <;> simp_all [toAgree]
+
+#rocq_ignore to_agree_proper "Derivable from instNonExpansive_toAgree with NonExpansive.eqv"
 
 @[rocq_alias to_agree_injN]
 theorem Agree.toAgree_injN {a b : α} : toAgree a ≡{n}≡ toAgree b → a ≡{n}≡ b := by
@@ -406,7 +408,8 @@ section agree_map
 
 variable {α β} [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f]
 
-instance : OFE.NonExpansive (Agree.map' f) where
+@[rocq_alias agree_map_ne]
+instance instNonExpansive_AgreeMap' : OFE.NonExpansive (Agree.map' f) where
   ne := by
     intro n x₁ x₂ h
     simp only [Agree.map', Agree.dist_def, Agree.dist, List.mem_map, forall_exists_index, and_imp,
@@ -419,9 +422,11 @@ instance : OFE.NonExpansive (Agree.map' f) where
       obtain ⟨b, hb, heq⟩ := h.2 a ha
       exact ⟨f b, ⟨b, hb, rfl⟩, OFE.NonExpansive.ne heq⟩
 
+#rocq_ignore agree_map_proper "Derivable from instNonExpansive_AgreeMap' with NonExpansive.eqv"
+
 variable (f) in
 @[rocq_alias agree_map_morphism]
-def Agree.map : CMRA.Hom (Agree α) (Agree β) where
+def Agree.map : (Agree α) -C> (Agree β) where
   f := map' f
   ne := inferInstance
   validN {n x} hval := by
@@ -436,6 +441,9 @@ def Agree.map : CMRA.Hom (Agree α) (Agree β) where
       obtain ⟨b, hb, rfl⟩ | ⟨b, hb, rfl⟩ := ha
       · exact ⟨f b, .inl ⟨_, hb, rfl⟩, .rfl⟩
       · exact ⟨f b, .inr ⟨_, hb, rfl⟩, .rfl⟩
+
+@[rocq_alias agreeO_map]
+abbrev Agree.map_hom : (Agree α) -n> (Agree β) := CMRA.Hom.toHom (Agree.map f)
 
 @[rocq_alias agreeO_map_ne]
 theorem Agree.map_ne [OFE.NonExpansive g] (heq : ∀ a, f a ≡{n}≡ g a) :
@@ -464,6 +472,10 @@ theorem toAgree.incN {a b : α} {n} : toAgree a ≼{n} toAgree b ↔ a ≡{n}≡
   intro H
   apply toAgree.inj
   exact Agree.valid_includedN trivial H
+
+@[rocq_alias agree_map_to_agree]
+theorem Agree.map_toAgree {x : α} : Agree.map f (toAgree x) = toAgree (f x) := rfl
+
 end agree_map
 
 section agree_rfunctor
