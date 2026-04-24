@@ -264,6 +264,8 @@ instance : OFE Unit where
   equiv_dist := by simp
   dist_lt _ _ := ⟨⟩
 
+instance : DiscreteE (() : Unit) := ⟨fun _ => trivial⟩
+
 instance [OFE α] : OFE (ULift α) where
   Equiv x y := x.down ≡ y.down
   Dist n x y := x.down ≡{n}≡ y.down
@@ -695,7 +697,9 @@ instance [COFE α] : COFE (ULift α) where
   compl c := ⟨compl (c.map uliftDownHom)⟩
   conv_compl := conv_compl
 
-@[rocq_alias unit_cofe]
+instance : Discrete Unit where
+  discrete_0 _ := .rfl
+
 instance : COFE Unit where
   compl _ := ()
   conv_compl := ⟨⟩

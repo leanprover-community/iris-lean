@@ -102,6 +102,21 @@ instance instOFE_GenMap : OFE (GenMap β) where
   dist_lt := Dist.lt
 end OFE
 
+theorem GenMap.singleton_discreteE {v : β} [OFE β] [DiscreteE v] :
+    DiscreteE (GenMap.singleton (β := β) k v) where
+  discrete {y} H γ' := by
+    specialize H γ'
+    simp only [GenMap.singleton, GenMap.alter, GenMap.empty, Iris.alter] at H ⊢
+    split
+    · next heq => simp only [heq, ite_true] at H ⊢; exact (Option.some_is_discrete ‹_›).discrete H
+    · next hne => simp only [hne, ite_false] at H ⊢; exact Option.none_is_discrete.discrete H
+
+theorem GenMap.empty_discreteE [OFE β] : DiscreteE (GenMap.empty (β := β)) where
+  discrete {y} H γ' := by
+    specialize H γ'
+    simp only [GenMap.empty] at H ⊢
+    exact Option.none_is_discrete.discrete H
+
 @[ext] theorem GenMap.ext {a b : GenMap β} (h : a.car = b.car) : a = b := by
   obtain ⟨ca, ba⟩ := a
   obtain ⟨cb, bb⟩ := b

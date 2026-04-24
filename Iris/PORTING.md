@@ -192,6 +192,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/mono_Z.v` (nb. generalize to `MonoNumbers.lean`)
 - [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
 - [ ] `lib/na_invariants.v`
+  - [x] Basic construction 
+  - [ ] Proofmode classes
 - [ ] `lib/own.v`
   - Missing: `later_internal_eq_iRes_singleton`
   - [x] Definition
@@ -201,7 +203,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] Own/Forall lemmas
 - [ ] `lib/proph_map.v`
 - [ ] `lib/saved_prop.v`
-- [ ] `lib/token.v`
+- [x] `lib/token.v`
 - [x] `lib/wsat.v`
 
 ## BI

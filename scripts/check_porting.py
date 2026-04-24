@@ -9,7 +9,7 @@ Usage:
   python3 scripts/check_porting.py [options]
 
 Options:
-  --format summary|csv|html   Output format (default: summary)
+  --format stale|csv|html     Output format (default: stale)
   --output PATH               Output file path
   --rocq-commit SHA           Iris-Rocq revision to check against
   --no-build                  Skip running lake exe dumpPortingData
@@ -391,45 +391,31 @@ def compute_report(
 
 
 # ============================================================================
-# Output: Summary
+# Output: Stale names
 # ============================================================================
 
-def output_summary(report: Report, out=sys.stdout) -> None:
-    """Print a human-readable summary to the given stream."""
+def output_stale(report: Report, out=sys.stdout) -> None:
+    """Print the list of stale aliases and stale ignores."""
     p = lambda *a, **kw: print(*a, file=out, **kw)
 
-    pct = report.count("ported") / report.total_rocq * 100 if report.total_rocq else 0
+    p(f"Lean revision:                 {report.lean_rev}")
+    p(f"Checked against Rocq revision: {report.rocq_commit}")
+    p()
 
-    p("=" * 60)
-    p("Iris Porting Completeness Report")
-    p("=" * 60)
-    p(f"Rocq commit: {report.rocq_commit}")
-    p(f"Total Rocq definitions: {report.total_rocq}")
-    p(f"Ported (with rocq_alias): {report.count('ported')}")
-    p(f"Ignored: {report.count('ignored')}")
-    p(f"Missing: {report.count('missing')}")
-    if n := report.count("stale_alias"):
-        p(f"Stale aliases: {n}")
-    if n := report.count("stale_ignore"):
-        p(f"Stale ignores: {n}")
-    p(f"\nProgress: {pct:.1f}%")
+    stale_aliases = sorted(report.by_status("stale_alias"), key=lambda e: e.rocq_name)
+    stale_ignores = sorted(report.by_status("stale_ignore"), key=lambda e: e.rocq_name)
 
-    # Per-file breakdown
-    files: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-    for e in report.entries:
-        if e.rocq_file:
-            files[e.rocq_file][e.status] += 1
+    if not stale_aliases and not stale_ignores:
+        p("No stale entries.")
+        return
 
-    p(f"\nPer-file breakdown:")
-    p("-" * 60)
-    for filepath in sorted(files):
-        counts = files[filepath]
-        total = sum(counts.values())
-        done = counts.get("ported", 0) + counts.get("ignored", 0)
-        file_pct = done / total * 100 if total else 0
-        parts = [f"{counts[s]} {s}" for s in ("ported", "ignored", "missing") if counts.get(s)]
-        display = filepath.removeprefix(ROCQ_SRC_PREFIX)
-        p(f"  {display:40s} {done:3d}/{total:<3d} ({file_pct:5.1f}%) [{', '.join(parts)}]")
+    p(f"Stale aliases ({len(stale_aliases)}):")
+    for e in stale_aliases:
+        p(f"  {e.rocq_name}")
+    p()
+    p(f"Stale ignores ({len(stale_ignores)}):")
+    for e in stale_ignores:
+        p(f"  {e.rocq_name}")
 
 
 # ============================================================================
@@ -708,7 +694,7 @@ def output_html(report: Report, path: str) -> None:
 
 # Maps --format values to their output functions.
 FORMATTERS = {
-    "summary": lambda report, args: output_summary(
+    "stale": lambda report, args: output_stale(
         report, out=open(args.output, "w") if args.output else sys.stdout
     ),
     "csv": lambda report, args: output_csv(report, args.output or "-"),
@@ -718,7 +704,7 @@ FORMATTERS = {
 
 def main():
     parser = argparse.ArgumentParser(description="Iris-Lean porting completeness checker")
-    parser.add_argument("--format", choices=FORMATTERS, default="summary")
+    parser.add_argument("--format", choices=FORMATTERS, default="stale")
     parser.add_argument("--output", "-o", help="Output file path")
     parser.add_argument("--rocq-commit", default=DEFAULT_ROCQ_REVISION,
                         help="Iris-Rocq commit SHA or branch")

@@ -29,6 +29,10 @@ inductive DisjointLeibnizSet (S : Type _) where
   | error : DisjointLeibnizSet S
 
 instance : COFE (DisjointLeibnizSet S) := COFE.ofDiscrete _ Eq_Equivalence
+
+instance inst_disjointLeibnizSet_DiscreteE {S : Type _} (x : DisjointLeibnizSet S) :
+    DiscreteE x := ⟨id⟩
+
 instance : Leibniz (DisjointLeibnizSet S) := ⟨id⟩
 
 namespace DisjointLeibnizSet
