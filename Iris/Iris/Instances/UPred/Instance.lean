@@ -12,7 +12,6 @@ public import Iris.Algebra.UPred
 public import Iris.Algebra.Updates
 public import Iris.BI.Lib.BUpdPlain
 public meta import Iris.Std.RocqPorting
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -579,7 +578,7 @@ theorem ownM_forall (f : A → M) :
   refine ⟨incN_refl x.val, ?_⟩
   rintro p ⟨a, rfl⟩
   rcases Hf (ownM (f a)) ⟨a, rfl⟩ with ⟨xf, Hxf⟩
-  exact ⟨iprop(UPred.eq x.val (f a • xf)), ⟨xf, rfl⟩, Hxf⟩
+  exact ⟨(UPred.eq x.val (f a • xf)), ⟨xf, rfl⟩, Hxf⟩
 
 @[rocq_alias uPred.later_ownM]
 theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ <si_pure> (SiProp.internalEq a b)
