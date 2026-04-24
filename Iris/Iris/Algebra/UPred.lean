@@ -13,6 +13,8 @@ public import Iris.Algebra.OFE
 namespace Iris
 open CMRA
 
+-- EXPERIMENT: UPred Leibniz by construction
+-- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Bi-entailment.20and.20generalized.20rewriting/with/565019365
 @[ext]
 structure ValidAt (M : Type _) [UCMRA M] (n : Nat) where
   val : M
