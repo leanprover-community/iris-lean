@@ -450,12 +450,7 @@ theorem prod.is_discrete [OFE α] [OFE β] {a : α} {b : β} (Ha : DiscreteE a) 
   intro y H; refine ⟨Ha.discrete H.1, Hb.discrete H.2⟩
 
 instance [OFE α] [OFE β] [Discrete α] [Discrete β] : Discrete (α × β) where
-  discrete_0 H := by
-    constructor
-    · apply Discrete.discrete_0
-      apply H.1
-    · apply Discrete.discrete_0
-      apply H.2
+  discrete_0 H := ⟨Discrete.discrete_0 H.1, Discrete.discrete_0 H.2⟩
 
 instance [OFE α] [OFE β] [Leibniz α] [Leibniz β] : Leibniz (α × β) where
   eq_of_eqv {x y} H := match x, y with
@@ -998,10 +993,10 @@ abbrev DiscreteFunOF {C : Type _} (F : C → OFunctorPre) : OFunctorPre :=
 instance oFunctor_discreteFunOF {C} (F : C → OFunctorPre) [∀ c, OFunctor (F c)] :
     OFunctor (DiscreteFunOF F) where
   cofe := _
-  map f₁ f₂ := mapCodHom fun c => OFunctor.map f₁ f₂
-  map_ne.ne _ _ _ Hx _ _ Hy _ _ := by apply OFunctor.map_ne.ne Hx Hy
-  map_id _ _ := by apply OFunctor.map_id
-  map_comp _ _ _ _ _ _ := by apply OFunctor.map_comp
+  map f₁ f₂ := mapCodHom fun _ => OFunctor.map f₁ f₂
+  map_ne.ne _ _ _ Hx _ _ Hy _ _ := OFunctor.map_ne.ne Hx Hy ..
+  map_id _ _ := OFunctor.map_id ..
+  map_comp _ _ _ _ _ _ := OFunctor.map_comp ..
 
 end DiscreteFunOF
 
@@ -1046,13 +1041,13 @@ instance oFunctorOption [OFunctor F] : OFunctor (OptionOF F) where
   map f g := optionMap (OFunctor.map f g)
   map_ne.ne _ _ _ Hx _ _ Hy z := by
     cases z <;> simp [optionMap, Dist, Option.Forall₂]
-    apply OFunctor.map_ne.ne Hx Hy
+    exact OFunctor.map_ne.ne Hx Hy ..
   map_id z := by
     cases z <;> simp [optionMap, Equiv, Option.Forall₂]
-    apply OFunctor.map_id
+    exact OFunctor.map_id ..
   map_comp _ _ _ _ z := by
     cases z <;> simp [optionMap, Equiv, Option.Forall₂]
-    apply OFunctor.map_comp
+    exact OFunctor.map_comp ..
 
 instance [OFunctorContractive F] : OFunctorContractive (OptionOF F) where
   map_contractive.1 H z := by
@@ -1517,6 +1512,8 @@ end LaterOF
 namespace Leibniz
 open COFE
 
+-- EXPERIMENT: Threading of Leibniz property through the recursive domain equation solver
+-- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Bi-entailment.20and.20generalized.20rewriting/with/565019365
 class LeibnizPreservingOFunctor (F : OFunctorPre) [OFunctor F] where
   preserves_leibniz [OFE α] [OFE β] [Leibniz α] [Leibniz β] : Leibniz (F α β)
 
