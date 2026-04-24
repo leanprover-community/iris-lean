@@ -395,7 +395,7 @@ theorem Agree.toAgree_op_valid_iff_equiv {a : α} : ✓ (toAgree a • toAgree b
 theorem toAgree_op_valid_iff_eq [OFE.Leibniz α] {a : α} :
     ✓ (toAgree a • toAgree b) ↔ a = b := by simp_all [Agree.toAgree_op_valid_iff_equiv]
 
-#rocq_ignore toAgree_op_inv_L "Use toAgree_op_valid_iff_eq"
+#rocq_ignore to_agree_op_inv_L "Use toAgree_op_valid_iff_eq"
 
 end agree
 
