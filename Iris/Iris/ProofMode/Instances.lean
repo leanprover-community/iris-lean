@@ -256,6 +256,9 @@ instance (priority := default - 10) fromAnd_and [BI PROP] (P1 P2 : PROP) :
 instance fromAnd_wandIff [BI PROP] (P1 P2 P1' P2' : PROP) [h : FromAnd iprop((P1 -∗ P2) ∧ (P2 -∗ P1)) P1' P2']:
     FromAnd iprop(P1 ∗-∗ P2) P1' P2' := h
 
+instance fromAnd_iff [BI PROP] (P1 P2 P1' P2' : PROP) [h : FromAnd iprop((P1 → P2) ∧ (P2 → P1)) P1' P2']:
+    FromAnd iprop(P1 ↔ P2) P1' P2' := h
+
 @[ipm_backtrack, rocq_alias from_and_sep_persistent_l]
 instance (priority := default + 30) fromAnd_sep_persistent_l [BI PROP] (P1 P1' P2 : PROP)
     [Persistent P1] [h : IntoAbsorbingly P1' P1] : FromAnd iprop(P1 ∗ P2) P1' P2 where
@@ -294,6 +297,9 @@ instance (priority := default - 10) intoAnd_and (p : Bool) [BI PROP] (P Q : PROP
 
 instance intoAnd_wandIff [BI PROP] p (P1 P2 P1' P2' : PROP) [h : IntoAnd p iprop((P1 -∗ P2) ∧ (P2 -∗ P1)) P1' P2']:
     IntoAnd p iprop(P1 ∗-∗ P2) P1' P2' := h
+
+instance intoAnd_iff [BI PROP] p (P1 P2 P1' P2' : PROP) [h : IntoAnd p iprop((P1 → P2) ∧ (P2 → P1)) P1' P2']:
+    IntoAnd p iprop(P1 ↔ P2) P1' P2' := h
 
 @[ipm_backtrack, rocq_alias into_and_and_affine_l]
 instance intoAnd_and_affine_l [BI PROP] (P Q Q' : PROP) [Affine P]

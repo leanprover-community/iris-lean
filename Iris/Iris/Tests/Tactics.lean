@@ -1197,6 +1197,11 @@ example [BI PROP] [BIAffine PROP] (Q : PROP) : ⊢ □ P -∗ Q -∗ R -∗ P �
   · iexact HP
   · iexact HQ
 
+/-- Tests `isplit` for iff -/
+example [BI PROP] (Q : PROP) : ⊢ (Q ↔ Q) := by
+  isplit
+  <;> iintro HQ <;> iexact HQ
+
 end split
 
 -- left / right
