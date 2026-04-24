@@ -7,6 +7,7 @@ module
 
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
+meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -14,7 +15,7 @@ namespace Iris
 open CMRA
 
 /-- The data of a UPred object is an indexed proposition over M (Bundled version) -/
-@[ext]
+@[ext, rocq_alias uPred]
 structure UPred (M : Type _) [UCMRA M] where
   holds : Nat → M → Prop
   mono {n1 n2 x1 x2} : holds n1 x1 → x1 ≼{n2} x2 → n2 ≤ n1 → holds n2 x2
@@ -31,6 +32,7 @@ variable [UCMRA M]
 
 open UPred
 
+@[rocq_alias uPredO]
 instance : OFE (UPred M) where
   Equiv P Q := ∀ n x, ✓{n} x → (P n x ↔ Q n x)
   Dist n P Q := ∀ n' x, n' ≤ n → ✓{n'} x → (P n' x ↔ Q n' x)
@@ -44,17 +46,21 @@ instance : OFE (UPred M) where
   dist_lt Hdist Hlt _ _ Hle Hvalid :=
     Hdist _ _ (Nat.le_trans Hle (Nat.le_of_succ_le Hlt)) Hvalid
 
+@[rocq_alias uPred_ne]
 theorem uPred_ne {P : UPred M} {n} {m₁ m₂} (H : m₁ ≡{n}≡ m₂) : P n m₁ ↔ P n m₂ :=
   ⟨fun H' => P.mono H' H.to_incN (Nat.le_refl _),
    fun H' => P.mono H' H.symm.to_incN (Nat.le_refl _)⟩
 
+@[rocq_alias uPred_proper]
 theorem uPred_proper {P : UPred M} {n} {m₁ m₂} (H : m₁ ≡ m₂) : P n m₁ ↔ P n m₂ :=
   uPred_ne H.dist
 
+@[rocq_alias uPred_holds_ne]
 theorem uPred_holds_ne {P Q : UPred M} {n₁ n₂ x}
     (HPQ : P ≡{n₂}≡ Q) (Hn : n₂ ≤ n₁) (Hx : ✓{n₂} x) (HQ : Q n₁ x) : P n₂ x :=
   (HPQ _ _ (Nat.le_refl _) Hx).mpr (Q.mono HQ .rfl Hn)
 
+@[rocq_alias uPred_cofe]
 instance : IsCOFE (UPred M) where
   compl c := {
     holds n x := ∀ n', n' ≤ n → ✓{n'} x → (c n') n' x
@@ -66,9 +72,11 @@ instance : IsCOFE (UPred M) where
     refine ⟨fun H => H _ (Nat.le_refl _) Hv, fun H n' Hn' Hv' => ?_⟩
     exact (c.cauchy Hn' _ _ (Nat.le_refl _) Hv').mp (mono _ H .rfl Hn')
 
+@[rocq_alias uPredOF]
 abbrev UPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
   fun A B _ _ => UPred (F B A)
 
+@[rocq_alias uPredO_map]
 def uPred_map [UCMRA α] [UCMRA β] (f : β -C> α) : UPred α -n> UPred β := by
   refine ⟨fun P => ⟨fun n x => P n (f x), ?_⟩, ⟨?_⟩⟩
   · intro n1 n2 x1 x2 HP Hm Hn
@@ -84,6 +92,7 @@ instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
   map_id _ _ z _ := uPred_proper <| URFunctor.map_id z
   map_comp f g f' g' _ _ H _ := uPred_proper <| URFunctor.map_comp g' f' g f H
 
+@[rocq_alias uPredOF_contractive]
 instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorContractive (UPredOF F) where
   map_contractive.1 {_ x y} HKL _ _ _ Hn _ := by
     refine uPred_ne <| (URFunctorContractive.map_contractive.1

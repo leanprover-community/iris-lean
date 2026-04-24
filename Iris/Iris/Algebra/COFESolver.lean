@@ -6,6 +6,7 @@ Authors: Mario Carneiro
 module
 
 public import Iris.Algebra.OFE
+public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -19,31 +20,38 @@ variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 namespace Fix.Impl
 
 variable (F) in
+@[rocq_alias solver.A']
 def A' : Nat → Σ α : Type u, COFE α
   | 0 => ⟨ULift Unit, inferInstance⟩
   | n+1 => let ⟨A, _⟩ := A' n; ⟨F A A, inferInstance⟩
 
 variable (F) in
+@[rocq_alias solver.A]
 def A (n : Nat) : Type u := (A' F n).1
 
+@[rocq_alias solver.A_cofe]
 instance instA' (n) : COFE (A' F n).1 := (A' F n).2
 instance instA (n) : COFE (A F n) := (A' F n).2
 
 variable (F) in
 mutual
+@[rocq_alias solver.f]
 def up : ∀ k, A F k -n> A F (k+1)
   | 0 => ⟨fun _ => inh.default, ⟨fun _ _ _ _ => .rfl⟩⟩
   | k+1 => map (down k) (up k)
+@[rocq_alias solver.g]
 def down : ∀ k, A F (k+1) -n> A F k
   | 0 => ⟨fun _ => ⟨()⟩, ⟨fun _ _ _ _ => .rfl⟩⟩
   | k+1 => map (up k) (down k)
 end
 
+@[rocq_alias solver.gf]
 theorem down_up : ∀ {k} x, down F k (up F k x) ≡ x
   | 0, ⟨()⟩ => .rfl
   | _+1, _ => (map_comp ..).symm.trans <|
     (map_ne.eqv down_up down_up _).trans (map_id _)
 
+@[rocq_alias solver.fg]
 theorem up_down {k} (x) : up F (k+1) (down F (k+1) x) ≡{k}≡ x := by
   refine (map_comp ..).dist.symm.trans <| .trans ?_ (map_id _).dist
   open OFunctorContractive in exact match k with
@@ -51,12 +59,14 @@ theorem up_down {k} (x) : up F (k+1) (down F (k+1) x) ≡{k}≡ x := by
   | k+1 => map_contractive.succ (x := (_, _)) (y := (_, _)) _ ⟨up_down, up_down⟩ _
 
 variable (F) in
-@[ext] structure Tower : Type u where
+@[ext, rocq_alias solver.tower]
+structure Tower : Type u where
   val k : A F k
   protected down {k} : down F k (val (k+1)) ≡ val k
 
 instance : CoeFun (Tower F) (fun _ => ∀ k, A F k) := ⟨Tower.val⟩
 
+@[rocq_alias solver.tower_ofe_mixin]
 instance : OFE (Tower F) where
   Equiv f g := ∀ k, f k ≡ g k
   Dist n f g := ∀ k, f k ≡{n}≡ g k
@@ -68,10 +78,12 @@ instance : OFE (Tower F) where
   equiv_dist {_ _} := by simp [equiv_dist]; apply forall_comm
   dist_lt h1 h2 _ := dist_lt (h1 _) h2
 
+@[rocq_alias solver.tower_chain]
 def towerChain (c : Chain (Tower F)) (k : Nat) : Chain (A F k) where
   chain i := c.1 i k
   cauchy h := c.cauchy h k
 
+@[rocq_alias solver.tower_cofe]
 instance : COFE (Tower F) where
   compl c := by
     refine ⟨fun k => compl ⟨fun i => c.1 i k, fun h => c.cauchy h k⟩, ?_⟩
@@ -81,22 +93,27 @@ instance : COFE (Tower F) where
   conv_compl _ := conv_compl
 
 variable (F) in
+@[rocq_alias solver.ff]
 def upN {k} : ∀ n, A F k -n> A F (k + n)
   | 0 => .id
   | n+1 => (up F (k + n)).comp (upN n)
 
 variable (F) in
+@[rocq_alias solver.gg]
 def downN {k} : ∀ n, A F (k + n) -n> A F k
   | 0 => .id
   | n+1 => (downN n).comp (down F (k + n))
 
+@[rocq_alias solver.ggff]
 theorem downN_upN {k} (x : A F k) : ∀ {i}, downN F i (upN F i x) ≡ x
   | 0 => .rfl
   | n+1 => ((downN F n).ne.eqv (down_up ..)).trans (downN_upN _)
 
+@[rocq_alias solver.f_tower]
 protected theorem Tower.up (X : Tower F) : up F (k+1) (X (k+1)) ≡{k}≡ X (k+2) :=
   ((up ..).ne.1 X.down.symm.dist).trans <| up_down _
 
+@[rocq_alias solver.ff_tower]
 protected theorem Tower.upN (X : Tower F) : ∀ i, upN F i (X (k+1)) ≡{k}≡ X (k+1+i)
   | 0 => .rfl
   | n+1 => by
@@ -104,28 +121,36 @@ protected theorem Tower.upN (X : Tower F) : ∀ i, upN F i (X (k+1)) ≡{k}≡ X
       rintro _ rfl; exact X.up.le (Nat.le_add_right ..)
     exact ((up ..).ne.1 (X.upN _)).trans <| this _ (Nat.add_right_comm ..)
 
+@[rocq_alias solver.gg_tower]
 protected theorem Tower.downN (X : Tower F) : ∀ i, downN F i (X (k+i)) ≡ X k
   | 0 => .rfl
   | _+1 => ((downN ..).ne.eqv X.down).trans (X.downN _)
 
+@[rocq_alias solver.tower_car_ne]
 instance (k : Nat) : NonExpansive (fun X : Tower F => X.val k) := ⟨fun _ _ _ => (· _)⟩
 
+@[rocq_alias solver.project]
 def Tower.proj (k) : Tower F -n> A F k := ⟨(· k), ⟨fun _ _ _ => (· _)⟩⟩
 
+@[rocq_alias solver.coerce]
 def eqToHom (e : i = k) : A F i -n> A F k := e ▸ .id
 
+@[rocq_alias solver.coerce_f]
 theorem eqToHom_up {k k'} {x : A F k} (e : k = k') :
     eqToHom (congrArg Nat.succ e) (up F k x) = up F k' (eqToHom e x) := by
   cases e; rfl
 
+@[rocq_alias solver.g_coerce]
 theorem down_eqToHom {k k'} {x : A F (k+1)} (e : k = k') :
     down F k' (eqToHom (congrArg Nat.succ e) x) = eqToHom e (down F k x) := by
   cases e; rfl
 
+@[rocq_alias solver.embed_coerce]
 def embed : A F k -n> A F i :=
   if h : k ≤ i then (eqToHom (Nat.add_sub_cancel' h)).comp (upN ..)
   else (downN ..).comp (eqToHom (Nat.add_sub_cancel' (Nat.le_of_not_ge h)).symm)
 
+@[rocq_alias solver.embed']
 protected def Tower.embed (k) : A F k -n> Tower F := by
   refine ⟨fun n => ⟨fun _ => embed n, fun {i} => ?_⟩, ⟨fun _ _ _ h _ => embed.ne.1 h⟩⟩
   dsimp [embed]; split <;> rename_i h₁
@@ -154,6 +179,7 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
       rw [down_eqToHom (Nat.add_right_comm i a 1)]
       apply ih
 
+@[rocq_alias solver.embed_f]
 theorem Tower.embed_up (x : A F k) :
     Tower.embed (k+1) (up F k x) ≡ Tower.embed k x := by
   refine equiv_dist.2 fun n i => ?_
@@ -183,6 +209,7 @@ theorem Tower.embed_up (x : A F k) :
       rintro a b eq rfl; cases Nat.add_left_cancel (m := b+1) eq
       exact (downN ..).ne.1 (down_up x).dist
 
+@[rocq_alias solver.embed_tower]
 theorem Tower.embed_self (X : Tower F) :
     Tower.embed (k+1) (X (k+1)) ≡{k}≡ X := by
   refine fun i => ?_
@@ -196,8 +223,10 @@ theorem Tower.embed_self (X : Tower F) :
     · cases show k=i+a from Nat.succ.inj eq
       exact (X.downN _).dist
 
+@[rocq_alias solver.tower_inhabited]
 instance : Inhabited (Tower F) := ⟨Tower.embed 0 ⟨()⟩⟩
 
+@[rocq_alias solver.unfold_chain]
 def unfoldChain (X : Tower F) : Chain (F (Tower F) (Tower F)) where
   chain n := map (Tower.proj _) (Tower.embed _) (X (n+1))
   cauchy {n i} h := by
@@ -257,14 +286,18 @@ end Fix.Impl
 open Fix.Impl
 
 variable (F) in
+@[rocq_alias solver.T]
 def Fix : Type u := Tower F
 
 instance : Inhabited (Fix F) := inferInstanceAs (Inhabited (Tower F))
 instance : COFE (Fix F) := inferInstanceAs (COFE (Tower F))
 
+@[rocq_alias solver.result]
 def Fix.iso : OFE.Iso (F (Fix F) (Fix F)) (Fix F) := Tower.iso
 
+@[rocq_alias solver.fold]
 def Fix.fold : F (Fix F) (Fix F) -n> Fix F := Fix.iso.hom
+@[rocq_alias solver.unfold]
 def Fix.unfold : Fix F -n> F (Fix F) (Fix F) := Fix.iso.inv
 theorem Fix.fold_unfold (X : Fix F) : Fix.fold (Fix.unfold X) ≡ X := Fix.iso.hom_inv
 theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) ≡ X := Fix.iso.inv_hom
