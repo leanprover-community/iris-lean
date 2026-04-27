@@ -6,6 +6,8 @@ public import Iris.ProgramLogic.EctxLanguage
 
 namespace Iris.ProgramLogic
 
+open Language.Notation EctxLanguage.Notation FromMathlib
+
 @[expose] public section
 
 variable {Expr : Type e}{Val : Type v}{State : Type σ}{Obs : Type o}
@@ -20,7 +22,6 @@ export EvContextItem (fillItem)
 
 attribute [simp] EvContextItem.fillItem_inj
 
-open BaseStep in
 class EctxItemLanguage
     (Expr     : Type e)
     (EctxItem : outParam <| Type i)

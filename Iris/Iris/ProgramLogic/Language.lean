@@ -12,7 +12,6 @@ public import Batteries.Data.List.Basic
 
 -- TODO: Consider renaming `ToVal` typeclass to something better, since
 --       it's not just the `toVal` operation it carries.
--- TODO: Fix the namespaces where notations may be found.
 
 namespace Iris.ProgramLogic
 
@@ -62,10 +61,13 @@ class PrimStep
   /-- The primitive reduction relation of the language -/
   primStep   : Expr × State → Obs → Expr × State × List Expr → Prop
 
-namespace PrimStep
-
+namespace Language.Notation
 @[inherit_doc PrimStep.primStep]
-scoped notation conf:40 " -<" obs:max ">-> " conf':41  => PrimStep.primStep conf obs conf'
+scoped notation (name := primStep) conf:40 " -<" obs:max ">-> " conf':41  => PrimStep.primStep conf obs conf'
+end Language.Notation
+open Language.Notation
+
+namespace PrimStep
 
 variable [PrimStep Expr State Obs]
 
@@ -91,7 +93,6 @@ def notStuck [ToVal Expr Val]: Expr × State → Prop
 end PrimStep
 
 open PrimStep
-
 
 class Language
     (Expr  : Type e)
@@ -125,14 +126,17 @@ inductive Step : List Expr × State → List Obs → List Expr × State → Prop
     -- most lemmas about an element appearing in the middle of a list
     -- are in the shape `t₁ ++ e :: t₂`, this form is preferred.
 
+namespace Notation
+@[inherit_doc Language.Step]
+scoped notation (name := Step) conf:40 " -<" obs:max ">->ₜₚ " conf':41 => Language.Step conf obs conf'
+end Notation
+open Notation
+
 def Step.of_primStep : ∀ {e σ}{obs : List Obs}{e'} {σ' : State} {eₜ},
     (e, σ) -<obs>-> (e', σ', eₜ) →
     ∀ {t₁ t₂: List Expr},
     Step (t₁ ++ e :: t₂, σ) obs (t₁ ++ e' :: t₂ ++ eₜ, σ') :=
   (Language.Step.atomic _ _ _ _ _ _ · _ _)
-
-@[inherit_doc Step]
-scoped notation conf:40 " -<" obs:max ">->ₜₚ " conf':41 => Language.Step conf obs conf'
 
 /-- The (possibly zero) sequence of `Language.step`s -/
 @[grind, rocq_alias nsteps]
@@ -144,20 +148,25 @@ inductive NSteps : Nat → List Expr × State → List Obs → List Expr × Stat
       NSteps n ρ₂ obs' ρ₃ →
       NSteps (n+1) ρ₁ (obs ++ obs') ρ₃
 
-@[inherit_doc NSteps]
-scoped notation conf:40 " -<" obs:max ">->ₜₚ^[" n:max "] " conf':41 =>
+namespace Notation
+@[inherit_doc Language.NSteps]
+scoped notation (name := NSteps) conf:40 " -<" obs:max ">->ₜₚ^[" n:max "] " conf':41 =>
  Language.NSteps n conf obs conf'
+end Notation
 
 /-- A `Language.step`s with no observation information -/
 @[rocq_alias erased_step]
 def erasedStep (ρ  ρ₂: List Expr × State) := ∃ obs, Step ρ obs ρ₂
 
-@[inherit_doc erasedStep]
-scoped notation conf:40 " -·->ₜₚ " conf':41 => Language.erasedStep conf conf'
+namespace Notation
+@[inherit_doc Language.erasedStep]
+scoped notation (name := erasedStep) conf:40 " -·->ₜₚ " conf':41 => Language.erasedStep conf conf'
 
 /-- A sequence of `Language.erasedStep`s -/
-scoped notation conf:40 " -·->ₜₚ* " conf':41 =>
-  Relation.ReflTransGen erasedStep conf conf'
+scoped notation (name := erasedStepStar) conf:40 " -·->ₜₚ* " conf':41 =>
+  Relation.ReflTransGen Language.erasedStep conf conf'
+end Notation
+open Notation
 
 open Relation in
 @[rocq_alias erased_step_nsteps]
@@ -419,33 +428,30 @@ structure PurePrimStep (e₁ e₂ : Expr) : Prop where
     (e₁, σ₁) -<obs>-> (e₂', σ₂, eₜ) →
     obs = [] ∧ σ₁ = σ₂ ∧ e₂ = e₂' ∧ eₜ = []
 
-@[inherit_doc PurePrimStep]
-scoped notation conf:40 " -ᵖ-> " conf':41 => PurePrimStep conf conf'
+namespace Notation
+@[inherit_doc Language.PurePrimStep]
+scoped notation (name := PurePrimStep) conf:40 " -ᵖ-> " conf':41 => Language.PurePrimStep conf conf'
 
 /-- `e₁ -ᵖ->^[n] e₂` represents a sequence of `n` pure steps taken
     from `e₁` up to `e₂`.
 -/
-scoped notation conf:40 " -ᵖ->^[" n "] " conf':41 => Relation.Iterate PurePrimStep n conf conf'
+scoped notation (name := PurePrimStepN) conf:40 " -ᵖ->^[" n "] " conf':41 => Relation.Iterate Language.PurePrimStep n conf conf'
 
 /-- `e₁ -ᵖ->* e₂` represents a sequence of some number of pure steps
     taken from `e₁` up to `e₂`.
 -/
-scoped notation conf:40 " -ᵖ->* " conf':41 => Relation.ReflTransGen PurePrimStep conf conf'
+scoped notation (name := PurePrimStepStar) conf:40 " -ᵖ->* " conf':41 => Relation.ReflTransGen Language.PurePrimStep conf conf'
+end Notation
 
 @[rocq_alias pure_steps_tp]
 abbrev pureSteps (t₁ t₂ : List Expr) := List.Forall₂ (· -ᵖ->* ·) t₁ t₂
 
+namespace Notation
 /-- `e₁ -ᵖ->ₜₚ* e₂` represents a sequence of some number of pure steps
     taken from `e₁` up to `e₂`.
 -/
-scoped notation conf:40 " -ᵖ->ₜₚ* " conf':41 => Language.pureSteps conf conf'
-
-open Lean PrettyPrinter Delaborator SubExpr in
-@[app_unexpander Language.pureSteps]
-meta def unexpandLanguagePureSteps : Unexpander
-| `(pureSteps $conf $conf') =>
-  `($conf -ᵖ->ₜₚ* $conf')
-| _ => throw ()
+scoped notation (name := pureSteps) conf:40 " -ᵖ->ₜₚ* " conf':41 => Language.pureSteps conf conf'
+end Notation
 
 @[rocq_alias PureExec]
 class PureExec (φ : Prop) (n : Nat) (e₁ e₂ : Expr) : Prop where

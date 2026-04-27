@@ -1,9 +1,12 @@
 module
 
 meta import Iris.Std.RocqPorting
+
 public import Iris.ProgramLogic.Language
 
 namespace Iris.ProgramLogic
+
+open Language.Notation
 
 @[expose] public section
 
@@ -37,12 +40,18 @@ class BaseStep
   /-- The base reduction relation of the language -/
   baseStep : Expr × State → List Obs → Expr × State × List Expr → Prop
 
+attribute [rocq_alias base_step] BaseStep.baseStep
+
+namespace EctxLanguage.Notation
+@[inherit_doc BaseStep.baseStep]
+scoped notation (name := baseStep) conf:40 " -<" obs:max ">->ᵇ " conf':41  =>
+  BaseStep.baseStep conf obs conf'
+end EctxLanguage.Notation
+open EctxLanguage.Notation
+
 namespace BaseStep
 
 variable [BaseStep Expr State Obs]
-
-@[inherit_doc BaseStep.baseStep]
-scoped notation conf:40 " -<" obs:max ">->ᵇ " conf':41  => BaseStep.baseStep conf obs conf'
 
 @[grind]
 inductive ToPrimStep [EvContext Expr Ectx] [BaseStep Expr State Obs]
@@ -105,7 +114,6 @@ theorem reducible_of_reducibleNoObs :
 
 end BaseStep
 
-open BaseStep in
 class EctxLanguage
     (Expr  : Type e)
     (Ectx  : outParam <| Type c)
@@ -188,7 +196,6 @@ theorem base_redex_unique K K' (e e' : Expr) σ σ' :
   | .inr h =>
     grind only [fill_empty]
 
-open PrimStep in
 @[rocq_alias base_prim_step]
 theorem primStep_of_baseStep {e₁ : Expr}{σ₁ obs e₂ σ₂ eₜ}:
     (e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ) →
@@ -197,7 +204,6 @@ theorem primStep_of_baseStep {e₁ : Expr}{σ₁ obs e₂ σ₂ eₜ}:
   have := ToPrimStep.ofBaseStep empty h
   simpa only [EvContext.fill_empty]
 
-open PrimStep in
 theorem baseStep_of_primStep {e₁ : Expr}{σ₁ obs e₂ σ₂ eₜ}:
     (e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ) →
     subredexesAreValues e₁ →
@@ -206,7 +212,6 @@ theorem baseStep_of_primStep {e₁ : Expr}{σ₁ obs e₂ σ₂ eₜ}:
   have K_empty := subredexValues K e₁ rfl (val_stuck bstep)
   by grind only [EvContext.fill_empty]
 
-open PrimStep in
 @[grind =>]
 theorem baseStep_iff_primStep_of_subredexesAreValues {e₁ : Expr}{σ₁ obs e₂ σ₂ eₜ}:
     subredexesAreValues e₁ →
@@ -219,7 +224,6 @@ theorem base_step_not_stuck {e : Expr} {σ obs e' σ' eₜ} :
     (e, σ) -<obs>->ᵇ (e', σ', eₜ) → PrimStep.notStuck (e, σ) :=
   Language.notStuck_of_primStep ∘ primStep_of_baseStep
 
-open PrimStep in
 @[rocq_alias fill_prim_step]
 theorem fill_primStep (K : Ectx) {e : Expr} {σ obs e' σ' eₜ} :
     (e, σ) -<obs>-> (e', σ', eₜ) →
@@ -300,7 +304,6 @@ def Atomic.ofBaseAtomic (a : Language.Atomicity) :
         by grind [baseAtomic]
     }
 
-open PrimStep in
 @[rocq_alias base_reducible_prim_step_ctx]
 theorem exists_baseStep_of_primStep_fill_of_redex_baseStep_reducible :
     BaseStep.reducible (e₁, σ₁) →
@@ -314,7 +317,6 @@ theorem exists_baseStep_of_primStep_fill_of_redex_baseStep_reducible :
   have : K'' = empty := by grind only [val_stuck, = Option.isSome_none, base_ctx_step_val bstep]
   grind only [= EvContext.fill_empty]
 
-open PrimStep in
 @[rocq_alias base_reducible_prim_step]
 theorem baseStep_of_primStep_of_baseStep_reducible :
     BaseStep.reducible (e₁, σ₁) →
@@ -323,7 +325,6 @@ theorem baseStep_of_primStep_of_baseStep_reducible :
   have ⟨e₂', heq, bstep⟩ := exists_baseStep_of_primStep_fill_of_redex_baseStep_reducible (K := empty) bred (EvContext.fill_empty e₁ ▸ pstep)
   heq ▸ (EvContext.fill_empty e₂' |>.symm ▸ bstep)
 
-open PrimStep in
 instance (K : Ectx) : Language.Context (fill (Expr := Expr) K) where
   toVal_eq_none_fill := fill_not_val K _
   primStep_fill {e σ obs e' σ' eₜ} := fun ⟨e₁, e₂, K', bstep⟩ =>
@@ -346,10 +347,12 @@ structure PureBaseStep (e₁ e₂ : Expr) : Prop where
     (e₁, σ₁) -<obs>->ᵇ (e₂', σ₂, eₜ) →
     obs = [] ∧ σ₁ = σ₂ ∧ e₂ = e₂' ∧ eₜ = []
 
-@[inherit_doc BaseStep.baseStep]
-scoped notation conf:40 " -ᵖ->ᵇ " conf':41  => PureBaseStep conf conf'
+namespace Notation
+@[inherit_doc EctxLanguage.PureBaseStep]
+scoped notation (name := PureBaseStep) conf:40 " -ᵖ->ᵇ " conf':41  =>
+  EctxLanguage.PureBaseStep conf conf'
+end Notation
 
-open Language in
 @[rocq_alias pure_base_step_pure_step]
 theorem purePrimStep_of_pureBaseStep :
     e₁ -ᵖ->ᵇ e₂ →
