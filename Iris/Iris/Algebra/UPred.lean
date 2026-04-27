@@ -38,14 +38,17 @@ theorem ValidAt.le_rfl {M : Type _} [UCMRA M] {n : Nat} {Hle : n ≤ n} {v : Val
 @[ext]
 structure UPred (M : Type _) [UCMRA M] where
   holds : (n : Nat) → ValidAt M n → Prop
-  mono {n1 n2} {x1 : ValidAt M n1} {x2 : ValidAt M n2} : holds n1 x1 → (x1 : M) ≼{n2} (x2 : M) → (Hle : n2 ≤ n1) → holds n2 x2
+  mono {n1 n2} {x1 : ValidAt M n1} {x2 : ValidAt M n2} :
+    holds n1 x1 → (x1 : M) ≼{n2} (x2 : M) → (Hle : n2 ≤ n1) → holds n2 x2
 
-def UPred.holds_unpacked {M : Type _} [UCMRA M] (P : UPred M) :
-  (n : Nat) → (x : M) → ✓{n} x → Prop := fun n x Hx => P.holds n ⟨x, Hx⟩
+def UPred.holds_unpacked {M : Type _} [UCMRA M] (P : UPred M) (n : Nat) (x : M) (Hx : ✓{n} x) :
+    Prop :=
+  P.holds n ⟨x, Hx⟩
 
 def UPred.mono_unpacked {M : Type _} [UCMRA M] (P : UPred M) {n1 n2 : Nat} {x1 x2 : M}
-  (Hx1 : ✓{n1} x1) (Hx2 : ✓{n2} x2) : P.holds_unpacked n1 x1 Hx1 → x1 ≼{n2} x2 → n2 ≤ n1 → P.holds_unpacked n2 x2 Hx2 :=
-    fun HP Hxle Hle => P.mono HP Hxle Hle
+    (Hx1 : ✓{n1} x1) (Hx2 : ✓{n2} x2) (HP : P.holds_unpacked n1 x1 Hx1) (Hxle : x1 ≼{n2} x2)
+    (Hle : n2 ≤ n1) : P.holds_unpacked n2 x2 Hx2 :=
+  P.mono HP Hxle Hle
 
 instance [UCMRA M] : Inhabited (UPred M) :=
   ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
@@ -68,7 +71,7 @@ instance : OFE (UPred M) where
     trans H1 H2 _ _ A B := (H1 _ _ A B).trans (H2 _ _ A B) }
   equiv_dist := ⟨
     fun Heqv _ _ _ _ Hvalid => Heqv _ _ Hvalid,
-    fun Hdist _ _ Hvalid => Hdist _ _ _ (Nat.le_refl _) Hvalid⟩
+    fun Hdist _ _ Hvalid => Hdist _ _ _ .refl Hvalid⟩
   dist_lt Hdist Hlt _ _ Hle Hvalid :=
     Hdist _ _ (Nat.le_trans Hle (Nat.le_of_succ_le Hlt)) Hvalid
 
@@ -78,27 +81,26 @@ instance : OFE.Leibniz (UPred M) where
     exact hequiv n e.val e.property
 
 theorem uPred_ne {P : UPred M} {n} {m₁ m₂ : ValidAt M n} (H : (m₁ : M) ≡{n}≡ (m₂ : M)) : P n m₁ ↔ P n m₂ :=
-  ⟨fun H' => P.mono H' H.to_incN (Nat.le_refl _),
-   fun H' => P.mono H' H.symm.to_incN (Nat.le_refl _)⟩
+  ⟨fun H' => P.mono H' H.to_incN .refl, fun H' => P.mono H' H.symm.to_incN .refl⟩
 
 theorem uPred_proper {P : UPred M} {n} {m₁ m₂ : ValidAt M n} (H : (m₁ : M) ≡ (m₂ : M)) : P n m₁ ↔ P n m₂ :=
   uPred_ne H.dist
 
 theorem uPred_holds_ne {P Q : UPred M} {n₁ n₂} {x : M}
     (HPQ : P ≡{n₂}≡ Q) (Hn : n₂ ≤ n₁) (Hx : ✓{n₂} x) (Hx' : ✓{n₁} x) (HQ : Q n₁ ⟨x, Hx'⟩) : P n₂ ⟨x, Hx⟩ :=
-  (HPQ _ _ (Nat.le_refl _) Hx).mpr (Q.mono HQ .rfl Hn)
+  (HPQ _ _ .refl Hx).mpr (Q.mono HQ .rfl Hn)
 
 instance : IsCOFE (UPred M) where
   compl c := {
     holds n x := ∀ n', (Hle : n' ≤ n) → (c n') n' (x.le Hle)
     mono {n1 n2 x1 x2 HP Hx12 Hn12 n3 Hn23} := by
-      refine mono _ (HP n3 (Nat.le_trans Hn23 Hn12)) ?_ (Nat.le_refl _)
+      refine mono _ (HP n3 (Nat.le_trans Hn23 Hn12)) ?_ .refl
       exact Hx12.le Hn23
   }
   conv_compl {n c i x} Hin Hv := by
-    refine .trans ?_ (c.cauchy Hin _ _ (Nat.le_refl _) Hv).symm
-    refine ⟨fun H => H _ (Nat.le_refl _), fun H n' Hn' => ?_⟩
-    exact (c.cauchy Hn' _ _ (Nat.le_refl _) _).mp (mono _ H .rfl Hn')
+    refine .trans ?_ (c.cauchy Hin _ _ .refl Hv).symm
+    refine ⟨fun H => H _ .refl, fun H n' Hn' => ?_⟩
+    exact (c.cauchy Hn' _ _ .refl _).mp (mono _ H .rfl Hn')
 
 abbrev UPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
   fun A B _ _ => UPred (F B A)
