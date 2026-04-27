@@ -13,13 +13,31 @@ open Language.Notation
 variable {Expr : Type e}{Val : Type v}{State : Type σ}{Obs : Type o}
 variable {Ectx : Type c}
 
-class IsEvContext (Ectx : Type c) where
+/-- Whether a type `Ectx` has the `comp` and `empty` operations expected
+    of evaluation contexts.
+
+    These operations are kept inside a separate typeclass so they don't
+    depend on a specific `Expr`. In particular, if `empty` was defined
+    inside of `EvContext`, then since `EvContext.empty` is not enough to
+    infer the type of `Expr` from a given call, it is asked to be given
+    explicitly as `EvContext.empty Expr`, which is inconvenient in practice.
+-/
+class EvContextOps (Ectx : Type c) where
   empty : Ectx
   comp  : Ectx → Ectx → Ectx
-export IsEvContext (empty comp)
+export EvContextOps (empty comp)
 
+attribute [rocq_alias empty_ectx] EvContextOps.empty
+attribute [rocq_alias comp_ectx] EvContextOps.comp
+
+/-- An evaluation context `Ectx` of expressions `Expr` is an "expression
+    with a hole". This hole can be filled in using the `fill` operation.
+
+    For example, for a lambda calculus `t ::= v | λ x . t | t t` with
+    values `v`, the evaluation contexts could be defined inductively as
+    `K ::= □ | v K | K t`.  -/
 class EvContext (Expr : Type e) (Ectx : outParam <| Type c)
-  extends IsEvContext Ectx
+  extends EvContextOps Ectx
   where
   fill  : Ectx → Expr → Expr
   fill_empty (e : Expr) : fill empty e = e
@@ -28,16 +46,33 @@ class EvContext (Expr : Type e) (Ectx : outParam <| Type c)
   fill_inj {K} : Function.Injective (fill K)
 export EvContext (fill)
 
+attribute [rocq_alias fill] EvContext.fill
+attribute [rocq_alias mixin_fill_empty] EvContext.fill_empty
+attribute [rocq_alias mixin_fill_comp] EvContext.fill_comp
+attribute [rocq_alias mixin_fill_inj] EvContext.fill_inj
+
 attribute [grind =] EvContext.fill_empty
 attribute [grind =_] EvContext.fill_comp
 
 attribute [local simp] EvContext.fill_inj Function.Injective.eq_iff
 
+/-- A base step is a reduction step which is only defined on base terms.
+
+    The generic reduction relation is then derived from taking the closure
+    of these base steps over any context.
+
+    For example, for a lambda calculus `t ::= v | λ x . t | t t` with
+    values `v` and evaluation contexts `K ::= □ | v K | K t`, the base step
+    relation could be defined as `(λ x . t) v -->ᵇ t[v/x]`, where `t[v/x]`
+    stands for "`t` but with all references to `x` replaced with `x`". In
+    particular, this is the only reduction defined for `-->ᵇ`, so a term
+    like `v₂ ((λ x . t) v)` does not reduce under `-->ᵇ`!
+-/
 class BaseStep
     (Expr : Type e)
     (State : outParam (Type σ))
     (Obs : outParam (Type o)) where
-  /-- The base reduction relation of the language -/
+  /-- The base reduction relation of the language. See `BaseStep`. -/
   baseStep : Expr × State → List Obs → Expr × State × List Expr → Prop
 
 attribute [rocq_alias base_step] BaseStep.baseStep
@@ -53,36 +88,41 @@ namespace BaseStep
 
 variable [BaseStep Expr State Obs]
 
+/-- The context closure of a base relation. A term `e` reduces under the context closure
+    to a term `e'` if `e` and `e'` share a common context `K`, and their remaining redexes
+    `e₁` and `e₂` reduce under a base step.
+  -/
 @[grind]
-inductive ToPrimStep [EvContext Expr Ectx] [BaseStep Expr State Obs]
+inductive ContextClosure [EvContext Expr Ectx] [BaseStep Expr State Obs]
   (obs : List Obs) (eₜ : List Expr) (σ₁ σ₂ : State) :
     Expr → Expr → Prop where
   | intro : ∀ (e₁ e₂) (K : Ectx),
     (e₁, σ₁) -<obs>->ᵇ (e₂,σ₂,eₜ) →
-    ToPrimStep obs eₜ σ₁ σ₂ (fill K e₁) (fill K e₂)
+    ContextClosure obs eₜ σ₁ σ₂ (fill K e₁) (fill K e₂)
 
 @[match_pattern]
-abbrev ToPrimStep.ofBaseStep [EvContext Expr Ectx] [BaseStep Expr State Obs]
+abbrev ContextClosure.ofBaseStep [EvContext Expr Ectx] [BaseStep Expr State Obs]
   {e₁ : Expr} {σ₁ obs e₂ σ₂ eₜ} (K : Ectx) :
     (e₁, σ₁) -<obs>->ᵇ (e₂,σ₂,eₜ) →
-    ToPrimStep obs eₜ σ₁ σ₂ (fill K e₁) (fill K e₂) :=
-  (ToPrimStep.intro _ _ _ ·)
+    ContextClosure obs eₜ σ₁ σ₂ (fill K e₁) (fill K e₂) :=
+  (ContextClosure.intro _ _ _ ·)
 
-@[match_pattern]
-abbrev ToPrimStep.ofBaseStep' [EvContext Expr Ectx] [BaseStep Expr State Obs]
+abbrev ContextClosure.ofBaseStep' [EvContext Expr Ectx] [BaseStep Expr State Obs]
   {e e' e₁ : Expr} {σ₁ obs e₂ σ₂ eₜ} (K : Ectx) :
     fill K e₁ = e →
     fill K e₂ = e' →
     (e₁, σ₁) -<obs>->ᵇ (e₂,σ₂,eₜ) →
-    ToPrimStep obs eₜ σ₁ σ₂ e e' := fun
-  | rfl, rfl => (ToPrimStep.intro _ _ _ ·)
+    ContextClosure obs eₜ σ₁ σ₂ e e' := fun
+  | rfl, rfl => (ContextClosure.intro _ _ _ ·)
 
+/-- The primitive reduction step generated from a base step is the context closure of
+    the base step.  -/
 @[grind]
 instance [BaseStep Expr State Obs] [EvContext Expr Ectx] :
     PrimStep Expr State (List Obs) where
   primStep
   | (e₁, σ₁), obs, (e₂, σ₂, eₜ) =>
-    ToPrimStep obs eₜ σ₁ σ₂ e₁ e₂
+    ContextClosure obs eₜ σ₁ σ₂ e₁ e₂
 
 @[rocq_alias base_reducible]
 def reducible : Expr × State → Prop
@@ -114,6 +154,13 @@ theorem reducible_of_reducibleNoObs :
 
 end BaseStep
 
+/-- A language with evaluation contexts.
+
+    This typeclass is defined in terms of a base step relation `baseStep`,
+    a type of evaluation contexts `Ectx` and a set of values `Val`, and
+    extended with theorems that relate these concepts to one another.
+
+-/
 class EctxLanguage
     (Expr  : Type e)
     (Ectx  : outParam <| Type c)
@@ -124,6 +171,7 @@ class EctxLanguage
     BaseStep Expr State Obs,
     ToVal Expr Val,
     EvContext Expr Ectx where
+  /-- Removing a context out of a value gives a value -/
   fill_val K e :
     (toVal (fill K e)).isSome →
     (toVal e).isSome
@@ -133,6 +181,7 @@ class EctxLanguage
     (e₁_redex, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ) →
     ∃ K'', K_redex = comp K' K''
 
+  /-- An expression which reduces cannot be a value -/
   val_stuck : ∀ {e} {σ : State} {obs e' σ' eₜ},
     (e, σ) -<obs>->ᵇ (e', σ', eₜ) → toVal e = none
 
@@ -141,7 +190,12 @@ class EctxLanguage
     (fill K e, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ) →
     (toVal e).isSome ∨ K = empty
 
+attribute [rocq_alias mixin_fill_val] EctxLanguage.fill_val
+attribute [rocq_alias mixin_step_by_val] EctxLanguage.step_by_val
+attribute [rocq_alias mixin_base_ctx_step_val] EctxLanguage.base_ctx_step_val
+
 attribute [grind .] EctxLanguage.val_stuck
+attribute [grind →] EctxLanguage.base_ctx_step_val
 
 namespace EctxLanguage
 open BaseStep
@@ -201,7 +255,7 @@ theorem primStep_of_baseStep {e₁ : Expr}{σ₁ obs e₂ σ₂ eₜ}:
     (e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ) →
     (e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ) := by
   intros h
-  have := ToPrimStep.ofBaseStep empty h
+  have := ContextClosure.ofBaseStep empty h
   simpa only [EvContext.fill_empty]
 
 theorem baseStep_of_primStep {e₁ : Expr}{σ₁ obs e₂ σ₂ eₜ}:
@@ -228,8 +282,8 @@ theorem base_step_not_stuck {e : Expr} {σ obs e' σ' eₜ} :
 theorem fill_primStep (K : Ectx) {e : Expr} {σ obs e' σ' eₜ} :
     (e, σ) -<obs>-> (e', σ', eₜ) →
     (fill K e, σ) -<obs>-> (fill K e', σ', eₜ) := fun ⟨e₁, e₂, K₁, pstep⟩ => by
-    have := ToPrimStep.ofBaseStep (comp K K₁) pstep
-    simpa only [EvContext.fill_comp]
+  have := ContextClosure.ofBaseStep (comp K K₁) pstep
+  simpa only [EvContext.fill_comp]
 
 @[rocq_alias fill_reducible]
 theorem fill_reducible (K : Ectx) {e : Expr} {σ} :
@@ -338,8 +392,10 @@ instance (K : Ectx) : Language.Context (fill (Expr := Expr) K) where
     simp only [← EvContext.fill_comp, EvContext.fill_inj, Function.Injective.eq_iff,
       exists_eq_left'] at *
     subst heq
-    exact ToPrimStep.ofBaseStep K'' bstep
+    exact ContextClosure.ofBaseStep K'' bstep
 
+/-- There is a pure base step between `e₁` and `e₂` if there is a unique base step between
+    them which produces no observations nor spawns new threads.  -/
 @[rocq_alias pure_base_step]
 structure PureBaseStep (e₁ e₂ : Expr) : Prop where
   safe : ∀ σ : State, BaseStep.reducibleNoObs (e₁, σ)
