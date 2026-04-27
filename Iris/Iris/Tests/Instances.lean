@@ -101,7 +101,7 @@ class TacticTest [BI PROP] (P : PROP) (Q : outParam PROP) where
 
 @[ipm_tactic_instance:high TacticTest _ _]
 def tac_continue : SynthTactic := λ e => do
-  logInfo m!"tac_continue called wit {e}"
+  logInfo m!"tac_continue called with {e}"
   return .continue
 
 theorem tactic_test_emp [BI PROP] (P : PROP) : TacticTest iprop(emp ∗ P) P := ⟨sep_elim_r⟩
@@ -146,7 +146,7 @@ def tac_fail : SynthTactic := λ _ => return .fail
 variable {PROP} [BI PROP] (P : PROP)
 
 /--
-info: tac_continue called wit TacticTest iprop(emp ∗ P) ?_
+info: tac_continue called with TacticTest iprop(emp ∗ P) ?_
 ---
 info: solution: TacticTest iprop(emp ∗ P) P, new goals: []
 ---
@@ -165,9 +165,9 @@ set_option pp.mvars false in
 #ipm_synth (TacticTest iprop(emp ∗ P) _)
 
 /--
-info: tac_continue called wit TacticTest iprop((emp ∗ P) ∗ P) ?_
+info: tac_continue called with TacticTest iprop((emp ∗ P) ∗ P) ?_
 ---
-info: tac_continue called wit TacticTest iprop(emp ∗ P) ?_
+info: tac_continue called with TacticTest iprop(emp ∗ P) ?_
 ---
 info: solution: TacticTest iprop((emp ∗ P) ∗ P) iprop(P ∗ P), new goals: []
 ---
@@ -192,11 +192,11 @@ set_option pp.mvars false in
 #ipm_synth (TacticTest iprop((emp ∗ P) ∗ P) _)
 
 /--
-info: tac_continue called wit TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P) ?_
+info: tac_continue called with TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P) ?_
 ---
-info: tac_continue called wit TacticTest iprop((emp ∗ ⌜a = 5⌝) ∗ P) (?_ a)
+info: tac_continue called with TacticTest iprop((emp ∗ ⌜a = 5⌝) ∗ P) (?_ a)
 ---
-info: tac_continue called wit TacticTest iprop(emp ∗ ⌜a = 5⌝) ?_
+info: tac_continue called with TacticTest iprop(emp ∗ ⌜a = 5⌝) ?_
 ---
 info: solution: TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P) iprop(∀ a, ⌜a = 5⌝ ∗ P), new goals: []
 ---
@@ -246,7 +246,7 @@ set_option pp.mvars false in
 #ipm_synth (TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P) _)
 
 /--
-info: tac_continue called wit TacticTest iprop(True) ?_
+info: tac_continue called with TacticTest iprop(True) ?_
 ---
 info: None
 ---

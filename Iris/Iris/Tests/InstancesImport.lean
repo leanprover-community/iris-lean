@@ -17,11 +17,11 @@ open Lean Qq BI ProofMode
 variable {PROP} [BI PROP] (P : PROP)
 
 /--
-info: tac_continue called wit TacticTest iprop(∀ x, (emp ∗ P) ∗ P) ?_
+info: tac_continue called with TacticTest iprop(∀ x, (emp ∗ P) ∗ P) ?_
 ---
-info: tac_continue called wit TacticTest iprop((emp ∗ P) ∗ P) (?_ a)
+info: tac_continue called with TacticTest iprop((emp ∗ P) ∗ P) (?_ a)
 ---
-info: tac_continue called wit TacticTest iprop(emp ∗ P) ?_
+info: tac_continue called with TacticTest iprop(emp ∗ P) ?_
 ---
 info: solution: TacticTest iprop(∀ a, (emp ∗ P) ∗ P) iprop(∀ a, P ∗ P), new goals: []
 -/

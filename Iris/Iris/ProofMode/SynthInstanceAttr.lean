@@ -54,9 +54,17 @@ end IPMBacktrack
 
 section IPMTactic
 
+/-- Result of a tactic registered via the `ipm_tactic_instance` attribute. -/
 inductive SynthTacticResult
+/-- The tactic produced a term `e` solving the goal. No further tactics or
+instances are tried. -/
 | success (e : Expr)
+/-- The tactic does not apply to this goal. The synthesis continues with the
+next tactic, or falls through to regular instance search if no tactics remain. -/
 | continue
+/-- The tactic determined that the goal is unsolvable. The synthesis aborts
+immediately: no further tactics are tried *and* the regular instance search
+is skipped. -/
 | fail
 
 
