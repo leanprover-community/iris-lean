@@ -31,8 +31,8 @@ class EvContextOps (Ectx : Type c) where
   comp  : Ectx → Ectx → Ectx
 export EvContextOps (empty comp)
 
-attribute [rocq_alias empty_ectx] EvContextOps.empty
-attribute [rocq_alias comp_ectx] EvContextOps.comp
+-- attribute [rocq_alias empty_ectx] EvContextOps.empty
+-- attribute [rocq_alias comp_ectx] EvContextOps.comp
 
 /-- An evaluation context `Ectx` of expressions `Expr` is an "expression
     with a hole". This hole can be filled in using the `fill` operation.
@@ -79,7 +79,7 @@ class BaseStep
   /-- The base reduction relation of the language. See `BaseStep`. -/
   baseStep : Expr × State → List Obs → Expr × State × List Expr → Prop
 
-attribute [rocq_alias base_step] BaseStep.baseStep
+-- attribute [rocq_alias base_step] BaseStep.baseStep
 
 namespace EctxLanguage.Notation
 @[inherit_doc BaseStep.baseStep]
@@ -111,7 +111,7 @@ abbrev ContextClosure.ofBaseStep [EvContext Expr Ectx] [BaseStep Expr State Obs]
     ContextClosure obs eₜ σ₁ σ₂ (fill K e₁) (fill K e₂) :=
   (ContextClosure.intro _ _ _ ·)
 
-@[rocq_alias Ectx_step]
+-- @[rocq_alias Ectx_step]
 abbrev ContextClosure.ofBaseStep' [EvContext Expr Ectx] [BaseStep Expr State Obs]
   {e e' e₁ : Expr} {σ₁ obs e₂ σ₂ eₜ} (K : Ectx) :
     fill K e₁ = e →
@@ -222,7 +222,7 @@ theorem fill_not_val K (e : Expr) :
   grind only [!fill_val, Option.not_isSome_iff_eq_none]
 
 
-@[rocq_alias subredexes_are_values]
+@[rocq_alias sub_redexes_are_values]
 def SubredexesAreValues (e : Expr) := ∀ (K : Ectx) e',
   e = fill K e' →
   toVal e' = none →

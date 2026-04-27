@@ -34,10 +34,10 @@ class ToVal (Expr : Type e) (Val : outParam <| Type v ) where
   toVal_coe (v : Val) : toVal (ofVal v) = some v
 export ToVal (toVal coe_of_toVal_eq_some toVal_coe)
 
-attribute [rocq_alias language.to_val] ToVal.toVal
-attribute [rocq_alias language.of_val] ToVal.ofVal
-attribute [rocq_alias mixin_of_to_val] coe_of_toVal_eq_some
-attribute [rocq_alias mixin_to_of_val] ToVal.toVal_coe
+-- attribute [rocq_alias language.to_val] ToVal.toVal
+-- attribute [rocq_alias language.of_val] ToVal.ofVal
+attribute [rocq_alias of_to_val] coe_of_toVal_eq_some
+attribute [rocq_alias to_of_val] ToVal.toVal_coe
 attribute [simp, grind =] ToVal.toVal_coe
 
 namespace ToVal
@@ -110,7 +110,7 @@ class Language
   val_stuck : ∀ {e} {σ : State} {obs e' σ' eₜ},
     (e, σ) -<obs>-> (e', σ', eₜ) → toVal e = none
 
-attribute [rocq_alias mixin_val_stuck] Language.val_stuck
+attribute [rocq_alias val_stuck] Language.val_stuck
 
 namespace Language
 
@@ -173,7 +173,7 @@ end Notation
 open Notation
 
 open Relation in
-@[rocq_alias erased_step_nsteps]
+-- @[rocq_alias erased_step_nsteps]
 theorem erasedStep_NSteps (ρ₁ ρ₂ : List Expr × State) :
     ρ₁ -·->ₜₚ* ρ₂ ↔ ∃ n obs, ρ₁ -<obs>->ₜₚ^[n] ρ₂ := by
   constructor <;> intros hyp
@@ -279,8 +279,8 @@ class Context(K: Expr → Expr) where
     ∃ e', K_e' = K e' ∧ (e, σ) -<obs>-> (e', σ', eₜ)
 
 attribute [rocq_alias fill_not_val] Context.toVal_eq_none_fill
-attribute [rocq_alias fill_step] Context.primStep_fill
-attribute [rocq_alias fill_step_inv] Context.primStep_fill_inv
+-- attribute [rocq_alias fill_step] Context.primStep_fill
+-- attribute [rocq_alias fill_step_inv] Context.primStep_fill_inv
 
 namespace Context
 
@@ -316,7 +316,7 @@ theorem reducibleNoObs_fill_inv (K : Expr → Expr) [Λ.Context K] ⦃e : Expr�
     have ⟨e₂, _, red⟩ := primStep_fill_inv toVal_none K_red
     ⟨e₂, σ', eₜ, red⟩
 
-@[rocq_alias irrreducible_fill]
+-- @[rocq_alias irrreducible_fill]
 theorem irreducible_fill (K : Expr → Expr) [Λ.Context K] ⦃e : Expr⦄ ⦃σ : State⦄ :
     toVal e = none →
     irreducible (e, σ) →
@@ -447,8 +447,9 @@ scoped notation (name := PurePrimStepN) conf:40 " -ᵖ->^[" n "] " conf':41 => R
 scoped notation (name := PurePrimStepStar) conf:40 " -ᵖ->* " conf':41 => Relation.ReflTransGen Language.PurePrimStep conf conf'
 end Notation
 
-@[rocq_alias pure_steps_tp]
 abbrev pureSteps (t₁ t₂ : List Expr) := List.Forall₂ (· -ᵖ->* ·) t₁ t₂
+
+#rocq_concept program_logic "pure_steps_tp" ported "Implemented as an abbreviation"
 
 namespace Notation
 /-- `e₁ -ᵖ->ₜₚ* e₂` represents a sequence of some number of pure steps

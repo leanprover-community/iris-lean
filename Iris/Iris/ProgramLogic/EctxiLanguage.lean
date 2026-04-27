@@ -46,7 +46,7 @@ class EctxItemLanguage
     (fillItem Ki e, σ) -<obs>->ᵇ (e', σ', eₜ) →
     (toVal e).isSome
 
-attribute [rocq_alias fill_item] EctxItemLanguage.fillItem
+-- attribute [rocq_alias fill_item] EctxItemLanguage.fillItem
 attribute [rocq_alias fill_item_inj] EctxItemLanguage.fillItem_inj
 attribute [rocq_alias fill_item_val] EctxItemLanguage.fillItem
 attribute [rocq_alias fill_item_no_val_inj] EctxItemLanguage.fillItem_no_val_inj
