@@ -30,11 +30,15 @@ abbrev PosSet := Std.ExtTreeSet Pos compare
 
 abbrev InvMap (x : Type _) := Std.ExtTreeMap Pos x compare
 
-abbrev InvMapF := HeapViewURF (F := PNat) (H := InvMap) (AgreeRF (LaterOF IdOF))
+abbrev InvMapF (GF : BundledGFunctors) :=
+  HeapViewURF (F := PNat) (H := InvMap) (AgreeRF (LaterOF (constOF (IProp GF))))
+
+abbrev InvMapR :=
+  HeapViewURF (F := PNat) (H := InvMap) (AgreeRF (LaterOF IdOF))
 
 /-- Wsat inclusion typeclass (`GF` contains the necessary functors for wsat) -/
 class WsatGpreS (GF : BundledGFunctors) where
-  inv : ElemG GF InvMapF
+  inv : ElemG GF (InvMapF GF)
   enabled : ElemG GF (constOF (DisjointLeibnizSet CoPset))
   disabled : ElemG GF (constOF (DisjointLeibnizSet PosSet))
 
@@ -67,7 +71,7 @@ def ownD (S : PosSet) : IProp GF :=
 
 abbrev liftInv (I : InvMap (IProp GF)) := map toAgree (map invariant_unfold I)
 
-abbrev invMap (I : InvMap (IProp GF)) : InvMapF.ap (IProp GF) :=
+abbrev invMap (I : InvMap (IProp GF)) : (InvMapF GF).ap (IProp GF) :=
   Auth (own 1) (liftInv I)
 
 def wsat : IProp GF := iprop(
