@@ -217,7 +217,7 @@ theorem fill_not_val K (e : Expr) :
 
 
 @[rocq_alias subredexes_are_values]
-def subredexesAreValues (e : Expr) := ∀ (K : Ectx) e',
+def SubredexesAreValues (e : Expr) := ∀ (K : Ectx) e',
   e = fill K e' →
   toVal e' = none →
   K = empty
@@ -268,7 +268,7 @@ theorem primStep_of_baseStep {e₁ : Expr}{σ₁ obs e₂ σ₂ eₜ}:
 
 theorem baseStep_of_primStep {e₁ : Expr}{σ₁ obs e₂ σ₂ eₜ}:
     (e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ) →
-    subredexesAreValues e₁ →
+    SubredexesAreValues e₁ →
     (e₁, σ₁) -<obs>->ᵇ  (e₂, σ₂, eₜ) := fun pstep subredexValues =>
   have ⟨e₁, e₂, K, bstep⟩ := pstep
   have K_empty := subredexValues K e₁ rfl (val_stuck bstep)
@@ -276,7 +276,7 @@ theorem baseStep_of_primStep {e₁ : Expr}{σ₁ obs e₂ σ₂ eₜ}:
 
 @[grind =>]
 theorem baseStep_iff_primStep_of_subredexesAreValues {e₁ : Expr}{σ₁ obs e₂ σ₂ eₜ}:
-    subredexesAreValues e₁ →
+    SubredexesAreValues e₁ →
     ((e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ) ↔
     (e₁, σ₁) -<obs>->ᵇ  (e₂, σ₂, eₜ)) := fun subredexValues =>
   ⟨(baseStep_of_primStep · subredexValues), primStep_of_baseStep⟩
@@ -339,28 +339,28 @@ theorem baseStep_irreducible_of_primStep_irreducible :
 @[rocq_alias prim_base_reducible]
 theorem baseStep_reducible_of_primStep_reducible :
     PrimStep.reducible (e, σ) →
-    subredexesAreValues e →
+    SubredexesAreValues e →
     BaseStep.reducible (e, σ) := fun ⟨obs, e', σ', eₜ, pstep⟩ subredexValues =>
   ⟨obs, e', σ', eₜ, baseStep_of_primStep pstep subredexValues⟩
 
 @[rocq_alias prim_base_irreducible]
 theorem primStep_irreducible_of_baseStep_irreducible :
     BaseStep.irreducible (e, σ) →
-    subredexesAreValues e →
+    SubredexesAreValues e →
     PrimStep.irreducible (e, σ) := fun birred subredexValues obs e' σ' eₜ pstep =>
   birred obs e' σ' eₜ (baseStep_of_primStep pstep subredexValues)
 
 @[rocq_alias base_stuck_stuck]
 theorem primStep_stuck_of_baseStep_stuck :
     BaseStep.stuck (e, σ) →
-    subredexesAreValues e →
+    SubredexesAreValues e →
     PrimStep.stuck (e, σ) := fun ⟨toVal_none, birred⟩ subredexValues =>
   ⟨toVal_none, primStep_irreducible_of_baseStep_irreducible birred subredexValues⟩
 
 @[rocq_alias ectx_language_atomic, implicit_reducible]
 def Atomic.ofBaseAtomic (a : Language.Atomicity) :
     baseAtomic a e →
-    subredexesAreValues e →
+    SubredexesAreValues e →
     Language.Atomic a e := fun batomic subredexValues => {
       atomic := fun σ obs e' σ' eₜ pstep =>
         by grind [baseAtomic]

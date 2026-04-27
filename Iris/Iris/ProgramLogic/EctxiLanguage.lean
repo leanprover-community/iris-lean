@@ -130,11 +130,9 @@ theorem fill_no_val K (e : Expr) :
     toVal (fill K e) = none := by
   grind only [=> EctxLanguage.fill_not_val]
 
--- TODO: I don't like that this has the same name as the property it's proving.
--- It makes it confusing...
 theorem subredexesAreValues (e : Expr) :
     (∀ Ki e', e = fillItem Ki e' → (toVal e').isSome) →
-    EctxLanguage.subredexesAreValues e := by
+    EctxLanguage.SubredexesAreValues e := by
   rintro hsub K e' rfl
   cases K using List.reverseRec
   case nil => simp [empty]
