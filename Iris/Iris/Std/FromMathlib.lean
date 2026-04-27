@@ -84,12 +84,32 @@ theorem cases_head (h : ReflTransGen r a b) : a = b ∨ ∃ c, r a c ∧ ReflTra
 
 end Relation.ReflTransGen
 
+namespace List
+
 @[grind .]
-theorem List.forall₂_zip : ∀ {l₁ l₂}, List.Forall₂ R l₁ l₂ → ∀ {a b}, (a, b) ∈ l₁.zip l₂ → R a b
+theorem forall₂_zip : ∀ {l₁ l₂}, List.Forall₂ R l₁ l₂ → ∀ {a b}, (a, b) ∈ l₁.zip l₂ → R a b
   | _, _, List.Forall₂.cons h₁ h₂, x, y, hx => by
     rw [List.zip, List.zipWith, List.mem_cons] at hx
     match hx with
     | Or.inl rfl => exact h₁
     | Or.inr h₃ => exact forall₂_zip h₂ h₃
+
+
+@[elab_as_elim]
+def reverseCases {motive : List α → Sort _} (nil : motive [])
+    (append_singleton : ∀ (l : List α) (a : α), motive (l ++ [a])) : ∀ l, motive l
+  | [] => nil
+  | a :: l => (List.dropLast_concat_getLast (List.cons_ne_nil a l)) ▸
+    append_singleton _ _
+
+@[elab_as_elim]
+def reverseRec {motive : List α → Sort _} (nil : motive [])
+    (append_singleton : ∀ (l : List α) (a : α), motive l → motive (l ++ [a])) : ∀ l, motive l
+  | [] => nil
+  | a :: l => (List.dropLast_concat_getLast (List.cons_ne_nil a l)) ▸
+    append_singleton _ _ (List.reverseRec nil append_singleton (a :: l).dropLast)
+  termination_by l => l.length
+
+end List
 
 end FromMathlib
