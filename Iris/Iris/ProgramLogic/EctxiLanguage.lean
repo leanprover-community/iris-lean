@@ -21,7 +21,6 @@ class EctxItemLanguage
     (Val      : outParam <| Type v)
   extends
     ToVal Expr Val,
-    -- EvContextItem Expr EctxItem,
     BaseStep Expr State Obs where
   fillItem : EctxItem → Expr → Expr
   fillItem_inj {K} : Function.Injective (fillItem K)
@@ -30,7 +29,7 @@ class EctxItemLanguage
     (toVal (fillItem K e)).isSome →
     (toVal e).isSome
 
-  fillItem_no_val_inj (Ki₁ Ki₂ : EctxItem) :
+  fillItem_no_val_inj {e₁ e₂ : Expr} (Ki₁ Ki₂ : EctxItem) :
     toVal e₁ = none → toVal e₂ = none →
     fillItem Ki₁ e₁ = fillItem Ki₂ e₂ →
     Ki₁ = Ki₂
@@ -39,14 +38,14 @@ class EctxItemLanguage
     (e, σ) -<obs>->ᵇ (e', σ', eₜ) → toVal e = none
 
   -- base_ctx_step_val
-  base_ctx_step_val : ∀ {e} {σ : State} {obs e' σ' eₜ},
+  base_ctx_step_val {Ki : EctxItem} : ∀ {e} {σ : State} {obs e' σ' eₜ},
     (fillItem Ki e, σ) -<obs>->ᵇ (e', σ', eₜ) →
     (toVal e).isSome
 
-attribute [rocq_alias mixin_fill_item] EctxItemLanguage.fillItem
-attribute [rocq_alias mixin_fill_item_inj] EctxItemLanguage.fillItem_inj
-attribute [rocq_alias mixin_fill_item_val] EctxItemLanguage.fillItem
-attribute [rocq_alias mixin_fill_item_no_val_inj] EctxItemLanguage.fillItem_no_val_inj
+attribute [rocq_alias fill_item] EctxItemLanguage.fillItem
+attribute [rocq_alias fill_item_inj] EctxItemLanguage.fillItem_inj
+attribute [rocq_alias fill_item_val] EctxItemLanguage.fillItem
+attribute [rocq_alias fill_item_no_val_inj] EctxItemLanguage.fillItem_no_val_inj
 
 attribute [simp] EctxItemLanguage.fillItem_inj
 attribute [grind →] EctxItemLanguage.fillItem_val
@@ -59,7 +58,7 @@ variable [Λ : EctxItemLanguage Expr EctxItem State Obs Val]
 
 abbrev Ectx [EctxItemLanguage Expr EctxItem State Obs Val] := List EctxItem
 
-@[grind]
+@[grind, rocq_alias ectxi_lang_ctx_item]
 instance [Λ : EctxItemLanguage Expr EctxItem State Obs Val] :
     EvContext Expr Λ.Ectx where
   comp x y := y ++ x
@@ -98,6 +97,7 @@ theorem fill_val K (e : Expr) :
 -- be able to match on `toVal`, since as it stands `grind` patterns cannot include `=`,
 -- which means `toVal e = none` is not as well supported.
 
+@[rocq_alias EctxLanguageOfEctxi]
 instance : EctxLanguage Expr Λ.Ectx State Obs Val where
   fill_val K e := fill_val K e
   step_by_val := by
@@ -125,12 +125,13 @@ instance : EctxLanguage Expr Λ.Ectx State Obs Val where
   base_ctx_step_val {K e σ₁ obs e₂ σ₂ eₜ} := by
     cases K using List.reverseRec <;> grind
 
-theorem fill_no_val K (e : Expr) :
+theorem fill_not_val K (e : Expr) :
     toVal e = none →
     toVal (fill K e) = none := by
   grind only [=> EctxLanguage.fill_not_val]
 
-theorem subredexesAreValues (e : Expr) :
+@[rocq_alias ectxi_language_sub_redexes_are_values]
+theorem subredexes_are_values (e : Expr) :
     (∀ Ki e', e = fillItem Ki e' → (toVal e').isSome) →
     EctxLanguage.SubredexesAreValues e := by
   rintro hsub K e' rfl

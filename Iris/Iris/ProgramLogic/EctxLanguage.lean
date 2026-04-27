@@ -47,9 +47,9 @@ class EvContext (Expr : Type e) (Ectx : outParam <| Type c)
 export EvContext (fill)
 
 attribute [rocq_alias fill] EvContext.fill
-attribute [rocq_alias mixin_fill_empty] EvContext.fill_empty
-attribute [rocq_alias mixin_fill_comp] EvContext.fill_comp
-attribute [rocq_alias mixin_fill_inj] EvContext.fill_inj
+attribute [rocq_alias fill_empty] EvContext.fill_empty
+attribute [rocq_alias fill_comp] EvContext.fill_comp
+attribute [rocq_alias fill_inj] EvContext.fill_inj
 
 attribute [grind =] EvContext.fill_empty
 attribute [grind =_] EvContext.fill_comp
@@ -92,7 +92,7 @@ variable [BaseStep Expr State Obs]
     to a term `e'` if `e` and `e'` share a common context `K`, and their remaining redexes
     `e₁` and `e₂` reduce under a base step.
   -/
-@[grind]
+@[grind, rocq_alias prim_step]
 inductive ContextClosure [EvContext Expr Ectx] [BaseStep Expr State Obs]
   (obs : List Obs) (eₜ : List Expr) (σ₁ σ₂ : State) :
     Expr → Expr → Prop where
@@ -100,13 +100,14 @@ inductive ContextClosure [EvContext Expr Ectx] [BaseStep Expr State Obs]
     (e₁, σ₁) -<obs>->ᵇ (e₂,σ₂,eₜ) →
     ContextClosure obs eₜ σ₁ σ₂ (fill K e₁) (fill K e₂)
 
-@[match_pattern]
+@[match_pattern, rocq_alias Ectx_step']
 abbrev ContextClosure.ofBaseStep [EvContext Expr Ectx] [BaseStep Expr State Obs]
   {e₁ : Expr} {σ₁ obs e₂ σ₂ eₜ} (K : Ectx) :
     (e₁, σ₁) -<obs>->ᵇ (e₂,σ₂,eₜ) →
     ContextClosure obs eₜ σ₁ σ₂ (fill K e₁) (fill K e₂) :=
   (ContextClosure.intro _ _ _ ·)
 
+@[rocq_alias Ectx_step]
 abbrev ContextClosure.ofBaseStep' [EvContext Expr Ectx] [BaseStep Expr State Obs]
   {e e' e₁ : Expr} {σ₁ obs e₂ σ₂ eₜ} (K : Ectx) :
     fill K e₁ = e →
@@ -198,9 +199,10 @@ class EctxLanguage
     (fill K e, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ) →
     (toVal e).isSome ∨ K = empty
 
-attribute [rocq_alias mixin_fill_val] EctxLanguage.fill_val
-attribute [rocq_alias mixin_step_by_val] EctxLanguage.step_by_val
-attribute [rocq_alias mixin_base_ctx_step_val] EctxLanguage.base_ctx_step_val
+attribute [rocq_alias val_base_stuck] EctxLanguage.val_stuck
+attribute [rocq_alias fill_val] EctxLanguage.fill_val
+attribute [rocq_alias step_by_val] EctxLanguage.step_by_val
+attribute [rocq_alias base_ctx_step_val] EctxLanguage.base_ctx_step_val
 
 attribute [grind .] EctxLanguage.val_stuck
 attribute [grind →] EctxLanguage.base_ctx_step_val
@@ -387,6 +389,7 @@ theorem baseStep_of_primStep_of_baseStep_reducible :
   have ⟨e₂', heq, bstep⟩ := exists_baseStep_of_primStep_fill_of_redex_baseStep_reducible (K := empty) bred (EvContext.fill_empty e₁ ▸ pstep)
   heq ▸ (EvContext.fill_empty e₂' |>.symm ▸ bstep)
 
+@[rocq_alias ectx_lang_ctx]
 instance (K : Ectx) : Language.Context (fill (Expr := Expr) K) where
   toVal_eq_none_fill := fill_not_val K _
   primStep_fill {e σ obs e' σ' eₜ} := fun ⟨e₁, e₂, K', bstep⟩ =>
