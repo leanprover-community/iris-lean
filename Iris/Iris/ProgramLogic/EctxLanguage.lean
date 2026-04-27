@@ -175,6 +175,10 @@ class EctxLanguage
   fill_val K e :
     (toVal (fill K e)).isSome →
     (toVal e).isSome
+  /-- If some expression can be obtained from different contexts over
+      expressions, at least one of which is reducible, then one of
+      the expressions can be obtained from applying some context to
+      the other.  -/
   step_by_val {K' K_redex e₁' e₁_redex σ₁ obs e₂ σ₂ eₜ } :
     fill K' e₁' = fill K_redex e₁_redex →
     toVal e₁' = none →
@@ -185,7 +189,11 @@ class EctxLanguage
   val_stuck : ∀ {e} {σ : State} {obs e' σ' eₜ},
     (e, σ) -<obs>->ᵇ (e', σ', eₜ) → toVal e = none
 
-  /- NOTE: Steps now occur only in redex posiitons! -/
+  /-- If an expression under a context reduces in the base relation,
+      either it was a value or the context was empty.
+
+      Intuitively, the base relation is defined only over simple contexts.
+       -/
   base_ctx_step_val {K e σ₁ obs e₂ σ₂ eₜ} :
     (fill K e, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ) →
     (toVal e).isSome ∨ K = empty
