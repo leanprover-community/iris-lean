@@ -693,6 +693,15 @@ instance oFunctorConstOF [OFE B] : OFunctor (constOF B) where
 instance OFunctor.constOF_contractive [OFE B] : OFunctorContractive (constOF B) where
   map_contractive.1 := by simp [map]
 
+abbrev IdOF : COFE.OFunctorPre := fun _ B _ _ => B
+
+instance IdOF_OFunctor : COFE.OFunctor IdOF where
+  cofe := inferInstance
+  map _ g := g
+  map_ne := ⟨fun _ _ _ _ _ _ hg => hg⟩
+  map_id _ := .rfl
+  map_comp _ _ _ _ _ := .rfl
+
 end COFE
 
 /- Leibniz OFE structure on a type -/
@@ -1051,6 +1060,14 @@ instance [OFunctorContractive F] : OFunctorContractive (LaterOF F) where
   map_contractive.1 H z m := Dist.lt <| by
     have := (OFunctorContractive.map_contractive (F := F)).distLater_dist H
     simp_all only [Dist, DistLater, Function.uncurry, OFunctor.map, laterMap]
+
+instance laterIdOF_contractive : COFE.OFunctorContractive (LaterOF IdOF) where
+    map_contractive.1 := by
+      intro n x y H z
+      simp only [Function.uncurry, COFE.OFunctor.map, laterMap, IdOF]
+      show OFE.DistLater _ _ _
+      intros k Hk
+      exact (H k Hk).2 _
 
 end LaterOF
 
