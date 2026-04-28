@@ -27,10 +27,10 @@ class EctxItemLanguage
     ToVal Expr Val,
     BaseStep Expr State Obs where
   fillItem : EctxItem → Expr → Expr
-  fillItem_inj {K} : Function.Injective (fillItem K)
+  fillItem_inj {Ki} : Function.Injective (fillItem Ki)
 
-  fillItem_val (e : Expr) (K : EctxItem) :
-    (toVal (fillItem K e)).isSome →
+  fillItem_val (e : Expr) (Ki : EctxItem) :
+    (toVal (fillItem Ki e)).isSome →
     (toVal e).isSome
 
   fillItem_no_val_inj {e₁ e₂ : Expr} (Ki₁ Ki₂ : EctxItem) :
@@ -86,9 +86,9 @@ theorem fill_nil (e : Expr) : fill [] e = e := rfl
 end SelectedGrindRflLemmas
 
 @[rocq_alias fill_app, grind =, simp]
-theorem fill_append (K1 K2 : Λ.Ectx) (e : Expr) :
-    fill (K1 ++ K2) e = fill K2 (fill K1 e) :=
-  EvContext.fill_comp K2 K1 e |>.symm
+theorem fill_append (K₁ K₂ : Λ.Ectx) (e : Expr) :
+    fill (K₁ ++ K₂) e = fill K₂ (fill K₁ e) :=
+  EvContext.fill_comp K₂ K₁ e |>.symm
 
 @[grind →]
 theorem fill_val K (e : Expr) :
