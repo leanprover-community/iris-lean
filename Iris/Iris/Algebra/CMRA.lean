@@ -1095,7 +1095,7 @@ instance COFE.OFunctor.constOF_RFunctor [CMRA B] : RFunctor (constOF B) where
 
 @[rocq_alias constRF_contractive]
 instance OFunctor.constOF_RFunctorContractive [CMRA B] :
-    RFunctorContractive (COFE.constOF B) where
+    RFunctorContractive (constOF B) where
   map_contractive.1 := by simp [Function.uncurry, RFunctor.map, COFE.OFunctor.map]
 
 instance COFE.OFunctor.constOF_URFunctor [UCMRA B] : URFunctor (constOF B) where
@@ -1105,7 +1105,7 @@ instance COFE.OFunctor.constOF_URFunctor [UCMRA B] : URFunctor (constOF B) where
   map_comp := map_comp
 
 instance OFunctor.constOF_URFunctorContractive [UCMRA B] :
-    URFunctorContractive (COFE.constOF B) where
+    URFunctorContractive (constOF B) where
   map_contractive.1 := by simp [Function.uncurry, URFunctor.map, COFE.OFunctor.map]
 
 end Id
@@ -1573,55 +1573,6 @@ instance [CMRA.Discrete α] [CMRA.Discrete β]: CMRA.Discrete (α × β) where
     exact (⟨CMRA.discrete_valid ·, CMRA.discrete_valid ·⟩)
 
 end Prod
-
-section ProdOF
-
-open COFE
-
-variable [OFE A] [OFE A'] [OFE B] [OFE B']
-
-instance (f : A → A') (g : B → B') [NonExpansive f] [NonExpansive g] :
-    NonExpansive (Prod.map f g) where
-  ne _ _ _ H := by
-    constructor
-    · rw [Prod.map_fst]
-      exact NonExpansive.ne H.1
-    · rw [Prod.map_snd]
-      exact NonExpansive.ne H.2
-
-omit [OFE A] [OFE B] in
-theorem Prod.map_ext {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡ f' a)
-    (Hg : ∀ a, g a ≡ g' a) : Prod.map f g x ≡ Prod.map f' g' x :=
-  ⟨Hf x.fst, Hg x.snd⟩
-
-omit [OFE A] [OFE B] in
-theorem Prod.map_ne {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡{n}≡ f' a)
-    (Hg : ∀ a, g a ≡{n}≡ g' a) : Prod.map f g x ≡{n}≡ Prod.map f' g' x :=
-  ⟨Hf x.fst, Hg x.snd⟩
-
-@[rocq_alias prodO_map]
-instance Prod.mapO (f : A -n> A') (g : B -n> B') : A × B -n> A' × B' where
-  f := .map f g
-  ne := inferInstance
-
-abbrev ProdOF (F1 F2 : OFunctorPre) : OFunctorPre := fun A B => (F1 A B) × (F2 A B)
-
-open OFunctor in
-@[rocq_alias prodOF]
-instance [OFunctor F1] [OFunctor F2] : OFunctor (ProdOF F1 F2) where
-  cofe := inferInstance
-  map f g := Prod.mapO (map f g) (map f g)
-  map_ne.ne _ _ _ Hx _ _ Hy _ := ⟨map_ne.ne Hx Hy _, map_ne.ne Hx Hy _⟩
-  map_id _ := ⟨map_id _, map_id _⟩
-  map_comp _ _ _ _ _ := ⟨map_comp .., map_comp ..⟩
-
-open OFunctorContractive in
-@[rocq_alias prodOF_contractive]
-instance [OFunctorContractive F1] [OFunctorContractive F2] : OFunctorContractive (ProdOF F1 F2) where
-  map_contractive.1 H _ :=
-    Prod.map_ne (fun _ => map_contractive.1 H _) (fun _ => map_contractive.1 H _)
-
-end ProdOF
 
 section ProdMor
 

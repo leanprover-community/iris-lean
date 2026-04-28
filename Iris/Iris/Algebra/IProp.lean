@@ -22,7 +22,7 @@ abbrev GType := Nat
 
 def BundledGFunctors := GType → Σ F : OFunctorPre, RFunctorContractive F
 
-def BundledGFunctors.default : BundledGFunctors := fun _ => ⟨COFE.constOF Unit, by infer_instance⟩
+def BundledGFunctors.default : BundledGFunctors := fun _ => ⟨constOF Unit, by infer_instance⟩
 
 def BundledGFunctors.set (GF : BundledGFunctors) (i : Nat) (FB : Σ F, RFunctorContractive F) :
     BundledGFunctors :=

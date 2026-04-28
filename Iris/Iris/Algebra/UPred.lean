@@ -131,4 +131,7 @@ instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorCo
       ((URFunctorContractive.map_contractive.1 (x := (x.snd, x.fst)) (y := (y.snd, y.fst))) ?_ a).le Hmn
     exact fun m Hm => ⟨(HKL m Hm).2, (HKL m Hm).1⟩
 
+instance [URFunctor F] : Leibniz.LeibnizPreservingOFunctor (UPredOF F) where
+  preserves_leibniz := inferInstance
+
 end UPred
