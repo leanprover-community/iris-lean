@@ -9,6 +9,21 @@ public import Iris.Algebra.COFESolver
 
 @[expose] public section
 
+/-!
+This example shows that for Leibniz-preserving functors, which include but not limited to
+those built from the combinators in `OFE.lean`, the Leibniz property propagates through the
+recursive domain equation solver. As a result, the fold/unfold isomorphisms of the
+fixed point can be stated as propositional equalities (`=`) rather than mere OFE
+equivalences (`≡`); see `Dom.unfold_fold` and `Dom.fold_unfold`.
+
+`DomF` is a concrete example: a domain for a simple language with values, errors,
+delayed computations, and function values. Its fixed point `Dom V E` satisfies
+`Dom V E ≅ V ⊕ E ⊕ Later(Dom V E) ⊕ Later(Dom V E -n> Dom V E)` propositionally,
+provided `V` and `E` are Leibniz OFEs.
+
+For examples, where it holds, it should provide better support for rewriting
+by relying on the default Lean tactics.
+-/
 section Fix
 open Iris OFE COFE
 
