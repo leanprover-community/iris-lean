@@ -15,9 +15,10 @@ open Iris OFE COFE
 variable [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err]
 
 abbrev DomF : OFunctorPre :=
-  SumOF (constOF Val) (SumOF (constOF Err) (SumOF (LaterOF IdOF) (LaterOF (MorOF IdOF IdOF))))
+  SumOF (constOF Val) (SumOF (constOF Err) (SumOF (LaterOF IdOF) (LaterOF (HomOF IdOF IdOF))))
 
-instance : Inhabited (DomF (Val := Val) (Err := Err) (ULift Unit) (ULift Unit)) := ⟨.inr (.inr (.inr ⟨id, inferInstance⟩))⟩
+instance : Inhabited (DomF (Val := Val) (Err := Err) (ULift Unit) (ULift Unit)) :=
+  ⟨.inr (.inr (.inr ⟨id, inferInstance⟩))⟩
 
 end Fix
 
@@ -30,13 +31,14 @@ open Iris OFE COFE
 
 variable [OFE V] [Leibniz V] [OFE E] [Leibniz E] [IsCOFE V] [IsCOFE E] [Inhabited E]
 
-def fold : V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E) -n> Dom V E
-  := OFunctor.Fix.fold (F := DomF (Val := V) (Err := E))
+def fold : V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E) -n> Dom V E :=
+  OFunctor.Fix.fold (F := DomF (Val := V) (Err := E))
 
-def unfold : Dom V E -n> V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E)
-  := OFunctor.Fix.unfold (F := DomF (Val := V) (Err := E))
+def unfold : Dom V E -n> V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E) :=
+  OFunctor.Fix.unfold (F := DomF (Val := V) (Err := E))
 
-theorem unfold_fold {x : V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E)} : unfold (fold x) = x :=
+theorem unfold_fold {x : V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E)} :
+    unfold (fold x) = x :=
   eq_of_eqv (OFunctor.Fix.unfold_fold (F := DomF (Val := V) (Err := E)) x)
 
 theorem fold_unfold {x : Dom V E} : fold (unfold x) = x :=
