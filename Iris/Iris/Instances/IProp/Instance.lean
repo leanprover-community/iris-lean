@@ -170,7 +170,7 @@ theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) ≡ x 
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x := by
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
-  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold, -OFE.leibniz]
 
 theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v) :
     OFE.DiscreteE (unfoldi.f v) where
@@ -476,7 +476,7 @@ theorem iOwn_op {a1 a2 : F.ap (IProp GF)} : iOwn γ (a1 • a2) ⊣⊢ iOwn γ a
 @[rocq_alias own_mono]
 theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOwn γ a2 := by
   rcases H with ⟨ac, Hac⟩
-  rintro n x Hv ⟨clos, Hclos⟩
+  rintro n x ⟨clos, Hclos⟩
   refine ⟨iSingleton F γ ac • clos, Hclos.trans <| fun τ' γ' => ?_⟩
   refine .trans ?_ CMRA.op_assocN.symm
   rw [iResUR_op_eval]
