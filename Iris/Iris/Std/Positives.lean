@@ -105,7 +105,8 @@ theorem Pos_toNat_pos (a : Pos) : 0 < a.toNat := by
   | xI a' ih => simp [Pos.toNat]
   | xO a' ih => simp [Pos.toNat]; omega
 
-theorem Pos_toNat_inj {a b : Pos} (h : a.toNat = b.toNat) : a = b := by
+theorem Pos_toNat_inj : Pos.toNat.Injective  := by
+  intros a b h
   induction a generalizing b <;> cases b
   all_goals simp [Pos.toNat] at h; grind [Pos_toNat_pos]
 
@@ -118,7 +119,7 @@ match n with
 | 0 => P1
 | (n + 1) => succ (ofNat n)
 
-theorem succ_inj : Function.Injective Pos.succ := by
+theorem succ_inj : Pos.succ.Injective  := by
   have succ_not_xH : ∀ (a : Pos), a.succ ≠ xH := by
     intro a; cases a <;> simp [succ]
   intro a b H
@@ -151,7 +152,7 @@ theorem succ_inj : Function.Injective Pos.succ := by
       apply IH
       rw [H]
 
-theorem Pos_ofNat_inj : Function.Injective Pos.ofNat := by
+theorem Pos_ofNat_inj : Pos.ofNat.Injective := by
   intro a b h
   induction a generalizing b with
   | zero =>
@@ -339,8 +340,8 @@ theorem flatten_suffix (l k : List Pos) : l <:+ k -> ∃ q, flatten k = q ++ fla
   rintro ⟨l', rfl⟩
   exact ⟨_, flatten_app⟩
 
-instance app_inj (p : Pos) : Iris.Std.Injective (.++ p) where
-  inj a a' Heq := by induction p <;> simp_all [HAppend.hAppend, app]
+instance app_inj (p : Pos) : (· ++ p).Injective :=
+  fun a a' Heq => by induction p <;> simp_all [HAppend.hAppend, app]
 
 theorem reverse_involutive p : reverse (reverse p) = p := by
   induction p with
@@ -348,8 +349,8 @@ theorem reverse_involutive p : reverse (reverse p) = p := by
   | xO p IH => rewrite [reverse_x0, reverse_app, IH]; rfl
   | xH => rfl
 
-instance rev_inj : Iris.Std.Injective reverse where
-  inj p q Heq := by
+instance rev_inj : reverse.Injective :=
+  fun p q Heq => by
     rewrite [<- reverse_involutive p, <- reverse_involutive q]
     simp [Heq]
 
@@ -393,19 +394,19 @@ theorem flatten_suffix_eq {p1 p2} {xs ys : List Pos} :
     have Heq : xs = ys := IH (Nat.add_right_cancel Hlen) Hl
     rewrite [Heq, reverse_dup, reverse_dup] at Hl
     refine List.cons_eq_cons.mpr ⟨?_, Heq⟩
-    exact rev_inj.inj _ _ (dup_suffix_eq ((app_inj (flatten ys)).inj _ _ Hl))
+    exact rev_inj (dup_suffix_eq ((app_inj (flatten ys)) Hl))
 
 class Countable (A : Type) where
   encode : A -> Pos
   decode : Pos -> Option A
   decode_encode x : decode (encode x) = some x
 
-instance some_inj {A} : Iris.Std.Injective (@some A) where
-  inj _ _ := by rintro ⟨⟩; rfl
+instance some_inj {A} : (@some A).Injective :=
+  fun _ _ => by rintro ⟨⟩; rfl
 
-instance encode_inj [c : Countable A] : Iris.Std.Injective (c.encode) where
-  inj x _ Hxy := by
-    apply some_inj.inj
+instance encode_inj [c : Countable A] : c.encode.Injective :=
+  fun x _ Hxy => by
+    apply some_inj
     rewrite [<- c.decode_encode x, Hxy, c.decode_encode]
     rfl
 
@@ -438,7 +439,7 @@ instance : Std.LawfulEqOrd Pos where
   eq_of_compare {a b} := by
     simp only [Ord.compare, compare]
     rw [compareOfLessAndEq_eq_eq Nat.le_refl (by grind)]
-    exact Pos_toNat_inj
+    apply Pos_toNat_inj
   compare_self {_} := by
     simp [Ord.compare, Pos.compare, compareOfLessAndEq_eq_eq]
 

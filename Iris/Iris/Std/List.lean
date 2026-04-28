@@ -29,7 +29,7 @@ inductive Equiv {α : Type _} (R : α → α → Prop) : List α → List α →
   l.mapIdx (fun i v => (v, (i : Int) + n))
 
 theorem nodup_map_of_injective {B : Type _} {f : A → B} {l : List A}
-    (hinj : Injective f) (hnodup : l.Nodup) : (l.map f).Nodup := by
+    (hinj : f.Injective) (hnodup : l.Nodup) : (l.map f).Nodup := by
   induction l with
   | nil => simp [List.Nodup]
   | cons x xs ih =>
@@ -38,7 +38,7 @@ theorem nodup_map_of_injective {B : Type _} {f : A → B} {l : List A}
     simp only [List.mem_map]
     constructor
     · intro ⟨y, hy, heq⟩
-      cases (hinj.inj _ _ heq.symm)
+      cases (hinj heq.symm)
       exact hnodup.1 hy
     · exact ih hnodup.2
 
@@ -48,7 +48,7 @@ theorem fresh [InfiniteType A] (X : List A) : ∃ a : A, a ∉ X := by
   let Nalloc := X |>.length
   let L := List.range (Nalloc + 1)
   have hnodup : L.map (InfiniteType.enum (T := A)) |>.Nodup :=
-    nodup_map_of_injective ⟨fun _ _ => InfiniteType.enum_inj _ _⟩ List.nodup_range
+    nodup_map_of_injective (fun _ _ => InfiniteType.enum_inj _ _) List.nodup_range
   have hsub : L.map InfiniteType.enum ⊆ X := by
     intro _ ha
     obtain ⟨_, _, rfl⟩ := List.mem_map.mp ha
