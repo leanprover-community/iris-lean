@@ -1632,7 +1632,6 @@ theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : 
     refine LimitPreserving.equiv f g _ ?_
     exact (equiv_iff.mpr <| h' ·)
 
-@[rocq_alias limit_preserving_Persistent]
 instance limitPreserving_persistent [BI PROP] [COFE A] (Φ : A → PROP) (Φne : OFE.NonExpansive Φ) :
  LimitPreserving (fun x => Persistent (Φ x)) := by
   letI _ : OFE.NonExpansive fun x => iprop(<pers> Φ x) := .comp persistently_ne Φne
