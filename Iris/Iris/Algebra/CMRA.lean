@@ -1095,7 +1095,7 @@ instance COFE.OFunctor.constOF_RFunctor [CMRA B] : RFunctor (constOF B) where
 
 @[rocq_alias constRF_contractive]
 instance OFunctor.constOF_RFunctorContractive [CMRA B] :
-    RFunctorContractive (COFE.constOF B) where
+    RFunctorContractive (constOF B) where
   map_contractive.1 := by simp [Function.uncurry, RFunctor.map, COFE.OFunctor.map]
 
 instance COFE.OFunctor.constOF_URFunctor [UCMRA B] : URFunctor (constOF B) where
@@ -1105,7 +1105,7 @@ instance COFE.OFunctor.constOF_URFunctor [UCMRA B] : URFunctor (constOF B) where
   map_comp := map_comp
 
 instance OFunctor.constOF_URFunctorContractive [UCMRA B] :
-    URFunctorContractive (COFE.constOF B) where
+    URFunctorContractive (constOF B) where
   map_contractive.1 := by simp [Function.uncurry, URFunctor.map, COFE.OFunctor.map]
 
 end Id
