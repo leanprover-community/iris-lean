@@ -62,7 +62,8 @@ theorem fixpoint_affine [BI PROP] {A : Type _} (F : (A → PROP) → A → PROP)
   · refine LimitPreserving.forall _ (fun _ => ?_)
     exact limitPreserving_affine _ ⟨fun _ _ _ h => h _⟩
 
-@[rocq_alias fixpoint_persistent_absorbing]
+-- FIXME: typo in Iris-Rocq
+@[rocq_alias fixpoint_persistent_absoring]
 theorem fixpoint_persistent_absorbing [BI PROP] {A : Type _}
     (F : (A → PROP) → A → PROP) [Contractive F] :
     (∀ Φ, (∀ x, Persistent (Φ x)) → (∀ x, Absorbing (Φ x)) →
@@ -105,7 +106,8 @@ theorem fixpoint_persistent_affine [BI PROP] {A : Type _}
     · exact limitPreserving_persistent _ ⟨fun _ _ _ h => h _⟩
     · exact limitPreserving_affine _ ⟨fun _ _ _ h => h _⟩
 
-@[rocq_alias fixpoint_plain_absorbing]
+-- FIXME: typo in Iris-Rocq
+@[rocq_alias fixpoint_plain_absoring]
 theorem fixpoint_plain_absorbing [Sbi PROP] {A : Type _}
     (F : (A → PROP) → A → PROP) [Contractive F] :
     (∀ Φ, (∀ x, Plain (Φ x)) → (∀ x, Absorbing (Φ x)) →
