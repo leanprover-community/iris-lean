@@ -67,7 +67,8 @@ theorem fixpoint_persistent_absoring [BI PROP] {A : Type _} (F : (A → PROP) �
     ∀ x, Persistent (fixpoint F x) ∧ Absorbing (fixpoint F x) := by
   intro HΦ
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Persistent (f x) ∧ Absorbing (f x)) ?_
-      (λ _ => iprop(True)) (fun _ => ⟨inferInstance, inferInstance⟩) (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
+      (λ _ => iprop(True)) (fun _ => ⟨inferInstance, inferInstance⟩)
+      (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
   · intro _ _ H HP x
     refine ⟨⟨?_⟩, ⟨?_⟩⟩
     · refine (equiv_iff.mp (H x)).mpr.trans ?_
@@ -87,7 +88,8 @@ theorem fixpoint_persistent_affine [BI PROP] {A : Type _} (F : (A → PROP) → 
     ∀ x, Persistent (fixpoint F x) ∧ Affine (fixpoint F x) := by
   intro HΦ
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Persistent (f x) ∧ Affine (f x)) ?_
-      (λ _ => iprop(emp)) (fun _ => ⟨inferInstance, inferInstance⟩) (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
+      (λ _ => iprop(emp)) (fun _ => ⟨inferInstance, inferInstance⟩)
+      (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
   · intro _ _ H HP x
     refine ⟨⟨?_⟩, ⟨?_⟩⟩
     · refine (equiv_iff.mp (H x)).mpr.trans ?_
@@ -105,7 +107,8 @@ theorem fixpoint_plain_absoring [Sbi PROP] {A : Type _} (F : (A → PROP) → A 
     ∀ x, Plain (fixpoint F x) ∧ Absorbing (fixpoint F x) := by
   intro HΦ
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Plain (f x) ∧ Absorbing (f x)) ?_
-      (λ _ => iprop(True)) (fun _ => ⟨inferInstance, inferInstance⟩) (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
+      (λ _ => iprop(True)) (fun _ => ⟨inferInstance, inferInstance⟩)
+      (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
   · intro _ _ H HP x
     refine ⟨⟨?_⟩, ⟨?_⟩⟩
     · refine .trans (.trans (equiv_iff.mp (H x)).mpr (HP x).left.plain) ?_
@@ -124,7 +127,8 @@ theorem fixpoint_plain_affine [Sbi PROP] {A : Type _} (F : (A → PROP) → A �
     ∀ x, Plain (fixpoint F x) ∧ Affine (fixpoint F x) := by
   intro HΦ
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Plain (f x) ∧ Affine (f x)) ?_
-      (λ _ => iprop(emp)) (fun _ => ⟨inferInstance, inferInstance⟩) (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
+      (λ _ => iprop(emp)) (fun _ => ⟨inferInstance, inferInstance⟩)
+      (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
   · intro _ _ H HP x
     refine ⟨⟨?_⟩, ⟨?_⟩⟩
     · refine .trans (.trans (equiv_iff.mp (H x)).mpr (HP x).left.plain) ?_
