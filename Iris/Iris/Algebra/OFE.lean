@@ -937,27 +937,6 @@ class OFunctorContractive (F : OFunctorPre) extends OFunctor F where
 
 attribute [reducible, instance] OFunctor.cofe
 
-abbrev constOF (B : Type) : OFunctorPre := fun _ _ _ _ => B
-
-instance oFunctorConstOF [OFE B] : OFunctor (constOF B) where
-  cofe := _
-  map _ _ := ⟨id, id_ne⟩
-  map_ne := by intros; constructor; simp
-  map_id := by simp
-  map_comp := by simp
-
-instance OFunctor.constOF_contractive [OFE B] : OFunctorContractive (constOF B) where
-  map_contractive.1 := by simp [map]
-
-abbrev IdOF : COFE.OFunctorPre := fun _ B _ _ => B
-
-instance IdOF_OFunctor : COFE.OFunctor IdOF where
-  cofe := inferInstance
-  map _ g := g
-  map_ne := ⟨fun _ _ _ _ _ _ hg => hg⟩
-  map_id _ := .rfl
-  map_comp _ _ _ _ _ := .rfl
-
 end COFE
 
 /- Leibniz OFE structure on a type -/
@@ -1181,6 +1160,24 @@ instance instOFunctorContractiveSigmaOF [∀ a, OFunctorContractive (F a)] :
   map_contractive.1 H := Sigma.mapO.ne.ne (fun _ => map_contractive.1 H)
 
 end SigmaOF
+
+section constOF
+
+open COFE
+
+abbrev constOF (B : Type) : OFunctorPre := fun _ _ _ _ => B
+
+instance oFunctorConstOF [OFE B] : OFunctor (constOF B) where
+  cofe := _
+  map _ _ := ⟨id, id_ne⟩
+  map_ne := by intros; constructor; simp
+  map_id := by simp
+  map_comp := by simp
+
+instance OFunctor.constOF_contractive [OFE B] : OFunctorContractive (constOF B) where
+  map_contractive.1 := by simp [OFunctor.map]
+
+end constOF
 
 section IdOF
 
@@ -1507,14 +1504,6 @@ instance instOFunctorLater [OFunctor F] : OFunctor (LaterOF F) where
 instance instOFunctorContractiveLater [OFunctor F] : OFunctorContractive (LaterOF F) where
   map_contractive.1 H _ _ hlt :=
     OFunctor.map_ne.ne (DistLater.dist_lt H hlt).1 (DistLater.dist_lt H hlt).2 _
-
-instance laterIdOF_contractive : COFE.OFunctorContractive (LaterOF IdOF) where
-    map_contractive.1 := by
-      intro n x y H z
-      simp only [Function.uncurry, COFE.OFunctor.map, laterMap, IdOF]
-      show OFE.DistLater _ _ _
-      intros k Hk
-      exact (H k Hk).2 _
 
 end LaterOF
 
