@@ -180,9 +180,9 @@ set_option pp.explicit true in
 #guard_msgs in
 #check hl(fst(snd((#1, #2, #3))))
 
-/-- info: hl(case: injl(injr(#1)) | _ => #1 | y => #2) : Exp -/
+/-- info: hl(match injl(injr(#1)) with | injl(_) => #1 | injr(y) => #2) : Exp -/
 #guard_msgs in
-#check hl(case: injl(injr(#1)) | _ => #1 | y => #2)
+#check hl(match injl(injr(#1)) with | injl(_) => #1 | injr(y) => #2)
 
 /-- info: hl_val(injl(injr(#1))) : Val -/
 #guard_msgs in
