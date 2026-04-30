@@ -19,3 +19,4 @@ public meta import Iris.ProofMode.Tactics.Rename
 public meta import Iris.ProofMode.Tactics.Revert
 public meta import Iris.ProofMode.Tactics.Specialize
 public meta import Iris.ProofMode.Tactics.Split
+public meta import Iris.ProofMode.Tactics.Rewrite

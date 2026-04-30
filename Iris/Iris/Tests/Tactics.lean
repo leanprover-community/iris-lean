@@ -1900,3 +1900,73 @@ example [BI PROP] (P : PROP) : P ⊢ P := by
   inext
 
 end inext
+
+section irewrite
+variable {PROP : Type _} [Sbi PROP]
+variable {A B : Type _} [OFE A] [OFE B]
+
+example (a b : A) (P : A → PROP) [OFE.NonExpansive P] :
+    internalEq a b ∗ P a ⊢ P b := by
+  istart
+  iintro ⟨Heq, Ha⟩
+  irewrite Heq
+
+  · sorry
+  · sorry
+  · sorry
+  · sorry
+
+example (a b : A) (P : A → PROP) [OFE.NonExpansive P] :
+    internalEq a b ∗ P b ⊢ P a := by
+  istart
+  iintro ⟨Heq, Hb⟩
+  irewrite ← Heq
+  iexact Hb
+
+example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] :
+    internalEq a b ∗ P a ∗ (P b -∗ Q b) ⊢ Q b := by
+  istart
+  iintro ⟨Heq, Ha, Himpl⟩
+  sorry
+
+example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] :
+    internalEq a b ∗ P b ∗ (P a -∗ Q a) ⊢ Q a := by
+  istart
+  iintro ⟨Heq, Hb, Himpl⟩
+
+  sorry
+
+example (f : A → B) [OFE.NonExpansive f] (a b : A) (P : B → PROP) [OFE.NonExpansive P] :
+    internalEq a b ∗ P (f a) ⊢ P (f b) := by
+  istart
+  iintro ⟨Heq, Ha⟩
+  sorry
+
+example (a b c : A) (P : A → PROP) [OFE.NonExpansive P] :
+    internalEq a b ∗ internalEq b c ∗ P a ⊢ P c := by
+  istart
+  iintro ⟨Hab, Hbc, Ha⟩
+  sorry
+
+example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] :
+    internalEq a b ∗ (P a ∗ Q a) ⊢ P b ∗ Q a := by
+  istart
+  iintro ⟨Heq, ⟨Ha, Qa⟩⟩
+  isplitl [Heq Ha]
+  sorry
+  sorry
+
+example (a b : A) (P : A → PROP) [OFE.NonExpansive P] :
+    internalEq b a ∗ P a ⊢ P b := by
+  istart
+  iintro ⟨Heq, Ha⟩
+  sorry
+
+example (a b : A) (P Q R : A → PROP)
+    [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] :
+    internalEq a b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
+  istart
+  iintro ⟨Heq, H⟩
+  sorry
+
+end irewrite

@@ -166,6 +166,10 @@ class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (p' : outPara
   elim_modal : φ → □?p P ∗ (□?p' P' -∗ Q') ⊢ Q
 export ElimModal (elim_modal)
 
+@[ipm_class]
+class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : Type _} [ofe : OFE A] (P : PROP) {x y : outParam A} where
+  into_internal_eq : P ⊢@{PROP} internalEq x y
+export IntoInternalEq (into_internal_eq)
 
 /-- `IntoLaterN` turns `P` into `▷^[n] Q`.
 The Boolean [only_head] indicates whether laters should only be stripped in
