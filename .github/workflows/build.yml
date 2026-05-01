@@ -68,7 +68,7 @@ jobs:
           mkdir -p _site
           python3 scripts/check_porting.py --no-build --format html --lean-rev "${{ github.sha }}" -o _site/index.html
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
 
   check-stale:
     if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
