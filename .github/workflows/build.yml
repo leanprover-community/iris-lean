@@ -26,7 +26,7 @@ jobs:
         working-directory: Iris
         run: lake exe dumpPortingData
       - name: Upload porting_data.json
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: porting-data
           path: Iris/.lake/porting_data.json
