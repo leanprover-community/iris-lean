@@ -13,6 +13,7 @@ namespace Iris.HeapLang
 open Lean Lean.PrettyPrinter Elab Parser
 
 declare_syntax_cat hl_exp
+declare_syntax_cat hl_match_arm
 declare_syntax_cat hl_val
 
 /-- embedding heaplang expressions into terms -/
@@ -34,6 +35,9 @@ syntax:max "(" hl_val ", " hl_val,+ ")" : hl_val
 syntax:100 "injl(" hl_val ")" : hl_val
 /-- injR -/
 syntax:100 "injr(" hl_val ")" : hl_val
+/-- none and some -/
+syntax:100 "none()" : hl_val
+syntax:100 "some(" hl_val ")" : hl_val
 
 /-- parenthesis -/
 syntax:max "(" hl_exp ")" : hl_exp
@@ -76,6 +80,9 @@ syntax:50 hl_exp:50 " < " hl_exp:50 : hl_exp
 /-- equality -/
 syntax:50 hl_exp:50 " = " hl_exp:50 : hl_exp
 
+syntax:35 hl_exp:36 "&&" hl_exp:35 : hl_exp
+syntax:30 hl_exp:31 "||" hl_exp:30 : hl_exp
+
 /-- neg -/
 syntax:100 "~" hl_exp:100 : hl_exp
 /-- minus -/
@@ -106,12 +113,24 @@ syntax:100 "fst(" hl_exp ")" : hl_exp
 /-- snd -/
 syntax:100 "snd(" hl_exp ")" : hl_exp
 
-/-- case -/
-syntax:100 "case: " hl_exp:80 " | " binderIdent " => " hl_exp:80 " | " binderIdent " => " hl_exp:80 : hl_exp
 /-- injL -/
 syntax:100 "injl(" hl_exp ")" : hl_exp
 /-- injR -/
 syntax:100 "injr(" hl_exp ")" : hl_exp
+
+/-- none and some -/
+syntax:100 "none()" : hl_exp
+syntax:100 "some(" hl_exp ")" : hl_exp
+
+/-- match -/
+syntax:100 "match " hl_exp:80 " with"
+  " | " hl_match_arm " => " hl_exp:80
+  " | " hl_match_arm " => " hl_exp:80 : hl_exp
+
+syntax "injl(" binderIdent ")" : hl_match_arm
+syntax "injr(" binderIdent ")" : hl_match_arm
+syntax "some(" binderIdent ")" : hl_match_arm
+syntax "none()" : hl_match_arm
 
 /-- heap operations -/
 syntax:100 "allocn(" hl_exp ", " hl_exp ")" : hl_exp
@@ -120,6 +139,7 @@ syntax:100 "free(" hl_exp ")" : hl_exp
 syntax:100 "!" hl_exp:100 : hl_exp
 syntax:15 hl_exp:16 " ← " hl_exp:15 : hl_exp
 syntax:100 "cmpXchg(" hl_exp ", " hl_exp ", " hl_exp ")" : hl_exp
+syntax:100 "cas(" hl_exp ", " hl_exp ", " hl_exp ")" : hl_exp
 syntax:100 "xchg(" hl_exp ", " hl_exp ")" : hl_exp
 syntax:100 "faa(" hl_exp ", " hl_exp ")" : hl_exp
 
@@ -159,6 +179,8 @@ macro_rules
   | `(hl_val(($e1, $e2, $e3,*))) => `(hl_val(($e1, ($e2, $e3,*))))
   | `(hl_val(injl($e1))) => `(Val.injL hl_val($e1))
   | `(hl_val(injr($e1))) => `(Val.injR hl_val($e1))
+  | `(hl_val(none())) => `(hl_val(injl(#())))
+  | `(hl_val(some($e))) => `(hl_val(injr($e)))
 
 /-- elaborating expressions -/
 macro_rules
@@ -182,28 +204,43 @@ macro_rules
   | `(hl($e1 ≤ $e2)) => `(Exp.binop BinOp.le hl($e1) hl($e2))
   | `(hl($e1 < $e2)) => `(Exp.binop BinOp.lt hl($e1) hl($e2))
   | `(hl($e1 = $e2)) => `(Exp.binop BinOp.eq hl($e1) hl($e2))
+  | `(hl($e1 && $e2)) => `(hl(if $e1 then $e2 else #false))
+  | `(hl($e1 || $e2)) => `(hl(if $e1 then #true else $e2))
   | `(hl(~$e1)) => `(Exp.unop UnOp.neg hl($e1))
   | `(hl(-$e1)) => `(Exp.unop UnOp.minus hl($e1))
   | `(hl(if $e1 then $e2 else $e3)) => `(Exp.if hl($e1) hl($e2) hl($e3))
   | `(hl($e1 $e2)) => `(Exp.app hl($e1) hl($e2))
   | `(hl(rec $f $x := $e)) => do `(Exp.rec_ hl_binder($f) hl_binder($x) hl($e))
-  | `(hl(rec $f $x $xs* := $e)) => do `(hl(rec $f $x := λ $xs*, $e))
-  | `(hl(λ $xs*, $e)) => do `(hl(rec _ $xs* := $e))
+  | `(hl(rec $f $x $xs* := $e)) => `(hl(rec $f $x := λ $xs*, $e))
+  | `(hl(λ $xs*, $e)) => `(hl(rec _ $xs* := $e))
   | `(hl($e1; $e2)) => `(hl(let _ := $e1; $e2))
   | `(hl(let $i := $e1; $e2)) => `(hl((λ $i, $e2) $e1))
   | `(hl(($e1, $e2))) => `(Exp.pair hl($e1) hl($e2))
   | `(hl(($e1, $e2, $e3,*))) => `(hl(($e1, ($e2, $e3,*))))
   | `(hl(fst($e1))) => `(Exp.fst hl($e1))
   | `(hl(snd($e1))) => `(Exp.snd hl($e1))
-  | `(hl(case: $e1 | $i2 => $e2 | $i3 => $e3)) => `(Exp.case hl($e1) hl(λ $i2, $e2) hl(λ $i3, $e3))
+  | `(hl(match $e1 with | injl($i2) => $e2 | injr($i3) => $e3)) =>
+    `(Exp.case hl($e1) hl(λ $i2, $e2) hl(λ $i3, $e3))
+  | `(hl(match $e1 with | injr($i2) => $e2 | injl($i3) => $e3)) =>
+    `(hl(match $e1 with | injl($i3) => $e3 | injr($i2) => $e2))
+  -- TODO: Why does the following not work?
+  -- | `(hl_match_arm | none()) => `(hl_match_arm | injl(_))
+  -- | `(hl_match_arm | some($i)) => `(hl_match_arm | injr($i))
+  | `(hl(match $e1 with | some($i2) => $e2 | none() => $e3)) =>
+    `(hl(match $e1 with | injr($i2) => $e2 | injl(_) => $e3))
+  | `(hl(match $e1 with | none() => $e2 | some($i3) => $e3)) =>
+    `(hl(match $e1 with | injl(_) => $e2 | injr($i3) => $e3))
   | `(hl(injl($e1))) => `(Exp.injL hl($e1))
   | `(hl(injr($e1))) => `(Exp.injR hl($e1))
+  | `(hl(none())) => `(hl(injl(#())))
+  | `(hl(some($e))) => `(hl(injr($e)))
   | `(hl(allocn($e1, $e2))) => `(Exp.allocN hl($e1) hl($e2))
   | `(hl(ref($e1))) => `(hl(allocn(#1, $e1)))
   | `(hl(free($e1))) => `(Exp.free hl($e1))
   | `(hl(! $e1)) => `(Exp.load hl($e1))
   | `(hl($e1 ← $e2)) => `(Exp.store hl($e1) hl($e2))
   | `(hl(cmpXchg($e1, $e2, $e3))) => `(Exp.cmpXchg hl($e1) hl($e2) hl($e3))
+  | `(hl(cas($e1, $e2, $e3))) => `(hl(snd(cmpXchg($e1, $e2, $e3))))
   | `(hl(xchg($e1, $e2))) => `(Exp.xchg hl($e1) hl($e2))
   | `(hl(faa($e1, $e2))) => `(Exp.faa hl($e1) hl($e2))
   | `(hl(fork($e1))) => `(Exp.fork hl($e1))
@@ -365,7 +402,8 @@ def unexpInjr : Unexpander
 
 @[app_unexpander Exp.case]
 def unexpCase : Unexpander
-  | `($_ $e1 hl((λ $i2, $e2)) hl((λ $i3, $e3))) => do `(hl(case: $(← unpackHLExp e1) | $i2 => $e2 | $i3 => $e3))
+  | `($_ $e1 hl((λ $i2, $e2)) hl((λ $i3, $e3))) =>
+    do `( hl(match $(← unpackHLExp e1) with | injl($i2) => $e2 | injr($i3) => $e3) )
   | _ => throw ()
 
 partial def unexpRef : Term → UnexpandM Term
