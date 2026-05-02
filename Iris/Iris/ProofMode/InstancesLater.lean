@@ -37,18 +37,18 @@ instance fromAssumption_except0 [BI PROP] (p : Bool) ioP (P Q : PROP)
 /-- FromPure -/
 
 @[rocq_alias from_pure_later]
-instance fromPure_later [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
-    [h : FromPure a P φ] : FromPure a iprop(▷ P) φ where
+instance fromPure_later {io} [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
+    [h : FromPure a P io φ] : FromPure a iprop(▷ P) io φ where
   from_pure := h.1.trans later_intro
 
 @[rocq_alias from_pure_laterN]
-instance fromPure_laterN [BI PROP] (a : Bool) (n : Nat) (P : PROP) (φ : Prop)
-    [h : FromPure a P φ] : FromPure a iprop(▷^[n] P) φ where
+instance fromPure_laterN {io} [BI PROP] (a : Bool) (n : Nat) (P : PROP) (φ : Prop)
+    [h : FromPure a P io φ] : FromPure a iprop(▷^[n] P) io φ where
   from_pure := h.1.trans (laterN_intro n)
 
 @[rocq_alias from_pure_except_0]
-instance fromPure_except0 [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
-    [h : FromPure a P φ] : FromPure a iprop(◇ P) φ where
+instance fromPure_except0 {io} [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
+    [h : FromPure a P io φ] : FromPure a iprop(◇ P) io φ where
   from_pure := h.1.trans except0_intro
 
 /-- IntoWand -/

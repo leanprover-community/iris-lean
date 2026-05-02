@@ -27,9 +27,9 @@ theorem imp_intro_intuitionistic [BI PROP] {P Q A1 A2 B : PROP}
   exact (and_mono_r inst.1).trans <| persistently_and_intuitionistically_sep_r.1.trans h
 
 theorem wand_intro_intuitionistic [BI PROP] {P Q A1 A2 B : PROP}
-    [FromWand Q A1 A2] [inst : IntoPersistently false A1 B] [or : TCOr (Affine A1) (Absorbing A2)]
+    [FromWand Q .out A1 A2] [inst : IntoPersistently false A1 B] [or : TCOr (Affine A1) (Absorbing A2)]
     (h : P ∗ □ B ⊢ A2) : P ⊢ Q := by
-  refine (wand_intro ?_).trans from_wand
+  refine (wand_intro ?_).trans (from_wand .out (Q1:=A1))
   exact match or with
   | TCOr.l => (sep_mono_r <| (affine_affinely A1).2.trans (affinely_mono inst.1)).trans h
   | TCOr.r => (sep_mono_r <| inst.1.trans absorbingly_intuitionistically.2).trans <|
@@ -47,7 +47,7 @@ theorem imp_intro_spatial [BI PROP] {P Q A1 A2 B : PROP}
     persistently_and_intuitionistically_sep_l.1.trans <| sep_mono_l intuitionistically_elim
 
 theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
-    [FromWand Q A1 A2] (h : P ∗ A1 ⊢ A2) : P ⊢ Q := (wand_intro h).trans from_wand
+    [FromWand Q .out A1 A2] (h : P ∗ A1 ⊢ A2) : P ⊢ Q := (wand_intro h).trans (from_wand .out (Q1:=A1))
 
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
@@ -91,14 +91,14 @@ private partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
       let pf ← iCasesCore bi hyps A2 pat q(true) B (iIntroCore · · pats)
       return q(imp_intro_intuitionistic (Q := $Q) $pf)
     | .intuitionistic pat, none =>
-      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q $A1 $A2)
+      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
         | throwError "iintro: {Q} not a wand"
       let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)
         | throwError "iintro: {A1} not persistent"
       let .some _ ← trySynthInstanceQ q(TCOr (Affine $A1) (Absorbing $A2))
         | throwError "iintro: {A1} not affine and the goal not absorbing"
       let pf ← iCasesCore bi hyps A2 pat q(true) B (iIntroCore · · pats)
-      return q(wand_intro_intuitionistic (Q := $Q) $pf)
+      return q(wand_intro_intuitionistic (A1 := $A1) (Q := $Q) $pf)
     | _, some _ =>
       -- should always succeed
       let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B $A1)
@@ -107,10 +107,10 @@ private partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
       let pf ← iCasesCore bi hyps A2 pat q(false) B (iIntroCore · · pats)
       return q(imp_intro_spatial (Q := $Q) $pf)
     | _, none =>
-      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q $A1 $A2)
+      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
         | throwError "iintro: {Q} not a wand"
       let pf ← iCasesCore bi hyps A2 pat q(false) A1 (iIntroCore · · pats)
-      return q(wand_intro_spatial (Q := $Q) $pf)
+      return q(wand_intro_spatial (A1 := $A1) (Q := $Q) $pf)
 
 
 elab "iintro" pats:(colGt introPat)* : tactic => do

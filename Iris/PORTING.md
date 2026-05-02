@@ -296,18 +296,19 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] AddModal
   - [x] IntoLater
 - [ ] `class_instances_make.v`
-  - [ ] QuickAffine
-  - [ ] QuickAbsorbing
-  - [ ] MakeEmbed
-  - [ ] MakeSep
-  - [ ] MakeAnd
-  - [ ] MakeOr
+  - [x] QuickAffine
+  - [x] QuickAbsorbing
+  - [x] MakeEmbed
+  - [x] MakeSep
+  - [x] MakeAnd
+  - [x] MakeOr
   - [x] MakeAffinely
   - [x] MakeIntuitionistically
   - [x] MakeAbsorbingly
   - [x] MakePersistenly
   - [x] MakeLaterN
-  - [ ] MakeExcept0
+  - [x] MakeExcept0
+  - [ ] MakeEmbed
 - [ ] `class_instances_plainly.v` (InstancesPlainly.lean)
   - [x] basic instances
   - [x] FromModal
@@ -352,7 +353,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] CombineSepGives
   - [x] ElimModal
   - [ ] AddModal
-  - [ ] Frame
+  - [x] Frame
   - [x] IntoExcept0
   - [x] MaybeIntoLaterN / IntoLaterN
   - [ ] IntoEmbed
@@ -363,18 +364,19 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IntoAcc
   - [ ] ElimInv
 - [ ] `classes_make.v`
-  - [ ] QuickAffine
-  - [ ] QuickAbsorbing
-  - [ ] MakeEmbed
-  - [ ] MakeSep
-  - [ ] MakeAnd
-  - [ ] MakeOr
+  - [x] QuickAffine
+  - [x] QuickAbsorbing
+  - [x] MakeEmbed
+  - [x] MakeSep
+  - [x] MakeAnd
+  - [x] MakeOr
   - [x] MakeAffinely
   - [x] MakeIntuitionistically
   - [x] MakeAbsorbingly
   - [x] MakePersistenly
   - [x] MakeLaterN
-  - [ ] MakeExcept0
+  - [x] MakeExcept0
+  - [ ] MakeEmbed
 - [ ] `coq_tactics.v` / `ltac_tactics.v` (split into the files in Tactics/)
   - [x] iSolveSideCondition
   - [ ] iStartProof
@@ -399,6 +401,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] iEmpIntro
   - [x] iPureIntro
   - [ ] iFrame
+    - [x] basic
+    - [ ] existential quantifiers
   - [ ] iRevert
     - [x] basic
     - [ ] `intoIH` revert
@@ -438,7 +442,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] IIdent
   - [x] IFresh
   - [x] IDrop
-  - [ ] IFrame
+  - [x] IFrame
   - [x] IList
   - [x] IPure
   - [x] IIntuitionistic
@@ -463,14 +467,17 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [x] `sel_patterns.v`
 - [ ] `spec_patterns.v`
   - [x] SIdent
+  - [ ] Nested spec patterns
   - [x] SPureGoal
   - [ ] SGoal
-    - [ ] Kind
-    - [ ] Negate
-    - [ ] Frame
+    - [x] Kind: Spatial
+    - [ ] Kind: Intuitionistic
+    - [ ] Kind: Modal
+    - [x] Negate
+    - [x] Frame
     - [x] Hyps
     - [ ] Done
-  - [ ] SAutoFrame
+  - [x] SAutoFrame
 - [-] `string_ident.v` (not necessary in Lean)
 - [-] `tokens.v` (not necessary in Lean)
 

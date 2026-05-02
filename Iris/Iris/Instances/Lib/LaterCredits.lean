@@ -14,7 +14,7 @@ public import Iris.Instances.IProp
 @[expose] public section
 
 /-! ## Later credits
-TODO: missing instances for PM: frame_le_upd, frame_le_upd_if, combine_sep_lc_add, combine_sep_lc_S_l
+TODO: missing instances for PM: combine_sep_lc_add, combine_sep_lc_S_l
 -/
 
 namespace Iris
@@ -407,7 +407,7 @@ instance from_assumption_le_upd {p} {P Q : IProp GF} [h : FromAssumption p ioP P
   from_assumption := h.1.trans le_upd_intro
 
 @[rocq_alias le_upd.from_pure_le_upd]
-instance {P : IProp GF} [H : FromPure a P φ] : FromPure a (le_upd P) φ where
+instance {io} {P : IProp GF} [H : FromPure a P io φ] : FromPure a (le_upd P) io φ where
   from_pure := by
     cases a <;> dsimp
     · iintro H
@@ -440,6 +440,10 @@ instance {P : IProp GF} : ElimModal True p false (le_upd P) P (le_upd Q) (le_upd
       iapply le_upd_bind $$ H2 H1
     · iintro ⟨H1, H2⟩
       iapply le_upd_bind $$ H2 H1
+
+@[rocq_alias le_upd.frame_le_upd]
+instance {p} {P R Q : IProp GF} [hf : Frame p R P Q] : Frame p R (le_upd P) (le_upd Q) where
+  frame := le_upd_frame_l.trans <| le_upd_mono hf.frame
 
 end Internal
 
@@ -551,7 +555,7 @@ instance {b} {p} {P Q : IProp GF} : ElimModal True p false (bupd P) P (le_upd_if
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
 @[rocq_alias le_upd_if.from_pure_le_upd_if]
-instance {b} {a} {P : IProp GF} φ [FromPure a P φ] : FromPure a (le_upd_if b P) φ := by
+instance {b} {a} {io} {P : IProp GF} φ [FromPure a P io φ] : FromPure a (le_upd_if b P) io φ := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
 @[rocq_alias le_upd_if.is_except_0_le_upd_if]
@@ -566,6 +570,10 @@ instance {b} {P : IProp GF} : FromModal True modality_id (le_upd_if b P) (le_upd
 instance {b} {p} {P Q : IProp GF} :
   ElimModal True p false (le_upd_if b P) P (le_upd_if b Q) (le_upd_if b Q) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
+
+@[rocq_alias le_upd_if.frame_le_upd_if]
+instance {p b} {P R Q : IProp GF} [hf : Frame p R P Q] : Frame p R (le_upd_if b P) (le_upd_if b Q) where
+  frame := le_upd_if_frame_l.trans <| le_upd_if_mono hf.frame
 
 @[rocq_alias le_upd_if.from_assumption_le_upd_if]
 instance from_assumption_le_upd_if {p} {P Q : IProp GF} [h : FromAssumption p ioP P Q] : FromAssumption p ioP P (le_upd_if b Q) where

@@ -23,8 +23,8 @@ namespace Iris.ProofMode
 public section
 open BI
 
-theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
-    [h1 : AsEmpValid .into φ P] (h : φ) : Q ⊢ Q ∗ □ P :=
+theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
+    [h1 : AsEmpValid .into φ .in PROP .in bi P] (h : φ) : Q ⊢ Q ∗ □ P :=
   sep_emp.2.trans (sep_mono_r $ intuitionistically_emp.2.trans (intuitionistically_mono (asEmpValid_1 _ h)))
 
 public meta section
@@ -80,7 +80,7 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     have val : Q($ty) := val
 
     let hyp ← mkFreshExprMVarQ q($prop)
-    let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty $hyp)
+    let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty .in $prop .in $bi $hyp)
       | throwError m!"ihave: {ty} is not an entailment"
 
     return ⟨_, hyps, q(true), hyp, q(have_asEmpValid $val)⟩

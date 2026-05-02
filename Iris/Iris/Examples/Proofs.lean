@@ -23,7 +23,7 @@ theorem proof_example_1 [BI PROP] (P Q R : PROP) (Φ : α → PROP) :
   isplitr
   · iassumption
   isplitl [HP]
-  · iexact HP
+  · iframe
   · iexact HQ
 
 end Iris.Examples

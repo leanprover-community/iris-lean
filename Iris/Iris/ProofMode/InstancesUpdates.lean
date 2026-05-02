@@ -25,8 +25,8 @@ instance fromAssumption_bupd p ioP (P Q : PROP)
   from_assumption := h.1.trans BIUpdate.intro
 
 @[rocq_alias from_pure_bupd]
-instance fromPure_bupd (a : Bool) (P : PROP) (φ : Prop)
-    [h : FromPure a P φ] : FromPure a iprop(|==> P) φ where
+instance fromPure_bupd {io} (a : Bool) (P : PROP) (φ : Prop)
+    [h : FromPure a P io φ] : FromPure a iprop(|==> P) io φ where
   from_pure := h.1.trans BIUpdate.intro
 
 @[rocq_alias into_wand_bupd]
@@ -117,8 +117,8 @@ instance fromAssumption_fupd E p ioP (P Q : PROP)
   from_assumption := h.from_assumption.trans BIUpdateFUpdate.fupd_of_bupd
 
 @[rocq_alias from_pure_fupd]
-instance fromPure_fupd E a (P : PROP) (φ : Prop)
-    [h : FromPure a P φ] : FromPure a iprop(|={E}=> P) φ where
+instance fromPure_fupd io E a (P : PROP) (φ : Prop)
+    [h : FromPure a P io φ] : FromPure a iprop(|={E}=> P) io φ where
   from_pure := h.from_pure.trans <| fupd_intro
 
 @[rocq_alias into_wand_fupd]
