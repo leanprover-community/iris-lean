@@ -49,14 +49,14 @@ def minMax : Exp :=
 def optionMap : Exp :=
   hl(λ f opt,
     match opt with
-    | injl(_) => injl(#())
-    | injr(x) => injr(f x))
+    | none() => none()
+    | some(x) => some(f x))
 
 def optionGetOrElse : Exp :=
   hl(λ opt default,
     match opt with
-    | injl(_) => default
-    | injr(x) => x)
+    | none() => default
+    | some(x) => x)
 
 def listLength : Exp :=
   hl(rec len xs :=

@@ -150,6 +150,13 @@ set_option pp.explicit true in
 #guard_msgs in
 #check hl(if #1 then #2 else #3)
 
+/--
+info: hl(if if a then b else #(BaseLit.bool false) then #(BaseLit.bool true) else
+    if c then d else #(BaseLit.bool false)) : Exp
+-/
+#guard_msgs in
+#check hl(a && b || c && d)
+
 /-- info: hl((#1, #2, #3)) : Exp -/
 #guard_msgs in
 #check hl((#1, #2, #3))
@@ -184,18 +191,35 @@ set_option pp.explicit true in
 #guard_msgs in
 #check hl(match injl(injr(#1)) with | injl(_) => #1 | injr(y) => #2)
 
+/-- info: hl(match injl(injr(#1)) with | injl(y) => #2 | injr(_) => #1) : Exp -/
+#guard_msgs in
+#check hl(match injl(injr(#1)) with | injr(_) => #1 | injl(y) => #2)
+
+/-- info: hl(match injr(injl(#BaseLit.unit)) with | injl(_) => #2 | injr(_) => #1) : Exp -/
+#guard_msgs in
+#check hl(match some(none()) with | some(_) => #1 | none() => #2)
+
+/-- info: hl(match injr(injl(#BaseLit.unit)) with | injl(_) => #1 | injr(x) => #2) : Exp -/
+#guard_msgs in
+#check hl(match some(none()) with | none() => #1 | some(x) => #2)
+
 /-- info: hl_val(injl(injr(#1))) : Val -/
 #guard_msgs in
 #check hl_val(injl(injr(#1)))
+
+/-- info: hl_val(injr(injl(#BaseLit.unit))) : Val -/
+#guard_msgs in
+#check hl_val(some(none()))
 
 
 /--
 info: hl(let x := ref(#0);
     let y := allocn(!x, #0);
-      x ← (!x + #1); fork(cmpXchg(x, #1, #2); xchg(x, #2); faa(x, #4)); assert((!x = #0)); free(x)) : Exp
+      x ← (!x + #1);
+        fork(cmpXchg(x, #1, #2); snd(cmpXchg(x, #1, #2)); xchg(x, #2); faa(x, #4)); assert((!x = #0)); free(x)) : Exp
 -/
 #guard_msgs in
-#check hl(let x := ref(#0); let y := allocn(!x, #0); x ← !x + #1; fork(cmpXchg(x, #1, #2); xchg(x, #2); faa(x, #4)); assert(!x = #0); free(x))
+#check hl(let x := ref(#0); let y := allocn(!x, #0); x ← !x + #1; fork(cmpXchg(x, #1, #2); cas(x, #1, #2); xchg(x, #2); faa(x, #4)); assert(!x = #0); free(x))
 
 /--
 info: (Exp.rec_ Binder.anon (Binder.named "x")
