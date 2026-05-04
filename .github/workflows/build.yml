@@ -115,7 +115,8 @@ jobs:
           exit 1
 
   deploy:
-    if: github.ref == 'refs/heads/master'
+     # we disable deploy for forks to prevent spurious CI failures
+    if: github.ref == 'refs/heads/master' && github.repository == 'leanprover-community/iris-lean'
     needs: report
     runs-on: ubuntu-latest
     permissions:
