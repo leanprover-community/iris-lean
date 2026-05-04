@@ -127,8 +127,11 @@ private def processWand :
 /-- `iCasesPat.should_try_dup_context` determines when iSpecializeCore should try to duplicate the separation context.
 The duplication only works if the conclusion of the specialization is persistent.
 
+TODO: Should this also return true for lists of intuitionistic patterns? (check in Rocq)
+
 TODO: This also needs to check that there are no modality addition patterns in `pat` once they are implemented.
 -/
+@[rocq_alias intro_pat_intuitionistic, rocq_alias use_tac_specialize_intuitionistic_helper]
 def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
   match pat with
   | .intuitionistic _ => true
