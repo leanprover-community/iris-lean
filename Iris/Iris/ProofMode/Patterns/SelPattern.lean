@@ -20,6 +20,7 @@ syntax "%" noWs ident : selPat
 syntax "#" : selPat
 syntax "∗" : selPat
 
+@[rocq_alias sel_pat]
 inductive SelPat
   | pure
   | intuitionistic
@@ -28,6 +29,7 @@ inductive SelPat
   | leanIdent (name : Ident)
   deriving Repr, Inhabited
 
+@[rocq_alias sel_pat.parse]
 partial def SelPat.parseOne (pat : TSyntax `selPat) : MacroM SelPat := do
   match go ⟨← expandMacros pat⟩ with
   | none => Macro.throwUnsupported
@@ -44,8 +46,12 @@ where
 partial def SelPat.parse (pats : TSyntaxArray `selPat) : MacroM (List SelPat) := do
   return (← pats.mapM SelPat.parseOne).toList
 
+#rocq_ignore sel_pat.parse_go "Not necessary in Lean"
+#rocq_ignore sel_pat_pure "Not necessary in Lean"
+
 public meta section
 
+@[rocq_alias esel_pat]
 structure SelTarget where
   target : Name ⊕ FVarId
   /- Was this target specified explicitly or is it from a glob like ∗? -/

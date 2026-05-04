@@ -51,10 +51,12 @@ instance fromWand_wand [BI PROP] io (P1 P2 : PROP) : FromWand iprop(P1 -∗ P2) 
 #rocq_ignore into_wand_impl' "IntoWand' is not used in Lean"
 #rocq_ignore into_wand_wandM' "IntoWand' is not used in Lean"
 
+@[rocq_alias into_wand_wand]
 instance intoWand_wand (p q : Bool) [BI PROP] ioP ioQ (P Q P' : PROP) [h : FromAssumption q ioP P P'] :
     IntoWand p q iprop(P' -∗ Q) ioP P ioQ Q where
   into_wand := (intuitionisticallyIf_mono <| wand_mono_l h.1).trans intuitionisticallyIf_elim
 
+-- TODO: compare this with into_wand_impl_false_false, into_wand_impl_false_true, ... in Rocq
 instance intoWand_imp_false [BI PROP] ioP ioQ (P Q P' : PROP) [Absorbing P'] [Absorbing iprop(P' → Q)]
     [h : FromAssumption b ioP P P'] : IntoWand false b iprop(P' → Q) ioP P ioQ Q where
   into_wand := wand_intro <| (sep_mono_r h.1).trans <| by dsimp; exact sep_and.trans imp_elim_l
@@ -427,20 +429,35 @@ instance intoSep_pure (φ ψ : Prop) [BI PROP] :
     IntoSep (PROP := PROP) iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
   into_sep := pure_and.2.trans persistent_and_sep_1
 
+@[ipm_backtrack, rocq_alias into_sep_affinely]
+instance (priority:=high) intoSep_affinely [BI PROP] [BIPositive PROP] (P Q1 Q2 : PROP)
+    [h : IntoSep P Q1 Q2] : IntoSep iprop(<affine> P) iprop(<affine> Q1) iprop(<affine> Q2) where
+  into_sep := (affinely_mono h.1).trans affinely_sep.1
+
+@[ipm_backtrack, rocq_alias into_sep_intuitionistically]
+instance (priority:=high) intoSep_intuitionistically [BI PROP] [BIPositive PROP] (P Q1 Q2 : PROP)
+    [h : IntoSep P Q1 Q2] : IntoSep iprop(□ P) iprop(□ Q1) iprop(□ Q2) where
+  into_sep := (intuitionistically_mono h.1).trans intuitionistically_sep.1
+
 -- Rocq: This instance is kind of strange, it just gets rid of the affinely.
 @[rocq_alias into_sep_affinely_trim]
 instance (priority := default - 10) intoSep_affinely_trim [BI PROP] (P Q1 Q2 : PROP)
     [h : IntoSep P Q1 Q2] : IntoSep iprop(<affine> P) Q1 Q2 where
   into_sep := affinely_elim.trans h.1
 
-@[rocq_alias into_sep_persistently_affine]
+@[ipm_backtrack, rocq_alias into_sep_persistently]
+instance intoSep_persistently [BI PROP] [BIPositive PROP] (P Q1 Q2 : PROP)
+    [h : IntoSep P Q1 Q2] : IntoSep iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2) where
+  into_sep := (persistently_mono h.1).trans persistently_sep.1
+
+@[ipm_backtrack, rocq_alias into_sep_persistently_affine]
 instance intoSep_persistently_affine [BI PROP] (P Q1 Q2 : PROP) [h : IntoSep P Q1 Q2]
     [TCOr (Affine Q1) (Absorbing Q2)] [TCOr (Affine Q2) (Absorbing Q1)] :
     IntoSep iprop(<pers> P) iprop(<pers> Q1) iprop(<pers> Q2) where
   into_sep := (persistently_mono <| h.1.trans sep_and).trans <|
     persistently_and.1.trans persistently_and_imp_sep
 
-@[rocq_alias into_sep_intuitionistically_affine]
+@[ipm_backtrack, rocq_alias into_sep_intuitionistically_affine]
 instance intoSep_intuitionistically_affine [BI PROP] (P Q1 Q2 : PROP) [h : IntoSep P Q1 Q2]
     [TCOr (Affine Q1) (Absorbing Q2)] [TCOr (Affine Q2) (Absorbing Q1)] :
     IntoSep iprop(□ P) iprop(□ Q1) iprop(□ Q2) where

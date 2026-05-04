@@ -234,7 +234,7 @@ meta section tactics
 open Lean
 
 /-- corresponds to the MaybeFrame typeclass in Rocq -/
-@[rocq_alias MaybeFrame']
+@[rocq_alias MaybeFrame', rocq_alias maybe_frame_frame]
 def maybeFrame {prop : Q(Type u)} {bi : Q(BI $prop)} (p : Q(Bool))
   (R P Q : Q($prop)) (f : Option Q(Frame $p $R $P $Q)) :
   MetaM (Option Q(Frame $p $R $P $Q)) := do

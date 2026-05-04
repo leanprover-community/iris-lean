@@ -317,11 +317,12 @@ instance (priority := default - 10) elimModal_timeless [BI PROP] p (P P' Q : PRO
   elim_modal _ := ((sep_mono ((intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf_2) except0_intro).trans $ except0_sep.2.trans (except0_mono wand_elim_r)).trans is_except0
 
 /-- IntoLaterN -/
+@[rocq_alias maybe_into_laterN_default]
 instance (priority := low) intoLaterN_default [BI PROP] only_head n (P : PROP) :
   IntoLaterN only_head n P P where
   into_laterN := laterN_intro n
 
-@[rocq_alias into_laterN_0]
+@[rocq_alias into_laterN_0, rocq_alias maybe_into_laterN_default_0]
 instance (priority := high) intoLaterN_default_0 [BI PROP] only_head (P : PROP) :
   IntoLaterN only_head 0 P P where
   into_laterN := laterN_intro 0

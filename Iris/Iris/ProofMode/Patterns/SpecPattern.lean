@@ -29,6 +29,7 @@ syntax "[>" frameIdent* "]" optional(" as " ident) : specPat
 syntax "[>" "-" frameIdent* "]" optional(" as " ident) : specPat
 syntax "[#" frameIdent* "]" optional(" as " ident) : specPat
 syntax "[" "$" "]" : specPat
+syntax "[>" "$" "]" : specPat
 syntax "[#" "$" "]" : specPat
 
 @[rocq_alias goal_kind]
@@ -56,6 +57,17 @@ inductive SpecPat
   | goal (goal : SpecGoal) (goalName : Name)
   | autoframe (goal : SpecGoalKind)
   deriving Repr, Inhabited
+
+@[rocq_alias goal_kind_modal]
+def SpecGoalKind.isModal : SpecGoalKind → Bool
+  | modal => true
+  | _ => false
+
+@[rocq_alias spec_pat_modal]
+def SpecPat.isModal : SpecPat → Bool
+  | .goal g _ => g.kind.isModal
+  | .autoframe g => g.isModal
+  | _ => false
 
 #rocq_ignore spec_pat.stack_item "Not necessary in Lean"
 #rocq_ignore spec_pat.parse_go "Not necessary in Lean"
@@ -111,4 +123,5 @@ where
     some <| .goal {kind := .intuitionistic, negate := false, frame, hyps } goal.getId
   | `(specPat| [$]) => some <| .autoframe .spatial
   | `(specPat| [# $]) => some <| .autoframe .intuitionistic
+  | `(specPat| [> $]) => some <| .autoframe .modal
   | _ => none
