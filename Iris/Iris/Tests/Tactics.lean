@@ -2166,3 +2166,15 @@ example [BI PROP] [BIAffine PROP] (Q : Nat → PROP) : (Q 0 ⊢ ∃ x, False ∨
   iframe
 
 end iframe
+section icombine
+
+/-- Tests `icombine` -/
+
+example [BI PROP] [BIAffine PROP] {P1 P2 Q : PROP} :
+  ⊢ P1 -∗ P2 -∗ (P1 ∗ P2 -∗ Q) -∗ Q := by
+  iintro HP1 HP2 H
+  icombine HP1 HP2
+  iapply H
+  iexact Hnew
+
+end icombine
