@@ -6,6 +6,7 @@ public meta import Iris.ProofMode.Tactics.Assumption
 public meta import Iris.ProofMode.Tactics.Basic
 public meta import Iris.ProofMode.Tactics.Cases
 public meta import Iris.ProofMode.Tactics.Clear
+public meta import Iris.ProofMode.Tactics.Combine
 public meta import Iris.ProofMode.Tactics.Exact
 public meta import Iris.ProofMode.Tactics.ExFalso
 public meta import Iris.ProofMode.Tactics.Exists
