@@ -2173,7 +2173,7 @@ section icombine
 example [BI PROP] [BIAffine PROP] {P1 P2 Q : PROP} :
   ⊢ P1 -∗ P2 -∗ (P1 ∗ P2 -∗ Q) -∗ Q := by
   iintro HP1 HP2 H
-  icombine HP1 HP2 as Hplaceholder
+  icombine HP1 HP2 as Hnew
   iapply H
   iexact Hnew
 
