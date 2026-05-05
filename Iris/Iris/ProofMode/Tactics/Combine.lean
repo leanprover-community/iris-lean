@@ -55,6 +55,11 @@ private def iCombineCore (hyp1 hyp2 : Ident) (pat : iCasesPat) : TacticM Unit :=
       mvar.assign q(combine $pf $pf1 $pf2 $inst)
   | _ => throwUnsupportedSyntax
 
-elab "icombine" colGt hyp1:ident colGt hyp2:ident "as" colGt pat:icasesPat : tactic => do
+private def iCombineCoreRec (hs : Array (TSyntax `ident)) (pat : iCasesPat) : TacticM Unit :=
+  match hs.toList with
+  | .cons hyp1 (.cons hyp2 .nil) => iCombineCore hyp1 hyp2 pat
+  | _ => throwUnsupportedSyntax
+
+elab "icombine" hyps:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse pat  -- Parse syntax
-  iCombineCore hyp1 hyp2 pat
+  iCombineCoreRec hyps pat
