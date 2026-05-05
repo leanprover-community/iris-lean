@@ -1907,4 +1907,32 @@ example [BI PROP] {P1 P2 Q : PROP} :
   iapply H
   iexact Hnew
 
+example [BI PROP] {P1 P2 Q : PROP} :
+  ⊢ <absorb> P1 -∗ <absorb> P2 -∗ (<absorb> (P1 ∗ P2) -∗ Q) -∗ Q := by
+  iintro HP1 HP2 H
+  icombine HP1 HP2 as Hnew
+  iapply H
+  iexact Hnew
+
+example [BI PROP] {P1 P2 Q : PROP} :
+  ⊢ <affine> P1 -∗ <affine> P2 -∗ (<affine> (P1 ∗ P2) -∗ Q) -∗ Q := by
+  iintro HP1 HP2 H
+  icombine HP1 HP2 as Hnew
+  iapply H
+  iexact Hnew
+
+example [BI PROP] {P1 P2 Q : PROP} :
+  ⊢ <pers> P1 -∗ <pers> P2 -∗ (<pers> (P1 ∗ P2) -∗ Q) -∗ Q := by
+  iintro HP1 HP2 H
+  icombine HP1 HP2 as Hnew
+  iapply H
+  iexact Hnew
+
+example [BI PROP] {P1 P2 Q : PROP} :
+  ⊢ □ P1 -∗ □ P2 -∗ (□ (P1 ∗ P2) -∗ Q) -∗ Q := by
+  iintro HP1 HP2 H
+  icombine HP1 HP2 as Hnew
+  iapply H
+  iexact Hnew
+
 end icombine
