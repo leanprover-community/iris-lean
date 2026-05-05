@@ -18,14 +18,14 @@ theorem combine [BI PROP] {out1 out2 e1 e2 goal e : PROP}
   (pf1 : e ⊣⊢ e1 ∗ out1)
   (pf2 : e1 ⊣⊢ e2 ∗ out2)
   (inst : CombineSepsAs out1 out2 out)
-  : e ⊢ goal := by
-  refine Entails.trans ?_ pf
+  : e ⊢ goal :=
   calc
-    e ⊢ e1 ∗ out1 := pf1.mp
+    e ⊢ e1 ∗ out1          := pf1.mp
     _ ⊢ (e2 ∗ out2) ∗ out1 := sep_mono pf2.mp refl
     _ ⊢ e2 ∗ (out2 ∗ out1) := sep_assoc.mp
     _ ⊢ e2 ∗ (out1 ∗ out2) := sep_mono refl sep_comm.mp
-    _ ⊢ e2 ∗ out := sep_mono refl inst.combine_seps_as
+    _ ⊢ e2 ∗ out           := sep_mono refl inst.combine_seps_as
+    _ ⊢ goal               := pf
 
 -- An extremely simplified version of icombine for combining two propositions
 -- into one, connected by the separating conjunction
