@@ -854,3 +854,7 @@ instance elimModal_forall [BI PROP] φ p p' P P' (Φ Ψ : α → PROP) [h : ∀ 
 instance elimModal_absorbingly_here [BI PROP] p (P Q : PROP) [Absorbing Q] :
   ElimModal True p false iprop(<absorb> P) P Q Q where
   elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans $ absorbingly_sep_l.1.trans $ absorbing_absorbingly.1.trans wand_elim_r
+
+-- CombineSepAs
+instance combineSepAs_default [BI PROP] (P Q : PROP) :
+  CombineSepsAs P Q iprop(P ∗ Q) := ⟨.rfl⟩
