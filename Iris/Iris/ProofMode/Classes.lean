@@ -183,10 +183,10 @@ class IntoLaterN [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam
   into_laterN : P ⊢ ▷^[n] Q
 export IntoLaterN (into_laterN)
 
-/-- `CombineSepsAs` combines two propositions `P1` and `P2` into `Q` -/
+/-- `CombineSepAs` combines two propositions `P` and `Q` into `R` -/
 @[ipm_class]
-class CombineSepsAs {PROP} [BI PROP] (P1 P2 : PROP) (Q : outParam PROP) where
-  combine_seps_as : P1 ∗ P2 ⊢ Q
-export CombineSepsAs (combine_seps_as)
+class CombineSepAs [BI PROP] (P Q : PROP) (R : outParam PROP) where
+  combine_sep_as : P ∗ Q ⊢ R
+export CombineSepAs (combine_sep_as)
 
 end Iris.ProofMode

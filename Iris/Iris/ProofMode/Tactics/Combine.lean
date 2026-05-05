@@ -13,22 +13,23 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
-theorem combine [BI PROP] {out1 out2 e1 e2 goal e : PROP}
+theorem combine [BI PROP] {out1 out2 out e1 e2 goal e : PROP}
   (pf : e2 ∗ □?false out ⊢ goal)
   (pf1 : e ⊣⊢ e1 ∗ out1)
   (pf2 : e1 ⊣⊢ e2 ∗ out2)
-  (inst : CombineSepsAs out1 out2 out)
+  (inst : CombineSepAs out1 out2 out)
   : e ⊢ goal :=
   calc
     e ⊢ e1 ∗ out1          := pf1.mp
     _ ⊢ (e2 ∗ out2) ∗ out1 := sep_mono pf2.mp refl
     _ ⊢ e2 ∗ (out2 ∗ out1) := sep_assoc.mp
     _ ⊢ e2 ∗ (out1 ∗ out2) := sep_mono refl sep_comm.mp
-    _ ⊢ e2 ∗ out           := sep_mono refl inst.combine_seps_as
+    _ ⊢ e2 ∗ out           := sep_mono refl inst.combine_sep_as
     _ ⊢ goal               := pf
 
--- An extremely simplified version of icombine for combining two propositions
--- into one, connected by the separating conjunction
+/-- An simplified version of icombine for combining two propositions
+    into one using the type class CombineSepAs or, by default, the separating
+    conjunction -/
 private def iCombineCore (hyp1 hyp2 : Ident) (pat : iCasesPat) : TacticM Unit :=
   match pat with
   | .one name => do
@@ -42,7 +43,7 @@ private def iCombineCore (hyp1 hyp2 : Ident) (pat : iCasesPat) : TacticM Unit :=
 
       -- Handle the combined proposition based on the type class
       let out ← mkFreshExprMVarQ _
-      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepsAs $out1 $out2 $out)
+      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out1 $out2 $out)
       | throwError "icombine: no type class instance to combine {out1} and {out2}"
 
       -- Introduce the new hypothesis that combines the two original hypotheses
