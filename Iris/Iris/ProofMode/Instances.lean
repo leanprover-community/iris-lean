@@ -855,6 +855,29 @@ instance elimModal_absorbingly_here [BI PROP] p (P Q : PROP) [Absorbing Q] :
   ElimModal True p false iprop(<absorb> P) P Q Q where
   elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans $ absorbingly_sep_l.1.trans $ absorbing_absorbingly.1.trans wand_elim_r
 
--- CombineSepAs
-instance combineSepAs_default [BI PROP] (P Q : PROP) :
-  CombineSepsAs P Q iprop(P ∗ Q) := ⟨.rfl⟩
+/-- The default way of combining two propositions is to use the separating conjunction -/
+@[rocq_alias maybe_combine_sep_as_default]
+instance CombineSepAs_default [BI PROP] (P Q : PROP) :
+  CombineSepAs P Q iprop(P ∗ Q) := ⟨.rfl⟩
+
+@[rocq_alias maybe_combine_sep_as_affinely]
+instance CombineSepAs_affinely [BI PROP] (Q1 Q2 P : PROP)
+  [h : CombineSepAs Q1 Q2 P] : CombineSepAs iprop(<affine> Q1) iprop(<affine> Q2) iprop(<affine> P) := by
+    exact ⟨affinely_sep_2.trans (affinely_mono h.combine_sep_as)⟩
+
+@[rocq_alias maybe_combine_sep_as_intuitionistically]
+instance CombineSepAs_intuitionistically [BI PROP] (Q1 Q2 P : PROP)
+  [h : CombineSepAs Q1 Q2 P] : CombineSepAs iprop(□ Q1) iprop(□ Q2) iprop(□ P) := by
+    exact ⟨intuitionistically_sep_2.trans (intuitionistically_mono h.combine_sep_as)⟩
+
+@[rocq_alias maybe_combine_sep_as_absorbingly]
+instance CombineSepAs_absorbingly [BI PROP] (Q1 Q2 P : PROP)
+  [h : CombineSepAs Q1 Q2 P] : CombineSepAs iprop(<absorb> Q1) iprop(<absorb> Q2) iprop(<absorb> P) := by
+    have h1 := absorbingly_sep (P := Q1) (Q := Q2)
+    have h2 : <absorb> (Q1 ∗ Q2) ⊢ <absorb> P := absorbingly_mono h.combine_sep_as
+    exact ⟨h1.2.trans h2⟩
+
+@[rocq_alias maybe_combine_sep_as_persistently]
+instance CombineSepAs_persistently [BI PROP] (Q1 Q2 P : PROP)
+  [h : CombineSepAs Q1 Q2 P] : CombineSepAs iprop(<pers> Q1) iprop(<pers> Q2) iprop(<pers> P) := by
+    exact ⟨persistently_sep_2.trans (persistently_mono h.combine_sep_as)⟩

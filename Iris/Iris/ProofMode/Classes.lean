@@ -221,10 +221,10 @@ export IntoLaterN (into_laterN)
 #rocq_ignore into_sep_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore into_wand_tc_opaque "No tc_opaque in Lean"
 
-/-- `CombineSepsAs` combines two propositions `P1` and `P2` into `Q` -/
+/-- `CombineSepAs` combines two propositions `P` and `Q` into `R` -/
 @[ipm_class]
-class CombineSepsAs {PROP} [BI PROP] (P1 P2 : PROP) (Q : outParam PROP) where
-  combine_seps_as : P1 ∗ P2 ⊢ Q
-export CombineSepsAs (combine_seps_as)
+class CombineSepAs [BI PROP] (P Q : PROP) (R : outParam PROP) where
+  combine_sep_as : P ∗ Q ⊢ R
+export CombineSepAs (combine_sep_as)
 
 end Iris.ProofMode
