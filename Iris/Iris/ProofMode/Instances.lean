@@ -890,6 +890,24 @@ instance CombineSepGives_persistently [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepGives Q1 Q2 P] : CombineSepGives iprop(<pers> Q1) iprop(<pers> Q2) iprop(<pers> P) := by
     exact ⟨persistently_sep_2.trans (persistently_mono h.combine_sep_gives)⟩
 
+-- CombineSepsAs
+instance CombineSepsAs_nil [BI PROP] : CombineSepsAs [] (emp : PROP) where
+  combine_seps_as := by simp [bigSep, bigOp]
+
+instance CombineSepsAs_singleton [BI PROP] (P : PROP) : CombineSepsAs [P] P where
+  combine_seps_as := by simp [bigSep, bigOp]
+
+instance CombineSepsAs_cons [BI PROP] (P : PROP) (Ps : List PROP) (Q R : PROP)
+  (h1 : CombineSepsAs Ps Q) (h2 : CombineSepAs P Q R) :
+  CombineSepsAs (P :: Ps) R where
+    combine_seps_as := by
+      have h3 : ([∗] (P :: Ps)) ⊣⊢ P ∗ [∗] Ps := bigOp_cons (f := sep) (unit := emp)
+      calc
+        [∗] (P :: Ps) ⊢ P ∗ [∗] Ps := by apply h3.mp
+        _ ⊢ P ∗ Q := sep_mono_r h1.combine_seps_as
+        _ ⊢ R := h2.combine_sep_as
+
+-- CombineSepsAsGives
 @[rocq_alias combine_seps_as_gives_nil]
 instance CombineSepsAsGives_nil [BI PROP] : CombineSepsAsGives [] (emp : PROP) iprop(True) where
   combine_seps_as_gives_as := by
