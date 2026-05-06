@@ -110,10 +110,16 @@ partial def Hyps.intuitionisticUniqs {u prop bi} :
   | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticUniqs ++ rhs.intuitionisticUniqs
 
 partial def Hyps.leaves {u prop bi} :
-    ∀ {s}, @Hyps u prop bi s → List (Q($prop))
-  | _, .emp _ => []
-  | _, .sep _ _ _ _ lhs rhs => leaves lhs ++ leaves rhs
-  | _, .hyp _ _ _ _ ty _ => [ty]
+    ∀ {s}, @Hyps u prop bi s → Q(List $prop)
+  | _, .emp _ => q([])
+  | _, .sep _ _ _ _ lhs rhs => q($(leaves lhs) ++ $(leaves rhs))
+  | _, .hyp _ _ _ _ ty _ => q([$ty])
+
+def Hyps.leavesMatchBigSep {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {s} (h : Hyps bi s) :
+  Q($s ⊣⊢ [∗] $(Hyps.leaves h)) := by match h with
+  | .emp h_eq => sorry
+  | .sep _ _ _ _ _ _ => sorry
+  | .hyp _ _ _ _ _ _ => sorry
 
 variable (oldUniq new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)

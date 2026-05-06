@@ -78,17 +78,16 @@ private def iCombineCoreList (hs : List Ident) (pat : iCasesPat) : TacticM Unit 
       let out ← mkFreshExprMVarQ _
 
       -- Get the list of propositions from hyps'
-      let list : List Q($prop) := Hyps.leaves hyps''
-      let qlist : Q(List $prop) := list.foldr (fun p acc => q($p :: $acc)) q([])
-      have pf2 : Q($e'' ⊣⊢ [∗] $qlist) := sorry
+      let list : Q(List $prop) := Hyps.leaves hyps''
+      have pf2 : Q($e'' ⊣⊢ [∗] $list) := Hyps.leavesMatchBigSep hyps''
 
-      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepsAs $qlist $out)
+      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepsAs $list $out)
       | throwError "icombine: no type class instance to combine propositions"
 
       let ⟨_, newHyps⟩ ← Hyps.addWithInfo bi name q(false) out hyps'
       let pf3 ← addBIGoal newHyps goal
 
-      -- mvar.assign q(combineList $pf1 $pf2 $pf3 $inst)
+      mvar.assign q(combineList $pf1 $pf2 $pf3 $inst)
   | _ => throwUnsupportedSyntax
 
 elab "icombine" hyps:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
