@@ -14,29 +14,29 @@ public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
 theorem combine [BI PROP] {out1 out2 out e1 e2 goal e : PROP}
-  (pf : e2 ∗ □?false out ⊢ goal)
   (pf1 : e ⊣⊢ e1 ∗ out1)
   (pf2 : e1 ⊣⊢ e2 ∗ out2)
-  (inst : CombineSepAs out1 out2 out)
-  : e ⊢ goal :=
-  calc
-    e ⊢ e1 ∗ out1          := pf1.mp
-    _ ⊢ (e2 ∗ out2) ∗ out1 := sep_mono pf2.mp refl
-    _ ⊢ e2 ∗ (out2 ∗ out1) := sep_assoc.mp
-    _ ⊢ e2 ∗ (out1 ∗ out2) := sep_mono refl sep_comm.mp
-    _ ⊢ e2 ∗ out           := sep_mono refl inst.combine_sep_as
-    _ ⊢ goal               := pf
+  (pf3 : e2 ∗ out ⊢ goal)
+  (inst : CombineSepAs out1 out2 out) : e ⊢ goal := by
+    calc
+      e ⊢ e1 ∗ out1          := pf1.mp
+      _ ⊢ (e2 ∗ out2) ∗ out1 := sep_mono pf2.mp refl
+      _ ⊢ e2 ∗ (out2 ∗ out1) := sep_assoc.mp
+      _ ⊢ e2 ∗ (out1 ∗ out2) := sep_mono refl sep_comm.mp
+      _ ⊢ e2 ∗ out           := sep_mono refl inst.combine_sep_as
+      _ ⊢ goal               := pf3
 
 theorem combineList [BI PROP] {e el er out goal : PROP} {list : List PROP}
   (pf1 : e ⊣⊢ el ∗ er)
   (pf2 : er ⊣⊢ [∗] list)
-  (inst : CombineSepsAs list out)
-  (pf : (el ∗ out) ⊢ goal) : e ⊢ goal := by
+  (pf3 : (el ∗ out) ⊢ goal)
+  (inst : CombineSepsAs list out) :
+  e ⊢ goal := by
     calc
       e ⊢ el ∗ er       := pf1.mp
       _ ⊢ el ∗ [∗] list := sep_mono refl pf2.mp
       _ ⊢ el ∗ out      := sep_mono refl inst.combine_seps_as
-      _ ⊢ goal          := pf
+      _ ⊢ goal          := pf3
 
 /-- An simplified version of icombine for combining two propositions
     into one using the type class CombineSepAs or, by default, the separating
@@ -61,9 +61,9 @@ private def iCombineCore (hyp1 hyp2 : Ident) (pat : iCasesPat) : TacticM Unit :=
       let ⟨_, newHyps⟩ ← Hyps.addWithInfo bi name q(false) out hyps2
 
       -- New proof goal for the tactic user
-      let pf ← addBIGoal newHyps goal
+      let pf3 ← addBIGoal newHyps goal
 
-      mvar.assign q(combine $pf $pf1 $pf2 $inst)
+      mvar.assign q(combine $pf1 $pf2 $pf3 $inst)
   | _ => throwUnsupportedSyntax
 
 /-- An simplified version of icombine for combining multiple propositions
@@ -80,16 +80,15 @@ private def iCombineCoreList (hs : List Ident) (pat : iCasesPat) : TacticM Unit 
       -- Get the list of propositions from hyps'
       let list : List Q($prop) := Hyps.leaves hyps''
       let qlist : Q(List $prop) := list.foldr (fun p acc => q($p :: $acc)) q([])
+      have pf2 : Q($e'' ⊣⊢ [∗] $qlist) := sorry
 
       let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepsAs $qlist $out)
       | throwError "icombine: no type class instance to combine propositions"
 
       let ⟨_, newHyps⟩ ← Hyps.addWithInfo bi name q(false) out hyps'
-      let pf ← addBIGoal newHyps goal
+      let pf3 ← addBIGoal newHyps goal
 
-      have pf2 : Q($e'' ⊣⊢ [∗] $qlist) := sorry
-
-      -- mvar.assign q(combineList $pf1 $pf2 $inst $pf)
+      -- mvar.assign q(combineList $pf1 $pf2 $pf3 $inst)
   | _ => throwUnsupportedSyntax
 
 elab "icombine" hyps:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
