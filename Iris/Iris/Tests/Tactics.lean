@@ -1935,4 +1935,12 @@ example [BI PROP] {P1 P2 Q : PROP} :
   iapply H
   iexact Hnew
 
+-- More than two propositions combined
+example [BI PROP] {P1 P2 P3 Q : PROP} :
+  ⊢ P1 -∗ P2 -∗ P3 -∗ (P1 ∗ P2 -∗ P3 -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HP3 H
+  icombine HP1 HP2 HP3 as Hnew
+  iapply H
+  iexact Hnew
+
 end icombine

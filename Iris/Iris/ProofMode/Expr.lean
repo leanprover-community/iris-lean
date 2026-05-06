@@ -109,6 +109,12 @@ partial def Hyps.intuitionisticUniqs {u prop bi} :
   | _, .hyp _ _ uniq p _ _ => if isTrue p then [uniq] else []
   | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticUniqs ++ rhs.intuitionisticUniqs
 
+partial def Hyps.leaves {u prop bi} :
+    ∀ {s}, @Hyps u prop bi s → List (Q($prop))
+  | _, .emp _ => []
+  | _, .sep _ _ _ _ lhs rhs => leaves lhs ++ leaves rhs
+  | _, .hyp _ _ _ _ ty _ => [ty]
+
 variable (oldUniq new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .emp _ => none
