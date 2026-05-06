@@ -123,13 +123,7 @@ partial def Hyps.leaves {u prop bi} :
     ∀ {s}, @Hyps u prop bi s → Q(List $prop)
   | _, .emp _ => q([])
   | _, .sep _ _ _ _ lhs rhs => q($(leaves lhs) ++ $(leaves rhs))
-  | _, .hyp _ _ _ _ ty _ => q([$ty])
-
-def Hyps.leavesMatchBigSep {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {s} (h : Hyps bi s) :
-  Q($s ⊣⊢ [∗] $(Hyps.leaves h)) := by match h with
-  | .emp h_eq => sorry
-  | .sep _ _ _ _ _ _ => sorry
-  | .hyp _ _ _ _ _ _ => sorry
+  | _, .hyp tm _ _ _ _ _ => q([$tm])
 
 variable (oldIVar : IVarId) (new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
