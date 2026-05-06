@@ -1941,5 +1941,4 @@ example [BI PROP] {P1 P2 P3 Q : PROP} :
   iintro HP1 HP2 HP3 H
   icombine HP1 HP2 HP3 as Hnew
 
-
--- end icombine
+end icombine
