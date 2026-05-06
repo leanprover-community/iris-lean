@@ -223,9 +223,15 @@ export IntoLaterN (into_laterN)
 
 /-- `CombineSepAs` combines two propositions `P` and `Q` into `R` -/
 @[ipm_class]
-class CombineSepAs [BI PROP] (P Q : PROP) (R : PROP) where
+class CombineSepAs [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_as : P ∗ Q ⊢ R
 export CombineSepAs (combine_sep_as)
+
+/-- `CombineSepsAs` combines multiple propositions into one -/
+@[ipm_class]
+class CombineSepsAs [BI PROP] (Ps : List PROP) (Q : PROP) where
+  combine_seps_as : [∗] Ps ⊢ Q
+export CombineSepsAs (combine_seps_as)
 
 @[ipm_class]
 class CombineSepGives [BI PROP] (P Q R : PROP) where
@@ -236,11 +242,5 @@ class CombineSepsAsGives [BI PROP] (Ps : List PROP) (Q R : outParam PROP) where
   combine_seps_as_gives_as : [∗] Ps ⊢ Q
   combine_seps_as_gives_gives : [∗] Ps ⊢ <pers> R
 export CombineSepsAsGives (combine_seps_as_gives_as combine_seps_as_gives_gives)
-
-/-- `CombineSepsAs` combines multiple propositions into one -/
-@[ipm_class]
-class CombineSepsAs [BI PROP] (Ps : List PROP) (Q : PROP) where
-  combine_seps_as : [∗] Ps ⊢ Q
-export CombineSepsAs (combine_seps_as)
 
 end Iris.ProofMode
