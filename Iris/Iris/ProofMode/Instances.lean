@@ -857,8 +857,23 @@ instance elimModal_absorbingly_here [BI PROP] p (P Q : PROP) [Absorbing Q] :
 
 /-- The default way of combining two propositions is to use the separating conjunction -/
 @[rocq_alias maybe_combine_sep_as_default]
-instance CombineSepAs_default [BI PROP] (P Q : PROP) :
+instance (priority := default - 20) CombineSepAs_default [BI PROP] (P Q : PROP) :
   CombineSepAs P Q iprop(P ∗ Q) := ⟨.rfl⟩
+
+/-- If more than two propositions are combined and the resultant combined
+    proposition is connected by the same connective, then it should be
+    right associative. For example, given `P1`, `P2` and `P3` where the default
+    option is applicable, the resultant proposition should be `P1 ∗ P2 ∗ P3`
+    (i.e., `P1 ∗ (P2 ∗ P3)`) rather than `(P1 ∗ P2) ∗ P3`.
+
+    Note that `icombine` combines propositions from left to right.
+    For example, when `□ P1`, `□ P2` and `P3` are combined, it may result in
+    `□ (P1 ∗ P2) ∗ P3`. -/
+instance (priority := default - 10) CombineSepAs_assoc [BI PROP] (P Q R S : PROP)
+    [h : CombineSepAs Q R S] : CombineSepAs iprop(P ∗ Q) R iprop(P ∗ S) :=
+  ⟨sep_assoc.mp.trans (sep_mono refl h.combine_sep_as)⟩
+
+/-- Combining propositions with the same modalities -/
 
 @[rocq_alias maybe_combine_sep_as_affinely]
 instance CombineSepAs_affinely [BI PROP] (Q1 Q2 P : PROP)
@@ -881,6 +896,8 @@ instance CombineSepAs_absorbingly [BI PROP] (Q1 Q2 P : PROP)
 instance CombineSepAs_persistently [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepAs Q1 Q2 P] : CombineSepAs iprop(<pers> Q1) iprop(<pers> Q2) iprop(<pers> P) := by
     exact ⟨persistently_sep_2.trans (persistently_mono h.combine_sep_as)⟩
+
+/-- The theorems for `CombineSepGives` in Rocq are named `combine_sep_as_*` -/
 
 @[rocq_alias combine_sep_as_affinely]
 instance CombineSepGives_affinely [BI PROP] (Q1 Q2 P : PROP)
@@ -916,62 +933,3 @@ instance CombineSepGives_absorbingly [BI PROP] (Q1 Q2 P : PROP)
 instance CombineSepGives_persistently [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepGives Q1 Q2 P] : CombineSepGives iprop(<pers> Q1) iprop(<pers> Q2) iprop(<pers> P) := by
     exact ⟨persistently_sep_2.trans (persistently_mono h.combine_sep_gives)⟩
-
--- -- CombineSepsAs
--- instance CombineSepsAs_nil [BI PROP] : CombineSepsAs [] (emp : PROP) where
---   combine_seps_as := by simp [bigSep, bigOp]
-
--- instance CombineSepsAs_singleton [BI PROP] (P : PROP) : CombineSepsAs [P] P where
---   combine_seps_as := by simp [bigSep, bigOp]
-
--- instance CombineSepsAs_cons [BI PROP] (P : PROP) (Ps : List PROP) (Q R : PROP)
---   [h1 : CombineSepsAs Ps Q] [h2 : CombineSepAs P Q R] :
---   CombineSepsAs (P :: Ps) R where
---     combine_seps_as := by
---       have h3 : ([∗] (P :: Ps)) ⊣⊢ P ∗ [∗] Ps := bigOp_cons (f := sep) (unit := emp)
---       calc
---         [∗] (P :: Ps) ⊢ P ∗ [∗] Ps := h3.mp
---         _             ⊢ P ∗ Q      := sep_mono_r h1.combine_seps_as
---         _             ⊢ R          := h2.combine_sep_as
-
--- instance CombineSepsAs_append [BI PROP] (l1 l2 : List PROP) (Q R : PROP)
---   [h1 : CombineSepsAs l1 Q] [h2 : CombineSepsAs l2 R] [h3 : CombineSepAs Q R S] :
---   CombineSepsAs (l1 ++ l2) S where
---   combine_seps_as := by
---     calc
---       [∗] (l1 ++ l2) ⊣⊢ ([∗] l1) ∗ ([∗] l2) := by
---         induction l1 with
---         | nil =>
---             have h1 : ([∗] []) = (emp : PROP) := bigOp_nil
---             simp [h1, emp_sep.symm]
---         | cons x xs ih =>
---           calc
---             [∗] (x :: xs ++ l2) ⊣⊢ x ∗ [∗] (xs ++ l2) := bigOp_sep_cons
---             _ ⊣⊢ x ∗ [∗] xs ∗ [∗] l2 := ⟨sep_mono .rfl ih.mp, sep_mono .rfl ih.mpr⟩
---             _ ⊣⊢ (x ∗ [∗] xs) ∗ [∗] l2 := sep_assoc.symm
---             _ ⊣⊢ [∗] (x :: xs) ∗ [∗] l2 :=
---               ⟨sep_mono bigOp_sep_cons.mpr .rfl, sep_mono bigOp_sep_cons.mp .rfl⟩
---       _ ⊢ Q ∗ R := sep_mono h1.combine_seps_as h2.combine_seps_as
---       _ ⊢ S := h3.combine_sep_as
-
--- CombineSepsAsGives
-@[rocq_alias combine_seps_as_gives_nil]
-instance CombineSepsAsGives_nil [BI PROP] : CombineSepsAsGives [] (emp : PROP) iprop(True) where
-  combine_seps_as_gives_as := by
-    simp [bigSep, bigOp]
-  combine_seps_as_gives_gives := by
-    simp [bigSep, bigOp]
-    calc
-      emp ⊢ <pers> emp := persistently_intro
-      _   ⊢ <pers> <pers> emp := persistently_idem.mpr
-      _   ⊢ <pers> True := persistently_mono persistently_emp.mp
-
-@[rocq_alias combine_seps_as_gives_singleton]
-instance CombineSepsAsGives_singleton [BI PROP] (P : PROP) : CombineSepsAsGives [P] P iprop(True) where
-  combine_seps_as_gives_as := by
-    simp [bigSep, bigOp]
-  combine_seps_as_gives_gives := by
-    simp [bigSep, bigOp]
-    calc
-      P ⊢ True := true_intro
-      _ ⊢ <pers> True := persistently_true.mpr
