@@ -925,14 +925,14 @@ instance CombineSepsAs_singleton [BI PROP] (P : PROP) : CombineSepsAs [P] P wher
   combine_seps_as := by simp [bigSep, bigOp]
 
 instance CombineSepsAs_cons [BI PROP] (P : PROP) (Ps : List PROP) (Q R : PROP)
-  (h1 : CombineSepsAs Ps Q) (h2 : CombineSepAs P Q R) :
+  [h1 : CombineSepsAs Ps Q] [h2 : CombineSepAs P Q R] :
   CombineSepsAs (P :: Ps) R where
     combine_seps_as := by
       have h3 : ([∗] (P :: Ps)) ⊣⊢ P ∗ [∗] Ps := bigOp_cons (f := sep) (unit := emp)
       calc
-        [∗] (P :: Ps) ⊢ P ∗ [∗] Ps := by apply h3.mp
-        _ ⊢ P ∗ Q := sep_mono_r h1.combine_seps_as
-        _ ⊢ R := h2.combine_sep_as
+        [∗] (P :: Ps) ⊢ P ∗ [∗] Ps := h3.mp
+        _             ⊢ P ∗ Q      := sep_mono_r h1.combine_seps_as
+        _             ⊢ R          := h2.combine_sep_as
 
 -- CombineSepsAsGives
 @[rocq_alias combine_seps_as_gives_nil]

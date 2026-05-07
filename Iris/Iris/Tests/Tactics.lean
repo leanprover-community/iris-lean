@@ -2222,6 +2222,17 @@ example [BI PROP] [BIAffine PROP] {P Q R : PROP} :
   icombine HP HQ as -
   iexact HR
 
+-- Zero propositions "combined": emp is produced
+example [BI PROP] {P : PROP} : ⊢ (emp : PROP) := by
+  icombine as H
+  iexact H
+
+-- One proposition "combined": the proposition remains unchanged
+example [BI PROP] {P : PROP} : P ⊢ P := by
+  iintro HP
+  icombine HP as H
+  iexact H
+
 -- More than two propositions combined
 example [BI PROP] {P1 P2 P3 Q : PROP} :
   ⊢ P1 -∗ P2 -∗ P3 -∗ (P1 ∗ P2 -∗ P3 -∗ Q) -∗ Q := by
