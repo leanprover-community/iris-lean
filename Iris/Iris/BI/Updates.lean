@@ -105,7 +105,7 @@ class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
   frame_r {P R : PROP} : (|==> P) ∗ R ⊢ |==> (P ∗ R)
 
 class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
-  [ne {E1 E2 : CoPset} : OFE.NonExpansive (FUpd.fupd E1 E2 (PROP := PROP))]
+  [ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP))]
   subset {E1 E2 : CoPset} : E2 ⊆ E1 → ⊢ |={E1,E2}=> |={E2,E1}=> (emp : PROP)
   except0 {E1 E2 : CoPset} {P : PROP} : (◇ |={E1,E2}=> P) ⊢ |={E1,E2}=> P
   mono {E1 E2 : CoPset} {P Q : PROP} : (P ⊢ Q) → (|={E1,E2}=> P) ⊢ |={E1,E2}=> Q
@@ -310,6 +310,54 @@ section StepFUpdLaws
 variable [BI PROP] [BIFUpdate PROP]
 
 open BIFUpdate LawfulSet
+
+theorem step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContractive PROP] :
+    OFE.Contractive (iprop(|={E1}[E2]▷=>^[n + 1] · : PROP)) where
+  distLater_dist := by
+    intro i x y xy_i
+    induction n with
+    | zero =>
+      dsimp only [Nat.repeat]
+      apply BIFUpdate.ne.ne
+      apply ι.distLater_dist
+      intros j ji
+      apply BIFUpdate.ne.ne
+      apply xy_i j ji
+    | succ n IH =>
+      dsimp only [Nat.repeat]
+      apply BIFUpdate.ne.ne
+      apply later_ne.ne
+      apply BIFUpdate.ne.ne
+      assumption
+
+theorem step_fupdN_ne {E1 E2 : CoPset} {n : Nat} :
+    OFE.NonExpansive (iprop(|={E1}[E2]▷=>^[n] · : PROP)) where
+  ne := by
+    intro i x y xy_i
+    induction n with
+    | zero => simp only [Nat.repeat, xy_i]
+    | succ n IH =>
+      dsimp only [Nat.repeat]
+      apply BIFUpdate.ne.ne
+      apply later_ne.ne
+      apply BIFUpdate.ne.ne
+      assumption
+
+theorem step_fupdN_wand {Eo Ei : CoPset} {n : Nat} {P Q : PROP} :
+    (|={Eo}[Ei]▷=>^[n] P) ⊢ (P -∗ Q) -∗ (|={Eo}[Ei]▷=>^[n] Q) := by
+  refine wand_intro' ?_
+  induction n with
+  | zero =>
+    dsimp [Nat.repeat]
+    exact wand_elim_l
+  | succ n IH =>
+    dsimp [Nat.repeat]
+    calc iprop((P -∗ Q) ∗ |={Eo,Ei}=> ▷ |={Ei,Eo}=> _)
+      _ ⊢ |={Eo,Ei}=> (P -∗ Q) ∗ ▷ |={Ei,Eo}=> _  := (fupd_frame_l ..)
+      _ ⊢ |={Eo,Ei}=> (▷ (P -∗ Q)) ∗ ▷ |={Ei,Eo}=> _  := mono (sep_mono (later_intro) .rfl)
+      _ ⊢ |={Eo,Ei}=> ▷ ((P -∗ Q) ∗ |={Ei,Eo}=> _) := mono (later_sep.2)
+      _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> ((P -∗ Q) ∗ _) := mono (later_mono (fupd_frame_l ..))
+      _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> _ := mono (later_mono (mono IH))
 
 @[rocq_alias step_fupd_fupd]
 theorem step_fupd_fupd {Eo Ei : CoPset} {P : PROP} : (|={Eo}[Ei]▷=> P) ⊣⊢ (|={Eo}[Ei]▷=> |={Eo}=> P) :=
