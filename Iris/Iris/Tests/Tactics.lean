@@ -1898,8 +1898,7 @@ end inext
 
 section icombine
 
-/-- Tests `icombine` -/
-
+/-- Tests `icombine` with the default case of combining propositions with the separating conjunction -/
 example [BI PROP] {P1 P2 Q : PROP} :
   ⊢ P1 -∗ P2 -∗ (P1 ∗ P2 -∗ Q) -∗ Q := by
   iintro HP1 HP2 H
@@ -1907,6 +1906,7 @@ example [BI PROP] {P1 P2 Q : PROP} :
   iapply H
   iexact Hnew
 
+/-- Tests `icombine` for combining two propositions with `<absorb>` -/
 example [BI PROP] {P1 P2 Q : PROP} :
   ⊢ <absorb> P1 -∗ <absorb> P2 -∗ (<absorb> (P1 ∗ P2) -∗ Q) -∗ Q := by
   iintro HP1 HP2 H
@@ -1914,6 +1914,7 @@ example [BI PROP] {P1 P2 Q : PROP} :
   iapply H
   iexact Hnew
 
+/-- Tests `icombine` for combining two propositions with `<affine>` -/
 example [BI PROP] {P1 P2 Q : PROP} :
   ⊢ <affine> P1 -∗ <affine> P2 -∗ (<affine> (P1 ∗ P2) -∗ Q) -∗ Q := by
   iintro HP1 HP2 H
@@ -1921,6 +1922,7 @@ example [BI PROP] {P1 P2 Q : PROP} :
   iapply H
   iexact Hnew
 
+/-- Tests `icombine` for combining two propositions with `<pers>` -/
 example [BI PROP] {P1 P2 Q : PROP} :
   ⊢ <pers> P1 -∗ <pers> P2 -∗ (<pers> (P1 ∗ P2) -∗ Q) -∗ Q := by
   iintro HP1 HP2 H
@@ -1928,6 +1930,7 @@ example [BI PROP] {P1 P2 Q : PROP} :
   iapply H
   iexact Hnew
 
+/-- Tests `icombine` for combining two propositions with `□` -/
 example [BI PROP] {P1 P2 Q : PROP} :
   ⊢ □ P1 -∗ □ P2 -∗ (□ (P1 ∗ P2) -∗ Q) -∗ Q := by
   iintro HP1 HP2 H
@@ -1935,7 +1938,7 @@ example [BI PROP] {P1 P2 Q : PROP} :
   iapply H
   iexact Hnew
 
--- Pattern introducing combined proposition into the non-spatial context
+/-- Tests `icombine` with pattern introducing combined proposition into the non-spatial context -/
 example [BI PROP] {P1 P2 Q : PROP} :
   ⊢ □ P1 -∗ □ P2 -∗ □((P1 ∗ P2) -∗ Q) -∗ □ Q := by
   iintro HP1 HP2 #H
@@ -1944,29 +1947,30 @@ example [BI PROP] {P1 P2 Q : PROP} :
   iapply H
   iexact Hnew
 
--- Pattern removing propositions from the spatial context using icombine
+/-- Tests `icombine` with pattern discarding the combined proposition -/
 example [BI PROP] [BIAffine PROP] {P Q R : PROP} :
   ⊢ P -∗ Q -∗ R -∗ R := by
   iintro HP HQ HR
-  -- The tactic iclear can alternatively be used
   icombine HP HQ as -
   iexact HR
 
--- Zero propositions "combined": emp is produced
-example [BI PROP] {P : PROP} : ⊢ (emp : PROP) := by
+/-- Tests `icombine` for producing `emp` with zero propositions -/
+example [BI PROP] : ⊢ (emp : PROP) := by
   icombine as H
   iexact H
 
--- One proposition "combined": the proposition remains unchanged
+/-- Tests `icombine` for the proposition remaining unchanges with one proposition -/
 example [BI PROP] {P : PROP} : P ⊢ P := by
   iintro HP
   icombine HP as H
   iexact H
 
--- More than two propositions combined
+/-- Tests `icombine` for the proposition with more than two propositions -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :
-  ⊢ P1 -∗ P2 -∗ P3 -∗ (P1 ∗ P2 -∗ P3 -∗ Q) -∗ Q := by
+  ⊢ P1 -∗ P2 -∗ P3 -∗ ((P1 ∗ P2) ∗ P3 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 H
   icombine HP1 HP2 HP3 as Hnew
+  iapply H
+  iexact Hnew
 
 end icombine

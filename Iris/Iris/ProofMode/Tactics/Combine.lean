@@ -80,16 +80,18 @@ private def iCombineCore (hyp1 hyp2 : Ident) (pat : iCasesPat) : TacticM Unit :=
 
     mvar.assign q(combine $pf1 $pf2 $pf3 $inst)
 
+theorem pf_thm [BI PROP] {e'' : PROP} : e'' ⊣⊢ [∗] list := sorry
+
 /-- An version of icombine for combining multiple propositions into one using
     the type class CombineSepsAs -/
 private def iCombineCoreList (hs : List Ident) (pat : iCasesPat) : TacticM Unit :=
-  ProofModeM.runTactic λ mvar { prop, bi, e, hyps, goal, .. } => do
+  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
     let uniqs ← hs.mapM (fun h => hyps.findWithInfo h)
-    let ⟨e', e'', hyps', hyps'', pf1⟩ := hyps.split _ (fun _ uniq => uniq ∈ uniqs)
+    let ⟨_, e'', hyps', hyps'', pf1⟩ := hyps.split _ (fun _ uniq => uniq ∈ uniqs)
 
     -- Get the list of propositions from hyps'
     let list : Q(List $prop) := Hyps.leaves hyps''
-    have pf2 : Q($e'' ⊣⊢ [∗] $list) := sorry
+    have pf2 : Q($e'' ⊣⊢ [∗] $list) := q(pf_thm)
 
     -- Handle the combined proposition based on the type class
     let out ← mkFreshExprMVarQ _
@@ -98,7 +100,7 @@ private def iCombineCoreList (hs : List Ident) (pat : iCasesPat) : TacticM Unit 
 
     let pf3 ← iCasesCore bi hyps' goal pat q(false) out (fun hyps goal => addBIGoal hyps goal)
 
-    -- mvar.assign q(combineList $pf1 $pf2 $pf3 $inst)
+    mvar.assign q(combineList $pf1 $pf2 $pf3 $inst)
 
 elab "icombine" hyps:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse pat  -- Parse syntax
