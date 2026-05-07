@@ -60,8 +60,9 @@ theorem combineList [BI PROP] {e el er out goal : PROP} {list : List PROP}
 /-- An simplified version of icombine for combining two propositions
     into one using the type class CombineSepAs or, by default, the separating
     conjunction -/
-private def iCombineCore (hyp1 hyp2 : Ident) (pat : iCasesPat) : TacticM Unit :=
-  ProofModeM.runTactic λ mvar { bi, hyps, goal, .. } => do
+private def iCombineCore {u : Level} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
+  (hyps : Hyps bi e) (hyp1 hyp2 : Ident) (pat : iCasesPat) (goal : Q($prop)) :
+  ProofModeM (Q($e ⊢ $goal)) := do
     let uniq1 ← hyps.findWithInfo hyp1
     let uniq2 ← hyps.findWithInfo hyp2
 
@@ -78,14 +79,15 @@ private def iCombineCore (hyp1 hyp2 : Ident) (pat : iCasesPat) : TacticM Unit :=
     -- New proof goal for the tactic user
     let pf3 ← iCasesCore bi hyps2 goal pat q(false) out (fun hyps goal => addBIGoal hyps goal)
 
-    mvar.assign q(combine $pf1 $pf2 $pf3 $inst)
+    return q(combine $pf1 $pf2 $pf3 $inst)
 
 theorem pf_thm [BI PROP] {e'' : PROP} : e'' ⊣⊢ [∗] list := sorry
 
 /-- An version of icombine for combining multiple propositions into one using
     the type class CombineSepsAs -/
-private def iCombineCoreList (hs : List Ident) (pat : iCasesPat) : TacticM Unit :=
-  ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
+private def iCombineCoreList {u : Level} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
+  (hyps : Hyps bi e) (hs : List Ident) (pat : iCasesPat) (goal : Q($prop)) :
+  ProofModeM (Q($e ⊢ $goal)) := do
     let uniqs ← hs.mapM (fun h => hyps.findWithInfo h)
     let ⟨_, e'', hyps', hyps'', pf1⟩ := hyps.split _ (fun _ uniq => uniq ∈ uniqs)
 
@@ -100,10 +102,16 @@ private def iCombineCoreList (hs : List Ident) (pat : iCasesPat) : TacticM Unit 
 
     let pf3 ← iCasesCore bi hyps' goal pat q(false) out (fun hyps goal => addBIGoal hyps goal)
 
-    mvar.assign q(combineList $pf1 $pf2 $pf3 $inst)
+    return q(combineList $pf1 $pf2 $pf3 $inst)
 
-elab "icombine" hyps:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
-  let pat ← liftMacroM <| iCasesPat.parse pat  -- Parse syntax
-  match hyps.toList with
-  | [hyp1, hyp2] => iCombineCore hyp1 hyp2 pat
-  | _            => iCombineCoreList hyps.toList pat
+elab "icombine" hs:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
+  -- Parse syntax
+  let pat ← liftMacroM <| iCasesPat.parse pat
+
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+    let proof ← match hs.toList with
+    | [hyp1, hyp2] => iCombineCore hyps hyp1 hyp2 pat goal
+    | _            => iCombineCoreList hyps hs.toList pat goal
+
+    -- Fill in the original metavariable
+    mvar.assign proof
