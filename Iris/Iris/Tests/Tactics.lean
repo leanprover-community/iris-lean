@@ -1967,7 +1967,7 @@ example [BI PROP] {P : PROP} : P ⊢ P := by
 
 /-- Tests `icombine` for the proposition with three propositions -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :
-  ⊢ P1 -∗ P2 -∗ P3 -∗ ((P1 ∗ P2) ∗ P3 -∗ Q) -∗ Q := by
+  ⊢ P1 -∗ P2 -∗ P3 -∗ (P1 ∗ P2 ∗ P3 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 H
   icombine HP1 HP2 HP3 as Hnew
   iapply H
@@ -1975,7 +1975,7 @@ example [BI PROP] {P1 P2 P3 Q : PROP} :
 
 /-- Tests `icombine` for the proposition with four propositions -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :
-  ⊢ P1 -∗ P2 -∗ P3 -∗ P4 -∗ ((((P1 ∗ P2) ∗ P3) ∗ P4) -∗ Q) -∗ Q := by
+  ⊢ P1 -∗ P2 -∗ P3 -∗ P4 -∗ (P1 ∗ P2 ∗ P3 ∗ P4 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 HP4 H
   icombine HP1 HP2 HP3 HP4 as Hnew
   iapply H
@@ -1983,18 +1983,36 @@ example [BI PROP] {P1 P2 P3 Q : PROP} :
 
 /-- Tests `icombine` for the proposition with three propositions with `□` -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :
-  ⊢ □ P1 -∗ □ P2 -∗ □ P3 -∗ (□ ((P1 ∗ P2) ∗ P3) -∗ Q) -∗ Q := by
+  ⊢ □ P1 -∗ □ P2 -∗ □ P3 -∗ (□ (P1 ∗ P2 ∗ P3) -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 H
   icombine HP1 HP2 HP3 as Hnew
   iapply H
   iexact Hnew
 
 /-- Tests `icombine` for the proposition with three propositions,
-    where the first two propositions has `□` -/
+    where the first two propositions has `□`. -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :
   ⊢ □ P1 -∗ □ P2 -∗ P3 -∗ (□ (P1 ∗ P2) ∗ P3 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 H
   icombine HP1 HP2 HP3 as Hnew
+  iapply H
+  iexact Hnew
+
+/-- Tests `icombine` for the proposition with four propositions,
+    where the first two propositions has `□` and the other two has `<affine>`. -/
+example [BI PROP] {P1 P2 P3 Q : PROP} :
+  ⊢ □ P1 -∗ □ P2 -∗ <affine> P3 -∗ <affine> P4 -∗ (□ (P1 ∗ P2) ∗ <affine> (P3 ∗ P4) -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HP3 HP4 H
+  icombine HP1 HP2 HP3 HP4 as Hnew
+  iapply H
+  iexact Hnew
+
+/-- Tests `icombine` for the proposition with four propositions,
+    where the second and third propositions has `□` while the others do not. -/
+example [BI PROP] {P1 P2 P3 Q : PROP} :
+  ⊢ P1 -∗ □ P2 -∗ □ P3 -∗ P4 -∗ (P1 ∗ □ (P2 ∗ P3) ∗ P4 -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HP3 HP4 H
+  icombine HP1 HP2 HP3 HP4 as Hnew
   iapply H
   iexact Hnew
 
