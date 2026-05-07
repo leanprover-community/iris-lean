@@ -2205,6 +2205,7 @@ example [BI PROP] {P1 P2 Q : PROP} :
   iapply H
   iexact Hnew
 
+-- Pattern introducing combined proposition into the non-spatial context
 example [BI PROP] {P1 P2 Q : PROP} :
   ⊢ □ P1 -∗ □ P2 -∗ □((P1 ∗ P2) -∗ Q) -∗ □ Q := by
   iintro HP1 HP2 #H
@@ -2212,6 +2213,14 @@ example [BI PROP] {P1 P2 Q : PROP} :
   imodintro
   iapply H
   iexact Hnew
+
+-- Pattern removing propositions from the spatial context using icombine
+example [BI PROP] [BIAffine PROP] {P Q R : PROP} :
+  ⊢ P -∗ Q -∗ R -∗ R := by
+  iintro HP HQ HR
+  -- The tactic iclear can alternatively be used
+  icombine HP HQ as -
+  iexact HR
 
 -- More than two propositions combined
 example [BI PROP] {P1 P2 P3 Q : PROP} :
