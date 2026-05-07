@@ -934,6 +934,26 @@ instance CombineSepsAs_cons [BI PROP] (P : PROP) (Ps : List PROP) (Q R : PROP)
         _             ⊢ P ∗ Q      := sep_mono_r h1.combine_seps_as
         _             ⊢ R          := h2.combine_sep_as
 
+instance CombineSepsAs_append [BI PROP] (l1 l2 : List PROP) (Q R : PROP)
+  [h1 : CombineSepsAs l1 Q] [h2 : CombineSepsAs l2 R] [h3 : CombineSepAs Q R S] :
+  CombineSepsAs (l1 ++ l2) S where
+  combine_seps_as := by
+    calc
+      [∗] (l1 ++ l2) ⊣⊢ ([∗] l1) ∗ ([∗] l2) := by
+        induction l1 with
+        | nil =>
+            have h1 : ([∗] []) = (emp : PROP) := bigOp_nil
+            simp [h1, emp_sep.symm]
+        | cons x xs ih =>
+          calc
+            [∗] (x :: xs ++ l2) ⊣⊢ x ∗ [∗] (xs ++ l2) := bigOp_sep_cons
+            _ ⊣⊢ x ∗ [∗] xs ∗ [∗] l2 := ⟨sep_mono .rfl ih.mp, sep_mono .rfl ih.mpr⟩
+            _ ⊣⊢ (x ∗ [∗] xs) ∗ [∗] l2 := sep_assoc.symm
+            _ ⊣⊢ [∗] (x :: xs) ∗ [∗] l2 :=
+              ⟨sep_mono bigOp_sep_cons.mpr .rfl, sep_mono bigOp_sep_cons.mp .rfl⟩
+      _ ⊢ Q ∗ R := sep_mono h1.combine_seps_as h2.combine_seps_as
+      _ ⊢ S := h3.combine_sep_as
+
 -- CombineSepsAsGives
 @[rocq_alias combine_seps_as_gives_nil]
 instance CombineSepsAsGives_nil [BI PROP] : CombineSepsAsGives [] (emp : PROP) iprop(True) where
