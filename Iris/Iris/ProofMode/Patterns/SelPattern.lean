@@ -46,7 +46,7 @@ partial def SelPat.parse (pats : TSyntaxArray `selPat) : MacroM (List SelPat) :=
 
 public meta section
 
-abbrev SelTarget := Name ⊕ FVarId
+abbrev SelTarget := IVarId ⊕ FVarId
 
 /-- Resolve selection patterns to concrete proofmode hypotheses (`.inl`) and Lean locals (`.inr`). -/
 def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget)

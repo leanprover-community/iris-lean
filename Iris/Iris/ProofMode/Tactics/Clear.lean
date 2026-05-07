@@ -40,7 +40,7 @@ private structure ClearState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (origE go
   pf : Q(($e ⊢ $goal) → ($origE ⊢ $goal))
 
 private def ClearState.clearProofModeHyp {u prop bi origE goal} :
-    @ClearState u prop bi origE goal → Name →
+    @ClearState u prop bi origE goal → IVarId →
     ProofModeM (@ClearState u prop bi origE goal)
   | { e, hyps, pf }, uniq => do
       let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove true uniq

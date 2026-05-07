@@ -81,7 +81,7 @@ private def processWand :
     for mvar in newMVarIds do addMVarGoal mvar
     return { e, hyps, p, out := out', pf := q(specialize_forall $pf $x) }
   | { hyps, p, out, pf, .. }, .goal ns g => do
-    let mut uniqs : NameSet := {}
+    let mut uniqs : IVarIdSet := {}
     for name in ns do
       uniqs := uniqs.insert (← hyps.findWithInfo name)
     let ⟨el', _, hypsl', hypsr', h'⟩ := Hyps.split bi (λ _ uniq => uniqs.contains uniq) hyps

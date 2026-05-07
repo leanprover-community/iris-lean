@@ -46,7 +46,7 @@ private def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : Tac
   -- extract environment
   ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
 
-  let mut uniqs : NameSet := {}
+  let mut uniqs : IVarIdSet := {}
   for name in names do
     uniqs := uniqs.insert (← hyps.findWithInfo name)
 

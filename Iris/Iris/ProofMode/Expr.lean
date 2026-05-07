@@ -20,13 +20,23 @@ open Lean Lean.Expr Lean.Meta Qq
 @[expose, match_pattern] def nameAnnotation := `name
 @[expose, match_pattern] def uniqAnnotation := `uniq
 
-def parseName? : Expr → Option (Name × Name × Expr)
+structure IVarId where
+  name : Name
+  deriving Inhabited, BEq, Hashable, Repr
+
+def mkFreshIVarId [Monad m] [MonadNameGenerator m] : m IVarId :=
+  return { name := (← mkFreshId) }
+
+@[expose] def IVarIdSet := Std.TreeSet IVarId (Name.quickCmp ·.name ·.name)
+  deriving Inhabited, EmptyCollection, Singleton
+
+def parseName? : Expr → Option (Name × IVarId × Expr)
   | .mdata ⟨[(nameAnnotation, .ofName name), (uniqAnnotation, .ofName uniq)]⟩ e => do
-    some (name, uniq, e)
+    some (name, ⟨uniq⟩, e)
   | _ => none
 
-def mkNameAnnotation (name uniq : Name) (e : Expr) : Expr :=
-  .mdata ⟨[(nameAnnotation, .ofName name), (uniqAnnotation, .ofName uniq)]⟩ e
+def mkNameAnnotation (name : Name)(uniq : IVarId) (e : Expr) : Expr :=
+  .mdata ⟨[(nameAnnotation, .ofName name), (uniqAnnotation, .ofName uniq.name)]⟩ e
 
 def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
   | `(binderIdent| $name:ident) => pure (name.getId, name)
@@ -43,7 +53,7 @@ inductive Hyps {prop : Q(Type u)} (bi : Q(BI $prop)) : (e : Q($prop)) → Type w
   | emp (_ : $e =Q emp) : Hyps bi e
   | sep (tm elhs erhs : Q($prop)) (_ : $e =Q iprop($elhs ∗ $erhs))
         (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) : Hyps bi e
-  | hyp (tm : Q($prop)) (name uniq : Name) (p : Q(Bool)) (ty : Q($prop))
+  | hyp (tm : Q($prop)) (name : Name)(uniq : IVarId) (p : Q(Bool)) (ty : Q($prop))
         (_ : $e =Q iprop(□?$p $ty)) : Hyps bi e
 deriving Repr
 
@@ -66,13 +76,13 @@ def mkIntuitionisticIf {prop : Q(Type u)} (_bi : Q(BI $prop))
   | .inr _ => ⟨e, ⟨⟩⟩
 
 def Hyps.mkHyp {prop : Q(Type u)} (bi : Q(BI $prop))
-    (name uniq : Name) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) : Hyps bi e :=
+    (name : Name) (uniq : IVarId) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) : Hyps bi e :=
   .hyp (mkIntuitionisticIf bi p (mkNameAnnotation name uniq ty)) name uniq p ty ⟨⟩
 
 -- TODO: should this ensure that adding a hypothesis to emp creates a
 -- hyp node instead of a sep node?
 def Hyps.add {prop : Q(Type u)} (bi : Q(BI $prop))
-    (name uniq : Name) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
+    (name : Name) (uniq : IVarId) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
     : Hyps bi q(iprop($e ∗ □?$p $ty)) :=
   Hyps.mkSep h (.mkHyp bi name uniq p ty)
 
@@ -92,24 +102,24 @@ partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     some ⟨ty, .hyp expr name uniq q(false) ty ⟨⟩⟩
 
 partial def Hyps.find? {u prop bi} (name : Name) :
-    ∀ {s}, @Hyps u prop bi s → Option (Name × Q(Bool) × Q($prop))
+    ∀ {s}, @Hyps u prop bi s → Option (IVarId × Q(Bool) × Q($prop))
   | _, .emp _ => none
   | _, .hyp _ name' uniq p ty _ => if name == name' then (uniq, p, ty) else none
   | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
 
 partial def Hyps.spatialUniqs {u prop bi} :
-    ∀ {s}, @Hyps u prop bi s → List Name
+    ∀ {s}, @Hyps u prop bi s → List IVarId
   | _, .emp _ => []
   | _, .hyp _ _ uniq p _ _ => if isTrue p then [] else [uniq]
   | _, .sep _ _ _ _ lhs rhs => lhs.spatialUniqs ++ rhs.spatialUniqs
 
 partial def Hyps.intuitionisticUniqs {u prop bi} :
-    ∀ {s}, @Hyps u prop bi s → List Name
+    ∀ {s}, @Hyps u prop bi s → List IVarId
   | _, .emp _ => []
   | _, .hyp _ _ uniq p _ _ => if isTrue p then [uniq] else []
   | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticUniqs ++ rhs.intuitionisticUniqs
 
-variable (oldUniq new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
+variable (oldUniq : IVarId) (new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .emp _ => none
   | _, .sep _ _ _ _ lhs rhs =>
@@ -121,7 +131,7 @@ def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .hyp _ _ uniq p ty _ =>
     if oldUniq == uniq then some (Hyps.mkHyp bi new uniq p ty _) else none
 
-def Hyps.select (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (Name × Q(Bool) × Q($prop))
+def Hyps.select (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (IVarId × Q(Bool) × Q($prop))
   | _, .emp _ => failure
   | _, .hyp _ _ uniq p ty' _ => do
     let .true ← isDefEq ty ty' | failure
@@ -161,7 +171,7 @@ inductive SplitResult {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) where
   | split {elhs erhs : Q($prop)} (lhs : Hyps bi elhs) (rhs : Hyps bi erhs)
           (pf : Q($e ⊣⊢ $elhs ∗ $erhs))
 
-variable {prop : Q(Type u)} (bi : Q(BI $prop)) (toRight : Name → Name → Bool) in
+variable {prop : Q(Type u)} (bi : Q(BI $prop)) (toRight : Name → IVarId → Bool) in
 def Hyps.splitCore : ∀ {e}, Hyps bi e → SplitResult bi e
   | _, .emp _ => .emp ⟨⟩
   | ehyp, h@(.hyp _ name uniq b ty _) =>
@@ -186,7 +196,7 @@ def Hyps.splitCore : ∀ {e}, Hyps bi e → SplitResult bi e
     | .split l1 l2 lpf, .right => .split l1 (l2.mkSep rhs) q(split_sr $lpf)
     | .split l1 l2 lpf, .split r1 r2 rpf => .split (l1.mkSep r1) (l2.mkSep r2) q(split_ss $lpf $rpf)
 
-def Hyps.split {prop : Q(Type u)} (bi : Q(BI $prop)) (toRight : Name → Name → Bool)
+def Hyps.split {prop : Q(Type u)} (bi : Q(BI $prop)) (toRight : Name → IVarId → Bool)
     {e} (hyps : Hyps bi e) :
     (elhs erhs : Q($prop)) × Hyps bi elhs × Hyps bi erhs × Q($e ⊣⊢ $elhs ∗ $erhs) :=
   match hyps.splitCore bi toRight with
@@ -219,7 +229,7 @@ theorem remove_r [BI PROP] {P Q Q' R : PROP} (h : Q ⊣⊢ Q' ∗ R) :
   (sep_congr_r h).trans sep_assoc.symm
 
 variable [Monad m] {prop : Q(Type u)} (bi : Q(BI $prop)) (rp : Bool)
-  (check : Name → Name → Q(Bool) → Q($prop) → m (Option α)) in
+  (check : Name → IVarId → Q(Bool) → Q($prop) → m (Option α)) in
 /-- If `rp` is true, the hyp will be removed even if it is in the intuitionistic context. -/
 def Hyps.removeCore : ∀ {e}, Hyps bi e → m (RemoveHypCore bi e α)
   | _, .emp _ => pure .none
@@ -249,7 +259,7 @@ def Hyps.removeCore : ∀ {e}, Hyps bi e → m (RemoveHypCore bi e α)
 
 def Hyps.removeG [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q(Prop)}
     (rp : Bool) (hyps : Hyps bi e)
-    (check : Name → Name → Q(Bool) → Q($prop) → m (Option α)) :
+    (check : Name → IVarId → Q(Bool) → Q($prop) → m (Option α)) :
     m (Option (α × RemoveHyp bi e)) := do
   match ← hyps.removeCore bi rp check with
   | .none => return none
@@ -257,7 +267,7 @@ def Hyps.removeG [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q(Prop)}
   | .main a res => return some (a, res)
 
 def Hyps.remove {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (rp : Bool) (hyps : Hyps bi e) (uniq : Name) : RemoveHyp bi e :=
+    (rp : Bool) (hyps : Hyps bi e) (uniq : IVarId) : RemoveHyp bi e :=
   match Id.run (hyps.removeG rp fun _ uniq' _ _ => if uniq == uniq' then some () else none) with
   | some (_, r) => r
   | none => panic! "variable not found"
@@ -305,7 +315,7 @@ inductive ReplaceHyp {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop)) where
   | main (e e' : Q($prop)) (hyps' : Hyps bi e') (pf : Q(Replaces $Q $e $e'))
 
 variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop))
-  (uniq : Name) (repl : Name → Q(Bool) → Q($prop) → m (ReplaceHyp bi Q)) in
+  (uniq : IVarId) (repl : Name → Q(Bool) → Q($prop) → m (ReplaceHyp bi Q)) in
 def Hyps.replace : ∀ {e}, Hyps bi e → m (ReplaceHyp bi Q)
   | _, .emp _ => pure .none
   | _, .hyp _ name uniq' p ty _ => do
@@ -335,7 +345,7 @@ end replace
 section dependency
 
 partial def Hyps.findDependencyOnFVar {prop : Q(Type u)} {bi : Q(BI $prop)}
-    (fvarId : FVarId) : ∀ {e}, Hyps bi e → Option (Name × Name × Q(Bool) × Q($prop))
+    (fvarId : FVarId) : ∀ {e}, Hyps bi e → Option (Name × IVarId × Q(Bool) × Q($prop))
   | _, .emp _ => none
   | _, .sep _ _ _ _ lhs rhs =>
       lhs.findDependencyOnFVar fvarId <|> rhs.findDependencyOnFVar fvarId
@@ -413,14 +423,14 @@ def addLocalVarInfo (stx : Syntax) (lctx : LocalContext)
         { elaborator := .anonymous, lctx, expr, stx, expectedType?, isBinder })
     (return .ofPartialTermInfo { elaborator := .anonymous, lctx, stx, expectedType? })
 
-def addHypInfo (stx : Syntax) (name uniq : Name) (prop : Q(Type u)) (ty : Q($prop))
+def addHypInfo (stx : Syntax) (name : Name) (uniq : IVarId) (prop : Q(Type u)) (ty : Q($prop))
     (isBinder := false) : MetaM Unit := do
   let lctx ← getLCtx
   let ty := q(HypMarker $ty)
-  addLocalVarInfo stx (lctx.mkLocalDecl ⟨uniq⟩ name ty) (.fvar ⟨uniq⟩) ty isBinder
+  addLocalVarInfo stx (lctx.mkLocalDecl ⟨uniq.name⟩ name ty) (.fvar ⟨uniq.name⟩) ty isBinder
 
 /-- Hyps.findWithInfo should be used on names obtained from the syntax of a tactic to highlight them correctly. -/
-def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : MetaM Name := do
+def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : MetaM IVarId := do
   let some (uniq, _, ty) := hyps.find? name.getId | throwError "unknown hypothesis {name}"
   addHypInfo name name.getId uniq prop ty
   pure uniq
@@ -428,8 +438,8 @@ def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : Me
 /-- Hyps.addWithInfo should be used by tactics that introduce a hypothesis based on the name given by the user. -/
 def Hyps.addWithInfo {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : TSyntax ``binderIdent) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
-    : MetaM (Name × Hyps bi q(iprop($e ∗ □?$p $ty))) := do
-  let uniq' ← mkFreshId
+    : MetaM (IVarId × Hyps bi q(iprop($e ∗ □?$p $ty))) := do
+  let uniq' ← mkFreshIVarId
   let (nameTo, nameRef) ← getFreshName name
   addHypInfo nameRef nameTo uniq' prop ty (isBinder := true)
   let hyps := Hyps.add bi nameTo uniq' p ty h

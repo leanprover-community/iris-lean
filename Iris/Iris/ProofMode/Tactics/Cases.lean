@@ -196,7 +196,7 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
   | .one name => do
     -- TODO: use Hyps.addWithInfo here?
     let (name, ref) ← getFreshName name
-    let uniq ← mkFreshId
+    let uniq ← mkFreshIVarId
     addHypInfo ref name uniq prop A (isBinder := true)
     let hyp := .mkHyp bi name uniq p A
     if let .emp _ := hyps then pure q(of_emp_sep $(← k hyp goal))

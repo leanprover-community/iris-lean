@@ -44,7 +44,7 @@ private structure RevertState {prop : Q(Type u)} {bi : Q(BI $prop)} (origE origG
 
 /-- Revert a proofmode hypothesis by turning it into a wand premise. -/
 private def RevertState.revertProofModeHyp
-    : @RevertState u prop bi origE origGoal → Name →
+    : @RevertState u prop bi origE origGoal → IVarId →
       ProofModeM (@RevertState u prop bi origE origGoal)
   | { hyps, goal, reverted, pf, .. }, uniq => do
     let ⟨e', hyps', out, _, _, _, hΔ⟩ := hyps.remove true uniq
