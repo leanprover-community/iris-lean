@@ -119,12 +119,6 @@ partial def Hyps.intuitionisticIVarIds {u prop bi} :
   | _, .hyp _ _ ivar p _ _ => if isTrue p then [ivar] else []
   | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticIVarIds ++ rhs.intuitionisticIVarIds
 
-partial def Hyps.leaves {u prop bi} :
-    ∀ {s}, @Hyps u prop bi s → Q(List $prop)
-  | _, .emp _ => q([])
-  | _, .sep _ _ _ _ lhs rhs => q($(leaves lhs) ++ $(leaves rhs))
-  | _, .hyp tm _ _ _ _ _ => q([$tm])
-
 variable (oldIVar : IVarId) (new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .emp _ => none

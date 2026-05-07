@@ -14,24 +14,6 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
-theorem bigSep_nil [BI PROP] : ([∗] ([] : List PROP)) = emp := by
-  simp [bigSep, bigOp]
-
-theorem bigSep_singleton [BI PROP] (P : PROP) : ([∗] [P]) = P := by
-  simp [bigSep, bigOp]
-
-theorem bigSep_append [BI PROP] (l1 l2 : List PROP) :
-    [∗] (l1 ++ l2) ⊣⊢ ([∗] l1) ∗ ([∗] l2) := by
-  induction l1 with
-  | nil => simp [bigSep_nil, emp_sep.symm]
-  | cons x xs ih =>
-    calc
-      [∗] (x :: xs ++ l2) ⊣⊢ x ∗ [∗] (xs ++ l2) := bigOp_sep_cons
-      _ ⊣⊢ x ∗ [∗] xs ∗ [∗] l2 := ⟨sep_mono .rfl ih.mp, sep_mono .rfl ih.mpr⟩
-      _ ⊣⊢ (x ∗ [∗] xs) ∗ [∗] l2 := sep_assoc.symm
-      _ ⊣⊢ [∗] (x :: xs) ∗ [∗] l2 :=
-        ⟨sep_mono bigOp_sep_cons.mpr .rfl, sep_mono bigOp_sep_cons.mp .rfl⟩
-
 theorem combine [BI PROP] {out1 out2 out e1 e2 goal e : PROP}
   (pf1 : e ⊣⊢ e1 ∗ out1)
   (pf2 : e1 ⊣⊢ e2 ∗ out2)
@@ -45,73 +27,78 @@ theorem combine [BI PROP] {out1 out2 out e1 e2 goal e : PROP}
       _ ⊢ e2 ∗ out           := sep_mono refl inst.combine_sep_as
       _ ⊢ goal               := pf3
 
-theorem combineList [BI PROP] {e el er out goal : PROP} {list : List PROP}
-  (pf1 : e ⊣⊢ el ∗ er)
-  (pf2 : er ⊣⊢ [∗] list)
-  (pf3 : (el ∗ out) ⊢ goal)
-  (inst : CombineSepsAs list out) :
-  e ⊢ goal := by
-    calc
-      e ⊢ el ∗ er       := pf1.mp
-      _ ⊢ el ∗ [∗] list := sep_mono refl pf2.mp
-      _ ⊢ el ∗ out      := sep_mono refl inst.combine_seps_as
-      _ ⊢ goal          := pf3
+/-- The tactic `icombine` combines two propositions into one using the type
+    class `CombineSepAs` or, by default, the separating conjunction -/
+private def iCombineCore {u} {prop : Q(Type u)} {bi} (e goal : Q($prop))
+  (hyps : Hyps bi e) (hs : List Ident) (pat : iCasesPat) :
+  ProofModeM Q($e ⊢ $goal) := do
+    match hs with
+    -- Introduce `emp` if no hypothesis is given as `icombine` arguments
+    | [] => do
+      let pf ← iCasesCore bi hyps goal pat q(false) q(emp) (fun hyps goal => addBIGoal hyps goal)
+      return q(sep_emp.mpr.trans $pf)
 
-/-- An simplified version of icombine for combining two propositions
-    into one using the type class CombineSepAs or, by default, the separating
-    conjunction -/
-private def iCombineCore {u : Level} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
-  (hyps : Hyps bi e) (hyp1 hyp2 : Ident) (pat : iCasesPat) (goal : Q($prop)) :
-  ProofModeM (Q($e ⊢ $goal)) := do
-    let uniq1 ← hyps.findWithInfo hyp1
-    let uniq2 ← hyps.findWithInfo hyp2
+    -- No hypothesis combined if exactly one hypothesis is given as an `icombine` argument
+    | [h1] => do
+      let uniq ← hyps.findWithInfo h1
+      let ⟨_, hyps', out', _, _, _, pf1⟩ := hyps.remove true uniq
+      let pf2 ← iCasesCore bi hyps' goal pat q(false) out' (fun hyps goal => addBIGoal hyps goal)
+      return q(($pf1).mp.trans $pf2)
 
-    -- Remove the original two hypotheses
-    let ⟨_, hyps1, out1, _, _, _, pf1⟩ := hyps.remove true uniq1
-    let ⟨_, hyps2, out2, _, _, _, pf2⟩ := hyps1.remove true uniq2
+    -- Combine the hypotheses if two are given as `icombine` arguments
+    | [h1, h2] => do
+      let uniq1 ← hyps.findWithInfo h1
+      let uniq2 ← hyps.findWithInfo h2
 
-    -- Handle the combined proposition based on the type class
-    let out ← mkFreshExprMVarQ _
-    let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out1 $out2 $out)
-    | throwError "icombine: no type class instance to combine {out1} and {out2}"
+      let ⟨_, hyps', out1, _, _, _, pf1⟩ := hyps.remove true uniq1
+      let ⟨_, hyps'', out2, _, _, _, pf2⟩ := hyps'.remove true uniq2
 
-    -- Introduce the new hypothesis that combines the two original hypotheses
-    -- New proof goal for the tactic user
-    let pf3 ← iCasesCore bi hyps2 goal pat q(false) out (fun hyps goal => addBIGoal hyps goal)
+      -- Handle the combined proposition based on the type class
+      let out ← mkFreshExprMVarQ _
+      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out1 $out2 $out)
+      | throwError "icombine: no type class instance to combine {out1} and {out2}"
 
-    return q(combine $pf1 $pf2 $pf3 $inst)
+      -- Introduce the new hypothesis that combines the two original hypotheses
+      -- New proof goal for the tactic user
+      let pf3 ← iCasesCore bi hyps'' goal pat q(false) out (fun hyps goal => addBIGoal hyps goal)
 
-theorem pf_thm [BI PROP] {e'' : PROP} : e'' ⊣⊢ [∗] list := sorry
+      return q(combine $pf1 $pf2 $pf3 $inst)
 
-/-- An version of icombine for combining multiple propositions into one using
-    the type class CombineSepsAs -/
-private def iCombineCoreList {u : Level} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
-  (hyps : Hyps bi e) (hs : List Ident) (pat : iCasesPat) (goal : Q($prop)) :
-  ProofModeM (Q($e ⊢ $goal)) := do
-    let uniqs ← hs.mapM (fun h => hyps.findWithInfo h)
-    let ⟨_, e'', hyps', hyps'', pf1⟩ := hyps.split _ (fun _ uniq => uniq ∈ uniqs)
+    -- Recursively combine the hypotheses if more than two hypotheses are given
+    | h1 :: h2 :: htail => do
+      let uniq1 ← hyps.findWithInfo h1
+      let uniq2 ← hyps.findWithInfo h2
 
-    -- Get the list of propositions from hyps'
-    let list : Q(List $prop) := Hyps.leaves hyps''
-    have pf2 : Q($e'' ⊣⊢ [∗] $list) := q(pf_thm)
+      let ⟨e', hyps', out1, _, _, _, pf1⟩ := hyps.remove true uniq1
+      let ⟨e'', hyps'', out2, _, _, _, pf2⟩ := hyps'.remove true uniq2
 
-    -- Handle the combined proposition based on the type class
-    let out ← mkFreshExprMVarQ _
-    let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepsAs $list $out)
-    | throwError "icombine: no type class instance to combine propositions"
+      let out ← mkFreshExprMVarQ _
+      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out1 $out2 $out)
+        | throwError "icombine: no type class instance to combine {out1} and {out2}"
 
-    let pf3 ← iCasesCore bi hyps' goal pat q(false) out (fun hyps goal => addBIGoal hyps goal)
+      -- Create a temporary identifier for the combined hypothesis
+      let freshId ← mkFreshId
+      let name := Name.mkSimple "Htmp"
+      let h := mkIdent name
 
-    return q(combineList $pf1 $pf2 $pf3 $inst)
+      -- Add the combined hypothesis to the context
+      let newHyps := Hyps.add bi name freshId q(false) out hyps''
+
+      -- Prove that the original context entails the new context
+      let pf3 : Q($e'' ∗ $out ⊢ $e'' ∗ $out) := q(refl)
+      let pf4 : Q($e ⊢ $e'' ∗ $out) := q(combine $pf1 $pf2 $pf3 $inst)
+
+      -- Add the combined proposition into the remaining list
+      let pf5 ← iCombineCore _ goal newHyps (h :: htail) pat
+
+      -- Compose the two proofs: first step to new context, then recursive step to goal
+      return q(($pf4).trans $pf5)
+  termination_by hs.length
 
 elab "icombine" hs:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
   -- Parse syntax
   let pat ← liftMacroM <| iCasesPat.parse pat
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let proof ← match hs.toList with
-    | [hyp1, hyp2] => iCombineCore hyps hyp1 hyp2 pat goal
-    | _            => iCombineCoreList hyps hs.toList pat goal
-
-    -- Fill in the original metavariable
-    mvar.assign proof
+  -- Generate new proof goals and fill in the original metavariable
+  ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do
+    mvar.assign (← iCombineCore e goal hyps hs.toList pat)
