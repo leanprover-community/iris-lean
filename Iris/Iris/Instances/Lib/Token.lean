@@ -23,7 +23,7 @@ and the key lemma `token_exclusive` proves only one token exists.
 FIXME: missing token_combine_gives
 -/
 
-abbrev TokenF : COFE.OFunctorPre := COFE.constOF (Excl Unit)
+abbrev TokenF : COFE.OFunctorPre := constOF (Excl Unit)
 
 @[rocq_alias tokenG]
 class TokenG (GF : BundledGFunctors) where
