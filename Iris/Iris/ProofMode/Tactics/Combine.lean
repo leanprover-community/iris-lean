@@ -76,33 +76,29 @@ private def iCombineCore (hyp1 hyp2 : Ident) (pat : iCasesPat) : TacticM Unit :=
 
     -- Introduce the new hypothesis that combines the two original hypotheses
     -- New proof goal for the tactic user
-    let pf3 ← iCasesCore bi hyps2 goal pat q(false) out (fun hyps' goal' => addBIGoal hyps' goal')
+    let pf3 ← iCasesCore bi hyps2 goal pat q(false) out (fun hyps goal => addBIGoal hyps goal)
 
     mvar.assign q(combine $pf1 $pf2 $pf3 $inst)
 
-/-- An simplified version of icombine for combining multiple propositions
-    into one using the type class CombineSepsAs -/
+/-- An version of icombine for combining multiple propositions into one using
+    the type class CombineSepsAs -/
 private def iCombineCoreList (hs : List Ident) (pat : iCasesPat) : TacticM Unit :=
-  match pat with
-  | .one name => do
-    ProofModeM.runTactic λ mvar { prop, bi, e, hyps, goal, .. } => do
-      let uniqs ← hs.mapM (fun h => hyps.findWithInfo h)
-      let ⟨e', e'', hyps', hyps'', pf1⟩ := hyps.split bi (fun _ uniq => uniq ∈ uniqs)
+  ProofModeM.runTactic λ mvar { prop, bi, e, hyps, goal, .. } => do
+    let uniqs ← hs.mapM (fun h => hyps.findWithInfo h)
+    let ⟨e', e'', hyps', hyps'', pf1⟩ := hyps.split bi (fun _ uniq => uniq ∈ uniqs)
 
-      let out ← mkFreshExprMVarQ _
+    let out ← mkFreshExprMVarQ _
 
-      -- Get the list of propositions from hyps'
-      let list : Q(List $prop) := Hyps.leaves hyps''
-      have pf2 : Q($e'' ⊣⊢ [∗] $list) := sorry
+    -- Get the list of propositions from hyps'
+    let list : Q(List $prop) := Hyps.leaves hyps''
+    have pf2 : Q($e'' ⊣⊢ [∗] $list) := sorry
 
-      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepsAs $list $out)
-      | throwError "icombine: no type class instance to combine propositions"
+    let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepsAs $list $out)
+    | throwError "icombine: no type class instance to combine propositions"
 
-      let ⟨_, newHyps⟩ ← Hyps.addWithInfo bi name q(false) out hyps'
-      let pf3 ← addBIGoal newHyps goal
+    let pf3 ← iCasesCore bi hyps' goal pat q(false) out (fun hyps goal => addBIGoal hyps goal)
 
-      mvar.assign q(combineList $pf1 $pf2 $pf3 $inst)
-  | _ => throwUnsupportedSyntax
+    mvar.assign q(combineList $pf1 $pf2 $pf3 $inst)
 
 elab "icombine" hyps:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse pat  -- Parse syntax
