@@ -48,21 +48,29 @@ macro:25 P:term:29 " ⊢@{ " PROP:term "} " Q:term:25 : term => ``(BIBase.Entail
 delab_rule BIBase.Entails
   | `($_ $P $Q) => do ``($(← unpackIprop P) ⊢ $(← unpackIprop Q))
 
-/-- Embedding of pure Lean proposition as separation logic proposition. -/
-syntax "⌜" term "⌝" : term
-/-- Separating conjunction. -/
-syntax:35 term:36 " ∗ " term:35 : term
-/-- Separating implication. -/
-syntax:25 term:26 " -∗ " term:25 : term
-/-- Persistency modality. `persistently` is a primitive of BI. -/
-syntax:max "<pers> " term:40 : term
-/-- Later modality. `later` is a primitive of BI. -/
-syntax:max "▷ " term:40 : term
+/-- Embedding of pure Lean proposition as separation logic proposition.
+Elaborates to `BIBase.pure` when inside an `iprop(...)` scope. -/
+syntax (name := bi_pure) "⌜" term "⌝" : term
+/-- Separating conjunction. Elaborates to `BIBase.sep` when inside an
+`iprop(...)` scope; throws `unsupportedSyntax` otherwise. -/
+syntax:35 (name := bi_sep) term:36 " ∗ " term:35 : term
+/-- Separating implication. Elaborates to `BIBase.wand` when inside an
+`iprop(...)` scope; throws `unsupportedSyntax` otherwise. -/
+syntax:25 (name := bi_wand) term:26 " -∗ " term:25 : term
+/-- Persistency modality. `persistently` is a primitive of BI.
+Elaborates to `BIBase.persistently` inside an `iprop(...)` scope. -/
+syntax:max (name := bi_pers) "<pers> " term:40 : term
+/-- Later modality. `later` is a primitive of BI.
+Elaborates to `BIBase.later` inside an `iprop(...)` scope. -/
+syntax:max (name := bi_later) "▷ " term:40 : term
 
-/-- Bidirectional implication on separation logic propositions. -/
+/-- Bidirectional implication on separation logic propositions. Shares the
+`↔` token with core Lean's `Iff`; disambiguated by the `iprop(...)` macro
+rule (see below). -/
 syntax:27 term:28 " ↔ " term:28 : term
-/-- Bidrectional separating implication on separation logic propositions. -/
-syntax:27 term:28 " ∗-∗ " term:28 : term
+/-- Bidrectional separating implication on separation logic propositions.
+Elaborates to `wandIff` inside an `iprop(...)` scope. -/
+syntax:27 (name := bi_wandIff) term:28 " ∗-∗ " term:28 : term
 
 /-- Existential quantification on separation logic propositions. -/
 macro "∃" xs:explicitBinders ", " b:term : term => do
@@ -71,15 +79,52 @@ macro "∃" xs:explicitBinders ", " b:term : term => do
 -- `iprop` syntax interpretation
 macro_rules
   | `(iprop(emp))       => ``(BIBase.emp)
-  | `(iprop(⌜$φ⌝))      => ``(BIBase.pure $φ)
   | `(iprop($P ∧ $Q))   => ``(BIBase.and iprop($P) iprop($Q))
   | `(iprop($P ∨ $Q))   => ``(BIBase.or iprop($P) iprop($Q))
   | `(iprop($P → $Q))   => ``(BIBase.imp iprop($P) iprop($Q))
   | `(iprop(∃ $xs, $Ψ)) => do expandExplicitBinders ``BIBase.exists xs (← ``(iprop($Ψ)))
-  | `(iprop($P ∗ $Q))   => ``(BIBase.sep iprop($P) iprop($Q))
-  | `(iprop($P -∗ $Q))  => ``(BIBase.wand iprop($P) iprop($Q))
-  | `(iprop(<pers> $P)) => ``(BIBase.persistently iprop($P))
-  | `(iprop(▷ $P))      => ``(BIBase.later iprop($P))
+
+-- `∗` and `-∗` are handled by flag-based term elaborators rather than
+-- `iprop(...)` macro_rules. This allows them to fire at any depth Lean's
+-- elaborator descends into (including lambda bodies, match arms, and
+-- function arguments at any nesting), without per-construct carry-through.
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_sep]
+meta def elabBiSep : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[0]⟩
+  let Q : Term := ⟨stx[2]⟩
+  elabTerm (← `(BIBase.sep iprop($P) iprop($Q))) expectedType?
+
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_wand]
+meta def elabBiWand : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[0]⟩
+  let Q : Term := ⟨stx[2]⟩
+  elabTerm (← `(BIBase.wand iprop($P) iprop($Q))) expectedType?
+
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_pure]
+meta def elabBiPure : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  -- `⌜ φ ⌝` parses as ⟨"⌜", φ, "⌝"⟩; argument index 1 is the embedded prop.
+  let φ : Term := ⟨stx[1]⟩
+  elabTerm (← `(BIBase.pure $φ)) expectedType?
+
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_pers]
+meta def elabBiPers : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[1]⟩
+  elabTerm (← `(BIBase.persistently iprop($P))) expectedType?
+
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_later]
+meta def elabBiLater : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[1]⟩
+  elabTerm (← `(BIBase.later iprop($P))) expectedType?
 
 delab_rule BIBase.emp
   | `($_) => ``(iprop($(mkIdent `emp)))
@@ -152,7 +197,14 @@ def wandIff [BIBase PROP] (P Q : PROP) : PROP := iprop((P -∗ Q) ∧ (Q -∗ P)
 
 macro_rules
   | `(iprop($P ↔ $Q))   => ``(iff iprop($P) iprop($Q))
-  | `(iprop($P ∗-∗ $Q)) => ``(wandIff iprop($P) iprop($Q))
+
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_wandIff]
+meta def elabBiWandIff : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[0]⟩
+  let Q : Term := ⟨stx[2]⟩
+  elabTerm (← `(wandIff iprop($P) iprop($Q))) expectedType?
 
 delab_rule iff
   | `($_ $P $Q) => do ``(iprop($(← unpackIprop P) ↔ $(← unpackIprop Q)))
@@ -164,16 +216,16 @@ delab_rule wandIff
 def affinely (P) := emp ∧ P
 ```
 -/
-syntax:max "<affine> " term:40 : term
+syntax:max (name := bi_affine) "<affine> " term:40 : term
 /-- Absorbing modality, `absorbingly`.
 ```
 def absorbingly (P) := True ∗ P
 ```
 -/
-syntax:max "<absorb> " term:40 : term
+syntax:max (name := bi_absorb) "<absorb> " term:40 : term
 
 def affinely    [BIBase PROP] (P : PROP) : PROP := iprop(emp ∧ P)
-def absorbingly [BIBase PROP] (P : PROP) : PROP := iprop(True ∗ P)
+def absorbingly [BIBase PROP] (P : PROP) : PROP := BIBase.sep iprop(True) P
 
 structure BiEntails [BIBase PROP] (P Q : PROP) where
   mp : P ⊢ Q
@@ -196,9 +248,19 @@ delab_rule BIBase.EmpValid
 delab_rule BIBase.BiEntails
   | `($_ $P $Q) => do ``($(← unpackIprop P) ⊣⊢ $(← unpackIprop Q))
 
-macro_rules
-  | `(iprop(<affine> $P)) => ``(affinely iprop($P))
-  | `(iprop(<absorb> $P)) => ``(absorbingly iprop($P))
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_affine]
+meta def elabBiAffine : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[1]⟩
+  elabTerm (← `(affinely iprop($P))) expectedType?
+
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_absorb]
+meta def elabBiAbsorb : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[1]⟩
+  elabTerm (← `(absorbingly iprop($P))) expectedType?
 
 delab_rule affinely
   | `($_ $P) => do ``(iprop(<affine> $(← unpackIprop P)))
@@ -210,12 +272,16 @@ delab_rule absorbingly
 def intuitionistically (P) := <affine> <pers> P
 ```
 -/
-syntax:max "□ " term:40 : term
+syntax:max (name := bi_intuit) "□ " term:40 : term
 
 def intuitionistically [BIBase PROP] (P : PROP) : PROP := iprop(<affine> <pers> P)
 
-macro_rules
-  | `(iprop(□ $P)) => ``(intuitionistically iprop($P))
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_intuit]
+meta def elabBiIntuit : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[1]⟩
+  elabTerm (← `(intuitionistically iprop($P))) expectedType?
 
 delab_rule intuitionistically
   | `($_ $P) => do ``(iprop(□ $(← unpackIprop P)))
@@ -225,31 +291,31 @@ delab_rule intuitionistically
 def persistentlyIf (p : Bool) (P : PROP) := if p then <pers> P else P
 ```
 -/
-syntax:max "<pers>?"   term:max ppHardSpace term:40 : term
+syntax:max (name := bi_persIf)   "<pers>?"   term:max ppHardSpace term:40 : term
 /-- Conditional affine modality.
 ```
 def affinelyIf (p : Bool) (P : PROP) := if p then <affine> P else P
 ```
 -/
-syntax:max "<affine>?" term:max ppHardSpace term:40 : term
+syntax:max (name := bi_affineIf) "<affine>?" term:max ppHardSpace term:40 : term
 /-- Conditional absorbing modality.
 ```
 def absorbinglyIf (p : Bool) (P : PROP) := if p then <absorb> P else P
 ```
 -/
-syntax:max "<absorb>?" term:max ppHardSpace term:40 : term
+syntax:max (name := bi_absorbIf) "<absorb>?" term:max ppHardSpace term:40 : term
 /-- Conditional intuitionistic modality.
 ```
 def intuitionisticallyIf (p : Bool) (P : PROP) := if p then □ P else P
 ```
 -/
-syntax:max "□?"        term:max ppHardSpace term:40 : term
+syntax:max (name := bi_intuitIf) "□?"        term:max ppHardSpace term:40 : term
 /-- Conditional later modality.
 ```
 def laterIf (p : Bool) (P : PROP) := if p then ▷ P else P
 ```
 -/
-syntax:max "▷?"        term:max ppHardSpace term:40 : term
+syntax:max (name := bi_laterIf)  "▷?"        term:max ppHardSpace term:40 : term
 
 def persistentlyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <pers> P else P)
 def affinelyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <affine> P else P)
@@ -257,12 +323,45 @@ def absorbinglyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then 
 def intuitionisticallyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then □ P else P)
 def laterIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then ▷ P else P)
 
-macro_rules
-  | `(iprop(<pers>?$p $P))   => ``(persistentlyIf $p iprop($P))
-  | `(iprop(<affine>?$p $P)) => ``(affinelyIf $p iprop($P))
-  | `(iprop(<absorb>?$p $P)) => ``(absorbinglyIf $p iprop($P))
-  | `(iprop(□?$p $P))        => ``(intuitionisticallyIf $p iprop($P))
-  | `(iprop(▷?$p $P))        => ``(laterIf $p iprop($P))
+section
+open Lean.Elab Lean.Elab.Term
+
+@[term_elab bi_persIf]
+meta def elabBiPersIf : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let p : Term := ⟨stx[1]⟩
+  let P : Term := ⟨stx[2]⟩
+  elabTerm (← `(persistentlyIf $p iprop($P))) expectedType?
+
+@[term_elab bi_affineIf]
+meta def elabBiAffineIf : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let p : Term := ⟨stx[1]⟩
+  let P : Term := ⟨stx[2]⟩
+  elabTerm (← `(affinelyIf $p iprop($P))) expectedType?
+
+@[term_elab bi_absorbIf]
+meta def elabBiAbsorbIf : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let p : Term := ⟨stx[1]⟩
+  let P : Term := ⟨stx[2]⟩
+  elabTerm (← `(absorbinglyIf $p iprop($P))) expectedType?
+
+@[term_elab bi_intuitIf]
+meta def elabBiIntuitIf : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let p : Term := ⟨stx[1]⟩
+  let P : Term := ⟨stx[2]⟩
+  elabTerm (← `(intuitionisticallyIf $p iprop($P))) expectedType?
+
+@[term_elab bi_laterIf]
+meta def elabBiLaterIf : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let p : Term := ⟨stx[1]⟩
+  let P : Term := ⟨stx[2]⟩
+  elabTerm (← `(laterIf $p iprop($P))) expectedType?
+
+end
 
 delab_rule persistentlyIf
   | `($_ $p $P) => do ``(iprop(<pers>?$p $(← unpackIprop P)))
@@ -288,25 +387,34 @@ notation:40 "[∗] " Ps:max => bigSep Ps
 
 
 /-- Iterated later modality. -/
-syntax:max "▷^[" term:45 "]" term:40 : term
+syntax:max (name := bi_laterN) "▷^[" term:45 "]" term:40 : term
 
 def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP :=
   match n with | .zero => P | .succ n' => later <| laterN n' P
 
-macro_rules
-  | `(iprop(▷^[$n] $P))   => ``(laterN $n iprop($P))
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_laterN]
+meta def elabBiLaterN : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let n : Term := ⟨stx[1]⟩
+  let P : Term := ⟨stx[3]⟩
+  elabTerm (← `(laterN $n iprop($P))) expectedType?
 
 delab_rule laterN
   | `($_ $n $P) => do ``(iprop(▷^[$n] $(← unpackIprop P)))
 
 
 /-- Except-0 modality -/
-syntax:max "◇ " term:40 : term
+syntax:max (name := bi_except0) "◇ " term:40 : term
 
 def except0 [BIBase PROP] (P : PROP) := iprop(▷ False ∨ P)
 
-macro_rules
-  | `(iprop(◇ $P)) => ``(except0 iprop($P))
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_except0]
+meta def elabBiExcept0 : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[1]⟩
+  elabTerm (← `(except0 iprop($P))) expectedType?
 
 delab_rule except0
   | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
@@ -317,10 +425,14 @@ class Plainly (PROP : Type _) where
   plainly : PROP → PROP
 export Plainly (plainly)
 
-syntax "■ " term:40 : term
+syntax (name := bi_plainly) "■ " term:40 : term
 
-macro_rules
-  | `(iprop(■ $P))  => ``(Plainly.plainly iprop($P))
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_plainly]
+meta def elabBiPlainly : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[1]⟩
+  elabTerm (← `(Plainly.plainly iprop($P))) expectedType?
 
 delab_rule Plainly.plainly
   | `($_ $P) => do ``(iprop(■ $(← Iris.BI.unpackIprop P)))
@@ -329,10 +441,15 @@ delab_rule Plainly.plainly
 def Plainly.plainlyIf [BIBase PROP] [Plainly PROP] (p : Bool) (P : PROP) : PROP :=
   iprop(if p then ■ P else P)
 
-syntax:max "■?" term:max ppHardSpace term:40 : term
+syntax:max (name := bi_plainlyIf) "■?" term:max ppHardSpace term:40 : term
 
-macro_rules
-  | `(iprop(■? $p $P))  => ``(Plainly.plainlyIf $p iprop($P))
+open Lean.Elab Lean.Elab.Term in
+@[term_elab bi_plainlyIf]
+meta def elabBiPlainlyIf : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let p : Term := ⟨stx[1]⟩
+  let P : Term := ⟨stx[2]⟩
+  elabTerm (← `(Plainly.plainlyIf $p iprop($P))) expectedType?
 
 delab_rule Plainly.plainlyIf
   | `($_ $p $P) => do ``(iprop(■? $p $(← Iris.BI.unpackIprop P)))

@@ -12,6 +12,7 @@ public import Iris.BI.DerivedLaws
 public import Iris.Algebra
 public import Iris.BI.Plainly
 public import Iris.Std.CoPset
+public meta import Iris.BI.Notation
 
 @[expose] public section
 
@@ -22,12 +23,23 @@ class BUpd (PROP : Type _) where
   bupd : PROP → PROP
 export BUpd (bupd)
 
-syntax "|==> " term:40 : term
-syntax:25 term:26 " ==∗ " term:25 : term
+syntax (name := bi_bupd)  "|==> " term:40 : term
+syntax:25 (name := bi_bupd_wand) term:26 " ==∗ " term:25 : term
 
-macro_rules
-  | `(iprop(|==> $P))  => ``(BUpd.bupd iprop($P))
-  | `(iprop($P ==∗ $Q))  => ``(BIBase.wand iprop($P) (BUpd.bupd iprop($Q)))
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_bupd]
+meta def elabBiBUpd : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[1]⟩
+  elabTerm (← `(BUpd.bupd iprop($P))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_bupd_wand]
+meta def elabBiBUpdWand : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[0]⟩
+  let Q : Term := ⟨stx[2]⟩
+  elabTerm (← `(BIBase.wand iprop($P) (BUpd.bupd iprop($Q)))) expectedType?
 
 delab_rule BUpd.bupd
   | `($_ $P) => do ``(iprop(|==> $(← Iris.BI.unpackIprop P)))
@@ -38,16 +50,48 @@ class FUpd (PROP : Type _) where
   fupd : CoPset → CoPset → PROP → PROP
 export FUpd (fupd)
 
-syntax "|={" term "," term "}=> " term : term
-syntax:25 term:26 "={" term "," term "}=∗ " term:25 : term
-syntax "|={" term "}=> " term : term
-syntax:25 term:26 "={" term "}=∗ " term:25 : term
+syntax (name := bi_fupd2)         "|={" term "," term "}=> " term : term
+syntax:25 (name := bi_fupd2_wand) term:26 "={" term "," term "}=∗ " term:25 : term
+syntax (name := bi_fupd1)         "|={" term "}=> " term : term
+syntax:25 (name := bi_fupd1_wand) term:26 "={" term "}=∗ " term:25 : term
 
-macro_rules
-  | `(iprop(|={$E1,$E2}=> $P))  => ``(FUpd.fupd $E1 $E2 iprop($P))
-  | `(iprop($P ={$E1,$E2}=∗ $Q))  => ``(BIBase.wand iprop($P) (FUpd.fupd $E1 $E2 iprop($Q)))
-  | `(iprop(|={$E1}=> $P))  => ``(FUpd.fupd $E1 $E1 iprop($P))
-  | `(iprop($P ={$E1}=∗ $Q))  => ``(BIBase.wand iprop($P) (FUpd.fupd $E1 $E1 iprop($Q)))
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd2]
+meta def elabBiFUpd2 : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  -- Children: "|={", E1, ",", E2, "}=>", P  → indices 1, 3, 5
+  let E1 : Term := ⟨stx[1]⟩
+  let E2 : Term := ⟨stx[3]⟩
+  let P  : Term := ⟨stx[5]⟩
+  elabTerm (← `(FUpd.fupd $E1 $E2 iprop($P))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd2_wand]
+meta def elabBiFUpd2Wand : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  -- Children: P, "={", E1, ",", E2, "}=∗", Q  → 0, 2, 4, 6
+  let P  : Term := ⟨stx[0]⟩
+  let E1 : Term := ⟨stx[2]⟩
+  let E2 : Term := ⟨stx[4]⟩
+  let Q  : Term := ⟨stx[6]⟩
+  elabTerm (← `(BIBase.wand iprop($P) (FUpd.fupd $E1 $E2 iprop($Q)))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd1]
+meta def elabBiFUpd1 : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let E1 : Term := ⟨stx[1]⟩
+  let P  : Term := ⟨stx[3]⟩
+  elabTerm (← `(FUpd.fupd $E1 $E1 iprop($P))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd1_wand]
+meta def elabBiFUpd1Wand : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P  : Term := ⟨stx[0]⟩
+  let E1 : Term := ⟨stx[2]⟩
+  let Q  : Term := ⟨stx[4]⟩
+  elabTerm (← `(BIBase.wand iprop($P) (FUpd.fupd $E1 $E1 iprop($Q)))) expectedType?
 
 delab_rule FUpd.fupd
   | `($_ $E1 $E2 $P) => do
@@ -55,42 +99,143 @@ delab_rule FUpd.fupd
       if E1 == E2 then ``(iprop(|={$E1}=> $P))
       else ``(iprop(|={$E1,$E2}=> $P))
 
-syntax "|={" term "}[" term "]▷=> " term : term
-syntax:25 term:26 "={" term "}[" term "]▷=∗ " term:25 : term
-syntax "|={" term "}▷=> " term : term
-syntax:25 term:26 "={" term "}▷=∗ " term:25 : term
+syntax (name := bi_fupd_step2)         "|={" term "}[" term "]▷=> " term : term
+syntax:25 (name := bi_fupd_step2_wand) term:26 "={" term "}[" term "]▷=∗ " term:25 : term
+syntax (name := bi_fupd_step1)         "|={" term "}▷=> " term : term
+syntax:25 (name := bi_fupd_step1_wand) term:26 "={" term "}▷=∗ " term:25 : term
 
-macro_rules
-  | `(iprop(|={$E1}[$E2]▷=> $P))  => ``(iprop(|={$E1,$E2}=> ▷ (|={$E2,$E1}=> iprop($P))))
-  | `(iprop($P ={$E1}[$E2]▷=∗ $Q))  => ``(iprop(iprop($P) -∗ |={$E1}[$E2]▷=> iprop($Q)))
-  | `(iprop(|={$E1}▷=> $P))  => ``(iprop(|={$E1}[$E1]▷=> iprop($P)))
-  | `(iprop($P ={$E1}▷=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷=∗ iprop($Q)))
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd_step2]
+meta def elabBiFUpdStep2 : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  -- "|={", E1, "}[", E2, "]▷=>", P  → 1, 3, 5
+  let E1 : Term := ⟨stx[1]⟩
+  let E2 : Term := ⟨stx[3]⟩
+  let P  : Term := ⟨stx[5]⟩
+  elabTerm (← `(iprop(|={$E1,$E2}=> ▷ (|={$E2,$E1}=> iprop($P))))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd_step2_wand]
+meta def elabBiFUpdStep2Wand : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P  : Term := ⟨stx[0]⟩
+  let E1 : Term := ⟨stx[2]⟩
+  let E2 : Term := ⟨stx[4]⟩
+  let Q  : Term := ⟨stx[6]⟩
+  elabTerm (← `(iprop(iprop($P) -∗ |={$E1}[$E2]▷=> iprop($Q)))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd_step1]
+meta def elabBiFUpdStep1 : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let E1 : Term := ⟨stx[1]⟩
+  let P  : Term := ⟨stx[3]⟩
+  elabTerm (← `(iprop(|={$E1}[$E1]▷=> iprop($P)))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd_step1_wand]
+meta def elabBiFUpdStep1Wand : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P  : Term := ⟨stx[0]⟩
+  let E1 : Term := ⟨stx[2]⟩
+  let Q  : Term := ⟨stx[4]⟩
+  elabTerm (← `(iprop(iprop($P) ={$E1}[$E1]▷=∗ iprop($Q)))) expectedType?
 
 -- Delab rules
 
-syntax "|={" term "}[" term "]▷^" term "=> " term : term
-syntax:25 term:26 "={" term "}[" term "]▷^" term "=∗ " term:25 : term
-syntax "|={" term "}▷^" term "=> " term : term
-syntax:25 term:26 "={" term "}▷^" term "=∗ " term:25 : term
+syntax (name := bi_fupd_stepN2)         "|={" term "}[" term "]▷^" term "=> " term : term
+syntax:25 (name := bi_fupd_stepN2_wand) term:26 "={" term "}[" term "]▷^" term "=∗ " term:25 : term
+syntax (name := bi_fupd_stepN1)         "|={" term "}▷^" term "=> " term : term
+syntax:25 (name := bi_fupd_stepN1_wand) term:26 "={" term "}▷^" term "=∗ " term:25 : term
 
-macro_rules
-  | `(iprop(|={$E1}[$E2]▷^$n=> $P))  => ``(iprop(|={$E1,$E2}=> ▷^[$n] (|={$E2,$E1}=> iprop($P))))
-  | `(iprop($P ={$E1}[$E2]▷^$n=∗ $Q))  => ``(iprop(iprop($P) -∗ |={$E1}[$E2]▷^$n=> iprop($Q)))
-  | `(iprop(|={$E1}▷^$n=> $P))  => ``(iprop(|={$E1}[$E1]▷^$n=> iprop($P)))
-  | `(iprop($P ={$E1}▷^$n=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷^$n=∗ iprop($Q)))
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd_stepN2]
+meta def elabBiFUpdStepN2 : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  -- "|={", E1, "}[", E2, "]▷^", n, "=>", P  → 1, 3, 5, 7
+  let E1 : Term := ⟨stx[1]⟩
+  let E2 : Term := ⟨stx[3]⟩
+  let n  : Term := ⟨stx[5]⟩
+  let P  : Term := ⟨stx[7]⟩
+  elabTerm (← `(iprop(|={$E1,$E2}=> ▷^[$n] (|={$E2,$E1}=> iprop($P))))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd_stepN2_wand]
+meta def elabBiFUpdStepN2Wand : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P  : Term := ⟨stx[0]⟩
+  let E1 : Term := ⟨stx[2]⟩
+  let E2 : Term := ⟨stx[4]⟩
+  let n  : Term := ⟨stx[6]⟩
+  let Q  : Term := ⟨stx[8]⟩
+  elabTerm (← `(iprop(iprop($P) -∗ |={$E1}[$E2]▷^$n=> iprop($Q)))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd_stepN1]
+meta def elabBiFUpdStepN1 : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let E1 : Term := ⟨stx[1]⟩
+  let n  : Term := ⟨stx[3]⟩
+  let P  : Term := ⟨stx[5]⟩
+  elabTerm (← `(iprop(|={$E1}[$E1]▷^$n=> iprop($P)))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd_stepN1_wand]
+meta def elabBiFUpdStepN1Wand : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P  : Term := ⟨stx[0]⟩
+  let E1 : Term := ⟨stx[2]⟩
+  let n  : Term := ⟨stx[4]⟩
+  let Q  : Term := ⟨stx[6]⟩
+  elabTerm (← `(iprop(iprop($P) ={$E1}[$E1]▷^$n=∗ iprop($Q)))) expectedType?
 
 -- Delab rules
 
-syntax "|={ " term " }[ " term " ]▷=>^[ " term " ]" term : term
-syntax:25 term:26 "={ " term " }[ " term " ]▷=∗^[ " term " ]" term:25 : term
-syntax "|={ " term " }▷=>^[ " term " ]" term : term
-syntax:25 term:26 "={ " term " }▷=∗^[ " term " ]" term:25 : term
+syntax (name := bi_fupd_iter2)         "|={ " term " }[ " term " ]▷=>^[ " term " ]" term : term
+syntax:25 (name := bi_fupd_iter2_wand) term:26 "={ " term " }[ " term " ]▷=∗^[ " term " ]" term:25 : term
+syntax (name := bi_fupd_iter1)         "|={ " term " }▷=>^[ " term " ]" term : term
+syntax:25 (name := bi_fupd_iter1_wand) term:26 "={ " term " }▷=∗^[ " term " ]" term:25 : term
 
-macro_rules
-  | `(iprop(|={ $E1 }[ $E2 ]▷=>^[ $n ] $P))  => ``(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) $n iprop($P))
-  | `(iprop($P ={ $E1 }[ $E2 ]▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q) $n) iprop($Q)))
-  | `(iprop(|={ $E1 }▷=>^[ $n ] $P))  => ``(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($P))
-  | `(iprop($P ={ $E1 }▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($Q)))
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd_iter2]
+meta def elabBiFUpdIter2 : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  -- "|={ ", E1, " }[ ", E2, " ]▷=>^[ ", n, " ]", P  → 1, 3, 5, 7
+  let E1 : Term := ⟨stx[1]⟩
+  let E2 : Term := ⟨stx[3]⟩
+  let n  : Term := ⟨stx[5]⟩
+  let P  : Term := ⟨stx[7]⟩
+  elabTerm (← `(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) $n iprop($P))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd_iter2_wand]
+meta def elabBiFUpdIter2Wand : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P  : Term := ⟨stx[0]⟩
+  let E1 : Term := ⟨stx[2]⟩
+  let E2 : Term := ⟨stx[4]⟩
+  let n  : Term := ⟨stx[6]⟩
+  let Q  : Term := ⟨stx[8]⟩
+  elabTerm (← `(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) $n iprop($Q)))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd_iter1]
+meta def elabBiFUpdIter1 : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let E1 : Term := ⟨stx[1]⟩
+  let n  : Term := ⟨stx[3]⟩
+  let P  : Term := ⟨stx[5]⟩
+  elabTerm (← `(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($P))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_fupd_iter1_wand]
+meta def elabBiFUpdIter1Wand : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P  : Term := ⟨stx[0]⟩
+  let E1 : Term := ⟨stx[2]⟩
+  let n  : Term := ⟨stx[4]⟩
+  let Q  : Term := ⟨stx[6]⟩
+  elabTerm (← `(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($Q)))) expectedType?
 
 -- Delab rules
 

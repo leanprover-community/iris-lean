@@ -178,4 +178,17 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 /-- info: iprop(P ∗ □?p Q) : PROP -/
 #guard_msgs in #check iprop(P ∗ (□?p Q))
 
+/-! ## Binders -/
+
+example : Nat → PROP := iprop(fun n => Ψ n ∗ Ψ n)
+
+/-- BI continuation passed as a function argument; inner lambda uses `∗`. -/
+example (k : (Nat → PROP) → PROP) : PROP := iprop(k (fun n => Ψ n ∗ Ψ n))
+
+/-- -/
+example (b : Bool) : PROP := iprop(
+  match b with
+  | true  => P ∗ Q
+  | false => P -∗ Q)
+
 end Iris.Tests

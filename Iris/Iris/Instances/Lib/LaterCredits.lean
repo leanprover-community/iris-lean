@@ -176,10 +176,14 @@ instance {P : IProp GF} : Contractive (le_upd_pre P) where
 @[rocq_alias le_upd.le_upd]
 def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
 
-syntax:max "|==£> " term:40 : term
+syntax:max (name := bi_leUpd) "|==£> " term:40 : term
 
-macro_rules
-| `(iprop(|==£> $P)) => ``(le_upd iprop($P))
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_leUpd]
+meta def elabBiLeUpd : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[1]⟩
+  elabTerm (← `(le_upd iprop($P))) expectedType?
 
 delab_rule le_upd
 | `($_ $P) => do ``(iprop(|==£> $(← unpackIprop P)))

@@ -11,6 +11,7 @@ public import Iris.BI.DerivedLaws
 public import Iris.BI.DerivedLawsLater
 public import Iris.BI.Extensions
 public import Iris.BI.SIProp
+public meta import Iris.BI.Notation
 public meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -40,12 +41,22 @@ export SiEmpValid (siEmpValid)
 
 section Notation
 
-syntax "<si_pure> " term:40 : term
-syntax "<si_emp_valid> " term:40 : term
+syntax (name := bi_siPure)     "<si_pure> "      term:40 : term
+syntax (name := bi_siEmpValid) "<si_emp_valid> " term:40 : term
 
-macro_rules
-  | `(iprop(<si_pure> $P)) => ``(SiPure.siPure iprop($P))
-  | `(iprop(<si_emp_valid> $P)) => ``(SiEmpValid.siEmpValid iprop($P))
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_siPure]
+meta def elabBiSiPure : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[1]⟩
+  elabTerm (← `(SiPure.siPure iprop($P))) expectedType?
+
+open Lean Lean.Elab Lean.Elab.Term Iris.BI in
+@[term_elab Iris.bi_siEmpValid]
+meta def elabBiSiEmpValid : TermElab := fun stx expectedType? => do
+  unless ← inIpropScope do throwUnsupportedSyntax
+  let P : Term := ⟨stx[1]⟩
+  elabTerm (← `(SiEmpValid.siEmpValid iprop($P))) expectedType?
 
 delab_rule SiPure.siPure
   | `($_ $P) => do ``(iprop(<si_pure> $(← BI.unpackIprop P)))
