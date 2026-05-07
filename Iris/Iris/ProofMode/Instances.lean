@@ -890,42 +890,42 @@ instance CombineSepGives_persistently [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepGives Q1 Q2 P] : CombineSepGives iprop(<pers> Q1) iprop(<pers> Q2) iprop(<pers> P) := by
     exact ⟨persistently_sep_2.trans (persistently_mono h.combine_sep_gives)⟩
 
--- CombineSepsAs
-instance CombineSepsAs_nil [BI PROP] : CombineSepsAs [] (emp : PROP) where
-  combine_seps_as := by simp [bigSep, bigOp]
+-- -- CombineSepsAs
+-- instance CombineSepsAs_nil [BI PROP] : CombineSepsAs [] (emp : PROP) where
+--   combine_seps_as := by simp [bigSep, bigOp]
 
-instance CombineSepsAs_singleton [BI PROP] (P : PROP) : CombineSepsAs [P] P where
-  combine_seps_as := by simp [bigSep, bigOp]
+-- instance CombineSepsAs_singleton [BI PROP] (P : PROP) : CombineSepsAs [P] P where
+--   combine_seps_as := by simp [bigSep, bigOp]
 
-instance CombineSepsAs_cons [BI PROP] (P : PROP) (Ps : List PROP) (Q R : PROP)
-  [h1 : CombineSepsAs Ps Q] [h2 : CombineSepAs P Q R] :
-  CombineSepsAs (P :: Ps) R where
-    combine_seps_as := by
-      have h3 : ([∗] (P :: Ps)) ⊣⊢ P ∗ [∗] Ps := bigOp_cons (f := sep) (unit := emp)
-      calc
-        [∗] (P :: Ps) ⊢ P ∗ [∗] Ps := h3.mp
-        _             ⊢ P ∗ Q      := sep_mono_r h1.combine_seps_as
-        _             ⊢ R          := h2.combine_sep_as
+-- instance CombineSepsAs_cons [BI PROP] (P : PROP) (Ps : List PROP) (Q R : PROP)
+--   [h1 : CombineSepsAs Ps Q] [h2 : CombineSepAs P Q R] :
+--   CombineSepsAs (P :: Ps) R where
+--     combine_seps_as := by
+--       have h3 : ([∗] (P :: Ps)) ⊣⊢ P ∗ [∗] Ps := bigOp_cons (f := sep) (unit := emp)
+--       calc
+--         [∗] (P :: Ps) ⊢ P ∗ [∗] Ps := h3.mp
+--         _             ⊢ P ∗ Q      := sep_mono_r h1.combine_seps_as
+--         _             ⊢ R          := h2.combine_sep_as
 
-instance CombineSepsAs_append [BI PROP] (l1 l2 : List PROP) (Q R : PROP)
-  [h1 : CombineSepsAs l1 Q] [h2 : CombineSepsAs l2 R] [h3 : CombineSepAs Q R S] :
-  CombineSepsAs (l1 ++ l2) S where
-  combine_seps_as := by
-    calc
-      [∗] (l1 ++ l2) ⊣⊢ ([∗] l1) ∗ ([∗] l2) := by
-        induction l1 with
-        | nil =>
-            have h1 : ([∗] []) = (emp : PROP) := bigOp_nil
-            simp [h1, emp_sep.symm]
-        | cons x xs ih =>
-          calc
-            [∗] (x :: xs ++ l2) ⊣⊢ x ∗ [∗] (xs ++ l2) := bigOp_sep_cons
-            _ ⊣⊢ x ∗ [∗] xs ∗ [∗] l2 := ⟨sep_mono .rfl ih.mp, sep_mono .rfl ih.mpr⟩
-            _ ⊣⊢ (x ∗ [∗] xs) ∗ [∗] l2 := sep_assoc.symm
-            _ ⊣⊢ [∗] (x :: xs) ∗ [∗] l2 :=
-              ⟨sep_mono bigOp_sep_cons.mpr .rfl, sep_mono bigOp_sep_cons.mp .rfl⟩
-      _ ⊢ Q ∗ R := sep_mono h1.combine_seps_as h2.combine_seps_as
-      _ ⊢ S := h3.combine_sep_as
+-- instance CombineSepsAs_append [BI PROP] (l1 l2 : List PROP) (Q R : PROP)
+--   [h1 : CombineSepsAs l1 Q] [h2 : CombineSepsAs l2 R] [h3 : CombineSepAs Q R S] :
+--   CombineSepsAs (l1 ++ l2) S where
+--   combine_seps_as := by
+--     calc
+--       [∗] (l1 ++ l2) ⊣⊢ ([∗] l1) ∗ ([∗] l2) := by
+--         induction l1 with
+--         | nil =>
+--             have h1 : ([∗] []) = (emp : PROP) := bigOp_nil
+--             simp [h1, emp_sep.symm]
+--         | cons x xs ih =>
+--           calc
+--             [∗] (x :: xs ++ l2) ⊣⊢ x ∗ [∗] (xs ++ l2) := bigOp_sep_cons
+--             _ ⊣⊢ x ∗ [∗] xs ∗ [∗] l2 := ⟨sep_mono .rfl ih.mp, sep_mono .rfl ih.mpr⟩
+--             _ ⊣⊢ (x ∗ [∗] xs) ∗ [∗] l2 := sep_assoc.symm
+--             _ ⊣⊢ [∗] (x :: xs) ∗ [∗] l2 :=
+--               ⟨sep_mono bigOp_sep_cons.mpr .rfl, sep_mono bigOp_sep_cons.mp .rfl⟩
+--       _ ⊢ Q ∗ R := sep_mono h1.combine_seps_as h2.combine_seps_as
+--       _ ⊢ S := h3.combine_sep_as
 
 -- CombineSepsAsGives
 @[rocq_alias combine_seps_as_gives_nil]

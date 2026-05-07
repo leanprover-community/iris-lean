@@ -1965,11 +1965,21 @@ example [BI PROP] {P : PROP} : P ⊢ P := by
   icombine HP as H
   iexact H
 
-/-- Tests `icombine` for the proposition with more than two propositions -/
+/-- Tests `icombine` for the proposition with more than three propositions -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :
   ⊢ P1 -∗ P2 -∗ P3 -∗ ((P1 ∗ P2) ∗ P3 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 H
   icombine HP1 HP2 HP3 as Hnew
+  simp
+  iapply H
+  iexact Hnew
+
+/-- Tests `icombine` for the proposition with more than four propositions -/
+example [BI PROP] {P1 P2 P3 Q : PROP} :
+  ⊢ P1 -∗ P2 -∗ P3 -∗ P4 -∗ ((((P1 ∗ P2) ∗ P3) ∗ P4) -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HP3 HP4 H
+  icombine HP1 HP2 HP3 HP4 as Hnew
+  simp
   iapply H
   iexact Hnew
 
