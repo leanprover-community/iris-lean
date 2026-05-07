@@ -191,12 +191,12 @@ export CombineSepAs (combine_sep_as)
 
 /-- `CombineSepsAs` combines multiple propositions into one -/
 @[ipm_class]
-class CombineSepsAs [BI PROP] (Ps : List PROP) (Q : PROP) where
+class CombineSepsAs [BI PROP] (Ps : List PROP) (Q : outParam PROP) where
   combine_seps_as : [∗] Ps ⊢ Q
 export CombineSepsAs (combine_seps_as)
 
 @[ipm_class]
-class CombineSepGives [BI PROP] (P Q R : PROP) where
+class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
 export CombineSepGives (combine_sep_gives)
 

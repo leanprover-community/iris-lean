@@ -85,23 +85,23 @@ private def iCombineCore (hyp1 hyp2 : Ident) (pat : iCasesPat) : TacticM Unit :=
 private def iCombineCoreList (hs : List Ident) (pat : iCasesPat) : TacticM Unit :=
   ProofModeM.runTactic λ mvar { prop, bi, e, hyps, goal, .. } => do
     let uniqs ← hs.mapM (fun h => hyps.findWithInfo h)
-    let ⟨e', e'', hyps', hyps'', pf1⟩ := hyps.split bi (fun _ uniq => uniq ∈ uniqs)
-
-    let out ← mkFreshExprMVarQ _
+    let ⟨e', e'', hyps', hyps'', pf1⟩ := hyps.split _ (fun _ uniq => uniq ∈ uniqs)
 
     -- Get the list of propositions from hyps'
     let list : Q(List $prop) := Hyps.leaves hyps''
     have pf2 : Q($e'' ⊣⊢ [∗] $list) := sorry
 
+    -- Handle the combined proposition based on the type class
+    let out ← mkFreshExprMVarQ _
     let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepsAs $list $out)
     | throwError "icombine: no type class instance to combine propositions"
 
     let pf3 ← iCasesCore bi hyps' goal pat q(false) out (fun hyps goal => addBIGoal hyps goal)
 
-    mvar.assign q(combineList $pf1 $pf2 $pf3 $inst)
+    -- mvar.assign q(combineList $pf1 $pf2 $pf3 $inst)
 
 elab "icombine" hyps:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse pat  -- Parse syntax
   match hyps.toList with
   | [hyp1, hyp2] => iCombineCore hyp1 hyp2 pat
-  | _ => throwUnsupportedSyntax
+  | _            => iCombineCoreList hyps.toList pat
