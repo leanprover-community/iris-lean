@@ -26,18 +26,20 @@ theorem combine_singleton [BI PROP] {e e1 goal : PROP}
   (pf2 : e1 ∗ out ⊢ goal) : e ⊢ goal := pf1.mp.trans pf2
 
 theorem combine [BI PROP] {out1 out2 out e1 e2 goal e : PROP}
-  (pf1 : e ⊣⊢ e1 ∗ out1)
-  (pf2 : e1 ⊣⊢ e2 ∗ out2)
-  (pf3 : e2 ∗ out ⊢ goal)
-  -- (inst : CombineSepAs out1 out2 out)
+  (pf1 : e ⊣⊢ e1 ∗ □?b1 out1)
+  (pf2 : e1 ⊣⊢ e2 ∗ □?b2 out2)
+  (pf3 : e2 ∗ □?b out ⊢ goal)
+  (pf4 : b = (b1 && b2))
+  (inst : CombineSepAs out1 out2 out)
   : e ⊢ goal := by
     calc
-      e ⊢ e1 ∗ out1          := pf1.mp
-      _ ⊢ (e2 ∗ out2) ∗ out1 := sep_mono pf2.mp refl
-      _ ⊢ e2 ∗ (out2 ∗ out1) := sep_assoc.mp
-      _ ⊢ e2 ∗ (out1 ∗ out2) := sep_mono refl sep_comm.mp
-      _ ⊢ e2 ∗ out           := sorry -- sep_mono refl inst.combine_sep_as
-      _ ⊢ goal               := pf3
+      e ⊢ e1 ∗ □?b1 out1               := pf1.mp
+      _ ⊢ (e2 ∗ □?b2 out2) ∗ □?b1 out1 := sep_mono pf2.mp refl
+      _ ⊢ e2 ∗ □?b2 out2 ∗ □?b1 out1   := sep_assoc.mp
+      _ ⊢ e2 ∗ □?b1 out1 ∗ □?b2 out2   := sep_mono refl sep_comm.mp
+      _ ⊢ e2 ∗ □?b (out1 ∗ out2)       := sep_mono refl (intuitionisticallyIf_sep_conj pf4)
+      _ ⊢ e2 ∗ □?b out                 := sep_mono refl (intuitionisticallyIf_mono inst.combine_sep_as)
+      _ ⊢ goal                         := pf3
 
 /-- The tactic `icombine` combines two propositions into one using the type
     class `CombineSepAs` or, by default, the separating conjunction -/
@@ -71,31 +73,26 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
       | throwError "icombine: no type class instance to combine propositions"
 
       let p := if ((p1 == q(true) && p2 == q(true))) then q(true) else q(false)
-
       match htail with
       | [] =>
         -- Introduce the new hypothesis that combines the two original hypotheses
         -- New proof goal for the tactic user
         let pf3 ← iCasesCore bi hyps2 goal pat p out addBIGoal
 
-        return q(combine $pf1 $pf2 $pf3)
+        throwUnsupportedSyntax
       | htail =>
         -- Create a temporary identifier for the combined hypothesis
         let freshId ← mkFreshId
         let h := mkIdent freshId
 
         -- Add the combined hypothesis to the context
-        let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi freshId freshId p out _)
-
-        -- Prove that the original context entails the new context
-        let pf3 : Q($e2 ∗ $out ⊢ $e2 ∗ $out) := q(refl)
-        let pf4 : Q($e ⊢ $e2 ∗ $out) := q(combine $pf1 $pf2 $pf3)
+        let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi freshId freshId p out)
 
         -- Add the combined proposition into the remaining list
         let pf5 ← iCombineCore newHyps goal (h :: htail) pat True
 
         -- Compose the two proofs: first step to new context, then recursive step to goal
-        return q(($pf4).trans $pf5)
+        throwUnsupportedSyntax
   termination_by hs.length
 
 elab "icombine" hs:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
