@@ -6,6 +6,7 @@ Authors: Lars König
 module
 
 public import Iris.BI.BIBase
+public import Iris.BI.Updates
 
 @[expose] public section
 
@@ -177,5 +178,39 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 #guard_msgs in #check iprop((□?p P) ∧ Q)
 /-- info: iprop(P ∗ □?p Q) : PROP -/
 #guard_msgs in #check iprop(P ∗ (□?p Q))
+
+/-! ## Paren-less form -/
+
+/-- info: iprop(P ∧ Q) : PROP -/
+#guard_msgs in #check iprop% P ∧ Q
+/-- info: iprop(P ∗ Q) : PROP -/
+#guard_msgs in #check iprop% P ∗ Q
+/-- info: iprop(∀ x, Ψ x) : PROP -/
+#guard_msgs in #check iprop% ∀ x, Ψ x
+
+/-! ### Paren-less MWE
+
+A fancy update over a `match` on a small inductive: one branch returns
+`Φ r` directly, the other shifts masks before a recursive call. The body
+is written with the paren-less `iprop`, which eats the entire RHS. -/
+
+section MWE
+
+variable [FUpd PROP]
+
+inductive A (R : Type) where
+  | a : R → A R
+  | b : A R → A R
+
+variable {R : Type} (E1 E2 : CoPset)
+
+def f (g : A R → (R → PROP) → PROP) :
+    A R → (R → PROP) → PROP := iprop%
+  fun x Φ => |={E1}=>
+    match x with
+    | A.a r  => Φ r
+    | A.b x' => iprop% |={E1,E2}=> g x' Φ
+
+end MWE
 
 end Iris.Tests
