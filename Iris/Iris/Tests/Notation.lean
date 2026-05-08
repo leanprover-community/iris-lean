@@ -182,11 +182,11 @@ variable [BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → Nat → 
 /-! ## Paren-less form -/
 
 /-- info: iprop(P ∧ Q) : PROP -/
-#guard_msgs in #check iprop$ P ∧ Q
+#guard_msgs in #check iprop% P ∧ Q
 /-- info: iprop(P ∗ Q) : PROP -/
-#guard_msgs in #check iprop$ P ∗ Q
+#guard_msgs in #check iprop% P ∗ Q
 /-- info: iprop(∀ x, Ψ x) : PROP -/
-#guard_msgs in #check iprop$ ∀ x, Ψ x
+#guard_msgs in #check iprop% ∀ x, Ψ x
 
 /-! ### Paren-less MWE
 
@@ -205,11 +205,11 @@ inductive A (R : Type) where
 variable {R : Type} (E1 E2 : CoPset)
 
 def f (g : A R → (R → PROP) → PROP) :
-    A R → (R → PROP) → PROP := iprop$
+    A R → (R → PROP) → PROP := iprop%
   fun x Φ => |={E1}=>
     match x with
     | A.a r  => Φ r
-    | A.b x' => iprop$ |={E1,E2}=> g x' Φ
+    | A.b x' => iprop% |={E1,E2}=> g x' Φ
 
 end MWE
 
