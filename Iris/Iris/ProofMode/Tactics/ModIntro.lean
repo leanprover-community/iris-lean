@@ -94,7 +94,7 @@ private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
   ProofModeM ((e' : _) × Hyps bi1 e' × Q($e ⊢ $(M).M $e')) :=
   match hyps with
   | .emp _ => return ⟨_, .mkEmp bi1, q($(M).emp)⟩
-  | .hyp _ name uniq p ty _ =>
+  | .hyp _ name ivar p ty _ =>
     let p' := isTrue p
     match act p' with
     | .isEmpty => throwError "imodintro: {if p' then "intuitionistic" else "spatial"} context is not empty"
@@ -106,14 +106,14 @@ private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
       -- bridge through defeq since `M.action` cannot unify directly with the pattern (same in other cases)
       have heq : Q(@ModalityAction.forall $prop1 $C = .forall $C) := q(Eq.refl (ModalityAction.forall $C))
       have heq : Q($(M).action $p = .forall $C) := heq
-      return ⟨_, .mkHyp bi1 name uniq p ty, q(modaction_forall $M $heq $hC)⟩
+      return ⟨_, .mkHyp bi1 name ivar p ty, q(modaction_forall $M $heq $hC)⟩
     | .transform C => do
       let ty' ← mkFreshExprMVarQ q($prop1)
       let .some hC ← trySynthInstanceQ q($C $ty $ty')
         | throwError "imodintro: cannot transform hypothesis {name} : {ty} with {C}"
       have heq : Q(@ModalityAction.transform $prop1 $prop2 $C = .transform $C) := q(Eq.refl (ModalityAction.transform $C))
       have heq : Q($(M).action $p = .transform $C) := heq
-      return ⟨_, .mkHyp bi1 name uniq p ty', q(modaction_transform $M $heq $hC)⟩
+      return ⟨_, .mkHyp bi1 name ivar p ty', q(modaction_transform $M $heq $hC)⟩
     | .clear =>
        have heq : Q(@ModalityAction.clear $prop1 $prop2 = .clear) := q(Eq.refl (ModalityAction.clear))
        have heq : Q($(M).action $p = @ModalityAction.clear $prop1 $prop2) := heq
@@ -123,7 +123,7 @@ private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
       have : $bi1 =Q $bi2 := ⟨⟩
       have heq : Q(@ModalityAction.id $prop1 = .id) := q(Eq.refl (ModalityAction.id))
       have heq : Q($(M).action $p = .id) := heq
-      return ⟨_, .mkHyp bi1 name uniq p ty, q(modaction_id $M $heq)⟩
+      return ⟨_, .mkHyp bi1 name ivar p ty, q(modaction_id $M $heq)⟩
   | .sep _ _ _ _ lhs rhs => do
     let ⟨_, lhs', pflhs⟩ ← iModAction lhs M act
     let ⟨_, rhs', pfrhs⟩ ← iModAction rhs M act
