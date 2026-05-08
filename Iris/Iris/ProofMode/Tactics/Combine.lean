@@ -61,8 +61,8 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
       let uniq1 ← hyps.findWithInfo h1
       let uniq2 ← hyps.findWithInfo h2
 
-      let ⟨e', hyps', out1, _, _, _, pf1⟩ := hyps.remove false uniq1
-      let ⟨e'', hyps'', out2, _, _, _, pf2⟩ := hyps'.remove false uniq2
+      let ⟨e1, hyps1, out1, out1', p1, eq1, pf1⟩ := hyps.remove false uniq1
+      let ⟨e2, hyps2, out2, out2', p2, eq2, pf2⟩ := hyps1.remove false uniq2
 
       let out ← mkFreshExprMVarQ _
       let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out1 $out2 $out)
@@ -73,7 +73,7 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
       | [] =>
         -- Introduce the new hypothesis that combines the two original hypotheses
         -- New proof goal for the tactic user
-        let pf3 ← iCasesCore bi hyps'' goal pat q(false) out (fun hyps goal => addBIGoal hyps goal)
+        let pf3 ← iCasesCore bi hyps2 goal pat q(false) out (fun hyps goal => addBIGoal hyps goal)
 
         return q(combine $pf1 $pf2 $pf3 $inst)
       | htail =>
@@ -82,11 +82,11 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
         let h := mkIdent freshId
 
         -- Add the combined hypothesis to the context
-        let newHyps := Hyps.mkSep hyps'' (Hyps.mkHyp bi freshId freshId q(false) out _)
+        let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi freshId freshId q(false) out _)
 
         -- Prove that the original context entails the new context
-        let pf3 : Q($e'' ∗ $out ⊢ $e'' ∗ $out) := q(refl)
-        let pf4 : Q($e ⊢ $e'' ∗ $out) := q(combine $pf1 $pf2 $pf3 $inst)
+        let pf3 : Q($e2 ∗ $out ⊢ $e2 ∗ $out) := q(refl)
+        let pf4 : Q($e ⊢ $e2 ∗ $out) := q(combine $pf1 $pf2 $pf3 $inst)
 
         -- Add the combined proposition into the remaining list
         let pf5 ← iCombineCore newHyps goal (h :: htail) pat
