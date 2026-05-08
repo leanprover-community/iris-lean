@@ -82,7 +82,7 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
         let h := mkIdent freshId
 
         -- Add the combined hypothesis to the context
-        let newHyps := Hyps.mkSep hyps'' (Hyps.mkHyp bi freshId freshId q(false) out out)
+        let newHyps := Hyps.mkSep hyps'' (Hyps.mkHyp bi freshId freshId q(false) out _)
 
         -- Prove that the original context entails the new context
         let pf3 : Q($e'' ∗ $out ⊢ $e'' ∗ $out) := q(refl)
