@@ -2040,10 +2040,20 @@ example [BI PROP] {P Q : PROP} :
 /-- Tests `icombine` for combining propositions in the non-spatial context.
     The combined proposition stays within the non-spatial context -/
 example [BI PROP] {P Q : PROP} :
+  ⊢ □ P -∗ □ Q -∗ □ (P ∗ Q) := by
+  iintro #HP #HQ
+  -- The proposition P ∗ Q ∗ R exists in the non-spatial context
+  icombine HP HQ as Hnew
+  iexact Hnew
+
+/-- Tests `icombine` for combining propositions in the non-spatial context.
+    The combined proposition stays within the non-spatial context -/
+example [BI PROP] {P Q : PROP} :
   ⊢ □ P -∗ □ Q -∗ □ R -∗ □ (P ∗ Q ∗ R) := by
   iintro #HP #HQ #HR
   -- The proposition P ∗ Q ∗ R exists in the non-spatial context
   icombine HP HQ HR as Hnew
+  iexact Hnew
 
 /-- Tests `icombine` for using a proposition in the non-spatial context
     multiple times -/
