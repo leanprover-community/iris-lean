@@ -68,11 +68,10 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
       | htail =>
         -- Create a temporary identifier for the combined hypothesis
         let freshId ← mkFreshId
-        let name := Name.mkSimple "Htmp"
-        let h := mkIdent name
+        let h := mkIdent freshId
 
         -- Add the combined hypothesis to the context
-        let newHyps := Hyps.mkSep hyps'' (Hyps.mkHyp bi name freshId q(false) out out)
+        let newHyps := Hyps.mkSep hyps'' (Hyps.mkHyp bi freshId freshId q(false) out out)
 
         -- Prove that the original context entails the new context
         let pf3 : Q($e'' ∗ $out ⊢ $e'' ∗ $out) := q(refl)
