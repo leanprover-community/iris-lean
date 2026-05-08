@@ -47,14 +47,14 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
     match hs with
     -- Introduce `emp` if no hypothesis is given as `icombine` arguments
     | [] => do
-      let pf ← iCasesCore bi hyps goal pat q(true) q(emp) (fun hyps goal => addBIGoal hyps goal)
+      let pf ← iCasesCore bi hyps goal pat q(true) q(emp) addBIGoal
       return q(combine_nil $pf)
 
     -- No hypothesis combined if exactly one hypothesis is given as an `icombine` argument
     | [h1] => do
       let uniq ← hyps.findWithInfo h1
       let ⟨e, hyps, out, out', p, _, pf1⟩ := hyps.remove false uniq
-      let pf2 ← iCasesCore bi hyps goal pat p out' (fun hyps goal => addBIGoal hyps goal)
+      let pf2 ← iCasesCore bi hyps goal pat p out' addBIGoal
       return q(combine_singleton $pf1 $pf2)
 
     -- Combine the hypotheses if two or more are given as `icombine` arguments
@@ -76,7 +76,7 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
       | [] =>
         -- Introduce the new hypothesis that combines the two original hypotheses
         -- New proof goal for the tactic user
-        let pf3 ← iCasesCore bi hyps2 goal pat p out (fun hyps goal => addBIGoal hyps goal)
+        let pf3 ← iCasesCore bi hyps2 goal pat p out addBIGoal
 
         return q(combine $pf1 $pf2 $pf3)
       | htail =>
