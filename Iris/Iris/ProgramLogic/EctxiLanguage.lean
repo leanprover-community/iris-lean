@@ -14,34 +14,21 @@ open Language.Notation EctxLanguage.Notation FromMathlib
 
 @[expose] public section
 
-variable {Expr : Type e}{Val : Type v}{State : Type σ}{Obs : Type o}
-variable {EctxItem : Type i}
+variable {Expr Val State Obs EctxItem : Type _}
 
-class EctxItemLanguage
-    (Expr     : Type e)
-    (EctxItem : outParam <| Type i)
-    (State    : outParam <| Type σ)
-    (Obs      : outParam <| Type o)
-    (Val      : outParam <| Type v)
-  extends
-    ToVal Expr Val,
-    BaseStep Expr State Obs where
+class EctxItemLanguage (Expr : Type _) (EctxItem State Obs Val : outParam (Type _))
+    extends ToVal Expr Val, BaseStep Expr State Obs where
   fillItem : EctxItem → Expr → Expr
   fillItem_inj {Ki} : Function.Injective (fillItem Ki)
-
   fillItem_val (e : Expr) (Ki : EctxItem) :
     (toVal (fillItem Ki e)).isSome →
     (toVal e).isSome
-
   fillItem_no_val_inj {e₁ e₂ : Expr} (Ki₁ Ki₂ : EctxItem) :
     toVal e₁ = none → toVal e₂ = none →
     fillItem Ki₁ e₁ = fillItem Ki₂ e₂ →
     Ki₁ = Ki₂
-
   val_stuck : ∀ {e} {σ : State} {obs e' σ' eₜ},
     (e, σ) -<obs>->ᵇ (e', σ', eₜ) → toVal e = none
-
-  -- base_ctx_step_val
   base_ctx_step_val {Ki : EctxItem} : ∀ {e} {σ : State} {obs e' σ' eₜ},
     (fillItem Ki e, σ) -<obs>->ᵇ (e', σ', eₜ) →
     (toVal e).isSome
@@ -63,8 +50,7 @@ variable [Λ : EctxItemLanguage Expr EctxItem State Obs Val]
 abbrev Ectx [EctxItemLanguage Expr EctxItem State Obs Val] := List EctxItem
 
 @[grind, rocq_alias ectxi_lang_ctx_item]
-instance [Λ : EctxItemLanguage Expr EctxItem State Obs Val] :
-    EvContext Expr Λ.Ectx where
+instance [Λ : EctxItemLanguage Expr EctxItem State Obs Val] : EvContext Expr Λ.Ectx where
   comp x y := y ++ x
   empty := []
   fill K e := K.foldl (fun x y => fillItem y x) e
@@ -86,13 +72,11 @@ theorem fill_nil (e : Expr) : fill [] e = e := rfl
 end SelectedGrindRflLemmas
 
 @[rocq_alias fill_app, grind =, simp]
-theorem fill_append (K₁ K₂ : Λ.Ectx) (e : Expr) :
-    fill (K₁ ++ K₂) e = fill K₂ (fill K₁ e) :=
+theorem fill_append (K₁ K₂ : Λ.Ectx) (e : Expr) : fill (K₁ ++ K₂) e = fill K₂ (fill K₁ e) :=
   EvContext.fill_comp K₂ K₁ e |>.symm
 
 @[grind →]
-theorem fill_val K (e : Expr) :
-    (toVal (fill K e)).isSome = true → (toVal e).isSome = true := by
+theorem fill_val {K} {e : Expr} : (toVal (fill K e)).isSome = true → (toVal e).isSome = true := by
   induction K generalizing e <;> grind [fillItem_val]
 
 -- NOTE: Would it be worth having an `isVal` predicate for `Expr`, basically defined
@@ -103,19 +87,15 @@ theorem fill_val K (e : Expr) :
 
 @[rocq_alias EctxLanguageOfEctxi]
 instance : EctxLanguage Expr Λ.Ectx State Obs Val where
-  fill_val K e := fill_val K e
-  step_by_val := by
-    intros K K' e₁ e₁' σ₁ obs e₂ σ₂ eₜ hfill hred hstep
+  fill_val K e := fill_val
+  step_by_val {K K' e₁ e₁' σ₁ obs e₂ σ₂ eₜ} hfill hred hstep := by
     induction K using List.reverseRec generalizing K' e₁ e₂ with
-    | nil =>
-      simp only [comp, List.append_nil, exists_eq']
+    | nil => simp [comp]
     | append_singleton Ks Ki IH =>
-      simp only [comp]
       cases K' using List.reverseCases with
       | nil =>
-        simp only [fill_append, fill_cons, fill_nil] at hfill
-        subst hfill
-        replace hstep := base_ctx_step_val hstep |> fill_val _ _
+        obtain rfl : fillItem Ki (fill Ks e₁) = e₁' := by simp_all
+        replace hstep := base_ctx_step_val hstep |> fill_val
         grind
       | append_singleton Ks' Ki' =>
         simp only [fill_append, fill_cons, fill_nil] at hfill
@@ -129,16 +109,13 @@ instance : EctxLanguage Expr Λ.Ectx State Obs Val where
   base_ctx_step_val {K e σ₁ obs e₂ σ₂ eₜ} := by
     cases K using List.reverseRec <;> grind
 
-theorem fill_not_val K (e : Expr) :
-    toVal e = none →
-    toVal (fill K e) = none := by
+theorem fill_not_val {K} {e : Expr} : toVal e = none → toVal (fill K e) = none := by
   grind only [=> EctxLanguage.fill_not_val]
 
 @[rocq_alias ectxi_language_sub_redexes_are_values]
-theorem subredexes_are_values (e : Expr) :
-    (∀ Ki e', e = fillItem Ki e' → (toVal e').isSome) →
+theorem subredexes_are_values {e : Expr} (hsub : ∀ Ki e', e = fillItem Ki e' → (toVal e').isSome) :
     EctxLanguage.SubredexesAreValues e := by
-  rintro hsub K e' rfl
+  rintro K e' rfl
   cases K using List.reverseRec
   case nil => simp [empty]
   case append_singleton init last IH =>
