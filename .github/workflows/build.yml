@@ -59,7 +59,7 @@ jobs:
           sha=$(cat scripts/ROCQ_REVISION)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - name: Cache Rocq definitions
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: Iris/.lake/iris-rocq-cache
           key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
@@ -68,7 +68,7 @@ jobs:
           mkdir -p _site
           python3 scripts/check_porting.py --no-build --format html --lean-rev "${{ github.sha }}" -o _site/index.html
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
 
   check-stale:
     if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
@@ -85,7 +85,7 @@ jobs:
         id: rocq-commit
         run: echo "sha=$(cat scripts/ROCQ_REVISION)" >> "$GITHUB_OUTPUT"
       - name: Cache Rocq definitions
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: Iris/.lake/iris-rocq-cache
           key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
@@ -115,7 +115,8 @@ jobs:
           exit 1
 
   deploy:
-    if: github.ref == 'refs/heads/master'
+     # we disable deploy for forks to prevent spurious CI failures
+    if: github.ref == 'refs/heads/master' && github.repository == 'leanprover-community/iris-lean'
     needs: report
     runs-on: ubuntu-latest
     permissions:

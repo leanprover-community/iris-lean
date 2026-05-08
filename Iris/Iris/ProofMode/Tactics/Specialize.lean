@@ -57,8 +57,8 @@ structure SpecializeState {prop : Q(Type u)} (bi : Q(BI $prop)) (orig : Q($prop)
 private def processWand :
     @SpecializeState u prop bi orig → SpecPat → ProofModeM (SpecializeState bi orig)
   | { hyps, p, out, pf, .. }, .ident i => do
-    let uniq ← hyps.findWithInfo i
-    let ⟨e', hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false uniq
+    let ivar ← hyps.findWithInfo i
+    let ⟨e', hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
     let p2 := if p1.constName! == ``true then p else q(false)
     have : $out₁ =Q iprop(□?$p1 $out₁') := ⟨⟩
     have : $p2 =Q ($p1 && $p) := ⟨⟩
@@ -81,10 +81,10 @@ private def processWand :
     for mvar in newMVarIds do addMVarGoal mvar
     return { e, hyps, p, out := out', pf := q(specialize_forall $pf $x) }
   | { hyps, p, out, pf, .. }, .goal ns g => do
-    let mut uniqs : NameSet := {}
+    let mut ivars : IVarIdSet := {}
     for name in ns do
-      uniqs := uniqs.insert (← hyps.findWithInfo name)
-    let ⟨el', _, hypsl', hypsr', h'⟩ := Hyps.split bi (λ _ uniq => uniqs.contains uniq) hyps
+      ivars := ivars.insert (← hyps.findWithInfo name)
+    let ⟨el', _, hypsl', hypsr', h'⟩ := Hyps.split bi (λ _ ivar => ivars.contains ivar) hyps
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
@@ -144,13 +144,13 @@ elab "ispecialize" colGt pmt:pmTerm : tactic => do
   ProofModeM.runTactic λ mvar { bi, hyps, goal, .. } => do
   -- hypothesis must be in the context, otherwise use ihave
   let name := ⟨pmt.term⟩
-  let some uniq ← try? <| hyps.findWithInfo name
+  let some ivar ← try? <| hyps.findWithInfo name
     | throwError "{name} should be a hypothesis, use ihave instead"
   let some ⟨name, _, hyps', _, out, p, _, pf⟩ := Id.run <|
-    hyps.removeG true λ name uniq' _ _ => if uniq == uniq' then some name else none
+    hyps.removeG true λ name ivar' _ _ => if ivar == ivar' then some name else none
     | throwError "ispecialize: cannot find argument"
 
   let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p out pmt.spats
-  let hyps''' := Hyps.add bi name uniq pb B hyps''
+  let hyps''' := Hyps.add bi name ivar pb B hyps''
   let pf'' ← addBIGoal hyps''' goal
   mvar.assign q(($pf).1.trans <| $(pf').trans <| $pf'')

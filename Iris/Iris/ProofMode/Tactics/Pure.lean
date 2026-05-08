@@ -56,8 +56,8 @@ def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
 elab "ipure" colGt hyp:ident : tactic => do
   ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do
 
-  let uniq ← hyps.findWithInfo hyp
-  let ⟨e', hyps', _, out', p, _, pf⟩ := hyps.remove true uniq
+  let ivar ← hyps.findWithInfo hyp
+  let ⟨e', hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
 
   let pf ← iPureCore bi e e' p out' goal (← `(binderIdent| $hyp:ident)) pf fun _ _ => addBIGoal hyps' goal
 
