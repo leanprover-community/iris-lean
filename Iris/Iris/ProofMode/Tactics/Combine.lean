@@ -29,8 +29,8 @@ theorem combine [BI PROP] {out1 out2 out e1 e2 goal e : PROP}
 
 /-- The tactic `icombine` combines two propositions into one using the type
     class `CombineSepAs` or, by default, the separating conjunction -/
-private def iCombineCore {u} {prop : Q(Type u)} {bi} (e goal : Q($prop))
-  (hyps : Hyps bi e) (hs : List Ident) (pat : iCasesPat) :
+private def iCombineCore {u} {prop : Q(Type u)} {bi e}
+  (hyps : Hyps bi e) (goal : Q($prop)) (hs : List Ident) (pat : iCasesPat) :
   ProofModeM Q($e ⊢ $goal) := do
     match hs with
     -- Introduce `emp` if no hypothesis is given as `icombine` arguments
@@ -79,7 +79,7 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi} (e goal : Q($prop))
         let pf4 : Q($e ⊢ $e'' ∗ $out) := q(combine $pf1 $pf2 $pf3 $inst)
 
         -- Add the combined proposition into the remaining list
-        let pf5 ← iCombineCore _ goal newHyps (h :: htail) pat
+        let pf5 ← iCombineCore newHyps goal (h :: htail) pat
 
         -- Compose the two proofs: first step to new context, then recursive step to goal
         return q(($pf4).trans $pf5)
@@ -90,5 +90,5 @@ elab "icombine" hs:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse pat
 
   -- Generate new proof goals and fill in the original metavariable
-  ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do
-    mvar.assign (← iCombineCore e goal hyps hs.toList pat)
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+    mvar.assign (← iCombineCore hyps goal hs.toList pat)
