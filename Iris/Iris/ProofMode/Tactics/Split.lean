@@ -46,9 +46,9 @@ private def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : Tac
   -- extract environment
   ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
 
-  let mut uniqs : IVarIdSet := {}
+  let mut ivars : IVarIdSet := {}
   for name in names do
-    uniqs := uniqs.insert (← hyps.findWithInfo name)
+    ivars := ivars.insert (← hyps.findWithInfo name)
 
   let Q1 ← mkFreshExprMVarQ prop
   let Q2 ← mkFreshExprMVarQ prop
@@ -56,7 +56,7 @@ private def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : Tac
     throwError "isplit: {goal} is not a separating conjunction"
 
   -- split conjunction
-  let ⟨_, _, lhs, rhs, pf⟩ := hyps.split bi (fun _ uniq => uniqs.contains uniq == splitRight)
+  let ⟨_, _, lhs, rhs, pf⟩ := hyps.split bi (fun _ ivar => ivars.contains ivar == splitRight)
 
   let m1 ← addBIGoal lhs Q1
   let m2 ← addBIGoal rhs Q2

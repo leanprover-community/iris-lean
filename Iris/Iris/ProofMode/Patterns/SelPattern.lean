@@ -56,9 +56,9 @@ def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget
       let ldecl ← getLocalDeclFromUserName name.getId
       return [.inr ldecl.fvarId]
   | .intuitionistic =>
-      return hyps.intuitionisticUniqs.map .inl
+      return hyps.intuitionisticIVarIds.map .inl
   | .spatial =>
-      return hyps.spatialUniqs.map .inl
+      return hyps.spatialIVarIds.map .inl
   | .pure => do
       -- `%` selects user-facing Lean pure assumptions, so we keep only `Prop` hypotheses.
       let mut hyps := #[]
