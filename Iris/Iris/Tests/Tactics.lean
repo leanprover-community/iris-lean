@@ -2062,7 +2062,7 @@ example [BI PROP] {P Q R : PROP} :
   ⊢ P -∗ Q -∗ □ R -∗ R ∗ Q ∗ P ∗ R := by
   iintro HP HQ #HR
   -- The proposition R ∗ Q ∗ P ∗ R exists in the spatial context
-  icombine HR HP HQ HR as Hnew
+  icombine HR HQ HP HR as Hnew
   iexact Hnew
 
 end icombine
