@@ -2016,4 +2016,53 @@ example [BI PROP] {P1 P2 P3 Q : PROP} :
   iapply H
   iexact Hnew
 
+/- Tests `icomine` failure: combining a proposition in the spatial context twice -/
+/-- error: Unknown constant `_inhabitedExprDummy` -/
+#guard_msgs in
+example [BI PROP] {P Q : PROP} : P ⊢ P ∗ P := by
+  iintro HP
+  icombine HP HP as Hnew
+
+/-- Tests `icombine` where the two propositions are prefixed with both
+    `<absorb>` and `<affine>` -/
+example [BI PROP] {P Q : PROP} :
+  ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) := by
+  iintro HP HQ
+  icombine HP HQ as Hnew
+  iexact Hnew
+
+/-- Tests `icombine` for combining propositions in the non-spatial context.
+    The combined proposition stays within the non-spatial context -/
+example [BI PROP] {P Q : PROP} :
+  ⊢ □ P -∗ □ Q -∗ □ R -∗ □ (P ∗ Q ∗ R) := by
+  iintro #HP #HQ #HR
+  -- The proposition P ∗ Q ∗ R exists in the non-spatial context
+  icombine HP HQ HR as Hnew
+
+/-- Tests `icombine` for using a proposition in the non-spatial context
+    multiple times -/
+example [BI PROP] {P : PROP} :
+  ⊢ □ P -∗ Q -∗ □ P ∗ P ∗ Q := by
+  iintro #HP HQ
+  -- The proposition P ∗ Q exists in the spatial context
+  icombine HP HQ as Hnew
+
+/-- Tests `icombine` for using a proposition in the non-spatial context
+    multiple times. The combined proposition remains in the non-spatial context -/
+example [BI PROP] {P : PROP} :
+  ⊢ □ P -∗ □ (P ∗ P ∗ P) := by
+  iintro #HP
+  -- The proposition P ∗ P ∗ P exists in the non-spatial context
+  icombine HP HP HP as Hnew
+  iexact Hnew
+
+/-- Tests `icombine` for using a proposition in the non-spatial context
+    multiple times -/
+example [BI PROP] {P Q R : PROP} :
+  ⊢ P -∗ Q -∗ □ R -∗ R ∗ Q ∗ P ∗ R := by
+  iintro HP HQ #HR
+  -- The proposition R ∗ Q ∗ P ∗ R exists in the spatial context
+  icombine HR HP HQ HR as Hnew
+  iexact Hnew
+
 end icombine
