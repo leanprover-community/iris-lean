@@ -14,8 +14,8 @@ open Lean Elab Tactic Meta Qq BI Std
 
 elab "iexact" colGt hyp:ident : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let uniq ← hyps.findWithInfo hyp
-  let ⟨e', _, _, out, p, _, pf⟩ := hyps.remove true uniq
+  let ivar ← hyps.findWithInfo hyp
+  let ⟨e', _, _, out, p, _, pf⟩ := hyps.remove true ivar
 
   let some _ ← ProofModeM.trySynthInstanceQ q(FromAssumption $p .in $out $goal)
     | throwError "iexact: cannot unify {out} and {goal}"

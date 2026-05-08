@@ -26,8 +26,14 @@ macro_rules
   | `(iprop(($P)))                  => ``((iprop($P)))
   | `(iprop(if $c then $t else $e)) => ``(if $c then iprop($t) else iprop($e))
   | `(iprop(($P : $t)))             => ``((iprop($P) : $t))
+  | `(iprop(fun $xs* => $P))        => ``(fun $xs* => iprop($P))
 
 macro:max "iprop(" P:term " : " t:term ")" : term => `((iprop($P) : $t))
+
+-- paren-less form: eats the rest of the term at minimum precedence
+syntax:min "iprop% " term:min : term
+macro_rules
+  | `(iprop% $t) => `(iprop($t))
 
 /-- Remove an `iprop` quotation from a `term` syntax object. -/
 partial def unpackIprop [Monad m] [MonadRef m] [MonadQuotation m] : Term → m Term

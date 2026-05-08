@@ -154,12 +154,12 @@ section Upd
 variable {GF : BundledGFunctors} [LcGS GF]
 
 @[rocq_alias le_upd.le_upd_pre]
-def le_upd_pre (le_upd : IProp GF → IProp GF) : IProp GF → IProp GF :=
-  fun P => iprop(∀ n, lc_supply n ==∗ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd P))
+def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
+  iprop(∀ n, lc_supply n ==∗ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd))
 
 @[rocq_alias le_upd.le_upd_pre_contractive]
-instance : Contractive (le_upd_pre (GF := GF)) where
-  distLater_dist {n x y} H P := by
+instance {P : IProp GF} : Contractive (le_upd_pre P) where
+  distLater_dist {n x y} H := by
     simp only [le_upd_pre]
     refine forall_ne (fun i => ?_)
     refine wand_ne.ne .rfl ?_
@@ -171,10 +171,10 @@ instance : Contractive (le_upd_pre (GF := GF)) where
     refine Contractive.distLater_dist ?_
     cases n
     · exact distLater_zero
-    · exact distLater_succ.mpr (distLater_succ.mp H P)
+    · exact distLater_succ.mpr (distLater_succ.mp H)
 
 @[rocq_alias le_upd.le_upd]
-def le_upd : IProp GF → IProp GF := fixpoint le_upd_pre
+def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
 
 syntax:max "|==£> " term:40 : term
 
@@ -187,8 +187,8 @@ delab_rule le_upd
 @[rocq_alias le_upd.le_upd_unfold]
 theorem le_upd_unfold {P : IProp GF} :
   (|==£> P) ⊣⊢
-  ∀ n, lc_supply n ==∗ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd P) :=
-    (equiv_iff.mp ((fixpoint_unfold ⟨le_upd_pre (GF := GF), inferInstance⟩) P)).trans .rfl
+  ∀ n, lc_supply n ==∗ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ |==£> P) :=
+    (equiv_iff.mp (fixpoint_unfold ⟨le_upd_pre P, inferInstance⟩)).trans .rfl
 
 @[rocq_alias le_upd.le_upd_ne]
 instance : NonExpansive (le_upd (GF := GF)) where
