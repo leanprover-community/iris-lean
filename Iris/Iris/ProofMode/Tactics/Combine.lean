@@ -41,7 +41,7 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
     -- No hypothesis combined if exactly one hypothesis is given as an `icombine` argument
     | [h1] => do
       let uniq ← hyps.findWithInfo h1
-      let ⟨_, hyps', out', _, _, _, pf1⟩ := hyps.remove true uniq
+      let ⟨_, hyps', out', _, _, _, pf1⟩ := hyps.remove false uniq
       let pf2 ← iCasesCore bi hyps' goal pat q(false) out' (fun hyps goal => addBIGoal hyps goal)
       return q(($pf1).mp.trans $pf2)
 
@@ -50,8 +50,8 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
       let uniq1 ← hyps.findWithInfo h1
       let uniq2 ← hyps.findWithInfo h2
 
-      let ⟨e', hyps', out1, _, _, _, pf1⟩ := hyps.remove true uniq1
-      let ⟨e'', hyps'', out2, _, _, _, pf2⟩ := hyps'.remove true uniq2
+      let ⟨e', hyps', out1, _, _, _, pf1⟩ := hyps.remove false uniq1
+      let ⟨e'', hyps'', out2, _, _, _, pf2⟩ := hyps'.remove false uniq2
 
       let out ← mkFreshExprMVarQ _
       let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out1 $out2 $out)
