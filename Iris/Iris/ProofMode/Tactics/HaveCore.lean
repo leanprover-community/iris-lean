@@ -49,9 +49,9 @@ A tuple containing:
 private def iHaveCore {e} (hyps : @Hyps u prop bi e)
   (tm : Term) (keep : Bool) :
   ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
-  if let some uniq ← try? <| hyps.findWithInfo ⟨tm⟩ then
+  if let some ivar ← try? <| hyps.findWithInfo ⟨tm⟩ then
     -- assertion from the Iris context
-    let ⟨_, hyps, _, out', p, _, pf⟩ := hyps.remove (!keep) uniq
+    let ⟨_, hyps, _, out', p, _, pf⟩ := hyps.remove (!keep) ivar
     return ⟨_, hyps, p, out', q($pf.1)⟩
   else
     -- lean hypothesis
