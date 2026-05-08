@@ -2322,6 +2322,9 @@ example [BI PROP] {P : PROP} :
   iintro #HP HQ
   -- The proposition P ∗ Q exists in the spatial context
   icombine HP HQ as Hnew
+  isplitr
+  · iexact HP
+  · iexact Hnew
 
 /-- Tests `icombine` for using a proposition in the non-spatial context
     multiple times. The combined proposition remains in the non-spatial context -/
