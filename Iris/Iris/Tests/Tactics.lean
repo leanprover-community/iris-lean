@@ -2229,11 +2229,17 @@ example [BI PROP] : ⊢ (emp : PROP) := by
   icombine as H
   iexact H
 
-/-- Tests `icombine` for the proposition remaining unchanges with one proposition -/
+/-- Tests `icombine` with one proposition in the spatial context -/
 example [BI PROP] {P : PROP} : P ⊢ P := by
   iintro HP
   icombine HP as H
   iexact H
+
+/-- Tests `icombine` with one proposition in the intuitionistic context -/
+example [BI PROP] {P : PROP} : □ P ⊢ □ P := by
+  iintro #HP
+  icombine HP as Hnew
+  iexact Hnew
 
 /-- Tests `icombine` for the proposition with three propositions -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :

@@ -14,6 +14,17 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
+theorem combine_nil [BI PROP] {e goal : PROP}
+  (pf : e ∗ □ emp ⊢ goal) : e ⊢ goal := by
+  calc
+    e ⊢ e ∗ emp   := sep_emp.mpr
+    _ ⊢ e ∗ □ emp := sep_mono refl intuitionistically_emp.mpr
+    _ ⊢ goal      := pf
+
+theorem combine_singleton [BI PROP] {e e1 goal : PROP}
+  (pf1 : e ⊣⊢ e1 ∗ out)
+  (pf2 : e1 ∗ out ⊢ goal) : e ⊢ goal := pf1.mp.trans pf2
+
 theorem combine [BI PROP] {out1 out2 out e1 e2 goal e : PROP}
   (pf1 : e ⊣⊢ e1 ∗ out1)
   (pf2 : e1 ⊣⊢ e2 ∗ out2)
@@ -35,15 +46,15 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
     match hs with
     -- Introduce `emp` if no hypothesis is given as `icombine` arguments
     | [] => do
-      let pf ← iCasesCore bi hyps goal pat q(false) q(emp) (fun hyps goal => addBIGoal hyps goal)
-      return q(sep_emp.mpr.trans $pf)
+      let pf ← iCasesCore bi hyps goal pat q(true) q(emp) (fun hyps goal => addBIGoal hyps goal)
+      return q(combine_nil $pf)
 
     -- No hypothesis combined if exactly one hypothesis is given as an `icombine` argument
     | [h1] => do
       let uniq ← hyps.findWithInfo h1
-      let ⟨_, hyps', out', _, _, _, pf1⟩ := hyps.remove false uniq
-      let pf2 ← iCasesCore bi hyps' goal pat q(false) out' (fun hyps goal => addBIGoal hyps goal)
-      return q(($pf1).mp.trans $pf2)
+      let ⟨e, hyps, out, out', p, _, pf1⟩ := hyps.remove false uniq
+      let pf2 ← iCasesCore bi hyps goal pat p out' (fun hyps goal => addBIGoal hyps goal)
+      return q(combine_singleton $pf1 $pf2)
 
     -- Combine the hypotheses if two or more are given as `icombine` arguments
     | h1 :: h2 :: htail => do
