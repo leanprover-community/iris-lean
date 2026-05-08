@@ -59,7 +59,7 @@ jobs:
           sha=$(cat scripts/ROCQ_REVISION)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - name: Cache Rocq definitions
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: Iris/.lake/iris-rocq-cache
           key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
@@ -85,7 +85,7 @@ jobs:
         id: rocq-commit
         run: echo "sha=$(cat scripts/ROCQ_REVISION)" >> "$GITHUB_OUTPUT"
       - name: Cache Rocq definitions
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: Iris/.lake/iris-rocq-cache
           key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
