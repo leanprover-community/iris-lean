@@ -2250,7 +2250,7 @@ example [BI PROP] {P1 P2 P3 Q : PROP} :
   iexact Hnew
 
 /-- Tests `icombine` for the proposition with four propositions -/
-example [BI PROP] {P1 P2 P3 Q : PROP} :
+example [BI PROP] {P1 P2 P3 P4 Q : PROP} :
   ⊢ P1 -∗ P2 -∗ P3 -∗ P4 -∗ (P1 ∗ P2 ∗ P3 ∗ P4 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 HP4 H
   icombine HP1 HP2 HP3 HP4 as Hnew
@@ -2276,7 +2276,7 @@ example [BI PROP] {P1 P2 P3 Q : PROP} :
 
 /-- Tests `icombine` for the proposition with four propositions,
     where the first two propositions has `□` and the other two has `<affine>`. -/
-example [BI PROP] {P1 P2 P3 Q : PROP} :
+example [BI PROP] {P1 P2 P3 P4 Q : PROP} :
   ⊢ □ P1 -∗ □ P2 -∗ <affine> P3 -∗ <affine> P4 -∗ (□ (P1 ∗ P2) ∗ <affine> (P3 ∗ P4) -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 HP4 H
   icombine HP1 HP2 HP3 HP4 as Hnew
@@ -2285,7 +2285,7 @@ example [BI PROP] {P1 P2 P3 Q : PROP} :
 
 /-- Tests `icombine` for the proposition with four propositions,
     where the second and third propositions has `□` while the others do not. -/
-example [BI PROP] {P1 P2 P3 Q : PROP} :
+example [BI PROP] {P1 P2 P3 P4 Q : PROP} :
   ⊢ P1 -∗ □ P2 -∗ □ P3 -∗ P4 -∗ (P1 ∗ □ (P2 ∗ P3) ∗ P4 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 HP4 H
   icombine HP1 HP2 HP3 HP4 as Hnew
@@ -2318,7 +2318,7 @@ example [BI PROP] {P Q : PROP} :
 
 /-- Tests `icombine` for combining propositions in the non-spatial context.
     The combined proposition stays within the non-spatial context -/
-example [BI PROP] {P Q : PROP} :
+example [BI PROP] {P Q R : PROP} :
   ⊢ □ P -∗ □ Q -∗ □ R -∗ □ (P ∗ Q ∗ R) := by
   iintro #HP #HQ #HR
   -- The proposition P ∗ Q ∗ R exists in the non-spatial context
@@ -2327,7 +2327,7 @@ example [BI PROP] {P Q : PROP} :
 
 /-- Tests `icombine` for using a proposition in the non-spatial context
     multiple times -/
-example [BI PROP] {P : PROP} :
+example [BI PROP] {P Q : PROP} :
   ⊢ □ P -∗ Q -∗ □ P ∗ P ∗ Q := by
   iintro #HP HQ
   -- The proposition P ∗ Q exists in the spatial context
