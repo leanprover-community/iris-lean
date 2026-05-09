@@ -41,6 +41,13 @@ theorem combine_step [BI PROP] {out1 out2 out e1 e2 goal e : PROP}
       _ ⊢ e2 ∗ □?b out                 := sep_mono refl (intuitionisticallyIf_mono inst.combine_sep_as)
       _ ⊢ goal                         := pf3
 
+theorem combine_step_2 [BI PROP] {out1 out2 out e1 e2 goal e : PROP}
+  (pf1 : e ⊣⊢ e1 ∗ out1)
+  (pf2 : e1 ⊣⊢ e2 ∗ out2)
+  (pf3 : e2 ∗ out ⊢ goal)
+  (inst : CombineSepAs iprop(□ out1) iprop(□ out2) iprop(out))
+  : e ⊢ goal := sorry
+
 theorem dummy_thm {p p1 p2 : Bool} : p = (p1 && p2) := sorry
 
 /-- The tactic `icombine` combines two propositions into one using the type
@@ -80,29 +87,54 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
       -- The error should not happen as the default option is always available
       | throwError "icombine: no type class instance to combine propositions"
 
-      let p := if ((p1 == q(true) && p2 == q(true))) then q(true) else q(false)
-
       match htail with
       | [] =>
         -- Introduce the new hypothesis that combines the two original hypotheses
         -- New proof goal for the tactic user
-        let pf3 ← iCasesCore bi hyps2 goal pat p out addBIGoal
-        let pf4 : Q($casesOn_1 = ($p1 && $p2)) := by simpa
-
-        return q(combine_step $pf1 $pf2 $pf3 $pf4 $inst)
+        match matchBool p1, matchBool p2 with
+        | .inl _, .inl _ =>
+          let pf3 ← iCasesCore bi hyps2 goal pat q(true) out addBIGoal
+          let pf4 : Q(true = ($p1 && $p2)) := q(rfl)
+          return q(combine_step $pf1 $pf2 $pf3 $pf4 $inst)
+        | .inl _, .inr _ =>
+          let pf3 ← iCasesCore bi hyps2 goal pat q(false) out addBIGoal
+          let pf4 : Q(false = ($p1 && $p2)) := q(rfl)
+          return q(combine_step $pf1 $pf2 $pf3 $pf4 $inst)
+        | .inr _, .inl _ =>
+          let pf3 ← iCasesCore bi hyps2 goal pat q(false) out addBIGoal
+          let pf4 : Q(false = ($p1 && $p2)) := q(rfl)
+          return q(combine_step $pf1 $pf2 $pf3 $pf4 $inst)
+        | .inr _, .inr _ =>
+          let pf3 ← iCasesCore bi hyps2 goal pat q(false) out addBIGoal
+          let pf4 : Q(false = ($p1 && $p2)) := q(rfl)
+          return q(combine_step $pf1 $pf2 $pf3 $pf4 $inst)
       | htail =>
         -- Create a temporary identifier for the combined hypothesis
         let freshId ← mkFreshId
         let h := mkIdent freshId
 
-        -- Add the combined hypothesis to the context
-        let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi freshId freshId p out)
-
-        -- Add the combined proposition into the remaining list
-        let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
-        let pf4 : Q($casesOn_1 = ($p1 && $p2)) := by simpa
-
-        return q(combine_step $pf1 $pf2 $pf3 $pf4 $inst)
+        -- Add the combined hypothesis to the context and into the list `hs`
+        match matchBool p1, matchBool p2 with
+        | .inl _, .inl _ =>
+          let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi freshId freshId q(true) out)
+          let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
+          let pf4 : Q(true = ($p1 && $p2)) := q(rfl)
+          return q(combine_step $pf1 $pf2 $pf3 $pf4 $inst)
+        | .inl _, .inr _ =>
+          let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi freshId freshId q(false) out)
+          let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
+          let pf4 : Q(false = ($p1 && $p2)) := q(rfl)
+          return q(combine_step $pf1 $pf2 $pf3 $pf4 $inst)
+        | .inr _, .inl _ =>
+          let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi freshId freshId q(false) out)
+          let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
+          let pf4 : Q(false = ($p1 && $p2)) := q(rfl)
+          return q(combine_step $pf1 $pf2 $pf3 $pf4 $inst)
+        | .inr _, .inr _ =>
+          let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi freshId freshId q(false) out)
+          let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
+          let pf4 : Q(false = ($p1 && $p2)) := q(rfl)
+          return q(combine_step $pf1 $pf2 $pf3 $pf4 $inst)
   termination_by hs.length
 
 elab "icombine" hs:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
