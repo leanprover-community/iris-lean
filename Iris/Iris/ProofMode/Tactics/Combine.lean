@@ -70,6 +70,10 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
       -- is temporary and should be removed even if it is in the non-spatial
       -- context.
       let ⟨_, hyps1, _, out1', p1, _, pf1⟩ := hyps.remove recCall uniq1
+
+      if (h2 :: htail).contains h1 ∧ ¬(isTrue p1) then
+        throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
+
       let ⟨_, hyps2, _, out2', p2, _, pf2⟩ := hyps1.remove false uniq2
 
       let out ← mkFreshExprMVarQ _

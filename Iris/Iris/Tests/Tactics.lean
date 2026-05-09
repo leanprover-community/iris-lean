@@ -2293,11 +2293,18 @@ example [BI PROP] {P1 P2 P3 P4 Q : PROP} :
   iexact Hnew
 
 /- Tests `icomine` failure: combining a proposition in the spatial context twice -/
-/-- error: Unknown constant `_inhabitedExprDummy` -/
+/-- error: icombine: proposition in spatial context cannot be used multiple times -/
 #guard_msgs in
-example [BI PROP] {P Q : PROP} : P ⊢ P ∗ P := by
+example [BI PROP] {P : PROP} : ⊢ P -∗ P ∗ P := by
   iintro HP
   icombine HP HP as Hnew
+
+/- Tests `icomine` failure: combining a proposition in the spatial context twice -/
+/-- error: icombine: proposition in spatial context cannot be used multiple times -/
+#guard_msgs in
+example [BI PROP] {P Q : PROP} : ⊢ P -∗ Q -∗ R -∗ P ∗ Q ∗ R ∗ P := by
+  iintro HP HQ HR
+  icombine HP HQ HR HP as Hnew
 
 /-- Tests `icombine` where the two propositions are prefixed with both
     `<absorb>` and `<affine>` -/
