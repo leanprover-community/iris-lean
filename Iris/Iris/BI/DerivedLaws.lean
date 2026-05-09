@@ -1509,14 +1509,13 @@ theorem intuitionisticallyIf_sep {p : Bool} [BI PROP] [BIPositive PROP] {P Q : P
   | false => .rfl
   | true => intuitionistically_sep
 
-theorem intuitionisticallyIf_sep_conj {p1 p2 p : Bool} [BI PROP] {P Q : PROP} (h : p = (p1 && p2)) :
-  (□?p1 P ∗ □?p2 Q) ⊢ □?p (P ∗ Q) := by
-    rw [h]
-    cases p1 <;> cases p2
-    · exact .rfl
-    · exact sep_mono .rfl (intuitionisticallyIf_elim (p := true))
-    · exact sep_mono (intuitionisticallyIf_elim (p := true)) .rfl
-    · exact intuitionisticallyIf_sep_2 (p := true)
+theorem intuitionisticallyIf_sep_conj {p1 p2 : Bool} [BI PROP] {P Q : PROP} :
+  (□?p1 P ∗ □?p2 Q) ⊢ □?(p1 ∧ p2) (P ∗ Q) := by
+  match p1, p2 with
+  | false, false => exact .rfl
+  | false, true  => exact sep_mono .rfl intuitionisticallyIf_elim
+  | true,  false => exact sep_mono intuitionisticallyIf_elim .rfl
+  | true,  true  => exact intuitionisticallyIf_sep_2
 
 theorem intuitionisticallyIf_idem {p : Bool} [BI PROP] {P : PROP} : □?p □?p P ⊣⊢ □?p P :=
   match p with

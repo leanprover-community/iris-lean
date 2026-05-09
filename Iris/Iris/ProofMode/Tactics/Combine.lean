@@ -28,18 +28,17 @@ theorem combine_singleton [BI PROP] {e e1 goal : PROP}
 theorem combine_step [BI PROP] {out1 out2 out e1 e2 goal e : PROP}
   (pf1 : e ⊣⊢ e1 ∗ □?b1 out1)
   (pf2 : e1 ⊣⊢ e2 ∗ □?b2 out2)
-  (pf3 : e2 ∗ □?b out ⊢ goal)
-  (pf4 : b = (b1 && b2))
+  (pf3 : e2 ∗ □?(b1 ∧ b2) out ⊢ goal)
   (inst : CombineSepAs out1 out2 out)
   : e ⊢ goal := by
     calc
-      e ⊢ e1 ∗ □?b1 out1               := pf1.mp
-      _ ⊢ (e2 ∗ □?b2 out2) ∗ □?b1 out1 := sep_mono pf2.mp refl
-      _ ⊢ e2 ∗ □?b2 out2 ∗ □?b1 out1   := sep_assoc.mp
-      _ ⊢ e2 ∗ □?b1 out1 ∗ □?b2 out2   := sep_mono refl sep_comm.mp
-      _ ⊢ e2 ∗ □?b (out1 ∗ out2)       := sep_mono refl (intuitionisticallyIf_sep_conj pf4)
-      _ ⊢ e2 ∗ □?b out                 := sep_mono refl (intuitionisticallyIf_mono inst.combine_sep_as)
-      _ ⊢ goal                         := pf3
+      e ⊢ e1 ∗ □?b1 out1                 := pf1.mp
+      _ ⊢ (e2 ∗ □?b2 out2) ∗ □?b1 out1   := sep_mono pf2.mp refl
+      _ ⊢ e2 ∗ □?b2 out2 ∗ □?b1 out1     := sep_assoc.mp
+      _ ⊢ e2 ∗ □?b1 out1 ∗ □?b2 out2     := sep_mono refl sep_comm.mp
+      _ ⊢ e2 ∗ □?(b1 ∧ b2) (out1 ∗ out2) := sep_mono refl intuitionisticallyIf_sep_conj
+      _ ⊢ e2 ∗ □?(b1 ∧ b2) out           := sep_mono refl (intuitionisticallyIf_mono inst.combine_sep_as)
+      _ ⊢ goal                           := pf3
 
 /-- The tactic `icombine` combines two propositions into one using the type
     class `CombineSepAs` or, by default, the separating conjunction -/
@@ -70,8 +69,8 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
       -- is called recursively. In this case, the first hypothesis in the list
       -- is temporary and should be removed even if it is in the non-spatial
       -- context.
-      let ⟨_, hyps1, _, out1', p1, eq1, pf1⟩ := hyps.remove recCall uniq1
-      let ⟨_, hyps2, _, out2', p2, eq2, pf2⟩ := hyps1.remove false uniq2
+      let ⟨_, hyps1, _, out1', p1, _, pf1⟩ := hyps.remove recCall uniq1
+      let ⟨_, hyps2, _, out2', p2, _, pf2⟩ := hyps1.remove false uniq2
 
       let out ← mkFreshExprMVarQ _
       let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out1' $out2' $out)
@@ -85,16 +84,16 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
         match matchBool p1, matchBool p2 with
         | .inl _, .inl _ =>
           let pf3 ← iCasesCore _ hyps2 goal pat q(true) out addBIGoal
-          return q(combine_step $pf1 $pf2 $pf3 rfl $inst)
+          return q(combine_step $pf1 $pf2 $pf3 $inst)
         | .inl _, .inr _ =>
           let pf3 ← iCasesCore _ hyps2 goal pat q(false) out addBIGoal
-          return q(combine_step $pf1 $pf2 $pf3 rfl $inst)
+          return q(combine_step $pf1 $pf2 $pf3 $inst)
         | .inr _, .inl _ =>
           let pf3 ← iCasesCore _ hyps2 goal pat q(false) out addBIGoal
-          return q(combine_step $pf1 $pf2 $pf3 rfl $inst)
+          return q(combine_step $pf1 $pf2 $pf3 $inst)
         | .inr _, .inr _ =>
           let pf3 ← iCasesCore _ hyps2 goal pat q(false) out addBIGoal
-          return q(combine_step $pf1 $pf2 $pf3 rfl $inst)
+          return q(combine_step $pf1 $pf2 $pf3 $inst)
       | htail =>
         -- Create a temporary identifier for the combined hypothesis
         let id ← mkFreshId
@@ -105,19 +104,19 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
         | .inl _, .inl _ =>
           let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi id id q(true) out)
           let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
-          return q(combine_step $pf1 $pf2 $pf3 rfl $inst)
+          return q(combine_step $pf1 $pf2 $pf3 $inst)
         | .inl _, .inr _ =>
           let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi id id q(false) out)
           let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
-          return q(combine_step $pf1 $pf2 $pf3 rfl $inst)
+          return q(combine_step $pf1 $pf2 $pf3 $inst)
         | .inr _, .inl _ =>
           let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi id id q(false) out)
           let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
-          return q(combine_step $pf1 $pf2 $pf3 rfl $inst)
+          return q(combine_step $pf1 $pf2 $pf3 $inst)
         | .inr _, .inr _ =>
           let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi id id q(false) out)
           let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
-          return q(combine_step $pf1 $pf2 $pf3 rfl $inst)
+          return q(combine_step $pf1 $pf2 $pf3 $inst)
   termination_by hs.length
 
 elab "icombine" hs:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
