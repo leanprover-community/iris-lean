@@ -2293,14 +2293,14 @@ example [BI PROP] {P1 P2 P3 P4 Q : PROP} :
   iexact Hnew
 
 /- Tests `icomine` failure: combining a proposition in the spatial context twice -/
-/-- error: icombine: proposition in spatial context cannot be used multiple times -/
+/-- error: icombine: propositions in the spatial context cannot be used as arguments multiple times -/
 #guard_msgs in
 example [BI PROP] {P : PROP} : ⊢ P -∗ P ∗ P := by
   iintro HP
   icombine HP HP as Hnew
 
 /- Tests `icomine` failure: combining a proposition in the spatial context twice -/
-/-- error: icombine: proposition in spatial context cannot be used multiple times -/
+/-- error: icombine: propositions in the spatial context cannot be used as arguments multiple times -/
 #guard_msgs in
 example [BI PROP] {P Q : PROP} : ⊢ P -∗ Q -∗ R -∗ P ∗ Q ∗ R ∗ P := by
   iintro HP HQ HR
