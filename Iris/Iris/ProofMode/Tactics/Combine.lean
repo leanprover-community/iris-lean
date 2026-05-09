@@ -102,19 +102,19 @@ private def iCombineCore {u} {prop : Q(Type u)} {bi e}
         -- Add the combined hypothesis to the context and into the list `hs`
         match matchBool p1, matchBool p2 with
         | .inl _, .inl _ =>
-          let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi id id q(true) out)
+          let newHyps := hyps2.add bi id id q(true) out
           let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
           return q(combine_step $pf1 $pf2 $pf3 $inst)
         | .inl _, .inr _ =>
-          let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi id id q(false) out)
+          let newHyps := hyps2.add bi id id q(false) out
           let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
           return q(combine_step $pf1 $pf2 $pf3 $inst)
         | .inr _, .inl _ =>
-          let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi id id q(false) out)
+          let newHyps := hyps2.add bi id id q(false) out
           let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
           return q(combine_step $pf1 $pf2 $pf3 $inst)
         | .inr _, .inr _ =>
-          let newHyps := Hyps.mkSep hyps2 (Hyps.mkHyp bi id id q(false) out)
+          let newHyps := hyps2.add bi id id q(false) out
           let pf3 ← iCombineCore newHyps goal (h :: htail) pat true
           return q(combine_step $pf1 $pf2 $pf3 $inst)
   termination_by hs.length
