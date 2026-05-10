@@ -157,7 +157,8 @@ private def iCombineAsCore {u} {prop : Q(Type u)} {bi e}
 /-- Use the type class `CombineSepGives` to derive a new proposition in the
     the intutitionistic context and retain the original hypotheses  -/
 private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
-  (hyps : Hyps bi e) (goal : Q($prop)) (hs : List Ident) (pat : iCasesPat) :
+  (hyps : Hyps bi e) (goal : Q($prop)) (hs : List Ident) (pat : iCasesPat)
+  (recCall : Bool := false) :
   ProofModeM Q($e ⊢ $goal) := do
     match hs with
     -- Combine the hypotheses if two or more are given as `icombine` arguments
@@ -165,7 +166,9 @@ private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
       let uniq1 ← hyps.findWithInfo h1
       let uniq2 ← hyps.findWithInfo h2
 
-      let ⟨_, hyps1, out1, _, p1, _, pf1⟩ := hyps.remove false uniq1
+      -- We use `hyps.remove` to extract `out1` and `out2` for `CombineSepGives`
+      -- The resultant
+      let ⟨_, hyps1, out1, _, p1, _, pf1⟩ := hyps.remove recCall uniq1
 
       if (h2 :: htail).contains h1 ∧ ¬isTrue p1 then
         throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
@@ -179,16 +182,24 @@ private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
 
       match htail with
       | [] =>
-        -- Introduce the new hypothesis into the intuitionistic context
-        -- New proof goal for the tactic user
+        -- Introduce the new hypothesis into the intuitionistic context and the new proof goal
+        -- Note that we use the original set of hypothesis (`hyps`)
         let pf3 ← iCasesCore _ hyps goal pat q(true) out addBIGoal
         return q(combine_step_gives $pf1 $pf2 $pf3 $inst)
+      | htail =>
+        -- Create a temporary identifier for the combined hypothesis
+        let id ← mkFreshId
+        let h := mkIdent id
 
-      | _ => throwUnsupportedSyntax
+        let newHyps := hyps.add bi id id q(true) out
+        let pf3 ← iCombineGivesCore newHyps goal (h :: htail) pat true
+
+        return q(combine_step_gives $pf1 $pf2 $pf3 $inst)
     | _ => do
       -- Introduce `True` if less than two hypotheses are given as an `icombine` argument
       let pf ← iCasesCore _ hyps goal pat q(true) q(iprop(True)) addBIGoal
       return q(combine_nil_singleton_gives $pf)
+  termination_by hs.length
 
 elab "icombine" hs:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
   -- Parse syntax

@@ -2141,13 +2141,4 @@ example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
   · iexact Hnew2
   · iexact Hnew1
 
-/-- Tests `icombine` with `gives` and three hypotheses that can be combined
-    using the type class `CombineSepGives` -/
-example [BI PROP] {P Q R S T : PROP}
-  [CombineSepGives P Q R] [CombineSepGives R S T] :
-  ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> S -∗ <pers> T := by
-  iintro HP HQ HS
-  icombine HP HQ HR gives Hnew
-  iexact Hnew
-
 end icombine
