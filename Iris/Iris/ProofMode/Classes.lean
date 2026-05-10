@@ -189,6 +189,7 @@ class CombineSepAs [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_as : P ∗ Q ⊢ R
 export CombineSepAs (combine_sep_as)
 
+/-- `CombineSepGives` combines two propositions `P` and `Q` for a proposition with the `<pers>` modality -/
 @[ipm_class]
 class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
