@@ -286,7 +286,6 @@ instance : CMRA (View F R) where
 #rocq_ignore view_valid_eq "Defeq from the CMRA instance"
 #rocq_ignore view_validN_eq "Defeq from the CMRA instance"
 #rocq_ignore view_pcore_eq "Defeq from the CMRA instance"
-#rocq_ignore view_code_eq "Defeq from the CMRA instance"
 #rocq_ignore view_op_eq "Defeq from the CMRA instance"
 
 @[rocq_alias view_cmra_discrete]
