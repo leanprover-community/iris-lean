@@ -2309,7 +2309,7 @@ example [BI PROP] {P : PROP} : ⊢ P -∗ P ∗ P := by
 /- Tests `icomine` failure: combining a proposition in the spatial context twice -/
 /-- error: icombine: propositions in the spatial context cannot be used as arguments multiple times -/
 #guard_msgs in
-example [BI PROP] {P Q : PROP} : ⊢ P -∗ Q -∗ R -∗ P ∗ Q ∗ R ∗ P := by
+example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ R -∗ P ∗ Q ∗ R ∗ P := by
   iintro HP HQ HR
   icombine HP HQ HR HP as Hnew
 
