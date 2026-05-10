@@ -207,3 +207,15 @@ elab "icombine" hs:(colGt ident)* "gives" colGt pat:icasesPat : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
     let proof ← iCombineGivesCore hyps goal hs.toList pat
     mvar.assign proof
+
+elab "icombine" hs:(colGt ident)* "as" colGt pat1:icasesPat "gives" colGt pat2:icasesPat : tactic => do
+  let pat1 ← liftMacroM <| iCasesPat.parse pat1
+  let pat2 ← liftMacroM <| iCasesPat.parse pat2
+
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+    let proof ← iCombineGivesCore hyps goal hs.toList pat1
+    mvar.assign proof
+
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+    let proof ← iCombineAsCore hyps goal hs.toList pat2
+    mvar.assign proof

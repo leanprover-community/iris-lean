@@ -2402,6 +2402,15 @@ example [BI PROP] {P Q R : PROP} :
   iintro HP HQ
   icombine HP HQ gives Hnew
 
+/-- Tests `icombine` with `as` and `gives` -/
+example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
+  ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by
+  iintro HP HQ
+  icombine HP HQ as Hnew1 gives Hnew2
+  isplitl
+  · iexact Hnew2
+  · iexact Hnew1
+
 /-- Tests `icombine` with `gives` and three hypotheses that can be combined
     using the type class `CombineSepGives` -/
 example [BI PROP] {P Q R S T : PROP}
