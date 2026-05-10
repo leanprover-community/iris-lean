@@ -2100,10 +2100,45 @@ example [BI PROP] {P Q R : PROP} :
   icombine HR HQ HP HR as Hnew
   iexact Hnew
 
-example [BI PROP] {P Q R : PROP} [h : CombineSepGives P Q R] :
+/-- Tests `icombine` with `gives` and no hypotheses -/
+example [BI PROP] {P : PROP} :
+  ⊢ P -∗ True := by
+  iintro -
+  -- `True` is created as the new proposition in the intuitionsitic context
+  icombine gives Hnew
+  iexact Hnew
+
+/-- Tests `icombine` with `gives` and one hypothesis -/
+example [BI PROP] {P : PROP} :
+  ⊢ P -∗ True := by
+  iintro HP
+  -- `True` is created as the new proposition in the intuitionsitic context
+  icombine HP gives Hnew
+  iexact Hnew
+
+/-- Tests `icombine` with `gives` and two hypotheses that can be combined
+    using the type class `CombineSepGives` -/
+example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
   ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <pers> R := by
   iintro HP HQ
   icombine HP HQ gives Hnew
+  iexact Hnew
+
+/- Tests `icombine` with `gives` and two hypotheses generically -/
+/-- error: icombine: no type class instance to combine propositions -/
+#guard_msgs in
+example [BI PROP] {P Q R : PROP} :
+  ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <pers> R := by
+  iintro HP HQ
+  icombine HP HQ gives Hnew
+
+/-- Tests `icombine` with `gives` and three hypotheses that can be combined
+    using the type class `CombineSepGives` -/
+example [BI PROP] {P Q R S T : PROP}
+  [CombineSepGives P Q R] [CombineSepGives R S T] :
+  ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> S -∗ <pers> T := by
+  iintro HP HQ HS
+  icombine HP HQ HR gives Hnew
   iexact Hnew
 
 end icombine
