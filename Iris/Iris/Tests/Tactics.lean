@@ -1885,6 +1885,7 @@ example [BI PROP] [BIFUpdate PROP]
 end imod
 
 section inext
+open ProofMode
 
 /- Tests `inext` failing on non-later goal -/
 set_option pp.mvars false in
@@ -1897,6 +1898,7 @@ example [BI PROP] (P : PROP) : P ⊢ P := by
 end inext
 
 section icombine
+open ProofMode
 
 /-- Tests `icombine` with the default case of combining propositions with the separating conjunction -/
 example [BI PROP] {P1 P2 Q : PROP} :
@@ -2096,6 +2098,12 @@ example [BI PROP] {P Q R : PROP} :
   iintro HP HQ #HR
   -- The proposition R ∗ Q ∗ P ∗ R exists in the spatial context
   icombine HR HQ HP HR as Hnew
+  iexact Hnew
+
+example [BI PROP] {P Q R : PROP} [h : CombineSepGives P Q R] :
+  ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <pers> R := by
+  iintro HP HQ
+  icombine HP HQ gives Hnew
   iexact Hnew
 
 end icombine
