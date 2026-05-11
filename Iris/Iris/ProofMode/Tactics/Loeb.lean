@@ -14,20 +14,6 @@ open Lean Meta Elab.Tactic Qq
 
 public meta section
 
-def ProofModeM.pruneSolvedGoals : ProofModeM Unit := do
-  let gs := (←get).goals
-  let gs ← gs.filterM fun g => not <$> g.isAssigned
-  modify ({· with goals := gs})
-
-def ProofModeM.getUnsolvedGoals : ProofModeM (Array MVarId) := do
-  pruneSolvedGoals
-  return (←get).goals
-
-def ProofModeM.getMainGoal : ProofModeM MVarId := do
-  let ⟨g :: _⟩ ← getUnsolvedGoals
-    | throwError "No more proof mode goals!"
-  return g
-
 inductive RevertTarget where
 | lean (id : FVarId)
 | pm (persistent? : Bool) (uniq : IVarId)

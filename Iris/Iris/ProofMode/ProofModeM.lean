@@ -123,3 +123,25 @@ def ProofModeM.runTactic (x : MVarId → IrisGoal → ProofModeM α) (s : ProofM
 
   replaceMainGoal (nonDep ++ dep).toList
   return res
+
+def ProofModeM.pruneSolvedGoals : ProofModeM Unit := do
+  let gs := (←get).goals
+  let gs ← gs.filterM fun g => not <$> g.isAssigned
+  modify ({· with goals := gs})
+
+def ProofModeM.getUnsolvedGoals : ProofModeM (Array MVarId) := do
+  pruneSolvedGoals
+  return (←get).goals
+
+def ProofModeM.getMainGoal : ProofModeM MVarId := do
+  loop (←get).goals 0
+where
+  loop (goals : Array MVarId) (i : Nat) : ProofModeM MVarId := do
+    if h: i < goals.size then
+      if (← goals[i].isAssigned) then
+        loop goals (i+1)
+      else
+        modify ({· with goals:= goals[i...*]})
+        return goals[i]
+    else
+      throwNoGoalsToBeSolved
