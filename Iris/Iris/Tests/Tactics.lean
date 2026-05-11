@@ -2352,9 +2352,18 @@ example [BI PROP] {P Q R : PROP} :
   iintro HP HQ
   icombine HP HQ gives Hnew
 
-/-- Tests `icombine` with `as` and `gives` -/
+/-- Tests `icombine` with `as` and `gives` using propositions with `<absorb>` and `<affine>` modalities -/
 example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
   ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by
+  iintro HP HQ
+  icombine HP HQ as Hnew1 gives Hnew2
+  isplitl
+  · iexact Hnew2
+  · iexact Hnew1
+
+/-- Tests `icombine` with `as` and `gives` for propositions with later modalities -/
+example [BI PROP] {n : Nat} {P Q R : PROP} [CombineSepGives P Q R] :
+  ⊢ ▷^[n] ◇ P -∗ ▷^[n] ◇ Q -∗ ▷^[n] ◇ (P ∗ Q) ∗ <pers> ▷^[n] ◇ R := by
   iintro HP HQ
   icombine HP HQ as Hnew1 gives Hnew2
   isplitl
