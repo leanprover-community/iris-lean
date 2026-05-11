@@ -178,7 +178,7 @@ under the feature in the HTML report.
 elab "#rocq_concept" folder:ident feature:str sub:(str)? status:ident reason:str : command => do
   checkRocqFolder folder
   let statusName := status.getId
-  unless statusName == `ported || statusName == `missing do
-    throwErrorAt status "status must be 'ported' or 'missing', got '{statusName}'"
+  unless statusName == `ported || statusName == `missing || statusName == `ignored do
+    throwErrorAt status "status must be 'ported' or 'missing' or 'ignored', got '{statusName}'"
   let sub := sub.map (·.getString)
   modifyEnv (rocqConceptExt.addEntry · (folder.getId.toString, feature.getString, sub, statusName, reason.getString))

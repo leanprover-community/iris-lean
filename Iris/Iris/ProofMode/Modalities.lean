@@ -12,6 +12,7 @@ public import Iris.BI
 namespace Iris.ProofMode
 open Iris.BI
 
+@[rocq_alias modality_action]
 inductive ModalityAction (PROP1 : Type u) : Type u → Type (u + 1) where
 | isEmpty {PROP2} : ModalityAction PROP1 PROP2
 | forall : (PROP1 → Prop) → ModalityAction PROP1 PROP1
@@ -23,7 +24,7 @@ namespace ModalityAction
 
 variable [BI PROP1] [h2 : BI PROP2] (s : ModalityAction PROP1 PROP2)
 
-@[simp]
+@[simp, rocq_alias modality_intuitionistic_action_spec, rocq_alias modality_spatial_action_spec]
 def action_spec (p : Bool) : (PROP1 → PROP2) → Prop :=
   match s, h2 with
   | .isEmpty, _ => λ _ => True
@@ -40,6 +41,7 @@ def action_spec (p : Bool) : (PROP1 → PROP2) → Prop :=
 
 end ModalityAction
 
+@[rocq_alias modality, rocq_alias modality_mixin, rocq_alias modality_emp, rocq_alias modality_mono, rocq_alias modality_sep]
 structure Modality PROP1 PROP2 [BI PROP1] [BI PROP2] where
   M : PROP1 → PROP2
   action : Bool → ModalityAction PROP1 PROP2
@@ -48,6 +50,7 @@ structure Modality PROP1 PROP2 [BI PROP1] [BI PROP2] where
   mono : ∀ {P Q}, (P ⊢ Q) → M P ⊢ M Q
   sep : ∀ {P Q}, iprop(M P ∗ M Q) ⊢ M iprop(P ∗ Q)
 
+@[rocq_alias modality_id, rocq_alias modality_id_mixin]
 def modality_id [BI PROP] : Modality PROP PROP where
   M := id
   action _ := .id
@@ -55,3 +58,16 @@ def modality_id [BI PROP] : Modality PROP PROP where
   emp := by simp
   mono := by simp
   sep := by simp
+
+#rocq_ignore modality_intuitionistic_transform "Handled by simplifying action_spec"
+#rocq_ignore modality_and_transform "Handled by simplifying action_spec"
+#rocq_ignore modality_spatial_transform "Handled by simplifying action_spec"
+#rocq_ignore modality_spatial_clear "Handled by simplifying action_spec"
+#rocq_ignore modality_and_forall "Handled by simplifying action_spec"
+#rocq_ignore modality_intuitionistic_forall "Handled by simplifying action_spec"
+#rocq_ignore modality_intuitionistic_id "Handled by simplifying action_spec"
+#rocq_ignore modality_spatial_forall "Handled by simplifying action_spec"
+#rocq_ignore modality_spatial_id "Handled by simplifying action_spec"
+#rocq_ignore modality_intuitionistic_forall_big_and "Not necessary due to different env representation"
+#rocq_ignore modality_intuitionistic_id_big_and "Not necessary due to different env representation"
+#rocq_ignore modality_spatial_forall_big_sep "Not necessary due to different env representation"

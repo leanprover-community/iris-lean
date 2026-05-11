@@ -96,7 +96,7 @@ elab "irevert" pats:(colGt selPat)+ : tactic => do
     let targets ← SelPat.resolve hyps pats
     let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
     let st ← targets.reverse.foldlM (init := init) fun st target => do
-      match target with
+      match target.target with
       | .inl uniq => st.revertProofModeHyp uniq
       | .inr fvar => st.revertLeanHyp fvar
 

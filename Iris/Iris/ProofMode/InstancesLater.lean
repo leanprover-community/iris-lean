@@ -37,18 +37,18 @@ instance fromAssumption_except0 [BI PROP] (p : Bool) ioP (P Q : PROP)
 /-- FromPure -/
 
 @[rocq_alias from_pure_later]
-instance fromPure_later [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
-    [h : FromPure a P φ] : FromPure a iprop(▷ P) φ where
+instance fromPure_later {io} [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
+    [h : FromPure a P io φ] : FromPure a iprop(▷ P) io φ where
   from_pure := h.1.trans later_intro
 
 @[rocq_alias from_pure_laterN]
-instance fromPure_laterN [BI PROP] (a : Bool) (n : Nat) (P : PROP) (φ : Prop)
-    [h : FromPure a P φ] : FromPure a iprop(▷^[n] P) φ where
+instance fromPure_laterN {io} [BI PROP] (a : Bool) (n : Nat) (P : PROP) (φ : Prop)
+    [h : FromPure a P io φ] : FromPure a iprop(▷^[n] P) io φ where
   from_pure := h.1.trans (laterN_intro n)
 
 @[rocq_alias from_pure_except_0]
-instance fromPure_except0 [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
-    [h : FromPure a P φ] : FromPure a iprop(◇ P) φ where
+instance fromPure_except0 {io} [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
+    [h : FromPure a P io φ] : FromPure a iprop(◇ P) io φ where
   from_pure := h.1.trans except0_intro
 
 /-- IntoWand -/
@@ -317,11 +317,12 @@ instance (priority := default - 10) elimModal_timeless [BI PROP] p (P P' Q : PRO
   elim_modal _ := ((sep_mono ((intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf_2) except0_intro).trans $ except0_sep.2.trans (except0_mono wand_elim_r)).trans is_except0
 
 /-- IntoLaterN -/
+@[rocq_alias maybe_into_laterN_default]
 instance (priority := low) intoLaterN_default [BI PROP] only_head n (P : PROP) :
   IntoLaterN only_head n P P where
   into_laterN := laterN_intro n
 
-@[rocq_alias into_laterN_0]
+@[rocq_alias into_laterN_0, rocq_alias maybe_into_laterN_default_0]
 instance (priority := high) intoLaterN_default_0 [BI PROP] only_head (P : PROP) :
   IntoLaterN only_head 0 P P where
   into_laterN := laterN_intro 0

@@ -32,6 +32,13 @@ instance [t : T] : TCOr T U := @TCOr.l T U t
 instance [u : U] : TCOr T U := @TCOr.r T U u
 
 
+/-- Type class version of `Eq`, i.e. a type class that has an instance exactly when `a = b`. -/
+class inductive TCEq {α : Sort _} (a : α) : α → Prop
+  | refl : TCEq a a
+
+instance {α : Sort _} {a : α} : TCEq a a := TCEq.refl
+
+
 /-- Type class version of `Ite`, i.e. a type class for which an instance exists if the boolean
 condition is `true` and an instance of `T` is present or the condition is `false` and an instance
 of `U` is present.

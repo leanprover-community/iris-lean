@@ -52,9 +52,9 @@ theorem ndot_ne_disjoint [Pos.Countable A] (N : Namespace) {x y : A} (Hxy : x �
   intros p
   simp only [nclose, CoPset.elem_suffixes]
   rintro ⟨⟨qx, Heqx⟩, ⟨qy, Heqy⟩⟩
-  refine Hxy (Pos.encode_inj.inj _ _ ?_)
-  have _ := Pos.flatten_suffix_eq (by simp [ndot]) (Heqx ▸ Heqy)
-  simp_all [ndot]
+  apply Hxy
+  have := Pos.flatten_suffix_eq (by simp [ndot]) (Heqx ▸ Heqy)
+  simpa only [ndot, List.cons.injEq, Pos.encode_inj, Function.Injective.eq_iff, and_true]
 
 theorem ndot_preserve_disjoint_l [Pos.Countable A] {N : Namespace} {E : CoPset} (x : A)
     (Hdisj : ↑N ## E) : ↑(N.@x) ## E :=

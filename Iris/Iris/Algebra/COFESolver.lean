@@ -269,4 +269,33 @@ def Fix.unfold : Fix F -n> F (Fix F) (Fix F) := Fix.iso.inv
 theorem Fix.fold_unfold (X : Fix F) : Fix.fold (Fix.unfold X) ≡ X := Fix.iso.hom_inv
 theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) ≡ X := Fix.iso.inv_hom
 
+section leibniz
+
+open Iris.Leibniz
+
+variable [LeibnizPreservingOFunctor F]
+
+instance : Leibniz (A F 0) where
+  eq_of_eqv {x y} _ := match x, y with | ⟨_⟩, ⟨_⟩ => rfl
+
+instance {k : Nat} [Leibniz (A F k)] : Leibniz (A F (k+1)) where
+  eq_of_eqv {_ _} := by
+    simp only [A, A'] at *
+    exact eq_of_eqv (self := LeibnizPreservingOFunctor.out)
+
+@[reducible]
+def LeibnizA (k : Nat) : Leibniz (A F k) :=
+  match k with
+  | 0 => inferInstance
+  | k+1 => haveI := LeibnizA k; inferInstance
+
+instance {k : Nat} : Leibniz (A F k) := LeibnizA k
+
+instance : Leibniz (Tower F) where
+  eq_of_eqv {_ _} H := by ext n; exact eq_of_eqv (H n)
+
+instance : Leibniz (Fix F) := inferInstanceAs (Leibniz (Tower F))
+
+end leibniz
+
 attribute [irreducible] Fix Fix.fold Fix.unfold Fix.iso

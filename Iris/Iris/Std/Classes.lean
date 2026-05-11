@@ -71,8 +71,4 @@ class Disjoint (α : Type u) where
 export Disjoint (disjoint)
 infix:50 " ## " => Disjoint.disjoint
 
-class Injective (f : A -> B) where
-  inj : ∀ (a a' : A), f a = f a' -> a = a'
-export Injective (inj)
-
 end Iris.Std

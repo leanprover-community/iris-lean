@@ -33,7 +33,7 @@ namespace AuthViewRel
 
 variable [UCMRA A]
 
-/-- Rocq: `auth_view_rel_raw_mono`, `auth_view_rel_raw_valid`, `auth_view_rel_raw_unit` -/
+@[rocq_alias auth_view_rel]
 instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) where
   mono := by
     intro _ a1 b1 n2 a2 b2 ⟨hinc, hv⟩ ha hb hn
@@ -43,6 +43,10 @@ instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) where
          _  ≼{n2} a2 := ha.to_incN
   rel_validN n a b := fun ⟨hinc, hv⟩ => validN_of_incN hinc hv
   rel_unit n := ⟨unit, incN_refl unit, unit_valid.validN⟩
+
+#rocq_ignore auth_view_rel_raw_mono "Use the IsViewRel typeclass"
+#rocq_ignore auth_view_rel_raw_valid "Use the IsViewRel typeclass"
+#rocq_ignore auth_view_rel_raw_unit "Use the IsViewRel typeclass"
 
 @[rocq_alias auth_view_rel_unit]
 theorem authViewRel_unit_iff {n : Nat} {a : A} : AuthViewRel n a unit ↔ ✓{n} a :=
@@ -67,15 +71,23 @@ abbrev Auth (F : Type _) (A : Type _) [UFraction F] [UCMRA A] :=
 namespace Auth
 variable [UFraction F] [UCMRA A]
 
-@[rocq_alias authO]
 instance : OFE (Auth F A) := View.instOFE
-@[rocq_alias authR]
 instance : CMRA (Auth F A) := View.instCMRA
-@[rocq_alias authUR]
 instance : UCMRA (Auth F A) := View.instUCMRA
 
+#rocq_ignore authO "Use the Auth type and View.instOFE typeclass"
+#rocq_ignore authR "Use the Auth type and View.instCMRA typeclass"
+#rocq_ignore authUR "Use the Auth type and View.instUCMRA typeclass"
+
+#rocq_ignore auth_cmra_discrete "Inference succeeds automatically"
+#rocq_ignore auth_ofe_discrete "Inference succeeds automatically"
+
+@[rocq_alias auth_auth]
 abbrev auth (dq : DFrac F) (a : A) : Auth F A := View.Auth dq a
+
 abbrev authFull (a : A) : Auth F A := Auth (DFrac.own One.one) a
+
+@[rocq_alias auth_frag]
 abbrev frag (b : A) : Auth F A := Frag b
 
 notation "●{" dq "} " a => auth dq a
@@ -86,9 +98,13 @@ notation "◯ " b => frag b
 nonrec instance auth_ne {dq : DFrac F} : NonExpansive (auth dq : A → Auth F A) :=
   auth_ne
 
+#rocq_ignore auth_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
+
 @[rocq_alias auth_frag_ne]
 nonrec instance frag_ne : NonExpansive (frag : A → Auth F A) :=
   frag_ne
+
+#rocq_ignore auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
 
 @[rocq_alias auth_auth_dist_inj]
 nonrec theorem auth_dist_inj {n : Nat} {dq1 dq2 : DFrac F} {a1 a2 : A}
@@ -217,6 +233,9 @@ theorem frag_op_validN {n : Nat} {b1 b2 : A} :
     (✓{n} ((◯ b1 : Auth F A) • ◯ b2)) ↔ (✓{n} (b1 • b2)) := by
   rw [← frag_op]; exact frag_validN
 
+#rocq_ignore auth_frag_op_validN_1 "Use frag_op_validN"
+#rocq_ignore auth_frag_op_validN_2 "Use frag_op_validN"
+
 @[rocq_alias auth_both_dfrac_validN]
 theorem both_dfrac_validN {n : Nat} {dq : DFrac F} {a b : A} :
     (✓{n} ((●{dq} a) • ◯ b)) ↔ (✓ dq ∧ b ≼{n} a ∧ ✓{n} a) :=
@@ -256,9 +275,15 @@ theorem frag_valid {b : A} : (✓ (◯ b : Auth F A)) ↔ (✓ b) := by
   simp only [valid_iff_validN]
   exact forall_congr' fun _ => frag_validN
 
+#rocq_ignore auth_frag_valid_1 "Use frag_valid"
+#rocq_ignore auth_frag_valid_2 "Use frag_valid"
+
 @[rocq_alias auth_frag_op_valid]
 theorem frag_op_valid {b1 b2 : A} : (✓ ((◯ b1 : Auth F A) • ◯ b2)) ↔ (✓ (b1 • b2)) := by
   rw [← frag_op]; exact frag_valid
+
+#rocq_ignore auth_frag_op_valid_1 "Use frag_op_valid"
+#rocq_ignore auth_frag_op_valid_2 "Use frag_op_valid"
 
 @[rocq_alias auth_both_dfrac_valid]
 theorem both_dfrac_valid {dq : DFrac F} {a b : A} :

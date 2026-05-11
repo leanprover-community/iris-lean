@@ -14,6 +14,7 @@ meta import Iris.Std.RocqPorting
 
 namespace Iris
 
+@[rocq_alias csum]
 inductive Csum (α β : Type _) where
   | inl : α → Csum α β
   | inr : β → Csum α β
@@ -25,13 +26,13 @@ namespace Csum
 
 /-! ## OFE -/
 
-@[simp] protected def Equiv [OFE α] [OFE β] : Csum α β → Csum α β → Prop
+@[simp, rocq_alias csum_equiv] def Equiv [OFE α] [OFE β] : Csum α β → Csum α β → Prop
   | inl a, inl a' => a ≡ a'
   | inr b, inr b' => b ≡ b'
   | invalid, invalid => True
   | _, _ => False
 
-@[simp] protected def Dist [OFE α] [OFE β] (n : Nat) : Csum α β → Csum α β → Prop
+@[simp, rocq_alias csum_dist] def Dist [OFE α] [OFE β] (n : Nat) : Csum α β → Csum α β → Prop
   | inl a, inl a' => a ≡{n}≡ a'
   | inr b, inr b' => b ≡{n}≡ b'
   | invalid, invalid => True
@@ -47,6 +48,7 @@ theorem dist_eqv [OFE α] [OFE β] {n} : Equivalence (Csum.Dist (α := α) (β :
     cases x <;> cases y <;> cases z <;>
       first | trivial | exact h₁.trans h₂ | exact h₂.elim | exact h₁.elim
 
+@[rocq_alias csum_ofe_mixin]
 instance [OFE α] [OFE β] : OFE (Csum α β) where
   Equiv := Csum.Equiv
   Dist := Csum.Dist
@@ -58,13 +60,19 @@ instance [OFE α] [OFE β] : OFE (Csum α β) where
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> first | exact OFE.Dist.lt hn hlt | exact hn.elim | trivial
 
+#rocq_ignore csumO "Use Csum type with typeclass inference"
+
 @[rocq_alias Cinl_ne]
 instance [OFE α] [OFE β] : NonExpansive (inl (α := α) (β := β)) where
   ne _ _ _ := id
 
+#rocq_ignore Cinl_proper "Derivable using NonExpansive.eqv"
+
 @[rocq_alias Cinr_ne]
 instance [OFE α] [OFE β] : NonExpansive (inr (α := α) (β := β)) where
   ne _ _ _ := id
+
+#rocq_ignore Cinr_proper "Derivable using NonExpansive.eqv"
 
 @[rocq_alias Cinl_inj]
 theorem inl_inj [OFE α] [OFE β] {a a' : α} (h : (inl (β := β) a) ≡ inl a') : a ≡ a' := h
@@ -181,6 +189,7 @@ private theorem pcore_map_inr_eq [CMRA β] {b : β} {cx : Csum α β}
     ∃ cb, CMRA.pcore b = some cb ∧ cx = inr cb := by
   cases _ : CMRA.pcore b <;> simp_all
 
+@[rocq_alias csum_cmra_mixin]
 instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
   pcore := Csum.pcore
   op := Csum.op
@@ -242,6 +251,12 @@ instance [CMRA α] [CMRA β] : CMRA (Csum α β) where
          exact ⟨inl z₁, inl z₂, hz, hz₁, hz₂⟩)
       | (obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := CMRA.extend hv he
          exact ⟨inr z₁, inr z₂, hz, hz₁, hz₂⟩)
+
+#rocq_ignore csumR "Use Csum type with typeclass inference"
+#rocq_ignore csum_op_instance "Use CMRA instance"
+#rocq_ignore csum_pcore_instance "Use CMRA instance"
+#rocq_ignore csum_validN_instance "Use CMRA instance"
+#rocq_ignore csum_valid_instance "Use CMRA instance"
 
 @[rocq_alias Cinl_valid]
 theorem inl_valid [CMRA α] [CMRA β] {a : α} : ✓ (inl (β := β) a) ↔ ✓ a := .rfl
@@ -521,6 +536,7 @@ theorem oMap_ne [OFE α] [OFE α'] [OFE β] [OFE β'] :
 abbrev OF (Fa Fb : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => Csum (Fa A B) (Fb A B)
 
+@[rocq_alias csum_map_cmra_morphism]
 def cMap [CMRA α] [CMRA α'] [CMRA β] [CMRA β']
     (fa : α -C> α') (fb : β -C> β') : Csum α β -C> Csum α' β' where
   f := map fa fb

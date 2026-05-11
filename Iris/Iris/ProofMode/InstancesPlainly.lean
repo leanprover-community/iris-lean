@@ -31,8 +31,8 @@ instance fromAssumption_plainly_l_false [Sbi PROP] [BIAffine PROP] (P Q : PROP)
 /-- FromPure -/
 
 @[rocq_alias from_pure_plainly]
-instance fromPure_plainly [Sbi PROP] (P : PROP) (φ : Prop)
-    [h : FromPure false P φ] : FromPure false iprop(■ P) φ where
+instance fromPure_plainly {io} [Sbi PROP] (P : PROP) (φ : Prop)
+    [h : FromPure false P io φ] : FromPure false iprop(■ P) io φ where
   from_pure := plainly_pure.2.trans (plainly_mono h.1)
 
 /-- IntoPure -/

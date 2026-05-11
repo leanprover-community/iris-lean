@@ -16,6 +16,7 @@ declare_syntax_cat icasesPat
 syntax icasesPatAlts := sepBy1(icasesPat, " | ")
 syntax binderIdent : icasesPat
 syntax "-" : icasesPat
+syntax "$" : icasesPat
 syntax "⟨" icasesPatAlts,* "⟩" : icasesPat
 syntax "(" icasesPatAlts ")" : icasesPat
 syntax "%" binderIdent : icasesPat
@@ -28,6 +29,7 @@ syntax ">" icasesPat : icasesPat
 inductive iCasesPat
   | one (name : TSyntax ``binderIdent)
   | clear
+  | frame
   | conjunction (args : List iCasesPat)
   | disjunction (args : List iCasesPat)
   | pure           (pat : TSyntax ``binderIdent)
@@ -44,6 +46,7 @@ where
   go : TSyntax `icasesPat → Option iCasesPat
   | `(icasesPat| $name:binderIdent) => some <| .one name
   | `(icasesPat| -) => some <| .clear
+  | `(icasesPat| $) => some <| .frame
   | `(icasesPat| ⟨$[$args],*⟩) => args.mapM goAlts |>.map (.conjunction ·.toList)
   | `(icasesPat| %$pat:binderIdent) => some <| .pure pat
   | `(icasesPat| #$pat) => go pat |>.map .intuitionistic

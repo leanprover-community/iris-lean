@@ -952,7 +952,7 @@ theorem map_subset {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
   exists x; exact ⟨hf, h _ hx⟩
 
 theorem toList_map_perm {S' : Type _} {B : Type _} [LawfulFiniteSet S' B]
-    {f : A → B} (s : S) (hinj : Injective f) :
+    {f : A → B} (s : S) (hinj : f.Injective) :
     (toList (map (S' := S') f s)).Perm (List.map f (toList s)) := by
   simp only [map]
   have hnodup : (List.map f (toList s)).Nodup := by

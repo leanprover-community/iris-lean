@@ -245,10 +245,10 @@ theorem updateP_both_unpersist [IsSplitFraction F] {q : Frac F} {a b : A} :
 
 @[rocq_alias frac_authURF]
 abbrev FracAuthURF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
-  AuthURF (F := F) (OptionOF (ProdOF (COFE.constOF (Frac F)) T))
+  AuthURF (F := F) (OptionOF (ProdOF (constOF (Frac F)) T))
 
 @[rocq_alias frac_authRF]
 abbrev FracAuthF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
-  AuthRF (F := F) (OptionOF (ProdOF (COFE.constOF (Frac F)) T))
+  AuthRF (F := F) (OptionOF (ProdOF (constOF (Frac F)) T))
 
 end FracAuth
