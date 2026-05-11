@@ -55,20 +55,22 @@ theorem combine_nil_singleton_gives [BI PROP] {e goal : PROP}
 theorem combine_step_gives [BI PROP] {out1 out2 out e1 e2 e goal : PROP}
   (pf1 : e ⊣⊢ e1 ∗ out1)
   (pf2 : e1 ⊣⊢ e2 ∗ out2)
-  (pf3 : e ∗ □ out ⊢ goal)
+  (pf3 : e' ∗ □ out ⊢ goal)
+  (pf4 : e ⊢ e')
   (inst : CombineSepGives out1 out2 out) : e ⊢ goal :=
-    have pf4 : e ⊣⊢ e2 ∗ out1 ∗ out2 := by calc
+    have pf5 : e ⊣⊢ e2 ∗ out1 ∗ out2 := by calc
       e ⊣⊢ e1 ∗ out1          := pf1
       _ ⊣⊢ (e2 ∗ out2) ∗ out1 := sep_congr pf2 .rfl
       _ ⊣⊢ e2 ∗ out2 ∗ out1   := sep_assoc
       _ ⊣⊢ e2 ∗ out1 ∗ out2   := sep_congr .rfl sep_comm
     calc
-      e ⊢ e2 ∗ out1 ∗ out2 := pf4.mp
+      e ⊢ e2 ∗ out1 ∗ out2                        := pf5.mp
       _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ out1 ∗ out2) := and_intro refl refl
       _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ <pers> out)  := and_mono refl (sep_mono refl inst.combine_sep_gives)
       _ ⊢ (e2 ∗ out1 ∗ out2) ∧ <pers> out         := and_mono refl sep_elim_r
       _ ⊢ (e2 ∗ out1 ∗ out2) ∗ □ out              := persistently_and_intuitionistically_sep_r.mp
-      _ ⊢ e ∗ □ out                               := sep_mono pf4.mpr refl
+      _ ⊢ e ∗ □ out                               := sep_mono pf5.mpr refl
+      _ ⊢ e' ∗ □ out                              := sep_mono pf4 refl
       _ ⊢ goal                                    := pf3
 
 /-- The tactic `icombine` combines two propositions into one using the type
@@ -123,10 +125,7 @@ private def iCombineAsCore {u} {prop : Q(Type u)} {bi e}
         | .inl _, .inr _ =>
           let pf3 ← iCasesCore _ hyps2 goal pat q(false) out addBIGoal
           return q(combine_as_step $pf1 $pf2 $pf3 $inst)
-        | .inr _, .inl _ =>
-          let pf3 ← iCasesCore _ hyps2 goal pat q(false) out addBIGoal
-          return q(combine_as_step $pf1 $pf2 $pf3 $inst)
-        | .inr _, .inr _ =>
+        | .inr _, _ =>
           let pf3 ← iCasesCore _ hyps2 goal pat q(false) out addBIGoal
           return q(combine_as_step $pf1 $pf2 $pf3 $inst)
       | htail =>
@@ -144,11 +143,7 @@ private def iCombineAsCore {u} {prop : Q(Type u)} {bi e}
           let newHyps := hyps2.add bi id id q(false) out
           let pf3 ← iCombineAsCore newHyps goal (h :: htail) pat true
           return q(combine_as_step $pf1 $pf2 $pf3 $inst)
-        | .inr _, .inl _ =>
-          let newHyps := hyps2.add bi id id q(false) out
-          let pf3 ← iCombineAsCore newHyps goal (h :: htail) pat true
-          return q(combine_as_step $pf1 $pf2 $pf3 $inst)
-        | .inr _, .inr _ =>
+        | .inr _, _ =>
           let newHyps := hyps2.add bi id id q(false) out
           let pf3 ← iCombineAsCore newHyps goal (h :: htail) pat true
           return q(combine_as_step $pf1 $pf2 $pf3 $inst)
@@ -167,7 +162,6 @@ private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
       let uniq2 ← hyps.findWithInfo h2
 
       -- We use `hyps.remove` to extract `out1` and `out2` for `CombineSepGives`
-      -- The resultant
       let ⟨e1, hyps1, out1, out1', p1, _, pf1⟩ := hyps.remove recCall uniq1
 
       if (h2 :: htail).contains h1 ∧ ¬isTrue p1 then
@@ -188,14 +182,15 @@ private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
 
         match matchBool p1 with
         | .inl _ =>
-          let pf4 := q(sep_mono ($(pf1).mp.trans sep_elim_l) (refl : □ $out ⊢ □ $out))
-          let pf5 := q($(pf4).trans $pf3)
-          return q(combine_step_gives $pf1 $pf2 $pf5 $inst)
+          let pf4 := q($(pf1).mp.trans sep_elim_l)
+          return q(combine_step_gives $pf1 $pf2 $pf3 $pf4 $inst)
         | .inr _ =>
-          throwError "icombine: not possible"
+          -- This should never happen as the intermediate proposition generated
+          -- by `iCombineGivesCore` exists in the intuitionistic context
+          throwAbortTactic
       | [], false =>
         let pf3 ← iCasesCore _ hyps goal pat q(true) out addBIGoal
-        return q(combine_step_gives $pf1 $pf2 $pf3 $inst)
+        return q(combine_step_gives $pf1 $pf2 $pf3 refl $inst)
       | htail, _ =>
         -- Create a temporary identifier for the combined hypothesis
         let id ← mkFreshId
@@ -204,7 +199,7 @@ private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
         let newHyps := hyps.add bi id id q(true) out
         let pf3 ← iCombineGivesCore newHyps goal (h :: htail) pat true
 
-        return q(combine_step_gives $pf1 $pf2 $pf3 $inst)
+        return q(combine_step_gives $pf1 $pf2 $pf3 refl $inst)
     | _ => do
       -- Introduce `True` if less than two hypotheses are given as an `icombine` argument
       let pf ← iCasesCore _ hyps goal pat q(true) q(iprop(True)) addBIGoal
