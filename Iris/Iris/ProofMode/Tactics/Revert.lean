@@ -89,16 +89,31 @@ private def RevertState.revertLeanHyp
   else
     st.revertLeanForallHyp f α
 
-elab "irevert" pats:(colGt selPat)+ : tactic => do
-  let pats ← liftMacroM <| SelPat.parse pats
-
-  ProofModeM.runTactic fun mvar { e, hyps, goal, .. } => do
-    let targets ← SelPat.resolve hyps pats
-    let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
-    let st ← targets.reverse.foldlM (init := init) fun st target => do
+def iRevertCore (mvar : MVarId) (g : IrisGoal) (targets : List SelTarget) :
+    ProofModeM (IrisGoal × Expr) := do
+  let {u, prop, bi, e, hyps, goal} := g
+  let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
+  let st ← targets.reverse.foldlM (init := init) fun st target => do
       match target.target with
       | .pm ivar => st.revertProofModeHyp ivar
       | .lean fvar => st.revertLeanHyp fvar
 
-    let pf' ← addBIGoalWithoutFVars st.hyps st.goal st.reverted.reverse
-    mvar.assign q($(st.pf) $pf')
+  let pf' : Q($(st.e) ⊢ $(st.goal)) ← addBIGoalWithoutFVars st.hyps st.goal st.reverted.reverse
+  mvar.assign q($(st.pf) $pf')
+  let g := {
+    u := u,
+    bi := bi,
+    prop := prop,
+    e := st.e,
+    hyps := st.hyps,
+    goal := st.goal
+    : IrisGoal
+  }
+  return (g, pf')
+
+elab "irevert" pats:(colGt selPat)+ : tactic => do
+  let pats ← liftMacroM <| SelPat.parse pats
+
+  ProofModeM.runTactic fun mvar g@{hyps, ..} => do
+    let targets ← SelPat.resolve hyps pats
+    discard <| iRevertCore mvar g targets
