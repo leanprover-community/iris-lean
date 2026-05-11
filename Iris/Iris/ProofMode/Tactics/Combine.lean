@@ -56,7 +56,7 @@ theorem combine_step_gives [BI PROP] {out1 out2 out e1 e2 e goal : PROP}
   (pf1 : e ⊣⊢ e1 ∗ out1)
   (pf2 : e1 ⊣⊢ e2 ∗ out2)
   (pf3 : e ∗ □ out ⊢ goal)
-  (inst : CombineSepGives out1 out2 out) : e ⊢ goal := by
+  (inst : CombineSepGives out1 out2 out) : e ⊢ goal :=
     have pf4 : e ⊣⊢ e2 ∗ out1 ∗ out2 := by calc
       e ⊣⊢ e1 ∗ out1          := pf1
       _ ⊣⊢ (e2 ∗ out2) ∗ out1 := sep_congr pf2 .rfl
@@ -168,7 +168,7 @@ private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
 
       -- We use `hyps.remove` to extract `out1` and `out2` for `CombineSepGives`
       -- The resultant
-      let ⟨_, hyps1, out1, _, p1, _, pf1⟩ := hyps.remove recCall uniq1
+      let ⟨e1, hyps1, out1, out1', p1, _, pf1⟩ := hyps.remove recCall uniq1
 
       if (h2 :: htail).contains h1 ∧ ¬isTrue p1 then
         throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
@@ -180,13 +180,23 @@ private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
       -- Throw an error if a non-trivial fact is not found
       | throwError "icombine: no type class instance to combine propositions"
 
-      match htail with
-      | [] =>
+      match htail, recCall with
+      | [], true =>
         -- Introduce the new hypothesis into the intuitionistic context and the new proof goal
         -- Note that we use the original set of hypothesis (`hyps`)
+        let pf3 ← iCasesCore _ hyps1 goal pat q(true) out addBIGoal
+
+        match matchBool p1 with
+        | .inl _ =>
+          let pf4 := q(sep_mono ($(pf1).mp.trans sep_elim_l) (refl : □ $out ⊢ □ $out))
+          let pf5 := q($(pf4).trans $pf3)
+          return q(combine_step_gives $pf1 $pf2 $pf5 $inst)
+        | .inr _ =>
+          throwError "icombine: not possible"
+      | [], false =>
         let pf3 ← iCasesCore _ hyps goal pat q(true) out addBIGoal
         return q(combine_step_gives $pf1 $pf2 $pf3 $inst)
-      | htail =>
+      | htail, _ =>
         -- Create a temporary identifier for the combined hypothesis
         let id ← mkFreshId
         let h := mkIdent id
