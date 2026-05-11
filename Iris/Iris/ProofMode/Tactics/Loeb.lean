@@ -4,19 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Fernando Leal
 -/
 module
-
-public meta import Iris.ProofMode.Patterns.SelPattern
-public import Iris.ProofMode
-meta import Iris.ProofMode.ProofModeM
-meta import Iris.ProofMode.Tactics.Revert
-meta import Iris.ProofMode.Tactics.Intro
-meta import Qq
+public import Iris.ProofMode.Tactics.Apply
+public import Iris.ProofMode.Tactics.Intro
+public import Iris.ProofMode.Tactics.Revert
 
 namespace Iris.ProofMode
 
 open Lean Meta Elab.Tactic Qq
 
-meta section
+public meta section
 
 def ProofModeM.pruneSolvedGoals : ProofModeM Unit := do
   let gs := (←get).goals
@@ -94,7 +90,7 @@ syntax (name := iloeb) "iloeb " " as " binderIdent (" generalizing " (ppSpace co
 elab_rules : tactic
 | `(tactic| iloeb as $IH:binderIdent $[generalizing $[$hs:selPat]*]? ) => do
   ProofModeM.runTactic fun mvid g@{hyps, ..} => do
-    let spatialCtx := hyps.spatialUniqs.map (RevertTarget.pm false)
+    let spatialCtx := hyps.spatialIVarIds.map (RevertTarget.pm false)
     let generalizedHs ← do
       let hs := hs.getD #[]
       let pats ← Elab.liftMacroM <| SelPat.parse hs
