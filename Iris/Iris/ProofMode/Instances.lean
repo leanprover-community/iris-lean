@@ -873,31 +873,31 @@ instance (priority := default - 10) CombineSepAs_assoc [BI PROP] (P Q R S : PROP
 /-- Combining propositions with the same modalities -/
 
 @[rocq_alias maybe_combine_sep_as_affinely]
-instance CombineSepAs_affinely [BI PROP] (Q1 Q2 P : PROP)
+instance combineSepAs_affinely [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepAs Q1 Q2 P] : CombineSepAs iprop(<affine> Q1) iprop(<affine> Q2) iprop(<affine> P) := by
     exact ⟨affinely_sep_2.trans (affinely_mono h.combine_sep_as)⟩
 
 @[rocq_alias maybe_combine_sep_as_intuitionistically]
-instance CombineSepAs_intuitionistically [BI PROP] (Q1 Q2 P : PROP)
+instance combineSepAs_intuitionistically [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepAs Q1 Q2 P] : CombineSepAs iprop(□ Q1) iprop(□ Q2) iprop(□ P) := by
     exact ⟨intuitionistically_sep_2.trans (intuitionistically_mono h.combine_sep_as)⟩
 
 @[rocq_alias maybe_combine_sep_as_absorbingly]
-instance CombineSepAs_absorbingly [BI PROP] (Q1 Q2 P : PROP)
+instance combineSepAs_absorbingly [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepAs Q1 Q2 P] : CombineSepAs iprop(<absorb> Q1) iprop(<absorb> Q2) iprop(<absorb> P) := by
     have h1 := absorbingly_sep (P := Q1) (Q := Q2)
     have h2 : <absorb> (Q1 ∗ Q2) ⊢ <absorb> P := absorbingly_mono h.combine_sep_as
     exact ⟨h1.2.trans h2⟩
 
 @[rocq_alias maybe_combine_sep_as_persistently]
-instance CombineSepAs_persistently [BI PROP] (Q1 Q2 P : PROP)
+instance combineSepAs_persistently [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepAs Q1 Q2 P] : CombineSepAs iprop(<pers> Q1) iprop(<pers> Q2) iprop(<pers> P) := by
     exact ⟨persistently_sep_2.trans (persistently_mono h.combine_sep_as)⟩
 
 /-- The theorems for `CombineSepGives` in Rocq are named `combine_sep_as_*` -/
 
 @[rocq_alias combine_sep_as_affinely]
-instance CombineSepGives_affinely [BI PROP] (Q1 Q2 P : PROP)
+instance combineSepGives_affinely [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepGives Q1 Q2 P] : CombineSepGives iprop(<affine> Q1) iprop(<affine> Q2) P where
     combine_sep_gives := by
       calc
@@ -906,7 +906,7 @@ instance CombineSepGives_affinely [BI PROP] (Q1 Q2 P : PROP)
         _                         ⊢ <pers> P           := affinely_elim
 
 @[rocq_alias combine_sep_as_intuitionistically]
-instance CombineSepGives_intuitionistically [BI PROP] (Q1 Q2 P : PROP)
+instance combineSepGives_intuitionistically [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepGives Q1 Q2 P] : CombineSepGives iprop(□ Q1) iprop(□ Q2) P where
   combine_sep_gives := by
       calc
@@ -915,7 +915,7 @@ instance CombineSepGives_intuitionistically [BI PROP] (Q1 Q2 P : PROP)
         _           ⊢ <pers> P    := intuitionistically_elim
 
 @[rocq_alias combine_sep_as_absorbingly]
-instance CombineSepGives_absorbingly [BI PROP] (Q1 Q2 P : PROP)
+instance combineSepGives_absorbingly [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepGives Q1 Q2 P] : CombineSepGives iprop(<absorb> Q1) iprop(<absorb> Q2) P where
     combine_sep_gives := by
       calc
@@ -924,6 +924,6 @@ instance CombineSepGives_absorbingly [BI PROP] (Q1 Q2 P : PROP)
         _                         ⊢ <pers> P           := absorbingly_persistently.mp
 
 @[rocq_alias combine_sep_as_persistently]
-instance CombineSepGives_persistently [BI PROP] (Q1 Q2 P : PROP)
+instance combineSepGives_persistently [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepGives Q1 Q2 P] : CombineSepGives iprop(<pers> Q1) iprop(<pers> Q2) iprop(<pers> P) where
     combine_sep_gives := persistently_sep_2.trans (persistently_mono h.combine_sep_gives)
