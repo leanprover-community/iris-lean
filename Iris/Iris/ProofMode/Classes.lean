@@ -202,6 +202,19 @@ class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : o
   into_laterN : P ⊢ ▷^[n] Q
 export IntoLaterN (into_laterN)
 
+/-- `CombineSepAs` combines two propositions `P` and `Q` into `R` -/
+@[ipm_class]
+class CombineSepAs [BI PROP] (P Q : PROP) (R : outParam PROP) where
+  combine_sep_as : P ∗ Q ⊢ R
+export CombineSepAs (combine_sep_as)
+
+/-- `CombineSepGives` combines two propositions `P` and `Q` for a proposition
+    with the `<pers>` modality -/
+@[ipm_class]
+class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
+  combine_sep_gives : P ∗ Q ⊢ <pers> R
+export CombineSepGives (combine_sep_gives)
+
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore elim_modal_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore from_and_tc_opaque "No tc_opaque in Lean"
@@ -220,22 +233,5 @@ export IntoLaterN (into_laterN)
 #rocq_ignore into_pure_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore into_sep_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore into_wand_tc_opaque "No tc_opaque in Lean"
-
-/-- `CombineSepAs` combines two propositions `P` and `Q` into `R` -/
-@[ipm_class]
-class CombineSepAs [BI PROP] (P Q : PROP) (R : outParam PROP) where
-  combine_sep_as : P ∗ Q ⊢ R
-export CombineSepAs (combine_sep_as)
-
-/-- `CombineSepGives` combines two propositions `P` and `Q` for a proposition with the `<pers>` modality -/
-@[ipm_class]
-class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
-  combine_sep_gives : P ∗ Q ⊢ <pers> R
-export CombineSepGives (combine_sep_gives)
-
-class CombineSepsAsGives [BI PROP] (Ps : List PROP) (Q R : outParam PROP) where
-  combine_seps_as_gives_as : [∗] Ps ⊢ Q
-  combine_seps_as_gives_gives : [∗] Ps ⊢ <pers> R
-export CombineSepsAsGives (combine_seps_as_gives_as combine_seps_as_gives_gives)
 
 end Iris.ProofMode

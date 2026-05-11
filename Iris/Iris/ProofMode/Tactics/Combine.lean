@@ -15,66 +15,62 @@ public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
 /-- Auxilary lemma for `iCombineAsCore` (base case with no hypotheses) -/
-theorem combine_as_nil [BI PROP] {e goal : PROP}
-  (pf : e ∗ □ emp ⊢ goal) : e ⊢ goal := by
-  calc
-    e ⊢ e ∗ emp   := sep_emp.mpr
-    _ ⊢ e ∗ □ emp := sep_mono refl intuitionistically_emp.mpr
-    _ ⊢ goal      := pf
+theorem combine_as_nil [BI PROP] {e goal : PROP} (pf : e ∗ □ emp ⊢ goal) : e ⊢ goal := calc
+  e ⊢ e ∗ emp   := sep_emp.mpr
+  _ ⊢ e ∗ □ emp := sep_mono refl intuitionistically_emp.mpr
+  _ ⊢ goal      := pf
 
 /-- Auxilary lemma for `iCombineAsCore` (base case with one hypothesis) -/
 theorem combine_as_singleton [BI PROP] {e e1 goal out : PROP}
-  (pf1 : e ⊣⊢ e1 ∗ out)
-  (pf2 : e1 ∗ out ⊢ goal) : e ⊢ goal := pf1.mp.trans pf2
+    (pf1 : e ⊣⊢ e1 ∗ out) (pf2 : e1 ∗ out ⊢ goal) : e ⊢ goal :=
+  pf1.mp.trans pf2
 
 /-- Auxilary lemma for `iCombineAsCore` (step case with two or more hypotheses) -/
-theorem combine_as_step [BI PROP] {out1 out2 out e1 e2 e goal : PROP}
-  {b1 b2 : Bool}
-  (pf1 : e ⊣⊢ e1 ∗ □?b1 out1)
-  (pf2 : e1 ⊣⊢ e2 ∗ □?b2 out2)
-  (pf3 : e2 ∗ □?(b1 ∧ b2) out ⊢ goal)
-  (inst : CombineSepAs out1 out2 out) : e ⊢ goal := by
-    calc
-      e ⊢ e1 ∗ □?b1 out1                 := pf1.mp
-      _ ⊢ (e2 ∗ □?b2 out2) ∗ □?b1 out1   := sep_mono pf2.mp refl
-      _ ⊢ e2 ∗ □?b2 out2 ∗ □?b1 out1     := sep_assoc.mp
-      _ ⊢ e2 ∗ □?b1 out1 ∗ □?b2 out2     := sep_mono refl sep_comm.mp
-      _ ⊢ e2 ∗ □?(b1 ∧ b2) (out1 ∗ out2) := sep_mono refl intuitionisticallyIf_sep_conj
-      _ ⊢ e2 ∗ □?(b1 ∧ b2) out           := sep_mono refl (intuitionisticallyIf_mono inst.combine_sep_as)
-      _ ⊢ goal                           := pf3
+theorem combine_as_step [BI PROP] {out1 out2 out e1 e2 e goal : PROP} {b1 b2 : Bool}
+    (pf1 : e ⊣⊢ e1 ∗ □?b1 out1)
+    (pf2 : e1 ⊣⊢ e2 ∗ □?b2 out2)
+    (pf3 : e2 ∗ □?(b1 ∧ b2) out ⊢ goal)
+    (inst : CombineSepAs out1 out2 out) : e ⊢ goal := calc
+  e ⊢ e1 ∗ □?b1 out1                 := pf1.mp
+  _ ⊢ (e2 ∗ □?b2 out2) ∗ □?b1 out1   := sep_mono pf2.mp refl
+  _ ⊢ e2 ∗ □?b2 out2 ∗ □?b1 out1     := sep_assoc.mp
+  _ ⊢ e2 ∗ □?b1 out1 ∗ □?b2 out2     := sep_mono refl sep_comm.mp
+  _ ⊢ e2 ∗ □?(b1 ∧ b2) (out1 ∗ out2) := sep_mono refl intuitionisticallyIf_sep_conj
+  _ ⊢ e2 ∗ □?(b1 ∧ b2) out           := sep_mono refl (intuitionisticallyIf_mono inst.combine_sep_as)
+  _ ⊢ goal                           := pf3
 
 /-- Auxilary lemma for `iCombineGivesCore` (base case with up to one hypothesis) -/
-theorem combine_nil_singleton_gives [BI PROP] {e goal : PROP}
-  (pf : e ∗ □ True ⊢ goal) : e ⊢ goal := by
-    calc
-      e ⊢ e ∗ emp    := sep_emp.mpr
-      _ ⊢ e ∗ □ True := sep_mono refl intuitionistically_true.mpr
-      _ ⊢ goal       := pf
+theorem combine_nil_singleton_gives [BI PROP] {e goal : PROP} (pf : e ∗ □ True ⊢ goal) : e ⊢ goal := calc
+  e ⊢ e ∗ emp    := sep_emp.mpr
+  _ ⊢ e ∗ □ True := sep_mono refl intuitionistically_true.mpr
+  _ ⊢ goal       := pf
 
 /-- Auxilary lemma for `iCombineGivesCore` (step case with two or more hypotheses) -/
-theorem combine_step_gives [BI PROP] {out1 out2 out e1 e2 e goal : PROP}
-  (pf1 : e ⊣⊢ e1 ∗ out1)
-  (pf2 : e1 ⊣⊢ e2 ∗ out2)
-  (pf3 : e' ∗ □ out ⊢ goal)
-  (pf4 : e ⊢ e')
-  (inst : CombineSepGives out1 out2 out) : e ⊢ goal :=
-    have pf5 : e ⊣⊢ e2 ∗ out1 ∗ out2 := by calc
-      e ⊣⊢ e1 ∗ out1          := pf1
-      _ ⊣⊢ (e2 ∗ out2) ∗ out1 := sep_congr pf2 .rfl
-      _ ⊣⊢ e2 ∗ out2 ∗ out1   := sep_assoc
-      _ ⊣⊢ e2 ∗ out1 ∗ out2   := sep_congr .rfl sep_comm
-    calc
-      e ⊢ e2 ∗ out1 ∗ out2                        := pf5.mp
-      _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ out1 ∗ out2) := and_intro refl refl
-      _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ <pers> out)  := and_mono refl (sep_mono refl inst.combine_sep_gives)
-      _ ⊢ (e2 ∗ out1 ∗ out2) ∧ <pers> out         := and_mono refl sep_elim_r
-      _ ⊢ (e2 ∗ out1 ∗ out2) ∗ □ out              := persistently_and_intuitionistically_sep_r.mp
-      _ ⊢ e ∗ □ out                               := sep_mono pf5.mpr refl
-      _ ⊢ e' ∗ □ out                              := sep_mono pf4 refl
-      _ ⊢ goal                                    := pf3
+theorem combine_step_gives [BI PROP] {out1 out2 out e1 e2 e e' goal : PROP}
+    (pf1 : e ⊣⊢ e1 ∗ out1)
+    (pf2 : e1 ⊣⊢ e2 ∗ out2)
+    (pf3 : e' ∗ □ out ⊢ goal)
+    (pf4 : e ⊢ e')
+    (inst : CombineSepGives out1 out2 out) : e ⊢ goal :=
+  have pf5 : e ⊣⊢ e2 ∗ out1 ∗ out2 := calc
+    e ⊣⊢ e1 ∗ out1          := pf1
+    _ ⊣⊢ (e2 ∗ out2) ∗ out1 := sep_congr pf2 .rfl
+    _ ⊣⊢ e2 ∗ out2 ∗ out1   := sep_assoc
+    _ ⊣⊢ e2 ∗ out1 ∗ out2   := sep_congr .rfl sep_comm
+  calc
+    e ⊢ e2 ∗ out1 ∗ out2                        := pf5.mp
+    _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ out1 ∗ out2) := and_intro refl refl
+    _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ <pers> out)  := and_mono refl (sep_mono refl inst.combine_sep_gives)
+    _ ⊢ (e2 ∗ out1 ∗ out2) ∧ <pers> out         := and_mono refl sep_elim_r
+    _ ⊢ (e2 ∗ out1 ∗ out2) ∗ □ out              := persistently_and_intuitionistically_sep_r.mp
+    _ ⊢ e ∗ □ out                               := sep_mono pf5.mpr refl
+    _ ⊢ e' ∗ □ out                              := sep_mono pf4 refl
+    _ ⊢ goal                                    := pf3
 
 /-- The tactic `icombine` combines two propositions into one using the type
-    class `CombineSepAs` or, by default, the separating conjunction -/
+    class `CombineSepAs` or, by default, the separating conjunction.
+    The Boolean value `recCall` indicates whether this function is currently
+    being called recursively. -/
 private def iCombineAsCore {u} {prop : Q(Type u)} {bi e}
   (hyps : Hyps bi e) (goal : Q($prop)) (hs : List Ident)
   (pat : iCasesPat) (recCall : Bool := false) :
@@ -98,15 +94,13 @@ private def iCombineAsCore {u} {prop : Q(Type u)} {bi e}
       let uniq1 ← hyps.findWithInfo h1
       let uniq2 ← hyps.findWithInfo h2
 
-      -- The Boolean value `recCall` indicates that `iCombineAsCore` is currently
-      -- is called recursively. In this case, the first hypothesis in the list
-      -- is temporary and should be removed even if it is in the non-spatial
-      -- context.
+      /- The Boolean value `recCall` indicates that `iCombineAsCore` is
+         currently is called recursively. In this case, the first hypothesis in
+         the list is temporary and should be removed even if it is in the
+         non-spatial context. -/
       let ⟨_, hyps1, _, out1', p1, _, pf1⟩ := hyps.remove recCall uniq1
-
       if (h2 :: htail).contains h1 ∧ ¬isTrue p1 then
         throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
-
       let ⟨_, hyps2, _, out2', p2, _, pf2⟩ := hyps1.remove false uniq2
 
       let out ← mkFreshExprMVarQ _
@@ -116,8 +110,10 @@ private def iCombineAsCore {u} {prop : Q(Type u)} {bi e}
 
       match htail with
       | [] =>
-        -- Introduce the new hypothesis that combines the two original hypotheses
-        -- New proof goal for the tactic user
+        /- Introduce the new hypothesis that combines the two original
+           hypotheses into the proof state, and generate the new proof goal for
+           the tactic user. The combined proposition is introduced into the
+           intuitionistic context if `p1` and `p2` are true. -/
         match matchBool p1, matchBool p2 with
         | .inl _, .inl _ =>
           let pf3 ← iCasesCore _ hyps2 goal pat q(true) out addBIGoal
@@ -133,7 +129,8 @@ private def iCombineAsCore {u} {prop : Q(Type u)} {bi e}
         let id ← mkFreshId
         let h := mkIdent id
 
-        -- Add the combined hypothesis to the context and into the list `hs`
+        /- Add the combined hypothesis to the proof state and into the list
+           `hs` for the recursive function call. -/
         match matchBool p1, matchBool p2 with
         | .inl _, .inl _ =>
           let newHyps := hyps2.add bi id id q(true) out
@@ -161,8 +158,8 @@ private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
       let uniq1 ← hyps.findWithInfo h1
       let uniq2 ← hyps.findWithInfo h2
 
-      -- We use `hyps.remove` to extract `out1` and `out2` for `CombineSepGives`
-      let ⟨e1, hyps1, out1, out1', p1, _, pf1⟩ := hyps.remove recCall uniq1
+      -- USe `hyps.remove` to extract `out1` and `out2` for `CombineSepGives`
+      let ⟨e1, hyps1, out1, _, p1, _, pf1⟩ := hyps.remove recCall uniq1
 
       if (h2 :: htail).contains h1 ∧ ¬isTrue p1 then
         throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
@@ -207,31 +204,27 @@ private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
   termination_by hs.length
 
 elab "icombine" hs:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
-  -- Parse syntax
   let pat ← liftMacroM <| iCasesPat.parse pat
 
-  -- Generate new proof goals and fill in the original metavariable
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
     let proof ← iCombineAsCore hyps goal hs.toList pat
     mvar.assign proof
 
 elab "icombine" hs:(colGt ident)* "gives" colGt pat:icasesPat : tactic => do
-  -- Parse syntax
   let pat ← liftMacroM <| iCasesPat.parse pat
 
-  -- Generate new proof goals and fill in the original metavariable
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
     let proof ← iCombineGivesCore hyps goal hs.toList pat
     mvar.assign proof
 
-elab "icombine" hs:(colGt ident)* "as" colGt pat1:icasesPat "gives" colGt pat2:icasesPat : tactic => do
-  let pat1 ← liftMacroM <| iCasesPat.parse pat1
-  let pat2 ← liftMacroM <| iCasesPat.parse pat2
+elab "icombine" hs:(colGt ident)* "as" colGt patAs:icasesPat "gives" colGt patGives:icasesPat : tactic => do
+  let patAs ← liftMacroM <| iCasesPat.parse patAs
+  let patGives ← liftMacroM <| iCasesPat.parse patGives
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let proof ← iCombineGivesCore hyps goal hs.toList pat2
+    let proof ← iCombineGivesCore hyps goal hs.toList patGives
     mvar.assign proof
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let proof ← iCombineAsCore hyps goal hs.toList pat1
+    let proof ← iCombineAsCore hyps goal hs.toList patAs
     mvar.assign proof

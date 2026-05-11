@@ -2171,57 +2171,55 @@ section icombine
 open ProofMode
 
 /-- Tests `icombine` with the default case of combining propositions with the separating conjunction -/
-example [BI PROP] {P1 P2 Q : PROP} :
-  ⊢ P1 -∗ P2 -∗ (P1 ∗ P2 -∗ Q) -∗ Q := by
+example [BI PROP] {P1 P2 Q : PROP} : ⊢ P1 -∗ P2 -∗ (P1 ∗ P2 -∗ Q) -∗ Q := by
   iintro HP1 HP2 H
-  icombine HP1 HP2 as Hnew
+  icombine HP1 HP2 as HNew
   iapply H
-  iexact Hnew
+  iexact HNew
 
 /-- Tests `icombine` for combining two propositions with `<absorb>` -/
 example [BI PROP] {P1 P2 Q : PROP} :
-  ⊢ <absorb> P1 -∗ <absorb> P2 -∗ (<absorb> (P1 ∗ P2) -∗ Q) -∗ Q := by
+    ⊢ <absorb> P1 -∗ <absorb> P2 -∗ (<absorb> (P1 ∗ P2) -∗ Q) -∗ Q := by
   iintro HP1 HP2 H
-  icombine HP1 HP2 as Hnew
+  icombine HP1 HP2 as HNew
   iapply H
-  iexact Hnew
+  iexact HNew
 
 /-- Tests `icombine` for combining two propositions with `<affine>` -/
 example [BI PROP] {P1 P2 Q : PROP} :
-  ⊢ <affine> P1 -∗ <affine> P2 -∗ (<affine> (P1 ∗ P2) -∗ Q) -∗ Q := by
+    ⊢ <affine> P1 -∗ <affine> P2 -∗ (<affine> (P1 ∗ P2) -∗ Q) -∗ Q := by
   iintro HP1 HP2 H
-  icombine HP1 HP2 as Hnew
+  icombine HP1 HP2 as HNew
   iapply H
-  iexact Hnew
+  iexact HNew
 
 /-- Tests `icombine` for combining two propositions with `<pers>` -/
 example [BI PROP] {P1 P2 Q : PROP} :
-  ⊢ <pers> P1 -∗ <pers> P2 -∗ (<pers> (P1 ∗ P2) -∗ Q) -∗ Q := by
+    ⊢ <pers> P1 -∗ <pers> P2 -∗ (<pers> (P1 ∗ P2) -∗ Q) -∗ Q := by
   iintro HP1 HP2 H
-  icombine HP1 HP2 as Hnew
+  icombine HP1 HP2 as HNew
   iapply H
-  iexact Hnew
+  iexact HNew
 
 /-- Tests `icombine` for combining two propositions with `□` -/
 example [BI PROP] {P1 P2 Q : PROP} :
-  ⊢ □ P1 -∗ □ P2 -∗ (□ (P1 ∗ P2) -∗ Q) -∗ Q := by
+    ⊢ □ P1 -∗ □ P2 -∗ (□ (P1 ∗ P2) -∗ Q) -∗ Q := by
   iintro HP1 HP2 H
-  icombine HP1 HP2 as Hnew
+  icombine HP1 HP2 as HNew
   iapply H
-  iexact Hnew
+  iexact HNew
 
 /-- Tests `icombine` with pattern introducing combined proposition into the non-spatial context -/
 example [BI PROP] {P1 P2 Q : PROP} :
   ⊢ □ P1 -∗ □ P2 -∗ □((P1 ∗ P2) -∗ Q) -∗ □ Q := by
   iintro HP1 HP2 #H
-  icombine HP1 HP2 as #Hnew
+  icombine HP1 HP2 as #HNew
   imodintro
   iapply H
-  iexact Hnew
+  iexact HNew
 
 /-- Tests `icombine` with pattern discarding the combined proposition -/
-example [BI PROP] [BIAffine PROP] {P Q R : PROP} :
-  ⊢ P -∗ Q -∗ R -∗ R := by
+example [BI PROP] [BIAffine PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ R -∗ R := by
   iintro HP HQ HR
   icombine HP HQ as -
   iexact HR
@@ -2240,190 +2238,183 @@ example [BI PROP] {P : PROP} : P ⊢ P := by
 /-- Tests `icombine` with one proposition in the intuitionistic context -/
 example [BI PROP] {P : PROP} : □ P ⊢ □ P := by
   iintro #HP
-  icombine HP as Hnew
-  iexact Hnew
+  icombine HP as HNew
+  iexact HNew
 
 /-- Tests `icombine` for the proposition with three propositions -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :
-  ⊢ P1 -∗ P2 -∗ P3 -∗ (P1 ∗ P2 ∗ P3 -∗ Q) -∗ Q := by
+    ⊢ P1 -∗ P2 -∗ P3 -∗ (P1 ∗ P2 ∗ P3 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 H
-  icombine HP1 HP2 HP3 as Hnew
+  icombine HP1 HP2 HP3 as HNew
   iapply H
-  iexact Hnew
+  iexact HNew
 
 /-- Tests `icombine` for the proposition with four propositions -/
 example [BI PROP] {P1 P2 P3 P4 Q : PROP} :
-  ⊢ P1 -∗ P2 -∗ P3 -∗ P4 -∗ (P1 ∗ P2 ∗ P3 ∗ P4 -∗ Q) -∗ Q := by
+    ⊢ P1 -∗ P2 -∗ P3 -∗ P4 -∗ (P1 ∗ P2 ∗ P3 ∗ P4 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 HP4 H
-  icombine HP1 HP2 HP3 HP4 as Hnew
+  icombine HP1 HP2 HP3 HP4 as HNew
   iapply H
-  iexact Hnew
+  iexact HNew
 
 /-- Tests `icombine` for the proposition with three propositions with `□` -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :
-  ⊢ □ P1 -∗ □ P2 -∗ □ P3 -∗ (□ (P1 ∗ P2 ∗ P3) -∗ Q) -∗ Q := by
+    ⊢ □ P1 -∗ □ P2 -∗ □ P3 -∗ (□ (P1 ∗ P2 ∗ P3) -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 H
-  icombine HP1 HP2 HP3 as Hnew
+  icombine HP1 HP2 HP3 as HNew
   iapply H
-  iexact Hnew
+  iexact HNew
 
 /-- Tests `icombine` for the proposition with three propositions,
     where the first two propositions has `□`. -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :
-  ⊢ □ P1 -∗ □ P2 -∗ P3 -∗ (□ (P1 ∗ P2) ∗ P3 -∗ Q) -∗ Q := by
+    ⊢ □ P1 -∗ □ P2 -∗ P3 -∗ (□ (P1 ∗ P2) ∗ P3 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 H
-  icombine HP1 HP2 HP3 as Hnew
+  icombine HP1 HP2 HP3 as HNew
   iapply H
-  iexact Hnew
+  iexact HNew
 
 /-- Tests `icombine` for the proposition with four propositions,
     where the first two propositions has `□` and the other two has `<affine>`. -/
 example [BI PROP] {P1 P2 P3 P4 Q : PROP} :
-  ⊢ □ P1 -∗ □ P2 -∗ <affine> P3 -∗ <affine> P4 -∗ (□ (P1 ∗ P2) ∗ <affine> (P3 ∗ P4) -∗ Q) -∗ Q := by
+    ⊢ □ P1 -∗ □ P2 -∗ <affine> P3 -∗ <affine> P4 -∗ (□ (P1 ∗ P2) ∗ <affine> (P3 ∗ P4) -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 HP4 H
-  icombine HP1 HP2 HP3 HP4 as Hnew
+  icombine HP1 HP2 HP3 HP4 as HNew
   iapply H
-  iexact Hnew
+  iexact HNew
 
 /-- Tests `icombine` for the proposition with four propositions,
     where the second and third propositions has `□` while the others do not. -/
 example [BI PROP] {P1 P2 P3 P4 Q : PROP} :
-  ⊢ P1 -∗ □ P2 -∗ □ P3 -∗ P4 -∗ (P1 ∗ □ (P2 ∗ P3) ∗ P4 -∗ Q) -∗ Q := by
+    ⊢ P1 -∗ □ P2 -∗ □ P3 -∗ P4 -∗ (P1 ∗ □ (P2 ∗ P3) ∗ P4 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 HP4 H
-  icombine HP1 HP2 HP3 HP4 as Hnew
+  icombine HP1 HP2 HP3 HP4 as HNew
   iapply H
-  iexact Hnew
+  iexact HNew
 
 /- Tests `icomine` failure: using a non-existent hypothesis as an argument -/
 /-- error: unknown hypothesis HP2 -/
 #guard_msgs in
 example [BI PROP] {P : PROP} : ⊢ P -∗ P ∗ P := by
   iintro HP1
-  icombine HP1 HP2 as Hnew
+  icombine HP1 HP2 as HNew
 
 /- Tests `icomine` failure: combining a proposition in the spatial context twice -/
 /-- error: icombine: propositions in the spatial context cannot be used as arguments multiple times -/
 #guard_msgs in
 example [BI PROP] {P : PROP} : ⊢ P -∗ P ∗ P := by
   iintro HP
-  icombine HP HP as Hnew
+  icombine HP HP as HNew
 
 /- Tests `icomine` failure: combining a proposition in the spatial context twice -/
 /-- error: icombine: propositions in the spatial context cannot be used as arguments multiple times -/
 #guard_msgs in
 example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ R -∗ P ∗ Q ∗ R ∗ P := by
   iintro HP HQ HR
-  icombine HP HQ HR HP as Hnew
+  icombine HP HQ HR HP as HNew
 
 /-- Tests `icombine` where the two propositions are prefixed with both
     `<absorb>` and `<affine>` -/
 example [BI PROP] {P Q : PROP} :
-  ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) := by
+    ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) := by
   iintro HP HQ
-  icombine HP HQ as Hnew
-  iexact Hnew
+  icombine HP HQ as HNew
+  iexact HNew
 
 /-- Tests `icombine` for combining propositions in the non-spatial context.
     The combined proposition stays within the non-spatial context -/
-example [BI PROP] {P Q : PROP} :
-  ⊢ □ P -∗ □ Q -∗ □ (P ∗ Q) := by
+example [BI PROP] {P Q : PROP} : ⊢ □ P -∗ □ Q -∗ □ (P ∗ Q) := by
   iintro #HP #HQ
   -- The proposition P ∗ Q ∗ R exists in the non-spatial context
-  icombine HP HQ as Hnew
-  iexact Hnew
+  icombine HP HQ as HNew
+  iexact HNew
 
 /-- Tests `icombine` for combining propositions in the non-spatial context.
     The combined proposition stays within the non-spatial context -/
-example [BI PROP] {P Q R : PROP} :
-  ⊢ □ P -∗ □ Q -∗ □ R -∗ □ (P ∗ Q ∗ R) := by
+example [BI PROP] {P Q R : PROP} : ⊢ □ P -∗ □ Q -∗ □ R -∗ □ (P ∗ Q ∗ R) := by
   iintro #HP #HQ #HR
   -- The proposition P ∗ Q ∗ R exists in the non-spatial context
-  icombine HP HQ HR as Hnew
-  iexact Hnew
+  icombine HP HQ HR as HNew
+  iexact HNew
 
 /-- Tests `icombine` for using a proposition in the non-spatial context
     multiple times -/
-example [BI PROP] {P Q : PROP} :
-  ⊢ □ P -∗ Q -∗ □ P ∗ P ∗ Q := by
+example [BI PROP] {P Q : PROP} : ⊢ □ P -∗ Q -∗ □ P ∗ P ∗ Q := by
   iintro #HP HQ
   -- The proposition P ∗ Q exists in the spatial context
-  icombine HP HQ as Hnew
+  icombine HP HQ as HNew
   isplitr
   · iexact HP
-  · iexact Hnew
+  · iexact HNew
 
 /-- Tests `icombine` for using a proposition in the non-spatial context
     multiple times. The combined proposition remains in the non-spatial context -/
-example [BI PROP] {P : PROP} :
-  ⊢ □ P -∗ □ (P ∗ P ∗ P) := by
+example [BI PROP] {P : PROP} : ⊢ □ P -∗ □ (P ∗ P ∗ P) := by
   iintro #HP
   -- The proposition P ∗ P ∗ P exists in the non-spatial context
-  icombine HP HP HP as Hnew
-  iexact Hnew
+  icombine HP HP HP as HNew
+  iexact HNew
 
 /-- Tests `icombine` for using a proposition in the non-spatial context
     multiple times -/
-example [BI PROP] {P Q R : PROP} :
-  ⊢ P -∗ Q -∗ □ R -∗ R ∗ Q ∗ P ∗ R := by
+example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ Q ∗ P ∗ R := by
   iintro HP HQ #HR
   -- The proposition R ∗ Q ∗ P ∗ R exists in the spatial context
-  icombine HR HQ HP HR as Hnew
-  iexact Hnew
+  icombine HR HQ HP HR as HNew
+  iexact HNew
 
 /-- Tests `icombine` with `gives` and no hypotheses -/
-example [BI PROP] {P : PROP} :
-  ⊢ P -∗ True := by
+example [BI PROP] {P : PROP} : ⊢ P -∗ True := by
   iintro -
   -- `True` is created as the new proposition in the intuitionsitic context
-  icombine gives Hnew
-  iexact Hnew
+  icombine gives HNew
+  iexact HNew
 
 /-- Tests `icombine` with `gives` and one hypothesis -/
-example [BI PROP] {P : PROP} :
-  ⊢ P -∗ True := by
+example [BI PROP] {P : PROP} : ⊢ P -∗ True := by
   iintro HP
   -- `True` is created as the new proposition in the intuitionsitic context
-  icombine HP gives Hnew
-  iexact Hnew
+  icombine HP gives HNew
+  iexact HNew
 
 /-- Tests `icombine` with `gives` and two hypotheses that can be combined
     using the type class `CombineSepGives` -/
 example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
-  ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <pers> R := by
+    ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <pers> R := by
   iintro HP HQ
-  icombine HP HQ gives Hnew
-  iexact Hnew
+  icombine HP HQ gives HNew
+  iexact HNew
 
 /- Tests `icombine` with `gives` and two hypotheses generically -/
 /-- error: icombine: no type class instance to combine propositions -/
 #guard_msgs in
 example [BI PROP] {P Q R : PROP} :
-  ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <pers> R := by
+    ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <pers> R := by
   iintro HP HQ
-  icombine HP HQ gives Hnew
+  icombine HP HQ gives HNew
 
 /-- Tests `icombine` with `as` and `gives` using propositions with `<absorb>` and `<affine>` modalities -/
 example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
-  ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by
+    ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by
   iintro HP HQ
-  icombine HP HQ as Hnew1 gives Hnew2
+  icombine HP HQ as HNew1 gives HNew2
   isplitl
-  · iexact Hnew1
-  · iexact Hnew2
+  · iexact HNew1
+  · iexact HNew2
 
 /-- Tests `icombine` with `as` and `gives` for propositions with later modalities -/
 example [BI PROP] {n : Nat} {P Q R : PROP} [CombineSepGives P Q R] :
-  ⊢ ▷^[n] ◇ P -∗ ▷^[n] ◇ Q -∗ ▷^[n] ◇ (P ∗ Q) ∗ <pers> ▷^[n] ◇ R := by
+    ⊢ ▷^[n] ◇ P -∗ ▷^[n] ◇ Q -∗ ▷^[n] ◇ (P ∗ Q) ∗ <pers> ▷^[n] ◇ R := by
   iintro HP HQ
-  icombine HP HQ as Hnew1 gives Hnew2
+  icombine HP HQ as HNew1 gives HNew2
   isplitl
-  · iexact Hnew1
-  · iexact Hnew2
+  · iexact HNew1
+  · iexact HNew2
 
 /-- Tests `icombine` with `as` and `gives` using three propositions and destruction pattern -/
 example [BI PROP] {P Q R S T : PROP}
-  [CombineSepGives P Q R] [CombineSepGives iprop(□ R) S T] :
-  ⊢ P -∗ Q -∗ S -∗ P ∗ (Q ∗ S) ∗ □ T := by
+    [CombineSepGives P Q R] [CombineSepGives iprop(□ R) S T] :
+    ⊢ P -∗ Q -∗ S -∗ P ∗ (Q ∗ S) ∗ □ T := by
   iintro HP HQ HS
   icombine HP HQ HS as ⟨HP, HQS⟩ gives HT
   isplitl [HP]
