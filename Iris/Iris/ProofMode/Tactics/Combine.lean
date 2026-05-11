@@ -224,9 +224,9 @@ elab "icombine" hs:(colGt ident)* "as" colGt pat1:icasesPat "gives" colGt pat2:i
   let pat2 ← liftMacroM <| iCasesPat.parse pat2
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let proof ← iCombineGivesCore hyps goal hs.toList pat1
+    let proof ← iCombineGivesCore hyps goal hs.toList pat2
     mvar.assign proof
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let proof ← iCombineAsCore hyps goal hs.toList pat2
+    let proof ← iCombineAsCore hyps goal hs.toList pat1
     mvar.assign proof

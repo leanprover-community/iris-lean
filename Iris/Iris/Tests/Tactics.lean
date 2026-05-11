@@ -2358,8 +2358,8 @@ example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
   iintro HP HQ
   icombine HP HQ as Hnew1 gives Hnew2
   isplitl
-  · iexact Hnew2
   · iexact Hnew1
+  · iexact Hnew2
 
 /-- Tests `icombine` with `as` and `gives` for propositions with later modalities -/
 example [BI PROP] {n : Nat} {P Q R : PROP} [CombineSepGives P Q R] :
@@ -2367,7 +2367,19 @@ example [BI PROP] {n : Nat} {P Q R : PROP} [CombineSepGives P Q R] :
   iintro HP HQ
   icombine HP HQ as Hnew1 gives Hnew2
   isplitl
-  · iexact Hnew2
   · iexact Hnew1
+  · iexact Hnew2
+
+/-- Tests `icombine` with `as` and `gives` using three propositions and destruction pattern -/
+example [BI PROP] {P Q R S T : PROP}
+  [CombineSepGives P Q R] [CombineSepGives iprop(□ R) S T] :
+  ⊢ P -∗ Q -∗ S -∗ P ∗ (Q ∗ S) ∗ □ T := by
+  iintro HP HQ HS
+  icombine HP HQ HS as ⟨HP, HQS⟩ gives HT
+  isplitl [HP]
+  · iexact HP
+  · isplitl
+    · iexact HQS
+    · iexact HT
 
 end icombine
