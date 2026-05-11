@@ -1027,6 +1027,30 @@ example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ 
   . iexact HR
   iexact HPQ
 
+/-- Tests `ispecialize` with framing subgoal -/
+example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HR HPQ
+  ispecialize HPQ $$ [HP1 $HP2] [-]
+  . iexact HP1
+  . iexact HR
+  iexact HPQ
+
+/-- Tests `ispecialize` with framing subgoal -/
+example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HR HPQ
+  ispecialize HPQ $$ [- HR $HP2] [-]
+  . iexact HP1
+  . iexact HR
+  iexact HPQ
+
+/-- Tests `ispecialize` with framing subgoal -/
+example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HR HPQ
+  ispecialize HPQ $$ [- HR $HP2] [-]
+  . iexact HP1
+  . iexact HR
+  iexact HPQ
+
 /-- Tests `ispecialize` with negated framing subgoal -/
 example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
@@ -1044,6 +1068,13 @@ example [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
 /-- Tests `ispecialize` with more complex autoframe -/
 example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
+  ispecialize HPQ $$ [$] [$]
+  iexact HPQ
+
+/-- Tests `ispecialize` with even more complex autoframe -/
+example [BI PROP] (P' : Nat → PROP) (Q : PROP)
+    : P' 1 ⊢ □ P' 1 -∗ P' 2 -∗ R -∗ (∀ n, ((□ P' n ∗ R ∗ P' n) -∗ P' 2 -∗ Q)) -∗ Q := by
+  iintro HP1 #HP1' HP2 HR HPQ
   ispecialize HPQ $$ [$] [$]
   iexact HPQ
 
@@ -1307,6 +1338,11 @@ example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) -∗ P ∗ Q := by
   icases HP with $
   iapply Hwand
   iframe #
+
+/-- Tests `icases` with complex pattern involving framing -/
+example [BI PROP] (P Q R : PROP) : ⊢ ((P ∗ □ Q ∗ (□ R ∨ R))) -∗ P ∗ Q ∗ R := by
+  iintro HP
+  icases HP with ⟨$, #HQ, ⟨#$ | $⟩⟩ <;> iframe #
 
 /-- Tests `icases` with nested conjunction -/
 example [BI PROP] (Q : PROP) : □ (P1 ∧ P2 ∧ Q) ⊢ Q := by
@@ -2107,11 +2143,17 @@ example [BI PROP] (P : PROP) : P ⊢ ∀ (x : Nat), P ∗ ⌜x = x⌝ := by
   ipure_intro; simp
 
 /- Tests `iframe` with mvar -/
-example [BI PROP] (P Q : PROP) : (P ∗ Q ⊢ ∃ x, P ∗ x ∗ ⌜x = Q⌝) := by
+example [BI PROP] (P Q : PROP) : (P ∗ Q ⊢ ∃ x, P ∗ ⌜x = Q⌝ ∗ x) := by
   iintro ⟨HP, HQ⟩
   iexists _
   iframe HP
   iframe HQ
   ipure_intro; trivial
+
+/- Tests `iframe` with mvar and or -/
+example [BI PROP] [BIAffine PROP] (Q : Nat → PROP) : (Q 0 ⊢ ∃ x, False ∨ Q x) := by
+  iintro HQ
+  iexists _
+  iframe
 
 end iframe

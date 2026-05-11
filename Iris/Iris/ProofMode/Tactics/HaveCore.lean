@@ -66,7 +66,8 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     let otherMVarIds := otherMVarIds.filter (!newMVarIds.contains ·)
 
     -- If the new mvars have type class assumption that could not be solved, register them such
-    -- that they are tried to be solved again at the end of `ProofModeM.runTactic` (using Term.synthesizeSyntheticMVarsNoPostponing)
+    -- that they are tried to be solved again at the end of `ProofModeM.runTactic`
+    -- (using `Term.synthesizeSyntheticMVarsNoPostponing`)
     for mvar in newMVars do
       if (← isSyntheticMVar mvar) && !(← mvar.mvarId!.isAssignedOrDelayedAssigned) then
         Term.registerSyntheticMVarWithCurrRef mvar.mvarId! (.typeClass .none)

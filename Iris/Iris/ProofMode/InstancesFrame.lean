@@ -16,10 +16,13 @@ public import Iris.Std.TC
 namespace Iris.ProofMode
 open Qq Iris.BI Iris.Std
 
-/- When framing [R] against itself, we leave [True] if possible since it is a weaker goal. Otherwise we leave [emp].
-Only if all those options fail, we start decomposing [R]. -/
+/-
+When framing [R] against itself, we leave [True] if possible since it is a weaker goal.
+Otherwise we leave [emp]. Only if all those options fail, we start decomposing [R].
+-/
 @[ipm_backtrack, rocq_alias frame_here_absorbing]
-instance (priority := high + 10) frame_here_absorbing [BI PROP] p (R : PROP) [QuickAbsorbing R] : Frame p R R iprop(True) where
+instance (priority := high + 10) frame_here_absorbing [BI PROP] p (R : PROP) [QuickAbsorbing R] :
+    Frame p R R iprop(True) where
   frame := sep_comm.1.trans <| (sep_mono_r intuitionisticallyIf_elim).trans quick_absorbing.absorbing
 
 @[ipm_backtrack, rocq_alias frame_here]
@@ -27,23 +30,27 @@ instance (priority := high + 5) frame_here [BI PROP] p (R : PROP) : Frame p R R 
   frame := sep_emp.1.trans intuitionisticallyIf_elim
 
 @[ipm_backtrack, rocq_alias frame_affinely_here_absorbing]
-instance (priority := high + 10) frame_affinely_here_absorbing [BI PROP] p (R : PROP) [QuickAbsorbing R] : Frame p iprop(<affine> R) R iprop(True) where
-  frame := sep_comm.1.trans <| (sep_mono_r (intuitionisticallyIf_elim.trans affinely_elim)).trans quick_absorbing.absorbing
+instance (priority := high + 10) frame_affinely_here_absorbing [BI PROP] p (R : PROP)
+    [QuickAbsorbing R] : Frame p iprop(<affine> R) R iprop(True) where
+  frame :=
+    sep_comm.1.trans <|
+    (sep_mono_r (intuitionisticallyIf_elim.trans affinely_elim)).trans quick_absorbing.absorbing
 
 @[ipm_backtrack, rocq_alias frame_affinely_here]
-instance (priority := high + 10) frame_affinely_here [BI PROP] p (R : PROP) : Frame p iprop(<affine> R) R iprop(emp) where
+instance (priority := high + 10) frame_affinely_here [BI PROP] p (R : PROP) :
+    Frame p iprop(<affine> R) R iprop(emp) where
   frame := sep_emp.1.trans (intuitionisticallyIf_elim.trans affinely_elim)
 
 @[ipm_backtrack, rocq_alias frame_here_pure_persistent]
 instance frame_here_pure_persistent [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
-    [FromPure a Q .in φ] : Frame true iprop(⌜φ⌝) Q iprop(emp) where
+    [hfp : FromPure .out a Q .in φ] : Frame true iprop(⌜φ⌝) Q iprop(emp) where
   frame :=
     have h : □?true iprop(⌜φ⌝) ∗ emp ⊢ □ iprop(⌜φ⌝) := sep_emp.1
-    h.trans (affinely_of_intuitionistically.trans (affinely_affinelyIf.trans (from_pure .in)))
+    h.trans (affinely_of_intuitionistically.trans (affinely_affinelyIf.trans hfp.1))
 
 @[ipm_backtrack, rocq_alias frame_here_pure]
 instance frame_here_pure [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
-    [h1 : FromPure a Q .in φ] [hor : TCOr (TCEq a false) (BIAffine PROP)] :
+    [h1 : FromPure .out a Q .in φ] [hor : TCOr (TCEq a false) (BIAffine PROP)] :
     Frame false iprop(⌜φ⌝) Q iprop(emp) where
   frame :=
     sep_emp.1.trans <|
@@ -115,12 +122,13 @@ instance frame_impl_persistent [BI PROP] (R P1 P2 Q2 : PROP)
     (and_mono_r (and_comm.1.trans imp_elim_r)).trans <|
     persistently_and_intuitionistically_sep_l.1.trans h.frame
 
-/- You may wonder why this uses [Persistent] and not [QuickPersistent].
-The reason is that [QuickPersistent] is not needed anywhere else, and
-even without [QuickPersistent], this instance avoids quadratic complexity:
-we usually use the [Quick*] classes to not traverse the same term over and over
-again, but here [P1] is encountered at most once. It is hence not worth adding
-a new typeclass just for this extremely rarely used instance. -/
+/-
+You may wonder why this uses [Persistent] and not [QuickPersistent].
+The reason is that [QuickPersistent] is not needed anywhere else, and even without [QuickPersistent],
+this instance avoids quadratic complexity: we usually use the [Quick*] classes to not traverse the
+same term over and over again, but here [P1] is encountered at most once. It is hence not worth adding
+a new typeclass just for this extremely rarely used instance.
+-/
 @[ipm_backtrack, rocq_alias frame_impl]
 instance frame_impl [BI PROP] (R P1 P2 Q2 : PROP)
     [hp : Persistent P1] [ha : QuickAbsorbing P1]
@@ -236,7 +244,7 @@ open Lean
 /-- corresponds to the MaybeFrame typeclass in Rocq -/
 @[rocq_alias MaybeFrame']
 def maybeFrame {prop : Q(Type u)} {bi : Q(BI $prop)} (p : Q(Bool))
-  (R P Q : Q($prop)) (f : Option Q(Frame $p $R $P $Q)) :
+    (R P Q : Q($prop)) (f : Option Q(Frame $p $R $P $Q)) :
   MetaM (Option Q(Frame $p $R $P $Q)) := do
   if let some f := f then return some f
   match matchBool p with
@@ -337,7 +345,7 @@ def frameOr : SynthTactic := λ e => do
      || (f1.isSome && f2.isSome) -- or if both sides made progress
      || (f1.isSome && isBITrue Q1) -- or if the left side was changed to True
      || (f2.isSome && isBITrue Q2) -- or if the right side was changed to True
-     then
+  then
     let .some _ ← maybeFrame p R P1 Q1 f1 | return .continue
     let .some _ ← maybeFrame p R P2 Q2 f2 | return .continue
     let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)

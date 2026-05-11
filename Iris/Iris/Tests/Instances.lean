@@ -185,7 +185,7 @@ info: solution: TacticTest iprop(emp ∗ P) P, new goals: []
 trace: [Meta.synthInstance] ✅️ IPM: TacticTest iprop(emp ∗ P) P
   [Meta.synthInstance] ✅️ new goal TacticTest iprop(emp ∗ P) ?_ => TacticTest iprop(emp ∗ P) P
     [Meta.synthInstance.tactics] [Iris.Tests.tac_sep:1000, Iris.Tests.tac_emp:1000, Iris.Tests.tac_continue:10000]
-    [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_continue to TacticTest iprop(emp ∗ P) ?_
+    [Meta.synthInstance] ❌️ apply tactic Iris.Tests.tac_continue to TacticTest iprop(emp ∗ P) ?_
     [Meta.synthInstance] Iris.Tests.tac_continue did not find an instance, continue to other instances
     [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_emp to TacticTest iprop(emp ∗ P) ?_
       [Meta.synthInstance] Iris.Tests.tac_emp success: tactic_test_emp P
@@ -206,12 +206,12 @@ info: solution: TacticTest iprop((emp ∗ P) ∗ P) iprop(P ∗ P), new goals: [
 trace: [Meta.synthInstance] ✅️ IPM: TacticTest iprop((emp ∗ P) ∗ P) iprop(P ∗ P)
   [Meta.synthInstance] ✅️ new goal TacticTest iprop((emp ∗ P) ∗ P) ?_ => TacticTest iprop((emp ∗ P) ∗ P) iprop(P ∗ P)
     [Meta.synthInstance.tactics] [Iris.Tests.tac_sep:1000, Iris.Tests.tac_continue:10000]
-    [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_continue to TacticTest iprop((emp ∗ P) ∗ P) ?_
+    [Meta.synthInstance] ❌️ apply tactic Iris.Tests.tac_continue to TacticTest iprop((emp ∗ P) ∗ P) ?_
     [Meta.synthInstance] Iris.Tests.tac_continue did not find an instance, continue to other instances
     [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_sep to TacticTest iprop((emp ∗ P) ∗ P) ?_
       [Meta.synthInstance] ✅️ new goal TacticTest iprop(emp ∗ P) ?_ => TacticTest iprop(emp ∗ P) P
         [Meta.synthInstance.tactics] [Iris.Tests.tac_sep:1000, Iris.Tests.tac_emp:1000, Iris.Tests.tac_continue:10000]
-        [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_continue to TacticTest iprop(emp ∗ P) ?_
+        [Meta.synthInstance] ❌️ apply tactic Iris.Tests.tac_continue to TacticTest iprop(emp ∗ P) ?_
         [Meta.synthInstance] Iris.Tests.tac_continue did not find an instance, continue to other instances
         [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_emp to TacticTest iprop(emp ∗ P) ?_
           [Meta.synthInstance] Iris.Tests.tac_emp success: tactic_test_emp P
@@ -236,7 +236,7 @@ trace: [Meta.synthInstance] ✅️ IPM: TacticTest iprop(∀ a, (emp ∗ ⌜a = 
   [Meta.synthInstance] ✅️ new goal TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P)
         ?_ => TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P) iprop(∀ a, ⌜a = 5⌝ ∗ P)
     [Meta.synthInstance.tactics] [Iris.Tests.tac_continue:10000]
-    [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_continue to TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P) ?_
+    [Meta.synthInstance] ❌️ apply tactic Iris.Tests.tac_continue to TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P) ?_
     [Meta.synthInstance] Iris.Tests.tac_continue did not find an instance, continue to other instances
     [Meta.synthInstance.instances] #[@tactic_test_all]
     [Meta.synthInstance] ✅️ apply @tactic_test_all to TacticTest iprop(∀ a, (emp ∗ ⌜a = 5⌝) ∗ P) ?_
@@ -254,7 +254,7 @@ trace: [Meta.synthInstance] ✅️ IPM: TacticTest iprop(∀ a, (emp ∗ ⌜a = 
             TacticTest iprop((emp ∗ ⌜a = 5⌝) ∗ P)
               (?_ a) => ∀ (a : Nat), TacticTest iprop((emp ∗ ⌜a = 5⌝) ∗ P) iprop(⌜a = 5⌝ ∗ P)
         [Meta.synthInstance.tactics] [Iris.Tests.tac_sep:1000, Iris.Tests.tac_continue:10000]
-        [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_continue to ∀ (a : Nat),
+        [Meta.synthInstance] ❌️ apply tactic Iris.Tests.tac_continue to ∀ (a : Nat),
               TacticTest iprop((emp ∗ ⌜a = 5⌝) ∗ P) (?_ a)
         [Meta.synthInstance] Iris.Tests.tac_continue did not find an instance, continue to other instances
         [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_sep to ∀ (a : Nat),
@@ -264,7 +264,7 @@ trace: [Meta.synthInstance] ✅️ IPM: TacticTest iprop(∀ a, (emp ∗ ⌜a = 
             [Meta.synthInstance.tactics] [Iris.Tests.tac_sep:1000,
                  Iris.Tests.tac_emp:1000,
                  Iris.Tests.tac_continue:10000]
-            [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_continue to TacticTest iprop(emp ∗ ⌜a = 5⌝) ?_
+            [Meta.synthInstance] ❌️ apply tactic Iris.Tests.tac_continue to TacticTest iprop(emp ∗ ⌜a = 5⌝) ?_
             [Meta.synthInstance] Iris.Tests.tac_continue did not find an instance, continue to other instances
             [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_emp to TacticTest iprop(emp ∗ ⌜a = 5⌝) ?_
               [Meta.synthInstance] Iris.Tests.tac_emp success: tactic_test_emp iprop(⌜a = 5⌝)
@@ -285,9 +285,9 @@ info: None
 trace: [Meta.synthInstance] ❌️ IPM: TacticTest iprop(True) ?_
   [Meta.synthInstance] ❌️ new goal TacticTest iprop(True) ?_ => TacticTest iprop(True) ?_
     [Meta.synthInstance.tactics] [Iris.Tests.tac_fail:100, Iris.Tests.tac_continue:10000]
-    [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_continue to TacticTest iprop(True) ?_
+    [Meta.synthInstance] ❌️ apply tactic Iris.Tests.tac_continue to TacticTest iprop(True) ?_
     [Meta.synthInstance] Iris.Tests.tac_continue did not find an instance, continue to other instances
-    [Meta.synthInstance] ✅️ apply tactic Iris.Tests.tac_fail to TacticTest iprop(True) ?_
+    [Meta.synthInstance] ❌️ apply tactic Iris.Tests.tac_fail to TacticTest iprop(True) ?_
     [Meta.synthInstance] Iris.Tests.tac_fail failed, no backtracking to other instances
   [Meta.synthInstance] result <not-available>
 -/

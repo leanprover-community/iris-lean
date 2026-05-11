@@ -87,7 +87,7 @@ private def processWand :
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
     return { e, hyps, p, out := out', pf := q(specialize_forall $pf $x) }
-  | { hyps, p, out, pf, .. }, .goal {kind, negate, frame:=f, hyps := hs} g => do
+  | { hyps, p, out, pf, .. }, .goal {kind, negate, frame := f, hyps := hs} g => do
     if kind != .spatial then
       -- TODO
       throwError "ispecialize: only spatial kind is supported at the moment"
@@ -101,7 +101,8 @@ private def processWand :
       if ivars.contains ivar then
         throwError "ispecialize: {name} used twice"
     frameIVars := frameIVars.reverse
-    let ⟨el', _, hypsl', hypsr', pf'⟩ := Hyps.split bi (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
+    let ⟨el', _, hypsl', hypsr', pf'⟩ := Hyps.split bi
+      (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)

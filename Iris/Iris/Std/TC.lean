@@ -32,7 +32,7 @@ instance [t : T] : TCOr T U := @TCOr.l T U t
 instance [u : U] : TCOr T U := @TCOr.r T U u
 
 
-/-- Type class version of `Eq`, i.e. a type class that has an instance exactly when `a = b`. -/
+/-- Type class version of `Eq`. `TCEq a b` has an instance exactly when `a = b`. -/
 class inductive TCEq {α : Sort _} (a : α) : α → Prop
   | refl : TCEq a a
 

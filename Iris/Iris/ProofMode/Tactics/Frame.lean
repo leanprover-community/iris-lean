@@ -62,30 +62,29 @@ structure FrameResult {u} {prop : Q(Type u)} (bi : Q(BI $prop)) (origE origGoal 
   pf : Q($origE ⊢ $e ∗ ($goal -∗ $origGoal))
 
 private def FrameResult.step {u prop bi origE origGoal} :
-    @FrameResult u prop bi origE origGoal → SelTarget →
-    ProofModeM (FrameResult bi origE origGoal)
-    | st@{progress:= _, e:=_, hyps, goal, pf}, {explicit, target := .inl ivar} => do
-      let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove false ivar
-      let goal' ← mkFreshExprMVarQ q($prop)
-      if let .some _ ← ProofModeM.trySynthInstanceQ q(Frame $p $out' $goal $goal') then
-        return ⟨true, e', hyps', goal', q(frame_hyp $pf $hrem)⟩
-      if explicit then
-         throwError "iframe: cannot frame {out'}"
-      else
-        return st
-    | st@{progress:= _, e, hyps, goal, pf}, {explicit, target := .inr fvar} => do
-      let ty ← fvar.getType
-      if ! (← Meta.isProp ty) then
-        throwError "iframe: {← fvar.getUserName} is not a Prop"
-      have φ : Q(Prop) := ty
-      have t : Q($φ) := Expr.fvar fvar
-      let goal' ← mkFreshExprMVarQ q($prop)
-      if let .some _ ← ProofModeM.trySynthInstanceQ q(Frame true iprop(⌜$φ⌝) $goal $goal') then
-        return ⟨true, e, hyps, goal', q(frame_pure $φ $pf $t)⟩
-      if explicit then
-        throwError "iframe: cannot frame ⌜{φ}⌝"
-      else
-        return st
+    @FrameResult u prop bi origE origGoal → SelTarget → ProofModeM (FrameResult bi origE origGoal)
+  | st@{hyps, goal, pf, ..}, {explicit, target := .inl ivar} => do
+    let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove false ivar
+    let goal' ← mkFreshExprMVarQ q($prop)
+    if let .some _ ← ProofModeM.trySynthInstanceQ q(Frame $p $out' $goal $goal') then
+      return ⟨true, e', hyps', goal', q(frame_hyp $pf $hrem)⟩
+    if explicit then
+      throwError "iframe: cannot frame {out'}"
+    else
+      return st
+  | st@{e, hyps, goal, pf, ..}, {explicit, target := .inr fvar} => do
+    let ty ← fvar.getType
+    if ! (← Meta.isProp ty) then
+      throwError "iframe: {← fvar.getUserName} is not a Prop"
+    have φ : Q(Prop) := ty
+    have t : Q($φ) := Expr.fvar fvar
+    let goal' ← mkFreshExprMVarQ q($prop)
+    if let .some _ ← ProofModeM.trySynthInstanceQ q(Frame true iprop(⌜$φ⌝) $goal $goal') then
+      return ⟨true, e, hyps, goal', q(frame_pure $φ $pf $t)⟩
+    if explicit then
+      throwError "iframe: cannot frame ⌜{φ}⌝"
+    else
+      return st
 
 def iFrame {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop))
     (hyps : Hyps bi e) (goal : Q($prop)) (sels : List SelTarget) :
@@ -98,8 +97,8 @@ def iFrame {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop))
   handles the subgoal remaining after framing. This function k might not be called if the framing
   made the goal trivial. -/
 def FrameResult.finish {u prop bi origE origGoal} (res : @FrameResult u prop bi origE origGoal)
-  (k : ∀ {e}, Hyps bi e → (goal : Q($prop)) → ProofModeM Q($e ⊢ $goal)) :
-  ProofModeM Q($origE ⊢ $origGoal) := do
+    (k : ∀ {e}, Hyps bi e → (goal : Q($prop)) → ProofModeM Q($e ⊢ $goal)) :
+    ProofModeM Q($origE ⊢ $origGoal) := do
   let {progress, e, hyps, goal, pf} := res
   if !progress then
     return q(frame_finish $pf $(← k hyps goal))
@@ -110,11 +109,11 @@ def FrameResult.finish {u prop bi origE origGoal} (res : @FrameResult u prop bi 
       return q(frame_finish $pf (affine (P := $e)))
     else
       return q(frame_finish $pf $(← k hyps goal))
-    | ~q(iprop(True)) =>
+  | ~q(iprop(True)) =>
       return q(frame_finish $pf (frame_true_done $e))
-    | _ => return q(frame_finish $pf $(← k hyps goal))
+  | _ => return q(frame_finish $pf $(← k hyps goal))
 
-/-- FrameResult.finishClose check that the original goal was fully solved by framing and gives it
+/-- FrameResult.finishClose checks that the original goal was fully solved by framing and gives it
   back with the remaining hypotheses. -/
 def FrameResult.finishClose {u prop bi origE origGoal} (res : @FrameResult u prop bi origE origGoal) :
   ProofModeM ((e : Q($prop)) × (_ : Hyps bi e) × Q($origE ⊢ $e ∗ $origGoal)) := do

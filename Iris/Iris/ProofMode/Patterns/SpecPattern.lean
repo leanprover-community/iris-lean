@@ -62,7 +62,7 @@ inductive SpecPat
 #rocq_ignore spec_pat.close "Not necessary in Lean"
 #rocq_ignore spec_pat.close_ident "Not necessary in Lean"
 
-partial def FrameIdent.parse : TSyntax `frameIdent → (Ident ⊕ Ident)
+def FrameIdent.parse : TSyntax `frameIdent → (Ident ⊕ Ident)
   | `(frameIdent| $name:ident) => .inl name
   | e =>
     -- Antiquotations start with $, so if we find one, it is a framing assumption
@@ -71,7 +71,7 @@ partial def FrameIdent.parse : TSyntax `frameIdent → (Ident ⊕ Ident)
     else .inl default -- should not happen
 
 @[rocq_alias spec_pat.parse]
-partial def SpecPat.parse (pat : Syntax) : MacroM SpecPat := do
+def SpecPat.parse (pat : Syntax) : MacroM SpecPat := do
   match go ⟨← expandMacros pat⟩ with
   | none => Macro.throwUnsupported
   | some pat => return pat

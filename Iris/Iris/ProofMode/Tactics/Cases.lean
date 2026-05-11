@@ -145,7 +145,10 @@ private def iCasesOr {prop : Q(Type u)} (bi : Q(BI $prop))
     | throwError "icases: {A} is not a disjunction"
   return q(or_elim' $(← k1 A1) $(← k2 A2))
 
-/-- Destruct a persistent hypothesis [A] by turning it into an explicit [□ B] and continuing with the persistent body. -/
+/--
+Destruct a persistent hypothesis [A] by turning it into an explicit [□ B] and continuing with
+the persistent body.
+-/
 private def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop))
     (p : Q(Bool)) (P A goal : Q($prop))
     (k : (B : Q($prop)) → ProofModeM Q($P ∗ □ $B ⊢ $goal)) :
@@ -161,7 +164,10 @@ private def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop))
       | throwError "icases: {A} not affine and the goal not absorbing"
     return q(intuitionistic_elim_spatial (A := $A) $(← k B))
 
-/-- Destruct an affine/spatial hypothesis [A] by removing the affinely wrapper and continuing with the spatial body. -/
+/--
+Destruct an affine/spatial hypothesis [A] by removing the affinely wrapper and continuing with
+the spatial body.
+-/
 private def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop))
     (p : Q(Bool)) (P A goal : Q($prop))
     (k : (B : Q($prop)) → ProofModeM Q($P ∗ $B ⊢ $goal)) :
@@ -218,9 +224,8 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
 
   | .conjunction [] => iCasesEmptyConj bi hyps p A goal
 
-  -- pure conjunctions are always handled as existentials. There is
-  -- intoExist_and_pure and intoExist_sep_pure to make this work as
-  -- expected for pure assertions that are not explicit existentials.
+  -- pure conjunctions are always handled as existentials. There is `intoExist_and_pure` and
+  -- `intoExist_sep_pure` to make this work as expected for pure assertions that are not explicit existentials.
   | .conjunction (.pure arg :: args) => do
     iCasesExists bi arg p P A goal (iCasesCore hyps goal (.conjunction args) p · k)
   | .conjunction (arg :: args) => do
@@ -256,8 +261,10 @@ elab "icases" keep:("+keep")? colGt pmt:pmTerm "with" colGt pat:icasesPat : tact
   let pat ← liftMacroM <| iCasesPat.parse pat
   ProofModeM.runTactic λ mvar { bi, goal, hyps, .. } => do
 
-  -- We keep the persistent hypothesis if it is required by the user (+keep is set by ihave) or if we perform specialization
-  let ⟨_, hyps, p, A, pf⟩ ← iHave hyps pmt (keep.isSome || pmt.is_nontrivial) (try_dup_context := pat.should_try_dup_context)
+  -- We keep the persistent hypothesis if it is required by the user (+keep is set by ihave)
+  -- or if we perform specialization
+  let ⟨_, hyps, p, A, pf⟩ ← iHave hyps pmt (keep.isSome || pmt.is_nontrivial)
+    (try_dup_context := pat.should_try_dup_context)
 
   -- process pattern
   let pf2 ← iCasesCore bi hyps goal pat p A λ hyps goal => addBIGoal hyps goal

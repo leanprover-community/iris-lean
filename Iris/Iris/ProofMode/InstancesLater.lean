@@ -19,17 +19,17 @@ open Iris.BI Iris.Std
 /-- FromAssumption -/
 
 @[rocq_alias from_assumption_later]
-instance fromAssumption_later [BI PROP] (p : Bool) ioP (P Q : PROP)
+instance fromAssumption_later [BI PROP] (p : Bool) (P Q : PROP)
     [h : FromAssumption p ioP P Q] : FromAssumption p ioP P iprop(▷ Q) where
   from_assumption := h.1.trans later_intro
 
 @[rocq_alias from_assumption_laterN]
-instance fromAssumption_laterN [BI PROP] n (p : Bool) ioP (P Q : PROP)
+instance fromAssumption_laterN [BI PROP] n (p : Bool) (P Q : PROP)
     [h : FromAssumption p ioP P Q] : FromAssumption p ioP P iprop(▷^[n] Q) where
   from_assumption := h.1.trans (laterN_intro n)
 
 @[rocq_alias from_assumption_except_0]
-instance fromAssumption_except0 [BI PROP] (p : Bool) ioP (P Q : PROP)
+instance fromAssumption_except0 [BI PROP] (p : Bool) (P Q : PROP)
     [h : FromAssumption p ioP P Q] : FromAssumption p ioP P iprop(◇ Q) where
   from_assumption := h.1.trans except0_intro
 
@@ -37,44 +37,44 @@ instance fromAssumption_except0 [BI PROP] (p : Bool) ioP (P Q : PROP)
 /-- FromPure -/
 
 @[rocq_alias from_pure_later]
-instance fromPure_later {io} [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
-    [h : FromPure a P io φ] : FromPure a iprop(▷ P) io φ where
+instance fromPure_later [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
+    [h : FromPure .out a P io φ] : FromPure ioA a iprop(▷ P) io φ where
   from_pure := h.1.trans later_intro
 
 @[rocq_alias from_pure_laterN]
-instance fromPure_laterN {io} [BI PROP] (a : Bool) (n : Nat) (P : PROP) (φ : Prop)
-    [h : FromPure a P io φ] : FromPure a iprop(▷^[n] P) io φ where
+instance fromPure_laterN [BI PROP] (a : Bool) (n : Nat) (P : PROP) (φ : Prop)
+    [h : FromPure .out a P io φ] : FromPure ioA a iprop(▷^[n] P) io φ where
   from_pure := h.1.trans (laterN_intro n)
 
 @[rocq_alias from_pure_except_0]
-instance fromPure_except0 {io} [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
-    [h : FromPure a P io φ] : FromPure a iprop(◇ P) io φ where
+instance fromPure_except0 [BI PROP] (a : Bool) (P : PROP) (φ : Prop)
+    [h : FromPure .out a P io φ] : FromPure ioA a iprop(◇ P) io φ where
   from_pure := h.1.trans except0_intro
 
 /-- IntoWand -/
 
 @[rocq_alias into_wand_later]
-instance intoWand_later [BI PROP] (p q : Bool) ioP ioQ (R P Q : PROP)
+instance intoWand_later [BI PROP] (p q : Bool) (R P Q : PROP)
     [h : IntoWand p q R ioP P ioQ Q] : IntoWand p q iprop(▷ R) ioP iprop(▷ P) ioQ iprop(▷ Q) where
   into_wand := later_intuitionisticallyIf_2.trans <|
     (later_mono h.1).trans <| later_wand.trans <| wand_mono later_intuitionisticallyIf_2 .rfl
 
 #rocq_ignore into_wand_later_args "IntoWand' is not used in Lean"
 -- TODO: see if this is necessary. It is an instance for IntoWand' in Rocq
--- instance intoWand_later_args [BI PROP] (p q : Bool) ioP ioQ (R P Q : PROP)
+-- instance intoWand_later_args [BI PROP] (p q : Bool) (R P Q : PROP)
 --     [h : IntoWand p q R ioP P ioQ Q] : IntoWand p q R ioP iprop(▷ P) ioQ iprop(▷ Q) where
 --   into_wand := (intuitionisticallyIf_mono later_intro).trans <| later_intuitionisticallyIf_2.trans <|
 --     (later_mono h.1).trans <| later_wand.trans <| wand_mono later_intuitionisticallyIf_2 .rfl
 
 @[rocq_alias into_wand_laterN]
-instance intoWand_laterN [BI PROP] (n : Nat) (p q : Bool) ioP ioQ (R P Q : PROP)
+instance intoWand_laterN [BI PROP] (n : Nat) (p q : Bool) (R P Q : PROP)
     [h : IntoWand p q R ioP P ioQ Q] : IntoWand p q iprop(▷^[n] R) ioP iprop(▷^[n] P) ioQ iprop(▷^[n] Q) where
   into_wand := (laterN_intuitionisticallyIf_2 n).trans <|
     (laterN_mono n h.1).trans <| (laterN_wand n).trans <| wand_mono (laterN_intuitionisticallyIf_2 n) .rfl
 
 #rocq_ignore into_wand_laterN_args "IntoWand' is not used in Lean"
 -- TODO: see if this is necessary. It is an instance for IntoWand' in Rocq
--- instance intoWand_laterN_args [BI PROP] (n : Nat) (p q : Bool) ioP ioQ (R P Q : PROP)
+-- instance intoWand_laterN_args [BI PROP] (n : Nat) (p q : Bool) (R P Q : PROP)
 --     [h : IntoWand p q R ioP P ioQ Q] : IntoWand p q R ioP iprop(▷^[n] P) ioQ iprop(▷^[n] Q) where
 --   into_wand := (intuitionisticallyIf_mono (laterN_intro n)).trans <| (laterN_intuitionisticallyIf_2 n).trans <|
 --     (laterN_mono n h.1).trans <| (laterN_wand n).trans <| wand_mono (laterN_intuitionisticallyIf_2 n) .rfl
@@ -125,13 +125,15 @@ instance intoAnd_later [BI PROP] (p : Bool) (P Q1 Q2 : PROP)
 instance intoAnd_laterN [BI PROP] (n : Nat) (p : Bool) (P Q1 Q2 : PROP)
     [h : IntoAnd p P Q1 Q2] : IntoAnd p iprop(▷^[n] P) iprop(▷^[n] Q1) iprop(▷^[n] Q2) where
   into_and := intuitionisticallyIf_intro' <|
-    (laterN_intuitionisticallyIf_2 n).trans <| (laterN_mono n <| h.1.trans intuitionisticallyIf_elim).trans (laterN_and n).1
+    (laterN_intuitionisticallyIf_2 n).trans <|
+    (laterN_mono n <| h.1.trans intuitionisticallyIf_elim).trans (laterN_and n).1
 
 @[rocq_alias into_and_except_0]
 instance intoAnd_except0 [BI PROP] (p : Bool) (P Q1 Q2 : PROP)
     [h : IntoAnd p P Q1 Q2] : IntoAnd p iprop(◇ P) iprop(◇ Q1) iprop(◇ Q2) where
   into_and := intuitionisticallyIf_intro' <|
-    except0_intuitionisticallyIf_2.trans <| (except0_mono <| h.1.trans intuitionisticallyIf_elim).trans except0_and.1
+    except0_intuitionisticallyIf_2.trans <|
+    (except0_mono <| h.1.trans intuitionisticallyIf_elim).trans except0_and.1
 
 /-- IntoSep -/
 

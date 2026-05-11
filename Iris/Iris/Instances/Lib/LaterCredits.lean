@@ -407,7 +407,7 @@ instance from_assumption_le_upd {p} {P Q : IProp GF} [h : FromAssumption p ioP P
   from_assumption := h.1.trans le_upd_intro
 
 @[rocq_alias le_upd.from_pure_le_upd]
-instance {io} {P : IProp GF} [H : FromPure a P io φ] : FromPure a (le_upd P) io φ where
+instance {P : IProp GF} [H : FromPure .out a P io φ] : FromPure ioA a (le_upd P) io φ where
   from_pure := by
     cases a <;> dsimp
     · iintro H
@@ -555,7 +555,7 @@ instance {b} {p} {P Q : IProp GF} : ElimModal True p false (bupd P) P (le_upd_if
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
 @[rocq_alias le_upd_if.from_pure_le_upd_if]
-instance {b} {a} {io} {P : IProp GF} φ [FromPure a P io φ] : FromPure a (le_upd_if b P) io φ := by
+instance {b} {a} {P : IProp GF} φ [FromPure .out a P io φ] : FromPure ioA a (le_upd_if b P) io φ := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
 @[rocq_alias le_upd_if.is_except_0_le_upd_if]
