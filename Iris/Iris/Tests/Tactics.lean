@@ -2166,3 +2166,95 @@ example [BI PROP] [BIAffine PROP] (Q : Nat → PROP) : (Q 0 ⊢ ∃ x, False ∨
   iframe
 
 end iframe
+
+section iloeb
+
+variable {PROP : Type u} [ι₁ : BI PROP] [ι₂ : BILoeb PROP]
+/--
+error: unsolved goals
+PROP : Type u
+ι₁ : BI PROP
+ι₂ : BILoeb PROP
+P Q : PROP
+⊢ ⏎
+  □IH : ▷ (P -∗ Q)
+  ⊢ P -∗ Q
+-/
+#guard_msgs in
+example (P Q : PROP) :
+    P ⊢ Q := by
+  iloeb as IH
+
+/--
+error: unsolved goals
+PROP : Type u
+ι₁ : BI PROP
+ι₂ : BILoeb PROP
+P₁ P₂ Q : PROP
+⊢ ⏎
+  □p : P₁
+  □IH : ▷ (P₂ -∗ Q)
+  ⊢ P₂ -∗ Q
+-/
+#guard_msgs in
+example (P₁ P₂ Q : PROP) :
+    ⊢ □ P₁ -∗ P₂ -∗ Q := by
+  iintro #p
+  iloeb as IH
+
+/--
+error: unsolved goals
+PROP : Type u
+ι₁ : BI PROP
+ι₂ : BILoeb PROP
+P₁ P₂ Q : PROP
+⊢ ⏎
+  □IH : ▷ (□ P₁ -∗ P₂ -∗ Q)
+  □p : P₁
+  ⊢ P₂ -∗ Q
+-/
+#guard_msgs in
+example (P₁ P₂ Q : PROP) :
+    ⊢ □ P₁ -∗ P₂ -∗ Q := by
+  iintro #p
+  iloeb as IH generalizing p
+
+/--
+error: unsolved goals
+PROP : Type u
+ι₁ : BI PROP
+ι₂ : BILoeb PROP
+H₁ : Sort u_1
+P P₁ P₂ Q : PROP
+h1 : H₁
+⊢ ⏎
+  □IH : ▷ (P -∗ Q)
+  ∗p : P
+  ⊢ Q
+-/
+#guard_msgs in
+example (P₁ P₂ Q : PROP) :
+    H₁ → ⊢ P -∗ Q := by
+  iintro %h1 p
+  iloeb as IH
+
+/--
+error: unsolved goals
+PROP : Type u
+ι₁ : BI PROP
+ι₂ : BILoeb PROP
+H₁ : Sort u_1
+P P₁ P₂ Q : PROP
+h1✝ h1 : H₁
+⊢ ⏎
+  □IH : ▷ ∀ h1, P -∗ Q
+  ∗p : P
+  ⊢ Q
+-/
+#guard_msgs in
+example (P₁ P₂ Q : PROP) :
+    H₁ → ⊢ P -∗ Q := by
+  iintro %h1 p
+  iloeb as IH generalizing %h1
+
+end iloeb

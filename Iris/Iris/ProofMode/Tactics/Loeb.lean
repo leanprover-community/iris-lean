@@ -91,7 +91,7 @@ elab_rules : tactic
               return some (RevertTarget.pm true ivar)
           | (.lean id, _) => return some (.lean id)
 
-    let _ ← ProofModeM.revertingTelescope mvid g (spatialCtx ++ generalizedHs) fun mvid {u, prop, goal, hyps, ..} => do
+    let _ ← ProofModeM.revertingTelescope mvid g (generalizedHs ++ spatialCtx) fun mvid {u, prop, goal, hyps, ..} => do
       trace[iloeb] s!"Goals before tactic : {←(liftM ∘ ppExpr =<< MVarId.getType (←ProofModeM.getMainGoal))}"
       let x : Term := ←`(term| @BI.loeb_wand_intuitionistically _)
       let ⟨_, hyps', p, out, pf⟩ ← iHave hyps ⟨x, []⟩ true
