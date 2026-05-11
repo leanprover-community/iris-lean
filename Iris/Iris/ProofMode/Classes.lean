@@ -198,16 +198,12 @@ class CombineSepAs [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_as : P ∗ Q ⊢ R
 export CombineSepAs (combine_sep_as)
 
-/-- `CombineSepGives` combines two propositions `P` and `Q` for a proposition with the `<pers>` modality -/
+/-- `CombineSepGives` combines two propositions `P` and `Q` for a proposition
+    with the `<pers>` modality -/
 @[ipm_class]
 class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
 export CombineSepGives (combine_sep_gives)
-
-class CombineSepsAsGives [BI PROP] (Ps : List PROP) (Q R : outParam PROP) where
-  combine_seps_as_gives_as : [∗] Ps ⊢ Q
-  combine_seps_as_gives_gives : [∗] Ps ⊢ <pers> R
-export CombineSepsAsGives (combine_seps_as_gives_as combine_seps_as_gives_gives)
 
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore elim_modal_tc_opaque "No tc_opaque in Lean"
