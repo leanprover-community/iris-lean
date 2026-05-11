@@ -53,7 +53,7 @@ public meta section
 
 inductive SelId where
 | lean (id : FVarId)
-| pm (uniq : IVarId)
+| pm (ivar : IVarId)
 deriving BEq, Hashable, Repr
 
 @[rocq_alias esel_pat]

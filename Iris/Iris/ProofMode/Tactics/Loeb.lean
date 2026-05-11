@@ -16,7 +16,7 @@ public meta section
 
 inductive RevertTarget where
 | lean (id : FVarId)
-| pm (persistent? : Bool) (uniq : IVarId)
+| pm (persistent? : Bool) (ivar : IVarId)
 deriving BEq, Hashable, Repr
 
 def RevertTarget.toSelTarget : RevertTarget → SelTarget
@@ -31,8 +31,8 @@ def ProofModeM.revertingTelescope {α} (mvar : MVarId)(g : IrisGoal)(hs : List R
       let name ← Lean.mkIdent <$> id.getUserName
       let ident ← `(binderIdent| $name:ident)
       return (name, .intro <| .pure ident)
-    | .pm persistent? uniq =>  do
-      let name ← Lean.mkIdent <$> (g.hyps.getUserName? uniq).getM
+    | .pm persistent? ivar =>  do
+      let name ← Lean.mkIdent <$> (hyps.getUserName? ivar).getM
       let ident ← `(binderIdent| $name:ident)
       return (name, .intro <| (if persistent? then .intuitionistic else id) <| .one ident)
 
