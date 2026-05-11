@@ -52,7 +52,14 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
-private partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
+/--
+Introduce the hypothesis specified by `pats` into the context given by `P` (structured  as `hyps`).
+The type of the current goal is given by `Q`.
+
+This function returns the proof of `P ⊢ Q` to be assigned. The new context is included in the
+`goals` directly by the tactic.
+-/
+partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat)) :
     ProofModeM (Q($P ⊢ $Q)) := do
   match pats with
@@ -63,8 +70,8 @@ private partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar
-    let α : Quoted q(Sort v) ← mkFreshExprMVarQ q(Sort v)
-    let Φ : Quoted q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
+    let α ← mkFreshExprMVarQ q(Sort v)
+    let Φ ← mkFreshExprMVarQ q($α → $prop)
     let .some _ ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ)
       | throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
     let (n, ref) ← getFreshName n
@@ -111,7 +118,6 @@ private partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
         | throwError "iintro: {Q} not a wand"
       let pf ← iCasesCore bi hyps A2 pat q(false) A1 (iIntroCore · · pats)
       return q(wand_intro_spatial (A1 := $A1) (Q := $Q) $pf)
-
 
 elab "iintro" pats:(colGt introPat)* : tactic => do
   -- parse syntax
