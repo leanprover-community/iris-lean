@@ -18,36 +18,24 @@ public import Iris.ProofMode
 
 @[expose] public section
 
-/-! # Weakest Precondition (Stage 1: fixpoint skeleton)
+/-! # Weakest Precondition
 
-References (Stage 1 接口审视，三参考交叉对比)：
+Lean 4 port of Coq Iris's program logic weakest precondition layer,
+following `iris/program_logic/weakestpre.v`.
 
-- **Canonical**: Coq Iris `iris/program_logic/weakestpre.v` (commit d663f775)
-  Defines `Inductive stuckness`, `Class irisGS_gen`, `Definition wp_pre`,
-  `Local Instance wp_pre_contractive`, `Definition wp_def := λ s, fixpoint (wp_pre s)`,
-  `Lemma wp_unfold`. 本文件 def/命题严格 1:1 自此处。
-- **Proof-side reference**: `hxrts/iris-lean@fork/iris/vendor:src/Iris/ProgramLogic/WeakestPre.lean`
-  (lines 60-470). 命题形态参考、tactic 思路参考——不复制代码。
-- **Upstream operator source**: `Iris/Algebra/OFE.lean` (Contractive, fixpoint, fixpoint_unfold)；
-  `Iris/Instances/Lib/{WSat,FUpd}.lean` (`InvGS_gen`, `uPred_fupd`, `BIFUpdate (IProp GF)`)；
-  `Iris/BI/Updates.lean` (notation `|={E1,E2}=>`, `|={E}[E']▷=>`, `|={E}▷=>^[n]`)；
-  `Iris/BI/BigOp/BigSepList.lean` (`[∗list] k ↦ x ∈ l, P k x`).
-  本 stage 算子全部走 upstream，**不**复制 hxrts vendor 算子。
+This file defines:
+- `Stuckness` — inductive matching Coq's `stuckness` (NotStuck / MaybeStuck)
+- `IrisGS` typeclass — matching all 5 fields of Coq's `irisGS_gen`
+- `wp_pre` — Coq's `wp_pre` 1:1 (with `num_laters_per_step` parameterization)
+- `wp_pre_contractive` instance — Coq's `Local Instance wp_pre_contractive`
+- `wp` — Coq's `wp_def := λ s, fixpoint (wp_pre s)`
+- `wp_unfold` — Coq's `Lemma wp_unfold`
 
-Phase 1-A 简化（CLAUDE.md §7 规定阶段 1 节奏 = 接口签名 + 命题真实 + proof sorry）：
-
-- `num_laters_per_step = 0` （即每步用 1 个 ▷；matches hxrts；Coq 原版是 `S (num_laters_per_step ns)`）。
-- `IrisGS` typeclass 暂不含 `state_interp_mono` 字段——Phase 1-B 在补真证明时回填。
-- 所有 lemma proof = `sorry`。Stage 1 只需保证 lake build 通过 + 命题与 Coq weakestpre.v 1:1。
-
-Stage 1 出口：Stuckness + IrisGS + wp_pre + wp_pre_contractive + wp + wp_unfold。
-后续 stages（参见 CLAUDE.md §7 stage 分支组织）：
-
-- stage/2-wp-basic: wp_value_fupd / wp_strong_mono / fupd_wp 等 ~10 lemma
-- stage/3-wp-frame-bind: wp_frame_l/r / wp_wand / wp_bind / wp_pure_step
-- stage/4-lifting: 见 Lifting.lean
-- stage/5-7: Adequacy 系列
-- stage/8-9: GhostMap / GenHeap
+All definitions and theorem statements are 1:1 with Coq weakestpre.v.
+Upstream operators reused: `Iris.Algebra.OFE` (Contractive / fixpoint /
+fixpoint_unfold), `Iris.Instances.Lib.{WSat,FUpd}` (InvGS / uPred_fupd /
+BIFUpdate), `Iris.BI.Updates` (|={E1,E2}=> / |={E}[E']▷=> / |={E}▷=>^[n]
+notations), `Iris.BI.BigOp.BigSepList` ([∗list] k ↦ x ∈ l, P k x).
 -/
 
 namespace Iris.ProgramLogic
@@ -57,8 +45,7 @@ open Iris OFE COFE BI Iris.BI Iris.Algebra Iris.ProgramLogic.PrimStep
 /-! ## Stuckness
 
 Coq weakestpre.v: `Inductive stuckness := NotStuck | MaybeStuck.`
-hxrts WeakestPre.lean line ~50: 用 `Stuckness.notStuck / .maybeStuck`（小写）。
-本文件采用 hxrts 命名（Lean 习惯）。 -/
+We use lowercase constructors `Stuckness.notStuck / .maybeStuck` per Lean convention. -/
 
 inductive Stuckness where
   | notStuck
@@ -67,9 +54,8 @@ inductive Stuckness where
 
 namespace Stuckness
 
-/-- 偏序：`notStuck ≤ maybeStuck`（即 NotStuck 是更强的要求）。
-Coq weakestpre.v: `Definition stuckness_le ...`
-hxrts WeakestPre.lean line ~260。 -/
+/-- Order on stuckness: `notStuck ≤ maybeStuck` (NotStuck is the stronger constraint).
+Coq weakestpre.v: `Definition stuckness_le ...`. -/
 def le : Stuckness → Stuckness → Prop
   | .notStuck, _ => True
   | .maybeStuck, .maybeStuck => True
@@ -91,14 +77,13 @@ Class irisGS_gen (hlc : has_lc) (Λ : language) (Σ : gFunctors) := IrisG {
 }.
 ```
 
-简化（vs Coq 原版，PR-ready 评估后保留）：
-- 固定 `hlc = true`（即 `InvGS GF = InvGS_gen true GF`）；upstream `Examples/IProp.lean` 同样
-  不参数化 hlc。
-
-补全（vs hxrts，2026-05-12 PR-ready 化）：
-- `num_laters_per_step` 字段：与 Coq 严格 1:1（per-step laters 参数化，HeapLang 风格 instance
-  可填 `fun _ => 0`）。
-- `state_interp_mono` 字段：与 Coq 与 hxrts 一致。 -/
+Adaptation to Lean / upstream iris-lean:
+- `hlc = true` fixed (i.e. `InvGS GF = InvGS_gen true GF`), matching the style of
+  `Iris/Examples/IProp.lean`. Coq parameterizes over `has_lc`; we may revisit if
+  later-credits-free use cases arise.
+- All five Coq fields (`iris_invGS`, `state_interp`, `fork_post`,
+  `num_laters_per_step`, `state_interp_mono`) are present; `iris_invGS` is via
+  `extends InvGS GF`. -/
 
 class IrisGS (Expr : Type _) (State Obs Val : outParam (Type _))
     [Language Expr State Obs Val] (GF : BundledGFunctors)
@@ -110,9 +95,9 @@ class IrisGS (Expr : Type _) (State Obs Val : outParam (Type _))
   Coq: field of `irisGS_gen`. -/
   fork_post : Val → IProp GF
   /-- Per-step number of `▷` laters (allows step-indexed reasoning to vary across step count).
-  Coq: field of `irisGS_gen`. HeapLang-style instance 填 `fun _ => 0`. -/
+  Coq: field of `irisGS_gen`. HeapLang-style instances set this to `fun _ => 0`. -/
   num_laters_per_step : Nat → Nat
-  /-- State interpretation 关于 step_count 的单调性（Coq 原版字段）。
+  /-- Monotonicity of state interpretation in the step count.
   Coq weakestpre.v `irisGS_gen.state_interp_mono`. -/
   state_interp_mono (σ : State) (ns : Nat) (κs : List Obs) (nt : Nat) :
     state_interp σ ns κs nt ⊢ iprop(|={∅}=> state_interp σ (ns + 1) κs nt)
@@ -137,24 +122,25 @@ Definition wp_pre `{!irisGS_gen hlc Λ Σ} (s : stuckness)
   end%I.
 ```
 
-2026-05-12 PR-ready 化：用 `S (IrisGS.num_laters_per_step ns)` 替代硬编码 1，严格 1:1 自 Coq。 -/
+Uses `S (IrisGS.num_laters_per_step ns)` per-step laters, matching Coq exactly. -/
 
 variable {Expr State Obs Val : Type _} [Language Expr State Obs Val]
 variable {GF : BundledGFunctors} [iG : IrisGS Expr State Obs Val GF]
 
-/-- 是否可还原（按 stuckness 选择）。Coq weakestpre.v 用 `match s with NotStuck => reducible | _ => True`。 -/
+/-- Reducibility predicate selected by stuckness.
+Coq weakestpre.v: `match s with NotStuck => reducible | MaybeStuck => True end`. -/
 def stuckPred (s : Stuckness) (e : Expr) (σ : State) : Prop :=
   match s with
   | .notStuck => PrimStep.Reducible (Expr := Expr) (Obs := List Obs) (e, σ)
   | .maybeStuck => True
 
-/-- 类型简写：wp 的函数类型 = `CoPset → Expr → (Val → IProp GF) → IProp GF`。
-Coq 用 `coPset -d> expr Λ -d> (val Λ -d> iPropO Σ) -d> iPropO Σ`. -/
+/-- Type abbreviation for the function space of `wp`.
+Coq uses `coPset -d> expr Λ -d> (val Λ -d> iPropO Σ) -d> iPropO Σ`. -/
 abbrev WPFun (Expr Val : Type _) (GF : BundledGFunctors) :=
   CoPset → Expr → (Val → IProp GF) → IProp GF
 
 /-- Pre-fixpoint of weakest precondition. Recursive call `wp` is a parameter.
-Coq weakestpre.v `wp_pre`. hxrts WeakestPre.lean:301. -/
+Coq weakestpre.v `wp_pre`; statement 1:1 with the Coq definition. -/
 noncomputable def wp_pre (s : Stuckness)
     (wp : WPFun Expr Val GF)
     (E : CoPset) (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
@@ -171,9 +157,8 @@ noncomputable def wp_pre (s : Stuckness)
                 wp E e2 Φ ∗
                 [∗list] _i ↦ ef ∈ efs, wp ⊤ ef (IrisGS.fork_post (Expr := Expr))))
 
-/-- Helper: `step_fupdN_ne` —— `|={E1}[E2]▷=∗^[k]` 是 NonExpansive in 内层 Q.
-
-证明：induction over k；每层用 `BIFUpdate.ne + later_ne + BIFUpdate.ne`. -/
+/-- Helper: `|={E1}[E2]▷=∗^[k]` is NonExpansive in the inner argument `Q`.
+Proof: induction on `k`, with each layer using `BIFUpdate.ne + later_ne + BIFUpdate.ne`. -/
 private theorem step_fupdN_ne {E1 E2 : CoPset} {k : Nat} {n : Nat}
     {X Y : IProp GF} (h : X ≡{n}≡ Y) :
     Nat.repeat (fun Q : IProp GF => iprop(|={E1}[E2]▷=> Q)) k X ≡{n}≡
@@ -188,8 +173,8 @@ private theorem step_fupdN_ne {E1 E2 : CoPset} {k : Nat} {n : Nat}
 
 /-- Contractive instance for `wp_pre s`.
 Coq weakestpre.v: `Local Instance wp_pre_contractive : Contractive (wp_pre s)`.
-hxrts WeakestPre.lean:315 `wp_pre_contractive`（思路参考）。
-模板：`Iris/Examples/IProp.lean:131-142` `wp_F_contractive`. -/
+Statement 1:1 with Coq; proof follows the pattern of
+`Iris/Examples/IProp.lean:131-142` `wp_F_contractive`. -/
 noncomputable instance wp_pre_contractive (s : Stuckness) :
     Contractive (fun W : WPFun Expr Val GF => wp_pre s W) where
   distLater_dist {n W₁ W₂ HW} E e Φ := by
@@ -215,35 +200,34 @@ noncomputable instance wp_pre_contractive (s : Stuckness) :
         refine forall_ne fun efs => ?_
         refine wand_ne.ne .rfl ?_
         -- `_ ▷=∗^[k+1]` macro → `Nat.repeat _ (k+1) X = (fun Q => |={∅}[∅]▷=> Q) (Nat.repeat _ k X)`
-        -- 透过外层 |={∅,∅}=> ▷ |={∅,∅}=> ...，▷ 那一层用 distLater_dist
+        -- Pass through `|={∅,∅}=> ▷ |={∅,∅}=> ...`; the `▷` layer uses `distLater_dist`.
         refine BIFUpdate.ne.ne ?_
         refine Contractive.distLater_dist fun m hm => ?_
         refine BIFUpdate.ne.ne ?_
-        -- 现在余 `Nat.repeat _ (num_laters_per_step ns) inner` 两边对比——用 step_fupdN_ne helper
+        -- Remaining: `Nat.repeat _ (num_laters_per_step ns) inner` on each side — use step_fupdN_ne.
         refine step_fupdN_ne ?_
-        -- 内 inner = |={∅,E}=> (state_interp ∗ W E e2 Φ ∗ [∗list])
+        -- Inner `inner` = `|={∅,E}=> (state_interp ∗ W E e2 Φ ∗ [∗list])`.
         refine BIFUpdate.ne.ne ?_
         refine sep_ne.ne .rfl ?_
         refine sep_ne.ne ?_ ?_
         · exact HW m hm E e2 Φ
         · exact Iris.BI.BigSepL.bigSepL_dist fun {_ _} _ => HW m hm ⊤ _ _
 
-/- `WPFun Expr Val GF` 自动是 COFE：
+/- `WPFun Expr Val GF` is automatically a COFE:
 
-- `IProp GF = UPred (IResUR GF)` 是 COFE，通过 `instance : IsCOFE (UPred M)`
-  (Iris/Algebra/UPred.lean:93) 与 `class abbrev COFE := OFE + IsCOFE` (OFE.lean:796) 合成
-- 函数空间封闭性 `instance [∀ x, COFE (β x)] : COFE ((x : α) → β x)`
-  (Iris/Algebra/OFE.lean:854) 套用 3 层：`Val → IProp GF`, `Expr → ...`, `CoPset → ...`
+- `IProp GF = UPred (IResUR GF)` is a COFE via `instance : IsCOFE (UPred M)`
+  (Iris/Algebra/UPred.lean) combined with `class abbrev COFE := OFE + IsCOFE`.
+- The function-space instance `[∀ x, COFE (β x)] → COFE ((x : α) → β x)`
+  (Iris/Algebra/OFE.lean) applies three times to layer over
+  `CoPset → Expr → (Val → IProp GF) → IProp GF`.
 
-不需要显式 instance —— typeclass resolution 自动 derive。
+No explicit instance needed — typeclass resolution derives it automatically. -/
 
-旧 sorry 实例（Stage 1 接口骨架阶段占位）已移除（2026-05-12 Phase 1-B 消 sorry）. -/
-
-/-- 强制 `WPFun Expr Val GF` 有默认值（fixpoint 需要 Inhabited）。 -/
+/-- `Inhabited (WPFun Expr Val GF)` required by `fixpoint`. -/
 noncomputable instance : Inhabited (WPFun Expr Val GF) :=
   ⟨fun _ _ _ => iprop(True)⟩
 
-/-! ## wp 定义
+/-! ## wp definition
 
 Coq weakestpre.v:
 ```
@@ -251,14 +235,10 @@ Definition wp_def `{!irisGS_gen hlc Λ Σ} : Wp (iProp Σ) (expr Λ) (val Λ) st
   λ s : stuckness, fixpoint (wp_pre s).
 ```
 
-hxrts WeakestPre.lean:416 `wp` 把 stuckness 一起带进 fixpoint（`wp_pre_all`）。
-我们沿 Coq 原版风格：每个 stuckness 一个 fixpoint。 -/
+One fixpoint per `Stuckness` value (matching Coq's style). -/
 
 /-- The weakest precondition.
-Coq weakestpre.v: `Definition wp_def := λ s, fixpoint (wp_pre s)`.
-
-Phase 1-B（2026-05-12）：COFE / Inhabited / wp_pre_contractive 都已就位，
-fixpoint 可直接 elaborate。 -/
+Coq weakestpre.v: `Definition wp_def := λ s, fixpoint (wp_pre s)`. -/
 noncomputable def wp (s : Stuckness) : WPFun Expr Val GF :=
   fixpoint (fun W : WPFun Expr Val GF => wp_pre s W)
 
@@ -270,7 +250,8 @@ Lemma wp_unfold s E e Φ :
   WP e @ s; E {{ Φ }} ⊣⊢ wp_pre s (wp s) E e Φ.
 ```
 
-Phase 1-B（2026-05-12）：用 upstream `fixpoint_unfold` 翻 `≡` 为 `⊣⊢`。 -/
+Proof uses upstream `fixpoint_unfold` to obtain `≡`, then converts to `⊣⊢` via
+function-space pointwise evaluation and `BI.equiv_iff`. -/
 theorem wp_unfold (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) :
     wp (Expr := Expr) (Val := Val) (GF := GF) s E e Φ ⊣⊢
       wp_pre s (wp (Expr := Expr) (Val := Val) (GF := GF) s) E e Φ := by
