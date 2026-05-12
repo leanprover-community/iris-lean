@@ -77,17 +77,15 @@ Class irisGS_gen (hlc : has_lc) (Λ : language) (Σ : gFunctors) := IrisG {
 }.
 ```
 
-Adaptation to Lean / upstream iris-lean:
-- `hlc = true` fixed (i.e. `InvGS GF = InvGS_gen true GF`), matching the style of
-  `Iris/Examples/IProp.lean`. Coq parameterizes over `has_lc`; we may revisit if
-  later-credits-free use cases arise.
+Adaptation to Lean:
 - All five Coq fields (`iris_invGS`, `state_interp`, `fork_post`,
   `num_laters_per_step`, `state_interp_mono`) are present; `iris_invGS` is via
-  `extends InvGS GF`. -/
+  `extends InvGS_gen hlc GF`. Coq's `has_lc` two-element type is represented
+  by Lean's `Bool` (the upstream convention, see `Iris/Instances/Lib/FUpd.lean`). -/
 
 class IrisGS (Expr : Type _) (State Obs Val : outParam (Type _))
-    [Language Expr State Obs Val] (GF : BundledGFunctors)
-    extends InvGS GF where
+    [Language Expr State Obs Val] (hlc : outParam Bool) (GF : BundledGFunctors)
+    extends InvGS_gen hlc GF where
   /-- State interpretation: `σ → step_count → past_observations → num_forks → iProp`.
   Coq: field of `irisGS_gen`. -/
   state_interp : State → Nat → List Obs → Nat → IProp GF
@@ -125,7 +123,7 @@ Definition wp_pre `{!irisGS_gen hlc Λ Σ} (s : stuckness)
 Uses `S (IrisGS.num_laters_per_step ns)` per-step laters, matching Coq exactly. -/
 
 variable {Expr State Obs Val : Type _} [Language Expr State Obs Val]
-variable {GF : BundledGFunctors} [iG : IrisGS Expr State Obs Val GF]
+variable {hlc : Bool} {GF : BundledGFunctors} [iG : IrisGS Expr State Obs Val hlc GF]
 
 /-- Reducibility predicate selected by stuckness.
 Coq weakestpre.v: `match s with NotStuck => reducible | MaybeStuck => True end`. -/
@@ -155,7 +153,7 @@ noncomputable def wp_pre (s : Stuckness)
               ={ ∅ }▷=∗^[ iG.num_laters_per_step ns + 1 ] (|={∅,E}=>
                 IrisGS.state_interp (Expr := Expr) σ2 (ns + 1) κs (efs.length + nt) ∗
                 wp E e2 Φ ∗
-                [∗list] _i ↦ ef ∈ efs, wp ⊤ ef (IrisGS.fork_post (Expr := Expr))))
+                [∗list] ef ∈ efs, wp ⊤ ef (IrisGS.fork_post (Expr := Expr))))
 
 /-- Helper: `|={E1}[E2]▷=∗^[k]` is NonExpansive in the inner argument `Q`.
 Proof: induction on `k`, with each layer using `BIFUpdate.ne + later_ne + BIFUpdate.ne`. -/
