@@ -40,7 +40,7 @@ notations), `Iris.BI.BigOp.BigSepList` ([∗list] k ↦ x ∈ l, P k x).
 
 namespace Iris.ProgramLogic
 
-open Iris OFE COFE BI Iris.BI Iris.Algebra Iris.ProgramLogic.PrimStep
+open Iris OFE COFE BI Iris.Algebra Iris.BI.BigSepL Iris.ProgramLogic.PrimStep
 
 /-! ## Stuckness
 
@@ -155,20 +155,6 @@ noncomputable def wp_pre (s : Stuckness)
                 wp E e2 Φ ∗
                 [∗list] ef ∈ efs, wp ⊤ ef (IrisGS.fork_post (Expr := Expr))))
 
-/-- Helper: `|={E1}[E2]▷=∗^[k]` is NonExpansive in the inner argument `Q`.
-Proof: induction on `k`, with each layer using `BIFUpdate.ne + later_ne + BIFUpdate.ne`. -/
-private theorem step_fupdN_ne {E1 E2 : CoPset} {k : Nat} {n : Nat}
-    {X Y : IProp GF} (h : X ≡{n}≡ Y) :
-    Nat.repeat (fun Q : IProp GF => iprop(|={E1}[E2]▷=> Q)) k X ≡{n}≡
-      Nat.repeat (fun Q : IProp GF => iprop(|={E1}[E2]▷=> Q)) k Y := by
-  induction k with
-  | zero => exact h
-  | succ k' IH =>
-    refine BIFUpdate.ne.ne ?_
-    refine later_ne.ne ?_
-    refine BIFUpdate.ne.ne ?_
-    exact IH
-
 /-- Contractive instance for `wp_pre s`.
 Coq weakestpre.v: `Local Instance wp_pre_contractive : Contractive (wp_pre s)`.
 Statement 1:1 with Coq; proof follows the pattern of
@@ -209,7 +195,7 @@ noncomputable instance wp_pre_contractive (s : Stuckness) :
         refine sep_ne.ne .rfl ?_
         refine sep_ne.ne ?_ ?_
         · exact HW m hm E e2 Φ
-        · exact Iris.BI.BigSepL.bigSepL_dist fun {_ _} _ => HW m hm ⊤ _ _
+        · exact bigSepL_dist fun {_ _} _ => HW m hm ⊤ _ _
 
 /- `WPFun Expr Val GF` is automatically a COFE:
 
