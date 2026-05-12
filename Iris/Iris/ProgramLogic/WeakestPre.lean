@@ -91,14 +91,14 @@ Class irisGS_gen (hlc : has_lc) (Λ : language) (Σ : gFunctors) := IrisG {
 }.
 ```
 
-Phase 1-A 简化（vs Coq 原版）：
-- 固定 `hlc = true`（即 `InvGS GF = InvGS_gen true GF`，含 LaterCredits）；Stage 1 不用 LC，
-  但保留参数化空间 留 Phase 1-B 决定是否暴露 hlc。Coq 原版可参数化。
-- 省略 `num_laters_per_step` 字段——硬编码 = 0（Phase 1 swap 不需要 per-step laters）。
-- 省略 `state_interp_mono` 字段——Phase 1-B 在写真证明 (wp_strong_mono 等) 时按需添加。
+简化（vs Coq 原版，PR-ready 评估后保留）：
+- 固定 `hlc = true`（即 `InvGS GF = InvGS_gen true GF`）；upstream `Examples/IProp.lean` 同样
+  不参数化 hlc。
+- 省略 `num_laters_per_step` 字段——硬编码 = 0；hxrts 同样省（precedent）；Phase 1 swap +
+  Phase 2 数组都不需要 per-step laters。
 
-hxrts 对比：hxrts 也省略 num_laters_per_step（fix = 0），但保留 state_interp_mono。
-我们 Stage 1 更激进——两个都省，待 Phase 1-B 按需补。 -/
+保留（vs hxrts，2026-05-12 PR-ready 化补回）：
+- `state_interp_mono` 字段：与 Coq 与 hxrts 一致。 -/
 
 class IrisGS (Expr : Type _) (State Obs Val : outParam (Type _))
     [Language Expr State Obs Val] (GF : BundledGFunctors)
@@ -109,6 +109,10 @@ class IrisGS (Expr : Type _) (State Obs Val : outParam (Type _))
   /-- Fixed postcondition for forked threads.
   Coq: field of `irisGS_gen`. -/
   fork_post : Val → IProp GF
+  /-- State interpretation 关于 step_count 的单调性（Coq 原版字段）。
+  Coq weakestpre.v `irisGS_gen.state_interp_mono`. -/
+  state_interp_mono (σ : State) (ns : Nat) (κs : List Obs) (nt : Nat) :
+    state_interp σ ns κs nt ⊢ iprop(|={∅}=> state_interp σ (ns + 1) κs nt)
 
 /-! ## wp_pre
 
