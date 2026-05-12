@@ -67,6 +67,10 @@ theorem combine_step_gives [BI PROP] {out1 out2 out e1 e2 e e' goal : PROP}
     _ ⊢ e' ∗ □ out                              := sep_mono pf4 refl
     _ ⊢ goal                                    := pf3
 
+private structure CombineState {u} {prop : Q(Type u)} {bi} (origE origGoal : Q($prop)) where
+  (e : Q($prop)) (hyps : Hyps bi e) (goal : Q($prop))
+  (pf : Q(($e ⊢ $goal) → ($origE ⊢ $origGoal)))
+
 /-- The tactic `icombine` combines two propositions into one using the type
     class `CombineSepAs` or, by default, the separating conjunction.
     The Boolean value `recCall` indicates whether this function is currently
