@@ -861,6 +861,13 @@ example [BI PROP] (Q : PROP) : (⌜φ1⌝ ∧ <affine> ⌜φ2⌝) ⊢ Q -∗ Q :
   ipure Hφ
   iexact HQ
 
+/-- Tests `ipure` with implication containing pure -/
+example [BI PROP] (Q : PROP) : <affine> (⌜φ1⌝ ∧ ⌜φ2⌝ → ⌜φ3⌝)  ⊢ Q -∗ Q := by
+  iintro Hφ
+  iintro HQ
+  ipure Hφ
+  iexact HQ
+
 /- Tests `ipure` failure -/
 /-- error: ipure: P is not pure -/
 #guard_msgs in
@@ -980,6 +987,16 @@ example [BI PROP] (H : A → B) (P Q : PROP) : <affine> P ⊢ <pers> Q → ⌜A�
   ipure_intro
   exact H
 
+/-- Tests `ipure_intro` with wand containing pure and affine lhs -/
+example [BI PROP] : ⊢@{PROP} (<affine> ⌜φ2⌝ -∗ emp) := by
+  ipure_intro
+  intro _; trivial
+
+/-- Tests `ipure_intro` with wand containing pure and absorbing rhs -/
+example [BI PROP] : ⊢@{PROP} (⌜φ2⌝ -∗ <absorb> emp) := by
+  ipure_intro
+  intro _; trivial
+
 /- Tests `ipure_intro` failure -/
 /-- error: ipure_intro: P is not pure -/
 #guard_msgs in
@@ -1009,6 +1026,65 @@ example [BI PROP] (Q : PROP) : P ⊢ (⌜True⌝ -∗ P -∗ ⌜True⌝ -∗ Q) 
   iintro HP HPQ
   ispecialize HPQ $$ %True.intro [HP] as G %True.intro
   case G => iexact HP
+  iexact HPQ
+
+/-- Tests `ispecialize` with negated subgoal -/
+example [BI PROP] (Q : PROP) : P ⊢ R -∗ (P -∗ R -∗ Q) -∗ Q := by
+  iintro HP HR HPQ
+  ispecialize HPQ $$ [- HR] [-]
+  . iexact HP
+  . iexact HR
+  iexact HPQ
+
+/-- Tests `ispecialize` with framing subgoal -/
+example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HR HPQ
+  ispecialize HPQ $$ [$HP1 HP2] [-]
+  . iexact HP2
+  . iexact HR
+  iexact HPQ
+
+/-- Tests `ispecialize` with framing subgoal (different argument order) -/
+example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HR HPQ
+  ispecialize HPQ $$ [HP1 $HP2] [-]
+  . iexact HP1
+  . iexact HR
+  iexact HPQ
+
+/-- Tests `ispecialize` with negated framing subgoal -/
+example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HR HPQ
+  ispecialize HPQ $$ [- $HP1 HR] [-]
+  . iexact HP2
+  . iexact HR
+  iexact HPQ
+
+/-- Tests `ispecialize` with negated framing subgoal (different argument order) -/
+example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HR HPQ
+  ispecialize HPQ $$ [- HR $HP2] [-]
+  . iexact HP1
+  . iexact HR
+  iexact HPQ
+
+/- Tests `ispecialize` with autoframe -/
+example [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
+  iintro HP HPQ
+  ispecialize HPQ $$ [$]
+  iexact HPQ
+
+/-- Tests `ispecialize` with more complex autoframe -/
+example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HR HPQ
+  ispecialize HPQ $$ [$] [$]
+  iexact HPQ
+
+/-- Tests `ispecialize` with even more complex autoframe -/
+example [BI PROP] (P' : Nat → PROP) (Q : PROP)
+    : P' 1 ⊢ □ P' 1 -∗ P' 2 -∗ R -∗ (∀ n, ((□ P' n ∗ R ∗ P' n) -∗ P' 2 -∗ Q)) -∗ Q := by
+  iintro HP1 #HP1' HP2 HR HPQ
+  ispecialize HPQ $$ [$] [$]
   iexact HPQ
 
 /-- Tests `ispecialize` with intuitionistic wand -/
@@ -1259,6 +1335,23 @@ example [BI PROP] (P Q : PROP) : P -∗ <affine> Q -∗ P := by
   iintro HQ
   icases HQ with -
   iexact HP
+
+/-- Tests `icases` to frame hypothesis -/
+example [BI PROP] (P : PROP) : ⊢ P -∗ P := by
+  iintro HP
+  icases HP with $
+
+/-- Tests `icases` to frame persistent hypothesis -/
+example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ (P -∗ Q) -∗ P ∗ Q := by
+  iintro #HP Hwand
+  icases HP with $
+  iapply Hwand
+  iframe #
+
+/-- Tests `icases` with complex pattern involving framing -/
+example [BI PROP] (P Q R : PROP) : ⊢ ((P ∗ □ Q ∗ (□ R ∨ R))) -∗ P ∗ Q ∗ R := by
+  iintro HP
+  icases HP with ⟨$, #HQ, ⟨#$ | $⟩⟩ <;> iframe #
 
 /-- Tests `icases` with nested conjunction -/
 example [BI PROP] (Q : PROP) : □ (P1 ∧ P2 ∧ Q) ⊢ Q := by
@@ -1900,3 +1993,176 @@ example [BI PROP] (P : PROP) : P ⊢ P := by
   inext
 
 end inext
+
+section iframe
+
+/- Tests basic `iframe` -/
+example [BI PROP] (P : PROP) : P ⊢ P := by
+  iintro HP
+  iframe HP
+
+/- Tests `iframe` not closing goal with non-affine assumption -/
+/--
+error: unsolved goals
+PROP : Type u_1
+inst✝ : BI PROP
+P Q : PROP
+⊢ ⏎
+  ∗HQ : Q
+  ⊢ emp
+-/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ∗ Q ⊢ P := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+
+/- Tests `iframe` closing goal with absorbing goal -/
+example [BI PROP] (P Q : PROP) : <absorb> P ∗ Q ⊢ <absorb> P := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+
+/- Tests `iframe` with pure hyp -/
+example [BI PROP] (Q : PROP) :
+  1 = 1 →
+  Q ⊢ ⌜1 = 1⌝ := by
+  iintro %heq HQ
+  iframe %heq
+
+/- Tests `iframe` error with pure hyp mismatch -/
+/-- error: iframe: cannot frame ⌜1 = 2⌝ -/
+#guard_msgs in
+example [BI PROP] (Q : PROP) :
+  1 = 2 →
+  Q ⊢ ⌜1 = 1⌝ := by
+  iintro %heq HQ
+  iframe %heq
+
+/- Tests `iframe` error with non-prop -/
+/-- error: iframe: Q is not a Prop -/
+#guard_msgs in
+example [BI PROP] (Q : PROP) :
+  Q ⊢ ⌜1 = 1⌝ := by
+  iintro HQ
+  iframe %Q
+
+/- Tests `iframe` under star -/
+example [BI PROP] (P Q : PROP) : P ∗ Q ⊢ P ∗ Q := by
+  iintro ⟨HP, HQ⟩
+  iframe HP HQ
+
+/- Tests `iframe` under nested star -/
+example [BI PROP] (P Q : PROP) : P ∗ Q ∗ Q ⊢ (P ∗ Q) ∗ Q := by
+  iintro ⟨HP, HQ1, HQ2⟩
+  iframe HP
+  iframe HQ1 HQ2
+
+/- Tests `iframe` without explicit patterns -/
+example [BI PROP] (P Q : PROP) : P ∗ Q ∗ Q ⊢ (P ∗ Q) ∗ Q := by
+  iintro ⟨HP, HQ1, HQ2⟩
+  iframe
+
+/- Tests `iframe` with persistent hyp cancelling multiple times -/
+example [BI PROP] (P Q : PROP) : P ∗ □ Q ⊢ (P ∗ Q) ∗ Q := by
+  iintro ⟨HP, #HQ1⟩
+  iframe HQ1
+  iframe
+
+/- Tests `iframe` under and -/
+example [BI PROP] (P : PROP) : P ⊢ (P ∧ P) := by
+  iintro HP
+  iframe HP
+
+/- Tests `iframe` under and -/
+example [BI PROP] (P Q : PROP) [BIAffine PROP] : P ∗ Q ⊢ (P ∧ Q) := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+  iframe HQ
+
+/- Tests `iframe` under and for non-affine P failing -/
+/-- error: iframe: cannot frame P -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ∗ Q ⊢ (P ∧ Q) := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+
+/- Tests `iframe` under and for intuitionistic hyp -/
+example [BI PROP] (P Q : PROP) [Affine Q] : □ P ∗ Q ⊢ (P ∧ Q) := by
+  iintro ⟨#HP, HQ⟩
+  iframe HP
+  iframe HQ
+
+/- Tests `iframe` under or -/
+example [BI PROP] (P Q : PROP) : P ∗ Q ⊢ (P ∗ Q ∨ P ∗ Q) := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+  iframe HQ
+
+/- Tests `iframe` under or only left fails -/
+/-- error: iframe: cannot frame P -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : P ∗ Q ⊢ (P ∗ Q ∨ Q) := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+
+/- Tests `iframe` under or only left works if persistent -/
+example [BI PROP] (P Q : PROP) : □ P ∗ Q ⊢ (P ∗ Q ∨ Q) := by
+  iintro ⟨#HP, HQ⟩
+  iframe HP
+  iframe HQ
+
+/- Tests `iframe` under or solve left -/
+example [BI PROP] (P Q : PROP) [BIAffine PROP] : P ∗ Q ⊢ (P ∨ Q) := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+
+/- Tests `iframe` under or solve right -/
+example [BI PROP] (P Q : PROP) [BIAffine PROP] : P ∗ Q ⊢ (Q ∨ P) := by
+  iintro ⟨HP, HQ⟩
+  iframe HP
+
+/- Tests `iframe` under modalities -/
+example [BI PROP] (P : PROP) : □ P ⊢ <pers> <affine> <absorb> □ P := by
+  iintro #HP
+  iframe HP
+
+/- Tests `iframe` under more modalities -/
+example [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] (P : PROP) [BIAffine PROP] E :
+  P ⊢ ▷ |==> |={E}=> P := by
+  iintro HP
+  iframe HP
+
+/- Tests `iframe` under magic wand -/
+example [BI PROP] (P Q : PROP) : P ⊢ Q -∗ P ∗ Q := by
+  iintro HP
+  iframe HP
+  iintro HQ
+  iframe HQ
+
+/- Tests `iframe` under implication -/
+example [BI PROP] (P Q : PROP) [BIAffine PROP] : P ⊢ □ Q → P ∗ Q := by
+  iintro HP
+  iframe HP
+  iintro #HQ
+  iframe HQ
+
+/- Tests `iframe` under forall -/
+example [BI PROP] (P : PROP) : P ⊢ ∀ (x : Nat), P ∗ ⌜x = x⌝ := by
+  iintro HP
+  iframe HP
+  ipure_intro; simp
+
+/- Tests `iframe` with mvar -/
+example [BI PROP] (P Q : PROP) : (P ∗ Q ⊢ ∃ x, P ∗ ⌜x = Q⌝ ∗ x) := by
+  iintro ⟨HP, HQ⟩
+  iexists _
+  iframe HP
+  iframe HQ
+  ipure_intro; trivial
+
+/- Tests `iframe` with mvar and or -/
+example [BI PROP] [BIAffine PROP] (Q : Nat → PROP) : (Q 0 ⊢ ∃ x, False ∨ Q x) := by
+  iintro HQ
+  iexists _
+  iframe
+
+end iframe
