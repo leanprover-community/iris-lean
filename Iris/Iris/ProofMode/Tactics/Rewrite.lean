@@ -58,25 +58,26 @@ private def iRewriteGoalCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   let ofe : Q(OFE $A) ← mkFreshExprMVarQ q(OFE $A)
   let .some out'' ← ProofModeM.trySynthInstanceQ q(IntoInternalEq (PROP := $prop) (ofe := $ofe) (A := $A) (x := $a) (y := $b) $out)
     | throwError "irewrite: {out} is not an internal equality"
-  let _ ← instantiateLevelMVars v
-  let _ ← instantiateMVars A
-  let _ ← instantiateMVars a
-  let _ ← instantiateMVars b
-  let _ ← instantiateMVars ofe
+  let v ← instantiateLevelMVars v
+  let A : Q(Type v) ← instantiateMVars A
+  let a : Q($A) ← instantiateMVars a
+  let b : Q($A) ← instantiateMVars b
+  let ofe : Q(OFE $A) ← instantiateMVars ofe
   let (search, target) := match direction with
     | .forward => (a, b)
     | .backward => (b, a)
 
-  let x ← mkFreshExprMVar (.some A)
+  -- let x ← mkFreshExprMVar (.some A)
   let goalAbstracted ← kabstract goal search
-  let goalWithX := goalAbstracted.instantiate1 x
-  let Ψ : Q($A → $prop) ← mkLambdaFVars #[x] goalWithX
+  -- if goalAbstracted == goal then
+  --   throwError "irewrite: {search} does not occur in the goal"
+  have Ψ : Q($A → $prop) := mkLambda `x .default A goalAbstracted
   let .some _ ← trySynthInstanceQ q(OFE.NonExpansive $Ψ)
     | throwError "irewrite: could not synthesize NonExpansive instance for {Ψ}"
   let goal' : Q($prop) := q($Ψ $search)
   let asm : Q($prop) := q($Ψ $target)
 
-  dbg_trace f!"{goalAbstracted} {goalWithX} {Ψ} {goal'} {asm} {goal} {target} {search}"
+  dbg_trace f!"abs: {goalAbstracted} Ψ: {Ψ} goal': {goal'} asm: {asm} goal: {goal} target: {target} search: {search}"
   let ⟨_⟩ ← assertDefEqQ goal goal'
   let pf' ← addBIGoal hyps' asm
   let _ ← addBIGoal hyps' goal -- remove, also wtf

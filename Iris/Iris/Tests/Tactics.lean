@@ -1906,7 +1906,7 @@ variable {PROP : Type _} [Sbi PROP]
 variable {A B : Type _} [OFE A] [OFE B]
 
 example (a b : A) (P : A → PROP) [OFE.NonExpansive P] :
-    internalEq a b ∗ P a ⊢ P b := by
+    internalEq b a ∗ P a ⊢ P b := by
   istart
   iintro ⟨Heq, Ha⟩
   irewrite Heq
