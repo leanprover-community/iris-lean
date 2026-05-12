@@ -166,12 +166,40 @@ noncomputable def wp_pre (s : Stuckness)
 
 /-- Contractive instance for `wp_pre s`.
 Coq weakestpre.v: `Local Instance wp_pre_contractive : Contractive (wp_pre s)`.
-hxrts WeakestPre.lean:315 `wp_pre_contractive`.
-
-Stage 1: sorry (Phase 1-B 补；hxrts proof 思路：拆 to_val match → 在 step 分支推 `▷` 守护下的
-distLater_dist). -/
+hxrts WeakestPre.lean:315 `wp_pre_contractive`（思路参考）。
+模板：`Iris/Examples/IProp.lean:131-142` `wp_F_contractive`（11 行同模式）。 -/
 noncomputable instance wp_pre_contractive (s : Stuckness) :
-    Contractive (fun W : WPFun Expr Val GF => wp_pre s W) := sorry
+    Contractive (fun W : WPFun Expr Val GF => wp_pre s W) where
+  distLater_dist {n W₁ W₂ HW} E e Φ := by
+    show wp_pre s W₁ E e Φ ≡{n}≡ wp_pre s W₂ E e Φ
+    cases hto : toVal (Val := Val) e with
+    | some v =>
+        unfold wp_pre
+        simp only [hto]
+        exact .rfl
+    | none =>
+        unfold wp_pre
+        simp only [hto]
+        refine forall_ne fun σ => ?_
+        refine forall_ne fun ns => ?_
+        refine forall_ne fun κ => ?_
+        refine forall_ne fun κs => ?_
+        refine forall_ne fun nt => ?_
+        refine wand_ne.ne .rfl ?_
+        refine BIFUpdate.ne.ne ?_
+        refine sep_ne.ne .rfl ?_
+        refine forall_ne fun e2 => ?_
+        refine forall_ne fun σ2 => ?_
+        refine forall_ne fun efs => ?_
+        refine wand_ne.ne .rfl ?_
+        refine BIFUpdate.ne.ne ?_
+        refine Contractive.distLater_dist fun m hm => ?_
+        refine BIFUpdate.ne.ne ?_
+        refine BIFUpdate.ne.ne ?_
+        refine sep_ne.ne .rfl ?_
+        refine sep_ne.ne ?_ ?_
+        · exact HW m hm E e2 Φ
+        · exact Iris.BI.BigSepL.bigSepL_dist fun {_ _} _ => HW m hm ⊤ _ _
 
 /- `WPFun Expr Val GF` 自动是 COFE：
 
