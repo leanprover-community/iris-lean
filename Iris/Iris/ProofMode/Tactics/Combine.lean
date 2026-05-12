@@ -67,9 +67,12 @@ theorem combine_step_gives [BI PROP] {out1 out2 out e1 e2 e e' goal : PROP}
     _ ⊢ e' ∗ □ out                              := sep_mono pf4 refl
     _ ⊢ goal                                    := pf3
 
-private structure CombineState {u} {prop : Q(Type u)} {bi} (origE origGoal : Q($prop)) where
-  (e : Q($prop)) (hyps : Hyps bi e) (goal : Q($prop))
-  (pf : Q(($e ⊢ $goal) → ($origE ⊢ $origGoal)))
+private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop)) where
+  (e1 : Q($prop))
+  (hyps1 : Hyps bi e1)
+  (p1 : Q(Bool))
+  (out1' : Q($prop))
+  pf : Q(($e1 ∗ □?$p1 $out1' ⊢ $goal) → ($origE ⊢ $goal))
 
 /-- The tactic `icombine` combines two propositions into one using the type
     class `CombineSepAs` or, by default, the separating conjunction.
@@ -207,28 +210,134 @@ private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
       return q(combine_nil_singleton_gives $pf)
   termination_by hs.length
 
-elab "icombine" hs:(colGt ident)* "as" colGt pat:icasesPat : tactic => do
+theorem dummy [BI PROP] {a b c : PROP} : a ⊢ b ∗ c := sorry
+
+private def CombineState.combineAsProofModeHyp {u prop bi origE goal} :
+    @CombineState u prop bi origE goal → Name → iCasesPat →
+    ProofModeM (@CombineState u prop bi origE goal)
+  | { e1, hyps1, out1', p1, pf }, uniq, pat => do
+      let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := hyps1.remove false uniq
+      let out ← mkFreshExprMVarQ _
+      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out1' $out2' $out)
+      -- The error should not happen as the default option is always available
+      | throwError "icombine: no type class instance to combine propositions"
+
+      match matchBool p1, matchBool p2 with
+      | .inl _, .inl _ =>
+        let pf'' : Q($origE ⊢ $e2 ∗ □ $out) := q(dummy)
+        return {
+          e1 := e2, hyps1 := hyps2, p1 := q(true), out1' := out,
+          pf := q(fun pf' => $(pf'').trans pf')
+        }
+
+      | .inl _, .inr _ =>
+        let pf'' : Q($origE ⊢ $e2 ∗ $out) := q(dummy)
+        return {
+          e1 := e2, hyps1 := hyps2, p1 := q(false), out1' := out,
+          pf := q(fun pf' => $(pf'').trans pf')
+        }
+      | .inr _, _ =>
+        let pf'' : Q($origE ⊢ $e2 ∗ $out) := q(dummy)
+        return {
+          e1 := e2, hyps1 := hyps2, p1 := q(false), out1' := out,
+          pf := q(fun pf' => $(pf'').trans pf')
+        }
+
+
+private def CombineState.combineGivesProofModeHyp {u prop bi origE goal} :
+    @CombineState u prop bi origE goal → Name → iCasesPat →
+    ProofModeM (@CombineState u prop bi origE goal)
+  | { e1, hyps1, out1', p1, pf }, uniq, pat => do
+      let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := hyps1.remove false uniq
+      let out ← mkFreshExprMVarQ _
+      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out1' $out2' $out)
+      -- The error should not happen as the default option is always available
+      | throwError "icombine: no type class instance to combine propositions"
+
+      let pf'' : Q($origE ⊢ $e2 ∗ □ $out) := q(dummy)
+      return {
+        e1 := e2, hyps1 := hyps2, p1 := q(true), out1' := out,
+        pf := q(fun pf' => $(pf'').trans pf')
+      }
+
+theorem dummy' [BI PROP] {e goal : PROP} : e ⊢ goal := sorry
+
+elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
+  let pat ← liftMacroM <| iCasesPat.parse patAs
+
+  ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do
+    match idents.toList with
+    | [] =>
+      let mut st : CombineState e goal := {
+        e1 := q($e), hyps1 := hyps, out1' := q(iprop(emp)), p1 := q(true),
+        pf := q(combine_as_nil)
+      }
+
+      let pf' ← iCasesCore _ st.hyps1 goal pat q($(st.p1)) st.out1' addBIGoal
+      mvar.assign q($(st.pf) $pf')
+
+    | h1 :: hs =>
+      let uniq ← hyps.findWithInfo h1
+      let ⟨e1, hyps1, out1, out1', p1, _, pf1⟩ := hyps.remove false uniq
+
+      if hs.count h1 ≥ 1 ∧ ¬isTrue p1 then
+        throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
+
+      let mut st : CombineState e goal := {
+        e1 := q($e1), hyps1 := hyps1, out1' := q($out1'), p1 := q($p1),
+        pf := q(fun h => dummy')
+      }
+
+      for h in hs do
+        let uniq ← hyps.findWithInfo h
+        let ⟨_, _, _, _, p, _, _⟩ := hyps.remove false uniq
+
+        if hs.count h ≥ 2 ∧ ¬isTrue p then
+          throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
+        st ← st.combineAsProofModeHyp uniq pat
+      let pf' ← iCasesCore _ st.hyps1 goal pat q($(st.p1)) st.out1' addBIGoal
+      mvar.assign q($(st.pf) $pf')
+
+elab "icombine" idents:(colGt ident)* "gives" colGt pat:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse pat
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let proof ← iCombineAsCore hyps goal hs.toList pat
-    mvar.assign proof
+  ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do
+    match idents.toList with
+    | [] =>
+      let mut st : CombineState e goal := {
+        e1 := q($e), hyps1 := hyps, out1' := q(iprop(True)), p1 := q(true),
+        pf := q(combine_nil_singleton_gives)
+      }
 
-elab "icombine" hs:(colGt ident)* "gives" colGt pat:icasesPat : tactic => do
-  let pat ← liftMacroM <| iCasesPat.parse pat
+      let pf' ← iCasesCore _ st.hyps1 goal pat q($(st.p1)) st.out1' addBIGoal
+      mvar.assign q($(st.pf) $pf')
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let proof ← iCombineGivesCore hyps goal hs.toList pat
-    mvar.assign proof
+    | [_] =>
+      let mut st : CombineState e goal := {
+        e1 := q($e), hyps1 := hyps, out1' := q(iprop(True)), p1 := q(true),
+        pf := q(combine_nil_singleton_gives)
+      }
 
-elab "icombine" hs:(colGt ident)* "as" colGt patAs:icasesPat "gives" colGt patGives:icasesPat : tactic => do
-  let patAs ← liftMacroM <| iCasesPat.parse patAs
-  let patGives ← liftMacroM <| iCasesPat.parse patGives
+      let pf' ← iCasesCore _ st.hyps1 goal pat q($(st.p1)) st.out1' addBIGoal
+      mvar.assign q($(st.pf) $pf')
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let proof ← iCombineGivesCore hyps goal hs.toList patGives
-    mvar.assign proof
+    | h1 :: hs =>
+      let uniq ← hyps.findWithInfo h1
+      let ⟨e1, hyps1, out1, out1', p1, _, pf1⟩ := hyps.remove false uniq
+      if hs.count h1 ≥ 1 ∧ ¬isTrue p1 then
+        throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
+      let mut st : CombineState e goal := {
+        e1 := q($e1), hyps1 := hyps1, out1' := q($out1'), p1 := q($p1),
+        pf := q(fun h => dummy')
+      }
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let proof ← iCombineAsCore hyps goal hs.toList patAs
-    mvar.assign proof
+      for h in hs do
+        let uniq ← hyps.findWithInfo h
+        let ⟨_, _, _, _, p, _, _⟩ := hyps.remove false uniq
+
+        if hs.count h ≥ 2 ∧ ¬isTrue p then
+          throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
+
+        st ← st.combineGivesProofModeHyp uniq pat
+      let pf' ← iCasesCore _ st.hyps1 goal pat q($(st.p1)) st.out1' addBIGoal
+      mvar.assign q($(st.pf) $pf')
