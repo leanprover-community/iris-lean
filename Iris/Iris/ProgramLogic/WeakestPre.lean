@@ -228,11 +228,12 @@ hxrts WeakestPre.lean:416 `wp` 把 stuckness 一起带进 fixpoint（`wp_pre_all
 我们沿 Coq 原版风格：每个 stuckness 一个 fixpoint。 -/
 
 /-- The weakest precondition.
+Coq weakestpre.v: `Definition wp_def := λ s, fixpoint (wp_pre s)`.
 
-Stage 1 占位：实际 Phase 1-B 用 `fixpoint (wp_pre s)`（依赖 COFE/Contractive/Inhabited
-instance 全 sorry 才能开 fixpoint）。本 stage 直接 sorry — wp_unfold lemma 会成为后续
-stage 与该 fixpoint 之间的唯一接口。 -/
-noncomputable def wp (s : Stuckness) : WPFun Expr Val GF := sorry
+Phase 1-B（2026-05-12）：COFE / Inhabited / wp_pre_contractive 都已就位，
+fixpoint 可直接 elaborate。 -/
+noncomputable def wp (s : Stuckness) : WPFun Expr Val GF :=
+  fixpoint (fun W : WPFun Expr Val GF => wp_pre s W)
 
 /-! ## wp_unfold
 
@@ -242,10 +243,13 @@ Lemma wp_unfold s E e Φ :
   WP e @ s; E {{ Φ }} ⊣⊢ wp_pre s (wp s) E e Φ.
 ```
 
-Stage 1: sorry. Phase 1-B 用 upstream `fixpoint_unfold` 翻 `≡` 为 `⊣⊢`. -/
+Phase 1-B（2026-05-12）：用 upstream `fixpoint_unfold` 翻 `≡` 为 `⊣⊢`。 -/
 theorem wp_unfold (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) :
     wp (Expr := Expr) (Val := Val) (GF := GF) s E e Φ ⊣⊢
       wp_pre s (wp (Expr := Expr) (Val := Val) (GF := GF) s) E e Φ := by
-  sorry
+  let F : ContractiveHom (WPFun Expr Val GF) (WPFun Expr Val GF) :=
+    { f := fun W => wp_pre s W, contractive := inferInstance }
+  have h := fixpoint_unfold F
+  exact BI.equiv_iff.mp (h E e Φ)
 
 end Iris.ProgramLogic
