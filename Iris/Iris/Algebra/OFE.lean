@@ -229,7 +229,6 @@ non-expansive. -/
 @[ext, rocq_alias ofe_mor] structure Hom (α β : Type _) [OFE α] [OFE β] where
   f : α → β
   ne : NonExpansive f
-#rocq_ignore OfeMor "Constructor for bundled `ofe_mor`; Lean uses `Hom.mk`."
 #rocq_ignore ofe_mor_proper "Derived from nonexpansivity"
 #rocq_ignore ofe_mor_ext "Use ext"
 
@@ -745,7 +744,6 @@ identity morphism. -/
   inv : β -n> α
   hom_inv : hom (inv x) ≡ x
   inv_hom : inv (hom x) ≡ x
-#rocq_ignore OfeIso "Constructor for bundled `ofe_iso`; Lean uses `Iso.mk`."
 #rocq_ignore ofe_isoO "Use Iso"
 #rocq_ignore ofe_iso_1_ne "Implicit from the type of `Iso.Hom`"
 #rocq_ignore ofe_iso_2_ne "Implicit from the type of `Iso.Inv`"
