@@ -564,8 +564,8 @@ def _render_folder_section(
     folder_total: int,
 ) -> str:
     """Render a top-level collapsible folder containing file and concept sections."""
-    # Merge and sort children by sort key
-    children = sorted(file_sections + concept_sections, key=lambda x: x[0])
+    # Concepts first (sorted), then files (sorted)
+    children = sorted(concept_sections, key=lambda x: x[0]) + sorted(file_sections, key=lambda x: x[0])
     children_html = "\n".join(html for _, html in children)
 
     return (
