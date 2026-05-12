@@ -55,6 +55,9 @@ an mvar at the top-level. This is to prevent accidentally instantiating mvars. N
 applies for mvars the top-level (matching the behavior of Hint Mode : ! in Rocq), since this is the
 simplest version to implement and catches most (all?) of the cases.
 This check 3 is omitted for `uncheckedIn` parameters.
+
+(We are reusing `outParam` and `semiOutParam` from the Lean TC infrastructure since this gives us
+checking synthesis order checking, which is useful (though not perfect).)
  -/
 inductive ParamKind
   | in

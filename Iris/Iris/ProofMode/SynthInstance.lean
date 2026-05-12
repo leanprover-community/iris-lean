@@ -52,7 +52,7 @@ def MessageData.withMCtx (mctx : MetavarContext) (d : MessageData) : MessageData
                                                  opts := ctx.opts} d
 
 /-- Needed to print the correct emoji with `withTraceNode` -/
-private instance : ExceptToTraceResult ε (Option α × Bool) where
+private local instance : ExceptToTraceResult ε (Option α × Bool) where
   toTraceResult
     | .error _        => .error
     | .ok (some _, _) => .success

@@ -43,14 +43,14 @@ instance (priority := high + 10) frame_affinely_here [BI PROP] p (R : PROP) :
 
 @[ipm_backtrack, rocq_alias frame_here_pure_persistent]
 instance frame_here_pure_persistent [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
-    [hfp : FromPure .out a Q .in φ] : Frame true iprop(⌜φ⌝) Q iprop(emp) where
+    [hfp : FromPure a Q .in φ] : Frame true iprop(⌜φ⌝) Q iprop(emp) where
   frame :=
     have h : □?true iprop(⌜φ⌝) ∗ emp ⊢ □ iprop(⌜φ⌝) := sep_emp.1
     h.trans (affinely_of_intuitionistically.trans (affinely_affinelyIf.trans hfp.1))
 
 @[ipm_backtrack, rocq_alias frame_here_pure]
 instance frame_here_pure [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
-    [h1 : FromPure .out a Q .in φ] [hor : TCOr (TCEq a false) (BIAffine PROP)] :
+    [h1 : FromPure a Q .in φ] [hor : TCOr (TCEq a false) (BIAffine PROP)] :
     Frame false iprop(⌜φ⌝) Q iprop(emp) where
   frame :=
     sep_emp.1.trans <|

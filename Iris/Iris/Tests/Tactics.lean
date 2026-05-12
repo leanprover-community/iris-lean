@@ -861,6 +861,13 @@ example [BI PROP] (Q : PROP) : (⌜φ1⌝ ∧ <affine> ⌜φ2⌝) ⊢ Q -∗ Q :
   ipure Hφ
   iexact HQ
 
+/-- Tests `ipure` with implication containing pure -/
+example [BI PROP] (Q : PROP) : <affine> (⌜φ1⌝ ∧ ⌜φ2⌝ → ⌜φ3⌝)  ⊢ Q -∗ Q := by
+  iintro Hφ
+  iintro HQ
+  ipure Hφ
+  iexact HQ
+
 /- Tests `ipure` failure -/
 /-- error: ipure: P is not pure -/
 #guard_msgs in
@@ -980,6 +987,16 @@ example [BI PROP] (H : A → B) (P Q : PROP) : <affine> P ⊢ <pers> Q → ⌜A�
   ipure_intro
   exact H
 
+/-- Tests `ipure_intro` with wand containing pure and affine lhs -/
+example [BI PROP] : ⊢@{PROP} (<affine> ⌜φ2⌝ -∗ emp) := by
+  ipure_intro
+  intro _; trivial
+
+/-- Tests `ipure_intro` with wand containing pure and absorbing rhs -/
+example [BI PROP] : ⊢@{PROP} (⌜φ2⌝ -∗ <absorb> emp) := by
+  ipure_intro
+  intro _; trivial
+
 /- Tests `ipure_intro` failure -/
 /-- error: ipure_intro: P is not pure -/
 #guard_msgs in
@@ -1027,26 +1044,10 @@ example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ 
   . iexact HR
   iexact HPQ
 
-/-- Tests `ispecialize` with framing subgoal -/
+/-- Tests `ispecialize` with framing subgoal (different argument order) -/
 example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
   iintro HP1 HP2 HR HPQ
   ispecialize HPQ $$ [HP1 $HP2] [-]
-  . iexact HP1
-  . iexact HR
-  iexact HPQ
-
-/-- Tests `ispecialize` with framing subgoal -/
-example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
-  iintro HP1 HP2 HR HPQ
-  ispecialize HPQ $$ [- HR $HP2] [-]
-  . iexact HP1
-  . iexact HR
-  iexact HPQ
-
-/-- Tests `ispecialize` with framing subgoal -/
-example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
-  iintro HP1 HP2 HR HPQ
-  ispecialize HPQ $$ [- HR $HP2] [-]
   . iexact HP1
   . iexact HR
   iexact HPQ
@@ -1056,6 +1057,14 @@ example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ 
   iintro HP1 HP2 HR HPQ
   ispecialize HPQ $$ [- $HP1 HR] [-]
   . iexact HP2
+  . iexact HR
+  iexact HPQ
+
+/-- Tests `ispecialize` with negated framing subgoal (different argument order) -/
+example [BI PROP] (Q : PROP) : P ⊢ P -∗ R -∗ (P ∗ P -∗ R -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HR HPQ
+  ispecialize HPQ $$ [- HR $HP2] [-]
+  . iexact HP1
   . iexact HR
   iexact HPQ
 

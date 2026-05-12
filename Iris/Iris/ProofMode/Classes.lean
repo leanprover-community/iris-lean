@@ -133,7 +133,7 @@ class IntoPure {PROP} [BI PROP] (P : PROP) (φ : outParam Prop) where
 export IntoPure (into_pure)
 
 @[ipm_class]
-class FromPure {PROP} [BI PROP] (ioA : InOut) (a : semiOutParam $ Bool) (P : PROP) (ioφ : InOut) (φ : semiOutParam $ Prop) where
+class FromPure {PROP} [BI PROP] (a : outParam $ Bool) (P : PROP) (ioφ : InOut) (φ : semiOutParam $ Prop) where
   from_pure : <affine>?a ⌜φ⌝ ⊢ P
 export FromPure (from_pure)
 
