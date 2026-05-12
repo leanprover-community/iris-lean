@@ -94,10 +94,10 @@ Class irisGS_gen (hlc : has_lc) (Λ : language) (Σ : gFunctors) := IrisG {
 简化（vs Coq 原版，PR-ready 评估后保留）：
 - 固定 `hlc = true`（即 `InvGS GF = InvGS_gen true GF`）；upstream `Examples/IProp.lean` 同样
   不参数化 hlc。
-- 省略 `num_laters_per_step` 字段——硬编码 = 0；hxrts 同样省（precedent）；Phase 1 swap +
-  Phase 2 数组都不需要 per-step laters。
 
-保留（vs hxrts，2026-05-12 PR-ready 化补回）：
+补全（vs hxrts，2026-05-12 PR-ready 化）：
+- `num_laters_per_step` 字段：与 Coq 严格 1:1（per-step laters 参数化，HeapLang 风格 instance
+  可填 `fun _ => 0`）。
 - `state_interp_mono` 字段：与 Coq 与 hxrts 一致。 -/
 
 class IrisGS (Expr : Type _) (State Obs Val : outParam (Type _))
@@ -109,6 +109,9 @@ class IrisGS (Expr : Type _) (State Obs Val : outParam (Type _))
   /-- Fixed postcondition for forked threads.
   Coq: field of `irisGS_gen`. -/
   fork_post : Val → IProp GF
+  /-- Per-step number of `▷` laters (allows step-indexed reasoning to vary across step count).
+  Coq: field of `irisGS_gen`. HeapLang-style instance 填 `fun _ => 0`. -/
+  num_laters_per_step : Nat → Nat
   /-- State interpretation 关于 step_count 的单调性（Coq 原版字段）。
   Coq weakestpre.v `irisGS_gen.state_interp_mono`. -/
   state_interp_mono (σ : State) (ns : Nat) (κs : List Obs) (nt : Nat) :
@@ -134,7 +137,7 @@ Definition wp_pre `{!irisGS_gen hlc Λ Σ} (s : stuckness)
   end%I.
 ```
 
-Phase 1-A 简化：硬编码 `num_laters_per_step = 0`，即 `S (..) = 1`，`|={∅}▷=>^[1] _`。 -/
+2026-05-12 PR-ready 化：用 `S (IrisGS.num_laters_per_step ns)` 替代硬编码 1，严格 1:1 自 Coq。 -/
 
 variable {Expr State Obs Val : Type _} [Language Expr State Obs Val]
 variable {GF : BundledGFunctors} [iG : IrisGS Expr State Obs Val GF]
@@ -163,15 +166,30 @@ noncomputable def wp_pre (s : Stuckness)
           ⌜stuckPred s e σ1⌝ ∗
           ∀ (e2 : Expr) (σ2 : State) (efs : List Expr),
             ⌜PrimStep.primStep (e, σ1) κ (e2, σ2, efs)⌝
-              ={ ∅ }▷=∗^[ 1 ] (|={∅,E}=>
+              ={ ∅ }▷=∗^[ iG.num_laters_per_step ns + 1 ] (|={∅,E}=>
                 IrisGS.state_interp (Expr := Expr) σ2 (ns + 1) κs (efs.length + nt) ∗
                 wp E e2 Φ ∗
                 [∗list] _i ↦ ef ∈ efs, wp ⊤ ef (IrisGS.fork_post (Expr := Expr))))
 
+/-- Helper: `step_fupdN_ne` —— `|={E1}[E2]▷=∗^[k]` 是 NonExpansive in 内层 Q.
+
+证明：induction over k；每层用 `BIFUpdate.ne + later_ne + BIFUpdate.ne`. -/
+private theorem step_fupdN_ne {E1 E2 : CoPset} {k : Nat} {n : Nat}
+    {X Y : IProp GF} (h : X ≡{n}≡ Y) :
+    Nat.repeat (fun Q : IProp GF => iprop(|={E1}[E2]▷=> Q)) k X ≡{n}≡
+      Nat.repeat (fun Q : IProp GF => iprop(|={E1}[E2]▷=> Q)) k Y := by
+  induction k with
+  | zero => exact h
+  | succ k' IH =>
+    refine BIFUpdate.ne.ne ?_
+    refine later_ne.ne ?_
+    refine BIFUpdate.ne.ne ?_
+    exact IH
+
 /-- Contractive instance for `wp_pre s`.
 Coq weakestpre.v: `Local Instance wp_pre_contractive : Contractive (wp_pre s)`.
 hxrts WeakestPre.lean:315 `wp_pre_contractive`（思路参考）。
-模板：`Iris/Examples/IProp.lean:131-142` `wp_F_contractive`（11 行同模式）。 -/
+模板：`Iris/Examples/IProp.lean:131-142` `wp_F_contractive`. -/
 noncomputable instance wp_pre_contractive (s : Stuckness) :
     Contractive (fun W : WPFun Expr Val GF => wp_pre s W) where
   distLater_dist {n W₁ W₂ HW} E e Φ := by
@@ -196,9 +214,14 @@ noncomputable instance wp_pre_contractive (s : Stuckness) :
         refine forall_ne fun σ2 => ?_
         refine forall_ne fun efs => ?_
         refine wand_ne.ne .rfl ?_
+        -- `_ ▷=∗^[k+1]` macro → `Nat.repeat _ (k+1) X = (fun Q => |={∅}[∅]▷=> Q) (Nat.repeat _ k X)`
+        -- 透过外层 |={∅,∅}=> ▷ |={∅,∅}=> ...，▷ 那一层用 distLater_dist
         refine BIFUpdate.ne.ne ?_
         refine Contractive.distLater_dist fun m hm => ?_
         refine BIFUpdate.ne.ne ?_
+        -- 现在余 `Nat.repeat _ (num_laters_per_step ns) inner` 两边对比——用 step_fupdN_ne helper
+        refine step_fupdN_ne ?_
+        -- 内 inner = |={∅,E}=> (state_interp ∗ W E e2 Φ ∗ [∗list])
         refine BIFUpdate.ne.ne ?_
         refine sep_ne.ne .rfl ?_
         refine sep_ne.ne ?_ ?_
