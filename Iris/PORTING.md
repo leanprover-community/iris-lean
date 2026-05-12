@@ -259,7 +259,12 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] Fupd mask change laws
   - [ ] Fupd step derived rules 
   - [ ] Fupd plainly general laws
-- [ ] `weakestpre.v`
+- [-] `weakestpre.v`
+  - [x] `Stuckness` inductive + `IrisGS` typeclass (all 5 fields)
+  - [x] `wp_pre` + `wp_pre_contractive`
+  - [x] `wp := fixpoint (wp_pre s)` + `wp_unfold`
+  - [ ] `wp_value_fupd` / `wp_strong_mono` / `wp_mono` / `fupd_wp` / `wp_fupd` / `wp_wand` / `wp_atomic`
+  - [ ] `wp_frame_l` / `wp_frame_r` / `wp_bind` / `wp_bind_inv`
 - [ ] `lib/atomic.v`
 - [ ] `lib/core.v`
 - [ ] `lib/counterexamples.v`
