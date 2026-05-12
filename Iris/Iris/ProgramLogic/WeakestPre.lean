@@ -173,10 +173,16 @@ distLater_dist). -/
 noncomputable instance wp_pre_contractive (s : Stuckness) :
     Contractive (fun W : WPFun Expr Val GF => wp_pre s W) := sorry
 
-/-- 强制 `WPFun Expr Val GF` 为 COFE（用于 `fixpoint`）。
-Coq 端通过 `iPropO Σ` discrete OFE / function space 自动得到。
-Lean 端 `IProp GF` 是 OFE，函数空间 OFE 通过 `OFE.discrete_funO` 提供——sorry 占位。 -/
-noncomputable instance : COFE (WPFun Expr Val GF) := sorry
+/- `WPFun Expr Val GF` 自动是 COFE：
+
+- `IProp GF = UPred (IResUR GF)` 是 COFE，通过 `instance : IsCOFE (UPred M)`
+  (Iris/Algebra/UPred.lean:93) 与 `class abbrev COFE := OFE + IsCOFE` (OFE.lean:796) 合成
+- 函数空间封闭性 `instance [∀ x, COFE (β x)] : COFE ((x : α) → β x)`
+  (Iris/Algebra/OFE.lean:854) 套用 3 层：`Val → IProp GF`, `Expr → ...`, `CoPset → ...`
+
+不需要显式 instance —— typeclass resolution 自动 derive。
+
+旧 sorry 实例（Stage 1 接口骨架阶段占位）已移除（2026-05-12 Phase 1-B 消 sorry）. -/
 
 /-- 强制 `WPFun Expr Val GF` 有默认值（fixpoint 需要 Inhabited）。 -/
 noncomputable instance : Inhabited (WPFun Expr Val GF) :=
