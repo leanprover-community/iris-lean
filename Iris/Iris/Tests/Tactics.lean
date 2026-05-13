@@ -2237,6 +2237,26 @@ example (P₁ P₂ Q : PROP) :
   iloeb as IH generalizing p
 
 /--
+warning: Spatial hypothesis are generalized automatically by iloeb
+---
+error: unsolved goals
+PROP : Type u
+ι₁ : BI PROP
+ι₂ : BILoeb PROP
+P₁ P₂ Q : PROP
+⊢ ⏎
+  □p1 : P₁
+  □IH : ▷ (P₂ -∗ Q)
+  ∗p2 : P₂
+  ⊢ Q
+-/
+#guard_msgs in
+example (P₁ P₂ Q : PROP) :
+    ⊢ □ P₁ -∗ P₂ -∗ Q := by
+  iintro #p1 p2
+  iloeb as IH generalizing p2
+
+/--
 error: unsolved goals
 PROP : Type u
 ι₁ : BI PROP
