@@ -60,13 +60,14 @@ This function returns the proof of `P ⊢ Q` to be assigned. The new context is 
 `goals` directly by the tactic.
 -/
 partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat)) :
+  {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat))
+  (k : ProofModeTactic := addBIGoal) :
     ProofModeM (Q($P ⊢ $Q)) := do
   match pats with
-  | [] => addBIGoal hyps Q
+  | [] => k hyps Q
   | (ref, .modintro) :: pats =>
     withRef ref do
-    iModIntroCore hyps Q (← `(_)) (iIntroCore · · pats)
+    iModIntroCore hyps Q (← `(_)) (iIntroCore · · pats k)
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar
@@ -79,7 +80,7 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
       addLocalVarInfo ref (← getLCtx) x α
       have B : Q($prop) := Expr.headBeta q($Φ $x)
       have : $B =Q $Φ $x := ⟨⟩
-      let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← iIntroCore hyps B pats
+      let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← iIntroCore hyps B pats k
       return q(from_forall_intro (Q := $Q) $pf)
   | (ref, .intro pat) :: pats =>
     withRef ref do
@@ -87,7 +88,7 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     let A2 ← mkFreshExprMVarQ q($prop)
     let fromImp ← ProofModeM.trySynthInstanceQ q(FromImp $Q $A1 $A2)
     if let (.clear, some _) := (pat, fromImp) then
-      let pf ← iIntroCore hyps A2 pats
+      let pf ← iIntroCore hyps A2 pats k
       return q(imp_intro_drop (Q := $Q) $pf)
     else
     let B ← mkFreshExprMVarQ q($prop)
@@ -95,7 +96,7 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     | .intuitionistic pat, some _ =>
       let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)
         | throwError "iintro: {A1} not persistent"
-      let pf ← iCasesCore bi hyps A2 pat q(true) B (iIntroCore · · pats)
+      let pf ← iCasesCore bi hyps A2 pat q(true) B (iIntroCore · · pats k)
       return q(imp_intro_intuitionistic (Q := $Q) $pf)
     | .intuitionistic pat, none =>
       let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
@@ -104,19 +105,19 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
         | throwError "iintro: {A1} not persistent"
       let .some _ ← trySynthInstanceQ q(TCOr (Affine $A1) (Absorbing $A2))
         | throwError "iintro: {A1} not affine and the goal not absorbing"
-      let pf ← iCasesCore bi hyps A2 pat q(true) B (iIntroCore · · pats)
+      let pf ← iCasesCore bi hyps A2 pat q(true) B (iIntroCore · · pats k)
       return q(wand_intro_intuitionistic (A1 := $A1) (Q := $Q) $pf)
     | _, some _ =>
       -- should always succeed
       let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B $A1)
       let .some _ ← trySynthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
         | throwError "iintro: {A1} is not persistent and spatial context is non-empty"
-      let pf ← iCasesCore bi hyps A2 pat q(false) B (iIntroCore · · pats)
+      let pf ← iCasesCore bi hyps A2 pat q(false) B (iIntroCore · · pats k)
       return q(imp_intro_spatial (Q := $Q) $pf)
     | _, none =>
       let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
         | throwError "iintro: {Q} not a wand"
-      let pf ← iCasesCore bi hyps A2 pat q(false) A1 (iIntroCore · · pats)
+      let pf ← iCasesCore bi hyps A2 pat q(false) A1 (iIntroCore · · pats k)
       return q(wand_intro_spatial (A1 := $A1) (Q := $Q) $pf)
 
 elab "iintro" pats:(colGt introPat)* : tactic => do
