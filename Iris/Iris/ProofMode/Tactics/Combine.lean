@@ -90,25 +90,25 @@ private def iCombineAsCore {u} {prop : Q(Type u)} {bi e}
 
     -- No hypothesis combined if exactly one hypothesis is given as an `icombine` argument
     | [h1] => do
-      let uniq ← hyps.findWithInfo h1
+      let ivar ← hyps.findWithInfo h1
       -- The second argument to `hyps.remove` is set as `false`
-      let ⟨_, hyps, _, out', p, _, pf1⟩ := hyps.remove false uniq
+      let ⟨_, hyps, _, out', p, _, pf1⟩ := hyps.remove false ivar
       let pf2 ← iCasesCore _ hyps goal pat p out' addBIGoal
       return q(combine_as_singleton $pf1 $pf2)
 
     -- Combine the hypotheses if two or more are given as `icombine` arguments
     | h1 :: h2 :: htail => do
-      let uniq1 ← hyps.findWithInfo h1
-      let uniq2 ← hyps.findWithInfo h2
+      let ivar1 ← hyps.findWithInfo h1
+      let ivar2 ← hyps.findWithInfo h2
 
       /- The Boolean value `recCall` indicates that `iCombineAsCore` is
          currently is called recursively. In this case, the first hypothesis in
          the list is temporary and should be removed even if it is in the
          non-spatial context. -/
-      let ⟨_, hyps1, _, out1', p1, _, pf1⟩ := hyps.remove recCall uniq1
+      let ⟨_, hyps1, _, out1', p1, _, pf1⟩ := hyps.remove recCall ivar1
       if (h2 :: htail).contains h1 ∧ ¬isTrue p1 then
         throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
-      let ⟨_, hyps2, _, out2', p2, _, pf2⟩ := hyps1.remove false uniq2
+      let ⟨_, hyps2, _, out2', p2, _, pf2⟩ := hyps1.remove false ivar2
 
       let out ← mkFreshExprMVarQ _
       let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out1' $out2' $out)
@@ -162,16 +162,16 @@ private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
     match hs with
     -- Combine the hypotheses if two or more are given as `icombine` arguments
     | h1 :: h2 :: htail => do
-      let uniq1 ← hyps.findWithInfo h1
-      let uniq2 ← hyps.findWithInfo h2
+      let ivar1 ← hyps.findWithInfo h1
+      let ivar2 ← hyps.findWithInfo h2
 
       -- USe `hyps.remove` to extract `out1` and `out2` for `CombineSepGives`
-      let ⟨e1, hyps1, out1, _, p1, _, pf1⟩ := hyps.remove recCall uniq1
+      let ⟨e1, hyps1, out1, _, p1, _, pf1⟩ := hyps.remove recCall ivar1
 
       if (h2 :: htail).contains h1 ∧ ¬isTrue p1 then
         throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
 
-      let ⟨_, _, out2, _, _, _, pf2⟩ := hyps1.remove false uniq2
+      let ⟨_, _, out2, _, _, _, pf2⟩ := hyps1.remove false ivar2
 
       let out ← mkFreshExprMVarQ _
       let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out1 $out2 $out)
@@ -213,10 +213,10 @@ private def iCombineGivesCore {u} {prop : Q(Type u)} {bi e}
 theorem dummy [BI PROP] {a b c : PROP} : a ⊢ b ∗ c := sorry
 
 private def CombineState.combineAsProofModeHyp {u prop bi origE goal} :
-    @CombineState u prop bi origE goal → Name → iCasesPat →
+    @CombineState u prop bi origE goal → IVarId → iCasesPat →
     ProofModeM (@CombineState u prop bi origE goal)
-  | { e1, hyps1, out1', p1, pf }, uniq, pat => do
-      let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := hyps1.remove false uniq
+  | { e1, hyps1, out1', p1, pf }, ivar, pat => do
+      let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := hyps1.remove false ivar
       let out ← mkFreshExprMVarQ _
       let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out1' $out2' $out)
       -- The error should not happen as the default option is always available
@@ -245,10 +245,10 @@ private def CombineState.combineAsProofModeHyp {u prop bi origE goal} :
 
 
 private def CombineState.combineGivesProofModeHyp {u prop bi origE goal} :
-    @CombineState u prop bi origE goal → Name → iCasesPat →
+    @CombineState u prop bi origE goal → IVarId → iCasesPat →
     ProofModeM (@CombineState u prop bi origE goal)
-  | { e1, hyps1, out1', p1, pf }, uniq, pat => do
-      let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := hyps1.remove false uniq
+  | { e1, hyps1, out1', p1, pf }, ivar, pat => do
+      let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := hyps1.remove false ivar
       let out ← mkFreshExprMVarQ _
       let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out1' $out2' $out)
       -- The error should not happen as the default option is always available
@@ -277,8 +277,8 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
       mvar.assign q($(st.pf) $pf')
 
     | h1 :: hs =>
-      let uniq ← hyps.findWithInfo h1
-      let ⟨e1, hyps1, out1, out1', p1, _, pf1⟩ := hyps.remove false uniq
+      let ivar ← hyps.findWithInfo h1
+      let ⟨e1, hyps1, out1, out1', p1, _, pf1⟩ := hyps.remove false ivar
 
       if hs.count h1 ≥ 1 ∧ ¬isTrue p1 then
         throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
@@ -289,12 +289,12 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
       }
 
       for h in hs do
-        let uniq ← hyps.findWithInfo h
-        let ⟨_, _, _, _, p, _, _⟩ := hyps.remove false uniq
+        let ivar ← hyps.findWithInfo h
+        let ⟨_, _, _, _, p, _, _⟩ := hyps.remove false ivar
 
         if hs.count h ≥ 2 ∧ ¬isTrue p then
           throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
-        st ← st.combineAsProofModeHyp uniq pat
+        st ← st.combineAsProofModeHyp ivar pat
       let pf' ← iCasesCore _ st.hyps1 goal pat q($(st.p1)) st.out1' addBIGoal
       mvar.assign q($(st.pf) $pf')
 
@@ -322,8 +322,8 @@ elab "icombine" idents:(colGt ident)* "gives" colGt pat:icasesPat : tactic => do
       mvar.assign q($(st.pf) $pf')
 
     | h1 :: hs =>
-      let uniq ← hyps.findWithInfo h1
-      let ⟨e1, hyps1, out1, out1', p1, _, pf1⟩ := hyps.remove false uniq
+      let ivar ← hyps.findWithInfo h1
+      let ⟨e1, hyps1, out1, out1', p1, _, pf1⟩ := hyps.remove false ivar
       if hs.count h1 ≥ 1 ∧ ¬isTrue p1 then
         throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
       let mut st : CombineState e goal := {
@@ -332,12 +332,12 @@ elab "icombine" idents:(colGt ident)* "gives" colGt pat:icasesPat : tactic => do
       }
 
       for h in hs do
-        let uniq ← hyps.findWithInfo h
-        let ⟨_, _, _, _, p, _, _⟩ := hyps.remove false uniq
+        let ivar ← hyps.findWithInfo h
+        let ⟨_, _, _, _, p, _, _⟩ := hyps.remove false ivar
 
         if hs.count h ≥ 2 ∧ ¬isTrue p then
           throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
 
-        st ← st.combineGivesProofModeHyp uniq pat
+        st ← st.combineGivesProofModeHyp ivar pat
       let pf' ← iCasesCore _ st.hyps1 goal pat q($(st.p1)) st.out1' addBIGoal
       mvar.assign q($(st.pf) $pf')
