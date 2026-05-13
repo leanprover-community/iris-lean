@@ -479,11 +479,15 @@ def addHypInfo (stx : Syntax) (name : Name) (ivar : IVarId) (prop : Q(Type u)) (
   let ty := q(HypMarker $ty)
   addLocalVarInfo stx (lctx.mkLocalDecl ⟨ivar.name⟩ name ty) (.fvar ⟨ivar.name⟩) ty isBinder
 
+/-- Hyps.findWithInfoPersistent should be used on names obtained from the syntax of a tactic to highlight them correctly. -/
+def Hyps.findWithInfoPersistent {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : MetaM (IVarId × Bool) := do
+  let some (ivar, p, ty) := hyps.find? name.getId | throwError "unknown hypothesis {name}"
+  addHypInfo name name.getId ivar prop ty
+  pure (ivar, isTrue p)
+
 /-- Hyps.findWithInfo should be used on names obtained from the syntax of a tactic to highlight them correctly. -/
 def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : MetaM IVarId := do
-  let some (ivar, _, ty) := hyps.find? name.getId | throwError "unknown hypothesis {name}"
-  addHypInfo name name.getId ivar prop ty
-  pure ivar
+  (·.1) <$> hyps.findWithInfoPersistent name
 
 /-- Hyps.addWithInfo should be used by tactics that introduce a hypothesis based on the name given by the user. -/
 def Hyps.addWithInfo {prop : Q(Type u)} (bi : Q(BI $prop))

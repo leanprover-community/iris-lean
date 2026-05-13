@@ -61,18 +61,20 @@ structure SelTarget where
   target : SelId
   /- Was this target specified explicitly or is it from a glob like ∗? -/
   explicit : Bool
+  persistent? : Bool
 
 /-- Resolve selection patterns to concrete proofmode hypotheses (`.ipm`) and Lean locals (`.lean`). -/
 def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget)
-  | .ident name =>
-      return [⟨.ipm (← hyps.findWithInfo name), true⟩]
+  | .ident name => do
+      let ⟨ivar, persistent?⟩ ← hyps.findWithInfoPersistent name
+      return [⟨.ipm ivar, true, persistent?⟩]
   | .leanIdent name => do
       let ldecl ← getLocalDeclFromUserName name.getId
-      return [⟨.pure ldecl.fvarId, true⟩]
+      return [⟨.pure ldecl.fvarId, true, true⟩]
   | .intuitionistic =>
-      return hyps.intuitionisticIVarIds.map (⟨.ipm ·, false⟩)
+      return hyps.intuitionisticIVarIds.map (⟨.ipm ·, false, true⟩)
   | .spatial =>
-      return hyps.spatialIVarIds.map (⟨.ipm ·, false⟩)
+      return hyps.spatialIVarIds.map (⟨.ipm ·, false, false⟩)
   | .pure => do
       -- `%` selects user-facing Lean pure assumptions, so we keep only `Prop` hypotheses.
       let mut hyps := #[]
@@ -81,7 +83,7 @@ def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget
           continue
         if ! (← isProp ldecl.type) then
           continue
-        hyps := hyps.push (⟨.pure ldecl.fvarId, false⟩)
+        hyps := hyps.push (⟨.pure ldecl.fvarId, false, true⟩)
       return hyps.toList
 
 def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) :
