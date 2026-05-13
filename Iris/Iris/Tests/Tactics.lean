@@ -2241,6 +2241,20 @@ example [BI PROP] {P : PROP} : □ P ⊢ □ P := by
   icombine HP as HNew
   iexact HNew
 
+/-- Tests `icombine` where two propositions are in the intuitionistic context,
+    with `emp` being the first -/
+example [BI PROP] {P : PROP} : ⊢ □ emp -∗ □ P -∗ □ (emp ∗ P) := by
+  iintro #Hemp #HP
+  icombine Hemp HP as HNew
+  iexact HNew
+
+/-- Tests `icombine` where two propositions are in the intuitionistic context,
+    with `emp` being the second -/
+example [BI PROP] {P : PROP} : ⊢ □ P -∗ □ emp -∗ □ (P ∗ emp) := by
+  iintro #HP #Hemp
+  icombine HP Hemp as HNew
+  iexact HNew
+
 /-- Tests `icombine` for the proposition with three propositions -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :
     ⊢ P1 -∗ P2 -∗ P3 -∗ (P1 ∗ P2 ∗ P3 -∗ Q) -∗ Q := by

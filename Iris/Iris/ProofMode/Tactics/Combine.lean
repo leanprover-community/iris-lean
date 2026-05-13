@@ -44,11 +44,11 @@ theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out : PROP
 /-- The proposition `□?p1 out1'` is the combined hypothesis, and `hyps1` is
     are remaining hypotheses. -/
 private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop)) where
-  (recCall : Bool)
   (e1 : Q($prop))
   (hyps1 : Hyps bi e1)
   (p1 : Q(Bool))
   (out1' : Q($prop))
+  (recCall : Q(Bool))
   (pf1 : Q($origE ⊢ $e1 ∗ □?$p1 $out1'))
   pf : Q(($e1 ∗ □?$p1 $out1' ⊢ $goal) → ($origE ⊢ $goal))
 
@@ -194,48 +194,47 @@ private def CombineState.combineAsProofModeHyp {u prop bi origE goal} :
     @CombineState u prop bi origE goal → IVarId  →
     ProofModeM (@CombineState u prop bi origE goal)
   | { e1, hyps1, out1', p1, pf1, pf, recCall }, ivar => do
-      match p1, out1' with
-      | ~q(true), ~q(emp) =>
+      match p1, out1', recCall with
+      | ~q(true), ~q(emp), ~q(false) =>
         let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := hyps1.remove false ivar
         let pf'' : Q($origE ⊢ $e2 ∗ □?$p2 $out2') := q(combine_as_singleton $pf1 $pf2)
         return {
           e1 := e2, hyps1 := hyps2, out1' := q($out2'), p1 := q($p2),
           pf1 := q(combine_as_singleton $pf1 $pf2),
-          recCall := true,
+          recCall := q(true),
           pf := q(fun pf => $(pf'').trans pf)
         }
-      | _, _ =>
-        let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := hyps1.remove false ivar
+      | _, _, _ =>
+        let ⟨e2, hyps2, _, out2', p2, _, pf2⟩ := hyps1.remove false ivar
         let out ← mkFreshExprMVarQ _
         let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out1' $out2' $out)
         -- The error should not happen as the default option is always available
         | throwError "icombine: no type class instance to combine propositions"
 
+        let mkReturn (p1' : Q(Bool)) (pf'' : Q($origE ⊢ $e2 ∗ □?$p1' $out)) :=
+          return {
+            e1 := e2,
+            hyps1 := hyps2,
+            p1 := p1',
+            out1' := out,
+            pf1 := pf'',
+            recCall := q(true),
+            pf := q(fun pf' => $(pf'').trans pf')
+          }
+
         match matchBool p1, matchBool p2 with
         | .inl _, .inl _ =>
             let pf'' : Q($origE ⊢ $e2 ∗ □?true $out) :=
               q(combine_as_step $pf1 $(pf2).mp $inst)
-            return {
-              e1 := e2, hyps1 := hyps2, p1 := q(true), out1' := out, pf1 := pf'',
-              recCall := true
-              pf := q(fun pf' => $(pf'').trans pf')
-            }
+            mkReturn q(true) pf''
         | .inl _, .inr _ =>
             let pf'' : Q($origE ⊢ $e2 ∗ □?false $out) :=
               q(combine_as_step $pf1 $(pf2).mp $inst)
-            return {
-              e1 := e2, hyps1 := hyps2, p1 := q(false), out1' := out, pf1 := pf'',
-              recCall := true
-              pf := q(fun pf' => $(pf'').trans pf')
-            }
+            mkReturn q(false) pf''
         | .inr _, _ =>
-          let pf'' : Q($origE ⊢ $e2 ∗ □?false $out) :=
-            q(combine_as_step $pf1 $(pf2).mp $inst)
-          return {
-            e1 := e2, hyps1 := hyps2, p1 := q(false), out1' := out, pf1 := pf'',
-            recCall := true
-            pf := q(fun pf' => $(pf'').trans pf')
-          }
+            let pf'' : Q($origE ⊢ $e2 ∗ □?false $out) :=
+              q(combine_as_step $pf1 $(pf2).mp $inst)
+            mkReturn q(false) pf''
 
 /-- The tactic `icombine` combines two propositions into one using the type
     class `CombineSepAs` or, by default, the separating conjunction. -/
@@ -248,7 +247,7 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
     let mut st : CombineState e goal := {
       e1 := q($e), hyps1 := hyps, out1' := q(iprop(emp)), p1 := q(true),
       pf1 := q(sep_emp.mpr.trans <| sep_mono_r intuitionistically_emp.mpr),
-      recCall := false
+      recCall := q(false)
       pf := q(combine_as_nil)
     }
 
@@ -257,7 +256,7 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
       let ⟨_, _, _, _, p, _, _⟩ := hyps.remove false ivar
 
       -- Hypothesis in the spatial context should not be used multiple times
-      if hs.count h ≥ 2 ∧ ¬isTrue p then
+      if hs.count h > 1 ∧ ¬isTrue p then
         throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
 
       st ← st.combineAsProofModeHyp ivar
