@@ -14,14 +14,14 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
-theorem combine_as_nil [BI PROP] {e goal : PROP}
-    (pf : e ∗ □ emp ⊢ goal) :
-    e ⊢ goal := calc
+/-- Auxilary lemma for the base case with no hypotheses -/
+theorem combine_as_nil [BI PROP] {e goal : PROP} (pf : e ∗ □ emp ⊢ goal) : e ⊢ goal := calc
   e ⊢ e ∗ emp   := sep_emp.mpr
   _ ⊢ e ∗ □ emp := sep_mono refl intuitionistically_emp.mpr
   _ ⊢ goal      := pf
 
-theorem combine_as_singleton [BI PROP] {e e1 : PROP}
+/-- Auxilary lemma for the base case with one hypothesis -/
+theorem combine_as_singleton [BI PROP] {e e1 e2 out2 : PROP}
     (pf1 : e ⊢ e1 ∗ □?true emp)
     (pf2 : e1 ⊣⊢ e2 ∗ out2) : e ⊢ e2 ∗ out2 := calc
   e ⊢ e1 ∗ □?true emp := pf1
@@ -29,6 +29,7 @@ theorem combine_as_singleton [BI PROP] {e e1 : PROP}
   _ ⊢ e1              := sep_emp.mp
   _ ⊢ e2 ∗ out2       := pf2.mp
 
+/-- Auxilary lemma for the step case with two or more hypotheses -/
 theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out : PROP}
     (pf1 : e ⊢ e1 ∗ □?p1 out1')
     (pf2 : e1 ⊢ e2 ∗ □?p2 out2')
@@ -41,16 +42,41 @@ theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out : PROP
   _ ⊢ e2 ∗ □?(p1 && p2) (out1' ∗ out2') := sep_mono_r intuitionisticallyIf_sep_conj
   _ ⊢ e2 ∗ □?(p1 && p2) out             := sep_mono_r (intuitionisticallyIf_mono inst.combine_sep_as)
 
-/-- The proposition `□?p1 out1'` is the combined hypothesis, and `hyps1` is
-    are remaining hypotheses. -/
+/--
+  Given any Iris proposition `origE` and `goal`, the structure
+  `CombineState origE goal` consists of a collection of hypotheses
+  `newHyps` (representing `newE`), a Boolean value `p` and a proposition
+  `out'` such that `origE` is equivalent to `newE ∗ □?p out'`.
+
+  The Boolean expression `init` indicates whether the structure is in its
+  initial state. When `p` is `q(true)` and `out'` is `q(emp)`, the Boolean
+  expression implicitly indicates whether `□ emp` is the first hypothesis
+  provided as an argument to `icombine` or simply the initial value of the
+  structure. This is necessary because one, for example, should be able to
+  combine `□HP : emp` with `∗HQ : Q` to get `emp ∗ Q` instead of just `Q`.
+-/
 private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop)) where
-  (e1 : Q($prop))
-  (hyps1 : Hyps bi e1)
-  (p1 : Q(Bool))
-  (out1' : Q($prop))
-  (recCall : Q(Bool))
-  (pf1 : Q($origE ⊢ $e1 ∗ □?$p1 $out1'))
-  pf : Q(($e1 ∗ □?$p1 $out1' ⊢ $goal) → ($origE ⊢ $goal))
+  {newE : Q($prop)}
+  {p : Q(Bool)}
+  {out' : Q($prop)}
+  (newHyps : Hyps bi newE)
+  (init : Q(Bool) := q(false))
+  (pf1 : Q($origE ⊢ $newE ∗ □?$p $out'))
+  pf : Q(($newE ∗ □?$p $out' ⊢ $goal) → ($origE ⊢ $goal))
+
+private def updateSt {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {p1 p2 : Q(Bool)}
+    {origE e1 e2 out1' out2' out' : Q($prop)}
+    (pf1 : Q($origE ⊢ $e1 ∗ □?$p1 $out1'))
+    (pf2 : Q($e1 ⊣⊢ $e2 ∗ □?$p2 $out2'))
+    (newHyps : Hyps bi e2)
+    (goal : Q($prop))
+    (inst : Q(CombineSepAs $out1' $out2' $out')) :
+    @CombineState u prop bi origE goal :=
+  let pf' := q(combine_as_step $pf1 $(pf2).mp $inst)
+  match matchBool p1, matchBool p2 with
+  | .inl _, .inl _ => { newHyps, p := q(true), out', pf1 := q($pf'), pf := q(($pf').trans)}
+  | .inl _, .inr _ => { newHyps, p := q(false), out', pf1 := q($pf'), pf := q(($pf').trans)}
+  | .inr _, _ => { newHyps, p := q(false), out', pf1 := q($pf'), pf := q(($pf').trans)}
 
 /-- The tactic `icombine` combines two propositions into one using the type
     class `CombineSepAs` or, by default, the separating conjunction.
@@ -193,48 +219,23 @@ theorem dummy [BI PROP] {a b c : PROP} : a ⊢ b ∗ c := sorry
 private def CombineState.combineAsProofModeHyp {u prop bi origE goal} :
     @CombineState u prop bi origE goal → IVarId  →
     ProofModeM (@CombineState u prop bi origE goal)
-  | { e1, hyps1, out1', p1, pf1, pf, recCall }, ivar => do
-      match p1, out1', recCall with
-      | ~q(true), ~q(emp), ~q(false) =>
-        let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := hyps1.remove false ivar
+  | { newE, newHyps, p, out', pf1, init .. }, ivar => do
+      let ⟨e2, hyps2, _, out2', p2, _, pf2⟩ := newHyps.remove false ivar
+      match matchBool p, out', matchBool init with
+      | .inl _, ~q(emp), .inl _ =>
         let pf'' : Q($origE ⊢ $e2 ∗ □?$p2 $out2') := q(combine_as_singleton $pf1 $pf2)
         return {
-          e1 := e2, hyps1 := hyps2, out1' := q($out2'), p1 := q($p2),
+          newE := e2, newHyps := hyps2, p := q($p2), out' := q($out2'),
           pf1 := q(combine_as_singleton $pf1 $pf2),
-          recCall := q(true),
           pf := q(fun pf => $(pf'').trans pf)
         }
       | _, _, _ =>
-        let ⟨e2, hyps2, _, out2', p2, _, pf2⟩ := hyps1.remove false ivar
         let out ← mkFreshExprMVarQ _
-        let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out1' $out2' $out)
+        let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepAs $out' $out2' $out)
         -- The error should not happen as the default option is always available
         | throwError "icombine: no type class instance to combine propositions"
-
-        let mkReturn (p1' : Q(Bool)) (pf'' : Q($origE ⊢ $e2 ∗ □?$p1' $out)) :=
-          return {
-            e1 := e2,
-            hyps1 := hyps2,
-            p1 := p1',
-            out1' := out,
-            pf1 := pf'',
-            recCall := q(true),
-            pf := q(fun pf' => $(pf'').trans pf')
-          }
-
-        match matchBool p1, matchBool p2 with
-        | .inl _, .inl _ =>
-            let pf'' : Q($origE ⊢ $e2 ∗ □?true $out) :=
-              q(combine_as_step $pf1 $(pf2).mp $inst)
-            mkReturn q(true) pf''
-        | .inl _, .inr _ =>
-            let pf'' : Q($origE ⊢ $e2 ∗ □?false $out) :=
-              q(combine_as_step $pf1 $(pf2).mp $inst)
-            mkReturn q(false) pf''
-        | .inr _, _ =>
-            let pf'' : Q($origE ⊢ $e2 ∗ □?false $out) :=
-              q(combine_as_step $pf1 $(pf2).mp $inst)
-            mkReturn q(false) pf''
+        let pf2 : Q($newE ⊣⊢ $e2 ∗ □?$p2 $out2') := pf2
+        return updateSt pf1 pf2 hyps2 goal inst
 
 /-- The tactic `icombine` combines two propositions into one using the type
     class `CombineSepAs` or, by default, the separating conjunction. -/
@@ -244,22 +245,31 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
   ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do
     let hs := idents.toList
 
+    -- Initialise a mutable instance of `CombineState`
     let mut st : CombineState e goal := {
-      e1 := q($e), hyps1 := hyps, out1' := q(iprop(emp)), p1 := q(true),
+      -- Nothing is part of the combined hypothesis initially
+      newE := q($e),
+      newHyps := hyps,
+      -- The initial combined hypothesis is `□ emp`
+      p := q(true),
+      out' := q(iprop(emp)),
+      -- The proposition `e` is always equivalent to `e ∗ □ emp`
       pf1 := q(sep_emp.mpr.trans <| sep_mono_r intuitionistically_emp.mpr),
-      recCall := q(false)
+      -- No hypothesis is combined initially
+      init := q(true)
       pf := q(combine_as_nil)
     }
 
     for h in hs do
+      -- Find the `IVarId` of the hypothesis
       let ivar ← hyps.findWithInfo h
-      let ⟨_, _, _, _, p, _, _⟩ := hyps.remove false ivar
 
       -- Hypothesis in the spatial context should not be used multiple times
-      if hs.count h > 1 ∧ ¬isTrue p then
+      if hs.count h > 1 ∧ ¬isTrue (← hyps.findP h) then
         throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
 
       st ← st.combineAsProofModeHyp ivar
 
-    let pf' ← iCasesCore _ st.hyps1 goal pat q($(st.p1)) st.out1' addBIGoal
+    -- Generate the new proof goal for the user and fill in the metavariable
+    let pf' ← iCasesCore _ st.newHyps goal pat q($(st.p)) st.out' addBIGoal
     mvar.assign q($(st.pf) $pf')
