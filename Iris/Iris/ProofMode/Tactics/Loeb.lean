@@ -23,13 +23,13 @@ def RevertTarget.toSelTarget : RevertTarget → SelTarget
   | .lean id => .lean id
   | .pm _ ivar => .pm ivar
 
-abbrev ProofModeContinuation := ∀{u : Level}{prop: Q(Type $u)}{bi : Q(BI $prop)}{e : Q($prop)}(_hyps : Hyps bi e)(goal: Q($prop)),
+abbrev ProofModeContinuation := ∀ {e : Q($prop)}(_hyps : Hyps bi e)(goal: Q($prop)),
   ProofModeM Q($e ⊢ $goal)
 
 def ProofModeM.revertingTelescope
   {u : Level}{prop: Q(Type $u)}{bi : Q(BI $prop)}{e : Q($prop)}(hyps : Hyps bi e)(goal: Q($prop))
   (hs : List RevertTarget)
-  (k : ∀{u : Level}{prop: Q(Type $u)}{bi : Q(BI $prop)}{e : Q($prop)}(_hyps : Hyps bi e)(goal: Q($prop)), ProofModeContinuation → ProofModeM Q($e ⊢ $goal))
+  (k : ∀ {e : Q($prop)}(_hyps : Hyps bi e)(goal: Q($prop)), ProofModeContinuation → ProofModeM Q($e ⊢ $goal))
    : ProofModeM Q($e ⊢ $goal) := do
   let names : List (Syntax × IntroPat) ← hs.mapM fun
     | .lean id => do

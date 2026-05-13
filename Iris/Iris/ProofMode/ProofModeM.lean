@@ -60,7 +60,7 @@ def addBIGoalWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
 
 def runTacticWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
   {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId) (name : Name := .anonymous)
-  (k : ∀{u : Level}{prop: Q(Type $u)}{bi : Q(BI $prop)}{e : Q($prop)}(_hyps : Hyps bi e)(goal: Q($prop)), ProofModeM Q($e ⊢ $goal)) :
+  (k : ∀ {e : Q($prop)}(_hyps : Hyps bi e)(goal: Q($prop)), ProofModeM Q($e ⊢ $goal)) :
     ProofModeM Q($e ⊢ $goal) := do
   let .mvar mvid ← addBIGoalWithoutFVars hyps goal toClear name
     | unreachable!

@@ -61,7 +61,7 @@ This function returns the proof of `P ⊢ Q` to be assigned. The new context is 
 -/
 partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat))
-  (k : ∀ {u : Level}{prop: Q(Type $u)}{bi : Q(BI $prop)}{e : Q($prop)}(hyps : Hyps bi e)(goal: Q($prop)), ProofModeM Q($e ⊢ $goal) := addBIGoal) :
+  (k : ∀ {e : Q($prop)}(hyps : Hyps bi e)(goal: Q($prop)), ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM (Q($P ⊢ $Q)) := do
   match pats with
   | [] => k hyps Q
