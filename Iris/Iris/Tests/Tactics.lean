@@ -2294,4 +2294,11 @@ example (H₁ : Prop) (P Q : PROP) :
   iintro %h1 p
   iloeb as IH generalizing %h1
 
+variable {PROP : Type u} [ι₁ : BI PROP] in
+/-- error: Cannot use `iloeb` if there is no `BILoeb PROP` instance available -/
+#guard_msgs in
+example (H₁ : Prop) (P Q : PROP) :
+    H₁ → ⊢ P -∗ Q := by
+  iloeb as IH
+
 end iloeb
