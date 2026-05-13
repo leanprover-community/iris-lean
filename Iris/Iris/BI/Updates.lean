@@ -315,10 +315,7 @@ open BIFUpdate LawfulSet
 theorem step_fupd_fupd {Eo Ei : CoPset} {P : PROP} : (|={Eo}[Ei]▷=> P) ⊣⊢ (|={Eo}[Ei]▷=> |={Eo}=> P) :=
   ⟨mono <| later_mono <| mono fupd_intro, mono <| later_mono BIFUpdate.trans⟩
 
-/-- The iterated step-update `|={Eo}[Ei]▷=∗^[k]` is NonExpansive in the inner
-argument. Each layer composes `BIFUpdate.ne`, `later_ne`, and `BIFUpdate.ne`.
-Addresses the FIXME in Coq Iris `weakestpre.v` (no proper instance for
-`step_fupdN`). -/
+@[rocq_alias step_fupdN_ne]
 theorem step_fupdN_ne {Eo Ei : CoPset} {k n : Nat} {P Q : PROP} (h : P ≡{n}≡ Q) :
     Nat.repeat (fun R : PROP => iprop(|={Eo}[Ei]▷=> R)) k P ≡{n}≡
       Nat.repeat (fun R : PROP => iprop(|={Eo}[Ei]▷=> R)) k Q := by
