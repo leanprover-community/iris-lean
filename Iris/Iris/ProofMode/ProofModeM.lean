@@ -58,6 +58,17 @@ def addBIGoalWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
   modify ({goals := ·.goals.push clearedGoalId})
   return Expr.mvar clearedGoalId
 
+def runTacticWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
+  {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId) (name : Name := .anonymous)
+  (k : ProofModeTactic) :
+    ProofModeM Q($e ⊢ $goal) := do
+  let .mvar mvid ← addBIGoalWithoutFVars hyps goal toClear name
+    | unreachable!
+  let expr ← mvid.withContext do
+    k hyps goal
+  mvid.assign expr
+  return expr
+
 /-- Add an existing metavariable as a goal to the proof mode state if it is not already assigned or present. -/
 def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do
   if ← m.isAssignedOrDelayedAssigned then
