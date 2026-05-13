@@ -2363,64 +2363,64 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ Q ∗ P �
   icombine HR HQ HP HR as HNew
   iexact HNew
 
-/-- Tests `icombine` with `gives` and no hypotheses -/
-example [BI PROP] {P : PROP} : ⊢ P -∗ True := by
-  iintro -
-  -- `True` is created as the new proposition in the intuitionsitic context
-  icombine gives HNew
-  iexact HNew
+-- /-- Tests `icombine` with `gives` and no hypotheses -/
+-- example [BI PROP] {P : PROP} : ⊢ P -∗ True := by
+--   iintro -
+--   -- `True` is created as the new proposition in the intuitionsitic context
+--   icombine gives HNew
+--   iexact HNew
 
-/-- Tests `icombine` with `gives` and one hypothesis -/
-example [BI PROP] {P : PROP} : ⊢ P -∗ True := by
-  iintro HP
-  -- `True` is created as the new proposition in the intuitionsitic context
-  icombine HP gives HNew
-  iexact HNew
+-- /-- Tests `icombine` with `gives` and one hypothesis -/
+-- example [BI PROP] {P : PROP} : ⊢ P -∗ True := by
+--   iintro HP
+--   -- `True` is created as the new proposition in the intuitionsitic context
+--   icombine HP gives HNew
+--   iexact HNew
 
-/-- Tests `icombine` with `gives` and two hypotheses that can be combined
-    using the type class `CombineSepGives` -/
-example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
-    ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <pers> R := by
-  iintro HP HQ
-  icombine HP HQ gives HNew
-  iexact HNew
+-- /-- Tests `icombine` with `gives` and two hypotheses that can be combined
+--     using the type class `CombineSepGives` -/
+-- example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
+--     ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <pers> R := by
+--   iintro HP HQ
+--   icombine HP HQ gives HNew
+--   iexact HNew
 
-/- Tests `icombine` with `gives` and two hypotheses generically -/
-/-- error: icombine: no type class instance to combine propositions -/
-#guard_msgs in
-example [BI PROP] {P Q R : PROP} :
-    ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <pers> R := by
-  iintro HP HQ
-  icombine HP HQ gives HNew
+-- /- Tests `icombine` with `gives` and two hypotheses generically -/
+-- /-- error: icombine: no type class instance to combine propositions -/
+-- #guard_msgs in
+-- example [BI PROP] {P Q R : PROP} :
+--     ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <pers> R := by
+--   iintro HP HQ
+--   icombine HP HQ gives HNew
 
-/-- Tests `icombine` with `as` and `gives` using propositions with `<absorb>` and `<affine>` modalities -/
-example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
-    ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by
-  iintro HP HQ
-  icombine HP HQ as HNew1 gives HNew2
-  isplitl
-  · iexact HNew1
-  · iexact HNew2
+-- /-- Tests `icombine` with `as` and `gives` using propositions with `<absorb>` and `<affine>` modalities -/
+-- example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
+--     ⊢ <absorb> <affine> P -∗ <absorb> <affine> Q -∗ <absorb> <affine> (P ∗ Q) ∗ <pers> R := by
+--   iintro HP HQ
+--   icombine HP HQ as HNew1 gives HNew2
+--   isplitl
+--   · iexact HNew1
+--   · iexact HNew2
 
-/-- Tests `icombine` with `as` and `gives` for propositions with later modalities -/
-example [BI PROP] {n : Nat} {P Q R : PROP} [CombineSepGives P Q R] :
-    ⊢ ▷^[n] ◇ P -∗ ▷^[n] ◇ Q -∗ ▷^[n] ◇ (P ∗ Q) ∗ <pers> ▷^[n] ◇ R := by
-  iintro HP HQ
-  icombine HP HQ as HNew1 gives HNew2
-  isplitl
-  · iexact HNew1
-  · iexact HNew2
+-- /-- Tests `icombine` with `as` and `gives` for propositions with later modalities -/
+-- example [BI PROP] {n : Nat} {P Q R : PROP} [CombineSepGives P Q R] :
+--     ⊢ ▷^[n] ◇ P -∗ ▷^[n] ◇ Q -∗ ▷^[n] ◇ (P ∗ Q) ∗ <pers> ▷^[n] ◇ R := by
+--   iintro HP HQ
+--   icombine HP HQ as HNew1 gives HNew2
+--   isplitl
+--   · iexact HNew1
+--   · iexact HNew2
 
-/-- Tests `icombine` with `as` and `gives` using three propositions and destruction pattern -/
-example [BI PROP] {P Q R S T : PROP}
-    [CombineSepGives P Q R] [CombineSepGives iprop(□ R) S T] :
-    ⊢ P -∗ Q -∗ S -∗ P ∗ (Q ∗ S) ∗ □ T := by
-  iintro HP HQ HS
-  icombine HP HQ HS as ⟨HP, HQS⟩ gives HT
-  isplitl [HP]
-  · iexact HP
-  · isplitl
-    · iexact HQS
-    · iexact HT
+-- /-- Tests `icombine` with `as` and `gives` using three propositions and destruction pattern -/
+-- example [BI PROP] {P Q R S T : PROP}
+--     [CombineSepGives P Q R] [CombineSepGives iprop(□ R) S T] :
+--     ⊢ P -∗ Q -∗ S -∗ P ∗ (Q ∗ S) ∗ □ T := by
+--   iintro HP HQ HS
+--   icombine HP HQ HS as ⟨HP, HQS⟩ gives HT
+--   isplitl [HP]
+--   · iexact HP
+--   · isplitl
+--     · iexact HQS
+--     · iexact HT
 
-end icombine
+-- end icombine

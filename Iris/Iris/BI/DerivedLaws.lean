@@ -1510,11 +1510,11 @@ theorem intuitionisticallyIf_sep {p : Bool} [BI PROP] [BIPositive PROP] {P Q : P
   | true => intuitionistically_sep
 
 theorem intuitionisticallyIf_sep_conj {p1 p2 : Bool} [BI PROP] {P Q : PROP} :
-  (□?p1 P ∗ □?p2 Q) ⊢ □?(p1 ∧ p2) (P ∗ Q) := by
+  (□?p1 P ∗ □?p2 Q) ⊢ □?(p1 && p2) (P ∗ Q) := by
   match p1, p2 with
-  | false, false => exact .rfl
-  | false, true  => exact sep_mono .rfl intuitionisticallyIf_elim
-  | true,  false => exact sep_mono intuitionisticallyIf_elim .rfl
+  | false, false => exact refl
+  | false, true  => exact sep_mono_r intuitionisticallyIf_elim
+  | true,  false => exact sep_mono_l intuitionisticallyIf_elim
   | true,  true  => exact intuitionisticallyIf_sep_2
 
 theorem intuitionisticallyIf_idem {p : Bool} [BI PROP] {P : PROP} : □?p □?p P ⊣⊢ □?p P :=
