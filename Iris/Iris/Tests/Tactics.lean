@@ -2190,6 +2190,23 @@ error: unsolved goals
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
+P Q : PROP
+⊢ ⏎
+  □IH : ▷ (P -∗ Q)
+  ∗p : P
+  ⊢ Q
+-/
+#guard_msgs in
+example (P Q : PROP) :
+    P ⊢ Q := by
+  iintro p
+  iloeb as IH
+
+/--
+error: unsolved goals
+PROP : Type u
+ι₁ : BI PROP
+ι₂ : BILoeb PROP
 P₁ P₂ Q : PROP
 ⊢ ⏎
   □p : P₁
@@ -2224,8 +2241,8 @@ error: unsolved goals
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
-H₁ : Sort u_1
-P P₁ P₂ Q : PROP
+H₁ : Prop
+P Q : PROP
 h1 : H₁
 ⊢ ⏎
   □IH : ▷ (P -∗ Q)
@@ -2233,7 +2250,7 @@ h1 : H₁
   ⊢ Q
 -/
 #guard_msgs in
-example (P₁ P₂ Q : PROP) :
+example (H₁ : Prop) (P Q : PROP) :
     H₁ → ⊢ P -∗ Q := by
   iintro %h1 p
   iloeb as IH
@@ -2243,16 +2260,16 @@ error: unsolved goals
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
-H₁ : Sort u_1
-P P₁ P₂ Q : PROP
-h1✝ h1 : H₁
+H₁ : Prop
+P Q : PROP
+h1 : H₁
 ⊢ ⏎
-  □IH : ▷ ∀ h1, P -∗ Q
+  □IH : ▷ (<affine> ⌜H₁⌝ -∗ P -∗ Q)
   ∗p : P
   ⊢ Q
 -/
 #guard_msgs in
-example (P₁ P₂ Q : PROP) :
+example (H₁ : Prop) (P Q : PROP) :
     H₁ → ⊢ P -∗ Q := by
   iintro %h1 p
   iloeb as IH generalizing %h1
