@@ -107,14 +107,14 @@ partial def Hyps.find? {u prop bi} (name : Name) :
   | _, .hyp _ name' ivar p ty _ => if name == name' then (ivar, p, ty) else none
   | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
 
-partial def Hyps.getDecl? {u prop bi} (uniq : IVarId) {s}:
+partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
     @Hyps u prop bi s → Option (Name × IVarId × Q(Bool) × Q($prop))
   | .emp _ => none
-  | .hyp _ name uniq' p ty _ => if uniq == uniq' then (name, uniq, p, ty) else none
-  | .sep _ _ _ _ lhs rhs => rhs.getDecl? uniq <|> lhs.getDecl? uniq
+  | .hyp _ name ivar' p ty _ => if ivar == ivar' then (name, ivar, p, ty) else none
+  | .sep _ _ _ _ lhs rhs => rhs.getDecl? ivar <|> lhs.getDecl? ivar
 
-def Hyps.getUserName? {u prop bi} (uniq : IVarId) (h : @Hyps u prop bi s) : Option Name :=
-  h.getDecl? uniq |>.map (·.1)
+def Hyps.getUserName? {u prop bi} (ivar : IVarId) (h : @Hyps u prop bi s) : Option Name :=
+  h.getDecl? ivar |>.map (·.1)
 
 partial def Hyps.spatialIVarIds {u prop bi} :
     ∀ {s}, @Hyps u prop bi s → List IVarId
