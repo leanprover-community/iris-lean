@@ -49,6 +49,47 @@ def matchBool (p : Q(Bool)) : ($p =Q true) ⊕' ($p =Q false) :=
 
 section hyps
 
+/--
+A structured view of an environment `e` as a tree, with nodes
+ - `emp : Hyps bi iprop(emp)`, for the empty tree
+ - `sep : Hyps bi iprop(elhs ∗ erhs)`, for branches over separating conjunctions `∗`
+ - `hyp : Hyps bi iprop(□?p H)`, for a hypothesis `H` at the leaf
+
+Since the inductive type cannot be indexed by the type of the environment,
+we use Qq's `=Q` constraints to ensure the invariant on the shape of the
+tree is maintained. This can be seen in the anonymous `_` fields found in
+each constructor.
+
+There are other invariants of the tree that are not represented in its
+type, but are documented below.
+
+### The `tm` field caches a specific function
+
+In particular, all constructors have a `tm` field which contains
+an expression equivalent to `e` up to definitional equality, which computes:
+
+```
+def tm : Hyps bi e → Expr
+  | .emp ..                  => q(iprop( emp ))
+  | .sep _ lhs rhs ..        => q(iprop( $(tm lhs) * $(tm rhs) ))
+  | .hyp _ _ _ q(false) ty _ => q(iprop( $ty ))
+  | .hyp _ _ _ q(true) ty _  => q(iprop( □ $ty ))
+```
+
+This value can be retrieved with the `Hyps.tm` function.
+
+See https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/What.20is.20the.20difference.20between.20.60tm.60.20and.20.60e.60.20in.20.60Hyps.60.3F/near/594308734
+
+### The `p` field of `Hyps.hyp` only has literal values.
+
+Even though `p : Q(Bool)`, we may assume `p = q(true)` or `p = q(false)`.
+The reason `p` is then represented as an expression, and not directly a
+`Bool`, is that Qq has trouble reasoning about the coercion `Bool` to
+`Q(Bool)`.
+
+See https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/What.20is.20the.20difference.20between.20.60tm.60.20and.20.60e.60.20in.20.60Hyps.60.3F/near/594305592
+
+-/
 inductive Hyps {prop : Q(Type u)} (bi : Q(BI $prop)) : (e : Q($prop)) → Type where
   | emp (_ : $e =Q emp) : Hyps bi e
   | sep (tm elhs erhs : Q($prop)) (_ : $e =Q iprop($elhs ∗ $erhs))
