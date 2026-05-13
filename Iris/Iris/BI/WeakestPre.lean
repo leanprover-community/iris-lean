@@ -68,16 +68,6 @@ syntax (name := texanTriple) "{{{ " term " }}} " wp_expr " {{{ " texanPostcond "
 
 /- This section checks whether the syntax is recognized correctly for all combinations -/
 section testNotation
-set_option trace.Elab.info false
-
-/-- Suppress all `info` level messages from a command -/
-elab "#no_info" "in" cmd:command : command => do
-  Lean.Elab.Command.elabCommandTopLevel cmd
-  modify fun st => {st with
-    messages := {st.messages with
-      unreported := st.messages.unreported.filter (¬ ·.severity matches MessageSeverity.information)
-    }
-  }
 
 /--
 info: elaboration function for `wp` has not been implemented
@@ -427,8 +417,11 @@ meta def wpMacro : Lean.Macro := fun stx => do
 --       -- logInfo s!"Found! {s.getArgs.size} {repr s}"
 --       let ids ← collectUnresolvedIds s
 --       logInfo s!"Collected identifiers {ids}"
---       let stx ← `(∀ $ids*, $t)
---       Elab.Term.elabTerm stx ty?
+--       if ids.isEmpty then
+--         Elab.Term.elabTerm t ty?
+--       else
+--         let stx ← `(∀ $ids*, $t)
+--         Elab.Term.elabTerm stx ty?
 --     else
 --       Elab.Term.elabTerm t ty?
 --   | _ => unreachable!
@@ -440,15 +433,20 @@ meta def wpMacro : Lean.Macro := fun stx => do
 -- @[macro texanTriple]
 -- meta def wpTexanTriple : Lean.Macro
 --   | `({{{ $P:term }}} $expr {{{ $[$[$xs:ident]* ,]? RET $pat ; $Q }}}) => do
---     let xs : TSyntaxArray `ident := xs.getD #[]
---     `(iprop(∀ Φ, $P -∗ ▷ (∀ $xs*, underExtraBinders($Q → Φ sourceExtraBinders($pat))) -∗ (WP $expr {{ Φ }})))
+--     let k ← match xs with
+--             | some xs => `(∀ $xs*, underExtraBinders($Q → Φ sourceExtraBinders($pat)))
+--             | none => `($Q:term → Φ $pat)
+--     `(iprop(∀ Φ, $P -∗ ▷ $k -∗ (WP $expr {{ Φ }})))
 --   | _ => Lean.Macro.throwUnsupported
 
 @[macro texanTriple]
 meta def wpTexanTriple : Lean.Macro
-  | `({{{ $P:term }}} $expr {{{ $[$[$xs:ident]* ,]? RET $pat ; $Q }}}) => do
-    let xs : TSyntaxArray `ident := xs.getD #[]
-    `(iprop(∀ Φ, $P -∗ ▷ (∀ $xs*, $Q → Φ $pat) -∗ (WP $expr {{ Φ }})))
+  | `({{{ $P:term }}} $wpExpr {{{ $[$[$xs:ident]* ,]? RET $pat ; $Q:term }}}) => do
+    -- It seems like `∀ $xs*, Ψ` does not translate to `Ψ`.
+    let k ← match xs with
+            | some xs => `(∀ $xs*, $Q:term → Φ $pat)
+            | none => `($Q:term → Φ $pat)
+    `(iprop(∀ Φ, $P -∗ ▷ $k -∗ (WP $wpExpr {{ Φ }})))
   | _ => Lean.Macro.throwUnsupported
 
 section testElab
@@ -502,7 +500,6 @@ variable (Φ : Val → PROP)
 /-- info: TotalWP.totalWp Stuckness.MaybeStuck ⊤ e Φ : PROP -/
 #guard_msgs in #check WP e ? [{ Φ }]
 
-
 variable (P : PROP) (Q : PROP) (v : Nat) (s : Stuckness) [Wp PROP Expr Nat Stuckness]
 
 -- Can we do away with the `x .. y` by obtaining the identifiers directly from `RET pat`?
@@ -518,18 +515,16 @@ variable (P : PROP) (Q : PROP) (v : Nat) (s : Stuckness) [Wp PROP Expr Nat Stuck
 /-- info: iprop(∀ Φ, P -∗ (▷ ∀ x y, Q → Φ (x + 1)) -∗ Wp.wp Stuckness.MaybeStuck ⊤ e Φ) : PROP -/
 #guard_msgs in #check {{{ P }}} e ? {{{ x y , RET (x+1) ; Q }}}
 
-#check iprop(∀ Φ, P -∗ (▷ Q → Φ 0) -∗ Wp.wp s E e Φ)
-/-- info: iprop(∀ Φ, P -∗ (▷ Q → Φ 0) -∗ Wp.wp s E e Φ) : PROP -/
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ Wp.wp s E e Φ) : PROP -/
 #guard_msgs in #check {{{ P }}} e @ s ; E {{{ RET 0 ; Q }}}
-/-- info: iprop(∀ Φ, P -∗ (▷ Q → Φ 0) -∗ Wp.wp Stuckness.NotStuck E e Φ) : PROP -/
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ Wp.wp Stuckness.NotStuck E e Φ) : PROP -/
 #guard_msgs in #check {{{ P }}} e @ E {{{ RET 0 ; Q }}}
-/-- info: iprop(∀ Φ, P -∗ (▷ Q → Φ 0) -∗ Wp.wp Stuckness.MaybeStuck E e Φ) : PROP -/
-#guard_msgs in #check {{{ P }}} e @ E ? {{{ RET pat ; Q }}}
-/-- info: iprop(∀ Φ, P -∗ (▷ Q → Φ 0) -∗ Wp.wp Stuckness.NotStuck ⊤ e Φ) : PROP -/
-#guard_msgs in #check {{{ P }}} e {{{ RET pat ; Q }}}
-/-- info: iprop(∀ Φ, P -∗ (▷ Q → Φ 0) -∗ Wp.wp Stuckness.MaybeStuck ⊤ e Φ) : PROP -/
-#guard_msgs in #check {{{ P }}} e ? {{{ RET pat ; Q }}}
-
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ Wp.wp Stuckness.MaybeStuck E e Φ) : PROP -/
+#guard_msgs in #check {{{ P }}} e @ E ? {{{ RET 0 ; Q }}}
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ Wp.wp Stuckness.NotStuck ⊤ e Φ) : PROP -/
+#guard_msgs in #check {{{ P }}} e {{{ RET 0 ; Q }}}
+/-- info: iprop(∀ Φ, P -∗ ▷ (Q → Φ 0) -∗ Wp.wp Stuckness.MaybeStuck ⊤ e Φ) : PROP -/
+#guard_msgs in #check {{{ P }}} e ? {{{ RET 0 ; Q }}}
 
 end testElab
 
