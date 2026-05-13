@@ -24,6 +24,11 @@ theorem apply [BI PROP] {p} {P Q Q1 R : PROP}
 public meta section
 open Lean Elab Tactic Meta Qq Std
 
+--  Like `ProofMode.assumption`, but specialized for the `iapply` case
+theorem apply_assumption [BI PROP] {p : Bool} {P A Q : PROP} [inst : FromAssumption p .in A Q]
+  [TCOr (Affine P) (Absorbing Q)] : P ∗ □?p A ⊢ Q :=
+  (sep_mono_r inst.1).trans sep_elim_r
+
 /--
 Apply a hypothesis `A` to the `goal` by eliminating the wands recursively
 
@@ -59,7 +64,7 @@ elab "iapply" colGt pmt:pmTerm : tactic => do
     let LOption.some _ ← trySynthInstanceQ q(TCOr (Affine $e) (Absorbing $goal))
       | throwError "iapply: the context {e} is not affine and goal not absorbing"
     -- have rfl : Q($e ∗ □?$p $out ⊣⊢ $e ∗ □?$p $out) := q(.rfl)
-    mvar.assign q($(pf).trans (assumption (Q := $goal) .rfl)) -- TODO: Is this better?
+    mvar.assign q($(pf).trans (apply_assumption (Q := $goal))) -- TODO: Is this better?
     return
   -- otherwise, `out` should be a wand, handled by `iApplyCore`
   let pf' ← iApplyCore hyps' p out goal
