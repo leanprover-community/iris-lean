@@ -6,6 +6,7 @@ public import Iris.ProofMode.Classes
 public import Iris.Std.TC
 public import Iris.ProofMode.ProofModeM
 meta import Iris.ProofMode.Tactics.Basic
+meta import Lean.Parser.Tactic
 
 namespace Iris.ProofMode
 
@@ -28,7 +29,14 @@ theorem rewrite_hyp [BI PROP] [Sbi PROP] {P Q : PROP} {A : Type _} [OFE A] {a b 
     sorry
 
 public meta section
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq BI Std Parser.Tactic
+
+namespace IRewrite
+structure Config where
+  occs : Occurrences := .all
+end IRewrite
+
+declare_config_elab elabIRewriteConfig IRewrite.Config
 
 inductive RewriteDirection
   | forward
@@ -38,19 +46,17 @@ inductive RewriteLocation
   | goal
   | hyp (name : Ident)
 
-#check Iris.internalEq
-#check IntoInternalEq
-#print IntoInternalEq
-
 private def iRewriteGoalCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     {e} (hyps : Hyps bi e) (goal : Q($prop))
-    (eq_hyp_name : Ident) (direction : RewriteDirection) :
+    (eq_hyp_name : Ident) (direction : RewriteDirection)
+    (occs : Occurrences := Occurrences.all) :
     ProofModeM Q($e ⊢ $goal) := do
   let uniq ← hyps.findWithInfo eq_hyp_name
-  let ⟨_, hyps', out, out', peq, _, pf⟩ := hyps.remove true uniq
+  let ⟨_, hyps', out, _, _, _, pf⟩ := hyps.remove true uniq
 
-  let .some _ ← trySynthInstanceQ q(Sbi $prop)
+  let .some sbi ← trySynthInstanceQ q(Sbi $prop)
     | throwError "irewrite: could not synthesize Sbi instance"
+
   let v ← mkFreshLevelMVar
   let A : Q(Type v) ← mkFreshExprMVarQ q(Type v)
   let a : Q($A) ← mkFreshExprMVarQ q($A)
@@ -58,33 +64,44 @@ private def iRewriteGoalCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   let ofe : Q(OFE $A) ← mkFreshExprMVarQ q(OFE $A)
   let .some out'' ← ProofModeM.trySynthInstanceQ q(IntoInternalEq (PROP := $prop) (ofe := $ofe) (A := $A) (x := $a) (y := $b) $out)
     | throwError "irewrite: {out} is not an internal equality"
-  let v ← instantiateLevelMVars v
-  let A : Q(Type v) ← instantiateMVars A
-  let a : Q($A) ← instantiateMVars a
-  let b : Q($A) ← instantiateMVars b
-  let ofe : Q(OFE $A) ← instantiateMVars ofe
-  let (search, target) := match direction with
-    | .forward => (a, b)
-    | .backward => (b, a)
 
-  -- let x ← mkFreshExprMVar (.some A)
-  let goalAbstracted ← kabstract goal search
-  -- if goalAbstracted == goal then
-  --   throwError "irewrite: {search} does not occur in the goal"
+  let A   : Q(Type v)  ← instantiateMVars A
+  let a   : Q($A)      ← instantiateMVars a
+  let b   : Q($A)      ← instantiateMVars b
+  let ofe : Q(OFE $A)  ← instantiateMVars ofe
+  let out'' : Q(IntoInternalEq (PROP := $prop) (ofe := $ofe) (A := $A) (x := $a) (y := $b) $out) :=
+    ← instantiateMVars out''
+
+  let search := match direction with | .forward => a | .backward => b
+
+  let goalAbstracted ← kabstract (occs := occs) goal search
+  unless goalAbstracted.hasLooseBVars do
+    let (tgt, pat) ← addPPExplicitToExposeDiff goal search
+    throwError "irewrite: Could not find {indentExpr pat}\nin the target expression{indentExpr tgt}"
   have Ψ : Q($A → $prop) := mkLambda `x .default A goalAbstracted
-  let .some _ ← trySynthInstanceQ q(OFE.NonExpansive $Ψ)
-    | throwError "irewrite: could not synthesize NonExpansive instance for {Ψ}"
-  let goal' : Q($prop) := q($Ψ $search)
-  let asm : Q($prop) := q($Ψ $target)
+  let inst ← trySynthInstanceQ q(OFE.NonExpansive $Ψ)
+  let _ ← match inst with
+    | .some x => pure x
+    | _ =>
+      let ne ← mkFreshExprMVarQ q(OFE.NonExpansive $Ψ)
+      modify ({goals := ·.goals.push ne.mvarId!})
+      pure ne
 
-  dbg_trace f!"abs: {goalAbstracted} Ψ: {Ψ} goal': {goal'} asm: {asm} goal: {goal} target: {target} search: {search}"
-  let ⟨_⟩ ← assertDefEqQ goal goal'
-  let pf' ← addBIGoal hyps' asm
-  let _ ← addBIGoal hyps' goal -- remove, also wtf
-  let _ ← addBIGoal hyps' goal' -- remove, also wtf
-  let _ ← addBIGoal hyps' out -- remove, also wtf
-  let eq_pf : Q($out ⊢ internalEq $target $search) := q(sorry)
-  return q(Entails.trans ($pf).mp (Entails.trans sep_comm.mp (rewrite_goal $Ψ $eq_pf $pf')))
+  match direction with
+  | .forward => do
+      -- FIXME: mkAppOptM is used to bypass Qq's BI-instance mismatch for internalEq.symm.
+      let into_eq : Expr := q(($out'').into_internal_eq)
+      let symm_app ← mkAppOptM ``internalEq.symm #[prop, sbi, A, ofe, a, b]
+      let eq_pf_expr ← mkAppOptM ``Entails.trans #[prop, none, none, none, none, into_eq, symm_app]
+      let eq_pf : Q($out ⊢ internalEq $b $a) := eq_pf_expr
+      let pf' ← addBIGoal hyps' q($Ψ $b)
+      let inner : Expr := q(Entails.trans ($pf).mp (Entails.trans sep_comm.mp (rewrite_goal $Ψ $eq_pf $pf')))
+      return inner
+  | .backward => do
+      let eq_pf : Q($out ⊢ internalEq $a $b) := q(($out'').into_internal_eq)
+      let pf' ← addBIGoal hyps' q($Ψ $a)
+      let inner : Expr := q(Entails.trans ($pf).mp (Entails.trans sep_comm.mp (rewrite_goal $Ψ $eq_pf $pf')))
+      return inner
 
 private def iRewriteHypCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     {e} (_hyps : Hyps bi e)
@@ -93,25 +110,27 @@ private def iRewriteHypCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     ProofModeM ((e' : _) × Hyps bi e' × Q($e ⊢ $e')) := do
   throwError "irewrite in hypothesis: not implemented"
 
-syntax rewriteLocation := "in" ident
+syntax irwRule    := patternIgnore("← " <|> "<- ")? ident
+syntax irwRuleSeq := " [" withoutPosition(irwRule,*,?) "]"
 
-elab "irewrite" dir:"←"? colGt eq_hyp:ident loc:(rewriteLocation)? : tactic => do
-  let direction := if dir.isSome then RewriteDirection.backward else RewriteDirection.forward
-
-  let location ← match loc with
+elab (name := irewriteSeq) "irewrite" cfg:optConfig "[" rules:(irwRule),* "]" loc:(location)? : tactic => do
+  let config ← elabIRewriteConfig cfg
+  let location : RewriteLocation ← match loc with
     | none => pure RewriteLocation.goal
-    | some loc =>
-      match loc with
-      | `(rewriteLocation| in $hyp:ident) => pure (RewriteLocation.hyp hyp)
-      | _ => throwUnsupportedSyntax
-
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    match location with
-    | RewriteLocation.goal => do
-      let pf ← iRewriteGoalCore hyps goal eq_hyp direction
-      mvar.assign pf
-
-    | RewriteLocation.hyp target_hyp => do
-      let ⟨e', hyps', pf⟩ ← iRewriteHypCore hyps target_hyp eq_hyp direction
-      let pf' ← addBIGoal hyps' goal
-      mvar.assign q(Entails.trans $pf $pf')
+    | some loc => match loc with
+      | `(location| at ⊢) => pure RewriteLocation.goal
+      | `(location| at $hyp:ident) => pure (RewriteLocation.hyp hyp)
+      | _ => throwError "irewrite: unsupported location"
+  for rule in rules.getElems do
+    let direction : RewriteDirection :=
+      if rule.raw[0].getArgs.isEmpty then .forward else .backward
+    let eq_hyp : Ident := ⟨rule.raw[1]⟩
+    ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+      match location with
+      | RewriteLocation.goal =>
+        let pf ← iRewriteGoalCore hyps goal eq_hyp direction config.occs
+        mvar.assign pf
+      | RewriteLocation.hyp target_hyp =>
+        let ⟨_, hyps', pf⟩ ← iRewriteHypCore hyps target_hyp eq_hyp direction
+        let pf' ← addBIGoal hyps' goal
+        mvar.assign q(Entails.trans $pf $pf')

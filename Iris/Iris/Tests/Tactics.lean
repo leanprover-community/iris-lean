@@ -1909,18 +1909,14 @@ example (a b : A) (P : A → PROP) [OFE.NonExpansive P] :
     internalEq b a ∗ P a ⊢ P b := by
   istart
   iintro ⟨Heq, Ha⟩
-  irewrite Heq
-
-  · sorry
-  · sorry
-  · sorry
-  · sorry
+  irewrite [Heq] at ⊢
+  iexact Ha
 
 example (a b : A) (P : A → PROP) [OFE.NonExpansive P] :
-    internalEq a b ∗ P b ⊢ P a := by
+    internalEq b a ∗ P b ⊢ P a := by
   istart
   iintro ⟨Heq, Hb⟩
-  irewrite ← Heq
+  irewrite [← Heq]
   iexact Hb
 
 example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] :
