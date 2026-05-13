@@ -63,7 +63,7 @@ structure FrameResult {u} {prop : Q(Type u)} (bi : Q(BI $prop)) (origE origGoal 
 
 private def FrameResult.step {u prop bi origE origGoal} :
     @FrameResult u prop bi origE origGoal → SelTarget → ProofModeM (FrameResult bi origE origGoal)
-  | st@{hyps, goal, pf, ..}, {explicit, target := .pm ivar} => do
+  | st@{hyps, goal, pf, ..}, {explicit, target := .ipm ivar} => do
     let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove false ivar
     let goal' ← mkFreshExprMVarQ q($prop)
     if let .some _ ← ProofModeM.trySynthInstanceQ q(Frame $p $out' $goal $goal') then
@@ -72,7 +72,7 @@ private def FrameResult.step {u prop bi origE origGoal} :
       throwError "iframe: cannot frame {out'}"
     else
       return st
-  | st@{e, hyps, goal, pf, ..}, {explicit, target := .lean fvar} => do
+  | st@{e, hyps, goal, pf, ..}, {explicit, target := .pure fvar} => do
     let ty ← fvar.getType
     if ! (← Meta.isProp ty) then
       throwError "iframe: {← fvar.getUserName} is not a Prop"

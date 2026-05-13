@@ -52,8 +52,8 @@ partial def SelPat.parse (pats : TSyntaxArray `selPat) : MacroM (List SelPat) :=
 public meta section
 
 inductive SelId where
-| lean (id : FVarId)
-| pm (ivar : IVarId)
+| pure (id : FVarId)
+| ipm (ivar : IVarId)
 deriving BEq, Hashable, Repr
 
 @[rocq_alias esel_pat]
@@ -62,17 +62,17 @@ structure SelTarget where
   /- Was this target specified explicitly or is it from a glob like ∗? -/
   explicit : Bool
 
-/-- Resolve selection patterns to concrete proofmode hypotheses (`.pm`) and Lean locals (`.lean`). -/
+/-- Resolve selection patterns to concrete proofmode hypotheses (`.ipm`) and Lean locals (`.lean`). -/
 def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget)
   | .ident name =>
-      return [⟨.pm (← hyps.findWithInfo name), true⟩]
+      return [⟨.ipm (← hyps.findWithInfo name), true⟩]
   | .leanIdent name => do
       let ldecl ← getLocalDeclFromUserName name.getId
-      return [⟨.lean ldecl.fvarId, true⟩]
+      return [⟨.pure ldecl.fvarId, true⟩]
   | .intuitionistic =>
-      return hyps.intuitionisticIVarIds.map (⟨.pm ·, false⟩)
+      return hyps.intuitionisticIVarIds.map (⟨.ipm ·, false⟩)
   | .spatial =>
-      return hyps.spatialIVarIds.map (⟨.pm ·, false⟩)
+      return hyps.spatialIVarIds.map (⟨.ipm ·, false⟩)
   | .pure => do
       -- `%` selects user-facing Lean pure assumptions, so we keep only `Prop` hypotheses.
       let mut hyps := #[]
@@ -81,7 +81,7 @@ def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget
           continue
         if ! (← isProp ldecl.type) then
           continue
-        hyps := hyps.push (⟨.lean ldecl.fvarId, false⟩)
+        hyps := hyps.push (⟨.pure ldecl.fvarId, false⟩)
       return hyps.toList
 
 def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) :
