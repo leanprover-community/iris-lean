@@ -51,30 +51,29 @@ partial def SelPat.parse (pats : TSyntaxArray `selPat) : MacroM (List SelPat) :=
 
 public meta section
 
-inductive SelId where
+inductive SelTarget.Kind where
 | pure (id : FVarId)
-| ipm (ivar : IVarId)
+| ipm (ivar : IVarId) (persistent? : Bool)
 deriving BEq, Hashable, Repr
 
 @[rocq_alias esel_pat]
 structure SelTarget where
-  target : SelId
+  kind : SelTarget.Kind
   /- Was this target specified explicitly or is it from a glob like ∗? -/
   explicit : Bool
-  persistent? : Bool
 
 /-- Resolve selection patterns to concrete proofmode hypotheses (`.ipm`) and Lean locals (`.lean`). -/
 def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget)
   | .ident name => do
       let ⟨ivar, persistent?⟩ ← hyps.findWithInfoPersistent name
-      return [⟨.ipm ivar, true, persistent?⟩]
+      return [⟨.ipm ivar persistent?, true⟩]
   | .leanIdent name => do
       let ldecl ← getLocalDeclFromUserName name.getId
-      return [⟨.pure ldecl.fvarId, true, true⟩]
+      return [⟨.pure ldecl.fvarId, true⟩]
   | .intuitionistic =>
-      return hyps.intuitionisticIVarIds.map (⟨.ipm ·, false, true⟩)
+      return hyps.intuitionisticIVarIds.map (⟨.ipm · true, false⟩)
   | .spatial =>
-      return hyps.spatialIVarIds.map (⟨.ipm ·, false, false⟩)
+      return hyps.spatialIVarIds.map (⟨.ipm · true, false⟩)
   | .pure => do
       -- `%` selects user-facing Lean pure assumptions, so we keep only `Prop` hypotheses.
       let mut hyps := #[]
@@ -83,7 +82,7 @@ def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget
           continue
         if ! (← isProp ldecl.type) then
           continue
-        hyps := hyps.push (⟨.pure ldecl.fvarId, false, true⟩)
+        hyps := hyps.push (⟨.pure ldecl.fvarId, false⟩)
       return hyps.toList
 
 def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) :
@@ -91,7 +90,7 @@ def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) :
   -- we want to remove duplicates; and if an pattern is first explicitly specified and then non-explicitly,
   -- we want to remove the non-explicit version (but not the other way around)
   return (← pats.flatMapM (SelPat.resolveOne hyps)).eraseDupsBy
-    (λ snd fst => snd.target == fst.target && (fst.explicit == snd.explicit || fst.explicit))
+    (λ snd fst => snd.kind == fst.kind && (fst.explicit == snd.explicit || fst.explicit))
 
 end
 

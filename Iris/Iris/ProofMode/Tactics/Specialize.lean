@@ -107,7 +107,7 @@ private def processWand :
     let out₂ ← mkFreshExprMVarQ prop
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
       | throwError m!"ispecialize: {out} is not a wand"
-    let res ← iFrame bi _ hypsr' out₁ (frameIVars.map (⟨.ipm ·, true, kind != .spatial⟩))
+    let res ← iFrame bi _ hypsr' out₁ (frameIVars.map (⟨.ipm ·  (kind != .spatial), true⟩))
     let pf'' ← res.finish (addBIGoal · · g)
     let pf := q(specialize_wand_subgoal $out₂ $pf $pf' $pf'')
     return { e := el', hyps := hypsl', p := q(false), out := out₂, pf }

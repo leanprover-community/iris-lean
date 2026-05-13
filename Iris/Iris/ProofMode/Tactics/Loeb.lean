@@ -23,11 +23,11 @@ def ProofModeM.revertingTelescope
   (k : ∀ {prop : Q(Type u)}{bi : Q(BI $prop)}{e : Q($prop)}(_hyps : Hyps bi e)(goal: Q($prop)), ProofModeContinuation u → ProofModeM Q($e ⊢ $goal))
    : ProofModeM Q($e ⊢ $goal) := do
   let names : List (Syntax × IntroPat) ← hs.mapM fun
-    | {target := .pure id, ..} => do
+    | {kind := .pure id, ..} => do
       let name ← Lean.mkIdent <$> id.getUserName
       let ident ← `(binderIdent| $name:ident)
       return (name, .intro <| .pure ident)
-    | {target := .ipm ivar, persistent?, ..} =>  do
+    | {kind := .ipm ivar persistent?, ..} =>  do
       let name ← Lean.mkIdent <$> (hyps.getUserName? ivar).getM
       let ident ← `(binderIdent| $name:ident)
       return (name, .intro <| (if persistent? then .intuitionistic else id) <| .one ident)
@@ -52,21 +52,19 @@ syntax (name := iloeb) "iloeb " " as " binderIdent (" generalizing " (ppSpace co
 elab_rules : tactic
 | `(tactic| iloeb as $IH:binderIdent $[generalizing $[$hs:selPat]*]? ) => do
   ProofModeM.runTactic fun mvid {hyps, goal, ..} => do
-    let spatialCtx := hyps.spatialIVarIds.map ({target := .ipm ·, explicit := false, persistent? := false})
+    let spatialCtx : List SelTarget := hyps.spatialIVarIds.map ({kind := .ipm · false, explicit := false})
     let generalizedHs ← do
       let hs := hs.getD #[]
       let pats ← Elab.liftMacroM <| SelPat.parse hs
       let generalizedHs ← SelPat.resolve hyps pats
       generalizedHs.zip hs.toList
         |>.filterMapM fun (tgt, ref) =>
-          match tgt.target with
-          | .ipm ivar => do
-            if spatialCtx.map (·.target) |>.contains (.ipm ivar) then
+          match tgt.kind with
+          | .ipm _ false => do
               logWarningAt ref m!"Spatial hypothesis are generalized automatically by iloeb"
               return none
-            else
-              return some ({target := .ipm ivar, explicit := false, persistent? := true})
-          | .pure id => return some ({target := .pure id, explicit := false, persistent? := true})
+          | .ipm _ true
+          | .pure _ => return some tgt
 
     let expr ← ProofModeM.revertingTelescope hyps goal (generalizedHs ++ spatialCtx) fun {prop _ _} hyps goal k => do
       let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)
