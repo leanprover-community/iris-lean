@@ -14,10 +14,10 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
-/-- Auxilary lemma for the base case with no hypotheses -/
+/-- Auxilary lemma for the base case where no hypothesis is given -/
 theorem combine_as_nil [BI PROP] {e goal : PROP} (pf : e ∗ □ emp ⊢ goal) : e ⊢ goal := calc
   e ⊢ e ∗ emp   := sep_emp.mpr
-  _ ⊢ e ∗ □ emp := sep_mono refl intuitionistically_emp.mpr
+  _ ⊢ e ∗ □ emp := sep_mono_r intuitionistically_emp.mpr
   _ ⊢ goal      := pf
 
 /-- Auxilary lemma for the base case with one hypothesis -/
