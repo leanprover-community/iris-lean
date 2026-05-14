@@ -335,7 +335,6 @@ theorem siEmpValid_exist_mpr [Sbi PROP] {A : Type _} {Φ : A → PROP} :
     (∃ x, <si_emp_valid> Φ x) ⊢@{SiProp} <si_emp_valid> (∃ x, Φ x) :=
   exists_elim fun x => siEmpValid_mono (exists_intro x)
 
-@[rocq_alias uPred_primitive.si_emp_valid_exist_1]
 theorem siEmpValid_exist_mp [Sbi PROP] [SbiEmpValidExist PROP] {A : Type _} {Φ : A → PROP} :
     <si_emp_valid> (∃ x, Φ x) ⊢@{SiProp} ∃ x, <si_emp_valid> Φ x :=
   calc iprop(<si_emp_valid> (∃ x, Φ x))
