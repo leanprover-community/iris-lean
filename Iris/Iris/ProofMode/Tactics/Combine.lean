@@ -261,6 +261,26 @@ private def CombineState.combineAsProofModeHyp {u prop bi origE goal} :
         let pf2 : Q($newE ⊣⊢ $e2 ∗ □?$p2 $out2') := pf2
         return updateSt pf1 pf2 hyps2 goal inst
 
+private structure CombineGivesState {u} {prop : Q(Type u)} {bi} (e goal : Q($prop)) where
+  {out' : Q($prop)}
+  (hyps : Hyps bi e)
+  (pf1 : Q($e ⊢ $e ∗ □ $out'))
+  pf : Q(($e ∗ □ $out' ⊢ $goal) → ($e ⊢ $goal))
+
+private def CombineGivesState.combineGivesProofModeHyp {u prop bi e goal} :
+    @CombineGivesState u prop bi e goal → IVarId →
+    ProofModeM (@CombineGivesState u prop bi e goal)
+  | { out', hyps, pf1, .. }, ivar => do
+      let ⟨_, _, out2, _, _, _, pf2⟩ := hyps.remove false ivar
+      let newOut ← mkFreshExprMVarQ _
+      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives iprop(□ $out') $out2 $newOut)
+      | throwError "icombine: no type class instance to combine propositions"
+
+      let pf1 : Q($e ⊢ $e ∗ □ $newOut) := q(combine_gives_step ⟨$pf1, sep_elim_l⟩ $pf2 $inst)
+      let pf : Q(($e ∗ □ $newOut ⊢ $goal) → ($e ⊢ $goal)) := q($(pf1).trans)
+
+      return { hyps, out' := newOut, pf1, pf }
+
 /-- The tactic `icombine` combines propositions into one using the type
     class `CombineSepAs`. By default, the separating conjunction is used
     as the connective. -/
@@ -299,26 +319,6 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
     let pf' ← iCasesCore _ st.newHyps goal pat q($(st.p)) st.out' addBIGoal
     mvar.assign q($(st.pf) $pf')
 
-private structure CombineGivesState {u} {prop : Q(Type u)} {bi} (e goal : Q($prop)) where
-  {out' : Q($prop)}
-  (hyps : Hyps bi e)
-  (pf1 : Q($e ⊢ $e ∗ □ $out'))
-  pf : Q(($e ∗ □ $out' ⊢ $goal) → ($e ⊢ $goal))
-
-private def CombineGivesState.combineGivesProofModeHyp {u prop bi e goal} :
-    @CombineGivesState u prop bi e goal → IVarId →
-    ProofModeM (@CombineGivesState u prop bi e goal)
-  | { out', hyps, pf1, .. }, ivar => do
-      let ⟨_, _, out2, _, _, _, pf2⟩ := hyps.remove false ivar
-      let newOut ← mkFreshExprMVarQ _
-      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives iprop(□ $out') $out2 $newOut)
-      | throwError "icombine: no type class instance to combine propositions"
-
-      let pf1 : Q($e ⊢ $e ∗ □ $newOut) := q(combine_gives_step ⟨$pf1, sep_elim_l⟩ $pf2 $inst)
-      let pf : Q(($e ∗ □ $newOut ⊢ $goal) → ($e ⊢ $goal)) := q($(pf1).trans)
-
-      return { hyps, out' := newOut, pf1, pf }
-
 /-- The tactic `icombine` with `gives` syntax combines propositions to derive
     new information in the intutionisitic context using the type class
     `CombineSepGives`. It is possible that no type class instance is
@@ -336,7 +336,7 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
       let ivar2 ← hyps.findWithInfo h2
 
       -- Hypothesis in the spatial context should not be used multiple times
-      if hs.count h1 > 1 ∧ ¬isTrue (← hyps.findP h1) then
+      if (hs.count h1 > 1 ∧ ¬isTrue (← hyps.findP h1)) ∨ (hs.count h2 > 1 ∧ ¬isTrue (← hyps.findP h2)) then
         throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
 
       let ⟨_, hyps1, out1, _, _, _, pf1⟩ := hyps.remove false ivar1
@@ -348,21 +348,18 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
 
       let pf' : Q($e ⊢ $e ∗ □ $out) := q(combine_gives_step $pf1 $pf2 $inst)
 
+      -- Initialise the mutable `CombineGivesState` instance
       let mut st : CombineGivesState e goal := {
-        hyps,
-        out' := out,
-        pf1 := q($pf'),
-        pf := q($(pf').trans)
+        hyps, out' := out, pf1 := q($pf'), pf := q($(pf').trans)
       }
 
       for h in htail do
         -- Find the `IVarId` of the hypothesis
         let ivar ← hyps.findWithInfo h
-
         -- Hypothesis in the spatial context should not be used multiple times
         if hs.count h > 1 ∧ ¬isTrue (← hyps.findP h) then
           throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
-
+        -- Iteratively handle the remaining hypotheses
         st ← st.combineGivesProofModeHyp ivar
 
       -- Generate the new proof goal for the user and fill in the metavariable
@@ -370,7 +367,7 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
       mvar.assign q($(st.pf) $pf')
 
     | _ =>
-      -- Generate the new proof goal for the user and fill in the metavariable
+      -- Introduce `True` into the intuitionistic context if less than two hypotheses are given
       let pf' ← iCasesCore _ hyps goal pat q(true) q(iprop(True)) addBIGoal
       mvar.assign q(combine_gives_nil $pf')
 
