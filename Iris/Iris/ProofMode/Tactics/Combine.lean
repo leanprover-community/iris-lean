@@ -51,21 +51,20 @@ theorem combine_gives_nil [BI PROP] {e goal : PROP} (pf : e ∗ □ True ⊢ goa
 theorem combine_gives_step [BI PROP] {e e1 e2 out1 out2 out : PROP}
     (pf1 : e ⊣⊢ e1 ∗ out1)
     (pf2 : e1 ⊣⊢ e2 ∗ out2)
-    (inst : CombineSepGives out1 out2 out) : e ⊣⊢ e ∗ □?true out := sorry
-  -- have pf5 : e ⊣⊢ e2 ∗ out1 ∗ out2 := calc
-  --   e ⊣⊢ e1 ∗ out1          := pf1
-  --   _ ⊣⊢ (e2 ∗ out2) ∗ out1 := sep_congr pf2 .rfl
-  --   _ ⊣⊢ e2 ∗ out2 ∗ out1   := sep_assoc
-  --   _ ⊣⊢ e2 ∗ out1 ∗ out2   := sep_congr .rfl sep_comm
-  -- calc
-  --   e ⊢ e2 ∗ out1 ∗ out2                        := pf5.mp
-  --   _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ out1 ∗ out2) := and_intro refl refl
-  --   _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ <pers> out)  := and_mono refl (sep_mono refl inst.combine_sep_gives)
-  --   _ ⊢ (e2 ∗ out1 ∗ out2) ∧ <pers> out         := and_mono refl sep_elim_r
-  --   _ ⊢ (e2 ∗ out1 ∗ out2) ∗ □ out              := persistently_and_intuitionistically_sep_r.mp
-  --   _ ⊢ e ∗ □ out                               := sep_mono pf5.mpr refl
-
-theorem combine_gives_1 [BI PROP] {e : PROP} : e ⊣⊢ e ∗ □ True := sorry
+    (inst : CombineSepGives out1 out2 out) : e ⊣⊢ e ∗ □?true out :=
+  have pf3 : e ⊣⊢ e2 ∗ out1 ∗ out2 := calc
+    e ⊣⊢ e1 ∗ out1          := pf1
+    _ ⊣⊢ (e2 ∗ out2) ∗ out1 := sep_congr pf2 .rfl
+    _ ⊣⊢ e2 ∗ out2 ∗ out1   := sep_assoc
+    _ ⊣⊢ e2 ∗ out1 ∗ out2   := sep_congr .rfl sep_comm
+  have pf4 : e ⊢ e ∗ □ out := calc
+    e ⊢ e2 ∗ out1 ∗ out2                        := pf3.mp
+    _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ out1 ∗ out2) := and_intro refl refl
+    _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ <pers> out)  := and_mono refl (sep_mono refl inst.combine_sep_gives)
+    _ ⊢ (e2 ∗ out1 ∗ out2) ∧ <pers> out         := and_mono refl sep_elim_r
+    _ ⊢ (e2 ∗ out1 ∗ out2) ∗ □ out              := persistently_and_intuitionistically_sep_r.mp
+    _ ⊢ e ∗ □ out                               := sep_mono_l pf3.mpr
+  by exact ⟨pf4, sep_elim_l⟩
 
 /--
   Given any Iris proposition `origE` and `goal`, the structure
@@ -377,7 +376,7 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
         -- The initial combined hypothesis is `□ True`
         out' := q(iprop(True)),
         -- The proposition `e` is always equivalent to `e ∗ □ True`
-        pf1 := q(combine_gives_1),
+        pf1 := q(sep_emp.symm.trans <| sep_congr_r intuitionistically_true.symm),
         -- No hypothesis is combined initially
         pf := q(combine_gives_nil)
       }
