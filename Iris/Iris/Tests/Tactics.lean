@@ -1905,64 +1905,118 @@ section irewrite
 variable {PROP : Type _} [Sbi PROP]
 variable {A B : Type _} [OFE A] [OFE B]
 
-example (a b : A) (P : A → PROP) [OFE.NonExpansive P] :
+example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
     internalEq b a ∗ P a ⊢ P b := by
   istart
   iintro ⟨Heq, Ha⟩
   irewrite [Heq] at ⊢
   iexact Ha
 
-example (a b : A) (P : A → PROP) [OFE.NonExpansive P] :
+example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P b)] :
     internalEq b a ∗ P b ⊢ P a := by
   istart
   iintro ⟨Heq, Hb⟩
   irewrite [← Heq]
   iexact Hb
 
-example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] :
+example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [Absorbing (P a)] :
     internalEq a b ∗ P a ∗ (P b -∗ Q b) ⊢ Q b := by
   istart
   iintro ⟨Heq, Ha, Himpl⟩
-  sorry
+  iapply Himpl
+  irewrite [←Heq]
+  iexact Ha
 
-example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] :
+example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [Absorbing (P b)] :
     internalEq a b ∗ P b ∗ (P a -∗ Q a) ⊢ Q a := by
   istart
   iintro ⟨Heq, Hb, Himpl⟩
+  iapply Himpl
+  irewrite [Heq]
+  iexact Hb
 
-  sorry
-
-example (f : A → B) [OFE.NonExpansive f] (a b : A) (P : B → PROP) [OFE.NonExpansive P] :
+example (f : A → B) [OFE.NonExpansive f] (a b : A) (P : B → PROP) [OFE.NonExpansive P] [Absorbing (P (f a))] :
     internalEq a b ∗ P (f a) ⊢ P (f b) := by
   istart
   iintro ⟨Heq, Ha⟩
-  sorry
+  irewrite [←Heq]
+  · exact (OFE.NonExpansive.comp (g := P) (f := f) inferInstance inferInstance)
+  · iexact Ha
 
-example (a b c : A) (P : A → PROP) [OFE.NonExpansive P] :
+example (a b c : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
     internalEq a b ∗ internalEq b c ∗ P a ⊢ P c := by
   istart
   iintro ⟨Hab, Hbc, Ha⟩
-  sorry
+  irewrite [←Hbc]
+  irewrite [←Hab]
+  iexact Ha
 
-example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] :
+example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [Absorbing (P a)] :
     internalEq a b ∗ (P a ∗ Q a) ⊢ P b ∗ Q a := by
   istart
   iintro ⟨Heq, ⟨Ha, Qa⟩⟩
   isplitl [Heq Ha]
-  sorry
-  sorry
+  · irewrite [←Heq]
+    iexact Ha
+  · iexact Qa
 
-example (a b : A) (P : A → PROP) [OFE.NonExpansive P] :
+example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
     internalEq b a ∗ P a ⊢ P b := by
   istart
   iintro ⟨Heq, Ha⟩
-  sorry
+  irewrite [Heq]
+  iexact Ha
 
 example (a b : A) (P Q R : A → PROP)
-    [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] :
+    [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] [Absorbing (P a)] :
     internalEq a b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
   istart
   iintro ⟨Heq, H⟩
-  sorry
+  irewrite [←Heq]
+  · refine ⟨fun _ _ _ h => ?_⟩
+    refine sep_ne.ne (OFE.NonExpansive.ne h) ?_
+    refine sep_ne.ne (OFE.NonExpansive.ne h) ?_
+    exact (OFE.NonExpansive.ne h)
+  · iexact H
+
+example (x y : A) P :
+  ⊢@{PROP} □ (∀ z, P -∗ <affine> (internalEq z y)) -∗ (P -∗ P ∧ (internalEq (x,x) (y,x))) := by
+  iintro #H1 H2
+  icases H1 $$ %x [H2] with #H1
+  · iexact H2
+  isplit
+  · iexact H2
+  irewrite [←H1]
+  · refine ⟨fun _ _ _ h => (internalEq.ne_r _).ne ?_⟩
+    exact OFE.dist_prod_ext h .rfl
+  · apply internalEq.refl
+
+example (f : A -n> A) x y :
+  ⊢@{PROP} internalEq (Later.next x) (Later.next y) -∗ internalEq (Later.next (f x)) (Later.next (f y)) := by
+  iintro H
+  iapply later_equivI_mpr
+  icases later_equivI_mp $$ H with H
+  inext
+  irewrite [H]
+  · exact ⟨fun _ _ _ h => (internalEq.ne_l _).ne (f.ne.ne h)⟩
+  · apply internalEq.refl
+
+example (P Q : PROP) :
+  ⊢@{PROP} <affine> ▷ (internalEq Q P) -∗ <affine> ▷ Q -∗ <affine> ▷ P := by
+  iintro #HPQ HQ !>
+  inext
+  -- change
+  irewrite [←HPQ]
+  · exact OFE.id_ne
+  · iexact HQ
+
+example (P Q : PROP) :
+  ⊢@{PROP} <affine> ▷ (internalEq Q P) -∗ <affine> ▷ Q -∗ <affine> ▷ P := by
+  iintro #HPQ HQ !>
+  inext
+  -- change
+  irewrite [←HPQ]
+  · exact OFE.id_ne
+  · iexact HQ
 
 end irewrite
