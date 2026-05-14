@@ -48,10 +48,24 @@ theorem combine_gives_nil [BI PROP] {e goal : PROP} (pf : e ∗ □ True ⊢ goa
   _ ⊢ e ∗ □ True := sep_mono_r intuitionistically_true.mpr
   _ ⊢ goal       := pf
 
-theorem combine_gives_step [BI PROP] {e : PROP}
-    (pf1 : e ⊣⊢ e1 ∗ □?p1 out1')
-    (pf2 : e1 ⊣⊢ e2 ∗ □?p2 out2')
-    (inst : CombineSepGives out1' out2' out) : e ⊣⊢ e ∗ □?true out := sorry
+theorem combine_gives_step [BI PROP] {e e1 e2 out1 out2 out : PROP}
+    (pf1 : e ⊣⊢ e1 ∗ out1)
+    (pf2 : e1 ⊣⊢ e2 ∗ out2)
+    (inst : CombineSepGives out1 out2 out) : e ⊣⊢ e ∗ □?true out := sorry
+  -- have pf5 : e ⊣⊢ e2 ∗ out1 ∗ out2 := calc
+  --   e ⊣⊢ e1 ∗ out1          := pf1
+  --   _ ⊣⊢ (e2 ∗ out2) ∗ out1 := sep_congr pf2 .rfl
+  --   _ ⊣⊢ e2 ∗ out2 ∗ out1   := sep_assoc
+  --   _ ⊣⊢ e2 ∗ out1 ∗ out2   := sep_congr .rfl sep_comm
+  -- calc
+  --   e ⊢ e2 ∗ out1 ∗ out2                        := pf5.mp
+  --   _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ out1 ∗ out2) := and_intro refl refl
+  --   _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ <pers> out)  := and_mono refl (sep_mono refl inst.combine_sep_gives)
+  --   _ ⊢ (e2 ∗ out1 ∗ out2) ∧ <pers> out         := and_mono refl sep_elim_r
+  --   _ ⊢ (e2 ∗ out1 ∗ out2) ∗ □ out              := persistently_and_intuitionistically_sep_r.mp
+  --   _ ⊢ e ∗ □ out                               := sep_mono pf5.mpr refl
+
+theorem combine_gives_1 [BI PROP] {e : PROP} : e ⊣⊢ e ∗ □ True := sorry
 
 /--
   Given any Iris proposition `origE` and `goal`, the structure
@@ -248,17 +262,6 @@ private def CombineState.combineAsProofModeHyp {u prop bi origE goal} :
         let pf2 : Q($newE ⊣⊢ $e2 ∗ □?$p2 $out2') := pf2
         return updateSt pf1 pf2 hyps2 goal inst
 
-private def CombineState.combineGivesProofModeHyp {u prop bi origE goal} :
-    @CombineState u prop bi origE goal → IVarId  →
-    ProofModeM (@CombineState u prop bi origE goal)
-  | { newE, newHyps, p, out', pf1, init .. }, ivar => do
-      let ⟨e2, hyps2, _, out2', p2, _, pf2⟩ := newHyps.remove false ivar
-      let out ← mkFreshExprMVarQ _
-      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out' $out2' $out)
-      | throwError "icombine: no type class instance to combine propositions"
-      let pf2 : Q($newE ⊣⊢ $e2 ∗ □?$p2 $out2') := pf2
-      return updateSt pf1 pf2 hyps2 goal inst (out' := out)
-
 /-- The tactic `icombine` combines propositions into one using the type
     class `CombineSepAs`. By default, the separating conjunction is used
     as the connective. -/
@@ -297,6 +300,26 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
     let pf' ← iCasesCore _ st.newHyps goal pat q($(st.p)) st.out' addBIGoal
     mvar.assign q($(st.pf) $pf')
 
+private structure CombineGivesState {u} {prop : Q(Type u)} {bi} (e goal : Q($prop)) where
+  {out' : Q($prop)}
+  (hyps : Hyps bi e)
+  (pf1 : Q($e ⊣⊢ $e ∗ □ $out'))
+  pf : Q(($e ∗ □ $out' ⊢ $goal) → ($e ⊢ $goal))
+
+private def CombineGivesState.combineGivesProofModeHyp {u prop bi e goal} :
+    @CombineGivesState u prop bi e goal → IVarId →
+    ProofModeM (@CombineGivesState u prop bi e goal)
+  | { out', hyps, pf1, pf }, ivar => do
+      let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := hyps.remove false ivar
+      let newOut ← mkFreshExprMVarQ _
+      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives iprop(□ $out') $out2 $newOut)
+      | throwError "icombine: no type class instance to combine propositions"
+
+      let pf1 : Q($e ⊣⊢ $e ∗ □?true $newOut) := q(combine_gives_step $pf1 $pf2 $inst)
+      let pf : Q(($e ∗ □?true $newOut ⊢ $goal) → ($e ⊢ $goal)) := q($(pf1).mp.trans)
+
+      return { hyps, out' := newOut, pf1, pf }
+
 /-- The tactic `icombine` with `gives` syntax combines propositions to derive
     new information in the intutionisitic context using the type class
     `CombineSepGives`. It is possible that no type class instance is
@@ -321,17 +344,15 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
       let ⟨e2, hyps2, out2, out2', p2, eq2, pf2⟩ := hyps1.remove false ivar2
 
       let out ← mkFreshExprMVarQ _
-      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out1' $out2' $out)
+      let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out1 $out2 $out)
       | throwError "icombine: no type class instance to combine propositions"
 
       let pf' : Q($e ⊣⊢ $e ∗ □?true $out) := q(combine_gives_step $pf1 $pf2 $inst)
 
-      let mut st : CombineState e goal := {
-        newE := q($e),
-        newHyps := hyps,
-        p := q(true),
+      let mut st : CombineGivesState e goal := {
+        hyps,
         out' := out,
-        pf1 := q($(pf').mp),
+        pf1 := q($pf'),
         pf := q($(pf').mp.trans)
       }
 
@@ -346,25 +367,24 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
         st ← st.combineGivesProofModeHyp ivar
 
       -- Generate the new proof goal for the user and fill in the metavariable
-      let pf' ← iCasesCore _ st.newHyps goal pat q($(st.p)) st.out' addBIGoal
+      let pf' ← iCasesCore _ st.hyps goal pat q(true) st.out' addBIGoal
       mvar.assign q($(st.pf) $pf')
 
     | _ =>
       -- Initialise a mutable instance of `CombineState`
-      let mut st : CombineState e goal := {
-        -- Nothing is part of the combined hypothesis initially
-        newE := q($e),
-        newHyps := hyps,
+      let mut st : CombineGivesState e goal := {
+        hyps,
         -- The initial combined hypothesis is `□ True`
-        p := q(true),
         out' := q(iprop(True)),
         -- The proposition `e` is always equivalent to `e ∗ □ True`
-        pf1 := q(sep_emp.mpr.trans <| sep_mono_r intuitionistically_true.mpr),
+        pf1 := q(combine_gives_1),
         -- No hypothesis is combined initially
-        init := q(true)
         pf := q(combine_gives_nil)
       }
 
       -- Generate the new proof goal for the user and fill in the metavariable
-      let pf' ← iCasesCore _ st.newHyps goal pat q($(st.p)) st.out' addBIGoal
+      let pf' ← iCasesCore _ st.hyps goal pat q(true) st.out' addBIGoal
       mvar.assign q($(st.pf) $pf')
+
+macro "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat "gives" colGt patGives:icasesPat : tactic =>
+  `(tactic| (icombine $idents* gives $patGives; icombine $idents* as $patAs))
