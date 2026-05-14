@@ -1978,9 +1978,22 @@ example (a b : A) (P Q R : A → PROP)
     exact (OFE.NonExpansive.ne h)
   · iexact H
 
+example (a b : A) (P Q R : A → PROP)
+    [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] [Absorbing (P a)] :
+    internalEq a b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
+  istart
+  iintro ⟨Heq, H⟩
+  irewrite [Heq] at H
+  · refine ⟨fun _ _ _ h => ?_⟩
+    refine sep_ne.ne (OFE.NonExpansive.ne h) ?_
+    refine sep_ne.ne (OFE.NonExpansive.ne h) ?_
+    exact (OFE.NonExpansive.ne h)
+  · iexact H
+
 example (x y : A) P :
   ⊢@{PROP} □ (∀ z, P -∗ <affine> (internalEq z y)) -∗ (P -∗ P ∧ (internalEq (x,x) (y,x))) := by
   iintro #H1 H2
+  -- FIXME: pmterm
   icases H1 $$ %x H2 with #H1
   isplit
   · iexact H2
@@ -1992,6 +2005,7 @@ example (x y : A) P :
 example (f : A -n> A) x y :
   ⊢@{PROP} internalEq (Later.next x) (Later.next y) -∗ internalEq (Later.next (f x)) (Later.next (f y)) := by
   iintro H
+  -- FIXME: inext
   iapply later_equivI_mpr
   icases later_equivI_mp $$ H with H
   inext
