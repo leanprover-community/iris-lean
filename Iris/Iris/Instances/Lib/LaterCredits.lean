@@ -601,10 +601,6 @@ instance {b} {p} {P Q : IProp GF} :
 instance {p b} {P R Q : IProp GF} [hf : Frame p R P Q] : Frame p R (le_upd_if b P) (le_upd_if b Q) where
   frame := le_upd_if_frame_l.trans <| le_upd_if_mono hf.frame
 
-@[rocq_alias le_upd_if.from_assumption_le_upd_if]
-instance from_assumption_le_upd_if {p} {P Q : IProp GF} [h : FromAssumption p ioP P Q] : FromAssumption p ioP P (le_upd_if b Q) where
-  from_assumption := h.1.trans le_upd_if_intro
-
 end If
 
 end Iris
