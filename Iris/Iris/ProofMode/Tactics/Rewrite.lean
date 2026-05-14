@@ -87,23 +87,20 @@ private def iRewriteGoalCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   let eq_pf_direct : Q($out ⊢ internalEq $a $b) :=
     q(intuitionisticallyIf_elim.trans ($out'').into_internal_eq)
 
+  let sc ← mkAppOptM ``sep_comm #[prop, bi, e', out]
+  let sep_comm_mp ← mkAppOptM ``Iris.BI.BIBase.BiEntails.mp #[prop, none, none, none, sc]
+  let h_split ← mkAppOptM ``Entails.trans #[prop, none, none, none, none, (pf : Expr), sep_comm_mp]
   match direction with
   | .forward => do
       let symm_app ← mkAppOptM ``internalEq.symm #[prop, sbi, A, ofe, a, b]
       let eq_pf_expr ← mkAppOptM ``Entails.trans #[prop, none, none, none, none, eq_pf_direct, symm_app]
       let eq_pf : Q($out ⊢ internalEq $b $a) := eq_pf_expr
-      let sc ← mkAppOptM ``sep_comm #[prop, bi, e', out]
-      let sep_comm_mp ← mkAppOptM ``Iris.BI.BIBase.BiEntails.mp #[prop, none, none, none, sc]
-      let h_split ← mkAppOptM ``Entails.trans #[prop, none, none, none, none, (pf : Expr), sep_comm_mp]
       let h_goal ← addBIGoal hyps q($Ψ $b)
       let rw_pf ← mkAppOptM ``rewrite_tac
         #[prop, sbi, none, none, none, A, ofe, b, a, Ψ, ne_inst, eq_pf, h_split, h_goal]
       return rw_pf
   | .backward => do
       let eq_pf : Q($out ⊢ internalEq $a $b) := eq_pf_direct
-      let sc ← mkAppOptM ``sep_comm #[prop, bi, e', out]
-      let sep_comm_mp ← mkAppOptM ``Iris.BI.BIBase.BiEntails.mp #[prop, none, none, none, sc]
-      let h_split ← mkAppOptM ``Entails.trans #[prop, none, none, none, none, (pf : Expr), sep_comm_mp]
       let h_goal ← addBIGoal hyps q($Ψ $a)
       let rw_pf ← mkAppOptM ``rewrite_tac
         #[prop, sbi, none, none, none, A, ofe, a, b, Ψ, ne_inst, eq_pf, h_split, h_goal]

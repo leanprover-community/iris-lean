@@ -1947,8 +1947,7 @@ example (a b c : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
     internalEq a b ∗ internalEq b c ∗ P a ⊢ P c := by
   istart
   iintro ⟨Hab, Hbc, Ha⟩
-  irewrite [←Hbc]
-  irewrite [←Hab]
+  irewrite [←Hbc, ←Hab]
   iexact Ha
 
 example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [Absorbing (P a)] :
@@ -1982,8 +1981,7 @@ example (a b : A) (P Q R : A → PROP)
 example (x y : A) P :
   ⊢@{PROP} □ (∀ z, P -∗ <affine> (internalEq z y)) -∗ (P -∗ P ∧ (internalEq (x,x) (y,x))) := by
   iintro #H1 H2
-  icases H1 $$ %x [H2] with #H1
-  · iexact H2
+  icases H1 $$ %x H2 with #H1
   isplit
   · iexact H2
   irewrite [←H1]
