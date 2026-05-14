@@ -42,29 +42,29 @@ theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out : PROP
   _ ⊢ e2 ∗ □?(p1 && p2) (out1' ∗ out2') := sep_mono_r intuitionisticallyIf_sep_conj
   _ ⊢ e2 ∗ □?(p1 && p2) out             := sep_mono_r (intuitionisticallyIf_mono inst.combine_sep_as)
 
-/-- Auxilary lemma for the base case where no hypothesis is given -/
+/-- Auxilary lemma for the base case where up to one hypothesis is given -/
 theorem combine_gives_nil [BI PROP] {e goal : PROP} (pf : e ∗ □ True ⊢ goal) : e ⊢ goal := calc
   e ⊢ e ∗ emp    := sep_emp.mpr
   _ ⊢ e ∗ □ True := sep_mono_r intuitionistically_true.mpr
   _ ⊢ goal       := pf
 
+/-- Auxilary lemma for the step case where multiple hypotheses are given -/
 theorem combine_gives_step [BI PROP] {e e1 e2 out1 out2 out : PROP}
     (pf1 : e ⊣⊢ e1 ∗ out1)
     (pf2 : e1 ⊣⊢ e2 ∗ out2)
-    (inst : CombineSepGives out1 out2 out) : e ⊣⊢ e ∗ □?true out :=
+    (inst : CombineSepGives out1 out2 out) : e ⊢ e ∗ □ out :=
   have pf3 : e ⊣⊢ e2 ∗ out1 ∗ out2 := calc
     e ⊣⊢ e1 ∗ out1          := pf1
     _ ⊣⊢ (e2 ∗ out2) ∗ out1 := sep_congr pf2 .rfl
     _ ⊣⊢ e2 ∗ out2 ∗ out1   := sep_assoc
     _ ⊣⊢ e2 ∗ out1 ∗ out2   := sep_congr .rfl sep_comm
-  have pf4 : e ⊢ e ∗ □ out := calc
+  calc
     e ⊢ e2 ∗ out1 ∗ out2                        := pf3.mp
     _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ out1 ∗ out2) := and_intro refl refl
     _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ <pers> out)  := and_mono refl (sep_mono refl inst.combine_sep_gives)
     _ ⊢ (e2 ∗ out1 ∗ out2) ∧ <pers> out         := and_mono refl sep_elim_r
     _ ⊢ (e2 ∗ out1 ∗ out2) ∗ □ out              := persistently_and_intuitionistically_sep_r.mp
     _ ⊢ e ∗ □ out                               := sep_mono_l pf3.mpr
-  by exact ⟨pf4, sep_elim_l⟩
 
 /--
   Given any Iris proposition `origE` and `goal`, the structure
@@ -302,20 +302,20 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
 private structure CombineGivesState {u} {prop : Q(Type u)} {bi} (e goal : Q($prop)) where
   {out' : Q($prop)}
   (hyps : Hyps bi e)
-  (pf1 : Q($e ⊣⊢ $e ∗ □ $out'))
+  (pf1 : Q($e ⊢ $e ∗ □ $out'))
   pf : Q(($e ∗ □ $out' ⊢ $goal) → ($e ⊢ $goal))
 
 private def CombineGivesState.combineGivesProofModeHyp {u prop bi e goal} :
     @CombineGivesState u prop bi e goal → IVarId →
     ProofModeM (@CombineGivesState u prop bi e goal)
-  | { out', hyps, pf1, pf }, ivar => do
-      let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := hyps.remove false ivar
+  | { out', hyps, pf1, .. }, ivar => do
+      let ⟨_, _, out2, _, _, _, pf2⟩ := hyps.remove false ivar
       let newOut ← mkFreshExprMVarQ _
       let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives iprop(□ $out') $out2 $newOut)
       | throwError "icombine: no type class instance to combine propositions"
 
-      let pf1 : Q($e ⊣⊢ $e ∗ □?true $newOut) := q(combine_gives_step $pf1 $pf2 $inst)
-      let pf : Q(($e ∗ □?true $newOut ⊢ $goal) → ($e ⊢ $goal)) := q($(pf1).mp.trans)
+      let pf1 : Q($e ⊢ $e ∗ □ $newOut) := q(combine_gives_step ⟨$pf1, sep_elim_l⟩ $pf2 $inst)
+      let pf : Q(($e ∗ □ $newOut ⊢ $goal) → ($e ⊢ $goal)) := q($(pf1).trans)
 
       return { hyps, out' := newOut, pf1, pf }
 
@@ -339,20 +339,20 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
       if hs.count h1 > 1 ∧ ¬isTrue (← hyps.findP h1) then
         throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
 
-      let ⟨e1, hyps1, out1, out1', p1, eq1, pf1⟩ := hyps.remove false ivar1
-      let ⟨e2, hyps2, out2, out2', p2, eq2, pf2⟩ := hyps1.remove false ivar2
+      let ⟨_, hyps1, out1, _, _, _, pf1⟩ := hyps.remove false ivar1
+      let ⟨_, _, out2, _, _, _, pf2⟩ := hyps1.remove false ivar2
 
       let out ← mkFreshExprMVarQ _
       let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out1 $out2 $out)
       | throwError "icombine: no type class instance to combine propositions"
 
-      let pf' : Q($e ⊣⊢ $e ∗ □?true $out) := q(combine_gives_step $pf1 $pf2 $inst)
+      let pf' : Q($e ⊢ $e ∗ □ $out) := q(combine_gives_step $pf1 $pf2 $inst)
 
       let mut st : CombineGivesState e goal := {
         hyps,
         out' := out,
         pf1 := q($pf'),
-        pf := q($(pf').mp.trans)
+        pf := q($(pf').trans)
       }
 
       for h in htail do
@@ -376,7 +376,7 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
         -- The initial combined hypothesis is `□ True`
         out' := q(iprop(True)),
         -- The proposition `e` is always equivalent to `e ∗ □ True`
-        pf1 := q(sep_emp.symm.trans <| sep_congr_r intuitionistically_true.symm),
+        pf1 := q(sep_emp.mpr.trans <| sep_mono_r intuitionistically_true.mpr),
         -- No hypothesis is combined initially
         pf := q(combine_gives_nil)
       }
