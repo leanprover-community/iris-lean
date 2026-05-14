@@ -370,20 +370,9 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
       mvar.assign q($(st.pf) $pf')
 
     | _ =>
-      -- Initialise a mutable instance of `CombineState`
-      let mut st : CombineGivesState e goal := {
-        hyps,
-        -- The initial combined hypothesis is `□ True`
-        out' := q(iprop(True)),
-        -- The proposition `e` is always equivalent to `e ∗ □ True`
-        pf1 := q(sep_emp.mpr.trans <| sep_mono_r intuitionistically_true.mpr),
-        -- No hypothesis is combined initially
-        pf := q(combine_gives_nil)
-      }
-
       -- Generate the new proof goal for the user and fill in the metavariable
-      let pf' ← iCasesCore _ st.hyps goal pat q(true) st.out' addBIGoal
-      mvar.assign q($(st.pf) $pf')
+      let pf' ← iCasesCore _ hyps goal pat q(true) q(iprop(True)) addBIGoal
+      mvar.assign q(combine_gives_nil $pf')
 
 macro "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat "gives" colGt patGives:icasesPat : tactic =>
   `(tactic| (icombine $idents* gives $patGives; icombine $idents* as $patAs))
