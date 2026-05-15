@@ -126,7 +126,7 @@ private def iRewriteHypCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   let ⟨e', hyps', p', inner', pf'⟩ ← iHave hyps eq_pmt true (try_dup_context := true)
   let some (uniq_target, _, _) := hyps'.find? target_hyp_name.getId
     | throwError "iRewriteHypCore: unknown target hypothesis {target_hyp_name}"
-  let ⟨e'', hyps'', p'', inner'', pf''⟩ ← iHave hyps' ⟨⟨target_hyp_name.raw⟩, []⟩ false
+  let ⟨e'', hyps'', p'', inner'', pf''⟩ ← iHave hyps ⟨⟨target_hyp_name.raw⟩, []⟩ false
   let out : Q($prop) := q(intuitionisticallyIf $p' $inner')
 
   let .some sbi ← trySynthInstanceQ q(Sbi $prop)
@@ -165,6 +165,9 @@ private def iRewriteHypCore {prop : Q(Type u)} {bi : Q(BI $prop)}
 
   let eq_pf_direct : Q($out ⊢ internalEq $a $b) :=
     q(intuitionisticallyIf_elim.trans ($out'').into_internal_eq)
+  let .some _ ← ProofModeM.trySynthInstanceQ q(Absorbing (internalEq (PROP := $prop) $a $b))
+    | throwError "irewrite: you should not get this error"
+  let pff : Q($e ⊢ internalEq $a $b) := q((($pf').trans (sep_mono_r $eq_pf_direct)).trans sep_elim_r)
   let h_split : Q($e ⊢ intuitionisticallyIf $p' $inner' ∗ ($e'' ∗ intuitionisticallyIf $p'' $inner'')) :=
     q($pf' |>.trans (sep_comm (P := $e') (Q := intuitionisticallyIf $p' $inner')).mp |>.trans (sep_mono_r $pf''))
   match direction with
