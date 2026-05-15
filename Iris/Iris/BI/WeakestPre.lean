@@ -51,8 +51,9 @@ class Wp (PROP Expr : Type _) (Val : outParam (Type _)) (A : Type _) where
 class TotalWP (PROP Expr) (Val : outParam (Type _)) (A : Type _) where
   totalWp : A → CoPset → Expr → (Val → PROP) → PROP
 
-syntax wp_expr :=
-    term:max (" @ " term:max (" ; " term:max) <|> ((" ? ")? )) <|> (" ? ")?
+
+syntax wpExpr :=
+  term:max (" @ " term:max (" ; " term:max) <|> ((" ? ")? )) <|> (" ? ")?
 
 declare_syntax_cat wpPostcondInner
 syntax ident ", " term : wpPostcondInner
@@ -64,11 +65,11 @@ syntax " [{ " wpPostcondInner " }] " : wpPostcond
 syntax " ⦃ " wpPostcondInner " ⦄ " : wpPostcond -- Are spaces outside of parens used in the pp?
 syntax " 〖 " wpPostcondInner " 〗 "  : wpPostcond
 
-syntax (name := wp) "WP " wp_expr wpPostcond : term
+syntax (name := wp) "WP " wpExpr wpPostcond : term
 
 syntax texanPostcond := (ident+ ", ")? " RET " term:min "; " term
 
-syntax (name := texanTriple) "{{{ " term " }}} " wp_expr " {{{ " texanPostcond " }}}" : term
+syntax (name := texanTriple) "{{{ " term " }}} " wpExpr " {{{ " texanPostcond " }}}" : term
 
 /- This section checks whether the syntax is recognized correctly for all combinations -/
 section testNotation
@@ -335,16 +336,16 @@ info: elaboration function for `Iris.texanTriple` has not been implemented
 end testNotation
 
 open Lean in
-meta def parseWpExpr : Lean.TSyntax ``wp_expr → Lean.MacroM (TSyntax `term × TSyntax `term × TSyntax `term) := fun
-  | `(wp_expr| $e @ $s ; $E) =>
+meta def parseWpExpr : Lean.TSyntax ``wpExpr → Lean.MacroM (TSyntax `term × TSyntax `term × TSyntax `term) := fun
+  | `(wpExpr| $e @ $s ; $E) =>
     return (e, s, E)
-  | `(wp_expr| $e @ $E) =>
+  | `(wpExpr| $e @ $E) =>
     return (e, ←`(Stuckness.NotStuck), E)
-  | `(wp_expr| $e @ $E ?) =>
+  | `(wpExpr| $e @ $E ?) =>
     return (e, ←`(Stuckness.MaybeStuck), E)
-  | `(wp_expr| $e:term) =>
+  | `(wpExpr| $e:term) =>
     return (e, ←`(Stuckness.NotStuck), ←`(⊤))
-  | `(wp_expr| $e:term ?) =>
+  | `(wpExpr| $e:term ?) =>
     return (e, ←`(Stuckness.MaybeStuck), ←`(⊤))
   | _ => Lean.Macro.throwUnsupported
 
@@ -537,28 +538,28 @@ meta def unexpandWpPostcondInner : TSyntax `term → PrettyPrinter.UnexpandM (TS
   | `($Φ:term) => `(wpPostcondInner| $Φ:term)
 
 open Lean in
-meta def makeWpExpr (s E e : TSyntax `term) : PrettyPrinter.UnexpandM (TSyntax ``wp_expr) := do
+meta def makeWpExpr (s E e : TSyntax `term) : PrettyPrinter.UnexpandM (TSyntax ``wpExpr) := do
   match s, E with
-  | `(Stuckness.NotStuck), `(⊤) => `(wp_expr| $e:term)
-  | `(Stuckness.NotStuck), E => `(wp_expr| $e:term @ $E:term)
-  | `(Stuckness.MaybeStuck), `(⊤) => `(wp_expr| $e:term ?)
-  | `(Stuckness.MaybeStuck), E => `(wp_expr| $e:term @ $E:term ?)
-  | s, E => `(wp_expr| $e:term @ $s:term ; $E:term)
+  | `(Stuckness.NotStuck), `(⊤) => `(wpExpr| $e:term)
+  | `(Stuckness.NotStuck), E => `(wpExpr| $e:term @ $E:term)
+  | `(Stuckness.MaybeStuck), `(⊤) => `(wpExpr| $e:term ?)
+  | `(Stuckness.MaybeStuck), E => `(wpExpr| $e:term @ $E:term ?)
+  | s, E => `(wpExpr| $e:term @ $s:term ; $E:term)
 
 @[app_unexpander Wp.wp]
 meta def unexpanderWp : PrettyPrinter.Unexpander
   | `($_wp $s $E $e $Φ) => do
-    let wp_expr ← makeWpExpr s E e
+    let wpExpr ← makeWpExpr s E e
     let wpPostcondInner ← unexpandWpPostcondInner Φ
-    `(WP $wp_expr {{ $wpPostcondInner }})
+    `(WP $wpExpr {{ $wpPostcondInner }})
   | _ => throw ()
 
 @[app_unexpander TotalWP.totalWp]
 meta def unexpanderTotalWp : PrettyPrinter.Unexpander
   | `($_wp $s $E $e $Φ) => do
-    let wp_expr ← makeWpExpr s E e
+    let wpExpr ← makeWpExpr s E e
     let wpPostcondInner ← unexpandWpPostcondInner Φ
-    `(WP $wp_expr [{ $wpPostcondInner }])
+    `(WP $wpExpr [{ $wpPostcondInner }])
   | _ => throw ()
 
 section testUnexpand
