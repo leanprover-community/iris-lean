@@ -22,25 +22,30 @@ theorem combine_as_nil [BI PROP] {e goal : PROP} (pf : e ∗ □ emp ⊢ goal) :
 
 /-- Auxilary lemma for the base case with one hypothesis -/
 theorem combine_as_singleton [BI PROP] {e e1 e2 out2 : PROP}
-    (pf1 : e ⊢ e1 ∗ □?true emp)
-    (pf2 : e1 ⊣⊢ e2 ∗ out2) : e ⊢ e2 ∗ out2 := calc
-  e ⊢ e1 ∗ □?true emp := pf1
-  _ ⊢ e1 ∗ emp        := sep_mono_r intuitionisticallyIf_emp.mp
-  _ ⊢ e1              := sep_emp.mp
-  _ ⊢ e2 ∗ out2       := pf2.mp
+    (pf1 : (e1 ∗ □?true emp ⊢ goal) → e ⊢ goal)
+    (pf2 : e1 ⊣⊢ e2 ∗ out2)
+    (pf3 : e2 ∗ out2 ⊢ goal) : e ⊢ goal :=
+  have pf4 : e1 ∗ □?true emp ⊢ goal := calc
+    e1 ∗ □?true emp ⊢ e1 ∗ emp  := sep_mono_r intuitionistically_emp.mp
+    _               ⊢ e1        := sep_emp.mp
+    _               ⊢ e2 ∗ out2 := pf2.mp
+    _               ⊢ goal      := pf3
+  pf1 pf4
 
 /-- Auxilary lemma for the step case with two or more hypotheses -/
-theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out : PROP}
-    (pf1 : e ⊢ e1 ∗ □?p1 out1')
+theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out goal : PROP}
+    (inst : CombineSepAs out1' out2' out)
+    (pf1 : (e1 ∗ □?p1 out1' ⊢ goal) → e ⊢ goal)
     (pf2 : e1 ⊢ e2 ∗ □?p2 out2')
-    (inst : CombineSepAs out1' out2' out) :
-    e ⊢ e2 ∗ □?(p1 && p2) out := calc
-  e ⊢ e1 ∗ □?p1 out1'                   := pf1
-  _ ⊢ (e2 ∗ □?p2 out2') ∗ □?p1 out1'    := sep_mono_l pf2
-  _ ⊢ e2 ∗ □?p2 out2' ∗ □?p1 out1'      := sep_assoc.mp
-  _ ⊢ e2 ∗ □?p1 out1' ∗ □?p2 out2'      := sep_mono_r sep_comm.mp
-  _ ⊢ e2 ∗ □?(p1 && p2) (out1' ∗ out2') := sep_mono_r intuitionisticallyIf_sep_conj
-  _ ⊢ e2 ∗ □?(p1 && p2) out             := sep_mono_r (intuitionisticallyIf_mono inst.combine_sep_as)
+    (pf3 : e2 ∗ □?(p1 && p2) out ⊢ goal) : e ⊢ goal :=
+  have pf4 : e1 ∗ □?p1 out1' ⊢ goal := calc
+    e1 ∗ □?p1 out1' ⊢ (e2 ∗ □?p2 out2') ∗ □?p1 out1'    := sep_mono_l pf2
+    _ ⊢ e2 ∗ □?p2 out2' ∗ □?p1 out1'      := sep_assoc.mp
+    _ ⊢ e2 ∗ □?p1 out1' ∗ □?p2 out2'      := sep_mono_r sep_comm.mp
+    _ ⊢ e2 ∗ □?(p1 && p2) (out1' ∗ out2') := sep_mono_r intuitionisticallyIf_sep_conj
+    _ ⊢ e2 ∗ □?(p1 && p2) out             := sep_mono_r (intuitionisticallyIf_mono inst.combine_sep_as)
+    _ ⊢ goal                              := pf3
+  pf1 pf4
 
 /-- Auxilary lemma for the base case where up to one hypothesis is given -/
 theorem combine_gives_nil [BI PROP] {e goal : PROP} (pf : e ∗ □ True ⊢ goal) : e ⊢ goal := calc
@@ -85,35 +90,32 @@ private structure CombineAsState {u} {prop : Q(Type u)} {bi} (origE goal : Q($pr
   {out' : Q($prop)}
   (newHyps : Hyps bi newE)
   (init : Q(Bool) := q(false))
-  (pf1 : Q($origE ⊢ $newE ∗ □?$p $out'))
   pf : Q(($newE ∗ □?$p $out' ⊢ $goal) → ($origE ⊢ $goal))
 
 private def updateSt {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {p1 p2 : Q(Bool)}
-    {origE e1 e2 out1' out2' out' : Q($prop)}
-    (pf1 : Q($origE ⊢ $e1 ∗ □?$p1 $out1'))
+    {origE e1 e2 out1' out2' out' goal : Q($prop)}
+    (pf1 : Q(($e1 ∗ □?$p1 $out1' ⊢ $goal) → $origE ⊢ $goal))
     (pf2 : Q($e1 ⊣⊢ $e2 ∗ □?$p2 $out2'))
     (newHyps : Hyps bi e2)
-    (goal : Q($prop))
     (inst : Q(CombineSepAs $out1' $out2' $out')) :
     @CombineAsState u prop bi origE goal :=
-  let pf' := q(combine_as_step $pf1 $(pf2).mp $inst)
+  let pf := q(combine_as_step $inst $pf1 $(pf2).mp)
   match matchBool p1, matchBool p2 with
-  | .inl _, .inl _ => { newHyps, p := q(true), out', pf1 := q($pf'), pf := q(($pf').trans)}
-  | .inl _, .inr _ => { newHyps, p := q(false), out', pf1 := q($pf'), pf := q(($pf').trans)}
-  | .inr _, _ => { newHyps, p := q(false), out', pf1 := q($pf'), pf := q(($pf').trans)}
+  | .inl _, .inl _ => { newHyps, p := q(true), out', pf }
+  | .inl _, .inr _ => { newHyps, p := q(false), out', pf }
+  | .inr _, _ => { newHyps, p := q(false), out', pf }
 
 private def CombineAsState.combineAsProofModeHyp {u prop bi origE goal} :
     @CombineAsState u prop bi origE goal → IVarId  →
     ProofModeM (@CombineAsState u prop bi origE goal)
-  | { newE, newHyps, p, out', pf1, init .. }, ivar => do
+  | { newE, newHyps, p, out', init, pf .. }, ivar => do
       let ⟨e2, hyps2, _, out2', p2, _, pf2⟩ := newHyps.remove false ivar
       match matchBool p, out', matchBool init with
       | .inl _, ~q(emp), .inl _ =>
-        let pf'' : Q($origE ⊢ $e2 ∗ □?$p2 $out2') := q(combine_as_singleton $pf1 $pf2)
+        let pf : Q((«$newE» ∗ □?true emp ⊢ «$goal») → «$origE» ⊢ «$goal») :=  pf
         return {
           newE := e2, newHyps := hyps2, p := q($p2), out' := q($out2'),
-          pf1 := q(combine_as_singleton $pf1 $pf2),
-          pf := q(fun pf => $(pf'').trans pf)
+          pf := q(combine_as_singleton $pf $pf2)
         }
       | _, _, _ =>
         let out ← mkFreshExprMVarQ _
@@ -121,7 +123,7 @@ private def CombineAsState.combineAsProofModeHyp {u prop bi origE goal} :
         -- The error should not happen as the default option is always available
         | throwError "icombine: no type class instance to combine propositions"
         let pf2 : Q($newE ⊣⊢ $e2 ∗ □?$p2 $out2') := pf2
-        return updateSt pf1 pf2 hyps2 goal inst
+        return updateSt pf pf2 hyps2 inst
 
 private structure CombineGivesState {u} {prop : Q(Type u)} {bi} (e goal : Q($prop)) where
   {out' : Q($prop)}
@@ -159,7 +161,7 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
       p := q(true),
       out' := q(iprop(emp)),
       -- The proposition `e` is always equivalent to `e ∗ □ emp`
-      pf1 := q(sep_emp.mpr.trans <| sep_mono_r intuitionistically_emp.mpr),
+      -- pf1 := q(sep_emp.mpr.trans <| sep_mono_r intuitionistically_emp.mpr),
       -- No hypothesis is combined initially
       init := q(true)
       pf := q(combine_as_nil)
