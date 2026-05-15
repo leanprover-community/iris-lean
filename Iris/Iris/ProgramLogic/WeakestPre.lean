@@ -419,16 +419,17 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF}
     iintro %v HΦ
     iapply HΦ $$ HP
 
-theorem wp_step_fupdN_strong {n}{s : Stuckness}{E1 E2 : CoPset} {e : Expr} {P : IProp GF} {Φ} :
+theorem wp_step_fupdN_strong {s : Stuckness}{E1 E2 : CoPset} {e : Expr} {P : IProp GF} {Φ} :
     toVal e = none →
     E2 ⊆ E1 →
+    ∀ {n},
     -- TODO: This was written as an ∧ in Iris Rocq. I've separated it because it doesn't seem like
     -- icases is able to handle ∧ expressions.
     (∀ (σ : State) ns obs nt, ⊢@{IProp GF} stateInterp σ ns obs nt ={E1, ∅}=∗ ⌜n ≤ numLatersPerStep ns + 1⌝) →
     (|={E1,E2}=> |={∅}▷=>^[n] |={E2,E1}=> P) ∗
     WP e @ s ; E2 {{ v, iprop(P ={E1}=∗ Φ v)}} ⊢
     WP e @ s ; E1 {{ Φ }} := by
-  intro toVal_e E2_E1 interp
+  intro toVal_e E2_E1 n interp
   match n with
   | 0 =>
     iintro ⟨Hp, Hwp⟩
@@ -588,5 +589,55 @@ theorem wp_frame_l : R ∗ WP e @ s; E {{ Φ }} ⊢ WP e @ s; E {{ v, iprop(R �
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF}{R : IProp GF} in
 theorem wp_frame_r : WP e @ s; E {{ Φ }} ∗ R ⊢ WP e @ s; E {{ v, iprop(R ∗ Φ v) }} :=
   BI.sep_comm.1.trans wp_frame_l
+
+
+variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} in
+/-- (copy-pasted from Rocq formalization)
+
+  This lemma states that if we can prove that [n] laters are used in
+  the current physical step, then one can perform an n-steps fancy
+  update during that physical step. The resources needed to prove the
+  bound on [n] are not used up: they can be reused in the proof of
+  the WP or in the proof of the n-steps fancy update. In order to
+  describe this unusual resource flow, we use ordinary conjunction as
+  a premise.
+-/
+theorem wp_step_fupdN {n : Nat} : toVal e = none → E₂ ⊆ E₁ →
+    (∀ (σ : State) ns obs nt, ⊢@{IProp GF} stateInterp σ ns obs nt ={E₁,∅}=∗ ⌜n ≤ (numLatersPerStep ns)+1⌝) →
+    ((|={E₁\E₂,∅}=> |={∅}▷=>^[n] |={∅,E₁\E₂}=> P) ∗
+    WP e @ s; E₂ {{ v, iprop(P ={E₁}=∗ Φ v) }}) -∗
+    WP e @ s; E₁ {{ Φ }} := by
+  intro toVal_e E₂E₁ Hstate
+  iintro H
+  iapply wp_step_fupdN_strong (s := s) (P := P) toVal_e E₂E₁ Hstate $$ [H]
+  apply BI.sep_mono_l
+  iintro Hp
+  imod fupd_mask_subseteq_emptyset_difference (show E₁\ E₂ ⊆ E₁ from Std.LawfulSet.diff_subset_left) with H
+  imod Hp
+  imod H with toClear; iclear toClear
+  simp [show E₁ \ (E₁ \ E₂) = E₂ from Std.LawfulSet.diff_self_diff_of_subset E₂E₁]
+  imodintro
+  iapply step_fupdN_wand $$ Hp; iintro H
+  iapply fupd_mask_frame (Std.LawfulSet.empty_subset)
+  imod H
+  imodintro
+  simp only [Std.LawfulSet.diff_empty, ←Std.LawfulSet.diff_subset_decomp E₂E₁, fupd_intro]
+
+variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} in
+theorem wp_step_fupd :
+    toVal e = none → E₂ ⊆ E₁ →
+    (|={E₁}[E₂]▷=> P) -∗ WP e @ s; E₂ {{ v, iprop(P ={E₁}=∗ Φ v) }} -∗ WP e @ s; E₁ {{ Φ }} :=
+  fun toVal_e E₂E₁=> by
+  iintro HR H
+  iapply wp_step_fupdN_strong (n := 1) toVal_e E₂E₁ (by
+    intros; iintro H
+    refine .trans ?_ <| fupd_mask_intro_discard (Std.LawfulSet.empty_subset)
+    simp only [Nat.le_add_left, BI.true_intro]
+    -- TODO: Maybe it's useful to have `_ ={E,E'}=∗ True ↔ True` in the simp set (Is this even true? maybe `E' ⊆ E`)
+  ) $$ [-]
+  iframe H
+  imod HR
+  simp only [Nat.repeat]
+  iframe
 
 end Wp
