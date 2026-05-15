@@ -19,6 +19,8 @@ public meta import Iris.Std.RocqPorting
 
 public section
 
+namespace Iris
+
 #check Lean.PrettyPrinter.Unexpander
 
 open Lean
@@ -70,260 +72,260 @@ syntax (name := texanTriple) "{{{ " term " }}} " wp_expr " {{{ " texanPostcond "
 section testNotation
 
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ s ; E {{ Φ }}
 -/
 #guard_msgs in #check_failure WP e @ s ; E {{ Φ }}
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E {{ Φ }}
 -/
 #guard_msgs in #check_failure WP e @ E {{ Φ }}
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E ? {{ Φ }}
 -/
 #guard_msgs in #check_failure WP e @ E ? {{ Φ }}
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e {{ Φ }}
 -/
 #guard_msgs in #check_failure WP e {{ Φ }}
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e ? {{ Φ }}
 -/
 #guard_msgs in #check_failure WP e ? {{ Φ }}
 
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ s ; E {{ v, Φ }}
 -/
 #guard_msgs in #check_failure WP e @ s ; E {{v,  Φ }}
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E {{ v, Φ }}
 -/
 #guard_msgs in #check_failure WP e @ E {{v,  Φ }}
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E ? {{ v, Φ }}
 -/
 #guard_msgs in #check_failure WP e @ E ? {{v,  Φ }}
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e {{ v, Φ }}
 -/
 #guard_msgs in #check_failure WP e {{v,  Φ }}
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e ? {{ v, Φ }}
 -/
 #guard_msgs in #check_failure WP e ? {{v,  Φ }}
 
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ s ; E ⦃ Φ ⦄
 -/
 #guard_msgs in #check_failure WP e @ s ; E ⦃ Φ ⦄
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E ⦃ Φ ⦄
 -/
 #guard_msgs in #check_failure WP e @ E ⦃ Φ ⦄
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E ? ⦃ Φ ⦄
 -/
 #guard_msgs in #check_failure WP e @ E ? ⦃ Φ ⦄
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e ⦃ Φ ⦄
 -/
 #guard_msgs in #check_failure WP e ⦃ Φ ⦄
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e ? ⦃ Φ ⦄
 -/
 #guard_msgs in #check_failure WP e ? ⦃ Φ ⦄
 
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ s ; E ⦃ v, Φ ⦄
 -/
 #guard_msgs in #check_failure WP e @ s ; E ⦃v,  Φ ⦄
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E ⦃ v, Φ ⦄
 -/
 #guard_msgs in #check_failure WP e @ E ⦃v,  Φ ⦄
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E ? ⦃ v, Φ ⦄
 -/
 #guard_msgs in #check_failure WP e @ E ? ⦃v,  Φ ⦄
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e ⦃ v, Φ ⦄
 -/
 #guard_msgs in #check_failure WP e ⦃v,  Φ ⦄
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e ? ⦃ v, Φ ⦄
 -/
 #guard_msgs in #check_failure WP e ? ⦃v,  Φ ⦄
 
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ s ; E [{ Φ }]
 -/
 #guard_msgs in #check_failure WP e @ s ; E [{ Φ }]
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E [{ Φ }]
 -/
 #guard_msgs in #check_failure WP e @ E [{ Φ }]
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E ? [{ Φ }]
 -/
 #guard_msgs in #check_failure WP e @ E ? [{ Φ }]
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e [{ Φ }]
 -/
 #guard_msgs in #check_failure WP e [{ Φ }]
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e ? [{ Φ }]
 -/
 #guard_msgs in #check_failure WP e ? [{ Φ }]
 
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ s ; E [{ v, Φ }]
 -/
 #guard_msgs in #check_failure WP e @ s ; E [{v,  Φ }]
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E [{ v, Φ }]
 -/
 #guard_msgs in #check_failure WP e @ E [{v,  Φ }]
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E ? [{ v, Φ }]
 -/
 #guard_msgs in #check_failure WP e @ E ? [{v,  Φ }]
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e [{ v, Φ }]
 -/
 #guard_msgs in #check_failure WP e [{v,  Φ }]
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e ? [{ v, Φ }]
 -/
 #guard_msgs in #check_failure WP e ? [{v,  Φ }]
 
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ s ; E 〖 Φ 〗
 -/
 #guard_msgs in #check_failure WP e @ s ; E 〖 Φ 〗
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E 〖 Φ 〗
 -/
 #guard_msgs in #check_failure WP e @ E 〖 Φ 〗
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E ? 〖 Φ 〗
 -/
 #guard_msgs in #check_failure WP e @ E ? 〖 Φ 〗
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e 〖 Φ 〗
 -/
 #guard_msgs in #check_failure WP e 〖 Φ 〗
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e ? 〖 Φ 〗
 -/
 #guard_msgs in #check_failure WP e ? 〖 Φ 〗
 
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ s ; E 〖 v, Φ 〗
 -/
 #guard_msgs in #check_failure WP e @ s ; E 〖v,  Φ 〗
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E 〖 v, Φ 〗
 -/
 #guard_msgs in #check_failure WP e @ E 〖v,  Φ 〗
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e @ E ? 〖 v, Φ 〗
 -/
 #guard_msgs in #check_failure WP e @ E ? 〖v,  Φ 〗
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e 〖 v, Φ 〗
 -/
 #guard_msgs in #check_failure WP e 〖v,  Φ 〗
 /--
-info: elaboration function for `wp` has not been implemented
+info: elaboration function for `Iris.wp` has not been implemented
   WP e ? 〖 v, Φ 〗
 -/
 #guard_msgs in #check_failure WP e ? 〖v,  Φ 〗
 
 /--
-info: elaboration function for `texanTriple` has not been implemented
+info: elaboration function for `Iris.texanTriple` has not been implemented
   {{{ P }}} e @ s ; E {{{ x y, RET pat; Q }}}
 -/
 #guard_msgs in #check_failure {{{ P }}} e @ s ; E {{{ x y , RET pat ; Q }}}
 /--
-info: elaboration function for `texanTriple` has not been implemented
+info: elaboration function for `Iris.texanTriple` has not been implemented
   {{{ P }}} e @ E {{{ x y, RET pat; Q }}}
 -/
 #guard_msgs in #check_failure {{{ P }}} e @ E {{{ x y , RET pat ; Q }}}
 /--
-info: elaboration function for `texanTriple` has not been implemented
+info: elaboration function for `Iris.texanTriple` has not been implemented
   {{{ P }}} e @ E ? {{{ x y, RET pat; Q }}}
 -/
 #guard_msgs in #check_failure {{{ P }}} e @ E ? {{{ x y , RET pat ; Q }}}
 /--
-info: elaboration function for `texanTriple` has not been implemented
+info: elaboration function for `Iris.texanTriple` has not been implemented
   {{{ P }}} e {{{ x y, RET pat; Q }}}
 -/
 #guard_msgs in #check_failure {{{ P }}} e {{{ x y , RET pat ; Q }}}
 /--
-info: elaboration function for `texanTriple` has not been implemented
+info: elaboration function for `Iris.texanTriple` has not been implemented
   {{{ P }}} e ? {{{ x y, RET pat; Q }}}
 -/
 #guard_msgs in #check_failure {{{ P }}} e ? {{{ x y , RET pat ; Q }}}
 /--
-info: elaboration function for `texanTriple` has not been implemented
+info: elaboration function for `Iris.texanTriple` has not been implemented
   {{{ P }}} e @ s ; E {{{ RET pat; Q }}}
 -/
 #guard_msgs in #check_failure {{{ P }}} e @ s ; E {{{ RET pat ; Q }}}
 /--
-info: elaboration function for `texanTriple` has not been implemented
+info: elaboration function for `Iris.texanTriple` has not been implemented
   {{{ P }}} e @ E {{{ RET pat; Q }}}
 -/
 #guard_msgs in #check_failure {{{ P }}} e @ E {{{ RET pat ; Q }}}
 /--
-info: elaboration function for `texanTriple` has not been implemented
+info: elaboration function for `Iris.texanTriple` has not been implemented
   {{{ P }}} e @ E ? {{{ RET pat; Q }}}
 -/
 #guard_msgs in #check_failure {{{ P }}} e @ E ? {{{ RET pat ; Q }}}
 /--
-info: elaboration function for `texanTriple` has not been implemented
+info: elaboration function for `Iris.texanTriple` has not been implemented
   {{{ P }}} e {{{ RET pat; Q }}}
 -/
 #guard_msgs in #check_failure {{{ P }}} e {{{ RET pat ; Q }}}
 /--
-info: elaboration function for `texanTriple` has not been implemented
+info: elaboration function for `Iris.texanTriple` has not been implemented
   {{{ P }}} e ? {{{ RET pat; Q }}}
 -/
 #guard_msgs in #check_failure {{{ P }}} e ? {{{ RET pat ; Q }}}
@@ -331,7 +333,7 @@ info: elaboration function for `texanTriple` has not been implemented
 end testNotation
 
 open Lean in
-meta def parseWpExpr : Lean.TSyntax `wp_expr → Lean.MacroM (TSyntax `term × TSyntax `term × TSyntax `term) := fun
+meta def parseWpExpr : Lean.TSyntax ``wp_expr → Lean.MacroM (TSyntax `term × TSyntax `term × TSyntax `term) := fun
   | `(wp_expr| $e @ $s ; $E) =>
     return (e, s, E)
   | `(wp_expr| $e @ $E) =>
@@ -533,7 +535,7 @@ meta def unexpandWpPostcondInner : TSyntax `term → PrettyPrinter.UnexpandM (TS
   | `($Φ:term) => `(wpPostcondInner| $Φ:term)
 
 open Lean in
-meta def makeWpExpr (s E e : TSyntax `term) : PrettyPrinter.UnexpandM (TSyntax `wp_expr) := do
+meta def makeWpExpr (s E e : TSyntax `term) : PrettyPrinter.UnexpandM (TSyntax ``wp_expr) := do
   match s, E with
   | `(Stuckness.NotStuck), `(⊤) => `(wp_expr| $e:term)
   | `(Stuckness.NotStuck), E => `(wp_expr| $e:term @ $E:term)
