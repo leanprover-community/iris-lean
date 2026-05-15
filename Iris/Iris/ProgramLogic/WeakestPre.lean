@@ -327,7 +327,7 @@ theorem wp_fupd (s : Stuckness) E (e : Expr) (Φ : Val → IProp GF) :
   iassumption
 
 theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IProp GF}
-  [Language.Atomic ↑s e] :
+  [ι : Language.Atomic ↑s e] :
     (|={E1,E2}=> WP e @ s ;  E2 {{v, iprop(|={E2,E1}=> Φ v) }}) ⊢ (WP e @ s ; E1 {{ Φ }}) := by
   refine (BIFUpdate.mono <| wp_unfold.1).trans ?_
   refine BI.Entails.trans ?_ wp_unfold.2
@@ -348,14 +348,27 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
     ihave aux := H $$ %e2 %σ2 %efs %Hstep Hcred
     iapply step_fupdN_wand $$ aux
     iintro >(⟨Hσ,H,Hefs⟩)
-    match s with
-    | .NotStuck =>
-      simp only [↓reduceIte] at h
-      obtain ⟨obs, e', σ2, efs, hstep⟩ := h
-      sorry
-    | .MaybeStuck =>
-      sorry
-    iapply H
-  sorry
+    cases s with -- TODO: Example of place where `match` is worse than `cases`
+    | NotStuck =>
+      -- TODO: replace this when `irw` is available.
+      istop; refine (BI.sep_mono (BI.sep_mono .rfl wp_unfold.1) (BI.BigSepL.bigSepL_mono λ_↦ wp_unfold.1)).trans ?_; refine BI.Entails.trans ?_ (BIFUpdate.mono <| (BI.sep_mono .rfl (BI.sep_mono wp_unfold.2 (BI.BigSepL.bigSepL_mono λ_↦ wp_unfold.2) ))); iintro ⟨⟨Hσ,H⟩,Hefs⟩
+      simp [wp.pre]
+      have := (ι.atomic _ _ _ _ _ Hstep)
+      simp at this
+      match h₂ : toVal e2 with
+      | some v2 =>
+        icases H with > > $
+        iframe
+      | none =>
+        simp
+        icases H $$ %σ2 %(ns +1) %([]) %_ %(efs.length +nt) [Hσ] with >⟨%h, _⟩
+        · exact .rfl
+        nomatch (Language.not_reducible_iff_irreducible.mpr (ι.atomic _ _ _ _ _ Hstep)) h
+    | MaybeStuck =>
+      have ⟨v, h⟩ := Option.isSome_iff_exists.mp (ι.atomic _ _ _ _ _ Hstep)
+      obtain ⟨rfl⟩ := (ToVal.coe_of_toVal_eq_some h)
+      istop; refine (BI.sep_mono (BI.sep_mono .rfl wp_value_fupd'.1) .rfl).trans ?_; refine BI.Entails.trans ?_ (BIFUpdate.mono <| (BI.sep_mono .rfl (BI.sep_mono wp_value_fupd'.2 .rfl ))); iintro ⟨⟨Hσ,H⟩,Hefs⟩
+      imod H with > H
+      iframe
 
 end Wp
