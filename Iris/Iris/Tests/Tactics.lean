@@ -1920,11 +1920,11 @@ example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P b)] :
   iexact Hb
 
 example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [Absorbing (P a)] :
-    internalEq a b ∗ P a ∗ (P b -∗ Q b) ⊢ Q b := by
+    (∀ c, internalEq a c) ∗ P a ∗ (P b -∗ Q b) ⊢ Q b := by
   istart
   iintro ⟨Heq, Ha, Himpl⟩
   iapply Himpl
-  irewrite [←Heq]
+  irewrite [← Heq $$ %b, ← Heq $$ %a]
   iexact Ha
 
 example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [Absorbing (P b)] :
@@ -1993,14 +1993,13 @@ example (a b : A) (P Q R : A → PROP)
 example (x y : A) P :
   ⊢@{PROP} □ (∀ z, P -∗ <affine> (internalEq z y)) -∗ (P -∗ P ∧ (internalEq (x,x) (y,x))) := by
   iintro #H1 H2
-  -- FIXME: pmterm
-  icases H1 $$ %x H2 with #H1
-  isplit
-  · iexact H2
-  irewrite [←H1]
-  · refine ⟨fun _ _ _ h => (internalEq.ne_r _).ne ?_⟩
-    exact OFE.dist_prod_ext h .rfl
-  · apply internalEq.refl
+  irewrite [H1 $$ %x H2]
+  · refine ⟨fun _ _ _ h => and_ne.ne .rfl ?_⟩
+    refine OFE.Dist.trans ?_ ((internalEq.ne_r ⟨_, _⟩).ne (OFE.dist_prod_ext .rfl h))
+    exact (internalEq.ne_l _).ne (OFE.dist_prod_ext h h)
+  · isplit
+    · iexact H2
+    · apply internalEq.refl
 
 example (f : A -n> A) x y :
   ⊢@{PROP} internalEq (Later.next x) (Later.next y) -∗ internalEq (Later.next (f x)) (Later.next (f y)) := by
@@ -2017,17 +2016,7 @@ example (P Q : PROP) :
   ⊢@{PROP} <affine> ▷ (internalEq Q P) -∗ <affine> ▷ Q -∗ <affine> ▷ P := by
   iintro #HPQ HQ !>
   inext
-  -- change
-  irewrite [←HPQ]
-  · exact OFE.id_ne
-  · iexact HQ
-
-example (P Q : PROP) :
-  ⊢@{PROP} <affine> ▷ (internalEq Q P) -∗ <affine> ▷ Q -∗ <affine> ▷ P := by
-  iintro #HPQ HQ !>
-  inext
-  -- change
-  irewrite [←HPQ]
+  irewrite [HPQ] at HQ
   · exact OFE.id_ne
   · iexact HQ
 
