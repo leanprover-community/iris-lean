@@ -359,6 +359,65 @@ theorem step_fupdN_wand {Eo Ei : CoPset} {n : Nat} {P Q : PROP} :
       _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> ((P -∗ Q) ∗ _) := mono (later_mono (fupd_frame_l ..))
       _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> _ := mono (later_mono (mono IH))
 
+theorem step_fupd_wand {Eo Ei : CoPset} {P Q : PROP} :
+    (|={Eo}[Ei]▷=> P) ⊢ (P -∗ Q) -∗ (|={Eo}[Ei]▷=> Q) := by
+  exact step_fupdN_wand (n := 1)
+
+#check emp_sep.2
+#check BIFUpdate.trans
+
+#check fupd_frame_r
+
+theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP} :
+    Ei₂ ⊆ Ei₁ →
+    Eo₁ ⊆ Eo₂ →
+    (|={Eo₁}[Ei₁]▷=> P) ⊢ |={Eo₂}[Ei₂]▷=> P := by
+  intro Ei₂_Ei₁ Eo₁_Eo₂
+
+  refine emp_sep.2.trans ?_
+  refine (sep_mono (fupd_mask_intro_subseteq Eo₁_Eo₂) .rfl).trans ?_
+  refine fupd_frame_r.trans ?_
+  refine BI.Entails.trans (mono ?_) (BIFUpdate.trans (E2 := Eo₁))
+
+  refine fupd_frame_l.trans ?_
+  refine BI.Entails.trans (mono ?_) (BIFUpdate.trans (E2 := Ei₁))
+
+  refine (sep_mono (fupd_mask_intro_subseteq Ei₂_Ei₁) .rfl).trans ?_
+  refine fupd_frame_r.trans ?_
+  apply mono
+
+  refine (sep_mono later_intro .rfl).trans ?_
+  refine later_sep.2.trans ?_
+  apply later_mono
+
+  refine  fupd_frame_r.trans ?_
+  refine BI.Entails.trans (mono ?_) (BIFUpdate.trans (E2 := Ei₁))
+
+  refine fupd_frame_l.trans ?_
+  refine BI.Entails.trans (mono ?_) (BIFUpdate.trans (E2 := Eo₁))
+
+  refine fupd_frame_r.trans ?_
+  refine mono emp_sep.1
+
+theorem step_fupd_intro {Ei Eo : CoPset} {P : PROP} :
+    Ei ⊆ Eo →
+    ▷ P ⊢ |={Eo}[Ei]▷=> P := by
+  intro Ei_Eo
+  calc iprop(▷ P)
+    _ ⊢ |={Ei}=> ▷ P := fupd_intro
+    _ ⊢ |={Ei}[Ei]▷=> P := mono <| later_mono fupd_intro
+    _ ⊢ |={Eo}[Ei]▷=> P := step_fupd_mask_mono (subset_refl) Ei_Eo
+
+theorem step_fupdN_le {n m : Nat}{Eo Ei : CoPset}{P : PROP} :
+    n ≤ m →
+    Ei ⊆ Eo →
+    (|={Eo}[Ei]▷=>^[n] P) ⊢ |={Eo}[Ei]▷=>^[m] P
+  | .refl, _ => .rfl
+  | .step (m := m) n_m, Ei_Eo => by
+    refine step_fupdN_le n_m Ei_Eo |>.trans ?_
+    refine later_intro.trans ?_
+    apply step_fupd_intro Ei_Eo
+
 @[rocq_alias step_fupd_fupd]
 theorem step_fupd_fupd {Eo Ei : CoPset} {P : PROP} : (|={Eo}[Ei]▷=> P) ⊣⊢ (|={Eo}[Ei]▷=> |={Eo}=> P) :=
   ⟨mono <| later_mono <| mono fupd_intro, mono <| later_mono BIFUpdate.trans⟩

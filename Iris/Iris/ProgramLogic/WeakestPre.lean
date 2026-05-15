@@ -371,4 +371,67 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
       imod H with > H
       iframe
 
+/-- (copy-pasted from Rocq formalization)
+
+  This lemma gives us access to the later credits that are generated in each step,
+  asuming that we have instantiated `numLaterPerStep` with a non-trivial function
+  (for instance, a linear function).
+
+  This lemma can be used to provide a "regeneration" mechanism for later credits.
+  `stateInter` will have to be defined in a way that involves the required
+  regeneration tokens.
+
+  In detail, a client can use this lemma as follows:
+
+   1. Then client obtains the state interpreatation `stateInterp _ ns _ _`
+
+   2. It uses some ghost state wired up to the interpretation to know that
+      `ns = k + m`, and update the state interpretation to `stateInterp _ m _ _`
+
+   3. _After_ `e` has finally stepped, we get `numLatersPerStep k` later credits
+      that we can use to prove `P` in the postcondition, and we have to update the
+      state interpretation from `stateInterp _ (m+1) _ _` to
+      `stateInterp _ (ns+1) _ _` again
+
+-/
+theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF} :
+  toVal e = none →
+  (∀ m k, numLatersPerStep m + numLatersPerStep k ≤ numLatersPerStep (m + k)) →
+  (∀ (σ₁ : State) ns obs nt,
+    stateInterp σ₁ ns obs nt ={E}=∗
+    ∃ k m, stateInterp σ₁ m obs nt ∗ ⌜ns = m + k⌝ ∗ (
+      ∀ nt (σ₂: State) obs, £ (numLatersPerStep k) -∗ stateInterp σ₂ (m+1) obs nt ={E}=∗
+        stateInterp σ₂ (ns+1) obs nt ∗ P)) ⊢
+  WP e @ s ; E {{ v, iprop(P ={E}=∗ Φ v) }} -∗
+  WP e @ s ; E {{ Φ }} := by
+    intro h Htri
+    refine BI.Entails.trans ?_ (BI.wand_mono wp_unfold.1 wp_unfold.2)
+    iintro Hupd Hwp
+    simp [wp.pre, h]
+    iintro %σ₁ %ns %obs %obs' %nt Hσ₁
+    imod Hupd $$ Hσ₁ with ⟨%k, %m, Hσ₁, %h, Hpost⟩; subst h
+    imod Hwp $$ Hσ₁ with ⟨$,Hwp⟩
+    imodintro
+    iintro %e₂ %σ₂ %efs %Hstep Hc
+    istop; refine (BI.sep_mono .rfl (lc_split.1)).trans ?_; iintro ⟨⟨Hpost,Hwp⟩,Hc⟩
+    icases Hc with ⟨Hc,Hone⟩
+    ihave Hc := lc_weaken _ (Htri m k) $$ Hc
+    istop; refine (BI.sep_mono .rfl (lc_split.1)).trans ?_; iintro ⟨⟨⟨Hpost,Hwp⟩,Hone⟩,Hc⟩
+    icases Hc with ⟨Hm, Hk⟩
+    -- TODO: Redo with `icombine` when available
+    ihave Hm := lc_split.mpr $$ [Hm Hone]
+    · iframe
+    simp [Nat.repeat]
+    ihave Hwp := Hwp $$ [] [Hm]
+    · ipure_intro; assumption
+    · rw [Nat.add_comm]; exact .rfl
+    iapply step_fupd_wand $$ Hwp; iintro Hwp
+    iapply step_fupdN_le (n := numLatersPerStep m) (by grind only) (Std.LawfulSet.subset_refl)
+    iapply step_fupdN_wand $$ Hwp; iintro >⟨SI, Hwp, $⟩
+    icases Hpost $$ Hk SI with >⟨$, HP⟩
+    imodintro
+    iapply wp_strong_mono (Std.IsPreorder.le_refl s) (Std.LawfulSet.subset_refl) $$ Hwp
+    iintro %v HΦ
+    iapply HΦ $$ HP
+
 end Wp
