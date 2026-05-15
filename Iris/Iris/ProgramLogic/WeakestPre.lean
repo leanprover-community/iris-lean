@@ -565,4 +565,16 @@ theorem wp_mask_mono : E₁ ⊆ E₂ → WP e @ s; E₁ {{ Φ }} ⊢ WP e @ s; E
 #rocq_ignore wp_mono' "No `Proper` typeclass in Lean"
 #rocq_ignore wp_flip_mono' "No `Proper` typeclass in Lean"
 
+variable {s : Stuckness} {E : CoPset} {e : Expr}{v : Val}{Φ : Val → IProp GF} in
+theorem wp_value_fupd : Language.IntoVal e v → WP e @ s; E {{ Φ }} ⊣⊢ |={E}=> Φ v
+  | ⟨h⟩ => h ▸ wp_value_fupd'
+
+variable {s : Stuckness} {E : CoPset} {e : Expr}{v : Val}{Φ : Val → IProp GF} in
+theorem wp_value' : Φ v ⊢ WP (v : Expr) @ s; E {{ Φ }} :=
+  fupd_intro.trans wp_value_fupd'.2
+
+variable {s : Stuckness} {E : CoPset} {e : Expr}{v : Val}{Φ : Val → IProp GF} in
+theorem wp_value : Language.IntoVal e v → Φ e ⊢ WP e @ s; E {{ Φ }}
+  | ⟨h⟩ => h ▸ wp_value'
+
 end Wp
