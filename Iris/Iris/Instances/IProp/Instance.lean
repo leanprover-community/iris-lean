@@ -64,7 +64,7 @@ class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] wh
   τ : GType
   transp : FF τ = ⟨F, ‹_›⟩
 
-#rocq_ignore subG_inG "Not needed"
+#rocq_ignore subG_inG "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 open OFE
 
@@ -471,8 +471,8 @@ end iSingleton
 def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IProp GF :=
   UPred.ownM <| iSingleton F γ v
 
-#rocq_ignore own_def "Not needed"
-#rocq_ignore own_aux "Not needed"
+#rocq_ignore own_def "`iOwn` is defined directly without `seal`/`unseal`."
+#rocq_ignore own_aux "`iOwn` is defined directly without `seal`/`unseal`."
 
 section iOwn
 

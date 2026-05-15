@@ -50,8 +50,8 @@ class WsatGS (GF : BundledGFunctors) extends WsatGpreS GF where
   enabled_name : GName
   disabled_name : GName
 
-#rocq_ignore «wsatGS.wsatΣ» "Not needed"
-#rocq_ignore «wsatGS.subG_wsatΣ» "Not needed"
+#rocq_ignore «wsatGS.wsatΣ» "Superseded by the `WsatGpreS` typeclass on `BundledGFunctors`."
+#rocq_ignore «wsatGS.subG_wsatΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 end WsatGS
 

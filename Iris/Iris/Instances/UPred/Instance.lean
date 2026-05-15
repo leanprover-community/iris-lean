@@ -33,18 +33,18 @@ protected def pure (p : Prop) : UPred M where
   holds _ _ := p
   mono h _ _ := h
 
-#rocq_ignore uPred.uPred_pure_unseal "Not needed"
-#rocq_ignore uPred.uPred_si_pure_unseal "Not needed"
-#rocq_ignore uPred.uPred_si_emp_valid_unseal "Not needed"
+#rocq_ignore uPred.uPred_pure_unseal "`UPred.pure` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_si_pure_unseal "`UPred.uPredSiPure` is unsealed in Lean."
+#rocq_ignore uPred.uPred_si_emp_valid_unseal "`UPred.uPredSiEmpValid` is unsealed in Lean."
 
 @[rocq_alias uPred_and]
 protected def and (P Q : UPred M) : UPred M where
   holds n x := P n x ∧ Q n x
   mono HPQ Hle Hn := ⟨P.mono HPQ.1 Hle Hn, Q.mono HPQ.2 Hle Hn⟩
 
-#rocq_ignore uPred_and_unseal "Not needed"
-#rocq_ignore uPred_and_def "Not needed"
-#rocq_ignore uPred_and_aux "Not needed"
+#rocq_ignore uPred_and_unseal "`UPred.and` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_and_def "`UPred.and` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_and_aux "`UPred.and` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias uPred_or]
 protected def or (P Q : UPred M) : UPred M where
@@ -53,9 +53,9 @@ protected def or (P Q : UPred M) : UPred M where
   | .inl H, Hle, Hn => .inl (P.mono H Hle Hn)
   | .inr H, Hle, Hn => .inr (Q.mono H Hle Hn)
 
-#rocq_ignore uPred_or_unseal "Not needed"
-#rocq_ignore uPred_or_def "Not needed"
-#rocq_ignore uPred_or_aux "Not needed"
+#rocq_ignore uPred_or_unseal "`UPred.or` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_or_def "`UPred.or` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_or_aux "`UPred.or` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias uPred_impl]
 protected def imp (P Q : UPred M) : UPred M where
@@ -71,27 +71,27 @@ protected def imp (P Q : UPred M) : UPred M where
     · exact Nat.le_trans Hnle Hn
     · exact (uPred_ne Hx).mp HP
 
-#rocq_ignore uPred_impl_unseal "Not needed"
-#rocq_ignore uPred_impl_def "Not needed"
-#rocq_ignore uPred_impl_aux "Not needed"
+#rocq_ignore uPred_impl_unseal "`UPred.imp` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_impl_def "`UPred.imp` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_impl_aux "`UPred.imp` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias uPred_forall]
 protected def sForall (Ψ : UPred M → Prop) : UPred M where
   holds n x := ∀ p, Ψ p → p n x
   mono a a_1 a_2 p a_3 := p.mono (a p a_3) a_1 a_2
 
-#rocq_ignore uPred_forall_unseal "Not needed"
-#rocq_ignore uPred_forall_def "Not needed"
-#rocq_ignore uPred_forall_aux "Not needed"
+#rocq_ignore uPred_forall_unseal "`UPred.sForall` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_forall_def "`UPred.sForall` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_forall_aux "`UPred.sForall` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias uPred_exist]
 protected def sExists (Ψ : UPred M → Prop) : UPred M where
   holds n x := ∃ p, Ψ p ∧ p n x
   mono := fun ⟨p, HΨ, Hp⟩ Hv Hn => ⟨p, HΨ, p.mono Hp Hv Hn⟩
 
-#rocq_ignore uPred_exist_unseal "Not needed"
-#rocq_ignore uPred_exist_def "Not needed"
-#rocq_ignore uPred_exist_aux "Not needed"
+#rocq_ignore uPred_exist_unseal "`UPred.sExists` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_exist_def "`UPred.sExists` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_exist_aux "`UPred.sExists` is defined directly without `seal`/`unseal`."
 
 protected def eq [OFE O] (o1 o2 : O) : UPred M where
   holds n _ := o1 ≡{n}≡ o2
@@ -110,9 +110,9 @@ protected def sep (P Q : UPred M) : UPred M where
     · exact P.mono HP (incN_refl x₁) Hn
     · exact Q.mono HQ (incN_op_left n₂ x₂ m) Hn
 
-#rocq_ignore uPred_sep_unseal "Not needed"
-#rocq_ignore uPred_sep_aux "Not needed"
-#rocq_ignore uPred_sep_def "Not needed"
+#rocq_ignore uPred_sep_unseal "`UPred.sep` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_sep_aux "`UPred.sep` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_sep_def "`UPred.sep` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias uPred_wand]
 protected def wand (P Q : UPred M) : UPred M where
@@ -123,9 +123,9 @@ protected def wand (P Q : UPred M) : UPred M where
       (op_monoN_left _ (incN_of_incN_le Hn' Hm)) .refl
     exact H _ _ (Nat.le_trans Hn' Hn) ?_ HP
 
-#rocq_ignore uPred_wand_unseal "Not needed"
-#rocq_ignore uPred_wand_aux "Not needed"
-#rocq_ignore uPred_wand_def "Not needed"
+#rocq_ignore uPred_wand_unseal "`UPred.wand` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_wand_aux "`UPred.wand` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_wand_def "`UPred.wand` is defined directly without `seal`/`unseal`."
 
 protected def plainly (P : UPred M) : UPred M where
   holds n _ := P n ⟨unit, unit_validN⟩
@@ -136,9 +136,9 @@ protected def persistently (P : UPred M) : UPred M where
   holds n x := P n ⟨core x, validN_core x.property⟩
   mono H Hx Hn := P.mono H (core_incN_core Hx) Hn
 
-#rocq_ignore uPred_persistently_unseal "Not needed"
-#rocq_ignore uPred_persistently_def "Not needed"
-#rocq_ignore uPred_persistently_aux "Not needed"
+#rocq_ignore uPred_persistently_unseal "`UPred.persistently` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_persistently_def "`UPred.persistently` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_persistently_aux "`UPred.persistently` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias uPred_later]
 protected def later (P : UPred M) : UPred M where
@@ -147,9 +147,9 @@ protected def later (P : UPred M) : UPred M where
     cases n₁ <;> cases n₂ <;> simp
     exact fun H Hx Hn => P.mono H (incN_of_incN_succ Hx) Hn
 
-#rocq_ignore uPred_later_unseal "Not needed"
-#rocq_ignore uPred_later_def "Not needed"
-#rocq_ignore uPred_later_aux "Not needed"
+#rocq_ignore uPred_later_unseal "`UPred.later` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_later_def "`UPred.later` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_later_aux "`UPred.later` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias uPred_ownM]
 def ownM (m : M) : UPred M where
@@ -160,9 +160,9 @@ def ownM (m : M) : UPred M where
          _      ≡{n₂}≡ (m • m₁) • m₂ := (Hm₁.le Hn).op_l
          _      ≡{n₂}≡ m • (m₁ • m₂) := assoc.symm.dist
 
-#rocq_ignore uPred_ownM_unseal "Not needed"
-#rocq_ignore uPred_ownM_def "Not needed"
-#rocq_ignore uPred_ownM_aux "Not needed"
+#rocq_ignore uPred_ownM_unseal "`UPred.ownM` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_ownM_def "`UPred.ownM` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_ownM_aux "`UPred.ownM` is defined directly without `seal`/`unseal`."
 
 def cmraValid {A} [CMRA A] (a : A) : UPred M where
   holds n _ := ✓{n} a
@@ -184,9 +184,9 @@ def bupd (Q : UPred M) : UPred M where
     refine Q.mono HQ' ?_ k.le_refl
     exact incN_op_left k x' x3
 
-#rocq_ignore uPred_bupd_unseal "Not needed"
-#rocq_ignore uPred_bupd_def "Not needed"
-#rocq_ignore uPred_bupd_aux "Not needed"
+#rocq_ignore uPred_bupd_unseal "`UPred.bupd` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_bupd_def "`UPred.bupd` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_bupd_aux "`UPred.bupd` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias uPred_emp]
 protected def emp : UPred M where
@@ -247,23 +247,23 @@ instance : BIBase (UPred M) where
   later        := UPred.later
 
 
-#rocq_ignore uPred.uPred_emp_unseal "Not needed"
-#rocq_ignore uPred.uPred_pure_unseal "Not needed"
-#rocq_ignore uPred.uPred_si_pure_unseal "Not needed"
-#rocq_ignore uPred.uPred_si_emp_valid_unseal "Not needed"
-#rocq_ignore uPred.uPred_and_unseal "Not needed"
-#rocq_ignore uPred.uPred_or_unseal "Not needed"
-#rocq_ignore uPred.uPred_impl_unseal "Not needed"
-#rocq_ignore uPred.uPred_forall_unseal "Not needed"
-#rocq_ignore uPred.uPred_exist_unseal "Not needed"
-#rocq_ignore uPred.uPred_sep_unseal "Not needed"
-#rocq_ignore uPred.uPred_wand_unseal "Not needed"
-#rocq_ignore uPred.uPred_persistently_unseal "Not needed"
-#rocq_ignore uPred.uPred_later_unseal "Not needed"
-#rocq_ignore uPred.uPred_bupd_unseal "Not needed"
-#rocq_ignore uPred.uPred_unseal "Not needed"
+#rocq_ignore uPred.uPred_emp_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_pure_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_si_pure_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_si_emp_valid_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_and_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_or_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_impl_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_forall_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_exist_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_sep_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_wand_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_persistently_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_later_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_bupd_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_unseal "No `Ltac unseal` rewrite is needed; nothing is sealed."
 
-#rocq_ignore uPred_primitive.uPred_unseal "Not needed"
+#rocq_ignore uPred_primitive.uPred_unseal "No `Ltac unseal` rewrite is needed; nothing is sealed."
 
 @[rocq_alias uPred_primitive.entails_po]
 instance uPred_entails_preorder : Std.Preorder (Entails (PROP := UPred M)) where
@@ -503,18 +503,18 @@ protected def uPredSiPure (Pi : SiProp) : UPred M where
   holds n _ := Pi.holds n
   mono H _ Hn := Pi.closed H Hn
 
-#rocq_ignore uPred_si_pure_aux "Not needed"
-#rocq_ignore uPred_si_pure_unseal "Not needed"
-#rocq_ignore uPred_si_pure_def "Not needed"
+#rocq_ignore uPred_si_pure_aux "`UPred.uPredSiPure` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_si_pure_unseal "`UPred.uPredSiPure` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_si_pure_def "`UPred.uPredSiPure` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias uPred_si_emp_valid]
 protected def uPredSiEmpValid (P : UPred M) : SiProp where
   holds n := P n ⟨unit, unit_validN⟩
   closed h hle := P.mono h (incN_refl _) hle
 
-#rocq_ignore uPred_si_emp_valid_aux "Not needed"
-#rocq_ignore uPred_si_emp_valid_unseal "Not needed"
-#rocq_ignore uPred_si_emp_valid_def "Not needed"
+#rocq_ignore uPred_si_emp_valid_aux "`UPred.uPredSiEmpValid` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_si_emp_valid_unseal "`UPred.uPredSiEmpValid` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_si_emp_valid_def "`UPred.uPredSiEmpValid` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias si_pure_ne, rocq_alias uPred_primitive.si_pure_ne]
 instance uPredSiPure_ne : OFE.NonExpansive (UPred.uPredSiPure : SiProp → UPred M) where

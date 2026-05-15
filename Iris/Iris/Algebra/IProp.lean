@@ -32,25 +32,25 @@ def BundledGFunctors.set (GF : BundledGFunctors) (i : Nat) (FB : GFunctor) :
     BundledGFunctors :=
   fun j => if j = i then FB else GF j
 
-#rocq_ignore gid "Not needed, `gFunctors` is bundled"
-#rocq_ignore gFunctors.nil "Not needed, `gFunctors` is bundled"
-#rocq_ignore gFunctors.singleton "Not needed, `gFunctors` is bundled"
-#rocq_ignore gFunctors.app "Not needed, `gFunctors` is bundled"
+#rocq_ignore gid "Use `GType` (= `Nat`) to index `BundledGFunctors` directly."
+#rocq_ignore gFunctors.nil "`BundledGFunctors` is a function `GType → GFunctor`; no list combinators."
+#rocq_ignore gFunctors.singleton "`BundledGFunctors` is a function `GType → GFunctor`; no list combinators."
+#rocq_ignore gFunctors.app "`BundledGFunctors` is a function `GType → GFunctor`; no list combinators."
 
 @[rocq_alias gname]
 abbrev GName := Nat
 
-#rocq_ignore gnameO "Not needed"
+#rocq_ignore gnameO "Use `LeibnizO GName`."
 
 @[rocq_alias iResF]
 abbrev IResF (GF : BundledGFunctors) : OFunctorPre :=
   DiscreteFunOF (fun i => GenMapOF (GF i).fst)
 
-#rocq_ignore subG "Not needed, see `ElemG`"
-#rocq_ignore subG_inv "Not needed"
-#rocq_ignore subG_refl "Not needed"
-#rocq_ignore subG_app_l "Not needed"
-#rocq_ignore subG_app_r "Not needed"
+#rocq_ignore subG "Superseded by `ElemG`."
+#rocq_ignore subG_inv "Lemma about `subG`; obsolete with `ElemG`."
+#rocq_ignore subG_refl "Lemma about `subG`; obsolete with `ElemG`."
+#rocq_ignore subG_app_l "Lemma about `subG`; obsolete with `ElemG`."
+#rocq_ignore subG_app_r "Lemma about `subG`; obsolete with `ElemG`."
 
 instance (GF : BundledGFunctors) (i : GName) : RFunctorContractive ((GF i).fst) := (GF i).snd
 
@@ -67,7 +67,7 @@ instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix _))
 @[rocq_alias iProp_solution.iResUR]
 def IResUR : Type := (i : GType) → GenMap (GF i |>.fst (IPre GF) (IPre GF))
 
-#rocq_ignore iResUR "Not needed, only used for sealing in Rocq"
+#rocq_ignore iResUR "Sealed copy of `iProp_solution.iResUR`; not needed since Lean does not seal it."
 
 instance : UCMRA (IResUR GF) :=
   ucmraDiscreteFunO (β := fun (i : GType) => GenMap (GF i |>.fst (IPre GF) (IPre GF)))

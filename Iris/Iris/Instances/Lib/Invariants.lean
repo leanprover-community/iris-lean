@@ -25,9 +25,9 @@ section InvariantDefinition
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
-#rocq_ignore inv_def "Not needed"
-#rocq_ignore inv_aux "Not needed"
-#rocq_ignore inv_unseal "Not needed"
+#rocq_ignore inv_def "`inv` is defined directly without `seal`/`unseal`."
+#rocq_ignore inv_aux "`inv` is defined directly without `seal`/`unseal`."
+#rocq_ignore inv_unseal "`inv` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias inv]
 def inv (N : Namespace) (P : IProp GF) : IProp GF :=

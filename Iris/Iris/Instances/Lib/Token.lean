@@ -30,16 +30,16 @@ class TokenG (GF : BundledGFunctors) where [elemG : ElemG GF TokenF]
 
 attribute [reducible, instance] TokenG.elemG
 
-#rocq_ignore «subG_tokenΣ» "Not needed"
+#rocq_ignore «subG_tokenΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 variable {GF : BundledGFunctors} [TokenG GF]
 
 @[rocq_alias token]
 def token (γ : GName) : IProp GF := iOwn (F := TokenF) γ (excl ())
 
-#rocq_ignore token_aux "Not needed"
-#rocq_ignore token_def "Not needed"
-#rocq_ignore token_unseal "Not needed"
+#rocq_ignore token_aux "`token` is defined directly without `seal`/`unseal`."
+#rocq_ignore token_def "`token` is defined directly without `seal`/`unseal`."
+#rocq_ignore token_unseal "`token` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias token_timeless]
 instance token_timeless (γ : GName) : Timeless (token (GF := GF) γ) := by

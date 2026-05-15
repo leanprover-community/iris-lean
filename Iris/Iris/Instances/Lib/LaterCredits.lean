@@ -48,8 +48,8 @@ attribute [reducible, instance] LcGpreS.lc_elem
 class LcGS (GF : BundledGFunctors) extends LcGpreS GF where
   lc_name : GName
 
-#rocq_ignore «lcΣ» "Not needed"
-#rocq_ignore «subG_lcΣ» "Not needed"
+#rocq_ignore «lcΣ» "Superseded by the `LcGpreS` typeclass on `BundledGFunctors`."
+#rocq_ignore «subG_lcΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 end LcGS
 
@@ -57,9 +57,9 @@ section Definitions
 
 variable {GF : BundledGFunctors} [LC : LcGS GF]
 
-#rocq_ignore lc_def "Not needed"
-#rocq_ignore lc_aux "Not needed"
-#rocq_ignore lc_unseal "Not needed"
+#rocq_ignore lc_def "`lc` is defined directly without `seal`/`unseal`."
+#rocq_ignore lc_aux "`lc` is defined directly without `seal`/`unseal`."
+#rocq_ignore lc_unseal "`lc` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias lc]
 def lc (i : Credit) : IProp GF :=
@@ -67,9 +67,9 @@ def lc (i : Credit) : IProp GF :=
 
 notation:max "£ " i:40 => lc i
 
-#rocq_ignore lc_supply_def "Not needed"
-#rocq_ignore lc_supply_aux "Not needed"
-#rocq_ignore lc_supply_unseal "Not needed"
+#rocq_ignore lc_supply_def "`lc_supply` is defined directly without `seal`/`unseal`."
+#rocq_ignore lc_supply_aux "`lc_supply` is defined directly without `seal`/`unseal`."
+#rocq_ignore lc_supply_unseal "`lc_supply` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias lc_supply]
 def lc_supply (i : Credit) : IProp GF :=
@@ -189,9 +189,9 @@ instance {P : IProp GF} : Contractive (le_upd_pre P) where
     · exact distLater_zero
     · exact distLater_succ.mpr (distLater_succ.mp H)
 
-#rocq_ignore le_upd.le_upd_def "Not needed"
-#rocq_ignore le_upd.le_upd_aux "Not needed"
-#rocq_ignore le_upd.le_upd_unseal "Not needed"
+#rocq_ignore le_upd.le_upd_def "`le_upd` is defined directly without `seal`/`unseal`."
+#rocq_ignore le_upd.le_upd_aux "`le_upd` is defined directly without `seal`/`unseal`."
+#rocq_ignore le_upd.le_upd_unseal "`le_upd` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias le_upd.le_upd]
 def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
