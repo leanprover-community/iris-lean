@@ -35,7 +35,7 @@ theorem ValidAt.le_rfl {M : Type _} [UCMRA M] {n : Nat} {Hle : n ≤ n} {v : Val
   v.le Hle = v := by rfl
 
 /-- The data of a UPred object is an indexed proposition over M (Bundled version) -/
-@[ext]
+@[ext, rocq_alias uPred]
 structure UPred (M : Type _) [UCMRA M] where
   holds : (n : Nat) → ValidAt M n → Prop
   mono {n1 n2} {x1 : ValidAt M n1} {x2 : ValidAt M n2} :
@@ -76,6 +76,13 @@ instance : OFE (UPred M) where
   dist_lt Hdist Hlt _ _ Hle Hvalid :=
     Hdist _ _ (Nat.le_trans Hle (Nat.le_of_succ_le Hlt)) Hvalid
 
+#rocq_ignore uPred_equiv' "Inlined in the `OFE` construction"
+#rocq_ignore uPred_equiv "Not needed"
+#rocq_ignore uPred_dist' "Inlined in the `OFE` construction"
+#rocq_ignore uPred_dist "Not needed"
+#rocq_ignore uPred_ofe_mixin "Not needed"
+
+
 instance : OFE.Leibniz (UPred M) where
   eq_of_eqv {x y} hequiv := by
     ext n e
@@ -107,7 +114,8 @@ instance : IsCOFE (UPred M) where
     refine ⟨fun H => H _ .refl, fun H n' Hn' => ?_⟩
     exact (c.cauchy Hn' _ _ .refl _).mp (mono _ H .rfl Hn')
 
-@[rocq_alias uPredOF]
+#rocq_ignore uPred_compl "Inlined in the `IsCOFE` construction"
+
 abbrev UPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
   fun A B _ _ => UPred (F B A)
 
@@ -119,6 +127,9 @@ def uPred_map [UCMRA α] [UCMRA β] (f : β -C> α) : UPred α -n> UPred β := b
   · intro n x1 x2 Hx1x2 n' y Hn' Hv
     exact Hx1x2 _ _ Hn' (f.validN Hv)
 
+#rocq_ignore uPred_map "Inlined in `uPred_map`"
+
+@[rocq_alias uPredOF]
 instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
   cofe := inferInstance
   map f g := uPred_map (URFunctor.map (F := F) g f)

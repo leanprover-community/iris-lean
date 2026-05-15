@@ -69,7 +69,7 @@ variable [I : RFunctorContractive F]
 def ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).fst = F :=
   Sigma.mk.inj E.transp |>.1
 
-def ElemG.transpClass (E : ElemG GF F) T [OFE T] : HEq (GF E.τ).snd I :=
+def ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).snd ≍ I :=
   Sigma.mk.inj E.transp |>.2
 
 def ElemG.bundle (E : ElemG GF F) [OFE T] : F.ap T → GF.api E.τ T :=
@@ -114,10 +114,10 @@ theorem bundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : F.ap (IProp 
 
 theorem unbundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : GF.api (ElemG.τ GF F) (IProp GF)) :
   E.unbundle (a2 • ac) ≡ E.unbundle a2 • E.unbundle ac :=
-  OFE.transpAp_op_mp (E.transpMap ((GF (ElemG.τ GF F)).fst.ap (IPre GF))) (E.transpClass ((GF (ElemG.τ GF F)).fst.ap (IPre GF)))
+  OFE.transpAp_op_mp (E.transpMap ((GF (ElemG.τ GF F)).fst.ap (IPre GF)))
+    (E.transpClass ((GF (ElemG.τ GF F)).fst.ap (IPre GF)))
 
-theorem ElemG.bundle_unit {GF F} [RFunctorContractive F] (E : ElemG GF F)
-    {ε : F.ap (IProp GF)} [IsUnit ε] :
+theorem ElemG.bundle_unit {GF F} [RFunctorContractive F] (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit ε] :
     IsUnit (E.bundle ε) := by
   refine { unit_valid := ?_, unit_left_id := ?_, pcore_unit := ?_ }
   · refine CMRA.valid_iff_validN.mpr fun n => ?_
@@ -155,18 +155,22 @@ open Iris COFE UPred
 variable {FF : BundledGFunctors}
 
 /-- Isorecursive unfolding for each projection of FF. -/
+@[rocq_alias inG_unfold]
 def IProp.unfoldi : FF.api τ (IProp FF) -n> FF.api τ (IPre FF) :=
   OFunctor.map (IProp.fold FF) (IProp.unfold FF)
 
 /-- Isorecursive folding for each projection of FF. -/
+@[rocq_alias inG_fold]
 def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
   OFunctor.map (IProp.unfold FF) (IProp.fold FF)
 
+@[rocq_alias inG_unfold_fold]
 theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) ≡ x := by
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
   apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
 
+@[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x := by
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
@@ -189,8 +193,12 @@ theorem IProp.unfoldi_validN {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} x)
 theorem IProp.validN_foldi {n : Nat} (x : FF.api τ (IPre FF)) (H : ✓{n} (foldi x)) : ✓{n} x :=
   CMRA.validN_ne (IProp.unfoldi_foldi x).dist (IProp.unfoldi_validN _ H)
 
-theorem IProp.validN_unfoldi {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} (unfoldi x)) : ✓{n} x :=
+theorem IProp.validN_unfoldi_mp {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} (unfoldi x)) : ✓{n} x :=
   CMRA.validN_ne (IProp.foldi_unfoldi x).dist (IProp.foldi_validN _ H)
+
+@[rocq_alias inG_unfold_validN]
+theorem IProp.validN_unfoldi {n : Nat} (x : FF.api τ (IProp FF)) : ✓{n} (unfoldi x) ↔ ✓{n} x :=
+  ⟨IProp.validN_unfoldi_mp x,IProp.unfoldi_validN x⟩
 
 -- unfoldi preserves unit structure
 theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit x] :
@@ -459,6 +467,9 @@ end iSingleton
 def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IProp GF :=
   UPred.ownM <| iSingleton F γ v
 
+#rocq_ignore own_def "Not needed"
+#rocq_ignore own_aux "Not needed"
+
 section iOwn
 
 open IProp OFE UPred BI GenMap
@@ -616,7 +627,6 @@ theorem iOwn_alloc_strong_dep (f : GName → F.ap (IProp GF)) (P : GName → Pro
   · refine BI.exists_elim (fun m => BI.pure_elim_l (fun ⟨γ, HPγ, Hm⟩ => ?_))
     subst Hm
     exact BI.exists_intro' γ (BI.persistent_entails_r (BI.pure_intro HPγ))
-
 
 private theorem list_not_mem_of_gt_max (G : List Nat) (k : Nat) (hk : G.foldr max 0 < k) :
     k ∉ G := by

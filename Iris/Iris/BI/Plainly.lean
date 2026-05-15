@@ -682,7 +682,7 @@ theorem prop_ext (P Q : PROP) : iprop(internalEq P Q ⊣⊢ ■ (P ∗-∗ Q)) :
   have ⟨mp, mpr⟩:= prop_ext_siEmpValid_equiv P Q
   ⟨siPure_mono mp, siPure_mono mpr⟩
 
-#rocq_ignore prop_ext_2 "Subsumed by prop_ext_symm (the ⊣⊢ form)"
+#rocq_ignore prop_ext_2 "Subsumed by `prop_ext_symm`"
 
 theorem prop_ext_symm (P Q : PROP) : iprop(■ (P ∗-∗ Q) ⊣⊢ internalEq P Q) :=
   prop_ext P Q |>.symm

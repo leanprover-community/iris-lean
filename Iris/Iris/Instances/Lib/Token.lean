@@ -31,11 +31,16 @@ class TokenG (GF : BundledGFunctors) where
 
 attribute [reducible] TokenG.elemG
 attribute [instance] TokenG.elemG
+attribute [rocq_alias «subG_tokenΣ»] TokenG.elemG
 
 variable {GF : BundledGFunctors} [TokenG GF]
 
 @[rocq_alias token]
 def token (γ : GName) : IProp GF := iOwn (F := TokenF) γ (excl ())
+
+#rocq_ignore token_aux "Not needed"
+#rocq_ignore token_def "Not needed"
+#rocq_ignore token_unseal "Not needed"
 
 @[rocq_alias token_timeless]
 instance token_timeless (γ : GName) : Timeless (token (GF := GF) γ) := by

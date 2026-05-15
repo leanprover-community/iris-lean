@@ -25,6 +25,7 @@ variable [UCMRA M]
 
 section bidefs
 
+@[rocq_alias uPred_entails]
 protected def Entails (P Q : UPred M) : Prop := ∀ n (x : ValidAt M n), P n x → Q n x
 
 @[rocq_alias uPred_pure]
@@ -424,66 +425,66 @@ instance : BI (UPred M) where
     | _+1, _, H => .inr @fun | 0, _, Hx'le, _, _ => P.mono H Hx'le.incN (Nat.zero_le _)
 
 
-#rocq_ignore pure_intro "Inlined in uPredI construction"
-#rocq_ignore pure_elim' "Inlined in uPredI construction"
+#rocq_ignore pure_intro "Inlined in `uPredI` construction"
+#rocq_ignore pure_elim' "Inlined in `uPredI` construction"
 
-#rocq_ignore uPred_primitive.and_elim_l "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.and_elim_r "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.and_intro "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.and_ne "Inlined in uPredI construction"
+#rocq_ignore uPred_primitive.and_elim_l "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.and_elim_r "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.and_intro "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.and_ne "Inlined in `uPredI` construction"
 
-#rocq_ignore uPred_primitive.or_intro_l "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.or_intro_r "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.or_elim "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.or_ne "Inlined in uPredI construction"
+#rocq_ignore uPred_primitive.or_intro_l "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.or_intro_r "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.or_elim "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.or_ne "Inlined in `uPredI` construction"
 
-#rocq_ignore uPred_primitive.impl_elim_l' "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.impl_intro_r "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.impl_ne "Inlined in uPredI construction"
+#rocq_ignore uPred_primitive.impl_elim_l' "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.impl_intro_r "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.impl_ne "Inlined in `uPredI` construction"
 
-#rocq_ignore uPred_primitive.sep_assoc' "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.sep_comm' "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.sep_mono "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.sep_ne "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.True_sep_1 "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.True_sep_2 "Inlined in uPredI construction"
+#rocq_ignore uPred_primitive.sep_assoc' "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.sep_comm' "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.sep_mono "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.sep_ne "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.True_sep_1 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.True_sep_2 "Inlined in `uPredI` construction"
 
-#rocq_ignore uPred_primitive.wand_elim_l' "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.wand_intro_r "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.wand_ne "Inlined in uPredI construction"
+#rocq_ignore uPred_primitive.wand_elim_l' "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.wand_intro_r "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.wand_ne "Inlined in `uPredI` construction"
 
-#rocq_ignore uPred_primitive.persistently_and_sep_l_1 "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.persistently_exist_1 "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.persistently_idemp_2 "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.persistently_mono "Inlined in uPredI construction"
+#rocq_ignore uPred_primitive.persistently_and_sep_l_1 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.persistently_exist_1 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.persistently_idemp_2 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.persistently_mono "Inlined in `uPredI` construction"
 
-#rocq_ignore uPred_primitive.exist_elim "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.exist_intro "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.exist_ne "Inlined in uPredI construction"
+#rocq_ignore uPred_primitive.exist_elim "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.exist_intro "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.exist_ne "Inlined in `uPredI` construction"
 
-#rocq_ignore uPred_primitive.forall_elim "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.forall_intro "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.forall_ne "Inlined in uPredI construction"
+#rocq_ignore uPred_primitive.forall_elim "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.forall_intro "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.forall_ne "Inlined in `uPredI` construction"
 
-#rocq_ignore uPred_primitive.later_intro "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.later_mono "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.later_sep_1 "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.later_sep_2 "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.later_persistently_1 "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.later_persistently_2 "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.later_exist_false "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.later_false_em "Inlined in uPredI construction"
-#rocq_ignore uPred_primitive.later_forall_2 "Inlined in uPredI construction"
+#rocq_ignore uPred_primitive.later_intro "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_mono "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_sep_1 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_sep_2 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_persistently_1 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_persistently_2 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_exist_false "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_false_em "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_forall_2 "Inlined in `uPredI` construction"
 
-#rocq_ignore uPred_bi_mixin "Inlined in uPredI construction"
-#rocq_ignore uPred_bi_later_mixin "Inlined in uPredI construction"
-#rocq_ignore uPred_bi_persistently_mixin "Inlined in uPredI construction"
+#rocq_ignore uPred_bi_mixin "Inlined in `uPredI` construction"
+#rocq_ignore uPred_bi_later_mixin "Inlined in `uPredI` construction"
+#rocq_ignore uPred_bi_persistently_mixin "Inlined in `uPredI` construction"
 
 @[rocq_alias uPred_persistently_forall]
 instance : BIPersistentlyForall (UPred M) where
   persistently_sForall_2 _ _ x h p hp := h _ ⟨p, rfl⟩ x (inc_refl _) .refl hp
 
-#rocq_ignore uPred_primitive.persistently_forall_2 "Inlined in BIPersistentlyForall construction"
+#rocq_ignore uPred_primitive.persistently_forall_2 "Inlined in `BIPersistentlyForall` construction"
 
 #rocq_ignore uPred_pure_forall "BiPureForall is not needed"
 
