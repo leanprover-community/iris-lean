@@ -577,4 +577,16 @@ variable {s : Stuckness} {E : CoPset} {e : Expr}{v : Val}{Φ : Val → IProp GF}
 theorem wp_value : Language.IntoVal e v → Φ e ⊢ WP e @ s; E {{ Φ }}
   | ⟨h⟩ => h ▸ wp_value'
 
+variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF}{R : IProp GF} in
+theorem wp_frame_l : R ∗ WP e @ s; E {{ Φ }} ⊢ WP e @ s; E {{ v, iprop(R ∗ Φ v) }} := by
+  iintro ⟨_, H⟩
+  iapply wp_strong_mono (Std.IsPreorder.le_refl s) (Std.LawfulSet.subset_refl) $$ H
+  iframe
+  iintro %x
+  iapply fupd_intro
+
+variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF}{R : IProp GF} in
+theorem wp_frame_r : WP e @ s; E {{ Φ }} ∗ R ⊢ WP e @ s; E {{ v, iprop(R ∗ Φ v) }} :=
+  BI.sep_comm.1.trans wp_frame_l
+
 end Wp
