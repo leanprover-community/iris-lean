@@ -423,4 +423,65 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF}
     iintro %v HΦ
     iapply HΦ $$ HP
 
+theorem wp_step_fupdN_strong {n}{s : Stuckness}{E1 E2 : CoPset} {e : Expr} {P : IProp GF} {Φ} :
+    toVal e = none →
+    E2 ⊆ E1 →
+    -- TODO: This was written as an ∧ in Iris Rocq. I've separated it because it doesn't seem like
+    -- icases is able to handle ∧ expressions.
+    (∀ (σ : State) ns obs nt, ⊢@{IProp GF} stateInterp σ ns obs nt ={E1, ∅}=∗ ⌜n ≤ numLatersPerStep ns + 1⌝) →
+    (|={E1,E2}=> |={∅}▷=>^[n] |={E2,E1}=> P) ∗
+    WP e @ s ; E2 {{ v, iprop(P ={E1}=∗ Φ v)}} ⊢
+    WP e @ s ; E1 {{ Φ }} := by
+  intro toVal_e E2_E1 interp
+  match n with
+  | 0 =>
+    iintro ⟨Hp, Hwp⟩
+    iapply wp_strong_mono (Std.IsPreorder.le_refl s) E2_E1 $$ Hwp
+    iintro %v H
+    refine (BI.sep_mono BIFUpdate.trans .rfl).trans ?_; iintro ⟨Hp,H⟩
+    imod Hp
+    iapply H $$ Hp
+  | n+1 =>
+    simp only [OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr (wp_unfold))]
+    iintro ⟨Hp,Hwp⟩
+    simp only [wp.pre, toVal_e]
+    iintro %σ₁ %ns %obs %obs' %nt Hσ₁
+    if Hn : n ≤ numLatersPerStep ns then
+      imod Hp
+      imod Hwp $$ Hσ₁ with ⟨$, H⟩
+      -- #check BIFUpdate.subset
+      iintro !> %e₂ %σ₂ %efs %Hstep Hcred
+      icases H $$ %_ %_ %_ %Hstep Hcred with H
+      simp only [Nat.repeat]
+      imod H; imod Hp
+      iintro !> !>
+      imod H; imod Hp
+      imodintro
+      clear interp
+      generalize numLatersPerStep ns = n0 at *
+      induction n generalizing n0 with
+      | zero =>
+        iapply step_fupdN_wand $$ H
+        iintro >⟨$, Hwp, $⟩
+        simp only [Nat.repeat]
+        imod Hp
+        imodintro
+        iapply wp_strong_mono (Std.IsPreorder.le_refl s) E2_E1 $$ Hwp
+        iintro %v HΦ
+        iapply HΦ $$ Hp
+      | succ n IH =>
+        obtain ⟨n0, rfl⟩ : ∃ n0', n0 = n0' + 1 := by cases n0 <;> grind only
+        simp only [Nat.repeat]
+        imod Hp
+        imod H
+        imodintro
+        imodintro
+        imod Hp
+        imod H
+        imodintro
+        iapply IH n0 (Nat.le_of_succ_le_succ Hn) $$ [$];
+    else
+      imod interp $$ Hσ₁ with %h
+      grind only
+
 end Wp
