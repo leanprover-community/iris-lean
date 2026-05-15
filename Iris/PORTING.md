@@ -288,7 +288,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `class_instances_cmra.v`
 - [ ] `class_instances_embedding.v`
 - [ ] `class_instances_frame.v`
-- [ ] `class_instances_internal_eq.v`
+- [x] `class_instances_internal_eq.v`
 - [ ] `class_instances_later.v` (InstancesLater.lean)
   - [x] basic instances
   - [x] FromModal
@@ -427,7 +427,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] iInduction
   - [ ] iLöb
   - [x] iAssert (Lean: ihave _ : _)
-  - [ ] iRewrite
+  - [x] iRewrite
   - [ ] iInv
   - [ ] iAccu
   - [ ] rules for trivial
