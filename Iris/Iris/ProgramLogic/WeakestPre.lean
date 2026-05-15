@@ -484,4 +484,31 @@ theorem wp_step_fupdN_strong {n}{s : Stuckness}{E1 E2 : CoPset} {e : Expr} {P : 
       imod interp $$ Hσ₁ with %h
       grind only
 
+theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} :
+    -- TODO: Figure out how to make this work better.
+    --  1. Get rid of parenthesis around the WP expression
+    --  2. Have `WP` use the correct `Val` type from the `Wp` instance (it should anyways, it's an outParam, no?)
+    WP e @ s ; E {{v, iprop(WP (K ((v : Val) : Expr)) @ s ; E {{ Φ }}) }} ⊢ WP (K e) @ s ; E {{ Φ }} := by
+  iintro H
+  iloeb as IH generalizing %E %e %Φ
+  rewrite (occs := [2]) [(OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr) wp_unfold]
+  simp only [wp.pre]
+  match h: toVal e with
+  | some v =>
+    simp only [ToVal.coe_of_toVal_eq_some h]
+    iapply fupd_wp $$ H
+  | none =>
+    rw [(OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr) wp_unfold]
+    simp only [wp.pre, κ.toVal_eq_none_fill h, Nat.repeat]
+    iintro %σ₁ %step %obs %obs' %n Hσ
+    imod H $$ [$] with ⟨%_, H⟩
+    imodintro
+    isplit
+    · ipure_intro; grind only [cases Stuckness, Language.Context.reducible_fill]
+    iintro %e₂ %σ₂ %efs %HKstep Hcred
+    obtain ⟨e₂', rfl, Hstep⟩ := κ.primStep_fill_inv h HKstep
+    icases H $$ %e₂' %σ₂ %efs %Hstep Hcred with >H; imodintro; imodintro
+    imod H; imodintro; iapply step_fupdN_wand $$ H; iintro H
+    imod H with ⟨$, H, $⟩; imodintro; iapply IH $$ H
+
 end Wp
