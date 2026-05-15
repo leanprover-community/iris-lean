@@ -68,10 +68,9 @@ section Operations
 
 variable {GF : BundledGFunctors} [LC : LcGS GF]
 
-theorem lc_split {n m} : £ (n + m) ⊣⊢@{IProp GF} £ n ∗ £ m := by
-  -- FIXME: Timeout on iOwn_op. Why?
-  refine .trans ?_ iOwn_op
-  exact .rfl
+theorem lc_split {n m} : £ (n + m) ⊣⊢@{IProp GF} £ n ∗ £ m :=
+  -- -- FIXME: Timeout on iOwn_op. Why?
+  iOwn_op (E := LC.lc_elem) (a1 := ◯ n) (a2 := ◯ m)
 
 @[rocq_alias lc_zero]
 theorem lc_zero : ⊢@{IProp GF} |==> £ 0 := iOwn_unit (ε := UCMRA.unit)
