@@ -653,7 +653,7 @@ theorem wp_frame_step_r : toVal e = none → E₂ ⊆ E₁ →
     WP e @ s; E₂ {{ Φ }} ∗ (|={E₁}[E₂]▷=> R) ⊢ WP e @ s; E₁ {{ v, iprop(Φ v ∗ R) }} :=
   (BI.sep_comm.1.trans <| wp_frame_step_l · · |>.trans <| wp_mono (fun _ => BI.sep_comm.1))
 
-variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} {R : IProp GF} in
+variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{Φ : Val → IProp GF} {R : IProp GF} in
 theorem wp_frame_step_l' : toVal e = none → E₂ ⊆ E₁ →
     (▷ R) ∗ WP e @ s; E₂ {{ Φ }} ⊢ WP e @ s; E₁ {{ v, iprop(R ∗ Φ v) }} := by
   iintro %toVal_e %E₂E₁ ⟨Hu, Hwp⟩
@@ -665,9 +665,36 @@ theorem wp_frame_step_l' : toVal e = none → E₂ ⊆ E₁ →
   apply BIFUpdate.mono
   exact BI.true_intro
 
-variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} {R : IProp GF} in
+variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{Φ : Val → IProp GF} {R : IProp GF} in
 theorem wp_frame_step_r' : toVal e = none → E₂ ⊆ E₁ →
      WP e @ s; E₂ {{ Φ }} ∗ (▷ R) ⊢ WP e @ s; E₁ {{ v, iprop(Φ v ∗ R) }} :=
   (BI.sep_comm.1.trans <| wp_frame_step_l' · · |>.trans <| wp_mono (fun _ => BI.sep_comm.1))
+
+variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ Ψ : Val → IProp GF} in
+theorem wp_wand :
+    WP e @ s ; E {{ Φ }} ⊢ (∀ v, Φ v -∗ Ψ v) -∗ WP e @ s ; E {{ Ψ }} := by
+  iintro Hwp H
+  iapply wp_strong_mono (Std.IsPreorder.le_refl s) (Std.LawfulSet.subset_refl) $$ Hwp
+  iintro %v HΦ
+  icases H $$ HΦ with H
+  exact fupd_intro
+
+variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF} in
+theorem wp_wand_l :
+    (∀ v, Φ v -∗ Ψ v) ∗ WP e @ s ; E {{ Φ }} ⊢ WP e @ s ; E {{ Ψ }} :=
+  BI.wand_elim' wp_wand
+
+variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF} in
+theorem wp_wand_r :
+    WP e @ s ; E {{ Φ }} ∗ (∀ v, Φ v -∗ Ψ v) ⊢ WP e @ s ; E {{ Ψ }} :=
+  BI.wand_elim wp_wand
+
+variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ :Val → IProp GF}{R : IProp GF} in
+theorem wp_frame_wand :
+    R ⊢ WP e @ s; E {{ v, iprop(R -∗ Φ v) }} -∗ WP e @ s; E {{ Φ }} := by
+  iintro R Hwp
+  iapply wp_wand $$ Hwp
+  iintro %v H
+  iapply H $$ R
 
 end Wp
