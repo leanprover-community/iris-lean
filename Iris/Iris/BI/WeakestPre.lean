@@ -36,10 +36,12 @@ instance instLE: LE Stuckness where
   le x y := ¬ (x = .MaybeStuck ∧ y = .NotStuck)
 
 instance : Std.IsPreorder Stuckness where
-  le_refl := by
-    simp only [LE.le, not_and, forall_eq, reduceCtorEq, not_false_eq_true]
-  le_trans := by
-    simp only [LE.le]; grind only [Stuckness]
+  le_refl  := by grind only [Stuckness, LE.le, instLE]
+  le_trans := by grind only [Stuckness, LE.le, instLE]
+
+@[simp] theorem le_MaybeStuck {s : Stuckness} : s ≤ MaybeStuck := by cases s <;> grind only [Stuckness, LE.le, instLE]
+
+@[simp] theorem NotSuck_le {s : Stuckness} : NotStuck ≤ s := by cases s <;> grind only [Stuckness, LE.le, instLE]
 
 end Stuckness
 
