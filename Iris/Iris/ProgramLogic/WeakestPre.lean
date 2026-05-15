@@ -154,42 +154,36 @@ instance wp_ne (s : Stuckness) E (e : Expr) :
     OFE.NonExpansive (Wp.wp (PROP := IProp GF) s E e) where
   ne {n Φ₁ Φ₂} HΦ := by
     induction n using Nat.strongRecOn generalizing e E Φ₁ Φ₂ with | ind n IH =>
-    calc iprop(Wp.wp s E e Φ₁)
-     _ ≡{n}≡ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ₁ :=
-        OFE.equiv_dist.1 (BI.equiv_iff.2 <| wp_unfold) n
-     _ ≡{n}≡ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ₂ := by
-        dsimp [wp.pre]
-        cases toVal e
-        case some v => exact BIFUpdate.ne.ne <| HΦ v
-        dsimp
-        refine BI.forall_ne (fun σ₁ => ?_)
-        refine BI.forall_ne (fun ns => ?_)
-        refine BI.forall_ne (fun obs => ?_)
-        refine BI.forall_ne (fun obs' => ?_)
-        refine BI.forall_ne (fun nt => ?_)
-        refine BI.wand_ne.ne (.of_eq rfl) ?_
-        refine BIFUpdate.ne.ne ?_
-        refine BI.sep_ne.ne (.of_eq rfl) ?_
-        refine BI.forall_ne (fun e₂  => ?_)
-        refine BI.forall_ne (fun σ₂ => ?_)
-        refine BI.forall_ne (fun eₜ => ?_)
-        refine BI.wand_ne.ne (.of_eq rfl) ?_
-        refine BI.wand_ne.ne (.of_eq rfl) ?_
-        induction numLatersPerStep ns
-        case zero =>
-          refine step_fupdN_contractive.distLater_dist ?_
-          intros i ih
-          refine BIFUpdate.ne.ne ?_
-          refine BI.sep_ne.ne (.of_eq rfl) ?_
-          refine BI.sep_ne.ne ?_ (.of_eq rfl)
-          apply IH i ih _ _ <| OFE.dist_lt HΦ ih
-        case succ n IH =>
-          apply BIFUpdate.ne.ne
-          apply BI.later_ne.ne
-          apply BIFUpdate.ne.ne
-          assumption
-     _ ≡{n}≡ Wp.wp s E e Φ₂ :=
-        OFE.equiv_dist.1 (BI.equiv_iff.2 <| wp_unfold) n |>.symm
+    simp only [OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr wp_unfold)]
+    dsimp only [wp.pre, Stuckness.MaybeReducible]
+    cases toVal e
+    case some v => exact BIFUpdate.ne.ne <| HΦ v
+    refine BI.forall_ne (fun σ₁ => ?_)
+    refine BI.forall_ne (fun ns => ?_)
+    refine BI.forall_ne (fun obs => ?_)
+    refine BI.forall_ne (fun obs' => ?_)
+    refine BI.forall_ne (fun nt => ?_)
+    refine BI.wand_ne.ne (.of_eq rfl) ?_
+    refine BIFUpdate.ne.ne ?_
+    refine BI.sep_ne.ne (.of_eq rfl) ?_
+    refine BI.forall_ne (fun e₂  => ?_)
+    refine BI.forall_ne (fun σ₂ => ?_)
+    refine BI.forall_ne (fun eₜ => ?_)
+    refine BI.wand_ne.ne (.of_eq rfl) ?_
+    refine BI.wand_ne.ne (.of_eq rfl) ?_
+    induction numLatersPerStep ns with
+    | zero =>
+      refine step_fupdN_contractive.distLater_dist ?_
+      intros i ih
+      refine BIFUpdate.ne.ne ?_
+      refine BI.sep_ne.ne (.of_eq rfl) ?_
+      refine BI.sep_ne.ne ?_ (.of_eq rfl)
+      apply IH i ih _ _ <| OFE.dist_lt HΦ ih
+    | succ n IH =>
+      apply BIFUpdate.ne.ne
+      apply BI.later_ne.ne
+      apply BIFUpdate.ne.ne
+      assumption
 
 #rocq_ignore wp_proper "Derivable using NonExpansive.eqv"
 
@@ -198,40 +192,35 @@ instance wp_ne (s : Stuckness) E (e : Expr) :
 instance wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     OFE.Contractive (Wp.wp (PROP := IProp GF) s E e) where
   distLater_dist {n Φ₁ Φ₂} HΦ := by
-    calc iprop(Wp.wp s E e Φ₁)
-     _ ≡{n}≡ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ₁ :=
-        OFE.equiv_dist.1 (BI.equiv_iff.2 <| wp_unfold) n
-     _ ≡{n}≡ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ₂ := by
-        simp only [wp.pre, h]
-        refine BI.forall_ne (fun σ₁ => ?_)
-        refine BI.forall_ne (fun ns => ?_)
-        refine BI.forall_ne (fun obs => ?_)
-        refine BI.forall_ne (fun obs' => ?_)
-        refine BI.forall_ne (fun nt => ?_)
-        refine BI.wand_ne.ne (.of_eq rfl) ?_
-        refine BIFUpdate.ne.ne ?_
-        refine BI.sep_ne.ne (.of_eq rfl) ?_
-        refine BI.forall_ne (fun e₂  => ?_)
-        refine BI.forall_ne (fun σ₂ => ?_)
-        refine BI.forall_ne (fun eₜ => ?_)
-        refine BI.wand_ne.ne (.of_eq rfl) ?_
-        refine BI.wand_ne.ne (.of_eq rfl) ?_
-        induction numLatersPerStep ns
-        case zero =>
-          refine step_fupdN_contractive.distLater_dist ?_
-          intros i ih
-          refine BIFUpdate.ne.ne ?_
-          refine BI.sep_ne.ne (.of_eq rfl) ?_
-          refine BI.sep_ne.ne ?_ (.of_eq rfl)
-          apply OFE.NonExpansive.ne
-          apply HΦ i ih
-        case succ n IH =>
-          apply BIFUpdate.ne.ne
-          apply BI.later_ne.ne
-          apply BIFUpdate.ne.ne
-          assumption
-     _ ≡{n}≡ Wp.wp s E e Φ₂ :=
-        OFE.equiv_dist.1 (BI.equiv_iff.2 <| wp_unfold) n |>.symm
+    simp only [OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr wp_unfold)]
+    simp only [wp.pre, h]
+    refine BI.forall_ne (fun σ₁ => ?_)
+    refine BI.forall_ne (fun ns => ?_)
+    refine BI.forall_ne (fun obs => ?_)
+    refine BI.forall_ne (fun obs' => ?_)
+    refine BI.forall_ne (fun nt => ?_)
+    refine BI.wand_ne.ne (.of_eq rfl) ?_
+    refine BIFUpdate.ne.ne ?_
+    refine BI.sep_ne.ne (.of_eq rfl) ?_
+    refine BI.forall_ne (fun e₂  => ?_)
+    refine BI.forall_ne (fun σ₂ => ?_)
+    refine BI.forall_ne (fun eₜ => ?_)
+    refine BI.wand_ne.ne (.of_eq rfl) ?_
+    refine BI.wand_ne.ne (.of_eq rfl) ?_
+    induction numLatersPerStep ns
+    case zero =>
+      refine step_fupdN_contractive.distLater_dist ?_
+      intros i ih
+      refine BIFUpdate.ne.ne ?_
+      refine BI.sep_ne.ne (.of_eq rfl) ?_
+      refine BI.sep_ne.ne ?_ (.of_eq rfl)
+      apply OFE.NonExpansive.ne
+      apply HΦ i ih
+    case succ n IH =>
+      apply BIFUpdate.ne.ne
+      apply BI.later_ne.ne
+      apply BIFUpdate.ne.ne
+      assumption
 
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
@@ -350,9 +339,8 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
     iintro >(⟨Hσ,H,Hefs⟩)
     cases s with -- TODO: Example of place where `match` is worse than `cases`
     | NotStuck =>
-      -- TODO: replace this when `irw` is available.
-      istop; refine (BI.sep_mono (BI.sep_mono .rfl wp_unfold.1) (BI.BigSepL.bigSepL_mono λ_↦ wp_unfold.1)).trans ?_; refine BI.Entails.trans ?_ (BIFUpdate.mono <| (BI.sep_mono .rfl (BI.sep_mono wp_unfold.2 (BI.BigSepL.bigSepL_mono λ_↦ wp_unfold.2) ))); iintro ⟨⟨Hσ,H⟩,Hefs⟩
-      simp [wp.pre]
+      simp only [OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr wp_unfold)]
+      simp only [wp.pre]
       have := (ι.atomic _ _ _ _ _ Hstep)
       simp at this
       match h₂ : toVal e2 with
@@ -405,7 +393,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF}
   WP e @ s ; E {{ v, iprop(P ={E}=∗ Φ v) }} -∗
   WP e @ s ; E {{ Φ }} := by
     intro h Htri
-    refine BI.Entails.trans ?_ (BI.wand_mono wp_unfold.1 wp_unfold.2)
+    simp only [OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr wp_unfold)]
     iintro Hupd Hwp
     simp [wp.pre, h]
     iintro %σ₁ %ns %obs %obs' %nt Hσ₁
@@ -424,7 +412,8 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF}
     simp [Nat.repeat]
     ihave Hwp := Hwp $$ [] [Hm]
     · ipure_intro; assumption
-    · rw [Nat.add_comm]; exact .rfl
+    · simp only [OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr lc_split), OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr BI.sep_comm)]
+      exact .rfl
     iapply step_fupd_wand $$ Hwp; iintro Hwp
     iapply step_fupdN_le (n := numLatersPerStep m) (by grind only) (Std.LawfulSet.subset_refl)
     iapply step_fupdN_wand $$ Hwp; iintro >⟨SI, Hwp, $⟩
