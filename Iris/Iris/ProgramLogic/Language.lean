@@ -8,6 +8,7 @@ meta import Iris.Std.RocqPorting
 public import Iris.Std.FromMathlib
 public import Iris.Std.Relation
 public import Iris.Std.List
+public import Iris.BI.WeakestPre
 public meta import Lean.PrettyPrinter.Delaborator
 public import Batteries.Data.List.Basic
 
@@ -217,8 +218,15 @@ end ReducibilityLemmas
 
 @[rocq_alias atomicity]
 inductive Atomicity where
-| WeaklyAtomic
-| StronglyAtomic
+  | WeaklyAtomic
+  | StronglyAtomic
+
+@[rocq_alias stuckness_to_atomicity, coe]
+abbrev Atomicity.ofStuckness : Stuckness → Atomicity
+  | .MaybeStuck => .StronglyAtomic
+  | .NotStuck => .WeaklyAtomic
+
+instance : Coe Stuckness Atomicity where coe := Atomicity.ofStuckness
 
 @[rocq_alias Atomic]
 class Atomic (a : Atomicity) (e : Expr) : Prop where
