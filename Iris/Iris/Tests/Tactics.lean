@@ -1979,7 +1979,7 @@ example (a b : A) (P Q R : A → PROP)
   · iexact H
 
 example (a b : A) (P Q R : A → PROP)
-    [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] [Absorbing (P a)] :
+    [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] [Absorbing iprop(P b ∗ Q b ∗ R b)] :
     internalEq a b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
   istart
   iintro ⟨Heq, H⟩
@@ -2017,7 +2017,15 @@ example (P Q : PROP) :
   iintro #HPQ HQ !>
   inext
   irewrite [HPQ] at HQ
-  · exact OFE.id_ne
+  · exact ⟨fun _ _ _ h => affinely_ne.ne h⟩
+  · iexact HQ
+
+example (P Q : PROP) :
+  ⊢@{PROP} <affine> ▷ (internalEq Q P) -∗ <affine> ▷ P -∗ <affine> ▷ Q := by
+  iintro #HPQ HQ !>
+  inext
+  irewrite [←HPQ] at HQ
+  · exact ⟨fun _ _ _ h => affinely_ne.ne h⟩
   · iexact HQ
 
 end irewrite
