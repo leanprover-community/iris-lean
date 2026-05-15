@@ -55,21 +55,25 @@ theorem combine_gives_nil [BI PROP] {e goal : PROP} (pf : e ∗ □ True ⊢ goa
 
 /-- Auxilary lemma for the step case where multiple hypotheses are given -/
 theorem combine_gives_step [BI PROP] {e e1 e2 out1 out2 out : PROP}
-    (pf1 : e ⊣⊢ e1 ∗ out1)
+    (inst : CombineSepGives out1 out2 out)
+    (pf0 : e1 ∗ out1 ⊢ e)
+    (pf1 : (e1 ∗ out1 ⊢ goal) → e ⊢ goal)
     (pf2 : e1 ⊣⊢ e2 ∗ out2)
-    (inst : CombineSepGives out1 out2 out) : e ⊢ e ∗ □ out :=
-  have pf3 : e ⊣⊢ e2 ∗ out1 ∗ out2 := calc
-    e ⊣⊢ e1 ∗ out1          := pf1
-    _ ⊣⊢ (e2 ∗ out2) ∗ out1 := sep_congr pf2 .rfl
-    _ ⊣⊢ e2 ∗ out2 ∗ out1   := sep_assoc
-    _ ⊣⊢ e2 ∗ out1 ∗ out2   := sep_congr .rfl sep_comm
-  calc
-    e ⊢ e2 ∗ out1 ∗ out2                        := pf3.mp
-    _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ out1 ∗ out2) := and_intro refl refl
+    (pf3 : e ∗ □ out ⊢ goal) : e ⊢ goal :=
+  have pf4 : e1 ∗ out1 ⊢ goal := calc
+    e1 ∗ out1 ⊢ (e2 ∗ out2) ∗ out1 := sep_mono_l pf2.mp
+    _         ⊢ e2 ∗ out2 ∗ out1   := sep_assoc.mp
+    _         ⊢ e2 ∗ out1 ∗ out2   := sep_mono_r sep_comm.mp
+    _         ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ out1 ∗ out2) := and_intro refl refl
     _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ <pers> out)  := and_mono refl (sep_mono refl inst.combine_sep_gives)
     _ ⊢ (e2 ∗ out1 ∗ out2) ∧ <pers> out         := and_mono refl sep_elim_r
     _ ⊢ (e2 ∗ out1 ∗ out2) ∗ □ out              := persistently_and_intuitionistically_sep_r.mp
-    _ ⊢ e ∗ □ out                               := sep_mono_l pf3.mpr
+    _ ⊢ (e2 ∗ out2 ∗ out1) ∗ □ out := sep_mono_l (sep_mono_r sep_comm.mp)
+    _ ⊢ ((e2 ∗ out2) ∗ out1) ∗ □ out := sep_mono_l sep_assoc.mpr
+    _ ⊢ (e1 ∗ out1) ∗ □ out := sep_mono_l (sep_mono_l pf2.mpr)
+    _ ⊢ e ∗ □ out := sep_mono_l pf0
+    _         ⊢ goal               := pf3
+  pf1 pf4
 
 /--
   Given any Iris proposition `origE` and `goal`, the structure
@@ -103,7 +107,7 @@ private def updateSt {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {p1 p2 : Q(Bool)}
   match matchBool p1, matchBool p2 with
   | .inl _, .inl _ => { newHyps, p := q(true), out', pf }
   | .inl _, .inr _ => { newHyps, p := q(false), out', pf }
-  | .inr _, _ => { newHyps, p := q(false), out', pf }
+  | .inr _, _      => { newHyps, p := q(false), out', pf }
 
 private def CombineAsState.combineAsProofModeHyp {u prop bi origE goal} :
     @CombineAsState u prop bi origE goal → IVarId  →
@@ -128,20 +132,18 @@ private def CombineAsState.combineAsProofModeHyp {u prop bi origE goal} :
 private structure CombineGivesState {u} {prop : Q(Type u)} {bi} (e goal : Q($prop)) where
   {out' : Q($prop)}
   (hyps : Hyps bi e)
-  (pf1 : Q($e ⊢ $e ∗ □ $out'))
   pf : Q(($e ∗ □ $out' ⊢ $goal) → ($e ⊢ $goal))
 
 private def CombineGivesState.combineGivesProofModeHyp {u prop bi e goal} :
     @CombineGivesState u prop bi e goal → IVarId →
     ProofModeM (@CombineGivesState u prop bi e goal)
-  | { out', hyps, pf1, .. }, ivar => do
+  | { out', hyps, pf, .. }, ivar => do
       let ⟨_, _, out2, _, _, _, pf2⟩ := hyps.remove false ivar
       let newOut ← mkFreshExprMVarQ _
       let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives iprop(□ $out') $out2 $newOut)
       | throwError "icombine: no type class instance to combine propositions"
-      let pf1 : Q($e ⊢ $e ∗ □ $newOut) := q(combine_gives_step ⟨$pf1, sep_elim_l⟩ $pf2 $inst)
-      let pf : Q(($e ∗ □ $newOut ⊢ $goal) → ($e ⊢ $goal)) := q($(pf1).trans)
-      return { hyps, out' := newOut, pf1, pf }
+      let pf : Q(($e ∗ □ $newOut ⊢ $goal) → ($e ⊢ $goal)) := q(combine_gives_step $inst sep_elim_l $pf $pf2)
+      return { hyps, out' := newOut, pf }
 
 /-- The tactic `icombine` combines propositions into one using the type
     class `CombineSepAs`. By default, the separating conjunction is used
@@ -206,11 +208,9 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
       let some inst ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out1 $out2 $out)
       | throwError "icombine: no type class instance to combine propositions"
 
-      let pf' : Q($e ⊢ $e ∗ □ $out) := q(combine_gives_step $pf1 $pf2 $inst)
-
       -- Initialise the mutable `CombineGivesState` instance
       let mut st : CombineGivesState e goal := {
-        hyps, out' := out, pf1 := q($pf'), pf := q($(pf').trans)
+        hyps, out' := out, pf := q(combine_gives_step $inst $(pf1).mpr $(pf1).mp.trans $pf2)
       }
 
       for h in htail do
