@@ -58,9 +58,13 @@ end TranspAp
 
 section ElemG
 
+/-- `ElemG` takes functors instead of CMRAs -/
+@[rocq_alias inG]
 class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] where
   τ : GType
   transp : FF τ = ⟨F, ‹_›⟩
+
+#rocq_ignore subG_inG "Not needed"
 
 open OFE
 
@@ -200,7 +204,7 @@ theorem IProp.validN_unfoldi_mp {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n}
 theorem IProp.validN_unfoldi {n : Nat} (x : FF.api τ (IProp FF)) : ✓{n} (unfoldi x) ↔ ✓{n} x :=
   ⟨IProp.validN_unfoldi_mp x,IProp.unfoldi_validN x⟩
 
--- unfoldi preserves unit structure
+/-- unfoldi preserves unit structure -/
 theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit x] :
     IsUnit (unfoldi x) := by
   refine { unit_valid := ?_, unit_left_id := ?_, pcore_unit := ?_ }

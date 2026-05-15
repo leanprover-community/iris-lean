@@ -26,6 +26,9 @@ abbrev NaInvF : OFunctorPre :=
 class NaInvG (GF : BundledGFunctors) where
   inv : ElemG GF NaInvF
 
+#rocq_ignore «na_invΣ» "Not needed"
+#rocq_ignore «subG_na_invG» "Not needed"
+
 attribute [reducible, instance] NaInvG.inv
 
 @[rocq_alias na_inv_pool_name]

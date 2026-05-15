@@ -26,12 +26,11 @@ FIXME: missing token_combine_gives
 abbrev TokenF : COFE.OFunctorPre := constOF (Excl Unit)
 
 @[rocq_alias tokenG]
-class TokenG (GF : BundledGFunctors) where
-  [elemG : ElemG GF TokenF]
+class TokenG (GF : BundledGFunctors) where [elemG : ElemG GF TokenF]
 
-attribute [reducible] TokenG.elemG
-attribute [instance] TokenG.elemG
-attribute [rocq_alias «subG_tokenΣ»] TokenG.elemG
+attribute [reducible, instance] TokenG.elemG
+
+#rocq_ignore «subG_tokenΣ» "Not needed"
 
 variable {GF : BundledGFunctors} [TokenG GF]
 
