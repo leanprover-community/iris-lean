@@ -511,4 +511,28 @@ theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E
     imod H; imodintro; iapply step_fupdN_wand $$ H; iintro H
     imod H with ⟨$, H, $⟩; imodintro; iapply IH $$ H
 
+theorem wp_bind_inv (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} :
+    WP (K e) @ s ; E {{ Φ }} ⊢ WP e @ s ; E {{v, WP (K ((v : Val) : Expr)) @ s ; E {{ Φ }} }} := by
+  iintro H
+  iloeb as IH generalizing %E %e %Φ
+  rewrite (occs := [3]) [(OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr) wp_unfold]
+  simp only [wp.pre]
+  match h: toVal e with
+  | some v =>
+    simp only [ToVal.coe_of_toVal_eq_some h]
+    iapply fupd_wp $$ H
+  | none =>
+    rewrite (occs := [2]) [(OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr) wp_unfold]
+    simp only [wp.pre, κ.toVal_eq_none_fill h, Nat.repeat]
+    iintro %σ₁ %step %obs %obs' %n Hσ
+    imod H $$ [$] with ⟨%_, H⟩
+    imodintro
+    isplit
+    · ipure_intro; grind only [cases Stuckness, Language.Context.reducible_fill_inv]
+    iintro %e₂ %σ₂ %efs %Hstep Hcred
+    have HKstep := κ.primStep_fill Hstep
+    icases H $$ %(K e₂) %σ₂ %efs %HKstep Hcred with >H; imodintro; imodintro
+    imod H; imodintro; iapply step_fupdN_wand $$ H; iintro H
+    imod H with ⟨$, H, $⟩; imodintro; iapply IH $$ H
+
 end Wp
