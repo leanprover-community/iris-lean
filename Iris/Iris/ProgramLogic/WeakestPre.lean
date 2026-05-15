@@ -535,4 +535,38 @@ theorem wp_bind_inv (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness
     imod H; imodintro; iapply step_fupdN_wand $$ H; iintro H
     imod H with ⟨$, H, $⟩; imodintro; iapply IH $$ H
 
+/-! ## Derived rules -/
+
+variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ Ψ : Val → IProp GF} in
+theorem wp_mono :
+    (∀ v, Φ v ⊢ Ψ v) → WP e @ s ; E {{ Φ }} ⊢ WP e @ s ; E {{ Ψ }} := by
+  iintro %HΦ H
+  iapply wp_strong_mono (Std.IsPreorder.le_refl s) (Std.LawfulSet.subset_refl) $$ H
+  iintro %v HΨ;
+  ihave aux := HΦ $$ HΨ
+  exact fupd_intro
+
+variable {s₁ s₂ : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF} in
+theorem wp_stuck_mono :
+    s₁ ≤ s₂ → WP e @ s₁; E {{ Φ }} ⊢ WP e @ s₂ ; E {{ Φ }} := by
+  iintro %s₁s₂ Hwp
+  iapply wp_strong_mono s₁s₂ (Std.LawfulSet.subset_refl) $$ Hwp
+  iintro %v HΦ
+  exact fupd_intro
+
+variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF} in
+theorem wp_stuck_weaken :
+    WP e @ s; E {{ Φ }} ⊢ WP e @ E ?{{ Φ }} :=
+   wp_stuck_mono (Stuckness.le_MaybeStuck)
+
+variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{Φ : Val → IProp GF} in
+theorem wp_mask_mono : E₁ ⊆ E₂ → WP e @ s; E₁ {{ Φ }} ⊢ WP e @ s; E₂ {{ Φ }} := by
+  iintro %E₁_E₂ Hwp
+  iapply wp_strong_mono (Std.IsPreorder.le_refl s) E₁_E₂ $$ Hwp
+  iintro %v HΦ
+  exact fupd_intro
+
+#rocq_ignore wp_mono' "No `Proper` typeclass in Lean"
+#rocq_ignore wp_flip_mono' "No `Proper` typeclass in Lean"
+
 end Wp
