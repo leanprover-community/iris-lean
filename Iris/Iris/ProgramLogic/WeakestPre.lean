@@ -640,4 +640,34 @@ theorem wp_step_fupd :
   simp only [Nat.repeat]
   iframe
 
+variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} {R : IProp GF} in
+theorem wp_frame_step_l : toVal e = none → E₂ ⊆ E₁ →
+    (|={E₁}[E₂]▷=> R) ∗ WP e @ s; E₂ {{ Φ }} ⊢ WP e @ s; E₁ {{ v, iprop(R ∗ Φ v) }} := by
+  iintro %toVal_e %E₂E₁ ⟨Hu, Hwp⟩
+  iapply wp_step_fupd toVal_e E₂E₁ $$ Hu
+  iapply wp_mono $$ Hwp
+  iintro %x $ $
+
+variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} {R : IProp GF} in
+theorem wp_frame_step_r : toVal e = none → E₂ ⊆ E₁ →
+    WP e @ s; E₂ {{ Φ }} ∗ (|={E₁}[E₂]▷=> R) ⊢ WP e @ s; E₁ {{ v, iprop(Φ v ∗ R) }} :=
+  (BI.sep_comm.1.trans <| wp_frame_step_l · · |>.trans <| wp_mono (fun _ => BI.sep_comm.1))
+
+variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} {R : IProp GF} in
+theorem wp_frame_step_l' : toVal e = none → E₂ ⊆ E₁ →
+    (▷ R) ∗ WP e @ s; E₂ {{ Φ }} ⊢ WP e @ s; E₁ {{ v, iprop(R ∗ Φ v) }} := by
+  iintro %toVal_e %E₂E₁ ⟨Hu, Hwp⟩
+  iapply wp_frame_step_l toVal_e E₂E₁
+  iframe
+  iapply fupd_mask_intro E₂E₁
+  iintro _
+  imodintro
+  apply BIFUpdate.mono
+  exact BI.true_intro
+
+variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} {R : IProp GF} in
+theorem wp_frame_step_r' : toVal e = none → E₂ ⊆ E₁ →
+     WP e @ s; E₂ {{ Φ }} ∗ (▷ R) ⊢ WP e @ s; E₁ {{ v, iprop(Φ v ∗ R) }} :=
+  (BI.sep_comm.1.trans <| wp_frame_step_l' · · |>.trans <| wp_mono (fun _ => BI.sep_comm.1))
+
 end Wp
