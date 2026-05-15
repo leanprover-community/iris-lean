@@ -70,76 +70,56 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (I
   fupd := uPred_fupd
   subset Hsub := by
     simp only [uPred_fupd]
-    iintro ⟨Hwsat, HE⟩
+    iintro ⟨$, HE⟩
     rw [diff_subset_decomp Hsub]
-    ihave ⟨HE1, HE2⟩ := (ownE_op (disjoint_symm disjoint_diff_right)).mp $$ HE
-    imodintro; imodintro
-    isplitl [Hwsat]; iassumption
-    isplitl [HE2]; iassumption
-    iintro ⟨Hwsat, HE⟩
-    imodintro; imodintro
-    isplitl [Hwsat]; iassumption
-    ihave HE := (ownE_op (disjoint_symm disjoint_diff_right)).mpr $$ [HE1 HE]
-    · isplitl [HE1] <;> iassumption
-    isplitl [HE]; iassumption
-    simp
+    ihave ⟨HE1, $⟩ := (ownE_op (disjoint_symm disjoint_diff_right)).mp $$ HE
+    iintro !> !>
+    iintro ⟨$, HE⟩ !> !>
+    ihave $ := (ownE_op (disjoint_symm disjoint_diff_right)).mpr $$ [$]
   except0 {E1 E2 P} := by
     simp only [uPred_fupd]
     iintro >H; iexact H
   mono H := by
     simp only [uPred_fupd]
     iintro H ⟨Hwsat, HE⟩
-    ihave H := H $$ [Hwsat HE]; isplitl [Hwsat] <;> iassumption
+    ihave H := H $$ [$]
     iapply le_upd_if_mono $$ H
-    iintro >⟨H1, H2, H3⟩; imodintro
-    isplitl [H1]; iassumption
-    isplitl [H2]; iassumption
+    iintro >⟨$, $, H3⟩ !>
     iapply H $$ H3
   trans {_ _ _ _} := by
     simp only [uPred_fupd]
     iintro H ⟨Hwsat, HE⟩
     iapply le_upd_if_trans
-    ihave H := H $$ [Hwsat HE]; isplitl [Hwsat] <;> iassumption
+    ihave H := H $$ [$]
     iapply le_upd_if_mono $$ H
     iintro >⟨H1, H2, H3⟩
-    iapply H3 $$ [H1 H2]; isplitl [H1] <;> iassumption
+    iapply H3 $$ [$]
   mask_frame_r' {_ _ _ _} Hdisj := by
     simp only [uPred_fupd]
     iintro H ⟨Hwsat, HE⟩
     ihave ⟨HE1, HE2⟩ := ownE_op Hdisj $$ HE
-    ihave >H := H $$ [Hwsat HE1]; isplitl [Hwsat] <;> iassumption
+    ihave >H := H $$ [$]
     imodintro
-    imod H with ⟨H1, H2, H3⟩; imodintro
-    ihave ⟨%Hdisj, HE⟩ := ownE_op_iff.mpr $$ [H2 HE2]
-    · isplitl [H2] <;> iassumption
-    isplitl [H1]; iassumption
-    isplitl [HE]; iassumption
+    imod H with ⟨$, H2, H3⟩; imodintro
+    ihave ⟨%Hdisj, $⟩ := ownE_op_iff.mpr $$ [H2 HE2]
+    · iframe
     iapply H3
     ipure_intro; assumption
   frame_r {_ _ _ _} := by
     simp only [uPred_fupd]
     iintro ⟨H, Hx⟩ ⟨Hwsat, HE⟩
-    ispecialize H $$ [Hwsat HE]; isplitl [Hwsat] <;> iassumption
-    ihave H := le_upd_if_frame_r $$ [H Hx]
-    · isplitl [H]
-      · iexact H
-      · iexact Hx
-    imod H with ⟨>⟨H1, H2, H3⟩, H4⟩; imodintro
-    imodintro
-    isplitl [H1]; iassumption
-    isplitl [H2]; iassumption
-    isplitl [H3]; iassumption
-    iassumption
+    ispecialize H $$ [$]
+    ihave H := le_upd_if_frame_r $$ [$H $Hx]
+    imod H with ⟨>⟨$, $, $⟩, $⟩; imodintro
+    ipure_intro; trivial
 
 @[rocq_alias uPred_bi_bupd_fupd]
 instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIUpdateFUpdate (IProp GF) where
   fupd_of_bupd {_ _} := by
     iintro H
     simp only [fupd, uPred_fupd]
-    iintro ⟨Hwsat, HE⟩
+    iintro ⟨$, $⟩
     imod H; imodintro; imodintro
-    isplitl [Hwsat]; iassumption
-    isplitl [HE]; iassumption
     iassumption
 
 @[rocq_alias uPred_bi_fupd_sbi_no_lc]
@@ -149,35 +129,26 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen fa
     simp only [fupd, uPred_fupd, le_upd_if, Bool.false_eq_true, ↓reduceIte]
     iintro ⟨H, Hx⟩ ⟨Hwsat, HE⟩
     ihave #>HP : ◇ ■ P $$ [H Hx Hwsat HE]
-    · imod H $$ Hx [Hwsat HE] with ⟨_, _, H⟩
-      · isplitl [Hwsat] <;> iassumption
-      iexact H
+    · imod H $$ Hx [$] with ⟨_, _, $⟩
     imodintro
-    isplitl [Hwsat]; iassumption
-    isplitl [HE]; iassumption
-    isplitl [HP] <;> iassumption
+    iframe
+    iassumption
   fupd_plainly_later _ P := by
     simp only [fupd, uPred_fupd, le_upd_if, Bool.false_eq_true, ↓reduceIte]
     iintro H ⟨Hwsat, HE⟩
     ihave #HP : ▷ ◇ ■ P $$ [H Hwsat HE]
     · inext
-      imod H $$ [Hwsat HE] with ⟨_, _, H⟩
-      · isplitl [Hwsat] <;> iassumption
-      iexact H
+      imod H $$ [$] with ⟨_, _, $⟩
     imodintro
-    isplitl [Hwsat]; iassumption
-    isplitl [HE]; iassumption
+    iframe
     imodintro; inext; imod HP; imodintro; iassumption
   fupd_plainly_sForall_2 E P := by
     simp only [fupd, uPred_fupd, le_upd_if, Bool.false_eq_true, ↓reduceIte]
     iintro H ⟨Hwsat, HE⟩
     ihave #HP : ◇ ■ sForall P $$ [H Hwsat HE]
-    · imod H $$ [Hwsat HE] with ⟨_, _, H⟩
-      · isplitl [Hwsat] <;> iassumption
-      iexact H
+    · imod H $$ [$] with ⟨_, _, $⟩
     imodintro; imod HP; imodintro
-    isplitl [Hwsat]; iassumption
-    isplitl [HE]; iassumption
+    iframe
     iclear H
     iexact HP
 
@@ -326,14 +297,8 @@ theorem step_fupdN_soundness_lc [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain 
     simp only [Nat.repeat]
     iintro ⟨⟨Hcr, Hcrs⟩, >H⟩
     imod lc_fupd_elim_later $$ Hcr H with >H
-    -- FIXME: direct iapply doesn't work
-    ihave IH : £ n ∗ (|={∅}▷=>^[n] P) -∗ |={∅}=> P $$ []
-    · refine wand_intro ?_
-      refine sep_elim_r.trans ?_
-      exact IH
-    iapply IH $$ [Hcrs H]
-    isplitl [Hcrs]; iassumption
-    iassumption
+    iapply IH
+    iframe
 
 @[rocq_alias step_fupdN_soundness_gen]
 theorem step_fupdN_soundness_gen [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] hlc :
@@ -395,14 +360,8 @@ theorem step_fupdN_soundness_lc' [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain
     simp only [Nat.repeat]
     iintro ⟨⟨Hcr, Hcrs⟩, >H⟩
     imod lc_fupd_elim_later $$ Hcr H with >H
-    -- FIXME: direct iapply doesn't work
-    ihave IH : £ n ∗ (|={⊤}[∅]▷=>^[n] P) -∗ |={⊤}=> P $$ []
-    · refine wand_intro ?_
-      refine sep_elim_r.trans ?_
-      exact IH
-    iapply IH $$ [Hcrs H]
-    isplitl [Hcrs]; iassumption
-    iassumption
+    iapply IH
+    iframe
 
 end StepIndexed
 

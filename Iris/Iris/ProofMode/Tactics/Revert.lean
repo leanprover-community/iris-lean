@@ -44,10 +44,10 @@ private structure RevertState {prop : Q(Type u)} {bi : Q(BI $prop)} (origE origG
 
 /-- Revert a proofmode hypothesis by turning it into a wand premise. -/
 private def RevertState.revertProofModeHyp
-    : @RevertState u prop bi origE origGoal → Name →
+    : @RevertState u prop bi origE origGoal → IVarId →
       ProofModeM (@RevertState u prop bi origE origGoal)
-  | { hyps, goal, reverted, pf, .. }, uniq => do
-    let ⟨e', hyps', out, _, _, _, hΔ⟩ := hyps.remove true uniq
+  | { hyps, goal, reverted, pf, .. }, ivar => do
+    let ⟨e', hyps', out, _, _, _, hΔ⟩ := hyps.remove true ivar
     return { e := e', hyps := hyps', goal := q(wand $out $goal), reverted,
              pf := q(fun h => $pf (wand_revert $hΔ h)) }
 
@@ -96,8 +96,8 @@ elab "irevert" pats:(colGt selPat)+ : tactic => do
     let targets ← SelPat.resolve hyps pats
     let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
     let st ← targets.reverse.foldlM (init := init) fun st target => do
-      match target with
-      | .inl uniq => st.revertProofModeHyp uniq
+      match target.target with
+      | .inl ivar => st.revertProofModeHyp ivar
       | .inr fvar => st.revertLeanHyp fvar
 
     let pf' ← addBIGoalWithoutFVars st.hyps st.goal st.reverted.reverse

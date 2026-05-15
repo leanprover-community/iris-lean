@@ -40,10 +40,10 @@ private structure ClearState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (origE go
   pf : Q(($e ⊢ $goal) → ($origE ⊢ $goal))
 
 private def ClearState.clearProofModeHyp {u prop bi origE goal} :
-    @ClearState u prop bi origE goal → Name →
+    @ClearState u prop bi origE goal → IVarId →
     ProofModeM (@ClearState u prop bi origE goal)
-  | { e, hyps, pf }, uniq => do
-      let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove true uniq
+  | { e, hyps, pf }, ivar => do
+      let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove true ivar
       let step ← iClearCore bi e e' p out' goal hrem
       let pf' : Q(($e' ⊢ $goal) → ($origE ⊢ $goal)) := q(λ h => $pf ($step h))
       return {  e := e', hyps := hyps', pf := pf' }
@@ -52,11 +52,11 @@ elab "iclear" pats:(colGt selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
   ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do
-  let (uniqs, fvars) := (← SelPat.resolve hyps pats).partitionMap id
+  let (ivars, fvars) := (← SelPat.resolve hyps pats).partitionMap (·.target)
 
   -- Clear the selected Iris hypotheses first, updating the proof-mode context and proof term.
   let mut st : ClearState e goal := { e, hyps, pf := q(fun h => h) }
-  for uniq in uniqs do st ← st.clearProofModeHyp uniq
+  for ivar in ivars do st ← st.clearProofModeHyp ivar
 
   -- Lean locals are cleared afterwards; first ensure no remaining hypothesis or goal depends on them.
   for fvar in fvars do

@@ -8,6 +8,7 @@ module
 public meta import Iris.ProofMode.Patterns.ProofModeTerm
 public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.Tactics.Basic
+public meta import Iris.ProofMode.Tactics.Frame
 
 namespace Iris.ProofMode
 
@@ -33,6 +34,12 @@ theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 : PROP} P
   refine h1.trans <| (sep_mono_l h2.1).trans <| sep_assoc.1.trans (sep_mono_r ((sep_mono_l h3).trans ?_))
   exact (sep_mono_r inst.1).trans wand_elim_r
 
+theorem specialize_wand_autoframe [BI PROP] {q : Bool} {A1 A2 A3 Q P1 : PROP} P2
+     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ A3 ∗ P1)
+     [inst : IntoWand q false Q .out P1 .out P2] : A1 ⊢ A3 ∗ P2 :=
+  h1.trans <| (sep_mono_l h2).trans <| sep_assoc.1.trans
+    (sep_mono_r ((sep_mono_r inst.into_wand).trans wand_elim_r))
+
 theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     [inst : IntoForall P Φ] (h : A1 ⊢ A2 ∗ □?p P) (a : α) : A1 ⊢ A2 ∗ □?p (Φ a) := by
   refine h.trans <| sep_mono_r <| intuitionisticallyIf_mono <| inst.1.trans (forall_elim a)
@@ -57,8 +64,8 @@ structure SpecializeState {prop : Q(Type u)} (bi : Q(BI $prop)) (orig : Q($prop)
 private def processWand :
     @SpecializeState u prop bi orig → SpecPat → ProofModeM (SpecializeState bi orig)
   | { hyps, p, out, pf, .. }, .ident i => do
-    let uniq ← hyps.findWithInfo i
-    let ⟨e', hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false uniq
+    let ivar ← hyps.findWithInfo i
+    let ⟨e', hyps', out₁, out₁', p1, _, pf'⟩ := hyps.remove false ivar
     let p2 := if p1.constName! == ``true then p else q(false)
     have : $out₁ =Q iprop(□?$p1 $out₁') := ⟨⟩
     have : $p2 =Q ($p1 && $p) := ⟨⟩
@@ -80,24 +87,51 @@ private def processWand :
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
     return { e, hyps, p, out := out', pf := q(specialize_forall $pf $x) }
-  | { hyps, p, out, pf, .. }, .goal ns g => do
-    let mut uniqs : NameSet := {}
-    for name in ns do
-      uniqs := uniqs.insert (← hyps.findWithInfo name)
-    let ⟨el', _, hypsl', hypsr', h'⟩ := Hyps.split bi (λ _ uniq => uniqs.contains uniq) hyps
+  | { hyps, p, out, pf, .. }, .goal {kind, negate, frame := f, hyps := hs} g => do
+    if kind != .spatial then
+      -- TODO
+      throwError "ispecialize: only spatial kind is supported at the moment"
+    let mut ivars : IVarIdSet := {}
+    for name in hs do
+      ivars := ivars.insert (← hyps.findWithInfo name)
+    let mut frameIVars : List IVarId := []
+    for name in f do
+      let ivar ← hyps.findWithInfo name
+      frameIVars := ivar :: frameIVars
+      if ivars.contains ivar then
+        throwError "ispecialize: {name} used twice"
+    frameIVars := frameIVars.reverse
+    let ⟨el', _, hypsl', hypsr', pf'⟩ := Hyps.split bi
+      (λ _ ivar => (negate ^^ ivars.contains ivar) || frameIVars.contains ivar) hyps
     let out₁ ← mkFreshExprMVarQ prop
     let out₂ ← mkFreshExprMVarQ prop
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
       | throwError m!"ispecialize: {out} is not a wand"
-    let pf' ← addBIGoal hypsr' out₁ g
-    let pf := q(specialize_wand_subgoal $out₂ $pf $h' $pf')
+    let res ← iFrame bi _ hypsr' out₁ (frameIVars.map (⟨.inl ·, true⟩))
+    let pf'' ← res.finish (addBIGoal · · g)
+    let pf := q(specialize_wand_subgoal $out₂ $pf $pf' $pf'')
     return { e := el', hyps := hypsl', p := q(false), out := out₂, pf }
+
+  | { hyps, p, out, pf, .. }, .autoframe kind => do
+    if kind != .spatial then
+      -- TODO
+      throwError "ispecialize: only spatial kind is supported at the moment"
+    let out₁ ← mkFreshExprMVarQ prop
+    let out₂ ← mkFreshExprMVarQ prop
+    let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
+      | throwError m!"ispecialize: {out} is not a wand"
+    let res ← iFrame bi _ hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
+    let ⟨_, hyps', pf'⟩ ← res.finishClose
+    return { e := _, hyps := hyps', p := q(false), out := out₂, pf := q(specialize_wand_autoframe $out₂ $pf $pf') }
 
 /-- `iCasesPat.should_try_dup_context` determines when iSpecializeCore should try to duplicate the separation context.
 The duplication only works if the conclusion of the specialization is persistent.
 
+TODO: Should this also return true for lists of intuitionistic patterns? (check in Rocq)
+
 TODO: This also needs to check that there are no modality addition patterns in `pat` once they are implemented.
 -/
+@[rocq_alias intro_pat_intuitionistic, rocq_alias use_tac_specialize_intuitionistic_helper]
 def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
   match pat with
   | .intuitionistic _ => true
@@ -144,13 +178,13 @@ elab "ispecialize" colGt pmt:pmTerm : tactic => do
   ProofModeM.runTactic λ mvar { bi, hyps, goal, .. } => do
   -- hypothesis must be in the context, otherwise use ihave
   let name := ⟨pmt.term⟩
-  let some uniq ← try? <| hyps.findWithInfo name
+  let some ivar ← try? <| hyps.findWithInfo name
     | throwError "{name} should be a hypothesis, use ihave instead"
   let some ⟨name, _, hyps', _, out, p, _, pf⟩ := Id.run <|
-    hyps.removeG true λ name uniq' _ _ => if uniq == uniq' then some name else none
+    hyps.removeG true λ name ivar' _ _ => if ivar == ivar' then some name else none
     | throwError "ispecialize: cannot find argument"
 
   let ⟨_, hyps'', pb, B, pf'⟩ ← iSpecializeCore hyps' p out pmt.spats
-  let hyps''' := Hyps.add bi name uniq pb B hyps''
+  let hyps''' := Hyps.add bi name ivar pb B hyps''
   let pf'' ← addBIGoal hyps''' goal
   mvar.assign q(($pf).1.trans <| $(pf').trans <| $pf'')

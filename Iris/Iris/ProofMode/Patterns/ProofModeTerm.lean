@@ -6,6 +6,7 @@ Authors: Oliver Soeser, Zongyuan Liu
 module
 
 public import Iris.ProofMode.Patterns.SpecPattern
+meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -17,6 +18,7 @@ declare_syntax_cat pmTerm
 syntax term : pmTerm
 syntax term "$$" (colGt specPat)+ : pmTerm
 
+@[rocq_alias iTrm]
 structure PMTerm where
   term : Term
   spats : List SpecPat

@@ -14,7 +14,7 @@ public import Iris.Instances.IProp
 @[expose] public section
 
 /-! ## Later credits
-TODO: missing instances for PM: frame_le_upd, frame_le_upd_if, combine_sep_lc_add, combine_sep_lc_S_l
+TODO: missing instances for PM: combine_sep_lc_add, combine_sep_lc_S_l
 -/
 
 namespace Iris
@@ -154,12 +154,12 @@ section Upd
 variable {GF : BundledGFunctors} [LcGS GF]
 
 @[rocq_alias le_upd.le_upd_pre]
-def le_upd_pre (le_upd : IProp GF → IProp GF) : IProp GF → IProp GF :=
-  fun P => iprop(∀ n, lc_supply n ==∗ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd P))
+def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
+  iprop(∀ n, lc_supply n ==∗ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd))
 
 @[rocq_alias le_upd.le_upd_pre_contractive]
-instance : Contractive (le_upd_pre (GF := GF)) where
-  distLater_dist {n x y} H P := by
+instance {P : IProp GF} : Contractive (le_upd_pre P) where
+  distLater_dist {n x y} H := by
     simp only [le_upd_pre]
     refine forall_ne (fun i => ?_)
     refine wand_ne.ne .rfl ?_
@@ -171,10 +171,10 @@ instance : Contractive (le_upd_pre (GF := GF)) where
     refine Contractive.distLater_dist ?_
     cases n
     · exact distLater_zero
-    · exact distLater_succ.mpr (distLater_succ.mp H P)
+    · exact distLater_succ.mpr (distLater_succ.mp H)
 
 @[rocq_alias le_upd.le_upd]
-def le_upd : IProp GF → IProp GF := fixpoint le_upd_pre
+def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
 
 syntax:max "|==£> " term:40 : term
 
@@ -187,8 +187,8 @@ delab_rule le_upd
 @[rocq_alias le_upd.le_upd_unfold]
 theorem le_upd_unfold {P : IProp GF} :
   (|==£> P) ⊣⊢
-  ∀ n, lc_supply n ==∗ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd P) :=
-    (equiv_iff.mp ((fixpoint_unfold ⟨le_upd_pre (GF := GF), inferInstance⟩) P)).trans .rfl
+  ∀ n, lc_supply n ==∗ (lc_supply n ∗ P) ∨ (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ |==£> P) :=
+    (equiv_iff.mp (fixpoint_unfold ⟨le_upd_pre P, inferInstance⟩)).trans .rfl
 
 @[rocq_alias le_upd.le_upd_ne]
 instance : NonExpansive (le_upd (GF := GF)) where
@@ -407,7 +407,7 @@ instance from_assumption_le_upd {p} {P Q : IProp GF} [h : FromAssumption p ioP P
   from_assumption := h.1.trans le_upd_intro
 
 @[rocq_alias le_upd.from_pure_le_upd]
-instance {P : IProp GF} [H : FromPure a P φ] : FromPure a (le_upd P) φ where
+instance {P : IProp GF} [H : FromPure a P io φ] : FromPure a (le_upd P) io φ where
   from_pure := by
     cases a <;> dsimp
     · iintro H
@@ -440,6 +440,10 @@ instance {P : IProp GF} : ElimModal True p false (le_upd P) P (le_upd Q) (le_upd
       iapply le_upd_bind $$ H2 H1
     · iintro ⟨H1, H2⟩
       iapply le_upd_bind $$ H2 H1
+
+@[rocq_alias le_upd.frame_le_upd]
+instance {p} {P R Q : IProp GF} [hf : Frame p R P Q] : Frame p R (le_upd P) (le_upd Q) where
+  frame := le_upd_frame_l.trans <| le_upd_mono hf.frame
 
 end Internal
 
@@ -551,7 +555,7 @@ instance {b} {p} {P Q : IProp GF} : ElimModal True p false (bupd P) P (le_upd_if
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
 @[rocq_alias le_upd_if.from_pure_le_upd_if]
-instance {b} {a} {P : IProp GF} φ [FromPure a P φ] : FromPure a (le_upd_if b P) φ := by
+instance {b} {a} {P : IProp GF} φ [FromPure a P io φ] : FromPure a (le_upd_if b P) io φ := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
 
 @[rocq_alias le_upd_if.is_except_0_le_upd_if]
@@ -566,6 +570,10 @@ instance {b} {P : IProp GF} : FromModal True modality_id (le_upd_if b P) (le_upd
 instance {b} {p} {P Q : IProp GF} :
   ElimModal True p false (le_upd_if b P) P (le_upd_if b Q) (le_upd_if b Q) := by
   cases b <;> (simp only [le_upd_if, Bool.false_eq_true, ↓reduceIte]; infer_instance)
+
+@[rocq_alias le_upd_if.frame_le_upd_if]
+instance {p b} {P R Q : IProp GF} [hf : Frame p R P Q] : Frame p R (le_upd_if b P) (le_upd_if b Q) where
+  frame := le_upd_if_frame_l.trans <| le_upd_if_mono hf.frame
 
 @[rocq_alias le_upd_if.from_assumption_le_upd_if]
 instance from_assumption_le_upd_if {p} {P Q : IProp GF} [h : FromAssumption p ioP P Q] : FromAssumption p ioP P (le_upd_if b Q) where

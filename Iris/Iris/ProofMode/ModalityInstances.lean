@@ -14,6 +14,7 @@ open Iris.BI
 
 section Modalities
 
+@[rocq_alias modality_persistently, rocq_alias modality_persistently_mixin]
 def modality_persistently [BI PROP] : Modality PROP PROP where
   M := persistently
   action
@@ -26,6 +27,7 @@ def modality_persistently [BI PROP] : Modality PROP PROP where
   mono := (persistently_mono ·)
   sep := persistently_sep_2
 
+@[rocq_alias modality_affinely, rocq_alias modality_affinely_mixin]
 def modality_affinely [BI PROP] : Modality PROP PROP where
   M := affinely
   action
@@ -38,6 +40,7 @@ def modality_affinely [BI PROP] : Modality PROP PROP where
   mono := (affinely_mono ·)
   sep := affinely_sep_2
 
+@[rocq_alias modality_intuitionistically, rocq_alias modality_intuitionistically_mixin]
 def modality_intuitionistically [BI PROP] : Modality PROP PROP where
   M := intuitionistically
   action
@@ -50,6 +53,7 @@ def modality_intuitionistically [BI PROP] : Modality PROP PROP where
   mono := (intuitionistically_mono ·)
   sep := intuitionistically_sep_2
 
+@[rocq_alias modality_plainly, rocq_alias modality_plainly_mixin]
 def modality_plainly [Sbi PROP] : Modality PROP PROP where
   M := BIBase.Plainly.plainly
   action
@@ -62,6 +66,7 @@ def modality_plainly [Sbi PROP] : Modality PROP PROP where
   mono := (plainly_mono ·)
   sep := plainly_sep_2
 
+@[rocq_alias modality_laterN, rocq_alias modality_laterN_mixin]
 def modality_laterN (n : Nat) [BI PROP] : Modality PROP PROP where
   M := BIBase.laterN n
   action := λ _ => .transform (IntoLaterN false n)

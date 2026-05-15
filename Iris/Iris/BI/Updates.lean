@@ -28,6 +28,7 @@ syntax:25 term:26 " ==∗ " term:25 : term
 macro_rules
   | `(iprop(|==> $P))  => ``(BUpd.bupd iprop($P))
   | `(iprop($P ==∗ $Q))  => ``(BIBase.wand iprop($P) (BUpd.bupd iprop($Q)))
+  | `($P ==∗ $Q)  => ``(⊢ $P ==∗ $Q)
 
 delab_rule BUpd.bupd
   | `($_ $P) => do ``(iprop(|==> $(← Iris.BI.unpackIprop P)))
@@ -48,6 +49,8 @@ macro_rules
   | `(iprop($P ={$E1,$E2}=∗ $Q))  => ``(BIBase.wand iprop($P) (FUpd.fupd $E1 $E2 iprop($Q)))
   | `(iprop(|={$E1}=> $P))  => ``(FUpd.fupd $E1 $E1 iprop($P))
   | `(iprop($P ={$E1}=∗ $Q))  => ``(BIBase.wand iprop($P) (FUpd.fupd $E1 $E1 iprop($Q)))
+  | `($P ={$E1,$E2}=∗ $Q)  => ``(⊢ $P ={$E1,$E2}=∗ $Q)
+  | `($P ={$E1}=∗ $Q)  => ``(⊢ $P ={$E1}=∗ $Q)
 
 delab_rule FUpd.fupd
   | `($_ $E1 $E2 $P) => do
