@@ -289,7 +289,7 @@ Proof.
   iIntros (σ1 ns κ κs nt) "Hσ1". iMod "H". by iApply "H".
 Qed.
 -/
-theorem fupd_wp (s : Stuckness) E (e : Expr) (Φ : Val → IProp GF) :
+theorem fupd_wp {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
     (|={E}=> WP e @ s ; E {{ Φ }}) ⊢ WP e @ s ; E {{ Φ }} := by
   simp only [rw_iProp wp_unfold]
   iintro H
@@ -575,7 +575,7 @@ theorem wp_value' : Φ v ⊢ WP (v : Expr) @ s; E {{ Φ }} :=
   fupd_intro.trans wp_value_fupd'.2
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{v : Val}{Φ : Val → IProp GF} in
-theorem wp_value : Language.IntoVal e v → Φ e ⊢ WP e @ s; E {{ Φ }}
+theorem wp_value : Language.IntoVal e v → Φ v ⊢ WP e @ s; E {{ Φ }}
   | ⟨h⟩ => h ▸ wp_value'
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF}{R : IProp GF} in
@@ -698,3 +698,91 @@ theorem wp_frame_wand :
   iapply H $$ R
 
 end Wp
+
+section ProofModeClasses
+
+open ProofMode
+
+variable {hlc : outParam Bool}
+variable {Expr State Obs Val : Type _}
+variable [Λ : Language Expr State Obs Val]
+variable {GF : BundledGFunctors}
+variable [ι : IrisGS_gen hlc Expr GF]
+
+variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ Ψ : Val → IProp GF} {P Q R : IProp GF}
+
+-- TODO: Add priorities
+
+instance frameWp {p : Bool} [H : ∀ v, Frame p R (Φ v) (Ψ v)] :
+    -- TODO: I didn't move over the `FrameInstantiateExistDisabled` constant. Ask if it's necessary.
+    Frame p R (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Ψ }}) where
+  frame := by
+    replace H v := (H v).frame
+    refine wp_frame_l.trans ?_
+    apply wp_mono
+    apply H
+
+instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
+  is_except0 :=
+    calc iprop(◇ _)
+      _ ⊢ ◇ |={E}=> _ := BI.except0_mono fupd_intro
+      _ ⊢ |={E}=> _ := BIFUpdate.except0
+      _ ⊢ WP e @ s ; E {{ Φ }} := fupd_wp
+
+instance elimModalFupdWp p :
+    ElimModal True p false iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
+  elim_modal := by
+    rintro ⟨⟩; iintro ⟨H, H⟩
+    refine (BI.sep_mono BI.intuitionisticallyIf_elim .rfl).trans ?_
+    refine fupd_frame_r.trans ?_
+    refine BIFUpdate.mono BI.wand_elim_r |>.trans ?_
+    exact fupd_wp
+
+/--
+  Error message instance for non-mask-changing view shifts.  Also uses a slightly
+  different error: we cannot apply `fupd_mask_subseteq` if `e` is not atomic, so
+  we tell the user to first add a leading `fupd` and then change the mask of that.
+-/
+instance elimModalFupdWp_wrongMask :
+    ElimModal (PMError "Goal and eliminated modality must have the same mask.
+    Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
+    p false iprop(|={E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
+  elim_modal := nofun
+
+instance elimModalFupdWpAtomic :
+    ElimModal (Language.Atomic ↑s e) p false iprop(|={E₁,E₂}=> P) P (WP e @ s ; E₁ {{ Φ }}) (WP e @ s ; E₂ {{ v, iprop(|={E₂,E₁}=> Φ v)}}) where
+  elim_modal := by
+    rintro atomic; iintro ⟨H, H⟩
+    refine (BI.sep_mono BI.intuitionisticallyIf_elim .rfl).trans ?_
+    refine fupd_frame_r.trans ?_
+    refine BIFUpdate.mono BI.wand_elim_r |>.trans ?_
+    exact wp_atomic
+
+instance elimModalFupdWpAtomic_wrongMask :
+    ElimModal (PMError "Goal and eliminated modality must have the same mask.
+    Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
+    p false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
+  elim_modal := nofun
+
+-- instance addModalFupdWp :
+--     ProofMode.AddModal iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) where
+--   add_modal := by
+--     refine fupd_frame_r.trans ?_
+--     refine BIFUpdate.mono BI.wand_elim_r |>.trans ?_
+--     exact fupd_wp
+
+-- instance elimAccWpAtomic :
+--     ElimAcc (X := X) (Atomic ↑s e)
+--       (fupd E₁ E₂) (fupd E₂ E₁)
+--       α β γ (WP e @ s ; E₁ {{ Φ}})
+--       iprop(λ x ↦ WP e @ s ; E₂ {{ v, iprop(|={E₂}=> β x ∗ (γ x -∗? Φ v)) }}) where
+--     elim_acc := sorry
+
+-- instance elimAccWpNonAtomic :
+--     ElimAcc (X := X) True
+--       (fupd E E) (fupd E E)
+--       α β γ (WP e @ s ; E {{ Φ}})
+--       iprop(λ x ↦ WP e @ s ; E {{ v, iprop(|={E}=> β x ∗ (γ x -∗? Φ v)) }}) where
+--     elim_acc := sorry
+
+end ProofModeClasses
