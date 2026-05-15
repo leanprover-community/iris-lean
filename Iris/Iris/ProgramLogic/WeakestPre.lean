@@ -259,7 +259,7 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
       | .NotStuck, .MaybeStuck =>
         ipure_intro; grind only
     iintro %e₂ %σ₂ %eₜ #hstep «h£»
-    dsimp [Nat.repeat]
+    dsimp only [Nat.repeat]
     imod H $$ hstep «h£» with H
     iintro !> !>; imod H; iintro !>
     iapply step_fupdN_wand $$ H
@@ -395,13 +395,13 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF}
     intro h Htri
     simp only [OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr wp_unfold)]
     iintro Hupd Hwp
-    simp [wp.pre, h]
+    simp only [wp.pre, h]
     iintro %σ₁ %ns %obs %obs' %nt Hσ₁
     imod Hupd $$ Hσ₁ with ⟨%k, %m, Hσ₁, %h, Hpost⟩; subst h
     imod Hwp $$ Hσ₁ with ⟨$,Hwp⟩
     imodintro
     iintro %e₂ %σ₂ %efs %Hstep Hc
-    istop; refine (BI.sep_mono .rfl (lc_split.1)).trans ?_; iintro ⟨⟨Hpost,Hwp⟩,Hc⟩
+    simp only [OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr lc_split)]
     icases Hc with ⟨Hc,Hone⟩
     ihave Hc := lc_weaken _ (Htri m k) $$ Hc
     istop; refine (BI.sep_mono .rfl (lc_split.1)).trans ?_; iintro ⟨⟨⟨Hpost,Hwp⟩,Hone⟩,Hc⟩
@@ -409,7 +409,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF}
     -- TODO: Redo with `icombine` when available
     ihave Hm := lc_split.mpr $$ [Hm Hone]
     · iframe
-    simp [Nat.repeat]
+    simp only [Nat.repeat]
     ihave Hwp := Hwp $$ [] [Hm]
     · ipure_intro; assumption
     · simp only [OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr lc_split), OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr BI.sep_comm)]
