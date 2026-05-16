@@ -8,6 +8,7 @@ module
 public meta import Iris.ProofMode.Tactics.Assumption
 public meta import Iris.ProofMode.Tactics.Cases
 public meta import Iris.ProofMode.Patterns.CasesPattern
+public meta import Iris.ProofMode.ClassesMake
 
 namespace Iris.ProofMode
 
@@ -41,33 +42,51 @@ theorem combine_gives_nil_singleton [BI PROP] {e goal : PROP} (pf : e ∗ □ Tr
   _ ⊢ e ∗ □ True := sep_mono_r intuitionistically_true.mpr
   _ ⊢ goal       := pf
 
-theorem dummy [BI PROP] {e1 e2 e3 e4 : PROP} (pf : e1 ⊢ e2) : e3 ⊢ e4 := sorry
-
-theorem dummy1 [BI PROP] {e1 e2 : PROP} : e1 ⊢ e2 := sorry
-
 /-- Auxilary lemma for the step case where multiple hypotheses are given -/
-theorem combine_gives_step [BI PROP] {e e1 e2 out1 out2 out goal : PROP}
-    (inst : CombineSepGives out1 out2 out)
-    (pf0 : e1 ∗ out1 ⊢ e)
-    (pf1 : (e1 ∗ out1 ⊢ goal) → e ⊢ goal)
-    (pf2 : e1 ⊣⊢ e2 ∗ out2)
+theorem combine_gives_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out goal : PROP}
+    (inst : CombineSepGives out1' out2' out)
+    (pf0 : e1 ∗ □?p1 out1' ⊢ e)
+    (pf1 : (e1 ∗ □?p1 out1' ⊢ goal) → e ⊢ goal)
+    (pf2 : e1 ⊣⊢ e2 ∗ □?p2 out2')
     (pf3 : e ∗ □ out ⊢ goal) : e ⊢ goal := by
   apply pf1
+  have pf4 : □?p1 out1' ∗ □?p2 out2' ⊢ <pers> out := calc
+    _ ⊢ □?(p1 && p2) (out1' ∗ out2') := intuitionisticallyIf_sep_conj
+    _ ⊢ □?(p1 && p2) <pers> out      := intuitionisticallyIf_mono (inst.combine_sep_gives)
+    _ ⊢ <pers> out                   := intuitionisticallyIf_elim
   calc
-    _ ⊢ (e2 ∗ out2) ∗ out1                      := sep_mono_l pf2.mp
-    _ ⊢ e2 ∗ out2 ∗ out1                        := sep_assoc.mp
-    _ ⊢ e2 ∗ out1 ∗ out2                        := sep_mono_r sep_comm.mp
-    _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ out1 ∗ out2) := and_intro refl refl
-    _ ⊢ (e2 ∗ out1 ∗ out2) ∧ (e2 ∗ <pers> out)  := and_mono_r <| sep_mono_r inst.combine_sep_gives
-    _ ⊢ (e2 ∗ out1 ∗ out2) ∧ <pers> out         := and_mono_r sep_elim_r
-    _ ⊢ (e2 ∗ out1 ∗ out2) ∗ □ out              := persistently_and_intuitionistically_sep_r.mp
-    _ ⊢ (e2 ∗ out2 ∗ out1) ∗ □ out              := sep_mono_l <| sep_mono_r sep_comm.mp
-    _ ⊢ ((e2 ∗ out2) ∗ out1) ∗ □ out            := sep_mono_l sep_assoc.mpr
-    _ ⊢ (e1 ∗ out1) ∗ □ out                     := sep_mono_l <| sep_mono_l pf2.mpr
-    _ ⊢ e ∗ □ out                               := sep_mono_l pf0
-    _ ⊢ goal                                    := pf3
+    _ ⊢ (e2 ∗ □?p2 out2') ∗ □?p1 out1'                      := sep_mono_l pf2.mp
+    _ ⊢ e2 ∗ □?p2 out2' ∗ □?p1 out1'                        := sep_assoc.mp
+    _ ⊢ e2 ∗ □?p1 out1' ∗ □?p2 out2'                        := sep_mono_r sep_comm.mp
+    _ ⊢ (e2 ∗ □?p1 out1' ∗ □?p2 out2') ∧ (e2 ∗ <pers> out)  := and_intro refl <| sep_mono_r pf4
+    _ ⊢ (e2 ∗ □?p1 out1' ∗ □?p2 out2') ∧ <pers> out         := and_mono_r sep_elim_r
+    _ ⊢ (e2 ∗ □?p1 out1' ∗ □?p2 out2') ∗ □ out              := persistently_and_intuitionistically_sep_r.mp
+    _ ⊢ (e2 ∗ □?p2 out2' ∗ □?p1 out1') ∗ □ out              := sep_mono_l <| sep_mono_r sep_comm.mp
+    _ ⊢ ((e2 ∗ □?p2 out2') ∗ □?p1 out1') ∗ □ out            := sep_mono_l sep_assoc.mpr
+    _ ⊢ (e1 ∗ □?p1 out1') ∗ □ out                           := sep_mono_l <| sep_mono_l pf2.mpr
+    _ ⊢ e ∗ □ out                                           := sep_mono_l pf0
+    _ ⊢ goal                                                := pf3
 
-/- NEW CODE -/
+theorem combine_gives_step_conj [BI PROP]
+    {origE outGives' goal outAs' out2' newOutGives newOutGivesCombined : PROP}
+    (inst : CombineSepGives outAs' out2' newOutGives)
+    (pf1 : (origE ∗ □ outGives' ⊢ goal) → origE ⊢ goal)
+    (pf2 : MakeAnd outGives' newOutGives newOutGivesCombined)
+    (pf3 : (newE ∗ □?p1 outAs' ⊢ goal) → origE ⊢ goal)
+    (pf4 : newE ⊣⊢ e2 ∗ □?p2 out2')
+    (pf5 : newE ∗ □?p1 outAs' ⊢ origE ∗ □ outGives')  -- MISSING
+    (pf6 : origE ∗ □ newOutGivesCombined ⊢ goal) :
+    origE ⊢ goal := by
+  apply pf1
+  have pf7 : (newE ∗ □?p1 outAs' ⊢ goal) → origE ∗ □ outGives' ⊢ goal :=
+    fun pf => sep_elim_l.trans <| pf3 pf
+  apply (combine_gives_step inst pf5 pf7 pf4)
+  apply sep_assoc.mp.trans
+  have pf8 : origE ∗ □ outGives' ∗ □ newOutGives ⊢ origE ∗ □ newOutGivesCombined := calc
+    _ ⊢ origE ∗ □ (outGives' ∧ newOutGives) := sep_mono_r intuitionistically_and_sep.mpr
+    _ ⊢ origE ∗ □ newOutGivesCombined       := sep_mono_r <| intuitionistically_mono pf2.make_and.mp
+  apply pf8.trans
+  apply pf6
 
 private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop)) where
   -- The original set of hypotheses
@@ -88,6 +107,17 @@ private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop
     | some outGives' => Q(($origE ∗ □ $outGives' ⊢ $goal) → ($origE ⊢ $goal)))
 
 /--
+  Given two values `p1` and `p2`, check whether both are syntactically
+  `q(true)` and, if so, return `q(true)`. Otherwise, return `q(false)`.
+  This is useful for determining whether the combined hypothesis should
+  exist in the intuitionistic context or the spatial context.
+-/
+private def pConj (p1 p2 : Q(Bool)) : Q(Bool) :=
+  match matchBool p1, matchBool p2 with
+  | .inl _, .inl _ => q(true)
+  | _, _           => q(false)
+
+/--
   This function takes in an instance of `CombineState` and handles one
   hypothesis at a time. This function is called by `iCombineCore` iteratively
   for every hypotheses being combined.
@@ -96,50 +126,50 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
     @CombineState u prop bi origE goal → IVarId →
     ProofModeM (@CombineState u prop bi origE goal)
   | { origHyps, newE, newHyps, p, outAs', pfAs, outGives', pfGives }, ivar => do
-    let ⟨e2, hyps2, out2, out2', p2, eq2, pf2⟩ := newHyps.remove false ivar
+    let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := newHyps.remove false ivar
 
+    -- Type class instance search for the `as` syntax
     let newOutAs ← mkFreshExprMVarQ _
     let instAs ← ProofModeM.synthInstanceQ q(CombineSepAs $outAs' $out2' $newOutAs)
-
-
-    let pf2 : Q($newE ⊣⊢ $e2 ∗ $out2) := pf2
     let newPfAs := q(combine_as_step $instAs $pfAs $(pf2).mp)
 
-    match outGives', pfGives with
-    | none, _ =>
-      match matchBool p, matchBool p2 with
-      | .inl _, .inl _ => return { origHyps, newHyps := hyps2, p := q(true), outAs' := newOutAs, pfAs := newPfAs, outGives' := none, pfGives := ⟨⟩ }
-      | _,      _      => return { origHyps, newHyps := hyps2, p := q(false), outAs' := newOutAs, pfAs := newPfAs, outGives' := none, pfGives := ⟨⟩ }
+    -- Type class instance search for the `gives` syntax
+    let newOutGives ← mkFreshExprMVarQ _
+    let instGives ← ProofModeM.trySynthInstanceQ q(CombineSepGives $outAs' $out2' $newOutGives)
 
-    | some outGives', pfGives =>
-      let pfGives : Q(($newE ∗ □ $outGives' ⊢ $goal) → $newE ⊢ $goal) := pfGives
+    match instGives, outGives', pfGives with
+    -- No additional persistent information derived, `outGives'` remains unchanged
+    | none, _, _ =>
+      return {
+        origHyps, newHyps := hyps2,
+        p := pConj p p2, outAs' := newOutAs, pfAs := newPfAs,
+        -- The `gives` syntax should fail
+        outGives' := none, pfGives := ⟨⟩
+      }
+    -- Persistent information derived at this step but not in the previous step
+    | _, none, _ =>
+      return {
+        origHyps, newHyps := hyps2,
+        p := pConj p p2, outAs' := newOutAs, pfAs := newPfAs,
+        -- The `gives` syntax should fail
+        outGives' := none, pfGives := ⟨⟩
+      }
+    -- Persistent information derived in addition to the existing `outGives'`
+    | some instGives, some outGives', pfGives =>
 
-      let newOutGives1 ← mkFreshExprMVarQ _
-      let newOutGives2 ← mkFreshExprMVarQ _
+      -- Combine the existing and new persistent information using the conjunction
+      let newOutGivesCombined ← mkFreshExprMVarQ _
+      let instGivesCombined ← ProofModeM.synthInstanceQ q(MakeAnd $outGives' $newOutGives $newOutGivesCombined)
 
-      let instGives1 ← ProofModeM.trySynthInstanceQ q(CombineSepGives iprop(□ $outGives') $out2 $newOutGives1)
-      let instGives2 ← ProofModeM.trySynthInstanceQ q(CombineSepGives iprop(□ $outAs') $out2 $newOutGives2)
+      let abc : Q(«$newE» ∗ □?«$p» «$outAs'» ⊢ «$origE» ∗ □ «$outGives'») := sorry
 
-      match instGives1, instGives2 with
-      | none, none =>
-        match matchBool p, matchBool p2 with
-        | .inl _, .inl _ => return { origHyps, newHyps := hyps2, p := q(true), outAs' := newOutAs, pfAs := newPfAs, outGives' := none, pfGives := ⟨⟩ }
-        | _,      _      => return { origHyps, newHyps := hyps2, p := q(false), outAs' := newOutAs, pfAs := newPfAs, outGives' := none, pfGives := ⟨⟩ }
-
-      | some instGives1, _ =>
-        let pf : Q(($newE ∗ □ $newOutGives1 ⊢ $goal) → ($newE ⊢ $goal)) := q(combine_gives_step $instGives1 sep_elim_l $pfGives $pf2)
-
-        match matchBool p, matchBool p2 with
-        | .inl _, .inl _ => return { origHyps, newHyps := hyps2, p := q(true), outAs' := newOutAs, pfAs := newPfAs, outGives' := some newOutGives1, pfGives := q(dummy) }
-        | _,      _      => return { origHyps, newHyps := hyps2, p := q(false), outAs' := newOutAs, pfAs := newPfAs, outGives' := some newOutGives1, pfGives := q(dummy) }
-
-      | none, some instGives2 =>
-        let pf' : Q(($newE ∗ □ $outAs' ⊢ $goal) → ($newE ⊢ $goal)) := q(dummy)
-        let pf : Q(($newE ∗ □ $newOutGives2 ⊢ $goal) → ($newE ⊢ $goal)) := q(combine_gives_step $instGives2 sep_elim_l $pf' $pf2)
-
-        match matchBool p, matchBool p2 with
-        | .inl _, .inl _ => return { origHyps, newHyps := hyps2, p := q(true), outAs' := newOutAs, pfAs := newPfAs, outGives' := some newOutGives2, pfGives := q(dummy) }
-        | _,      _      => return { origHyps, newHyps := hyps2, p := q(false), outAs' := newOutAs, pfAs := newPfAs, outGives' := some newOutGives2, pfGives := q(dummy) }
+      return {
+        origHyps, newHyps := hyps2,
+        p := pConj p p2, outAs' := newOutAs, pfAs := newPfAs,
+        -- The `gives` syntax produces the conjunction of the two pieces of persistent information
+        outGives' := some newOutGivesCombined,
+        pfGives := q(combine_gives_step_conj $instGives $pfGives $instGivesCombined $pfAs $pf2 $abc)
+      }
 
 /--
   A hypothesis in the spatial context should not be used as an argument of
@@ -194,8 +224,8 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     let ivar2 ← hyps.findWithInfo h2
     checkSpatialContextHyp hs hyps h1
     checkSpatialContextHyp hs hyps h2
-    let ⟨_, hyps1, out1, out1', p1, _, pf1⟩ := hyps.remove false ivar1
-    let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := hyps1.remove false ivar2
+    let ⟨_, hyps1, _, out1', p1, _, pf1⟩ := hyps.remove false ivar1
+    let ⟨e2, hyps2, _, out2', p2, _, pf2⟩ := hyps1.remove false ivar2
 
     -- Search for the type class instance for the `as` syntax
     let newOutAs ← mkFreshExprMVarQ _
@@ -205,7 +235,7 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
 
     -- Search for the type class instance for the `gives` syntax
     let newOutGives ← mkFreshExprMVarQ _
-    let instGives ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out1 $out2 $newOutGives)
+    let instGives ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out1' $out2' $newOutGives)
 
     -- Initialise the mutable `CombineState` instance with the first two hypotheses combined
     let mut st : CombineState e goal :=
