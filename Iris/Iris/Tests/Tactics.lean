@@ -2399,16 +2399,13 @@ example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
   icombine HP HQ gives HNew
   iexact HNew
 
-/-- Tests `icombine` with `as` and `gives` separately using three propositions -/
-example [BI PROP] {P Q R S T : PROP}
-    [CombineSepGives P Q R] [CombineSepGives iprop(□ R) S T] :
-    ⊢ P -∗ Q -∗ S -∗ (P ∗ Q ∗ S) ∗ □ T := by
-  iintro HP HQ HS
-  icombine HP HQ HS gives HT
-  isplitl
-  · icombine HP HQ HS as Hnew
-    iexact Hnew
-  · iexact HT
+/-- Tests `icombine` with `gives` using three propositions -/
+example [BI PROP] [BIAffine PROP] {P1 P2 P3 P4 P5 P6 : PROP}
+    [CombineSepAs P1 P2 P4] [CombineSepGives P1 P2 P5] [CombineSepGives P4 P3 P6] :
+    ⊢ P1 -∗ P2 -∗ P3 -∗ □ (P5 ∧ P6) := by
+  iintro HP1 HP2 HP3
+  icombine HP1 HP2 HP3 gives Hnew
+  iexact Hnew
 
 /- Tests `icombine` with `gives` and two hypotheses generically -/
 /-- error: icombine: no type class instance to combine propositions -/
@@ -2436,16 +2433,18 @@ example [BI PROP] {n : Nat} {P Q R : PROP} [CombineSepGives P Q R] :
   · iexact HNew1
   · iexact HNew2
 
-/-- Tests `icombine` with `as` and `gives` using three propositions and destruction pattern -/
-example [BI PROP] {P Q R S T : PROP}
-    [CombineSepGives P Q R] [CombineSepGives iprop(□ R) S T] :
-    ⊢ P -∗ Q -∗ S -∗ P ∗ (Q ∗ S) ∗ □ T := by
-  iintro HP HQ HS
-  icombine HP HQ HS as ⟨HP, HQS⟩ gives HT
-  isplitl [HP]
-  · iexact HP
-  · isplitl
-    · iexact HQS
-    · iexact HT
+/-- Tests `icombine` with `as` and `gives` using three propositions and destruction patterns -/
+example [BI PROP] {P1 P2 P3 P4 P5 P6 : PROP}
+    [CombineSepAs P1 P2 P4] [CombineSepGives P1 P2 P5] [CombineSepGives P4 P3 P6] :
+    ⊢ P1 -∗ P2 -∗ P3 -∗ P3 ∗ P4 ∗ □ P5 ∗ □ P6 := by
+  iintro HP1 HP2 HP3
+  icombine HP1 HP2 HP3 as ⟨HP4, HP3⟩ gives ⟨HP5, HP6⟩
+  isplitl [HP3]
+  · iexact HP3
+  · isplitl [HP4]
+    · iexact HP4
+    · isplitl
+      · iexact HP5
+      · iexact HP6
 
 end icombine

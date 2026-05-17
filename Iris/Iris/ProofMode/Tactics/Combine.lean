@@ -74,13 +74,13 @@ theorem combine_gives_step_conj [BI PROP]
     (pf2 : MakeAnd outGives' newOutGives newOutGivesCombined)
     (pf3 : (newE ∗ □?p1 outAs' ⊢ goal) → origE ⊢ goal)
     (pf4 : newE ⊣⊢ e2 ∗ □?p2 out2')
-    (pf5 : newE ∗ □?p1 outAs' ⊢ origE ∗ □ outGives')  -- MISSING
+    -- (pf5 : newE ∗ □?p1 outAs' ⊢ origE ∗ □ outGives')  -- MISSING
     (pf6 : origE ∗ □ newOutGivesCombined ⊢ goal) :
     origE ⊢ goal := by
   apply pf1
   have pf7 : (newE ∗ □?p1 outAs' ⊢ goal) → origE ∗ □ outGives' ⊢ goal :=
     fun pf => sep_elim_l.trans <| pf3 pf
-  apply (combine_gives_step inst pf5 pf7 pf4)
+  apply (combine_gives_step inst sorry pf7 pf4)
   apply sep_assoc.mp.trans
   have pf8 : origE ∗ □ outGives' ∗ □ newOutGives ⊢ origE ∗ □ newOutGivesCombined := calc
     _ ⊢ origE ∗ □ (outGives' ∧ newOutGives) := sep_mono_r intuitionistically_and_sep.mpr
@@ -161,14 +161,12 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
       let newOutGivesCombined ← mkFreshExprMVarQ _
       let instGivesCombined ← ProofModeM.synthInstanceQ q(MakeAnd $outGives' $newOutGives $newOutGivesCombined)
 
-      let abc : Q(«$newE» ∗ □?«$p» «$outAs'» ⊢ «$origE» ∗ □ «$outGives'») := sorry
-
       return {
         origHyps, newHyps := hyps2,
         p := pConj p p2, outAs' := newOutAs, pfAs := newPfAs,
         -- The `gives` syntax produces the conjunction of the two pieces of persistent information
         outGives' := some newOutGivesCombined,
-        pfGives := q(combine_gives_step_conj $instGives $pfGives $instGivesCombined $pfAs $pf2 $abc)
+        pfGives := q(combine_gives_step_conj $instGives $pfGives $instGivesCombined $pfAs $pf2)
       }
 
 /--
