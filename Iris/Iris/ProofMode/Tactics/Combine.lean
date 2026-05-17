@@ -280,6 +280,9 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
     let pf' ← iCasesCore _ st.newHyps goal pat q($(st.p)) st.outAs' addBIGoal
     mvar.assign q($(st.pfAs) $pf')
 
+private def throwNoInstanceForGives : ProofModeM Unit := do
+  throwError "icombine: no type class instance to combine propositions"
+
 /-- The tactic `icombine` with `gives` syntax combines propositions to derive
     new information in the intutionisitic context using the type class
     `CombineSepGives`. It is possible that no type class instance is
@@ -295,7 +298,7 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
     | some outGives', pfGives =>
       let pf' ← iCasesCore _ st.origHyps goal pat q(true) outGives' addBIGoal
       mvar.assign q($pfGives $pf')
-    | none, _ => throwError "icombine: no type class instance to combine propositions"
+    | none, _ => throwNoInstanceForGives
 
 elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat "gives" colGt patGives:icasesPat : tactic => do
   let pat1 ← liftMacroM <| iCasesPat.parse patAs
@@ -307,8 +310,7 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat "gives" colGt p
 
     match st.outGives', st.pfGives with
     | some outGives', _ =>
-      let pf'' ← iCasesCore _ st.newHyps goal pat1 q($(st.p)) st.outAs'
+      let pf'' ← iCasesCore _ st.newHyps goal pat1 q($st.p) st.outAs'
         (fun myHyps myGoal => iCasesCore _ myHyps myGoal pat2 q(true) outGives' addBIGoal)
       -- TODO: find the correct proof to fill in the metavariable
-      mvar.assign q($st.pfAs $pf'')
-    | none, _ => throwError "icombine: no type class instance to combine propositions"
+    | none, _ => throwNoInstanceForGives
