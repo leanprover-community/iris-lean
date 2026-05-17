@@ -96,6 +96,16 @@ theorem lc_decrease_supply {n m} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -�
   imodintro
   unfold lc_supply; iexact H
 
+@[rocq_alias lc_increase_supply]
+theorem lc_increase_supply n m : lc_supply m ⊢@{IProp GF} |==> (lc_supply (n + m) ∗ £ n) := by
+unfold lc lc_supply
+iintro H
+imod iOwn_update $$ H with Hown
+· apply auth_update_alloc
+  apply leftCancelAdd_local_update (y := 0) (x' := (n + m)) (y' := n) (by grind)
+icases iOwn_op $$ Hown with ⟨Hm, _⟩
+iframe
+
 @[rocq_alias lc_succ]
 theorem lc_succ {n} : £ (.succ n) ⊣⊢@{IProp GF} £ 1 ∗ £ n := by
   rw [show .succ n = 1 + n by simp [Nat.succ_eq_add_one, Nat.add_comm]]
@@ -458,6 +468,177 @@ theorem lc_alloc [H : LcGpreS GF] n : ⊢@{IProp GF} |==> ∃ _ : LcGS GF, lc_su
   imodintro
   simp only [lc_supply, lc]
   isplitl [HAuth] <;> iassumption
+
+@[rocq_alias le_upd_finally]
+def le_upd_finally [LcGS GF] (P : IProp GF) : IProp GF :=
+  iprop(∀ m, lc_supply m -∗ ▷^[m] ◇ ■ P)
+
+#rocq_ignore le_upd_finally_aux "Not needed"
+#rocq_ignore le_upd_finally_def "Not needed"
+#rocq_ignore le_upd_finally_unseal "Not needed"
+
+syntax:max "|==£|> " term:40 : term
+
+macro_rules
+| `(iprop(|==£|> $P)) => ``(le_upd_finally iprop($P))
+
+delab_rule le_upd_finally
+| `($_ $P) => do ``(iprop(|==£|> $(← unpackIprop P)))
+
+section le_upd_finally_rules
+variable [LcGS GF]
+
+@[rocq_alias le_upd_finally_ne]
+instance le_upd_finally_ne : NonExpansive (le_upd_finally (GF := GF)) where
+  ne _ _ _ H := by
+    simp only [le_upd_finally]
+    refine forall_ne (fun m => ?_)
+    refine wand_ne.ne .rfl ?_
+    refine laterN_ne m |>.ne ?_
+    refine except0_ne.ne ?_
+    exact instPlainly_ne.ne H
+
+@[rocq_alias le_upd_finally_mono]
+theorem le_upd_finally_mono (P Q: IProp GF) : (P ⊢ Q) → (|==£|> P) ⊢ (|==£|> Q) := by
+  intro Hent
+  unfold le_upd_finally
+  iintro HP %m Hlc
+  ihave HP := HP $$ %m Hlc
+  iapply laterN_mono $$ HP
+  iintro HP
+  iapply except0_mono $$ HP
+  iintro HP
+  iapply plainly_mono Hent $$ HP
+
+@[rocq_alias le_upd_finally_intro]
+theorem le_upd_finally_intro (P : IProp GF) : ■ P ⊢ |==£|> P := by
+  unfold le_upd_finally
+  iintro HP %m _Hlc
+  iapply laterN_intro
+  iapply except0_intro
+  iexact HP
+
+@[rocq_alias le_upd_finally_finally]
+theorem le_upd_le_upd_finally (P : IProp GF) : (|==£> |==£|> P) ⊢ |==£|> P := by
+  iapply BILoeb.loeb_weak
+  unfold le_upd_finally
+  iintro IH HP %m Hlc
+  icases le_upd_unfold $$ HP with HP
+  imod HP $$ Hlc with ⟨⟨Hlc, H⟩ | ⟨%m', %Hm, Hlc , H⟩⟩
+  · iapply H; iframe
+  conv =>
+    rhs
+    rw [show m = 1+ ((m - m' - 1) + m') by grind]
+  iapply laterN_add; inext
+  iapply laterN_add; inext
+  iapply IH $$ H Hlc
+  ipure_intro;trivial
+
+@[rocq_alias except_0_le_upd_finally]
+theorem except0_le_upd_finally (P : IProp GF) : (◇ |==£|> P) ⊢ |==£|> P := by
+  unfold le_upd_finally
+  iintro HP %m Hlc
+  iapply laterN_mono _ (except0_idemp (P := iprop(■ P))).mp
+  iapply except0_laterN
+  imod HP
+  imodintro
+  iapply HP;iassumption
+
+@[rocq_alias le_upd_finally_except_0]
+theorem le_upd_finally_except0 (P : IProp GF) : (|==£|> ◇ P) ⊢ |==£|> P := by
+  unfold le_upd_finally
+  iintro HP %m Hlc
+  iapply laterN_mono _ except0_idemp.mp
+  iapply laterN_mono _ (except0_mono except0_plainly.mpr)
+  iapply HP $$ Hlc
+
+@[rocq_alias le_upd_finally_add_lc]
+theorem le_upd_finally_add_lc (P : IProp GF) : (£ 1 -∗ |==£|> P) ⊢ |==£|> ▷ ◇ P := by
+  unfold le_upd_finally
+  iintro H %m Hlc
+  iapply laterN_mono _ except0_intro
+  iapply laterN_mono _ later_plainly.mp
+  iapply laterN_mono _ (later_mono except0_plainly.mp)
+  iapply (laterN_later m).mp
+  rw [show m + 1 = 1 + m from Nat.add_comm m 1]
+  imod lc_increase_supply 1 $$ Hlc with ⟨Hlc, Hl⟩
+  iapply H $$ Hl Hlc
+
+-- TODO: move
+omit [LcGS GF] in
+private theorem timeless_laterN {X : IProp GF} [Timeless X] (n : Nat) :
+    iprop(▷^[n] X) ⊢ iprop(▷^[n] False ∨ X) := by
+  induction n with
+  | zero => exact or_intro_r
+  | succ n IH =>
+    -- ▷^[n+1] X = ▷ ▷^[n] X ⊢ ▷ (▷^[n] False ∨ X)
+    refine (later_mono IH).trans ?_
+    -- ▷ (▷^[n] False ∨ X) ⊣⊢ ▷ ▷^[n] False ∨ ▷ X = ▷^[n+1] False ∨ ▷ X
+    refine later_or.mp.trans ?_
+    -- Timeless: ▷ X ⊢ ▷ False ∨ X
+    refine or_mono .rfl Timeless.timeless |>.trans ?_
+    -- ▷ False ⊢ ▷^[n+1] False (via later_mono (laterN_intro n))
+    refine or_mono .rfl (or_mono_l (later_mono (laterN_intro n))) |>.trans ?_
+    -- ▷^[n+1] False ∨ ▷^[n+1] False ∨ X ⊢ ▷^[n+1] False ∨ X
+    exact or_assoc.mpr.trans (or_mono or_self.mp .rfl)
+
+@[rocq_alias le_upd_finally_keep]
+theorem le_upd_finally_keep (P Q : IProp GF) [Timeless P] : (|==£|> P) ∧ (P -∗ |==£|> Q) ⊢ |==£|> Q := by
+  unfold le_upd_finally
+  iintro H %m Hlc
+  ihave #HP : ▷^[m] ◇ ■ P $$ [H Hlc]
+  · icases H with ⟨H, -⟩
+    iapply H $$ Hlc
+  icases H with ⟨-, H⟩
+  icases (laterN_mono _ except0_into_later) $$ HP with HP
+  icases (laterN_later _).mpr $$ HP with HP
+  icases (timeless_laterN _) $$ HP with HP
+  icases HP with (HFalse | HP')
+  · icases (laterN_later _).mp $$ HFalse with HFalse
+    inext
+    imod HFalse
+    iexfalso; iassumption
+  iapply H $$ HP' Hlc
+
+@[rocq_alias le_upd_finally_forall]
+theorem le_upd_finally_forall (Φ : A → IProp GF) : (∀ x, |==£|> Φ x) ⊢ |==£|> ∀ x, Φ x := by
+  unfold le_upd_finally
+  iintro H %m Hlc %x
+  iapply H $$ Hlc
+
+    -- (** Derived rules *)
+    -- (** Since the modality is used only internally in the version for fancy
+    -- updates, we do not provide instances of the proof mode classes. *)
+
+    -- Global Instance le_upd_finally_proper : Proper ((⊣⊢) ==> (⊣⊢)) le_upd_finally.
+    -- Proof. apply: ne_proper. Qed.
+    -- Global Instance le_upd_finally_mono' : Proper ((⊢) ==> (⊢)) le_upd_finally.
+    -- Proof. intros P Q. apply le_upd_finally_mono. Qed.
+    -- Global Instance le_upd_finally_flip_mono' :
+    --   Proper (flip (⊢) ==> flip (⊢)) le_upd_finally.
+    -- Proof. intros P Q. apply le_upd_finally_mono. Qed.
+
+@[rocq_alias le_upd_finally_later]
+theorem le_upd_finally_later (P : IProp GF) : ▷ (|==£|> P) ⊢ |==£|> ▷ ◇ P := by
+  iintro H
+  iapply le_upd_finally_add_lc
+  iintro Hl
+  iapply le_upd_le_upd_finally
+  iapply le_upd_later $$ Hl H
+
+end le_upd_finally_rules
+
+theorem le_upd_finally_soundness [LcGpreS GF] n (P : IProp GF) :
+  (∀ [LcGS GF], £ n ⊢ |==£|> P) → ⊢ P := by
+  intro HP
+  apply laterN_soundness (n := n.succ)
+  iintro _
+  iapply (laterN_later _).mpr
+  iapply (laterN_mono _ except0_into_later)
+  iapply (laterN_mono _ (except0_mono plainly_elim))
+  imod lc_alloc n with ⟨%LC, Hlc, Hl⟩
+  have HP' : £ n ⊢ iprop(∀ m, lc_supply m -∗ ▷^[m] ◇ ■ P) := HP
+  iapply HP' $$ Hl Hlc
 
 @[rocq_alias le_upd.lc_soundness]
 theorem lc_soundness [LcGpreS GF] m (P : IProp GF) [Plain P]  (H : ∀ {_: LcGS GF}, ⊢ £ m -∗ |==£> P) :

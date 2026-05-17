@@ -44,7 +44,7 @@ theorem persistently_if_elim_plainly p : <pers>?p ■ P ⊣⊢ ■ P :=
   | true => persistently_elim_plainly
   | false => .rfl
 
-nonrec theorem plainly_forall_2 {A : Type _} {Ψ : A → PROP} : (∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a) :=
+nonrec theorem plainly_forall_2 {A : Sort _} {Ψ : A → PROP} : (∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a) :=
   plainly_forall_2 _
 
 @[rocq_alias plainly_persistently_elim]
@@ -96,7 +96,7 @@ theorem plainly_pure {φ} : ■ ⌜φ⌝ ⊣⊢ (⌜φ⌝ : PROP) := by
   exact (forall_intro (Ψ := fun _ => iprop(■ True)) Empty.rec).trans <|
     plainly_forall_2.trans (plainly_mono <| true_intro.trans <| pure_intro φ)
 
-theorem plainly_forall {A : Type _} {Ψ : A → PROP} : ■ (∀ a, Ψ a) ⊣⊢ ∀ a, ■ (Ψ a) :=
+theorem plainly_forall {A : Sort _} {Ψ : A → PROP} : ■ (∀ a, Ψ a) ⊣⊢ ∀ a, ■ (Ψ a) :=
   ⟨forall_intro (plainly_mono <| forall_elim ·), plainly_forall_2⟩
 
 @[rocq_alias plainly_exist_2]

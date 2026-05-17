@@ -374,6 +374,7 @@ theorem except0_exists [Inhabited α] {Φ : α → PROP} :
 theorem except0_later {P : PROP} : ◇ ▷ P ⊢ ▷ P :=
   (or_elim (later_mono false_elim) .rfl)
 
+@[rocq_alias bi.except_0_laterN]
 theorem except0_laterN (n : Nat) {P : PROP} : ◇ ▷^[n] P ⊢ ▷^[n] ◇ P :=
   match n with
   | 0 => .rfl

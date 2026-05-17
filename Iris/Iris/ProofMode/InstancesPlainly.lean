@@ -137,7 +137,7 @@ instance intoForall_plainly [Sbi PROP] (P : PROP) {α : Type _} (Φ : α → PRO
 /-- FromForall -/
 
 @[rocq_alias from_forall_plainly]
-instance fromForall_plainly [Sbi PROP] (P : PROP) {α : Type _} (Φ : α → PROP)
+instance fromForall_plainly [Sbi PROP] (P : PROP) {α : Sort _} (Φ : α → PROP)
     [h : FromForall P Φ] : FromForall iprop(■ P) (fun a => iprop(■ Φ a)) where
   from_forall := plainly_forall.2.trans (plainly_mono h.1)
 
