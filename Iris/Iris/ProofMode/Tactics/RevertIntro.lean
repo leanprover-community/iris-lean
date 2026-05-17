@@ -34,8 +34,7 @@ def iRevertIntro
       let name ← Lean.mkIdent <$> (hyps.getUserName? ivar).getM
       let ident ← `(binderIdent| $name:ident)
       return (name, .intro <| (if ivar.persistent? then .intuitionistic else id) <| .one ident)
-  trace[irevert] s!"Calling reverting telescope with {names.map (·.1)} on context {←ppExpr hyps.tm}\n⊢\n{←ppExpr goal}"
-
+  trace[irevert] s!"Calling `iRevertIntro` with {names.map (·.1)} on context {←ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
   iRevertCore hs hyps goal fun hyps goal => do
   k hyps goal fun hyps goal => do
   iIntroCore hyps goal names
