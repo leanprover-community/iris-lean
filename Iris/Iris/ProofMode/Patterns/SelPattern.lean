@@ -53,7 +53,7 @@ public meta section
 
 inductive SelTarget.Kind where
 | pure (id : FVarId)
-| ipm (ivar : IVarId) (persistent? : Bool)
+| ipm (ivar : IVarId)
 deriving BEq, Hashable, Repr
 
 @[rocq_alias esel_pat]
@@ -62,18 +62,18 @@ structure SelTarget where
   /- Was this target specified explicitly or is it from a glob like ∗? -/
   explicit : Bool
 
-/-- Resolve selection patterns to concrete proofmode hypotheses (`.ipm`) and Lean locals (`.lean`). -/
+/-- Resolve selection patterns to concrete proofmode hypotheses (`.ipm`) and pure local hypotheses (`.pure`). -/
 def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget)
   | .ident name => do
-      let ⟨ivar, persistent?⟩ ← hyps.findWithInfoPersistent name
-      return [⟨.ipm ivar persistent?, true⟩]
+      let ivar ← hyps.findWithInfo name
+      return [⟨.ipm ivar, true⟩]
   | .leanIdent name => do
       let ldecl ← getLocalDeclFromUserName name.getId
       return [⟨.pure ldecl.fvarId, true⟩]
   | .intuitionistic =>
-      return hyps.intuitionisticIVarIds.map (⟨.ipm · true, false⟩)
+      return hyps.intuitionisticIVarIds.map (⟨.ipm ·, false⟩)
   | .spatial =>
-      return hyps.spatialIVarIds.map (⟨.ipm · true, false⟩)
+      return hyps.spatialIVarIds.map (⟨.ipm ·, false⟩)
   | .pure => do
       -- `%` selects user-facing Lean pure assumptions, so we keep only `Prop` hypotheses.
       let mut hyps := #[]

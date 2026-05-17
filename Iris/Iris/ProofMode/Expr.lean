@@ -22,17 +22,23 @@ open Lean Lean.Expr Lean.Meta Qq
 
 structure IVarId where
   name : Name
+  -- caches whether the ivar is persistent or not to allow
+  -- retrieving this information in O(1) and without `Hyps`
+  -- TODO: cache more here? E.g. also the user name?
+  persistent? : Bool
   deriving Inhabited, BEq, Hashable, Repr, DecidableEq
 
-def mkFreshIVarId [Monad m] [MonadNameGenerator m] : m IVarId :=
-  return { name := (← mkFreshId) }
+def IVarId.spatial? (ivar : IVarId) : Bool := !ivar.persistent?
+
+def mkFreshIVarId [Monad m] [MonadNameGenerator m] (persistent? : Bool) : m IVarId :=
+  return { name := (← mkFreshId), persistent? }
 
 @[expose] def IVarIdSet := Std.TreeSet IVarId (Name.quickCmp ·.name ·.name)
   deriving Inhabited, EmptyCollection, Singleton
 
-def parseName? : Expr → Option (Name × IVarId × Expr)
+def parseName? : Expr → Option (Name × Name × Expr)
   | .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar)]⟩ e => do
-    some (name, ⟨ivar⟩, e)
+    some (name, ivar, e)
   | _ => none
 
 def mkNameAnnotation (name : Name)(ivar : IVarId) (e : Expr) : Expr :=
@@ -89,6 +95,9 @@ The reason `p` is then represented as an expression, and not directly a
 
 See https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/What.20is.20the.20difference.20between.20.60tm.60.20and.20.60e.60.20in.20.60Hyps.60.3F/near/594305592
 
+### The `persistent?` field of the `ivar` in `Hyps.hyp` corresponds to `p`.
+
+This means that the ivar correctly caches whether it refers to a persistent hypothesis or not.
 -/
 inductive Hyps {prop : Q(Type u)} (bi : Q(BI $prop)) : (e : Q($prop)) → Type where
   | emp (_ : $e =Q emp) : Hyps bi e
@@ -137,15 +146,15 @@ partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     some ⟨expr, .emp ⟨⟩⟩
   else if let some #[_, _, P] := appM? expr ``intuitionistically then
     let (name, ivar, (ty : Q($prop))) ← parseName? P
-    some ⟨q(iprop(□ $ty)), .hyp expr name ivar q(true) ty ⟨⟩⟩
+    some ⟨q(iprop(□ $ty)), .hyp expr name ⟨ivar, true⟩ q(true) ty ⟨⟩⟩
   else
     let (name, ivar, ty) ← parseName? expr
-    some ⟨ty, .hyp expr name ivar q(false) ty ⟨⟩⟩
+    some ⟨ty, .hyp expr name ⟨ivar, false⟩ q(false) ty ⟨⟩⟩
 
 partial def Hyps.find? {u prop bi} (name : Name) :
-    ∀ {s}, @Hyps u prop bi s → Option (IVarId × Q(Bool) × Q($prop))
+    ∀ {s}, @Hyps u prop bi s → Option (IVarId × Q($prop))
   | _, .emp _ => none
-  | _, .hyp _ name' ivar p ty _ => if name == name' then (ivar, p, ty) else none
+  | _, .hyp _ name' ivar _ ty _ => if name == name' then (ivar, ty) else none
   | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
 
 partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
@@ -479,21 +488,17 @@ def addHypInfo (stx : Syntax) (name : Name) (ivar : IVarId) (prop : Q(Type u)) (
   let ty := q(HypMarker $ty)
   addLocalVarInfo stx (lctx.mkLocalDecl ⟨ivar.name⟩ name ty) (.fvar ⟨ivar.name⟩) ty isBinder
 
-/-- Hyps.findWithInfoPersistent should be used on names obtained from the syntax of a tactic to highlight them correctly. -/
-def Hyps.findWithInfoPersistent {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : MetaM (IVarId × Bool) := do
-  let some (ivar, p, ty) := hyps.find? name.getId | throwError "unknown hypothesis {name}"
-  addHypInfo name name.getId ivar prop ty
-  pure (ivar, isTrue p)
-
 /-- Hyps.findWithInfo should be used on names obtained from the syntax of a tactic to highlight them correctly. -/
 def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : MetaM IVarId := do
-  (·.1) <$> hyps.findWithInfoPersistent name
+  let some (ivar, ty) := hyps.find? name.getId | throwError "unknown hypothesis {name}"
+  addHypInfo name name.getId ivar prop ty
+  pure (ivar)
 
 /-- Hyps.addWithInfo should be used by tactics that introduce a hypothesis based on the name given by the user. -/
 def Hyps.addWithInfo {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : TSyntax ``binderIdent) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
     : MetaM (IVarId × Hyps bi q(iprop($e ∗ □?$p $ty))) := do
-  let ivar' ← mkFreshIVarId
+  let ivar' ← mkFreshIVarId (isTrue p)
   let (nameTo, nameRef) ← getFreshName name
   addHypInfo nameRef nameTo ivar' prop ty (isBinder := true)
   let hyps := Hyps.add bi nameTo ivar' p ty h

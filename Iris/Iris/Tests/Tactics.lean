@@ -2170,6 +2170,7 @@ end iframe
 section iloeb
 
 variable {PROP : Type u} [ι₁ : BI PROP] [ι₂ : BILoeb PROP]
+-- Tests `iloeb` basic
 /--
 error: unsolved goals
 PROP : Type u
@@ -2177,14 +2178,15 @@ PROP : Type u
 ι₂ : BILoeb PROP
 P Q : PROP
 ⊢ ⏎
-  □IH : ▷ (P -∗ Q)
+  □IHH : ▷ (P -∗ Q)
   ⊢ P -∗ Q
 -/
 #guard_msgs in
 example (P Q : PROP) :
     P ⊢ Q := by
-  iloeb as IH
+  iloeb as IHH
 
+-- Tests `iloeb` automatically generalizing spatial context
 /--
 error: unsolved goals
 PROP : Type u
@@ -2193,15 +2195,16 @@ PROP : Type u
 P Q : PROP
 ⊢ ⏎
   □IH : ▷ (P -∗ Q)
-  ∗p : P
+  ∗HP : P
   ⊢ Q
 -/
 #guard_msgs in
 example (P Q : PROP) :
     P ⊢ Q := by
-  iintro p
+  iintro HP
   iloeb as IH
 
+-- Tests `iloeb` not automatically generalizing persistent context
 /--
 error: unsolved goals
 PROP : Type u
@@ -2209,96 +2212,87 @@ PROP : Type u
 ι₂ : BILoeb PROP
 P₁ P₂ Q : PROP
 ⊢ ⏎
-  □p : P₁
+  □HP1 : P₁
   □IH : ▷ (P₂ -∗ Q)
-  ⊢ P₂ -∗ Q
+  ∗HP2 : P₂
+  ⊢ Q
 -/
 #guard_msgs in
 example (P₁ P₂ Q : PROP) :
     ⊢ □ P₁ -∗ P₂ -∗ Q := by
-  iintro #p
+  iintro #HP1 HP2
   iloeb as IH
 
+-- Tests reordering spatial hypothesis in `iloeb`
 /--
 error: unsolved goals
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
-P₁ P₂ Q : PROP
+P₁ P₂ P₃ Q : PROP
 ⊢ ⏎
-  □IH : ▷ (□ P₁ -∗ P₂ -∗ Q)
-  □p : P₁
-  ⊢ P₂ -∗ Q
--/
-#guard_msgs in
-example (P₁ P₂ Q : PROP) :
-    ⊢ □ P₁ -∗ P₂ -∗ Q := by
-  iintro #p
-  iloeb as IH generalizing p
-
-/--
-warning: Spatial hypothesis are generalized automatically by iloeb
----
-error: unsolved goals
-PROP : Type u
-ι₁ : BI PROP
-ι₂ : BILoeb PROP
-P₁ P₂ Q : PROP
-⊢ ⏎
-  □p1 : P₁
-  □IH : ▷ (P₂ -∗ Q)
-  ∗p2 : P₂
+  □HP1 : P₁
+  □IH : ▷ (P₃ -∗ P₂ -∗ Q)
+  ∗HP3 : P₃
+  ∗HP2 : P₂
   ⊢ Q
 -/
 #guard_msgs in
-example (P₁ P₂ Q : PROP) :
-    ⊢ □ P₁ -∗ P₂ -∗ Q := by
-  iintro #p1 p2
-  iloeb as IH generalizing p2
+example (P₁ P₂ P₃ Q : PROP) :
+    ⊢ □ P₁ -∗ P₂ -∗ P₃ -∗ Q := by
+  iintro #HP1 HP2 HP3
+  iloeb as IH generalizing HP3
 
+-- Tests `iloeb` with pure hypothesis
 /--
 error: unsolved goals
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
-H₁ : Prop
-P Q : PROP
-h1 : H₁
+H₁ : Nat → Prop
+P Q : Nat → PROP
+n : Nat
+h1 : H₁ n
 ⊢ ⏎
-  □IH : ▷ (P -∗ Q)
-  ∗p : P
-  ⊢ Q
+  □IH : ▷ ∀ n, <affine> ⌜H₁ n⌝ -∗ P n -∗ Q n
+  ∗p : P n
+  ⊢ Q n
 -/
 #guard_msgs in
-example (H₁ : Prop) (P Q : PROP) :
-    H₁ → ⊢ P -∗ Q := by
+example (n : Nat) (H₁ : Nat → Prop) (P Q : Nat → PROP) :
+    H₁ n → ⊢ P n -∗ Q n := by
   iintro %h1 p
-  iloeb as IH
+  iloeb as IH generalizing %n %h1
 
+
+-- Tests `iloeb` with pure hypothesis in affine logic
 /--
 error: unsolved goals
 PROP : Type u
 ι₁ : BI PROP
 ι₂ : BILoeb PROP
-H₁ : Prop
-P Q : PROP
-h1 : H₁
+i : BIAffine PROP
+H₁ : Nat → Prop
+P Q : Nat → PROP
+n : Nat
+h1 : H₁ n
 ⊢ ⏎
-  □IH : ▷ (<affine> ⌜H₁⌝ -∗ P -∗ Q)
-  ∗p : P
-  ⊢ Q
+  □IH : ▷ ∀ n, ⌜H₁ n⌝ -∗ P n -∗ Q n
+  ∗p : P n
+  ⊢ Q n
 -/
 #guard_msgs in
-example (H₁ : Prop) (P Q : PROP) :
-    H₁ → ⊢ P -∗ Q := by
+example [i : BIAffine PROP] (n : Nat) (H₁ : Nat → Prop) (P Q : Nat → PROP) :
+    H₁ n → ⊢ P n -∗ Q n := by
   iintro %h1 p
-  iloeb as IH generalizing %h1
+  iloeb as IH generalizing %n %h1
 
 variable {PROP : Type u} [ι₁ : BI PROP] in
-/-- error: Cannot use `iloeb` if there is no `BILoeb PROP` instance available -/
+-- Tests `iloeb` failing without `BILoeb`
+/-- error: iloeb: no `BILoeb PROP` instance found -/
 #guard_msgs in
-example (H₁ : Prop) (P Q : PROP) :
-    H₁ → ⊢ P -∗ Q := by
+example (P Q : PROP) :
+    ⊢ P -∗ Q := by
   iloeb as IH
 
 end iloeb

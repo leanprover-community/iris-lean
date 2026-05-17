@@ -45,29 +45,30 @@ def addBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
   modify ({goals := ·.goals.push m.mvarId!})
   pure m
 
+/-- Run `k` in a context where `fvarIds` are removed from the context.
+The user should check whether the fvars can be cleared using `Hyps.checkRemovableFVar`.
+TODO: calling this function requires specifying `u`. Not clear why.
+-/
+def withoutFVars {α : Q(Sort u)} (fvarIds : Array FVarId) (k : ProofModeM Q($α)) :
+  ProofModeM Q($α) := do
+  -- TODO: Is there a better way of doing this that does not require
+  -- creating an mvar, using another function than MVarId.clear?
+  let m := (← mkFreshExprSyntheticOpaqueMVar α).mvarId!
+  let expr ← m.withContext do
+    -- see Lean.MVarId.tryClearMany'
+    -- sort to ensure that the fvars can be given in an arbitrary order
+    let fvarIds := (← getLCtx).sortFVarsByContextOrder fvarIds
+    let m ← fvarIds.foldrM (init := m) (λ h m => m.clear h)
+    m.withContext k
+  m.assign expr
+  return expr
+
 /-- Create a new BI goal with the given hypotheses and goal, but without some fvars, and add it to the proof mode state.
 It is the responsibility of the user of this function to check that the variables to clear can actually be cleared (e.g. using
 `Hyps.checkRemovableFVar`). -/
 def addBIGoalWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
-  let goal ← mkBIGoal hyps goal name
-  let (clearedGoalId, cleared) ← goal.mvarId!.tryClearMany' toClear
-  unless cleared.size == toClear.size do
-    -- this should not happen since the caller of this function should call Hyps.checkRemovableFVar first
-    throwError "internal error: failed to clear all selected Lean hypotheses"
-  modify ({goals := ·.goals.push clearedGoalId})
-  return Expr.mvar clearedGoalId
-
-def runTacticWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
-  {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId) (name : Name := .anonymous)
-  (k : ∀ {e : Q($prop)}(_hyps : Hyps bi e)(goal: Q($prop)), ProofModeM Q($e ⊢ $goal)) :
-    ProofModeM Q($e ⊢ $goal) := do
-  let .mvar mvid ← addBIGoalWithoutFVars hyps goal toClear name
-    | unreachable!
-  let expr ← mvid.withContext do
-    k hyps goal
-  mvid.assign expr
-  return expr
+  {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
+  withoutFVars (u:=0) toClear (addBIGoal hyps goal name)
 
 /-- Add an existing metavariable as a goal to the proof mode state if it is not already assigned or present. -/
 def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do

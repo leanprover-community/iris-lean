@@ -63,7 +63,7 @@ structure FrameResult {u} {prop : Q(Type u)} (bi : Q(BI $prop)) (origE origGoal 
 
 private def FrameResult.step {u prop bi origE origGoal} :
     @FrameResult u prop bi origE origGoal → SelTarget → ProofModeM (FrameResult bi origE origGoal)
-  | st@{hyps, goal, pf, ..}, {explicit, kind := .ipm ivar _, ..} => do
+  | st@{hyps, goal, pf, ..}, {explicit, kind := .ipm ivar, ..} => do
     let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove false ivar
     let goal' ← mkFreshExprMVarQ q($prop)
     if let .some _ ← ProofModeM.trySynthInstanceQ q(Frame $p $out' $goal $goal') then
