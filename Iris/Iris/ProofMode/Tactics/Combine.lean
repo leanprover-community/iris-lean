@@ -23,7 +23,7 @@ theorem combine_as_nil [BI PROP] {e goal : PROP} (pf : e ∗ □ emp ⊢ goal) :
 
 /-- Auxilary lemma for the step case with two or more hypotheses -/
 theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out goal : PROP}
-    (inst : CombineSepAs out1' out2' out)
+    (inst : CombineSepAs out2' out1' out)
     (pf1 : (e1 ∗ □?p1 out1' ⊢ goal) → e ⊢ goal)
     (pf2 : e1 ⊢ e2 ∗ □?p2 out2')
     (pf3 : e2 ∗ □?(p1 && p2) out ⊢ goal) : e ⊢ goal := by
@@ -33,7 +33,7 @@ theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out goal :
     _ ⊢ e2 ∗ □?p2 out2' ∗ □?p1 out1'      := sep_assoc.mp
     _ ⊢ e2 ∗ □?p1 out1' ∗ □?p2 out2'      := sep_mono_r sep_comm.mp
     _ ⊢ e2 ∗ □?(p1 && p2) (out1' ∗ out2') := sep_mono_r intuitionisticallyIf_sep_conj
-    _ ⊢ e2 ∗ □?(p1 && p2) out             := sep_mono_r <| intuitionisticallyIf_mono inst.combine_sep_as
+    _ ⊢ e2 ∗ □?(p1 && p2) out             := sep_mono_r <| intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_as
     _ ⊢ goal                              := pf3
 
 /-- Auxilary lemma for the base case where up to one hypothesis is given -/
@@ -44,7 +44,7 @@ theorem combine_gives_nil_singleton [BI PROP] {e goal : PROP} (pf : e ∗ □ Tr
 
 /-- Auxilary lemma for the step case where multiple hypotheses are given -/
 theorem combine_gives_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out goal : PROP}
-    (inst : CombineSepGives out1' out2' out)
+    (inst : CombineSepGives out2' out1' out)
     (pf0 : e1 ∗ □?p1 out1' ⊢ e)
     (pf1 : (e1 ∗ □?p1 out1' ⊢ goal) → e ⊢ goal)
     (pf2 : e1 ⊣⊢ e2 ∗ □?p2 out2')
@@ -52,7 +52,7 @@ theorem combine_gives_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out goa
   apply pf1
   have pf4 : □?p1 out1' ∗ □?p2 out2' ⊢ <pers> out := calc
     _ ⊢ □?(p1 && p2) (out1' ∗ out2') := intuitionisticallyIf_sep_conj
-    _ ⊢ □?(p1 && p2) <pers> out      := intuitionisticallyIf_mono (inst.combine_sep_gives)
+    _ ⊢ □?(p1 && p2) <pers> out      := intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_gives
     _ ⊢ <pers> out                   := intuitionisticallyIf_elim
   calc
     _ ⊢ (e2 ∗ □?p2 out2') ∗ □?p1 out1'                      := sep_mono_l pf2.mp
@@ -69,7 +69,7 @@ theorem combine_gives_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out goa
 
 theorem combine_gives_step_conj [BI PROP]
     {origE outGives' goal outAs' out2' newOutGives newOutGivesCombined : PROP}
-    (inst : CombineSepGives outAs' out2' newOutGives)
+    (inst : CombineSepGives out2' outAs' newOutGives)
     (pf1 : (origE ∗ □ outGives' ⊢ goal) → origE ⊢ goal)
     (pf2 : MakeAnd outGives' newOutGives newOutGivesCombined)
     (pf3 : (newE ∗ □?p1 outAs' ⊢ goal) → origE ⊢ goal)
@@ -125,17 +125,17 @@ private def pConj (p1 p2 : Q(Bool)) : Q(Bool) :=
 private def CombineState.combineProofModeHyp {u prop bi origE goal} :
     @CombineState u prop bi origE goal → IVarId →
     ProofModeM (@CombineState u prop bi origE goal)
-  | { origHyps, newE, newHyps, p, outAs', pfAs, outGives', pfGives }, ivar => do
-    let ⟨e2, hyps2, out2, out2', p2, _, pf2⟩ := newHyps.remove false ivar
+  | { origHyps, newHyps, p, outAs', pfAs, outGives', pfGives, .. }, ivar => do
+    let ⟨_, hyps2, _, out2', p2, _, pf2⟩ := newHyps.remove false ivar
 
     -- Type class instance search for the `as` syntax
     let newOutAs ← mkFreshExprMVarQ _
-    let instAs ← ProofModeM.synthInstanceQ q(CombineSepAs $outAs' $out2' $newOutAs)
+    let instAs ← ProofModeM.synthInstanceQ q(CombineSepAs $out2' $outAs' $newOutAs)
     let newPfAs := q(combine_as_step $instAs $pfAs $(pf2).mp)
 
     -- Type class instance search for the `gives` syntax
     let newOutGives ← mkFreshExprMVarQ _
-    let instGives ← ProofModeM.trySynthInstanceQ q(CombineSepGives $outAs' $out2' $newOutGives)
+    let instGives ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out2' $outAs' $newOutGives)
 
     match instGives, outGives', pfGives with
     -- No additional persistent information derived, `outGives'` remains unchanged
@@ -192,7 +192,7 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (hyps : Hyps bi e)
     (goal : Q($prop)) :
     ProofModeM (@CombineState u prop bi e goal) := do
-  match hs with
+  match hs.reverse with
   /-
     Trivial case when no hypothesis is given as an argument for the tactic:
     introduce `□ emp` for the `as` syntax and `□ True` for the `gives` syntax.
@@ -227,13 +227,13 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
 
     -- Search for the type class instance for the `as` syntax
     let newOutAs ← mkFreshExprMVarQ _
-    let instAs ← ProofModeM.synthInstanceQ q(CombineSepAs $out1' $out2' $newOutAs)
+    let instAs ← ProofModeM.synthInstanceQ q(CombineSepAs $out2' $out1' $newOutAs)
     let pfAs : Q(($e2 ∗ □?($p1 && $p2) $newOutAs ⊢ $goal) → $e ⊢ $goal) :=
       q(combine_as_step $instAs $(pf1).mp.trans $(pf2).mp)
 
     -- Search for the type class instance for the `gives` syntax
     let newOutGives ← mkFreshExprMVarQ _
-    let instGives ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out1' $out2' $newOutGives)
+    let instGives ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out2' $out1' $newOutGives)
 
     -- Initialise the mutable `CombineState` instance with the first two hypotheses combined
     let mut st : CombineState e goal :=

@@ -2280,9 +2280,22 @@ example [BI PROP] {P1 P2 P3 Q : PROP} :
   iexact HNew
 
 /-- Tests `icombine` for the proposition with three propositions,
-    where the first two propositions has `□`. -/
+    where the first two propositions have `□`.
+    Note that `□ P2` and `P3` first get combined into `P2 ∗ P3`, which is then
+    combined with `□ P1` to get `□ P1 ∗ □ P2 ∗ P3`. -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :
-    ⊢ □ P1 -∗ □ P2 -∗ P3 -∗ (□ (P1 ∗ P2) ∗ P3 -∗ Q) -∗ Q := by
+    ⊢ □ P1 -∗ □ P2 -∗ P3 -∗ (□ P1 ∗ □ P2 ∗ P3 -∗ Q) -∗ Q := by
+  iintro HP1 HP2 HP3 H
+  icombine HP1 HP2 HP3 as HNew
+  iapply H
+  iexact HNew
+
+/-- Tests `icombine` for the proposition with three propositions,
+    where the last two propositions have `□`. Note that `□ P2` and `□ P3`
+    are first combined into `□ (P2 ∗ P3)`, which is then combined with
+    `P1` to get `P1 ∗ □ (P2 ∗ P3)`. -/
+example [BI PROP] {P1 P2 P3 Q : PROP} :
+    ⊢ P1 -∗ □ P2 -∗ □ P3 -∗ (P1 ∗ □ (P2 ∗ P3) -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 H
   icombine HP1 HP2 HP3 as HNew
   iapply H
@@ -2291,7 +2304,7 @@ example [BI PROP] {P1 P2 P3 Q : PROP} :
 /-- Tests `icombine` for the proposition with four propositions,
     where the first two propositions has `□` and the other two has `<affine>`. -/
 example [BI PROP] {P1 P2 P3 P4 Q : PROP} :
-    ⊢ □ P1 -∗ □ P2 -∗ <affine> P3 -∗ <affine> P4 -∗ (□ (P1 ∗ P2) ∗ <affine> (P3 ∗ P4) -∗ Q) -∗ Q := by
+    ⊢ □ P1 -∗ □ P2 -∗ <affine> P3 -∗ <affine> P4 -∗ (□ P1 ∗ □ P2 ∗ <affine> (P3 ∗ P4) -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 HP4 H
   icombine HP1 HP2 HP3 HP4 as HNew
   iapply H
@@ -2300,7 +2313,7 @@ example [BI PROP] {P1 P2 P3 P4 Q : PROP} :
 /-- Tests `icombine` for the proposition with four propositions,
     where the second and third propositions has `□` while the others do not. -/
 example [BI PROP] {P1 P2 P3 P4 Q : PROP} :
-    ⊢ P1 -∗ □ P2 -∗ □ P3 -∗ P4 -∗ (P1 ∗ □ (P2 ∗ P3) ∗ P4 -∗ Q) -∗ Q := by
+    ⊢ P1 -∗ □ P2 -∗ □ P3 -∗ P4 -∗ (P1 ∗ □ P2 ∗ □ P3 ∗ P4 -∗ Q) -∗ Q := by
   iintro HP1 HP2 HP3 HP4 H
   icombine HP1 HP2 HP3 HP4 as HNew
   iapply H
@@ -2401,9 +2414,23 @@ example [BI PROP] {P Q R : PROP} [CombineSepGives P Q R] :
 
 /-- Tests `icombine` with `gives` using three propositions -/
 example [BI PROP] [BIAffine PROP] {P1 P2 P3 P4 P5 P6 : PROP}
-    [CombineSepAs P1 P2 P4] [CombineSepGives P1 P2 P5] [CombineSepGives P4 P3 P6] :
+    [CombineSepAs P2 P3 P4] [CombineSepGives P2 P3 P5] [CombineSepGives P1 P4 P6] :
     ⊢ P1 -∗ P2 -∗ P3 -∗ □ (P5 ∧ P6) := by
   iintro HP1 HP2 HP3
+  icombine HP1 HP2 HP3 gives Hnew
+  iexact Hnew
+
+/- Tests `icombine` with `gives` using three propositions, with type class
+    instance synthesis possible only in the first step -/
+/-- error: icombine: no type class instance to combine propositions -/
+#guard_msgs in
+example [BI PROP] [BIAffine PROP] {P1 P2 P3 P4 P5 P6 : PROP}
+    [CombineSepAs P2 P3 P4] [CombineSepGives P2 P3 P5] :
+    ⊢ P1 -∗ P2 -∗ P3 -∗ □ (P5 ∧ P6) := by
+  iintro HP1 HP2 HP3
+  -- Combining `HP2 : P2` and `HP3 : P3` gives `Hnew : P5`
+  icombine HP2 HP3 gives Hnew
+  -- The entire tactic below fails as `HP1 : P1` cannot be combined with `P5`
   icombine HP1 HP2 HP3 gives Hnew
   iexact Hnew
 
@@ -2435,12 +2462,12 @@ example [BI PROP] {n : Nat} {P Q R : PROP} [CombineSepGives P Q R] :
 
 /-- Tests `icombine` with `as` and `gives` using three propositions and destruction patterns -/
 example [BI PROP] {P1 P2 P3 P4 P5 P6 : PROP}
-    [CombineSepAs P1 P2 P4] [CombineSepGives P1 P2 P5] [CombineSepGives P4 P3 P6] :
-    ⊢ P1 -∗ P2 -∗ P3 -∗ P3 ∗ P4 ∗ □ P5 ∗ □ P6 := by
+    [CombineSepAs P2 P3 P4] [CombineSepGives P2 P3 P5] [CombineSepGives P1 P4 P6] :
+    ⊢ P1 -∗ P2 -∗ P3 -∗ P1 ∗ P4 ∗ □ P5 ∗ □ P6 := by
   iintro HP1 HP2 HP3
-  icombine HP1 HP2 HP3 as ⟨HP4, HP3⟩ gives ⟨HP5, HP6⟩
-  isplitl [HP3]
-  · iexact HP3
+  icombine HP1 HP2 HP3 as ⟨HP1, HP4⟩ gives ⟨HP5, HP6⟩
+  isplitl [HP1]
+  · iexact HP1
   · isplitl [HP4]
     · iexact HP4
     · isplitl

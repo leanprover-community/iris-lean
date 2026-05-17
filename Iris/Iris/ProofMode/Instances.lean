@@ -861,20 +861,6 @@ instance (priority := default - 20) combineSepAs_default [BI PROP] (P Q : PROP) 
     CombineSepAs P Q iprop(P ∗ Q) where
   combine_sep_as := refl
 
-/-- If more than two propositions are combined and the resultant combined
-    proposition is connected by the same connective, then it should be
-    right associative. For example, given `P1`, `P2` and `P3` where the default
-    option is applicable, the resultant proposition should be `P1 ∗ P2 ∗ P3`
-    (i.e., `P1 ∗ (P2 ∗ P3)`) rather than `(P1 ∗ P2) ∗ P3`.
-
-    Note that `icombine` combines propositions from left to right.
-    For example, when `□ P1`, `□ P2` and `P3` are combined, it may result in
-    `□ (P1 ∗ P2) ∗ P3`. -/
-instance (priority := default - 10) combineSepAs_assoc [BI PROP] (P Q R S : PROP)
-    [h : CombineSepAs Q R S] :
-    CombineSepAs iprop(P ∗ Q) R iprop(P ∗ S) where
-  combine_sep_as := sep_assoc.mp.trans (sep_mono refl h.combine_sep_as)
-
 @[rocq_alias maybe_combine_sep_as_affinely]
 instance combineSepAs_affinely [BI PROP] (Q1 Q2 P : PROP)
     [h : CombineSepAs Q1 Q2 P] :
