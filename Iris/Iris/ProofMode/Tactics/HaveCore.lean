@@ -41,7 +41,9 @@ Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.
 ## Returns
 A tuple containing:
 - `e'`: Proposition for `hyps'`
-- `hyps'`: Updated hypothesis context
+- `hyps'`: Updated hypothesis context, which consumes the asserted proposition if it
+    was contained in the spatial context (or if it was persistent and `keep = true`),
+    or is returned unchanged if the function term was contained in the Lean context.
 - `p`: Persistence flag for the output (always `true` for Lean terms, inherited for Iris hypotheses)
 - `out`: Asserted proposition
 - `pf`: Proof of `hyps ⊢ hyps' ∗ □?p out`

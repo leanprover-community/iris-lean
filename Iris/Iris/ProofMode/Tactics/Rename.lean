@@ -16,7 +16,7 @@ elab "irename" colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do
   ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
 
   -- find hypothesis index
-  let some (ivar, _, ty) := hyps.find? nameFrom.getId | throwError "irename: unknown hypothesis"
+  let some (ivar, ty) := hyps.find? nameFrom.getId | throwError "irename: unknown hypothesis"
   addHypInfo nameFrom nameFrom.getId ivar prop ty
   let some hyps' := hyps.rename ivar nameTo.getId | unreachable!
   addHypInfo nameTo nameTo.getId ivar prop ty (isBinder := true)
