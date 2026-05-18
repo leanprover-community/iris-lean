@@ -1998,83 +1998,31 @@ section irewrite
 variable {PROP : Type _} [Sbi PROP]
 variable {A B : Type _} [OFE A] [OFE B]
 
+/- Tests `irewrite` rewriting in goal -/
 example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
     internalEq b a ∗ P a ⊢ P b := by
-  istart
+  iintro ⟨Heq, Ha⟩
+  irewrite [Heq]
+  iexact Ha
+
+/- Tests `irewrite` rewriting in goal explicitly -/
+example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
+    internalEq b a ∗ P a ⊢ P b := by
   iintro ⟨Heq, Ha⟩
   irewrite [Heq] at ⊢
   iexact Ha
 
+/- Tests `irewrite` rewriting in goal in backward direction -/
 example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P b)] :
     internalEq b a ∗ P b ⊢ P a := by
-  istart
   iintro ⟨Heq, Hb⟩
   irewrite [← Heq]
   iexact Hb
 
-example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [Absorbing (P a)] :
-    (∀ c, internalEq a c) ∗ P a ∗ (P b -∗ Q b) ⊢ Q b := by
-  istart
-  iintro ⟨Heq, Ha, Himpl⟩
-  iapply Himpl
-  irewrite [← Heq $$ %b, ← Heq $$ %a]
-  iexact Ha
-
-example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [Absorbing (P b)] :
-    internalEq a b ∗ P b ∗ (P a -∗ Q a) ⊢ Q a := by
-  istart
-  iintro ⟨Heq, Hb, Himpl⟩
-  iapply Himpl
-  irewrite [Heq]
-  iexact Hb
-
-example (f : A → B) [OFE.NonExpansive f] (a b : A) (P : B → PROP) [OFE.NonExpansive P] [Absorbing (P (f a))] :
-    internalEq a b ∗ P (f a) ⊢ P (f b) := by
-  istart
-  iintro ⟨Heq, Ha⟩
-  irewrite [←Heq]
-  · exact (OFE.NonExpansive.comp (g := P) (f := f) inferInstance inferInstance)
-  · iexact Ha
-
-example (a b c : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
-    internalEq a b ∗ internalEq b c ∗ P a ⊢ P c := by
-  istart
-  iintro ⟨Hab, Hbc, Ha⟩
-  irewrite [←Hbc, ←Hab]
-  iexact Ha
-
-example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [Absorbing (P a)] :
-    internalEq a b ∗ (P a ∗ Q a) ⊢ P b ∗ Q a := by
-  istart
-  iintro ⟨Heq, ⟨Ha, Qa⟩⟩
-  isplitl [Heq Ha]
-  · irewrite [←Heq]
-    iexact Ha
-  · iexact Qa
-
-example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
-    internalEq b a ∗ P a ⊢ P b := by
-  istart
-  iintro ⟨Heq, Ha⟩
-  irewrite [Heq]
-  iexact Ha
-
-example (a b : A) (P Q R : A → PROP)
-    [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] [Absorbing (P a)] :
-    internalEq a b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
-  istart
-  iintro ⟨Heq, H⟩
-  irewrite [←Heq]
-  · refine ⟨fun _ _ _ h => ?_⟩
-    refine sep_ne.ne (OFE.NonExpansive.ne h) ?_
-    refine sep_ne.ne (OFE.NonExpansive.ne h) ?_
-    exact (OFE.NonExpansive.ne h)
-  · iexact H
-
+/- Tests `irewrite` rewriting in hypothesis -/
 example (a b : A) (P Q R : A → PROP)
     [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] [Absorbing iprop(P b ∗ Q b ∗ R b)] :
     internalEq a b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
-  istart
   iintro ⟨Heq, H⟩
   irewrite [Heq] at H
   · refine ⟨fun _ _ _ h => ?_⟩
@@ -2083,6 +2031,50 @@ example (a b : A) (P Q R : A → PROP)
     exact (OFE.NonExpansive.ne h)
   · iexact H
 
+/- Tests `irewrite` rewriting in same hypothesis -/
+example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P b)] :
+    internalEq b a ⊢@{PROP} internalEq a a := by
+  iintro Heq
+  irewrite [Heq] at Heq
+  · apply internalEq.ne_l
+  iexact Heq
+
+/- Tests `irewrite` with proof mode terms -/
+example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [Absorbing (P a)] :
+    (∀ c, internalEq a c) ∗ P a ∗ (P b -∗ Q b) ⊢ Q b := by
+  iintro ⟨Heq, Ha, Himpl⟩
+  iapply Himpl
+  irewrite [← Heq $$ %b, ← Heq $$ %a]
+  iexact Ha
+
+/- Tests `irewrite` with multiple rewrites -/
+example (a b c : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
+    internalEq a b ∗ internalEq b c ∗ P a ⊢ P c := by
+  iintro ⟨Hab, Hbc, Ha⟩
+  irewrite [←Hbc, ←Hab]
+  iexact Ha
+
+/- Tests `irewrite` with manual nonexpansive proof -/
+example (f : A → B) [OFE.NonExpansive f] (a b : A) (P : B → PROP) [OFE.NonExpansive P] [Absorbing (P (f a))] :
+    internalEq a b ∗ P (f a) ⊢ P (f b) := by
+  iintro ⟨Heq, Ha⟩
+  irewrite [←Heq]
+  · exact (OFE.NonExpansive.comp (g := P) (f := f) inferInstance inferInstance)
+  · iexact Ha
+
+/- Tests `irewrite` under separating conjunction -/
+example (a b : A) (P Q R : A → PROP)
+    [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] [Absorbing (P a)] :
+    internalEq a b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
+  iintro ⟨Heq, H⟩
+  irewrite [←Heq]
+  · refine ⟨fun _ _ _ h => ?_⟩
+    refine sep_ne.ne (OFE.NonExpansive.ne h) ?_
+    refine sep_ne.ne (OFE.NonExpansive.ne h) ?_
+    exact (OFE.NonExpansive.ne h)
+  · iexact H
+
+/- Tests `irewrite` under more connectives -/
 example (x y : A) P :
   ⊢@{PROP} □ (∀ z, P -∗ <affine> (internalEq z y)) -∗ (P -∗ P ∧ (internalEq (x,x) (y,x))) := by
   iintro #H1 H2
@@ -2094,6 +2086,7 @@ example (x y : A) P :
     · iexact H2
     · apply internalEq.refl
 
+/- Tests `irewrite` with Later.next -/
 example (f : A -n> A) x y :
   ⊢@{PROP} internalEq (Later.next x) (Later.next y) -∗ internalEq (Later.next (f x)) (Later.next (f y)) := by
   iintro H
@@ -2105,21 +2098,36 @@ example (f : A -n> A) x y :
   · exact ⟨fun _ _ _ h => (internalEq.ne_l _).ne (f.ne.ne h)⟩
   · apply internalEq.refl
 
+/- Tests `irewrite` under affine and later -/
 example (P Q : PROP) :
-  ⊢@{PROP} <affine> ▷ (internalEq Q P) -∗ <affine> ▷ Q -∗ <affine> ▷ P := by
+  <affine> ▷ (internalEq Q P) -∗ <affine> ▷ Q -∗ <affine> ▷ P := by
   iintro #HPQ HQ !>
   inext
   irewrite [HPQ] at HQ
   · exact ⟨fun _ _ _ h => affinely_ne.ne h⟩
   · iexact HQ
 
+/- Tests `irewrite` under affine and later backwards -/
 example (P Q : PROP) :
-  ⊢@{PROP} <affine> ▷ (internalEq Q P) -∗ <affine> ▷ P -∗ <affine> ▷ Q := by
+  <affine> ▷ (internalEq Q P) -∗ <affine> ▷ P -∗ <affine> ▷ Q := by
   iintro #HPQ HQ !>
   inext
   irewrite [←HPQ] at HQ
   · exact ⟨fun _ _ _ h => affinely_ne.ne h⟩
   · iexact HQ
+
+/- Tests `irewrite` with no matching target -/
+/--
+error: irewrite: Could not find ⏎
+  P
+in the target expression
+  Q
+-/
+#guard_msgs in
+example (P Q : PROP) :
+  internalEq P Q -∗ Q := by
+  iintro HPQ
+  irewrite [HPQ]
 
 end irewrite
 
