@@ -15,26 +15,18 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
-/-- Auxilary lemma for the base case where no hypothesis is given -/
-theorem combine_as_nil [BI PROP] {e goal : PROP} (pf : e ∗ □ emp ⊢ goal) : e ⊢ goal := calc
-  e ⊢ e ∗ emp   := sep_emp.mpr
-  _ ⊢ e ∗ □ emp := sep_mono_r intuitionistically_emp.mpr
-  _ ⊢ goal      := pf
-
 /-- Auxilary lemma for the step case with two or more hypotheses -/
-theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out goal : PROP}
+theorem combine_as_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out : PROP}
     (inst : CombineSepAs out2' out1' out)
-    (pf1 : (e1 ∗ □?p1 out1' ⊢ goal) → e ⊢ goal)
-    (pf2 : e1 ⊢ e2 ∗ □?p2 out2')
-    (pf3 : e2 ∗ □?(p1 && p2) out ⊢ goal) : e ⊢ goal := by
-  apply pf1
-  calc
-    _ ⊢ (e2 ∗ □?p2 out2') ∗ □?p1 out1'    := sep_mono_l pf2
-    _ ⊢ e2 ∗ □?p2 out2' ∗ □?p1 out1'      := sep_assoc.mp
-    _ ⊢ e2 ∗ □?p1 out1' ∗ □?p2 out2'      := sep_mono_r sep_comm.mp
-    _ ⊢ e2 ∗ □?(p1 && p2) (out1' ∗ out2') := sep_mono_r intuitionisticallyIf_sep_conj
-    _ ⊢ e2 ∗ □?(p1 && p2) out             := sep_mono_r <| intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_as
-    _ ⊢ goal                              := pf3
+    (pf1 : e ⊢ e1 ∗ □?p1 out1')
+    (pf2 : e1 ⊢ e2 ∗ □?p2 out2') :
+    e ⊢ e2 ∗ □?(p1 && p2) out := calc
+  e ⊢ e1 ∗ □?p1 out1' := pf1
+  _ ⊢ (e2 ∗ □?p2 out2') ∗ □?p1 out1'    := sep_mono_l pf2
+  _ ⊢ e2 ∗ □?p2 out2' ∗ □?p1 out1'      := sep_assoc.mp
+  _ ⊢ e2 ∗ □?p1 out1' ∗ □?p2 out2'      := sep_mono_r sep_comm.mp
+  _ ⊢ e2 ∗ □?(p1 && p2) (out1' ∗ out2') := sep_mono_r intuitionisticallyIf_sep_conj
+  _ ⊢ e2 ∗ □?(p1 && p2) out             := sep_mono_r <| intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_as
 
 /-- Auxilary lemma for the base case where up to one hypothesis is given -/
 theorem combine_gives_nil_singleton [BI PROP] {e goal : PROP} (pf : e ∗ □ True ⊢ goal) : e ⊢ goal := calc
@@ -72,21 +64,21 @@ theorem combine_gives_step_conj [BI PROP]
     (inst : CombineSepGives out2' outAs' newOutGives)
     (pf1 : (origE ∗ □ outGives' ⊢ goal) → origE ⊢ goal)
     (pf2 : MakeAnd outGives' newOutGives newOutGivesCombined)
-    (pf3 : (newE ∗ □?p1 outAs' ⊢ goal) → origE ⊢ goal)
+    (pf3 : origE ⊢ newE ∗ □?p1 outAs')
     (pf4 : newE ⊣⊢ e2 ∗ □?p2 out2')
     -- (pf5 : newE ∗ □?p1 outAs' ⊢ origE ∗ □ outGives')  -- MISSING
     (pf6 : origE ∗ □ newOutGivesCombined ⊢ goal) :
-    origE ⊢ goal := by
-  apply pf1
-  have pf7 : (newE ∗ □?p1 outAs' ⊢ goal) → origE ∗ □ outGives' ⊢ goal :=
-    fun pf => sep_elim_l.trans <| pf3 pf
-  apply (combine_gives_step inst sorry pf7 pf4)
-  apply sep_assoc.mp.trans
-  have pf8 : origE ∗ □ outGives' ∗ □ newOutGives ⊢ origE ∗ □ newOutGivesCombined := calc
-    _ ⊢ origE ∗ □ (outGives' ∧ newOutGives) := sep_mono_r intuitionistically_and_sep.mpr
-    _ ⊢ origE ∗ □ newOutGivesCombined       := sep_mono_r <| intuitionistically_mono pf2.make_and.mp
-  apply pf8.trans
-  apply pf6
+    origE ⊢ goal := sorry
+  -- apply pf1
+  -- have pf7 : (newE ∗ □?p1 outAs' ⊢ goal) → origE ∗ □ outGives' ⊢ goal :=
+  --   fun pf => sep_elim_l.trans <| pf3 pf
+  -- apply (combine_gives_step inst sorry pf7 pf4)
+  -- apply sep_assoc.mp.trans
+  -- have pf8 : origE ∗ □ outGives' ∗ □ newOutGives ⊢ origE ∗ □ newOutGivesCombined := calc
+  --   _ ⊢ origE ∗ □ (outGives' ∧ newOutGives) := sep_mono_r intuitionistically_and_sep.mpr
+  --   _ ⊢ origE ∗ □ newOutGivesCombined       := sep_mono_r <| intuitionistically_mono pf2.make_and.mp
+  -- apply pf8.trans
+  -- apply pf6
 
 private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop)) where
   -- The original set of hypotheses
@@ -98,7 +90,7 @@ private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop
   {p : Q(Bool)}
   {outAs' : Q($prop)}
   -- The proof for the `as` syntax
-  (pfAs : Q(($newE ∗ □?$p $outAs' ⊢ $goal) → ($origE ⊢ $goal)))
+  (pfAs : Q($origE ⊢ $newE ∗ □?$p $outAs'))
   -- The derived additional hypothesis for the `gives` syntax
   (outGives' : Option Q($prop))
   -- The proof for the `gives` syntax
@@ -199,7 +191,8 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   -/
   | [] =>
     return { origHyps := hyps, newHyps := hyps,
-             p := q(true), outAs' := q(emp), pfAs := q(combine_as_nil),
+             p := q(true), outAs' := q(emp),
+             pfAs := q(sep_emp.mpr.trans <| sep_mono_r intuitionistically_emp.mpr),
              outGives' := some q(iprop(True)), pfGives := q(combine_gives_nil_singleton) }
   /-
     Trivial case when one hypothesis is given as an argument for the tactic:
@@ -210,7 +203,7 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     let ivar ← hyps.findWithInfo h1
     let ⟨_, hyps1, _, out1', p1, _, pf1⟩ := hyps.remove false ivar
     return { origHyps := hyps, newHyps := hyps1,
-             p := p1, outAs' := out1', pfAs := q($(pf1).mp.trans),
+             p := p1, outAs' := out1', pfAs := q($(pf1).mp),
              outGives' := some q(iprop(True)), pfGives := q(combine_gives_nil_singleton) }
   /-
     Non-trivial case when two or more hypotheses are given as arguments for
@@ -228,8 +221,8 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     -- Search for the type class instance for the `as` syntax
     let newOutAs ← mkFreshExprMVarQ _
     let instAs ← ProofModeM.synthInstanceQ q(CombineSepAs $out2' $out1' $newOutAs)
-    let pfAs : Q(($e2 ∗ □?($p1 && $p2) $newOutAs ⊢ $goal) → $e ⊢ $goal) :=
-      q(combine_as_step $instAs $(pf1).mp.trans $(pf2).mp)
+    let pfAs : Q($e ⊢ ($e2 ∗ □?($p1 && $p2) $newOutAs)) :=
+      q(combine_as_step $instAs $(pf1).mp $(pf2).mp)
 
     -- Search for the type class instance for the `gives` syntax
     let newOutGives ← mkFreshExprMVarQ _
@@ -278,7 +271,7 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
     let hs := idents.toList
     let st ← iCombineCore hs hyps goal
     let pf' ← iCasesCore _ st.newHyps goal pat q($(st.p)) st.outAs' addBIGoal
-    mvar.assign q($(st.pfAs) $pf')
+    mvar.assign q($(st.pfAs).trans $pf')
 
 private def throwNoInstanceForGives : ProofModeM Unit := do
   throwError "icombine: no type class instance to combine propositions"
@@ -301,14 +294,13 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
     | none, _ => throwNoInstanceForGives
 
 theorem pfAsGives_combine [BI PROP] {p : Bool} {newE e outAs' outGives' goal : PROP}
-    (pfAs : (newE ∗ □?p outAs' ⊢ goal) → e ⊢ goal)
+    (pfAs : e ⊢ newE ∗ □?p outAs')
     (pfGives : (e ∗ □ outGives' ⊢ goal) → e ⊢ goal)
     (pfAsGives : newE ∗ □?p (outAs' ∗ □ outGives') ⊢ goal) :
     e ⊢ goal := by
-  have pfEq : e ⊣⊢ newE ∗ □?p outAs' := sorry
   apply pfGives
   calc
-    _ ⊢ (newE ∗ □?p outAs') ∗ □ outGives' := sep_mono_l pfEq.mp
+    _ ⊢ (newE ∗ □?p outAs') ∗ □ outGives' := sep_mono_l pfAs
     _ ⊢ newE ∗ □?p outAs' ∗ □ outGives' := sep_assoc.mp
     _ ⊢ newE ∗ □?p outAs' ∗ □?p □ outGives' := sep_mono_r <| sep_mono_r intuitionisticallyIf_intutitionistically.mpr
     _ ⊢ newE ∗ □?p (outAs' ∗ □ outGives')   := sep_mono_r intuitionisticallyIf_sep_2
