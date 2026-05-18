@@ -59,23 +59,28 @@ theorem combine_gives_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out goa
     _ ⊢ goal                                                := pf2
 
 theorem combine_gives_step_conj [BI PROP] {p1 p2 : Bool}
-    {origE newE outGives' outAs' out2' e2 newOutGives newOutGivesCombined : PROP}
-    (inst : CombineSepGives out2' outAs' newOutGives)
-    (pf1 : (origE ∗ □ outGives' ⊢ goal) → origE ⊢ goal)
-    (pf2 : MakeAnd outGives' newOutGives newOutGivesCombined)
-    (pf3 : origE ⊢ newE ∗ □?p1 outAs')
-    (pf4 : newE ⊣⊢ e2 ∗ □?p2 out2') :
-    (origE ∗ □ newOutGivesCombined ⊢ goal) → origE ⊢ goal := sorry
-  -- apply pf1
-  -- have pf7 : (newE ∗ □?p1 outAs' ⊢ goal) → origE ∗ □ outGives' ⊢ goal :=
-  --   fun pf => sep_elim_l.trans <| pf3 pf
-  -- apply (combine_gives_step inst sorry pf7 pf4)
-  -- apply sep_assoc.mp.trans
-  -- have pf8 : origE ∗ □ outGives' ∗ □ newOutGives ⊢ origE ∗ □ newOutGivesCombined := calc
-  --   _ ⊢ origE ∗ □ (outGives' ∧ newOutGives) := sep_mono_r intuitionistically_and_sep.mpr
-  --   _ ⊢ origE ∗ □ newOutGivesCombined       := sep_mono_r <| intuitionistically_mono pf2.make_and.mp
-  -- apply pf8.trans
-  -- apply pf6
+    {e e1 e2 f1 f2 fNew out1' out2' : PROP}
+    (inst : CombineSepGives out2' out1' f2)
+    (pf1 : (e ∗ □ f1 ⊢ goal) → e ⊢ goal)
+    (pf2 : MakeAnd f1 f2 fNew)
+    (pf3 : e ⊢ e1 ∗ □?p1 out1')
+    (pf4 : e1 ⊣⊢ e2 ∗ □?p2 out2')
+    (pf5 : e ∗ □ fNew ⊢ goal) : e ⊢ goal := by
+  apply pf1
+  have h_pers_f1 : e ∗ □ f1 ⊢ <pers> f1 :=
+    (sep_mono_l true_intro).trans
+      ((sep_mono_r persistently_of_intuitionistically).trans absorbing)
+  have h_pers_f2 : e ∗ □ f1 ⊢ <pers> f2 :=
+    sep_elim_l.trans <| pf3.trans <| (sep_mono_l pf4.1).trans <|
+      sep_assoc.1.trans <|
+      (sep_mono_r (sep_mono intuitionisticallyIf_elim intuitionisticallyIf_elim)).trans <|
+      (sep_mono_l true_intro).trans <| (sep_mono_r inst.combine_sep_gives).trans absorbing
+  have h_pers_fNew : e ∗ □ f1 ⊢ <pers> fNew :=
+    (and_intro h_pers_f1 h_pers_f2).trans
+      (persistently_and.2.trans (persistently_mono pf2.make_and.1))
+  exact (and_intro h_pers_fNew .rfl).trans
+    (persistently_and_intuitionistically_sep_l.1.trans
+      ((sep_mono_r sep_elim_l).trans (sep_comm.1.trans pf5)))
 
 private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop)) where
   -- The original set of hypotheses
