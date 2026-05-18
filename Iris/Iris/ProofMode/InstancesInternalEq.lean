@@ -81,7 +81,7 @@ instance intoInternalEq_absorbingly [Sbi PROP] [OFE A] (x y : A) (P : PROP)
 instance intoInternalEq_plainly [Sbi PROP] [OFE A] (x y : A) (P : PROP)
     [h : IntoInternalEq P x y] :
     IntoInternalEq iprop(■ P) x y where
-  into_internal_eq := (plainly_mono h.into_internal_eq).trans (by sorry) --(plainly_internalEq).1
+  into_internal_eq := (plainly_mono h.into_internal_eq).trans (plainly_internalEq).1
 
 @[rocq_alias into_internal_eq_persistently]
 instance intoInternalEq_persistently [Sbi PROP] [OFE A] (x y : A) (P : PROP)
