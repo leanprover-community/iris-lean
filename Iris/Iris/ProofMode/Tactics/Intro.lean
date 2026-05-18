@@ -61,7 +61,7 @@ This function returns the proof of `P ⊢ Q` to be assigned. The new context is 
 -/
 partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat))
-  (k : ∀ {prop : Q(Type $u)}{bi : Q(BI $prop)}{e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
+  (k : ∀ {prop : Q(Type $u)} {bi : Q(BI $prop)} {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM (Q($P ⊢ $Q)) := do
   match pats with
   | [] => k hyps Q
@@ -71,8 +71,8 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar
-    let α ← mkFreshExprMVarQ q(Sort v)     -- TODO: We used to have the types of these declarations explicitly.
-    let Φ ← mkFreshExprMVarQ q($α → $prop) --       But why?
+    let α ← mkFreshExprMVarQ q(Sort v)
+    let Φ ← mkFreshExprMVarQ q($α → $prop)
     let .some _ ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ)
       | throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
     let (n, ref) ← getFreshName n

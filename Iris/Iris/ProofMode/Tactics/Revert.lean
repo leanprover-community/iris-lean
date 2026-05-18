@@ -95,10 +95,10 @@ def iRevertCore (targets : List SelTarget) {u : Level}{prop: Q(Type $u)}{bi : Q(
   let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
   let st ← targets.reverse.foldlM (init := init) fun st target => do
       match target.kind with
-      | .ipm ivar _ => st.revertProofModeHyp ivar
+      | .ipm ivar => st.revertProofModeHyp ivar
       | .pure fvar => st.revertLeanHyp fvar
 
-  let pf' : Q($(st.e) ⊢ $(st.goal)) ← runTacticWithoutFVars st.hyps st.goal st.reverted.reverse (name := .anonymous) k
+  let pf' : Q($(st.e) ⊢ $(st.goal)) ← withoutFVars (u:=0) st.reverted (k st.hyps st.goal)
   return q($(st.pf) $pf')
 
 elab "irevert" pats:(colGt selPat)+ : tactic => do
