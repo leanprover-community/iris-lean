@@ -363,11 +363,6 @@ theorem step_fupd_wand {Eo Ei : CoPset} {P Q : PROP} :
     (|={Eo}[Ei]▷=> P) ⊢ (P -∗ Q) -∗ (|={Eo}[Ei]▷=> Q) := by
   exact step_fupdN_wand (n := 1)
 
-#check emp_sep.2
-#check BIFUpdate.trans
-
-#check fupd_frame_r
-
 theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP} :
     Ei₂ ⊆ Ei₁ →
     Eo₁ ⊆ Eo₂ →

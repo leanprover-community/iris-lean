@@ -21,8 +21,6 @@ public section
 
 namespace Iris
 
-#check Lean.PrettyPrinter.Unexpander
-
 open Lean
 
 inductive Stuckness where
