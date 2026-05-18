@@ -300,6 +300,20 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
       mvar.assign q($pfGives $pf')
     | none, _ => throwNoInstanceForGives
 
+theorem pfAsGives_combine [BI PROP] {p : Bool} {newE e outAs' outGives' goal : PROP}
+    (pfAs : (newE ∗ □?p outAs' ⊢ goal) → e ⊢ goal)
+    (pfGives : (e ∗ □ outGives' ⊢ goal) → e ⊢ goal)
+    (pfAsGives : newE ∗ □?p (outAs' ∗ □ outGives') ⊢ goal) :
+    e ⊢ goal := by
+  have pfEq : e ⊣⊢ newE ∗ □?p outAs' := sorry
+  apply pfGives
+  calc
+    _ ⊢ (newE ∗ □?p outAs') ∗ □ outGives' := sep_mono_l pfEq.mp
+    _ ⊢ newE ∗ □?p outAs' ∗ □ outGives' := sep_assoc.mp
+    _ ⊢ newE ∗ □?p outAs' ∗ □?p □ outGives' := sep_mono_r <| sep_mono_r intuitionisticallyIf_intutitionistically.mpr
+    _ ⊢ newE ∗ □?p (outAs' ∗ □ outGives')   := sep_mono_r intuitionisticallyIf_sep_2
+    _ ⊢ goal := pfAsGives
+
 elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat "gives" colGt patGives:icasesPat : tactic => do
   let pat1 ← liftMacroM <| iCasesPat.parse patAs
   let pat2 ← liftMacroM <| iCasesPat.parse patGives
@@ -308,9 +322,12 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat "gives" colGt p
     let hs := idents.toList
     let st ← iCombineCore hs hyps goal
 
+    let outAs' := st.outAs'
+    let pfAs := st.pfAs
+
     match st.outGives', st.pfGives with
-    | some outGives', _ =>
-      let pf'' ← iCasesCore _ st.newHyps goal pat1 q($st.p) st.outAs'
-        (fun myHyps myGoal => iCasesCore _ myHyps myGoal pat2 q(true) outGives' addBIGoal)
-      -- TODO: find the correct proof to fill in the metavariable
+    | some outGives', pfGives =>
+      let pf' ← iCasesCore _ st.newHyps goal (.conjunction [pat1, .intuitionistic pat2])
+        q($st.p) q(iprop($outAs' ∗ □ $outGives')) addBIGoal
+      mvar.assign q(pfAsGives_combine $pfAs $pfGives $pf')
     | none, _ => throwNoInstanceForGives
