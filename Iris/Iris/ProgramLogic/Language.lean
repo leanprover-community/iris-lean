@@ -230,7 +230,7 @@ instance : Coe Stuckness Atomicity where coe := Atomicity.ofStuckness
 
 @[rocq_alias Atomic]
 class Atomic (a : Atomicity) (e : Expr) : Prop where
-  atomic (σ : State) obs e' σ' eₜ :
+  atomic {σ : State} {obs e' σ' eₜ} :
     (e, σ) -<obs>-> (e', σ', eₜ) →
     match a with
     | .WeaklyAtomic => Irreducible (e', σ')

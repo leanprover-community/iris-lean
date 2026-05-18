@@ -23,23 +23,34 @@ open ProgramLogic Language.Notation
 
 @[expose] public section
 
+/--
+  Carrier typeclass for the `stateInterp` operation.
+
+
+  This operation cannot be placed directly inside of `IrisGS_gen`
+  because Lean then wouldn't be able to derive from its arguments
+  the values of `Expr` and `Val`, and so they're asked explicitly.
+  This was not a problem in Iris Rocq becuse of canonical structures.
+  In Iris Lean, we instead fix our choice of `State` from the choice
+  of `Expr`, so `Expr` cannot be inferred from `State` instead.
+-/
 class StateInterp
+    -- TODO: This probably should be a `semiOutParam`
     (State: Type s)
     (Obs  : outParam <| Type o)
     (GF : BundledGFunctors)
   where
+    /--
+      Axiomatic interpretation of a state in a language model.
+        - `σ` is the state whose interpretation we take
+        - `ns` are the number of prior steps (TODO: Check whether true)
+        - `obs` are the observations prior to this state
+        - `nt` are the number of threads previously spawned
+
+    -/
     stateInterp : State → Nat → List (Obs) → Nat → IProp GF
 
 export StateInterp (stateInterp)
-
-/- TODO: Should this be a class? Maybe we just need to be explicit about the
-   instance it belongs to. Otherwise, we could have some problems if somewhere
-   someone defines a NumLatersPerStep instance and that one gets taken by
-   everyone else.  -/
-class NumLatersPerStep where
-  numLatersPerStep : Nat → Nat
-
-export NumLatersPerStep (numLatersPerStep)
 
 class IrisGS_gen (hlc : outParam <| Bool)
     (Expr  : Type e)
@@ -50,13 +61,28 @@ class IrisGS_gen (hlc : outParam <| Bool)
     (GF : BundledGFunctors)
   extends
     StateInterp State Obs GF,
-    InvGS_gen hlc GF,
-    NumLatersPerStep where
+    InvGS_gen hlc GF where
 
+  /--
+    Number of later credits obtained from taking one step in the
+    operational semantics of our language.
+  -/
+  -- TODO: Should we have a default of `1`?
+  numLatersPerStep : Nat → Nat
+
+  /--
+    Postcondition of forked threads
+  -/
+  -- TODO: Should we have a default of `True`?
   forkPost : Val → IProp GF
 
+  /--
+    The number of steps in the state interpretation should only be
+    considered a lower bound.
+  -/
   state_interp_mono σ ns obs nt :
     iprop(stateInterp σ ns obs nt ⊢ |={∅}=> stateInterp σ (ns + 1) obs nt)
+
 
 variable {hlc : outParam Bool}
 variable {Expr State Obs Val}
@@ -66,7 +92,6 @@ variable [ι : IrisGS_gen hlc Expr GF]
 
 instance : IrisGS_gen hlc Expr GF → Language Expr State Obs Val := fun _ => Λ
 
-@[simp]
 -- TODO: Move to a better place, probably think of a better name
 theorem rw_iProp{P Q : IProp GF} : P ⊣⊢ Q → P = Q := OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr
 
@@ -76,7 +101,6 @@ theorem rw_iProp{P Q : IProp GF} : P ⊣⊢ Q → P = Q := OFE.Leibniz.eq_of_eqv
 if s matches .NotStuck then Reducible (e, σ) else True
 ```
 -/
-@[simp]
 abbrev Stuckness.MaybeReducible : Stuckness → Expr × State → Prop
 | .NotStuck, (e₁, σ₁) => PrimStep.Reducible (e₁, σ₁)
 | _, _ => True
@@ -90,108 +114,87 @@ def wp.pre (s : Stuckness)
     stateInterp σ₁ ns (obs ++ obs') nt ={E,∅}=∗
     ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
     ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ -∗
-      £ (numLatersPerStep ns + 1)
-      ={∅}▷=∗^[numLatersPerStep ns + 1] |={∅,E}=>
+      £ (ι.numLatersPerStep ns + 1)
+      ={∅}▷=∗^[ι.numLatersPerStep ns + 1] |={∅,E}=>
       stateInterp σ₂ (ns + 1) obs' (eₜ.length + nt) ∗
       wp E e₂ Φ ∗
       [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
-
 
 instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
   distLater_dist := by
     intros n wp wp' Hwp E e₁ Φ
     dsimp only [pre]
     cases toVal e₁
-    case some _ => simp
-    dsimp
+    case some _ => exact .rfl
+    dsimp only
     refine BI.forall_ne (fun σ₁ => ?_)
     refine BI.forall_ne (fun ns => ?_)
     refine BI.forall_ne (fun obs => ?_)
     refine BI.forall_ne (fun obs' => ?_)
     refine BI.forall_ne (fun nt => ?_)
-    refine BI.wand_ne.ne (.of_eq rfl) ?_
+    refine BI.wand_ne.ne .rfl ?_
     refine BIFUpdate.ne.ne ?_
-    refine BI.sep_ne.ne (.of_eq rfl) ?_
+    refine BI.sep_ne.ne .rfl ?_
     refine BI.forall_ne (fun e₂  => ?_)
     refine BI.forall_ne (fun σ₂ => ?_)
     refine BI.forall_ne (fun eₜ => ?_)
-    refine BI.wand_ne.ne (.of_eq rfl) ?_
-    refine BI.wand_ne.ne (.of_eq rfl) ?_
-    induction numLatersPerStep ns
-    case zero =>
-      refine step_fupdN_contractive.distLater_dist ?_
-      intros i ih
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne (.of_eq rfl) ?_
-      refine BI.sep_ne.ne ?_ ?_
-      · apply Hwp i ih
-      refine BI.BigSepL.bigSepL_dist ?_
-      intros k x h
-      · apply Hwp i ih
-    case succ n IH =>
-      apply BIFUpdate.ne.ne
-      apply BI.later_ne.ne
-      apply BIFUpdate.ne.ne
-      assumption
+    refine BI.wand_ne.ne .rfl ?_
+    refine BI.wand_ne.ne .rfl ?_
+    refine BIFUpdate.ne.ne ?_
+    refine OFE.Contractive.distLater_dist fun m m_n => ?_
+    refine BIFUpdate.ne.ne ?_
+    refine step_fupdN_ne.ne ?_
+    refine BIFUpdate.ne.ne ?_
+    refine BI.sep_ne.ne .rfl ?_
+    apply BI.sep_ne.ne
+    · apply Hwp m m_n
+    · refine BI.BigSepL.bigSepL_dist (fun _ => (Hwp m m_n _ _ _))
 
--- instance wp.pre.ne s : OFE.NonExpansive (wp.pre s (ι := ι))
---   := OFE.ne_of_contractive (wp.pre s (ι := ι))
-
--- TODO: In this part of the Rocq code, a lot of juggling
--- is happening with `wp_def`, `wp_aux`, `wp'` and `wp_unseal`.
--- I wonder what is the purpose of all of these, and if
--- it's possible to achieve this differently in Lean.
 @[implicit_reducible]
 instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
   wp s := fixpoint (wp.pre s)
 
 section Wp
 
--- TODO: Move out of here
-def _root_.Function.toContractiveHom (f : α → β)[OFE α][OFE β][ι : OFE.Contractive f] : α -c> β where
-  f := f
-  contractive := ι
-
 @[rocq_alias wp_unfold]
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
-  BI.equiv_iff.1 <| fixpoint_unfold (f := (wp.pre (ι := ι) s).toContractiveHom) E e Φ
+  BI.equiv_iff.1 <| fixpoint_unfold (f := (wp.pre s).toContractiveHom) E e Φ
 
 @[rocq_alias wp_ne]
-instance wp_ne (s : Stuckness) E (e : Expr) :
+instance wp_ne {s : Stuckness} {E} {e : Expr} :
     OFE.NonExpansive (Wp.wp (PROP := IProp GF) s E e) where
   ne {n Φ₁ Φ₂} HΦ := by
     induction n using Nat.strongRecOn generalizing e E Φ₁ Φ₂ with | ind n IH =>
     simp only [rw_iProp wp_unfold]
-    dsimp only [wp.pre, Stuckness.MaybeReducible]
+    dsimp only [wp.pre]
     cases toVal e
     case some v => exact BIFUpdate.ne.ne <| HΦ v
-    refine BI.forall_ne (fun σ₁ => ?_)
-    refine BI.forall_ne (fun ns => ?_)
-    refine BI.forall_ne (fun obs => ?_)
-    refine BI.forall_ne (fun obs' => ?_)
-    refine BI.forall_ne (fun nt => ?_)
-    refine BI.wand_ne.ne (.of_eq rfl) ?_
+
+    -- Composing a bunch of nonexpansive operations…
+    refine    BI.forall_ne fun σ₁ => ?_
+    refine    BI.forall_ne fun ns => ?_
+    refine    BI.forall_ne fun obs => ?_
+    refine    BI.forall_ne fun obs' => ?_
+    refine    BI.forall_ne fun nt => ?_
+    refine   BI.wand_ne.ne .rfl ?_
     refine BIFUpdate.ne.ne ?_
-    refine BI.sep_ne.ne (.of_eq rfl) ?_
-    refine BI.forall_ne (fun e₂  => ?_)
-    refine BI.forall_ne (fun σ₂ => ?_)
-    refine BI.forall_ne (fun eₜ => ?_)
-    refine BI.wand_ne.ne (.of_eq rfl) ?_
-    refine BI.wand_ne.ne (.of_eq rfl) ?_
-    induction numLatersPerStep ns with
-    | zero =>
-      refine step_fupdN_contractive.distLater_dist ?_
-      intros i ih
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne (.of_eq rfl) ?_
-      refine BI.sep_ne.ne ?_ (.of_eq rfl)
-      apply IH i ih _ _ <| OFE.dist_lt HΦ ih
-    | succ n IH =>
-      apply BIFUpdate.ne.ne
-      apply BI.later_ne.ne
-      apply BIFUpdate.ne.ne
-      assumption
+    refine    BI.sep_ne.ne .rfl ?_
+    refine    BI.forall_ne fun e₂  => ?_
+    refine    BI.forall_ne fun σ₂ => ?_
+    refine    BI.forall_ne fun eₜ => ?_
+    refine   BI.wand_ne.ne .rfl ?_
+    refine   BI.wand_ne.ne .rfl ?_
+
+    -- The `step_fupdN` |={∅}▷=>^[n+1] is contractive
+    refine step_fupdN_contractive.distLater_dist fun m n_m => ?_
+
+    refine BIFUpdate.ne.ne ?_
+    refine    BI.sep_ne.ne .rfl ?_
+    refine    BI.sep_ne.ne ?_ .rfl
+
+    -- We can now apply the induction hypothesis
+    apply IH m n_m <| OFE.dist_lt HΦ n_m
 
 #rocq_ignore wp_proper "Derivable using NonExpansive.eqv"
 
@@ -202,33 +205,25 @@ instance wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
   distLater_dist {n Φ₁ Φ₂} HΦ := by
     simp only [rw_iProp wp_unfold]
     simp only [wp.pre, h]
-    refine BI.forall_ne (fun σ₁ => ?_)
-    refine BI.forall_ne (fun ns => ?_)
-    refine BI.forall_ne (fun obs => ?_)
-    refine BI.forall_ne (fun obs' => ?_)
-    refine BI.forall_ne (fun nt => ?_)
-    refine BI.wand_ne.ne (.of_eq rfl) ?_
+    refine BI.forall_ne fun σ₁ => ?_
+    refine BI.forall_ne fun ns => ?_
+    refine BI.forall_ne fun obs => ?_
+    refine BI.forall_ne fun obs' => ?_
+    refine BI.forall_ne fun nt => ?_
+    refine BI.wand_ne.ne .rfl ?_
     refine BIFUpdate.ne.ne ?_
-    refine BI.sep_ne.ne (.of_eq rfl) ?_
-    refine BI.forall_ne (fun e₂  => ?_)
-    refine BI.forall_ne (fun σ₂ => ?_)
-    refine BI.forall_ne (fun eₜ => ?_)
-    refine BI.wand_ne.ne (.of_eq rfl) ?_
-    refine BI.wand_ne.ne (.of_eq rfl) ?_
-    induction numLatersPerStep ns
-    case zero =>
-      refine step_fupdN_contractive.distLater_dist ?_
-      intros i ih
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne (.of_eq rfl) ?_
-      refine BI.sep_ne.ne ?_ (.of_eq rfl)
-      apply OFE.NonExpansive.ne
-      apply HΦ i ih
-    case succ n IH =>
-      apply BIFUpdate.ne.ne
-      apply BI.later_ne.ne
-      apply BIFUpdate.ne.ne
-      assumption
+    refine BI.sep_ne.ne .rfl ?_
+    refine BI.forall_ne fun e₂  => ?_
+    refine BI.forall_ne fun σ₂ => ?_
+    refine BI.forall_ne fun eₜ => ?_
+    refine BI.wand_ne.ne .rfl ?_
+    refine BI.wand_ne.ne .rfl ?_
+    refine step_fupdN_contractive.distLater_dist fun m n_m => ?_
+    refine BIFUpdate.ne.ne ?_
+    refine BI.sep_ne.ne .rfl ?_
+    refine BI.sep_ne.ne ?_ .rfl
+    refine wp_ne.ne ?_
+    apply HΦ m n_m
 
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
@@ -241,13 +236,12 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
     ⊢ WP e @ s₁ ; E₁ {{ Φ }} -∗ (∀ v, Φ v ={E₂}=∗ Ψ v) -∗ WP e @ s₂ ; E₂ {{ Ψ }} := by
   intro hs hE
   iloeb as IH generalizing %e %Φ %Ψ %E₁ %E₂ %hE
-  rw (occs := [1]) [rw_iProp wp_unfold]
-  rw (occs := [1]) [rw_iProp wp_unfold]
+  rw [rw_iProp wp_unfold, rw_iProp wp_unfold]
   iintro H HΦ
   dsimp only [wp.pre]
   match toVal e with
   | none =>
-    dsimp
+    dsimp only
     iintro %σ₁ %ns %obs %obs' %nt Hσ
     imod fupd_mask_intro_subseteq hE (P := iprop(emp)) $$ [] with Hclose -- TODO: Should we add rocq_alias `fupd_mask_subseteq` to this theorem?
     · exact BI.intuitionistically_elim_emp
@@ -279,20 +273,11 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
       imodintro
       iassumption
   | some v =>
-    dsimp
+    dsimp only
     ihave h := fupd_mask_mono hE $$ H
     imod h
     iapply HΦ $$ h
 
-
-/-
-Lemma fupd_wp s E e Φ : (|={E}=> WP e @ s; E {{ Φ }}) ⊢ WP e @ s; E {{ Φ }}.
-Proof.
-  rewrite wp_unfold /wp_pre. iIntros "H". destruct (to_val e) as [v|] eqn:?.
-  { by iMod "H". }
-  iIntros (σ1 ns κ κs nt) "Hσ1". iMod "H". by iApply "H".
-Qed.
--/
 theorem fupd_wp {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
     (|={E}=> WP e @ s ; E {{ Φ }}) ⊢ WP e @ s ; E {{ Φ }} := by
   simp only [rw_iProp wp_unfold]
@@ -337,25 +322,24 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
     ihave aux := H $$ %e2 %σ2 %efs %Hstep Hcred
     iapply step_fupdN_wand $$ aux
     iintro >(⟨Hσ,H,Hefs⟩)
+    have Hatomic := ι.atomic Hstep
     cases s with -- TODO: Example of place where `match` is worse than `cases`
     | NotStuck =>
       simp only [rw_iProp wp_unfold]
-      simp only [wp.pre]
-      have := (ι.atomic _ _ _ _ _ Hstep)
-      simp at this
+      dsimp only [wp.pre] at Hatomic ⊢
       match h₂ : toVal e2 with
       | some v2 =>
         icases H with > > $
         iframe
       | none =>
-        simp
+        simp only [Stuckness.MaybeReducible]
         icases H $$ %σ2 %(ns +1) %([]) %_ %(efs.length +nt) [Hσ] with >⟨%h, _⟩
         · exact .rfl
-        nomatch (Language.not_reducible_iff_irreducible.mpr (ι.atomic _ _ _ _ _ Hstep)) h
+        nomatch (Language.not_reducible_iff_irreducible.mpr Hatomic) h
     | MaybeStuck =>
-      have ⟨v, h⟩ := Option.isSome_iff_exists.mp (ι.atomic _ _ _ _ _ Hstep)
+      have ⟨v, h⟩ := Option.isSome_iff_exists.mp (ι.atomic Hstep)
       obtain ⟨rfl⟩ := (ToVal.coe_of_toVal_eq_some h)
-      istop; refine (BI.sep_mono (BI.sep_mono .rfl wp_value_fupd'.1) .rfl).trans ?_; refine BI.Entails.trans ?_ (BIFUpdate.mono <| (BI.sep_mono .rfl (BI.sep_mono wp_value_fupd'.2 .rfl ))); iintro ⟨⟨Hσ,H⟩,Hefs⟩
+      simp only [rw_iProp wp_value_fupd']
       imod H with > H
       iframe
 
@@ -376,7 +360,7 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
    2. It uses some ghost state wired up to the interpretation to know that
       `ns = k + m`, and update the state interpretation to `stateInterp _ m _ _`
 
-   3. _After_ `e` has finally stepped, we get `numLatersPerStep k` later credits
+   3. _After_ `e` has finally stepped, we get `ι.numLatersPerStep k` later credits
       that we can use to prove `P` in the postcondition, and we have to update the
       state interpretation from `stateInterp _ (m+1) _ _` to
       `stateInterp _ (ns+1) _ _` again
@@ -384,11 +368,11 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
 -/
 theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF} :
   toVal e = none →
-  (∀ m k, numLatersPerStep m + numLatersPerStep k ≤ numLatersPerStep (m + k)) →
+  (∀ m k, ι.numLatersPerStep m + ι.numLatersPerStep k ≤ ι.numLatersPerStep (m + k)) →
   (∀ (σ₁ : State) ns obs nt,
     stateInterp σ₁ ns obs nt ={E}=∗
     ∃ k m, stateInterp σ₁ m obs nt ∗ ⌜ns = m + k⌝ ∗ (
-      ∀ nt (σ₂: State) obs, £ (numLatersPerStep k) -∗ stateInterp σ₂ (m+1) obs nt ={E}=∗
+      ∀ nt (σ₂: State) obs, £ (ι.numLatersPerStep k) -∗ stateInterp σ₂ (m+1) obs nt ={E}=∗
         stateInterp σ₂ (ns+1) obs nt ∗ P)) ⊢
   WP e @ s ; E {{ v, iprop(P ={E}=∗ Φ v) }} -∗
   WP e @ s ; E {{ Φ }} := by
@@ -401,7 +385,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF}
     imod Hwp $$ Hσ₁ with ⟨$,Hwp⟩
     imodintro
     iintro %e₂ %σ₂ %efs %Hstep Hc
-    simp only [OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr lc_split)]
+    simp only [rw_iProp lc_split]
     icases Hc with ⟨Hc,Hone⟩
     ihave Hc := lc_weaken _ (Htri m k) $$ Hc
     istop; refine (BI.sep_mono .rfl (lc_split.1)).trans ?_; iintro ⟨⟨⟨Hpost,Hwp⟩,Hone⟩,Hc⟩
@@ -415,7 +399,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF}
     · simp only [OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr lc_split), OFE.Leibniz.eq_of_eqv (BI.equiv_iff.mpr BI.sep_comm)]
       exact .rfl
     iapply step_fupd_wand $$ Hwp; iintro Hwp
-    iapply step_fupdN_le (n := numLatersPerStep m) (by grind only) (Std.LawfulSet.subset_refl)
+    iapply step_fupdN_le (n := ι.numLatersPerStep m) (by grind only) (Std.LawfulSet.subset_refl)
     iapply step_fupdN_wand $$ Hwp; iintro >⟨SI, Hwp, $⟩
     icases Hpost $$ Hk SI with >⟨$, HP⟩
     imodintro
@@ -429,7 +413,7 @@ theorem wp_step_fupdN_strong {s : Stuckness}{E1 E2 : CoPset} {e : Expr} {P : IPr
     ∀ {n},
     -- TODO: This was written as an ∧ in Iris Rocq. I've separated it because it doesn't seem like
     -- icases is able to handle ∧ expressions.
-    (∀ (σ : State) ns obs nt, ⊢@{IProp GF} stateInterp σ ns obs nt ={E1, ∅}=∗ ⌜n ≤ numLatersPerStep ns + 1⌝) →
+    (∀ (σ : State) ns obs nt, ⊢@{IProp GF} stateInterp σ ns obs nt ={E1, ∅}=∗ ⌜n ≤ ι.numLatersPerStep ns + 1⌝) →
     (|={E1,E2}=> |={∅}▷=>^[n] |={E2,E1}=> P) ∗
     WP e @ s ; E2 {{ v, iprop(P ={E1}=∗ Φ v)}} ⊢
     WP e @ s ; E1 {{ Φ }} := by
@@ -447,10 +431,9 @@ theorem wp_step_fupdN_strong {s : Stuckness}{E1 E2 : CoPset} {e : Expr} {P : IPr
     iintro ⟨Hp,Hwp⟩
     simp only [wp.pre, toVal_e]
     iintro %σ₁ %ns %obs %obs' %nt Hσ₁
-    if Hn : n ≤ numLatersPerStep ns then
+    if Hn : n ≤ ι.numLatersPerStep ns then
       imod Hp
       imod Hwp $$ Hσ₁ with ⟨$, H⟩
-      -- #check BIFUpdate.subset
       iintro !> %e₂ %σ₂ %efs %Hstep Hcred
       icases H $$ %_ %_ %_ %Hstep Hcred with H
       simp only [Nat.repeat]
@@ -459,7 +442,7 @@ theorem wp_step_fupdN_strong {s : Stuckness}{E1 E2 : CoPset} {e : Expr} {P : IPr
       imod H; imod Hp
       imodintro
       clear interp
-      generalize numLatersPerStep ns = n0 at *
+      generalize ι.numLatersPerStep ns = n0 at *
       induction n generalizing n0 with
       | zero =>
         iapply step_fupdN_wand $$ H
@@ -607,7 +590,7 @@ variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val 
   a premise.
 -/
 theorem wp_step_fupdN {n : Nat} : toVal e = none → E₂ ⊆ E₁ →
-    (∀ (σ : State) ns obs nt, ⊢@{IProp GF} stateInterp σ ns obs nt ={E₁,∅}=∗ ⌜n ≤ (numLatersPerStep ns)+1⌝) →
+    (∀ (σ : State) ns obs nt, ⊢@{IProp GF} stateInterp σ ns obs nt ={E₁,∅}=∗ ⌜n ≤ (ι.numLatersPerStep ns)+1⌝) →
     ((|={E₁\E₂,∅}=> |={∅}▷=>^[n] |={∅,E₁\E₂}=> P) ∗
     WP e @ s; E₂ {{ v, iprop(P ={E₁}=∗ Φ v) }}) -∗
     WP e @ s; E₁ {{ Φ }} := by
@@ -619,13 +602,13 @@ theorem wp_step_fupdN {n : Nat} : toVal e = none → E₂ ⊆ E₁ →
   imod fupd_mask_subseteq_emptyset_difference (show E₁\ E₂ ⊆ E₁ from Std.LawfulSet.diff_subset_left) with H
   imod Hp
   imod H with toClear; iclear toClear
-  simp [show E₁ \ (E₁ \ E₂) = E₂ from Std.LawfulSet.diff_self_diff_of_subset E₂E₁]
+  simp only [show E₁ \ (E₁ \ E₂) = E₂ from Std.LawfulSet.diff_self_diff_of_subset E₂E₁]
   imodintro
   iapply step_fupdN_wand $$ Hp; iintro H
   iapply fupd_mask_frame (Std.LawfulSet.empty_subset)
   imod H
   imodintro
-  simp only [Std.LawfulSet.diff_empty, ←Std.LawfulSet.diff_subset_decomp E₂E₁, fupd_intro]
+  simp [Std.LawfulSet.diff_empty, ←Std.LawfulSet.diff_subset_decomp E₂E₁, fupd_intro]
 
 variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} in
 theorem wp_step_fupd :
@@ -636,8 +619,7 @@ theorem wp_step_fupd :
   iapply wp_step_fupdN_strong (n := 1) toVal_e E₂E₁ (by
     intros; iintro H
     refine .trans ?_ <| fupd_mask_intro_discard (Std.LawfulSet.empty_subset)
-    simp only [Nat.le_add_left, BI.true_intro]
-    -- TODO: Maybe it's useful to have `_ ={E,E'}=∗ True ↔ True` in the simp set (Is this even true? maybe `E' ⊆ E`)
+    simp [Nat.le_add_left, BI.true_intro]
   ) $$ [-]
   iframe H
   imod HR
@@ -714,8 +696,6 @@ variable {GF : BundledGFunctors}
 variable [ι : IrisGS_gen hlc Expr GF]
 
 variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ Ψ : Val → IProp GF} {P Q R : IProp GF}
-
--- TODO: Add priorities
 
 instance frameWp {p : Bool} [H : ∀ v, Frame p R (Φ v) (Ψ v)] :
     -- TODO: I didn't move over the `FrameInstantiateExistDisabled` constant. Ask if it's necessary.
