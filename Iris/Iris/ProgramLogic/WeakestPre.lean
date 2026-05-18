@@ -69,6 +69,8 @@ class IrisGS_gen (hlc : outParam <| Bool)
   -/
   -- TODO: Should we have a default of `1`?
   numLatersPerStep : Nat → Nat
+  -- TODO: Even when referenced with the typeclass instance, the
+  -- display of `numLatersPerStep` is still kinda awful.
 
   /--
     Postcondition of forked threads
@@ -80,7 +82,7 @@ class IrisGS_gen (hlc : outParam <| Bool)
     The number of steps in the state interpretation should only be
     considered a lower bound.
   -/
-  state_interp_mono σ ns obs nt :
+  stateInterp_mono σ ns obs nt :
     iprop(stateInterp σ ns obs nt ⊢ |={∅}=> stateInterp σ (ns + 1) obs nt)
 
 
@@ -116,7 +118,9 @@ def wp.pre (s : Stuckness)
     ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ -∗
       £ (ι.numLatersPerStep ns + 1)
       ={∅}▷=∗^[ι.numLatersPerStep ns + 1] |={∅,E}=>
-      stateInterp σ₂ (ns + 1) obs' (eₜ.length + nt) ∗
+      -- NOTE: Changed the order of `nt` and `eₜ.length` since in Lean
+      -- we have `n + 0 = n` and not `0 + n = n`
+      stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
       wp E e₂ Φ ∗
       [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
 
@@ -293,6 +297,13 @@ theorem fupd_wp {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
     imod H with H
     iassumption
 
+-- Easier to use when rewritting
+theorem fupd_wp_iff {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
+    WP e @ s ; E {{ Φ }} ⊣⊢ (|={E}=> WP e @ s ; E {{ Φ }})  := by
+  constructor
+  · exact fupd_mask_intro_discard Std.LawfulSet.subset_refl
+  · exact fupd_wp
+
 theorem wp_fupd (s : Stuckness) E (e : Expr) (Φ : Val → IProp GF) :
     WP e @ s ; E {{v, |={E}=> Φ v }} ⊢ WP e @ s ; E {{ Φ }} := by
   iintro h
@@ -332,7 +343,7 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
         iframe
       | none =>
         simp only [Stuckness.MaybeReducible]
-        icases H $$ %σ2 %(ns +1) %([]) %_ %(efs.length +nt) [Hσ] with >⟨%h, _⟩
+        icases H $$ %σ2 %(ns +1) %([]) %_ %(nt + efs.length) [Hσ] with >⟨%h, _⟩
         · exact .rfl
         nomatch (Language.not_reducible_iff_irreducible.mpr Hatomic) h
     | MaybeStuck =>
