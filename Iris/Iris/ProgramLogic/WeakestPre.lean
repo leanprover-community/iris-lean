@@ -294,8 +294,7 @@ theorem fupd_wp {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
     iassumption
 
 theorem wp_fupd (s : Stuckness) E (e : Expr) (Φ : Val → IProp GF) :
-    -- TODO: Fix `WP` syntax so this doesn't happen.
-    WP e @ s ; E {{v, iprop(|={E}=> Φ v) }} ⊢ WP e @ s ; E {{ Φ }} := by
+    WP e @ s ; E {{v, |={E}=> Φ v }} ⊢ WP e @ s ; E {{ Φ }} := by
   iintro h
   iapply wp_strong_mono (Std.IsPreorder.le_refl _) Std.LawfulSet.subset_refl $$ h
   iintro %v h
@@ -303,7 +302,7 @@ theorem wp_fupd (s : Stuckness) E (e : Expr) (Φ : Val → IProp GF) :
 
 theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IProp GF}
   [ι : Language.Atomic ↑s e] :
-    (|={E1,E2}=> WP e @ s ;  E2 {{v, iprop(|={E2,E1}=> Φ v) }}) ⊢ (WP e @ s ; E1 {{ Φ }}) := by
+    (|={E1,E2}=> WP e @ s ;  E2 {{v, |={E2,E1}=> Φ v }}) ⊢ (WP e @ s ; E1 {{ Φ }}) := by
   simp only [rw_iProp wp_unfold]
   iintro H
   match He : toVal e with
@@ -374,7 +373,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF}
     ∃ k m, stateInterp σ₁ m obs nt ∗ ⌜ns = m + k⌝ ∗ (
       ∀ nt (σ₂: State) obs, £ (ι.numLatersPerStep k) -∗ stateInterp σ₂ (m+1) obs nt ={E}=∗
         stateInterp σ₂ (ns+1) obs nt ∗ P)) ⊢
-  WP e @ s ; E {{ v, iprop(P ={E}=∗ Φ v) }} -∗
+  WP e @ s ; E {{ v, P ={E}=∗ Φ v }} -∗
   WP e @ s ; E {{ Φ }} := by
     intro h Htri
     simp only [rw_iProp wp_unfold]
@@ -415,7 +414,7 @@ theorem wp_step_fupdN_strong {s : Stuckness}{E1 E2 : CoPset} {e : Expr} {P : IPr
     -- icases is able to handle ∧ expressions.
     (∀ (σ : State) ns obs nt, ⊢@{IProp GF} stateInterp σ ns obs nt ={E1, ∅}=∗ ⌜n ≤ ι.numLatersPerStep ns + 1⌝) →
     (|={E1,E2}=> |={∅}▷=>^[n] |={E2,E1}=> P) ∗
-    WP e @ s ; E2 {{ v, iprop(P ={E1}=∗ Φ v)}} ⊢
+    WP e @ s ; E2 {{ v, P ={E1}=∗ Φ v}} ⊢
     WP e @ s ; E1 {{ Φ }} := by
   intro toVal_e E2_E1 n interp
   match n with
@@ -469,10 +468,8 @@ theorem wp_step_fupdN_strong {s : Stuckness}{E1 E2 : CoPset} {e : Expr} {P : IPr
       grind only
 
 theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} :
-    -- TODO: Figure out how to make this work better.
-    --  1. Get rid of parenthesis around the WP expression
-    --  2. Have `WP` use the correct `Val` type from the `Wp` instance (it should anyways, it's an outParam, no?)
-    WP e @ s ; E {{v, iprop(WP (K ((v : Val) : Expr)) @ s ; E {{ Φ }}) }} ⊢ WP (K e) @ s ; E {{ Φ }} := by
+    -- TODO: Have `WP` use the correct `Val` type from the `Wp` instance (it should anyways, it's an outParam, no?)
+    WP e @ s ; E {{v, WP (K ((v : Val) : Expr)) @ s ; E {{ Φ }} }} ⊢ WP (K e) @ s ; E {{ Φ }} := by
   iintro H
   iloeb as IH generalizing %E %e %Φ
   rewrite (occs := [2]) [rw_iProp wp_unfold]
@@ -566,7 +563,7 @@ theorem wp_value : Language.IntoVal e v → Φ v ⊢ WP e @ s; E {{ Φ }}
   | ⟨h⟩ => h ▸ wp_value'
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF}{R : IProp GF} in
-theorem wp_frame_l : R ∗ WP e @ s; E {{ Φ }} ⊢ WP e @ s; E {{ v, iprop(R ∗ Φ v) }} := by
+theorem wp_frame_l : R ∗ WP e @ s; E {{ Φ }} ⊢ WP e @ s; E {{ v, R ∗ Φ v }} := by
   iintro ⟨_, H⟩
   iapply wp_strong_mono (Std.IsPreorder.le_refl s) (Std.LawfulSet.subset_refl) $$ H
   iframe
@@ -574,7 +571,7 @@ theorem wp_frame_l : R ∗ WP e @ s; E {{ Φ }} ⊢ WP e @ s; E {{ v, iprop(R �
   iapply fupd_intro
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF}{R : IProp GF} in
-theorem wp_frame_r : WP e @ s; E {{ Φ }} ∗ R ⊢ WP e @ s; E {{ v, iprop(R ∗ Φ v) }} :=
+theorem wp_frame_r : WP e @ s; E {{ Φ }} ∗ R ⊢ WP e @ s; E {{ v, R ∗ Φ v }} :=
   BI.sep_comm.1.trans wp_frame_l
 
 
@@ -592,7 +589,7 @@ variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val 
 theorem wp_step_fupdN {n : Nat} : toVal e = none → E₂ ⊆ E₁ →
     (∀ (σ : State) ns obs nt, ⊢@{IProp GF} stateInterp σ ns obs nt ={E₁,∅}=∗ ⌜n ≤ (ι.numLatersPerStep ns)+1⌝) →
     ((|={E₁\E₂,∅}=> |={∅}▷=>^[n] |={∅,E₁\E₂}=> P) ∗
-    WP e @ s; E₂ {{ v, iprop(P ={E₁}=∗ Φ v) }}) -∗
+    WP e @ s; E₂ {{ v, P ={E₁}=∗ Φ v }}) -∗
     WP e @ s; E₁ {{ Φ }} := by
   intro toVal_e E₂E₁ Hstate
   iintro H
@@ -613,7 +610,7 @@ theorem wp_step_fupdN {n : Nat} : toVal e = none → E₂ ⊆ E₁ →
 variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} in
 theorem wp_step_fupd :
     toVal e = none → E₂ ⊆ E₁ →
-    (|={E₁}[E₂]▷=> P) -∗ WP e @ s; E₂ {{ v, iprop(P ={E₁}=∗ Φ v) }} -∗ WP e @ s; E₁ {{ Φ }} :=
+    (|={E₁}[E₂]▷=> P) -∗ WP e @ s; E₂ {{ v, P ={E₁}=∗ Φ v }} -∗ WP e @ s; E₁ {{ Φ }} :=
   fun toVal_e E₂E₁=> by
   iintro HR H
   iapply wp_step_fupdN_strong (n := 1) toVal_e E₂E₁ (by
@@ -628,7 +625,7 @@ theorem wp_step_fupd :
 
 variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} {R : IProp GF} in
 theorem wp_frame_step_l : toVal e = none → E₂ ⊆ E₁ →
-    (|={E₁}[E₂]▷=> R) ∗ WP e @ s; E₂ {{ Φ }} ⊢ WP e @ s; E₁ {{ v, iprop(R ∗ Φ v) }} := by
+    (|={E₁}[E₂]▷=> R) ∗ WP e @ s; E₂ {{ Φ }} ⊢ WP e @ s; E₁ {{ v, R ∗ Φ v }} := by
   iintro %toVal_e %E₂E₁ ⟨Hu, Hwp⟩
   iapply wp_step_fupd toVal_e E₂E₁ $$ Hu
   iapply wp_mono $$ Hwp
@@ -636,12 +633,12 @@ theorem wp_frame_step_l : toVal e = none → E₂ ⊆ E₁ →
 
 variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} {R : IProp GF} in
 theorem wp_frame_step_r : toVal e = none → E₂ ⊆ E₁ →
-    WP e @ s; E₂ {{ Φ }} ∗ (|={E₁}[E₂]▷=> R) ⊢ WP e @ s; E₁ {{ v, iprop(Φ v ∗ R) }} :=
+    WP e @ s; E₂ {{ Φ }} ∗ (|={E₁}[E₂]▷=> R) ⊢ WP e @ s; E₁ {{ v, Φ v ∗ R }} :=
   (BI.sep_comm.1.trans <| wp_frame_step_l · · |>.trans <| wp_mono (fun _ => BI.sep_comm.1))
 
 variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{Φ : Val → IProp GF} {R : IProp GF} in
 theorem wp_frame_step_l' : toVal e = none → E₂ ⊆ E₁ →
-    (▷ R) ∗ WP e @ s; E₂ {{ Φ }} ⊢ WP e @ s; E₁ {{ v, iprop(R ∗ Φ v) }} := by
+    (▷ R) ∗ WP e @ s; E₂ {{ Φ }} ⊢ WP e @ s; E₁ {{ v, R ∗ Φ v }} := by
   iintro %toVal_e %E₂E₁ ⟨Hu, Hwp⟩
   iapply wp_frame_step_l toVal_e E₂E₁
   iframe
@@ -653,7 +650,7 @@ theorem wp_frame_step_l' : toVal e = none → E₂ ⊆ E₁ →
 
 variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{Φ : Val → IProp GF} {R : IProp GF} in
 theorem wp_frame_step_r' : toVal e = none → E₂ ⊆ E₁ →
-     WP e @ s; E₂ {{ Φ }} ∗ (▷ R) ⊢ WP e @ s; E₁ {{ v, iprop(Φ v ∗ R) }} :=
+     WP e @ s; E₂ {{ Φ }} ∗ (▷ R) ⊢ WP e @ s; E₁ {{ v, Φ v ∗ R }} :=
   (BI.sep_comm.1.trans <| wp_frame_step_l' · · |>.trans <| wp_mono (fun _ => BI.sep_comm.1))
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ Ψ : Val → IProp GF} in
@@ -677,7 +674,7 @@ theorem wp_wand_r :
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ :Val → IProp GF}{R : IProp GF} in
 theorem wp_frame_wand :
-    R ⊢ WP e @ s; E {{ v, iprop(R -∗ Φ v) }} -∗ WP e @ s; E {{ Φ }} := by
+    R ⊢ WP e @ s; E {{ v, R -∗ Φ v }} -∗ WP e @ s; E {{ Φ }} := by
   iintro R Hwp
   iapply wp_wand $$ Hwp
   iintro %v H
@@ -734,7 +731,7 @@ instance elimModalFupdWp_wrongMask :
   elim_modal := nofun
 
 instance elimModalFupdWpAtomic :
-    ElimModal (Language.Atomic ↑s e) p false iprop(|={E₁,E₂}=> P) P (WP e @ s ; E₁ {{ Φ }}) (WP e @ s ; E₂ {{ v, iprop(|={E₂,E₁}=> Φ v)}}) where
+    ElimModal (Language.Atomic ↑s e) p false iprop(|={E₁,E₂}=> P) P (WP e @ s ; E₁ {{ Φ }}) (WP e @ s ; E₂ {{ v, |={E₂,E₁}=> Φ v}}) where
   elim_modal := by
     rintro atomic; iintro ⟨H, H⟩
     refine (BI.sep_mono BI.intuitionisticallyIf_elim .rfl).trans ?_

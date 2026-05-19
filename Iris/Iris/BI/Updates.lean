@@ -317,41 +317,27 @@ theorem step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContracti
     intro i x y xy_i
     induction n with
     | zero =>
-      dsimp only [Nat.repeat]
-      apply BIFUpdate.ne.ne
-      apply ι.distLater_dist
-      intros j ji
-      apply BIFUpdate.ne.ne
-      apply xy_i j ji
+      exact BIFUpdate.ne.ne (ι.distLater_dist (fun j ji => BIFUpdate.ne.ne (xy_i j ji)))
     | succ n IH =>
-      dsimp only [Nat.repeat]
-      apply BIFUpdate.ne.ne
-      apply later_ne.ne
-      apply BIFUpdate.ne.ne
-      assumption
+      exact BIFUpdate.ne.ne (later_ne.ne (BIFUpdate.ne.ne IH))
 
 theorem step_fupdN_ne {E1 E2 : CoPset} {n : Nat} :
     OFE.NonExpansive (iprop(|={E1}[E2]▷=>^[n] · : PROP)) where
   ne := by
     intro i x y xy_i
     induction n with
-    | zero => simp only [Nat.repeat, xy_i]
+    | zero => simp [Nat.repeat, xy_i]
     | succ n IH =>
-      dsimp only [Nat.repeat]
-      apply BIFUpdate.ne.ne
-      apply later_ne.ne
-      apply BIFUpdate.ne.ne
-      assumption
+      exact BIFUpdate.ne.ne (later_ne.ne (BIFUpdate.ne.ne IH))
 
+@[rocq_alias step_fupdN_wand]
 theorem step_fupdN_wand {Eo Ei : CoPset} {n : Nat} {P Q : PROP} :
     (|={Eo}[Ei]▷=>^[n] P) ⊢ (P -∗ Q) -∗ (|={Eo}[Ei]▷=>^[n] Q) := by
   refine wand_intro' ?_
   induction n with
   | zero =>
-    dsimp [Nat.repeat]
     exact wand_elim_l
   | succ n IH =>
-    dsimp [Nat.repeat]
     calc iprop((P -∗ Q) ∗ |={Eo,Ei}=> ▷ |={Ei,Eo}=> _)
       _ ⊢ |={Eo,Ei}=> (P -∗ Q) ∗ ▷ |={Ei,Eo}=> _  := (fupd_frame_l ..)
       _ ⊢ |={Eo,Ei}=> (▷ (P -∗ Q)) ∗ ▷ |={Ei,Eo}=> _  := mono (sep_mono (later_intro) .rfl)
@@ -359,10 +345,12 @@ theorem step_fupdN_wand {Eo Ei : CoPset} {n : Nat} {P Q : PROP} :
       _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> ((P -∗ Q) ∗ _) := mono (later_mono (fupd_frame_l ..))
       _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> _ := mono (later_mono (mono IH))
 
+@[rocq_alias step_fupd_wand]
 theorem step_fupd_wand {Eo Ei : CoPset} {P Q : PROP} :
     (|={Eo}[Ei]▷=> P) ⊢ (P -∗ Q) -∗ (|={Eo}[Ei]▷=> Q) := by
   exact step_fupdN_wand (n := 1)
 
+@[rocq_alias step_fupd_mask_mono]
 theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP} :
     Ei₂ ⊆ Ei₁ →
     Eo₁ ⊆ Eo₂ →
@@ -379,11 +367,11 @@ theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP} :
 
   refine (sep_mono (fupd_mask_intro_subseteq Ei₂_Ei₁) .rfl).trans ?_
   refine fupd_frame_r.trans ?_
-  apply mono
+  refine mono ?_
 
   refine (sep_mono later_intro .rfl).trans ?_
   refine later_sep.2.trans ?_
-  apply later_mono
+  refine later_mono ?_
 
   refine  fupd_frame_r.trans ?_
   refine BI.Entails.trans (mono ?_) (BIFUpdate.trans (E2 := Ei₁))
@@ -392,8 +380,9 @@ theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP} :
   refine BI.Entails.trans (mono ?_) (BIFUpdate.trans (E2 := Eo₁))
 
   refine fupd_frame_r.trans ?_
-  refine mono emp_sep.1
+  exact mono emp_sep.1
 
+@[rocq_alias step_fupd_intro]
 theorem step_fupd_intro {Ei Eo : CoPset} {P : PROP} :
     Ei ⊆ Eo →
     ▷ P ⊢ |={Eo}[Ei]▷=> P := by
@@ -403,15 +392,14 @@ theorem step_fupd_intro {Ei Eo : CoPset} {P : PROP} :
     _ ⊢ |={Ei}[Ei]▷=> P := mono <| later_mono fupd_intro
     _ ⊢ |={Eo}[Ei]▷=> P := step_fupd_mask_mono (subset_refl) Ei_Eo
 
-theorem step_fupdN_le {n m : Nat}{Eo Ei : CoPset}{P : PROP} :
+@[rocq_alias step_fupdN_le]
+theorem step_fupdN_le {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
     n ≤ m →
     Ei ⊆ Eo →
     (|={Eo}[Ei]▷=>^[n] P) ⊢ |={Eo}[Ei]▷=>^[m] P
   | .refl, _ => .rfl
-  | .step (m := m) n_m, Ei_Eo => by
-    refine step_fupdN_le n_m Ei_Eo |>.trans ?_
-    refine later_intro.trans ?_
-    apply step_fupd_intro Ei_Eo
+  | .step (m := m) n_m, Ei_Eo =>
+    step_fupdN_le n_m Ei_Eo |>.trans (later_intro.trans (step_fupd_intro Ei_Eo))
 
 @[rocq_alias step_fupd_fupd]
 theorem step_fupd_fupd {Eo Ei : CoPset} {P : PROP} : (|={Eo}[Ei]▷=> P) ⊣⊢ (|={Eo}[Ei]▷=> |={Eo}=> P) :=
