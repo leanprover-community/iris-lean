@@ -435,11 +435,6 @@ def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : Me
   addHypInfo name name.getId ivar prop ty
   pure ivar
 
-def Hyps.findP {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : MetaM Q(Bool) := do
-  let some (_, p, _) := hyps.find? name.getId
-  | throwError "unknown hypothesis {name}"
-  return p
-
 /-- Hyps.addWithInfo should be used by tactics that introduce a hypothesis based on the name given by the user. -/
 def Hyps.addWithInfo {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : TSyntax ``binderIdent) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
