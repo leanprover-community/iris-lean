@@ -129,41 +129,38 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
     let instAs ← ProofModeM.synthInstanceQ q(CombineSepAs $out2' $outAs $newOutAs)
     let newPfAs := q(combine_as_step $instAs $pfAs $(pf2).mp)
 
-    -- Type class instance search for the `gives` syntax
-    let newOutGives ← mkFreshExprMVarQ _
-    let instGives ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out2' $outAs $newOutGives)
-
-    match instGives, outGives, pfGives with
-    -- No additional persistent information derived, `outGives` remains unchanged
-    | none, _, _ =>
+    match outGives, pfGives with
+    -- No persistent information derived in the previous step
+    | none, _ =>
       return {
         newHyps := hyps2,
         p := pConj p p2, outAs := newOutAs, pfAs := newPfAs,
         -- The `gives` syntax should fail
         outGives := none, pfGives := ⟨⟩
       }
-    -- Persistent information derived at this step but not in the previous step
-    | _, none, _ =>
-      return {
-        newHyps := hyps2,
-        p := pConj p p2, outAs := newOutAs, pfAs := newPfAs,
-        -- The `gives` syntax should fail
-        outGives := none, pfGives := ⟨⟩
-      }
-    -- Persistent information derived in addition to the existing `outGives`
-    | some instGives, some outGives, pfGives =>
+    | some outGives, pfGives =>
+      -- Type class instance search for the `gives` syntax
+      let newOutGives ← mkFreshExprMVarQ _
+      let instGives ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out2' $outAs $newOutGives)
 
+      match instGives with
+      -- No persistent information derived in the current step
+      | none =>
+        return {
+          newHyps := hyps2, p := pConj p p2, outAs := newOutAs, pfAs := newPfAs,
+          -- The `gives` syntax should fail
+          outGives := none, pfGives := ⟨⟩
+        }
       -- Combine the existing and new persistent information using the conjunction
-      let newOutGivesCombined ← mkFreshExprMVarQ _
-      let instGivesCombined ← ProofModeM.synthInstanceQ q(MakeAnd $outGives $newOutGives $newOutGivesCombined)
-
-      return {
-        newHyps := hyps2,
-        p := pConj p p2, outAs := newOutAs, pfAs := newPfAs,
-        -- The `gives` syntax produces the conjunction of the two pieces of persistent information
-        outGives := some newOutGivesCombined,
-        pfGives := q(combine_gives_step_conj $instGives $instGivesCombined $pfGives $pfAs $pf2)
-      }
+      | some instGives =>
+        let newOutGivesCombined ← mkFreshExprMVarQ _
+        let instGivesCombined ← ProofModeM.synthInstanceQ q(MakeAnd $outGives $newOutGives $newOutGivesCombined)
+        return {
+          newHyps := hyps2, p := pConj p p2, outAs := newOutAs, pfAs := newPfAs,
+          -- The `gives` syntax produces the conjunction of the two pieces of persistent information
+          outGives := some newOutGivesCombined,
+          pfGives := q(combine_gives_step_conj $instGives $instGivesCombined $pfGives $pfAs $pf2)
+        }
 
 /--
   A hypothesis in the spatial context should not be used as an argument of
