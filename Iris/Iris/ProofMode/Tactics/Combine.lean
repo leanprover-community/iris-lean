@@ -37,50 +37,54 @@ theorem combine_gives_nil_singleton [BI PROP] {e goal : PROP} (pf : e ∗ □ Tr
 /-- Auxilary lemma for the step case where multiple hypotheses are given -/
 theorem combine_gives_step [BI PROP] {p1 p2 : Bool} {e e1 e2 out1' out2' out goal : PROP}
     (inst : CombineSepGives out2' out1' out)
-    (pf0 : e ⊣⊢ e1 ∗ □?p1 out1')
-    (pf1 : e1 ⊣⊢ e2 ∗ □?p2 out2')
-    (pf2 : e ∗ □ out ⊢ goal) : e ⊢ goal := by
-  have pf3 : □?p1 out1' ∗ □?p2 out2' ⊢ <pers> out := calc
+    (pf1 : e ⊣⊢ e1 ∗ □?p1 out1')
+    (pf2 : e1 ⊣⊢ e2 ∗ □?p2 out2')
+    (pf3 : e ∗ □ out ⊢ goal) : e ⊢ goal := by
+  have pf4 : □?p1 out1' ∗ □?p2 out2' ⊢ <pers> out := calc
     _ ⊢ □?(p1 && p2) (out1' ∗ out2') := intuitionisticallyIf_sep_conj
     _ ⊢ □?(p1 && p2) <pers> out      := intuitionisticallyIf_mono <| sep_comm.mp.trans inst.combine_sep_gives
     _ ⊢ <pers> out                   := intuitionisticallyIf_elim
   calc
-    e ⊢ e1 ∗ □?p1 out1'                                     := pf0.mp
-    _ ⊢ (e2 ∗ □?p2 out2') ∗ □?p1 out1'                      := sep_mono_l pf1.mp
+    e ⊢ e1 ∗ □?p1 out1'                                     := pf1.mp
+    _ ⊢ (e2 ∗ □?p2 out2') ∗ □?p1 out1'                      := sep_mono_l pf2.mp
     _ ⊢ e2 ∗ □?p2 out2' ∗ □?p1 out1'                        := sep_assoc.mp
     _ ⊢ e2 ∗ □?p1 out1' ∗ □?p2 out2'                        := sep_mono_r sep_comm.mp
-    _ ⊢ (e2 ∗ □?p1 out1' ∗ □?p2 out2') ∧ (e2 ∗ <pers> out)  := and_intro refl <| sep_mono_r pf3
+    _ ⊢ (e2 ∗ □?p1 out1' ∗ □?p2 out2') ∧ (e2 ∗ <pers> out)  := and_intro refl <| sep_mono_r pf4
     _ ⊢ (e2 ∗ □?p1 out1' ∗ □?p2 out2') ∧ <pers> out         := and_mono_r sep_elim_r
     _ ⊢ (e2 ∗ □?p1 out1' ∗ □?p2 out2') ∗ □ out              := persistently_and_intuitionistically_sep_r.mp
     _ ⊢ (e2 ∗ □?p2 out2' ∗ □?p1 out1') ∗ □ out              := sep_mono_l <| sep_mono_r sep_comm.mp
     _ ⊢ ((e2 ∗ □?p2 out2') ∗ □?p1 out1') ∗ □ out            := sep_mono_l sep_assoc.mpr
-    _ ⊢ (e1 ∗ □?p1 out1') ∗ □ out                           := sep_mono_l <| sep_mono_l pf1.mpr
-    _ ⊢ e ∗ □ out                                           := sep_mono_l pf0.mpr
-    _ ⊢ goal                                                := pf2
+    _ ⊢ (e1 ∗ □?p1 out1') ∗ □ out                           := sep_mono_l <| sep_mono_l pf2.mpr
+    _ ⊢ e ∗ □ out                                           := sep_mono_l pf1.mpr
+    _ ⊢ goal                                                := pf3
 
 theorem combine_gives_step_conj [BI PROP] {p1 p2 : Bool}
-    {e e1 e2 f1 f2 fNew out1' out2' : PROP}
-    (inst : CombineSepGives out2' out1' f2)
-    (pf1 : (e ∗ □ f1 ⊢ goal) → e ⊢ goal)
-    (pf2 : MakeAnd f1 f2 fNew)
-    (pf3 : e ⊢ e1 ∗ □?p1 out1')
-    (pf4 : e1 ⊣⊢ e2 ∗ □?p2 out2')
-    (pf5 : e ∗ □ fNew ⊢ goal) : e ⊢ goal := by
+    {e e1 e2 outGives newOutGives outGivesCombined out1' out2' : PROP}
+    (instGives : CombineSepGives out2' out1' newOutGives)
+    (instGivesCombined : MakeAnd outGives newOutGives outGivesCombined)
+    (pf1 : (e ∗ □ outGives ⊢ goal) → e ⊢ goal)
+    (pf2 : e ⊢ e1 ∗ □?p1 out1')
+    (pf3 : e1 ⊣⊢ e2 ∗ □?p2 out2')
+    (pf4 : e ∗ □ outGivesCombined ⊢ goal) : e ⊢ goal := by
   apply pf1
-  have h_pers_f1 : e ∗ □ f1 ⊢ <pers> f1 :=
-    (sep_mono_l true_intro).trans
-      ((sep_mono_r persistently_of_intuitionistically).trans absorbing)
-  have h_pers_f2 : e ∗ □ f1 ⊢ <pers> f2 :=
-    sep_elim_l.trans <| pf3.trans <| (sep_mono_l pf4.1).trans <|
-      sep_assoc.1.trans <|
-      (sep_mono_r (sep_mono intuitionisticallyIf_elim intuitionisticallyIf_elim)).trans <|
-      (sep_mono_l true_intro).trans <| (sep_mono_r inst.combine_sep_gives).trans absorbing
-  have h_pers_fNew : e ∗ □ f1 ⊢ <pers> fNew :=
-    (and_intro h_pers_f1 h_pers_f2).trans
-      (persistently_and.2.trans (persistently_mono pf2.make_and.1))
-  exact (and_intro h_pers_fNew .rfl).trans
-    (persistently_and_intuitionistically_sep_l.1.trans
-      ((sep_mono_r sep_elim_l).trans (sep_comm.1.trans pf5)))
+  have pf5 : e ∗ □ outGives ⊢ <pers> outGives := calc
+    _ ⊢ e ∗ <pers> outGives := sep_mono_r persistently_of_intuitionistically
+    _ ⊢ <pers> outGives     := persistently_absorb_r
+  have pf6 : e ∗ □ outGives ⊢ <pers> newOutGives := calc
+    _ ⊢ e                              := sep_elim_l
+    _ ⊢ e1 ∗ □?p1 out1'                := pf2
+    _ ⊢ (e2 ∗ □?p2 out2') ∗ □?p1 out1' := sep_mono_l pf3.mp
+    _ ⊢ e2 ∗ □?p2 out2' ∗ □?p1 out1'   := sep_assoc.mp
+    _ ⊢ e2 ∗ out2' ∗ out1'             := sep_mono_r <| sep_mono intuitionisticallyIf_elim intuitionisticallyIf_elim
+    _ ⊢ e2 ∗ <pers> newOutGives        := sep_mono_r instGives.combine_sep_gives
+    _ ⊢ <pers> newOutGives             := persistently_absorb_r
+  calc
+    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGives ∧ <pers> newOutGives := and_intro refl <| and_intro pf5 pf6
+    _ ⊢ (e ∗ □ outGives) ∧ <pers> (outGives ∧ newOutGives)      := and_mono_r <| persistently_and.mpr
+    _ ⊢ (e ∗ □ outGives) ∧ <pers> outGivesCombined              := and_mono_r <| persistently_mono instGivesCombined.make_and.mp
+    _ ⊢ (e ∗ □ outGives) ∗ □ outGivesCombined                   := persistently_and_intuitionistically_sep_r.mp
+    _ ⊢ e ∗ □ outGivesCombined                                  := sep_mono_l sep_elim_l
+    _ ⊢ goal                                                    := pf4
 
 private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop)) where
   -- The original set of hypotheses
@@ -160,7 +164,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
         p := pConj p p2, outAs' := newOutAs, pfAs := newPfAs,
         -- The `gives` syntax produces the conjunction of the two pieces of persistent information
         outGives' := some newOutGivesCombined,
-        pfGives := q(combine_gives_step_conj $instGives $pfGives $instGivesCombined $pfAs $pf2)
+        pfGives := q(combine_gives_step_conj $instGives $instGivesCombined $pfGives $pfAs $pf2)
       }
 
 /--
