@@ -87,8 +87,6 @@ theorem combine_gives_step_conj [BI PROP] {p1 p2 : Bool}
     _ ⊢ goal                                                    := pf4
 
 private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop)) where
-  -- The original set of hypotheses
-  (origHyps : Hyps bi origE)
   -- The remaining hypotheses after combining hypotheses
   {newE : Q($prop)}
   (newHyps : Hyps bi newE)
@@ -123,7 +121,7 @@ private def pConj (p1 p2 : Q(Bool)) : Q(Bool) :=
 private def CombineState.combineProofModeHyp {u prop bi origE goal} :
     @CombineState u prop bi origE goal → IVarId →
     ProofModeM (@CombineState u prop bi origE goal)
-  | { origHyps, newHyps, p, outAs', pfAs, outGives', pfGives, .. }, ivar => do
+  | { newHyps, p, outAs', pfAs, outGives', pfGives, .. }, ivar => do
     let ⟨_, hyps2, _, out2', p2, _, pf2⟩ := newHyps.remove false ivar
 
     -- Type class instance search for the `as` syntax
@@ -139,7 +137,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
     -- No additional persistent information derived, `outGives'` remains unchanged
     | none, _, _ =>
       return {
-        origHyps, newHyps := hyps2,
+        newHyps := hyps2,
         p := pConj p p2, outAs' := newOutAs, pfAs := newPfAs,
         -- The `gives` syntax should fail
         outGives' := none, pfGives := ⟨⟩
@@ -147,7 +145,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
     -- Persistent information derived at this step but not in the previous step
     | _, none, _ =>
       return {
-        origHyps, newHyps := hyps2,
+        newHyps := hyps2,
         p := pConj p p2, outAs' := newOutAs, pfAs := newPfAs,
         -- The `gives` syntax should fail
         outGives' := none, pfGives := ⟨⟩
@@ -160,7 +158,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
       let instGivesCombined ← ProofModeM.synthInstanceQ q(MakeAnd $outGives' $newOutGives $newOutGivesCombined)
 
       return {
-        origHyps, newHyps := hyps2,
+        newHyps := hyps2,
         p := pConj p p2, outAs' := newOutAs, pfAs := newPfAs,
         -- The `gives` syntax produces the conjunction of the two pieces of persistent information
         outGives' := some newOutGivesCombined,
@@ -196,7 +194,7 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     introduce `□ emp` for the `as` syntax and `□ True` for the `gives` syntax.
   -/
   | [] =>
-    return { origHyps := hyps, newHyps := hyps,
+    return { newHyps := hyps,
              p := q(true), outAs' := q(emp),
              pfAs := q(sep_emp.mpr.trans <| sep_mono_r intuitionistically_emp.mpr),
              outGives' := some q(iprop(True)), pfGives := q(combine_gives_nil_singleton) }
@@ -208,7 +206,7 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   | [h1] =>
     let ivar ← hyps.findWithInfo h1
     let ⟨_, hyps1, _, out1', p1, _, pf1⟩ := hyps.remove false ivar
-    return { origHyps := hyps, newHyps := hyps1,
+    return { newHyps := hyps1,
              p := p1, outAs' := out1', pfAs := q($(pf1).mp),
              outGives' := some q(iprop(True)), pfGives := q(combine_gives_nil_singleton) }
   /-
@@ -238,22 +236,16 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     let mut st : CombineState e goal :=
       match matchBool p1, matchBool p2, instGives with
       | .inl _, .inl _, some instGives =>
-        { origHyps := hyps, newHyps := hyps2,
-          p := q(true), outAs' := newOutAs, pfAs,
-          outGives' := some newOutGives,
-          pfGives := q(combine_gives_step $instGives $pf1 $pf2) }
+        { newHyps := hyps2, p := q(true), outAs' := newOutAs, pfAs,
+          outGives' := some newOutGives, pfGives := q(combine_gives_step $instGives $pf1 $pf2) }
       | .inl _, .inl _, none =>
-        { origHyps := hyps, newHyps := hyps2,
-          p := q(true), outAs' := newOutAs, pfAs,
+        { newHyps := hyps2, p := q(true), outAs' := newOutAs, pfAs,
           outGives' := none, pfGives := ⟨⟩ }
       | _, _, some instGives =>
-        { origHyps := hyps, newHyps := hyps2,
-          p := q(false), outAs' := newOutAs, pfAs,
-          outGives' := some newOutGives,
-          pfGives := q(combine_gives_step $instGives $pf1 $pf2) }
+        { newHyps := hyps2, p := q(false), outAs' := newOutAs, pfAs,
+          outGives' := some newOutGives, pfGives := q(combine_gives_step $instGives $pf1 $pf2) }
       | _, _, none =>
-        { origHyps := hyps, newHyps := hyps2,
-          p := q(false), outAs' := newOutAs, pfAs,
+        { newHyps := hyps2, p := q(false), outAs' := newOutAs, pfAs,
           outGives' := none, pfGives := ⟨⟩ }
 
     -- Handle the remaining hypotheses that are given as tactic arguments
@@ -295,7 +287,7 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
 
     match st.outGives', st.pfGives with
     | some outGives', pfGives =>
-      let pf' ← iCasesCore _ st.origHyps goal pat q(true) outGives' addBIGoal
+      let pf' ← iCasesCore _ hyps goal pat q(true) outGives' addBIGoal
       mvar.assign q($pfGives $pf')
     | none, _ => throwNoInstanceForGives
 
