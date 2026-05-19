@@ -163,17 +163,6 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
         }
 
 /--
-  A hypothesis in the spatial context should not be used as an argument of
-  the `icombine` tactic multiple times. This function ensures this is satisfied
-  and prints a pretty error otherwise.
--/
-private def checkSpatialContextHyp {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
-    (hs : List (TSyntax `ident)) (hyps : Hyps bi e) (h : TSyntax `ident) :
-    ProofModeM Unit := do
-  if hs.count h > 1 ∧ ¬isTrue (← hyps.findP h) then
-    throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
-
-/--
   The `iCombineCore` function takes the hypotheses (`hyps`) and the goal
   (`goal`) of an Iris proof state, as well as the idents of hypotheses
   to be combined (`hs`). It then initialises an instance of `CombineState`,
@@ -181,9 +170,7 @@ private def checkSpatialContextHyp {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   and returns the instance.
 -/
 private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
-    (hs : List (TSyntax `ident))
-    (hyps : Hyps bi e)
-    (goal : Q($prop)) :
+    (hs : List IVarId) (hyps : Hyps bi e) (goal : Q($prop)) :
     ProofModeM (@CombineState u prop bi e goal) := do
   match hs.reverse with
   /-
@@ -201,8 +188,7 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     `□ True` for the `gives` syntax.
   -/
   | [h1] =>
-    let ivar ← hyps.findWithInfo h1
-    let ⟨_, hyps1, _, out1', p1, _, pf1⟩ := hyps.remove false ivar
+    let ⟨_, hyps1, _, out1', p1, _, pf1⟩ := hyps.remove false h1
     return { newHyps := hyps1,
              p := p1, outAs := out1', pfAs := q($(pf1).mp),
              outGives := some q(iprop(True)), pfGives := q(combine_gives_nil_singleton) }
@@ -211,13 +197,9 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     the tactic.
   -/
   | h1 :: h2 :: htail =>
-    -- Find the `IVarId` values of the hypotheses and apply removal
-    let ivar1 ← hyps.findWithInfo h1
-    let ivar2 ← hyps.findWithInfo h2
-    checkSpatialContextHyp hs hyps h1
-    checkSpatialContextHyp hs hyps h2
-    let ⟨_, hyps1, _, out1', p1, _, pf1⟩ := hyps.remove false ivar1
-    let ⟨e2, hyps2, _, out2', p2, _, pf2⟩ := hyps1.remove false ivar2
+    -- Apply removal of the hypotheses
+    let ⟨_, hyps1, _, out1', p1, _, pf1⟩ := hyps.remove false h1
+    let ⟨e2, hyps2, _, out2', p2, _, pf2⟩ := hyps1.remove false h2
 
     -- Search for the type class instance for the `as` syntax
     let newOutAs ← mkFreshExprMVarQ _
@@ -247,12 +229,8 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
 
     -- Handle the remaining hypotheses that are given as tactic arguments
     for h in htail do
-      -- Find the `IVarId` of the hypothesis
-      let ivar ← hyps.findWithInfo h
-      -- Hypothesis in the spatial context should not be used multiple times
-      checkSpatialContextHyp hs hyps h
       -- Iteratively handle the remaining hypotheses
-      st ← st.combineProofModeHyp ivar
+      st ← st.combineProofModeHyp h
 
     return st
 
@@ -263,7 +241,7 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patAs
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let hs := idents.toList
+    let hs ← idents.toList.mapM (fun h => hyps.findWithInfo h)
     let st ← iCombineCore hs hyps goal
     let pf ← iCasesCore _ st.newHyps goal pat q($(st.p)) st.outAs addBIGoal
     mvar.assign q($(st.pfAs).trans $pf)
@@ -279,7 +257,7 @@ elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic 
   let pat ← liftMacroM <| iCasesPat.parse patGives
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let hs := idents.toList
+    let hs ← idents.toList.mapM (fun h => hyps.findWithInfo h)
     let st ← iCombineCore hs hyps goal
 
     match st.outGives, st.pfGives with
@@ -306,7 +284,7 @@ elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat "gives" colGt p
   let pat2 ← liftMacroM <| iCasesPat.parse patGives
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let hs := idents.toList
+    let hs ← idents.toList.mapM (fun h => hyps.findWithInfo h)
     let st ← iCombineCore hs hyps goal
 
     match st.outGives, st.pfGives with
