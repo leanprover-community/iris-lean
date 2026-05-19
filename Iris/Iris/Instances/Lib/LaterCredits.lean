@@ -13,10 +13,6 @@ public import Iris.Instances.IProp
 
 @[expose] public section
 
-/-! ## Later credits
-TODO: missing instances for PM: combine_sep_lc_add, combine_sep_lc_S_l
--/
-
 namespace Iris
 
 open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
@@ -146,6 +142,14 @@ instance (priority := default - 10) {n m} : IntoSep (PROP := IProp GF) (£ (n + 
 @[rocq_alias into_sep_lc_S]
 instance (priority := default) {n} : IntoSep (PROP := IProp GF) (£ (.succ n)) (£ 1) (£ n) where
   into_sep := lc_succ.mp
+
+@[rocq_alias combine_sep_lc_add]
+instance (priority := default - 10) {n} : CombineSepAs (PROP := IProp GF) (£ n) (£ m) (£ (n + m)) where
+  combine_sep_as := lc_split.mpr
+
+@[rocq_alias combine_sep_lc_S_l]
+instance (priority := default) {n} : CombineSepAs (PROP := IProp GF) (£ n) (£ 1) (£ (.succ n)) where
+  combine_sep_as := sep_comm.mp.trans lc_succ.mpr
 
 end ProofMode
 

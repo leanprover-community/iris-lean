@@ -7,6 +7,9 @@ module
 
 public import Iris.BI
 public import Iris.ProofMode
+public import Iris.Instances.IProp
+public import Iris.Instances.Lib.LaterCredits
+public import Iris.Instances.Lib.Token
 
 @[expose] public section
 
@@ -2323,5 +2326,32 @@ example [BI PROP] {P1 P2 P3 P4 P5 P6 : PROP}
 example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q := by
   iintro HP HQ #HR
   icombine %a as HNew1
+
+/-- Tests `icombine` for combining propositions involving `iOwn` -/
+example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
+    {a1 a2 a3 : F.ap (IProp GF)} :
+    ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
+      iOwn γ (a1 • (a2 • a3)) ∧ internalCmraValid (a1 • (a2 • a3)) := by
+  iintro H1 H2 H3
+  icombine H1 H2 H3 as Hnew1 gives ⟨-, Hnew2⟩
+  isplitl
+  · iexact Hnew1
+  · iexact Hnew2
+
+/-- Tests `icombine` for combining propositions involving later credits.
+    Note that `.succ` is used whenever possible for increment the credit by 1
+    according to the type class instance priorities -/
+example {GF m n} [LcGS GF] :
+    ⊢@{IProp GF} £ n -∗ £ 1 -∗ £ m -∗ £ 1 -∗ £ n + (1 + .succ m) := by
+  iintro H1 H2 H3 H4
+  icombine H1 H2 H3 H4 as Hnew
+  iexact Hnew
+
+/-- Tests `icombine` for combining two tokens -/
+example {GF} [TokenG GF] {γ} :
+    ⊢@{IProp GF} token γ -∗ token γ -∗ False := by
+  iintro H1 H2
+  icombine H1 H2 gives H
+  iexact H
 
 end icombine
