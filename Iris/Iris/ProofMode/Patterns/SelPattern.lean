@@ -79,6 +79,10 @@ def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget
         hyps := hyps.push (⟨.inr ldecl.fvarId, false⟩)
       return hyps.toList
 
+def SelPat.resolveWithDuplicates (hyps : Hyps bi e) (pats : List SelPat) :
+    ProofModeM (List SelTarget) := do
+  return (← pats.flatMapM (SelPat.resolveOne hyps))
+
 def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) :
     ProofModeM (List SelTarget) := do
   -- we want to remove duplicates; and if an pattern is first explicitly specified and then non-explicitly,

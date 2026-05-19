@@ -242,14 +242,25 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
 
     return st
 
+/--  -/
+private def iCombineParseSelPats {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
+    (hyps : Hyps bi e) (patSels : TSyntaxArray `selPat) :
+    ProofModeM (List IVarId) := do
+  let selPats ← liftMacroM <| SelPat.parse patSels
+  let targets ← SelPat.resolveWithDuplicates hyps selPats
+  return targets.filterMap fun t =>
+    match t.target with
+    | .inl ivarId => some ivarId
+    | .inr _      => none
+
 /-- The tactic `icombine` combines propositions into one using the type
     class `CombineSepAs`. By default, the separating conjunction is used
     as the connective. -/
-elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat : tactic => do
+elab "icombine" patSels:(colGt selPat)* "as" colGt patAs:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patAs
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let hs ← idents.toList.mapM (fun h => hyps.findWithInfo h)
+    let hs ← iCombineParseSelPats hyps patSels
     let st ← iCombineCore hs hyps goal
     let pf ← iCasesCore _ st.newHyps goal pat q($(st.p)) st.outAs addBIGoal
     mvar.assign q($(st.pfAs).trans $pf)
@@ -261,11 +272,11 @@ private def throwNoInstanceForGives : ProofModeM Unit := do
     new information in the intutionisitic context using the type class
     `CombineSepGives`. It is possible that no type class instance is
     applicable -/
-elab "icombine" idents:(colGt ident)* "gives" colGt patGives:icasesPat : tactic => do
+elab "icombine" patSels:(colGt selPat)* "gives" colGt patGives:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patGives
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let hs ← idents.toList.mapM (fun h => hyps.findWithInfo h)
+    let hs ← iCombineParseSelPats hyps patSels
     let st ← iCombineCore hs hyps goal
 
     match st.outGives, st.pfGives with
@@ -286,12 +297,12 @@ theorem pfAsGives_combine [BI PROP] {p : Bool} {newE e outAs outGives goal : PRO
   _ ⊢ newE ∗ □?p (outAs ∗ □ outGives)   := sep_mono_r intuitionisticallyIf_sep_2
   _ ⊢ goal := pfAsGives
 
-elab "icombine" idents:(colGt ident)* "as" colGt patAs:icasesPat "gives" colGt patGives:icasesPat : tactic => do
+elab "icombine" patSels:(colGt selPat)* "as" colGt patAs:icasesPat "gives" colGt patGives:icasesPat : tactic => do
   let pat1 ← liftMacroM <| iCasesPat.parse patAs
   let pat2 ← liftMacroM <| iCasesPat.parse patGives
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let hs ← idents.toList.mapM (fun h => hyps.findWithInfo h)
+    let hs ← iCombineParseSelPats hyps patSels
     let st ← iCombineCore hs hyps goal
 
     match st.outGives, st.pfGives with

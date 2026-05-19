@@ -2474,4 +2474,17 @@ example [BI PROP] {P1 P2 P3 P4 P5 P6 : PROP}
       · iexact HP5
       · iexact HP6
 
+/- Tests `icombine` with selection patterns -/
+example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q := by
+  iintro HP HQ #HR
+  icombine # ∗ as HNew
+  iexact HNew
+
+/- Tests `icombine` with an invalid selection pattern -/
+/-- error: unknown local declaration `a` -/
+#guard_msgs in
+example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q := by
+  iintro HP HQ #HR
+  icombine %a as HNew1
+
 end icombine
