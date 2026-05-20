@@ -23,11 +23,11 @@ declare_syntax_cat specPat
 
 syntax ident : specPat
 syntax "%" term:max : specPat
-syntax "[" frameIdent* "]" optional(" as " ident) : specPat
-syntax "[" "-" frameIdent* "]" optional(" as " ident) : specPat
-syntax "[>" frameIdent* "]" optional(" as " ident) : specPat
-syntax "[>" "-" frameIdent* "]" optional(" as " ident) : specPat
-syntax "[#" frameIdent* "]" optional(" as " ident) : specPat
+syntax "[" frameIdent* optional("//") "]" optional(" as " ident) : specPat
+syntax "[" "-" frameIdent* optional("//") "]" optional(" as " ident) : specPat
+syntax "[>" frameIdent* optional("//") "]" optional(" as " ident) : specPat
+syntax "[>" "-" frameIdent* optional("//") "]" optional(" as " ident) : specPat
+syntax "[#" frameIdent* optional("//") "]" optional(" as " ident) : specPat
 syntax "[" "$" "]" : specPat
 syntax "[>" "$" "]" : specPat
 syntax "[#" "$" "]" : specPat
@@ -44,6 +44,7 @@ inductive SpecGoalKind
 @[rocq_alias spec_goal]
 structure SpecGoal where
   kind : SpecGoalKind
+  trivial : Bool
   negate : Bool
   frame : List Ident
   hyps : List Ident
@@ -91,36 +92,21 @@ where
   go : TSyntax `specPat → Option SpecPat
   | `(specPat| $name:ident) => some <| .ident name
   | `(specPat| % $term:term) => some <| .pure term
-  | `(specPat| [$[$names:frameIdent]*]) =>
+  | `(specPat| [$[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .spatial, negate := false, frame, hyps } .anonymous
-  | `(specPat| [$[$names:frameIdent]*] as $goal:ident) =>
+    some <| .goal {kind := .spatial, negate := false, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+  | `(specPat| [- $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .spatial, negate := false, frame, hyps } goal.getId
-  | `(specPat| [- $[$names:frameIdent]*]) =>
+    some <| .goal {kind := .spatial, negate := true, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+  | `(specPat| [> $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .spatial, negate := true, frame, hyps } .anonymous
-  | `(specPat| [- $[$names:frameIdent]*] as $goal:ident) =>
+    some <| .goal {kind := .modal, negate := false, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+  | `(specPat| [> - $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .spatial, negate := true, frame, hyps } goal.getId
-  | `(specPat| [> $[$names:frameIdent]*]) =>
+    some <| .goal {kind := .modal, negate := true, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
+  | `(specPat| [# $[$names:frameIdent]* $[//%$trivTk]?] $[as $goal:ident]?) =>
     let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .modal, negate := false, frame, hyps } .anonymous
-  | `(specPat| [> $[$names:frameIdent]*] as $goal:ident) =>
-    let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .modal, negate := false, frame, hyps } goal.getId
-  | `(specPat| [> - $[$names:frameIdent]*]) =>
-    let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .modal, negate := true, frame, hyps } .anonymous
-  | `(specPat| [> - $[$names:frameIdent]*] as $goal:ident) =>
-    let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .modal, negate := true, frame, hyps } goal.getId
-  | `(specPat| [# $[$names:frameIdent]*]) =>
-    let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .intuitionistic, negate := false, frame, hyps } .anonymous
-  | `(specPat| [# $[$names:frameIdent]*] as $goal:ident) =>
-    let (hyps, frame) := names.toList.partitionMap FrameIdent.parse;
-    some <| .goal {kind := .intuitionistic, negate := false, frame, hyps } goal.getId
+    some <| .goal {kind := .intuitionistic, negate := false, trivial := trivTk.isSome, frame, hyps } <| (TSyntax.getId <*> goal).getD .anonymous
   | `(specPat| [$]) => some <| .autoframe .spatial
   | `(specPat| [# $]) => some <| .autoframe .intuitionistic
   | `(specPat| [> $]) => some <| .autoframe .modal

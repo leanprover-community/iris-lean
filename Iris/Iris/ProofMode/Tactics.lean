@@ -14,10 +14,14 @@ public meta import Iris.ProofMode.Tactics.Frame
 public meta import Iris.ProofMode.Tactics.Have
 public meta import Iris.ProofMode.Tactics.Intro
 public meta import Iris.ProofMode.Tactics.LeftRight
+public meta import Iris.ProofMode.Tactics.Loeb
 public meta import Iris.ProofMode.Tactics.Mod
 public meta import Iris.ProofMode.Tactics.ModIntro
 public meta import Iris.ProofMode.Tactics.Pure
 public meta import Iris.ProofMode.Tactics.Rename
 public meta import Iris.ProofMode.Tactics.Revert
+public meta import Iris.ProofMode.Tactics.RevertIntro
+public meta import Iris.ProofMode.Tactics.Rewrite
 public meta import Iris.ProofMode.Tactics.Specialize
 public meta import Iris.ProofMode.Tactics.Split
+public meta import Iris.ProofMode.Tactics.Trivial

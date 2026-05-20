@@ -15,6 +15,14 @@ public meta section
 namespace Iris.ProofMode
 open Lean Elab.Tactic Meta Qq BI Std
 
+/-- `itrivial` collects tactics to solve trivial Iris goals. It is used by the `//` specialization
+and introduction patterns. One can add new tactics using
+```
+macro_rules | `(tactic| itrivial) => `(tactic|mytac)
+```
+-/
+syntax "itrivial" : tactic
+
 def iSolveSideconditionAt (m : MVarId) : ProofModeM Unit := do
   let goal ← instantiateMVars (← m.getType)
   match goal with

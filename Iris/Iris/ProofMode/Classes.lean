@@ -113,6 +113,11 @@ class IntoOr {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam $ PROP) where
   into_or : P ⊢ Q1 ∨ Q2
 export IntoOr (into_or)
 
+@[ipm_class, rocq_alias IntoInternalEq]
+class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _} [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where
+  into_internal_eq : P ⊢@{PROP} internalEq x y
+export IntoInternalEq (into_internal_eq)
+
 @[ipm_class, rocq_alias IntoPersistent]
 class IntoPersistently {PROP} [BI PROP] (p : Bool) (P : PROP) (Q : outParam $ PROP) where
   into_persistently : <pers>?p P ⊢ <pers> Q

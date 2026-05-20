@@ -151,7 +151,7 @@ private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
 Proof term of `hyps ⊢ goal`
 -/
 def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop)) (sel : TSyntax `term)
-  (k : ∀ {prop' bi' P}, @Hyps u prop' bi' P → ∀ Q : Q($prop'), ProofModeM Q($P ⊢ $Q))
+  (k : ∀ {prop' bi' P}, @Hyps u prop' bi' P → ∀ Q : Q($prop'), ProofModeM Q($P ⊢ $Q) := addBIGoal)
    : ProofModeM (Q($e ⊢ $goal)) := do
     let prop' : Q(Type u) ← mkFreshExprMVarQ q(Type u)
     let bi' ← mkFreshExprMVarQ q(BI $prop')
@@ -176,7 +176,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop)) (sel : TSynta
 
 elab "imodintro" colGt sel:term : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let pf ← iModIntroCore hyps goal sel addBIGoal
+  let pf ← iModIntroCore hyps goal sel
 
   mvar.assign pf
 

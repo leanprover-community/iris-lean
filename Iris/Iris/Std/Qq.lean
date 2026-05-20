@@ -8,6 +8,9 @@ module
 public import Qq
 
 @[expose] public section
-open Qq
+open Qq Lean
 
 instance : Inhabited (QuotedDefEq a b) := ⟨⟨⟩⟩
+
+def instantiateMVarsQ' {u : Level} {α : Q(Sort u)} (e : Q($α)) : MetaM ((e' : Q($α)) ×' $e =Q $e') := do
+  return ⟨← instantiateMVarsQ e, ⟨⟩⟩
