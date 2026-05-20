@@ -95,8 +95,8 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Discrete functions
   - [x] Isomorphisms
   - [ ] Sigma 
-- [ ] `proofmode_classes.v`
-  - [ ] IsOp
+- [x] `proofmode_classes.v`
+  - [x] IsOp
 - [ ] `reservation_map.v`
   - [ ] CMRA
   - [ ] Updates
