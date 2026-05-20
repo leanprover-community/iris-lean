@@ -219,6 +219,20 @@ example [BI PROP] (Q : PROP) : □ (P1 ∧ P2) -∗ Q ∨ Q -∗ Q := by
   iintro #⟨_HP1, ∗_HP2⟩ (HQ | HQ)
   <;> iexact HQ
 
+/-- Tests `iintro //` -/
+example [BI PROP] : ⊢@{PROP} True := by
+  iintro //
+
+/-- Tests `iintro //` not solving the goal -/
+example [BI PROP] (Q : PROP) : Q -∗ Q := by
+  iintro // HQ
+  iexact HQ
+
+/-- Tests `iintro //` solving one subgoal, but not another -/
+example [BI PROP] (Q : PROP) : ((True -∗ Q) ∨ False) -∗ Q := by
+  iintro ⟨HQ | %_⟩  //
+  iapply HQ $$ [//]
+
 /- Tests `iintro` failing to introduce pure hypothesis -/
 /-- error: iintro: iprop(P -∗ Q) cannot be turned into a universal quantifier or pure hypothesis -/
 #guard_msgs in
@@ -479,6 +493,19 @@ example [BI PROP] (P Q : PROP) : □ P ⊢ Q := by
   iintro #_HQ
   iassumption
 
+/- Tests `iassumption` with mvar goal -/
+/-- error: iassumption: goal is a mvar, use iaccu instead -/
+#guard_msgs in
+example [BI PROP] (P : PROP) : P ⊢ ∃ Q, Q := by
+  iintro HP
+  iexists _
+  iassumption
+
+/-- Tests `iassumption` in `itrivial` -/
+example [BI PROP] (Q : PROP) : Q ⊢ Q := by
+  iintro _HQ
+  itrivial
+
 end assumption
 
 -- apply
@@ -572,7 +599,7 @@ example [BI PROP] (P Q : PROP) (H : P -∗ Q) (HP : ⊢ P) : ⊢ Q := by
 example [BI PROP] (P Q : PROP) (H1 : P ⊢ Q) (H2 : Q ⊢ R) : P ⊢ R := by
   iintro HP
   iapply (wand_intro (emp_sep.mp.trans H2))
-  . ipure_intro; trivial
+  . itrivial
   iapply H1 $$ HP
 
 /-- Tests `iapply` with Lean wand entailment and subgoal -/
@@ -799,7 +826,7 @@ example [BI PROP] (P Q : PROP) : P -∗ (P -∗ Q) -∗ Q := by
   ihave ⟨HQ, _⟩ : (Q ∗ emp) $$ [Hwand HP]
   . isplit
     . iapply Hwand $$ HP
-    . ipure_intro; trivial
+    . itrivial
   iexact HQ
 
 /-- Tests `ihave` assert duplicating the context -/
@@ -966,6 +993,11 @@ example [BI PROP] (P : PROP) : <affine> P ⊢ emp := by
   iintro _HP
   iemp_intro
 
+/-- Tests that `itrivial` subsumes `iemp_intro` -/
+example [BI PROP] (P : PROP) : <affine> P ⊢ emp := by
+  iintro _HP
+  itrivial
+
 end empintro
 
 -- pure intro
@@ -1020,6 +1052,23 @@ example [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
   ispecialize HPQ $$ [HP]
   . iexact HP
   iexact HPQ
+
+/-- Tests `ispecialize` with subgoal and `//` -/
+example [BI PROP] (Q : PROP) : P ⊢ (P -∗ Q) -∗ Q := by
+  iintro HP HPQ
+  ispecialize HPQ $$ [HP //]
+  iexact HPQ
+
+-- Test `ispecialize` with failing `//`
+/--
+error: ispecialize: itrivial could not solve ⏎
+⊢ False
+-/
+#guard_msgs in
+example [BI PROP] (Q : PROP) : ⊢ (False -∗ Q) -∗ Q := by
+  iintro HQ
+  ispecialize HQ $$ [//]
+
 
 /-- Tests `ispecialize` with named subgoal -/
 example [BI PROP] (Q : PROP) : P ⊢ (⌜True⌝ -∗ P -∗ ⌜True⌝ -∗ Q) -∗ Q := by
@@ -1984,8 +2033,7 @@ example [BI PROP] [BIFUpdate PROP]
 example [BI PROP] [BIUpdate PROP]
     (P : PROP) : (True -∗ |==> P) ⊢ |==> P := by
   iintro HP
-  imod HP $$ []
-  · ipure_intro; trivial
+  imod HP $$ [//]
   imodintro
   iexact HP
 
@@ -2303,7 +2351,7 @@ example [BI PROP] (P Q : PROP) [BIAffine PROP] : P ⊢ □ Q → P ∗ Q := by
 example [BI PROP] (P : PROP) : P ⊢ ∀ (x : Nat), P ∗ ⌜x = x⌝ := by
   iintro HP
   iframe HP
-  ipure_intro; simp
+  itrivial
 
 /- Tests `iframe` with mvar -/
 example [BI PROP] (P Q : PROP) : (P ∗ Q ⊢ ∃ x, P ∗ ⌜x = Q⌝ ∗ x) := by
@@ -2311,7 +2359,7 @@ example [BI PROP] (P Q : PROP) : (P ∗ Q ⊢ ∃ x, P ∗ ⌜x = Q⌝ ∗ x) :=
   iexists _
   iframe HP
   iframe HQ
-  ipure_intro; trivial
+  itrivial
 
 /- Tests `iframe` with mvar and or -/
 example [BI PROP] [BIAffine PROP] (Q : Nat → PROP) : (Q 0 ⊢ ∃ x, False ∨ Q x) := by

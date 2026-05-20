@@ -100,3 +100,6 @@ elab "ipure_intro" : tactic => do
     mvar.assign q(pure_intro_spatial (P := $e) (Q := $goal) $h $m)
   -- the following indicates a bug in the typeclass instances that generate b
   | _ => throwError "ipure_intro: bug in typeclass instances, cannot reduce {b} to true or false"
+
+-- TODO: what is the best lean automation tactic to call here?
+macro_rules | `(tactic| itrivial) => `(tactic| (first | ipure_intro | exfalso) <;> simp [*] <;> done)

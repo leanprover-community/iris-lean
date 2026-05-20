@@ -49,7 +49,7 @@ private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps :
 
   -- otherwise, if `A` has the form `?P -∗ ?B`, create a subgoal for `P` and continue with ?B
   let some ⟨_, hyps', pb, B, pf⟩ ← try? <| iSpecializeCore hyps p A
-    [.goal {kind := .spatial, negate := false, frame := [], hyps := []} .anonymous]
+    [.goal {kind := .spatial, negate := false, trivial := false, frame := [], hyps := []} .anonymous]
     | throwError m!"iapply: cannot apply {A} to {goal}"
   let pf' ← iApplyCore hyps' pb B goal
   return q($(pf).trans $pf')
