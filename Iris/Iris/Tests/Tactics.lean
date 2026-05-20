@@ -2330,12 +2330,15 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q :=
 example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
     {a1 a2 a3 : F.ap (IProp GF)} :
     ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
-      iOwn γ (a1 • (a2 • a3)) ∧ internalCmraValid (a1 • (a2 • a3)) := by
+      iOwn γ (a1 • (a2 • a3)) ∗
+      internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • (a2 • a3)) := by
   iintro H1 H2 H3
-  icombine H1 H2 H3 as Hnew1 gives ⟨-, Hnew2⟩
+  icombine H1 H2 H3 as Hnew1 gives ⟨Hnew2, Hnew3⟩
   isplitl
   · iexact Hnew1
-  · iexact Hnew2
+  · isplit
+    · iexact Hnew2
+    · iexact Hnew3
 
 /-- Tests `icombine` for combining propositions involving later credits.
     Note that `.succ` is used whenever possible for increment the credit by 1
