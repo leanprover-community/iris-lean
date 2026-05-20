@@ -212,7 +212,7 @@ private def iCombineParseSelPats {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   targets.mapM fun t =>
     match t.target with
     | .inl iVarId => pure iVarId
-    | .inr _      => throwError "icombine: invalid selection pattern"
+    | .inr _      => throwError "icombine: invalid selection pattern with pure propositions"
 
 private def throwNoInstanceForGives : ProofModeM Unit := do
   throwError "icombine: no type class instance to combine propositions"
