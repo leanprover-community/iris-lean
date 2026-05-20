@@ -1980,6 +1980,23 @@ example [BI PROP] [BIFUpdate PROP]
   imodintro
   iexact HP
 
+/-- Tests `imod` without with but with proof mode term -/
+example [BI PROP] [BIUpdate PROP]
+    (P : PROP) : (True -∗ |==> P) ⊢ |==> P := by
+  iintro HP
+  imod HP $$ []
+  · ipure_intro; trivial
+  imodintro
+  iexact HP
+
+/-- Tests `imod` without with and without ident -/
+example [BI PROP] [BIUpdate PROP]
+    (P : Nat → PROP) (h : ∀ x, ⊢ |==> P x) :
+    ⊢ |==> P 0 := by
+  imod h 0
+  imodintro
+  iassumption
+
 end imod
 
 section inext
