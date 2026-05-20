@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Alvin Tang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler, Alvin Tang
+Authors: Alvin Tang, Michael Sammler
 -/
 module
 
@@ -120,9 +120,6 @@ private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop
     | none => PUnit
     | some outGives => Q($origE ⊢ $origE ∗ □ $outGives))
 
-private def throwDuplicateSpatialHyp : ProofModeM a := do
-  throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
-
 /--
   This function takes in an instance of `CombineState` and handles one
   hypothesis at a time. This function is called by `iCombineCore` iteratively
@@ -134,10 +131,10 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
   | { newHyps, p := p1, outAs, pfAs, outGives, pfGives, .. }, ivar => do
     let some (_, ⟨_, hyps2, _, out2, p2, _, pf2⟩) ←
         newHyps.removeG false <| fun _ ivar' _ _ => return guard <| ivar' == ivar
-    | throwDuplicateSpatialHyp
+    | throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
 
     -- Type class instance search for the `as` syntax
-    let newOutAs ← mkFreshExprMVarQ _
+    let newOutAs ← mkFreshExprMVarQ q($prop)
     let instAs ← ProofModeM.synthInstanceQ q(CombineSepAs $out2 $outAs $newOutAs)
     let newPfAs := q(combine_as_step $instAs $pfAs $(pf2).mp)
 
@@ -150,7 +147,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
       }
     | some outGives, pfGives =>
       -- Type class instance search for the `gives` syntax
-      let newOutGives ← mkFreshExprMVarQ _
+      let newOutGives ← mkFreshExprMVarQ q($prop)
       let instGives ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out2 $outAs $newOutGives)
 
       match instGives with
@@ -162,7 +159,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
         }
       -- Combine the existing and new persistent information using the conjunction
       | some instGives =>
-        let newOutGivesCombined ← mkFreshExprMVarQ _
+        let newOutGivesCombined ← mkFreshExprMVarQ q($prop)
         let instGivesCombined ← ProofModeM.synthInstanceQ q(MakeAnd $outGives $newOutGives $newOutGivesCombined)
         return {
           newHyps := hyps2, p := conj p1 p2, outAs := newOutAs, pfAs := newPfAs,
@@ -181,7 +178,6 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
 private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (ivars : List IVarId) (hyps : Hyps bi e) (goal : Q($prop)) :
     ProofModeM (@CombineState u prop bi e goal) := do
-  let checkHyp := fun ivar _ ivar' _ _ => return guard <| ivar' == ivar
   match ivars.reverse with
   | [] =>
     return { newHyps := hyps, p := q(true), outAs := q(emp),
@@ -189,8 +185,7 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
              outGives := some q(iprop(True)), pfGives := q(combine_gives_nil_singleton) }
   | ivar :: ivars =>
     -- Apply removal of the hypotheses
-    let some (_, ⟨_, hyps1, _, out1, p1, _, pf1⟩) ← hyps.removeG false <| checkHyp ivar
-    | throwDuplicateSpatialHyp
+    let ⟨_, hyps1, _, out1, p1, _, pf1⟩ := hyps.remove false ivar
 
     -- Initialise the mutable `CombineState` instance
     let mut st : CombineState e goal :=

@@ -2169,6 +2169,7 @@ example [BI PROP] [BIAffine PROP] (Q : Nat → PROP) : (Q 0 ⊢ ∃ x, False ∨
   iframe
 
 end iframe
+
 section icombine
 open ProofMode
 
@@ -2354,9 +2355,7 @@ example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
     · iexact Hnew2
     · iexact Hnew3
 
-/-- Tests `icombine` for combining propositions involving later credits.
-    Note that `.succ` is used whenever possible for increment the credit by 1
-    according to the type class instance priorities -/
+/-- Tests `icombine` for combining propositions involving later credits. -/
 example {GF m n} [LcGS GF] :
     ⊢@{IProp GF} £ n -∗ £ 1 -∗ £ m -∗ £ 1 -∗ £ n + (1 + (m + 1)) := by
   iintro H1 H2 H3 H4

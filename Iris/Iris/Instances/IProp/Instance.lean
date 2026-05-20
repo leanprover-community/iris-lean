@@ -754,6 +754,7 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
 
 @[rocq_alias combine_sep_as_own]
 instance combineSepAs_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
+  -- TODO: Add IsOp premise once it is ported
   CombineSepAs (iOwn γ a1) (iOwn γ a2) (iOwn γ (a1 • a2)) where
   combine_sep_as := iOwn_op.mpr
 
