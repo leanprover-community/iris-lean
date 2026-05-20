@@ -255,7 +255,7 @@ private def iCombineParseSelPats {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (hyps : Hyps bi e) (patSels : TSyntaxArray `selPat) :
     ProofModeM (List IVarId) := do
   let selPats ← liftMacroM <| SelPat.parse patSels
-  let targets ← SelPat.resolveWithDuplicates hyps selPats
+  let targets ← SelPat.resolve hyps selPats
   return targets.filterMap fun t =>
     match t.target with
     | .inl iVarId => some iVarId
