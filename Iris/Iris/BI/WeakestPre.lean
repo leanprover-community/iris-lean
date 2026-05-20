@@ -57,8 +57,8 @@ syntax ident ", " term : wpPostcondInner
 syntax term : wpPostcondInner
 
 declare_syntax_cat wpPostcond
-syntax " {{ " wpPostcondInner " }} " : wpPostcond
-syntax " [{ " wpPostcondInner " }] " : wpPostcond
+syntax " {" "{ " wpPostcondInner " }" "} " : wpPostcond
+syntax " [" "{ " wpPostcondInner " }" "] " : wpPostcond
 syntax " ⦃ " wpPostcondInner " ⦄ " : wpPostcond
 syntax " 〖 " wpPostcondInner " 〗 "  : wpPostcond
 
