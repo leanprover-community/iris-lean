@@ -144,12 +144,10 @@ instance (priority := default) {n} : IntoSep (PROP := IProp GF) (£ (.succ n)) (
   into_sep := lc_succ.mp
 
 @[rocq_alias combine_sep_lc_add]
-instance (priority := default - 10) {n} : CombineSepAs (PROP := IProp GF) (£ n) (£ m) (£ (n + m)) where
+instance (priority := default) {n} : CombineSepAs (PROP := IProp GF) (£ n) (£ m) (£ (n + m)) where
   combine_sep_as := lc_split.mpr
 
-@[rocq_alias combine_sep_lc_S_l]
-instance (priority := default) {n} : CombineSepAs (PROP := IProp GF) (£ n) (£ 1) (£ (.succ n)) where
-  combine_sep_as := sep_comm.mp.trans lc_succ.mpr
+#rocq_ignore combine_sep_lc_S_l "Not necessary in Lean as it is more common to use +1 instead of .succ"
 
 end ProofMode
 

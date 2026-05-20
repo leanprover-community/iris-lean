@@ -2341,7 +2341,7 @@ example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
     Note that `.succ` is used whenever possible for increment the credit by 1
     according to the type class instance priorities -/
 example {GF m n} [LcGS GF] :
-    ⊢@{IProp GF} £ n -∗ £ 1 -∗ £ m -∗ £ 1 -∗ £ n + (1 + .succ m) := by
+    ⊢@{IProp GF} £ n -∗ £ 1 -∗ £ m -∗ £ 1 -∗ £ n + (1 + (m + 1)) := by
   iintro H1 H2 H3 H4
   icombine H1 H2 H3 H4 as Hnew
   iexact Hnew
