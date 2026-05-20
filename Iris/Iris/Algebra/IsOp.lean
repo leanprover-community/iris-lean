@@ -8,9 +8,13 @@ module
 public import Iris.Algebra.CMRA
 meta import Iris.Std.RocqPorting
 
-namespace Iris.Algebra
+@[expose] public section
+
+namespace Iris
 
 open CMRA
+
+section IsOp
 
 @[rocq_alias IsOp]
 class IsOp [CMRA α] (a b1 b2 : α) where
@@ -51,3 +55,7 @@ instance isOp_pair_core_id_r [CMRA α] [CMRA β] (a b1 b2 : α) (a' : β)
 instance isOp_some [CMRA α] (a b1 b2 : α)
     [h : IsOp a b1 b2] : IsOp' (some a) (some b1) (some b2) where
   is_op' := ⟨h.is_op⟩
+
+end IsOp
+
+end Iris
