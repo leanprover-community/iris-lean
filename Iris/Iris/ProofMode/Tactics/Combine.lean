@@ -220,10 +220,10 @@ private def iCombineParseSelPats {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     ProofModeM (List IVarId) := do
   let selPats ← liftMacroM <| SelPat.parse patSels
   let targets ← SelPat.resolve hyps selPats
-  return targets.filterMap fun t =>
+  targets.mapM fun t =>
     match t.target with
-    | .inl iVarId => some iVarId
-    | .inr _      => none
+    | .inl iVarId => pure iVarId
+    | .inr _      => throwError "icombine: invalid selection pattern"
 
 private def throwNoInstanceForGives : ProofModeM Unit := do
   throwError "icombine: no type class instance to combine propositions"
