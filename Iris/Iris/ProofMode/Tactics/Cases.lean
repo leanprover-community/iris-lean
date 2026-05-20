@@ -272,7 +272,11 @@ elab "icases" keep:("+keep")? colGt pmt:pmTerm "with" colGt pat:icasesPat : tact
   mvar.assign q(($pf).trans $pf2)
 
 macro "imod" colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => `(tactic | icases $pmt with >$pat)
-macro "imod" colGt hyp:ident : tactic => `(tactic | imod $hyp:ident with $hyp:ident)
+macro "imod" colGt pmt:pmTerm : tactic =>
+  match pmt with
+  | `(pmTerm | $hyp:ident) => `(tactic | imod $pmt with $hyp:ident)
+  | `(pmTerm | $hyp:ident $$ $_*) => `(tactic | imod $pmt with $hyp:ident)
+  | _ => `(tactic | imod $pmt with _)
 
 -- TODO: remove these shortcuts if they are not used
 macro "iintuitionistic" hyp:ident : tactic => `(tactic | icases $hyp:ident with #$hyp:ident)

@@ -368,36 +368,60 @@ theorem from_affine [BI PROP] {p : Bool} {P P' Q : PROP} [hP : FromAffinely P' P
     Replaces Q iprop(□?p P) P' :=
   wand_mono_l <| affinelyIf_of_intuitionisticallyIf.trans hP.1
 
-inductive ReplaceHyp {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop)) where
-  | none
-  | unchanged (ehyps') (hyps' : Hyps bi ehyps')
-  | main (e e' : Q($prop)) (hyps' : Hyps bi e') (pf : Q(Replaces $Q $e $e'))
+theorem replace_hyp {PROP} [BI PROP] {p} {ty ty' e0 : PROP}
+  (h : e0 ⊢ <pers> (ty -∗ ty')) :
+  ∀ P, (□?p ty ∗ P) ∧ e0 ⊢ □?p ty' ∗ P := fun _ =>
+  (and_mono_r h).trans <| persistent_and_affinely_sep_r_1.trans <|
+  sep_comm.1.trans <| sep_assoc.2.trans <| sep_mono_l <|
+    match p with
+    | false => (sep_mono_l intuitionistically_elim).trans <| wand_elim_l
+    | true => intuitionistically_sep_2.trans <| intuitionistically_mono wand_elim_l
 
-variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)} (bi : Q(BI $prop)) (Q : Q($prop))
-  (ivar : IVarId) (repl : Name → Q(Bool) → Q($prop) → m (ReplaceHyp bi Q)) in
-def Hyps.replace : ∀ {e}, Hyps bi e → m (ReplaceHyp bi Q)
-  | _, .emp _ => pure .none
+theorem replace_hyp_sep_l {PROP} [BI PROP] {elhs elhs' erhs e0 : PROP}
+  (h : ∀ P, (elhs ∗ P) ∧ e0 ⊢ elhs' ∗ P) :
+  ∀ P, ((elhs ∗ erhs) ∗ P) ∧ e0 ⊢ (elhs' ∗ erhs) ∗ P := fun P =>
+  calc iprop(((elhs ∗ erhs) ∗ P) ∧ e0)
+    _ ⊢ (elhs ∗ (erhs ∗ P)) ∧ e0 := and_mono_l sep_assoc.1
+    _ ⊢ elhs' ∗ (erhs ∗ P) := h _
+    _ ⊢ (elhs' ∗ erhs) ∗ P := sep_assoc.2
+
+theorem replace_hyp_sep_r {PROP} [BI PROP] {elhs erhs' erhs e0 : PROP}
+  (h : ∀ P, (erhs ∗ P) ∧ e0 ⊢ erhs' ∗ P) :
+  ∀ P, ((elhs ∗ erhs) ∗ P) ∧ e0 ⊢ (elhs ∗ erhs') ∗ P := fun P =>
+  calc iprop(((elhs ∗ erhs) ∗ P) ∧ e0)
+    _ ⊢ (erhs ∗ (elhs ∗ P)) ∧ e0 := and_mono_l <| (sep_mono_l sep_comm.2).trans sep_assoc.1
+    _ ⊢ erhs' ∗ (elhs ∗ P) := h _
+    _ ⊢ (elhs ∗ erhs') ∗ P := sep_assoc.2.trans (sep_mono_l sep_comm.2)
+
+theorem replace_finish {PROP} [BI PROP] {e e' : PROP}
+  (h : ∀ P, (e ∗ P) ∧ e ⊢ e' ∗ P) :
+  e ⊢ e' :=
+    calc e
+      _ ⊢ (e ∗ emp) ∧ e := and_intro sep_emp.2 .rfl
+      _ ⊢ e' ∗ emp := h _
+      _ ⊢ e' := sep_emp.1
+
+variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)} (bi : Q(BI $prop)) (e0 : Q($prop))
+  (ivar : IVarId) (repl : Name → Q(Bool) → (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($e0 ⊢ <pers> ($ty -∗ $ty')))) in
+def Hyps.replaceCore : ∀ {e}, Hyps bi e → m (Option ((e' : Q($prop)) × Hyps bi e' × Q(∀ P, (($e ∗ P) ∧ $e0 ⊢ $e' ∗ P))))
+  | _, .emp _ => return none
   | _, .hyp _ name ivar' p ty _ => do
     if ivar == ivar' then
-      let res ← repl name p ty
-      if let .main e e' hyps' _ := res then
-        let e' ← instantiateMVarsQ e'
-        if e == e' then
-          return .unchanged _ hyps'
-      return res
-    else return .none
-  | _, .sep _ elhs erhs _ lhs rhs => do
-    match ← rhs.replace with
-    | .unchanged _ rhs' => return .unchanged _ (.mkSep lhs rhs')
-    | .main erhs₀ _ rhs' pf =>
-      let hyps' := .mkSep lhs rhs'
-      return .main q(iprop($elhs ∗ $erhs₀)) _ hyps' q(replaces_r $pf)
-    | .none => match ← lhs.replace with
-      | .unchanged _ lhs' => return .unchanged _ (.mkSep lhs' rhs)
-      | .main elhs₀ _ lhs' pf =>
-        let hyps' := .mkSep lhs' rhs
-        return .main q(iprop($elhs₀ ∗ $erhs)) _ hyps' q(replaces_l $pf)
-      | .none => pure .none
+      let ⟨ty', pf⟩ ← repl name p ty
+      return some ⟨_, .mkHyp bi name ivar p ty', q(replace_hyp $pf)⟩
+    return none
+  | _, .sep _ _ _ _ lhs rhs => do
+    if let some ⟨_, lhs', pf⟩ ← lhs.replaceCore then
+      return some ⟨_, .mkSep lhs' rhs, q(replace_hyp_sep_l $pf)⟩
+    if let some ⟨_, rhs', pf⟩ ← rhs.replaceCore then
+      return some ⟨_, .mkSep lhs rhs', q(replace_hyp_sep_r $pf)⟩
+    return none
+
+variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e)
+  (ivar : IVarId) (repl : Name → Q(Bool) → (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($e ⊢ <pers> ($ty -∗ $ty')))) in
+def Hyps.replace : m (Option ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e'))) := do
+  let some ⟨_, hyps', pf⟩ ← hyps.replaceCore bi e ivar repl | return none
+  return some ⟨_, hyps', q(replace_finish $pf)⟩
 
 end replace
 
