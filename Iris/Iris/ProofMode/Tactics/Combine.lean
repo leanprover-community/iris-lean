@@ -131,20 +131,8 @@ private def pConj (p1 p2 : Q(Bool)) : Q(Bool) :=
   | .inl _, .inl _ => q(true)
   | _, _           => q(false)
 
-/--
-  While similar to `Hyps.remove`, this function uses `Hyps.removeG` directly.
-  If an invalid `IVarId` is supplied as an argument to `Hyps.removeG`,
-  the function throws the error "unknown hypothesis <argument>".
-  If a valid `IVarId` is given as an argument but the corresponding hypothesis
-  exist in the spatial context and is used multiple times, `Hyps.removeG`
-  returns `none` without throwing an error. In this case, this function
-  throw an error in a pretty format.
--/
-private def iCombineRemoveHyp {u} {prop : Q(Type $u)} {bi : Q(BI $prop)} {e}
-    (hyps : Hyps bi e) (ivar : IVarId) : ProofModeM (RemoveHyp bi e) := do
-  match ← hyps.removeG false (fun _ ivar' _ _ => return if ivar' == ivar then some () else none) with
-  | none => throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
-  | some (_, r) => return r
+private def throwDuplicateSpatialHyp : ProofModeM a := do
+  throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
 
 /--
   This function takes in an instance of `CombineState` and handles one
@@ -155,7 +143,9 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
     @CombineState u prop bi origE goal → IVarId →
     ProofModeM (@CombineState u prop bi origE goal)
   | { newHyps, p := p1, outAs, pfAs, outGives, pfGives, .. }, ivar => do
-    let ⟨_, hyps2, _, out2, p2, _, pf2⟩ ← iCombineRemoveHyp newHyps ivar
+    let some (_, ⟨_, hyps2, _, out2, p2, _, pf2⟩) ←
+        newHyps.removeG false <| fun _ ivar' _ _ => return guard <| ivar' == ivar
+    | throwDuplicateSpatialHyp
 
     -- Type class instance search for the `as` syntax
     let newOutAs ← mkFreshExprMVarQ _
@@ -202,6 +192,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
 private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (ivars : List IVarId) (hyps : Hyps bi e) (goal : Q($prop)) :
     ProofModeM (@CombineState u prop bi e goal) := do
+  let checkHyp := fun ivar _ ivar' _ _ => return guard <| ivar' == ivar
   match ivars.reverse with
   /-
     Trivial case when no hypothesis is given as an argument for the tactic:
@@ -217,7 +208,9 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     `□ True` for the `gives` syntax.
   -/
   | [i1] =>
-    let ⟨_, hyps1, _, out1, p1, _, pf1⟩ ← iCombineRemoveHyp hyps i1
+    let some (_, ⟨_, hyps1, _, out1, p1, _, pf1⟩) ←
+        hyps.removeG false <| checkHyp i1
+    | throwDuplicateSpatialHyp
     return { newHyps := hyps1, p := p1, outAs := out1, pfAs := q($(pf1).mp),
              outGives := some q(iprop(True)), pfGives := q(combine_gives_nil_singleton) }
   /-
@@ -226,8 +219,10 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   -/
   | i1 :: i2 :: itail =>
     -- Apply removal of the hypotheses
-    let ⟨_, hyps1, _, out1, p1, _, pf1⟩ ← iCombineRemoveHyp hyps i1
-    let ⟨e2, hyps2, _, out2, p2, _, pf2⟩ ← iCombineRemoveHyp hyps1 i2
+    let some (_, ⟨_, hyps1, _, out1, p1, _, pf1⟩) ← hyps.removeG false <| checkHyp i1
+    | throwDuplicateSpatialHyp
+    let some (_, ⟨e2, hyps2, _, out2, p2, _, pf2⟩) ← hyps1.removeG false <| checkHyp i2
+    | throwDuplicateSpatialHyp
 
     -- Search for the type class instance for the `as` syntax
     let newOutAs ← mkFreshExprMVarQ _
