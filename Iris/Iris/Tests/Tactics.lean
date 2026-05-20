@@ -1986,7 +1986,6 @@ example [BI PROP] [BIFUpdate PROP]
 end imod
 
 section inext
-open ProofMode
 
 /- Tests `inext` failing on non-later goal -/
 set_option pp.mvars false in
