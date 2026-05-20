@@ -87,10 +87,11 @@ def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget
 
 def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) :
     ProofModeM (List SelTarget) := do
-  -- we want to remove duplicates; and if an pattern is first explicitly specified and then non-explicitly,
-  -- we want to remove the non-explicit version (but not the other way around)
+  -- if the users specifies something like `HP ∗` we want to remove `HP`
+  -- from the expansion of `∗`, but if the user specifies `HP` explicitly
+  -- twice, it should be kept (this is for example important for `icombine`)
   return (← pats.flatMapM (SelPat.resolveOne hyps)).eraseDupsBy
-    (λ snd fst => snd.kind == fst.kind && (fst.explicit == snd.explicit || fst.explicit))
+    (λ snd fst => snd.kind == fst.kind && fst.explicit && !snd.explicit)
 
 end
 

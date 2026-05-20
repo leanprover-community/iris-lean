@@ -8,7 +8,8 @@ module
 public meta import Iris.ProofMode.Patterns.ProofModeTerm
 public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.Tactics.Basic
-public meta import Iris.ProofMode.Tactics.Frame
+public import Iris.ProofMode.Tactics.Trivial
+public import Iris.ProofMode.Tactics.Frame
 
 namespace Iris.ProofMode
 
@@ -87,7 +88,7 @@ private def processWand :
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
     return { e, hyps, p, out := out', pf := q(specialize_forall $pf $x) }
-  | { hyps, p, out, pf, .. }, .goal {kind, negate, frame := f, hyps := hs} g => do
+  | { hyps, p, out, pf, .. }, .goal {kind, negate, trivial, frame := f, hyps := hs} g => do
     if kind != .spatial then
       -- TODO
       throwError "ispecialize: only spatial kind is supported at the moment"
@@ -108,7 +109,13 @@ private def processWand :
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
       | throwError m!"ispecialize: {out} is not a wand"
     let res ← iFrame bi _ hypsr' out₁ (frameIVars.map (⟨.ipm ·, true⟩))
-    let pf'' ← res.finish (addBIGoal · · g)
+    let pf'' ← res.finish λ hyps goal => do
+      if trivial then
+        let some r ← iTrivial hyps goal
+          | throwError "ispecialize: itrivial could not solve {← ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
+        return r
+      else
+        addBIGoal hyps goal g
     let pf := q(specialize_wand_subgoal $out₂ $pf $pf' $pf'')
     return { e := el', hyps := hypsl', p := q(false), out := out₂, pf }
 

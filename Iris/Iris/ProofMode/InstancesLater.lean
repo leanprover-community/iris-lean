@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler
+Authors: Michael Sammler, Alvin Tang
 -/
 module
 
@@ -396,5 +396,50 @@ instance intoLaterN_sep [BI PROP] n (P1 P2 Q1 Q2 : PROP)
     [h1 : IntoLaterN false n P1 Q1] [h2 : IntoLaterN false n P2 Q2] :
     IntoLaterN false n iprop(P1 ∗ P2) iprop(Q1 ∗ Q2) where
   into_laterN := (sep_mono h1.1 h2.1).trans (laterN_sep n).2
+
+@[rocq_alias maybe_combine_sep_as_later]
+instance combineSepAs_later [BI PROP] (Q1 Q2 P : PROP)
+  [h : CombineSepAs Q1 Q2 P] :
+  CombineSepAs iprop(▷ Q1) iprop(▷ Q2) iprop(▷ P) where
+  combine_sep_as := later_sep.mpr.trans (later_mono h.combine_sep_as)
+
+@[rocq_alias maybe_combine_sep_as_laterN]
+instance combineSepAs_laterN [BI PROP] (Q1 Q2 P : PROP)
+  [h : CombineSepAs Q1 Q2 P] :
+  CombineSepAs iprop(▷^[n] Q1) iprop(▷^[n] Q2) iprop(▷^[n] P) where
+  combine_sep_as := (laterN_sep n).mpr.trans (laterN_mono n h.combine_sep_as)
+
+@[rocq_alias maybe_combine_sep_as_except_0]
+instance combineSepAs_except0 [BI PROP] (Q1 Q2 P : PROP)
+  [h : CombineSepAs Q1 Q2 P] :
+  CombineSepAs iprop(◇ Q1) iprop(◇ Q2) iprop(◇ P) where
+  combine_sep_as := except0_sep.mpr.trans (except0_mono h.combine_sep_as)
+
+@[rocq_alias maybe_combine_sep_gives_later]
+instance combineSepGives_later [BI PROP] (Q1 Q2 P : PROP)
+  [h : CombineSepGives Q1 Q2 P] :
+  CombineSepGives iprop(▷ Q1) iprop(▷ Q2) iprop(▷ P) where
+  combine_sep_gives := by calc
+    ▷ Q1 ∗ ▷ Q2 ⊢ ▷ (Q1 ∗ Q2) := later_sep.mpr
+    _             ⊢ ▷ <pers> P  := later_mono h.combine_sep_gives
+    _             ⊢ <pers> ▷ P  := later_persistently.mp
+
+@[rocq_alias maybe_combine_sep_gives_laterN]
+instance combineSepGives_laterN [BI PROP] (Q1 Q2 P : PROP)
+  [h : CombineSepGives Q1 Q2 P] :
+  CombineSepGives iprop(▷^[n] Q1) iprop(▷^[n] Q2) iprop(▷^[n] P) where
+  combine_sep_gives := by calc
+    ▷^[n] Q1 ∗ ▷^[n] Q2 ⊢ ▷^[n] (Q1 ∗ Q2) := (laterN_sep n).mpr
+    _                     ⊢ ▷^[n] <pers> P  := laterN_mono n h.combine_sep_gives
+    _                     ⊢ <pers> ▷^[n] P  := (laterN_persistently n).mp
+
+@[rocq_alias maybe_combine_sep_gives_except_0]
+instance combineSepGives_except0 [BI PROP] (Q1 Q2 P : PROP)
+  [h : CombineSepGives Q1 Q2 P] :
+  CombineSepGives iprop(◇ Q1) iprop(◇ Q2) iprop(◇ P) where
+  combine_sep_gives := by calc
+    ◇ Q1 ∗ ◇ Q2 ⊢ ◇ (Q1 ∗ Q2) := except0_sep.mpr
+    _             ⊢ ◇ <pers> P  := except0_mono h.combine_sep_gives
+    _             ⊢ <pers> ◇ P  := except0_persistently.mp
 
 end Iris.ProofMode

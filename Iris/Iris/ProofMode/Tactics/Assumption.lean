@@ -23,6 +23,9 @@ open Lean Elab Tactic Meta Qq
 elab "iassumption" : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
 
+  if goal.isMVar then
+    throwError "iassumption: goal is a mvar, use iaccu instead"
+
   let some ⟨inst, e', _, out, ty, b, _, pf⟩ ←
     hyps.removeG true fun _ _ b ty => do
       ProofModeM.trySynthInstanceQ q(FromAssumption $b .in $ty $goal)
@@ -32,3 +35,5 @@ elab "iassumption" : tactic => do
   let .some _ ← trySynthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
     | throwError "iassumption: context is not affine or goal is not absorbing"
   mvar.assign q(assumption (Q := $goal) $pf)
+
+macro_rules | `(tactic| itrivial) => `(tactic| (try iassumption) <;> done)

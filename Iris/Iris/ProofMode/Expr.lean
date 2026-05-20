@@ -53,6 +53,17 @@ def isTrue (p : Q(Bool)) : Bool := p.constName! == ``true
 def matchBool (p : Q(Bool)) : ($p =Q true) ⊕' ($p =Q false) :=
   if isTrue p then .inl ⟨⟩ else .inr ⟨⟩
 
+/--
+  Given two values `p1` and `p2`, check whether both are syntactically
+  `q(true)` and, if so, return `q(true)`. Otherwise, return `q(false)`.
+  This is useful for determining whether the combined hypothesis should
+  exist in the intuitionistic context or the spatial context.
+-/
+def conj (p1 p2 : Q(Bool)) : Q(Bool) :=
+  match matchBool p1, matchBool p2 with
+  | .inl _, .inl _ => q(true)
+  | _, _           => q(false)
+
 section hyps
 
 /--

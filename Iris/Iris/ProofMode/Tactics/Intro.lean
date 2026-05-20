@@ -8,6 +8,7 @@ module
 public meta import Iris.ProofMode.Patterns.IntroPattern
 public meta import Iris.ProofMode.Tactics.Cases
 public meta import Iris.ProofMode.Tactics.ModIntro
+public meta import Iris.ProofMode.Tactics.Trivial
 
 namespace Iris.ProofMode
 
@@ -68,6 +69,12 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   | (ref, .modintro) :: pats =>
     withRef ref do
     iModIntroCore hyps Q (← `(_)) (iIntroCore · · pats k)
+  | (ref, .trivial) :: pats =>
+    withRef ref do
+    if let some r ← iTrivial hyps Q then
+      return r
+    else
+      iIntroCore hyps Q pats k
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar
