@@ -57,6 +57,10 @@ syntax ident ", " term : wpPostcondInner
 syntax term : wpPostcondInner
 
 declare_syntax_cat wpPostcond
+-- Avoids conflicts with
+-- example {a : PUnit.{i}} : PUnit.{i} := a
+--                      ^^
+-- see: https://github.com/leanprover-community/iris-lean/pull/393
 syntax " {" "{ " wpPostcondInner " }" "} " : wpPostcond
 syntax " [" "{ " wpPostcondInner " }" "] " : wpPostcond
 syntax " ⦃ " wpPostcondInner " ⦄ " : wpPostcond

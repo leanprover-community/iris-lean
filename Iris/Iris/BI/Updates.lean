@@ -204,6 +204,10 @@ theorem fupd_mask_intro_subseteq {E1 E2 : CoPset} {P : PROP} : E2 ⊆ E1 → P �
   λ h => (emp_sep.2.trans <| sep_mono_l <| subset h).trans <|
     frame_r.trans <| mono <| frame_r.trans <| mono emp_sep.1
 
+@[rocq_alias fupd_mask_subseteq]
+theorem fupd_mask_subseteq {E1 E2 : CoPset} : E2 ⊆ E1 → ⊢@{PROP} |={E1,E2}=> |={E2,E1}=> emp :=
+  λ Hsub => fupd_mask_intro_subseteq Hsub (P := iprop(emp))
+
 theorem fupd_intro {E : CoPset} {P : PROP} : P ⊢ |={E}=> P :=
   (fupd_mask_intro_subseteq λ _ => id).trans trans
 
