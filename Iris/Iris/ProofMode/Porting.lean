@@ -48,7 +48,7 @@ import Iris.Std.RocqPorting
 #rocq_concept proofmode "Tactics" "iMod" ported "imod"
 #rocq_concept proofmode "Tactics" "iDestruct (basic)" ported "icases"
 #rocq_concept proofmode "Tactics" "iDestruct (all destruct patterns)" missing ""
-#rocq_concept proofmode "Tactics" "iCombine" missing ""
+#rocq_concept proofmode "Tactics" "iCombine" ported "icombine"
 #rocq_concept proofmode "Tactics" "iIntros (basic)" ported "iintro"
 #rocq_concept proofmode "Tactics" "iIntros (all intro patterns)" missing ""
 #rocq_concept proofmode "Tactics" "iInduction" missing ""
