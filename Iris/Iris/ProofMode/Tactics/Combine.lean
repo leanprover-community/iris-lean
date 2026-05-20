@@ -120,17 +120,6 @@ private structure CombineState {u} {prop : Q(Type u)} {bi} (origE goal : Q($prop
     | none => PUnit
     | some outGives => Q($origE ⊢ $origE ∗ □ $outGives))
 
-/--
-  Given two values `p1` and `p2`, check whether both are syntactically
-  `q(true)` and, if so, return `q(true)`. Otherwise, return `q(false)`.
-  This is useful for determining whether the combined hypothesis should
-  exist in the intuitionistic context or the spatial context.
--/
-private def pConj (p1 p2 : Q(Bool)) : Q(Bool) :=
-  match matchBool p1, matchBool p2 with
-  | .inl _, .inl _ => q(true)
-  | _, _           => q(false)
-
 private def throwDuplicateSpatialHyp : ProofModeM a := do
   throwError "icombine: propositions in the spatial context cannot be used as arguments multiple times"
 
@@ -156,7 +145,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
     -- No persistent information derived in the previous step: `gives` syntax fails
     | none, _ =>
       return {
-        newHyps := hyps2, p := pConj p1 p2, outAs := newOutAs, pfAs := newPfAs,
+        newHyps := hyps2, p := conj p1 p2, outAs := newOutAs, pfAs := newPfAs,
         outGives := none, pfGives := ⟨⟩
       }
     | some outGives, pfGives =>
@@ -168,7 +157,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
       -- No persistent information derived in the current step: `gives` syntax fails
       | none =>
         return {
-          newHyps := hyps2, p := pConj p1 p2, outAs := newOutAs, pfAs := newPfAs,
+          newHyps := hyps2, p := conj p1 p2, outAs := newOutAs, pfAs := newPfAs,
           outGives := none, pfGives := ⟨⟩
         }
       -- Combine the existing and new persistent information using the conjunction
@@ -176,7 +165,7 @@ private def CombineState.combineProofModeHyp {u prop bi origE goal} :
         let newOutGivesCombined ← mkFreshExprMVarQ _
         let instGivesCombined ← ProofModeM.synthInstanceQ q(MakeAnd $outGives $newOutGives $newOutGivesCombined)
         return {
-          newHyps := hyps2, p := pConj p1 p2, outAs := newOutAs, pfAs := newPfAs,
+          newHyps := hyps2, p := conj p1 p2, outAs := newOutAs, pfAs := newPfAs,
           -- The `gives` syntax produces the conjunction of the two pieces of persistent information
           outGives := some newOutGivesCombined,
           pfGives := q(combine_gives_step_conj $instGives $instGivesCombined $pfGives $pfAs $pf2)
