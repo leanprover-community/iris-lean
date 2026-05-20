@@ -52,6 +52,7 @@ class StateInterp
 
 export StateInterp (stateInterp)
 
+@[rocq_alias irisGS_gen]
 class IrisGS_gen (hlc : outParam <| Bool)
     (Expr  : Type e)
     {Val   : Type v}
@@ -107,6 +108,7 @@ abbrev Stuckness.MaybeReducible : Stuckness → Expr × State → Prop
 | .NotStuck, (e₁, σ₁) => PrimStep.Reducible (e₁, σ₁)
 | _, _ => True
 
+@[rocq_alias wp_pre]
 def wp.pre (s : Stuckness)
   (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF) :
     CoPset -> Expr -> (Val -> IProp GF) -> IProp GF := fun E e₁ Φ =>
@@ -124,6 +126,7 @@ def wp.pre (s : Stuckness)
       wp E e₂ Φ ∗
       [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
 
+@[rocq_alias wp_pre_contractive]
 instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
   distLater_dist := by
     intros n wp wp' Hwp E e₁ Φ
@@ -154,9 +157,13 @@ instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
     · apply Hwp m m_n
     · refine BI.BigSepL.bigSepL_dist (fun _ => (Hwp m m_n _ _ _))
 
-@[implicit_reducible]
+@[implicit_reducible, rocq_alias wp_def]
 instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
   wp s := fixpoint (wp.pre s)
+
+#rocq_ignore wp_aux "We do not use Iris' custom seal/unseal visibility control"
+#rocq_ignore wp' "We do not use Iris' custom seal/unseal visibility control"
+#rocq_ignore wp_unseal "We do not use Iris' custom seal/unseal visibility control"
 
 section Wp
 
@@ -282,6 +289,7 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
     imod h
     iapply HΦ $$ h
 
+@[rocq_alias fupd_wp]
 theorem fupd_wp {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
     (|={E}=> WP e @ s ; E {{ Φ }}) ⊢ WP e @ s ; E {{ Φ }} := by
   simp only [rw_iProp wp_unfold]
@@ -304,6 +312,7 @@ theorem fupd_wp_iff {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
   · exact fupd_mask_intro_discard Std.LawfulSet.subset_refl
   · exact fupd_wp
 
+@[rocq_alias wp_fupd]
 theorem wp_fupd (s : Stuckness) E (e : Expr) (Φ : Val → IProp GF) :
     WP e @ s ; E {{v, |={E}=> Φ v }} ⊢ WP e @ s ; E {{ Φ }} := by
   iintro h
@@ -311,6 +320,7 @@ theorem wp_fupd (s : Stuckness) E (e : Expr) (Φ : Val → IProp GF) :
   iintro %v h
   iassumption
 
+@[rocq_alias wp_atomic]
 theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IProp GF}
   [ι : Language.Atomic ↑s e] :
     (|={E1,E2}=> WP e @ s ;  E2 {{v, |={E2,E1}=> Φ v }}) ⊢ (WP e @ s ; E1 {{ Φ }}) := by
@@ -376,6 +386,7 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
       `stateInterp _ (ns+1) _ _` again
 
 -/
+@[rocq_alias wp_credit_access]
 theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF} :
   toVal e = none →
   (∀ m k, ι.numLatersPerStep m + ι.numLatersPerStep k ≤ ι.numLatersPerStep (m + k)) →
@@ -417,6 +428,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset}{e : Expr}{Φ}{P: IProp GF}
     iintro %v HΦ
     iapply HΦ $$ HP
 
+@[rocq_alias wp_step_fupdN_strong]
 theorem wp_step_fupdN_strong {s : Stuckness}{E1 E2 : CoPset} {e : Expr} {P : IProp GF} {Φ} :
     toVal e = none →
     E2 ⊆ E1 →
@@ -478,6 +490,7 @@ theorem wp_step_fupdN_strong {s : Stuckness}{E1 E2 : CoPset} {e : Expr} {P : IPr
       imod interp $$ Hσ₁ with %h
       grind only
 
+@[rocq_alias wp_bind]
 theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} :
     -- TODO: Have `WP` use the correct `Val` type from the `Wp` instance (it should anyways, it's an outParam, no?)
     WP e @ s ; E {{v, WP (K ((v : Val) : Expr)) @ s ; E {{ Φ }} }} ⊢ WP (K e) @ s ; E {{ Φ }} := by
@@ -503,6 +516,7 @@ theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E
     imod H; imodintro; iapply step_fupdN_wand $$ H; iintro H
     imod H with ⟨$, H, $⟩; imodintro; iapply IH $$ H
 
+@[rocq_alias wp_bind_inv]
 theorem wp_bind_inv (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} :
     WP (K e) @ s ; E {{ Φ }} ⊢ WP e @ s ; E {{v, WP (K ((v : Val) : Expr)) @ s ; E {{ Φ }} }} := by
   iintro H
@@ -530,6 +544,7 @@ theorem wp_bind_inv (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness
 /-! ## Derived rules -/
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ Ψ : Val → IProp GF} in
+@[rocq_alias wp_mono]
 theorem wp_mono :
     (∀ v, Φ v ⊢ Ψ v) → WP e @ s ; E {{ Φ }} ⊢ WP e @ s ; E {{ Ψ }} := by
   iintro %HΦ H
@@ -539,6 +554,7 @@ theorem wp_mono :
   exact fupd_intro
 
 variable {s₁ s₂ : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF} in
+@[rocq_alias wp_stuck_mono]
 theorem wp_stuck_mono :
     s₁ ≤ s₂ → WP e @ s₁; E {{ Φ }} ⊢ WP e @ s₂ ; E {{ Φ }} := by
   iintro %s₁s₂ Hwp
@@ -547,11 +563,13 @@ theorem wp_stuck_mono :
   exact fupd_intro
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF} in
+@[rocq_alias wp_stuck_weaken]
 theorem wp_stuck_weaken :
     WP e @ s; E {{ Φ }} ⊢ WP e @ E ?{{ Φ }} :=
    wp_stuck_mono (Stuckness.le_MaybeStuck)
 
 variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{Φ : Val → IProp GF} in
+@[rocq_alias wp_mask_mono]
 theorem wp_mask_mono : E₁ ⊆ E₂ → WP e @ s; E₁ {{ Φ }} ⊢ WP e @ s; E₂ {{ Φ }} := by
   iintro %E₁_E₂ Hwp
   iapply wp_strong_mono (Std.IsPreorder.le_refl s) E₁_E₂ $$ Hwp
@@ -562,18 +580,22 @@ theorem wp_mask_mono : E₁ ⊆ E₂ → WP e @ s; E₁ {{ Φ }} ⊢ WP e @ s; E
 #rocq_ignore wp_flip_mono' "No `Proper` typeclass in Lean"
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{v : Val}{Φ : Val → IProp GF} in
+@[rocq_alias wp_value_fupd]
 theorem wp_value_fupd : Language.IntoVal e v → WP e @ s; E {{ Φ }} ⊣⊢ |={E}=> Φ v
   | ⟨h⟩ => h ▸ wp_value_fupd'
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{v : Val}{Φ : Val → IProp GF} in
+@[rocq_alias wp_value']
 theorem wp_value' : Φ v ⊢ WP (v : Expr) @ s; E {{ Φ }} :=
   fupd_intro.trans wp_value_fupd'.2
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{v : Val}{Φ : Val → IProp GF} in
+@[rocq_alias wp_value]
 theorem wp_value : Language.IntoVal e v → Φ v ⊢ WP e @ s; E {{ Φ }}
   | ⟨h⟩ => h ▸ wp_value'
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF}{R : IProp GF} in
+@[rocq_alias wp_frame_l]
 theorem wp_frame_l : R ∗ WP e @ s; E {{ Φ }} ⊢ WP e @ s; E {{ v, R ∗ Φ v }} := by
   iintro ⟨_, H⟩
   iapply wp_strong_mono (Std.IsPreorder.le_refl s) (Std.LawfulSet.subset_refl) $$ H
@@ -582,6 +604,7 @@ theorem wp_frame_l : R ∗ WP e @ s; E {{ Φ }} ⊢ WP e @ s; E {{ v, R ∗ Φ v
   iapply fupd_intro
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF}{R : IProp GF} in
+@[rocq_alias wp_frame_r]
 theorem wp_frame_r : WP e @ s; E {{ Φ }} ∗ R ⊢ WP e @ s; E {{ v, R ∗ Φ v }} :=
   BI.sep_comm.1.trans wp_frame_l
 
@@ -597,6 +620,7 @@ variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val 
   describe this unusual resource flow, we use ordinary conjunction as
   a premise.
 -/
+@[rocq_alias wp_step_fupdN]
 theorem wp_step_fupdN {n : Nat} : toVal e = none → E₂ ⊆ E₁ →
     (∀ (σ : State) ns obs nt, ⊢@{IProp GF} stateInterp σ ns obs nt ={E₁,∅}=∗ ⌜n ≤ (ι.numLatersPerStep ns)+1⌝) →
     ((|={E₁\E₂,∅}=> |={∅}▷=>^[n] |={∅,E₁\E₂}=> P) ∗
@@ -619,6 +643,7 @@ theorem wp_step_fupdN {n : Nat} : toVal e = none → E₂ ⊆ E₁ →
   simp [Std.LawfulSet.diff_empty, ←Std.LawfulSet.diff_subset_decomp E₂E₁, fupd_intro]
 
 variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} in
+@[rocq_alias wp_step_fupd]
 theorem wp_step_fupd :
     toVal e = none → E₂ ⊆ E₁ →
     (|={E₁}[E₂]▷=> P) -∗ WP e @ s; E₂ {{ v, P ={E₁}=∗ Φ v }} -∗ WP e @ s; E₁ {{ Φ }} :=
@@ -635,6 +660,7 @@ theorem wp_step_fupd :
   iframe
 
 variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} {R : IProp GF} in
+@[rocq_alias wp_frame_step_l]
 theorem wp_frame_step_l : toVal e = none → E₂ ⊆ E₁ →
     (|={E₁}[E₂]▷=> R) ∗ WP e @ s; E₂ {{ Φ }} ⊢ WP e @ s; E₁ {{ v, R ∗ Φ v }} := by
   iintro %toVal_e %E₂E₁ ⟨Hu, Hwp⟩
@@ -643,11 +669,13 @@ theorem wp_frame_step_l : toVal e = none → E₂ ⊆ E₁ →
   iintro %x $ $
 
 variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{P : IProp GF}{Φ : Val → IProp GF} {R : IProp GF} in
+@[rocq_alias wp_frame_step_r]
 theorem wp_frame_step_r : toVal e = none → E₂ ⊆ E₁ →
     WP e @ s; E₂ {{ Φ }} ∗ (|={E₁}[E₂]▷=> R) ⊢ WP e @ s; E₁ {{ v, Φ v ∗ R }} :=
   (BI.sep_comm.1.trans <| wp_frame_step_l · · |>.trans <| wp_mono (fun _ => BI.sep_comm.1))
 
 variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{Φ : Val → IProp GF} {R : IProp GF} in
+@[rocq_alias wp_frame_step_l']
 theorem wp_frame_step_l' : toVal e = none → E₂ ⊆ E₁ →
     (▷ R) ∗ WP e @ s; E₂ {{ Φ }} ⊢ WP e @ s; E₁ {{ v, R ∗ Φ v }} := by
   iintro %toVal_e %E₂E₁ ⟨Hu, Hwp⟩
@@ -660,11 +688,13 @@ theorem wp_frame_step_l' : toVal e = none → E₂ ⊆ E₁ →
   exact BI.true_intro
 
 variable {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{Φ : Val → IProp GF} {R : IProp GF} in
+@[rocq_alias wp_frame_step_r']
 theorem wp_frame_step_r' : toVal e = none → E₂ ⊆ E₁ →
      WP e @ s; E₂ {{ Φ }} ∗ (▷ R) ⊢ WP e @ s; E₁ {{ v, Φ v ∗ R }} :=
   (BI.sep_comm.1.trans <| wp_frame_step_l' · · |>.trans <| wp_mono (fun _ => BI.sep_comm.1))
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ Ψ : Val → IProp GF} in
+@[rocq_alias wp_wand]
 theorem wp_wand :
     WP e @ s ; E {{ Φ }} ⊢ (∀ v, Φ v -∗ Ψ v) -∗ WP e @ s ; E {{ Ψ }} := by
   iintro Hwp H
@@ -674,16 +704,19 @@ theorem wp_wand :
   exact fupd_intro
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF} in
+@[rocq_alias wp_wand_l]
 theorem wp_wand_l :
     (∀ v, Φ v -∗ Ψ v) ∗ WP e @ s ; E {{ Φ }} ⊢ WP e @ s ; E {{ Ψ }} :=
   BI.wand_elim' wp_wand
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ : Val → IProp GF} in
+@[rocq_alias wp_wand_r]
 theorem wp_wand_r :
     WP e @ s ; E {{ Φ }} ∗ (∀ v, Φ v -∗ Ψ v) ⊢ WP e @ s ; E {{ Ψ }} :=
   BI.wand_elim wp_wand
 
 variable {s : Stuckness} {E : CoPset} {e : Expr}{Φ :Val → IProp GF}{R : IProp GF} in
+@[rocq_alias wp_frame_wand]
 theorem wp_frame_wand :
     R ⊢ WP e @ s; E {{ v, R -∗ Φ v }} -∗ WP e @ s; E {{ Φ }} := by
   iintro R Hwp
@@ -705,6 +738,7 @@ variable [ι : IrisGS_gen hlc Expr GF]
 
 variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ Ψ : Val → IProp GF} {P Q R : IProp GF}
 
+@[rocq_alias frame_wp]
 instance frameWp {p : Bool} [H : ∀ v, Frame p R (Φ v) (Ψ v)] :
     -- TODO: I didn't move over the `FrameInstantiateExistDisabled` constant. Ask if it's necessary.
     Frame p R (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Ψ }}) where
@@ -714,6 +748,7 @@ instance frameWp {p : Bool} [H : ∀ v, Frame p R (Φ v) (Ψ v)] :
     apply wp_mono
     apply H
 
+@[rocq_alias is_except_0_wp]
 instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
   is_except0 :=
     calc iprop(◇ _)
@@ -721,6 +756,7 @@ instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
       _ ⊢ |={E}=> _ := BIFUpdate.except0
       _ ⊢ WP e @ s ; E {{ Φ }} := fupd_wp
 
+@[rocq_alias elim_modal_fupd_wp]
 instance elimModalFupdWp p :
     ElimModal True p false iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
   elim_modal := by
@@ -730,17 +766,27 @@ instance elimModalFupdWp p :
     refine BIFUpdate.mono BI.wand_elim_r |>.trans ?_
     exact fupd_wp
 
+@[rocq_alias elim_modal_bupd_wp]
+instance elimModalBupdWp p :
+    ElimModal True p false iprop(|==> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
+  elim_modal := by
+    rintro ⟨⟩
+    refine BI.sep_mono (BI.intuitionisticallyIf_mono (BIUpdateFUpdate.fupd_of_bupd (E := E))) .rfl |>.trans ?_
+    apply elimModalFupdWp _ |>.elim_modal ⟨⟩
+
 /--
   Error message instance for non-mask-changing view shifts.  Also uses a slightly
   different error: we cannot apply `fupd_mask_subseteq` if `e` is not atomic, so
   we tell the user to first add a leading `fupd` and then change the mask of that.
 -/
+@[rocq_alias elim_modal_fupd_wp_wrong_mask]
 instance elimModalFupdWp_wrongMask :
     ElimModal (PMError "Goal and eliminated modality must have the same mask.
     Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
     p false iprop(|={E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
 
+@[rocq_alias elim_modal_fupd_wp_atomic]
 instance elimModalFupdWpAtomic :
     ElimModal (Language.Atomic ↑s e) p false iprop(|={E₁,E₂}=> P) P (WP e @ s ; E₁ {{ Φ }}) (WP e @ s ; E₂ {{ v, |={E₂,E₁}=> Φ v}}) where
   elim_modal := by
@@ -750,12 +796,16 @@ instance elimModalFupdWpAtomic :
     refine BIFUpdate.mono BI.wand_elim_r |>.trans ?_
     exact wp_atomic
 
+@[rocq_alias elim_modal_fupd_wp_atomic_wrong_mask]
 instance elimModalFupdWpAtomic_wrongMask :
     ElimModal (PMError "Goal and eliminated modality must have the same mask.
     Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
     p false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
 
+-- TODO: Implement these when `AddModal` and `ElimAcc` are added.
+
+-- @[rocq_alias add_modal_fupd_wp]
 -- instance addModalFupdWp :
 --     ProofMode.AddModal iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) where
 --   add_modal := by
@@ -763,6 +813,7 @@ instance elimModalFupdWpAtomic_wrongMask :
 --     refine BIFUpdate.mono BI.wand_elim_r |>.trans ?_
 --     exact fupd_wp
 
+-- @[rocq_alias elim_acc_wp_atomic]
 -- instance elimAccWpAtomic :
 --     ElimAcc (X := X) (Atomic ↑s e)
 --       (fupd E₁ E₂) (fupd E₂ E₁)
@@ -770,6 +821,7 @@ instance elimModalFupdWpAtomic_wrongMask :
 --       iprop(λ x ↦ WP e @ s ; E₂ {{ v, iprop(|={E₂}=> β x ∗ (γ x -∗? Φ v)) }}) where
 --     elim_acc := sorry
 
+-- @[rocq_alias elim_acc_wp_nonatomic]
 -- instance elimAccWpNonAtomic :
 --     ElimAcc (X := X) True
 --       (fupd E E) (fupd E E)

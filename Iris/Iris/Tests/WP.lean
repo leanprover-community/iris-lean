@@ -30,9 +30,9 @@ variable (Φ : Val → PROP)
 /-- info: WP e @ s ; E {{ Φ }} : PROP -/
 #guard_msgs in #check WP e @ s ; E {{ Φ }}
 /-- info: WP e @ E {{ Φ }} : PROP -/
-#guard_msgs in #check WP e @ E {{  Φ}}
+#guard_msgs in #check WP e @ E {{ Φ }}
 /-- info: WP e @ E ? {{ Φ }} : PROP -/
-#guard_msgs in #check WP e @ E ? {{  Φ}}
+#guard_msgs in #check WP e @ E ? {{ Φ }}
 /-- info: WP e {{ Φ }} : PROP -/
 #guard_msgs in #check WP e {{ Φ }}
 /-- info: WP e ? {{ Φ }} : PROP -/
@@ -41,9 +41,9 @@ variable (Φ : Val → PROP)
 /-- info: WP e @ s ; E [{ Φ }] : PROP -/
 #guard_msgs in #check WP e @ s ; E [{ Φ }]
 /-- info: WP e @ E [{ Φ }] : PROP -/
-#guard_msgs in #check WP e @ E [{  Φ}]
+#guard_msgs in #check WP e @ E [{ Φ }]
 /-- info: WP e @ E ? [{ Φ }] : PROP -/
-#guard_msgs in #check WP e @ E ? [{  Φ}]
+#guard_msgs in #check WP e @ E ? [{ Φ }]
 /-- info: WP e [{ Φ }] : PROP -/
 #guard_msgs in #check WP e [{ Φ }]
 /-- info: WP e ? [{ Φ }] : PROP -/
@@ -88,9 +88,9 @@ variable (Φ : PROP)
 /-- info: WP e @ s ; E [{ v, Φ }] : PROP -/
 #guard_msgs in #check WP e @ s ; E [{v,  Φ }]
 /-- info: WP e @ E [{ v, Φ }] : PROP -/
-#guard_msgs in #check WP e @ E [{ v,  Φ}]
+#guard_msgs in #check WP e @ E [{ v, Φ }]
 /-- info: WP e @ E ? [{ v, Φ }] : PROP -/
-#guard_msgs in #check WP e @ E ? [{ v,  Φ}]
+#guard_msgs in #check WP e @ E ? [{ v, Φ }]
 /-- info: WP e [{ v, Φ }] : PROP -/
 #guard_msgs in #check WP e [{v,  Φ }]
 /-- info: WP e ? [{ v, Φ }] : PROP -/
