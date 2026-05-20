@@ -2182,10 +2182,24 @@ example [BI PROP] {P1 P2 Q : PROP} :
   iapply H
   iexact HNew
 
-/-- Tests `icombine` for producing `emp` with zero propositions -/
-example [BI PROP] : ⊢ (emp : PROP) := by
-  icombine as H
-  iexact H
+/-- Tests `icombine` with zero/one hypothesis argument(s) -/
+example [BI PROP] {P : PROP} : ⊢ P -∗ P ∗ emp ∗ True ∗ True := by
+  iintro HP
+  -- Tests `icombine … as …` with no arguments: introduces `emp`
+  icombine as H1
+  -- Tests `icombine … gives …` with no arguments: introduces `True`
+  icombine gives H2
+  -- Tests `icombine … gives …` with one argument: introduces `True`
+  icombine HP gives H3
+  -- Tests `icombine … as …` with one argument: renames the hypothesis
+  icombine HP as HNew
+  isplitl
+  · iexact HNew
+  · isplitl
+    · iexact H1
+    · isplitl
+      · iexact H2
+      · iexact H3
 
 /-- Tests `icombine` for the proposition with three propositions with `□` -/
 example [BI PROP] {P1 P2 P3 Q : PROP} :

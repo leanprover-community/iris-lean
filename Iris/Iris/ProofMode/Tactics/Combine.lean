@@ -194,58 +194,22 @@ private def iCombineCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     ProofModeM (@CombineState u prop bi e goal) := do
   let checkHyp := fun ivar _ ivar' _ _ => return guard <| ivar' == ivar
   match ivars.reverse with
-  /-
-    Trivial case when no hypothesis is given as an argument for the tactic:
-    introduce `□ emp` for the `as` syntax and `□ True` for the `gives` syntax.
-  -/
   | [] =>
     return { newHyps := hyps, p := q(true), outAs := q(emp),
              pfAs := q(sep_emp.mpr.trans <| sep_mono_r intuitionistically_emp.mpr),
              outGives := some q(iprop(True)), pfGives := q(combine_gives_nil_singleton) }
-  /-
-    Trivial case when one hypothesis is given as an argument for the tactic:
-    introduce the combined hypothesis unchanged for the `as` syntax and
-    `□ True` for the `gives` syntax.
-  -/
-  | [i1] =>
-    let some (_, ⟨_, hyps1, _, out1, p1, _, pf1⟩) ←
-        hyps.removeG false <| checkHyp i1
-    | throwDuplicateSpatialHyp
-    return { newHyps := hyps1, p := p1, outAs := out1, pfAs := q($(pf1).mp),
-             outGives := some q(iprop(True)), pfGives := q(combine_gives_nil_singleton) }
-  /-
-    Non-trivial case when two or more hypotheses are given as arguments for
-    the tactic.
-  -/
-  | i1 :: i2 :: itail =>
+  | ivar :: ivars =>
     -- Apply removal of the hypotheses
-    let some (_, ⟨_, hyps1, _, out1, p1, _, pf1⟩) ← hyps.removeG false <| checkHyp i1
-    | throwDuplicateSpatialHyp
-    let some (_, ⟨e2, hyps2, _, out2, p2, _, pf2⟩) ← hyps1.removeG false <| checkHyp i2
+    let some (_, ⟨_, hyps1, _, out1, p1, _, pf1⟩) ← hyps.removeG false <| checkHyp ivar
     | throwDuplicateSpatialHyp
 
-    -- Search for the type class instance for the `as` syntax
-    let newOutAs ← mkFreshExprMVarQ _
-    let instAs ← ProofModeM.synthInstanceQ q(CombineSepAs $out2 $out1 $newOutAs)
-    let pfAs : Q($e ⊢ ($e2 ∗ □?($p1 && $p2) $newOutAs)) :=
-      q(combine_as_step $instAs $(pf1).mp $(pf2).mp)
-
-    -- Search for the type class instance for the `gives` syntax
-    let newOutGives ← mkFreshExprMVarQ _
-    let instGives ← ProofModeM.trySynthInstanceQ q(CombineSepGives $out2 $out1 $newOutGives)
-
-    -- Initialise the mutable `CombineState` instance with the first two hypotheses combined
+    -- Initialise the mutable `CombineState` instance
     let mut st : CombineState e goal :=
-      match instGives with
-      | none =>
-        { newHyps := hyps2, p := pConj p1 p2, outAs := newOutAs, pfAs,
-          outGives := none, pfGives := ⟨⟩ }
-      | some instGives =>
-        { newHyps := hyps2, p := pConj p1 p2, outAs := newOutAs, pfAs,
-          outGives := some newOutGives, pfGives := q(combine_gives_step $instGives $pf1 $pf2) }
+      { newHyps := hyps1, p := p1, outAs := out1, pfAs := q($(pf1).mp),
+        outGives := some q(iprop(True)), pfGives := q(combine_gives_nil_singleton) }
 
     -- Iteratively handle the remaining hypotheses that are given as tactic arguments
-    for i in itail do
+    for i in ivars do
       st ← st.combineProofModeHyp i
 
     return st
