@@ -733,8 +733,10 @@ theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr)
                          (stateI σ2 -∗ ∃ (E : CoPset), |={⊤,E}=> ⌜φ⌝))))
     (_hsteps : Relation.ReflTransGen Language.ErasedStep ([e1], σ1) (t2, σ2)) :
     φ :=
-  -- TODO: rewrite proof for new simple-stateI signature. With IrisGS_gen.ofSimple,
-  -- iG.stateInterp σ _ _ _ = stateI σ so the ns=0 vs n bridge becomes trivial.
+  -- TODO: same proof shell as wp_progress_gen (pure_soundness + step_fupdN_soundness_gen
+  -- + letI iG := ofSimple Hinv stateI forkPost (fun _ => 0)) but requires wptp_preservation
+  -- application + extracting stateI σ2 from result + applying Hφ to get ∃ E, |={⊤,E}=> ⌜φ⌝
+  -- + mask close. Significant proof body, deferred.
   sorry
 
 @[rocq_alias wp_invariance]
