@@ -53,6 +53,31 @@ private theorem step_fupdN_compose {Eo Ei : CoPset} {a b : Nat} {P Q : IProp GF}
   rw [Nat.repeat_add]
   exact step_fupdN_wand
 
+/-- Monotonicity of `step_fupd` (one-step). Derived from `BIFUpdate.mono` + `later_mono`. -/
+private theorem step_fupd_mono_lift {Eo Ei : CoPset} {P Q : IProp GF} (h : P ⊢ Q) :
+    iprop(|={Eo}[Ei]▷=> P) ⊢ iprop(|={Eo}[Ei]▷=> Q) :=
+  BIFUpdate.mono (later_mono (BIFUpdate.mono h))
+
+/-- Monotonicity of `step_fupdN` (n-fold). By induction on `n`. -/
+private theorem step_fupdN_mono {Eo Ei : CoPset} {n : Nat} {P Q : IProp GF} (h : P ⊢ Q) :
+    iprop(|={Eo}[Ei]▷=>^[n] P) ⊢ iprop(|={Eo}[Ei]▷=>^[n] Q) := by
+  induction n generalizing P Q with
+  | zero => exact h
+  | succ k IH => exact step_fupd_mono_lift (IH h)
+
+/-- Port of Coq `step_fupdN_S_fupd` from `iris/bi/updates.v`:
+    `(|={E}[∅]▷=>^[n+1] P) ⊣⊢ (|={E}[∅]▷=>^[n+1] |={E}=> P)`.
+    Lets us absorb an inner `|={E}=>` into a non-empty `step_fupdN` for free. -/
+private theorem step_fupdN_S_fupd {n : Nat} {E : CoPset} {P : IProp GF} :
+    iprop(|={E}[∅]▷=>^[n + 1] P) ⊣⊢ iprop(|={E}[∅]▷=>^[n + 1] |={E}=> P) := by
+  constructor
+  · induction n generalizing P with
+    | zero => exact step_fupd_fupd.1
+    | succ k IH => exact step_fupd_mono_lift IH
+  · induction n generalizing P with
+    | zero => exact step_fupd_fupd.2
+    | succ k IH => exact step_fupd_mono_lift IH
+
 @[rocq_alias steps_sum]
 def steps_sum (numLaters : Nat → Nat) : Nat → Nat → Nat
   | _,     0      => 0
@@ -307,17 +332,43 @@ theorem wptp_preservation (s : Stuckness) (n : Nat) (es1 es2 : List Expr)
     icases Hwptp_step with ⟨%nt'_step, Hwptp_step⟩
     imod Hwptp_step
     imodintro
+    -- Reshape goal: insert |={∅}=> between outer step_fupdN^[M+1] and inner step_fupdN^[k]
+    -- via step_fupdN_S_fupd (backward direction adds |={∅}=> for free under non-empty step_fupdN).
+    iapply step_fupdN_S_fupd.2
+    -- Now peel the outer step_fupdN^[M+1].
     iapply step_fupdN_wand $$ Hwptp_step
     iintro Hbody
-    -- The Coq proof uses `step_fupdN_S_fupd` to reshape the goal so that
-    -- `iIntros ">(...)"` can open `Hbody`'s `|={∅,⊤}=>` modality. That lemma
-    -- is not yet available in iris-lean master; the new flexible `imod`
-    -- (PR #398) and `iintro >X` likewise cannot open an inner fupd across
-    -- a leading `step_fupdN^[k]`. Real proof deferred until `step_fupdN_S_fupd`
-    -- (or an equivalent pattern) is in place.
-    -- Reference: iris/iris@d663f775:iris/program_logic/adequacy.v
-    --            (wptp_preservation, cons case).
-    sorry
+    -- Hbody : |={∅,⊤}=> stateInterp_mid ∗ wptp_mid
+    -- Goal  : |={∅}=> step_fupdN^[k] |={∅,⊤}=> ∃...
+    -- imod Hbody composes |={∅,⊤}=> (Hbody) with |={∅,∅}=> (goal outer) via fupd_elim.
+    imod Hbody with ⟨HSI, Hwptp_mid⟩
+    -- After imod, mask is ⊤; goal: |={⊤,∅}=> step_fupdN^[k] |={∅,⊤}=> ∃ nt_total, ...
+    -- Apply ih to recurse on inner NSteps. Provide explicit instantiation.
+    ihave Hih := ih (es1 := e_mid) (σ1 := σ_mid) (es2 := es2) (σ2 := σ2)
+                    (nt := nt + nt'_step) (κs' := κs')
+                    (Φs := Φs ++ List.replicate nt'_step iG.forkPost) (ns := ns + 1)
+                    rfl rfl $$ HSI Hcred2 Hwptp_mid
+    -- Hih : |={⊤,∅}=> step_fupdN^[k] |={∅,⊤}=> ∃ nt_inner', stateInterp ... ∗ wptp ...
+    -- where Φs structure is (Φs ++ replicate nt'_step) ++ replicate nt_inner', nt is (nt+nt'_step) + nt_inner'.
+    imod Hih
+    imodintro  -- consume goal's residual |={∅,∅}=> (no mask change, trivially closes)
+    iapply step_fupdN_wand $$ Hih
+    iintro >⟨%nt_inner', HSI', Hwptp'⟩
+    -- Mask ⊤; goal: ∃ nt_total, ...
+    iexists (nt'_step + nt_inner')
+    -- Bridge HSI' / Hwptp' shapes to goal via Nat.add_assoc + List.replicate_add + List.append_assoc.
+    have ns_eq : n_inner + 1 + ns = n_inner + (ns + 1) := by omega
+    have nt_eq : nt + (nt'_step + nt_inner') = (nt + nt'_step) + nt_inner' :=
+      (Nat.add_assoc _ _ _).symm
+    have rep_split : List.replicate (nt'_step + nt_inner') iG.forkPost =
+        List.replicate nt'_step iG.forkPost ++ List.replicate nt_inner' iG.forkPost :=
+      (List.replicate_append_replicate ..).symm
+    have phis_eq : Φs ++ List.replicate (nt'_step + nt_inner') iG.forkPost =
+        (Φs ++ List.replicate nt'_step iG.forkPost) ++ List.replicate nt_inner' iG.forkPost := by
+      rw [rep_split, ← List.append_assoc]
+    rw [ns_eq, nt_eq, phis_eq]
+    iframe HSI'
+    iexact Hwptp'
 
 @[rocq_alias wptp_postconditions]
 theorem wptp_postconditions (Φs : List (Val → IProp GF)) (κs' : List Obs)
