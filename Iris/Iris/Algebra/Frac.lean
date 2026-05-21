@@ -7,6 +7,7 @@ module
 
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
+public import Iris.Algebra.IsOp
 
 /-!
 # The Frac CMRA
@@ -128,6 +129,10 @@ class UFraction (α : Type _) extends Fraction α, One α where
   -- existence of a Whole element.
   -- whole_iff_one {a : α} : Fraction.Whole a ↔ a = 1
   one_whole : Fraction.Whole (1 : α)
+
+@[rocq_alias frac_is_op]
+instance isOp_frac [CMRA F] {q1 q2 : F} : IsOp (op q1 q2) q1 q2 where
+  is_op := .rfl
 
 section NumericFraction
 
