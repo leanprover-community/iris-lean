@@ -18,8 +18,7 @@ section IsOp
 
 
 /--
-  A type class for splitting `a` into `b1` and `b2`, as well as to merge `b1`
-  and `b2` into `a`.
+  A type class for splitting `a` into `b1` and `b2`.
 -/
 @[rocq_alias IsOp]
 class IsOp [CMRA α] (a : outParam α) (b1 b2 : α) where
@@ -28,6 +27,12 @@ class IsOp [CMRA α] (a : outParam α) (b1 b2 : α) where
 @[rocq_alias is_op_op]
 instance (priority := default + 100) isOp_op [CMRA α] (a b : α) : IsOp (a • b) a b where
   is_op := .rfl
+
+/--
+  A type class to merge `b1` and `b2` into `a`.
+-/
+class IsOpMerge [CMRA α] (a : α) (b1 b2 : outParam α) where
+  is_op : a ≡ b1 • b2
 
 #rocq_ignore IsOp' "separate type class is no longer necessary"
 
