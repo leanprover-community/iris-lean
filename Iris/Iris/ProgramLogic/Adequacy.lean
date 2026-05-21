@@ -550,13 +550,22 @@ theorem wptp_progress (Φs : List (Val → IProp GF)) (κs' : List Obs)
                   ((Φs ++ List.replicate nt'' iG.forkPost)[i]) $$ HSI Hwp_e2
   iexact Hres
 
+/-- Bridge for `wp_progress_gen`: lifts `step_fupdN^[k] |={∅}=> ⌜φ⌝` (wptp_progress
+shape) to `step_fupdN^[k+1] ⌜φ⌝` (step_fupdN_soundness shape) under outer
+`|={⊤,∅}=>`. Uses `step_fupdN_le` (k ≤ k+1) + `step_fupdN_S_fupd.2` (strip
+inner `|={∅}=>`). Extracted to a separate theorem to avoid `whnf` heartbeat
+timeout inside the main proof. -/
+private theorem progress_widen_bridge {k : Nat} {φ : Prop} :
+    ⊢@{IProp GF} iprop(
+      (|={⊤,∅}=> |={∅}[∅]▷=>^[k] |={∅}=> ⌜φ⌝) -∗
+      |={⊤,∅}=> |={∅}[∅]▷=>^[k + 1] ⌜φ⌝) :=
+  wand_intro (emp_sep.1.trans (BIFUpdate.mono
+    ((step_fupdN_le (Nat.le_succ _) LawfulSet.subset_refl).trans step_fupdN_S_fupd.2)))
+
 /-- Lean port of Coq Iris `wp_progress_gen`: given a user-supplied WP-existence
 hypothesis that, in the presence of any allocated `InvGS_gen`, builds a complete
-`IrisGS_gen` instance and proves `stateI σ1 0 κs 0 ∗ wptp s es Φs`, conclude
-that any reachable thread `e2 ∈ t2` after `n` steps is not stuck. The
-`IrisGS_gen` fields (stateInterp / forkPost / monotonicity) are supplied
-as ordinary Pi arguments rather than inside the Iris ∃ as in Coq, since
-Lean's `letI` cannot be introduced inside `iprop(...)` syntax. -/
+`IrisGS_gen` instance and proves `stateI σ1 ∗ wptp NotStuck es Φs`, conclude
+that any reachable thread `e2 ∈ t2` after `n` steps is not stuck. -/
 @[rocq_alias wp_progress_gen]
 theorem wp_progress_gen [InvGpreS GF]
     (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
@@ -570,12 +579,27 @@ theorem wp_progress_gen [InvGpreS GF]
             stateI σ1 ∗ wptp Stuckness.NotStuck es Φs)))
     (_hsteps : Language.NSteps n (es, σ1) κs (t2, σ2))
     (_hel : e2 ∈ t2) :
-    PrimStep.NotStuck (e2, σ2) :=
-  -- TODO: proof skeleton done (pure_soundness + step_fupdN_soundness_gen +
-  -- letI iG via ofSimple + apply wptp_progress) but iexact fails on
-  -- `step_fupdN^[k] |={∅}=> ⌜NotStuck⌝` vs `step_fupdN^[k] ⌜NotStuck⌝`
-  -- (inner |={∅}=> absorption). Need fupd_pure_intro / except_0 strip.
-  sorry
+    PrimStep.NotStuck (e2, σ2) := by
+  apply pure_soundness (PROP := IProp GF)
+  refine step_fupdN_soundness_gen
+    (n := steps_sum numLaters 0 n + 1)
+    (m := steps_sum numLaters 0 n + 1) hlc ?_
+  intro Hinv
+  iintro Hcr
+  have splitL : ⊢@{IProp GF} iprop(£ (steps_sum numLaters 0 n + 1) -∗
+      £ (steps_sum numLaters 0 n) ∗ £ 1) :=
+    wand_intro (emp_sep.1.trans lc_split.mp)
+  ihave Hcr := splitL $$ Hcr
+  icases Hcr with ⟨Hcr_k, _Hcr_1⟩
+  letI iG : IrisGS_gen hlc Expr GF :=
+    IrisGS_gen.ofSimple Hinv (fun _ => iprop(emp)) (fun _ => iprop(True)) numLaters
+  ihave Hopen := @_Hwp Hinv (fun _ => iprop(emp)) (fun _ => iprop(True))
+  imod Hopen with ⟨%Φs, _Hemp, Hwptp⟩
+  ihave Hres :=
+    (@wptp_progress hlc Expr State Obs Val _ GF iG Φs [] n es t2 κs σ1 σ2 0 0 e2 _hsteps _hel)
+      $$ _Hemp Hcr_k Hwptp
+  ihave Hbridged := progress_widen_bridge $$ Hres
+  iexact Hbridged
 
 /-- Bridge: fork-post block (`replicate nt' iG.forkPost`) implies the
 `filterMap`-shaped block required by `wp_strong_adequacy_gen`'s continuation.
