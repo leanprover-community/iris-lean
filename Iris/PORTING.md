@@ -87,14 +87,14 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Unit
   - [x] Emtpy
   - [x] Product
-  - [ ] Sum
+  - [x] Sum
   - [x] Discrete
   - [x] Leibniz
   - [x] Option
   - [x] Later
   - [x] Discrete functions
   - [x] Isomorphisms
-  - [ ] Sigma 
+  - [x] Sigma 
 - [ ] `proofmode_classes.v`
   - [ ] IsOp
 - [ ] `reservation_map.v`
@@ -259,7 +259,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] Fupd mask change laws
   - [ ] Fupd step derived rules 
   - [ ] Fupd plainly general laws
-- [ ] `weakestpre.v`
+- [x] `weakestpre.v`
 - [ ] `lib/atomic.v`
 - [ ] `lib/core.v`
 - [ ] `lib/counterexamples.v`
@@ -289,3 +289,4 @@ See proofmode at https://leanprover-community.github.io/iris-lean/
   - [x] `language.v`
   - [x] `ectx_language.v`
   - [x] `ectxi_language.v`
+  - [x] `weakestpre.v`

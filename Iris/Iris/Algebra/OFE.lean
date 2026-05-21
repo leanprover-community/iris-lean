@@ -275,6 +275,13 @@ infixr:25 " -c> " => ContractiveHom
 instance [OFE α] [OFE β] : CoeFun (α -c> β) (fun _ => α → β) := ⟨fun x => x.toHom.f⟩
 instance [OFE α] [OFE β] (f : α -c> β) : Contractive f := f.contractive
 
+def _root_.Function.toContractiveHom (f : α → β) [OFE α] [OFE β] [ι : OFE.Contractive f] : α -c> β where
+  f := f
+  contractive := ι
+
+@[simp] theorem _root_.Function.toContractiveHom_apply {f : α → β} [OFE α] [OFE β] [ι : OFE.Contractive f] {x} :
+  f.toContractiveHom x = f x := by rfl
+
 theorem InvImage.equivalence {α : Sort u} {β : Sort v}
     {r : β → β → Prop} {f : α → β} (H : Equivalence r) : Equivalence (InvImage r f) where
   refl _ := H.refl _
@@ -1770,4 +1777,3 @@ theorem OFE.cast_dist [Iα : OFE α] [Iβ : OFE β] {x y : α}
     (Ht : α = β) (HIt : Iα = Ht ▸ Iβ)  (H : x ≡{n}≡ y) :
     (Ht ▸ x) ≡{n}≡ (Ht ▸ y) := by
   subst Ht; subst HIt; exact H
-
