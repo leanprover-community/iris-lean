@@ -732,12 +732,70 @@ theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr)
         (⊢ iprop(|={⊤}=> stateI σ1 ∗ WP e1 @ s ; ⊤ {{ v, iprop(True) }} ∗
                          (stateI σ2 -∗ ∃ (E : CoPset), |={⊤,E}=> ⌜φ⌝))))
     (_hsteps : Relation.ReflTransGen Language.ErasedStep ([e1], σ1) (t2, σ2)) :
-    φ :=
-  -- TODO: same proof shell as wp_progress_gen (pure_soundness + step_fupdN_soundness_gen
-  -- + letI iG := ofSimple Hinv stateI forkPost (fun _ => 0)) but requires wptp_preservation
-  -- application + extracting stateI σ2 from result + applying Hφ to get ∃ E, |={⊤,E}=> ⌜φ⌝
-  -- + mask close. Significant proof body, deferred.
-  sorry
+    φ := by
+  -- Coerce ReflTransGen ErasedStep into NSteps via erasedStep_nSteps.
+  obtain ⟨n, κs, hsteps⟩ := (Language.erasedStep_nSteps _ _).mp _hsteps
+  -- Skeleton parallels `wp_progress_gen`: `pure_soundness` + `step_fupdN_soundness_gen`
+  -- with `k+1` budget (`k := steps_sum (fun _ => 0) 0 n`). For invariance we route
+  -- through `wptp_preservation` to extract `stateI σ2` and then apply user's `Hφ`.
+  apply pure_soundness (PROP := IProp GF)
+  refine step_fupdN_soundness_gen
+    (n := steps_sum (fun _ => 0) 0 n + 1)
+    (m := steps_sum (fun _ => 0) 0 n + 1) hlc ?_
+  intro Hinv
+  iintro Hcr
+  -- Split the `£ (k+1)` credit into `£ k` (for wptp_preservation) and unused `£ 1`.
+  have splitL : ⊢@{IProp GF} iprop(£ (steps_sum (fun _ => 0) 0 n + 1) -∗
+      £ (steps_sum (fun _ => 0) 0 n) ∗ £ 1) :=
+    wand_intro (emp_sep.1.trans lc_split.mp)
+  ihave Hcr := splitL $$ Hcr
+  icases Hcr with ⟨Hcr_k, _Hcr_1⟩
+  -- Build the `IrisGS_gen` instance with the simple constant-emp stateI.
+  letI iG : IrisGS_gen hlc Expr GF :=
+    IrisGS_gen.ofSimple Hinv (fun _ => iprop(emp)) (fun _ => iprop(True)) (fun _ => 0)
+  -- Specialize user's hypothesis at stateI := (fun _ => emp), forkPost := (fun _ => True).
+  ihave Hopen := @_Hwp Hinv κs (fun _ => iprop(emp)) (fun _ => iprop(True))
+  imod Hopen with ⟨_Hemp, Hwp_e1, Hφ⟩
+  -- Convert WP e1 to a singleton wptp via bigSepL2_singleton (.2 direction).
+  have wpe1_to_wptp : ⊢@{IProp GF} iprop(
+      WP e1 @ s ; ⊤ {{ v, iprop(True) }} -∗
+      @wptp hlc Expr State Obs Val _ GF iG s [e1] [fun (_ : Val) => iprop(True)]) :=
+    wand_intro (emp_sep.1.trans (BI.BigSepL2.bigSepL2_singleton
+      (Φ := fun (_ : Nat) (e : Expr) (Φ : Val → IProp GF) =>
+              iprop(Wp.wp (PROP := IProp GF) s ⊤ e Φ))).2)
+  ihave Hwptp := wpe1_to_wptp $$ Hwp_e1
+  -- Apply `wptp_preservation` with `κs' := []`. Pattern matches `wptp_progress`.
+  ihave Hpres :=
+    (@wptp_preservation hlc Expr State Obs Val _ GF iG s n [e1] t2 κs []
+        σ1 σ2 0 [fun (_ : Val) => iprop(True)] 0 hsteps)
+      $$ _Hemp Hcr_k Hwptp
+  -- Hpres : |={⊤,∅}=> |={∅}▷=>^[k] |={∅,⊤}=> ∃ nt', stateInterp σ2 ... ∗ wptp ...
+  -- Goal  : |={⊤,∅}=> |={∅}▷=>^[k+1] ⌜φ⌝
+  -- Strategy: open outer |={⊤,∅}=>, then use `step_fupdN_compose` to combine
+  -- the k-prefix from Hpres with a 1-step wand mapping the |={∅,⊤}=> ∃-body to
+  -- step_fupd ⌜φ⌝ (via Hφ + mask closures). The inner wand body is:
+  --   |={∅,⊤}=> ∃ nt', emp ∗ wptp ...  ⊢  |={∅,∅}=> ▷ |={∅,∅}=> ⌜φ⌝
+  --   (open at ⊤, apply Hφ to emp, destructure ∃E, open Hcl at E, close).
+  imod Hpres
+  imodintro
+  iapply step_fupdN_compose $$ Hpres
+  iintro Hinner
+  -- Reduce `Nat.repeat (...) 1 ⌜φ⌝` to `step_fupd ⌜φ⌝ = |={∅,∅}=> ▷ |={∅,∅}=> ⌜φ⌝`,
+  -- exposing the fupd structure required by `imod`'s ElimModal lookup.
+  simp only [Nat.repeat]
+  imod Hinner with ⟨%_nt', HSI, _Hwptp⟩
+  -- HSI : stateInterp σ2 (n+0) [] (0+_nt') ≡ emp by `iG := ofSimple ...` reducibility.
+  -- Apply user's Hφ : emp -∗ ∃ E, |={⊤,E}=> ⌜φ⌝ to HSI.
+  ihave Hex := Hφ $$ HSI
+  icases Hex with ⟨%E, Hcl⟩
+  imod Hcl with %hφ
+  -- hφ : φ (pure); goal: |={E,∅}=> ▷ |={∅,∅}=> ⌜φ⌝. Close mask via empty_subset,
+  -- then introduce later + inner fupd_intro on top of `⌜φ⌝`.
+  iapply (fupd_mask_intro_discard (E1 := E) (E2 := ∅) empty_subset)
+  iapply later_intro
+  iapply fupd_intro
+  ipure_intro
+  exact hφ
 
 @[rocq_alias wp_invariance]
 def wp_invariance : True := True.intro
