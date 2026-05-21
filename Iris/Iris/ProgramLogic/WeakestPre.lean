@@ -324,8 +324,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
   icases Hc with ⟨Hc,Hone⟩
   ihave Hc := lc_weaken _ (Htri m k) $$ Hc
   icases lc_split $$ Hc with ⟨Hm, Hk⟩
-  -- TODO: Redo with `icombine` when available
-  ihave Hm := lc_split.mpr $$ [$Hm $Hone]
+  icombine Hm Hone as Hm
   dsimp only [Nat.repeat]
   ihave Hwp := Hwp $$ [] [Hm]
   · ipure_intro; assumption
