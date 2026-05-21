@@ -83,6 +83,22 @@ def steps_sum (numLaters : Nat → Nat) : Nat → Nat → Nat
   | _,     0      => 0
   | start, n + 1  => numLaters start + 1 + steps_sum numLaters (start + 1) n
 
+/-- Build an `IrisGS_gen` instance from an `InvGS_gen` plus a simple stateI
+that ignores ns/obs/nt — matches Coq's `IrisG Hinv (λ σ _ _ _, stateI σ)
+fork_post (λ _, 0) (λ _ _ _ _, fupd_intro _ _)` construction used in
+`wp_adequacy_gen` / `wp_invariance_gen`. -/
+private def IrisGS_gen.ofSimple {hlc : Bool} {Expr State Obs Val : Type _}
+    [Language Expr State Obs Val] {GF : BundledGFunctors}
+    (Hinv : InvGS_gen hlc GF)
+    (stateI : State → IProp GF) (forkPost : Val → IProp GF) :
+    IrisGS_gen hlc Expr GF :=
+  { toStateInterp := { stateInterp := fun σ _ _ _ => stateI σ }
+    toInvGS_gen := Hinv
+    numLatersPerStep := fun _ => 0
+    forkPost := forkPost
+    stateInterp_mono := fun _ _ _ _ => fupd_intro }
+
+
 @[rocq_alias wp_step]
 theorem wp_step (s : Stuckness) (e1 : Expr) (σ1 : State)
     (ns : Nat) (κ κs : List Obs) (e2 : Expr) (σ2 : State) (efs : List Expr) (nt : Nat)
@@ -580,7 +596,11 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
       (m := steps_sum iG.numLatersPerStep 0 n) hlc ?_
   intro Hinv
   iintro Hcr
-  ihave HwpOpen := @_Hwp Hinv iG
+  -- Rebuild iG so its `InvGS_gen` field equals the freshly allocated `Hinv`.
+  -- This makes `iGh.toLcGS = Hinv.toLcGS`, so `wptp_postconditions` / `wptp_progress`
+  -- (which use the local iG's LcGS for `£`) see the same LcGS instance as `Hcr`.
+  letI iGh : IrisGS_gen hlc Expr GF := { iG with toInvGS_gen := Hinv }
+  ihave HwpOpen := @_Hwp Hinv iGh
   imod HwpOpen with ⟨%Φs, HSI, Hwptp, Hφ⟩
   have lenW : ⊢@{IProp GF} iprop(
       ([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }}) -∗ ⌜es.length = Φs.length⌝) :=
@@ -596,13 +616,14 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
         (m := steps_sum iG.numLatersPerStep 0 n) hlc ?_
     intro Hinv'
     iintro Hcr'
-    ihave HwpOpen' := @_Hwp Hinv' iG
+    letI iGh' : IrisGS_gen hlc Expr GF := { iG with toInvGS_gen := Hinv' }
+    ihave HwpOpen' := @_Hwp Hinv' iGh'
     imod HwpOpen' with ⟨%Φs', HSI', Hwptp', _Hφ'⟩
     have wrap' : ⊢@{IProp GF} iprop(
         stateInterp σ1 0 κs 0 -∗ stateInterp σ1 0 (κs ++ []) 0) := by
       rw [List.append_nil]; exact BI.wand_intro BI.emp_sep.1
     ihave HSI' := wrap' $$ HSI'
-    ihave Hprog := wptp_progress Φs' [] n es t2 κs σ1 σ2 0 0 e2 _hsteps hel
+    ihave Hprog := wptp_progress (iG := iGh') Φs' [] n es t2 κs σ1 σ2 0 0 e2 _hsteps hel
                      $$ HSI' Hcr' Hwptp'
     imod Hprog
     imodintro
@@ -614,7 +635,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
       stateInterp σ1 0 κs 0 -∗ stateInterp σ1 0 (κs ++ []) 0) := by
     rw [List.append_nil]; exact BI.wand_intro BI.emp_sep.1
   ihave HSI := wrap $$ HSI
-  ihave Hpost := wptp_postconditions Φs [] s n es t2 κs σ1 σ2 0 0 _hsteps
+  ihave Hpost := wptp_postconditions (iG := iGh) Φs [] s n es t2 κs σ1 σ2 0 0 _hsteps
                    $$ HSI Hcr Hwptp
   imod Hpost
   imodintro
@@ -622,11 +643,11 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
   iintro Hpost
   imod Hpost with ⟨%nt', HSI', Hfrom⟩
   have splitW : ⊢@{IProp GF} iprop(
-      ([∗list] e;Φ ∈ t2;Φs ++ List.replicate nt' iG.forkPost,
+      ([∗list] e;Φ ∈ t2;Φs ++ List.replicate nt' iGh.forkPost,
          fromOptionVal (GF := GF) e Φ) -∗
       ∃ (es' t2' : List Expr), ⌜t2 = es' ++ t2'⌝ ∧
         (([∗list] e;Φ ∈ es';Φs, fromOptionVal (GF := GF) e Φ) ∗
-         ([∗list] e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+         ([∗list] e;Φ ∈ t2';List.replicate nt' iGh.forkPost,
             fromOptionVal (GF := GF) e Φ))) :=
     BI.wand_intro (BI.emp_sep.1.trans BI.BigSepL2.bigSepL2_app_inv_right)
   ihave Hsplit := splitW $$ Hfrom
@@ -637,9 +658,9 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
     BI.wand_intro (BI.emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
   ihave %hlen_esPhi := lenES $$ Hes'
   have lenT : ⊢@{IProp GF} iprop(
-      ([∗list] e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+      ([∗list] e;Φ ∈ t2';List.replicate nt' iGh.forkPost,
          fromOptionVal (GF := GF) e Φ) -∗
-      ⌜t2'.length = (List.replicate nt' iG.forkPost).length⌝) :=
+      ⌜t2'.length = (List.replicate nt' iGh.forkPost).length⌝) :=
     BI.wand_intro (BI.emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
   ihave %hlen_t2 := lenT $$ Ht2'
   rw [List.length_replicate] at hlen_t2
@@ -652,10 +673,11 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
     · omega
   rw [hSI_eq] at HSI'
   have forkW : ⊢@{IProp GF} iprop(
-      ([∗list] e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+      ([∗list] e;Φ ∈ t2';List.replicate nt' iGh.forkPost,
          fromOptionVal (GF := GF) e Φ) -∗
-      ([∗list] v ∈ List.filterMap ToVal.toVal t2', iG.forkPost v)) :=
-    BI.wand_intro (BI.emp_sep.1.trans (fork_block_to_filterMap t2' nt' hlen_t2))
+      ([∗list] v ∈ List.filterMap ToVal.toVal t2', iGh.forkPost v)) :=
+    BI.wand_intro (BI.emp_sep.1.trans
+      (fork_block_to_filterMap (iG := iGh) t2' nt' hlen_t2))
   ihave Hforks := forkW $$ Ht2'
   iapply Hφ $$ %es' %t2' %ht2eq %hlen_eq %hNS HSI' Hes' Hforks
 
@@ -725,7 +747,7 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State)
             (κs : List Obs),
         ⊢ iprop(|={⊤}=> iG.stateInterp σ 0 κs 0 ∗ WP e @ s ; ⊤ {{ v, ⌜φ v⌝ }})) :
     adequate s e σ (fun v _ => φ v) :=
-  -- TODO: agent #3 hit fromOptionVal/match-form ispecialize blocker. Defer.
+  -- TODO: Agent #3 hit match aux-def blocker (same as Group A wptp_postconditions).
   sorry
 
 @[rocq_alias wp_adequacy]
