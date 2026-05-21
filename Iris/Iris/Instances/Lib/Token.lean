@@ -19,8 +19,6 @@ open BI CMRA Excl OFE UPred IProp Std ProofMode
 This library provides assertions that represent "unique tokens".
 The `token γ` assertion provides ownership of the token named `γ`,
 and the key lemma `token_exclusive` proves only one token exists.
-
-FIXME: missing token_combine_gives
 -/
 
 abbrev TokenF : COFE.OFunctorPre := constOF (Excl Unit)
