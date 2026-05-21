@@ -219,22 +219,16 @@ theorem frag_op_valid {q1 q2 : Frac F} {a b : A} :
 /-! ## IsOp type class instances -/
 
 @[rocq_alias frac_auth_is_op]
-instance isOp_frac_auth {q q1 q2 : Frac F} {a a1 a2 : A}
+instance isOp_frac_auth {q q1 q2 : Frac F} {a1 a2 : A} {a : outParam A}
     [h1 : IsOp q q1 q2] [h2 : IsOp a a1 a2] :
-    IsOp' (◯F{q} a) (◯F{q1} a1) (◯F{q2} a2) where
-  is_op' := by
-    repeat constructor
-    apply h1.is_op
-    apply h2.is_op
+    IsOp (◯F{q} a) (◯F{q1} a1) (◯F{q2} a2) where
+  is_op := ⟨⟨⟩, ⟨h1.is_op, h2.is_op⟩⟩
 
 @[rocq_alias frac_auth_is_op_core_id]
 instance isOp_frac_auth_core_id {q q1 q2 : Frac F} {a : A}
     [h1 : CoreId a] [h2 : IsOp q q1 q2] :
-    IsOp' (◯F{q} a) (◯F{q1} a) (◯F{q2} a) where
-  is_op' := by
-    repeat constructor
-    apply h2.is_op
-    apply (op_self a).symm
+    IsOp (◯F{q} a) (◯F{q1} a) (◯F{q2} a) where
+  is_op := ⟨⟨⟩, ⟨h2.is_op, (op_self a).symm⟩⟩
 
 /-! ## Updates -/
 
