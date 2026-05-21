@@ -31,7 +31,7 @@ This was not a problem in Iris Rocq becuse of canonical structures.
 In Iris Lean, we instead fix our choice of `State` from the choice
 of `Expr`, so `Expr` cannot be inferred from `State` instead.
 -/
-class StateInterp (State : semiOutParam $ Type _) (Obs : outParam $ Type _) (GF : BundledGFunctors)
+class StateInterp (State : Type _) (Obs : outParam $ Type _) (GF : BundledGFunctors)
   where
     /-- Interpretation of a state in a language model. Takes a state,
     number of steps, list of observations prior to the state, and number of

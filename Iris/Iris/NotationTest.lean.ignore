@@ -1,0 +1,118 @@
+import Lean
+-- import Lean.NotationExtra
+
+class BIBase (PROP : Type u) where
+  Entails : PROP → PROP → Prop
+  emp : PROP
+  pure : Prop → PROP
+  and : PROP → PROP → PROP
+  or : PROP → PROP → PROP
+  imp : PROP → PROP → PROP
+  sForall : (PROP → Prop) → PROP
+  sExists : (PROP → Prop) → PROP
+  sep : PROP → PROP → PROP
+  wand : PROP → PROP → PROP
+  persistently : PROP → PROP
+  later : PROP → PROP
+
+namespace BIBase
+
+def «forall» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sForall fun p => ∃ a, P a = p
+def «exists» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sExists fun p => ∃ a, P a = p
+
+end BIBase
+
+-- We introduce a new category merely so we can write `iprop => term` macros; as we want
+-- iprop syntax to be embeddable arbitrarily into `term`, all actual syntax must be defined in the
+-- latter category as before.
+declare_syntax_cat iprop
+
+syntax term : iprop
+syntax "iprop(" iprop:min ")" : term
+
+macro_rules
+  | `(iprop| $P:ident) => `($P)
+macro_rules
+  | `(iprop| ($P:term)) => `(iprop($P:term))
+
+/-- Embedding of pure Lean proposition as separation logic proposition. -/
+syntax "⌜" term "⌝" : iprop
+/-- Separating conjunction. -/
+syntax:35 iprop:36 " ∗ " iprop:35 : iprop
+/-- Separating implication. -/
+syntax:25 iprop:26 " -∗ " iprop:25 : iprop
+/-- Persistency modality. `persistently` is a primitive of BI. -/
+syntax:max "<pers> " iprop:40 : iprop
+/-- Later modality. `later` is a primitive of BI. -/
+syntax:max "▷ " iprop:40 : iprop
+
+/-- Bidirectional implication on separation logic propositions. -/
+syntax:27 iprop:28 " ↔ " iprop:28 : iprop
+/-- Bidrectional separating implication on separation logic propositions. -/
+syntax:27 iprop:28 " ∗-∗ " iprop:28 : iprop
+
+open Lean in
+/-- Existential quantification on separation logic propositions. -/
+macro (name := ipropExists) "∃" xs:explicitBinders ", " b:iprop : iprop => do
+  return ⟨← expandExplicitBinders ``BIBase.exists xs b⟩
+
+-- `iprop` syntax interpretation
+/-- The empty predicate of a BI logic -/
+macro_rules
+  | `(iprop| emp)       => ``(BIBase.emp)
+/-- A pure predicate of a BI logic -/
+macro_rules
+  | `(iprop| ⌜$φ⌝)      => ``(BIBase.pure $φ)
+/-- A conjunction of a BI logic -/
+macro_rules
+  | `(iprop| $P:term ∧ $Q)   => ``(BIBase.and iprop($P:term) iprop($Q:term))
+/-- A disjunction of a BI logic -/
+macro_rules
+  | `(iprop| $P:term ∨ $Q)   => ``(BIBase.or iprop($P:term) iprop($Q:term))
+/-- An implication of a BI logic -/
+macro_rules
+  | `(iprop| $P:term → $Q)   => ``(BIBase.imp iprop($P:term) iprop($Q:term))
+/-- An existential quantifier over a predicate of a BI logic -/
+macro_rules
+  | `(ipropExists| ∃ $xs, $Ψ) => do Lean.expandExplicitBinders ``BIBase.exists xs (← ``(iprop($Ψ)))
+/-- A separating conjunction of a BI logic -/
+macro_rules
+  | `(iprop| $P:iprop ∗ $Q:iprop)   => ``(BIBase.sep iprop($P) iprop($Q))
+/-- A separating implication of a BI logic -/
+macro_rules
+  | `(iprop| $P -∗ $Q)  => ``(0)
+/-- The persistant modality of a BI logic -/
+macro_rules
+  | `(iprop| <pers> $P) => ``(BIBase.persistently iprop($P))
+/-- The later modality of a BI logic -/
+macro_rules
+  | `(iprop| ▷ $P)      => ``(BIBase.later iprop($P))
+
+elab_rules : term
+  | `(iprop($P:term)) =>
+    Lean.Elab.Term.elabTerm P .none
+
+-- open Lean Elab in
+-- elab_rules : term
+--   | `(iprop($P)) => do
+--     let env ← getEnv
+--     -- Drive step-wise macro elaboration ourselves so we can get access to the name of the unfolded
+--     -- macro and create info trees per macro; like `elabTermAux` except for `PTerm` below.
+--     let result ← match (← liftMacroM (expandMacroImpl? env P)) with
+--     | some (decl, stxNew?) =>
+--       let P' ← liftMacroM <| liftExcept stxNew?
+--       -- NOTE: `P` itself will have synthetic source info after the first expansion because it is
+--       -- a syntax node representing the `term : iprop` embedding created by the RHS of each macro
+--       -- rule. Its only child, the `term` node, is the one transferred from the LHS, so we should
+--       -- use it in the info tree nodes to get the correct connection to the original source code.
+--       let PTerm := P.raw.getArg 0
+--       Term.withTermInfoContext' decl PTerm do
+--         withMacroExpansionInfo PTerm P' do
+--           Term.elabTerm P' none
+--     | none => throwUnsupportedSyntax
+
+-- Go-to-definition will now correctly jump to each of the three macro rules
+variable [BIBase Nat](A B C : Nat)
+set_option trace.Elab.info true in
+#check iprop(A -∗ B)
+#check iprop((A -∗ B) → C)
