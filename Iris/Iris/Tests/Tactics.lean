@@ -373,6 +373,7 @@ P : PROP
 -/
 #guard_msgs in
 example [BI PROP] (P : PROP) {x : Nat} : ⊢ P := by
+  irevert %x
 
 /- Tests `irevert` failing with dependency -/
 /-- error: irevert: proofmode hypothesis H depends on x -/
