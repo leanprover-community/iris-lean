@@ -69,7 +69,10 @@ private def RevertState.revertLeanForallHyp
     ProofModeM (@RevertState u prop bi origE origGoal) := do
   let { e, hyps, goal, reverted, pf } := st
   let x : Q($α) := mkFVar f
-  have Φ : Q($α → $prop) := ← mkLambdaFVars #[x] goal
+  have Φ : Q($α → $prop) := ← do
+    return match ← mkLambdaFVars #[x] goal with
+    | .lam n t b _ => .lam n t b .default
+    | e => e
   let goal' : Q($prop) := q(BI.forall $Φ)
   have pf' : Q(($e ⊢ $goal') → ($origE ⊢ $origGoal)) :=
     ← withLocalDeclDQ `h q($e ⊢ BI.forall $Φ) fun h => do

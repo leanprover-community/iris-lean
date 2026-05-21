@@ -193,7 +193,6 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
     (hs : s₁ ≤ s₂) (hE : E₁ ⊆ E₂) :
     ⊢ WP e @ s₁ ; E₁ {{ Φ }} -∗ (∀ v, Φ v ={E₂}=∗ Ψ v) -∗ WP e @ s₂ ; E₂ {{ Ψ }} := by
   iloeb as IH generalizing %e %Φ %Ψ %E₁ %E₂ %hE
-  -- FIXME: Delaboration error
   rw [IProp.ext wp_unfold, IProp.ext wp_unfold]
   iintro H HΦ
   dsimp only [wp.pre]
@@ -340,7 +339,6 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
   iintro %v HΦ
   iapply HΦ $$ HP
 
--- TODO: icases support for ⟨_, H⟩ and ⟨H, _⟩ patterns for hypothesis of the form A ∧ B
 @[rocq_alias wp_step_fupdN_strong]
 theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IProp GF} {Φ} {n}
     (toVal_e : toVal e = none)  (E2_E1 : E2 ⊆ E1) :
@@ -350,8 +348,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
     WP e @ s ; E1 {{ Φ }} := by
   match n with
   | 0 =>
-    iintro H
-    icases BI.and_elim_r $$ H with ⟨Hp, Hwp⟩
+    iintro ⟨-, ⟨Hp, Hwp⟩⟩
     iapply wp_strong_mono (Std.IsPreorder.le_refl s) E2_E1 $$ Hwp
     iintro %v H
     dsimp only [Nat.repeat]
@@ -363,7 +360,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
     simp only [wp.pre, toVal_e]
     iintro H %σ₁ %ns %obs %obs' %nt Hσ₁
     by_cases Hn : n ≤ ι.numLatersPerStep ns
-    · icases BI.and_elim_r $$ H with ⟨Hp, Hwp⟩
+    · icases H with ⟨-, ⟨Hp, Hwp⟩⟩
       imod Hp
       dsimp only [Nat.repeat]
       imod Hwp $$ Hσ₁ with ⟨$, H⟩
@@ -390,7 +387,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
         dsimp only [Nat.repeat]
         imod Hp; imod H; imodintro; imodintro; imod Hp; imod H; imodintro
         iapply IH n0 (Nat.le_of_succ_le_succ Hn) $$ [$];
-    · icases BI.and_elim_l $$ H with interp
+    · icases H with ⟨interp, -⟩
       imod interp $$ Hσ₁ with %h
       grind only
 
@@ -519,8 +516,7 @@ theorem wp_step_fupdN {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp
   iintro H
   iapply wp_step_fupdN_strong (s := s) (P := P) (n := n) toVal_e E₂E₁ $$ [H]
   iapply BI.and_mono_r $$ H
-  apply BI.sep_mono_l
-  iintro HP
+  iintro ⟨HP, $⟩
   imod fupd_mask_subseteq_emptyset_difference (show E₁\ E₂ ⊆ E₁ from LawfulSet.diff_subset_left) with G
   imod HP
   imod G with -
