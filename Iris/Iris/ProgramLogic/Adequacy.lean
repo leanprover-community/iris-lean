@@ -87,7 +87,7 @@ def steps_sum (numLaters : Nat → Nat) : Nat → Nat → Nat
 that ignores ns/obs/nt — matches Coq's `IrisG Hinv (λ σ _ _ _, stateI σ)
 fork_post (λ _, 0) (λ _ _ _ _, fupd_intro _ _)` construction used in
 `wp_adequacy_gen` / `wp_invariance_gen`. -/
-private def IrisGS_gen.ofSimple {hlc : Bool} {Expr State Obs Val : Type _}
+def IrisGS_gen.ofSimple {hlc : Bool} {Expr State Obs Val : Type _}
     [Language Expr State Obs Val] {GF : BundledGFunctors}
     (Hinv : InvGS_gen hlc GF)
     (stateI : State → IProp GF) (forkPost : Val → IProp GF) :
@@ -588,98 +588,52 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
             ([∗list] v ∈ List.filterMap ToVal.toVal t2', iG.forkPost v) -∗
             |={⊤,∅}=> ⌜φ⌝)))
     (_hsteps : Language.NSteps n (es, σ1) κs (t2, σ2)) :
-    φ := by
-  apply pure_soundness (PROP := IProp GF)
-  refine
-    step_fupdN_soundness_gen
-      (n := steps_sum iG.numLatersPerStep 0 n)
-      (m := steps_sum iG.numLatersPerStep 0 n) hlc ?_
-  intro Hinv
-  iintro Hcr
-  -- Rebuild iG so its `InvGS_gen` field equals the freshly allocated `Hinv`.
-  -- This makes `iGh.toLcGS = Hinv.toLcGS`, so `wptp_postconditions` / `wptp_progress`
-  -- (which use the local iG's LcGS for `£`) see the same LcGS instance as `Hcr`.
-  letI iGh : IrisGS_gen hlc Expr GF := { iG with toInvGS_gen := Hinv }
-  ihave HwpOpen := @_Hwp Hinv iGh
-  imod HwpOpen with ⟨%Φs, HSI, Hwptp, Hφ⟩
-  have lenW : ⊢@{IProp GF} iprop(
-      ([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }}) -∗ ⌜es.length = Φs.length⌝) :=
-    BI.wand_intro (BI.emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
-  ihave %hlen_es := lenW $$ Hwptp
-  have hNS : ∀ e2, s = Stuckness.NotStuck → e2 ∈ t2 → PrimStep.NotStuck (e2, σ2) := by
-    intro e2 hsNS hel
-    subst hsNS
-    apply pure_soundness (PROP := IProp GF)
-    refine
-      step_fupdN_soundness_gen
-        (n := steps_sum iG.numLatersPerStep 0 n)
-        (m := steps_sum iG.numLatersPerStep 0 n) hlc ?_
-    intro Hinv'
-    iintro Hcr'
-    letI iGh' : IrisGS_gen hlc Expr GF := { iG with toInvGS_gen := Hinv' }
-    ihave HwpOpen' := @_Hwp Hinv' iGh'
-    imod HwpOpen' with ⟨%Φs', HSI', Hwptp', _Hφ'⟩
-    have wrap' : ⊢@{IProp GF} iprop(
-        stateInterp σ1 0 κs 0 -∗ stateInterp σ1 0 (κs ++ []) 0) := by
-      rw [List.append_nil]; exact BI.wand_intro BI.emp_sep.1
-    ihave HSI' := wrap' $$ HSI'
-    ihave Hprog := wptp_progress (iG := iGh') Φs' [] n es t2 κs σ1 σ2 0 0 e2 _hsteps hel
-                     $$ HSI' Hcr' Hwptp'
-    imod Hprog
-    imodintro
-    iapply step_fupdN_wand $$ Hprog
-    iintro Hprog
-    imod Hprog
-    iexact Hprog
-  have wrap : ⊢@{IProp GF} iprop(
-      stateInterp σ1 0 κs 0 -∗ stateInterp σ1 0 (κs ++ []) 0) := by
-    rw [List.append_nil]; exact BI.wand_intro BI.emp_sep.1
-  ihave HSI := wrap $$ HSI
-  ihave Hpost := wptp_postconditions (iG := iGh) Φs [] s n es t2 κs σ1 σ2 0 0 _hsteps
-                   $$ HSI Hcr Hwptp
-  imod Hpost
-  imodintro
-  iapply step_fupdN_wand $$ Hpost
-  iintro Hpost
-  imod Hpost with ⟨%nt', HSI', Hfrom⟩
-  have splitW : ⊢@{IProp GF} iprop(
-      ([∗list] e;Φ ∈ t2;Φs ++ List.replicate nt' iGh.forkPost,
-         fromOptionVal (GF := GF) e Φ) -∗
-      ∃ (es' t2' : List Expr), ⌜t2 = es' ++ t2'⌝ ∧
-        (([∗list] e;Φ ∈ es';Φs, fromOptionVal (GF := GF) e Φ) ∗
-         ([∗list] e;Φ ∈ t2';List.replicate nt' iGh.forkPost,
-            fromOptionVal (GF := GF) e Φ))) :=
-    BI.wand_intro (BI.emp_sep.1.trans BI.BigSepL2.bigSepL2_app_inv_right)
-  ihave Hsplit := splitW $$ Hfrom
-  icases Hsplit with ⟨%es', %t2', %ht2eq, Hes', Ht2'⟩
-  have lenES : ⊢@{IProp GF} iprop(
-      ([∗list] e;Φ ∈ es';Φs, fromOptionVal (GF := GF) e Φ) -∗
-      ⌜es'.length = Φs.length⌝) :=
-    BI.wand_intro (BI.emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
-  ihave %hlen_esPhi := lenES $$ Hes'
-  have lenT : ⊢@{IProp GF} iprop(
-      ([∗list] e;Φ ∈ t2';List.replicate nt' iGh.forkPost,
-         fromOptionVal (GF := GF) e Φ) -∗
-      ⌜t2'.length = (List.replicate nt' iGh.forkPost).length⌝) :=
-    BI.wand_intro (BI.emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
-  ihave %hlen_t2 := lenT $$ Ht2'
-  rw [List.length_replicate] at hlen_t2
-  have hlen_eq : es'.length = es.length := hlen_esPhi.trans hlen_es.symm
-  have hSI_eq :
-      iprop(stateInterp σ2 (n + 0) [] (0 + nt')) =
-      iprop(stateInterp σ2 n [] t2'.length) := by
-    congr 1
-    · omega
-    · omega
-  rw [hSI_eq] at HSI'
-  have forkW : ⊢@{IProp GF} iprop(
-      ([∗list] e;Φ ∈ t2';List.replicate nt' iGh.forkPost,
-         fromOptionVal (GF := GF) e Φ) -∗
-      ([∗list] v ∈ List.filterMap ToVal.toVal t2', iGh.forkPost v)) :=
-    BI.wand_intro (BI.emp_sep.1.trans
-      (fork_block_to_filterMap (iG := iGh) t2' nt' hlen_t2))
-  ihave Hforks := forkW $$ Ht2'
-  iapply Hφ $$ %es' %t2' %ht2eq %hlen_eq %hNS HSI' Hes' Hforks
+    φ :=
+  -- DESIGN ISSUE (see Bash log of stage/6-on-393 worktree, 2026-05-21):
+  -- The current Lean port signature has the section variable
+  -- `[iG : IrisGS_gen hlc Expr GF]` auto-bound at the theorem level (i.e. the
+  -- caller provides `iG` *externally*), while `step_fupdN_soundness_gen`
+  -- allocates a *fresh* `Hinv : InvGS_gen hlc GF` inside the proof.
+  --
+  -- These two are *different* `InvGS_gen` instances, so `iG.toLcGS ≠
+  -- Hinv.toLcGS` and `iG.toWsatGS ≠ Hinv.toWsatGS`.  All `£`-credits and
+  -- `|={E1,E2}=>` masks introduced by the soundness lemma carry
+  -- `Hinv.toLcGS` / `Hinv.toWsatGS`, while every helper proved against the
+  -- section `iG` (`wptp_postconditions` / `wptp_progress` / `wp_not_stuck` /
+  -- `wp_to_postcond` / …) carries `iG.toLcGS` / `iG.toWsatGS`.  `ispecialize`
+  -- cannot unify the resulting `£`-cells across the two instances, so the
+  -- straightforward port of Coq's adequacy proof does not type-check.
+  --
+  -- Coq's `wp_strong_adequacy` avoids this by *constructing* `iG` from
+  -- `Hinv` inside the proof via `pose (iG := IrisG Hinv …)`.  In Lean we
+  -- cannot mirror that pattern because:
+  --   (a) `letI` cannot be introduced inside `iprop(…)` syntax (noted in
+  --       `wp_progress_gen`'s existing doc-comment), so `iG` must be a
+  --       Pi-argument (auto-bound section variable);
+  --   (b) `{ iG with toInvGS_gen := Hinv }` triggers a `Type mismatch` on
+  --       the `stateInterp_mono` field, whose statement depends on
+  --       `iG.toInvGS_gen`: the user-supplied proof of `stateInterp_mono`
+  --       quantifies over `iG`'s `InvGS_gen`, not the fresh `Hinv`.
+  --
+  -- A proper Lean-side fix probably requires *either*:
+  --   (i) restating `IrisGS_gen` so that `stateInterp_mono` is generic
+  --       over the embedded `InvGS_gen` (e.g. quantify over all `Hinv` of
+  --       the right type, not just `iG.toInvGS_gen`), so the field can be
+  --       transported to `Hinv`; *or*
+  --   (ii) restating `wp_strong_adequacy_gen` to take the
+  --        `stateInterp` / `forkPost` / `numLatersPerStep` /
+  --        `stateInterp_mono` *as plain Pi arguments* (mirroring Coq's
+  --        in-iprop existential), and *constructing* `iG` inside the
+  --        proof from `Hinv` + those parameters.
+  -- Both are non-trivial design changes outside this PR's scope.
+  --
+  -- A full draft proof using the (i) approach was attempted in this
+  -- worktree (see git log for stage/6-on-393); it stops at the `letI`
+  -- transport step.  The remaining structure (pure_soundness →
+  -- step_fupdN_soundness_gen → open `_Hwp` → wptp_postconditions →
+  -- bigSepL2_app_inv_right split → fork-block conversion via
+  -- `fork_block_to_filterMap` → apply user continuation) is correct.
+  sorry
 
 @[rocq_alias wp_strong_adequacy]
 def wp_strong_adequacy : True := True.intro
@@ -756,78 +710,16 @@ def wp_adequacy : True := True.intro
 @[rocq_alias wp_invariance_gen]
 theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr)
     (σ1 σ2 : State) (t2 : List Expr) (φ : Prop)
-    (_Hwp : ∀ [_Hinv : InvGS_gen hlc GF] [iG : IrisGS_gen hlc Expr GF]
-            (κs : List Obs),
-        ⊢ iprop(|={⊤}=> iG.stateInterp σ1 0 κs 0 ∗
-                        WP e1 @ s ; ⊤ {{ v, iprop(True) }} ∗
-                        (iG.stateInterp σ2 0 [] (t2.length - 1) -∗
-                          ∃ (E : CoPset), |={⊤,E}=> ⌜φ⌝)))
+    (_Hwp : ∀ [Hinv : InvGS_gen hlc GF] (κs : List Obs)
+             (stateI : State → IProp GF) (forkPost : Val → IProp GF),
+        letI _ : IrisGS_gen hlc Expr GF := IrisGS_gen.ofSimple Hinv stateI forkPost
+        (⊢ iprop(|={⊤}=> stateI σ1 ∗ WP e1 @ s ; ⊤ {{ v, iprop(True) }} ∗
+                         (stateI σ2 -∗ ∃ (E : CoPset), |={⊤,E}=> ⌜φ⌝))))
     (_hsteps : Relation.ReflTransGen Language.ErasedStep ([e1], σ1) (t2, σ2)) :
-    φ := by
-  -- Convert ReflTransGen ErasedStep to ∃ n κs, NSteps n.
-  obtain ⟨n, κs, hsteps⟩ := (Language.erasedStep_nSteps _ _).mp _hsteps
-  -- Apply wp_strong_adequacy_gen (treated as oracle) with `φ` as its target.
-  refine wp_strong_adequacy_gen (hlc := hlc) (GF := GF) s [e1] σ1 n κs t2 σ2 φ
-    (fun _ => 0) ?_ hsteps
-  intro _Hinv iG
-  -- Extract user's tripartite hypothesis (parametrically over κs).
-  ihave Huser := _Hwp κs
-  imod Huser with ⟨Hσ, Hwp, Hφ⟩
-  imodintro
-  -- Choose Φs := [fun _ => iprop(True)].
-  iexists [fun (_ : Val) => iprop(True)]
-  iframe Hσ
-  -- Convert WP e1 {{_, True}} to the bigSepL2 singleton form.
-  have wp_to_bsl : ⊢@{IProp GF} iprop(WP e1 @ s ; ⊤ {{ v, iprop(True) }} -∗
-      [∗list] e;Φ ∈ ([e1] : List Expr);[fun (_ : Val) => iprop(True)],
-        Wp.wp (PROP := IProp GF) s ⊤ e Φ) :=
-    wand_intro (emp_sep.1.trans
-      (BI.BigSepL2.bigSepL2_singleton
-        (Φ := fun (_ : Nat) (e : Expr) (Φ : Val → IProp GF) =>
-                iprop(Wp.wp (PROP := IProp GF) s ⊤ e Φ))).2)
-  ihave Hwp := wp_to_bsl $$ Hwp
-  isplitl [Hwp]
-  · iexact Hwp
-  -- Continuation: derive φ from the strong adequacy continuation.
-  iintro %es'
-  iintro %t2'
-  iintro %heq
-  iintro %hlen
-  iintro _hns
-  iintro HSI
-  iintro _Hpost
-  iintro _Hforks
-  -- es'.length = 1 (= [e1].length); since heq : t2 = es' ++ t2',
-  -- deduce t2'.length = t2.length - 1.
-  have hes'_len : es'.length = 1 := by simpa using hlen
-  have ht2_len : t2.length = es'.length + t2'.length := by
-    rw [heq]
-    exact List.length_append
-  have ht2'_len : t2'.length = t2.length - 1 := by omega
-  -- Bridge: iG.stateInterp σ2 n [] t2'.length -∗ iG.stateInterp σ2 0 [] (t2.length - 1).
-  -- The `nt` argument (t2'.length vs t2.length - 1) matches via ht2'_len.
-  -- The `ns` argument (n vs 0) is a Lean ⇔ Coq signature impedance: Coq's
-  -- `wp_invariance` builds a fresh `irisGS_gen` whose `stateI σ _ _` ignores
-  -- `ns`, absorbing this discrepancy. The Lean PR #393 interface receives an
-  -- externally-provided iG and the user signature has a literal `0` where
-  -- Coq's wrapper would absorb. The `ns` mismatch is not derivable from
-  -- `stateInterp_mono` (which only goes ns → ns+1). Documented sorry-leaf
-  -- (signature impedance, not a proof gap).
-  have bridge : ⊢@{IProp GF} iprop(iG.stateInterp σ2 n [] t2'.length -∗
-                                    iG.stateInterp σ2 0 [] (t2.length - 1)) := by
-    rw [ht2'_len]
-    -- Goal: iG.stateInterp σ2 n [] (t2.length - 1) -∗ iG.stateInterp σ2 0 [] (t2.length - 1)
-    sorry
-  ihave HSI0 := bridge $$ HSI
-  -- Apply user's Hφ to HSI0 to obtain `∃ E, |={⊤,E}=> ⌜φ⌝`.
-  ihave Hexists := Hφ $$ HSI0
-  icases Hexists with ⟨%E, Hclose⟩
-  -- We need `|={⊤,∅}=> ⌜φ⌝`. We have `|={⊤,E}=> ⌜φ⌝`. Eliminate the inner
-  -- fancy update, then re-introduce ∅ via `fupd_mask_intro_discard`.
-  imod Hclose with %hφ
-  iapply fupd_mask_intro_discard LawfulSet.empty_subset
-  ipure_intro
-  exact hφ
+    φ :=
+  -- TODO: rewrite proof for new simple-stateI signature. With IrisGS_gen.ofSimple,
+  -- iG.stateInterp σ _ _ _ = stateI σ so the ns=0 vs n bridge becomes trivial.
+  sorry
 
 @[rocq_alias wp_invariance]
 def wp_invariance : True := True.intro
