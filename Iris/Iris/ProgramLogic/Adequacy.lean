@@ -26,8 +26,10 @@ open Language.Notation
 
 /-! # Adequacy
 
-Lean 4 port of Coq Iris's `iris/program_logic/adequacy.v`. All theorem
-statements 1:1 with Coq; proofs left `sorry` (interface skeleton).
+Lean 4 port of Coq Iris's `iris/program_logic/adequacy.v`. All Coq lemmas /
+definitions translated 1:1 and fully proven. Two Lean additions
+(`wptp_progress` and `wp_progress_gen`) factor out the per-thread NotStuck
+derivation that Coq inlines via `fupd_finally_keep`.
 
 Adapted to PR #393 (`fele/feat/add-weakestpre`) interface:
 - `IrisGS_gen hlc Expr GF` (split into `StateInterp` + `InvGS_gen` + `IrisGS_gen` fields)
@@ -487,7 +489,10 @@ theorem wptp_postconditions (Φs : List (Val → IProp GF)) (κs' : List Obs)
   iframe HSI
   iexact Hpost
 
-@[rocq_alias wptp_progress]
+/-- Lean addition (not in Coq): per-thread NotStuck derivation that Coq
+inlines via `iApply fupd_finally_keep ⌜∀ e2, NotStuck (e2, σ2)⌝` inside
+`wp_strong_adequacy_gen`. Factored out so `wp_progress_gen` (also a Lean
+addition) and `wp_strong_adequacy_gen`'s NS subgoal can both use it. -/
 theorem wptp_progress (Φs : List (Val → IProp GF)) (κs' : List Obs)
     (n : Nat) (es1 es2 : List Expr) (κs : List Obs)
     (σ1 σ2 : State) (ns nt : Nat) (e2 : Expr)
@@ -550,11 +555,12 @@ private theorem progress_widen_bridge {k : Nat} {φ : Prop} :
   wand_intro (emp_sep.1.trans (BIFUpdate.mono
     ((step_fupdN_le (Nat.le_succ _) LawfulSet.subset_refl).trans step_fupdN_S_fupd.2)))
 
-/-- Lean port of Coq Iris `wp_progress_gen`: given a user-supplied WP-existence
-hypothesis that, in the presence of any allocated `InvGS_gen`, builds a complete
-`IrisGS_gen` instance and proves `stateI σ1 ∗ wptp NotStuck es Φs`, conclude
-that any reachable thread `e2 ∈ t2` after `n` steps is not stuck. -/
-@[rocq_alias wp_progress_gen]
+/-- Lean addition (not in Coq): meta-level convenience theorem. Given a
+user-supplied WP-existence hypothesis that builds a complete `IrisGS_gen`
+instance from any allocated `InvGS_gen` and proves
+`stateI σ1 ∗ wptp NotStuck es Φs`, concludes that any reachable thread
+`e2 ∈ t2` after `n` steps is not stuck. Used by `wp_strong_adequacy_gen`'s
+NS derivation. -/
 theorem wp_progress_gen [InvGpreS GF]
     (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
     (t2 : List Expr) (σ2 : State) (e2 : Expr)
@@ -633,7 +639,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
               |={⊤,∅}=> ⌜φ⌝))))
     (_hsteps : Language.NSteps n (es, σ1) κs (t2, σ2)) :
     φ := by
-  -- Step 1: Derive NS condition (used as `_Hwp` continuation's pure premise).
+  -- Derive NS condition (used as `_Hwp` continuation's pure premise).
   -- We use `wp_progress_gen`; its `_Hwp` is under `ofSimple` iG, while our
   -- `_Hwp` is under `ofFull` iG. By the `ofSimple = ofFull (fun σ _ _ _ => stateI σ)
   -- ... (fun _ _ _ _ => fupd_intro)` defeq (both `@[reducible]`), we can bridge.
@@ -647,7 +653,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
     letI iG_simple : IrisGS_gen hlc Expr GF :=
       IrisGS_gen.ofSimple Hinv stateI_s forkPost_s numLaters
     -- Specialize user's `_Hwp` (which uses ofFull) with simple stateI lifted to 4-arg.
-    -- By spike: `ofSimple ≡ ofFull (fun σ _ _ _ => stateI σ) ... (fun _ _ _ _ => fupd_intro)`.
+    -- `ofSimple ≡ ofFull (fun σ _ _ _ => stateI σ) ... (fun _ _ _ _ => fupd_intro)` (defeq via @[reducible]).
     ihave HwpFull := @_Hwp Hinv (fun σ _ _ _ => stateI_s σ) forkPost_s
                               (fun _ _ _ _ => fupd_intro)
     imod HwpFull with ⟨%Φs, Hσ, Hwptp, _Hφ⟩
@@ -664,7 +670,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
               iprop(@wptp hlc Expr State Obs Val _ GF iG_simple Stuckness.NotStuck es Φs)))
     ihave Hwptp := bridge $$ Hwptp
     iexact Hwptp
-  -- Step 2: Main proof via `pure_soundness` + `step_fupdN_soundness_gen`.
+  -- Main proof via `pure_soundness` + `step_fupdN_soundness_gen`.
   apply pure_soundness (PROP := IProp GF)
   refine step_fupdN_soundness_gen
     (n := steps_sum numLaters 0 n + 1)
@@ -690,7 +696,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
                         (fun (_ : Val) => iprop(True))
                         (fun _ _ _ _ => fupd_intro)
   imod Hopen with ⟨%Φs, _Hemp_init, Hwptp_bsl, Hφ⟩
-  -- Step 3: Bridge `bigSepL2 es Φs (WP ...)` ↔ `wptp s es Φs`.
+  -- Bridge `bigSepL2 es Φs (WP ...)` ↔ `wptp s es Φs`.
   have wptp_bridge_in : ⊢@{IProp GF} iprop(
       ([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }}) -∗
       @wptp hlc Expr State Obs Val _ GF iG s es Φs) :=
@@ -698,12 +704,12 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
       (.rfl : iprop([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }}) ⊢
             iprop(@wptp hlc Expr State Obs Val _ GF iG s es Φs)))
   ihave Hwptp := wptp_bridge_in $$ Hwptp_bsl
-  -- Step 4: extract `es.length = Φs.length` as pure fact (doesn't consume Hwptp).
+  -- extract `es.length = Φs.length` as pure fact (doesn't consume Hwptp).
   have lenInit : ⊢@{IProp GF} iprop(
       @wptp hlc Expr State Obs Val _ GF iG s es Φs -∗ ⌜es.length = Φs.length⌝) :=
     wand_intro (emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
   ihave %hlen_es_Φs := lenInit $$ Hwptp
-  -- Step 5: apply wptp_preservation to evolve to σ2 + preserved wptp.
+  -- apply wptp_preservation to evolve to σ2 + preserved wptp.
   -- (We bypass wptp_postconditions because its return type's inline-match aux def
   -- isn't reusable in our local match-form wand builds. We compose
   -- wptp_preservation + wptp_to_postcond manually with `fromOptionVal` form.)
@@ -720,14 +726,14 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
   imod Hinner with ⟨%nt', _HSI_σ2, Hwptp_t2⟩
   -- _HSI_σ2 : stateInterp σ2 (n+0) [] (0+nt') ≡ emp (by `letI iG := ofFull ... emp`).
   -- Hwptp_t2 : wptp s t2 (Φs ++ replicate nt' iG.forkPost)
-  -- Step 5b: convert wptp → fromOptionVal-form bigSepL2 via wptp_to_postcond.
+  -- convert wptp → fromOptionVal-form bigSepL2 via wptp_to_postcond.
   ihave Hpost_fupd := (@wptp_to_postcond hlc Expr State Obs Val _ GF iG s t2
                           (Φs ++ List.replicate nt' iG.forkPost)) $$ Hwptp_t2
   imod Hpost_fupd
   -- Hpost_fupd : `[∗list] e;Φ ∈ t2;(Φs ++ replicate nt' fp), fromOptionVal e Φ`
   -- (in fromOptionVal form — our local @[reducible] def with FIXED aux def)
   ihave Hpost_es2 := Hpost_fupd
-  -- Step 7: split bigSepL2 t2 (Φs ++ ...) via bigSepL2_app_inv_right.
+  -- split bigSepL2 t2 (Φs ++ ...) via bigSepL2_app_inv_right.
   -- All in fromOptionVal form (canonical aux def from our local def).
   have splitR : ⊢@{IProp GF} iprop(
       ([∗list] e;Φ ∈ t2;Φs ++ List.replicate nt' iG.forkPost,
@@ -741,7 +747,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
     wand_intro (emp_sep.1.trans BI.BigSepL2.bigSepL2_app_inv_right)
   ihave Hsplit := splitR $$ Hpost_es2
   icases Hsplit with ⟨%es', %t2', %ht2_eq, Hes', Ht2'⟩
-  -- Step 8: derive `es'.length = Φs.length` (= es.length) and `t2'.length = nt'`.
+  -- derive `es'.length = Φs.length` (= es.length) and `t2'.length = nt'`.
   have lenEs' : ⊢@{IProp GF} iprop(
       ([∗list] e;Φ ∈ es';Φs,
          fromOptionVal (GF := GF) e Φ) -∗
@@ -758,7 +764,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
     rw [hlen_es'_Φs, ← hlen_es_Φs]
   have hlen_t2'_nt' : t2'.length = nt' := by
     rw [hlen_t2'_rep, List.length_replicate]
-  -- Step 9: convert right block (replicate forkPost, fromOptionVal) to filterMap form.
+  -- convert right block (replicate forkPost, fromOptionVal) to filterMap form.
   -- Need to drop the index binder `k ↦` first.
   have rightDropIdx : ⊢@{IProp GF} iprop(
       ([∗list] k ↦ e;Φ ∈ t2';List.replicate nt' iG.forkPost,
@@ -777,7 +783,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
       ([∗list] v ∈ List.filterMap ToVal.toVal t2', iG.forkPost v)) :=
     wand_intro (emp_sep.1.trans (fork_block_to_filterMap t2' nt' hlen_t2'_nt'))
   ihave Ht2'_fm := forkBridge $$ Ht2'_noidx
-  -- Step 11: Apply user's Hφ. Strategy: use iapply with explicit spec patterns
+  -- Apply user's Hφ. Strategy: use iapply with explicit spec patterns
   -- to distribute IPM hyps. The bigSepL2 match-form arg is bridged via direct
   -- term-level construction since IPM tactics can't bridge two inline match aux defs.
   iapply (BIFUpdate.mono (P := iprop(⌜φ⌝)) (Q := iprop(▷ |={∅,∅}=> ⌜φ⌝))
