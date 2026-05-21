@@ -370,6 +370,58 @@ theorem wptp_preservation (s : Stuckness) (n : Nat) (es1 es2 : List Expr)
     iframe HSI'
     iexact Hwptp'
 
+/-- Pointwise post-condition extracted from a WP-style continuation,
+named to ensure both the theorem statement and the helper use the same
+elaborated `match` aux-def. -/
+@[reducible] private def fromOptionVal (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
+  match ToVal.toVal e with
+  | some v => Φ v
+  | none   => iprop(True)
+
+/-- Per-element conversion: a WP can be turned into a fancy update of
+the `from_option` postcondition. Port of Coq's per-element step in
+`wptp_postconditions`. -/
+private theorem wp_to_postcond (s : Stuckness) (e : Expr) (Φ : Val → IProp GF) :
+    iprop(WP e @ s ; ⊤ {{ Φ }}) ⊢
+    iprop(|={⊤}=> fromOptionVal (GF := GF) e Φ) := by
+  unfold fromOptionVal
+  match hv : ToVal.toVal e with
+  | some v =>
+    have he : (v : Expr) = e := ToVal.coe_of_toVal_eq_some hv
+    -- Goal: WP e {{ Φ }} ⊢ |={⊤}=> Φ v (match already substituted by `hv`)
+    exact he ▸ wp_value_fupd' (s := s) (E := ⊤) (Φ := Φ) (v := v) |>.1
+  | none =>
+    -- Goal: WP e {{ Φ }} ⊢ |={⊤}=> True (match already substituted by `hv`)
+    exact true_intro.trans fupd_intro
+
+/-- Conversion lemma: a list of WP's can be turned into a fancy update of
+postcondition `from_option`s. Port of Coq's tail of `wptp_postconditions`. -/
+private theorem wptp_to_postcond (s : Stuckness) :
+    ∀ (es : List Expr) (Φs : List (Val → IProp GF)),
+    iprop(wptp s es Φs) ⊢
+    iprop(|={⊤}=> [∗list] e;Φ ∈ es;Φs, fromOptionVal (GF := GF) e Φ) := by
+  intro es
+  induction es with
+  | nil =>
+    intro Φs
+    cases Φs with
+    | nil =>
+      show iprop(emp) ⊢ iprop(|={⊤}=> emp)
+      exact fupd_intro
+    | cons _ _ =>
+      show iprop(False) ⊢ _
+      exact false_elim
+  | cons e es ih =>
+    intro Φs
+    cases Φs with
+    | nil =>
+      show iprop(False) ⊢ _
+      exact false_elim
+    | cons Φ Φs =>
+      -- LHS = WP e {{Φ}} ∗ wptp s es Φs (via wptp/bigSepL2 cons unfold = .rfl)
+      -- RHS = |={⊤}=> (fromOptionVal e Φ ∗ [∗list]...)
+      exact (sep_mono (wp_to_postcond s e Φ) (ih Φs)).trans fupd_sep
+
 @[rocq_alias wptp_postconditions]
 theorem wptp_postconditions (Φs : List (Val → IProp GF)) (κs' : List Obs)
     (s : Stuckness) (n : Nat) (es1 es2 : List Expr) (κs : List Obs)
@@ -383,8 +435,34 @@ theorem wptp_postconditions (Φs : List (Val → IProp GF)) (κs' : List Obs)
         [∗list] e;Φ ∈ es2;Φs ++ List.replicate nt' iG.forkPost,
           (match ToVal.toVal e with
            | some v => Φ v
-           | none   => iprop(True))) :=
-  sorry
+           | none   => iprop(True))) := by
+  -- Replace the goal's explicit `match` with the `fromOptionVal` synonym so
+  -- that auto-generated match aux defs in the goal and in `wptp_to_postcond`
+  -- match. This is sound because `fromOptionVal` is `@[reducible]`.
+  show ⊢ iprop(stateInterp σ1 ns (κs ++ κs') nt -∗
+      £ (steps_sum iG.numLatersPerStep ns n) -∗
+      wptp s es1 Φs ={⊤,∅}=∗
+      |={∅}▷=>^[steps_sum iG.numLatersPerStep ns n] |={∅,⊤}=> ∃ nt',
+        stateInterp σ2 (n + ns) κs' (nt + nt') ∗
+        [∗list] e;Φ ∈ es2;Φs ++ List.replicate nt' iG.forkPost,
+          fromOptionVal (GF := GF) e Φ)
+  iintro Hσ
+  iintro Hcred
+  iintro Hwptp
+  ihave Hpres := wptp_preservation s n es1 es2 κs κs' σ1 σ2 ns Φs nt _hsteps
+                 $$ Hσ Hcred Hwptp
+  imod Hpres
+  imodintro
+  iapply step_fupdN_wand $$ Hpres
+  iintro >⟨%nt', HSI, Hwptp_es2⟩
+  ihave Hpost :=
+    (wptp_to_postcond s es2 (Φs ++ List.replicate nt' iG.forkPost)
+      : iprop(wptp s es2 (Φs ++ List.replicate nt' iG.forkPost)) ⊢ _) $$ Hwptp_es2
+  imod Hpost
+  imodintro
+  iexists nt'
+  iframe HSI
+  iexact Hpost
 
 @[rocq_alias wptp_progress]
 theorem wptp_progress (Φs : List (Val → IProp GF)) (κs' : List Obs)
@@ -396,8 +474,46 @@ theorem wptp_progress (Φs : List (Val → IProp GF)) (κs' : List Obs)
       £ (steps_sum iG.numLatersPerStep ns n) -∗
       wptp Stuckness.NotStuck es1 Φs ={⊤,∅}=∗
       |={∅}▷=>^[steps_sum iG.numLatersPerStep ns n] |={∅}=>
-        ⌜PrimStep.NotStuck (e2, σ2)⌝) :=
-  sorry
+        ⌜PrimStep.NotStuck (e2, σ2)⌝) := by
+  iintro Hσ; iintro Hcred; iintro Ht
+  -- Apply wptp_preservation to get the preserved state at the end of n steps.
+  ihave Hpres := wptp_preservation Stuckness.NotStuck n es1 es2 κs κs' σ1 σ2 ns Φs nt _hsteps
+                  $$ Hσ Hcred Ht
+  imod Hpres
+  imodintro
+  iapply step_fupdN_wand $$ Hpres
+  iintro Hpres
+  -- imod composes Hpres's |={∅,⊤}=> with goal's |={∅,∅}=> via elimModal_fupd_fupd:
+  -- opens Hpres at mask ⊤, leaves goal as |={⊤,∅}=> ⌜NotStuck⌝.
+  imod Hpres with ⟨%nt'', HSI, Hwptp⟩
+  -- Extract a WP for e2 from Hwptp via bigSepL2_lookup_acc.
+  obtain ⟨i, hi⟩ := List.getElem?_of_mem _hel
+  have lenW : ⊢@{IProp GF} iprop(wptp Stuckness.NotStuck es2
+                                    (Φs ++ List.replicate nt'' iG.forkPost) -∗
+                                  ⌜es2.length = (Φs ++ List.replicate nt'' iG.forkPost).length⌝) :=
+    wand_intro (emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
+  ihave %hlen := lenW $$ Hwptp
+  have hi_lt : i < es2.length := (List.getElem?_eq_some_iff.mp hi).1
+  have hi_lt' : i < (Φs ++ List.replicate nt'' iG.forkPost).length := hlen ▸ hi_lt
+  have hi_Φ : (Φs ++ List.replicate nt'' iG.forkPost)[i]? =
+      some ((Φs ++ List.replicate nt'' iG.forkPost)[i]) :=
+    List.getElem?_eq_getElem hi_lt'
+  have lookup_wand : ⊢@{IProp GF} iprop(
+      wptp Stuckness.NotStuck es2 (Φs ++ List.replicate nt'' iG.forkPost) -∗
+      Wp.wp (PROP := IProp GF) Stuckness.NotStuck ⊤ e2
+        ((Φs ++ List.replicate nt'' iG.forkPost)[i]) ∗
+      (Wp.wp (PROP := IProp GF) Stuckness.NotStuck ⊤ e2
+         ((Φs ++ List.replicate nt'' iG.forkPost)[i]) -∗
+       wptp Stuckness.NotStuck es2 (Φs ++ List.replicate nt'' iG.forkPost))) :=
+    wand_intro (emp_sep.1.trans
+      (BI.BigSepL2.bigSepL2_lookup_acc (Φ := fun (_ : Nat) (e : Expr) (Φ : Val → IProp GF) =>
+        iprop(Wp.wp (PROP := IProp GF) Stuckness.NotStuck ⊤ e Φ)) hi hi_Φ))
+  ihave Hwptp := lookup_wand $$ Hwptp
+  icases Hwptp with ⟨Hwp_e2, _Hrest⟩
+  -- Apply wp_not_stuck to finish.
+  ihave Hres := wp_not_stuck κs' (nt + nt'') e2 σ2 (n + ns)
+                  ((Φs ++ List.replicate nt'' iG.forkPost)[i]) $$ HSI Hwp_e2
+  iexact Hres
 
 /-- WP-existence assumption (`∀ Hinv, ⊢ |={⊤}=> ∃ stateI Φs fork_post ...`)
 abstracted as `True` until `invGpreS` infrastructure lands; signature is
