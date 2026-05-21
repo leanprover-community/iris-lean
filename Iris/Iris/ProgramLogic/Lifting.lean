@@ -36,7 +36,7 @@ theorem wp_lift_step_fupdN :
       [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
   ⊢ WP e₁ @ s; E {{ Φ }} := by
   intro h
-  rw [rw_iProp wp_unfold]
+  rw [IProp.ext wp_unfold]
   simp only [wp.pre, h]
   exact .rfl
 
@@ -74,7 +74,7 @@ theorem wp_lift_stuck :
       stateInterp σ ns obs nt ={E,∅}=∗ ⌜PrimStep.Stuck (e,σ)⌝)
     ⊢ WP e @ E ? {{ Φ }} := by
   iintro %h H
-  simp only [rw_iProp wp_unfold]
+  simp only [IProp.ext wp_unfold]
   simp only [wp.pre, h]
   iintro %σ₁ %ns %obs %obs' %nt Hσ
   imod H $$ Hσ with %Hirr
@@ -221,7 +221,7 @@ theorem wp_pure_step_fupd [Inhabited State] :
   induction Hexec using Relation.Iterate.head_induction_on with
   | rfl =>
     simp only [Nat.repeat]
-    rw (occs := [2]) [rw_iProp fupd_wp_iff]
+    rw (occs := [2]) [IProp.ext fupd_wp_iff]
     icases lc_zero with >Hz
     iapply Hwp $$ Hz
   | @head n e₁ e₃ inicio fin IH =>
@@ -257,6 +257,6 @@ theorem wp_pure_step_later [Inhabited State] :
   | zero => exact .rfl
   | succ n IH =>
     simp [Nat.repeat]
-    rw [rw_iProp <| BI.later_laterN n]
+    rw [IProp.ext <| BI.later_laterN n]
     refine .trans (BI.later_mono IH) ?_
     apply step_fupd_intro (Std.LawfulSet.subset_refl)

@@ -164,8 +164,6 @@ theorem wp_lift_atomic_base_step_no_fork :
   simp only [List.length_nil, Nat.add_zero, Algebra.BigOpL.bigOpL_nil]
   iframe
 
-#check wp_lift_pure_det_step_no_fork
-
 theorem wp_lift_pure_det_base_step_no_fork [Inhabited State] :
     toVal e₁ = none →
     (∀ σ₁, BaseStep.Reducible (e₁, σ₁)) →
