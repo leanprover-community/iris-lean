@@ -210,8 +210,6 @@ theorem wp_lift_pure_det_step_no_fork [Inhabited State] :
   obtain ⟨rfl, _, rfl, rfl⟩:= Hpuredet _ _ _ _ _ aux
   iassumption
 
-#check BIUpdate.intro
-
 theorem wp_pure_step_fupd [Inhabited State] :
     Language.PureExec φ n e₁ e₂ →
     φ →
