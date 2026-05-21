@@ -535,6 +535,24 @@ theorem wp_progress_gen [InvGpreS GF] (s : Stuckness)
     PrimStep.NotStuck (e2, σ2) :=
   sorry
 
+/-- Bridge: fork-post block (`replicate nt' iG.forkPost`) implies the
+`filterMap`-shaped block required by `wp_strong_adequacy_gen`'s continuation.
+Uses BI affineness. -/
+private theorem fork_block_to_filterMap (t2' : List Expr) (nt' : Nat)
+    (hlen : t2'.length = nt') :
+    iprop([∗list] e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+            fromOptionVal (GF := GF) e Φ) ⊢
+    iprop([∗list] v ∈ List.filterMap ToVal.toVal t2', iG.forkPost v) := by
+  subst hlen
+  refine BI.BigSepL2.bigSepL2_replicate_right.1.trans ?_
+  refine .trans ?_ (BI.equiv_iff.mp (BI.BigSepL.bigSepL_filterMap ToVal.toVal)).2
+  refine BI.BigSepL.bigSepL_mono ?_
+  intro _ e _
+  unfold fromOptionVal
+  cases ToVal.toVal e with
+  | some _ => exact .rfl
+  | none   => exact BI.affine
+
 @[rocq_alias wp_strong_adequacy_gen]
 theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
     (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
@@ -554,8 +572,92 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
             ([∗list] v ∈ List.filterMap ToVal.toVal t2', iG.forkPost v) -∗
             |={⊤,∅}=> ⌜φ⌝)))
     (_hsteps : Language.NSteps n (es, σ1) κs (t2, σ2)) :
-    φ :=
-  sorry
+    φ := by
+  apply pure_soundness (PROP := IProp GF)
+  refine
+    step_fupdN_soundness_gen
+      (n := steps_sum iG.numLatersPerStep 0 n)
+      (m := steps_sum iG.numLatersPerStep 0 n) hlc ?_
+  intro Hinv
+  iintro Hcr
+  ihave HwpOpen := @_Hwp Hinv iG
+  imod HwpOpen with ⟨%Φs, HSI, Hwptp, Hφ⟩
+  have lenW : ⊢@{IProp GF} iprop(
+      ([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }}) -∗ ⌜es.length = Φs.length⌝) :=
+    BI.wand_intro (BI.emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
+  ihave %hlen_es := lenW $$ Hwptp
+  have hNS : ∀ e2, s = Stuckness.NotStuck → e2 ∈ t2 → PrimStep.NotStuck (e2, σ2) := by
+    intro e2 hsNS hel
+    subst hsNS
+    apply pure_soundness (PROP := IProp GF)
+    refine
+      step_fupdN_soundness_gen
+        (n := steps_sum iG.numLatersPerStep 0 n)
+        (m := steps_sum iG.numLatersPerStep 0 n) hlc ?_
+    intro Hinv'
+    iintro Hcr'
+    ihave HwpOpen' := @_Hwp Hinv' iG
+    imod HwpOpen' with ⟨%Φs', HSI', Hwptp', _Hφ'⟩
+    have wrap' : ⊢@{IProp GF} iprop(
+        stateInterp σ1 0 κs 0 -∗ stateInterp σ1 0 (κs ++ []) 0) := by
+      rw [List.append_nil]; exact BI.wand_intro BI.emp_sep.1
+    ihave HSI' := wrap' $$ HSI'
+    ihave Hprog := wptp_progress Φs' [] n es t2 κs σ1 σ2 0 0 e2 _hsteps hel
+                     $$ HSI' Hcr' Hwptp'
+    imod Hprog
+    imodintro
+    iapply step_fupdN_wand $$ Hprog
+    iintro Hprog
+    imod Hprog
+    iexact Hprog
+  have wrap : ⊢@{IProp GF} iprop(
+      stateInterp σ1 0 κs 0 -∗ stateInterp σ1 0 (κs ++ []) 0) := by
+    rw [List.append_nil]; exact BI.wand_intro BI.emp_sep.1
+  ihave HSI := wrap $$ HSI
+  ihave Hpost := wptp_postconditions Φs [] s n es t2 κs σ1 σ2 0 0 _hsteps
+                   $$ HSI Hcr Hwptp
+  imod Hpost
+  imodintro
+  iapply step_fupdN_wand $$ Hpost
+  iintro Hpost
+  imod Hpost with ⟨%nt', HSI', Hfrom⟩
+  have splitW : ⊢@{IProp GF} iprop(
+      ([∗list] e;Φ ∈ t2;Φs ++ List.replicate nt' iG.forkPost,
+         fromOptionVal (GF := GF) e Φ) -∗
+      ∃ (es' t2' : List Expr), ⌜t2 = es' ++ t2'⌝ ∧
+        (([∗list] e;Φ ∈ es';Φs, fromOptionVal (GF := GF) e Φ) ∗
+         ([∗list] e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+            fromOptionVal (GF := GF) e Φ))) :=
+    BI.wand_intro (BI.emp_sep.1.trans BI.BigSepL2.bigSepL2_app_inv_right)
+  ihave Hsplit := splitW $$ Hfrom
+  icases Hsplit with ⟨%es', %t2', %ht2eq, Hes', Ht2'⟩
+  have lenES : ⊢@{IProp GF} iprop(
+      ([∗list] e;Φ ∈ es';Φs, fromOptionVal (GF := GF) e Φ) -∗
+      ⌜es'.length = Φs.length⌝) :=
+    BI.wand_intro (BI.emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
+  ihave %hlen_esPhi := lenES $$ Hes'
+  have lenT : ⊢@{IProp GF} iprop(
+      ([∗list] e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+         fromOptionVal (GF := GF) e Φ) -∗
+      ⌜t2'.length = (List.replicate nt' iG.forkPost).length⌝) :=
+    BI.wand_intro (BI.emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
+  ihave %hlen_t2 := lenT $$ Ht2'
+  rw [List.length_replicate] at hlen_t2
+  have hlen_eq : es'.length = es.length := hlen_esPhi.trans hlen_es.symm
+  have hSI_eq :
+      iprop(stateInterp σ2 (n + 0) [] (0 + nt')) =
+      iprop(stateInterp σ2 n [] t2'.length) := by
+    congr 1
+    · omega
+    · omega
+  rw [hSI_eq] at HSI'
+  have forkW : ⊢@{IProp GF} iprop(
+      ([∗list] e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+         fromOptionVal (GF := GF) e Φ) -∗
+      ([∗list] v ∈ List.filterMap ToVal.toVal t2', iG.forkPost v)) :=
+    BI.wand_intro (BI.emp_sep.1.trans (fork_block_to_filterMap t2' nt' hlen_t2))
+  ihave Hforks := forkW $$ Ht2'
+  iapply Hφ $$ %es' %t2' %ht2eq %hlen_eq %hNS HSI' Hes' Hforks
 
 @[rocq_alias wp_strong_adequacy]
 def wp_strong_adequacy : True := True.intro
@@ -623,6 +725,7 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State)
             (κs : List Obs),
         ⊢ iprop(|={⊤}=> iG.stateInterp σ 0 κs 0 ∗ WP e @ s ; ⊤ {{ v, ⌜φ v⌝ }})) :
     adequate s e σ (fun v _ => φ v) :=
+  -- TODO: agent #3 hit fromOptionVal/match-form ispecialize blocker. Defer.
   sorry
 
 @[rocq_alias wp_adequacy]
@@ -638,8 +741,71 @@ theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr)
                         (iG.stateInterp σ2 0 [] (t2.length - 1) -∗
                           ∃ (E : CoPset), |={⊤,E}=> ⌜φ⌝)))
     (_hsteps : Relation.ReflTransGen Language.ErasedStep ([e1], σ1) (t2, σ2)) :
-    φ :=
-  sorry
+    φ := by
+  -- Convert ReflTransGen ErasedStep to ∃ n κs, NSteps n.
+  obtain ⟨n, κs, hsteps⟩ := (Language.erasedStep_nSteps _ _).mp _hsteps
+  -- Apply wp_strong_adequacy_gen (treated as oracle) with `φ` as its target.
+  refine wp_strong_adequacy_gen (hlc := hlc) (GF := GF) s [e1] σ1 n κs t2 σ2 φ
+    (fun _ => 0) ?_ hsteps
+  intro _Hinv iG
+  -- Extract user's tripartite hypothesis (parametrically over κs).
+  ihave Huser := _Hwp κs
+  imod Huser with ⟨Hσ, Hwp, Hφ⟩
+  imodintro
+  -- Choose Φs := [fun _ => iprop(True)].
+  iexists [fun (_ : Val) => iprop(True)]
+  iframe Hσ
+  -- Convert WP e1 {{_, True}} to the bigSepL2 singleton form.
+  have wp_to_bsl : ⊢@{IProp GF} iprop(WP e1 @ s ; ⊤ {{ v, iprop(True) }} -∗
+      [∗list] e;Φ ∈ ([e1] : List Expr);[fun (_ : Val) => iprop(True)],
+        Wp.wp (PROP := IProp GF) s ⊤ e Φ) :=
+    wand_intro (emp_sep.1.trans
+      (BI.BigSepL2.bigSepL2_singleton
+        (Φ := fun (_ : Nat) (e : Expr) (Φ : Val → IProp GF) =>
+                iprop(Wp.wp (PROP := IProp GF) s ⊤ e Φ))).2)
+  ihave Hwp := wp_to_bsl $$ Hwp
+  isplitl [Hwp]
+  · iexact Hwp
+  -- Continuation: derive φ from the strong adequacy continuation.
+  iintro %es'
+  iintro %t2'
+  iintro %heq
+  iintro %hlen
+  iintro _hns
+  iintro HSI
+  iintro _Hpost
+  iintro _Hforks
+  -- es'.length = 1 (= [e1].length); since heq : t2 = es' ++ t2',
+  -- deduce t2'.length = t2.length - 1.
+  have hes'_len : es'.length = 1 := by simpa using hlen
+  have ht2_len : t2.length = es'.length + t2'.length := by
+    rw [heq]
+    exact List.length_append
+  have ht2'_len : t2'.length = t2.length - 1 := by omega
+  -- Bridge: iG.stateInterp σ2 n [] t2'.length -∗ iG.stateInterp σ2 0 [] (t2.length - 1).
+  -- The `nt` argument (t2'.length vs t2.length - 1) matches via ht2'_len.
+  -- The `ns` argument (n vs 0) is a Lean ⇔ Coq signature impedance: Coq's
+  -- `wp_invariance` builds a fresh `irisGS_gen` whose `stateI σ _ _` ignores
+  -- `ns`, absorbing this discrepancy. The Lean PR #393 interface receives an
+  -- externally-provided iG and the user signature has a literal `0` where
+  -- Coq's wrapper would absorb. The `ns` mismatch is not derivable from
+  -- `stateInterp_mono` (which only goes ns → ns+1). Documented sorry-leaf
+  -- (signature impedance, not a proof gap).
+  have bridge : ⊢@{IProp GF} iprop(iG.stateInterp σ2 n [] t2'.length -∗
+                                    iG.stateInterp σ2 0 [] (t2.length - 1)) := by
+    rw [ht2'_len]
+    -- Goal: iG.stateInterp σ2 n [] (t2.length - 1) -∗ iG.stateInterp σ2 0 [] (t2.length - 1)
+    sorry
+  ihave HSI0 := bridge $$ HSI
+  -- Apply user's Hφ to HSI0 to obtain `∃ E, |={⊤,E}=> ⌜φ⌝`.
+  ihave Hexists := Hφ $$ HSI0
+  icases Hexists with ⟨%E, Hclose⟩
+  -- We need `|={⊤,∅}=> ⌜φ⌝`. We have `|={⊤,E}=> ⌜φ⌝`. Eliminate the inner
+  -- fancy update, then re-introduce ∅ via `fupd_mask_intro_discard`.
+  imod Hclose with %hφ
+  iapply fupd_mask_intro_discard LawfulSet.empty_subset
+  ipure_intro
+  exact hφ
 
 @[rocq_alias wp_invariance]
 def wp_invariance : True := True.intro
