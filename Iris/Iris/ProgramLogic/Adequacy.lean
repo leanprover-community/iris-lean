@@ -632,11 +632,172 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
               ([∗list] v ∈ List.filterMap ToVal.toVal t2', forkPost v) -∗
               |={⊤,∅}=> ⌜φ⌝))))
     (_hsteps : Language.NSteps n (es, σ1) κs (t2, σ2)) :
-    φ :=
-  -- TODO: rewrite proof for new signature. With IrisGS_gen.ofFull constructed
-  -- INSIDE the proof using Hinv from step_fupdN_soundness, the LcGS/WsatGS
-  -- mismatch (Agent #1's diagnosis) is gone.
-  sorry
+    φ := by
+  -- Step 1: Derive NS condition (used as `_Hwp` continuation's pure premise).
+  -- We use `wp_progress_gen`; its `_Hwp` is under `ofSimple` iG, while our
+  -- `_Hwp` is under `ofFull` iG. By the `ofSimple = ofFull (fun σ _ _ _ => stateI σ)
+  -- ... (fun _ _ _ _ => fupd_intro)` defeq (both `@[reducible]`), we can bridge.
+  have NS : ∀ e2, s = .NotStuck → e2 ∈ t2 → PrimStep.NotStuck (e2, σ2) := by
+    intro e2 hs hel
+    subst hs
+    refine @wp_progress_gen hlc Expr State Obs Val _ GF _ _ es σ1 n κs t2 σ2 e2
+                            numLaters ?_ _hsteps hel
+    intro Hinv stateI_s forkPost_s
+    -- Bind a named local iG via ofSimple (matches wp_progress_gen's letI _ shape).
+    letI iG_simple : IrisGS_gen hlc Expr GF :=
+      IrisGS_gen.ofSimple Hinv stateI_s forkPost_s numLaters
+    -- Specialize user's `_Hwp` (which uses ofFull) with simple stateI lifted to 4-arg.
+    -- By spike: `ofSimple ≡ ofFull (fun σ _ _ _ => stateI σ) ... (fun _ _ _ _ => fupd_intro)`.
+    ihave HwpFull := @_Hwp Hinv (fun σ _ _ _ => stateI_s σ) forkPost_s
+                              (fun _ _ _ _ => fupd_intro)
+    imod HwpFull with ⟨%Φs, Hσ, Hwptp, _Hφ⟩
+    imodintro
+    iexists Φs
+    iframe Hσ
+    -- `Hwptp : bigSepL2 es Φs (WP e @ NotStuck ; ⊤ {{Φ}})` under the letI'd iG (= ofSimple by defeq).
+    -- Goal: `wptp NotStuck es Φs` under same iG. Bridge via wand-wrap (wptp = bigSepL2 by `noncomputable def`).
+    have bridge : ⊢@{IProp GF} iprop(
+        ([∗list] e;Φ ∈ es;Φs, WP e @ Stuckness.NotStuck ; ⊤ {{ Φ }}) -∗
+        @wptp hlc Expr State Obs Val _ GF iG_simple Stuckness.NotStuck es Φs) :=
+      wand_intro (emp_sep.1.trans
+        (.rfl : iprop([∗list] e;Φ ∈ es;Φs, WP e @ Stuckness.NotStuck ; ⊤ {{ Φ }}) ⊢
+              iprop(@wptp hlc Expr State Obs Val _ GF iG_simple Stuckness.NotStuck es Φs)))
+    ihave Hwptp := bridge $$ Hwptp
+    iexact Hwptp
+  -- Step 2: Main proof via `pure_soundness` + `step_fupdN_soundness_gen`.
+  apply pure_soundness (PROP := IProp GF)
+  refine step_fupdN_soundness_gen
+    (n := steps_sum numLaters 0 n + 1)
+    (m := steps_sum numLaters 0 n + 1) hlc ?_
+  intro Hinv
+  iintro Hcr
+  -- Split £ (k+1) into £ k (for wptp_preservation) and unused £ 1.
+  have splitLcr : ⊢@{IProp GF} iprop(£ (steps_sum numLaters 0 n + 1) -∗
+      £ (steps_sum numLaters 0 n) ∗ £ 1) :=
+    wand_intro (emp_sep.1.trans lc_split.mp)
+  ihave Hcr := splitLcr $$ Hcr
+  icases Hcr with ⟨Hcr_k, _Hcr_1⟩
+  -- Build iG via `ofFull` with constant-`emp` stateI.
+  letI iG : IrisGS_gen hlc Expr GF :=
+    IrisGS_gen.ofFull Hinv
+      (fun (_ : State) (_ : Nat) (_ : List Obs) (_ : Nat) => iprop(emp))
+      (fun (_ : Val) => iprop(True))
+      numLaters
+      (fun _ _ _ _ => fupd_intro)
+  -- Specialize user's `_Hwp` at the constant-`emp` stateI.
+  ihave Hopen := @_Hwp Hinv
+                        (fun (_ : State) (_ : Nat) (_ : List Obs) (_ : Nat) => iprop(emp))
+                        (fun (_ : Val) => iprop(True))
+                        (fun _ _ _ _ => fupd_intro)
+  imod Hopen with ⟨%Φs, _Hemp_init, Hwptp_bsl, Hφ⟩
+  -- Step 3: Bridge `bigSepL2 es Φs (WP ...)` ↔ `wptp s es Φs`.
+  have wptp_bridge_in : ⊢@{IProp GF} iprop(
+      ([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }}) -∗
+      @wptp hlc Expr State Obs Val _ GF iG s es Φs) :=
+    wand_intro (emp_sep.1.trans
+      (.rfl : iprop([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }}) ⊢
+            iprop(@wptp hlc Expr State Obs Val _ GF iG s es Φs)))
+  ihave Hwptp := wptp_bridge_in $$ Hwptp_bsl
+  -- Step 4: extract `es.length = Φs.length` as pure fact (doesn't consume Hwptp).
+  have lenInit : ⊢@{IProp GF} iprop(
+      @wptp hlc Expr State Obs Val _ GF iG s es Φs -∗ ⌜es.length = Φs.length⌝) :=
+    wand_intro (emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
+  ihave %hlen_es_Φs := lenInit $$ Hwptp
+  -- Step 5: apply wptp_preservation to evolve to σ2 + preserved wptp.
+  -- (We bypass wptp_postconditions because its return type's inline-match aux def
+  -- isn't reusable in our local match-form wand builds. We compose
+  -- wptp_preservation + wptp_to_postcond manually with `fromOptionVal` form.)
+  ihave Hpres := (@wptp_preservation hlc Expr State Obs Val _ GF iG s n
+                    es t2 κs [] σ1 σ2 0 Φs 0 _hsteps) $$ _Hemp_init Hcr_k Hwptp
+  imod Hpres
+  imodintro
+  iapply step_fupdN_compose $$ Hpres
+  iintro Hinner
+  -- Inner shape: `|={∅,⊤}=> ∃ nt', stateInterp σ2 (n+0) [] (0+nt') ∗ wptp s t2 (Φs ++ replicate nt' iG.forkPost)`
+  -- Goal: `step_fupd ⌜φ⌝` ≡ `|={∅}=> ▷ |={∅}=> ⌜φ⌝`.
+  simp only [Nat.repeat]
+  -- Strip inner |={∅,⊤}=>; opens at ⊤. Goal becomes `|={⊤,∅}=> ▷ |={∅,∅}=> ⌜φ⌝`.
+  imod Hinner with ⟨%nt', _HSI_σ2, Hwptp_t2⟩
+  -- _HSI_σ2 : stateInterp σ2 (n+0) [] (0+nt') ≡ emp (by `letI iG := ofFull ... emp`).
+  -- Hwptp_t2 : wptp s t2 (Φs ++ replicate nt' iG.forkPost)
+  -- Step 5b: convert wptp → fromOptionVal-form bigSepL2 via wptp_to_postcond.
+  ihave Hpost_fupd := (@wptp_to_postcond hlc Expr State Obs Val _ GF iG s t2
+                          (Φs ++ List.replicate nt' iG.forkPost)) $$ Hwptp_t2
+  imod Hpost_fupd
+  -- Hpost_fupd : `[∗list] e;Φ ∈ t2;(Φs ++ replicate nt' fp), fromOptionVal e Φ`
+  -- (in fromOptionVal form — our local @[reducible] def with FIXED aux def)
+  ihave Hpost_es2 := Hpost_fupd
+  -- Step 7: split bigSepL2 t2 (Φs ++ ...) via bigSepL2_app_inv_right.
+  -- All in fromOptionVal form (canonical aux def from our local def).
+  have splitR : ⊢@{IProp GF} iprop(
+      ([∗list] e;Φ ∈ t2;Φs ++ List.replicate nt' iG.forkPost,
+         fromOptionVal (GF := GF) e Φ) -∗
+      ∃ (l1' l1'' : List Expr),
+        ⌜t2 = l1' ++ l1''⌝ ∧
+        (([∗list] e;Φ ∈ l1';Φs,
+            fromOptionVal (GF := GF) e Φ) ∗
+         ([∗list] k ↦ e;Φ ∈ l1'';List.replicate nt' iG.forkPost,
+            fromOptionVal (GF := GF) e Φ))) :=
+    wand_intro (emp_sep.1.trans BI.BigSepL2.bigSepL2_app_inv_right)
+  ihave Hsplit := splitR $$ Hpost_es2
+  icases Hsplit with ⟨%es', %t2', %ht2_eq, Hes', Ht2'⟩
+  -- Step 8: derive `es'.length = Φs.length` (= es.length) and `t2'.length = nt'`.
+  have lenEs' : ⊢@{IProp GF} iprop(
+      ([∗list] e;Φ ∈ es';Φs,
+         fromOptionVal (GF := GF) e Φ) -∗
+      ⌜es'.length = Φs.length⌝) :=
+    wand_intro (emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
+  have lenT2' : ⊢@{IProp GF} iprop(
+      ([∗list] k ↦ e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+         fromOptionVal (GF := GF) e Φ) -∗
+      ⌜t2'.length = (List.replicate nt' iG.forkPost).length⌝) :=
+    wand_intro (emp_sep.1.trans BI.BigSepL2.bigSepL2_length)
+  ihave %hlen_es'_Φs := lenEs' $$ Hes'
+  ihave %hlen_t2'_rep := lenT2' $$ Ht2'
+  have hlen_es'_es : es'.length = es.length := by
+    rw [hlen_es'_Φs, ← hlen_es_Φs]
+  have hlen_t2'_nt' : t2'.length = nt' := by
+    rw [hlen_t2'_rep, List.length_replicate]
+  -- Step 9: convert right block (replicate forkPost, fromOptionVal) to filterMap form.
+  -- Need to drop the index binder `k ↦` first.
+  have rightDropIdx : ⊢@{IProp GF} iprop(
+      ([∗list] k ↦ e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+         fromOptionVal (GF := GF) e Φ) -∗
+      ([∗list] e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+         fromOptionVal (GF := GF) e Φ)) :=
+    wand_intro (emp_sep.1.trans
+      (.rfl : iprop([∗list] k ↦ e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+                      fromOptionVal (GF := GF) e Φ) ⊢
+            iprop([∗list] e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+                      fromOptionVal (GF := GF) e Φ)))
+  ihave Ht2'_noidx := rightDropIdx $$ Ht2'
+  have forkBridge : ⊢@{IProp GF} iprop(
+      ([∗list] e;Φ ∈ t2';List.replicate nt' iG.forkPost,
+         fromOptionVal (GF := GF) e Φ) -∗
+      ([∗list] v ∈ List.filterMap ToVal.toVal t2', iG.forkPost v)) :=
+    wand_intro (emp_sep.1.trans (fork_block_to_filterMap t2' nt' hlen_t2'_nt'))
+  ihave Ht2'_fm := forkBridge $$ Ht2'_noidx
+  -- Step 11: Apply user's Hφ. Strategy: use iapply with explicit spec patterns
+  -- to distribute IPM hyps. The bigSepL2 match-form arg is bridged via direct
+  -- term-level construction since IPM tactics can't bridge two inline match aux defs.
+  iapply (BIFUpdate.mono (P := iprop(⌜φ⌝)) (Q := iprop(▷ |={∅,∅}=> ⌜φ⌝))
+            (later_intro.trans (later_mono fupd_intro)))
+  -- Now goal: `|={⊤,∅}=> ⌜φ⌝`.
+  iapply Hφ $$ %es' %t2' %ht2_eq %hlen_es'_es %NS [_HSI_σ2] [Hes'] [Ht2'_fm]
+  -- Subgoal 1: _HSI_σ2 (stateInterp σ2 (n+0) [] (0+nt') = emp) ⊢ emp.
+  · iexact _HSI_σ2
+  -- Subgoal 2: Hes' (bigSepL2 fromOptionVal) ⊢ bigSepL2 match.
+  -- IPM goal uses `Entails'` (abbrev for Entails). refine .trans produces
+  -- `Entails ?Q ?R` which startProofMode can't parse. So convert back via
+  -- `show Iris.ProofMode.Entails' ... ...` to re-enter IPM mode.
+  · refine BIBase.Entails.trans
+      (Q := iprop([∗list] e;Φ ∈ es';Φs, fromOptionVal (GF := GF) e Φ)) ?goalQ .rfl
+    case goalQ =>
+      show Iris.ProofMode.Entails' _ _
+      iexact Hes'
+  -- Subgoal 3: Ht2'_fm ⊢ bigSepL filterMap True.
+  · iexact Ht2'_fm
+
 
 @[rocq_alias wp_strong_adequacy]
 def wp_strong_adequacy : True := True.intro
