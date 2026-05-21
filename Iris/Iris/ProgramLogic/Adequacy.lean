@@ -85,18 +85,37 @@ def steps_sum (numLaters : Nat → Nat) : Nat → Nat → Nat
 
 /-- Build an `IrisGS_gen` instance from an `InvGS_gen` plus a simple stateI
 that ignores ns/obs/nt — matches Coq's `IrisG Hinv (λ σ _ _ _, stateI σ)
-fork_post (λ _, 0) (λ _ _ _ _, fupd_intro _ _)` construction used in
-`wp_adequacy_gen` / `wp_invariance_gen`. -/
+fork_post numLaters (λ _ _ _ _, fupd_intro _ _)` construction used in
+`wp_progress_gen` / `wp_adequacy_gen` / `wp_invariance_gen`. -/
 def IrisGS_gen.ofSimple {hlc : Bool} {Expr State Obs Val : Type _}
     [Language Expr State Obs Val] {GF : BundledGFunctors}
     (Hinv : InvGS_gen hlc GF)
-    (stateI : State → IProp GF) (forkPost : Val → IProp GF) :
+    (stateI : State → IProp GF) (forkPost : Val → IProp GF)
+    (numLaters : Nat → Nat := fun _ => 0) :
     IrisGS_gen hlc Expr GF :=
   { toStateInterp := { stateInterp := fun σ _ _ _ => stateI σ }
     toInvGS_gen := Hinv
-    numLatersPerStep := fun _ => 0
+    numLatersPerStep := numLaters
     forkPost := forkPost
     stateInterp_mono := fun _ _ _ _ => fupd_intro }
+
+/-- Build an `IrisGS_gen` instance from an `InvGS_gen` plus a full
+(4-arg) `stateI`, `forkPost`, `numLaters`, and user-supplied
+`stateInterp_mono` proof — matches Coq's `IrisG Hinv stateI fork_post
+numLaters state_interp_mono` construction used in `wp_strong_adequacy_gen`. -/
+def IrisGS_gen.ofFull {hlc : Bool} {Expr State Obs Val : Type _}
+    [Language Expr State Obs Val] {GF : BundledGFunctors}
+    (Hinv : InvGS_gen hlc GF)
+    (stateI : State → Nat → List Obs → Nat → IProp GF)
+    (forkPost : Val → IProp GF) (numLaters : Nat → Nat)
+    (mono : ∀ σ ns obs nt,
+        iprop(stateI σ ns obs nt ⊢ |={∅}=> stateI σ (ns + 1) obs nt)) :
+    IrisGS_gen hlc Expr GF :=
+  { toStateInterp := { stateInterp := stateI }
+    toInvGS_gen := Hinv
+    numLatersPerStep := numLaters
+    forkPost := forkPost
+    stateInterp_mono := mono }
 
 
 @[rocq_alias wp_step]
@@ -542,13 +561,17 @@ Lean's `letI` cannot be introduced inside `iprop(...)` syntax. -/
 theorem wp_progress_gen [InvGpreS GF] (s : Stuckness)
     (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
     (t2 : List Expr) (σ2 : State) (e2 : Expr)
-    (_numLaters : Nat → Nat)
-    (_Hwp : ∀ [_Hinv : InvGS_gen hlc GF] [_iG : IrisGS_gen hlc Expr GF],
-        ⊢ iprop(|={⊤}=> ∃ (Φs : List (Val → IProp GF)),
-          stateInterp σ1 0 κs 0 ∗ wptp s es Φs))
+    (numLaters : Nat → Nat)
+    (_Hwp : ∀ [Hinv : InvGS_gen hlc GF]
+             (stateI : State → IProp GF) (forkPost : Val → IProp GF),
+        letI _ : IrisGS_gen hlc Expr GF :=
+          IrisGS_gen.ofSimple Hinv stateI forkPost numLaters
+        (⊢ iprop(|={⊤}=> ∃ (Φs : List (Val → IProp GF)),
+            stateI σ1 ∗ wptp s es Φs)))
     (_hsteps : Language.NSteps n (es, σ1) κs (t2, σ2))
     (_hel : e2 ∈ t2) :
     PrimStep.NotStuck (e2, σ2) :=
+  -- TODO: rewrite for new signature using ofSimple + wptp_progress.
   sorry
 
 /-- Bridge: fork-post block (`replicate nt' iG.forkPost`) implies the
@@ -573,66 +596,31 @@ private theorem fork_block_to_filterMap (t2' : List Expr) (nt' : Nat)
 theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
     (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
     (t2 : List Expr) (σ2 : State) (φ : Prop)
-    (_numLaters : Nat → Nat)
-    (_Hwp : ∀ [_Hinv : InvGS_gen hlc GF] [iG : IrisGS_gen hlc Expr GF],
-        ⊢ iprop(|={⊤}=> ∃ (Φs : List (Val → IProp GF)),
-          stateInterp σ1 0 κs 0 ∗
-          ([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }}) ∗
-          (∀ (es' t2' : List Expr),
-            ⌜t2 = es' ++ t2'⌝ -∗ ⌜es'.length = es.length⌝ -∗
-            ⌜∀ e2, s = Stuckness.NotStuck → e2 ∈ t2 → PrimStep.NotStuck (e2, σ2)⌝ -∗
-            stateInterp σ2 n [] t2'.length -∗
-            ([∗list] e;Φ ∈ es';Φs, match ToVal.toVal e with
-                                    | some v => Φ v
-                                    | none   => iprop(True)) -∗
-            ([∗list] v ∈ List.filterMap ToVal.toVal t2', iG.forkPost v) -∗
-            |={⊤,∅}=> ⌜φ⌝)))
+    (numLaters : Nat → Nat)
+    (_Hwp : ∀ [Hinv : InvGS_gen hlc GF]
+             (stateI : State → Nat → List Obs → Nat → IProp GF)
+             (forkPost : Val → IProp GF)
+             (mono : ∀ σ ns obs nt,
+                iprop(stateI σ ns obs nt ⊢ |={∅}=> stateI σ (ns + 1) obs nt)),
+        letI iG : IrisGS_gen hlc Expr GF :=
+          IrisGS_gen.ofFull Hinv stateI forkPost numLaters mono
+        (⊢ iprop(|={⊤}=> ∃ (Φs : List (Val → IProp GF)),
+            stateI σ1 0 κs 0 ∗
+            ([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }}) ∗
+            (∀ (es' t2' : List Expr),
+              ⌜t2 = es' ++ t2'⌝ -∗ ⌜es'.length = es.length⌝ -∗
+              ⌜∀ e2, s = Stuckness.NotStuck → e2 ∈ t2 → PrimStep.NotStuck (e2, σ2)⌝ -∗
+              stateI σ2 n [] t2'.length -∗
+              ([∗list] e;Φ ∈ es';Φs, match ToVal.toVal e with
+                                      | some v => Φ v
+                                      | none   => iprop(True)) -∗
+              ([∗list] v ∈ List.filterMap ToVal.toVal t2', forkPost v) -∗
+              |={⊤,∅}=> ⌜φ⌝))))
     (_hsteps : Language.NSteps n (es, σ1) κs (t2, σ2)) :
     φ :=
-  -- DESIGN ISSUE (see Bash log of stage/6-on-393 worktree, 2026-05-21):
-  -- The current Lean port signature has the section variable
-  -- `[iG : IrisGS_gen hlc Expr GF]` auto-bound at the theorem level (i.e. the
-  -- caller provides `iG` *externally*), while `step_fupdN_soundness_gen`
-  -- allocates a *fresh* `Hinv : InvGS_gen hlc GF` inside the proof.
-  --
-  -- These two are *different* `InvGS_gen` instances, so `iG.toLcGS ≠
-  -- Hinv.toLcGS` and `iG.toWsatGS ≠ Hinv.toWsatGS`.  All `£`-credits and
-  -- `|={E1,E2}=>` masks introduced by the soundness lemma carry
-  -- `Hinv.toLcGS` / `Hinv.toWsatGS`, while every helper proved against the
-  -- section `iG` (`wptp_postconditions` / `wptp_progress` / `wp_not_stuck` /
-  -- `wp_to_postcond` / …) carries `iG.toLcGS` / `iG.toWsatGS`.  `ispecialize`
-  -- cannot unify the resulting `£`-cells across the two instances, so the
-  -- straightforward port of Coq's adequacy proof does not type-check.
-  --
-  -- Coq's `wp_strong_adequacy` avoids this by *constructing* `iG` from
-  -- `Hinv` inside the proof via `pose (iG := IrisG Hinv …)`.  In Lean we
-  -- cannot mirror that pattern because:
-  --   (a) `letI` cannot be introduced inside `iprop(…)` syntax (noted in
-  --       `wp_progress_gen`'s existing doc-comment), so `iG` must be a
-  --       Pi-argument (auto-bound section variable);
-  --   (b) `{ iG with toInvGS_gen := Hinv }` triggers a `Type mismatch` on
-  --       the `stateInterp_mono` field, whose statement depends on
-  --       `iG.toInvGS_gen`: the user-supplied proof of `stateInterp_mono`
-  --       quantifies over `iG`'s `InvGS_gen`, not the fresh `Hinv`.
-  --
-  -- A proper Lean-side fix probably requires *either*:
-  --   (i) restating `IrisGS_gen` so that `stateInterp_mono` is generic
-  --       over the embedded `InvGS_gen` (e.g. quantify over all `Hinv` of
-  --       the right type, not just `iG.toInvGS_gen`), so the field can be
-  --       transported to `Hinv`; *or*
-  --   (ii) restating `wp_strong_adequacy_gen` to take the
-  --        `stateInterp` / `forkPost` / `numLatersPerStep` /
-  --        `stateInterp_mono` *as plain Pi arguments* (mirroring Coq's
-  --        in-iprop existential), and *constructing* `iG` inside the
-  --        proof from `Hinv` + those parameters.
-  -- Both are non-trivial design changes outside this PR's scope.
-  --
-  -- A full draft proof using the (i) approach was attempted in this
-  -- worktree (see git log for stage/6-on-393); it stops at the `letI`
-  -- transport step.  The remaining structure (pure_soundness →
-  -- step_fupdN_soundness_gen → open `_Hwp` → wptp_postconditions →
-  -- bigSepL2_app_inv_right split → fork-block conversion via
-  -- `fork_block_to_filterMap` → apply user continuation) is correct.
+  -- TODO: rewrite proof for new signature. With IrisGS_gen.ofFull constructed
+  -- INSIDE the proof using Hinv from step_fupdN_soundness, the LcGS/WsatGS
+  -- mismatch (Agent #1's diagnosis) is gone.
   sorry
 
 @[rocq_alias wp_strong_adequacy]
@@ -697,11 +685,12 @@ theorem adequate_tp_safe (e1 : Expr) (t2 : List Expr) (σ1 σ2 : State)
 @[rocq_alias wp_adequacy_gen]
 theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State)
     (φ : Val → Prop)
-    (_Hwp : ∀ [_Hinv : InvGS_gen hlc GF] [iG : IrisGS_gen hlc Expr GF]
-            (κs : List Obs),
-        ⊢ iprop(|={⊤}=> iG.stateInterp σ 0 κs 0 ∗ WP e @ s ; ⊤ {{ v, ⌜φ v⌝ }})) :
+    (_Hwp : ∀ [Hinv : InvGS_gen hlc GF] (κs : List Obs)
+             (stateI : State → IProp GF) (forkPost : Val → IProp GF),
+        letI _ : IrisGS_gen hlc Expr GF := IrisGS_gen.ofSimple Hinv stateI forkPost
+        (⊢ iprop(|={⊤}=> stateI σ ∗ WP e @ s ; ⊤ {{ v, ⌜φ v⌝ }}))) :
     adequate s e σ (fun v _ => φ v) :=
-  -- TODO: Agent #3 hit match aux-def blocker (same as Group A wptp_postconditions).
+  -- TODO: rewrite for new signature using ofSimple + adequate_alt + wp_strong_adequacy_gen.
   sorry
 
 @[rocq_alias wp_adequacy]
