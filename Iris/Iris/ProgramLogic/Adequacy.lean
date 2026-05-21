@@ -87,7 +87,7 @@ def steps_sum (numLaters : Nat → Nat) : Nat → Nat → Nat
 that ignores ns/obs/nt — matches Coq's `IrisG Hinv (λ σ _ _ _, stateI σ)
 fork_post numLaters (λ _ _ _ _, fupd_intro _ _)` construction used in
 `wp_progress_gen` / `wp_adequacy_gen` / `wp_invariance_gen`. -/
-def IrisGS_gen.ofSimple {hlc : Bool} {Expr State Obs Val : Type _}
+@[reducible] def IrisGS_gen.ofSimple {hlc : Bool} {Expr State Obs Val : Type _}
     [Language Expr State Obs Val] {GF : BundledGFunctors}
     (Hinv : InvGS_gen hlc GF)
     (stateI : State → IProp GF) (forkPost : Val → IProp GF)
@@ -103,7 +103,7 @@ def IrisGS_gen.ofSimple {hlc : Bool} {Expr State Obs Val : Type _}
 (4-arg) `stateI`, `forkPost`, `numLaters`, and user-supplied
 `stateInterp_mono` proof — matches Coq's `IrisG Hinv stateI fork_post
 numLaters state_interp_mono` construction used in `wp_strong_adequacy_gen`. -/
-def IrisGS_gen.ofFull {hlc : Bool} {Expr State Obs Val : Type _}
+@[reducible] def IrisGS_gen.ofFull {hlc : Bool} {Expr State Obs Val : Type _}
     [Language Expr State Obs Val] {GF : BundledGFunctors}
     (Hinv : InvGS_gen hlc GF)
     (stateI : State → Nat → List Obs → Nat → IProp GF)
@@ -558,7 +558,7 @@ that any reachable thread `e2 ∈ t2` after `n` steps is not stuck. The
 as ordinary Pi arguments rather than inside the Iris ∃ as in Coq, since
 Lean's `letI` cannot be introduced inside `iprop(...)` syntax. -/
 @[rocq_alias wp_progress_gen]
-theorem wp_progress_gen [InvGpreS GF] (s : Stuckness)
+theorem wp_progress_gen [InvGpreS GF]
     (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
     (t2 : List Expr) (σ2 : State) (e2 : Expr)
     (numLaters : Nat → Nat)
@@ -567,11 +567,14 @@ theorem wp_progress_gen [InvGpreS GF] (s : Stuckness)
         letI _ : IrisGS_gen hlc Expr GF :=
           IrisGS_gen.ofSimple Hinv stateI forkPost numLaters
         (⊢ iprop(|={⊤}=> ∃ (Φs : List (Val → IProp GF)),
-            stateI σ1 ∗ wptp s es Φs)))
+            stateI σ1 ∗ wptp Stuckness.NotStuck es Φs)))
     (_hsteps : Language.NSteps n (es, σ1) κs (t2, σ2))
     (_hel : e2 ∈ t2) :
     PrimStep.NotStuck (e2, σ2) :=
-  -- TODO: rewrite for new signature using ofSimple + wptp_progress.
+  -- TODO: proof skeleton done (pure_soundness + step_fupdN_soundness_gen +
+  -- letI iG via ofSimple + apply wptp_progress) but iexact fails on
+  -- `step_fupdN^[k] |={∅}=> ⌜NotStuck⌝` vs `step_fupdN^[k] ⌜NotStuck⌝`
+  -- (inner |={∅}=> absorption). Need fupd_pure_intro / except_0 strip.
   sorry
 
 /-- Bridge: fork-post block (`replicate nt' iG.forkPost`) implies the
