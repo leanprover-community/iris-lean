@@ -805,8 +805,10 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
   · iexact Ht2'_fm
 
 
+/-- `wp_strong_adequacy_gen` specialized to `hlc := true` (later credits enabled).
+Matches Coq's `Definition wp_strong_adequacy := wp_strong_adequacy_gen HasLc`. -/
 @[rocq_alias wp_strong_adequacy]
-def wp_strong_adequacy : True := True.intro
+abbrev wp_strong_adequacy := @wp_strong_adequacy_gen true
 
 @[rocq_alias adequate]
 structure adequate (s : Stuckness) (e1 : Expr) (σ1 : State)
@@ -1006,8 +1008,10 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State)
     · iapply BI.BigSepL2.bigSepL2_nil.mpr
       iemp_intro
 
+/-- `wp_adequacy_gen` specialized to `hlc := true` (later credits enabled).
+Matches Coq's `Definition wp_adequacy := wp_adequacy_gen HasLc`. -/
 @[rocq_alias wp_adequacy]
-def wp_adequacy : True := True.intro
+abbrev wp_adequacy := @wp_adequacy_gen true
 
 @[rocq_alias wp_invariance_gen]
 theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr)
@@ -1084,8 +1088,10 @@ theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr)
   exact hφ
 
 
+/-- `wp_invariance_gen` specialized to `hlc := true` (later credits enabled).
+Matches Coq's `Definition wp_invariance := wp_invariance_gen HasLc`. -/
 @[rocq_alias wp_invariance]
-def wp_invariance : True := True.intro
+abbrev wp_invariance := @wp_invariance_gen true
 
 end
 end Iris.ProgramLogic
