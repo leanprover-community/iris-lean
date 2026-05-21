@@ -408,7 +408,7 @@ theorem wptp_preservation (s : Stuckness) (n : Nat) (es1 es2 : List Expr)
 /-- Pointwise post-condition extracted from a WP-style continuation,
 named to ensure both the theorem statement and the helper use the same
 elaborated `match` aux-def. -/
-@[reducible] private def fromOptionVal (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
+@[reducible] def fromOptionVal (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
   match ToVal.toVal e with
   | some v => Φ v
   | none   => iprop(True)
@@ -468,19 +468,7 @@ theorem wptp_postconditions (Φs : List (Val → IProp GF)) (κs' : List Obs)
       |={∅}▷=>^[steps_sum iG.numLatersPerStep ns n] |={∅,⊤}=> ∃ nt',
         stateInterp σ2 (n + ns) κs' (nt + nt') ∗
         [∗list] e;Φ ∈ es2;Φs ++ List.replicate nt' iG.forkPost,
-          (match ToVal.toVal e with
-           | some v => Φ v
-           | none   => iprop(True))) := by
-  -- Replace the goal's explicit `match` with the `fromOptionVal` synonym so
-  -- that auto-generated match aux defs in the goal and in `wptp_to_postcond`
-  -- match. This is sound because `fromOptionVal` is `@[reducible]`.
-  show ⊢ iprop(stateInterp σ1 ns (κs ++ κs') nt -∗
-      £ (steps_sum iG.numLatersPerStep ns n) -∗
-      wptp s es1 Φs ={⊤,∅}=∗
-      |={∅}▷=>^[steps_sum iG.numLatersPerStep ns n] |={∅,⊤}=> ∃ nt',
-        stateInterp σ2 (n + ns) κs' (nt + nt') ∗
-        [∗list] e;Φ ∈ es2;Φs ++ List.replicate nt' iG.forkPost,
-          fromOptionVal (GF := GF) e Φ)
+          fromOptionVal (GF := GF) e Φ) := by
   iintro Hσ
   iintro Hcred
   iintro Hwptp
@@ -709,6 +697,55 @@ theorem adequate_tp_safe (e1 : Expr) (t2 : List Expr) (σ1 σ2 : State)
   obtain ⟨t2', t2'', rfl⟩ := List.append_of_mem hel
   exact .inr ⟨t2' ++ e3 :: t2'' ++ efs, σ3, obs, Language.Step.of_primStep hstep⟩
 
+/-- Bridge for `wp_adequacy_gen` value branch: extracts the head `⌜φ v2⌝` from
+the postcondition bigSepL2 when `t2 = ofVal v2 :: t2_ext`. Uses the `fromOptionVal`
+synonym for the per-element match, so the goal's match aux-def is `fromOptionVal.match_1`
+(shared with `wptp_postconditions`'s body). Extracted to avoid heartbeat timeout. -/
+private theorem adequacy_value_inner_bridge
+    (σ2 : State) (t2 t2_ext : List Expr) (v2 : Val) (φ : Val → Prop) (n : Nat)
+    (ht2_eq : t2 = ToVal.ofVal v2 :: t2_ext) :
+    iprop(
+      |={∅,⊤}=> ∃ nt',
+        stateInterp σ2 (n + 0) [] (0 + nt') ∗
+        [∗list] e;Φ ∈ t2; [fun v => iprop(⌜φ v⌝)] ++
+                            List.replicate nt' iG.forkPost,
+          fromOptionVal (GF := GF) e Φ) ⊢@{IProp GF}
+    iprop(|={∅}=> ⌜φ v2⌝) := by
+  refine (fupd_elim (E2 := ⊤) (E1 := ∅) (E3 := ∅) ?_)
+  refine (exists_elim (fun nt' => ?_))
+  refine sep_elim_r.trans ?_
+  rw [ht2_eq]
+  refine BI.BigSepL2.bigSepL2_cons.1.trans ?_
+  refine sep_elim_l.trans ?_
+  -- Goal: fromOptionVal (ofVal v2) (fun v => ⌜φ v⌝) ⊢ |={⊤}=> ⌜φ v2⌝
+  unfold fromOptionVal
+  have heq_match :
+      iprop((match ToVal.toVal (Expr := Expr) (Val := Val) (ToVal.ofVal v2) with
+             | some v => (fun v => iprop(⌜φ v⌝)) v
+             | none   => iprop(True))) =
+      (iprop(⌜φ v2⌝) : IProp GF) := by
+    rw [ToVal.toVal_coe]
+  rw [heq_match]
+  exact fupd_mask_intro_discard empty_subset
+
+/-- Bridge for `wp_adequacy_gen`: lifts `step_fupdN^[k] |={∅,⊤}=> ∃...` (wptp_postconditions
+shape) to `step_fupdN^[k+1] ⌜φ v2⌝`. Composes `step_fupdN_mono` with the inner bridge
+and then widens k → k+1 via `step_fupdN_le + step_fupdN_S_fupd.2`. Extracted to
+avoid `whnf` heartbeat timeout. -/
+private theorem adequacy_value_widen_bridge
+    (σ2 : State) (t2 t2_ext : List Expr) (v2 : Val) (φ : Val → Prop) (n : Nat)
+    (k : Nat)
+    (ht2_eq : t2 = ToVal.ofVal v2 :: t2_ext) :
+    iprop(
+      |={∅}[∅]▷=>^[k] |={∅,⊤}=> ∃ nt',
+        stateInterp σ2 (n + 0) [] (0 + nt') ∗
+        [∗list] e;Φ ∈ t2; [fun v => iprop(⌜φ v⌝)] ++
+                            List.replicate nt' iG.forkPost,
+          fromOptionVal (GF := GF) e Φ) ⊢@{IProp GF}
+    iprop(|={∅}[∅]▷=>^[k + 1] ⌜φ v2⌝) :=
+  (step_fupdN_mono (adequacy_value_inner_bridge σ2 t2 t2_ext v2 φ n ht2_eq)).trans
+    ((step_fupdN_le (Nat.le_succ _) LawfulSet.subset_refl).trans step_fupdN_S_fupd.2)
+
 @[rocq_alias wp_adequacy_gen]
 theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State)
     (φ : Val → Prop)
@@ -716,9 +753,91 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State)
              (stateI : State → IProp GF) (forkPost : Val → IProp GF),
         letI _ : IrisGS_gen hlc Expr GF := IrisGS_gen.ofSimple Hinv stateI forkPost
         (⊢ iprop(|={⊤}=> stateI σ ∗ WP e @ s ; ⊤ {{ v, ⌜φ v⌝ }}))) :
-    adequate s e σ (fun v _ => φ v) :=
-  -- TODO: rewrite for new signature using ofSimple + adequate_alt + wp_strong_adequacy_gen.
-  sorry
+    adequate s e σ (fun v _ => φ v) := by
+  refine (adequate_alt s e σ (fun v _ => φ v)).mpr ?_
+  intro t2 σ2 hreach
+  obtain ⟨n, κs, hsteps⟩ := (Language.erasedStep_nSteps _ _).mp hreach
+  -- Bypass wp_strong_adequacy_gen and call wptp_postconditions + wptp_progress directly,
+  -- following the wp_progress_gen pattern. We get both conjuncts simultaneously by
+  -- proving a conjunction via pure_soundness.
+  refine ⟨?part_phi, ?part_ns⟩
+  case part_phi =>
+    intro v2 t2_ext ht2_eq
+    -- t2 = ofVal v2 :: t2_ext.  We need φ v2.
+    -- Use wptp_postconditions to get a pure ⌜φ v2⌝ out.
+    apply pure_soundness (PROP := IProp GF)
+    refine step_fupdN_soundness_gen
+      (n := steps_sum (fun _ : Nat => 0) 0 n + 1)
+      (m := steps_sum (fun _ : Nat => 0) 0 n + 1) hlc ?_
+    intro Hinv
+    iintro Hcr
+    have splitL : ⊢@{IProp GF} iprop(£ (steps_sum (fun _ : Nat => 0) 0 n + 1) -∗
+        £ (steps_sum (fun _ : Nat => 0) 0 n) ∗ £ 1) :=
+      wand_intro (emp_sep.1.trans lc_split.mp)
+    ihave Hcr := splitL $$ Hcr
+    icases Hcr with ⟨Hcr_k, _Hcr_1⟩
+    letI iG : IrisGS_gen hlc Expr GF :=
+      IrisGS_gen.ofSimple Hinv (fun _ => iprop(emp)) (fun _ => iprop(True))
+        (fun _ => 0)
+    -- Apply _Hwp with stateI := fun _ => emp, forkPost := fun _ => True.
+    -- Then we have stateI σ ∗ WP e {{ v, ⌜φ v⌝ }} under the letI'd iG.
+    -- Don't add a type ascription: it would re-elaborate the iprop at the
+    -- section iG and break the typeclass unification below.
+    ihave Hopen := @_Hwp Hinv κs (fun _ => iprop(emp)) (fun _ => iprop(True))
+    imod Hopen with ⟨_Hemp, Hwp_e⟩
+    -- Package WP into a singleton wptp via IPM (uses local letI'd iG).
+    ihave Hwptp : iprop(wptp s [e] [fun v => iprop(⌜φ v⌝)]) $$ [Hwp_e]
+    · unfold wptp
+      iapply BI.BigSepL2.bigSepL2_cons.mpr
+      isplitl [Hwp_e]
+      · iexact Hwp_e
+      · iapply BI.BigSepL2.bigSepL2_nil.mpr
+        iemp_intro
+    -- Apply wptp_postconditions:
+    --   ⊢ stateI σ ns (κs ++ κs') nt -∗ £ ... -∗ wptp s [e] Φs ={⊤,∅}=∗
+    --     step_fupdN^[k] |={∅,⊤}=> ∃ nt', stateI σ2 (n+ns) κs' (nt+nt') ∗
+    --                                     [∗list] e;Φ ∈ t2;(Φs++replicate), match ...
+    ihave Hres :=
+      (@wptp_postconditions hlc Expr State Obs Val _ GF iG
+        [fun v => iprop(⌜φ v⌝)] [] s n [e] t2 κs σ σ2 0 0 hsteps)
+        $$ _Hemp Hcr_k Hwptp
+    -- Hres : |={⊤,∅}=> step_fupdN^[k] |={∅,⊤}=> ∃ nt', stateI σ2 (n + 0) [] (0 + nt') ∗
+    --                  [∗list] e;Φ ∈ t2; [fun v => ⌜φ v⌝] ++ replicate nt' iG.forkPost,
+    --                  match toVal e with | some v => Φ v | none => True
+    imod Hres
+    imodintro
+    -- Apply the widen bridge via iapply on its entailment form. Both bridges
+    -- are parameterized on the section's `iG`, but our local letI'd `iG`
+    -- shadows it consistently in the IPM context.
+    iapply (adequacy_value_widen_bridge (iG := iG)
+      σ2 t2 t2_ext v2 φ n (steps_sum iG.numLatersPerStep 0 n) ht2_eq)
+    iexact Hres
+  case part_ns =>
+    intro e2 hs hel
+    -- This is exactly wp_progress_gen with s := NotStuck.
+    have hs_eq : s = Stuckness.NotStuck := hs
+    subst hs_eq
+    refine wp_progress_gen (hlc := hlc) (Expr := Expr) (Val := Val) (GF := GF)
+      [e] σ n κs t2 σ2 e2 (fun _ => 0) ?_ hsteps hel
+    intro Hinv stateI_simple forkPost_simple
+    -- Goal: ⊢ |={⊤}=> ∃ Φs, stateI_simple σ ∗ wptp NotStuck [e] Φs (under
+    --   iG = ofSimple Hinv stateI_simple forkPost_simple (fun _ => 0), from
+    --   wp_progress_gen's letI).
+    -- _Hwp Hinv κs stateI_simple forkPost_simple gives WP under the same
+    --   ofSimple iG. No type ascription is needed (would force section's iG).
+    ihave Hopen := @_Hwp Hinv κs stateI_simple forkPost_simple
+    imod Hopen with ⟨Hσ, Hwp_e⟩
+    imodintro
+    iexists [fun v => iprop(⌜φ v⌝)]
+    iframe Hσ
+    -- Now: wptp NotStuck [e] [fun v => ⌜φ v⌝] = bigSepL2 [e];[Φ] (defn-equal)
+    --     = WP e {{ Φ }} ∗ emp (after cons + nil reduction).
+    unfold wptp
+    iapply BI.BigSepL2.bigSepL2_cons.mpr
+    isplitl [Hwp_e]
+    · iexact Hwp_e
+    · iapply BI.BigSepL2.bigSepL2_nil.mpr
+      iemp_intro
 
 @[rocq_alias wp_adequacy]
 def wp_adequacy : True := True.intro
@@ -796,6 +915,7 @@ theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr)
   iapply fupd_intro
   ipure_intro
   exact hφ
+
 
 @[rocq_alias wp_invariance]
 def wp_invariance : True := True.intro
