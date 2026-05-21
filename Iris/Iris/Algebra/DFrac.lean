@@ -10,6 +10,7 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.Frac
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
+public import Iris.Algebra.IsOp
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -32,7 +33,7 @@ instance : OFE.Discrete (DFrac F) := ⟨congrArg id⟩
 
 namespace DFrac
 
-open DFrac Fraction OFE.Discrete
+open DFrac Fraction OFE.Discrete IsOp
 
 variable [UFraction F]
 

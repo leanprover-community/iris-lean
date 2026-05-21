@@ -312,6 +312,12 @@ instance : UCMRA (View F R) where
 theorem auth_op_auth_eqv : (●V{dq1 • dq2} a : View F R) ≡ (●V{dq1} a) • ●V{dq2} a :=
   ⟨⟨rfl, Agree.idemp.symm⟩, UCMRA.unit_left_id.symm⟩
 
+@[rocq_alias view_auth_dfrac_is_op]
+instance isOp_view_auth_dfrac {dq dq1 dq2 : DFrac F} {a : A} [h : IsOp dq dq1 dq2] : IsOp (●V{dq} a : View F R) (●V{dq1} a) (●V{dq2} a) where
+  is_op := by
+    rw [h.is_op]
+    apply auth_op_auth_eqv
+
 @[rocq_alias view_frag_op]
 theorem frag_op_eq : (◯V (b1 • b2) : View F R) = ((◯V b1) • ◯V b2 : View F R) := rfl
 
@@ -348,6 +354,10 @@ instance [CMRA.CoreId b] : CMRA.CoreId ((●V{.discard} a : View F R) • ◯V b
     refine (CMRA.core_ne.eqv UCMRA.unit_left_id).trans ?_
     refine (CMRA.coreId_iff_core_eqv_self.mp (by trivial)).trans ?_
     refine UCMRA.unit_left_id.symm
+
+@[rocq_alias view_frag_is_op]
+instance [h : IsOp b b1 b2] : IsOp (◯V b : View F R) (◯V b1) (◯V b2) where
+  is_op := NonExpansive.eqv h.is_op
 
 @[rocq_alias view_auth_dfrac_op_invN]
 theorem dist_of_validN_auth (H : ✓{n} ((●V{dq1} a1 : View F R) • ●V{dq2} a2)) : a1 ≡{n}≡ a2 := by
