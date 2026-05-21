@@ -101,6 +101,25 @@ fork_post numLaters (λ _ _ _ _, fupd_intro _ _)` construction used in
     forkPost := forkPost
     stateInterp_mono := fun _ _ _ _ => fupd_intro }
 
+/-- Build an `IrisGS_gen` instance from a 2-arg stateI (state + observations),
+ignoring step count and thread count; `numLaters` fixed to `fun _ => 0`.
+Matches Coq's `IrisG Hinv (λ σ _ κs _, stateI σ κs) fork_post (λ _, 0) _`
+construction used in `wp_adequacy_gen` / `wp_invariance_gen`.
+
+The `stateInterp_mono` proof is trivial because `stateInterp σ ns κs nt
+= stateInterp σ (ns+1) κs nt` (state interp ignores `ns`), so `fupd_intro`
+gives `P ⊢ |={∅}=> P`. -/
+@[reducible] def IrisGS_gen.ofKObs {hlc : Bool} {Expr State Obs Val : Type _}
+    [Language Expr State Obs Val] {GF : BundledGFunctors}
+    (Hinv : InvGS_gen hlc GF)
+    (stateI : State → List Obs → IProp GF) (forkPost : Val → IProp GF) :
+    IrisGS_gen hlc Expr GF :=
+  { toStateInterp := { stateInterp := fun σ _ κs _ => stateI σ κs }
+    toInvGS_gen := Hinv
+    numLatersPerStep := fun _ => 0
+    forkPost := forkPost
+    stateInterp_mono := fun _ _ _ _ => fupd_intro }
+
 /-- Build an `IrisGS_gen` instance from an `InvGS_gen` plus a full
 (4-arg) `stateI`, `forkPost`, `numLaters`, and user-supplied
 `stateInterp_mono` proof — matches Coq's `IrisG Hinv stateI fork_post
@@ -565,12 +584,16 @@ theorem wp_progress_gen [InvGpreS GF]
     (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
     (t2 : List Expr) (σ2 : State) (e2 : Expr)
     (numLaters : Nat → Nat)
-    (_Hwp : ∀ [Hinv : InvGS_gen hlc GF]
-             (stateI : State → IProp GF) (forkPost : Val → IProp GF),
-        letI _ : IrisGS_gen hlc Expr GF :=
-          IrisGS_gen.ofSimple Hinv stateI forkPost numLaters
-        (⊢ iprop(|={⊤}=> ∃ (Φs : List (Val → IProp GF)),
-            stateI σ1 ∗ wptp Stuckness.NotStuck es Φs)))
+    (_Hwp : ∀ [Hinv : InvGS_gen hlc GF],
+        ⊢ iprop(|={⊤}=>
+          ∃ (stateI : State → Nat → List Obs → Nat → IProp GF)
+            (Φs : List (Val → IProp GF))
+            (forkPost : Val → IProp GF)
+            (mono : ∀ σ ns obs nt,
+                iprop(stateI σ ns obs nt ⊢ |={∅}=> stateI σ (ns + 1) obs nt)),
+          let _ : IrisGS_gen hlc Expr GF :=
+            IrisGS_gen.ofFull Hinv stateI forkPost numLaters mono
+          iprop(stateI σ1 0 κs 0 ∗ wptp Stuckness.NotStuck es Φs)))
     (_hsteps : Language.NSteps n (es, σ1) κs (t2, σ2))
     (_hel : e2 ∈ t2) :
     PrimStep.NotStuck (e2, σ2) := by
@@ -585,13 +608,18 @@ theorem wp_progress_gen [InvGpreS GF]
     wand_intro (emp_sep.1.trans lc_split.mp)
   ihave Hcr := splitL $$ Hcr
   icases Hcr with ⟨Hcr_k, _Hcr_1⟩
+  ihave Hopen := @_Hwp Hinv
+  imod Hopen with ⟨%stateI, %Φs, %forkPost, %mono, HSI, Hwptp⟩
   letI iG : IrisGS_gen hlc Expr GF :=
-    IrisGS_gen.ofSimple Hinv (fun _ => iprop(emp)) (fun _ => iprop(True)) numLaters
-  ihave Hopen := @_Hwp Hinv (fun _ => iprop(emp)) (fun _ => iprop(True))
-  imod Hopen with ⟨%Φs, _Hemp, Hwptp⟩
+    IrisGS_gen.ofFull Hinv stateI forkPost numLaters mono
+  -- Bridge HSI : stateI σ1 0 κs 0 to wptp_progress's `stateInterp σ1 0 (κs ++ []) 0` form.
+  have HSI_bridge :
+      ⊢@{IProp GF} iprop(stateI σ1 0 κs 0 -∗ stateI σ1 0 (κs ++ ([] : List Obs)) 0) := by
+    simp only [List.append_nil]; exact wand_intro emp_sep.1
+  ihave HSI' := HSI_bridge $$ HSI
   ihave Hres :=
     (@wptp_progress hlc Expr State Obs Val _ GF iG Φs [] n es t2 κs σ1 σ2 0 0 e2 _hsteps _hel)
-      $$ _Hemp Hcr_k Hwptp
+      $$ HSI' Hcr_k Hwptp
   ihave Hbridged := progress_widen_bridge $$ Hres
   iexact Hbridged
 
@@ -618,15 +646,16 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
     (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
     (t2 : List Expr) (σ2 : State) (φ : Prop)
     (numLaters : Nat → Nat)
-    (_Hwp : ∀ [Hinv : InvGS_gen hlc GF]
-             (stateI : State → Nat → List Obs → Nat → IProp GF)
-             (forkPost : Val → IProp GF)
-             (mono : ∀ σ ns obs nt,
+    (_Hwp : ∀ [Hinv : InvGS_gen hlc GF],
+        ⊢ iprop(|={⊤}=>
+          ∃ (stateI : State → Nat → List Obs → Nat → IProp GF)
+            (Φs : List (Val → IProp GF))
+            (forkPost : Val → IProp GF)
+            (mono : ∀ σ ns obs nt,
                 iprop(stateI σ ns obs nt ⊢ |={∅}=> stateI σ (ns + 1) obs nt)),
-        letI iG : IrisGS_gen hlc Expr GF :=
-          IrisGS_gen.ofFull Hinv stateI forkPost numLaters mono
-        (⊢ iprop(|={⊤}=> ∃ (Φs : List (Val → IProp GF)),
-            stateI σ1 0 κs 0 ∗
+          let _ : IrisGS_gen hlc Expr GF :=
+            IrisGS_gen.ofFull Hinv stateI forkPost numLaters mono
+          iprop(stateI σ1 0 κs 0 ∗
             ([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }}) ∗
             (∀ (es' t2' : List Expr),
               ⌜t2 = es' ++ t2'⌝ -∗ ⌜es'.length = es.length⌝ -∗
@@ -648,28 +677,29 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
     subst hs
     refine @wp_progress_gen hlc Expr State Obs Val _ GF _ _ es σ1 n κs t2 σ2 e2
                             numLaters ?_ _hsteps hel
-    intro Hinv stateI_s forkPost_s
-    -- Bind a named local iG via ofSimple (matches wp_progress_gen's letI _ shape).
-    letI iG_simple : IrisGS_gen hlc Expr GF :=
-      IrisGS_gen.ofSimple Hinv stateI_s forkPost_s numLaters
-    -- Specialize user's `_Hwp` (which uses ofFull) with simple stateI lifted to 4-arg.
-    -- `ofSimple ≡ ofFull (fun σ _ _ _ => stateI σ) ... (fun _ _ _ _ => fupd_intro)` (defeq via @[reducible]).
-    ihave HwpFull := @_Hwp Hinv (fun σ _ _ _ => stateI_s σ) forkPost_s
-                              (fun _ _ _ _ => fupd_intro)
-    imod HwpFull with ⟨%Φs, Hσ, Hwptp, _Hφ⟩
+    intro Hinv
+    -- Forward our `_Hwp` (new ∃ form) to wp_progress_gen's `_Hwp` (also new ∃ form).
+    -- Both ∃-quantify stateI/Φs/forkPost/mono; we imod-elim then iexists.
+    ihave Hopen := @_Hwp Hinv
+    imod Hopen with ⟨%stateI, %Φs, %forkPost, %mono, HSI, Hwptp_bs, _Hφ⟩
+    letI iG_local : IrisGS_gen hlc Expr GF :=
+      IrisGS_gen.ofFull Hinv stateI forkPost numLaters mono
     imodintro
+    iexists stateI
     iexists Φs
-    iframe Hσ
-    -- `Hwptp : bigSepL2 es Φs (WP e @ NotStuck ; ⊤ {{Φ}})` under the letI'd iG (= ofSimple by defeq).
-    -- Goal: `wptp NotStuck es Φs` under same iG. Bridge via wand-wrap (wptp = bigSepL2 by `noncomputable def`).
-    have bridge : ⊢@{IProp GF} iprop(
-        ([∗list] e;Φ ∈ es;Φs, WP e @ Stuckness.NotStuck ; ⊤ {{ Φ }}) -∗
-        @wptp hlc Expr State Obs Val _ GF iG_simple Stuckness.NotStuck es Φs) :=
-      wand_intro (emp_sep.1.trans
-        (.rfl : iprop([∗list] e;Φ ∈ es;Φs, WP e @ Stuckness.NotStuck ; ⊤ {{ Φ }}) ⊢
-              iprop(@wptp hlc Expr State Obs Val _ GF iG_simple Stuckness.NotStuck es Φs)))
-    ihave Hwptp := bridge $$ Hwptp
-    iexact Hwptp
+    iexists forkPost
+    iexists mono
+    isplitl [HSI]
+    · iexact HSI
+    · -- Bridge bigSepL2 (WP @ NotStuck) → wptp NotStuck (noncomputable def equality).
+      have bridge : ⊢@{IProp GF} iprop(
+          ([∗list] e;Φ ∈ es;Φs, WP e @ Stuckness.NotStuck ; ⊤ {{ Φ }}) -∗
+          @wptp hlc Expr State Obs Val _ GF iG_local Stuckness.NotStuck es Φs) :=
+        wand_intro (emp_sep.1.trans
+          (.rfl : iprop([∗list] e;Φ ∈ es;Φs, WP e @ Stuckness.NotStuck ; ⊤ {{ Φ }}) ⊢
+                iprop(@wptp hlc Expr State Obs Val _ GF iG_local Stuckness.NotStuck es Φs)))
+      ihave Hwptp := bridge $$ Hwptp_bs
+      iexact Hwptp
   -- Main proof via `pure_soundness` + `step_fupdN_soundness_gen`.
   apply pure_soundness (PROP := IProp GF)
   refine step_fupdN_soundness_gen
@@ -683,19 +713,17 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
     wand_intro (emp_sep.1.trans lc_split.mp)
   ihave Hcr := splitLcr $$ Hcr
   icases Hcr with ⟨Hcr_k, _Hcr_1⟩
-  -- Build iG via `ofFull` with constant-`emp` stateI.
-  letI iG : IrisGS_gen hlc Expr GF :=
-    IrisGS_gen.ofFull Hinv
-      (fun (_ : State) (_ : Nat) (_ : List Obs) (_ : Nat) => iprop(emp))
-      (fun (_ : Val) => iprop(True))
-      numLaters
-      (fun _ _ _ _ => fupd_intro)
-  -- Specialize user's `_Hwp` at the constant-`emp` stateI.
+  -- Open user's `_Hwp` (new ∃ form) to get stateI/Φs/forkPost/mono + body.
   ihave Hopen := @_Hwp Hinv
-                        (fun (_ : State) (_ : Nat) (_ : List Obs) (_ : Nat) => iprop(emp))
-                        (fun (_ : Val) => iprop(True))
-                        (fun _ _ _ _ => fupd_intro)
-  imod Hopen with ⟨%Φs, _Hemp_init, Hwptp_bsl, Hφ⟩
+  imod Hopen with ⟨%stateI, %Φs, %forkPost, %mono, HSI_init, Hwptp_bsl, Hφ⟩
+  -- Build iG via `ofFull` using ∃-elim'd stateI/forkPost/mono.
+  letI iG : IrisGS_gen hlc Expr GF :=
+    IrisGS_gen.ofFull Hinv stateI forkPost numLaters mono
+  -- Bridge HSI_init : stateI σ1 0 κs 0 to wptp_preservation's `stateInterp σ1 0 (κs ++ []) 0` form.
+  have HSI_bridge :
+      ⊢@{IProp GF} iprop(stateI σ1 0 κs 0 -∗ stateI σ1 0 (κs ++ ([] : List Obs)) 0) := by
+    simp only [List.append_nil]; exact wand_intro emp_sep.1
+  ihave _Hemp_init := HSI_bridge $$ HSI_init
   -- Bridge `bigSepL2 es Φs (WP ...)` ↔ `wptp s es Φs`.
   have wptp_bridge_in : ⊢@{IProp GF} iprop(
       ([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }}) -∗
@@ -783,6 +811,13 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
       ([∗list] v ∈ List.filterMap ToVal.toVal t2', iG.forkPost v)) :=
     wand_intro (emp_sep.1.trans (fork_block_to_filterMap t2' nt' hlen_t2'_nt'))
   ihave Ht2'_fm := forkBridge $$ Ht2'_noidx
+  -- Bridge _HSI_σ2 : stateI σ2 (n+0) [] (0+nt') → stateI σ2 n [] t2'.length.
+  -- (n+0/0+nt' reduce; nt' = t2'.length via hlen_t2'_nt'.)
+  have HSI_bridge_out :
+      ⊢@{IProp GF} iprop(stateI σ2 (n + 0) [] (0 + nt') -∗ stateI σ2 n [] t2'.length) := by
+    simp only [Nat.add_zero, Nat.zero_add, ← hlen_t2'_nt']
+    exact wand_intro emp_sep.1
+  ihave _HSI_σ2 := HSI_bridge_out $$ _HSI_σ2
   -- Apply user's Hφ. Strategy: use iapply with explicit spec patterns
   -- to distribute IPM hyps. The bigSepL2 match-form arg is bridged via direct
   -- term-level construction since IPM tactics can't bridge two inline match aux defs.
@@ -918,22 +953,19 @@ private theorem adequacy_value_widen_bridge
 @[rocq_alias wp_adequacy_gen]
 theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State)
     (φ : Val → Prop)
-    (_Hwp : ∀ [Hinv : InvGS_gen hlc GF] (κs : List Obs)
-             (stateI : State → IProp GF) (forkPost : Val → IProp GF),
-        letI _ : IrisGS_gen hlc Expr GF := IrisGS_gen.ofSimple Hinv stateI forkPost
-        (⊢ iprop(|={⊤}=> stateI σ ∗ WP e @ s ; ⊤ {{ v, ⌜φ v⌝ }}))) :
+    (_Hwp : ∀ [Hinv : InvGS_gen hlc GF] (κs : List Obs),
+        ⊢ iprop(|={⊤}=>
+          ∃ (stateI : State → List Obs → IProp GF)
+            (forkPost : Val → IProp GF),
+          let _ : IrisGS_gen hlc Expr GF := IrisGS_gen.ofKObs Hinv stateI forkPost
+          iprop(stateI σ κs ∗ WP e @ s ; ⊤ {{ v, ⌜φ v⌝ }}))) :
     adequate s e σ (fun v _ => φ v) := by
   refine (adequate_alt s e σ (fun v _ => φ v)).mpr ?_
   intro t2 σ2 hreach
   obtain ⟨n, κs, hsteps⟩ := (Language.erasedStep_nSteps _ _).mp hreach
-  -- Bypass wp_strong_adequacy_gen and call wptp_postconditions + wptp_progress directly,
-  -- following the wp_progress_gen pattern. We get both conjuncts simultaneously by
-  -- proving a conjunction via pure_soundness.
   refine ⟨?part_phi, ?part_ns⟩
   case part_phi =>
     intro v2 t2_ext ht2_eq
-    -- t2 = ofVal v2 :: t2_ext.  We need φ v2.
-    -- Use wptp_postconditions to get a pure ⌜φ v2⌝ out.
     apply pure_soundness (PROP := IProp GF)
     refine step_fupdN_soundness_gen
       (n := steps_sum (fun _ : Nat => 0) 0 n + 1)
@@ -945,16 +977,14 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State)
       wand_intro (emp_sep.1.trans lc_split.mp)
     ihave Hcr := splitL $$ Hcr
     icases Hcr with ⟨Hcr_k, _Hcr_1⟩
-    letI iG : IrisGS_gen hlc Expr GF :=
-      IrisGS_gen.ofSimple Hinv (fun _ => iprop(emp)) (fun _ => iprop(True))
-        (fun _ => 0)
-    -- Apply _Hwp with stateI := fun _ => emp, forkPost := fun _ => True.
-    -- Then we have stateI σ ∗ WP e {{ v, ⌜φ v⌝ }} under the letI'd iG.
-    -- Don't add a type ascription: it would re-elaborate the iprop at the
-    -- section iG and break the typeclass unification below.
-    ihave Hopen := @_Hwp Hinv κs (fun _ => iprop(emp)) (fun _ => iprop(True))
-    imod Hopen with ⟨_Hemp, Hwp_e⟩
-    -- Package WP into a singleton wptp via IPM (uses local letI'd iG).
+    ihave Hopen := @_Hwp Hinv κs
+    imod Hopen with ⟨%stateI, %forkPost, HSI, Hwp_e⟩
+    letI iG : IrisGS_gen hlc Expr GF := IrisGS_gen.ofKObs Hinv stateI forkPost
+    -- Bridge HSI : stateI σ κs to iG.stateInterp form (handles κs ↔ κs ++ []).
+    have HSI_bridge :
+        ⊢@{IProp GF} iprop(stateI σ κs -∗ stateI σ (κs ++ ([] : List Obs))) := by
+      simp only [List.append_nil]; exact wand_intro emp_sep.1
+    ihave HSI' := HSI_bridge $$ HSI
     ihave Hwptp : iprop(wptp s [e] [fun v => iprop(⌜φ v⌝)]) $$ [Hwp_e]
     · unfold wptp
       iapply BI.BigSepL2.bigSepL2_cons.mpr
@@ -962,51 +992,51 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State)
       · iexact Hwp_e
       · iapply BI.BigSepL2.bigSepL2_nil.mpr
         iemp_intro
-    -- Apply wptp_postconditions:
-    --   ⊢ stateI σ ns (κs ++ κs') nt -∗ £ ... -∗ wptp s [e] Φs ={⊤,∅}=∗
-    --     step_fupdN^[k] |={∅,⊤}=> ∃ nt', stateI σ2 (n+ns) κs' (nt+nt') ∗
-    --                                     [∗list] e;Φ ∈ t2;(Φs++replicate), match ...
     ihave Hres :=
       (@wptp_postconditions hlc Expr State Obs Val _ GF iG
         [fun v => iprop(⌜φ v⌝)] [] s n [e] t2 κs σ σ2 0 0 hsteps)
-        $$ _Hemp Hcr_k Hwptp
-    -- Hres : |={⊤,∅}=> step_fupdN^[k] |={∅,⊤}=> ∃ nt', stateI σ2 (n + 0) [] (0 + nt') ∗
-    --                  [∗list] e;Φ ∈ t2; [fun v => ⌜φ v⌝] ++ replicate nt' iG.forkPost,
-    --                  match toVal e with | some v => Φ v | none => True
+        $$ HSI' Hcr_k Hwptp
     imod Hres
     imodintro
-    -- Apply the widen bridge via iapply on its entailment form. Both bridges
-    -- are parameterized on the section's `iG`, but our local letI'd `iG`
-    -- shadows it consistently in the IPM context.
     iapply (adequacy_value_widen_bridge (iG := iG)
       σ2 t2 t2_ext v2 φ n (steps_sum iG.numLatersPerStep 0 n) ht2_eq)
     iexact Hres
   case part_ns =>
     intro e2 hs hel
-    -- This is exactly wp_progress_gen with s := NotStuck.
     have hs_eq : s = Stuckness.NotStuck := hs
     subst hs_eq
-    refine wp_progress_gen (hlc := hlc) (Expr := Expr) (Val := Val) (GF := GF)
-      [e] σ n κs t2 σ2 e2 (fun _ => 0) ?_ hsteps hel
-    intro Hinv stateI_simple forkPost_simple
-    -- Goal: ⊢ |={⊤}=> ∃ Φs, stateI_simple σ ∗ wptp NotStuck [e] Φs (under
-    --   iG = ofSimple Hinv stateI_simple forkPost_simple (fun _ => 0), from
-    --   wp_progress_gen's letI).
-    -- _Hwp Hinv κs stateI_simple forkPost_simple gives WP under the same
-    --   ofSimple iG. No type ascription is needed (would force section's iG).
-    ihave Hopen := @_Hwp Hinv κs stateI_simple forkPost_simple
-    imod Hopen with ⟨Hσ, Hwp_e⟩
-    imodintro
-    iexists [fun v => iprop(⌜φ v⌝)]
-    iframe Hσ
-    -- Now: wptp NotStuck [e] [fun v => ⌜φ v⌝] = bigSepL2 [e];[Φ] (defn-equal)
-    --     = WP e {{ Φ }} ∗ emp (after cons + nil reduction).
-    unfold wptp
-    iapply BI.BigSepL2.bigSepL2_cons.mpr
-    isplitl [Hwp_e]
-    · iexact Hwp_e
-    · iapply BI.BigSepL2.bigSepL2_nil.mpr
-      iemp_intro
+    -- Inline wp_progress_gen-style proof to avoid cross-refactor dependency.
+    apply pure_soundness (PROP := IProp GF)
+    refine step_fupdN_soundness_gen
+      (n := steps_sum (fun _ : Nat => 0) 0 n + 1)
+      (m := steps_sum (fun _ : Nat => 0) 0 n + 1) hlc ?_
+    intro Hinv
+    iintro Hcr
+    have splitL : ⊢@{IProp GF} iprop(£ (steps_sum (fun _ : Nat => 0) 0 n + 1) -∗
+        £ (steps_sum (fun _ : Nat => 0) 0 n) ∗ £ 1) :=
+      wand_intro (emp_sep.1.trans lc_split.mp)
+    ihave Hcr := splitL $$ Hcr
+    icases Hcr with ⟨Hcr_k, _Hcr_1⟩
+    ihave Hopen := @_Hwp Hinv κs
+    imod Hopen with ⟨%stateI, %forkPost, HSI, Hwp_e⟩
+    letI iG : IrisGS_gen hlc Expr GF := IrisGS_gen.ofKObs Hinv stateI forkPost
+    have HSI_bridge :
+        ⊢@{IProp GF} iprop(stateI σ κs -∗ stateI σ (κs ++ ([] : List Obs))) := by
+      simp only [List.append_nil]; exact wand_intro emp_sep.1
+    ihave HSI' := HSI_bridge $$ HSI
+    ihave Hwptp : iprop(wptp Stuckness.NotStuck [e] [fun v => iprop(⌜φ v⌝)]) $$ [Hwp_e]
+    · unfold wptp
+      iapply BI.BigSepL2.bigSepL2_cons.mpr
+      isplitl [Hwp_e]
+      · iexact Hwp_e
+      · iapply BI.BigSepL2.bigSepL2_nil.mpr
+        iemp_intro
+    ihave Hres :=
+      (@wptp_progress hlc Expr State Obs Val _ GF iG
+        [fun v => iprop(⌜φ v⌝)] [] n [e] t2 κs σ σ2 0 0 e2 hsteps hel)
+        $$ HSI' Hcr_k Hwptp
+    ihave Hbridged := progress_widen_bridge $$ Hres
+    iexact Hbridged
 
 /-- `wp_adequacy_gen` specialized to `hlc := true` (later credits enabled).
 Matches Coq's `Definition wp_adequacy := wp_adequacy_gen HasLc`. -/
@@ -1016,37 +1046,36 @@ abbrev wp_adequacy := @wp_adequacy_gen true
 @[rocq_alias wp_invariance_gen]
 theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr)
     (σ1 σ2 : State) (t2 : List Expr) (φ : Prop)
-    (_Hwp : ∀ [Hinv : InvGS_gen hlc GF] (κs : List Obs)
-             (stateI : State → IProp GF) (forkPost : Val → IProp GF),
-        letI _ : IrisGS_gen hlc Expr GF := IrisGS_gen.ofSimple Hinv stateI forkPost
-        (⊢ iprop(|={⊤}=> stateI σ1 ∗ WP e1 @ s ; ⊤ {{ v, iprop(True) }} ∗
-                         (stateI σ2 -∗ ∃ (E : CoPset), |={⊤,E}=> ⌜φ⌝))))
+    (_Hwp : ∀ [Hinv : InvGS_gen hlc GF] (κs : List Obs),
+        ⊢ iprop(|={⊤}=>
+          ∃ (stateI : State → List Obs → IProp GF)
+            (forkPost : Val → IProp GF),
+          let _ : IrisGS_gen hlc Expr GF := IrisGS_gen.ofKObs Hinv stateI forkPost
+          iprop(stateI σ1 κs ∗ WP e1 @ s ; ⊤ {{ _v, iprop(True) }} ∗
+                (stateI σ2 [] -∗ ∃ (E : CoPset), |={⊤,E}=> ⌜φ⌝))))
     (_hsteps : Relation.ReflTransGen Language.ErasedStep ([e1], σ1) (t2, σ2)) :
     φ := by
-  -- Coerce ReflTransGen ErasedStep into NSteps via erasedStep_nSteps.
   obtain ⟨n, κs, hsteps⟩ := (Language.erasedStep_nSteps _ _).mp _hsteps
-  -- Skeleton parallels `wp_progress_gen`: `pure_soundness` + `step_fupdN_soundness_gen`
-  -- with `k+1` budget (`k := steps_sum (fun _ => 0) 0 n`). For invariance we route
-  -- through `wptp_preservation` to extract `stateI σ2` and then apply user's `Hφ`.
   apply pure_soundness (PROP := IProp GF)
   refine step_fupdN_soundness_gen
     (n := steps_sum (fun _ => 0) 0 n + 1)
     (m := steps_sum (fun _ => 0) 0 n + 1) hlc ?_
   intro Hinv
   iintro Hcr
-  -- Split the `£ (k+1)` credit into `£ k` (for wptp_preservation) and unused `£ 1`.
   have splitL : ⊢@{IProp GF} iprop(£ (steps_sum (fun _ => 0) 0 n + 1) -∗
       £ (steps_sum (fun _ => 0) 0 n) ∗ £ 1) :=
     wand_intro (emp_sep.1.trans lc_split.mp)
   ihave Hcr := splitL $$ Hcr
   icases Hcr with ⟨Hcr_k, _Hcr_1⟩
-  -- Build the `IrisGS_gen` instance with the simple constant-emp stateI.
-  letI iG : IrisGS_gen hlc Expr GF :=
-    IrisGS_gen.ofSimple Hinv (fun _ => iprop(emp)) (fun _ => iprop(True)) (fun _ => 0)
-  -- Specialize user's hypothesis at stateI := (fun _ => emp), forkPost := (fun _ => True).
-  ihave Hopen := @_Hwp Hinv κs (fun _ => iprop(emp)) (fun _ => iprop(True))
-  imod Hopen with ⟨_Hemp, Hwp_e1, Hφ⟩
-  -- Convert WP e1 to a singleton wptp via bigSepL2_singleton (.2 direction).
+  ihave Hopen := @_Hwp Hinv κs
+  imod Hopen with ⟨%stateI, %forkPost, HSI, Hwp_e1, Hφ⟩
+  letI iG : IrisGS_gen hlc Expr GF := IrisGS_gen.ofKObs Hinv stateI forkPost
+  -- Bridge HSI : stateI σ1 κs to wptp_preservation's `stateInterp σ1 0 (κs ++ []) 0` form.
+  have HSI_bridge :
+      ⊢@{IProp GF} iprop(stateI σ1 κs -∗ stateI σ1 (κs ++ ([] : List Obs))) := by
+    simp only [List.append_nil]; exact wand_intro emp_sep.1
+  ihave HSI' := HSI_bridge $$ HSI
+  -- Convert WP e1 to a singleton wptp.
   have wpe1_to_wptp : ⊢@{IProp GF} iprop(
       WP e1 @ s ; ⊤ {{ v, iprop(True) }} -∗
       @wptp hlc Expr State Obs Val _ GF iG s [e1] [fun (_ : Val) => iprop(True)]) :=
@@ -1054,11 +1083,10 @@ theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr)
       (Φ := fun (_ : Nat) (e : Expr) (Φ : Val → IProp GF) =>
               iprop(Wp.wp (PROP := IProp GF) s ⊤ e Φ))).2)
   ihave Hwptp := wpe1_to_wptp $$ Hwp_e1
-  -- Apply `wptp_preservation` with `κs' := []`. Pattern matches `wptp_progress`.
   ihave Hpres :=
     (@wptp_preservation hlc Expr State Obs Val _ GF iG s n [e1] t2 κs []
         σ1 σ2 0 [fun (_ : Val) => iprop(True)] 0 hsteps)
-      $$ _Hemp Hcr_k Hwptp
+      $$ HSI' Hcr_k Hwptp
   -- Hpres : |={⊤,∅}=> |={∅}▷=>^[k] |={∅,⊤}=> ∃ nt', stateInterp σ2 ... ∗ wptp ...
   -- Goal  : |={⊤,∅}=> |={∅}▷=>^[k+1] ⌜φ⌝
   -- Strategy: open outer |={⊤,∅}=>, then use `step_fupdN_compose` to combine
