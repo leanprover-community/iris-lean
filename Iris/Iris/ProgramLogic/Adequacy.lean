@@ -515,24 +515,44 @@ theorem wptp_progress (Φs : List (Val → IProp GF)) (κs' : List Obs)
                   ((Φs ++ List.replicate nt'' iG.forkPost)[i]) $$ HSI Hwp_e2
   iexact Hres
 
-/-- WP-existence assumption (`∀ Hinv, ⊢ |={⊤}=> ∃ stateI Φs fork_post ...`)
-abstracted as `True` until `invGpreS` infrastructure lands; signature is
-otherwise 1:1 with Coq. -/
+/-- Lean port of Coq Iris `wp_progress_gen`: given a user-supplied WP-existence
+hypothesis that, in the presence of any allocated `InvGS_gen`, builds a complete
+`IrisGS_gen` instance and proves `stateI σ1 0 κs 0 ∗ wptp s es Φs`, conclude
+that any reachable thread `e2 ∈ t2` after `n` steps is not stuck. The
+`IrisGS_gen` fields (stateInterp / forkPost / monotonicity) are supplied
+as ordinary Pi arguments rather than inside the Iris ∃ as in Coq, since
+Lean's `letI` cannot be introduced inside `iprop(...)` syntax. -/
 @[rocq_alias wp_progress_gen]
-theorem wp_progress_gen (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
+theorem wp_progress_gen [InvGpreS GF] (s : Stuckness)
+    (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
     (t2 : List Expr) (σ2 : State) (e2 : Expr)
     (_numLaters : Nat → Nat)
-    (_hwp : True)
+    (_Hwp : ∀ [_Hinv : InvGS_gen hlc GF] [_iG : IrisGS_gen hlc Expr GF],
+        ⊢ iprop(|={⊤}=> ∃ (Φs : List (Val → IProp GF)),
+          stateInterp σ1 0 κs 0 ∗ wptp s es Φs))
     (_hsteps : Language.NSteps n (es, σ1) κs (t2, σ2))
     (_hel : e2 ∈ t2) :
     PrimStep.NotStuck (e2, σ2) :=
   sorry
 
 @[rocq_alias wp_strong_adequacy_gen]
-theorem wp_strong_adequacy_gen (s : Stuckness) (es : List Expr) (σ1 : State)
-    (n : Nat) (κs : List Obs) (t2 : List Expr) (σ2 : State) (φ : Prop)
+theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
+    (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
+    (t2 : List Expr) (σ2 : State) (φ : Prop)
     (_numLaters : Nat → Nat)
-    (_hwp : True)
+    (_Hwp : ∀ [_Hinv : InvGS_gen hlc GF] [iG : IrisGS_gen hlc Expr GF],
+        ⊢ iprop(|={⊤}=> ∃ (Φs : List (Val → IProp GF)),
+          stateInterp σ1 0 κs 0 ∗
+          ([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }}) ∗
+          (∀ (es' t2' : List Expr),
+            ⌜t2 = es' ++ t2'⌝ -∗ ⌜es'.length = es.length⌝ -∗
+            ⌜∀ e2, s = Stuckness.NotStuck → e2 ∈ t2 → PrimStep.NotStuck (e2, σ2)⌝ -∗
+            stateInterp σ2 n [] t2'.length -∗
+            ([∗list] e;Φ ∈ es';Φs, match ToVal.toVal e with
+                                    | some v => Φ v
+                                    | none   => iprop(True)) -∗
+            ([∗list] v ∈ List.filterMap ToVal.toVal t2', iG.forkPost v) -∗
+            |={⊤,∅}=> ⌜φ⌝)))
     (_hsteps : Language.NSteps n (es, σ1) κs (t2, σ2)) :
     φ :=
   sorry
@@ -597,8 +617,11 @@ theorem adequate_tp_safe (e1 : Expr) (t2 : List Expr) (σ1 σ2 : State)
   exact .inr ⟨t2' ++ e3 :: t2'' ++ efs, σ3, obs, Language.Step.of_primStep hstep⟩
 
 @[rocq_alias wp_adequacy_gen]
-theorem wp_adequacy_gen (s : Stuckness) (e : Expr) (σ : State) (φ : Val → Prop)
-    (_hwp : True) :
+theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State)
+    (φ : Val → Prop)
+    (_Hwp : ∀ [_Hinv : InvGS_gen hlc GF] [iG : IrisGS_gen hlc Expr GF]
+            (κs : List Obs),
+        ⊢ iprop(|={⊤}=> iG.stateInterp σ 0 κs 0 ∗ WP e @ s ; ⊤ {{ v, ⌜φ v⌝ }})) :
     adequate s e σ (fun v _ => φ v) :=
   sorry
 
@@ -606,9 +629,14 @@ theorem wp_adequacy_gen (s : Stuckness) (e : Expr) (σ : State) (φ : Val → Pr
 def wp_adequacy : True := True.intro
 
 @[rocq_alias wp_invariance_gen]
-theorem wp_invariance_gen (s : Stuckness) (e1 : Expr) (σ1 σ2 : State)
-    (t2 : List Expr) (φ : Prop)
-    (_hwp : True)
+theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr)
+    (σ1 σ2 : State) (t2 : List Expr) (φ : Prop)
+    (_Hwp : ∀ [_Hinv : InvGS_gen hlc GF] [iG : IrisGS_gen hlc Expr GF]
+            (κs : List Obs),
+        ⊢ iprop(|={⊤}=> iG.stateInterp σ1 0 κs 0 ∗
+                        WP e1 @ s ; ⊤ {{ v, iprop(True) }} ∗
+                        (iG.stateInterp σ2 0 [] (t2.length - 1) -∗
+                          ∃ (E : CoPset), |={⊤,E}=> ⌜φ⌝)))
     (_hsteps : Relation.ReflTransGen Language.ErasedStep ([e1], σ1) (t2, σ2)) :
     φ :=
   sorry
