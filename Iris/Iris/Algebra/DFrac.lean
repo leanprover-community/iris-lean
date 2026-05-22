@@ -221,4 +221,12 @@ theorem DFrac.update_acquire [IsSplitFraction F] :
     rw [← add_assoc, IsSplitFraction.split_add]
     exact HP
 
+@[rocq_alias dfrac_op_own]
+theorem op_own (f f' : F) : own f • own f' = own (f + f') := rfl
+
+@[rocq_alias dfrac_is_op]
+instance isOp_dfrac_own {q q1 q2 : Frac F} [h : IsOp q q1 q2] :
+    IsOp (own q.car) (own q1.car) (own q2.car) where
+  is_op := by rw [h.is_op]; rfl
+
 end DFrac
