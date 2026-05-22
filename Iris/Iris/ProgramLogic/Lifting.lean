@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Fernando Leal. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 module
 
 public import Iris.ProofMode
@@ -173,6 +177,7 @@ theorem wp_lift_atomic_step_fupd (h : toVal e₁ = none) (E₂ : CoPset) :
     iexfalso; iassumption
 
 
+@[rocq_alias wp_lift_atomic_step]
 theorem wp_lift_atomic_step (h : toVal e₁ = none) :
     (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E}=∗
       ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
@@ -188,6 +193,7 @@ theorem wp_lift_atomic_step (h : toVal e₁ = none) :
   iintro !> %e₂ %σ₂ %eₜ %Hstep Hcred !> !>
   iapply H $$ %_ %_ %_ %Hstep Hcred
 
+@[rocq_alias wp_lift_pure_det_step_no_fork]
 theorem wp_lift_pure_det_step_no_fork [Inhabited State] (E₂ : CoPset) :
     -- TODO: Why not have this `∀` only in the left match branch?
     (∀ σ₁, match s with | .NotStuck => PrimStep.Reducible (e₁,σ₁) | _ => toVal e₁ = none) →
@@ -202,6 +208,7 @@ theorem wp_lift_pure_det_step_no_fork [Inhabited State] (E₂ : CoPset) :
   obtain ⟨rfl, _, rfl, rfl⟩:= Hpuredet _ _ _ _ _ aux
   iassumption
 
+@[rocq_alias wp_pure_step_fupd]
 theorem wp_pure_step_fupd [Inhabited State] (E₂ : CoPset):
     Language.PureExec φ n e₁ e₂ → φ → (|={E}[E₂]▷=>^[n] £ n -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro %Hexec %Hφ Hwp
@@ -229,6 +236,7 @@ theorem wp_pure_step_fupd [Inhabited State] (E₂ : CoPset):
     iapply lc_split
     iframe
 
+@[rocq_alias wp_pure_step_later]
 theorem wp_pure_step_later [Inhabited State] :
     Language.PureExec φ n e₁ e₂ → φ → ▷^[n] (£ n -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
   intro Hexec Hφ
