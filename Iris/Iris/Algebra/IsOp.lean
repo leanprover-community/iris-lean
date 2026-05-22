@@ -17,42 +17,37 @@ open CMRA
 section IsOp
 
 
-/--
-  A type class for splitting `a` into `b1` and `b2`.
--/
+
 @[rocq_alias IsOp]
-class IsOp [CMRA α] (a : outParam α) (b1 b2 : α) where
+class IsOp [CMRA α] (a b1 b2 : α) where
   is_op : a ≡ b1 • b2
 
+/--
+  Merging with `•` should have the lowest priority.
+-/
 @[rocq_alias is_op_op]
-instance (priority := default + 100) isOp_op [CMRA α] (a b : α) : IsOp (a • b) a b where
+instance (priority := default - 100) isOp_op [CMRA α] (a b : α) : IsOp (a • b) a b where
   is_op := .rfl
 
 /--
-  A type class to merge `b1` and `b2` into `a`.
+  A type class for merging `b1` and `b2` into `a`.
 -/
-class IsOpMerge [CMRA α] (a : α) (b1 b2 : outParam α) where
+@[rocq_alias IsOp']
+class IsOpMerge [CMRA α] (a : outParam α) (b1 b2 : α) where
   is_op : a ≡ b1 • b2
 
-#rocq_ignore IsOp' "separate type class is no longer necessary"
+/--
+  A type class for splitting `a` into `b1` and `b2`.
+-/
+class IsOpSplit [CMRA α] (a : α) (b1 b2 : outParam α) where
+  is_op : a ≡ b1 • b2
 
--- @[rocq_alias IsOp']
--- class IsOp' [CMRA α] (a b1 b2 : α) where
---   is_op' : IsOp a b1 b2
+@[rocq_alias is_op_lr_op]
+instance (priority := default + 100) isOpSplit_op [CMRA α] (a b : α) :
+    IsOpSplit (a • b) a b where
+  is_op := .rfl
 
-#rocq_ignore IsOp'LR "seperate type class is no longer necessary"
-
--- @[rocq_alias IsOp'LR]
--- class IsOp'LR [CMRA α] (a b1 b2 : α) where
---   is_op_lr : IsOp a b1 b2
-
-#rocq_ignore is_op_lr_op "no longer necessary as IsOp'LR is not relevant"
-
--- @[rocq_alias is_op_lr_op]
--- instance isOp_lr_op [CMRA α] (a b : α) : IsOp'LR (a • b) a b where
---   is_op_lr := ⟨.rfl⟩
-
-/- The following type class instances were originally defined for `IsOp'`. -/
+/- The following type class instances were originally defined with `IsOp'`. -/
 
 @[rocq_alias is_op_pair]
 instance isOp_pair [CMRA α] (a b1 b2 : α) (a' b1' b2' : α)
