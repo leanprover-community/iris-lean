@@ -350,6 +350,7 @@ theorem wptp_preservation (s : Stuckness) (n : Nat) (es1 es2 : List Expr)
     obtain ⟨rfl, rfl⟩ := Prod.mk.injEq .. |>.mp hρ1.symm
     obtain ⟨rfl, rfl⟩ := Prod.mk.injEq .. |>.mp hρ2.symm
     cases ρ with | mk e σ =>
+    set_option linter.unusedSimpArgs false in
     simp only [Nat.zero_add, Nat.add_zero, List.nil_append, List.append_nil,
                List.replicate]
     iintro Hσ; iintro _; iintro Hwptp
@@ -574,6 +575,7 @@ private theorem progress_widen_bridge {k : Nat} {φ : Prop} :
   wand_intro (emp_sep.1.trans (BIFUpdate.mono
     ((step_fupdN_le (Nat.le_succ _) LawfulSet.subset_refl).trans step_fupdN_S_fupd.2)))
 
+omit iG in
 /-- Lean addition (not in Coq): meta-level convenience theorem. Given a
 user-supplied WP-existence hypothesis that builds a complete `IrisGS_gen`
 instance from any allocated `InvGS_gen` and proves
@@ -641,6 +643,7 @@ private theorem fork_block_to_filterMap (t2' : List Expr) (nt' : Nat)
   | some _ => exact .rfl
   | none   => exact BI.affine
 
+omit iG in
 @[rocq_alias wp_strong_adequacy_gen]
 theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
     (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
@@ -675,7 +678,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness)
   have NS : ∀ e2, s = .NotStuck → e2 ∈ t2 → PrimStep.NotStuck (e2, σ2) := by
     intro e2 hs hel
     subst hs
-    refine @wp_progress_gen hlc Expr State Obs Val _ GF _ _ es σ1 n κs t2 σ2 e2
+    refine @wp_progress_gen hlc Expr State Obs Val _ GF _ es σ1 n κs t2 σ2 e2
                             numLaters ?_ _hsteps hel
     intro Hinv
     -- Forward our `_Hwp` (new ∃ form) to wp_progress_gen's `_Hwp` (also new ∃ form).
@@ -950,6 +953,7 @@ private theorem adequacy_value_widen_bridge
   (step_fupdN_mono (adequacy_value_inner_bridge σ2 t2 t2_ext v2 φ n ht2_eq)).trans
     ((step_fupdN_le (Nat.le_succ _) LawfulSet.subset_refl).trans step_fupdN_S_fupd.2)
 
+omit iG in
 @[rocq_alias wp_adequacy_gen]
 theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State)
     (φ : Val → Prop)
@@ -1043,6 +1047,7 @@ Matches Coq's `Definition wp_adequacy := wp_adequacy_gen HasLc`. -/
 @[rocq_alias wp_adequacy]
 abbrev wp_adequacy := @wp_adequacy_gen true
 
+omit iG in
 @[rocq_alias wp_invariance_gen]
 theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr)
     (σ1 σ2 : State) (t2 : List Expr) (φ : Prop)
