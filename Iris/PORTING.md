@@ -290,3 +290,4 @@ See proofmode at https://leanprover-community.github.io/iris-lean/
   - [x] `ectx_language.v`
   - [x] `ectxi_language.v`
   - [x] `weakestpre.v`
+  - [x] `adequacy.v`
