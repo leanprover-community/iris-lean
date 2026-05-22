@@ -58,6 +58,7 @@ theorem wp_lift_step_fupd (h : toVal e₁ = none) :
   iapply step_fupd_intro Std.LawfulSet.empty_subset
   iassumption
 
+@[rocq_alias wp_lift_stuck]
 theorem wp_lift_stuck (h : toVal e = none) :
     (∀ σ ns obs nt,
       stateInterp σ ns obs nt ={E,∅}=∗ ⌜PrimStep.Stuck (e,σ)⌝)
@@ -134,10 +135,11 @@ theorem wp_lift_pure_stuck [Inhabited State] :
   ipure_intro
   apply Hstuck
 
-theorem wp_lift_atomic_step_fupd (h : toVal e₁ = none) :
-    (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E1}=∗
+@[rocq_alias wp_lift_atomic_step_fupd]
+theorem wp_lift_atomic_step_fupd (h : toVal e₁ = none) (E₂ : CoPset) :
+    (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E₁}=∗
       ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
-      ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E1}[E2]▷=∗
+      ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E₁}[E₂]▷=∗
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
         (toVal e₂).rec iprop(False) Φ ∗
         -- NOTE: I tried something like this
@@ -148,7 +150,7 @@ theorem wp_lift_atomic_step_fupd (h : toVal e₁ = none) :
         -- Why is `Option.rec` (or `from_option` in Iris) used
         -- in the first place.
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
-    ⊢ WP e₁ @ s; E1 {{ Φ }} := by
+    ⊢ WP e₁ @ s; E₁ {{ Φ }} := by
   iintro H
   iapply wp_lift_step_fupd h
   iintro %σ₁ %ns %obs %obs' %nt Hσ₁
