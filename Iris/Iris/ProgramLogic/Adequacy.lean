@@ -23,7 +23,6 @@ variable {hlc : Bool} {Expr State Obs Val : Type _}
 variable [Language Expr State Obs Val]
 variable {GF : BundledGFunctors} [iG : IrisGS_gen hlc Expr GF]
 
-@[rocq_alias wptp]
 abbrev wptp (s : Stuckness) (es : List Expr) (Φs : List (Val → IProp GF)) : IProp GF :=
   iprop([∗list] e;Φ ∈ es;Φs, WP e @ s ; ⊤ {{ Φ }})
 
