@@ -131,7 +131,7 @@ class UFraction (α : Type _) extends Fraction α, One α where
   one_whole : Fraction.Whole (1 : α)
 
 @[rocq_alias frac_is_op]
-instance isOp_frac [CMRA F] {q1 q2 : F} : IsOp (op q1 q2) q1 q2 where
+instance isOp_frac [Fraction α] {q1 q2 : Frac α} : IsOp (Add.add q1 q2) q1 q2 where
   is_op := .rfl
 
 section NumericFraction
