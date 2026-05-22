@@ -375,6 +375,10 @@ theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP}
   refine fupd_frame_r.trans ?_
   exact mono emp_sep.1
 
+theorem step_fupd_mono {Eo Ei : CoPset} {P Q : PROP} :
+    (Q ⊢ P) → (|={Eo}[Ei]▷=> Q) ⊢ |={Eo}[Ei]▷=> P :=
+  (BIFUpdate.mono <| later_mono <| BIFUpdate.mono ·)
+
 @[rocq_alias step_fupd_intro]
 theorem step_fupd_intro {Ei Eo : CoPset} {P : PROP} (Ei_Eo : Ei ⊆ Eo) :
     ▷ P ⊢ |={Eo}[Ei]▷=> P := by
@@ -385,7 +389,7 @@ theorem step_fupd_intro {Ei Eo : CoPset} {P : PROP} (Ei_Eo : Ei ⊆ Eo) :
 
 @[rocq_alias step_fupdN_intro]
 theorem step_fupdN_intro {Ei Eo : CoPset} {P : PROP} (Ei_Eo : Ei ⊆ Eo) :
-    ▷^[n] P ⊢ |={Eo}[Ei]▷=>^[n] P := 
+    ▷^[n] P ⊢ |={Eo}[Ei]▷=>^[n] P :=
   match n with
   | 0 => .rfl
   | n+1 => by

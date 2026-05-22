@@ -156,11 +156,11 @@ theorem wp_lift_atomic_base_step_no_fork (h : toVal e₁ = none) :
   simp only [List.length_nil, Nat.add_zero, Algebra.BigOpL.bigOpL_nil]
   iframe
 
-theorem wp_lift_pure_det_base_step_no_fork [Inhabited State] (h : toVal e₁ = none) :
+theorem wp_lift_pure_det_base_step_no_fork [Inhabited State] (E₂ : CoPset) (h : toVal e₁ = none) :
     (∀ σ₁, BaseStep.Reducible (e₁, σ₁)) →
     (∀ σ₁ obs e₂' σ₂ eₜ',
       (e₁, σ₁) -<obs>->ᵇ (e₂', σ₂, eₜ') → obs = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ' = []) →
-    (|={E}[E']▷=> £ 1 -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
+    (|={E}[E₂]▷=> £ 1 -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro %Hbred %Hpure _
   apply wp_lift_pure_det_step_no_fork
   · grind [EctxLanguage.primStep_reducible_of_baseStep_reducible]
@@ -172,5 +172,5 @@ theorem wp_lift_pure_det_base_step_no_fork' [Inhabited State] (h : toVal e₁ = 
       (e₁, σ₁) -<obs>->ᵇ (e₂', σ₂, eₜ') → obs = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ' = []) →
     ▷ (£ 1 -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro %Hbred %Hpure _
-  refine .trans ?_ <| wp_lift_pure_det_base_step_no_fork (E' := E) h Hbred Hpure
+  refine .trans ?_ <| wp_lift_pure_det_base_step_no_fork E h Hbred Hpure
   exact step_fupd_intro Std.LawfulSet.subset_refl

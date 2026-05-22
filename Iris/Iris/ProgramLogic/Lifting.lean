@@ -51,9 +51,8 @@ theorem wp_lift_step_fupd (h : toVal e₁ = none) :
   imod Hwp $$ Hσ with ⟨$, Hwp⟩
   iintro !> %e₂ %σ₂ %eₜ %Hstep Hcred
   ihave Hcred := lc_weaken 1 (Nat.le_add_left 1 (ι.numLatersPerStep ns)) $$ Hcred
-  -- simp only [Nat.repeat]
-  refine .trans ?_ <| BIFUpdate.mono <| later_mono <| BIFUpdate.mono <|
-    (laterN_intro _ |>.trans <| step_fupdN_intro Std.LawfulSet.empty_subset)
+  refine .trans ?_ <| step_fupd_mono <|
+    (laterN_intro _).trans <| step_fupdN_intro Std.LawfulSet.empty_subset
   iintro ⟨Hwp, Hcred⟩
   imod Hwp $$ %_ %_ %_ %Hstep Hcred with Hwp
   iapply step_fupd_intro Std.LawfulSet.empty_subset
@@ -71,7 +70,7 @@ theorem wp_lift_stuck (h : toVal e = none) :
   replace ⟨_, Hirr⟩ := Hirr
   imodintro
   isplit
-  · ipure_intro; simp only [Stuckness.MaybeReducible]
+  · ipure_intro; simp [Stuckness.MaybeReducible]
   iintro %e₂ %σ₂ %eₜ %Hstep
   nomatch Hirr obs e₂ σ₂ eₜ Hstep
 
@@ -95,9 +94,7 @@ theorem wp_lift_step (h : toVal e₁ = none) :
   iapply H $$ %_ %_ %_ %Hstep Hcred
 
 @[rocq_alias wp_lift_pure_step_no_fork]
--- TODO: Why does `E₂` even appear here?
--- Probably shouldn't be inferring it...
-theorem wp_lift_pure_step_no_fork [Inhabited State] :
+theorem wp_lift_pure_step_no_fork [Inhabited State] (E₂ : CoPset) :
     -- (∀ σ₁, if s matches .NotStuck then PrimStep.Reducible (e₁,σ₁) else toVal e₁ = none) →
     (∀ σ₁, match s with | .NotStuck => PrimStep.Reducible (e₁,σ₁) | _ => toVal e₁ = none) →
     (∀ obs σ₁ e₂ σ₂ eₜ, (e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ) → obs = [] ∧ σ₂ = σ₁ ∧ eₜ = []) →
@@ -189,21 +186,21 @@ theorem wp_lift_atomic_step (h : toVal e₁ = none) :
   iintro !> %e₂ %σ₂ %eₜ %Hstep Hcred !> !>
   iapply H $$ %_ %_ %_ %Hstep Hcred
 
-theorem wp_lift_pure_det_step_no_fork [Inhabited State] :
+theorem wp_lift_pure_det_step_no_fork [Inhabited State] (E₂ : CoPset) :
     -- TODO: Why not have this `∀` only in the left match branch?
     (∀ σ₁, match s with | .NotStuck => PrimStep.Reducible (e₁,σ₁) | _ => toVal e₁ = none) →
     (∀ σ₁ obs e₂' σ₂ eₜ', (e₁, σ₁) -<obs>-> (e₂', σ₂, eₜ') →
       obs = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ' = []) →
     (|={E}[E₂]▷=> £ 1 -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro %Hsafe %Hpuredet H
-  iapply wp_lift_pure_step_no_fork Hsafe (by grind only) (E₂ := E₂)
+  iapply wp_lift_pure_step_no_fork E₂ Hsafe (by grind only)
   iapply step_fupd_wand $$ H
   iintro H
   iintro %obs %e' %eₜ' %σ %aux
   obtain ⟨rfl, _, rfl, rfl⟩:= Hpuredet _ _ _ _ _ aux
   iassumption
 
-theorem wp_pure_step_fupd [Inhabited State] :
+theorem wp_pure_step_fupd [Inhabited State] (E₂ : CoPset):
     Language.PureExec φ n e₁ e₂ → φ → (|={E}[E₂]▷=>^[n] £ n -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro %Hexec %Hφ Hwp
   replace Hexec := Hexec.pureExec Hφ
@@ -213,9 +210,9 @@ theorem wp_pure_step_fupd [Inhabited State] :
     rw (occs := [2]) [IProp.ext fupd_wp_iff]
     icases lc_zero with >Hz
     iapply Hwp $$ Hz
-  | @head n e₁ e₃ inicio fin IH =>
-    obtain ⟨Hsafe, Hdet⟩ := inicio
-    iapply wp_lift_pure_det_step_no_fork (E₂ := E₂) (e₂ := e₃) (by
+  | @head n e₁ e₃ _ _ IH =>
+    obtain ⟨Hsafe, Hdet⟩ := ‹e₁ -ᵖ-> e₃›
+    iapply wp_lift_pure_det_step_no_fork E₂ (e₂ := e₃) (by
         intro σ
         have : PrimStep.Reducible (e₁, σ) := by grind only [Language.reducible_of_reducibleNoObs]
         grind [cases Stuckness]
@@ -233,10 +230,10 @@ theorem wp_pure_step_fupd [Inhabited State] :
 theorem wp_pure_step_later [Inhabited State] :
     Language.PureExec φ n e₁ e₂ → φ → ▷^[n] (£ n -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
   intro Hexec Hφ
-  refine .trans ?_  (@wp_pure_step_fupd hlc Expr State Obs Val Λ GF ι s E E e₁ e₂ Φ φ n _ Hexec Hφ)
+  refine .trans ?_  (wp_pure_step_fupd E Hexec Hφ)
   suffices Hwp : ∀ (P : IProp GF), ▷^[n] P ⊢ |={E}▷=>^[n] P by iapply Hwp
   intro P
-  clear Hexec
+  clear Hexec -- So it is not captured by the `induction`
   induction n with
   | zero => exact .rfl
   | succ n IH =>
