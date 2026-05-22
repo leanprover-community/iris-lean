@@ -130,9 +130,9 @@ class UFraction (α : Type _) extends Fraction α, One α where
   -- whole_iff_one {a : α} : Fraction.Whole a ↔ a = 1
   one_whole : Fraction.Whole (1 : α)
 
-@[rocq_alias frac_is_op]
-instance isOp_frac [Fraction α] {q1 q2 : Frac α} : IsOp (q1 + q2) q1 q2 where
-  is_op := .rfl
+-- @[rocq_alias frac_is_op]
+-- instance isOp_frac [Fraction α] {q1 q2 : Frac α} : IsOp merge (q1 + q2) q1 q2 where
+--   is_op := .rfl
 
 section NumericFraction
 

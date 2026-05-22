@@ -2557,6 +2557,23 @@ example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
     · iexact Hnew2
     · iexact Hnew3
 
+/-- Tests `icombine` for combining propositions involving `iOwn` -/
+example {GF} [Fraction α] [ElemG GF (constOF (Frac α))] {γ}
+    {a1 a2 a3 : Frac α} :
+    ⊢@{IProp GF} iOwn (F := constOF (Frac α)) γ a1 -∗
+      iOwn (F := constOF (Frac α))  γ a2 -∗
+      iOwn (F := constOF (Frac α)) γ a3 -∗
+      iOwn (F := constOF (Frac α)) γ (a1 • (a2 • a3)) ∗
+      internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • (a2 • a3)) := by
+  iintro H1 H2 H3
+  set_option trace.Meta.synthInstance true in
+    icombine H1 H2 H3 as Hnew1 gives ⟨Hnew2, Hnew3⟩
+  isplitl
+  · iexact Hnew1
+  · isplit
+    · iexact Hnew2
+    · iexact Hnew3
+
 /-- Tests `icombine` for combining propositions involving later credits. -/
 example {GF m n} [LcGS GF] :
     ⊢@{IProp GF} £ n -∗ £ 1 -∗ £ m -∗ £ 1 -∗ £ n + (1 + (m + 1)) := by
