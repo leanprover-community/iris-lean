@@ -44,8 +44,6 @@ theorem wp_lift_step_fupd (h : toVal e₁ = none) :
     ⌜s.MaybeReducible (e₁, σ₁)⌝ ∗
     ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂,σ₂, eₜ)⌝ -∗
       £ 1 ={∅}=∗ ▷ |={∅,E}=>
-      -- NOTE: Changed the order of `nt` and `eₜ.length` since in Lean
-      -- we have `n + 0 = n` and not `0 + n = n`
       stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length ) ∗
       WP e₂ @ s; E {{ Φ }} ∗
       [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
@@ -80,7 +78,6 @@ theorem wp_lift_stuck (h : toVal e = none) :
   nomatch Hirr obs e₂ σ₂ eₜ Hstep
 
 /-! ## Derived lifting lemmas -/
-
 
 @[rocq_alias wp_lift_step]
 theorem wp_lift_step (h : toVal e₁ = none) :
