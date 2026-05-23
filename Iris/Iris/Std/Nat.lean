@@ -9,7 +9,7 @@ module
 
 namespace Nat
 
-theorem repeat_add {A : Type} (n1 n2 : Nat) (f : A → A) (x : A) :
+theorem repeat_add {A : Type _} (n1 n2 : Nat) (f : A → A) (x : A) :
     (n1 + n2).repeat f x = n1.repeat f (n2.repeat f x) := by
   induction n1 with
   | zero => simp [«repeat»]

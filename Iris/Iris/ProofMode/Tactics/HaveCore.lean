@@ -23,8 +23,8 @@ namespace Iris.ProofMode
 public section
 open BI
 
-theorem have_asEmpValid [BI PROP] {φ} {P Q : PROP}
-    [h1 : AsEmpValid .into φ P] (h : φ) : Q ⊢ Q ∗ □ P :=
+theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
+    [h1 : AsEmpValid .into φ .in PROP .in bi P] (h : φ) : Q ⊢ Q ∗ □ P :=
   sep_emp.2.trans (sep_mono_r $ intuitionistically_emp.2.trans (intuitionistically_mono (asEmpValid_1 _ h)))
 
 public meta section
@@ -41,7 +41,9 @@ Assert a hypothesis from either a hypothesis name or a Lean proof term `tm`.
 ## Returns
 A tuple containing:
 - `e'`: Proposition for `hyps'`
-- `hyps'`: Updated hypothesis context
+- `hyps'`: Updated hypothesis context, which consumes the asserted proposition if it
+    was contained in the spatial context (or if it was persistent and `keep = true`),
+    or is returned unchanged if the function term was contained in the Lean context.
 - `p`: Persistence flag for the output (always `true` for Lean terms, inherited for Iris hypotheses)
 - `out`: Asserted proposition
 - `pf`: Proof of `hyps ⊢ hyps' ∗ □?p out`
@@ -49,9 +51,9 @@ A tuple containing:
 private def iHaveCore {e} (hyps : @Hyps u prop bi e)
   (tm : Term) (keep : Bool) :
   ProofModeM ((e' : _) × Hyps bi e' × (p : Q(Bool)) × (out : Q($prop)) × Q($e ⊢ $e' ∗ □?$p $out)) := do
-  if let some uniq ← try? <| hyps.findWithInfo ⟨tm⟩ then
+  if let some ivar ← try? <| hyps.findWithInfo ⟨tm⟩ then
     -- assertion from the Iris context
-    let ⟨_, hyps, _, out', p, _, pf⟩ := hyps.remove (!keep) uniq
+    let ⟨_, hyps, _, out', p, _, pf⟩ := hyps.remove (!keep) ivar
     return ⟨_, hyps, p, out', q($pf.1)⟩
   else
     -- lean hypothesis
@@ -66,7 +68,8 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     let otherMVarIds := otherMVarIds.filter (!newMVarIds.contains ·)
 
     -- If the new mvars have type class assumption that could not be solved, register them such
-    -- that they are tried to be solved again at the end of `ProofModeM.runTactic` (using Term.synthesizeSyntheticMVarsNoPostponing)
+    -- that they are tried to be solved again at the end of `ProofModeM.runTactic`
+    -- (using `Term.synthesizeSyntheticMVarsNoPostponing`)
     for mvar in newMVars do
       if (← isSyntheticMVar mvar) && !(← mvar.mvarId!.isAssignedOrDelayedAssigned) then
         Term.registerSyntheticMVarWithCurrRef mvar.mvarId! (.typeClass .none)
@@ -80,7 +83,7 @@ private def iHaveCore {e} (hyps : @Hyps u prop bi e)
     have val : Q($ty) := val
 
     let hyp ← mkFreshExprMVarQ q($prop)
-    let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty $hyp)
+    let some _ ← ProofModeM.trySynthInstanceQ q(AsEmpValid .into $ty .in $prop .in $bi $hyp)
       | throwError m!"ihave: {ty} is not an entailment"
 
     return ⟨_, hyps, q(true), hyp, q(have_asEmpValid $val)⟩

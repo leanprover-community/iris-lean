@@ -44,10 +44,10 @@ private structure RevertState {prop : Q(Type u)} {bi : Q(BI $prop)} (origE origG
 
 /-- Revert a proofmode hypothesis by turning it into a wand premise. -/
 private def RevertState.revertProofModeHyp
-    : @RevertState u prop bi origE origGoal → Name →
+    : @RevertState u prop bi origE origGoal → IVarId →
       ProofModeM (@RevertState u prop bi origE origGoal)
-  | { hyps, goal, reverted, pf, .. }, uniq => do
-    let ⟨e', hyps', out, _, _, _, hΔ⟩ := hyps.remove true uniq
+  | { hyps, goal, reverted, pf, .. }, ivar => do
+    let ⟨e', hyps', out, _, _, _, hΔ⟩ := hyps.remove true ivar
     return { e := e', hyps := hyps', goal := q(wand $out $goal), reverted,
              pf := q(fun h => $pf (wand_revert $hΔ h)) }
 
@@ -69,7 +69,12 @@ private def RevertState.revertLeanForallHyp
     ProofModeM (@RevertState u prop bi origE origGoal) := do
   let { e, hyps, goal, reverted, pf } := st
   let x : Q($α) := mkFVar f
-  have Φ : Q($α → $prop) := ← mkLambdaFVars #[x] goal
+  -- abstract over x in the goal
+  let Φ ← mkLambdaFVars #[x] goal
+  -- make sure that the binder info is set to default, otherwise the
+  -- printing of BI.forall breaks
+  have Φ : Q($α → $prop) :=
+    match Φ with | .lam n t b _ => .lam n t b .default | e => e
   let goal' : Q($prop) := q(BI.forall $Φ)
   have pf' : Q(($e ⊢ $goal') → ($origE ⊢ $origGoal)) :=
     ← withLocalDeclDQ `h q($e ⊢ BI.forall $Φ) fun h => do
@@ -89,16 +94,22 @@ private def RevertState.revertLeanHyp
   else
     st.revertLeanForallHyp f α
 
+def iRevertCore (targets : List SelTarget) {u : Level}{prop: Q(Type $u)}{bi : Q(BI $prop)}{e : Q($prop)}(hyps : Hyps bi e)(goal: Q($prop))
+  (k : ∀ {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
+    ProofModeM Q($e ⊢ $goal) := do
+  let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
+  let st ← targets.reverse.foldlM (init := init) fun st target => do
+      match target.kind with
+      | .ipm ivar => st.revertProofModeHyp ivar
+      | .pure fvar => st.revertLeanHyp fvar
+
+  let pf' : Q($(st.e) ⊢ $(st.goal)) ← withoutFVars (u:=0) st.reverted (k st.hyps st.goal)
+  return q($(st.pf) $pf')
+
 elab "irevert" pats:(colGt selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
-  ProofModeM.runTactic fun mvar { e, hyps, goal, .. } => do
+  ProofModeM.runTactic fun mvar {hyps, goal, ..} => do
     let targets ← SelPat.resolve hyps pats
-    let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
-    let st ← targets.reverse.foldlM (init := init) fun st target => do
-      match target with
-      | .inl uniq => st.revertProofModeHyp uniq
-      | .inr fvar => st.revertLeanHyp fvar
-
-    let pf' ← addBIGoalWithoutFVars st.hyps st.goal st.reverted.reverse
-    mvar.assign q($(st.pf) $pf')
+    let expr ← iRevertCore targets hyps goal
+    mvar.assign expr

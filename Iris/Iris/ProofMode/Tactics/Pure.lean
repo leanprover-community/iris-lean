@@ -56,8 +56,8 @@ def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
 elab "ipure" colGt hyp:ident : tactic => do
   ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do
 
-  let uniq ← hyps.findWithInfo hyp
-  let ⟨e', hyps', _, out', p, _, pf⟩ := hyps.remove true uniq
+  let ivar ← hyps.findWithInfo hyp
+  let ⟨e', hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
 
   let pf ← iPureCore bi e e' p out' goal (← `(binderIdent| $hyp:ident)) pf fun _ _ => addBIGoal hyps' goal
 
@@ -72,11 +72,11 @@ elab "iemp_intro" : tactic => do
   mvar.assign q(affine (P := $e))
 
 theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
-    [h : FromPure true Q φ] [Affine P] (hφ : φ) : P ⊢ Q :=
+    (h : FromPure true Q .out φ) [Affine P] (hφ : φ) : P ⊢ Q :=
   (affine.trans (eq_true hφ ▸ affinely_true.2)).trans h.1
 
 theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
-    [h : FromPure false Q φ] (hφ : φ) : P ⊢ Q :=
+    (h : FromPure false Q .out φ) (hφ : φ) : P ⊢ Q :=
   (pure_intro hφ).trans h.1
 
 elab "ipure_intro" : tactic => do
@@ -84,7 +84,7 @@ elab "ipure_intro" : tactic => do
 
   let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
-  let .some _ ← ProofModeM.trySynthInstanceQ q(FromPure $b $goal $φ)
+  let .some h ← ProofModeM.trySynthInstanceQ q(FromPure $b $goal .out $φ)
     | throwError "ipure_intro: {goal} is not pure"
   let m : Q($φ) ← mkFreshExprMVar (← instantiateMVars φ)
   addMVarGoal m.mvarId!
@@ -94,9 +94,12 @@ elab "ipure_intro" : tactic => do
     have : $b =Q true := ⟨⟩
     let .some _ ← trySynthInstanceQ q(Affine $e)
       | throwError "ipure_intro: context is not affine"
-    mvar.assign q(pure_intro_affine (P := $e) (Q := $goal) $m)
+    mvar.assign q(pure_intro_affine (P := $e) (Q := $goal) $h $m)
   | .const ``false _ =>
     have : $b =Q false := ⟨⟩
-    mvar.assign q(pure_intro_spatial (P := $e) (Q := $goal) $m)
+    mvar.assign q(pure_intro_spatial (P := $e) (Q := $goal) $h $m)
   -- the following indicates a bug in the typeclass instances that generate b
   | _ => throwError "ipure_intro: bug in typeclass instances, cannot reduce {b} to true or false"
+
+-- TODO: what is the best lean automation tactic to call here?
+macro_rules | `(tactic| itrivial) => `(tactic| (first | ipure_intro | exfalso) <;> simp [*] <;> done)

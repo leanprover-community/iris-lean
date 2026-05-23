@@ -21,20 +21,20 @@ inductive ModalityActionQ (PROP1 : Q(Type u)) (PROP2 : Q(Type u)) : Type where
 | clear
 | id
 
-theorem modaction_forall [BI PROP] {p P} (M : Modality PROP PROP) {C} (h : M.action p = .forall C) (hC : C P)
-  : □?p P ⊢ M.M iprop(□?p P) := by
+theorem modaction_forall [BI PROP] {p P} (M : Modality PROP PROP) {C} (h : M.action p = .forall C)
+(hC : C P) : □?p P ⊢ M.M iprop(□?p P) := by
     have hs := M.spec p
     rw [h] at hs
     apply (hs _ hC)
 
-theorem modaction_transform [BI PROP1] [BI PROP2] {p P Q} (M : Modality PROP1 PROP2) {C} (h : M.action p = .transform C) (hC : C P Q)
-  : □?p P ⊢ M.M iprop(□?p Q) := by
+theorem modaction_transform [BI PROP1] [BI PROP2] {p P Q} (M : Modality PROP1 PROP2) {C}
+(h : M.action p = .transform C) (hC : C P Q) : □?p P ⊢ M.M iprop(□?p Q) := by
     have hs := M.spec p
     rw [h] at hs
     apply (hs _ _ hC)
 
-theorem modaction_clear [BI PROP1] [BI PROP2] {p P} (M : Modality PROP1 PROP2) (h : M.action p = .clear)
-  : □?p P ⊢ M.M emp :=
+theorem modaction_clear [BI PROP1] [BI PROP2] {p P} (M : Modality PROP1 PROP2)
+(h : M.action p = .clear) : □?p P ⊢ M.M emp :=
   match p, h  with
   | true, _ => affine.trans M.emp
   | false, h => by
@@ -49,17 +49,20 @@ theorem modaction_id [BI PROP] {p P} (M : Modality PROP PROP) (h : M.action p = 
     apply hs
 
 theorem modaction_sep_emp_l [BI PROP1] [bi2: BI PROP2] {elhs erhs erhs'} {M : Modality PROP1 PROP2}
-  (h1 : elhs ⊢ M.M emp) (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(erhs') := (sep_mono h1 h2).trans $ M.sep.trans (M.mono emp_sep.1)
+  (h1 : elhs ⊢ M.M emp) (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(erhs') :=
+  (sep_mono h1 h2).trans $ M.sep.trans (M.mono emp_sep.1)
 
 theorem modaction_sep_emp_r [BI PROP1] [bi2: BI PROP2] {elhs elhs' erhs} {M : Modality PROP1 PROP2}
-  (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M emp) : elhs ∗ erhs ⊢ M.M iprop(elhs') := (sep_mono h1 h2).trans $ M.sep.trans (M.mono sep_emp.1)
+  (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M emp) : elhs ∗ erhs ⊢ M.M iprop(elhs') :=
+  (sep_mono h1 h2).trans $ M.sep.trans (M.mono sep_emp.1)
 
 theorem modaction_sep [BI PROP1] [bi2: BI PROP2] {elhs erhs elhs' erhs'} {M : Modality PROP1 PROP2}
-  (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(elhs' ∗ erhs') := (sep_mono h1 h2).trans M.sep
+  (h1 : elhs ⊢ M.M elhs') (h2 : erhs ⊢ M.M erhs') : elhs ∗ erhs ⊢ M.M iprop(elhs' ∗ erhs') :=
+  (sep_mono h1 h2).trans M.sep
 
-theorem modintro [BI PROP1] [BI PROP2] {e e'} {Φ M sel} {P : PROP2} {Q : PROP1} [FromModal Φ M sel P Q]
-  (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P :=
-    (h1.trans (M.mono h2)).trans (from_modal sel hΦ)
+theorem modintro [BI PROP1] [BI PROP2] {e e'} {Φ M sel} {P : PROP2} {Q : PROP1}
+[FromModal Φ M sel P Q] (h1 : e ⊢ M.M e') (h2 : e' ⊢ Q) (hΦ : Φ) : e ⊢ P :=
+    (h1.trans (M.mono h2)).trans (from_modal hΦ)
 
 public meta section
 open Lean Elab Tactic Meta
@@ -94,7 +97,7 @@ private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
   ProofModeM ((e' : _) × Hyps bi1 e' × Q($e ⊢ $(M).M $e')) :=
   match hyps with
   | .emp _ => return ⟨_, .mkEmp bi1, q($(M).emp)⟩
-  | .hyp _ name uniq p ty _ =>
+  | .hyp _ name ivar p ty _ =>
     let p' := isTrue p
     match act p' with
     | .isEmpty => throwError "imodintro: {if p' then "intuitionistic" else "spatial"} context is not empty"
@@ -106,14 +109,15 @@ private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
       -- bridge through defeq since `M.action` cannot unify directly with the pattern (same in other cases)
       have heq : Q(@ModalityAction.forall $prop1 $C = .forall $C) := q(Eq.refl (ModalityAction.forall $C))
       have heq : Q($(M).action $p = .forall $C) := heq
-      return ⟨_, .mkHyp bi1 name uniq p ty, q(modaction_forall $M $heq $hC)⟩
+      return ⟨_, .mkHyp bi1 name ivar p ty, q(modaction_forall $M $heq $hC)⟩
     | .transform C => do
       let ty' ← mkFreshExprMVarQ q($prop1)
       let .some hC ← trySynthInstanceQ q($C $ty $ty')
         | throwError "imodintro: cannot transform hypothesis {name} : {ty} with {C}"
-      have heq : Q(@ModalityAction.transform $prop1 $prop2 $C = .transform $C) := q(Eq.refl (ModalityAction.transform $C))
+      have heq : Q(@ModalityAction.transform $prop1 $prop2 $C = .transform $C) :=
+        q(Eq.refl (ModalityAction.transform $C))
       have heq : Q($(M).action $p = .transform $C) := heq
-      return ⟨_, .mkHyp bi1 name uniq p ty', q(modaction_transform $M $heq $hC)⟩
+      return ⟨_, .mkHyp bi1 name ivar p ty', q(modaction_transform $M $heq $hC)⟩
     | .clear =>
        have heq : Q(@ModalityAction.clear $prop1 $prop2 = .clear) := q(Eq.refl (ModalityAction.clear))
        have heq : Q($(M).action $p = @ModalityAction.clear $prop1 $prop2) := heq
@@ -123,7 +127,7 @@ private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
       have : $bi1 =Q $bi2 := ⟨⟩
       have heq : Q(@ModalityAction.id $prop1 = .id) := q(Eq.refl (ModalityAction.id))
       have heq : Q($(M).action $p = .id) := heq
-      return ⟨_, .mkHyp bi1 name uniq p ty, q(modaction_id $M $heq)⟩
+      return ⟨_, .mkHyp bi1 name ivar p ty, q(modaction_id $M $heq)⟩
   | .sep _ _ _ _ lhs rhs => do
     let ⟨_, lhs', pflhs⟩ ← iModAction lhs M act
     let ⟨_, rhs', pfrhs⟩ ← iModAction rhs M act
@@ -147,7 +151,7 @@ private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
 Proof term of `hyps ⊢ goal`
 -/
 def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop)) (sel : TSyntax `term)
-  (k : ∀ {prop' bi' P}, @Hyps u prop' bi' P → ∀ Q : Q($prop'), ProofModeM Q($P ⊢ $Q))
+  (k : ∀ {prop' bi' P}, @Hyps u prop' bi' P → ∀ Q : Q($prop'), ProofModeM Q($P ⊢ $Q) := addBIGoal)
    : ProofModeM (Q($e ⊢ $goal)) := do
     let prop' : Q(Type u) ← mkFreshExprMVarQ q(Type u)
     let bi' ← mkFreshExprMVarQ q(BI $prop')
@@ -172,7 +176,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop)) (sel : TSynta
 
 elab "imodintro" colGt sel:term : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-  let pf ← iModIntroCore hyps goal sel addBIGoal
+  let pf ← iModIntroCore hyps goal sel
 
   mvar.assign pf
 

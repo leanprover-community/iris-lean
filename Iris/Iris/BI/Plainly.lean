@@ -371,17 +371,13 @@ instance limitPreserving_plain {A} [COFE A] (Φ : A → PROP) (Φne : OFE.NonExp
 
 section BigOp
 
-theorem BiEntails_proper {a a' b b' : PROP} (ha : a ≡ a') (hb : b ≡ b') : (a ⊣⊢ b ↔ a' ⊣⊢ b') where
-  mp h := equiv_iff.1 (ha.symm.trans (equiv_iff.2 h) |>.trans hb)
-  mpr h := equiv_iff.1 (ha.trans (equiv_iff.2 h) |>.trans hb.symm)
-
 @[rocq_alias plainly_sep_weak_homomorphism]
 instance plainly_sep_weak_homomorphism [BIPositive PROP][BIAffine PROP] :
     Algebra.WeakMonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) BIBase.BiEntails
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper := BiEntails_proper
+  rel_proper := BIBase.BiEntails.proper
   op_proper aa' bb' := equiv_iff.1 (sep_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
   map_ne := inferInstance
   map_op := plainly_sep
@@ -391,7 +387,7 @@ instance plainly_and_weak_homomorphism :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper := BiEntails_proper
+  rel_proper := BIBase.BiEntails.proper
   op_proper aa' bb' := equiv_iff.1 (and_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
   map_ne := inferInstance
   map_op := plainly_and
@@ -401,7 +397,7 @@ instance plainly_or_weak_homomorphism [SbiEmpValidExist PROP] :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper := BiEntails_proper
+  rel_proper := BIBase.BiEntails.proper
   op_proper aa' bb' := equiv_iff.1 (or_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
   map_ne := inferInstance
   map_op := plainly_or
@@ -660,22 +656,20 @@ instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=
 
 @[rocq_alias plainly_internal_eq]
 theorem plainly_internalEq {A} [OFE A] {a b : A} :
-    iprop(■ (SiProp.internalEq a b) ⊣⊢ SiProp.internalEq a b) := by
+    iprop(■ (internalEq a b) ⊣⊢@{PROP} internalEq a b) := by
   refine ⟨plainly_elim, ?_⟩
-  have : OFE.NonExpansive (λ x ↦ iprop(■ (SiProp.internalEq a x))) :=  {
-    ne n x x' xx' := by
-      apply instPlainly_ne.ne
-      exact @fun n ih => ⟨(·.trans (xx'.le ih)), (·.trans (xx'.symm.le ih))⟩
+  have : OFE.NonExpansive (β := PROP) (λ x ↦ iprop(■ (internalEq a x))) :=  {
+    ne n x x' xx' := instPlainly_ne.ne ((internalEq.ne_r a).ne xx')
   }
-  refine .trans ?_ (imp_elim <| SiProp.internalEq_rewrite a b (fun x ↦ iprop(■ SiProp.internalEq a x)))
+  refine .trans ?_ (imp_elim <| internalEq.rewrite (a := a) (fun x ↦ iprop(■ internalEq a x)))
   refine and_intro .rfl ?_
-  calc iprop(SiProp.internalEq a b)
+  calc iprop(internalEq a b)
     _ ⊢ True := true_intro
     _ ⊢ ■ (True) := plainly_pure.2
-    _ ⊢ ■ (SiProp.internalEq a a) := plainly_mono (SiProp.internalEq_refl _ _)
+    _ ⊢ ■ (internalEq a a) := plainly_mono internalEq.refl
 
-theorem internalEq_plain {A} [OFE A](a b : A) : Plain iprop(SiProp.internalEq a b) where
-  plain := plainly_internalEq |>.1
+theorem internalEq_plain {A} [OFE A] (a b : A) : Plain (PROP := PROP) iprop(internalEq a b) where
+  plain := plainly_internalEq |>.2
 
 @[rocq_alias prop_ext]
 theorem prop_ext (P Q : PROP) : iprop(internalEq P Q ⊣⊢ ■ (P ∗-∗ Q)) :=

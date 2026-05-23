@@ -60,40 +60,31 @@ theorem fresh [InfiniteType A] (X : List A) : ∃ a : A, a ∉ X := by
   omega
 
 @[expose, match_pattern]
-def Forall₂.append : ∀ {l₁ l₁' l₂ l₂'}, List.Forall₂ R l₁ l₂ → List.Forall₂ R l₁' l₂' → List.Forall₂ R (l₁ ++ l₁') (l₂ ++ l₂')
-  | _, _, _, _, .nil, h => h
-  | _, _, _, _, .cons step rest, h => .cons step (append rest h)
+def Forall₂.append {l₁ l₁' l₂ l₂'} : List.Forall₂ R l₁ l₂ → List.Forall₂ R l₁' l₂' → List.Forall₂ R (l₁ ++ l₁') (l₂ ++ l₂')
+  | .nil, h => h
+  | .cons step rest, h => .cons step (append rest h)
 
 @[grind →]
-theorem exists_of_forall₂_cons : ∀ {l₁ l₂}{x},
-    List.Forall₂ R (x :: l₁) l₂ → ∃ y l₂', l₂ = y :: l₂' ∧ R x y ∧ List.Forall₂ R l₁ l₂' := by
-  intro l₁ l₂ x h
-  cases h with
-  | cons y l₂' => grind only
+theorem exists_of_forall₂_cons {l₁ l₂} {x} : List.Forall₂ R (x :: l₁) l₂ →
+    ∃ y l₂', l₂ = y :: l₂' ∧ R x y ∧ List.Forall₂ R l₁ l₂'
+  | .cons y l₂' => by grind
 
 @[grind →]
-theorem exists_of_forall₂_append : ∀ {l₁ l₁' l},
-    List.Forall₂ R (l₁ ++ l₁') l → ∃ l₂ l₂', l = l₂ ++ l₂' ∧ List.Forall₂ R l₁ l₂ ∧ List.Forall₂ R l₁' l₂' ∧ l₁.length = l₂.length := by
-  intro l₁ l₁' l h
+theorem exists_of_forall₂_append {l₁ l₁' l} (h : List.Forall₂ R (l₁ ++ l₁') l) :
+     ∃ l₂ l₂', l = l₂ ++ l₂' ∧ List.Forall₂ R l₁ l₂ ∧ List.Forall₂ R l₁' l₂' ∧ l₁.length = l₂.length := by
   induction l₁ generalizing l with
   | nil =>
     exists [], l
     simpa using h
   | cons x l₁ IH =>
-    grind only [= List.cons_append, → exists_of_forall₂_cons,
-      =_ List.cons_append, = List.length_cons, List.Forall₂.cons]
-    -- obtain ⟨y, l, rfl, x_y, h⟩ := List.exists_of_forall₂_cons h
-    -- obtain ⟨l₂, l₂', h, Rleft, Rright, hlen⟩ := IH h
-    -- exists (y :: l₂), l₂'
-    -- refine ⟨h ▸ rfl, List.Forall₂.cons x_y Rleft, Rright, ?_⟩
-    -- simp only [List.length_cons, hlen]
+    grind only [= List.cons_append, → exists_of_forall₂_cons, =_ List.cons_append,
+      = List.length_cons, List.Forall₂.cons]
 
 @[grind =]
 theorem getElem?_some_iff_append
 {a : α} {i : Nat} {l : List α} : l[i]? = some a ↔ ∃ s t : List α, l = s ++ a :: t ∧ s.length = i := by
-  constructor
-  · intros h
-    induction i generalizing l with
+  refine ⟨fun h => ?_, ?_⟩
+  · induction i generalizing l with
     | zero =>
       rcases l with _ | ⟨hd, tl⟩
       · simp at h

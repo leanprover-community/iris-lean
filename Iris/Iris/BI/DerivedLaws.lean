@@ -1509,6 +1509,14 @@ theorem intuitionisticallyIf_sep {p : Bool} [BI PROP] [BIPositive PROP] {P Q : P
   | false => .rfl
   | true => intuitionistically_sep
 
+theorem intuitionisticallyIf_sep_conj {p1 p2 : Bool} [BI PROP] {P Q : PROP} :
+  (□?p1 P ∗ □?p2 Q) ⊢ □?(p1 && p2) (P ∗ Q) :=
+  match p1, p2 with
+  | false, false => refl
+  | false, true  => sep_mono_r intuitionisticallyIf_elim
+  | true,  false => sep_mono_l intuitionisticallyIf_elim
+  | true,  true  => intuitionisticallyIf_sep_2
+
 theorem intuitionisticallyIf_idem {p : Bool} [BI PROP] {P : PROP} : □?p □?p P ⊣⊢ □?p P :=
   match p with
   | false => .rfl
@@ -1631,6 +1639,26 @@ theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : 
     refine equiv_iff.1 ?_
     refine LimitPreserving.equiv f g _ ?_
     exact (equiv_iff.mpr <| h' ·)
+
+instance limitPreserving_persistent [BI PROP] [COFE A] (Φ : A → PROP) (Φne : OFE.NonExpansive Φ) :
+ LimitPreserving (fun x => Persistent (Φ x)) := by
+  letI _ : OFE.NonExpansive fun x => iprop(<pers> Φ x) := .comp persistently_ne Φne
+  refine fun c h => ⟨?_⟩
+  refine LimitPreserving.entails _ (fun x => iprop(<pers> (Φ x))) _ ?_
+  exact (fun n => h n |>.persistent)
+
+instance limitPreserving_absorbing [BI PROP] [COFE A] (Φ : A → PROP) (Φne : OFE.NonExpansive Φ) :
+ LimitPreserving (fun x => Absorbing (Φ x)) := by
+  letI _ : OFE.NonExpansive fun x => iprop(<absorb> Φ x) := .comp absorbingly_ne Φne
+  refine fun c h => ⟨?_⟩
+  refine LimitPreserving.entails (fun x => iprop(<absorb> (Φ x))) _ _ ?_
+  exact (fun n => h n |>.absorbing)
+
+instance limitPreserving_affine [BI PROP] [COFE A] (Φ : A → PROP) (Φne : OFE.NonExpansive Φ) :
+ LimitPreserving (fun x => Affine (Φ x)) := by
+  refine fun c h => ⟨?_⟩
+  refine LimitPreserving.entails (fun x => iprop((Φ x))) (fun _ => iprop(emp)) _ ?_
+  exact (fun n => h n |>.affine)
 
 theorem iter_modal_intro [BI PROP] (M : PROP → PROP) (n : Nat) {P : PROP} (H : ∀ {Q}, Q ⊢ M Q) :
     P ⊢ n.repeat (fun x => M x) P := by

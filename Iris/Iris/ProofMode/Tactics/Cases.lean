@@ -12,6 +12,7 @@ public meta import Iris.ProofMode.Tactics.Pure
 public meta import Iris.ProofMode.Tactics.Clear
 public meta import Iris.ProofMode.Tactics.Basic
 public meta import Iris.ProofMode.Tactics.HaveCore
+public meta import Iris.ProofMode.Tactics.Frame
 
 namespace Iris.ProofMode
 
@@ -116,10 +117,10 @@ private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
     let goal' := q(iprop(□ $A2 -∗ $goal))
     let pf ← k1 hyps goal' A1 fun hyps goal' => do
       let goal'' ← mkFreshExprMVarQ q($prop)
-      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $goal' iprop(□ $A2) $goal'')
+      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in iprop(□ $A2) $goal'')
         | throwError "icases: internal error: {goal'} is not a wand"
       let pf ← k2 hyps goal'' A2 k
-      return q((wand_intro $pf).trans from_wand)
+      return q((wand_intro $pf).trans (from_wand .in (Q1:=iprop(□ $A2))))
     return q(and_elim_intuitionistic $pf)
   | .inr _ =>
     let .some _ ← ProofModeM.trySynthInstanceQ q(IntoSep $A $A1 $A2)
@@ -127,10 +128,10 @@ private def iCasesSep {prop : Q(Type u)} (bi : Q(BI $prop))
     let goal' := q(iprop($A2 -∗ $goal))
     let pf ← k1 hyps goal' A1 fun hyps goal' => do
       let goal'' ← mkFreshExprMVarQ q($prop)
-      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $goal' $A2 $goal'')
+      let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $goal' .in $A2 $goal'')
         | throwError "icases: internal error: {goal'} is not a wand"
       let pf ← k2 hyps goal'' A2 k
-      return q((wand_intro $pf).trans from_wand)
+      return q((wand_intro $pf).trans (from_wand .in (Q1:=$A2)))
     return q(sep_elim_spatial (A := $A) $pf)
 
 /-- Destruct a disjunction hypothesis [A] into two cases and continue separately on each branch. -/
@@ -144,7 +145,10 @@ private def iCasesOr {prop : Q(Type u)} (bi : Q(BI $prop))
     | throwError "icases: {A} is not a disjunction"
   return q(or_elim' $(← k1 A1) $(← k2 A2))
 
-/-- Destruct a persistent hypothesis [A] by turning it into an explicit [□ B] and continuing with the persistent body. -/
+/--
+Destruct a persistent hypothesis [A] by turning it into an explicit [□ B] and continuing with
+the persistent body.
+-/
 private def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop))
     (p : Q(Bool)) (P A goal : Q($prop))
     (k : (B : Q($prop)) → ProofModeM Q($P ∗ □ $B ⊢ $goal)) :
@@ -160,7 +164,10 @@ private def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop))
       | throwError "icases: {A} not affine and the goal not absorbing"
     return q(intuitionistic_elim_spatial (A := $A) $(← k B))
 
-/-- Destruct an affine/spatial hypothesis [A] by removing the affinely wrapper and continuing with the spatial body. -/
+/--
+Destruct an affine/spatial hypothesis [A] by removing the affinely wrapper and continuing with
+the spatial body.
+-/
 private def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop))
     (p : Q(Bool)) (P A goal : Q($prop))
     (k : (B : Q($prop)) → ProofModeM Q($P ∗ $B ⊢ $goal)) :
@@ -190,15 +197,15 @@ A proof of `hyps ∗ □?p A ⊢ goal`.
 -/
 partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat)
     (p : Q(Bool)) (A : Q($prop))
-    (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal)) :
+    (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal') := addBIGoal) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) :=
   match pat with
   | .one name => do
     -- TODO: use Hyps.addWithInfo here?
     let (name, ref) ← getFreshName name
-    let uniq ← mkFreshId
-    addHypInfo ref name uniq prop A (isBinder := true)
-    let hyp := .mkHyp bi name uniq p A
+    let ivar ← mkFreshIVarId (isTrue p)
+    addHypInfo ref name ivar prop A (isBinder := true)
+    let hyp := .mkHyp bi name ivar p A
     if let .emp _ := hyps then pure q(of_emp_sep $(← k hyp goal))
     else k (.mkSep hyps hyp) goal
 
@@ -206,15 +213,19 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
     let pf ← iClearCore bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl)
     pure q($pf $(← k hyps goal))
 
+  | .frame => do
+    let ⟨ivar, hyps'⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
+    let res ← iFrame bi _ hyps' goal [⟨.ipm ivar, true⟩]
+    res.finish @k
+
   | .conjunction [arg] | .disjunction [arg] => iCasesCore hyps goal arg p A @k
 
   | .disjunction [] => throwUnsupportedSyntax
 
   | .conjunction [] => iCasesEmptyConj bi hyps p A goal
 
-  -- pure conjunctions are always handled as existentials. There is
-  -- intoExist_and_pure and intoExist_sep_pure to make this work as
-  -- expected for pure assertions that are not explicit existentials.
+  -- pure conjunctions are always handled as existentials. There is `intoExist_and_pure` and
+  -- `intoExist_sep_pure` to make this work as expected for pure assertions that are not explicit existentials.
   | .conjunction (.pure arg :: args) => do
     iCasesExists bi arg p P A goal (iCasesCore hyps goal (.conjunction args) p · k)
   | .conjunction (arg :: args) => do
@@ -250,16 +261,22 @@ elab "icases" keep:("+keep")? colGt pmt:pmTerm "with" colGt pat:icasesPat : tact
   let pat ← liftMacroM <| iCasesPat.parse pat
   ProofModeM.runTactic λ mvar { bi, goal, hyps, .. } => do
 
-  -- We keep the persistent hypothesis if it is required by the user (+keep is set by ihave) or if we perform specialization
-  let ⟨_, hyps, p, A, pf⟩ ← iHave hyps pmt (keep.isSome || pmt.is_nontrivial) (try_dup_context := pat.should_try_dup_context)
+  -- We keep the persistent hypothesis if it is required by the user (+keep is set by ihave)
+  -- or if we perform specialization
+  let ⟨_, hyps, p, A, pf⟩ ← iHave hyps pmt (keep.isSome || pmt.is_nontrivial)
+    (try_dup_context := pat.should_try_dup_context)
 
   -- process pattern
-  let pf2 ← iCasesCore bi hyps goal pat p A λ hyps goal => addBIGoal hyps goal
+  let pf2 ← iCasesCore bi hyps goal pat p A
 
   mvar.assign q(($pf).trans $pf2)
 
 macro "imod" colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => `(tactic | icases $pmt with >$pat)
-macro "imod" colGt hyp:ident : tactic => `(tactic | imod $hyp:ident with $hyp:ident)
+macro "imod" colGt pmt:pmTerm : tactic =>
+  match pmt with
+  | `(pmTerm | $hyp:ident) => `(tactic | imod $pmt with $hyp:ident)
+  | `(pmTerm | $hyp:ident $$ $_*) => `(tactic | imod $pmt with $hyp:ident)
+  | _ => `(tactic | imod $pmt with _)
 
 -- TODO: remove these shortcuts if they are not used
 macro "iintuitionistic" hyp:ident : tactic => `(tactic | icases $hyp:ident with #$hyp:ident)

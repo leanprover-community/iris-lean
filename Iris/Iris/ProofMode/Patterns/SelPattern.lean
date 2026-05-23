@@ -20,6 +20,7 @@ syntax "%" noWs ident : selPat
 syntax "#" : selPat
 syntax "∗" : selPat
 
+@[rocq_alias sel_pat]
 inductive SelPat
   | pure
   | intuitionistic
@@ -28,6 +29,7 @@ inductive SelPat
   | leanIdent (name : Ident)
   deriving Repr, Inhabited
 
+@[rocq_alias sel_pat.parse]
 partial def SelPat.parseOne (pat : TSyntax `selPat) : MacroM SelPat := do
   match go ⟨← expandMacros pat⟩ with
   | none => Macro.throwUnsupported
@@ -44,21 +46,34 @@ where
 partial def SelPat.parse (pats : TSyntaxArray `selPat) : MacroM (List SelPat) := do
   return (← pats.mapM SelPat.parseOne).toList
 
+#rocq_ignore sel_pat.parse_go "Not necessary in Lean"
+#rocq_ignore sel_pat_pure "Not necessary in Lean"
+
 public meta section
 
-abbrev SelTarget := Name ⊕ FVarId
+inductive SelTarget.Kind where
+| pure (id : FVarId)
+| ipm (ivar : IVarId)
+deriving BEq, Hashable, Repr
 
-/-- Resolve selection patterns to concrete proofmode hypotheses (`.inl`) and Lean locals (`.inr`). -/
+@[rocq_alias esel_pat]
+structure SelTarget where
+  kind : SelTarget.Kind
+  /- Was this target specified explicitly or is it from a glob like ∗? -/
+  explicit : Bool
+
+/-- Resolve selection patterns to concrete proofmode hypotheses (`.ipm`) and pure local hypotheses (`.pure`). -/
 def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget)
-  | .ident name =>
-      return [.inl (← hyps.findWithInfo name)]
+  | .ident name => do
+      let ivar ← hyps.findWithInfo name
+      return [⟨.ipm ivar, true⟩]
   | .leanIdent name => do
       let ldecl ← getLocalDeclFromUserName name.getId
-      return [.inr ldecl.fvarId]
+      return [⟨.pure ldecl.fvarId, true⟩]
   | .intuitionistic =>
-      return hyps.intuitionisticUniqs.map .inl
+      return hyps.intuitionisticIVarIds.map (⟨.ipm ·, false⟩)
   | .spatial =>
-      return hyps.spatialUniqs.map .inl
+      return hyps.spatialIVarIds.map (⟨.ipm ·, false⟩)
   | .pure => do
       -- `%` selects user-facing Lean pure assumptions, so we keep only `Prop` hypotheses.
       let mut hyps := #[]
@@ -67,12 +82,16 @@ def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget
           continue
         if ! (← isProp ldecl.type) then
           continue
-        hyps := hyps.push (.inr ldecl.fvarId)
+        hyps := hyps.push (⟨.pure ldecl.fvarId, false⟩)
       return hyps.toList
 
 def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) :
     ProofModeM (List SelTarget) := do
-  return (← pats.flatMapM (SelPat.resolveOne hyps)).eraseDups
+  -- if the users specifies something like `HP ∗` we want to remove `HP`
+  -- from the expansion of `∗`, but if the user specifies `HP` explicitly
+  -- twice, it should be kept (this is for example important for `icombine`)
+  return (← pats.flatMapM (SelPat.resolveOne hyps)).eraseDupsBy
+    (λ snd fst => snd.kind == fst.kind && fst.explicit && !snd.explicit)
 
 end
 
