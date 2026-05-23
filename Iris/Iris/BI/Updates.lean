@@ -396,8 +396,8 @@ theorem step_fupdN_intro {Ei Eo : CoPset} {P : PROP} (Ei_Eo : Ei ⊆ Eo) :
     simp only [Nat.repeat]
     refine .trans (later_laterN n).1 ?_
     refine .trans (step_fupd_intro Ei_Eo) ?_
-    apply BIFUpdate.mono ∘ later_mono ∘ BIFUpdate.mono
-    exact (step_fupdN_intro (n := n) (P := P) Ei_Eo)
+    refine mono <| later_mono  <| mono ?_
+    exact step_fupdN_intro Ei_Eo
 
 @[rocq_alias step_fupdN_le]
 theorem step_fupdN_le {n m : Nat} {Eo Ei : CoPset} {P : PROP} :

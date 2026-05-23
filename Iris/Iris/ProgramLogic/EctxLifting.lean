@@ -9,15 +9,12 @@ public import Iris.ProgramLogic.EctxiLanguage
 
 namespace Iris.ProgramLogic
 
-open Language.Notation
-open EctxLanguage.Notation
+open Language.Notation EctxLanguage EctxLanguage.Notation
 
-variable {hlc : outParam Bool}
-variable {Expr Ectx State Obs Val}
+variable {hlc : outParam Bool} {Expr Ectx State Obs Val}
 variable [Λ : EctxLanguage Expr Ectx State Obs Val]
 variable {GF : BundledGFunctors}
 variable [ι : IrisGS_gen hlc Expr GF]
-
 variable {s : Stuckness} {E E₁ E₂ : CoPset} {v : Val} {e e₁ e₂ : Expr}
 variable {σ : State} {P Q : IProp GF} {Φ : Val → IProp GF}
 
@@ -36,11 +33,12 @@ theorem wp_lift_base_step_fupd (h : toVal e₁ = none) :
   imod H $$ Hσ with ⟨%Hred, H⟩
   imodintro
   isplit
-  · ipure_intro; grind only [EctxLanguage.primStep_reducible_of_baseStep_reducible]
+  · ipure_intro
+    grind [primStep_reducible_of_baseStep_reducible]
   iintro %e₂ %σ₂ %eₜ %Hstep
   iapply H $$ %_ %_ %_
   ipure_intro
-  apply EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred Hstep
+  exact baseStep_of_primStep_of_baseStep_reducible Hred Hstep
 
 @[rocq_alias wp_lift_base_step]
 theorem wp_lift_base_step (h : toVal e₁ = none) :
@@ -60,7 +58,7 @@ theorem wp_lift_base_step (h : toVal e₁ = none) :
 
 @[rocq_alias wp_lift_base_stuck]
 theorem wp_lift_base_stuck (h : toVal e = none) :
-    EctxLanguage.SubredexesAreValues e →
+    SubredexesAreValues e →
     (∀ σ ns obs' nt, stateInterp σ ns obs' nt ={E,∅}=∗ ⌜BaseStep.Stuck (e,σ)⌝)
     ⊢ WP e @ E ? {{ Φ }} := by
   iintro %sav_e H
@@ -68,11 +66,11 @@ theorem wp_lift_base_stuck (h : toVal e = none) :
   iintro %σ %ns %obs' %nt Hσ
   imod H $$ Hσ with %H
   ipure_intro
-  apply EctxLanguage.primStep_stuck_of_baseStep_stuck H sav_e
+  exact primStep_stuck_of_baseStep_stuck H sav_e
 
 @[rocq_alias wp_lift_pure_base_stuck]
 theorem wp_lift_pure_base_stuck (h : toVal e = none) :
-    EctxLanguage.SubredexesAreValues e →
+    SubredexesAreValues e →
     (∀ σ, BaseStep.Stuck (e,σ)) →
     ⊢ WP e @ E ?{{ Φ }} := by
   iintro %sav_e %Hstuck
@@ -81,7 +79,7 @@ theorem wp_lift_pure_base_stuck (h : toVal e = none) :
   iapply fupd_mask_intro Std.LawfulSet.empty_subset
   iintro -
   ipure_intro
-  apply Hstuck
+  exact Hstuck _
 
 @[rocq_alias wp_lift_atomic_base_step_fupd]
 theorem wp_lift_atomic_base_step_fupd (h : toVal e₁ = none) :
@@ -89,20 +87,20 @@ theorem wp_lift_atomic_base_step_fupd (h : toVal e₁ = none) :
       ⌜BaseStep.Reducible (e₁, σ₁)⌝ ∗
       ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E₁}[E₂]▷=∗
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
-        (toVal e₂).rec iprop(False) Φ ∗
+        (∃ v, ⌜(toVal e₂) = some v⌝ ∧ Φ v) ∗
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
     ⊢ WP e₁ @ s; E₁ {{ Φ }} := by
   iintro H
-  iapply wp_lift_atomic_step_fupd h
+  iapply wp_lift_atomic_step_fupd (E₂ := E₂) h
   iintro %σ₁ %ns %obs %obs' %nt Hσ₁
   imod H $$ Hσ₁ with ⟨%Hbred, H⟩
   imodintro
   isplit
-  · ipure_intro; grind only [EctxLanguage.primStep_reducible_of_baseStep_reducible]
+  · ipure_intro; grind only [primStep_reducible_of_baseStep_reducible]
   iintro %_ %_ %_ %Hstep
   iapply H
   ipure_intro
-  apply EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hbred Hstep
+  exact baseStep_of_primStep_of_baseStep_reducible Hbred Hstep
 
 @[rocq_alias wp_lift_atomic_base_step]
 theorem wp_lift_atomic_base_step (h : toVal e₁ = none) :
@@ -110,7 +108,7 @@ theorem wp_lift_atomic_base_step (h : toVal e₁ = none) :
       ⌜BaseStep.Reducible (e₁, σ₁)⌝ ∗
       ▷ ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E}=∗
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
-        (toVal e₂).rec iprop(False) Φ ∗
+        (∃ v, ⌜(toVal e₂) = some v⌝ ∧ Φ v) ∗
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
     ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro H
@@ -119,22 +117,22 @@ theorem wp_lift_atomic_base_step (h : toVal e₁ = none) :
   imod H $$ Hσ₁ with ⟨%Hbred, H⟩
   imodintro
   isplit
-  · ipure_intro; grind only [EctxLanguage.primStep_reducible_of_baseStep_reducible]
+  · ipure_intro; grind only [primStep_reducible_of_baseStep_reducible]
   inext
   iintro %e₂ %σ₂ %eₜ %Hstep Hcred
   iapply H $$ %_ %_ %_ [] Hcred
   ipure_intro
-  apply EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hbred Hstep
+  exact baseStep_of_primStep_of_baseStep_reducible Hbred Hstep
 
 @[rocq_alias wp_lift_atomic_base_step_no_fork_fupd]
 theorem wp_lift_atomic_base_step_no_fork_fupd (h : toVal e₁ = none) :
     (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E₁}=∗
       ⌜BaseStep.Reducible (e₁, σ₁)⌝ ∗
       ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E₁}[E₂]▷=∗
-        ⌜eₜ = []⌝ ∗ stateInterp σ₂ (ns + 1) obs' nt ∗  (toVal e₂).rec iprop(False) Φ)
+        ⌜eₜ = []⌝ ∗ stateInterp σ₂ (ns + 1) obs' nt ∗ (∃ v, ⌜(toVal e₂) = some v⌝ ∧ Φ v))
     ⊢ WP e₁ @ s; E₁ {{ Φ }} := by
   iintro H
-  iapply wp_lift_atomic_base_step_fupd h
+  iapply wp_lift_atomic_base_step_fupd (E₂ := E₂) h
   iintro %σ₁ %ns %obs %obs' %nt Hσ₁
   imod H $$ %_ %_ %_ %_ %_ Hσ₁ with ⟨$, H⟩
   imodintro
@@ -145,15 +143,14 @@ theorem wp_lift_atomic_base_step_no_fork_fupd (h : toVal e₁ = none) :
   subst h
   simp only [List.length_nil, Nat.add_zero, Algebra.BigOpL.bigOpL_nil]
   iframe
-  iapply fupd_mask_intro_discard Std.LawfulSet.subset_refl
-  exact .rfl
+  itrivial
 
 @[rocq_alias wp_lift_atomic_base_step_no_fork]
 theorem wp_lift_atomic_base_step_no_fork (h : toVal e₁ = none) :
     (∀ σ₁ ns obs obs' nt, stateInterp σ₁ ns (obs ++ obs') nt ={E}=∗
       ⌜BaseStep.Reducible (e₁, σ₁)⌝ ∗
       ▷ ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ)⌝ -∗ £ 1 ={E}=∗
-        ⌜eₜ = []⌝ ∗ stateInterp σ₂ (ns + 1) obs' nt ∗ (toVal e₂).rec iprop(False) Φ )
+        ⌜eₜ = []⌝ ∗ stateInterp σ₂ (ns + 1) obs' nt ∗ (∃ v, ⌜(toVal e₂) = some v⌝ ∧ Φ v))
     ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro H
   iapply wp_lift_atomic_base_step h
@@ -169,22 +166,22 @@ theorem wp_lift_atomic_base_step_no_fork (h : toVal e₁ = none) :
   iframe
 
 @[rocq_alias wp_lift_pure_det_base_step_no_fork]
-theorem wp_lift_pure_det_base_step_no_fork [Inhabited State] (E₂ : CoPset) (h : toVal e₁ = none) :
-    (∀ σ₁, BaseStep.Reducible (e₁, σ₁)) →
-    (∀ σ₁ obs e₂' σ₂ eₜ',
-      (e₁, σ₁) -<obs>->ᵇ (e₂', σ₂, eₜ') → obs = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ' = []) →
+theorem wp_lift_pure_det_base_step_no_fork [Inhabited State] (E₂ : CoPset) (h : toVal e₁ = none)
+    (Hbred : ∀ σ₁, BaseStep.Reducible (e₁, σ₁))
+    (Hpure : ∀ σ₁ obs e₂' σ₂ eₜ',
+      (e₁, σ₁) -<obs>->ᵇ (e₂', σ₂, eₜ') → obs = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ' = []) :
     (|={E}[E₂]▷=> £ 1 -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
-  iintro %Hbred %Hpure _
+  iintro _
   apply wp_lift_pure_det_step_no_fork
-  · grind [EctxLanguage.primStep_reducible_of_baseStep_reducible]
-  · grind only [→ EctxLanguage.baseStep_of_primStep_of_baseStep_reducible]
+  · grind [primStep_reducible_of_baseStep_reducible]
+  · grind only [→ baseStep_of_primStep_of_baseStep_reducible]
 
 @[rocq_alias wp_lift_pure_det_base_step_no_fork']
-theorem wp_lift_pure_det_base_step_no_fork' [Inhabited State] (h : toVal e₁ = none) :
-    (∀ σ₁, BaseStep.Reducible (e₁, σ₁)) →
-    (∀ σ₁ obs e₂' σ₂ eₜ',
-      (e₁, σ₁) -<obs>->ᵇ (e₂', σ₂, eₜ') → obs = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ' = []) →
+theorem wp_lift_pure_det_base_step_no_fork' [Inhabited State] (h : toVal e₁ = none)
+    (Hbred : ∀ σ₁, BaseStep.Reducible (e₁, σ₁))
+    (Hpure : ∀ σ₁ obs e₂' σ₂ eₜ',
+      (e₁, σ₁) -<obs>->ᵇ (e₂', σ₂, eₜ') → obs = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ' = []) :
     ▷ (£ 1 -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
-  iintro %Hbred %Hpure _
+  iintro _
   refine .trans ?_ <| wp_lift_pure_det_base_step_no_fork E h Hbred Hpure
   exact step_fupd_intro Std.LawfulSet.subset_refl
