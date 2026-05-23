@@ -310,6 +310,32 @@ theorem fupd_trans_frame {E1 E2 E3 : CoPset} {P Q : PROP} :
   fupd_frame_l.trans <| fupd_elim <| ((sep_assoc.2.trans <| sep_mono_l sep_comm.1).trans <|
     sep_mono_l wand_elim_r).trans <| fupd_frame_r.trans <| BIFUpdate.mono emp_sep.1
 
+@[rocq_alias fupd_or_homomorphism]
+instance fupd_sep_homomorphism E :
+  Algebra.MonoidHomomorphism (M₁ := PROP) sep sep emp emp (flip Entails) (fupd E E) where
+  rel_refl := .rfl
+  rel_trans := flip .trans
+  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp)
+    , fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
+  op_proper := sep_mono
+  map_ne := BIFUpdate.ne
+  map_op := fupd_sep
+  map_unit := fupd_intro
+
+@[rocq_alias big_sepL_fupd]
+theorem BigSepL2.big_sepL_fupd {A : Type _} E (Φ : Nat → A → PROP) l :
+    ([∗list] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗list] k↦x ∈ l, Φ k x :=
+    Algebra.BigOpL.bigOpL_hom (R := flip Entails) Φ l
+
+@[rocq_alias big_sepL2_fupd]
+theorem BigSepL2.big_sepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) l1 l2 :
+    ([∗list] k↦x;y ∈ l1;l2, |={E}=> Φ k x y) ⊢ |={E}=> [∗list] k↦x;y ∈ l1;l2, Φ k x y := by
+  refine BigSepL2.bigSepL2_alt.mp.trans ?_
+  refine persistent_and_affinely_sep_l.mp.trans ?_
+  refine .trans ?_ (mono BigSepL2.bigSepL2_alt.mpr)
+  refine .trans ?_ (mono persistent_and_affinely_sep_l.mpr)
+  exact .trans (sep_mono_r (BigSepL2.big_sepL_fupd E _ _ )) fupd_frame_l
+
 end FUpdLaws
 
 section StepFUpdLaws
@@ -409,6 +435,20 @@ theorem step_fupdN_le {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
 @[rocq_alias step_fupd_fupd]
 theorem step_fupd_fupd {Eo Ei : CoPset} {P : PROP} : (|={Eo}[Ei]▷=> P) ⊣⊢ (|={Eo}[Ei]▷=> |={Eo}=> P) :=
   ⟨mono <| later_mono <| mono fupd_intro, mono <| later_mono BIFUpdate.trans⟩
+
+@[rocq_alias step_fupdN_mono]
+theorem step_fupdN_mono {n : Nat} {Eo Ei : CoPset} {P Q : PROP} (H : P ⊢ Q) :
+    (|={Eo}[Ei]▷=>^[n] P) ⊢ (|={Eo}[Ei]▷=>^[n] Q) := by
+  induction n with
+  | zero => exact H
+  | succ k IH => exact mono (later_mono (mono IH))
+
+@[rocq_alias step_fupdN_S_fupd]
+theorem step_fupdN_S_fupd {n : Nat} {E : CoPset} {P : PROP} :
+    (|={E}[∅]▷=>^[n + 1] P) ⊣⊢ (|={E}[∅]▷=>^[n + 1] |={E}=> P) := by
+  refine ⟨mono <| later_mono <| mono <| step_fupdN_mono fupd_intro, ?_⟩
+  simp only [Nat.repeat_add]
+  exact step_fupdN_mono step_fupd_fupd.mpr
 
 end StepFUpdLaws
 

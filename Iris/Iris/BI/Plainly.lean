@@ -371,17 +371,13 @@ instance limitPreserving_plain {A} [COFE A] (Φ : A → PROP) (Φne : OFE.NonExp
 
 section BigOp
 
-theorem BiEntails_proper {a a' b b' : PROP} (ha : a ≡ a') (hb : b ≡ b') : (a ⊣⊢ b ↔ a' ⊣⊢ b') where
-  mp h := equiv_iff.1 (ha.symm.trans (equiv_iff.2 h) |>.trans hb)
-  mpr h := equiv_iff.1 (ha.trans (equiv_iff.2 h) |>.trans hb.symm)
-
 @[rocq_alias plainly_sep_weak_homomorphism]
 instance plainly_sep_weak_homomorphism [BIPositive PROP][BIAffine PROP] :
     Algebra.WeakMonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) BIBase.BiEntails
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper := BiEntails_proper
+  rel_proper := BIBase.BiEntails.proper
   op_proper aa' bb' := equiv_iff.1 (sep_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
   map_ne := inferInstance
   map_op := plainly_sep
@@ -391,7 +387,7 @@ instance plainly_and_weak_homomorphism :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper := BiEntails_proper
+  rel_proper := BIBase.BiEntails.proper
   op_proper aa' bb' := equiv_iff.1 (and_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
   map_ne := inferInstance
   map_op := plainly_and
@@ -401,7 +397,7 @@ instance plainly_or_weak_homomorphism [SbiEmpValidExist PROP] :
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
-  rel_proper := BiEntails_proper
+  rel_proper := BIBase.BiEntails.proper
   op_proper aa' bb' := equiv_iff.1 (or_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
   map_ne := inferInstance
   map_op := plainly_or
