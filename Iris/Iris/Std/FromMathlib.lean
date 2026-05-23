@@ -5,6 +5,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Batteries.Data.List.Basic
+public import Batteries.Data.Int
+public import Batteries.Data.Nat.Bitwise
+import all Init.Data.Nat.Bitwise.Basic
+import all Init.Data.Int.Bitwise.Basic
+import all Init.Data.Int.Basic
+
 
 @[expose] public section
 
@@ -110,5 +116,100 @@ def reverseRec {motive : List α → Sort _} (nil : motive [])
   termination_by l => l.length
 
 end List
+
+namespace Nat
+
+/-- NB. Copied from Mathlib -/
+def ldiff : Nat → Nat → Nat :=
+  Nat.bitwise fun a b => a && not b
+
+/-- NB. Copied from Mathlib
+`bit b` appends the digit `b` to the little end of the binary representation of
+its natural number input. -/
+def bit (b : Bool) (n : Nat) : Nat :=
+  cond b (2 * n + 1) (2 * n)
+
+/-- NB. Copied from Mathlib -/
+theorem bit_val (b n) : bit b n = 2 * n + b.toNat := by
+  cases b <;> rfl
+
+/-- NB. Copied from Mathlib
+`shiftLeft' b m n` performs a left shift of `m` `n` times
+and adds the bit `b` as the least significant bit each time.
+Returns the corresponding natural number -/
+def shiftLeft' (b : Bool) (m : Nat) : Nat → Nat
+  | 0 => m
+  | n + 1 => bit b (shiftLeft' b m n)
+
+/-- NB. Copied from Mathlib -/
+@[simp]
+theorem shiftLeft'_false : ∀ n, shiftLeft' false m n = m <<< n
+  | 0 => rfl
+  | n + 1 => by
+    have : 2 * (m * 2 ^ n) = 2 ^ (n + 1) * m := by
+      rw [Nat.mul_comm, Nat.mul_assoc, ← Nat.pow_succ]; grind only
+    simp [Nat.shiftLeft_eq, shiftLeft', bit_val, shiftLeft'_false, this]
+    grind only
+
+/-- NB. Copied from Mathlib -/
+@[simp] theorem shiftRight_eq (m n : Nat) : Nat.shiftRight m n = m >>> n := rfl
+
+end Nat
+
+namespace Int
+
+open Nat _root_.Int
+
+/-- NB. Copied from Mathlib
+`lor` takes two integers and returns their bitwise `or` -/
+def lor : Int → Int → Int
+  | (m : Nat), (n : Nat) => m ||| n
+  | (m : Nat), -[n+1] => -[ldiff n m+1]
+  | -[m+1], (n : Nat) => -[ldiff m n+1]
+  | -[m+1], -[n+1] => -[m &&& n+1]
+
+instance : HOr Int Int Int := ⟨lor⟩
+
+/-- NB. Copied from Mathlib
+`land` takes two integers and returns their bitwise `and` -/
+def land : Int → Int → Int
+  | (m : Nat), (n : Nat) => m &&& n
+  | (m : Nat), -[n+1] => ldiff m n
+  | -[m+1], (n : Nat) => ldiff n m
+  | -[m+1], -[n+1] => -[m ||| n+1]
+
+instance : HAnd Int Int Int := ⟨land⟩
+
+/-- NB. Copied from Mathlib
+`xor` computes the bitwise `xor` of two natural numbers -/
+def xor : Int → Int → Int
+  | (m : Nat), (n : Nat) => (m ^^^ n)
+  | (m : Nat), -[n+1] => -[(m ^^^ n)+1]
+  | -[m+1], (n : Nat) => -[(m ^^^ n)+1]
+  | -[m+1], -[n+1] => (m ^^^ n)
+
+instance : HXor Int Int Int := ⟨xor⟩
+
+/-- NB. Copied from Mathlib
+`m <<< n` produces an integer whose binary representation
+is obtained by left-shifting the binary representation of `m` by `n` places -/
+instance : ShiftLeft Int where
+  shiftLeft
+  | (m : Nat), (n : Nat) => Nat.shiftLeft' false m n
+  | (m : Nat), -[n+1] => m >>> (Nat.succ n)
+  | -[m+1], (n : Nat) => -[shiftLeft' true m n+1]
+  | -[m+1], -[n+1] => -[m >>> (Nat.succ n)+1]
+
+instance : HShiftLeft Int Int Int := ⟨ShiftLeft.shiftLeft⟩
+
+/-- NB. Copied from Mathlib
+`m >>> n` produces an integer whose binary representation
+is obtained by right-shifting the binary representation of `m` by `n` places -/
+instance : ShiftRight Int where
+  shiftRight m n := m <<< (-n)
+
+instance : HShiftRight Int Int Int := ⟨ShiftRight.shiftRight⟩
+
+end Int
 
 end FromMathlib
