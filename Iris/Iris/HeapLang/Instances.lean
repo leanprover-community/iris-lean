@@ -20,7 +20,7 @@ def expToVal : Exp → Option Val
 instance : EctxItemLanguage Exp ECtxItem State Observation Val where
   toVal    := expToVal
   ofVal    := .val
-  coe_of_toVal_eq_some e v h := by
+  coe_of_toVal_eq_some {e v} h := by
     cases e <;> simp_all [expToVal]
   toVal_coe _ := rfl
   baseStep := fun ⟨e, σ⟩ obs ⟨e', σ', eps⟩ => BaseStep e σ obs e' σ' eps
