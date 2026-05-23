@@ -3,7 +3,7 @@ module
 public import Iris.HeapLang.Syntax
 public import Std.Data.ExtTreeMap
 public import Std.Data.ExtTreeSet
-public import Iris.Std.FromMathlib
+public import Iris.Std.BitOp
 
 @[expose] public section
 namespace Iris.HeapLang
