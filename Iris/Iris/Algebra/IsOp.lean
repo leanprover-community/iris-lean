@@ -22,7 +22,9 @@ section IsOp
   to split `a` into `b1` and `b2`.
 -/
 @[ipm_class, rocq_alias IsOp, rocq_alias IsOp', rocq_alias IsOp'LR]
-class IsOp [CMRA α] (_ : InOut) (a : semiOutParam $ α) (b1 b2 : α) where
+class IsOp [CMRA α]
+    (_ : InOut) (a : semiOutParam $ α)
+    (b1 : uncheckedInParam α) (b2 : uncheckedInParam α) where
   is_op : a ≡ b1 • b2
 
 /--

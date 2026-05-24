@@ -752,17 +752,20 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
     rintro rfl
     exact BI.and_elim_r
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_sep_own]
 instance intoSep_own {γ} {a : F.ap (IProp GF)} [h : IsOp split a b1 b2] :
     IntoSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   into_sep := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mp.trans iOwn_op.mp
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_and_own]
 instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp split a b1 b2] :
     IntoAnd false (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   into_and := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mp.trans <|
     and_intro (iOwn_mono ⟨b2, .rfl⟩) (iOwn_mono ⟨b1, CMRA.comm⟩)
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_sep_own]
 instance fromSep_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp split a b1 b2] :
     FromSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
@@ -778,8 +781,9 @@ instance combineSepGives_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
     CombineSepGives (iOwn γ a1) (iOwn γ a2) (internalCmraValid (a1 • a2)) where
   combine_sep_gives := iOwn_cmraValid_op
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias from_and_own_persistent]
-instance fromAndOwn_persistent {a b1 b2 : F.ap (IProp GF)} [h : IsOp split a b1 b2]
+instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOp split a b1 b2]
     [TCOr (CoreId b1) (CoreId b2)] : FromAnd (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
   from_and := by
     -- Infer from `CoreId b1` that `iOwn γ b1` is persistent, likewise for `b2`
