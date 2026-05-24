@@ -2561,7 +2561,7 @@ example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
 example {GF} [Fraction α] [ElemG GF (constOF (Frac α))] {γ}
     {a1 a2 a3 : Frac α} :
     ⊢@{IProp GF} iOwn (F := constOF (Frac α)) γ a1 -∗
-      iOwn (F := constOF (Frac α))  γ a2 -∗
+      iOwn (F := constOF (Frac α)) γ a2 -∗
       iOwn (F := constOF (Frac α)) γ a3 -∗
       iOwn (F := constOF (Frac α)) γ (a1 • (a2 • a3)) ∗
       internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • (a2 • a3)) := by
