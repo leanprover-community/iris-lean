@@ -32,17 +32,18 @@ macro_rules
 
 delab_rule BUpd.bupd
   | `($_ $P) => do ``(iprop(|==> $(← Iris.BI.unpackIprop P)))
--- delab_rule WandUpdate ??
---   | `($_ $P $Q) => ``(iprop($P ==∗ $Q))
+
+delab_rule BIBase.wand
+  | `($_ $P iprop(|==> $Q)) => do `(iprop($(←Iris.BI.unpackIprop P) ==∗ $Q))
 
 class FUpd (PROP : Type _) where
   fupd : CoPset → CoPset → PROP → PROP
 export FUpd (fupd)
 
-syntax "|={" term "," term "}=> " term : term
-syntax:25 term:26 "={" term "," term "}=∗ " term:25 : term
+syntax "|={" term ", " term "}=> " term : term
+syntax:25 term:26 " ={" term ", " term "}=∗ " term:25 : term
 syntax "|={" term "}=> " term : term
-syntax:25 term:26 "={" term "}=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={$E1,$E2}=> $P))  => ``(FUpd.fupd $E1 $E2 iprop($P))
@@ -58,10 +59,14 @@ delab_rule FUpd.fupd
       if E1 == E2 then ``(iprop(|={$E1}=> $P))
       else ``(iprop(|={$E1,$E2}=> $P))
 
+delab_rule BIBase.wand
+  | `($_ $P iprop(|={$E₁,$E₂}=> $Q)) => do `(iprop($(←Iris.BI.unpackIprop P) ={$E₁,$E₂}=∗ $Q))
+  | `($_ $P iprop(|={$E₁}=> $Q)) => do `(iprop($(←Iris.BI.unpackIprop P) ={$E₁}=∗ $Q))
+
 syntax "|={" term "}[" term "]▷=> " term : term
-syntax:25 term:26 "={" term "}[" term "]▷=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}[" term "]▷=∗ " term:25 : term
 syntax "|={" term "}▷=> " term : term
-syntax:25 term:26 "={" term "}▷=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}▷=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={$E1}[$E2]▷=> $P))  => ``(iprop(|={$E1,$E2}=> ▷ (|={$E2,$E1}=> iprop($P))))
@@ -69,12 +74,26 @@ macro_rules
   | `(iprop(|={$E1}▷=> $P))  => ``(iprop(|={$E1}[$E1]▷=> iprop($P)))
   | `(iprop($P ={$E1}▷=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷=∗ iprop($Q)))
 
--- Delab rules
+open Lean.PrettyPrinter in
+delab_rule FUpd.fupd
+  | `($_ $E₁ $E₂ iprop(▷ |={$E₂',$E₁'}=> $P)) => do
+    unless E₁ == E₁' ∧ E₂ == E₂' do throw ()
+    `(iprop(|={$E₁}[$E₂]▷=> $(←Iris.BI.unpackIprop P)))
+  | `($_ $E₁ $E₁' iprop(▷ |={$E₁''}=> $P)) => do
+    unless E₁ == E₁' ∧ E₁' == E₁'' do throw ()
+    `(iprop(|={$E₁}▷=> $(←Iris.BI.unpackIprop P)))
+
+open Lean.PrettyPrinter in
+delab_rule BIBase.wand
+  | `($_ $Q iprop(|={$E₁}[$E₂]▷=> $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷=∗ $P))
+  | `($_ $Q iprop(|={$E₁}▷=> $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}▷=∗ $P))
 
 syntax "|={" term "}[" term "]▷^" term "=> " term : term
-syntax:25 term:26 "={" term "}[" term "]▷^" term "=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}[" term "]▷^" term "=∗ " term:25 : term
 syntax "|={" term "}▷^" term "=> " term : term
-syntax:25 term:26 "={" term "}▷^" term "=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}▷^" term "=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={$E1}[$E2]▷^$n=> $P))  => ``(iprop(|={$E1,$E2}=> ▷^[$n] (|={$E2,$E1}=> iprop($P))))
@@ -83,19 +102,60 @@ macro_rules
   | `(iprop($P ={$E1}▷^$n=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷^$n=∗ iprop($Q)))
 
 -- Delab rules
+open Lean.PrettyPrinter in
+delab_rule FUpd.fupd
+  | `($_ $E₁ $E₂ iprop(▷^[$n] |={$E₂',$E₁'}=> $P)) => do
+    unless E₁ == E₁' ∧ E₂ == E₂' do throw ()
+    `(iprop(|={$E₁}[$E₂]▷^$n=> $(←Iris.BI.unpackIprop P)))
+  | `($_ $E₁ $E₁' iprop(▷^[$n] |={$E₁''}=> $P)) => do
+    unless E₁ == E₁' ∧ E₁' == E₁'' do throw ()
+    `(iprop(|={$E₁}▷^$n=> $(←Iris.BI.unpackIprop P)))
 
-syntax "|={ " term " }[ " term " ]▷=>^[ " term " ]" term : term
-syntax:25 term:26 "={ " term " }[ " term " ]▷=∗^[ " term " ]" term:25 : term
-syntax "|={ " term " }▷=>^[ " term " ]" term : term
-syntax:25 term:26 "={ " term " }▷=∗^[ " term " ]" term:25 : term
+delab_rule BIBase.wand
+  | `($_ $Q iprop(|={$E₁}[$E₂]▷^$n=> $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷^$n=∗ $P))
+  | `($_ $Q iprop(|={$E₁}▷^$n=> $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}▷^$n=∗ $P))
+
+syntax "|={" term "}[" term "]▷=>^[" term "] " term : term
+syntax:25 term:26 " ={" term "}[" term "]▷=∗^[" term "] " term:25 : term
+syntax "|={" term "}▷=>^[" term "] " term : term
+syntax:25 term:26 " ={" term "}▷=∗^[" term "] " term:25 : term
 
 macro_rules
   | `(iprop(|={ $E1 }[ $E2 ]▷=>^[ $n ] $P))  => ``(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) $n iprop($P))
-  | `(iprop($P ={ $E1 }[ $E2 ]▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q) $n) iprop($Q)))
+  | `(iprop($P ={ $E1 }[ $E2 ]▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) $n iprop($Q)))
   | `(iprop(|={ $E1 }▷=>^[ $n ] $P))  => ``(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($P))
   | `(iprop($P ={ $E1 }▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($Q)))
 
--- Delab rules
+open Lean.PrettyPrinter.Delaborator SubExpr in
+@[app_delab Nat.repeat]
+meta def delab_step_fupdN : Delab :=  do
+  let_expr Nat.repeat _ lam _ _ := ←getExpr | unreachable!
+  let n ← withNaryArg 2 delab
+  let P ← withNaryArg 3 delab
+  guard <| lam.isLambda
+  let lamBody ← withNaryArg 1 do
+    withBindingBody' `_ Pure.pure fun arg => do
+    guard <| (←getExpr).getAppFn.constName! == ``FUpd.fupd
+    withNaryArg 4 do
+      guard <| (←getExpr).getAppFn.constName! == ``BIBase.later
+      withNaryArg 2 do
+      guard <| (←getExpr).getAppFn.constName! == ``FUpd.fupd
+      withNaryArg 4 do
+      let body ← getExpr
+      guard (←Lean.Meta.isDefEq arg body)
+    delab
+  match lamBody with
+  | `(iprop(|={$E₁}▷=> $_)) => `(iprop(|={$E₁}▷=>^[$n] $P))
+  | `(iprop(|={$E₁}[$E₂]▷=> $_)) => `(iprop(|={$E₁}[$E₂]▷=>^[$n] $P))
+  | _ => failure
+
+delab_rule BIBase.wand
+  | `($_ $Q iprop(|={$E₁}[$E₂]▷=>^[$n] $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷=∗^[$n] $P))
+  | `($_ $Q iprop(|={$E₁}▷=>^[$n] $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}▷=∗^[$n] $P))
 
 class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
   [bupd_ne : OFE.NonExpansive (BUpd.bupd (PROP := PROP))]
