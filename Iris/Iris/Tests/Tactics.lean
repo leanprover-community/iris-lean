@@ -10,11 +10,12 @@ public import Iris.ProofMode
 public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
+public import Iris.Algebra.CMRA
 
 @[expose] public section
 
 namespace Iris.Tests
-open Iris.BI
+open BI CMRA DFrac
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -2543,36 +2544,43 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q :=
   iintro HP HQ #HR
   icombine %a as HNew1
 
-/-- Tests `icombine` for combining propositions involving `iOwn` -/
+/-- Tests `icombine` for combining propositions involving `iOwn`, where
+    `a2` and `a3` can be combined as `b` instead of `a2 • a3` as
+    the former takes higher precedence. Likewise, `a1` and `b` is merged
+    as `c` instead of `a1 • b`. -/
 example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
-    {a1 a2 a3 : F.ap (IProp GF)} :
+    {a1 a2 a3 b c : F.ap (IProp GF)} [IsOp merge b a2 a3] [IsOp merge c a1 b] :
     ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
-      iOwn γ (a1 • (a2 • a3)) ∗
-      internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • (a2 • a3)) := by
+      iOwn γ c ∗
+      internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • b) := by
   iintro H1 H2 H3
   icombine H1 H2 H3 as Hnew1 gives ⟨Hnew2, Hnew3⟩
   isplitl
   · iexact Hnew1
   · isplit
-    · iexact Hnew2
+    · iexact Hnew2  -- `IsOp` is irrelevant to the `gives` syntax
     · iexact Hnew3
 
-/-- Tests `icombine` for combining propositions involving `iOwn` -/
-example {GF} [Fraction α] [ElemG GF (constOF (Frac α))] {γ}
-    {a1 a2 a3 : Frac α} :
-    ⊢@{IProp GF} iOwn (F := constOF (Frac α)) γ a1 -∗
+/-- Tests `icombine` for combining propositions involving `iOwn`, `IsOp`
+    instances. -/
+example {GF} [UFraction α] [ElemG GF (constOF (DFrac α))]
+    [ElemG GF (constOF (Frac α))] {γ}
+    {a1 a2 a3 b : Frac α} [IsOp merge b a2 a3] [IsOp merge c a1 b] :
+    ⊢@{IProp GF}
+      iOwn (F := constOF (DFrac α)) γ (own a1.car) -∗
+      iOwn (F := constOF (DFrac α)) γ (own a2.car) -∗
+      iOwn (F := constOF (DFrac α)) γ (own a3.car) -∗
+      iOwn (F := constOF (Frac α)) γ a1 -∗
       iOwn (F := constOF (Frac α)) γ a2 -∗
       iOwn (F := constOF (Frac α)) γ a3 -∗
-      iOwn (F := constOF (Frac α)) γ (a1 • (a2 • a3)) ∗
-      internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • (a2 • a3)) := by
-  iintro H1 H2 H3
-  set_option trace.Meta.synthInstance true in
-    icombine H1 H2 H3 as Hnew1 gives ⟨Hnew2, Hnew3⟩
-  isplitl
+      iOwn (F := constOF (DFrac α)) γ (own c.car) ∗
+      iOwn (F := constOF (Frac α)) γ c := by
+  iintro H1 H2 H3 H4 H5 H6
+  icombine H1 H2 H3 as Hnew1
+  icombine H4 H5 H6 as Hnew2
+  isplitl [Hnew1]
   · iexact Hnew1
-  · isplit
-    · iexact Hnew2
-    · iexact Hnew3
+  · iexact Hnew2
 
 /-- Tests `icombine` for combining propositions involving later credits. -/
 example {GF m n} [LcGS GF] :
