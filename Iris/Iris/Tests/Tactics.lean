@@ -2561,11 +2561,11 @@ example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
     · iexact Hnew2  -- `IsOp` is irrelevant to the `gives` syntax
     · iexact Hnew3
 
-/-- Tests `icombine` for combining propositions involving `iOwn`, `IsOp`
-    instances. -/
-example {GF} [UFraction α] [ElemG GF (constOF (DFrac α))]
+/-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
+    instances for `DFrac` and `Frac`. -/
+example {GF α} [UFraction α] [ElemG GF (constOF (DFrac α))]
     [ElemG GF (constOF (Frac α))] {γ}
-    {a1 a2 a3 b : Frac α} [IsOp merge b a2 a3] [IsOp merge c a1 b] :
+    {a1 a2 a3 b c : Frac α} [IsOp merge b a2 a3] [IsOp merge c a1 b] :
     ⊢@{IProp GF}
       iOwn (F := constOF (DFrac α)) γ (own a1.car) -∗
       iOwn (F := constOF (DFrac α)) γ (own a2.car) -∗
@@ -2581,6 +2581,24 @@ example {GF} [UFraction α] [ElemG GF (constOF (DFrac α))]
   isplitl [Hnew1]
   · iexact Hnew1
   · iexact Hnew2
+
+/-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
+    instances for the authoritative CMRA. -/
+example {GF F A} [UFraction F] [UCMRA A] [ElemG GF (constOF (Auth F A))] {γ}
+    {a1 a2 a3 b c : A} {dq dq1 dq2 : DFrac F}
+    [IsOp merge b a2 a3] [IsOp merge c a1 b] [IsOp merge dq dq1 dq2] :
+    ⊢@{IProp GF}
+      iOwn (F := constOF (Auth F A)) γ (◯ a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (◯ a2) -∗
+      iOwn (F := constOF (Auth F A)) γ (◯ a3) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{dq1} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{dq2} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ ((◯ c) • ●{dq} a1) := by
+  iintro H1 H2 H3 H4 H5
+  icombine H1 H2 H3 as HNew1
+  icombine H4 H5 as HNew2
+  icombine HNew1 HNew2 as HNew
+  iexact HNew
 
 /-- Tests `icombine` for combining propositions involving later credits. -/
 example {GF m n} [LcGS GF] :
