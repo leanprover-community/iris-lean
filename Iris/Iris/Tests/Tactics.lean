@@ -2551,8 +2551,7 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q :=
 example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
     {a1 a2 a3 b c : F.ap (IProp GF)} [IsOp merge b a2 a3] [IsOp merge c a1 b] :
     ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
-      iOwn γ c ∗
-      internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • b) := by
+      iOwn γ c ∗ internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • b) := by
   iintro H1 H2 H3
   icombine H1 H2 H3 as Hnew1 gives ⟨Hnew2, Hnew3⟩
   isplitl
@@ -2573,8 +2572,7 @@ example {GF α} [UFraction α] [ElemG GF (constOF (DFrac α))]
       iOwn (F := constOF (Frac α)) γ a1 -∗
       iOwn (F := constOF (Frac α)) γ a2 -∗
       iOwn (F := constOF (Frac α)) γ a3 -∗
-      iOwn (F := constOF (DFrac α)) γ (own c.car) ∗
-      iOwn (F := constOF (Frac α)) γ c := by
+      iOwn (F := constOF (DFrac α)) γ (own c.car) ∗ iOwn (F := constOF (Frac α)) γ c := by
   iintro H1 H2 H3 H4 H5 H6
   icombine H1 H2 H3 as Hnew1
   icombine H4 H5 H6 as Hnew2
@@ -2585,19 +2583,23 @@ example {GF α} [UFraction α] [ElemG GF (constOF (DFrac α))]
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
     instances for the authoritative CMRA. -/
 example {GF F A} [UFraction F] [UCMRA A] [ElemG GF (constOF (Auth F A))] {γ}
-    {a1 a2 a3 b c : A} {dq dq1 dq2 : DFrac F}
-    [IsOp merge b a2 a3] [IsOp merge c a1 b] [IsOp merge dq dq1 dq2] :
+    {a1 a2 a3 b c : A} {dq' dq'' dq1 dq2 dq3 dq4 : DFrac F}
+    [IsOp merge b a2 a3] [IsOp merge c a1 b]
+    [IsOp merge dq' dq1 dq2] [IsOp merge dq'' dq3 dq4] :
     ⊢@{IProp GF}
       iOwn (F := constOF (Auth F A)) γ (◯ a1) -∗
       iOwn (F := constOF (Auth F A)) γ (◯ a2) -∗
       iOwn (F := constOF (Auth F A)) γ (◯ a3) -∗
       iOwn (F := constOF (Auth F A)) γ (●{dq1} a1) -∗
       iOwn (F := constOF (Auth F A)) γ (●{dq2} a1) -∗
-      iOwn (F := constOF (Auth F A)) γ ((◯ c) • ●{dq} a1) := by
-  iintro H1 H2 H3 H4 H5
+      iOwn (F := constOF (Auth F A)) γ (●{dq3} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{dq4} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ ((◯ c) • ●{dq' • dq''} a1) := by
+  iintro H1 H2 H3 H4 H5 H6 H7
   icombine H1 H2 H3 as HNew1
   icombine H4 H5 as HNew2
-  icombine HNew1 HNew2 as HNew
+  icombine H6 H7 as HNew3
+  icombine HNew1 HNew2 HNew3 as HNew
   iexact HNew
 
 /-- Tests `icombine` for combining propositions involving later credits. -/
