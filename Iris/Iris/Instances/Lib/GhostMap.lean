@@ -36,4 +36,10 @@ variable [hgm: GhostMapG GF F K V H]
 instance (γ : GName)(k: K)(dq: DFrac F)(v: V): BI.Timeless (ghost_map_elem (hgm := hgm) γ dq k v) :=
   iOwn_timeless (E := hgm.elem)
 
+instance (γ : GName)(k: K)(v: V): BI.Persistent (ghost_map_elem (hgm := hgm) γ .discard k v) := by
+  unfold ghost_map_elem
+  exact instPersistentIPropIOwnOfCoreIdAp (E := hgm.elem)
+
+-- Global Instance ghost_map_elem_fractional k γ v : Fractional (λ q, γ ↪◯MAP[k]{#q} v)%I.
+
 end lemmas
