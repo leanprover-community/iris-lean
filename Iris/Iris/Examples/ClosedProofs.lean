@@ -57,7 +57,7 @@ instance : InvGpreS GF where
 
 example : True := by
   apply pure_soundness (PROP := IProp GF)
-  iapply step_fupdN_soundness_no_lc' (m := 0) (n := 1)
+  iapply step_fupdN_soundness_close (hlc := .HasNoLC) (m := 0) (n := 1)
   iintro %_ _
   simp only [Nat.repeat]
   icases inv_alloc nroot ⊤ iprop(True) $$ [] with >#Hinv

@@ -19,7 +19,7 @@ open Language.Notation
 
 @[expose] public section
 
-variable {hlc : Bool} {Expr State Obs Val : Type _}
+variable {hlc : HasLC?} {Expr State Obs Val : Type _}
 variable [Language Expr State Obs Val]
 variable {GF : BundledGFunctors} [iG : IrisGS_gen hlc Expr GF]
 
@@ -222,7 +222,8 @@ theorem wp_progress_gen [InvGpreS GF] (es : List Expr) (σ1 : State) (n : Nat) (
     (Hel : e2 ∈ t2) :
     NotStuck (e2, σ2) := by
   apply pure_soundness (PROP := IProp GF)
-  refine step_fupdN_soundness_gen (steps_sum numLaters 0 n + 1) (steps_sum numLaters 0 n + 1) hlc ?_
+  refine step_fupdN_soundness (hlc := hlc) (steps_sum numLaters 0 n + 1)
+    (steps_sum numLaters 0 n + 1) ?_
   iintro %Hinv ⟨Hcr_1, Hcr_k⟩
   imod Hwp with ⟨%stateI, %Φs, %forkPost, %mono, HSI, Hwptp⟩
   letI iG : IrisGS_gen hlc Expr GF := .mk (toStateInterp := ⟨stateI⟩) numLaters forkPost mono
@@ -255,7 +256,8 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness) (es : List Expr) (�
     (Hsteps : (es, σ1) -<κs>->ₜₚ^[n] (t2, σ2)) :
     φ := by
   apply pure_soundness (PROP := IProp GF)
-  refine step_fupdN_soundness_gen (steps_sum numLaters 0 n + 1) (steps_sum numLaters 0 n + 1) hlc ?_
+  refine step_fupdN_soundness (hlc := hlc) (steps_sum numLaters 0 n + 1)
+    (steps_sum numLaters 0 n + 1) ?_
   iintro %Hinv ⟨Hcr_1, Hcr_k⟩
   imod Hwp with ⟨%stateI, %Φs, %forkPost, %mono, HSI_init, Hwptp_bsl, Hφ⟩
   letI iG : IrisGS_gen hlc Expr GF := .mk (toStateInterp := ⟨stateI⟩) numLaters forkPost mono
@@ -295,7 +297,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness) (es : List Expr) (�
       iintro H; iexact H
 
 @[rocq_alias wp_strong_adequacy]
-abbrev wp_strong_adequacy := @wp_strong_adequacy_gen true
+abbrev wp_strong_adequacy := @wp_strong_adequacy_gen .HasLC
 
 @[rocq_alias adequate]
 structure adequate (s : Stuckness) (e1 : Expr) (σ1 : State)
@@ -375,7 +377,7 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State) (�
     ipure_intro; grind
 
 @[rocq_alias wp_adequacy]
-abbrev wp_adequacy := @wp_adequacy_gen true
+abbrev wp_adequacy := @wp_adequacy_gen .HasLC
 
 omit iG in
 @[rocq_alias wp_invariance_gen]
@@ -413,7 +415,7 @@ theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr) (σ1 σ2 : S
   iframe Hcont
 
 @[rocq_alias wp_invariance]
-abbrev wp_invariance := @wp_invariance_gen true
+abbrev wp_invariance := @wp_invariance_gen .HasLC
 
 end
 end Iris.ProgramLogic

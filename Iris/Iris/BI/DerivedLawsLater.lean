@@ -559,3 +559,15 @@ instance from_option_timeless [BI PROP] {α : Type _} {Ψ : α → PROP} {P : PR
   match mx with
   | none => inferInstanceAs (Timeless P)
   | some x => inferInstanceAs (Timeless (Ψ x))
+
+@[rocq_alias bi.timeless_laterN]
+theorem timeless_laterN {P : PROP} [Timeless P] (n : Nat) :
+    (▷^[n] P) ⊢ (▷^[n] False ∨ P) := by
+  induction n with
+  | zero => exact or_intro_r
+  | succ n IH =>
+    refine (later_mono IH).trans ?_
+    refine later_or.mp.trans ?_
+    refine or_mono .rfl Timeless.timeless |>.trans ?_
+    refine or_mono .rfl (or_mono_l (later_mono (laterN_intro n))) |>.trans ?_
+    exact or_assoc.mpr.trans (or_mono or_self.mp .rfl)

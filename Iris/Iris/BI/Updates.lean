@@ -449,6 +449,28 @@ theorem step_fupdN_S_fupd {n : Nat} {E : CoPset} {P : PROP} :
   simp only [Nat.repeat_add]
   exact step_fupdN_mono step_fupd_fupd.mpr
 
+@[rocq_alias step_fupd_frame_l]
+theorem step_fupd_frame_l {Eo Ei : CoPset} {R Q : PROP} :
+    (R ∗ |={Eo}[Ei]▷=> Q) ⊢ |={Eo}[Ei]▷=> (R ∗ Q) :=
+  fupd_frame_l.trans <| mono <|
+    (sep_mono_l later_intro).trans <| later_sep.2.trans <| later_mono fupd_frame_l
+
+@[rocq_alias step_fupdN_add]
+theorem step_fupdN_add {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
+    (|={Eo}[Ei]▷=>^[n + m] P) ⊣⊢ (|={Eo}[Ei]▷=>^[n] |={Eo}[Ei]▷=>^[m] P) := by
+  induction n with
+  | zero => rw [Nat.zero_add]; exact .rfl
+  | succ n IH =>
+    rw [Nat.add_right_comm n 1 m]
+    exact ⟨mono <| later_mono <| mono IH.1, mono <| later_mono <| mono IH.2⟩
+
+@[rocq_alias step_fupdN_frame_l]
+theorem step_fupdN_frame_l {Eo Ei : CoPset} {n : Nat} {R Q : PROP} :
+    (R ∗ |={Eo}[Ei]▷=>^[n] Q) ⊢ |={Eo}[Ei]▷=>^[n] (R ∗ Q) := by
+  induction n with
+  | zero => exact .rfl
+  | succ n IH => exact step_fupd_frame_l.trans (mono <| later_mono <| mono IH)
+
 end StepFUpdLaws
 
 section StepFUpdPlainlyLaws

@@ -309,7 +309,7 @@ theorem plainly_if_idemp p  : ■?p ■?p P ⊣⊢ ■?p P :=
   build_plainly_if p from plainly_idemp
 
 @[rocq_alias plainly_if_absorbing]
-instance plainly_if_absorbing (P : PROP)[Absorbing P] p : Absorbing iprop(■?p P) :=
+instance plainly_if_absorbing (P : PROP) [Absorbing P] p : Absorbing iprop(■?p P) :=
   build_plainly_if p from plainly_absorbing P
 end PlainlyLaws
 
@@ -331,12 +331,14 @@ theorem plainly_intro [ι:Plain P] : iprop(P ⊢ Q) → P ⊢ ■ Q := fun h =>
     _ ⊢ ■ P := Plain.plain
     _ ⊢ ■ Q := plainly_mono h
 
+-- FIXME: this is not an instance for a performance reason in Rocq.
+-- Can we make it an instance in Lean?
 @[rocq_alias plain_persistent]
 theorem plain_persistent [ι : Plain P]: Persistent P where
   persistent := ι.plain.trans plainly_elim_persistently
 
 @[rocq_alias impl_persistent]
-instance impl_persistent [Absorbing P][Plain P][Persistent Q] : Persistent iprop(P → Q) where
+instance impl_persistent [Absorbing P] [Plain P] [Persistent Q] : Persistent iprop(P → Q) where
   persistent := by
     calc iprop(P → Q)
       _ ⊢ (<absorb> P → Q) := imp_mono Absorbing.absorbing .rfl
@@ -350,7 +352,7 @@ instance plainly_persistent : Persistent iprop(■ P) where
   persistent := persistently_elim_plainly.2
 
 @[rocq_alias wand_persistent]
-instance wand_persistent [Plain P][Persistent Q][Absorbing Q] :
+instance wand_persistent [Plain P] [Persistent Q] [Absorbing Q] :
   Persistent iprop(P -∗ Q) where
   persistent :=
     open Plain Persistent Absorbing in
