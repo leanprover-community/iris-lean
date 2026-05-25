@@ -8,10 +8,12 @@ public import Iris.HeapLang.Syntax
 public import Std.Data.ExtTreeMap
 public import Std.Data.ExtTreeSet
 public import Iris.Std.BitOp
+public import Iris.Std.RocqPorting
 
 @[expose] public section
 namespace Iris.HeapLang
 
+@[rocq_alias ectx_item]
 inductive ECtxItem where
   | appL (v2 : Val)
   | appR (e1 : Exp)
@@ -44,6 +46,7 @@ inductive ECtxItem where
   | resolveR (e0 e1 : Exp)
   deriving Inhabited, Repr, DecidableEq
 
+@[rocq_alias fill_item]
 def ECtxItem.fill (Ki : ECtxItem) (e : Exp) : Exp :=
   match Ki with
   | .appL v2        => .app e (.val v2)
@@ -76,17 +79,21 @@ def ECtxItem.fill (Ki : ECtxItem) (e : Exp) : Exp :=
   | .resolveM e0 v2   => .resolve e0 e (.val v2)
   | .resolveR e0 e1   => .resolve e0 e1 e
 
+@[rocq_alias state]
 structure State where
   heap : Std.ExtTreeMap Loc Val
   usedProphId : Std.ExtTreeSet ProphId
 
+@[rocq_alias observation]
 abbrev Observation := ProphId × (Val × Val)
 
+@[rocq_alias un_op_eval]
 def UnOp.eval : UnOp → Val → Option Val
   | .neg,   .lit (.bool b) => some (.lit (.bool (!b)))
   | .minus, .lit (.int n)  => some (.lit (.int (-n)))
   | _,      _              => none
 
+@[rocq_alias bin_op_eval]
 def BinOp.eval : BinOp → Val → Val → Option Val
   | .plus,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 + n2)))
   | .minus,  .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 - n2)))
@@ -111,6 +118,7 @@ def BinOp.eval : BinOp → Val → Val → Option Val
 def State.initHeap (σ : State) (l : Loc) (n : Int) (v : Val) : State :=
   { σ with heap := (List.range n.toNat).foldl (fun h (i : Nat) => h.insert (l + (i : Int)) v) σ.heap }
 
+@[rocq_alias base_step]
 inductive BaseStep : Exp → State → List Observation → Exp → State → List Exp → Prop where
   | recS (f x : Binder) (e : Exp) (σ : State) :
       BaseStep (.rec_ f x e) σ [] (.val (.rec_ f x e)) σ []

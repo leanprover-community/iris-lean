@@ -16,11 +16,12 @@ namespace Iris.HeapLang
 
 open ProgramLogic
 
-@[reducible]
+@[reducible, rocq_alias to_val]
 def expToVal : Exp → Option Val
   | .val v => some v
   | _      => none
 
+@[rocq_alias heap_ectxi_lang]
 instance : EctxItemLanguage Exp ECtxItem State Observation Val where
   toVal    := expToVal
   ofVal    := .val
