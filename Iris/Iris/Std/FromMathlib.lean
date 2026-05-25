@@ -5,12 +5,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Batteries.Data.List.Basic
-public import Batteries.Data.Int
-public import Batteries.Data.Nat.Bitwise
-import all Init.Data.Nat.Bitwise.Basic
-import all Init.Data.Int.Bitwise.Basic
-import all Init.Data.Int.Basic
-
 
 @[expose] public section
 
