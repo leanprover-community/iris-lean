@@ -139,7 +139,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `lib/mono_list.v` 
   - [ ] Lemmas
   - [ ] Functors
-- [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
+- [x] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
 - [ ] `lib/ufrac_auth.v` 
   - [ ] Lemmas
   - [ ] Updates
@@ -190,7 +190,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Lemmas 
   - [ ] ProofMode instances 
 - [ ] `lib/mono_Z.v` (nb. generalize to `MonoNumbers.lean`)
-- [ ] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
+- [x] `lib/mono_nat.v` (nb. generalize to `MonoNumbers.lean`)
 - [ ] `lib/na_invariants.v`
   - [x] Basic construction 
   - [ ] Proofmode classes
