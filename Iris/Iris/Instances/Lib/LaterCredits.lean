@@ -57,8 +57,6 @@ section Definitions
 
 variable {GF : BundledGFunctors} {hlc : HasLC?} [LC : LcGS hlc GF]
 
-/-- The user-facing credit resource, denoting ownership of `i` credits
-(but only if later credits are enabled). -/
 def lc (i : Credit) : IProp GF :=
   match hlc with
   | .HasLC => iOwn (E := LC.lc_elem) LC.lc_name (◯ i)
@@ -66,8 +64,6 @@ def lc (i : Credit) : IProp GF :=
 
 notation:max "£ " i:40 => lc i
 
-/-- The internal authoritative part of the credit ghost state, tracking how many
-credits are available in total. Users should not directly interface with this. -/
 def lc_supply (i : Credit) : IProp GF :=
   match hlc with
   | .HasLC => iOwn (E := LC.lc_elem) LC.lc_name (● i)
@@ -409,16 +405,6 @@ open ProofMode
 
 variable {GF : BundledGFunctors} {hlc : HasLC?} [LcGS hlc GF]
 
-omit [LcGS hlc GF] in
-/-- `▷^[1] False` (i.e. `▷ False`) entails `◇ X`: it is the left disjunct of the except-0 modality. -/
-private theorem except0_intro_false {X : IProp GF} : iprop(▷^[1] False) ⊢ iprop(◇ X) :=
-  or_intro_l
-
-omit [LcGS hlc GF] in
-private theorem laterN_succ_false_except0 {X : IProp GF} (n : Nat) :
-    iprop(▷^[n.succ] False) ⊢ iprop(▷^[n] ◇ X) :=
-  (laterN_later n).mp.trans (laterN_mono n or_intro_l)
-
 @[rocq_alias le_upd.elim_bupd_le_upd]
 instance {P : IProp GF} : ElimModal True p false (bupd P) P (le_upd Q) (le_upd Q) where
   elim_modal := by
@@ -548,7 +534,8 @@ theorem le_upd_le_upd_finally (P : IProp GF) : (|==£> |==£|> P) ⊢ |==£|> P 
   iloeb as IH generalizing %m
   icases le_upd_unfold $$ HP with HP
   imod HP $$ Hlc with ⟨HFalse | ⟨Hlc, H⟩ | ⟨%m', %Hm, Hlc , H⟩⟩
-  · iapply laterN_succ_false_except0 $$ HFalse
+  · simp only [BIBase.except0]
+    iapply (laterN_later _).mp.trans (laterN_mono _ or_intro_l) $$ HFalse
   · iapply H; iframe
   conv =>
     rhs
