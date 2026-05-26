@@ -7,6 +7,7 @@ module
 
 public import Iris.BI
 public import Iris.ProofMode.Classes
+public import Iris.ProofMode.ClassesMake
 public import Iris.ProofMode.ModalityInstances
 public import Iris.Std.TC
 public import Iris.Std.RocqPorting
@@ -917,3 +918,32 @@ instance combineSepGives_persistently [BI PROP] (Q1 Q2 P : PROP)
     [h : CombineSepGives Q1 Q2 P] :
     CombineSepGives iprop(<pers> Q1) iprop(<pers> Q2) iprop(<pers> P) where
   combine_sep_gives := persistently_sep_2.trans (persistently_mono h.combine_sep_gives)
+
+-- TODO: two more instances [into_ih_Forall] and [into_ih_Forall2]
+-- have not been implemented
+
+@[rocq_alias into_ih_entails]
+instance intoIH_entails [BI PROP] (P Q : PROP) : IntoIH (P ⊢ Q) P Q where
+  into_ih := λ hpq => intuitionistically_elim.trans hpq
+
+@[rocq_alias into_ih_forall]
+instance intoIH_forall [BI PROP] (φ : α → Prop) (P : PROP) (Φ : α → PROP)
+    [h : ∀ x, IntoIH (φ x) P (Φ x)] :
+    IntoIH (∀ x, φ x) P (BI.forall Φ) where
+  into_ih := by
+    intro hφ
+    apply forall_intro
+    intro x
+    exact (h x).into_ih (hφ x)
+
+@[rocq_alias into_ih_impl]
+instance intoIH_imp [BI PROP] (φ ψ : Prop) (Δ P Q : PROP)
+    [h1 : MakeAffinely iprop(⌜φ⌝) P]
+    [h2 : IntoIH ψ Δ Q] :
+    IntoIH (φ → ψ) Δ iprop(P -∗ Q) where
+  into_ih := by
+    intro hImp
+    apply wand_intro
+    refine (sep_mono_r h1.make_affinely.mpr).trans ?_
+    refine persistent_and_affinely_sep_r.2.trans ?_
+    exact pure_elim_r (fun hφ => h2.into_ih (hImp hφ))

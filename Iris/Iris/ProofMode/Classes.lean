@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Michael Sammler, Alvin Tang
+Authors: Lars König, Michael Sammler, Yunsong Yang, Alvin Tang
 -/
 module
 
@@ -208,17 +208,26 @@ class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : o
 export IntoLaterN (into_laterN)
 
 /-- `CombineSepAs` combines two propositions `P` and `Q` into `R` -/
-@[ipm_class]
+@[ipm_class, rocq_alias CombineSepAs]
 class CombineSepAs [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_as : P ∗ Q ⊢ R
 export CombineSepAs (combine_sep_as)
 
 /-- `CombineSepGives` combines two propositions `P` and `Q` for a proposition
     with the `<pers>` modality -/
-@[ipm_class]
+@[ipm_class, rocq_alias CombineSepGives]
 class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
 export CombineSepGives (combine_sep_gives)
+
+/-
+  `IntoIH φ P Q` describes how to turn a pure induction hypothesis `φ` into a proofmode
+  hypothesis `Q` under an intuitionistic BI context `□ P`.
+-/
+@[ipm_class, rocq_alias IntoIH]
+class IntoIH [BI PROP] (φ : Prop) (P : PROP) (Q : outParam PROP) where
+  into_ih : φ → □ P ⊢ Q
+export IntoIH (into_ih)
 
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore elim_modal_tc_opaque "No tc_opaque in Lean"
