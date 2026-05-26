@@ -315,7 +315,7 @@ theorem auth_op_auth_eqv : (●V{dq1 • dq2} a : View F R) ≡ (●V{dq1} a) �
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias view_auth_dfrac_is_op]
 instance isOp_view_auth_dfrac {dq dq1 dq2 : DFrac F} {a : A}
-    [h : IsOp merge dq dq1 dq2] :
+    [h : IsOp io1 dq io2 dq1 io3 dq2] :
     IsOp io1 (●V{dq} a : View F R) io2 (●V{dq1} a) io3 (●V{dq2} a) where
   is_op := by
     rw [h.is_op]
@@ -359,7 +359,7 @@ instance [CMRA.CoreId b] : CMRA.CoreId ((●V{.discard} a : View F R) • ◯V b
     refine UCMRA.unit_left_id.symm
 
 @[rocq_alias view_frag_is_op]
-instance {b b1 b2 : B} [h : IsOp merge b b1 b2] :
+instance {b b1 b2 : B} [h : IsOp io1 b io2 b1 io3 b2] :
     IsOp io1 (◯V b : View F R) io2 (◯V b1) io3 (◯V b2) where
   is_op := NonExpansive.eqv h.is_op
 

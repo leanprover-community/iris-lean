@@ -139,7 +139,7 @@ nonrec theorem auth_dfrac_op {dq1 dq2 : DFrac F} {a : A} :
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias auth_auth_dfrac_is_op]
-instance {dq dq1 dq2 : DFrac F} [h : IsOp merge dq dq1 dq2] :
+instance {dq dq1 dq2 : DFrac F} [h : IsOp io1 dq io2 dq1 io3 dq2] :
     IsOp io1 (●{dq} a : Auth F A) io2 (●{dq1} a) io3 (●{dq2} a) where
   is_op := by
     rw [h.is_op]
@@ -181,7 +181,7 @@ nonrec instance {a : A} {b : A} [CoreId b] :
   instCoreIdOpAuthDiscardFrag
 
 @[rocq_alias auth_frag_is_op]
-instance {a b1 b2 : A} [h : IsOp merge a b1 b2] :
+instance {a b1 b2 : A} [h : IsOp io1 a io2 b1 io3 b2] :
     IsOp io1 (◯ a : Auth F A) io2 (◯ b1) io3 (◯ b2) where
   is_op := ⟨⟨⟩, h.is_op⟩
 
