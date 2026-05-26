@@ -323,18 +323,18 @@ instance fupd_sep_homomorphism E :
   map_unit := fupd_intro
 
 @[rocq_alias big_sepL_fupd]
-theorem BigSepL2.big_sepL_fupd {A : Type _} E (Φ : Nat → A → PROP) l :
+theorem BigSepL2.bigSepL_fupd {A : Type _} E (Φ : Nat → A → PROP) l :
     ([∗list] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗list] k↦x ∈ l, Φ k x :=
     Algebra.BigOpL.bigOpL_hom (R := flip Entails) Φ l
 
 @[rocq_alias big_sepL2_fupd]
-theorem BigSepL2.big_sepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) l1 l2 :
+theorem BigSepL2.bigSepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) l1 l2 :
     ([∗list] k↦x;y ∈ l1;l2, |={E}=> Φ k x y) ⊢ |={E}=> [∗list] k↦x;y ∈ l1;l2, Φ k x y := by
   refine BigSepL2.bigSepL2_alt.mp.trans ?_
   refine persistent_and_affinely_sep_l.mp.trans ?_
   refine .trans ?_ (mono BigSepL2.bigSepL2_alt.mpr)
   refine .trans ?_ (mono persistent_and_affinely_sep_l.mpr)
-  exact .trans (sep_mono_r (BigSepL2.big_sepL_fupd E _ _ )) fupd_frame_l
+  exact .trans (sep_mono_r (BigSepL2.bigSepL_fupd E _ _ )) fupd_frame_l
 
 end FUpdLaws
 
@@ -448,6 +448,28 @@ theorem step_fupdN_S_fupd {n : Nat} {E : CoPset} {P : PROP} :
   refine ⟨step_fupd_mono <| step_fupdN_mono fupd_intro, ?_⟩
   simp only [Nat.repeat_add]
   exact step_fupdN_mono step_fupd_fupd.mpr
+
+@[rocq_alias step_fupd_frame_l]
+theorem step_fupd_frame_l {Eo Ei : CoPset} {R Q : PROP} :
+    (R ∗ |={Eo}[Ei]▷=> Q) ⊢ |={Eo}[Ei]▷=> (R ∗ Q) :=
+  fupd_frame_l.trans <| mono <|
+    (sep_mono_l later_intro).trans <| later_sep.2.trans <| later_mono fupd_frame_l
+
+@[rocq_alias step_fupdN_add]
+theorem step_fupdN_add {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
+    (|={Eo}[Ei]▷=>^[n + m] P) ⊣⊢ (|={Eo}[Ei]▷=>^[n] |={Eo}[Ei]▷=>^[m] P) := by
+  induction n with
+  | zero => rw [Nat.zero_add]; exact .rfl
+  | succ n IH =>
+    rw [Nat.add_right_comm n 1 m]
+    exact ⟨mono <| later_mono <| mono IH.1, mono <| later_mono <| mono IH.2⟩
+
+@[rocq_alias step_fupdN_frame_l]
+theorem step_fupdN_frame_l {Eo Ei : CoPset} {n : Nat} {R Q : PROP} :
+    (R ∗ |={Eo}[Ei]▷=>^[n] Q) ⊢ |={Eo}[Ei]▷=>^[n] (R ∗ Q) := by
+  induction n with
+  | zero => exact .rfl
+  | succ n IH => exact step_fupd_frame_l.trans (mono <| later_mono <| mono IH)
 
 end StepFUpdLaws
 
