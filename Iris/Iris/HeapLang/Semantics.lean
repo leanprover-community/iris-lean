@@ -78,7 +78,7 @@ def ECtxItem.fill (Ki : ECtxItem) (e : Exp) : Exp :=
   | .resolveR e0 e1   => .resolve e0 e1 e
 
 structure State where
-  heap : Std.ExtTreeMap Loc Val
+  heap : Std.ExtTreeMap Loc (Option Val)
   usedProphId : Std.ExtTreeSet ProphId
 
 abbrev Observation := ProphId × (Val × Val)
@@ -150,7 +150,7 @@ inductive BaseStep : Exp → State → List Observation → Exp → State → Li
   | freeS (l : Loc) (v : Val) (σ : State) :
       σ.heap.get? l = some v →
       BaseStep (.free (.val (.lit (.loc l)))) σ
-               [] (.val (.lit .unit)) { σ with heap := σ.heap.erase l } []
+               [] (.val (.lit .unit)) { σ with heap := σ.heap.insert l none } []
   | loadS (l : Loc) (v : Val) (σ : State) :
       σ.heap.get? l = some v →
       BaseStep (.load (.val (.lit (.loc l)))) σ [] (.val v) σ []
@@ -171,10 +171,10 @@ inductive BaseStep : Exp → State → List Observation → Exp → State → Li
                (.val (.pair vl (.lit (.bool b))))
                (if b then { σ with heap := σ.heap.insert l v2 } else σ) []
   | faaS (l : Loc) (i1 i2 : Int) (σ : State) :
-      σ.heap.get? l = some (.lit (.int i1)) →
+      σ.heap.get? l = some (some (.lit (.int i1))) →
       BaseStep (.faa (.val (.lit (.loc l))) (.val (.lit (.int i2)))) σ
                [] (.val (.lit (.int i1)))
-               { σ with heap := σ.heap.insert l (.lit (.int (i1 + i2))) } []
+               { σ with heap := σ.heap.insert l (some (.lit (.int (i1 + i2)))) } []
   | forkS (e : Exp) (σ : State) :
       BaseStep (.fork e) σ [] (.val (.lit .unit)) σ [e]
   | newProphS (σ : State) (p : ProphId) :
