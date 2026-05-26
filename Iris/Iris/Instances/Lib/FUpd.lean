@@ -185,9 +185,7 @@ theorem lc_fupd_elim_later {E : CoPset} {P : IProp GF} : ⊢ £ 1 -∗ (▷ P) -
   iintro ⟨Hwsat, HE⟩
   iapply le_upd_later $$ Hcr
   inext
-  isplitl [Hwsat]; iassumption
-  isplitl [HE]; iassumption
-  iassumption
+  iframe
 
 @[rocq_alias lc_fupd_add_later]
 theorem lc_fupd_add_later {E1 E2 : CoPset} {P : IProp GF} : ⊢ £ 1 -∗ (▷ |={E1, E2}=>P) -∗ |={E1, E2}=> P := by
@@ -488,7 +486,6 @@ instance fromForall_fupd_pure {A : Type _} (E : CoPset) (P : IProp GF) (Φ : A �
 
 end fupd_finally
 
-
 open Std.LawfulSet
 
 variable {GF : BundledGFunctors}
@@ -569,7 +566,8 @@ theorem fupd_soundness_no_lc_unfold [InvGpreS GF] m E :
   rw [diff_subset_decomp (s₁ := E) (s₂ := ⊤) (fun _ _ => CoPset.mem_full)]
   icases (ownE_op (disjoint_symm disjoint_diff_right)) $$ HE with ⟨_, HE⟩
   -- FIXME: iframe failed without simplication here
-  dsimp only []
+  -- Fails on Hw and HE
+  dsimp only
   iframe Hlc Hw HE
   iintro !>!>  %E1 %E2 %P HP HwE
   simp only [fupd, uPred_fupd]

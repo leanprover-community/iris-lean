@@ -82,6 +82,7 @@ theorem lc_split {n m} : £ (n + m) ⊣⊢@{IProp GF} £ n ∗ £ m := by
     exact (true_sep (P := iprop(True))).symm
   | HasLC =>
     -- FIXME: Timeout on iOwn_op. Why?
+    -- Specifying (F := (AuthURF (F := PNat) (constOF Credit))) (a1 := ◯ n) (a2 := ◯ m) fixes it, but it is too verbose.
     simp only [lc]
     refine .trans ?_ iOwn_op
     exact .rfl
@@ -109,8 +110,7 @@ theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n �
   · unfold lc lc_supply
     isplitl [Hsupp] <;> iassumption
   ihave H := iOwn_cmraValid $$ H
-  ihave ⟨H1, H2⟩ := auth_both_validI m n $$ H
-  ihave %H := internalCmraIncluded_discrete $$ H1
+  ihave ⟨%H, H2⟩ := auth_both_validI m n $$ H
   ipure_intro
   obtain ⟨k, rfl⟩ := H
   exact n.le_add_right k
@@ -132,8 +132,7 @@ theorem lc_increase_supply n m : lc_supply m ⊢@{IProp GF} |==> (lc_supply (n +
 unfold lc lc_supply
 iintro H
 imod iOwn_update $$ H with Hown
-· apply auth_update_alloc
-  apply leftCancelAdd_local_update (y := 0) (x' := (n + m)) (y' := n) (by grind)
+· exact auth_update_alloc (leftCancelAdd_local_update (y := 0) (x' := (n + m)) (y' := n) (by grind))
 icases iOwn_op $$ Hown with ⟨Hm, _⟩
 iframe
 
@@ -159,9 +158,7 @@ instance {n} : Timeless (PROP := IProp GF) (£ n) := by
 @[rocq_alias lc_0_persistent]
 instance : Persistent (PROP := IProp GF) (£ 0) := by
   unfold lc
-  cases hlc
-  · infer_instance
-  · apply instPersistentIPropIOwnOfCoreIdAp
+  cases hlc <;> infer_instance
 
 end Operations
 
@@ -295,7 +292,7 @@ theorem bupd_le_upd {P : IProp GF} : (|==> P) ⊢ (|==£> P) := by
   iintro %n Hsupp
   imod H; imodintro
   iright; ileft
-  isplitl [Hsupp] <;> iassumption
+  iframe
 
 @[rocq_alias le_upd.le_upd_intro]
 theorem le_upd_intro {P : IProp GF} : P ⊢ |==£> P := by
@@ -356,7 +353,7 @@ theorem le_upd_mono {P Q : IProp GF} (Hent : P ⊢ Q) : (|==£> P) ⊢ (|==£> Q
   iapply le_upd_bind $$ [] H
   iintro H
   iapply le_upd_intro
-  apply Hent
+  exact Hent
 
 @[rocq_alias le_upd.le_upd_trans]
 theorem le_upd_trans {P : IProp GF} : (|==£> |==£> P) ⊢ |==£> P := by
@@ -467,7 +464,7 @@ theorem lc_alloc [H : LcGpreS GF] n : ⊢@{IProp GF} |==> ∃ _ : LcGS .HasLC GF
   iexists LC
   imodintro
   simp only [lc_supply, lc]
-  isplitl [HAuth] <;> iassumption
+  iframe
 
 @[rocq_alias le_upd.lc_alloc_no_lc]
 theorem lc_alloc_no_lc [H : LcGpreS GF] n :
