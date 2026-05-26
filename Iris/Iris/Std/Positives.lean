@@ -152,6 +152,15 @@ theorem succ_inj : Pos.succ.Injective  := by
       apply IH
       rw [H]
 
+theorem toNat_succ : ∀ p : Pos, p.succ.toNat = p.toNat + 1
+  | .xH   => rfl
+  | .xI p => by simp only [succ, toNat, toNat_succ p]; omega
+  | .xO _ => rfl
+
+theorem toNat_ofNat : ∀ n : Nat, (Pos.ofNat n).toNat = n + 1
+  | 0     => rfl
+  | n + 1 => by simp [Pos.ofNat, Pos.toNat_succ, Pos.toNat_ofNat n]
+
 theorem Pos_ofNat_inj : Pos.ofNat.Injective := by
   intro a b h
   induction a generalizing b with
@@ -421,6 +430,24 @@ instance : Countable Pos where
   encode := id
   decode := some
   decode_encode _ := rfl
+
+instance : Pos.Countable Char where
+  encode c := Pos.ofNat c.val.toNat
+  decode p :=
+    let u := UInt32.ofNat (p.toNat - 1)
+    if hv : u.isValidChar then some (Char.mk u hv) else none
+  decode_encode c := by
+    simp only [Pos.toNat_ofNat, Nat.add_sub_cancel]
+    have hv : (UInt32.ofNat c.val.toNat).isValidChar := by
+      simp [UInt32.isValidChar]; exact c.valid
+    simp only [hv, ↓reduceDIte]
+    congr 1; ext; simp
+
+instance : Pos.Countable String where
+  encode s := (Pos.Countable.encode : List Char → Pos) s.toList
+  decode p := ((Pos.Countable.decode p : Option (List Char))).map String.ofList
+  decode_encode s := by
+    simp [Pos.Countable.decode_encode, String.ofList_toList]
 
 instance : Ord Pos where
   compare x y := Pos.compare x y
