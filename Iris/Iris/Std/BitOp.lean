@@ -80,46 +80,45 @@ theorem xor_assoc (a b c : Nat) : (a ^^^ b) ^^^ c = a ^^^ (b ^^^ c) := by
   simp only [Nat.testBit_xor]
   cases a.testBit i <;> cases b.testBit i <;> cases c.testBit i <;> rfl
 
+theorem testBit_ldiff (a b i : Nat) :
+  (ldiff a b).testBit i = (a.testBit i && !(b.testBit i)) := by
+  simp [ldiff, Nat.testBit_bitwise]
+
 theorem ldiff_zero (a : Nat) : ldiff a 0 = a := by
   apply Nat.eq_of_testBit_eq; intro i
-  simp [ldiff, Nat.testBit_bitwise]
+  simp [testBit_ldiff]
 
 theorem zero_ldiff (a : Nat) : ldiff 0 a = 0 := by
   apply Nat.eq_of_testBit_eq; intro i
-  simp [ldiff, Nat.testBit_bitwise]
+  simp [testBit_ldiff]
 
 theorem ldiff_ldiff_or (a b c : Nat) : ldiff (ldiff a b) c = ldiff a (b ||| c) := by
-  unfold ldiff
   apply Nat.eq_of_testBit_eq; intro i
-  rw [Nat.testBit_bitwise, Nat.testBit_bitwise, Nat.testBit_bitwise, Nat.testBit_or]
+  simp only [testBit_ldiff, Nat.testBit_or]
   cases a.testBit i <;> cases b.testBit i <;> cases c.testBit i
   all_goals decide
 
 theorem ldiff_comm_and (a b c : Nat) : ldiff (ldiff a b) c = ldiff (ldiff a c) b := by
-  unfold ldiff
   apply Nat.eq_of_testBit_eq; intro i
-  rw [Nat.testBit_bitwise, Nat.testBit_bitwise, Nat.testBit_bitwise, Nat.testBit_bitwise]
+  simp only [testBit_ldiff]
   cases a.testBit i <;> cases b.testBit i <;> cases c.testBit i
   all_goals decide
 
 theorem and_ldiff_left (a b c : Nat) : ldiff (a &&& b) c = (a &&& ldiff b c) := by
-  unfold ldiff
   apply Nat.eq_of_testBit_eq; intro i
-  rw [Nat.testBit_bitwise, Nat.testBit_and, Nat.testBit_and, Nat.testBit_bitwise]
+  simp only [testBit_ldiff, Nat.testBit_and]
   cases a.testBit i <;> cases b.testBit i <;> cases c.testBit i
   all_goals decide
 
 theorem and_ldiff_right (a b c : Nat) : ldiff a b &&& c = (a &&& ldiff c b) := by
-  unfold ldiff
   apply Nat.eq_of_testBit_eq; intro i
-  rw [Nat.testBit_and, Nat.testBit_bitwise, Nat.testBit_and, Nat.testBit_bitwise]
+  simp only [testBit_ldiff, Nat.testBit_and]
   cases a.testBit i <;> cases b.testBit i <;> cases c.testBit i
   all_goals decide
 
 theorem ldiff_and_self (a b c : Nat) : ldiff b a &&& c = ldiff (b &&& c) a := by
-  unfold ldiff
   apply Nat.eq_of_testBit_eq; intro i
-  rw [Nat.testBit_and, Nat.testBit_bitwise, Nat.testBit_bitwise, Nat.testBit_and]
+  simp only [testBit_ldiff, Nat.testBit_and]
   cases a.testBit i <;> cases b.testBit i <;> cases c.testBit i
   all_goals decide
 
@@ -137,7 +136,7 @@ def lor : Int → Int → Int
   | -[m+1], (n : Nat) => -[ldiff m n+1]
   | -[m+1], -[n+1] => -[m &&& n+1]
 
-instance : HOr Int Int Int := ⟨lor⟩
+instance : OrOp Int := ⟨lor⟩
 
 /-- NB. Copied from Mathlib
 `land` takes two integers and returns their bitwise `and` -/
@@ -147,7 +146,7 @@ def land : Int → Int → Int
   | -[m+1], (n : Nat) => ldiff n m
   | -[m+1], -[n+1] => -[m ||| n+1]
 
-instance : HAnd Int Int Int := ⟨land⟩
+instance : AndOp Int := ⟨land⟩
 
 /-- NB. Copied from Mathlib
 `xor` computes the bitwise `xor` of two natural numbers -/
@@ -157,7 +156,7 @@ def xor : Int → Int → Int
   | -[m+1], (n : Nat) => -[(m ^^^ n)+1]
   | -[m+1], -[n+1] => (m ^^^ n)
 
-instance : HXor Int Int Int := ⟨xor⟩
+instance : XorOp Int := ⟨xor⟩
 
 /-- NB. Copied from Mathlib
 `m <<< n` produces an integer whose binary representation
@@ -169,15 +168,12 @@ instance : ShiftLeft Int where
   | -[m+1], (n : Nat) => -[shiftLeft' true m n+1]
   | -[m+1], -[n+1] => -[m >>> (Nat.succ n)+1]
 
-instance : HShiftLeft Int Int Int := ⟨ShiftLeft.shiftLeft⟩
-
 /-- NB. Copied from Mathlib
 `m >>> n` produces an integer whose binary representation
 is obtained by right-shifting the binary representation of `m` by `n` places -/
 instance : ShiftRight Int where
   shiftRight m n := m <<< (-n)
 
-instance : HShiftRight Int Int Int := ⟨ShiftRight.shiftRight⟩
 
 @[simp]
 theorem lor_comm (m n : Int) : m ||| n = n ||| m := by
@@ -421,13 +417,13 @@ theorem shiftLeft_natCast (m n : Nat) : (m : Int) <<< (n : Int) = ((m <<< n) : N
   simp [HShiftLeft.hShiftLeft, ShiftLeft.shiftLeft, shiftLeft'_false]
 
 theorem natCast_lor (m n : Nat) : ((m ||| n : Nat) : Int) = (m : Int) ||| (n : Int) := by
-  simp [HOr.hOr, lor]
+  simp [HOr.hOr, OrOp.or, lor]
 
 theorem natCast_land (m n : Nat) : ((m &&& n : Nat) : Int) = (m : Int) &&& (n : Int) := by
-  simp [HAnd.hAnd, land]
+  simp [HAnd.hAnd, AndOp.and, land]
 
 theorem natCast_xor (m n : Nat) : ((m ^^^ n : Nat) : Int) = (m : Int) ^^^ (n : Int) := by
-  simp [HXor.hXor, xor]
+  simp [HXor.hXor, XorOp.xor, xor]
 
 theorem lor_negSucc_negSucc (m n : Nat) : -[m+1] ||| -[n+1] = -[m &&& n+1] := rfl
 
