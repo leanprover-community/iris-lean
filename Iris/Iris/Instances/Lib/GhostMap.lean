@@ -10,6 +10,8 @@ public import Iris.Instances.IProp
 public import Iris.BI.Lib.Fractional
 public import Iris.ProofMode
 
+public section
+
 namespace Iris
 
 open Iris Std HeapView PartialMap Iris.Algebra CMRA BI ProofMode
@@ -35,13 +37,13 @@ public def ghost_map_elem (γ : GName) (dq : DFrac F) (k : K) (v : V) : IProp GF
 end definitions
 
 notation γ " ↪●MAP{" dq "} " m => ghost_map_auth γ dq m
-notation γ " ↪●MAP " m => ghost_map_auth γ (DFrac.own 1) m
+notation γ " ↪●MAP " m => ghost_map_auth γ (DFrac.own One.one) m
 notation γ " ↪◯MAP[" k "]{" dq "} " v => ghost_map_elem γ dq k v
-notation γ " ↪◯MAP[" k "] " v => ghost_map_elem γ (DFrac.own 1) k v
+notation γ " ↪◯MAP[" k "] " v => ghost_map_elem γ (DFrac.own One.one) k v
 
 section lemmas
 
-variable (F K V : Type _) (H : Type _ → Type _) [UFraction F] [LawfulFiniteMap H K]
+variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [LawfulFiniteMap H K]
 variable [hgm : GhostMapG GF F K V H]
 
 @[rocq_alias ghost_map_elem_timeless]
@@ -72,7 +74,7 @@ instance (γ : GName) (k : K) (v : V)
     : AsFractional (PROP := IProp GF) (γ ↪◯MAP[k]{.own q} v)
       (fun q => γ ↪◯MAP[k]{.own q} v) q where
   as_fractional := IProp.ext_iff.mp rfl
-  as_fractional_fractional := ghost_map_elem_fractional F K V H γ k v
+  as_fractional_fractional := ghost_map_elem_fractional γ k v
 
 @[rocq_alias ghost_map_elems_unseal]
 theorem ghost_map_elems_unseal γ (m : H V) dq :
@@ -261,7 +263,7 @@ instance (γ : GName) (m : H V) (q : F)
     : AsFractional (PROP := IProp GF) (γ ↪●MAP{.own q} m)
       (fun q => γ ↪●MAP{.own q} m) q where
   as_fractional := IProp.ext_iff.mp rfl
-  as_fractional_fractional := ghost_map_auth_fractional F K V H m
+  as_fractional_fractional := ghost_map_auth_fractional m
 
 @[rocq_alias ghost_map_auth_valid]
 theorem ghost_map_auth_valid γ (dq : DFrac F) (m : H V) :
@@ -314,7 +316,6 @@ theorem ghost_map_insert {γ} {m : H V} (k : K) (v : V) :
   get? m k = .none →
   ⊢@{IProp GF} (γ ↪●MAP m) ==∗ (γ ↪●MAP insert m k v) ∗ γ ↪◯MAP[k] v := sorry
 
-@[rocq_alias ghost_map_insert_persist]
 theorem ghost_map_insert_persist {γ} {m : H V} (k : K) (v : V) :
   get? m k = .none →
   ⊢@{IProp GF} (γ ↪●MAP m) ==∗ (γ ↪●MAP insert m k v) ∗ (γ ↪◯MAP[k]{.discard} v) := sorry
@@ -334,25 +335,25 @@ theorem ghost_map_lookup_big {γ dq} {m : H V} {dq'} m0 :
   ⌜m0 ⊆ m⌝ := sorry
 
 @[rocq_alias ghost_map_insert_big]
-theorem ghost_map_insert_big {γ m} (m' : H V) :
+theorem ghost_map_insert_big [LawfulFiniteMap H K] {γ : GName} {m : H V} (m' : H V) :
   (m' ##ₘ m) →
   ⊢@{IProp GF} (γ ↪●MAP m) ==∗
   (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k] v := sorry
 
 @[rocq_alias ghost_map_insert_persist_big]
-theorem ghost_map_insert_persist_big {γ m} (m' : H V) :
+theorem ghost_map_insert_persist_big [LawfulFiniteMap H K] {γ m} (m' : H V) :
   m' ##ₘ m →
   ⊢@{IProp GF} (γ ↪●MAP m) ==∗
   (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k]{.discard} v := sorry
 
 @[rocq_alias ghost_map_delete_big]
-theorem ghost_map_delete_big {γ m} (m0 : H V) :
+theorem ghost_map_delete_big [LawfulFiniteMap H K] {γ m} (m0 : H V) :
   ⊢@{IProp GF} (γ ↪●MAP m) -∗
   ([∗map] k ↦v ∈ m0, γ ↪◯MAP[k] v) ==∗
   (γ ↪●MAP (m \ m0)) := sorry
 
 @[rocq_alias ghost_map_update_big]
-theorem ghost_map_update_big {γ m} (m0 m1 : H V) :
+theorem ghost_map_update_big [LawfulFiniteMap H K] {γ m} (m0 m1 : H V) :
   dom m0 = dom m1 →
   ⊢@{IProp GF} (γ ↪●MAP m) -∗
   ([∗map] k ↦v ∈ m0, γ ↪◯MAP[k] v) ==∗
