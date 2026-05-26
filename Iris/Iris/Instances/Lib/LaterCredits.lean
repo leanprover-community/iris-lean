@@ -620,12 +620,8 @@ theorem le_upd_keep (P Q : IProp GF) [TCOr (TCEq hlc .HasNoLC) (Timeless P)] :
 theorem le_upd_finally_later (P : IProp GF) : ▷ (|==£|> P) ⊢ |==£|> ▷ ◇ P := by
   unfold le_upd_finally
   iintro H %m Hlc
-  -- `▷ ◇ ■ P ⊢ ◇ ■ (▷ ◇ P)`: `■ (▷ ◇ P) ⊣⊢ ▷ ◇ ■ P`, then introduce the `◇`.
-  have hbody : iprop(▷ ◇ ■ P) ⊢ iprop(◇ ■ (▷ ◇ P)) :=
-    except0_intro.trans <| except0_mono <|
-      (later_mono except0_plainly.1).trans <| later_plainly.1
-  -- Goal `▷^[m] ◇ ■ (▷ ◇ P)` ⟸ `▷^[m] (▷ ◇ ■ P) = ▷^[m+1] ◇ ■ P = ▷ (▷^[m] ◇ ■ P)`.
-  iapply laterN_mono _ hbody
+  iapply laterN_mono _ (except0_intro.trans <| except0_mono <| later_plainly.1)
+  iapply laterN_mono _ (later_mono except0_plainly.1)
   iapply (laterN_later m).mp
   iapply (later_laterN m).mpr
   inext
