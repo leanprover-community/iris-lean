@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2026 Сухарик. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Сухарик (@suhr)
+-/
+
 module
 
 public import Iris.Instances.IProp
@@ -35,7 +41,7 @@ notation γ " ↪◯MAP[" k "] " v => ghost_map_elem γ (DFrac.own 1) k v
 
 section lemmas
 
-variable (F K V : Type _) (H : Type _ → Type _) [UFraction F] [lpm: LawfulPartialMap H K] [CMRA V]
+variable (F K V : Type _) (H : Type _ → Type _) [UFraction F] [lpm: LawfulPartialMap H K]
 variable [hgm: GhostMapG GF F K V H]
 
 @[rocq_alias ghost_map_elem_timeless]
@@ -48,8 +54,8 @@ instance (γ : GName)(k: K)(v: V): BI.Persistent (PROP := IProp GF) (γ ↪◯MA
   exact instPersistentIPropIOwnOfCoreIdAp (E := hgm.elem)
 
 @[rocq_alias ghost_map_elem_fractional]
-instance (γ : GName)(k: K)(v: V)
-    : Fractional (PROP := IProp GF) iprop(fun q: F => γ ↪◯MAP[k]{.own q} v) where
+instance ghost_map_elem_fractional (γ : GName)(k: K)(v: V)
+    : Fractional (PROP := IProp GF) (fun q: F => γ ↪◯MAP[k]{.own q} v) where
   fractional p q := by
     unfold ghost_map_elem
     let ta := @toAgree (LeibnizO V) { car := v }
@@ -65,7 +71,9 @@ instance (γ : GName)(k: K)(v: V)
 @[rocq_alias ghost_map_elem_as_fractional]
 instance (γ : GName) (k: K) (v: V)
     : AsFractional (PROP := IProp GF) (γ ↪◯MAP[k]{.own q} v)
-      (fun q => γ ↪◯MAP[k]{.own q} v) q := sorry
+      (fun q => γ ↪◯MAP[k]{.own q} v) q where
+  as_fractional := IProp.ext_iff.mp rfl
+  as_fractional_fractional := ghost_map_elem_fractional F K V H γ k v
 
 @[rocq_alias ghost_map_elems_unseal]
 theorem ghost_map_elems_unseal [LawfulFiniteMap H K] γ (m : H V) dq :
@@ -75,11 +83,21 @@ theorem ghost_map_elems_unseal [LawfulFiniteMap H K] γ (m : H V) dq :
 
 @[rocq_alias ghost_map_elem_valid]
 theorem ghost_map_elem_valid (γ : GName) (k : K) (dq: DFrac F) (v: V) :
-  ⊢@{IProp GF} (γ ↪◯MAP[k]{dq} v) -∗ ⌜✓ dq⌝ := sorry
+    (γ ↪◯MAP[k]{dq} v) ⊢@{IProp GF} internalCmraValid dq := by
+  calc
+    iOwn (E := hgm.elem) γ (Frag k dq (toAgree { car := v })) ⊢
+    internalCmraValid (Frag (H := H) k dq (toAgree ({ car := v } : LeibnizO V))) :=
+      iOwn_cmraValid (E := hgm.elem)
+    _ ⊢ ⌜✓ dq⌝ := by
+      iintro h
+      ipure h
+      ipure_intro
+      exact (frag_valid_iff.mp h).left
 
 @[rocq_alias ghost_map_elem_valid_2]
 theorem ghost_map_elem_valid_2 (γ : GName) (k : K) (dq1: DFrac F) (dq2: DFrac F) (v1: V) (v2: V) :
-  ⊢@{IProp GF} (γ ↪◯MAP[k]{dq1} v1) -∗ (γ ↪◯MAP[k]{dq2} v2) -∗ ⌜✓ (dq1 • dq2) ∧ v1 = v2⌝ := sorry
+  ⊢@{IProp GF} (γ ↪◯MAP[k]{dq1} v1) -∗ (γ ↪◯MAP[k]{dq2} v2) -∗
+    internalCmraValid (dq1 • dq2) ∧ ⌜v1 = v2⌝ := sorry
 
 @[rocq_alias ghost_map_elem_agree]
 theorem ghost_map_elem_agree (γ : GName) (k : K) (dq1 : DFrac F) (dq2 : DFrac F) (v1 : V) (v2 : V) :
@@ -199,7 +217,7 @@ theorem ghost_map_delete {γ} {m: H V} (k: K) (v: V) :
 
 @[rocq_alias ghost_map_update]
 theorem ghost_map_update {γ} {m: H V} (k: K) (v: V) (w: V) :
-  ⊢@{IProp GF} (γ ↪●MAP m) -∗ (γ ↪◯MAP[k] v) ==∗ (γ ↪●MAP insert m k v) ∗ γ ↪◯MAP[k] w := sorry
+  ⊢@{IProp GF} (γ ↪●MAP m) -∗ (γ ↪◯MAP[k] v) ==∗ (γ ↪●MAP insert m k w) ∗ γ ↪◯MAP[k] w := sorry
 
 --  Big-op versions of above lemmas
 theorem ghost_map_lookup_big [LawfulFiniteMap H K] {γ dq} {m : H V} {dq'} m0 :
