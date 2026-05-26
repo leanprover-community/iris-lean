@@ -323,18 +323,18 @@ instance fupd_sep_homomorphism E :
   map_unit := fupd_intro
 
 @[rocq_alias big_sepL_fupd]
-theorem BigSepL2.big_sepL_fupd {A : Type _} E (Φ : Nat → A → PROP) l :
+theorem BigSepL2.bigSepL_fupd {A : Type _} E (Φ : Nat → A → PROP) l :
     ([∗list] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗list] k↦x ∈ l, Φ k x :=
     Algebra.BigOpL.bigOpL_hom (R := flip Entails) Φ l
 
 @[rocq_alias big_sepL2_fupd]
-theorem BigSepL2.big_sepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) l1 l2 :
+theorem BigSepL2.bigSepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) l1 l2 :
     ([∗list] k↦x;y ∈ l1;l2, |={E}=> Φ k x y) ⊢ |={E}=> [∗list] k↦x;y ∈ l1;l2, Φ k x y := by
   refine BigSepL2.bigSepL2_alt.mp.trans ?_
   refine persistent_and_affinely_sep_l.mp.trans ?_
   refine .trans ?_ (mono BigSepL2.bigSepL2_alt.mpr)
   refine .trans ?_ (mono persistent_and_affinely_sep_l.mpr)
-  exact .trans (sep_mono_r (BigSepL2.big_sepL_fupd E _ _ )) fupd_frame_l
+  exact .trans (sep_mono_r (BigSepL2.bigSepL_fupd E _ _ )) fupd_frame_l
 
 end FUpdLaws
 

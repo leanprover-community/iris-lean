@@ -615,9 +615,9 @@ theorem le_upd_keep (P Q : IProp GF) [TCOr (TCEq hlc .HasNoLC) (Timeless P)] :
   iapply le_upd_unfold $$ H
   iframe
 
-#rocq_ignore le_upd_finally_proper "Subsumed by the NonExpansive instance `le_upd_finally_ne`"
-#rocq_ignore le_upd_finally_mono' "Subsumed by `le_upd_finally_mono`"
-#rocq_ignore le_upd_finally_flip_mono' "Subsumed by `le_upd_finally_mono`"
+#rocq_ignore le_upd.le_upd_finally_proper "Subsumed by the NonExpansive instance `le_upd_finally_ne`"
+#rocq_ignore le_upd.le_upd_finally_mono' "Subsumed by `le_upd_finally_mono`"
+#rocq_ignore le_upd.le_upd_finally_flip_mono' "Subsumed by `le_upd_finally_mono`"
 
 @[rocq_alias le_upd.le_upd_finally_later]
 theorem le_upd_finally_later (P : IProp GF) : ▷ (|==£|> P) ⊢ |==£|> ▷ ◇ P := by
