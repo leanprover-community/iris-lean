@@ -42,7 +42,7 @@ instance : EctxItemLanguage Exp ECtxItem State Observation Val where
   fillItem_val e Ki h := by
     cases Ki <;> simp_all [ECtxItem.fill, expToVal]
   fillItem_no_val_inj Ki₁ Ki₂ hv1 hv2 heq := by
-    induction Ki₁ generalizing Ki₂ <;> induction Ki₂ <;> simp [ECtxItem.fill] at heq <;> grind only
+    induction Ki₁ generalizing Ki₂ <;> induction Ki₂ <;> simp only [ECtxItem.fill] at heq <;> grind only
   val_stuck h := by cases h <;> rfl
   base_ctx_step_val {Ki} {e} := by
     induction Ki generalizing e with
