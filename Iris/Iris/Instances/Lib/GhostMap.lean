@@ -8,7 +8,7 @@ public import Iris.BI.BigOp.BigOp
 
 namespace Iris
 
-open Iris Std HeapView
+open Iris Std HeapView PartialMap Iris.Algebra
 
 class GhostMapG (GF : BundledGFunctors) (F: outParam (Type _))
     (K V: Type _)(H : outParam <| Type _ → Type _)
@@ -63,10 +63,10 @@ instance (γ : GName)(k: K)(v: V)
 -- Global Instance ghost_map_elem_as_fractional k γ q v :
 --     AsFractional (γ ↪◯MAP[k]{#q} v) (λ q, γ ↪◯MAP[k]{#q} v)%I q.
 
--- Local Lemma ghost_map_elems_unseal γ m dq :
---   ([∗map] k ↦ v ∈ m, γ ↪◯MAP[k]{dq} v) ==∗
---   own γ ([^op map] k↦v ∈ m,
---     gmap_view_frag (V:=agreeR (leibnizO V)) k dq (to_agree v)).
+theorem ghost_map_elems_unseal [LawfulFiniteMap H K] γ (m : H V) dq :
+  ([∗map] k ↦ v ∈ m, γ ↪◯MAP[k]{dq} v) ==∗
+  iOwn (E := hgm.elem) γ ([^ CMRA.op map] k ↦ v ∈ m,
+    Frag (V:= Agree (LeibnizO V)) k dq (toAgree { car := v })) := sorry
 
 theorem ghost_map_elem_valid (γ : GName) (k : K) (dq: DFrac F) (v: V) :
   ⊢@{IProp GF} (γ ↪◯MAP[k]{dq} v) -∗ ⌜✓ dq⌝ := sorry
@@ -98,11 +98,11 @@ theorem ghost_map_elem_frac_ne γ (k1 : K) (k2 : K) (dq1 : DFrac F) (dq2 : DFrac
 theorem ghost_map_elem_ne γ (k1 : K) (k2 : K) (dq2 : DFrac F) (v1 : V) (v2 : V) :
   ⊢@{IProp GF} (γ ↪◯MAP[k1] v1) -∗ (γ ↪◯MAP[k2]{dq2} v2) -∗ ⌜k1 ≠ k2⌝ := sorry
 
--- (** Make an element read-only.
+--  Make an element read-only.
 theorem ghost_map_elem_persist (γ : GName) (k : K) (dq : DFrac F) (v : V) :
   ⊢@{IProp GF} (γ ↪◯MAP[k]{dq} v) ==∗ (γ ↪◯MAP[k]{.discard} v) := sorry
 
--- (** Recover fractional ownership for read-only element.
+--  Recover fractional ownership for read-only element.
 theorem ghost_map_elem_unpersist (γ : GName) (k : K) (v : V) :
   ⊢@{IProp GF} (γ ↪◯MAP[k]{.discard} v) ==∗ ∃ q, (γ ↪◯MAP[k]{.own q} v) := sorry
 
@@ -123,11 +123,14 @@ theorem ghost_map_alloc [LawfulFiniteMap H K](m: H V) :
 theorem ghost_map_alloc_empty :
   ⊢@{IProp GF} |==> ∃ γ, (γ ↪●MAP (∅ : H V)) := sorry
 
--- Global Instance ghost_map_auth_timeless γ dq m : Timeless (γ ↪●MAP{dq} m) := sorry
+-- Global Instance ghost_map_auth_timeless γ dq m :
+instance (m : H V): BI.Timeless (PROP := IProp GF) (γ ↪●MAP{dq} m) := sorry
 
--- Global Instance ghost_map_persistent γ m : Timeless (γ ↪●MAP{.discard} m) := sorry
+-- Global Instance ghost_map_persistent γ m :
+instance (m : H V): BI.Timeless (PROP := IProp GF) (γ ↪●MAP{.discard} m) := sorry
 
--- Global Instance ghost_map_auth_fractional γ m : Fractional (λ q, γ ↪●MAP{.own q} m)%I := sorry
+-- Global Instance ghost_map_auth_fractional γ m :
+instance (m : H V): Fractional (PROP := IProp GF) (fun q => γ ↪●MAP{.own q} m) := sorry
 
 -- Global Instance ghost_map_auth_as_fractional γ q m :
 --   AsFractional (γ ↪●MAP{.own q} m) (λ q, γ ↪●MAP{.own q} m)%I q := sorry
@@ -172,32 +175,31 @@ theorem ghost_map_delete {γ} {m: H V} (k: K) (v: V) :
 theorem ghost_map_update {γ} {m: H V} (k: K) (v: V) (w: V) :
   ⊢@{IProp GF} (γ ↪●MAP m) -∗ (γ ↪◯MAP[k] v) ==∗ (γ ↪●MAP insert m k v) ∗ γ ↪◯MAP[k] w := sorry
 
--- (** Big-op versions of above lemmas
--- theorem ghost_map_lookup_big {γ dq m dq'} m0 :
---   ⊢@{IProp GF} γ ↪●MAP{dq} m -∗
---   ([∗map] k↦v ∈ m0, γ ↪◯MAP[k]{dq'} v) -∗
---   ⌜m0 ⊆ m⌝ := sorry
+--  Big-op versions of above lemmas
+theorem ghost_map_lookup_big [LawfulFiniteMap H K] {γ dq} {m : H V} {dq'} m0 :
+  ⊢@{IProp GF} (γ ↪●MAP{dq} m) -∗
+  ([∗map] k↦v ∈ m0, γ ↪◯MAP[k]{dq'} v) -∗
+  ⌜m0 ⊆ m⌝ := sorry
 
--- theorem ghost_map_insert_big {γ m} m' :
---   ⊢@{IProp GF} m' ##ₘ m →
---   γ ↪●MAP m ==∗
---   γ ↪●MAP (m' ∪ m) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k] v := sorry
+theorem ghost_map_insert_big [LawfulFiniteMap H K] {γ m} (m' : H V) :
+  (m' ##ₘ m) →
+  ⊢@{IProp GF} (γ ↪●MAP m) ==∗
+  (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k] v := sorry
 
--- theorem ghost_map_insert_persist_big {γ m} m' :
---   ⊢@{IProp GF} m' ##ₘ m →
---   γ ↪●MAP m ==∗
---   γ ↪●MAP (m' ∪ m) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k]{.discard} v := sorry
+theorem ghost_map_insert_persist_big [LawfulFiniteMap H K] {γ m} (m' : H V) :
+  m' ##ₘ m →
+  ⊢@{IProp GF} (γ ↪●MAP m) ==∗
+  (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k]{.discard} v := sorry
 
--- theorem ghost_map_delete_big {γ m} m0 :
---   ⊢@{IProp GF} γ ↪●MAP m -∗
---   ([∗map] k↦v ∈ m0, γ ↪◯MAP[k] v) ==∗
---   γ ↪●MAP (m ∖ m0) := sorry
+theorem ghost_map_delete_big [LawfulFiniteMap H K] {γ m} (m0 : H V) :
+  ⊢@{IProp GF} (γ ↪●MAP m) -∗
+  ([∗map] k ↦v ∈ m0, γ ↪◯MAP[k] v) ==∗
+  (γ ↪●MAP (m \ m0)) := sorry
 
--- theorem ghost_map_update_big {γ m} m0 m1 :
---   ⊢@{IProp GF} dom m0 = dom m1 →
---   γ ↪●MAP m -∗
---   ([∗map] k↦v ∈ m0, γ ↪◯MAP[k] v) ==∗
---   γ ↪●MAP (m1 ∪ m) ∗ [∗map] k↦v ∈ m1, γ ↪◯MAP[k] v := sorry
-
+theorem ghost_map_update_big [LawfulFiniteMap H K] {γ m} (m0 m1 : H V) :
+  dom m0 = dom m1 →
+  ⊢@{IProp GF} (γ ↪●MAP m) -∗
+  ([∗map] k ↦v ∈ m0, γ ↪◯MAP[k] v) ==∗
+  (γ ↪●MAP (m1 ∪ m)) ∗ [∗map] k↦v ∈ m1, γ ↪◯MAP[k] v := sorry
 
 end lemmas
