@@ -74,7 +74,6 @@ macro_rules
   | `(iprop(|={$E1}▷=> $P))  => ``(iprop(|={$E1}[$E1]▷=> iprop($P)))
   | `(iprop($P ={$E1}▷=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷=∗ iprop($Q)))
 
-open Lean.PrettyPrinter in
 delab_rule FUpd.fupd
   | `($_ $E₁ $E₂ iprop(▷ |={$E₂',$E₁'}=> $P)) => do
     unless E₁ == E₁' ∧ E₂ == E₂' do throw ()
@@ -83,7 +82,6 @@ delab_rule FUpd.fupd
     unless E₁ == E₁' ∧ E₁' == E₁'' do throw ()
     `(iprop(|={$E₁}▷=> $(←Iris.BI.unpackIprop P)))
 
-open Lean.PrettyPrinter in
 delab_rule BIBase.wand
   | `($_ $Q iprop(|={$E₁}[$E₂]▷=> $P)) => do
     `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷=∗ $P))
@@ -101,8 +99,6 @@ macro_rules
   | `(iprop(|={$E1}▷^$n=> $P))  => ``(iprop(|={$E1}[$E1]▷^$n=> iprop($P)))
   | `(iprop($P ={$E1}▷^$n=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷^$n=∗ iprop($Q)))
 
--- Delab rules
-open Lean.PrettyPrinter in
 delab_rule FUpd.fupd
   | `($_ $E₁ $E₂ iprop(▷^[$n] |={$E₂',$E₁'}=> $P)) => do
     unless E₁ == E₁' ∧ E₂ == E₂' do throw ()
@@ -130,7 +126,7 @@ macro_rules
 
 open Lean.PrettyPrinter.Delaborator SubExpr in
 @[app_delab Nat.repeat]
-meta def delab_step_fupdN : Delab :=  do
+meta def delabStepFUpdN : Delab :=  do
   let_expr Nat.repeat _ lam _ _ := ←getExpr | unreachable!
   let n ← withNaryArg 2 delab
   let P ← withNaryArg 3 delab
