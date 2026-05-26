@@ -108,13 +108,13 @@ theorem ghost_map_elem_unpersist (γ : GName) (k : K) (v : V) :
 
 -- * lemmas about [ghost_map_auth]
 
--- theorem ghost_map_alloc_strong P m :
---   pred_infinite P →
---   ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ γ ↪●MAP m ∗ [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := sorry
+theorem ghost_map_alloc_strong [LawfulFiniteMap H K] (P : GName → Prop) (m : H V) :
+  (hP : ∀ N, ∃ k, N ≤ k ∧ P k) →
+  ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MAP m) ∗ [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := sorry
 
--- theorem ghost_map_alloc_strong_empty P :
---   pred_infinite P →
---   ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MAP (∅ : gmap K V)) := sorry
+theorem ghost_map_alloc_strong_empty (P : GName → Prop) :
+  (hP : ∀ N, ∃ k, N ≤ k ∧ P k) →
+  ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MAP (∅ : H V)) := sorry
 
 theorem ghost_map_alloc [LawfulFiniteMap H K](m: H V) :
     ⊢@{IProp GF} |==> ∃ γ, (γ ↪●MAP m) ∗
@@ -178,7 +178,7 @@ theorem ghost_map_update {γ} {m: H V} (k: K) (v: V) (w: V) :
 --  Big-op versions of above lemmas
 theorem ghost_map_lookup_big [LawfulFiniteMap H K] {γ dq} {m : H V} {dq'} m0 :
   ⊢@{IProp GF} (γ ↪●MAP{dq} m) -∗
-  ([∗map] k↦v ∈ m0, γ ↪◯MAP[k]{dq'} v) -∗
+  ([∗map] k ↦ v ∈ m0, γ ↪◯MAP[k]{dq'} v) -∗
   ⌜m0 ⊆ m⌝ := sorry
 
 theorem ghost_map_insert_big [LawfulFiniteMap H K] {γ m} (m' : H V) :
@@ -200,6 +200,6 @@ theorem ghost_map_update_big [LawfulFiniteMap H K] {γ m} (m0 m1 : H V) :
   dom m0 = dom m1 →
   ⊢@{IProp GF} (γ ↪●MAP m) -∗
   ([∗map] k ↦v ∈ m0, γ ↪◯MAP[k] v) ==∗
-  (γ ↪●MAP (m1 ∪ m)) ∗ [∗map] k↦v ∈ m1, γ ↪◯MAP[k] v := sorry
+  (γ ↪●MAP (m1 ∪ m)) ∗ [∗map] k ↦ v ∈ m1, γ ↪◯MAP[k] v := sorry
 
 end lemmas
