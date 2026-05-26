@@ -226,7 +226,7 @@ theorem op_own (f f' : F) : own f • own f' = own (f + f') := rfl
 
 @[rocq_alias dfrac_is_op]
 instance isOp_dfrac_own {q q1 q2 : Frac F} [h : IsOp merge q q1 q2] :
-    IsOp io (own q.car) (own q1.car) (own q2.car) where
+    IsOp io1 (own q.car) io2 (own q1.car) io3 (own q2.car) where
   is_op := by rw [h.is_op]; rfl
 
 end DFrac

@@ -17,6 +17,8 @@ open CMRA ProofMode
 
 section IsOp
 
+set_option synthInstance.checkSynthOrder false
+
 /--
   A type class that allows merging `b1` and `b2` into `a` as well as
   to split `a` into `b1` and `b2`.
@@ -24,15 +26,16 @@ section IsOp
 @[ipm_class, rocq_alias IsOp, rocq_alias IsOp', rocq_alias IsOp'LR]
 class IsOp [CMRA α]
     (_ : InOut) (a : semiOutParam $ α)
-    (b1 : uncheckedInParam α) (b2 : uncheckedInParam α) where
+    (_ : InOut) (b1 : semiOutParam α)
+    (_ : InOut) (b2 : semiOutParam α) where
   is_op : a ≡ b1 • b2
 
 /--
   Syntactic sugar for specifying whether `IsOp` is used for merging or splitting.
 -/
 macro_rules
-  | `(IsOp merge $a $b1 $b2) => `(IsOp .out $a $b1 $b2)
-  | `(IsOp split $a $b1 $b2) => `(IsOp .in $a $b1 $b2)
+  | `(IsOp merge $a $b1 $b2) => `(IsOp .out $a .in $b1 .in $b2)
+  | `(IsOp split $a $b1 $b2) => `(IsOp .in $a .out $b1 .out $b2)
 
 /--
   Merging with `•` should have the lowest priority.
@@ -61,29 +64,29 @@ instance (priority := default + 100) isOpSplit_op [CMRA α] (a b : α) :
 -/
 
 @[rocq_alias is_op_pair]
-instance isOpMerge_pair [CMRA α] {io : InOut}
+instance isOpMerge_pair [CMRA α]
     (a b1 b2 : α) (a' b1' b2' : α)
     [h1 : IsOp merge a b1 b2] [h2 : IsOp merge a' b1' b2'] :
-    IsOp io (a, a') (b1, b1') (b2, b2') where
+    IsOp ioa (a, a') iob1 (b1, b1') iob2 (b2, b2') where
   is_op := ⟨h1.is_op, h2.is_op⟩
 
 @[rocq_alias is_op_pair_core_id_l]
-instance isOpMerge_pair_core_id_l [CMRA α] [CMRA β] {io : InOut}
+instance isOpMerge_pair_core_id_l [CMRA α] [CMRA β] {ioa iob1 iob2 : InOut}
     (a : α) (a' b1' b2' : β) [h1 : CoreId a] [h2 : IsOp merge a' b1' b2'] :
-    IsOp io (a, a') (a, b1') (a, b2') where
+    IsOp ioa (a, a') iob1 (a, b1') iob2 (a, b2') where
   is_op := ⟨(op_self a).symm, h2.is_op⟩
 
 @[rocq_alias is_op_pair_core_id_r]
-instance isOpMerge_pair_core_id_r [CMRA α] [CMRA β] {io : InOut}
+instance isOpMerge_pair_core_id_r [CMRA α] [CMRA β] {ioa iob1 iob2 : InOut}
     (a b1 b2 : α) (a' : β)
     [h1 : CoreId a'] [h2 : IsOp merge a b1 b2] :
-    IsOp io (a, a') (b1, a') (b2, a') where
+    IsOp ioa (a, a') iob1 (b1, a') iob2 (b2, a') where
   is_op := ⟨h2.is_op, (op_self a').symm⟩
 
 @[rocq_alias is_op_Some]
-instance isOpMerge_some [CMRA α] (a b1 b2 : α) {io : InOut}
+instance isOpMerge_some [CMRA α] (a b1 b2 : α) {ioa iob1 iob2 : InOut}
     [h : IsOp merge a b1 b2] :
-    IsOp io (some a) (some b1) (some b2) where
+    IsOp ioa (some a) iob1 (some b1) iob2 (some b2) where
   is_op := h.is_op
 
 end IsOp

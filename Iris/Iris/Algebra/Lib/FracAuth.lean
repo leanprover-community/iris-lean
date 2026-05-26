@@ -221,13 +221,14 @@ theorem frag_op_valid {q1 q2 : Frac F} {a b : A} :
 @[rocq_alias frac_auth_is_op]
 instance isOp_frac_auth {q q1 q2 : Frac F} {a1 a2 : A} {a : outParam A}
     [h1 : IsOp merge q q1 q2] [h2 : IsOp merge a a1 a2] :
-    IsOp io (◯F{q} a) (◯F{q1} a1) (◯F{q2} a2) where
+    IsOp io1 (◯F{q} a) io2 (◯F{q1} a1) io3 (◯F{q2} a2) where
   is_op := ⟨⟨⟩, ⟨h1.is_op, h2.is_op⟩⟩
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_auth_is_op_core_id]
 instance isOp_frac_auth_core_id {q q1 q2 : Frac F} {a : A}
     [h1 : CoreId a] [h2 : IsOp merge q q1 q2] :
-    IsOp io (◯F{q} a) (◯F{q1} a) (◯F{q2} a) where
+    IsOp io1 (◯F{q} a) io2 (◯F{q1} a) io3 (◯F{q2} a) where
   is_op := ⟨⟨⟩, ⟨h2.is_op, (op_self a).symm⟩⟩
 
 /-! ## Updates -/

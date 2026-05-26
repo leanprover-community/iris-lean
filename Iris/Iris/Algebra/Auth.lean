@@ -137,9 +137,10 @@ nonrec theorem auth_dfrac_op {dq1 dq2 : DFrac F} {a : A} :
     (●{dq1 • dq2} a) ≡ (●{dq1} a) • (●{dq2} a) :=
   auth_op_auth_eqv
 
+set_option synthInstance.checkSynthOrder false in
 @[rocq_alias auth_auth_dfrac_is_op]
 instance {dq dq1 dq2 : DFrac F} [h : IsOp merge dq dq1 dq2] :
-    IsOp io (●{dq} a : Auth F A) (●{dq1} a) (●{dq2} a) where
+    IsOp io1 (●{dq} a : Auth F A) io2 (●{dq1} a) io3 (●{dq2} a) where
   is_op := by
     rw [h.is_op]
     apply auth_dfrac_op
@@ -181,7 +182,7 @@ nonrec instance {a : A} {b : A} [CoreId b] :
 
 @[rocq_alias auth_frag_is_op]
 instance {a b1 b2 : A} [h : IsOp merge a b1 b2] :
-    IsOp io (◯ a : Auth F A) (◯ b1) (◯ b2) where
+    IsOp io1 (◯ a : Auth F A) io2 (◯ b1) io3 (◯ b2) where
   is_op := ⟨⟨⟩, h.is_op⟩
 
 -- TODO: auth_frag_sep_homomorphism
