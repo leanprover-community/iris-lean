@@ -64,7 +64,7 @@ instance (priority := default + 100) isOpSplit_op [CMRA α] (a b : α) :
 -/
 
 @[rocq_alias is_op_pair]
-instance isOpMerge_pair [CMRA α]
+instance isOpMerge_pair [CMRA α] {ioa iob1 iob2 : InOut}
     (a b1 b2 : α) (a' b1' b2' : α)
     [h1 : IsOp merge a b1 b2] [h2 : IsOp merge a' b1' b2'] :
     IsOp ioa (a, a') iob1 (b1, b1') iob2 (b2, b2') where
