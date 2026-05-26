@@ -11,7 +11,7 @@ namespace Iris.ProgramLogic
 
 open Language.Notation EctxLanguage EctxLanguage.Notation
 
-variable {hlc : outParam HasLC?} {Expr Ectx State Obs Val}
+variable {hlc : outParam HasLC} {Expr Ectx State Obs Val}
 variable [Λ : EctxLanguage Expr Ectx State Obs Val]
 variable {GF : BundledGFunctors}
 variable [ι : IrisGS_gen hlc Expr GF]

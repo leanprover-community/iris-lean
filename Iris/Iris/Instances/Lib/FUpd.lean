@@ -30,20 +30,20 @@ class InvGpreS (GF : BundledGFunctors) where
 attribute [reducible, instance] InvGpreS.toWsatGpreS
 attribute [reducible, instance] InvGpreS.toLcGpreS
 
-class InvGS_gen (hlc : outParam HasLC?) (GF : BundledGFunctors) extends InvGpreS GF where
+class InvGS_gen (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGpreS GF where
   toWsatGS : WsatGS GF
   toLcGS : LcGS hlc GF
 
 attribute [reducible, instance] InvGS_gen.toWsatGS
 attribute [reducible, instance] InvGS_gen.toLcGS
 
-abbrev InvGS := InvGS_gen .HasLC
+abbrev InvGS := InvGS_gen .hasLC
 
 end InvG
 
 section FUpd
 
-variable {GF : BundledGFunctors} {hlc : HasLC?} [InvGS_gen hlc GF]
+variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 
 @[rocq_alias uPred_fupd]
 def uPred_fupd (E1 E2 : CoPset) (P : IProp GF) : IProp GF :=
@@ -129,7 +129,7 @@ instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIUpdateFUpdate (IProp GF)
     iassumption
 
 @[rocq_alias uPred_bi_fupd_sbi_no_lc]
-instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .HasNoLC GF] :
+instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .hasNoLC GF] :
     BIFUpdatePlainly (IProp GF) where
   fupd_plainly_keep_l E E' P Q := by
     simp only [fupd, uPred_fupd]
@@ -170,7 +170,7 @@ end Instances
 section LaterCreditLemmas
 
 @[rocq_alias fupd_unfold_no_lc]
-theorem fupd_unfold_no_lc [Hi:InvGS_gen .HasNoLC GF] E1 E2 (P : IProp GF) :
+theorem fupd_unfold_no_lc [Hi:InvGS_gen .hasNoLC GF] E1 E2 (P : IProp GF) :
   (|={E1,E2}=> P) ⊣⊢ (wsat ∗ ownE E1 ==∗ ◇ (wsat ∗ ownE E2 ∗ P)) := by
   simp only [fupd, uPred_fupd]
   rw [eq_of_eqv <| equiv_iff.mpr (le_upd_unfold_no_le (GF := GF))]
@@ -257,7 +257,7 @@ section fupd_finally
 
 open ProofMode Std
 
-variable {GF : BundledGFunctors} {hlc : HasLC?} [InvGS_gen hlc GF]
+variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 
 @[rocq_alias fupd_finally_ne]
 instance fupd_finally_ne (E : CoPset) : NonExpansive (fupd_finally (GF := GF) (hlc := hlc) E) where
@@ -325,7 +325,7 @@ theorem fupd_finally_forall (E : CoPset) (Φ : A → IProp GF) :
   iapply H $$ %x Hw HE
 
 @[rocq_alias fupd_keep]
-theorem fupd_keep (E1 E2 : CoPset) (P Q : IProp GF) [TCOr (TCEq hlc .HasNoLC) (Timeless P)] :
+theorem fupd_keep (E1 E2 : CoPset) (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC) (Timeless P)] :
     (|={E1|}=> P) ∧ (P -∗ |={E1,E2}=> Q) ⊢ |={E1,E2}=> Q := by
   simp only [fupd_finally, fupd, uPred_fupd]
   iintro H ⟨Hw, HE⟩
@@ -338,7 +338,7 @@ theorem fupd_keep (E1 E2 : CoPset) (P Q : IProp GF) [TCOr (TCEq hlc .HasNoLC) (T
     iapply H $$ HP [$Hw $HE]
 
 @[rocq_alias fupd_finally_keep]
-theorem fupd_finally_keep (E : CoPset) (P Q : IProp GF) [TCOr (TCEq hlc .HasNoLC) (Timeless P)] :
+theorem fupd_finally_keep (E : CoPset) (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC) (Timeless P)] :
     (|={E|}=> P) ∧ (P -∗ |={E|}=> Q) ⊢ |={E|}=> Q := by
   iintro H
   iapply fupd_fupd_finally E E
@@ -491,7 +491,7 @@ open Std.LawfulSet
 variable {GF : BundledGFunctors}
 
 @[rocq_alias fupd_finally_soundness]
-theorem fupd_finally_soundness (hlc : HasLC?) [InvGpreS GF] (n : Nat) (E : CoPset) (P : IProp GF) :
+theorem fupd_finally_soundness (hlc : HasLC) [InvGpreS GF] (n : Nat) (E : CoPset) (P : IProp GF) :
   (∀ (_ : InvGS_gen hlc GF), £ n ⊢ |={E|}=> P) → ⊢ P := by
   unfold fupd_finally
   intro HP
@@ -506,12 +506,11 @@ theorem fupd_finally_soundness (hlc : HasLC?) [InvGpreS GF] (n : Nat) (E : CoPse
   ipure_intro; trivial
 
 @[rocq_alias fupd_soundness]
-theorem fupd_soundness (hlc : HasLC?) [InvGpreS GF] (n : Nat) {E1 E2 : CoPset} {P : IProp GF} [Plain P] :
+theorem fupd_soundness (hlc : HasLC) [InvGpreS GF] (n : Nat) {E1 E2 : CoPset} {P : IProp GF} [Plain P] :
   (∀ (_ : InvGS_gen hlc GF), £ n ={E1,E2}=∗ P) → ⊢ P := by
   intros HP
   apply fupd_finally_soundness hlc n E1
   iintro %_ Hf
-  haveI : Persistent P := plain_persistent
   imod HP $$ Hf with #_
   imodintro; iassumption
 
@@ -535,7 +534,6 @@ theorem step_fupdN_soundness [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] 
   iapply fupd_finally_mono (laterN_mono _ except0_into_later)
   iapply step_fupdN_fupd_finally
   iapply step_fupdN_wand $$ HP
-  haveI : Persistent P := plain_persistent
   iintro #HP !>
   iassumption
 
@@ -551,22 +549,20 @@ theorem step_fupdN_soundness_close [InvGpreS GF] (n m : Nat) {P : IProp GF} [Pla
   iapply fupd_finally_mono (laterN_mono _ except0_into_later)
   iapply step_fupdN_fupd_finally
   iapply step_fupdN_wand $$ HP
-  haveI : Persistent P := plain_persistent
   iintro #HP !>
   iassumption
 
 @[rocq_alias fupd_soundness_no_lc_unfold]
 theorem fupd_soundness_no_lc_unfold [InvGpreS GF] m E :
-  ⊢ |==> ∃ (_: InvGS_gen .HasNoLC GF) (ω : CoPset → IProp GF),
+  ⊢ |==> ∃ (_: InvGS_gen .hasNoLC GF) (ω : CoPset → IProp GF),
     £ m ∗ ω E ∗ □ (∀ E1 E2 P, (|={E1, E2}=> P) -∗ ω E1 ==∗ ◇ (ω E2 ∗ P)) := by
   imod wsat_alloc with ⟨%W, Hw, HE⟩
   icases (lc_alloc_no_lc m) with ⟨%Hc, _, Hlc⟩
-  let Hi := @InvGS_gen.mk .HasNoLC GF (inferInstance) W Hc
+  let Hi := @InvGS_gen.mk .hasNoLC GF (inferInstance) W Hc
   iexists Hi, (λ E => iprop(wsat ∗ ownE E))
   rw [diff_subset_decomp (s₁ := E) (s₂ := ⊤) (fun _ _ => CoPset.mem_full)]
   icases (ownE_op (disjoint_symm disjoint_diff_right)) $$ HE with ⟨_, HE⟩
   -- FIXME: iframe failed without simplication here
-  -- Fails on Hw and HE
   dsimp only
   iframe Hlc Hw HE
   iintro !>!>  %E1 %E2 %P HP HwE

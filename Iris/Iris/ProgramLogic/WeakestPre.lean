@@ -41,7 +41,7 @@ class StateInterp (State : Type _) (Obs : outParam $ Type _) (GF : BundledGFunct
 export StateInterp (stateInterp)
 
 @[rocq_alias irisGS_gen]
-class IrisGS_gen (hlc : outParam HasLC?) (Expr : Type _) {Val : Type _} {State : Type _}
+class IrisGS_gen (hlc : outParam HasLC) (Expr : Type _) {Val : Type _} {State : Type _}
     {Obs : Type _} [Λ : Language Expr State Obs Val] (GF : BundledGFunctors) extends
     StateInterp State Obs GF, InvGS_gen hlc GF where
   /-- Number of later credits obtained from taking one step in the
@@ -56,7 +56,7 @@ class IrisGS_gen (hlc : outParam HasLC?) (Expr : Type _) {Val : Type _} {State :
   stateInterp_mono σ ns obs nt :
     iprop(stateInterp σ ns obs nt ⊢ |={∅}=> stateInterp σ (ns + 1) obs nt)
 
-variable {hlc : outParam HasLC?} {Expr State Obs Val}
+variable {hlc : outParam HasLC} {Expr State Obs Val}
 variable [Λ : Language Expr State Obs Val]
 variable {GF : BundledGFunctors} [ι : IrisGS_gen hlc Expr GF]
 
@@ -609,7 +609,7 @@ section ProofModeClasses
 
 open ProofMode
 
-variable {hlc : outParam HasLC?}
+variable {hlc : outParam HasLC}
 variable {Expr State Obs Val : Type _}
 variable [Λ : Language Expr State Obs Val]
 variable {GF : BundledGFunctors}

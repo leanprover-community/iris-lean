@@ -25,9 +25,9 @@ section LcGS
 abbrev Credit := Nat
 
 @[rocq_alias has_lc]
-inductive HasLC? where
-| HasNoLC
-| HasLC
+inductive HasLC where
+| hasNoLC
+| hasLC
 
 scoped instance : Associative (Add.add (α := Credit)) := ⟨Nat.add_assoc⟩
 scoped instance : Commutative (Add.add (α := Credit)) := ⟨Nat.add_comm⟩
@@ -48,39 +48,39 @@ class LcGpreS (GF : BundledGFunctors) where
 
 attribute [reducible, instance] LcGpreS.lc_elem
 
-class LcGS (hlc : outParam HasLC?) (GF : BundledGFunctors)  extends LcGpreS GF where
+class LcGS (hlc : outParam HasLC) (GF : BundledGFunctors)  extends LcGpreS GF where
   lc_name : GName
 
 end LcGS
 
 section Definitions
 
-variable {GF : BundledGFunctors} {hlc : HasLC?} [LC : LcGS hlc GF]
+variable {GF : BundledGFunctors} {hlc : HasLC} [LC : LcGS hlc GF]
 
 def lc (i : Credit) : IProp GF :=
   match hlc with
-  | .HasLC => iOwn (E := LC.lc_elem) LC.lc_name (◯ i)
-  | .HasNoLC => iprop(True)
+  | .hasLC => iOwn (E := LC.lc_elem) LC.lc_name (◯ i)
+  | .hasNoLC => iprop(True)
 
 notation:max "£ " i:40 => lc i
 
 def lc_supply (i : Credit) : IProp GF :=
   match hlc with
-  | .HasLC => iOwn (E := LC.lc_elem) LC.lc_name (● i)
-  | .HasNoLC => iprop(⌜i = 0⌝)
+  | .hasLC => iOwn (E := LC.lc_elem) LC.lc_name (● i)
+  | .hasNoLC => iprop(⌜i = 0⌝)
 
 end Definitions
 
 section Operations
 
-variable {GF : BundledGFunctors} {hlc : HasLC?} [LC : LcGS hlc GF]
+variable {GF : BundledGFunctors} {hlc : HasLC} [LC : LcGS hlc GF]
 
 theorem lc_split {n m} : £ (n + m) ⊣⊢@{IProp GF} £ n ∗ £ m := by
   cases hlc with
-  | HasNoLC =>
+  | hasNoLC =>
     simp only [lc]
     exact (true_sep (P := iprop(True))).symm
-  | HasLC =>
+  | hasLC =>
     -- FIXME: Timeout on iOwn_op. Why?
     -- Specifying (F := (AuthURF (F := PNat) (constOF Credit))) (a1 := ◯ n) (a2 := ◯ m) fixes it, but it is too verbose.
     simp only [lc]
@@ -88,20 +88,20 @@ theorem lc_split {n m} : £ (n + m) ⊣⊢@{IProp GF} £ n ∗ £ m := by
     exact .rfl
 
 @[rocq_alias lc_no_lc]
-theorem lc_no_lc [LcGS .HasNoLC GF] (n : Credit) : £ n ⊣⊢@{IProp GF} iprop(True) := .rfl
+theorem lc_no_lc [LcGS .hasNoLC GF] (n : Credit) : £ n ⊣⊢@{IProp GF} iprop(True) := .rfl
 
 @[rocq_alias lc_supply_no_lc]
-theorem lc_supply_no_lc [LcGS .HasNoLC GF] (n : Credit) :
+theorem lc_supply_no_lc [LcGS .hasNoLC GF] (n : Credit) :
     lc_supply n ⊣⊢@{IProp GF} iprop(⌜n = 0⌝) := .rfl
 
 @[rocq_alias lc_zero]
 theorem lc_zero : ⊢@{IProp GF} |==> £ 0 := by
   cases hlc with
-  | HasNoLC => simp only [lc]; imodintro; ipure_intro; trivial
-  | HasLC => exact iOwn_unit (ε := UCMRA.unit)
+  | hasNoLC => simp only [lc]; imodintro; ipure_intro; trivial
+  | hasLC => exact iOwn_unit (ε := UCMRA.unit)
 
 section LcSupplyRules
-variable [LC : LcGS .HasLC GF]
+variable [LC : LcGS .hasLC GF]
 
 @[rocq_alias lc_supply_bound]
 theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n ≤ m⌝ := by
@@ -166,7 +166,7 @@ section ProofMode
 
 open ProofMode
 
-variable {GF : BundledGFunctors} {hlc : HasLC?} [LcGS hlc GF]
+variable {GF : BundledGFunctors} {hlc : HasLC} [LcGS hlc GF]
 
 @[rocq_alias from_sep_lc_add]
 instance (priority := default - 10) {n m} : FromSep (PROP := IProp GF) (£ (n + m)) (£ n) (£ m) where
@@ -194,7 +194,7 @@ end ProofMode
 
 section Upd
 
-variable {GF : BundledGFunctors} {hlc : HasLC?} [LcGS hlc GF]
+variable {GF : BundledGFunctors} {hlc : HasLC} [LcGS hlc GF]
 
 @[rocq_alias le_upd.le_upd_pre]
 def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
@@ -257,7 +257,7 @@ instance : NonExpansive (le_upd (GF := GF)) where
     exact (fun k Hk => IH k Hk (H.lt Hk))
 
 @[rocq_alias le_upd.le_upd_unfold_no_le]
-theorem le_upd_unfold_no_le [LcGS .HasNoLC GF] {P : IProp GF} : (|==£> P) ⊣⊢ |==> ◇ P := by
+theorem le_upd_unfold_no_le [LcGS .hasNoLC GF] {P : IProp GF} : (|==£> P) ⊣⊢ |==> ◇ P := by
   apply le_upd_unfold.trans
   constructor
   · iintro H
@@ -331,7 +331,7 @@ theorem le_upd_bind {P Q : IProp GF} : ⊢ (P -∗ |==£> Q) -∗ (|==£> P) -�
   ipure_intro; simp
 
 @[rocq_alias le_upd.lc_le_upd_elim_later]
-theorem le_upd_later_elim [LcGS .HasLC GF] {P : IProp GF} : ⊢ £ 1 -∗ (▷ |==£> P) -∗ |==£> P := by
+theorem le_upd_later_elim [LcGS .hasLC GF] {P : IProp GF} : ⊢ £ 1 -∗ (▷ |==£> P) -∗ |==£> P := by
   iintro Hcr H
   iapply le_upd_unfold
   iintro %n Hsupp
@@ -376,7 +376,7 @@ theorem le_upd_frame_l {P R : IProp GF} : R ∗ (|==£> P) ⊢ |==£> (R ∗ P) 
   iapply le_upd_frame_r
 
 @[rocq_alias le_upd.lc_le_upd_add_later]
-theorem le_upd_later [LcGS .HasLC GF] {P : IProp GF} : ⊢ £ 1 -∗ ▷ P -∗ |==£> P := by
+theorem le_upd_later [LcGS .hasLC GF] {P : IProp GF} : ⊢ £ 1 -∗ ▷ P -∗ |==£> P := by
   iintro H1 H2
   iapply le_upd_later_elim $$ H1
   inext
@@ -400,7 +400,7 @@ section Internal
 
 open ProofMode
 
-variable {GF : BundledGFunctors} {hlc : HasLC?} [LcGS hlc GF]
+variable {GF : BundledGFunctors} {hlc : HasLC} [LcGS hlc GF]
 
 @[rocq_alias le_upd.elim_bupd_le_upd]
 instance {P : IProp GF} : ElimModal True p false (bupd P) P (le_upd Q) (le_upd Q) where
@@ -456,11 +456,11 @@ instance {p} {P R Q : IProp GF} [hf : Frame p R P Q] : Frame p R (le_upd P) (le_
 end Internal
 
 @[rocq_alias le_upd.lc_alloc]
-theorem lc_alloc [H : LcGpreS GF] n : ⊢@{IProp GF} |==> ∃ _ : LcGS .HasLC GF, lc_supply n ∗ £ n := by
+theorem lc_alloc [H : LcGpreS GF] n : ⊢@{IProp GF} |==> ∃ _ : LcGS .hasLC GF, lc_supply n ∗ £ n := by
   imod (iOwn_alloc (E := H.lc_elem) ((● n) • (◯ n)) (auth_both_valid.mpr ⟨fun _ => .rfl, ⟨⟩⟩))
     with ⟨%γLC, HOwn⟩
   icases iOwn_op $$ HOwn with ⟨HAuth, HFrag⟩
-  let LC : LcGS .HasLC GF := { lc_elem := H.lc_elem, lc_name := γLC }
+  let LC : LcGS .hasLC GF := { lc_elem := H.lc_elem, lc_name := γLC }
   iexists LC
   imodintro
   simp only [lc_supply, lc]
@@ -468,8 +468,8 @@ theorem lc_alloc [H : LcGpreS GF] n : ⊢@{IProp GF} |==> ∃ _ : LcGS .HasLC GF
 
 @[rocq_alias le_upd.lc_alloc_no_lc]
 theorem lc_alloc_no_lc [H : LcGpreS GF] n :
-    ⊢@{IProp GF} ∃ _ : LcGS .HasNoLC GF, lc_supply 0 ∗ £ n := by
-  let LC : LcGS .HasNoLC GF := { lc_elem := H.lc_elem, lc_name := default }
+    ⊢@{IProp GF} ∃ _ : LcGS .hasNoLC GF, lc_supply 0 ∗ £ n := by
+  let LC : LcGS .hasNoLC GF := { lc_elem := H.lc_elem, lc_name := default }
   iexists LC
   simp only [lc_supply, lc]
   isplitr []
@@ -493,7 +493,7 @@ delab_rule le_upd_finally
 | `($_ $P) => do ``(iprop(|==£|> $(← unpackIprop P)))
 
 section le_upd_finally_rules
-variable {hlc : HasLC?} [LcGS hlc GF]
+variable {hlc : HasLC} [LcGS hlc GF]
 
 @[rocq_alias le_upd.le_upd_finally_ne]
 instance le_upd_finally_ne : NonExpansive (le_upd_finally (GF := GF)) where
@@ -558,11 +558,11 @@ theorem le_upd_finally_add_lc (P : IProp GF) : (£ 1 -∗ |==£|> P) ⊢ |==£|>
   iapply laterN_mono _ (later_mono except0_plainly.mp)
   iapply (laterN_later m).mp
   cases hlc with
-  | HasLC =>
+  | hasLC =>
     rw [show m + 1 = 1 + m from Nat.add_comm m 1]
     imod lc_increase_supply 1 $$ Hlc with ⟨Hlc, Hl⟩
     iapply H $$ Hl Hlc
-  | HasNoLC =>
+  | hasNoLC =>
     icases (lc_supply_no_lc m) $$ Hlc with %Hlc
     subst Hlc
     rw [Nat.zero_add]
@@ -582,7 +582,7 @@ theorem le_upd_finally_forall (Φ : A → IProp GF) : (∀ x, |==£|> Φ x) ⊢ 
   iapply H $$ Hlc
 
 @[rocq_alias le_upd.le_upd_keep]
-theorem le_upd_keep (P Q : IProp GF) [TCOr (TCEq hlc .HasNoLC) (Timeless P)] :
+theorem le_upd_keep (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC) (Timeless P)] :
     (|==£|> P) ∧ (P -∗ |==£> Q) ⊢ |==£> Q := by
   iintro H
   iapply le_upd_unfold
@@ -590,14 +590,14 @@ theorem le_upd_keep (P Q : IProp GF) [TCOr (TCEq hlc .HasNoLC) (Timeless P)] :
   ihave #⟨$| HP⟩ : iprop((▷^[n.succ] False) ∨ ■ P) $$ [H Hc]
   · icases H with ⟨H, -⟩
     unfold le_upd_finally
-    cases ‹TCOr (TCEq hlc .HasNoLC) (Timeless P)› with
+    cases ‹TCOr (TCEq hlc .hasNoLC) (Timeless P)› with
     | r =>
       iapply timeless_laterN
       ispecialize H $$ Hc
       icases (laterN_mono n except0_into_later) $$ H with H
       icases (laterN_later _).mpr $$ H with $
     | l =>
-      cases ‹TCEq hlc .HasNoLC›
+      cases ‹TCEq hlc .hasNoLC›
       icases (lc_supply_no_lc n).mp $$ Hc with %Hn
       subst n
       ispecialize H $$ Hc
@@ -630,11 +630,11 @@ theorem le_upd_finally_later (P : IProp GF) : ▷ (|==£|> P) ⊢ |==£|> ▷ �
 end le_upd_finally_rules
 
 @[rocq_alias le_upd.le_upd_finally_soundness]
-theorem le_upd_finally_soundness (hlc : HasLC?) [LcGpreS GF] n (P : IProp GF) :
+theorem le_upd_finally_soundness (hlc : HasLC) [LcGpreS GF] n (P : IProp GF) :
   (∀ [LcGS hlc GF], £ n ⊢ |==£|> P) → ⊢ P := by
   intro HP
   cases hlc with
-  | HasLC =>
+  | hasLC =>
     apply laterN_soundness (n := n.succ)
     iintro _
     iapply (laterN_later _).mpr
@@ -643,7 +643,7 @@ theorem le_upd_finally_soundness (hlc : HasLC?) [LcGpreS GF] n (P : IProp GF) :
     imod lc_alloc n with ⟨%LC, Hlc, Hl⟩
     have HP' : £ n ⊢ iprop(∀ m, lc_supply m -∗ ▷^[m] ◇ ■ P) := HP
     iapply HP' $$ Hl Hlc
-  | HasNoLC =>
+  | hasNoLC =>
     apply laterN_soundness (n := 1)
     iintro _
     iapply (laterN_later 0).mpr
@@ -656,7 +656,7 @@ theorem le_upd_finally_soundness (hlc : HasLC?) [LcGpreS GF] n (P : IProp GF) :
     iapply laterN_0.mp $$ G
 
 @[rocq_alias le_upd.lc_soundness]
-theorem lc_soundness (hlc : HasLC?) [LcGpreS GF] m (P : IProp GF) [Plain P]
+theorem lc_soundness (hlc : HasLC) [LcGpreS GF] m (P : IProp GF) [Plain P]
     (H : ∀ {_ : LcGS hlc GF}, ⊢ £ m -∗ |==£> P) : ⊢ P := by
   apply le_upd_finally_soundness hlc m
   intro LC

@@ -19,7 +19,7 @@ open Language.Notation
 
 @[expose] public section
 
-variable {hlc : HasLC?} {Expr State Obs Val : Type _}
+variable {hlc : HasLC} {Expr State Obs Val : Type _}
 variable [Language Expr State Obs Val]
 variable {GF : BundledGFunctors} [iG : IrisGS_gen hlc Expr GF]
 
@@ -231,7 +231,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness) (es : List Expr) (�
   imod Hφ $$ [] [] [] Hσ Hes' Ht2' with %_ <;> ipure_intro <;> grind
 
 @[rocq_alias wp_strong_adequacy]
-abbrev wp_strong_adequacy := @wp_strong_adequacy_gen .HasLC
+abbrev wp_strong_adequacy := @wp_strong_adequacy_gen .hasLC
 
 @[rocq_alias adequate]
 structure adequate (s : Stuckness) (e1 : Expr) (σ1 : State)
@@ -311,7 +311,7 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State) (�
     ipure_intro; grind
 
 @[rocq_alias wp_adequacy]
-abbrev wp_adequacy := @wp_adequacy_gen .HasLC
+abbrev wp_adequacy := @wp_adequacy_gen .hasLC
 
 omit iG in
 @[rocq_alias wp_invariance_gen]
@@ -349,7 +349,7 @@ theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr) (σ1 σ2 : S
   iframe Hcont
 
 @[rocq_alias wp_invariance]
-abbrev wp_invariance := @wp_invariance_gen .HasLC
+abbrev wp_invariance := @wp_invariance_gen .hasLC
 
 end
 end Iris.ProgramLogic

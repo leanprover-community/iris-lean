@@ -331,11 +331,9 @@ theorem plainly_intro [ι:Plain P] : iprop(P ⊢ Q) → P ⊢ ■ Q := fun h =>
     _ ⊢ ■ P := Plain.plain
     _ ⊢ ■ Q := plainly_mono h
 
--- FIXME: this is not an instance for a performance reason in Rocq.
--- Can we make it an instance in Lean?
 @[rocq_alias plain_persistent]
-theorem plain_persistent [ι : Plain P]: Persistent P where
-  persistent := ι.plain.trans plainly_elim_persistently
+instance plain_persistent [Plain P]: Persistent P where
+  persistent := Plain.plain.trans plainly_elim_persistently
 
 @[rocq_alias impl_persistent]
 instance impl_persistent [Absorbing P] [Plain P] [Persistent Q] : Persistent iprop(P → Q) where
