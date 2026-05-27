@@ -256,13 +256,15 @@ theorem ghost_map_alloc_strong_empty [DecidableEq K] (P : GName → Prop) :
   iframe
 
 @[rocq_alias ghost_map_alloc]
-theorem ghost_map_alloc (m : H V) :
+theorem ghost_map_alloc [DecidableEq K] (m : H V) :
   ⊢@{IProp GF} |==> ∃ γ, (γ ↪●MAP m) ∗
     [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := by
-  sorry
+  imod (ghost_map_alloc_strong _ _ _ _ (fun _ => True) m) with ⟨%γ, -, H1, H2⟩
+  · intro N; exists N; simp
+  · iexists γ; iframe H1 H2
 
 @[rocq_alias ghost_map_alloc_empty]
-theorem ghost_map_alloc_empty :
+theorem ghost_map_alloc_empty [DecidableEq K] :
   ⊢@{IProp GF} |==> ∃ γ, (γ ↪●MAP (∅ : H V)) := by
   imod ghost_map_alloc _ _ _ _ (∅ : H V) with ⟨%γ, _, -⟩
   imodintro
