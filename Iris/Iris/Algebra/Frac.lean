@@ -7,7 +7,6 @@ module
 
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
-public import Iris.Algebra.IsOp
 
 /-!
 # The Frac CMRA
