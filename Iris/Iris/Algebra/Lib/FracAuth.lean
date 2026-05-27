@@ -20,10 +20,9 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 
 open Iris OFE CMRA UCMRA Auth Option
 
-
 /-! ## Definitions -/
 
-@[rocq_alias frac_authR]
+@[rocq_alias frac_authR, rocq_alias frac_authUR]
 public abbrev FracAuth [UFraction F] [CMRA A] := Auth F (Option (Frac F × A))
 
 namespace FracAuth
@@ -53,10 +52,12 @@ instance frac_one_exclusive (b : A) : Exclusive (fracOne (F := F), b) where
 @[rocq_alias frac_auth_auth_ne]
 instance auth_ne {dq : DFrac F} : NonExpansive (auth dq : A → FracAuth) where
   ne _ _ _ h := Auth.auth_ne.ne ⟨.rfl, h⟩
+#rocq_ignore frac_auth_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
 
 @[rocq_alias frac_auth_frag_ne]
 instance frag_ne {q : Frac F} : NonExpansive (frag q : A → FracAuth) where
   ne _ _ _ h := Auth.frag_ne.ne ⟨.rfl, h⟩
+#rocq_ignore frac_auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
 
 /-! ## Discrete instances -/
 

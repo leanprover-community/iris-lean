@@ -21,6 +21,12 @@ infixr:50 " ~~>: " => UpdateP
 def Update [CMRA α] (x y : α) := ∀ n mz,
   ✓{n} (x •? mz) → ✓{n} (y •? mz)
 infixr:50 " ~~> " => Update
+#rocq_ignore cmra_update_rewrite_relation "Use Trans instances"
+#rocq_ignore cmra_update_preorder "Use Trans instances"
+#rocq_ignore cmra_update_proper_update "Use Trans instances"
+#rocq_ignore cmra_update_flip_proper_update "Use Trans instances"
+#rocq_ignore cmra_update_op_proper "Use Update.op"
+#rocq_ignore cmra_update_op_flip_proper "Use Update.op"
 
 section updates
 

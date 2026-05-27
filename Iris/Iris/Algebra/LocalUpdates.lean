@@ -24,9 +24,7 @@ section CMRA
 
 variable [CMRA α]
 
--- Global Instance local_update_proper :
--- Proper ((≡) ==> (≡) ==> iff) (@local_update SI A).
--- Proof. unfold local_update. by repeat intro; setoid_subst. Qed.
+#rocq_ignore local_update_proper "Use LocalUpdate.equiv_left/LocalUpdate.equiv_right"
 
 theorem LocalUpdate.id (x : α × α) : x ~l~> x := fun _ _ vx e => ⟨vx, e⟩
 
@@ -47,8 +45,7 @@ theorem LocalUpdate.equiv_right (x : α × α) {y z : α × α} (h : y ≡ z) : 
     _     ≡{n}≡ y.snd •? mw := e
     _     ≡{n}≡ z.snd •? mw := h.dist.2.opM .rfl
 
--- Global Instance local_update_preorder : PreOrder (@local_update SI A).
--- Proof. split; unfold local_update; red; naive_solver. Qed.
+#rocq_ignore local_update_preorder "Use LocalUpdate.id for reflexivity"
 
 @[rocq_alias exclusive_local_update]
 theorem LocalUpdate.exclusive [CMRA.Exclusive y] {x x' : α}

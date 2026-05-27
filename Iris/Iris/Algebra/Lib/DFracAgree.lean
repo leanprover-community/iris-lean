@@ -33,6 +33,7 @@ variable {F : Type _} [UFraction F] {A : Type _} [OFE A]
 @[rocq_alias to_dfrac_agree_ne]
 instance mk_ne {d : DFrac F} : NonExpansive (mk d : A → DFracAgreeR F A) where
   ne _ _ _ h := ⟨.rfl, NonExpansive.ne (f := toAgree) h⟩
+#rocq_ignore to_dfrac_agree_proper "Derivable from mk_ne with NonExpansive.eqv"
 
 @[rocq_alias to_dfrac_agree_exclusive]
 instance mk_exclusive {a : A} : Exclusive (mk (.own (1 : F)) a) := one_exclusive_left

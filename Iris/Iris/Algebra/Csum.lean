@@ -19,6 +19,8 @@ inductive Csum (α β : Type _) where
   | inl : α → Csum α β
   | inr : β → Csum α β
   | invalid : Csum α β
+#rocq_ignore maybe_Cinl "Use pattern matching or `getInlD`"
+#rocq_ignore maybe_Cinr "Use pattern matching or `getInrD`"
 
 open Csum OFE CMRA
 
@@ -148,6 +150,10 @@ instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
       show IsCOFE.compl (chainR c b) ≡{n}≡ b'
       refine OFE.Dist.trans COFE.conv_compl ?_
       simp [chainR, en]
+#rocq_ignore csum_compl "Local Compl definition; folded into Lean's IsCOFE instance."
+#rocq_ignore csum_bchain_l "Transfinite step-indexing only"
+#rocq_ignore csum_bchain_r "Transfinite step-indexing only"
+#rocq_ignore csum_lbcompl "Transfinite step-indexing only"
 
 /-! ## CMRA -/
 

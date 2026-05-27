@@ -28,14 +28,28 @@ open OFE Iris.Std
   match l with
   | [] => unit
   | x :: xs => op (Φ 0 x) (bigOpL op (fun n => Φ (n + 1)) xs)
+#rocq_ignore big_opL_ne' "Derived from nonexpansivity"
+#rocq_ignore big_opL_proper' "Derived from nonexpansivity"
+#rocq_ignore big_opL_permutation' "Derived from nonexpansivity"
 
 @[rocq_alias big_opM, expose] public def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
     {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K] (m : M' V) : M :=
   bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList m)
+#rocq_ignore big_opM_aux "bigOpM is unsealed by default"
+#rocq_ignore big_opM_def "bigOpM is unsealed by default"
+#rocq_ignore big_opM_unseal "bigOpM is unsealed by default"
+#rocq_ignore big_opM_ne' "Derived from nonexpansivity"
+#rocq_ignore big_opM_proper' "Derived from nonexpansivity"
 
 @[rocq_alias big_opS, expose] public def bigOpS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     {A : Type _} {S : Type _} [FiniteSet S A] (Φ : A → M) (m : S) : M :=
   bigOpL op (fun _ x => Φ x) (toList m)
+#rocq_ignore big_opS_aux "bigOpS is unsealed by default"
+#rocq_ignore big_opS_def "bigOpS is unsealed by default"
+#rocq_ignore big_opS_unseal "bigOpS is unsealed by default"
+#rocq_ignore big_opS_ne' "Derived from nonexpansivity"
+#rocq_ignore big_opS_proper "Derived from nonexpansivity"
+#rocq_ignore big_opS_proper' "Derived from nonexpansivity"
 
 /-- Big op over list with index: `[^ op list] k ↦ x ∈ l, P` -/
 scoped syntax atomic("[^") term " list]" ident " ↦ " ident " ∈ " term ", " term : term

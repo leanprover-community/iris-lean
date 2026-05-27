@@ -235,6 +235,8 @@ theorem frag_op_validN {n : Nat} {b1 b2 : A} :
 
 #rocq_ignore auth_frag_op_validN_1 "Use frag_op_validN"
 #rocq_ignore auth_frag_op_validN_2 "Use frag_op_validN"
+#rocq_ignore auth_frag_validN_1 "Use frag_validN"
+#rocq_ignore auth_frag_validN_2 "Use frag_validN"
 
 @[rocq_alias auth_both_dfrac_validN]
 theorem both_dfrac_validN {n : Nat} {dq : DFrac F} {a b : A} :

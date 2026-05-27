@@ -25,10 +25,13 @@ inductive DFrac (F : Type _) where
 | discard : DFrac F
 /-- Ownership of `F` plus knowledge that a fraction has been discarded. -/
 | ownDiscard (f : F) : DFrac F
+#rocq_ignore DfracOwn_inj "Lean inductive constructors are automatically injective"
+#rocq_ignore DfracBoth_inj "Lean inductive constructors are automatically injective"
 
 @[simp] instance : COFE (DFrac F) := COFE.ofDiscrete _ Eq_Equivalence
 instance : OFE.Leibniz (DFrac F) := ⟨(·)⟩
 instance : OFE.Discrete (DFrac F) := ⟨congrArg id⟩
+#rocq_ignore dfracO "Use DFrac type with typeclass inference"
 
 namespace DFrac
 
@@ -60,6 +63,12 @@ def op : DFrac F → DFrac F → DFrac F
   | ownDiscard f, own f'
   | ownDiscard f, ownDiscard f' => ownDiscard (f + f')
 
+#rocq_ignore dfracR "Use DFrac type with typeclass inference"
+#rocq_ignore dfrac_op_instance "Use CMRA instance"
+#rocq_ignore dfrac_pcore_instance "Use CMRA instance"
+#rocq_ignore dfrac_valid_instance "Use CMRA instance"
+
+@[rocq_alias dfrac_ra_mixin]
 instance DFrac_CMRA : CMRA (DFrac F) where
   pcore := pcore
   op := op
@@ -219,5 +228,31 @@ theorem DFrac.update_acquire [IsSplitFraction F] :
     refine ⟨(IsSplitFraction.split q').2, ?_⟩
     rw [← add_assoc, IsSplitFraction.split_add]
     exact HP
+
+@[rocq_alias dfrac_op_own]
+theorem op_own {p q : F} : own p • own q = own (p + q) := rfl
+
+@[rocq_alias dfrac_op_discarded]
+theorem op_discard : (discard : DFrac F) • discard = discard := rfl
+
+@[rocq_alias dfrac_valid_own]
+theorem valid_own {p : F} : ✓ own p ↔ Fraction.Proper p := .rfl
+
+@[rocq_alias dfrac_valid]
+theorem valid_iff {dq : DFrac F} : ✓ dq ↔
+    match dq with
+    | own f => Fraction.Proper f
+    | discard => True
+    | ownDiscard f => Fraction.Fractional f := by
+  cases dq <;> rfl
+
+@[rocq_alias dfrac_discarded_included]
+theorem discard_included : (discard : DFrac F) ≼ discard := ⟨discard, .rfl⟩
+
+@[rocq_alias dfrac_own_included]
+theorem own_included {p q : F} : own p ≼ own q ↔ ∃ r, q = p + r := by
+  refine ⟨fun ⟨z, hz⟩ => ?_, fun ⟨r, hr⟩ => ⟨own r, hr ▸ .rfl⟩⟩
+  rcases z with (r|_|r) <;> simp [CMRA.op, op] at hz
+  exact ⟨r, hz⟩
 
 end DFrac

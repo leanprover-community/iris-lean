@@ -22,10 +22,10 @@ class OFE (α : Type _) where
 
 #rocq_ignore Dist "Lean uses the unbundled field OFE.Dist; no separate class needed."
 #rocq_ignore OfeMixin "Lean uses the OFE type class directly; mixin/bundle separation is unnecessary."
+#rocq_ignore ofe_mixin_of' "Lean uses the OFE type class directly."
 #rocq_ignore dist_ne "Rewrite using Equiv.trans"
 #rocq_ignore dist_proper "Rewrite using Equiv.trans"
 #rocq_ignore dist_proper_2 "Rewrite using Equiv.trans"
-
 
 open OFE
 
@@ -33,6 +33,9 @@ scoped infix:40 " ≡ " => OFE.Equiv
 scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist n x y
 
 namespace OFE
+
+@[rocq_alias dist_equivalence]
+theorem dist_equivalence [OFE α] {n} : Equivalence (Dist (α := α) n) := dist_eqv
 
 @[rocq_alias dist_lt]
 theorem Dist.lt [OFE α] {m n} {x y : α} : x ≡{n}≡ y → m < n → x ≡{m}≡ y := dist_lt
@@ -196,8 +199,11 @@ class Discrete (α : Type _) [OFE α] where
 export OFE.Discrete (discrete_0)
 
 #rocq_ignore ofe_discrete_subrelation "Generalized-rewriting subrelation; not needed in Lean."
+#rocq_ignore Discrete_proper "Derived from nonexpansivity"
+#rocq_ignore discrete_ofe_discrete "Folded into Lean's OFE.Discrete typeclass"
 
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
+@[rocq_alias discrete]
 theorem Discrete.discrete [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡ y) : x ≡ y :=
   discrete_0 (h.le (Nat.zero_le _))
 export OFE.Discrete (discrete)
@@ -205,9 +211,18 @@ export OFE.Discrete (discrete)
 instance Discrete.toDiscreteE [OFE α] [Discrete α] (x : α) : DiscreteE x := ⟨discrete_0⟩
 
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
+@[rocq_alias discrete_dist]
 theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{0}≡ y) : x ≡{n}≡ y :=
   (discrete h).dist
 export OFE.Discrete (discrete_n)
+
+@[rocq_alias discrete_iff]
+theorem Discrete.discrete_iff [OFE α] [Discrete α] (n) {x y : α} : x ≡ y ↔ x ≡{n}≡ y :=
+  ⟨Equiv.dist, discrete⟩
+
+@[rocq_alias discrete_iff_0]
+theorem Discrete.discrete_iff_0 [OFE α] [Discrete α] (n) {x y : α} : x ≡{0}≡ y ↔ x ≡{n}≡ y :=
+  ⟨discrete_n, fun h => h.le (Nat.zero_le _)⟩
 
 class Leibniz (α : Type _) [OFE α] where
   eq_of_eqv {x y : α} : x ≡ y → x = y
@@ -233,6 +248,9 @@ non-expansive. -/
   ne : NonExpansive f
 #rocq_ignore ofe_mor_proper "Derived from nonexpansivity"
 #rocq_ignore ofe_mor_ext "Use ext"
+#rocq_ignore ofe_mor_car_proper "Derived from nonexpansivity"
+#rocq_ignore ofe_mor_car_ne "Implicit in the Hom field"
+#rocq_ignore ofe_mor_inhabited "Implicit in Lean's Inhabited (α -n> β) instance"
 
 @[inherit_doc]
 infixr:25 " -n> " => Hom
@@ -338,6 +356,13 @@ instance [OFE α] : OFE (Option α) where
 #rocq_ignore optionO "Use Option"
 #rocq_ignore option_dist "Local Dist instance; folded into Lean's OFE (Option α) instance."
 #rocq_ignore option_dist_Forall2 "Local Dist unfolding lemma; trivial in Lean."
+#rocq_ignore option_fmap_dist_inj "Derived from nonexpansivity"
+#rocq_ignore option_fmap_ne "Derived from nonexpansivity"
+#rocq_ignore optionO_map_ne "Derived from nonexpansivity"
+#rocq_ignore option_mbind_ne "Derived from nonexpansivity"
+#rocq_ignore option_mjoin_ne "Derived from nonexpansivity"
+#rocq_ignore from_option_ne "Derived from nonexpansivity"
+#rocq_ignore Some_dist_inj "Use Option.some_dist_some"
 
 @[rocq_alias option_ofe_discrete]
 instance [OFE α] [OFE.Discrete α] : OFE.Discrete (Option α) where
@@ -444,6 +469,9 @@ instance [OFE α] [OFE β] : OFE (α -n> β) where
   equiv_dist := equiv_dist
   dist_lt := dist_lt
 #rocq_ignore ofe_morO "Use Hom type"
+#rocq_ignore ofe_mor_equiv "Local Equiv instance; folded into Lean's OFE (α -n> β) instance."
+#rocq_ignore ofe_mor_dist "Local Dist instance; folded into Lean's OFE (α -n> β) instance."
+#rocq_ignore ofe_mor_chain "Local Chain definition; folded into Lean's IsCOFE instance."
 
 instance [OFE α] [OFE β] : OFE (α -c> β) where
   Equiv f g := Equiv f.toHom g.toHom
@@ -495,6 +523,10 @@ instance [OFE α] [OFE β] : OFE (α × β) where
   dist_lt h1 h2 := ⟨dist_lt h1.1 h2, dist_lt h1.2 h2⟩
 #rocq_ignore prodO "Use product type"
 #rocq_ignore prod_dist "Implicit in Prod OFE"
+#rocq_ignore pair_dist_inj "Use projections"
+#rocq_ignore pair_ne "Derived from nonexpansivity"
+#rocq_ignore prod_map_ne "Derived from nonexpansivity"
+#rocq_ignore prodO_map_ne "Derived from nonexpansivity"
 
 theorem equiv_fst [OFE α] [OFE β] {x y : α × β} (h : x ≡ y) : x.fst ≡ y.fst := h.left
 theorem equiv_snd [OFE α] [OFE β] {x y : α × β} (h : x ≡ y) : x.snd ≡ y.snd := h.right
@@ -584,6 +616,9 @@ instance : OFE (α ⊕ β) where
     | .inl _, .inr _ => (False.elim ·)
     | .inr _, .inl _ => (False.elim ·)
 #rocq_ignore sumO "Use sum type"
+#rocq_ignore sum_dist "Local Dist instance; folded into Lean's OFE (α ⊕ β) instance."
+#rocq_ignore sum_map_ne "Derived from nonexpansivity"
+#rocq_ignore sumO_map_ne "Derived from nonexpansivity"
 
 theorem equiv_inl {x y : α} (h : x ≡ y) : (.inl x : α ⊕ β) ≡ .inl y := h
 theorem equiv_inr {x y : β} (h : x ≡ y) : (.inr x : α ⊕ β) ≡ .inr y := h
@@ -835,6 +870,34 @@ end OFE
   chain : Nat → α
   cauchy : n ≤ i → chain i ≡{n}≡ chain n
 
+#rocq_ignore bchain "Transfinite step-indexing only"
+#rocq_ignore bchain_const "Transfinite step-indexing only"
+#rocq_ignore bchain_le "Transfinite step-indexing only"
+#rocq_ignore bchain_map "Transfinite step-indexing only"
+#rocq_ignore bchain_map_snd "Transfinite step-indexing only"
+#rocq_ignore bcompl "Transfinite step-indexing only"
+#rocq_ignore bcompl_ne "Transfinite step-indexing only"
+#rocq_ignore bfchain "Transfinite step-indexing only"
+#rocq_ignore bfchain_chain_unique "Transfinite step-indexing only"
+#rocq_ignore compl_bchain_map "Transfinite step-indexing only"
+#rocq_ignore conv_bcompl "Transfinite step-indexing only"
+#rocq_ignore lbcompl_bchain_le "Transfinite step-indexing only"
+#rocq_ignore limit_preserving_bcompl "Transfinite step-indexing only"
+#rocq_ignore limit_preserving_sidx_finite "Transfinite step-indexing only"
+#rocq_ignore discrete_fun_bchain "Transfinite step-indexing only"
+#rocq_ignore inl_bchain "Transfinite step-indexing only"
+#rocq_ignore inr_bchain "Transfinite step-indexing only"
+#rocq_ignore later_limit_bchain "Transfinite step-indexing only"
+#rocq_ignore ofe_mor_bchain "Transfinite step-indexing only"
+#rocq_ignore ofe_mor_lbcompl "Transfinite step-indexing only"
+#rocq_ignore option_bchain "Transfinite step-indexing only"
+#rocq_ignore option_lbcompl "Transfinite step-indexing only"
+#rocq_ignore sigT_bchain_const_proj1 "Transfinite step-indexing only"
+#rocq_ignore sigT_lbcompl "Transfinite step-indexing only"
+#rocq_ignore sum_lbcompl "Transfinite step-indexing only"
+#rocq_ignore fixpoint_bchain "Transfinite step-indexing only"
+#rocq_ignore fixpoint_bchain_go "Transfinite step-indexing only"
+
 instance [OFE α] : CoeFun (Chain α) (fun _ => Nat → α) := ⟨Chain.chain⟩
 
 namespace Chain
@@ -983,6 +1046,7 @@ instance instIsCOFEHom [OFE α] [OFE β] [IsCOFE β] : IsCOFE (α -n> β) where
     refine conv_compl.trans (.trans ?_ conv_compl.symm)
     exact NonExpansive.ne (f := c.chain n) H
   conv_compl _ := IsCOFE.conv_compl
+#rocq_ignore ofe_mor_compl "Local Compl definition; folded into Lean's IsCOFE instance."
 
 @[rocq_alias prod_cofe]
 instance instIsCOFEProd [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (α × β) where

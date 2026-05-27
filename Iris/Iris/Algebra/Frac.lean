@@ -7,6 +7,7 @@ module
 
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
+meta import Iris.Std.RocqPorting
 
 /-!
 # The Frac CMRA
@@ -79,12 +80,20 @@ end Fraction
 open Fraction OFE CMRA
 
 def Frac (α : Type _) := LeibnizO α
+#rocq_ignore fracO "Use Frac type with typeclass inference"
+
 instance [Fraction α] : Coe (Frac α) α := ⟨(·.1)⟩
 instance [Fraction α] : Coe α (Frac α) := ⟨(⟨·⟩)⟩
 @[simp] instance : COFE (Frac α) := inferInstanceAs (COFE (LeibnizO α))
 @[simp] instance [Fraction α] : Add (Frac α) := ⟨fun x y => x.1 + y.1⟩
 instance : Leibniz (Frac α) := inferInstanceAs (Leibniz (LeibnizO α))
 
+#rocq_ignore fracR "Use Frac type with typeclass inference"
+#rocq_ignore frac_op_instance "Use CMRA instance"
+#rocq_ignore frac_pcore_instance "Use CMRA instance"
+#rocq_ignore frac_valid_instance "Use CMRA instance"
+
+@[rocq_alias frac_ra_mixin]
 instance Frac_CMRA [Fraction α] : CMRA (Frac α) where
   pcore _ := none
   op := Add.add
@@ -103,23 +112,32 @@ instance Frac_CMRA [Fraction α] : CMRA (Frac α) where
   pcore_op_mono := by simp
   extend {_ _ y1 y2} _ _ := by exists y1; exists y2
 
-instance [Fraction α] : CMRA.Discrete (Frac α) where
+@[rocq_alias frac_cmra_discrete]
+instance Frac_CMRA_Discrete [Fraction α] : CMRA.Discrete (Frac α) where
   discrete_0 := id
   discrete_valid := id
 
-instance [Fraction α] [CMRA α] {a : Frac α} (Hw : Whole a.1) : Exclusive a where
+instance Frac_whole_exclusive [Fraction α] [CMRA α] {a : Frac α} (Hw : Whole a.1) : Exclusive a where
   exclusive0_l _ Hk := (not_exists.mp Hw.2) _ Hk
 
-instance [Fraction α] {a : Frac α} : CMRA.Cancelable a where
+@[rocq_alias frac_cancelable]
+instance Frac_Cancelable [Fraction α] {a : Frac α} : CMRA.Cancelable a where
   cancelableN {n x y} _ (H : a • x = a • y) := by
     refine Dist.of_eq <| LeibnizO.ext <| add_left_cancel (a := a.car) <| ?_
     exact LeibnizO.eqv_inj H
 
-instance [Fraction α] {a : Frac α} : CMRA.IdFree a where
+@[rocq_alias frac_id_free]
+instance Frac_IdFree [Fraction α] {a : Frac α} : CMRA.IdFree a where
   id_free0_r b _ H := by
     suffices (b + a).car = a.car from add_ne this.symm
     refine LeibnizO.ext_iff.mp (Leibniz.eq_of_eqv (α := Frac _) ?_)
     exact CMRA.comm.trans (discrete_0 H)
+
+@[rocq_alias frac_op]
+theorem Frac.op_eq [Fraction α] (p q : Frac α) : p • q = ⟨p.1 + q.1⟩ := rfl
+
+@[rocq_alias frac_valid]
+theorem Frac.valid_iff [Fraction α] {p : Frac α} : ✓ p ↔ Proper p.1 := .rfl
 
 /-- A type of fractions with a unique whole element. -/
 class UFraction (α : Type _) extends Fraction α, One α where
@@ -128,6 +146,13 @@ class UFraction (α : Type _) extends Fraction α, One α where
   -- existence of a Whole element.
   -- whole_iff_one {a : α} : Fraction.Whole a ↔ a = 1
   one_whole : Fraction.Whole (1 : α)
+
+@[rocq_alias frac_valid_1]
+theorem Frac.valid_one [UFraction α] : CMRA.Valid (α := Frac α) ⟨1⟩ := UFraction.one_whole.1
+
+@[rocq_alias frac_full_exclusive]
+instance Frac_one_exclusive [UFraction α] [CMRA α] : Exclusive (α := Frac α) ⟨1⟩ :=
+  Frac_whole_exclusive UFraction.one_whole
 
 section NumericFraction
 
@@ -199,6 +224,7 @@ instance : UFraction α where
     simp [Fraction.Whole, Fraction.Fractional]
     exact ⟨le_rfl, fun _ => not_add_le_self⟩
 
+@[rocq_alias frac_included]
 theorem Frac.inc_iff_lt {p q : Frac α} : p ≼ q ↔ p < q := by
   constructor
   · intro ⟨r, Hr⟩; exact lt_def.mpr ⟨r, Hr ▸ rfl⟩
@@ -206,6 +232,7 @@ theorem Frac.inc_iff_lt {p q : Frac α} : p ≼ q ↔ p < q := by
     let ⟨r, Hr⟩ := lt_def.mp H
     exact ⟨r, .of_eq <| LeibnizO.ext_iff.mpr Hr.symm⟩
 
+@[rocq_alias frac_included_weak]
 theorem Frac.le_of_inc {p q : Frac α} (H : p ≼ q) : p ≤ q :=
   lt_le (inc_iff_lt.mp H)
 
