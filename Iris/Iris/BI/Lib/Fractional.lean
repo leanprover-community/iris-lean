@@ -14,8 +14,6 @@ public import Iris.ProofMode
 namespace Iris
 open Iris.Std BI OFE
 
-#check BI
-
 class Fractional [BI PROP] [UFraction F] (Φ : F → PROP) where
   fractional p q : Φ (p + q) ⊣⊢ Φ p ∗ Φ q
 
