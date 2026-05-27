@@ -2571,7 +2571,7 @@ example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
     · iexact Hnew3
 
 /-- Tests `icombine` for combining propositions involving later credits. -/
-example {GF m n} [LcGS GF] :
+example {GF m n} [LcGS .hasLC GF] :
     ⊢@{IProp GF} £ n -∗ £ 1 -∗ £ m -∗ £ 1 -∗ £ n + (1 + (m + 1)) := by
   iintro H1 H2 H3 H4
   icombine H1 H2 H3 H4 as Hnew
