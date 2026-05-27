@@ -37,9 +37,9 @@ public def ghost_map_elem (γ : GName) (dq : DFrac F) (k : K) (v : V) : IProp GF
 end definitions
 
 notation γ " ↪●MAP{" dq "} " m => ghost_map_auth γ dq m
-notation γ " ↪●MAP " m => ghost_map_auth γ (DFrac.own One.one) m
+notation γ " ↪●MAP " m => ghost_map_auth γ (DFrac.own 1) m
 notation γ " ↪◯MAP[" k "]{" dq "} " v => ghost_map_elem γ dq k v
-notation γ " ↪◯MAP[" k "] " v => ghost_map_elem γ (DFrac.own One.one) k v
+notation γ " ↪◯MAP[" k "] " v => ghost_map_elem γ (DFrac.own 1) k v
 
 section lemmas
 
@@ -47,14 +47,12 @@ variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [LawfulFiniteMap
 variable [hgm : GhostMapG GF F K V H]
 
 @[rocq_alias ghost_map_elem_timeless]
-instance (γ : GName) (k : K) (dq : DFrac F) (v : V) : Timeless (PROP := IProp GF) (γ ↪◯MAP[k]{dq} v) := by
-  unfold ghost_map_elem
-  infer_instance
+instance (γ : GName) (k : K) (dq : DFrac F) (v : V) : Timeless (PROP := IProp GF) (γ ↪◯MAP[k]{dq} v) :=
+  inferInstanceAs (Timeless (PROP := IProp GF) (iOwn _ _))
 
 @[rocq_alias ghost_map_elem_persistent]
-instance (γ : GName) (k : K) (v : V): Persistent (PROP := IProp GF) (γ ↪◯MAP[k]{.discard} v) := by
-  unfold ghost_map_elem
-  infer_instance
+instance (γ : GName) (k : K) (v : V): Persistent (PROP := IProp GF) (γ ↪◯MAP[k]{.discard} v) :=
+  inferInstanceAs (Persistent (PROP := IProp GF) (iOwn _ _))
 
 @[rocq_alias ghost_map_elem_fractional]
 instance ghost_map_elem_fractional (γ : GName) (k : K) (v : V)
@@ -221,7 +219,7 @@ theorem ghost_map_alloc_strong_empty (P : GName → Prop) :
   (∀ N, ∃ k, N ≤ k ∧ P k) →
   ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MAP (∅ : H V)) := by
   iintro %Hinf
-  imod ghost_map_alloc_strong _ _ _ _ P (∅ : H V) Hinf with ⟨%γ, H1, H2, -⟩
+  imod ghost_map_alloc_strong _ (∅ : H V) Hinf with ⟨%γ, H1, H2, -⟩
   iexists γ
   iframe
 
@@ -229,7 +227,6 @@ theorem ghost_map_alloc_strong_empty (P : GName → Prop) :
 theorem ghost_map_alloc (m : H V) :
   ⊢@{IProp GF} |==> ∃ γ, (γ ↪●MAP m) ∗
     [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := by
-
   sorry
 
 @[rocq_alias ghost_map_alloc_empty]
@@ -240,14 +237,12 @@ theorem ghost_map_alloc_empty :
 
 -- Global Instance ghost_map_auth_timeless γ dq m :
 @[rocq_alias ghost_map_auth_timeless]
-instance (m : H V): Timeless (PROP := IProp GF) (γ ↪●MAP{dq} m) := by
-  unfold ghost_map_auth
-  infer_instance
+instance (m : H V): Timeless (PROP := IProp GF) (γ ↪●MAP{dq} m) :=
+  inferInstanceAs (Timeless (PROP := IProp GF) (iOwn _ _))
 
 @[rocq_alias ghost_map_persistent]
-instance (m : H V): Timeless (PROP := IProp GF) (γ ↪●MAP{.discard} m) := by
-  unfold ghost_map_auth
-  infer_instance
+instance (m : H V): Timeless (PROP := IProp GF) (γ ↪●MAP{.discard} m) :=
+  inferInstanceAs (Timeless (PROP := IProp GF) (iOwn _ _))
 
 @[rocq_alias ghost_map_auth_fractional]
 instance ghost_map_auth_fractional (m : H V): Fractional (PROP := IProp GF) (fun q => γ ↪●MAP{.own q} m) where
@@ -335,25 +330,25 @@ theorem ghost_map_lookup_big {γ dq} {m : H V} {dq'} m0 :
   ⌜m0 ⊆ m⌝ := sorry
 
 @[rocq_alias ghost_map_insert_big]
-theorem ghost_map_insert_big [LawfulFiniteMap H K] {γ : GName} {m : H V} (m' : H V) :
+theorem ghost_map_insert_big {γ : GName} {m : H V} (m' : H V) :
   (m' ##ₘ m) →
-  ⊢@{IProp GF} (γ ↪●MAP m) ==∗
+  ⊢@{IProp GF} (γ ↪●MAP{dq} m) ==∗
   (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k] v := sorry
 
 @[rocq_alias ghost_map_insert_persist_big]
-theorem ghost_map_insert_persist_big [LawfulFiniteMap H K] {γ m} (m' : H V) :
+theorem ghost_map_insert_persist_big {γ m} (m' : H V) :
   m' ##ₘ m →
   ⊢@{IProp GF} (γ ↪●MAP m) ==∗
   (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k]{.discard} v := sorry
 
 @[rocq_alias ghost_map_delete_big]
-theorem ghost_map_delete_big [LawfulFiniteMap H K] {γ m} (m0 : H V) :
+theorem ghost_map_delete_big {γ m} (m0 : H V) :
   ⊢@{IProp GF} (γ ↪●MAP m) -∗
   ([∗map] k ↦v ∈ m0, γ ↪◯MAP[k] v) ==∗
   (γ ↪●MAP (m \ m0)) := sorry
 
 @[rocq_alias ghost_map_update_big]
-theorem ghost_map_update_big [LawfulFiniteMap H K] {γ m} (m0 m1 : H V) :
+theorem ghost_map_update_big {γ m} (m0 m1 : H V) :
   dom m0 = dom m1 →
   ⊢@{IProp GF} (γ ↪●MAP m) -∗
   ([∗map] k ↦v ∈ m0, γ ↪◯MAP[k] v) ==∗
