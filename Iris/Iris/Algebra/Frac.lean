@@ -7,6 +7,7 @@ module
 
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
+public import Iris.Algebra.IsOp
 
 /-!
 # The Frac CMRA
@@ -120,6 +121,12 @@ instance [Fraction α] {a : Frac α} : CMRA.IdFree a where
     suffices (b + a).car = a.car from add_ne this.symm
     refine LeibnizO.ext_iff.mp (Leibniz.eq_of_eqv (α := Frac _) ?_)
     exact CMRA.comm.trans (discrete_0 H)
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias frac_is_op]
+instance [Fraction α] (q1 q2 : Frac α) :
+    IsOp merge (q1 + q2) q1 q2 where
+  is_op := .rfl
 
 /-- A type of fractions with a unique whole element. -/
 class UFraction (α : Type _) extends Fraction α, One α where
