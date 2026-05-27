@@ -858,7 +858,7 @@ theorem _root_.Iris.OFE.Dist.to_incN {n} {x y : α} (H : x ≡{n}≡ y) : x ≼{
   ⟨unit, ((equiv_dist.mp unit_right_id n).trans H).symm⟩
 
 instance ucmraMonoidOps {α : Type _} [UCMRA α] : Algebra.MonoidOps (CMRA.op (α := α)) UCMRA.unit where
-  op_ne := { ne := fun _ _ _ hx _ _ hy => hx.op hy }
+  op_ne := ⟨fun _ _ _ hx _ _ hy => hx.op hy⟩
   op_assoc := CMRA.assoc.symm
   op_comm := CMRA.comm
   op_left_id := UCMRA.unit_left_id
