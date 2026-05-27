@@ -84,35 +84,58 @@ theorem ghost_map_elems_unseal [LawfulFiniteMap H K] γ (m : H V) dq :
 @[rocq_alias ghost_map_elem_valid]
 theorem ghost_map_elem_valid (γ : GName) (k : K) (dq: DFrac F) (v: V) :
     (γ ↪◯MAP[k]{dq} v) ⊢@{IProp GF} internalCmraValid dq := by
-  calc
-    iOwn (E := hgm.elem) γ (Frag k dq (toAgree { car := v })) ⊢
-    internalCmraValid (Frag (H := H) k dq (toAgree ({ car := v } : LeibnizO V))) :=
-      iOwn_cmraValid (E := hgm.elem)
-    _ ⊢ ⌜✓ dq⌝ := by
-      iintro h
-      ipure h
-      ipure_intro
-      exact (frag_valid_iff.mp h).left
+  refine (iOwn_cmraValid (E := hgm.elem)).trans ?_
+  iintro h
+  ipure h; ipure_intro
+  exact (frag_valid_iff.mp h).left
+
+#check iOwn_op
+#check frag_op_valid_iff
+#check Iris.Agree.op
+#check toAgree_op_valid_iff_eq
 
 @[rocq_alias ghost_map_elem_valid_2]
 theorem ghost_map_elem_valid_2 (γ : GName) (k : K) (dq1: DFrac F) (dq2: DFrac F) (v1: V) (v2: V) :
-  ⊢@{IProp GF} (γ ↪◯MAP[k]{dq1} v1) -∗ (γ ↪◯MAP[k]{dq2} v2) -∗
-    internalCmraValid (dq1 • dq2) ∧ ⌜v1 = v2⌝ := sorry
+    (γ ↪◯MAP[k]{dq1} v1) ∗ (γ ↪◯MAP[k]{dq2} v2) ⊢@{IProp GF}
+      internalCmraValid (dq1 • dq2) ∧ ⌜v1 = v2⌝ := by
+  refine (iOwn_op (E := hgm.elem)).mpr.trans ?_
+  refine (iOwn_cmraValid (E := hgm.elem)).trans ?_
+  iintro h
+  ipure h; ipure_intro
+  have ⟨vdq, va⟩ := frag_op_valid_iff.mp h
+  exact ⟨vdq, congrArg (·.car) (toAgree_op_valid_iff_eq.mp va)⟩
 
 @[rocq_alias ghost_map_elem_agree]
 theorem ghost_map_elem_agree (γ : GName) (k : K) (dq1 : DFrac F) (dq2 : DFrac F) (v1 : V) (v2 : V) :
-  ⊢@{IProp GF} (γ ↪◯MAP[k]{dq1} v1) -∗ (γ ↪◯MAP[k]{dq2} v2) -∗ ⌜v1 = v2⌝ := by
-    sorry
+    (γ ↪◯MAP[k]{dq1} v1) ∗ (γ ↪◯MAP[k]{dq2} v2) ⊢@{IProp GF} ⌜v1 = v2⌝ := by
+  let := ghost_map_elem_valid_2 (GF := GF) F K V H γ k dq1 dq2 v1 v2
+  refine this.trans ?_
+  iintro h
+  ipure h; ipure_intro
+  exact h.right
 
 -- Global Instance ghost_map_elem_combine_gives γ k v1 dq1 v2 dq2 :
 --   CombineSepGives (γ ↪◯MAP[k]{dq1} v1) (γ ↪◯MAP[k]{dq2} v2)
 --     ⌜✓ (dq1 • dq2) ∧ v1 = v2⌝ := sorry
 
+#check frag_op_equiv
+#check BI.equiv_iff
+#check Agree.op
+#check Agree.toAgree_op_valid_iff_equiv
+#check View.frag_ne
+
 @[rocq_alias ghost_map_elem_combine]
 theorem ghost_map_elem_combine (γ : GName) (k : K) (dq1 : DFrac F) (dq2 : DFrac F) (v1 : V) (v2 : V) :
-  ⊢@{IProp GF} (γ ↪◯MAP[k]{dq1} v1) -∗
-  (γ ↪◯MAP[k]{dq2} v2) -∗
-  (γ ↪◯MAP[k]{dq1 • dq2} v1) ∗ ⌜v1 = v2⌝ := sorry
+    (γ ↪◯MAP[k]{dq1} v1) ∗ (γ ↪◯MAP[k]{dq2} v2)
+    ⊢@{IProp GF} (γ ↪◯MAP[k]{dq1 • dq2} v1) ∗ ⌜v1 = v2⌝ := by
+  unfold ghost_map_elem
+  refine (iOwn_op (E := hgm.elem)).mpr.trans ?_
+  have : (Frag (H := H) k dq1 (toAgree ({ car := v1 } : LeibnizO V)) •
+    Frag k dq2 (toAgree ({ car := v2 } : LeibnizO V))) ≡ _ := frag_op_equiv.symm
+  have := (@iOwn_ne GF _ _ GhostMapG.elem γ).eqv this
+  have := (BI.equiv_iff (PROP := IProp GF)).mp this
+  -- TODO (life is painful without rewriting)
+  sorry
 
 -- Global Instance ghost_map_elem_combine_as (γ : GName) (k : K) (dq1 : DFrac F) (dq2 : DFrac F) (v1 : V) (v2 : V) :
 --   CombineSepAs (γ ↪◯MAP[k]{dq1} v1) (γ ↪◯MAP[k]{dq2} v2)
