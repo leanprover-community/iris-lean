@@ -7,7 +7,6 @@ module
 
 public import Iris.Std.List
 import Batteries.Data.List.Perm
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -75,14 +74,11 @@ theorem fresh [InfiniteType A] (X : _root_.List A) : ∃ a : A, a ∉ X := by
 end Iris.Std.List
 
 /-- A predicate is *infinite* if it has a witness outside every finite list. -/
-@[rocq_alias pred_infinite]
 def PredInfinite (P : α → Prop) : Prop := ∀ xs : List α, ∃ x, P x ∧ x ∉ xs
 
-@[rocq_alias pred_infinite_True]
 theorem PredInfinite.true [InfiniteType α] : PredInfinite (fun _ : α => True) :=
   fun xs => (Iris.Std.List.fresh xs).elim fun a ha => ⟨a, trivial, ha⟩
 
-@[rocq_alias pred_infinite_set]
 theorem PredInfinite.not_mem [InfiniteType α] (G : List α) : PredInfinite (· ∉ G) :=
   fun xs => (Iris.Std.List.fresh (G ++ xs)).elim fun a ha =>
     ⟨a, fun h => ha (List.mem_append.mpr (.inl h)),
