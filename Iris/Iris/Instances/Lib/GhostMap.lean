@@ -144,7 +144,21 @@ theorem ghost_map_elem_combine (γ : GName) (k : K) (dq1 : DFrac F) (dq2 : DFrac
 @[rocq_alias ghost_map_elem_frac_ne]
 theorem ghost_map_elem_frac_ne γ (k1 : K) (k2 : K) (dq1 : DFrac F) (dq2 : DFrac F) (v1 : V) (v2 : V) :
    ¬ ✓ (dq1 • dq2) →
-    ⊢@{IProp GF} (γ ↪◯MAP[k1]{dq1} v1) -∗ (γ ↪◯MAP[k2]{dq2} v2) -∗ ⌜k1 ≠ k2⌝ := sorry
+     (γ ↪◯MAP[k1]{dq1} v1) ∗ (γ ↪◯MAP[k2]{dq2} v2) ⊢@{IProp GF} ⌜k1 ≠ k2⌝ := by
+  let foo := ghost_map_elem_valid_2 (GF := GF) F K V H γ k1 dq1 dq2 v1 v2
+  intro nv
+  let bar : @BI.Entails (IProp GF) UPred.instBIBaseUPred
+      iprop(internalCmraValid (dq1 • dq2) ∧ ⌜v1 = v2⌝) iprop(⌜k1 ≠ k2⌝) := by
+    iintro h
+    ipure h; ipure_intro
+    grind
+  have := foo.trans bar
+  if hk: k1 = k2 then
+    exact hk ▸ this
+  else
+    iintro _
+    ipure_intro
+    exact hk
 
 @[rocq_alias ghost_map_elem_ne]
 theorem ghost_map_elem_ne γ (k1 : K) (k2 : K) (dq2 : DFrac F) (v1 : V) (v2 : V) :
