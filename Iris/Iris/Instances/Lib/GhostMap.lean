@@ -330,9 +330,9 @@ theorem ghost_map_lookup_big {γ dq} {m : H V} {dq'} m0 :
   ⌜m0 ⊆ m⌝ := sorry
 
 @[rocq_alias ghost_map_insert_big]
-theorem ghost_map_insert_big {γ : GName} {m : H V} (m' : H V) :
+theorem ghost_map_insert_big {γ m} (m' : H V) :
   (m' ##ₘ m) →
-  ⊢@{IProp GF} (γ ↪●MAP{dq} m) ==∗
+  ⊢@{IProp GF} (γ ↪●MAP m) ==∗
   (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k] v := sorry
 
 @[rocq_alias ghost_map_insert_persist_big]
