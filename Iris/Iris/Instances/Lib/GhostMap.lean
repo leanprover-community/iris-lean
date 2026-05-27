@@ -227,14 +227,15 @@ theorem ghost_map_alloc_strong_empty (P : GName → Prop) :
 theorem ghost_map_alloc (m : H V) :
   ⊢@{IProp GF} |==> ∃ γ, (γ ↪●MAP m) ∗
     [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := by
-
   sorry
 
 @[rocq_alias ghost_map_alloc_empty]
 theorem ghost_map_alloc_empty :
   ⊢@{IProp GF} |==> ∃ γ, (γ ↪●MAP (∅ : H V)) := by
-
-  sorry
+  imod ghost_map_alloc _ _ _ _ (∅ : H V) with ⟨%γ, _, -⟩
+  imodintro
+  iexists γ
+  iassumption
 
 -- Global Instance ghost_map_auth_timeless γ dq m :
 @[rocq_alias ghost_map_auth_timeless]
@@ -263,17 +264,54 @@ instance (γ : GName) (m : H V) (q : F)
   as_fractional := IProp.ext_iff.mp rfl
   as_fractional_fractional := ghost_map_auth_fractional F K V H m
 
+#check HeapView.auth_valid_iff
+#check iOwn_cmraValid
+
 @[rocq_alias ghost_map_auth_valid]
 theorem ghost_map_auth_valid γ (dq : DFrac F) (m : H V) :
-  ⊢@{IProp GF} (γ ↪●MAP{dq} m) -∗ ⌜✓ dq⌝ := sorry
+  ⊢@{IProp GF} (γ ↪●MAP{dq} m) -∗ ⌜✓ dq⌝ := by
+    unfold ghost_map_auth
+    iintro _
+    refine iOwn_cmraValid.trans ?_
+    iintro %H; ipure_intro
+    apply HeapView.auth_valid_iff.mp H
 
 @[rocq_alias ghost_map_auth_valid_2]
-theorem ghost_map_auth_valid_2 γ (dq1 dq2 : DFrac F) (m1 m2 : H V) :
-  ⊢@{IProp GF} (γ ↪●MAP{dq1} m1) -∗ (γ ↪●MAP{dq2} m2) -∗ ⌜✓ (dq1 • dq2) ∧ m1 = m2⌝ := sorry
+theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac F} {m1 m2 : H V} :
+    ⊢@{IProp GF} (γ ↪●MAP{dq1} m1) -∗ (γ ↪●MAP{dq2} m2) -∗ ⌜✓ (dq1 • dq2) ∧ m1 ≡ₘ m2⌝ := by
+  -- TODO: Clean up
+  unfold ghost_map_auth
+  iintro _ _
+  rewrite [←IProp.ext iOwn_op]
+  iintro _; refine iOwn_cmraValid.trans ?_; iintro %h;
+  ipure_intro
+  have ⟨h₁, h₂⟩ := HeapView.auth_op_auth_valid_iff.mp h
+  refine ⟨h₁, ?_⟩
+  intro k
+  have h := h₂ k
+  simp only [LawfulPartialMap.get?_map, Option.map] at h
+  match h₁ : get? m1 k with
+  | some x =>
+    simp only [h₁] at h
+    cases h₂ : get? m2 k
+    case some x' =>
+      simp only [h₂, OFE.some_eqv_some] at h
+      replace h := OFE.equiv_dist.mp h
+      have h n := toAgree.inj (h n)
+      simp only [OFE.Dist, LeibnizO.mk.injEq, forall_const] at h
+      grind
+    case none => simp [h₂] at h
+  | none =>
+    simp [h₁] at h
+    cases h₂ : get? m2 k
+    case some x' => simp [h₂] at h
+    case none => rfl
 
 @[rocq_alias ghost_map_auth_agree]
 theorem ghost_map_auth_agree γ (dq1 dq2 : DFrac F) (m1 m2 : H V) :
-  ⊢@{IProp GF} (γ ↪●MAP{dq1} m1) -∗ (γ ↪●MAP{dq2} m2) -∗ ⌜m1 = m2⌝ := sorry
+    ⊢@{IProp GF} (γ ↪●MAP{dq1} m1) -∗ (γ ↪●MAP{dq2} m2) -∗ ⌜m1 ≡ₘ m2⌝ := by
+  iintro H₁ H₂
+  ihave ⟨_, $⟩ := ghost_map_auth_valid_2 $$ H₁ H₂
 
 @[rocq_alias ghost_map_auth_persist]
 theorem ghost_map_auth_persist γ dq (m : H V) :
