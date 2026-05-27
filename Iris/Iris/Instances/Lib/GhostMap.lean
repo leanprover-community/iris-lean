@@ -27,7 +27,7 @@ variable [UFraction F] [LawfulFiniteMap H K] [GhostMapG GF F K V H]
 
 public def ghost_map_auth (γ : GName) (dq : DFrac F) (m : H V) : IProp GF :=
   iOwn (E := GhostMapG.elem) γ
-    (Auth dq (Iris.Std.PartialMap.map (fun x ↦ toAgree ⟨x⟩) m))
+    (Auth dq (Std.PartialMap.map (fun x ↦ toAgree ⟨x⟩) m))
 
 public def ghost_map_elem (γ : GName) (dq : DFrac F) (k : K) (v : V) : IProp GF :=
   iOwn (E := GhostMapG.elem) γ (Frag k dq (toAgree ⟨v⟩))
@@ -205,7 +205,7 @@ theorem ghost_map_elem_unpersist [IsSplitFraction F] (γ : GName) (k : K) (v : V
 -- * lemmas about [ghost_map_auth]
 
 @[rocq_alias ghost_map_alloc_strong]
-theorem ghost_map_alloc_strong (P : GName → Prop) (m : H V) :
+theorem ghost_map_alloc_strong [DecidableEq K] (P : GName → Prop) (m : H V) :
   (∀ N, ∃ k, N ≤ k ∧ P k) →
   ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MAP m) ∗ [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := by
   unfold ghost_map_elem ghost_map_auth
@@ -215,11 +215,39 @@ theorem ghost_map_alloc_strong (P : GName → Prop) (m : H V) :
   · rw [auth_valid_iff]
     exact DFrac.valid_own_one
   · iexists γ; iframe %HP
-    -- missing upstream: gmap_view_alloc_big
-    sorry
+    imod iOwn_update (E := hgm.elem) (update_big_alloc _
+      (Std.PartialMap.map (fun x ↦ toAgree ⟨x⟩) m) (DFrac.own 1)
+      ?_ DFrac.valid_own_one ?_) $$ G with G
+    · simp only [EmptyCollection.emptyCollection, disjoint_iff, LawfulPartialMap.get?_map,
+      Option.map_eq_none_iff, get?_empty, Option.map_none, _root_.or_true, implies_true]
+    · rw [LawfulFiniteMap.all_iff_toList]
+      intro ⟨k, v⟩
+      rw [toList_get, LawfulPartialMap.get?_map]
+      simp only [Option.map_eq_some_iff, forall_exists_index, and_imp]
+      rintro x Hx ⟨⟩
+      rw [Agree.valid_def]
+      simp only [Agree.valid]
+      intro; exact True.intro
+    · imodintro
+      icases iOwn_op (E := hgm.elem) $$ G with ⟨G1, G2⟩
+      isplitr [G2]
+      · iapply iOwn_mono (E := hgm.elem) $$ G1
+        refine inc_of_inc_of_eqv .rfl ?_
+        refine OFE.NonExpansive.eqv ?_
+        intro i
+        simp [LawfulPartialMap.get?_map, Union.union, get?_merge, EmptyCollection.emptyCollection, get?_empty]
+      · by_cases heq : m ≡ₘ ∅
+        · iapply BigOpM.bigOpM_equiv_of_perm _ heq
+          iapply BigSepM.bigSepM_empty
+          ipure_intro; simp
+        · iapply bigOpM_iOwn _ _ _ (fun c => heq c)
+          iapply iOwn_mono (E := hgm.elem) $$ G2
+          refine inc_of_inc_of_eqv .rfl ?_
+          refine .trans ?_ (BigOpM.bigOpM_map_equiv _ _ _).symm
+          exact .rfl
 
 @[rocq_alias ghost_map_alloc_strong_empty]
-theorem ghost_map_alloc_strong_empty (P : GName → Prop) :
+theorem ghost_map_alloc_strong_empty [DecidableEq K] (P : GName → Prop) :
   (∀ N, ∃ k, N ≤ k ∧ P k) →
   ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MAP (∅ : H V)) := by
   iintro %Hinf
