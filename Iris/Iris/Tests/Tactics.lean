@@ -2549,7 +2549,7 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q :=
     the former takes higher precedence. Likewise, `a1` and `b` is merged
     as `c` instead of `a1 • b`. -/
 example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
-    {a1 a2 a3 b c : F.ap (IProp GF)} [IsOp merge b a2 a3] [IsOp merge c a1 b] :
+    {a1 a2 a3 b c : F.ap (IProp GF)} [IsMergeOp b a2 a3] [IsMergeOp c a1 b] :
     ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
       iOwn γ c ∗ internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • b) := by
   iintro H1 H2 H3
@@ -2564,7 +2564,7 @@ example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
     instances for `DFrac` and `Frac`. -/
 example {GF α} [UFraction α] [ElemG GF (constOF (DFrac α))]
     [ElemG GF (constOF (Frac α))] {γ}
-    {a1 a2 a3 b c : Frac α} [IsOp merge b a2 a3] [IsOp merge c a1 b] :
+    {a1 a2 a3 b c : Frac α} [IsMergeOp b a2 a3] [IsMergeOp c a1 b] :
     ⊢@{IProp GF}
       iOwn (F := constOF (DFrac α)) γ (own a1.car) -∗
       iOwn (F := constOF (DFrac α)) γ (own a2.car) -∗
@@ -2584,8 +2584,8 @@ example {GF α} [UFraction α] [ElemG GF (constOF (DFrac α))]
     instances for the authoritative CMRA. -/
 example {GF F A} [UFraction F] [UCMRA A] [ElemG GF (constOF (Auth F A))] {γ}
     {a1 a2 a3 b c : A} {dq' dq'' dq1 dq2 dq3 dq4 : DFrac F}
-    [IsOp merge b a2 a3] [IsOp merge c a1 b]
-    [IsOp merge dq' dq1 dq2] [IsOp merge dq'' dq3 dq4] :
+    [IsMergeOp b a2 a3] [IsMergeOp c a1 b]
+    [IsMergeOp dq' dq1 dq2] [IsMergeOp dq'' dq3 dq4] :
     ⊢@{IProp GF}
       iOwn (F := constOF (Auth F A)) γ (◯ a1) -∗
       iOwn (F := constOF (Auth F A)) γ (◯ a2) -∗
