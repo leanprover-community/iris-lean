@@ -809,8 +809,8 @@ theorem bigOpS_iOwn {B : Type _} {S : Type _} [LawfulFiniteSet S B] (γ : GName)
 
 @[rocq_alias own_cmra_sep_entails_homomorphism]
 instance iOwn_cmra_sep_entails_homomorphism (γ : GName) :
-    MonoidHomomorphism (CMRA.op (α := F.ap (IProp GF))) BIBase.sep
-      UCMRA.unit iprop(emp) BIBase.Entails (iOwn γ) where
+    MonoidHomomorphism (CMRA.op (α := F.ap (IProp GF))) sep
+      UCMRA.unit iprop(emp) Entails (iOwn γ) where
   rel_refl := .rfl
   rel_trans := .trans
   rel_proper ha hb :=
