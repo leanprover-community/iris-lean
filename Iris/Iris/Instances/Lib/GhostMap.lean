@@ -380,6 +380,7 @@ theorem ghost_map_insert {γ} {m : H V} (k : K) (v : V) :
   by_cases H : k = i
     <;> simp [H, LawfulPartialMap.get?_map, get?_insert_ne, get?_insert_eq]
 
+@[rocq_alias ghost_map_insert_persist]
 theorem ghost_map_insert_persist {γ} {m : H V} (k : K) (v : V) :
   get? m k = .none →
   ⊢@{IProp GF} (γ ↪●MAP m) ==∗ (γ ↪●MAP insert m k v) ∗ (γ ↪◯MAP[k]{.discard} v) := by
