@@ -37,9 +37,9 @@ public def ghost_map_elem (γ : GName) (dq : DFrac F) (k : K) (v : V) : IProp GF
 end definitions
 
 notation γ " ↪●MAP{" dq "} " m => ghost_map_auth γ dq m
-notation γ " ↪●MAP " m => ghost_map_auth γ (DFrac.own One.one) m
+notation γ " ↪●MAP " m => ghost_map_auth γ (DFrac.own 1) m
 notation γ " ↪◯MAP[" k "]{" dq "} " v => ghost_map_elem γ dq k v
-notation γ " ↪◯MAP[" k "] " v => ghost_map_elem γ (DFrac.own One.one) k v
+notation γ " ↪◯MAP[" k "] " v => ghost_map_elem γ (DFrac.own 1) k v
 
 section lemmas
 
@@ -47,14 +47,12 @@ variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [LawfulFiniteMap
 variable [hgm : GhostMapG GF F K V H]
 
 @[rocq_alias ghost_map_elem_timeless]
-instance (γ : GName) (k : K) (dq : DFrac F) (v : V) : Timeless (PROP := IProp GF) (γ ↪◯MAP[k]{dq} v) := by
-  unfold ghost_map_elem
-  infer_instance
+instance (γ : GName) (k : K) (dq : DFrac F) (v : V) : Timeless (PROP := IProp GF) (γ ↪◯MAP[k]{dq} v) :=
+  inferInstanceAs (Timeless (PROP := IProp GF) (iOwn _ _))
 
 @[rocq_alias ghost_map_elem_persistent]
-instance (γ : GName) (k : K) (v : V): Persistent (PROP := IProp GF) (γ ↪◯MAP[k]{.discard} v) := by
-  unfold ghost_map_elem
-  infer_instance
+instance (γ : GName) (k : K) (v : V): Persistent (PROP := IProp GF) (γ ↪◯MAP[k]{.discard} v) :=
+  inferInstanceAs (Persistent (PROP := IProp GF) (iOwn _ _))
 
 @[rocq_alias ghost_map_elem_fractional]
 instance ghost_map_elem_fractional (γ : GName) (k : K) (v : V)
@@ -239,7 +237,7 @@ theorem ghost_map_alloc_strong_empty [DecidableEq K] (P : GName → Prop) :
   (∀ N, ∃ k, N ≤ k ∧ P k) →
   ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MAP (∅ : H V)) := by
   iintro %Hinf
-  imod ghost_map_alloc_strong P (∅ : H V) Hinf with ⟨%γ, H1, H2, -⟩
+  imod ghost_map_alloc_strong _ (∅ : H V) Hinf with ⟨%γ, H1, H2, -⟩
   iexists γ
   iframe
 
@@ -260,14 +258,12 @@ theorem ghost_map_alloc_empty [DecidableEq K] :
   iassumption
 
 @[rocq_alias ghost_map_auth_timeless]
-instance (m : H V): Timeless (PROP := IProp GF) (γ ↪●MAP{dq} m) := by
-  unfold ghost_map_auth
-  infer_instance
+instance (m : H V): Timeless (PROP := IProp GF) (γ ↪●MAP{dq} m) :=
+  inferInstanceAs (Timeless (PROP := IProp GF) (iOwn _ _))
 
 @[rocq_alias ghost_map_persistent]
-instance (m : H V): Timeless (PROP := IProp GF) (γ ↪●MAP{.discard} m) := by
-  unfold ghost_map_auth
-  infer_instance
+instance (m : H V): Timeless (PROP := IProp GF) (γ ↪●MAP{.discard} m) :=
+  inferInstanceAs (Timeless (PROP := IProp GF) (iOwn _ _))
 
 @[rocq_alias ghost_map_auth_fractional]
 instance ghost_map_auth_fractional (m : H V): Fractional (PROP := IProp GF) (fun q => γ ↪●MAP{.own q} m) where
