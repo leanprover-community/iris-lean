@@ -29,11 +29,13 @@ namespace Iris
 open OFE BI
 
 /-- Embedding of step-indexed propositions into a BI. -/
+@[rocq_alias SiPure]
 class SiPure (PROP : Type _) where
   siPure : SiProp → PROP
 export SiPure (siPure)
 
 /-- Step-indexed validity of BI propositions. -/
+@[rocq_alias SiEmpValid]
 class SiEmpValid (PROP : Type _) where
   siEmpValid : PROP → SiProp
 export SiEmpValid (siEmpValid)
@@ -75,11 +77,22 @@ class Sbi (PROP : Type _) extends BI PROP, SiPure PROP, SiEmpValid PROP where
   siEmpValid_affinely_mpr {P : PROP} : <si_emp_valid> P ⊢@{SiProp} <si_emp_valid> (<affine> P)
   prop_ext_siEmpValid {P Q : PROP} : <si_emp_valid> (P ∗-∗ Q) ⊢@{SiProp} SiProp.internalEq P Q
 
-attribute [instance] Sbi.siPure_ne Sbi.siEmpValid_ne Sbi.siPure_absorbing
+attribute [instance] Sbi.siPure_ne Sbi.siEmpValid_ne
+attribute [instance, rocq_alias si_pure_absorbing] Sbi.siPure_absorbing
 
 export Sbi (siPure_mono siEmpValid_mono siEmpValid_siPure siPure_siEmpValid siPure_imp_mpr
   siPure_sForall_mpr persistently_imp_siPure siPure_later siEmpValid_later_mp
   siEmpValid_affinely_mpr prop_ext_siEmpValid)
+
+#rocq_ignore SbiMixin "Lean uses the Sbi type class directly; mixin/bundle separation is unnecessary."
+#rocq_ignore SbiPropExtMixin "Folded into the Sbi class via the prop_ext_siEmpValid field."
+#rocq_ignore sbi_prop_ext_mixin "Folded into the Sbi class via the prop_ext_siEmpValid field."
+
+/-- Alias for `Sbi.siEmpValid_affinely_mpr` field. -/
+@[rocq_alias si_emp_valid_affinely_2]
+theorem si_emp_valid_affinely_2 [Sbi PROP] {P : PROP} :
+    <si_emp_valid> P ⊢@{SiProp} <si_emp_valid> (<affine> P) :=
+  Sbi.siEmpValid_affinely_mpr
 
 /-- `SbiEmpValidExist` generalizes that plainly commutes with existentials and disjunction. -/
 @[rocq_alias SbiEmpValidExist]
@@ -93,6 +106,9 @@ instance : SiPure SiProp where
 
 instance : SiEmpValid SiProp where
   siEmpValid := id
+
+#rocq_ignore siprop_sbi_mixin "Folded into Lean's siprop_sbi instance."
+#rocq_ignore siprop_sbi_prop_ext_mixin "Folded into Lean's siprop_sbi instance."
 
 @[rocq_alias siprop_sbi]
 instance instSbiSiProp : Sbi SiProp where
@@ -135,6 +151,12 @@ theorem siPure_forall_mpr [Sbi PROP] {A : Sort _} {Φi : A → SiProp} :
 theorem siPure_mono_bi [Sbi PROP] {Pi Qi : SiProp}
     (H : Pi ⊣⊢@{SiProp} Qi) : <si_pure> Pi ⊣⊢@{PROP} <si_pure> Qi :=
   ⟨siPure_mono H.mp, siPure_mono H.mpr⟩
+
+#rocq_ignore si_pure_mono' "Generalized-rewriting Proper; use siPure_mono directly."
+#rocq_ignore si_pure_flip_mono' "Generalized-rewriting Proper; use siPure_mono directly."
+#rocq_ignore si_emp_valid_proper "Derivable from siEmpValid_ne with NonExpansive.eqv"
+#rocq_ignore si_emp_valid_mono' "Generalized-rewriting Proper; use siEmpValid_mono directly."
+#rocq_ignore si_emp_valid_flip_mono' "Generalized-rewriting Proper; use siEmpValid_mono directly."
 
 @[rocq_alias si_pure_forall]
 theorem siPure_forall [Sbi PROP] {A : Sort _} {Φi : A → SiProp} :
@@ -503,7 +525,7 @@ theorem laterN_soundness [Sbi PROP] {P : PROP} {n : Nat} (h : emp ⊢ ▷^[n] P)
 
 In Rocq: `■ P := <si_pure> <si_emp_valid> P`. All BIPlainly axioms are derived. -/
 
-@[rocq_alias siProp_plain]
+@[rocq_alias siProp_plain, rocq_alias plainly]
 instance instPlainlySbi [Sbi PROP] : BIBase.Plainly PROP where
   plainly P := SiPure.siPure (SiEmpValid.siEmpValid P)
 

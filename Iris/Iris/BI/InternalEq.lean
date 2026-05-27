@@ -34,6 +34,8 @@ instance instInternalEq_ne (A : Type _) [OFE A] :
     NonExpansive₂ (internalEq (PROP := PROP) (A := A)) where
   ne _ _ _ h₁ _ _ h₂ := Sbi.siPure_ne.ne (SiProp.instNonExpansive₂InternalEq.ne h₁ h₂)
 
+#rocq_ignore internal_eq_proper "Derivable from internal_eq_ne with NonExpansive.eqv"
+
 theorem ne_l {A : Type _} [OFE A] (a : A) :
     NonExpansive (internalEq (PROP := PROP) · a) :=
   NonExpansive₂.ne_left internalEq a

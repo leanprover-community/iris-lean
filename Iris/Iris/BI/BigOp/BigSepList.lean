@@ -1238,4 +1238,9 @@ theorem bigSepL_sepL2_diag {Φ : Nat → A → A → PROP} {l : List A} :
 
 end BigSepL2
 
+#rocq_ignore big_sepL_mono' "Generalized-rewriting Proper; use BigSepL.bigSepL_mono directly."
+#rocq_ignore big_sepL2_mono' "Generalized-rewriting Proper; use BigSepL2.bigSepL2_mono directly."
+#rocq_ignore big_sepL2_ne' "Generalized-rewriting Proper; bigSepL2 is preserved under ≡ by nonexpansivity."
+#rocq_ignore big_sepL2_proper' "Generalized-rewriting Proper; bigSepL2 is preserved under ⊣⊢."
+
 end BI

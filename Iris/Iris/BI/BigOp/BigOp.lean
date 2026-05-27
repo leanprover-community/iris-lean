@@ -75,7 +75,7 @@ abbrev bigAndL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : P
 abbrev bigOrL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : PROP :=
   bigOpL or Φ l
 
-@[expose] def bigSepL2 [BI PROP] {A B : Type _} (Φ : Nat → A → B → PROP)
+@[rocq_alias big_sepL2, expose] def bigSepL2 [BI PROP] {A B : Type _} (Φ : Nat → A → B → PROP)
     (l1 : List A) (l2 : List B) : PROP :=
   match l1, l2 with
   | [], [] => emp
