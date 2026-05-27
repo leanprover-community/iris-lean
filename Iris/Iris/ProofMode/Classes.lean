@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Michael Sammler
+Authors: Lars König, Michael Sammler, Alvin Tang
 -/
 module
 
@@ -113,6 +113,11 @@ class IntoOr {PROP} [BI PROP] (P : PROP) (Q1 Q2 : outParam $ PROP) where
   into_or : P ⊢ Q1 ∨ Q2
 export IntoOr (into_or)
 
+@[ipm_class, rocq_alias IntoInternalEq]
+class IntoInternalEq {PROP} [BI PROP] [Sbi PROP] {A : outParam $ Type _} [ofe : outParam $ OFE A] (P : PROP) (x y : outParam A) where
+  into_internal_eq : P ⊢@{PROP} internalEq x y
+export IntoInternalEq (into_internal_eq)
+
 @[ipm_class, rocq_alias IntoPersistent]
 class IntoPersistently {PROP} [BI PROP] (p : Bool) (P : PROP) (Q : outParam $ PROP) where
   into_persistently : <pers>?p P ⊢ <pers> Q
@@ -201,6 +206,19 @@ This classes is deliberately not an `ipm_class` to use the more efficient TC syn
 class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : outParam $ PROP) where
   into_laterN : P ⊢ ▷^[n] Q
 export IntoLaterN (into_laterN)
+
+/-- `CombineSepAs` combines two propositions `P` and `Q` into `R` -/
+@[ipm_class]
+class CombineSepAs [BI PROP] (P Q : PROP) (R : outParam PROP) where
+  combine_sep_as : P ∗ Q ⊢ R
+export CombineSepAs (combine_sep_as)
+
+/-- `CombineSepGives` combines two propositions `P` and `Q` for a proposition
+    with the `<pers>` modality -/
+@[ipm_class]
+class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
+  combine_sep_gives : P ∗ Q ⊢ <pers> R
+export CombineSepGives (combine_sep_gives)
 
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore elim_modal_tc_opaque "No tc_opaque in Lean"

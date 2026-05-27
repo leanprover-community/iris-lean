@@ -126,7 +126,7 @@ instance siPure_persistent [Sbi PROP] : Persistent (PROP := PROP) iprop(<si_pure
       _ ⊢ <pers> <si_pure> Pi := siPure_siEmpValid
 
 @[rocq_alias si_pure_forall_2]
-theorem siPure_forall_mpr [Sbi PROP] {A : Type _} {Φi : A → SiProp} :
+theorem siPure_forall_mpr [Sbi PROP] {A : Sort _} {Φi : A → SiProp} :
     (∀ x, <si_pure> Φi x) ⊢@{PROP} <si_pure> (∀ x, Φi x) := by
   refine (forall_intro fun _ => imp_intro' <| pure_elim_l ?_).trans siPure_sForall_mpr
   exact fun ⟨a, ha⟩ => ha ▸ forall_elim a
@@ -137,7 +137,7 @@ theorem siPure_mono_bi [Sbi PROP] {Pi Qi : SiProp}
   ⟨siPure_mono H.mp, siPure_mono H.mpr⟩
 
 @[rocq_alias si_pure_forall]
-theorem siPure_forall [Sbi PROP] {A : Type _} {Φi : A → SiProp} :
+theorem siPure_forall [Sbi PROP] {A : Sort _} {Φi : A → SiProp} :
     <si_pure> (∀ x, Φi x) ⊣⊢@{PROP} ∀ x, <si_pure> Φi x :=
   ⟨forall_intro (siPure_mono <| forall_elim ·), siPure_forall_mpr⟩
 
@@ -319,7 +319,7 @@ theorem siEmpValid_emp [Sbi PROP] : iprop(<si_emp_valid> (emp : PROP) ⊣⊢@{Si
     _ ⊢ <si_emp_valid> emp := siEmpValid_mono affinely_true.mp
 
 @[rocq_alias si_emp_valid_forall]
-theorem siEmpValid_forall [Sbi PROP] {A : Type _} {Φ : A → PROP} :
+theorem siEmpValid_forall [Sbi PROP] {A : Sort _} {Φ : A → PROP} :
     iprop(<si_emp_valid> (∀ x, Φ x) ⊣⊢@{SiProp} ∀ x, <si_emp_valid> Φ x) := by
   refine ⟨forall_intro (siEmpValid_mono <| forall_elim ·), ?_⟩
   calc iprop(∀ x, <si_emp_valid> Φ x)
@@ -526,7 +526,7 @@ theorem plainly_idemp_2 {P : PROP} : iprop(■ P ⊢ ■ ■ P) :=
   siPure_mono siEmpValid_siPure.mpr
 
 @[rocq_alias plainly_forall_2]
-theorem plainly_forall_2 {A : Type _} (Ψ : A → PROP) :
+theorem plainly_forall_2 {A : Sort _} (Ψ : A → PROP) :
     iprop((∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a)) := by
   show iprop((∀ a, <si_pure> <si_emp_valid> Ψ a) ⊢ <si_pure> <si_emp_valid> (∀ a, Ψ a))
   exact siPure_forall.mpr.trans <| siPure_mono siEmpValid_forall.mpr

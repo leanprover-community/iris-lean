@@ -16,6 +16,9 @@ namespace Iris
 
 open COFE
 
+@[ext]
+theorem IProp.ext {P Q : IProp GF} : P ⊣⊢ Q → P = Q := OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr
+
 /-- Apply an OFunctor at a fixed type -/
 abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [OFE T] :=
   F T T
@@ -476,7 +479,7 @@ def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap 
 
 section iOwn
 
-open IProp OFE UPred BI GenMap
+open IProp OFE UPred BI GenMap ProofMode
 
 variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 
@@ -765,6 +768,17 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
     apply BI.pure_elim (iSingleton F γ ε = y) BI.and_elim_l
     rintro rfl
     exact BI.and_elim_r
+
+@[rocq_alias combine_sep_as_own]
+instance combineSepAs_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
+  -- TODO: Add IsOp premise once it is ported
+  CombineSepAs (iOwn γ a1) (iOwn γ a2) (iOwn γ (a1 • a2)) where
+  combine_sep_as := iOwn_op.mpr
+
+@[rocq_alias combine_sep_gives_own]
+instance combineSepGives_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
+  CombineSepGives (iOwn γ a1) (iOwn γ a2) (internalCmraValid (a1 • a2)) where
+  combine_sep_gives := iOwn_cmraValid_op
 
 end iOwn
 end Iris

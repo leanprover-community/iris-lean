@@ -6,7 +6,6 @@ module
 
 public import Batteries.Data.List.Basic
 
-
 @[expose] public section
 
 namespace FromMathlib

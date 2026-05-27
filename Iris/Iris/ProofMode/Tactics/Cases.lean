@@ -197,13 +197,13 @@ A proof of `hyps ∗ □?p A ⊢ goal`.
 -/
 partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat)
     (p : Q(Bool)) (A : Q($prop))
-    (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal')) :
+    (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal') := addBIGoal) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) :=
   match pat with
   | .one name => do
     -- TODO: use Hyps.addWithInfo here?
     let (name, ref) ← getFreshName name
-    let ivar ← mkFreshIVarId
+    let ivar ← mkFreshIVarId (isTrue p)
     addHypInfo ref name ivar prop A (isBinder := true)
     let hyp := .mkHyp bi name ivar p A
     if let .emp _ := hyps then pure q(of_emp_sep $(← k hyp goal))
@@ -215,7 +215,7 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
 
   | .frame => do
     let ⟨ivar, hyps'⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
-    let res ← iFrame bi _ hyps' goal [⟨.inl ivar, true⟩]
+    let res ← iFrame bi _ hyps' goal [⟨.ipm ivar, true⟩]
     res.finish @k
 
   | .conjunction [arg] | .disjunction [arg] => iCasesCore hyps goal arg p A @k
@@ -267,12 +267,16 @@ elab "icases" keep:("+keep")? colGt pmt:pmTerm "with" colGt pat:icasesPat : tact
     (try_dup_context := pat.should_try_dup_context)
 
   -- process pattern
-  let pf2 ← iCasesCore bi hyps goal pat p A λ hyps goal => addBIGoal hyps goal
+  let pf2 ← iCasesCore bi hyps goal pat p A
 
   mvar.assign q(($pf).trans $pf2)
 
 macro "imod" colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => `(tactic | icases $pmt with >$pat)
-macro "imod" colGt hyp:ident : tactic => `(tactic | imod $hyp:ident with $hyp:ident)
+macro "imod" colGt pmt:pmTerm : tactic =>
+  match pmt with
+  | `(pmTerm | $hyp:ident) => `(tactic | imod $pmt with $hyp:ident)
+  | `(pmTerm | $hyp:ident $$ $_*) => `(tactic | imod $pmt with $hyp:ident)
+  | _ => `(tactic | imod $pmt with _)
 
 -- TODO: remove these shortcuts if they are not used
 macro "iintuitionistic" hyp:ident : tactic => `(tactic | icases $hyp:ident with #$hyp:ident)

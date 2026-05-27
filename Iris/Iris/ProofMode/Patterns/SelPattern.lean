@@ -51,23 +51,29 @@ partial def SelPat.parse (pats : TSyntaxArray `selPat) : MacroM (List SelPat) :=
 
 public meta section
 
+inductive SelTarget.Kind where
+| pure (id : FVarId)
+| ipm (ivar : IVarId)
+deriving BEq, Hashable, Repr
+
 @[rocq_alias esel_pat]
 structure SelTarget where
-  target : IVarId ⊕ FVarId
+  kind : SelTarget.Kind
   /- Was this target specified explicitly or is it from a glob like ∗? -/
   explicit : Bool
 
-/-- Resolve selection patterns to concrete proofmode hypotheses (`.inl`) and Lean locals (`.inr`). -/
+/-- Resolve selection patterns to concrete proofmode hypotheses (`.ipm`) and pure local hypotheses (`.pure`). -/
 def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget)
-  | .ident name =>
-      return [⟨.inl (← hyps.findWithInfo name), true⟩]
+  | .ident name => do
+      let ivar ← hyps.findWithInfo name
+      return [⟨.ipm ivar, true⟩]
   | .leanIdent name => do
       let ldecl ← getLocalDeclFromUserName name.getId
-      return [⟨.inr ldecl.fvarId, true⟩]
+      return [⟨.pure ldecl.fvarId, true⟩]
   | .intuitionistic =>
-      return hyps.intuitionisticIVarIds.map (⟨.inl ·, false⟩)
+      return hyps.intuitionisticIVarIds.map (⟨.ipm ·, false⟩)
   | .spatial =>
-      return hyps.spatialIVarIds.map (⟨.inl ·, false⟩)
+      return hyps.spatialIVarIds.map (⟨.ipm ·, false⟩)
   | .pure => do
       -- `%` selects user-facing Lean pure assumptions, so we keep only `Prop` hypotheses.
       let mut hyps := #[]
@@ -76,15 +82,16 @@ def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget
           continue
         if ! (← isProp ldecl.type) then
           continue
-        hyps := hyps.push (⟨.inr ldecl.fvarId, false⟩)
+        hyps := hyps.push (⟨.pure ldecl.fvarId, false⟩)
       return hyps.toList
 
 def SelPat.resolve (hyps : Hyps bi e) (pats : List SelPat) :
     ProofModeM (List SelTarget) := do
-  -- we want to remove duplicates; and if an pattern is first explicitly specified and then non-explicitly,
-  -- we want to remove the non-explicit version (but not the other way around)
+  -- if the users specifies something like `HP ∗` we want to remove `HP`
+  -- from the expansion of `∗`, but if the user specifies `HP` explicitly
+  -- twice, it should be kept (this is for example important for `icombine`)
   return (← pats.flatMapM (SelPat.resolveOne hyps)).eraseDupsBy
-    (λ snd fst => snd.target == fst.target && (fst.explicit == snd.explicit || fst.explicit))
+    (λ snd fst => snd.kind == fst.kind && fst.explicit && !snd.explicit)
 
 end
 

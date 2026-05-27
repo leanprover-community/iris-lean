@@ -989,11 +989,11 @@ protected theorem Hom.core [CMRA β] (f : α -C> β) {x : α} : core (f x) ≡ f
     let ⟨s, hs, es⟩ := equiv_some h.symm
     rw [hs]; exact es
 
-@[rocq_alias cmra_morphism_monotone]
+@[rocq_alias cmra_morphism_mono]
 protected theorem Hom.mono [CMRA β] (f : α -C> β) {x₁ x₂ : α} : x₁ ≼ x₂ → f x₁ ≼ f x₂
   | ⟨z, hz⟩ => ⟨f.f z, (f.eqv hz).trans (f.op ..)⟩
 
-@[rocq_alias cmra_morphism_monotoneN]
+@[rocq_alias cmra_morphism_monoN]
 protected theorem Hom.monoN [CMRA β] (f : α -C> β) n {x₁ x₂ : α} : x₁ ≼{n} x₂ → f x₁ ≼{n} f x₂
   | ⟨z, hz⟩ => ⟨f.f z, (f.ne.ne hz).trans (f.op ..).dist⟩
 

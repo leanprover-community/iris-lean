@@ -53,8 +53,7 @@ instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
     refine forall_ne (fun i => ?_)
     refine imp_ne.ne .rfl ?_
     refine wand_ne.ne .rfl ?_
-    refine le_upd_if_ne.ne ?_
-    refine except0_ne.ne ?_
+    refine (inferInstance : NonExpansive le_upd).ne ?_
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne ?_ ?_
@@ -117,7 +116,7 @@ theorem own_inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆
   ihave HE1 : ownE ({i} ∪ (nclose N \ {i})) $$ [HE1]
   · rw [HNEQ]; iexact HE1
   icases ownE_op disjoint_diff_right $$ HE1 with ⟨HE1, HE3⟩
-  imodintro; imodintro
+  imodintro
   icases ownI_open $$ [Hwsat HE1 Hown] with ⟨Hwsat, HP, HD⟩
   · isplitl [Hwsat]; iassumption
     isplitl [Hown]; iassumption
@@ -126,7 +125,7 @@ theorem own_inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆
   isplitl [HE2]; iassumption
   isplitl [HP]; iassumption
   iintro HP ⟨Hwsat, HE⟩
-  imodintro; imodintro
+  imodintro
   icases ownI_close $$ [HP Hwsat HD Hown] with ⟨Hwsat, HE1⟩
   · isplitl [Hwsat]; iassumption
     isplitl [Hown]; iassumption
@@ -152,7 +151,7 @@ theorem own_inv_alloc (N : Namespace) (E : CoPset) (P : IProp GF) :
   imod ownI_alloc (.∈ (↑N : CoPset)) P $$ [HP Hw] with ⟨%i, %Hin, Hw, HI⟩
   · intro E; apply fresh_name
   · isplitl [Hw] <;> iassumption
-  · imodintro; imodintro
+  · imodintro
     isplitl [Hw]; iassumption
     isplitl [HE]; iassumption
     iexists i
@@ -181,7 +180,7 @@ theorem own_inv_alloc_open (N : Namespace) (E : CoPset) (P : IProp GF) (Hsub : �
   ihave HE1 : ownE ({i} ∪ (nclose N \ {i})) $$ [HE1]
   · rw [HNEQ]; iexact HE1
   icases ownE_op disjoint_diff_right $$ HE1 with ⟨HEi, HENi⟩
-  imodintro; imodintro
+  imodintro
   ispecialize Hcont $$ HEi
   isplitl [Hcont]; iassumption
   isplitl [HEN]; iassumption
@@ -195,7 +194,7 @@ theorem own_inv_alloc_open (N : Namespace) (E : CoPset) (P : IProp GF) (Hsub : �
     isplitl [HI]; iassumption
     isplitl [HP]; iassumption
     iassumption
-  imodintro; imodintro
+  imodintro
   isplitl [Hwsat]; iassumption
   icases ownE_op disjoint_diff_right $$ [HENi HE1] with HE1
   · isplitl [HE1]; iassumption

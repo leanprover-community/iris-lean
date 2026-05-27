@@ -12,7 +12,7 @@ public import Iris.Instances.IProp.Instance
 
 namespace Iris
 
-open BI CMRA Excl OFE UPred IProp Std
+open BI CMRA Excl OFE UPred IProp Std ProofMode
 
 /-! ## Token
 
@@ -73,5 +73,9 @@ theorem token_exclusive (γ : GName) : token γ ∗ token γ ⊢@{IProp GF} Fals
   ihave H := iOwn_cmraValid $$ H
   icases internalCmraValid_discrete (A := Excl Unit) $$ H with %H
   exact H.elim
+
+@[rocq_alias token_combine_gives]
+instance {γ : GName} : CombineSepGives (token γ) (token γ) (iprop(False) : IProp GF) where
+  combine_sep_gives := token_exclusive γ
 
 end Iris
