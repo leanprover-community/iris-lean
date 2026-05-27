@@ -23,7 +23,7 @@ section IsOp
 -/
 @[ipm_class, rocq_alias IsOp, rocq_alias IsOp', rocq_alias IsOp'LR]
 class IsOp [CMRA α]
-    (_ : InOut) (a : semiOutParam $ α)
+    (_ : InOut) (a : semiOutParam α)
     (_ : InOut) (b1 : semiOutParam α)
     (_ : InOut) (b2 : semiOutParam α) where
   is_op : a ≡ b1 • b2
@@ -31,9 +31,9 @@ class IsOp [CMRA α]
 /--
   Syntactic sugar for specifying whether `IsOp` is used for merging or splitting.
 -/
-macro_rules
-  | `(IsOp merge $a $b1 $b2) => `(IsOp .out $a .in $b1 .in $b2)
-  | `(IsOp split $a $b1 $b2) => `(IsOp .in $a .out $b1 .out $b2)
+abbrev IsMergeOp [CMRA α] (a b1 b2 : semiOutParam α) := IsOp .out a .in b1 .in b2
+abbrev IsSplitOp [CMRA α] (a b1 b2 : semiOutParam α) := IsOp .in a .out b1 .out b2
+
 
 set_option synthInstance.checkSynthOrder false in
 /--
@@ -41,7 +41,7 @@ set_option synthInstance.checkSynthOrder false in
 -/
 @[rocq_alias is_op_op]
 instance (priority := default - 100) isOp_op [CMRA α] (a b : α) :
-    IsOp merge (a • b) a b where
+    IsMergeOp (a • b) a b where
   is_op := .rfl
 
 set_option synthInstance.checkSynthOrder false in
@@ -50,7 +50,7 @@ set_option synthInstance.checkSynthOrder false in
 -/
 @[rocq_alias is_op_lr_op]
 instance (priority := default + 100) isOpSplit_op [CMRA α] (a b : α) :
-    IsOp split (a • b) a b where
+    IsSplitOp (a • b) a b where
   is_op := .rfl
 
 /-

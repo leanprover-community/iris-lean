@@ -125,7 +125,7 @@ instance [Fraction α] {a : Frac α} : CMRA.IdFree a where
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_is_op]
 instance [Fraction α] (q1 q2 : Frac α) :
-    IsOp merge (q1 + q2) q1 q2 where
+    IsMergeOp (q1 + q2) q1 q2 where
   is_op := .rfl
 
 /-- A type of fractions with a unique whole element. -/
