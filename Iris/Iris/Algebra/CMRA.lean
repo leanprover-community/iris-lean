@@ -857,9 +857,9 @@ instance empty_cancelable : Cancelable (unit : α) where
 theorem _root_.Iris.OFE.Dist.to_incN {n} {x y : α} (H : x ≡{n}≡ y) : x ≼{n} y :=
   ⟨unit, ((equiv_dist.mp unit_right_id n).trans H).symm⟩
 
-instance : Iris.Algebra.MonoidOps (M := α) op unit where
-  op_ne := { ne _ _ _ ex _ _ ey := Dist.op ex ey }
-  op_assoc := Equiv.symm assoc
+instance : Algebra.MonoidOps (M := α) op unit where
+  op_ne := ⟨fun _ _ _ ex _ _ ey => Dist.op ex ey⟩
+  op_assoc := assoc.symm
   op_comm := comm
   op_left_id := unit_left_id
 
