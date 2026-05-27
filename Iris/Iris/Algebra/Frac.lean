@@ -128,6 +128,12 @@ instance [Fraction α] (q1 q2 : Frac α) :
     IsMergeOp (q1 + q2) q1 q2 where
   is_op := .rfl
 
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias is_op_frac]
+instance [Fraction α] [h : IsSplitFraction α] (q : Frac α) :
+    IsOp io1 q io2 (h.split q).1 io3 (h.split q).2 where
+  is_op := q.ext <| h.split_add.symm
+
 /-- A type of fractions with a unique whole element. -/
 class UFraction (α : Type _) extends Fraction α, One α where
   -- Experiment: I don't see why we need a unique One element. I wouldn't be surprised if it were
