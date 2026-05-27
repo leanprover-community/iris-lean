@@ -9,6 +9,7 @@ public import Iris.Algebra.Heap
 public import Iris.Algebra.View
 public import Iris.Algebra.DFrac
 public import Iris.Algebra.Frac
+public import Iris.Algebra.BigOp
 
 /-!
 # Heap Views
@@ -561,3 +562,69 @@ instance {T} [RFunctorContractive T] : URFunctorContractive (HeapViewURF (F := F
 end heapViewFunctor
 
 end HeapView
+
+section FiniteHeapView
+open Std PartialMap Heap OFE CMRA HeapView
+open One DFrac UFraction LawfulPartialMap Algebra
+
+variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [DecidableEq K] [LawfulFiniteMap H K] [CMRA V]
+
+-- TODO: golf
+theorem update_big_alloc (m1 m2 : H V) dq
+  (Hdisj : m2 ##ₘ m1) (Hdq : ✓ dq)
+  (Hall : all (fun _ v => ✓ v) m2) :
+  Auth (.own one) m1 ~~>
+    Auth (.own one) (m2 ∪ m1)
+    • bigOpM (M := HeapView F K V H) op (fun k v => Frag k dq v) m2 := by
+    induction m2 using LawfulFiniteMap.induction_on generalizing m1 with
+    | hequiv m₁ m₂ heq hP =>
+      have Hall' : all (fun k v => ✓ v) m₁ := by
+        intro k v hk; exact Hall k v (heq k ▸ hk)
+      have Hdisj' : m₁ ##ₘ m1 := by
+        intro k ⟨hs1, hs2⟩; exact Hdisj k ⟨heq k ▸ hs1, hs2⟩
+      have IH := hP m1 Hdisj' Hall'
+      refine IH.trans ?_
+      refine Update.included ?_
+      refine inc_of_inc_of_eqv .rfl ?_
+      refine CMRA.op_eqv ?_ ?_
+      · refine OFE.NonExpansive.eqv ?_
+        intro i
+        exact .of_eq (by
+          change get? (PartialMap.union m₂ m1) i = get? (PartialMap.union m₁ m1) i;
+          simp [PartialMap.union, get?_merge, heq i])
+      · exact BigOpM.bigOpM_equiv_of_perm _ heq.symm
+    | hemp =>
+      rw [show bigOpM (M := HeapView F K V H) op (fun k x => Frag k dq x) (empty : H V) = UCMRA.unit by
+        exact BigOpM.bigOpM_empty (M := HeapView F K V H) (M' := H) (K := K) (op := op) (V := V)
+          (fun k v => Frag k dq v)]
+      refine Update.included ?_
+      refine inc_of_inc_of_eqv .rfl ?_
+      refine CMRA.comm.trans ?_
+      refine UCMRA.unit_left_id.trans ?_
+      refine OFE.NonExpansive.eqv ?_
+      exact eqv_of_Equiv (fun k => by
+        change get? (PartialMap.union empty m1) k = get? m1 k;
+        simp [PartialMap.union, get?_merge, get?_empty])
+    | hins k v m2 Hm2 IH =>
+      have Hall' : all (fun k v => ✓ v) m2 := by exact all_of_all_insert _ Hm2 Hall
+      have Hdisj' : m2 ##ₘ m1 := by
+        intro j ⟨hs1, hs2⟩; by_cases hjk : k = j; subst hjk; simp [Hm2] at hs1
+        exact Hdisj j ⟨by rw [get?_insert_ne hjk]; exact hs1, hs2⟩
+      have IH := IH m1 Hdisj' Hall'
+      refine IH.trans ?_
+      have Hms : get? (m2 ∪ m1) k = none := by
+        change get? (PartialMap.union m2 m1) k = none
+        rw [get?_union_none]
+        exact ⟨Hm2, Option.not_isSome_iff_eq_none.mp (fun h => Hdisj k ⟨by simp [get?_insert_eq rfl], h⟩)⟩
+      have Hv := all_insert_of_all _ Hall
+      have Hstep := update_one_alloc Hms Hdq Hv
+      refine (Update.op Hstep .id).trans ?_
+      refine (Update.equiv_left CMRA.assoc ?_)
+      refine Update.op ?_ ?_
+      · refine Update.equiv_left ?_ .id
+        refine OFE.NonExpansive.eqv ?_
+        exact eqv_of_Equiv (PartialMap.equiv.symm _ _ union_insert_left)
+      · refine Update.equiv_left ?_ .id
+        exact BigOpM.bigOpM_insert_equiv _ _ Hm2
+
+end FiniteHeapView
