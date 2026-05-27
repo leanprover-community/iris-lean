@@ -75,18 +75,22 @@ instance (γ : GName) (k : K) (v : V)
   as_fractional_fractional := ghost_map_elem_fractional F K V H γ k v
 
 @[rocq_alias ghost_map_elems_unseal]
-theorem ghost_map_elems_unseal γ (m : H V) dq :
+theorem ghost_map_elems_unseal [DecidableEq K] γ (m : H V) dq :
   ([∗map] k ↦ v ∈ m, γ ↪◯MAP[k]{dq} v) ==∗
   iOwn (E := hgm.elem) γ ([^ op map] k ↦ v ∈ m,
     Frag k dq (toAgree ⟨v⟩)) := by
   iintro H
-  by_cases h : m = ∅
-  · subst h
-    simp only [BigOpM.bigOpM_empty]
-    iapply iOwn_unit (E := hgm.elem)
-  · -- Either via `BigOpM.bigOpM_weak_hom` or wait a bit, until there are `iOwn_bigOp_*` lemmas.
-    -- Zongyuan kindly agreed to port them.
-    sorry
+  by_cases h : m ≡ₘ ∅
+  · imod iOwn_unit (γ := γ) (E := hgm.elem) (ε := unit) with G
+    imodintro
+    iapply iOwn_mono (E := hgm.elem) $$ G
+    refine inc_of_inc_of_eqv .rfl ?_
+    refine (BigOpM.bigOpM_equiv_of_perm _ h).trans ?_
+    simp [BigOpM.bigOpM_empty]
+  · imodintro
+    iapply bigOpM_iOwn _ _ _ (fun c => h c)
+    unfold ghost_map_elem
+    iexact H
 
 @[rocq_alias ghost_map_elem_valid]
 theorem ghost_map_elem_valid (γ : GName) (k : K) (dq : DFrac F) (v : V) :
@@ -263,9 +267,6 @@ instance (γ : GName) (m : H V) (q : F)
       (fun q => γ ↪●MAP{.own q} m) q where
   as_fractional := IProp.ext_iff.mp rfl
   as_fractional_fractional := ghost_map_auth_fractional F K V H m
-
-#check HeapView.auth_valid_iff
-#check iOwn_cmraValid
 
 @[rocq_alias ghost_map_auth_valid]
 theorem ghost_map_auth_valid γ (dq : DFrac F) (m : H V) :
