@@ -31,9 +31,9 @@ class Fraction (α : Type _) extends Add α where
   add_ne : ∀ {a b : α}, a ≠ b + a
   proper_add_mono_left : ∀ {a b : α}, Proper (a + b) → Proper a
 
-class IsSplitFraction (α : Type _) [Fraction α] where
-  split : α → α × α
-  split_add {a : α} : (split a).1 + (split a).2 = a
+class IsHalfFraction (α : Type _) [Fraction α] where
+  half : α → α
+  half_add {a : α} : half a + half a = a
 
 namespace Fraction
 
@@ -130,9 +130,9 @@ instance (priority := default - 10) [Fraction α] (q1 q2 : Frac α) :
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_frac]
-instance [Fraction α] [h : IsSplitFraction α] (q : Frac α) :
-    IsOp io1 q io2 (h.split q).1 io3 (h.split q).2 where
-  is_op := q.ext <| h.split_add.symm
+instance [Fraction α] [h : IsHalfFraction α] (q : Frac α) :
+    IsOp io1 q io2 (h.half q) io3 (h.half q) where
+  is_op := q.ext <| h.half_add.symm
 
 /-- A type of fractions with a unique whole element. -/
 class UFraction (α : Type _) extends Fraction α, One α where

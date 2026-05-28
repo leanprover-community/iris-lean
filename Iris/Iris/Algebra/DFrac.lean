@@ -192,7 +192,7 @@ theorem DFrac.update_discard {dq : DFrac F} : dq ~~> .discard := by
   · cases dq <;> first | exact Fractional.of_add_right H | exact H
 
 @[rocq_alias dfrac_undiscard_update]
-theorem DFrac.update_acquire [IsSplitFraction F] :
+theorem DFrac.update_acquire [IsHalfFraction F] :
     (.discard : DFrac F) ~~>: fun k => ∃ q, k = .own q := by
   apply UpdateP.discrete.mpr
   rintro (_|q)
@@ -207,18 +207,18 @@ theorem DFrac.update_acquire [IsSplitFraction F] :
     rw [add_comm]
     exact HP
   · intro _
-    let q' : F := (IsSplitFraction.split One.one).1
+    let q' : F := IsHalfFraction.half One.one
     refine ⟨.own q', ⟨⟨q', rfl⟩, ?_⟩⟩
     simp [CMRA.op?, CMRA.op, op]
-    refine ⟨(IsSplitFraction.split One.one).2, ?_⟩
-    rw [IsSplitFraction.split_add]
+    refine ⟨IsHalfFraction.half One.one, ?_⟩
+    rw [IsHalfFraction.half_add]
     apply UFraction.one_whole.1
   · rintro ⟨q', HP⟩
-    let q'' : F := (IsSplitFraction.split q').1
+    let q'' : F := IsHalfFraction.half q'
     refine ⟨(.own q''), ⟨⟨q'', rfl⟩, ?_⟩⟩
     simp only [CMRA.op?, CMRA.op, op, add_comm]
-    refine ⟨(IsSplitFraction.split q').2, ?_⟩
-    rw [← add_assoc, IsSplitFraction.split_add]
+    refine ⟨IsHalfFraction.half q', ?_⟩
+    rw [← add_assoc, IsHalfFraction.half_add]
     exact HP
 
 @[rocq_alias dfrac_op_own]

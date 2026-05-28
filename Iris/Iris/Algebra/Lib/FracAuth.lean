@@ -248,12 +248,12 @@ theorem update_auth_persist {dq : DFrac F} {a : A} : (●F{dq} a) ~~> ●F{.disc
   Auth.auth_update_auth_persist
 
 @[rocq_alias frac_auth_updateP_auth_unpersist]
-theorem updateP_auth_unpersist [IsSplitFraction F] {a : A} :
+theorem updateP_auth_unpersist [IsHalfFraction F] {a : A} :
     (●F{.discard} a : FracAuth (F := F)) ~~>: fun k => ∃ q, k = ●F{.own q} a :=
   Auth.auth_updateP_auth_unpersist
 
 @[rocq_alias frac_auth_updateP_both_unpersist]
-theorem updateP_both_unpersist [IsSplitFraction F] {q : Frac F} {a b : A} :
+theorem updateP_both_unpersist [IsHalfFraction F] {q : Frac F} {a b : A} :
     ((●F{DFrac.discard} a) • ◯F{q} b) ~~>: fun k => ∃ q', k = (●F{.own q'} a) • ◯F{q} b :=
   auth_updateP_both_unpersist
 

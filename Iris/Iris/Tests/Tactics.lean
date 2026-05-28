@@ -2617,8 +2617,8 @@ example {GF F A} [UFraction F] [UCMRA A] [ElemG GF (constOF (Auth F A))] {γ}
 
 /-- Tests `icombine` with the `IsOp` instances stipulating the
     merging of `a1`, `a2` and `a3` using `+` instead of `•`, as well as
-    to eliminate splits (`IsSplitFraction`). -/
-example {GF α} [Fraction α] [h : IsSplitFraction α]
+    to eliminate splits (`IsHalfFraction`). -/
+example {GF α} [Fraction α] [h : IsHalfFraction α]
     [ElemG GF (constOF (Frac α))] {γ} {a1 a2 a3 : Frac α} :
     ⊢@{IProp GF}
       iOwn (F := constOF (Frac α)) γ a1 -∗

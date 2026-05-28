@@ -679,7 +679,7 @@ theorem auth_discard : (●V{dq} a : View F R) ~~> ●V{.discard} a := by
   · exact DFrac.update_discard
 
 @[rocq_alias view_updateP_auth_unpersist]
-theorem auth_acquire [IsSplitFraction F] :
+theorem auth_acquire [IsHalfFraction F] :
     (●V{.discard} a : View F R) ~~>: fun k => ∃ q, k = ●V{.own q} a := by
   apply UpdateP.weaken
   · apply auth_updateP
@@ -688,7 +688,7 @@ theorem auth_acquire [IsSplitFraction F] :
     exists q'
 
 @[rocq_alias view_updateP_both_unpersist]
-theorem auth_op_frag_acquire [IsSplitFraction F] :
+theorem auth_op_frag_acquire [IsHalfFraction F] :
     ((●V{.discard} a : View F R) • ◯V b) ~~>: fun k => ∃ q, k = ((●V{.own q} a : View F R) • ◯V b ):= by
   apply UpdateP.op
   apply auth_acquire
