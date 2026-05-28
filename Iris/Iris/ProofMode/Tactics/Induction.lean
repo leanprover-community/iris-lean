@@ -47,8 +47,10 @@ elab "iinduction" colGt x:ident : tactic => do
     -- Revert all hypotheses in the list
     let pf ← iRevertIntro hyps goal targets (
       fun hyps' goal' k => do
-        -- Use built-in induction in Lean
-        evalTactic (← `(tactic| induction x:id))
+        -- Create a new metavariable for the proof goal upon reverting hypotheses
+        let m ← mkBIGoal hyps' goal'
+        -- Use built-in induction in Lean to generate the subgoals for induction
+        let subgoals ← evalTacticAt (← `(tactic| induction $x:ident)) m.mvarId!
         k hyps' goal'
     )
 
