@@ -80,14 +80,14 @@ To implement this mechanism, we use three pieces of ghost state:
 
 variable (F: outParam (Type _)) [UFraction F]
 
-class gen_HeapGPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)[Std.LawfulPartialMap H L] where
+class gen_HeapGPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _) [Std.LawfulFiniteMap H L] where
   heap : GhostMapG GF F L V H
   -- TODO: `meta` field blocked by `reservation_mapR`
   -- TODO: `metaData` field blocked by `reservation_mapR`
 
-instance gen_HeapGPreS.instGhostMapG [Std.LawfulPartialMap H L][ι : gen_HeapGPreS F L V GF H] : GhostMapG GF F L V H := ι.heap
+instance gen_HeapGPreS.instGhostMapG [Std.LawfulFiniteMap H L] [ι : gen_HeapGPreS F L V GF H] : GhostMapG GF F L V H := ι.heap
 
-class gen_HeapGS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)[Std.LawfulPartialMap H L]
+class gen_HeapGS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _) [Std.LawfulFiniteMap H L]
     extends gen_HeapGPreS F L V GF H where
   heapName : GName
   -- TODO: Metadata not supported yet
@@ -99,7 +99,7 @@ class gen_HeapGS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ 
 section definitions
 
 variable {GF : BundledGFunctors} {L V : Type _}
-variable {H : outParam <| Type _ → Type _} [Std.LawfulPartialMap H L]
+variable {H : outParam <| Type _ → Type _} [Std.LawfulFiniteMap H L]
 variable {F: outParam (Type _)} [UFraction F]
 variable [ι : gen_HeapGS F L V GF H]
 
@@ -123,7 +123,7 @@ section lemmas
 
 variable {F: outParam (Type _)} [UFraction F]
 variable {L V : Type _} {GF : BundledGFunctors}
-variable {H : outParam <| Type _ → Type _} [Std.LawfulPartialMap H L]
+variable {H : outParam <| Type _ → Type _} [Std.LawfulFiniteMap H L]
 variable [ι : gen_HeapGS F L V GF H]
 
 variable (l : L) (dq dq₁ dq₂ : DFrac F) (v v₁ v₂ : V) (σ : H V)
