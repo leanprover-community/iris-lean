@@ -119,6 +119,9 @@ theorem eq_subset {X Y : S} : X ⊆ Y → Y ⊆ X → X = Y := by
   ext x
   exact ⟨H1 x, H2 x⟩
 
+instance : Std.Antisymm (fun x y : S => x ⊆ y) where
+  antisymm _ _ := eq_subset
+
 /-- Proper subset is equivalent to subset plus inequality. -/
 theorem ssubset_subset  {X Y : S} : (X ⊂ Y) ↔ (X ⊆ Y ∧ X ≠ Y) := by
   simp [SSubset, Subset]; grind only
@@ -353,9 +356,16 @@ theorem insert_subset_subset {s₁ s₂ : S} {x : A} (H : s₁ ⊆ s₂) : inser
 theorem subset_refl {s : S} : s ⊆ s := by
   intro x _; assumption
 
+instance : Std.Refl (fun x y : S => x ⊆ y) where
+  refl _ := subset_refl
+
 /-- Subset relation is transitive. -/
 theorem subset_trans {s₁ s₂ s₃ : S} : s₁ ⊆ s₂ → s₂ ⊆ s₃ → s₁ ⊆ s₃ := by
   intro h1 h2 x hx; exact h2 _ (h1 _ hx)
+
+--                                        ↓ It looks like a face 🥹
+instance : Trans (fun x y : S => x ⊆ y) (·⊆ ·) (·⊆ ·) where
+  trans := subset_trans
 
 /-! ### Disjointness -/
 
@@ -441,6 +451,12 @@ theorem diff_all {s : S} : s \ s = ∅ := by
 theorem diff_subset_left {s₁ s₂ : S} : s₁ \ s₂ ⊆ s₁ := by
   intro y G; rw [mem_diff] at G
   exact G.left
+
+theorem diff_self_diff_of_subset {s u : S} : s ⊆ u → u \ (u \ s) = s := by
+  intro su
+  apply eq_subset
+  · intro x; grind [mem_diff]
+  · intro x xs; simp [mem_diff, su x xs, xs]
 
 /-- A set is disjoint from the part removed by taking a difference. -/
 theorem disjoint_diff_right {s₁ s₂ : S} : s₁ ## (s₂ \ s₁) := by

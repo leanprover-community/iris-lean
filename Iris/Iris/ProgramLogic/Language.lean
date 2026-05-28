@@ -5,11 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 meta import Iris.Std.RocqPorting
-public import Iris.Std.FromMathlib
 public import Iris.Std.Relation
-public import Iris.Std.List
-public meta import Lean.PrettyPrinter.Delaborator
-public import Batteries.Data.List.Basic
+public import Iris.BI.WeakestPre
 
 #rocq_ignore LanguageMixin "This feature was implemented differently using typeclasses"
 #rocq_ignore language      "This feature was implemented differently using typeclasses"
@@ -26,7 +23,7 @@ class ToVal (Expr : Type _) (Val : outParam (Type _)) where
   toVal : Expr → Option Val
   ofVal : Val → Expr
   /-- If `toVal` is defined for an expression, `coe` is its inverse -/
-  coe_of_toVal_eq_some (e : Expr) (v : Val) : toVal e = some v → ofVal v = e
+  coe_of_toVal_eq_some {e : Expr} {v : Val} : toVal e = some v → ofVal v = e
   /-- `toVal` is defined `coe`, and works as its inverse -/
   toVal_coe (v : Val) : toVal (ofVal v) = some v
 export ToVal (toVal coe_of_toVal_eq_some toVal_coe)
@@ -46,7 +43,7 @@ instance : Coe Val Expr where coe := ofVal
 
 @[grind! ., rocq_alias of_to_val_flip]
 theorem toVal_eq_iff_coe (e : Expr) (v : Val) : v = e ↔ toVal e = some v :=
-  ⟨(· ▸ toVal_coe v), coe_of_toVal_eq_some e v⟩
+  ⟨(· ▸ toVal_coe v), coe_of_toVal_eq_some⟩
 
 @[rocq_alias of_val_inj]
 instance : ι.ofVal.Injective := by
@@ -210,22 +207,29 @@ theorem toVal_none_of_reducible : Reducible (e, σ) → toVal e = none := by
   grind only [Reducible, val_stuck]
 
 @[rocq_alias val_irreducible]
-theorem val_irreducible : (toVal e).isSome → Irreducible (e, σ) := by
+theorem val_irreducible : (toVal e).isSome → ∀ σ, Irreducible (e, σ) := by
   grind only [Irreducible, val_stuck, = Option.isSome_none]
 
 end ReducibilityLemmas
 
 @[rocq_alias atomicity]
 inductive Atomicity where
-| WeaklyAtomic
-| StronglyAtomic
+  | WeaklyAtomic
+  | StronglyAtomic
+
+@[rocq_alias stuckness_to_atomicity, coe]
+abbrev Atomicity.ofStuckness : Stuckness → Atomicity
+  | .MaybeStuck => .StronglyAtomic
+  | .NotStuck => .WeaklyAtomic
+
+instance : Coe Stuckness Atomicity where coe := Atomicity.ofStuckness
 
 @[rocq_alias Atomic]
 class Atomic (a : Atomicity) (e : Expr) : Prop where
-  atomic (σ : State) obs e' σ' eₜ :
+  atomic {σ : State} {obs e' σ' eₜ} :
     (e, σ) -<obs>-> (e', σ', eₜ) →
     match a with
-    | .WeaklyAtomic => ¬ Reducible (e', σ')
+    | .WeaklyAtomic => Irreducible (e', σ')
     | .StronglyAtomic => (toVal e').isSome
 
 @[rocq_alias strongly_atomic_atomic]
@@ -481,75 +485,3 @@ theorem erasedStep_pureSteps {t₁ t₂ t₃ : List Expr} {σ₁ σ₂ : State} 
     exact Std.List.Forall₂.append ps_ps₃ <| .cons lastSteps ss_ss₃
 
 end Language
-
-section test
-open Language
-
-section notations
-
-/--
-info: (e, σ) -<obs>-> (e, σ, []) : Prop
--/
-#guard_msgs in
-variable (e : Expr) (σ : State) (obs : Obs) [PrimStep Expr State Obs] in
-#check (PrimStep.primStep (e, σ) obs (e,σ,[]))
-
-/--
-info: (t, σ) -<obs>->ₜₚ (t, σ) : Prop
--/
-#guard_msgs in
-variable (t : List Expr) (σ : State) (obs : List Obs) [Language Expr State Obs Val] in
-#check (Language.Step (t, σ) obs (t,σ))
-
-/--
-info: (t, σ) -<obs>->ₜₚ^[0] (t, σ) : Prop
--/
-#guard_msgs in
-variable (t : List Expr) (σ : State) (obs : List Obs) [Language Expr State Obs Val] in
-#check (Language.NSteps 0 (t, σ) obs (t,σ))
-
-/--
-info: (t, σ) -·->ₜₚ (t, σ) : Prop
--/
-#guard_msgs in
-variable (t : List Expr) (σ : State) [Language Expr State Obs Val] in
-#check (ErasedStep (t, σ) (t,σ))
-
-/--
-info: e -ᵖ-> e : Prop
--/
-#guard_msgs in
-variable (e : Expr) [Language Expr State Obs Val] in
-#check (PurePrimStep e e)
-
-/--
-info: e -ᵖ->^[0] e : Prop
--/
-#guard_msgs in
-variable (e : Expr) [Language Expr State Obs Val] in
-#check (Relation.Iterate PurePrimStep 0 e e)
-
-/--
-info: e -ᵖ->* e : Prop
--/
-#guard_msgs in
-variable (e : Expr) [Language Expr State Obs Val] in
-#check (Relation.ReflTransGen PurePrimStep e e)
-
-/--
-info: e -ᵖ->* e : Prop
--/
-#guard_msgs in
-variable (e : Expr) [Language Expr State Obs Val] in
-#check (Relation.ReflTransGen PurePrimStep e e)
-
-/--
-info: t -ᵖ->ₜₚ* t : Prop
--/
-#guard_msgs in
-variable (t : List Expr) [Language Expr State Obs Val] in
-#check (PureSteps t t)
-
-end notations
-
-end test

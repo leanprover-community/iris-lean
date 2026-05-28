@@ -6,6 +6,7 @@ Authors: Mario Carneiro, Сухарик (@suhr), Markus de Medeiros, Puming Liu
 module
 
 public import Iris.Algebra.OFE
+public import Iris.Algebra.Monoid
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -856,6 +857,12 @@ instance empty_cancelable : Cancelable (unit : α) where
 theorem _root_.Iris.OFE.Dist.to_incN {n} {x y : α} (H : x ≡{n}≡ y) : x ≼{n} y :=
   ⟨unit, ((equiv_dist.mp unit_right_id n).trans H).symm⟩
 
+instance ucmraMonoidOps {α : Type _} [UCMRA α] : Algebra.MonoidOps (CMRA.op (α := α)) UCMRA.unit where
+  op_ne := ⟨fun _ _ _ hx _ _ hy => hx.op hy⟩
+  op_assoc := CMRA.assoc.symm
+  op_comm := CMRA.comm
+  op_left_id := UCMRA.unit_left_id
+
 end ucmra
 
 
@@ -989,11 +996,11 @@ protected theorem Hom.core [CMRA β] (f : α -C> β) {x : α} : core (f x) ≡ f
     let ⟨s, hs, es⟩ := equiv_some h.symm
     rw [hs]; exact es
 
-@[rocq_alias cmra_morphism_monotone]
+@[rocq_alias cmra_morphism_mono]
 protected theorem Hom.mono [CMRA β] (f : α -C> β) {x₁ x₂ : α} : x₁ ≼ x₂ → f x₁ ≼ f x₂
   | ⟨z, hz⟩ => ⟨f.f z, (f.eqv hz).trans (f.op ..)⟩
 
-@[rocq_alias cmra_morphism_monotoneN]
+@[rocq_alias cmra_morphism_monoN]
 protected theorem Hom.monoN [CMRA β] (f : α -C> β) n {x₁ x₂ : α} : x₁ ≼{n} x₂ → f x₁ ≼{n} f x₂
   | ⟨z, hz⟩ => ⟨f.f z, (f.ne.ne hz).trans (f.op ..).dist⟩
 

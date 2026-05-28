@@ -7,6 +7,7 @@ module
 
 
 public import Iris.BI
+public import Iris.BI.BigOp
 public import Iris.Algebra
 public import Iris.Instances.UPred
 public meta import Iris.Std.RocqPorting
@@ -15,6 +16,9 @@ public meta import Iris.Std.RocqPorting
 namespace Iris
 
 open COFE Std CMRA
+
+@[ext]
+theorem IProp.ext {P Q : IProp GF} : P ⊣⊢ Q → P = Q := OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr
 
 /-- Apply an OFunctor at a fixed type -/
 abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [OFE T] :=
@@ -797,4 +801,76 @@ instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsSplitOp a
       _ ⊢ iOwn γ a              := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mpr
 
 end iOwn
+
+section big_op_instances
+
+open IProp OFE UPred BI GenMap ProofMode Algebra Std
+open scoped Iris.Std.PartialMap
+
+variable {GF F} [URFunctorContractive F] [E : ElemG GF F]
+
+@[rocq_alias own_cmra_sep_homomorphism]
+instance iOwn_cmra_sep_homomorphism (γ : GName) :
+    WeakMonoidHomomorphism (CMRA.op (α := F.ap (IProp GF))) sep
+      UCMRA.unit iprop(emp) BiEntails (iOwn γ) where
+  rel_refl := .rfl
+  rel_trans := .trans
+  rel_proper := BIBase.BiEntails.proper
+  op_proper aa' bb' := equiv_iff.1 (sep_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
+  map_ne := iOwn_ne
+  map_op := iOwn_op
+
+@[rocq_alias big_opL_own]
+theorem bigOpL_iOwn {B : Type _} (γ : GName) (f : Nat → B → F.ap (IProp GF)) (l : List B) :
+    l ≠ [] →
+    iOwn γ ([^ CMRA.op list] k ↦ x ∈ l, f k x) ⊣⊢ [∗list] k ↦ x ∈ l, iOwn γ (f k x) :=
+  BigOpL.bigOpL_hom_weak f
+
+@[rocq_alias big_opM_own]
+theorem bigOpM_iOwn {K : Type _} {M : Type _ → Type _} {B : Type _} [LawfulFiniteMap M K]
+    [DecidableEq K] (γ : GName) (g : K → B → F.ap (IProp GF)) (m : M B) :
+    ¬ m ≡ₘ (∅ : M B) →
+    iOwn γ ([^ CMRA.op map] k ↦ x ∈ m, g k x) ⊣⊢ [∗map] k ↦ x ∈ m, iOwn γ (g k x) :=
+  BigOpM.bigOpM_weak_hom g m
+
+@[rocq_alias big_opS_own]
+theorem bigOpS_iOwn {B : Type _} {S : Type _} [LawfulFiniteSet S B] (γ : GName)
+    (g : B → F.ap (IProp GF)) (X : S) :
+    X ≠ ∅ →
+    iOwn γ ([^ CMRA.op set] x ∈ X, g x) ⊣⊢ [∗set] x ∈ X, iOwn γ (g x) :=
+  BigOpS.hom_weak (iOwn_cmra_sep_homomorphism γ) g X
+
+@[rocq_alias own_cmra_sep_entails_homomorphism]
+instance iOwn_cmra_sep_entails_homomorphism (γ : GName) :
+    MonoidHomomorphism (CMRA.op (α := F.ap (IProp GF))) sep
+      UCMRA.unit iprop(emp) Entails (iOwn γ) where
+  rel_refl := .rfl
+  rel_trans := .trans
+  rel_proper ha hb :=
+    ⟨fun h => (equiv_iff.1 ha).mpr.trans <| h.trans (equiv_iff.1 hb).mp,
+     fun h => (equiv_iff.1 ha).mp.trans <| h.trans (equiv_iff.1 hb).mpr⟩
+  op_proper := sep_mono
+  map_ne := iOwn_ne
+  map_op := iOwn_op.mp
+  map_unit := affine
+
+@[rocq_alias big_opL_own_1]
+theorem bigOpL_iOwn_entail {B : Type _} (γ : GName) (f : Nat → B → F.ap (IProp GF)) (l : List B) :
+    iOwn γ ([^ CMRA.op list] k ↦ x ∈ l, f k x) ⊢ [∗list] k ↦ x ∈ l, iOwn γ (f k x) :=
+  BigOpL.bigOpL_hom f l
+
+@[rocq_alias big_opM_own_1]
+theorem bigOpM_iOwn_entail {K : Type _} {M : Type _ → Type _} {B : Type _} [LawfulFiniteMap M K]
+    (γ : GName) (g : K → B → F.ap (IProp GF)) (m : M B) :
+    iOwn γ ([^ CMRA.op map] k ↦ x ∈ m, g k x) ⊢ [∗map] k ↦ x ∈ m, iOwn γ (g k x) :=
+  BigOpM.bigOpM_hom g m
+
+@[rocq_alias big_opS_own_1]
+theorem bigOpS_iOwn_entail {B : Type _} {S : Type _} [LawfulFiniteSet S B] (γ : GName)
+    (g : B → F.ap (IProp GF)) (X : S) :
+    iOwn γ ([^ CMRA.op set] x ∈ X, g x) ⊢ [∗set] x ∈ X, iOwn γ (g x) :=
+  BigOpS.hom (iOwn_cmra_sep_entails_homomorphism γ) g X
+
+end big_op_instances
+
 end Iris

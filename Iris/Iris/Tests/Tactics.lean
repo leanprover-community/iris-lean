@@ -363,6 +363,19 @@ example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗
   iintro %x %hp H
   iexact H
 
+/- Tests that `irevert` clears binder info (see https://github.com/leanprover-community/iris-lean/pull/393#issuecomment-4506443579) -/
+/--
+error: unsolved goals
+PROP : Type u_1
+inst✝ : BI PROP
+P : PROP
+⊢ ⏎
+  ⊢ ∀ x, P
+-/
+#guard_msgs in
+example [BI PROP] (P : PROP) {x : Nat} : ⊢ P := by
+  irevert %x
+
 /- Tests `irevert` failing with dependency -/
 /-- error: irevert: proofmode hypothesis H depends on x -/
 #guard_msgs in
@@ -2618,7 +2631,7 @@ example {GF α} [Fraction α] [h : IsSplitFraction α]
   iexact Hnew
 
 /-- Tests `icombine` for combining propositions involving later credits. -/
-example {GF m n} [LcGS GF] :
+example {GF m n} [LcGS .hasLC GF] :
     ⊢@{IProp GF} £ n -∗ £ 1 -∗ £ m -∗ £ 1 -∗ £ n + (1 + (m + 1)) := by
   iintro H1 H2 H3 H4
   icombine H1 H2 H3 H4 as Hnew

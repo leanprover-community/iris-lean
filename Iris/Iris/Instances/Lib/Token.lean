@@ -40,9 +40,8 @@ instance token_timeless (γ : GName) : Timeless (token (GF := GF) γ) := by
   unfold token
   infer_instance
 
--- HP encodes `pred_infinite P` from Rocq
 @[rocq_alias token_alloc_strong]
-theorem token_alloc_strong (P : GName → Prop) (HP : ∀ xs : List GName, ∃ x, P x ∧ x ∉ xs) :
+theorem token_alloc_strong (P : GName → Prop) (HP : PredInfinite P) :
     ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ token γ := by
   unfold token
   iapply iOwn_alloc_strong _ P _ trivial
