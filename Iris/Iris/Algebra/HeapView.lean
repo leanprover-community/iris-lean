@@ -149,6 +149,13 @@ variable {dp dq : DFrac F} {n : Nat} {m1 m2 : H V} {k : K} {v1 v2 : V}
 theorem auth_dfrac_op_equiv : Auth (dp • dq) m1 ≡ Auth dp m1 • Auth dq m1 :=
   View.auth_op_auth_eqv
 
+/-- An `Auth` inclusion follows from a pointwise map equivalence on the underlying heap.
+This is the workhorse for proofs that rewrite the authoritative map along identities like
+`PartialMap.map_insert`, `map_delete`, or `map_union`. -/
+theorem auth_inc_of_pmap_equiv (dq : DFrac F) (h : PartialMap.equiv m1 m2) :
+    Auth (H := H) dq m1 ≼ Auth dq m2 :=
+  CMRA.inc_of_inc_of_eqv .rfl (OFE.NonExpansive.eqv (PartialMap.eqv_of_Equiv h))
+
 theorem dist_of_validN_auth_op : ✓{n} Auth dp m1 • Auth dq m2 → m1 ≡{n}≡ m2 :=
   dist_of_validN_auth
 

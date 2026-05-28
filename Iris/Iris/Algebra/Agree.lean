@@ -246,6 +246,12 @@ theorem Agree.toAgree_inj {a b : α} : toAgree a ≡ toAgree b → a ≡ b := by
   simp only [OFE.equiv_dist]
   exact fun heq n => toAgree_injN (heq n)
 
+@[simp] theorem Agree.toAgree_validN {a : α} : ✓{n} toAgree a := by
+  simp [validN_def, validN, toAgree]
+
+@[simp] theorem Agree.toAgree_valid {a : α} : ✓ toAgree a :=
+  fun _ => Agree.toAgree_validN
+
 @[rocq_alias to_agree_uninjN]
 theorem Agree.toAgree_uninjN {x : Agree α} : ✓{n} x → ∃ a, toAgree a ≡{n}≡ x := by
   rw [validN_def, validN_iff]

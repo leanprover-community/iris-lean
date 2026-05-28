@@ -223,14 +223,7 @@ theorem ghost_map_alloc_strong [DecidableEq K] (P : GName → Prop) (m : H V) :
     · simp only [EmptyCollection.emptyCollection, disjoint_iff, LawfulPartialMap.get?_map,
       Option.map_eq_none_iff, get?_empty, Option.map_none, _root_.or_true, implies_true]
     · exact DFrac.valid_own_one
-    · -- TODO: golf
-      rw [LawfulFiniteMap.all_iff_toList]
-      intro ⟨k, v⟩
-      rw [toList_get, LawfulPartialMap.get?_map]
-      simp only [Option.map_eq_some_iff, forall_exists_index, and_imp]
-      rintro x Hx ⟨⟩
-      simp only [Agree.valid_def, Agree.valid]
-      intro; exact True.intro
+    · exact LawfulPartialMap.all_map fun _ _ => Agree.toAgree_valid
 
 @[rocq_alias ghost_map_alloc_strong_empty]
 theorem ghost_map_alloc_strong_empty [DecidableEq K] (P : GName → Prop) :
@@ -376,11 +369,7 @@ theorem ghost_map_insert {γ} {m : H V} (k : K) (v : V) :
   icases H with ⟨H, $⟩
   imodintro
   iapply iOwn_mono $$ H
-  refine inc_of_inc_of_eqv .rfl ?_
-  refine OFE.NonExpansive.eqv ?_
-  intro i
-  by_cases H : k = i
-    <;> simp [H, LawfulPartialMap.get?_map, get?_insert_ne, get?_insert_eq]
+  exact auth_inc_of_pmap_equiv _ LawfulPartialMap.map_insert
 
 @[rocq_alias ghost_map_insert_persist]
 theorem ghost_map_insert_persist {γ} {m : H V} (k : K) (v : V) :
@@ -399,11 +388,7 @@ theorem ghost_map_delete {γ} {m : H V} (k : K) (v : V) :
   imod iOwn_update (update_one_delete (k := k) (v1 := toAgree (⟨v⟩ : LeibnizO V)))
     $$ G with G
   iapply iOwn_mono $$ G
-  refine inc_of_inc_of_eqv .rfl ?_
-  refine OFE.NonExpansive.eqv ?_
-  intro i
-  by_cases H : k = i
-    <;> simp [H, LawfulPartialMap.get?_map, get?_delete_eq, get?_delete_ne]
+  exact auth_inc_of_pmap_equiv _ LawfulPartialMap.map_delete
 
 @[rocq_alias ghost_map_update]
 theorem ghost_map_update {γ} {m : H V} (k : K) (v : V) (w : V) :
@@ -414,12 +399,10 @@ theorem ghost_map_update {γ} {m : H V} (k : K) (v : V) (w : V) :
   imodintro
   unfold ghost_map_auth
   iapply iOwn_mono $$ aux
-  refine inc_of_inc_of_eqv .rfl ?_
-  refine OFE.NonExpansive.eqv ?_
+  refine auth_inc_of_pmap_equiv _ ?_
   intro i
-  refine eqv_of_Equiv ?_ i
-  simp [Std.PartialMap.map, LawfulPartialMap.get?_insert_delete_same,
-    get?_bindAlter, get?_bindAlter]
+  rw [LawfulPartialMap.get?_map, LawfulPartialMap.get?_map,
+    LawfulPartialMap.insert_delete i]
 
 /-! ### Big-op versions of the above lemmas -/
 
@@ -445,8 +428,7 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) :
   · imodintro
     isplitl [H]
     · iapply iOwn_mono $$ H
-      refine inc_of_inc_of_eqv .rfl ?_
-      refine OFE.NonExpansive.eqv (fun i => ?_)
+      refine auth_inc_of_pmap_equiv _ (fun i => ?_)
       simp [LawfulPartialMap.get?_map, Union.union, get?_merge, h i,
         EmptyCollection.emptyCollection, get?_empty]
     · simp only [bigSepM]
@@ -461,20 +443,12 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) :
     specialize Hdisj i; simp only [not_and, Bool.not_eq_true, Option.isSome_eq_false_iff,
       Option.isNone_iff_eq_none] at Hdisj
     grind [LawfulPartialMap.get?_map]
-  · rw [LawfulFiniteMap.all_iff_toList]
-    intro ⟨k, v⟩
-    rw [toList_get, LawfulPartialMap.get?_map]
-    simp only [Option.map_eq_some_iff, forall_exists_index, and_imp]
-    rintro x Hx ⟨⟩
-    simp [Agree.valid_def, Agree.valid, Agree.validN, toAgree]
+  · exact LawfulPartialMap.all_map fun _ _ => Agree.toAgree_valid
   · icases H with ⟨H1, H2⟩
     imodintro
     isplitl [H1]
     · iapply iOwn_mono $$ H1
-      refine inc_of_inc_of_eqv .rfl ?_
-      refine OFE.NonExpansive.eqv (fun i => ?_)
-      simp only [Std.PartialMap.map, Union.union, union, get?_bindAlter, get?_merge, Option.merge]
-      split <;> simp_all
+      exact auth_inc_of_pmap_equiv _ LawfulPartialMap.map_union
     · iapply iOwn_mono $$ H2
       refine inc_of_inc_of_eqv .rfl ?_
       refine .trans ?_ (BigOpM.bigOpM_map_equiv _ _ _).symm
@@ -509,9 +483,7 @@ theorem ghost_map_delete_big [DecidableEq K] {γ m} (m0 : H V) :
     ?_
   refine (update_big_delete _ _).trans ?_
   refine Update.equiv_right ?_ .id
-  refine OFE.NonExpansive.eqv (fun i => ?_)
-  simp only [LawfulPartialMap.get?_difference, LawfulPartialMap.get?_map, Option.isSome_map]
-  split <;> simp
+  exact OFE.NonExpansive.eqv (PartialMap.eqv_of_Equiv LawfulPartialMap.map_difference_map)
 
 @[rocq_alias ghost_map_update_big]
 theorem ghost_map_update_big [DecidableEq K] {γ m} (m0 m1 : H V) :
@@ -526,8 +498,7 @@ theorem ghost_map_update_big [DecidableEq K] {γ m} (m0 m1 : H V) :
     isplitl [H1]
     · unfold ghost_map_auth
       iapply iOwn_mono $$ H1
-      refine inc_of_inc_of_eqv .rfl ?_
-      refine OFE.NonExpansive.eqv (fun i => ?_)
+      refine auth_inc_of_pmap_equiv _ (fun i => ?_)
       simp [LawfulPartialMap.get?_map, Union.union, get?_merge, h i,
         EmptyCollection.emptyCollection, get?_empty]
     · simp only [bigSepM]
@@ -547,25 +518,12 @@ theorem ghost_map_update_big [DecidableEq K] {γ m} (m0 m1 : H V) :
     ?_
   have Heq' : dom (Std.PartialMap.map (fun x : V => toAgree (LeibnizO.mk x)) m0)
     = dom (Std.PartialMap.map (fun x : V => toAgree (LeibnizO.mk x)) m1) := by
-    ext k
-    simp only [PartialMap.dom, LawfulPartialMap.get?_map]
-    have Heq' := congrFun Heq k
-    simp only [PartialMap.dom] at Heq'
-    simp [Heq']
-  refine (update_big_replace _ _ _ Heq' ?_).trans ?_
-  · rw [LawfulFiniteMap.all_iff_toList]
-    intro ⟨k, v⟩
-    rw [toList_get, LawfulPartialMap.get?_map]
-    simp only [Option.map_eq_some_iff, forall_exists_index, and_imp]
-    rintro x Hx ⟨⟩
-    simp [Agree.valid_def, Agree.valid, Agree.validN, toAgree]
-  · refine Update.equiv_right ?_ .id
-    refine CMRA.op_eqv ?_ ?_
-    · refine OFE.NonExpansive.eqv (fun i => ?_)
-      simp only [LawfulPartialMap.get?_map, Union.union, union, get?_merge]
-      cases (get? m1 i) <;> cases (get? m i) <;> simp [Option.merge]
-    · refine .trans (BigOpM.bigOpM_map_equiv _ _ _) ?_
-      exact .rfl
+    rw [LawfulPartialMap.dom_map, LawfulPartialMap.dom_map, Heq]
+  refine (update_big_replace _ _ _ Heq'
+    (LawfulPartialMap.all_map fun _ _ => Agree.toAgree_valid)).trans ?_
+  refine Update.equiv_right ?_ .id
+  refine CMRA.op_eqv ?_ (BigOpM.bigOpM_map_equiv _ _ _)
+  exact OFE.NonExpansive.eqv (PartialMap.eqv_of_Equiv LawfulPartialMap.map_union.symm)
 
 end lemmas
 

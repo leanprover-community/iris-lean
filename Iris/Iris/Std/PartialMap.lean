@@ -528,6 +528,16 @@ theorem all_delete (P : K → V → Prop) {m : M V} {i : K}
   · rw [get?_delete_ne hik] at hget
     exact h k v hget
 
+theorem all_map {P : K → V' → Prop} {f : V → V'} {m : M V}
+    (h : ∀ k v, P k (f v)) : PartialMap.all P (PartialMap.map f m) := by
+  intro k v' hget
+  cases hm : get? m k with
+  | none =>
+    simp [PartialMap.map, get?_bindAlter, hm] at hget
+  | some v =>
+    simp [PartialMap.map, get?_bindAlter, hm] at hget
+    cases hget; exact h k v
+
 theorem disjoint_insert_left {m₁ m₂ : M V} {i : K} {x : V}
     (hi : get? m₂ i = none) (hdisj : m₁ ##ₘ m₂) : insert m₁ i x ##ₘ m₂ := by
   intro k ⟨hs1, hs2⟩
@@ -661,6 +671,37 @@ theorem map_empty {f : V → V'} : PartialMap.map f (empty : M V) ≡ₘ (empty 
   intro k
   rw [get?_map, get?_empty, get?_empty]
   rfl
+
+theorem map_insert {f : V → V'} {m : M V} {k : K} {v : V} :
+    PartialMap.map f (insert m k v) ≡ₘ insert (PartialMap.map f m) k (f v) := by
+  intro i
+  by_cases h : k = i <;>
+    simp [h, get?_map, get?_insert_eq, get?_insert_ne]
+
+theorem map_delete {f : V → V'} {m : M V} {k : K} :
+    PartialMap.map f (delete m k) ≡ₘ delete (PartialMap.map f m) k := by
+  intro i
+  by_cases h : k = i <;>
+    simp [h, get?_map, get?_delete_eq, get?_delete_ne]
+
+theorem map_union {f : V → V'} {m₁ m₂ : M V} :
+    PartialMap.map f (m₁ ∪ m₂) ≡ₘ (PartialMap.map f m₁ ∪ PartialMap.map f m₂) := by
+  intro k
+  simp only [get?_map, Union.union, PartialMap.union, get?_merge]
+  cases get? m₁ k <;> cases get? m₂ k <;> simp [Option.merge]
+
+theorem dom_map {f : V → V'} {m : M V} : dom (PartialMap.map f m) = dom m := by
+  ext k
+  simp [PartialMap.dom, get?_map]
+
+/-- `map` commutes with set difference, provided the second map has the same key set.
+The conclusion uses `map` on both sides so the right-hand side type-checks. -/
+theorem map_difference_map {f : V → V'} {g : V → V'}
+    {m₁ m₂ : M V} :
+    (PartialMap.map f m₁ \ PartialMap.map g m₂) ≡ₘ PartialMap.map f (m₁ \ m₂) := by
+  intro k
+  simp only [get?_map, get?_difference, Option.isSome_map]
+  split <;> simp
 
 theorem get?_filterMap {f : V → Option V} {m : M V} {k : K} :
     get? (filterMap f m) k = (get? m k).bind f := by
