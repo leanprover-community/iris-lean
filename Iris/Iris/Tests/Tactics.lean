@@ -2623,8 +2623,8 @@ example {GF α} [Fraction α] [h : IsHalfFraction α]
     ⊢@{IProp GF}
       iOwn (F := constOF (Frac α)) γ a1 -∗
       iOwn (F := constOF (Frac α)) γ a2 -∗
-      iOwn (F := constOF (Frac α)) γ (h.split a3).1 -∗
-      iOwn (F := constOF (Frac α)) γ (h.split a3).2 -∗
+      iOwn (F := constOF (Frac α)) γ (h.half a3) -∗
+      iOwn (F := constOF (Frac α)) γ (h.half a3) -∗
       iOwn (F := constOF (Frac α)) γ (a1 + (a2 + a3)) := by
   iintro H1 H2 H3a H3b
   icombine H1 H2 H3a H3b as Hnew
