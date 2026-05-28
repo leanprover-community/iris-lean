@@ -11,7 +11,7 @@ public meta import Iris.Std.AesopContractive
 
 namespace Iris
 
-attribute [aesop unsafe 10% cases (rule_sets := [aesop_contractive])] Option
+attribute [aesop_contractive unsafe 10% cases] Option
 
 /-- Ordered family of equivalences -/
 @[rocq_alias ofe]
@@ -108,7 +108,7 @@ theorem NonExpansive₂.ne_left [OFE α] [OFE β] [OFE γ] (f : α → β → γ
   ⟨fun {_ _ _} h => ne h Dist.rfl⟩
 
 /-- `DistLater n x y` means that `x` and `y` are `m`-equivalent for all `m < n`. -/
-@[rocq_alias dist_later, aesop safe unfold (rule_sets := [aesop_contractive])]
+@[rocq_alias dist_later, aesop_contractive safe unfold]
 def DistLater [OFE α] (n : Nat) (x y : α) : Prop := ∀ m, m < n → x ≡{m}≡ y
 
 @[simp, refl] theorem DistLater.rfl [OFE α] {n} {x : α} : DistLater n x x := fun _ _ => .rfl
@@ -153,7 +153,7 @@ theorem distLater_soundness [OFE α] {x y : α} (H : ∀ n, DistLater n x y → 
 class Contractive [OFE α] [OFE β] (f : α → β) where
   distLater_dist : DistLater n x y → f x ≡{n}≡ f y
 
-attribute [aesop safe apply (rule_sets := [aesop_contractive])] Contractive.distLater_dist
+attribute [aesop_contractive safe apply] Contractive.distLater_dist
 
 @[simp, rocq_alias contractive_0] theorem Contractive.zero [OFE α] [OFE β] (f : α → β)
     [Contractive f] {x y} : f x ≡{0}≡ f y :=
