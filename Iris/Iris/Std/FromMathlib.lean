@@ -81,6 +81,11 @@ theorem head_induction_on {motive : ∀ a : α, ReflTransGen r a b → Prop} {a 
 theorem cases_head (h : ReflTransGen r a b) : a = b ∨ ∃ c, r a c ∧ ReflTransGen r c b := by
   induction h using ReflTransGen.head_induction_on <;> grind
 
+theorem trans (hab : ReflTransGen r a b) (hbc : ReflTransGen r b c) : ReflTransGen r a c := by
+  induction hbc with
+  | refl => exact hab
+  | tail _ hcd ih => exact ih.tail hcd
+
 end Relation.ReflTransGen
 
 namespace List
