@@ -2596,18 +2596,18 @@ example {GF α} [UFraction α] [ElemG GF (constOF (DFrac α))]
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
     instances for the authoritative CMRA. -/
 example {GF F A} [UFraction F] [UCMRA A] [ElemG GF (constOF (Auth F A))] {γ}
-    {a1 a2 a3 b c : A} {dq' dq'' dq1 dq2 dq3 dq4 : DFrac F}
+    {a1 a2 a3 b c : A} {q1 q2 : Frac F} {dq'' dq3 dq4 : DFrac F}
     [IsMergeOp b a2 a3] [IsMergeOp c a1 b]
-    [IsMergeOp dq' dq1 dq2] [IsMergeOp dq'' dq3 dq4] :
+    [IsMergeOp dq'' dq3 dq4] :
     ⊢@{IProp GF}
       iOwn (F := constOF (Auth F A)) γ (◯ a1) -∗
       iOwn (F := constOF (Auth F A)) γ (◯ a2) -∗
       iOwn (F := constOF (Auth F A)) γ (◯ a3) -∗
-      iOwn (F := constOF (Auth F A)) γ (●{dq1} a1) -∗
-      iOwn (F := constOF (Auth F A)) γ (●{dq2} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{own q1.car} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{own q2.car} a1) -∗
       iOwn (F := constOF (Auth F A)) γ (●{dq3} a1) -∗
       iOwn (F := constOF (Auth F A)) γ (●{dq4} a1) -∗
-      iOwn (F := constOF (Auth F A)) γ ((◯ c) • ●{dq' • dq''} a1) := by
+      iOwn (F := constOF (Auth F A)) γ ((◯ c) • ●{(own $ q1 + q2) • dq''} a1) := by
   iintro H1 H2 H3 H4 H5 H6 H7
   icombine H1 H2 H3 as HNew1
   icombine H4 H5 as HNew2
@@ -2618,16 +2618,17 @@ example {GF F A} [UFraction F] [UCMRA A] [ElemG GF (constOF (Auth F A))] {γ}
 /-- Tests `icombine` with the `IsOp` instances stipulating the
     merging of `a1`, `a2` and `a3` using `+` instead of `•`, as well as
     to eliminate splits (`IsHalfFraction`). -/
-example {GF α} [Fraction α] [h : IsHalfFraction α]
+example {GF α} [Fraction α] [IsHalfFraction α]
     [ElemG GF (constOF (Frac α))] {γ} {a1 a2 a3 : Frac α} :
     ⊢@{IProp GF}
       iOwn (F := constOF (Frac α)) γ a1 -∗
       iOwn (F := constOF (Frac α)) γ a2 -∗
-      iOwn (F := constOF (Frac α)) γ (h.half a3) -∗
-      iOwn (F := constOF (Frac α)) γ (h.half a3) -∗
-      iOwn (F := constOF (Frac α)) γ (a1 + (a2 + a3)) := by
+      iOwn (F := constOF (Frac α)) γ (a3.half) -∗
+      iOwn (F := constOF (Frac α)) γ (a3.half) -∗
+      iOwn (F := constOF (Frac α)) γ (a1.half + (a1.half + (a2 + a3))) := by
   iintro H1 H2 H3a H3b
-  icombine H1 H2 H3a H3b as Hnew
+  icases H1 with ⟨H1a, H1b⟩
+  icombine H1a H1b H2 H3a H3b as Hnew
   iexact Hnew
 
 /-- Tests `icombine` for combining propositions involving later credits. -/

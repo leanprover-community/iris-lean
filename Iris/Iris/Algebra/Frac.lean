@@ -86,6 +86,9 @@ instance [Fraction α] : Coe α (Frac α) := ⟨(⟨·⟩)⟩
 @[simp] instance [Fraction α] : Add (Frac α) := ⟨fun x y => x.1 + y.1⟩
 instance : Leibniz (Frac α) := inferInstanceAs (Leibniz (LeibnizO α))
 
+def Frac.half {α} [Fraction α] [h : IsHalfFraction α]
+  (q : Frac α) : Frac α := ⟨h.half q.car⟩
+
 instance Frac_CMRA [Fraction α] : CMRA (Frac α) where
   pcore _ := none
   op := Add.add
@@ -130,9 +133,9 @@ instance (priority := default - 10) [Fraction α] (q1 q2 : Frac α) :
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_frac]
-instance [Fraction α] [h : IsHalfFraction α] (q : Frac α) :
-    IsOp io1 q io2 (h.half q) io3 (h.half q) where
-  is_op := q.ext <| h.half_add.symm
+instance [Fraction α] [IsHalfFraction α] (q : Frac α) :
+    IsOp io1 q io2 (q.half) io3 (q.half) where
+  is_op := q.ext <| IsHalfFraction.half_add.symm
 
 /-- A type of fractions with a unique whole element. -/
 class UFraction (α : Type _) extends Fraction α, One α where
