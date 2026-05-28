@@ -672,6 +672,11 @@ theorem map_empty {f : V → V'} : PartialMap.map f (empty : M V) ≡ₘ (empty 
   rw [get?_map, get?_empty, get?_empty]
   rfl
 
+theorem map_equiv {f : V → V'} {m₁ m₂ : M V} (h : m₁ ≡ₘ m₂) :
+    PartialMap.map f m₁ ≡ₘ PartialMap.map f m₂ := by
+  intro k
+  rw [get?_map, get?_map, h k]
+
 theorem map_insert {f : V → V'} {m : M V} {k : K} {v : V} :
     PartialMap.map f (insert m k v) ≡ₘ insert (PartialMap.map f m) k (f v) := by
   intro i
@@ -693,6 +698,12 @@ theorem map_union {f : V → V'} {m₁ m₂ : M V} :
 theorem dom_map {f : V → V'} {m : M V} : dom (PartialMap.map f m) = dom m := by
   ext k
   simp [PartialMap.dom, get?_map]
+
+theorem disjoint_map {f g : V → V'} {m₁ m₂ : M V}
+    (hdisj : m₁ ##ₘ m₂) : PartialMap.map f m₁ ##ₘ PartialMap.map g m₂ := by
+  intro k ⟨hs1, hs2⟩
+  simp only [get?_map, Option.isSome_map] at hs1 hs2
+  exact hdisj k ⟨hs1, hs2⟩
 
 /-- `map` commutes with set difference, provided the second map has the same key set.
 The conclusion uses `map` on both sides so the right-hand side type-checks. -/
