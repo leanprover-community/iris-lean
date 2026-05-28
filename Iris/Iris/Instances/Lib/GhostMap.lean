@@ -103,9 +103,8 @@ theorem ghost_map_elem_valid_2 (γ : GName) (k : K) (dq1 dq2 : DFrac F) (v1 v2 :
     (γ ↪◯MAP[k]{dq1} v1) ∗ (γ ↪◯MAP[k]{dq2} v2) ⊢@{IProp GF}
       internalCmraValid (dq1 • dq2) ∧ ⌜v1 = v2⌝ := by
   unfold ghost_map_elem
-  iintro H
-  icases iOwn_op (E := hgm.elem) $$ H with H
-  icases iOwn_cmraValid (E := hgm.elem) $$ H with %H
+  iintro ⟨H1, H2⟩
+  icombine H1 H2 gives %H
   obtain ⟨vdq, va⟩ := frag_op_valid_iff.mp H
   ipure_intro
   exact ⟨vdq, congrArg (·.car) (toAgree_op_valid_iff_eq.mp va)⟩
@@ -130,16 +129,11 @@ instance ghost_map_elem_combine_gives γ (k : K) (dq1 dq2 : DFrac F) (v1 v2 : V)
 theorem ghost_map_elem_combine (γ : GName) (k : K) (dq1 dq2 : DFrac F) (v1 v2 : V) :
     (γ ↪◯MAP[k]{dq1} v1) ∗ (γ ↪◯MAP[k]{dq2} v2)
     ⊢@{IProp GF} (γ ↪◯MAP[k]{dq1 • dq2} v1) ∗ ⌜v1 = v2⌝ := by
-  iintro H
-  icases ghost_map_elem_agree $$ H with #%heq
+  iintro ⟨H1, H2⟩
+  icases ghost_map_elem_agree $$ [$] with #%heq
   iframe %heq; subst heq
   unfold ghost_map_elem
-  icases iOwn_op (E := hgm.elem) $$ H with H
-  iapply iOwn_mono (E := hgm.elem) $$ H
-  refine inc_of_inc_of_eqv ?_ frag_op_equiv
-  refine inc_of_inc_of_eqv .rfl ?_
-  refine OFE.NonExpansive.eqv ?_
-  exact Agree.idemp.symm
+  icombine H1 H2 as $
 
 @[rocq_alias ghost_map_elem_combine_as]
 instance ghost_map_elem_combine_as (γ : GName) (k : K) (dq1 dq2 : DFrac F) (v1 v2 : V) :
@@ -179,7 +173,7 @@ theorem ghost_map_elem_persist (γ : GName) (k : K) (dq : DFrac F) (v : V) :
   exact update_frag_discard
 
 --  Recover fractional ownership for read-only element.
-theorem ghost_map_elem_unpersist [IsSplitFraction F] (γ : GName) (k : K) (v : V) :
+theorem ghost_map_elem_unpersist [IsHalfFraction F] (γ : GName) (k : K) (v : V) :
   ⊢@{IProp GF} (γ ↪◯MAP[k]{.discard} v) ==∗ ∃ q, (γ ↪◯MAP[k]{.own q} v) := by
   unfold ghost_map_elem
   iintro H
@@ -215,7 +209,7 @@ theorem ghost_map_alloc_strong [DecidableEq K] (P : GName → Prop) (m : H V) :
       simp only [Agree.valid]
       intro; exact True.intro
     · imodintro
-      icases iOwn_op (E := hgm.elem) $$ G with ⟨G1, G2⟩
+      icases G with ⟨G1, G2⟩
       isplitr [G2]
       · iapply iOwn_mono (E := hgm.elem) $$ G1
         refine inc_of_inc_of_eqv .rfl ?_
@@ -297,8 +291,7 @@ theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac F} {m1 m2 : H V} :
     ⊢@{IProp GF} (γ ↪●MAP{dq1} m1) -∗ (γ ↪●MAP{dq2} m2) -∗ ⌜✓ (dq1 • dq2) ∧ m1 ≡ₘ m2⌝ := by
   unfold ghost_map_auth
   iintro H1 H2
-  icases iOwn_op $$ [$H1 $H2] with G
-  icases iOwn_cmraValid $$ G with %G
+  icombine H1 H2 gives %G
   ipure_intro
   have ⟨h₁, h₂⟩ := auth_op_auth_valid_iff.mp G
   refine ⟨h₁, fun k => ?_⟩
@@ -321,7 +314,7 @@ theorem ghost_map_auth_persist γ dq (m : H V) :
   iapply iOwn_update auth_dfrac_discard
 
 @[rocq_alias ghost_map_auth_unpersist]
-theorem ghost_map_auth_unpersist [IsSplitFraction F] γ (m : H V) :
+theorem ghost_map_auth_unpersist [IsHalfFraction F] γ (m : H V) :
   ⊢@{IProp GF} (γ ↪●MAP{.discard} m) ==∗ ∃ q, γ ↪●MAP{.own q} m := by
   unfold ghost_map_auth
   iintro H
@@ -337,8 +330,7 @@ theorem ghost_map_lookup {γ dq} {m : H V} {k : K} {dq' v} :
   ⊢@{IProp GF} (γ ↪●MAP{dq} m) -∗ (γ ↪◯MAP[k]{dq'} v) -∗ ⌜get? m k = some v⌝ := by
   unfold ghost_map_auth ghost_map_elem
   iintro H1 H2
-  icases iOwn_op $$ [$H1 $H2] with G
-  icases iOwn_cmraValid $$ G with %G
+  icombine H1 H2 gives %G
   ipure_intro
   have ⟨av', _, _, h_av', _, h⟩ := auth_op_frag_valid_total_discrete_iff G
   cases h₂ : get? m k <;> grind [Std.LawfulPartialMap.get?_map,Agree.toAgree_included, OFE.leibniz]
@@ -373,7 +365,7 @@ theorem ghost_map_insert {γ} {m : H V} (k : K) (v : V) :
     (by simp [LawfulPartialMap.get?_map, Heq])
     DFrac.valid_own_one
     (by simp [Agree.valid_def, Agree.valid, Agree.validN, toAgree])) $$ H with H
-  icases iOwn_op $$ H with ⟨H, $⟩
+  icases H with ⟨H, $⟩
   imodintro
   iapply iOwn_mono $$ H
   refine inc_of_inc_of_eqv .rfl ?_
@@ -395,7 +387,7 @@ theorem ghost_map_delete {γ} {m : H V} (k : K) (v : V) :
   ⊢@{IProp GF} (γ ↪●MAP m) -∗ (γ ↪◯MAP[k] v) ==∗ γ ↪●MAP delete m k := by
   unfold ghost_map_auth ghost_map_elem
   iintro H1 H2
-  icases iOwn_op $$ [$H1 $H2] with G
+  icombine H1 H2 as G
   imod iOwn_update (update_one_delete (k := k) (v1 := toAgree (⟨v⟩ : LeibnizO V)))
     $$ G with G
   iapply iOwn_mono $$ G
@@ -463,9 +455,8 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) :
     simp only [Option.map_eq_some_iff, forall_exists_index, and_imp]
     rintro x Hx ⟨⟩
     simp [Agree.valid_def, Agree.valid, Agree.validN, toAgree]
-  · icases iOwn_op $$ H with ⟨H1, H2⟩
+  · icases H with ⟨H1, H2⟩
     imodintro
-    iapply iOwn_op
     isplitl [H1]
     · iapply iOwn_mono (E := hgm.elem) $$ H1
       refine inc_of_inc_of_eqv .rfl ?_

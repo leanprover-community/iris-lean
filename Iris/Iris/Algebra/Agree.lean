@@ -7,6 +7,7 @@ module
 
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
+public import Iris.Algebra.IsOp
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -388,6 +389,10 @@ theorem Agree.toAgree_op_validN_iff_dist {a b : α} :
       toAgree a • toAgree b ≡{n}≡ toAgree a • toAgree a := this.symm.op_r
       _ ≡{n}≡ toAgree a := idemp n
     exact this.symm.validN.mp trivial
+
+set_option synthInstance.checkSynthOrder false in
+instance {x : Agree α} : IsOp io1 x io2 x io3 x where
+  is_op := Agree.idemp.symm
 
 @[rocq_alias to_agree_op_valid]
 theorem Agree.toAgree_op_valid_iff_equiv {a : α} : ✓ (toAgree a • toAgree b) ↔ a ≡ b := by
