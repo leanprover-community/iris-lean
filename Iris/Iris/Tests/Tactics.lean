@@ -2715,3 +2715,12 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
+
+section iinduction
+
+example [BI PROP] {P Q : PROP} {n : Nat} :
+    ⊢ P -∗ ⌜n = 0⌝ -∗ Q -∗ ⌜n ≠ 1⌝ -∗ P ∗ Q ∗ ⌜n = n⌝ := by
+  iintro H1 H2 H3 #H4
+  iinduction n
+
+end iinduction
