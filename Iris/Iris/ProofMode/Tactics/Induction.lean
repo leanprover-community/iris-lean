@@ -17,34 +17,20 @@ namespace Iris.ProofMode
 public meta section
 open BI Std Lean Elab Tactic Meta Qq
 
-private def iInductionCore {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
-    (hyps : Hyps bi e) (goal : Q($prop)) :
-    ProofModeM (Q($e ⊢ $goal)) := sorry
-
 /--
   Given a collection of hypotheses (`hyps`) and a free variable `fvar`, return
   the subset of hypotheses in `hyps` that contains the `fvar`.
 -/
 private def iHypsContaining {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (hyps : Hyps bi e) (fvar : FVarId) : List SelTarget :=
-  let ivars := hyps.spatialIVarIds ++ hyps.intuitionisticIVarIds
-
-  let containing := ivars.filter fun ivar =>
+  let intuitionisticIVarIds := hyps.intuitionisticIVarIds.filter fun ivar =>
     match hyps.getDecl? ivar with
     | some (_, _, _, ty) => ty.containsFVar fvar
     | none => false
 
-  containing.map (fun ivar => { kind := .ipm ivar, explicit := false })
-
-/-- Clear all local hypotheses whose type parses as an IrisGoal. -/
-private def clearIrisGoalHyps (s : MVarId) : MetaM MVarId :=
-  s.withContext do
-    (← getLCtx).foldlM (fun s' ldecl => do
-      if ldecl.isAuxDecl then return s'
-      if (parseIrisGoal? (← instantiateMVars ldecl.type)).isSome then
-        try s'.clear ldecl.fvarId
-        catch _ => pure s'
-      else pure s') s
+  (hyps.spatialIVarIds ++ intuitionisticIVarIds).map (
+    fun ivar => { kind := .ipm ivar, explicit := false }
+  )
 
 elab "iinduction" colGt x:ident : tactic => do
   -- Get the ID of the variable on which induction is being performed
@@ -66,14 +52,6 @@ elab "iinduction" colGt x:ident : tactic => do
 
         -- Handle each subgoal
         for s in subgoals do
-          let s ← clearIrisGoalHyps s
-
-          let s ← (
-            do
-              let [s'] ← evalTacticAt (← `(tactic| rename_i $x:ident)) s | pure s
-              pure s'
-          ) <|> pure s
-
           s.withContext do
             let sType ← instantiateMVars (← s.getType)
 
