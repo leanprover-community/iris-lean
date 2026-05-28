@@ -67,6 +67,13 @@ elab "iinduction" colGt x:ident : tactic => do
         -- Handle each subgoal
         for s in subgoals do
           let s ← clearIrisGoalHyps s
+
+          let s ← (
+            do
+              let [s'] ← evalTacticAt (← `(tactic| rename_i $x:ident)) s | pure s
+              pure s'
+          ) <|> pure s
+
           s.withContext do
             let sType ← instantiateMVars (← s.getType)
 
