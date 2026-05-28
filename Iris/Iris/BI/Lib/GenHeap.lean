@@ -4,8 +4,7 @@ public import Iris.BI.Lib.Fractional
 public import Iris.Instances.Lib.GhostMap
 public import Iris.Instances.IProp
 
-
-public section
+@[expose] public section
 
 namespace Iris
 
@@ -84,6 +83,8 @@ class gen_HeapGPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type
   heap : GhostMapG GF F L V H
   -- TODO: `meta` field blocked by `reservation_mapR`
   -- TODO: `metaData` field blocked by `reservation_mapR`
+
+attribute [reducible, instance] gen_HeapGPreS.heap
 
 instance gen_HeapGPreS.instGhostMapG [Std.LawfulFiniteMap H L] [ι : gen_HeapGPreS F L V GF H] : GhostMapG GF F L V H := ι.heap
 

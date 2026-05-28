@@ -10,7 +10,7 @@ public import Iris.Instances.IProp
 public import Iris.BI.Lib.Fractional
 public import Iris.ProofMode
 
-public section
+@[expose] public section
 
 namespace Iris
 
