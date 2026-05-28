@@ -36,6 +36,16 @@ private def iHypsContaining {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
 
   containing.map (fun ivar => { kind := .ipm ivar, explicit := false })
 
+/-- Clear all local hypotheses whose type parses as an IrisGoal. -/
+private def clearIrisGoalHyps (s : MVarId) : MetaM MVarId :=
+  s.withContext do
+    (← getLCtx).foldlM (fun s' ldecl => do
+      if ldecl.isAuxDecl then return s'
+      if (parseIrisGoal? (← instantiateMVars ldecl.type)).isSome then
+        try s'.clear ldecl.fvarId
+        catch _ => pure s'
+      else pure s') s
+
 elab "iinduction" colGt x:ident : tactic => do
   -- Get the ID of the variable on which induction is being performed
   let fvar ← getFVarId x
@@ -56,6 +66,7 @@ elab "iinduction" colGt x:ident : tactic => do
 
         -- Handle each subgoal
         for s in subgoals do
+          let s ← clearIrisGoalHyps s
           s.withContext do
             let sType ← instantiateMVars (← s.getType)
 
