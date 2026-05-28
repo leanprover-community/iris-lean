@@ -107,7 +107,9 @@ instance : EctxLanguage Expr Λ.Ectx State Obs Val where
         simp [comp]
   val_stuck {e σ obs e' σ' eₜ} := val_stuck
   base_ctx_step_val {K e σ₁ obs e₂ σ₂ eₜ} := by
-    cases K using List.reverseRec <;> grind
+    cases K using List.reverseRec
+    · intro; right; rfl
+    · simp_all; grind
 
 theorem fill_not_val {K} {e : Expr} : toVal e = none → toVal (fill K e) = none := by
   grind only [=> EctxLanguage.fill_not_val]
