@@ -623,6 +623,21 @@ theorem get?_union_none {m₁ m₂ : M V} {i : K} :
   rw [get?_union]
   cases h1 : get? m₁ i <;> cases h2 : get? m₂ i <;> simp [Option.orElse]
 
+theorem union_equiv {m₁ m₁' m₂ m₂' : M V}
+    (h₁ : m₁ ≡ₘ m₁') (h₂ : m₂ ≡ₘ m₂') : union m₁ m₂ ≡ₘ union m₁' m₂' := by
+  intro k
+  rw [get?_union, get?_union, h₁ k, h₂ k]
+
+theorem union_empty_right {m : M V} : union m (empty : M V) ≡ₘ m := by
+  intro k
+  rw [get?_union, get?_empty]
+  cases get? m k <;> rfl
+
+theorem union_empty_left {m : M V} : union (empty : M V) m ≡ₘ m := by
+  intro k
+  rw [get?_union, get?_empty]
+  rfl
+
 theorem union_insert_left {m₁ m₂ : M V} {i : K} {x : V} :
     insert (union m₁ m₂) i x ≡ₘ union (insert m₁ i x) m₂ := by
   intro k
@@ -641,6 +656,11 @@ theorem map_id {m : M V} :
   intro k
   rw [get?_map]
   cases get? m k <;> simp
+
+theorem map_empty {f : V → V'} : PartialMap.map f (empty : M V) ≡ₘ (empty : M V') := by
+  intro k
+  rw [get?_map, get?_empty, get?_empty]
+  rfl
 
 theorem get?_filterMap {f : V → Option V} {m : M V} {k : K} :
     get? (filterMap f m) k = (get? m k).bind f := by

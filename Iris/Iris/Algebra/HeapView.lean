@@ -578,6 +578,11 @@ open One DFrac UFraction LawfulPartialMap Algebra
 
 variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [DecidableEq K] [LawfulFiniteMap H K] [CMRA V]
 
+omit [DecidableEq K] in
+private theorem bigOpM_frag_empty (dq : DFrac F) :
+    bigOpM (M := HeapView F K V H) op (fun k x => Frag k dq x) (empty : H V) = UCMRA.unit :=
+  BigOpM.bigOpM_empty (M := HeapView F K V H) (M' := H) (K := K) (op := op) (V := V) _
+
 theorem update_big_delete (m m' : H V) :
   Auth (.own one) m • (bigOpM (M := HeapView F K V H) op (fun k v => Frag k (.own one) v) m') ~~>
   Auth (.own one) (m \ m') := by
@@ -589,9 +594,7 @@ theorem update_big_delete (m m' : H V) :
     refine OFE.NonExpansive.eqv ?_
     exact eqv_of_Equiv (fun j => by simp [get?_difference, heq j])
   | hemp =>
-    rw [show bigOpM (M := HeapView F K V H) op (fun k x => Frag k (.own one) x) (empty : H V) = UCMRA.unit by
-        exact BigOpM.bigOpM_empty (M := HeapView F K V H) (M' := H) (K := K) (op := op) (V := V)
-          (fun k v => Frag k (.own one) v)]
+    rw [bigOpM_frag_empty]
     refine Update.equiv_left CMRA.comm ?_
     refine Update.equiv_left UCMRA.unit_left_id.symm ?_
     refine Update.equiv_left ?_ .id
@@ -624,9 +627,7 @@ theorem update_big_replace (m m0 m1 : H V)
     exact .rfl
   | hemp =>
     intro m1 Hdom Hall
-    rw [show bigOpM (M := HeapView F K V H) op (fun k x => Frag k (.own one) x) (empty : H V) = UCMRA.unit by
-        exact BigOpM.bigOpM_empty (M := HeapView F K V H) (M' := H) (K := K) (op := op) (V := V)
-          (fun k v => Frag k (.own one) v)]
+    rw [bigOpM_frag_empty]
     refine Update.equiv_left CMRA.comm ?_
     refine Update.equiv_left UCMRA.unit_left_id.symm ?_
     have Heq : equiv m1 ∅ := by
@@ -699,9 +700,7 @@ theorem update_big_alloc (m1 m2 : H V) dq
           simp [PartialMap.union, get?_merge, heq i])
       · exact BigOpM.bigOpM_equiv_of_perm _ heq.symm
     | hemp =>
-      rw [show bigOpM (M := HeapView F K V H) op (fun k x => Frag k dq x) (empty : H V) = UCMRA.unit by
-        exact BigOpM.bigOpM_empty (M := HeapView F K V H) (M' := H) (K := K) (op := op) (V := V)
-          (fun k v => Frag k dq v)]
+      rw [bigOpM_frag_empty]
       refine Update.included ?_
       refine inc_of_inc_of_eqv .rfl ?_
       refine CMRA.comm.trans ?_
