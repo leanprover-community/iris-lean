@@ -83,8 +83,8 @@ instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
   distLater_dist := by
     intros n wp wp' Hwp E e₁ Φ
     aesop_contractive
-    · exact Hwp m ‹_› _ _ _
-    · exact BI.BigSepL.bigSepL_dist <| fun _ => Hwp m ‹_› _ _ _
+    · exact Hwp _ ‹_› _ _ _
+    · exact BI.BigSepL.bigSepL_dist <| fun _ => Hwp _ ‹_› _ _ _
 
 @[rocq_alias wp_def]
 instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
@@ -124,7 +124,7 @@ instance wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     simp only [IProp.ext wp_unfold]
     aesop_contractive
     refine wp_ne.ne ?_
-    exact HΦ m ‹_›
+    exact HΦ _ ‹_›
 
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :

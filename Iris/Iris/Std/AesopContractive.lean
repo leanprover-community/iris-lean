@@ -2,7 +2,7 @@ module
 public meta import Aesop
 public meta import Lean
 
-open Lean Elab
+open Lean Elab Meta
 
 declare_aesop_rule_sets [aesop_contractive]
 
@@ -31,14 +31,31 @@ meta def elabConfig (stx : Syntax) : TermElabM AttrConfig :=
       return { rules := rs }
     | _ => throwUnsupportedSyntax
 
+meta def auxIfIsNonExpansiveDecl (declName : Name) : TermElabM Name := do
+  let decl ← getConstInfo declName
+  forallTelescope decl.type fun xs ty => ty.withApp fun fn _ => do
+    if let .const fnName _ := fn then
+      unless fnName = `Iris.OFE.NonExpansive || fnName = `Iris.OFE.NonExpansive₂ do
+        return declName
+      let declLvls := decl.levelParams.map Level.param
+      let declWithArgs := mkAppN (mkConst declName declLvls) xs
+      let proj ←  mkProjection declWithArgs `ne
+      withDeclNameForAuxNaming declName do
+        let auxName ← mkAuxDeclName
+        let e ← mkAuxDefinitionFor auxName proj
+        trace[aesop] m!"{e}"
+        return auxName
+    else
+      return declName
+
 meta initialize registerBuiltinAttribute {
     name := `aesop_contractive_attr
     descr := "Adds a given declaration to the ruleset for the `aesop_contractive` tactic."
     applicationTime := .afterCompilation
-    add := fun src stx kind ↦ withRef stx do Aesop.runTermElabMAsCoreM do
+    add := fun declName stx kind ↦ withRef stx do Aesop.runTermElabMAsCoreM do
+      let declName ← auxIfIsNonExpansiveDecl declName
       let config ← elabConfig stx
-      let decl ← getConstInfo src
-      let rules ← config.rules.flatMapM (·.buildAdditionalGlobalRules src)
+      let rules ← config.rules.flatMapM (·.buildAdditionalGlobalRules declName)
       for (rule, rsNames) in rules do
         for rsName in rsNames do
           addGlobalRule rsName rule kind (checkNotExists := true)
