@@ -146,9 +146,8 @@ theorem ghost_map_elem_combine (γ : GName) (k : K) (dq1 dq2 : DFrac F) (v1 v2 :
   iintro Hl1 Hl2
   icases ghost_map_elem_agree $$ [$Hl1 $Hl2] with #%heq
   iframe %heq; subst heq
-  icombine Hl1 Hl2 as Hl
   unfold ghost_map_elem
-  icombine H1 H2 as $
+  icombine Hl1 Hl2 as $
 
 @[rocq_alias ghost_map_elem_combine_as]
 instance ghost_map_elem_combine_as (γ : GName) (k : K) (dq1 dq2 : DFrac F) (v1 v2 : V) :
