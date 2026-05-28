@@ -31,8 +31,8 @@ class IsOp [CMRA α]
 /--
   Syntactic sugar for specifying whether `IsOp` is used for merging or splitting.
 -/
-abbrev IsMergeOp [CMRA α] (a b1 b2 : semiOutParam α) := IsOp .out a .in b1 .in b2
-abbrev IsSplitOp [CMRA α] (a b1 b2 : semiOutParam α) := IsOp .in a .out b1 .out b2
+abbrev IsOpMerge [CMRA α] (a b1 b2 : semiOutParam α) := IsOp .out a .in b1 .in b2
+abbrev IsOpSplit [CMRA α] (a b1 b2 : semiOutParam α) := IsOp .in a .out b1 .out b2
 
 
 set_option synthInstance.checkSynthOrder false in
@@ -40,8 +40,8 @@ set_option synthInstance.checkSynthOrder false in
   Merging with `•` should have the lowest priority.
 -/
 @[rocq_alias is_op_op]
-instance (priority := default - 100) isOp_op [CMRA α] (a b : α) :
-    IsMergeOp (a • b) a b where
+instance (priority := default - 100) isOpMerge_op [CMRA α] (a b : α) :
+    IsOpMerge (a • b) a b where
   is_op := .rfl
 
 set_option synthInstance.checkSynthOrder false in
@@ -50,21 +50,17 @@ set_option synthInstance.checkSynthOrder false in
 -/
 @[rocq_alias is_op_lr_op]
 instance (priority := default + 100) isOpSplit_op [CMRA α] (a b : α) :
-    IsSplitOp (a • b) a b where
+    IsOpSplit (a • b) a b where
   is_op := .rfl
 
 /-
   The following type class instances were originally defined in terms of
-  both `IsOp` and `IsOp'`. The distinction between `IsOp` and `IsOp'` is no
+  both `IsOp` and `IsOp'` in Rocq. The distinction between `IsOp` and `IsOp'` is no
   longer relevant in Lean, and we use `InOut` instead.
-
-  Note that in the Rocq formulation, the assumptions use `IsOp` while
-  the conclusion use `IsOp'`. We therefore use `merge` for the assumptions
-  but allow any `InOut` value for the conclusion.
 -/
 
 @[rocq_alias is_op_pair]
-instance isOpMerge_pair [CMRA α] {ioa iob1 iob2 : InOut}
+instance isOp_pair [CMRA α] {ioa iob1 iob2 : InOut}
     (a b1 b2 : α) (a' b1' b2' : α)
     [h1 : IsOp ioa a iob1 b1 iob2 b2] [h2 : IsOp ioa a' iob1 b1' iob2 b2'] :
     IsOp ioa (a, a') iob1 (b1, b1') iob2 (b2, b2') where
@@ -72,7 +68,7 @@ instance isOpMerge_pair [CMRA α] {ioa iob1 iob2 : InOut}
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_pair_core_id_l]
-instance isOpMerge_pair_core_id_l [CMRA α] [CMRA β] {ioa iob1 iob2 : InOut}
+instance isOp_pair_core_id_l [CMRA α] [CMRA β] {ioa iob1 iob2 : InOut}
     (a : α) (a' b1' b2' : β) [h1 : CoreId a] [h2 : IsOp ioa a' iob1 b1' iob2 b2'] :
     IsOp ioa (a, a') iob1 (a, b1') iob2 (a, b2') where
   is_op := ⟨(op_self a).symm, h2.is_op⟩
@@ -86,7 +82,7 @@ instance isOpMerge_pair_core_id_r [CMRA α] [CMRA β] {ioa iob1 iob2 : InOut}
   is_op := ⟨h2.is_op, (op_self a').symm⟩
 
 @[rocq_alias is_op_Some]
-instance isOpMerge_some [CMRA α] (a b1 b2 : α) {ioa iob1 iob2 : InOut}
+instance isOp_some [CMRA α] (a b1 b2 : α) {ioa iob1 iob2 : InOut}
     [h : IsOp ioa a iob1 b1 iob2 b2] :
     IsOp ioa (some a) iob1 (some b1) iob2 (some b2) where
   is_op := h.is_op
