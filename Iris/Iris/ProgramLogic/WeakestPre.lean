@@ -78,37 +78,17 @@ def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF
       stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
       wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
 
+/-For some reason, it looks like builting rules cannot be removed from specific rulesets, only from the general aesop ruleset...
+  These rules also seem to get re-integrated in the ruleset when imported from another file.. ?
+-/
+erase_aesop_rules [Aesop.BuiltinRules.rfl, Exists]
 @[rocq_alias wp_pre_contractive]
 instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
   distLater_dist := by
     intros n wp wp' Hwp E e₁ Φ
-    unfold pre
-    cases toVal e₁
-    case some _ =>
-      exact .rfl
-    case none =>
-      refine BI.forall_ne (fun σ₁ => ?_)
-      refine BI.forall_ne (fun ns => ?_)
-      refine BI.forall_ne (fun obs => ?_)
-      refine BI.forall_ne (fun obs' => ?_)
-      refine BI.forall_ne (fun nt => ?_)
-      refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.forall_ne (fun e₂  => ?_)
-      refine BI.forall_ne (fun σ₂ => ?_)
-      refine BI.forall_ne (fun eₜ => ?_)
-      refine BI.wand_ne.ne .rfl ?_
-      refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
-      refine OFE.Contractive.distLater_dist fun m m_n => ?_
-      refine BIFUpdate.ne.ne ?_
-      refine step_fupdN_ne.ne ?_
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.sep_ne.ne ?_ ?_
-      · exact Hwp m m_n _ _ _
-      · exact BI.BigSepL.bigSepL_dist <| fun _ => Hwp m m_n _ _ _
+    aesop_contractive
+    · exact Hwp m ‹_› _ _ _
+    · exact BI.BigSepL.bigSepL_dist <| fun _ => Hwp m ‹_› _ _ _
 
 @[rocq_alias wp_def]
 instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
@@ -136,24 +116,8 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
     case some v =>
       exact BIFUpdate.ne.ne <| HΦ v
     case none =>
-      refine BI.forall_ne fun σ₁ => ?_
-      refine BI.forall_ne fun ns => ?_
-      refine BI.forall_ne fun obs => ?_
-      refine BI.forall_ne fun obs' => ?_
-      refine BI.forall_ne fun nt => ?_
-      refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.forall_ne fun e₂  => ?_
-      refine BI.forall_ne fun σ₂ => ?_
-      refine BI.forall_ne fun eₜ => ?_
-      refine BI.wand_ne.ne .rfl ?_
-      refine BI.wand_ne.ne .rfl ?_
-      refine step_fupdN_contractive.distLater_dist fun m n_m => ?_
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.sep_ne.ne ?_ .rfl
-      exact IH m n_m <| OFE.dist_lt HΦ n_m
+      aesop_contractive
+      exact IH m ‹_›  <| OFE.dist_lt HΦ ‹_›
 
 #rocq_ignore wp_proper "Derivable using NonExpansive.eqv"
 
@@ -162,26 +126,9 @@ instance wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     OFE.Contractive (Wp.wp (PROP := IProp GF) s E e) where
   distLater_dist {n Φ₁ Φ₂} HΦ := by
     simp only [IProp.ext wp_unfold]
-    simp only [wp.pre, h]
-    refine BI.forall_ne fun σ₁ => ?_
-    refine BI.forall_ne fun ns => ?_
-    refine BI.forall_ne fun obs => ?_
-    refine BI.forall_ne fun obs' => ?_
-    refine BI.forall_ne fun nt => ?_
-    refine BI.wand_ne.ne .rfl ?_
-    refine BIFUpdate.ne.ne ?_
-    refine BI.sep_ne.ne .rfl ?_
-    refine BI.forall_ne fun e₂  => ?_
-    refine BI.forall_ne fun σ₂ => ?_
-    refine BI.forall_ne fun eₜ => ?_
-    refine BI.wand_ne.ne .rfl ?_
-    refine BI.wand_ne.ne .rfl ?_
-    refine step_fupdN_contractive.distLater_dist fun m n_m => ?_
-    refine BIFUpdate.ne.ne ?_
-    refine BI.sep_ne.ne .rfl ?_
-    refine BI.sep_ne.ne ?_ .rfl
+    aesop_contractive
     refine wp_ne.ne ?_
-    exact HΦ m n_m
+    exact HΦ m ‹_›
 
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
