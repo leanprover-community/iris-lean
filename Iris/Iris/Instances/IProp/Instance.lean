@@ -15,7 +15,7 @@ public meta import Iris.Std.RocqPorting
 @[expose] public section
 namespace Iris
 
-open COFE
+open COFE Std CMRA
 
 @[ext]
 theorem IProp.ext {P Q : IProp GF} : P ⊣⊢ Q → P = Q := OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr
@@ -756,16 +756,49 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
     rintro rfl
     exact BI.and_elim_r
 
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_sep_own]
+instance intoSep_own {γ} {a : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
+    IntoSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
+  into_sep := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mp.trans iOwn_op.mp
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_and_own]
+instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
+    IntoAnd false (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
+  into_and := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mp.trans <|
+    and_intro (iOwn_mono ⟨b2, .rfl⟩) (iOwn_mono ⟨b1, CMRA.comm⟩)
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias from_sep_own]
+instance fromSep_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
+    FromSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
+  from_sep := iOwn_op.mpr.trans (equiv_iff.mp <| NonExpansive.eqv h.is_op).mpr
+
 @[rocq_alias combine_sep_as_own]
-instance combineSepAs_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
-  -- TODO: Add IsOp premise once it is ported
-  CombineSepAs (iOwn γ a1) (iOwn γ a2) (iOwn γ (a1 • a2)) where
-  combine_sep_as := iOwn_op.mpr
+instance combineSepAs_iOwn {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpMerge a b1 b2] :
+    CombineSepAs (iOwn γ b1) (iOwn γ b2) (iOwn γ a) where
+  combine_sep_as := iOwn_op.mpr.trans (equiv_iff.mp <| NonExpansive.eqv h.is_op.symm).mp
 
 @[rocq_alias combine_sep_gives_own]
 instance combineSepGives_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
-  CombineSepGives (iOwn γ a1) (iOwn γ a2) (internalCmraValid (a1 • a2)) where
+    CombineSepGives (iOwn γ a1) (iOwn γ a2) (internalCmraValid (a1 • a2)) where
   combine_sep_gives := iOwn_cmraValid_op
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias from_and_own_persistent]
+instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2]
+    [TCOr (CoreId b1) (CoreId b2)] : FromAnd (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
+  from_and := by
+    -- Infer from `CoreId b1` that `iOwn γ b1` is persistent, likewise for `b2`
+    have _ : TCOr (Persistent (iOwn γ b1)) (Persistent (iOwn γ b2)) := by
+      cases (inferInstance : TCOr (CoreId b1) (CoreId b2))
+      · infer_instance
+      · infer_instance
+    calc
+      _ ⊢ iOwn γ b1 ∗ iOwn γ b2 := persistent_and_sep_1
+      _ ⊢ iOwn γ (b1 • b2)      := iOwn_op.mpr
+      _ ⊢ iOwn γ a              := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mpr
 
 end iOwn
 
