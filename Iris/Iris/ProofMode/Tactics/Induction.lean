@@ -45,13 +45,39 @@ elab "iinduction" colGt x:ident : tactic => do
     let targets := iHypsContaining hyps fvar
 
     -- Revert all hypotheses in the list
-    let pf ← iRevertIntro hyps goal targets (
-      fun hyps' goal' k => do
+    let pf ← iRevertCore targets hyps goal (
+
+      let names : List (Syntax × IntroPat) := ← targets.mapM (fun
+      | {kind := .pure id, ..} => do
+          let name ← Lean.mkIdent <$> id.getUserName
+          let ident ← `(binderIdent| $name:ident)
+          return (name, IntroPat.intro <| .pure ident)
+      | {kind := .ipm ivar, ..} => do
+          let name ← Lean.mkIdent <$> (hyps.getUserName? ivar).getM
+          let ident ← `(binderIdent| $name:ident)
+          return (name, IntroPat.intro <| (if ivar.persistent? then iCasesPat.intuitionistic else id) <| .one ident)
+      )
+
+      -- The function takes the hypotheses and goal after reverting
+      fun hyps' goal' => do
         -- Create a new metavariable for the proof goal upon reverting hypotheses
         let m ← mkBIGoal hyps' goal'
+
         -- Use built-in induction in Lean to generate the subgoals for induction
         let subgoals ← evalTacticAt (← `(tactic| induction $x:ident)) m.mvarId!
-        k hyps' goal'
+
+        for s in subgoals do
+          s.withContext do
+            let sType ← instantiateMVars (← s.getType)
+
+            let some irisGoal := parseIrisGoal? sType
+            -- This should not happen
+            | throwError "iinduction: fail to parse induction subgoal"
+
+            let casePf ← iIntroCore irisGoal.hyps irisGoal.goal names
+            s.assign casePf
+
+        return m
     )
 
     mvar.assign pf
