@@ -91,6 +91,8 @@ open Iris Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
+-- FIXME: Use iframe
+
 @[rocq_alias own_inv_acc]
 theorem own_inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) :
     ⊢ own_inv N P ={E, E \ ↑N}=∗ ▷ P ∗ (▷ P ={E \ ↑N, E}=∗ True) := by
@@ -241,6 +243,8 @@ open Iris Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
+-- FIXME: Arguments E, N and P in this section should be made implicit
+
 @[rocq_alias inv_acc]
 theorem inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) :
     ⊢ inv N P ={E, E \ ↑N}=∗ ▷ P ∗ (▷ P ={E \ ↑N, E}=∗ True) := by
@@ -277,6 +281,15 @@ theorem inv_acc_timeless (E : CoPset) (N : Namespace) (P : IProp GF) [Timeless P
   iintro HP
   iapply H
   inext; iassumption
+
+theorem inv_open_fupd {E : CoPset} {N : Namespace} {P : IProp GF} (Hsub : ↑N ⊆ E) :
+    ⊢ inv N P -∗ (▷ P ∗ Q ={E \ N}=∗ P ∗ R) -∗ Q ={E}=∗ R := by
+  iintro #Hinv H HQ
+  imod inv_acc _ _ _ Hsub $$ Hinv with ⟨HP, Hclose⟩
+  imod H $$ [$] with ⟨HP, HR⟩; iframe
+  imod Hclose $$ [HP] with -
+  · inext; iframe
+  itrivial
 
 end Access
 
