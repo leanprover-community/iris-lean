@@ -195,9 +195,6 @@ class Discrete (α : Type _) [OFE α] where
   discrete_0 {x y : α} : x ≡{0}≡ y → x ≡ y
 export OFE.Discrete (discrete_0)
 
-instance [OFE α][Discrete α](x: α): DiscreteE x where
-  discrete := Discrete.discrete_0
-
 #rocq_ignore ofe_discrete_subrelation "Generalized-rewriting subrelation; not needed in Lean."
 
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
