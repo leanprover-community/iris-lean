@@ -2602,17 +2602,19 @@ example {GF F A} [UFraction F] [UCMRA A] [ElemG GF (constOF (Auth F A))] {γ}
   icombine HNew1 HNew2 HNew3 as HNew
   iexact HNew
 
-/-- Tests `icombine` with the `IsOp` instance `isOp_frac`, which stipulates the
-    merging of `a1`, `a2` and `a3` using `+` instead of `•`. -/
-example {GF α} [Fraction α] [ElemG GF (constOF (Frac α))] {γ}
-    {a1 a2 a3 : Frac α} :
+/-- Tests `icombine` with the `IsOp` instances stipulating the
+    merging of `a1`, `a2` and `a3` using `+` instead of `•`, as well as
+    to eliminate splits (`IsSplitFraction`). -/
+example {GF α} [Fraction α] [h : IsSplitFraction α]
+    [ElemG GF (constOF (Frac α))] {γ} {a1 a2 a3 : Frac α} :
     ⊢@{IProp GF}
       iOwn (F := constOF (Frac α)) γ a1 -∗
       iOwn (F := constOF (Frac α)) γ a2 -∗
-      iOwn (F := constOF (Frac α)) γ a3 -∗
+      iOwn (F := constOF (Frac α)) γ (h.split a3).1 -∗
+      iOwn (F := constOF (Frac α)) γ (h.split a3).2 -∗
       iOwn (F := constOF (Frac α)) γ (a1 + (a2 + a3)) := by
-  iintro H1 H2 H3
-  icombine H1 H2 H3 as Hnew
+  iintro H1 H2 H3a H3b
+  icombine H1 H2 H3a H3b as Hnew
   iexact Hnew
 
 /-- Tests `icombine` for combining propositions involving later credits. -/
