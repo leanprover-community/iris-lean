@@ -78,10 +78,6 @@ def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF
       stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
       wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
 
-/-For some reason, it looks like builting rules cannot be removed from specific rulesets, only from the general aesop ruleset...
-  These rules also seem to get re-integrated in the ruleset when imported from another file.. ?
--/
-erase_aesop_rules [Aesop.BuiltinRules.rfl, Exists]
 @[rocq_alias wp_pre_contractive]
 instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
   distLater_dist := by
