@@ -170,6 +170,9 @@ class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
     E1 ## Ef → (|={E1,E2}=> ⌜E2 ## Ef⌝ → P) ⊢ |={E1 ∪ Ef,E2 ∪ Ef}=> P
   frame_r {E1 E2 : CoPset} {P R : PROP} : (|={E1,E2}=> P) ∗ R ⊢ |={E1,E2}=> P ∗ R
 
+@[aesop safe apply (rule_sets := [aesop_contractive])]
+theorem BIFUpdate.ne_ne [BI PROP] [h : BIFUpdate PROP] : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → iprop(|={E1,E2}=> x₁ : PROP) ≡{n}≡ iprop(|={E1,E2}=> x₂ : PROP) := ne.ne
+
 class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] where
   fupd_of_bupd {P : PROP} {E : CoPset} : (|==> P) ⊢ |={E}=> P
 
@@ -413,6 +416,9 @@ theorem step_fupdN_ne {E1 E2 : CoPset} {n : Nat} :
     induction n with
     | zero => simp [Nat.repeat, xy_i]
     | succ n IH => exact ne.ne (later_ne.ne (ne.ne IH))
+
+@[aesop safe apply (rule_sets := [aesop_contractive])]
+def step_fupdN_ne_ne {E1 E2 : CoPset} ⦃n : Nat⦄ := (@step_fupdN_ne PROP _ _  E1 E2 n).ne
 
 theorem step_fupd_mono {Eo Ei : CoPset} {P Q : PROP} :
     (Q ⊢ P) → (|={Eo}[Ei]▷=> Q) ⊢ |={Eo}[Ei]▷=> P :=

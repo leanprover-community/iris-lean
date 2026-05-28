@@ -65,7 +65,7 @@ abbrev Stuckness.MaybeReducible : Stuckness → Expr × State → Prop
 | .NotStuck, (e₁, σ₁) => PrimStep.Reducible (e₁, σ₁)
 | _, _ => True
 
-@[rocq_alias wp_pre]
+@[rocq_alias wp_pre, aesop safe unfold (rule_sets := [aesop_contractive])]
 def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF) (E : CoPset)
     (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
   match toVal e₁ with

@@ -89,6 +89,12 @@ attribute [instance] BI.entails_preorder
 theorem BIBase.Entails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q) (h2 : Q ⊢ R) : P ⊢ R :=
   Transitive.trans h1 h2
 
+@[aesop safe apply (rule_sets := [aesop_contractive])]
+theorem wand_ne_ne [h : BI PROP] :  ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → h.wand x₁ y₁ ≡{n}≡ h.wand x₂ y₂ := wand_ne.ne
+
+@[aesop safe apply (rule_sets := [aesop_contractive])]
+theorem sep_ne_ne [h : BI PROP] :  ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → h.sep x₁ y₁ ≡{n}≡ h.sep x₂ y₂ := sep_ne.ne
+
 @[simp] theorem BIBase.Entails.rfl [BI PROP] {P : PROP} : P ⊢ P := refl
 
 theorem BIBase.Entails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊢ Q := h ▸ .rfl
