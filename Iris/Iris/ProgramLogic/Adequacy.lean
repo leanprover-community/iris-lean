@@ -44,7 +44,7 @@ theorem wp_step (s : Stuckness) (e1 : Expr) (σ1 : State)
         stateInterp σ2 (ns + 1) κs (nt + efs.length) ∗
         WP e2 @ s ; ⊤ {{ Φ }} ∗
         wptp s efs (List.replicate efs.length iG.forkPost) := by
-  rw [IProp.ext wp_unfold]
+  rw [wp_unfold.to_eq]
   simp only [wp.pre, Language.val_stuck Hstep]
   iintro Hσ Hcred Hwp
   imod Hwp $$ %σ1 %ns %κ %κs %nt Hσ with ⟨%_, Hcont⟩
@@ -91,7 +91,7 @@ theorem wp_not_stuck (κs : List Obs) (nt : Nat) (e : Expr) (σ : State)
     (ns : Nat) (Φ : Val → IProp GF) :
     ⊢ stateInterp σ ns κs nt -∗
       WP e @ Stuckness.NotStuck ; ⊤ {{ Φ }} ={⊤,∅}=∗ ⌜NotStuck (e, σ)⌝ := by
-  rw [IProp.ext wp_unfold]
+  rw [wp_unfold.to_eq]
   unfold wp.pre
   match h : toVal e with
   | some v =>
