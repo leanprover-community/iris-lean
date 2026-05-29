@@ -4,10 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
 
-module
-
-meta import Lean
-public meta import Iris.Std.RocqPorting
+import Lean
+import Iris.Std.RocqPorting
 
 /-!
 # Dump Porting Data

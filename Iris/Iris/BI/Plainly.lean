@@ -44,7 +44,7 @@ theorem persistently_if_elim_plainly p : <pers>?p ■ P ⊣⊢ ■ P :=
   | true => persistently_elim_plainly
   | false => .rfl
 
-nonrec theorem plainly_forall_2 {A : Type _} {Ψ : A → PROP} : (∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a) :=
+nonrec theorem plainly_forall_2 {A : Sort _} {Ψ : A → PROP} : (∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a) :=
   plainly_forall_2 _
 
 @[rocq_alias plainly_persistently_elim]
@@ -96,7 +96,7 @@ theorem plainly_pure {φ} : ■ ⌜φ⌝ ⊣⊢ (⌜φ⌝ : PROP) := by
   exact (forall_intro (Ψ := fun _ => iprop(■ True)) Empty.rec).trans <|
     plainly_forall_2.trans (plainly_mono <| true_intro.trans <| pure_intro φ)
 
-theorem plainly_forall {A : Type _} {Ψ : A → PROP} : ■ (∀ a, Ψ a) ⊣⊢ ∀ a, ■ (Ψ a) :=
+theorem plainly_forall {A : Sort _} {Ψ : A → PROP} : ■ (∀ a, Ψ a) ⊣⊢ ∀ a, ■ (Ψ a) :=
   ⟨forall_intro (plainly_mono <| forall_elim ·), plainly_forall_2⟩
 
 @[rocq_alias plainly_exist_2]
@@ -309,7 +309,7 @@ theorem plainly_if_idemp p  : ■?p ■?p P ⊣⊢ ■?p P :=
   build_plainly_if p from plainly_idemp
 
 @[rocq_alias plainly_if_absorbing]
-instance plainly_if_absorbing (P : PROP)[Absorbing P] p : Absorbing iprop(■?p P) :=
+instance plainly_if_absorbing (P : PROP) [Absorbing P] p : Absorbing iprop(■?p P) :=
   build_plainly_if p from plainly_absorbing P
 end PlainlyLaws
 
@@ -332,11 +332,11 @@ theorem plainly_intro [ι:Plain P] : iprop(P ⊢ Q) → P ⊢ ■ Q := fun h =>
     _ ⊢ ■ Q := plainly_mono h
 
 @[rocq_alias plain_persistent]
-theorem plain_persistent [ι : Plain P]: Persistent P where
-  persistent := ι.plain.trans plainly_elim_persistently
+instance plain_persistent [Plain P]: Persistent P where
+  persistent := Plain.plain.trans plainly_elim_persistently
 
 @[rocq_alias impl_persistent]
-instance impl_persistent [Absorbing P][Plain P][Persistent Q] : Persistent iprop(P → Q) where
+instance impl_persistent [Absorbing P] [Plain P] [Persistent Q] : Persistent iprop(P → Q) where
   persistent := by
     calc iprop(P → Q)
       _ ⊢ (<absorb> P → Q) := imp_mono Absorbing.absorbing .rfl
@@ -350,7 +350,7 @@ instance plainly_persistent : Persistent iprop(■ P) where
   persistent := persistently_elim_plainly.2
 
 @[rocq_alias wand_persistent]
-instance wand_persistent [Plain P][Persistent Q][Absorbing Q] :
+instance wand_persistent [Plain P] [Persistent Q] [Absorbing Q] :
   Persistent iprop(P -∗ Q) where
   persistent :=
     open Plain Persistent Absorbing in

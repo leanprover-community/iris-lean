@@ -13,7 +13,7 @@ namespace Iris.ProgramLogic
 
 open Language Language.Notation BI
 
-variable {hlc : outParam Bool} {Expr State Obs Val}
+variable {hlc : outParam HasLC} {Expr State Obs Val}
 variable [Λ : Language Expr State Obs Val]
 variable {GF : BundledGFunctors}
 variable [ι : IrisGS_gen hlc Expr GF]

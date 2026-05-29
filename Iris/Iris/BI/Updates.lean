@@ -32,17 +32,18 @@ macro_rules
 
 delab_rule BUpd.bupd
   | `($_ $P) => do ``(iprop(|==> $(← Iris.BI.unpackIprop P)))
--- delab_rule WandUpdate ??
---   | `($_ $P $Q) => ``(iprop($P ==∗ $Q))
+
+delab_rule BIBase.wand
+  | `($_ $P iprop(|==> $Q)) => do `(iprop($(←Iris.BI.unpackIprop P) ==∗ $Q))
 
 class FUpd (PROP : Type _) where
   fupd : CoPset → CoPset → PROP → PROP
 export FUpd (fupd)
 
-syntax "|={" term "," term "}=> " term : term
-syntax:25 term:26 "={" term "," term "}=∗ " term:25 : term
+syntax "|={" term ", " term "}=> " term : term
+syntax:25 term:26 " ={" term ", " term "}=∗ " term:25 : term
 syntax "|={" term "}=> " term : term
-syntax:25 term:26 "={" term "}=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={$E1,$E2}=> $P))  => ``(FUpd.fupd $E1 $E2 iprop($P))
@@ -58,10 +59,14 @@ delab_rule FUpd.fupd
       if E1 == E2 then ``(iprop(|={$E1}=> $P))
       else ``(iprop(|={$E1,$E2}=> $P))
 
+delab_rule BIBase.wand
+  | `($_ $P iprop(|={$E₁,$E₂}=> $Q)) => do `(iprop($(←Iris.BI.unpackIprop P) ={$E₁,$E₂}=∗ $Q))
+  | `($_ $P iprop(|={$E₁}=> $Q)) => do `(iprop($(←Iris.BI.unpackIprop P) ={$E₁}=∗ $Q))
+
 syntax "|={" term "}[" term "]▷=> " term : term
-syntax:25 term:26 "={" term "}[" term "]▷=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}[" term "]▷=∗ " term:25 : term
 syntax "|={" term "}▷=> " term : term
-syntax:25 term:26 "={" term "}▷=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}▷=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={$E1}[$E2]▷=> $P))  => ``(iprop(|={$E1,$E2}=> ▷ (|={$E2,$E1}=> iprop($P))))
@@ -69,12 +74,24 @@ macro_rules
   | `(iprop(|={$E1}▷=> $P))  => ``(iprop(|={$E1}[$E1]▷=> iprop($P)))
   | `(iprop($P ={$E1}▷=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷=∗ iprop($Q)))
 
--- Delab rules
+delab_rule FUpd.fupd
+  | `($_ $E₁ $E₂ iprop(▷ |={$E₂',$E₁'}=> $P)) => do
+    unless E₁ == E₁' ∧ E₂ == E₂' do throw ()
+    `(iprop(|={$E₁}[$E₂]▷=> $(←Iris.BI.unpackIprop P)))
+  | `($_ $E₁ $E₁' iprop(▷ |={$E₁''}=> $P)) => do
+    unless E₁ == E₁' ∧ E₁' == E₁'' do throw ()
+    `(iprop(|={$E₁}▷=> $(←Iris.BI.unpackIprop P)))
+
+delab_rule BIBase.wand
+  | `($_ $Q iprop(|={$E₁}[$E₂]▷=> $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷=∗ $P))
+  | `($_ $Q iprop(|={$E₁}▷=> $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}▷=∗ $P))
 
 syntax "|={" term "}[" term "]▷^" term "=> " term : term
-syntax:25 term:26 "={" term "}[" term "]▷^" term "=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}[" term "]▷^" term "=∗ " term:25 : term
 syntax "|={" term "}▷^" term "=> " term : term
-syntax:25 term:26 "={" term "}▷^" term "=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}▷^" term "=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={$E1}[$E2]▷^$n=> $P))  => ``(iprop(|={$E1,$E2}=> ▷^[$n] (|={$E2,$E1}=> iprop($P))))
@@ -82,20 +99,59 @@ macro_rules
   | `(iprop(|={$E1}▷^$n=> $P))  => ``(iprop(|={$E1}[$E1]▷^$n=> iprop($P)))
   | `(iprop($P ={$E1}▷^$n=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷^$n=∗ iprop($Q)))
 
--- Delab rules
+delab_rule FUpd.fupd
+  | `($_ $E₁ $E₂ iprop(▷^[$n] |={$E₂',$E₁'}=> $P)) => do
+    unless E₁ == E₁' ∧ E₂ == E₂' do throw ()
+    `(iprop(|={$E₁}[$E₂]▷^$n=> $(←Iris.BI.unpackIprop P)))
+  | `($_ $E₁ $E₁' iprop(▷^[$n] |={$E₁''}=> $P)) => do
+    unless E₁ == E₁' ∧ E₁' == E₁'' do throw ()
+    `(iprop(|={$E₁}▷^$n=> $(←Iris.BI.unpackIprop P)))
 
-syntax "|={ " term " }[ " term " ]▷=>^[ " term " ]" term : term
-syntax:25 term:26 "={ " term " }[ " term " ]▷=∗^[ " term " ]" term:25 : term
-syntax "|={ " term " }▷=>^[ " term " ]" term : term
-syntax:25 term:26 "={ " term " }▷=∗^[ " term " ]" term:25 : term
+delab_rule BIBase.wand
+  | `($_ $Q iprop(|={$E₁}[$E₂]▷^$n=> $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷^$n=∗ $P))
+  | `($_ $Q iprop(|={$E₁}▷^$n=> $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}▷^$n=∗ $P))
+
+syntax "|={" term "}[" term "]▷=>^[" term "] " term : term
+syntax:25 term:26 " ={" term "}[" term "]▷=∗^[" term "] " term:25 : term
+syntax "|={" term "}▷=>^[" term "] " term : term
+syntax:25 term:26 " ={" term "}▷=∗^[" term "] " term:25 : term
 
 macro_rules
   | `(iprop(|={ $E1 }[ $E2 ]▷=>^[ $n ] $P))  => ``(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) $n iprop($P))
-  | `(iprop($P ={ $E1 }[ $E2 ]▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q) $n) iprop($Q)))
+  | `(iprop($P ={ $E1 }[ $E2 ]▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) $n iprop($Q)))
   | `(iprop(|={ $E1 }▷=>^[ $n ] $P))  => ``(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($P))
   | `(iprop($P ={ $E1 }▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($Q)))
 
--- Delab rules
+open Lean.PrettyPrinter.Delaborator SubExpr in
+@[app_delab Nat.repeat]
+meta def delabStepFUpdN : Delab :=  do
+  let_expr Nat.repeat _ lam _ _ := ←getExpr | unreachable!
+  let n ← withNaryArg 2 delab
+  let P ← withNaryArg 3 delab
+  guard <| lam.isLambda
+  let lamBody ← withNaryArg 1 do
+    withBindingBody' `_ Pure.pure fun arg => do
+    guard <| (←getExpr).getAppFn.constName! == ``FUpd.fupd
+    withNaryArg 4 do
+      guard <| (←getExpr).getAppFn.constName! == ``BIBase.later
+      withNaryArg 2 do
+      guard <| (←getExpr).getAppFn.constName! == ``FUpd.fupd
+      withNaryArg 4 do
+      let body ← getExpr
+      guard (←Lean.Meta.isDefEq arg body)
+    delab
+  match lamBody with
+  | `(iprop(|={$E₁}▷=> $_)) => `(iprop(|={$E₁}▷=>^[$n] $P))
+  | `(iprop(|={$E₁}[$E₂]▷=> $_)) => `(iprop(|={$E₁}[$E₂]▷=>^[$n] $P))
+  | _ => failure
+
+delab_rule BIBase.wand
+  | `($_ $Q iprop(|={$E₁}[$E₂]▷=>^[$n] $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷=∗^[$n] $P))
+  | `($_ $Q iprop(|={$E₁}▷=>^[$n] $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}▷=∗^[$n] $P))
 
 class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
   [bupd_ne : OFE.NonExpansive (BUpd.bupd (PROP := PROP))]
@@ -323,18 +379,18 @@ instance fupd_sep_homomorphism E :
   map_unit := fupd_intro
 
 @[rocq_alias big_sepL_fupd]
-theorem BigSepL2.big_sepL_fupd {A : Type _} E (Φ : Nat → A → PROP) l :
+theorem BigSepL2.bigSepL_fupd {A : Type _} E (Φ : Nat → A → PROP) l :
     ([∗list] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗list] k↦x ∈ l, Φ k x :=
     Algebra.BigOpL.bigOpL_hom (R := flip Entails) Φ l
 
 @[rocq_alias big_sepL2_fupd]
-theorem BigSepL2.big_sepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) l1 l2 :
+theorem BigSepL2.bigSepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) l1 l2 :
     ([∗list] k↦x;y ∈ l1;l2, |={E}=> Φ k x y) ⊢ |={E}=> [∗list] k↦x;y ∈ l1;l2, Φ k x y := by
   refine BigSepL2.bigSepL2_alt.mp.trans ?_
   refine persistent_and_affinely_sep_l.mp.trans ?_
   refine .trans ?_ (mono BigSepL2.bigSepL2_alt.mpr)
   refine .trans ?_ (mono persistent_and_affinely_sep_l.mpr)
-  exact .trans (sep_mono_r (BigSepL2.big_sepL_fupd E _ _ )) fupd_frame_l
+  exact .trans (sep_mono_r (BigSepL2.bigSepL_fupd E _ _ )) fupd_frame_l
 
 end FUpdLaws
 
@@ -448,6 +504,28 @@ theorem step_fupdN_S_fupd {n : Nat} {E : CoPset} {P : PROP} :
   refine ⟨step_fupd_mono <| step_fupdN_mono fupd_intro, ?_⟩
   simp only [Nat.repeat_add]
   exact step_fupdN_mono step_fupd_fupd.mpr
+
+@[rocq_alias step_fupd_frame_l]
+theorem step_fupd_frame_l {Eo Ei : CoPset} {R Q : PROP} :
+    (R ∗ |={Eo}[Ei]▷=> Q) ⊢ |={Eo}[Ei]▷=> (R ∗ Q) :=
+  fupd_frame_l.trans <| mono <|
+    (sep_mono_l later_intro).trans <| later_sep.2.trans <| later_mono fupd_frame_l
+
+@[rocq_alias step_fupdN_add]
+theorem step_fupdN_add {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
+    (|={Eo}[Ei]▷=>^[n + m] P) ⊣⊢ (|={Eo}[Ei]▷=>^[n] |={Eo}[Ei]▷=>^[m] P) := by
+  induction n with
+  | zero => rw [Nat.zero_add]; exact .rfl
+  | succ n IH =>
+    rw [Nat.add_right_comm n 1 m]
+    exact ⟨mono <| later_mono <| mono IH.1, mono <| later_mono <| mono IH.2⟩
+
+@[rocq_alias step_fupdN_frame_l]
+theorem step_fupdN_frame_l {Eo Ei : CoPset} {n : Nat} {R Q : PROP} :
+    (R ∗ |={Eo}[Ei]▷=>^[n] Q) ⊢ |={Eo}[Ei]▷=>^[n] (R ∗ Q) := by
+  induction n with
+  | zero => exact .rfl
+  | succ n IH => exact step_fupd_frame_l.trans (mono <| later_mono <| mono IH)
 
 end StepFUpdLaws
 
