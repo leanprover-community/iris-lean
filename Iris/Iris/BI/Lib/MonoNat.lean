@@ -49,18 +49,22 @@ notation γ " ↪◯MN " n => lb_own γ n
 instance : Timeless (PROP := IProp GF) (γ ↪●MN{dq} n) := by
   unfold auth_own
   infer_instance
+
 @[rocq_alias mono_nat_auth_own_persistent]
 instance : Persistent (PROP := IProp GF) (γ ↪●MN□ n) := by
   unfold auth_own
   infer_instance
+
 @[rocq_alias mono_nat_lb_own_timeless]
 instance : Timeless (PROP := IProp GF) (γ ↪◯MN n) := by
   unfold lb_own
   infer_instance
+
 @[rocq_alias mono_nat_lb_own_persistent]
 instance : Persistent (PROP := IProp GF) (γ ↪◯MN n) := by
   unfold lb_own
   infer_instance
+
 instance : IsUnit (◯MN 0 : MonoNat F) := by
   infer_instance
 
@@ -119,22 +123,19 @@ theorem own_alloc_strong (P : Nat → Prop) n
   ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MN n) ∗ γ ↪◯MN n := by
   unfold auth_own lb_own
   imod iOwn_alloc_strong (F := MonoNatRF F) ((●MN n) • (◯MN n)) P hP with ⟨%γ, ⟨H1, H2⟩⟩
-  · rw [both_valid]; simp
+  · simp [both_valid]
   imodintro
   iexists γ
   iframe H1
-  icases iOwn_op $$ H2 with ⟨H1, H2⟩
-  iframe
+  icases iOwn_op $$ H2 with ⟨$,$⟩
 
 @[rocq_alias mono_nat_own_alloc]
 theorem own_alloc {F : Type _} [UFraction F] {GF : BundledGFunctors} [MonoNatG F GF] (n : MaxNat) :
   ⊢@{IProp GF} |==> (∃ γ, (γ ↪●MN n) ∗ (γ ↪◯MN n)) := by
-  unfold auth_own lb_own
   imod (own_alloc_strong (λ _ => True) n) with ⟨%γ, ⟨-, H⟩⟩
   · intro n; exists n; simp
   · iexists γ
     imodintro
-    unfold auth_own lb_own
     iframe
 
 @[rocq_alias mono_nat_own_update]
@@ -146,9 +147,8 @@ theorem own_update {F : Type _} [UFraction F] {GF : BundledGFunctors} [MonoNatG 
     iapply iOwn_update $$ H
     exact update _ h
   · imodintro
-    isplit
-    · iframe
-    · iapply lb_own_get $$ Hauth
+    ihave #$ := lb_own_get $$ Hauth
+    iframe
 
 @[rocq_alias mono_nat_own_persist]
 theorem own_persist (γ : GName) (dq : DFrac F) (a : MaxNat) :
@@ -159,7 +159,7 @@ theorem own_persist (γ : GName) (dq : DFrac F) (a : MaxNat) :
   exact auth_persist _ _
 
 @[rocq_alias mono_nat_own_unpersist]
-theorem own_unpersist {F : Type _} [UFraction F] [IsSplitFraction F] {GF : BundledGFunctors} [MonoNatG F GF] (γ : GName) (a : MaxNat) :
+theorem own_unpersist {F : Type _} [UFraction F] [IsHalfFraction F] {GF : BundledGFunctors} [MonoNatG F GF] (γ : GName) (a : MaxNat) :
   ⊢@{IProp GF} (γ ↪●MN□ a) ==∗ (∃ q, γ ↪●MN{DFrac.own q} a) := by
   unfold auth_own
   iintro H
