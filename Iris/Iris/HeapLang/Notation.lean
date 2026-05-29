@@ -166,8 +166,7 @@ partial def unpackHLVal [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (
 
 partial def unpackHLBinder [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `Lean.binderIdent)
   | `(hl_binder($e)) => `(binderIdent|$e)
--- TODO
-  | `($_) => panic! "unknown binder"
+  | `($_) => `(binderIdent|_)
 
 /-- elaborating binders -/
 macro_rules

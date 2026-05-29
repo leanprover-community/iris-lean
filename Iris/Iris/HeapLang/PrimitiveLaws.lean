@@ -30,12 +30,40 @@ instance : Language.PureExec True 1 hl(if #true then {e1} else {e2}) e1 where
       exists e1, σ, []
       refine BaseStep.ContextStep.intro (K := []) ?_
       constructor
-    · intros _ _ _ e2' _ Hstep
-      -- simp only [PrimStep.primStep] at Hstep
-      -- rw [show hl(if #(BaseLit.bool true) then {e1} else {e2}) = fill [] hl(if #(BaseLit.bool true) then {e1} else {e2}) by rfl] at Hstep
-      -- rw [show e2' = fill [] e2' by rfl] at Hstep
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.if (.val (.lit (.bool true))) e1 e2) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        cases heq
+        simp [toVal]
+      have Hbase := EctxLanguage.baseStep_of_primStep Hstep hsr
+      cases Hbase
+      case ifTrueS => exact ⟨rfl, rfl, rfl, rfl⟩
+      all_goals contradiction
 
+instance {f x : Binder} {e : Exp} {v : Val} : Language.PureExec True 1 hl(v(rec f x := e) {v}) (Exp.subst x v (Exp.subst f (hl_val(rec f x := e)) e)) where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists (Exp.subst x v (Exp.subst f (hl_val(rec f x := e)) e)), σ, []
+      refine BaseStep.ContextStep.intro (K := []) ?_
+      apply BaseStep.betaS
+      simp [Exp.subst]
       sorry
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues hl(v(rec f x := e) {↑v}) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        · cases heq; simp [toVal, expToVal]
+        · cases heq; simp
+      have Hbase := EctxLanguage.baseStep_of_primStep Hstep hsr
+      cases Hbase
+
+      case betaS => exact ⟨rfl, rfl, sorry, rfl⟩
+      -- all_goals contradiction
 
 section HeapLangGS
 
@@ -46,7 +74,7 @@ class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGp
 
 attribute [reducible, instance] HeapLangGpreS.heap_pre
 
-class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) extends HeapLangGpreS hlc GF, InvGS_gen hlc GF where
+class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGS_gen hlc GF where
   heap : gen_HeapGS PNat Loc (Option Val) GF HeapF
 
 attribute [reducible, instance] HeapLangGS.heap
@@ -80,9 +108,6 @@ end NotationOverride
 
 section Adequacy
 
--- set_option maxHeartbeats 4000000 in
--- set_option pp.all true in
--- set_option diagnostics true in
 theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop) :
   (∀ [HeapLangGS .hasLC GF], ⊢@{IProp GF} (WP e {{ v, ⌜φ v⌝ }})) →
   adequate .NotStuck e σ (fun v _ => φ v) := by
@@ -90,42 +115,17 @@ theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
   refine wp_adequacy (GF := GF) .NotStuck e σ φ ?_
   intro inst κs
   istart
-
   imod iOwn_alloc (E := HeapLangGpreS.heap_pre.heap.elem)
-    (HeapView.Auth (.own One.one) (σ.heap.map (fun k v => toAgree $ LeibnizO.mk v)))
+    (HeapView.Auth (.own One.one) (Std.PartialMap.map (fun  v => toAgree $ LeibnizO.mk v) σ.heap))
     HeapView.auth_one_valid with ⟨%γ, H⟩
+  letI : HeapLangGS .hasLC GF := ⟨⟨γ⟩⟩
   imodintro
   iexists (fun σ _ => iOwn (E := HeapLangGpreS.heap_pre.heap.elem) γ
-    (HeapView.Auth (.own One.one) (σ.heap.map (fun k v => toAgree $ LeibnizO.mk v))))
+    (HeapView.Auth (.own One.one) (Std.PartialMap.map (fun v => toAgree $ LeibnizO.mk v) σ.heap)))
   iexists (fun _ => iprop(True))
   dsimp only
   iframe H
-  letI : HeapLangGS .hasLC GF := {
-    heap := {
-      heapName := γ
-    }
-    toWsatGS := inst.toWsatGS
-    toLcGS := inst.toLcGS
-  }
-
-  -- apply Hwp
-  sorry
-  -- -- iapply Hwp
-  -- specialize @Hwp this
-  -- istop
-
-  -- unfold HeapLang at Hwp
-  -- unfold HeapLangState at Hwp
-  -- unfold gen_heap_interp at Hwp
-  -- unfold ghost_map_auth at Hwp
-  -- unfold this at Hwp
-
-  -- -- ι.heapName ↪●MAP
-  -- -- simp_all
-  -- apply Hwp
-  -- exact Hwp
-
-  -- sorry
+  exact Hwp
 
 end Adequacy
 
@@ -140,6 +140,16 @@ theorem wp_if_true {e1 e2 : Exp} :
   ⊢ WP hl(if #true then {e1} else {e2}) @s; E {{ Φ }} := by
   iintro Hwp
   iapply wp_pure_step_fupd (φ := True) (Hφ := True.intro) (n := 1) (e₂ := e1) (E₂ := E)
+  · infer_instance
+  · simp only [Nat.repeat]
+    iintro !> !> !> -; iframe
+
+theorem wp_rec {f x : Binder} (e : Exp) (v : Val) :
+  ▷ WP ((e.subst f hl_val(rec f x := e)).subst x v) @ s; E {{ Φ }}
+  ⊢@{IProp GF} WP hl(v(rec f x := e) {v}) @ s; E {{ Φ }} := by
+  iintro Hwp
+  iapply wp_pure_step_fupd (φ := True) (Hφ := True.intro) (n := 1)
+    (e₂ := (e.subst f hl_val(rec f x := e)).subst x v) (E₂ := E)
   · infer_instance
   · simp only [Nat.repeat]
     iintro !> !> !> -; iframe
@@ -173,13 +183,37 @@ theorem wp_alloc (v : Val) :
   iintro %e₂ %σ₂ %eₜ %Heq
   inext
   iintro Hcr
-
-  sorry
-
--- theorem wp_rec {f x : Binder} (e : Exp) (v : Val) :
---   ▷ WP ((e.subst f (.rec_ f x e1)).subst x v) @ s; E {{ Φ }}
---   ⊢@{IProp GF} WP ((Exp.app (.val (.rec_ f x e1)) (.val v))) @ s; E {{ Φ }} := by
---     sorry
+  have Hred : BaseStep.Reducible (hl(ref(v(v))), σ₁) := by
+    exists [], (.val (.lit (.loc l))), (σ₁.initHeap l 1 v), []
+    constructor
+    · decide
+    · intro i Hzero Hbound
+      obtain ⟨⟩ : i = 0 := by grind
+      rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
+      exact Hne
+  have Hbase := EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred Heq
+  cases Hbase
+  case allocNS l' Hpos Hi =>
+    simp only [Int.cast_ofNat_Int, List.length_nil, Nat.add_zero, Algebra.BigOpL.bigOpL_nil]
+    have heq_heap : (σ₁.initHeap l' 1 v).heap = σ₁.heap.insert l' (some v) := by
+      simp only [State.initHeap, Int.toNat_one]
+      show List.foldl (fun h i => h.insert (l' + (i : Int)) (some v)) σ₁.heap (List.range 1) = _
+      have : List.range 1 = [0] := by decide
+      rw [this]
+      simp only [List.foldl, Int.ofNat_zero]
+      congr 1
+      ext
+      change l'.n + 0 = l'.n
+      omega
+    unfold HeapLang; dsimp only
+    unfold HeapLangState; dsimp only
+    rw [heq_heap]
+    simp only [stateInterp]
+    iframe Hσ
+    iexists l'
+    isplitr
+    · ipure; rfl
+    · iframe Hpt
 
 end Lifting
 
