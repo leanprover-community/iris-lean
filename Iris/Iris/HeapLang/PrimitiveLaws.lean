@@ -101,7 +101,7 @@ theorem wp_rec {f x : Binder} {e : Exp} {v : Val} :
     iintro !> !> !> -; iframe
 
 theorem wp_fork {e : Exp} :
-  ▷ Φ (.lit .unit) ∗ ▷ WP e @ s; ⊤ {{ _v, True }} ⊢ WP hl(fork({e})) @ s; E {{ Φ }} := by
+  ▷ Φ (hl_val(#())) ∗ ▷ WP e @ s; ⊤ {{ _v, True }} ⊢ WP hl(fork({e})) @ s; E {{ Φ }} := by
   iintro ⟨HΦ, Hwp⟩
   iapply wp_lift_atomic_step
   · simp [toVal]
@@ -170,7 +170,7 @@ theorem wp_alloc (v : Val) :
 
 theorem wp_load {l : Loc} {q} {v : Val} :
   ▷ (l ↦{q} (Option.some v))
-  ⊢ (WP hl(!{.val (.lit (.loc l))}) @ s; E {{ v', ⌜v = v'⌝ ∗ (l ↦{q} (Option.some v')) }} : IProp GF) := by
+  ⊢ (WP hl(!v({(.lit (.loc l))})) @ s; E {{ v', ⌜v = v'⌝ ∗ (l ↦{q} (Option.some v')) }} : IProp GF) := by
   iintro >Hpt
   iapply wp_lift_atomic_step
   · simp [toVal]
@@ -207,7 +207,7 @@ theorem wp_load {l : Loc} {q} {v : Val} :
 theorem wp_store {l : Loc} {v v' : Val} {e : Exp} :
   toVal e = Option.some v →
   ▷ (l ↦ (Option.some v'))
-  ⊢ (WP hl({.val (.lit (.loc l))} ← {v}) @ s; E {{ v'', ⌜v'' = Val.lit .unit⌝ ∗ (l ↦ (Option.some v)) }} : IProp GF) := by
+  ⊢ (WP hl(v({(.lit (.loc l))}) ← {v}) @ s; E {{ v'', ⌜v'' = hl_val(#())⌝ ∗ (l ↦ (Option.some v)) }} : IProp GF) := by
   iintro %Heq >Hpt
   iapply wp_lift_atomic_step
   · simp [toVal]
@@ -234,12 +234,95 @@ theorem wp_store {l : Loc} {v v' : Val} {e : Exp} :
   simp only [Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil,
     Algebra.BigOpL.bigOpL_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
-
   imod gen_heap_update (v₂ := .some v) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
   imodintro
   iframe Hσ
   isplit
   · iexists (.lit .unit)
+    iframe Hpt
+    ipure_intro
+    simp [toVal]
+  · itrivial
+
+-- cas is not atomic 🙈
+theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val} :
+  toVal e1 = .some v1 → toVal e2 = .some v2 → v'.compareSafe v1 → decide (v' = v1) = false →
+  ▷ (l ↦{q} (Option.some v'))
+  ⊢ (WP hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})) @ s; E {{ v'', ⌜v'' = hl_val(({v'}, #(BaseLit.bool false)))⌝ ∗ l ↦{q} (Option.some v') }} : IProp GF) := by
+  iintro %Heq1 %Heq2 %Heq3 %Heq4 >Hpt
+  iapply wp_lift_atomic_step
+  · simp [toVal]
+  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  simp only [stateInterp]
+  ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
+  · icases gen_heap_valid $$ [$Hσ $Hpt] with >%Heq'
+    ipure_intro; assumption
+  ihave %Hred : ⌜BaseStep.Reducible (hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})), σ₁)⌝ $$ []
+  · ipure_intro
+    exists [], hl(v(({v'}, #(BaseLit.bool false)))), σ₁, []
+    rw [show e1 = ToVal.ofVal v1 by grind, show e2 = ToVal.ofVal v2 by grind]
+    exact BaseStep.cmpXchgS l v1 v2 v' σ₁ false (by simp [Hpt]) Heq3 Heq4
+  isplitr
+  · ipure_intro
+    cases s <;> simp only [Stuckness.MaybeReducible]
+    exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
+  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  cases (EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred Heq)
+  rename_i Heq4 H
+  rw [Hpt] at H; simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some,
+    Option.some.injEq] at H
+  subst H
+  simp only [Algebra.BigOpL.bigOpL_nil]
+  subst Heq4; simp only [toVal, Option.some.injEq] at Heq1 Heq2
+  subst Heq1; subst Heq2
+  simp only [Heq4, Bool.false_eq_true, ↓reduceIte]
+  imodintro
+  iframe Hσ
+  isplit
+  · iexists hl_val(({v'}, #(BaseLit.bool false)))
+    iframe Hpt
+    ipure_intro
+    simp [toVal]
+  · itrivial
+
+theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val} :
+  toVal e1 = .some v1 → toVal e2 = .some v2 → v'.compareSafe v1 → decide (v' = v1) = true →
+  ▷ (l ↦ (Option.some v'))
+  ⊢ (WP hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})) @ s; E {{ v'', ⌜v'' = hl_val(({v'}, #(BaseLit.bool true)))⌝ ∗ l ↦ (Option.some v2) }} : IProp GF) := by
+  iintro %Heq1 %Heq2 %Heq3 %Heq4 >Hpt
+  iapply wp_lift_atomic_step
+  · simp [toVal]
+  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  simp only [stateInterp]
+  ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
+  · icases gen_heap_valid $$ [$Hσ $Hpt] with >%Heq'
+    ipure_intro; assumption
+  ihave %Hred : ⌜BaseStep.Reducible (hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})), σ₁)⌝ $$ []
+  · ipure_intro
+    exists [], hl(v(({v'}, #(BaseLit.bool true)))), (σ₁.initHeap l 1 (some v2)), []
+    rw [show e1 = ToVal.ofVal v1 by grind, show e2 = ToVal.ofVal v2 by grind]
+    exact BaseStep.cmpXchgS l v1 v2 v' σ₁ true (by simp [Hpt]) Heq3 Heq4
+  isplitr
+  · ipure_intro
+    cases s <;> simp only [Stuckness.MaybeReducible]
+    exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
+  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  cases (EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred Heq)
+  rename_i v1' v2' vl' _ _ Heq4 H
+  rw [Hpt] at H; simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some,
+    Option.some.injEq] at H
+  subst H
+  simp only [Algebra.BigOpL.bigOpL_nil]
+  subst Heq4; simp only [toVal, Option.some.injEq] at Heq1 Heq2
+  subst Heq1; subst Heq2
+  simp only [Heq4, ↓reduceIte, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
+    List.foldl_nil]
+  rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
+  imod gen_heap_update (v₂ := .some v2') $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
+  imodintro
+  iframe Hσ
+  isplit
+  · iexists hl_val(({v'}, #(BaseLit.bool true)))
     iframe Hpt
     ipure_intro
     simp [toVal]

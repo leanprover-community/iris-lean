@@ -177,7 +177,7 @@ inductive BaseStep : Exp → State → List Observation → Exp → State → Li
   | cmpXchgS (l : Loc) (v1 v2 vl : Val) (σ : State) (b : Bool) :
       σ.get? l = some vl →
       vl.compareSafe v1 →
-      b = decide (vl = v1) →
+      decide (vl = v1) = b →
       BaseStep (.cmpXchg (.val (.lit (.loc l))) (.val v1) (.val v2)) σ
                []
                (.val (.pair vl (.lit (.bool b))))
