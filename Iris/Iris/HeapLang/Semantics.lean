@@ -1,0 +1,192 @@
+/-
+Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
+module
+
+public import Iris.HeapLang.Syntax
+public import Std.Data.ExtTreeMap
+public import Std.Data.ExtTreeSet
+public import Iris.Std.BitOp
+public import Iris.Std.RocqPorting
+
+@[expose] public section
+namespace Iris.HeapLang
+
+inductive ECtxItem where
+  | appL (v2 : Val)
+  | appR (e1 : Exp)
+  | unOp (op : UnOp)
+  | binOpL (op : BinOp) (v2 : Val)
+  | binOpR (op : BinOp) (e1 : Exp)
+  | if (e1 e2 : Exp)
+  | pairL (v2 : Val)
+  | pairR (e1 : Exp)
+  | fst
+  | snd
+  | injL
+  | injR
+  | case (e1 e2 : Exp)
+  | allocNL (v2 : Val)
+  | allocNR (e1 : Exp)
+  | free
+  | load
+  | storeL (v2 : Val)
+  | storeR (e1 : Exp)
+  | xchgL (v2 : Val)
+  | xchgR (e1 : Exp)
+  | cmpXchgL (v1 v2 : Val)
+  | cmpXchgM (e0 : Exp) (v2 : Val)
+  | cmpXchgR (e0 e1 : Exp)
+  | faaL (v2 : Val)
+  | faaR (e1 : Exp)
+  | resolveL (ctx : ECtxItem) (v1 v2 : Val)
+  | resolveM (e0 : Exp) (v2 : Val)
+  | resolveR (e0 e1 : Exp)
+  deriving Inhabited, Repr, DecidableEq
+
+def ECtxItem.fill (Ki : ECtxItem) (e : Exp) : Exp :=
+  match Ki with
+  | .appL v2        => .app e (.val v2)
+  | .appR e1        => .app e1 e
+  | .unOp op        => .unop op e
+  | .binOpL op v2   => .binop op e (.val v2)
+  | .binOpR op e1   => .binop op e1 e
+  | .if e1 e2       => .if e e1 e2
+  | .pairL v2       => .pair e (.val v2)
+  | .pairR e1       => .pair e1 e
+  | .fst            => .fst e
+  | .snd            => .snd e
+  | .injL           => .injL e
+  | .injR           => .injR e
+  | .case e1 e2     => .case e e1 e2
+  | .allocNL v2     => .allocN e (.val v2)
+  | .allocNR e1     => .allocN e1 e
+  | .free           => .free e
+  | .load           => .load e
+  | .storeL v2      => .store e (.val v2)
+  | .storeR e1      => .store e1 e
+  | .xchgL v2       => .xchg e (.val v2)
+  | .xchgR e1       => .xchg e1 e
+  | .cmpXchgL v1 v2 => .cmpXchg e (.val v1) (.val v2)
+  | .cmpXchgM e0 v2 => .cmpXchg e0 e (.val v2)
+  | .cmpXchgR e0 e1 => .cmpXchg e0 e1 e
+  | .faaL v2        => .faa e (.val v2)
+  | .faaR e1        => .faa e1 e
+  | .resolveL K v1 v2 => .resolve (K.fill e) (.val v1) (.val v2)
+  | .resolveM e0 v2   => .resolve e0 e (.val v2)
+  | .resolveR e0 e1   => .resolve e0 e1 e
+
+structure State where
+  heap : Std.ExtTreeMap Loc (Option Val)
+  usedProphId : Std.ExtTreeSet ProphId
+
+abbrev Observation := ProphId × (Val × Val)
+
+def UnOp.eval : UnOp → Val → Option Val
+  | .neg,   .lit (.bool b) => some (.lit (.bool (!b)))
+  | .minus, .lit (.int n)  => some (.lit (.int (-n)))
+  | _,      _              => none
+
+def BinOp.eval : BinOp → Val → Val → Option Val
+  | .plus,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 + n2)))
+  | .minus,  .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 - n2)))
+  | .mult,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 * n2)))
+  | .tdiv,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1.tdiv n2)))
+  | .tmod,   .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1.tmod n2)))
+  | .and,    .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 &&& n2)))
+  | .or,     .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 ||| n2)))
+  | .xor,    .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 ^^^ n2)))
+  | .and,    .lit (.bool b1), .lit (.bool b2) => some (.lit (.bool (b1 && b2)))
+  | .or,     .lit (.bool b1), .lit (.bool b2) => some (.lit (.bool (b1 || b2)))
+  | .xor,    .lit (.bool b1), .lit (.bool b2) => some (.lit (.bool (b1 ^^ b2)))
+  | .shiftl, .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 <<< n2)))
+  | .shiftr, .lit (.int n1),  .lit (.int n2)  => some (.lit (.int (n1 >>> n2)))
+  | .le,     .lit (.int n1),  .lit (.int n2)  => some (.lit (.bool (n1 ≤ n2)))
+  | .lt,     .lit (.int n1),  .lit (.int n2)  => some (.lit (.bool (n1 < n2)))
+  | .eq,     v1,              v2              =>
+      if v1.compareSafe v2 then some (.lit (.bool (v1 == v2))) else none
+  | .offset, .lit (.loc l),   .lit (.int n)   => some (.lit (.loc (l + n)))
+  | _,       _,               _               => none
+
+def State.initHeap (σ : State) (l : Loc) (n : Int) (v : Val) : State :=
+  { σ with heap := (List.range n.toNat).foldl (fun h (i : Nat) => h.insert (l + (i : Int)) v) σ.heap }
+
+inductive BaseStep : Exp → State → List Observation → Exp → State → List Exp → Prop where
+  | recS (f x : Binder) (e : Exp) (σ : State) :
+      BaseStep (.rec_ f x e) σ [] (.val (.rec_ f x e)) σ []
+  | pairS (v1 v2 : Val) (σ : State) :
+      BaseStep (.pair (.val v1) (.val v2)) σ [] (.val (.pair v1 v2)) σ []
+  | injLS (v : Val) (σ : State) :
+      BaseStep (.injL (.val v)) σ [] (.val (.injL v)) σ []
+  | injRS (v : Val) (σ : State) :
+      BaseStep (.injR (.val v)) σ [] (.val (.injR v)) σ []
+  | betaS (f x : Binder) (e1 : Exp) (v2 : Val) (e' : Exp) (σ : State) :
+      e' = (e1.subst f (.rec_ f x e1)).subst x v2 →
+      BaseStep (.app (.val (.rec_ f x e1)) (.val v2)) σ [] e' σ []
+  | unOpS (op : UnOp) (v v' : Val) (σ : State) :
+      op.eval v = some v' →
+      BaseStep (.unop op (.val v)) σ [] (.val v') σ []
+  | binOpS (op : BinOp) (v1 v2 v' : Val) (σ : State) :
+      op.eval v1 v2 = some v' →
+      BaseStep (.binop op (.val v1) (.val v2)) σ [] (.val v') σ []
+  | ifTrueS (e1 e2 : Exp) (σ : State) :
+      BaseStep (.if (.val (.lit (.bool true))) e1 e2) σ [] e1 σ []
+  | ifFalseS (e1 e2 : Exp) (σ : State) :
+      BaseStep (.if (.val (.lit (.bool false))) e1 e2) σ [] e2 σ []
+  | fstS (v1 v2 : Val) (σ : State) :
+      BaseStep (.fst (.val (.pair v1 v2))) σ [] (.val v1) σ []
+  | sndS (v1 v2 : Val) (σ : State) :
+      BaseStep (.snd (.val (.pair v1 v2))) σ [] (.val v2) σ []
+  | caseLS (v : Val) (e1 e2 : Exp) (σ : State) :
+      BaseStep (.case (.val (.injL v)) e1 e2) σ [] (.app e1 (.val v)) σ []
+  | caseRS (v : Val) (e1 e2 : Exp) (σ : State) :
+      BaseStep (.case (.val (.injR v)) e1 e2) σ [] (.app e2 (.val v)) σ []
+  | allocNS (n : Int) (v : Val) (σ : State) (l : Loc) :
+      0 < n →
+      (∀ i : Int, 0 ≤ i → i < n → σ.heap.get? (l + i) = none) →
+      BaseStep (.allocN (.val (.lit (.int n))) (.val v)) σ
+               [] (.val (.lit (.loc l))) (σ.initHeap l n v) []
+  | freeS (l : Loc) (v : Val) (σ : State) :
+      σ.heap.get? l = some v →
+      BaseStep (.free (.val (.lit (.loc l)))) σ
+               [] (.val (.lit .unit)) { σ with heap := σ.heap.insert l none } []
+  | loadS (l : Loc) (v : Val) (σ : State) :
+      σ.heap.get? l = some v →
+      BaseStep (.load (.val (.lit (.loc l)))) σ [] (.val v) σ []
+  | storeS (l : Loc) (v w : Val) (σ : State) :
+      σ.heap.get? l = some v →
+      BaseStep (.store (.val (.lit (.loc l))) (.val w)) σ
+               [] (.val (.lit .unit)) { σ with heap := σ.heap.insert l w } []
+  | xchgS (l : Loc) (v1 v2 : Val) (σ : State) :
+      σ.heap.get? l = some v1 →
+      BaseStep (.xchg (.val (.lit (.loc l))) (.val v2)) σ
+               [] (.val v1) { σ with heap := σ.heap.insert l v2 } []
+  | cmpXchgS (l : Loc) (v1 v2 vl : Val) (σ : State) (b : Bool) :
+      σ.heap.get? l = some vl →
+      vl.compareSafe v1 →
+      b = decide (vl = v1) →
+      BaseStep (.cmpXchg (.val (.lit (.loc l))) (.val v1) (.val v2)) σ
+               []
+               (.val (.pair vl (.lit (.bool b))))
+               (if b then { σ with heap := σ.heap.insert l v2 } else σ) []
+  | faaS (l : Loc) (i1 i2 : Int) (σ : State) :
+      σ.heap.get? l = some (some (.lit (.int i1))) →
+      BaseStep (.faa (.val (.lit (.loc l))) (.val (.lit (.int i2)))) σ
+               [] (.val (.lit (.int i1)))
+               { σ with heap := σ.heap.insert l (some (.lit (.int (i1 + i2)))) } []
+  | forkS (e : Exp) (σ : State) :
+      BaseStep (.fork e) σ [] (.val (.lit .unit)) σ [e]
+  | newProphS (σ : State) (p : ProphId) :
+      ¬ σ.usedProphId.contains p →
+      BaseStep .newProph σ
+               [] (.val (.lit (.prophecy p)))
+               { σ with usedProphId := σ.usedProphId.insert p } []
+  | resolveS (p : ProphId) (v : Val) (e : Exp) (σ : State) (w : Val) (σ' : State)
+             (κs : List Observation) (ts : List Exp) :
+      BaseStep e σ κs (.val v) σ' ts →
+      σ.usedProphId.contains p →
+      BaseStep (.resolve e (.val (.lit (.prophecy p))) (.val w)) σ
+               (κs ++ [(p, (v, w))]) (.val v) σ' ts
+
+end Iris.HeapLang

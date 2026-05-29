@@ -19,8 +19,6 @@ open BI CMRA Excl OFE UPred IProp Std ProofMode
 This library provides assertions that represent "unique tokens".
 The `token γ` assertion provides ownership of the token named `γ`,
 and the key lemma `token_exclusive` proves only one token exists.
-
-FIXME: missing token_combine_gives
 -/
 
 abbrev TokenF : COFE.OFunctorPre := constOF (Excl Unit)
@@ -42,9 +40,8 @@ instance token_timeless (γ : GName) : Timeless (token (GF := GF) γ) := by
   unfold token
   infer_instance
 
--- HP encodes `pred_infinite P` from Rocq
 @[rocq_alias token_alloc_strong]
-theorem token_alloc_strong (P : GName → Prop) (HP : ∀ xs : List GName, ∃ x, P x ∧ x ∉ xs) :
+theorem token_alloc_strong (P : GName → Prop) (HP : PredInfinite P) :
     ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ token γ := by
   unfold token
   iapply iOwn_alloc_strong _ P _ trivial

@@ -32,17 +32,18 @@ macro_rules
 
 delab_rule BUpd.bupd
   | `($_ $P) => do ``(iprop(|==> $(← Iris.BI.unpackIprop P)))
--- delab_rule WandUpdate ??
---   | `($_ $P $Q) => ``(iprop($P ==∗ $Q))
+
+delab_rule BIBase.wand
+  | `($_ $P iprop(|==> $Q)) => do `(iprop($(←Iris.BI.unpackIprop P) ==∗ $Q))
 
 class FUpd (PROP : Type _) where
   fupd : CoPset → CoPset → PROP → PROP
 export FUpd (fupd)
 
-syntax "|={" term "," term "}=> " term : term
-syntax:25 term:26 "={" term "," term "}=∗ " term:25 : term
+syntax "|={" term ", " term "}=> " term : term
+syntax:25 term:26 " ={" term ", " term "}=∗ " term:25 : term
 syntax "|={" term "}=> " term : term
-syntax:25 term:26 "={" term "}=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={$E1,$E2}=> $P))  => ``(FUpd.fupd $E1 $E2 iprop($P))
@@ -58,10 +59,14 @@ delab_rule FUpd.fupd
       if E1 == E2 then ``(iprop(|={$E1}=> $P))
       else ``(iprop(|={$E1,$E2}=> $P))
 
+delab_rule BIBase.wand
+  | `($_ $P iprop(|={$E₁,$E₂}=> $Q)) => do `(iprop($(←Iris.BI.unpackIprop P) ={$E₁,$E₂}=∗ $Q))
+  | `($_ $P iprop(|={$E₁}=> $Q)) => do `(iprop($(←Iris.BI.unpackIprop P) ={$E₁}=∗ $Q))
+
 syntax "|={" term "}[" term "]▷=> " term : term
-syntax:25 term:26 "={" term "}[" term "]▷=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}[" term "]▷=∗ " term:25 : term
 syntax "|={" term "}▷=> " term : term
-syntax:25 term:26 "={" term "}▷=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}▷=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={$E1}[$E2]▷=> $P))  => ``(iprop(|={$E1,$E2}=> ▷ (|={$E2,$E1}=> iprop($P))))
@@ -69,12 +74,24 @@ macro_rules
   | `(iprop(|={$E1}▷=> $P))  => ``(iprop(|={$E1}[$E1]▷=> iprop($P)))
   | `(iprop($P ={$E1}▷=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷=∗ iprop($Q)))
 
--- Delab rules
+delab_rule FUpd.fupd
+  | `($_ $E₁ $E₂ iprop(▷ |={$E₂',$E₁'}=> $P)) => do
+    unless E₁ == E₁' ∧ E₂ == E₂' do throw ()
+    `(iprop(|={$E₁}[$E₂]▷=> $(←Iris.BI.unpackIprop P)))
+  | `($_ $E₁ $E₁' iprop(▷ |={$E₁''}=> $P)) => do
+    unless E₁ == E₁' ∧ E₁' == E₁'' do throw ()
+    `(iprop(|={$E₁}▷=> $(←Iris.BI.unpackIprop P)))
+
+delab_rule BIBase.wand
+  | `($_ $Q iprop(|={$E₁}[$E₂]▷=> $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷=∗ $P))
+  | `($_ $Q iprop(|={$E₁}▷=> $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}▷=∗ $P))
 
 syntax "|={" term "}[" term "]▷^" term "=> " term : term
-syntax:25 term:26 "={" term "}[" term "]▷^" term "=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}[" term "]▷^" term "=∗ " term:25 : term
 syntax "|={" term "}▷^" term "=> " term : term
-syntax:25 term:26 "={" term "}▷^" term "=∗ " term:25 : term
+syntax:25 term:26 " ={" term "}▷^" term "=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={$E1}[$E2]▷^$n=> $P))  => ``(iprop(|={$E1,$E2}=> ▷^[$n] (|={$E2,$E1}=> iprop($P))))
@@ -82,20 +99,59 @@ macro_rules
   | `(iprop(|={$E1}▷^$n=> $P))  => ``(iprop(|={$E1}[$E1]▷^$n=> iprop($P)))
   | `(iprop($P ={$E1}▷^$n=∗ $Q))  => ``(iprop(iprop($P) ={$E1}[$E1]▷^$n=∗ iprop($Q)))
 
--- Delab rules
+delab_rule FUpd.fupd
+  | `($_ $E₁ $E₂ iprop(▷^[$n] |={$E₂',$E₁'}=> $P)) => do
+    unless E₁ == E₁' ∧ E₂ == E₂' do throw ()
+    `(iprop(|={$E₁}[$E₂]▷^$n=> $(←Iris.BI.unpackIprop P)))
+  | `($_ $E₁ $E₁' iprop(▷^[$n] |={$E₁''}=> $P)) => do
+    unless E₁ == E₁' ∧ E₁' == E₁'' do throw ()
+    `(iprop(|={$E₁}▷^$n=> $(←Iris.BI.unpackIprop P)))
 
-syntax "|={ " term " }[ " term " ]▷=>^[ " term " ]" term : term
-syntax:25 term:26 "={ " term " }[ " term " ]▷=∗^[ " term " ]" term:25 : term
-syntax "|={ " term " }▷=>^[ " term " ]" term : term
-syntax:25 term:26 "={ " term " }▷=∗^[ " term " ]" term:25 : term
+delab_rule BIBase.wand
+  | `($_ $Q iprop(|={$E₁}[$E₂]▷^$n=> $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷^$n=∗ $P))
+  | `($_ $Q iprop(|={$E₁}▷^$n=> $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}▷^$n=∗ $P))
+
+syntax "|={" term "}[" term "]▷=>^[" term "] " term : term
+syntax:25 term:26 " ={" term "}[" term "]▷=∗^[" term "] " term:25 : term
+syntax "|={" term "}▷=>^[" term "] " term : term
+syntax:25 term:26 " ={" term "}▷=∗^[" term "] " term:25 : term
 
 macro_rules
   | `(iprop(|={ $E1 }[ $E2 ]▷=>^[ $n ] $P))  => ``(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) $n iprop($P))
-  | `(iprop($P ={ $E1 }[ $E2 ]▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q) $n) iprop($Q)))
+  | `(iprop($P ={ $E1 }[ $E2 ]▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E2 ]▷=> Q)) $n iprop($Q)))
   | `(iprop(|={ $E1 }▷=>^[ $n ] $P))  => ``(Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($P))
   | `(iprop($P ={ $E1 }▷=∗^[ $n ] $Q))  => ``(BIBase.wand iprop($P) (Nat.repeat (fun Q => iprop(|={ $E1 }[ $E1 ]▷=> Q)) $n iprop($Q)))
 
--- Delab rules
+open Lean.PrettyPrinter.Delaborator SubExpr in
+@[app_delab Nat.repeat]
+meta def delabStepFUpdN : Delab :=  do
+  let_expr Nat.repeat _ lam _ _ := ←getExpr | unreachable!
+  let n ← withNaryArg 2 delab
+  let P ← withNaryArg 3 delab
+  guard <| lam.isLambda
+  let lamBody ← withNaryArg 1 do
+    withBindingBody' `_ Pure.pure fun arg => do
+    guard <| (←getExpr).getAppFn.constName! == ``FUpd.fupd
+    withNaryArg 4 do
+      guard <| (←getExpr).getAppFn.constName! == ``BIBase.later
+      withNaryArg 2 do
+      guard <| (←getExpr).getAppFn.constName! == ``FUpd.fupd
+      withNaryArg 4 do
+      let body ← getExpr
+      guard (←Lean.Meta.isDefEq arg body)
+    delab
+  match lamBody with
+  | `(iprop(|={$E₁}▷=> $_)) => `(iprop(|={$E₁}▷=>^[$n] $P))
+  | `(iprop(|={$E₁}[$E₂]▷=> $_)) => `(iprop(|={$E₁}[$E₂]▷=>^[$n] $P))
+  | _ => failure
+
+delab_rule BIBase.wand
+  | `($_ $Q iprop(|={$E₁}[$E₂]▷=>^[$n] $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}[$E₂]▷=∗^[$n] $P))
+  | `($_ $Q iprop(|={$E₁}▷=>^[$n] $P)) => do
+    `(iprop($(←Iris.BI.unpackIprop Q) ={$E₁}▷=∗^[$n] $P))
 
 class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
   [bupd_ne : OFE.NonExpansive (BUpd.bupd (PROP := PROP))]
@@ -310,6 +366,32 @@ theorem fupd_trans_frame {E1 E2 E3 : CoPset} {P Q : PROP} :
   fupd_frame_l.trans <| fupd_elim <| ((sep_assoc.2.trans <| sep_mono_l sep_comm.1).trans <|
     sep_mono_l wand_elim_r).trans <| fupd_frame_r.trans <| BIFUpdate.mono emp_sep.1
 
+@[rocq_alias fupd_or_homomorphism]
+instance fupd_sep_homomorphism E :
+  Algebra.MonoidHomomorphism (M₁ := PROP) sep sep emp emp (flip Entails) (fupd E E) where
+  rel_refl := .rfl
+  rel_trans := flip .trans
+  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp)
+    , fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
+  op_proper := sep_mono
+  map_ne := BIFUpdate.ne
+  map_op := fupd_sep
+  map_unit := fupd_intro
+
+@[rocq_alias big_sepL_fupd]
+theorem BigSepL2.bigSepL_fupd {A : Type _} E (Φ : Nat → A → PROP) l :
+    ([∗list] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗list] k↦x ∈ l, Φ k x :=
+    Algebra.BigOpL.bigOpL_hom (R := flip Entails) Φ l
+
+@[rocq_alias big_sepL2_fupd]
+theorem BigSepL2.bigSepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) l1 l2 :
+    ([∗list] k↦x;y ∈ l1;l2, |={E}=> Φ k x y) ⊢ |={E}=> [∗list] k↦x;y ∈ l1;l2, Φ k x y := by
+  refine BigSepL2.bigSepL2_alt.mp.trans ?_
+  refine persistent_and_affinely_sep_l.mp.trans ?_
+  refine .trans ?_ (mono BigSepL2.bigSepL2_alt.mpr)
+  refine .trans ?_ (mono persistent_and_affinely_sep_l.mpr)
+  exact .trans (sep_mono_r (BigSepL2.bigSepL_fupd E _ _ )) fupd_frame_l
+
 end FUpdLaws
 
 section StepFUpdLaws
@@ -332,6 +414,10 @@ theorem step_fupdN_ne {E1 E2 : CoPset} {n : Nat} :
     | zero => simp [Nat.repeat, xy_i]
     | succ n IH => exact ne.ne (later_ne.ne (ne.ne IH))
 
+theorem step_fupd_mono {Eo Ei : CoPset} {P Q : PROP} :
+    (Q ⊢ P) → (|={Eo}[Ei]▷=> Q) ⊢ |={Eo}[Ei]▷=> P :=
+  (mono <| later_mono <| mono ·)
+
 @[rocq_alias step_fupdN_wand]
 theorem step_fupdN_wand {Eo Ei : CoPset} {n : Nat} {P Q : PROP} :
     (|={Eo}[Ei]▷=>^[n] P) ⊢ (P -∗ Q) -∗ (|={Eo}[Ei]▷=>^[n] Q) := by
@@ -345,7 +431,7 @@ theorem step_fupdN_wand {Eo Ei : CoPset} {n : Nat} {P Q : PROP} :
       _ ⊢ |={Eo,Ei}=> (▷ (P -∗ Q)) ∗ ▷ |={Ei,Eo}=> _  := mono (sep_mono (later_intro) .rfl)
       _ ⊢ |={Eo,Ei}=> ▷ ((P -∗ Q) ∗ |={Ei,Eo}=> _) := mono (later_sep.2)
       _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> ((P -∗ Q) ∗ _) := mono (later_mono (fupd_frame_l ..))
-      _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> _ := mono (later_mono (mono IH))
+      _ ⊢ |={Eo,Ei}=> ▷ |={Ei,Eo}=> _ := step_fupd_mono IH
 
 @[rocq_alias step_fupd_wand]
 theorem step_fupd_wand {Eo Ei : CoPset} {P Q : PROP} :
@@ -383,6 +469,17 @@ theorem step_fupd_intro {Ei Eo : CoPset} {P : PROP} (Ei_Eo : Ei ⊆ Eo) :
     _ ⊢ |={Ei}[Ei]▷=> P := mono <| later_mono fupd_intro
     _ ⊢ |={Eo}[Ei]▷=> P := step_fupd_mask_mono (subset_refl) Ei_Eo
 
+@[rocq_alias step_fupdN_intro]
+theorem step_fupdN_intro {Ei Eo : CoPset} {P : PROP} (Ei_Eo : Ei ⊆ Eo) :
+    ▷^[n] P ⊢ |={Eo}[Ei]▷=>^[n] P :=
+  match n with
+  | 0 => .rfl
+  | n+1 => by
+    simp only [Nat.repeat]
+    refine .trans (later_laterN n).1 ?_
+    refine .trans (step_fupd_intro Ei_Eo) ?_
+    exact step_fupd_mono <| step_fupdN_intro Ei_Eo
+
 @[rocq_alias step_fupdN_le]
 theorem step_fupdN_le {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
     n ≤ m → Ei ⊆ Eo → (|={Eo}[Ei]▷=>^[n] P) ⊢ |={Eo}[Ei]▷=>^[m] P
@@ -392,7 +489,43 @@ theorem step_fupdN_le {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
 
 @[rocq_alias step_fupd_fupd]
 theorem step_fupd_fupd {Eo Ei : CoPset} {P : PROP} : (|={Eo}[Ei]▷=> P) ⊣⊢ (|={Eo}[Ei]▷=> |={Eo}=> P) :=
-  ⟨mono <| later_mono <| mono fupd_intro, mono <| later_mono BIFUpdate.trans⟩
+  ⟨step_fupd_mono fupd_intro, mono <| later_mono BIFUpdate.trans⟩
+
+@[rocq_alias step_fupdN_mono]
+theorem step_fupdN_mono {n : Nat} {Eo Ei : CoPset} {P Q : PROP} (H : P ⊢ Q) :
+    (|={Eo}[Ei]▷=>^[n] P) ⊢ (|={Eo}[Ei]▷=>^[n] Q) := by
+  induction n with
+  | zero => exact H
+  | succ k IH => exact step_fupd_mono IH
+
+@[rocq_alias step_fupdN_S_fupd]
+theorem step_fupdN_S_fupd {n : Nat} {E : CoPset} {P : PROP} :
+    (|={E}[∅]▷=>^[n + 1] P) ⊣⊢ (|={E}[∅]▷=>^[n + 1] |={E}=> P) := by
+  refine ⟨step_fupd_mono <| step_fupdN_mono fupd_intro, ?_⟩
+  simp only [Nat.repeat_add]
+  exact step_fupdN_mono step_fupd_fupd.mpr
+
+@[rocq_alias step_fupd_frame_l]
+theorem step_fupd_frame_l {Eo Ei : CoPset} {R Q : PROP} :
+    (R ∗ |={Eo}[Ei]▷=> Q) ⊢ |={Eo}[Ei]▷=> (R ∗ Q) :=
+  fupd_frame_l.trans <| mono <|
+    (sep_mono_l later_intro).trans <| later_sep.2.trans <| later_mono fupd_frame_l
+
+@[rocq_alias step_fupdN_add]
+theorem step_fupdN_add {n m : Nat} {Eo Ei : CoPset} {P : PROP} :
+    (|={Eo}[Ei]▷=>^[n + m] P) ⊣⊢ (|={Eo}[Ei]▷=>^[n] |={Eo}[Ei]▷=>^[m] P) := by
+  induction n with
+  | zero => rw [Nat.zero_add]; exact .rfl
+  | succ n IH =>
+    rw [Nat.add_right_comm n 1 m]
+    exact ⟨mono <| later_mono <| mono IH.1, mono <| later_mono <| mono IH.2⟩
+
+@[rocq_alias step_fupdN_frame_l]
+theorem step_fupdN_frame_l {Eo Ei : CoPset} {n : Nat} {R Q : PROP} :
+    (R ∗ |={Eo}[Ei]▷=>^[n] Q) ⊢ |={Eo}[Ei]▷=>^[n] (R ∗ Q) := by
+  induction n with
+  | zero => exact .rfl
+  | succ n IH => exact step_fupd_frame_l.trans (mono <| later_mono <| mono IH)
 
 end StepFUpdLaws
 
@@ -430,7 +563,7 @@ theorem step_fupdN_plain {E1 E2 : CoPset} {n : Nat} {P : PROP} [Plain P] :
   | zero => exact except0_intro.trans fupd_intro
   | succ n ih =>
     simp only [Nat.repeat]
-    refine (mono <| later_mono <| mono ih).trans ?_
+    refine (step_fupd_mono ih).trans ?_
     refine step_fupd_fupd.2.trans ?_
     refine step_fupd_plain.trans ?_
     refine (mono <| later_mono <| except0_laterN n).trans ?_

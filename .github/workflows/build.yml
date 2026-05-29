@@ -33,7 +33,6 @@ jobs:
           retention-days: 1
 
   build-math:
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

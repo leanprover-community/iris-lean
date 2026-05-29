@@ -10,11 +10,12 @@ public import Iris.ProofMode
 public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
+public import Iris.Algebra.CMRA
 
 @[expose] public section
 
 namespace Iris.Tests
-open Iris.BI
+open BI CMRA DFrac
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -2556,22 +2557,82 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q :=
   iintro HP HQ #HR
   icombine %a as HNew1
 
-/-- Tests `icombine` for combining propositions involving `iOwn` -/
+/-- Tests `icombine` for combining propositions involving `iOwn`, where
+    `a2` and `a3` can be combined as `b` instead of `a2 • a3` as
+    the former takes higher precedence. Likewise, `a1` and `b` is merged
+    as `c` instead of `a1 • b`. -/
 example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
-    {a1 a2 a3 : F.ap (IProp GF)} :
+    {a1 a2 a3 b c : F.ap (IProp GF)} [IsOpMerge b a2 a3] [IsOpMerge c a1 b] :
     ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
-      iOwn γ (a1 • (a2 • a3)) ∗
-      internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • (a2 • a3)) := by
+      iOwn γ c ∗ internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • b) := by
   iintro H1 H2 H3
   icombine H1 H2 H3 as Hnew1 gives ⟨Hnew2, Hnew3⟩
   isplitl
   · iexact Hnew1
   · isplit
-    · iexact Hnew2
+    · iexact Hnew2  -- `IsOp` is irrelevant to the `gives` syntax
     · iexact Hnew3
 
+/-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
+    instances for `DFrac` and `Frac`. -/
+example {GF α} [UFraction α] [ElemG GF (constOF (DFrac α))]
+    [ElemG GF (constOF (Frac α))] {γ}
+    {a1 a2 a3 b c : Frac α} [IsOpMerge b a2 a3] [IsOpMerge c a1 b] :
+    ⊢@{IProp GF}
+      iOwn (F := constOF (DFrac α)) γ (own a1.car) -∗
+      iOwn (F := constOF (DFrac α)) γ (own a2.car) -∗
+      iOwn (F := constOF (DFrac α)) γ (own a3.car) -∗
+      iOwn (F := constOF (Frac α)) γ a1 -∗
+      iOwn (F := constOF (Frac α)) γ a2 -∗
+      iOwn (F := constOF (Frac α)) γ a3 -∗
+      iOwn (F := constOF (DFrac α)) γ (own c.car) ∗ iOwn (F := constOF (Frac α)) γ c := by
+  iintro H1 H2 H3 H4 H5 H6
+  icombine H1 H2 H3 as Hnew1
+  icombine H4 H5 H6 as Hnew2
+  isplitl [Hnew1]
+  · iexact Hnew1
+  · iexact Hnew2
+
+/-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
+    instances for the authoritative CMRA. -/
+example {GF F A} [UFraction F] [UCMRA A] [ElemG GF (constOF (Auth F A))] {γ}
+    {a1 a2 a3 b c : A} {q1 q2 : Frac F} {dq'' dq3 dq4 : DFrac F}
+    [IsOpMerge b a2 a3] [IsOpMerge c a1 b]
+    [IsOpMerge dq'' dq3 dq4] :
+    ⊢@{IProp GF}
+      iOwn (F := constOF (Auth F A)) γ (◯ a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (◯ a2) -∗
+      iOwn (F := constOF (Auth F A)) γ (◯ a3) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{own q1.car} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{own q2.car} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{dq3} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{dq4} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ ((◯ c) • ●{(own $ q1 + q2) • dq''} a1) := by
+  iintro H1 H2 H3 H4 H5 H6 H7
+  icombine H1 H2 H3 as HNew1
+  icombine H4 H5 as HNew2
+  icombine H6 H7 as HNew3
+  icombine HNew1 HNew2 HNew3 as HNew
+  iexact HNew
+
+/-- Tests `icombine` with the `IsOp` instances stipulating the
+    merging of `a1`, `a2` and `a3` using `+` instead of `•`, as well as
+    to eliminate splits (`IsHalfFraction`). -/
+example {GF α} [Fraction α] [IsHalfFraction α]
+    [ElemG GF (constOF (Frac α))] {γ} {a1 a2 a3 : Frac α} :
+    ⊢@{IProp GF}
+      iOwn (F := constOF (Frac α)) γ a1 -∗
+      iOwn (F := constOF (Frac α)) γ a2 -∗
+      iOwn (F := constOF (Frac α)) γ (a3.half) -∗
+      iOwn (F := constOF (Frac α)) γ (a3.half) -∗
+      iOwn (F := constOF (Frac α)) γ (a1.half + (a1.half + (a2 + a3))) := by
+  iintro H1 H2 H3a H3b
+  icases H1 with ⟨H1a, H1b⟩
+  icombine H1a H1b H2 H3a H3b as Hnew
+  iexact Hnew
+
 /-- Tests `icombine` for combining propositions involving later credits. -/
-example {GF m n} [LcGS GF] :
+example {GF m n} [LcGS .hasLC GF] :
     ⊢@{IProp GF} £ n -∗ £ 1 -∗ £ m -∗ £ 1 -∗ £ n + (1 + (m + 1)) := by
   iintro H1 H2 H3 H4
   icombine H1 H2 H3 H4 as Hnew
