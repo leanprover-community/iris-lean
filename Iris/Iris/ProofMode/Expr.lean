@@ -195,6 +195,12 @@ partial def Hyps.intuitionisticProps {u prop bi} :
   | _, .hyp _ _ _ p ty _ => if isTrue p then [ty] else []
   | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticProps ++ rhs.intuitionisticProps
 
+partial def Hyps.spatialProps {u prop bi} :
+    ∀ {s}, @Hyps u prop bi s → List Q($prop)
+  | _, .emp _ => []
+  | _, .hyp _ _ _ p ty _ => if isTrue p then [] else [ty]
+  | _, .sep _ _ _ _ lhs rhs => lhs.spatialProps ++ rhs.spatialProps
+
 variable (oldIVar : IVarId) (new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .emp _ => none

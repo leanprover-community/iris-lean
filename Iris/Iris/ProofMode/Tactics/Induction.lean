@@ -23,12 +23,12 @@ open BI Std Lean Elab Tactic Meta Qq
 -/
 private def iHypsContaining {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (hyps : Hyps bi e) (fvar : FVarId) : List SelTarget :=
-  let ivars := (hyps.spatialIVarIds ++ hyps.intuitionisticIVarIds).filter fun ivar =>
+  let ivars := hyps.intuitionisticIVarIds.filter fun ivar =>
     match hyps.getDecl? ivar with
     | some (_, _, _, ty) => ty.containsFVar fvar
     | none => false
 
-  ivars.map (
+  (ivars ++ hyps.spatialIVarIds).map (
     fun ivar => { kind := .ipm ivar, explicit := false }
   )
 
@@ -51,6 +51,8 @@ private def addIntoIH {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   let P : Q($prop) ← intuitionisticHyps hyps
 
   let Q ← mkFreshExprMVarQ q($prop)
+  logInfo m!"[DEBUG] φ: {φ}, P: {P}, Q: {Q}"
+
   let some _ ← ProofModeM.trySynthInstanceQ q(IntoIH $φ $P $Q)
   | throwError "iinduction: type class synthesis with IntoIH failed"
 
@@ -68,8 +70,8 @@ private def findIHs (m : MVarId) : MetaM (List FVarId) :=
     let mut ihs := []
     for decl in lctx do
       let type ← instantiateMVars decl.type
-      if isIrisGoal type.consumeMData then
-        ihs := (decl.fvarId) :: ihs
+      if isIrisGoal type then
+        ihs := decl.fvarId :: ihs
     return ihs.reverse
 
 /--
