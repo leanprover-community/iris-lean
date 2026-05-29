@@ -9,6 +9,16 @@ public section
 
 namespace Iris
 
+/-
+  NOTE:
+
+  This file is based on an old version of `gen_heap.v`, which does not depend on a
+  `reservation_map`. In particular, the API offered here is much more restricted,
+  and mostly mirrors that of `GhostMap`. In the future, we'd need to port the
+  `reservation_map`s and port the rest of the lemmas.
+
+-/
+
 /-! (TODO: Adapt to Iris Lean implementation)
 
 This file provides a generic mechanism for a language-level point-to
@@ -66,16 +76,6 @@ To implement this mechanism, we use three pieces of ghost state:
   in an authoritative fragment without owning the full authoritative element
   (in other words, without the indirection `meta_set` would need `gen_heap_interp`
   as a premise).
--/
-
-/-
-  NOTE:
-
-  This file is based on an old version of `gen_heap.v`, which does not depend on a
-  `reservation_map`. In particular, the API offered here is much more restricted,
-  and mostly mirrors that of `GhostMap`. In the future, we'd need to port the
-  `reservation_map`s and port the rest of the lemmas.
-
 -/
 
 variable (F: outParam (Type _)) [UFraction F]
