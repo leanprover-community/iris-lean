@@ -121,7 +121,7 @@ elab "iinduction" colGt x:ident : tactic => do
             -- Introduce the induction hypothesis back into the Iris proof state
             let ⟨_, newHyps⟩ ← addAllIHs irisGoal.hyps ihFVars
 
-            s.assign <| ← k newHyps irisGoal.goal
+            s.assign <| ← withoutFVars (u := 0) ihFVars.toArray <| k newHyps irisGoal.goal
 
         return m
     )
