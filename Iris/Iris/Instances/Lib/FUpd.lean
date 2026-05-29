@@ -23,6 +23,7 @@ open Iris OFE COFE BI Auth
 
 section InvG
 
+@[rocq_alias invGpreS]
 class InvGpreS (GF : BundledGFunctors) where
   toWsatGpreS : WsatGpreS GF
   toLcGpreS : LcGpreS GF
@@ -30,6 +31,7 @@ class InvGpreS (GF : BundledGFunctors) where
 attribute [reducible, instance] InvGpreS.toWsatGpreS
 attribute [reducible, instance] InvGpreS.toLcGpreS
 
+@[rocq_alias invGS_gen]
 class InvGS_gen (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGpreS GF where
   toWsatGS : WsatGS GF
   toLcGS : LcGS hlc GF
@@ -39,11 +41,18 @@ attribute [reducible, instance] InvGS_gen.toLcGS
 
 abbrev InvGS := InvGS_gen .hasLC
 
+#rocq_ignore «invΣ» "Superseded by the `InvGpreS` typeclass on `BundledGFunctors`."
+#rocq_ignore «subG_invΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
+
 end InvG
 
 section FUpd
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
+
+#rocq_ignore uPred_fupd_def "`uPred_fupd` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_fupd_aux "`uPred_fupd` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_fupd_unseal "`uPred_fupd` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias uPred_fupd]
 def uPred_fupd (E1 E2 : CoPset) (P : IProp GF) : IProp GF :=
@@ -65,6 +74,8 @@ end FUpd
 section Instances
 
 open Std.LawfulSet
+
+#rocq_ignore uPred_fupd_mixin "The `BiFUpdMixin` laws are supplied directly when building `uPred_bi_fupd` below."
 
 @[rocq_alias uPred_bi_fupd]
 instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (IProp GF) where
