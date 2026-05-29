@@ -430,7 +430,7 @@ theorem update_replace (Hval' : ✓ v2) :
 
 theorem auth_dfrac_discard : Auth dq m1 ~~> Auth .discard m1 := auth_discard
 
-theorem auth_dfrac_acquire [IsSplitFraction F] :
+theorem auth_dfrac_acquire [IsHalfFraction F] :
     Auth (F := F) .discard m1 ~~>: fun a => ∃ q, a = Auth (.own q) m1 :=
   auth_acquire
 
@@ -469,7 +469,7 @@ theorem update_of_dfrac_update P (Hdq : dq ~~>: P) :
 theorem update_frag_discard : Frag (H := H) k dq v1 ~~> Frag k .discard v1 :=
   .lift_updateP (Frag k · v1) _ _ update_of_dfrac_update DFrac.update_discard
 
-theorem update_frag_acquire [IsSplitFraction F] :
+theorem update_frag_acquire [IsHalfFraction F] :
     (Frag k .discard v1 : HeapView F K V H) ~~>: fun a => ∃ q, a = Frag k (.own q) v1 := by
   apply UpdateP.weaken (update_of_dfrac_update _ DFrac.update_acquire)
   rintro y ⟨q, rfl, ⟨q1, rfl⟩⟩

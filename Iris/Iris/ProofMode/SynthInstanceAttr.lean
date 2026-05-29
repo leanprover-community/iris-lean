@@ -288,7 +288,8 @@ unsafe def SynthTacticEntrySerialized.deserialize (e : SynthTacticEntrySerialize
     throwError "The tactic should have type SynthTactic."
   if compile then
     let d ← getConstInfoDefn e.name
-    compileDecl (.defnDecl d)
+    name := d.name ++ `_replay
+    addAndCompile (.defnDecl {d with name := name}) (markMeta := true)
   let tac ← evalConst SynthTactic name
   return {tac, prio := e.prio, name := e.name}
 

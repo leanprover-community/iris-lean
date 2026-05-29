@@ -7,6 +7,7 @@ module
 
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
+public import Iris.Algebra.IsOp
 
 /-!
 # The Frac CMRA
@@ -30,9 +31,9 @@ class Fraction (α : Type _) extends Add α where
   add_ne : ∀ {a b : α}, a ≠ b + a
   proper_add_mono_left : ∀ {a b : α}, Proper (a + b) → Proper a
 
-class IsSplitFraction (α : Type _) [Fraction α] where
-  split : α → α × α
-  split_add {a : α} : (split a).1 + (split a).2 = a
+class IsHalfFraction (α : Type _) [Fraction α] where
+  half : α → α
+  half_add {a : α} : half a + half a = a
 
 namespace Fraction
 
@@ -85,6 +86,9 @@ instance [Fraction α] : Coe α (Frac α) := ⟨(⟨·⟩)⟩
 @[simp] instance [Fraction α] : Add (Frac α) := ⟨fun x y => x.1 + y.1⟩
 instance : Leibniz (Frac α) := inferInstanceAs (Leibniz (LeibnizO α))
 
+def Frac.half {α} [Fraction α] [h : IsHalfFraction α]
+  (q : Frac α) : Frac α := ⟨h.half q.car⟩
+
 instance Frac_CMRA [Fraction α] : CMRA (Frac α) where
   pcore _ := none
   op := Add.add
@@ -120,6 +124,18 @@ instance [Fraction α] {a : Frac α} : CMRA.IdFree a where
     suffices (b + a).car = a.car from add_ne this.symm
     refine LeibnizO.ext_iff.mp (Leibniz.eq_of_eqv (α := Frac _) ?_)
     exact CMRA.comm.trans (discrete_0 H)
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias frac_is_op]
+instance (priority := default - 10) [Fraction α] (q1 q2 : Frac α) :
+    IsOpMerge (q1 + q2) q1 q2 where
+  is_op := .rfl
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias is_op_frac]
+instance [Fraction α] [IsHalfFraction α] (q : Frac α) :
+    IsOp io1 q io2 (q.half) io3 (q.half) where
+  is_op := q.ext <| IsHalfFraction.half_add.symm
 
 /-- A type of fractions with a unique whole element. -/
 class UFraction (α : Type _) extends Fraction α, One α where
