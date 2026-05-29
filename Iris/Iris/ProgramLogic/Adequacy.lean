@@ -192,7 +192,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness) (es : List Expr) (�
     φ := by
   apply pure_soundness (PROP := IProp GF)
   apply laterN_soundness (n := steps_sum numLaters 0 n + 1)
-  rw [eq_of_eqv <| equiv_iff.mpr <| laterN_later _]
+  rw [(laterN_later _).to_eq]
   refine Entails.trans ?_ (laterN_mono _ except0_into_later)
   apply fupd_finally_soundness hlc (steps_sum numLaters 0 n) ⊤
   iintro %Hinv Hf

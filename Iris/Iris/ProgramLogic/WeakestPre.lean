@@ -328,7 +328,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
   dsimp only [Nat.repeat]
   ihave Hwp := Hwp $$ [] [Hm]
   · ipure_intro; assumption
-  · simp [OFE.eq_of_eqv (BI.equiv_iff.mpr lc_split)]
+  · simp [lc_split.to_eq]
   iapply step_fupd_wand $$ Hwp; iintro Hwp
   iapply step_fupdN_le (n := ι.numLatersPerStep m) (by grind only) LawfulSet.subset_refl
   iapply step_fupdN_wand $$ Hwp; iintro >⟨SI, Hwp, $⟩

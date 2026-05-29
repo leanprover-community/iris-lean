@@ -602,9 +602,7 @@ theorem le_upd_keep (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC) (Timeless P)] :
       subst n
       ispecialize H $$ Hc
       icases laterN_0.mp $$ H with H
-      rw [← Nat.add_one]
-      rw [eq_of_eqv <| equiv_iff.mpr <| laterN_later (n := 0)]
-      rw [eq_of_eqv <| equiv_iff.mpr <| laterN_0]
+      rw [← Nat.add_one, (laterN_later (n := 0)).to_eq, (laterN_0).to_eq]
       unfold BIBase.except0
       iapply H
   icases H with ⟨-, H⟩
