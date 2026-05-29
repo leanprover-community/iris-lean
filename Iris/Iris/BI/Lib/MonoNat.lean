@@ -86,7 +86,7 @@ theorem auth_own_exclusive (γ : GName) (n1 n2 : MaxNat) :
   ipure_intro
   exact (auth_op_valid _ _).mp Hvalid
 
-@[rocq_alias mono_nat_lb_own_valid]
+@[rocq_alias mono_nat_auth_lb_own_valid]
 theorem auth_lb_own_valid (γ : GName) (dq : DFrac F) (n m : MaxNat) :
   ⊢@{IProp GF} (γ ↪●MN{dq} n) -∗ (γ ↪◯MN m) -∗ ⌜✓ dq ∧ m ≤ n⌝ := by
   unfold auth_own lb_own
