@@ -45,10 +45,10 @@ instance : Std.IsPreorder Stuckness where
 
 end Stuckness
 
-class Wp (PROP Expr : Type _) (Val : outParam (Type _)) (A : outParam (Type _)) where
+class Wp (PROP Expr : Type _) (Val : outParam (Type _)) (A : Type _) where
   wp : A → CoPset → Expr → (Val → PROP) → PROP
 
-class TotalWp (PROP Expr) (Val : outParam (Type _)) (A : outParam (Type _)) where
+class TotalWp (PROP Expr) (Val : outParam (Type _)) (A : Type _) where
   totalWp : A → CoPset → Expr → (Val → PROP) → PROP
 
 syntax wpExpr :=
