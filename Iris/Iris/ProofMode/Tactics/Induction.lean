@@ -23,12 +23,12 @@ open BI Std Lean Elab Tactic Meta Qq
 -/
 private def iHypsContaining {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (hyps : Hyps bi e) (fvar : FVarId) : List SelTarget :=
-  let intuitionisticIVarIds := hyps.intuitionisticIVarIds.filter fun ivar =>
+  let ivars := (hyps.spatialIVarIds ++ hyps.intuitionisticIVarIds).filter fun ivar =>
     match hyps.getDecl? ivar with
     | some (_, _, _, ty) => ty.containsFVar fvar
     | none => false
 
-  (hyps.spatialIVarIds ++ intuitionisticIVarIds).map (
+  ivars.map (
     fun ivar => { kind := .ipm ivar, explicit := false }
   )
 
