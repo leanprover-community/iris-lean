@@ -2726,11 +2726,11 @@ example [BI PROP] {P Q : PROP} {n : Nat} :
   · iframe
     itrivial
 
-example [BI PROP] {P Q : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ ⌜n + 0 = n⌝ := by
-  iintro H1 #H2
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
   iinduction n
-  · iframe
+  · itrivial
   · iframe
     itrivial
 
