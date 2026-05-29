@@ -16,55 +16,6 @@ namespace Iris.HeapLang
 
 open Iris ProgramLogic Language.Notation Std
 
-instance : OFE Val := OFE.ofDiscrete _ Eq_Equivalence
-instance : InfiniteType Loc where
-  enum n := .mk n
-  enum_inj n m := by grind
-instance : Inhabited State := ⟨.empty, .empty⟩
-
-instance : Language.PureExec True 1 hl(if #true then {e1} else {e2}) e1 where
-  pureExec _ := by
-    refine Relation.Iterate.head ?_ (.rfl _)
-    constructor
-    · intro σ
-      exists e1, σ, []
-      refine BaseStep.ContextStep.intro (K := []) ?_
-      constructor
-    · intro σ1 σ2 κs e2' efs Hstep
-      have hsr : EctxLanguage.SubredexesAreValues (Exp.if (.val (.lit (.bool true))) e1 e2) := by
-        apply EctxItemLanguage.subredexes_are_values
-        intro Ki e_inner heq
-        cases Ki <;> try (cases heq; done)
-        cases heq
-        simp [toVal]
-      have Hbase := EctxLanguage.baseStep_of_primStep Hstep hsr
-      cases Hbase
-      case ifTrueS => exact ⟨rfl, rfl, rfl, rfl⟩
-      all_goals contradiction
-
-instance {f x : Binder} {e : Exp} {v : Val} : Language.PureExec True 1 hl(v(rec f x := e) {v}) (Exp.subst x v (Exp.subst f (hl_val(rec f x := e)) e)) where
-  pureExec _ := by
-    refine Relation.Iterate.head ?_ (.rfl _)
-    constructor
-    · intro σ
-      exists (Exp.subst x v (Exp.subst f (hl_val(rec f x := e)) e)), σ, []
-      refine BaseStep.ContextStep.intro (K := []) ?_
-      apply BaseStep.betaS
-      simp [Exp.subst]
-      sorry
-    · intro σ1 σ2 κs e2' efs Hstep
-      have hsr : EctxLanguage.SubredexesAreValues hl(v(rec f x := e) {↑v}) := by
-        apply EctxItemLanguage.subredexes_are_values
-        intro Ki e_inner heq
-        cases Ki <;> try (cases heq; done)
-        · cases heq; simp [toVal, expToVal]
-        · cases heq; simp
-      have Hbase := EctxLanguage.baseStep_of_primStep Hstep hsr
-      cases Hbase
-
-      case betaS => exact ⟨rfl, rfl, sorry, rfl⟩
-      -- all_goals contradiction
-
 section HeapLangGS
 
 abbrev HeapF := fun V => Std.ExtTreeMap Loc V compare
@@ -82,9 +33,6 @@ attribute [reducible, instance] HeapLangGS.heap
 instance HeapLangState [HeapLangGS hlc GF] : StateInterp State Observation GF where
   stateInterp σ _ _ _ := gen_heap_interp (F := PNat) (GF := GF) (H := HeapF) σ.heap
 
-set_option allowUnsafeReducibility true
-attribute [reducible, instance] StateInterp.stateInterp
-
 instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
   numLatersPerStep n := 0
   forkPost v := iprop(True)
@@ -94,17 +42,6 @@ instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
     iframe H
 
 end HeapLangGS
-
-section NotationOverride
-
-variable {GF : BundledGFunctors} {hlc : HasLC}
-variable [HeapLangGS hlc GF]
-variable {s : Stuckness} {E : CoPset} {Φ : Val → IProp GF}
-
-notation l " ↦{" dq "} " v => pointsTo l dq (Option.some v)
-notation l " ↦ " v => pointsTo l (DFrac.own 1) (Option.some v)
-
-end NotationOverride
 
 section Adequacy
 
@@ -144,76 +81,169 @@ theorem wp_if_true {e1 e2 : Exp} :
   · simp only [Nat.repeat]
     iintro !> !> !> -; iframe
 
-theorem wp_rec {f x : Binder} (e : Exp) (v : Val) :
-  ▷ WP ((e.subst f hl_val(rec f x := e)).subst x v) @ s; E {{ Φ }}
-  ⊢@{IProp GF} WP hl(v(rec f x := e) {v}) @ s; E {{ Φ }} := by
+theorem wp_if_false {e1 e2 : Exp} :
+  ▷ WP e2 @ s; E {{ Φ }}
+  ⊢ WP hl(if #false then {e1} else {e2}) @s; E {{ Φ }} := by
   iintro Hwp
-  iapply wp_pure_step_fupd (φ := True) (Hφ := True.intro) (n := 1)
-    (e₂ := (e.subst f hl_val(rec f x := e)).subst x v) (E₂ := E)
+  iapply wp_pure_step_fupd (φ := True) (Hφ := True.intro) (n := 1) (e₂ := e2) (E₂ := E)
   · infer_instance
   · simp only [Nat.repeat]
     iintro !> !> !> -; iframe
 
-theorem wp_alloc (v : Val) :
-  ⊢ (WP (hl(ref(v(v)))) @ s; E {{ l, ∃ l' : Loc, ⌜l = .lit (.loc l')⌝ ∗ (l' ↦ v)}} : IProp GF) := by
+theorem wp_rec {f x : Binder} {e : Exp} {v : Val} :
+  ▷ WP ((e.subst f (.rec_ f x e)).subst x v) @ s; E {{ Φ }}
+  ⊢@{IProp GF} WP (Exp.app (.val (.rec_ f x e)) v) @ s; E {{ Φ }} := by
+  iintro Hwp
+  iapply wp_pure_step_fupd (φ := True) (Hφ := True.intro) (n := 1)
+    (e₂ := (e.subst f (.rec_ f x e)).subst x v) (E₂ := E)
+  · infer_instance
+  · simp only [Nat.repeat]
+    iintro !> !> !> -; iframe
+
+theorem wp_fork {e : Exp} :
+  ▷ Φ (.lit .unit) ∗ ▷ WP e @ s; ⊤ {{ _v, True }} ⊢ WP hl(fork({e})) @ s; E {{ Φ }} := by
+  iintro ⟨HΦ, Hwp⟩
   iapply wp_lift_atomic_step
   · simp [toVal]
-  iintro %σ₁ %ns %obs %obs' %nt Hσ
-  iapply fupd_sep
+  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  simp only [stateInterp]
+  have Hred : BaseStep.Reducible (hl(fork({e})), σ₁) := by
+    exists [], (.val (.lit .unit)), σ₁, [e]
+    simp [BaseStep.baseStep]
+    constructor
+  isplitr
+  · ipure_intro
+    cases s <;> simp only [Stuckness.MaybeReducible]
+    exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
+  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  cases (EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred Heq)
+  unfold HeapLang HeapLangState; dsimp only
+  iframe Hσ
+  imodintro
+  isplitr [Hwp]
+  · iexists (.lit .unit)
+    isplit
+    · ipure_intro; rfl
+    · iframe HΦ
+  · iapply BI.BigSepL.bigSepL_singleton
+    iframe Hwp
+
+theorem wp_alloc (v : Val) :
+  ⊢ (WP (hl(ref({v}))) @ s; E {{ l, ∃ l' : Loc, ⌜l = .lit (.loc l')⌝ ∗ (l' ↦ (Option.some v))}} : IProp GF) := by
+  iapply wp_lift_atomic_step
+  · simp [toVal]
+  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   simp only [stateInterp]
   let l := (List.fresh σ₁.heap.keys).choose
-  have Hne : get? (M := HeapF) σ₁.heap l = .none := by
-    simp only [get?, getElem?_eq_none_iff]
-    rw [←Std.ExtTreeMap.mem_keys]
+  have Hne : σ₁.get? l = .none := by
+    simp [State.get?, get?, getElem?_eq_none_iff, ←Std.ExtTreeMap.mem_keys]
     exact (List.fresh σ₁.heap.keys).choose_spec
-  isplitr
-  · imodintro
-    ipure_intro
-    cases s <;> simp only [Stuckness.MaybeReducible]
+  have Hred : BaseStep.Reducible (hl(ref({v})), σ₁) := by
     exists [], (.val (.lit (.loc l))), (σ₁.initHeap l 1 v), []
-    refine BaseStep.ContextStep.intro (K := []) ?_
     constructor
     · simp
     · intro i Hzero Hbound
-      obtain ⟨⟩ : i = 0 := by grind
-      rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
+      rw [show l + (i : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
       exact Hne
-  imod gen_heap_alloc _ (.some v) _ Hne $$ Hσ with ⟨Hσ, Hpt⟩
+  isplitr
+  · ipure_intro
+    cases s <;> simp only [Stuckness.MaybeReducible]
+    exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
+  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  cases (EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred Heq)
+  rename_i l' Hpo Hi
+  simp only [Int.cast_ofNat_Int, Algebra.BigOpL.bigOpL_nil,
+    Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil]
+  specialize Hi 0 (by simp) (by simp)
+  rw [show l' + (0 : Int) = l' by cases l'; simp only [HAdd.hAdd, Loc.mk.injEq]; grind] at Hi ⊢
+  imod gen_heap_alloc _ (.some v) _ Hi $$ Hσ with ⟨Hσ, Hpt⟩
   imodintro
-  iintro %e₂ %σ₂ %eₜ %Heq
-  inext
-  iintro Hcr
-  have Hred : BaseStep.Reducible (hl(ref(v(v))), σ₁) := by
-    exists [], (.val (.lit (.loc l))), (σ₁.initHeap l 1 v), []
+  iframe Hσ
+  isplit
+  · iexists (.lit (.loc l'))
+    isplit
+    · ipure_intro; rfl
+    · iexists l'
+      iframe Hpt
+      ipure_intro; rfl
+  · ipure_intro; simp
+
+theorem wp_load {l : Loc} {q} {v : Val} :
+  ▷ (l ↦{q} (Option.some v))
+  ⊢ (WP hl(!{.val (.lit (.loc l))}) @ s; E {{ v', ⌜v = v'⌝ ∗ (l ↦{q} (Option.some v')) }} : IProp GF) := by
+  iintro >Hpt
+  iapply wp_lift_atomic_step
+  · simp [toVal]
+  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  simp only [stateInterp]
+  ihave %Hpt : ⌜σ₁.get? l = v⌝ $$ [Hσ Hpt]
+  · iapply bupd_elim
+    simp only [State.get?]
+    iapply gen_heap_valid $$ [$Hσ $Hpt]
+  ihave %Hred : ⌜BaseStep.Reducible (hl(!{.val (.lit (.loc l))}), σ₁)⌝ $$ []
+  · ipure_intro
+    exists [], (.val v), σ₁, []
     constructor
-    · decide
-    · intro i Hzero Hbound
-      obtain ⟨⟩ : i = 0 := by grind
-      rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
-      exact Hne
-  have Hbase := EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred Heq
-  cases Hbase
-  case allocNS l' Hpos Hi =>
-    simp only [Int.cast_ofNat_Int, List.length_nil, Nat.add_zero, Algebra.BigOpL.bigOpL_nil]
-    have heq_heap : (σ₁.initHeap l' 1 v).heap = σ₁.heap.insert l' (some v) := by
-      simp only [State.initHeap, Int.toNat_one]
-      show List.foldl (fun h i => h.insert (l' + (i : Int)) (some v)) σ₁.heap (List.range 1) = _
-      have : List.range 1 = [0] := by decide
-      rw [this]
-      simp only [List.foldl, Int.ofNat_zero]
-      congr 1
-      ext
-      change l'.n + 0 = l'.n
-      omega
-    unfold HeapLang; dsimp only
-    unfold HeapLangState; dsimp only
-    rw [heq_heap]
-    simp only [stateInterp]
-    iframe Hσ
-    iexists l'
-    isplitr
-    · ipure; rfl
-    · iframe Hpt
+    rw [Hpt]; simp
+  isplitr
+  · ipure_intro
+    cases s <;> simp only [Stuckness.MaybeReducible]
+    exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
+  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  cases (EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred Heq)
+  rename_i v'' H
+  rw [Hpt] at H; simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some,
+    Option.some.injEq] at H
+  subst H
+  simp only [Algebra.BigOpL.bigOpL_nil]
+  iframe Hσ
+  imodintro
+  isplit
+  · iexists v; iframe Hpt
+    ipure_intro
+    simp [toVal]
+  · itrivial
+
+theorem wp_store {l : Loc} {v v' : Val} {e : Exp} :
+  toVal e = Option.some v →
+  ▷ (l ↦ (Option.some v'))
+  ⊢ (WP hl({.val (.lit (.loc l))} ← {v}) @ s; E {{ v'', ⌜v'' = Val.lit .unit⌝ ∗ (l ↦ (Option.some v)) }} : IProp GF) := by
+  iintro %Heq >Hpt
+  iapply wp_lift_atomic_step
+  · simp [toVal]
+  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  simp only [stateInterp]
+  ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
+  · icases gen_heap_valid $$ [$Hσ $Hpt] with >%Heq'
+    ipure_intro; assumption
+  ihave %Hred : ⌜BaseStep.Reducible (hl({.val (.lit (.loc l))} ← {v}), σ₁)⌝ $$ []
+  · ipure_intro
+    exists [], (.val (.lit .unit)), (σ₁.initHeap l 1 v), []
+    refine BaseStep.storeS _ v' _ _ ?_
+    rw [Hpt]; simp
+  isplitr
+  · ipure_intro
+    cases s <;> simp only [Stuckness.MaybeReducible]
+    exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
+  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  cases (EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred Heq)
+  rename_i v'' H
+  rw [Hpt] at H; simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some,
+    Option.some.injEq] at H
+  subst H
+  simp only [Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil,
+    Algebra.BigOpL.bigOpL_nil]
+  rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
+
+  imod gen_heap_update (v₂ := .some v) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
+  imodintro
+  iframe Hσ
+  isplit
+  · iexists (.lit .unit)
+    iframe Hpt
+    ipure_intro
+    simp [toVal]
+  · itrivial
 
 end Lifting
 

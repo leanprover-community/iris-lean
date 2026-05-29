@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.HeapLang.Syntax
+public import Iris.HeapLang.Notation
 public import Iris.HeapLang.Semantics
 public import Iris.ProgramLogic.EctxiLanguage
 public import Std.Data.ExtTreeMap
@@ -55,5 +56,61 @@ instance : EctxItemLanguage Exp ECtxItem State Observation Val where
       intro σ obs e' σ' eps h
       simp only [ECtxItem.fill] at h
       cases h <;> simp [expToVal, Option.isSome_some]
+
+instance : Language.PureExec True 1 hl(if #true then {e1} else {e2}) e1 where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists e1, σ, []
+      refine BaseStep.ContextStep.intro (K := []) ?_
+      constructor
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.if (.val (.lit (.bool true))) e1 e2) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        cases heq
+        simp [toVal]
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      exact ⟨rfl, rfl, rfl, rfl⟩
+
+instance : Language.PureExec True 1 hl(if #false then {e1} else {e2}) e2 where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists e2, σ, []
+      refine BaseStep.ContextStep.intro (K := []) ?_
+      constructor
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.if (.val (.lit (.bool false))) e1 e2) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        cases heq
+        simp [toVal]
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      exact ⟨rfl, rfl, rfl, rfl⟩
+
+instance {f x : Binder} {e : Exp} {v : Val} : Language.PureExec True 1 (.app (.val (.rec_ f x e)) v) ((e.subst f (.rec_ f x e)).subst x v) where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists ((e.subst f (.rec_ f x e))).subst x v, σ, []
+      refine BaseStep.ContextStep.intro (e₂ := (e.subst f (.rec_ f x e)).subst x v) (K := []) ?_
+      apply BaseStep.betaS
+      rfl
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.app (.val (.rec_ f x e)) v) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        · cases heq; simp [toVal, expToVal]
+        · cases heq; simp
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      rename_i H
+      refine ⟨rfl, rfl, H.symm, rfl⟩
 
 end Iris.HeapLang

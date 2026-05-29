@@ -9,9 +9,13 @@ public import Std.Data.ExtTreeMap
 public import Std.Data.ExtTreeSet
 public import Iris.Std.BitOp
 public import Iris.Std.RocqPorting
+public import Iris.Std.PartialMap
+public import Iris.Std.HeapInstances
 
 @[expose] public section
 namespace Iris.HeapLang
+
+open Std
 
 inductive ECtxItem where
   | appL (v2 : Val)
@@ -81,6 +85,8 @@ structure State where
   heap : Std.ExtTreeMap Loc (Option Val)
   usedProphId : Std.ExtTreeSet ProphId
 
+instance : Inhabited State := ⟨.empty, .empty⟩
+
 abbrev Observation := ProphId × (Val × Val)
 
 def UnOp.eval : UnOp → Val → Option Val
@@ -109,8 +115,14 @@ def BinOp.eval : BinOp → Val → Val → Option Val
   | .offset, .lit (.loc l),   .lit (.int n)   => some (.lit (.loc (l + n)))
   | _,       _,               _               => none
 
-def State.initHeap (σ : State) (l : Loc) (n : Int) (v : Val) : State :=
-  { σ with heap := (List.range n.toNat).foldl (fun h (i : Nat) => h.insert (l + (i : Int)) v) σ.heap }
+abbrev State.initHeap (σ : State) (l : Loc) (n : Int) (v : Option Val) : State :=
+  { σ with heap := (List.range n.toNat).foldl
+            (fun h (i : Nat) => Std.insert
+                (M := fun V => Std.ExtTreeMap Loc V compare)
+                h (l + (i : Int)) v) σ.heap }
+
+abbrev State.get? (σ : State) (l : Loc) : Option (Option Val) :=
+    PartialMap.get? (M := fun V => Std.ExtTreeMap Loc V compare) σ.heap l
 
 inductive BaseStep : Exp → State → List Observation → Exp → State → List Exp → Prop where
   | recS (f x : Binder) (e : Exp) (σ : State) :
@@ -144,37 +156,37 @@ inductive BaseStep : Exp → State → List Observation → Exp → State → Li
       BaseStep (.case (.val (.injR v)) e1 e2) σ [] (.app e2 (.val v)) σ []
   | allocNS (n : Int) (v : Val) (σ : State) (l : Loc) :
       0 < n →
-      (∀ i : Int, 0 ≤ i → i < n → σ.heap.get? (l + i) = none) →
+      (∀ i : Int, 0 ≤ i → i < n → σ.get? (l + i) = none) →
       BaseStep (.allocN (.val (.lit (.int n))) (.val v)) σ
                [] (.val (.lit (.loc l))) (σ.initHeap l n v) []
   | freeS (l : Loc) (v : Val) (σ : State) :
-      σ.heap.get? l = some v →
+      σ.get? l = some v →
       BaseStep (.free (.val (.lit (.loc l)))) σ
-               [] (.val (.lit .unit)) { σ with heap := σ.heap.insert l none } []
+               [] (.val (.lit .unit)) (σ.initHeap l 1 none) []
   | loadS (l : Loc) (v : Val) (σ : State) :
-      σ.heap.get? l = some v →
+      σ.get? l = some v →
       BaseStep (.load (.val (.lit (.loc l)))) σ [] (.val v) σ []
   | storeS (l : Loc) (v w : Val) (σ : State) :
-      σ.heap.get? l = some v →
+      σ.get? l = some v →
       BaseStep (.store (.val (.lit (.loc l))) (.val w)) σ
-               [] (.val (.lit .unit)) { σ with heap := σ.heap.insert l w } []
+               [] (.val (.lit .unit)) (σ.initHeap l 1 w) []
   | xchgS (l : Loc) (v1 v2 : Val) (σ : State) :
-      σ.heap.get? l = some v1 →
+      σ.get? l = some v1 →
       BaseStep (.xchg (.val (.lit (.loc l))) (.val v2)) σ
-               [] (.val v1) { σ with heap := σ.heap.insert l v2 } []
+               [] (.val v1) (σ.initHeap l 1 v2) []
   | cmpXchgS (l : Loc) (v1 v2 vl : Val) (σ : State) (b : Bool) :
-      σ.heap.get? l = some vl →
+      σ.get? l = some vl →
       vl.compareSafe v1 →
       b = decide (vl = v1) →
       BaseStep (.cmpXchg (.val (.lit (.loc l))) (.val v1) (.val v2)) σ
                []
                (.val (.pair vl (.lit (.bool b))))
-               (if b then { σ with heap := σ.heap.insert l v2 } else σ) []
+               (if b then (σ.initHeap l 1 v2) else σ) []
   | faaS (l : Loc) (i1 i2 : Int) (σ : State) :
-      σ.heap.get? l = some (some (.lit (.int i1))) →
+      σ.get? l = some (some (.lit (.int i1))) →
       BaseStep (.faa (.val (.lit (.loc l))) (.val (.lit (.int i2)))) σ
                [] (.val (.lit (.int i1)))
-               { σ with heap := σ.heap.insert l (some (.lit (.int (i1 + i2)))) } []
+               (σ.initHeap l 1 (some (.lit (.int (i1 + i2))))) []
   | forkS (e : Exp) (σ : State) :
       BaseStep (.fork e) σ [] (.val (.lit .unit)) σ [e]
   | newProphS (σ : State) (p : ProphId) :

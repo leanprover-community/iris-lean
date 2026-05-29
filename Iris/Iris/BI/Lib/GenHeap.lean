@@ -164,7 +164,7 @@ theorem gen_heap_dealloc : (gen_heap_interp (GF := GF) σ ∗ l ↦ v) ==∗ gen
   iintro ⟨H₁,H₂⟩
   iapply ghost_map_delete (γ := ι.heapName) _ v $$ H₁ H₂
 
-theorem gen_heap_valid : (gen_heap_interp (GF := GF) σ ∗ l ↦ v) ==∗ ⌜ get? σ l = .some v ⌝ := by
+theorem gen_heap_valid : (gen_heap_interp (GF := GF) σ ∗ l ↦{dq} v) ==∗ ⌜ get? σ l = .some v ⌝ := by
   simp only [gen_heap_interp, pointsTo]
   iintro ⟨H₁,H₂⟩
   iapply ghost_map_lookup $$ H₁ H₂
