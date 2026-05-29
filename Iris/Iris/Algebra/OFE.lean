@@ -202,6 +202,8 @@ theorem Discrete.discrete [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡
   discrete_0 (h.le (Nat.zero_le _))
 export OFE.Discrete (discrete)
 
+instance Discrete.toDiscreteE [OFE α] [Discrete α] (x : α) : DiscreteE x := ⟨discrete_0⟩
+
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
 theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{0}≡ y) : x ≡{n}≡ y :=
   (discrete h).dist
@@ -389,7 +391,7 @@ instance [OFE α] [Discrete α] : Discrete (Option α) where
 instance OFE.Option.some.ne [OFE α] : OFE.NonExpansive (some : α → Option α) := ⟨fun _ _ _ => id⟩
 
 @[rocq_alias Some_discrete]
-theorem Option.some_is_discrete [OFE α] {a : α} (Ha : DiscreteE a) : DiscreteE (some a) := by
+instance Option.some_is_discrete [OFE α] {a : α} (Ha : DiscreteE a) : DiscreteE (some a) := by
   constructor
   rintro (_|_) H
   · exact H
@@ -403,7 +405,7 @@ theorem Option.ne_match [OFE α] {B : Type _} [OFE B]
     match x', y', h with | some _, some _, h => hf.ne h | none, none, _ => Dist.rfl⟩
 
 @[rocq_alias None_discrete]
-theorem Option.none_is_discrete [OFE α] : DiscreteE (none : Option α) := by
+instance Option.none_is_discrete [OFE α] : DiscreteE (none : Option α) := by
   constructor; rintro (_|_) <;> simp
 
 instance Option.merge_ne [OFE α] {op : α → α → α} [NonExpansive₂ op] :
@@ -528,7 +530,7 @@ theorem NonExpansive₂.uncurry [OFE α] [OFE β] [OFE γ] {f : α → β → γ
   ⟨fun {_ _ _} (h : _ ∧ _) => hf.ne h.1 h.2⟩
 
 @[rocq_alias prod_discrete]
-theorem prod.is_discrete [OFE α] [OFE β] {a : α} {b : β} (Ha : DiscreteE a) (Hb : DiscreteE b) :
+instance prod.is_discrete [OFE α] [OFE β] {a : α} {b : β} (Ha : DiscreteE a) (Hb : DiscreteE b) :
     DiscreteE (a, b) := by
   constructor
   intro y H; refine ⟨Ha.discrete H.1, Hb.discrete H.2⟩
