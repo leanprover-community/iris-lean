@@ -213,6 +213,9 @@ class Leibniz (α : Type _) [OFE α] where
   eq_of_eqv {x y : α} : x ≡ y → x = y
 export OFE.Leibniz (eq_of_eqv)
 
+theorem Equiv.to_eq {α} [OFE α] [Leibniz α] {x y : α} (h : x ≡ y) : x = y :=
+  eq_of_eqv h
+
 #rocq_ignore boolO "Canonical Leibniz OFE on `bool`; Lean uses `LeibnizO Bool`."
 #rocq_ignore natO "Canonical Leibniz OFE on `nat`; Lean uses `LeibnizO Nat`."
 #rocq_ignore positiveO "Canonical Leibniz OFE on `positive`; not applicable in Lean."

@@ -84,8 +84,10 @@ _DEF_RE = re.compile(
 )
 
 # Module/Section tracking: Modules qualify names (e.g., Module bi -> bi.foo),
-# but Sections do not. 
-_MODULE_START_RE = re.compile(r"^\s*Module\s+(\w+)", re.MULTILINE)
+# but Sections do not.
+# `Module Export M` and `Module Import M` are valid forms where the name is M,
+# not the Export/Import keyword.
+_MODULE_START_RE = re.compile(r"^\s*Module\s+(?:Export\s+|Import\s+)?(\w+)", re.MULTILINE)
 _MODULE_TYPE_RE = re.compile(r"^\s*Module\s+Type\b")  # Module Types are skipped
 _SECTION_START_RE = re.compile(r"^\s*Section\s+(\w+)", re.MULTILINE)
 _END_RE = re.compile(r"^\s*End\s+(\w+)\s*\.", re.MULTILINE)
