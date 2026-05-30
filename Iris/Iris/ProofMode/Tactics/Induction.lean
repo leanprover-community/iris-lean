@@ -102,6 +102,15 @@ elab "iinduction" colGt x:ident : tactic => do
     -- Find all hypotheses that contain the variable being performed induction on
     let targets := iHypsContaining hyps fvar
 
+    -- Find the recursor name for induction
+    let fvarType ← whnf <| ← inferType <| mkFVar fvar
+    let recName : Name ← match fvarType.getAppFn with
+    | Expr.const indName _ =>
+      match (← getEnv).find? indName with
+      | some (ConstantInfo.inductInfo val) => pure (Name.mkStr val.name "recOn")
+      | _ => throwError "iinduction: {indName} is not inductive"
+    | _ => throwError "iinduction: unable to determine inductive type"
+
     -- Revert all hypotheses in the list
     let pf ← iRevertIntro hyps goal targets (
       -- The function takes the hypotheses and goal after reverting
@@ -111,7 +120,7 @@ elab "iinduction" colGt x:ident : tactic => do
 
         -- Use built-in induction in Lean to generate the subgoals for induction
         let subgoals ←  m.mvarId!.withContext do
-          m.mvarId!.induction fvar `Nat.recOn #[]
+          m.mvarId!.induction fvar recName #[]
 
         -- Handle each subgoal
         for s in subgoals do
