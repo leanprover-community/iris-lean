@@ -147,9 +147,9 @@ inductive BaseStep : Exp → State → List Observation → Exp → State → Li
   | ifFalseS (e1 e2 : Exp) (σ : State) :
       BaseStep (.if (.val (.lit (.bool false))) e1 e2) σ [] e2 σ []
   | fstS (v1 v2 : Val) (σ : State) :
-      BaseStep (.fst (.val (.pair v1 v2))) σ [] (.val v1) σ []
+      BaseStep (.fst (.val (Val.pair v1 v2))) σ [] (.val v1) σ []
   | sndS (v1 v2 : Val) (σ : State) :
-      BaseStep (.snd (.val (.pair v1 v2))) σ [] (.val v2) σ []
+      BaseStep (.snd (.val (Val.pair v1 v2))) σ [] (.val v2) σ []
   | caseLS (v : Val) (e1 e2 : Exp) (σ : State) :
       BaseStep (.case (.val (.injL v)) e1 e2) σ [] (.app e1 (.val v)) σ []
   | caseRS (v : Val) (e1 e2 : Exp) (σ : State) :

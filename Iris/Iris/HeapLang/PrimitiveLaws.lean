@@ -72,6 +72,17 @@ variable {GF : BundledGFunctors} {hlc : HasLC}
 variable [HeapLangGS hlc GF]
 variable {s : Stuckness} {E : CoPset} {Φ : Val → IProp GF}
 
+theorem wp_snd {v1 v2 : Val} :
+  ▷ Φ v2 ⊢ WP hl(snd(v(({v1}, {v2})))) @s; E {{ Φ }} := by
+  iintro HΦ
+  iapply wp_pure_step_fupd (φ := True) (Hφ := True.intro) (n := 1) (e₂ := .val v2) (E₂ := E)
+  · apply snd_pure
+  · simp only [Nat.repeat]
+    iintro !> !> !> -; iframe
+    iapply wp_value $$ HΦ
+    constructor
+    rfl
+
 theorem wp_if_true {e1 e2 : Exp} :
   ▷ WP e1 @ s; E {{ Φ }}
   ⊢ WP hl(if #true then {e1} else {e2}) @s; E {{ Φ }} := by
@@ -244,7 +255,6 @@ theorem wp_store {l : Loc} {v v' : Val} {e : Exp} :
     simp [toVal]
   · itrivial
 
--- cas is not atomic 🙈
 theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val} :
   toVal e1 = .some v1 → toVal e2 = .some v2 → v'.compareSafe v1 → decide (v' = v1) = false →
   ▷ (l ↦{q} (Option.some v'))

@@ -42,7 +42,7 @@ class lock (GF : BundledGFunctors) [IrisGS_gen hlc Exp GF] where
     -∗ WP hl({acquire} {lk}) {{ Φ }}
   release_spec {N} γ lk R :
     ⊢ □ ∀ (Φ : Val → IProp GF),
-    (is_lock N γ lk R ∗ locked N γ ∗ R)
+    (is_lock N γ lk R) ∗ locked N γ ∗ R
     -∗ (True -∗ Φ (.lit .unit))
     -∗ WP hl({release} {lk}) {{ Φ }}
 
