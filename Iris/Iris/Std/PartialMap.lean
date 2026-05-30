@@ -1166,6 +1166,38 @@ theorem toList_dom_set_perm [LawfulFiniteSet S K] (m : M V) :
     exact ⟨(x, v), toList_get.mpr hv, rfl⟩
   · grind [toList_get]
 
+/-! ### `map_seq` -/
+
+variable {M' : Type _ → Type _} [LawfulFiniteMap M' Nat]
+
+@[simp] theorem map_seq_nil {V : Type _} {start : Nat} :
+    map_seq (M := M') start ([] : List V) = ∅ := by
+  rw [map_seq, List.mapIdx_nil]; rfl
+
+theorem map_seq_cons {V : Type _} {start : Nat} {v : V} {l : List V} :
+    map_seq (M := M') start (v :: l) = insert (map_seq (start + 1) l) start v := by
+  have hfun : (fun i (x : V) => (start + (i + 1), x)) = (fun i x => (start + 1 + i, x)) := by
+    funext i x; congr 1; omega
+  show ofList ((v :: l).mapIdx fun i x => (start + i, x)) = _
+  rw [List.mapIdx_cons]
+  simp only [Nat.add_zero, hfun]
+  exact ofList_cons
+
+theorem get?_map_seq {V : Type _} {start k : Nat} {l : List V} :
+    get? (map_seq (M := M') start l) k = if start ≤ k then l[k - start]? else none := by
+  induction l generalizing start with
+  | nil => rw [map_seq_nil]; simp only [List.getElem?_nil, ite_self]; exact get?_empty _
+  | cons v l ih =>
+      rw [map_seq_cons]
+      by_cases hk : k = start
+      · subst hk; rw [get?_insert_eq rfl, if_pos (Nat.le_refl _)]; simp
+      · rw [get?_insert_ne (by omega : start ≠ k), ih]
+        rcases Nat.lt_or_ge k start with h | h
+        · rw [if_neg (by omega), if_neg (by omega)]
+        · rw [if_pos h, if_pos (by omega : start + 1 ≤ k), List.getElem?_cons,
+            if_neg (by omega : k - start ≠ 0)]
+          congr 1 <;> omega
+
 end LawfulFiniteMap
 
 end Iris.Std
