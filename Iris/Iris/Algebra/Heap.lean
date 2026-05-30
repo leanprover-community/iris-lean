@@ -83,7 +83,7 @@ open PartialMap
 variable [LawfulPartialMap M K] [CMRA V]
 
 @[simp] def op (s1 s2 : M V) : M V := merge (fun _ => CMRA.op) s1 s2
-@[simp] def unit : M V := empty
+@[simp] def unit : M V := ∅
 @[simp] def pcore (s : M V) : Option (M V) := some <| bindAlter (fun _ => CMRA.pcore) s
 @[simp] def valid (s : M V) : Prop := ∀ k, ✓ get? s k
 @[simp] def validN (n : Nat) (s : M V) : Prop := ∀ k, ✓{n} get? s k
