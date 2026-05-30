@@ -94,6 +94,16 @@ private def addAllIHs {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
   return current
 
+/--
+  The `iinduction` tactic user provides the proof for the induction subgoal,
+  which has hypotheses introduced into the Iris proof state.
+
+  Given this proof, obtain the proof where the hypotheses are not yet
+  introduced into the Iris proof state.
+-/
+@[rocq_alias tac_revert_ih]
+theorem revert_IH [BI PROP] {a b c d : PROP} (h : a ⊢ b) : c ⊢ d := sorry
+
 elab "iinduction" colGt x:ident : tactic => do
   -- Get the ID of the variable on which induction is being performed
   let fvar ← getFVarId x
@@ -142,8 +152,10 @@ elab "iinduction" colGt x:ident : tactic => do
             -- Introduce the induction hypothesis back into the Iris proof state
             let ⟨_, newHyps⟩ ← addAllIHs irisGoal.hyps ihFVars
 
+            let pf ← withoutFVars (u := 0) ihFVars.toArray <| k newHyps irisGoal.goal
+
             -- Remove the IHs from the regular context
-            s.mvarId.assign <| ← withoutFVars (u := 0) ihFVars.toArray <| k newHyps irisGoal.goal
+            s.mvarId.assign <| (q(revert_IH $pf) : Q($irisGoal.e ⊢ $irisGoal.goal))
 
         return m
     )
