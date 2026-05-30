@@ -9,6 +9,7 @@ public import Iris.ProgramLogic.EctxLanguage
 public import Iris.ProgramLogic.Adequacy
 public import Iris.Instances.Lib.GhostMap
 public import Iris.Std.FromMathlib
+public import Batteries.Data.List.Lemmas
 
 namespace Iris.ProgramLogic
 
@@ -38,82 +39,118 @@ inductive Forking where
 
 /-- Every thread in the pool is not stuck at the current state. -/
 def cfgNotStuck (C : List Expr × State) : Prop :=
-  ∀ e ∈ C.1, NotStuck (e, C.2)
+  ∀ {e}, e ∈ C.1 → NotStuck (e, C.2)
 
 /-- If we declared the configuration `DoesNotFork`, every primitive step
 of every thread emits empty forks. -/
 def cfgForking (C : List Expr × State) (f : Forking) : Prop :=
-  f = .doesNotFork →
-    ∀ e ∈ C.1, ∀ {e' σ' κ efs},
-      (e, C.2) -<κ>-> (e', σ', efs) → efs = []
+  f = .doesNotFork → ∀ e ∈ C.1, ∀ {e' σ' κ efs}, (e, C.2) -<κ>-> (e', σ', efs) → efs = []
 
 /-- The configuration is safe under the given forking discipline:
 every reachable configuration is not stuck and respects the forking constraint. -/
 def cfgSafeForking (C : List Expr × State) (f : Forking) : Prop :=
-  ∀ C₂, (C -·->ₜₚ* C₂) → cfgNotStuck C₂ ∧ cfgForking C₂ f
+  ∀ {C₂}, (C -·->ₜₚ* C₂) → cfgNotStuck C₂ ∧ cfgForking C₂ f
 
 /-- The configuration is safe: every reachable configuration is not stuck. -/
 def cfgSafe (C : List Expr × State) : Prop :=
-  ∀ C₂, (C -·->ₜₚ* C₂) → cfgNotStuck C₂
+  ∀ {C₂}, (C -·->ₜₚ* C₂) → cfgNotStuck C₂
 
 theorem cfgSafe_of_cfgSafeForking {C : List Expr × State} {f : Forking}
-    (H : cfgSafeForking C f) : cfgSafe C := by
-  sorry
+    (H : cfgSafeForking C f) : cfgSafe C := fun Hp _ => H Hp |>.1
 
-theorem primSteps_fill {K : Expr → Expr} [Context K]
-    {e₁ σ₁ κ e₂ σ₂ efs} (_ : PrimSteps e₁ σ₁ κ e₂ σ₂ efs) :
-    PrimSteps (K e₁) σ₁ κ (K e₂) σ₂ efs := by
-  sorry
+theorem PrimSteps.fill {K : Expr → Expr} [Context K] {e₁ σ₁ κ e₂ σ₂ efs}
+    (Hs : PrimSteps e₁ σ₁ κ e₂ σ₂ efs) : PrimSteps (K e₁) σ₁ κ (K e₂) σ₂ efs :=
+  match Hs with
+  | once hstep => .once <| Context.primStep_fill hstep
+  | next hstep hsteps => .next (Context.primStep_fill hstep) hsteps.fill
 
 theorem cfg_step {tp : List Expr} {σ : State} {n : Nat} {e : Expr}
     {κ : List Obs} {e' : Expr} {σ' : State} {efs : List Expr}
     (Hlu : tp[n]? = some e) (Hprim : (e, σ) -<κ>-> (e', σ', efs)) :
     Step (tp, σ) κ (tp.set n e' ++ efs, σ') := by
-  sorry
+  obtain ⟨hlt, rfl⟩ := List.getElem?_eq_some_iff.mp Hlu
+  simpa only [List.getElem_cons_drop hlt, List.take_append_drop,
+    ← List.set_eq_take_cons_drop e' hlt] using
+    Step.of_primStep Hprim (t₁ := tp.take n) (t₂ := tp.drop (n+1))
+
+theorem getElem?_set_append_self {tp : List Expr} {n : Nat} {a : Expr} {efs : List Expr}
+    (hlt : n < tp.length) : (tp.set n a ++ efs)[n]? = some a := by
+  rw [List.getElem?_append_left (by rwa [List.length_set]), List.getElem?_set_self hlt]
+
+theorem set_append_set_append {tp : List Expr} {n : Nat} {a b : Expr}
+    {efs₁ efs₂ : List Expr} (hlt : n < tp.length) :
+    (tp.set n a ++ efs₁).set n b ++ efs₂ = tp.set n b ++ (efs₁ ++ efs₂) := by
+  rw [List.set_append_left _ _ (by rwa [List.length_set]), List.set_set, List.append_assoc]
 
 theorem cfg_stepsTc {tp : List Expr} {σ : State} {n e κ e' σ' efs}
     (Hlu : tp[n]? = some e) (Hprim : PrimSteps e σ κ e' σ' efs) :
     Relation.TransGen ErasedStep (tp, σ) (tp.set n e' ++ efs, σ') := by
-  sorry
+  revert Hlu
+  induction Hprim generalizing tp with
+  | once hstep => exact fun Hlu => .single ⟨_, cfg_step Hlu hstep⟩
+  | @next _ _ _ e₂ _ efs₁ _ _ _ _ hstep _ ih =>
+      intro Hlu
+      have hlt : n < tp.length := (List.getElem?_eq_some_iff.mp Hlu).1
+      have rest := ih (tp := tp.set n e₂ ++ efs₁) (getElem?_set_append_self hlt)
+      rw [set_append_set_append hlt] at rest
+      exact rest.head ⟨_, cfg_step Hlu hstep⟩
 
-theorem cfg_steps {tp : List Expr} {σ : State} {n e κ e' σ' efs}
-    (Hlu : tp[n]? = some e) (Hprim : PrimSteps e σ κ e' σ' efs) :
-    (tp, σ) -·->ₜₚ* (tp.set n e' ++ efs, σ') := by
-  sorry
+theorem cfg_steps {tp : List Expr} {σ : State} {n e κ e' σ' efs} (Hlu : tp[n]? = some e)
+    (Hprim : PrimSteps e σ κ e' σ' efs) : (tp, σ) -·->ₜₚ* (tp.set n e' ++ efs, σ') :=
+  (cfg_stepsTc Hlu Hprim).to_reflTransGen
 
 theorem cfg_safeStep {tp : List Expr} {σ : State} {f n e κ e' σ' efs}
     (Hsafe : cfgSafeForking (tp, σ) f) (Hlu : tp[n]? = some e)
     (Hprim : (e, σ) -<κ>-> (e', σ', efs)) :
-    cfgSafeForking (tp.set n e' ++ efs, σ') f ∧
-    (f = .doesNotFork → efs = []) := by
-  sorry
+    cfgSafeForking (tp.set n e' ++ efs, σ') f ∧ (f = .doesNotFork → efs = []) := by
+  refine ⟨fun {C₂ Hrtc} => ?_, fun hf => ?_⟩
+  · exact Hsafe (.head ⟨κ, cfg_step Hlu Hprim⟩ Hrtc)
+  · exact Hsafe .refl |>.2 hf e (List.mem_of_getElem? Hlu) Hprim
 
 theorem cfg_safeSteps {tp : List Expr} {σ : State} {f n e κ e' σ' efs}
     (Hsafe : cfgSafeForking (tp, σ) f) (Hlu : tp[n]? = some e)
     (Hprim : PrimSteps e σ κ e' σ' efs) :
     cfgSafeForking (tp.set n e' ++ efs, σ') f ∧
     (f = .doesNotFork → efs = []) := by
-  sorry
+  revert Hsafe Hlu
+  induction Hprim generalizing tp with
+  | once hstep => exact fun Hsafe Hlu => cfg_safeStep Hsafe Hlu hstep
+  | @next _ _ _ e₂ _ efs₁ _ _ _ _ hstep _ ih =>
+      intro Hsafe Hlu
+      have hlt := (List.getElem?_eq_some_iff.mp Hlu).1
+      obtain ⟨Hsafe2, Hnf⟩ := cfg_safeStep Hsafe Hlu hstep
+      obtain ⟨Hsafe3, Hnf2⟩ :=
+        ih (tp := tp.set n e₂ ++ efs₁) Hsafe2 (getElem?_set_append_self hlt)
+      rw [set_append_set_append hlt] at Hsafe3
+      exact ⟨Hsafe3, fun hf => by simp [Hnf hf, Hnf2 hf]⟩
 
 theorem nSteps_trans {n m : Nat} {ρ₁ ρ₂ ρ₃ : List Expr × State} {κa κb : List Obs}
     (H1 : ρ₁ -<κa>->ₜₚ^[n] ρ₂) (H2 : ρ₂ -<κb>->ₜₚ^[m] ρ₃) :
     ρ₁ -<(κa ++ κb)>->ₜₚ^[(n + m)] ρ₃ := by
-  sorry
+  induction H1 with
+  | refl ρ => simpa using H2
+  | cons hstep _ ih =>
+      rw [Nat.add_right_comm, List.append_assoc]
+      exact NSteps.cons hstep (ih H2)
 
 theorem nSteps_one {ρ₁ ρ₂ : List Expr × State} {κ : List Obs}
     (H : ρ₁ -<κ>->ₜₚ ρ₂) : ρ₁ -<κ>->ₜₚ^[1] ρ₂ := by
-  sorry
+  simpa using NSteps.cons H (.refl _)
 
 theorem nSteps_r {n} {ρ₁ ρ₂ ρ₃ : List Expr × State} {κ κs : List Obs}
-    (H1 : ρ₁ -<κs>->ₜₚ^[n] ρ₂) (H2 : ρ₂ -<κ>->ₜₚ ρ₃) :
-    ρ₁ -<(κs ++ κ)>->ₜₚ^[(n + 1)] ρ₃ := by
-  sorry
+    (H1 : ρ₁ -<κs>->ₜₚ^[n] ρ₂) (H2 : ρ₂ -<κ>->ₜₚ ρ₃) : ρ₁ -<(κs ++ κ)>->ₜₚ^[(n + 1)] ρ₃ :=
+  nSteps_trans H1 (nSteps_one H2)
 
 theorem primSteps_atomic {e : Expr} {σ κ e₂ σ' efs}
-    (Hatom : Atomic .StronglyAtomic e)
-    (Hsteps : PrimSteps e σ κ e₂ σ' efs) :
+    (Hatom : Atomic .StronglyAtomic e) (Hsteps : PrimSteps e σ κ e₂ σ' efs) :
     ((e, σ) -<κ>-> (e₂, σ', efs)) ∧ (ToVal.toVal e₂).isSome := by
-  sorry
+  cases Hsteps with
+  | once hstep => exact ⟨hstep, Hatom.atomic hstep⟩
+  | next hstep hsteps2 =>
+      have hv := Hatom.atomic hstep
+      cases hsteps2 with
+      | once h3 => simp [Language.val_stuck h3] at hv
+      | next h3 _ => simp [Language.val_stuck h3] at hv
 
 end
 
