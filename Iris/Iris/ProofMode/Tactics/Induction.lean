@@ -66,10 +66,17 @@ private def findIHs (m : MVarId) : MetaM (List FVarId) :=
   introduced into the Iris proof state.
 -/
 @[rocq_alias tac_revert_ih]
-theorem revert_IH [BI PROP] {P Q R goal : PROP}
-  {φ : Prop}
-  (inst : IntoIH φ P Q)
-  (h : R ∗ □ Q ⊢ goal) : R ⊢ goal := sorry
+theorem revert_IH [BI PROP] {P Q R goal : PROP} {φ}
+    (ih : φ)
+    (inst : IntoIH φ P Q)
+    (h1 : □ P ⊣⊢ R)
+    (h2 : R ∗ □ Q ⊢ goal) : R ⊢ goal := calc
+  R ⊢ □ P         := h1.mpr
+  _ ⊢ □ P ∗ □ P   := intuitionistically_sep_dup.mp
+  _ ⊢ □ P ∗ □ □ P := sep_mono_r intuitionistically_idem.mpr
+  _ ⊢ □ P ∗ □ Q   := sep_mono_r <| intuitionistically_mono <| inst.into_ih ih
+  _ ⊢ R ∗ □ Q     := sep_mono_l h1.mp
+  _ ⊢ goal        := h2
 
 /--
   Designed to be a mutable state such that `newHyps` contains induction
@@ -89,10 +96,10 @@ private def addIntoIH {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e goal}
     (st : @InductionState u prop bi e goal)
     (φ : Q(Prop)) (hFVar : FVarId) :
     ProofModeM (@InductionState u prop bi e goal) := do
+  let oldE := st.newE
+  let oldHyps : Hyps bi oldE := st.newHyps
 
-  let hyps := st.newHyps
-
-  let P : Q($prop) ← intuitionisticHyps hyps
+  let P : Q($prop) ← intuitionisticHyps oldHyps
 
   let Q ← mkFreshExprMVarQ q($prop)
   let some inst ← ProofModeM.trySynthInstanceQ q(IntoIH $φ $P $Q)
@@ -100,11 +107,13 @@ private def addIntoIH {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e goal}
 
   let nameIdent := mkIdent <| ← hFVar.getUserName
   let binderIdent ← `(binderIdent| $nameIdent:ident)
-  let ⟨_, newHyps⟩ ← Hyps.addWithInfo bi binderIdent q(true) Q hyps
+  let ⟨_, newHyps⟩ ← Hyps.addWithInfo bi binderIdent q(true) Q oldHyps
+
+  let a := q(revert_IH sorry $inst (goal := $goal) (R := $oldE) sorry)
 
   return {
     newHyps,
-    pf := q(fun pf => $st.pf <| revert_IH $inst pf)
+    pf := q(fun pf => $st.pf <| $a pf)
   }
 
 /--
