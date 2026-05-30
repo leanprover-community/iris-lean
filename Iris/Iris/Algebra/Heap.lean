@@ -69,6 +69,49 @@ instance Heap.instCOFE [LawfulPartialMap M K] [COFE V] : COFE (M V) where
     · simp [← PartialMap.chain_get, chain_none_const (c := PartialMap.chain k c) (n := 0) (H▸rfl)]
     · exact IsCOFE.conv_compl
 
+instance [PartialMap M K] [OFE V] [Discrete V] : Discrete (M V) where
+  discrete_0 h k := Discrete.discrete_0 (h k)
+
+instance [ExtensionalPartialMap M K] [OFE V] [Leibniz V] : Leibniz (M V) where
+  eq_of_eqv h :=
+    ExtensionalPartialMap.equiv_iff_eq.mp (fun i => Leibniz.eq_of_eqv (h i))
+
+instance [LawfulPartialMap M K] [DecidableEq K] [OFE V] {v : V} [DiscreteE v] {k : K}
+    : DiscreteE (PartialMap.singleton (M := M) k v) where
+  discrete {y} h k' := by
+    have := h k'
+    if hh : k = k' then
+      simp [LawfulPartialMap.get?_singleton, hh] at this ⊢
+      have uu := DiscreteE.discrete this
+      exact uu
+    else
+      simp [LawfulPartialMap.get?_singleton, hh] at this ⊢
+      rw [dist_none.mp this.symm]
+
+instance instDiscreteEEmpty [LawfulPartialMap M K] [OFE V] : DiscreteE (∅ : M V) where
+  discrete {y} h k := by
+    have := h k
+    simp [LawfulPartialMap.get?_empty] at this ⊢
+    have bb : get? y k = none := dist_none.mp this.symm
+    rw [bb]
+
+instance [LawfulPartialMap M K] [OFE V] : DiscreteE (∅ : M V) := instDiscreteEEmpty
+
+theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V]
+    {n : Nat} {x y : V} (h : x ≡{n}≡ y) (k : K)
+    : PartialMap.singleton (M := M) k x ≡{n}≡ PartialMap.singleton k y := by
+  intro k'
+  simp [LawfulPartialMap.get?_singleton]
+  if hh : k = k' then simp [hh, h]
+  else simp [hh]
+
+theorem singleton_equiv [LawfulPartialMap M K] [DecidableEq K] [OFE V] {x y : V} (h : x ≡ y) (k : K)
+    : PartialMap.singleton (M := M) k x ≡ PartialMap.singleton k y := by
+  intro k'
+  simp [LawfulPartialMap.get?_singleton]
+  if hh : k = k' then simp [hh, h]
+  else simp [hh]
+
 end OFE
 
 section CMRA
@@ -229,6 +272,9 @@ instance instStoreUCMRA : UCMRA (M V) where
   unit_left_id _ := by simp [CMRA.op, get?_merge, get?_empty]
   pcore_unit _ := by simp [get?_bindAlter, get?_empty]
 
+instance : IsTotal (M V) where
+  total _ := Option.isSome_iff_exists.mp rfl
+
 end Heap
 end CMRA
 
@@ -240,13 +286,28 @@ variable {K V : Type _} [LawfulPartialMap M K] [CMRA V]
 
 open CMRA
 
+theorem get?_op_eq_get?_op_get? (x y : M V) : get? (x • y) i = get? x i • get? y i := by
+  simp [CMRA.op, get?_merge, Option.merge]
+  grind only
+
+theorem valid_empty : ✓ (∅ : M V) :=
+  fun k => by simp [Valid, show get? ∅ k = none from get?_empty (M := M) k]
+
 theorem validN_get?_validN {m : M V} (Hv : ✓{n} m) (He : get? m i ≡{n}≡ some x) : ✓{n} x := by
   specialize Hv i; revert Hv
   rcases h : get? m i <;> simp [h] at He
   exact OFE.Dist.validN He |>.mp
 
+theorem validN_get? {m : M V} (v : ✓{n} m) : ✓{n} get? m i :=
+  match hh : get? m i with
+  | none => ⟨⟩
+  | some z => show ✓{n} z from validN_get?_validN v (OFE.Dist.of_eq hh)
+
 theorem valid_get?_valid {m : M V} (Hv : ✓ m) (He : get? m i ≡ some x) : ✓ x :=
   valid_iff_validN.mpr (fun _ => validN_get?_validN Hv.validN He.dist)
+
+theorem valid_get? {m : M V} (v : ✓ m) : ✓ get? m i :=
+  valid_iff_validN.mpr (fun _ => Valid.validN (v i))
 
 open Classical in
 theorem insert_validN {m : M V} (Hx : ✓{n} x) (Hm : ✓{n} m) : ✓{n} (insert m i x) := by
@@ -292,6 +353,12 @@ theorem insert_equiv_singleton_op_singleton {m : M V} (Hemp : get? m i = none) :
 theorem insert_eq_singleton_op_singleton [IsoFunMap M K] {m : M V} (Hemp : get? m i = none) :
     insert m i x = singleton i x • m :=
   IsoFunMap.ext (insert_equiv_singleton_op_singleton Hemp)
+
+theorem core_empty : core (∅ : M V) ≡ ∅ := by
+  simp [core, CMRA.pcore]
+  intro k
+  have aa : get? ∅ k = none := get?_empty (M := M) (V := V) k
+  simp [get?_bindAlter, aa]
 
 open Classical in
 theorem core_singleton_equiv {i : K} {x : V} {cx : V} (Hpcore : CMRA.pcore x = some cx) :

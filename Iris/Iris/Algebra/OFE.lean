@@ -359,6 +359,12 @@ instance [OFE α] [OFE.Discrete α] : OFE.Discrete (Option α) where
 @[simp] theorem not_some_dist_none [OFE α] {n} {x : α} : ¬some x ≡{n}≡ none := id
 @[simp] theorem not_none_dist_some [OFE α] {n} {x : α} : ¬none ≡{n}≡ some x := id
 
+instance [OFE α] {e : α} [OFE.DiscreteE e] : OFE.DiscreteE (some e) where
+  discrete {y} h :=
+    match y with
+    | .none => absurd h not_some_dist_none
+    | .some y => show e ≡ y from DiscreteE.discrete h
+
 theorem equiv_some [OFE α] {o : Option α} {y : α} (e : o ≡ some y) :
     ∃ z, o = some z ∧ z ≡ y := by
   let .some x := o
@@ -366,6 +372,9 @@ theorem equiv_some [OFE α] {o : Option α} {y : α} (e : o ≡ some y) :
 
 @[rocq_alias dist_None]
 theorem equiv_none [OFE α] {o : Option α} : o ≡ none ↔ o = none :=
+  ⟨fun _ => let .none := o; rfl, (· ▸ .rfl)⟩
+
+theorem dist_none [OFE α] {o : Option α} : o ≡{n}≡ none ↔ o = none :=
   ⟨fun _ => let .none := o; rfl, (· ▸ .rfl)⟩
 
 @[rocq_alias dist_Some_inv_r']
