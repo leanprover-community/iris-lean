@@ -919,9 +919,6 @@ instance combineSepGives_persistently [BI PROP] (Q1 Q2 P : PROP)
     CombineSepGives iprop(<pers> Q1) iprop(<pers> Q2) iprop(<pers> P) where
   combine_sep_gives := persistently_sep_2.trans (persistently_mono h.combine_sep_gives)
 
--- TODO: two more instances [into_ih_Forall] and [into_ih_Forall2]
--- have not been implemented
-
 @[rocq_alias into_ih_entails]
 instance intoIH_entails [BI PROP] (P Q : PROP) : IntoIH (P ⊢ Q) P Q where
   into_ih := λ hpq => intuitionistically_elim.trans hpq
@@ -947,3 +944,21 @@ instance intoIH_imp [BI PROP] (φ ψ : Prop) (Δ P Q : PROP)
     refine (sep_mono_r h1.make_affinely.mpr).trans ?_
     refine persistent_and_affinely_sep_r.2.trans ?_
     exact pure_elim_r (fun hφ => h2.into_ih (hImp hφ))
+
+/-- Support for induction principles whose IH is guarded by `List.Forall`, e.g.
+    `∀ l, Forall P l → P (Tree l)` arising from nested inductive types like
+    `inductive ntree := Tree : List ntree → ntree`. -/
+@[rocq_alias into_ih_Forall]
+instance intoIH_listForall [BI PROP] (φ : α → Bool) (l : List α) (P : PROP) (Φ : α → PROP)
+    [h : ∀ x, IntoIH (φ x) P (Φ x)] :
+    IntoIH (l.all φ) P (bigSepL (fun _ a => iprop(□ Φ a)) l) where
+  into_ih := sorry
+
+/-- Support for induction principles whose IH is guarded by `List.Forall₂`, e.g.
+    arising from mutual inductive types relating two lists element-wise. -/
+@[rocq_alias into_ih_Forall2]
+instance intoIH_listForall₂ [BI PROP] (φ : α → β → Prop) (l1 : List α) (l2 : List β)
+    (P : PROP) (Φ : α → β → PROP)
+    [h : ∀ x1 x2, IntoIH (φ x1 x2) P (Φ x1 x2)] :
+    IntoIH (List.Forall₂ φ l1 l2) P (bigSepL2 (fun _ x1 x2 => iprop(□ Φ x1 x2)) l1 l2) where
+  into_ih := sorry
