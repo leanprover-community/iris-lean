@@ -974,4 +974,13 @@ instance intoIH_listForall₂ [BI PROP] (φ : α → β → Prop) (l1 : List α)
     (P : PROP) (Φ : α → β → PROP)
     [h : ∀ x1 x2, IntoIH (φ x1 x2) P (Φ x1 x2)] :
     IntoIH (List.Forall₂ φ l1 l2) P (bigSepL2 (fun _ x1 x2 => iprop(□ Φ x1 x2)) l1 l2) where
-  into_ih := sorry
+  into_ih := by
+    intro h
+    induction h with
+    | nil => simp [bigSepL2, affine]
+    | cons x xs ih =>
+      simp [bigSepL2] at ⊢
+      apply intuitionistically_sep_idem.mpr.trans
+      refine sep_mono ?_ ?_
+      · exact intuitionistically_intro' ((h _ _).into_ih x)
+      · exact ih
