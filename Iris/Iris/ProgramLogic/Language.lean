@@ -158,6 +158,10 @@ scoped notation (name := ErasedStep) conf:40 " -·->ₜₚ " conf':41 => Languag
 scoped notation (name := erasedStepStar) conf:40 " -·->ₜₚ* " conf':41 =>
   Relation.ReflTransGen Language.ErasedStep conf conf'
 
+/-- A nonempty sequence of `Language.erasedStep`s -/
+scoped notation (name := erasedStepPlus) conf:40 " -·->ₜₚ+ " conf':41 =>
+  Relation.TransGen Language.ErasedStep conf conf'
+
 end Notation
 
 open Notation
@@ -239,6 +243,14 @@ theorem stronglyAtomic_atomic {a} :
   match a with
   | .StronglyAtomic => id
   | .WeaklyAtomic => fun ⟨h⟩ => ⟨by grind only [not_reducible_iff_irreducible, val_irreducible]⟩
+
+theorem prim_val_stuck {obs : List Obs} {e' σ' eₜ}
+    (h : ((ToVal.ofVal v : Expr), σ) -<obs>-> (e', σ', eₜ)) : False := by
+  sorry
+
+instance val_atomic {a : Atomicity} {v : Val} :
+    Atomic (State := State) a (Λ.ofVal v) := by
+  sorry
 
 
 /-- The function `K` models an evaluation context for the language -/

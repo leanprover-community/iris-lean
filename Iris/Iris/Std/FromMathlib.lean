@@ -86,7 +86,51 @@ theorem trans (hab : ReflTransGen r a b) (hbc : ReflTransGen r b c) : ReflTransG
   | refl => exact hab
   | tail _ hcd ih => exact ih.tail hcd
 
+/-- NB. Copied from Mathlib -/
+theorem single (hab : r a b) : ReflTransGen r a b :=
+  refl.tail hab
+
 end Relation.ReflTransGen
+
+end FromMathlib
+
+/-! ### Lemmas about `Relation.TransGen` (defined in Lean core, `Init.Core`).
+
+The transitive closure itself is in `_root_.Relation.TransGen`; we add a few
+helper lemmas here, mirroring the names from Mathlib, and bridging to our
+local `FromMathlib.Relation.ReflTransGen`. -/
+
+namespace Relation.TransGen
+
+/-- NB. Copied from Mathlib -/
+theorem to_reflTransGen {α} {r : α → α → Prop} {a b}
+    (h : Relation.TransGen r a b) : FromMathlib.Relation.ReflTransGen r a b := by
+  induction h with
+  | single h => exact FromMathlib.Relation.ReflTransGen.single h
+  | tail _ bc ab => exact FromMathlib.Relation.ReflTransGen.tail ab bc
+
+/-- NB. Copied from Mathlib -/
+theorem trans_left {α} {r : α → α → Prop} {a b c}
+    (hab : Relation.TransGen r a b) (hbc : FromMathlib.Relation.ReflTransGen r b c) :
+    Relation.TransGen r a c := by
+  induction hbc with
+  | refl => exact hab
+  | tail _ hcd hac => exact hac.tail hcd
+
+/-- NB. Copied from Mathlib -/
+theorem head' {α} {r : α → α → Prop} {a b c}
+    (hab : r a b) (hbc : FromMathlib.Relation.ReflTransGen r b c) :
+    Relation.TransGen r a c :=
+  trans_left (.single hab) hbc
+
+/-- NB. Copied from Mathlib -/
+theorem head {α} {r : α → α → Prop} {a b c}
+    (hab : r a b) (hbc : Relation.TransGen r b c) : Relation.TransGen r a c :=
+  head' hab hbc.to_reflTransGen
+
+end Relation.TransGen
+
+namespace FromMathlib
 
 namespace List
 

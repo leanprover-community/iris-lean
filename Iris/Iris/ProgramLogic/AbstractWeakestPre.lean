@@ -83,3 +83,34 @@ theorem inv_open_maybe_ectxlang_inv (e : Expr) (E : CoPset) (N : Namespace)
   sorry
 
 end EctxLanguage
+
+/-! ### Instances of the abstract classes for iris-lean's real `Wp`.
+
+Mirrors `WP_abstract_weakestpre_gen` and `WP_abstract_ectx_weakestpre_gen`
+from `framework/wpre_instantiation.v`. The intuitionistic magic-rule
+instance (`WP_abstract_weakestpre_gen_magic_intuitionistic`) is intentionally
+omitted — the classical chain uses `wp_inv_open_maybe_ectxlang` instead. -/
+
+section IrisWP
+
+variable {Expr State Obs Val : Type _} [Language Expr State Obs Val]
+variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
+
+/-- iris-lean's standard `WP` satisfies the abstract 5-law class. -/
+instance WP_lawful_abstract :
+    LawfulAbstractWP (Expr := Expr) (Val := Val)
+      (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
+  fupd_wp := by sorry
+  wp_fupd := by sorry
+  wp_value := by sorry
+  wp_wand := by sorry
+  wp_atomic := by sorry
+
+/-- iris-lean's standard `WP` also satisfies the bind class for ectx
+languages. -/
+instance WP_bind_abstract :
+    BindAbstractWP (Expr := Expr) (Val := Val)
+      (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
+  wp_bind := by sorry
+
+end IrisWP
