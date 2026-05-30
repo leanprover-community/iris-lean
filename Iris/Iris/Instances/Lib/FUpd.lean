@@ -184,7 +184,7 @@ section LaterCreditLemmas
 theorem fupd_unfold_no_lc [Hi:InvGS_gen .hasNoLC GF] E1 E2 (P : IProp GF) :
   (|={E1,E2}=> P) ⊣⊢ (wsat ∗ ownE E1 ==∗ ◇ (wsat ∗ ownE E2 ∗ P)) := by
   simp only [fupd, uPred_fupd]
-  rw [eq_of_eqv <| equiv_iff.mpr (le_upd_unfold_no_le (GF := GF))]
+  rw [(le_upd_unfold_no_le (GF := GF)).to_eq]
   exact .rfl
 
 variable {GF : BundledGFunctors} [InvGS GF]
@@ -541,7 +541,7 @@ theorem step_fupdN_soundness [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] 
   apply fupd_finally_soundness hlc (n := m) (E := ⊤)
   iintro %Hinv Hc
   imod HP $$ Hc with HP
-  rw [eq_of_eqv <| equiv_iff.mpr (laterN_later n)]
+  rw [(laterN_later n).to_eq]
   iapply fupd_finally_mono (laterN_mono _ except0_into_later)
   iapply step_fupdN_fupd_finally
   iapply step_fupdN_wand $$ HP
@@ -556,7 +556,7 @@ theorem step_fupdN_soundness_close [InvGpreS GF] (n m : Nat) {P : IProp GF} [Pla
   apply fupd_finally_soundness hlc (n := m) (E := ⊤)
   iintro %Hinv Hc
   ihave HP := HP $$ Hc
-  rw [eq_of_eqv <| equiv_iff.mpr (laterN_later n)]
+  rw [(laterN_later n).to_eq]
   iapply fupd_finally_mono (laterN_mono _ except0_into_later)
   iapply step_fupdN_fupd_finally
   iapply step_fupdN_wand $$ HP
@@ -579,7 +579,7 @@ theorem fupd_soundness_no_lc_unfold [InvGpreS GF] m E :
   iintro !>!>  %E1 %E2 %P HP HwE
   simp only [fupd, uPred_fupd]
   iapply le_upd_unfold_no_le
-  rw [eq_of_eqv <| equiv_iff.mpr <| sep_assoc (R := P)]
+  rw [(sep_assoc (R := P)).to_eq]
   iapply HP $$ HwE
 
 end StepIndexed
