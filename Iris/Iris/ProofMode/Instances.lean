@@ -952,7 +952,20 @@ instance intoIH_imp [BI PROP] (φ ψ : Prop) (Δ P Q : PROP)
 instance intoIH_listForall [BI PROP] (φ : α → Bool) (l : List α) (P : PROP) (Φ : α → PROP)
     [h : ∀ x, IntoIH (φ x) P (Φ x)] :
     IntoIH (l.all φ) P (bigSepL (fun _ a => iprop(□ Φ a)) l) where
-  into_ih := sorry
+  into_ih := by
+    intro h1
+    induction l generalizing Φ with
+    | nil =>
+      simp [affine]
+    | cons x xs ih =>
+      simp [List.all, bigSepL] at h1 ⊢
+      rcases h1 with ⟨hx, hxs⟩
+      apply intuitionistically_sep_idem.mpr.trans
+      refine sep_mono ?_ ?_
+      · exact intuitionistically_intro' ((h x).into_ih hx)
+      · apply ih
+        apply (List.all_eq_true.mpr)
+        apply hxs
 
 /-- Support for induction principles whose IH is guarded by `List.Forall₂`, e.g.
     arising from mutual inductive types relating two lists element-wise. -/
