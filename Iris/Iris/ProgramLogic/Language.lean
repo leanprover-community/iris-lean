@@ -244,14 +244,11 @@ theorem stronglyAtomic_atomic {a} :
   | .StronglyAtomic => id
   | .WeaklyAtomic => fun ⟨h⟩ => ⟨by grind only [not_reducible_iff_irreducible, val_irreducible]⟩
 
-theorem prim_val_stuck {obs : List Obs} {e' σ' eₜ}
-    (h : ((ToVal.ofVal v : Expr), σ) -<obs>-> (e', σ', eₜ)) : False := by
-  sorry
+theorem prim_val_stuck (h : (↑ v, σ) -<obs>-> (e', σ', eₜ)) : False := by
+  simpa using val_stuck h
 
-instance val_atomic {a : Atomicity} {v : Val} :
-    Atomic (State := State) a (Λ.ofVal v) := by
-  sorry
-
+instance val_atomic {a : Atomicity} {v : Val} : Atomic a (Λ.ofVal v) :=
+  ⟨fun h => by simpa using val_stuck h⟩
 
 /-- The function `K` models an evaluation context for the language -/
 @[rocq_alias LanguageCtx]

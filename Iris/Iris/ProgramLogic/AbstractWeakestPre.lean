@@ -56,10 +56,9 @@ open Classical
 
 variable {Expr State Obs Val Ectx : Type _} [EctxLanguage Expr Ectx State Obs Val]
 variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
-variable {wp : AbstractWP Expr Val GF} [BindAbstractWP wp]
+variable {wp : AbstractWP Expr Val GF} [IWP : BindAbstractWP wp]
 
--- wp_inv_open_maybe_ectxlang
-theorem inv_open_maybe_ectxlang (e : Expr) (E₁ E₂ : CoPset) (Φ : Val → IProp GF)
+theorem inv_open_maybe_ectxlang {e : Expr} {E₁ E₂ : CoPset} {Φ : Val → IProp GF}
     (Hsub : E₂ ⊆ E₁) (Hred : ∃ σ, PrimStep.Reducible (e, σ)) :
     (|={E₁, E₂}=>
       (∃ (K : Ectx) (e' : Expr),
@@ -67,9 +66,40 @@ theorem inv_open_maybe_ectxlang (e : Expr) (E₁ E₂ : CoPset) (Φ : Val → IP
         ∗ wp E₂ e' (fun v => iprop% |={E₂, E₁}=> wp E₁ (fill K v) Φ)) ∨
       (|={E₂, E₁}=> wp E₁ e Φ))
     ⊢ wp E₁ e Φ := by
-  sorry
+  iintro H
+  obtain ⟨σ, ⟨obs, e', σ', eₜ, @⟨e₁', e₂', K, Hbase⟩⟩⟩ := Hred
+  iapply (IWP.wp_bind (K := fill K)).mp
+  by_cases Atomic .WeaklyAtomic e₁'
+  next Hatomic =>
+    iapply IWP.toLawfulAbstractWP.wp_atomic Hatomic (E₂ := E₂)
+    imod H with (⟨%K₁, %e', %Hf, %Hat, %Hred, Hwp⟩| H')
+    · imodintro
+      obtain ⟨σ'', Hred⟩ := Hred
+      have Hred' : BaseStep.Reducible (e₁', σ) := ⟨_, _, _, _, Hbase⟩
+      obtain ⟨rfl, rfl⟩ := EctxLanguage.base_redex_unique _ _ _ _ σ _ Hf Hred' Hred
+      simp only [← EvContext.fill_comp, EvContext.fill_empty]
+      iapply IWP.toLawfulAbstractWP.wp_wand $$ Hwp
+      iintro %v >Hwp2
+      itrivial
+    · imodintro
+      iapply IWP.toLawfulAbstractWP.wp_atomic Hatomic (E₂ := E₁)
+      imod H'
+      imodintro
+      ihave H' := (IWP.wp_bind (K := fill K)).mpr $$ H'
+      iapply IWP.wp_wand $$ H' []
+      iintro %v Hwp
+      iapply fupd_mask_intro_subseteq Hsub $$ [$]
+  next Hnonatomic =>
+    iapply IWP.toLawfulAbstractWP.fupd_wp
+    imod H with (⟨%K₁, %e', %Hf, %Hat, %Hred, Hwp⟩| H')
+    · obtain ⟨σ'', Hred⟩ := Hred
+      have Hred' : BaseStep.Reducible (e₁', σ) := ⟨_, _, _, _, Hbase⟩
+      obtain ⟨_, rfl⟩ := EctxLanguage.base_redex_unique _ _ _ _ σ _ Hf Hred' Hred
+      exact Hnonatomic Hat |>.elim
+    · imod H'
+      ihave H' := (IWP.wp_bind (K := fill K)).mpr $$ H'
+      itrivial
 
--- wp_inv_open_maybe_ectxlang_inv
 theorem inv_open_maybe_ectxlang_inv (e : Expr) (E : CoPset) (N : Namespace)
     (P : IProp GF) (Φ : Val → IProp GF)
     (Hsub : ↑N ⊆ E) (Hred : ∃ σ, PrimStep.Reducible (e, σ)) :
@@ -80,16 +110,26 @@ theorem inv_open_maybe_ectxlang_inv (e : Expr) (E : CoPset) (N : Namespace)
           ∗ wp (E \ ↑N) e' (fun v => iprop% P ∗ wp E (fill K v) Φ)) ∨
         (P ∗ wp E e Φ)))
     ⊢ wp E e Φ := by
-  sorry
+  iintro ⟨#Hinv, H⟩
+  iapply inv_open_maybe_ectxlang (E₂ := E \ nclose N) LawfulSet.diff_subset_left Hred
+  imod inv_acc _ _ _ Hsub $$ Hinv with ⟨HP, Hclose⟩
+  imod H $$ HP with (⟨%K, %e', %He, %Hat, %Hred, H⟩|⟨HP, H⟩)
+  · imodintro
+    ileft
+    iexists K
+    iexists e'
+    iframe %He %Hat %Hred
+    iapply IWP.wp_wand $$ H
+    iintro %v ⟨HP, Hwp⟩
+    imod Hclose $$ HP with -
+    itrivial
+  · iright
+    imod Hclose $$ HP with -
+    iapply fupd_mask_intro_subseteq LawfulSet.diff_subset_left $$ [$]
 
 end EctxLanguage
 
-/-! ### Instances of the abstract classes for iris-lean's real `Wp`.
-
-Mirrors `WP_abstract_weakestpre_gen` and `WP_abstract_ectx_weakestpre_gen`
-from `framework/wpre_instantiation.v`. The intuitionistic magic-rule
-instance (`WP_abstract_weakestpre_gen_magic_intuitionistic`) is intentionally
-omitted — the classical chain uses `wp_inv_open_maybe_ectxlang` instead. -/
+/-! ### Instances of the abstract classes for iris-lean's real `Wp`. -/
 
 section IrisWP
 
