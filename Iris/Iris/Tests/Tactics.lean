@@ -2734,9 +2734,8 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
   iinduction n
-  | zero      => itrivial
-  | succ n IH => iframe; itrivial
-  | aa => sorry
+  | Nat.zero  => itrivial          -- Using the full name of the constructor
+  | succ n IH => iframe; itrivial  -- Using the short name of the constructor
 
 /- Tests `iinduction` with a non-inductive datatype -/
 /-- error: iinduction: unable to determine inductive type -/
@@ -2744,13 +2743,26 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
 example [BI PROP] {P : PROP} : ⊢ P := by
   iinduction P
 
+/- Tests `iinduction` with induction on natural numbers with user-supplied
+    names, missing `succ` case -/
+/-- error: iinduction: alternative `succ` has not been provided -/
+#guard_msgs in
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
-  induction n with
-  | zero => sorry
-  | succ aa bb => sorry
+  iinduction n
+  | zero => itrivial
 
-
+/- Tests `iinduction` with induction on natural numbers with user-supplied
+    names, missing `succ` case -/
+/-- error: iinduction: invalid alternative names `a` -/
+#guard_msgs in
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n
+  | zero      => itrivial
+  | a         => itrivial
+  | succ n IH => iframe; itrivial
 
 end iinduction
