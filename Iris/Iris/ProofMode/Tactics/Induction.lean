@@ -173,11 +173,11 @@ private def buildPfIntHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 syntax iinductionAlt := "| " ident ident* " => " tacticSeq
 
 private def parseIInductionAlt (alt : TSyntax `Iris.ProofMode.iinductionAlt) :
-    TacticM (Name × Array Name × TSyntax `Lean.Parser.Tactic.tacticSeq) := do
+    TacticM (Name × Array (TSyntax `ident) × TSyntax `Lean.Parser.Tactic.tacticSeq) := do
   let `(iinductionAlt| | $ctor:ident $vars:ident* => $tac:tacticSeq) := alt
   | throwError "iinduction: invalid syntax"
 
-  return (ctor.getId, vars.map (·.getId), tac)
+  return (ctor.getId, vars, tac)
 
 /-- Check whether a fully-qualified constructor name (e.g. `Nat.succ`) matches a
     user-written short name (e.g. `succ`) or an already-qualified name. -/
@@ -210,13 +210,14 @@ elab "iinduction" colGt x:ident alts:(colGe iinductionAlt)* : tactic => do
     | _ => throwError "iinduction: unable to determine inductive type"
 
     -- TODO: generalisation for other inductive data structures
-    let varNames : Array AltVarNames ← if parsedAlts.isEmpty then
+    let varNames : Array AltVarNames ←
+    if parsedAlts.isEmpty then
       pure <| ctors.toArray.map (fun _ => {explicit := true, varNames := []})
     else do
       ctors.toArray.mapM fun ctor =>
       match parsedAlts.find? (fun (altCtor, _, _) => matchesCtorName ctor altCtor) with
-      | some (_, varNms, _) =>
-        pure ({ explicit := true, varNames := varNms.toList } : AltVarNames)
+      | some (_, vars, _) =>
+        pure ({ explicit := true, varNames := vars.toList.map (·.getId) } : AltVarNames)
       | none => throwMissingAlt ctor
 
     -- Revert all hypotheses in the list
@@ -236,6 +237,21 @@ elab "iinduction" colGt x:ident alts:(colGe iinductionAlt)* : tactic => do
             throwError "iinduction: expected {ctors.length} subgoals for {ctors.length} constructors, got {subgoals.size}"
 
           s.mvarId.withContext do
+
+            if !parsedAlts.isEmpty then
+
+
+              match parsedAlts.find? (fun (altCtor, _, _) => matchesCtorName ctor altCtor) with
+              | some (_, vars, _) =>
+                for (fieldFVar, varStx) in s.fields.toList.zip vars.toList do
+                let lctx ← getLCtx
+                let fieldType ← inferType fieldFVar
+                addLocalVarInfo varStx lctx fieldFVar (some fieldType) (isBinder := true)
+
+              | none => throwMissingAlt ctor
+
+
+
             let sType ← instantiateMVars (← s.mvarId.getType)
 
             let some irisGoal := parseIrisGoal? sType
