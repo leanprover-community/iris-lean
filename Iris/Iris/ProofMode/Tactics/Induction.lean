@@ -179,10 +179,10 @@ elab "iinduction" colGt x:ident : tactic => do
 
     -- Find the recursor name for induction
     let fvarType ← whnf <| ← inferType <| mkFVar fvar
-    let recName : Name ← match fvarType.getAppFn with
+    let ⟨recName, ctors⟩ ← match fvarType.getAppFn with
     | .const indName _ =>
       match (← getEnv).find? indName with
-      | some (.inductInfo val) => pure <| Name.mkStr val.name "recOn"
+      | some (.inductInfo val) => pure <| (Name.mkStr val.name "recOn", val.ctors)
       | _ => throwError "iinduction: {indName} is not inductive"
     | _ => throwError "iinduction: unable to determine inductive type"
 
