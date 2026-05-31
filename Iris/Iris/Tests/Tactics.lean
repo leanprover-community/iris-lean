@@ -2753,16 +2753,18 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   iinduction n with
   | zero => itrivial
 
-/- Tests `iinduction` with induction on natural numbers with user-supplied
-    names, missing `succ` case -/
-/-- error: iinduction: invalid alternative names `a` -/
+/- Tests `iinduction` with induction on natural numbers with invalid
+   user-supplied names -/
+/-- error: iinduction: invalid alternative name(s): `invalidA`, `invalidB`, `invalidC` -/
 #guard_msgs in
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
   iinduction n with
+  | invalidA  => done
   | zero      => itrivial
-  | a         => itrivial
+  | invalidB  => done
   | succ n IH => iframe; itrivial
+  | invalidC  => done
 
 end iinduction
