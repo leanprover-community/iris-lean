@@ -87,7 +87,7 @@ attribute [instance] AbstractEctxLangCompletenessGen.heap_inv_timeless
 
 end AbstractEctxCompleteness
 
-/-! ### Lifting and top-level completeness theorems. -/
+/-! ### Lifting the ectx-level soundness equation to the prim level. -/
 
 section Lifting
 
@@ -105,10 +105,8 @@ variable [CInvG F GF]
 /-- Lift the ectx-level reduction soundness equation to a prim-level one.
 Mirrors `weakestpre_ectx_to_prim_completeness` in
 `framework/abstract/abstract_ectx_lang_completeness.v` lines 37–53. -/
-theorem weakestpre_ectx_to_prim_completeness
-    (n : Nat) (C : List Expr) (e₁ : Expr) (σ : State) (E : CoPset)
-    (_ : PrimStep.Reducible (e₁, σ)) :
-    ⊢ langCompletenessStmt (TI := TI) wp AEC.heap_inv n C e₁ σ E := by
+theorem weakestpre_ectx_to_prim_completeness :
+    ⊢ abstractECTXLangComplete (TI := TI) wp AEC.heap_inv := by
   sorry
 
 /-- Every `AbstractEctxLangCompletenessGen` gives an
@@ -117,42 +115,7 @@ instance abstract_ectx_to_completeness :
     AbstractLangCompletenessGen wp where
   heap_inv := AEC.heap_inv
   heap_inv_timeless C σ := AEC.heap_inv_timeless C σ
-  lang_completeness n C e₁ σ E red := by
-    exact weakestpre_ectx_to_prim_completeness n C e₁ σ E red
-
-/-- **Top-level theorem**: `adequate` gives a WP with a pure postcondition.
-This is the entry point consumed by the heap-lang case study. -/
-theorem weakestpre_sem_completeness
-    (e : Expr) (σ : State) (φ : Val → Prop)
-    (Hade : adequate .NotStuck e σ (fun v _ => φ v)) :
-    ⊢ tpInvIni (TI := TI) -∗
-      AEC.heap_inv [e] σ -∗
-      wp ⊤ e (fun v => iprop% ⌜φ v⌝) := by
-  sorry
-
-/-- Strong nofork variant. -/
-theorem weakestpre_sem_completeness_nofork_strong
-    (e : Expr) (σ : State) (φ : Val → State → Prop)
-    (Hade : AdequateNoFork .NotStuck e σ (fun v σ' => φ v σ')) :
-    ⊢ tpInvIni (TI := TI) -∗
-      AEC.heap_inv [e] σ -∗
-      wp ⊤ e (fun v =>
-        iprop% ∃ σ' : State,
-          tpInv (TI := TI) [ToVal.ofVal v] ∗
-          isThread (TI := TI) 0 (.own 1) (ToVal.ofVal v) ∗
-          AEC.heap_inv [ToVal.ofVal v] σ' ∗
-          ⌜φ v σ'⌝) := by
-  sorry
-
-/-- User-facing nofork variant. -/
-theorem weakestpre_sem_completeness_nofork
-    (e : Expr) (σ : State) (φ : Val → State → Prop)
-    (Hade : AdequateNoFork .NotStuck e σ (fun v σ' => φ v σ')) :
-    ⊢ tpInvIni (TI := TI) -∗
-      AEC.heap_inv [e] σ -∗
-      wp ⊤ e (fun v =>
-        iprop% ∃ σ' : State, AEC.heap_inv [ToVal.ofVal v] σ' ∗ ⌜φ v σ'⌝) := by
-  sorry
+  lang_completeness := weakestpre_ectx_to_prim_completeness
 
 end Lifting
 

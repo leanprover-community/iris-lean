@@ -41,8 +41,8 @@ class LawfulAbstractWP (wp : AbstractWP Expr Val GF) where
   fupd_wp : (|={E}=> wp E e Φ) ⊢ wp E e Φ
   wp_fupd {Φ : Val → IProp GF} : (wp E e (iprop% |={E}=> Φ ·)) ⊢ wp E e Φ
   wp_value {v : Val} : wp E v Φ ⊣⊢ |={E}=> Φ v
-  wp_wand : ⊢ wp E e Φ -∗ (∀ v, Φ v -∗ Ψ v) -∗ wp E e Ψ
-  wp_atomic {e : Expr} (Hatom : Atomic WeaklyAtomic e) :
+  wp_wand : wp E e Φ ⊢ (∀ v, Φ v -∗ Ψ v) -∗ wp E e Ψ
+  wp_atomic {e : Expr} (Hatom : Atomic .WeaklyAtomic e) :
     (|={E₁, E₂}=> wp E₂ e (iprop% |={E₂, E₁}=> Φ ·)) ⊢ wp E₁ e Φ
 
 class BindAbstractWP (wp : AbstractWP Expr Val GF) extends LawfulAbstractWP wp where
@@ -140,17 +140,53 @@ variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
 instance WP_lawful_abstract :
     LawfulAbstractWP (Expr := Expr) (Val := Val)
       (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
-  fupd_wp := by sorry
-  wp_fupd := by sorry
-  wp_value := by sorry
-  wp_wand := by sorry
-  wp_atomic := by sorry
+  fupd_wp := fupd_wp
+  wp_fupd := wp_fupd _ _ _ _
+  wp_value := wp_value_fupd'
+  wp_wand := wp_wand
+  wp_atomic _ := wp_atomic
 
 /-- iris-lean's standard `WP` also satisfies the bind class for ectx
 languages. -/
 instance WP_bind_abstract :
     BindAbstractWP (Expr := Expr) (Val := Val)
       (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
-  wp_bind := by sorry
+  wp_bind := ⟨wp_bind _, wp_bind_inv _⟩
+
+/-- The magic rule for iris-lean's `Wp`, non-value case (`e` is not a value):
+the work happens here — one physical step is threaded through the state
+interpretation. Stated for an arbitrary `Language` (generic `Context K`,
+prim-step), unlike the ectx-specialized `inv_open_maybe_ectxlang`.
+Was Rocq's `wp_inv_open_maybe_help1` in `wpre_instantiation.v`. -/
+theorem wp_inv_open_maybe_of_not_val (e : Expr) (E₁ E₂ : CoPset)
+    (Φ : Val → IProp GF) (Hnv : ToVal.toVal e = none) :
+    (|={E₁, E₂}=>
+      (∃ K e', ⌜Context K⌝ ∗ ⌜e = K e'⌝ ∗ ⌜Atomic .WeaklyAtomic e'⌝
+        ∗ Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₂ e'
+            (fun v' => iprop% |={E₂, E₁}=> Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₁ (K v') Φ)) ∨
+      (|={E₂, E₁}=> Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₁ e Φ))
+    ⊢ Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₁ e Φ := by
+  sorry
+
+/-- The magic rule for iris-lean's `Wp` (the `InvOpenAbstractWP` shape), all
+cases. Wraps `wp_inv_open_maybe_of_not_val` with the value case (values are
+atomic). Stated for an arbitrary `Language`. Was Rocq's `wp_inv_open_maybe`. -/
+theorem wp_inv_open_maybe (e : Expr) (E₁ E₂ : CoPset) (Φ : Val → IProp GF) :
+    (|={E₁, E₂}=>
+      (∃ K e', ⌜Context K⌝ ∗ ⌜e = K e'⌝ ∗ ⌜Atomic .WeaklyAtomic e'⌝
+        ∗ Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₂ e'
+            (fun v' => iprop% |={E₂, E₁}=> Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₁ (K v') Φ)) ∨
+      (|={E₂, E₁}=> Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₁ e Φ))
+    ⊢ Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₁ e Φ := by
+  sorry
+
+/-- iris-lean's standard `WP` satisfies the magic (`InvOpenAbstractWP`) class
+for an arbitrary `Language`. This is the provider that discharges
+`[InvOpenAbstractWP wp]` for the concrete WP — the faithful port of Rocq's
+`WP_abstract_weakestpre_gen_magic_intuitionistic`. -/
+instance WP_inv_open_abstract :
+    InvOpenAbstractWP (Expr := Expr) (Val := Val)
+      (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
+  inv_open_maybe e E₁ E₂ Φ _ := wp_inv_open_maybe e E₁ E₂ Φ
 
 end IrisWP
