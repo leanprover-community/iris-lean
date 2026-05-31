@@ -188,7 +188,13 @@ the operational thread list `tp`. -/
 public def tpInv (tp : List Expr) : IProp GF := iprop%
   ∃ m : H Expr, ⌜∀ n, PartialMap.get? m n = tp[n]?⌝ ∗ TI.tp_name ↪●MAP m
 
-theorem tpInv_lookup (tp : List Expr) (n : Nat) (e₁ : Expr) (dq : DFrac F) :
+/-- `tpInv` is timeless: the ghost-map authority is over a discrete camera, and
+the rest is pure/existential. Needed to strip the later off invariant contents
+after opening (e.g. via `CancelableInvariant.acc`). -/
+public instance tpInv_timeless (tp : List Expr) : Iris.BI.Timeless (tpInv (TI := TI) tp) := by
+  unfold tpInv; infer_instance
+
+public theorem tpInv_lookup (tp : List Expr) (n : Nat) (e₁ : Expr) (dq : DFrac F) :
     tpInv tp ⊢@{IProp GF} (n ↪thread{dq} e₁) -∗ ⌜tp[n]? = some e₁⌝ := by
   unfold tpInv isThread
   iintro ⟨%m, %He, Hauth⟩ Hfrag
@@ -196,7 +202,7 @@ theorem tpInv_lookup (tp : List Expr) (n : Nat) (e₁ : Expr) (dq : DFrac F) :
   ipure_intro
   rw [← Hlookup, He _]
 
-theorem tpInv_update (tp : List Expr) (n : Nat) (e₁ e₂ : Expr) :
+public theorem tpInv_update (tp : List Expr) (n : Nat) (e₁ e₂ : Expr) :
     tpInv tp ⊢@{IProp GF}
     (n ↪thread e₁) ==∗ tpInv (tp.set n e₂) ∗ (n ↪thread e₂) := by
   iintro Hinv Hfrag
@@ -210,7 +216,7 @@ theorem tpInv_update (tp : List Expr) (n : Nat) (e₁ e₂ : Expr) :
   iframe; ipure_intro; intro n
   grind [LawfulPartialMap.get?_insert]
 
-theorem tpInv_new_threads (efs tp : List Expr) :
+public theorem tpInv_new_threads (efs tp : List Expr) :
     ⊢@{IProp GF} tpInv tp ==∗ (tpInv (tp ++ efs) ∗ ([∗list] n ↦ e' ∈ efs, (tp.length + n) ↪thread e')) := by
   unfold tpInv isThread
   iintro ⟨%m, %He, Hauth⟩
@@ -237,7 +243,7 @@ theorem tpInv_new_threads (efs tp : List Expr) :
   · iapply (Iris.BI.BigSepM.bigSepM_map_seq).mp
     iexact Hlist
 
-theorem tpInv_set (C : List Expr) :
+public theorem tpInv_set (C : List Expr) :
     ⊢@{IProp GF} tpInvIni (Expr := Expr) ==∗ tpInv C ∗ ([∗list] n ↦ e ∈ C, n ↪thread e) := by
   iintro Hauth
   imod tpInv_new_threads C [] $$ [Hauth] with ⟨Hi, Hlist⟩

@@ -32,9 +32,9 @@ variable {F : Type _} [UFraction F]
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable [TI : TpinvGS GF F Expr H]
 
-public def abstractECTXLangComplete (wp : AbstractWP Expr Val GF) (I : List Expr → State → IProp GF) :
+public abbrev abstractECTXLangComplete (wp : AbstractWP Expr Val GF) (I : List Expr → State → IProp GF)
+  (n : Nat) (C : List Expr) (e₁ : Expr) (σ : State) (E : CoPset) :
     IProp GF := iprop%
-  ∀ n C e₁ σ E ,
    ⌜PrimStep.Reducible (e₁, σ)⌝ -∗ (n ↪thread e₁) -∗ I C σ ∗ tpInv C ∗ ⌜cfgSafe (C, σ)⌝ ={E}=∗
    ((∃ (K : Expr → Expr) (e₁' : Expr),
        ⌜Context K⌝ ∗ ⌜e₁ = K e₁'⌝ ∗ ⌜ToVal.toVal e₁' = none⌝ ∗ ⌜Atomic .WeaklyAtomic e₁'⌝ ∗
@@ -60,7 +60,7 @@ public class AbstractLangCompletenessGen
     (wp : AbstractWP Expr Val GF) [LawfulAbstractWP wp] where
   heap_inv : List Expr → State → IProp GF
   heap_inv_timeless (C : List Expr) (σ : State) : Timeless (heap_inv C σ)
-  lang_completeness : ⊢ abstractECTXLangComplete wp heap_inv
+  lang_completeness {n C e₁ σ E} : ⊢ abstractECTXLangComplete wp heap_inv n C e₁ σ E
 
 attribute [instance] AbstractLangCompletenessGen.heap_inv_timeless
 
@@ -74,7 +74,7 @@ variable {F : Type _} [UFraction F]
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable [TI : TpinvGS GF F Expr H]
 variable {wp : AbstractWP Expr Val GF}
-variable [LawfulAbstractWP wp] [InvOpenAbstractWP wp]
+variable [LWP : LawfulAbstractWP wp] [IAO : InvOpenAbstractWP wp]
 variable [ACG : AbstractLangCompletenessGen wp]
 variable [CInvG F GF]
 
@@ -86,14 +86,23 @@ public def completenessN : Namespace := nroot .@ (1 : Pos)
 thread-pool invariants. -/
 public def cfgInv (Cini : List Expr × State) (f : Forking) : IProp GF := iprop%
   ∃ cfg : List Expr × State,
-    ACG.heap_inv cfg.1 cfg.2 ∗ tpInv cfg.1 ∗ ⌜cfgSafeForking cfg f ∧ Cini -·->ₜₚ* cfg ⌝
+    ACG.heap_inv cfg.1 cfg.2 ∗ tpInv cfg.1 ∗ ⌜cfgSafeForking cfg f⌝ ∗ ⌜Cini -·->ₜₚ* cfg⌝
+
+/-- `cfgInv` is timeless: `heap_inv` is timeless by the class field, `tpInv` by
+`tpInv_timeless`, and the reachability/safety conjunct is pure. This is what
+lets the later be stripped off the invariant contents after opening it. -/
+instance cfgInv_timeless (Cini : List Expr × State) (f : Forking) :
+    Timeless (cfgInv (wp := wp) Cini f) := by
+  unfold cfgInv; infer_instance
 
 /-- Cancelable invariant package wrapping `cfgInv`. -/
 public def isCcfg (Cini : List Expr × State) (f : Forking) (γ : GName) : IProp GF :=
   CancelableInvariant.cinv (F := F) completenessN γ (cfgInv (wp := wp) Cini f)
 
-/-- The core Löb-induction lemma. Internal infrastructure consumed by the
-top-level corollaries below. -/
+instance isCcfg_persistent (Cini : List Expr × State) (f : Forking) (γ : GName) :
+    Persistent (isCcfg (wp := wp) Cini f γ : IProp GF) := by
+  unfold isCcfg; infer_instance
+
 theorem weakestpre_completeness
     (Cini : List Expr × State) (f : Forking) (γ : GName) (q : Frac F)
     (n : Nat) (e : Expr) :
@@ -103,7 +112,61 @@ theorem weakestpre_completeness
     wp ⊤ e (fun v => iprop%
         isThread (TI := TI) n (.own 1) (ToVal.ofVal v) ∗
         ∃ q' : Frac F, CancelableInvariant.own γ q' ∗ ⌜f = .doesNotFork → q = q'⌝) := by
-  sorry
+  iintro #Hinv
+  iloeb as IH generalizing %q %n %e
+  iintro Hq He
+  have Hn : nclose completenessN ⊆ ⊤ := sorry -- TODO Solve then inline?
+  have Hn' : ⊤ \ nclose completenessN ⊆ ⊤ := sorry -- TODO Solve then inline?
+  iapply IAO.inv_open_maybe (E₂ := ⊤ \ nclose completenessN) _ _ _ Hn'
+  unfold isCcfg
+  imod CancelableInvariant.acc _ _ _ _ _ Hn $$ [$] [$] with ⟨>Hinv2, Hq, Hclose⟩
+  unfold cfgInv
+  icases Hinv2 with ⟨%cfg, Hheap, HtpInv, %Hx⟩
+  rcases Hx with ⟨Hsafe, Hreach⟩
+  ihave %Hlu := tpInv_lookup $$ [$] [$]
+  have ⟨HnotStuck, Hforking⟩ := Hsafe .refl
+  rcases HnotStuck (List.mem_of_getElem? Hlu) with Hv|HnotStuck'
+  · replace ⟨v, Hv⟩ := Option.isSome_iff_exists.mp Hv
+    obtain rfl := (coe_of_toVal_eq_some Hv).symm; clear Hv
+    imodintro
+    ileft
+    -- TODO: Can iframe be improved to supply these directly?
+    have Hframe1 : Context (Expr := Expr) id := by infer_instance
+    have Hframe2 : (↑v : Expr) = id ↑v := rfl
+    have Hframe3 : Atomic Atomicity.WeaklyAtomic (↑v : Expr) := val_atomic
+    iexists id, v
+    iframe %Hframe1 %Hframe2 %Hframe3
+    clear Hframe1 Hframe2 Hframe3
+    simp only [id_eq]
+    iapply LWP.wp_value
+    imodintro
+    imod Hclose $$ [HtpInv Hheap] with -
+    · inext
+      iexists cfg
+      iframe Hheap HtpInv %Hreach %Hsafe
+    · imodintro
+      iapply LWP.wp_value
+      imodintro
+      iframe
+      iexists q
+      iframe
+      ipure_intro
+      grind
+  · imod AbstractLangCompletenessGen.lang_completeness $$ %HnotStuck' He [Hheap HtpInv]
+        with (⟨%K, %e₁, %Hctx, %Heq, %Hval, %Hatom, H⟩|H)
+    · have aux : cfgSafe (cfg.fst, cfg.snd) := cfgSafe_of_cfgSafeForking Hsafe
+      iframe %aux Hheap HtpInv
+    · imodintro
+      ileft
+      iexists K, e₁
+      iframe %Hctx %Heq %Hatom
+      iapply H
+      iintro !> %κ %v₂ %σ₂' %Hefs %Hbase He HtpInv
+      -- Now we need fractional divide n
+      sorry
+    ·
+      sorry
+
 
 /-- **Top-level theorem**: `adequate` gives a WP with a pure postcondition.
 This is the entry point consumed by the heap-lang case study. Stated on the
