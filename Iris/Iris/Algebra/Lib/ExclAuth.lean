@@ -74,7 +74,7 @@ theorem agree {a b : A} (h : ✓ (●E a) • ◯E b) : a ≡ b :=
 
 @[rocq_alias excl_auth_agree_L]
 theorem agree_L [Leibniz A] {a b : A} (h : ✓ (●E a) • ◯E b) : a = b :=
-  eq_of_eqv (agree h)
+  (agree h).to_eq
 
 @[rocq_alias excl_auth_auth_op_validN]
 theorem auth_op_validN {a b : A} : (✓{n} (●E a) • ●E b) ↔ False :=

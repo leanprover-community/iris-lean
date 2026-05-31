@@ -209,7 +209,7 @@ theorem auth_dfrac_op_inv {dq1 dq2 : DFrac F} {a b : A}
 @[rocq_alias auth_auth_dfrac_op_inv_L]
 theorem auth_dfrac_op_inv_L [Leibniz A] {dq1 dq2 : DFrac F} {a b : A}
     (h : ✓ ((●{dq1} a) • ●{dq2} b)) : a = b :=
-  Leibniz.eq_of_eqv (auth_dfrac_op_inv h)
+  (auth_dfrac_op_inv h).to_eq
 
 
 @[rocq_alias auth_auth_dfrac_validN]
