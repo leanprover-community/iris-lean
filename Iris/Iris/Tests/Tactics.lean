@@ -2718,14 +2718,8 @@ end iloeb
 
 section iinduction
 
-example [BI PROP] {P Q : PROP} {n : Nat} :
-    ⊢ P -∗ ⌜n = 0⌝ -∗ Q -∗ ⌜n ≠ 1⌝ -∗ P ∗ Q ∗ ⌜n = n⌝ := by
-  iintro H1 H2 H3 #H4
-  iinduction n
-  · iframe
-  · iframe
-    itrivial
-
+/-- Tests `iinduction` with induction on natural numbers. Hypotheses in the
+    spatial context become premises of the induction hypothesis. -/
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
@@ -2733,5 +2727,11 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   · itrivial
   · iframe
     itrivial
+
+/- Tests `iinduction` with a non-inductive datatype -/
+/-- error: iinduction: unable to determine inductive type -/
+#guard_msgs in
+example [BI PROP] {P : PROP} : ⊢ P := by
+  iinduction P
 
 end iinduction
