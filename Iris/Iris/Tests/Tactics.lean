@@ -2733,7 +2733,7 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
-  iinduction n
+  iinduction n with
   | Nat.zero  => itrivial          -- Using the full name of the constructor
   | succ n IH => iframe; itrivial  -- Using the short name of the constructor
 
@@ -2750,7 +2750,7 @@ example [BI PROP] {P : PROP} : ⊢ P := by
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
-  iinduction n
+  iinduction n with
   | zero => itrivial
 
 /- Tests `iinduction` with induction on natural numbers with user-supplied
@@ -2760,7 +2760,7 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
-  iinduction n
+  iinduction n with
   | zero      => itrivial
   | a         => itrivial
   | succ n IH => iframe; itrivial
