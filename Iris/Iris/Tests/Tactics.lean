@@ -2728,10 +2728,29 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   · iframe
     itrivial
 
+/-- Tests `iinduction` with induction on natural numbers with user-supplied
+    names for variables and induction hypotheses. -/
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n
+  | zero      => itrivial
+  | succ n IH => iframe; itrivial
+  | aa => sorry
+
 /- Tests `iinduction` with a non-inductive datatype -/
 /-- error: iinduction: unable to determine inductive type -/
 #guard_msgs in
 example [BI PROP] {P : PROP} : ⊢ P := by
   iinduction P
+
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  induction n with
+  | zero => sorry
+  | succ aa bb => sorry
+
+
 
 end iinduction
