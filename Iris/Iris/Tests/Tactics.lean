@@ -2735,7 +2735,7 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   iintro HP #HQ #HR HS #HT
   iinduction n with
   | Nat.zero  => itrivial          -- Using the full name of the constructor
-  | succ n IH => iframe; itrivial  -- Using the short name of the constructor
+  | succ n ih => iframe; itrivial  -- Using the short name of the constructor
 
 /- Tests `iinduction` with a non-inductive datatype -/
 /-- error: iinduction: unable to determine inductive type -/
@@ -2766,5 +2766,20 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | invalidB  => done
   | succ n IH => iframe; itrivial
   | invalidC  => done
+
+/-- Tests `iinduction` using a custom recursor name. -/
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n using Nat.recOn
+  · itrivial
+  · iframe; itrivial
+
+/-- Tests `iinduction` using a custom recursor name. -/
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n using Nat.strongRecOn  -- TODO: IH with regular hypothesis
+  itrivial
 
 end iinduction
