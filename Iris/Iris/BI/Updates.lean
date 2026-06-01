@@ -232,6 +232,23 @@ theorem bupd_except0 {P : PROP} : ◇ (|==> P) ⊢ (|==> ◇ P) :=
 instance {P : PROP} [Absorbing P] : Absorbing iprop(|==> P) :=
   ⟨bupd_frame_l.trans <| mono sep_elim_r⟩
 
+@[rocq_alias bupd_sep_homomorphism]
+instance bupd_sep_homomorphism :
+  Algebra.MonoidHomomorphism (M₁ := PROP) sep sep emp emp (flip Entails) bupd where
+  rel_refl := .rfl
+  rel_trans := flip .trans
+  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp)
+    , fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
+  op_proper := sep_mono
+  map_ne := BIUpdate.bupd_ne
+  map_op := bupd_sep
+  map_unit := BIUpdate.intro
+
+@[rocq_alias big_sepM_bupd]
+theorem BigSepM.bigSepM_bupd [LawfulFiniteMap M' K] (Φ : K → V → PROP) {l : M' V} :
+    ([∗map] k↦x ∈ l, |==> Φ k x) ⊢ |==> [∗map] k↦x ∈ l, Φ k x :=
+    Algebra.BigOpM.bigOpM_hom (R := flip Entails) Φ l
+
 end BUpdLaws
 
 section BUpdPlainlyLaws
@@ -370,7 +387,7 @@ theorem fupd_trans_frame {E1 E2 E3 : CoPset} {P Q : PROP} :
   fupd_frame_l.trans <| fupd_elim <| ((sep_assoc.2.trans <| sep_mono_l sep_comm.1).trans <|
     sep_mono_l wand_elim_r).trans <| fupd_frame_r.trans <| BIFUpdate.mono emp_sep.1
 
-@[rocq_alias fupd_or_homomorphism]
+@[rocq_alias fupd_sep_homomorphism]
 instance fupd_sep_homomorphism E :
   Algebra.MonoidHomomorphism (M₁ := PROP) sep sep emp emp (flip Entails) (fupd E E) where
   rel_refl := .rfl

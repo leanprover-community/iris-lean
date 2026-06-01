@@ -30,7 +30,7 @@ theorem wp_lift_step_fupdN (h : toVal e₁ = none) :
         stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
         WP e₂ @ s; E {{ Φ }} ∗
         [∗list] ef ∈ eₜ, WP ef @ s; ⊤ {{ ι.forkPost }})
-    ⊢ WP e₁ @ s; E {{ Φ }} := by simp [IProp.ext (wp_unfold (e := e₁)), wp.pre, h]
+    ⊢ WP e₁ @ s; E {{ Φ }} := by simp [(wp_unfold (e := e₁)).to_eq, wp.pre, h]
 
 @[rocq_alias wp_lift_step_fupd]
 theorem wp_lift_step_fupd (h : toVal e₁ = none) :
@@ -60,7 +60,7 @@ theorem wp_lift_stuck (h : toVal e = none) :
     (∀ σ ns obs nt, stateInterp σ ns obs nt ={E,∅}=∗ ⌜PrimStep.Stuck (e,σ)⌝)
     ⊢ WP e @ E ? {{ Φ }} := by
   iintro H
-  rw [IProp.ext wp_unfold]
+  rw [wp_unfold.to_eq]
   simp only [wp.pre, h]
   iintro %σ₁ %ns %obs %obs' %nt Hσ
   imod H $$ Hσ with %Hirr
@@ -191,7 +191,7 @@ theorem wp_pure_step_fupd [Inhabited State] (E₂ : CoPset)
   induction Hexec using Relation.Iterate.head_induction_on with
   | rfl =>
     simp only [Nat.repeat]
-    rw (occs := [2]) [IProp.ext fupd_wp_iff]
+    rw (occs := [2]) [fupd_wp_iff.to_eq]
     icases lc_zero with >Hz
     iapply Hwp $$ Hz
   | @head n e₁ e₃ _ _ IH =>
@@ -222,6 +222,6 @@ theorem wp_pure_step_later [Inhabited State] (Hexec : PureExec φ n e₁ e₂) (
   | zero => exact .rfl
   | succ n IH =>
     simp only [Nat.repeat]
-    rw [IProp.ext <| later_laterN n]
+    rw [(later_laterN n).to_eq]
     refine (later_mono IH).trans ?_
     exact step_fupd_intro Std.LawfulSet.subset_refl

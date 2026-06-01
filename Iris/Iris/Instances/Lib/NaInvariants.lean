@@ -26,6 +26,9 @@ abbrev NaInvF : OFunctorPre :=
 class NaInvG (GF : BundledGFunctors) where
   inv : ElemG GF NaInvF
 
+#rocq_ignore «na_invΣ» "Superseded by the `NaInvG` typeclass on `BundledGFunctors`."
+#rocq_ignore «subG_na_invG» "Superseded by Lean's direct `ElemG` typeclass synthesis."
+
 attribute [reducible, instance] NaInvG.inv
 
 @[rocq_alias na_inv_pool_name]

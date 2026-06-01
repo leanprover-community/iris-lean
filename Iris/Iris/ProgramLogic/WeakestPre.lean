@@ -120,7 +120,7 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
     OFE.NonExpansive (Wp.wp (PROP := IProp GF) s E e) where
   ne {n Φ₁ Φ₂} HΦ := by
     induction n using Nat.strongRecOn generalizing e E Φ₁ Φ₂ with | ind n IH =>
-    simp only [IProp.ext wp_unfold]
+    simp only [wp_unfold.to_eq]
     dsimp only [wp.pre]
     aesop_contractive
     -- · aesop_contractive
@@ -135,7 +135,7 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
 instance wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     OFE.Contractive (Wp.wp (PROP := IProp GF) s E e) where
   distLater_dist {n Φ₁ Φ₂} HΦ := by
-    simp only [IProp.ext wp_unfold]
+    simp only [wp_unfold.to_eq]
     unfold wp.pre
     aesop_contractive
     -- refine wp_ne.ne ?_
@@ -144,14 +144,14 @@ instance wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
     WP (v : Expr) @ s ; E {{ Φ }} ⊣⊢ |={E}=> Φ v := by
-  simp [IProp.ext wp_unfold, toVal_coe, BI.BIBase.BiEntails.rfl, wp.pre]
+  simp [wp_unfold.to_eq, toVal_coe, BI.BIBase.BiEntails.rfl, wp.pre]
 
 @[rocq_alias wp_strong_mono]
 theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : Val → IProp GF}
     (hs : s₁ ≤ s₂) (hE : E₁ ⊆ E₂) :
     ⊢ WP e @ s₁ ; E₁ {{ Φ }} -∗ (∀ v, Φ v ={E₂}=∗ Ψ v) -∗ WP e @ s₂ ; E₂ {{ Ψ }} := by
   iloeb as IH generalizing %e %Φ %Ψ %E₁ %E₂ %hE
-  rw [IProp.ext wp_unfold, IProp.ext wp_unfold]
+  rw [wp_unfold.to_eq, wp_unfold.to_eq]
   iintro H HΦ
   dsimp only [wp.pre]
   match toVal e with
@@ -190,7 +190,7 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
 @[rocq_alias fupd_wp]
 theorem fupd_wp {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
     (|={E}=> WP e @ s ; E {{ Φ }}) ⊢ WP e @ s ; E {{ Φ }} := by
-  simp only [IProp.ext wp_unfold]
+  simp only [wp_unfold.to_eq]
   iintro H
   match h: toVal e with
   | some v =>
@@ -219,7 +219,7 @@ theorem wp_fupd (s : Stuckness) E (e : Expr) (Φ : Val → IProp GF) :
 theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IProp GF}
   [ι : Language.Atomic ↑s e] :
     (|={E1,E2}=> WP e @ s ;  E2 {{v, |={E2,E1}=> Φ v }}) ⊢ (WP e @ s ; E1 {{ Φ }}) := by
-  simp only [IProp.ext wp_unfold]
+  simp only [wp_unfold.to_eq]
   iintro H
   match He : toVal e with
   | some v =>
@@ -240,7 +240,7 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
     irevert %ι
     match s with
     | .NotStuck =>
-      simp only [IProp.ext wp_unfold]
+      simp only [wp_unfold.to_eq]
       dsimp only [wp.pre]
       match h₂ : toVal e2 with
       | some v2 =>
@@ -256,7 +256,7 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
       iintro %ι
       have ⟨v, h⟩ := Option.isSome_iff_exists.mp (ι.atomic Hstep)
       obtain ⟨rfl⟩ := (ToVal.coe_of_toVal_eq_some h)
-      simp only [IProp.ext wp_value_fupd']
+      simp only [wp_value_fupd'.to_eq]
       imod H with > H
       iframe
 
@@ -270,7 +270,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
           stateInterp σ₂ (ns+1) obs nt ∗ P)) ⊢
     WP e @ s ; E {{ v, P ={E}=∗ Φ v }} -∗
     WP e @ s ; E {{ Φ }} := by
-  simp only [IProp.ext wp_unfold]
+  simp only [wp_unfold.to_eq]
   iintro Hupd Hwp
   simp only [wp.pre, h]
   iintro %σ₁ %ns %obs %obs' %nt Hσ₁
@@ -278,7 +278,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
   imod Hwp $$ Hσ₁ with ⟨$,Hwp⟩
   imodintro
   iintro %e₂ %σ₂ %efs %Hstep Hc
-  simp only [IProp.ext lc_split]
+  simp only [lc_split.to_eq]
   icases Hc with ⟨Hc,Hone⟩
   ihave Hc := lc_weaken _ (Htri m k) $$ Hc
   icases lc_split $$ Hc with ⟨Hm, Hk⟩
@@ -286,7 +286,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
   dsimp only [Nat.repeat]
   ihave Hwp := Hwp $$ [] [Hm]
   · ipure_intro; assumption
-  · simp [OFE.eq_of_eqv (BI.equiv_iff.mpr lc_split)]
+  · simp [lc_split.to_eq]
   iapply step_fupd_wand $$ Hwp; iintro Hwp
   iapply step_fupdN_le (n := ι.numLatersPerStep m) (by grind only) LawfulSet.subset_refl
   iapply step_fupdN_wand $$ Hwp; iintro >⟨SI, Hwp, $⟩
@@ -313,7 +313,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
     imod Hp
     iapply H $$ Hp
   | n+1 =>
-    simp only [IProp.ext wp_unfold]
+    simp only [wp_unfold.to_eq]
     simp only [wp.pre, toVal_e]
     iintro H %σ₁ %ns %obs %obs' %nt Hσ₁
     by_cases Hn : n ≤ ι.numLatersPerStep ns
@@ -355,14 +355,14 @@ theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E
     WP e @ s ; E {{v, WP (K (↑v : Val)) @ s ; E {{ Φ }} }} ⊢ WP (K e) @ s ; E {{ Φ }} := by
   iintro H
   iloeb as IH generalizing %E %e %Φ
-  rewrite (occs := [2]) [IProp.ext wp_unfold]
+  rewrite (occs := [2]) [wp_unfold.to_eq]
   simp only [wp.pre]
   match h : toVal e with
   | some v =>
     simp only [ToVal.coe_of_toVal_eq_some h]
     iapply fupd_wp $$ H
   | none =>
-    rw [IProp.ext wp_unfold]
+    rw [wp_unfold.to_eq]
     simp only [wp.pre, κ.toVal_eq_none_fill h, Nat.repeat]
     iintro %σ₁ %step %obs %obs' %n Hσ
     imod H $$ [$] with ⟨%_, H⟩
@@ -381,14 +381,14 @@ theorem wp_bind_inv (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness
     WP (K e) @ s ; E {{ Φ }} ⊢ WP e @ s ; E {{v, WP (K (↑v : Val)) @ s ; E {{ Φ }} }} := by
   iintro H
   iloeb as IH generalizing %E %e %Φ
-  rewrite (occs := [3]) [IProp.ext wp_unfold]
+  rewrite (occs := [3]) [wp_unfold.to_eq]
   simp only [wp.pre]
   match h : toVal e with
   | some v =>
     simp only [ToVal.coe_of_toVal_eq_some h]
     iapply fupd_wp $$ H
   | none =>
-    rewrite (occs := [2]) [IProp.ext wp_unfold]
+    rewrite (occs := [2]) [wp_unfold.to_eq]
     simp only [wp.pre, κ.toVal_eq_none_fill h, Nat.repeat]
     iintro %σ₁ %step %obs %obs' %n Hσ
     imod H $$ [$] with ⟨%_, H⟩

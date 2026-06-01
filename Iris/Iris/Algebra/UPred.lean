@@ -35,7 +35,7 @@ theorem ValidAt.le_rfl {M : Type _} [UCMRA M] {n : Nat} {Hle : n ≤ n} {v : Val
   v.le Hle = v := by rfl
 
 /-- The data of a UPred object is an indexed proposition over M (Bundled version) -/
-@[ext]
+@[ext, rocq_alias uPred]
 structure UPred (M : Type _) [UCMRA M] where
   holds : (n : Nat) → ValidAt M n → Prop
   mono {n1 n2} {x1 : ValidAt M n1} {x2 : ValidAt M n2} :
@@ -62,6 +62,7 @@ variable [UCMRA M]
 
 open UPred
 
+@[rocq_alias uPredO]
 instance : OFE (UPred M) where
   Equiv P Q := ∀ n (x : M), (p : ✓{n} x) → (P n ⟨x, p⟩ ↔ Q n ⟨x, p⟩)
   Dist n P Q := ∀ n' (x : M), n' ≤ n → (p : ✓{n'} x) → (P n' ⟨x, p⟩ ↔ Q n' ⟨x, p⟩)
@@ -75,21 +76,32 @@ instance : OFE (UPred M) where
   dist_lt Hdist Hlt _ _ Hle Hvalid :=
     Hdist _ _ (Nat.le_trans Hle (Nat.le_of_succ_le Hlt)) Hvalid
 
+#rocq_ignore uPred_equiv' "Inlined in the `OFE` construction"
+#rocq_ignore uPred_equiv "Not needed"
+#rocq_ignore uPred_dist' "Inlined in the `OFE` construction"
+#rocq_ignore uPred_dist "Not needed"
+#rocq_ignore uPred_ofe_mixin "Not needed"
+
+
 instance : OFE.Leibniz (UPred M) where
   eq_of_eqv {x y} hequiv := by
     ext n e
     exact hequiv n e.val e.property
 
+@[rocq_alias uPred_ne]
 theorem uPred_ne {P : UPred M} {n} {m₁ m₂ : ValidAt M n} (H : (m₁ : M) ≡{n}≡ (m₂ : M)) : P n m₁ ↔ P n m₂ :=
   ⟨fun H' => P.mono H' H.to_incN .refl, fun H' => P.mono H' H.symm.to_incN .refl⟩
 
+@[rocq_alias uPred_proper]
 theorem uPred_proper {P : UPred M} {n} {m₁ m₂ : ValidAt M n} (H : (m₁ : M) ≡ (m₂ : M)) : P n m₁ ↔ P n m₂ :=
   uPred_ne H.dist
 
+@[rocq_alias uPred_holds_ne]
 theorem uPred_holds_ne {P Q : UPred M} {n₁ n₂} {x : M}
     (HPQ : P ≡{n₂}≡ Q) (Hn : n₂ ≤ n₁) (Hx : ✓{n₂} x) (Hx' : ✓{n₁} x) (HQ : Q n₁ ⟨x, Hx'⟩) : P n₂ ⟨x, Hx⟩ :=
   (HPQ _ _ .refl Hx).mpr (Q.mono HQ .rfl Hn)
 
+@[rocq_alias uPred_cofe]
 instance : IsCOFE (UPred M) where
   compl c := {
     holds n x := ∀ n', (Hle : n' ≤ n) → (c n') n' (x.le Hle)
@@ -102,9 +114,12 @@ instance : IsCOFE (UPred M) where
     refine ⟨fun H => H _ .refl, fun H n' Hn' => ?_⟩
     exact (c.cauchy Hn' _ _ .refl _).mp (mono _ H .rfl Hn')
 
+#rocq_ignore uPred_compl "Inlined in the `IsCOFE` construction"
+
 abbrev UPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
   fun A B _ _ => UPred (F B A)
 
+@[rocq_alias uPredO_map]
 def uPred_map [UCMRA α] [UCMRA β] (f : β -C> α) : UPred α -n> UPred β := by
   refine ⟨fun P => ⟨fun n x => P n ⟨(f x.val), f.validN x.property⟩, ?_⟩, ⟨?_⟩⟩
   · intro n1 n2 x1 x2 HP Hm Hn
@@ -112,6 +127,9 @@ def uPred_map [UCMRA α] [UCMRA β] (f : β -C> α) : UPred α -n> UPred β := b
   · intro n x1 x2 Hx1x2 n' y Hn' Hv
     exact Hx1x2 _ _ Hn' (f.validN Hv)
 
+#rocq_ignore uPred_map "Inlined in `uPred_map`"
+
+@[rocq_alias uPredOF]
 instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
   cofe := inferInstance
   map f g := uPred_map (URFunctor.map (F := F) g f)
@@ -125,6 +143,7 @@ instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
     simp only [uPred_map]
     exact uPred_proper <| URFunctor.map_comp g' f' g f H
 
+@[rocq_alias uPredOF_contractive]
 instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorContractive (UPredOF F) where
   map_contractive.1 {n x y} HKL P m a Hmn Ha := by
     refine uPred_ne (P := P) <|
