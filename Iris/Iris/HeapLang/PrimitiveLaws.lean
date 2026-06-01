@@ -123,7 +123,7 @@ theorem wp_fork {e : Exp} :
     simp [BaseStep.baseStep]
     constructor
   isplitr
-  · ipure_intro
+  · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
   iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
@@ -133,9 +133,8 @@ theorem wp_fork {e : Exp} :
   imodintro
   isplitr [Hwp]
   · iexists (.lit .unit)
-    isplit
-    · ipure_intro; rfl
-    · iframe HΦ
+    iframe HΦ
+    ipureintro; rfl
   · iapply BI.BigSepL.bigSepL_singleton
     iframe Hwp
 
@@ -157,7 +156,7 @@ theorem wp_alloc (v : Val) :
       rw [show l + (i : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
       exact Hne
   isplitr
-  · ipure_intro
+  · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
   iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
@@ -173,11 +172,11 @@ theorem wp_alloc (v : Val) :
   isplit
   · iexists (.lit (.loc l'))
     isplit
-    · ipure_intro; rfl
+    · ipureintro; rfl
     · iexists l'
       iframe Hpt
-      ipure_intro; rfl
-  · ipure_intro; simp
+      itrivial
+  · itrivial
 
 theorem wp_load {l : Loc} {q} {v : Val} :
   ▷ (l ↦{q} (Option.some v))
@@ -192,12 +191,12 @@ theorem wp_load {l : Loc} {q} {v : Val} :
     simp only [State.get?]
     iapply gen_heap_valid $$ [$Hσ $Hpt]
   ihave %Hred : ⌜BaseStep.Reducible (hl(!{.val (.lit (.loc l))}), σ₁)⌝ $$ []
-  · ipure_intro
+  · ipureintro
     exists [], (.val v), σ₁, []
     constructor
     rw [Hpt]; simp
   isplitr
-  · ipure_intro
+  · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
   iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
@@ -211,8 +210,7 @@ theorem wp_load {l : Loc} {q} {v : Val} :
   imodintro
   isplit
   · iexists v; iframe Hpt
-    ipure_intro
-    simp [toVal]
+    ipureintro; simp [toVal]
   · itrivial
 
 theorem wp_store {l : Loc} {v v' : Val} {e : Exp} :
@@ -226,14 +224,14 @@ theorem wp_store {l : Loc} {v v' : Val} {e : Exp} :
   simp only [stateInterp]
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
   · icases gen_heap_valid $$ [$Hσ $Hpt] with >%Heq'
-    ipure_intro; assumption
+    itrivial
   ihave %Hred : ⌜BaseStep.Reducible (hl({.val (.lit (.loc l))} ← {v}), σ₁)⌝ $$ []
-  · ipure_intro
+  · ipureintro
     exists [], (.val (.lit .unit)), (σ₁.initHeap l 1 v), []
     refine BaseStep.storeS _ v' _ _ ?_
     rw [Hpt]; simp
   isplitr
-  · ipure_intro
+  · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
   iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
@@ -251,8 +249,7 @@ theorem wp_store {l : Loc} {v v' : Val} {e : Exp} :
   isplit
   · iexists (.lit .unit)
     iframe Hpt
-    ipure_intro
-    simp [toVal]
+    ipureintro; simp [toVal]
   · itrivial
 
 theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val} :
@@ -266,14 +263,14 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   simp only [stateInterp]
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
   · icases gen_heap_valid $$ [$Hσ $Hpt] with >%Heq'
-    ipure_intro; assumption
+    itrivial
   ihave %Hred : ⌜BaseStep.Reducible (hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})), σ₁)⌝ $$ []
-  · ipure_intro
+  · ipureintro
     exists [], hl(v(({v'}, #(BaseLit.bool false)))), σ₁, []
     rw [show e1 = ToVal.ofVal v1 by grind, show e2 = ToVal.ofVal v2 by grind]
     exact BaseStep.cmpXchgS l v1 v2 v' σ₁ false (by simp [Hpt]) Heq3 Heq4
   isplitr
-  · ipure_intro
+  · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
   iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
@@ -291,8 +288,7 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   isplit
   · iexists hl_val(({v'}, #(BaseLit.bool false)))
     iframe Hpt
-    ipure_intro
-    simp [toVal]
+    ipureintro; simp [toVal]
   · itrivial
 
 theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val} :
@@ -306,14 +302,14 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   simp only [stateInterp]
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
   · icases gen_heap_valid $$ [$Hσ $Hpt] with >%Heq'
-    ipure_intro; assumption
+    itrivial
   ihave %Hred : ⌜BaseStep.Reducible (hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})), σ₁)⌝ $$ []
-  · ipure_intro
+  · ipureintro
     exists [], hl(v(({v'}, #(BaseLit.bool true)))), (σ₁.initHeap l 1 (some v2)), []
     rw [show e1 = ToVal.ofVal v1 by grind, show e2 = ToVal.ofVal v2 by grind]
     exact BaseStep.cmpXchgS l v1 v2 v' σ₁ true (by simp [Hpt]) Heq3 Heq4
   isplitr
-  · ipure_intro
+  · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
     exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
   iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
@@ -334,8 +330,7 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   isplit
   · iexists hl_val(({v'}, #(BaseLit.bool true)))
     iframe Hpt
-    ipure_intro
-    simp [toVal]
+    ipureintro; simp [toVal]
   · itrivial
 
 end Lifting
