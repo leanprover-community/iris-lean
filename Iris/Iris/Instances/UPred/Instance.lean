@@ -25,22 +25,39 @@ variable [UCMRA M]
 
 section bidefs
 
+@[rocq_alias uPred_entails]
 protected def Entails (P Q : UPred M) : Prop := ∀ n (x : ValidAt M n), P n x → Q n x
 
+@[rocq_alias uPred_pure]
 protected def pure (p : Prop) : UPred M where
   holds _ _ := p
   mono h _ _ := h
 
+#rocq_ignore uPred.uPred_pure_unseal "`UPred.pure` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_si_pure_unseal "`UPred.uPredSiPure` is unsealed in Lean."
+#rocq_ignore uPred.uPred_si_emp_valid_unseal "`UPred.uPredSiEmpValid` is unsealed in Lean."
+
+@[rocq_alias uPred_and]
 protected def and (P Q : UPred M) : UPred M where
   holds n x := P n x ∧ Q n x
   mono HPQ Hle Hn := ⟨P.mono HPQ.1 Hle Hn, Q.mono HPQ.2 Hle Hn⟩
 
+#rocq_ignore uPred_and_unseal "`UPred.and` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_and_def "`UPred.and` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_and_aux "`UPred.and` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias uPred_or]
 protected def or (P Q : UPred M) : UPred M where
   holds n x := P n x ∨ Q n x
   mono
   | .inl H, Hle, Hn => .inl (P.mono H Hle Hn)
   | .inr H, Hle, Hn => .inr (Q.mono H Hle Hn)
 
+#rocq_ignore uPred_or_unseal "`UPred.or` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_or_def "`UPred.or` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_or_aux "`UPred.or` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias uPred_impl]
 protected def imp (P Q : UPred M) : UPred M where
   holds n x := ∀ {n'} (x' : ValidAt M n'), x.val ≼ x'.val → n' ≤ n → P n' x' → Q n' x'
   mono {_ _ x₁ x₂} H := fun ⟨m₁, Hle⟩ Hn n ⟨x, xP⟩ ⟨m₂, Hxle⟩ Hnle HP => by
@@ -54,18 +71,33 @@ protected def imp (P Q : UPred M) : UPred M where
     · exact Nat.le_trans Hnle Hn
     · exact (uPred_ne Hx).mp HP
 
+#rocq_ignore uPred_impl_unseal "`UPred.imp` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_impl_def "`UPred.imp` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_impl_aux "`UPred.imp` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias uPred_forall]
 protected def sForall (Ψ : UPred M → Prop) : UPred M where
   holds n x := ∀ p, Ψ p → p n x
   mono a a_1 a_2 p a_3 := p.mono (a p a_3) a_1 a_2
 
+#rocq_ignore uPred_forall_unseal "`UPred.sForall` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_forall_def "`UPred.sForall` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_forall_aux "`UPred.sForall` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias uPred_exist]
 protected def sExists (Ψ : UPred M → Prop) : UPred M where
   holds n x := ∃ p, Ψ p ∧ p n x
   mono := fun ⟨p, HΨ, Hp⟩ Hv Hn => ⟨p, HΨ, p.mono Hp Hv Hn⟩
+
+#rocq_ignore uPred_exist_unseal "`UPred.sExists` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_exist_def "`UPred.sExists` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_exist_aux "`UPred.sExists` is defined directly without `seal`/`unseal`."
 
 protected def eq [OFE O] (o1 o2 : O) : UPred M where
   holds n _ := o1 ≡{n}≡ o2
   mono H1 _ H2 := H1.le H2
 
+@[rocq_alias uPred_sep]
 protected def sep (P Q : UPred M) : UPred M where
   holds n x := ∃ x1 x2, ∃ (H : x.val ≡{n}≡ x1 • x2),
     P n ⟨x1, validN_op_left (validN_ne H x.property)⟩
@@ -78,6 +110,11 @@ protected def sep (P Q : UPred M) : UPred M where
     · exact P.mono HP (incN_refl x₁) Hn
     · exact Q.mono HQ (incN_op_left n₂ x₂ m) Hn
 
+#rocq_ignore uPred_sep_unseal "`UPred.sep` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_sep_aux "`UPred.sep` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_sep_def "`UPred.sep` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias uPred_wand]
 protected def wand (P Q : UPred M) : UPred M where
   holds n x := ∀ n' x', n' ≤ n → (H : ✓{n'} (x.val • x'))
     → P n' ⟨x', validN_op_right H⟩ → Q n' ⟨x • x', H⟩
@@ -86,20 +123,35 @@ protected def wand (P Q : UPred M) : UPred M where
       (op_monoN_left _ (incN_of_incN_le Hn' Hm)) .refl
     exact H _ _ (Nat.le_trans Hn' Hn) ?_ HP
 
+#rocq_ignore uPred_wand_unseal "`UPred.wand` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_wand_aux "`UPred.wand` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_wand_def "`UPred.wand` is defined directly without `seal`/`unseal`."
+
 protected def plainly (P : UPred M) : UPred M where
   holds n _ := P n ⟨unit, unit_validN⟩
   mono H _ Hn := P.mono H (incN_refl unit) Hn
 
+@[rocq_alias uPred_persistently]
 protected def persistently (P : UPred M) : UPred M where
   holds n x := P n ⟨core x, validN_core x.property⟩
   mono H Hx Hn := P.mono H (core_incN_core Hx) Hn
 
+#rocq_ignore uPred_persistently_unseal "`UPred.persistently` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_persistently_def "`UPred.persistently` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_persistently_aux "`UPred.persistently` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias uPred_later]
 protected def later (P : UPred M) : UPred M where
   holds n x := match n with | 0 => True | Nat.succ n' => P n' (x.le (Nat.le_succ _))
   mono {n₁ n₂} := by
     cases n₁ <;> cases n₂ <;> simp
     exact fun H Hx Hn => P.mono H (incN_of_incN_succ Hx) Hn
 
+#rocq_ignore uPred_later_unseal "`UPred.later` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_later_def "`UPred.later` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_later_aux "`UPred.later` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias uPred_ownM]
 def ownM (m : M) : UPred M where
   holds n x := m ≼{n} x
   mono {_ n₂ x₁ x₂} := fun ⟨m₁, Hm₁⟩ ⟨m₂, Hm₂⟩ Hn => by
@@ -108,10 +160,15 @@ def ownM (m : M) : UPred M where
          _      ≡{n₂}≡ (m • m₁) • m₂ := (Hm₁.le Hn).op_l
          _      ≡{n₂}≡ m • (m₁ • m₂) := assoc.symm.dist
 
+#rocq_ignore uPred_ownM_unseal "`UPred.ownM` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_ownM_def "`UPred.ownM` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_ownM_aux "`UPred.ownM` is defined directly without `seal`/`unseal`."
+
 def cmraValid {A} [CMRA A] (a : A) : UPred M where
   holds n _ := ✓{n} a
   mono hv _ le := validN_of_le le hv
 
+@[rocq_alias uPred_bupd]
 def bupd (Q : UPred M) : UPred M where
   holds n x := ∀ k yf, k ≤ n → ✓{k} (x.val • yf)
     → ∃ x', ∃ H : ✓{k} (x' • yf), Q k ⟨x', validN_op_left H⟩
@@ -127,6 +184,11 @@ def bupd (Q : UPred M) : UPred M where
     refine Q.mono HQ' ?_ k.le_refl
     exact incN_op_left k x' x3
 
+#rocq_ignore uPred_bupd_unseal "`UPred.bupd` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_bupd_def "`UPred.bupd` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_bupd_aux "`UPred.bupd` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias uPred_emp]
 protected def emp : UPred M where
   holds _ _ := True
   mono _ _ _ := trivial
@@ -148,7 +210,7 @@ instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
       | 0 => by simp [UPred.later]
       | n' + 1 => fun _ Hn' Hx' => Hl _ Hn' _ _ .refl (validN_succ Hx')
 
-@[rocq_alias uPred_primitive.ownM_ne]
+@[rocq_alias uPred_primitive.ownM_ne, rocq_alias uPred.ownM_ne]
 instance ownM_ne : OFE.NonExpansive (ownM : M → UPred M) where
   ne _ _ _ H _ _ Hn _ := OFE.Dist.incN (OFE.Dist.le H Hn) .rfl
 
@@ -184,10 +246,31 @@ instance : BIBase (UPred M) where
   persistently := UPred.persistently
   later        := UPred.later
 
+
+#rocq_ignore uPred.uPred_emp_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_pure_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_si_pure_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_si_emp_valid_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_and_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_or_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_impl_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_forall_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_exist_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_sep_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_wand_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_persistently_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_later_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_bupd_unseal "Connectives are defined directly without `seal`/`unseal`."
+#rocq_ignore uPred.uPred_unseal "No `Ltac unseal` rewrite is needed; nothing is sealed."
+
+#rocq_ignore uPred_primitive.uPred_unseal "No `Ltac unseal` rewrite is needed; nothing is sealed."
+
+@[rocq_alias uPred_primitive.entails_po]
 instance uPred_entails_preorder : Std.Preorder (Entails (PROP := UPred M)) where
   refl _ _ H := H
   trans H1 H2 _ _ Hv := H2 _ _ <| H1 _ _ Hv
 
+@[rocq_alias uPred_primitive.entails_lim]
 theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
     IsCOFE.compl cP ⊢ IsCOFE.compl cQ := by
   intros n Hv HP
@@ -195,6 +278,7 @@ theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
   refine H _ _ Hv ?_
   exact uPred_holds_ne IsCOFE.conv_compl.symm n.le_refl _ Hv.property HP
 
+@[rocq_alias uPredI]
 instance : BI (UPred M) where
   entails_preorder := inferInstance
   equiv_iff {_ _} := by
@@ -340,9 +424,69 @@ instance : BI (UPred M) where
     | 0, _, _ => .inl trivial
     | _+1, _, H => .inr @fun | 0, _, Hx'le, _, _ => P.mono H Hx'le.incN (Nat.zero_le _)
 
+
+#rocq_ignore pure_intro "Inlined in `uPredI` construction"
+#rocq_ignore pure_elim' "Inlined in `uPredI` construction"
+
+#rocq_ignore uPred_primitive.and_elim_l "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.and_elim_r "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.and_intro "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.and_ne "Inlined in `uPredI` construction"
+
+#rocq_ignore uPred_primitive.or_intro_l "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.or_intro_r "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.or_elim "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.or_ne "Inlined in `uPredI` construction"
+
+#rocq_ignore uPred_primitive.impl_elim_l' "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.impl_intro_r "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.impl_ne "Inlined in `uPredI` construction"
+
+#rocq_ignore uPred_primitive.sep_assoc' "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.sep_comm' "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.sep_mono "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.sep_ne "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.True_sep_1 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.True_sep_2 "Inlined in `uPredI` construction"
+
+#rocq_ignore uPred_primitive.wand_elim_l' "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.wand_intro_r "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.wand_ne "Inlined in `uPredI` construction"
+
+#rocq_ignore uPred_primitive.persistently_and_sep_l_1 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.persistently_exist_1 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.persistently_idemp_2 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.persistently_mono "Inlined in `uPredI` construction"
+
+#rocq_ignore uPred_primitive.exist_elim "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.exist_intro "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.exist_ne "Inlined in `uPredI` construction"
+
+#rocq_ignore uPred_primitive.forall_elim "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.forall_intro "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.forall_ne "Inlined in `uPredI` construction"
+
+#rocq_ignore uPred_primitive.later_intro "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_mono "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_sep_1 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_sep_2 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_persistently_1 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_persistently_2 "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_exist_false "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_false_em "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_forall_2 "Inlined in `uPredI` construction"
+
+#rocq_ignore uPred_bi_mixin "Inlined in `uPredI` construction"
+#rocq_ignore uPred_bi_later_mixin "Inlined in `uPredI` construction"
+#rocq_ignore uPred_bi_persistently_mixin "Inlined in `uPredI` construction"
+
 @[rocq_alias uPred_persistently_forall]
 instance : BIPersistentlyForall (UPred M) where
   persistently_sForall_2 _ _ x h p hp := h _ ⟨p, rfl⟩ x (inc_refl _) .refl hp
+
+#rocq_ignore uPred_primitive.persistently_forall_2 "Inlined in `BIPersistentlyForall` construction"
+
+#rocq_ignore uPred_pure_forall "BiPureForall is not needed"
 
 @[rocq_alias uPred_later_contractive]
 instance : BILaterContractive (UPred M) where
@@ -354,19 +498,29 @@ instance (P : UPred M) : Affine P where
 @[rocq_alias uPred_affine]
 instance : BIAffine (UPred M) := ⟨by infer_instance⟩
 
+@[rocq_alias uPred_si_pure]
 protected def uPredSiPure (Pi : SiProp) : UPred M where
   holds n _ := Pi.holds n
   mono H _ Hn := Pi.closed H Hn
 
+#rocq_ignore uPred_si_pure_aux "`UPred.uPredSiPure` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_si_pure_unseal "`UPred.uPredSiPure` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_si_pure_def "`UPred.uPredSiPure` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias uPred_si_emp_valid]
 protected def uPredSiEmpValid (P : UPred M) : SiProp where
   holds n := P n ⟨unit, unit_validN⟩
   closed h hle := P.mono h (incN_refl _) hle
 
-@[rocq_alias si_pure_ne]
+#rocq_ignore uPred_si_emp_valid_aux "`UPred.uPredSiEmpValid` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_si_emp_valid_unseal "`UPred.uPredSiEmpValid` is defined directly without `seal`/`unseal`."
+#rocq_ignore uPred_si_emp_valid_def "`UPred.uPredSiEmpValid` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias si_pure_ne, rocq_alias uPred_primitive.si_pure_ne]
 instance uPredSiPure_ne : OFE.NonExpansive (UPred.uPredSiPure : SiProp → UPred M) where
   ne _ _ _ hp _ _ hn _ := hp hn
 
-@[rocq_alias si_emp_valid_ne]
+@[rocq_alias si_emp_valid_ne, rocq_alias uPred_primitive.si_emp_valid_ne]
 instance uPredSiEmpValid_ne : OFE.NonExpansive (UPred.uPredSiEmpValid : UPred M → SiProp) where
   ne _ _ _ h m hm := h m unit hm unit_validN
 
@@ -380,55 +534,43 @@ section SiPropEmbedding
 ## Rules for the SiProp embedding
 -/
 
-@[rocq_alias si_pure_mono]
+@[rocq_alias si_pure_mono, rocq_alias uPred_primitive.si_pure_mono]
 theorem uPredSiPure_mono {Pi Qi : SiProp} (hpq : Pi ⊢ Qi) : <si_pure> Pi ⊢@{UPred M} <si_pure> Qi :=
   fun n _ hp => hpq n hp
 
-@[rocq_alias si_emp_valid_mono]
+@[rocq_alias si_emp_valid_mono, rocq_alias uPred_primitive.si_emp_valid_mono]
 theorem uPredSiEmpValid_mono {P Q : UPred M} (h : P ⊢ Q) : <si_emp_valid> P ⊢ <si_emp_valid> Q :=
   fun n hp => h n ⟨unit, unit_validN⟩ hp
 
-@[rocq_alias si_pure_impl_2]
+@[rocq_alias si_pure_impl_2, rocq_alias uPred_primitive.si_pure_impl_2]
 theorem uPredSiPure_imp_mpr {Pi Qi : SiProp} :
     (<si_pure> Pi → <si_pure> Qi) ⊢@{UPred M} <si_pure> (Pi → Qi) :=
   fun _ x hpq _ hle => hpq (x.le hle) .rfl hle
 
-@[rocq_alias si_pure_later]
+@[rocq_alias si_pure_later, rocq_alias uPred_primitive.si_pure_later]
 theorem uPredSiPure_later {Pi : SiProp} : <si_pure> (▷ Pi) ⊣⊢@{UPred M} ▷ <si_pure> Pi :=
   ⟨fun | 0, _ | _+1, _ => id, fun | 0, _ | _+1, _ => id⟩
 
-@[rocq_alias si_emp_valid_later_1]
+@[rocq_alias si_emp_valid_later_1, rocq_alias uPred_primitive.si_emp_valid_later_1]
 theorem uPredSiEmpValid_later_mp {P : UPred M} : <si_emp_valid> (▷ P) ⊢ ▷ <si_emp_valid> P :=
   fun | 0 | _+1 => id
 
-@[rocq_alias si_emp_valid_si_pure]
+@[rocq_alias si_emp_valid_si_pure, rocq_alias uPred_primitive.si_emp_valid_si_pure]
 theorem uPredSiEmpValid_uPredSiPure {Pi : SiProp} : <si_emp_valid> (<si_pure> Pi : UPred M) ⊣⊢ Pi :=
   ⟨fun _ hp => hp, fun _ hp => hp⟩
 
-@[rocq_alias si_pure_si_emp_valid]
+@[rocq_alias si_pure_si_emp_valid, rocq_alias uPred_primitive.si_pure_si_emp_valid]
 theorem uPredSiPure_uPredSiEmpValid {P : UPred M} : <si_pure> <si_emp_valid> P ⊢ <pers> P :=
   fun n _ hp => P.mono hp incN_unit n.le_refl
 
-@[rocq_alias persistently_impl_si_pure]
+@[rocq_alias persistently_impl_si_pure, rocq_alias uPred_primitive.persistently_impl_si_pure]
 theorem persistently_imp_uPredSiPure {Pi : SiProp} {Q : UPred M} :
     (<si_pure> Pi → <pers> Q) ⊢ <pers> (<si_pure> Pi → Q) := by
   intro n x hpq m y hinc hle hp
   have hq := hpq (x.le hle) (inc_refl x.val) hle hp
   exact Q.mono hq hinc.incN m.le_refl
 
--- si_pure_forall_2 is already in Sbi.lean
-theorem uPredSiPure_forall_mpr {α : Type _} {Pi : α → SiProp} :
-    (∀ x, <si_pure> Pi x : UPred M) ⊢ <si_pure> (∀ x, Pi x) := by
-  rintro _ _ hp _ ⟨a, rfl⟩
-  exact hp iprop(<si_pure> Pi a) ⟨a, rfl⟩
-
--- si_emp_valid_exist_1 is already in Sbi.lean
-theorem uPredSiEmpValid_exist_mp {α : Type _} {P : α → UPred M} :
-    (<si_emp_valid> (∃ x, P x) : SiProp) ⊢ ∃ x, <si_emp_valid> P x := by
-  rintro _ ⟨_, ⟨a, rfl⟩, hp⟩
-  exact ⟨iprop(<si_emp_valid> P a), ⟨a, rfl⟩, hp⟩
-
--- prop_ext_2 is already in SIProp.lean
+@[rocq_alias uPred_primitive.prop_ext_2]
 theorem prop_ext_uPredSiEmpValid {P Q : UPred M} : <si_emp_valid> (P ∗-∗ Q) ⊢ SiProp.internalEq P Q := by
   intro _ hpq n x hn hv
   have hu : unit • x ≡{n}≡ x := unit_left_id.dist
@@ -439,6 +581,7 @@ theorem prop_ext_uPredSiEmpValid {P Q : UPred M} : <si_emp_valid> (P ∗-∗ Q) 
 
 end SiPropEmbedding
 
+@[rocq_alias uPred_sbi]
 instance : Sbi (UPred M) where
   siPure_ne := uPredSiPure_ne
   siEmpValid_ne := uPredSiEmpValid_ne
@@ -455,11 +598,22 @@ instance : Sbi (UPred M) where
   siEmpValid_affinely_mpr _ h := ⟨trivial, h⟩
   prop_ext_siEmpValid := prop_ext_uPredSiEmpValid
 
+#rocq_ignore uPred_sbi_mixin "Inlined in uPred_sbi construction"
+#rocq_ignore uPred_sbi_prop_ext_mixin "Inlined in uPred_sbi construction"
+
+@[rocq_alias uPred_primitive.si_pure_forall_2]
+theorem uPredSiPure_forall_mpr {α : Type _} {Pi : α → SiProp} :
+    (∀ x, <si_pure> Pi x : UPred M) ⊢ <si_pure> (∀ x, Pi x) := siPure_forall_mpr
+
 @[rocq_alias uPred_sbi_emp_valid_exist]
 instance : SbiEmpValidExist (UPred M) where
   siEmpValid_sExists_1 Ψ n h := by
     obtain ⟨p, hΨ, hp⟩ := h
     exact ⟨_, ⟨p, rfl⟩, hΨ, hp⟩
+
+@[rocq_alias uPred_primitive.si_emp_valid_exist_1]
+theorem uPredSiEmpValid_exist_mp {α : Type _} {P : α → UPred M} :
+    (<si_emp_valid> (∃ x, P x) : SiProp) ⊢ ∃ x, <si_emp_valid> P x := siEmpValid_exist_mp
 
 /-- The Sbi-derived plainly on UPred unfolds to `UPred.plainly`. -/
 theorem plainly_eq_uPred_plainly (P : UPred M) : iprop(■ P) = UPred.plainly P := rfl
@@ -487,6 +641,12 @@ instance : BIUpdate (UPred M) where
     refine ⟨x' • x2, op_assocN.validN.1 Hx'1, x', x2, .rfl, Hx'2, ?_⟩
     exact R.mono HR (incN_refl x2) Hk
 
+#rocq_ignore uPred_primitive.bupd_intro "Inlined in BIUpdate instance construction"
+#rocq_ignore uPred_primitive.bupd_mono "Inlined in BIUpdate instance construction"
+#rocq_ignore uPred_primitive.bupd_trans "Inlined in BIUpdate instance construction"
+#rocq_ignore uPred_primitive.bupd_frame_r "Inlined in BIUpdate instance construction"
+#rocq_ignore uPred_bupd_mixin "Inlined in BIUpdate instance construction"
+
 @[rocq_alias uPred_primitive.bupd_si_pure]
 theorem bupd_si_pure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure> Pi := by
   intro n x Hv
@@ -498,10 +658,10 @@ theorem bupd_si_pure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure>
 instance : BIBUpdateSbi (UPred M) where
   bupd_si_pure := bupd_si_pure
 
-@[rocq_alias uPred_primitive.ownM_valid]
+@[rocq_alias uPred_primitive.ownM_valid, rocq_alias uPred.ownM_valid]
 theorem ownM_valid (m : M) : ownM m ⊢ internalCmraValid m := fun _ h hp => hp.validN h.property
 
-@[rocq_alias uPred_primitive.ownM_op]
+@[rocq_alias uPred_primitive.ownM_op, rocq_alias uPred.ownM_op]
 theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 := by
   constructor
   · intro n _ ⟨z, Hz⟩
@@ -524,11 +684,11 @@ theorem ownM_eqv {m1 m2 : M} (H : m1 ≡ m2) : ownM m1 ⊣⊢ ownM m2 :=
 theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : internalCmraValid m ⊢@{UPred M} False :=
   fun n _ => H n
 
-@[rocq_alias uPred.ownM_unit]
+@[rocq_alias uPred.ownM_unit, rocq_alias uPred_primitive.ownM_unit]
 theorem ownM_unit P : P ⊢ □ ownM (unit : M) :=
   fun _ _ _ => ⟨trivial, incN_unit⟩
 
-@[rocq_alias uPred.persistently_ownM_core]
+@[rocq_alias uPred.persistently_ownM_core, rocq_alias uPred_primitive.persistently_ownM_core]
 theorem persistently_ownM_core (a : M) : ownM a ⊢ <pers> ownM (core a) :=
   fun _ _ => core_incN_core
 
@@ -543,7 +703,7 @@ instance {a : M} : Persistent (ownM (core a)) where
     refine OFE.NonExpansive.eqv ?_
     exact core_idem a
 
-@[rocq_alias uPred.bupd_ownM_updateP]
+@[rocq_alias uPred.bupd_ownM_updateP, rocq_alias uPred_primitive.bupd_ownM_updateP]
 theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   (x ~~>: Φ) → ownM x ⊢ |==> ∃ y, ⌜Φ y⌝ ∧ ownM y := by
   intro Hup _ _ ⟨x3, Hx⟩ k yf Hk Hyf
@@ -556,7 +716,7 @@ theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
   · exists y
   · exact ⟨HΦy, incN_op_left k y x3⟩
 
-@[rocq_alias uPred.ownM_forall]
+@[rocq_alias uPred.ownM_forall, rocq_alias uPred_primitive.ownM_forall]
 theorem ownM_forall (f : A → M) :
   (∀ a, ownM (f a)) ⊢ ∃ z, ownM z ∧ (∀ a, ∃ xf, UPred.eq z (f a • xf)) := by
   intro _ x Hf
@@ -566,7 +726,7 @@ theorem ownM_forall (f : A → M) :
   rcases Hf (ownM (f a)) ⟨a, rfl⟩ with ⟨xf, Hxf⟩
   exact ⟨(UPred.eq x.val (f a • xf)), ⟨xf, rfl⟩, Hxf⟩
 
-@[rocq_alias uPred.later_ownM]
+@[rocq_alias uPred.later_ownM, rocq_alias uPred_primitive.later_ownM]
 theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ <si_pure> (SiProp.internalEq a b)
   | 0, _, _ =>
     ⟨iprop(ownM unit ∧ ▷ <si_pure> (SiProp.internalEq a unit)), ⟨unit, rfl⟩, incN_unit, trivial⟩

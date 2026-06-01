@@ -15,9 +15,7 @@ import Iris.Instances.Lib.WSat
 
 @[expose] public section
 
-/-! ## Invariants
-TODO: into_inv_inv, into_acc_inv
--/
+/-! ## Invariants -/
 
 namespace Iris
 
@@ -27,9 +25,15 @@ section InvariantDefinition
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
+#rocq_ignore inv_def "`inv` is defined directly without `seal`/`unseal`."
+#rocq_ignore inv_aux "`inv` is defined directly without `seal`/`unseal`."
+#rocq_ignore inv_unseal "`inv` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias inv]
 def inv (N : Namespace) (P : IProp GF) : IProp GF :=
   iprop(□ ∀ E, ⌜↑N ⊆ E⌝ → |={E, E \ ↑N}=> ▷ P ∗ (▷ P ={E \ ↑N, E}=∗ True))
 
+@[rocq_alias own_inv]
 def own_inv (N : Namespace) (P : IProp GF) : IProp GF :=
   iprop(∃ i, ⌜i ∈ (↑N : CoPset)⌝ ∧ ownI i P)
 
@@ -82,6 +86,8 @@ theorem except_0_inv (N : Namespace) (P : IProp GF) : ⊢ ◇ inv N P -∗ inv N
 @[rocq_alias is_except_0_inv]
 instance is_except_0_inv (N : Namespace) (P : IProp GF) : IsExcept0 (inv N P) where
   is_except0 := by iintro H; iapply except_0_inv $$ H
+
+-- TODO: into_inv_inv, into_acc_inv
 
 end Instances
 

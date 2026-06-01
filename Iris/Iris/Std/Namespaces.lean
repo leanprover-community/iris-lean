@@ -8,6 +8,7 @@ module
 public import Iris.Std.CoPset
 public import Iris.Std.Positives
 public import Iris.Std.GenSets
+meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -68,6 +69,7 @@ theorem nclose_not_finite (N : Namespace) : ¬CoPset.isFinite (↑N) := by
   simp only [nclose]
   exact CoPset.suffixes_not_finite (Pos.flatten N)
 
+@[rocq_alias fresh_inv_name]
 theorem fresh_name {S : Type _} [Iris.Std.LawfulFiniteSet S Pos] (E : S) (N : Namespace) :
   ∃ i, i ∉ E ∧ i ∈ (↑N : CoPset) := by
   exists (CoPset.pick (↑N \ set_to_coPset E))
