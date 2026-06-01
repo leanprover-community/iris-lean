@@ -924,7 +924,7 @@ instance intoIH_entails [BI PROP] (P Q : PROP) : IntoIH (P ⊢ Q) P Q where
   into_ih := λ hpq => intuitionistically_elim.trans hpq
 
 @[rocq_alias into_ih_forall]
-instance intoIH_forall [BI PROP] (φ : α → Prop) (P : PROP) (Φ : α → PROP)
+instance (priority := default - 2) intoIH_forall [BI PROP] (φ : α → Prop) (P : PROP) (Φ : α → PROP)
     [h : ∀ x, IntoIH (φ x) P (Φ x)] :
     IntoIH (∀ x, φ x) P (BI.forall Φ) where
   into_ih := by
@@ -934,7 +934,7 @@ instance intoIH_forall [BI PROP] (φ : α → Prop) (P : PROP) (Φ : α → PROP
     exact (h x).into_ih (hφ x)
 
 @[rocq_alias into_ih_impl]
-instance intoIH_imp [BI PROP] (φ ψ : Prop) (Δ P Q : PROP)
+instance (priority := default - 1) intoIH_imp [BI PROP] (φ ψ : Prop) (Δ P Q : PROP)
     [h1 : MakeAffinely iprop(⌜φ⌝) P]
     [h2 : IntoIH ψ Δ Q] :
     IntoIH (φ → ψ) Δ iprop(P -∗ Q) where
