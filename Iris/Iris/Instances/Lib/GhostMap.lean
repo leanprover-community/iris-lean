@@ -109,7 +109,7 @@ theorem ghost_map_elem_valid (γ : GName) (k : K) (dq : DFrac F) (v : V) :
     (γ ↪◯MAP[k]{dq} v) ⊢@{IProp GF} internalCmraValid dq := by
   refine iOwn_cmraValid.trans ?_
   iintro %h
-  ipure_intro
+  ipureintro
   exact (frag_valid_iff.mp h).left
 
 @[rocq_alias ghost_map_elem_valid_2]
@@ -120,7 +120,7 @@ theorem ghost_map_elem_valid_2 (γ : GName) (k : K) (dq1 dq2 : DFrac F) (v1 v2 :
   iintro ⟨H1, H2⟩
   icombine H1 H2 gives %H
   obtain ⟨vdq, va⟩ := frag_op_valid_iff.mp H
-  ipure_intro
+  ipureintro
   exact ⟨vdq, congrArg (·.car) (toAgree_op_valid_iff_eq.mp va)⟩
 
 @[rocq_alias ghost_map_elem_agree]
@@ -137,7 +137,7 @@ instance ghost_map_elem_combine_gives γ (k : K) (dq1 dq2 : DFrac F) (v1 v2 : V)
   combine_sep_gives := by
     iintro H
     icases ghost_map_elem_valid_2 $$ H with %H
-    imodintro; ipure_intro; assumption
+    itrivial
 
 @[rocq_alias ghost_map_elem_combine]
 theorem ghost_map_elem_combine (γ : GName) (k : K) (dq1 dq2 : DFrac F) (v1 v2 : V) :
@@ -272,7 +272,7 @@ theorem ghost_map_auth_valid γ (dq : DFrac F) (m : H V) :
   unfold ghost_map_auth
   iintro _
   refine iOwn_cmraValid.trans ?_
-  iintro %H; ipure_intro
+  iintro %H; ipureintro
   apply auth_valid_iff.mp H
 
 @[rocq_alias ghost_map_auth_valid_2]
@@ -281,7 +281,7 @@ theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac F} {m1 m2 : H V} :
   unfold ghost_map_auth
   iintro H1 H2
   icombine H1 H2 gives %G
-  ipure_intro
+  ipureintro
   have ⟨h₁, h₂⟩ := auth_op_auth_valid_iff.mp G
   refine ⟨h₁, fun k => ?_⟩
   have h := h₂ k
@@ -320,7 +320,7 @@ theorem ghost_map_lookup {γ dq} {m : H V} {k : K} {dq' v} :
   unfold ghost_map_auth ghost_map_elem
   iintro H1 H2
   icombine H1 H2 gives %G
-  ipure_intro
+  ipureintro
   have ⟨av', _, _, h_av', _, h⟩ := auth_op_frag_valid_total_discrete_iff G
   cases h₂ : get? m k <;> grind [get?_map,Agree.toAgree_included, OFE.leibniz]
 
@@ -332,7 +332,7 @@ instance ghost_map_lookup_combine_gives_1 γ (m : H V) (k : K) (dq1 dq2 : DFrac 
   combine_sep_gives := by
     iintro ⟨H, G⟩
     icases ghost_map_lookup $$ H G with %H
-    ipure_intro; assumption
+    itrivial
 
 @[rocq_alias ghost_map_lookup_combine_gives_2]
 instance ghost_map_lookup_combine_gives_2 γ (m : H V) (k : K) (dq dq' : DFrac F) (v : V) :
@@ -342,7 +342,7 @@ instance ghost_map_lookup_combine_gives_2 γ (m : H V) (k : K) (dq dq' : DFrac F
   combine_sep_gives := by
     iintro ⟨H, G⟩
     icases ghost_map_lookup $$ G H with %H
-    ipure_intro; assumption
+    itrivial
 
 @[rocq_alias ghost_map_insert]
 theorem ghost_map_insert {γ} {m : H V} (k : K) (v : V) (Heq : get? m k = .none) :

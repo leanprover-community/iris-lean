@@ -98,8 +98,7 @@ theorem own_updateP [UCMRA M] {own : M → PROP} {x : M} {Φ : M → Prop}
   iapply H
   iexists y
   isplit
-  · ipure_intro
-    exact HΦ
+  · itrivial
   · iexact Hy
 
 end BupdPlainDef

@@ -85,7 +85,7 @@ example [BI PROP] (P Q R : PROP) : □ P ∗ □ Q ⊢ R -∗ R := by
 example [BI PROP] (P Q R : PROP) : <affine> P ∗ <affine> Q ⊢ <affine> R -∗ emp := by
   iintro ⟨HP, HQ⟩ HR
   iclear ∗
-  iemp_intro
+  iempintro
 
 /-- Tests clearing a Lean variable with `iclear %x` -/
 example [BI PROP] (_x : α) (Q : PROP) : Q ⊢ Q := by
@@ -111,7 +111,7 @@ example [BI PROP] (_hφ : φ) (P Q R : PROP) : □ P ∗ <affine> Q ⊢ <affine>
   iintro ⟨#HP, HQ⟩
   iintro HR
   iclear % # ∗
-  iemp_intro
+  iempintro
 
 /-- Tests clearing dependent Lean locals when the dependency comes first. -/
 example [BI PROP] (x : α) (_hx : x = x) (Q : PROP) : Q ⊢ Q := by
@@ -398,38 +398,38 @@ namespace «exists»
 /-- Tests `iexists` with a BI proposition -/
 example [BI PROP] : ⊢@{PROP} ∃ x, x := by
   iexists iprop(True)
-  ipure_intro
+  ipureintro
   exact True.intro
 
 /-- Tests `iexists` with a natural number -/
 example [BI PROP] : ⊢@{PROP} ∃ (_x : Nat), True ∨ False := by
   iexists 42
   ileft
-  ipure_intro
+  ipureintro
   exact True.intro
 
 /-- Tests `iexists` with Prop -/
 example [BI PROP] : ⊢@{PROP} ⌜∃ x, x ∨ False⌝ := by
   iexists True
-  ipure_intro
+  ipureintro
   exact Or.inl True.intro
 
 /-- Tests `iexists` with a named metavariable -/
 example [BI PROP] : ⊢@{PROP} ∃ x, ⌜x = 42⌝ := by
   iexists ?y
-  ipure_intro
+  ipureintro
   rfl
 
 /-- Tests `iexists` with anonymous metavariable -/
 example [BI PROP] : ⊢@{PROP} ∃ x, ⌜x = 42⌝ := by
   iexists _
-  ipure_intro
+  ipureintro
   rfl
 
 /-- Tests `iexists` with two quantifiers -/
 example [BI PROP] : ⊢@{PROP} ∃ x y : Nat, ⌜x = y⌝ := by
   iexists _, 1
-  ipure_intro
+  ipureintro
   rfl
 
 /- Tests `iexists` failing with non-quantifier -/
@@ -588,7 +588,7 @@ example [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
 /-- Tests `iapply` with lemma -/
 example [BI PROP] (Q : PROP) : Q ⊢ (emp ∗ Q) ∗ emp := by
   iapply (wand_intro sep_emp.mpr)
-  iemp_intro
+  iempintro
 
 /-- Tests `iapply` with pure sidecondition -/
 example [BI PROP] (Q : PROP) (H : 0 = 0 → ⊢ Q) : ⊢ Q := by
@@ -600,7 +600,7 @@ example [BI PROP] : ⊢@{PROP} ⌜1 = 1⌝ := by
   istart
   iapply (pure_intro (P:=emp))
   . rfl
-  iemp_intro
+  iempintro
 
 /-- Tests `iapply` with entailment as Lean hypothesis -/
 example [BI PROP] (P Q : PROP) (H : P ⊢ Q) (HP : ⊢ P) : ⊢ Q := by
@@ -874,7 +874,7 @@ example [BI PROP] (P : PROP) : □ P ⊢ False -∗ Q := by
 example [BI PROP] (P : PROP) (HF : False) : ⊢ P := by
   istart
   iexfalso
-  ipure_intro
+  ipureintro
   exact HF
 
 end exfalso
@@ -1001,16 +1001,16 @@ end spatial
 -- emp intro
 namespace empintro
 
-/-- Tests `iemp_intro` for proving emp -/
+/-- Tests `iempintro` for proving emp -/
 example [BI PROP] : ⊢@{PROP} emp := by
-  iemp_intro
+  iempintro
 
-/-- Tests `iemp_intro` with affine environment -/
+/-- Tests `iempintro` with affine environment -/
 example [BI PROP] (P : PROP) : <affine> P ⊢ emp := by
   iintro _HP
-  iemp_intro
+  iempintro
 
-/-- Tests that `itrivial` subsumes `iemp_intro` -/
+/-- Tests that `itrivial` subsumes `iempintro` -/
 example [BI PROP] (P : PROP) : <affine> P ⊢ emp := by
   iintro _HP
   itrivial
@@ -1020,37 +1020,37 @@ end empintro
 -- pure intro
 namespace pureintro
 
-/-- Tests `ipure_intro` for True -/
+/-- Tests `ipureintro` for True -/
 example [BI PROP] : ⊢@{PROP} ⌜True⌝ := by
-  ipure_intro
+  ipureintro
   exact True.intro
 
-/-- Tests `ipure_intro` for disjunction -/
+/-- Tests `ipureintro` for disjunction -/
 example [BI PROP] : ⊢@{PROP} True ∨ False := by
-  ipure_intro
+  ipureintro
   apply Or.inl True.intro
 
-/-- Tests `ipure_intro` with context -/
+/-- Tests `ipureintro` with context -/
 example [BI PROP] (H : A → B) (P Q : PROP) : <affine> P ⊢ <pers> Q → ⌜A⌝ → ⌜B⌝ := by
   iintro _HP #_HQ
-  ipure_intro
+  ipureintro
   exact H
 
-/-- Tests `ipure_intro` with wand containing pure and affine lhs -/
+/-- Tests `ipureintro` with wand containing pure and affine lhs -/
 example [BI PROP] : ⊢@{PROP} (<affine> ⌜φ2⌝ -∗ emp) := by
-  ipure_intro
+  ipureintro
   intro _; trivial
 
-/-- Tests `ipure_intro` with wand containing pure and absorbing rhs -/
+/-- Tests `ipureintro` with wand containing pure and absorbing rhs -/
 example [BI PROP] : ⊢@{PROP} (⌜φ2⌝ -∗ <absorb> emp) := by
-  ipure_intro
+  ipureintro
   intro _; trivial
 
-/- Tests `ipure_intro` failure -/
-/-- error: ipure_intro: P is not pure -/
+/- Tests `ipureintro` failure -/
+/-- error: ipureintro: P is not pure -/
 #guard_msgs in
 example [BI PROP] (P : PROP) : ⊢ P := by
-  ipure_intro
+  ipureintro
 
 end pureintro
 
