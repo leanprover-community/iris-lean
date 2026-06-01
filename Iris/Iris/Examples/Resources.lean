@@ -23,7 +23,7 @@ variable [UCMRA M]
 -- A proof with no resources
 example (P Q : UPred M) : P ∗ Q ⊢ ⌜True⌝ := by
   iintro ⟨HP, HQ⟩
-  ipure_intro
+  ipureintro
   trivial
 
 example (P Q : IProp FF0) : P ∗ Q ⊢ P := by

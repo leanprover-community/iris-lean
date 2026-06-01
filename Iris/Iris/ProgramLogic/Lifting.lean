@@ -67,7 +67,7 @@ theorem wp_lift_stuck (h : toVal e = none) :
   replace ⟨_, Hirr⟩ := Hirr
   imodintro
   isplit
-  · ipure_intro; simp [Stuckness.MaybeReducible]
+  · ipureintro; simp [Stuckness.MaybeReducible]
   iintro %e₂ %σ₂ %eₜ %Hstep
   nomatch Hirr obs e₂ σ₂ eₜ Hstep
 
@@ -103,7 +103,7 @@ theorem wp_lift_pure_step_no_fork [Inhabited State] (E₂ : CoPset) :
   iapply fupd_mask_intro Std.LawfulSet.empty_subset
   iintro Hclose
   isplit
-  · ipure_intro; cases s <;> grind -- TODO: Why is `grind [cases S]` not enough?
+  · ipureintro; cases s <;> grind -- TODO: Why is `grind [cases S]` not enough?
   inext
   iintro %e₂ %σ₂ %eₜ %Hstep Hcred
   obtain ⟨rfl, rfl, rfl⟩ := Hpure _ _ _ _ _ Hstep
@@ -126,7 +126,7 @@ theorem wp_lift_pure_stuck [Inhabited State] :
   iintro %σ %ns %obs' %nt -
   iapply fupd_mask_intro Std.LawfulSet.empty_subset
   iintro -
-  ipure_intro
+  ipureintro
   apply Hstuck
 
 @[rocq_alias wp_lift_atomic_step_fupd]

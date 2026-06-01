@@ -90,7 +90,7 @@ nonrec theorem inv_iff {p : NaInvPoolName} {N : Namespace} {P Q : IProp GF} :
   unfold inv
   iintro ⟨%i, %Hin, HI⟩ #HPQ
   iexists i
-  isplit; (· ipure_intro; assumption)
+  isplit; (· itrivial)
   iapply inv_iff $$ HI
   inext; imodintro
   isplit
@@ -122,7 +122,7 @@ theorem own_disjoint {p : NaInvPoolName} {E1 E2 : CoPset} :
   · isplitl [H1] <;> iassumption
   ihave H := iOwn_cmraValid $$ H
   icases internalCmraValid_discrete $$ H with %H
-  ipure_intro
+  ipureintro
   exact valid_op_iff_disj.mp H.1
 
 @[rocq_alias na_own_union]
@@ -166,7 +166,7 @@ nonrec theorem inv_alloc {p : NaInvPoolName} {E : CoPset} {N : Namespace} {P : I
   imodintro
   iexists i
   isplit
-  · ipure_intro; assumption
+  · ipureintro; assumption
   · iassumption
 
 @[rocq_alias na_inv_acc]
