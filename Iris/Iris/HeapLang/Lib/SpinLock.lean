@@ -199,8 +199,7 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   imodintro
   icases G1 with ⟨%b, Hpt, Hcond⟩
   iapply wp_wand $$ [Hpt]
-  · iapply wp_store (e := hl(#(BaseLit.bool false))) $$ Hpt
-    simp [toVal]
+  · iapply wp_store $$ Hpt
   iintro %_ ⟨%Heq, Hpt'⟩
   subst Heq
   imod G2 $$ [- Hcont]
