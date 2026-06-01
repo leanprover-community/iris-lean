@@ -396,7 +396,7 @@ scoped notation (name := PureSteps) conf:40 " -ᵖ->ₜₚ* " conf':41 => Langua
 end Notation
 
 @[rocq_alias PureExec]
-class PureExec (φ : Prop) (n : Nat) (e₁ e₂ : Expr) : Prop where
+class PureExec (φ : Prop) (n : semiOutParam <| Nat) (e₁ : Expr) (e₂ : outParam <| Expr) : Prop where
   pureExec : φ → e₁ -ᵖ->^[n] e₂
 
 variable (K : Expr → Expr) [Context K]

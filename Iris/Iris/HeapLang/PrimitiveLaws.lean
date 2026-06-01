@@ -36,31 +36,25 @@ instance HeapLangState [HeapLangGS hlc GF] : StateInterp State Observation GF wh
 instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
   numLatersPerStep n := 0
   forkPost v := iprop(True)
-  stateInterp_mono σ ns obs nt := by
-    iintro H
-    simp only [stateInterp]
-    iframe H
+  stateInterp_mono σ ns obs nt := by iintro $
 
 end HeapLangGS
 
 section Adequacy
 
-theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop) :
-  (∀ [HeapLangGS .hasLC GF], ⊢@{IProp GF} (WP e {{ v, ⌜φ v⌝ }})) →
+theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
+  (Hwp : ∀ [HeapLangGS .hasLC GF], ⊢@{IProp GF} (WP e {{ v, ⌜φ v⌝ }})) :
   adequate .NotStuck e σ (fun v _ => φ v) := by
-  intro Hwp
   refine wp_adequacy (GF := GF) .NotStuck e σ φ ?_
   intro inst κs
-  istart
-  imod iOwn_alloc (E := HeapLangGpreS.heap_pre.heap.elem)
-    (HeapView.Auth (.own One.one) (Std.PartialMap.map (fun  v => toAgree $ LeibnizO.mk v) σ.heap))
+  imod iOwn_alloc (E := GhostMapG.elem)
+    (HeapView.Auth (H := HeapF) (.own One.one) (Std.PartialMap.map (fun  v => toAgree $ LeibnizO.mk v) σ.heap))
     HeapView.auth_one_valid with ⟨%γ, H⟩
   letI : HeapLangGS .hasLC GF := ⟨⟨γ⟩⟩
   imodintro
-  iexists (fun σ _ => iOwn (E := HeapLangGpreS.heap_pre.heap.elem) γ
-    (HeapView.Auth (.own One.one) (Std.PartialMap.map (fun v => toAgree $ LeibnizO.mk v) σ.heap)))
+  iexists (fun σ _ => iOwn (E := GhostMapG.elem) γ
+    (HeapView.Auth (H := HeapF) (.own One.one) (Std.PartialMap.map (fun v => toAgree $ LeibnizO.mk v) σ.heap)))
   iexists (fun _ => iprop(True))
-  dsimp only
   iframe H
   exact Hwp
 
@@ -75,28 +69,27 @@ variable {s : Stuckness} {E : CoPset} {Φ : Val → IProp GF}
 theorem wp_snd {v1 v2 : Val} :
   ▷ Φ v2 ⊢ WP hl(snd(v(({v1}, {v2})))) @s; E {{ Φ }} := by
   iintro HΦ
-  iapply wp_pure_step_fupd (φ := True) (Hφ := True.intro) (n := 1) (e₂ := .val v2) (E₂ := E)
+  iapply wp_pure_step_fupd (Hφ := True.intro)
   · apply snd_pure
-  · simp only [Nat.repeat]
+  · dsimp only [Nat.repeat]
     iintro !> !> !> -; iframe
     iapply wp_value $$ HΦ
-    constructor
-    rfl
+    constructor; rfl
 
 theorem wp_if_true {e1 e2 : Exp} :
   ▷ WP e1 @ s; E {{ Φ }}
   ⊢ WP hl(if #true then {e1} else {e2}) @s; E {{ Φ }} := by
   iintro Hwp
-  iapply wp_pure_step_fupd (φ := True) (Hφ := True.intro) (n := 1) (e₂ := e1) (E₂ := E)
+  iapply wp_pure_step_fupd (Hφ := True.intro) (n := 1)
   · infer_instance
-  · simp only [Nat.repeat]
+  · dsimp only [Nat.repeat]
     iintro !> !> !> -; iframe
 
 theorem wp_if_false {e1 e2 : Exp} :
   ▷ WP e2 @ s; E {{ Φ }}
   ⊢ WP hl(if #false then {e1} else {e2}) @s; E {{ Φ }} := by
   iintro Hwp
-  iapply wp_pure_step_fupd (φ := True) (Hφ := True.intro) (n := 1) (e₂ := e2) (E₂ := E)
+  iapply wp_pure_step_fupd (Hφ := True.intro) (n := 1)
   · infer_instance
   · simp only [Nat.repeat]
     iintro !> !> !> -; iframe
@@ -105,8 +98,7 @@ theorem wp_rec {f x : Binder} {e : Exp} {v : Val} :
   ▷ WP ((e.subst f (.rec_ f x e)).subst x v) @ s; E {{ Φ }}
   ⊢@{IProp GF} WP (Exp.app (.val (.rec_ f x e)) v) @ s; E {{ Φ }} := by
   iintro Hwp
-  iapply wp_pure_step_fupd (φ := True) (Hφ := True.intro) (n := 1)
-    (e₂ := (e.subst f (.rec_ f x e)).subst x v) (E₂ := E)
+  iapply wp_pure_step_fupd (Hφ := True.intro) (n := 1)
   · infer_instance
   · simp only [Nat.repeat]
     iintro !> !> !> -; iframe
@@ -117,10 +109,8 @@ theorem wp_fork {e : Exp} :
   iapply wp_lift_atomic_step
   · simp [toVal]
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  simp only [stateInterp]
   have Hred : BaseStep.Reducible (hl(fork({e})), σ₁) := by
-    exists [], (.val (.lit .unit)), σ₁, [e]
-    simp [BaseStep.baseStep]
+    exists [], hl(#BaseLit.unit), σ₁, [e]
     constructor
   isplitr
   · ipureintro
@@ -128,11 +118,10 @@ theorem wp_fork {e : Exp} :
     exact (EctxLanguage.primStep_reducible_of_baseStep_reducible Hred)
   iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
   cases (EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred Heq)
-  unfold HeapLang HeapLangState; dsimp only
   iframe Hσ
   imodintro
   isplitr [Hwp]
-  · iexists (.lit .unit)
+  · iexists _
     iframe HΦ
     ipureintro; rfl
   · iapply BI.BigSepL.bigSepL_singleton
@@ -151,7 +140,7 @@ theorem wp_alloc (v : Val) :
   have Hred : BaseStep.Reducible (hl(ref({v})), σ₁) := by
     exists [], (.val (.lit (.loc l))), (σ₁.initHeap l 1 v), []
     constructor
-    · simp
+    · trivial
     · intro i Hzero Hbound
       rw [show l + (i : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
       exact Hne
@@ -170,10 +159,10 @@ theorem wp_alloc (v : Val) :
   imodintro
   iframe Hσ
   isplit
-  · iexists (.lit (.loc l'))
+  · iexists _
     isplit
     · ipureintro; rfl
-    · iexists l'
+    · iexists _
       iframe Hpt
       itrivial
   · itrivial
@@ -185,16 +174,13 @@ theorem wp_load {l : Loc} {q} {v : Val} :
   iapply wp_lift_atomic_step
   · simp [toVal]
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  simp only [stateInterp]
   ihave %Hpt : ⌜σ₁.get? l = v⌝ $$ [Hσ Hpt]
-  · iapply bupd_elim
-    simp only [State.get?]
-    iapply gen_heap_valid $$ [$Hσ $Hpt]
+  · ihave >%_ := gen_heap_valid $$ [$Hσ $Hpt]
+    itrivial
   ihave %Hred : ⌜BaseStep.Reducible (hl(!{.val (.lit (.loc l))}), σ₁)⌝ $$ []
   · ipureintro
     exists [], (.val v), σ₁, []
-    constructor
-    rw [Hpt]; simp
+    constructor; simp [Hpt]
   isplitr
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
@@ -209,7 +195,7 @@ theorem wp_load {l : Loc} {q} {v : Val} :
   iframe Hσ
   imodintro
   isplit
-  · iexists v; iframe Hpt
+  · iexists _; iframe Hpt
     ipureintro; simp [toVal]
   · itrivial
 
@@ -228,8 +214,7 @@ theorem wp_store {l : Loc} {v v' : Val} {e : Exp} :
   ihave %Hred : ⌜BaseStep.Reducible (hl({.val (.lit (.loc l))} ← {v}), σ₁)⌝ $$ []
   · ipureintro
     exists [], (.val (.lit .unit)), (σ₁.initHeap l 1 v), []
-    refine BaseStep.storeS _ v' _ _ ?_
-    rw [Hpt]; simp
+    refine BaseStep.storeS _ v' _ _ ?_; grind
   isplitr
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
@@ -268,7 +253,7 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   · ipureintro
     exists [], hl(v(({v'}, #(BaseLit.bool false)))), σ₁, []
     rw [show e1 = ToVal.ofVal v1 by grind, show e2 = ToVal.ofVal v2 by grind]
-    exact BaseStep.cmpXchgS l v1 v2 v' σ₁ false (by simp [Hpt]) Heq3 Heq4
+    constructor <;> grind
   isplitr
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
@@ -307,7 +292,7 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   · ipureintro
     exists [], hl(v(({v'}, #(BaseLit.bool true)))), (σ₁.initHeap l 1 (some v2)), []
     rw [show e1 = ToVal.ofVal v1 by grind, show e2 = ToVal.ofVal v2 by grind]
-    exact BaseStep.cmpXchgS l v1 v2 v' σ₁ true (by simp [Hpt]) Heq3 Heq4
+    constructor <;> grind
   isplitr
   · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible]
