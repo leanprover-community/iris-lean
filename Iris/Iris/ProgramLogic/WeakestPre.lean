@@ -65,7 +65,7 @@ abbrev Stuckness.MaybeReducible : Stuckness → Expr × State → Prop
 | .NotStuck, (e₁, σ₁) => PrimStep.Reducible (e₁, σ₁)
 | _, _ => True
 
-@[rocq_alias wp_pre, aesop_contractive safe unfold]
+@[rocq_alias wp_pre]
 def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF) (E : CoPset)
     (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
   match toVal e₁ with
@@ -78,13 +78,25 @@ def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF
       stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
       wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
 
-@[rocq_alias wp_pre_contractive]
+open BI
+
+attribute [aesop_contractive safe apply] wand_ne sep_ne BIFUpdate.ne step_fupdN_contractive BigSepL.bigSepL_dist
+-- the following makes aesop_contractive quite slow and does not allow prioritization of Contractive instances over NonExpansive instances
+-- attribute [aesop_contractive safe apply] OFE.NonExpansive.ne OFE.NonExpansive₂.ne
+attribute [aesop_contractive safe forward (immediate := [h])] OFE.Dist.le
+attribute [aesop_contractive simp] Nat.le_iff_lt_or_eq
+
+-- time: 445ms
+#time @[rocq_alias wp_pre_contractive, aesop_contractive safe apply]
 instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
   distLater_dist := by
-    intros n wp wp' Hwp E e₁ Φ
+    intros; unfold pre; intros _ _ _;
     aesop_contractive
-    · exact Hwp _ ‹_› _ _ _
-    · exact BI.BigSepL.bigSepL_dist <| fun _ => Hwp _ ‹_› _ _ _
+    -- set_option trace.aesop true in
+    -- aesop (config := { introsTransparency? := none, warnOnNonterminal := false })
+            -- (rule_sets := [aesop_contractive]) (erase Aesop.BuiltinRules.rfl)
+    -- · exact Hwp _ ‹_› _ _ _
+    -- · exact BI.BigSepL.bigSepL_dist <| fun _ => Hwp _ ‹_› _ _ _
 
 @[rocq_alias wp_def]
 instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
@@ -101,30 +113,32 @@ theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
   BI.equiv_iff.1 <| fixpoint_unfold (f := (wp.pre s).toContractiveHom) E e Φ
 
-@[rocq_alias wp_ne]
+-- time: 648ms
+#time @[rocq_alias wp_ne, aesop_contractive safe apply]
 instance wp_ne {s : Stuckness} {E} {e : Expr} :
     OFE.NonExpansive (Wp.wp (PROP := IProp GF) s E e) where
   ne {n Φ₁ Φ₂} HΦ := by
     induction n using Nat.strongRecOn generalizing e E Φ₁ Φ₂ with | ind n IH =>
     simp only [IProp.ext wp_unfold]
     dsimp only [wp.pre]
-    cases toVal e
-    case some v =>
-      exact BIFUpdate.ne.ne <| HΦ v
-    case none =>
-      aesop_contractive
-      exact IH m ‹_›  <| OFE.dist_lt HΦ ‹_›
+    aesop_contractive
+    -- · aesop_contractive
+    -- · apply IH
+      -- · aesop_contractive
+      -- · apply fwd; aesop_contractive
 
 #rocq_ignore wp_proper "Derivable using NonExpansive.eqv"
 
-@[rocq_alias wp_contractive]
+-- time: 393ms
+#time @[rocq_alias wp_contractive]
 instance wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     OFE.Contractive (Wp.wp (PROP := IProp GF) s E e) where
   distLater_dist {n Φ₁ Φ₂} HΦ := by
     simp only [IProp.ext wp_unfold]
+    unfold wp.pre
     aesop_contractive
-    refine wp_ne.ne ?_
-    exact HΦ _ ‹_›
+    -- refine wp_ne.ne ?_
+    -- exact HΦ _ ‹_›
 
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :

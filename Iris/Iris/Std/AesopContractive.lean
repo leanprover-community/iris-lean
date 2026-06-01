@@ -8,10 +8,10 @@ declare_aesop_rule_sets [aesop_contractive]
 
 macro (name := aesop_cat) "aesop_contractive" c:Aesop.tactic_clause* : tactic =>
 `(tactic|
-  aesop $c* (config := { introsTransparency? := some .none, warnOnNonterminal := false })
+  aesop $c* (config := { warnOnNonterminal := true })
             (rule_sets := [$(Lean.mkIdent `aesop_contractive):ident]) (erase Aesop.BuiltinRules.rfl))
 
-attribute [simp] Nat.repeat
+-- attribute [simp] Nat.repeat
 
 syntax (name := aesop_contractive_attr) "aesop_contractive " Aesop.attr_rules : attr
 
@@ -33,20 +33,24 @@ meta def elabConfig (stx : Syntax) : TermElabM AttrConfig :=
 
 meta def auxIfIsNonExpansiveDecl (declName : Name) : TermElabM Name := do
   let decl ← getConstInfo declName
-  forallTelescope decl.type fun xs ty => ty.withApp fun fn _ => do
-    if let .const fnName _ := fn then
-      unless fnName = `Iris.OFE.NonExpansive || fnName = `Iris.OFE.NonExpansive₂ do
-        return declName
-      let declLvls := decl.levelParams.map Level.param
-      let declWithArgs := mkAppN (mkConst declName declLvls) xs
-      let proj ←  mkProjection declWithArgs `ne
-      withDeclNameForAuxNaming declName do
-        let auxName ← mkAuxDeclName
-        let e ← mkAuxDefinitionFor auxName proj
-        trace[aesop] m!"{e}"
-        return auxName
-    else
-      return declName
+  forallTelescope decl.type fun xs ty => do
+    let .const fnName _ := ty.getAppFn | return declName
+    let projName ←
+      if fnName == `Iris.OFE.NonExpansive ||
+         fnName == `Iris.OFE.NonExpansive₂ then
+        pure `ne
+      else if fnName == `Iris.OFE.Contractive then
+        pure `distLater_dist
+      else
+        do return declName
+    let declLvls := decl.levelParams.map Level.param
+    let declWithArgs := mkAppN (mkConst declName declLvls) xs
+    let proj ←  mkProjection declWithArgs projName
+    withDeclNameForAuxNaming declName do
+      let auxName ← mkAuxDeclName
+      let e ← mkAuxDefinitionFor auxName proj
+      trace[aesop] m!"{e}"
+      return auxName
 
 meta initialize registerBuiltinAttribute {
     name := `aesop_contractive_attr

@@ -11,8 +11,6 @@ public meta import Iris.Std.AesopContractive
 
 namespace Iris
 
-attribute [aesop_contractive unsafe 10% cases] Option
-
 /-- Ordered family of equivalences -/
 @[rocq_alias ofe]
 class OFE (α : Type _) where
@@ -153,29 +151,27 @@ theorem distLater_soundness [OFE α] {x y : α} (H : ∀ n, DistLater n x y → 
 class Contractive [OFE α] [OFE β] (f : α → β) where
   distLater_dist : DistLater n x y → f x ≡{n}≡ f y
 
-attribute [aesop_contractive safe apply] Contractive.distLater_dist
-
-@[simp, aesop_contractive safe apply, rocq_alias contractive_0] theorem Contractive.zero [OFE α] [OFE β] (f : α → β)
+@[simp, rocq_alias contractive_0] theorem Contractive.zero [OFE α] [OFE β] (f : α → β)
     [Contractive f] {x y} : f x ≡{0}≡ f y :=
   Contractive.distLater_dist distLater_zero
 
-@[aesop_contractive safe apply, rocq_alias contractive_S]
+@[rocq_alias contractive_S]
 theorem Contractive.succ [OFE α] [OFE β] (f : α → β) [Contractive f] {n x y}
     (h : x ≡{n}≡ y) : f x ≡{n.succ}≡ f y :=
   Contractive.distLater_dist (distLater_succ.2 h)
 
 /-- A contractive function is non-expansive. -/
-@[aesop_contractive safe apply, rocq_alias contractive_ne]
+@[rocq_alias contractive_ne]
 instance ne_of_contractive [OFE α] [OFE β] (f : α → β) [Contractive f] : NonExpansive f where
   ne := fun _ _ _ h => Contractive.distLater_dist (Dist.distLater h)
 
 /-- A contractive function preserves equivalence. -/
-@[aesop_contractive safe apply, rocq_alias contractive_proper]
+@[rocq_alias contractive_proper]
 theorem Contractive.eqv [OFE α] [OFE β] (f : α → β) [Contractive f] ⦃x y : α⦄ (h : x ≡ y) :
     f x ≡ f y := NonExpansive.eqv h
 
 /-- Constant functions are contractive. -/
-@[aesop_contractive safe apply, rocq_alias const_contractive]
+@[rocq_alias const_contractive]
 instance [OFE α] [OFE β] {x : β} : Contractive (fun _ : α => x) where
   distLater_dist := fun _ => Dist.rfl
 

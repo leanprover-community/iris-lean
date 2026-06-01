@@ -85,8 +85,6 @@ class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
 namespace BI
 
 attribute [instance] BI.entails_preorder
-attribute [aesop_contractive safe apply] and_ne or_ne imp_ne sForall_ne sExists_ne sep_ne wand_ne persistently_ne
-attribute [aesop_contractive unsafe 90% apply] later_ne
 
 theorem BIBase.Entails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊢ Q) (h2 : Q ⊢ R) : P ⊢ R :=
   Transitive.trans h1 h2
