@@ -153,7 +153,7 @@ private def buildPfIntHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 /--
   Tactic syntax for user-supplied alternative names.
 -/
-syntax inductionAlts := "| " ident+ " => " tacticSeq
+syntax inductionAlts := "| " binderIdent+ " => " tacticSeq
 
 /--
   Parse the tactic syntax for user-supplied alternative names.
@@ -164,8 +164,8 @@ syntax inductionAlts := "| " ident+ " => " tacticSeq
   3. the tactics for this induction subgoal.
 -/
 private def parseInductionAlts (alt : TSyntax `Iris.ProofMode.inductionAlts) :
-    TacticM (Name × Array (TSyntax `ident) × TSyntax `Lean.Parser.Tactic.tacticSeq) := do
-  let `(inductionAlts| | $ctor:ident $vars:ident* => $tac:tacticSeq) := alt
+    TacticM (Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq) := do
+  let `(inductionAlts| | $ctor:ident $vars:binderIdent* => $tac:tacticSeq) := alt
   | throwError "iinduction: invalid syntax"
   return ⟨ctor.getId, vars, tac⟩
 
@@ -215,7 +215,7 @@ private def checkCtors (ctors altCtors : List Name) : MetaM Unit := do
 -/
 private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (fvar : FVarId)
-    (parsedAlts : Option <| Array <| Name × Array (TSyntax `ident) × TSyntax `Lean.Parser.Tactic.tacticSeq)
+    (parsedAlts : Option <| Array <| Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq)
     (altRecName : Option Name)
     (genSelTargets : Option <| List SelTarget) :
     ProofModeM Q($e ⊢ $goal) := do
@@ -258,7 +258,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
   let matcher :
     Name →
-    Name × Array (TSyntax `ident) × TSyntax `Lean.Parser.Tactic.tacticSeq →
+    Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq →
     Bool := fun ctor ⟨altCtor, _, _⟩ => matchesCtorName ctor altCtor
 
   -- Define the names for variables and induction hypotheses if supplied by user
@@ -270,7 +270,11 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       ctors.toArray.mapM <| fun ctor =>
       match parsedAlts.find? <| matcher ctor with
       | some (_, vars, _) =>
-        pure { explicit := true, varNames := vars.toList.map (·.getId) }
+        pure { explicit := true, varNames := vars.toList.map <|
+          fun v =>
+            match v.raw with
+            | `(binderIdent| $id:ident) => id.getId
+            | _ => Name.mkSimple "_" }
       | none => throwMissingAlt ctor
 
   -- Check that all alternative names supplied by the user are valid
@@ -297,9 +301,10 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
             match parsedAlts.find? <| matcher ctor with
             | some ⟨_, vars, _⟩ =>
               for ⟨fieldFVar, varStx⟩ in s.fields.toList.zip vars.toList do
-              let lctx ← getLCtx
-              let fieldType ← inferType fieldFVar
-              addLocalVarInfo varStx lctx fieldFVar (some fieldType) true
+                if let `(binderIdent| $id:ident) := varStx then
+                  let lctx ← getLCtx
+                  let fieldType ← inferType fieldFVar
+                  addLocalVarInfo id lctx fieldFVar (some fieldType) true
             | none => throwMissingAlt ctor
 
           -- Obtain the type of the induction subgoal
