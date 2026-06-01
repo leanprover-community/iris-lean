@@ -119,6 +119,7 @@ theorem imp_congr_l [BI PROP] {P P' Q : PROP} (h : P ⊣⊢ P') : (P → Q) ⊣�
 theorem imp_congr_r [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P → Q) ⊣⊢ (P → Q') :=
   imp_congr .rfl h
 
+@[aesop_contractive safe apply]
 theorem forall_ne [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ≡{n}≡ Ψ a) :
     iprop(∀ a, Φ a) ≡{n}≡ iprop(∀ a, Ψ a) := sForall_ne <| by
   constructor <;> rintro _ ⟨a, rfl⟩ <;> exact ⟨_, ⟨a, rfl⟩, h _⟩

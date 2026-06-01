@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mario Carneiro
 -/
 module
-
 public meta import Iris.Std.RocqPorting
+public meta import Iris.Std.AesopContractive
 
 @[expose] public section
 
@@ -106,7 +106,7 @@ theorem NonExpansive₂.ne_left [OFE α] [OFE β] [OFE γ] (f : α → β → γ
   ⟨fun {_ _ _} h => ne h Dist.rfl⟩
 
 /-- `DistLater n x y` means that `x` and `y` are `m`-equivalent for all `m < n`. -/
-@[rocq_alias dist_later]
+@[rocq_alias dist_later, aesop_contractive safe unfold]
 def DistLater [OFE α] (n : Nat) (x y : α) : Prop := ∀ m, m < n → x ≡{m}≡ y
 
 @[simp, refl] theorem DistLater.rfl [OFE α] {n} {x : α} : DistLater n x x := fun _ _ => .rfl

@@ -160,6 +160,8 @@ class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
   trans {P : PROP} : |==> |==> P ⊢ |==> P
   frame_r {P R : PROP} : (|==> P) ∗ R ⊢ |==> (P ∗ R)
 
+attribute [instance] BIUpdate.bupd_ne
+
 class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
   [ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP))]
   subset {E1 E2 : CoPset} : E2 ⊆ E1 → ⊢ |={E1,E2}=> |={E2,E1}=> (emp : PROP)
@@ -169,6 +171,8 @@ class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
   mask_frame_r' {E1 E2 Ef : CoPset} {P : PROP} :
     E1 ## Ef → (|={E1,E2}=> ⌜E2 ## Ef⌝ → P) ⊢ |={E1 ∪ Ef,E2 ∪ Ef}=> P
   frame_r {E1 E2 : CoPset} {P R : PROP} : (|={E1,E2}=> P) ∗ R ⊢ |={E1,E2}=> P ∗ R
+
+attribute [instance] BIFUpdate.ne
 
 class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] where
   fupd_of_bupd {P : PROP} {E : CoPset} : (|==> P) ⊢ |={E}=> P
@@ -424,6 +428,8 @@ theorem step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContracti
     | zero => exact ne.ne (ι.distLater_dist (ne.ne <| xy_i · ·))
     | succ n IH => exact ne.ne (later_ne.ne (ne.ne IH))
 
+-- unsafe since it can make contractive goals unprovable if n > 0
+-- @[aesop_contractive unsafe 90% apply]
 theorem step_fupdN_ne {E1 E2 : CoPset} {n : Nat} :
     OFE.NonExpansive (iprop(|={E1}[E2]▷=>^[n] · : PROP)) where
   ne {i x y} xy_i := by
