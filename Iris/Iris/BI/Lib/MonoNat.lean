@@ -81,7 +81,7 @@ theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac F) (n1 n2 : MaxNat) :
   unfold auth_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
-  ipure_intro
+  ipureintro
   exact (auth_dfrac_op_valid dq1 dq2 n1 n2).mp Hvalid
 
 @[rocq_alias mono_nat_auth_own_exclusive]
@@ -90,7 +90,7 @@ theorem auth_own_exclusive (γ : GName) (n1 n2 : MaxNat) :
   unfold auth_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
-  ipure_intro
+  ipureintro
   exact (auth_op_valid _ _).mp Hvalid
 
 @[rocq_alias mono_nat_auth_lb_own_valid]
@@ -99,7 +99,7 @@ theorem auth_lb_own_valid (γ : GName) (dq : DFrac F) (n m : MaxNat) :
   unfold auth_own lb_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
-  ipure_intro
+  ipureintro
   exact (both_dfrac_valid dq n m).mp Hvalid
 
 @[rocq_alias mono_nat_lb_own_get]
