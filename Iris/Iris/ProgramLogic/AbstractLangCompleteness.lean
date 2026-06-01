@@ -153,7 +153,7 @@ theorem weakestpre_completeness
       ipure_intro
       grind
   · imod AbstractLangCompletenessGen.lang_completeness $$ %HnotStuck' He [Hheap HtpInv]
-        with (⟨%K, %e₁, %Hctx, %Heq, %Hval, %Hatom, H⟩|H)
+        with (⟨%K, %e₁, %Hctx, %Heq, %Hval, %Hatom, H⟩|⟨Hheap, Htpinv, H⟩)
     · have aux : cfgSafe (cfg.fst, cfg.snd) := cfgSafe_of_cfgSafeForking Hsafe
       iframe %aux Hheap HtpInv
     · imodintro
@@ -164,8 +164,21 @@ theorem weakestpre_completeness
       iintro !> %κ %v₂ %σ₂' %Hefs %Hbase He HtpInv
       -- Now we need fractional divide n
       sorry
-    ·
-      sorry
+    · imodintro
+      iright
+      imod Hclose $$ [Hheap Htpinv] with -
+      · inext
+        iexists cfg
+        -- FIXME: A. needs a better proof of this
+        have Hframe : cfgSafeForking cfg f :=
+          @«inferInstanceAs» (cfgSafeForking cfg f) Hsafe
+        iframe Hheap Htpinv %Hreach %Hframe
+      imodintro
+      iapply H
+      inext
+      iintro %e₂ %efs H
+      imod CancelableInvariant.acc _ _ _ _ _ Hn $$ [$] [$] with ⟨>Hinv2, Hq, Hclose⟩
+      all_goals sorry
 
 
 /-- **Top-level theorem**: `adequate` gives a WP with a pure postcondition.
