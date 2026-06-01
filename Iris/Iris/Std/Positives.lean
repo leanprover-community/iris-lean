@@ -437,22 +437,14 @@ instance : Pos.Countable Char where
     let u := UInt32.ofNat (p.toNat - 1)
     if hv : u.isValidChar then some (Char.mk u hv) else none
   decode_encode c := by
-    simp only [Pos.toNat_ofNat, Nat.add_sub_cancel]
-    have hv : (UInt32.ofNat c.val.toNat).isValidChar := by
-      simp only [UInt32.isValidChar, Nat.isValidChar, Char.toNat_val, UInt32.toNat_ofNat',
-        Nat.reducePow]
-      have hv := c.valid
-      simp only [UInt32.isValidChar, Nat.isValidChar, Char.toNat_val] at hv
-      grind
-    simp only [hv, ↓reduceDIte]
-    congr 1; ext; simp
-    exact UInt32.ofNat_toNat
+    have h : (UInt32.ofNat c.val.toNat).isValidChar := by grind [Char.toNat_val, UInt32.toNat_ofNat']
+    simp only [Pos.toNat_ofNat, Nat.add_sub_cancel, h, ↓reduceDIte]
+    congr; exact UInt32.ofNat_toNat
 
 instance : Pos.Countable String where
   encode s := (Pos.Countable.encode : List Char → Pos) s.toList
   decode p := ((Pos.Countable.decode p : Option (List Char))).map String.ofList
-  decode_encode s := by
-    simp [Pos.Countable.decode_encode, String.ofList_toList]
+  decode_encode s := by simp [Pos.Countable.decode_encode, String.ofList_toList]
 
 instance : Ord Pos where
   compare x y := Pos.compare x y
