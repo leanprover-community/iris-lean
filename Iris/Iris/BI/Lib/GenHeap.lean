@@ -4,8 +4,7 @@ public import Iris.BI.Lib.Fractional
 public import Iris.Instances.Lib.GhostMap
 public import Iris.Instances.IProp
 
-
-public section
+@[expose] public section
 
 namespace Iris
 
@@ -85,9 +84,11 @@ class gen_HeapGPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type
   -- TODO: `meta` field blocked by `reservation_mapR`
   -- TODO: `metaData` field blocked by `reservation_mapR`
 
-instance gen_HeapGPreS.instGhostMapG [Std.LawfulFiniteMap H L][ι : gen_HeapGPreS F L V GF H] : GhostMapG GF F L V H := ι.heap
+attribute [reducible, instance] gen_HeapGPreS.heap
 
-class gen_HeapGS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)[Std.LawfulFiniteMap H L]
+instance gen_HeapGPreS.instGhostMapG [Std.LawfulFiniteMap H L] [ι : gen_HeapGPreS F L V GF H] : GhostMapG GF F L V H := ι.heap
+
+class gen_HeapGS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _) [Std.LawfulFiniteMap H L]
     extends gen_HeapGPreS F L V GF H where
   heapName : GName
   -- TODO: Metadata not supported yet
@@ -163,7 +164,7 @@ theorem gen_heap_dealloc : (gen_heap_interp (GF := GF) σ ∗ l ↦ v) ==∗ gen
   iintro ⟨H₁,H₂⟩
   iapply ghost_map_delete (γ := ι.heapName) _ v $$ H₁ H₂
 
-theorem gen_heap_valid : (gen_heap_interp (GF := GF) σ ∗ l ↦ v) ==∗ ⌜ get? σ l = .some v ⌝ := by
+theorem gen_heap_valid : (gen_heap_interp (GF := GF) σ ∗ l ↦{dq} v) ==∗ ⌜ get? σ l = .some v ⌝ := by
   simp only [gen_heap_interp, pointsTo]
   iintro ⟨H₁,H₂⟩
   iapply ghost_map_lookup $$ H₁ H₂

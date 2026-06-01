@@ -49,7 +49,7 @@ scoped instance : CMRA α where
   op := add
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [eq_of_eqv (discrete h)]
+  op_ne.ne _ _ _ h := by rw [(discrete h).to_eq]
   pcore_ne _ := dist_some ∘ Dist.of_eq
   validN_ne _ _ := .intro
   valid_iff_validN := .symm <| forall_const Nat
@@ -112,7 +112,7 @@ scoped instance : CMRA α where
   op := add
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [eq_of_eqv (discrete h)]
+  op_ne.ne _ _ _ h := by rw [(discrete h).to_eq]
   pcore_ne {_ y _ _} h := by
     rintro ⟨rfl⟩
     exact ⟨y, congrArg _ <| leibniz.mp (discrete h.symm), .rfl⟩
@@ -146,6 +146,8 @@ scoped instance [LawfulLeftIdentity (add (α := α)) zero] : UCMRA α where
 scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
   cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ eq_of_eqv ∘ discrete
 
+scoped instance {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
+
 end OrdCommMonoidLike
 
 /- NoCore core -/
@@ -164,7 +166,7 @@ scoped instance : CMRA α where
   op := add
   ValidN _ _ := True
   Valid _ := True
-  op_ne.ne _ _ _ h := by rw [eq_of_eqv (discrete h)]
+  op_ne.ne _ _ _ h := by rw [(discrete h).to_eq]
   pcore_ne _ := by rintro ⟨rfl⟩
   validN_ne _ _ := .intro
   valid_iff_validN := .symm <| forall_const Nat

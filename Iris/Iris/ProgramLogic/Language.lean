@@ -441,7 +441,7 @@ class IntoVal (e : Expr) (v : Val) where
   into_val : (v : Expr) = e
 
 class AsVal (e : Expr) where
-  as_val : ∃ v, (v : Expr) = e
+  as_val : ∃ v : Val, (v : Expr) = e
 
 @[rocq_alias as_val_is_Some]
 theorem as_val_isSome e : (∃ v : Val, (v : Expr) = e) → (toVal e).isSome := by

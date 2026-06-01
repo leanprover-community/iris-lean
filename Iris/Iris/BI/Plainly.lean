@@ -668,7 +668,7 @@ theorem plainly_internalEq {A} [OFE A] {a b : A} :
     _ ⊢ ■ (True) := plainly_pure.2
     _ ⊢ ■ (internalEq a a) := plainly_mono internalEq.refl
 
-theorem internalEq_plain {A} [OFE A] (a b : A) : Plain (PROP := PROP) iprop(internalEq a b) where
+instance internalEq_plain {A} [OFE A] (a b : A) : Plain (PROP := PROP) iprop(internalEq a b) where
   plain := plainly_internalEq |>.2
 
 @[rocq_alias prop_ext]
