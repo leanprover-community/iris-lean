@@ -37,6 +37,15 @@ theorem bigSepM_empty_intro {P : PROP} [Affine P] {Φ : K → V → PROP} :
     P ⊢ [∗map] k ↦ x ∈ (∅ : M V), Φ k x :=
   Affine.affine.trans bigSepM_empty.2
 
+theorem bigSepM_equiv_of_perm {Φ : K → V → PROP} {m₁ m₂ : M V} (h : m₁ ≡ₘ m₂) :
+    ([∗map] k ↦ v ∈ m₁, Φ k v) ⊣⊢ ([∗map] k ↦ v ∈ m₂, Φ k v) :=
+  equiv_iff.mp (bigOpM_equiv_of_perm _ h)
+
+/-- A `bigSepM` over a map equivalent to the empty map is `emp`. -/
+theorem bigSepM_equiv_empty {Φ : K → V → PROP} {m : M V} (h : m ≡ₘ ∅) :
+    ([∗map] k ↦ v ∈ m, Φ k v) ⊣⊢ emp :=
+  (bigSepM_equiv_of_perm h).trans bigSepM_empty
+
 @[rocq_alias big_sepM_singleton]
 theorem bigSepM_singleton {Φ : K → V → PROP} {i : K} {x : V} :
     ([∗map] k ↦ v ∈ (singleton i x : M V), Φ k v) ⊣⊢ Φ i x :=

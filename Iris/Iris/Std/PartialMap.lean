@@ -528,6 +528,16 @@ theorem all_delete (P : K → V → Prop) {m : M V} {i : K}
   · rw [get?_delete_ne hik] at hget
     exact h k v hget
 
+theorem all_map {P : K → V' → Prop} {f : V → V'} {m : M V}
+    (h : ∀ k v, P k (f v)) : PartialMap.all P (PartialMap.map f m) := by
+  intro k v' hget
+  cases hm : get? m k with
+  | none =>
+    simp [PartialMap.map, get?_bindAlter, hm] at hget
+  | some v =>
+    simp [PartialMap.map, get?_bindAlter, hm] at hget
+    cases hget; exact h k v
+
 theorem disjoint_insert_left {m₁ m₂ : M V} {i : K} {x : V}
     (hi : get? m₂ i = none) (hdisj : m₁ ##ₘ m₂) : insert m₁ i x ##ₘ m₂ := by
   intro k ⟨hs1, hs2⟩
@@ -623,6 +633,21 @@ theorem get?_union_none {m₁ m₂ : M V} {i : K} :
   rw [get?_union]
   cases h1 : get? m₁ i <;> cases h2 : get? m₂ i <;> simp [Option.orElse]
 
+theorem union_equiv {m₁ m₁' m₂ m₂' : M V}
+    (h₁ : m₁ ≡ₘ m₁') (h₂ : m₂ ≡ₘ m₂') : union m₁ m₂ ≡ₘ union m₁' m₂' := by
+  intro k
+  rw [get?_union, get?_union, h₁ k, h₂ k]
+
+theorem union_empty_right {m : M V} : union m (empty : M V) ≡ₘ m := by
+  intro k
+  rw [get?_union, get?_empty]
+  cases get? m k <;> rfl
+
+theorem union_empty_left {m : M V} : union (empty : M V) m ≡ₘ m := by
+  intro k
+  rw [get?_union, get?_empty]
+  rfl
+
 theorem union_insert_left {m₁ m₂ : M V} {i : K} {x : V} :
     insert (union m₁ m₂) i x ≡ₘ union (insert m₁ i x) m₂ := by
   intro k
@@ -641,6 +666,53 @@ theorem map_id {m : M V} :
   intro k
   rw [get?_map]
   cases get? m k <;> simp
+
+theorem map_empty {f : V → V'} : PartialMap.map f (empty : M V) ≡ₘ (empty : M V') := by
+  intro k
+  rw [get?_map, get?_empty, get?_empty]
+  rfl
+
+theorem map_equiv {f : V → V'} {m₁ m₂ : M V} (h : m₁ ≡ₘ m₂) :
+    PartialMap.map f m₁ ≡ₘ PartialMap.map f m₂ := by
+  intro k
+  rw [get?_map, get?_map, h k]
+
+theorem map_insert {f : V → V'} {m : M V} {k : K} {v : V} :
+    PartialMap.map f (insert m k v) ≡ₘ insert (PartialMap.map f m) k (f v) := by
+  intro i
+  by_cases h : k = i <;>
+    simp [h, get?_map, get?_insert_eq, get?_insert_ne]
+
+theorem map_delete {f : V → V'} {m : M V} {k : K} :
+    PartialMap.map f (delete m k) ≡ₘ delete (PartialMap.map f m) k := by
+  intro i
+  by_cases h : k = i <;>
+    simp [h, get?_map, get?_delete_eq, get?_delete_ne]
+
+theorem map_union {f : V → V'} {m₁ m₂ : M V} :
+    PartialMap.map f (m₁ ∪ m₂) ≡ₘ (PartialMap.map f m₁ ∪ PartialMap.map f m₂) := by
+  intro k
+  simp only [get?_map, Union.union, PartialMap.union, get?_merge]
+  cases get? m₁ k <;> cases get? m₂ k <;> simp [Option.merge]
+
+theorem dom_map {f : V → V'} {m : M V} : dom (PartialMap.map f m) = dom m := by
+  ext k
+  simp [PartialMap.dom, get?_map]
+
+theorem disjoint_map {f g : V → V'} {m₁ m₂ : M V}
+    (hdisj : m₁ ##ₘ m₂) : PartialMap.map f m₁ ##ₘ PartialMap.map g m₂ := by
+  intro k ⟨hs1, hs2⟩
+  simp only [get?_map, Option.isSome_map] at hs1 hs2
+  exact hdisj k ⟨hs1, hs2⟩
+
+/-- `map` commutes with set difference, provided the second map has the same key set.
+The conclusion uses `map` on both sides so the right-hand side type-checks. -/
+theorem map_difference_map {f : V → V'} {g : V → V'}
+    {m₁ m₂ : M V} :
+    (PartialMap.map f m₁ \ PartialMap.map g m₂) ≡ₘ PartialMap.map f (m₁ \ m₂) := by
+  intro k
+  simp only [get?_map, get?_difference, Option.isSome_map]
+  split <;> simp
 
 theorem get?_filterMap {f : V → Option V} {m : M V} {k : K} :
     get? (filterMap f m) k = (get? m k).bind f := by

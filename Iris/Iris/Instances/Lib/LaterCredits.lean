@@ -15,6 +15,8 @@ public import Iris.Instances.IProp
 
 @[expose] public section
 
+/-! ## Later credits -/
+
 namespace Iris
 
 open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
@@ -43,13 +45,18 @@ scoped instance : CMRA.Discrete Credit := CommMonoidLike.instDiscrete
 scoped instance {a : Credit} : CMRA.Cancelable a := inferInstance
 
 /-- Later credits inclusion typeclass (`GF` contains the necessary functors for later credits) -/
+@[rocq_alias lcGpreS]
 class LcGpreS (GF : BundledGFunctors) where
   lc_elem : ElemG GF (AuthURF (F := PNat) (constOF Credit))
 
 attribute [reducible, instance] LcGpreS.lc_elem
 
+@[rocq_alias lcGS]
 class LcGS (hlc : outParam HasLC) (GF : BundledGFunctors)  extends LcGpreS GF where
   lc_name : GName
+
+#rocq_ignore «lcΣ» "Superseded by the `LcGpreS` typeclass on `BundledGFunctors`."
+#rocq_ignore «subG_lcΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 end LcGS
 
@@ -57,6 +64,11 @@ section Definitions
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [LC : LcGS hlc GF]
 
+#rocq_ignore lc_def "`lc` is defined directly without `seal`/`unseal`."
+#rocq_ignore lc_aux "`lc` is defined directly without `seal`/`unseal`."
+#rocq_ignore lc_unseal "`lc` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias lc]
 def lc (i : Credit) : IProp GF :=
   match hlc with
   | .hasLC => iOwn (E := LC.lc_elem) LC.lc_name (◯ i)
@@ -64,6 +76,11 @@ def lc (i : Credit) : IProp GF :=
 
 notation:max "£ " i:40 => lc i
 
+#rocq_ignore lc_supply_def "`lc_supply` is defined directly without `seal`/`unseal`."
+#rocq_ignore lc_supply_aux "`lc_supply` is defined directly without `seal`/`unseal`."
+#rocq_ignore lc_supply_unseal "`lc_supply` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias lc_supply]
 def lc_supply (i : Credit) : IProp GF :=
   match hlc with
   | .hasLC => iOwn (E := LC.lc_elem) LC.lc_name (● i)
@@ -75,6 +92,7 @@ section Operations
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [LC : LcGS hlc GF]
 
+@[rocq_alias lc_split]
 theorem lc_split {n m} : £ (n + m) ⊣⊢@{IProp GF} £ n ∗ £ m := by
   cases hlc with
   | hasNoLC =>
@@ -176,6 +194,8 @@ instance (priority := default - 10) {n m} : FromSep (PROP := IProp GF) (£ (n + 
 instance (priority := default) {n} : FromSep (PROP := IProp GF) (£ (.succ n)) (£ 1) (£ n) where
   from_sep := lc_succ.mpr
 
+-- TODO: combine_sep_lc_add, combine_sep_lc_S_l
+
 @[rocq_alias into_sep_lc_add]
 instance (priority := default - 10) {n m} : IntoSep (PROP := IProp GF) (£ (n + m)) (£ n) (£ m) where
   into_sep := lc_split.mp
@@ -219,6 +239,10 @@ instance {P : IProp GF} : Contractive (le_upd_pre P) where
     cases n
     · exact distLater_zero
     · exact distLater_succ.mpr (distLater_succ.mp H)
+
+#rocq_ignore le_upd.le_upd_def "`le_upd` is defined directly without `seal`/`unseal`."
+#rocq_ignore le_upd.le_upd_aux "`le_upd` is defined directly without `seal`/`unseal`."
+#rocq_ignore le_upd.le_upd_unseal "`le_upd` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias le_upd.le_upd]
 def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
@@ -393,6 +417,8 @@ theorem except_0_le_upd {P : IProp GF} : ◇ (|==£> P) ⊢ |==£> P := by
   iapply (laterN_later n).mpr
   inext
   iexact HFalse
+
+#rocq_ignore le_upd.bi_bupd_mixin_le_upd "Only a safety check, not used"
 
 end Upd
 
@@ -602,9 +628,7 @@ theorem le_upd_keep (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC) (Timeless P)] :
       subst n
       ispecialize H $$ Hc
       icases laterN_0.mp $$ H with H
-      rw [← Nat.add_one]
-      rw [eq_of_eqv <| equiv_iff.mpr <| laterN_later (n := 0)]
-      rw [eq_of_eqv <| equiv_iff.mpr <| laterN_0]
+      rw [← Nat.add_one, (laterN_later (n := 0)).to_eq, (laterN_0).to_eq]
       unfold BIBase.except0
       iapply H
   icases H with ⟨-, H⟩

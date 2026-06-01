@@ -54,9 +54,9 @@ def unfold : Dom V E -n> V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom 
 
 theorem unfold_fold {x : V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E)} :
     unfold (fold x) = x :=
-  eq_of_eqv (OFunctor.Fix.unfold_fold (F := DomF (Val := V) (Err := E)) x)
+  (OFunctor.Fix.unfold_fold (F := DomF (Val := V) (Err := E)) x).to_eq
 
 theorem fold_unfold {x : Dom V E} : fold (unfold x) = x :=
-  eq_of_eqv (OFunctor.Fix.fold_unfold (F := DomF (Val := V) (Err := E)) x)
+  (OFunctor.Fix.fold_unfold (F := DomF (Val := V) (Err := E)) x).to_eq
 
 end Dom
