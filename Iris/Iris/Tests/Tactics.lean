@@ -2772,11 +2772,11 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | Nat.zero  => itrivial
   | invalidC  => done
 
-/-- Tests `iinduction` using a custom recursor name. -/
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+/-- Tests `iinduction` using a custom recursor name and expression -/
+example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {n : Nat} :
+    ⊢ P -∗ □ Q m -∗ □ R -∗ S -∗ □ T n -∗ ⌜n + m + 0 = n + m⌝ := by
   iintro HP #HQ #HR HS #HT
-  iinduction n using Nat.strongRecOn
+  iinduction n + m using Nat.strongRecOn
   itrivial
 
 end iinduction
