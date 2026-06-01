@@ -198,7 +198,8 @@ private def checkCtors (ctors altCtors : List Name) : ProofModeM Unit := do
     altCtors.filter (not <| ctors.any <| fun ctor => matchesCtorName ctor ·)
 
   -- Check for duplicate constructor names
-  let dupAltCtors := (altCtors.filter (fun alt => altCtors.countP (fun alt' => matchesCtorName alt alt') > 1)).eraseDupsBy matchesCtorName
+  let dupAltCtors := (altCtors.filter <|
+    fun alt => altCtors.countP (matchesCtorName alt ·) > 1).eraseDupsBy matchesCtorName
 
   if !missingAltCtors.isEmpty then
     let missing := ", ".intercalate  <| missingAltCtors.map (s!"`{·}`")
@@ -233,7 +234,8 @@ private def checkCtors (ctors altCtors : List Name) : ProofModeM Unit := do
 -/
 private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (fvar : FVarId)
-    (parsedAlts : Option <| Array <| Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq)
+    (parsedAlts : Option <| Array <|
+      Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq)
     (altRecName : Option Name)
     (genSelTargets : Option <| List SelTarget) :
     ProofModeM Q($e ⊢ $goal) := do
@@ -424,7 +426,8 @@ elab "iinduction" colGt x:term "using" r:ident : tactic => do
     mvar.assign pf
 
 /-- Tactic with the recursor name and alternative names supplied by the user. -/
-elab "iinduction" colGt x:term "using" r:ident "with" alts:(colGe inductionAlts)* : tactic => do
+elab "iinduction" colGt x:term "using" r:ident
+    "with" alts:(colGe inductionAlts)* : tactic => do
   let fvar ← termToFVar x
 
   -- Parse the recursor name provided by the user
@@ -447,7 +450,8 @@ elab "iinduction" colGt x:term "generalizing" genSelPats:(colGt selPat)+ : tacti
     let pf ← iInductionCore hyps goal fvar none none genSelTargets
     mvar.assign pf
 
-elab "iinduction" colGt x:term "generalizing" genSelPats:(colGt selPat)+ "with" alts:(colGe inductionAlts)* : tactic => do
+elab "iinduction" colGt x:term "generalizing" genSelPats:(colGt selPat)+
+    "with" alts:(colGe inductionAlts)* : tactic => do
   let fvar ← termToFVar x
 
   -- Parse the list of alternative names supplied by the user
@@ -461,7 +465,8 @@ elab "iinduction" colGt x:term "generalizing" genSelPats:(colGt selPat)+ "with" 
     let pf ← iInductionCore hyps goal fvar parsedAlts none genSelTargets
     mvar.assign pf
 
-elab "iinduction" colGt x:term "using" r:ident "generalizing" genSelPats:(colGt selPat)+ : tactic => do
+elab "iinduction" colGt x:term "using" r:ident
+    "generalizing" genSelPats:(colGt selPat)+ : tactic => do
   let fvar ← termToFVar x
 
   -- Parse the recursor name provided by the user
@@ -475,7 +480,8 @@ elab "iinduction" colGt x:term "using" r:ident "generalizing" genSelPats:(colGt 
     let pf ← iInductionCore hyps goal fvar none recName genSelTargets
     mvar.assign pf
 
-elab "iinduction" colGt x:term "using" r:ident "generalizing" genSelPats:(colGt selPat)+ "with" alts:(colGe inductionAlts)* : tactic => do
+elab "iinduction" colGt x:term "using" r:ident
+    "generalizing" genSelPats:(colGt selPat)+ "with" alts:(colGe inductionAlts)* : tactic => do
   let fvar ← termToFVar x
 
   -- Parse the recursor name provided by the user
