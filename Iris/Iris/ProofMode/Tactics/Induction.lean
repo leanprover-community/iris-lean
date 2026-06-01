@@ -73,7 +73,7 @@ private def iHypsContaining {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   Search for hypotheses in the regular Lean context that represent induction
   hypotheses and return their IDs as a list.
 -/
-private def findIHs (m : MVarId) : MetaM (List FVarId) :=
+private def findIHs (m : MVarId) : ProofModeM (List FVarId) :=
   m.withContext do
     let lctx ← getLCtx
     let mut ihs := []
@@ -183,17 +183,35 @@ private def throwMissingAlt {α} (ctor : Name) : ProofModeM α :=
   throwError "iinduction: alternative `{ctor.getString!}` has not been provided"
 
 /--
-  Checks whether an invalid constructor names have been supplied by the user.
-  Throw an error if this is the case.
+  Checks whether an invalid, missing and/or duplicate constructor names have
+  been supplied by the user. Throw an error if this is the case.
 -/
-private def checkCtors (ctors altCtors : List Name) : MetaM Unit := do
-  let invalidAltCtors :=
-    altCtors.filter fun alt =>
-      not <| ctors.any fun ctor => matchesCtorName ctor alt
+private def checkCtors (ctors altCtors : List Name) : ProofModeM Unit := do
+  let mut errors : List String := []
 
+  -- Check for missing constructor names
+  let missingAltCtors :=
+    ctors.filter (not <| altCtors.any <| fun altCtor => matchesCtorName · altCtor)
+
+  -- Check for invalid constructor names
+  let invalidAltCtors :=
+    altCtors.filter (not <| ctors.any <| fun ctor => matchesCtorName ctor ·)
+
+  -- Check for duplicate constructor names
+  let dupAltCtors := (altCtors.filter (fun alt => altCtors.countP (fun alt' => matchesCtorName alt alt') > 1)).eraseDupsBy matchesCtorName
+
+  if !missingAltCtors.isEmpty then
+    let missing := ", ".intercalate  <| missingAltCtors.map (s!"`{·}`")
+    errors := errors.concat s!"iinduction: missing alternative name(s): {missing}"
+  if !dupAltCtors.isEmpty then
+    let dups := ", ".intercalate  <| dupAltCtors.map (s!"`{·}`")
+    errors := errors.concat s!"iinduction: duplicate alternative name(s): {dups}"
   if !invalidAltCtors.isEmpty then
-    let invalids := String.intercalate ", " <| invalidAltCtors.map (s!"`{·}`")
-    throwError m!"iinduction: invalid alternative name(s): {invalids}"
+    let invalids := ", ".intercalate <| invalidAltCtors.map (s!"`{·}`")
+    errors := errors.concat s!"iinduction: invalid alternative name(s): {invalids}"
+
+  if !errors.isEmpty then
+    throwError m!"{"\n".intercalate errors}"
 
 /--
   The main function handling the steps for the `iinduction` tactic.
@@ -261,6 +279,11 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq →
     Bool := fun ctor ⟨altCtor, _, _⟩ => matchesCtorName ctor altCtor
 
+  -- Check that all alternative names supplied by the user are valid
+  match parsedAlts with
+  | none => pure ()
+  | some parsedAlts => checkCtors ctors <| parsedAlts.toList.map Prod.fst
+
   -- Define the names for variables and induction hypotheses if supplied by user
   let varNames : Array AltVarNames ←
     match parsedAlts with
@@ -276,11 +299,6 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
             | `(binderIdent| $id:ident) => id.getId
             | _ => Name.mkSimple "_" }
       | none => throwMissingAlt ctor
-
-  -- Check that all alternative names supplied by the user are valid
-  match parsedAlts with
-  | none => pure ()
-  | some parsedAlts => checkCtors ctors <| parsedAlts.toList.map Prod.fst
 
   let pf ← iRevertIntro hyps goal targets <|
     fun hyps' goal' k => do
