@@ -50,7 +50,7 @@ variable [Λ : EctxItemLanguage Expr EctxItem State Obs Val]
 abbrev Ectx [EctxItemLanguage Expr EctxItem State Obs Val] := List EctxItem
 
 @[grind, rocq_alias ectxi_lang_ctx_item]
-instance [Λ : EctxItemLanguage Expr EctxItem State Obs Val] : EvContext Expr Λ.Ectx where
+instance instEvContext [Λ : EctxItemLanguage Expr EctxItem State Obs Val] : EvContext Expr Λ.Ectx where
   comp x y := y ++ x
   empty := []
   fill K e := K.foldl (fun x y => fillItem y x) e
@@ -86,7 +86,7 @@ theorem fill_val {K} {e : Expr} : (toVal (fill K e)).isSome = true → (toVal e)
 -- which means `toVal e = none` is not as well supported.
 
 @[rocq_alias EctxLanguageOfEctxi]
-instance : EctxLanguage Expr Λ.Ectx State Obs Val where
+instance instEctxLanguage : EctxLanguage Expr Λ.Ectx State Obs Val where
   fill_val K e := fill_val
   step_by_val {K K' e₁ e₁' σ₁ obs e₂ σ₂ eₜ} hfill hred hstep := by
     induction K using List.reverseRec generalizing K' e₁ e₂ with
