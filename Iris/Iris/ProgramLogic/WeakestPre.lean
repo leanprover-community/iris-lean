@@ -86,7 +86,7 @@ attribute [aesop_contractive safe apply] wand_ne sep_ne BIFUpdate.ne step_fupdN_
 attribute [aesop_contractive safe forward (immediate := [h])] OFE.Dist.le
 attribute [aesop_contractive simp] Nat.le_iff_lt_or_eq
 
--- time: 445ms
+-- time: was 580ms, is 350ms now
 #time @[rocq_alias wp_pre_contractive, aesop_contractive safe apply]
 instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
   distLater_dist := by
@@ -113,7 +113,7 @@ theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
   BI.equiv_iff.1 <| fixpoint_unfold (f := (wp.pre s).toContractiveHom) E e Φ
 
--- time: 648ms
+-- time: was 780ms, is 540ms now
 #time @[rocq_alias wp_ne, aesop_contractive safe apply]
 instance wp_ne {s : Stuckness} {E} {e : Expr} :
     OFE.NonExpansive (Wp.wp (PROP := IProp GF) s E e) where
@@ -129,7 +129,7 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
 
 #rocq_ignore wp_proper "Derivable using NonExpansive.eqv"
 
--- time: 393ms
+-- time: was 480ms, is 260ms now
 #time @[rocq_alias wp_contractive]
 instance wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     OFE.Contractive (Wp.wp (PROP := IProp GF) s E e) where
