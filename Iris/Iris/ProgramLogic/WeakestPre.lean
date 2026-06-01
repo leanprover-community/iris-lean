@@ -85,6 +85,7 @@ attribute [aesop_contractive safe apply] wand_ne sep_ne BIFUpdate.ne step_fupdN_
 -- attribute [aesop_contractive safe apply] OFE.NonExpansive.ne OFE.NonExpansive₂.ne
 attribute [aesop_contractive safe forward (immediate := [h])] OFE.Dist.le
 attribute [aesop_contractive simp] Nat.le_iff_lt_or_eq
+attribute [aesop_contractive simp] OFE.Dist.rfl
 
 -- time: was 580ms, is 350ms now
 #time @[rocq_alias wp_pre_contractive, aesop_contractive safe apply]
