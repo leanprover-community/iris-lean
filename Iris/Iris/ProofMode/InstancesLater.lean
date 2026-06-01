@@ -118,20 +118,20 @@ instance fromSep_except0 [BI PROP] (P Q1 Q2 : PROP)
 @[rocq_alias into_and_later]
 instance intoAnd_later [BI PROP] (p : Bool) (P Q1 Q2 : PROP)
     [h : IntoAnd p P Q1 Q2] : IntoAnd p iprop(▷ P) iprop(▷ Q1) iprop(▷ Q2) where
-  into_and := intuitionisticallyIf_intro' <|
+  into_and := intuitionisticallyIf_intro_intuitionisticallyIf <|
     later_intuitionisticallyIf_2.trans <| (later_mono <| h.1.trans intuitionisticallyIf_elim).trans later_and.1
 
 @[rocq_alias into_and_laterN]
 instance intoAnd_laterN [BI PROP] (n : Nat) (p : Bool) (P Q1 Q2 : PROP)
     [h : IntoAnd p P Q1 Q2] : IntoAnd p iprop(▷^[n] P) iprop(▷^[n] Q1) iprop(▷^[n] Q2) where
-  into_and := intuitionisticallyIf_intro' <|
+  into_and := intuitionisticallyIf_intro_intuitionisticallyIf <|
     (laterN_intuitionisticallyIf_2 n).trans <|
     (laterN_mono n <| h.1.trans intuitionisticallyIf_elim).trans (laterN_and n).1
 
 @[rocq_alias into_and_except_0]
 instance intoAnd_except0 [BI PROP] (p : Bool) (P Q1 Q2 : PROP)
     [h : IntoAnd p P Q1 Q2] : IntoAnd p iprop(◇ P) iprop(◇ Q1) iprop(◇ Q2) where
-  into_and := intuitionisticallyIf_intro' <|
+  into_and := intuitionisticallyIf_intro_intuitionisticallyIf <|
     except0_intuitionisticallyIf_2.trans <|
     (except0_mono <| h.1.trans intuitionisticallyIf_elim).trans except0_and.1
 
@@ -316,7 +316,7 @@ instance intoExcept0_persistently [BI PROP] (P Q : PROP)
 @[ipm_backtrack, rocq_alias elim_modal_timeless]
 instance (priority := default - 10) elimModal_timeless [BI PROP] p (P P' Q : PROP) [IntoExcept0 P P'] [IsExcept0 Q] :
   ElimModal True p p P P' Q Q where
-  elim_modal _ := ((sep_mono ((intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf_2) except0_intro).trans $ except0_sep.2.trans (except0_mono wand_elim_r)).trans is_except0
+  elim_modal _ := ((sep_mono ((intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf_2) except0_intro).trans $ except0_sep.2.trans (except0_mono wand_elim_right)).trans is_except0
 
 /-- IntoLaterN -/
 @[rocq_alias maybe_into_laterN_default]

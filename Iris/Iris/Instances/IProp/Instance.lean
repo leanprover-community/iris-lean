@@ -509,10 +509,10 @@ theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} :
 
 @[rocq_alias own_valid_r]
 theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ internalCmraValid a :=
-  BI.persistent_entails_l iOwn_cmraValid
+  BI.persistent_entails_left iOwn_cmraValid
 @[rocq_alias own_valid_l]
 theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a ∗ iOwn γ a :=
-  BI.persistent_entails_r iOwn_cmraValid
+  BI.persistent_entails_right iOwn_cmraValid
 
 @[rocq_alias own_core_persistent]
 instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : BI.Persistent (iOwn γ a) where
@@ -591,9 +591,9 @@ theorem iOwn_alloc_dep (f : GName → F.ap (IProp GF)) (Ha : ∀ γ, ✓ (f γ))
     refine .trans intuitionistically_elim ?_
     apply UPred.bupd_ownM_updateP
     apply alloc_update_unit Ha
-  · refine BI.exists_elim (fun m => BI.pure_elim_l (fun ⟨γ, Hm⟩ => ?_))
+  · refine BI.exists_elim (fun m => BI.pure_elim_left (fun ⟨γ, Hm⟩ => ?_))
     subst Hm
-    exact BI.exists_intro' γ .rfl
+    exact BI.exists_intro_trans γ .rfl
 
 @[rocq_alias own_alloc]
 theorem iOwn_alloc (a : F.ap (IProp GF)) : ✓ a → ⊢ |==> ∃ γ, iOwn γ a :=
@@ -617,9 +617,9 @@ theorem iOwn_alloc_strong_dep (f : GName → F.ap (IProp GF)) (P : GName → Pro
     obtain ⟨γ, Hfresh, HPγ⟩ := (mf (ElemG.τ GF F)).exists_fresh_sat HP
     refine ⟨iSingleton F γ (f γ), ⟨γ, HPγ, rfl⟩, ?_⟩
     apply validN_iSingleton_op Hvalid (Hf γ HPγ).validN Hfresh
-  · refine BI.exists_elim (fun m => BI.pure_elim_l (fun ⟨γ, HPγ, Hm⟩ => ?_))
+  · refine BI.exists_elim (fun m => BI.pure_elim_left (fun ⟨γ, HPγ, Hm⟩ => ?_))
     subst Hm
-    exact BI.exists_intro' γ (BI.persistent_entails_r (BI.pure_intro HPγ))
+    exact BI.exists_intro_trans γ (BI.persistent_entails_right (BI.pure_intro HPγ))
 
 
 private theorem list_not_mem_of_gt_max (G : List Nat) (k : Nat) (hk : G.foldr max 0 < k) :
@@ -704,23 +704,23 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.
   refine .trans (Q := iprop(|==> ∃ m, ⌜ ∃ a', m = (iSingleton F γ a') ∧ P a' ⌝ ∧ UPred.ownM m)) ?_ ?_
   · apply UPred.bupd_ownM_updateP
     apply singleton_updateP Hupd
-  · refine BIUpdate.mono (BI.exists_elim (fun m => BI.pure_elim_l (fun ⟨a', Hm, HP⟩ => ?_)))
+  · refine BIUpdate.mono (BI.exists_elim (fun m => BI.pure_elim_left (fun ⟨a', Hm, HP⟩ => ?_)))
     subst Hm
-    exact BI.exists_intro' a' (BI.persistent_entails_r (BI.pure_intro HP))
+    exact BI.exists_intro_trans a' (BI.persistent_entails_right (BI.pure_intro HP))
 
 @[rocq_alias own_update]
 theorem iOwn_update {γ} {a a' : F.ap (IProp GF)} (Hupd : a ~~> a') : iOwn γ a ⊢ |==> iOwn γ a' := by
   apply (iOwn_updateP <| UpdateP.of_update Hupd).trans
   apply BIUpdate.mono
   refine BI.exists_elim (fun m => ?_)
-  apply BI.pure_elim (a' = m) BI.sep_elim_l
+  apply BI.pure_elim (a' = m) BI.sep_elim_left
   rintro rfl
-  exact BI.sep_elim_r
+  exact BI.sep_elim_right
 
 @[rocq_alias own_valid_3]
 theorem iOwn_cmraValid_op_op {a1 a2 a3 : F.ap (IProp GF)} :
     iOwn γ a1 ∗ iOwn γ a2 ∗ iOwn γ a3 ⊢ UPred.cmraValid ((a1 • a2) • a3) :=
-  BI.sep_assoc.symm.1.trans ((BI.sep_mono_l iOwn_op.mpr).trans iOwn_cmraValid_op)
+  BI.sep_assoc.symm.1.trans ((BI.sep_mono_left iOwn_op.mpr).trans iOwn_cmraValid_op)
 
 @[rocq_alias own_update_2]
 theorem iOwn_update_op {γ} {a1 a2 a' : F.ap (IProp GF)} (Hupd : a1 • a2 ~~> a') :
@@ -730,7 +730,7 @@ theorem iOwn_update_op {γ} {a1 a2 a' : F.ap (IProp GF)} (Hupd : a1 • a2 ~~> a
 @[rocq_alias own_update_3]
 theorem iOwn_update_op_op {γ} {a1 a2 a3 a' : F.ap (IProp GF)} (Hupd : (a1 • a2) • a3 ~~> a') :
     iOwn γ a1 ∗ iOwn γ a2 ∗ iOwn γ a3 ⊢ |==> iOwn γ a' :=
-  BI.sep_assoc.symm.1.trans ((BI.sep_mono_l iOwn_op.mpr).trans (iOwn_update_op Hupd))
+  BI.sep_assoc.symm.1.trans ((BI.sep_mono_left iOwn_op.mpr).trans (iOwn_update_op Hupd))
 
 @[rocq_alias own_unit]
 theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn γ ε := by

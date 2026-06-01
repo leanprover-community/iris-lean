@@ -35,7 +35,7 @@ instance intoWand_bupd (p q : Bool) ioP ioQ (R P Q : PROP)
     IntoWand p q iprop(|==> R) ioP iprop(|==> P) ioQ iprop(|==> Q) where
   into_wand := intuitionisticallyIf_elim.trans <|
     wand_intro <| (sep_mono (BIUpdate.mono h.1) intuitionisticallyIf_elim).trans <|
-    bupd_sep.trans <| BIUpdate.mono wand_elim_l
+    bupd_sep.trans <| BIUpdate.mono wand_elim_left
 
 #rocq_ignore into_wand_bupd_args "IntoWand' is not used in Lean"
 
@@ -45,7 +45,7 @@ instance intoWand_bupd_persistent (p q : Bool) ioP ioQ (R P Q : PROP)
     IntoWand p q iprop(|==> R) ioP P ioQ iprop(|==> Q) where
   into_wand := intuitionisticallyIf_elim.trans <|
     wand_intro <| (sep_mono (BIUpdate.mono h.1) .rfl).trans <|
-    bupd_frame_r.trans <| BIUpdate.mono wand_elim_l
+    bupd_frame_r.trans <| BIUpdate.mono wand_elim_left
 
 @[rocq_alias from_sep_bupd]
 instance fromSep_bupd (P Q1 Q2 : PROP)
@@ -85,8 +85,8 @@ instance fromModal_bupd (P : PROP) :
 @[rocq_alias elim_modal_bupd]
 instance elimModal_bupd p (P Q : PROP) :
     ElimModal True p false iprop(|==> P) P iprop(|==> Q) iprop(|==> Q) where
-  elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans <|
-    bupd_frame_r.trans <| (BIUpdate.mono wand_elim_r).trans BIUpdate.trans
+  elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans <|
+    bupd_frame_r.trans <| (BIUpdate.mono wand_elim_right).trans BIUpdate.trans
 
 end BIBasicUpdate
 
@@ -97,13 +97,13 @@ variable {PROP} [Sbi PROP] [BIUpdate PROP] [BIBUpdatePlainly PROP]
 @[ipm_backtrack, rocq_alias elim_modal_bupd_plain_goal]
 instance elimModal_bupd_plain_goal p (P Q : PROP) [Plain Q] :
     ElimModal True p false iprop(|==> P) P Q Q where
-  elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans <|
-    bupd_frame_r.trans <| (BIUpdate.mono wand_elim_r).trans bupd_elim
+  elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans <|
+    bupd_frame_r.trans <| (BIUpdate.mono wand_elim_right).trans bupd_elim
 
 @[ipm_backtrack, rocq_alias elim_modal_bupd_plain]
 instance elimModal_bupd_plain p (P Q : PROP) [Plain P] :
     ElimModal True p p iprop(|==> P) P Q Q where
-  elim_modal _ := (sep_mono_l (intuitionisticallyIf_mono bupd_elim)).trans wand_elim_r
+  elim_modal _ := (sep_mono_left (intuitionisticallyIf_mono bupd_elim)).trans wand_elim_right
 
 end SBIBasicUpdate
 
@@ -127,7 +127,7 @@ instance intoWand_fupd E (p q : Bool) ioP ioQ (R P Q : PROP)
     IntoWand p q iprop(|={E}=> R) ioP iprop(|={E}=> P) ioQ iprop(|={E}=> Q) where
   into_wand := intuitionisticallyIf_elim.trans <|
     wand_intro <| (sep_mono (BIFUpdate.mono h.into_wand) intuitionisticallyIf_elim).trans <|
-    fupd_sep.trans <| BIFUpdate.mono wand_elim_l
+    fupd_sep.trans <| BIFUpdate.mono wand_elim_left
 
 @[rocq_alias into_wand_fupd_persistent]
 instance intoWand_fupd_persistent E1 E2 (p q : Bool) ioP ioQ (R P Q : PROP)
@@ -135,7 +135,7 @@ instance intoWand_fupd_persistent E1 E2 (p q : Bool) ioP ioQ (R P Q : PROP)
     IntoWand p q iprop(|={E1,E2}=> R) ioP P ioQ iprop(|={E1,E2}=> Q) where
   into_wand := intuitionisticallyIf_elim.trans <|
     wand_intro <| (sep_mono (BIFUpdate.mono h.into_wand) .rfl).trans <|
-    fupd_frame_r.trans <| BIFUpdate.mono wand_elim_l
+    fupd_frame_r.trans <| BIFUpdate.mono wand_elim_left
 
 #rocq_ignore into_wand_fupd_args "IntoWand' is not used in Lean"
 
@@ -183,15 +183,15 @@ instance (priority := low) fromModal_fupd_wrongMask E1 E2 (P : PROP) :
 @[rocq_alias elim_modal_bupd_fupd]
 instance elimModal_bupd_fupd p E1 E2 (P Q : PROP) :
     ElimModal True p false iprop(|==> P) P iprop(|={E1,E2}=> Q) iprop(|={E1,E2}=> Q) where
-  elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans <|
-    (sep_mono_l BIUpdateFUpdate.fupd_of_bupd).trans <|
-    fupd_frame_r.trans <| (BIFUpdate.mono wand_elim_r).trans BIFUpdate.trans
+  elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans <|
+    (sep_mono_left BIUpdateFUpdate.fupd_of_bupd).trans <|
+    fupd_frame_r.trans <| (BIFUpdate.mono wand_elim_right).trans BIFUpdate.trans
 
 @[rocq_alias elim_modal_fupd_fupd]
 instance (priority := high) elimModal_fupd_fupd p E1 E2 E3 (P Q : PROP) :
     ElimModal True p false iprop(|={E1,E2}=> P) P iprop(|={E1,E3}=> Q) iprop(|={E2,E3}=> Q) where
-  elim_modal _ := (sep_mono_l intuitionisticallyIf_elim).trans <|
-    fupd_frame_r.trans <| (BIFUpdate.mono wand_elim_r).trans BIFUpdate.trans
+  elim_modal _ := (sep_mono_left intuitionisticallyIf_elim).trans <|
+    fupd_frame_r.trans <| (BIFUpdate.mono wand_elim_right).trans BIFUpdate.trans
 
 @[rocq_alias elim_modal_fupd_fupd_wrong_mask]
 instance (priority := low) elimModal_fupd_fupd_wrongMask p E0 E1 E2 E3 (P Q : PROP) :

@@ -33,7 +33,7 @@ def internalCmraValid (a : A) : PROP := siPure (cmraValid a)
 instance internalCmraValid_ne : NonExpansive (internalCmraValid (PROP := PROP) (A := A)) where
   ne _ _ _ h := siPure_ne.ne (instNonExpansiveCmraValid.ne h)
 
-#rocq_ignore internal_cmra_valid_proper "Derivable from internal_cmra_valid_ne with NonExpansive.eqv"
+#rocq_ignore internal_cmra_valid_proper "Derivable from internalCmraValid_ne with NonExpansive.eqv"
 
 @[rocq_alias internal_cmra_valid_intro]
 theorem internalCmraValid_intro {P : PROP} {a : A} (h : Valid a) :
@@ -120,7 +120,7 @@ instance internalCmraIncluded_ne :
     refine siPure_ne.ne ?_
     apply (exists_ne (fun a => NonExpansive₂.ne hy (op_commN.trans ((op_ne.ne hx).trans op_commN))))
 
-#rocq_ignore internal_included_proper "Derivable from internal_included_nonexpansive with NonExpansive.eqv"
+#rocq_ignore internal_included_proper "Derivable from internalCmraIncluded_ne with NonExpansive.eqv"
 
 @[rocq_alias internal_included_intro]
 theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ b) :
@@ -129,7 +129,7 @@ theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ b) :
   calc (P : PROP)
     _ ⊢ True := true_intro
     _ ⊢ <si_pure> True := siPure_pure.mpr
-    _ ⊢ internalCmraIncluded a b := siPure_mono (BI.exists_intro' c (internalEq.of_equiv hc))
+    _ ⊢ internalCmraIncluded a b := siPure_mono (BI.exists_intro_trans c (internalEq.of_equiv hc))
 
 @[rocq_alias si_pure_internal_included]
 theorem siPure_internalCmraIncluded {a b : A} :
@@ -172,14 +172,14 @@ theorem internalCmraIncluded_trans {a b c : A} :
     ⊢@{PROP} internalCmraIncluded a b -∗ internalCmraIncluded b c -∗ internalCmraIncluded a c := by
   refine BI.entails_wand (siPure_exist.mp.trans ?_)
   refine BI.exists_elim (fun a' => ?_)
-  refine BI.wand_intro ((BI.sep_mono_r siPure_exist.mp).trans (BI.sep_exists_l.mp.trans ?_))
+  refine BI.wand_intro ((BI.sep_mono_right siPure_exist.mp).trans (BI.sep_exists_left.mp.trans ?_))
   refine BI.exists_elim (fun b' => ?_)
   refine siPure_and_sep.mpr.trans (siPure_mono ?_)
-  refine BI.exists_intro' (a' • b') ?_
+  refine BI.exists_intro_trans (a' • b') ?_
   refine Entails.trans ?_ (internalEq.trans (b := (a • a') • b'))
   refine and_intro ?_ (internalEq.of_equiv assoc.symm)
   refine Entails.trans ?_ (internalEq.trans (b := (b • b')))
-  exact and_intro and_elim_r (and_elim_l' (BI.internalEq_entails.mpr (fun n heq => op_left_dist _ heq)))
+  exact and_intro and_elim_r (and_elim_left_trans (BI.internalEq_entails.mpr (fun n heq => op_left_dist _ heq)))
 
 @[rocq_alias internal_included_timeless]
 instance internalCmraIncluded_timeless {a b : A} [CMRA.Discrete A] :

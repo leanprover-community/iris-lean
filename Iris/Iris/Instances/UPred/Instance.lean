@@ -618,7 +618,7 @@ theorem ownM_unit' : ownM unit ⊣⊢@{UPred M} True :=
 @[rocq_alias uPred.bupd_ownM_update]
 theorem bupd_ownM_update {x y : M} (hupd : x ~~> y) : ownM x ⊢ |==> ownM y := by
   refine (bupd_ownM_updateP x (y = ·) (UpdateP.of_update hupd)).trans ?_
-  exact BIUpdate.mono (exists_elim fun z => pure_elim_l fun hyz => hyz ▸ .rfl)
+  exact BIUpdate.mono (exists_elim fun z => pure_elim_left fun hyz => hyz ▸ .rfl)
 
 @[rocq_alias uPred.ownM_timeless]
 instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where

@@ -514,7 +514,7 @@ theorem wp_step_fupdN {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp
     WP e @ s; E₁ {{ Φ }} := by
   iintro H
   iapply wp_step_fupdN_strong (s := s) (P := P) (n := n) toVal_e E₂E₁ $$ [H]
-  iapply BI.and_mono_r $$ H
+  iapply BI.and_mono_right $$ H
   iintro ⟨HP, $⟩
   imod fupd_mask_subseteq_emptyset_difference (show E₁\ E₂ ⊆ E₁ from LawfulSet.diff_subset_left) with G
   imod HP
@@ -588,7 +588,7 @@ theorem wp_wand {s : Stuckness} {E : CoPset} {e : Expr} {Φ Ψ : Val → IProp G
 @[rocq_alias wp_wand_l]
 theorem wp_wand_l {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} :
     (∀ v, Φ v -∗ Ψ v) ∗ WP e @ s ; E {{ Φ }} ⊢ WP e @ s ; E {{ Ψ }} :=
-  BI.wand_elim' wp_wand
+  BI.wand_elim_swap wp_wand
 
 @[rocq_alias wp_wand_r]
 theorem wp_wand_r {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} :

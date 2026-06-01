@@ -96,13 +96,13 @@ private theorem bigOrL_exist_fwd {Φ : Nat → A → PROP} {l : List A} :
   match l with
   | [] => false_elim
   | _ :: _ => or_elim
-    (exists_intro' 0 <| exists_intro' _ <| and_intro (pure_intro rfl) .rfl)
-    (bigOrL_exist_fwd.trans <| exists_elim fun k => exists_intro' (k + 1) .rfl)
+    (exists_intro_trans 0 <| exists_intro_trans _ <| and_intro (pure_intro rfl) .rfl)
+    (bigOrL_exist_fwd.trans <| exists_elim fun k => exists_intro_trans (k + 1) .rfl)
 
 @[rocq_alias big_orL_exist]
 theorem bigOrL_exist {Φ : Nat → A → PROP} {l : List A} :
     ([∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ ∃ k x, ⌜l[k]? = some x⌝ ∧ Φ k x :=
-  ⟨bigOrL_exist_fwd, exists_elim fun _ => exists_elim fun _ => pure_elim_l (bigOrL_intro ·)⟩
+  ⟨bigOrL_exist_fwd, exists_elim fun _ => exists_elim fun _ => pure_elim_left (bigOrL_intro ·)⟩
 
 @[rocq_alias big_orL_pure]
 theorem bigOrL_pure {φ : Nat → A → Prop} {l : List A} :
@@ -114,11 +114,11 @@ theorem bigOrL_pure {φ : Nat → A → Prop} {l : List A} :
 @[rocq_alias big_orL_sep_l]
 theorem bigOrL_sep_left {P : PROP} {Φ : Nat → A → PROP} {l : List A} :
     P ∗ ([∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, (P ∗ Φ k x) := by
-  refine (sep_congr .rfl bigOrL_exist).trans <| sep_exists_l.trans ?_
-  refine (exists_congr fun _ => sep_exists_l.trans <| exists_congr fun _ => ?_).trans bigOrL_exist.symm
-  refine (sep_congr .rfl persistent_and_affinely_sep_l).trans ?_
+  refine (sep_congr .rfl bigOrL_exist).trans <| sep_exists_left.trans ?_
+  refine (exists_congr fun _ => sep_exists_left.trans <| exists_congr fun _ => ?_).trans bigOrL_exist.symm
+  refine (sep_congr .rfl persistent_and_affinely_sep_left).trans ?_
   refine sep_assoc.symm.trans <| (sep_congr sep_comm .rfl).trans ?_
-  exact sep_assoc.trans persistent_and_affinely_sep_l.symm
+  exact sep_assoc.trans persistent_and_affinely_sep_left.symm
 
 @[rocq_alias big_orL_sep_r]
 theorem bigOrL_sep_right {Φ : Nat → A → PROP} {P : PROP} {l : List A} :

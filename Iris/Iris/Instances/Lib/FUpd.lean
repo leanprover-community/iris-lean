@@ -86,7 +86,7 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (I
   mono H := by
     simp only [uPred_fupd]
     iintro Hupd HwE
-    iapply le_upd_mono (sep_mono_r (sep_mono_r H))
+    iapply le_upd_mono (sep_mono_right (sep_mono_right H))
     iapply Hupd $$ HwE
   trans {_ _ _ _} := by
     simp only [uPred_fupd]
@@ -417,15 +417,15 @@ theorem step_fupdN_fupd_finally (E1 E2 : CoPset) (n : Nat) (P : IProp GF) :
 @[rocq_alias fupd_finally_and]
 theorem fupd_finally_and (E : CoPset) (P Q : IProp GF) :
     (|={E|}=> P) ∧ (|={E|}=> Q) ⊢ |={E|}=> P ∧ Q :=
-  and_forall_bool.mp.trans <|
+  and_forall_ite.mp.trans <|
     (forall_mono fun b => by cases b <;> exact .rfl).trans <|
-    (fupd_finally_forall E _).trans <| fupd_finally_mono and_forall_bool.mpr
+    (fupd_finally_forall E _).trans <| fupd_finally_mono and_forall_ite.mpr
 
 @[rocq_alias fupd_finally_wand]
 theorem fupd_finally_wand (E : CoPset) (P Q : IProp GF) :
     (|={E|}=> P) -∗ ■ (P -∗ Q) -∗ (|={E|}=> Q) := by
   iintro Hupd #Hpq
-  iapply fupd_finally_mono ((sep_mono_r plainly_elim).trans wand_elim_r)
+  iapply fupd_finally_mono ((sep_mono_right plainly_elim).trans wand_elim_right)
   iapply fupd_finally_mono plainly_and_sep_r.1
   iapply fupd_finally_mono and_comm.1
   iapply fupd_finally_and
