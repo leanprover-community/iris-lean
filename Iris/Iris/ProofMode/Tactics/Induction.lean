@@ -197,35 +197,49 @@ private def checkCtors (ctors altCtors : List Name) : MetaM Unit := do
 
 /--
   The main function handling the steps for the `iinduction` tactic.
-  1. Revert intutionistic hypotheses that include `fvar` on which induction is performed.
-  2. Revert all spatial hypotheses in the Iris proof state.
-  3. Prepare the arguments for `Lean.Meta.Tactic.induction`.
-  4. Apply `Lean.Meta.Tactic.induction` to obtain the induction subgoals.
-  5. For each subgoal, move the induction hypotheses from the regular Lean
-     context into the Iris intuitionistic context.
-  6. Introduce reverted hypotheses back into the Iris proof state.
 
-  Step 1, 2 and 6 are handled by `iRevertIntro`, which is called by this function.
+  1. Revert Iris hypotheses explicitly specified by the tactic user
+     (applicable when the `generalizing` syntax is used).
+  2. Revert all spatial hypotheses in the Iris proof state as well as the
+     relevant hypotheses in the intuitionistic context.
+  3. Revert pure Lean variables specified by the tactic user
+     (applicable when the `generalizing` syntax is used).
+  4. Prepare the arguments for `Lean.Meta.Tactic.induction`.
+  5. Apply `Lean.Meta.Tactic.induction` to obtain the induction subgoals.
+  6. For each subgoal, move the induction hypotheses from the regular Lean
+     context into the Iris intuitionistic context.
+  7. Introduce hypotheses reverted in steps 1 and 2 back into the Iris proof state.
+
+  The relevant intuitionistic hypotheses to which Step 2 refers are those
+  involving `fvar` or pure Lean variables in `genSelTargets`.
 -/
 private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (fvar : FVarId)
     (parsedAlts : Option <| Array <| Name × Array (TSyntax `ident) × TSyntax `Lean.Parser.Tactic.tacticSeq)
     (altRecName : Option Name)
-    (genFVars : Option <| List FVarId) :
+    (genSelTargets : Option <| List SelTarget) :
     ProofModeM Q($e ⊢ $goal) := do
-  -- Find all hypotheses that contain the variable being performed induction on
-  let targets :=
-    match genFVars with
-    | none => iHypsContaining hyps [fvar]
-    | some genFVars => iHypsContaining hyps <| [fvar] ++ genFVars
-
-  -- User-supplied list of targets for reverting
-  let genTargets : List SelTarget :=
-    match genFVars with
-    | some genFVars => genFVars.map ({ kind := .pure ·, explicit := true })
+  -- Iris hypotheses to be reverted as specified by the user using the `generalizing` syntax
+  let explicitIrisTargets : List SelTarget :=
+    match genSelTargets with
     | none => []
+    | some genSelTargets => genSelTargets.filter <| fun t => match t.kind with | .ipm _ => true | _ => false
 
-  let targets := genTargets ++ targets
+  -- `FVarID` values of pure hypothesis specified by the user using the `generalizing` syntax
+  let pureFVars : List FVarId :=
+    match genSelTargets with
+    | none => []
+    | some genSelTargets =>
+      genSelTargets.filterMap <| fun t => match t.kind with | .pure f => some f | _ => none
+
+  -- Iris hypotheses in the spatial context and relevant intuitionistic context
+  let spatialAndIntuitionisticTargets := iHypsContaining hyps <| pureFVars.concat fvar
+
+  -- Pure hypotheses to be reverted as specified by the user using the `generalizing` syntax
+  let pureTargets : List SelTarget := pureFVars.map ({ kind := .pure ·, explicit := true })
+
+  -- Those in `explicitIrisTargets` get reverted first, so they are last in the list
+  let targets := pureTargets ++ spatialAndIntuitionisticTargets ++ explicitIrisTargets
 
   -- Find the recursor name and constructor names of the inductive datatype
   let fvarType ← whnf <| ← inferType <| mkFVar fvar
@@ -378,50 +392,57 @@ elab "iinduction" colGt x:ident "using" r:ident "with" alts:(colGe inductionAlts
     let pf ← iInductionCore hyps goal fvar parsedAlts recName none
     mvar.assign pf
 
-elab "iinduction" colGt x:ident "generalizing" genIds:ident+ : tactic => do
+elab "iinduction" colGt x:ident "generalizing" genSelPats:(colGt selPat)+ : tactic => do
   let fvar ← getFVarId x
-
-  -- Parse the user-supplied list of variables to be generalised
-  let genFVars ← genIds.toList.mapM <| fun id => getFVarId id.raw
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let pf ← iInductionCore hyps goal fvar none none genFVars
+    -- Parse the user-supplied list of variables to be generalised
+    let genSelPats ← liftMacroM <| SelPat.parse genSelPats
+    let genSelTargets ← SelPat.resolve hyps genSelPats
+
+    let pf ← iInductionCore hyps goal fvar none none genSelTargets
     mvar.assign pf
 
-elab "iinduction" colGt x:ident "generalizing" genIds:ident+ "with" alts:(colGe inductionAlts)* : tactic => do
+elab "iinduction" colGt x:ident "generalizing" genSelPats:(colGt selPat)+ "with" alts:(colGe inductionAlts)* : tactic => do
   let fvar ← getFVarId x
 
-  -- Parse the user-supplied list of variables to be generalised
-  let genFVars ← genIds.toList.mapM <| fun id => getFVarId id.raw
   -- Parse the list of alternative names supplied by the user
   let parsedAlts ← alts.mapM parseInductionAlts
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let pf ← iInductionCore hyps goal fvar parsedAlts none genFVars
+    -- Parse the user-supplied list of variables to be generalised
+    let genSelPats ← liftMacroM <| SelPat.parse genSelPats
+    let genSelTargets ← SelPat.resolve hyps genSelPats
+
+    let pf ← iInductionCore hyps goal fvar parsedAlts none genSelTargets
     mvar.assign pf
 
-elab "iinduction" colGt x:ident "using" r:ident "generalizing" genIds:ident+ : tactic => do
+elab "iinduction" colGt x:ident "using" r:ident "generalizing" genSelPats:(colGt selPat)+ : tactic => do
   let fvar ← getFVarId x
 
   -- Parse the recursor name provided by the user
   let recName := r.getId
-  -- Parse the user-supplied list of variables to be generalised
-  let genFVars ← genIds.toList.mapM <| fun id => getFVarId id.raw
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let pf ← iInductionCore hyps goal fvar none recName genFVars
+    -- Parse the user-supplied list of variables to be generalised
+    let genSelPats ← liftMacroM <| SelPat.parse genSelPats
+    let genSelTargets ← SelPat.resolve hyps genSelPats
+
+    let pf ← iInductionCore hyps goal fvar none recName genSelTargets
     mvar.assign pf
 
-elab "iinduction" colGt x:ident "using" r:ident "generalizing" genIds:ident+ "with" alts:(colGe inductionAlts)* : tactic => do
+elab "iinduction" colGt x:ident "using" r:ident "generalizing" genSelPats:(colGt selPat)+ "with" alts:(colGe inductionAlts)* : tactic => do
   let fvar ← getFVarId x
 
   -- Parse the recursor name provided by the user
   let recName := r.getId
-  -- Parse the user-supplied list of variables to be generalised
-  let genFVars ← genIds.toList.mapM <| fun id => getFVarId id.raw
   -- Parse the list of alternative names supplied by the user
   let parsedAlts ← alts.mapM parseInductionAlts
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let pf ← iInductionCore hyps goal fvar parsedAlts recName genFVars
+    -- Parse the user-supplied list of variables to be generalised
+    let genSelPats ← liftMacroM <| SelPat.parse genSelPats
+    let genSelTargets ← SelPat.resolve hyps genSelPats
+
+    let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
     mvar.assign pf
