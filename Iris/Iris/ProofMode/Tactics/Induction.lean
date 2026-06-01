@@ -253,6 +253,9 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   -- Iris hypotheses in the spatial context and relevant intuitionistic context
   let spatialAndIntuitionisticTargets := iHypsContaining hyps <| pureFVars.concat fvar
 
+  let spatialAndIntuitionisticTargets :=
+    spatialAndIntuitionisticTargets.filter (not <| (explicitIrisTargets.map (·.kind)).contains ·.kind)
+
   -- Pure hypotheses to be reverted as specified by the user using the `generalizing` syntax
   let pureTargets : List SelTarget := pureFVars.map ({ kind := .pure ·, explicit := true })
 
