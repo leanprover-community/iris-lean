@@ -331,9 +331,7 @@ elab "iinduction" colGt x:ident : tactic => do
     let pf ← iInductionCore hyps goal fvar none none
     mvar.assign pf
 
-/--
-  Tactic with names of variables and induction hypotheses supplied by the user.
--/
+/-- Tactic with names of variables and induction hypotheses supplied by the user. -/
 elab "iinduction" colGt x:ident "with" alts:(colGe inductionAlts)* : tactic => do
   let fvar ← getFVarId x
 
@@ -344,15 +342,16 @@ elab "iinduction" colGt x:ident "with" alts:(colGe inductionAlts)* : tactic => d
     let pf ← iInductionCore hyps goal fvar (some parsedAlts) none
     mvar.assign pf
 
-/--
-  Tactic with the recursor name supplied by the user.
--/
-elab "iinduction" colGt x:ident "using" r:ident : tactic => do
+/-- Tactic with the recursor name and alternative names supplied by the user. -/
+elab "iinduction" colGt x:ident "using" r:ident "with" alts:(colGe inductionAlts)* : tactic => do
   let fvar ← getFVarId x
 
   -- Parse the recursor name provided by the user
   let recName := r.getId
 
+  -- Parse the list of alternative names supplied by the user
+  let parsedAlts ← alts.mapM parseInductionAlts
+
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let pf ← iInductionCore hyps goal fvar none recName
+    let pf ← iInductionCore hyps goal fvar (some parsedAlts) recName
     mvar.assign pf

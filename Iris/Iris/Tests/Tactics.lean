@@ -2782,4 +2782,12 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   iinduction n using Nat.strongRecOn  -- TODO: IH with regular hypothesis
   itrivial
 
+/-- Tests `iinduction` using a custom recursor name. -/
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  induction n using Nat.rec with
+  | zero     => sorry
+  | succ _ _ => sorry
+
 end iinduction
