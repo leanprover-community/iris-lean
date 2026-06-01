@@ -2725,7 +2725,8 @@ section iinduction
   the tactic is equivalent to `iinduction n using Nat.recAux generalizing %P HQ %R`.
 
   Hypotheses in the spatial context necessarily become premises of the
-  induction hypothesis.
+  induction hypothesis. The intuitionistic hypothesis `T n` is reverted
+  because it depends on `n`.
 
   With the `generalizing` syntax, `P` and `R` are universally quantified
   in the induction hypothesis. Given they occur in `HP` and `HR`, respectively,
@@ -2740,8 +2741,8 @@ section iinduction
   - `induction n generalizing %P HP HQ %R HR`
   - the tactics above with any permutations of `generalizing` arguments.
 -/
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+example [BI PROP] {P Q R S : PROP} {T : Nat → PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T n -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
   iinduction n generalizing %P HQ %R with
   -- Using the full name of the constructor (`Nat.zero`)
@@ -2775,7 +2776,7 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
-  iinduction n using Nat.strongRecOn  -- TODO: IH with regular hypothesis
+  iinduction n using Nat.strongRecOn
   itrivial
 
 end iinduction
