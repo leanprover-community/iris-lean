@@ -65,14 +65,14 @@ def IPre : Type _ := OFunctor.Fix (UPredOF (IResF GF))
 instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix _))
 
 @[rocq_alias iProp_solution.iResUR]
-def IResUR : Type := (i : GType) → GenMap (GF i |>.fst (IPre GF) (IPre GF))
+def IResUR.{u} : Type u := (i : GType) → GenMap (GF i |>.fst (IPre GF) (IPre GF))
 
 #rocq_ignore iResUR "Sealed copy of `iProp_solution.iResUR`; not needed since Lean does not seal it."
 
 instance : UCMRA (IResUR GF) :=
   ucmraDiscreteFunO (β := fun (i : GType) => GenMap (GF i |>.fst (IPre GF) (IPre GF)))
 
-abbrev IProp := UPred (IResUR GF)
+abbrev IProp.{u} : Type u := UPred (IResUR GF)
 
 @[rocq_alias iProp_solution.iProp_unfold]
 def IProp.unfold : IProp GF -n> IPre GF :=
