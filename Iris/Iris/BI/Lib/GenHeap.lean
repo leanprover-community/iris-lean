@@ -8,6 +8,16 @@ public import Iris.Instances.IProp
 
 namespace Iris
 
+/-
+  NOTE:
+
+  This file is based on an old version of `gen_heap.v`, which does not depend on a
+  `reservation_map`. In particular, the API offered here is much more restricted,
+  and mostly mirrors that of `GhostMap`. In the future, we'd need to port the
+  `reservation_map`s and port the rest of the lemmas.
+
+-/
+
 /-! (TODO: Adapt to Iris Lean implementation)
 
 This file provides a generic mechanism for a language-level point-to
@@ -67,19 +77,9 @@ To implement this mechanism, we use three pieces of ghost state:
   as a premise).
 -/
 
-/-
-  NOTE:
-
-  This file is based on an old version of `gen_heap.v`, which does not depend on a
-  `reservation_map`. In particular, the API offered here is much more restricted,
-  and mostly mirrors that of `GhostMap`. In the future, we'd need to port the
-  `reservation_map`s and port the rest of the lemmas.
-
--/
-
 variable (F: outParam (Type _)) [UFraction F]
 
-class gen_HeapGPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _) [Std.LawfulFiniteMap H L] where
+class gen_HeapGPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)[Std.LawfulFiniteMap H L] where
   heap : GhostMapG GF F L V H
   -- TODO: `meta` field blocked by `reservation_mapR`
   -- TODO: `metaData` field blocked by `reservation_mapR`
@@ -104,7 +104,7 @@ variable {H : outParam <| Type _ → Type _} [Std.LawfulFiniteMap H L]
 variable {F: outParam (Type _)} [UFraction F]
 variable [ι : gen_HeapGS F L V GF H]
 
-open Std.PartialMap
+open Std.FiniteMap
 
 def gen_heap_interp (σ : H V) : IProp GF := iprop(ι.heapName ↪●MAP σ)
 -- def gen_heap_interp (σ : GMap V) : IProp GF := iprop%
