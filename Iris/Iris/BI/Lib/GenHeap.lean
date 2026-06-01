@@ -79,41 +79,38 @@ To implement this mechanism, we use three pieces of ghost state:
 
 variable (F: outParam (Type _)) [UFraction F]
 
-class gen_HeapGPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)[Std.LawfulFiniteMap H L] where
+class gen_HeapGPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)
+  [Std.LawfulFiniteMap H L] where
   heap : GhostMapG GF F L V H
   -- TODO: `meta` field blocked by `reservation_mapR`
   -- TODO: `metaData` field blocked by `reservation_mapR`
 
 attribute [reducible, instance] gen_HeapGPreS.heap
+attribute [instance] GhostMapG.elem
 
-instance gen_HeapGPreS.instGhostMapG [Std.LawfulFiniteMap H L] [ι : gen_HeapGPreS F L V GF H] : GhostMapG GF F L V H := ι.heap
-
-class gen_HeapGS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _) [Std.LawfulFiniteMap H L]
-    extends gen_HeapGPreS F L V GF H where
+class gen_HeapGS (L V : outParam <| Type _) (GF : outParam <| BundledGFunctors) (H : outParam <| Type _ → Type _)
+  [Std.LawfulFiniteMap H L] extends gen_HeapGPreS F L V GF H where
   heapName : GName
   -- TODO: Metadata not supported yet
-  -- metaName : GName
 
-#rocq_concept base_logic "gen_heapΣ" missing "We don't yet have definitions of BundledGFunctors"
-#rocq_concept base_logic "subG_gen_heapGpreS" missing "We don't yet have SubG"
+
+#rocq_ignore «gen_heapΣ» "Subsumed by BundledGFunctors typeclass synthesis"
+#rocq_ignore «subG_gen_heapGpreS» "Subsumed by BundledGFunctors typeclass synthesis"
 
 section definitions
 
 variable {GF : BundledGFunctors} {L V : Type _}
 variable {H : outParam <| Type _ → Type _} [Std.LawfulFiniteMap H L]
 variable {F: outParam (Type _)} [UFraction F]
-variable [ι : gen_HeapGS F L V GF H]
+variable [gen_HeapGS F L V GF H]
 
-open Std.FiniteMap
+open Std.FiniteMap gen_HeapGS
 
-def gen_heap_interp (σ : H V) : IProp GF := iprop(ι.heapName ↪●MAP σ)
--- def gen_heap_interp (σ : GMap V) : IProp GF := iprop%
---   ∃ m : GMap GName,
---   ⌜ ∀ x : L, dom m x → dom σ x ⌝ ∗
---   (ι.heapName ↪●MAP σ) ∗
---   (ι.metaName ↪●MAP m)
+def gen_heap_interp (σ : H V) : IProp GF :=
+  iprop(heapName ↪●MAP σ)
 
-def pointsTo (l : L) (dq : DFrac F)(v : V) : IProp GF := iprop((ι.heapName) ↪◯MAP[l]{dq} v)
+def pointsTo (l : L) (dq : DFrac F)(v : V) : IProp GF :=
+  iprop(heapName ↪◯MAP[l]{dq} v)
 
 notation l " ↦{" dq "} " v => pointsTo l dq v
 notation l " ↦ " v => pointsTo l (DFrac.own 1) v
@@ -125,24 +122,27 @@ section lemmas
 variable {F: outParam (Type _)} [UFraction F]
 variable {L V : Type _} {GF : BundledGFunctors}
 variable {H : outParam <| Type _ → Type _} [Std.LawfulFiniteMap H L]
-variable [ι : gen_HeapGS F L V GF H]
+variable [gen_HeapGS F L V GF H]
 
 variable (l : L) (dq dq₁ dq₂ : DFrac F) (v v₁ v₂ : V) (σ : H V)
 
+open gen_HeapGS
+
 instance : BI.Timeless (PROP := IProp GF) (l ↦{dq} v) :=
-  inferInstanceAs (BI.Timeless (ι.heapName ↪◯MAP[l]{dq} v))
+  inferInstanceAs (BI.Timeless (heapName ↪◯MAP[l]{dq} v))
 
 instance : Fractional (PROP := IProp GF) (l ↦{.own ·} v) :=
-  inferInstanceAs (Fractional (ι.heapName ↪◯MAP[l]{.own ·} v))
+  inferInstanceAs (Fractional (heapName ↪◯MAP[l]{.own ·} v))
 
 instance : AsFractional (PROP := IProp GF) (l ↦{.own q} v) (l ↦{.own ·} v) q :=
   inferInstanceAs
-    (AsFractional (PROP := IProp GF) (ι.heapName ↪◯MAP[l]{.own q} v) (ι.heapName ↪◯MAP[l]{.own ·} v) q)
+    (AsFractional (PROP := IProp GF) (heapName ↪◯MAP[l]{.own q} v) (heapName ↪◯MAP[l]{.own ·} v) q)
 
 theorem pointsTo_cmraValid : (l ↦{dq} v)  ⊢@{IProp GF} internalCmraValid dq := by
   simp only [pointsTo, ghost_map_elem_valid]
 
-theorem pointsTo_op_cmraValid : (l ↦{dq₁} v₁) ∗ (l ↦{dq₂} v₂) ⊢@{IProp GF} internalCmraValid (dq₁ • dq₂) ∧ ⌜ v₁ = v₂ ⌝ := by
+theorem pointsTo_op_cmraValid :
+  (l ↦{dq₁} v₁) ∗ (l ↦{dq₂} v₂) ⊢@{IProp GF} internalCmraValid (dq₁ • dq₂) ∧ ⌜ v₁ = v₂ ⌝ := by
   simp only [pointsTo]
   iapply ghost_map_elem_valid_2
 
@@ -155,24 +155,25 @@ open Std.PartialMap
 section updateLemmas
 
 theorem gen_heap_alloc (Hσl : get? σ l = .none) :
-    (gen_heap_interp (GF := GF) σ) ⊢ |==> (gen_heap_interp (insert σ l v) ∗ (l ↦ v)) := by
-  simp only [gen_heap_interp, pointsTo]
-  iapply ghost_map_insert (γ := ι.heapName) _ v Hσl
+    (gen_heap_interp σ) ⊢ |==> (gen_heap_interp (insert σ l v) ∗ (l ↦ v)) := by
+  unfold gen_heap_interp pointsTo
+  iapply ghost_map_insert _ v Hσl
 
-theorem gen_heap_dealloc : (gen_heap_interp (GF := GF) σ ∗ l ↦ v) ==∗ gen_heap_interp (delete σ l) := by
-  simp only [gen_heap_interp, pointsTo]
+theorem gen_heap_dealloc : (gen_heap_interp σ ∗ l ↦ v) ==∗ gen_heap_interp (delete σ l) := by
+  unfold gen_heap_interp pointsTo
   iintro ⟨H₁,H₂⟩
-  iapply ghost_map_delete (γ := ι.heapName) _ v $$ H₁ H₂
+  iapply ghost_map_delete _ v $$ H₁ H₂
 
-theorem gen_heap_valid : (gen_heap_interp (GF := GF) σ ∗ l ↦{dq} v) ==∗ ⌜ get? σ l = .some v ⌝ := by
-  simp only [gen_heap_interp, pointsTo]
+theorem gen_heap_valid : (gen_heap_interp σ ∗ l ↦{dq} v) ==∗ ⌜ get? σ l = .some v ⌝ := by
+  unfold gen_heap_interp pointsTo
   iintro ⟨H₁,H₂⟩
   iapply ghost_map_lookup $$ H₁ H₂
 
-theorem gen_heap_update : (gen_heap_interp (GF := GF) σ ∗ l ↦ v₁) ==∗ (gen_heap_interp (GF := GF) (insert σ l v₂) ∗ l ↦ v₂) := by
-  simp only [gen_heap_interp, pointsTo]
+theorem gen_heap_update :
+  (gen_heap_interp σ ∗ l ↦ v₁) ==∗ (gen_heap_interp (insert σ l v₂) ∗ l ↦ v₂) := by
+  unfold gen_heap_interp pointsTo
   iintro ⟨H₁,H₂⟩
-  iapply ghost_map_update (γ := ι.heapName) _ _ v₂ $$ H₁ H₂
+  iapply ghost_map_update _ _ v₂ $$ H₁ H₂
 
 end updateLemmas
 

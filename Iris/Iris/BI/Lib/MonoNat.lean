@@ -21,22 +21,23 @@ abbrev MonoNatRF (F : Type _) [UFraction F] : COFE.OFunctorPre :=
 
 @[rocq_alias mono_natG]
 class MonoNatG (F : outParam <| Type _) [UFraction F] (GF : BundledGFunctors) where
-  mono_nat_elem : ElemG GF (MonoNatRF F)
-  mono_nat_name : GName
+  elem : ElemG GF (MonoNatRF F)
+  name : GName
 
-attribute [reducible, instance] MonoNatG.mono_nat_elem
+attribute [reducible, instance] MonoNatG.elem
 
 namespace MonoNat
 
-variable {F : Type _} [UFraction F] {GF : BundledGFunctors} [MN : MonoNatG F GF]
+variable {F : Type _} [UFraction F] {GF : BundledGFunctors} [MonoNatG F GF]
+open MonoNatG
 
 @[rocq_alias mono_nat_auth_own]
 def auth_own (γ : GName) (dq : DFrac F) (n : MaxNat) : IProp GF :=
-  iOwn (E := MN.mono_nat_elem) γ (MonoNat.auth dq n)
+  iOwn (E := elem) γ (MonoNat.auth dq n)
 
 @[rocq_alias mono_nat_lb_own]
 def lb_own (γ : GName) (n : MaxNat) : IProp GF :=
-  iOwn (E := MN.mono_nat_elem) γ (MonoNat.lb n)
+  iOwn (E := elem) γ (MonoNat.lb n)
 
 notation γ " ↪●MN{" dq "} " n => auth_own γ dq n
 notation γ " ↪●MN " n => auth_own γ (DFrac.own One.one) n

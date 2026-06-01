@@ -34,8 +34,7 @@ def lock_inv (γ : GName) (l : Loc) (R : IProp GF) : IProp GF :=
 def is_lock (γ : GName) (lk : Val) (R : IProp GF) : IProp GF :=
   iprop(∃ l : Loc, ⌜lk = Val.lit (.loc l)⌝ ∧ inv spinlockN (lock_inv γ l R))
 
-instance is_lock_persistent (γ : GName) (lk : Val) (R : IProp GF) :
-    Persistent (is_lock γ lk R) := by
+instance is_lock_persistent (γ : GName) (lk : Val) (R : IProp GF) : Persistent (is_lock γ lk R) := by
   unfold is_lock; infer_instance
 
 instance locked_timeless (γ : GName) : Timeless (locked (GF := GF) γ) := by
@@ -48,19 +47,19 @@ theorem locked_exclusive (γ : GName) :
 theorem is_lock_iff (γ : GName) (lk : Val) (R₁ R₂ : IProp GF) :
     is_lock γ lk R₁ ⊢ (▷ □ (R₁ ∗-∗ R₂)) -∗ is_lock γ lk R₂ := by
   unfold is_lock lock_inv
-  iintro ⟨%l, %H1, #H2⟩ Heq
+  iintro ⟨%l, %H1, #H2⟩ #Heq
   iexists l
   isplit; itrivial
   iapply inv_iff $$ H2
-  inext; icases Heq with #Heq; imodintro
+  inext; imodintro
   isplit
   · iintro ⟨%b, H1, H3⟩
-    iexists b; iframe H1
+    iexists _; iframe H1
     split; itrivial
     icases H3 with ⟨$, H3⟩
     iapply Heq $$ H3
   · iintro ⟨%b, H1, H3⟩
-    iexists b; iframe H1
+    iexists _; iframe H1
     split; itrivial
     icases H3 with ⟨$, H3⟩
     iapply Heq $$ H3
@@ -89,7 +88,7 @@ theorem spinlock_newlock_spec :
   imod inv_alloc spinlockN E iprop(∃ b, (l ↦ some hl_val(#(BaseLit.bool b))) ∗ if b = true then True else token γ ∗ R) $$ [Hpt HR Hγ]
   · iexists false
     simp only [Bool.false_eq_true, ↓reduceIte]
-    inext; iframe
+    iframe
   · subst Heq
     imodintro
     unfold is_lock
@@ -120,12 +119,9 @@ theorem spinlock_try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   cases b
   · simp only [Bool.false_eq_true, ↓reduceIte]
     iapply wp_wand $$ [Hpt]
-    · iapply wp_cmpXchg_true (e1 := hl(#(BaseLit.bool false)))
-        (e2 := hl(#(BaseLit.bool true))) $$ Hpt
-      · simp [toVal]; rfl
-      · simp [toVal]; rfl
+    · iapply wp_cmpXchg_true (by rfl) (by rfl) $$ Hpt
       · simp [Val.compareSafe, Val.isUnboxed, BaseLit.isUnboxed]
-      · simp
+      · trivial
     iintro %v ⟨%Heq, Hpt⟩
     subst Heq
     imod G2 $$ [Hpt]
@@ -140,10 +136,7 @@ theorem spinlock_try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
       iframe
   · simp only [↓reduceIte]
     iapply wp_wand $$ [Hpt]
-    · iapply wp_cmpXchg_fail (e1 := hl(#(BaseLit.bool false)))
-        (e2 := hl(#(BaseLit.bool true))) $$ Hpt
-      · simp [toVal]; rfl
-      · simp [toVal]; rfl
+    · iapply wp_cmpXchg_fail (by rfl) (by rfl) $$ Hpt
       · simp [Val.compareSafe, Val.isUnboxed, BaseLit.isUnboxed]
       · simp
     iintro %v ⟨%Heq, Hpt⟩
@@ -154,7 +147,6 @@ theorem spinlock_try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
       iframe
     · imodintro
       iapply wp_snd
-      inext
       iapply Hcont $$ [Hcond]
       simp only [Bool.false_eq_true, ↓reduceIte]
       itrivial
@@ -211,7 +203,7 @@ theorem spinlock_release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   · inext
     iexists false
     simp only [Bool.false_eq_true, ↓reduceIte]
-    iframe Hpt'  Hl HR
+    iframe Hpt' Hl HR
   · imodintro
     iapply Hcont
     itrivial
