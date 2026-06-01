@@ -2718,24 +2718,37 @@ end iloeb
 
 section iinduction
 
-/-- Tests `iinduction` with induction on natural numbers. Hypotheses in the
-    spatial context become premises of the induction hypothesis. -/
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
-  iinduction n
-  · itrivial
-  · iframe
-    itrivial
+/--
+  Tests `iinduction` with induction on natural numbers.
 
-/-- Tests `iinduction` with induction on natural numbers with user-supplied
-    names for variables and induction hypotheses. -/
+  For natural numbers, `Nat.recAux` is used as the default recursor name. Hence,
+  the tactic is equivalent to `iinduction n using Nat.recAux generalizing %P HQ %R`.
+
+  Hypotheses in the spatial context necessarily become premises of the
+  induction hypothesis.
+
+  With the `generalizing` syntax, `P` and `R` are universally quantified
+  in the induction hypothesis. Given they occur in `HP` and `HR`, respectively,
+  the two propositions are included as premises of the induction hypothesis.
+
+  Meanwhile, `HQ` is included as a premise of the induction hypothesis without
+  `Q` being universally quantified.
+
+  Note that the following variants of the tactic all produce equivalent subgoals:
+  - `induction n generalizing %P HP HQ %R`
+  - `induction n generalizing %P HQ %R HR`
+  - `induction n generalizing %P HP HQ %R HR`
+  - the tactics above with any permutations of `generalizing` arguments.
+-/
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
-  iinduction n with
-  | Nat.zero  => itrivial          -- Using the full name of the constructor
-  | succ n ih => iframe; itrivial  -- Using the short name of the constructor
+  iinduction n generalizing %P HQ %R with
+  -- Using the full name of the constructor (`Nat.zero`)
+  | Nat.zero  => itrivial
+  /- Using the short name of the constructor (`succ`), naming the induction
+     hypothesis as `ih`, but leaving the variable `n` inaccessible by using `_` -/
+  | succ _ ih => iframe; itrivial
 
 /- Tests `iinduction` with a non-inductive datatype -/
 /-- error: iinduction: unable to determine inductive type -/
@@ -2743,19 +2756,10 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
 example [BI PROP] {P : PROP} : ⊢ P := by
   iinduction P
 
-/- Tests `iinduction` with induction on natural numbers with user-supplied
-    names, missing `succ` case -/
-/-- error: iinduction: alternative `succ` has not been provided -/
-#guard_msgs in
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
-  iinduction n with
-  | zero => itrivial
-
-/- Tests `iinduction` with induction on natural numbers with invalid
-   user-supplied names -/
-/-- error: iinduction: invalid alternative name(s): `invalidA`, `invalidB`, `invalidC` -/
+/- Tests `iinduction` with induction on natural numbers with invalid user-supplied names -/
+/-- error: iinduction: missing alternative name(s): `Nat.succ`
+iinduction: duplicate alternative name(s): `zero`
+iinduction: invalid alternative name(s): `invalidA`, `invalidB`, `invalidC` -/
 #guard_msgs in
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
@@ -2764,16 +2768,8 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | invalidA  => done
   | zero      => itrivial
   | invalidB  => done
-  | succ n IH => iframe; itrivial
+  | Nat.zero  => itrivial
   | invalidC  => done
-
-/-- Tests `iinduction` using a custom recursor name. -/
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
-  iinduction n using Nat.recOn
-  · itrivial
-  · iframe; itrivial
 
 /-- Tests `iinduction` using a custom recursor name. -/
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
@@ -2781,13 +2777,5 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   iintro HP #HQ #HR HS #HT
   iinduction n using Nat.strongRecOn  -- TODO: IH with regular hypothesis
   itrivial
-
-/-- Tests `iinduction` using a custom recursor name. -/
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
-  induction n using Nat.rec with
-  | zero     => sorry
-  | succ _ _ => sorry
 
 end iinduction
