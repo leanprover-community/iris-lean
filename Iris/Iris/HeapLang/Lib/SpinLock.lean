@@ -211,16 +211,16 @@ theorem spinlock_release_spec (γ : GName) (lk : Val) (R : IProp GF) :
 end SpinLockSpecs
 
 @[implicit_reducible]
-def spinLock [HeapLangGS hlc GF] : lock GF where
+def spinLock [HeapLangGS hlc GF] : Lock GF where
   newlock := spinlock_newlock
   acquire := spinlock_acquire
   release := spinlock_release
   lockG   := SpinLockG
   name := GName
-  is_lock _ γ lk R  := is_lock γ lk R
+  isLock _ γ lk R  := is_lock γ lk R
   locked _ γ := locked γ
-  is_lock_persistent γ lk R := is_lock_persistent γ lk R
-  is_lock_iff γ lk R₁ R₂ := is_lock_iff γ lk R₁ R₂
+  isLock_persistent γ lk R := is_lock_persistent γ lk R
+  isLock_iff γ lk R₁ R₂ := is_lock_iff γ lk R₁ R₂
   locked_timeless γ := locked_timeless γ
   locked_exclusive γ := locked_exclusive γ
   newlock_spec_delay_init := spinlock_newlock_spec
