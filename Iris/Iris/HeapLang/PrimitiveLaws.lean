@@ -164,7 +164,7 @@ theorem wp_alloc (v : Val) :
 
 theorem wp_load {l : Loc} {q} {v : Val} :
     ▷ (l ↦{q} (some v))
-    ⊢@{IProp GF} WP hl(!v({(.lit (.loc l))})) @ s; E {{ v', ⌜v = v'⌝ ∗ (l ↦{q} (Option.some v')) }} := by
+    ⊢@{IProp GF} WP hl(!v({(.lit (.loc l))})) @ s; E {{ v', ⌜v = v'⌝ ∗ (l ↦{q} (some v')) }} := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
@@ -193,9 +193,9 @@ theorem wp_load {l : Loc} {q} {v : Val} :
   ipureintro; simp [toVal]
 
 theorem wp_store {l : Loc} {v v' : Val} :
-    ▷ (l ↦ (Option.some v'))
+    ▷ (l ↦ (some v'))
     ⊢@{IProp GF} WP hl(v({(.lit (.loc l))}) ← {v}) @ s; E
-      {{ v'', ⌜v'' = hl_val(#())⌝ ∗ (l ↦ (Option.some v)) }} := by
+      {{ v'', ⌜v'' = hl_val(#())⌝ ∗ (l ↦ some v) }} := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
@@ -231,9 +231,9 @@ theorem wp_store {l : Loc} {v v' : Val} :
 theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val}
     (Heq1 : toVal e1 = .some v1) (Heq2 : toVal e2 = .some v2) (Heq3 : v'.compareSafe v1)
     (Heq4 : decide (v' = v1) = false) :
-      ▷ (l ↦{q} (Option.some v'))
+      ▷ (l ↦{q} some v')
       ⊢ (WP hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})) @ s; E
-          {{ v'', ⌜v'' = hl_val(({v'}, #(BaseLit.bool false)))⌝ ∗ l ↦{q} (Option.some v') }}) := by
+          {{ v'', ⌜v'' = hl_val(({v'}, #(BaseLit.bool false)))⌝ ∗ l ↦{q} some v' }}) := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
@@ -270,9 +270,9 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
 theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val}
     (Heq1 : toVal e1 = .some v1) (Heq2 : toVal e2 = .some v2) (Heq3 : v'.compareSafe v1)
     (Heq4 : decide (v' = v1) = true) :
-      ▷ (l ↦ (Option.some v'))
+      ▷ (l ↦ some v')
       ⊢ WP hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})) @ s; E
-        {{ v'', ⌜v'' = hl_val(({v'}, #(BaseLit.bool true)))⌝ ∗ l ↦ (Option.some v2) }} := by
+        {{ v'', ⌜v'' = hl_val(({v'}, #(BaseLit.bool true)))⌝ ∗ l ↦ some v2 }} := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
