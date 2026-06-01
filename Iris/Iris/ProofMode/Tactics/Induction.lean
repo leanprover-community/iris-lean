@@ -79,7 +79,7 @@ private def findIHs (m : MVarId) : ProofModeM (List FVarId) :=
     let mut ihs := []
     for decl in lctx do
       let type ← instantiateMVars decl.type
-      if isIrisGoal type then
+      if isIrisGoalWithForalls type then
         ihs := decl.fvarId :: ihs
     return ihs.reverse
 
