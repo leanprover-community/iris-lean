@@ -36,7 +36,7 @@ instance exists_intuitionistic [BI PROP] (Φ : α → PROP) [∀ x, Intuitionist
 
 instance sep_intuitionistic [BI PROP] (P Q : PROP) [Intuitionistic P] [Intuitionistic Q] :
     Intuitionistic iprop(P ∗ Q) where
-  intuitionistic := (sep_mono intuitionistic intuitionistic).trans intuitionistically_sep_2
+  intuitionistic := (sep_mono intuitionistic intuitionistic).trans intuitionistically_sep_mpr
 
 instance intuitionistically_intuitionistic [BI PROP] (P : PROP) : Intuitionistic iprop(□ P) where
   intuitionistic := intuitionistically_idem.2

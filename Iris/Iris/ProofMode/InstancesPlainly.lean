@@ -132,14 +132,14 @@ instance intoExists_plainly [Sbi PROP] [SbiEmpValidExist PROP] (P : PROP)
 @[rocq_alias into_forall_plainly]
 instance intoForall_plainly [Sbi PROP] (P : PROP) {α : Type _} (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(■ P) (fun a => iprop(■ Φ a)) where
-  into_forall := (plainly_mono h.1).trans plainly_forall.1
+  into_forall := (plainly_mono h.1).trans BI.plainly_forall.1
 
 /-- FromForall -/
 
 @[rocq_alias from_forall_plainly]
 instance fromForall_plainly [Sbi PROP] (P : PROP) {α : Sort _} (Φ : α → PROP)
     [h : FromForall P Φ] : FromForall iprop(■ P) (fun a => iprop(■ Φ a)) where
-  from_forall := plainly_forall.2.trans (plainly_mono h.1)
+  from_forall := BI.plainly_forall.2.trans (plainly_mono h.1)
 
 /-- FromModal -/
 

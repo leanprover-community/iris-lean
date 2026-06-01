@@ -95,7 +95,7 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (I
     imod Hupd $$ [$] with ⟨Hw, HE, Hupd⟩
     imodintro
     iapply Hupd $$ [$]
-  mask_frame_r' {E1 E2 Ef P} Hdisj := by
+  mask_frame_right_strong {E1 E2 Ef P} Hdisj := by
     simp only [uPred_fupd]
     iintro Hupd ⟨Hwsat, HE⟩
     ihave ⟨HE1, HEf⟩ := ownE_op Hdisj $$ HE
@@ -111,7 +111,7 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (I
     iapply HP
     ipure_intro
     exact Hdisj'
-  frame_r {_ _ _ _} := by
+  frame_right {_ _ _ _} := by
     simp only [uPred_fupd]
     iintro ⟨Hupd, HR⟩ HwE
     ihave Hupd := Hupd $$ HwE
@@ -131,7 +131,7 @@ instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIUpdateFUpdate (IProp GF)
 @[rocq_alias uPred_bi_fupd_sbi_no_lc]
 instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .hasNoLC GF] :
     BIFUpdatePlainly (IProp GF) where
-  fupd_plainly_keep_l E E' P Q := by
+  fupd_plainly_keep_left E E' P Q := by
     simp only [fupd, uPred_fupd]
     iintro ⟨H, Hx⟩ ⟨Hwsat, HE⟩
     ihave #>HP : ◇ ■ P $$ [H Hx Hwsat HE]
@@ -403,7 +403,7 @@ theorem step_fupdN_fupd_finally (E1 E2 : CoPset) (n : Nat) (P : IProp GF) :
     simp only [Nat.repeat]
     imod HP
     iapply fupd_finally_mono (later_laterN n).mpr
-    iapply fupd_finally_mono (later_mono (laterN_mono n except0_idemp.mp))
+    iapply fupd_finally_mono (later_mono (laterN_mono n except0_idem.mp))
     iapply fupd_finally_mono (later_mono (except0_laterN (P := iprop(◇ P)) n))
     iapply fupd_finally_later
     inext
@@ -426,12 +426,12 @@ theorem fupd_finally_wand (E : CoPset) (P Q : IProp GF) :
     (|={E|}=> P) -∗ ■ (P -∗ Q) -∗ (|={E|}=> Q) := by
   iintro Hupd #Hpq
   iapply fupd_finally_mono ((sep_mono_right plainly_elim).trans wand_elim_right)
-  iapply fupd_finally_mono plainly_and_sep_r.1
+  iapply fupd_finally_mono plainly_and_sep_right.1
   iapply fupd_finally_mono and_comm.1
   iapply fupd_finally_and
   iframe Hupd
   iapply fupd_finally_intro
-  iapply plainly_idemp.mpr $$ Hpq
+  iapply plainly_idem.mpr $$ Hpq
 
 @[rocq_alias fupd_keep_pure]
 theorem fupd_keep_pure {E1 E2 : CoPset} (φ : Prop) (E2' : CoPset) (Q : IProp GF) :

@@ -84,9 +84,9 @@ export Sbi (siPure_mono siEmpValid_mono siEmpValid_siPure siPure_siEmpValid siPu
   siPure_sForall_mpr persistently_imp_siPure siPure_later siEmpValid_later_mp
   siEmpValid_affinely_mpr prop_ext_siEmpValid)
 
-#rocq_ignore SbiMixin "Lean uses the Sbi type class directly; mixin/bundle separation is unnecessary."
-#rocq_ignore SbiPropExtMixin "Folded into the Sbi class via the prop_ext_siEmpValid field."
-#rocq_ignore sbi_prop_ext_mixin "Folded into the Sbi class via the prop_ext_siEmpValid field."
+#rocq_ignore SbiMixin "Uses the Sbi typeclass."
+#rocq_ignore SbiPropExtMixin "Included in Sbi."
+#rocq_ignore sbi_prop_ext_mixin "Included in Sbi."
 
 /-- Alias for `Sbi.siEmpValid_affinely_mpr` field. -/
 @[rocq_alias si_emp_valid_affinely_2]
@@ -107,9 +107,6 @@ instance : SiPure SiProp where
 instance : SiEmpValid SiProp where
   siEmpValid := id
 
-#rocq_ignore siprop_sbi_mixin "Folded into Lean's siprop_sbi instance."
-#rocq_ignore siprop_sbi_prop_ext_mixin "Folded into Lean's siprop_sbi instance."
-
 @[rocq_alias siprop_sbi]
 instance instSbiSiProp : Sbi SiProp where
   siPure_ne := id_ne
@@ -128,6 +125,9 @@ instance instSbiSiProp : Sbi SiProp where
   siEmpValid_later_mp := .rfl
   siEmpValid_affinely_mpr _ := (⟨trivial, ·⟩)
   prop_ext_siEmpValid := @SiProp.prop_ext
+
+#rocq_ignore siprop_sbi_mixin "Included in Sbi instance construction."
+#rocq_ignore siprop_sbi_prop_ext_mixin "Included in Sbi instance construction."
 
 @[rocq_alias siprop_sbi_emp_valid_exist]
 instance instSbiEmpValidExistSiProp : SbiEmpValidExist SiProp where
@@ -152,11 +152,11 @@ theorem siPure_mono_bi [Sbi PROP] {Pi Qi : SiProp}
     (H : Pi ⊣⊢@{SiProp} Qi) : <si_pure> Pi ⊣⊢@{PROP} <si_pure> Qi :=
   ⟨siPure_mono H.mp, siPure_mono H.mpr⟩
 
-#rocq_ignore si_pure_mono' "Generalized-rewriting Proper; use siPure_mono directly."
-#rocq_ignore si_pure_flip_mono' "Generalized-rewriting Proper; use siPure_mono directly."
-#rocq_ignore si_emp_valid_proper "Derivable from siEmpValid_ne with NonExpansive.eqv"
-#rocq_ignore si_emp_valid_mono' "Generalized-rewriting Proper; use siEmpValid_mono directly."
-#rocq_ignore si_emp_valid_flip_mono' "Generalized-rewriting Proper; use siEmpValid_mono directly."
+#rocq_ignore si_pure_mono' "Use siPure_mono."
+#rocq_ignore si_pure_flip_mono' "Use siPure_mono."
+#rocq_ignore si_emp_valid_proper "Derivable from siEmpValid_ne with NonExpansive.eqv."
+#rocq_ignore si_emp_valid_mono' "Use siEmpValid_mono."
+#rocq_ignore si_emp_valid_flip_mono' "Use siEmpValid_mono."
 
 @[rocq_alias si_pure_forall]
 theorem siPure_forall [Sbi PROP] {A : Sort _} {Φi : A → SiProp} :
@@ -189,7 +189,7 @@ theorem siPure_and [Sbi PROP] {Pi Qi : SiProp} :
 @[rocq_alias si_pure_and_sep]
 theorem siPure_and_sep [Sbi PROP] {Pi Qi : SiProp} :
     <si_pure> (Pi ∧ Qi) ⊣⊢@{PROP} <si_pure> Pi ∗ <si_pure> Qi :=
-  siPure_and.trans ⟨persistent_and_sep_1, and_intro sep_elim_left sep_elim_right⟩
+  siPure_and.trans ⟨persistent_and_sep_mp, and_intro sep_elim_left sep_elim_right⟩
 
 @[rocq_alias si_pure_or]
 theorem siPure_or [Sbi PROP] {Pi Qi : SiProp} :
@@ -521,9 +521,7 @@ theorem laterN_soundness [Sbi PROP] {P : PROP} {n : Nat} (h : emp ⊢ ▷^[n] P)
   | .zero => h
   | .succ _ => laterN_soundness (later_soundness h)
 
-/-! ## Plainly modality derived from Sbi
-
-In Rocq: `■ P := <si_pure> <si_emp_valid> P`. All BIPlainly axioms are derived. -/
+/-! ## Plainly modality derived from Sbi -/
 
 @[rocq_alias siProp_plain, rocq_alias plainly]
 instance instPlainlySbi [Sbi PROP] : BIBase.Plainly PROP where
@@ -545,17 +543,17 @@ theorem plainly_elim_persistently {P : PROP} : iprop(■ P ⊢ <pers> P) :=
   siPure_siEmpValid
 
 @[rocq_alias plainly_idemp_2]
-theorem plainly_idemp_2 {P : PROP} : iprop(■ P ⊢ ■ ■ P) :=
+theorem plainly_idem_mpr {P : PROP} : iprop(■ P ⊢ ■ ■ P) :=
   siPure_mono siEmpValid_siPure.mpr
 
 @[rocq_alias plainly_forall_2]
-theorem plainly_forall_2 {A : Sort _} (Ψ : A → PROP) :
+theorem plainly_forall {A : Sort _} (Ψ : A → PROP) :
     iprop((∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a)) := by
   show iprop((∀ a, <si_pure> <si_emp_valid> Ψ a) ⊢ <si_pure> <si_emp_valid> (∀ a, Ψ a))
   exact siPure_forall.mpr.trans <| siPure_mono siEmpValid_forall.mpr
 
 @[rocq_alias plainly_exist_1]
-theorem plainly_exist_1 [SbiEmpValidExist PROP] {A : Type _} (Ψ : A → PROP) :
+theorem plainly_exist [SbiEmpValidExist PROP] {A : Type _} (Ψ : A → PROP) :
     iprop(■ (∃ a, Ψ a) ⊢ ∃ a, ■ (Ψ a)) := by
   show iprop(<si_pure> <si_emp_valid> (∃ a, Ψ a) ⊢ ∃ a, <si_pure> <si_emp_valid> (Ψ a))
   exact (siPure_mono siEmpValid_exist.mp).trans siPure_exist.mp
@@ -601,7 +599,7 @@ theorem plainly_sForall_2_sbi {Φ : PROP → Prop} :
   sorry
 -/
 
-theorem plainly_sExists_1 [SbiEmpValidExist PROP] {Φ : PROP → Prop} :
+theorem plainly_sExists [SbiEmpValidExist PROP] {Φ : PROP → Prop} :
     iprop(■ sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ ■ p) := by
   show iprop(<si_pure> <si_emp_valid> sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ <si_pure> <si_emp_valid> p)
   exact (siPure_mono (SbiEmpValidExist.siEmpValid_sExists_1 Φ)).trans <|

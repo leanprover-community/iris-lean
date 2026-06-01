@@ -92,7 +92,7 @@ theorem combine_as_gives [BI PROP] {p : Bool} {newE e outAs outGives goal : PROP
   _ ⊢ (newE ∗ □?p outAs) ∗ □ outGives   := sep_mono_left pfAs
   _ ⊢ newE ∗ □?p outAs ∗ □ outGives     := sep_assoc.mp
   _ ⊢ newE ∗ □?p outAs ∗ □?p □ outGives := sep_mono_right <| sep_mono_right intuitionisticallyIf_intutitionistically.mpr
-  _ ⊢ newE ∗ □?p (outAs ∗ □ outGives)   := sep_mono_right intuitionisticallyIf_sep_2
+  _ ⊢ newE ∗ □?p (outAs ∗ □ outGives)   := sep_mono_right intuitionisticallyIf_sep_mpr
   _ ⊢ goal := pfAsGives
 
 /--

@@ -98,7 +98,7 @@ theorem bigSepL_id_mono {Ps Qs : List PROP} (hlen : Ps.length = Qs.length)
 theorem bigSepL_persistent_id {Ps : List PROP} (hPs : ∀ P, P ∈ Ps → Persistent P) :
     Persistent ([∗list] P ∈ Ps, P) where
   persistent := bigOpL_closed (P := fun Q => Q ⊢ <pers> Q) persistently_emp_2
-    (fun hx hy => (sep_mono hx hy).trans persistently_sep_2)
+    (fun hx hy => (sep_mono hx hy).trans persistently_sep_mpr)
     (fun hget => (hPs _ (List.mem_iff_getElem?.mpr ⟨_, hget⟩)).persistent)
 
 @[rocq_alias big_sepL_persistent]
@@ -106,7 +106,7 @@ theorem bigSepL_persistent {Φ : Nat → A → PROP} {l : List A}
     (h : ∀ k x, l[k]? = some x → Persistent (Φ k x)) :
     Persistent ([∗list] k ↦ x ∈ l, Φ k x) where
   persistent := bigOpL_closed (P := fun Q => Q ⊢ <pers> Q) persistently_emp_2
-    (fun hx hy => (sep_mono hx hy).trans persistently_sep_2)
+    (fun hx hy => (sep_mono hx hy).trans persistently_sep_mpr)
     (fun hget => (h _ _ hget).persistent)
 
 @[rocq_alias big_sepL_nil_persistent]
@@ -215,7 +215,7 @@ theorem bigSepL_affinely_pure_elim {φ : Nat → A → Prop} {l : List A} :
   | _ :: _ =>
     (affinely_mono <| pure_mono fun h => ⟨h 0 _ rfl, fun k x hget => h (k + 1) x hget⟩).trans <|
     (affinely_mono pure_and.2).trans <| affinely_and.1.trans <|
-    persistent_and_sep_1.trans <| sep_mono_right bigSepL_affinely_pure_elim
+    persistent_and_sep_mp.trans <| sep_mono_right bigSepL_affinely_pure_elim
 
 @[rocq_alias big_sepL_pure]
 theorem bigSepL_pure [BIAffine PROP] {φ : Nat → A → Prop} {l : List A} :
@@ -343,7 +343,7 @@ theorem bigSepL_forall_elim {Φ : Nat → A → PROP} {l : List A} [BIAffine PRO
   induction l generalizing Φ with
   | nil => exact Affine.affine
   | cons y ys ih =>
-    refine (and_self.2.trans <| and_mono_left ?_).trans persistent_and_sep_1 |>.trans <| sep_mono_right <| ?_
+    refine (and_self.2.trans <| and_mono_left ?_).trans persistent_and_sep_mp |>.trans <| sep_mono_right <| ?_
     exact ((forall_elim 0).trans <| forall_elim y).trans <| (and_intro (pure_intro rfl) .rfl).trans imp_elim_right
     exact (forall_intro fun k => forall_intro fun z => (forall_elim (k + 1)).trans (forall_elim z)).trans ih
 
@@ -645,7 +645,7 @@ theorem bigSepL2_persistent {Φ : Nat → A → B → PROP} {l1 : List A} {l2 : 
     Persistent ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) where
   persistent := bigSepL2_closed (P := fun Q => Q ⊢ <pers> Q) persistently_emp_2
     (false_elim.trans (persistently_mono false_elim))
-    (fun hx hy => (sep_mono hx hy).trans persistently_sep_2)
+    (fun hx hy => (sep_mono hx hy).trans persistently_sep_mpr)
     (fun h1 h2 => (h _ _ _ h1 h2).persistent)
 
 @[rocq_alias big_sepL2_persistent']
@@ -998,7 +998,7 @@ theorem bigSepL2_forall [BIAffine PROP] {Φ : Nat → A → B → PROP} {l1 : Li
     | nil => simp at hlen
     | cons y2 ys2 =>
       simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen; simp only [bigSepL2]
-      exact (and_self.2.trans (and_mono_left bigSepL2_forall_elim)).trans <| persistent_and_sep_1.trans <|
+      exact (and_self.2.trans (and_mono_left bigSepL2_forall_elim)).trans <| persistent_and_sep_mp.trans <|
         sep_mono_right <| bigSepL2_forall_shift.trans <| ih (fun k => hPersistent (k + 1)) hlen
 
 @[rocq_alias big_sepL2_persistently]

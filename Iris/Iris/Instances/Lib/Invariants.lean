@@ -255,14 +255,14 @@ theorem inv_acc_strong (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N 
   iintro Hinv
   icases inv_acc ↑N N _ subset_refl $$ Hinv with H
   rw [diff_all]
-  icases fupd_mask_frame_r disjoint_diff_right (Ef := (E \ ↑N)) $$ H with H
+  icases fupd_mask_frame_right disjoint_diff_right (Ef := (E \ ↑N)) $$ H with H
   rw [union_empty_left, ←union_comm, ←diff_subset_decomp Hsub]
   imod H with ⟨HP, H⟩
   imodintro
   isplitl [HP]; iassumption
   iintro %E' HP
   ispecialize H $$ HP
-  icases fupd_mask_frame_r disjoint_empty_left (Ef := E') $$ H with H
+  icases fupd_mask_frame_right disjoint_empty_left (Ef := E') $$ H with H
   rw [union_empty_left]
   imod H; imodintro
   iexact H

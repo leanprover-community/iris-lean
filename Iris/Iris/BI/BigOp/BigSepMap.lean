@@ -114,7 +114,7 @@ theorem bigSepM_persistent {Φ : K → V → PROP} {m : M V}
     (h : ∀ {k x}, get? m k = some x → Persistent (Φ k x)) :
     Persistent ([∗map] k ↦ x ∈ m, Φ k x) where
   persistent := bigOpM_closed (P := fun Q => Q ⊢ <pers> Q) persistently_emp_2
-    (fun hx hy => (sep_mono hx hy).trans persistently_sep_2) (h · |>.persistent)
+    (fun hx hy => (sep_mono hx hy).trans persistently_sep_mpr) (h · |>.persistent)
 
 @[rocq_alias big_sepM_persistent']
 instance bigSepM_persistent_inst {Φ : K → V → PROP} {m : M V} [∀ k x, Persistent (Φ k x)] :
@@ -305,7 +305,7 @@ theorem bigSepM_forall_elim {Φ : K → V → PROP} {m : M V}
       ((∀ k, ∀ v, iprop(⌜get? m k = some v⌝ → Φ k v) : PROP) ⊢ Q) ∧ Persistent Q)
     ⟨Affine.affine, inferInstance⟩
     (fun ⟨hx, _⟩ ⟨hy, _⟩ => ⟨and_self.2.trans <| (and_mono hx hy).trans
-      persistent_and_sep_1, inferInstance⟩)
+      persistent_and_sep_mp, inferInstance⟩)
     (fun {k x} hget => ⟨(forall_elim k).trans <| (forall_elim x).trans <|
       (imp_congr_left <| pure_true hget).1.trans true_imp.1, inst k x⟩)).1
 
@@ -346,7 +346,7 @@ theorem bigSepM_affinely_pure_elim {φ : K → V → Prop} {m : M V} :
     pure_mono fun hall => hall _ _ hget)
   exact (affinely_mono <| pure_mono fun hall => ⟨hall, hall⟩).trans <|
     (affinely_mono pure_and.2).trans <| affinely_and.1.trans <|
-    persistent_and_sep_1.trans <| sep_mono hx hy
+    persistent_and_sep_mp.trans <| sep_mono hx hy
 
 @[rocq_alias big_sepM_pure]
 theorem bigSepM_pure [BIAffine PROP] {φ : K → V → Prop} {m : M V} :

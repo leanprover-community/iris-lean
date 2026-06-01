@@ -42,7 +42,7 @@ theorem imp_intro_spatial [BI PROP] {P Q A1 A2 B : PROP}
   refine (BI.imp_intro ?_).trans from_imp
   refine Entails.trans ?_ <| (sep_mono_right inst.1).trans h
   exact match or with
-  | TCOr.l => persistent_and_affinely_sep_right_1
+  | TCOr.l => persistent_and_affinely_sep_right_mp
   | TCOr.r (u := u) =>
     (and_mono_left u.1).trans <| affinely_and_left_right.1.trans <|
     persistently_and_intuitionistically_sep_left.1.trans <| sep_mono_left intuitionistically_elim

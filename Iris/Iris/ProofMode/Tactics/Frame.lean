@@ -48,7 +48,7 @@ theorem frame_true_done [BI PROP] (P : PROP) : P ⊢ True :=
 
 theorem frame_finish_close_true [BI PROP] {e origE origGoal : PROP}
     (h1 : origE ⊢ e ∗ (True -∗ origGoal)) :
-    origE ⊢ e ∗ origGoal := h1.trans (sep_mono_right <| true_sep_2.trans wand_elim_right)
+    origE ⊢ e ∗ origGoal := h1.trans (sep_mono_right <| true_sep_mpr.trans wand_elim_right)
 
 theorem frame_finish_close_emp [BI PROP] {e origE origGoal : PROP}
     (h1 : origE ⊢ e ∗ (emp -∗ origGoal)) :

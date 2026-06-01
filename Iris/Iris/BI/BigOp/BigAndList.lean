@@ -199,7 +199,7 @@ instance bigAndL_nil_absorbing_inst {Φ : Nat → A → PROP} :
 theorem bigAndL_absorbing {Φ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Absorbing (Φ k x)) :
     Absorbing ([∧list] k ↦ x ∈ l, Φ k x) where
   absorbing := bigOpL_closed (P := fun Q => <absorb> Q ⊢ Q) true_intro
-    (absorbingly_and_1.trans <| and_mono · ·) (h · |>.absorbing)
+    (absorbingly_and.trans <| and_mono · ·) (h · |>.absorbing)
 
 @[rocq_alias big_andL_absorbing']
 instance bigAndL_absorbing_inst {Φ : Nat → A → PROP} {l : List A} [∀ k x, Absorbing (Φ k x)] :

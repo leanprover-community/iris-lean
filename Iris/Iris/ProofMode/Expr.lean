@@ -382,11 +382,11 @@ theorem from_affine [BI PROP] {p : Bool} {P P' Q : PROP} [hP : FromAffinely P' P
 theorem replace_hyp {PROP} [BI PROP] {p} {ty ty' e0 : PROP}
   (h : e0 ⊢ <pers> (ty -∗ ty')) :
   ∀ P, (□?p ty ∗ P) ∧ e0 ⊢ □?p ty' ∗ P := fun _ =>
-  (and_mono_right h).trans <| persistent_and_affinely_sep_right_1.trans <|
+  (and_mono_right h).trans <| persistent_and_affinely_sep_right_mp.trans <|
   sep_comm.1.trans <| sep_assoc.2.trans <| sep_mono_left <|
     match p with
     | false => (sep_mono_left intuitionistically_elim).trans <| wand_elim_left
-    | true => intuitionistically_sep_2.trans <| intuitionistically_mono wand_elim_left
+    | true => intuitionistically_sep_mpr.trans <| intuitionistically_mono wand_elim_left
 
 theorem replace_hyp_sep_l {PROP} [BI PROP] {elhs elhs' erhs e0 : PROP}
   (h : ∀ P, (elhs ∗ P) ∧ e0 ⊢ elhs' ∗ P) :

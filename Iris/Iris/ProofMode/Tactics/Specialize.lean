@@ -25,7 +25,7 @@ theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
   | false => exact (sep_mono_right h3.1).trans <| wand_elim_right
   | true => exact
     (sep_mono intuitionisticallyIf_intutitionistically.2 intuitionisticallyIf_idem.2).trans <|
-    intuitionisticallyIf_sep_2.trans <| intuitionisticallyIf_mono <| (wand_elim_swap h3.1)
+    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap h3.1)
 
 -- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336

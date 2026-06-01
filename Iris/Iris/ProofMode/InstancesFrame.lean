@@ -74,7 +74,7 @@ instance frame_affinely [BI PROP] p (R P Q Q' : PROP)
       | @TCOr.r _ _ hq => by have := hq.quick_affine; exact inferInstance
     (sep_mono_right h2.make_affinely.2).trans <|
     (sep_mono_left (affine_affinely _).symm.1).trans <|
-    affinely_sep_2.trans <|
+    affinely_sep_mpr.trans <|
     affinely_mono h1.frame
 
 @[ipm_backtrack, rocq_alias frame_intuitionistically]
@@ -84,7 +84,7 @@ instance frame_intuitionistically [BI PROP] (R P Q Q' : PROP)
   frame :=
     (sep_mono_right h2.make_intuitionistically.2).trans <|
     (sep_mono_left intuitionistically_idem.2).trans <|
-    intuitionistically_sep_2.trans <|
+    intuitionistically_sep_mpr.trans <|
     intuitionistically_mono h1.frame
 
 @[ipm_backtrack, rocq_alias frame_absorbingly]
@@ -103,7 +103,7 @@ instance frame_persistently [BI PROP] (R P Q Q' : PROP)
   frame :=
     (sep_mono_right h2.make_persistently.2).trans <|
     (sep_mono_left persistent).trans <|
-    persistently_sep_2.trans <|
+    persistently_sep_mpr.trans <|
     persistently_mono h1.frame
 
 @[ipm_backtrack, rocq_alias frame_forall]
@@ -157,19 +157,19 @@ instance frame_laterN [BI PROP] p n (R R' P Q Q' : PROP)
     Frame p R' iprop(▷^[n] P) Q' where
   frame :=
     (sep_mono_right h3.make_laterN.2).trans <|
-    (sep_mono_left ((intuitionisticallyIf_mono h1.into_laterN).trans (laterN_intuitionisticallyIf_2 n))).trans <|
+    (sep_mono_left ((intuitionisticallyIf_mono h1.into_laterN).trans (laterN_intuitionisticallyIf n))).trans <|
     (laterN_sep n).2.trans <|
     laterN_mono n h2.frame
 
 @[ipm_backtrack, rocq_alias frame_bupd]
 instance frame_bupd [BI PROP] [BIUpdate PROP] p (R P Q Q' : PROP)
     [h : Frame p R P Q] [h2 : MakeBUpd Q Q'] : Frame p R iprop(|==> P) Q' where
-  frame := (sep_mono .rfl h2.1.2).trans <| bupd_frame_l.trans (BIUpdate.mono h.frame)
+  frame := (sep_mono .rfl h2.1.2).trans <| bupd_frame_left.trans (BIUpdate.mono h.frame)
 
 @[ipm_backtrack, rocq_alias frame_fupd]
 instance frame_fupd [BI PROP] [BIFUpdate PROP] p (E1 E2 : CoPset) (R P Q Q' : PROP)
     [h : Frame p R P Q] [h2 : MakeFUpd E1 E2 Q Q'] : Frame p R iprop(|={E1,E2}=> P) Q' where
-  frame := (sep_mono .rfl h2.1.2).trans <| fupd_frame_l.trans (BIFUpdate.mono h.frame)
+  frame := (sep_mono .rfl h2.1.2).trans <| fupd_frame_left.trans (BIFUpdate.mono h.frame)
 
 @[ipm_backtrack, rocq_alias frame_except_0]
 instance frame_except_0 [BI PROP] p (R P Q Q' : PROP)

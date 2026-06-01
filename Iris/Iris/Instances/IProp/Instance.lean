@@ -796,7 +796,7 @@ instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a
       · infer_instance
       · infer_instance
     calc
-      _ ⊢ iOwn γ b1 ∗ iOwn γ b2 := persistent_and_sep_1
+      _ ⊢ iOwn γ b1 ∗ iOwn γ b2 := persistent_and_sep_mp
       _ ⊢ iOwn γ (b1 • b2)      := iOwn_op.mpr
       _ ⊢ iOwn γ a              := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mpr
 

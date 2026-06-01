@@ -414,6 +414,61 @@ def delabBigOpL : Delab := do
 
 end
 
+/-! ## Persistently as a monoid homomorphism
+
+These instances ported from Rocq `bi_persistently_*_homomorphism` in
+`iris/bi/derived_laws.v`. -/
+public section Persistently
+open Iris.Algebra Iris.Std OFE BIBase
+
+@[rocq_alias bi.bi_persistently_and_homomorphism]
+instance bi_persistently_and_homomorphism [BI PROP] :
+    MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· ≡ ·) persistently :=
+  MonoidHomomorphism.ofEquiv BI.persistently_ne
+    (equiv_iff.mpr persistently_and) (equiv_iff.mpr persistently_true)
+
+@[rocq_alias bi.bi_persistently_or_homomorphism]
+instance bi_persistently_or_homomorphism [BI PROP] :
+    MonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· ≡ ·) persistently :=
+  MonoidHomomorphism.ofEquiv BI.persistently_ne
+    (equiv_iff.mpr persistently_or) (equiv_iff.mpr persistently_pure)
+
+@[rocq_alias bi.bi_persistently_sep_weak_homomorphism]
+instance bi_persistently_sep_weak_homomorphism [BI PROP] [BIPositive PROP] :
+    WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· ≡ ·) persistently :=
+  WeakMonoidHomomorphism.ofEquiv BI.persistently_ne (equiv_iff.mpr persistently_sep)
+
+@[rocq_alias bi.bi_persistently_sep_homomorphism]
+instance bi_persistently_sep_homomorphism [BI PROP] [BIAffine PROP] :
+    MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· ≡ ·) persistently :=
+  MonoidHomomorphism.ofEquiv BI.persistently_ne
+    (equiv_iff.mpr persistently_sep) (equiv_iff.mpr persistently_emp_affine)
+
+@[rocq_alias bi.bi_persistently_sep_entails_weak_homomorphism]
+instance bi_persistently_sep_entails_weak_homomorphism [BI PROP] :
+    WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (flip Entails) persistently where
+  rel_refl := .rfl
+  rel_trans := flip .trans
+  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
+                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
+  op_proper := sep_mono
+  map_ne := BI.persistently_ne
+  map_op := persistently_sep_mpr
+
+@[rocq_alias bi.bi_persistently_sep_entails_homomorphism]
+instance bi_persistently_sep_entails_homomorphism [BI PROP] :
+    MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (flip Entails) persistently where
+  rel_refl := .rfl
+  rel_trans := flip .trans
+  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
+                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
+  op_proper := sep_mono
+  map_ne := BI.persistently_ne
+  map_op := persistently_sep_mpr
+  map_unit := persistently_emp_intro
+
+end Persistently
+
 section Tests
 open Iris.Std OFE BIBase
 variable [BI PROP] (P : Nat → PROP) (Q : Nat → Nat → PROP) (l l1 l2 : List Nat)

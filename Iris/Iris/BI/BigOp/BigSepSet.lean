@@ -101,7 +101,7 @@ theorem bigSepS_persistent {Φ : A → PROP} {X : S}
     (h : ∀ {x}, x ∈ X → Persistent (Φ x)) :
     Persistent ([∗set] x ∈ X, Φ x) where
   persistent := bigOpS_closed (fun Q => Q ⊢ <pers> Q) Φ X persistently_emp_2
-    (fun hx hy => (sep_mono hx hy).trans persistently_sep_2) (fun hm => (h hm).persistent)
+    (fun hx hy => (sep_mono hx hy).trans persistently_sep_mpr) (fun hm => (h hm).persistent)
 
 @[rocq_alias big_sepS_persistent']
 instance bigSepS_persistent_inst {Φ : A → PROP} {X : S} [h : ∀ x, Persistent (Φ x)] :
@@ -225,7 +225,7 @@ theorem bigSepS_forall [BIAffine PROP] {Φ : A → PROP} {X : S} [hPers : ∀ x,
     | hemp => exact bigSepS_empty_intro
     | hadd a s hnin ih =>
       refine .trans ?_ (bigSepS_insert hnin).2
-      refine .trans (and_intro ?_ ?_) persistent_and_sep_1
+      refine .trans (and_intro ?_ ?_) persistent_and_sep_mp
       · exact (forall_elim _).trans <|
           (and_intro (pure_intro <| mem_insert.mpr <| .inl rfl) .rfl).trans imp_elim_right
       · exact (forall_mono fun x => imp_mono_left

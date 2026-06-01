@@ -116,7 +116,7 @@ theorem bigAndM_absorbing {Φ : K → V → PROP} {m : M V}
     (h : ∀ {k x}, get? m k = some x → Absorbing (Φ k x)) :
     Absorbing ([∧map] k ↦ x ∈ m, Φ k x) where
   absorbing := bigOpM_closed (P := fun Q => <absorb> Q ⊢ Q) true_intro
-    (absorbingly_and_1.trans <| and_mono · ·) (h · |>.absorbing)
+    (absorbingly_and.trans <| and_mono · ·) (h · |>.absorbing)
 
 instance bigAndM_absorbing_inst {Φ : K → V → PROP} {m : M V} [∀ k x, Absorbing (Φ k x)] :
     Absorbing ([∧map] k ↦ x ∈ m, Φ k x) :=

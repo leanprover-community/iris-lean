@@ -69,15 +69,15 @@ instance intoWand_later [BI PROP] (p q : Bool) (R P Q : PROP)
 @[rocq_alias into_wand_laterN]
 instance intoWand_laterN [BI PROP] (n : Nat) (p q : Bool) (R P Q : PROP)
     [h : IntoWand p q R ioP P ioQ Q] : IntoWand p q iprop(▷^[n] R) ioP iprop(▷^[n] P) ioQ iprop(▷^[n] Q) where
-  into_wand := (laterN_intuitionisticallyIf_2 n).trans <|
-    (laterN_mono n h.1).trans <| (laterN_wand n).trans <| wand_mono (laterN_intuitionisticallyIf_2 n) .rfl
+  into_wand := (laterN_intuitionisticallyIf n).trans <|
+    (laterN_mono n h.1).trans <| (laterN_wand n).trans <| wand_mono (laterN_intuitionisticallyIf n) .rfl
 
 #rocq_ignore into_wand_laterN_args "IntoWand' is not used in Lean"
 -- TODO: see if this is necessary. It is an instance for IntoWand' in Rocq
 -- instance intoWand_laterN_args [BI PROP] (n : Nat) (p q : Bool) (R P Q : PROP)
 --     [h : IntoWand p q R ioP P ioQ Q] : IntoWand p q R ioP iprop(▷^[n] P) ioQ iprop(▷^[n] Q) where
---   into_wand := (intuitionisticallyIf_mono (laterN_intro n)).trans <| (laterN_intuitionisticallyIf_2 n).trans <|
---     (laterN_mono n h.1).trans <| (laterN_wand n).trans <| wand_mono (laterN_intuitionisticallyIf_2 n) .rfl
+--   into_wand := (intuitionisticallyIf_mono (laterN_intro n)).trans <| (laterN_intuitionisticallyIf n).trans <|
+--     (laterN_mono n h.1).trans <| (laterN_wand n).trans <| wand_mono (laterN_intuitionisticallyIf n) .rfl
 
 /-- FromAnd -/
 
@@ -125,14 +125,14 @@ instance intoAnd_later [BI PROP] (p : Bool) (P Q1 Q2 : PROP)
 instance intoAnd_laterN [BI PROP] (n : Nat) (p : Bool) (P Q1 Q2 : PROP)
     [h : IntoAnd p P Q1 Q2] : IntoAnd p iprop(▷^[n] P) iprop(▷^[n] Q1) iprop(▷^[n] Q2) where
   into_and := intuitionisticallyIf_intro_intuitionisticallyIf <|
-    (laterN_intuitionisticallyIf_2 n).trans <|
+    (laterN_intuitionisticallyIf n).trans <|
     (laterN_mono n <| h.1.trans intuitionisticallyIf_elim).trans (laterN_and n).1
 
 @[rocq_alias into_and_except_0]
 instance intoAnd_except0 [BI PROP] (p : Bool) (P Q1 Q2 : PROP)
     [h : IntoAnd p P Q1 Q2] : IntoAnd p iprop(◇ P) iprop(◇ Q1) iprop(◇ Q2) where
   into_and := intuitionisticallyIf_intro_intuitionisticallyIf <|
-    except0_intuitionisticallyIf_2.trans <|
+    except0_intuitionisticallyIf.trans <|
     (except0_mono <| h.1.trans intuitionisticallyIf_elim).trans except0_and.1
 
 /-- IntoSep -/
@@ -201,7 +201,7 @@ instance fromExists_laterN [BI PROP] (n : Nat) (P : PROP) (Φ : α → PROP)
 @[rocq_alias from_exist_except_0]
 instance fromExists_except0 [BI PROP] (P : PROP) (Φ : α → PROP)
     [h : FromExists P Φ] : FromExists iprop(◇ P) (fun a => iprop(◇ Φ a)) where
-  from_exists := except0_exists_2.trans (except0_mono h.1)
+  from_exists := except0_exists_mpr.trans (except0_mono h.1)
 
 /-- IntoExists -/
 @[rocq_alias into_exist_later]
@@ -255,7 +255,7 @@ instance fromForall_except0 [BI PROP] (P : PROP) (Φ : α → PROP)
 /-- IsExcept0 -/
 @[rocq_alias is_except_0_except_0]
 instance isExcept0_except0 [BI PROP] (P : PROP) : IsExcept0 iprop(◇ P) where
-  is_except0 := (except0_idemp.1)
+  is_except0 := (except0_idem.1)
 
 @[rocq_alias is_except_0_later]
 instance isExcept0_later [BI PROP] (P : PROP) : IsExcept0 iprop(▷ P) where
@@ -295,12 +295,12 @@ instance intoExcept0_laterIf [BI PROP] p (P : PROP) [Timeless P] : IntoExcept0 i
 @[rocq_alias into_except_0_affinely]
 instance intoExcept0_affinely [BI PROP] (P Q : PROP)
     [h : IntoExcept0 P Q] : IntoExcept0 iprop(<affine> P) iprop(<affine> Q) where
-  into_except0 := (affinely_mono h.1).trans except0_affinely_2
+  into_except0 := (affinely_mono h.1).trans except0_affinely
 
 @[rocq_alias into_except_0_intuitionistically]
 instance intoExcept0_intuitionistically [BI PROP] (P Q : PROP)
     [h : IntoExcept0 P Q] : IntoExcept0 iprop(□ P) iprop(□ Q) where
-  into_except0 := (intuitionistically_mono h.1).trans except0_intuitionistically_2
+  into_except0 := (intuitionistically_mono h.1).trans except0_intuitionistically
 
 @[rocq_alias into_except_0_absorbingly]
 instance intoExcept0_absorbingly [BI PROP] (P Q : PROP)
@@ -316,7 +316,7 @@ instance intoExcept0_persistently [BI PROP] (P Q : PROP)
 @[ipm_backtrack, rocq_alias elim_modal_timeless]
 instance (priority := default - 10) elimModal_timeless [BI PROP] p (P P' Q : PROP) [IntoExcept0 P P'] [IsExcept0 Q] :
   ElimModal True p p P P' Q Q where
-  elim_modal _ := ((sep_mono ((intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf_2) except0_intro).trans $ except0_sep.2.trans (except0_mono wand_elim_right)).trans is_except0
+  elim_modal _ := ((sep_mono ((intuitionisticallyIf_mono into_except0).trans except0_intuitionisticallyIf) except0_intro).trans $ except0_sep.2.trans (except0_mono wand_elim_right)).trans is_except0
 
 /-- IntoLaterN -/
 @[rocq_alias maybe_into_laterN_default]
@@ -362,7 +362,7 @@ instance intoLaterN_forall [BI PROP] n (Φ Ψ : α → PROP)
 @[rocq_alias into_laterN_exist]
 instance intoLaterN_exists [BI PROP] n (Φ Ψ : α → PROP)
     [h : ∀ x, IntoLaterN false n (Φ x) (Ψ x)] : IntoLaterN false n iprop(∃ x, Φ x) iprop(∃ x, Ψ x) where
-  into_laterN := (exists_mono fun x => (h x).1).trans (laterN_exists_2 n)
+  into_laterN := (exists_mono fun x => (h x).1).trans (laterN_exists_mpr n)
 
 @[rocq_alias into_laterN_or_l, rocq_alias into_laterN_or_r]
 instance intoLaterN_or [BI PROP] n (P1 P2 Q1 Q2 : PROP)
@@ -374,12 +374,12 @@ instance intoLaterN_or [BI PROP] n (P1 P2 Q1 Q2 : PROP)
 @[rocq_alias into_later_affinely]
 instance intoLaterN_affinely [BI PROP] n (P Q : PROP)
     [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(<affine> P) iprop(<affine> Q) where
-  into_laterN := (affinely_mono h.1).trans (laterN_affinely_2 n)
+  into_laterN := (affinely_mono h.1).trans (laterN_affinely n)
 
 @[rocq_alias into_later_intuitionistically]
 instance intoLaterN_intuitionistically [BI PROP] n (P Q : PROP)
     [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(□ P) iprop(□ Q) where
-  into_laterN := (intuitionistically_mono h.1).trans (laterN_intuitionistically_2 n)
+  into_laterN := (intuitionistically_mono h.1).trans (laterN_intuitionistically n)
 
 @[rocq_alias into_later_absorbingly]
 instance intoLaterN_absorbingly [BI PROP] n (P Q : PROP)

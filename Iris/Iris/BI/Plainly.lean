@@ -37,7 +37,7 @@ theorem affinely_plainly_elim : <affine> ■ P ⊢ P :=
 @[rocq_alias persistently_elim_plainly]
 theorem persistently_elim_plainly : <pers> ■ P ⊣⊢ ■ P :=
   ⟨absorbingly_of_persistently.trans <| sep_symm.trans plainly_absorb,
-   plainly_idemp_2.trans plainly_elim_persistently⟩
+   plainly_idem_mpr.trans plainly_elim_persistently⟩
 
 @[rocq_alias persistently_if_elim_plainly]
 theorem persistently_if_elim_plainly p : <pers>?p ■ P ⊣⊢ ■ P :=
@@ -46,11 +46,11 @@ theorem persistently_if_elim_plainly p : <pers>?p ■ P ⊣⊢ ■ P :=
   | false => .rfl
 
 nonrec theorem plainly_forall_2 {A : Sort _} {Ψ : A → PROP} : (∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a) :=
-  plainly_forall_2 _
+  plainly_forall _
 
 @[rocq_alias plainly_persistently_elim]
 theorem plainly_persistently_elim : ■ <pers> P ⊣⊢ ■ P := by
-  refine ⟨?_, plainly_idemp_2.trans <| plainly_mono plainly_elim_persistently⟩
+  refine ⟨?_, plainly_idem_mpr.trans <| plainly_mono plainly_elim_persistently⟩
   calc iprop(■ <pers> P)
     _ ⊢ ■ emp ∧ ■ <pers> P := true_and.2.trans <| and_mono plainly_emp_intro .rfl
     _ ⊢ ∀ (b : Bool), if b then ■ emp else ■ <pers> P := and_forall_ite.1
@@ -91,16 +91,17 @@ theorem plainly_into_absorbingly : ■ P ⊢ <absorb> P :=
 theorem plainly_elim [Absorbing P] : ■ P ⊢ P :=
   plainly_elim_persistently.trans persistently_elim
 
-@[rocq_alias plainly_idemp]
-theorem plainly_idemp : ■ ■ P ⊣⊢ ■ P :=
-  ⟨plainly_into_absorbingly.trans absorbingly_elim_plainly.1, plainly_idemp_2⟩
-
 @[rocq_alias plainly_idemp_1]
-theorem plainly_idemp_1 : ■ ■ P ⊢ ■ P := plainly_idemp.1
+theorem plainly_idem_mp : ■ ■ P ⊢ ■ P :=
+  plainly_into_absorbingly.trans absorbingly_elim_plainly.1
+
+@[rocq_alias plainly_idemp]
+theorem plainly_idem : ■ ■ P ⊣⊢ ■ P :=
+  ⟨plainly_idem_mp, plainly_idem_mpr⟩
 
 @[rocq_alias plainly_intro']
-theorem plainly_intro' (H : ■ P ⊢ Q) : ■ P ⊢ ■ Q :=
-  plainly_idemp.2.trans <| plainly_mono <| H
+theorem plainly_intro_plainly (H : ■ P ⊢ Q) : ■ P ⊢ ■ Q :=
+  plainly_idem.2.trans <| plainly_mono <| H
 
 @[rocq_alias plainly_pure]
 theorem plainly_pure {φ} : ■ ⌜φ⌝ ⊣⊢ (⌜φ⌝ : PROP) := by
@@ -119,7 +120,7 @@ theorem plainly_exists_2 {α : Sort _} {Ψ : α → PROP} : (∃ a, ■ (Ψ a)) 
 
 theorem plainly_exists_1 [SbiEmpValidExist PROP] {A : Type _} {Ψ : A → PROP} :
     ■ (∃ a, Ψ a) ⊢ ∃ a, ■ (Ψ a) :=
-  plainly_exist_1 _
+  plainly_exist _
 
 @[rocq_alias plainly_exist]
 theorem plainly_exists [SbiEmpValidExist PROP] {A : Type _} {Ψ : A → PROP} : ■ (∃ a, Ψ a) ⊣⊢ ∃ a, ■ (Ψ a) :=
@@ -147,7 +148,7 @@ theorem plainly_or [SbiEmpValidExist PROP] : ■ (P ∨ Q) ⊣⊢ ■ P ∨ ■ 
   exact plainly_exists_1.trans <| exists_mono (·.casesOn .rfl .rfl)
 
 @[rocq_alias plainly_impl]
-theorem plainly_impl : ■ (P → Q) ⊢ ■ P → ■ Q := by
+theorem plainly_imp : ■ (P → Q) ⊢ ■ P → ■ Q := by
   refine imp_intro_swap <| plainly_and.mpr.trans ?_
   exact plainly_mono imp_elim_right
 
@@ -164,15 +165,15 @@ theorem plainly_sep_dup : ■ P ⊣⊢ ■ P ∗ ■ P := by
     _ ⊢ ■ P ∗ ■ P := sep_mono and_elim_l .rfl
 
 @[rocq_alias plainly_and_sep_l_1]
-theorem plainly_and_sep_l_1 : ■ P ∧ Q ⊢ ■ P ∗ Q :=
+theorem plainly_and_sep_left_mp : ■ P ∧ Q ⊢ ■ P ∗ Q :=
   calc iprop(■ P ∧ Q)
     _ ⊢ ■ P ∧ (emp ∗ Q) := and_mono .rfl emp_sep.2
     _ ⊢ (■ P ∧ emp) ∗ Q := plainly_and_sep_assoc.1
     _ ⊢ ■ P ∗ Q := sep_mono and_elim_l .rfl
 
 @[rocq_alias plainly_and_sep_r_1]
-theorem plainly_and_sep_r_1 : P ∧ ■ Q ⊢ P ∗ ■ Q :=
-  and_comm.1.trans <| plainly_and_sep_l_1.trans sep_symm
+theorem plainly_and_sep_right_mp : P ∧ ■ Q ⊢ P ∗ ■ Q :=
+  and_comm.1.trans <| plainly_and_sep_left_mp.trans sep_symm
 
 @[rocq_alias plainly_True_emp]
 theorem plainly_true_emp : ■ True ⊣⊢ ■ (emp : PROP) :=
@@ -181,7 +182,7 @@ theorem plainly_true_emp : ■ True ⊣⊢ ■ (emp : PROP) :=
 @[rocq_alias plainly_and_sep]
 theorem plainly_and_sep : ■ (P ∧ Q) ⊢ ■ (P ∗ Q) :=
   calc iprop(■ (P ∧ Q))
-    _ ⊢ ■ ■ P ∧ ■ Q := plainly_and.mp.trans <| and_mono plainly_idemp_2 .rfl
+    _ ⊢ ■ ■ P ∧ ■ Q := plainly_and.mp.trans <| and_mono plainly_idem_mpr .rfl
     _ ⊢ ■ (■ P ∧ Q) := plainly_and.mpr
     _ ⊢ ■ (■ P ∧ (emp ∗ Q)) := plainly_mono <| and_mono .rfl emp_sep.mpr
     _ ⊢ ■ ((■ P ∧ emp) ∗ Q) := plainly_mono plainly_and_sep_assoc.1
@@ -203,7 +204,7 @@ theorem intuitionistically_plainly : □ ■ P ⊢ ■ □ P := by
 
 @[rocq_alias and_sep_plainly]
 theorem and_sep_plainly : ■ P ∧ ■ Q ⊣⊢ ■ P ∗ ■ Q :=
-  ⟨plainly_and_sep_l_1, and_intro plainly_absorb (sep_symm.trans plainly_absorb)⟩
+  ⟨plainly_and_sep_left_mp, and_intro plainly_absorb (sep_symm.trans plainly_absorb)⟩
 
 @[rocq_alias plainly_sep_2]
 theorem plainly_sep_2 : ■ P ∗ ■ Q ⊢ ■ (P ∗ Q) :=
@@ -231,16 +232,16 @@ theorem plainly_wand : ■ (P -∗ Q) ⊢ ■ P -∗ ■ Q :=
   wand_intro <| plainly_sep_2.trans (plainly_mono wand_elim_left)
 
 @[rocq_alias plainly_entails_l]
-theorem plainly_entails_l (H : P ⊢ ■ Q) : P ⊢ ■ Q ∗ P :=
-  (and_intro H .rfl).trans plainly_and_sep_l_1
+theorem plainly_entails_left (H : P ⊢ ■ Q) : P ⊢ ■ Q ∗ P :=
+  (and_intro H .rfl).trans plainly_and_sep_left_mp
 
 @[rocq_alias plainly_entails_r]
-theorem plainly_entails_r (H : P ⊢ ■ Q) : P ⊢ P ∗ ■ Q :=
-  (and_intro .rfl H).trans plainly_and_sep_r_1
+theorem plainly_entails_right (H : P ⊢ ■ Q) : P ⊢ P ∗ ■ Q :=
+  (and_intro .rfl H).trans plainly_and_sep_right_mp
 
 @[rocq_alias plainly_impl_wand_2]
 theorem plainly_impl_wand_2 : ■ (P -∗ Q) ⊢ ■ (P → Q) := by
-  refine plainly_intro' (imp_intro ?_)
+  refine plainly_intro_plainly (imp_intro ?_)
   calc iprop(■ (P -∗ Q) ∧ P)
     _ ⊢ ■ (P -∗ Q) ∧ (emp ∗ P) := and_mono .rfl emp_sep.mpr
     _ ⊢ (■ (P -∗ Q) ∧ emp) ∗ P := plainly_and_sep_assoc.mp
@@ -249,7 +250,7 @@ theorem plainly_impl_wand_2 : ■ (P -∗ Q) ⊢ ■ (P → Q) := by
 
 @[rocq_alias impl_wand_plainly_2]
 theorem impl_wand_plainly_2 : (■ P -∗ Q) ⊢ (■ P → Q) :=
-  imp_intro_swap <| plainly_and_sep_l_1.trans wand_elim_right
+  imp_intro_swap <| plainly_and_sep_left_mp.trans wand_elim_right
 
 @[rocq_alias impl_wand_affinely_plainly]
 theorem impl_wand_affinely_plainly : (■ P → Q) ⊣⊢ (<affine> ■ P -∗ Q) := by
@@ -285,25 +286,25 @@ theorem plainly_emp : ■ emp ⊣⊢ (emp : PROP) :=
   ⟨plainly_elim, plainly_emp_2⟩
 
 @[rocq_alias plainly_and_sep_l]
-theorem plainly_and_sep_l : ■ P ∧ Q ⊣⊢ ■ P ∗ Q :=
-  ⟨plainly_and_sep_l_1, sep_and⟩
+theorem plainly_and_sep_left : ■ P ∧ Q ⊣⊢ ■ P ∗ Q :=
+  ⟨plainly_and_sep_left_mp, sep_and⟩
 
 @[rocq_alias plainly_and_sep_r]
-theorem plainly_and_sep_r : P ∧ ■ Q ⊣⊢ P ∗ ■ Q := by
+theorem plainly_and_sep_right : P ∧ ■ Q ⊣⊢ P ∗ ■ Q := by
   constructor
-  · exact and_comm.mp.trans <| plainly_and_sep_l.mp.trans sep_symm
-  · exact sep_symm.trans <| plainly_and_sep_l.mpr.trans and_comm.mpr
+  · exact and_comm.mp.trans <| plainly_and_sep_left.mp.trans sep_symm
+  · exact sep_symm.trans <| plainly_and_sep_left.mpr.trans and_comm.mpr
 
 @[rocq_alias plainly_impl_wand]
 theorem plainly_impl_wand : ■ (P → Q) ⊣⊢ ■ (P -∗ Q) := by
   refine ⟨?_, plainly_impl_wand_2⟩
-  refine plainly_intro' <| wand_intro_left ?_
-  refine plainly_and_sep_r.mpr.trans ?_
+  refine plainly_intro_plainly <| wand_intro_left ?_
+  refine plainly_and_sep_right.mpr.trans ?_
   exact (and_mono .rfl plainly_elim).trans imp_elim_right
 
 @[rocq_alias impl_wand_plainly]
 theorem impl_wand_plainly : (■ P → Q) ⊣⊢ (■ P -∗ Q) :=
-  ⟨imp_wand_1, impl_wand_plainly_2⟩
+  ⟨imp_wand, impl_wand_plainly_2⟩
 
 end AffineBI
 
@@ -353,18 +354,18 @@ theorem plainly_if_exists p [SbiEmpValidExist PROP] {A : Type _} {Ψ : A → PRO
   build_plainly_if p from plainly_exists
 
 @[rocq_alias plainly_if_idemp]
-theorem plainly_if_idemp p  : ■?p ■?p P ⊣⊢ ■?p P :=
-  build_plainly_if p from plainly_idemp
+theorem plainly_if_idem p  : ■?p ■?p P ⊣⊢ ■?p P :=
+  build_plainly_if p from plainly_idem
 
 @[rocq_alias plainly_if_absorbing]
 instance plainly_if_absorbing (P : PROP) [Absorbing P] p : Absorbing iprop(■?p P) :=
   build_plainly_if p from plainly_absorbing P
 
-#rocq_ignore plainly_mono' "Generalized-rewriting Proper; use plainly_mono directly."
-#rocq_ignore plainly_flip_mono' "Generalized-rewriting Proper; use plainly_mono directly."
+#rocq_ignore plainly_mono' "Use plainly_mono."
+#rocq_ignore plainly_flip_mono' "Use plainly_mono."
 #rocq_ignore plainly_proper "Derivable from plainly_ne with NonExpansive.eqv"
-#rocq_ignore plainly_if_mono' "Generalized-rewriting Proper; use plainly_if_mono directly."
-#rocq_ignore plainly_if_flip_mono' "Generalized-rewriting Proper; use plainly_if_mono directly."
+#rocq_ignore plainly_if_mono' "Use plainly_if_mono."
+#rocq_ignore plainly_if_flip_mono' "Use plainly_if_mono."
 #rocq_ignore plainly_if_proper "Derivable from plainly_if_ne with NonExpansive.eqv"
 
 end PlainlyLaws
@@ -375,7 +376,7 @@ section PlainLaws
 class Plain [BI PROP] [BIBase.Plainly PROP] (P : PROP) where
   plain : P ⊢ ■ P
 
-#rocq_ignore Plain_proper "Derivable from BI structure; Plain is preserved under ⊣⊢."
+#rocq_ignore Plain_proper "Derivable from BI."
 
 @[rocq_alias plain_plainly_2]
 theorem plain_plainly_2 [Plain P] : P ⊢ ■ P := Plain.plain
@@ -431,7 +432,7 @@ section BigOp
 
 @[rocq_alias plainly_sep_weak_homomorphism]
 instance plainly_sep_weak_homomorphism [BIPositive PROP][BIAffine PROP] :
-    Algebra.WeakMonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) BIBase.BiEntails
+    Algebra.WeakMonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) BiEntails
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
@@ -441,7 +442,7 @@ instance plainly_sep_weak_homomorphism [BIPositive PROP][BIAffine PROP] :
   map_op := plainly_sep
 
 instance plainly_and_weak_homomorphism :
-    Algebra.WeakMonoidHomomorphism BIBase.and BIBase.and iprop(True) iprop(True) BIBase.BiEntails
+    Algebra.WeakMonoidHomomorphism BIBase.and BIBase.and iprop(True) iprop(True) BiEntails
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
@@ -451,7 +452,7 @@ instance plainly_and_weak_homomorphism :
   map_op := plainly_and
 
 instance plainly_or_weak_homomorphism [SbiEmpValidExist PROP] :
-    Algebra.WeakMonoidHomomorphism BIBase.or BIBase.or iprop(False) iprop(False) BIBase.BiEntails
+    Algebra.WeakMonoidHomomorphism BIBase.or BIBase.or iprop(False) iprop(False) BiEntails
     (BIBase.plainly (PROP := PROP)) where
   rel_refl := .rfl
   rel_trans := .trans
@@ -462,7 +463,7 @@ instance plainly_or_weak_homomorphism [SbiEmpValidExist PROP] :
 
 @[rocq_alias plainly_sep_homomorphism]
 instance plainly_sep_homomorphism [BIAffine PROP] :
-    Algebra.MonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) BIBase.BiEntails
+    Algebra.MonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) BiEntails
     (BIBase.plainly (PROP := PROP)) where
   map_unit := plainly_emp
 
@@ -472,12 +473,34 @@ instance plainly_and_homomorphism :
     (BIBase.plainly (PROP := PROP)) where
   map_unit := plainly_pure
 
-#rocq_ignore plainly_sep_entails_weak_homomorphism "Subsumed by plainly_sep_weak_homomorphism over BiEntails."
-#rocq_ignore plainly_sep_entails_homomorphism "Subsumed by plainly_sep_homomorphism over BiEntails."
+@[rocq_alias plainly_sep_entails_weak_homomorphism]
+instance plainly_sep_entails_weak_homomorphism :
+    Algebra.WeakMonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) (flip Entails)
+      (BIBase.plainly (PROP := PROP)) where
+  rel_refl := .rfl
+  rel_trans := flip .trans
+  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
+                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
+  op_proper := sep_mono
+  map_ne := inferInstance
+  map_op := plainly_sep_2
+
+@[rocq_alias plainly_sep_entails_homomorphism]
+instance plainly_sep_entails_homomorphism [BIAffine PROP] :
+    Algebra.MonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) (flip Entails)
+      (BIBase.plainly (PROP := PROP)) where
+  rel_refl := .rfl
+  rel_trans := flip .trans
+  rel_proper H G := ⟨fun J => (equiv_iff.1 G).mpr.trans (J.trans (equiv_iff.1 H).mp),
+                     fun J => (equiv_iff.1 G).mp.trans (J.trans (equiv_iff.1 H).mpr)⟩
+  op_proper := sep_mono
+  map_ne := inferInstance
+  map_op := plainly_sep_2
+  map_unit := plainly_emp.mpr
 
 @[rocq_alias plainly_or_homomorphism]
 instance plainly_or_homomorphism [SbiEmpValidExist PROP] :
-    Algebra.MonoidHomomorphism BIBase.or BIBase.or iprop(False) iprop(False) BIBase.BiEntails
+    Algebra.MonoidHomomorphism BIBase.or BIBase.or iprop(False) iprop(False) BiEntails
     (BIBase.plainly (PROP := PROP)) where
   map_unit := plainly_pure
 
@@ -570,7 +593,7 @@ instance sep_plain (P Q : PROP) [Plain P] [Plain Q]: Plain iprop(P ∗ Q) where
   plain := .trans (sep_mono plain plain) plainly_sep_2
 
 @[rocq_alias plainly_plain]
-instance plainly_plain(P : PROP) : Plain iprop(■ P) := ⟨plainly_idemp_2⟩
+instance plainly_plain(P : PROP) : Plain iprop(■ P) := ⟨plainly_idem_mpr⟩
 
 @[rocq_alias persistently_plain]
 instance persistently_plain (P : PROP) [ι : Plain P] : Plain iprop(<pers> P) where
@@ -749,7 +772,7 @@ theorem plainly_alt (P : PROP) : ■ P ⊣⊢ internalEq iprop(<affine> P) iprop
   · refine .trans ?_ (prop_ext (affinely P) iprop(emp) |>.2)
     refine plainly_mono ?_
     refine and_intro (wand_intro_left ?_) (wand_intro_left ?_)
-    · exact affinely_sep_2.trans affinely_elim_emp
+    · exact affinely_sep_mpr.trans affinely_elim_emp
     · exact emp_sep.1
   · calc iprop(internalEq _ _)
       _ ⊢ internalEq _ _                   := internalEq.symm
@@ -770,13 +793,13 @@ theorem plainly_alt_absorbing (P : PROP)[Absorbing P] : ■ P ⊣⊢ internalEq 
       _ ⊢ ■ P                     := true_imp.1
 
 @[rocq_alias plainly_True_alt]
-theorem plainly_True_alt (P : PROP) : ■ (True -∗ P) ⊣⊢ internalEq P iprop(True) := by
+theorem plainly_true_alt (P : PROP) : ■ (True -∗ P) ⊣⊢ internalEq P iprop(True) := by
   refine ⟨?_, ?_⟩
   · refine .trans ?_ (prop_ext P iprop(True) |>.2)
     refine plainly_mono ?_
     exact and_intro (wand_intro_left true_intro) (wand_intro_left wand_elim_right)
   · let Ψ P : PROP := iprop(■ (True -∗ P))
-    have : OFE.NonExpansive Ψ := OFE.NonExpansive.comp (inferInstance) (wand_ne.ne_right _ _)
+    haveI : OFE.NonExpansive Ψ := OFE.NonExpansive.comp (inferInstance) (wand_ne.ne_right _ _)
     calc iprop(internalEq _ _)
       _ ⊢ internalEq _ _                        := internalEq.symm
       _ ⊢ ■ (True -∗ True) → (■ (True -∗ P)) := internalEq.rewrite Ψ
@@ -796,10 +819,10 @@ instance internalEq_timeless {P Q : PROP} [Timeless P] [Timeless Q] :
       _ ⊢ ◇ internalEq P Q := except0_mono mpr
 
 @[rocq_alias later_plainly_1]
-theorem later_plainly_1 {P : PROP} : ▷ ■ P ⊢ ■ ▷ P := later_plainly.1
+theorem later_plainly_mp {P : PROP} : ▷ ■ P ⊢ ■ ▷ P := later_plainly.1
 
 @[rocq_alias later_plainly_2]
-theorem later_plainly_2 {P : PROP} : ■ ▷ P ⊢ ▷ ■ P := later_plainly.2
+theorem later_plainly_mpr {P : PROP} : ■ ▷ P ⊢ ▷ ■ P := later_plainly.2
 
 @[rocq_alias laterN_plainly]
 theorem laterN_plainly n {P : PROP} : ▷^[n] ■ P ⊣⊢ ■ ▷^[n] P :=
