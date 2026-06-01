@@ -21,17 +21,17 @@ section HeapLangGS
 abbrev HeapF := fun V => Std.ExtTreeMap Loc V compare
 
 class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGpreS GF where
-  heap_pre : gen_HeapGPreS PNat Loc (Option Val) GF HeapF
+  heap_pre : genHeapPreS PNat Loc (Option Val) GF HeapF
 
 attribute [reducible, instance] HeapLangGpreS.heap_pre
 
 class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGS_gen hlc GF where
-  heap : gen_HeapGS PNat Loc (Option Val) GF HeapF
+  heap : genHeapGS PNat Loc (Option Val) GF HeapF
 
 attribute [reducible, instance] HeapLangGS.heap
 
 instance HeapLangState [HeapLangGS hlc GF] : StateInterp State Observation GF where
-  stateInterp σ _ _ _ := gen_heap_interp (F := PNat) (GF := GF) (H := HeapF) σ.heap
+  stateInterp σ _ _ _ := genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap
 
 instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
   numLatersPerStep n := 0
@@ -155,7 +155,7 @@ theorem wp_alloc (v : Val) :
     Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil]
   specialize Hi 0 (by simp) (by simp)
   rw [show l' + (0 : Int) = l' by cases l'; simp only [HAdd.hAdd, Loc.mk.injEq]; grind] at Hi ⊢
-  imod gen_heap_alloc _ (.some v) _ Hi $$ Hσ with ⟨Hσ, Hpt⟩
+  imod genHeap_alloc Hi $$ Hσ with ⟨Hσ, Hpt⟩
   imodintro
   iframe Hσ
   isplit
@@ -175,7 +175,7 @@ theorem wp_load {l : Loc} {q} {v : Val} :
   · simp [toVal]
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   ihave %Hpt : ⌜σ₁.get? l = v⌝ $$ [Hσ Hpt]
-  · ihave >%_ := gen_heap_valid $$ [$Hσ $Hpt]
+  · ihave >%_ := genHeap_valid $$ [$Hσ $Hpt]
     itrivial
   ihave %Hred : ⌜BaseStep.Reducible (hl(!{.val (.lit (.loc l))}), σ₁)⌝ $$ []
   · ipureintro
@@ -209,7 +209,7 @@ theorem wp_store {l : Loc} {v v' : Val} {e : Exp} :
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   simp only [stateInterp]
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
-  · icases gen_heap_valid $$ [$Hσ $Hpt] with >%Heq'
+  · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
   ihave %Hred : ⌜BaseStep.Reducible (hl({.val (.lit (.loc l))} ← {v}), σ₁)⌝ $$ []
   · ipureintro
@@ -228,7 +228,7 @@ theorem wp_store {l : Loc} {v v' : Val} {e : Exp} :
   simp only [Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil,
     Algebra.BigOpL.bigOpL_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
-  imod gen_heap_update (v₂ := .some v) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
+  imod genHeap_update (v₂ := .some v) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
   imodintro
   iframe Hσ
   isplit
@@ -247,7 +247,7 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   simp only [stateInterp]
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
-  · icases gen_heap_valid $$ [$Hσ $Hpt] with >%Heq'
+  · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
   ihave %Hred : ⌜BaseStep.Reducible (hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})), σ₁)⌝ $$ []
   · ipureintro
@@ -286,7 +286,7 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   simp only [stateInterp]
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
-  · icases gen_heap_valid $$ [$Hσ $Hpt] with >%Heq'
+  · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
   ihave %Hred : ⌜BaseStep.Reducible (hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})), σ₁)⌝ $$ []
   · ipureintro
@@ -309,7 +309,7 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   simp only [Heq4, ↓reduceIte, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
     List.foldl_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
-  imod gen_heap_update (v₂ := .some v2') $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
+  imod genHeap_update (v₂ := .some v2') $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
   imodintro
   iframe Hσ
   isplit
