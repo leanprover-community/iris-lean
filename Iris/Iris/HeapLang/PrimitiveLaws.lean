@@ -72,7 +72,7 @@ open EctxLanguage
 
 theorem wp_snd {v1 v2 : Val} : ▷ Φ v2 ⊢ WP hl(snd(v(({v1}, {v2})))) @s; E {{ Φ }} := by
   iintro HΦ
-  iapply wp_pure_step_fupd (Hφ := True.intro) _ snd_pure
+  iapply wp_pure_step_fupd (Hφ := True.intro) _ PureExec_snd
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
   iapply wp_value $$ HΦ

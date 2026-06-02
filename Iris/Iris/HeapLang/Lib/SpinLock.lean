@@ -166,7 +166,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   iapply wp_rec
   simp only [Exp.subst, Exp.substStr, String.reduceBEq, Bool.false_eq_true, ↓reduceIte, BEq.rfl]
   inext
-  iapply wp_bind (fun x => hl(if {x} then {?_} else {?_})) (κ := instContextExpValStateObservationIf)
+  iapply wp_bind (fun x => hl(if {x} then {?_} else {?_})) (κ := instContextIfConditional)
   iapply try_acquire_spec $$ Hlock
   iintro %b Hpt
   cases b
