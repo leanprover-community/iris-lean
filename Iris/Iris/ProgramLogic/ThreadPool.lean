@@ -199,7 +199,7 @@ public theorem tpInv_lookup (tp : List Expr) (n : Nat) (e₁ : Expr) (dq : DFrac
   unfold tpInv isThread
   iintro ⟨%m, %He, Hauth⟩ Hfrag
   ihave %Hlookup := ghost_map_lookup $$ Hauth Hfrag
-  ipure_intro
+  ipureintro
   rw [← Hlookup, He _]
 
 public theorem tpInv_update (tp : List Expr) (n : Nat) (e₁ e₂ : Expr) :
@@ -213,7 +213,7 @@ public theorem tpInv_update (tp : List Expr) (n : Nat) (e₁ e₂ : Expr) :
   imodintro
   iframe
   iexists (Std.insert m n e₂)
-  iframe; ipure_intro; intro n
+  iframe; ipureintro; intro n
   grind [LawfulPartialMap.get?_insert]
 
 public theorem tpInv_new_threads (efs tp : List Expr) :
@@ -232,7 +232,7 @@ public theorem tpInv_new_threads (efs tp : List Expr) :
   isplitl [Hauth]
   · iexists (FiniteMap.map_seq tp.length efs ∪ m)
     iframe
-    ipure_intro
+    ipureintro
     intro n
     show get? (PartialMap.union (FiniteMap.map_seq tp.length efs) m) n = (tp ++ efs)[n]?
     rw [LawfulPartialMap.get?_union, LawfulFiniteMap.get?_map_seq, He n]
@@ -250,7 +250,7 @@ public theorem tpInv_set (C : List Expr) :
   · unfold tpInvIni tpInv
     iexists ∅
     iframe
-    ipure_intro
+    ipureintro
     exact get?_empty
   imodintro
   simp

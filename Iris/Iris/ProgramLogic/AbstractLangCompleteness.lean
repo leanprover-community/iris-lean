@@ -150,7 +150,7 @@ theorem weakestpre_completeness
       iframe
       iexists q
       iframe
-      ipure_intro
+      ipureintro
       grind
   · imod AbstractLangCompletenessGen.lang_completeness $$ %HnotStuck' He [Hheap HtpInv]
         with (⟨%K, %e₁, %Hctx, %Heq, %Hval, %Hatom, H⟩|⟨Hheap, Htpinv, H⟩)

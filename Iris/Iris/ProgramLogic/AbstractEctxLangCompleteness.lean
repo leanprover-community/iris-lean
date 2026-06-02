@@ -106,7 +106,8 @@ variable [CInvG F GF]
 Mirrors `weakestpre_ectx_to_prim_completeness` in
 `framework/abstract/abstract_ectx_lang_completeness.v` lines 37–53. -/
 theorem weakestpre_ectx_to_prim_completeness :
-    ⊢ abstractECTXLangComplete (TI := TI) wp AEC.heap_inv := by
+  ∀ (n : Nat) (C : List Expr) (e₁ : Expr) (σ : State) (E : CoPset),
+    ⊢ abstractECTXLangComplete (TI := TI) wp AEC.heap_inv n C e₁ σ E := by
   sorry
 
 /-- Every `AbstractEctxLangCompletenessGen` gives an
@@ -115,7 +116,7 @@ instance abstract_ectx_to_completeness :
     AbstractLangCompletenessGen wp where
   heap_inv := AEC.heap_inv
   heap_inv_timeless C σ := AEC.heap_inv_timeless C σ
-  lang_completeness := weakestpre_ectx_to_prim_completeness
+  lang_completeness := weakestpre_ectx_to_prim_completeness _ _ _ _ _
 
 end Lifting
 
