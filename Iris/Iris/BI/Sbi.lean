@@ -29,11 +29,13 @@ namespace Iris
 open OFE BI
 
 /-- Embedding of step-indexed propositions into a BI. -/
+@[rocq_alias SiPure]
 class SiPure (PROP : Type _) where
   siPure : SiProp → PROP
 export SiPure (siPure)
 
 /-- Step-indexed validity of BI propositions. -/
+@[rocq_alias SiEmpValid]
 class SiEmpValid (PROP : Type _) where
   siEmpValid : PROP → SiProp
 export SiEmpValid (siEmpValid)
@@ -75,11 +77,22 @@ class Sbi (PROP : Type _) extends BI PROP, SiPure PROP, SiEmpValid PROP where
   siEmpValid_affinely_mpr {P : PROP} : <si_emp_valid> P ⊢@{SiProp} <si_emp_valid> (<affine> P)
   prop_ext_siEmpValid {P Q : PROP} : <si_emp_valid> (P ∗-∗ Q) ⊢@{SiProp} SiProp.internalEq P Q
 
-attribute [instance] Sbi.siPure_ne Sbi.siEmpValid_ne Sbi.siPure_absorbing
+attribute [instance] Sbi.siPure_ne Sbi.siEmpValid_ne
+attribute [instance, rocq_alias si_pure_absorbing] Sbi.siPure_absorbing
 
 export Sbi (siPure_mono siEmpValid_mono siEmpValid_siPure siPure_siEmpValid siPure_imp_mpr
   siPure_sForall_mpr persistently_imp_siPure siPure_later siEmpValid_later_mp
   siEmpValid_affinely_mpr prop_ext_siEmpValid)
+
+#rocq_ignore SbiMixin "Uses the Sbi typeclass."
+#rocq_ignore SbiPropExtMixin "Included in Sbi."
+#rocq_ignore sbi_prop_ext_mixin "Included in Sbi."
+
+/-- Alias for `Sbi.siEmpValid_affinely_mpr` field. -/
+@[rocq_alias si_emp_valid_affinely_2]
+theorem si_emp_valid_affinely_2 [Sbi PROP] {P : PROP} :
+    <si_emp_valid> P ⊢@{SiProp} <si_emp_valid> (<affine> P) :=
+  Sbi.siEmpValid_affinely_mpr
 
 /-- `SbiEmpValidExist` generalizes that plainly commutes with existentials and disjunction. -/
 @[rocq_alias SbiEmpValidExist]
@@ -113,10 +126,13 @@ instance instSbiSiProp : Sbi SiProp where
   siEmpValid_affinely_mpr _ := (⟨trivial, ·⟩)
   prop_ext_siEmpValid := @SiProp.prop_ext
 
+#rocq_ignore siprop_sbi_mixin "Included in Sbi instance construction."
+#rocq_ignore siprop_sbi_prop_ext_mixin "Included in Sbi instance construction."
+
 @[rocq_alias siprop_sbi_emp_valid_exist]
 instance instSbiEmpValidExistSiProp : SbiEmpValidExist SiProp where
   siEmpValid_sExists_1 _ :=
-    sExists_elim fun p hp => exists_intro' p (and_intro (pure_intro hp) .rfl)
+    sExists_elim fun p hp => exists_intro_trans p (and_intro (pure_intro hp) .rfl)
 
 @[rocq_alias si_pure_persistent]
 instance siPure_persistent [Sbi PROP] : Persistent (PROP := PROP) iprop(<si_pure> Pi) where
@@ -128,13 +144,19 @@ instance siPure_persistent [Sbi PROP] : Persistent (PROP := PROP) iprop(<si_pure
 @[rocq_alias si_pure_forall_2]
 theorem siPure_forall_mpr [Sbi PROP] {A : Sort _} {Φi : A → SiProp} :
     (∀ x, <si_pure> Φi x) ⊢@{PROP} <si_pure> (∀ x, Φi x) := by
-  refine (forall_intro fun _ => imp_intro' <| pure_elim_l ?_).trans siPure_sForall_mpr
+  refine (forall_intro fun _ => imp_intro_swap <| pure_elim_left ?_).trans siPure_sForall_mpr
   exact fun ⟨a, ha⟩ => ha ▸ forall_elim a
 
 @[rocq_alias si_pure_proper]
 theorem siPure_mono_bi [Sbi PROP] {Pi Qi : SiProp}
     (H : Pi ⊣⊢@{SiProp} Qi) : <si_pure> Pi ⊣⊢@{PROP} <si_pure> Qi :=
   ⟨siPure_mono H.mp, siPure_mono H.mpr⟩
+
+#rocq_ignore si_pure_mono' "Use siPure_mono."
+#rocq_ignore si_pure_flip_mono' "Use siPure_mono."
+#rocq_ignore si_emp_valid_proper "Derivable from siEmpValid_ne with NonExpansive.eqv."
+#rocq_ignore si_emp_valid_mono' "Use siEmpValid_mono."
+#rocq_ignore si_emp_valid_flip_mono' "Use siEmpValid_mono."
 
 @[rocq_alias si_pure_forall]
 theorem siPure_forall [Sbi PROP] {A : Sort _} {Φi : A → SiProp} :
@@ -159,25 +181,25 @@ theorem siPure_and [Sbi PROP] {Pi Qi : SiProp} :
         <si_pure> (Pi ∧ Qi) ⊣⊢@{PROP} <si_pure> Pi ∧ <si_pure> Qi := by
   refine ⟨and_intro (siPure_mono and_elim_l) (siPure_mono and_elim_r), ?_⟩
   calc iprop(<si_pure> Pi ∧ <si_pure> Qi)
-    _ ⊢ ∀ (b : Bool), if b then <si_pure> Pi else <si_pure> Qi := (and_forall_bool ..).mp
+    _ ⊢ ∀ (b : Bool), if b then <si_pure> Pi else <si_pure> Qi := (and_forall_ite ..).mp
     _ ⊢ ∀ (b : Bool), <si_pure> (if b then Pi else Qi) := forall_mono (·.casesOn .rfl .rfl)
     _ ⊢ <si_pure> ∀ (b : Bool), if b then Pi else Qi := siPure_forall_mpr
-    _ ⊢ <si_pure> (Pi ∧ Qi) := siPure_mono and_forall_bool.mpr
+    _ ⊢ <si_pure> (Pi ∧ Qi) := siPure_mono and_forall_ite.mpr
 
 @[rocq_alias si_pure_and_sep]
 theorem siPure_and_sep [Sbi PROP] {Pi Qi : SiProp} :
     <si_pure> (Pi ∧ Qi) ⊣⊢@{PROP} <si_pure> Pi ∗ <si_pure> Qi :=
-  siPure_and.trans ⟨persistent_and_sep_1, and_intro sep_elim_l sep_elim_r⟩
+  siPure_and.trans ⟨persistent_and_sep_mp, and_intro sep_elim_left sep_elim_right⟩
 
 @[rocq_alias si_pure_or]
 theorem siPure_or [Sbi PROP] {Pi Qi : SiProp} :
     <si_pure> (Pi ∨ Qi) ⊣⊢@{PROP} <si_pure> Pi ∨ <si_pure> Qi := by
   refine ⟨?_, or_elim (siPure_mono or_intro_l) (siPure_mono or_intro_r)⟩
   calc iprop(<si_pure> (Pi ∨ Qi))
-    _ ⊢ <si_pure> (∃ b : Bool, if b then Pi else Qi) := siPure_mono or_exists_bool.mp
+    _ ⊢ <si_pure> (∃ b : Bool, if b then Pi else Qi) := siPure_mono or_exists_ite.mp
     _ ⊢ ∃ b : Bool, <si_pure> (if b then Pi else Qi) := siPure_exist.mp
     _ ⊢ ∃ b : Bool, if b then <si_pure> Pi else <si_pure> Qi := exists_mono (·.casesOn .rfl .rfl)
-    _ ⊢ <si_pure> Pi ∨ <si_pure> Qi := or_exists_bool.mpr
+    _ ⊢ <si_pure> Pi ∨ <si_pure> Qi := or_exists_ite.mpr
 
 theorem pure_iff_exists_PLift [BI PROP] {φ : Prop} : ⌜φ⌝ ⊣⊢@{PROP} ∃ _ : PLift φ, True :=
   ⟨pure_elim' (exists_intro (Ψ := fun _ => iprop(True)) <| .up ·), exists_elim (pure_intro ·.down)⟩
@@ -205,19 +227,19 @@ theorem siPure_pure [Sbi PROP] {φ : Prop} : <si_pure> ⌜φ⌝ ⊣⊢@{PROP} �
 @[rocq_alias si_pure_impl]
 theorem siPure_imp [Sbi PROP] {Pi Qi : SiProp} :
     <si_pure> (Pi → Qi) ⊣⊢@{PROP} (<si_pure> Pi → <si_pure> Qi) :=
-  ⟨imp_intro' <| siPure_and.mpr.trans <| siPure_mono imp_elim_r, siPure_imp_mpr⟩
+  ⟨imp_intro_swap <| siPure_and.mpr.trans <| siPure_mono imp_elim_right, siPure_imp_mpr⟩
 
 @[rocq_alias si_pure_impl_wand]
 theorem siPure_imp_wand [Sbi PROP] {Pi Qi : SiProp} :
     <si_pure> (Pi → Qi) ⊣⊢@{PROP} (<si_pure> Pi -∗ <si_pure> Qi) := by
-  refine ⟨wand_intro' ?_, (imp_intro' ?_).trans siPure_imp.mpr⟩
+  refine ⟨wand_intro_left ?_, (imp_intro_swap ?_).trans siPure_imp.mpr⟩
   · calc iprop(<si_pure> Pi ∗ <si_pure> (Pi → Qi))
       _ ⊢ <si_pure> (Pi ∧ (Pi → Qi)) := siPure_and_sep.mpr
-      _ ⊢ <si_pure> Qi := siPure_mono imp_elim_r
+      _ ⊢ <si_pure> Qi := siPure_mono imp_elim_right
   · calc iprop(<si_pure> Pi ∧ (<si_pure> Pi -∗ <si_pure> Qi))
-      _ ⊢ <affine> <si_pure> Pi ∗ (<si_pure> Pi -∗ <si_pure> Qi) := persistent_and_affinely_sep_l.mp
-      _ ⊢ <si_pure> Pi ∗ (<si_pure> Pi -∗ <si_pure> Qi) := sep_mono_l affinely_elim
-      _ ⊢ <si_pure> Qi := wand_elim_r
+      _ ⊢ <affine> <si_pure> Pi ∗ (<si_pure> Pi -∗ <si_pure> Qi) := persistent_and_affinely_sep_left.mp
+      _ ⊢ <si_pure> Pi ∗ (<si_pure> Pi -∗ <si_pure> Qi) := sep_mono_left affinely_elim
+      _ ⊢ <si_pure> Qi := wand_elim_right
 
 @[rocq_alias si_pure_iff]
 theorem siPure_iff [Sbi PROP] {Pi Qi : SiProp} :
@@ -243,8 +265,8 @@ theorem siPure_except0 [Sbi PROP] {Pi : SiProp} :
     <si_pure> (◇ Pi) ⊣⊢@{PROP} ◇ <si_pure> Pi := by
   show iprop(<si_pure> (▷ False ∨ Pi) ⊣⊢ ▷ False ∨ <si_pure> Pi)
   exact siPure_or.trans <|
-    ⟨or_mono_l <| siPure_later.mp.trans <| later_mono siPure_pure.mp,
-     or_mono_l <| (later_mono siPure_pure.mpr).trans siPure_later.mpr⟩
+    ⟨or_mono_left <| siPure_later.mp.trans <| later_mono siPure_pure.mp,
+     or_mono_left <| (later_mono siPure_pure.mpr).trans siPure_later.mpr⟩
 
 @[rocq_alias absorbingly_si_pure]
 theorem absorbingly_siPure [Sbi PROP] {Pi : SiProp} :
@@ -327,7 +349,7 @@ theorem siEmpValid_forall [Sbi PROP] {A : Sort _} {Φ : A → PROP} :
     _ ⊢ <si_emp_valid> <affine> <si_pure> ∀ x, <si_emp_valid> Φ x := siEmpValid_affinely_mpr
     _ ⊢ <si_emp_valid> <affine> ∀ x, <si_pure> <si_emp_valid> Φ x :=
           siEmpValid_mono <| affinely_mono siPure_forall.mp
-    _ ⊢ <si_emp_valid> ∀ x, <affine> <si_pure> <si_emp_valid> Φ x := siEmpValid_mono affinely_forall_1
+    _ ⊢ <si_emp_valid> ∀ x, <affine> <si_pure> <si_emp_valid> Φ x := siEmpValid_mono affinely_forall
     _ ⊢ <si_emp_valid> ∀ x, Φ x := siEmpValid_mono <| forall_mono fun _ => affinely_siPure_siEmpValid
 
 @[rocq_alias si_emp_valid_exist_2]
@@ -340,7 +362,7 @@ theorem siEmpValid_exist_mp [Sbi PROP] [SbiEmpValidExist PROP] {A : Type _} {Φ 
   calc iprop(<si_emp_valid> (∃ x, Φ x))
     _ ⊢ ∃ p, ⌜∃ a, Φ a = p⌝ ∧ <si_emp_valid> p := siEmpValid_sExists_1 _
     _ ⊢ ∃ x, <si_emp_valid> Φ x :=
-        exists_elim fun _ => pure_elim_l fun ⟨_, ha⟩ => ha ▸ exists_intro' _ .rfl
+        exists_elim fun _ => pure_elim_left fun ⟨_, ha⟩ => ha ▸ exists_intro_trans _ .rfl
 
 @[rocq_alias si_emp_valid_exist]
 theorem siEmpValid_exist [Sbi PROP] [SbiEmpValidExist PROP] {A : Type _} {Φ : A → PROP} :
@@ -352,10 +374,10 @@ theorem siEmpValid_and [Sbi PROP] {P Q : PROP} :
     <si_emp_valid> (P ∧ Q) ⊣⊢@{SiProp} <si_emp_valid> P ∧ <si_emp_valid> Q := by
   refine ⟨and_intro (siEmpValid_mono and_elim_l) (siEmpValid_mono and_elim_r), ?_⟩
   calc iprop(<si_emp_valid> P ∧ <si_emp_valid> Q)
-    _ ⊢ ∀ b, if b then siEmpValid P else siEmpValid Q := (and_forall_bool ..).mp
+    _ ⊢ ∀ b, if b then siEmpValid P else siEmpValid Q := (and_forall_ite ..).mp
     _ ⊢ ∀ (b : Bool), siEmpValid (if b then P else Q) := forall_mono (·.casesOn .rfl .rfl)
     _ ⊢ <si_emp_valid> ∀ (b : Bool), if b then P else Q := siEmpValid_forall.mpr
-    _ ⊢ <si_emp_valid> (P ∧ Q) := siEmpValid_mono and_forall_bool.mpr
+    _ ⊢ <si_emp_valid> (P ∧ Q) := siEmpValid_mono and_forall_ite.mpr
 
 @[rocq_alias si_emp_valid_or_2]
 theorem siEmpValid_or_mpr [Sbi PROP] {P Q : PROP} :
@@ -367,10 +389,10 @@ theorem siEmpValid_or [Sbi PROP] [SbiEmpValidExist PROP] {P Q : PROP} :
     <si_emp_valid> (P ∨ Q) ⊣⊢@{SiProp} <si_emp_valid> P ∨ <si_emp_valid> Q := by
   refine ⟨?_, siEmpValid_or_mpr⟩
   calc iprop(<si_emp_valid> (P ∨ Q))
-    _ ⊢ <si_emp_valid> (∃ b : Bool, if b then P else Q) := siEmpValid_mono or_exists_bool.mp
+    _ ⊢ <si_emp_valid> (∃ b : Bool, if b then P else Q) := siEmpValid_mono or_exists_ite.mp
     _ ⊢ ∃ b : Bool, <si_emp_valid> (if b then P else Q) := siEmpValid_exist.mp
     _ ⊢ ∃ b, if b then <si_emp_valid> P else <si_emp_valid> Q := exists_mono (·.casesOn .rfl .rfl)
-    _ ⊢ <si_emp_valid> P ∨ <si_emp_valid> Q := or_exists_bool.mpr
+    _ ⊢ <si_emp_valid> P ∨ <si_emp_valid> Q := or_exists_ite.mpr
 
 @[rocq_alias si_emp_valid_impl_si_pure]
 theorem siEmpValid_imp_siPure [Sbi PROP] {Pi : SiProp} {Q : PROP} :
@@ -379,9 +401,9 @@ theorem siEmpValid_imp_siPure [Sbi PROP] {Pi : SiProp} {Q : PROP} :
     _ ⊢ <si_emp_valid> <si_pure> (Pi → <si_emp_valid> Q) := siEmpValid_siPure.mpr
     _ ⊢ <si_emp_valid> (<affine> <si_pure> (Pi → <si_emp_valid> Q)) := siEmpValid_affinely.mpr
     _ ⊢ <si_emp_valid> (<si_pure> Pi → Q) := by
-        refine siEmpValid_mono <| imp_intro' ?_
-        refine affinely_and_r.mp.trans ?_
-        refine (affinely_mono <| siPure_and.mpr.trans <| siPure_mono imp_elim_r).trans ?_
+        refine siEmpValid_mono <| imp_intro_swap ?_
+        refine affinely_and_right.mp.trans ?_
+        refine (affinely_mono <| siPure_and.mpr.trans <| siPure_mono imp_elim_right).trans ?_
         exact affinely_siPure_siEmpValid
 
 @[rocq_alias si_emp_valid_sep]
@@ -399,8 +421,8 @@ theorem siEmpValid_sep [Sbi PROP] [BIPositive PROP] {P Q : PROP} :
 theorem siEmpValid_wand_siPure [Sbi PROP] {Pi : SiProp} {Q : PROP} :
     (Pi → <si_emp_valid> Q) ⊢@{SiProp} <si_emp_valid> (<affine> <si_pure> Pi -∗ Q) := by
   refine siEmpValid_imp_siPure.trans ?_
-  refine siEmpValid_mono <| wand_intro' ?_
-  exact persistent_and_affinely_sep_l.mpr.trans imp_elim_r
+  refine siEmpValid_mono <| wand_intro_left ?_
+  exact persistent_and_affinely_sep_left.mpr.trans imp_elim_right
 
 @[rocq_alias si_emp_valid_later]
 theorem siEmpValid_later [Sbi PROP] {P : PROP} :
@@ -423,19 +445,19 @@ theorem siEmpValid_except0 [Sbi PROP] {P : PROP} :
     <si_emp_valid> (◇ P) ⊣⊢@{SiProp} ◇ <si_emp_valid> P := by
   constructor
   · refine (and_intro ((siEmpValid_mono except0_into_later).trans siEmpValid_later.mp) .rfl).trans ?_
-    refine (and_mono_l later_false_em).trans <| and_or_r.mp.trans ?_
-    refine or_elim (or_intro_l' and_elim_l) <| or_intro_r' ?_
+    refine (and_mono_left later_false_em).trans <| and_or_right.mp.trans ?_
+    refine or_elim (or_intro_left_trans and_elim_l) <| or_intro_right_trans ?_
     calc iprop((▷ False → <si_emp_valid> P) ∧ <si_emp_valid> ◇ P)
       _ ⊢ <si_emp_valid> (<si_pure> ▷ False → P) ∧ <si_emp_valid> ◇ P :=
-          and_mono_l siEmpValid_imp_siPure
+          and_mono_left siEmpValid_imp_siPure
       _ ⊢ <si_emp_valid> ((<si_pure> ▷ False → P) ∧ ◇ P) := siEmpValid_and.mpr
       _ ⊢ <si_emp_valid> ((▷ False → P) ∧ ◇ P) :=
-          siEmpValid_mono <| and_mono_l (imp_mono_l siPure_later_false.mpr)
+          siEmpValid_mono <| and_mono_left (imp_mono_left siPure_later_false.mpr)
       _ ⊢ <si_emp_valid> P :=
-          siEmpValid_mono <| and_or_l.mp.trans <| or_elim imp_elim_l and_elim_r
+          siEmpValid_mono <| and_or_left.mp.trans <| or_elim imp_elim_left and_elim_r
   · calc iprop(▷ False ∨ <si_emp_valid> P)
-      _ ⊢ ▷ <si_emp_valid> ⌜False⌝ ∨ <si_emp_valid> P := or_mono_l <| later_mono siEmpValid_pure.mpr
-      _ ⊢ <si_emp_valid> (▷ False) ∨ <si_emp_valid> P := or_mono_l siEmpValid_later.mpr
+      _ ⊢ ▷ <si_emp_valid> ⌜False⌝ ∨ <si_emp_valid> P := or_mono_left <| later_mono siEmpValid_pure.mpr
+      _ ⊢ <si_emp_valid> (▷ False) ∨ <si_emp_valid> P := or_mono_left siEmpValid_later.mpr
       _ ⊢ <si_emp_valid> (▷ False ∨ P) := siEmpValid_or_mpr
 
 
@@ -498,11 +520,9 @@ theorem laterN_soundness [Sbi PROP] {P : PROP} {n : Nat} (h : emp ⊢ ▷^[n] P)
   | .zero => h
   | .succ _ => laterN_soundness (later_soundness h)
 
-/-! ## Plainly modality derived from Sbi
+/-! ## Plainly modality derived from Sbi -/
 
-In Rocq: `■ P := <si_pure> <si_emp_valid> P`. All BIPlainly axioms are derived. -/
-
-@[rocq_alias siProp_plain]
+@[rocq_alias siProp_plain, rocq_alias plainly]
 instance instPlainlySbi [Sbi PROP] : BIBase.Plainly PROP where
   plainly P := SiPure.siPure (SiEmpValid.siEmpValid P)
 
@@ -522,17 +542,17 @@ theorem plainly_elim_persistently {P : PROP} : iprop(■ P ⊢ <pers> P) :=
   siPure_siEmpValid
 
 @[rocq_alias plainly_idemp_2]
-theorem plainly_idemp_2 {P : PROP} : iprop(■ P ⊢ ■ ■ P) :=
+theorem plainly_idem_mpr {P : PROP} : iprop(■ P ⊢ ■ ■ P) :=
   siPure_mono siEmpValid_siPure.mpr
 
 @[rocq_alias plainly_forall_2]
-theorem plainly_forall_2 {A : Sort _} (Ψ : A → PROP) :
+theorem plainly_forall {A : Sort _} (Ψ : A → PROP) :
     iprop((∀ a, ■ (Ψ a)) ⊢ ■ (∀ a, Ψ a)) := by
   show iprop((∀ a, <si_pure> <si_emp_valid> Ψ a) ⊢ <si_pure> <si_emp_valid> (∀ a, Ψ a))
   exact siPure_forall.mpr.trans <| siPure_mono siEmpValid_forall.mpr
 
 @[rocq_alias plainly_exist_1]
-theorem plainly_exist_1 [SbiEmpValidExist PROP] {A : Type _} (Ψ : A → PROP) :
+theorem plainly_exist [SbiEmpValidExist PROP] {A : Type _} (Ψ : A → PROP) :
     iprop(■ (∃ a, Ψ a) ⊢ ∃ a, ■ (Ψ a)) := by
   show iprop(<si_pure> <si_emp_valid> (∃ a, Ψ a) ⊢ ∃ a, <si_pure> <si_emp_valid> (Ψ a))
   exact (siPure_mono siEmpValid_exist.mp).trans siPure_exist.mp
@@ -554,7 +574,7 @@ theorem plainly_emp_intro {P : PROP} : iprop(P ⊢ ■ emp) := by
 @[rocq_alias plainly_absorb]
 theorem plainly_absorb {P Q : PROP} : iprop(■ P ∗ Q ⊢ ■ P) := by
   show iprop(<si_pure> <si_emp_valid> P ∗ Q ⊢ <si_pure> <si_emp_valid> P)
-  exact sep_elim_l
+  exact sep_elim_left
 
 @[rocq_alias later_plainly]
 theorem later_plainly {P : PROP} : iprop(▷ ■ P ⊣⊢ ■ ▷ P) := by
@@ -578,12 +598,12 @@ theorem plainly_sForall_2_sbi {Φ : PROP → Prop} :
   sorry
 -/
 
-theorem plainly_sExists_1 [SbiEmpValidExist PROP] {Φ : PROP → Prop} :
+theorem plainly_sExists [SbiEmpValidExist PROP] {Φ : PROP → Prop} :
     iprop(■ sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ ■ p) := by
   show iprop(<si_pure> <si_emp_valid> sExists Φ ⊢ ∃ p, ⌜Φ p⌝ ∧ <si_pure> <si_emp_valid> p)
   exact (siPure_mono (SbiEmpValidExist.siEmpValid_sExists_1 Φ)).trans <|
     siPure_exist.mp.trans <|
-    exists_mono fun p => siPure_and.mp.trans (and_mono_l siPure_pure.mp)
+    exists_mono fun p => siPure_and.mp.trans (and_mono_left siPure_pure.mp)
 
 @[rocq_alias plainly_if_ne]
 instance instPlainlyIf_ne p: OFE.NonExpansive (BIBase.Plainly.plainlyIf (PROP := PROP) p) where

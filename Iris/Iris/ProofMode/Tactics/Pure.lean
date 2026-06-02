@@ -18,12 +18,12 @@ theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
     (h : P ⊣⊢ P' ∗ A) (h_entails : φ → P' ⊢ Q) : P ⊢ Q :=
   h.1.trans <| match or with
   | TCOr.l =>
-    (sep_mono_r <| (affine_affinely A).2.trans (affinely_mono hA.1)).trans <|
-    persistent_and_affinely_sep_r.2.trans (pure_elim_r h_entails)
+    (sep_mono_right <| (affine_affinely A).2.trans (affinely_mono hA.1)).trans <|
+    persistent_and_affinely_sep_right.2.trans (pure_elim_right h_entails)
   | TCOr.r =>
-    (sep_mono_r <| hA.1.trans absorbingly_affinely_intro_of_persistent).trans <|
-    absorbingly_sep_lr.2.trans <| persistent_and_affinely_sep_r.2.trans <|
-    pure_elim_r fun hφ => (absorbingly_mono <| h_entails hφ).trans absorbing
+    (sep_mono_right <| hA.1.trans absorbingly_affinely_intro_of_persistent).trans <|
+    absorbingly_sep_left_right.2.trans <| persistent_and_affinely_sep_right.2.trans <|
+    pure_elim_right fun hφ => (absorbingly_mono <| h_entails hφ).trans absorbing
 
 theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=

@@ -20,40 +20,40 @@ theorem specialize_wand [BI PROP] {q p : Bool} {A1 A2 A3 Q P1 P2 : PROP}
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊣⊢ A3 ∗ □?p P1)
     [h3 : IntoWand q p Q .in P1 .out P2] :
     A1 ⊢ A3 ∗ □?(p && q) P2 := by
-  refine h1.trans <| (sep_mono_l h2.1).trans <| sep_assoc.1.trans (sep_mono_r ?_)
+  refine h1.trans <| (sep_mono_left h2.1).trans <| sep_assoc.1.trans (sep_mono_right ?_)
   cases p with
-  | false => exact (sep_mono_r h3.1).trans <| wand_elim_r
+  | false => exact (sep_mono_right h3.1).trans <| wand_elim_right
   | true => exact
     (sep_mono intuitionisticallyIf_intutitionistically.2 intuitionisticallyIf_idem.2).trans <|
-    intuitionisticallyIf_sep_2.trans <| intuitionisticallyIf_mono <| (wand_elim' h3.1)
+    intuitionisticallyIf_sep_mpr.trans <| intuitionisticallyIf_mono <| (wand_elim_swap h3.1)
 
 -- TODO: if q is true and A1 is persistent, this proof can guarantee □ P2 instead of P2
 -- see https://gitlab.mpi-sws.org/iris/iris/-/blob/846ed45bed6951035c6204fef365d9a344022ae6/iris/proofmode/coq_tactics.v#L336
 theorem specialize_wand_subgoal [BI PROP] {q : Bool} {A1 A2 A3 A4 Q P1 : PROP} P2
     (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊣⊢ A3 ∗ A4) (h3 : A4 ⊢ P1)
     [inst : IntoWand q false Q .out P1 .out P2] : A1 ⊢ A3 ∗ P2 := by
-  refine h1.trans <| (sep_mono_l h2.1).trans <| sep_assoc.1.trans (sep_mono_r ((sep_mono_l h3).trans ?_))
-  exact (sep_mono_r inst.1).trans wand_elim_r
+  refine h1.trans <| (sep_mono_left h2.1).trans <| sep_assoc.1.trans (sep_mono_right ((sep_mono_left h3).trans ?_))
+  exact (sep_mono_right inst.1).trans wand_elim_right
 
 theorem specialize_wand_autoframe [BI PROP] {q : Bool} {A1 A2 A3 Q P1 : PROP} P2
      (h1 : A1 ⊢ A2 ∗ □?q Q) (h2 : A2 ⊢ A3 ∗ P1)
      [inst : IntoWand q false Q .out P1 .out P2] : A1 ⊢ A3 ∗ P2 :=
-  h1.trans <| (sep_mono_l h2).trans <| sep_assoc.1.trans
-    (sep_mono_r ((sep_mono_r inst.into_wand).trans wand_elim_r))
+  h1.trans <| (sep_mono_left h2).trans <| sep_assoc.1.trans
+    (sep_mono_right ((sep_mono_right inst.into_wand).trans wand_elim_right))
 
 theorem specialize_forall [BI PROP] {p : Bool} {A1 A2 P : PROP} {α : Sort _} {Φ : α → PROP}
     [inst : IntoForall P Φ] (h : A1 ⊢ A2 ∗ □?p P) (a : α) : A1 ⊢ A2 ∗ □?p (Φ a) := by
-  refine h.trans <| sep_mono_r <| intuitionisticallyIf_mono <| inst.1.trans (forall_elim a)
+  refine h.trans <| sep_mono_right <| intuitionisticallyIf_mono <| inst.1.trans (forall_elim a)
 
 theorem specialize_dup_context [BI PROP] {P : PROP} {pa A P' pb B}
   (h : P ∗ □?pa A ⊢ P' ∗ □?pb B)
   (h2 : pa = true ∨ Affine A)
   [IntoPersistently pb B B']
   : P ∗ □?pa A ⊢ P ∗ □ B' := by
-    apply Entails.trans _ persistently_and_intuitionistically_sep_r.1
+    apply Entails.trans _ persistently_and_intuitionistically_sep_right.1
     apply and_intro
-    · cases h2 <;> subst_eqs <;> apply sep_elim_l
-    · apply h.trans $ (sep_mono_r (persistentlyIf_of_intuitionisticallyIf.trans into_persistently)).trans sep_elim_r
+    · cases h2 <;> subst_eqs <;> apply sep_elim_left
+    · apply h.trans $ (sep_mono_right (persistentlyIf_of_intuitionisticallyIf.trans into_persistently)).trans sep_elim_right
 
 public meta section
 open Lean Elab Tactic Meta Qq Std

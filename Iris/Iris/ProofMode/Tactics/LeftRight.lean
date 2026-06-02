@@ -16,11 +16,11 @@ open BI
 
 theorem from_or_l [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A1) : P ⊢ Q :=
-  (or_intro_l' h1).trans inst.1
+  (or_intro_left_trans h1).trans inst.1
 
 theorem from_or_r [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
     (h1 : P ⊢ A2) : P ⊢ Q :=
-  (or_intro_r' h1).trans inst.1
+  (or_intro_right_trans h1).trans inst.1
 
 public meta section
 open Lean Elab.Tactic Meta Qq Std

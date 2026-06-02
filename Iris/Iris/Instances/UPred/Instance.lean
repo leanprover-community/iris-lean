@@ -635,7 +635,7 @@ instance : BIUpdate (UPred M) where
   trans _ _ H k yf Hx Hyf :=
     let ⟨x', Hx', Hx''⟩ := H k yf Hx Hyf
     Hx'' k yf k.le_refl Hx'
-  frame_r {_ R} _ _ := fun ⟨x1, x2, Hx, HP, HR⟩ k yf Hk Hyf => by
+  frame_right {_ R} _ _ := fun ⟨x1, x2, Hx, HP, HR⟩ k yf Hk Hyf => by
     have L : ✓{k} x1 • (x2 • yf) := (op_assocN.trans (Hx.le Hk).op_l.symm).validN.2 Hyf
     let ⟨x', Hx'1, Hx'2⟩ := HP k (x2 • yf) Hk L
     refine ⟨x' • x2, op_assocN.validN.1 Hx'1, x', x2, .rfl, Hx'2, ?_⟩
@@ -657,13 +657,6 @@ theorem bupd_si_pure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure>
 @[rocq_alias uPred_bi_bupd_sbi]
 instance : BIBUpdateSbi (UPred M) where
   bupd_si_pure := bupd_si_pure
-
-instance : BIBUpdatePlainly (UPred M) where
-  bupd_plainly {P} n x Hv := by
-    have L : ✓{n} x.val • unit := unit_right_id.symm.dist.validN.1 x.property
-    let ⟨x', _, Hx'⟩ := Hv n unit n.le_refl L
-    rw [plainly_eq_uPred_plainly] at Hx'
-    exact P.mono Hx' incN_unit n.le_refl
 
 @[rocq_alias uPred_primitive.ownM_valid, rocq_alias uPred.ownM_valid]
 theorem ownM_valid (m : M) : ownM m ⊢ internalCmraValid m := fun _ h hp => hp.validN h.property
@@ -778,7 +771,7 @@ theorem ownM_unit' : ownM unit ⊣⊢@{UPred M} True :=
 @[rocq_alias uPred.bupd_ownM_update]
 theorem bupd_ownM_update {x y : M} (hupd : x ~~> y) : ownM x ⊢ |==> ownM y := by
   refine (bupd_ownM_updateP x (y = ·) (UpdateP.of_update hupd)).trans ?_
-  exact BIUpdate.mono (exists_elim fun z => pure_elim_l fun hyz => hyz ▸ .rfl)
+  exact BIUpdate.mono (exists_elim fun z => pure_elim_left fun hyz => hyz ▸ .rfl)
 
 @[rocq_alias uPred.ownM_timeless]
 instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where

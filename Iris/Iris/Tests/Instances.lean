@@ -136,7 +136,7 @@ def tac_continue : SynthTactic := λ e => do
   logInfo m!"tac_continue called with {e}"
   return .continue
 
-theorem tactic_test_emp [BI PROP] (P : PROP) : TacticTest iprop(emp ∗ P) P := ⟨sep_elim_r⟩
+theorem tactic_test_emp [BI PROP] (P : PROP) : TacticTest iprop(emp ∗ P) P := ⟨sep_elim_right⟩
 
 @[ipm_tactic_instance TacticTest iprop(emp ∗ _) _]
 def tac_emp : SynthTactic := λ e => do

@@ -116,7 +116,7 @@ theorem bigAndM_absorbing {Φ : K → V → PROP} {m : M V}
     (h : ∀ {k x}, get? m k = some x → Absorbing (Φ k x)) :
     Absorbing ([∧map] k ↦ x ∈ m, Φ k x) where
   absorbing := bigOpM_closed (P := fun Q => <absorb> Q ⊢ Q) true_intro
-    (absorbingly_and_1.trans <| and_mono · ·) (h · |>.absorbing)
+    (absorbingly_and.trans <| and_mono · ·) (h · |>.absorbing)
 
 instance bigAndM_absorbing_inst {Φ : K → V → PROP} {m : M V} [∀ k x, Absorbing (Φ k x)] :
     Absorbing ([∧map] k ↦ x ∈ m, Φ k x) :=
@@ -159,7 +159,7 @@ theorem bigAndM_insert_elim {Φ : K → V → PROP} {m : M V} {i : K} {x : V} :
     Φ i x ∧ ([∧map] k ↦ v ∈ m, Φ k v) ⊢ [∧map] k ↦ v ∈ insert m i x, Φ k v :=
   match hm : get? m i with
   | none => (bigAndM_insert hm).2
-  | some _ => (and_mono_r ((bigAndM_delete hm).1.trans and_elim_r)).trans bigAndM_insert_delete.2
+  | some _ => (and_mono_right ((bigAndM_delete hm).1.trans and_elim_r)).trans bigAndM_insert_delete.2
 
 @[rocq_alias big_andM_intro]
 theorem bigAndM_intro {P : PROP} {Φ : K → V → PROP} {m : M V}
@@ -171,9 +171,9 @@ theorem bigAndM_intro {P : PROP} {Φ : K → V → PROP} {m : M V}
 theorem bigAndM_forall {Φ : K → V → PROP} {m : M V} :
     ([∧map] k ↦ x ∈ m, Φ k x) ⊣⊢ ∀ k, ∀ v, iprop(⌜get? m k = some v⌝ → Φ k v) := by
   refine ⟨forall_intro fun _ => forall_intro fun _ => ?_, bigAndM_intro fun {k x} hget => ?_⟩
-  · exact imp_intro <| and_comm.1.trans <| pure_elim_l (bigAndM_lookup ·)
+  · exact imp_intro <| and_comm.1.trans <| pure_elim_left (bigAndM_lookup ·)
   · exact (forall_elim k).trans <| (forall_elim x).trans <|
-    (imp_congr_l <| pure_true hget).1.trans true_imp.1
+    (imp_congr_left <| pure_true hget).1.trans true_imp.1
 
 @[rocq_alias big_andM_impl]
 theorem bigAndM_impl {Φ Ψ : K → V → PROP} {m : M V} :
@@ -181,7 +181,7 @@ theorem bigAndM_impl {Φ Ψ : K → V → PROP} {m : M V} :
       [∧map] k ↦ x ∈ m, Ψ k x := by
   refine bigAndM_intro fun {k v} hget => (and_mono (bigAndM_lookup hget) <|
   (forall_elim k).trans (forall_elim v)).trans ?_
-  exact (and_mono .rfl <| (and_intro (pure_intro hget) .rfl).trans imp_elim_r).trans imp_elim_r
+  exact (and_mono .rfl <| (and_intro (pure_intro hget) .rfl).trans imp_elim_right).trans imp_elim_right
 
 @[rocq_alias big_andM_subseteq]
 theorem bigAndM_subseteq {Φ : K → V → PROP} {m₁ m₂ : M V}
@@ -261,7 +261,7 @@ theorem bigAndM_filter {Φ : K → V → PROP} {m : M V} (p : K → V → Bool) 
       [∧map] k ↦ x ∈ m, iprop(⌜p k x = true⌝ → Φ k x) :=
   (bigAndM_filter_cond p).trans <| bigOpM_proper fun {k x} _ => by
     match hp : p k x with
-    | false => simpa using equiv_iff.mpr ⟨imp_intro' <| pure_elim_l False.elim, true_intro⟩
+    | false => simpa using equiv_iff.mpr ⟨imp_intro_swap <| pure_elim_left False.elim, true_intro⟩
     | true => simpa using equiv_iff.mpr true_imp.symm
 
 @[rocq_alias big_andM_union]
