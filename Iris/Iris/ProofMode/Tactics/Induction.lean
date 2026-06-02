@@ -270,11 +270,15 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   | .const indName _ =>
     match (← getEnv).find? indName with
     | some (.inductInfo val) =>
-        -- Use the user-supplied recursor name if available
-        let some recName ← match altRecName with
-          | none => getCustomEliminator? #[mkFVar fvar] true
-          | some altRecName => pure altRecName
-        | throwError "iinduction: unable to determine recursor name"
+        let recName ←
+          match altRecName, ← getCustomEliminator? #[mkFVar fvar] true with
+          -- Use the user-supplied recursor name if available
+          | some altRecName, _ => pure altRecName
+          -- Use the default recursor name if available
+          | none, some r => pure r
+          -- Use `.rec` as the fallback option
+          | none, none => pure <| mkRecName indName
+        -- | throwError "iinduction: unable to determine recursor name"
         pure (recName, val.ctors)
     | _ => throwError "iinduction: {indName} is not inductive"
   | _ => throwError "iinduction: unable to determine inductive type"
