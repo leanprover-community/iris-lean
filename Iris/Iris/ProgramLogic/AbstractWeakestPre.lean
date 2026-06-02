@@ -153,40 +153,85 @@ instance WP_bind_abstract :
       (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
   wp_bind := ⟨wp_bind _, wp_bind_inv _⟩
 
-/-- The magic rule for iris-lean's `Wp`, non-value case (`e` is not a value):
-the work happens here — one physical step is threaded through the state
-interpretation. Stated for an arbitrary `Language` (generic `Context K`,
-prim-step), unlike the ectx-specialized `inv_open_maybe_ectxlang`.
-Was Rocq's `wp_inv_open_maybe_help1` in `wpre_instantiation.v`. -/
-theorem wp_inv_open_maybe_of_not_val (e : Expr) (E₁ E₂ : CoPset)
-    (Φ : Val → IProp GF) (Hnv : ToVal.toVal e = none) :
+theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val → IProp GF}
+    (Hnv : ToVal.toVal e = none) :
     (|={E₁, E₂}=>
-      (∃ K e', ⌜Context K⌝ ∗ ⌜e = K e'⌝ ∗ ⌜Atomic .WeaklyAtomic e'⌝
-        ∗ Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₂ e'
-            (fun v' => iprop% |={E₂, E₁}=> Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₁ (K v') Φ)) ∨
-      (|={E₂, E₁}=> Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₁ e Φ))
-    ⊢ Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₁ e Φ := by
-  sorry
+      (∃ K e', ⌜Context K⌝ ∗ ⌜e = K e'⌝ ∗ ⌜Atomic .WeaklyAtomic e'⌝ ∗
+        Wp.wp (Val := Val) Stuckness.NotStuck E₂ e'
+          (fun v' => iprop% |={E₂, E₁}=> Wp.wp (Val := Val) Stuckness.NotStuck E₁ (K v') Φ)) ∨
+      (|={E₂, E₁}=> Wp.wp (Val := Val) Stuckness.NotStuck E₁ e Φ))
+    ⊢ Wp.wp (Val := Val) Stuckness.NotStuck E₁ e Φ := by
+  iintro H
+  rw [IProp.ext wp_unfold, wp.pre, Hnv]
+  simp only
+  imod H with (⟨%K, %e', %Hctx, %Haux, %hato, Hwp⟩| >$)
+  subst Haux
+  -- FIXME: Why does this exit the proofmode?
+  rw [IProp.ext wp_unfold, wp.pre]; iintro Hwp
+  rcases He' : toVal e' with (_|v'); rotate_left
+  · imod Hwp; imod Hwp
+    rw [IProp.ext wp_unfold, wp.pre]
+    simp [coe_of_toVal_eq_some He', Hnv]
+  · simp only
+    iintro %σ %n %κ %κs %n₂ Hσ
+    imod Hwp $$ Hσ with ⟨%Hred, Hc⟩
+    imodintro
+    have aux := Context.reducible_fill K Hred
+    iframe %aux; clear aux
+    iintro %e₂ %σ₂ %efs %H Hlc
+    obtain ⟨e₂, rfl, Hprim⟩ := Context.primStep_fill_inv (toVal_none_of_reducible Hred) H
+    ispecialize Hc $$ %e₂ %σ₂ %efs %Hprim Hlc
+    iapply step_fupdN_mono $$ Hc
+    iintro Hc
+    imod Hc with ⟨Hst, Hwp, $⟩
+    replace Hprim : PrimStep.Irreducible (e₂, σ₂) := hato.atomic Hprim
+    -- FIXME: Why does this exit the proofmode?
+    rw [IProp.ext wp_unfold, wp.pre]
+    iintro ⟨Hst, Hwp⟩
+    rcases He₂' : toVal e₂ with (_|v₂) <;> simp only
+    · imod Hwp $$ %_ %_ %κs %.nil [Hst] with ⟨%Hredu, H⟩
+      · rw [List.append_nil κs]; iframe
+      grind
+    · imod Hwp with >Hwp
+      rw [coe_of_toVal_eq_some He₂']
+      iframe
 
-/-- The magic rule for iris-lean's `Wp` (the `InvOpenAbstractWP` shape), all
-cases. Wraps `wp_inv_open_maybe_of_not_val` with the value case (values are
-atomic). Stated for an arbitrary `Language`. Was Rocq's `wp_inv_open_maybe`. -/
 theorem wp_inv_open_maybe (e : Expr) (E₁ E₂ : CoPset) (Φ : Val → IProp GF) :
     (|={E₁, E₂}=>
-      (∃ K e', ⌜Context K⌝ ∗ ⌜e = K e'⌝ ∗ ⌜Atomic .WeaklyAtomic e'⌝
-        ∗ Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₂ e'
-            (fun v' => iprop% |={E₂, E₁}=> Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₁ (K v') Φ)) ∨
-      (|={E₂, E₁}=> Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₁ e Φ))
-    ⊢ Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₁ e Φ := by
-  sorry
+      (∃ K e', ⌜Context K⌝ ∗ ⌜e = K e'⌝ ∗ ⌜Atomic .WeaklyAtomic e'⌝ ∗
+          Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₂ e'
+          (fun v' => iprop% |={E₂, E₁}=> Wp.wp (Val := Val) Stuckness.NotStuck E₁ (K v') Φ)) ∨
+      (|={E₂, E₁}=> Wp.wp (Val := Val) Stuckness.NotStuck E₁ e Φ))
+    ⊢ Wp.wp (Val := Val) Stuckness.NotStuck E₁ e Φ := by
+  iintro H
+  rcases Hv : toVal e with (_|v);
+    iapply wp_inv_open_maybe_of_not_val Hv $$ [$]
+  rw [← coe_of_toVal_eq_some Hv]
+  iapply wp_atomic (E2 := E₂)
+  imod H with (⟨%K, %e', %Hctx, %He, %Hato, H⟩| H);
+  · rcases Hv' : toVal e' with (_|v')
+    · exfalso
+      have h1 := Hctx.toVal_eq_none_fill Hv'
+      rw [← He] at h1
+      simp at h1
+    · rw [← coe_of_toVal_eq_some Hv']
+      have hKv : K (↑v' : Expr) = ↑v := by rw [coe_of_toVal_eq_some Hv']; exact He.symm
+      imodintro
+      iapply wp_value_fupd (v := v) ⟨rfl⟩
+      imodintro
+      imod (wp_value_fupd (v := v') ⟨rfl⟩).mp $$ H with H
+      imod H
+      ihave H := (wp_value_fupd (v := v) ⟨hKv.symm⟩).mp $$ H
+      iframe
+  · imodintro
+    iapply wp_value_fupd (v := v) ⟨rfl⟩
+    imodintro
+    imod H
+    ihave _ := (wp_value_fupd (v := v) ⟨rfl⟩).mp $$ H
+    iframe
 
-/-- iris-lean's standard `WP` satisfies the magic (`InvOpenAbstractWP`) class
-for an arbitrary `Language`. This is the provider that discharges
-`[InvOpenAbstractWP wp]` for the concrete WP — the faithful port of Rocq's
-`WP_abstract_weakestpre_gen_magic_intuitionistic`. -/
 instance WP_inv_open_abstract :
-    InvOpenAbstractWP (Expr := Expr) (Val := Val)
-      (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
+    InvOpenAbstractWP (Expr := Expr) (Val := Val) (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
   inv_open_maybe e E₁ E₂ Φ _ := wp_inv_open_maybe e E₁ E₂ Φ
 
 end IrisWP
