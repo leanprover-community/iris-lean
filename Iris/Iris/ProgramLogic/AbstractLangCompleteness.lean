@@ -115,8 +115,8 @@ theorem weakestpre_completeness
   iintro #Hinv
   iloeb as IH generalizing %q %n %e
   iintro Hq He
-  have Hn : nclose completenessN ⊆ ⊤ := sorry -- TODO Solve then inline?
-  have Hn' : ⊤ \ nclose completenessN ⊆ ⊤ := sorry -- TODO Solve then inline?
+  have Hn : nclose completenessN ⊆ ⊤ := fun _ _ => CoPset.mem_full
+  have Hn' : ⊤ \ nclose completenessN ⊆ ⊤ := Std.LawfulSet.diff_subset_left
   iapply IAO.inv_open_maybe (E₂ := ⊤ \ nclose completenessN) _ _ _ Hn'
   unfold isCcfg
   imod CancelableInvariant.acc _ _ _ _ _ Hn $$ [$] [$] with ⟨>Hinv2, Hq, Hclose⟩
@@ -169,16 +169,15 @@ theorem weakestpre_completeness
       imod Hclose $$ [Hheap Htpinv] with -
       · inext
         iexists cfg
-        -- FIXME: A. needs a better proof of this
-        have Hframe : cfgSafeForking cfg f :=
-          @«inferInstanceAs» (cfgSafeForking cfg f) Hsafe
+        -- FIXME: needs a better proof of this
+        have Hframe : cfgSafeForking cfg f := @«inferInstanceAs» (cfgSafeForking cfg f) Hsafe
         iframe Hheap Htpinv %Hreach %Hframe
       imodintro
       iapply H
       inext
       iintro %e₂ %efs H
       imod CancelableInvariant.acc _ _ _ _ _ Hn $$ [$] [$] with ⟨>Hinv2, Hq, Hclose⟩
-      all_goals sorry
+      sorry
 
 
 /-- **Top-level theorem**: `adequate` gives a WP with a pure postcondition.
@@ -191,7 +190,49 @@ theorem weakestpre_sem_completeness
     ⊢ tpInvIni (TI := TI) -∗
       ACG.heap_inv [e] σ -∗
       wp ⊤ e (fun v => iprop% ⌜φ v⌝) := by
-  sorry
+  have Hsafe0 : cfgSafeForking ([e], σ) .doesFork :=
+    fun {C₂} hreach =>
+      ⟨fun {e2} hmem => Hade.adequate_not_stuck _ _ e2 rfl hreach hmem,
+       fun hf => Forking.noConfusion hf⟩
+  iintro Hini Hheap
+  iapply LWP.fupd_wp
+  imod (tpInv_set [e]) $$ Hini with ⟨Hauth, Hfrags⟩
+  imod (CancelableInvariant.alloc (F := F) ⊤ completenessN
+      (cfgInv (wp := wp) ([e], σ) .doesFork)) $$ [Hauth Hheap] with ⟨%γ, #Hinv, Hq⟩
+  · inext
+    unfold cfgInv
+    iexists ([e], σ)
+    iframe Hheap Hauth %Hsafe0
+    ipureintro
+    exact .refl
+  have Hn0 : (completenessN : CoPset) ⊆ ⊤ := fun _ _ => CoPset.mem_full
+  ihave He0 := (Iris.BI.BigSepL.bigSepL_singleton
+    (Φ := fun n e' => isThread (TI := TI) n (.own 1) e') (x := e)).1 $$ Hfrags
+  imodintro
+  iapply LWP.wp_fupd
+  ihave Hccfg : iprop(isCcfg (wp := wp) ([e], σ) .doesFork γ) $$ [Hinv]
+  · unfold isCcfg; iexact Hinv
+  ihave Hwp := weakestpre_completeness (wp := wp) ([e], σ) .doesFork γ (⟨One.one⟩ : Frac F) 0 e
+    $$ Hccfg Hq He0
+  iapply LWP.wp_wand $$ Hwp
+  iintro %v ⟨Hv, %q', Hq', _⟩
+  imod (CancelableInvariant.acc (F := F) ⊤ completenessN γ q'
+    (cfgInv (wp := wp) ([e], σ) .doesFork) Hn0) $$ Hinv Hq' with ⟨>Hinv2, Hq', Hclose2⟩
+  unfold cfgInv
+  icases Hinv2 with ⟨%cfg, Hheap, Htpinv, %Hsafe2, %Hreach2⟩
+  ihave %Hlu := tpInv_lookup $$ Htpinv Hv
+  imod Hclose2 $$ [Hheap Htpinv] with -
+  · inext
+    iexists cfg
+    iframe Hheap Htpinv %Hsafe2 %Hreach2
+  imodintro
+  ipureintro
+  obtain ⟨tp2, σ2⟩ := cfg
+  rcases tp2 with _ | ⟨hd, rest⟩
+  · simp at Hlu
+  · simp only [List.getElem?_cons_zero, Option.some.injEq] at Hlu
+    subst Hlu
+    exact Hade.adequate_result rest σ2 v Hreach2
 
 /-- Strong nofork variant. -/
 theorem weakestpre_sem_completeness_nofork_strong
@@ -205,7 +246,52 @@ theorem weakestpre_sem_completeness_nofork_strong
           isThread (TI := TI) 0 (.own 1) (ToVal.ofVal v) ∗
           ACG.heap_inv [ToVal.ofVal v] σ' ∗
           ⌜φ v σ'⌝) := by
-  sorry
+  have Hsafe0 : cfgSafeForking ([e], σ) .doesNotFork := by
+    rintro ⟨tp2, σ2⟩ hreach
+    refine ⟨fun {e2} hmem => Hade.not_stuck rfl hreach hmem, ?_⟩
+    intro _ e2 hmem e' σ' κ efs hstep
+    exact adequateNoFork_efs_nil Hade hreach hmem hstep
+  have Hn0 : (completenessN : CoPset) ⊆ ⊤ := fun _ _ => CoPset.mem_full
+  iintro Hini Hheap
+  iapply LWP.fupd_wp
+  imod (tpInv_set [e]) $$ Hini with ⟨Hauth, Hfrags⟩
+  imod (CancelableInvariant.alloc (F := F) ⊤ completenessN
+      (cfgInv (wp := wp) ([e], σ) .doesNotFork)) $$ [Hauth Hheap] with ⟨%γ, #Hinv, Hq⟩
+  · inext
+    unfold cfgInv
+    iexists ([e], σ)
+    iframe Hheap Hauth %Hsafe0
+    ipureintro
+    exact .refl
+  ihave He0 := (Iris.BI.BigSepL.bigSepL_singleton
+    (Φ := fun n e' => isThread (TI := TI) n (.own 1) e') (x := e)).1 $$ Hfrags
+  imodintro
+  iapply LWP.wp_fupd
+  ihave Hccfg : iprop(isCcfg (wp := wp) ([e], σ) .doesNotFork γ) $$ [Hinv]
+  · unfold isCcfg; iexact Hinv
+  ihave Hwp := weakestpre_completeness (wp := wp) ([e], σ) .doesNotFork γ (⟨One.one⟩ : Frac F) 0 e
+    $$ Hccfg Hq He0
+  iapply LWP.wp_wand $$ Hwp
+  iintro %v ⟨Hv, %q', Hq', %His1⟩
+  obtain rfl := His1 rfl
+  imod (CancelableInvariant.cancel (F := F) ⊤ completenessN γ
+      (cfgInv (wp := wp) ([e], σ) .doesNotFork) Hn0) $$ Hinv Hq' with >Hinv2
+  unfold cfgInv
+  icases Hinv2 with ⟨%cfg, Hheap, Htpinv, %Hsafe2, %Hreach2⟩
+  ihave %Hlu := tpInv_lookup $$ Htpinv Hv
+  imodintro
+  obtain ⟨tp2, σ2⟩ := cfg
+  rcases tp2 with _ | ⟨hd, rest⟩
+  · simp at Hlu
+  · simp only [List.getElem?_cons_zero, Option.some.injEq] at Hlu
+    subst Hlu
+    have hlen := Hade.no_fork Hreach2
+    rw [List.length_cons] at hlen
+    obtain rfl := List.length_eq_zero_iff.mp (by omega : rest.length = 0)
+    iexists σ2
+    iframe Htpinv Hv Hheap
+    ipureintro
+    exact Hade.result Hreach2
 
 /-- User-facing nofork variant. -/
 theorem weakestpre_sem_completeness_nofork
@@ -215,7 +301,12 @@ theorem weakestpre_sem_completeness_nofork
       ACG.heap_inv [e] σ -∗
       wp ⊤ e (fun v =>
         iprop% ∃ σ' : State, ACG.heap_inv [ToVal.ofVal v] σ' ∗ ⌜φ v σ'⌝) := by
-  sorry
+  iintro Hini Hheap
+  ihave Hw := weakestpre_sem_completeness_nofork_strong (wp := wp) e σ φ Hade $$ Hini Hheap
+  iapply LWP.wp_wand $$ Hw
+  iintro %v ⟨%σ2, _, _, Hh, Hphi⟩
+  iexists σ2
+  iframe
 
 end Completeness
 
