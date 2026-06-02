@@ -396,7 +396,7 @@ scoped notation (name := PureSteps) conf:40 " -ᵖ->ₜₚ* " conf':41 => Langua
 end Notation
 
 @[rocq_alias PureExec]
-class PureExec (φ : Prop) (n : semiOutParam <| Nat) (e₁ : Expr) (e₂ : outParam <| Expr) : Prop where
+class PureExec (φ : Prop) (n : outParam <| Nat) (e₁ : Expr) (e₂ : outParam <| Expr) : Prop where
   pureExec : φ → e₁ -ᵖ->^[n] e₂
 
 variable (K : Expr → Expr) [Context K]
@@ -423,7 +423,6 @@ theorem ReflTransGen_pureStep_fill {e₁ e₂} (h : e₁ -ᵖ->* e₂) :  K e₁
 @[rocq_alias pure_exec_ctx]
 theorem pureExec_fill {φ n e₁ e₂} (h : PureExec φ n e₁ e₂) : PureExec φ n (K e₁) (K e₂) :=
   ⟨fun hφ => iterate_purePrimStep_fill K (h.1 hφ)⟩
-
 
 @[rocq_alias rtc_pure_step_val]
 theorem ReflTransGen_purePrimStep_val [Inhabited State] {v : Val} {e : Expr}

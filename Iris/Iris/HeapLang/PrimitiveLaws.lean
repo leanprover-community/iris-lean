@@ -72,7 +72,7 @@ open EctxLanguage
 
 theorem wp_snd {v1 v2 : Val} : ▷ Φ v2 ⊢ WP hl(snd(v(({v1}, {v2})))) @s; E {{ Φ }} := by
   iintro HΦ
-  iapply wp_pure_step_fupd (Hφ := True.intro) _ PureExec_snd
+  iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
   iapply wp_value $$ HΦ
@@ -81,14 +81,14 @@ theorem wp_snd {v1 v2 : Val} : ▷ Φ v2 ⊢ WP hl(snd(v(({v1}, {v2})))) @s; E {
 theorem wp_if_true {e1 e2 : Exp} :
     ▷ WP e1 @ s; E {{ Φ }} ⊢ WP hl(if #true then {e1} else {e2}) @s; E {{ Φ }} := by
   iintro Hwp
-  iapply wp_pure_step_fupd (Hφ := True.intro) (n := 1) _ (by infer_instance)
+  iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
 
 theorem wp_if_false {e1 e2 : Exp} :
     ▷ WP e2 @ s; E {{ Φ }} ⊢ WP hl(if #false then {e1} else {e2}) @s; E {{ Φ }} := by
   iintro Hwp
-  iapply wp_pure_step_fupd (Hφ := True.intro) (n := 1) _ (by infer_instance)
+  iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
 
@@ -98,7 +98,7 @@ theorem wp_rec {f x : Binder} {e : Exp} {v : Val} :
     ▷ WP ((e.subst f (.rec_ f x e)).subst x v) @ s; E {{ Φ }}
     ⊢  WP (Exp.app (.val (.rec_ f x e)) v) @ s; E {{ Φ }} := by
   iintro Hwp
-  iapply wp_pure_step_fupd (Hφ := True.intro) (n := 1) _ (by infer_instance)
+  iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
 

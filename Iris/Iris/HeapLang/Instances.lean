@@ -106,7 +106,7 @@ instance instPureExecBeta {f x : Binder} {e : Exp} {v : Val} :
       rename_i H
       refine ⟨rfl, rfl, H.symm, rfl⟩
 
-theorem PureExec_snd {v1 v2 : Val} : Language.PureExec True 1 hl(snd(v(({v1}, {v2})))) v2 where
+instance PureExec_snd {v1 v2 : Val} : Language.PureExec True 1 hl(snd(v(({v1}, {v2})))) v2 where
   pureExec _ := by
     refine Relation.Iterate.head ?_ (.rfl _)
     constructor
