@@ -122,7 +122,7 @@ theorem persist {d : DFrac F} {a : A} : mk d a ~~> mk .discard a := by
   · exact ⟨DFrac.update_discard n (some mz₁) hv.1, hv.2⟩
 
 @[rocq_alias dfrac_agree_unpersist]
-theorem unpersist [IsSplitFraction F] {a : A} :
+theorem unpersist [IsHalfFraction F] {a : A} :
     mk (.discard : DFrac F) a ~~>: fun k => ∃ q, k = mk (.own q) a := by
   intro n mz hv
   simp only [mk, op?] at hv ⊢

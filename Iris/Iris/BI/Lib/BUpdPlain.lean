@@ -23,6 +23,7 @@ cf. https://gitlab.mpi-sws.org/iris/iris/merge_requests/211
 
 namespace BUpdPlain
 
+@[rocq_alias bupd_alt]
 def BUpdPlain [BIBase PROP] [BIBase.Plainly PROP] (P : PROP) : PROP :=
   iprop(∀ R, (P -∗ ■ R) -∗ ■ R)
 
@@ -32,15 +33,18 @@ open OFE
 
 variable [Sbi PROP]
 
+@[rocq_alias bupd_alt_ne]
 instance BUpdPlain_ne : NonExpansive (BUpdPlain (PROP := PROP)) where
   ne _ _ _ H := forall_ne fun _ => wand_ne.ne (wand_ne.ne H .rfl) .rfl
 
+@[rocq_alias bupd_alt_intro]
 theorem BUpdPlain_intro {P : PROP} : P ⊢ BUpdPlain P := by
   iintro Hp
   unfold BUpdPlain
   iintro %_ H
   iapply H $$ Hp
 
+@[rocq_alias bupd_alt_mono]
 theorem BUpdPlain_mono {P Q : PROP} : (P ⊢ Q) → (BUpdPlain P ⊢ BUpdPlain Q) := by
   intros H
   unfold BUpdPlain
@@ -50,14 +54,16 @@ theorem BUpdPlain_mono {P Q : PROP} : (P ⊢ Q) → (BUpdPlain P ⊢ BUpdPlain Q
   iapply Hp
   iapply H $$ HP
 
-theorem BUpdPlain_idemp {P : PROP} : BUpdPlain (BUpdPlain P) ⊢ BUpdPlain P := by
+@[rocq_alias bupd_alt_trans]
+theorem BUpdPlain_idem {P : PROP} : BUpdPlain (BUpdPlain P) ⊢ BUpdPlain P := by
   unfold BUpdPlain
   iintro Hp %R H
   iapply Hp
   iintro Hp
   iapply Hp $$ H
 
-theorem BUpdPlain_frame_r {P Q : PROP} : BUpdPlain P ∗ Q ⊢ (BUpdPlain iprop(P ∗ Q)) := by
+@[rocq_alias bupd_alt_frame_r]
+theorem BUpdPlain_frame_right {P Q : PROP} : BUpdPlain P ∗ Q ⊢ (BUpdPlain iprop(P ∗ Q)) := by
   unfold BUpdPlain
   iintro ⟨Hp, Hq⟩ %R H
   iapply Hp
@@ -67,6 +73,7 @@ theorem BUpdPlain_frame_r {P Q : PROP} : BUpdPlain P ∗ Q ⊢ (BUpdPlain iprop(
   · iexact Hp
   · iexact Hq
 
+@[rocq_alias bupd_alt_plainly]
 theorem BUpdPlain_plainly {P : PROP} : BUpdPlain iprop(■ P) ⊢ (■ P) := by
   unfold BUpdPlain
   iintro H
@@ -74,15 +81,16 @@ theorem BUpdPlain_plainly {P : PROP} : BUpdPlain iprop(■ P) ⊢ (■ P) := by
   iapply wand_rfl
 
 /- BiBUpdPlainly entails the alternative definition -/
-theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdatePlainly PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P := by
+@[rocq_alias bupd_bupd_alt]
+theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdateSbi PROP] [BIAffine PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P := by
   unfold BUpdPlain
   iintro HP %_ Hx
   imod HP
   iapply Hx $$ HP
 
--- We get the usual rule for frame preserving updates if we have an [own]
--- connective satisfying the following rule w.r.t. interaction with plainly.
-
+-- FIXME: @[rocq_alias own_updateP] duplicate alias
+/-- We get the usual rule for frame preserving updates if we have an [own]
+  connective satisfying the following rule w.r.t. interaction with plainly. -/
 theorem own_updateP [UCMRA M] {own : M → PROP} {x : M} {Φ : M → Prop}
   (own_updateP_plainly : ∀ (x : M) (Φ : M → Prop) (R : PROP),
     (x ~~>: Φ) → own x ∗ (∀ y, iprop(⌜Φ y⌝) -∗ own y -∗ ■ R) ⊢ ■ R)
@@ -98,8 +106,7 @@ theorem own_updateP [UCMRA M] {own : M → PROP} {x : M} {Φ : M → Prop}
   iapply H
   iexists y
   isplit
-  · ipure_intro
-    exact HΦ
+  · itrivial
   · iexact Hy
 
 end BupdPlainDef

@@ -10,11 +10,12 @@ public import Iris.ProofMode
 public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
+public import Iris.Algebra.CMRA
 
 @[expose] public section
 
 namespace Iris.Tests
-open Iris.BI
+open BI CMRA DFrac
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -84,7 +85,7 @@ example [BI PROP] (P Q R : PROP) : □ P ∗ □ Q ⊢ R -∗ R := by
 example [BI PROP] (P Q R : PROP) : <affine> P ∗ <affine> Q ⊢ <affine> R -∗ emp := by
   iintro ⟨HP, HQ⟩ HR
   iclear ∗
-  iemp_intro
+  iempintro
 
 /-- Tests clearing a Lean variable with `iclear %x` -/
 example [BI PROP] (_x : α) (Q : PROP) : Q ⊢ Q := by
@@ -110,7 +111,7 @@ example [BI PROP] (_hφ : φ) (P Q R : PROP) : □ P ∗ <affine> Q ⊢ <affine>
   iintro ⟨#HP, HQ⟩
   iintro HR
   iclear % # ∗
-  iemp_intro
+  iempintro
 
 /-- Tests clearing dependent Lean locals when the dependency comes first. -/
 example [BI PROP] (x : α) (_hx : x = x) (Q : PROP) : Q ⊢ Q := by
@@ -397,38 +398,38 @@ namespace «exists»
 /-- Tests `iexists` with a BI proposition -/
 example [BI PROP] : ⊢@{PROP} ∃ x, x := by
   iexists iprop(True)
-  ipure_intro
+  ipureintro
   exact True.intro
 
 /-- Tests `iexists` with a natural number -/
 example [BI PROP] : ⊢@{PROP} ∃ (_x : Nat), True ∨ False := by
   iexists 42
   ileft
-  ipure_intro
+  ipureintro
   exact True.intro
 
 /-- Tests `iexists` with Prop -/
 example [BI PROP] : ⊢@{PROP} ⌜∃ x, x ∨ False⌝ := by
   iexists True
-  ipure_intro
+  ipureintro
   exact Or.inl True.intro
 
 /-- Tests `iexists` with a named metavariable -/
 example [BI PROP] : ⊢@{PROP} ∃ x, ⌜x = 42⌝ := by
   iexists ?y
-  ipure_intro
+  ipureintro
   rfl
 
 /-- Tests `iexists` with anonymous metavariable -/
 example [BI PROP] : ⊢@{PROP} ∃ x, ⌜x = 42⌝ := by
   iexists _
-  ipure_intro
+  ipureintro
   rfl
 
 /-- Tests `iexists` with two quantifiers -/
 example [BI PROP] : ⊢@{PROP} ∃ x y : Nat, ⌜x = y⌝ := by
   iexists _, 1
-  ipure_intro
+  ipureintro
   rfl
 
 /- Tests `iexists` failing with non-quantifier -/
@@ -587,7 +588,7 @@ example [BI PROP] (Q : PROP) (H : ⊢ Q) : ⊢ Q := by
 /-- Tests `iapply` with lemma -/
 example [BI PROP] (Q : PROP) : Q ⊢ (emp ∗ Q) ∗ emp := by
   iapply (wand_intro sep_emp.mpr)
-  iemp_intro
+  iempintro
 
 /-- Tests `iapply` with pure sidecondition -/
 example [BI PROP] (Q : PROP) (H : 0 = 0 → ⊢ Q) : ⊢ Q := by
@@ -599,7 +600,7 @@ example [BI PROP] : ⊢@{PROP} ⌜1 = 1⌝ := by
   istart
   iapply (pure_intro (P:=emp))
   . rfl
-  iemp_intro
+  iempintro
 
 /-- Tests `iapply` with entailment as Lean hypothesis -/
 example [BI PROP] (P Q : PROP) (H : P ⊢ Q) (HP : ⊢ P) : ⊢ Q := by
@@ -873,7 +874,7 @@ example [BI PROP] (P : PROP) : □ P ⊢ False -∗ Q := by
 example [BI PROP] (P : PROP) (HF : False) : ⊢ P := by
   istart
   iexfalso
-  ipure_intro
+  ipureintro
   exact HF
 
 end exfalso
@@ -1000,16 +1001,16 @@ end spatial
 -- emp intro
 namespace empintro
 
-/-- Tests `iemp_intro` for proving emp -/
+/-- Tests `iempintro` for proving emp -/
 example [BI PROP] : ⊢@{PROP} emp := by
-  iemp_intro
+  iempintro
 
-/-- Tests `iemp_intro` with affine environment -/
+/-- Tests `iempintro` with affine environment -/
 example [BI PROP] (P : PROP) : <affine> P ⊢ emp := by
   iintro _HP
-  iemp_intro
+  iempintro
 
-/-- Tests that `itrivial` subsumes `iemp_intro` -/
+/-- Tests that `itrivial` subsumes `iempintro` -/
 example [BI PROP] (P : PROP) : <affine> P ⊢ emp := by
   iintro _HP
   itrivial
@@ -1019,37 +1020,37 @@ end empintro
 -- pure intro
 namespace pureintro
 
-/-- Tests `ipure_intro` for True -/
+/-- Tests `ipureintro` for True -/
 example [BI PROP] : ⊢@{PROP} ⌜True⌝ := by
-  ipure_intro
+  ipureintro
   exact True.intro
 
-/-- Tests `ipure_intro` for disjunction -/
+/-- Tests `ipureintro` for disjunction -/
 example [BI PROP] : ⊢@{PROP} True ∨ False := by
-  ipure_intro
+  ipureintro
   apply Or.inl True.intro
 
-/-- Tests `ipure_intro` with context -/
+/-- Tests `ipureintro` with context -/
 example [BI PROP] (H : A → B) (P Q : PROP) : <affine> P ⊢ <pers> Q → ⌜A⌝ → ⌜B⌝ := by
   iintro _HP #_HQ
-  ipure_intro
+  ipureintro
   exact H
 
-/-- Tests `ipure_intro` with wand containing pure and affine lhs -/
+/-- Tests `ipureintro` with wand containing pure and affine lhs -/
 example [BI PROP] : ⊢@{PROP} (<affine> ⌜φ2⌝ -∗ emp) := by
-  ipure_intro
+  ipureintro
   intro _; trivial
 
-/-- Tests `ipure_intro` with wand containing pure and absorbing rhs -/
+/-- Tests `ipureintro` with wand containing pure and absorbing rhs -/
 example [BI PROP] : ⊢@{PROP} (⌜φ2⌝ -∗ <absorb> emp) := by
-  ipure_intro
+  ipureintro
   intro _; trivial
 
-/- Tests `ipure_intro` failure -/
-/-- error: ipure_intro: P is not pure -/
+/- Tests `ipureintro` failure -/
+/-- error: ipureintro: P is not pure -/
 #guard_msgs in
 example [BI PROP] (P : PROP) : ⊢ P := by
-  ipure_intro
+  ipureintro
 
 end pureintro
 
@@ -2556,19 +2557,79 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q :=
   iintro HP HQ #HR
   icombine %a as HNew1
 
-/-- Tests `icombine` for combining propositions involving `iOwn` -/
+/-- Tests `icombine` for combining propositions involving `iOwn`, where
+    `a2` and `a3` can be combined as `b` instead of `a2 • a3` as
+    the former takes higher precedence. Likewise, `a1` and `b` is merged
+    as `c` instead of `a1 • b`. -/
 example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
-    {a1 a2 a3 : F.ap (IProp GF)} :
+    {a1 a2 a3 b c : F.ap (IProp GF)} [IsOpMerge b a2 a3] [IsOpMerge c a1 b] :
     ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
-      iOwn γ (a1 • (a2 • a3)) ∗
-      internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • (a2 • a3)) := by
+      iOwn γ c ∗ internalCmraValid (a2 • a3) ∗ internalCmraValid (a1 • b) := by
   iintro H1 H2 H3
   icombine H1 H2 H3 as Hnew1 gives ⟨Hnew2, Hnew3⟩
   isplitl
   · iexact Hnew1
   · isplit
-    · iexact Hnew2
+    · iexact Hnew2  -- `IsOp` is irrelevant to the `gives` syntax
     · iexact Hnew3
+
+/-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
+    instances for `DFrac` and `Frac`. -/
+example {GF α} [UFraction α] [ElemG GF (constOF (DFrac α))]
+    [ElemG GF (constOF (Frac α))] {γ}
+    {a1 a2 a3 b c : Frac α} [IsOpMerge b a2 a3] [IsOpMerge c a1 b] :
+    ⊢@{IProp GF}
+      iOwn (F := constOF (DFrac α)) γ (own a1.car) -∗
+      iOwn (F := constOF (DFrac α)) γ (own a2.car) -∗
+      iOwn (F := constOF (DFrac α)) γ (own a3.car) -∗
+      iOwn (F := constOF (Frac α)) γ a1 -∗
+      iOwn (F := constOF (Frac α)) γ a2 -∗
+      iOwn (F := constOF (Frac α)) γ a3 -∗
+      iOwn (F := constOF (DFrac α)) γ (own c.car) ∗ iOwn (F := constOF (Frac α)) γ c := by
+  iintro H1 H2 H3 H4 H5 H6
+  icombine H1 H2 H3 as Hnew1
+  icombine H4 H5 H6 as Hnew2
+  isplitl [Hnew1]
+  · iexact Hnew1
+  · iexact Hnew2
+
+/-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
+    instances for the authoritative CMRA. -/
+example {GF F A} [UFraction F] [UCMRA A] [ElemG GF (constOF (Auth F A))] {γ}
+    {a1 a2 a3 b c : A} {q1 q2 : Frac F} {dq'' dq3 dq4 : DFrac F}
+    [IsOpMerge b a2 a3] [IsOpMerge c a1 b]
+    [IsOpMerge dq'' dq3 dq4] :
+    ⊢@{IProp GF}
+      iOwn (F := constOF (Auth F A)) γ (◯ a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (◯ a2) -∗
+      iOwn (F := constOF (Auth F A)) γ (◯ a3) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{own q1.car} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{own q2.car} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{dq3} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ (●{dq4} a1) -∗
+      iOwn (F := constOF (Auth F A)) γ ((◯ c) • ●{(own $ q1 + q2) • dq''} a1) := by
+  iintro H1 H2 H3 H4 H5 H6 H7
+  icombine H1 H2 H3 as HNew1
+  icombine H4 H5 as HNew2
+  icombine H6 H7 as HNew3
+  icombine HNew1 HNew2 HNew3 as HNew
+  iexact HNew
+
+/-- Tests `icombine` with the `IsOp` instances stipulating the
+    merging of `a1`, `a2` and `a3` using `+` instead of `•`, as well as
+    to eliminate splits (`IsHalfFraction`). -/
+example {GF α} [Fraction α] [IsHalfFraction α]
+    [ElemG GF (constOF (Frac α))] {γ} {a1 a2 a3 : Frac α} :
+    ⊢@{IProp GF}
+      iOwn (F := constOF (Frac α)) γ a1 -∗
+      iOwn (F := constOF (Frac α)) γ a2 -∗
+      iOwn (F := constOF (Frac α)) γ (a3.half) -∗
+      iOwn (F := constOF (Frac α)) γ (a3.half) -∗
+      iOwn (F := constOF (Frac α)) γ (a1.half + (a1.half + (a2 + a3))) := by
+  iintro H1 H2 H3a H3b
+  icases H1 with ⟨H1a, H1b⟩
+  icombine H1a H1b H2 H3a H3b as Hnew
+  iexact Hnew
 
 /-- Tests `icombine` for combining propositions involving later credits. -/
 example {GF m n} [LcGS .hasLC GF] :

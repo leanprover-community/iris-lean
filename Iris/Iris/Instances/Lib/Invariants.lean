@@ -15,9 +15,7 @@ import Iris.Instances.Lib.WSat
 
 @[expose] public section
 
-/-! ## Invariants
-TODO: into_inv_inv, into_acc_inv
--/
+/-! ## Invariants -/
 
 namespace Iris
 
@@ -27,9 +25,15 @@ section InvariantDefinition
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
+#rocq_ignore inv_def "`inv` is defined directly without `seal`/`unseal`."
+#rocq_ignore inv_aux "`inv` is defined directly without `seal`/`unseal`."
+#rocq_ignore inv_unseal "`inv` is defined directly without `seal`/`unseal`."
+
+@[rocq_alias inv]
 def inv (N : Namespace) (P : IProp GF) : IProp GF :=
   iprop(□ ∀ E, ⌜↑N ⊆ E⌝ → |={E, E \ ↑N}=> ▷ P ∗ (▷ P ={E \ ↑N, E}=∗ True))
 
+@[rocq_alias own_inv]
 def own_inv (N : Namespace) (P : IProp GF) : IProp GF :=
   iprop(∃ i, ⌜i ∈ (↑N : CoPset)⌝ ∧ ownI i P)
 
@@ -77,11 +81,13 @@ theorem except_0_inv (N : Namespace) (P : IProp GF) : ⊢ ◇ inv N P -∗ inv N
   iintro %E %Hsub
   imod H
   iapply H
-  ipure_intro; assumption
+  itrivial
 
 @[rocq_alias is_except_0_inv]
 instance is_except_0_inv (N : Namespace) (P : IProp GF) : IsExcept0 (inv N P) where
   is_except0 := by iintro H; iapply except_0_inv $$ H
+
+-- TODO: into_inv_inv, into_acc_inv
 
 end Instances
 
@@ -145,13 +151,9 @@ theorem own_inv_alloc (N : Namespace) (E : CoPset) (P : IProp GF) :
   imod ownI_alloc (.∈ (↑N : CoPset)) P $$ [HP Hw] with ⟨%i, %Hin, Hw, HI⟩
   · intro E; apply fresh_name
   · isplitl [Hw] <;> iassumption
-  · imodintro
-    isplitl [Hw]; iassumption
-    isplitl [HE]; iassumption
-    iexists i
-    isplit
-    · ipure_intro; assumption
-    · iassumption
+  · imodintro; iframe
+    iexists i; iframe
+    itrivial
 
 @[rocq_alias own_inv_alloc_open]
 theorem own_inv_alloc_open (N : Namespace) (E : CoPset) (P : IProp GF) (Hsub : ↑N ⊆ E) :
@@ -180,7 +182,7 @@ theorem own_inv_alloc_open (N : Namespace) (E : CoPset) (P : IProp GF) (Hsub : �
   isplitl [HEN]; iassumption
   isplitl [HI]
   · iexists i; isplit
-    · ipure_intro; assumption
+    · ipureintro; assumption
     · iexact HI
   iintro HP ⟨Hw, HE⟩
   icases ownI_close $$ [HP Hw HD] with ⟨Hwsat, HE1⟩
@@ -247,7 +249,7 @@ theorem inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) 
   simp only [inv]
   iintro #HI
   iapply HI $$ %E []
-  ipure_intro; assumption
+  ipureintro; assumption
 
 @[rocq_alias inv_acc_strong]
 theorem inv_acc_strong (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) :
@@ -255,14 +257,14 @@ theorem inv_acc_strong (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N 
   iintro Hinv
   icases inv_acc ↑N N _ subset_refl $$ Hinv with H
   rw [diff_all]
-  icases fupd_mask_frame_r disjoint_diff_right (Ef := (E \ ↑N)) $$ H with H
+  icases fupd_mask_frame_right disjoint_diff_right (Ef := (E \ ↑N)) $$ H with H
   rw [union_empty_left, ←union_comm, ←diff_subset_decomp Hsub]
   imod H with ⟨HP, H⟩
   imodintro
   isplitl [HP]; iassumption
   iintro %E' HP
   ispecialize H $$ HP
-  icases fupd_mask_frame_r disjoint_empty_left (Ef := E') $$ H with H
+  icases fupd_mask_frame_right disjoint_empty_left (Ef := E') $$ H with H
   rw [union_empty_left]
   imod H; imodintro
   iexact H
@@ -329,10 +331,10 @@ theorem inv_combine (N1 N2 N : Namespace) (P Q : IProp GF) (Hdisj : N1 ## N2)
   imodintro
   iintro %E %Hsub'
   imod HI1 $$ %E [] with ⟨HP, H1⟩
-  · ipure_intro
+  · ipureintro
     exact subset_trans (subset_trans union_subset_left Hsub) Hsub'
   imod HI2 $$ %(E \ ↑N1) [] with ⟨HQ, H2⟩
-  · ipure_intro
+  · ipureintro
     intro x; simp only [mem_diff]
     specialize Hsub x; simp only [mem_union] at Hsub
     specialize Hsub' x

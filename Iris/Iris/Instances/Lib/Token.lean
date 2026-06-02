@@ -19,23 +19,25 @@ open BI CMRA Excl OFE UPred IProp Std ProofMode
 This library provides assertions that represent "unique tokens".
 The `token γ` assertion provides ownership of the token named `γ`,
 and the key lemma `token_exclusive` proves only one token exists.
-
-FIXME: missing token_combine_gives
 -/
 
 abbrev TokenF : COFE.OFunctorPre := constOF (Excl Unit)
 
 @[rocq_alias tokenG]
-class TokenG (GF : BundledGFunctors) where
-  [elemG : ElemG GF TokenF]
+class TokenG (GF : BundledGFunctors) where [elemG : ElemG GF TokenF]
 
-attribute [reducible] TokenG.elemG
-attribute [instance] TokenG.elemG
+attribute [reducible, instance] TokenG.elemG
+
+#rocq_ignore «subG_tokenΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 variable {GF : BundledGFunctors} [TokenG GF]
 
 @[rocq_alias token]
 def token (γ : GName) : IProp GF := iOwn (F := TokenF) γ (excl ())
+
+#rocq_ignore token_aux "`token` is defined directly without `seal`/`unseal`."
+#rocq_ignore token_def "`token` is defined directly without `seal`/`unseal`."
+#rocq_ignore token_unseal "`token` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias token_timeless]
 instance token_timeless (γ : GName) : Timeless (token (GF := GF) γ) := by

@@ -14,11 +14,11 @@ public import Iris.ProofMode
 namespace Iris
 open Iris.Std BI OFE
 
-#check BI
-
+@[rocq_alias Fractional]
 class Fractional [BI PROP] [UFraction F] (Φ : F → PROP) where
   fractional p q : Φ (p + q) ⊣⊢ Φ p ∗ Φ q
 
+@[rocq_alias AsFractional]
 class AsFractional {PROP: Type u} [bi: BI PROP] [UFraction F] (P : PROP) (Φ : F → PROP) (q : F) where
   as_fractional : P ⊣⊢ Φ q
   as_fractional_fractional : Fractional Φ

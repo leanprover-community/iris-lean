@@ -15,7 +15,7 @@ public meta import Iris.Std.RocqPorting
 @[expose] public section
 namespace Iris
 
-open COFE
+open COFE Std CMRA
 
 @[ext]
 theorem IProp.ext {P Q : IProp GF} : P ⊣⊢ Q → P = Q := OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr
@@ -62,9 +62,13 @@ end TranspAp
 
 section ElemG
 
+/-- `ElemG` takes functors instead of CMRAs -/
+@[rocq_alias inG]
 class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] where
   τ : GType
   transp : FF τ = ⟨F, ‹_›⟩
+
+#rocq_ignore subG_inG "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 open OFE
 
@@ -73,7 +77,7 @@ variable [I : RFunctorContractive F]
 def ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).fst = F :=
   Sigma.mk.inj E.transp |>.1
 
-def ElemG.transpClass (E : ElemG GF F) T [OFE T] : HEq (GF E.τ).snd I :=
+def ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).snd ≍ I :=
   Sigma.mk.inj E.transp |>.2
 
 def ElemG.bundle (E : ElemG GF F) [OFE T] : F.ap T → GF.api E.τ T :=
@@ -118,10 +122,10 @@ theorem bundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : F.ap (IProp 
 
 theorem unbundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : GF.api (ElemG.τ GF F) (IProp GF)) :
   E.unbundle (a2 • ac) ≡ E.unbundle a2 • E.unbundle ac :=
-  OFE.transpAp_op_mp (E.transpMap ((GF (ElemG.τ GF F)).fst.ap (IPre GF))) (E.transpClass ((GF (ElemG.τ GF F)).fst.ap (IPre GF)))
+  OFE.transpAp_op_mp (E.transpMap ((GF (ElemG.τ GF F)).fst.ap (IPre GF)))
+    (E.transpClass ((GF (ElemG.τ GF F)).fst.ap (IPre GF)))
 
-theorem ElemG.bundle_unit {GF F} [RFunctorContractive F] (E : ElemG GF F)
-    {ε : F.ap (IProp GF)} [IsUnit ε] :
+theorem ElemG.bundle_unit {GF F} [RFunctorContractive F] (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit ε] :
     IsUnit (E.bundle ε) := by
   refine { unit_valid := ?_, unit_left_id := ?_, pcore_unit := ?_ }
   · refine CMRA.valid_iff_validN.mpr fun n => ?_
@@ -159,18 +163,22 @@ open Iris COFE UPred
 variable {FF : BundledGFunctors}
 
 /-- Isorecursive unfolding for each projection of FF. -/
+@[rocq_alias inG_unfold]
 def IProp.unfoldi : FF.api τ (IProp FF) -n> FF.api τ (IPre FF) :=
   OFunctor.map (IProp.fold FF) (IProp.unfold FF)
 
 /-- Isorecursive folding for each projection of FF. -/
+@[rocq_alias inG_fold]
 def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
   OFunctor.map (IProp.unfold FF) (IProp.fold FF)
 
+@[rocq_alias inG_unfold_fold]
 theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) ≡ x := by
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
   apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
 
+@[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x := by
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
@@ -193,10 +201,14 @@ theorem IProp.unfoldi_validN {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} x)
 theorem IProp.validN_foldi {n : Nat} (x : FF.api τ (IPre FF)) (H : ✓{n} (foldi x)) : ✓{n} x :=
   CMRA.validN_ne (IProp.unfoldi_foldi x).dist (IProp.unfoldi_validN _ H)
 
-theorem IProp.validN_unfoldi {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} (unfoldi x)) : ✓{n} x :=
+theorem IProp.validN_unfoldi_mp {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} (unfoldi x)) : ✓{n} x :=
   CMRA.validN_ne (IProp.foldi_unfoldi x).dist (IProp.foldi_validN _ H)
 
--- unfoldi preserves unit structure
+@[rocq_alias inG_unfold_validN]
+theorem IProp.validN_unfoldi {n : Nat} (x : FF.api τ (IProp FF)) : ✓{n} (unfoldi x) ↔ ✓{n} x :=
+  ⟨IProp.validN_unfoldi_mp x,IProp.unfoldi_validN x⟩
+
+/-- unfoldi preserves unit structure -/
 theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit x] :
     IsUnit (unfoldi x) := by
   refine { unit_valid := ?_, unit_left_id := ?_, pcore_unit := ?_ }
@@ -463,6 +475,9 @@ end iSingleton
 def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IProp GF :=
   UPred.ownM <| iSingleton F γ v
 
+#rocq_ignore own_def "`iOwn` is defined directly without `seal`/`unseal`."
+#rocq_ignore own_aux "`iOwn` is defined directly without `seal`/`unseal`."
+
 section iOwn
 
 open IProp OFE UPred BI GenMap ProofMode
@@ -509,10 +524,10 @@ theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} :
 
 @[rocq_alias own_valid_r]
 theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ internalCmraValid a :=
-  BI.persistent_entails_l iOwn_cmraValid
+  BI.persistent_entails_left iOwn_cmraValid
 @[rocq_alias own_valid_l]
 theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a ∗ iOwn γ a :=
-  BI.persistent_entails_r iOwn_cmraValid
+  BI.persistent_entails_right iOwn_cmraValid
 
 @[rocq_alias own_core_persistent]
 instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : BI.Persistent (iOwn γ a) where
@@ -591,9 +606,9 @@ theorem iOwn_alloc_dep (f : GName → F.ap (IProp GF)) (Ha : ∀ γ, ✓ (f γ))
     refine .trans intuitionistically_elim ?_
     apply UPred.bupd_ownM_updateP
     apply alloc_update_unit Ha
-  · refine BI.exists_elim (fun m => BI.pure_elim_l (fun ⟨γ, Hm⟩ => ?_))
+  · refine BI.exists_elim (fun m => BI.pure_elim_left (fun ⟨γ, Hm⟩ => ?_))
     subst Hm
-    exact BI.exists_intro' γ .rfl
+    exact BI.exists_intro_trans γ .rfl
 
 @[rocq_alias own_alloc]
 theorem iOwn_alloc (a : F.ap (IProp GF)) : ✓ a → ⊢ |==> ∃ γ, iOwn γ a :=
@@ -617,10 +632,9 @@ theorem iOwn_alloc_strong_dep (f : GName → F.ap (IProp GF)) (P : GName → Pro
     obtain ⟨γ, Hfresh, HPγ⟩ := (mf (ElemG.τ GF F)).exists_fresh_sat HP
     refine ⟨iSingleton F γ (f γ), ⟨γ, HPγ, rfl⟩, ?_⟩
     apply validN_iSingleton_op Hvalid (Hf γ HPγ).validN Hfresh
-  · refine BI.exists_elim (fun m => BI.pure_elim_l (fun ⟨γ, HPγ, Hm⟩ => ?_))
+  · refine BI.exists_elim (fun m => BI.pure_elim_left (fun ⟨γ, HPγ, Hm⟩ => ?_))
     subst Hm
-    exact BI.exists_intro' γ (BI.persistent_entails_r (BI.pure_intro HPγ))
-
+    exact BI.exists_intro_trans γ (BI.persistent_entails_right (BI.pure_intro HPγ))
 
 private theorem list_not_mem_of_gt_max (G : List Nat) (k : Nat) (hk : G.foldr max 0 < k) :
     k ∉ G := by
@@ -704,23 +718,23 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.
   refine .trans (Q := iprop(|==> ∃ m, ⌜ ∃ a', m = (iSingleton F γ a') ∧ P a' ⌝ ∧ UPred.ownM m)) ?_ ?_
   · apply UPred.bupd_ownM_updateP
     apply singleton_updateP Hupd
-  · refine BIUpdate.mono (BI.exists_elim (fun m => BI.pure_elim_l (fun ⟨a', Hm, HP⟩ => ?_)))
+  · refine BIUpdate.mono (BI.exists_elim (fun m => BI.pure_elim_left (fun ⟨a', Hm, HP⟩ => ?_)))
     subst Hm
-    exact BI.exists_intro' a' (BI.persistent_entails_r (BI.pure_intro HP))
+    exact BI.exists_intro_trans a' (BI.persistent_entails_right (BI.pure_intro HP))
 
 @[rocq_alias own_update]
 theorem iOwn_update {γ} {a a' : F.ap (IProp GF)} (Hupd : a ~~> a') : iOwn γ a ⊢ |==> iOwn γ a' := by
   apply (iOwn_updateP <| UpdateP.of_update Hupd).trans
   apply BIUpdate.mono
   refine BI.exists_elim (fun m => ?_)
-  apply BI.pure_elim (a' = m) BI.sep_elim_l
+  apply BI.pure_elim (a' = m) BI.sep_elim_left
   rintro rfl
-  exact BI.sep_elim_r
+  exact BI.sep_elim_right
 
 @[rocq_alias own_valid_3]
 theorem iOwn_cmraValid_op_op {a1 a2 a3 : F.ap (IProp GF)} :
     iOwn γ a1 ∗ iOwn γ a2 ∗ iOwn γ a3 ⊢ UPred.cmraValid ((a1 • a2) • a3) :=
-  BI.sep_assoc.symm.1.trans ((BI.sep_mono_l iOwn_op.mpr).trans iOwn_cmraValid_op)
+  BI.sep_assoc.symm.1.trans ((BI.sep_mono_left iOwn_op.mpr).trans iOwn_cmraValid_op)
 
 @[rocq_alias own_update_2]
 theorem iOwn_update_op {γ} {a1 a2 a' : F.ap (IProp GF)} (Hupd : a1 • a2 ~~> a') :
@@ -730,7 +744,7 @@ theorem iOwn_update_op {γ} {a1 a2 a' : F.ap (IProp GF)} (Hupd : a1 • a2 ~~> a
 @[rocq_alias own_update_3]
 theorem iOwn_update_op_op {γ} {a1 a2 a3 a' : F.ap (IProp GF)} (Hupd : (a1 • a2) • a3 ~~> a') :
     iOwn γ a1 ∗ iOwn γ a2 ∗ iOwn γ a3 ⊢ |==> iOwn γ a' :=
-  BI.sep_assoc.symm.1.trans ((BI.sep_mono_l iOwn_op.mpr).trans (iOwn_update_op Hupd))
+  BI.sep_assoc.symm.1.trans ((BI.sep_mono_left iOwn_op.mpr).trans (iOwn_update_op Hupd))
 
 @[rocq_alias own_unit]
 theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn γ ε := by
@@ -756,16 +770,49 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
     rintro rfl
     exact BI.and_elim_r
 
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_sep_own]
+instance intoSep_own {γ} {a : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
+    IntoSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
+  into_sep := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mp.trans iOwn_op.mp
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_and_own]
+instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
+    IntoAnd false (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
+  into_and := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mp.trans <|
+    and_intro (iOwn_mono ⟨b2, .rfl⟩) (iOwn_mono ⟨b1, CMRA.comm⟩)
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias from_sep_own]
+instance fromSep_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
+    FromSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
+  from_sep := iOwn_op.mpr.trans (equiv_iff.mp <| NonExpansive.eqv h.is_op).mpr
+
 @[rocq_alias combine_sep_as_own]
-instance combineSepAs_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
-  -- TODO: Add IsOp premise once it is ported
-  CombineSepAs (iOwn γ a1) (iOwn γ a2) (iOwn γ (a1 • a2)) where
-  combine_sep_as := iOwn_op.mpr
+instance combineSepAs_iOwn {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpMerge a b1 b2] :
+    CombineSepAs (iOwn γ b1) (iOwn γ b2) (iOwn γ a) where
+  combine_sep_as := iOwn_op.mpr.trans (equiv_iff.mp <| NonExpansive.eqv h.is_op.symm).mp
 
 @[rocq_alias combine_sep_gives_own]
 instance combineSepGives_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
-  CombineSepGives (iOwn γ a1) (iOwn γ a2) (internalCmraValid (a1 • a2)) where
+    CombineSepGives (iOwn γ a1) (iOwn γ a2) (internalCmraValid (a1 • a2)) where
   combine_sep_gives := iOwn_cmraValid_op
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias from_and_own_persistent]
+instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2]
+    [TCOr (CoreId b1) (CoreId b2)] : FromAnd (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
+  from_and := by
+    -- Infer from `CoreId b1` that `iOwn γ b1` is persistent, likewise for `b2`
+    have _ : TCOr (Persistent (iOwn γ b1)) (Persistent (iOwn γ b2)) := by
+      cases (inferInstance : TCOr (CoreId b1) (CoreId b2))
+      · infer_instance
+      · infer_instance
+    calc
+      _ ⊢ iOwn γ b1 ∗ iOwn γ b2 := persistent_and_sep_mp
+      _ ⊢ iOwn γ (b1 • b2)      := iOwn_op.mpr
+      _ ⊢ iOwn γ a              := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mpr
 
 end iOwn
 

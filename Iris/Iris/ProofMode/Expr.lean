@@ -221,15 +221,15 @@ section split
 theorem split_es [BI PROP] {Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : emp ∗ Q ⊣⊢ Q1 ∗ Q2 :=
   emp_sep.trans h
 theorem split_ls [BI PROP] {P Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ (P ∗ Q1) ∗ Q2 :=
-  (sep_congr_r h).trans sep_assoc.symm
+  (sep_congr_right h).trans sep_assoc.symm
 theorem split_rs [BI PROP] {P Q Q1 Q2 : PROP} (h : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ Q1 ∗ (P ∗ Q2) :=
-  (sep_congr_r h).trans sep_left_comm
+  (sep_congr_right h).trans sep_left_comm
 theorem split_se [BI PROP] {P P1 P2 : PROP} (h : P ⊣⊢ P1 ∗ P2) : P ∗ emp ⊣⊢ P1 ∗ P2 :=
   sep_emp.trans h
 theorem split_sl [BI PROP] {P Q P1 P2 : PROP} (h : P ⊣⊢ P1 ∗ P2) : P ∗ Q ⊣⊢ (P1 ∗ Q) ∗ P2 :=
-  (sep_congr_l h).trans sep_right_comm
+  (sep_congr_left h).trans sep_right_comm
 theorem split_sr [BI PROP] {P Q P1 P2 : PROP} (h : P ⊣⊢ P1 ∗ P2) : P ∗ Q ⊣⊢ P1 ∗ (P2 ∗ Q) :=
-  (sep_congr_l h).trans sep_assoc
+  (sep_congr_left h).trans sep_assoc
 theorem split_ss [BI PROP] {P Q P1 P2 Q1 Q2 : PROP}
     (h1 : P ⊣⊢ P1 ∗ P2) (h2 : Q ⊣⊢ Q1 ∗ Q2) : P ∗ Q ⊣⊢ (P1 ∗ Q1) ∗ (P2 ∗ Q2) :=
   (sep_congr h1 h2).trans sep_sep_sep_comm
@@ -292,11 +292,11 @@ inductive RemoveHypCore {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) (α
 
 theorem remove_l [BI PROP] {P P' Q R : PROP} (h : P ⊣⊢ P' ∗ R) :
     P ∗ Q ⊣⊢ (P' ∗ Q) ∗ R :=
-  (sep_congr_l h).trans sep_right_comm
+  (sep_congr_left h).trans sep_right_comm
 
 theorem remove_r [BI PROP] {P Q Q' R : PROP} (h : Q ⊣⊢ Q' ∗ R) :
     P ∗ Q ⊣⊢ (P ∗ Q') ∗ R :=
-  (sep_congr_r h).trans sep_assoc.symm
+  (sep_congr_right h).trans sep_assoc.symm
 
 variable [Monad m] {prop : Q(Type u)} (bi : Q(BI $prop)) (rp : Bool)
   (check : Name → IVarId → Q(Bool) → Q($prop) → m (Option α)) in
@@ -356,43 +356,43 @@ theorem Replaces.apply [BI PROP] {P P' Q : PROP}
 theorem replaces_r [BI PROP] {K P Q Q' : PROP} (h : Replaces K Q Q') :
     Replaces K iprop(P ∗ Q) iprop(P ∗ Q') :=
   wand_intro <| sep_assoc.2.trans <| wand_elim <|
-  (wand_intro <| sep_assoc.1.trans wand_elim_l).trans h
+  (wand_intro <| sep_assoc.1.trans wand_elim_left).trans h
 
 theorem replaces_l [BI PROP] {K P P' Q : PROP} (h : Replaces K P P') :
     Replaces K iprop(P ∗ Q) iprop(P' ∗ Q) :=
-  (wand_mono_l sep_comm.1).trans <| (replaces_r h).trans (wand_mono_l sep_comm.1)
+  (wand_mono_left sep_comm.1).trans <| (replaces_r h).trans (wand_mono_left sep_comm.1)
 
 theorem to_persistent_spatial [BI PROP] {P P' Q : PROP}
     [hP : IntoPersistently false P P'] [or : TCOr (Affine P) (Absorbing Q)] :
     Replaces Q P iprop(□ P') :=
   match or with
-  | TCOr.l => wand_mono_l <| (affine_affinely P).2.trans (affinely_mono hP.1)
+  | TCOr.l => wand_mono_left <| (affine_affinely P).2.trans (affinely_mono hP.1)
   | TCOr.r =>
-    wand_intro <| (sep_mono_r <| hP.1.trans absorbingly_intuitionistically.2).trans <|
-    absorbingly_sep_r.1.trans <| (absorbingly_mono wand_elim_l).trans absorbing
+    wand_intro <| (sep_mono_right <| hP.1.trans absorbingly_intuitionistically.2).trans <|
+    absorbingly_sep_right.1.trans <| (absorbingly_mono wand_elim_left).trans absorbing
 
 theorem to_persistent_intuitionistic [BI PROP] {P P' Q : PROP}
     [hP : IntoPersistently true P P'] : Replaces Q iprop(□ P) iprop(□ P') :=
-  wand_mono_l <| affinely_mono hP.1
+  wand_mono_left <| affinely_mono hP.1
 
 theorem from_affine [BI PROP] {p : Bool} {P P' Q : PROP} [hP : FromAffinely P' P p] :
     Replaces Q iprop(□?p P) P' :=
-  wand_mono_l <| affinelyIf_of_intuitionisticallyIf.trans hP.1
+  wand_mono_left <| affinelyIf_of_intuitionisticallyIf.trans hP.1
 
 theorem replace_hyp {PROP} [BI PROP] {p} {ty ty' e0 : PROP}
   (h : e0 ⊢ <pers> (ty -∗ ty')) :
   ∀ P, (□?p ty ∗ P) ∧ e0 ⊢ □?p ty' ∗ P := fun _ =>
-  (and_mono_r h).trans <| persistent_and_affinely_sep_r_1.trans <|
-  sep_comm.1.trans <| sep_assoc.2.trans <| sep_mono_l <|
+  (and_mono_right h).trans <| persistent_and_affinely_sep_right_mp.trans <|
+  sep_comm.1.trans <| sep_assoc.2.trans <| sep_mono_left <|
     match p with
-    | false => (sep_mono_l intuitionistically_elim).trans <| wand_elim_l
-    | true => intuitionistically_sep_2.trans <| intuitionistically_mono wand_elim_l
+    | false => (sep_mono_left intuitionistically_elim).trans <| wand_elim_left
+    | true => intuitionistically_sep_mpr.trans <| intuitionistically_mono wand_elim_left
 
 theorem replace_hyp_sep_l {PROP} [BI PROP] {elhs elhs' erhs e0 : PROP}
   (h : ∀ P, (elhs ∗ P) ∧ e0 ⊢ elhs' ∗ P) :
   ∀ P, ((elhs ∗ erhs) ∗ P) ∧ e0 ⊢ (elhs' ∗ erhs) ∗ P := fun P =>
   calc iprop(((elhs ∗ erhs) ∗ P) ∧ e0)
-    _ ⊢ (elhs ∗ (erhs ∗ P)) ∧ e0 := and_mono_l sep_assoc.1
+    _ ⊢ (elhs ∗ (erhs ∗ P)) ∧ e0 := and_mono_left sep_assoc.1
     _ ⊢ elhs' ∗ (erhs ∗ P) := h _
     _ ⊢ (elhs' ∗ erhs) ∗ P := sep_assoc.2
 
@@ -400,9 +400,9 @@ theorem replace_hyp_sep_r {PROP} [BI PROP] {elhs erhs' erhs e0 : PROP}
   (h : ∀ P, (erhs ∗ P) ∧ e0 ⊢ erhs' ∗ P) :
   ∀ P, ((elhs ∗ erhs) ∗ P) ∧ e0 ⊢ (elhs ∗ erhs') ∗ P := fun P =>
   calc iprop(((elhs ∗ erhs) ∗ P) ∧ e0)
-    _ ⊢ (erhs ∗ (elhs ∗ P)) ∧ e0 := and_mono_l <| (sep_mono_l sep_comm.2).trans sep_assoc.1
+    _ ⊢ (erhs ∗ (elhs ∗ P)) ∧ e0 := and_mono_left <| (sep_mono_left sep_comm.2).trans sep_assoc.1
     _ ⊢ erhs' ∗ (elhs ∗ P) := h _
-    _ ⊢ (elhs ∗ erhs') ∗ P := sep_assoc.2.trans (sep_mono_l sep_comm.2)
+    _ ⊢ (elhs ∗ erhs') ∗ P := sep_assoc.2.trans (sep_mono_left sep_comm.2)
 
 theorem replace_finish {PROP} [BI PROP] {e e' : PROP}
   (h : ∀ P, (e ∗ P) ∧ e ⊢ e' ∗ P) :
