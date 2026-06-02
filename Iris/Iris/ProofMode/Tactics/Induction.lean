@@ -323,6 +323,10 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
           | some parsedAlts =>
             match parsedAlts.find? <| matcher ctor with
             | some ⟨_, vars, _⟩ =>
+              if vars.size > s.fields.size then
+                throwError
+                  s!"iinduction: too many variable names provided at alternative `{ctor}`: ".append
+                  s!"{vars.size} provided, but {s.fields.size} expected"
               for ⟨fieldFVar, varStx⟩ in s.fields.toList.zip vars.toList do
                 if let `(binderIdent| $id:ident) := varStx then
                   let lctx ← getLCtx

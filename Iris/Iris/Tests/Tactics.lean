@@ -2772,11 +2772,23 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | Nat.zero  => itrivial
   | invalidC  => done
 
-/-- Tests `iinduction` using a custom recursor name and expression -/
+/- Tests `iinduction` with extra arguments supplied by the user -/
+/-- error: iinduction: too many variable names provided at alternative `Nat.succ`: 4 provided, but 2 expected -/
+#guard_msgs in
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n with
+  | zero => itrivial
+  | succ n ih extra1 extra2 => itrivial
+
+/-- Tests `iinduction` using a custom recursor name (strong induction),
+    performing induction on an expression `n + m` -/
 example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {n : Nat} :
     ⊢ P -∗ □ Q m -∗ □ R -∗ S -∗ □ T n -∗ ⌜n + m + 0 = n + m⌝ := by
   iintro HP #HQ #HR HS #HT
-  iinduction n + m using Nat.strongRecOn
-  itrivial
+  iinduction n + m using Nat.caseStrongRecOn with
+  | zero => itrivial
+  | succ n ih => itrivial
 
 end iinduction
