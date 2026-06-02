@@ -2,10 +2,12 @@ module
 
 public import Iris.ProofMode
 public import Iris.HeapLang.Tactic
+public import Iris.HeapLang.Instances
 public import Iris.ProgramLogic.WeakestPre
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.EctxLanguage
 public import Iris.ProgramLogic.EctxiLanguage
+public import Iris.ProgramLogic.Lifting
 public import Lean
 public import Qq
 
@@ -21,30 +23,31 @@ meta def quoteList {α : Q(Type u)}: List Q($α) → Q(List $α)
   | x :: xs => q($x :: $(quoteList xs))
 
 meta
-def trySubtractExprFromContextAt(ctx : List Q(ECtxItem)) (e : Q(Exp)) (K : Q(Exp)) (position : Nat) : MetaM (Option (List Q(ECtxItem))) := do
+def trySubtractExprFromContextAt(ctx : List Q(ECtxItem)) (e : Q(Exp)) (K : Q(Exp)) (position : Nat) (traceCls : Lean.Name := decl_name%) : MetaM (Option (List Q(ECtxItem))) := do
   let (inner_Ks, outer_Ks) := ctx.splitAt position
-  trace[wp_bind] s!"Expression context (inner): {← inner_Ks.mapM <| liftM ∘ ppExpr}"
-  trace[wp_bind] s!"Expression context (outer): {← outer_Ks.mapM <| liftM ∘ ppExpr}"
+  traceM traceCls do return s!"Expression context (inner): {← inner_Ks.mapM <| liftM ∘ ppExpr}"
+  traceM traceCls do return s!"Expression context (outer): {← outer_Ks.mapM <| liftM ∘ ppExpr}"
   let K' ← HeapLang.fill inner_Ks e
   if ←isDefEq K K' then return .some outer_Ks else return .none
 
 meta partial
-def substractExprFromContextMatchingFrom (ctx : List Q(ECtxItem)) (e : Q(Exp)) (K : Q(Exp)) (pt : Nat) : MetaM (List Q(ECtxItem)) :=  do
-  if pt <= ctx.length then
-    match ← trySubtractExprFromContextAt ctx e K pt with
-    | .some outer_Ks => return outer_Ks
-    | .none => substractExprFromContextMatchingFrom ctx e K (pt+1)
-  else
-    throwError s!"Couldn't unify {←ppExpr K} with any possible evaluation context"
+def subtractExprFromContextMatchingFrom (ctx : List Q(ECtxItem)) (e : Q(Exp)) (K : Q(Exp)) (pt : Nat) (traceCls : Lean.Name := decl_name%) : MetaM (List Q(ECtxItem)) :=  do
+  unless pt <= ctx.length do throwError s!"Couldn't unify {←ppExpr K} with any possible evaluation context"
+  match ← trySubtractExprFromContextAt ctx e K pt traceCls with
+  | .some outer_Ks => return outer_Ks
+  | .none => subtractExprFromContextMatchingFrom ctx e K (pt+1)
 
 meta partial
-def substractExprFromContext (ctx : List Q(ECtxItem)) (e : Q(Exp)) (K : Q(Exp)) : MetaM (List Q(ECtxItem)) :=  do
+def subtractExprFromExpr (e : Q(Exp)) (K : Q(Exp)) (traceCls : Lean.Name := `subtractExprFromExpr) : MetaM (List Q(ECtxItem)) :=  do
+  let (ctx, e) ← HeapLang.extractAllEctxItems e
+  traceM traceCls do return s!"Expression context: {← ctx.mapM <| ppExpr}"
+  traceM traceCls do return s!"Expression radical: {←ppExpr e}"
   let (Ks, rad) := (← HeapLang.extractAllEctxItems K)
   let K_depth := Ks.length
   if let .mvar _ := rad then
     -- NOTE: It only makes sense to search for a possibly bigger context if the radical is
     -- a metavariable.
-    substractExprFromContextMatchingFrom ctx e K K_depth
+    subtractExprFromContextMatchingFrom ctx e K K_depth traceCls
   else
     let .some res ← trySubtractExprFromContextAt ctx e K K_depth
       | throwError s!"Couldn't unify {←ppExpr K} with any possible evaluation context"
@@ -66,10 +69,8 @@ elab "wp_bind" K:term : tactic => do
       (self := wp.def (Λ := @ProgramLogic.EctxLanguage.instLanguage _ _ _ _ _ (ProgramLogic.EctxItemLanguage.instEctxLanguage (EctxItem := ECtxItem) (Λ := $Λ))) (ι := $ι))
       $s $E $e $Φ) := goal
       | throwError "The goal was not a WP application"
-    let (ctx, e) ← HeapLang.extractAllEctxItems e
-    trace[wp_bind] s!"Expression context: {← ctx.mapM <| liftM ∘ ppExpr}"
-    trace[wp_bind] s!"Expression radical: {←ppExpr e}"
-    let outer_Ks ← substractExprFromContext ctx e K
+
+    let outer_Ks ← subtractExprFromExpr e K (traceCls := `wp_bind)
 
     let outer_K := quoteList outer_Ks
 
