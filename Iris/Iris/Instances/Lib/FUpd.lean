@@ -120,7 +120,7 @@ instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (I
     isplitl [HE]
     · iassumption
     iapply HP
-    ipure_intro
+    ipureintro
     exact Hdisj'
   frame_right {_ _ _ _} := by
     simp only [uPred_fupd]
@@ -514,7 +514,7 @@ theorem fupd_finally_soundness (hlc : HasLC) [InvGpreS GF] (n : Nat) (E : CoPset
   iapply HP (InvGS_gen.mk W _) $$ Hf Hw
   rw [← subset_union_diff (s₁ := E) (s₂ := ⊤) (fun _ _ => CoPset.mem_full)]
   icases ownE_op disjoint_diff_right $$ HE with ⟨$, _⟩
-  ipure_intro; trivial
+  itrivial
 
 @[rocq_alias fupd_soundness]
 theorem fupd_soundness (hlc : HasLC) [InvGpreS GF] (n : Nat) {E1 E2 : CoPset} {P : IProp GF} [Plain P] :

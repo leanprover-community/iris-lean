@@ -123,7 +123,7 @@ theorem ownE_disjoint {E1 E2} : ownE E1 ∗ ownE E2 ⊢@{IProp GF} ⌜E1 ## E2�
     isplitl [H1] <;> iassumption
   ihave H := iOwn_cmraValid $$ H
   icases internalCmraValid_discrete (A := DisjointLeibnizSet CoPset) $$ H with %H
-  ipure_intro
+  ipureintro
   exact valid_op_iff_disj.mp H
 
 @[rocq_alias ownE_op']
@@ -136,7 +136,7 @@ theorem ownE_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownE (E1 ∪ E2) ⊣⊢@{IProp 
     · iapply ownE_disjoint $$ [H1 H2]
       isplitl [H1] <;> iassumption
     isplit
-    · ipure_intro; assumption
+    · ipureintro; assumption
     · iapply (ownE_op Hdisj).mpr $$ [H1 H2]
       isplitl [H1] <;> iassumption
 
@@ -168,7 +168,7 @@ theorem ownD_disjoint (E1 E2 : PosSet) :
   · isplitl [H1] <;> iassumption
   ihave H := iOwn_cmraValid $$ H
   icases internalCmraValid_discrete (A := DisjointLeibnizSet PosSet) $$ H with %H
-  ipure_intro
+  ipureintro
   exact valid_op_iff_disj.mp H
 
 @[rocq_alias ownD_op']
@@ -181,7 +181,7 @@ theorem ownD_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownD (E1 ∪ E2) ⊣⊢@{IProp 
     · iapply ownD_disjoint $$ [H1 H2]
       isplitl [H1] <;> iassumption
     isplit
-    · ipure_intro; assumption
+    · ipureintro; assumption
     · iapply (ownD_op Hdisj).mpr $$ [H1 H2]
       isplitl [H1] <;> iassumption
 
@@ -209,7 +209,7 @@ theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
   have ⟨Q', Hget, Hagree⟩ := Hlookup
   iexists Q'
   isplit
-  · ipure_intro; assumption
+  · ipureintro; assumption
   · iapply later_equivI_mp
     iapply internalEq.symm
     rw [←Hagree]
@@ -290,7 +290,7 @@ theorem ownI_alloc [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
   imodintro
   iexists j
   isplit
-  · ipure_intro; assumption
+  · ipureintro; assumption
   isplitr [Hpt]
   · iexists insert I j P
     isplitl [Hown]
@@ -331,7 +331,7 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
   imodintro
   iexists j
   isplit
-  · ipure_intro; assumption
+  · ipureintro; assumption
   isplitr [Hpt HD]
   · iintro HE
     unfold ownE

@@ -61,7 +61,7 @@ example : True := by
   iintro %_ _
   simp only [Nat.repeat]
   icases inv_alloc nroot ⊤ iprop(True) $$ [] with >#Hinv
-  · inext; ipure_intro; simp
+  · itrivial
   imod inv_acc ⊤ $$ Hinv with ⟨HP, Hcl⟩
   · rw [nclose_root]; exact subset_refl
   imod Hcl $$ HP with HP

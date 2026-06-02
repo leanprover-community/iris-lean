@@ -63,12 +63,12 @@ elab "ipure" colGt hyp:ident : tactic => do
 
   mvar.assign pf
 
-elab "iemp_intro" : tactic => do
+elab "iempintro" : tactic => do
   ProofModeM.runTactic λ mvar { prop, e, goal, .. } => do
 
   let .true ← isDefEq goal q(emp : $prop) | throwError "goal is not `emp`"
   let .some _ ← trySynthInstanceQ q(Affine $e)
-    | throwError "iemp_intro: context is not affine"
+    | throwError "iempintro: context is not affine"
   mvar.assign q(affine (P := $e))
 
 theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
@@ -79,13 +79,13 @@ theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
     (h : FromPure false Q .out φ) (hφ : φ) : P ⊢ Q :=
   (pure_intro hφ).trans h.1
 
-elab "ipure_intro" : tactic => do
+elab "ipureintro" : tactic => do
   ProofModeM.runTactic λ mvar { e, goal, .. } => do
 
   let b : Q(Bool) ← mkFreshExprMVarQ q(Bool)
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let .some h ← ProofModeM.trySynthInstanceQ q(FromPure $b $goal .out $φ)
-    | throwError "ipure_intro: {goal} is not pure"
+    | throwError "ipureintro: {goal} is not pure"
   let m : Q($φ) ← mkFreshExprMVar (← instantiateMVars φ)
   addMVarGoal m.mvarId!
 
@@ -93,13 +93,14 @@ elab "ipure_intro" : tactic => do
   | .const ``true _ =>
     have : $b =Q true := ⟨⟩
     let .some _ ← trySynthInstanceQ q(Affine $e)
-      | throwError "ipure_intro: context is not affine"
+      | throwError "ipureintro: context is not affine"
     mvar.assign q(pure_intro_affine (P := $e) (Q := $goal) $h $m)
   | .const ``false _ =>
     have : $b =Q false := ⟨⟩
     mvar.assign q(pure_intro_spatial (P := $e) (Q := $goal) $h $m)
   -- the following indicates a bug in the typeclass instances that generate b
-  | _ => throwError "ipure_intro: bug in typeclass instances, cannot reduce {b} to true or false"
+  | _ => throwError "ipureintro: bug in typeclass instances, cannot reduce {b} to true or false"
 
 -- TODO: what is the best lean automation tactic to call here?
-macro_rules | `(tactic| itrivial) => `(tactic| (first | ipure_intro | exfalso) <;> simp [*] <;> done)
+-- `assumption` is necessary if the goal contains mvars
+macro_rules | `(tactic| itrivial) => `(tactic| (first | ipureintro | exfalso) <;> (first | simp [*] | assumption) <;> done)
