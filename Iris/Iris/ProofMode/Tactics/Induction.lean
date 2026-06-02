@@ -278,7 +278,6 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
           | none, some r => pure r
           -- Use `.rec` as the fallback option
           | none, none => pure <| mkRecName indName
-        -- | throwError "iinduction: unable to determine recursor name"
         pure recName
     | _ => throwError "iinduction: {indName} is not inductive"
   | _ => throwError "iinduction: unable to determine inductive type"
