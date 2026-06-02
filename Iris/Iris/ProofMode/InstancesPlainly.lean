@@ -103,7 +103,7 @@ instance intoSep_plainly_affine [Sbi PROP] (P Q1 Q2 : PROP)
 @[rocq_alias from_or_plainly]
 instance fromOr_plainly [Sbi PROP] (P Q1 Q2 : PROP)
     [h : FromOr P Q1 Q2] : FromOr iprop(■ P) iprop(■ Q1) iprop(■ Q2) where
-  from_or := plainly_or_2.trans (plainly_mono h.1)
+  from_or := plainly_or_mpr.trans (plainly_mono h.1)
 
 /-- IntoOr -/
 
@@ -117,7 +117,7 @@ instance intoOr_plainly [Sbi PROP] [SbiEmpValidExist PROP] (P Q1 Q2 : PROP)
 @[rocq_alias from_exist_plainly]
 instance fromExists_plainly [Sbi PROP] (P : PROP) (Φ : α → PROP)
     [h : FromExists P Φ] : FromExists iprop(■ P) (fun a => iprop(■ Φ a)) where
-  from_exists := plainly_exists_2.trans (plainly_mono h.1)
+  from_exists := plainly_exists_mpr.trans (plainly_mono h.1)
 
 /-- IntoExists -/
 
@@ -125,21 +125,21 @@ instance fromExists_plainly [Sbi PROP] (P : PROP) (Φ : α → PROP)
 instance intoExists_plainly [Sbi PROP] [SbiEmpValidExist PROP] (P : PROP)
     {α : Type _} (Φ : α → PROP) [h : IntoExists P Φ] :
     IntoExists iprop(■ P) (fun a => iprop(■ Φ a)) where
-  into_exists := (plainly_mono h.1).trans plainly_exists_1
+  into_exists := (plainly_mono h.1).trans plainly_exists.mp
 
 /-- IntoForall -/
 
 @[rocq_alias into_forall_plainly]
 instance intoForall_plainly [Sbi PROP] (P : PROP) {α : Type _} (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(■ P) (fun a => iprop(■ Φ a)) where
-  into_forall := (plainly_mono h.1).trans plainly_forall.1
+  into_forall := (plainly_mono h.1).trans BI.plainly_forall.mp
 
 /-- FromForall -/
 
 @[rocq_alias from_forall_plainly]
 instance fromForall_plainly [Sbi PROP] (P : PROP) {α : Sort _} (Φ : α → PROP)
     [h : FromForall P Φ] : FromForall iprop(■ P) (fun a => iprop(■ Φ a)) where
-  from_forall := plainly_forall.2.trans (plainly_mono h.1)
+  from_forall := BI.plainly_forall.mpr.trans (plainly_mono h.1)
 
 /-- FromModal -/
 

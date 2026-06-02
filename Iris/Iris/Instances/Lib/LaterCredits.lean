@@ -569,7 +569,7 @@ theorem le_upd_le_upd_finally (P : IProp GF) : (|==£> |==£|> P) ⊢ |==£|> P 
 theorem le_upd_finally_except0 (P : IProp GF) : (|==£|> ◇ P) ⊢ |==£|> P := by
   unfold le_upd_finally
   iintro HP %m Hlc
-  iapply laterN_mono _ except0_idemp.mp
+  iapply laterN_mono _ except0_idem.mp
   iapply laterN_mono _ (except0_mono except0_plainly.mpr)
   iapply HP $$ Hlc
 

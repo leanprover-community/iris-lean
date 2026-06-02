@@ -18,7 +18,7 @@ open BI
 theorem ihave_assert [BI PROP] {A B C : PROP}
   (h1 : A ∗ □ (B -∗ B) ⊢ C) : A ⊢ C :=
     (and_intro .rfl (persistently_emp_intro.trans (persistently_mono $ wand_intro emp_sep.1))).trans
-      $ persistently_and_intuitionistically_sep_r.1.trans h1
+      $ persistently_and_intuitionistically_sep_right.1.trans h1
 
 public meta section
 open Lean Elab Tactic Meta Qq

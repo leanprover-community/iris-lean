@@ -207,7 +207,7 @@ theorem ghost_map_alloc_strong [DecidableEq K] (P : GName → Prop) (m : H V) :
     (Auth (DFrac.own 1) (V := Agree (LeibnizO V)) (∅ : H _)) P Hinf with ⟨%γ, %HP, G⟩
   · simpa only [auth_valid_iff] using DFrac.valid_own_one
   · iexists γ; iframe %HP
-    iapply BIUpdate.mono <| sep_mono_r <| bigOpM_iOwn_entail γ _ m
+    iapply BIUpdate.mono <| sep_mono_right <| bigOpM_iOwn_entail γ _ m
     iapply BIUpdate.mono <| iOwn_op.mp
     iapply iOwn_update $$ G
     refine Update.equiv_right ?_

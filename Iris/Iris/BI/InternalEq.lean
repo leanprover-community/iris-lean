@@ -34,6 +34,8 @@ instance instInternalEq_ne (A : Type _) [OFE A] :
     NonExpansive₂ (internalEq (PROP := PROP) (A := A)) where
   ne _ _ _ h₁ _ _ h₂ := Sbi.siPure_ne.ne (SiProp.instNonExpansive₂InternalEq.ne h₁ h₂)
 
+#rocq_ignore internal_eq_proper "Derivable from internal_eq_ne with NonExpansive.eqv"
+
 theorem ne_l {A : Type _} [OFE A] (a : A) :
     NonExpansive (internalEq (PROP := PROP) · a) :=
   NonExpansive₂.ne_left internalEq a
@@ -64,18 +66,18 @@ theorem rewrite {A : Type _} [OFE A] {a b : A} (Ψ : A → PROP) [hΨ : NonExpan
   calc internalEq (PROP := PROP) a b
     _ ⊢ <si_pure> iprop(Φ a → Φ b) := siPure_mono (SiProp.internalEq_rewrite _ _ _)
     _ ⊢ <si_pure> (Φ b) := by
-        refine mp siPure_imp.mp ?_
+        refine imp_mp siPure_imp.mp ?_
         refine persistently_emp_intro.trans ?_
         refine (persistently_mono (siPure_emp_valid.mpr ?_)).trans persistently_elim
         refine siEmpValid_emp_valid.mpr ?_
-        exact wand_intro' (sep_emp.1.trans <| imp_intro and_elim_r)
+        exact wand_intro_left (sep_emp.1.trans <| imp_intro and_elim_r)
     _ ⊢ True -∗ Ψ a → Ψ b := siPure_siEmpValid_elim
-    _ ⊢ Ψ a → Ψ b := emp_sep.2.trans <| (sep_mono_l true_intro).trans wand_elim_r
+    _ ⊢ Ψ a → Ψ b := emp_sep.2.trans <| (sep_mono_left true_intro).trans wand_elim_right
 
 @[rocq_alias internal_eq_rewrite']
 theorem rewrite' {A : Type _} [OFE A] {a b : A} (Ψ : A → PROP) [NonExpansive Ψ]
      (Heq : P ⊢ internalEq a b) (HΨa : P ⊢ Ψ a) : P ⊢ Ψ b :=
-  (and_intro .rfl HΨa).trans <| (and_mono_l Heq).trans <| imp_elim (rewrite Ψ)
+  (and_intro .rfl HΨa).trans <| (and_mono_left Heq).trans <| imp_elim (rewrite Ψ)
 
 @[rocq_alias internal_eq_sym]
 theorem symm {A : Type _} [OFE A] {a b : A} : internalEq a b ⊢@{PROP} internalEq b a :=
@@ -305,7 +307,7 @@ theorem internalEq_rewrite_contractive {A : Type _} [OFE A] (a b : A) (Ψ : A �
 theorem internalEq_rewrite_contractive' {A : Type _} [OFE A] (a b : A) (Ψ : A → PROP)
     [Contractive Ψ] (Heq : P ⊢ ▷ internalEq a b) (HΨa : P ⊢ Ψ a) : P ⊢ Ψ b :=
   (and_intro .rfl HΨa).trans <|
-    (and_mono_l Heq).trans <| imp_elim (internalEq_rewrite_contractive a b Ψ)
+    (and_mono_left Heq).trans <| imp_elim (internalEq_rewrite_contractive a b Ψ)
 
 @[rocq_alias eq_timeless]
 instance eq_timeless {A : Type _} [OFE A] (a b : A) [TCOr (DiscreteE a) (DiscreteE b)] :

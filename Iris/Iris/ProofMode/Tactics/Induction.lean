@@ -40,9 +40,9 @@ instance intoIH_imp [BI PROP] (φ ψ : Prop) (Δ P Q : PROP)
   into_ih := by
     intro hImp
     apply wand_intro
-    refine (sep_mono_r h1.make_affinely.mpr).trans ?_
-    refine persistent_and_affinely_sep_r.2.trans ?_
-    exact pure_elim_r (fun hφ => h2.into_ih (hImp hφ))
+    refine (sep_mono_right h1.make_affinely.mpr).trans ?_
+    refine persistent_and_affinely_sep_right.2.trans ?_
+    exact pure_elim_right (fun hφ => h2.into_ih (hImp hφ))
 
 theorem ih_revert [BI PROP] {Δ P Q : PROP} {φ : Prop} (hφ : φ)
     [hP : IntoIH φ Δ P]
@@ -50,10 +50,10 @@ theorem ih_revert [BI PROP] {Δ P Q : PROP} {φ : Prop} (hφ : φ)
     (hPQ : Δ ⊢ iprop(<pers> P → Q)) :
     Δ ⊢ Q := by
   have hP' : □ Δ ⊢ <pers> P :=
-    (intuitionistically_intro' (hP.into_ih hφ)).trans persistently_of_intuitionistically
+    (intuitionistically_intro_intuitionistically (hP.into_ih hφ)).trans persistently_of_intuitionistically
   have hAnd : □ Δ ⊢ iprop(<pers> P ∧ (<pers> P → Q)) :=
     and_intro hP' <| intuitionistically_elim.trans hPQ
-  exact hΔ.trans <| hAnd.trans (imp_elim_r (P := iprop(<pers> P)) (Q := Q))
+  exact hΔ.trans <| hAnd.trans (imp_elim_right (P := iprop(<pers> P)) (Q := Q))
 
 public meta section
 open Lean Elab Tactic Meta Qq

@@ -53,7 +53,7 @@ theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac F) (m : H V) k dq v :
   · refine siPure_mono ?_
     iintro ⟨%v', ⟨%dq', %Hdp', %Hlookup, H⟩⟩
     refine siPure_and.mpr.trans ?_
-    refine siPure_mono (and_exists_l.mp.trans (exists_elim (fun c => ?_)))
+    refine siPure_mono (and_exists_left.mp.trans (exists_elim (fun c => ?_)))
     intro n ⟨h1, h2⟩
     apply auth_op_frag_validN_iff.mpr
     exists v', dq'
@@ -65,8 +65,8 @@ theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac F) (m : H V) k dq v :
 theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac F) (m : H V) k v :
   internalCmraValid (Auth dp m • Frag k (.own One.one) v) ⊣⊢@{PROP}
     ⌜✓ dp⌝ ∧ internalCmraValid v ∧ internalEq (get? m k) (.some v) := by
-  refine .trans ?_ (and_congr_r siPure_and)
-  refine .trans ?_ (and_congr_l siPure_pure)
+  refine .trans ?_ (and_congr_right siPure_and)
+  refine .trans ?_ (and_congr_left siPure_pure)
   refine .trans ?_ siPure_and
   constructor
   · refine siPure_mono fun n => ?_
@@ -103,7 +103,7 @@ theorem auth_op_frag_validI_total [Sbi PROP] [CMRA.IsTotal V] (dp : DFrac F) (m 
 theorem frag_op_frag_validI [Sbi PROP] k dq1 dq2 v1 v2 :
   internalCmraValid (Frag (F := F) (H := H) (V := V) k dq1 v1 • Frag k dq2 v2) ⊣⊢@{PROP}
     ⌜✓ (dq1 • dq2)⌝ ∧ internalCmraValid (v1 • v2) := by
-  refine .trans ?_ (and_congr_l siPure_pure)
+  refine .trans ?_ (and_congr_left siPure_pure)
   refine .trans ?_ siPure_and
   constructor
   · refine siPure_mono fun n => ?_
@@ -163,14 +163,14 @@ theorem agree_op_equiv_toAgreeI (x y : Agree A) (a : A) :
     refine (absorbingly_mono ?_).trans absorbing
     refine internalEq.rewrite' internalCmraValid internalEq.symm ?_ |>.trans (agree_op_invI x y)
     refine emp_sep.2.trans ?_
-    refine (sep_mono_l (toAgree_validI a)) |>.trans ?_
-    exact sep_elim_l
+    refine (sep_mono_left (toAgree_validI a)) |>.trans ?_
+    exact sep_elim_left
   have H2 : internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq x (toAgree a) := by
     letI : NonExpansive (x • ·) := CMRA.op_ne
     have H21 : internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq (x • x) (toAgree a) := by
       exact (and_intro (H1.trans (internalEq.of_internalEquiv_ne (x • ·))) .rfl).trans internalEq.trans
     have H22 : internalEq (x • y) (toAgree a) ⊢@{PROP} internalEq (x • x) x := by
-      exact emp_sep.2.trans (sep_mono_l (internalEq.of_equiv Agree.idemp)) |>.trans sep_elim_l
+      exact emp_sep.2.trans (sep_mono_left (internalEq.of_equiv Agree.idemp)) |>.trans sep_elim_left
     refine (and_intro (H22.trans internalEq.symm) H21).trans internalEq.trans
   apply and_intro H1
   exact (and_intro (H1.trans internalEq.symm) H2).trans internalEq.trans
@@ -181,7 +181,7 @@ theorem agree_includedI (x y : Agree A) :
   constructor
   · refine siPure_mono (exists_elim (fun c => ?_))
     exact (fun n Heq => (includedN.mp ⟨c, Heq⟩).trans op_commN)
-  · refine siPure_mono (exists_intro' y ?_)
+  · refine siPure_mono (exists_intro_trans y ?_)
     exact entails_preorder.refl
 
 @[rocq_alias to_agree_includedI]
@@ -192,7 +192,7 @@ theorem toAgree_includedI (a b : A) :
     exact (fun n Heq => toAgree_includedN.mp ⟨c, Heq⟩)
   · refine siPure_mono ?_
     show SiProp.internalEq a b ⊢ (∃ c, SiProp.internalEq (toAgree b) (toAgree a • c))
-    refine exists_intro' (toAgree a) ?_
+    refine exists_intro_trans (toAgree a) ?_
     refine internalEq_entails.mpr fun n heq => ?_
     exact (NonExpansive.ne heq.symm).trans (idemp.symm n)
 
@@ -206,7 +206,7 @@ variable [Sbi PROP] [UFraction F] [UCMRA A]
 @[rocq_alias auth_auth_dfrac_validI]
 theorem auth_dfrac_validI (dq : DFrac F) (a : A) :
     internalCmraValid (●{dq} a : Auth F A) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ internalCmraValid a := by
-  refine .trans ?_ (and_congr_l siPure_pure)
+  refine .trans ?_ (and_congr_left siPure_pure)
   refine .trans ?_ siPure_and
   refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
   all_goals simpa only [SiProp.cmraValid, auth_dfrac_validN] using id
@@ -220,8 +220,8 @@ theorem auth_validI (a : A) : internalCmraValid (● a : Auth F A) ⊣⊢@{PROP}
 theorem auth_dfrac_op_validI (dq1 dq2 : DFrac F) (a1 a2 : A) :
     internalCmraValid ((●{dq1} a1) • (●{dq2} a2)) ⊣⊢@{PROP}
       ⌜✓ (dq1 • dq2)⌝ ∧ internalEq a1 a2 ∧ internalCmraValid a1 := by
-  refine .trans ?_ (and_congr_l siPure_pure)
-  refine .trans ?_ (siPure_and.trans (and_congr_r siPure_and))
+  refine .trans ?_ (and_congr_left siPure_pure)
+  refine .trans ?_ (siPure_and.trans (and_congr_right siPure_and))
   refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
   all_goals simpa only [SiProp.cmraValid, auth_dfrac_op_validN] using id
 
@@ -237,7 +237,7 @@ theorem both_dfrac_validI (dq : DFrac F) (a b : A) :
     ⌜✓ dq⌝ ∧ internalCmraIncluded b a ∧ internalCmraValid a := by
   refine .trans ?_ <| siPure_and.trans (and_congr siPure_pure siPure_and)
   refine siPure_mono_bi ?_
-  refine .trans ?_ ((and_congr_r BI.and_exists_r).trans BI.and_exists_l).symm
+  refine .trans ?_ ((and_congr_right BI.and_exists_right).trans BI.and_exists_left).symm
   refine ⟨siPure_mono fun n => ?_, ?_⟩
   · simp only [both_dfrac_validN]
     intro ⟨hv, ⟨c, hi⟩, hvn⟩
@@ -254,7 +254,7 @@ theorem auth_both_validI (a b : A) :
       internalCmraIncluded b a ∧ internalCmraValid a := by
   refine .trans ?_ siPure_and
   refine siPure_mono_bi ?_
-  refine .trans ?_ BI.and_exists_r.symm
+  refine .trans ?_ BI.and_exists_right.symm
   simp only [SiProp.cmraValid, both_dfrac_validN]
   refine ⟨fun n ⟨_, ⟨⟨c, hi⟩, hvn⟩⟩ => ?_, ?_⟩
   · apply SiProp.instBI.sExists_intro
