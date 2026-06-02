@@ -10,6 +10,7 @@ public import Iris.ProgramLogic.WeakestPre
 namespace Iris.HeapLang
 
 variable {hlc} {GF : BundledGFunctors} [ι : IrisGS_gen hlc HeapLang.Exp GF]
+set_option linter.unusedVariables false
 
 namespace wp_bind
 
@@ -80,3 +81,46 @@ example : ⊢@{IProp GF}  WP hl(#2 + (#1 + #2)) {{ v, True }} := by
   wp_bind (_ + #2)
 
 end wp_bind
+
+
+-- TODO: Why is this not an `instance`?
+attribute [local instance] snd_pure
+
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+⊢ ⏎
+  ⊢ WP hl(#0) {{ v, True }}
+-/
+#guard_msgs in
+example : ⊢@{IProp GF}  WP hl(if #false then #1 else #0) {{ v, True }} := by
+  istart
+  wp_pure hl({_})
+
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+⊢ ⏎
+  ⊢ WP hl(#1) {{ v, True }}
+-/
+#guard_msgs in
+example : ⊢@{IProp GF}  WP hl(if #true then #1 else #0) {{ v, True }} := by
+  istart
+  wp_pure hl({_})
+
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+⊢ ⏎
+  ⊢ WP ↑hl_val(#2) {{ v, True }}
+-/
+#guard_msgs in
+example : ⊢@{IProp GF}  WP hl(snd(v((#1,#2)))) {{ v, True }} := by
+  istart
+  wp_pure hl({_})

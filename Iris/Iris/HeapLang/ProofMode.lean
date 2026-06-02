@@ -109,3 +109,95 @@ elab "wp_bind" focus:hl_exp : tactic => do
     --   Tactic.setGoals (savedGoals ++ newGoals)
 
     mvar.assign q($(newProof).trans $pf)
+
+public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e₁ e₂ : Exp} {φ : Prop} {n : Nat} {Φ : Val → IProp GF} :
+    ProgramLogic.Language.PureExec φ n e₁ e₂ →
+    φ →
+    IntoLaterN false n Δ Δ' →
+    (Δ' ⊢ WP (ProgramLogic.fill K e₂) @ s ; E {{ Φ }}) →
+    (Δ ⊢ WP (ProgramLogic.fill K e₁) @ s ; E {{ Φ }})
+    := by
+  intro Hpstep _ ⟨Δ_Δ'⟩ H
+  refine Δ_Δ'.trans ?_
+  replace Hpstep := ProgramLogic.EctxLanguage.pureExec_fill (K := K) φ n Hpstep
+  refine .trans ?_ <| ProgramLogic.wp_pure_step_later (GF := GF) Hpstep ‹φ›
+  refine .trans (BI.laterN_mono _ H) ?_
+  iintro $ !> -; itrivial
+
+meta def _root_.Lean.MVarId.trySolveWith (mvarId : MVarId) (tac : TacticM α) : TacticM α := do
+  let savedGoals ← getGoals
+  setGoals [mvarId]
+  let a ← tac
+  setGoals savedGoals
+  pure a
+
+elab "wp_pure" focus:term " by " tac:tactic : tactic => do
+  let focus ← elabTermEnsuringTypeQ focus q(HeapLang.Exp)
+  let (focus_ctx, _) ← HeapLang.extractAllEctxItems focus
+  trace[wp_pure] s!"Focusing with {←ppExpr focus} of depth {focus_ctx.length}"
+  ProofModeM.runTactic fun mvar {u, prop, bi, hyps, goal, ..} => do
+    let .defEq _ ← isLevelDefEqQ u 0
+      | throwError "`wp_bind` only works over `IProp` (at universe level 0)"
+    let ~q(IProp $GF) := prop
+      | throwError "`wp_bind` only works over `IProp`"
+    let ~q(UPred.instBIUPred) := bi
+      | throwError "`wp_bind` expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
+
+    let ~q(Wp.wp (A := Stuckness) (Expr := Exp) (Val := Val)
+      (self := wp.def (Λ := @ProgramLogic.EctxLanguage.instLanguage _ _ (HeapLang.State) (HeapLang.Observation) _ (ProgramLogic.EctxItemLanguage.instEctxLanguage (EctxItem := ECtxItem) (Λ := instEctxItemLanguageExpECtxItemStateObservationVal))) (ι := $ι))
+      $s $E $e $Φ) := goal
+      | throwError "The goal was not a WP application"
+
+    let (ctx, radical) ← HeapLang.extractAllEctxItems e
+    trace[wp_pure] s!"Goal context is {←ctx.mapM (liftM ∘ ppExpr)} with radical {←ppExpr radical}"
+    for i in focus_ctx.length...=ctx.length do
+      let (inner_ctx, outer_ctx) := ctx.splitAt i
+      let curr ← HeapLang.fill inner_ctx radical
+      trace[wp_pure] s!"Trying to reduce {←ppExpr curr} using {←ppExpr focus}"
+      unless ← liftM ∘ withoutModifyingState <| isDefEq curr focus do continue
+
+      let φ ← mkFreshExprMVarQ q(Prop)
+      -- let n ← mkFreshExprMVarQ q(Nat)
+      -- TODO: Why is `n` not `outParam` in `PureExec`?
+      let n := q(1)
+      let e₂ ← mkFreshExprMVarQ q(Exp)
+
+      let .some instPureExec ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $curr $e₂)
+        | continue
+      trace[wp_pure] s!"Wee"
+      trace[wp_pure] s!"Found {←ppExpr instPureExec}"
+      let Δ' ← mkFreshExprMVarQ q(IProp $GF)
+      let .some instIntoLaterN ← ProofModeM.trySynthInstanceQ q(IntoLaterN false $n $(hyps.tm) $Δ')
+        | continue
+      trace[wp_pure] s!"Found instance {←ppExpr instIntoLaterN}"
+
+      -- TODO: See previous comment on the `ProgramLogic.fill` duplication
+      -- let newGoal := q(Wp.wp $s $E (ProgramLogic.fill $(quoteList outer_ctx) $e₂) $Φ)
+      let inner ← HeapLang.fill outer_ctx e₂
+      let newGoal := q(Wp.wp $s $E $inner $Φ)
+      have : (ProgramLogic.fill $(quoteList outer_ctx) $e₂) =Q $inner := ⟨⟩
+
+      trace[wp_pure] s!"Parsing {Δ'}"
+      let .some ⟨Δ'₂, hyps'⟩ := parseHyps? bi <| ←instantiateMVars Δ'
+        | throwError s!"Obtained hypothesis {←ppExpr Δ'} from `IntroLaterN`, but these couldn't be parsed as {←ppExpr <| ←inferType bi} hypothesis"
+      have : $Δ'₂ =Q $Δ' := ⟨⟩
+      let nextPf ← addBIGoal hyps' newGoal
+
+      let HΦ : Q($φ) ← (liftM ∘ mkFreshExprSyntheticOpaqueMVar) q($φ)
+      addMVarGoal HΦ.mvarId!
+      HΦ.mvarId!.trySolveWith do
+        evalTactic tac
+
+      let pf := q(tac_wp_pure (ι := $ι) $instPureExec $HΦ $instIntoLaterN $nextPf)
+
+      mvar.assign pf
+      return ()
+    throwError "Found no `PureExec` rule to apply in the expression {←ppExpr e}"
+
+-- TODO: Rething these syntax declarations
+macro "wp_pure" : tactic => `(tactic| wp_pure _ by grind only)
+macro "wp_pure" " by " tac:tactic : tactic => `(tactic| wp_pure _ by $tac)
+macro "wp_pure" focus:term : tactic => `(tactic| wp_pure $focus by grind only)
+
+initialize registerTraceClass `wp_bind
+initialize registerTraceClass `wp_pure
