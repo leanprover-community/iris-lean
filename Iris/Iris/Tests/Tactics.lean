@@ -2776,3 +2776,68 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
+
+section iinduction
+
+/--
+  Tests `iinduction` with induction on natural numbers.
+
+  For natural numbers, `Nat.recAux` is used as the default recursor name. Hence,
+  the tactic is equivalent to `iinduction n using Nat.recAux generalizing %P HQ %R`.
+
+  Hypotheses in the spatial context necessarily become premises of the
+  induction hypothesis. The intuitionistic hypothesis `T n` is reverted
+  because it depends on `n`.
+
+  With the `generalizing` syntax, `P` and `R` are universally quantified
+  in the induction hypothesis. Given they occur in `HP` and `HR`, respectively,
+  the two propositions are included as premises of the induction hypothesis.
+
+  Meanwhile, `HQ` is included as a premise of the induction hypothesis without
+  `Q` being universally quantified.
+
+  Note that the following variants of the tactic all produce equivalent subgoals:
+  - `induction n generalizing %P HP HQ %R`
+  - `induction n generalizing %P HQ %R HR`
+  - `induction n generalizing %P HP HQ %R HR`
+  - the tactics above with any permutations of `generalizing` arguments.
+-/
+example [BI PROP] {P Q R S : PROP} {T : Nat → PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T n -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n generalizing %P HQ %R with
+  -- Using the full name of the constructor (`Nat.zero`)
+  | Nat.zero  => itrivial
+  /- Using the short name of the constructor (`succ`), naming the induction
+     hypothesis as `ih`, but leaving the variable `n` inaccessible by using `_` -/
+  | succ _ ih => iframe; itrivial
+
+/- Tests `iinduction` with a non-inductive datatype -/
+/-- error: iinduction: unable to determine inductive type -/
+#guard_msgs in
+example [BI PROP] {P : PROP} : ⊢ P := by
+  iinduction P
+
+/- Tests `iinduction` with induction on natural numbers with invalid user-supplied names -/
+/-- error: iinduction: missing alternative name(s): `Nat.succ`
+iinduction: duplicate alternative name(s): `zero`
+iinduction: invalid alternative name(s): `invalidA`, `invalidB`, `invalidC` -/
+#guard_msgs in
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n with
+  | invalidA  => done
+  | zero      => itrivial
+  | invalidB  => done
+  | Nat.zero  => itrivial
+  | invalidC  => done
+
+/-- Tests `iinduction` using a custom recursor name and expression -/
+example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {n : Nat} :
+    ⊢ P -∗ □ Q m -∗ □ R -∗ S -∗ □ T n -∗ ⌜n + m + 0 = n + m⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n + m using Nat.strongRecOn
+  itrivial
+
+end iinduction
