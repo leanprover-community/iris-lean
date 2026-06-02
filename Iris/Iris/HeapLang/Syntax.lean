@@ -5,6 +5,8 @@ Authors: Michael Sammler
 -/
 module
 
+public import Iris.Std.Infinite
+
 @[expose] public section
 namespace Iris.HeapLang
 
@@ -13,6 +15,10 @@ structure Loc where
   mk ::
   n : Int
 deriving Inhabited, Repr, DecidableEq
+
+instance : InfiniteType Loc where
+  enum n := .mk n
+  enum_inj n m := by grind
 
 instance : Ord Loc where
   compare l₁ l₂ := compare l₁.n l₂.n

@@ -50,9 +50,9 @@ public def ghost_map_elem (γ : GName) (dq : DFrac F) (k : K) (v : V) : IProp GF
 end definitions
 
 notation γ " ↪●MAP{" dq "} " m => ghost_map_auth γ dq m
-notation γ " ↪●MAP " m => ghost_map_auth γ (DFrac.own 1) m
+notation γ " ↪●MAP " m => ghost_map_auth γ (DFrac.own One.one) m
 notation γ " ↪◯MAP[" k "]{" dq "} " v => ghost_map_elem γ dq k v
-notation γ " ↪◯MAP[" k "] " v => ghost_map_elem γ (DFrac.own 1) k v
+notation γ " ↪◯MAP[" k "] " v => ghost_map_elem γ (DFrac.own One.one) k v
 
 section lemmas
 
