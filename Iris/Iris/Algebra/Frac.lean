@@ -248,3 +248,67 @@ instance : NumericFraction PNat where
   lt_irrefl := Nat.lt_irrefl _
 
 end PNat
+
+def Qp := { q : Rat // 0 < q }
+
+namespace Qp
+
+instance : One Qp := ⟨1, by grind⟩
+instance : Add Qp := ⟨fun a b => ⟨a.1 + b.1, by have := a.2; have := b.2; grind⟩⟩
+instance : LE Qp := ⟨fun a b => a.1 ≤ b.1⟩
+instance : LT Qp := ⟨fun a b => a.1 < b.1⟩
+
+@[simp] theorem add_val (a b : Qp) : (a + b).1 = a.1 + b.1 := rfl
+@[simp] theorem one_val : (1 : Qp).1 = 1 := rfl
+
+instance : NumericFraction Qp where
+  add_comm a b := Subtype.ext (Rat.add_comm a.1 b.1)
+  add_assoc a b c := Subtype.ext (Rat.add_assoc a.1 b.1 c.1).symm
+  add_left_cancel {a b c} h :=
+    Subtype.ext (Rat.add_left_cancel a.1 (show a.1 + b.1 = a.1 + c.1 from congrArg Subtype.val h))
+  le_def {a b} := by
+    show a.1 ≤ b.1 ↔ a = b ∨ a.1 < b.1
+    constructor
+    · intro h
+      rcases Rat.le_iff_lt_or_eq.mp h with h' | h'
+      · exact Or.inr h'
+      · exact Or.inl (Subtype.ext h')
+    · rintro (rfl | h)
+      · exact Rat.le_iff_lt_or_eq.mpr (Or.inr rfl)
+      · exact Rat.le_iff_lt_or_eq.mpr (Or.inl h)
+  lt_def {a b} := by
+    show a.1 < b.1 ↔ ∃ c : Qp, a + c = b
+    constructor
+    · intro h
+      exact ⟨⟨b.1 - a.1, (Rat.lt_iff_sub_pos a.1 b.1).mp h⟩,
+        Subtype.ext (by show a.1 + (b.1 - a.1) = b.1; grind)⟩
+    · rintro ⟨c, hc⟩
+      show a.1 < b.1
+      have h1 : a.1 + c.1 = b.1 := congrArg Subtype.val hc
+      have h2 : (0 : Rat) < c.1 := c.2
+      grind
+  lt_irrefl {a} := by show ¬ a.1 < a.1; grind
+
+/-- Divide a positive rational by a positive rational. -/
+def div (q d : Qp) : Qp :=
+  ⟨q.1 / d.1, by rw [Rat.div_def]; exact Rat.mul_pos q.2 (Rat.inv_pos.mpr d.2)⟩
+
+@[simp] theorem div_val (q d : Qp) : (q.div d).1 = q.1 / d.1 := rfl
+
+@[simp] theorem div_one (q : Qp) : q.div 1 = q :=
+  Subtype.ext (by show q.1 / 1 = q.1; grind)
+
+/-- A positive natural as a positive rational, for `n`-way division. -/
+def ofPNat (n : Nat) (hn : 0 < n) : Qp := ⟨(n : Rat), Rat.natCast_pos.mpr hn⟩
+
+@[simp] theorem ofPNat_one (hn : 0 < 1) : ofPNat 1 hn = 1 :=
+  Subtype.ext (Rat.ext rfl rfl)
+
+/-- The defining recombination: `n` copies of `q / n` sum (in value) back to `q`. -/
+theorem ofPNat_mul_div (q : Qp) (n : Nat) (hn : 0 < n) :
+    (ofPNat n hn).1 * (q.div (ofPNat n hn)).1 = q.1 := by
+  have hn' : (0 : Rat) < (n : Rat) := Rat.natCast_pos.mpr hn
+  show (n : Rat) * (q.1 / (n : Rat)) = q.1
+  grind
+
+end Qp
