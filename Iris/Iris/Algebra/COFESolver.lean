@@ -137,6 +137,7 @@ instance (k : Nat) : NonExpansive (fun X : Tower F => X.val k) := ⟨fun _ _ _ =
 @[rocq_alias solver.project]
 def Tower.proj (k) : Tower F -n> A F k := ⟨(· k), ⟨fun _ _ _ => (· _)⟩⟩
 
+@[rocq_alias solver.coerce]
 def eqToHom (e : i = k) : A F i -n> A F k := e ▸ .id
 
 theorem eqToHom_up {k k'} {x : A F k} (e : k = k') :
@@ -147,7 +148,7 @@ theorem down_eqToHom {k k'} {x : A F (k+1)} (e : k = k') :
     down F k' (eqToHom (congrArg Nat.succ e) x) = eqToHom e (down F k x) := by
   cases e; rfl
 
-@[rocq_alias solver.coerce, rocq_alias solver.embed']
+@[rocq_alias solver.embed_coerce]
 def embed : A F k -n> A F i :=
   if h : k ≤ i then (eqToHom (Nat.add_sub_cancel' h)).comp (upN ..)
   else (downN ..).comp (eqToHom (Nat.add_sub_cancel' (Nat.le_of_not_ge h)).symm)
@@ -158,10 +159,9 @@ def embed : A F k -n> A F i :=
 #rocq_ignore solver.g_coerce "Use down_eqToHom"
 #rocq_ignore solver.ff_ff "Local helper; folded into Tower.embed_up/Tower.embed_self proofs."
 #rocq_ignore solver.gg_gg "Local helper; folded into Tower.embed_up/Tower.embed_self proofs."
-#rocq_ignore solver.embed_coerce "Local helper; folded into Tower.embed."
 #rocq_ignore solver.g_embed_coerce "Local helper; folded into Tower.embed."
 
-@[rocq_alias solver.embed]
+@[rocq_alias solver.embed', rocq_alias solver.embed]
 protected def Tower.embed (k) : A F k -n> Tower F := by
   refine ⟨fun n => ⟨fun _ => embed n, fun {i} => ?_⟩, ⟨fun _ _ _ h _ => embed.ne.1 h⟩⟩
   dsimp [embed]; split <;> rename_i h₁
@@ -296,8 +296,9 @@ def Tower.iso : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
 end Fix.Impl
 open Fix.Impl
 
+#rocq_ignore solver.result "Returns the ignored `solution F` bundle; the carrier is `Fix F`, with `Inhabited`/`COFE`/`Fix.iso` provided separately."
+
 variable (F) in
-@[rocq_alias solver.result]
 def Fix : Type u := Tower F
 
 instance : Inhabited (Fix F) := inferInstanceAs (Inhabited (Tower F))

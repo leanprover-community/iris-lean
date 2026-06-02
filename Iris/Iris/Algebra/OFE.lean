@@ -210,8 +210,9 @@ export OFE.Discrete (discrete)
 
 instance Discrete.toDiscreteE [OFE α] [Discrete α] (x : α) : DiscreteE x := ⟨discrete_0⟩
 
+#rocq_ignore discrete_dist "Local Dist instance for the discrete OFE construction; folded into Lean's discreteO/Leibniz OFE instances."
+
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
-@[rocq_alias discrete_dist]
 theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{0}≡ y) : x ≡{n}≡ y :=
   (discrete h).dist
 export OFE.Discrete (discrete_n)
@@ -380,7 +381,8 @@ instance [OFE α] [OFE.Discrete α] : OFE.Discrete (Option α) where
 @[simp] theorem not_some_eqv_none [OFE α] {x : α} : ¬some x ≡ none := id
 @[simp] theorem not_none_eqv_some [OFE α] {x : α} : ¬none ≡ some x := id
 
-@[simp] theorem some_dist_some [OFE α] {n} {x y : α} : (some x ≡{n}≡ some y) ↔ x ≡{n}≡ y := .rfl
+@[simp, rocq_alias dist_Some]
+theorem some_dist_some [OFE α] {n} {x y : α} : (some x ≡{n}≡ some y) ↔ x ≡{n}≡ y := .rfl
 @[simp] theorem not_some_dist_none [OFE α] {n} {x : α} : ¬some x ≡{n}≡ none := id
 @[simp] theorem not_none_dist_some [OFE α] {n} {x : α} : ¬none ≡{n}≡ some x := id
 
@@ -1609,6 +1611,7 @@ def fixpointAB [COFE α] [COFE β] [Inhabited α] [Inhabited β] (fB : α -c> β
   }
   exact con_hom.fixpoint
 
+@[rocq_alias fixpoint_AB_contractive]
 theorem fixpointAB_contractive [COFE α] [COFE β] [Inhabited α] [Inhabited β] (fB : α -c> β -c> β) :
     Contractive (fixpointAB fB) where
   distLater_dist {n _ _} Dl := by
@@ -1621,6 +1624,7 @@ def fixpointAA [COFE α] [COFE β] [Inhabited α] [Inhabited β] (fA : α -c> β
     (fB : α -c> β -c> β) (x : α) : α :=
   fA x (fixpointAB fB x)
 
+@[rocq_alias fixpoint_AA_contractive]
 theorem fixpointAA_contractive [COFE α] [COFE β] [Inhabited α] [Inhabited β]
     (fA : α -c> β -n> α) (fB : α -c> β -c> β) : Contractive (fixpointAA fA fB) where
   distLater_dist {_ _ x₂} Dl := by
