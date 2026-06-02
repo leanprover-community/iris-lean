@@ -144,8 +144,11 @@ elab "wp_pure" focus:term " by " tac:tactic : tactic => do
       | throwError "`wp_bind` expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
 
     let ~q(Wp.wp (A := Stuckness) (Expr := Exp) (Val := Val)
-      (self := wp.def (Λ := @ProgramLogic.EctxLanguage.instLanguage _ _ (HeapLang.State) (HeapLang.Observation) _ (ProgramLogic.EctxItemLanguage.instEctxLanguage (EctxItem := ECtxItem) (Λ := instEctxItemLanguageExpECtxItemStateObservationVal))) (ι := $ι))
-      $s $E $e $Φ) := goal
+            (self := wp.def
+              (Λ := @ProgramLogic.EctxLanguage.instLanguage _ _ (HeapLang.State) (HeapLang.Observation) _
+                (ProgramLogic.EctxItemLanguage.instEctxLanguage (EctxItem := ECtxItem) (Λ := instEctxItemLanguageExp)))
+              (ι := $ι))
+            $s $E $e $Φ) := goal
       | throwError "The goal was not a WP application"
 
     let (ctx, radical) ← HeapLang.extractAllEctxItems e
@@ -193,6 +196,9 @@ elab "wp_pure" focus:term " by " tac:tactic : tactic => do
       mvar.assign pf
       return ()
     throwError "Found no `PureExec` rule to apply in the expression {←ppExpr e}"
+
+example : (λ x ↦ x) 0 = 0 := by
+  cbv
 
 -- TODO: Rething these syntax declarations
 macro "wp_pure" : tactic => `(tactic| wp_pure _ by grind only)
