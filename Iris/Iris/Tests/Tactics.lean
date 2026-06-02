@@ -2790,4 +2790,20 @@ example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {n : Nat} :
   iinduction n + m using Nat.caseStrongRecOn with
   | zero => itrivial
   | ind n ih => itrivial
+
+inductive Tree (α : Type u) where
+  | leaf : Tree α
+  | node : Tree α → α → Tree α → Tree α
+  deriving Repr
+
+example [BI PROP] {α} {t : Tree α} {P : Tree α → PROP} :
+    □ P .leaf -∗ □ (∀ l x r, P l -∗ P r -∗ P (.node l x r)) -∗ P t := by
+  iintro #H1 #H2
+  iinduction t with
+  | leaf => iexact H1
+  | node l y r ih1 ih2 =>
+    iapply H2
+    · iexact ih1
+    · iexact ih2
+
 end iinduction
