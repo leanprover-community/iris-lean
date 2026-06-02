@@ -23,8 +23,8 @@ theorem rewrite_tac [Sbi PROP] {P P' Q : PROP} {A : Type _} [OFE A] {a b : A} {p
     (h1 : P ⊢ P' ∗ □?p Q)
     : P ⊢ <pers> (Ψ a ∗-∗ Ψ b) :=
   calc P
-  _ ⊢ P' ∗ internalEq a b := h1.trans (sep_mono_r (intuitionisticallyIf_elim.trans heq.1))
-  _ ⊢ internalEq a b := sep_elim_r
+  _ ⊢ P' ∗ internalEq a b := h1.trans (sep_mono_right (intuitionisticallyIf_elim.trans heq.1))
+  _ ⊢ internalEq a b := sep_elim_right
   _ ⊢ internalEq (Ψ a) (Ψ b) := internalEq.of_internalEquiv_ne Ψ
   _ ⊢ <pers> internalEq (Ψ a) (Ψ b) := persistent
   _ ⊢ <pers> <affine> internalEq (Ψ a) (Ψ b) := persistently_affinely.2
@@ -43,8 +43,8 @@ theorem rewrite_tac_goal [BI PROP] {P Q Q' : PROP}
     calc P
       _ ⊢ <pers> (Q ∗-∗ Q') ∧ Q' := and_intro h1 h2
       _ ⊢ (Q ∗-∗ Q') ∗ Q' := persistently_and_l
-      _ ⊢ (Q' -∗ Q) ∗ Q' := sep_mono_l and_elim_r
-      _ ⊢ Q := wand_elim_l
+      _ ⊢ (Q' -∗ Q) ∗ Q' := sep_mono_left and_elim_r
+      _ ⊢ Q := wand_elim_left
 
 theorem rewrite_tac_hyp [BI PROP] {P Q Q' : PROP}
     (h1 : P ⊢ <pers> (Q ∗-∗ Q'))

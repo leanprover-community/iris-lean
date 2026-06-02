@@ -159,11 +159,8 @@ example (e e' : Expr) Φ (Hstep : ∀ {s : State}, @step _ _ Value _ (e, s) = (e
   iright
   iintro %s Hs
   iexists e', s
-  isplitr
-  · ipure_intro
-    exact Hstep
-  · iintro !> !>
-    iframe
+  iframe
+  itrivial
 
 /- The pattern of rules for stateful steps, for example, writing to a piece of memory.
    This style of rule applies when ownership over a resource P (eg. k ↦[γ] v) ensures that the state
@@ -182,7 +179,7 @@ example (e e' : Expr) (P P' : IProp GF) Φ
   . iframe
   iexists e', s'
   isplitr
-  · ipure_intro; exact Hstep
+  · itrivial
   iintro !>
   imod Hupd with ⟨HP', Hs⟩
   iintro !>
@@ -199,7 +196,7 @@ example (e : Expr) Φ (Hloop : ∀ σ : State, step Value (e, σ) = (e, σ)) :
   iintro %s Hs
   iexists e, s
   isplitr
-  · ipure_intro; exact Hloop s
+  · itrivial
   iintro !> !>
   iframe
   · exact true_intro

@@ -205,7 +205,7 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
     imodintro
     isplit
     · simp only [LE.le] at hs
-      ipure_intro
+      ipureintro
       grind [cases Stuckness]
     · iintro %e₂ %σ₂ %eₜ #hstep hc
       dsimp only [Nat.repeat]
@@ -328,8 +328,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
   icases lc_split $$ Hc with ⟨Hm, Hk⟩
   icombine Hm Hone as Hm
   dsimp only [Nat.repeat]
-  ihave Hwp := Hwp $$ [] [Hm]
-  · ipure_intro; assumption
+  ihave Hwp := Hwp $$ [//] [Hm]
   · simp [lc_split.to_eq]
   iapply step_fupd_wand $$ Hwp; iintro Hwp
   iapply step_fupdN_le (n := ι.numLatersPerStep m) (by grind only) LawfulSet.subset_refl
@@ -414,7 +413,7 @@ theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E
     imod H $$ [$] with ⟨%_, H⟩
     imodintro
     isplit
-    · ipure_intro; grind only [cases Stuckness, Language.Context.reducible_fill]
+    · ipureintro; grind only [cases Stuckness, Language.Context.reducible_fill]
     · iintro %e₂ %σ₂ %efs %HKstep Hcred
       obtain ⟨e₂', rfl, Hstep⟩ := κ.primStep_fill_inv h HKstep
       icases H $$ %e₂' %σ₂ %efs %Hstep Hcred with >H; imodintro; imodintro
@@ -440,7 +439,7 @@ theorem wp_bind_inv (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness
     imod H $$ [$] with ⟨%_, H⟩
     imodintro
     isplit
-    · ipure_intro; grind only [cases Stuckness, Language.Context.reducible_fill_inv]
+    · ipureintro; grind only [cases Stuckness, Language.Context.reducible_fill_inv]
     · iintro %e₂ %σ₂ %efs %Hstep Hcred
       icases H $$ %(K e₂) %σ₂ %efs %(κ.primStep_fill Hstep) Hcred with >H; imodintro; imodintro
       imod H; imodintro; iapply step_fupdN_wand $$ H; iintro H
@@ -518,7 +517,7 @@ theorem wp_step_fupdN {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp
     WP e @ s; E₁ {{ Φ }} := by
   iintro H
   iapply wp_step_fupdN_strong (s := s) (P := P) (n := n) toVal_e E₂E₁ $$ [H]
-  iapply BI.and_mono_r $$ H
+  iapply BI.and_mono_right $$ H
   iintro ⟨HP, $⟩
   imod fupd_mask_subseteq_emptyset_difference (show E₁\ E₂ ⊆ E₁ from LawfulSet.diff_subset_left) with G
   imod HP
@@ -592,7 +591,7 @@ theorem wp_wand {s : Stuckness} {E : CoPset} {e : Expr} {Φ Ψ : Val → IProp G
 @[rocq_alias wp_wand_l]
 theorem wp_wand_l {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} :
     (∀ v, Φ v -∗ Ψ v) ∗ WP e @ s ; E {{ Φ }} ⊢ WP e @ s ; E {{ Ψ }} :=
-  BI.wand_elim' wp_wand
+  BI.wand_elim_swap wp_wand
 
 @[rocq_alias wp_wand_r]
 theorem wp_wand_r {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} :

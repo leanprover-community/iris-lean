@@ -84,7 +84,7 @@ theorem own_valid {γ : GName} {q1 q2 : Frac F} :
   ihave H := iOwn_op $$ [H1 H2]; iframe
   ihave H := iOwn_cmraValid $$ H
   icases internalCmraValid_discrete $$ H with %H
-  ipure_intro
+  ipureintro
   exact H.2
 
 @[rocq_alias cinv_own_fractional]

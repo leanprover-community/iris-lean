@@ -20,32 +20,32 @@ public section
 open BI Std
 
 theorem false_elim' [BI PROP] {P Q : PROP} : P ∗ □?p False ⊢ Q :=
-  wand_elim' <| intuitionisticallyIf_elim.trans false_elim
+  wand_elim_swap <| intuitionisticallyIf_elim.trans false_elim
 
 theorem exists_elim' [BI PROP] {p} {P A Q : PROP} {Φ : α → PROP} [inst : IntoExists A Φ]
     (h : ∀ a, P ∗ □?p Φ a ⊢ Q) : P ∗ □?p A ⊢ Q :=
-  (sep_mono_r <| (intuitionisticallyIf_mono inst.1).trans intuitionisticallyIf_exists.1).trans <| sep_exists_l.1.trans (exists_elim h)
+  (sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans intuitionisticallyIf_exists.1).trans <| sep_exists_left.1.trans (exists_elim h)
 
 theorem sep_and_elim_l [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
     (h : P ∗ □?p A1 ⊢ Q) : P ∗ □?p A ⊢ Q :=
-  (sep_mono_r <| inst.1.trans <| intuitionisticallyIf_mono and_elim_l).trans h
+  (sep_mono_right <| inst.1.trans <| intuitionisticallyIf_mono and_elim_l).trans h
 
 theorem sep_and_elim_r [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd p A A1 A2]
     (h : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
-  (sep_mono_r <| inst.1.trans <| intuitionisticallyIf_mono and_elim_r).trans h
+  (sep_mono_right <| inst.1.trans <| intuitionisticallyIf_mono and_elim_r).trans h
 
 theorem sep_elim_spatial [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoSep A A1 A2]
     (h : P ∗ A1 ⊢ A2 -∗ Q) : P ∗ A ⊢ Q :=
-  (sep_mono_r inst.1).trans <| sep_assoc.2.trans <| wand_elim h
+  (sep_mono_right inst.1).trans <| sep_assoc.2.trans <| wand_elim h
 
 theorem and_elim_intuitionistic [BI PROP] {P A Q A1 A2 : PROP} [inst : IntoAnd true A A1 A2]
     (h : P ∗ □ A1 ⊢ □ A2 -∗ Q) : P ∗ □ A ⊢ Q :=
-  (sep_mono_r <| inst.1.trans intuitionistically_and_sep.1).trans <|
+  (sep_mono_right <| inst.1.trans intuitionistically_and_sep.1).trans <|
   sep_assoc.2.trans <| wand_elim h
 
 theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
     (h1 : P ∗ □?p A1 ⊢ Q) (h2 : P ∗ □?p A2 ⊢ Q) : P ∗ □?p A ⊢ Q :=
-  (sep_mono_r <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1).trans <| BI.sep_or_l.1.trans <| or_elim h1 h2
+  (sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1).trans <| BI.sep_or_left.1.trans <| or_elim h1 h2
 
 theorem intuitionistic_elim_spatial [BI PROP] {A A' Q : PROP}
     [IntoPersistently false A A'] [TCOr (Affine A) (Absorbing Q)]
@@ -56,7 +56,7 @@ theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP} [IntoPersis
 
 theorem spatial_elim [BI PROP] {p} {A A' Q : PROP} [FromAffinely A' A p]
     (h : P ∗ A' ⊢ Q) : P ∗ □?p A ⊢ Q :=
-      (sep_mono_r <| (affinelyIf_of_intuitionisticallyIf).trans from_affinely).trans h
+      (sep_mono_right <| (affinelyIf_of_intuitionisticallyIf).trans from_affinely).trans h
 
 theorem of_emp_sep [BI PROP] {A Q : PROP} (h : A ⊢ Q) : emp ∗ A ⊢ Q := emp_sep.1.trans h
 

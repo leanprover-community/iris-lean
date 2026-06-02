@@ -17,42 +17,42 @@ open BI
 
 theorem frame_init [BI PROP] {e goal : PROP} :
     e ⊢ e ∗ (goal -∗ goal) :=
-  sep_emp.2.trans (sep_mono_r (wand_intro emp_sep.1))
+  sep_emp.2.trans (sep_mono_right (wand_intro emp_sep.1))
 
 theorem frame_hyp [BI PROP] {p} {e e' origE goal goal' origGoal R : PROP}
     (h1 : origE ⊢ e ∗ (goal -∗ origGoal))
     [h2 : Frame p R goal goal']
     (h3 : e ⊣⊢ e' ∗ □?p R) :
     origE ⊢ e' ∗ (goal' -∗ origGoal) :=
-  h1.trans <| (sep_mono_l h3.1).trans <| sep_assoc.1.trans <|
-  sep_mono_r (wand_intro (sep_assoc.1.trans <| (sep_mono_r sep_comm.1).trans <|
-    sep_assoc.2.trans <| (sep_mono_l h2.frame).trans wand_elim_r))
+  h1.trans <| (sep_mono_left h3.1).trans <| sep_assoc.1.trans <|
+  sep_mono_right (wand_intro (sep_assoc.1.trans <| (sep_mono_right sep_comm.1).trans <|
+    sep_assoc.2.trans <| (sep_mono_left h2.frame).trans wand_elim_right))
 
 theorem frame_pure [BI PROP] {origE e goal goal' origGoal : PROP} (φ : Prop)
     (h1 : origE ⊢ e ∗ (goal -∗ origGoal))
     [h2 : Frame true iprop(⌜φ⌝) goal goal'] (h : φ) :
     origE ⊢ e ∗ (goal' -∗ origGoal) :=
   have h_box : emp ⊢ □?true iprop(⌜φ⌝) := affinely_intro ((pure_intro h).trans persistent)
-  h1.trans <| sep_mono_r <| wand_intro <|
-    emp_sep.2.trans <| (sep_mono_l h_box).trans <|
-    (sep_mono_r sep_comm.1).trans <| sep_assoc.2.trans <|
-    (sep_mono_l h2.frame).trans wand_elim_r
+  h1.trans <| sep_mono_right <| wand_intro <|
+    emp_sep.2.trans <| (sep_mono_left h_box).trans <|
+    (sep_mono_right sep_comm.1).trans <| sep_assoc.2.trans <|
+    (sep_mono_left h2.frame).trans wand_elim_right
 
 theorem frame_finish [BI PROP] {e origE goal origGoal : PROP}
     (h1 : origE ⊢ e ∗ (goal -∗ origGoal)) (h2 : e ⊢ goal) :
     origE ⊢ origGoal :=
-  h1.trans ((sep_mono_l h2).trans wand_elim_r)
+  h1.trans ((sep_mono_left h2).trans wand_elim_right)
 
 theorem frame_true_done [BI PROP] (P : PROP) : P ⊢ True :=
   pure_intro .intro
 
 theorem frame_finish_close_true [BI PROP] {e origE origGoal : PROP}
     (h1 : origE ⊢ e ∗ (True -∗ origGoal)) :
-    origE ⊢ e ∗ origGoal := h1.trans (sep_mono_r <| true_sep_2.trans wand_elim_r)
+    origE ⊢ e ∗ origGoal := h1.trans (sep_mono_right <| true_sep_mpr.trans wand_elim_right)
 
 theorem frame_finish_close_emp [BI PROP] {e origE origGoal : PROP}
     (h1 : origE ⊢ e ∗ (emp -∗ origGoal)) :
-    origE ⊢ e ∗ origGoal := h1.trans (sep_mono_r <| emp_sep.2.trans wand_elim_r)
+    origE ⊢ e ∗ origGoal := h1.trans (sep_mono_right <| emp_sep.2.trans wand_elim_right)
 
 public meta section
 open Lean Elab Tactic Meta Qq Std

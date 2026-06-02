@@ -146,6 +146,8 @@ scoped instance [LawfulLeftIdentity (add (α := α)) zero] : UCMRA α where
 scoped instance [LeftCancelAdd α] {a : α} : Cancelable a where
   cancelableN {_ _ _} _ := .of_eq ∘ LeftCancelAdd.cancel_left ∘ eq_of_eqv ∘ discrete
 
+scoped instance {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
+
 end OrdCommMonoidLike
 
 /- NoCore core -/

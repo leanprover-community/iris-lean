@@ -25,7 +25,7 @@ open BI
 
 theorem have_asEmpValid [bi : BI PROP] {φ} {P Q : PROP}
     [h1 : AsEmpValid .into φ .in PROP .in bi P] (h : φ) : Q ⊢ Q ∗ □ P :=
-  sep_emp.2.trans (sep_mono_r $ intuitionistically_emp.2.trans (intuitionistically_mono (asEmpValid_1 _ h)))
+  sep_emp.2.trans (sep_mono_right $ intuitionistically_emp.2.trans (intuitionistically_mono (asEmpValid_1 _ h)))
 
 public meta section
 open Lean Elab Tactic Meta Qq Std

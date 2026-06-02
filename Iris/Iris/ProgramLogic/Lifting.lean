@@ -67,7 +67,7 @@ theorem wp_lift_stuck (h : toVal e = none) :
   replace ⟨_, Hirr⟩ := Hirr
   imodintro
   isplit
-  · ipure_intro; simp [Stuckness.MaybeReducible]
+  · ipureintro; simp [Stuckness.MaybeReducible]
   iintro %e₂ %σ₂ %eₜ %Hstep
   nomatch Hirr obs e₂ σ₂ eₜ Hstep
 
@@ -103,7 +103,7 @@ theorem wp_lift_pure_step_no_fork [Inhabited State] (E₂ : CoPset) :
   iapply fupd_mask_intro Std.LawfulSet.empty_subset
   iintro Hclose
   isplit
-  · ipure_intro; cases s <;> grind -- TODO: Why is `grind [cases S]` not enough?
+  · ipureintro; cases s <;> grind -- TODO: Why is `grind [cases S]` not enough?
   inext
   iintro %e₂ %σ₂ %eₜ %Hstep Hcred
   obtain ⟨rfl, rfl, rfl⟩ := Hpure _ _ _ _ _ Hstep
@@ -126,7 +126,7 @@ theorem wp_lift_pure_stuck [Inhabited State] :
   iintro %σ %ns %obs' %nt -
   iapply fupd_mask_intro Std.LawfulSet.empty_subset
   iintro -
-  ipure_intro
+  ipureintro
   apply Hstuck
 
 @[rocq_alias wp_lift_atomic_step_fupd]
@@ -184,7 +184,7 @@ theorem wp_lift_pure_det_step_no_fork [Inhabited State] (E₂ : CoPset)
 
 @[rocq_alias wp_pure_step_fupd]
 theorem wp_pure_step_fupd [Inhabited State] (E₂ : CoPset)
-    (Hexec : PureExec φ n e₁ e₂) (Hφ : φ) :
+    [Hexec : PureExec φ n e₁ e₂] (Hφ : φ) :
     (|={E}[E₂]▷=>^[n] £ n -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro Hwp
   replace Hexec := Hexec.pureExec Hφ
@@ -212,9 +212,9 @@ theorem wp_pure_step_fupd [Inhabited State] (E₂ : CoPset)
     iframe
 
 @[rocq_alias wp_pure_step_later]
-theorem wp_pure_step_later [Inhabited State] (Hexec : PureExec φ n e₁ e₂) (Hφ : φ) :
+theorem wp_pure_step_later [Inhabited State] [Hexec : PureExec φ n e₁ e₂] (Hφ : φ) :
     ▷^[n] (£ n -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
-  refine .trans ?_  (wp_pure_step_fupd E Hexec Hφ)
+  refine .trans ?_  (wp_pure_step_fupd E Hφ)
   suffices Hwp : ∀ (P : IProp GF), ▷^[n] P ⊢ |={E}▷=>^[n] P by iapply Hwp
   intro P
   clear Hexec

@@ -14,7 +14,7 @@ namespace Iris.ProofMode
 public section
 open BI
 
-theorem exists_intro' [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExists P Φ]
+theorem from_exists_intro [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : FromExists P Φ]
     (a : α) (h : P ⊢ Q) : Φ a ⊢ Q :=
   ((exists_intro a).trans inst.1).trans h
 
@@ -39,7 +39,7 @@ elab "iexists" xs:term,+ : tactic => do
     let newMVarIds ← getMVarsNoDelayed x
     for mvar in newMVarIds do addMVarGoal mvar
     let new_goal' : Q($prop) := Expr.headBeta q($Φ $x)
-    let new_goal_pf' : Q($Φ $x ⊢ $goal) := q(exists_intro' _ $(new_goal_pf))
+    let new_goal_pf' : Q($Φ $x ⊢ $goal) := q(from_exists_intro _ $(new_goal_pf))
     new_goal_and_pf := ⟨new_goal', new_goal_pf'⟩
 
   let m : Q($e ⊢ $(new_goal_and_pf.1)) ← addBIGoal hyps new_goal_and_pf.1
