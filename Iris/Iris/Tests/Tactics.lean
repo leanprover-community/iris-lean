@@ -2758,7 +2758,7 @@ example [BI PROP] {P : PROP} : ⊢ P := by
   iinduction P
 
 /- Tests `iinduction` with induction on natural numbers with invalid user-supplied names -/
-/-- error: iinduction: missing alternative name(s): `Nat.succ`
+/-- error: iinduction: missing alternative name(s): `succ`
 iinduction: duplicate alternative name(s): `zero`
 iinduction: invalid alternative name(s): `invalidA`, `invalidB`, `invalidC` -/
 #guard_msgs in
@@ -2773,7 +2773,7 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | invalidC  => done
 
 /- Tests `iinduction` with extra arguments supplied by the user -/
-/-- error: iinduction: too many variable names provided at alternative `Nat.succ`: 4 provided, but 2 expected -/
+/-- error: iinduction: too many variable names provided at alternative `succ`: 4 provided, but 2 expected -/
 #guard_msgs in
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
@@ -2789,6 +2789,5 @@ example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {n : Nat} :
   iintro HP #HQ #HR HS #HT
   iinduction n + m using Nat.caseStrongRecOn with
   | zero => itrivial
-  | succ n ih => itrivial
-
+  | ind n ih => itrivial
 end iinduction
