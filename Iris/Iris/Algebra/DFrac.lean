@@ -19,38 +19,36 @@ namespace Iris
 
 /-- Knowledge about a discardable fraction. -/
 @[rocq_alias dfrac]
-inductive DFrac (F : Type _) where
+inductive DFrac where
 /-- Ownership of `F` plus knowledge that no fraction has been discarded. -/
-| own (f : F) : DFrac F
+| own (f : Qp) : DFrac
 /-- Knowledge that a fraction has been discarded. -/
-| discard : DFrac F
+| discard : DFrac
 /-- Ownership of `F` plus knowledge that a fraction has been discarded. -/
-| ownDiscard (f : F) : DFrac F
+| ownDiscard (f : Qp) : DFrac
 
-@[simp] instance : COFE (DFrac F) := COFE.ofDiscrete _ Eq_Equivalence
-instance : OFE.Leibniz (DFrac F) := ⟨(·)⟩
-instance : OFE.Discrete (DFrac F) := ⟨congrArg id⟩
+@[simp] instance : COFE DFrac := COFE.ofDiscrete _ Eq_Equivalence
+instance : OFE.Leibniz DFrac := ⟨(·)⟩
+instance : OFE.Discrete DFrac := ⟨congrArg id⟩
 
 namespace DFrac
 
-open DFrac Fraction OFE.Discrete IsOp
-
-variable [UFraction F]
+open DFrac OFE.Discrete IsOp
 
 @[rocq_alias dfrac_inhabited]
-instance : Inhabited (DFrac F) := ⟨discard⟩
+instance : Inhabited DFrac := ⟨discard⟩
 
-def valid : DFrac F → Prop
-  | .own f        => Proper f
+def valid : DFrac → Prop
+  | .own f        => f.val ≤ 1
   | .discard      => True
-  | .ownDiscard f => Fractional f
+  | .ownDiscard f => f.val < 1
 
-def pcore : DFrac F → Option (DFrac F)
+def pcore : DFrac → Option DFrac
   | own _        => none
   | .discard     => some discard
   | ownDiscard _ => some discard
 
-def op : DFrac F → DFrac F → DFrac F
+def op : DFrac → DFrac → DFrac
   | .discard, .discard => discard
   | own f, .discard
   | ownDiscard f, .discard
@@ -61,7 +59,7 @@ def op : DFrac F → DFrac F → DFrac F
   | ownDiscard f, own f'
   | ownDiscard f, ownDiscard f' => ownDiscard (f + f')
 
-instance DFrac_CMRA : CMRA (DFrac F) where
+instance instCMRADFrac : CMRA DFrac where
   pcore := pcore
   op := op
   Valid := valid
@@ -71,15 +69,9 @@ instance DFrac_CMRA : CMRA (DFrac F) where
   validN_ne H := H ▸ id
   valid_iff_validN := ⟨fun x _ => x, fun x => x 0⟩
   validN_succ := id
-  validN_op_left {_} := by
-    rintro ⟨⟩ ⟨⟩ <;> simp [valid, op]
-    · exact proper_add_mono_left
-    · exact Fractional.proper
-    · exact Fractional.proper ∘ Fractional.of_add_left
-    · exact Fractional.of_add_left
-    · exact Fractional.of_add_left
-  assoc := by rintro ⟨⟩ ⟨⟩ ⟨⟩ <;> simp [op, Fraction.add_assoc]
-  comm := by rintro ⟨⟩ ⟨⟩ <;> simp [op, Fraction.add_comm]
+  validN_op_left {_} := by rintro ⟨⟩ ⟨⟩ <;> simp [valid, op] <;> grind
+  assoc := by rintro ⟨⟩ ⟨⟩ ⟨⟩ <;> simp [op] <;> grind
+  comm := by rintro ⟨⟩ ⟨⟩ <;> simp [op] <;> grind
   pcore_op_left := by rintro ⟨⟩ ⟨⟩ <;> simp [op, pcore]
   pcore_idem := by rintro ⟨⟩ ⟨⟩ <;> simp [pcore]
   pcore_op_mono := by
@@ -97,136 +89,127 @@ instance DFrac_CMRA : CMRA (DFrac F) where
       exists discard, discard
     · rintro (y|_|y) (z|_|z) Hx Hxyz <;> simp [op] at Hxyz
       any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
-      all_goals subst Hxyz'
       · exists own x, discard
+        obtain rfl : x = y := Subtype.ext Hxyz'
+        exact ⟨.rfl, .rfl, .rfl⟩
       · exists own y, ownDiscard z
       · exists discard, own x
+        obtain rfl : x = z := Subtype.ext Hxyz'
+        exact ⟨.rfl, .rfl, .rfl⟩
       · exists discard, ownDiscard x
       · exists ownDiscard y, own z
       · exists ownDiscard x, discard
       · exists ownDiscard y, ownDiscard z
 
-theorem own_whole_exclusive {w : F} (Hw : Whole w) : CMRA.Exclusive (own w) where
-  exclusive0_l := by
-    rintro (y|_|y) <;> simp only [CMRA.ValidN, valid, CMRA.op, op]
-    · exact fun Hp => Hw.not_fractional ⟨y, Hp⟩
-    · exact Hw.not_fractional
-    · exact fun Hk => Hw.not_fractional Hk.of_add_left
-
 @[rocq_alias dfrac_full_exclusive]
-instance : CMRA.Exclusive (own (1 : F)) :=
-  own_whole_exclusive <| UFraction.one_whole
+instance own_whole_exclusive : CMRA.Exclusive (α := DFrac) (own 1) where
+  exclusive0_l := by
+    rintro (y|_|y) <;> simp only [CMRA.ValidN, valid, CMRA.op, op] <;>
+      first | (have := y.2; grind) | grind
 
-instance one_exclusive_left [CMRA V] {v : V} : CMRA.Exclusive (own (F := F) One.one, v) where
+instance one_exclusive_left [CMRA V] {v : V} : CMRA.Exclusive (own (1 : Qp), v) where
   exclusive0_l := by
     refine fun ⟨y1, _⟩ ⟨Hv1, _⟩ => ?_
-    rcases y1 with (y|_|y)
-    · exact UFraction.one_whole.2 ⟨_, Hv1⟩
-    · exact UFraction.one_whole.2 Hv1
-    · exact UFraction.one_whole.2 <| Fractional.of_add_left Hv1
+    rcases y1 with (y|_|y) <;>
+      simp only [CMRA.ValidN, CMRA.op, op, valid] at Hv1 <;>
+      first | (have := y.2; grind) | grind
 
-instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (F := F) One.one) where
+instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (1 : Qp)) where
   exclusive0_l := by
     refine fun ⟨_, y2⟩ ⟨_, Hv2⟩ => ?_
-    rcases y2 with (y|_|y)
-    · exact UFraction.one_whole.2 ⟨_, Hv2⟩
-    · exact UFraction.one_whole.2 Hv2
-    · exact UFraction.one_whole.2 <| Fractional.of_add_left Hv2
+    rcases y2 with (y|_|y) <;>
+      simp only [CMRA.ValidN, CMRA.op, op, valid] at Hv2 <;>
+      first | (have := y.2; grind) | grind
 
 @[rocq_alias dfrac_cancelable]
-instance {f : F} : CMRA.Cancelable (own f) where
+instance {f : Qp} : CMRA.Cancelable (own f) where
   cancelableN {_} := by
-    rintro ⟨⟩ ⟨⟩ <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
+    rintro (a|_|a) (b|_|b) <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
     any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
-    · exact congrArg own <| add_left_cancel Hxyz'
-    · cases add_ne (Hxyz'.trans (add_comm ..))
-    · cases add_ne ((add_comm ..).trans Hxyz').symm
-    · exact congrArg ownDiscard <| add_left_cancel Hxyz'
+    · exact congrArg own (Subtype.ext (by grind))
+    · exact absurd Hxyz' (by have := b.2; grind)
+    · exact absurd Hxyz' (by have := a.2; grind)
+    · exact congrArg ownDiscard (Subtype.ext (by grind))
 
 @[rocq_alias dfrac_own_id_free]
-instance {f : F} : CMRA.IdFree (own f) where
+instance {f : Qp} : CMRA.IdFree (own f) where
   id_free0_r := by
     rintro (y|_|y) <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
     any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
-    exact (add_ne ((add_comm ..).trans Hxyz').symm).elim
+    exact absurd Hxyz' (by have := y.2; grind)
 
 @[rocq_alias dfrac_valid_own_1]
-theorem valid_own_one : ✓ own (One.one : F) := UFraction.one_whole.1
+theorem valid_own_one : ✓ own (1 : Qp) := by show (1 : Qp).val ≤ 1; grind
 
 @[rocq_alias dfrac_valid_own_r]
-theorem valid_op_own {dq : DFrac F} {q : F} : ✓ dq • own q → Fractional q := by
-  obtain y|_|y := dq
-  · exact (⟨y, add_comm (α := F) .. ▸ ·⟩)
-  · exact id
-  · exact Fractional.of_add_right
+theorem valid_op_own {dq : DFrac} {q : Qp} : ✓ dq • own q → q.val < 1 := by
+  obtain y|_|y := dq <;> intro h <;> simp only [CMRA.Valid, CMRA.op, op, valid] at h <;>
+    first | (have := y.2; grind) | grind
 
 @[rocq_alias dfrac_valid_own_l]
-theorem valid_own_op {dq : DFrac F} {q : F} : ✓ own q • dq → Fractional q :=
+theorem valid_own_op {dq : DFrac} {q : Qp} : ✓ own q • dq → q.val < 1 :=
   valid_op_own ∘ CMRA.valid_of_eqv (CMRA.comm (y := dq))
 
 @[rocq_alias dfrac_valid_discarded]
-theorem valid_discard : ✓ (discard : DFrac F) := by simp [CMRA.Valid, valid]
+theorem valid_discard : ✓ (discard : DFrac) := by simp [CMRA.Valid, valid]
 
 @[rocq_alias dfrac_valid_own_discarded]
-theorem valid_own_op_discard {q : F} : ✓ own q • discard ↔ Fractional q := by
+theorem valid_own_op_discard {q : Qp} : ✓ own q • discard ↔ q.val < 1 := by
   simp [CMRA.op, op, CMRA.Valid, valid]
 
 @[rocq_alias dfrac_cmra_discrete]
-instance : CMRA.Discrete (DFrac F) where
+instance : CMRA.Discrete DFrac where
   discrete_valid {x} := by simp [CMRA.Valid, CMRA.ValidN]
 
-theorem is_discrete {q : DFrac F} : OFE.DiscreteE q := ⟨congrArg id⟩
+theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨congrArg id⟩
 
 @[rocq_alias dfrac_discarded_core_id]
-instance : CMRA.CoreId (DFrac.discard (F := F)) where
+instance : CMRA.CoreId (DFrac.discard) where
   core_id := by simp [CMRA.pcore, DFrac.pcore]
 
 @[rocq_alias dfrac_discard_update]
-theorem DFrac.update_discard {dq : DFrac F} : dq ~~> .discard := by
+theorem DFrac.update_discard {dq : DFrac} : dq ~~> .discard := by
   intros n q H
   apply (CMRA.valid_iff_validN' n).mp
   have H' := (CMRA.valid_iff_validN' n).mpr H
   simp [CMRA.op?] at H' ⊢
   rcases q with (_|⟨q|_|q⟩) <;> simp [CMRA.Valid, valid, CMRA.op, op]
-  · cases dq <;> first | exact valid_op_own H | exact H
-  · cases dq <;> first | exact Fractional.of_add_right H | exact H
+  all_goals
+    rcases dq with (f|_|f) <;>
+      simp only [CMRA.op?, CMRA.ValidN, CMRA.op, op, valid] at H <;>
+      first | (have := f.2; grind) | grind
 
 @[rocq_alias dfrac_undiscard_update]
-theorem DFrac.update_acquire [IsHalfFraction F] :
-    (.discard : DFrac F) ~~>: fun k => ∃ q, k = .own q := by
+theorem DFrac.update_acquire :
+    (.discard : DFrac) ~~>: fun k => ∃ q, k = .own q := by
   apply UpdateP.discrete.mpr
   rintro (_|q)
   · rintro _
-    refine ⟨.own One.one, ⟨⟨One.one, rfl⟩, ?_⟩⟩
-    simp [CMRA.Valid]
-    apply UFraction.one_whole.1
+    refine ⟨.own 1, ⟨⟨1, rfl⟩, ?_⟩⟩
+    simp only [CMRA.op?, CMRA.Valid, valid]
+    grind
   rcases q with (q|_|q)
-  · rintro ⟨q', HP⟩
-    refine ⟨(.own q'), ⟨⟨q', rfl⟩, ?_⟩⟩
-    simp [CMRA.op?, CMRA.op, op]
-    rw [add_comm]
-    exact HP
+  · intro h
+    have hq : q.val < 1 := h
+    refine ⟨.own ⟨1 - q.val, by grind⟩, ⟨⟨_, rfl⟩, ?_⟩⟩
+    simp only [CMRA.op?, CMRA.Valid, CMRA.op, op, valid, Qp.val_add]
+    grind
   · intro _
-    let q' : F := IsHalfFraction.half One.one
-    refine ⟨.own q', ⟨⟨q', rfl⟩, ?_⟩⟩
-    simp [CMRA.op?, CMRA.op, op]
-    refine ⟨IsHalfFraction.half One.one, ?_⟩
-    rw [IsHalfFraction.half_add]
-    apply UFraction.one_whole.1
-  · rintro ⟨q', HP⟩
-    let q'' : F := IsHalfFraction.half q'
-    refine ⟨(.own q''), ⟨⟨q'', rfl⟩, ?_⟩⟩
-    simp only [CMRA.op?, CMRA.op, op, add_comm]
-    refine ⟨IsHalfFraction.half q', ?_⟩
-    rw [← add_assoc, IsHalfFraction.half_add]
-    exact HP
+    refine ⟨.own (Qp.half 1), ⟨⟨_, rfl⟩, ?_⟩⟩
+    simp only [CMRA.op?, CMRA.Valid, CMRA.op, op, valid, Qp.val_half]
+    grind
+  · intro h
+    have hq : q.val < 1 := h
+    refine ⟨.own ⟨(1 - q.val) / 2, by grind⟩, ⟨⟨_, rfl⟩, ?_⟩⟩
+    simp only [CMRA.op?, CMRA.Valid, CMRA.op, op, valid, Qp.val_add]
+    grind
 
 @[rocq_alias dfrac_op_own]
-theorem op_own (f f' : F) : own f • own f' = own (f + f') := rfl
+theorem op_own (f f' : Qp) : own f • own f' = own (f + f') := rfl
 
 @[rocq_alias dfrac_is_op]
-instance isOp_dfrac_own {q q1 q2 : Frac F} [h : IsOp io1 q io2 q1 io3 q2] :
-    IsOp io1 (own q.car) io2 (own q1.car) io3 (own q2.car) where
+instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp io1 q io2 q1 io3 q2] :
+    IsOp io1 (own q) io2 (own q1) io3 (own q2) where
   is_op := by rw [h.is_op]; rfl
 
 end DFrac
