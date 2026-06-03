@@ -38,6 +38,16 @@ instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
   forkPost v := iprop(True)
   stateInterp_mono σ ns obs nt := by iintro $
 
+/-- The state interpretation is closed under bumping the step counter. In
+iris-lean this is trivial, since the heap_lang `stateInterp` ignores the step
+index. Mirrors `state_interp_step` in `case_studies/heaplang/fixes.v`. -/
+theorem state_interp_step [HeapLangGS hlc GF] (σ : State) (ns : Nat)
+    (κs : List Observation) (nt : Nat) :
+    stateInterp (GF := GF) σ ns κs nt ⊢ |==> stateInterp (GF := GF) σ (ns + 1) κs nt := by
+  iintro H
+  imodintro
+  iexact H
+
 end HeapLangGS
 
 section Adequacy
@@ -116,6 +126,32 @@ theorem wp_fork {e : Exp} :
   iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   iframe Hσ
+  imodintro
+  isplitr [Hwp]
+  · iexists _
+    iframe HΦ
+    ipureintro; rfl
+  · iapply BI.BigSepL.bigSepL_singleton
+    iframe Hwp
+
+/-- Fancy-update-flavoured fork rule. Mirrors `wp_fork_fupd` in
+`case_studies/heaplang/fixes.v`. -/
+theorem wp_fork_fupd {e : Exp} :
+    (▷ |={E}=> (WP e @ s; ⊤ {{ _v, True }} ∗ Φ (hl_val(#())))) ⊢
+      WP hl(fork({e})) @ s; E {{ Φ }} := by
+  iintro HeΦ
+  iapply wp_lift_atomic_step rfl
+  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  have Hred : BaseStep.Reducible (hl(fork({e})), σ₁) :=
+    ⟨[], hl(#BaseLit.unit), σ₁, [e], by constructor⟩
+  isplitr
+  · ipureintro
+    cases s <;> simp only [Stuckness.MaybeReducible]
+    exact (primStep_reducible_of_baseStep_reducible Hred)
+  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
+  iframe Hσ
+  imod HeΦ with ⟨Hwp, HΦ⟩
   imodintro
   isplitr [Hwp]
   · iexists _

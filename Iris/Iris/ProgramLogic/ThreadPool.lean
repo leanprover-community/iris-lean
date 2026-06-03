@@ -160,20 +160,19 @@ section ghost
 open Iris CMRA Std
 
 variable {GF : BundledGFunctors}
-variable {F : Type _} [UFraction F]
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable {Expr : Type _}
 
 /-- The ghost state needed to track a thread-pool invariant -/
-public class TpinvGS (GF : BundledGFunctors) (F : outParam <| Type _) (Expr : Type _)
-    (H : outParam <| Type _ → Type _) [UFraction F] [LawfulFiniteMap H Nat]
-    extends GhostMapG GF F Nat Expr H where
+public class TpinvGS (GF : BundledGFunctors) (Expr : Type _)
+    (H : outParam <| Type _ → Type _) [LawfulFiniteMap H Nat]
+    extends GhostMapG GF Qp Nat Expr H where
   tp_name : GName
 
-variable [TI : TpinvGS GF F Expr H]
+variable [TI : TpinvGS GF Expr H]
 
 /-- Thread `n` in the pool is the expression `e`. -/
-public def isThread (n : Nat) (dq : DFrac F) (e : Expr) : IProp GF :=
+public def isThread (n : Nat) (dq : DFrac Qp) (e : Expr) : IProp GF :=
   TI.tp_name ↪◯MAP[n]{dq} e
 
 notation k " ↪thread{" dq "} " v => isThread k dq v
@@ -194,7 +193,7 @@ after opening (e.g. via `CancelableInvariant.acc`). -/
 public instance tpInv_timeless (tp : List Expr) : Iris.BI.Timeless (tpInv (TI := TI) tp) := by
   unfold tpInv; infer_instance
 
-public theorem tpInv_lookup (tp : List Expr) (n : Nat) (e₁ : Expr) (dq : DFrac F) :
+public theorem tpInv_lookup (tp : List Expr) (n : Nat) (e₁ : Expr) (dq : DFrac Qp) :
     tpInv tp ⊢@{IProp GF} (n ↪thread{dq} e₁) -∗ ⌜tp[n]? = some e₁⌝ := by
   unfold tpInv isThread
   iintro ⟨%m, %He, Hauth⟩ Hfrag
@@ -266,15 +265,14 @@ section alloc
 open Iris CMRA Std
 
 variable {GF : BundledGFunctors}
-variable {F : Type _} [UFraction F]
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
-variable {Expr : Type _} [GhostMapG GF F Nat Expr H]
+variable {Expr : Type _} [GhostMapG GF Qp Nat Expr H]
 
 open Classical in
 theorem tpInv_alloc :
     ⊢@{IProp GF} |==> ∃ γ,
       tpInvIni (Expr := Expr) (TI := { toGhostMapG := inferInstance, tp_name := γ }) := by
-  imod @ghost_map_alloc_empty _ F Nat Expr H with ⟨%γ, H⟩
+  imod @ghost_map_alloc_empty _ Qp Nat Expr H with ⟨%γ, H⟩
   imodintro
   iexists γ
   unfold tpInvIni

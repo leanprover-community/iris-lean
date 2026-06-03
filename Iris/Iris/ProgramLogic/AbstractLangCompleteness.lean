@@ -28,9 +28,8 @@ section AbstractCompleteness
 
 variable {Expr State Obs Val : Type _} [Language Expr State Obs Val]
 variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
-variable {F : Type _} [UFraction F]
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
-variable [TI : TpinvGS GF F Expr H]
+variable [TI : TpinvGS GF Expr H]
 
 public abbrev abstractECTXLangComplete (wp : AbstractWP Expr Val GF) (I : List Expr → State → IProp GF)
   (n : Nat) (C : List Expr) (e₁ : Expr) (σ : State) (E : CoPset) :
@@ -70,13 +69,12 @@ section Completeness
 
 variable {Expr State Obs Val : Type _} [Language Expr State Obs Val]
 variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
-variable {F : Type _} [UFraction F]
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
-variable [TI : TpinvGS GF F Expr H]
+variable [TI : TpinvGS GF Expr H]
 variable {wp : AbstractWP Expr Val GF}
 variable [LWP : LawfulAbstractWP wp] [IAO : InvOpenAbstractWP wp]
 variable [ACG : AbstractLangCompletenessGen wp]
-variable [CInvG F GF]
+variable [CInvG Qp GF]
 
 /-- Namespace under which the completeness invariant lives. -/
 public def completenessN : Namespace := nroot .@ (1 : Pos)
@@ -97,21 +95,53 @@ instance cfgInv_timeless (Cini : List Expr × State) (f : Forking) :
 
 /-- Cancelable invariant package wrapping `cfgInv`. -/
 public def isCcfg (Cini : List Expr × State) (f : Forking) (γ : GName) : IProp GF :=
-  CancelableInvariant.cinv (F := F) completenessN γ (cfgInv (wp := wp) Cini f)
+  CancelableInvariant.cinv (F := Qp) completenessN γ (cfgInv (wp := wp) Cini f)
 
 instance isCcfg_persistent (Cini : List Expr × State) (f : Forking) (γ : GName) :
     Persistent (isCcfg (wp := wp) Cini f γ : IProp GF) := by
   unfold isCcfg; infer_instance
 
+/-- A separating conjunction over a list with a constant body depends only on the
+list's length. -/
+theorem bigSepL_const_congr {α β : Type _} {P : IProp GF} {l1 : List α} {l2 : List β}
+    (h : l1.length = l2.length) : ([∗list] _x ∈ l1, P) ⊣⊢ ([∗list] _x ∈ l2, P) := by
+  refine (BigSepL.bigSepL_replicate (l := l1) (P := P)).symm.trans
+    (BiEntails.trans ?_ (BigSepL.bigSepL_replicate (l := l2) (P := P)))
+  rw [h]; exact .rfl
+
+/-- Split the cancelable-invariant fraction `own γ ⟨qc⟩` into `l.length + 1` equal
+pieces: one for the current thread, plus one piece per forked thread in `l`. The
+fraction type must support `n`-way division, hence the specialization to `Qp`.
+Mirrors `fractional_divide_n` in `framework/thread_pool.v`. -/
+theorem own_divide_forks {α : Type _} (γ : GName) (qc : Qp) (l : List α) :
+    CancelableInvariant.own (GF := GF) (F := Qp) γ ⟨qc⟩ ⊢
+      CancelableInvariant.own γ (⟨qc.div (Qp.ofPNat (l.length + 1) (Nat.succ_pos _))⟩ : Frac Qp) ∗
+      ([∗list] _x ∈ l,
+        CancelableInvariant.own γ (⟨qc.div (Qp.ofPNat (l.length + 1) (Nat.succ_pos _))⟩ : Frac Qp)) := by
+  have h := fractional_divide_equal
+    (Φ := fun p : Qp => CancelableInvariant.own (GF := GF) γ (⟨p⟩ : Frac Qp)) qc l.length
+  rw [List.replicate_succ'] at h
+  refine h.trans ((BigSepL.bigSepL_snoc (Φ := fun _ _ => CancelableInvariant.own (GF := GF) γ
+    (⟨qc.div (Qp.ofPNat (l.length + 1) (Nat.succ_pos _))⟩ : Frac Qp))).1.trans
+    (sep_comm.1.trans (sep_mono_right (bigSepL_const_congr (by simp)).1)))
+
+/-- When there are no forks (`l = []`), dividing by `l.length + 1 = 1` is the
+identity. This is the algebraic fact behind `f = doesNotFork → q = q'`. -/
+theorem qp_div_ofPNat_succ_nil {α : Type _} (qc : Qp) {l : List α} (h : l = []) :
+    qc.div (Qp.ofPNat (l.length + 1) (Nat.succ_pos _)) = qc := by
+  subst h
+  apply Subtype.ext
+  simp [Qp.div_val]
+
 theorem weakestpre_completeness
-    (Cini : List Expr × State) (f : Forking) (γ : GName) (q : Frac F)
+    (Cini : List Expr × State) (f : Forking) (γ : GName) (q : Frac Qp)
     (n : Nat) (e : Expr) :
     isCcfg (TI := TI) (wp := wp) Cini f γ -∗
     CancelableInvariant.own γ q -∗
     isThread (TI := TI) n (.own 1) e -∗
     wp ⊤ e (fun v => iprop%
         isThread (TI := TI) n (.own 1) (ToVal.ofVal v) ∗
-        ∃ q' : Frac F, CancelableInvariant.own γ q' ∗ ⌜f = .doesNotFork → q = q'⌝) := by
+        ∃ q' : Frac Qp, CancelableInvariant.own γ q' ∗ ⌜f = .doesNotFork → q = q'⌝) := by
   iintro #Hinv
   iloeb as IH generalizing %q %n %e
   iintro Hq He
@@ -162,8 +192,51 @@ theorem weakestpre_completeness
       iframe %Hctx %Heq %Hatom
       iapply H
       iintro !> %κ %v₂ %σ₂' %Hefs %Hbase He HtpInv
-      -- Now we need fractional divide n
-      sorry
+      -- Divide the fraction `q` among the current thread and the `length Hefs` forks.
+      obtain ⟨qc⟩ := q
+      icases own_divide_forks γ qc Hefs $$ Hq with ⟨Hq, Hefsfrac⟩
+      -- Register the forked threads and update the current thread to `K ↑v₂`.
+      imod (tpInv_update cfg.fst n e (K ↑v₂)) $$ HtpInv He with ⟨HtpInv, He⟩
+      imod (tpInv_new_threads Hefs (cfg.fst.set n (K ↑v₂))) $$ HtpInv with ⟨HtpInv, Hefs_threads⟩
+      imodintro
+      isplitl [Hclose Hq He HtpInv]
+      · -- Current thread: close the invariant at the new configuration, then recurse.
+        iintro Hheap
+        have Hprim : (e, cfg.snd) -<κ>-> (K ↑v₂, σ₂', Hefs) := Heq ▸ Context.primStep_fill Hbase
+        obtain ⟨Hsafe', Hnf⟩ := cfg_safeStep Hsafe Hlu Hprim
+        imod Hclose $$ [Hheap HtpInv] with -
+        · inext
+          iexists (cfg.fst.set n (K ↑v₂) ++ Hefs, σ₂')
+          iframe Hheap HtpInv
+          ipureintro
+          exact ⟨Hsafe', Hreach.tail ⟨κ, cfg_step Hlu Hprim⟩⟩
+        imodintro
+        iapply LWP.wp_wand $$ [Hq He]
+        · iapply IH $$ Hq He
+        iintro %v ⟨Hthread, %q', Hq', %Hfork⟩
+        iframe Hthread
+        iexists q'
+        iframe Hq'
+        ipureintro
+        intro hnf
+        rw [← Hfork hnf]
+        congr 1
+        exact (qp_div_ofPNat_succ_nil qc (Hnf hnf)).symm
+      · -- Forked threads: recurse on each, discarding the postcondition.
+        ihave Hcomb : iprop([∗list] k ↦ e' ∈ Hefs,
+            (((cfg.fst.set n (K ↑v₂)).length + k) ↪thread e') ∗
+            CancelableInvariant.own γ
+              (⟨qc.div (Qp.ofPNat (Hefs.length + 1) (Nat.succ_pos _))⟩ : Frac Qp))
+            $$ [Hefs_threads Hefsfrac]
+        · iapply (BigSepL.bigSepL_sep_equiv).2
+          iframe Hefs_threads Hefsfrac
+        iapply BigSepL.bigSepL_impl $$ Hcomb
+        iintro !> %k %e' %_ ⟨He, Hq⟩
+        iapply LWP.wp_wand $$ [Hq He]
+        · iapply IH $$ Hq He
+        iintro %v _
+        ipureintro
+        trivial
     · imodintro
       iright
       imod Hclose $$ [Hheap Htpinv] with -
@@ -177,7 +250,54 @@ theorem weakestpre_completeness
       inext
       iintro %e₂ %efs H
       imod CancelableInvariant.acc _ _ _ _ _ Hn $$ [$] [$] with ⟨>Hinv2, Hq, Hclose⟩
-      sorry
+      icases Hinv2 with ⟨%cfg2, Hheap, Htpinv, %Hsafe2, %Hreach2⟩
+      -- Use the step-producer `H` against the freshly-opened invariant content.
+      imod H $$ [Hheap Htpinv] with ⟨%κ, %σ1', %Hprim, He, Htpinv, Hhp⟩
+      · iframe Hheap Htpinv
+        ipureintro
+        exact cfgSafe_of_cfgSafeForking Hsafe2
+      -- Divide the fraction and register the new threads.
+      obtain ⟨qc⟩ := q
+      icases own_divide_forks γ qc efs $$ Hq with ⟨Hq, Hefsfrac⟩
+      ihave %Hlu2 := tpInv_lookup $$ Htpinv He
+      obtain ⟨Hsafe2', Hforking2⟩ := cfg_safeSteps Hsafe2 Hlu2 Hprim
+      imod (tpInv_update cfg2.fst n e e₂) $$ Htpinv He with ⟨Htpinv, He⟩
+      imod (tpInv_new_threads efs (cfg2.fst.set n e₂)) $$ Htpinv with ⟨Htpinv, Hefs_threads⟩
+      imod Hclose $$ [Hhp Htpinv] with -
+      · inext
+        iexists (cfg2.fst.set n e₂ ++ efs, σ1')
+        iframe Hhp Htpinv
+        ipureintro
+        exact ⟨Hsafe2', Hreach2.trans (cfg_steps Hlu2 Hprim)⟩
+      imodintro
+      isplitl [Hq He]
+      · -- Current thread continues with `e₂`; recurse.
+        iapply LWP.wp_wand $$ [Hq He]
+        · iapply IH $$ Hq He
+        iintro %v ⟨Hthread, %q', Hq', %Hfork⟩
+        iframe Hthread
+        iexists q'
+        iframe Hq'
+        ipureintro
+        intro hnf
+        rw [← Hfork hnf]
+        congr 1
+        exact (qp_div_ofPNat_succ_nil qc (Hforking2 hnf)).symm
+      · -- Forked threads: recurse on each, discarding the postcondition.
+        ihave Hcomb : iprop([∗list] k ↦ e' ∈ efs,
+            (((cfg2.fst.set n e₂).length + k) ↪thread e') ∗
+            CancelableInvariant.own γ
+              (⟨qc.div (Qp.ofPNat (efs.length + 1) (Nat.succ_pos _))⟩ : Frac Qp))
+            $$ [Hefs_threads Hefsfrac]
+        · iapply (BigSepL.bigSepL_sep_equiv).2
+          iframe Hefs_threads Hefsfrac
+        iapply BigSepL.bigSepL_impl $$ Hcomb
+        iintro !> %k %e' %_ ⟨He, Hq⟩
+        iapply LWP.wp_wand $$ [Hq He]
+        · iapply IH $$ Hq He
+        iintro %v _
+        ipureintro
+        trivial
 
 
 /-- **Top-level theorem**: `adequate` gives a WP with a pure postcondition.
@@ -197,7 +317,7 @@ theorem weakestpre_sem_completeness
   iintro Hini Hheap
   iapply LWP.fupd_wp
   imod (tpInv_set [e]) $$ Hini with ⟨Hauth, Hfrags⟩
-  imod (CancelableInvariant.alloc (F := F) ⊤ completenessN
+  imod (CancelableInvariant.alloc (F := Qp) ⊤ completenessN
       (cfgInv (wp := wp) ([e], σ) .doesFork)) $$ [Hauth Hheap] with ⟨%γ, #Hinv, Hq⟩
   · inext
     unfold cfgInv
@@ -212,11 +332,11 @@ theorem weakestpre_sem_completeness
   iapply LWP.wp_fupd
   ihave Hccfg : iprop(isCcfg (wp := wp) ([e], σ) .doesFork γ) $$ [Hinv]
   · unfold isCcfg; iexact Hinv
-  ihave Hwp := weakestpre_completeness (wp := wp) ([e], σ) .doesFork γ (⟨One.one⟩ : Frac F) 0 e
+  ihave Hwp := weakestpre_completeness (wp := wp) ([e], σ) .doesFork γ (⟨One.one⟩ : Frac Qp) 0 e
     $$ Hccfg Hq He0
   iapply LWP.wp_wand $$ Hwp
   iintro %v ⟨Hv, %q', Hq', _⟩
-  imod (CancelableInvariant.acc (F := F) ⊤ completenessN γ q'
+  imod (CancelableInvariant.acc (F := Qp) ⊤ completenessN γ q'
     (cfgInv (wp := wp) ([e], σ) .doesFork) Hn0) $$ Hinv Hq' with ⟨>Hinv2, Hq', Hclose2⟩
   unfold cfgInv
   icases Hinv2 with ⟨%cfg, Hheap, Htpinv, %Hsafe2, %Hreach2⟩
@@ -255,7 +375,7 @@ theorem weakestpre_sem_completeness_nofork_strong
   iintro Hini Hheap
   iapply LWP.fupd_wp
   imod (tpInv_set [e]) $$ Hini with ⟨Hauth, Hfrags⟩
-  imod (CancelableInvariant.alloc (F := F) ⊤ completenessN
+  imod (CancelableInvariant.alloc (F := Qp) ⊤ completenessN
       (cfgInv (wp := wp) ([e], σ) .doesNotFork)) $$ [Hauth Hheap] with ⟨%γ, #Hinv, Hq⟩
   · inext
     unfold cfgInv
@@ -269,12 +389,12 @@ theorem weakestpre_sem_completeness_nofork_strong
   iapply LWP.wp_fupd
   ihave Hccfg : iprop(isCcfg (wp := wp) ([e], σ) .doesNotFork γ) $$ [Hinv]
   · unfold isCcfg; iexact Hinv
-  ihave Hwp := weakestpre_completeness (wp := wp) ([e], σ) .doesNotFork γ (⟨One.one⟩ : Frac F) 0 e
+  ihave Hwp := weakestpre_completeness (wp := wp) ([e], σ) .doesNotFork γ (⟨One.one⟩ : Frac Qp) 0 e
     $$ Hccfg Hq He0
   iapply LWP.wp_wand $$ Hwp
   iintro %v ⟨Hv, %q', Hq', %His1⟩
   obtain rfl := His1 rfl
-  imod (CancelableInvariant.cancel (F := F) ⊤ completenessN γ
+  imod (CancelableInvariant.cancel (F := Qp) ⊤ completenessN γ
       (cfgInv (wp := wp) ([e], σ) .doesNotFork) Hn0) $$ Hinv Hq' with >Hinv2
   unfold cfgInv
   icases Hinv2 with ⟨%cfg, Hheap, Htpinv, %Hsafe2, %Hreach2⟩

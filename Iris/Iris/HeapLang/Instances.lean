@@ -242,6 +242,38 @@ skipped — see `PORTING_NOTES.md`. -/
 
 open ProgramLogic ProgramLogic.Language
 
+/-- Every heap_lang evaluation-context item produces a non-value. -/
+private theorem fillItem_expToVal_none (Ki : ECtxItem) (e : Exp) :
+    expToVal (EctxItemLanguage.fillItem Ki e) = none := by
+  cases Ki <;> rfl
+
+/-- A heap_lang evaluation context whose fill is a value must be empty: only the
+empty context can produce a value, since every context item is a non-value. -/
+private theorem fill_isSome_empty {K : List ECtxItem} {e : Exp}
+    (h : (expToVal (EvContext.fill K e)).isSome) : K = [] := by
+  cases K with
+  | nil => rfl
+  | cons Ki K' =>
+    rw [EctxItemLanguage.fill_cons] at h
+    have h2 : (expToVal (EctxItemLanguage.fillItem Ki e)).isSome = true :=
+      EctxItemLanguage.fill_val (K := K') (e := EctxItemLanguage.fillItem Ki e) h
+    rw [fillItem_expToVal_none] at h2
+    simp at h2
+
+/-- A primitive step reaching a value is a base step (the evaluation context is
+forced to be empty). -/
+private theorem primStep_val_baseStep {e : Exp} {σ : State} {obs : List Observation}
+    {v : Val} {σ' : State} {efs : List Exp}
+    (h : PrimStep.primStep (e, σ) obs (Exp.val v, σ', efs)) :
+    BaseStep e σ obs (Exp.val v) σ' efs := by
+  generalize hg : (Exp.val v : Exp) = g at h
+  obtain ⟨Hbase⟩ := h
+  rename_i a b K
+  obtain rfl : K = [] := fill_isSome_empty (e := b) (by simp [← hg, expToVal])
+  simp only [EvContext.fill, List.foldl_nil] at hg ⊢
+  subst hg
+  exact Hbase
+
 /-- `Resolve` weirdness lemma: if one base step reaches a value, every base
 step from the same expression reaches a value too. -/
 theorem base_step_to_val_always_to_val
@@ -251,7 +283,7 @@ theorem base_step_to_val_always_to_val
     (h₁ : BaseStep e₁ σ₁ₐ κsₐ (Exp.val v₂ₐ) σ₂ₐ efsₐ)
     (h₂ : BaseStep e₁ σ₁ᵦ κsᵦ e₂ᵦ σ₂ᵦ efsᵦ) :
     (expToVal e₂ᵦ).isSome := by
-  sorry
+  cases h₁ <;> cases h₂ <;> simp_all [expToVal] <;> grind
 
 /-- `Resolve` weirdness lemma lifted to `PrimStep`. -/
 theorem prim_step_to_val_always_to_val
@@ -261,7 +293,13 @@ theorem prim_step_to_val_always_to_val
     (h₁ : PrimStep.primStep (e₁, σ₁ₐ) κsₐ (Exp.val v₂ₐ, σ₂ₐ, efsₐ))
     (h₂ : PrimStep.primStep (e₁, σ₁ᵦ) κsᵦ (e₂ᵦ, σ₂ᵦ, efsᵦ)) :
     (expToVal e₂ᵦ).isSome := by
-  sorry
+  have Hbase₁ := primStep_val_baseStep h₁
+  have hsr : EctxLanguage.SubredexesAreValues e₁ := by
+    intro K e' heq hnv
+    rcases EctxLanguage.base_ctx_step_val (K := K) (e := e') (heq ▸ Hbase₁) with h | h
+    · rw [hnv] at h; simp at h
+    · exact h
+  exact base_step_to_val_always_to_val Hbase₁ (EctxLanguage.baseStep_of_primStep h₂ hsr)
 
 /-- A base step that reaches a value witnesses atomicity of the source. -/
 theorem base_step_to_val_atomic
@@ -269,7 +307,9 @@ theorem base_step_to_val_atomic
     {σ₂ₐ : State} {efsₐ : List Exp} (a : Atomicity)
     (h : BaseStep e₁ σ₁ₐ κsₐ (Exp.val v₂ₐ) σ₂ₐ efsₐ) :
     Atomic (State := State) a e₁ := by
-  sorry
+  apply stronglyAtomic_atomic
+  refine ⟨fun hprim => ?_⟩
+  exact prim_step_to_val_always_to_val (EctxLanguage.primStep_of_baseStep h) hprim
 
 /- TODO: Coq has a `Hint Extern (Atomic _ _) => by eapply base_step_to_val_atomic`.
    No Lean equivalent — `BaseStep` is not a typeclass, so we can't make this
