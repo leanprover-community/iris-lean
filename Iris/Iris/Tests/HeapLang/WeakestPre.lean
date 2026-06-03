@@ -11,6 +11,7 @@ namespace Iris.HeapLang
 
 variable {hlc} {GF : BundledGFunctors} [ι : IrisGS_gen hlc HeapLang.Exp GF]
 set_option linter.unusedVariables false
+set_option pp.mvars false
 
 namespace wp_bind
 
@@ -26,7 +27,7 @@ GF : BundledGFunctors
 example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
   wp_bind ((#0 + _) + _)
 
-/-- error: Couldn't unify hl((#2 + {?m.28})) with any possible evaluation context -/
+/-- error: Couldn't unify hl((#2 + {?_})) with any possible evaluation context -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
   wp_bind (#2 + _)
