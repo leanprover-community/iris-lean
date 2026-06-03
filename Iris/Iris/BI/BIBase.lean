@@ -147,7 +147,9 @@ macro_rules
   | `(iprop(False)) => ``(BIBase.pure False)
   | `(iprop(¬$P))   => ``(iprop($P → False))
 
+@[rocq_alias bi_iff]
 def iff     [BIBase PROP] (P Q : PROP) : PROP := iprop((P → Q) ∧ (Q → P))
+@[rocq_alias bi_wand_iff]
 def wandIff [BIBase PROP] (P Q : PROP) : PROP := iprop((P -∗ Q) ∧ (Q -∗ P))
 
 macro_rules
@@ -172,13 +174,16 @@ def absorbingly (P) := True ∗ P
 -/
 syntax:max "<absorb> " term:40 : term
 
+@[rocq_alias bi_affinely]
 def affinely    [BIBase PROP] (P : PROP) : PROP := iprop(emp ∧ P)
+@[rocq_alias bi_absorbingly]
 def absorbingly [BIBase PROP] (P : PROP) : PROP := iprop(True ∗ P)
 
 structure BiEntails [BIBase PROP] (P Q : PROP) where
   mp : P ⊢ Q
   mpr : Q ⊢ P
 
+@[rocq_alias bi_emp_valid]
 def EmpValid [BIBase PROP] (P : PROP) : Prop := emp ⊢ P
 
 /-- Entailment on separation logic propositions with an empty context. -/
@@ -215,6 +220,7 @@ def intuitionistically (P) := <affine> <pers> P
 -/
 syntax:max "□ " term:40 : term
 
+@[rocq_alias bi_intuitionistically]
 def intuitionistically [BIBase PROP] (P : PROP) : PROP := iprop(<affine> <pers> P)
 
 macro_rules
@@ -254,9 +260,13 @@ def laterIf (p : Bool) (P : PROP) := if p then ▷ P else P
 -/
 syntax:max "▷?"        term:max ppHardSpace term:40 : term
 
+@[rocq_alias bi_persistently_if]
 def persistentlyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <pers> P else P)
+@[rocq_alias bi_affinely_if]
 def affinelyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <affine> P else P)
+@[rocq_alias bi_absorbingly_if]
 def absorbinglyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <absorb> P else P)
+@[rocq_alias bi_intuitionistically_if]
 def intuitionisticallyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then □ P else P)
 def laterIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then ▷ P else P)
 
@@ -293,6 +303,7 @@ notation:40 "[∗] " Ps:max => bigSep Ps
 /-- Iterated later modality. -/
 syntax:max "▷^[" term:45 "]" term:40 : term
 
+@[rocq_alias bi_laterN]
 def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP :=
   match n with | .zero => P | .succ n' => later <| laterN n' P
 
@@ -306,6 +317,7 @@ delab_rule laterN
 /-- Except-0 modality -/
 syntax:max "◇ " term:40 : term
 
+@[rocq_alias bi_except_0]
 def except0 [BIBase PROP] (P : PROP) := iprop(▷ False ∨ P)
 
 macro_rules

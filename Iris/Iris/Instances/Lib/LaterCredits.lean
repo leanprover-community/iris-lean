@@ -115,7 +115,7 @@ theorem lc_supply_no_lc [LcGS .hasNoLC GF] (n : Credit) :
 @[rocq_alias lc_zero]
 theorem lc_zero : ⊢@{IProp GF} |==> £ 0 := by
   cases hlc with
-  | hasNoLC => simp only [lc]; imodintro; ipure_intro; trivial
+  | hasNoLC => simp only [lc]; itrivial
   | hasLC => exact iOwn_unit (ε := UCMRA.unit)
 
 section LcSupplyRules
@@ -129,7 +129,7 @@ theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n �
     isplitl [Hsupp] <;> iassumption
   ihave H := iOwn_cmraValid $$ H
   ihave ⟨%H, H2⟩ := auth_both_validI m n $$ H
-  ipure_intro
+  ipureintro
   obtain ⟨k, rfl⟩ := H
   exact n.le_add_right k
 
@@ -286,7 +286,7 @@ theorem le_upd_unfold_no_le [LcGS .hasNoLC GF] {P : IProp GF} : (|==£> P) ⊣�
   constructor
   · iintro H
     ihave Hs : lc_supply 0 $$ []
-    · iapply (lc_supply_no_lc 0).mpr; ipure_intro; rfl
+    · iapply (lc_supply_no_lc 0).mpr; itrivial
     imod H $$ %0 Hs with (HFalse | ⟨_, HP⟩ | ⟨%m, %Hlt, _⟩)
     · imodintro
       icases (laterN_later 0).mp $$ HFalse with HFalse
@@ -307,7 +307,7 @@ theorem le_upd_unfold_no_le [LcGS .hasNoLC GF] {P : IProp GF} : (|==£> P) ⊣�
       inext; iexact HFalse
     · imodintro; iright; ileft
       iframe HP
-      iapply (lc_supply_no_lc 0).mpr; ipure_intro; rfl
+      iapply (lc_supply_no_lc 0).mpr; itrivial
 
 @[rocq_alias le_upd.bupd_le_upd]
 theorem bupd_le_upd {P : IProp GF} : (|==> P) ⊢ (|==£> P) := by
@@ -343,16 +343,16 @@ theorem le_upd_bind {P Q : IProp GF} : ⊢ (P -∗ |==£> Q) -∗ (|==£> P) -�
       iright; iright
       iexists m
       iframe
-      ipure_intro; assumption
+      itrivial
   · imodintro
     iright; iright
     iexists m
     iframe
     isplit
-    · ipure_intro; assumption
+    · itrivial
     inext
     iapply HLöb $$ H G
-  ipure_intro; simp
+  itrivial
 
 @[rocq_alias le_upd.lc_le_upd_elim_later]
 theorem le_upd_later_elim [LcGS .hasLC GF] {P : IProp GF} : ⊢ £ 1 -∗ (▷ |==£> P) -∗ |==£> P := by
@@ -369,7 +369,7 @@ theorem le_upd_later_elim [LcGS .hasLC GF] {P : IProp GF} : ⊢ £ 1 -∗ (▷ |
     iright; iright
     iexists n
     iframe
-    ipure_intro; simp
+    itrivial
 
 @[rocq_alias le_upd.le_upd_mono]
 theorem le_upd_mono {P Q : IProp GF} (Hent : P ⊢ Q) : (|==£> P) ⊢ (|==£> Q) := by
@@ -498,9 +498,7 @@ theorem lc_alloc_no_lc [H : LcGpreS GF] n :
   let LC : LcGS .hasNoLC GF := { lc_elem := H.lc_elem, lc_name := default }
   iexists LC
   simp only [lc_supply, lc]
-  isplitr []
-  · ipure_intro; trivial
-  ipure_intro; trivial
+  itrivial
 
 @[rocq_alias le_upd.le_upd_finally]
 def le_upd_finally [LcGS hlc GF] (P : IProp GF) : IProp GF :=
@@ -571,7 +569,7 @@ theorem le_upd_le_upd_finally (P : IProp GF) : (|==£> |==£|> P) ⊢ |==£|> P 
 theorem le_upd_finally_except0 (P : IProp GF) : (|==£|> ◇ P) ⊢ |==£|> P := by
   unfold le_upd_finally
   iintro HP %m Hlc
-  iapply laterN_mono _ except0_idemp.mp
+  iapply laterN_mono _ except0_idem.mp
   iapply laterN_mono _ (except0_mono except0_plainly.mpr)
   iapply HP $$ Hlc
 
@@ -594,9 +592,9 @@ theorem le_upd_finally_add_lc (P : IProp GF) : (£ 1 -∗ |==£|> P) ⊢ |==£|>
     rw [Nat.zero_add]
     inext
     ihave Hone : £ 1 $$ []
-    · iapply (lc_no_lc 1).mpr; ipure_intro; trivial
+    · iapply (lc_no_lc 1).mpr; itrivial
     ihave Hz : lc_supply 0 $$ []
-    · iapply (lc_supply_no_lc 0).mpr; ipure_intro; rfl
+    · iapply (lc_supply_no_lc 0).mpr; itrivial
     ispecialize H $$ Hone %0 Hz
     iapply laterN_0
     iassumption
@@ -628,9 +626,7 @@ theorem le_upd_keep (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC) (Timeless P)] :
       subst n
       ispecialize H $$ Hc
       icases laterN_0.mp $$ H with H
-      rw [← Nat.add_one]
-      rw [eq_of_eqv <| equiv_iff.mpr <| laterN_later (n := 0)]
-      rw [eq_of_eqv <| equiv_iff.mpr <| laterN_0]
+      rw [← Nat.add_one, (laterN_later (n := 0)).to_eq, (laterN_0).to_eq]
       unfold BIBase.except0
       iapply H
   icases H with ⟨-, H⟩

@@ -95,9 +95,9 @@ theorem bigAndL_intro {P : PROP} {Φ : Nat → A → PROP} {l : List A} (h : ∀
 theorem bigAndL_forall {Φ : Nat → A → PROP} {l : List A} :
     ([∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ ∀ k x, iprop(⌜l[k]? = some x⌝ → Φ k x) := by
   refine ⟨forall_intro fun _ => forall_intro fun _ =>  ?_, bigAndL_intro fun k x hget => ?_⟩
-  · exact imp_intro <| and_comm.1.trans <| pure_elim_l (bigAndL_lookup ·)
+  · exact imp_intro <| and_comm.1.trans <| pure_elim_left (bigAndL_lookup ·)
   · exact ((forall_elim k).trans <| forall_elim x).trans <|
-    (imp_congr_l (pure_true hget)).1.trans true_imp.1
+    (imp_congr_left (pure_true hget)).1.trans true_imp.1
 
 @[rocq_alias big_andL_impl]
 theorem bigAndL_impl {Φ Ψ : Nat → A → PROP} {l : List A} :
@@ -105,7 +105,7 @@ theorem bigAndL_impl {Φ Ψ : Nat → A → PROP} {l : List A} :
       [∧list] k ↦ x ∈ l, Ψ k x := by
   refine bigAndL_intro fun k x hget => ?_
   refine (and_mono (bigAndL_lookup hget) <| (forall_elim k).trans (forall_elim x)).trans ?_
-  exact (and_mono .rfl <| (and_intro (pure_intro hget) .rfl).trans imp_elim_r).trans imp_elim_r
+  exact (and_mono .rfl <| (and_intro (pure_intro hget) .rfl).trans imp_elim_right).trans imp_elim_right
 
 @[rocq_alias big_andL_persistently]
 theorem bigAndL_persistently {Φ : Nat → A → PROP} {l : List A} :
@@ -199,7 +199,7 @@ instance bigAndL_nil_absorbing_inst {Φ : Nat → A → PROP} :
 theorem bigAndL_absorbing {Φ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Absorbing (Φ k x)) :
     Absorbing ([∧list] k ↦ x ∈ l, Φ k x) where
   absorbing := bigOpL_closed (P := fun Q => <absorb> Q ⊢ Q) true_intro
-    (absorbingly_and_1.trans <| and_mono · ·) (h · |>.absorbing)
+    (absorbingly_and.trans <| and_mono · ·) (h · |>.absorbing)
 
 @[rocq_alias big_andL_absorbing']
 instance bigAndL_absorbing_inst {Φ : Nat → A → PROP} {l : List A} [∀ k x, Absorbing (Φ k x)] :

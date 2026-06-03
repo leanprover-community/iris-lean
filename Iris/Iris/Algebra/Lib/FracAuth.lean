@@ -101,7 +101,7 @@ theorem agree {dq : DFrac F} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a ≡
 
 @[rocq_alias frac_auth_agree_L]
 theorem agree_L [OFE.Leibniz A] {dq : DFrac F} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :=
-  eq_of_eqv (agree h)
+  (agree h).to_eq
 
 /-! ## Inclusion -/
 
