@@ -587,7 +587,7 @@ variable {F K V : Type _} {H : Type _ → Type _} [UFraction F] [DecidableEq K] 
 
 omit [DecidableEq K] in
 private theorem bigOpM_frag_empty (dq : DFrac F) :
-    bigOpM (M := HeapView F K V H) op (fun k x => Frag k dq x) (empty : H V) = UCMRA.unit :=
+    bigOpM (M := HeapView F K V H) op (fun k x => Frag k dq x) (∅ : H V) = UCMRA.unit :=
   BigOpM.bigOpM_empty (M := HeapView F K V H) (M' := H) (K := K) (op := op) (V := V) _
 
 theorem update_big_delete (m m' : H V) :
@@ -714,7 +714,7 @@ theorem update_big_alloc (m1 m2 : H V) dq
       refine UCMRA.unit_left_id.trans ?_
       refine OFE.NonExpansive.eqv ?_
       exact eqv_of_Equiv (fun k => by
-        change get? (PartialMap.union empty m1) k = get? m1 k;
+        change get? (PartialMap.union ∅ m1) k = get? m1 k;
         simp [PartialMap.union, get?_merge, get?_empty])
     | hins k v m2 Hm2 IH =>
       have Hall' : all (fun k v => ✓ v) m2 := by exact all_of_all_insert _ Hm2 Hall
