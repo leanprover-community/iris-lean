@@ -54,14 +54,16 @@ private structure InductionState {u} {prop : Q(Type u)} {bi} (origE : Q($prop)) 
   (pf : Q($origE ⊢ $newE))
 
 /--
-  Given a collection of hypotheses (`hyps`) and a free variable `fvar`, return
-  the subset of intuitionistic hypotheses in `hyps` that contains the `fvar`
-  and all spatial hypotheses in the proof state.
+  Given a collection of hypotheses (`hyps`) and a free variable `fvar`
+  representing the variable on which induction is applied, return the subset of
+  hypotheses in the Iris goal to be generalised. This includes the subset of
+  hypotheses in the intuitionistic context with occurrences of `fvar`, as well
+  as all spatial hypotheses.
 
-  This function is used for identifying the hypotheses in the Iris proof state
-  that must be reverted before applying Lean's built-in `induction` tactic.
+  These hypotheses are then reverted from the the Iris contexts into the regular
+  Lean context before applying Lean's built-in `induction` tactic.
 -/
-private def iHypsContaining {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
+private def iHypsToGeneralize {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (hyps : Hyps bi e) (fvars : List FVarId) : List SelTarget :=
   let ivars := hyps.intuitionisticIVarIds.filter <| fun ivar =>
     match hyps.getDecl? ivar with
@@ -238,7 +240,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       genSelTargets.filterMap <| fun t => match t.kind with | .pure f => some f | _ => none
 
   -- Iris hypotheses in the spatial context and relevant intuitionistic context
-  let spatialAndIntuitionisticTargets := iHypsContaining hyps <| pureFVars.concat fvar
+  let spatialAndIntuitionisticTargets := iHypsToGeneralize hyps <| pureFVars.concat fvar
 
   let spatialAndIntuitionisticTargets :=
     spatialAndIntuitionisticTargets.filter (not <| (explicitIrisTargets.map (·.kind)).contains ·.kind)
