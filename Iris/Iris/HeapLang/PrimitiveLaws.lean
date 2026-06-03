@@ -345,6 +345,116 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   iframe Hpt
   ipureintro; simp [toVal]
 
+theorem wp_free {l : Loc} {v : Val} :
+    ▷ (l ↦ some v)
+    ⊢@{IProp GF} WP (Exp.free (.val (.lit (.loc l)))) @ s; E
+      {{ v'', ⌜v'' = Val.lit BaseLit.unit⌝ ∗ (l ↦ (none : Option Val)) }} := by
+  iintro >Hpt
+  iapply wp_lift_atomic_step rfl
+  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  simp only [stateInterp]
+  ihave %Hpt : ⌜σ₁.get? l = .some (.some v)⌝ $$ [Hσ Hpt]
+  · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
+    itrivial
+  ihave %Hred : ⌜BaseStep.Reducible (Exp.free (.val (.lit (.loc l))), σ₁)⌝ $$ []
+  · ipureintro
+    exists [], (.val (.lit .unit)), (σ₁.initHeap l 1 none), []
+    refine BaseStep.freeS l v _ ?_; grind
+  isplitr
+  · ipureintro
+    cases s <;> simp only [Stuckness.MaybeReducible]
+    exact primStep_reducible_of_baseStep_reducible Hred
+  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
+  rename_i v'' H
+  simp only [Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil,
+    Algebra.BigOpL.bigOpL_nil]
+  rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
+  imod genHeap_update (v₂ := (none : Option Val)) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
+  imodintro
+  iframe Hσ
+  isplit <;> try itrivial
+  iexists .lit .unit
+  iframe Hpt
+  ipureintro; simp [toVal]
+
+theorem wp_xchg {l : Loc} {v w : Val} :
+    ▷ (l ↦ some v)
+    ⊢@{IProp GF} WP (Exp.xchg (.val (.lit (.loc l))) (.val w)) @ s; E
+      {{ v'', ⌜v'' = v⌝ ∗ (l ↦ some w) }} := by
+  iintro >Hpt
+  iapply wp_lift_atomic_step rfl
+  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  simp only [stateInterp]
+  ihave %Hpt : ⌜σ₁.get? l = .some (.some v)⌝ $$ [Hσ Hpt]
+  · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
+    itrivial
+  ihave %Hred : ⌜BaseStep.Reducible (Exp.xchg (.val (.lit (.loc l))) (.val w), σ₁)⌝ $$ []
+  · ipureintro
+    exists [], (.val v), (σ₁.initHeap l 1 w), []
+    refine BaseStep.xchgS l v w _ ?_; grind
+  isplitr
+  · ipureintro
+    cases s <;> simp only [Stuckness.MaybeReducible]
+    exact primStep_reducible_of_baseStep_reducible Hred
+  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
+  rename_i v1' H
+  obtain rfl : v = v1' := by
+    rw [Hpt] at H
+    simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at H
+    exact H
+  simp only [Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil,
+    Algebra.BigOpL.bigOpL_nil]
+  rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
+  imod genHeap_update (v₂ := (some w : Option Val)) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
+  imodintro
+  iframe Hσ
+  isplit <;> try itrivial
+  iexists v
+  iframe Hpt
+  ipureintro; simp [toVal]
+
+theorem wp_faa {l : Loc} {i1 i2 : Int} :
+    ▷ (l ↦ some (Val.lit (.int i1)))
+    ⊢@{IProp GF} WP (Exp.faa (.val (.lit (.loc l))) (.val (.lit (.int i2)))) @ s; E
+      {{ v'', ⌜v'' = Val.lit (.int i1)⌝ ∗ (l ↦ some (Val.lit (.int (i1 + i2)))) }} := by
+  iintro >Hpt
+  iapply wp_lift_atomic_step rfl
+  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  simp only [stateInterp]
+  ihave %Hpt : ⌜σ₁.get? l = .some (.some (Val.lit (.int i1)))⌝ $$ [Hσ Hpt]
+  · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
+    itrivial
+  ihave %Hred :
+      ⌜BaseStep.Reducible (Exp.faa (.val (.lit (.loc l))) (.val (.lit (.int i2))), σ₁)⌝ $$ []
+  · ipureintro
+    exists [], (.val (.lit (.int i1))), (σ₁.initHeap l 1 (some (.lit (.int (i1 + i2))))), []
+    refine BaseStep.faaS l i1 i2 _ ?_; grind
+  isplitr
+  · ipureintro
+    cases s <;> simp only [Stuckness.MaybeReducible]
+    exact primStep_reducible_of_baseStep_reducible Hred
+  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
+  rename_i i1' H
+  obtain rfl : i1 = i1' := by
+    rw [Hpt] at H
+    simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq,
+      Val.lit.injEq, BaseLit.int.injEq] at H
+    exact H
+  simp only [Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil,
+    Algebra.BigOpL.bigOpL_nil]
+  rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
+  imod genHeap_update (v₂ := (some (Val.lit (.int (i1 + i2))) : Option Val)) $$ [$Hσ $Hpt]
+    with ⟨Hσ, Hpt⟩
+  imodintro
+  iframe Hσ
+  isplit <;> try itrivial
+  iexists Val.lit (.int i1)
+  iframe Hpt
+  ipureintro; simp [toVal]
+
 end Lifting
 
 end Iris.HeapLang

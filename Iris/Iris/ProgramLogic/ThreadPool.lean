@@ -269,7 +269,7 @@ variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable {Expr : Type _} [GhostMapG GF Qp Nat Expr H]
 
 open Classical in
-theorem tpInv_alloc :
+public theorem tpInv_alloc :
     ⊢@{IProp GF} |==> ∃ γ,
       tpInvIni (Expr := Expr) (TI := { toGhostMapG := inferInstance, tp_name := γ }) := by
   imod @ghost_map_alloc_empty _ Qp Nat Expr H with ⟨%γ, H⟩

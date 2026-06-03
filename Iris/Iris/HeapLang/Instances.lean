@@ -122,6 +122,162 @@ instance PureExec_snd {v1 v2 : Val} : Language.PureExec True 1 hl(snd(v(({v1}, {
       cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
       refine ⟨rfl, rfl, rfl, rfl⟩
 
+instance PureExec_fst {v1 v2 : Val} : Language.PureExec True 1 hl(fst(v(({v1}, {v2})))) v1 where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists v1, σ, []
+      refine BaseStep.ContextStep.intro (K := []) (by constructor)
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.fst (Val.pair v1 v2)) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        all_goals (cases heq; simp [toVal, expToVal])
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      exact ⟨rfl, rfl, rfl, rfl⟩
+
+instance PureExec_injL {v : Val} :
+    Language.PureExec True 1 (Exp.injL (.val v)) (.val (.injL v)) where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists (.val (.injL v)), σ, []
+      refine BaseStep.ContextStep.intro (K := []) (by constructor)
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.injL (.val v)) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        all_goals (cases heq; simp [toVal, expToVal])
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      exact ⟨rfl, rfl, rfl, rfl⟩
+
+instance PureExec_injR {v : Val} :
+    Language.PureExec True 1 (Exp.injR (.val v)) (.val (.injR v)) where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists (.val (.injR v)), σ, []
+      refine BaseStep.ContextStep.intro (K := []) (by constructor)
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.injR (.val v)) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        all_goals (cases heq; simp [toVal, expToVal])
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      exact ⟨rfl, rfl, rfl, rfl⟩
+
+instance PureExec_pair {v1 v2 : Val} :
+    Language.PureExec True 1 (Exp.pair (.val v1) (.val v2)) (.val (.pair v1 v2)) where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists (.val (.pair v1 v2)), σ, []
+      refine BaseStep.ContextStep.intro (K := []) (by constructor)
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.pair (.val v1) (.val v2)) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        all_goals (cases heq; simp [toVal, expToVal])
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      exact ⟨rfl, rfl, rfl, rfl⟩
+
+instance PureExec_caseL {v : Val} {e1 e2 : Exp} :
+    Language.PureExec True 1 (Exp.case (.val (.injL v)) e1 e2) (Exp.app e1 (.val v)) where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists (Exp.app e1 (.val v)), σ, []
+      refine BaseStep.ContextStep.intro (K := []) (by constructor)
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.case (.val (.injL v)) e1 e2) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        all_goals (cases heq; simp [toVal, expToVal])
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      exact ⟨rfl, rfl, rfl, rfl⟩
+
+instance PureExec_caseR {v : Val} {e1 e2 : Exp} :
+    Language.PureExec True 1 (Exp.case (.val (.injR v)) e1 e2) (Exp.app e2 (.val v)) where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists (Exp.app e2 (.val v)), σ, []
+      refine BaseStep.ContextStep.intro (K := []) (by constructor)
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.case (.val (.injR v)) e1 e2) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        all_goals (cases heq; simp [toVal, expToVal])
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      exact ⟨rfl, rfl, rfl, rfl⟩
+
+instance PureExec_rec {f x : Binder} {e : Exp} :
+    Language.PureExec True 1 (Exp.rec_ f x e) (.val (.rec_ f x e)) where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists (.val (.rec_ f x e)), σ, []
+      refine BaseStep.ContextStep.intro (K := []) (by constructor)
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.rec_ f x e) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        all_goals (cases heq; simp [toVal, expToVal])
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      exact ⟨rfl, rfl, rfl, rfl⟩
+
+instance PureExec_unop {op : UnOp} {v v' : Val} :
+    Language.PureExec (op.eval v = some v') 1 (Exp.unop op (.val v)) (.val v') where
+  pureExec hφ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists (.val v'), σ, []
+      exact BaseStep.ContextStep.intro (K := []) (BaseStep.unOpS op v v' σ hφ)
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.unop op (.val v)) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        all_goals (cases heq; simp [toVal, expToVal])
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      rename_i v'' H
+      obtain rfl : v' = v'' := by rw [hφ] at H; simp_all
+      exact ⟨rfl, rfl, rfl, rfl⟩
+
+instance PureExec_binop {op : BinOp} {v1 v2 v' : Val} :
+    Language.PureExec (op.eval v1 v2 = some v') 1 (Exp.binop op (.val v1) (.val v2)) (.val v') where
+  pureExec hφ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists (.val v'), σ, []
+      exact BaseStep.ContextStep.intro (K := []) (BaseStep.binOpS op v1 v2 v' σ hφ)
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.binop op (.val v1) (.val v2)) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        all_goals (cases heq; simp [toVal, expToVal])
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      rename_i v'' H
+      obtain rfl : v' = v'' := by rw [hφ] at H; simp_all
+      exact ⟨rfl, rfl, rfl, rfl⟩
+
 instance instAtomicStore : Language.Atomic s hl(v({v1}) ← v({v2})) where
   atomic {σ obs e' σ' eₜ} Hstep := by
     have hsr : EctxLanguage.SubredexesAreValues hl(v({v1}) ← v({v2})) := by
