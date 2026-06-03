@@ -119,11 +119,13 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   refine .trans (BI.laterN_mono _ H) ?_
   iintro $ !> -; itrivial
 
+-- NOTE: Potential postprocessing lemma for `wp_pure` (could be called in a `simp` only on the resulting goal)
 public
 theorem wp_value_simp [IrisGS_gen hlc Exp GF]{s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF} :
     (WP hl(v(v)) @ s; E {{ Φ }}) = iprop(|={E}=> Φ v) := by
   simp [wp_unfold.to_eq, wp.pre]
 
+-- NOTE: Potential postprocessing lemma for `wp_pure` (could be called in a `simp` only on the resulting goal)
 public
 theorem fupd_full_fupd [IrisGS_gen hlc Exp GF]{P : IProp GF} :
     iprop(|={⊤}=> |={E}=> P) = iprop(|={⊤}=> P) := by
