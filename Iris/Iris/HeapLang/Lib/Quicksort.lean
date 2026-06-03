@@ -80,6 +80,7 @@ instance instContextAppR {e} : Language.Context fun x => hl({e} {x}) where
   primStep_fill_inv {e σ obs K_e' σ' eₜ} Heq Hstep := by sorry
 
 
+-- set_option profiler true in
 theorem quicksort_spec l ls Φ :
   isList (GF:=GF) l ls -∗
   (∀ l' ls',
@@ -163,12 +164,10 @@ theorem quicksort_spec l ls Φ :
       iintro %_ _
       iapply HΦ $$ [$]
       · ipureintro
-        have : ls2'.all (head < ·) := by grind [List.Perm.mem_iff]
+        have : ls2'.all (head < ·) := by grind
         grind [List.pairwise_cons]
       · ipureintro
-        have : List.Perm tail (tail.filter (· ≤ head) ++ tail.filter (head < ·)) := by
-          grind [List.filter_append_perm]
-        grind
+        grind [List.filter_append_perm]
 
 
 example (l l1 l2 : List Int) x :
