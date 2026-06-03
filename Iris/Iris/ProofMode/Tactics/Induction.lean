@@ -102,7 +102,7 @@ private def addIH {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   -- Obtain the proposition to be introduced into the intuitionistic context
   let Q ← mkFreshExprMVarQ q($prop)
   let some inst ← ProofModeM.trySynthInstanceQ q(IntoIH $φ $e $Q)
-  | throwError "iinduction: type class synthesis with IntoIH failed"
+  | throwError "iinduction: unable to perform type class synthesis with IntoIH for {φ}"
 
   -- Introduce the induction hypothesis into the intuitionistic context
   let nameIdent := mkIdent <| ← hFVar.getUserName
