@@ -136,25 +136,6 @@ private def addIHs {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
   return st
 
 /--
-  Given hypothesis `hyps` representing `e` where every hypothesis exist in the
-  intuitionistic context, return the proof of `e ⊢ □ e`. Throw an error if
-  `hyps` contains hypotheses in the spatial context.
--/
-private def buildPfIntHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (hyps : Hyps bi e) : ProofModeM Q($e ⊢ □ $e) :=
-  match hyps with
-  | .emp _ => pure q(intuitionistically_emp.mpr)
-  | .hyp _ _ _ p _ _ =>
-    match matchBool p with
-    | .inl _ => pure q(intuitionistically_idem.mpr)
-    | .inr _ =>
-      throwError "iinduction: spatial context is not empty after reverting hypotheses"
-  | .sep _ _ _ _ lhs rhs => do
-    let pfL ← buildPfIntHyps lhs
-    let pfR ← buildPfIntHyps rhs
-    pure q((sep_mono $pfL $pfR).trans intuitionistically_sep_2)
-
-/--
   Tactic syntax for user-supplied alternative names.
 -/
 syntax inductionAlts := "| " binderIdent+ " => " tacticSeq
@@ -356,7 +337,8 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
           let ihFVars ← findIHs s.mvarId
 
           -- A proof that all hypotheses in the Iris goal exist in the intuitionistic context
-          let pfIntHyps ← buildPfIntHyps irisGoal.hyps
+          let some pfIntHyps := irisGoal.hyps.buildIntuitionisticProof
+          | throwError "iinduction: spatial context should be empty"
 
           -- Introduce the induction hypothesis back into the Iris proof state
           let st ← addIHs pfIntHyps irisGoal.hyps ihFVars
