@@ -9,6 +9,7 @@ public import Iris.ProgramLogic.EctxLanguage
 public import Iris.ProgramLogic.EctxiLanguage
 public import Iris.ProgramLogic.Lifting
 public import Lean
+public import Lean.Elab.Tactic.Simp
 public import Qq
 
 namespace Iris.ProofMode
@@ -17,46 +18,15 @@ open Lean hiding Expr
 open Meta Elab Tactic Qq
 open Iris.HeapLang
 
--- TODO: Is this really needed?
-meta def quoteList {α : Q(Type u)}: List Q($α) → Q(List $α)
-  | [] => q([])
-  | x :: xs => q($x :: $(quoteList xs))
+public
+theorem wp_value_simp [IrisGS_gen hlc Exp GF]{s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF} :
+    (WP hl(v(v)) @ s; E {{ Φ }}) = iprop(|={E}=> Φ v) := by
+  simp [wp_unfold.to_eq, wp.pre]
 
-meta
-def trySubtractExprFromContextAt(ctx : List Q(ECtxItem)) (e : Q(Exp)) (K : Q(Exp)) (position : Nat) (traceCls : Lean.Name := decl_name%) : MetaM (Option (List Q(ECtxItem))) := do
-  let (inner_Ks, outer_Ks) := ctx.splitAt position
-  traceM traceCls do return s!"Expression context (inner): {← inner_Ks.mapM <| liftM ∘ ppExpr}"
-  traceM traceCls do return s!"Expression context (outer): {← outer_Ks.mapM <| liftM ∘ ppExpr}"
-  let K' ← HeapLang.fill inner_Ks e
-  if ←isDefEq K K' then return .some outer_Ks else return .none
-
-meta partial
-def subtractExprFromContextMatchingFrom (ctx : List Q(ECtxItem)) (e : Q(Exp)) (K : Q(Exp)) (pt : Nat) (traceCls : Lean.Name := decl_name%) : MetaM (List Q(ECtxItem)) :=  do
-  unless pt <= ctx.length do throwError s!"Couldn't unify {←ppExpr K} with any possible evaluation context"
-  match ← trySubtractExprFromContextAt ctx e K pt traceCls with
-  | .some outer_Ks => return outer_Ks
-  | .none => subtractExprFromContextMatchingFrom ctx e K (pt+1)
-
-meta partial
-def subtractExprFromExpr (e : Q(Exp)) (K : Q(Exp)) (traceCls : Lean.Name := `subtractExprFromExpr) : MetaM (List Q(ECtxItem)) :=  do
-  let (ctx, e) ← HeapLang.extractAllEctxItems e
-  traceM traceCls do return s!"Expression context: {← ctx.mapM <| ppExpr}"
-  traceM traceCls do return s!"Expression radical: {←ppExpr e}"
-  let (Ks, rad) := (← HeapLang.extractAllEctxItems K)
-  let K_depth := Ks.length
-  if let .mvar _ := rad then
-    -- NOTE: It only makes sense to search for a possibly bigger context if the radical is
-    -- a metavariable.
-    subtractExprFromContextMatchingFrom ctx e K K_depth traceCls
-  else
-    let .some res ← trySubtractExprFromContextAt ctx e K K_depth
-      | throwError s!"Couldn't unify {←ppExpr K} with any possible evaluation context"
-    return res
-
-elab "wp_bind" K:term : tactic => do
+elab "wp_bind" focus:term : tactic => do
   -- TODO: Do we ask for a function or for a "pattern"?
-  let K ← elabTermEnsuringTypeQ K q(HeapLang.Exp)
-  trace[bind] s!"Context to bind over: {←ppExpr K}"
+  let focus ← elabTermEnsuringTypeQ focus q(HeapLang.Exp)
+  trace[bind] s!"Context to bind over: {←ppExpr focus}"
   ProofModeM.runTactic fun mvar {u, prop, bi, hyps, goal, ..} => do
     let .defEq _ ← isLevelDefEqQ u 0
       | throwError "`wp_bind` only works over `IProp` (at universe level 0)"
@@ -65,33 +35,77 @@ elab "wp_bind" K:term : tactic => do
     let ~q(UPred.instBIUPred) := bi
       | throwError "`wp_bind` expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
 
-    let ~q(Wp.wp (A := Stuckness) (Expr := Exp) (Val := $Val)
+    let ~q(Wp.wp (A := Stuckness) (Expr := Exp) (Val := Val)
       (self := wp.def (Λ := @ProgramLogic.EctxLanguage.instLanguage _ _ _ _ _ (ProgramLogic.EctxItemLanguage.instEctxLanguage (EctxItem := ECtxItem) (Λ := $Λ))) (ι := $ι))
       $s $E $e $Φ) := goal
       | throwError "The goal was not a WP application"
 
-    let outer_Ks ← subtractExprFromExpr e K (traceCls := `wp_bind)
+    let (outer_ctx, e') :: _ ← (←extractAllOuterEvCtx e).filterM (isDefEq ·.2 focus)
+      | throwError s!"Couldn't unify {←ppExpr focus} with any possible evaluation context"
+    dbg_trace s!"Considering ctx {←ppExpr outer_ctx} with focused expression {←ppExpr e'}"
+    /- We assume that `extractAllOuterEvCtx` gives the following invariant -/
+    have : ProgramLogic.fill $outer_ctx $e' =Q $e := ⟨⟩
 
-    let outer_K := quoteList outer_Ks
-
-    let evctxInst : Q(ProgramLogic.Language.Context (ProgramLogic.fill (Expr := Exp) $outer_K)) := q(ProgramLogic.EctxLanguage.instContextFill ..)
+    let evctxInst : Q(ProgramLogic.Language.Context (ProgramLogic.fill (Expr := Exp) $outer_ctx)) := q(ProgramLogic.EctxLanguage.instContextFill ..)
     trace[wp_bind] s!"Evaluation context instance: {←ppExpr evctxInst}"
 
-    let pf := q(wp_bind (GF := $GF) (ProgramLogic.fill _) (κ := $evctxInst) (s := $s) (E := $E) (e := $K) (Φ := $Φ))
-    let innerPostcond : Q($Val → IProp $GF) ← Qq.withLocalDeclDQ `v q(Val) fun v => do
-      mkLambdaFVars #[v] <| q(Wp.wp (PROP := IProp $GF) $s $E $(←HeapLang.fill outer_Ks q(.val $v)) $Φ)
+    let pf := q(wp_bind (GF := $GF) (ProgramLogic.fill _) (κ := $evctxInst) (s := $s) (E := $E) (e := $focus) (Φ := $Φ))
 
-    -- TODO: Here, we assume that `HeapLang.fill outer_Ks v` properly reflects the semantics of
-    -- `ProgramLogic.fill`. It requires us to have a duplicate implementation of `fill`, one in the
-    -- object level and one in the meta level, and ensure that these implementations are equivalent.
-    -- The reason we use `HeapLang.fill` here is to ensure the context is properly simplified. It
-    -- may be preferable to, instead, use `ProgramLogic.fill` everywhere, and simply invoke `simp`
-    -- to perform a targetted "constant evaluation" on the produced term.
-    have : $innerPostcond =Q fun v : $Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $outer_K (v : Exp)) $Φ := ⟨⟩
+    -- NOTE: Option 1: We perform the simplification ourselves
+    let innerPostcond : Q(Val → IProp $GF) ← Qq.withLocalDeclDQ `v q(Val) fun v => do
+      mkLambdaFVars #[v] <| q(Wp.wp (PROP := IProp $GF) $s $E $(←HeapLang.fill outer_ctx q(($v : Exp))) $Φ)
+    have : $innerPostcond =Q (fun v : Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $outer_ctx (v : Exp)) $Φ) := ⟨⟩
 
-    let newGoal := q(Wp.wp (PROP := IProp $GF) $s $E $K $innerPostcond)
+    -- NOTE: Option 2: We call `cbv` or `simp` to perform the simplification
+    -- let innerPostcond := q(fun v : Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $outer_ctx (v : Exp)) $Φ)
+
+    let newGoal := q(Wp.wp (PROP := IProp $GF) $s $E $focus $innerPostcond)
 
     let newProof ← addBIGoal hyps newGoal
-    mvar.assign q($(newProof).trans $pf)
+    -- do
+    --   let savedGoals ← Tactic.getGoals
+    --   Tactic.setGoals [newProof.mvarId!]
+    --   newProof.mvarId!.withContext do
+    --     -- TODO: Pretty this up.
+    --     evalTactic <| ← `(tactic| try simp only [
+    --         -- wp_value_simp,
+    --         -- wp_value_iff,
+    --         -- ←fupd_wp_iff.to_eq,
+    --         -- fupd_idem.to_eq,
+    --         -- Iris.ProgramLogic.EctxItemLanguage.fill_cons,
+    --         -- Iris.ProgramLogic.EctxItemLanguage.fill_nil,
+    --         -- Iris.ProgramLogic.EctxItemLanguage.fillItem,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_1,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_2,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_3,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_4,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_5,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_6,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_7,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_8,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_9,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_10,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_11,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_12,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_13,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_14,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_15,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_16,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_17,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_18,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_19,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_20,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_21,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_22,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_23,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_24,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_25,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_26,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_27,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_28,
+    --         -- Iris.HeapLang.ECtxItem.fill.eq_29
+    --         ])
+    --   let newGoals ← Tactic.getGoals
+    --   Tactic.setGoals (savedGoals ++ newGoals)
 
-initialize registerTraceClass `wp_bind
+    mvar.assign q($(newProof).trans $pf)

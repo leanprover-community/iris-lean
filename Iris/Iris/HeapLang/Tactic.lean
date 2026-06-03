@@ -4,6 +4,7 @@ public import Iris.HeapLang.Syntax
 public import Iris.HeapLang.Semantics
 public import Iris.ProofMode.ProofModeM
 public import Lean
+public import Iris.ProgramLogic.EctxiLanguage
 public import Qq
 
 namespace Iris.HeapLang
@@ -60,6 +61,7 @@ def extractAllEctxItems (e : Q(Exp)) (acc : List Q(ECtxItem) := []) : MetaM (Lis
   | (.some Ki, e') => extractAllEctxItems e' (Ki :: acc)
   | (.none, e) => return (acc, e)
 
+
 open ECtxItem in
 meta partial
 def fillItem (e : Q(Exp)) : Q(ECtxItem) → MetaM Q(Exp)
@@ -94,9 +96,27 @@ def fillItem (e : Q(Exp)) : Q(ECtxItem) → MetaM Q(Exp)
   | ~q(resolveR $e₀ $e₁)    => return q(.resolve $e₀ $e₁ $e)
 
 
-public meta def fill (K: List Q(ECtxItem)) (e : Q(Exp)) : MetaM Q(Exp) :=
+public meta partial def fill (K: Q(List ECtxItem)) (e : Q(Exp)) : MetaM Q(Exp) :=
   -- K.foldlM fillItem e
   match K with
-  | [] => pure e
-  | Ki :: K => do
+  | ~q([]) => pure e
+  | ~q($Ki :: $K) => do
     fill K (←fillItem e Ki)
+
+-- TODO: Is this really needed? Is it better if I just pattern
+-- matched over an object-level List instead?
+meta def quoteList {α : Q(Type u)}: List Q($α) → Q(List $α)
+  | [] => q([])
+  | x :: xs => q($x :: $(quoteList xs))
+
+public meta partial
+def extractAllOuterEvCtx (e : Q(Exp)) : MetaM (List (Q(List ECtxItem) × Q(Exp))) := do
+  let (Kis, inner) ← extractAllEctxItems e
+  splitOnAllPositions inner Kis
+where
+  splitOnAllPositions (e : Q(Exp)) (Kis : List Q(ECtxItem)) : MetaM (List (Q(List ECtxItem) × Q(Exp))) :=
+    match Kis with
+    | [] => return [(q([]), e)]
+    | Ki :: Kis =>
+      -- TODO: Do we use the meta level fillItem here, or the object level one?
+      return (quoteList (Ki :: Kis), e) ::  (← splitOnAllPositions (←fillItem e Ki) Kis)
