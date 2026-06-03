@@ -70,6 +70,14 @@ variable {s : Stuckness} {E : CoPset} {Φ : Val → IProp GF}
 
 open EctxLanguage
 
+theorem wp_fst {v1 v2 : Val} : ▷ Φ v1 ⊢ WP hl(fst(v(({v1}, {v2})))) @s; E {{ Φ }} := by
+  iintro HΦ
+  iapply wp_pure_step_fupd (Hφ := True.intro)
+  dsimp only [Nat.repeat]
+  iintro !> !> !> -; iframe
+  iapply wp_value $$ HΦ
+  constructor; rfl
+
 theorem wp_snd {v1 v2 : Val} : ▷ Φ v2 ⊢ WP hl(snd(v(({v1}, {v2})))) @s; E {{ Φ }} := by
   iintro HΦ
   iapply wp_pure_step_fupd (Hφ := True.intro)
@@ -77,6 +85,17 @@ theorem wp_snd {v1 v2 : Val} : ▷ Φ v2 ⊢ WP hl(snd(v(({v1}, {v2})))) @s; E {
   iintro !> !> !> -; iframe
   iapply wp_value $$ HΦ
   constructor; rfl
+
+theorem wp_pair {v1 v2 : Val} :
+  ▷ Φ hl_val(({v1}, {v2})) ⊢
+  WP hl((v({v1}), v({v2}))) @s; E {{ Φ }} := by
+  iintro HΦ
+  iapply wp_pure_step_fupd (Hφ := True.intro)
+  dsimp only [Nat.repeat]
+  iintro !> !> !> -; iframe
+  iapply wp_value $$ HΦ
+  constructor; rfl
+
 
 theorem wp_if_true {e1 e2 : Exp} :
     ▷ WP e1 @ s; E {{ Φ }} ⊢ WP hl(if #true then {e1} else {e2}) @s; E {{ Φ }} := by
@@ -92,14 +111,49 @@ theorem wp_if_false {e1 e2 : Exp} :
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
 
+theorem wp_match_injl {v} {e1 e2 : Exp} :
+    ▷ WP (Exp.app e1 (.val v)) @ s; E {{ Φ }} ⊢
+    WP (Exp.case hl(v(injl(v))) e1 e2)  @s; E {{ Φ }} := by
+  iintro Hwp
+  iapply wp_pure_step_fupd (Hφ := True.intro)
+  dsimp only [Nat.repeat]
+  iintro !> !> !> -; iframe
+
+theorem wp_match_injr {v} {e1 e2 : Exp} :
+    ▷ WP (Exp.app e2 (.val v)) @ s; E {{ Φ }} ⊢
+    WP (Exp.case hl(v(injr(v))) e1 e2)  @s; E {{ Φ }} := by
+  iintro Hwp
+  iapply wp_pure_step_fupd (Hφ := True.intro)
+  dsimp only [Nat.repeat]
+  iintro !> !> !> -; iframe
+
 theorem wp_rec {f x : Binder} {e : Exp} {vf v : Val}
     (h : vf = (.rec_ f x e)) :
     ▷ WP ((e.subst f vf).subst x v) @ s; E {{ Φ }}
-    ⊢  WP hl(v({vf}) {v}) @ s; E {{ Φ }} := by
+    ⊢  WP hl(v({vf}) v({v})) @ s; E {{ Φ }} := by
   iintro Hwp; subst h
   iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
+
+theorem wp_rec_val {f x : Binder} {e : Exp} :
+    ▷ (Φ (Val.rec_ f x e))
+    ⊢  WP (Exp.rec_ f x e) @ s; E {{ Φ }} := by
+  iintro HΦ
+  iapply wp_pure_step_fupd (Hφ := True.intro)
+  dsimp only [Nat.repeat]
+  iintro !> !> !> -
+  iapply wp_value' $$ [$]
+
+theorem wp_let {e1 e2 : Exp} {x} :
+    WP e2 @ s; E {{ v, WP (e1.subst x v) @ s; E {{ Φ }} }}
+    ⊢  WP (Exp.app (.rec_ .anon x e1) e2) @ s; E {{ Φ }} := by
+  iintro Hwp
+  sorry
+  -- iapply wp_pure_step_fupd (Hφ := True.intro)
+  -- dsimp only [Nat.repeat]
+  -- iintro !> !> !> -; iframe
+
 
 theorem wp_fork {e : Exp} :
     ▷ Φ (hl_val(#())) ∗ ▷ WP e @ s; ⊤ {{ _v, True }} ⊢ WP hl(fork({e})) @ s; E {{ Φ }} := by
