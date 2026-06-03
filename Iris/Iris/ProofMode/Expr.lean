@@ -490,11 +490,6 @@ structure IrisGoal where
 
 def isIrisGoal (expr : Expr) : Bool := isAppOfArity expr ``Entails' 4
 
-partial def isIrisGoalWithForalls (expr : Expr) : Bool :=
-  match expr.consumeMData with
-  | .forallE _ _ e _ => isIrisGoalWithForalls e
-  | e => isIrisGoal e
-
 def parseIrisGoal? (expr : Expr) : Option IrisGoal := do
   -- remove top-level metadata when matching on the goal
   let expr := expr.consumeMData
