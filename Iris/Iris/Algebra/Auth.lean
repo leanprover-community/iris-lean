@@ -14,7 +14,7 @@ meta import Iris.Std.RocqPorting
 
 The authoritative camera has 2 types of elements:
 - the authoritative element `●{dq} a`
--  and the fragment `◯ b`
+- the fragment `◯ b`
 -/
 
 @[expose] public section
@@ -238,6 +238,9 @@ theorem auth_op_validN {n : Nat} {a1 a2 : A} : (✓{n} ((● a1 : Auth F A) • 
 theorem frag_validN {n : Nat} {b : A} : (✓{n} (◯ b : Auth F A)) ↔ (✓{n} b) := by
   rw [frag_validN_iff, AuthViewRel.authViewRel_exists_iff]
 
+#rocq_ignore auth_frag_validN_1 "Use frag_validN.mp"
+#rocq_ignore auth_frag_validN_2 "Use frag_validN.mpr"
+
 @[rocq_alias auth_frag_op_validN]
 theorem frag_op_validN {n : Nat} {b1 b2 : A} :
     (✓{n} ((◯ b1 : Auth F A) • ◯ b2)) ↔ (✓{n} (b1 • b2)) := by
@@ -245,8 +248,6 @@ theorem frag_op_validN {n : Nat} {b1 b2 : A} :
 
 #rocq_ignore auth_frag_op_validN_1 "Use frag_op_validN"
 #rocq_ignore auth_frag_op_validN_2 "Use frag_op_validN"
-#rocq_ignore auth_frag_validN_1 "Use frag_validN"
-#rocq_ignore auth_frag_validN_2 "Use frag_validN"
 
 @[rocq_alias auth_both_dfrac_validN]
 theorem both_dfrac_validN {n : Nat} {dq : DFrac F} {a b : A} :

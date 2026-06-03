@@ -40,27 +40,13 @@ class CMRA (α : Type _) extends OFE α where
   extend : ValidN n x → x ≡{n}≡ op y₁ y₂ →
     Σ' z₁ z₂, x ≡ op z₁ z₂ ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂
 
-#rocq_ignore Op "Lean uses the CMRA.op field; no separate class needed."
-#rocq_ignore PCore "Lean uses the CMRA.pcore field; no separate class needed."
-#rocq_ignore Valid "Lean uses the CMRA.Valid field; no separate class needed."
-#rocq_ignore ValidN "Lean uses the CMRA.ValidN field; no separate class needed."
-#rocq_ignore RAMixin "Lean uses the CMRA type class directly; mixin/bundle separation is unnecessary."
-#rocq_ignore CmraMixin "Lean uses the CMRA type class directly; mixin/bundle separation is unnecessary."
-#rocq_ignore cmra_mixin_of' "Lean uses the CMRA type class directly."
-#rocq_ignore cmra_ofeO "Folded into Lean's CMRA extends OFE."
-#rocq_ignore cmra_op_ne' "Binary NonExpansive2 form of op; derivable from CMRA.op_ne with congruence."
-#rocq_ignore cmra_validN_lt "Use validN_le"
-#rocq_ignore cmra_opM_proper "Derived from nonexpansivity"
-#rocq_ignore cmra_core_proper "Derived from nonexpansivity"
-#rocq_ignore cmra_validN_proper "Derived from validN_ne"
-#rocq_ignore cmra_includedN_proper "Derived from nonexpansivity"
-#rocq_ignore cmra_included_preorder "Use Trans instances"
-#rocq_ignore cmra_includedN_preorder "Use Trans instances"
-#rocq_ignore cmra_mono' "Derived from direct lemmas"
-#rocq_ignore cmra_monoN' "Derived from direct lemmas"
-#rocq_ignore cmra_monoid "Use local MonoidOps instances"
-#rocq_ignore cmra_total_mixin "Use CMRA + IsTotal"
-#rocq_ignore ra_total_mixin "Use CMRA + IsTotal"
+#rocq_ignore Op "Use the CMRA.op field."
+#rocq_ignore PCore "Use the CMRA.pcore field."
+#rocq_ignore Valid "Use the CMRA.Valid field."
+#rocq_ignore ValidN "Use the CMRA.ValidN field."
+#rocq_ignore CmraMixin "Use the CMRA type class."
+#rocq_ignore cmra_mixin_of' "Not needed."
+#rocq_ignore cmra_ofeO "Not needed."
 
 /-- Reduction of `pcore_op_mono` to regular monotonicity -/
 theorem pcore_op_mono_of_core_op_mono [OFE α] (op : α → α → α) (pcore : α → Option α)
@@ -118,6 +104,8 @@ export IdFree (id_free0_r)
 class IsTotal (α : Type _) [CMRA α] where
   total (x : α) : ∃ cx, pcore x = some cx
 export IsTotal (total)
+
+#rocq_ignore cmra_total_mixin "Use CMRA + IsTotal"
 
 @[rocq_alias core]
 def core (x : α) := (pcore x).getD x
@@ -191,12 +179,16 @@ theorem pcore_ne' {n} {x y : α} {cx} (h : x ≡{n}≡ y) (e : pcore x = some cx
 @[rocq_alias cmra_validN_ne]
 theorem validN_ne' {n} {x y : α} (h : x ≡{n}≡ y) : ✓{n} x → ✓{n} y := CMRA.validN_ne h
 
-@[rocq_alias cmra_opM_ne]
-theorem opM_ne {n} {x : α} {y₁ y₂ : Option α} (h : y₁ ≡{n}≡ y₂) : x •? y₁ ≡{n}≡ x •? y₂ :=
+theorem opM_ne_right {n} {x : α} {y₁ y₂ : Option α} (h : y₁ ≡{n}≡ y₂) : x •? y₁ ≡{n}≡ x •? y₂ :=
   match y₁, y₂, h with
   | none, none, _ => .rfl
   | some _, some _, h => CMRA.op_ne.ne h
 
+@[rocq_alias cmra_opM_ne]
+instance : NonExpansive₂ (op? (α := α)) where
+  ne n x {y} e := sorry
+
+#rocq_ignore cmra_opM_proper "Derived from nonexpansivity"
 
 @[rocq_alias cmra_pcore_ne']
 instance : NonExpansive (pcore (α := α)) where
@@ -298,8 +290,11 @@ theorem validN_of_eqv {x y : α} : x ≡ y → ✓{n} x → ✓{n} y :=
   fun e v => validN_ne (equiv_dist.mp e n) v
 
 @[rocq_alias cmra_validN_ne']
-theorem validN_iff {x y : α} (e : x ≡{n}≡ y) : ✓{n} x ↔ ✓{n} y := ⟨validN_ne e, validN_ne e.symm⟩
-theorem _root_.Iris.OFE.Dist.validN : (x : α) ≡{n}≡ y → (✓{n} x ↔ ✓{n} y) := validN_iff
+theorem validN_dist_iff {x y : α} (e : x ≡{n}≡ y) : ✓{n} x ↔ ✓{n} y := ⟨validN_ne e, validN_ne e.symm⟩
+theorem _root_.Iris.OFE.Dist.validN : (x : α) ≡{n}≡ y → (✓{n} x ↔ ✓{n} y) := validN_dist_iff
+
+@[rocq_alias cmra_validN_proper]
+theorem validN_eqv_iff {x y : α} (e : x ≡ y) : ✓{n} x ↔ ✓{n} y := sorry
 
 theorem valid_of_eqv {x y : α} : x ≡ y → ✓ x → ✓ y :=
   fun e => valid_mapN fun _ => validN_of_eqv e
@@ -309,8 +304,12 @@ theorem valid_iff {x y : α} (e : x ≡ y) : ✓ x ↔ ✓ y := ⟨valid_of_eqv 
 theorem _root_.Iris.OFE.Equiv.valid : (x : α) ≡ y → (✓ x ↔ ✓ y) := valid_iff
 
 @[rocq_alias cmra_validN_le]
-theorem validN_of_le {n n'} {x : α} : n' ≤ n → ✓{n} x → ✓{n'} x :=
-  fun le => le.recOn id fun  _ ih vs => ih (validN_succ vs)
+theorem validN_of_le {n n'} {x : α} (le : n' ≤ n) : ✓{n} x → ✓{n'} x :=
+  le.recOn id fun  _ ih vs => ih (validN_succ vs)
+
+@[rocq_alias cmra_validN_lt]
+theorem validN_of_lt {n n'} {x : α} (lt : n' < n): ✓{n} x → ✓{n'} x :=
+  validN_of_le (Nat.le_of_lt lt)
 
 theorem valid0_of_validN {n} {x : α} : ✓{n} x → ✓{0} x := validN_of_le (Nat.zero_le n)
 
@@ -359,6 +358,10 @@ theorem pcore_proper {x y : α} (cx : α) (e : x ≡ y) (ps : pcore x = some cx)
     have : cy' = cy := Option.some_inj.mp (hcy' ▸ hcy)
     this ▸ ecy'
   exact equiv_dist.mpr this
+
+@[rocq_alias cmra_op_ne']
+instance cmra_op_ne2 : NonExpansive₂ (op (α := α)) where
+  ne n x₁ {x₂} e₁ y₁ {y₂} e₂ := by sorry
 
 @[rocq_alias cmra_pcore_proper']
 theorem pcore_proper' {x y : α} (e : x ≡ y) : pcore x ≡ pcore y :=
@@ -500,10 +503,14 @@ theorem incN_iff_right (e : (b : α) ≡{n}≡ c) : a ≼{n} b ↔ a ≼{n} c :=
 theorem _root_.Iris.OFE.Dist.incN_r : (b : α) ≡{n}≡ c → (a ≼{n} b ↔ a ≼{n} c) := incN_iff_right
 
 @[rocq_alias cmra_includedN_ne]
-theorem incN_iff (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n}≡ b') : a ≼{n} b ↔ a' ≼{n} b' :=
+theorem incN_dist_iff (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n}≡ b') : a ≼{n} b ↔ a' ≼{n} b' :=
   (incN_iff_left ea).trans (incN_iff_right eb)
 theorem _root_.Iris.OFE.Dist.incN :
-    (a : α) ≡{n}≡ a' → b ≡{n}≡ b' → (a ≼{n} b ↔ a' ≼{n} b') := incN_iff
+    (a : α) ≡{n}≡ a' → b ≡{n}≡ b' → (a ≼{n} b ↔ a' ≼{n} b') := incN_dist_iff
+
+@[rocq_alias cmra_includedN_proper]
+theorem incN_eqv_iff (ea : (a : α) ≡ a') (eb : (b : α) ≡ b') : a ≼{n} b ↔ a' ≼{n} b' :=
+sorry
 
 @[rocq_alias cmra_included_trans]
 theorem inc_trans {x y z : α} : x ≼ y → y ≼ z → x ≼ z
@@ -623,9 +630,13 @@ theorem op_mono_left {x y} (z : α) (h : x ≼ y) : x • z ≼ y • z :=
 theorem op_monoN {n} {x x' y y' : α} (hx : x ≼{n} x') (hy : y ≼{n} y') : x • y ≼{n} x' • y' :=
   (op_monoN_left _ hx).trans (op_monoN_right _ hy)
 
+#rocq_ignore cmra_monoN' "Use cmra_monoN"
+
 @[rocq_alias cmra_mono]
 theorem op_mono {x x' y y' : α} (hx : x ≼ x') (hy : y ≼ y') : x • y ≼ x' • y' :=
   (op_mono_left _ hx).trans (op_mono_right _ hy)
+
+#rocq_ignore cmra_mono' "Use cmra_mono"
 
 @[rocq_alias core_id_dup]
 theorem op_self (x : α) [CoreId x] : x • x ≡ x := pcore_op_self' CoreId.core_id
@@ -685,6 +696,8 @@ theorem core_ne : NonExpansive (core : α → α) where
     rw [← pcore_eq_core, ← pcore_eq_core]
     exact NonExpansive.ne H
 
+#rocq_ignore cmra_core_proper "Derived from core_ne"
+
 theorem _root_.Iris.OFE.Dist.core :
   ∀ {n} {x₁ x₂ : α}, x₁ ≡{n}≡ x₂ → core x₁ ≡{n}≡ core x₂ := @core_ne.ne
 theorem _root_.Iris.OFE.Equiv.core : ∀ {x₁ x₂ : α}, x₁ ≡ x₂ → core x₁ ≡ core x₂ := @core_ne.eqv
@@ -725,6 +738,8 @@ theorem core_op_mono (x y : α) : core x ≼ core (x • y) := by
 theorem core_mono {x y : α} (Hinc : x ≼ y) : core x ≼ core y := by
   have ⟨z, hz⟩ := Hinc
   exact hz.core.inc_r.2 (core_op_mono x z)
+
+
 
 end total
 
@@ -838,7 +853,7 @@ theorem IdFree.of_dist {x₁ x₂ : α} {n} (e : x₁ ≡{n}≡ x₂) (h : IdFre
       x₁ • z ≡{0}≡ x₂ • z := op_left_dist z ee
       _      ≡{0}≡ x₂ := h₂
       _      ≡{0}≡ x₁ := ee.symm
-    h.id_free0_r _ ((validN_iff ee).mpr v) this
+    h.id_free0_r _ ((validN_dist_iff ee).mpr v) this
 
 theorem _root_.Iris.OFE.Dist.idFree {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) : IdFree x₁ ↔ IdFree x₂ :=
   ⟨.of_dist e, .of_dist e.symm⟩
@@ -883,7 +898,7 @@ instance idFree_op_l {x y : α} [IdFree x] [Cancelable y] : IdFree (x • y) :=
 
 @[rocq_alias exclusive_id_free]
 instance exclusive_idFree {x : α} [Exclusive x] : IdFree x where
-  id_free0_r z v h := exclusive0_l z ((validN_iff h.symm).mp v)
+  id_free0_r z v h := exclusive0_l z ((validN_dist_iff h.symm).mp v)
 
 end idFreeElements
 
@@ -928,6 +943,7 @@ instance empty_cancelable : Cancelable (unit : α) where
 theorem _root_.Iris.OFE.Dist.to_incN {n} {x y : α} (H : x ≡{n}≡ y) : x ≼{n} y :=
   ⟨unit, ((equiv_dist.mp unit_right_id n).trans H).symm⟩
 
+@[rocq_alias cmra_monoid]
 instance ucmraMonoidOps {α : Type _} [UCMRA α] : Algebra.MonoidOps (CMRA.op (α := α)) UCMRA.unit where
   op_ne := ⟨fun _ _ _ hx _ _ hy => hx.op hy⟩
   op_assoc := CMRA.assoc.symm
