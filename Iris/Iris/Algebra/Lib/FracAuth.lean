@@ -48,9 +48,8 @@ abbrev fracOne : Qp := One.one
 
 instance frac_one_exclusive (b : A) : Exclusive (fracOne, b) where
   exclusive0_l y h := by
-    have hy := y.1.2
-    have h1 : (One.one : Qp).val = 1 := rfl
-    have hv : (One.one + y.1).val ≤ 1 := h.1
+    have _ : (One.one : Qp).val = 1 := rfl
+    have _ : (One.one + y.1).val ≤ 1 := h.1
     grind
 
 /-! ## NonExpansive instances -/

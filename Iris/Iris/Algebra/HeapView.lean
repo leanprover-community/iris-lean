@@ -342,16 +342,8 @@ theorem update_one_delete :
                  Option.some.injEq, forall_eq'] at Hrel
       obtain ⟨_, _, _, Hqv, Hinc⟩ := Hrel
       have Hval := Option.validN_of_incN_validN (Hv := Hqv) (Hinc := Hinc)
-      rcases v with ⟨(f|_|f), _⟩
-      · exact absurd Hval.1
-          (by have := f.2; have : (One.one : Qp).val = 1 := rfl
-              simp only [CMRA.ValidN, CMRA.op, DFrac.op, DFrac.valid]; grind)
-      · exact absurd Hval.1
-          (by have : (One.one : Qp).val = 1 := rfl
-              simp only [CMRA.ValidN, CMRA.op, DFrac.op, DFrac.valid]; grind)
-      · exact absurd Hval.1
-          (by have := f.2; have : (One.one : Qp).val = 1 := rfl
-              simp only [CMRA.ValidN, CMRA.op, DFrac.op, DFrac.valid]; grind)
+      -- `own 1` is exclusive, so it cannot validly compose with the frame's fraction
+      exact (own_whole_exclusive.exclusive0_l _ (valid0_of_validN Hval.1)).elim
     · specialize Hrel j
       simp only [CMRA.op, Heap.op, get?_merge, exists_and_left, Prod.forall, get?_singleton_ne h,
         He] at Hrel
