@@ -139,43 +139,6 @@ instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIUpdateFUpdate (IProp GF)
     imod H; imodintro
     iassumption
 
-@[rocq_alias uPred_bi_fupd_sbi_no_lc]
-instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .hasNoLC GF] :
-    BIFUpdatePlainly (IProp GF) where
-  fupd_plainly_keep_left E E' P Q := by
-    simp only [fupd, uPred_fupd]
-    iintro ⟨H, Hx⟩ ⟨Hwsat, HE⟩
-    ihave #>HP : ◇ ■ P $$ [H Hx Hwsat HE]
-    · ihave H := H $$ Hx [$]
-      icases le_upd_unfold_no_le.mp $$ H with H
-      imod H with ⟨_, _, $⟩
-    imodintro
-    iframe
-    iassumption
-  fupd_plainly_later _ P := by
-    simp only [fupd, uPred_fupd]
-    iintro H ⟨Hwsat, HE⟩
-    ihave #HP : ▷ ◇ ■ P $$ [H Hwsat HE]
-    · inext
-      ihave H := H $$ [$]
-      icases le_upd_unfold_no_le.mp $$ H with H
-      imod H with ⟨_, _, $⟩
-    imodintro
-    iframe
-    inext; imod HP; imodintro
-    iapply plainly_elim $$ HP
-  fupd_plainly_sForall_2 E P := by
-    simp only [fupd, uPred_fupd]
-    iintro H ⟨Hwsat, HE⟩
-    ihave #HP : ◇ ■ sForall P $$ [H Hwsat HE]
-    · ihave H := H $$ [$]
-      icases le_upd_unfold_no_le.mp $$ H with H
-      imod H with ⟨_, _, $⟩
-    imod HP; imodintro
-    iframe
-    iclear H
-    iapply plainly_elim $$ HP
-
 end Instances
 
 section LaterCreditLemmas
@@ -360,6 +323,42 @@ theorem fupd_finally_keep (E : CoPset) (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC
     icases H with ⟨-, H⟩
     iapply fupd_intro
     iapply H $$ HP
+
+@[rocq_alias uPred_bi_fupd_sbi_no_lc]
+instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .hasNoLC GF] :
+    BIFUpdatePlainly (IProp GF) where
+  fupd_keep_si_pure E' Pi R := by
+    iintro H
+    iapply fupd_keep _ _ iprop(<si_pure> Pi)
+    isplit
+    · icases H with ⟨H, -⟩
+      iapply fupd_fupd_finally _ E'
+      iapply BIFUpdate.mono (fupd_finally_intro E' iprop(<si_pure> Pi))
+      iapply BIFUpdate.mono Plain.plain $$ H
+    · icases H with ⟨-, $⟩
+  fupd_plainly_later _ P := by
+    simp only [fupd, uPred_fupd]
+    iintro H ⟨Hwsat, HE⟩
+    ihave #HP : ▷ ◇ ■ P $$ [H Hwsat HE]
+    · inext
+      ihave H := H $$ [$]
+      icases le_upd_unfold_no_le.mp $$ H with H
+      imod H with ⟨_, _, $⟩
+    imodintro
+    iframe
+    inext; imod HP; imodintro
+    iapply plainly_elim $$ HP
+  fupd_plainly_sForall_2 E P := by
+    simp only [fupd, uPred_fupd]
+    iintro H ⟨Hwsat, HE⟩
+    ihave #HP : ◇ ■ sForall P $$ [H Hwsat HE]
+    · ihave H := H $$ [$]
+      icases le_upd_unfold_no_le.mp $$ H with H
+      imod H with ⟨_, _, $⟩
+    imod HP; imodintro
+    iframe
+    iclear H
+    iapply plainly_elim $$ HP
 
 @[rocq_alias fupd_finally_mask_mono]
 theorem fupd_finally_mask_mono (E1 E2 : CoPset) (P : IProp GF) (H : E1 ⊆ E2) :
