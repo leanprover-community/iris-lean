@@ -13,238 +13,117 @@ public import Iris.Algebra.IsOp
 # The Frac CMRA
 
 This CMRA captures the notion of fractional ownership of another resource.
-Traditionally the underlying set is assumed to be the half open interval $$(0,1]$$.
+This version follows Iris Rocq in fixing the underlying type of fractions to be `ℚ ∩ (0, 1]`
 -/
 
 @[expose] public section
 
 namespace Iris
 
-class Fraction (α : Type _) extends Add α where
-  /-- Validity predicate on fractions. Generalizes the notion of `(· ≤ 1)` from rational
-  fractions. -/
-  Proper : α → Prop
-  add_comm : ∀ a b : α, a + b = b + a
-  add_assoc : ∀ a b c : α, a + (b + c) = (a + b) + c
-  add_left_cancel : ∀ {a b c : α}, a + b = a + c → b = c
-  /-- There does not exist a zero fraction. -/
-  add_ne : ∀ {a b : α}, a ≠ b + a
-  proper_add_mono_left : ∀ {a b : α}, Proper (a + b) → Proper a
+/-- The type of positive rational numbers, used as fractions -/
+@[rocq_alias frac, rocq_alias fracO, rocq_alias fracR]
+abbrev Qp := { q : Rat // 0 < q }
 
-class IsHalfFraction (α : Type _) [Fraction α] where
-  half : α → α
-  half_add {a : α} : half a + half a = a
+-- TODO: Should we move the positivity condition into the validity predicate? My initial guess is not,
+-- but we should avoid duplicating the Rat terms (add, half, etc) somehow.
 
-namespace Fraction
+instance instQpOne : One Qp where
+  one := ⟨1, Rat.neg_lt_neg_iff.mp rfl⟩
 
-/-- A fraction does not represent the entire resource.
-Generalizes the notion of `(· < 1)` from rational fractions. -/
-def Fractional [Fraction α] (a : α) : Prop := ∃ b, Proper (a + b)
+abbrev Qp.add (x y : Qp) : Qp := ⟨x.val + y.val, by grind⟩
 
-/-- A fraction that is tne entire resource.
-Generalizes the notion of `1` from rational fractions. -/
-def Whole [Fraction α] (a : α) : Prop := Proper a ∧ ¬Fractional a
+instance instHaddQpQpQp : HAdd Qp Qp Qp where
+  hAdd := Qp.add
 
-variable [Fraction α]
+def Qp.half (q : Qp) : Qp where
+  val := q.val / 2
+  property := by
+    let ⟨v, P⟩ := q
+    grind
 
-theorem Proper.fractional_or_whole {a : α} (H : Proper a) : Fractional a ∨ Whole a := by
-  if h : ∃ b, Proper (a + b) then exact .inl h
-  else exact .inr ⟨H, h⟩
+instance instCOFEQp : COFE Qp := COFE.ofDiscrete _ Eq_Equivalence
 
-theorem Fractional.not_whole {a : α} (H : Fractional a) : ¬Whole a :=
-  H.elim fun a' Ha' Hk => Hk.2 ⟨a', Ha'⟩
+instance instLeibnizQp : OFE.Leibniz Qp := ⟨id⟩
 
-theorem Whole.not_fractional {a : α} (H : Whole a) : ¬Fractional a :=
-  H.elim fun _ Hk1 Hk2 => Hk1 Hk2
-
-theorem add_right_cancel {a b c : α} (H : b + a = c + a) : b = c :=
-  add_left_cancel <| add_comm c _ ▸ add_comm b _ ▸ H
-
-theorem Fractional.proper {a : α} : Fractional a → Proper a :=
-  fun H => H.elim fun _ H' => proper_add_mono_left H'
-
-theorem Fractional.of_add_left {a a' : α} (H : Fractional (a + a')) : Fractional a := by
-  let ⟨z, Hz⟩ := H
-  exists a' + z
-  rw [add_assoc]
-  exact Hz
-
-theorem Fractional.of_add_right {a a' : α} (H : Fractional (a + a')) : Fractional a' := by
-  let ⟨z, Hz⟩ := H
-  exists a + z
-  rw [add_assoc, add_comm (a := a')]
-  exact Hz
-
-end Fraction
-
-open Fraction OFE CMRA
-
-def Frac (α : Type _) := LeibnizO α
-instance [Fraction α] : Coe (Frac α) α := ⟨(·.1)⟩
-instance [Fraction α] : Coe α (Frac α) := ⟨(⟨·⟩)⟩
-@[simp] instance : COFE (Frac α) := inferInstanceAs (COFE (LeibnizO α))
-@[simp] instance [Fraction α] : Add (Frac α) := ⟨fun x y => x.1 + y.1⟩
-instance : Leibniz (Frac α) := inferInstanceAs (Leibniz (LeibnizO α))
-
-def Frac.half {α} [Fraction α] [h : IsHalfFraction α]
-  (q : Frac α) : Frac α := ⟨h.half q.car⟩
-
-instance Frac_CMRA [Fraction α] : CMRA (Frac α) where
+instance instCMRAQp : CMRA Qp where
   pcore _ := none
-  op := Add.add
-  ValidN _ x := Proper x.1
-  Valid x := Proper x.1
-  op_ne {x} := ⟨fun _ _ _ => congrArg <| Add.add x⟩
-  pcore_ne _ := (exists_eq_right'.mpr ·)
-  validN_ne H Hp := H ▸ Hp
-  valid_iff_validN := forall_const _ |>.symm
-  validN_succ := (·)
-  validN_op_left := proper_add_mono_left
-  assoc := Equiv.of_eq <| by simp only [Add.add]; rw [add_assoc]
-  comm := Equiv.of_eq <| by simp only [Add.add]; rw [add_comm]
-  pcore_op_left := by simp
-  pcore_idem := by simp
-  pcore_op_mono := by simp
-  extend {_ _ y1 y2} _ _ := by exists y1; exists y2
+  op x y := x + y
+  ValidN _ x := x.val ≤ 1
+  Valid x := x.val ≤ 1
+  op_ne.ne n x1 x2 H := by rw [H]
+  pcore_ne _ H := by rcases H
+  validN_ne H := by rw [H]; exact id
+  valid_iff_validN := .symm (forall_const _)
+  validN_succ := id
+  validN_op_left {n x y} h := by
+    show x.val ≤ 1
+    have h' : x.val + y.val ≤ 1 := h
+    grind
+  assoc := OFE.leibniz.mpr <| Subtype.ext (Rat.add_assoc ..).symm
+  comm := OFE.leibniz.mpr <| Subtype.ext (Rat.add_comm ..)
+  pcore_op_left H := by rcases H
+  pcore_idem H := by rcases H
+  pcore_op_mono H := by rcases H
+  extend {_ x y z} := by rintro H rfl; exists y; exists z
 
-instance [Fraction α] : CMRA.Discrete (Frac α) where
+
+-- TODO: A different solution to having these bridge lemmas might be to internalize
+-- positivity into the CMRA's validity predicate, removing the sybtype, and having Qp
+-- become just a Leibniz CMRA over Rat. This admits two-way coercions to Rat for the automation.
+
+@[simp, grind =] theorem Qp.val_add (x y : Qp) : (x + y).val = x.val + y.val := rfl
+@[simp, grind =] theorem Qp.val_one : (1 : Qp).val = 1 := rfl
+@[simp, grind =] theorem Qp.val_half (q : Qp) : q.half.val = q.val / 2 := rfl
+@[simp, grind =] theorem Qp.val_op (x y : Qp) : (x • y).val = x.val + y.val := rfl
+@[simp, grind =] theorem Qp.validN_iff {n} {x : Qp} : ✓{n} x ↔ x.val ≤ 1 := Iff.rfl
+@[simp, grind =] theorem Qp.valid_iff {x : Qp} : ✓ x ↔ x.val ≤ 1 := Iff.rfl
+@[simp, grind =] theorem Qp.le_iff {x y : Qp} : x ≤ y ↔ x.val ≤ y.val := Iff.rfl
+@[simp, grind =] theorem Qp.lt_iff {x y : Qp} : x < y ↔ x.val < y.val := Iff.rfl
+@[simp] theorem Qp.ext_iff {x y : Qp} : x = y ↔ x.val = y.val := Subtype.ext_iff
+@[simp] theorem Qp.dist_iff {n} {x y : Qp} : x ≡{n}≡ y ↔ x.val = y.val := Subtype.ext_iff
+@[simp] theorem Qp.equiv_iff {x y : Qp} : x ≡ y ↔ x.val = y.val := Subtype.ext_iff
+
+#rocq_ignore frac_op_instance "Use CMRA instance"
+#rocq_ignore frac_pcore_instance "Use CMRA instance"
+#rocq_ignore frac_valid_instance "Use CMRA instance"
+#rocq_ignore frac_ra_mixin "Use CMRA instance"
+
+@[rocq_alias frac_included]
+theorem Frac.inc_iff {p q : Qp} : p ≼ q ↔ p < q := by
+  refine ⟨fun ⟨r, Hr⟩ => ?_, fun H => ?_⟩
+  · have := r.2; simp only [Qp.lt_iff, Qp.equiv_iff, Qp.val_op] at *; grind
+  · exact ⟨⟨q.val - p.val, by grind⟩, by simp only [Qp.equiv_iff, Qp.val_op]; grind⟩
+
+@[rocq_alias frac_included_weak]
+theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := by
+  have := inc_iff.mp H; grind
+
+@[rocq_alias frac_cmra_discrete]
+instance instDiscreteQp : CMRA.Discrete Qp where
   discrete_0 := id
   discrete_valid := id
 
-instance [Fraction α] [CMRA α] {a : Frac α} (Hw : Whole a.1) : Exclusive a where
-  exclusive0_l _ Hk := (not_exists.mp Hw.2) _ Hk
+@[rocq_alias frac_full_exclusive]
+instance instExclusiveQp1 : CMRA.Exclusive (α := Qp) 1 where
+  exclusive0_l x := by have := x.2; grind
 
-instance [Fraction α] {a : Frac α} : CMRA.Cancelable a where
+@[rocq_alias frac_cancelable]
+instance instCancelableQp {a : Qp} : CMRA.Cancelable (α := Qp) a where
   cancelableN {n x y} _ (H : a • x = a • y) := by
-    refine Dist.of_eq <| LeibnizO.ext <| add_left_cancel (a := a.car) <| ?_
-    exact LeibnizO.eqv_inj H
+    simp only [Qp.dist_iff, Qp.ext_iff, Qp.val_op] at *; grind
 
-instance [Fraction α] {a : Frac α} : CMRA.IdFree a where
+@[rocq_alias frac_id_free]
+instance instIdFreeQp {a : Qp} : CMRA.IdFree a where
   id_free0_r b _ H := by
-    suffices (b + a).car = a.car from add_ne this.symm
-    refine LeibnizO.ext_iff.mp (Leibniz.eq_of_eqv (α := Frac _) ?_)
-    exact CMRA.comm.trans (discrete_0 H)
+    have := b.2; simp only [Qp.dist_iff, Qp.val_op] at H; grind
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_is_op]
-instance (priority := default - 10) [Fraction α] (q1 q2 : Frac α) :
-    IsOpMerge (q1 + q2) q1 q2 where
+instance (priority := default - 10) (q1 q2 : Qp) :
+    IsOpMerge (q1 + q2 : Qp) q1 q2 where
   is_op := .rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias is_op_frac]
-instance [Fraction α] [IsHalfFraction α] (q : Frac α) :
-    IsOp io1 q io2 (q.half) io3 (q.half) where
-  is_op := q.ext <| IsHalfFraction.half_add.symm
-
-/-- A type of fractions with a unique whole element. -/
-class UFraction (α : Type _) extends Fraction α, One α where
-  -- Experiment: I don't see why we need a unique One element. I wouldn't be surprised if it were
-  -- necessary somewhere, but for now we will try relaxing the constraint to just assert the
-  -- existence of a Whole element.
-  -- whole_iff_one {a : α} : Fraction.Whole a ↔ a = 1
-  one_whole : Fraction.Whole (1 : α)
-
-section NumericFraction
-
-/-- Generic fractional instance for types with comparison and 1 operators. -/
-class NumericFraction (α : Type _) extends One α, Add α, LE α, LT α where
-  add_comm : ∀ a b : α, a + b = b + a
-  add_assoc : ∀ a b c : α, a + (b + c) = (a + b) + c
-  add_left_cancel : ∀ {a b c : α}, a + b = a + c → b = c
-  le_def : ∀ {a b : α}, a ≤ b ↔ a = b ∨ a < b
-  lt_def : ∀ {a b : α}, a < b ↔ ∃ c : α, a + c = b
-  lt_irrefl : ∀ {a : α}, ¬a < a
-
-@[simp] instance [NumericFraction T] : One (Frac T) := ⟨⟨One.one⟩⟩
-@[simp] instance [NumericFraction T] : LE (Frac T) := ⟨(·.1 ≤ ·.1)⟩
-@[simp] instance [NumericFraction T] : LT (Frac T) := ⟨(·.1 < ·.1)⟩
-
-variable {α} [NumericFraction α]
-
-open NumericFraction
-
-theorem le_rfl {a : α} : a ≤ a := le_def.2 (.inl rfl)
-
-theorem lt_trans {a b c : α} : a < b → b < c → a < c := by
-  simp only [lt_def] at *
-  exact fun ⟨ac, hac⟩ ⟨bc, hbc⟩ => ⟨ac + bc, by rwa [← hac, ←add_assoc] at hbc⟩
-
-theorem le_trans {a b c : α} : a ≤ b → b ≤ c → a ≤ c := by
-  simp only [le_def] at *
-  intro
-  | .inl ha_eq_b, .inl hb_eq_c => exact .inl (ha_eq_b.trans hb_eq_c)
-  | .inl ha_eq_b, .inr hb_lt_c => exact .inr (ha_eq_b ▸ hb_lt_c)
-  | .inr ha_lt_b, .inl hb_eq_c => exact .inr (hb_eq_c ▸ ha_lt_b)
-  | .inr ha_lt_b, .inr hb_lt_c => exact .inr (lt_trans ha_lt_b hb_lt_c)
-
-theorem add_le_mono {a b c : α} : a + b ≤ c → a ≤ c := by
-  simp only [le_def, lt_def]
-  rintro (rfl | ⟨d, hltd⟩)
-  · exact .inr ⟨b, rfl⟩
-  · exact .inr ⟨b + d, (add_assoc ..).trans hltd⟩
-
-theorem lt_le {a b : α} : a < b → a ≤ b := by simp +contextual [le_def]
-
-theorem add_ne_self {a b : α} : a + b ≠ a := mt (lt_def.2 ⟨b, ·⟩) lt_irrefl
-
-theorem not_add_lt_self {a b : α} : ¬a + b < a := fun H => by
-  have ⟨c1, H⟩ := lt_def.1 H
-  exact add_ne_self ((add_assoc ..).trans H)
-
-theorem not_add_le_self {a b : α} : ¬ a + b ≤ a := fun H => by
-  obtain H | H := le_def.mp H
-  · exact add_ne_self H
-  · exact not_add_lt_self H
-
-instance : UFraction α where
-  Proper x := x ≤ 1
-  add_comm := add_comm
-  add_assoc := add_assoc
-  add_left_cancel := add_left_cancel
-  add_ne H := add_ne_self ((add_comm ..).trans H.symm)
-  proper_add_mono_left := add_le_mono
-  -- whole_iff_one {a} := by
-  --   constructor
-  --   · intro ⟨Hp, Hdp⟩
-  --     refine (le_def.mp Hp).resolve_right fun HK => ?_
-  --     let ⟨c, Hc⟩ := lt_def.mp HK
-  --     exact Hdp ⟨c, Hc ▸ le_refl⟩
-  --   · rintro rfl; exact ⟨le_refl, fun ⟨b, H⟩ => not_add_le_self H⟩
-  one_whole := by
-    simp [Fraction.Whole, Fraction.Fractional]
-    exact ⟨le_rfl, fun _ => not_add_le_self⟩
-
-theorem Frac.inc_iff_lt {p q : Frac α} : p ≼ q ↔ p < q := by
-  constructor
-  · intro ⟨r, Hr⟩; exact lt_def.mpr ⟨r, Hr ▸ rfl⟩
-  · intro H
-    let ⟨r, Hr⟩ := lt_def.mp H
-    exact ⟨r, .of_eq <| LeibnizO.ext_iff.mpr Hr.symm⟩
-
-theorem Frac.le_of_inc {p q : Frac α} (H : p ≼ q) : p ≤ q :=
-  lt_le (inc_iff_lt.mp H)
-
-end NumericFraction
-
-/-- Positive naturals, the simplest `UFraction` instance. -/
-def PNat := { n : Nat // 0 < n }
-
-namespace PNat
-
-instance : One PNat := ⟨⟨1, Nat.one_pos⟩⟩
-instance : Add PNat := ⟨fun a b => ⟨a.1 + b.1, Nat.add_pos_left a.2 b.1⟩⟩
-instance : LE PNat := ⟨fun a b => a.1 ≤ b.1⟩
-instance : LT PNat := ⟨fun a b => a.1 < b.1⟩
-
-instance : NumericFraction PNat where
-  add_comm _ _ := Subtype.ext (Nat.add_comm ..)
-  add_assoc _ _ _ := Subtype.ext (Nat.add_assoc ..).symm
-  add_left_cancel h := Subtype.ext (Nat.add_left_cancel (Subtype.ext_iff.mp h))
-  le_def.mp h := Nat.eq_or_lt_of_le h |>.elim (.inl ∘ Subtype.ext) .inr
-  le_def.mpr h := h.elim (· ▸ Nat.le_refl _) Nat.le_of_lt
-  lt_def.mp h := ⟨⟨_, Nat.sub_pos_of_lt h⟩, Subtype.ext (Nat.add_sub_cancel' (Nat.le_of_lt h))⟩
-  lt_def.mpr := fun ⟨c, h⟩ => h ▸ Nat.lt_add_of_pos_right c.2
-  lt_irrefl := Nat.lt_irrefl _
-
-end PNat
+instance (q : Qp) : IsOp io1 q io2 q.half io3 q.half where
+  is_op := by refine q.ext ?_; grind
