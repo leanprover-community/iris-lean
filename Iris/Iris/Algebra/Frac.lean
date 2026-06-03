@@ -83,6 +83,9 @@ instance instCMRAQp : CMRA Qp where
 @[simp] theorem Qp.dist_iff {n} {x y : Qp} : x ≡{n}≡ y ↔ x.val = y.val := Subtype.ext_iff
 @[simp] theorem Qp.equiv_iff {x y : Qp} : x ≡ y ↔ x.val = y.val := Subtype.ext_iff
 
+/-- The whole fraction `1` is valid. -/
+@[simp] theorem Qp.valid_one : ✓ (1 : Qp) := by grind
+
 #rocq_ignore frac_op_instance "Use CMRA instance"
 #rocq_ignore frac_pcore_instance "Use CMRA instance"
 #rocq_ignore frac_valid_instance "Use CMRA instance"

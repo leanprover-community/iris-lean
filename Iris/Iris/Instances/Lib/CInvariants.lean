@@ -37,11 +37,6 @@ namespace CancelableInvariant
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF] [W : CInvG GF]
 
-private theorem qpOne_valid : ✓ (One.one : Qp) := by
-  show (One.one : Qp).val ≤ 1
-  have : (One.one : Qp).val = 1 := rfl
-  grind
-
 @[rocq_alias cinv_own]
 def own (γ : GName) (p : Qp) : IProp GF := iOwn (E := W.inv) γ (none, some p)
 
@@ -111,7 +106,7 @@ theorem own_excl_alloc (P : GName → Prop) (HP : PredInfinite P) :
   imod iOwn_alloc_strong (E := W.inv)
     ((some (Excl.excl ()), none) • (none, some (One.one : Qp)) :
       CInvF (IProp GF) (IProp GF)) P ?_
-    ⟨trivial, qpOne_valid⟩ with ⟨%γ, %HPγ, Hown⟩
+    ⟨trivial, Qp.valid_one⟩ with ⟨%γ, %HPγ, Hown⟩
   · intro N
     obtain ⟨γ, HPγ, Hγ⟩ := HP (List.range (N + 1))
     exact ⟨γ, by grind, HPγ⟩

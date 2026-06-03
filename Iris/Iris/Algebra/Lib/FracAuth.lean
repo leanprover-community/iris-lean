@@ -46,11 +46,6 @@ notation "◯F " a => fragFull a
 
 abbrev fracOne : Qp := One.one
 
-private theorem qpOne_valid : ✓ (One.one : Qp) := by
-  show (One.one : Qp).val ≤ 1
-  have : (One.one : Qp).val = 1 := rfl
-  grind
-
 instance frac_one_exclusive (b : A) : Exclusive (fracOne, b) where
   exclusive0_l y h := by
     have hy := y.1.2
@@ -83,7 +78,7 @@ theorem frag_discrete {q : Qp} {a : A} (ha : DiscreteE a) : DiscreteE (◯F{q} a
 @[rocq_alias frac_auth_dfrac_validN]
 theorem dfrac_validN {dq : DFrac} {n : Nat} {a : A} (hdq : ✓ dq) (ha : ✓{n} a) :
     ✓{n} (●F{dq} a) • ◯F a := by
-  simpa only [both_dfrac_validN] using ⟨hdq, ⟨none, .rfl⟩, qpOne_valid, ha⟩
+  simpa only [both_dfrac_validN] using ⟨hdq, ⟨none, .rfl⟩, Qp.valid_one, ha⟩
 
 @[rocq_alias frac_auth_validN]
 theorem validN {n : Nat} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) • ◯F a :=
@@ -91,7 +86,7 @@ theorem validN {n : Nat} {a : A} (ha : ✓{n} a) : ✓{n} (●F a : FracAuth) �
 
 @[rocq_alias frac_auth_dfrac_valid]
 theorem dfrac_valid {dq : DFrac} {a : A} (hdq : ✓ dq) (ha : ✓ a) : ✓ (●F{dq} a) • ◯F a :=
-  auth_both_dfrac_valid_2 hdq ⟨valid_iff_validN.mpr fun _ => qpOne_valid, ha⟩ ⟨none, .rfl⟩
+  auth_both_dfrac_valid_2 hdq ⟨valid_iff_validN.mpr fun _ => Qp.valid_one, ha⟩ ⟨none, .rfl⟩
 
 @[rocq_alias frac_auth_valid]
 theorem valid {a : A} (ha : ✓ a) : ✓ (●F a : FracAuth) • ◯F a :=
@@ -147,7 +142,7 @@ theorem included_total [CMRA.Discrete A] [IsTotal A] {dq : DFrac} {a b : A}
 @[rocq_alias frac_auth_auth_dfrac_validN]
 theorem auth_dfrac_validN {dq : DFrac} {a : A} : (✓{n} ●F{dq} a) ↔ ✓ dq ∧ ✓{n} a := by
   rw [Auth.auth_dfrac_validN]
-  exact ⟨fun ⟨hdq, ha⟩ => ⟨hdq, ha.2⟩, fun ⟨hdq, ha⟩ => ⟨hdq, qpOne_valid, ha⟩⟩
+  exact ⟨fun ⟨hdq, ha⟩ => ⟨hdq, ha.2⟩, fun ⟨hdq, ha⟩ => ⟨hdq, Qp.valid_one, ha⟩⟩
 
 @[rocq_alias frac_auth_auth_validN]
 theorem auth_validN {a : A} : (✓{n} (●F a : FracAuth)) ↔ ✓{n} a := by
@@ -159,7 +154,7 @@ theorem auth_dfrac_valid {dq : DFrac} {a : A} : (✓ ●F{dq} a) ↔ ✓ dq ∧ 
   rw [Auth.auth_dfrac_valid]
   refine ⟨fun ⟨hq, ha⟩ => ?_, fun ⟨hq, ha⟩ => ?_⟩
   · exact ⟨hq, valid_iff_validN.mpr fun n => (valid_iff_validN.mp ha n).2⟩
-  · exact ⟨hq, valid_iff_validN.mpr fun n => ⟨qpOne_valid, valid_iff_validN.mp ha n⟩⟩
+  · exact ⟨hq, valid_iff_validN.mpr fun n => ⟨Qp.valid_one, valid_iff_validN.mp ha n⟩⟩
 
 @[rocq_alias frac_auth_auth_valid]
 theorem auth_valid {a : A} : (✓ (●F a : FracAuth)) ↔ ✓ a := by
@@ -250,7 +245,7 @@ theorem update {q : Qp} {a b a' b' : A} (h : (a, b) ~l~> (a', b')) :
 @[rocq_alias frac_auth_update_1]
 theorem update_full {a b a' : A} (ha' : ✓ a') :
     ((●F a : FracAuth) • ◯F b) ~~> (●F a') • ◯F a' :=
-   auth_update (.option (.exclusive ⟨qpOne_valid, ha'⟩))
+   auth_update (.option (.exclusive ⟨Qp.valid_one, ha'⟩))
 
 @[rocq_alias frac_auth_update_auth_persist]
 theorem update_auth_persist {dq : DFrac} {a : A} : (●F{dq} a) ~~> ●F{.discard} a :=
