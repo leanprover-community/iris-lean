@@ -94,7 +94,7 @@ GF : BundledGFunctors
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(if #false then #1 else #0) {{ v, True }} := by
   istart
-  wp_pure hl({_})
+  wp_pure
 
 /--
 error: unsolved goals
@@ -107,7 +107,7 @@ GF : BundledGFunctors
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(if #true then #1 else #0) {{ v, True }} := by
   istart
-  wp_pure hl({_})
+  wp_pure
 
 /--
 error: unsolved goals
@@ -120,4 +120,4 @@ GF : BundledGFunctors
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(snd(v((#1,#2)))) {{ v, True }} := by
   istart
-  wp_pure hl({_})
+  wp_pure

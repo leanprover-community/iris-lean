@@ -18,11 +18,6 @@ open Lean hiding Expr
 open Meta Elab Tactic Qq
 open Iris.HeapLang
 
-public
-theorem wp_value_simp [IrisGS_gen hlc Exp GF]{s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF} :
-    (WP hl(v(v)) @ s; E {{ Φ }}) = iprop(|={E}=> Φ v) := by
-  simp [wp_unfold.to_eq, wp.pre]
-
 elab "wp_bind" focus:hl_exp : tactic => do
   -- TODO: Do we ask for a function or for a "pattern"?
   let focus ← elabTermEnsuringTypeQ (←`(hl($focus))) q(HeapLang.Exp)
@@ -124,6 +119,23 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   refine .trans (BI.laterN_mono _ H) ?_
   iintro $ !> -; itrivial
 
+public
+theorem wp_value_simp [IrisGS_gen hlc Exp GF]{s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF} :
+    (WP hl(v(v)) @ s; E {{ Φ }}) = iprop(|={E}=> Φ v) := by
+  simp [wp_unfold.to_eq, wp.pre]
+
+public
+theorem fupd_full_fupd [IrisGS_gen hlc Exp GF]{P : IProp GF} :
+    iprop(|={⊤}=> |={E}=> P) = iprop(|={⊤}=> P) := by
+  ext; constructor
+  · iintro >H
+    ihave >aux := BIFUpdate.subset (E1 := ⊤) (E2 := E) (by simp [Std.top, Subset, Membership.mem, CoPset.full])
+    imod H
+    imod aux with -
+    iassumption
+  · apply fupd_elim;
+    refine fupd_intro.trans fupd_intro
+
 meta def _root_.Lean.MVarId.trySolveWith (mvarId : MVarId) (tac : TacticM α) : TacticM α := do
   let savedGoals ← getGoals
   setGoals [mvarId]
@@ -131,8 +143,8 @@ meta def _root_.Lean.MVarId.trySolveWith (mvarId : MVarId) (tac : TacticM α) : 
   setGoals savedGoals
   pure a
 
-elab "wp_pure" focus:term " by " tac:tactic : tactic => do
-  let focus ← elabTermEnsuringTypeQ focus q(HeapLang.Exp)
+elab "wp_pure" focus:hl_exp " by " tac:tactic : tactic => do
+  let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
   let (focus_ctx, _) ← HeapLang.extractAllEctxItems focus
   trace[wp_pure] s!"Focusing with {←ppExpr focus} of depth {focus_ctx.length}"
   ProofModeM.runTactic fun mvar {u, prop, bi, hyps, goal, ..} => do
@@ -172,6 +184,52 @@ elab "wp_pure" focus:term " by " tac:tactic : tactic => do
       have : $inner =Q ProgramLogic.fill $outer_ctx $e₂ := ⟨⟩
 
       let newGoal := q(Wp.wp $s $E $inner $Φ)
+      -- do
+      --   let savedGoals ← Tactic.getGoals
+      --   Tactic.setGoals [newProof.mvarId!]
+      --   newProof.mvarId!.withContext do
+      --     -- TODO: Pretty this up.
+      --     evalTactic <| ← `(tactic| try simp only [
+      --         -- wp_value_simp,
+      --         -- wp_value_iff,
+      --         -- ←fupd_wp_iff.to_eq,
+      --         -- fupd_idem.to_eq,
+      --         -- Iris.ProgramLogic.EctxItemLanguage.fill_cons,
+      --         -- Iris.ProgramLogic.EctxItemLanguage.fill_nil,
+      --         -- Iris.ProgramLogic.EctxItemLanguage.fillItem,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_1,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_2,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_3,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_4,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_5,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_6,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_7,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_8,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_9,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_10,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_11,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_12,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_13,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_14,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_15,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_16,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_17,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_18,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_19,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_20,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_21,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_22,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_23,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_24,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_25,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_26,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_27,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_28,
+      --         -- Iris.HeapLang.ECtxItem.fill.eq_29,
+      --         -- fupd_full_fupd
+      --         ])
+      --   let newGoals ← Tactic.getGoals
+      --   Tactic.setGoals (savedGoals ++ newGoals)
 
       let .some ⟨Δ'₂, hyps'⟩ := parseHyps? bi <| ←instantiateMVars Δ'
         | throwError s!"Obtained hypothesis {←ppExpr Δ'} from `IntroLaterN`, but these couldn't be parsed as {←ppExpr <| ←inferType bi} hypothesis"
@@ -193,7 +251,7 @@ elab "wp_pure" focus:term " by " tac:tactic : tactic => do
 -- TODO: Rething these syntax declarations
 macro "wp_pure" : tactic => `(tactic| wp_pure _ by grind only)
 macro "wp_pure" " by " tac:tactic : tactic => `(tactic| wp_pure _ by $tac)
-macro "wp_pure" focus:term : tactic => `(tactic| wp_pure $focus by grind only)
+macro "wp_pure" focus:hl_exp : tactic => `(tactic| wp_pure $focus by grind only)
 
 initialize registerTraceClass `wp_bind
 initialize registerTraceClass `wp_pure
