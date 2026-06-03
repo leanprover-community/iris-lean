@@ -11,7 +11,7 @@ namespace Iris.HeapLang
 
 open Lean hiding Expr
 open Lean renaming Expr → LeanExpr
-open Qq
+open Qq Iris.ProofMode
 
 open ECtxItem in
 meta partial
@@ -110,13 +110,13 @@ meta def quoteList {α : Q(Type u)}: List Q($α) → Q(List $α)
   | x :: xs => q($x :: $(quoteList xs))
 
 public meta partial
-def extractAllOuterEvCtx (e : Q(Exp)) : MetaM (List (Q(List ECtxItem) × Q(Exp))) := do
+def findECtx {α : Type _} (e : Q(Exp)) (pred : Q(Exp) → ProofModeM (Option α) )
+  : ProofModeM (Option (α × Q(List ECtxItem) × Q(Exp))) := do
   let (Kis, inner) ← extractAllEctxItems e
-  splitOnAllPositions inner Kis
+  go inner Kis
 where
-  splitOnAllPositions (e : Q(Exp)) (Kis : List Q(ECtxItem)) : MetaM (List (Q(List ECtxItem) × Q(Exp))) :=
-    match Kis with
-    | [] => return [(q([]), e)]
-    | Ki :: Kis =>
-      -- TODO: Do we use the meta level fillItem here, or the object level one?
-      return (quoteList (Ki :: Kis), e) ::  (← splitOnAllPositions (←fillItem e Ki) Kis)
+  go (e : Q(Exp)) (Kis : List Q(ECtxItem)) : ProofModeM (Option (α × Q(List ECtxItem) × Q(Exp))) := do
+    if let some a ← pred e then
+      return some ⟨a, quoteList Kis, e⟩
+    let Ki :: Kis' := Kis | return none
+    go (← fillItem e Ki) Kis'

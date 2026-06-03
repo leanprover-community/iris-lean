@@ -16,13 +16,28 @@ namespace Iris.ProofMode
 
 open Lean hiding Expr
 open Meta Elab Tactic Qq
-open Iris.HeapLang
+open Iris.HeapLang Iris.BI
 
-elab "wp_bind" focus:hl_exp : tactic => do
-  -- TODO: Do we ask for a function or for a "pattern"?
-  let focus ← elabTermEnsuringTypeQ (←`(hl($focus))) q(HeapLang.Exp)
-  trace[bind] s!"Context to bind over: {←ppExpr focus}"
-  ProofModeM.runTactic fun mvar {u, prop, bi, hyps, goal, ..} => do
+public structure WpGoal where
+  u : Level
+  prop : Q(Type u)
+  bi : Q(BI $prop)
+  ehyps : Q($prop)
+  hyps : Hyps bi ehyps
+  GF : Q(BundledGFunctors.{0, 0, 0})
+  hlc : Q(HasLC)
+  ι : Q(IrisGS_gen $hlc Exp $GF)
+  s : Q(Stuckness)
+  E : Q(CoPset)
+  e : Q(Exp)
+  Φ : Q(Val → IProp $GF)
+  hu : QuotedLevelDefEq u 0
+  hprop : $prop =Q IProp $GF
+  hbi : $bi =Q UPred.instBIUPred
+
+
+public meta def ProofModeM.runTacticWp {α} (k : MVarId → WpGoal → ProofModeM α)
+  : TacticM α := do  ProofModeM.runTactic fun mvar {u, prop, bi, e:=ehyps, hyps, goal, ..} => do
     let .defEq _ ← isLevelDefEqQ u 0
       | throwError "`wp_bind` only works over `IProp` (at universe level 0)"
     let ~q(IProp $GF) := prop
@@ -30,80 +45,49 @@ elab "wp_bind" focus:hl_exp : tactic => do
     let ~q(UPred.instBIUPred) := bi
       | throwError "`wp_bind` expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
 
-    let ~q(Wp.wp (A := Stuckness) (Expr := Exp) (Val := Val)
-      (self := wp.def (Λ := @ProgramLogic.EctxLanguage.instLanguage _ _ _ _ _ (ProgramLogic.EctxItemLanguage.instEctxLanguage (EctxItem := ECtxItem) (Λ := $Λ))) (ι := $ι))
-      $s $E $e $Φ) := goal
+    let ~q(Wp.wp (A := Stuckness) (Expr := Exp) (self := wp.def (ι := $ι)) $s $E $e $Φ) := goal
       | throwError "The goal was not a WP application"
+    k mvar { u, prop, bi, ehyps, hyps, GF, ι, hlc:=_, s, E, e, Φ, hu:=⟨⟩, hprop:=⟨⟩, hbi:=⟨⟩ }
 
-    let (outer_ctx, e') :: _ ← (←extractAllOuterEvCtx e).filterM (isDefEq ·.2 focus)
+public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e e' : Exp} {Φ Φ' : Val → IProp GF} :
+    (Δ ⊢ WP e' @ s ; E {{ Φ' }}) →
+    e = ProgramLogic.fill K e' →
+    Φ' = (λ v : Val => WP (ProgramLogic.fill K (Exp.val v)) @ s; E {{ Φ }}) →
+    (Δ ⊢ WP e @ s ; E {{ Φ }})
+    := by
+  rintro H rfl rfl
+  iintro _
+  iapply wp_bind
+  iapply H $$ [$]
+
+elab "wp_bind" focus:hl_exp : tactic => do
+  let focus ← elabTermEnsuringTypeQ (←`(hl($focus))) q(HeapLang.Exp)
+
+  trace[bind] s!"Context to bind over: {←ppExpr focus}"
+  -- TODO: why is it necessary to mention all the fields we don't need here?
+  ProofModeM.runTacticWp fun mvar {GF, hyps, s, E, e, Φ, u:=_, prop:=_, bi:=_, ehyps:=_, hlc:=_, ι:=_, hu :=_, hprop:=_, hbi:=_} => do
+
+    let some ⟨_, K, e'⟩ ← findECtx e (do
+      if ← isDefEq · focus then return some () else return none)
       | throwError s!"Couldn't unify {←ppExpr focus} with any possible evaluation context"
-    trace[bind] s!"Found ctx {←ppExpr outer_ctx} with expression {←ppExpr e'} matching our focus"
-    /- We assume that `extractAllOuterEvCtx` gives the following invariant -/
-    have : ProgramLogic.fill $outer_ctx $e' =Q $e := ⟨⟩
+    trace[bind] s!"Found ctx {←ppExpr K} with expression {←ppExpr e'} matching our focus"
 
-    let evctxInst : Q(ProgramLogic.Language.Context (ProgramLogic.fill (Expr := Exp) $outer_ctx)) := q(ProgramLogic.EctxLanguage.instContextFill ..)
-    trace[wp_bind] s!"Evaluation context instance: {←ppExpr evctxInst}"
+    -- findECtx guarantees that this holds
+    have _ : $e =Q ProgramLogic.fill $K $e' := ⟨⟩
+    have he : Q($e = ProgramLogic.fill $K $e') := q(rfl)
 
-    let pf := q(wp_bind (GF := $GF) (ProgramLogic.fill _) (κ := $evctxInst) (s := $s) (E := $E) (e := $focus) (Φ := $Φ))
+    -- construct the new postcondition
+    let Φ' : Q(Val → IProp $GF) ←
+      Qq.withLocalDeclDQ `v q(Val) fun v => do
+        mkLambdaFVars #[v] <|
+          q(Wp.wp $s $E $(← HeapLang.fill K q(.val $v)) $Φ)
+    have _ : $Φ' =Q (fun v : Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $K (v : Exp)) $Φ) := ⟨⟩
+    -- TODO: check that this proofterm actually works
+    have hΦ : Q($Φ' = (fun v : Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $K (v : Exp)) $Φ)) := q(rfl)
 
-    -- NOTE: Option 1: We perform the simplification ourselves
-    let innerPostcond : Q(Val → IProp $GF) ← Qq.withLocalDeclDQ `v q(Val) fun v => do
-      mkLambdaFVars #[v] <| q(Wp.wp (PROP := IProp $GF) $s $E $(←HeapLang.fill outer_ctx q(($v : Exp))) $Φ)
-    have : $innerPostcond =Q (fun v : Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $outer_ctx (v : Exp)) $Φ) := ⟨⟩
-
-    -- NOTE: Option 2: We call `cbv` or `simp` to perform the simplification
-    -- let innerPostcond := q(fun v : Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $outer_ctx (v : Exp)) $Φ)
-
-    let newGoal := q(Wp.wp (PROP := IProp $GF) $s $E $focus $innerPostcond)
-
-    let newProof ← addBIGoal hyps newGoal
-    -- do
-    --   let savedGoals ← Tactic.getGoals
-    --   Tactic.setGoals [newProof.mvarId!]
-    --   newProof.mvarId!.withContext do
-    --     -- TODO: Pretty this up.
-    --     evalTactic <| ← `(tactic| try simp only [
-    --         -- wp_value_simp,
-    --         -- wp_value_iff,
-    --         -- ←fupd_wp_iff.to_eq,
-    --         -- fupd_idem.to_eq,
-    --         -- Iris.ProgramLogic.EctxItemLanguage.fill_cons,
-    --         -- Iris.ProgramLogic.EctxItemLanguage.fill_nil,
-    --         -- Iris.ProgramLogic.EctxItemLanguage.fillItem,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_1,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_2,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_3,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_4,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_5,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_6,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_7,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_8,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_9,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_10,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_11,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_12,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_13,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_14,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_15,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_16,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_17,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_18,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_19,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_20,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_21,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_22,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_23,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_24,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_25,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_26,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_27,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_28,
-    --         -- Iris.HeapLang.ECtxItem.fill.eq_29
-    --         ])
-    --   let newGoals ← Tactic.getGoals
-    --   Tactic.setGoals (savedGoals ++ newGoals)
-
-    mvar.assign q($(newProof).trans $pf)
+    let newGoal := q(Wp.wp $s $E $e' $Φ')
+    let pf ← addBIGoal hyps newGoal
+    mvar.assign q(tac_wp_bind $pf $he $hΦ)
 
 public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e₁ e₂ : Exp} {φ : Prop} {n : Nat} {Φ : Val → IProp GF} :
     ProgramLogic.Language.PureExec φ n e₁ e₂ →
@@ -145,115 +129,52 @@ meta def _root_.Lean.MVarId.trySolveWith (mvarId : MVarId) (tac : TacticM α) : 
   setGoals savedGoals
   pure a
 
-elab "wp_pure" focus:hl_exp " by " tac:tactic : tactic => do
+elab "wp_pure" colGt focus:hl_exp : tactic => do
   let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
   let (focus_ctx, _) ← HeapLang.extractAllEctxItems focus
   trace[wp_pure] s!"Focusing with {←ppExpr focus} of depth {focus_ctx.length}"
-  ProofModeM.runTactic fun mvar {u, prop, bi, hyps, goal, ..} => do
-    let .defEq _ ← isLevelDefEqQ u 0
-      | throwError "`wp_bind` only works over `IProp` (at universe level 0)"
-    let ~q(IProp $GF) := prop
-      | throwError "`wp_bind` only works over `IProp`"
-    let ~q(UPred.instBIUPred) := bi
-      | throwError "`wp_bind` expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
-
-    let ~q(Wp.wp (A := Stuckness) (Expr := Exp) (Val := Val)
-            (self := wp.def
-              (Λ := @ProgramLogic.EctxLanguage.instLanguage _ _ (HeapLang.State) (HeapLang.Observation) _
-                (ProgramLogic.EctxItemLanguage.instEctxLanguage (EctxItem := ECtxItem) (Λ := instEctxItemLanguageExp)))
-              (ι := $ι))
-            $s $E $e $Φ) := goal
-      | throwError "The goal was not a WP application"
+  ProofModeM.runTacticWp fun mvar {GF, bi, hyps, ι, s, E, e, Φ, u:=_, prop:=_, ehyps:=_, hlc:=_, hu :=_, hprop:=_, hbi:=_} => do
 
     -- NOTE: We use `withoutModifyingState` to ensure successful metavariable assignments are reverted at each iteration.
     -- We didn't have to do this with `wp_bind` because we never backtrack once we found a subexpression defeq with `focus`.
-    for (outer_ctx, curr) in ← (← extractAllOuterEvCtx e).filterM (liftM ∘ withoutModifyingState <| isDefEq ·.2 focus) do
+    let some ⟨(φ, n, e₂, inst), outer_ctx, e⟩ ← findECtx e fun e => do
+      unless ← (withoutModifyingMCtx <| isDefEq e focus) do
+        return none
       let φ ← mkFreshExprMVarQ q(Prop)
       let n ← mkFreshExprMVarQ q(Nat)
       let e₂ ← mkFreshExprMVarQ q(Exp)
-      let .some instPureExec ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $curr $e₂)
-        | continue
-      trace[wp_pure] s!"Found `PureExec` rule to apply: {←ppExpr instPureExec}"
+      let some inst ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $e $e₂)
+        | return none
+      return some (φ, n, e₂, inst)
+      | throwError "wp_pure: Cannot find expression to evaluate"
 
-      let Δ' ← mkFreshExprMVarQ q(IProp $GF)
-      let .some instIntoLaterN ← ProofModeM.trySynthInstanceQ q(IntoLaterN false $n $(hyps.tm) $Δ')
-        | continue
-      trace[wp_pure] s!"Found `IntoLaterN` instance {←ppExpr instIntoLaterN}"
+    have inst : Q(ProgramLogic.Language.PureExec $φ $n $e $e₂) := inst
+    let Δ' ← mkFreshExprMVarQ q(IProp $GF)
+    let .some instIntoLaterN ← ProofModeM.trySynthInstanceQ q(IntoLaterN false $n $(hyps.tm) $Δ')
+      | throwError "wp_pure: Cannot synthesize IntoLaterN"
+    trace[wp_pure] s!"Found `IntoLaterN` instance {←ppExpr instIntoLaterN}"
 
       -- TODO: See previous comment on the `ProgramLogic.fill` duplication
       -- let newGoal := q(Wp.wp $s $E (ProgramLogic.fill $(quoteList outer_ctx) $e₂) $Φ)
-      let inner ← HeapLang.fill outer_ctx e₂
-      have : $inner =Q ProgramLogic.fill $outer_ctx $e₂ := ⟨⟩
+    let inner ← HeapLang.fill outer_ctx e₂
+    have : $inner =Q ProgramLogic.fill $outer_ctx $e₂ := ⟨⟩
+    let newGoal := q(Wp.wp $s $E $inner $Φ)
 
-      let newGoal := q(Wp.wp $s $E $inner $Φ)
-      -- do
-      --   let savedGoals ← Tactic.getGoals
-      --   Tactic.setGoals [newProof.mvarId!]
-      --   newProof.mvarId!.withContext do
-      --     -- TODO: Pretty this up.
-      --     evalTactic <| ← `(tactic| try simp only [
-      --         -- wp_value_simp,
-      --         -- wp_value_iff,
-      --         -- ←fupd_wp_iff.to_eq,
-      --         -- fupd_idem.to_eq,
-      --         -- Iris.ProgramLogic.EctxItemLanguage.fill_cons,
-      --         -- Iris.ProgramLogic.EctxItemLanguage.fill_nil,
-      --         -- Iris.ProgramLogic.EctxItemLanguage.fillItem,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_1,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_2,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_3,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_4,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_5,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_6,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_7,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_8,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_9,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_10,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_11,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_12,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_13,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_14,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_15,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_16,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_17,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_18,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_19,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_20,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_21,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_22,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_23,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_24,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_25,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_26,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_27,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_28,
-      --         -- Iris.HeapLang.ECtxItem.fill.eq_29,
-      --         -- fupd_full_fupd
-      --         ])
-      --   let newGoals ← Tactic.getGoals
-      --   Tactic.setGoals (savedGoals ++ newGoals)
-
-      let .some ⟨Δ'₂, hyps'⟩ := parseHyps? bi <| ←instantiateMVars Δ'
-        | throwError s!"Obtained hypothesis {←ppExpr Δ'} from `IntroLaterN`, but these couldn't be parsed as {←ppExpr <| ←inferType bi} hypothesis"
+    let .some ⟨Δ'₂, hyps'⟩ := parseHyps? bi <| ←instantiateMVars Δ'
+      | throwError s!"Obtained hypothesis {←ppExpr Δ'} from `IntroLaterN`, but these couldn't be parsed as {←ppExpr <| ←inferType bi} hypothesis"
       -- We make use of the invariant that `parseHyps? Δ = .some (Δ', hyps) → Δ = Δ'`.
-      have : $Δ'₂ =Q $Δ' := ⟨⟩
-      let nextPf ← addBIGoal hyps' newGoal
+    have : $Δ'₂ =Q $Δ' := ⟨⟩
+    let nextPf ← addBIGoal hyps' newGoal
 
-      let HΦ : Q($φ) ← (liftM ∘ mkFreshExprSyntheticOpaqueMVar) q($φ)
-      addMVarGoal HΦ.mvarId!
-      HΦ.mvarId!.trySolveWith do
-        evalTactic tac
+    let HΦ : Q($φ) ← mkFreshExprSyntheticOpaqueMVar q($φ)
+    iSolveSideconditionAt HΦ.mvarId! (failOnUnsolved := false)
 
-      let pf := q(tac_wp_pure (ι := $ι) $instPureExec $HΦ $instIntoLaterN $nextPf)
+    let pf := q(tac_wp_pure (ι := $ι) $inst $HΦ $instIntoLaterN $nextPf)
 
-      mvar.assign pf
-      return ()
-    throwError "Found no `PureExec` rule to apply in the expression {←ppExpr e}"
+    mvar.assign pf
+    return ()
 
--- TODO: Rething these syntax declarations
-macro "wp_pure" : tactic => `(tactic| wp_pure _ by grind only)
-macro "wp_pure" " by " tac:tactic : tactic => `(tactic| wp_pure _ by $tac)
-macro "wp_pure" focus:hl_exp : tactic => `(tactic| wp_pure $focus by grind only)
+macro "wp_pure" : tactic => `(tactic| wp_pure _)
 
 initialize registerTraceClass `wp_bind
 initialize registerTraceClass `wp_pure

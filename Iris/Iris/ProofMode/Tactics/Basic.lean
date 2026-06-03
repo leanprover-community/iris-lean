@@ -23,7 +23,7 @@ macro_rules | `(tactic| itrivial) => `(tactic|mytac)
 -/
 syntax "itrivial" : tactic
 
-def iSolveSideconditionAt (m : MVarId) : ProofModeM Unit := do
+def iSolveSideconditionAt (m : MVarId) (failOnUnsolved := true) : ProofModeM Unit := do
   let goal ← instantiateMVars (← m.getType)
   match goal with
   | .app (.const ``PMError _) (.lit (.strVal msg)) =>
@@ -31,7 +31,10 @@ def iSolveSideconditionAt (m : MVarId) : ProofModeM Unit := do
   | _ =>
       let gs ← evalTacticAt (← `(tactic | trivial)) m
       if !gs.isEmpty then
-        throwError "isolvesidecondition: failed to solve sidecondition {goal}"
+        if failOnUnsolved then
+          throwError "isolvesidecondition: failed to solve sidecondition {goal}"
+        else
+          for g in gs do addMVarGoal g
 
 elab "istart" : tactic => do
   let (mvar, _) ← startProofMode (← getMainGoal)
