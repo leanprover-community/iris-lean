@@ -42,7 +42,7 @@ elab "wp_bind" focus:hl_exp : tactic => do
 
     let (outer_ctx, e') :: _ ← (←extractAllOuterEvCtx e).filterM (isDefEq ·.2 focus)
       | throwError s!"Couldn't unify {←ppExpr focus} with any possible evaluation context"
-    dbg_trace s!"Considering ctx {←ppExpr outer_ctx} with focused expression {←ppExpr e'}"
+    trace[bind] s!"Found ctx {←ppExpr outer_ctx} with expression {←ppExpr e'} matching our focus"
     /- We assume that `extractAllOuterEvCtx` gives the following invariant -/
     have : ProgramLogic.fill $outer_ctx $e' =Q $e := ⟨⟩
 
@@ -120,7 +120,7 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   intro Hpstep _ ⟨Δ_Δ'⟩ H
   refine Δ_Δ'.trans ?_
   replace Hpstep := ProgramLogic.EctxLanguage.pureExec_fill (K := K) φ n Hpstep
-  refine .trans ?_ <| ProgramLogic.wp_pure_step_later (GF := GF) Hpstep ‹φ›
+  refine .trans ?_ <| ProgramLogic.wp_pure_step_later (GF := GF) ‹φ›
   refine .trans (BI.laterN_mono _ H) ?_
   iintro $ !> -; itrivial
 
@@ -151,38 +151,31 @@ elab "wp_pure" focus:term " by " tac:tactic : tactic => do
             $s $E $e $Φ) := goal
       | throwError "The goal was not a WP application"
 
-    let (ctx, radical) ← HeapLang.extractAllEctxItems e
-    trace[wp_pure] s!"Goal context is {←ctx.mapM (liftM ∘ ppExpr)} with radical {←ppExpr radical}"
-    for i in focus_ctx.length...=ctx.length do
-      let (inner_ctx, outer_ctx) := ctx.splitAt i
-      let curr ← HeapLang.fill inner_ctx radical
-      trace[wp_pure] s!"Trying to reduce {←ppExpr curr} using {←ppExpr focus}"
-      unless ← liftM ∘ withoutModifyingState <| isDefEq curr focus do continue
-
+    -- NOTE: We use `withoutModifyingState` to ensure successful metavariable assignments are reverted at each iteration.
+    -- We didn't have to do this with `wp_bind` because we never backtrack once we found a subexpression defeq with `focus`.
+    for (outer_ctx, curr) in ← (← extractAllOuterEvCtx e).filterM (liftM ∘ withoutModifyingState <| isDefEq ·.2 focus) do
       let φ ← mkFreshExprMVarQ q(Prop)
-      -- let n ← mkFreshExprMVarQ q(Nat)
-      -- TODO: Why is `n` not `outParam` in `PureExec`?
-      let n := q(1)
+      let n ← mkFreshExprMVarQ q(Nat)
       let e₂ ← mkFreshExprMVarQ q(Exp)
-
       let .some instPureExec ← ProofModeM.trySynthInstanceQ q(ProgramLogic.Language.PureExec $φ $n $curr $e₂)
         | continue
-      trace[wp_pure] s!"Wee"
-      trace[wp_pure] s!"Found {←ppExpr instPureExec}"
+      trace[wp_pure] s!"Found `PureExec` rule to apply: {←ppExpr instPureExec}"
+
       let Δ' ← mkFreshExprMVarQ q(IProp $GF)
       let .some instIntoLaterN ← ProofModeM.trySynthInstanceQ q(IntoLaterN false $n $(hyps.tm) $Δ')
         | continue
-      trace[wp_pure] s!"Found instance {←ppExpr instIntoLaterN}"
+      trace[wp_pure] s!"Found `IntoLaterN` instance {←ppExpr instIntoLaterN}"
 
       -- TODO: See previous comment on the `ProgramLogic.fill` duplication
       -- let newGoal := q(Wp.wp $s $E (ProgramLogic.fill $(quoteList outer_ctx) $e₂) $Φ)
       let inner ← HeapLang.fill outer_ctx e₂
-      let newGoal := q(Wp.wp $s $E $inner $Φ)
-      have : (ProgramLogic.fill $(quoteList outer_ctx) $e₂) =Q $inner := ⟨⟩
+      have : $inner =Q ProgramLogic.fill $outer_ctx $e₂ := ⟨⟩
 
-      trace[wp_pure] s!"Parsing {Δ'}"
+      let newGoal := q(Wp.wp $s $E $inner $Φ)
+
       let .some ⟨Δ'₂, hyps'⟩ := parseHyps? bi <| ←instantiateMVars Δ'
         | throwError s!"Obtained hypothesis {←ppExpr Δ'} from `IntroLaterN`, but these couldn't be parsed as {←ppExpr <| ←inferType bi} hypothesis"
+      -- We make use of the invariant that `parseHyps? Δ = .some (Δ', hyps) → Δ = Δ'`.
       have : $Δ'₂ =Q $Δ' := ⟨⟩
       let nextPf ← addBIGoal hyps' newGoal
 
@@ -196,9 +189,6 @@ elab "wp_pure" focus:term " by " tac:tactic : tactic => do
       mvar.assign pf
       return ()
     throwError "Found no `PureExec` rule to apply in the expression {←ppExpr e}"
-
-example : (λ x ↦ x) 0 = 0 := by
-  cbv
 
 -- TODO: Rething these syntax declarations
 macro "wp_pure" : tactic => `(tactic| wp_pure _ by grind only)
