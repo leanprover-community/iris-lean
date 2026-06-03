@@ -190,7 +190,6 @@ scoped instance : CMRA.Discrete α where
   discrete_valid := id
 #rocq_ignore max_nat_cmra_discrete "Inference succeeds automatically"
 #rocq_ignore max_Z_cmra_discrete "Inference succeeds automatically"
-#rocq_ignore max_Z_cmra_total "Inference succeeds automatically"
 #rocq_ignore min_nat_cmra_discrete "Inference succeeds automatically"
 
 scoped instance (a : α) : CMRA.CoreId a where

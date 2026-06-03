@@ -48,7 +48,7 @@ class CMRA (α : Type _) extends OFE α where
 #rocq_ignore CmraMixin "Lean uses the CMRA type class directly; mixin/bundle separation is unnecessary."
 #rocq_ignore cmra_mixin_of' "Lean uses the CMRA type class directly."
 #rocq_ignore cmra_ofeO "Folded into Lean's CMRA extends OFE."
-#rocq_ignore cmra_op_ne' "Use op_ne"
+#rocq_ignore cmra_op_ne' "Binary NonExpansive2 form of op; derivable from CMRA.op_ne with congruence."
 #rocq_ignore cmra_validN_lt "Use validN_le"
 #rocq_ignore cmra_opM_proper "Derived from nonexpansivity"
 #rocq_ignore cmra_core_proper "Derived from nonexpansivity"
@@ -1631,9 +1631,8 @@ section unit
 #rocq_ignore unit_pcore_instance "Use CMRA instance"
 #rocq_ignore unit_valid_instance "Use CMRA instance"
 #rocq_ignore unit_validN_instance "Use CMRA instance"
-#rocq_ignore unit_cmra_discrete "Provided as `CMRA.Discrete Unit`"
-#rocq_ignore unit_cancelable "Provided as a `Cancelable` instance on `()`"
-#rocq_ignore unit_core_id "Provided as a `CoreId` instance on `()`"
+#rocq_ignore unit_cancelable "Subsumed by `empty_cancelable : Cancelable (UCMRA.unit : α)` at `α := Unit`."
+#rocq_ignore unit_core_id "Subsumed by `unit_CoreId : CoreId (UCMRA.unit : α)` at `α := Unit`."
 
 @[rocq_alias unitR, rocq_alias unit_cmra_mixin]
 instance cmraUnit : CMRA Unit where

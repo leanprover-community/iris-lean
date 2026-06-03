@@ -140,10 +140,12 @@ def Tower.proj (k) : Tower F -n> A F k := ⟨(· k), ⟨fun _ _ _ => (· _)⟩�
 @[rocq_alias solver.coerce]
 def eqToHom (e : i = k) : A F i -n> A F k := e ▸ .id
 
+@[rocq_alias solver.coerce_f]
 theorem eqToHom_up {k k'} {x : A F k} (e : k = k') :
     eqToHom (congrArg Nat.succ e) (up F k x) = up F k' (eqToHom e x) := by
   cases e; rfl
 
+@[rocq_alias solver.g_coerce]
 theorem down_eqToHom {k k'} {x : A F (k+1)} (e : k = k') :
     down F k' (eqToHom (congrArg Nat.succ e) x) = eqToHom e (down F k x) := by
   cases e; rfl
@@ -155,8 +157,6 @@ def embed : A F k -n> A F i :=
 #rocq_ignore solver.embed_ne "Implicit in `embed`'s `-n>` return type"
 #rocq_ignore solver.coerce_proper "Derived from nonexpansivity"
 #rocq_ignore solver.coerce_id "Trivial unfolding lemma; definitional in Lean."
-#rocq_ignore solver.coerce_f "Use eqToHom_up"
-#rocq_ignore solver.g_coerce "Use down_eqToHom"
 #rocq_ignore solver.ff_ff "Local helper; folded into Tower.embed_up/Tower.embed_self proofs."
 #rocq_ignore solver.gg_gg "Local helper; folded into Tower.embed_up/Tower.embed_self proofs."
 #rocq_ignore solver.g_embed_coerce "Local helper; folded into Tower.embed."
@@ -296,7 +296,7 @@ def Tower.iso : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
 end Fix.Impl
 open Fix.Impl
 
-#rocq_ignore solver.result "Returns the ignored `solution F` bundle; the carrier is `Fix F`, with `Inhabited`/`COFE`/`Fix.iso` provided separately."
+#rocq_ignore solver.result "Use `Fix F` with separate Inhabited/COFE instances and `Fix.iso`."
 
 variable (F) in
 def Fix : Type u := Tower F

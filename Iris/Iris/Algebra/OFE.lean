@@ -210,7 +210,7 @@ export OFE.Discrete (discrete)
 
 instance Discrete.toDiscreteE [OFE α] [Discrete α] (x : α) : DiscreteE x := ⟨discrete_0⟩
 
-#rocq_ignore discrete_dist "Local Dist instance for the discrete OFE construction; folded into Lean's discreteO/Leibniz OFE instances."
+#rocq_ignore discrete_dist "Local Dist instance; folded into Lean's discreteO instance."
 
 /-- For discrete OFEs, `n`-equivalence implies equivalence for any `n`. -/
 theorem Discrete.discrete_n [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{0}≡ y) : x ≡{n}≡ y :=
@@ -366,7 +366,6 @@ instance [OFE α] : OFE (Option α) where
 #rocq_ignore option_mbind_ne "Derived from nonexpansivity"
 #rocq_ignore option_mjoin_ne "Derived from nonexpansivity"
 #rocq_ignore from_option_ne "Derived from nonexpansivity"
-#rocq_ignore Some_dist_inj "Use Option.some_dist_some"
 
 @[rocq_alias option_ofe_discrete]
 instance [OFE α] [OFE.Discrete α] : OFE.Discrete (Option α) where
@@ -381,7 +380,7 @@ instance [OFE α] [OFE.Discrete α] : OFE.Discrete (Option α) where
 @[simp] theorem not_some_eqv_none [OFE α] {x : α} : ¬some x ≡ none := id
 @[simp] theorem not_none_eqv_some [OFE α] {x : α} : ¬none ≡ some x := id
 
-@[simp, rocq_alias dist_Some]
+@[simp, rocq_alias dist_Some, rocq_alias Some_dist_inj]
 theorem some_dist_some [OFE α] {n} {x y : α} : (some x ≡{n}≡ some y) ↔ x ≡{n}≡ y := .rfl
 @[simp] theorem not_some_dist_none [OFE α] {n} {x : α} : ¬some x ≡{n}≡ none := id
 @[simp] theorem not_none_dist_some [OFE α] {n} {x : α} : ¬none ≡{n}≡ some x := id
@@ -530,7 +529,6 @@ instance [OFE α] [OFE β] : OFE (α × β) where
 #rocq_ignore prod_dist "Implicit in Prod OFE"
 #rocq_ignore pair_dist_inj "Use projections"
 #rocq_ignore pair_ne "Derived from nonexpansivity"
-#rocq_ignore prod_map_ne "Derived from nonexpansivity"
 #rocq_ignore prodO_map_ne "Derived from nonexpansivity"
 
 theorem equiv_fst [OFE α] [OFE β] {x y : α × β} (h : x ≡ y) : x.fst ≡ y.fst := h.left
@@ -622,7 +620,6 @@ instance : OFE (α ⊕ β) where
     | .inr _, .inl _ => (False.elim ·)
 #rocq_ignore sumO "Use sum type"
 #rocq_ignore sum_dist "Local Dist instance; folded into Lean's OFE (α ⊕ β) instance."
-#rocq_ignore sum_map_ne "Derived from nonexpansivity"
 #rocq_ignore sumO_map_ne "Derived from nonexpansivity"
 
 theorem equiv_inl {x y : α} (h : x ≡ y) : (.inl x : α ⊕ β) ≡ .inl y := h
@@ -1246,6 +1243,7 @@ open COFE
 
 variable [OFE A] [OFE A'] [OFE B] [OFE B']
 
+@[rocq_alias prod_map_ne]
 instance instNonExpansiveProdMap (f : A → A') (g : B → B') [NonExpansive f] [NonExpansive g] :
     NonExpansive (Prod.map f g) where
   ne _ _ _ H := by
@@ -1296,6 +1294,7 @@ open COFE
 
 variable [OFE A] [OFE A'] [OFE B] [OFE B']
 
+@[rocq_alias sum_map_ne]
 instance instNonExpansiveSumMap (f : A → A') (g : B → B') [NonExpansive f] [NonExpansive g] :
     NonExpansive (Sum.map f g) where
   ne _ x y H := match x, y with
