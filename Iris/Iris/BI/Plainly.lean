@@ -696,7 +696,6 @@ instance bigSepM_plain {K} [DecidableEq K] {M A} [ι : LawfulFiniteMap M K] (Φ 
         _  ⊢ ■ [∗map] k ↦ x ∈ m₁, Φ k x := H
         _ ⊣⊢ ■ [∗map] k ↦ x ∈ m₂, Φ k x := .ofMono plainly_mono <| BI.equiv_iff.1 h
     case hemp =>
-      rw [show empty = ∅ from rfl]
       simp only [Algebra.BigOpM.bigOpM_empty, plain]
     case hins k v m get?_m_k IH=>
       calc iprop([∗map] k ↦ x ∈ Std.insert m k v, Φ k x)
