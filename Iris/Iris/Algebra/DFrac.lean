@@ -107,16 +107,18 @@ instance own_whole_exclusive : CMRA.Exclusive (α := DFrac) (own 1) where
     rintro (y|_|y) <;> simp only [CMRA.ValidN, valid, CMRA.op, op] <;>
       first | (have := y.2; grind) | grind
 
-instance one_exclusive_left [CMRA V] {v : V} : CMRA.Exclusive (own (1 : Qp), v) where
+instance one_exclusive_left [CMRA V] {v : V} : CMRA.Exclusive (own (One.one : Qp), v) where
   exclusive0_l := by
     refine fun ⟨y1, _⟩ ⟨Hv1, _⟩ => ?_
+    have h1 : (One.one : Qp).val = 1 := rfl
     rcases y1 with (y|_|y) <;>
       simp only [CMRA.ValidN, CMRA.op, op, valid] at Hv1 <;>
       first | (have := y.2; grind) | grind
 
-instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (1 : Qp)) where
+instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (One.one : Qp)) where
   exclusive0_l := by
     refine fun ⟨_, y2⟩ ⟨_, Hv2⟩ => ?_
+    have h1 : (One.one : Qp).val = 1 := rfl
     rcases y2 with (y|_|y) <;>
       simp only [CMRA.ValidN, CMRA.op, op, valid] at Hv2 <;>
       first | (have := y.2; grind) | grind

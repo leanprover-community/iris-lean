@@ -26,10 +26,10 @@ namespace ExclAuth
 variable [OFE A]
 
 @[rocq_alias excl_authR]
-public abbrev ExclAuthR := Auth PNat (Option (Excl A))
+public abbrev ExclAuthR := Auth (Option (Excl A))
 
 @[rocq_alias excl_authUR]
-public abbrev ExclAuthUR := Auth PNat (Option (Excl A))
+public abbrev ExclAuthUR := Auth (Option (Excl A))
 
 @[rocq_alias excl_auth_auth]
 public abbrev auth (a : A) : ExclAuthR (A := A) := ● (some (excl a))
@@ -102,11 +102,11 @@ theorem update {a b a' : A} : ((●E a) • ◯E b) ~~> ((●E a') • ◯E a') 
 
 @[rocq_alias excl_authURF]
 abbrev ExclAuthURF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
-  AuthURF (F := PNat) (OptionOF (ExclOF T))
+  AuthURF (OptionOF (ExclOF T))
 
 @[rocq_alias excl_authRF]
 abbrev ExclAuthRF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
-  AuthRF (F := PNat) (OptionOF (ExclOF T))
+  AuthRF (OptionOF (ExclOF T))
 
 end ExclAuth
 end Iris

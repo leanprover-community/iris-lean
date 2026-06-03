@@ -77,11 +77,9 @@ To implement this mechanism, we use three pieces of ghost state:
   as a premise).
 -/
 
-variable (F: outParam (Type _)) [UFraction F]
-
 class genHeapPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)
     [Std.LawfulFiniteMap H L] where
-  heap : GhostMapG GF F L V H
+  heap : GhostMapG GF L V H
   -- TODO: `meta` field blocked by `reservation_mapR`
   -- TODO: `metaData` field blocked by `reservation_mapR`
 
@@ -90,7 +88,7 @@ attribute [instance] GhostMapG.elem
 
 class genHeapGS (L V : outParam <| Type _) (GF : outParam <| BundledGFunctors)
     (H : outParam <| Type _ → Type _) [Std.LawfulFiniteMap H L]
-    extends genHeapPreS F L V GF H where
+    extends genHeapPreS L V GF H where
   heapName : GName
   -- TODO: Metadata not supported yet
 
@@ -101,14 +99,13 @@ section definitions
 
 variable {GF : BundledGFunctors} {L V : Type _}
 variable {H : outParam <| Type _ → Type _} [Std.LawfulFiniteMap H L]
-variable {F: outParam (Type _)} [UFraction F]
-variable [genHeapGS F L V GF H]
+variable [genHeapGS L V GF H]
 
 open Std.FiniteMap genHeapGS
 
 def genHeapInterp (σ : H V) : IProp GF := heapName ↪●MAP σ
 
-def pointsTo (l : L) (dq : DFrac F)(v : V) : IProp GF := heapName ↪◯MAP[l]{dq} v
+def pointsTo (l : L) (dq : DFrac)(v : V) : IProp GF := heapName ↪◯MAP[l]{dq} v
 
 notation l " ↦{" dq "} " v => pointsTo l dq v
 notation l " ↦ " v => pointsTo l (DFrac.own 1) v
@@ -117,9 +114,9 @@ end definitions
 
 section lemmas
 
-variable {F: outParam (Type _)} [UFraction F]  {GF : BundledGFunctors}
+variable {GF : BundledGFunctors}
 variable {L V : Type _} {H : outParam <| Type _ → Type _} [Std.LawfulFiniteMap H L]
-variable [genHeapGS F L V GF H]
+variable [genHeapGS L V GF H]
 
 open genHeapGS
 

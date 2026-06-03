@@ -21,17 +21,17 @@ section HeapLangGS
 abbrev HeapF := fun V => Std.ExtTreeMap Loc V compare
 
 class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGpreS GF where
-  heap_pre : genHeapPreS PNat Loc (Option Val) GF HeapF
+  heap_pre : genHeapPreS Loc (Option Val) GF HeapF
 
 attribute [reducible, instance] HeapLangGpreS.heap_pre
 
 class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGS_gen hlc GF where
-  heap : genHeapGS PNat Loc (Option Val) GF HeapF
+  heap : genHeapGS Loc (Option Val) GF HeapF
 
 attribute [reducible, instance] HeapLangGS.heap
 
 instance HeapLangState [HeapLangGS hlc GF] : StateInterp State Observation GF where
-  stateInterp σ _ _ _ := genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap
+  stateInterp σ _ _ _ := genHeapInterp (GF := GF) (H := HeapF) σ.heap
 
 instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
   numLatersPerStep n := 0

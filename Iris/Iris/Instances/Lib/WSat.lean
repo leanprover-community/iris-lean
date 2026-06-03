@@ -30,7 +30,7 @@ abbrev PosSet := Std.ExtTreeSet Pos compare
 
 abbrev InvMap (x : Type _) := Std.ExtTreeMap Pos x compare
 
-abbrev InvMapF := HeapViewURF (F := PNat) (H := InvMap) (AgreeRF (LaterOF IdOF))
+abbrev InvMapF := HeapViewURF (H := InvMap) (AgreeRF (LaterOF IdOF))
 
 /-- Wsat inclusion typeclass (`GF` contains the necessary functors for wsat) -/
 @[rocq_alias wsatGS.wsatGpreS]
@@ -203,7 +203,7 @@ theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
   iintro H
   ihave H := iOwn_cmraValid_op $$ H
   ihave ⟨%v', %dp', %Hdp, %Hlookup, H1, H2⟩ :=
-    (auth_op_frag_validI_total (F := PNat)
+    (auth_op_frag_validI_total
       (own 1) (map toAgree (map invariant_unfold I))) $$ H
   simp only [get?_map, Option.map_map, Option.map_eq_some_iff, Function.comp_apply] at Hlookup
   have ⟨Q', Hget, Hagree⟩ := Hlookup

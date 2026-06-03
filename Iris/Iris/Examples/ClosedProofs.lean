@@ -40,7 +40,7 @@ noncomputable def GF : BundledGFunctors := fun n =>
   | 0  => ⟨InvMapF, by infer_instance⟩
   | 1  => ⟨constOF (DisjointLeibnizSet CoPset), by infer_instance⟩
   | 2  => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
-  | 3  => ⟨AuthURF (F := PNat) (constOF Credit), by infer_instance⟩
+  | 3  => ⟨AuthURF (constOF Credit), by infer_instance⟩
   | _  => ⟨constOF Unit, by infer_instance⟩
 
 instance : WsatGpreS GF where
