@@ -43,6 +43,7 @@ scoped notation "◯E " a => ExclAuth.frag a
 @[rocq_alias excl_auth_auth_ne]
 instance auth_ne : NonExpansive (auth (A := A)) where
   ne _ _ _ h := Auth.auth_ne.ne (some_dist_some.mpr h)
+
 #rocq_ignore excl_auth_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
 
 @[rocq_alias excl_auth_frag_ne]

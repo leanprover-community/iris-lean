@@ -53,11 +53,13 @@ instance frac_one_exclusive (b : A) : Exclusive (fracOne (F := F), b) where
 @[rocq_alias frac_auth_auth_ne]
 instance auth_ne {dq : DFrac F} : NonExpansive (auth dq : A → FracAuth) where
   ne _ _ _ h := Auth.auth_ne.ne ⟨.rfl, h⟩
+
 #rocq_ignore frac_auth_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
 
 @[rocq_alias frac_auth_frag_ne]
 instance frag_ne {q : Frac F} : NonExpansive (frag q : A → FracAuth) where
   ne _ _ _ h := Auth.frag_ne.ne ⟨.rfl, h⟩
+
 #rocq_ignore frac_auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
 
 /-! ## Discrete instances -/
@@ -127,7 +129,7 @@ theorem included [CMRA.Discrete A] {dq : DFrac F} {a b : A} (h : ✓ (●F{dq} a
 @[rocq_alias frac_auth_includedN_total]
 theorem includedN_total [IsTotal A] {dq : DFrac F} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
     b ≼{n} a :=
-  some_incN_some_iff_isTotal.mp (includedN h)
+  some_incN_some_iff_is_total.mp (includedN h)
 
 @[rocq_alias frac_auth_included_total]
 theorem included_total [CMRA.Discrete A] [IsTotal A] {dq : DFrac F} {a b : A}

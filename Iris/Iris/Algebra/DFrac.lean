@@ -26,8 +26,9 @@ inductive DFrac (F : Type _) where
 | discard : DFrac F
 /-- Ownership of `F` plus knowledge that a fraction has been discarded. -/
 | ownDiscard (f : F) : DFrac F
-#rocq_ignore DfracOwn_inj "Lean inductive constructors are automatically injective"
-#rocq_ignore DfracBoth_inj "Lean inductive constructors are automatically injective"
+
+#rocq_ignore DfracOwn_inj "Not needed"
+#rocq_ignore DfracBoth_inj "Not needed"
 
 @[simp] instance : COFE (DFrac F) := COFE.ofDiscrete _ Eq_Equivalence
 instance : OFE.Leibniz (DFrac F) := ⟨(·)⟩
@@ -64,12 +65,12 @@ def op : DFrac F → DFrac F → DFrac F
   | ownDiscard f, own f'
   | ownDiscard f, ownDiscard f' => ownDiscard (f + f')
 
-#rocq_ignore dfracR "Use DFrac type with typeclass inference"
 #rocq_ignore dfrac_op_instance "Use CMRA instance"
 #rocq_ignore dfrac_pcore_instance "Use CMRA instance"
 #rocq_ignore dfrac_valid_instance "Use CMRA instance"
+#rocq_ignore dfrac_ra_mixin "Not needed"
 
-@[rocq_alias dfrac_ra_mixin]
+@[rocq_alias dfracR]
 instance DFrac_CMRA : CMRA (DFrac F) where
   pcore := pcore
   op := op

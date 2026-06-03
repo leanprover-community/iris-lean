@@ -621,11 +621,11 @@ instance si_emp_valid_plain (P : PROP) : Plain (siEmpValid P) where
   plain := .rfl
 
 @[rocq_alias big_sepL_nil_plain]
-instance big_sepL_nil_plain {A} (Φ : Nat → A → PROP) :
+instance bigSepL_nil_plain {A} (Φ : Nat → A → PROP) :
    Plain ([∗list] k ↦ x ∈ [], Φ k x) := inferInstanceAs (Plain iprop(emp))
 
 @[rocq_alias big_sepL_plain]
-instance big_sepL_plain {A} (Φ : Nat → A → PROP) l [h : ∀ k x, Plain (Φ k x)] :
+instance bigSepL_plain {A} (Φ : Nat → A → PROP) l [h : ∀ k x, Plain (Φ k x)] :
      Plain ([∗list] k ↦ x ∈ l, Φ k x) where
   plain := by
    induction l generalizing Φ with
@@ -635,11 +635,11 @@ instance big_sepL_plain {A} (Φ : Nat → A → PROP) l [h : ∀ k x, Plain (Φ 
      exact sep_plain _ _ |>.plain
 
 @[rocq_alias big_andL_nil_plain]
-instance big_andL_nil_plain {A} (Φ : Nat → A → PROP) :
+instance bigAndL_nil_plain {A} (Φ : Nat → A → PROP) :
    Plain ([∧list] k ↦ x ∈ [], Φ k x) := inferInstanceAs (Plain iprop(True))
 
 @[rocq_alias big_andL_plain]
-instance big_andL_plain {A} (Φ : Nat → A → PROP) l [h : ∀ k x, Plain (Φ k x)] :
+instance bigAndL_plain {A} (Φ : Nat → A → PROP) l [h : ∀ k x, Plain (Φ k x)] :
    Plain ([∧list] k ↦ x ∈ l, Φ k x) where
    plain := by
     induction l generalizing Φ with
@@ -649,11 +649,11 @@ instance big_andL_plain {A} (Φ : Nat → A → PROP) l [h : ∀ k x, Plain (Φ 
       apply and_plain _ _ |>.plain
 
 @[rocq_alias big_orL_nil_plain]
-instance big_orL_nil_plain {A} (Φ : Nat → A → PROP) :
+instance bigOrL_nil_plain {A} (Φ : Nat → A → PROP) :
    Plain ([∨list] k ↦ x ∈ [], Φ k x) := inferInstanceAs (Plain iprop(False))
 
 @[rocq_alias big_orL_plain]
-instance big_orL_plain {A} (Φ : Nat → A → PROP) l [h : ∀ k x, Plain (Φ k x)] :
+instance bigOrL_plain {A} (Φ : Nat → A → PROP) l [h : ∀ k x, Plain (Φ k x)] :
    Plain ([∨list] k ↦ x ∈ l, Φ k x) where
    plain := by
     induction l generalizing Φ with
@@ -676,21 +676,21 @@ instance bigSepL2_plain {A B} (Φ : Nat → A → B → PROP) l1 l2 [h : ∀ k x
     refine (plainly_mono BigSepL2.bigSepL2_alt.2)
 
 @[rocq_alias big_sepM_empty_plain]
-instance  bigSepM_empty_plain {K} [Pos.Countable K] {M A} [LawfulFiniteMap M K] (Φ : K → A → PROP) :
+instance bigSepM_empty_plain {K} [Pos.Countable K] {M A} [LawfulFiniteMap M K] (Φ : K → A → PROP) :
     Plain ([∗map] k↦x ∈ (∅ : M A), Φ k x) where
   plain := by
     simp only [Algebra.BigOpM.bigOpM_empty]
     apply plain
 
 @[rocq_alias big_sepM_plain]
-instance  bigSepM__plain {K} [DecidableEq K] {M A} [ι : LawfulFiniteMap M K] (Φ : K → A → PROP)
+instance bigSepM_plain {K} [DecidableEq K] {M A} [ι : LawfulFiniteMap M K] (Φ : K → A → PROP)
   (m : M A) [h : ∀ k x, Plain (Φ k x)] :
     Plain ([∗map] k↦x ∈ m, Φ k x) where
   plain := by
     induction m using Iris.Std.LawfulFiniteMap.induction_on
     case hequiv m₁ m₂ m₁m₂ H =>
       have h : iprop([∗map] k ↦ x ∈ m₁, Φ k x) ≡ [∗map] k ↦ x ∈ m₂, Φ k x :=
-          Algebra.BigOpM.bigOpM_equiv_of_perm (M' := M) _ m₁m₂
+          Algebra.BigOpM.bigOpM_eqv_of_perm (M' := M) _ m₁m₂
       calc iprop([∗map] k ↦ x ∈ m₂, Φ k x)
         _ ⊣⊢ [∗map] k ↦ x ∈ m₁, Φ k x := BI.equiv_iff.1 h |>.symm
         _  ⊢ ■ [∗map] k ↦ x ∈ m₁, Φ k x := H
@@ -701,13 +701,13 @@ instance  bigSepM__plain {K} [DecidableEq K] {M A} [ι : LawfulFiniteMap M K] (�
     case hins k v m get?_m_k IH=>
       calc iprop([∗map] k ↦ x ∈ Std.insert m k v, Φ k x)
         _ ⊣⊢ Φ k v ∗ [∗map] k ↦ x ∈  m, Φ k x :=
-            BI.equiv_iff.1 (Algebra.BigOpM.bigOpM_insert_equiv _ _ get?_m_k)
+            BI.equiv_iff.1 (Algebra.BigOpM.bigOpM_insert_eqv _ _ get?_m_k)
         _  ⊢ ■ Φ k v ∗ ■ [∗map] k ↦ x ∈  m, Φ k x :=
           sep_mono (h k v |>.plain) IH
         _  ⊢ ■ (Φ k v ∗ [∗map] k ↦ x ∈  m, Φ k x) := plainly_sep_2
         _ ⊣⊢ ■ [∗map] k ↦ x ∈ Std.insert m k v, Φ k x :=
           .ofMono plainly_mono <|
-            BI.equiv_iff.1 (Algebra.BigOpM.bigOpM_insert_equiv _ _ get?_m_k) |>.symm
+            BI.equiv_iff.1 (Algebra.BigOpM.bigOpM_insert_eqv _ _ get?_m_k) |>.symm
 
 open Algebra in
 @[rocq_alias big_sepS_empty_plain]

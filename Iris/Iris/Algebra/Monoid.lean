@@ -33,8 +33,8 @@ class MonoidOps {M : Type u} [OFE M] (op : M → M → M) (unit : outParam M) wh
   /-- Left identity up to equivalence -/
   op_left_id : ∀ {a : M}, op unit a ≡ a
 
-#rocq_ignore MonoidOps "Rocq's MonoidOps is a stub class; Lean's MonoidOps carries the laws (aliased as Monoid)."
-#rocq_ignore monoid_ops "Folded into Lean's MonoidOps typeclass"
+#rocq_ignore MonoidOps "Not needed"
+#rocq_ignore monoid_ops "Not needed"
 
 namespace MonoidOps
 
@@ -49,7 +49,7 @@ theorem op_proper [MonoidOps op unit] (ha : a ≡ a') (hb : b ≡ b') :
     op a b ≡ op a' b' := NonExpansive₂.eqv ha hb
 
 /-- Right identity follows from commutativity and left identity. -/
-@[rocq_alias monoid_right_id, simp]
+@[simp, rocq_alias monoid_right_id]
 theorem op_right_id [MonoidOps op unit] : op a unit ≡ a :=
   op_comm.trans op_left_id
 
@@ -105,7 +105,12 @@ class WeakMonoidHomomorphism {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M�
   map_ne : NonExpansive f
   /-- The homomorphism property -/
   map_op : ∀ {x y}, R (f (op₁ x y)) (op₂ (f x) (f y))
-#rocq_ignore weak_monoid_homomorphism_proper "Derived from nonexpansivity"
+
+@[rocq_alias weak_monoid_homomorphism_proper]
+theorem weak_monoid_homomorphism_equiv [ OFE M₁] [OFE M₂]
+  [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂] (f : M₁ → M₂)
+  [h : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f] {x y} :
+    (x ≡ y) → f x ≡ f y := fun e => h.map_ne.eqv e
 
 /-- A monoid homomorphism preserves both the operation and the unit. -/
 @[rocq_alias MonoidHomomorphism]

@@ -89,7 +89,6 @@ instance [Fraction α] : Coe α (Frac α) := ⟨(⟨·⟩)⟩
 @[simp] instance [Fraction α] : Add (Frac α) := ⟨fun x y => x.1 + y.1⟩
 instance : Leibniz (Frac α) := inferInstanceAs (Leibniz (LeibnizO α))
 
-#rocq_ignore fracR "Use Frac type with typeclass inference"
 #rocq_ignore frac_op_instance "Use CMRA instance"
 #rocq_ignore frac_pcore_instance "Use CMRA instance"
 #rocq_ignore frac_valid_instance "Use CMRA instance"
@@ -97,8 +96,10 @@ instance : Leibniz (Frac α) := inferInstanceAs (Leibniz (LeibnizO α))
 def Frac.half {α} [Fraction α] [h : IsHalfFraction α]
   (q : Frac α) : Frac α := ⟨h.half q.car⟩
 
-@[rocq_alias frac_ra_mixin]
-instance Frac_CMRA [Fraction α] : CMRA (Frac α) where
+#rocq_ignore frac_ra_mixin "Not needed"
+
+@[rocq_alias fracR]
+instance frac_cmra [Fraction α] : CMRA (Frac α) where
   pcore _ := none
   op := Add.add
   ValidN _ x := Proper x.1
@@ -117,21 +118,21 @@ instance Frac_CMRA [Fraction α] : CMRA (Frac α) where
   extend {_ _ y1 y2} _ _ := by exists y1; exists y2
 
 @[rocq_alias frac_cmra_discrete]
-instance Frac_CMRA_Discrete [Fraction α] : CMRA.Discrete (Frac α) where
+instance frac_cmra_discrete [Fraction α] : CMRA.Discrete (Frac α) where
   discrete_0 := id
   discrete_valid := id
 
-instance Frac_whole_exclusive [Fraction α] [CMRA α] {a : Frac α} (Hw : Whole a.1) : Exclusive a where
+instance frac_whole_exclusive [Fraction α] [CMRA α] {a : Frac α} (Hw : Whole a.1) : Exclusive a where
   exclusive0_l _ Hk := (not_exists.mp Hw.2) _ Hk
 
 @[rocq_alias frac_cancelable]
-instance Frac_Cancelable [Fraction α] {a : Frac α} : CMRA.Cancelable a where
+instance frac_cancelable [Fraction α] {a : Frac α} : CMRA.Cancelable a where
   cancelableN {n x y} _ (H : a • x = a • y) := by
     refine Dist.of_eq <| LeibnizO.ext <| add_left_cancel (a := a.car) <| ?_
     exact LeibnizO.eqv_inj H
 
 @[rocq_alias frac_id_free]
-instance Frac_IdFree [Fraction α] {a : Frac α} : CMRA.IdFree a where
+instance frac_id_free [Fraction α] {a : Frac α} : CMRA.IdFree a where
   id_free0_r b _ H := by
     suffices (b + a).car = a.car from add_ne this.symm
     refine LeibnizO.ext_iff.mp (Leibniz.eq_of_eqv (α := Frac _) ?_)
@@ -167,8 +168,8 @@ class UFraction (α : Type _) extends Fraction α, One α where
 theorem Frac.valid_one [UFraction α] : CMRA.Valid (α := Frac α) ⟨1⟩ := UFraction.one_whole.1
 
 @[rocq_alias frac_full_exclusive]
-instance Frac_one_exclusive [UFraction α] [CMRA α] : Exclusive (α := Frac α) ⟨1⟩ :=
-  Frac_whole_exclusive UFraction.one_whole
+instance Frac.one_exclusive [UFraction α] [CMRA α] : Exclusive (α := Frac α) ⟨1⟩ :=
+  frac_whole_exclusive UFraction.one_whole
 
 section NumericFraction
 

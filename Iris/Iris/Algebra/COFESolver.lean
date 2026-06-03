@@ -10,7 +10,7 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
-#rocq_ignore solution "Use `OFE.Iso (F (Fix F) (Fix F)) (Fix F)` (Fix.iso) with separate Inhabited/COFE instances."
+#rocq_ignore solution "Use OFE.iso + Inhabited + COFE."
 
 namespace Iris.COFE.OFunctor
 open OFE
@@ -40,12 +40,14 @@ mutual
 def up : ∀ k, A F k -n> A F (k+1)
   | 0 => ⟨fun _ => inh.default, ⟨fun _ _ _ _ => .rfl⟩⟩
   | k+1 => map (down k) (up k)
+-- rocq_alias solver.g
 def down : ∀ k, A F (k+1) -n> A F k
   | 0 => ⟨fun _ => ⟨()⟩, ⟨fun _ _ _ _ => .rfl⟩⟩
   | k+1 => map (up k) (down k)
 end
-#rocq_ignore solver.f_S "Trivial unfolding lemma; definitional in Lean."
-#rocq_ignore solver.g_S "Trivial unfolding lemma; definitional in Lean."
+
+#rocq_ignore solver.f_S "Not needed"
+#rocq_ignore solver.g_S "Not needed"
 
 @[rocq_alias solver.gf]
 theorem down_up : ∀ {k} x, down F k (up F k x) ≡ x
@@ -61,13 +63,14 @@ theorem up_down {k} (x) : up F (k+1) (down F (k+1) x) ≡{k}≡ x := by
   | k+1 => map_contractive.succ (x := (_, _)) (y := (_, _)) _ ⟨up_down, up_down⟩ _
 
 variable (F) in
-@[ext, rocq_alias solver.T, rocq_alias solver.tower]
+@[ext, rocq_alias solver.tower]
 structure Tower : Type u where
   val k : A F k
   protected down {k} : down F k (val (k+1)) ≡ val k
 
 instance : CoeFun (Tower F) (fun _ => ∀ k, A F k) := ⟨Tower.val⟩
 
+@[rocq_alias solver.T]
 instance : OFE (Tower F) where
   Equiv f g := ∀ k, f k ≡ g k
   Dist n f g := ∀ k, f k ≡{n}≡ g k
@@ -78,9 +81,10 @@ instance : OFE (Tower F) where
   }
   equiv_dist {_ _} := by simp [equiv_dist]; apply forall_comm
   dist_lt h1 h2 _ := dist_lt (h1 _) h2
-#rocq_ignore solver.tower_equiv "Local Equiv instance; folded into Lean's OFE (Tower F) instance."
-#rocq_ignore solver.tower_dist "Local Dist instance; folded into Lean's OFE (Tower F) instance."
-#rocq_ignore solver.tower_ofe_mixin "Lean uses the OFE type class directly; mixin/bundle separation is unnecessary."
+
+#rocq_ignore solver.tower_equiv "Included in OFE (Tower F) instance"
+#rocq_ignore solver.tower_dist "Included in OFE (Tower F) instance"
+#rocq_ignore solver.tower_ofe_mixin "Not needed"
 
 @[rocq_alias solver.tower_chain]
 def towerChain (c : Chain (Tower F)) (k : Nat) : Chain (A F k) where
@@ -94,9 +98,10 @@ instance : COFE (Tower F) where
     refine ((down ..).ne.1 conv_compl).trans <| .trans ?_ conv_compl.symm
     exact (c.chain n).down.dist
   conv_compl _ := conv_compl
-#rocq_ignore solver.tower_cofe "Local helper; folded into Lean's IsCOFE instance."
-#rocq_ignore solver.tower_compl "Local Compl definition; folded into Lean's IsCOFE instance."
-#rocq_ignore solver.tower_car_ne "Implicit in unnamed `NonExpansive` instance on `Tower.val`"
+
+#rocq_ignore solver.tower_cofe "Use IsCOFE instance"
+#rocq_ignore solver.tower_compl "Use IsCOFE instance"
+#rocq_ignore solver.tower_car_ne "Use NonExpansive instance"
 
 variable (F) in
 @[rocq_alias solver.ff]
@@ -154,14 +159,12 @@ theorem down_eqToHom {k k'} {x : A F (k+1)} (e : k = k') :
 def embed : A F k -n> A F i :=
   if h : k ≤ i then (eqToHom (Nat.add_sub_cancel' h)).comp (upN ..)
   else (downN ..).comp (eqToHom (Nat.add_sub_cancel' (Nat.le_of_not_ge h)).symm)
-#rocq_ignore solver.embed_ne "Implicit in `embed`'s `-n>` return type"
-#rocq_ignore solver.coerce_proper "Derived from nonexpansivity"
-#rocq_ignore solver.coerce_id "Trivial unfolding lemma; definitional in Lean."
-#rocq_ignore solver.ff_ff "Local helper; folded into Tower.embed_up/Tower.embed_self proofs."
-#rocq_ignore solver.gg_gg "Local helper; folded into Tower.embed_up/Tower.embed_self proofs."
-#rocq_ignore solver.g_embed_coerce "Local helper; folded into Tower.embed."
 
-@[rocq_alias solver.embed', rocq_alias solver.embed]
+#rocq_ignore solver.coerce_id "Not needed"
+#rocq_ignore solver.coerce_proper "Inlined in embed"
+#rocq_ignore solver.embed_ne "Implicit in embed"
+
+@[rocq_alias solver.embed]
 protected def Tower.embed (k) : A F k -n> Tower F := by
   refine ⟨fun n => ⟨fun _ => embed n, fun {i} => ?_⟩, ⟨fun _ _ _ h _ => embed.ne.1 h⟩⟩
   dsimp [embed]; split <;> rename_i h₁
@@ -296,7 +299,7 @@ def Tower.iso : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
 end Fix.Impl
 open Fix.Impl
 
-#rocq_ignore solver.result "Use `Fix F` with separate Inhabited/COFE instances and `Fix.iso`."
+#rocq_ignore solver.result "Use `Fix F` with Inhabited + COFE instances and Fix.iso"
 
 variable (F) in
 def Fix : Type u := Tower F

@@ -18,7 +18,6 @@ section excl
 inductive Excl α where
   | excl : α → Excl α
   | invalid : Excl α
-#rocq_ignore maybe_Excl "Use pattern matching or `getD`"
 
 namespace Excl
 open OFE
@@ -46,9 +45,9 @@ theorem dist_eqv [OFE α] {n} : Equivalence (Excl.Dist (α := α) n) where
     cases x <;> cases y <;> cases z <;> try trivial
     exact Dist.trans h₁ h₂
 
-#rocq_ignore exclO "Use Excl type with typeclass inference"
+#rocq_ignore excl_ofe_mixin "Not needed"
 
-@[rocq_alias excl_ofe_mixin]
+@[rocq_alias exclO]
 instance [OFE α] : OFE (Excl α) where
   Equiv := Excl.Equiv
   Dist := Excl.Dist
@@ -133,13 +132,13 @@ instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
   | excl _ => True
   | invalid => False
 
-#rocq_ignore exclR "Use Excl type with typeclass inference"
 #rocq_ignore excl_op_instance "Use CMRA instance"
 #rocq_ignore excl_pcore_instance "Use CMRA instance"
 #rocq_ignore excl_validN_instance "Use CMRA instance"
 #rocq_ignore excl_valid_instance "Use CMRA instance"
+#rocq_ignore excl_cmra_mixin "Not needed"
 
-@[rocq_alias excl_cmra_mixin]
+@[rocq_alias exclR]
 instance [OFE α] : CMRA (Excl α) where
   pcore _ := none
   op _ _ := invalid
