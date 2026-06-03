@@ -122,13 +122,6 @@ theorem fupd_full_fupd [IrisGS_gen hlc Exp GF]{P : IProp GF} :
   · apply fupd_elim;
     refine fupd_intro.trans fupd_intro
 
-meta def _root_.Lean.MVarId.trySolveWith (mvarId : MVarId) (tac : TacticM α) : TacticM α := do
-  let savedGoals ← getGoals
-  setGoals [mvarId]
-  let a ← tac
-  setGoals savedGoals
-  pure a
-
 elab "wp_pure" colGt focus:hl_exp : tactic => do
   let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
   let (focus_ctx, _) ← HeapLang.extractAllEctxItems focus
@@ -172,7 +165,6 @@ elab "wp_pure" colGt focus:hl_exp : tactic => do
     let pf := q(tac_wp_pure (ι := $ι) $inst $HΦ $instIntoLaterN $nextPf)
 
     mvar.assign pf
-    return ()
 
 macro "wp_pure" : tactic => `(tactic| wp_pure _)
 
