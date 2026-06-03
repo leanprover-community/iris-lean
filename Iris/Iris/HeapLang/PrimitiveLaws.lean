@@ -92,12 +92,11 @@ theorem wp_if_false {e1 e2 : Exp} :
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
 
--- TODO use hl syntax everywhere possible
-
-theorem wp_rec {f x : Binder} {e : Exp} {v : Val} :
-    ▷ WP ((e.subst f (.rec_ f x e)).subst x v) @ s; E {{ Φ }}
-    ⊢  WP (Exp.app (.val (.rec_ f x e)) v) @ s; E {{ Φ }} := by
-  iintro Hwp
+theorem wp_rec {f x : Binder} {e : Exp} {vf v : Val}
+    (h : vf = (.rec_ f x e)) :
+    ▷ WP ((e.subst f vf).subst x v) @ s; E {{ Φ }}
+    ⊢  WP hl(v({vf}) {v}) @ s; E {{ Φ }} := by
+  iintro Hwp; subst h
   iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
