@@ -83,9 +83,6 @@ example : ⊢@{IProp GF}  WP hl(#2 + (#1 + #2)) {{ v, True }} := by
 end wp_bind
 
 
--- TODO: Why is this not an `instance`?
-attribute [local instance] snd_pure
-
 /--
 error: unsolved goals
 hlc : HasLC
