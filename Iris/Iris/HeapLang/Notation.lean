@@ -150,6 +150,9 @@ syntax:100 "fork(" hl_exp  ")" : hl_exp
 /-- assert -/
 syntax:100 "assert(" hl_exp  ")" : hl_exp
 
+/-- holes -/
+syntax "_" : hl_exp
+
 open Lean.PrettyPrinter.Parenthesizer in
 @[category_parenthesizer hl_exp]
 def hl_exp.parenthesizer : CategoryParenthesizer := fun prec => do
@@ -191,6 +194,7 @@ macro_rules
 /-- elaborating expressions -/
 macro_rules
   | `(hl(($e))) => `(hl($e))
+  | `(hl(_)) => `(_)
   | `(hl({$t})) => pure t
   | `(hl(v($e))) => `(Exp.val hl_val($e))
   | `(hl(# $e)) => `(hl(v(# $e)))

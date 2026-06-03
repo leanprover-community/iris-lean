@@ -23,9 +23,9 @@ theorem wp_value_simp [IrisGS_gen hlc Exp GF]{s : Stuckness} {E : CoPset} {v : V
     (WP hl(v(v)) @ s; E {{ Φ }}) = iprop(|={E}=> Φ v) := by
   simp [wp_unfold.to_eq, wp.pre]
 
-elab "wp_bind" focus:term : tactic => do
+elab "wp_bind" focus:hl_exp : tactic => do
   -- TODO: Do we ask for a function or for a "pattern"?
-  let focus ← elabTermEnsuringTypeQ focus q(HeapLang.Exp)
+  let focus ← elabTermEnsuringTypeQ (←`(hl($focus))) q(HeapLang.Exp)
   trace[bind] s!"Context to bind over: {←ppExpr focus}"
   ProofModeM.runTactic fun mvar {u, prop, bi, hyps, goal, ..} => do
     let .defEq _ ← isLevelDefEqQ u 0

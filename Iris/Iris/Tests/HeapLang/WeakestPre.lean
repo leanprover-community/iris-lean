@@ -23,12 +23,12 @@ GF : BundledGFunctors
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
-  wp_bind hl((#0 + {_}) + {_})
+  wp_bind ((#0 + _) + _)
 
 /-- error: Couldn't unify hl((#2 + {?m.28})) with any possible evaluation context -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
-  wp_bind hl(#2 + {_})
+  wp_bind (#2 + _)
 
 /--
 error: unsolved goals
@@ -40,7 +40,7 @@ GF : BundledGFunctors
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
-  wp_bind hl({_} + #2)
+  wp_bind (_ + #2)
 
 /--
 error: unsolved goals
@@ -52,7 +52,7 @@ GF : BundledGFunctors
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
-  wp_bind hl(#0 + #1)
+  wp_bind (#0 + #1)
 
 /--
 error: unsolved goals
@@ -64,7 +64,7 @@ GF : BundledGFunctors
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(#2 + (#1 + #2)) {{ v, True }} := by
-  wp_bind hl(#2 + {_})
+  wp_bind (#2 + _)
 
 
 /--
@@ -77,6 +77,6 @@ GF : BundledGFunctors
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(#2 + (#1 + #2)) {{ v, True }} := by
-  wp_bind hl({_} + #2)
+  wp_bind (_ + #2)
 
 end wp_bind
