@@ -53,8 +53,8 @@ theorem DisjointLeibnizSet.mem_of_eqv [LawfulSet S A] {a b : DisjointLeibnizSet 
     (eqv : a ≡ b) (mx : x ∈ a) : x ∈ b :=
   match a, b with
   | .error, _ => False.elim mx
-  | .valid a, .error => by simp at eqv
-  | .valid a, .valid b => by simpa [← show _ = _ from eqv]
+  | .valid _, .error => by simp at eqv
+  | .valid _, .valid _ => by simpa [← show _ = _ from eqv]
 
 namespace DisjointLeibnizSet
 
@@ -127,14 +127,13 @@ theorem not_validN_invalid : ¬ ✓{n} (error : DisjointLeibnizSet S) := False.e
 theorem mem_iff_of_valid_union {x y : DisjointLeibnizSet S} (v : ✓ x • y) (a : A)
     : a ∈ x • y ↔ a ∈ x ∨ a ∈ y := by
   match x, y with
-  | error, _ => simp [CMRA.op] at v; exact v.elim
-  | _, error => simp [CMRA.op] at v; exact v.elim
+  | error, _ => exact v.elim
+  | _, error => simp only [op] at v; exact v.elim
   | valid x, valid y =>
-    if h : x ## y then
-      simp [CMRA.op, h]
+    by_cases h : x ## y
+    · simp only [op, h, ↓reduceIte]
       exact mem_union
-    else
-      simp [CMRA.op, h] at v; exact v.elim
+    · simp only [op, h, ↓reduceIte] at v; exact v.elim
 
 theorem mem_iff_of_validN_union {x y : DisjointLeibnizSet S} (v : ✓{n} x • y) (a : A)
     : a ∈ x • y ↔ a ∈ x ∨ a ∈ y := mem_iff_of_valid_union v a
@@ -171,11 +170,10 @@ theorem valid_inv_l {X : S} {Y : DisjointLeibnizSet S} :
 theorem not_mem_of_mem_and_valid_op_left {x y : DisjointLeibnizSet S} (v : ✓ x • y) {p : A} (m : p ∈ x)
     : ¬ p ∈ y := by
   intro h
-  have ⟨x', hx⟩ := exist_set_of_mem m
-  have ⟨y', hy⟩ := exist_set_of_mem h
-  have : ¬ x' ## y' := fun hh =>
-    hh p ⟨show p ∈ valid x' from hx ▸ m, show p ∈ valid y' from hy ▸ h⟩
-  exact absurd (valid_op_iff_disj.mp (hx ▸ hy ▸ v)) this
+  obtain ⟨x', hx⟩ := exist_set_of_mem m
+  obtain ⟨y', hy⟩ := exist_set_of_mem h
+  exact ((valid_op_iff_disj.mp (hx ▸ hy ▸ v)) p
+    ⟨show p ∈ valid x' from hx ▸ m, show p ∈ valid y' from hy ▸ h⟩).elim
 
 theorem not_mem_of_mem_and_valid_op_right {x y : DisjointLeibnizSet S}
   (v : ✓ x • y) {p : A} (m : p ∈ y)

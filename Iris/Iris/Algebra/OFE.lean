@@ -379,21 +379,15 @@ theorem some_dist_some [OFE α] {n} {x y : α} : (some x ≡{n}≡ some y) ↔ x
 @[simp] theorem not_some_dist_none [OFE α] {n} {x : α} : ¬some x ≡{n}≡ none := id
 @[simp] theorem not_none_dist_some [OFE α] {n} {x : α} : ¬none ≡{n}≡ some x := id
 
-instance [OFE α] {e : α} [OFE.DiscreteE e] : OFE.DiscreteE (some e) where
-  discrete {y} h :=
-    match y with
-    | .none => absurd h not_some_dist_none
-    | .some y => show e ≡ y from DiscreteE.discrete h
-
 theorem equiv_some [OFE α] {o : Option α} {y : α} (e : o ≡ some y) :
     ∃ z, o = some z ∧ z ≡ y := by
   let .some x := o
   exact ⟨x, rfl, e⟩
 
-@[rocq_alias dist_None]
 theorem equiv_none [OFE α] {o : Option α} : o ≡ none ↔ o = none :=
   ⟨fun _ => let .none := o; rfl, (· ▸ .rfl)⟩
 
+@[rocq_alias dist_None]
 theorem dist_none [OFE α] {o : Option α} : o ≡{n}≡ none ↔ o = none :=
   ⟨fun _ => let .none := o; rfl, (· ▸ .rfl)⟩
 
@@ -423,11 +417,11 @@ instance [OFE α] [Discrete α] : Discrete (Option α) where
 instance OFE.Option.some.ne [OFE α] : OFE.NonExpansive (some : α → Option α) := ⟨fun _ _ _ => id⟩
 
 @[rocq_alias Some_discrete]
-instance Option.some_is_discrete [OFE α] {a : α} (Ha : DiscreteE a) : DiscreteE (some a) := by
-  constructor
-  rintro (_|_) H
-  · exact H
-  · exact Ha.discrete H
+instance [OFE α] {e : α} [OFE.DiscreteE e] : OFE.DiscreteE (some e) where
+  discrete {y} h :=
+    match y with
+    | .none => absurd h not_some_dist_none
+    | .some y => show e ≡ y from DiscreteE.discrete h
 
 /-- Note: Not an instance, due to instance coherence problems. -/
 theorem Option.ne_match [OFE α] {B : Type _} [OFE B]

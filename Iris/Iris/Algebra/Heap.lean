@@ -79,38 +79,29 @@ instance [ExtensionalPartialMap M K] [OFE V] [Leibniz V] : Leibniz (M V) where
 instance [LawfulPartialMap M K] [DecidableEq K] [OFE V] {v : V} [DiscreteE v] {k : K}
     : DiscreteE (PartialMap.singleton (M := M) k v) where
   discrete {y} h k' := by
-    have := h k'
-    if hh : k = k' then
-      simp [LawfulPartialMap.get?_singleton, hh] at this ⊢
-      have uu := DiscreteE.discrete this
-      exact uu
-    else
-      simp [LawfulPartialMap.get?_singleton, hh] at this ⊢
-      rw [dist_none.mp this.symm]
+    by_cases hh : k = k' <;>
+      (simp only [LawfulPartialMap.get?_singleton, hh, ↓reduceIte];
+       refine (DiscreteE.discrete (.trans ?_ (h k')));
+       simp [LawfulPartialMap.get?_singleton, hh, ↓reduceIte])
 
 instance instDiscreteEEmpty [LawfulPartialMap M K] [OFE V] : DiscreteE (∅ : M V) where
   discrete {y} h k := by
-    have := h k
-    simp [LawfulPartialMap.get?_empty] at this ⊢
-    have bb : get? y k = none := dist_none.mp this.symm
-    rw [bb]
-
-instance [LawfulPartialMap M K] [OFE V] : DiscreteE (∅ : M V) := instDiscreteEEmpty
+    simp only [LawfulPartialMap.get?_empty]
+    refine (DiscreteE.discrete (.trans ?_ (h k)))
+    simp [LawfulPartialMap.get?_empty]
 
 theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V]
     {n : Nat} {x y : V} (h : x ≡{n}≡ y) (k : K)
     : PartialMap.singleton (M := M) k x ≡{n}≡ PartialMap.singleton k y := by
   intro k'
-  simp [LawfulPartialMap.get?_singleton]
-  if hh : k = k' then simp [hh, h]
-  else simp [hh]
+  simp only [LawfulPartialMap.get?_singleton]
+  split <;> simp [h]
 
 theorem singleton_equiv [LawfulPartialMap M K] [DecidableEq K] [OFE V] {x y : V} (h : x ≡ y) (k : K)
     : PartialMap.singleton (M := M) k x ≡ PartialMap.singleton k y := by
   intro k'
-  simp [LawfulPartialMap.get?_singleton]
-  if hh : k = k' then simp [hh, h]
-  else simp [hh]
+  simp only [LawfulPartialMap.get?_singleton]
+  split <;> simp [h]
 
 end OFE
 
@@ -286,9 +277,9 @@ variable {K V : Type _} [LawfulPartialMap M K] [CMRA V]
 
 open CMRA
 
-theorem get?_op_eq_get?_op_get? (x y : M V) : get? (x • y) i = get? x i • get? y i := by
-  simp [CMRA.op, get?_merge, Option.merge]
-  grind only
+theorem get?_op (x y : M V) : get? (x • y) i = get? x i • get? y i := by
+  simp only [CMRA.op, op, get?_merge, Option.merge, optionOp]
+  grind
 
 theorem valid_empty : ✓ (∅ : M V) :=
   fun k => by simp [Valid, show get? ∅ k = none from get?_empty (M := M) k]
@@ -355,10 +346,8 @@ theorem insert_eq_singleton_op_singleton [IsoFunMap M K] {m : M V} (Hemp : get? 
   IsoFunMap.ext (insert_equiv_singleton_op_singleton Hemp)
 
 theorem core_empty : core (∅ : M V) ≡ ∅ := by
-  simp [core, CMRA.pcore]
   intro k
-  have aa : get? ∅ k = none := get?_empty (M := M) (V := V) k
-  simp [get?_bindAlter, aa]
+  simp [core, CMRA.pcore, get?_empty, get?_bindAlter]
 
 open Classical in
 theorem core_singleton_equiv {i : K} {x : V} {cx : V} (Hpcore : CMRA.pcore x = some cx) :
