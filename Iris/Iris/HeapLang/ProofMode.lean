@@ -64,8 +64,7 @@ public theorem tac_wp_value_nofupd [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckn
   (Δ ⊢ WP (v : Exp) @ s ; E {{ Φ }}) :=
   H.trans <| fupd_intro.trans (wp_value_fupd ⟨rfl⟩).2
 
-public meta
-def iWpValueHead {u}
+public meta def iWpValueHead {u}
   {GF : Q(BundledGFunctors.{0, 0, 0})}
   {hlc : Q(HasLC)}
   {prop : Q(Type u)}
@@ -82,12 +81,10 @@ def iWpValueHead {u}
   (_hu : QuotedLevelDefEq u 0 := ⟨⟩)
   (_hprop : $prop =Q IProp $GF := ⟨⟩)
   (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
-  (_hwp : $κ =Q wp.def := ⟨⟩)
-
-  (throwEx : ∀ {α : Type _}, MessageData → ProofModeM α := Lean.throwError) :
-    ProofModeM Q($ehyps ⊢ Wp.wp $s $E $e $Φ) := (do
+  (_hwp : $κ =Q wp.def := ⟨⟩) :
+    ProofModeM (Option Q($ehyps ⊢ Wp.wp $s $E $e $Φ)) := (do
   let ~q(ProgramLogic.ToVal.ofVal $v) := e
-    | throwEx m!"{e} is not a value"
+    | return none
   have goal : Q(IProp $GF) := Expr.headBeta q($Φ $v)
   have : $goal =Q $Φ $v := ⟨⟩
 
@@ -100,15 +97,16 @@ def iWpValueHead {u}
   if let .some _ ← ProofModeM.trySynthInstanceQ q(ElimModal $c false $p' iprop(|={$E}=> $goal) $A' $goal $Q') then
     if let some _ ← try? <| iSolveSidecondition c then
       let pf ← addBIGoal hyps q($goal)
-      return q(tac_wp_value_nofupd (s:=$s) (E:=$E) $pf)
+      return some q(tac_wp_value_nofupd (s:=$s) (E:=$E) $pf)
 
   let pf ← addBIGoal hyps q(iprop(|={$E}=> $goal))
-  return q(tac_wp_value (s:=$s) $pf))
+  return some q(tac_wp_value (s:=$s) $pf))
 
 elab "wp_value_head" : tactic =>
   ProofModeM.runTacticWp fun mvar {bi, hyps, ι, s, E, e, Φ, hbi, ..} => do
     have : $bi =Q UPred.instBIUPred := hbi
-    let pf ← iWpValueHead hyps ι q(wp.def) s E e Φ (throwEx := (throwTacticEx `wp_value_head mvar ·))
+    let some pf ← iWpValueHead hyps ι q(wp.def) s E e Φ
+      | throwTacticEx `wp_value_head mvar s!"{e} is not a value"
     mvar.assign pf
 
 public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e' : Exp} {Φ : Val → IProp GF}
@@ -151,7 +149,7 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   iintro $ !> -; itrivial
 
 elab "wp_pure " colGt ppSpace focus:hl_exp : tactic =>
-  ProofModeM.runTacticWp fun mvar {hyps, s, E, e, Φ, ..} => do
+  ProofModeM.runTacticWp fun mvar {hyps, ι, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
     trace[wp_pure] m!"Focusing with {focus}"
 
@@ -169,7 +167,8 @@ elab "wp_pure " colGt ppSpace focus:hl_exp : tactic =>
 
     let ⟨inner, .up _⟩ ← HeapLang.fillQ K e₂
 
-    let nextPf ← addBIGoal hyps' q(Wp.wp $s $E $inner $Φ)
+    let nextPf ← (← iWpValueHead hyps' ι q(wp.def) s E inner Φ).getDM
+      (addBIGoal hyps' q(Wp.wp $s $E $inner $Φ))
 
     let HΦ ← iSolveSidecondition q($φ) (failOnUnsolved := false)
 
@@ -178,6 +177,7 @@ elab "wp_pure " colGt ppSpace focus:hl_exp : tactic =>
     mvar.assign pf
 
 macro "wp_pure" : tactic => `(tactic| wp_pure _)
+macro "wp_pures" : tactic => `(tactic| repeat wp_pure)
 
 initialize registerTraceClass `wp_bind
 initialize registerTraceClass `wp_pure

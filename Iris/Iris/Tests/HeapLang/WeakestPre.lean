@@ -187,11 +187,24 @@ hlc : HasLC
 GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 ⊢ ⏎
-  ⊢ WP ↑hl_val(#2) {{ v, True }}
+  ⊢ |={⊤}=> True
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(snd(v((#1,#2)))) {{ v, True }} := by
   istart
   wp_pure
+
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+⊢ ⏎
+  ⊢ WP hl(#2) {{ v, ⌜v = hl_val(#2)⌝ }}
+-/
+#guard_msgs in
+example : ⊢@{IProp GF} WP hl(if #true then if #false then #1 else #2 else #3) {{ v, ⌜v = hl_val(#2)⌝ }} := by
+  wp_pures
+
 
 end wp_pure
