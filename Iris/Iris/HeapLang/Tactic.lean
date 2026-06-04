@@ -5,6 +5,8 @@ public import Iris.HeapLang.Semantics
 public import Iris.ProofMode.ProofModeM
 public import Lean
 public import Iris.ProgramLogic.EctxiLanguage
+public import Iris.ProgramLogic.EctxLanguage
+public import Iris.HeapLang.Instances
 public import Qq
 
 namespace Iris.HeapLang
@@ -103,20 +105,30 @@ public meta partial def fill (K: Q(List ECtxItem)) (e : Q(Exp)) : MetaM Q(Exp) :
   | ~q($Ki :: $K) => do
     fill K (←fillItem e Ki)
 
+public meta partial def fill' (K: Q(List ECtxItem)) (e : Q(Exp)) : MetaM ((res :Q(Exp)) × PLift ($res =Q ProgramLogic.fill $K $e)):=
+  return ⟨←fill K e , .up ⟨⟩⟩
+
 -- TODO: Is this really needed? Is it better if I just pattern
 -- matched over an object-level List instead?
 meta def quoteList {α : Q(Type u)}: List Q($α) → Q(List $α)
   | [] => q([])
   | x :: xs => q($x :: $(quoteList xs))
 
+public meta
+structure ECtxResultOf (e : Q(Exp)) (α : Type) where unsafeMk ::
+  result : α
+  ctx : Q(List ECtxItem)
+  e' : Q(Exp)
+  guarantee : ProgramLogic.fill $ctx $e' =Q $e := ⟨⟩
+
 public meta partial
-def findECtx {α : Type _} (e : Q(Exp)) (pred : Q(Exp) → ProofModeM (Option α) )
-  : ProofModeM (Option (α × Q(List ECtxItem) × Q(Exp))) := do
-  let (Kis, inner) ← extractAllEctxItems e
+def findECtx {α : Type _} (ogE : Q(Exp)) (pred : Q(Exp) → ProofModeM α )
+  : ProofModeM (Option (ECtxResultOf ogE α)) := do
+  let (Kis, inner) ← extractAllEctxItems ogE
   go inner Kis
 where
-  go (e : Q(Exp)) (Kis : List Q(ECtxItem)) : ProofModeM (Option (α × Q(List ECtxItem) × Q(Exp))) := do
-    if let some a ← pred e then
-      return some ⟨a, quoteList Kis, e⟩
+  go (e : Q(Exp)) (Kis : List Q(ECtxItem)) : ProofModeM (Option (ECtxResultOf ogE α)) := do
+    if let some a ← observing? <| pred e then
+      return some {result := a, ctx := quoteList Kis, e' := e}
     let Ki :: Kis' := Kis | return none
     go (← fillItem e Ki) Kis'

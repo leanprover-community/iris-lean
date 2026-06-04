@@ -117,9 +117,7 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   unfold isLock
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
   subst Heq
-  iapply wp_bind (fun x => hl(snd({x})))
-  -- TODO: why does the following not work?
-  -- wp_bind snd(_)
+  wp_bind cmpXchg(_,_,_)
   iapply wp_atomic (E2 := ⊤ \ nclose spinlockN)
   imod inv_acc ⊤ _ _ (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨G1, G2⟩
   unfold lockInv
@@ -169,7 +167,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   iapply wp_rec
   simp only [Exp.subst, Exp.substStr, String.reduceBEq, Bool.false_eq_true, ↓reduceIte, BEq.rfl]
   inext
-  iapply wp_bind (fun x => hl(if {x} then {?_} else {?_})) (κ := instContextIfConditional)
+  wp_bind {(tryAcquire : Exp)} _
   iapply try_acquire_spec $$ Hlock
   iintro %b Hpt
   cases b

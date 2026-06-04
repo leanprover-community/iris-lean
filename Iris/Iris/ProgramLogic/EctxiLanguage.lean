@@ -33,6 +33,8 @@ class EctxItemLanguage (Expr : Type _) (EctxItem State Obs Val : outParam (Type 
     (fillItem Ki e, σ) -<obs>->ᵇ (e', σ', eₜ) →
     (toVal e).isSome
 
+export EctxItemLanguage (fillItem)
+
 -- attribute [rocq_alias fill_item] EctxItemLanguage.fillItem
 attribute [rocq_alias fill_item_inj] EctxItemLanguage.fillItem_inj
 attribute [rocq_alias fill_item_val] EctxItemLanguage.fillItem

@@ -81,6 +81,18 @@ GF : BundledGFunctors
 example : ⊢@{IProp GF}  WP hl(#2 + (#1 + #2)) {{ v, True }} := by
   wp_bind (_ + #2)
 
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+⊢ ⏎
+  ⊢ WP hl(snd((#1, #0))) {{ v, WP hl((v(v) + #1)) {{ v, True }} }}
+-/
+#guard_msgs in
+example : ⊢@{IProp GF}  WP hl(snd((#1,#0)) + #1) {{ v, True }} := by
+  wp_bind (snd(_))
+
 end wp_bind
 
 

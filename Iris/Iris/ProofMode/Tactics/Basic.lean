@@ -36,6 +36,13 @@ def iSolveSideconditionAt (m : MVarId) (failOnUnsolved := true) : ProofModeM Uni
         else
           for g in gs do addMVarGoal g
 
+def mkSimpleSidecondition (target : Q(Prop)) (failOnUnsolved := true) : ProofModeM Q($target) := do
+  -- TODO: I'm choosing `SyntheticOpaqueMVar` because, as I understand, this is the kind of
+  -- metavariables that must be closed by tactics.
+  let mvar ← mkFreshExprSyntheticOpaqueMVar q($target)
+  iSolveSideconditionAt mvar.mvarId! (failOnUnsolved := failOnUnsolved)
+  return mvar
+
 elab "istart" : tactic => do
   let (mvar, _) ← startProofMode (← getMainGoal)
   replaceMainGoal [mvar]
