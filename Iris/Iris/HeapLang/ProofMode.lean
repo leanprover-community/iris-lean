@@ -50,6 +50,38 @@ public meta def ProofModeM.runTacticWp {α} (k : MVarId → WpGoal → ProofMode
       | throwError "The goal was not a WP application"
     k mvar { u, prop, bi, ehyps, hyps, GF, ι, hlc:=_, s, E, e, Φ, hu:=⟨⟩, hprop:=⟨⟩, hbi:=⟨⟩ }
 
+public theorem tac_wp_value [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF}
+  (H : Δ ⊢ |={E}=> Φ v) :
+  (Δ ⊢ WP (v : Exp) @ s ; E {{ Φ }}) :=
+  H.trans (wp_value_fupd ⟨rfl⟩).2
+
+public theorem tac_wp_value_nofupd [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF}
+  (H : Δ ⊢ Φ v) :
+  (Δ ⊢ WP (v : Exp) @ s ; E {{ Φ }}) :=
+  H.trans <| fupd_intro.trans (wp_value_fupd ⟨rfl⟩).2
+
+elab "wp_value_head" : tactic =>
+  ProofModeM.runTacticWp fun mvar {GF, hyps, s, E, e, Φ, ..} => do
+    let ~q(ProgramLogic.ToVal.ofVal $v) := e
+      | throwTacticEx `wp_value_head mvar "{e} is not a value"
+    have goal : Q(IProp $GF) := Expr.headBeta q($Φ $v)
+    have : $goal =Q $Φ $v := ⟨⟩
+
+    -- Check if we can eliminate ̄|={E}=> in $Φ.
+    -- If yes, we don't need to add ̄|={E}=> to the goal
+    let c : Q(Prop) ← mkFreshExprMVarQ q(Prop)
+    let p' : Q(Bool) ← mkFreshExprMVarQ q(Bool)
+    let A' : Q(IProp $GF) ← mkFreshExprMVarQ q(IProp $GF)
+    let Q' : Q(IProp $GF) ← mkFreshExprMVarQ q(IProp $GF)
+    if let .some _ ← ProofModeM.trySynthInstanceQ q(ElimModal $c false $p' iprop(|={$E}=> $goal) $A' $goal $Q') then
+      if let some _ ← try? <| iSolveSidecondition c then
+        let pf ← addBIGoal hyps q($goal)
+        mvar.assign q(tac_wp_value_nofupd (s:=$s) (E:=$E) $pf)
+        return
+
+    let pf ← addBIGoal hyps q(iprop(|={$E}=> $goal))
+    mvar.assign q(tac_wp_value (s:=$s) $pf)
+
 public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e' : Exp} {Φ : Val → IProp GF}
   (H : Δ ⊢ WP e' @ s ; E {{ v, WP (ProgramLogic.fill K (Exp.val v)) @ s; E {{ Φ }} }}) :
     (Δ ⊢ WP (ProgramLogic.fill K e') @ s ; E {{ Φ }}) :=
@@ -88,25 +120,6 @@ public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness}
   refine .trans ?_ <| ProgramLogic.wp_pure_step_later (GF := GF) ‹φ›
   refine .trans (BI.laterN_mono _ H) ?_
   iintro $ !> -; itrivial
-
--- NOTE: Potential postprocessing lemma for `wp_pure` (could be called in a `simp` only on the resulting goal)
-public
-theorem wp_value_simp [IrisGS_gen hlc Exp GF]{s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF} :
-    (WP hl(v(v)) @ s; E {{ Φ }}) = iprop(|={E}=> Φ v) := by
-  simp [wp_unfold.to_eq, wp.pre]
-
--- NOTE: Potential postprocessing lemma for `wp_pure` (could be called in a `simp` only on the resulting goal)
-public
-theorem fupd_full_fupd [IrisGS_gen hlc Exp GF]{P : IProp GF} :
-    iprop(|={⊤}=> |={E}=> P) = iprop(|={⊤}=> P) := by
-  ext; constructor
-  · iintro >H
-    ihave >aux := BIFUpdate.subset (E1 := ⊤) (E2 := E) (by simp [Std.top, Subset, Membership.mem, CoPset.full])
-    imod H
-    imod aux with -
-    iassumption
-  · apply fupd_elim;
-    refine fupd_intro.trans fupd_intro
 
 elab "wp_pure " colGt ppSpace focus:hl_exp : tactic =>
   ProofModeM.runTacticWp fun mvar {hyps, s, E, e, Φ, ..} => do

@@ -136,7 +136,8 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
       iframe
     · imodintro
       wp_pure
-      iapply wp_value'
+      wp_value_head
+      imodintro
       iapply Hcont $$ [Hcond]
       simp only [↓reduceIte]
       iframe
@@ -152,7 +153,8 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
       iframe
     · imodintro
       wp_pure
-      iapply wp_value'
+      wp_value_head
+      imodintro
       iapply Hcont
       simp only [Bool.false_eq_true, ↓reduceIte]
       itrivial

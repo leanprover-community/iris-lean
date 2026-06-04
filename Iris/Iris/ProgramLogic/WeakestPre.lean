@@ -640,8 +640,9 @@ instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
       _ ⊢ |={E}=> _ := BIFUpdate.except0
       _ ⊢ WP e @ s ; E {{ Φ }} := fupd_wp
 
+-- this should have higher priority than elimModalFupdWpAtomic
 @[rocq_alias elim_modal_fupd_wp]
-instance elimModalFupdWp p :
+instance (priority := default + 10) elimModalFupdWp p :
     ElimModal True p false iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
   elim_modal := by
     iintro %_ ⟨H, G⟩

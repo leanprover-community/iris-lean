@@ -13,6 +13,52 @@ variable {hlc} {GF : BundledGFunctors} [ι : IrisGS_gen hlc HeapLang.Exp GF]
 set_option linter.unusedVariables false
 set_option pp.mvars false
 
+namespace wp_value_head
+
+variable (v : Val)
+
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+v : Val
+⊢ ⏎
+  ⊢ |={⊤}=> True
+-/
+#guard_msgs in
+example : ⊢@{IProp GF} WP (v : Exp) {{ v, True }} := by
+  wp_value_head
+
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+v : Val
+⊢ ⏎
+  ⊢ |={⊤}=> True
+-/
+#guard_msgs in
+example : ⊢@{IProp GF} WP (v : Exp) {{ v, |={⊤}=> True }} := by
+  wp_value_head
+
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+v : Val
+⊢ ⏎
+  ⊢ WP ↑v {{ v, True }}
+-/
+#guard_msgs in
+example : ⊢@{IProp GF} WP (v : Exp) {{ v, WP ((v : Val) : Exp) {{ v, True }} }} := by
+  istart
+  wp_value_head
+
+end wp_value_head
+
 namespace wp_bind
 
 /--
