@@ -270,12 +270,10 @@ instance : UCMRA (ReservationMap A H) where
   pcore_unit := ⟨Heap.core_empty, .rfl⟩
 
 @[simp]
-theorem op_data (x y : ReservationMap A H): (x • y).data = x.data • y.data :=
-  rfl
+theorem op_data (x y : ReservationMap A H): (x • y).data = x.data • y.data := rfl
 
 @[simp]
-theorem op_token (x y : ReservationMap A H): (x • y).token = x.token • y.token :=
-  rfl
+theorem op_token (x y : ReservationMap A H): (x • y).token = x.token • y.token := rfl
 
 @[rocq_alias reservation_map_cmra_discrete]
 instance [CMRA.Discrete A] : CMRA.Discrete (ReservationMap A H) where
@@ -353,7 +351,7 @@ theorem disj_of_validN_data_op_token {a : H A} {b : CoPset} (h : ✓{n} mkData a
   | inr h' =>
     simp only [mkData, mkToken, op_token] at h'
     rw [mem_iff_of_valid_union, not_or] at h'
-    · exact .inr <| fun hh => h'.right hh
+    · exact .inr <| h'.right
     · exact valid_of_eqv (pcore_op_left' rfl).symm valid_set
 
 theorem disj_of_valid_data_op_token (a : H A) (b : CoPset) (h : ✓ mkData a • mkToken b) (i : Pos) :
