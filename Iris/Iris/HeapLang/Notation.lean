@@ -11,7 +11,7 @@ public meta import Lean.PrettyPrinter.Parenthesizer
 public meta section
 namespace Iris.HeapLang
 
-open Lean Lean.PrettyPrinter Elab Parser
+open Lean Lean.PrettyPrinter Lean.PrettyPrinter.Delaborator Elab Parser ProgramLogic
 
 declare_syntax_cat hl_exp
 declare_syntax_cat hl_match_arm
@@ -27,7 +27,7 @@ syntax:max "hl_val(" hl_val ")" : term
 /-- escaping -/
 syntax:max "{" term "}" : hl_val
 /-- escaping identifiers -/
-syntax:max ident : hl_val
+syntax:max "?" ident : hl_val
 /-- embedding literals -/
 syntax:max "#" term:max : hl_val
 /-- pairs -/
@@ -44,8 +44,11 @@ syntax:100 "some(" hl_val ")" : hl_val
 syntax:max "(" hl_exp ")" : hl_exp
 /-- embedding values -/
 syntax:max "v(" hl_val ")" : hl_exp
+syntax:max "v{" term "}" : hl_exp
 /-- escaping -/
 syntax:max "{" term "}" : hl_exp
+/-- escaping identifiers -/
+syntax:max "?" ident : hl_exp
 /-- embedding literals -/
 syntax:max "#" term:max : hl_exp
 /-- variables -/
@@ -158,10 +161,12 @@ def hl_exp.parenthesizer : CategoryParenthesizer := fun prec => do
 
 partial def unpackHLExp [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `hl_exp)
   | `(hl($e)) => `(hl_exp|$e)
+  | `($i:ident) => `(hl_exp|?$i)
   | `($t) => `(hl_exp|{$t})
 
 partial def unpackHLVal [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `hl_val)
   | `(hl_val($e)) => `(hl_val|$e)
+  | `($i:ident) => `(hl_val|?$i)
   | `($t) => `(hl_val|{$t})
 
 partial def unpackHLBinder [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `Lean.binderIdent)
@@ -175,7 +180,7 @@ macro_rules
 
 /-- elaborating values -/
 macro_rules
-  | `(hl_val($i:ident)) => pure i
+  | `(hl_val(? $i)) => pure i
   | `(hl_val({$t})) => pure t
   | `(hl_val(# $e)) => `(Val.lit $e)
   | `(hl_val(rec $f $x := $e)) => do `(Val.rec_ hl_binder($f) hl_binder($x) hl($e))
@@ -192,7 +197,9 @@ macro_rules
 macro_rules
   | `(hl(($e))) => `(hl($e))
   | `(hl({$t})) => pure t
-  | `(hl(v($e))) => `(Exp.val hl_val($e))
+  | `(hl(?$i)) => pure i
+  | `(hl(v($e))) => `(@ToVal.ofVal Exp Val instToVal hl_val($e))
+  | `(hl(v{$e})) => `(hl(v({$e})))
   | `(hl(# $e)) => `(hl(v(# $e)))
   | `(hl($i:ident)) => `(Exp.var $(Syntax.mkStrLit i.getId.toString))
   | `(hl($e1 + $e2)) => `(Exp.binop BinOp.plus hl($e1) hl($e2))
@@ -303,18 +310,21 @@ def unexpInjrVal : Unexpander
   | _ => throw ()
 
 /-- delaborating expressions -/
-partial def unexpValLit : Term → UnexpandM Term
+partial def unexpValLit : Term → DelabM Term
   | `(hl(v(# $l))) => do
     unexpValLit $ ← `(hl(# $l))
-  | `(hl(v({$i:ident}))) => do
-    unexpValLit $ ← `(hl(v($i:ident)))
+  | `(hl(v({$t}))) => do
+    unexpValLit $ ← `(hl(v{$t}))
   | x => return x
 
-@[app_unexpander Exp.val]
-def unexpVal : Unexpander
-  | `($_ $arg) => do unexpValLit $ ← `(hl(v($(← unpackHLVal arg))))
-  | _ => throw ()
-
+@[app_delab ToVal.ofVal]
+def unexpVal : Delab := do
+  if ← getPPOption getPPExplicit then failure
+  let e ← SubExpr.getExpr
+  let_expr ToVal.ofVal exp val _ v := e | failure
+  if !exp.isConstOf ``Exp && !val.isConstOf ``Val then failure
+  let v ← delab v
+  unexpValLit $ ← `(hl(v($(← unpackHLVal v))))
 
 @[app_unexpander Exp.var]
 def unexpVar : Unexpander

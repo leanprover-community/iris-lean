@@ -20,7 +20,7 @@ def tryAcquire : Val := hl_val(
   λ l, snd(cmpXchg(l, #false, #true)))
 def acquire : Val := hl_val(
   rec acquire l :=
-    if ({tryAcquire} l)
+    if (?tryAcquire l)
       then #()
       else acquire l)
 def release : Val := hl_val(
@@ -80,7 +80,7 @@ variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [SpinLockG GF]
 theorem newlock_spec :
   ⊢ □ ∀ (Φ : Val → IProp GF),
     (∀ (v : Val) (γ : GName), (∀ R E, R ={E}=∗ isLock γ v R) -∗ Φ v) -∗
-    WP hl({newlock} #()) {{ Φ }} := by
+    WP hl(?newlock #()) {{ Φ }} := by
   iintro !> %Φ Hcont
   iapply wp_rec; (· rfl); simp only [Exp.subst]
   inext
@@ -103,9 +103,9 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
     ⊢ □ ∀ (Φ : Val → IProp GF),
     isLock γ lk R -∗
     (∀ (b : Bool), iprop(if b then locked γ ∗ R else iprop(True)) -∗ Φ hl_val(#b)) -∗
-    WP hl({tryAcquire} {lk}) {{ Φ }} := by
+    WP hl(?tryAcquire ?lk) {{ Φ }} := by
   iintro !> %Φ #Hlock Hcont
-  iapply wp_rec; (· rfl); simp only [Exp.subst, Exp.substStr, BEq.rfl, ↓reduceIte, isLock]
+  iapply wp_rec; (· rfl); simp only [Exp.subst, Exp.substStr, BEq.rfl, ↓reduceIte, isLock, val_to_ofVal]
   inext
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
   subst Heq
@@ -157,7 +157,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   iintro !> %Φ #Hlock Hcont
   iloeb as IH
   iapply wp_rec; (· rfl)
-  simp only [Exp.subst, Exp.substStr, String.reduceBEq, Bool.false_eq_true, ↓reduceIte, BEq.rfl]
+  simp only [Exp.subst, Exp.substStr, String.reduceBEq, Bool.false_eq_true, ↓reduceIte, BEq.rfl, val_to_ofVal]
   inext
   iapply wp_bind (fun x => hl(if {x} then {?_} else {?_})) (κ := instContextIfConditional)
   iapply try_acquire_spec $$ Hlock
@@ -180,7 +180,7 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
     (True -∗ Φ hl_val(#())) -∗
     WP hl({release} {lk}) {{ Φ }} := by
   iintro !> %Φ ⟨#Hlock, ⟨Hl, HR⟩⟩ Hcont
-  iapply wp_rec; (· rfl); simp only [Exp.subst, Exp.substStr, ↓reduceIte, BEq.rfl]
+  iapply wp_rec; (· rfl); simp only [Exp.subst, Exp.substStr, ↓reduceIte, BEq.rfl, val_to_ofVal]
   inext
   unfold isLock
   icases Hlock with ⟨%l, %Heq, #Hinv⟩

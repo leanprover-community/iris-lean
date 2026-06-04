@@ -6,6 +6,7 @@ Authors: Michael Sammler
 module
 
 public import Iris.Std.Infinite
+public import Iris.ProgramLogic.Language
 
 @[expose] public section
 namespace Iris.HeapLang
@@ -101,6 +102,7 @@ deriving Inhabited, Repr, DecidableEq
 mutual
   inductive Exp : Type where
     /- values -/
+    -- This constructor should not be used directly. Use Exp.ofVal instead.
     | val (v : Val)
     /- Base lambda calculus -/
     | var (x : String)
@@ -144,6 +146,22 @@ end
 def Exp.isVal : Exp → Bool
   | .val _ => true
   | _ => false
+
+instance instToVal : ProgramLogic.ToVal Exp Val where
+  toVal
+  | .val v => some v
+  | _ => none
+  ofVal := .val
+  coe_of_toVal_eq_some {e v} h := by
+    cases e <;> simp_all
+  toVal_coe _ := rfl
+
+namespace Exp
+export ProgramLogic.ToVal (ofVal)
+end Exp
+
+@[simp]
+theorem val_to_ofVal : Exp.val = Exp.ofVal := rfl
 
 instance : Coe Nat BaseLit where
   coe n := .int n
@@ -205,14 +223,14 @@ def Val.compareSafe (v1 v2 : Val) : Bool :=
   v1.isUnboxed || v2.isUnboxed
 
 section Derived
-def Exp.stuck : Exp := Exp.app (.val $ .lit $ .int 0) (.val $ .lit $ .int 0)
+def Exp.stuck : Exp := Exp.app (.ofVal $ .lit $ .int 0) (.ofVal $ .lit $ .int 0)
 
 @[simp]
 theorem Exp.stuck_subst x v:
   Exp.substStr x v Exp.stuck = Exp.stuck := by
   simp [Exp.stuck, Exp.substStr]
 
-def Exp.assert (e : Exp) := Exp.if e (.val $ .lit .unit) Exp.stuck
+def Exp.assert (e : Exp) := Exp.if e (.ofVal $ .lit .unit) Exp.stuck
 
 @[simp]
 theorem Exp.assert_subst x v e:

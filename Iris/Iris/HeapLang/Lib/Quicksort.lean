@@ -26,11 +26,11 @@ def quicksort : Val := hl_val(
     | some(x) =>
       (let head := fst(x);
        let tail := snd(x);
-       let part := v({partition}) (head, tail);
+       let part := ?partition (head, tail);
        let a := quicksort (fst(part));
        let b := quicksort (snd(part));
-       let e := v({cons}) (head, b);
-       v({append}) (a, e))
+       let e := ?cons (head, b);
+       ?append (a, e))
     )
 
 section Predicates
@@ -39,7 +39,7 @@ variable [HeapLangGS hlc GF]
 
 def isList (v : Val) : List Int → IProp GF
   | [] => iprop% ⌜v = hl_val(none())⌝
-  | x :: xs => iprop% ∃ tl, ⌜v = hl_val(some((#x, tl)))⌝ ∗ isList tl xs
+  | x :: xs => iprop% ∃ tl, ⌜v = hl_val(some((#x, ?tl)))⌝ ∗ isList tl xs
 
 end Predicates
 
@@ -50,14 +50,14 @@ variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
 theorem cons_spec x l ls Φ :
   isList (GF:=GF) l ls -∗
   (∀ v, isList v (x :: ls) -∗ Φ v) -∗
-  WP hl(v({cons}) v((#x, l))) {{ Φ }} := by
+  WP hl(?cons v((#x, ?l))) {{ Φ }} := by
     sorry
 
 theorem append_spec l1 ls1 l2 ls2 Φ :
   isList (GF:=GF) l1 ls1 -∗
   isList l2 ls2 -∗
   (∀ v, isList v (ls1 ++ ls2) -∗ Φ v) -∗
-  WP hl(v({append}) v((l1, l2))) {{ Φ }} := by
+  WP hl(?append v((?l1, ?l2))) {{ Φ }} := by
     sorry
 
 theorem partition_spec x l ls Φ :
@@ -65,8 +65,8 @@ theorem partition_spec x l ls Φ :
   (∀ l1 l2,
     isList l1 (ls.filter (· ≤ x)) -∗
     isList l2 (ls.filter (x < ·)) -∗
-    Φ hl_val((l1, l2))) -∗
-  WP hl(v({partition}) v((#x, l))) {{ Φ }} := by
+    Φ hl_val((?l1, ?l2))) -∗
+  WP hl(?partition v((#x, ?l))) {{ Φ }} := by
     sorry
 
 instance instContextAppL {v} : Language.Context fun x => hl({x} v({v})) where
@@ -88,7 +88,7 @@ theorem quicksort_spec l ls Φ :
     ⌜List.Pairwise LE.le ls'⌝ -∗
     ⌜List.Perm ls ls'⌝ -∗
     Φ l') -∗
-  WP hl(v({quicksort}) v(l)) {{ Φ }} := by
+  WP hl(?quicksort ?l) {{ Φ }} := by
     iintro Hl HΦ
     iloeb as IH generalizing %l %ls %Φ
     iapply wp_rec; rfl; simp [Exp.subst, Exp.substStr]
@@ -170,21 +170,21 @@ theorem quicksort_spec l ls Φ :
         grind [List.filter_append_perm]
 
 
-example (l l1 l2 : List Int) x :
-  List.Perm (l.filter (· ≤ x)) l1 →
-  List.Perm (l.filter (x < ·)) l2 →
-  List.Perm (x :: l) (l1 ++ x :: l2) := by
-    intro h1 h2
-    have : List.Perm l (l.filter (· ≤ x) ++ l.filter (x < ·)) := by
-      grind [List.filter_append_perm]
-    grind
+-- example (l l1 l2 : List Int) x :
+--   List.Perm (l.filter (· ≤ x)) l1 →
+--   List.Perm (l.filter (x < ·)) l2 →
+--   List.Perm (x :: l) (l1 ++ x :: l2) := by
+--     intro h1 h2
+--     have : List.Perm l (l.filter (· ≤ x) ++ l.filter (x < ·)) := by
+--       grind [List.filter_append_perm]
+--     grind
 
-example (l l1 l2 : List Int) x :
-  List.Perm (l.filter (· ≤ x)) l1 →
-  List.Pairwise LE.le l1 →
-  List.Pairwise LE.le l2 →
-  List.Perm (l.filter (x < ·)) l2 →
-  List.Pairwise LE.le (l1 ++ x :: l2) := by
-    intro h1 h2 h3 h4
-    have : l2.all (x < ·) := by grind [List.Perm.mem_iff]
-    grind [List.pairwise_cons]
+-- example (l l1 l2 : List Int) x :
+--   List.Perm (l.filter (· ≤ x)) l1 →
+--   List.Pairwise LE.le l1 →
+--   List.Pairwise LE.le l2 →
+--   List.Perm (l.filter (x < ·)) l2 →
+--   List.Pairwise LE.le (l1 ++ x :: l2) := by
+--     intro h1 h2 h3 h4
+--     have : l2.all (x < ·) := by grind [List.Perm.mem_iff]
+--     grind [List.pairwise_cons]

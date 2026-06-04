@@ -13,36 +13,42 @@ open Iris.HeapLang
 
 section test
 
-variable (v : Val)
-/-- info: hl((#1 + (#1 + v(v)))) : Exp -/
+variable (v : Val) (e : Exp)
+/-- info: hl((#1 + (#1 + v(?v)))) : Exp -/
 #guard_msgs in
-#check hl(#1 + #1 + {.val v})
+#check hl(#1 + #1 + {.ofVal v})
 /--
-info: Exp.binop BinOp.plus (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))
-  (Exp.binop BinOp.plus (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))
+info: Exp.binop BinOp.plus
+  (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+    (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))
+  (Exp.binop BinOp.plus
+    (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+      (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))
     (Exp.val v)) : Exp
 -/
 #guard_msgs in
 set_option pp.explicit true in
 #check hl(#1 + #1 + {.val v})
-/-- info: hl((#1 + (#1 + v(v)))) : Exp -/
+/-- info: hl((#1 + (#1 + v(?v)))) : Exp -/
 #guard_msgs in
-#check hl(#1 + (#1 + v(v)))
+#check hl(#1 + (#1 + v(?v)))
 
-/-- info: hl(((#1 + #1) + v(v))) : Exp -/
+/-- info: hl(((#1 + #1) + v(?v))) : Exp -/
 #guard_msgs in
-#check hl((#1 + #1) + v(v))
+#check hl((#1 + #1) + ?v)
 
-/-- info: hl((#1 = (v + v(v)))) : Exp -/
+/-- info: hl((#1 = (v + (v(?v) + ?e)))) : Exp -/
 #guard_msgs in
-#check hl(#1 = v + v(v))
+#check hl(#1 = v + ?v + ?e)
 /--
-info: Exp.binop BinOp.eq (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))
-  (Exp.binop BinOp.plus (Exp.var "v") (Exp.val v)) : Exp
+info: Exp.binop BinOp.eq
+  (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+    (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))
+  (Exp.binop BinOp.plus (Exp.var "v") (@ProgramLogic.ToVal.ofVal Exp Val instToVal v)) : Exp
 -/
 #guard_msgs in
 set_option pp.explicit true in
-#check hl(#1 = v + v(v))
+#check hl(#1 = v + v(?v))
 
 /-- info: hl((λ x y z, #1)) : Exp -/
 #guard_msgs in
@@ -55,7 +61,8 @@ set_option pp.explicit true in
 /--
 info: Exp.rec_ Binder.anon (Binder.named "x")
   (Exp.rec_ Binder.anon (Binder.named "y")
-    (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))) : Exp
+    (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+      (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))) : Exp
 -/
 #guard_msgs in
 set_option pp.explicit true in
@@ -67,7 +74,8 @@ set_option pp.explicit true in
 
 /--
 info: (Exp.rec_ (Binder.named "f") (Binder.named "x") (Exp.var "x")).app
-  (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))) : Exp
+  (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+    (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))) : Exp
 -/
 #guard_msgs in
 set_option pp.explicit true in
@@ -83,8 +91,10 @@ info: Exp.rec_ Binder.anon (Binder.named "x")
     ((Exp.rec_ Binder.anon (Binder.named "z")
           ((Exp.rec_ Binder.anon Binder.anon
                 (Exp.binop BinOp.plus (Exp.var "x") (Exp.binop BinOp.plus (Exp.var "y") (Exp.var "z")))).app
-            (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 2) (@instOfNatBaseLit (nat_lit 2))))))).app
-      (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))))) : Exp
+            (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+              (Val.lit (@OfNat.ofNat BaseLit (nat_lit 2) (@instOfNatBaseLit (nat_lit 2))))))).app
+      (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+        (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))))) : Exp
 -/
 #guard_msgs in
 set_option pp.explicit true in
@@ -104,35 +114,58 @@ info: Exp.rec_ Binder.anon (Binder.named "x")
     (Exp.binop BinOp.le
       (Exp.binop BinOp.or
         (Exp.binop BinOp.and
-          (Exp.binop BinOp.plus (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))
+          (Exp.binop BinOp.plus
+            (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+              (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))
             (Exp.binop BinOp.offset
-              (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 2) (@instOfNatBaseLit (nat_lit 2)))))
+              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                (Val.lit (@OfNat.ofNat BaseLit (nat_lit 2) (@instOfNatBaseLit (nat_lit 2)))))
               (Exp.binop BinOp.minus
-                (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 3) (@instOfNatBaseLit (nat_lit 3)))))
+                (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                  (Val.lit (@OfNat.ofNat BaseLit (nat_lit 3) (@instOfNatBaseLit (nat_lit 3)))))
                 (Exp.binop BinOp.mult
-                  (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 4) (@instOfNatBaseLit (nat_lit 4)))))
+                  (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                    (Val.lit (@OfNat.ofNat BaseLit (nat_lit 4) (@instOfNatBaseLit (nat_lit 4)))))
                   (Exp.binop BinOp.tdiv
-                    (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 5) (@instOfNatBaseLit (nat_lit 5)))))
+                    (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                      (Val.lit (@OfNat.ofNat BaseLit (nat_lit 5) (@instOfNatBaseLit (nat_lit 5)))))
                     (Exp.binop BinOp.tmod
-                      (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 6) (@instOfNatBaseLit (nat_lit 6)))))
-                      (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 7) (@instOfNatBaseLit (nat_lit 7)))))))))))
-          (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 8) (@instOfNatBaseLit (nat_lit 8))))))
-        (Exp.binop BinOp.xor (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 9) (@instOfNatBaseLit (nat_lit 9)))))
+                      (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                        (Val.lit (@OfNat.ofNat BaseLit (nat_lit 6) (@instOfNatBaseLit (nat_lit 6)))))
+                      (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                        (Val.lit (@OfNat.ofNat BaseLit (nat_lit 7) (@instOfNatBaseLit (nat_lit 7)))))))))))
+          (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+            (Val.lit (@OfNat.ofNat BaseLit (nat_lit 8) (@instOfNatBaseLit (nat_lit 8))))))
+        (Exp.binop BinOp.xor
+          (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+            (Val.lit (@OfNat.ofNat BaseLit (nat_lit 9) (@instOfNatBaseLit (nat_lit 9)))))
           (Exp.binop BinOp.shiftl
-            (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 10) (@instOfNatBaseLit (nat_lit 10)))))
+            (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+              (Val.lit (@OfNat.ofNat BaseLit (nat_lit 10) (@instOfNatBaseLit (nat_lit 10)))))
             (Exp.binop BinOp.shiftr
-              (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 11) (@instOfNatBaseLit (nat_lit 11)))))
-              (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 12) (@instOfNatBaseLit (nat_lit 12)))))))))
-      (Exp.binop BinOp.le (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 13) (@instOfNatBaseLit (nat_lit 13)))))
-        (Exp.binop BinOp.lt (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 14) (@instOfNatBaseLit (nat_lit 14)))))
-          (Exp.binop BinOp.eq (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 15) (@instOfNatBaseLit (nat_lit 15)))))
+              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                (Val.lit (@OfNat.ofNat BaseLit (nat_lit 11) (@instOfNatBaseLit (nat_lit 11)))))
+              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                (Val.lit (@OfNat.ofNat BaseLit (nat_lit 12) (@instOfNatBaseLit (nat_lit 12)))))))))
+      (Exp.binop BinOp.le
+        (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+          (Val.lit (@OfNat.ofNat BaseLit (nat_lit 13) (@instOfNatBaseLit (nat_lit 13)))))
+        (Exp.binop BinOp.lt
+          (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+            (Val.lit (@OfNat.ofNat BaseLit (nat_lit 14) (@instOfNatBaseLit (nat_lit 14)))))
+          (Exp.binop BinOp.eq
+            (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+              (Val.lit (@OfNat.ofNat BaseLit (nat_lit 15) (@instOfNatBaseLit (nat_lit 15)))))
             (Exp.binop BinOp.plus
-              (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 16) (@instOfNatBaseLit (nat_lit 16)))))
+              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                (Val.lit (@OfNat.ofNat BaseLit (nat_lit 16) (@instOfNatBaseLit (nat_lit 16)))))
               (Exp.binop BinOp.plus
                 (Exp.unop UnOp.minus
-                  (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 17) (@instOfNatBaseLit (nat_lit 17))))))
+                  (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                    (Val.lit (@OfNat.ofNat BaseLit (nat_lit 17) (@instOfNatBaseLit (nat_lit 17))))))
                 (Exp.unop UnOp.neg
-                  (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 18) (@instOfNatBaseLit (nat_lit 18))))))))))))) : Exp
+                  (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                    (Val.lit (@OfNat.ofNat BaseLit (nat_lit 18) (@instOfNatBaseLit (nat_lit 18))))))))))))) : Exp
 -/
 #guard_msgs in
 set_option pp.explicit true in
@@ -140,7 +173,8 @@ set_option pp.explicit true in
 
 /--
 info: Exp.binop BinOp.shiftl (Exp.var "x").load
-  (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))) : Exp
+  (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+    (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))) : Exp
 -/
 #guard_msgs in
 set_option pp.explicit true in
@@ -149,6 +183,10 @@ set_option pp.explicit true in
 /-- info: hl(if #1 then #2 else #3) : Exp -/
 #guard_msgs in
 #check hl(if #1 then #2 else #3)
+
+/-- info: hl(#1) : Exp -/
+#guard_msgs in
+#check hl(#1)
 
 /--
 info: hl(if if a then b else #(BaseLit.bool false) then #(BaseLit.bool true) else
@@ -162,9 +200,12 @@ info: hl(if if a then b else #(BaseLit.bool false) then #(BaseLit.bool true) els
 #check hl((#1, #2, #3))
 
 /--
-info: (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))).pair
-  ((Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 2) (@instOfNatBaseLit (nat_lit 2))))).pair
-    (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 3) (@instOfNatBaseLit (nat_lit 3)))))) : Exp
+info: (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+      (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))).pair
+  ((@ProgramLogic.ToVal.ofVal Exp Val instToVal
+        (Val.lit (@OfNat.ofNat BaseLit (nat_lit 2) (@instOfNatBaseLit (nat_lit 2))))).pair
+    (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+      (Val.lit (@OfNat.ofNat BaseLit (nat_lit 3) (@instOfNatBaseLit (nat_lit 3)))))) : Exp
 -/
 #guard_msgs in
 set_option pp.explicit true in
@@ -228,29 +269,34 @@ info: (Exp.rec_ Binder.anon (Binder.named "x")
                   ((Exp.rec_ Binder.anon Binder.anon
                         ((Exp.rec_ Binder.anon Binder.anon (Exp.var "x").free).app
                           (Exp.binop BinOp.eq (Exp.var "x").load
-                              (Exp.val
+                              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
                                 (Val.lit
                                   (@OfNat.ofNat BaseLit (nat_lit 0) (@instOfNatBaseLit (nat_lit 0)))))).assert)).app
                     ((Exp.rec_ Binder.anon Binder.anon
                             ((Exp.rec_ Binder.anon Binder.anon
                                   ((Exp.var "x").faa
-                                    (Exp.val
+                                    (@ProgramLogic.ToVal.ofVal Exp Val instToVal
                                       (Val.lit
                                         (@OfNat.ofNat BaseLit (nat_lit 4) (@instOfNatBaseLit (nat_lit 4))))))).app
                               ((Exp.var "x").xchg
-                                (Exp.val
+                                (@ProgramLogic.ToVal.ofVal Exp Val instToVal
                                   (Val.lit (@OfNat.ofNat BaseLit (nat_lit 2) (@instOfNatBaseLit (nat_lit 2)))))))).app
                         ((Exp.var "x").cmpXchg
-                          (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))
-                          (Exp.val
+                          (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                            (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))
+                          (@ProgramLogic.ToVal.ofVal Exp Val instToVal
                             (Val.lit (@OfNat.ofNat BaseLit (nat_lit 2) (@instOfNatBaseLit (nat_lit 2))))))).fork)).app
               ((Exp.var "x").store
                 (Exp.binop BinOp.plus (Exp.var "x").load
-                  (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))))))).app
+                  (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                    (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))))))).app
         ((Exp.var "x").load.allocN
-          (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 0) (@instOfNatBaseLit (nat_lit 0)))))))).app
-  ((Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))).allocN
-    (Exp.val (Val.lit (@OfNat.ofNat BaseLit (nat_lit 0) (@instOfNatBaseLit (nat_lit 0)))))) : Exp
+          (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+            (Val.lit (@OfNat.ofNat BaseLit (nat_lit 0) (@instOfNatBaseLit (nat_lit 0)))))))).app
+  ((@ProgramLogic.ToVal.ofVal Exp Val instToVal
+        (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1))))).allocN
+    (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+      (Val.lit (@OfNat.ofNat BaseLit (nat_lit 0) (@instOfNatBaseLit (nat_lit 0)))))) : Exp
 -/
 #guard_msgs in
 set_option pp.explicit true in

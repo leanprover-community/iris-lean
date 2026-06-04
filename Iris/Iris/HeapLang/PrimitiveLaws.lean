@@ -70,7 +70,9 @@ variable {s : Stuckness} {E : CoPset} {Φ : Val → IProp GF}
 
 open EctxLanguage
 
-theorem wp_fst {v1 v2 : Val} : ▷ Φ v1 ⊢ WP hl(fst(v(({v1}, {v2})))) @s; E {{ Φ }} := by
+theorem wp_fst {v1 v2 : Val} :
+    ▷ Φ v1
+    ⊢ WP hl(fst(v((?v1, ?v2)))) @s; E {{ Φ }} := by
   iintro HΦ
   iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
@@ -78,7 +80,9 @@ theorem wp_fst {v1 v2 : Val} : ▷ Φ v1 ⊢ WP hl(fst(v(({v1}, {v2})))) @s; E {
   iapply wp_value $$ HΦ
   constructor; rfl
 
-theorem wp_snd {v1 v2 : Val} : ▷ Φ v2 ⊢ WP hl(snd(v(({v1}, {v2})))) @s; E {{ Φ }} := by
+theorem wp_snd {v1 v2 : Val} :
+    ▷ Φ v2
+    ⊢ WP hl(snd(v((?v1, ?v2)))) @s; E {{ Φ }} := by
   iintro HΦ
   iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
@@ -87,8 +91,8 @@ theorem wp_snd {v1 v2 : Val} : ▷ Φ v2 ⊢ WP hl(snd(v(({v1}, {v2})))) @s; E {
   constructor; rfl
 
 theorem wp_pair {v1 v2 : Val} :
-  ▷ Φ hl_val(({v1}, {v2})) ⊢
-  WP hl((v({v1}), v({v2}))) @s; E {{ Φ }} := by
+  ▷ Φ hl_val((?v1, ?v2)) ⊢
+  WP hl((?v1, ?v2)) @s; E {{ Φ }} := by
   iintro HΦ
   iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
@@ -98,30 +102,32 @@ theorem wp_pair {v1 v2 : Val} :
 
 
 theorem wp_if_true {e1 e2 : Exp} :
-    ▷ WP e1 @ s; E {{ Φ }} ⊢ WP hl(if #true then {e1} else {e2}) @s; E {{ Φ }} := by
+    ▷ WP e1 @ s; E {{ Φ }}
+    ⊢ WP hl(if #true then ?e1 else ?e2) @s; E {{ Φ }} := by
   iintro Hwp
   iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
 
 theorem wp_if_false {e1 e2 : Exp} :
-    ▷ WP e2 @ s; E {{ Φ }} ⊢ WP hl(if #false then {e1} else {e2}) @s; E {{ Φ }} := by
+    ▷ WP e2 @ s; E {{ Φ }}
+    ⊢ WP hl(if #false then ?e1 else ?e2) @s; E {{ Φ }} := by
   iintro Hwp
   iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
 
 theorem wp_match_injl {v} {e1 e2 : Exp} :
-    ▷ WP (Exp.app e1 (.val v)) @ s; E {{ Φ }} ⊢
-    WP (Exp.case hl(v(injl(v))) e1 e2)  @s; E {{ Φ }} := by
+    ▷ WP (Exp.app e1 (.ofVal v)) @ s; E {{ Φ }}
+    ⊢ WP (Exp.case hl(v(injl(?v))) e1 e2)  @s; E {{ Φ }} := by
   iintro Hwp
   iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
 
 theorem wp_match_injr {v} {e1 e2 : Exp} :
-    ▷ WP (Exp.app e2 (.val v)) @ s; E {{ Φ }} ⊢
-    WP (Exp.case hl(v(injr(v))) e1 e2)  @s; E {{ Φ }} := by
+    ▷ WP (Exp.app e2 (.ofVal v)) @ s; E {{ Φ }}
+    ⊢ WP (Exp.case hl(v(injr(?v))) e1 e2)  @s; E {{ Φ }} := by
   iintro Hwp
   iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
@@ -130,7 +136,7 @@ theorem wp_match_injr {v} {e1 e2 : Exp} :
 theorem wp_rec {f x : Binder} {e : Exp} {vf v : Val}
     (h : vf = (.rec_ f x e)) :
     ▷ WP ((e.subst f vf).subst x v) @ s; E {{ Φ }}
-    ⊢  WP hl(v({vf}) v({v})) @ s; E {{ Φ }} := by
+    ⊢ WP hl(?vf ?v) @ s; E {{ Φ }} := by
   iintro Hwp; subst h
   iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
@@ -156,11 +162,12 @@ theorem wp_let {e1 e2 : Exp} {x} :
 
 
 theorem wp_fork {e : Exp} :
-    ▷ Φ (hl_val(#())) ∗ ▷ WP e @ s; ⊤ {{ _v, True }} ⊢ WP hl(fork({e})) @ s; E {{ Φ }} := by
+    ▷ Φ (hl_val(#())) ∗ ▷ WP e @ s; ⊤ {{ _v, True }}
+    ⊢ WP hl(fork(?e)) @ s; E {{ Φ }} := by
   iintro ⟨HΦ, Hwp⟩
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  have Hred : BaseStep.Reducible (hl(fork({e})), σ₁) :=
+  have Hred : BaseStep.Reducible (hl(fork(?e)), σ₁) :=
     ⟨[], hl(#BaseLit.unit), σ₁, [e], by constructor⟩
   isplitr
   · ipureintro
@@ -178,7 +185,7 @@ theorem wp_fork {e : Exp} :
     iframe Hwp
 
 theorem wp_alloc (v : Val) :
-    ⊢ WP (hl(ref({v}))) @ s; E {{ l, ∃ l' : Loc, ⌜l = .lit (.loc l')⌝ ∗ (l' ↦ (some v))}} := by
+    ⊢ WP (hl(ref(?v))) @ s; E {{ l, ∃ l' : Loc, ⌜l = .lit (.loc l')⌝ ∗ (l' ↦ (some v))}} := by
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   simp only [stateInterp]
@@ -217,7 +224,7 @@ theorem wp_alloc (v : Val) :
 
 theorem wp_load {l : Loc} {q} {v : Val} :
     ▷ (l ↦{q} (some v))
-    ⊢@{IProp GF} WP hl(!v({(.lit (.loc l))})) @ s; E {{ v', ⌜v = v'⌝ ∗ (l ↦{q} (some v')) }} := by
+    ⊢@{IProp GF} WP hl(!v(#(.loc l))) @ s; E {{ v', ⌜v = v'⌝ ∗ (l ↦{q} (some v')) }} := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
@@ -247,7 +254,7 @@ theorem wp_load {l : Loc} {q} {v : Val} :
 
 theorem wp_store {l : Loc} {v v' : Val} :
     ▷ (l ↦ (some v'))
-    ⊢@{IProp GF} WP hl(v({(.lit (.loc l))}) ← {v}) @ s; E
+    ⊢@{IProp GF} WP hl(v(#(.loc l)) ← {v}) @ s; E
       {{ v'', ⌜v'' = hl_val(#())⌝ ∗ (l ↦ some v) }} := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
@@ -285,7 +292,7 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
     (Heq1 : toVal e1 = .some v1) (Heq2 : toVal e2 = .some v2) (Heq3 : v'.compareSafe v1)
     (Heq4 : decide (v' = v1) = false) :
       ▷ (l ↦{q} some v')
-      ⊢ (WP hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})) @ s; E
+      ⊢ (WP hl(cmpXchg(v(#(.loc l)), ?e1, ?e2)) @ s; E
           {{ v'', ⌜v'' = hl_val(({v'}, #(BaseLit.bool false)))⌝ ∗ l ↦{q} some v' }}) := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
