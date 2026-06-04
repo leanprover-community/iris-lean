@@ -357,7 +357,7 @@ theorem token_op (a b : CoPset) (h : a ## b)
   simp [token, CMRA.op, op_tokenProj', h]
 
 theorem disj_of_validN_data_op_token {a : H A} {b : CoPset}
-    (h : ✓{n} data a • token (H := H) (A := A) b)
+    (h : ✓{n} data a • token b)
     : ∀i, get? a i = none ∨ i ∉ b := by
   intro i
   cases validN_disj h i with
@@ -371,22 +371,12 @@ theorem disj_of_validN_data_op_token {a : H A} {b : CoPset}
     · exact valid_of_eqv (pcore_op_left' rfl).symm valid_set
 
 theorem disj_of_valid_data_op_token (a : H A) (b : CoPset)
-    (h : ✓ data a • token (H := H) (A := A) b)
-    : ∀i, get? a i = none ∨ i ∉ b := by
-    intro i
-    cases valid_disj h i with
-    | inl h =>
-      simp only [data, token, op_dataProj, Heap.get?_op, get?_empty] at h
-      exact .inl <| Option.eq_none_of_op_eq_none_left h
-    | inr h' =>
-      simp only [data, token, op_tokenProj] at h'
-      rw [mem_iff_of_valid_union, not_or] at h'
-      · exact .inr <| fun hh => h'.right hh
-      · exact valid_of_eqv (pcore_op_left' rfl).symm valid_set
+    (h : ✓ data a • token b)
+    : ∀i, get? a i = none ∨ i ∉ b := disj_of_validN_data_op_token (h.validN (n := 0))
 
 theorem validN_data_op_token {n : Nat} (a : H A) (b : CoPset)
     (vd : ✓{n} data a) (disj : ∀i, get? a i = none ∨ i ∉ b)
-    : ✓{n} data a • token (H := H) (A := A) b := by
+    : ✓{n} data a • token b := by
   have abdp : (data a • token b).dataProj ≡ a :=
     show a • ∅ ≡ a from (Algebra.MonoidOps.op_right_id)
   have eo : ∅ • valid b = .valid b := pcore_op_left_L rfl
