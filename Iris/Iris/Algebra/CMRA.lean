@@ -1437,6 +1437,18 @@ theorem equiv_of_some_equiv_some {x y : α} (H : some x ≡ some y) : x ≡ y :=
 
 theorem dist_of_some_dist_some {n} {x y : α} (H : some x ≡{n}≡ some y) : x ≡{n}≡ y := H
 
+theorem eq_none_of_op_eq_none_left {x y : Option α} (h : x • y = none) : x = none := by
+  match x, y with
+  | none, _ => rfl
+  | some _, none => simp [op] at h
+  | some _, some _ => simp [op] at h
+
+theorem eq_none_of_op_eq_none_right {x y : Option α} (h : x • y = none) : y = none := by
+  match x, y with
+  | _, none => rfl
+  | none, some _ => simp [op] at h
+  | some _, some _ => simp [op] at h
+
 theorem op_some_opM_assoc {x y : α} {mz : Option α} : (x • y) •? mz ≡ x •? (some y • mz) :=
   match mz with | none => .rfl | some _ => assoc.symm
 
