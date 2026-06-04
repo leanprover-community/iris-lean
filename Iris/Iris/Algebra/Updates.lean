@@ -22,6 +22,8 @@ def Update [CMRA α] (x y : α) := ∀ n mz,
   ✓{n} (x •? mz) → ✓{n} (y •? mz)
 infixr:50 " ~~> " => Update
 
+#rocq_ignore cmra_update_rewrite_relation "Not needed"
+
 section updates
 
 variable [CMRA α] [CMRA β] (f : α → β) (g : β → α)
@@ -86,14 +88,6 @@ instance [CMRA α] : Trans Update Update Update (α := α) where
 instance [CMRA α] : Trans Update UpdateP UpdateP (α := α) where
   trans := Update.transP
 
--- (* Global Instance cmra_update_proper_update :
---   Proper (flip cmra_update ==> cmra_update ==> impl) (@cmra_update SI A).
--- Proof. Admitted. *)
-
--- (* Global Instance cmra_update_flip_proper_update :
---   Proper (cmra_update ==> flip cmra_update ==> flip impl) (@cmra_update SI A).
--- Proof. Admitted. *)
-
 @[rocq_alias cmra_updateP_op]
 theorem UpdateP.op {P Q R : α → Prop} {x y}
     (uxp : x ~~>: P) (uyq : y ~~>: Q) (pqr : ∀z w, P z → Q w → R (z • w)) : x • y ~~>: R := by
@@ -116,22 +110,6 @@ theorem UpdateP.op' {P Q : α → Prop} {x y : α} (uxp : x ~~>: P) (uyq : y ~~>
 @[rocq_alias cmra_update_op]
 theorem Update.op {x₁ x₂ y₁ y₂ : α} (xy₁ : x₁ ~~> y₁) (xy₂ : x₂ ~~> y₂) : x₁ • x₂ ~~> y₁ • y₂ :=
   .of_updateP <| .op (.of_update xy₁) (.of_update xy₂) fun _ _ ez ew => ez ▸ ew ▸ rfl
-
--- (* Global Instance cmra_update_op_proper :
---   Proper (cmra_update ==> cmra_update ==> cmra_update) (op (A:=A)).
--- Proof. Admitted. *)
-
--- (* Global Instance cmra_update_op_flip_proper :
---   Proper (flip cmra_update ==> flip cmra_update ==> flip cmra_update) (op (A:=A)).
--- Proof. Admitted. *)
-
--- (* Global Instance cmra_update_op_proper :
---   Proper (cmra_update ==> cmra_update ==> cmra_update) (op (A:=A)).
--- Proof. Admitted. *)
-
--- (* Global Instance cmra_update_op_flip_proper :
---   Proper (flip cmra_update ==> flip cmra_update ==> flip cmra_update) (op (A:=A)).
--- Proof. Admitted. *)
 
 @[rocq_alias cmra_update_op_l]
 theorem Update.op_l {x y : α} : x • y ~~> x := fun _ _ => CMRA.validN_op_opM_left
