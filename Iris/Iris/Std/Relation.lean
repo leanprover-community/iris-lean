@@ -32,6 +32,9 @@ theorem Iterate.head (hab : r a b) (hbc : Iterate r n b c) : Iterate r (n+1) a c
   | .rfl x => .tail a (.rfl a) hab
   | .tail y hcd hac => .tail y (head hab hcd) hac
 
+theorem Iterate.once (hab : r a b) : Iterate r 1 a b :=
+  Relation.Iterate.head hab (.rfl _)
+
 theorem Iterate.head_induction_on {b : α} {motive : ∀ (n : Nat) (a : α), Iterate r n a b → Prop}
     (rfl : motive _ _ (.rfl b))
     (head : ∀ {n a} c (h' : r a c) (h : Iterate r n c b), motive _ _ h → motive _ _ (h.head h'))

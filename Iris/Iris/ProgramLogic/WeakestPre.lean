@@ -490,6 +490,11 @@ theorem wp_value {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ : Val →
     Language.IntoVal e v → Φ v ⊢ WP e @ s; E {{ Φ }}
   | ⟨h⟩ => h ▸ wp_value'
 
+@[simp]
+theorem wp_value_iff {s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF} :
+    WP (v : Expr) @ s; E {{ Φ }} = iprop(|={E}=> Φ v) := by
+  simp [wp_unfold.to_eq, wp.pre]
+
 @[rocq_alias wp_frame_l]
 theorem wp_frame_l {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} {R : IProp GF} :
     R ∗ WP e @ s; E {{ Φ }} ⊢ WP e @ s; E {{ v, R ∗ Φ v }} := by
@@ -635,8 +640,9 @@ instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
       _ ⊢ |={E}=> _ := BIFUpdate.except0
       _ ⊢ WP e @ s ; E {{ Φ }} := fupd_wp
 
+-- this should have higher priority than elimModalFupdWpAtomic
 @[rocq_alias elim_modal_fupd_wp]
-instance elimModalFupdWp p :
+instance (priority := default + 10) elimModalFupdWp p :
     ElimModal True p false iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
   elim_modal := by
     iintro %_ ⟨H, G⟩

@@ -23,15 +23,19 @@ macro_rules | `(tactic| itrivial) => `(tactic|mytac)
 -/
 syntax "itrivial" : tactic
 
-def iSolveSideconditionAt (m : MVarId) : ProofModeM Unit := do
-  let goal ← instantiateMVars (← m.getType)
-  match goal with
+def iSolveSidecondition (target : Q(Prop)) (failOnUnsolved := true) : ProofModeM Q($target) := do
+  let mvar ← mkFreshExprSyntheticOpaqueMVar q($target)
+  match ← instantiateMVars target with
   | .app (.const ``PMError _) (.lit (.strVal msg)) =>
       throwError "{msg}"
   | _ =>
-      let gs ← evalTacticAt (← `(tactic | trivial)) m
+      let gs ← evalTacticAt (← `(tactic | trivial)) mvar.mvarId!
       if !gs.isEmpty then
-        throwError "isolvesidecondition: failed to solve sidecondition {goal}"
+        if failOnUnsolved then
+          throwError "isolvesidecondition: failed to solve sidecondition {target}"
+        else
+          for g in gs do addMVarGoal g
+      return mvar
 
 elab "istart" : tactic => do
   let (mvar, _) ← startProofMode (← getMainGoal)
