@@ -69,15 +69,15 @@ instance Heap.instCOFE [LawfulPartialMap M K] [COFE V] : COFE (M V) where
     · simp [← PartialMap.chain_get, chain_none_const (c := PartialMap.chain k c) (n := 0) (H▸rfl)]
     · exact IsCOFE.conv_compl
 
-instance [PartialMap M K] [OFE V] [Discrete V] : Discrete (M V) where
+instance instDiscreteHeap [PartialMap M K] [OFE V] [Discrete V] : Discrete (M V) where
   discrete_0 h k := Discrete.discrete_0 (h k)
 
-instance [ExtensionalPartialMap M K] [OFE V] [Leibniz V] : Leibniz (M V) where
+instance instLeibnizHeap [ExtensionalPartialMap M K] [OFE V] [Leibniz V] : Leibniz (M V) where
   eq_of_eqv h :=
     ExtensionalPartialMap.equiv_iff_eq.mp (fun i => Leibniz.eq_of_eqv (h i))
 
-instance [LawfulPartialMap M K] [DecidableEq K] [OFE V] {v : V} [ha : DiscreteE v] {k : K}
-    : DiscreteE (PartialMap.singleton (M := M) k v) where
+instance instDiscreteESingleton [LawfulPartialMap M K] [DecidableEq K] [OFE V] {v : V}
+    [ha : DiscreteE v] {k : K} : DiscreteE (PartialMap.singleton (M := M) k v) where
   discrete {y} h k' := by
     by_cases hh : k = k'
     · simp only [LawfulPartialMap.get?_singleton, hh, ↓reduceIte]
@@ -93,15 +93,14 @@ instance instDiscreteEEmpty [LawfulPartialMap M K] [OFE V] : DiscreteE (∅ : M 
     refine (DiscreteE.discrete (.trans ?_ (h k)))
     simp [LawfulPartialMap.get?_empty]
 
-theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V]
-    {n : Nat} {x y : V} (h : x ≡{n}≡ y) (k : K)
-    : PartialMap.singleton (M := M) k x ≡{n}≡ PartialMap.singleton k y := by
+theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V] {n : Nat} {x y : V}
+    (h : x ≡{n}≡ y) (k : K) : PartialMap.singleton (M := M) k x ≡{n}≡ PartialMap.singleton k y := by
   intro k'
   simp only [LawfulPartialMap.get?_singleton]
   split <;> simp [h]
 
-theorem singleton_equiv [LawfulPartialMap M K] [DecidableEq K] [OFE V] {x y : V} (h : x ≡ y) (k : K)
-    : PartialMap.singleton (M := M) k x ≡ PartialMap.singleton k y := by
+theorem singleton_equiv [LawfulPartialMap M K] [DecidableEq K] [OFE V] {x y : V} (h : x ≡ y) (k : K) :
+    PartialMap.singleton (M := M) k x ≡ PartialMap.singleton k y := by
   intro k'
   simp only [LawfulPartialMap.get?_singleton]
   split <;> simp [h]
@@ -266,7 +265,7 @@ instance instStoreUCMRA : UCMRA (M V) where
   unit_left_id _ := by simp [CMRA.op, get?_merge, get?_empty]
   pcore_unit _ := by simp [get?_bindAlter, get?_empty]
 
-instance : IsTotal (M V) where
+instance instIsTotalHeap : IsTotal (M V) where
   total _ := Option.isSome_iff_exists.mp rfl
 
 end Heap
