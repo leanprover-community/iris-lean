@@ -1,5 +1,6 @@
 name = "iris"
 defaultTargets = ["Iris", "IrisTest"]
+lintDriver = "batteries/runLinter"
 
 [[require]]
 name = "Qq"
@@ -13,7 +14,6 @@ rev = "v4.30.0"
 
 [[lean_lib]]
 name = "Iris"
-lintDriver := "batteries/runLinter"
 
 [[lean_lib]]
 name = "IrisTest"
