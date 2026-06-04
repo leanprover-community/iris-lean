@@ -15,7 +15,7 @@ public meta section
 
 abbrev ProofModeContinuation :=
   ∀ {u : Level} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
-    (_hyps : Hyps bi e) (goal: Q($prop)),
+    (_hyps : Hyps bi e) (goal: Q($prop)) (_ : Name := Name.anonymous),
     ProofModeM Q($e ⊢ $goal)
 
 def iRevertIntro
@@ -36,7 +36,7 @@ def iRevertIntro
       return (name, .intro <| (if ivar.persistent? then .intuitionistic else id) <| .one ident)
   trace[irevertintro] s!"Calling `iRevertIntro` with {names.map (·.1)} on context {←ppExpr <| IrisGoal.toExpr {hyps, goal ..}}"
   iRevertCore hs hyps goal fun hyps goal => do
-  k hyps goal fun hyps goal => do
-  iIntroCore hyps goal names
+  k hyps goal fun hyps goal name => do
+  iIntroCore hyps goal names (addBIGoal · · name)
 
 initialize registerTraceClass `irevertintro
