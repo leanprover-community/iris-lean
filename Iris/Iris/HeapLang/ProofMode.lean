@@ -19,13 +19,13 @@ open Meta Elab Tactic Qq
 open Iris.HeapLang Iris.BI
 
 public structure WpGoal where
-  u : Level
-  prop : Q(Type u)
-  bi : Q(BI $prop)
-  ehyps : Q($prop)
+  {u : Level}
+  {prop : Q(Type u)}
+  {bi : Q(BI $prop)}
+  {ehyps : Q($prop)}
   hyps : Hyps bi ehyps
-  GF : Q(BundledGFunctors.{0, 0, 0})
-  hlc : Q(HasLC)
+  {GF : Q(BundledGFunctors.{0, 0, 0})}
+  {hlc : Q(HasLC)}
   ι : Q(IrisGS_gen $hlc Exp $GF)
   s : Q(Stuckness)
   E : Q(CoPset)
@@ -38,7 +38,7 @@ public structure WpGoal where
 
 public meta def ProofModeM.runTacticWp {α} (k : MVarId → WpGoal → ProofModeM α)
   : TacticM α := do
-  ProofModeM.runTactic fun mvar {u, prop, bi, e:=ehyps, hyps, goal, ..} => do
+  ProofModeM.runTactic fun mvar {u, prop, bi, hyps, goal, ..} => do
     let .defEq _ ← isLevelDefEqQ u 0
       | throwError "The goal must be an `IProp` at universe level 0"
     let ~q(IProp $GF) := prop
@@ -48,7 +48,7 @@ public meta def ProofModeM.runTacticWp {α} (k : MVarId → WpGoal → ProofMode
 
     let ~q(Wp.wp (A := Stuckness) (Expr := Exp) (self := wp.def (ι := $ι)) $s $E $e $Φ) := goal
       | throwError "The goal was not a WP application"
-    k mvar { u, prop, bi, ehyps, hyps, GF, ι, hlc:=_, s, E, e, Φ, hu:=⟨⟩, hprop:=⟨⟩, hbi:=⟨⟩ }
+    k mvar {hyps, ι, s, E, e, Φ, hu:=⟨⟩, hprop:=⟨⟩, hbi:=⟨⟩ }
 
 public theorem tac_wp_value [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF}
   (H : Δ ⊢ |={E}=> Φ v) :
@@ -60,27 +60,52 @@ public theorem tac_wp_value_nofupd [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckn
   (Δ ⊢ WP (v : Exp) @ s ; E {{ Φ }}) :=
   H.trans <| fupd_intro.trans (wp_value_fupd ⟨rfl⟩).2
 
+public meta
+def iWpValueHead {u}
+  {GF : Q(BundledGFunctors.{0, 0, 0})}
+  {hlc : Q(HasLC)}
+  {prop : Q(Type u)}
+  {bi : Q(BI $prop)}
+  {ehyps : Q($prop)}
+  (hyps : Hyps bi ehyps)
+  (ι : Q(IrisGS_gen $hlc Exp $GF))
+  (κ : Q(Wp $prop Exp Val Stuckness))
+  (s : Q(Stuckness))
+  (E : Q(CoPset))
+  (e : Q(Exp))
+  (Φ : Q(Val → $prop))
+
+  (hu : QuotedLevelDefEq u 0 := ⟨⟩)
+  (hprop : $prop =Q IProp $GF := ⟨⟩)
+  (hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
+  (hwp : $κ =Q wp.def := ⟨⟩)
+
+  (throwEx : ∀ {α : Type _}, MessageData → ProofModeM α := Lean.throwError) :
+    ProofModeM Q($ehyps ⊢ Wp.wp $s $E $e $Φ) := (do
+  let ~q(ProgramLogic.ToVal.ofVal $v) := e
+    | throwEx m!"{e} is not a value"
+  have goal : Q(IProp $GF) := Expr.headBeta q($Φ $v)
+  have : $goal =Q $Φ $v := ⟨⟩
+
+  -- Check if we can eliminate ̄|={E}=> in $Φ.
+  -- If yes, we don't need to add ̄|={E}=> to the goal
+  let c : Q(Prop) ← mkFreshExprMVarQ q(Prop)
+  let p' : Q(Bool) ← mkFreshExprMVarQ q(Bool)
+  let A' : Q(IProp $GF) ← mkFreshExprMVarQ q(IProp $GF)
+  let Q' : Q(IProp $GF) ← mkFreshExprMVarQ q(IProp $GF)
+  if let .some _ ← ProofModeM.trySynthInstanceQ q(ElimModal $c false $p' iprop(|={$E}=> $goal) $A' $goal $Q') then
+    if let some _ ← try? <| iSolveSidecondition c then
+      let pf ← addBIGoal hyps q($goal)
+      return q(tac_wp_value_nofupd (s:=$s) (E:=$E) $pf)
+
+  let pf ← addBIGoal hyps q(iprop(|={$E}=> $goal))
+  return q(tac_wp_value (s:=$s) $pf))
+
 elab "wp_value_head" : tactic =>
-  ProofModeM.runTacticWp fun mvar {GF, hyps, s, E, e, Φ, ..} => do
-    let ~q(ProgramLogic.ToVal.ofVal $v) := e
-      | throwTacticEx `wp_value_head mvar "{e} is not a value"
-    have goal : Q(IProp $GF) := Expr.headBeta q($Φ $v)
-    have : $goal =Q $Φ $v := ⟨⟩
-
-    -- Check if we can eliminate ̄|={E}=> in $Φ.
-    -- If yes, we don't need to add ̄|={E}=> to the goal
-    let c : Q(Prop) ← mkFreshExprMVarQ q(Prop)
-    let p' : Q(Bool) ← mkFreshExprMVarQ q(Bool)
-    let A' : Q(IProp $GF) ← mkFreshExprMVarQ q(IProp $GF)
-    let Q' : Q(IProp $GF) ← mkFreshExprMVarQ q(IProp $GF)
-    if let .some _ ← ProofModeM.trySynthInstanceQ q(ElimModal $c false $p' iprop(|={$E}=> $goal) $A' $goal $Q') then
-      if let some _ ← try? <| iSolveSidecondition c then
-        let pf ← addBIGoal hyps q($goal)
-        mvar.assign q(tac_wp_value_nofupd (s:=$s) (E:=$E) $pf)
-        return
-
-    let pf ← addBIGoal hyps q(iprop(|={$E}=> $goal))
-    mvar.assign q(tac_wp_value (s:=$s) $pf)
+  ProofModeM.runTacticWp fun mvar {bi, hyps, ι, s, E, e, Φ, hbi, ..} => do
+    have : $bi =Q UPred.instBIUPred := hbi
+    let pf ← iWpValueHead hyps ι q(wp.def) s E e Φ (throwEx := (throwTacticEx `wp_value_head mvar ·))
+    mvar.assign pf
 
 public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e' : Exp} {Φ : Val → IProp GF}
   (H : Δ ⊢ WP e' @ s ; E {{ v, WP (ProgramLogic.fill K (Exp.val v)) @ s; E {{ Φ }} }}) :
