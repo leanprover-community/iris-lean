@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Fernando Leal. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 module
 
 public import Iris.BI
@@ -50,7 +54,7 @@ GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 v : Val
 ⊢ ⏎
-  ⊢ WP hl(v(?v)) {{ v, True }}
+  ⊢ WP ↑v {{ v, True }}
 -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP (v : Exp) {{ v, WP ((v : Val) : Exp) {{ v, True }} }} := by
@@ -183,11 +187,29 @@ hlc : HasLC
 GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 ⊢ ⏎
-  ⊢ WP ↑hl_val(#2) {{ v, True }}
+  ⊢ |={⊤}=> True
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(snd(v((#1,#2)))) {{ v, True }} := by
   istart
   wp_pure
+
+example : ⊢@{IProp GF}  WP hl(snd(v((#1,#2)))) {{ v, ⌜v = hl_val(#2)⌝ }} := by
+  istart
+  wp_pure
+  itrivial
+
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+⊢ ⏎
+  ⊢ WP hl(#2) {{ v, ⌜v = hl_val(#2)⌝ }}
+-/
+#guard_msgs in
+example : ⊢@{IProp GF} WP hl(if #true then if #false then #1 else #2 else #3) {{ v, ⌜v = hl_val(#2)⌝ }} := by
+  wp_pures
+
 
 end wp_pure

@@ -40,6 +40,14 @@ class CMRA (α : Type _) extends OFE α where
   extend : ValidN n x → x ≡{n}≡ op y₁ y₂ →
     Σ' z₁ z₂, x ≡ op z₁ z₂ ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂
 
+#rocq_ignore Op "Use the CMRA.op field."
+#rocq_ignore PCore "Use the CMRA.pcore field."
+#rocq_ignore Valid "Use the CMRA.Valid field."
+#rocq_ignore ValidN "Use the CMRA.ValidN field."
+#rocq_ignore CmraMixin "Use the CMRA type class."
+#rocq_ignore cmra_mixin_of' "Not needed."
+#rocq_ignore cmra_ofeO "Not needed."
+
 /-- Reduction of `pcore_op_mono` to regular monotonicity -/
 theorem pcore_op_mono_of_core_op_mono [OFE α] (op : α → α → α) (pcore : α → Option α)
     (h : (∀ x cx y : α, (∃ z, y ≡ op x z) → pcore x = some cx →
@@ -84,16 +92,20 @@ export Exclusive (exclusive0_l)
 class Cancelable (x : α) where
   cancelableN : ✓{n} x • y → x • y ≡{n}≡ x • z → y ≡{n}≡ z
 export Cancelable (cancelableN)
+#rocq_ignore Cancelable_proper "Derived from nonexpansivity"
 
 @[rocq_alias IdFree]
 class IdFree (x : α) where
   id_free0_r y : ✓{0} x → ¬x • y ≡{0}≡ x
 export IdFree (id_free0_r)
+#rocq_ignore IdFree_proper "Derived from nonexpansivity"
 
 @[rocq_alias CmraTotal]
 class IsTotal (α : Type _) [CMRA α] where
   total (x : α) : ∃ cx, pcore x = some cx
 export IsTotal (total)
+
+#rocq_ignore cmra_total_mixin "Use CMRA + IsTotal"
 
 @[rocq_alias core]
 def core (x : α) := (pcore x).getD x
@@ -102,6 +114,9 @@ def core (x : α) := (pcore x).getD x
 class Discrete (α : Type _) [CMRA α] extends OFE.Discrete α where
   discrete_valid {x : α} : ✓{0} x → ✓ x
 export Discrete (discrete_valid)
+#rocq_ignore discrete_cmra_discrete "Folded into Lean's CMRA.Discrete typeclass"
+#rocq_ignore discrete_cmra_mixin "Lean uses the CMRA + CMRA.Discrete typeclasses directly."
+#rocq_ignore discrete_validN_instance "Use CMRA instance"
 
 end CMRA
 
@@ -111,6 +126,11 @@ class UCMRA (α : Type _) extends CMRA α where
   unit_valid : ✓ unit
   unit_left_id : unit • x ≡ x
   pcore_unit : pcore unit ≡ some unit
+
+#rocq_ignore Unit "Lean uses the UCMRA.unit field; no separate class needed."
+#rocq_ignore UcmraMixin "Lean uses the UCMRA type class directly; mixin/bundle separation is unnecessary."
+#rocq_ignore ucmra_cmraR "Folded into Lean's UCMRA extends CMRA."
+#rocq_ignore ucmra_ofeO "Folded into Lean's UCMRA → OFE."
 
 class IsUnit [CMRA α] (ε : α) : Prop where
   unit_valid : ✓ ε
@@ -126,6 +146,54 @@ namespace CMRA
 variable [CMRA α]
 
 export UCMRA (unit unit_valid unit_left_id pcore_unit)
+
+@[rocq_alias cmra_assoc]
+theorem assoc' {x y z : α} : x • (y • z) ≡ (x • y) • z := CMRA.assoc
+
+@[rocq_alias cmra_comm]
+theorem comm' {x y : α} : x • y ≡ y • x := CMRA.comm
+
+@[rocq_alias cmra_pcore_l]
+theorem pcore_l {x cx : α} (e : pcore x = some cx) : cx • x ≡ x := CMRA.pcore_op_left e
+
+@[rocq_alias cmra_pcore_idemp]
+theorem pcore_idemp {x cx : α} (e : pcore x = some cx) : pcore cx ≡ some cx := CMRA.pcore_idem e
+
+@[rocq_alias cmra_extend]
+def extend' {n} {x y₁ y₂ : α} (v : ✓{n} x) (e : x ≡{n}≡ y₁ • y₂) :
+    Σ' z₁ z₂, x ≡ z₁ • z₂ ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂ := extend (y₁ := y₁) (y₂ := y₂) v e
+
+@[rocq_alias cmra_validN_op_l]
+theorem validN_op_l {n} {x y : α} : ✓{n} (x • y) → ✓{n} x := CMRA.validN_op_left
+
+@[rocq_alias cmra_valid_validN]
+theorem valid_validN {x : α} : ✓ x ↔ ∀ n, ✓{n} x := CMRA.valid_iff_validN
+
+@[rocq_alias cmra_op_ne]
+theorem op_ne' {x : α} : NonExpansive (x • ·) := CMRA.op_ne
+
+@[rocq_alias cmra_pcore_ne]
+theorem pcore_ne' {n} {x y : α} {cx} (h : x ≡{n}≡ y) (e : pcore x = some cx) :
+    ∃ cy, pcore y = some cy ∧ cx ≡{n}≡ cy := CMRA.pcore_ne h e
+
+@[rocq_alias cmra_validN_ne]
+theorem validN_ne' {n} {x y : α} (h : x ≡{n}≡ y) : ✓{n} x → ✓{n} y := CMRA.validN_ne h
+
+theorem opM_ne_right {n} {x : α} {y₁ y₂ : Option α} (h : y₁ ≡{n}≡ y₂) : x •? y₁ ≡{n}≡ x •? y₂ :=
+  match y₁, y₂, h with
+  | none, none, _ => .rfl
+  | some _, some _, h => CMRA.op_ne.ne h
+
+@[rocq_alias cmra_opM_ne]
+instance : NonExpansive₂ (op? (α := α)) where
+  ne _ _ _ e₁ y₁ y₂ e₂ :=
+    match y₁, y₂, e₂ with
+    | none, none, _ => e₁
+    | some _, some _, e₂ =>
+      (CMRA.op_ne.ne e₂).trans (equiv_dist.mp comm _ |>.trans <|
+        (CMRA.op_ne.ne e₁).trans (equiv_dist.mp comm _))
+
+#rocq_ignore cmra_opM_proper "Derived from nonexpansivity"
 
 @[rocq_alias cmra_pcore_ne']
 instance : NonExpansive (pcore (α := α)) where
@@ -227,8 +295,12 @@ theorem validN_of_eqv {x y : α} : x ≡ y → ✓{n} x → ✓{n} y :=
   fun e v => validN_ne (equiv_dist.mp e n) v
 
 @[rocq_alias cmra_validN_ne']
-theorem validN_iff {x y : α} (e : x ≡{n}≡ y) : ✓{n} x ↔ ✓{n} y := ⟨validN_ne e, validN_ne e.symm⟩
-theorem _root_.Iris.OFE.Dist.validN : (x : α) ≡{n}≡ y → (✓{n} x ↔ ✓{n} y) := validN_iff
+theorem validN_dist_iff {x y : α} (e : x ≡{n}≡ y) : ✓{n} x ↔ ✓{n} y := ⟨validN_ne e, validN_ne e.symm⟩
+theorem _root_.Iris.OFE.Dist.validN : (x : α) ≡{n}≡ y → (✓{n} x ↔ ✓{n} y) := validN_dist_iff
+
+@[rocq_alias cmra_validN_proper]
+theorem validN_eqv_iff {x y : α} (e : x ≡ y) : ✓{n} x ↔ ✓{n} y :=
+  validN_dist_iff (equiv_dist.mp e n)
 
 theorem valid_of_eqv {x y : α} : x ≡ y → ✓ x → ✓ y :=
   fun e => valid_mapN fun _ => validN_of_eqv e
@@ -238,8 +310,12 @@ theorem valid_iff {x y : α} (e : x ≡ y) : ✓ x ↔ ✓ y := ⟨valid_of_eqv 
 theorem _root_.Iris.OFE.Equiv.valid : (x : α) ≡ y → (✓ x ↔ ✓ y) := valid_iff
 
 @[rocq_alias cmra_validN_le]
-theorem validN_of_le {n n'} {x : α} : n' ≤ n → ✓{n} x → ✓{n'} x :=
-  fun le => le.recOn id fun  _ ih vs => ih (validN_succ vs)
+theorem validN_of_le {n n'} {x : α} (le : n' ≤ n) : ✓{n} x → ✓{n'} x :=
+  le.recOn id fun  _ ih vs => ih (validN_succ vs)
+
+@[rocq_alias cmra_validN_lt]
+theorem validN_of_lt {n n'} {x : α} (lt : n' < n): ✓{n} x → ✓{n'} x :=
+  validN_of_le (Nat.le_of_lt lt)
 
 theorem valid0_of_validN {n} {x : α} : ✓{n} x → ✓{0} x := validN_of_le (Nat.zero_le n)
 
@@ -288,6 +364,10 @@ theorem pcore_proper {x y : α} (cx : α) (e : x ≡ y) (ps : pcore x = some cx)
     have : cy' = cy := Option.some_inj.mp (hcy' ▸ hcy)
     this ▸ ecy'
   exact equiv_dist.mpr this
+
+@[rocq_alias cmra_op_ne']
+instance cmra_op_ne2 : NonExpansive₂ (op (α := α)) where
+  ne _ _ _ e₁ _ _ e₂ := e₁.op e₂
 
 @[rocq_alias cmra_pcore_proper']
 theorem pcore_proper' {x y : α} (e : x ≡ y) : pcore x ≡ pcore y :=
@@ -429,10 +509,14 @@ theorem incN_iff_right (e : (b : α) ≡{n}≡ c) : a ≼{n} b ↔ a ≼{n} c :=
 theorem _root_.Iris.OFE.Dist.incN_r : (b : α) ≡{n}≡ c → (a ≼{n} b ↔ a ≼{n} c) := incN_iff_right
 
 @[rocq_alias cmra_includedN_ne]
-theorem incN_iff (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n}≡ b') : a ≼{n} b ↔ a' ≼{n} b' :=
+theorem incN_dist_iff (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n}≡ b') : a ≼{n} b ↔ a' ≼{n} b' :=
   (incN_iff_left ea).trans (incN_iff_right eb)
 theorem _root_.Iris.OFE.Dist.incN :
-    (a : α) ≡{n}≡ a' → b ≡{n}≡ b' → (a ≼{n} b ↔ a' ≼{n} b') := incN_iff
+    (a : α) ≡{n}≡ a' → b ≡{n}≡ b' → (a ≼{n} b ↔ a' ≼{n} b') := incN_dist_iff
+
+@[rocq_alias cmra_includedN_proper]
+theorem incN_eqv_iff (ea : (a : α) ≡ a') (eb : (b : α) ≡ b') : a ≼{n} b ↔ a' ≼{n} b' :=
+  incN_dist_iff ea.dist eb.dist
 
 @[rocq_alias cmra_included_trans]
 theorem inc_trans {x y z : α} : x ≼ y → y ≼ z → x ≼ z
@@ -552,9 +636,13 @@ theorem op_mono_left {x y} (z : α) (h : x ≼ y) : x • z ≼ y • z :=
 theorem op_monoN {n} {x x' y y' : α} (hx : x ≼{n} x') (hy : y ≼{n} y') : x • y ≼{n} x' • y' :=
   (op_monoN_left _ hx).trans (op_monoN_right _ hy)
 
+#rocq_ignore cmra_monoN' "Use cmra_monoN"
+
 @[rocq_alias cmra_mono]
 theorem op_mono {x x' y y' : α} (hx : x ≼ x') (hy : y ≼ y') : x • y ≼ x' • y' :=
   (op_mono_left _ hx).trans (op_mono_right _ hy)
+
+#rocq_ignore cmra_mono' "Use cmra_mono"
 
 @[rocq_alias core_id_dup]
 theorem op_self (x : α) [CoreId x] : x • x ≡ x := pcore_op_self' CoreId.core_id
@@ -614,6 +702,8 @@ theorem core_ne : NonExpansive (core : α → α) where
     rw [← pcore_eq_core, ← pcore_eq_core]
     exact NonExpansive.ne H
 
+#rocq_ignore cmra_core_proper "Derived from core_ne"
+
 theorem _root_.Iris.OFE.Dist.core :
   ∀ {n} {x₁ x₂ : α}, x₁ ≡{n}≡ x₂ → core x₁ ≡{n}≡ core x₂ := @core_ne.ne
 theorem _root_.Iris.OFE.Equiv.core : ∀ {x₁ x₂ : α}, x₁ ≡ x₂ → core x₁ ≡ core x₂ := @core_ne.eqv
@@ -656,7 +746,6 @@ theorem core_mono {x y : α} (Hinc : x ≼ y) : core x ≼ core y := by
   exact hz.core.inc_r.2 (core_op_mono x z)
 
 end total
-
 
 section discreteElements
 
@@ -767,7 +856,7 @@ theorem IdFree.of_dist {x₁ x₂ : α} {n} (e : x₁ ≡{n}≡ x₂) (h : IdFre
       x₁ • z ≡{0}≡ x₂ • z := op_left_dist z ee
       _      ≡{0}≡ x₂ := h₂
       _      ≡{0}≡ x₁ := ee.symm
-    h.id_free0_r _ ((validN_iff ee).mpr v) this
+    h.id_free0_r _ ((validN_dist_iff ee).mpr v) this
 
 theorem _root_.Iris.OFE.Dist.idFree {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) : IdFree x₁ ↔ IdFree x₂ :=
   ⟨.of_dist e, .of_dist e.symm⟩
@@ -812,7 +901,7 @@ instance idFree_op_l {x y : α} [IdFree x] [Cancelable y] : IdFree (x • y) :=
 
 @[rocq_alias exclusive_id_free]
 instance exclusive_idFree {x : α} [Exclusive x] : IdFree x where
-  id_free0_r z v h := exclusive0_l z ((validN_iff h.symm).mp v)
+  id_free0_r z v h := exclusive0_l z ((validN_dist_iff h.symm).mp v)
 
 end idFreeElements
 
@@ -857,6 +946,7 @@ instance empty_cancelable : Cancelable (unit : α) where
 theorem _root_.Iris.OFE.Dist.to_incN {n} {x y : α} (H : x ≡{n}≡ y) : x ≼{n} y :=
   ⟨unit, ((equiv_dist.mp unit_right_id n).trans H).symm⟩
 
+@[rocq_alias cmra_monoid]
 instance ucmraMonoidOps {α : Type _} [UCMRA α] : Algebra.MonoidOps (CMRA.op (α := α)) UCMRA.unit where
   op_ne := ⟨fun _ _ _ hx _ _ hy => hx.op hy⟩
   op_assoc := CMRA.assoc.symm
@@ -928,7 +1018,18 @@ end Leibniz
 
 section UCMRA
 
-variable {α : Type _} [UCMRA α] [Leibniz α]
+variable {α : Type _} [UCMRA α]
+
+@[rocq_alias ucmra_unit_valid]
+theorem ucmra_unit_valid : ✓ (unit : α) := unit_valid
+
+@[rocq_alias ucmra_unit_left_id]
+theorem ucmra_unit_left_id {x : α} : unit • x ≡ x := unit_left_id
+
+@[rocq_alias ucmra_pcore_unit]
+theorem ucmra_pcore_unit : pcore (unit : α) ≡ some unit := pcore_unit
+
+variable [Leibniz α]
 
 @[rocq_alias ucmra_unit_left_id_L]
 theorem unit_left_id_L {x : α} : unit • x = x := leibniz.mp unit_left_id
@@ -1120,6 +1221,12 @@ end Id
 section DiscreteFunO
 open CMRA
 
+#rocq_ignore discrete_fun_op_instance "Use CMRA instance"
+#rocq_ignore discrete_fun_pcore_instance "Use CMRA instance"
+#rocq_ignore discrete_fun_valid_instance "Use CMRA instance"
+#rocq_ignore discrete_fun_validN_instance "Use CMRA instance"
+#rocq_ignore discrete_fun_cmra_mixin "Use CMRA instance"
+
 @[rocq_alias discrete_funR]
 instance cmraDiscreteFunO {α : Type _} (β : α → Type _)
     [∀ x, CMRA (β x)] [∀ x, IsTotal (β x)] : CMRA (∀ x, β x) where
@@ -1146,6 +1253,9 @@ instance cmraDiscreteFunO {α : Type _} (β : α → Type _)
     let F x := extend (Hv x) (He x)
     exact ⟨fun x => (F x).1, fun x => (F x).2.1,
       fun x => (F x).2.2.1, fun x => (F x).2.2.2.1, fun x => (F x).2.2.2.2⟩
+
+#rocq_ignore discrete_fun_unit_instance "Use UCMRA instance"
+#rocq_ignore discrete_fun_ucmra_mixin "Use UCMRA instance"
 
 @[rocq_alias discrete_funUR]
 instance ucmraDiscreteFunO {α : Type _} (β : α → Type _) [∀ x, UCMRA (β x)] : UCMRA (∀ x, β x) where
@@ -1204,7 +1314,12 @@ def optionValid : Option α → Prop
   | some x => ✓ x
   | none => True
 
-@[rocq_alias optionR]
+#rocq_ignore option_op_instance "Use CMRA instance"
+#rocq_ignore option_pcore_instance "Use CMRA instance"
+#rocq_ignore option_valid_instance "Use CMRA instance"
+#rocq_ignore option_validN_instance "Use CMRA instance"
+
+@[rocq_alias optionR, rocq_alias option_cmra_mixin]
 instance cmraOption : CMRA (Option α) where
   pcore x := some (optionCore x)
   op := optionOp
@@ -1260,6 +1375,9 @@ instance cmraOption : CMRA (Option α) where
     · rcases extend Hx Hx' with ⟨mc1, mc2, _, _, _⟩
       exists some mc1, some mc2
 
+#rocq_ignore option_unit_instance "Use UCMRA instance"
+#rocq_ignore option_ucmra_mixin "Use UCMRA instance"
+
 @[rocq_alias optionUR]
 instance ucmraOption : UCMRA (Option α) where
   unit := none
@@ -1268,6 +1386,52 @@ instance ucmraOption : UCMRA (Option α) where
   pcore_unit := by rfl
 
 namespace Option
+
+@[rocq_alias Some_op]
+theorem some_op (a b : α) : some (a • b) = some a • some b := rfl
+
+@[rocq_alias Some_valid]
+theorem some_valid {a : α} : ✓ (some a) ↔ ✓ a := .rfl
+
+@[rocq_alias Some_validN]
+theorem some_validN {n} {a : α} : ✓{n} (some a) ↔ ✓{n} a := .rfl
+
+@[rocq_alias pcore_Some]
+theorem pcore_some (a : α) :
+    CMRA.pcore (some a) = (some (CMRA.pcore a) : Option (Option α)) := rfl
+
+@[rocq_alias Some_core]
+theorem some_core [IsTotal α] (a : α) : some (CMRA.core a) = CMRA.core (some a) := by
+  simp [CMRA.core, CMRA.pcore, optionCore]
+  obtain ⟨c, hc⟩ := IsTotal.total a
+  simp [hc]
+
+@[rocq_alias Some_core_id]
+instance some_core_id (a : α) [CoreId a] : CoreId (some a : Option α) where
+  core_id := by simp [pcore_some]; exact CoreId.core_id
+
+@[rocq_alias option_core_id]
+instance option_core_id (ma : Option α) [∀ x : α, CoreId x] : CoreId ma where
+  core_id := by
+    rcases ma with _|a
+    · rfl
+    · exact (some_core_id a).core_id
+
+@[rocq_alias op_None]
+theorem op_none_iff (ma mb : Option α) : ma • mb = none ↔ ma = none ∧ mb = none := by
+  cases ma <;> cases mb <;> simp [CMRA.op, optionOp]
+
+@[rocq_alias op_is_Some]
+theorem op_isSome (ma mb : Option α) : (ma • mb).isSome ↔ ma.isSome ∨ mb.isSome := by
+  cases ma <;> cases mb <;> simp [CMRA.op, optionOp]
+
+@[rocq_alias op_None_left_id]
+theorem op_none_left_id (a : Option α) : (none : Option α) • a = a := by
+  cases a <;> rfl
+
+@[rocq_alias op_None_right_id]
+theorem op_none_right_id (a : Option α) : a • (none : Option α) = a := by
+  cases a <;> rfl
 
 theorem equiv_of_some_equiv_some {x y : α} (H : some x ≡ some y) : x ≡ y := H
 
@@ -1308,6 +1472,28 @@ theorem exists_op_some_dist_some {n} (x : Option α) (y : α) : ∃ z, x • som
 
 theorem not_valid_some_exclN_op_left {n} {x : α} [Exclusive x] {y : α} : ¬✓{n} (some x • some y) :=
   not_valid_exclN_op_left (α := α)
+
+@[rocq_alias exclusiveN_Some_l]
+theorem exclusiveN_some_left {n} {a : α} [Exclusive a] {mb : Option α}
+    (h : ✓{n} (some a • mb)) : mb = none := by
+  cases mb with
+  | none => rfl
+  | some b => exact (not_valid_some_exclN_op_left h).elim
+
+@[rocq_alias exclusiveN_Some_r]
+theorem exclusiveN_some_right {n} {a : α} [Exclusive a] {mb : Option α}
+    (h : ✓{n} (mb • some a)) : mb = none :=
+  exclusiveN_some_left (CMRA.validN_ne CMRA.op_commN h)
+
+@[rocq_alias exclusive_Some_l]
+theorem exclusive_some_left {a : α} [Exclusive a] {mb : Option α}
+    (h : ✓ (some a • mb)) : mb = none :=
+  exclusiveN_some_left (n := 0) h.validN
+
+@[rocq_alias exclusive_Some_r]
+theorem exclusive_some_right {a : α} [Exclusive a] {mb : Option α}
+    (h : ✓ (mb • some a)) : mb = none :=
+  exclusiveN_some_right (n := 0) h.validN
 
 theorem validN_op_unit {n} {x : Option α} (vx : ✓{n} x) : ✓{n} x • unit := by
   rcases x with ⟨_|_⟩ <;> trivial
@@ -1350,7 +1536,7 @@ theorem inc_iff_isTotal [IsTotal α] {ma mb : Option α} :
     · exact .inr ⟨a, b, rfl, rfl, .inr Hinc⟩
 
 @[rocq_alias option_includedN_total]
-theorem incN_iff_isTotal [IsTotal α] {ma mb : Option α} :
+theorem incN_iff_is_total [IsTotal α] {ma mb : Option α} :
     ma ≼{n} mb ↔ ma = none ∨ ∃ a b, ma = some a ∧ mb = some b ∧ a ≼{n} b := by
   rw [incN_iff]
   constructor
@@ -1389,7 +1575,7 @@ theorem dist_of_inc_exclusive [Exclusive (a : α)] {b : α} (H : some a ≼{n} s
     · exact not_valid_of_exclN_inc H Hv |>.elim
 
 @[rocq_alias Some_included_total]
-theorem some_inc_some_iff_isTotal [IsTotal α] {a b : α} : some a ≼ some b ↔ a ≼ b := by
+theorem some_inc_some_iff_is_total [IsTotal α] {a b : α} : some a ≼ some b ↔ a ≼ b := by
   apply some_inc_some_iff.trans
   refine ⟨?_, .inr⟩
   rintro (H|H)
@@ -1397,7 +1583,7 @@ theorem some_inc_some_iff_isTotal [IsTotal α] {a b : α} : some a ≼ some b �
   · exact H
 
 @[rocq_alias Some_includedN_total]
-theorem some_incN_some_iff_isTotal [IsTotal α] {a b : α} : some a ≼{n} some b ↔ a ≼{n} b := by
+theorem some_incN_some_iff_is_total [IsTotal α] {a b : α} : some a ≼{n} some b ↔ a ≼{n} b := by
   apply some_incN_some_iff.trans
   refine ⟨?_, .inr⟩
   rintro (H|H)
@@ -1463,7 +1649,14 @@ end option
 
 section unit
 
-@[rocq_alias unitR]
+#rocq_ignore unit_op_instance "Use CMRA instance"
+#rocq_ignore unit_pcore_instance "Use CMRA instance"
+#rocq_ignore unit_valid_instance "Use CMRA instance"
+#rocq_ignore unit_validN_instance "Use CMRA instance"
+#rocq_ignore unit_cancelable "Subsumed by empty_cancelable"
+#rocq_ignore unit_core_id "Subsumed by unit_CoreId"
+
+@[rocq_alias unitR, rocq_alias unit_cmra_mixin]
 instance cmraUnit : CMRA Unit where
   pcore _ := some ()
   op _ _ := ()
@@ -1500,7 +1693,12 @@ abbrev ValidN n (x : α × β) := ✓{n} x.fst ∧ ✓{n} x.snd
 
 abbrev Valid (x : α × β) := ✓ x.fst ∧ ✓ x.snd
 
-@[rocq_alias prodR]
+#rocq_ignore prod_op_instance "Use CMRA instance"
+#rocq_ignore prod_pcore_instance "Use CMRA instance"
+#rocq_ignore prod_valid_instance "Use CMRA instance"
+#rocq_ignore prod_validN_instance "Use CMRA instance"
+
+@[rocq_alias prodR, rocq_alias prod_cmra_mixin]
 instance cmraProd : CMRA (α × β) where
   pcore := pcore
   op := op

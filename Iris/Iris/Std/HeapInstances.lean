@@ -50,7 +50,7 @@ instance instPartialMapFun : PartialMap (K → Option ·) K where
     | some x, some y => some <| f k x y
 
 instance : LawfulPartialMap (K → Option ·) K where
-  get?_empty := by simp [get?, empty]
+  get?_empty := fun k => rfl
   get?_insert_eq := by simp [get?, insert]; grind
   get?_insert_ne := by simp [get?, insert]; grind
   get?_delete_eq := by simp [get?, delete]
@@ -387,7 +387,7 @@ theorem getElem?_mergeWith' {t₁ t₂ : TreeMap K V compare} {f : K → V → V
     simp [eq_of_compare hkv_cmp]
 
 instance : LawfulPartialMap (TreeMap K · compare) K where
-  get?_empty := by simp [Iris.Std.get?, Iris.Std.empty]
+  get?_empty := by simp [Iris.Std.get?]
   get?_insert_eq := by simp [Iris.Std.get?, Iris.Std.insert]; grind
   get?_insert_ne := by simp [Iris.Std.get?, Iris.Std.insert]; grind
   get?_delete_eq := by simp [Iris.Std.get?, Iris.Std.delete]
@@ -461,7 +461,7 @@ theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
     | _ m₂ => exact Std.TreeMap.getElem?_mergeWith'
 
 instance : LawfulPartialMap (ExtTreeMap K · compare) K where
-  get?_empty := by simp [Iris.Std.get?, Iris.Std.empty]
+  get?_empty := by simp [Iris.Std.get?]
   get?_insert_eq := by simp [Iris.Std.get?, Iris.Std.insert]; grind
   get?_insert_ne := by simp [Iris.Std.get?, Iris.Std.insert]; grind
   get?_delete_eq := by simp [Iris.Std.get?, Iris.Std.delete]
