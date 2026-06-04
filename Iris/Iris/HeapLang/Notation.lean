@@ -93,7 +93,7 @@ syntax:75 "-" hl_exp:75 : hl_exp
 syntax:10 "if " hl_exp:10 " then " hl_exp:10 " else " hl_exp:10 : hl_exp
 
 /-- application -/
-syntax:100 hl_exp:100 ppSpace hl_exp:101 : hl_exp
+syntax:100 hl_exp:100 colGt ppSpace hl_exp:101 : hl_exp
 /-- let -/
 syntax:10 "let " binderIdent " := " hl_exp:10 "; " hl_exp:1 : hl_exp
 /-- sequencing -/

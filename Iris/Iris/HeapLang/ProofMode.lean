@@ -60,17 +60,18 @@ public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E 
   iapply wp_bind
   iapply H $$ [$]
 
-elab "wp_bind" focus:hl_exp : tactic => do
+elab "wp_bind" colGt focus:hl_exp : tactic => do
   let focus ← elabTermEnsuringTypeQ (←`(hl($focus))) q(HeapLang.Exp)
 
-  trace[bind] s!"Context to bind over: {←ppExpr focus}"
+  trace[wp_bind] s!"Context to bind over: {←ppExpr focus}"
   -- TODO: why is it necessary to mention all the fields we don't need here?
   ProofModeM.runTacticWp fun mvar {GF, hyps, s, E, e, Φ, u:=_, prop:=_, bi:=_, ehyps:=_, hlc:=_, ι:=_, hu :=_, hprop:=_, hbi:=_} => do
 
-    let some ⟨_, K, e'⟩ ← findECtx e (do
-      if ← isDefEq · focus then return some () else return none)
+    let some ⟨_, K, e'⟩ ← findECtx e (fun e => do
+      trace[wp_bind] s!"trying to unify {←ppExpr e} with expression {←ppExpr focus}"
+      if ← isDefEq e focus then return some () else return none)
       | throwError s!"Couldn't unify {←ppExpr focus} with any possible evaluation context"
-    trace[bind] s!"Found ctx {←ppExpr K} with expression {←ppExpr e'} matching our focus"
+    trace[wp_bind] s!"Found ctx {←ppExpr K} with expression {←ppExpr e'} matching our focus"
 
     -- findECtx guarantees that this holds
     have _ : $e =Q ProgramLogic.fill $K $e' := ⟨⟩

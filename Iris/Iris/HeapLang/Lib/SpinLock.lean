@@ -5,6 +5,7 @@ public import Iris.Instances.Lib.Token
 public import Iris.Instances.Lib.Invariants
 public import Iris.Std.Namespaces
 public import Iris.HeapLang.PrimitiveLaws
+public import Iris.HeapLang.ProofMode
 
 namespace Iris.HeapLang
 
@@ -117,6 +118,8 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
   subst Heq
   iapply wp_bind (fun x => hl(snd({x})))
+  -- TODO: why does the following not work?
+  -- wp_bind snd(_)
   iapply wp_atomic (E2 := ⊤ \ nclose spinlockN)
   imod inv_acc ⊤ _ _ (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨G1, G2⟩
   unfold lockInv
