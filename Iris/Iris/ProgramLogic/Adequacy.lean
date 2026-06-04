@@ -205,7 +205,7 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness) (es : List Expr) (�
   iapply step_fupdN_fupd_finally
   iapply step_fupdN_wand $$ H
   iintro >⟨%nt', Hσ, Ht⟩
-  iapply fupd_finally_keep _ iprop(⌜∀ e2, s = .NotStuck → e2 ∈ t2 → NotStuck (e2, σ2)⌝)
+  iapply fupd_finally_keep iprop(⌜∀ e2, s = .NotStuck → e2 ∈ t2 → NotStuck (e2, σ2)⌝)
   isplit
   · iintro %e %Heq %Hin
     subst s
