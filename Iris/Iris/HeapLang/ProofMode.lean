@@ -79,10 +79,10 @@ def iWpValueHead {u}
   (e : Q(Exp))
   (Φ : Q(Val → $prop))
 
-  (hu : QuotedLevelDefEq u 0 := ⟨⟩)
-  (hprop : $prop =Q IProp $GF := ⟨⟩)
-  (hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
-  (hwp : $κ =Q wp.def := ⟨⟩)
+  (_hu : QuotedLevelDefEq u 0 := ⟨⟩)
+  (_hprop : $prop =Q IProp $GF := ⟨⟩)
+  (_hbi : $bi =Q UPred.instBIUPred := ⟨⟩)
+  (_hwp : $κ =Q wp.def := ⟨⟩)
 
   (throwEx : ∀ {α : Type _}, MessageData → ProofModeM α := Lean.throwError) :
     ProofModeM Q($ehyps ⊢ Wp.wp $s $E $e $Φ) := (do
