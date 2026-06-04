@@ -24,11 +24,11 @@ info: Exp.binop BinOp.plus
   (Exp.binop BinOp.plus
     (@ProgramLogic.ToVal.ofVal Exp Val instToVal
       (Val.lit (@OfNat.ofNat BaseLit (nat_lit 1) (@instOfNatBaseLit (nat_lit 1)))))
-    (Exp.val v)) : Exp
+    (@ProgramLogic.ToVal.ofVal Exp Val instToVal v)) : Exp
 -/
 #guard_msgs in
 set_option pp.explicit true in
-#check hl(#1 + #1 + {.val v})
+#check hl(#1 + #1 + {.ofVal v})
 /-- info: hl((#1 + (#1 + v(?v)))) : Exp -/
 #guard_msgs in
 #check hl(#1 + (#1 + v(?v)))

@@ -79,25 +79,6 @@ theorem wp_rec {f x : Binder} {e : Exp} {vf v : Val}
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
 
-theorem wp_rec_val {f x : Binder} {e : Exp} :
-    ▷ (Φ (Val.rec_ f x e))
-    ⊢  WP (Exp.rec_ f x e) @ s; E {{ Φ }} := by
-  iintro HΦ
-  iapply wp_pure_step_fupd (Hφ := True.intro)
-  dsimp only [Nat.repeat]
-  iintro !> !> !> -
-  iapply wp_value' $$ [$]
-
-theorem wp_let {e1 e2 : Exp} {x} :
-    WP e2 @ s; E {{ v, WP (e1.subst x v) @ s; E {{ Φ }} }}
-    ⊢  WP (Exp.app (.rec_ .anon x e1) e2) @ s; E {{ Φ }} := by
-  iintro Hwp
-  sorry
-  -- iapply wp_pure_step_fupd (Hφ := True.intro)
-  -- dsimp only [Nat.repeat]
-  -- iintro !> !> !> -; iframe
-
-
 theorem wp_fork {e : Exp} :
     ▷ Φ (hl_val(#())) ∗ ▷ WP e @ s; ⊤ {{ _v, True }}
     ⊢ WP hl(fork(?e)) @ s; E {{ Φ }} := by

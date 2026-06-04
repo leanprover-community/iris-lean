@@ -169,7 +169,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
     iapply IH
     iapply Hcont
   · wp_pure
-    iapply wp_value'
+    imodintro
     iapply Hcont
     simp only [if_pos]
     iframe

@@ -110,16 +110,18 @@ elab "wp_value_head" : tactic =>
     mvar.assign pf
 
 public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e' : Exp} {Φ : Val → IProp GF}
-  (H : Δ ⊢ WP e' @ s ; E {{ v, WP (ProgramLogic.fill K (Exp.val v)) @ s; E {{ Φ }} }}) :
+  (H : Δ ⊢ WP e' @ s ; E {{ v, WP (ProgramLogic.fill K (Exp.ofVal (Expr:=Exp) v)) @ s; E {{ Φ }} }}) :
     (Δ ⊢ WP (ProgramLogic.fill K e') @ s ; E {{ Φ }}) :=
   H.trans (wp_bind (ProgramLogic.fill K))
 
 elab "wp_bind" colGt ppSpace focus:hl_exp : tactic =>
   ProofModeM.runTacticWp fun mvar {GF, hyps, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (←`(hl($focus))) q(HeapLang.Exp)
-    trace[bind] s!"Context to bind over: {←ppExpr focus}"
+    trace[wp_bind] s!"Context to bind over: {←ppExpr focus}"
 
-    let some {K, e', ..} ← findECtx e (do guard <| ← isDefEq · focus)
+    let some {K, e', ..} ← findECtx e (fun e => do
+      trace[wp_bind] s!"trying to unify {←ppExpr e} with {←ppExpr focus}"
+      guard <| ← isDefEq e focus)
     -- TODO: add a throwProofModeEx for throwing errors consistently across all tactics
       | throwTacticEx `wp_bind mvar s!"Cannot unify {←ppExpr focus} with any possible evaluation context"
     trace[wp_bind] s!"Found context {←ppExpr K} with expression {←ppExpr e'} matching our focus"
@@ -128,7 +130,7 @@ elab "wp_bind" colGt ppSpace focus:hl_exp : tactic =>
     let Φ' : Q(Val → IProp $GF) ←
       Qq.withLocalDeclDQ `v q(Val) fun v => do
         mkLambdaFVars #[v] <|
-          q(Wp.wp $s $E $(← HeapLang.fill K q(.val $v)) $Φ)
+          q(Wp.wp $s $E $(← HeapLang.fill K q(.ofVal $v)) $Φ)
     have _ : $Φ' =Q (fun v : Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $K (v : Exp)) $Φ) := ⟨⟩
 
     let pf ← addBIGoal hyps q(Wp.wp $s $E $e' $Φ')
