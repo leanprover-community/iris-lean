@@ -103,6 +103,7 @@ example : ⊢@{IProp GF}  WP hl(snd((#1,#0)) + #1) {{ v, True }} := by
 
 end wp_bind
 
+section wp_pure
 
 /--
 error: unsolved goals
@@ -142,3 +143,5 @@ GF : BundledGFunctors
 example : ⊢@{IProp GF}  WP hl(snd(v((#1,#2)))) {{ v, True }} := by
   istart
   wp_pure
+
+end wp_pure
