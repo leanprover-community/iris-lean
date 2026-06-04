@@ -124,75 +124,65 @@ def Valid (x : ReservationMap A H) : Prop :=
   | .valid e => ✓ x.data ∧ ∀i, get? x.data i = none ∨ i ∉ e
   | .error => False
 
-def validN_unpack {n : Nat} {x : ReservationMap A H} (h : x.ValidN n) :
-    ✓{n} x.data ∧ ✓{n} x.token ∧ ∀i, get? x.data i = none ∨ i ∉ x.token := by
-  simp only [ValidN] at h
-  exact match eq : x.token with
-  | .valid s => ⟨(eq ▸ h).left, (valid_0_iff_validN n).mp trivial, (eq ▸ h).right⟩
-  | .error => (eq ▸ h).elim
+theorem validN_iff {n : Nat} {x : ReservationMap A H} :
+    x.ValidN n ↔ ✓{n} x.data ∧ ✓{n} x.token ∧ ∀ i, get? x.data i = none ∨ i ∉ x.token := by
+  refine ⟨fun h => ?_, fun ⟨vd, vt, disj⟩ => ?_⟩
+  · simp only [ValidN] at h
+    exact match eq : x.token with
+    | .valid s => ⟨(eq ▸ h).left, (valid_0_iff_validN n).mp trivial, (eq ▸ h).right⟩
+    | .error => (eq ▸ h).elim
+  · simp only [ValidN]
+    cases h : x.token
+    · simp only [h] at disj
+      exact ⟨vd, disj⟩
+    · exact ((h ▸ not_valid_invalid (S := CoPset)) vt)
+
+theorem valid_iff {x : ReservationMap A H} :
+    x.Valid ↔ ✓ x.data ∧ ✓ x.token ∧ ∀ i, get? x.data i = none ∨ i ∉ x.token := by
+  refine ⟨fun h => ?_, fun ⟨vd, vt, disj⟩ => ?_⟩
+  · simp only [Valid] at h
+    exact match eq : x.token with
+    | .valid s => ⟨(eq ▸ h).left, valid_mapN (fun n a => a) trivial, (eq ▸ h).right⟩
+    | .error => (eq ▸ h).elim
+  · simp only [Valid]
+    cases h : x.token
+    · simp only [h] at disj
+      exact ⟨vd, disj⟩
+    · exact ((h ▸ not_valid_invalid (S := CoPset)) vt)
 
 theorem validN_data_of_validN {n : Nat} {x : ReservationMap A H} (h : x.ValidN n) :
-    ✓{n} x.data := (validN_unpack h).left
+    ✓{n} x.data := (validN_iff.mp h).left
 
 theorem validN_token_of_validN {n : Nat} {x : ReservationMap A H} (h : x.ValidN n) :
-    ✓{n} x.token := (validN_unpack h).right.left
+    ✓{n} x.token := (validN_iff.mp h).right.left
 
 theorem validN_disj {n : Nat} {x : ReservationMap A H} (h : x.ValidN n) (i : Pos) :
-  get? x.data i = none ∨ i ∉ x.token := (validN_unpack h).right.right i
-
-theorem validN_of_parts {n : Nat} {x : ReservationMap A H} (vd : ✓{n} x.data)
-    (vt : ✓{n} x.token) (disj : ∀i, get? x.data i = none ∨ i ∉ x.token) :
-    x.ValidN n := by
-  simp only [ValidN]
-  cases h : x.token
-  · simp only [h] at disj
-    exact ⟨vd, disj⟩
-  · exact ((h ▸ not_valid_invalid (S := CoPset)) vt)
-
-def valid_unpack {x : ReservationMap A H} (h : x.Valid) :
-    ✓ x.data ∧ ✓ x.token ∧ ∀i, get? x.data i = none ∨ i ∉ x.token := by
-  simp only [Valid] at h
-  exact match eq : x.token with
-  | .valid s => ⟨(eq ▸ h).left, valid_mapN (fun n a => a) trivial, (eq ▸ h).right⟩
-  | .error => (eq ▸ h).elim
+    get? x.data i = none ∨ i ∉ x.token := (validN_iff.mp h).right.right i
 
 theorem valid_data_of_valid {x : ReservationMap A H} (h : x.Valid) :
-    ✓ x.data := (valid_unpack h).left
+    ✓ x.data := (valid_iff.mp h).left
 
 theorem valid_token_of_valid {x : ReservationMap A H} (h : x.Valid) :
-    ✓ x.token := (valid_unpack h).right.left
+    ✓ x.token := (valid_iff.mp h).right.left
 
 theorem valid_disj {x : ReservationMap A H} (h : x.Valid) (i : Pos):
-    get? x.data i = none ∨ i ∉ x.token := (valid_unpack h).right.right i
-
-theorem valid_of_parts {x : ReservationMap A H} (vd : ✓ x.data) (vt : ✓ x.token)
-    (disj : ∀i, get? x.data i = none ∨ i ∉ x.token) : x.Valid := by
-  simp only [Valid]
-  cases h : x.token
-  · simp only [h] at disj
-    exact ⟨vd, disj⟩
-  · exact (h ▸ not_valid_invalid) vt
+    get? x.data i = none ∨ i ∉ x.token := (valid_iff.mp h).right.right i
 
 def core (x : ReservationMap A H) : ReservationMap A H := mk (CMRA.core x.data) ∅
 
 @[simp]
-theorem core_data (x : ReservationMap A H) :
-  x.core.data = CMRA.core x.data := rfl
+theorem core_data (x : ReservationMap A H) : x.core.data = CMRA.core x.data := rfl
 
 @[simp]
-theorem core_token (x : ReservationMap A H) : x.core.token = CMRA.core x.token :=
-  rfl
+theorem core_token (x : ReservationMap A H) : x.core.token = CMRA.core x.token := rfl
 
-def op (x y : ReservationMap A H) : ReservationMap A H :=
-  mk (x.data • y.data) (x.token • y.token)
+def op (x y : ReservationMap A H) : ReservationMap A H := mk (x.data • y.data) (x.token • y.token)
 
 @[simp]
-theorem op_data' (x y : ReservationMap A H): (x.op y).data = x.data • y.data :=
-  rfl
+theorem op_data' (x y : ReservationMap A H) : (x.op y).data = x.data • y.data := rfl
 
 @[simp]
-theorem op_token' (x y : ReservationMap A H): (x.op y).token = x.token • y.token :=
-  rfl
+theorem op_token' (x y : ReservationMap A H) : (x.op y).token = x.token • y.token := rfl
 
 #rocq_ignore reservation_map_cmra_mixin "Not needed"
 #rocq_ignore reservation_map_ucmra_mixin "Not needed"
@@ -208,14 +198,13 @@ instance : UCMRA (ReservationMap A H) where
   pcore_ne {n x y cx} e pe := by
     cases Option.some_inj.mp pe.symm
     refine ⟨core y, rfl, ?_, ?_⟩
-    · simp [core_data, Dist.core e.left]
-    · simp [core_token, Dist.core e.right]
+    · simp [Dist.core e.left]
+    · simp [Dist.core e.right]
   validN_ne {n x y} h v := by
-    refine validN_of_parts ?_ ?_ ?_
+    refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
     · exact (Dist.validN h.left).mp (validN_data_of_validN v)
     · exact (Dist.validN h.right).mp (validN_token_of_validN v)
-    · intro i
-      cases (validN_disj v) i with
+    · cases (validN_disj v) i with
       | inl gn =>
         refine .inl <| ?_
         rw [←dist_none (n := n)]
@@ -226,28 +215,25 @@ instance : UCMRA (ReservationMap A H) where
         rw [congrFun ((congrArg Membership.mem h.right)) i]
         exact hc
   valid_iff_validN {x} := by
-    refine ⟨?_, ?_⟩
-    · intro h n
-      refine validN_of_parts ?_ ?_ ?_
+    refine ⟨fun h n => ?_, fun v => ?_⟩
+    · refine validN_iff.mpr ⟨?_, ?_, ?_⟩
       · exact Valid.validN (valid_data_of_valid h)
       · exact (valid_0_iff_validN n).mp (valid_token_of_valid h)
       · exact valid_disj h
-    · intro v
-      refine valid_of_parts ?_ ?_ ?_
+    · refine valid_iff.mpr ⟨?_, ?_, ?_⟩
       · exact valid_iff_validN.mpr (fun n => validN_data_of_validN (v n))
       · exact valid_iff_validN.mpr (fun n => validN_token_of_validN (v n))
       · exact validN_disj (v 0)
   validN_succ {x n} v := by
-    refine validN_of_parts ?_ ?_ ?_
+    refine validN_iff.mpr ⟨?_, ?_, ?_⟩
     · exact validN_succ (validN_data_of_validN v)
     · exact (valid_0_iff_validN n).mp (validN_token_of_validN (n := n.succ) v)
     · exact validN_disj v
   validN_op_left {n x y} v := by
-    refine validN_of_parts ?_ ?_ ?_
+    refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
     · exact validN_op_left (validN_data_of_validN v)
     · exact validN_op_left (validN_token_of_validN v)
-    · intro i
-      cases (validN_disj v) i with
+    · cases (validN_disj v) i with
       | inl aa =>
         simp only [op_data', Heap.get?_op] at aa
         exact .inl <| Option.eq_none_of_op_eq_none_left aa
@@ -293,9 +279,11 @@ theorem op_token (x y : ReservationMap A H): (x • y).token = x.token • y.tok
 
 @[rocq_alias reservation_map_cmra_discrete]
 instance [CMRA.Discrete A] : CMRA.Discrete (ReservationMap A H) where
-  discrete_valid {_} v :=
-    valid_of_parts (discrete_valid (validN_data_of_validN v))
-      (validN_token_of_validN v) (validN_disj v)
+  discrete_valid {_} v := by
+    refine valid_iff.mpr ⟨?_, ?_, ?_⟩
+    · exact discrete_valid (validN_data_of_validN v)
+    · exact validN_token_of_validN v
+    · exact validN_disj v
 
 instance instCoreIdSingleton {a : A} [CoreId a] : CoreId (singleton (H := H) k a) where
   core_id := by
@@ -326,10 +314,10 @@ theorem split_validN {x : ReservationMap A H} (vx : ✓{n} x) :
     . exact (pcore_op_left' rfl).symm
 
 theorem valid_data {d : H A} : ✓ (ReservationMap.mkData (H := H) d) ↔ ✓ d :=
-  ⟨valid_data_of_valid, fun h => valid_of_parts h ⟨⟩ (fun p => .inr (mem_empty p))⟩
+  ⟨valid_data_of_valid, fun h => valid_iff.mpr ⟨h, ⟨⟩, fun p => .inr (mem_empty p)⟩⟩
 
 theorem validN_data {d : H A} : ✓{n} (ReservationMap.mkData (H := H) d) ↔ ✓{n} d :=
-  ⟨validN_data_of_validN, fun h => validN_of_parts h ⟨⟩ (fun p => .inr (mem_empty p))⟩
+  ⟨validN_data_of_validN, fun h => validN_iff.mpr ⟨h, ⟨⟩, (fun p => .inr (mem_empty p))⟩⟩
 
 @[rocq_alias reservation_map_data_valid]
 theorem valid_singleton (k : Pos) (a : A) : ✓ (singleton (H := H) k a) ↔ ✓ a :=
@@ -376,26 +364,26 @@ theorem validN_data_op_token {n : Nat} (a : H A) (b : CoPset) (vd : ✓{n} Reser
   have abdp : (ReservationMap.mkData a • ReservationMap.mkToken b).data ≡ a :=
     show a • ∅ ≡ a from (Algebra.MonoidOps.op_right_id)
   have eo : ∅ • valid b = .valid b := pcore_op_left_L rfl
-  refine validN_of_parts (validN_of_eqv abdp.symm ((validN_data).mp vd))
-    (by simp [op_token, ReservationMap.mkData, ReservationMap.mkToken, eo, validN_set])
-    fun i => ?_
-  simp only [ReservationMap.mkData, ReservationMap.mkToken, op_data, Heap.get?_op, get?_empty, op_token]
-  cases disj i with
-  | inl h => simpa [h] using .inl <| rfl
-  | inr h => simpa [eo] using .inr h
+  refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
+  · exact validN_of_eqv abdp.symm ((validN_data).mp vd)
+  · simp [ReservationMap.mkData, ReservationMap.mkToken, eo, validN_set]
+  · simp [ReservationMap.mkData, ReservationMap.mkToken, op_data, Heap.get?_op, get?_empty, op_token]
+    cases disj i with
+    | inl h => simpa [h] using .inl <| rfl
+    | inr h => simpa [eo] using .inr h
 
 theorem valid_data_op_token (a : H A) (b : CoPset) (vd : ✓ ReservationMap.mkData a)
     (disj : ∀i, get? a i = none ∨ i ∉ b) : ✓ ReservationMap.mkData a • ReservationMap.mkToken b := by
   have abdp : (ReservationMap.mkData a • ReservationMap.mkToken b).data ≡ a :=
     show a • ∅ ≡ a from (Algebra.MonoidOps.op_right_id)
   have eo : ∅ • valid b = .valid b := pcore_op_left_L rfl
-  refine valid_of_parts (valid_of_eqv abdp.symm ((valid_data).mp vd))
-    (by simp [op_token, ReservationMap.mkData, ReservationMap.mkToken, eo, valid_set])
-    fun i => ?_
-  simp only [ReservationMap.mkData, ReservationMap.mkToken, op_data, Heap.get?_op, get?_empty, op_token]
-  cases disj i with
-  | inl h => simpa only [h] using .inl <| rfl
-  | inr h => simpa only [eo] using .inr h
+  refine valid_iff.mpr ⟨?_, ?_, fun i => ?_⟩
+  · exact valid_of_eqv abdp.symm ((valid_data).mp vd)
+  · simp [op_token, ReservationMap.mkData, ReservationMap.mkToken, eo, valid_set]
+  · simp only [ReservationMap.mkData, ReservationMap.mkToken, op_data, Heap.get?_op, get?_empty, op_token]
+    cases disj i with
+    | inl h => simpa only [h] using .inl <| rfl
+    | inr h => simpa only [eo] using .inr h
 
 @[rocq_alias reservation_map_data_mono]
 theorem singleton_mono {k} {a b : A} (Hab : a ≼ b) : singleton (H := H) k a ≼ singleton k b :=
@@ -431,7 +419,7 @@ theorem validN_token_op_iff_disj {e₁ e₂} :
     ✓{n} (ReservationMap.mkToken (H := H) (A := A) e₁ • ReservationMap.mkToken e₂) ↔ e₁ ## e₂ where
   mp h := valid_op_iff_disj.mp (validN_token_of_validN h)
   mpr h := by
-    refine validN_of_parts ?_ ?_ fun i => ?_
+    refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
     · show ✓{n} ∅ • (∅ : H A)
       refine validN_of_eqv Algebra.MonoidOps.op_left_id.symm ?_
       exact Heap.valid_empty.validN
