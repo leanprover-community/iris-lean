@@ -1,6 +1,7 @@
 module
 
 public import Iris.HeapLang.PrimitiveLaws
+public import Iris.HeapLang.ProofMode
 
 namespace Iris.HeapLang
 
@@ -99,14 +100,13 @@ theorem quicksort_spec l ls Φ :
       simp
       iclear IH
       icases Hl with %heq; subst heq
-      iapply wp_match_injl
-      iintro !>
+      wp_pure
       iapply wp_bind (fun x => hl({x} #BaseLit.unit))
       iapply wp_rec_val
       imodintro
       iapply wp_rec; rfl; simp [Exp.subst]
       imodintro
-      iapply wp_value'
+      imodintro
       iapply HΦ $$ %_ %([])
       · unfold isList; itrivial
       · itrivial
@@ -114,52 +114,49 @@ theorem quicksort_spec l ls Φ :
     | cons head tail =>
       simp
       icases Hl with ⟨%tl, %heq, Hl⟩; subst heq
-      iapply wp_match_injr
-      iintro !>
+      wp_pure
       iapply wp_bind (fun x => hl({x} {_}))
       iapply wp_rec_val
       imodintro
       iapply wp_rec; rfl; simp [Exp.subst, Exp.substStr]
       imodintro
       iapply wp_let
-      iapply wp_fst; simp [Exp.subst, Exp.substStr]
-      imodintro
+      wp_pure
+      wp_value_head; simp [Exp.subst, Exp.substStr]
       iapply wp_let
-      iapply wp_snd; simp [Exp.subst, Exp.substStr]
-      imodintro
+      wp_pure
+      wp_value_head; simp [Exp.subst, Exp.substStr]
       iapply wp_let
       iapply wp_bind (fun x => hl({_} {x}))
-      iapply wp_pair
-      imodintro
-      -- simp [ToVal.ofVal]
-      -- set_option pp.all true in
+      wp_pure
+      wp_value_head
       iapply partition_spec $$ [$]
       iintro %l1 %l2 Hl1 Hl2
       simp [Exp.subst, Exp.substStr]
       iapply wp_let
       iapply wp_bind (fun x => hl({_} {x}))
-      iapply wp_fst
-      imodintro
+      wp_pure
+      wp_value_head
       iapply IH $$ [$]
       iintro %l1' %ls1' Hl1 %_ %_
       simp [Exp.subst, Exp.substStr]
       iapply wp_let
       iapply wp_bind (fun x => hl({_} {x}))
-      iapply wp_snd
-      imodintro
+      wp_pure
+      wp_value_head
       iapply IH $$ [$]
       iintro %l2' %ls2' Hl2 %_ %_
       simp [Exp.subst, Exp.substStr]
       iapply wp_let
       iapply wp_bind (fun x => hl({_} {x}))
-      iapply wp_pair
-      imodintro
+      wp_pure
+      wp_value_head
       iapply cons_spec $$ Hl2
       iintro %_ _
       simp [Exp.subst, Exp.substStr]
       iapply wp_bind (fun x => hl({_} {x}))
-      iapply wp_pair
-      imodintro
+      wp_pure
+      wp_value_head
       iapply append_spec $$ [$] [$]
       iintro %_ _
       iapply HΦ $$ [$]

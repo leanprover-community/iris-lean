@@ -51,12 +51,14 @@ instance instEctxItemLanguageExp : EctxItemLanguage Exp ECtxItem State Observati
 
 instance instPureExecIfTrue: Language.PureExec True 1 hl(if #true then ?e1 else ?e2) e1 where
   pureExec _ := by
-    refine Relation.Iterate.head ?_ (.rfl _)
-    refine ⟨fun σ => ?_, @fun σ1 σ2 κs e2' efs Hstep => ?_⟩
-    · exists e1, σ, []
+    refine Relation.Iterate.once ?_
+    constructor
+    · intro σ
+      exists e1, σ, []
       refine BaseStep.ContextStep.intro (K := []) ?_
       constructor
-    · have hsr : EctxLanguage.SubredexesAreValues (Exp.if (.ofVal (.lit (.bool true))) e1 e2) := by
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues (Exp.if (.ofVal (.lit (.bool true))) e1 e2) := by
         apply EctxItemLanguage.subredexes_are_values
         intro Ki e_inner heq
         cases Ki <;> try (cases heq; done)
@@ -67,7 +69,7 @@ instance instPureExecIfTrue: Language.PureExec True 1 hl(if #true then ?e1 else 
 
 instance instPureExecIfFalse : Language.PureExec True 1 hl(if #false then ?e1 else ?e2) e2 where
   pureExec _ := by
-    refine Relation.Iterate.head ?_ (.rfl _)
+    refine Relation.Iterate.once ?_
     constructor
     · intro σ
       exists e2, σ, []
@@ -117,7 +119,7 @@ instance instPureExecCaseInjr {v e1 e2} : Language.PureExec True 1 (Exp.case hl(
 instance instPureExecBeta {f x : Binder} {e : Exp} {v : Val} :
     Language.PureExec True 1 (.app (.ofVal (.rec_ f x e)) (.ofVal v)) ((e.subst f (.rec_ f x e)).subst x v) where
   pureExec _ := by
-    refine Relation.Iterate.head ?_ (.rfl _)
+    refine Relation.Iterate.once ?_
     constructor
     · intro σ
       exists ((e.subst f (.rec_ f x e))).subst x v, σ, []
@@ -167,7 +169,7 @@ instance PureExec_fst {v1 v2 : Val} : Language.PureExec True 1 hl(fst(v((?v1, ?v
 
 instance PureExec_snd {v1 v2 : Val} : Language.PureExec True 1 hl(snd(v((?v1, ?v2)))) v2 where
   pureExec _ := by
-    refine Relation.Iterate.head ?_ (.rfl _)
+    refine Relation.Iterate.once ?_
     constructor
     · intro σ
       exists v2, σ, []
