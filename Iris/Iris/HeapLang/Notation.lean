@@ -93,7 +93,7 @@ syntax:75 "-" hl_exp:75 : hl_exp
 syntax:10 "if " hl_exp:10 " then " hl_exp:10 " else " hl_exp:10 : hl_exp
 
 /-- application -/
-syntax:100 hl_exp:100 ppSpace hl_exp:101 : hl_exp
+syntax:100 hl_exp:100 colGt ppSpace hl_exp:101 : hl_exp
 /-- let -/
 syntax:10 "let " binderIdent " := " hl_exp:10 "; " hl_exp:1 : hl_exp
 /-- sequencing -/
@@ -150,6 +150,9 @@ syntax:100 "fork(" hl_exp  ")" : hl_exp
 /-- assert -/
 syntax:100 "assert(" hl_exp  ")" : hl_exp
 
+/-- holes -/
+syntax "_" : hl_exp
+
 open Lean.PrettyPrinter.Parenthesizer in
 @[category_parenthesizer hl_exp]
 def hl_exp.parenthesizer : CategoryParenthesizer := fun prec => do
@@ -191,6 +194,7 @@ macro_rules
 /-- elaborating expressions -/
 macro_rules
   | `(hl(($e))) => `(hl($e))
+  | `(hl(_)) => `(_)
   | `(hl({$t})) => pure t
   | `(hl(v($e))) => `(Exp.val hl_val($e))
   | `(hl(# $e)) => `(hl(v(# $e)))
