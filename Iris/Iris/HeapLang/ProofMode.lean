@@ -44,14 +44,14 @@ public meta def ProofModeM.runTacticWp {α} (k : MVarId → WpGoal → ProofMode
   : TacticM α := do
   ProofModeM.runTactic fun mvar {u, prop, bi, hyps, goal, ..} => do
     let .defEq _ ← isLevelDefEqQ u 0
-      | throwError "The goal must be an `IProp` at universe level 0"
+      | throwError "The goal {goal} must be an `IProp` at universe level 0"
     let ~q(IProp $GF) := prop
-      | throwError "The goal must be an `IProp`"
+      | throwError "The goal {goal} must be an `IProp`"
     let ~q(UPred.instBIUPred) := bi
       | throwError "Expected the BI implementation of `IProp` to be `UPred.instBIUPred`"
 
     let ~q(Wp.wp (A := Stuckness) (Expr := Exp) (self := wp.def (ι := $ι)) $s $E $e $Φ) := goal
-      | throwError "The goal was not a WP application"
+      | throwError "The goal {goal} must be a WP"
     k mvar {hyps, ι, s, E, e, Φ, hu:=⟨⟩, hprop:=⟨⟩, hbi:=⟨⟩ }
 
 public theorem tac_wp_value [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E : CoPset} {v : Val} {Φ : Val → IProp GF}

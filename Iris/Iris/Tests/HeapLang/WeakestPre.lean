@@ -194,6 +194,11 @@ example : ⊢@{IProp GF}  WP hl(snd(v((#1,#2)))) {{ v, True }} := by
   istart
   wp_pure
 
+example : ⊢@{IProp GF}  WP hl(snd(v((#1,#2)))) {{ v, ⌜v = hl_val(#2)⌝ }} := by
+  istart
+  wp_pure
+  itrivial
+
 /--
 error: unsolved goals
 hlc : HasLC
