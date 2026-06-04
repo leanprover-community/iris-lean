@@ -491,7 +491,7 @@ theorem singleton_inc_singleton_iff : (singleton i x : M V) ≼ (singleton i y :
 
 theorem total_singleton_inc_singleton_iff [IsTotal V] :
     (singleton i x : M V) ≼ (singleton i y) ↔ x ≼ y :=
-  singleton_inc_singleton_iff.trans <| Option.some_inc_some_iff_isTotal
+  singleton_inc_singleton_iff.trans <| Option.some_inc_some_iff_is_total
 
 theorem singleton_inc_singleton_mono (Hinc : x ≼ y) :
     (singleton i x : M V) ≼ (singleton i y) :=

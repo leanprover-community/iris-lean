@@ -24,10 +24,6 @@ section CMRA
 
 variable [CMRA α]
 
--- Global Instance local_update_proper :
--- Proper ((≡) ==> (≡) ==> iff) (@local_update SI A).
--- Proof. unfold local_update. by repeat intro; setoid_subst. Qed.
-
 theorem LocalUpdate.id (x : α × α) : x ~l~> x := fun _ _ vx e => ⟨vx, e⟩
 
 theorem LocalUpdate.equiv_left {x y : α × α} (z : α × α) (h : x ≡ y) : x ~l~> z → y ~l~> z := by
@@ -47,8 +43,10 @@ theorem LocalUpdate.equiv_right (x : α × α) {y z : α × α} (h : y ≡ z) : 
     _     ≡{n}≡ y.snd •? mw := e
     _     ≡{n}≡ z.snd •? mw := h.dist.2.opM .rfl
 
--- Global Instance local_update_preorder : PreOrder (@local_update SI A).
--- Proof. split; unfold local_update; red; naive_solver. Qed.
+@[rocq_alias local_update_proper]
+theorem LocalUpdate.equiv {x x' : α × α} {y y' : α × α} (h1 : x ≡ x') (h2 : y ≡ y') : x ~l~> y ↔ x' ~l~> y' :=
+  ⟨fun u => equiv_right _ h2 (equiv_left _ h1 u),
+   fun u => equiv_right _ h2.symm (equiv_left _ h1.symm u)⟩
 
 @[rocq_alias exclusive_local_update]
 theorem LocalUpdate.exclusive [CMRA.Exclusive y] {x x' : α}
@@ -133,7 +131,7 @@ theorem LocalUpdate.valid [CMRA.Discrete α] {x y x' y' : α}
 @[rocq_alias local_update_total_valid0]
 theorem LocalUpdate.total_valid0 [CMRA.IsTotal α] {x y x' y' : α}
     (h : ✓{0} x → ✓{0} y → y ≼{0} x → (x, y) ~l~> (x', y')) : (x, y) ~l~> (x', y') :=
-  .valid0 fun vx0 vy0 mz => h vx0 vy0 (Option.some_incN_some_iff_isTotal.mp mz)
+  .valid0 fun vx0 vy0 mz => h vx0 vy0 (Option.some_incN_some_iff_is_total.mp mz)
 
 @[rocq_alias local_update_total_valid]
 theorem LocalUpdate.total_valid [CMRA.IsTotal α] [CMRA.Discrete α] {x y x' y' : α}
