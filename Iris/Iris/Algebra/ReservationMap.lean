@@ -15,25 +15,26 @@ namespace Iris
 
 open Iris Std PartialMap
 
--- The camera [reservation_map A] over a camera [A] extends [gmap positive A]
+-- The camera [ReservationMap A H] over a camera [A] extends [LawfulPartialMap H Pos]
 -- with a notion of "reservation tokens" for a (potentially infinite) set
--- [E : coPset] which represent the right to allocate a map entry at any position
--- [k ∈ E].  The key connectives are [reservation_map_data k a] (the "points-to"
--- assertion of this map), which associates data [a : A] with a key [k : positive],
--- and [reservation_map_token E] (the reservation token), which says
+-- [E : CoPset] which represent the right to allocate a map entry at any position
+-- [k ∈ E].  The key connectives are [ReservationMap.singleton k a] (the "points-to"
+-- assertion of this map), which associates data [a : A] with a key [k : Pos],
+-- and [ReservationMap.token E] (the reservation token), which says
 -- that no data has been associated with the indices in the mask [E]. The important
 -- properties of this camera are:
 --
--- • The lemma [reservation_map_token_union] enables one to split [reservation_map_token]
+-- • The lemma [ReservationMap.token_union] enables one to split [ReservationMap.token]
 --   w.r.t. disjoint union. That is, if we have [E1 ## E2], then we get
---   [reservation_map_token (E1 ∪ E2) = reservation_map_token E1 • reservation_map_token E2].
--- • The lemma [reservation_map_alloc] provides a frame preserving update to
---   associate data to a key: [reservation_map_token E ~~> reservation_map_data k a]
+--   [ReservationMap.token (E1 ∪ E2) = ReservationMap.token E1 • ReservationMap.token E2].
+-- • The lemma [ReservationMap.alloc] provides a frame preserving update to
+--   associate data to a key: [ReservationMap.token E ~~> ReservationMap.data k a]
 --   provided [k ∈ E] and [✓ a].
 --
 -- In the future, it could be interesting to generalize this map to arbitrary key
--- types instead of hard-coding [positive].
+-- types instead of hard-coding [Pos].
 
+@[rocq_alias reservation_map]
 structure ReservationMap (A : Type) (H : Type → Type) where
   dataProj : H A
   tokenProj : DisjointLeibnizSet CoPset
@@ -41,9 +42,11 @@ structure ReservationMap (A : Type) (H : Type → Type) where
 def ReservationMap.data [LawfulPartialMap H Pos] (data : H A)
     : ReservationMap A H := .mk data ∅
 
+@[rocq_alias reservation_data]
 def ReservationMap.singleton [LawfulPartialMap H Pos] (k : Pos) (a : A)
     : ReservationMap A H := ReservationMap.data {[k := a]}
 
+@[rocq_alias reservation_token]
 def ReservationMap.token [LawfulPartialMap H Pos] (e : CoPset)
     : ReservationMap A H := .mk ∅ (.valid e)
 
@@ -273,6 +276,7 @@ instance : UCMRA (ReservationMap A H) where
   ⟩
   pcore_unit := ⟨Heap.core_empty, OFE.Equiv.rfl⟩
 
+@[rocq_alias reservation_map_cmra_discrete]
 instance [Discrete A] : Discrete (ReservationMap A H) where
   discrete_valid {_} v :=
     valid_of_parts (discrete_valid (validN_dataProj_of_validN v))
@@ -319,6 +323,7 @@ theorem validN_data {d : H A}
   mp := validN_dataProj_of_validN
   mpr h := validN_of_parts h ⟨⟩ (fun p => .inr (DisjointLeibnizSet.mem_empty p))
 
+@[rocq_alias reservation_map_data_valid]
 theorem valid_singleton (k : Pos) (a : A)
     : ✓ (singleton (H := H) k a) ↔ ✓ a :=
   (valid_data).trans Heap.singleton_valid_iff
@@ -327,6 +332,7 @@ theorem validN_singleton (k : Pos) (a : A)
     : ✓{n} (singleton (H := H) k a) ↔ ✓{n} a :=
   (validN_data).trans Heap.singleton_validN_iff
 
+@[rocq_alias reservation_map_token_valid]
 theorem valid_token : ✓ (token (H := H) (A := A) e) :=
   ⟨Heap.valid_empty, fun i => .inl (get?_empty i)⟩
 
@@ -334,6 +340,7 @@ theorem data_op (a b : H A) : data (a • b) ≡ data a • data b :=
   ⟨OFE.Equiv.rfl, (pcore_op_right_L rfl).symm⟩
 
 open Classical in
+@[rocq_alias reservation_map_data_op]
 theorem singleton_op k (a b : A)
     : singleton (H := H) k (a • b) ≡ singleton (H := H) k a • singleton k b := by
   refine ((data_op _ _).symm.trans ?_).symm
@@ -424,6 +431,7 @@ theorem valid_data_op_token (a : H A) (b : CoPset)
       simp [eo]
       exact h
 
+@[rocq_alias reservation_map_data_mono]
 theorem singleton_mono k (a b : A)
     : a ≼ b → singleton (H := H) k a ≼ singleton k b :=
   fun ⟨z, hz⟩ => ⟨singleton k z,
@@ -437,6 +445,7 @@ theorem singleton_mono k (a b : A)
 --       ib₂ (data k b₂) where
 --   is_op := sorry
 
+@[rocq_alias reservation_map_token_union]
 theorem token_union {e₁ e₂} (he : e₁ ## e₂)
     : token (H := H) (A := A) (e₁ ∪ e₂) ≡
       token e₁ (H := H) (A := A) • token e₂ := by
@@ -445,6 +454,7 @@ theorem token_union {e₁ e₂} (he : e₁ ## e₂)
     exact OFE.Equiv.rfl
   · simp [token, op_tokenProj];  simp [CMRA.op, he]
 
+@[rocq_alias reservation_map_token_difference]
 theorem token_difference {e₁ e₂} (he : e₁ ⊆ e₂)
     : token (H := H) (A := A) e₂ ≡
       token e₁ (H := H) (A := A) • token (e₂ \ e₁) := by
@@ -455,6 +465,7 @@ theorem token_difference {e₁ e₂} (he : e₁ ⊆ e₂)
   have := eu ▸ eud ▸ token_union (H := H) (A := A) dj
   exact this
 
+@[rocq_alias reservation_map_token_valid_op]
 theorem valid_token_op_iff_disj {e₁ e₂}
     : ✓ (token (H := H) (A := A) e₁ • token e₂) ↔ e₁ ## e₂ where
   mp h := DisjointLeibnizSet.valid_op_iff_disj.mp (valid_tokenProj_of_valid h)
@@ -504,7 +515,8 @@ theorem valid_singleton_op_of_valid_op? {a : A} {x : H A} (vx : ✓{n} x) (h : �
     simp [ki, LawfulPartialMap.get?_singleton]
     exact Heap.validN_get? vx
 
-theorem alloc e k (a : A) (hke : k ∈ e) (va : ✓ a)
+@[rocq_alias reservation_map_alloc]
+theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓ a)
     : token (H := H) e ~~> singleton k a := by
   intro n mz vo
   match mz with
@@ -539,6 +551,7 @@ theorem alloc e k (a : A) (hke : k ∈ e) (va : ✓ a)
       intro i
       grind [disj_of_validN_data_op_token vdt, validN_token_op_iff_disj.mp vet i]
 
+@[rocq_alias reservation_map_updateP]
 theorem updateP {P} {Q : ReservationMap A H → Prop} k a
     (ap : a ~~>: P) (apq : ∀ a', P a' → Q (singleton k a')) :
     singleton k a ~~>: Q := by
@@ -580,6 +593,7 @@ theorem updateP {P} {Q : ReservationMap A H → Prop} k a
       simp [CMRA.op, get?_merge, LawfulPartialMap.get?_singleton] at ⊢ dat ddt
       grind
 
+@[rocq_alias reservation_map_update]
 theorem reservation_map_update k (a b : A) (uab : a ~~> b):
     singleton (H := H) k a ~~> singleton k b := by
   have := UpdateP.of_update uab
