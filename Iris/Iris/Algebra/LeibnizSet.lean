@@ -33,18 +33,22 @@ instance inst_disjointLeibnizSet_DiscreteE {S : Type _} (x : DisjointLeibnizSet 
 
 instance : Leibniz (DisjointLeibnizSet S) := ⟨id⟩
 
-instance [LawfulSet S A] : EmptyCollection (DisjointLeibnizSet S) where
+instance instEmptyCollectionDisjointLeibnizSet [LawfulSet S A] :
+    EmptyCollection (DisjointLeibnizSet S) where
   emptyCollection := .valid ∅
 
-instance [LawfulSet S A] : Membership A (DisjointLeibnizSet S) where
+instance instMembershowDisjointLeibnizSet [LawfulSet S A] :
+    Membership A (DisjointLeibnizSet S) where
   mem s x :=
     match s with
     | .valid s   => x ∈ s
     | .error => False
 
-theorem DisjointLeibnizSet.mem_empty [LawfulSet S A] (p : A) : ¬p ∈ (∅ : (DisjointLeibnizSet S)) := Std.mem_empty
+theorem DisjointLeibnizSet.mem_empty [LawfulSet S A] (p : A) : ¬p ∈ (∅ : (DisjointLeibnizSet S)) :=
+  Std.mem_empty
 
-theorem DisjointLeibnizSet.exist_set_of_mem [LawfulSet S A] {x : DisjointLeibnizSet S} (h : p ∈ x) : ∃x', x = .valid x' :=
+theorem DisjointLeibnizSet.exist_set_of_mem [LawfulSet S A] {x : DisjointLeibnizSet S} (h : p ∈ x) :
+    ∃x', x = .valid x' :=
   match x with
   | .error => by simp [Membership.mem] at h
   | .valid x' => ⟨x', rfl⟩
@@ -108,11 +112,11 @@ instance : CMRA (DisjointLeibnizSet S) where
     simp [disjoint_empty_left]
   extend {_ _ y₁ y₂} _ h := ⟨y₁, y₂, ⟨h, rfl, rfl⟩⟩
 
-instance : CMRA.Discrete (DisjointLeibnizSet S) where
+instance instDiscreteDisjointLeibnizSet : CMRA.Discrete (DisjointLeibnizSet S) where
   discrete_0 := id
   discrete_valid := id
 
-instance : UCMRA (DisjointLeibnizSet S) where
+instance instUCMRADisjointLeibnizSet : UCMRA (DisjointLeibnizSet S) where
   unit := .valid ∅
   unit_valid := by simp [Valid]
   unit_left_id {x} := by rcases x <;> simp [disjoint_empty_left, op]
@@ -124,8 +128,8 @@ theorem validN_set {s : S}: ✓{n} valid s := ⟨⟩
 theorem not_valid_invalid : ¬ ✓ (error : DisjointLeibnizSet S) := False.elim
 theorem not_validN_invalid : ¬ ✓{n} (error : DisjointLeibnizSet S) := False.elim
 
-theorem mem_iff_of_valid_union {x y : DisjointLeibnizSet S} (v : ✓ x • y) (a : A)
-    : a ∈ x • y ↔ a ∈ x ∨ a ∈ y := by
+theorem mem_iff_of_valid_union {x y : DisjointLeibnizSet S} (v : ✓ x • y) (a : A) :
+    a ∈ x • y ↔ a ∈ x ∨ a ∈ y := by
   match x, y with
   | error, _ => exact v.elim
   | _, error => simp only [op] at v; exact v.elim
@@ -135,8 +139,8 @@ theorem mem_iff_of_valid_union {x y : DisjointLeibnizSet S} (v : ✓ x • y) (a
       exact mem_union
     · simp only [op, h, ↓reduceIte] at v; exact v.elim
 
-theorem mem_iff_of_validN_union {x y : DisjointLeibnizSet S} (v : ✓{n} x • y) (a : A)
-    : a ∈ x • y ↔ a ∈ x ∨ a ∈ y := mem_iff_of_valid_union v a
+theorem mem_iff_of_validN_union {x y : DisjointLeibnizSet S} (v : ✓{n} x • y) (a : A) :
+    a ∈ x • y ↔ a ∈ x ∨ a ∈ y := mem_iff_of_valid_union v a
 
 theorem included_iff_subset {X Y : S} : valid X ≼ valid Y ↔ X ⊆ Y := by
   refine ⟨?_, ?_⟩
