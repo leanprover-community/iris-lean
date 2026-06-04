@@ -47,18 +47,30 @@ theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
     adequate .NotStuck e σ (fun v _ => φ v) := by
   refine wp_adequacy (GF := GF) .NotStuck e σ φ ?_
   intro inst κs
-  imod iOwn_alloc (E := GhostMapG.elem)
+  imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := Option Val) (F := PNat) (H := HeapF))
     (HeapView.Auth (H := HeapF) (.own One.one)
-    (Std.PartialMap.map (fun v => toAgree $ LeibnizO.mk v) σ.heap))
-    HeapView.auth_one_valid with ⟨%γ, H⟩
-  letI _ : HeapLangGS .hasLC GF := ⟨⟨γ⟩⟩
+      (Std.PartialMap.map (fun v : Option Val => toAgree (LeibnizO.mk v)) σ.heap))
+    HeapView.auth_one_valid with ⟨%γh, Hh⟩
+  imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := GName) (F := PNat) (H := HeapF))
+    (HeapView.Auth (H := HeapF) (.own One.one)
+      (Std.PartialMap.map (fun g : GName => toAgree (LeibnizO.mk g))
+        (∅ : HeapF GName)))
+    HeapView.auth_one_valid with ⟨%γm, Hm⟩
+  letI _ : HeapLangGS .hasLC GF := ⟨⟨γh, γm⟩⟩
   imodintro
-  iexists (fun σ _ => iOwn (E := GhostMapG.elem) γ
-    (HeapView.Auth (H := HeapF) (.own One.one)
-    (Std.PartialMap.map (fun v => toAgree $ LeibnizO.mk v) σ.heap)))
+  iexists (fun σ _ => Iris.genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap)
   iexists (fun _ => iprop(True))
-  iframe H
-  exact Hwp
+  isplitl [Hh Hm]
+  · simp only [Iris.genHeapInterp]
+    iexists (∅ : HeapF GName)
+    isplitr
+    · ipureintro
+      intro k hk
+      simp [Std.PartialMap.dom, LawfulPartialMap.get?_empty] at hk
+    unfold ghost_map_auth
+    simp only [Std.PartialMap.map, Std.PartialMap.bindAlter]
+    iframe Hh Hm
+  · exact Hwp
 
 end Adequacy
 
@@ -126,10 +138,10 @@ theorem wp_alloc (v : Val) :
   rcases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   rename_i l' Hpo Hi
   simp only [Int.cast_ofNat_Int, Algebra.BigOpL.bigOpL_nil, Int.toNat_one, List.range_one,
-    List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil]
+    List.foldl_cons, List.foldl_nil]
   specialize Hi 0 (by simp) (by simp)
   rw [show l' + (0 : Int) = l' by cases l'; simp only [HAdd.hAdd, Loc.mk.injEq]; grind] at Hi ⊢
-  imod genHeap_alloc (v := some v) Hi $$ Hσ with ⟨Hσ, Hpt⟩
+  imod genHeap_alloc (v := some v) Hi $$ Hσ with ⟨Hσ, Hpt, _Hmt⟩
   imodintro
   -- FIXME: can iframe should solve emp?
   iframe Hσ
