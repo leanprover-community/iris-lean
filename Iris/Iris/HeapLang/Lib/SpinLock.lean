@@ -135,8 +135,8 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
       simp only [↓reduceIte]
       iframe
     · imodintro
-      iapply wp_snd
-      inext
+      wp_pure
+      iapply wp_value'
       iapply Hcont $$ [Hcond]
       simp only [↓reduceIte]
       iframe
@@ -151,8 +151,9 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
       simp only [↓reduceIte]
       iframe
     · imodintro
-      iapply wp_snd
-      iapply Hcont $$ [Hcond]
+      wp_pure
+      iapply wp_value'
+      iapply Hcont
       simp only [Bool.false_eq_true, ↓reduceIte]
       itrivial
 
@@ -171,12 +172,10 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   iapply try_acquire_spec $$ Hlock
   iintro %b Hpt
   cases b
-  · iapply wp_if_false
-    inext
+  · wp_pure
     iapply IH
     iapply Hcont
-  · iapply wp_if_true
-    inext
+  · wp_pure
     iapply wp_value'
     iapply Hcont
     simp only [if_pos]

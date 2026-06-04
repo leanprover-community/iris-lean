@@ -28,7 +28,7 @@ example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
   wp_bind ((#0 + _) + _)
 
 /--
-error: Tactic `wp_bind` failed: Couldn't unify hl((#2 + {?_})) with any possible evaluation context
+error: Tactic `wp_bind` failed: Cannot unify hl((#2 + {?_})) with any possible evaluation context
 
 hlc : HasLC
 GF : BundledGFunctors

@@ -98,18 +98,16 @@ def fillItem (e : Q(Exp)) : Q(ECtxItem) → MetaM Q(Exp)
   | ~q(resolveR $e₀ $e₁)    => return q(.resolve $e₀ $e₁ $e)
 
 
-public meta partial def fill (K: Q(List ECtxItem)) (e : Q(Exp)) : MetaM Q(Exp) :=
+public meta partial def fill (K : Q(List ECtxItem)) (e : Q(Exp)) : MetaM Q(Exp) :=
   -- K.foldlM fillItem e
   match K with
   | ~q([]) => pure e
   | ~q($Ki :: $K) => do
     fill K (←fillItem e Ki)
 
-public meta partial def fill' (K: Q(List ECtxItem)) (e : Q(Exp)) : MetaM ((res :Q(Exp)) × PLift ($res =Q ProgramLogic.fill $K $e)):=
+public meta partial def fillQ (K: Q(List ECtxItem)) (e : Q(Exp)) : MetaM ((res : Q(Exp)) × PLift ($res =Q ProgramLogic.fill $K $e)):=
   return ⟨←fill K e , .up ⟨⟩⟩
 
--- TODO: Is this really needed? Is it better if I just pattern
--- matched over an object-level List instead?
 meta def quoteList {α : Q(Type u)}: List Q($α) → Q(List $α)
   | [] => q([])
   | x :: xs => q($x :: $(quoteList xs))
@@ -117,18 +115,18 @@ meta def quoteList {α : Q(Type u)}: List Q($α) → Q(List $α)
 public meta
 structure ECtxResultOf (e : Q(Exp)) (α : Type) where unsafeMk ::
   result : α
-  ctx : Q(List ECtxItem)
+  K : Q(List ECtxItem)
   e' : Q(Exp)
-  guarantee : ProgramLogic.fill $ctx $e' =Q $e := ⟨⟩
+  heq : ProgramLogic.fill $K $e' =Q $e := ⟨⟩
 
 public meta partial
-def findECtx {α : Type _} (ogE : Q(Exp)) (pred : Q(Exp) → ProofModeM α )
+def findECtx {α : Type _} (ogE : Q(Exp)) (pred : Q(Exp) → ProofModeM α)
   : ProofModeM (Option (ECtxResultOf ogE α)) := do
   let (Kis, inner) ← extractAllEctxItems ogE
   go inner Kis
 where
   go (e : Q(Exp)) (Kis : List Q(ECtxItem)) : ProofModeM (Option (ECtxResultOf ogE α)) := do
     if let some a ← observing? <| pred e then
-      return some {result := a, ctx := quoteList Kis, e' := e}
+      return some {result := a, K := quoteList Kis, e' := e}
     let Ki :: Kis' := Kis | return none
     go (← fillItem e Ki) Kis'

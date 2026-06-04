@@ -84,7 +84,6 @@ Applies modality actions to transform proof mode context.
 # Parameters
 - `hyps` - Context in `prop2`
 - `M` - Modality being introduced (`prop1 → prop2`)
-- `act` - Modality action depending on persistence flag
 
 # Returns
 A tuple containing:
@@ -92,14 +91,24 @@ A tuple containing:
 - Transformed context `hyps'` in `prop1`
 - Proof of `hyps ⊢ M hyps'`
 -/
-private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
-  (hyps : @Hyps u prop2 bi2 e) (M : Q(Modality $prop1 $prop2)) (act : Bool → ModalityActionQ prop1 prop2) :
+def iModAction {prop1 prop2 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
+  (hyps : @Hyps u prop2 bi2 e) (M : Q(Modality $prop1 $prop2)) :
+  ProofModeM ((e' : _) × Hyps bi1 e' × Q($e ⊢ $(M).M $e')) := do
+  -- pre-compute the actions
+  let iact ← parseModalityActionQ q($(M).action true)
+  let sact ← parseModalityActionQ q($(M).action false)
+  go iact sact hyps
+where go {e}
+  (iact : ModalityActionQ prop1 prop2)
+  (sact : ModalityActionQ prop1 prop2)
+  (hyps : @Hyps u prop2 bi2 e) :
   ProofModeM ((e' : _) × Hyps bi1 e' × Q($e ⊢ $(M).M $e')) :=
   match hyps with
   | .emp _ => return ⟨_, .mkEmp bi1, q($(M).emp)⟩
   | .hyp _ name ivar p ty _ =>
     let p' := isTrue p
-    match act p' with
+    let act := if p' then iact else sact
+    match act with
     | .isEmpty => throwError "imodintro: {if p' then "intuitionistic" else "spatial"} context is not empty"
     | .forall C => do
       have : $prop1 =Q $prop2 := ⟨⟩
@@ -129,8 +138,8 @@ private def iModAction {prop1 : Q(Type u)} {bi1 : Q(BI $prop1)} {bi2} {e}
       have heq : Q($(M).action $p = .id) := heq
       return ⟨_, .mkHyp bi1 name ivar p ty, q(modaction_id $M $heq)⟩
   | .sep _ _ _ _ lhs rhs => do
-    let ⟨_, lhs', pflhs⟩ ← iModAction lhs M act
-    let ⟨_, rhs', pfrhs⟩ ← iModAction rhs M act
+    let ⟨_, lhs', pflhs⟩ ← go iact sact lhs
+    let ⟨_, rhs', pfrhs⟩ ← go iact sact rhs
     -- TODO: make pruning emp part of mkSep?
     if let .emp _ := lhs' then
       return ⟨_, rhs', q(modaction_sep_emp_l $pflhs $pfrhs)⟩
@@ -163,13 +172,9 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop)) (sel : TSynta
     let .some _ ← ProofModeM.trySynthInstanceQ q(@FromModal $prop' $prop $bi' $bi $Φ $M $sel $goal $Q)
       | throwError "imodintro: {goal} is not a modality{if sel.isMVar then m!"" else m!" matching {sel}"}"
     -- show the side condition
-    let hΦ ← mkFreshExprMVarQ q($Φ)
-    iSolveSideconditionAt hΦ.mvarId!
-    -- pre-compute the actions
-    let iact ← parseModalityActionQ q($(M).action true)
-    let sact ← parseModalityActionQ q($(M).action false)
+    let hΦ ← iSolveSidecondition q($Φ)
     -- perform modality actions, get transformed context `hyps'` and `pf : hyps ⊢ M hyps'`
-    let ⟨_, hyps', pf⟩ ← iModAction hyps M (λ p => if p then iact else sact)
+    let ⟨_, hyps', pf⟩ ← iModAction hyps M
     -- get proof `hyps' ⊢ Q`
     let pf' ← k hyps' Q
     return q(modintro (sel:=$sel) $pf $pf' $hΦ)
