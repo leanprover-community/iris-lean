@@ -76,13 +76,16 @@ instance [ExtensionalPartialMap M K] [OFE V] [Leibniz V] : Leibniz (M V) where
   eq_of_eqv h :=
     ExtensionalPartialMap.equiv_iff_eq.mp (fun i => Leibniz.eq_of_eqv (h i))
 
-instance [LawfulPartialMap M K] [DecidableEq K] [OFE V] {v : V} [DiscreteE v] {k : K}
+instance [LawfulPartialMap M K] [DecidableEq K] [OFE V] {v : V} [ha : DiscreteE v] {k : K}
     : DiscreteE (PartialMap.singleton (M := M) k v) where
   discrete {y} h k' := by
-    by_cases hh : k = k' <;>
-      (simp only [LawfulPartialMap.get?_singleton, hh, ↓reduceIte];
-       refine (DiscreteE.discrete (.trans ?_ (h k')));
-       simp [LawfulPartialMap.get?_singleton, hh, ↓reduceIte])
+    by_cases hh : k = k'
+    · simp only [LawfulPartialMap.get?_singleton, hh, ↓reduceIte]
+      refine ((Option.some_is_discrete ha).discrete (.trans ?_ (h k')))
+      simp [LawfulPartialMap.get?_singleton, hh, ↓reduceIte]
+    · simp only [LawfulPartialMap.get?_singleton, hh, ↓reduceIte]
+      refine (Option.none_is_discrete.discrete (.trans ?_ (h k')))
+      simp [LawfulPartialMap.get?_singleton, hh, ↓reduceIte]
 
 instance instDiscreteEEmpty [LawfulPartialMap M K] [OFE V] : DiscreteE (∅ : M V) where
   discrete {y} h k := by
