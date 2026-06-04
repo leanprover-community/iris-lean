@@ -546,9 +546,9 @@ theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP}
   refine emp_sep.2.trans ?_
   refine (sep_mono (fupd_mask_intro_subseteq Eo₁_Eo₂) .rfl).trans ?_
   refine frame_right.trans ?_
-  refine BI.Entails.trans (mono ?_) (trans (E2 := Eo₁))
+  refine .trans (mono ?_) (trans (E2 := Eo₁))
   refine fupd_frame_left.trans ?_
-  refine BI.Entails.trans (mono ?_) (trans (E2 := Ei₁))
+  refine .trans (mono ?_) (trans (E2 := Ei₁))
   refine (sep_mono (fupd_mask_intro_subseteq Ei₂_Ei₁) .rfl).trans ?_
   refine frame_right.trans ?_
   refine mono ?_
@@ -556,9 +556,9 @@ theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP}
   refine later_sep.2.trans ?_
   refine later_mono ?_
   refine frame_right.trans ?_
-  refine BI.Entails.trans (mono ?_) (trans (E2 := Ei₁))
+  refine .trans (mono ?_) (trans (E2 := Ei₁))
   refine fupd_frame_left.trans ?_
-  refine BI.Entails.trans (mono ?_) (trans (E2 := Eo₁))
+  refine .trans (mono ?_) (trans (E2 := Eo₁))
   refine frame_right.trans ?_
   exact mono emp_sep.1
 
@@ -637,16 +637,16 @@ variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP]
 open BIFUpdate BIFUpdatePlainly
 
 @[rocq_alias fupd_keep_si_pure]
-theorem fupd_keep_si_pure {E1 E2 : CoPset} E2' Pi (R: PROP) :
+theorem fupd_keep_si_pure {E1 E2 : CoPset} E2' Pi {R : PROP} :
   (|={E1,E2'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R :=
   (and_mono_right (wand_mono_right fupd_intro)).trans <|
     (BIFUpdatePlainly.fupd_keep_si_pure E2' Pi iprop(|={E1,E2}=> R)).trans trans
 
 @[rocq_alias fupd_keep_plainly]
-theorem fupd_keep_plainly [BIAffine PROP] {E1 E2 : CoPset} E2' (P R : PROP) :
+theorem fupd_keep_plainly [BIAffine PROP] {E1 E2 : CoPset} E2' (P : PROP) {R : PROP} :
   (|={E1,E2'}=> ■ P) ∧ (P ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R :=
   (and_mono_right (wand_mono_left siPure_siEmpValid_elim)).trans <|
-    fupd_keep_si_pure E2' (SiEmpValid.siEmpValid P) R
+    fupd_keep_si_pure E2' (SiEmpValid.siEmpValid P)
 
 @[rocq_alias fupd_plainly_later]
 theorem fupd_plainly_later (E : CoPset) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P :=
@@ -655,12 +655,12 @@ theorem fupd_plainly_later (E : CoPset) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={
 @[rocq_alias fupd_keep_plain]
 theorem fupd_keep_plain [BIAffine PROP] {E1 E2 : CoPset} E2' (P R : PROP) [Plain P] :
   (|={E1,E2'}=> P) ∧ (P ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R :=
-  (and_mono_left (mono Plain.plain)).trans (fupd_keep_plainly E2' P R)
+  (and_mono_left (mono Plain.plain)).trans (fupd_keep_plainly E2' P)
 
 @[rocq_alias fupd_plainly_mask]
 theorem fupd_plainly_mask [BIAffine PROP] E E' {P : PROP} : (|={E,E'}=> ■ P) ⊢ |={E}=> P :=
   (and_intro .rfl (wand_intro_left (sep_elim_left.trans fupd_intro))).trans <|
-    fupd_keep_plainly E' P P
+    fupd_keep_plainly E' P
 
 @[rocq_alias fupd_plain_mask]
 theorem fupd_plain_mask [BIAffine PROP] {E E' : CoPset} {P : PROP} [Plain P] :

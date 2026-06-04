@@ -299,7 +299,7 @@ theorem fupd_finally_forall (E : CoPset) (Φ : A → IProp GF) :
   iapply H $$ %x Hw HE
 
 @[rocq_alias fupd_keep]
-theorem fupd_keep (E1 E2 : CoPset) (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC) (Timeless P)] :
+theorem fupd_keep {E1 E2 : CoPset} (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC) (Timeless P)] :
     (|={E1|}=> P) ∧ (P -∗ |={E1,E2}=> Q) ⊢ |={E1,E2}=> Q := by
   simp only [fupd_finally, fupd, uPred_fupd]
   iintro H ⟨Hw, HE⟩
@@ -312,11 +312,11 @@ theorem fupd_keep (E1 E2 : CoPset) (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC) (T
     iapply H $$ HP [$Hw $HE]
 
 @[rocq_alias fupd_finally_keep]
-theorem fupd_finally_keep (E : CoPset) (P Q : IProp GF) [TCOr (TCEq hlc .hasNoLC) (Timeless P)] :
+theorem fupd_finally_keep {E : CoPset} (P : IProp GF) {Q : IProp GF} [TCOr (TCEq hlc .hasNoLC) (Timeless P)] :
     (|={E|}=> P) ∧ (P -∗ |={E|}=> Q) ⊢ |={E|}=> Q := by
   iintro H
   iapply fupd_fupd_finally E E
-  iapply fupd_keep E E P
+  iapply fupd_keep P
   isplit
   · icases H with ⟨$, -⟩
   · iintro HP
@@ -329,7 +329,7 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .h
     BIFUpdatePlainly (IProp GF) where
   fupd_keep_si_pure E' Pi R := by
     iintro H
-    iapply fupd_keep _ _ iprop(<si_pure> Pi)
+    iapply fupd_keep iprop(<si_pure> Pi)
     isplit
     · icases H with ⟨H, -⟩
       iapply fupd_fupd_finally _ E'
@@ -447,7 +447,7 @@ theorem fupd_finally_wand (E : CoPset) (P Q : IProp GF) :
 theorem fupd_keep_pure {E1 E2 : CoPset} (φ : Prop) (E2' : CoPset) (Q : IProp GF) :
     (|={E1,E2'}=> ⌜φ⌝) ∧ (⌜φ⌝ ={E1,E2}=∗ Q) ⊢ |={E1,E2}=> Q := by
   iintro H
-  iapply fupd_keep E1 E2 iprop(⌜φ⌝)
+  iapply fupd_keep iprop(⌜φ⌝)
   isplit
   · icases H with ⟨H, -⟩
     iapply fupd_fupd_finally E1 E2'
@@ -460,7 +460,7 @@ theorem fupd_pure_forall {A : Type _} (E1 E2 : CoPset) (φ : A → Prop) (H : E2
     (|={E1,E2}=> ∀ x, ⌜φ x⌝ : IProp GF) ⊣⊢ iprop(∀ x, |={E1,E2}=> ⌜φ x⌝) := by
   refine ⟨fupd_forall, ?_⟩
   · iintro H
-    iapply fupd_keep E1 E2 iprop(∀ x, ⌜φ x⌝)
+    iapply fupd_keep iprop(∀ x, ⌜φ x⌝)
     isplit
     · iapply fupd_finally_forall
       iintro %x
