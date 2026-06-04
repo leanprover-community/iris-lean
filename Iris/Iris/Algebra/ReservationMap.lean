@@ -288,35 +288,35 @@ instance [CMRA.Discrete A] : CMRA.Discrete (ReservationMap A H) where
 instance instCoreIdSingleton {a : A} [CoreId a] : CoreId (singleton (H := H) k a) where
   core_id := by
     refine ⟨?_, rfl⟩
-    simp [singleton, ReservationMap.mkData, core_eqv_self (PartialMap.singleton k a)]
+    simp [singleton, mkData, core_eqv_self (PartialMap.singleton k a)]
 
 theorem split_valid {x : ReservationMap A H} (vx : ✓ x) :
-    ∃ (d : H A) (t : CoPset), x ≡ ReservationMap.mkData d • ReservationMap.mkToken t := by
+    ∃ (d : H A) (t : CoPset), x ≡ mkData d • mkToken t := by
   rcases x with ⟨xd, xt⟩
   match hh : xt with
   | .error =>
     exact ((not_valid_invalid (S := CoPset)) (hh ▸ (valid_token_of_valid vx))).elim
   | .valid t =>
     refine ⟨xd, t, ?_, ?_⟩
-    · simp [ReservationMap.mkData, ReservationMap.mkToken, op_data, Algebra.MonoidOps.op_right_id.symm]
-    . simp only [ReservationMap.mkData, ReservationMap.mkToken, op_token, leibniz]
+    · simp [mkData, mkToken, op_data, Algebra.MonoidOps.op_right_id.symm]
+    . simp only [mkData, mkToken, op_token, leibniz]
       exact (pcore_op_left_L rfl).symm
 
 theorem split_validN {x : ReservationMap A H} (vx : ✓{n} x) :
-    ∃ (d : H A) (t : CoPset), x ≡ ReservationMap.mkData d • ReservationMap.mkToken t := by
+    ∃ (d : H A) (t : CoPset), x ≡ mkData d • mkToken t := by
   rcases x with ⟨xd, xt⟩
   have H := validN_token_of_validN vx
   match hh : xt with
   | .error => exact ((not_valid_invalid (S := CoPset)) (hh ▸ H)).elim
   | .valid t =>
     refine ⟨xd, t, ?_, ?_⟩
-    · simpa [ReservationMap.mkData, ReservationMap.mkToken, op_data] using Algebra.MonoidOps.op_right_id.symm
+    · simpa [mkData, mkToken, op_data] using Algebra.MonoidOps.op_right_id.symm
     . exact (pcore_op_left' rfl).symm
 
-theorem valid_data {d : H A} : ✓ (ReservationMap.mkData (H := H) d) ↔ ✓ d :=
+theorem valid_data {d : H A} : ✓ (mkData (H := H) d) ↔ ✓ d :=
   ⟨valid_data_of_valid, fun h => valid_iff.mpr ⟨h, ⟨⟩, fun p => .inr (mem_empty p)⟩⟩
 
-theorem validN_data {d : H A} : ✓{n} (ReservationMap.mkData (H := H) d) ↔ ✓{n} d :=
+theorem validN_data {d : H A} : ✓{n} (mkData (H := H) d) ↔ ✓{n} d :=
   ⟨validN_data_of_validN, fun h => validN_iff.mpr ⟨h, ⟨⟩, (fun p => .inr (mem_empty p))⟩⟩
 
 @[rocq_alias reservation_map_data_valid]
@@ -327,10 +327,10 @@ theorem validN_singleton (k : Pos) (a : A) : ✓{n} (singleton (H := H) k a) ↔
   (validN_data).trans Heap.singleton_validN_iff
 
 @[rocq_alias reservation_map_token_valid]
-theorem valid_token : ✓ (ReservationMap.mkToken (H := H) (A := A) e) :=
+theorem valid_token : ✓ (mkToken (H := H) (A := A) e) :=
   ⟨Heap.valid_empty, fun i => .inl (get?_empty i)⟩
 
-theorem data_op (a b : H A) : ReservationMap.mkData (a • b) ≡ ReservationMap.mkData a • ReservationMap.mkData b :=
+theorem data_op (a b : H A) : mkData (a • b) ≡ mkData a • mkData b :=
   ⟨.rfl, (pcore_op_right_L rfl).symm⟩
 
 @[rocq_alias reservation_map_data_op]
@@ -340,47 +340,47 @@ theorem singleton_op k (a b : A) :
   exact NonExpansive.eqv (fun i => .of_eq (Heap.singleton_op_singleton i))
 
 theorem token_op (a b : CoPset) (h : a ## b) :
-    ReservationMap.mkToken (H := H) (A := A) (a ∪ b) ≡ ReservationMap.mkToken a • ReservationMap.mkToken b := by
+    mkToken (H := H) (A := A) (a ∪ b) ≡ mkToken a • mkToken b := by
   refine ⟨show ∅ ≡ (∅ : H A) • ∅ from Algebra.MonoidOps.op_left_id.symm, ?_⟩
-  simp [ReservationMap.mkToken, CMRA.op, op_token', h]
+  simp [mkToken, CMRA.op, op_token', h]
 
-theorem disj_of_validN_data_op_token {a : H A} {b : CoPset} (h : ✓{n} ReservationMap.mkData a • ReservationMap.mkToken b) (i : Pos) :
+theorem disj_of_validN_data_op_token {a : H A} {b : CoPset} (h : ✓{n} mkData a • mkToken b) (i : Pos) :
     get? a i = none ∨ i ∉ b := by
   cases validN_disj h i with
   | inl h =>
-    simp only [ReservationMap.mkData, ReservationMap.mkToken, op_data, Heap.get?_op, get?_empty] at h
+    simp only [mkData, mkToken, op_data, Heap.get?_op, get?_empty] at h
     exact .inl <| Option.eq_none_of_op_eq_none_left h
   | inr h' =>
-    simp only [ReservationMap.mkData, ReservationMap.mkToken, op_token] at h'
+    simp only [mkData, mkToken, op_token] at h'
     rw [mem_iff_of_valid_union, not_or] at h'
     · exact .inr <| fun hh => h'.right hh
     · exact valid_of_eqv (pcore_op_left' rfl).symm valid_set
 
-theorem disj_of_valid_data_op_token (a : H A) (b : CoPset) (h : ✓ ReservationMap.mkData a • ReservationMap.mkToken b) (i : Pos) :
+theorem disj_of_valid_data_op_token (a : H A) (b : CoPset) (h : ✓ mkData a • mkToken b) (i : Pos) :
   get? a i = none ∨ i ∉ b := disj_of_validN_data_op_token (h.validN (n := 0)) i
 
-theorem validN_data_op_token {n : Nat} (a : H A) (b : CoPset) (vd : ✓{n} ReservationMap.mkData a)
-    (disj : ∀ i, get? a i = none ∨ i ∉ b) : ✓{n} ReservationMap.mkData a • ReservationMap.mkToken b := by
-  have abdp : (ReservationMap.mkData a • ReservationMap.mkToken b).data ≡ a :=
+theorem validN_data_op_token {n : Nat} (a : H A) (b : CoPset) (vd : ✓{n} mkData a)
+    (disj : ∀ i, get? a i = none ∨ i ∉ b) : ✓{n} mkData a • mkToken b := by
+  have abdp : (mkData a • mkToken b).data ≡ a :=
     show a • ∅ ≡ a from (Algebra.MonoidOps.op_right_id)
   have eo : ∅ • valid b = .valid b := pcore_op_left_L rfl
   refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
   · exact validN_of_eqv abdp.symm ((validN_data).mp vd)
-  · simp [ReservationMap.mkData, ReservationMap.mkToken, eo, validN_set]
-  · simp [ReservationMap.mkData, ReservationMap.mkToken, op_data, Heap.get?_op, get?_empty, op_token]
+  · simp [mkData, mkToken, eo, validN_set]
+  · simp [mkData, mkToken, op_data, Heap.get?_op, get?_empty, op_token]
     cases disj i with
     | inl h => simpa [h] using .inl <| rfl
     | inr h => simpa [eo] using .inr h
 
-theorem valid_data_op_token (a : H A) (b : CoPset) (vd : ✓ ReservationMap.mkData a)
-    (disj : ∀i, get? a i = none ∨ i ∉ b) : ✓ ReservationMap.mkData a • ReservationMap.mkToken b := by
-  have abdp : (ReservationMap.mkData a • ReservationMap.mkToken b).data ≡ a :=
+theorem valid_data_op_token (a : H A) (b : CoPset) (vd : ✓ mkData a)
+    (disj : ∀i, get? a i = none ∨ i ∉ b) : ✓ mkData a • mkToken b := by
+  have abdp : (mkData a • mkToken b).data ≡ a :=
     show a • ∅ ≡ a from (Algebra.MonoidOps.op_right_id)
   have eo : ∅ • valid b = .valid b := pcore_op_left_L rfl
   refine valid_iff.mpr ⟨?_, ?_, fun i => ?_⟩
   · exact valid_of_eqv abdp.symm ((valid_data).mp vd)
-  · simp [op_token, ReservationMap.mkData, ReservationMap.mkToken, eo, valid_set]
-  · simp only [ReservationMap.mkData, ReservationMap.mkToken, op_data, Heap.get?_op, get?_empty, op_token]
+  · simp [op_token, mkData, mkToken, eo, valid_set]
+  · simp only [mkData, mkToken, op_data, Heap.get?_op, get?_empty, op_token]
     cases disj i with
     | inl h => simpa only [h] using .inl <| rfl
     | inr h => simpa only [eo] using .inr h
@@ -398,47 +398,47 @@ instance {ia ib₁ ib₂ : ProofMode.InOut} {a b₁ b₂ : A} [hv : IsOp ia a ib
 
 @[rocq_alias reservation_map_token_union]
 theorem token_union {e₁ e₂} (he : e₁ ## e₂) :
-    ReservationMap.mkToken (H := H) (A := A) (e₁ ∪ e₂) ≡ ReservationMap.mkToken e₁ • ReservationMap.mkToken e₂ := by
+    mkToken (H := H) (A := A) (e₁ ∪ e₂) ≡ mkToken e₁ • mkToken e₂ := by
   refine ⟨fun i => ?_, ?_⟩
-  · simpa only [ReservationMap.mkToken, get?_empty, op_data, Heap.get?_op] using .rfl
-  · simp [ReservationMap.mkToken, CMRA.op, he]
+  · simpa only [mkToken, get?_empty, op_data, Heap.get?_op] using .rfl
+  · simp [mkToken, CMRA.op, he]
 
 @[rocq_alias reservation_map_token_difference]
 theorem token_difference {e₁ e₂} (he : e₁ ⊆ e₂) :
-    ReservationMap.mkToken (H := H) (A := A) e₂ ≡ ReservationMap.mkToken e₁ • ReservationMap.mkToken (e₂ \ e₁) := by
+    mkToken (H := H) (A := A) e₂ ≡ mkToken e₁ • mkToken (e₂ \ e₁) := by
   refine .trans ?_ (token_union LawfulSet.disjoint_diff_right)
   rw [LawfulSet.subset_union_diff he]
 
 @[rocq_alias reservation_map_token_valid_op]
 theorem valid_token_op_iff_disj {e₁ e₂} :
-    ✓ (ReservationMap.mkToken (H := H) (A := A) e₁ • ReservationMap.mkToken e₂) ↔ e₁ ## e₂ :=
+    ✓ (mkToken (H := H) (A := A) e₁ • mkToken e₂) ↔ e₁ ## e₂ :=
   ⟨fun h => valid_op_iff_disj.mp (valid_token_of_valid h),
    fun h => (Equiv.valid (token_union h)).mp valid_token⟩
 
 theorem validN_token_op_iff_disj {e₁ e₂} :
-    ✓{n} (ReservationMap.mkToken (H := H) (A := A) e₁ • ReservationMap.mkToken e₂) ↔ e₁ ## e₂ where
+    ✓{n} (mkToken (H := H) (A := A) e₁ • mkToken e₂) ↔ e₁ ## e₂ where
   mp h := valid_op_iff_disj.mp (validN_token_of_validN h)
   mpr h := by
     refine validN_iff.mpr ⟨?_, ?_, fun i => ?_⟩
     · show ✓{n} ∅ • (∅ : H A)
       refine validN_of_eqv Algebra.MonoidOps.op_left_id.symm ?_
       exact Heap.valid_empty.validN
-    · simpa [CMRA.op, ReservationMap.mkToken, op, h] using validN_set
-    · simpa [ReservationMap.mkToken, op_data, op_token, Heap.get?_op, get?_empty] using .inl rfl
+    · simpa [CMRA.op, mkToken, op, h] using validN_set
+    · simpa [mkToken, op_data, op_token, Heap.get?_op, get?_empty] using .inl rfl
 
-theorem valid_op?_of_valid_singleton_op {a : A} {x : H A} (h : ✓{n} (singleton k a • ReservationMap.mkData x)) :
+theorem valid_op?_of_valid_singleton_op {a : A} {x : H A} (h : ✓{n} (singleton k a • mkData x)) :
     ✓{n} a •? get? x k := by
   match h' : get? x k with
   | none => simpa [op?] using (validN_singleton (H := H) k a).mp (validN_op_left h)
   | some g =>
     simp only [op?]
     have vdp := (validN_data_of_validN h) k
-    simp only [CMRA.op, singleton, ReservationMap.mkData, op_data', Heap.op, get?_merge, Option.merge,
+    simp only [CMRA.op, singleton, mkData, op_data', Heap.op, get?_merge, Option.merge,
       LawfulPartialMap.get?_singleton, ↓reduceIte, h'] at vdp
     exact vdp
 
 theorem valid_singleton_op_of_valid_op? {a : A} {x : H A} (vx : ✓{n} x) (h : ✓{n} a •? get? x k) :
-    ✓{n} singleton k a • ReservationMap.mkData x := by
+    ✓{n} singleton k a • mkData x := by
   refine validN_of_eqv (data_op (PartialMap.singleton k a) x) ?_
   refine (validN_data).mpr fun i => ?_
   rw [Heap.get?_op]
@@ -447,18 +447,18 @@ theorem valid_singleton_op_of_valid_op? {a : A} {x : H A} (vx : ✓{n} x) (h : �
   · simpa only [LawfulPartialMap.get?_singleton, ki, ↓reduceIte] using Heap.validN_get? vx
 
 @[rocq_alias reservation_map_alloc]
-theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓ a) : ReservationMap.mkToken (H := H) e ~~> singleton k a := by
+theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓ a) : mkToken (H := H) e ~~> singleton k a := by
   intro n mz vo
   match mz with
   | none => exact Valid.validN <| (valid_singleton k a).mpr va
   | some z =>
     have ⟨d, t, ze⟩ := split_validN (validN_op_right vo)
-    have vedt : ✓{n} ReservationMap.mkToken e • (ReservationMap.mkData d • ReservationMap.mkToken t) := validN_of_eqv (op_right_eqv _ ze) vo
+    have vedt : ✓{n} mkToken e • (mkData d • mkToken t) := validN_of_eqv (op_right_eqv _ ze) vo
     have disj : ∀ (i : Pos), get? d i = none ∨ ¬i ∈ e:=
       disj_of_validN_data_op_token (validN_of_eqv comm (validN_op_left (validN_of_eqv assoc vedt)))
     refine validN_of_eqv (op_right_eqv _ ze.symm) ?_
     refine validN_of_eqv CMRA.assoc.symm ?_
-    refine validN_of_eqv (op_left_eqv (ReservationMap.mkToken t) (data_op _ _)) ?_
+    refine validN_of_eqv (op_left_eqv (mkToken t) (data_op _ _)) ?_
     refine validN_data_op_token (PartialMap.singleton k a • d) t ?_ ?_
     · refine validN_of_eqv (data_op _ _).symm ?_
       apply valid_singleton_op_of_valid_op?
@@ -488,7 +488,7 @@ theorem updateP {P} {Q : ReservationMap A H → Prop} k a (ap : a ~~>: P)
     simp only [CMRA.op?] at vaz ⊢
     refine validN_of_eqv (op_right_eqv (singleton k y) ze).symm ?_
     refine validN_of_eqv CMRA.assoc.symm ?_
-    refine validN_of_eqv (op_left_eqv (ReservationMap.mkToken t) (data_op _ _)) ?_
+    refine validN_of_eqv (op_left_eqv (mkToken t) (data_op _ _)) ?_
     refine validN_data_op_token _ _ ?_ ?_
     · refine validN_of_eqv (data_op _ _).symm ?_
       refine valid_singleton_op_of_valid_op? ?_ vy
