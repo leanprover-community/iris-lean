@@ -69,16 +69,13 @@ theorem nclose_not_finite (N : Namespace) : ¬CoPset.isFinite (↑N) := by
   simp only [nclose]
   exact CoPset.suffixes_not_finite (Pos.flatten N)
 
-@[rocq_alias nclose_infinite]
 theorem nclose_infinite (N : Namespace) : ¬Iris.Std.LawfulSet.setFinite (↑N : CoPset) :=
   fun h => nclose_not_finite N (isFinite_setFinite.mpr h)
 
-@[rocq_alias nclose_non_empty]
 theorem nclose_non_empty (N : Namespace) : (↑N : CoPset) ≠ ∅ := by
   intro h
   exact nclose_infinite N (h ▸ Iris.Std.LawfulSet.empty_finite)
 
-@[rocq_alias coPpick_elem_of]
 theorem coPpick_nclose (N : Namespace) : CoPset.pick (↑N) ∈ (↑N : CoPset) :=
   CoPset.mem_pick _ (nclose_non_empty N)
 
