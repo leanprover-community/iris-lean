@@ -101,6 +101,7 @@ instance isCcfg_persistent (Cini : List Expr × State) (f : Forking) (γ : GName
     Persistent (isCcfg (wp := wp) Cini f γ : IProp GF) := by
   unfold isCcfg; infer_instance
 
+omit [CInvG Qp GF] in
 /-- A separating conjunction over a list with a constant body depends only on the
 list's length. -/
 theorem bigSepL_const_congr {α β : Type _} {P : IProp GF} {l1 : List α} {l2 : List β}
@@ -131,7 +132,7 @@ theorem qp_div_ofPNat_succ_nil {α : Type _} (qc : Qp) {l : List α} (h : l = []
     qc.div (Qp.ofPNat (l.length + 1) (Nat.succ_pos _)) = qc := by
   subst h
   apply Subtype.ext
-  simp [Qp.div_val]
+  simp
 
 theorem weakestpre_completeness
     (Cini : List Expr × State) (f : Forking) (γ : GName) (q : Frac Qp)
