@@ -116,8 +116,40 @@ instance instPureExecCaseInjr {v e1 e2} : Language.PureExec True 1 (Exp.case hl(
       cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
       exact ⟨rfl, rfl, rfl, rfl⟩
 
+instance PureExec_injl {v : Val} : Language.PureExec True 1 hl(injl(?v)) hl(v(injl(?v)))  where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists hl(v(injl(?v))), σ, []
+      refine BaseStep.ContextStep.intro (K := []) (by constructor)
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues hl(injl(?v)) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        all_goals cases heq; simp [toVal]
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      refine ⟨rfl, rfl, rfl, rfl⟩
+
+instance PureExec_injr {v : Val} : Language.PureExec True 1 hl(injr(?v)) hl(v(injr(?v)))  where
+  pureExec _ := by
+    refine Relation.Iterate.head ?_ (.rfl _)
+    constructor
+    · intro σ
+      exists hl(v(injr(?v))), σ, []
+      refine BaseStep.ContextStep.intro (K := []) (by constructor)
+    · intro σ1 σ2 κs e2' efs Hstep
+      have hsr : EctxLanguage.SubredexesAreValues hl(injr(?v)) := by
+        apply EctxItemLanguage.subredexes_are_values
+        intro Ki e_inner heq
+        cases Ki <;> try (cases heq; done)
+        all_goals cases heq; simp [toVal]
+      cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
+      refine ⟨rfl, rfl, rfl, rfl⟩
+
 instance instPureExecBeta {f x : Binder} {e : Exp} {v : Val} :
-    Language.PureExec True 1 (.app (.ofVal (.rec_ f x e)) (.ofVal v)) ((e.subst f (.rec_ f x e)).subst x v) where
+    Language.PureExec True 1 hl(v(rec ?f ?x := ?e) ?v) ((e.subst f (.rec_ f x e)).subst x v) where
   pureExec _ := by
     refine Relation.Iterate.once ?_
     constructor
@@ -136,7 +168,7 @@ instance instPureExecBeta {f x : Binder} {e : Exp} {v : Val} :
       rename_i H
       refine ⟨rfl, rfl, H.symm, rfl⟩
 
-instance instPureExecRec {f x e} : Language.PureExec True 1 (Exp.rec_ f x e) (.ofVal (.rec_ f x e)) where
+instance instPureExecRec {f x e} : Language.PureExec True 1 hl(rec ?f ?x := ?e) hl(v(rec ?f ?x := ?e)) where
   pureExec _ := by
     refine Relation.Iterate.head ?_ (.rfl _)
     refine ⟨fun σ => ?_, @fun σ1 σ2 κs e2' efs Hstep => ?_⟩

@@ -80,9 +80,10 @@ theorem wp_rec {f x : Binder} {e : Exp} {vf v : Val}
   iintro !> !> !> -; iframe
 
 theorem wp_fork {e : Exp} :
-    ▷ Φ (hl_val(#())) ∗ ▷ WP e @ s; ⊤ {{ _v, True }}
-    ⊢ WP hl(fork(?e)) @ s; E {{ Φ }} := by
-  iintro ⟨HΦ, Hwp⟩
+    ▷ Φ (hl_val(#())) -∗
+    ▷ WP e @ s; ⊤ {{ _v, True }} -∗
+    WP hl(fork(?e)) @ s; E {{ Φ }} := by
+  iintro HΦ Hwp
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   have Hred : BaseStep.Reducible (hl(fork(?e)), σ₁) :=
@@ -102,8 +103,10 @@ theorem wp_fork {e : Exp} :
   · iapply BI.BigSepL.bigSepL_singleton
     iframe Hwp
 
-theorem wp_alloc (v : Val) :
-    ⊢ WP (hl(ref(?v))) @ s; E {{ l, ∃ l' : Loc, ⌜l = .lit (.loc l')⌝ ∗ (l' ↦ (some v))}} := by
+theorem wp_alloc (v : Val) (Φ : Val → IProp GF ) :
+    ▷ (∀ l : Loc, l ↦ some v -∗ Φ (.lit $ .loc l)) -∗
+    WP hl(ref(?v)) @ s; E {{ Φ }} := by
+  iintro HΦ
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   simp only [stateInterp]
@@ -136,14 +139,13 @@ theorem wp_alloc (v : Val) :
   isplit <;> try itrivial
   iexists hl_val(#(BaseLit.loc l'))
   isplit; ipureintro; rfl
-  iexists _
-  iframe Hpt
-  itrivial
+  iapply HΦ $$ [$]
 
-theorem wp_load {l : Loc} {q} {v : Val} :
-    ▷ (l ↦{q} (some v))
-    ⊢@{IProp GF} WP hl(!v(#(.loc l))) @ s; E {{ v', ⌜v = v'⌝ ∗ (l ↦{q} (some v')) }} := by
-  iintro >Hpt
+theorem wp_load {l : Loc} {q} {v : Val} Φ :
+    ▷ l ↦{q} some v -∗
+    ▷ (l ↦{q} some v -∗ Φ v) -∗
+    WP hl(!v(#(.loc l))) @ s; E {{ Φ }} := by
+  iintro >Hpt HΦ
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   ihave %Hpt : ⌜σ₁.get? l = v⌝ $$ [Hσ Hpt]
@@ -167,14 +169,15 @@ theorem wp_load {l : Loc} {q} {v : Val} :
   iframe Hσ
   imodintro
   isplit <;> try itrivial
-  iexists _; iframe Hpt
-  ipureintro; simp [toVal]
+  iexists _; isplit
+  · ipureintro; simp [toVal]; rfl
+  · iapply HΦ $$ [$]
 
-theorem wp_store {l : Loc} {v v' : Val} :
-    ▷ (l ↦ (some v'))
-    ⊢@{IProp GF} WP hl(v(#(.loc l)) ← {v}) @ s; E
-      {{ v'', ⌜v'' = hl_val(#())⌝ ∗ (l ↦ some v) }} := by
-  iintro >Hpt
+theorem wp_store {l : Loc} {v v' : Val} Φ :
+    ▷ l ↦ some v' -∗
+    ▷ (l ↦ some v -∗ Φ hl_val(#())) -∗
+    WP hl(v(#(.loc l)) ← ?v) @ s; E {{ Φ }} := by
+  iintro >Hpt HΦ
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   simp only [stateInterp]
@@ -203,8 +206,9 @@ theorem wp_store {l : Loc} {v v' : Val} :
   iframe Hσ
   isplit <;> try itrivial
   iexists .lit .unit
-  iframe Hpt
-  ipureintro; simp [toVal]
+  isplit
+  · ipureintro; simp [toVal]
+  · iapply HΦ $$ [$]
 
 theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val}
     (Heq1 : toVal e1 = .some v1) (Heq2 : toVal e2 = .some v2) (Heq3 : v'.compareSafe v1)

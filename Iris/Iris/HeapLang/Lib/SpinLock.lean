@@ -86,9 +86,9 @@ theorem newlock_spec :
   iapply wp_rec; (· rfl); simp only [Exp.subst]
   inext
   imod token_alloc with ⟨%γ, Hγ⟩
-  iapply wp_wand; iapply wp_alloc
-  iintro %v ⟨%l, %Heq, Hpt⟩
-  iapply Hcont $$ %v %γ
+  iapply wp_alloc
+  iintro !> %l Hpt
+  iapply Hcont
   iintro %R %E HR
   imod inv_alloc spinlockN E (lockInv γ l R) $$ [Hpt HR Hγ] with H
   · unfold lockInv locked
@@ -190,15 +190,13 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   unfold lockInv
   imodintro
   icases G1 with ⟨%b, Hpt, Hcond⟩
-  iapply wp_wand $$ [Hpt]
-  · iapply wp_store $$ Hpt
-  iintro %_ ⟨%Heq, Hpt'⟩
-  subst Heq
+  iapply wp_store $$ Hpt
+  iintro !> Hpt
   imod G2 $$ [- Hcont]
   · inext
     iexists false
     simp only [Bool.false_eq_true, ↓reduceIte]
-    iframe Hpt' Hl HR
+    iframe Hpt Hl HR
   · imodintro
     iapply Hcont
     itrivial

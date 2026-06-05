@@ -110,8 +110,8 @@ def genHeapInterp (σ : H V) : IProp GF := heapName ↪●MAP σ
 
 def pointsTo (l : L) (dq : DFrac F)(v : V) : IProp GF := heapName ↪◯MAP[l]{dq} v
 
-notation l " ↦{" dq "} " v => pointsTo l dq v
-notation l " ↦ " v => pointsTo l (DFrac.own 1) v
+notation:50 l:50 " ↦{" dq "} " v:50 => pointsTo l dq v
+notation:50 l:50 " ↦ " v:50 => pointsTo l (DFrac.own 1) v
 
 end definitions
 
@@ -132,7 +132,7 @@ instance instFractionalPointsTo : Fractional (l ↦{.own ·} v) :=
 instance instAsFractionalPointsTo : AsFractional (l ↦{.own q} v) (l ↦{.own ·} v) q :=
   inferInstanceAs (AsFractional (heapName ↪◯MAP[l]{.own q} v) (heapName ↪◯MAP[l]{.own ·} v) q)
 
-theorem pointsTo_cmraValid : (l ↦{dq} v) ⊢@{IProp GF} internalCmraValid dq := by
+theorem pointsTo_cmraValid : l ↦{dq} v ⊢@{IProp GF} internalCmraValid dq := by
   simp [pointsTo, ghost_map_elem_valid]
 
 theorem pointsTo_op_cmraValid :
@@ -140,7 +140,7 @@ theorem pointsTo_op_cmraValid :
   unfold pointsTo
   iapply ghost_map_elem_valid_2
 
-theorem pointsTo_agree : (l ↦{dq₁} v₁) ∗ (l ↦{dq₂} v₂) ⊢@{IProp GF} ⌜v₁ = v₂⌝ := by
+theorem pointsTo_agree : l ↦{dq₁} v₁ ∗ l ↦{dq₂} v₂ ⊢@{IProp GF} ⌜v₁ = v₂⌝ := by
   unfold pointsTo
   iapply ghost_map_elem_agree
 
@@ -149,22 +149,22 @@ open Std.PartialMap
 section updateLemmas
 
 theorem genHeap_alloc (Hσl : get? σ l = .none) :
-    genHeapInterp σ ⊢ |==> (genHeapInterp (insert σ l v) ∗ (l ↦ v)) := by
+    genHeapInterp σ ⊢ |==> (genHeapInterp (insert σ l v) ∗ l ↦ v) := by
   unfold genHeapInterp pointsTo
   iapply ghost_map_insert _ v Hσl
 
-theorem genHeap_dealloc : (genHeapInterp σ ∗ l ↦ v) ==∗ genHeapInterp (delete σ l) := by
+theorem genHeap_dealloc : genHeapInterp σ ∗ l ↦ v ==∗ genHeapInterp (delete σ l) := by
   unfold genHeapInterp pointsTo
   iintro ⟨H₁,H₂⟩
   iapply ghost_map_delete _ v $$ H₁ H₂
 
-theorem genHeap_valid : (genHeapInterp σ ∗ l ↦{dq} v) ==∗ ⌜get? σ l = .some v⌝ := by
+theorem genHeap_valid : genHeapInterp σ ∗ l ↦{dq} v ==∗ ⌜get? σ l = .some v⌝ := by
   unfold genHeapInterp pointsTo
   iintro ⟨H₁,H₂⟩
   iapply ghost_map_lookup $$ H₁ H₂
 
 theorem genHeap_update :
-    (genHeapInterp σ ∗ l ↦ v₁) ==∗ (genHeapInterp (insert σ l v₂) ∗ l ↦ v₂) := by
+    genHeapInterp σ ∗ l ↦ v₁ ==∗ genHeapInterp (insert σ l v₂) ∗ l ↦ v₂ := by
   unfold genHeapInterp pointsTo
   iintro ⟨H₁,H₂⟩
   iapply ghost_map_update _ _ v₂ $$ H₁ H₂

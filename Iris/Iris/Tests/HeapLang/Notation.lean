@@ -100,6 +100,20 @@ info: Exp.rec_ Binder.anon (Binder.named "x")
 set_option pp.explicit true in
 #check hl(λ x y, let z := #1; #2; x + y + z)
 
+variable (f x : Binder) in
+/-- info: hl((λ ?x y, (rec ?f ?x := y))) : Exp -/
+#guard_msgs in
+#check hl(λ ?x y, rec ?f ?x := y)
+
+variable (f x : Binder) in
+/--
+info: Exp.rec_ Binder.anon x (Exp.rec_ Binder.anon (Binder.named "y") (Exp.rec_ f x (Exp.var "y"))) : Exp
+-/
+#guard_msgs in
+set_option pp.explicit true in
+#check hl(λ ?x y, rec ?f ?x := y)
+
+
 /--
 info: hl((λ x y,
       ((((#1 + (#2 +ₗ (#3 - (#4 * (#5 / (#6 % #7)))))) & #8) | (#9 ^ (#10 <<< (#11 >>> #12)))) ≤

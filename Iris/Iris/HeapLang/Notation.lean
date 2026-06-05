@@ -14,15 +14,28 @@ namespace Iris.HeapLang
 open Lean Lean.PrettyPrinter Lean.PrettyPrinter.Delaborator Elab Parser ProgramLogic
 
 declare_syntax_cat hl_exp
+declare_syntax_cat hl_binder
 declare_syntax_cat hl_match_arm
 declare_syntax_cat hl_val
 
 /-- embedding heaplang expressions into terms -/
 syntax:max "hl(" hl_exp ")" : term
+syntax:min "hl% " hl_exp:min : term
+macro_rules
+  | `(hl% $t) => `(hl($t))
 /-- embedding heaplang binders into terms -/
-syntax:max "hl_binder(" binderIdent ")" : term
+syntax:max "hl_binder(" hl_binder ")" : term
 /-- embedding heaplang values into terms -/
 syntax:max "hl_val(" hl_val ")" : term
+syntax:min "hl_val% " hl_val:min : term
+macro_rules
+  | `(hl_val% $t) => `(hl_val($t))
+
+/-- escaping -/
+syntax:max "{" term "}" : hl_binder
+/-- escaping identifiers -/
+syntax:max "?" ident : hl_binder
+syntax:max binderIdent : hl_binder
 
 /-- escaping -/
 syntax:max "{" term "}" : hl_val
@@ -98,17 +111,17 @@ syntax:10 "if " hl_exp:10 " then " hl_exp:10 " else " hl_exp:10 : hl_exp
 /-- application -/
 syntax:100 hl_exp:100 colGt ppSpace hl_exp:101 : hl_exp
 /-- let -/
-syntax:10 "let " binderIdent " := " hl_exp:10 "; " hl_exp:1 : hl_exp
+syntax:10 "let " hl_binder " := " hl_exp:10 "; " hl_exp:1 : hl_exp
 /-- sequencing -/
 syntax:5 hl_exp:6 "; " hl_exp:5 : hl_exp
 /-- lambda -/
-syntax:10 "λ " binderIdent+ ", " hl_exp:10 : hl_exp
+syntax:10 "λ " hl_binder+ ", " hl_exp:10 : hl_exp
 /-- lambda -/
-syntax:10 "λ " binderIdent+ ", " hl_exp:10 : hl_val
+syntax:10 "λ " hl_binder+ ", " hl_exp:10 : hl_val
 /-- recursive function -/
-syntax:10 "rec " binderIdent ppSpace binderIdent+ " := " hl_exp:10 : hl_exp
+syntax:10 "rec " hl_binder ppSpace hl_binder+ " := " hl_exp:10 : hl_exp
 /-- recursive function -/
-syntax:10 "rec " binderIdent ppSpace binderIdent+ " := " hl_exp:10 : hl_val
+syntax:10 "rec " hl_binder ppSpace hl_binder+ " := " hl_exp:10 : hl_val
 
 /-- pairs -/
 syntax:max "(" hl_exp ", " hl_exp,+ ")" : hl_exp
@@ -131,9 +144,9 @@ syntax:100 "match " hl_exp:80 " with"
   " | " hl_match_arm " => " hl_exp:80
   " | " hl_match_arm " => " hl_exp:80 : hl_exp
 
-syntax "injl(" binderIdent ")" : hl_match_arm
-syntax "injr(" binderIdent ")" : hl_match_arm
-syntax "some(" binderIdent ")" : hl_match_arm
+syntax "injl(" hl_binder ")" : hl_match_arm
+syntax "injr(" hl_binder ")" : hl_match_arm
+syntax "some(" hl_binder ")" : hl_match_arm
 syntax "none()" : hl_match_arm
 
 /-- heap operations -/
@@ -172,14 +185,17 @@ partial def unpackHLVal [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (
   | `($i:ident) => `(hl_val|?$i)
   | `($t) => `(hl_val|{$t})
 
-partial def unpackHLBinder [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `Lean.binderIdent)
-  | `(hl_binder($e)) => `(binderIdent|$e)
-  | `($_) => `(binderIdent|_)
+partial def unpackHLBinder [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `hl_binder)
+  | `(hl_binder($e)) => `(hl_binder|$e)
+  | `($i:ident) => `(hl_binder|?$i)
+  | `($t) => `(hl_binder|{$t})
 
 /-- elaborating binders -/
 macro_rules
   | `(hl_binder(_)) => `(Binder.anon)
   | `(hl_binder($i:ident)) => `(Binder.named $(Syntax.mkStrLit i.getId.toString))
+  | `(hl_binder(?$i)) => `($i)
+  | `(hl_binder({$t})) => `($t)
 
 /-- elaborating values -/
 macro_rules
