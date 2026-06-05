@@ -16,18 +16,20 @@ public import Iris.ProofMode
 /-! # HeapLang completeness
 
 Ports `case_studies/heaplang/completeness_generic.v` and
-`completeness_classical.v`, dropping the prophecy machinery and (for now) the
-`meta_token` conjunct of `heap_inv` (not yet implemented upstream in
-`BI/Lib/GenHeap.lean`).
+`completeness_classical.v`. The `heap_inv` retains Rocq's heap conjunct
+(per-cell points-to ∗ `meta_token`); its prophecy conjunct is dropped because the
+iris-lean heap_lang `stateInterp` tracks only `σ.heap` (there is no `proph_map`
+ghost component).
 
 Status of `wp_base_completeness` (the base-step case analysis):
 * pure branches (`rec`/`pair`/`injL`/`injR`/`beta`/`unop`/`binop`/`if`/`fst`/
-  `snd`/`case`) — complete, via `wp_base_pure` + the `PureExec` instances;
-* atomic heap branches (`load`/`store`/`free`/`xchg`/`faa`) — reduced via
-  `wp_base_atomic`(`_nochange`) to a small per-op determinism fact, `sorry`'d;
-* `cmpXchg` and `fork` — not yet wired (`sorry`);
-* `alloc` — needs `meta_token_ne` for location freshness (`sorry`);
-* `newProph`/`resolve` — dropped (prophecy out of scope, `sorry`).
+  `snd`/`case`) — via `wp_base_pure` + the `PureExec` instances/lemmas;
+* atomic heap branches (`load`/`store`/`free`/`xchg`/`faa`/`cmpXchg`) — via
+  `wp_base_atomic`(`_nochange`) + the per-op determinism lemmas;
+* `fork` — via the non-atomic disjunct and `wp_fork_fupd`;
+* `alloc` — via `genHeap_alloc_big`, with location freshness from `meta_token_ne`;
+* `newProph`/`resolve` — `sorry`, pending a `proph_map` port (no Lean counterpart
+  yet for the prophecy ghost state these steps manipulate).
 -/
 
 @[expose] public section
@@ -37,12 +39,14 @@ open Iris ProgramLogic Iris.BI Language Language.Notation Std
 
 variable {hlc : HasLC} {GF : BundledGFunctors} [HeapLangGS hlc GF]
 
-/-- The heap-lang configuration invariant: ownership of every heap cell. The
-`meta_token` conjunct of the Rocq `heap_inv` is dropped (not yet available), as
-is the prophecy conjunct (out of scope). Mirrors `heap_inv` in
-`case_studies/heaplang/completeness_generic.v`. -/
+/-- The heap-lang configuration invariant: full ownership of every heap cell
+together with its `meta_token`. Mirrors the heap conjunct of `heap_inv` in
+`case_studies/heaplang/completeness_generic.v`; the prophecy conjunct is dropped
+because the iris-lean heap_lang `stateInterp` tracks only `σ.heap` (no
+`proph_map`). -/
 @[reducible] def heap_inv (σ : State) : IProp GF :=
-  bigSepM (M := HeapF) (K := Loc) (fun (l : Loc) (vo : Option Val) => iprop(l ↦ vo)) σ.heap
+  bigSepM (M := HeapF) (K := Loc)
+    (fun (l : Loc) (vo : Option Val) => iprop((l ↦ vo) ∗ metaToken l ⊤)) σ.heap
 
 instance heap_inv_timeless (σ : State) : Timeless (heap_inv (GF := GF) σ) := by
   unfold heap_inv; infer_instance
@@ -113,7 +117,8 @@ theorem wp_base_atomic {e₁ : Exp} {v₂ : Val} (l : Loc) (vold vnew : Option V
   iframe %hatom
   iintro %Φ Hstep
   icases (BigSepM.bigSepM_insert_acc (M := HeapF)
-    (Φ := fun (k : Loc) (vo : Option Val) => iprop(k ↦ vo)) hcell) $$ Hinv with ⟨Hpt, Hclose⟩
+    (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤)) hcell) $$ Hinv
+    with ⟨⟨Hpt, Hmeta⟩, Hclose⟩
   iapply wp_lift_atomic_step (EctxLanguage.val_stuck (hbase σ hcell))
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   simp only [stateInterp]
@@ -138,14 +143,14 @@ theorem wp_base_atomic {e₁ : Exp} {v₂ : Val} (l : Loc) (vold vnew : Option V
     Int.cast_ofNat_Int, List.foldl_nil, hl0, List.length_nil, Nat.add_zero,
     Algebra.BigOpL.bigOpL_nil]
   iframe Hσ
-  isplitl [Hpost Hclose Hpt]
+  isplitl [Hpost Hclose Hpt Hmeta]
   · iexists v₂
     isplit
     · ipureintro; simp [toVal]
     iapply Hpost
     simp only [heap_inv, State.initHeap, Int.toNat_one, List.range_one, List.foldl_cons,
       Int.cast_ofNat_Int, List.foldl_nil, hl0]
-    iapply Hclose $$ Hpt
+    iapply Hclose $$ [$Hpt $Hmeta]
   · itrivial
 
 /-- Atomic heap-step branch that leaves the heap unchanged (read-only ops: `load`,
@@ -171,7 +176,8 @@ theorem wp_base_atomic_nochange {e₁ : Exp} {v₂ : Val} (l : Loc) (vcur : Opti
   simp only [stateInterp]
   ihave %hcell1 : ⌜get? (M := HeapF) σ₁.heap l = some vcur⌝ $$ [Hσ Hinv]
   · icases (BigSepM.bigSepM_lookup_acc (M := HeapF)
-      (Φ := fun (k : Loc) (vo : Option Val) => iprop(k ↦ vo)) hcell).1 $$ Hinv with ⟨Hpt, _⟩
+      (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤)) hcell).1 $$ Hinv
+      with ⟨⟨Hpt, _⟩, _⟩
     icases genHeap_valid $$ [$Hσ $Hpt] with >%hh
     itrivial
   isplitr
@@ -196,12 +202,192 @@ theorem wp_base_atomic_nochange {e₁ : Exp} {v₂ : Val} (l : Loc) (vcur : Opti
     iexact Hinv
   · itrivial
 
-/-- The heap-only completeness equation: case analysis on the base step. Mirrors
-`wp_base_completeness` in `case_studies/heaplang/completeness_generic.v`.
+/-! ### Per-operation determinism facts.
 
-See the module header for the per-branch status; the remaining `sorry`s are the
-per-op determinism facts for the heap branches, `cmpXchg`/`fork`, the `alloc`
-freshness argument (`meta_token`), and the dropped prophecy branches. -/
+These discharge the `hdet` argument of `wp_base_atomic`(`_nochange`): for a fixed
+redex and a fixed value of the cell being acted on, the base step's output is
+uniquely determined. In Rocq these are obtained for free by reasoning forward
+with the concrete `wp_load`/`wp_store`/… rules; here the generic atomic helper
+takes the determinism as an explicit side condition. Each is a one-constructor
+`cases` followed by reading off the cell equation. -/
+
+theorem loadS_det {l : Loc} {v : Val} {σ : State} {obs e' σ' efs}
+    (h : get? (M := HeapF) σ.heap l = some (some v))
+    (hs : BaseStep (.load (.val (.lit (.loc l)))) σ obs e' σ' efs) :
+    obs = [] ∧ e' = (ToVal.ofVal v : Exp) ∧ σ' = σ ∧ efs = [] := by
+  cases hs with
+  | loadS _ v' _ h' =>
+    simp only [State.get?] at h'
+    rw [h] at h'
+    simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at h'
+    subst h'
+    refine ⟨rfl, rfl, rfl, rfl⟩
+
+theorem storeS_det {l : Loc} {w : Val} {σ : State} {obs e' σ' efs}
+    (hs : BaseStep (.store (.val (.lit (.loc l))) (.val w)) σ obs e' σ' efs) :
+    obs = [] ∧ e' = (ToVal.ofVal (Val.lit .unit) : Exp) ∧
+      σ' = σ.initHeap l 1 (some w) ∧ efs = [] := by
+  cases hs with
+  | storeS _ _ _ _ _ => refine ⟨rfl, rfl, rfl, rfl⟩
+
+theorem freeS_det {l : Loc} {σ : State} {obs e' σ' efs}
+    (hs : BaseStep (.free (.val (.lit (.loc l)))) σ obs e' σ' efs) :
+    obs = [] ∧ e' = (ToVal.ofVal (Val.lit .unit) : Exp) ∧
+      σ' = σ.initHeap l 1 none ∧ efs = [] := by
+  cases hs with
+  | freeS _ _ _ _ => refine ⟨rfl, rfl, rfl, rfl⟩
+
+theorem xchgS_det {l : Loc} {v1 v2 : Val} {σ : State} {obs e' σ' efs}
+    (h : get? (M := HeapF) σ.heap l = some (some v1))
+    (hs : BaseStep (.xchg (.val (.lit (.loc l))) (.val v2)) σ obs e' σ' efs) :
+    obs = [] ∧ e' = (ToVal.ofVal v1 : Exp) ∧ σ' = σ.initHeap l 1 (some v2) ∧ efs = [] := by
+  cases hs with
+  | xchgS _ v1' _ _ h' =>
+    simp only [State.get?] at h'
+    rw [h] at h'
+    simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at h'
+    subst h'
+    refine ⟨rfl, rfl, rfl, rfl⟩
+
+theorem faaS_det {l : Loc} {i1 i2 : Int} {σ : State} {obs e' σ' efs}
+    (h : get? (M := HeapF) σ.heap l = some (some (Val.lit (.int i1))))
+    (hs : BaseStep (.faa (.val (.lit (.loc l))) (.val (.lit (.int i2)))) σ obs e' σ' efs) :
+    obs = [] ∧ e' = (ToVal.ofVal (Val.lit (.int i1)) : Exp) ∧
+      σ' = σ.initHeap l 1 (some (Val.lit (.int (i1 + i2)))) ∧ efs = [] := by
+  cases hs with
+  | faaS _ i1' _ _ h' =>
+    simp only [State.get?] at h'
+    rw [h] at h'
+    simp only [Option.bind_some, Option.some.injEq, Val.lit.injEq, BaseLit.int.injEq] at h'
+    subst h'
+    refine ⟨rfl, rfl, rfl, rfl⟩
+
+theorem cmpXchgS_det_true {l : Loc} {v1 v2 vl : Val} {σ : State} {obs e' σ' efs}
+    (h : get? (M := HeapF) σ.heap l = some (some vl)) (htrue : decide (vl = v1) = true)
+    (hs : BaseStep (.cmpXchg (.val (.lit (.loc l))) (.val v1) (.val v2)) σ obs e' σ' efs) :
+    obs = [] ∧ e' = (ToVal.ofVal (Val.pair vl (.lit (.bool true))) : Exp) ∧
+      σ' = σ.initHeap l 1 (some v2) ∧ efs = [] := by
+  cases hs with
+  | cmpXchgS _ _ _ vl' _ b' h' hcs' hb' =>
+    simp only [State.get?] at h'
+    rw [h] at h'
+    simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at h'
+    subst h'
+    rw [htrue] at hb'
+    subst hb'
+    refine ⟨rfl, rfl, rfl, rfl⟩
+
+theorem cmpXchgS_det_false {l : Loc} {v1 v2 vl : Val} {σ : State} {obs e' σ' efs}
+    (h : get? (M := HeapF) σ.heap l = some (some vl)) (hfalse : decide (vl = v1) = false)
+    (hs : BaseStep (.cmpXchg (.val (.lit (.loc l))) (.val v1) (.val v2)) σ obs e' σ' efs) :
+    obs = [] ∧ e' = (ToVal.ofVal (Val.pair vl (.lit (.bool false))) : Exp) ∧
+      σ' = σ ∧ efs = [] := by
+  cases hs with
+  | cmpXchgS _ _ _ vl' _ b' h' hcs' hb' =>
+    simp only [State.get?] at h'
+    rw [h] at h'
+    simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at h'
+    subst h'
+    rw [hfalse] at hb'
+    subst hb'
+    refine ⟨rfl, rfl, rfl, rfl⟩
+
+/-! ### Multi-cell allocation helpers (for the `allocN` branch).
+
+`allocN n v` writes `v` into `n` consecutive fresh locations. The state update
+`State.initHeap` is a left-fold of single inserts; the lemmas below characterise
+its heap pointwise and as a left-biased union with a freshly-built block
+`allocCells`, which is what lets `genHeap_alloc_big` produce the new points-to and
+meta tokens. -/
+
+/-- A block of `n` cells all holding `v`, starting at `l` (`l, l+1, …, l+(n-1)`).
+This is `(State.initHeap σ l n v).heap` with the existing heap `σ.heap` removed. -/
+def allocCells (l : Loc) (n : Nat) (v : Option Val) : HeapF (Option Val) :=
+  (List.range n).foldl (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) ∅
+
+theorem get?_foldl_insert (l : Loc) (v : Option Val) (m : HeapF (Option Val)) (n : Nat) (k : Loc) :
+    get? (M := HeapF) ((List.range n).foldl
+        (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) m) k
+      = if (∃ i, i < n ∧ k = l + (i : Int)) then some v else get? (M := HeapF) m k := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
+      Iris.Std.LawfulPartialMap.get?_insert, ih]
+    by_cases hk : (l + (n : Int)) = k
+    · rw [if_pos hk, if_pos ⟨n, Nat.lt_succ_self n, hk.symm⟩]
+    · rw [if_neg hk]
+      by_cases hex : ∃ i, i < n ∧ k = l + (i : Int)
+      · obtain ⟨i, hi, hki⟩ := hex
+        rw [if_pos ⟨i, hi, hki⟩, if_pos ⟨i, Nat.lt_succ_of_lt hi, hki⟩]
+      · rw [if_neg hex, if_neg]
+        rintro ⟨i, hi, hki⟩
+        rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hi' | rfl
+        · exact hex ⟨i, hi', hki⟩
+        · exact hk hki.symm
+
+theorem get?_allocCells {l : Loc} {n : Nat} {v : Option Val} {k : Loc} :
+    get? (M := HeapF) (allocCells l n v) k
+      = if (∃ i, i < n ∧ k = l + (i : Int)) then some v else none := by
+  rw [allocCells, get?_foldl_insert]
+  simp only [LawfulPartialMap.get?_empty]
+
+/-- `State.initHeap` is the left-biased union of the fresh block with the old heap. -/
+theorem initHeap_heap_eq {σ : State} {l : Loc} {n : Int} {v : Option Val} :
+    Iris.Std.PartialMap.equiv (M := HeapF) (σ.initHeap l n v).heap
+      (Iris.Std.PartialMap.union (allocCells l n.toNat v) σ.heap) := by
+  intro k
+  show get? (M := HeapF) ((List.range n.toNat).foldl
+      (fun h (i : Nat) => Std.insert (M := HeapF) h (l + (i : Int)) v) σ.heap) k = _
+  rw [get?_foldl_insert, Iris.Std.LawfulPartialMap.get?_union, get?_allocCells]
+  by_cases hex : ∃ i, i < n.toNat ∧ k = l + (i : Int)
+  · simp only [if_pos hex, Option.orElse]
+  · simp only [if_neg hex, Option.orElse]
+
+theorem allocCells_disjoint {l : Loc} {n : Int} {v : Val} {m : HeapF (Option Val)}
+    (hf : ∀ i : Int, 0 ≤ i → i < n → get? (M := HeapF) m (l + i) = none) :
+    Std.PartialMap.disjoint (M := HeapF) (allocCells l n.toNat (some v)) m := by
+  intro k ⟨h1, h2⟩
+  rw [get?_allocCells] at h1
+  split at h1 <;> rename_i hcond
+  · obtain ⟨i, hi, hki⟩ := hcond
+    rw [hki, hf (i : Int) (Int.ofNat_nonneg i) (by omega)] at h2
+    simp at h2
+  · simp at h1
+
+private theorem mem_le_foldr_max (x : Int) (L : List Int) (h : x ∈ L) :
+    x ≤ L.foldr max 0 := by
+  induction L with
+  | nil => simp at h
+  | cons a L ih =>
+    simp only [List.foldr_cons]
+    rcases List.mem_cons.mp h with rfl | h
+    · omega
+    · have := ih h; omega
+
+/-- Any heap has a fresh block of `n` consecutive locations: pick a base strictly
+above every used location's address. This is the reducibility witness for the
+`allocN` lift, replacing Rocq's built-in `fresh_locs`. -/
+theorem exists_fresh_block (m : HeapF (Option Val)) (n : Int) :
+    ∃ l : Loc, ∀ i : Int, 0 ≤ i → i < n → get? (M := HeapF) m (l + i) = none := by
+  refine ⟨Loc.mk ((m.keys.map Loc.n).foldr max 0 + 1), fun i hi0 hin => ?_⟩
+  have hnotmem : (Loc.mk ((m.keys.map Loc.n).foldr max 0 + 1) + i) ∉ m.keys := by
+    intro hmem
+    have hle : (Loc.mk ((m.keys.map Loc.n).foldr max 0 + 1) + i).n
+        ≤ (m.keys.map Loc.n).foldr max 0 :=
+      mem_le_foldr_max _ _ (List.mem_map_of_mem hmem)
+    simp only [loc_add_n] at hle
+    omega
+  simpa [get?, getElem?_eq_none_iff, ← Std.ExtTreeMap.mem_keys] using hnotmem
+
+private theorem coPset_top_ne_empty : (⊤ : CoPset) ≠ ∅ := by
+  intro h
+  have hm : Pos.xH ∈ (⊤ : CoPset) := CoPset.mem_full
+  rw [h] at hm
+  exact CoPset.mem_empty hm
+
+/-- The heap-only completeness equation: case analysis on the base step. Mirrors
+`wp_base_completeness` in `case_studies/heaplang/completeness_generic.v`. -/
 theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
     (Hred : BaseStep.Reducible (e₁, σ)) :
     heap_inv (GF := GF) σ ⊢ iprop(|={E}=> baseCompletenessGoal e₁ σ E) := by
@@ -241,32 +427,134 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
   | loadS l v σ hl =>
       iapply (wp_base_atomic_nochange (v₂ := v) l (some v) σ E
         (base_step_to_val_atomic Atomicity.StronglyAtomic (BaseStep.loadS l v σ hl)) hl
-        (fun σ'' h => BaseStep.loadS l v σ'' h)
-        (fun {σ''} h hs => by sorry)) $$ Hinv
+        (fun σ'' h => BaseStep.loadS l v σ'' h) loadS_det) $$ Hinv
   | storeS l v w σ hl =>
       iapply (wp_base_atomic (v₂ := .lit .unit) l (some v) (some w) σ E
         (base_step_to_val_atomic Atomicity.StronglyAtomic (BaseStep.storeS l v w σ hl)) hl
-        (fun σ'' h => BaseStep.storeS l v w σ'' h)
-        (fun {σ''} h hs => by sorry)) $$ Hinv
+        (fun σ'' h => BaseStep.storeS l v w σ'' h) (fun _ hs => storeS_det hs)) $$ Hinv
   | freeS l v σ hl =>
       iapply (wp_base_atomic (v₂ := .lit .unit) l (some v) none σ E
         (base_step_to_val_atomic Atomicity.StronglyAtomic (BaseStep.freeS l v σ hl)) hl
-        (fun σ'' h => BaseStep.freeS l v σ'' h)
-        (fun {σ''} h hs => by sorry)) $$ Hinv
+        (fun σ'' h => BaseStep.freeS l v σ'' h) (fun _ hs => freeS_det hs)) $$ Hinv
   | xchgS l v1 v2 σ hl =>
       iapply (wp_base_atomic (v₂ := v1) l (some v1) (some v2) σ E
         (base_step_to_val_atomic Atomicity.StronglyAtomic (BaseStep.xchgS l v1 v2 σ hl)) hl
-        (fun σ'' h => BaseStep.xchgS l v1 v2 σ'' h)
-        (fun {σ''} h hs => by sorry)) $$ Hinv
+        (fun σ'' h => BaseStep.xchgS l v1 v2 σ'' h) xchgS_det) $$ Hinv
   | faaS l i1 i2 σ hl =>
       iapply (wp_base_atomic (v₂ := .lit (.int i1)) l (some (.lit (.int i1)))
         (some (.lit (.int (i1 + i2)))) σ E
         (base_step_to_val_atomic Atomicity.StronglyAtomic (BaseStep.faaS l i1 i2 σ hl)) hl
-        (fun σ'' h => BaseStep.faaS l i1 i2 σ'' h)
-        (fun {σ''} h hs => by sorry)) $$ Hinv
-  | cmpXchgS l v1 v2 vl σ b hl hcs hb => sorry
-  | forkS e σ => sorry
-  | allocNS n v σ l hn hfresh => sorry
+        (fun σ'' h => BaseStep.faaS l i1 i2 σ'' h) faaS_det) $$ Hinv
+  | cmpXchgS l v1 v2 vl σ b hl hcs hb =>
+      cases hb1 : decide (vl = v1) with
+      | true =>
+          iapply (wp_base_atomic (v₂ := .pair vl (.lit (.bool true))) l (some vl) (some v2) σ E
+            (base_step_to_val_atomic Atomicity.StronglyAtomic
+              (BaseStep.cmpXchgS l v1 v2 vl σ true hl hcs (by rw [hb1])))
+            hl
+            (fun σ'' h => by
+              have := BaseStep.cmpXchgS l v1 v2 vl σ'' true h hcs (by rw [hb1])
+              simpa using this)
+            (fun h hs => cmpXchgS_det_true h hb1 hs)) $$ Hinv
+      | false =>
+          iapply (wp_base_atomic_nochange (v₂ := .pair vl (.lit (.bool false))) l (some vl) σ E
+            (base_step_to_val_atomic Atomicity.StronglyAtomic
+              (BaseStep.cmpXchgS l v1 v2 vl σ false hl hcs (by rw [hb1])))
+            hl
+            (fun σ'' h => by
+              have := BaseStep.cmpXchgS l v1 v2 vl σ'' false h hcs (by rw [hb1])
+              simpa using this)
+            (fun h hs => cmpXchgS_det_false h hb1 hs)) $$ Hinv
+  | forkS e σ =>
+      -- Fork lands in the non-atomic disjunct: the forked thread `e` becomes the
+      -- single forked expression `efs = [e]`, and the parent steps to `#()`.
+      imodintro
+      iright
+      iframe Hinv
+      iintro %Φ %E₂ H
+      iapply wp_fork_fupd
+      iintro !>
+      ihave Htraj : iprop(∀ σ₁, heap_inv σ₁ ={E}=∗
+          ∃ κ σ₁', ⌜PrimSteps (.fork e) σ₁ κ (.val (.lit .unit)) σ₁' [e]⌝ ∗ heap_inv σ₁') $$ []
+      · iintro %σ₁ Hheap
+        imodintro
+        iexists [], σ₁
+        iframe Hheap
+        ipureintro
+        exact PrimSteps.once (EctxLanguage.primStep_of_baseStep (BaseStep.forkS e σ₁))
+      imod H $$ Htraj with ⟨HwpUnit, Hefs⟩
+      isplitl [Hefs]
+      · iapply (BI.BigSepL.bigSepL_singleton (PROP := IProp GF)).1 $$ Hefs
+      · iapply (wp_value_fupd' (v := .lit .unit)).1 $$ HwpUnit
+  | allocNS n v σ l hn hfresh =>
+      -- `allocN` is atomic and allocates a fresh block of `n` cells.
+      imodintro
+      ileft
+      have hatom : Atomic Atomicity.StronglyAtomic (Exp.allocN (.val (.lit (.int n))) (.val v)) :=
+        base_step_to_val_atomic Atomicity.StronglyAtomic (BaseStep.allocNS n v σ l hn hfresh)
+      iframe %hatom
+      iintro %Φ Hstep
+      iapply wp_lift_atomic_step
+        (EctxLanguage.val_stuck (BaseStep.allocNS n v σ l hn hfresh))
+      iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+      simp only [stateInterp]
+      -- Reducibility in `σ₁` from a fresh block.
+      obtain ⟨lf, hlf⟩ := exists_fresh_block σ₁.heap n
+      have Hred₁ : BaseStep.Reducible (Exp.allocN (.val (.lit (.int n))) (.val v), σ₁) :=
+        ⟨[], _, _, [], BaseStep.allocNS n v σ₁ lf hn hlf⟩
+      isplitr
+      · ipureintro
+        simp only [Stuckness.MaybeReducible]
+        exact EctxLanguage.primStep_reducible_of_baseStep_reducible Hred₁
+      iintro !> %e₂ %σ₂ %eₜ %Hprim Hcr
+      cases EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred₁ Hprim
+      rename_i l' Hpo Hi
+      -- Allocate the new block in the state interpretation.
+      imod (genHeap_alloc_big (allocCells l' n.toNat (some v)) σ₁.heap (allocCells_disjoint Hi))
+        $$ Hσ with ⟨Hσ', Hnewpts, Hnewmeta⟩
+      -- Freshness of the block in `σ` (the `heap_inv` state), via `meta_token_ne`.
+      ihave %hfreshσ : ⌜∀ i : Int, 0 ≤ i → i < n → get? (M := HeapF) σ.heap (l' + i) = none⌝
+          $$ [Hinv Hnewmeta]
+      · iintro %i %hi0 %hin
+        rcases hgc : get? (M := HeapF) σ.heap (l' + i) with _ | vo
+        · itrivial
+        · icases (BigSepM.bigSepM_lookup_acc (M := HeapF)
+            (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤)) hgc).1
+            $$ Hinv with ⟨⟨_, Hmeta1⟩, _⟩
+          have hcell_new : get? (M := HeapF) (allocCells l' n.toNat (some v)) (l' + i)
+              = some (some v) := by
+            rw [get?_allocCells, if_pos ⟨i.toNat, by omega, by rw [Int.toNat_of_nonneg hi0]⟩]
+          icases (BigSepM.bigSepM_lookup_acc (M := HeapF)
+            (Φ := fun (k : Loc) (_vo : Option Val) => iprop(metaToken k ⊤)) hcell_new).1
+            $$ Hnewmeta with ⟨Hmeta2, _⟩
+          icases metaToken_ne coPset_top_ne_empty $$ Hmeta1 Hmeta2 with %hne
+          exact absurd rfl hne
+      -- Instantiate the magic premise with the base step from `σ` at `l'`.
+      imod Hstep $$ [] with ⟨Hpost, _⟩
+      · ipureintro
+        exact EctxLanguage.primStep_of_baseStep (BaseStep.allocNS n v σ l' hn hfreshσ)
+      imodintro
+      isplitl [Hσ']
+      · iapply genHeapInterp_eqv (Iris.Std.PartialMap.equiv.symm _ _ initHeap_heap_eq)
+        iexact Hσ'
+      isplitl [Hpost Hinv Hnewpts Hnewmeta]
+      · iexists (.lit (.loc l'))
+        isplit
+        · ipureintro; simp [toVal]
+        iapply Hpost
+        iapply (BigSepM.bigSepM_eqv_of_perm
+          (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤))
+          initHeap_heap_eq).2
+        iapply (BigSepM.bigSepM_union
+          (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤))
+          (allocCells_disjoint hfreshσ)).2
+        isplitl [Hnewpts Hnewmeta]
+        · iapply (Iris.BI.equiv_iff.mp (BigSepM.bigSepM_sep_eqv (M := HeapF)
+            (Φ := fun (k : Loc) (vo : Option Val) => iprop(k ↦ vo))
+            (Ψ := fun (k : Loc) (_vo : Option Val) => iprop(metaToken k ⊤)))).2
+          iframe Hnewpts Hnewmeta
+        · iexact Hinv
+      · itrivial
   | newProphS σ p hp => sorry
   | resolveS p v e σ w σ' κs ts hbase hp => sorry
 
