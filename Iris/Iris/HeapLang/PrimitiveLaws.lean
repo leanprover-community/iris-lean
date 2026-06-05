@@ -558,12 +558,6 @@ theorem wp_new_proph :
     ipureintro; rfl
   · simp only [Algebra.BigOpL.bigOpL_nil]; itrivial
 
-/-- The step-branch of `wp.pre`, exposed as the converse of `wp_lift_step_fupd`.
-Given `e` non-value, a WP for `e` unfolds to the universal step-continuation. -/
-theorem wp_open {Φ : Val → IProp GF} {e : Exp} :
-    WP e @ s; E {{ Φ }} ⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
-  wp_unfold.mp
-
 /-- `Resolve e (Val (LitProphecy p)) (Val w)` lifts a WP for the inner expression
 `e` through the `Resolve` wrapper, consuming the front observation `(v_e, w)`
 from the prophecy `p`. The inner WP is allowed to use the prophecy token
@@ -593,21 +587,15 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
   have Hp_mem : p ∈ σ₁.usedProphId := Hagree.1
   have hp_contains : σ₁.usedProphId.contains p :=
     Std.ExtTreeSet.mem_iff_contains.mp Hp_mem
-  -- Feed the prophecy token to the inner WP wand.
+  -- Feed the prophecy token to the inner WP wand, then open into the step
+  -- branch via `wp_unfold` + `wp.pre`-reduction (the Lean-eq bridge).
   ihave HWPe : iprop(WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
       ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }})
       $$ [Hp HWPe]
   · iapply HWPe; iexact Hp
-  -- Convert HWPe via `wp_open` into `wp.pre`; then reduce via `hne` using
-  -- the Lean-eq → iris-hyp bridge (`rw` on a Lean Prop goal).
-  ihave HWPe := wp_open $$ HWPe
-  -- Now HWPe : wp.pre s _ E e Φ_strong; reduce via match on `toVal e = none`.
-  -- Reduce `wp.pre` using `hne` via a Lean-level rewrite on the `ihave` subgoal.
-  -- We use `_` heavily and let Lean infer the unfolded shape.
-  ihave HWPe := (show wp.pre s (Wp.wp (PROP := IProp GF) s) E e
-      (fun v_e => iprop(∃ pvs', proph p pvs' ∗
-        ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e)) ⊢ _
-    by simp only [wp.pre, hne]; exact Iris.BI.BIBase.Entails.rfl) $$ HWPe
+  ihave HWPe := (show iprop(WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
+      ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }}) ⊢ _
+    by rw [wp_unfold.to_eq]; simp only [wp.pre, hne]; exact .rfl) $$ HWPe
   -- Reverse-induct on the outer observation list `obs`.
   rcases hrev : obs.reverse with _ | ⟨lastObs, init_rev⟩
   · -- obs = []. Apply inner WP with inner obs = [], inner obs' = obs'.
@@ -622,16 +610,7 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     isplitr
     · ipureintro
       cases s <;> simp only [Stuckness.MaybeReducible]
-      -- For NotStuck: extract the inner step from `Hred_e : PrimStep.Reducible`,
-      -- convert to BaseStep via atomicity, then lift through Resolve.
-      obtain ⟨κ_h, e'_h, σ'_h, efs_h, hprim_h⟩ := Hred_e
-      have hval_h : (toVal e'_h).isSome := hatom.atomic hprim_h
-      obtain ⟨v_h, rfl⟩ : ∃ v_h, e'_h = Exp.val v_h := by
-        match e'_h, hval_h with | .val v_h, _ => exact ⟨v_h, rfl⟩
-      have hbase_h : BaseStep e σ₁ κ_h (.val v_h) σ'_h efs_h :=
-        primStep_val_baseStep hprim_h
-      exact EctxLanguage.primStep_reducible_of_baseStep_reducible
-        (resolve_reducible hatom ⟨κ_h, _, σ'_h, efs_h, hbase_h⟩ hp_contains)
+      exact prim_step_reducible_resolve hatom hp_contains Hred_e
     iintro %e₂ %σ₂ %eₜ %Hstep _Hcred
     exfalso
     obtain ⟨κ_inner, v_inner, hκ_eq, _, _, _⟩ :=
@@ -654,43 +633,26 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     isplitr
     · ipureintro
       cases s <;> simp only [Stuckness.MaybeReducible]
-      -- For NotStuck: extract the inner step from `Hred_e : PrimStep.Reducible`,
-      -- convert to BaseStep via atomicity, then lift through Resolve.
-      obtain ⟨κ_h, e'_h, σ'_h, efs_h, hprim_h⟩ := Hred_e
-      have hval_h : (toVal e'_h).isSome := hatom.atomic hprim_h
-      obtain ⟨v_h, rfl⟩ : ∃ v_h, e'_h = Exp.val v_h := by
-        match e'_h, hval_h with | .val v_h, _ => exact ⟨v_h, rfl⟩
-      have hbase_h : BaseStep e σ₁ κ_h (.val v_h) σ'_h efs_h :=
-        primStep_val_baseStep hprim_h
-      exact EctxLanguage.primStep_reducible_of_baseStep_reducible
-        (resolve_reducible hatom ⟨κ_h, _, σ'_h, efs_h, hbase_h⟩ hp_contains)
+      exact prim_step_reducible_resolve hatom hp_contains Hred_e
     iintro %e₂ %σ₂ %eₜ %Hstep Hcred
     obtain ⟨κ_inner, v_inner, hκ_eq, he₂_eq, Hbase_e, _⟩ :=
       step_resolve_decompose hatom Hstep
-    -- κ_inner ++ [(p, (v_inner, w))] = init_rev.reverse ++ [lastObs]
-    -- Cancel: κ_inner = init_rev.reverse, lastObs = (p, (v_inner, w))
+    -- Cancel the trailing observation: from `init_rev.reverse ++ [lastObs]
+    -- = κ_inner ++ [(p, (v_inner, w))]`, reverse both sides and `simp`.
     obtain ⟨hκ_inner_eq, hlast_eq⟩ :
         κ_inner = init_rev.reverse ∧ lastObs = (p, (v_inner, w)) := by
-      have hlen : init_rev.reverse.length = κ_inner.length := by
-        have h : (init_rev.reverse ++ [lastObs]).length =
-                 (κ_inner ++ [(p, (v_inner, w))]).length :=
-          congrArg List.length hκ_eq
-        simp only [List.length_append, List.length_cons, List.length_nil] at h
-        omega
-      have ⟨h1, h2⟩ := List.append_inj hκ_eq hlen
-      refine ⟨h1.symm, ?_⟩
-      have := List.cons_eq_cons.mp h2
-      exact this.1
+      have h := congrArg List.reverse hκ_eq
+      simp [List.reverse_append] at h
+      refine ⟨?_, h.1⟩
+      have := congrArg List.reverse h.2; simpa using this.symm
     subst hκ_inner_eq; subst hlast_eq; subst he₂_eq
-    -- Now apply the inner WP step continuation to the inner base step. The
-    -- shape `={∅}▷=∗^[n+1] |={∅,E}=> X` for n=0 unfolds to
-    -- `|={∅}=∗ ▷ |={∅,E}=> X` (matching the surrounding goal shape).
+    -- Apply the inner WP step continuation to the inner base step, then
+    -- bridge the resulting `={∅}▷=∗^[n+1] |={∅,E}=>` modality stack into the
+    -- outer goal of the same shape via `step_fupdN_wand`.
     have Hprim_e : PrimStep.primStep (e, σ₁) init_rev.reverse
         (Exp.val v_inner, σ₂, eₜ) :=
       EctxLanguage.primStep_of_baseStep Hbase_e
     ispecialize HWPe $$ %_ %_ %_ %Hprim_e Hcred
-    -- HWPe : ={∅}▷=∗^[n+1] |={∅,E}=> X_inner. Goal: ={∅}▷=∗^[n+1] |={∅,E}=> Y_outer.
-    -- Bridge them via `step_fupdN_wand`.
     iapply step_fupdN_wand $$ HWPe
     iintro HWPe
     imod HWPe with ⟨Hσ_post, HWPval, Hefs⟩

@@ -694,18 +694,8 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
         iintro !> %κ_e %v_e %σ_e %efs_e %Hprim_e
         have Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e :=
           primStep_val_baseStep Hprim_e
-        have hp_contains : σ.usedProphId.contains p :=
-          Std.ExtTreeSet.mem_iff_contains.mp hp_mem
-        have Hbase_outer : BaseStep
-            (Exp.resolve e (.val (.lit (.prophecy p))) (.val w)) σ
-            (κ_e ++ [(p, (v_e, w))]) (.val v_e) σ_e efs_e :=
-          BaseStep.resolveS p v_e e σ w σ_e κ_e efs_e Hbase_e hp_contains
-        have Hprim_outer : PrimStep.primStep
-            (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ)
-            (κ_e ++ [(p, (v_e, w))])
-            ((ToVal.ofVal v_e : Exp), σ_e, efs_e) :=
-          EctxLanguage.primStep_of_baseStep Hbase_outer
-        imod Hstep $$ %_ %_ %_ %_ %Hprim_outer with ⟨Hwp_outer, Hefs⟩
+        imod Hstep $$ %_ %_ %_ %_ %(prim_step_resolve_of_inner (w := w) Hbase_e hp)
+          with ⟨Hwp_outer, Hefs⟩
         imodintro
         iframe Hefs
         iintro ⟨Hmap_e, Hproph_inv_e⟩
@@ -734,18 +724,8 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
           | .val v_e, _ => exact ⟨v_e, rfl⟩
         have Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e :=
           primStep_val_baseStep Hprim_e
-        have hp_contains : σ.usedProphId.contains p :=
-          Std.ExtTreeSet.mem_iff_contains.mp hp_mem
-        have Hbase_outer : BaseStep
-            (Exp.resolve e (.val (.lit (.prophecy p))) (.val w)) σ
-            (κ_e ++ [(p, (v_e, w))]) (.val v_e) σ_e efs_e :=
-          BaseStep.resolveS p v_e e σ w σ_e κ_e efs_e Hbase_e hp_contains
-        have Hprim_outer : PrimStep.primStep
-            (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ)
-            (κ_e ++ [(p, (v_e, w))])
-            ((ToVal.ofVal v_e : Exp), σ_e, efs_e) :=
-          EctxLanguage.primStep_of_baseStep Hbase_outer
-        imod Hstep $$ %_ %_ %_ %_ %Hprim_outer with ⟨Hwp_outer, Hefs⟩
+        imod Hstep $$ %_ %_ %_ %_ %(prim_step_resolve_of_inner (w := w) Hbase_e hp)
+          with ⟨Hwp_outer, Hefs⟩
         imodintro
         have hp_mem_e : p ∈ σ_e.usedProphId :=
           base_step_more_proph_ids Hbase_e p hp_mem

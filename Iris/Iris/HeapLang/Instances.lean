@@ -574,6 +574,17 @@ theorem step_resolve {e : Exp} {vp vt : Val} {σ₁ σ₂ : State}
       simp at hval_e1
     | _ => simp [EctxItemLanguage.fillItem, ECtxItem.fill] at hsrc
 
+/-- Construct a `Resolve` prim-step from an inner base-step ending at a value:
+the outer observation list is the inner one with `(p, (v_e, w))` appended. -/
+theorem prim_step_resolve_of_inner {e : Exp} {σ σ_e : State} {κ_e : List Observation}
+    {v_e w : Val} {efs_e : List Exp} {p : ProphId}
+    (Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e)
+    (hp_contains : σ.usedProphId.contains p) :
+    PrimStep.primStep (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ)
+        (κ_e ++ [(p, (v_e, w))]) (Exp.val v_e, σ_e, efs_e) :=
+  EctxLanguage.primStep_of_baseStep
+    (BaseStep.resolveS p v_e e σ w σ_e κ_e efs_e Hbase_e hp_contains)
+
 /-- Inversion lemma for `Resolve` prim-steps: any prim-step of
 `Resolve e (Val (LitProphecy p)) (Val w)` with `e` atomic decomposes into an
 inner base-step of `e` to a value, with the trailing observation
@@ -618,6 +629,23 @@ theorem resolve_reducible
     | _ => simp [expToVal] at hval
   refine ⟨κ ++ [(p, (w', v))], Exp.val w', σ', efs, ?_⟩
   exact BaseStep.resolveS p w' e σ v σ' κ efs hstep hin
+
+/-- `Resolve`-lifted version of `resolve_reducible` for prim-step reducibility:
+if `e` is strongly atomic, prim-step reducible, and `p ∈ σ.usedProphId`, then
+`Resolve e (proph p) v` is prim-step reducible. -/
+theorem prim_step_reducible_resolve {e : Exp} {σ : State} {p : ProphId} {w : Val}
+    (hatom : Language.Atomic (State := State) (Obs := Observation)
+      Language.Atomicity.StronglyAtomic e)
+    (hp_contains : σ.usedProphId.contains p)
+    (hred : PrimStep.Reducible (e, σ)) :
+    PrimStep.Reducible
+      (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ) := by
+  obtain ⟨κ, e', σ', efs, hprim⟩ := hred
+  have hval : (toVal e').isSome := hatom.atomic hprim
+  obtain ⟨v, rfl⟩ : ∃ v, e' = Exp.val v := by
+    match e', hval with | .val v, _ => exact ⟨v, rfl⟩
+  exact EctxLanguage.primStep_reducible_of_baseStep_reducible
+    (resolve_reducible hatom ⟨κ, _, σ', efs, primStep_val_baseStep hprim⟩ hp_contains)
 
 /-- Lifted to `PrimStep`. Mirrors Rocq's `prim_step_more_proph_ids`. -/
 @[rocq_alias prim_step_more_proph_ids]
