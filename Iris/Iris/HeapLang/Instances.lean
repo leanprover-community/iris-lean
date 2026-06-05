@@ -242,7 +242,10 @@ instance PureExec_rec {f x : Binder} {e : Exp} :
       cases (EctxLanguage.baseStep_of_primStep Hstep hsr)
       exact ⟨rfl, rfl, rfl, rfl⟩
 
-instance PureExec_unop {op : UnOp} {v v' : Val} :
+-- Not an `instance`: the reduct `v'` is not syntactically determined by the
+-- redex `Exp.unop op (.val v)` (it depends on `op.eval`), so it cannot provide
+-- the (semi-)out-params required of a `PureExec` instance. Applied explicitly.
+@[reducible] def PureExec_unop {op : UnOp} {v v' : Val} :
     Language.PureExec (op.eval v = some v') 1 (Exp.unop op (.val v)) (.val v') where
   pureExec hφ := by
     refine Relation.Iterate.head ?_ (.rfl _)
@@ -261,7 +264,9 @@ instance PureExec_unop {op : UnOp} {v v' : Val} :
       obtain rfl : v' = v'' := by rw [hφ] at H; simp_all
       exact ⟨rfl, rfl, rfl, rfl⟩
 
-instance PureExec_binop {op : BinOp} {v1 v2 v' : Val} :
+-- Not an `instance` (see `PureExec_unop`): the reduct `v'` is not syntactically
+-- determined by the redex, so it cannot provide the `PureExec` out-params.
+@[reducible] def PureExec_binop {op : BinOp} {v1 v2 v' : Val} :
     Language.PureExec (op.eval v1 v2 = some v') 1 (Exp.binop op (.val v1) (.val v2)) (.val v') where
   pureExec hφ := by
     refine Relation.Iterate.head ?_ (.rfl _)

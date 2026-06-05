@@ -228,7 +228,7 @@ theorem weakestpre_completeness
             CancelableInvariant.own γ
               (⟨qc.div (Qp.ofPNat (Hefs.length + 1) (Nat.succ_pos _))⟩ : Frac Qp))
             $$ [Hefs_threads Hefsfrac]
-        · iapply (BigSepL.bigSepL_sep_equiv).2
+        · iapply (BigSepL.bigSepL_sep_eqv).2
           iframe Hefs_threads Hefsfrac
         iapply BigSepL.bigSepL_impl $$ Hcomb
         iintro !> %k %e' %_ ⟨He, Hq⟩
@@ -289,7 +289,7 @@ theorem weakestpre_completeness
             CancelableInvariant.own γ
               (⟨qc.div (Qp.ofPNat (efs.length + 1) (Nat.succ_pos _))⟩ : Frac Qp))
             $$ [Hefs_threads Hefsfrac]
-        · iapply (BigSepL.bigSepL_sep_equiv).2
+        · iapply (BigSepL.bigSepL_sep_eqv).2
           iframe Hefs_threads Hefsfrac
         iapply BigSepL.bigSepL_impl $$ Hcomb
         iintro !> %k %e' %_ ⟨He, Hq⟩
