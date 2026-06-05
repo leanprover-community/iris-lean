@@ -138,7 +138,7 @@ instance instTimelessProph (p : P) (vs : List V) : Timeless (PROP := IProp GF) (
 
 @[rocq_alias proph_exclusive]
 theorem proph_exclusive (p : P) (vs1 vs2 : List V) :
-    ⊢@{IProp GF} proph p vs1 -∗ proph p vs2 -∗ False := by
+    proph p vs1 -∗ proph p vs2 -∗ False := by
   unfold proph
   iintro Hp1 Hp2
   icases ghost_map_elem_ne $$ Hp1 Hp2 with %hne
@@ -149,7 +149,7 @@ namespace ProphMap
 @[rocq_alias proph_map_new_proph]
 theorem new_proph [DecidableEq P] (p : P) (ps : S) (pvs : ProphValList P V) (Hp : p ∉ ps) :
     prophMapInterp pvs ps
-    ⊢@{IProp GF} |==> (prophMapInterp pvs ({p} ∪ ps) ∗ proph p (prophListResolves pvs p)) := by
+      ==∗ (prophMapInterp pvs ({p} ∪ ps) ∗ proph p (prophListResolves pvs p)) := by
   unfold prophMapInterp proph
   iintro ⟨%R, ⟨%Hres, %Hdom⟩, Hauth⟩
   have Hfresh : get? R p = none := by
@@ -171,7 +171,7 @@ theorem new_proph [DecidableEq P] (p : P) (ps : S) (pvs : ProphValList P V) (Hp 
 theorem resolve_proph [DecidableEq P] (p : P) (v : V) (pvs : ProphValList P V) (ps : S)
     (vs : List V) :
     prophMapInterp ((p, v) :: pvs) ps ∗ proph p vs
-    ⊢@{IProp GF} |==> (∃ vs', ⌜vs = v :: vs'⌝ ∗ prophMapInterp pvs ps ∗ proph p vs') := by
+      ==∗ (∃ vs', ⌜vs = v :: vs'⌝ ∗ prophMapInterp pvs ps ∗ proph p vs') := by
   unfold prophMapInterp proph
   iintro ⟨⟨%R, ⟨%Hres, %Hdom⟩, Hauth⟩, Hp⟩
   icombine Hauth Hp gives %HR
@@ -181,8 +181,8 @@ theorem resolve_proph [DecidableEq P] (p : P) (v : V) (pvs : ProphValList P V) (
   imod ghost_map_update p _ (prophListResolves pvs p) $$ Hauth Hp with ⟨Hauth, Hfrag⟩
   imodintro
   iexists (prophListResolves pvs p)
-  have Haux1 : v :: prophListResolves pvs p = v :: prophListResolves pvs p := rfl
-  iframe Hfrag %Haux1
+  iframe Hfrag; isplit
+  · itrivial
   iexists (insert R p (prophListResolves pvs p))
   iframe Hauth
   ipureintro
@@ -201,7 +201,7 @@ theorem resolve_proph [DecidableEq P] (p : P) (v : V) (pvs : ProphValList P V) (
 @[rocq_alias proph_map_agree]
 theorem agree [DecidableEq P] (pvs : ProphValList P V) (ps : S) (p : P) (vs : List V) :
     prophMapInterp pvs ps ∗ proph p vs
-    ⊢@{IProp GF} ⌜p ∈ ps ∧ vs = prophListResolves pvs p⌝ := by
+      -∗ ⌜p ∈ ps ∧ vs = prophListResolves pvs p⌝ := by
   unfold prophMapInterp proph
   iintro ⟨⟨%R, ⟨%Hres, %Hdom⟩, Hauth⟩, Hp⟩
   icombine Hauth Hp gives %Hlookup
