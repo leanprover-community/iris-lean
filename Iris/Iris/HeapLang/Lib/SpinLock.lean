@@ -83,8 +83,7 @@ theorem newlock_spec :
     (∀ (v : Val) (γ : GName), (∀ R E, R ={E}=∗ isLock γ v R) -∗ Φ v) -∗
     WP hl(?newlock #()) {{ Φ }} := by
   iintro !> %Φ Hcont
-  iapply wp_rec; (· rfl); simp only [Exp.subst]
-  inext
+  wp_rec
   imod token_alloc with ⟨%γ, Hγ⟩
   iapply wp_alloc
   iintro !> %l Hpt
@@ -106,8 +105,8 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
     (∀ (b : Bool), iprop(if b then locked γ ∗ R else iprop(True)) -∗ Φ hl_val(#b)) -∗
     WP hl(?tryAcquire ?lk) {{ Φ }} := by
   iintro !> %Φ #Hlock Hcont
-  iapply wp_rec; (· rfl); simp only [Exp.subst, Exp.substStr, BEq.rfl, ↓reduceIte, isLock, val_to_ofVal]
-  inext
+  wp_rec
+  unfold isLock
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
   subst Heq
   wp_bind cmpXchg(_,_,_)
@@ -158,10 +157,8 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
     WP hl({acquire} {lk}) {{ Φ }} := by
   iintro !> %Φ #Hlock Hcont
   iloeb as IH
-  iapply wp_rec; (· rfl)
-  simp only [Exp.subst, Exp.substStr, String.reduceBEq, Bool.false_eq_true, ↓reduceIte, BEq.rfl, val_to_ofVal]
-  inext
-  wp_bind {(tryAcquire : Exp)} _
+  wp_rec
+  wp_bind ?tryAcquire _
   iapply try_acquire_spec $$ Hlock
   iintro %b Hpt
   cases b
@@ -180,13 +177,13 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
     (True -∗ Φ hl_val(#())) -∗
     WP hl({release} {lk}) {{ Φ }} := by
   iintro !> %Φ ⟨#Hlock, ⟨Hl, HR⟩⟩ Hcont
-  iapply wp_rec; (· rfl); simp only [Exp.subst, Exp.substStr, ↓reduceIte, BEq.rfl, val_to_ofVal]
-  inext
+  wp_rec
   unfold isLock
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
   subst Heq
-  iapply wp_atomic (E2 := ⊤ \ nclose spinlockN)
-  imod inv_acc ⊤ _ _ (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨G1, G2⟩
+  iapply wp_atomic
+  imod inv_acc $$ Hinv with ⟨G1, G2⟩
+  · simp
   unfold lockInv
   imodintro
   icases G1 with ⟨%b, Hpt, Hcond⟩
@@ -196,7 +193,7 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   · inext
     iexists false
     simp only [Bool.false_eq_true, ↓reduceIte]
-    iframe Hpt Hl HR
+    iframe
   · imodintro
     iapply Hcont
     itrivial

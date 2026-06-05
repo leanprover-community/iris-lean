@@ -19,6 +19,8 @@ open Lean hiding Expr
 open Lean renaming Expr → LeanExpr
 open Qq Iris.ProofMode
 
+register_simp_attr wp_expr_simp
+
 open ECtxItem in
 meta partial
 def extractEctxItem : Q(Exp) → MetaM (Option Q(ECtxItem) × Q(Exp))
