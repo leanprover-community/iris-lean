@@ -5,7 +5,7 @@ public import Iris.HeapLang.ProofMode
 
 namespace Iris.HeapLang
 
-open BI Iris ProgramLogic
+open BI Iris ProgramLogic List
 
 @[expose] public section
 
@@ -82,8 +82,7 @@ theorem cons_spec x l ls Φ :
   wp_pures
   imodintro
   iapply HΦ
-  rw (occs:=[3]) [isList.eq_def]
-  simp only
+  rw [isList]
   iexists _, _; iframe
   itrivial
 
@@ -147,14 +146,17 @@ theorem partition_spec x l ls Φ :
     iapply IH $$ Hl
     iintro %l1 %l2 Hl1 Hl2
     wp_pures
-    by_cases hd ≤ x <;> simp [*] <;> wp_pures
-    all_goals wp_bind ?cons _
-    · iapply cons_spec $$ Hl1
+    by_cases hd ≤ x <;> simp [*]
+    · wp_pures
+      wp_bind ?cons _
+      iapply cons_spec $$ Hl1
       iintro %_ _
       wp_pures
       imodintro
       iapply HΦ $$ [$] [$]
-    · iapply cons_spec $$ Hl2
+    · wp_pures
+      wp_bind ?cons _
+      iapply cons_spec $$ Hl2
       iintro %_ _
       wp_pures
       imodintro
@@ -178,7 +180,7 @@ theorem quicksort_spec l ls Φ :
   rw (occs:=[2]) [isList.eq_def]
   cases ls with
   | nil =>
-    simp
+    simp only
     iclear IH
     icases Hl with %heq; subst heq
     wp_pures
@@ -188,7 +190,7 @@ theorem quicksort_spec l ls Φ :
     · itrivial
     · itrivial
   | cons head tail =>
-    simp
+    simp only
     icases Hl with ⟨%l, %tl, %heq, Hpt, Hl⟩; subst heq
     wp_pures
     wp_bind !_
@@ -216,26 +218,25 @@ theorem quicksort_spec l ls Φ :
     iapply HΦ $$ [$]
     · ipureintro
       have : ls2'.all (head < ·) := by grind
-      grind [List.pairwise_cons]
+      grind [pairwise_cons]
     · ipureintro
-      grind [List.filter_append_perm]
-
+      grind [filter_append_perm]
 
 -- example (l l1 l2 : List Int) x :
---   List.Perm (l.filter (· ≤ x)) l1 →
---   List.Perm (l.filter (x < ·)) l2 →
---   List.Perm (x :: l) (l1 ++ x :: l2) := by
+--   Perm (l.filter (· ≤ x)) l1 →
+--   Perm (l.filter (x < ·)) l2 →
+--   Perm (x :: l) (l1 ++ x :: l2) := by
 --     intro h1 h2
---     have : List.Perm l (l.filter (· ≤ x) ++ l.filter (x < ·)) := by
---       grind [List.filter_append_perm]
+--     have : Perm l (l.filter (· ≤ x) ++ l.filter (x < ·)) := by
+--       grind [filter_append_perm]
 --     grind
 
 -- example (l l1 l2 : List Int) x :
---   List.Perm (l.filter (· ≤ x)) l1 →
---   List.Pairwise LE.le l1 →
---   List.Pairwise LE.le l2 →
---   List.Perm (l.filter (x < ·)) l2 →
---   List.Pairwise LE.le (l1 ++ x :: l2) := by
+--   Perm (l.filter (· ≤ x)) l1 →
+--   Pairwise LE.le l1 →
+--   Pairwise LE.le l2 →
+--   Perm (l.filter (x < ·)) l2 →
+--   Pairwise LE.le (l1 ++ x :: l2) := by
 --     intro h1 h2 h3 h4
---     have : l2.all (x < ·) := by grind [List.Perm.mem_iff]
---     grind [List.pairwise_cons]
+--     have : l2.all (x < ·) := by grind [Perm.mem_iff]
+--     grind [pairwise_cons]
