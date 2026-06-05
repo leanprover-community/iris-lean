@@ -68,7 +68,6 @@ theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
       intro k hk
       simp [Std.PartialMap.dom, LawfulPartialMap.get?_empty] at hk
     unfold ghost_map_auth
-    simp only [Std.PartialMap.map, Std.PartialMap.bindAlter]
     iframe Hh Hm
   · exact Hwp
 

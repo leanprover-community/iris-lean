@@ -70,7 +70,7 @@ section definitions
 variable {GF : BundledGFunctors} {L V : Type _}
 variable {H : outParam <| Type _ → Type _} [Std.LawfulFiniteMap H L]
 variable {F : outParam (Type _)} [UFraction F]
-variable [genHeapGS F L V GF H]
+variable [G : genHeapGS F L V GF H]
 
 open Std.FiniteMap Std.PartialMap genHeapGS
 
@@ -155,13 +155,34 @@ theorem pointsTo_combine :
   iintro ⟨H₁, H₂⟩
   iapply ghost_map_elem_combine $$ H₁ H₂
 
--- TODO: pointsto_frac_ne
--- TODO: pointsto_ne
--- TODO: pointsto_persist
--- TODO: pointsto_unpersist
+@[rocq_alias pointsto_frac_ne]
+theorem pointsTo_frac_ne {l₁ l₂ : L} {dq₁ dq₂ : DFrac F} {v₁ v₂ : V}
+    (Hk : ¬ ✓ (dq₁ • dq₂)) :
+    ⊢@{IProp GF} (l₁ ↦{dq₁} v₁) -∗ (l₂ ↦{dq₂} v₂) -∗ ⌜l₁ ≠ l₂⌝ := by
+  unfold pointsTo
+  iapply ghost_map_elem_frac_ne (Hk := Hk)
+
+@[rocq_alias pointsto_ne]
+theorem pointsTo_ne {l₁ l₂ : L} {dq₂ : DFrac F} {v₁ v₂ : V} :
+    ⊢@{IProp GF} (l₁ ↦ v₁) -∗ (l₂ ↦{dq₂} v₂) -∗ ⌜l₁ ≠ l₂⌝ := by
+  unfold pointsTo
+  iapply ghost_map_elem_ne
+
+/-- Permanently turn any points-to predicate into a persistent points-to. -/
+@[rocq_alias pointsto_persist]
+theorem pointsTo_persist {l : L} {dq : DFrac F} {v : V} :
+    ⊢@{IProp GF} (l ↦{dq} v) ==∗ (l ↦{.discard} v) := by
+  unfold pointsTo
+  iapply ghost_map_elem_persist
+
+/-- Recover fractional ownership of a read-only element. -/
+@[rocq_alias pointsto_unpersist]
+theorem pointsTo_unpersist [IsHalfFraction F] {l : L} {v : V} :
+    ⊢@{IProp GF} (l ↦{.discard} v) ==∗ ∃ q, (l ↦{.own q} v) := by
+  unfold pointsTo
+  iapply ghost_map_elem_unpersist
 
 /-! ### General properties of `metaInfo` and `metaToken` -/
-
 
 @[rocq_alias meta_token_timeless]
 instance instTimelessMetaToken (l : L) (E : CoPset) :
@@ -245,13 +266,22 @@ instance instCombineSepGivesMetaToken (l : L) (E1 E2 : CoPset) :
     icases metaToken_valid_2 $$ H1 H2 with %H
     itrivial
 
--- TODO: meta_token_ne
+@[rocq_alias meta_token_ne]
+theorem metaToken_ne {l₁ l₂ : L} {E : CoPset} (HE : E ≠ ∅) :
+    metaToken (GF := GF) l₁ ⊤ -∗ metaToken l₂ E -∗ ⌜l₁ ≠ l₂⌝ := by
+  iintro H1 H2
+  iintro %heq; subst heq
+  icases metaToken_valid_2 $$ H1 H2 with %Hdisj
+  have hE : E = ∅ := by
+    ext p
+    exact ⟨fun hp => (Hdisj p ⟨CoPset.mem_full, hp⟩).elim, fun hp => (CoPset.mem_empty hp).elim⟩
+  exact (HE hE).elim
 
 @[rocq_alias meta_token_difference]
 theorem metaToken_difference {l : L} {E1 E2 : CoPset} (he : E1 ⊆ E2) :
     metaToken (GF := GF) l E2 ⊣⊢ metaToken l E1 ∗ metaToken l (E2 \ E1) := by
-  have heq : E1 ∪ (E2 \ E1) = E2 := Iris.Std.LawfulSet.subset_union_diff he
-  refine .trans (.of_eq ?_) (metaToken_union (l := l) Iris.Std.LawfulSet.disjoint_diff_right)
+  have heq : E1 ∪ (E2 \ E1) = E2 := Std.LawfulSet.subset_union_diff he
+  refine .trans (.of_eq ?_) (metaToken_union (l := l) Std.LawfulSet.disjoint_diff_right)
   rw [heq]
 
 @[rocq_alias meta_agree]
@@ -283,8 +313,52 @@ theorem meta_set {A : Type _} [Pos.Countable A] {l : L} {E : CoPset} {N : Namesp
   iexists γm
   iframe Hγm Hm
 
--- TODO meta_meta_token_valid
--- TODO meta_meta_token_valid'
+@[rocq_alias meta_meta_token_valid]
+theorem meta_metaToken_valid {A : Type _} [Pos.Countable A] {l : L} {N : Namespace} {x : A}
+    {E : CoPset} :
+    metaInfo (GF := GF) l N x -∗ metaToken l E -∗ ⌜¬ (↑N : CoPset) ⊆ E⌝ := by
+  unfold metaInfo metaToken
+  iintro ⟨%γm1, #Hγm1, Hm1⟩ ⟨%γm2, #Hγm2, Hm2⟩
+  icombine Hγm1 Hγm2 gives ⟨%_, %heq⟩
+  subst heq
+  icombine Hm1 Hm2 gives %Hvalid
+  ipureintro
+  intro hsub
+  have hmem : CoPset.pick (↑N) ∈ E := hsub _ (coPpick_nclose N)
+  have h := ReservationMap.disj_of_valid_data_op_token _ E Hvalid (CoPset.pick (↑N))
+  cases h with
+  | inl hnone =>
+    rw [LawfulPartialMap.get?_singleton_eq rfl] at hnone
+    cases hnone
+  | inr hnin => exact hnin hmem
+
+@[rocq_alias meta_meta_token_valid']
+theorem meta_metaToken_valid' {A : Type _} [Pos.Countable A] {l : L} {N : Namespace} {x : A}
+    {E : CoPset} (he : (↑N : CoPset) ⊆ E) :
+    metaInfo (GF := GF) l N x -∗ metaToken l E -∗ False := by
+  iintro H1 H2
+  icases meta_metaToken_valid $$ H1 H2 with %hnot
+  exact (hnot he).elim
+
+@[rocq_alias combine_sep_gives_meta_meta_token_1]
+instance instCombineSepGivesMetaMetaToken1 {A : Type _} [Pos.Countable A]
+    (l : L) (N : Namespace) (x : A) (E : CoPset) :
+    CombineSepGives (PROP := IProp GF) (metaInfo l N x) (metaToken l E)
+      iprop(⌜¬ (↑N : CoPset) ⊆ E⌝) where
+  combine_sep_gives := by
+    iintro ⟨H1, H2⟩
+    icases meta_metaToken_valid $$ H1 H2 with %H
+    itrivial
+
+@[rocq_alias combine_sep_gives_meta_meta_token_2]
+instance instCombineSepGivesMetaMetaToken2 {A : Type _} [Pos.Countable A]
+    (l : L) (N : Namespace) (x : A) (E : CoPset) :
+    CombineSepGives (PROP := IProp GF) (metaToken l E) (metaInfo l N x)
+      iprop(⌜¬ (↑N : CoPset) ⊆ E⌝) where
+  combine_sep_gives := by
+    iintro ⟨H1, H2⟩
+    icases meta_metaToken_valid $$ H2 H1 with %H
+    itrivial
 
 /-! ### Update lemmas -/
 
@@ -326,7 +400,80 @@ theorem genHeap_alloc {σ : H V} {l : L} {v : V} (Hσl : get? σ l = .none) :
     · iexists γm
       iframe Hlm Hγm
 
--- TODO: gen_heap_alloc_big
+/-- `genHeapInterp` is monotone under map equivalence. -/
+private theorem genHeapInterp_eqv [DecidableEq L] {σ₁ σ₂ : H V}
+    (h : σ₁ ≡ₘ σ₂) : genHeapInterp (GF := GF) σ₁ ⊢ genHeapInterp σ₂ := by
+  unfold genHeapInterp
+  refine BI.exists_mono (fun m => ?_)
+  refine BI.sep_mono ?_ (BI.sep_mono ?_ BIBase.Entails.rfl)
+  · refine BI.pure_mono ?_
+    intro H k hk
+    simp only [dom] at hk ⊢; rw [← h k]; exact H k hk
+  · refine iOwn_mono (HeapView.auth_inc_of_pmap_eqv _ ?_)
+    exact LawfulPartialMap.map_equiv h.symm
+
+@[rocq_alias gen_heap_alloc_big]
+theorem genHeap_alloc_big [DecidableEq L] (σ' σ : H V) (Hdisj : σ' ##ₘ σ) :
+    genHeapInterp σ ⊢ |==>
+      (genHeapInterp (σ' ∪ σ) ∗ ([∗map] l↦v ∈ σ', l ↦ v) ∗
+        ([∗map] l↦_v ∈ σ', metaToken l ⊤)) := by
+  revert σ Hdisj
+  induction σ' using LawfulFiniteMap.induction_on with
+  | hequiv σ₁ σ₂ heqv IH =>
+    intro σ Hdisj
+    have Hdisj₁ : σ₁ ##ₘ σ := by
+      intro k ⟨h1, h2⟩
+      exact Hdisj k ⟨by rw [← heqv k]; exact h1, h2⟩
+    have heqv_union : (σ₁ ∪ σ) ≡ₘ (σ₂ ∪ σ) :=
+      LawfulPartialMap.union_equiv heqv Std.PartialMap.equiv.refl
+    refine (IH σ Hdisj₁).trans ?_
+    refine bupd_mono (PROP := IProp GF) ?_
+    refine BI.sep_mono (genHeapInterp_eqv heqv_union) ?_
+    refine BI.sep_mono
+      ((BigSepM.bigSepM_eqv_of_perm (Φ := fun l v => iprop(l ↦ v)) heqv).1) ?_
+    exact (BigSepM.bigSepM_eqv_of_perm
+      (Φ := fun l (_v : V) => iprop(metaToken l ⊤)) heqv).1
+  | hemp =>
+    intro σ _
+    iintro Hσ
+    iapply (bupd_intro (PROP := IProp GF))
+    isplitl [Hσ]
+    · iapply genHeapInterp_eqv (σ₁ := σ) (σ₂ := ∅ ∪ σ)
+        LawfulPartialMap.union_empty_left.symm
+      iexact Hσ
+    · isplitr
+      · iapply BigSepM.bigSepM_empty.mpr; itrivial
+      · iapply BigSepM.bigSepM_empty.mpr; itrivial
+  | hins l v σ' Hl IH =>
+    intro σ Hdisj
+    have Hdisj' : σ' ##ₘ σ := by
+      intro k ⟨h1, h2⟩
+      apply Hdisj k
+      refine ⟨?_, h2⟩
+      by_cases hkl : l = k
+      · subst hkl; rw [LawfulPartialMap.get?_insert_eq rfl]; simp
+      · rw [LawfulPartialMap.get?_insert_ne hkl]; exact h1
+    have Hσl : get? σ l = none := by
+      rcases hσl : get? σ l with _ | w
+      · rfl
+      · exfalso; apply Hdisj l
+        refine ⟨?_, by rw [hσl]; simp⟩
+        rw [LawfulPartialMap.get?_insert_eq rfl]; simp
+    have Hunion_l : get? (σ' ∪ σ) l = none :=
+      LawfulPartialMap.get?_union_none.mpr ⟨Hl, Hσl⟩
+    refine (IH σ Hdisj').trans (bupd_mono ?_ |>.trans bupd_trans)
+    iintro ⟨Hinterp, Hpts, Htok⟩
+    imod genHeap_alloc Hunion_l $$ Hinterp with ⟨Hinterp', Hl_pts, Hl_tok⟩
+    imodintro
+    isplitl [Hinterp']
+    · iapply (genHeapInterp_eqv (σ₁ := insert (σ' ∪ σ) l v)
+        (σ₂ := insert σ' l v ∪ σ) LawfulPartialMap.union_insert_left)
+      iexact Hinterp'
+    · isplitl [Hl_pts Hpts]
+      · iapply (BigSepM.bigSepM_insert Hl).mpr
+        iframe Hl_pts Hpts
+      · iapply (BigSepM.bigSepM_insert Hl).mpr
+        iframe Hl_tok Htok
 
 @[rocq_alias gen_heap_valid]
 theorem genHeap_valid {σ : H V} {l : L} {dq : DFrac F} {v : V} :
@@ -360,5 +507,71 @@ theorem genHeap_update {σ : H V} {l : L} {v₁ v₂ : V} :
 end updateLemmas
 
 end lemmas
+
+/-! ### Initialization lemmas
+
+These build a fresh `genHeapGS` from a `genHeapPreS` and an initial heap.
+-/
+
+section init
+
+variable {F : Type _} [UFraction F] {GF : BundledGFunctors}
+variable {L V : Type _} {H : Type _ → Type _} [Std.LawfulFiniteMap H L]
+
+open Std.PartialMap Std.FiniteMap
+
+/-- Initialize `genHeapGS` with explicit ghost names.  The names of the heap
+and the meta-data tables are exposed in the conclusion. -/
+@[rocq_alias gen_heap_init_names]
+theorem genHeap_init_names [DecidableEq L] [genHeapPreS F L V GF H] (σ : H V) :
+    ⊢@{IProp GF} |==> ∃ γh γm : GName,
+      genHeapInterp (G := (⟨γh, γm⟩ : genHeapGS F L V GF H)) σ ∗
+      ([∗map] l ↦ v ∈ σ,
+        pointsTo (G := (⟨γh, γm⟩ : genHeapGS F L V GF H)) l (.own 1) v) ∗
+      ([∗map] l ↦ _v ∈ σ,
+        metaToken (G := (⟨γh, γm⟩ : genHeapGS F L V GF H)) l ⊤) := by
+  imod (ghost_map_alloc_empty (K := L) (V := V)) with ⟨%γh, Hh⟩
+  imod (ghost_map_alloc_empty (K := L) (V := GName)) with ⟨%γm, Hm⟩
+  letI G : genHeapGS F L V GF H := ⟨γh, γm⟩
+  -- Build `genHeapInterp ∅` from the empty ghost maps.
+  have Hinterp_empty : (γh ↪●MAP (∅ : H V)) ∗ (γm ↪●MAP (∅ : H GName)) ⊢@{IProp GF}
+      genHeapInterp (G := G) ∅ := by
+    unfold genHeapInterp
+    iintro ⟨Hh, Hm⟩
+    iexists (∅ : H GName)
+    isplitr
+    · ipureintro
+      intro k hk
+      simp only [dom, Std.LawfulPartialMap.get?_empty] at hk
+      exact Bool.false_ne_true (Option.isSome_none.symm.trans hk) |>.elim
+    iframe Hh Hm
+  ihave Hinterp0 : genHeapInterp (G := G) ∅ $$ [Hh Hm]
+  · iapply Hinterp_empty
+    iframe Hh Hm
+  imod (genHeap_alloc_big σ ∅
+    (Std.LawfulPartialMap.disjoint_empty_right σ)) $$ Hinterp0
+    with ⟨Hinterp, Hpts, Htok⟩
+  imodintro
+  iexists γh, γm
+  isplitl [Hinterp]
+  · iapply (genHeapInterp_eqv (σ₁ := σ ∪ ∅) (σ₂ := σ)
+      Std.LawfulPartialMap.union_empty_right)
+    iexact Hinterp
+  iframe Hpts Htok
+
+/-- Initialize `genHeapGS` from a `genHeapPreS`, hiding the freshly allocated
+ghost names. -/
+@[rocq_alias gen_heap_init]
+theorem genHeap_init [DecidableEq L] [genHeapPreS F L V GF H] (σ : H V) :
+    ⊢@{IProp GF} |==> ∃ G : genHeapGS F L V GF H,
+      genHeapInterp (G := G) σ ∗
+      ([∗map] l ↦ v ∈ σ, pointsTo (G := G) l (.own 1) v) ∗
+      ([∗map] l ↦ _v ∈ σ, metaToken (G := G) l ⊤) := by
+  imod genHeap_init_names σ with ⟨%γh, %γm, H⟩
+  imodintro
+  iexists (⟨γh, γm⟩ : genHeapGS F L V GF H)
+  iexact H
+
+end init
 
 end Iris
