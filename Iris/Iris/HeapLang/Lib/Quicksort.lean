@@ -64,6 +64,13 @@ def isList (v : Val) : List Int → IProp GF
   | x :: xs => iprop% ∃ l tl, ⌜v = hl_val(some(#(.loc l)))⌝ ∗
     l ↦ some hl_val((#x, ?tl)) ∗ isList tl xs
 
+theorem isList_nil {v} :
+  isList (GF:=GF) v [] ⊣⊢ iprop(⌜v = hl_val(none())⌝) := .rfl
+
+theorem isList_cons {v x xs} :
+  isList (GF:=GF) v (x :: xs) ⊣⊢ iprop(∃ l tl, ⌜v = hl_val(some(#(.loc l)))⌝ ∗
+    l ↦ some hl_val((#x, ?tl)) ∗ isList tl xs) := .rfl
+
 end Predicates
 
 section Specs
@@ -91,31 +98,32 @@ theorem append_spec l1 ls1 l2 ls2 Φ :
     isList l2 ls2 -∗
     (∀ v, isList v (ls1 ++ ls2) -∗ Φ v) -∗
     WP hl(?append v((?l1, ?l2))) {{ Φ }} := by
-  iintro Hl1 Hl2 HΦ
-  iloeb as IH generalizing %l1 %ls1 %Φ
-  wp_rec
-  rw (occs:=[3]) [isList.eq_def]
-  cases ls1 with
-  | nil =>
-    simp only
-    icases Hl1 with %hl1; subst hl1
-    wp_pures; imodintro; simp
-    iapply HΦ $$ [$]
-  | cons x ls1 =>
-    simp only
-    icases Hl1 with ⟨%x, %tl, %hl1, Hpt, Hl1⟩; subst hl1
-    wp_pures
-    wp_bind !_
-    iapply wp_load $$ [$]
-    iintro !> Hpt
-    wp_pures
-    wp_bind ?append _
-    iapply IH $$ Hl1 Hl2
-    iintro %_ Hl
-    wp_pures
-    iapply cons_spec $$ [$]
-    iintro %_ Hl; simp
-    iapply HΦ $$ [$]
+    iintro Hl1 Hl2 HΦ
+    iloeb as IH generalizing %l1 %ls1 %Φ
+    wp_rec; wp_pures
+    cases ls1 with
+    | nil =>
+      simp [isList_nil.to_eq]
+      icases Hl1 with %heq; subst heq
+      wp_pures
+      imodintro
+      iapply HΦ $$ [$]
+    | cons l1 ls1 =>
+      icases isList_cons $$ Hl1 with ⟨%l, %tl, %heq, Hpt, Hl1⟩; subst heq
+      wp_pures
+      wp_bind !_
+      iapply wp_load $$ [$]
+      iintro !> Hl
+      wp_pures
+      wp_bind ?append _
+      iapply IH $$ Hl1 [$]
+      iintro %_ Hl
+      wp_pures
+      iapply cons_spec $$ Hl
+      iintro %_ Hp
+      iapply HΦ
+      simp
+      iframe
 
 theorem partition_spec x l ls Φ :
     isList (GF:=GF) l ls -∗
@@ -165,7 +173,6 @@ theorem partition_spec x l ls Φ :
       simp [*]
       iframe
 
--- set_option profiler true in
 theorem quicksort_spec l ls Φ :
     isList (GF:=GF) l ls -∗
     (∀ l' ls',
