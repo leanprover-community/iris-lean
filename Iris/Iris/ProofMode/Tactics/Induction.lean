@@ -130,7 +130,7 @@ private def addIHs {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
 /--
   Tactic syntax for user-supplied alternative names.
 -/
-syntax inductionAlts := "| " binderIdent+ " => " tacticSeq
+syntax inductionAlt := "| " binderIdent+ " => " tacticSeq
 
 /--
   Parse the tactic syntax for user-supplied alternative names.
@@ -140,9 +140,9 @@ syntax inductionAlts := "| " binderIdent+ " => " tacticSeq
   2. the alternative names for that constructor (`vars`), and
   3. the tactics for this induction subgoal.
 -/
-private def parseInductionAlts (alt : TSyntax `Iris.ProofMode.inductionAlts) :
+private def parseinductionAlt (alt : TSyntax `Iris.ProofMode.inductionAlt) :
     TacticM (Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq) := do
-  let `(inductionAlts| | $ctor:ident $vars:binderIdent* => $tac:tacticSeq) := alt
+  let `(inductionAlt| | $ctor:ident $vars:binderIdent* => $tac:tacticSeq) := alt
   | throwError "iinduction: invalid syntax"
   return ⟨ctor.getId, vars, tac⟩
 
@@ -396,11 +396,11 @@ elab "iinduction" colGt x:term : tactic => do
     mvar.assign pf
 
 /-- Tactic with names of variables and induction hypotheses supplied by the user. -/
-elab "iinduction" colGt x:term "with" alts:(colGe inductionAlts)* : tactic => do
+elab "iinduction" colGt x:term "with" alts:(colGe inductionAlt)* : tactic => do
   let fvar ← generalizeTermWithFVar x
 
   -- Parse the list of alternative names supplied by the user
-  let parsedAlts ← alts.mapM parseInductionAlts
+  let parsedAlts ← alts.mapM parseinductionAlt
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
     let pf ← iInductionCore hyps goal fvar parsedAlts none none
@@ -419,13 +419,13 @@ elab "iinduction" colGt x:term "using" r:ident : tactic => do
 
 /-- Tactic with the recursor name and alternative names supplied by the user. -/
 elab "iinduction" colGt x:term "using" r:ident
-    "with" alts:(colGe inductionAlts)* : tactic => do
+    "with" alts:(colGe inductionAlt)* : tactic => do
   let fvar ← generalizeTermWithFVar x
 
   -- Parse the recursor name provided by the user
   let recName := r.getId
   -- Parse the list of alternative names supplied by the user
-  let parsedAlts ← alts.mapM parseInductionAlts
+  let parsedAlts ← alts.mapM parseinductionAlt
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
     let pf ← iInductionCore hyps goal fvar parsedAlts recName none
@@ -443,11 +443,11 @@ elab "iinduction" colGt x:term "generalizing" genSelPats:(colGt selPat)+ : tacti
     mvar.assign pf
 
 elab "iinduction" colGt x:term "generalizing" genSelPats:(colGt selPat)+
-    "with" alts:(colGe inductionAlts)* : tactic => do
+    "with" alts:(colGe inductionAlt)* : tactic => do
   let fvar ← generalizeTermWithFVar x
 
   -- Parse the list of alternative names supplied by the user
-  let parsedAlts ← alts.mapM parseInductionAlts
+  let parsedAlts ← alts.mapM parseinductionAlt
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
     -- Parse the user-supplied list of variables to be generalised
@@ -473,13 +473,13 @@ elab "iinduction" colGt x:term "using" r:ident
     mvar.assign pf
 
 elab "iinduction" colGt x:term "using" r:ident
-    "generalizing" genSelPats:(colGt selPat)+ "with" alts:(colGe inductionAlts)* : tactic => do
+    "generalizing" genSelPats:(colGt selPat)+ "with" alts:(colGe inductionAlt)* : tactic => do
   let fvar ← generalizeTermWithFVar x
 
   -- Parse the recursor name provided by the user
   let recName := r.getId
   -- Parse the list of alternative names supplied by the user
-  let parsedAlts ← alts.mapM parseInductionAlts
+  let parsedAlts ← alts.mapM parseinductionAlt
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
     -- Parse the user-supplied list of variables to be generalised
