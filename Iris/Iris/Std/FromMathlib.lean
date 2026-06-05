@@ -92,45 +92,43 @@ theorem single (hab : r a b) : ReflTransGen r a b :=
 
 end Relation.ReflTransGen
 
-end FromMathlib
-
 /-! ### Lemmas about `Relation.TransGen` (defined in Lean core, `Init.Core`).
 
 The transitive closure itself is in `_root_.Relation.TransGen`; we add a few
-helper lemmas here, mirroring the names from Mathlib, and bridging to our
-local `FromMathlib.Relation.ReflTransGen`. -/
+helper lemmas here under `FromMathlib.Relation.TransGen` (mirroring Mathlib's
+names without colliding when Mathlib is also imported), bridging to our local
+`FromMathlib.Relation.ReflTransGen`. -/
 
 namespace Relation.TransGen
 
 /-- NB. Copied from Mathlib -/
 theorem to_reflTransGen {α} {r : α → α → Prop} {a b}
-    (h : Relation.TransGen r a b) : FromMathlib.Relation.ReflTransGen r a b := by
+    (h : _root_.Relation.TransGen r a b) : Relation.ReflTransGen r a b := by
   induction h with
-  | single h => exact FromMathlib.Relation.ReflTransGen.single h
-  | tail _ bc ab => exact FromMathlib.Relation.ReflTransGen.tail ab bc
+  | single h => exact Relation.ReflTransGen.single h
+  | tail _ bc ab => exact Relation.ReflTransGen.tail ab bc
 
 /-- NB. Copied from Mathlib -/
 theorem trans_left {α} {r : α → α → Prop} {a b c}
-    (hab : Relation.TransGen r a b) (hbc : FromMathlib.Relation.ReflTransGen r b c) :
-    Relation.TransGen r a c := by
+    (hab : _root_.Relation.TransGen r a b) (hbc : Relation.ReflTransGen r b c) :
+    _root_.Relation.TransGen r a c := by
   induction hbc with
   | refl => exact hab
   | tail _ hcd hac => exact hac.tail hcd
 
 /-- NB. Copied from Mathlib -/
 theorem head' {α} {r : α → α → Prop} {a b c}
-    (hab : r a b) (hbc : FromMathlib.Relation.ReflTransGen r b c) :
-    Relation.TransGen r a c :=
+    (hab : r a b) (hbc : Relation.ReflTransGen r b c) :
+    _root_.Relation.TransGen r a c :=
   trans_left (.single hab) hbc
 
 /-- NB. Copied from Mathlib -/
 theorem head {α} {r : α → α → Prop} {a b c}
-    (hab : r a b) (hbc : Relation.TransGen r b c) : Relation.TransGen r a c :=
-  head' hab hbc.to_reflTransGen
+    (hab : r a b) (hbc : _root_.Relation.TransGen r b c) :
+    _root_.Relation.TransGen r a c :=
+  head' hab (to_reflTransGen hbc)
 
 end Relation.TransGen
-
-namespace FromMathlib
 
 namespace List
 

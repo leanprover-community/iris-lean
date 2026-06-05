@@ -14,7 +14,7 @@ public import Batteries.Data.List.Lemmas
 namespace Iris.ProgramLogic
 
 open Iris.ProgramLogic.PrimStep
-open Language Language.Notation Relation
+open Language Language.Notation Relation FromMathlib FromMathlib.Relation.TransGen
 
 @[expose] public section
 
@@ -93,11 +93,11 @@ theorem cfg_stepsTc {tp : List Expr} {σ : State} {n e κ e' σ' efs}
       have hlt : n < tp.length := (List.getElem?_eq_some_iff.mp Hlu).1
       have rest := ih (tp := tp.set n e₂ ++ efs₁) (getElem?_set_append_self hlt)
       rw [set_append_set_append hlt] at rest
-      exact rest.head ⟨_, cfg_step Hlu hstep⟩
+      exact head ⟨_, cfg_step Hlu hstep⟩ rest
 
 theorem cfg_steps {tp : List Expr} {σ : State} {n e κ e' σ' efs} (Hlu : tp[n]? = some e)
     (Hprim : PrimSteps e σ κ e' σ' efs) : (tp, σ) -·->ₜₚ* (tp.set n e' ++ efs, σ') :=
-  (cfg_stepsTc Hlu Hprim).to_reflTransGen
+  to_reflTransGen (cfg_stepsTc Hlu Hprim)
 
 theorem cfg_safeStep {tp : List Expr} {σ : State} {f n e κ e' σ' efs}
     (Hsafe : cfgSafeForking (tp, σ) f) (Hlu : tp[n]? = some e)

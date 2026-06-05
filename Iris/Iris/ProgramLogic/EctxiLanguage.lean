@@ -81,6 +81,18 @@ theorem fill_append (K₁ K₂ : Λ.Ectx) (e : Expr) : fill (K₁ ++ K₂) e = f
 theorem fill_val {K} {e : Expr} : (toVal (fill K e)).isSome = true → (toVal e).isSome = true := by
   induction K generalizing e <;> grind [fillItem_val]
 
+/-- A base step from `e` is impossible whenever `fill K e` equals a value: a
+filled value forces `e` itself to be a value (`fill_val`), but base steps never
+fire from values (`val_stuck`). -/
+theorem baseStep_fill_eq_val_absurd {K : Ectx} {e e' : Expr} {σ σ' : State}
+    {obs : List Obs} {efs : List Expr} {v : Val}
+    (hbase : (e, σ) -<obs>->ᵇ (e', σ', efs))
+    (heq : (v : Expr) = fill K e) : False := by
+  have hfill_isval : (toVal (fill K e)).isSome := heq ▸ by simp
+  have h_e_val : (toVal e).isSome := fill_val hfill_isval
+  rw [val_stuck hbase] at h_e_val
+  simp at h_e_val
+
 -- NOTE: Would it be worth having an `isVal` predicate for `Expr`, basically defined
 -- as `toVal e |>.isSome`, so that we could rephrase all instances of `(toVal e).isSome`
 -- as `isVal e` and `toVal e = none` as `¬ isVal e`. That way tactics like `grind` would

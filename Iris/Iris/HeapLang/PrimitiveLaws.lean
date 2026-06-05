@@ -16,7 +16,7 @@ public import Std.Data.ExtTreeMap
 @[expose] public section
 namespace Iris.HeapLang
 
-open Iris ProgramLogic Language.Notation Std
+open Iris ProgramLogic Language.Notation Std FromMathlib
 
 section HeapLangGS
 
@@ -597,10 +597,9 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
       ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }}) ⊢ _
     by rw [wp_unfold.to_eq]; simp only [wp.pre, hne]; exact .rfl) $$ HWPe
   -- Reverse-induct on the outer observation list `obs`.
-  rcases hrev : obs.reverse with _ | ⟨lastObs, init_rev⟩
-  · -- obs = []. Apply inner WP with inner obs = [], inner obs' = obs'.
-    have hobs : obs = [] := List.reverse_eq_nil_iff.mp hrev
-    subst hobs
+  cases obs using List.reverseRec with
+  | nil =>
+    -- obs = []. Apply inner WP with inner obs = [], inner obs' = obs'.
     ihave Hσ_e : iprop(stateInterp σ₁ ns ([] ++ obs') nt) $$ [Hheap Hpmap]
     · iapply (stateInterp_split σ₁ ns ([] ++ obs') nt).mpr
       iframe Hheap
@@ -613,19 +612,16 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
       exact prim_step_reducible_resolve hatom hp_contains Hred_e
     iintro %e₂ %σ₂ %eₜ %Hstep _Hcred
     exfalso
-    obtain ⟨κ_inner, v_inner, hκ_eq, _, _, _⟩ :=
+    obtain ⟨κ_inner, _, hκ_eq, _, _⟩ :=
       step_resolve_decompose hatom Hstep
     exact List.cons_ne_nil _ _ (List.append_eq_nil_iff.mp hκ_eq.symm).2
-  · -- obs = init_rev.reverse ++ [lastObs]. Apply inner WP with
-    -- inner obs = init_rev.reverse, inner obs' = lastObs :: obs'.
-    have hobs : obs = init_rev.reverse ++ [lastObs] := by
-      have hh := congrArg List.reverse hrev; simp at hh; exact hh
-    subst hobs
-    have hassoc : (init_rev.reverse ++ [lastObs]) ++ obs' =
-        init_rev.reverse ++ (lastObs :: obs') := by simp
-    ihave Hσ_e : iprop(stateInterp σ₁ ns (init_rev.reverse ++ (lastObs :: obs')) nt)
+  | append_singleton init lastObs _ =>
+    -- obs = init ++ [lastObs]. Apply inner WP with inner obs = init,
+    -- inner obs' = lastObs :: obs'.
+    have hassoc : (init ++ [lastObs]) ++ obs' = init ++ (lastObs :: obs') := by simp
+    ihave Hσ_e : iprop(stateInterp σ₁ ns (init ++ (lastObs :: obs')) nt)
         $$ [Hheap Hpmap]
-    · iapply (stateInterp_split σ₁ ns (init_rev.reverse ++ (lastObs :: obs')) nt).mpr
+    · iapply (stateInterp_split σ₁ ns (init ++ (lastObs :: obs')) nt).mpr
       iframe Hheap
       rw [← hassoc]; iexact Hpmap
     imod HWPe $$ %_ %_ %_ %_ %_ Hσ_e with ⟨%Hred_e, HWPe⟩
@@ -635,22 +631,18 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
       cases s <;> simp only [Stuckness.MaybeReducible]
       exact prim_step_reducible_resolve hatom hp_contains Hred_e
     iintro %e₂ %σ₂ %eₜ %Hstep Hcred
-    obtain ⟨κ_inner, v_inner, hκ_eq, he₂_eq, Hbase_e, _⟩ :=
+    obtain ⟨κ_inner, v_inner, hκ_eq, he₂_eq, Hbase_e⟩ :=
       step_resolve_decompose hatom Hstep
-    -- Cancel the trailing observation: from `init_rev.reverse ++ [lastObs]
+    -- Cancel the trailing observation: from `init ++ [lastObs]
     -- = κ_inner ++ [(p, (v_inner, w))]`, reverse both sides and `simp`.
-    obtain ⟨hκ_inner_eq, hlast_eq⟩ :
-        κ_inner = init_rev.reverse ∧ lastObs = (p, (v_inner, w)) := by
-      have h := congrArg List.reverse hκ_eq
-      simp [List.reverse_append] at h
-      refine ⟨?_, h.1⟩
-      have := congrArg List.reverse h.2; simpa using this.symm
-    subst hκ_inner_eq; subst hlast_eq; subst he₂_eq
+    have h := congrArg List.reverse hκ_eq
+    simp at h
+    obtain ⟨hκ_eq_init, hlast_eq⟩ := h
+    subst hκ_eq_init; subst hlast_eq; subst he₂_eq
     -- Apply the inner WP step continuation to the inner base step, then
     -- bridge the resulting `={∅}▷=∗^[n+1] |={∅,E}=>` modality stack into the
     -- outer goal of the same shape via `step_fupdN_wand`.
-    have Hprim_e : PrimStep.primStep (e, σ₁) init_rev.reverse
-        (Exp.val v_inner, σ₂, eₜ) :=
+    have Hprim_e : PrimStep.primStep (e, σ₁) init (Exp.val v_inner, σ₂, eₜ) :=
       EctxLanguage.primStep_of_baseStep Hbase_e
     ispecialize HWPe $$ %_ %_ %_ %Hprim_e Hcred
     iapply step_fupdN_wand $$ HWPe
