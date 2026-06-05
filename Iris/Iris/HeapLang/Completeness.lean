@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.HeapLang.PrimitiveLaws
+public import Iris.BI.BigOp.BigSepSet
 public import Iris.ProgramLogic.ThreadPool
 public import Iris.ProgramLogic.AbstractWeakestPre
 public import Iris.ProgramLogic.AbstractLangCompleteness
@@ -16,10 +17,10 @@ public import Iris.ProofMode
 /-! # HeapLang completeness
 
 Ports `case_studies/heaplang/completeness_generic.v` and
-`completeness_classical.v`. The `heap_inv` retains Rocq's heap conjunct
-(per-cell points-to ∗ `meta_token`); its prophecy conjunct is dropped because the
-iris-lean heap_lang `stateInterp` tracks only `σ.heap` (there is no `proph_map`
-ghost component).
+`completeness_classical.v`. `heap_inv` carries Rocq's two conjuncts: per-cell
+points-to ∗ `meta_token`, and `∃ pvs, proph p pvs` for every prophecy id in
+`σ.usedProphId`. `stateInterp` includes `prophMapInterp κs σ.usedProphId`
+alongside `genHeapInterp σ.heap`.
 
 Status of `wp_base_completeness` (the base-step case analysis):
 * pure branches (`rec`/`pair`/`injL`/`injR`/`beta`/`unop`/`binop`/`if`/`fst`/
@@ -28,8 +29,16 @@ Status of `wp_base_completeness` (the base-step case analysis):
   `wp_base_atomic`(`_nochange`) + the per-op determinism lemmas;
 * `fork` — via the non-atomic disjunct and `wp_fork_fupd`;
 * `alloc` — via `genHeap_alloc_big`, with location freshness from `meta_token_ne`;
-* `newProph`/`resolve` — `sorry`, pending a `proph_map` port (no Lean counterpart
-  yet for the prophecy ghost state these steps manipulate).
+* `newProph` — atomic lift, fresh `p` picked in `σ₁.usedProphId`, then
+  `ProphMap.new_proph` allocates a proph token; freshness in `σ` follows from
+  `proph_exclusive` against the proph conjunct of `heap_inv σ`;
+* `resolve` — `sorry`. Rocq's proof recurses on the inner `BaseStep e σ κs
+  (val v) σ' ts` via `iInduction`. The Lean port would need to restructure
+  `wp_base_completeness` to take `BaseStep` directly with `termination_by` on
+  the step derivation, plus a `wp_resolve_strong`-style lift over the inner
+  completeness disjunction. All other supporting infrastructure
+  (`prophMapInterp`, `proph p pvs`, `ProphMap.resolve_proph`, the proph
+  conjunct of `heap_inv`) is in place.
 -/
 
 @[expose] public section
@@ -40,13 +49,12 @@ open Iris ProgramLogic Iris.BI Language Language.Notation Std
 variable {hlc : HasLC} {GF : BundledGFunctors} [HeapLangGS hlc GF]
 
 /-- The heap-lang configuration invariant: full ownership of every heap cell
-together with its `meta_token`. Mirrors the heap conjunct of `heap_inv` in
-`case_studies/heaplang/completeness_generic.v`; the prophecy conjunct is dropped
-because the iris-lean heap_lang `stateInterp` tracks only `σ.heap` (no
-`proph_map`). -/
-@[reducible] def heap_inv (σ : State) : IProp GF :=
-  bigSepM (M := HeapF) (K := Loc)
-    (fun (l : Loc) (vo : Option Val) => iprop((l ↦ vo) ∗ metaToken l ⊤)) σ.heap
+together with its `meta_token`, and a `proph` token for every used prophecy id.
+Mirrors `heap_inv` in `case_studies/heaplang/completeness_generic.v`. -/
+@[reducible] def heap_inv (σ : State) : IProp GF := iprop(
+    (bigSepM (M := HeapF) (K := Loc)
+       (fun (l : Loc) (vo : Option Val) => iprop((l ↦ vo) ∗ metaToken l ⊤)) σ.heap) ∗
+    ([∗set] p ∈ σ.usedProphId, ∃ pvs : List (Val × Val), proph p pvs))
 
 instance heap_inv_timeless (σ : State) : Timeless (heap_inv (GF := GF) σ) := by
   unfold heap_inv; infer_instance
@@ -110,18 +118,18 @@ theorem wp_base_atomic {e₁ : Exp} {v₂ : Val} (l : Loc) (vold vnew : Option V
         BaseStep e₁ σ'' obs e' σ''' efs →
         obs = [] ∧ e' = (ToVal.ofVal v₂ : Exp) ∧ σ''' = σ''.initHeap l 1 vnew ∧ efs = []) :
     heap_inv (GF := GF) σ ⊢ iprop(|={E}=> baseCompletenessGoal e₁ σ E) := by
-  iintro Hinv
+  iintro ⟨Hmap, Hproph_inv⟩
   unfold baseCompletenessGoal
   imodintro
   ileft
   iframe %hatom
   iintro %Φ Hstep
   icases (BigSepM.bigSepM_insert_acc (M := HeapF)
-    (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤)) hcell) $$ Hinv
+    (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤)) hcell) $$ Hmap
     with ⟨⟨Hpt, Hmeta⟩, Hclose⟩
   iapply wp_lift_atomic_step (EctxLanguage.val_stuck (hbase σ hcell))
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  simp only [stateInterp]
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %hcell1 : ⌜get? (M := HeapF) σ₁.heap l = some vold⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%hh
     itrivial
@@ -138,19 +146,22 @@ theorem wp_base_atomic {e₁ : Exp} {v₂ : Val} (l : Loc) (vold vnew : Option V
   · ipureintro
     exact EctxLanguage.primStep_of_baseStep (hbase σ hcell)
   imodintro
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
   have hl0 : l + (0 : Int) = l := by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind
   simp only [stateInterp, State.initHeap, Int.toNat_one, List.range_one, List.foldl_cons,
     Int.cast_ofNat_Int, List.foldl_nil, hl0, List.length_nil, Nat.add_zero,
     Algebra.BigOpL.bigOpL_nil]
-  iframe Hσ
-  isplitl [Hpost Hclose Hpt Hmeta]
+  iframe Hσ Hproph
+  isplitl [Hpost Hclose Hpt Hmeta Hproph_inv]
   · iexists v₂
     isplit
     · ipureintro; simp [toVal]
     iapply Hpost
     simp only [heap_inv, State.initHeap, Int.toNat_one, List.range_one, List.foldl_cons,
       Int.cast_ofNat_Int, List.foldl_nil, hl0]
-    iapply Hclose $$ [$Hpt $Hmeta]
+    isplitl [Hclose Hpt Hmeta]
+    · iapply Hclose $$ [$Hpt $Hmeta]
+    · iexact Hproph_inv
   · itrivial
 
 /-- Atomic heap-step branch that leaves the heap unchanged (read-only ops: `load`,
@@ -165,7 +176,7 @@ theorem wp_base_atomic_nochange {e₁ : Exp} {v₂ : Val} (l : Loc) (vcur : Opti
         BaseStep e₁ σ'' obs e' σ''' efs →
         obs = [] ∧ e' = (ToVal.ofVal v₂ : Exp) ∧ σ''' = σ'' ∧ efs = []) :
     heap_inv (GF := GF) σ ⊢ iprop(|={E}=> baseCompletenessGoal e₁ σ E) := by
-  iintro Hinv
+  iintro ⟨Hmap, Hproph_inv⟩
   unfold baseCompletenessGoal
   imodintro
   ileft
@@ -173,10 +184,10 @@ theorem wp_base_atomic_nochange {e₁ : Exp} {v₂ : Val} (l : Loc) (vcur : Opti
   iintro %Φ Hstep
   iapply wp_lift_atomic_step (EctxLanguage.val_stuck (hbase σ hcell))
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  simp only [stateInterp]
-  ihave %hcell1 : ⌜get? (M := HeapF) σ₁.heap l = some vcur⌝ $$ [Hσ Hinv]
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  ihave %hcell1 : ⌜get? (M := HeapF) σ₁.heap l = some vcur⌝ $$ [Hσ Hmap]
   · icases (BigSepM.bigSepM_lookup_acc (M := HeapF)
-      (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤)) hcell).1 $$ Hinv
+      (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤)) hcell).1 $$ Hmap
       with ⟨⟨Hpt, _⟩, _⟩
     icases genHeap_valid $$ [$Hσ $Hpt] with >%hh
     itrivial
@@ -193,13 +204,16 @@ theorem wp_base_atomic_nochange {e₁ : Exp} {v₂ : Val} (l : Loc) (vcur : Opti
   · ipureintro
     exact EctxLanguage.primStep_of_baseStep (hbase σ hcell)
   imodintro
-  iframe Hσ
-  isplitl [Hpost Hinv]
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₂.usedProphId).mp $$ Hproph
+  simp only [stateInterp]
+  iframe Hσ Hproph
+  isplitl [Hpost Hmap Hproph_inv]
   · iexists v₂
     isplit
     · ipureintro; simp [toVal]
     iapply Hpost
-    iexact Hinv
+    simp only [heap_inv]
+    iframe Hmap Hproph_inv
   · itrivial
 
 /-! ### Per-operation determinism facts.
@@ -497,7 +511,7 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
       iapply wp_lift_atomic_step
         (EctxLanguage.val_stuck (BaseStep.allocNS n v σ l hn hfresh))
       iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-      simp only [stateInterp]
+      icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
       -- Reducibility in `σ₁` from a fresh block.
       obtain ⟨lf, hlf⟩ := exists_fresh_block σ₁.heap n
       have Hred₁ : BaseStep.Reducible (Exp.allocN (.val (.lit (.int n))) (.val v), σ₁) :=
@@ -509,18 +523,21 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
       iintro !> %e₂ %σ₂ %eₜ %Hprim Hcr
       cases EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred₁ Hprim
       rename_i l' Hpo Hi
+      ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+      -- Destructure `heap_inv σ` into its heap and prophecy conjuncts.
+      icases Hinv with ⟨Hmap, Hproph_inv⟩
       -- Allocate the new block in the state interpretation.
       imod (genHeap_alloc_big (allocCells l' n.toNat (some v)) σ₁.heap (allocCells_disjoint Hi))
         $$ Hσ with ⟨Hσ', Hnewpts, Hnewmeta⟩
       -- Freshness of the block in `σ` (the `heap_inv` state), via `meta_token_ne`.
       ihave %hfreshσ : ⌜∀ i : Int, 0 ≤ i → i < n → get? (M := HeapF) σ.heap (l' + i) = none⌝
-          $$ [Hinv Hnewmeta]
+          $$ [Hmap Hnewmeta]
       · iintro %i %hi0 %hin
         rcases hgc : get? (M := HeapF) σ.heap (l' + i) with _ | vo
         · itrivial
         · icases (BigSepM.bigSepM_lookup_acc (M := HeapF)
             (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤)) hgc).1
-            $$ Hinv with ⟨⟨_, Hmeta1⟩, _⟩
+            $$ Hmap with ⟨⟨_, Hmeta1⟩, _⟩
           have hcell_new : get? (M := HeapF) (allocCells l' n.toNat (some v)) (l' + i)
               = some (some v) := by
             rw [get?_allocCells, if_pos ⟨i.toNat, by omega, by rw [Int.toNat_of_nonneg hi0]⟩]
@@ -534,29 +551,111 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
       · ipureintro
         exact EctxLanguage.primStep_of_baseStep (BaseStep.allocNS n v σ l' hn hfreshσ)
       imodintro
-      isplitl [Hσ']
-      · iapply genHeapInterp_eqv (Iris.Std.PartialMap.equiv.symm _ _ initHeap_heap_eq)
-        iexact Hσ'
-      isplitl [Hpost Hinv Hnewpts Hnewmeta]
+      isplitl [Hσ' Hproph]
+      · simp only [stateInterp]
+        isplitl [Hσ']
+        · iapply genHeapInterp_eqv (Iris.Std.PartialMap.equiv.symm _ _ initHeap_heap_eq)
+          iexact Hσ'
+        · iexact Hproph
+      isplitl [Hpost Hmap Hproph_inv Hnewpts Hnewmeta]
       · iexists (.lit (.loc l'))
         isplit
         · ipureintro; simp [toVal]
         iapply Hpost
-        iapply (BigSepM.bigSepM_eqv_of_perm
-          (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤))
-          initHeap_heap_eq).2
-        iapply (BigSepM.bigSepM_union
-          (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤))
-          (allocCells_disjoint hfreshσ)).2
-        isplitl [Hnewpts Hnewmeta]
-        · iapply (Iris.BI.equiv_iff.mp (BigSepM.bigSepM_sep_eqv (M := HeapF)
-            (Φ := fun (k : Loc) (vo : Option Val) => iprop(k ↦ vo))
-            (Ψ := fun (k : Loc) (_vo : Option Val) => iprop(metaToken k ⊤)))).2
-          iframe Hnewpts Hnewmeta
-        · iexact Hinv
+        simp only [heap_inv]
+        isplitl [Hmap Hnewpts Hnewmeta]
+        · iapply (BigSepM.bigSepM_eqv_of_perm
+            (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤))
+            initHeap_heap_eq).2
+          iapply (BigSepM.bigSepM_union
+            (Φ := fun (k : Loc) (vo : Option Val) => iprop((k ↦ vo) ∗ metaToken k ⊤))
+            (allocCells_disjoint hfreshσ)).2
+          isplitl [Hnewpts Hnewmeta]
+          · iapply (Iris.BI.equiv_iff.mp (BigSepM.bigSepM_sep_eqv (M := HeapF)
+              (Φ := fun (k : Loc) (vo : Option Val) => iprop(k ↦ vo))
+              (Ψ := fun (k : Loc) (_vo : Option Val) => iprop(metaToken k ⊤)))).2
+            iframe Hnewpts Hnewmeta
+          · iexact Hmap
+        · iexact Hproph_inv
       · itrivial
-  | newProphS σ p hp => sorry
-  | resolveS p v e σ w σ' κs ts hbase hp => sorry
+  | newProphS σ p hp =>
+      -- `newProph` is atomic and allocates a fresh prophecy variable.
+      imodintro
+      ileft
+      have hatom : Atomic Atomicity.StronglyAtomic (Exp.newProph : Exp) :=
+        base_step_to_val_atomic Atomicity.StronglyAtomic (BaseStep.newProphS σ p hp)
+      iframe %hatom
+      iintro %Φ Hstep
+      iapply wp_lift_atomic_step
+        (EctxLanguage.val_stuck (BaseStep.newProphS σ p hp))
+      iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+      icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+      -- Pick a prophecy id fresh in `σ₁.usedProphId`.
+      obtain ⟨pf, Hpf⟩ := Iris.Std.List.fresh σ₁.usedProphId.toList
+      have Hpf_contains : ¬ σ₁.usedProphId.contains pf := by
+        intro hc; exact Hpf (Std.ExtTreeSet.mem_toList.mpr hc)
+      have Hred₁ : BaseStep.Reducible (Exp.newProph, σ₁) :=
+        ⟨[], _, _, [], BaseStep.newProphS σ₁ pf Hpf_contains⟩
+      isplitr
+      · ipureintro
+        simp only [Stuckness.MaybeReducible]
+        exact EctxLanguage.primStep_reducible_of_baseStep_reducible Hred₁
+      iintro !> %e₂ %σ₂ %eₜ %Hprim Hcr
+      cases EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred₁ Hprim
+      rename_i p' Hp'
+      ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+      have Hp'_mem : p' ∉ σ₁.usedProphId :=
+        fun hmem => Hp' (Std.ExtTreeSet.mem_iff_contains.symm.mp hmem)
+      imod (ProphMap.new_proph p' σ₁.usedProphId obs' Hp'_mem) $$ Hproph
+        with ⟨Hproph', Htok⟩
+      -- Destructure `heap_inv σ` and derive that `p'` is fresh in `σ` via
+      -- `proph_exclusive` against `Hproph_inv`.
+      icases Hinv with ⟨Hmap, Hproph_inv⟩
+      ihave %Hfresh_σ : ⌜p' ∉ σ.usedProphId⌝ $$ [Hproph_inv Htok]
+      · iintro %hmem
+        icases Iris.BI.BigSepS.bigSepS_elem_of_acc hmem $$ Hproph_inv with ⟨⟨%pvs', Htok'⟩, _⟩
+        iapply proph_exclusive $$ Htok Htok'
+      have Hfresh_σ_contains : ¬ σ.usedProphId.contains p' := fun hc =>
+        Hfresh_σ (Std.ExtTreeSet.mem_iff_contains.symm.mpr hc)
+      -- Instantiate the magic premise with the `newProph` step from `σ` at `p'`.
+      imod Hstep $$ [] with ⟨Hpost, _⟩
+      · ipureintro
+        exact EctxLanguage.primStep_of_baseStep (BaseStep.newProphS σ p' Hfresh_σ_contains)
+      imodintro
+      isplitl [Hσ Hproph']
+      · simp only [stateInterp]
+        iframe Hσ
+        rw [show ({p'} ∪ σ₁.usedProphId : Std.ExtTreeSet ProphId compare)
+            = σ₁.usedProphId.insert p' from usedProph_insert_eq.symm]
+        iexact Hproph'
+      isplitl [Hpost Hmap Hproph_inv Htok]
+      · iexists (.lit (.prophecy p'))
+        isplit
+        · ipureintro; simp [toVal]
+        iapply Hpost
+        simp only [heap_inv]
+        isplitl [Hmap]
+        · iexact Hmap
+        · -- goal: bigSepS (σ.usedProphId.insert p') (∃ pvs, proph)
+          rw [usedProph_insert_eq (ps := σ.usedProphId) (p := p')]
+          have hdisj : ({p'} : Std.ExtTreeSet ProphId compare) ## σ.usedProphId := by
+            intro x ⟨h1, h2⟩
+            rw [Iris.Std.LawfulSet.mem_singleton] at h1
+            subst h1
+            exact Hfresh_σ h2
+          iapply (Iris.BI.BigSepS.bigSepS_union hdisj).mpr
+          isplitl [Htok]
+          · iapply Iris.BI.BigSepS.bigSepS_singleton.mpr
+            iexists (prophListResolves obs' p')
+            iexact Htok
+          · iexact Hproph_inv
+      · itrivial
+  | resolveS p v e σ w σ' κs ts hbase hp =>
+      -- Recurse on the inner base step to get its completeness equation.
+      have IH : heap_inv (GF := GF) σ ⊢ iprop(|={E}=> baseCompletenessGoal e σ E) :=
+        wp_base_completeness e σ E ⟨κs, _, _, _, hbase⟩
+      sorry
+termination_by structural e₁
 
 section Framework
 

@@ -8,6 +8,8 @@ public import Iris.ProgramLogic.WeakestPre
 public import Iris.ProgramLogic.Adequacy
 public import Iris.ProgramLogic.Lifting
 public import Iris.BI.Lib.GenHeap
+public import Iris.BI.Lib.ProphMap
+public import Iris.Std.GenSetsInstances
 public import Iris.ProofMode
 public import Std.Data.ExtTreeMap
 
@@ -20,18 +22,48 @@ section HeapLangGS
 
 abbrev HeapF := fun V => Std.ExtTreeMap Loc V compare
 
+/-- The finite-map type used by the heap_lang prophecy ghost state: a map from
+`ProphId` to the prophecy's outstanding resolution list. Mirrors the Rocq
+`gmap proph_id (list val)` used in `proph_map`. -/
+abbrev ProphMapF := fun V => Std.ExtTreeMap ProphId V compare
+
 class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGpreS GF where
   heap_pre : genHeapPreS PNat Loc (Option Val) GF HeapF
+  proph_pre : prophMapPreS PNat ProphId (Val × Val) GF ProphMapF
 
 attribute [reducible, instance] HeapLangGpreS.heap_pre
+attribute [reducible, instance] HeapLangGpreS.proph_pre
 
 class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGS_gen hlc GF where
   heap : genHeapGS PNat Loc (Option Val) GF HeapF
+  proph : prophMapGS (F := PNat) ProphId (Val × Val) GF ProphMapF
 
 attribute [reducible, instance] HeapLangGS.heap
+attribute [reducible, instance] HeapLangGS.proph
 
 instance HeapLangState [HeapLangGS hlc GF] : StateInterp State Observation GF where
-  stateInterp σ _ _ _ := genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap
+  stateInterp σ _ κs _ := iprop(
+    genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap ∗
+    prophMapInterp (F := PNat) (GF := GF) (H := ProphMapF) κs σ.usedProphId)
+
+/-- The state interpretation as a separating conjunction of the heap interp and
+the prophecy-map interp. Used to destruct `Hσ` into its two conjuncts after
+`wp_lift_atomic_step`. -/
+theorem stateInterp_split [HeapLangGS hlc GF] (σ : State) (ns : Nat)
+    (κs : List Observation) (nt : Nat) :
+    stateInterp (GF := GF) σ ns κs nt ⊣⊢
+      iprop(genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap ∗
+            prophMapInterp (F := PNat) (GF := GF) (H := ProphMapF) κs σ.usedProphId) :=
+  Iris.BI.BIBase.BiEntails.rfl
+
+/-- Normalize a `[] ++ κs` argument to `κs`. Used to rephrase `prophMapInterp`
+hypotheses introduced before a step whose observations are `[]` get substituted
+in by `cases`. The two sides are definitionally equal. -/
+theorem prophMapInterp_nil_append [HeapLangGS hlc GF] (κs : List Observation)
+    (ps : Std.ExtTreeSet ProphId) :
+    iprop(prophMapInterp (F := PNat) (GF := GF) (H := ProphMapF) ([] ++ κs) ps) ⊣⊢
+    iprop(prophMapInterp (F := PNat) (GF := GF) (H := ProphMapF) κs ps) :=
+  Iris.BI.BIBase.BiEntails.rfl
 
 instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
   numLatersPerStep n := 0
@@ -66,19 +98,25 @@ theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
       (Std.PartialMap.map (fun g : GName => toAgree (LeibnizO.mk g))
         (∅ : HeapF GName)))
     HeapView.auth_one_valid with ⟨%γm, Hm⟩
-  letI _ : HeapLangGS .hasLC GF := ⟨⟨γh, γm⟩⟩
+  imod (ProphMap.init (F := PNat) (V := Val × Val) (H := ProphMapF) κs σ.usedProphId)
+    with ⟨%Gproph, Hproph⟩
+  letI _ : HeapLangGS .hasLC GF := ⟨⟨γh, γm⟩, Gproph⟩
   imodintro
-  iexists (fun σ _ => Iris.genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap)
+  iexists (fun σ κs => iprop(
+    Iris.genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap ∗
+    Iris.prophMapInterp (F := PNat) (GF := GF) (H := ProphMapF) κs σ.usedProphId))
   iexists (fun _ => iprop(True))
-  isplitl [Hh Hm]
-  · simp only [Iris.genHeapInterp]
-    iexists (∅ : HeapF GName)
-    isplitr
-    · ipureintro
-      intro k hk
-      simp [Std.PartialMap.dom, LawfulPartialMap.get?_empty] at hk
-    unfold ghost_map_auth
-    iframe Hh Hm
+  isplitl [Hh Hm Hproph]
+  · isplitl [Hh Hm]
+    · simp only [Iris.genHeapInterp]
+      iexists (∅ : HeapF GName)
+      isplitr
+      · ipureintro
+        intro k hk
+        simp [Std.PartialMap.dom, LawfulPartialMap.get?_empty] at hk
+      unfold ghost_map_auth
+      iframe Hh Hm
+    · iexact Hproph
   · exact Hwp
 
 end Adequacy
@@ -106,6 +144,7 @@ theorem wp_fork {e : Exp} :
   iintro ⟨HΦ, Hwp⟩
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   have Hred : BaseStep.Reducible (hl(fork({e})), σ₁) :=
     ⟨[], hl(#BaseLit.unit), σ₁, [e], by constructor⟩
   isplitr
@@ -114,8 +153,11 @@ theorem wp_fork {e : Exp} :
     exact (primStep_reducible_of_baseStep_reducible Hred)
   iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
-  iframe Hσ
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
   imodintro
+  isplitl [Hσ Hproph]
+  · iapply (stateInterp_split σ₁ (ns + 1) obs' (nt + [e].length)).mpr
+    iframe Hσ Hproph
   isplitr [Hwp]
   · iexists _
     iframe HΦ
@@ -131,6 +173,7 @@ theorem wp_fork_fupd {e : Exp} :
   iintro HeΦ
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   have Hred : BaseStep.Reducible (hl(fork({e})), σ₁) :=
     ⟨[], hl(#BaseLit.unit), σ₁, [e], by constructor⟩
   isplitr
@@ -139,9 +182,12 @@ theorem wp_fork_fupd {e : Exp} :
     exact (primStep_reducible_of_baseStep_reducible Hred)
   iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
-  iframe Hσ
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
   imod HeΦ with ⟨Hwp, HΦ⟩
   imodintro
+  isplitl [Hσ Hproph]
+  · iapply (stateInterp_split σ₁ (ns + 1) obs' (nt + [e].length)).mpr
+    iframe Hσ Hproph
   isplitr [Hwp]
   · iexists _
     iframe HΦ
@@ -153,7 +199,7 @@ theorem wp_alloc (v : Val) :
     ⊢ WP (hl(ref({v}))) @ s; E {{ l, ∃ l' : Loc, ⌜l = .lit (.loc l')⌝ ∗ (l' ↦ (some v))}} := by
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  simp only [stateInterp]
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   let l := (List.fresh σ₁.heap.keys).choose
   have Hne : σ₁.get? l = .none := by
     simpa [State.get?, get?, getElem?_eq_none_iff, ←Std.ExtTreeMap.mem_keys]
@@ -172,14 +218,14 @@ theorem wp_alloc (v : Val) :
   iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
   rcases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   rename_i l' Hpo Hi
-  simp only [Int.cast_ofNat_Int, Algebra.BigOpL.bigOpL_nil, Int.toNat_one, List.range_one,
-    List.foldl_cons, List.foldl_nil]
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  simp only [stateInterp, Int.cast_ofNat_Int, Algebra.BigOpL.bigOpL_nil, Int.toNat_one,
+    List.range_one, List.foldl_cons, List.foldl_nil]
   specialize Hi 0 (by simp) (by simp)
   rw [show l' + (0 : Int) = l' by cases l'; simp only [HAdd.hAdd, Loc.mk.injEq]; grind] at Hi ⊢
   imod genHeap_alloc (v := some v) Hi $$ Hσ with ⟨Hσ, Hpt, _Hmt⟩
   imodintro
-  -- FIXME: can iframe should solve emp?
-  iframe Hσ
+  iframe Hσ Hproph
   isplit <;> try itrivial
   iexists hl_val(#(BaseLit.loc l'))
   isplit; ipureintro; rfl
@@ -193,6 +239,7 @@ theorem wp_load {l : Loc} {q} {v : Val} :
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = v⌝ $$ [Hσ Hpt]
   · ihave >%_ := genHeap_valid $$ [$Hσ $Hpt]
     itrivial
@@ -210,8 +257,9 @@ theorem wp_load {l : Loc} {q} {v : Val} :
   rw [Hpt] at H; simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some,
     Option.some.injEq] at H
   subst H
-  simp only [Algebra.BigOpL.bigOpL_nil]
-  iframe Hσ
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  simp only [stateInterp, Algebra.BigOpL.bigOpL_nil]
+  iframe Hσ Hproph
   imodintro
   isplit <;> try itrivial
   iexists _; iframe Hpt
@@ -224,7 +272,7 @@ theorem wp_store {l : Loc} {v v' : Val} :
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  simp only [stateInterp]
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
@@ -242,12 +290,13 @@ theorem wp_store {l : Loc} {v v' : Val} :
   rw [Hpt] at H; simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some,
     Option.some.injEq] at H
   subst H
-  simp only [Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil,
-    Algebra.BigOpL.bigOpL_nil]
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  simp only [stateInterp, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
+    List.foldl_nil, Algebra.BigOpL.bigOpL_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
   imod genHeap_update (v₂ := .some v) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
   imodintro
-  iframe Hσ
+  iframe Hσ Hproph
   isplit <;> try itrivial
   iexists .lit .unit
   iframe Hpt
@@ -262,7 +311,7 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  simp only [stateInterp]
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
@@ -281,12 +330,13 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   rw [Hpt] at H
   simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at H
   subst H
-  simp only [Algebra.BigOpL.bigOpL_nil]
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  simp only [stateInterp, Algebra.BigOpL.bigOpL_nil]
   subst Heq4; simp only [toVal, Option.some.injEq] at Heq1 Heq2
   subst Heq1; subst Heq2
   simp only [Heq4, Bool.false_eq_true, ↓reduceIte]
   imodintro
-  iframe Hσ
+  iframe Hσ Hproph
   isplit <;> try itrivial
   iexists hl_val(({v'}, #(BaseLit.bool false)))
   iframe Hpt
@@ -301,7 +351,7 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  simp only [stateInterp]
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
@@ -320,7 +370,8 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   rw [Hpt] at H
   simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at H
   subst H
-  simp only [Algebra.BigOpL.bigOpL_nil]
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  simp only [stateInterp, Algebra.BigOpL.bigOpL_nil]
   subst Heq4; simp only [toVal, Option.some.injEq] at Heq1 Heq2
   subst Heq1; subst Heq2
   simp only [Heq4, ↓reduceIte, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
@@ -328,7 +379,7 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
   imod genHeap_update (v₂ := .some v2') $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
   imodintro
-  iframe Hσ
+  iframe Hσ Hproph
   isplit <;> try itrivial
   iexists hl_val(({v'}, #(BaseLit.bool true)))
   iframe Hpt
@@ -341,7 +392,7 @@ theorem wp_free {l : Loc} {v : Val} :
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  simp only [stateInterp]
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v)⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
@@ -356,12 +407,13 @@ theorem wp_free {l : Loc} {v : Val} :
   iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   rename_i v'' H
-  simp only [Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil,
-    Algebra.BigOpL.bigOpL_nil]
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  simp only [stateInterp, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
+    List.foldl_nil, Algebra.BigOpL.bigOpL_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
   imod genHeap_update (v₂ := (none : Option Val)) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
   imodintro
-  iframe Hσ
+  iframe Hσ Hproph
   isplit <;> try itrivial
   iexists .lit .unit
   iframe Hpt
@@ -374,7 +426,7 @@ theorem wp_xchg {l : Loc} {v w : Val} :
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  simp only [stateInterp]
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v)⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
@@ -393,12 +445,13 @@ theorem wp_xchg {l : Loc} {v w : Val} :
     rw [Hpt] at H
     simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at H
     exact H
-  simp only [Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil,
-    Algebra.BigOpL.bigOpL_nil]
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  simp only [stateInterp, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
+    List.foldl_nil, Algebra.BigOpL.bigOpL_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
   imod genHeap_update (v₂ := (some w : Option Val)) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
   imodintro
-  iframe Hσ
+  iframe Hσ Hproph
   isplit <;> try itrivial
   iexists v
   iframe Hpt
@@ -411,7 +464,7 @@ theorem wp_faa {l : Loc} {i1 i2 : Int} :
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  simp only [stateInterp]
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %Hpt : ⌜σ₁.get? l = .some (.some (Val.lit (.int i1)))⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
@@ -432,17 +485,79 @@ theorem wp_faa {l : Loc} {i1 i2 : Int} :
     simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq,
       Val.lit.injEq, BaseLit.int.injEq] at H
     exact H
-  simp only [Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int, List.foldl_nil,
-    Algebra.BigOpL.bigOpL_nil]
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  simp only [stateInterp, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
+    List.foldl_nil, Algebra.BigOpL.bigOpL_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
   imod genHeap_update (v₂ := (some (Val.lit (.int (i1 + i2))) : Option Val)) $$ [$Hσ $Hpt]
     with ⟨Hσ, Hpt⟩
   imodintro
-  iframe Hσ
+  iframe Hσ Hproph
   isplit <;> try itrivial
   iexists Val.lit (.int i1)
   iframe Hpt
   ipureintro; simp [toVal]
+
+/-- The state update of a `newProphS` step (insertion into `usedProphId`) is the
+same set as `{p} ∪ usedProphId`, which is what `ProphMap.new_proph` returns. -/
+theorem usedProph_insert_eq {ps : Std.ExtTreeSet ProphId compare} {p : ProphId} :
+    ps.insert p = ({p} ∪ ps : Std.ExtTreeSet ProphId compare) := by
+  apply Std.ExtTreeSet.ext_mem
+  intro x
+  rw [Std.ExtTreeSet.mem_insert, Std.ExtTreeSet.mem_union_iff,
+    Iris.Std.LawfulSet.mem_singleton, Std.LawfulEqCmp.compare_eq_iff_eq]
+  constructor
+  · rintro (rfl | h)
+    · left; rfl
+    · right; exact h
+  · rintro (rfl | h)
+    · left; rfl
+    · right; exact h
+
+/-- Allocate a fresh prophecy variable. Mirrors `wp_new_proph` in `iris.heap_lang.lifting`. -/
+theorem wp_new_proph :
+    ⊢ WP (Exp.newProph : Exp) @ s; E
+        {{ v, ∃ p : ProphId, ∃ pvs : List (Val × Val),
+              ⌜v = .lit (.prophecy p)⌝ ∗ proph p pvs }} := by
+  iapply wp_lift_atomic_step rfl
+  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  -- Pick a prophecy id fresh in the current `usedProphId`.
+  obtain ⟨pf, Hpf⟩ := Iris.Std.List.fresh σ₁.usedProphId.toList
+  have Hpf_contains : ¬ σ₁.usedProphId.contains pf := by
+    intro hc; exact Hpf (Std.ExtTreeSet.mem_toList.mpr hc)
+  have Hred : BaseStep.Reducible (Exp.newProph, σ₁) :=
+    ⟨[], _, _, [], BaseStep.newProphS σ₁ pf Hpf_contains⟩
+  isplitr
+  · ipureintro
+    cases s <;> simp only [Stuckness.MaybeReducible]
+    exact primStep_reducible_of_baseStep_reducible Hred
+  iintro !> %e₂ %σ₂ %eₜ %Heq Hcr
+  cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
+  rename_i p' Hp'
+  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
+  -- Convert `¬ contains` to `∉` for `ProphMap.new_proph`.
+  have Hp'_mem : p' ∉ σ₁.usedProphId :=
+    fun hmem => Hp' (Std.ExtTreeSet.mem_iff_contains.symm.mp hmem)
+  imod (ProphMap.new_proph p' σ₁.usedProphId obs' Hp'_mem) $$ Hproph
+    with ⟨Hproph', Htok⟩
+  imodintro
+  simp only [stateInterp]
+  iframe Hσ
+  isplitl [Hproph']
+  · -- Bridge `{p'} ∪ σ₁.usedProphId` (from new_proph) and `σ₁.usedProphId.insert p'`
+    -- (from the newProphS constructor's output).
+    rw [show ({p'} ∪ σ₁.usedProphId : Std.ExtTreeSet ProphId compare)
+         = σ₁.usedProphId.insert p' from usedProph_insert_eq.symm]
+    iexact Hproph'
+  isplitl [Htok]
+  · iexists hl_val(#(BaseLit.prophecy p'))
+    isplit
+    · ipureintro; simp [toVal]
+    iexists p', _
+    iframe Htok
+    ipureintro; rfl
+  · simp only [Algebra.BigOpL.bigOpL_nil]; itrivial
 
 end Lifting
 
