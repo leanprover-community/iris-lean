@@ -33,7 +33,7 @@ elab  "iloeb" "as" IH:binderIdent "generalizing" hs:(colGt selPat)* : tactic => 
         -- We have applied BI.loeb_wand_intuitionistically
         let goal := q(iprop(□ (□ ▷ $goal -∗ $goal)))
         iModIntroCore hyps goal (← `(_)) fun hyps goal => do
-        iIntroCore hyps goal [(IH, .intro <| .intuitionistic <| .one IH)] k
+        iIntroCore hyps goal [(IH, .intro <| .intuitionistic <| .one IH)] (k · · addBIGoal)
       return q($(pf').trans $pf)
 
     mvid.assign expr
