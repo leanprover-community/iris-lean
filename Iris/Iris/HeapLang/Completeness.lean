@@ -655,61 +655,115 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
           · iexact Hproph_inv
       · itrivial
   | resolveS p v e σ w σ' κs ts hbase hp =>
-      -- Resolve is atomic since the inner step `hbase` produces a value in one
-      -- base step. We recurse on `hbase` to get the completeness equation for
-      -- the inner expression `e`, then lift through the `Resolve` wrapper.
+      -- Mirror of `completeness_generic.v:127–159`. Resolve is atomic since the
+      -- inner step `hbase` produces a value in one base step. We recurse on
+      -- `hbase` to get the completeness equation for `e`, then lift through
+      -- the `Resolve` wrapper via `wp_resolve_strong`.
       have IH : heap_inv (GF := GF) σ ⊢ iprop(|={E}=> baseCompletenessGoal e σ E) :=
         wp_base_completeness e σ E ⟨κs, _, _, _, hbase⟩
-      imodintro
-      ileft
       have hatom : Atomic Atomicity.StronglyAtomic
           (Exp.resolve e (.val (.lit (.prophecy p))) (.val w)) :=
         base_step_to_val_atomic Atomicity.StronglyAtomic
           (BaseStep.resolveS p v e σ w σ' κs efs hbase hp)
+      have hatom_e : Atomic Atomicity.StronglyAtomic e :=
+        base_step_to_val_atomic Atomicity.StronglyAtomic hbase
+      have hne_e : toVal e = none := EctxLanguage.val_stuck hbase
+      have hp_mem : p ∈ σ.usedProphId := Std.ExtTreeSet.mem_iff_contains.symm.mpr hp
+      imodintro
+      ileft
       iframe %hatom
       iintro %Φ Hstep
-      -- Destructure `heap_inv σ` and extract `∃ pvs, proph p pvs` from the proph
-      -- conjunct using `hp : p ∈ σ.usedProphId`.
       icases Hinv with ⟨Hmap, Hproph_inv⟩
-      have hp_mem : p ∈ σ.usedProphId := Std.ExtTreeSet.mem_iff_contains.symm.mpr hp
       icases Iris.BI.BigSepS.bigSepS_elem_of_acc hp_mem $$ Hproph_inv
         with ⟨⟨%pvs, Htok⟩, HcloseProph⟩
-      -- Reconstruct `heap_inv σ` for the `IH` application.
-      ihave Hinv_full : iprop(heap_inv σ) $$ [Hmap HcloseProph Htok]
+      iapply (wp_resolve_strong hatom_e hne_e) $$ Htok
+      iintro Hele
+      ihave Hinv_full : iprop(heap_inv σ) $$ [Hmap HcloseProph Hele]
       · unfold heap_inv
         iframe Hmap
         iapply HcloseProph
-        iexists pvs; iexact Htok
-      -- Open the inner completeness via `IH` (wrapping the WP goal in a fupd).
+        iexists pvs; iexact Hele
       ihave Hinner : iprop(|={E}=> baseCompletenessGoal e σ E) $$ [Hinv_full]
       · iapply IH; iexact Hinv_full
       iapply fupd_wp
       imod Hinner with H
-      -- `e` is atomic (it base-steps to a value via `hbase`).
-      have hatom_e : Atomic Atomicity.StronglyAtomic e :=
-        base_step_to_val_atomic Atomicity.StronglyAtomic hbase
-      -- The inner expression `e` is not itself a value (it base-steps).
-      have hne_e : toVal e = none := EctxLanguage.val_stuck hbase
-      icases H with (⟨_hatom_e', _Hwp_atom⟩ | ⟨_Hinv_back, _Hwp_nonatom⟩)
-      · -- Atomic disjunct of the inner completeness for `e`.
-        --
-        -- The intended argument: use `wp_resolve_strong` (with `Htok` for the proph
-        -- token — note the current structure consumes Htok above in building
-        -- Hinv_full, so a restructure is needed to keep Htok in scope here) to
-        -- lift `WP e` through the `Resolve` wrapper. Then apply `Hwp_atom` with the
-        -- magic premise body that, given an inner prim step, converts to a base step
-        -- via `SubredexesAreValues e` + `EctxLanguage.baseStep_of_primStep`, builds
-        -- the outer Resolve prim step via `BaseStep.resolveS`, feeds it to the outer
-        -- `Hstep`, then closes the proph-token swap by rebuilding `heap_inv σ_e`'s
-        -- proph conjunct via `HcloseProph` with the updated `Htok' : proph p pvs'`.
-        sorry
-      · -- Non-atomic disjunct: the inner step's completeness gives `heap_inv σ` back.
-        -- Symmetric to the atomic case but with non-atomic plumbing — extract `Htok`
-        -- afresh from the returned `heap_inv σ`'s proph conjunct (via `bigSepS_elem_of_acc`
-        -- + `hp_mem`), then proceed as above. For our use (`hbase` produces a value in
-        -- one step), `e` is `Atomic StronglyAtomic`, so this disjunct is typically not
-        -- chosen by the inner completeness proof.
-        sorry
+      imodintro
+      icases H with (⟨_hatom_e', Hrst⟩ | ⟨Hinv_back, Hrst_nonatom⟩)
+      · -- Atomic disjunct: feed `Hrst` the resolve-strong post for `e`.
+        iapply Hrst
+        iintro !> %κ_e %v_e %σ_e %efs_e %Hprim_e
+        have Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e :=
+          primStep_val_baseStep Hprim_e
+        have hp_contains : σ.usedProphId.contains p :=
+          Std.ExtTreeSet.mem_iff_contains.mp hp_mem
+        have Hbase_outer : BaseStep
+            (Exp.resolve e (.val (.lit (.prophecy p))) (.val w)) σ
+            (κ_e ++ [(p, (v_e, w))]) (.val v_e) σ_e efs_e :=
+          BaseStep.resolveS p v_e e σ w σ_e κ_e efs_e Hbase_e hp_contains
+        have Hprim_outer : PrimStep.primStep
+            (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ)
+            (κ_e ++ [(p, (v_e, w))])
+            ((ToVal.ofVal v_e : Exp), σ_e, efs_e) :=
+          EctxLanguage.primStep_of_baseStep Hbase_outer
+        imod Hstep $$ %_ %_ %_ %_ %Hprim_outer with ⟨Hwp_outer, Hefs⟩
+        imodintro
+        iframe Hefs
+        iintro ⟨Hmap_e, Hproph_inv_e⟩
+        have hp_mem_e : p ∈ σ_e.usedProphId :=
+          base_step_more_proph_ids Hbase_e p hp_mem
+        icases Iris.BI.BigSepS.bigSepS_elem_of_acc hp_mem_e $$ Hproph_inv_e
+          with ⟨⟨%pvs2, Hele2⟩, HcloseProph_e⟩
+        iexists pvs2
+        iframe Hele2
+        iintro %pvs'' %heq Hele2'
+        subst heq
+        iapply Hwp_outer
+        unfold heap_inv
+        iframe Hmap_e
+        iapply HcloseProph_e
+        iexists pvs''; iexact Hele2'
+      · -- Non-atomic disjunct: symmetric to the atomic case, plus extracting
+        -- the single prim step from the trajectory via `primSteps_atomic`.
+        iapply Hrst_nonatom
+        iintro !> %e₂_e %efs_e Htraj_e
+        imod Htraj_e $$ %_ Hinv_back with ⟨%κ_e, %σ_e, %Hprims, ⟨Hmap_e, Hproph_inv_e⟩⟩
+        obtain ⟨Hprim_e, hval_e⟩ :=
+          ProgramLogic.primSteps_atomic (e := e) hatom_e Hprims
+        obtain ⟨v_e, rfl⟩ : ∃ v_e, e₂_e = Exp.val v_e := by
+          match e₂_e, hval_e with
+          | .val v_e, _ => exact ⟨v_e, rfl⟩
+        have Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e :=
+          primStep_val_baseStep Hprim_e
+        have hp_contains : σ.usedProphId.contains p :=
+          Std.ExtTreeSet.mem_iff_contains.mp hp_mem
+        have Hbase_outer : BaseStep
+            (Exp.resolve e (.val (.lit (.prophecy p))) (.val w)) σ
+            (κ_e ++ [(p, (v_e, w))]) (.val v_e) σ_e efs_e :=
+          BaseStep.resolveS p v_e e σ w σ_e κ_e efs_e Hbase_e hp_contains
+        have Hprim_outer : PrimStep.primStep
+            (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ)
+            (κ_e ++ [(p, (v_e, w))])
+            ((ToVal.ofVal v_e : Exp), σ_e, efs_e) :=
+          EctxLanguage.primStep_of_baseStep Hbase_outer
+        imod Hstep $$ %_ %_ %_ %_ %Hprim_outer with ⟨Hwp_outer, Hefs⟩
+        imodintro
+        have hp_mem_e : p ∈ σ_e.usedProphId :=
+          base_step_more_proph_ids Hbase_e p hp_mem
+        icases Iris.BI.BigSepS.bigSepS_elem_of_acc hp_mem_e $$ Hproph_inv_e
+          with ⟨⟨%pvs2, Hele2⟩, HcloseProph_e⟩
+        isplitl [Hele2 Hwp_outer Hmap_e HcloseProph_e]
+        · -- WP (Val v_e) {{ strong-post }} — apply wp_value', witness pvs2.
+          iapply wp_value'
+          iexists pvs2
+          iframe Hele2
+          iintro %pvs'' %heq Hele2'
+          subst heq
+          iapply Hwp_outer
+          unfold heap_inv
+          iframe Hmap_e
+          iapply HcloseProph_e
+          iexists pvs''; iexact Hele2'
+        · iexact Hefs
 termination_by e₁
 
 section Framework

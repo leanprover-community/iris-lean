@@ -11,6 +11,7 @@ public import Iris.ProgramLogic.EctxiLanguage
 public import Std.Data.ExtTreeMap
 public import Std.Data.ExtTreeSet
 public import Iris.Std.FromMathlib
+public import Iris.Std.GenSetsInstances
 
 @[expose] public section
 namespace Iris.HeapLang
@@ -425,7 +426,8 @@ private theorem fill_isSome_empty {K : List ECtxItem} {e : Exp}
 
 /-- A primitive step reaching a value is a base step (the evaluation context is
 forced to be empty). -/
-private theorem primStep_val_baseStep {e : Exp} {σ : State} {obs : List Observation}
+@[rocq_alias prim_step_to_val_is_base_step]
+theorem primStep_val_baseStep {e : Exp} {σ : State} {obs : List Observation}
     {v : Val} {σ' : State} {efs : List Exp}
     (h : PrimStep.primStep (e, σ) obs (Exp.val v, σ', efs)) :
     BaseStep e σ obs (Exp.val v) σ' efs := by
@@ -477,5 +479,154 @@ theorem base_step_to_val_atomic
 /- TODO: Coq has a `Hint Extern (Atomic _ _) => by eapply base_step_to_val_atomic`.
    No Lean equivalent — `BaseStep` is not a typeclass, so we can't make this
    a real instance. At use sites, manually apply `base_step_to_val_atomic`. -/
+
+/-- One cannot deallocate prophecy variables: any base step preserves
+`usedProphId` modulo extension. Mirrors Rocq's `base_step_more_proph_ids`. -/
+@[rocq_alias base_step_more_proph_ids]
+theorem base_step_more_proph_ids
+    {e : Exp} {σ : State} {κs : List Observation}
+    {e' : Exp} {σ' : State} {efs : List Exp}
+    (h : BaseStep e σ κs e' σ' efs) :
+    σ.usedProphId ⊆ σ'.usedProphId := by
+  induction h with
+  | newProphS σ p _ =>
+    show σ.usedProphId ⊆ σ.usedProphId.insert p
+    intro x hx
+    rw [Std.ExtTreeSet.mem_insert]; right; exact hx
+  | resolveS _ _ _ _ _ _ _ _ _ _ IH => exact IH
+  | cmpXchgS _ _ _ _ σ b _ _ _ =>
+    cases b <;>
+      exact (Iris.Std.LawfulSet.subset_refl (S := Std.ExtTreeSet ProphId compare))
+  | _ => exact (Iris.Std.LawfulSet.subset_refl (S := Std.ExtTreeSet ProphId compare))
+
+/-- Any prim-step of `Resolve e (Val vp) (Val vt)` whose inner expression is
+strongly atomic is in fact a base step. The eval-context for the prim-step is
+forced to be empty: if it ended in a `ResolveL` item, atomicity would force the
+context to be empty (contradicting its non-emptiness); the `ResolveM`/`ResolveR`
+sub-shapes would force `vp` / `vt` to take a base step from a value, which is
+also impossible. Mirrors Rocq's `step_resolve`. -/
+@[rocq_alias step_resolve]
+theorem step_resolve {e : Exp} {vp vt : Val} {σ₁ σ₂ : State}
+    {κ : List Observation} {e₂ : Exp} {efs : List Exp}
+    (hatom : Language.Atomic (State := State) (Obs := Observation)
+      Language.Atomicity.StronglyAtomic e)
+    (hprim : PrimStep.primStep
+              (Exp.resolve e (.val vp) (.val vt), σ₁) κ (e₂, σ₂, efs)) :
+    BaseStep (Exp.resolve e (.val vp) (.val vt)) σ₁ κ e₂ σ₂ efs := by
+  generalize hsrc : Exp.resolve e (.val vp) (.val vt) = src at hprim
+  obtain ⟨Hbase⟩ := hprim
+  rename_i e₁' e₂' K
+  -- hsrc : Exp.resolve e (Val vp) (Val vt) = fill K e₁'
+  -- goal : BaseStep (Exp.resolve e (Val vp) (Val vt)) σ₁ κ (fill K e₂') σ₂ efs
+  rcases hrev : K.reverse with _ | ⟨Ki, K_rev_rest⟩
+  · -- K = []
+    have hK : K = [] := List.reverse_eq_nil_iff.mp hrev
+    subst hK
+    simp only [EctxItemLanguage.fill_nil] at hsrc ⊢
+    subst hsrc
+    exact Hbase
+  · -- K = K_rev_rest.reverse ++ [Ki]
+    have hK : K = K_rev_rest.reverse ++ [Ki] := by
+      have hh := congrArg List.reverse hrev; simp at hh; exact hh
+    subst hK
+    simp only [EctxItemLanguage.fill_append, EctxItemLanguage.fill_cons,
+        EctxItemLanguage.fill_nil] at hsrc ⊢
+    -- hsrc : Exp.resolve e (Val vp) (Val vt) = fillItem Ki (fill K_rev_rest.reverse e₁')
+    -- goal : BaseStep ... σ₁ κ (fillItem Ki (fill K_rev_rest.reverse e₂')) σ₂ efs
+    generalize hK' : K_rev_rest.reverse = K' at *
+    cases Ki with
+    | resolveL K_inner v1 v2 =>
+      simp only [EctxItemLanguage.fillItem, ECtxItem.fill, Exp.resolve.injEq] at hsrc
+      obtain ⟨h_e_eq, _, _⟩ := hsrc
+      -- Build prim_step of e via K' ++ [K_inner]
+      have hprim_e : PrimStep.primStep (e, σ₁) κ
+          (EctxItemLanguage.fillItem K_inner (fill K' e₂'), σ₂, efs) := by
+        rw [h_e_eq]
+        have base_ctx : PrimStep.primStep
+            (EvContext.fill (K' ++ [K_inner]) e₁', σ₁) κ
+            (EvContext.fill (K' ++ [K_inner]) e₂', σ₂, efs) :=
+          EctxLanguage.fill_primStep (K' ++ [K_inner])
+            (EctxLanguage.primStep_of_baseStep Hbase)
+        simp only [EctxItemLanguage.fill_append, EctxItemLanguage.fill_cons,
+          EctxItemLanguage.fill_nil] at base_ctx
+        exact base_ctx
+      have hval : (expToVal (EctxItemLanguage.fillItem K_inner (fill K' e₂'))).isSome :=
+        hatom.atomic hprim_e
+      rw [fillItem_expToVal_none] at hval
+      simp at hval
+    | resolveM e0 v2 =>
+      simp only [EctxItemLanguage.fillItem, ECtxItem.fill, Exp.resolve.injEq] at hsrc
+      obtain ⟨_, h_vp_eq, _⟩ := hsrc
+      -- fill K' e₁' = Val vp
+      have hval_e1 : (expToVal e₁').isSome :=
+        EctxItemLanguage.fill_val (K := K') (by rw [← h_vp_eq]; rfl)
+      have hstuck : expToVal e₁' = none := EctxLanguage.val_stuck Hbase
+      rw [hstuck] at hval_e1
+      simp at hval_e1
+    | resolveR e0 e1 =>
+      simp only [EctxItemLanguage.fillItem, ECtxItem.fill, Exp.resolve.injEq] at hsrc
+      obtain ⟨_, _, h_vt_eq⟩ := hsrc
+      -- fill K' e₁' = Val vt
+      have hval_e1 : (expToVal e₁').isSome :=
+        EctxItemLanguage.fill_val (K := K') (by rw [← h_vt_eq]; rfl)
+      have hstuck : expToVal e₁' = none := EctxLanguage.val_stuck Hbase
+      rw [hstuck] at hval_e1
+      simp at hval_e1
+    | _ => simp [EctxItemLanguage.fillItem, ECtxItem.fill] at hsrc
+
+/-- Inversion lemma for `Resolve` prim-steps: any prim-step of
+`Resolve e (Val (LitProphecy p)) (Val w)` with `e` atomic decomposes into an
+inner base-step of `e` to a value, with the trailing observation
+`(p, (v_inner, w))` tacked onto the inner observation list. Packages the
+constructor-level destructuring that `cases` on `step_resolve` would expose. -/
+theorem step_resolve_decompose {e : Exp} {p : ProphId} {w : Val}
+    {σ₁ σ₂ : State} {κ : List Observation} {e₂ : Exp} {efs : List Exp}
+    (hatom : Language.Atomic (State := State) (Obs := Observation)
+      Language.Atomicity.StronglyAtomic e)
+    (hstep : PrimStep.primStep
+        (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ₁) κ (e₂, σ₂, efs)) :
+    ∃ (κ_inner : List Observation) (v_inner : Val),
+      κ = κ_inner ++ [(p, (v_inner, w))] ∧
+      e₂ = Exp.val v_inner ∧
+      BaseStep e σ₁ κ_inner (.val v_inner) σ₂ efs ∧
+      σ₁.usedProphId.contains p := by
+  have hbase := step_resolve hatom hstep
+  cases hbase with
+  | resolveS p_n v_n e_n σ_n w_n σ'_n κs_n ts_n hb hp =>
+    exact ⟨κs_n, v_n, rfl, rfl, hb, hp⟩
+
+/-- An atomic, reducible `e` whose prophecy id `p` is live can be wrapped in
+`Resolve _ (proph p) v` while remaining reducible: tack a fresh observation
+`(p, (v_e, v))` onto the inner step's observation list. Mirrors Rocq's
+`resolve_reducible`. -/
+@[rocq_alias resolve_reducible]
+theorem resolve_reducible
+    {e : Exp} {σ : State} {p : ProphId} {v : Val}
+    (hatom : Language.Atomic (State := State) (Obs := Observation)
+      Language.Atomicity.StronglyAtomic e)
+    (hred : BaseStep.Reducible (e, σ))
+    (hin : σ.usedProphId.contains p) :
+    BaseStep.Reducible
+      (Exp.resolve e (.val (.lit (.prophecy p))) (.val v), σ) := by
+  obtain ⟨κ, e', σ', efs, hstep⟩ := hred
+  have hprim : PrimStep.primStep (e, σ) κ (e', σ', efs) :=
+    EctxLanguage.primStep_of_baseStep hstep
+  have hval : (expToVal e').isSome := hatom.atomic hprim
+  obtain ⟨w', rfl⟩ : ∃ w', e' = Exp.val w' := by
+    cases e' with
+    | val w' => exact ⟨w', rfl⟩
+    | _ => simp [expToVal] at hval
+  refine ⟨κ ++ [(p, (w', v))], Exp.val w', σ', efs, ?_⟩
+  exact BaseStep.resolveS p w' e σ v σ' κ efs hstep hin
+
+/-- Lifted to `PrimStep`. Mirrors Rocq's `prim_step_more_proph_ids`. -/
+@[rocq_alias prim_step_more_proph_ids]
+theorem prim_step_more_proph_ids
+    {e : Exp} {σ : State} {κs : List Observation}
+    {e' : Exp} {σ' : State} {efs : List Exp}
+    (h : PrimStep.primStep (e, σ) κs (e', σ', efs)) :
+    σ.usedProphId ⊆ σ'.usedProphId := by
+  obtain ⟨hbase⟩ := h
+  exact base_step_more_proph_ids hbase
 
 end Iris.HeapLang

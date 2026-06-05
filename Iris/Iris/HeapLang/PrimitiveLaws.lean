@@ -558,18 +558,162 @@ theorem wp_new_proph :
     ipureintro; rfl
   · simp only [Algebra.BigOpL.bigOpL_nil]; itrivial
 
+/-- The step-branch of `wp.pre`, exposed as the converse of `wp_lift_step_fupd`.
+Given `e` non-value, a WP for `e` unfolds to the universal step-continuation. -/
+theorem wp_open {Φ : Val → IProp GF} {e : Exp} :
+    WP e @ s; E {{ Φ }} ⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
+  wp_unfold.mp
+
 /-- `Resolve e (Val (LitProphecy p)) (Val w)` lifts a WP for the inner expression
 `e` through the `Resolve` wrapper, consuming the front observation `(v_e, w)`
-from the prophecy `p`. Mirrors `wp_resolve_strong` in Rocq heap_lang's
-`primitive_laws.v`. -/
+from the prophecy `p`. The inner WP is allowed to use the prophecy token
+`proph p pvs` while reducing `e`; on completion the postcondition is closed
+under reattaching the front observation. Mirrors `wp_resolve_strong` in Rocq
+heap_lang's `primitive_laws.v`. -/
 theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
     (hatom : Language.Atomic (State := State) (Obs := Observation)
       Language.Atomicity.StronglyAtomic e)
     (hne : toVal e = none) :
     proph p pvs -∗
-    WP e @ s; E {{ v_e, ∀ pvs', ⌜pvs = (v_e, w) :: pvs'⌝ -∗ proph p pvs' ={E}=∗ Φ v_e }} -∗
+    (proph p pvs -∗ WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
+      ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }}) -∗
     WP (Exp.resolve e (.val (.lit (.prophecy p))) (.val w)) @ s; E {{ Φ }} := by
-  sorry
+  -- Mirrors Rocq `iris/heap_lang/primitive_laws.v:726–758`. The proof breaks
+  -- the WP abstraction by unfolding `wp_unfold` directly on the inner WP for
+  -- `e`, reverse-inducting on the outer observation list, and threading the
+  -- trailing observation through the prophecy map via `ProphMap.resolve_proph`.
+  iintro Hp HWPe
+  iapply wp_lift_step_fupdN rfl
+  iintro %σ₁ %ns %obs %obs' %nt Hσ
+  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hheap, Hpmap⟩
+  -- Extract `p ∈ σ₁.usedProphId` (pure conclusion via `ProphMap.agree`,
+  -- preserving `Hpmap` and `Hp` via the `$` frame markers).
+  icases ProphMap.agree (obs ++ obs') σ₁.usedProphId p pvs $$ [$Hpmap $Hp]
+    with %Hagree
+  have Hp_mem : p ∈ σ₁.usedProphId := Hagree.1
+  have hp_contains : σ₁.usedProphId.contains p :=
+    Std.ExtTreeSet.mem_iff_contains.mp Hp_mem
+  -- Feed the prophecy token to the inner WP wand.
+  ihave HWPe : iprop(WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
+      ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }})
+      $$ [Hp HWPe]
+  · iapply HWPe; iexact Hp
+  -- Convert HWPe via `wp_open` into `wp.pre`; then reduce via `hne` using
+  -- the Lean-eq → iris-hyp bridge (`rw` on a Lean Prop goal).
+  ihave HWPe := wp_open $$ HWPe
+  -- Now HWPe : wp.pre s _ E e Φ_strong; reduce via match on `toVal e = none`.
+  -- Reduce `wp.pre` using `hne` via a Lean-level rewrite on the `ihave` subgoal.
+  -- We use `_` heavily and let Lean infer the unfolded shape.
+  ihave HWPe := (show wp.pre s (Wp.wp (PROP := IProp GF) s) E e
+      (fun v_e => iprop(∃ pvs', proph p pvs' ∗
+        ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e)) ⊢ _
+    by simp only [wp.pre, hne]; exact Iris.BI.BIBase.Entails.rfl) $$ HWPe
+  -- Reverse-induct on the outer observation list `obs`.
+  rcases hrev : obs.reverse with _ | ⟨lastObs, init_rev⟩
+  · -- obs = []. Apply inner WP with inner obs = [], inner obs' = obs'.
+    have hobs : obs = [] := List.reverse_eq_nil_iff.mp hrev
+    subst hobs
+    ihave Hσ_e : iprop(stateInterp σ₁ ns ([] ++ obs') nt) $$ [Hheap Hpmap]
+    · iapply (stateInterp_split σ₁ ns ([] ++ obs') nt).mpr
+      iframe Hheap
+      iexact Hpmap
+    imod HWPe $$ %_ %_ %_ %_ %_ Hσ_e with ⟨%Hred_e, HWPe⟩
+    imodintro
+    isplitr
+    · ipureintro
+      cases s <;> simp only [Stuckness.MaybeReducible]
+      -- For NotStuck: extract the inner step from `Hred_e : PrimStep.Reducible`,
+      -- convert to BaseStep via atomicity, then lift through Resolve.
+      obtain ⟨κ_h, e'_h, σ'_h, efs_h, hprim_h⟩ := Hred_e
+      have hval_h : (toVal e'_h).isSome := hatom.atomic hprim_h
+      obtain ⟨v_h, rfl⟩ : ∃ v_h, e'_h = Exp.val v_h := by
+        match e'_h, hval_h with | .val v_h, _ => exact ⟨v_h, rfl⟩
+      have hbase_h : BaseStep e σ₁ κ_h (.val v_h) σ'_h efs_h :=
+        primStep_val_baseStep hprim_h
+      exact EctxLanguage.primStep_reducible_of_baseStep_reducible
+        (resolve_reducible hatom ⟨κ_h, _, σ'_h, efs_h, hbase_h⟩ hp_contains)
+    iintro %e₂ %σ₂ %eₜ %Hstep _Hcred
+    exfalso
+    obtain ⟨κ_inner, v_inner, hκ_eq, _, _, _⟩ :=
+      step_resolve_decompose hatom Hstep
+    exact List.cons_ne_nil _ _ (List.append_eq_nil_iff.mp hκ_eq.symm).2
+  · -- obs = init_rev.reverse ++ [lastObs]. Apply inner WP with
+    -- inner obs = init_rev.reverse, inner obs' = lastObs :: obs'.
+    have hobs : obs = init_rev.reverse ++ [lastObs] := by
+      have hh := congrArg List.reverse hrev; simp at hh; exact hh
+    subst hobs
+    have hassoc : (init_rev.reverse ++ [lastObs]) ++ obs' =
+        init_rev.reverse ++ (lastObs :: obs') := by simp
+    ihave Hσ_e : iprop(stateInterp σ₁ ns (init_rev.reverse ++ (lastObs :: obs')) nt)
+        $$ [Hheap Hpmap]
+    · iapply (stateInterp_split σ₁ ns (init_rev.reverse ++ (lastObs :: obs')) nt).mpr
+      iframe Hheap
+      rw [← hassoc]; iexact Hpmap
+    imod HWPe $$ %_ %_ %_ %_ %_ Hσ_e with ⟨%Hred_e, HWPe⟩
+    imodintro
+    isplitr
+    · ipureintro
+      cases s <;> simp only [Stuckness.MaybeReducible]
+      -- For NotStuck: extract the inner step from `Hred_e : PrimStep.Reducible`,
+      -- convert to BaseStep via atomicity, then lift through Resolve.
+      obtain ⟨κ_h, e'_h, σ'_h, efs_h, hprim_h⟩ := Hred_e
+      have hval_h : (toVal e'_h).isSome := hatom.atomic hprim_h
+      obtain ⟨v_h, rfl⟩ : ∃ v_h, e'_h = Exp.val v_h := by
+        match e'_h, hval_h with | .val v_h, _ => exact ⟨v_h, rfl⟩
+      have hbase_h : BaseStep e σ₁ κ_h (.val v_h) σ'_h efs_h :=
+        primStep_val_baseStep hprim_h
+      exact EctxLanguage.primStep_reducible_of_baseStep_reducible
+        (resolve_reducible hatom ⟨κ_h, _, σ'_h, efs_h, hbase_h⟩ hp_contains)
+    iintro %e₂ %σ₂ %eₜ %Hstep Hcred
+    obtain ⟨κ_inner, v_inner, hκ_eq, he₂_eq, Hbase_e, _⟩ :=
+      step_resolve_decompose hatom Hstep
+    -- κ_inner ++ [(p, (v_inner, w))] = init_rev.reverse ++ [lastObs]
+    -- Cancel: κ_inner = init_rev.reverse, lastObs = (p, (v_inner, w))
+    obtain ⟨hκ_inner_eq, hlast_eq⟩ :
+        κ_inner = init_rev.reverse ∧ lastObs = (p, (v_inner, w)) := by
+      have hlen : init_rev.reverse.length = κ_inner.length := by
+        have h : (init_rev.reverse ++ [lastObs]).length =
+                 (κ_inner ++ [(p, (v_inner, w))]).length :=
+          congrArg List.length hκ_eq
+        simp only [List.length_append, List.length_cons, List.length_nil] at h
+        omega
+      have ⟨h1, h2⟩ := List.append_inj hκ_eq hlen
+      refine ⟨h1.symm, ?_⟩
+      have := List.cons_eq_cons.mp h2
+      exact this.1
+    subst hκ_inner_eq; subst hlast_eq; subst he₂_eq
+    -- Now apply the inner WP step continuation to the inner base step. The
+    -- shape `={∅}▷=∗^[n+1] |={∅,E}=> X` for n=0 unfolds to
+    -- `|={∅}=∗ ▷ |={∅,E}=> X` (matching the surrounding goal shape).
+    have Hprim_e : PrimStep.primStep (e, σ₁) init_rev.reverse
+        (Exp.val v_inner, σ₂, eₜ) :=
+      EctxLanguage.primStep_of_baseStep Hbase_e
+    ispecialize HWPe $$ %_ %_ %_ %Hprim_e Hcred
+    -- HWPe : ={∅}▷=∗^[n+1] |={∅,E}=> X_inner. Goal: ={∅}▷=∗^[n+1] |={∅,E}=> Y_outer.
+    -- Bridge them via `step_fupdN_wand`.
+    iapply step_fupdN_wand $$ HWPe
+    iintro HWPe
+    imod HWPe with ⟨Hσ_post, HWPval, Hefs⟩
+    icases (stateInterp_split σ₂ (ns + 1) ((p, (v_inner, w)) :: obs') (nt + eₜ.length)).mp
+      $$ Hσ_post with ⟨Hheap_e, Hpmap_e⟩
+    -- HWPval : WP (Val v_inner) {{ strong-post }}; convert to `|={E}=> strong-post v_inner`.
+    ihave HWPval := wp_value_fupd'.mp $$ HWPval
+    imod HWPval with ⟨%pvs', Hele, HΦ⟩
+    -- The prophMapInterp now sees `(p, (v_inner, w)) :: obs'` at σ₂. Use
+    -- `ProphMap.resolve_proph` to consume the front observation.
+    icombine Hpmap_e Hele as Hcomb
+    imod (ProphMap.resolve_proph (F := PNat) (V := Val × Val) (H := ProphMapF)
+            p (v_inner, w) obs' σ₂.usedProphId pvs') $$ Hcomb
+      with ⟨%pvs'', %hpvs'_eq, Hpmap_e, Hele⟩
+    imodintro
+    isplitl [Hheap_e Hpmap_e]
+    · iapply (stateInterp_split σ₂ (ns + 1) obs' (nt + eₜ.length)).mpr
+      iframe Hheap_e
+      iexact Hpmap_e
+    isplitr [Hefs]
+    · iapply wp_value'
+      iapply HΦ $$ %pvs'' %hpvs'_eq Hele
+    · iexact Hefs
 
 end Lifting
 
