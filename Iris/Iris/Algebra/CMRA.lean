@@ -1619,10 +1619,6 @@ instance {ma : Option α} [∀ a : α, IdFree a] [∀ a : α, Cancelable a] : Ca
   · simp [op]
   · infer_instance
 
-@[rocq_alias Some_core_id]
-instance {x : α} [CMRA.CoreId x] : CMRA.CoreId (some x) where
-  core_id := core_id (x := x)
-
 @[rocq_alias cmra_validN_Some_includedN]
 theorem validN_of_incN_validN {a b : α} (Hv : ✓{n} a) (Hinc : some b ≼{n} some a) : ✓{n} b :=
   validN_of_incN (α := Option α) Hinc Hv

@@ -443,7 +443,7 @@ instance Option.merge_ne [OFE α] {op : α → α → α} [NonExpansive₂ op] :
 instance Option.bind_fun_ne [OFE α] [OFE β] (f : α → Option β) [NonExpansive f] : NonExpansive (flip Option.bind f) where
   ne _ _ x2 Hx := match x2 with
     | some _ => (dist_some Hx).choose_spec.left ▸ (NonExpansive.ne (f := f) (dist_some Hx).choose_spec.right.symm)
-    | none => (dist_none Hx).symm ▸ .rfl
+    | none => (dist_none.mp Hx).symm ▸ .rfl
 
 theorem Option.bind_dist [OFE α] [OFE β] {x : Option α} {f g : α → Option β} (H : ∀ x, f x ≡{n}≡ g x) : Option.bind x f ≡{n}≡ Option.bind x g :=
   match x with

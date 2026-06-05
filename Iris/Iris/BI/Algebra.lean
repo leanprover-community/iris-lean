@@ -34,15 +34,16 @@ theorem prod_includedI [Sbi PROP] [CMRA A] [CMRA B] (x y : A × B) :
   refine .trans ?_ siPure_and
   refine siPure_mono_bi ?_
   refine siPure_exist.symm.trans ?_
-  refine .trans ?_ (and_congr_l siPure_exist)
-  refine .trans ?_ (and_congr_r siPure_exist)
+  refine .trans ?_ (and_congr_left siPure_exist)
+  refine .trans ?_ (and_congr_right siPure_exist)
   refine .trans ?_ siPure_and
   refine siPure_mono_bi ?_
   cases x with | mk x1 x2 =>
   cases y with | mk y1 y2 =>
   simp only [CMRA.op, Prod.op]
   constructor
-  · intro n ⟨x, ⟨⟨⟨a, b⟩, H1⟩, H2⟩⟩
+  ·
+    intro n ⟨x, ⟨⟨⟨a, b⟩, H1⟩, H2⟩⟩
     refine ⟨⟨x, ⟨⟨a, ?_⟩, H2⟩⟩, ⟨x, ⟨⟨b, ?_⟩, H2⟩⟩⟩
     simp only [←H1]
 
@@ -53,6 +54,40 @@ theorem prod_includedI [Sbi PROP] [CMRA A] [CMRA B] (x y : A × B) :
   · sorry
 
 end prod
+
+section option
+
+open BI Std BIBase.BiEntails
+
+@[rocq_alias option_validI]
+theorem option_validI [Sbi PROP] [CMRA A] {mx : Option A} :
+  internalCmraValid mx ⊣⊢@{PROP} mx.elim iprop(True) internalCmraValid := by
+  sorry
+
+@[rocq_alias option_includedI]
+theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
+  internalCmraIncluded mx my ⊣⊢@{PROP}
+    match mx, my with
+      | some x, some y => iprop((internalCmraIncluded x y) ∨ (internalEq x y))
+      | none, _ => iprop(True)
+      | some x, none => iprop(False) := by
+  sorry
+
+@[rocq_alias option_included_totalI]
+theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Option A} :
+  internalCmraIncluded mx my ⊣⊢@{PROP}
+    match mx, my with
+      | some x, some y => internalCmraIncluded x y
+      | none, _ => iprop(True)
+      | some x, none => iprop(False) := by
+  sorry
+
+@[rocq_alias Some_included_totalI]
+theorem Some_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {x y : A} :
+  internalCmraIncluded (some x) (some y) ⊣⊢@{PROP} internalCmraIncluded x y := by
+  sorry
+
+end option
 
 section heap_view
 
