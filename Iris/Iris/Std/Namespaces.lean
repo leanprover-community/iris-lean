@@ -8,6 +8,7 @@ module
 public import Iris.Std.CoPset
 public import Iris.Std.Positives
 public import Iris.Std.GenSets
+meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -52,9 +53,9 @@ theorem ndot_ne_disjoint [Pos.Countable A] (N : Namespace) {x y : A} (Hxy : x �
   intros p
   simp only [nclose, CoPset.elem_suffixes]
   rintro ⟨⟨qx, Heqx⟩, ⟨qy, Heqy⟩⟩
-  refine Hxy (Pos.encode_inj.inj _ _ ?_)
-  have _ := Pos.flatten_suffix_eq (by simp [ndot]) (Heqx ▸ Heqy)
-  simp_all [ndot]
+  apply Hxy
+  have := Pos.flatten_suffix_eq (by simp [ndot]) (Heqx ▸ Heqy)
+  simpa only [ndot, List.cons.injEq, Pos.encode_inj, Function.Injective.eq_iff, and_true]
 
 theorem ndot_preserve_disjoint_l [Pos.Countable A] {N : Namespace} {E : CoPset} (x : A)
     (Hdisj : ↑N ## E) : ↑(N.@x) ## E :=
@@ -68,17 +69,24 @@ theorem nclose_not_finite (N : Namespace) : ¬CoPset.isFinite (↑N) := by
   simp only [nclose]
   exact CoPset.suffixes_not_finite (Pos.flatten N)
 
+theorem nclose_infinite (N : Namespace) : ¬Iris.Std.LawfulSet.setFinite (↑N : CoPset) :=
+  fun h => nclose_not_finite N (isFinite_setFinite.mpr h)
+
+theorem nclose_non_empty (N : Namespace) : (↑N : CoPset) ≠ ∅ := by
+  intro h
+  exact nclose_infinite N (h ▸ Iris.Std.LawfulSet.empty_finite)
+
+theorem coPpick_nclose (N : Namespace) : CoPset.pick (↑N) ∈ (↑N : CoPset) :=
+  CoPset.mem_pick _ (nclose_non_empty N)
+
+@[rocq_alias fresh_inv_name]
 theorem fresh_name {S : Type _} [Iris.Std.LawfulFiniteSet S Pos] (E : S) (N : Namespace) :
   ∃ i, i ∉ E ∧ i ∈ (↑N : CoPset) := by
   exists (CoPset.pick (↑N \ set_to_coPset E))
   have hne : ↑N \ set_to_coPset E ≠ ∅ := by
     apply Iris.Std.LawfulSet.diff_not_finite_finite_ne_empty
-    · simp [Iris.Std.LawfulSet.setInfinite]
-      intro l
-      have : ¬CoPset.isFinite (↑N) := nclose_not_finite N
-      rw [isFinite_setFinite] at this
-      simp [Iris.Std.LawfulSet.setFinite] at this
-      exact this l
+    · rw [←Iris.Std.LawfulSet.not_finite_infinite]
+      exact nclose_infinite N
     · rw [← isFinite_setFinite]
       exact set_to_coPset_finite E
   have ⟨hiN, hiE⟩ := CoPset.in_diff.mp (CoPset.mem_pick (↑N \ set_to_coPset E) hne)

@@ -48,27 +48,27 @@ def minMax : Exp :=
 
 def optionMap : Exp :=
   hl(λ f opt,
-    case: opt
-    | _ => injl(#())
-    | x => injr(f x))
+    match opt with
+    | none() => none()
+    | some(x) => some(f x))
 
 def optionGetOrElse : Exp :=
   hl(λ opt default,
-    case: opt
-    | _ => default
-    | x => x)
+    match opt with
+    | none() => default
+    | some(x) => x)
 
 def listLength : Exp :=
   hl(rec len xs :=
-    case: xs
-    | _ => #0
-    | p => #1 + (len (snd(p))))
+    match xs with
+    | injl(_) => #0
+    | injr(p) => #1 + (len (snd(p))))
 
 def listSum : Exp :=
   hl(rec lsum xs :=
-    case: xs
-    | _ => #0
-    | p => fst(p) + (lsum (snd(p))))
+    match xs with
+    | injl(_) => #0
+    | injr(p) => fst(p) + (lsum (snd(p))))
 
 /-! ## Heap operations -/
 
@@ -143,9 +143,9 @@ def listIsEmpty : Exp := hl(λ xs, {listLength} xs ≤ #0)
 
 def listSumIncremented : Exp :=
   hl(rec go xs :=
-    case: xs
-    | _ => #0
-    | p => {increment} (fst(p)) + (go (snd(p))))
+    match xs with
+    | injl(_) => #0
+    | injr(p) => {increment} (fst(p)) + (go (snd(p))))
 
 def casIncrementTwice : Exp :=
   hl(λ l,
@@ -235,11 +235,11 @@ def readCoin : Exp :=
   hl(λ cp,
     let c := fst(cp);
     let p := snd(cp);
-    case: !c
-    | _ => {hl(let r := {nondetBool} #();
+    match !c with
+    | injl(_) => {hl(let r := {nondetBool} #();
                c ← injr(r);
                {Exp.resolve hl(injl(#())) hl(p) hl(r)};
                r)}
-    | b => b)
+    | injr(b) => b)
 
 end Iris.Examples.HeapLang

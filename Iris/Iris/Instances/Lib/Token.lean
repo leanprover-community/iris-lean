@@ -12,39 +12,40 @@ public import Iris.Instances.IProp.Instance
 
 namespace Iris
 
-open BI CMRA Excl OFE UPred IProp Std
+open BI CMRA Excl OFE UPred IProp Std ProofMode
 
 /-! ## Token
 
 This library provides assertions that represent "unique tokens".
 The `token γ` assertion provides ownership of the token named `γ`,
 and the key lemma `token_exclusive` proves only one token exists.
-
-FIXME: missing token_combine_gives
 -/
 
-abbrev TokenF : COFE.OFunctorPre := COFE.constOF (Excl Unit)
+abbrev TokenF : COFE.OFunctorPre := constOF (Excl Unit)
 
 @[rocq_alias tokenG]
-class TokenG (GF : BundledGFunctors) where
-  [elemG : ElemG GF TokenF]
+class TokenG (GF : BundledGFunctors) where [elemG : ElemG GF TokenF]
 
-attribute [reducible] TokenG.elemG
-attribute [instance] TokenG.elemG
+attribute [reducible, instance] TokenG.elemG
+
+#rocq_ignore «subG_tokenΣ» "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 variable {GF : BundledGFunctors} [TokenG GF]
 
 @[rocq_alias token]
 def token (γ : GName) : IProp GF := iOwn (F := TokenF) γ (excl ())
 
+#rocq_ignore token_aux "`token` is defined directly without `seal`/`unseal`."
+#rocq_ignore token_def "`token` is defined directly without `seal`/`unseal`."
+#rocq_ignore token_unseal "`token` is defined directly without `seal`/`unseal`."
+
 @[rocq_alias token_timeless]
 instance token_timeless (γ : GName) : Timeless (token (GF := GF) γ) := by
   unfold token
   infer_instance
 
--- HP encodes `pred_infinite P` from Rocq
 @[rocq_alias token_alloc_strong]
-theorem token_alloc_strong (P : GName → Prop) (HP : ∀ xs : List GName, ∃ x, P x ∧ x ∉ xs) :
+theorem token_alloc_strong (P : GName → Prop) (HP : PredInfinite P) :
     ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ token γ := by
   unfold token
   iapply iOwn_alloc_strong _ P _ trivial
@@ -69,5 +70,9 @@ theorem token_exclusive (γ : GName) : token γ ∗ token γ ⊢@{IProp GF} Fals
   ihave H := iOwn_cmraValid $$ H
   icases internalCmraValid_discrete (A := Excl Unit) $$ H with %H
   exact H.elim
+
+@[rocq_alias token_combine_gives]
+instance {γ : GName} : CombineSepGives (token γ) (token γ) (iprop(False) : IProp GF) where
+  combine_sep_gives := token_exclusive γ
 
 end Iris

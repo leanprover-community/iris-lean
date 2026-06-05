@@ -18,6 +18,21 @@ structure ProofModeM.State where
 
 abbrev ProofModeM := StateRefT ProofModeM.State TacticM
 
+structure ProofModeM.SavedState where
+  tactic : Tactic.SavedState
+  ipmState : State
+
+def ProofModeM.SavedState.restore (b : SavedState) (restoreInfo := false) : ProofModeM Unit := do
+  b.tactic.restore restoreInfo
+  set b.ipmState
+
+protected def ProofModeM.saveState : ProofModeM SavedState :=
+  return { tactic := (← Tactic.saveState), ipmState := (← get) }
+
+instance : MonadBacktrack ProofModeM.SavedState ProofModeM where
+  saveState := ProofModeM.saveState
+  restoreState b := b.restore
+
 /-
 Make the compiler generate specialized `pure`/`bind` so we do not have to optimize through the
 whole monad stack at every use site. May eventually be covered by `deriving`.
@@ -45,18 +60,30 @@ def addBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
   modify ({goals := ·.goals.push m.mvarId!})
   pure m
 
+/-- Run `k` in a context where `fvarIds` are removed from the context.
+The user should check whether the fvars can be cleared using `Hyps.checkRemovableFVar`.
+TODO: calling this function requires specifying `u`. Not clear why.
+-/
+def withoutFVars {α : Q(Sort u)} (fvarIds : Array FVarId) (k : ProofModeM Q($α)) :
+  ProofModeM Q($α) := do
+  -- TODO: Is there a better way of doing this that does not require
+  -- creating an mvar, using another function than MVarId.clear?
+  let m := (← mkFreshExprSyntheticOpaqueMVar α).mvarId!
+  let expr ← m.withContext do
+    -- see Lean.MVarId.tryClearMany'
+    -- sort to ensure that the fvars can be given in an arbitrary order
+    let fvarIds := (← getLCtx).sortFVarsByContextOrder fvarIds
+    let m ← fvarIds.foldrM (init := m) (λ h m => m.clear h)
+    m.withContext k
+  m.assign expr
+  return expr
+
 /-- Create a new BI goal with the given hypotheses and goal, but without some fvars, and add it to the proof mode state.
 It is the responsibility of the user of this function to check that the variables to clear can actually be cleared (e.g. using
 `Hyps.checkRemovableFVar`). -/
 def addBIGoalWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
-  let goal ← mkBIGoal hyps goal name
-  let (clearedGoalId, cleared) ← goal.mvarId!.tryClearMany' toClear
-  unless cleared.size == toClear.size do
-    -- this should not happen since the caller of this function should call Hyps.checkRemovableFVar first
-    throwError "internal error: failed to clear all selected Lean hypotheses"
-  modify ({goals := ·.goals.push clearedGoalId})
-  return Expr.mvar clearedGoalId
+  {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
+  withoutFVars (u:=0) toClear (addBIGoal hyps goal name)
 
 /-- Add an existing metavariable as a goal to the proof mode state if it is not already assigned or present. -/
 def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do
@@ -96,7 +123,8 @@ def startProofMode (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withCont
   let prop ← mkFreshExprMVarQ q(Type u)
   let P ← mkFreshExprMVarQ q($prop)
   let bi ← mkFreshExprMVarQ q(BI $prop)
-  let .some (_, mvars) ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal $P) | throwError "istart: {goal} is not an emp valid"
+  let .some (_, mvars) ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal .out $prop .out $bi $P)
+    | throwError "istart: {goal} is not an emp valid"
   if !mvars.isEmpty then throwError "istart does not support creating mvars"
 
   let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P, .. }

@@ -6,6 +6,7 @@ Authors: Markus de Medeiros
 module
 
 public import Iris.Algebra.Auth
+public import Iris.Algebra.IsOp
 import Iris.Algebra.LocalUpdates
 meta import Iris.Std.RocqPorting
 
@@ -20,10 +21,9 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 
 open Iris OFE CMRA UCMRA Auth Option
 
-
 /-! ## Definitions -/
 
-@[rocq_alias frac_authR]
+@[rocq_alias frac_authR, rocq_alias frac_authUR]
 public abbrev FracAuth [UFraction F] [CMRA A] := Auth F (Option (Frac F × A))
 
 namespace FracAuth
@@ -54,9 +54,13 @@ instance frac_one_exclusive (b : A) : Exclusive (fracOne (F := F), b) where
 instance auth_ne {dq : DFrac F} : NonExpansive (auth dq : A → FracAuth) where
   ne _ _ _ h := Auth.auth_ne.ne ⟨.rfl, h⟩
 
+#rocq_ignore frac_auth_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
+
 @[rocq_alias frac_auth_frag_ne]
 instance frag_ne {q : Frac F} : NonExpansive (frag q : A → FracAuth) where
   ne _ _ _ h := Auth.frag_ne.ne ⟨.rfl, h⟩
+
+#rocq_ignore frac_auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
 
 /-! ## Discrete instances -/
 
@@ -100,7 +104,7 @@ theorem agree {dq : DFrac F} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a ≡
 
 @[rocq_alias frac_auth_agree_L]
 theorem agree_L [OFE.Leibniz A] {dq : DFrac F} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :=
-  eq_of_eqv (agree h)
+  (agree h).to_eq
 
 /-! ## Inclusion -/
 
@@ -125,7 +129,7 @@ theorem included [CMRA.Discrete A] {dq : DFrac F} {a b : A} (h : ✓ (●F{dq} a
 @[rocq_alias frac_auth_includedN_total]
 theorem includedN_total [IsTotal A] {dq : DFrac F} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F{q} b) :
     b ≼{n} a :=
-  some_incN_some_iff_isTotal.mp (includedN h)
+  some_incN_some_iff_is_total.mp (includedN h)
 
 @[rocq_alias frac_auth_included_total]
 theorem included_total [CMRA.Discrete A] [IsTotal A] {dq : DFrac F} {a b : A}
@@ -215,6 +219,21 @@ theorem frag_op_valid {q1 q2 : Frac F} {a b : A} :
   show ✓ (◯F{q1 + q2} (a • b)) ↔ _
   exact frag_valid
 
+/-! ## IsOp type class instances -/
+
+@[rocq_alias frac_auth_is_op]
+instance isOp_frac_auth {q q1 q2 : Frac F} {a1 a2 : A} {a : outParam A}
+    [h1 : IsOp io1 q io2 q1 io3 q2] [h2 : IsOp io1 a io2 a1 io3 a2] :
+    IsOp io1 (◯F{q} a) io2 (◯F{q1} a1) io3 (◯F{q2} a2) where
+  is_op := ⟨⟨⟩, ⟨h1.is_op, h2.is_op⟩⟩
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias frac_auth_is_op_core_id]
+instance isOp_frac_auth_core_id {q q1 q2 : Frac F} {a : A}
+    [h1 : CoreId a] [h2 : IsOp io1 q io2 q1 io3 q2] :
+    IsOp io1 (◯F{q} a) io2 (◯F{q1} a) io3 (◯F{q2} a) where
+  is_op := ⟨⟨⟩, ⟨h2.is_op, (op_self a).symm⟩⟩
+
 /-! ## Updates -/
 
 @[rocq_alias frac_auth_update]
@@ -232,12 +251,12 @@ theorem update_auth_persist {dq : DFrac F} {a : A} : (●F{dq} a) ~~> ●F{.disc
   Auth.auth_update_auth_persist
 
 @[rocq_alias frac_auth_updateP_auth_unpersist]
-theorem updateP_auth_unpersist [IsSplitFraction F] {a : A} :
+theorem updateP_auth_unpersist [IsHalfFraction F] {a : A} :
     (●F{.discard} a : FracAuth (F := F)) ~~>: fun k => ∃ q, k = ●F{.own q} a :=
   Auth.auth_updateP_auth_unpersist
 
 @[rocq_alias frac_auth_updateP_both_unpersist]
-theorem updateP_both_unpersist [IsSplitFraction F] {q : Frac F} {a b : A} :
+theorem updateP_both_unpersist [IsHalfFraction F] {q : Frac F} {a b : A} :
     ((●F{DFrac.discard} a) • ◯F{q} b) ~~>: fun k => ∃ q', k = (●F{.own q'} a) • ◯F{q} b :=
   auth_updateP_both_unpersist
 
@@ -245,10 +264,10 @@ theorem updateP_both_unpersist [IsSplitFraction F] {q : Frac F} {a b : A} :
 
 @[rocq_alias frac_authURF]
 abbrev FracAuthURF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
-  AuthURF (F := F) (OptionOF (ProdOF (COFE.constOF (Frac F)) T))
+  AuthURF (F := F) (OptionOF (ProdOF (constOF (Frac F)) T))
 
 @[rocq_alias frac_authRF]
 abbrev FracAuthF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
-  AuthRF (F := F) (OptionOF (ProdOF (COFE.constOF (Frac F)) T))
+  AuthRF (F := F) (OptionOF (ProdOF (constOF (Frac F)) T))
 
 end FracAuth

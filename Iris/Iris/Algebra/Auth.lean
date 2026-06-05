@@ -14,7 +14,7 @@ meta import Iris.Std.RocqPorting
 
 The authoritative camera has 2 types of elements:
 - the authoritative element `●{dq} a`
--  and the fragment `◯ b`
+- the fragment `◯ b`
 -/
 
 @[expose] public section
@@ -33,7 +33,7 @@ namespace AuthViewRel
 
 variable [UCMRA A]
 
-/-- Rocq: `auth_view_rel_raw_mono`, `auth_view_rel_raw_valid`, `auth_view_rel_raw_unit` -/
+@[rocq_alias auth_view_rel]
 instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) where
   mono := by
     intro _ a1 b1 n2 a2 b2 ⟨hinc, hv⟩ ha hb hn
@@ -43,6 +43,10 @@ instance instViewRel_authViewRel : IsViewRel (AuthViewRel (A := A)) where
          _  ≼{n2} a2 := ha.to_incN
   rel_validN n a b := fun ⟨hinc, hv⟩ => validN_of_incN hinc hv
   rel_unit n := ⟨unit, incN_refl unit, unit_valid.validN⟩
+
+#rocq_ignore auth_view_rel_raw_mono "Use the IsViewRel typeclass"
+#rocq_ignore auth_view_rel_raw_valid "Use the IsViewRel typeclass"
+#rocq_ignore auth_view_rel_raw_unit "Use the IsViewRel typeclass"
 
 @[rocq_alias auth_view_rel_unit]
 theorem authViewRel_unit_iff {n : Nat} {a : A} : AuthViewRel n a unit ↔ ✓{n} a :=
@@ -67,15 +71,23 @@ abbrev Auth (F : Type _) (A : Type _) [UFraction F] [UCMRA A] :=
 namespace Auth
 variable [UFraction F] [UCMRA A]
 
-@[rocq_alias authO]
 instance : OFE (Auth F A) := View.instOFE
-@[rocq_alias authR]
 instance : CMRA (Auth F A) := View.instCMRA
-@[rocq_alias authUR]
 instance : UCMRA (Auth F A) := View.instUCMRA
 
+#rocq_ignore authO "Use the Auth type and View.instOFE typeclass"
+#rocq_ignore authR "Use the Auth type and View.instCMRA typeclass"
+#rocq_ignore authUR "Use the Auth type and View.instUCMRA typeclass"
+
+#rocq_ignore auth_cmra_discrete "Inference succeeds automatically"
+#rocq_ignore auth_ofe_discrete "Inference succeeds automatically"
+
+@[rocq_alias auth_auth]
 abbrev auth (dq : DFrac F) (a : A) : Auth F A := View.Auth dq a
+
 abbrev authFull (a : A) : Auth F A := Auth (DFrac.own One.one) a
+
+@[rocq_alias auth_frag]
 abbrev frag (b : A) : Auth F A := Frag b
 
 notation "●{" dq "} " a => auth dq a
@@ -86,9 +98,13 @@ notation "◯ " b => frag b
 nonrec instance auth_ne {dq : DFrac F} : NonExpansive (auth dq : A → Auth F A) :=
   auth_ne
 
+#rocq_ignore auth_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
+
 @[rocq_alias auth_frag_ne]
 nonrec instance frag_ne : NonExpansive (frag : A → Auth F A) :=
   frag_ne
+
+#rocq_ignore auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
 
 @[rocq_alias auth_auth_dist_inj]
 nonrec theorem auth_dist_inj {n : Nat} {dq1 dq2 : DFrac F} {a1 a2 : A}
@@ -121,7 +137,13 @@ nonrec theorem auth_dfrac_op {dq1 dq2 : DFrac F} {a : A} :
     (●{dq1 • dq2} a) ≡ (●{dq1} a) • (●{dq2} a) :=
   auth_op_auth_eqv
 
--- TODO: auth_auth_dfrac_is_op
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias auth_auth_dfrac_is_op]
+instance {dq dq1 dq2 : DFrac F} [h : IsOp io1 dq io2 dq1 io3 dq2] :
+    IsOp io1 (●{dq} a : Auth F A) io2 (●{dq1} a) io3 (●{dq2} a) where
+  is_op := by
+    rw [h.is_op]
+    apply auth_dfrac_op
 
 @[rocq_alias auth_frag_op]
 theorem frag_op {b1 b2 : A} : (◯ (b1 • b2) : Auth F A) = ((◯ b1 : Auth F A) • ◯ b2) :=
@@ -158,7 +180,11 @@ nonrec instance {a : A} {b : A} [CoreId b] :
     CoreId ((●{.discard} a : Auth F A) • ◯ b) :=
   instCoreIdOpAuthDiscardFrag
 
--- TODO: auth_frag_is_op
+@[rocq_alias auth_frag_is_op]
+instance {a b1 b2 : A} [h : IsOp io1 a io2 b1 io3 b2] :
+    IsOp io1 (◯ a : Auth F A) io2 (◯ b1) io3 (◯ b2) where
+  is_op := ⟨⟨⟩, h.is_op⟩
+
 -- TODO: auth_frag_sep_homomorphism
 
 /- TODO: BigOPs
@@ -183,7 +209,7 @@ theorem auth_dfrac_op_inv {dq1 dq2 : DFrac F} {a b : A}
 @[rocq_alias auth_auth_dfrac_op_inv_L]
 theorem auth_dfrac_op_inv_L [Leibniz A] {dq1 dq2 : DFrac F} {a b : A}
     (h : ✓ ((●{dq1} a) • ●{dq2} b)) : a = b :=
-  Leibniz.eq_of_eqv (auth_dfrac_op_inv h)
+  (auth_dfrac_op_inv h).to_eq
 
 
 @[rocq_alias auth_auth_dfrac_validN]
@@ -212,10 +238,16 @@ theorem auth_op_validN {n : Nat} {a1 a2 : A} : (✓{n} ((● a1 : Auth F A) • 
 theorem frag_validN {n : Nat} {b : A} : (✓{n} (◯ b : Auth F A)) ↔ (✓{n} b) := by
   rw [frag_validN_iff, AuthViewRel.authViewRel_exists_iff]
 
+#rocq_ignore auth_frag_validN_1 "Use frag_validN.mp"
+#rocq_ignore auth_frag_validN_2 "Use frag_validN.mpr"
+
 @[rocq_alias auth_frag_op_validN]
 theorem frag_op_validN {n : Nat} {b1 b2 : A} :
     (✓{n} ((◯ b1 : Auth F A) • ◯ b2)) ↔ (✓{n} (b1 • b2)) := by
   rw [← frag_op]; exact frag_validN
+
+#rocq_ignore auth_frag_op_validN_1 "Use frag_op_validN"
+#rocq_ignore auth_frag_op_validN_2 "Use frag_op_validN"
 
 @[rocq_alias auth_both_dfrac_validN]
 theorem both_dfrac_validN {n : Nat} {dq : DFrac F} {a b : A} :
@@ -256,9 +288,15 @@ theorem frag_valid {b : A} : (✓ (◯ b : Auth F A)) ↔ (✓ b) := by
   simp only [valid_iff_validN]
   exact forall_congr' fun _ => frag_validN
 
+#rocq_ignore auth_frag_valid_1 "Use frag_valid"
+#rocq_ignore auth_frag_valid_2 "Use frag_valid"
+
 @[rocq_alias auth_frag_op_valid]
 theorem frag_op_valid {b1 b2 : A} : (✓ ((◯ b1 : Auth F A) • ◯ b2)) ↔ (✓ (b1 • b2)) := by
   rw [← frag_op]; exact frag_valid
+
+#rocq_ignore auth_frag_op_valid_1 "Use frag_op_valid"
+#rocq_ignore auth_frag_op_valid_2 "Use frag_op_valid"
 
 @[rocq_alias auth_both_dfrac_valid]
 theorem both_dfrac_valid {dq : DFrac F} {a b : A} :
@@ -394,13 +432,13 @@ theorem auth_update_auth_persist {dq : DFrac F} {a : A} :
   auth_discard
 
 @[rocq_alias auth_updateP_auth_unpersist]
-theorem auth_updateP_auth_unpersist [IsSplitFraction F] {a : A} :
+theorem auth_updateP_auth_unpersist [IsHalfFraction F] {a : A} :
     (●{DFrac.discard} a : Auth F A) ~~>:
       fun k => ∃ q, k = ●{DFrac.own q} a :=
   auth_acquire
 
 @[rocq_alias auth_updateP_both_unpersist]
-theorem auth_updateP_both_unpersist [IsSplitFraction F] {a b : A} :
+theorem auth_updateP_both_unpersist [IsHalfFraction F] {a b : A} :
     ((●{DFrac.discard} a : Auth F A) • ◯ b) ~~>:
       fun k => ∃ q, k = ((●{DFrac.own q} a : Auth F A) • ◯ b) :=
   auth_op_frag_acquire

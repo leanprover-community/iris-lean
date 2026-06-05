@@ -34,6 +34,8 @@ variable {F : Type _} [UFraction F] {A : Type _} [OFE A]
 instance mk_ne {d : DFrac F} : NonExpansive (mk d : A → DFracAgreeR F A) where
   ne _ _ _ h := ⟨.rfl, NonExpansive.ne (f := toAgree) h⟩
 
+#rocq_ignore to_dfrac_agree_proper "Derivable from mk_ne with NonExpansive.eqv"
+
 @[rocq_alias to_dfrac_agree_exclusive]
 instance mk_exclusive {a : A} : Exclusive (mk (.own (1 : F)) a) := one_exclusive_left
 
@@ -121,7 +123,7 @@ theorem persist {d : DFrac F} {a : A} : mk d a ~~> mk .discard a := by
   · exact ⟨DFrac.update_discard n (some mz₁) hv.1, hv.2⟩
 
 @[rocq_alias dfrac_agree_unpersist]
-theorem unpersist [IsSplitFraction F] {a : A} :
+theorem unpersist [IsHalfFraction F] {a : A} :
     mk (.discard : DFrac F) a ~~>: fun k => ∃ q, k = mk (.own q) a := by
   intro n mz hv
   simp only [mk, op?] at hv ⊢
@@ -180,7 +182,7 @@ end Frac
 
 @[rocq_alias dfrac_agreeRF]
 abbrev DFracAgreeRF [UFraction F] (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
-  ProdOF (COFE.constOF (DFrac F)) (AgreeRF T)
+  ProdOF (constOF (DFrac F)) (AgreeRF T)
 
 end DFracAgree
 

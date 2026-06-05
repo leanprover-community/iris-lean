@@ -56,6 +56,14 @@ class RightId (R : Relation α) (i : α) (f : α → α → α) where
   right_id {x : α} : R (f x i) x
 export RightId (right_id)
 
+class LeftAbsorb (R : Relation α) (i : α) (f : α → α → α) where
+  left_absorb {x : α} : R (f i x) i
+export LeftAbsorb (left_absorb)
+
+class RightAbsorb (R : Relation α) (i : α) (f : α → α → α) where
+  right_absorb {x : α} : R (f x i) i
+export RightAbsorb (right_absorb)
+
 /-- Require that a binary function `f` on `α` is associative in a relation `R` on `α`. -/
 class Associative (R : Relation α) (f : α → α → α) where
   assoc {x y z : α} : R (f (f x y) z) (f x (f y z))
@@ -70,9 +78,5 @@ class Disjoint (α : Type u) where
   disjoint : α -> α -> Prop
 export Disjoint (disjoint)
 infix:50 " ## " => Disjoint.disjoint
-
-class Injective (f : A -> B) where
-  inj : ∀ (a a' : A), f a = f a' -> a = a'
-export Injective (inj)
 
 end Iris.Std

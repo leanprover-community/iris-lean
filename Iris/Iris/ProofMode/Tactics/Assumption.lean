@@ -15,13 +15,16 @@ open BI Std
 
 theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption p .in A Q]
   [TCOr (Affine P') (Absorbing Q)] (h : P ⊣⊢ P' ∗ □?p A) : P ⊢ Q :=
-  h.1.trans <| (sep_mono_r inst.1).trans sep_elim_r
+  h.1.trans <| (sep_mono_right inst.1).trans sep_elim_right
 
 public meta section
 open Lean Elab Tactic Meta Qq
 
 elab "iassumption" : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+
+  if goal.isMVar then
+    throwError "iassumption: goal is a mvar, use iaccu instead"
 
   let some ⟨inst, e', _, out, ty, b, _, pf⟩ ←
     hyps.removeG true fun _ _ b ty => do
@@ -32,3 +35,5 @@ elab "iassumption" : tactic => do
   let .some _ ← trySynthInstanceQ q(TCOr (Affine $e') (Absorbing $goal))
     | throwError "iassumption: context is not affine or goal is not absorbing"
   mvar.assign q(assumption (Q := $goal) $pf)
+
+macro_rules | `(tactic| itrivial) => `(tactic| (try iassumption) <;> done)

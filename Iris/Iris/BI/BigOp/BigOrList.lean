@@ -33,18 +33,18 @@ theorem bigOrL_cons {Φ : Nat → A → PROP} {x : A} {xs : List A} :
 @[rocq_alias big_orL_singleton]
 theorem bigOrL_singleton {Φ : Nat → A → PROP} {x : A} :
     ([∨list] k ↦ y ∈ [x], Φ k y) ⊣⊢ Φ 0 x :=
-  equiv_iff.mp <| bigOpL_singleton_equiv Φ x
+  equiv_iff.mp <| bigOpL_singleton_eqv Φ x
 
 @[rocq_alias big_orL_app]
 theorem bigOrL_append {Φ : Nat → A → PROP} {l₁ l₂ : List A} :
     ([∨list] k ↦ x ∈ (l₁ ++ l₂), Φ k x) ⊣⊢
       ([∨list] k ↦ x ∈ l₁, Φ k x) ∨ [∨list] n ↦ x ∈ l₂, Φ (n + l₁.length) x :=
-  equiv_iff.mp <| bigOpL_append_equiv Φ l₁ l₂
+  equiv_iff.mp <| bigOpL_append_eqv Φ l₁ l₂
 
 @[rocq_alias big_orL_snoc]
 theorem bigOrL_snoc {Φ : Nat → A → PROP} {l : List A} {x : A} :
     ([∨list] k ↦ y ∈ (l ++ [x]), Φ k y) ⊣⊢ ([∨list] k ↦ y ∈ l, Φ k y) ∨ Φ l.length x :=
-  equiv_iff.mp <| bigOpL_snoc_equiv Φ l x
+  equiv_iff.mp <| bigOpL_snoc_eqv Φ l x
 
 @[rocq_alias big_orL_mono]
 theorem bigOrL_mono {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ⊢ Ψ k x) :
@@ -52,13 +52,13 @@ theorem bigOrL_mono {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[
   bigOpL_gen_proper (· ⊢ ·) .rfl or_mono (h ·)
 
 @[rocq_alias big_orL_proper]
-theorem bigOrL_equiv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ≡ Ψ k x) :
+theorem bigOrL_eqv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Φ k x ≡ Ψ k x) :
     ([∨list] k ↦ x ∈ l, Φ k x) ≡ [∨list] k ↦ x ∈ l, Ψ k x :=
-  bigOpL_equiv h
+  bigOpL_eqv h
 
-theorem bigOrL_equiv_of_forall_equiv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, Φ k x ≡ Ψ k x) :
+theorem bigOrL_eqv_of_forall_eqv {Φ Ψ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, Φ k x ≡ Ψ k x) :
     ([∨list] k ↦ x ∈ l, Φ k x) ≡ [∨list] k ↦ x ∈ l, Ψ k x :=
-  bigOpL_equiv_of_forall_equiv h
+  bigOpL_eqv_of_forall_eqv h
 
 @[rocq_alias big_orL_ne]
 theorem bigOrL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : Nat}
@@ -67,20 +67,20 @@ theorem bigOrL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : Nat}
   bigOpL_dist h
 
 @[rocq_alias big_orL_or]
-theorem bigOrL_or_equiv {Φ Ψ : Nat → A → PROP} {l : List A} :
+theorem bigOrL_or_eqv {Φ Ψ : Nat → A → PROP} {l : List A} :
     ([∨list] k ↦ x ∈ l, iprop(Φ k x ∨ Ψ k x)) ≡
       iprop(([∨list] k ↦ x ∈ l, Φ k x) ∨ [∨list] k ↦ x ∈ l, Ψ k x) :=
-  bigOpL_op_equiv Φ Ψ l
+  bigOpL_op_eqv Φ Ψ l
 
 theorem bigOrL_take_drop {Φ : Nat → A → PROP} {l : List A} {n : Nat} :
     ([∨list] k ↦ x ∈ l, Φ k x) ≡
       iprop(([∨list] k ↦ x ∈ (l.take n), Φ k x) ∨ [∨list] k ↦ x ∈ (l.drop n), Φ (n + k) x) :=
-  bigOpL_take_drop_equiv Φ l n
+  bigOpL_take_drop_eqv Φ l n
 
 @[rocq_alias big_orL_fmap]
 theorem bigOrL_map {B : Type _} (f : A → B) {Φ : Nat → B → PROP} {l : List A} :
     ([∨list] k ↦ y ∈ (l.map f), Φ k y) ≡ [∨list] k ↦ x ∈ l, Φ k (f x) :=
-  bigOpL_map_equiv f Φ l
+  bigOpL_map_eqv f Φ l
 
 @[rocq_alias big_orL_intro]
 theorem bigOrL_intro {Φ : Nat → A → PROP} {l : List A} {k : Nat} {x : A} (h : l[k]? = some x) :
@@ -96,13 +96,13 @@ private theorem bigOrL_exist_fwd {Φ : Nat → A → PROP} {l : List A} :
   match l with
   | [] => false_elim
   | _ :: _ => or_elim
-    (exists_intro' 0 <| exists_intro' _ <| and_intro (pure_intro rfl) .rfl)
-    (bigOrL_exist_fwd.trans <| exists_elim fun k => exists_intro' (k + 1) .rfl)
+    (exists_intro_trans 0 <| exists_intro_trans _ <| and_intro (pure_intro rfl) .rfl)
+    (bigOrL_exist_fwd.trans <| exists_elim fun k => exists_intro_trans (k + 1) .rfl)
 
 @[rocq_alias big_orL_exist]
 theorem bigOrL_exist {Φ : Nat → A → PROP} {l : List A} :
     ([∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ ∃ k x, ⌜l[k]? = some x⌝ ∧ Φ k x :=
-  ⟨bigOrL_exist_fwd, exists_elim fun _ => exists_elim fun _ => pure_elim_l (bigOrL_intro ·)⟩
+  ⟨bigOrL_exist_fwd, exists_elim fun _ => exists_elim fun _ => pure_elim_left (bigOrL_intro ·)⟩
 
 @[rocq_alias big_orL_pure]
 theorem bigOrL_pure {φ : Nat → A → Prop} {l : List A} :
@@ -114,17 +114,17 @@ theorem bigOrL_pure {φ : Nat → A → Prop} {l : List A} :
 @[rocq_alias big_orL_sep_l]
 theorem bigOrL_sep_left {P : PROP} {Φ : Nat → A → PROP} {l : List A} :
     P ∗ ([∨list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∨list] k ↦ x ∈ l, (P ∗ Φ k x) := by
-  refine (sep_congr .rfl bigOrL_exist).trans <| sep_exists_l.trans ?_
-  refine (exists_congr fun _ => sep_exists_l.trans <| exists_congr fun _ => ?_).trans bigOrL_exist.symm
-  refine (sep_congr .rfl persistent_and_affinely_sep_l).trans ?_
+  refine (sep_congr .rfl bigOrL_exist).trans <| sep_exists_left.trans ?_
+  refine (exists_congr fun _ => sep_exists_left.trans <| exists_congr fun _ => ?_).trans bigOrL_exist.symm
+  refine (sep_congr .rfl persistent_and_affinely_sep_left).trans ?_
   refine sep_assoc.symm.trans <| (sep_congr sep_comm .rfl).trans ?_
-  exact sep_assoc.trans persistent_and_affinely_sep_l.symm
+  exact sep_assoc.trans persistent_and_affinely_sep_left.symm
 
 @[rocq_alias big_orL_sep_r]
 theorem bigOrL_sep_right {Φ : Nat → A → PROP} {P : PROP} {l : List A} :
     ([∨list] k ↦ x ∈ l, Φ k x) ∗ P ⊣⊢ [∨list] k ↦ x ∈ l, (Φ k x ∗ P) := by
   refine sep_comm.trans <| bigOrL_sep_left.trans ?_
-  exact equiv_iff.mp <| bigOrL_equiv_of_forall_equiv <| equiv_iff.mpr sep_comm
+  exact equiv_iff.mp <| bigOrL_eqv_of_forall_eqv <| equiv_iff.mpr sep_comm
 
 @[rocq_alias big_orL_elem_of]
 theorem bigOrL_mem {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
@@ -136,7 +136,7 @@ theorem bigOrL_mem {Φ : A → PROP} {l : List A} {x : A} (h : x ∈ l) :
 @[rocq_alias big_orL_bind]
 theorem bigOrL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : List A} :
     ([∨list] y ∈ (l.flatMap f), Φ y) ⊣⊢ [∨list] x ∈ l, [∨list] y ∈ f x, Φ y :=
-  equiv_iff.mp <| bigOpL_flatMap_equiv f Φ l
+  equiv_iff.mp <| bigOpL_flatMap_eqv f Φ l
 
 @[rocq_alias big_orL_persistently]
 theorem bigOrL_persistently {Φ : Nat → A → PROP} {l : List A} :
@@ -160,7 +160,7 @@ theorem bigOrL_laterN {Φ : Nat → A → PROP} {l : List A} {n : Nat} (hne : l 
 
 theorem bigOrL_perm {Φ : A → PROP} {l₁ l₂ : List A} (hp : l₁.Perm l₂) :
     ([∨list] x ∈ l₁, Φ x) ≡ [∨list] x ∈ l₂, Φ x :=
-  bigOpL_equiv_of_perm Φ hp
+  bigOpL_eqv_of_perm Φ hp
 
 @[rocq_alias big_orL_submseteq]
 theorem bigOrL_submseteq {Φ : A → PROP} {l₁ l₂ l : List A} (h : (l₁ ++ l).Perm l₂) :
@@ -217,7 +217,7 @@ instance bigOrL_timeless_inst {Φ : Nat → A → PROP} {l : List A} [∀ k x, T
 @[rocq_alias big_orL_zip_seq]
 theorem bigOrL_zip_seq {Φ : A × Nat → PROP} {n : Nat} {l : List A} :
     ([∨list] xy ∈ l.zipIdx n, Φ xy) ≡ [∨list] i ↦ x ∈ l, Φ (x, n + i) :=
-  bigOpL_zipIdx_equiv Φ n l
+  bigOpL_zipIdx_eqv Φ n l
 
 end BigOrL
 

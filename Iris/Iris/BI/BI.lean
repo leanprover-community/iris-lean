@@ -97,6 +97,8 @@ theorem BIBase.Entails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊢ Q := h �
 
 theorem BIBase.BiEntails.of_eq [BI PROP] {P Q : PROP} (h : P = Q) : P ⊣⊢ Q := h ▸ .rfl
 
+theorem BIBase.BiEntails.to_eq [BI PROP] [Leibniz PROP] {P Q : PROP} (h : P ⊣⊢ Q) : P = Q := (equiv_iff.mpr h).to_eq
+
 theorem BIBase.BiEntails.symm [BI PROP] {P Q : PROP} (h : P ⊣⊢ Q) : Q ⊣⊢ P := ⟨h.2, h.1⟩
 
 theorem BIBase.BiEntails.trans [BI PROP] {P Q R : PROP} (h1 : P ⊣⊢ Q) (h2 : Q ⊣⊢ R) : P ⊣⊢ R :=
@@ -106,6 +108,10 @@ theorem BIBase.BiEntails.ofMono [BI PROP1] [BI PROP2] {mod : PROP1 → PROP2}
     (mono : ∀{P Q}, iprop(P ⊢ Q) → iprop(mod P ⊢ mod Q)) :
     ∀ {P Q : PROP1}, P ⊣⊢ Q → mod P ⊣⊢ mod Q :=
   fun h => ⟨mono h.1, mono h.2⟩
+
+theorem BIBase.BiEntails.proper [BI PROP] {a a' b b' : PROP} (ha : a ≡ a') (hb : b ≡ b') : (a ⊣⊢ b ↔ a' ⊣⊢ b') where
+  mp h := equiv_iff.1 (ha.symm.trans (equiv_iff.2 h) |>.trans hb)
+  mpr h := equiv_iff.1 (ha.trans (equiv_iff.2 h) |>.trans hb.symm)
 
 export BIBase (
   Entails emp pure and or imp sForall sExists «forall» «exists» sep wand

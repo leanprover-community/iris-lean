@@ -10,6 +10,7 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.Frac
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
+public import Iris.Algebra.IsOp
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -26,13 +27,17 @@ inductive DFrac (F : Type _) where
 /-- Ownership of `F` plus knowledge that a fraction has been discarded. -/
 | ownDiscard (f : F) : DFrac F
 
+#rocq_ignore DfracOwn_inj "Not needed"
+#rocq_ignore DfracBoth_inj "Not needed"
+
 @[simp] instance : COFE (DFrac F) := COFE.ofDiscrete _ Eq_Equivalence
 instance : OFE.Leibniz (DFrac F) := ⟨(·)⟩
 instance : OFE.Discrete (DFrac F) := ⟨congrArg id⟩
+#rocq_ignore dfracO "Use DFrac type with typeclass inference"
 
 namespace DFrac
 
-open DFrac Fraction OFE.Discrete
+open DFrac Fraction OFE.Discrete IsOp
 
 variable [UFraction F]
 
@@ -60,6 +65,12 @@ def op : DFrac F → DFrac F → DFrac F
   | ownDiscard f, own f'
   | ownDiscard f, ownDiscard f' => ownDiscard (f + f')
 
+#rocq_ignore dfrac_op_instance "Use CMRA instance"
+#rocq_ignore dfrac_pcore_instance "Use CMRA instance"
+#rocq_ignore dfrac_valid_instance "Use CMRA instance"
+#rocq_ignore dfrac_ra_mixin "Not needed"
+
+@[rocq_alias dfracR]
 instance DFrac_CMRA : CMRA (DFrac F) where
   pcore := pcore
   op := op
@@ -191,7 +202,7 @@ theorem DFrac.update_discard {dq : DFrac F} : dq ~~> .discard := by
   · cases dq <;> first | exact Fractional.of_add_right H | exact H
 
 @[rocq_alias dfrac_undiscard_update]
-theorem DFrac.update_acquire [IsSplitFraction F] :
+theorem DFrac.update_acquire [IsHalfFraction F] :
     (.discard : DFrac F) ~~>: fun k => ∃ q, k = .own q := by
   apply UpdateP.discrete.mpr
   rintro (_|q)
@@ -206,18 +217,49 @@ theorem DFrac.update_acquire [IsSplitFraction F] :
     rw [add_comm]
     exact HP
   · intro _
-    let q' : F := (IsSplitFraction.split One.one).1
+    let q' : F := IsHalfFraction.half One.one
     refine ⟨.own q', ⟨⟨q', rfl⟩, ?_⟩⟩
     simp [CMRA.op?, CMRA.op, op]
-    refine ⟨(IsSplitFraction.split One.one).2, ?_⟩
-    rw [IsSplitFraction.split_add]
+    refine ⟨IsHalfFraction.half One.one, ?_⟩
+    rw [IsHalfFraction.half_add]
     apply UFraction.one_whole.1
   · rintro ⟨q', HP⟩
-    let q'' : F := (IsSplitFraction.split q').1
+    let q'' : F := IsHalfFraction.half q'
     refine ⟨(.own q''), ⟨⟨q'', rfl⟩, ?_⟩⟩
     simp only [CMRA.op?, CMRA.op, op, add_comm]
-    refine ⟨(IsSplitFraction.split q').2, ?_⟩
-    rw [← add_assoc, IsSplitFraction.split_add]
+    refine ⟨IsHalfFraction.half q', ?_⟩
+    rw [← add_assoc, IsHalfFraction.half_add]
     exact HP
+
+@[rocq_alias dfrac_op_own]
+theorem op_own {p q : F} : own p • own q = own (p + q) := rfl
+
+@[rocq_alias dfrac_op_discarded]
+theorem op_discard : (discard : DFrac F) • discard = discard := rfl
+
+@[rocq_alias dfrac_valid_own]
+theorem valid_own {p : F} : ✓ own p ↔ Fraction.Proper p := .rfl
+
+@[rocq_alias dfrac_valid]
+theorem valid_iff {dq : DFrac F} : ✓ dq ↔
+    match dq with
+    | own f => Fraction.Proper f
+    | discard => True
+    | ownDiscard f => Fraction.Fractional f := by
+  cases dq <;> rfl
+
+@[rocq_alias dfrac_discarded_included]
+theorem discard_included : (discard : DFrac F) ≼ discard := ⟨discard, .rfl⟩
+
+@[rocq_alias dfrac_own_included]
+theorem own_included {p q : F} : own p ≼ own q ↔ ∃ r, q = p + r := by
+  refine ⟨fun ⟨z, hz⟩ => ?_, fun ⟨r, hr⟩ => ⟨own r, hr ▸ .rfl⟩⟩
+  rcases z with (r|_|r) <;> simp [CMRA.op, op] at hz
+  exact ⟨r, hz⟩
+
+@[rocq_alias dfrac_is_op]
+instance isOp_dfrac_own {q q1 q2 : Frac F} [h : IsOp io1 q io2 q1 io3 q2] :
+    IsOp io1 (own q.car) io2 (own q1.car) io3 (own q2.car) where
+  is_op := by rw [h.is_op]; rfl
 
 end DFrac

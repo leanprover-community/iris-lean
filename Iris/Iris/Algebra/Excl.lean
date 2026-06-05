@@ -6,6 +6,7 @@ Authors: Oliver Soeser, Mario Carneiro
 module
 
 public import Iris.Algebra.CMRA
+meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -13,24 +14,26 @@ namespace Iris
 
 section excl
 
+@[rocq_alias excl]
 inductive Excl α where
   | excl : α → Excl α
   | invalid : Excl α
 
-open Excl OFE
+namespace Excl
+open OFE
 
 /-! ## COFE -/
-@[simp] protected def Excl.Equiv [OFE α] : Excl α → Excl α → Prop
+@[simp, rocq_alias excl_equiv] protected def Equiv [OFE α] : Excl α → Excl α → Prop
   | excl a, excl b => a ≡ b
   | invalid, invalid => True
   | _, _ => False
 
-@[simp] protected def Excl.Dist [OFE α] (n : Nat) : Excl α → Excl α → Prop
+@[simp, rocq_alias excl_dist] protected def Dist [OFE α] (n : Nat) : Excl α → Excl α → Prop
   | excl a, excl b => a ≡{n}≡ b
   | invalid, invalid => True
   | _, _ => False
 
-theorem Excl.dist_eqv [OFE α] {n} : Equivalence (Excl.Dist (α := α) n) where
+theorem dist_eqv [OFE α] {n} : Equivalence (Excl.Dist (α := α) n) where
   refl {x} := by
     cases x with
     | excl a => exact Dist.of_eq rfl
@@ -42,10 +45,13 @@ theorem Excl.dist_eqv [OFE α] {n} : Equivalence (Excl.Dist (α := α) n) where
     cases x <;> cases y <;> cases z <;> try trivial
     exact Dist.trans h₁ h₂
 
+#rocq_ignore excl_ofe_mixin "Not needed"
+
+@[rocq_alias exclO]
 instance [OFE α] : OFE (Excl α) where
   Equiv := Excl.Equiv
   Dist := Excl.Dist
-  dist_eqv := dist_eqv
+  dist_eqv
   equiv_dist {x y} := by
     constructor
     · intro h n
@@ -58,11 +64,12 @@ instance [OFE α] : OFE (Excl α) where
     cases x <;> cases y <;> simp at *
     exact Dist.lt hn hlt
 
+@[rocq_alias Excl_ne]
 instance [OFE α] : NonExpansive excl (α := α) where
   ne _ _ _ a := a
 
 /-- Note: Not an instance, due to instance coherence problems. -/
-theorem Excl.ne_match [OFE α] {B : Type _} [OFE B]
+theorem ne_match [OFE α] {B : Type _} [OFE B]
     (f : α → B) (hf : NonExpansive f) (g : B) :
     NonExpansive (fun x : Excl α => match x with | .excl a => f a | .invalid => g) :=
   ⟨fun {n x' y'} (h : Excl.Dist n x' y') =>
@@ -72,33 +79,37 @@ theorem Excl.ne_match [OFE α] {B : Type _} [OFE B]
     | .invalid, .excl _, h => h.elim
     | .invalid, .invalid, _ => Dist.rfl⟩
 
+@[rocq_alias excl_ofe_discrete]
 instance [OFE α] [Discrete α] : Discrete (Excl α) where
   discrete_0 {x y} h' := by
     cases x <;> cases y <;> try exact h'
     exact discrete_0 (α := α) h'
 
+@[rocq_alias excl_leibniz]
 instance [OFE α] [Leibniz α] : Leibniz (Excl α) where
   eq_of_eqv {x y} h' := by
     cases x <;> cases y <;> try trivial
     exact congrArg excl (eq_of_eqv h')
 
+@[rocq_alias Excl_discrete]
 instance [OFE α] {a : α} [h : DiscreteE a] : DiscreteE (excl a) where
   discrete {x} h' := by
     cases x
     · exact h.discrete h'
     · exact h'
 
+@[rocq_alias ExclInvalid_discrete]
 instance [OFE α] : DiscreteE (@invalid α) where
   discrete {x} h := by cases x <;> exact h
 
 /- Adapted from the corresponding definitions for [Option]. -/
 /- This could be simplified if there was an isomorphism lemma for [COFE]s in [OFE.lean]. -/
-@[simp] def Excl.getD (x : Excl α) (dflt : α) : α :=
+@[simp] def getD (x : Excl α) (dflt : α) : α :=
   match x with
   | excl a => a
   | invalid => dflt
 
-@[simp] def Excl.map (f : α → β) : Excl α → Excl β
+@[simp, rocq_alias excl_map] def map (f : α → β) : Excl α → Excl β
   | excl a => excl (f a)
   | invalid => invalid
 
@@ -107,19 +118,27 @@ def exclChain [OFE α] (c : Chain (Excl α)) (a : α) : Chain α := by
   dsimp; have := c.cauchy H; revert this
   cases c.chain i <;> cases c.chain n <;> simp [Dist]
 
+@[rocq_alias excl_cofe]
 instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
   compl c := (c 0).map fun x => IsCOFE.compl (exclChain c x)
   conv_compl {n} c := by
     have := c.cauchy (Nat.zero_le n); revert this
     obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [Dist]
-    refine fun _ => dist_eqv.trans IsCOFE.conv_compl ?_
+    refine fun _ => .trans IsCOFE.conv_compl ?_
     simp [exclChain, e]
 
 /-! ## CMRA -/
-@[simp] def Excl.Valid : Excl α → Prop
+@[simp] def Valid : Excl α → Prop
   | excl _ => True
   | invalid => False
 
+#rocq_ignore excl_op_instance "Use CMRA instance"
+#rocq_ignore excl_pcore_instance "Use CMRA instance"
+#rocq_ignore excl_validN_instance "Use CMRA instance"
+#rocq_ignore excl_valid_instance "Use CMRA instance"
+#rocq_ignore excl_cmra_mixin "Not needed"
+
+@[rocq_alias exclR]
 instance [OFE α] : CMRA (Excl α) where
   pcore _ := none
   op _ _ := invalid
@@ -141,7 +160,8 @@ instance [OFE α] : CMRA (Excl α) where
   validN_op_left := by simp
   extend {n x y₁ y₂} h₁ h₂ := by cases x <;> trivial
 
-theorem excl_included [OFE α] {x y : Excl α} : x ≼ y ↔ y = invalid := by
+@[rocq_alias excl_included]
+theorem inc_iff [OFE α] {x y : Excl α} : x ≼ y ↔ y = invalid := by
   constructor
   · intro h
     rcases h with ⟨z, hz⟩
@@ -150,47 +170,107 @@ theorem excl_included [OFE α] {x y : Excl α} : x ≼ y ↔ y = invalid := by
     exists invalid
     exact Equiv.of_eq h
 
-theorem excl_includedN [OFE α] {x y : Excl α} (n) : x ≼{n} y ↔ y = invalid := by
+@[rocq_alias excl_includedN]
+theorem incN_iff [OFE α] {x y : Excl α} (n) : x ≼{n} y ↔ y = invalid := by
   constructor
   · intro ⟨z, hz⟩; cases x <;> cases y <;> trivial
   · rintro rfl; exists invalid
 
+@[rocq_alias Excl_inj]
+theorem excl_inj [OFE α] {a b : α} (h : (some (excl a) : Option (Excl α)) ≡ some (excl b)) :
+    a ≡ b := OFE.some_eqv_some.mp h
+
+@[rocq_alias Excl_dist_inj]
+theorem excl_dist_inj [OFE α] {a b : α} {n}
+    (h : (some (excl a) : Option (Excl α)) ≡{n}≡ some (excl b)) : a ≡{n}≡ b :=
+  OFE.some_dist_some.mp h
+
+@[rocq_alias Excl_included]
+theorem excl_included [OFE α] {a b : α} :
+    (some (excl a) : Option (Excl α)) ≼ some (excl b) ↔ a ≡ b := by
+  refine ⟨fun ⟨z, hz⟩ => ?_, fun h => ⟨none, OFE.some_eqv_some.mpr (show excl b ≡ excl a from h.symm)⟩⟩
+  rcases z with _|z
+  · exact (OFE.some_eqv_some.mp hz : excl b ≡ excl a).symm
+  · exact (OFE.some_eqv_some.mp hz : excl b ≡ invalid).elim
+
+@[rocq_alias Excl_includedN]
+theorem excl_includedN [OFE α] {a b : α} {n} :
+    (some (excl a) : Option (Excl α)) ≼{n} some (excl b) ↔ a ≡{n}≡ b := by
+  refine ⟨fun ⟨z, hz⟩ => ?_, fun h => ⟨none, OFE.some_dist_some.mpr (show excl b ≡{n}≡ excl a from h.symm)⟩⟩
+  rcases z with _|z
+  · exact (OFE.some_dist_some.mp hz : excl b ≡{n}≡ excl a).symm
+  · exact (OFE.some_dist_some.mp hz : excl b ≡{n}≡ invalid).elim
+
+@[rocq_alias excl_validN_inv_l]
+theorem validN_inv_some_l [OFE α] {n} {mx : Option (Excl α)} {a : α}
+    (h : ✓{n} (some (excl a) • mx)) : mx = none := by
+  cases mx with
+  | none => rfl
+  | some _ => exact h.elim
+
+@[rocq_alias excl_validN_inv_r]
+theorem validN_inv_some_r [OFE α] {n} {mx : Option (Excl α)} {a : α}
+    (h : ✓{n} (mx • some (excl a))) : mx = none := by
+  cases mx with
+  | none => rfl
+  | some _ => exact h.elim
+
+@[rocq_alias excl_exclusive]
 instance [OFE α] {x : Excl α} : CMRA.Exclusive x where exclusive0_l := fun _ a => a
 
+@[rocq_alias excl_cmra_discrete]
 instance [OFE α] [OFE.Discrete α] : CMRA.Discrete (Excl α) where
   discrete_valid a := a
 
-theorem invalid_included [OFE α] (ea : Excl α) : ea ≼ invalid := by exists invalid
+@[rocq_alias ExclInvalid_included]
+theorem invalid_inc [OFE α] (ea : Excl α) : ea ≼ invalid := by exists invalid
 
 /-! ## Functors -/
-theorem excl_map_id : map id x = x := by
+@[rocq_alias excl_map_id]
+theorem map_id : map id x = x := by
   cases x <;> simp
 
-theorem excl_map_compose (f : α → β) (g : β → γ) :
+@[rocq_alias excl_map_compose]
+theorem map_comp (f : α → β) (g : β → γ) :
     map (g ∘ f) x = map g (map f x) := by
   cases x <;> simp
 
-theorem excl_map_ext [OFE α] [OFE β] (f g : α → β) (h : ∀ x, f x ≡ g x) : map f x ≡ map g x := by
+@[rocq_alias excl_map_ext]
+theorem map_ext [OFE α] [OFE β] (f g : α → β) (h : ∀ x, f x ≡ g x) : map f x ≡ map g x := by
   cases x; apply h _; simp
 
-theorem excl_map_ne [OFE α] [OFE β] (f : α -n> β) : NonExpansive (map f) where
+@[rocq_alias excl_map_ne]
+theorem map_ne [OFE α] [OFE β] (f : α -n> β) : NonExpansive (map f) where
   ne n x₁ x₂ h := by
     cases x₁ <;> cases x₂ <;> try trivial
     have ⟨hne⟩ := f.ne
     exact hne h
 
-def exclO_map [OFE α] [OFE β] (f : α -n> β) : Excl α -C> Excl β := by
-  refine ⟨⟨map f, excl_map_ne f⟩, ?_, ?_, ?_⟩
+#rocq_ignore Excl_proper "Derivable from NonExpansive.eqv"
+
+@[rocq_alias excl_map_cmra_morphism]
+def hom [OFE α] [OFE β] (f : α -n> β) : Excl α -C> Excl β := by
+  refine ⟨⟨map f, map_ne f⟩, ?_, ?_, ?_⟩
   · intro n x h; cases x <;> trivial
   · intro x; trivial
   · intro x y; trivial
 
+@[rocq_alias exclO_map]
+def oMap [OFE α] [OFE β] (f : α -n> β) : Excl α -n> Excl β := ⟨map f, map_ne f⟩
+
+@[rocq_alias exclO_map_ne]
+instance oMap_ne [OFE α] [OFE β] : NonExpansive (oMap (α := α) (β := β)) where
+  ne _ _ _ h x := by cases x with
+    | excl _ => exact h _
+    | invalid => exact .rfl
+
+@[rocq_alias exclRF]
 abbrev ExclOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => Excl (F A B)
 
 instance {F} [COFE.OFunctor F] : RFunctor (ExclOF F) where
   cmra := inferInstance
-  map f g := exclO_map (COFE.OFunctor.map f g)
+  map f g := hom (COFE.OFunctor.map f g)
   map_ne.ne := by
     intros n f₁ f₂ hf g₁ g₂ hg x
     cases x with
@@ -208,6 +288,7 @@ instance {F} [COFE.OFunctor F] : RFunctor (ExclOF F) where
     · apply COFE.OFunctor.map_comp
     · trivial
 
+@[rocq_alias exclRF_contractive]
 instance {F} [COFE.OFunctorContractive F] : RFunctorContractive (ExclOF F) where
   map_contractive.1 {n x y} HKL z := by
     rewrite [RFunctor.map]

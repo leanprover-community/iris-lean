@@ -7,6 +7,7 @@ module
 
 
 public import Iris.BI
+public import Iris.BI.BigOp
 public import Iris.Algebra
 public import Iris.Instances.UPred
 public meta import Iris.Std.RocqPorting
@@ -14,7 +15,10 @@ public meta import Iris.Std.RocqPorting
 @[expose] public section
 namespace Iris
 
-open COFE
+open COFE Std CMRA
+
+@[ext]
+theorem IProp.ext {P Q : IProp GF} : P ⊣⊢ Q → P = Q := OFE.Leibniz.eq_of_eqv ∘ BI.equiv_iff.mpr
 
 /-- Apply an OFunctor at a fixed type -/
 abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [OFE T] :=
@@ -58,9 +62,13 @@ end TranspAp
 
 section ElemG
 
+/-- `ElemG` takes functors instead of CMRAs -/
+@[rocq_alias inG]
 class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] where
   τ : GType
   transp : FF τ = ⟨F, ‹_›⟩
+
+#rocq_ignore subG_inG "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 open OFE
 
@@ -69,7 +77,7 @@ variable [I : RFunctorContractive F]
 def ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).fst = F :=
   Sigma.mk.inj E.transp |>.1
 
-def ElemG.transpClass (E : ElemG GF F) T [OFE T] : HEq (GF E.τ).snd I :=
+def ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).snd ≍ I :=
   Sigma.mk.inj E.transp |>.2
 
 def ElemG.bundle (E : ElemG GF F) [OFE T] : F.ap T → GF.api E.τ T :=
@@ -114,10 +122,10 @@ theorem bundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : F.ap (IProp 
 
 theorem unbundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : GF.api (ElemG.τ GF F) (IProp GF)) :
   E.unbundle (a2 • ac) ≡ E.unbundle a2 • E.unbundle ac :=
-  OFE.transpAp_op_mp (E.transpMap ((GF (ElemG.τ GF F)).fst.ap (IPre GF))) (E.transpClass ((GF (ElemG.τ GF F)).fst.ap (IPre GF)))
+  OFE.transpAp_op_mp (E.transpMap ((GF (ElemG.τ GF F)).fst.ap (IPre GF)))
+    (E.transpClass ((GF (ElemG.τ GF F)).fst.ap (IPre GF)))
 
-theorem ElemG.bundle_unit {GF F} [RFunctorContractive F] (E : ElemG GF F)
-    {ε : F.ap (IProp GF)} [IsUnit ε] :
+theorem ElemG.bundle_unit {GF F} [RFunctorContractive F] (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit ε] :
     IsUnit (E.bundle ε) := by
   refine { unit_valid := ?_, unit_left_id := ?_, pcore_unit := ?_ }
   · refine CMRA.valid_iff_validN.mpr fun n => ?_
@@ -155,22 +163,26 @@ open Iris COFE UPred
 variable {FF : BundledGFunctors}
 
 /-- Isorecursive unfolding for each projection of FF. -/
+@[rocq_alias inG_unfold]
 def IProp.unfoldi : FF.api τ (IProp FF) -n> FF.api τ (IPre FF) :=
   OFunctor.map (IProp.fold FF) (IProp.unfold FF)
 
 /-- Isorecursive folding for each projection of FF. -/
+@[rocq_alias inG_fold]
 def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
   OFunctor.map (IProp.unfold FF) (IProp.fold FF)
 
+@[rocq_alias inG_unfold_fold]
 theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) ≡ x := by
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
   apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
 
+@[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) ≡ x := by
   refine .trans (OFunctor.map_comp (F := FF τ |>.fst) ..).symm ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.fst) x)
-  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold]
+  apply OFunctor.map_ne.eqv <;> intro _ <;> simp [IProp.unfold, IProp.fold, -OFE.leibniz]
 
 theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v) :
     OFE.DiscreteE (unfoldi.f v) where
@@ -189,10 +201,14 @@ theorem IProp.unfoldi_validN {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} x)
 theorem IProp.validN_foldi {n : Nat} (x : FF.api τ (IPre FF)) (H : ✓{n} (foldi x)) : ✓{n} x :=
   CMRA.validN_ne (IProp.unfoldi_foldi x).dist (IProp.unfoldi_validN _ H)
 
-theorem IProp.validN_unfoldi {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} (unfoldi x)) : ✓{n} x :=
+theorem IProp.validN_unfoldi_mp {n : Nat} (x : FF.api τ (IProp FF)) (H : ✓{n} (unfoldi x)) : ✓{n} x :=
   CMRA.validN_ne (IProp.foldi_unfoldi x).dist (IProp.foldi_validN _ H)
 
--- unfoldi preserves unit structure
+@[rocq_alias inG_unfold_validN]
+theorem IProp.validN_unfoldi {n : Nat} (x : FF.api τ (IProp FF)) : ✓{n} (unfoldi x) ↔ ✓{n} x :=
+  ⟨IProp.validN_unfoldi_mp x,IProp.unfoldi_validN x⟩
+
+/-- unfoldi preserves unit structure -/
 theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit x] :
     IsUnit (unfoldi x) := by
   refine { unit_valid := ?_, unit_left_id := ?_, pcore_unit := ?_ }
@@ -459,9 +475,12 @@ end iSingleton
 def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName) (v : F.ap (IProp GF)) : IProp GF :=
   UPred.ownM <| iSingleton F γ v
 
+#rocq_ignore own_def "`iOwn` is defined directly without `seal`/`unseal`."
+#rocq_ignore own_aux "`iOwn` is defined directly without `seal`/`unseal`."
+
 section iOwn
 
-open IProp OFE UPred BI GenMap
+open IProp OFE UPred BI GenMap ProofMode
 
 variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 
@@ -476,7 +495,7 @@ theorem iOwn_op {a1 a2 : F.ap (IProp GF)} : iOwn γ (a1 • a2) ⊣⊢ iOwn γ a
 @[rocq_alias own_mono]
 theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOwn γ a2 := by
   rcases H with ⟨ac, Hac⟩
-  rintro n x Hv ⟨clos, Hclos⟩
+  rintro n x ⟨clos, Hclos⟩
   refine ⟨iSingleton F γ ac • clos, Hclos.trans <| fun τ' γ' => ?_⟩
   refine .trans ?_ CMRA.op_assocN.symm
   rw [iResUR_op_eval]
@@ -505,10 +524,10 @@ theorem iOwn_cmraValid_op {a1 a2 : F.ap (IProp GF)} :
 
 @[rocq_alias own_valid_r]
 theorem iOwn_valid_r {a : F.ap (IProp GF)} : iOwn γ a ⊢ iOwn γ a ∗ internalCmraValid a :=
-  BI.persistent_entails_l iOwn_cmraValid
+  BI.persistent_entails_left iOwn_cmraValid
 @[rocq_alias own_valid_l]
 theorem iOwn_valid_l {a : F.ap (IProp GF)} : iOwn γ a ⊢ internalCmraValid a ∗ iOwn γ a :=
-  BI.persistent_entails_r iOwn_cmraValid
+  BI.persistent_entails_right iOwn_cmraValid
 
 @[rocq_alias own_core_persistent]
 instance {a : F.ap (IProp GF)} [CMRA.CoreId a] : BI.Persistent (iOwn γ a) where
@@ -587,9 +606,9 @@ theorem iOwn_alloc_dep (f : GName → F.ap (IProp GF)) (Ha : ∀ γ, ✓ (f γ))
     refine .trans intuitionistically_elim ?_
     apply UPred.bupd_ownM_updateP
     apply alloc_update_unit Ha
-  · refine BI.exists_elim (fun m => BI.pure_elim_l (fun ⟨γ, Hm⟩ => ?_))
+  · refine BI.exists_elim (fun m => BI.pure_elim_left (fun ⟨γ, Hm⟩ => ?_))
     subst Hm
-    exact BI.exists_intro' γ .rfl
+    exact BI.exists_intro_trans γ .rfl
 
 @[rocq_alias own_alloc]
 theorem iOwn_alloc (a : F.ap (IProp GF)) : ✓ a → ⊢ |==> ∃ γ, iOwn γ a :=
@@ -613,10 +632,9 @@ theorem iOwn_alloc_strong_dep (f : GName → F.ap (IProp GF)) (P : GName → Pro
     obtain ⟨γ, Hfresh, HPγ⟩ := (mf (ElemG.τ GF F)).exists_fresh_sat HP
     refine ⟨iSingleton F γ (f γ), ⟨γ, HPγ, rfl⟩, ?_⟩
     apply validN_iSingleton_op Hvalid (Hf γ HPγ).validN Hfresh
-  · refine BI.exists_elim (fun m => BI.pure_elim_l (fun ⟨γ, HPγ, Hm⟩ => ?_))
+  · refine BI.exists_elim (fun m => BI.pure_elim_left (fun ⟨γ, HPγ, Hm⟩ => ?_))
     subst Hm
-    exact BI.exists_intro' γ (BI.persistent_entails_r (BI.pure_intro HPγ))
-
+    exact BI.exists_intro_trans γ (BI.persistent_entails_right (BI.pure_intro HPγ))
 
 private theorem list_not_mem_of_gt_max (G : List Nat) (k : Nat) (hk : G.foldr max 0 < k) :
     k ∉ G := by
@@ -700,23 +718,23 @@ theorem iOwn_updateP {P γ a} (Hupd : a ~~>: P) : iOwn γ a ⊢ |==> ∃ a' : F.
   refine .trans (Q := iprop(|==> ∃ m, ⌜ ∃ a', m = (iSingleton F γ a') ∧ P a' ⌝ ∧ UPred.ownM m)) ?_ ?_
   · apply UPred.bupd_ownM_updateP
     apply singleton_updateP Hupd
-  · refine BIUpdate.mono (BI.exists_elim (fun m => BI.pure_elim_l (fun ⟨a', Hm, HP⟩ => ?_)))
+  · refine BIUpdate.mono (BI.exists_elim (fun m => BI.pure_elim_left (fun ⟨a', Hm, HP⟩ => ?_)))
     subst Hm
-    exact BI.exists_intro' a' (BI.persistent_entails_r (BI.pure_intro HP))
+    exact BI.exists_intro_trans a' (BI.persistent_entails_right (BI.pure_intro HP))
 
 @[rocq_alias own_update]
 theorem iOwn_update {γ} {a a' : F.ap (IProp GF)} (Hupd : a ~~> a') : iOwn γ a ⊢ |==> iOwn γ a' := by
   apply (iOwn_updateP <| UpdateP.of_update Hupd).trans
   apply BIUpdate.mono
   refine BI.exists_elim (fun m => ?_)
-  apply BI.pure_elim (a' = m) BI.sep_elim_l
+  apply BI.pure_elim (a' = m) BI.sep_elim_left
   rintro rfl
-  exact BI.sep_elim_r
+  exact BI.sep_elim_right
 
 @[rocq_alias own_valid_3]
 theorem iOwn_cmraValid_op_op {a1 a2 a3 : F.ap (IProp GF)} :
     iOwn γ a1 ∗ iOwn γ a2 ∗ iOwn γ a3 ⊢ UPred.cmraValid ((a1 • a2) • a3) :=
-  BI.sep_assoc.symm.1.trans ((BI.sep_mono_l iOwn_op.mpr).trans iOwn_cmraValid_op)
+  BI.sep_assoc.symm.1.trans ((BI.sep_mono_left iOwn_op.mpr).trans iOwn_cmraValid_op)
 
 @[rocq_alias own_update_2]
 theorem iOwn_update_op {γ} {a1 a2 a' : F.ap (IProp GF)} (Hupd : a1 • a2 ~~> a') :
@@ -726,7 +744,7 @@ theorem iOwn_update_op {γ} {a1 a2 a' : F.ap (IProp GF)} (Hupd : a1 • a2 ~~> a
 @[rocq_alias own_update_3]
 theorem iOwn_update_op_op {γ} {a1 a2 a3 a' : F.ap (IProp GF)} (Hupd : (a1 • a2) • a3 ~~> a') :
     iOwn γ a1 ∗ iOwn γ a2 ∗ iOwn γ a3 ⊢ |==> iOwn γ a' :=
-  BI.sep_assoc.symm.1.trans ((BI.sep_mono_l iOwn_op.mpr).trans (iOwn_update_op Hupd))
+  BI.sep_assoc.symm.1.trans ((BI.sep_mono_left iOwn_op.mpr).trans (iOwn_update_op Hupd))
 
 @[rocq_alias own_unit]
 theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn γ ε := by
@@ -752,5 +770,121 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [Hε : IsUnit ε] : ⊢ |==> iOwn 
     rintro rfl
     exact BI.and_elim_r
 
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_sep_own]
+instance intoSep_own {γ} {a : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
+    IntoSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
+  into_sep := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mp.trans iOwn_op.mp
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_and_own]
+instance intoAnd_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
+    IntoAnd false (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
+  into_and := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mp.trans <|
+    and_intro (iOwn_mono ⟨b2, .rfl⟩) (iOwn_mono ⟨b1, CMRA.comm⟩)
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias from_sep_own]
+instance fromSep_own {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2] :
+    FromSep (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
+  from_sep := iOwn_op.mpr.trans (equiv_iff.mp <| NonExpansive.eqv h.is_op).mpr
+
+@[rocq_alias combine_sep_as_own]
+instance combineSepAs_iOwn {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpMerge a b1 b2] :
+    CombineSepAs (iOwn γ b1) (iOwn γ b2) (iOwn γ a) where
+  combine_sep_as := iOwn_op.mpr.trans (equiv_iff.mp <| NonExpansive.eqv h.is_op.symm).mp
+
+@[rocq_alias combine_sep_gives_own]
+instance combineSepGives_iOwn {γ} {a1 a2 : F.ap (IProp GF)} :
+    CombineSepGives (iOwn γ a1) (iOwn γ a2) (internalCmraValid (a1 • a2)) where
+  combine_sep_gives := iOwn_cmraValid_op
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias from_and_own_persistent]
+instance fromAndOwn_persistent {γ} {a b1 b2 : F.ap (IProp GF)} [h : IsOpSplit a b1 b2]
+    [TCOr (CoreId b1) (CoreId b2)] : FromAnd (iOwn γ a) (iOwn γ b1) (iOwn γ b2) where
+  from_and := by
+    -- Infer from `CoreId b1` that `iOwn γ b1` is persistent, likewise for `b2`
+    have _ : TCOr (Persistent (iOwn γ b1)) (Persistent (iOwn γ b2)) := by
+      cases (inferInstance : TCOr (CoreId b1) (CoreId b2))
+      · infer_instance
+      · infer_instance
+    calc
+      _ ⊢ iOwn γ b1 ∗ iOwn γ b2 := persistent_and_sep_mp
+      _ ⊢ iOwn γ (b1 • b2)      := iOwn_op.mpr
+      _ ⊢ iOwn γ a              := (equiv_iff.mp <| NonExpansive.eqv h.is_op).mpr
+
 end iOwn
+
+section big_op_instances
+
+open IProp OFE UPred BI GenMap ProofMode Algebra Std
+open scoped Iris.Std.PartialMap
+
+variable {GF F} [URFunctorContractive F] [E : ElemG GF F]
+
+@[rocq_alias own_cmra_sep_homomorphism]
+instance iOwn_cmra_sep_homomorphism (γ : GName) :
+    WeakMonoidHomomorphism (CMRA.op (α := F.ap (IProp GF))) sep
+      UCMRA.unit iprop(emp) BiEntails (iOwn γ) where
+  rel_refl := .rfl
+  rel_trans := .trans
+  rel_proper := BIBase.BiEntails.proper
+  op_proper aa' bb' := equiv_iff.1 (sep_ne.eqv (equiv_iff.2 aa') (equiv_iff.2 bb'))
+  map_ne := iOwn_ne
+  map_op := iOwn_op
+
+@[rocq_alias big_opL_own]
+theorem bigOpL_iOwn {B : Type _} (γ : GName) (f : Nat → B → F.ap (IProp GF)) (l : List B) :
+    l ≠ [] →
+    iOwn γ ([^ CMRA.op list] k ↦ x ∈ l, f k x) ⊣⊢ [∗list] k ↦ x ∈ l, iOwn γ (f k x) :=
+  BigOpL.bigOpL_hom_weak f
+
+@[rocq_alias big_opM_own]
+theorem bigOpM_iOwn {K : Type _} {M : Type _ → Type _} {B : Type _} [LawfulFiniteMap M K]
+    [DecidableEq K] (γ : GName) (g : K → B → F.ap (IProp GF)) (m : M B) :
+    ¬ m ≡ₘ (∅ : M B) →
+    iOwn γ ([^ CMRA.op map] k ↦ x ∈ m, g k x) ⊣⊢ [∗map] k ↦ x ∈ m, iOwn γ (g k x) :=
+  BigOpM.bigOpM_weak_hom g m
+
+@[rocq_alias big_opS_own]
+theorem bigOpS_iOwn {B : Type _} {S : Type _} [LawfulFiniteSet S B] (γ : GName)
+    (g : B → F.ap (IProp GF)) (X : S) :
+    X ≠ ∅ →
+    iOwn γ ([^ CMRA.op set] x ∈ X, g x) ⊣⊢ [∗set] x ∈ X, iOwn γ (g x) :=
+  BigOpS.hom_weak (iOwn_cmra_sep_homomorphism γ) g X
+
+@[rocq_alias own_cmra_sep_entails_homomorphism]
+instance iOwn_cmra_sep_entails_homomorphism (γ : GName) :
+    MonoidHomomorphism (CMRA.op (α := F.ap (IProp GF))) sep
+      UCMRA.unit iprop(emp) Entails (iOwn γ) where
+  rel_refl := .rfl
+  rel_trans := .trans
+  rel_proper ha hb :=
+    ⟨fun h => (equiv_iff.1 ha).mpr.trans <| h.trans (equiv_iff.1 hb).mp,
+     fun h => (equiv_iff.1 ha).mp.trans <| h.trans (equiv_iff.1 hb).mpr⟩
+  op_proper := sep_mono
+  map_ne := iOwn_ne
+  map_op := iOwn_op.mp
+  map_unit := affine
+
+@[rocq_alias big_opL_own_1]
+theorem bigOpL_iOwn_entail {B : Type _} (γ : GName) (f : Nat → B → F.ap (IProp GF)) (l : List B) :
+    iOwn γ ([^ CMRA.op list] k ↦ x ∈ l, f k x) ⊢ [∗list] k ↦ x ∈ l, iOwn γ (f k x) :=
+  BigOpL.bigOpL_hom f l
+
+@[rocq_alias big_opM_own_1]
+theorem bigOpM_iOwn_entail {K : Type _} {M : Type _ → Type _} {B : Type _} [LawfulFiniteMap M K]
+    (γ : GName) (g : K → B → F.ap (IProp GF)) (m : M B) :
+    iOwn γ ([^ CMRA.op map] k ↦ x ∈ m, g k x) ⊢ [∗map] k ↦ x ∈ m, iOwn γ (g k x) :=
+  BigOpM.bigOpM_hom g m
+
+@[rocq_alias big_opS_own_1]
+theorem bigOpS_iOwn_entail {B : Type _} {S : Type _} [LawfulFiniteSet S B] (γ : GName)
+    (g : B → F.ap (IProp GF)) (X : S) :
+    iOwn γ ([^ CMRA.op set] x ∈ X, g x) ⊢ [∗set] x ∈ X, iOwn γ (g x) :=
+  BigOpS.hom (iOwn_cmra_sep_entails_homomorphism γ) g X
+
+end big_op_instances
+
 end Iris
