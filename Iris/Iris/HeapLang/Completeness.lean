@@ -32,13 +32,18 @@ Status of `wp_base_completeness` (the base-step case analysis):
 * `newProph` — atomic lift, fresh `p` picked in `σ₁.usedProphId`, then
   `ProphMap.new_proph` allocates a proph token; freshness in `σ` follows from
   `proph_exclusive` against the proph conjunct of `heap_inv σ`;
-* `resolve` — `sorry`. Rocq's proof recurses on the inner `BaseStep e σ κs
-  (val v) σ' ts` via `iInduction`. The Lean port would need to restructure
-  `wp_base_completeness` to take `BaseStep` directly with `termination_by` on
-  the step derivation, plus a `wp_resolve_strong`-style lift over the inner
-  completeness disjunction. All other supporting infrastructure
-  (`prophMapInterp`, `proph p pvs`, `ProphMap.resolve_proph`, the proph
-  conjunct of `heap_inv`) is in place.
+* `resolve` — `sorry` body, but `wp_base_completeness` is now a well-founded
+  recursion on `e₁` (declared via `termination_by e₁`), so the resolveS branch
+  has the inductive hypothesis `IH : heap_inv σ ⊢ |={E}=> baseCompletenessGoal
+  e σ E` in scope for the inner expression `e`. What remains is the body that
+  combines `IH` with the outer Resolve wrapping (mirror of Rocq lines 127–159):
+  extract `proph p` from `heap_inv σ`'s proph conjunct via `bigSepS_elem_of_acc`
+  + `hp : p ∈ σ.usedProphId`, then either inline a `wp_resolve_strong`-style
+  argument or split on `IH`'s atomic/non-atomic disjunction and use
+  `ProphMap.resolve_proph` to consume the front observation `(p,(v,w))` of
+  `κs`. All other supporting infrastructure (`prophMapInterp`, `proph p pvs`,
+  `ProphMap.resolve_proph`, the proph conjunct of `heap_inv`, the recursion)
+  is in place.
 -/
 
 @[expose] public section
@@ -655,7 +660,7 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
       have IH : heap_inv (GF := GF) σ ⊢ iprop(|={E}=> baseCompletenessGoal e σ E) :=
         wp_base_completeness e σ E ⟨κs, _, _, _, hbase⟩
       sorry
-termination_by structural e₁
+termination_by e₁
 
 section Framework
 
