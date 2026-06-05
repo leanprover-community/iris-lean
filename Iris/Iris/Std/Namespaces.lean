@@ -88,12 +88,8 @@ theorem fresh_name {S : Type _} [Iris.Std.LawfulFiniteSet S Pos] (E : S) (N : Na
   exists (CoPset.pick (↑N \ set_to_coPset E))
   have hne : ↑N \ set_to_coPset E ≠ ∅ := by
     apply Iris.Std.LawfulSet.diff_not_finite_finite_ne_empty
-    · simp [Iris.Std.LawfulSet.setInfinite]
-      intro l
-      have : ¬CoPset.isFinite (↑N) := nclose_not_finite N
-      rw [isFinite_setFinite] at this
-      simp [Iris.Std.LawfulSet.setFinite] at this
-      exact this l
+    · rw [←Iris.Std.LawfulSet.not_finite_infinite]
+      exact nclose_infinite N
     · rw [← isFinite_setFinite]
       exact set_to_coPset_finite E
   have ⟨hiN, hiE⟩ := CoPset.in_diff.mp (CoPset.mem_pick (↑N \ set_to_coPset E) hne)
