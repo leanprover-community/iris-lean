@@ -96,7 +96,7 @@ variable {K V M} [PartialMap M K]
 instance : EmptyCollection (M V) := ⟨PartialMap.empty⟩
 
 /-- Singleton map containing exactly one key-value pair. -/
-def singleton (k : K) (v : V) : M V := insert empty k v
+def singleton (k : K) (v : V) : M V := insert ∅ k v
 
 /-- Two maps have disjoint domains. -/
 def disjoint (m₁ m₂ : M V) : Prop := ∀ k, ¬((get? m₁ k).isSome ∧ (get? m₂ k).isSome)
@@ -106,7 +106,7 @@ def submap (m₁ m₂ : M V) : Prop := ∀ k v, get? m₁ k = some v → get? m�
 
 /-- Construct a map from a list of key-value pairs. Later entries override earlier ones. -/
 def ofList (l : List (K × V)) : M V :=
-  l.foldr (fun (k, v) acc => insert acc k v) empty
+  l.foldr (fun (k, v) acc => insert acc k v) ∅
 
 /-- Partial maps support the subset relation `⊆` via the submap relation. -/
 instance : HasSubset (M V) := ⟨submap⟩
@@ -226,7 +226,7 @@ class ExtensionalPartialMap (M : Type _ → Type _) (K : outParam (Type _))
 /-- Laws that a partial map implementation must satisfy. -/
 class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _))
     extends PartialMap M K where
-  get?_empty k : get? (empty : M V) k = none
+  get?_empty k : get? (∅ : M V) k = none
   get?_insert_eq {m : M V} {k k' v} : k = k' → get? (insert m k v) k' = some v
   get?_insert_ne {m : M V} {k k' v} : k ≠ k' → get? (insert m k v) k' = get? m k'
   get?_delete_eq {m : M V} {k k'} : k = k' → get? (delete m k) k' = none
@@ -238,7 +238,7 @@ class LawfulPartialMap (M : Type _ → Type _) (K : outParam (Type _))
 export LawfulPartialMap (get?_empty get?_insert_eq get?_insert_ne get?_delete_eq
   get?_delete_ne get?_bindAlter get?_merge)
 
-class LawfulFiniteMap (M : Type _ → Type _) (K : outParam (Type _)) 
+class LawfulFiniteMap (M : Type _ → Type _) (K : outParam (Type _))
     extends LawfulPartialMap M K, FiniteMap M K where
   toList_empty : toList (∅ : M V) = []
   toList_noDupKeys : NoDupKeys (toList (m : M V))
@@ -276,6 +276,11 @@ theorem get?_insert [DecidableEq K] {m : M V} {k k' : K} {v : V} :
   split <;> rename_i h
   · exact get?_insert_eq h
   · exact get?_insert_ne h
+
+theorem dom_insert_iff [DecidableEq K] {m : M V} {k k' : K} {v : V} :
+    PartialMap.dom (insert m k v) k' ↔ k = k' ∨ PartialMap.dom m k' := by
+  simp only [PartialMap.dom, get?_insert]
+  by_cases h : k = k' <;> simp [h]
 
 theorem get?_delete [DecidableEq K] {m : M V} {k k' : K} :
     get? (delete m k) k' = if k = k' then none else get? m k' := by
@@ -399,7 +404,7 @@ theorem delete_insert_of_ne {m : M V} {i j : K} {x : V} (h : i ≠ j) :
   · rw [get?_insert_ne hik, get?_delete_eq hjk, get?_delete_eq hjk]
   · rw [get?_delete_ne hjk, get?_insert_ne hik, get?_insert_ne hik, get?_delete_ne hjk]
 
-theorem delete_empty {i : K} : delete (empty : M V) i ≡ₘ empty := by
+theorem delete_empty {i : K} : delete (∅ : M V) i ≡ₘ ∅ := by
   intro j
   by_cases h : i = j
   · rw [get?_delete_eq h, get?_empty]
@@ -418,7 +423,7 @@ theorem insert_get? {m : M V} {i : K} {x : V} (h : get? m i = some x) :
   · rw [get?_insert_eq hij, ← h, hij]
   · rw [get?_insert_ne hij]
 
-theorem insert_ne_empty {m : M V} {i : K} {x : V} : ¬(insert m i x ≡ₘ empty) := by
+theorem insert_ne_empty {m : M V} {i : K} {x : V} : ¬(insert m i x ≡ₘ ∅) := by
   intro h
   have : get? (insert m i x) i = none := (h i) ▸ get?_empty i
   rw [get?_insert_eq rfl] at this
@@ -461,7 +466,7 @@ theorem insert_subset_insert {m₁ m₂ : M V} {i : K} {x : V} (h : m₁ ⊆ m�
 
 theorem singleton_ne_empty {i : K} {x : V} : ¬({[i := x]} ≡ₘ (∅ : M V)) := insert_ne_empty
 
-theorem delete_singleton_eq {i : K} {x : V} : delete ({[i := x]} : M V) i ≡ₘ empty := by
+theorem delete_singleton_eq {i : K} {x : V} : delete ({[i := x]} : M V) i ≡ₘ ∅ := by
   intro j
   by_cases h : i = j
   · rw [get?_delete_eq h, get?_empty]
@@ -474,7 +479,7 @@ theorem delete_singleton_ne {i j : K} {x : V} (h : i ≠ j) :
   · rw [get?_delete_eq hik, get?_singleton_ne (hik ▸ h.symm)]
   · rw [get?_delete_ne hik]
 
-theorem all_empty (P : K → V → Prop) : PartialMap.all P (empty : M V) := by
+theorem all_empty (P : K → V → Prop) : PartialMap.all P (∅ : M V) := by
   intro k v h
   rw [get?_empty k] at h
   cases h
@@ -546,6 +551,18 @@ theorem disjoint_insert_left {m₁ m₂ : M V} {i : K} {x : V}
     simp [hi] at hs2
   · simp [get?_insert_ne hik] at hs1
     exact hdisj k ⟨hs1, hs2⟩
+
+/-- Disjointness of `insert m₁ i x` and `m₂` decomposes into freshness of `i`
+in `m₂` and the disjointness of `m₁` and `m₂`. -/
+theorem disjoint_insert_left_iff {m₁ m₂ : M V} {i : K} {x : V} (hi : get? m₁ i = none) :
+    insert m₁ i x ##ₘ m₂ ↔ get? m₂ i = none ∧ m₁ ##ₘ m₂ := by
+  refine ⟨fun hd => ⟨?_, fun k ⟨hs1, hs2⟩ => ?_⟩, fun ⟨h1, h2⟩ => disjoint_insert_left h1 h2⟩
+  · rcases h : get? m₂ i with _ | _
+    · rfl
+    · exact absurd (hd i ⟨by simp [get?_insert_eq rfl], by simp [h]⟩) id
+  · by_cases hik : i = k
+    · subst hik; simp [hi] at hs1
+    · exact hd k ⟨by simp [get?_insert_ne hik, hs1], hs2⟩
 
 theorem disjoint_insert_right {m₁ m₂ : M V} {i : K} {x : V}
     (hi : get? m₁ i = none) (hdisj : m₁ ##ₘ m₂) : m₁ ##ₘ insert m₂ i x := by
@@ -638,12 +655,12 @@ theorem union_equiv {m₁ m₁' m₂ m₂' : M V}
   intro k
   rw [get?_union, get?_union, h₁ k, h₂ k]
 
-theorem union_empty_right {m : M V} : union m (empty : M V) ≡ₘ m := by
+theorem union_empty_right {m : M V} : union m (∅ : M V) ≡ₘ m := by
   intro k
   rw [get?_union, get?_empty]
   cases get? m k <;> rfl
 
-theorem union_empty_left {m : M V} : union (empty : M V) m ≡ₘ m := by
+theorem union_empty_left {m : M V} : union (∅ : M V) m ≡ₘ m := by
   intro k
   rw [get?_union, get?_empty]
   rfl
@@ -667,7 +684,7 @@ theorem map_id {m : M V} :
   rw [get?_map]
   cases get? m k <;> simp
 
-theorem map_empty {f : V → V'} : PartialMap.map f (empty : M V) ≡ₘ (empty : M V') := by
+theorem map_empty {f : V → V'} : PartialMap.map f (∅ : M V) ≡ₘ (∅ : M V') := by
   intro k
   rw [get?_map, get?_empty, get?_empty]
   rfl
@@ -793,12 +810,12 @@ theorem isSome_zipWith {f : V → V' → V''} {m₁ : M V} {m₂ : M V'} {k : K}
   cases h1 : get? m₁ k <;> cases h2 : get? m₂ k <;> simp
 
 theorem zip_empty_left {m : M V'} :
-    zip (empty : M V) m ≡ₘ empty := by
+    zip (∅ : M V) m ≡ₘ ∅ := by
   intro k
   simp only [zip, zipWith, get?_bindAlter, get?_empty, Option.bind]
 
 theorem zip_empty_right {m : M V} :
-    zip m (empty : M V') ≡ₘ empty := by
+    zip m (∅ : M V') ≡ₘ ∅ := by
   intro k
   simp only [zip, zipWith, get?_bindAlter, get?_empty, Option.bind]
   cases h : get? m k <;> simp
@@ -918,7 +935,7 @@ theorem ofList_toList [DecidableEq K] {m : M V} :
 
 theorem induction_on [DecidableEq K] {P : M V → Prop}
     (hequiv : ∀ m₁ m₂, PartialMap.equiv m₁ m₂ → P m₁ → P m₂)
-    (hemp : P PartialMap.empty)
+    (hemp : P ∅)
     (hins : ∀ i x m, get? m i = none → P m → P (PartialMap.insert m i x))
     (m : M V) : P m := by
   apply hequiv _ _ ofList_toList

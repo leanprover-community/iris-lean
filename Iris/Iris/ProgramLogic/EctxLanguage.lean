@@ -194,7 +194,7 @@ def SubredexesAreValues (e : Expr) :=
   ∀ {K : Ectx} {e'}, e = fill K e' → toVal e' = none → K = empty
 
 @[rocq_alias LanguageOfEctx]
-instance : Language Expr State Obs Val where
+instance instLanguage : Language Expr State Obs Val where
   val_stuck {e σ obs e' σ' eₜ} primStep := by
     rcases primStep with ⟨bstep⟩
     grind only [val_stuck, fill_not_val]
@@ -331,7 +331,7 @@ theorem baseStep_of_primStep_of_baseStep_reducible (bred : Reducible (e₁, σ�
   heq ▸ (EvContext.fill_empty e₂' |>.symm ▸ bstep)
 
 @[rocq_alias ectx_lang_ctx]
-instance (K : Ectx) : Language.Context (fill (Expr := Expr) K) where
+instance instContextFill (K : Ectx) : Language.Context (fill (Expr := Expr) K) where
   toVal_eq_none_fill := fill_not_val K _
   primStep_fill {e σ obs e' σ' eₜ} := fun ⟨bstep⟩ => by
     rename_i e₁ e₂ K'

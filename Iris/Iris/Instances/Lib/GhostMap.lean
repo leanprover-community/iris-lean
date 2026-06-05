@@ -79,7 +79,7 @@ instance ghost_map_elem_fractional (γ : GName) (k : K) (v : V) :
     unfold ghost_map_elem
     refine .trans ?_ iOwn_op
     refine equiv_iff.mp ?_
-    refine .trans ?_ (iOwn_ne.eqv frag_add_op_equiv)
+    refine .trans ?_ (iOwn_ne.eqv frag_add_op_eqv)
     refine OFE.NonExpansive.eqv (OFE.NonExpansive.eqv ?_)
     exact Agree.idemp.symm
 
@@ -96,7 +96,7 @@ theorem ghost_map_elems_unseal [DecidableEq K] γ (m : H V) dq :
       Frag k dq (toAgree (⟨v⟩: LeibnizO V))) := by
   iintro H
   by_cases h : m ≡ₘ ∅
-  · iapply OFE.NonExpansive.eqv <| OFE.NonExpansive.eqv (BigOpM.bigOpM_equiv_of_perm _ h)
+  · iapply OFE.NonExpansive.eqv <| OFE.NonExpansive.eqv (BigOpM.bigOpM_eqv_of_perm _ h)
     simp only [BigOpM.bigOpM_empty]
     iapply iOwn_unit (γ := γ) (ε := unit)
   · imodintro
@@ -214,7 +214,7 @@ theorem ghost_map_alloc_strong [DecidableEq K] (P : GName → Prop) (m : H V) :
       (update_big_alloc _ (Std.PartialMap.map (fun x ↦ toAgree ⟨x⟩) m) _
         (disjoint_empty_right _) DFrac.valid_own_one
         (all_map fun _ _ => Agree.toAgree_valid))
-    refine CMRA.op_eqv ?_ (BigOpM.bigOpM_map_equiv _ _ _)
+    refine CMRA.op_eqv ?_ (BigOpM.bigOpM_map_eqv _ _ _)
     exact OFE.NonExpansive.eqv (PartialMap.eqv_of_Equiv union_empty_right)
 
 @[rocq_alias ghost_map_alloc_strong_empty]
@@ -257,7 +257,7 @@ instance ghost_map_auth_fractional (m : H V) :
     unfold ghost_map_auth
     refine .trans ?_ iOwn_op
     refine equiv_iff.mp ?_
-    refine .trans ?_ (iOwn_ne.eqv auth_dfrac_op_equiv)
+    refine .trans ?_ (iOwn_ne.eqv auth_dfrac_op_eqv)
     rfl
 
 @[rocq_alias ghost_map_auth_as_fractional]
@@ -356,7 +356,7 @@ theorem ghost_map_insert {γ} {m : H V} (k : K) (v : V) (Heq : get? m k = .none)
   icases H with ⟨H, $⟩
   imodintro
   iapply iOwn_mono $$ H
-  exact auth_inc_of_pmap_equiv _ map_insert
+  exact auth_inc_of_pmap_eqv _ map_insert
 
 @[rocq_alias ghost_map_insert_persist]
 theorem ghost_map_insert_persist {γ} {m : H V} (k : K) (v : V) (Heq : get? m k = .none) :
@@ -373,7 +373,7 @@ theorem ghost_map_delete {γ} {m : H V} (k : K) (v : V) :
   icombine H1 H2 as G
   imod iOwn_update (update_one_delete (k := k) (v1 := toAgree (⟨v⟩ : LeibnizO V))) $$ G with G
   iapply iOwn_mono $$ G
-  exact auth_inc_of_pmap_equiv _ map_delete
+  exact auth_inc_of_pmap_eqv _ map_delete
 
 -- TODO: Make these implicit
 
@@ -386,7 +386,7 @@ theorem ghost_map_update {γ} {m : H V} (k : K) (v : V) (w : V) :
   imodintro
   unfold ghost_map_auth
   iapply iOwn_mono $$ aux
-  refine auth_inc_of_pmap_equiv _ ?_
+  refine auth_inc_of_pmap_eqv _ ?_
   intro i
   rw [get?_map, get?_map, insert_delete i]
 
@@ -411,8 +411,8 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
   · imodintro
     isplitl [H]
     · iapply iOwn_mono $$ H
-      exact auth_inc_of_pmap_equiv _ (map_equiv ((union_equiv h .refl).trans union_empty_left))
-    · iapply (BigSepM.bigSepM_equiv_empty h).mpr; itrivial
+      exact auth_inc_of_pmap_eqv _ (map_equiv ((union_equiv h .refl).trans union_empty_left))
+    · iapply (BigSepM.bigSepM_eqv_empty h).mpr; itrivial
   · rw [←(bigOpM_iOwn γ _ _ h).to_eq, ←iOwn_op.to_eq]
     imod iOwn_update (E := GhostMapG.elem) (update_big_alloc _
         (Std.PartialMap.map (fun x ↦ toAgree ⟨x⟩) m') (DFrac.own 1)
@@ -422,9 +422,9 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
     imodintro
     isplitl [H1]
     · iapply iOwn_mono $$ H1
-      exact auth_inc_of_pmap_equiv _ map_union
+      exact auth_inc_of_pmap_eqv _ map_union
     · iapply iOwn_mono $$ H2
-      exact inc_of_inc_of_eqv .rfl (BigOpM.bigOpM_map_equiv _ _ _).symm
+      exact inc_of_inc_of_eqv .rfl (BigOpM.bigOpM_map_eqv _ _ _).symm
 
 @[rocq_alias ghost_map_insert_persist_big]
 theorem ghost_map_insert_persist_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ m) :
@@ -443,7 +443,7 @@ theorem ghost_map_delete_big [DecidableEq K] {γ m} (m0 : H V) :
   imod ghost_map_elems_unseal $$ H2 with H2
   unfold ghost_map_auth
   iapply iOwn_update_op $$ [$H1 $H2]
-  refine Update.equiv_left (CMRA.op_right_eqv _ (BigOpM.bigOpM_map_equiv _ _ m0)) ?_
+  refine Update.equiv_left (CMRA.op_right_eqv _ (BigOpM.bigOpM_map_eqv _ _ m0)) ?_
   refine (update_big_delete _ _).trans ?_
   refine Update.equiv_right ?_ .id
   exact OFE.NonExpansive.eqv (PartialMap.eqv_of_Equiv map_difference_map)
@@ -459,20 +459,20 @@ theorem ghost_map_update_big [DecidableEq K] {γ m} (m0 m1 : H V) (Heq : dom m0 
     isplitl [H1]
     · unfold ghost_map_auth
       iapply iOwn_mono $$ H1
-      exact auth_inc_of_pmap_equiv _ (map_equiv ((union_equiv h .refl).trans union_empty_left))
-    · iapply (BigSepM.bigSepM_equiv_empty h).mpr; itrivial
+      exact auth_inc_of_pmap_eqv _ (map_equiv ((union_equiv h .refl).trans union_empty_left))
+    · iapply (BigSepM.bigSepM_eqv_empty h).mpr; itrivial
   · unfold ghost_map_elem ghost_map_auth
     icombine H1 H2 as H
     rw [←(bigOpM_iOwn γ _ _ h).to_eq, ←iOwn_op.to_eq]
     iapply iOwn_update $$ H
-    refine Update.equiv_left (CMRA.op_right_eqv _ (BigOpM.bigOpM_map_equiv _ _ m0)) ?_
+    refine Update.equiv_left (CMRA.op_right_eqv _ (BigOpM.bigOpM_map_eqv _ _ m0)) ?_
     have Heq' : dom (Std.PartialMap.map (fun x : V => toAgree (LeibnizO.mk x)) m0) =
         dom (Std.PartialMap.map (fun x : V => toAgree (LeibnizO.mk x)) m1) := by
       rw [dom_map, dom_map, Heq]
     refine (update_big_replace _ _ _ Heq'
       (all_map fun _ _ => Agree.toAgree_valid)).trans ?_
     refine Update.equiv_right ?_ .id
-    refine CMRA.op_eqv ?_ (BigOpM.bigOpM_map_equiv _ _ _)
+    refine CMRA.op_eqv ?_ (BigOpM.bigOpM_map_eqv _ _ _)
     exact OFE.NonExpansive.eqv (PartialMap.eqv_of_Equiv map_union.symm)
 
 end lemmas
