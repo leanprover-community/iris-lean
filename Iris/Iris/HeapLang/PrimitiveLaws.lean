@@ -482,8 +482,7 @@ theorem wp_faa {l : Loc} {i1 i2 : Int} :
   rename_i i1' H
   obtain rfl : i1 = i1' := by
     rw [Hpt] at H
-    simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq,
-      Val.lit.injEq, BaseLit.int.injEq] at H
+    simp only [Option.some.injEq, Val.lit.injEq, BaseLit.int.injEq] at H
     exact H
   ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
   simp only [stateInterp, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
@@ -558,6 +557,19 @@ theorem wp_new_proph :
     iframe Htok
     ipureintro; rfl
   · simp only [Algebra.BigOpL.bigOpL_nil]; itrivial
+
+/-- `Resolve e (Val (LitProphecy p)) (Val w)` lifts a WP for the inner expression
+`e` through the `Resolve` wrapper, consuming the front observation `(v_e, w)`
+from the prophecy `p`. Mirrors `wp_resolve_strong` in Rocq heap_lang's
+`primitive_laws.v`. -/
+theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × Val)}
+    (hatom : Language.Atomic (State := State) (Obs := Observation)
+      Language.Atomicity.StronglyAtomic e)
+    (hne : toVal e = none) :
+    proph p pvs -∗
+    WP e @ s; E {{ v_e, ∀ pvs', ⌜pvs = (v_e, w) :: pvs'⌝ -∗ proph p pvs' ={E}=∗ Φ v_e }} -∗
+    WP (Exp.resolve e (.val (.lit (.prophecy p))) (.val w)) @ s; E {{ Φ }} := by
+  sorry
 
 end Lifting
 

@@ -154,7 +154,7 @@ theorem wp_base_atomic {e₁ : Exp} {v₂ : Val} (l : Loc) (vold vnew : Option V
   ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
   have hl0 : l + (0 : Int) = l := by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind
   simp only [stateInterp, State.initHeap, Int.toNat_one, List.range_one, List.foldl_cons,
-    Int.cast_ofNat_Int, List.foldl_nil, hl0, List.length_nil, Nat.add_zero,
+    Int.cast_ofNat_Int, List.foldl_nil, hl0,
     Algebra.BigOpL.bigOpL_nil]
   iframe Hσ Hproph
   isplitl [Hpost Hclose Hpt Hmeta Hproph_inv]
@@ -162,8 +162,7 @@ theorem wp_base_atomic {e₁ : Exp} {v₂ : Val} (l : Loc) (vold vnew : Option V
     isplit
     · ipureintro; simp [toVal]
     iapply Hpost
-    simp only [heap_inv, State.initHeap, Int.toNat_one, List.range_one, List.foldl_cons,
-      Int.cast_ofNat_Int, List.foldl_nil, hl0]
+    simp only [heap_inv]
     isplitl [Hclose Hpt Hmeta]
     · iapply Hclose $$ [$Hpt $Hmeta]
     · iexact Hproph_inv
@@ -277,7 +276,7 @@ theorem faaS_det {l : Loc} {i1 i2 : Int} {σ : State} {obs e' σ' efs}
   | faaS _ i1' _ _ h' =>
     simp only [State.get?] at h'
     rw [h] at h'
-    simp only [Option.bind_some, Option.some.injEq, Val.lit.injEq, BaseLit.int.injEq] at h'
+    simp only [Option.some.injEq, Val.lit.injEq, BaseLit.int.injEq] at h'
     subst h'
     refine ⟨rfl, rfl, rfl, rfl⟩
 
@@ -370,7 +369,7 @@ theorem allocCells_disjoint {l : Loc} {n : Int} {v : Val} {m : HeapF (Option Val
   rw [get?_allocCells] at h1
   split at h1 <;> rename_i hcond
   · obtain ⟨i, hi, hki⟩ := hcond
-    rw [hki, hf (i : Int) (Int.ofNat_nonneg i) (by omega)] at h2
+    rw [hki, hf (i : Int) (Int.natCast_nonneg i) (by omega)] at h2
     simp at h2
   · simp at h1
 
@@ -656,10 +655,61 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
           · iexact Hproph_inv
       · itrivial
   | resolveS p v e σ w σ' κs ts hbase hp =>
-      -- Recurse on the inner base step to get its completeness equation.
+      -- Resolve is atomic since the inner step `hbase` produces a value in one
+      -- base step. We recurse on `hbase` to get the completeness equation for
+      -- the inner expression `e`, then lift through the `Resolve` wrapper.
       have IH : heap_inv (GF := GF) σ ⊢ iprop(|={E}=> baseCompletenessGoal e σ E) :=
         wp_base_completeness e σ E ⟨κs, _, _, _, hbase⟩
-      sorry
+      imodintro
+      ileft
+      have hatom : Atomic Atomicity.StronglyAtomic
+          (Exp.resolve e (.val (.lit (.prophecy p))) (.val w)) :=
+        base_step_to_val_atomic Atomicity.StronglyAtomic
+          (BaseStep.resolveS p v e σ w σ' κs efs hbase hp)
+      iframe %hatom
+      iintro %Φ Hstep
+      -- Destructure `heap_inv σ` and extract `∃ pvs, proph p pvs` from the proph
+      -- conjunct using `hp : p ∈ σ.usedProphId`.
+      icases Hinv with ⟨Hmap, Hproph_inv⟩
+      have hp_mem : p ∈ σ.usedProphId := Std.ExtTreeSet.mem_iff_contains.symm.mpr hp
+      icases Iris.BI.BigSepS.bigSepS_elem_of_acc hp_mem $$ Hproph_inv
+        with ⟨⟨%pvs, Htok⟩, HcloseProph⟩
+      -- Reconstruct `heap_inv σ` for the `IH` application.
+      ihave Hinv_full : iprop(heap_inv σ) $$ [Hmap HcloseProph Htok]
+      · unfold heap_inv
+        iframe Hmap
+        iapply HcloseProph
+        iexists pvs; iexact Htok
+      -- Open the inner completeness via `IH` (wrapping the WP goal in a fupd).
+      ihave Hinner : iprop(|={E}=> baseCompletenessGoal e σ E) $$ [Hinv_full]
+      · iapply IH; iexact Hinv_full
+      iapply fupd_wp
+      imod Hinner with H
+      -- `e` is atomic (it base-steps to a value via `hbase`).
+      have hatom_e : Atomic Atomicity.StronglyAtomic e :=
+        base_step_to_val_atomic Atomicity.StronglyAtomic hbase
+      -- The inner expression `e` is not itself a value (it base-steps).
+      have hne_e : toVal e = none := EctxLanguage.val_stuck hbase
+      icases H with (⟨_hatom_e', _Hwp_atom⟩ | ⟨_Hinv_back, _Hwp_nonatom⟩)
+      · -- Atomic disjunct of the inner completeness for `e`.
+        --
+        -- The intended argument: use `wp_resolve_strong` (with `Htok` for the proph
+        -- token — note the current structure consumes Htok above in building
+        -- Hinv_full, so a restructure is needed to keep Htok in scope here) to
+        -- lift `WP e` through the `Resolve` wrapper. Then apply `Hwp_atom` with the
+        -- magic premise body that, given an inner prim step, converts to a base step
+        -- via `SubredexesAreValues e` + `EctxLanguage.baseStep_of_primStep`, builds
+        -- the outer Resolve prim step via `BaseStep.resolveS`, feeds it to the outer
+        -- `Hstep`, then closes the proph-token swap by rebuilding `heap_inv σ_e`'s
+        -- proph conjunct via `HcloseProph` with the updated `Htok' : proph p pvs'`.
+        sorry
+      · -- Non-atomic disjunct: the inner step's completeness gives `heap_inv σ` back.
+        -- Symmetric to the atomic case but with non-atomic plumbing — extract `Htok`
+        -- afresh from the returned `heap_inv σ`'s proph conjunct (via `bigSepS_elem_of_acc`
+        -- + `hp_mem`), then proceed as above. For our use (`hbase` produces a value in
+        -- one step), `e` is `Atomic StronglyAtomic`, so this disjunct is typically not
+        -- chosen by the inner completeness proof.
+        sorry
 termination_by e₁
 
 section Framework
@@ -708,8 +758,8 @@ instance heap_lang_completeness :
     AbstractEctxLangCompletenessGen (Expr := Exp) (Ectx := List ECtxItem)
       (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
   heap_inv _C σ := heap_inv σ
-  heap_inv_timeless C σ := heap_inv_timeless σ
-  ectx_lang_completeness n C e₁ σ K E := wp_base_completeness_actual n C e₁ σ K E
+  heap_inv_timeless _C σ := heap_inv_timeless σ
+  ectx_lang_completeness n _C e₁ σ K E := wp_base_completeness_actual n _C e₁ σ K E
 
 end Framework
 
