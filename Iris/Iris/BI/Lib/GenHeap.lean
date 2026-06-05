@@ -47,11 +47,11 @@ variable (F : outParam (Type _)) [UFraction F]
 class genHeapPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)
     [Std.LawfulFiniteMap H L] where
   heap : GhostMapG GF F L V H
-  «meta» : GhostMapG GF F L GName H
+  metaInfo : GhostMapG GF F L GName H
   metaData : ElemG GF (constOF MetaUR)
 
 attribute [reducible, instance] genHeapPreS.heap
-attribute [reducible, instance] genHeapPreS.«meta»
+attribute [reducible, instance] genHeapPreS.metaInfo
 attribute [reducible, instance] genHeapPreS.metaData
 attribute [instance] GhostMapG.elem
 
@@ -217,8 +217,7 @@ theorem metaToken_union_1 {l : L} {E1 E2 : CoPset} (he : E1 ## E2) :
       iOwn (E := genHeapPreS.metaData (L := L) (V := V)) γm (ReservationMap.mkToken E1) ∗
       iOwn (E := genHeapPreS.metaData (L := L) (V := V)) γm (ReservationMap.mkToken E2)) $$ [Hm]
   · iapply iOwn_op.mp
-    iapply (BI.equiv_iff.mp (iOwn_ne.eqv (ReservationMap.token_union he))).mp
-    iexact Hm
+    iapply (BI.equiv_iff.mp (iOwn_ne.eqv (ReservationMap.token_union he))).mp $$ [$]
   isplitl [Hm1]
   · iexists γm
     iframe Hγm Hm1
@@ -375,42 +374,41 @@ theorem genHeap_alloc {σ : H V} {l : L} {v : V} (Hσl : get? σ l = .none) :
   have Hml : get? m l = .none := by
     rcases h : get? m l with _ | _
     · rfl
-    · exfalso
-      have : dom m l := by simp [dom, h]
-      have := Hdom l this
-      simp [dom, Hσl] at this
+    · specialize Hdom l
+      simp [dom, Hσl, h] at Hdom
   imod ghost_map_insert_persist l γm Hml $$ Hm with ⟨Hm, Hlm⟩
   imodintro
   isplitl [Hσ Hm]
   · iexists (insert m l γm)
-    isplitr
-    · ipureintro
-      intro k hk
-      simp only [dom] at hk ⊢
-      by_cases hkl : k = l
-      · subst hkl
-        rw [LawfulPartialMap.get?_insert_eq rfl]
-        rfl
-      · rw [LawfulPartialMap.get?_insert_ne (Ne.symm hkl)] at hk
-        rw [LawfulPartialMap.get?_insert_ne (Ne.symm hkl)]
-        exact Hdom k hk
-    · iframe
-  · isplitl [Hl]
-    · iframe
-    · iexists γm
-      iframe Hlm Hγm
+    iframe
+    ipureintro
+    intro k hk
+    simp only [dom] at hk ⊢
+    by_cases hkl : k = l
+    · subst hkl
+      rw [LawfulPartialMap.get?_insert_eq rfl]
+      rfl
+    · rw [LawfulPartialMap.get?_insert_ne (Ne.symm hkl)] at hk
+      rw [LawfulPartialMap.get?_insert_ne (Ne.symm hkl)]
+      exact Hdom k hk
+  · iframe
+    iexists γm
+    iframe Hlm Hγm
 
-/-- `genHeapInterp` is monotone under map equivalence. -/
-private theorem genHeapInterp_eqv [DecidableEq L] {σ₁ σ₂ : H V}
-    (h : σ₁ ≡ₘ σ₂) : genHeapInterp (GF := GF) σ₁ ⊢ genHeapInterp σ₂ := by
+/-- The state interpretation respects pointwise equivalence of the value
+heap. -/
+private theorem genHeapInterp_eqv {σ₁ σ₂ : H V} (h : σ₁ ≡ₘ σ₂) :
+    genHeapInterp (GF := GF) σ₁ ⊢ genHeapInterp σ₂ := by
   unfold genHeapInterp
-  refine BI.exists_mono (fun m => ?_)
-  refine BI.sep_mono ?_ (BI.sep_mono ?_ BIBase.Entails.rfl)
-  · refine BI.pure_mono ?_
-    intro H k hk
-    simp only [dom] at hk ⊢; rw [← h k]; exact H k hk
-  · refine iOwn_mono (HeapView.auth_inc_of_pmap_eqv _ ?_)
-    exact LawfulPartialMap.map_equiv h.symm
+  iintro ⟨%m, %Hdom, Hh, Hm⟩
+  iexists m
+  isplitr
+  · ipureintro
+    intro k hk
+    unfold dom; rw [← h k]
+    exact Hdom k hk
+  refine sep_mono_left ?_
+  exact iOwn_mono (HeapView.auth_inc_of_pmap_eqv _ (LawfulPartialMap.map_equiv h.symm))
 
 @[rocq_alias gen_heap_alloc_big]
 theorem genHeap_alloc_big [DecidableEq L] (σ' σ : H V) (Hdisj : σ' ##ₘ σ) :
@@ -421,59 +419,50 @@ theorem genHeap_alloc_big [DecidableEq L] (σ' σ : H V) (Hdisj : σ' ##ₘ σ) 
   induction σ' using LawfulFiniteMap.induction_on with
   | hequiv σ₁ σ₂ heqv IH =>
     intro σ Hdisj
-    have Hdisj₁ : σ₁ ##ₘ σ := by
-      intro k ⟨h1, h2⟩
-      exact Hdisj k ⟨by rw [← heqv k]; exact h1, h2⟩
-    have heqv_union : (σ₁ ∪ σ) ≡ₘ (σ₂ ∪ σ) :=
-      LawfulPartialMap.union_equiv heqv Std.PartialMap.equiv.refl
-    refine (IH σ Hdisj₁).trans ?_
-    refine bupd_mono (PROP := IProp GF) ?_
-    refine BI.sep_mono (genHeapInterp_eqv heqv_union) ?_
-    refine BI.sep_mono
-      ((BigSepM.bigSepM_eqv_of_perm (Φ := fun l v => iprop(l ↦ v)) heqv).1) ?_
-    exact (BigSepM.bigSepM_eqv_of_perm
-      (Φ := fun l (_v : V) => iprop(metaToken l ⊤)) heqv).1
+    have Hdisj₁ : σ₁ ##ₘ σ := fun k ⟨h1, h2⟩ => Hdisj k ⟨by rw [← heqv k]; exact h1, h2⟩
+    have hUnion : (σ₁ ∪ σ) ≡ₘ (σ₂ ∪ σ) := LawfulPartialMap.union_equiv heqv Std.PartialMap.equiv.refl
+    iintro Hσ
+    imod IH σ Hdisj₁ $$ Hσ with ⟨Hint, Hpts, Htok⟩
+    imodintro
+    isplitl [Hint]
+    · iapply genHeapInterp_eqv hUnion; iexact Hint
+    isplitl [Hpts]
+    · iapply (BigSepM.bigSepM_eqv_of_perm (Φ := fun l v => iprop(l ↦ v)) heqv).mp
+      iexact Hpts
+    iapply (BigSepM.bigSepM_eqv_of_perm (Φ := fun l _ => iprop(metaToken l ⊤)) heqv).mp
+    iexact Htok
   | hemp =>
     intro σ _
     iintro Hσ
-    iapply (bupd_intro (PROP := IProp GF))
-    isplitl [Hσ]
-    · iapply genHeapInterp_eqv (σ₁ := σ) (σ₂ := ∅ ∪ σ)
-        LawfulPartialMap.union_empty_left.symm
-      iexact Hσ
-    · isplitr
-      · iapply BigSepM.bigSepM_empty.mpr; itrivial
-      · iapply BigSepM.bigSepM_empty.mpr; itrivial
-  | hins l v σ' Hl IH =>
-    intro σ Hdisj
-    have Hdisj' : σ' ##ₘ σ := by
-      intro k ⟨h1, h2⟩
-      apply Hdisj k
-      refine ⟨?_, h2⟩
-      by_cases hkl : l = k
-      · subst hkl; rw [LawfulPartialMap.get?_insert_eq rfl]; simp
-      · rw [LawfulPartialMap.get?_insert_ne hkl]; exact h1
-    have Hσl : get? σ l = none := by
-      rcases hσl : get? σ l with _ | w
-      · rfl
-      · exfalso; apply Hdisj l
-        refine ⟨?_, by rw [hσl]; simp⟩
-        rw [LawfulPartialMap.get?_insert_eq rfl]; simp
-    have Hunion_l : get? (σ' ∪ σ) l = none :=
-      LawfulPartialMap.get?_union_none.mpr ⟨Hl, Hσl⟩
-    refine (IH σ Hdisj').trans (bupd_mono ?_ |>.trans bupd_trans)
-    iintro ⟨Hinterp, Hpts, Htok⟩
-    imod genHeap_alloc Hunion_l $$ Hinterp with ⟨Hinterp', Hl_pts, Hl_tok⟩
     imodintro
-    isplitl [Hinterp']
-    · iapply (genHeapInterp_eqv (σ₁ := insert (σ' ∪ σ) l v)
-        (σ₂ := insert σ' l v ∪ σ) LawfulPartialMap.union_insert_left)
-      iexact Hinterp'
-    · isplitl [Hl_pts Hpts]
-      · iapply (BigSepM.bigSepM_insert Hl).mpr
-        iframe Hl_pts Hpts
-      · iapply (BigSepM.bigSepM_insert Hl).mpr
-        iframe Hl_tok Htok
+    isplitl [Hσ]
+    · iapply genHeapInterp_eqv LawfulPartialMap.union_empty_left.symm
+      iexact Hσ
+    isplit <;> · iapply BigSepM.bigSepM_empty.mpr; itrivial
+  | hins l v σ'' Hl IH =>
+    intro σ Hdisj
+    have Hσl : get? σ l = .none := by
+      rcases h : get? σ l with _ | w
+      · rfl
+      · exact absurd
+          (Hdisj l ⟨by simp [LawfulPartialMap.get?_insert_eq rfl], by rw [h]; simp⟩) id
+    have Hdisj' : σ'' ##ₘ σ := fun k ⟨h1, h2⟩ => Hdisj k ⟨by
+      by_cases hkl : l = k
+      · subst hkl; simp [Hl] at h1
+      · rw [LawfulPartialMap.get?_insert_ne hkl]; exact h1, h2⟩
+    have Hunion_l : get? (σ'' ∪ σ) l = .none := LawfulPartialMap.get?_union_none.mpr ⟨Hl, Hσl⟩
+    iintro Hσ
+    imod IH σ Hdisj' $$ Hσ with ⟨Hint, Hpts, Htok⟩
+    imod genHeap_alloc Hunion_l $$ Hint with ⟨Hint', Hl_pts, Hl_tok⟩
+    imodintro
+    isplitl [Hint']
+    · iapply genHeapInterp_eqv LawfulPartialMap.union_insert_left
+      iexact Hint'
+    isplitl [Hl_pts Hpts]
+    · iapply (BigSepM.bigSepM_insert Hl).mpr
+      iframe Hl_pts Hpts
+    iapply (BigSepM.bigSepM_insert (Φ := fun l _ => iprop(metaToken l ⊤)) Hl).mpr
+    iframe Hl_tok Htok
 
 @[rocq_alias gen_heap_valid]
 theorem genHeap_valid {σ : H V} {l : L} {dq : DFrac F} {v : V} :
@@ -489,20 +478,18 @@ theorem genHeap_update {σ : H V} {l : L} {v₁ v₂ : V} :
   iintro ⟨⟨%m, %Hdom, Hσ, Hm⟩, Hl⟩
   imod ghost_map_update l v₁ v₂ $$ Hσ Hl with ⟨Hσ, Hl⟩
   imodintro
-  isplitl [Hσ Hm]
-  · iexists m
-    isplitr
-    · ipureintro
-      intro k hk
-      simp only [dom] at hk ⊢
-      by_cases hkl : k = l
-      · subst hkl
-        rw [LawfulPartialMap.get?_insert_eq rfl]
-        rfl
-      · rw [LawfulPartialMap.get?_insert_ne (Ne.symm hkl)]
-        exact Hdom k hk
-    · iframe
-  · iframe
+  iframe
+  iexists m
+  iframe
+  ipureintro
+  intro k hk
+  simp only [dom] at hk ⊢
+  by_cases hkl : k = l
+  · subst hkl
+    rw [LawfulPartialMap.get?_insert_eq rfl]
+    rfl
+  · rw [LawfulPartialMap.get?_insert_ne (Ne.symm hkl)]
+    exact Hdom k hk
 
 end updateLemmas
 
@@ -533,7 +520,6 @@ theorem genHeap_init_names [DecidableEq L] [genHeapPreS F L V GF H] (σ : H V) :
   imod (ghost_map_alloc_empty (K := L) (V := V)) with ⟨%γh, Hh⟩
   imod (ghost_map_alloc_empty (K := L) (V := GName)) with ⟨%γm, Hm⟩
   letI G : genHeapGS F L V GF H := ⟨γh, γm⟩
-  -- Build `genHeapInterp ∅` from the empty ghost maps.
   have Hinterp_empty : (γh ↪●MAP (∅ : H V)) ∗ (γm ↪●MAP (∅ : H GName)) ⊢@{IProp GF}
       genHeapInterp (G := G) ∅ := by
     unfold genHeapInterp
@@ -541,23 +527,20 @@ theorem genHeap_init_names [DecidableEq L] [genHeapPreS F L V GF H] (σ : H V) :
     iexists (∅ : H GName)
     isplitr
     · ipureintro
-      intro k hk
-      simp only [dom, Std.LawfulPartialMap.get?_empty] at hk
-      exact Bool.false_ne_true (Option.isSome_none.symm.trans hk) |>.elim
+      simp only [dom, Std.LawfulPartialMap.get?_empty]
+      grind
     iframe Hh Hm
   ihave Hinterp0 : genHeapInterp (G := G) ∅ $$ [Hh Hm]
   · iapply Hinterp_empty
-    iframe Hh Hm
+    iframe
   imod (genHeap_alloc_big σ ∅
     (Std.LawfulPartialMap.disjoint_empty_right σ)) $$ Hinterp0
     with ⟨Hinterp, Hpts, Htok⟩
   imodintro
   iexists γh, γm
-  isplitl [Hinterp]
-  · iapply (genHeapInterp_eqv (σ₁ := σ ∪ ∅) (σ₂ := σ)
-      Std.LawfulPartialMap.union_empty_right)
-    iexact Hinterp
-  iframe Hpts Htok
+  iframe
+  iapply genHeapInterp_eqv LawfulPartialMap.union_empty_right
+  iexact Hinterp
 
 /-- Initialize `genHeapGS` from a `genHeapPreS`, hiding the freshly allocated
 ghost names. -/
