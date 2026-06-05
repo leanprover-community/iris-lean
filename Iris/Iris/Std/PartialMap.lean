@@ -277,6 +277,11 @@ theorem get?_insert [DecidableEq K] {m : M V} {k k' : K} {v : V} :
   · exact get?_insert_eq h
   · exact get?_insert_ne h
 
+theorem dom_insert_iff [DecidableEq K] {m : M V} {k k' : K} {v : V} :
+    PartialMap.dom (insert m k v) k' ↔ k = k' ∨ PartialMap.dom m k' := by
+  simp only [PartialMap.dom, get?_insert]
+  by_cases h : k = k' <;> simp [h]
+
 theorem get?_delete [DecidableEq K] {m : M V} {k k' : K} :
     get? (delete m k) k' = if k = k' then none else get? m k' := by
   split <;> rename_i h
@@ -546,6 +551,18 @@ theorem disjoint_insert_left {m₁ m₂ : M V} {i : K} {x : V}
     simp [hi] at hs2
   · simp [get?_insert_ne hik] at hs1
     exact hdisj k ⟨hs1, hs2⟩
+
+/-- Disjointness of `insert m₁ i x` and `m₂` decomposes into freshness of `i`
+in `m₂` and the disjointness of `m₁` and `m₂`. -/
+theorem disjoint_insert_left_iff {m₁ m₂ : M V} {i : K} {x : V} (hi : get? m₁ i = none) :
+    insert m₁ i x ##ₘ m₂ ↔ get? m₂ i = none ∧ m₁ ##ₘ m₂ := by
+  refine ⟨fun hd => ⟨?_, fun k ⟨hs1, hs2⟩ => ?_⟩, fun ⟨h1, h2⟩ => disjoint_insert_left h1 h2⟩
+  · rcases h : get? m₂ i with _ | _
+    · rfl
+    · exact absurd (hd i ⟨by simp [get?_insert_eq rfl], by simp [h]⟩) id
+  · by_cases hik : i = k
+    · subst hik; simp [hi] at hs1
+    · exact hd k ⟨by simp [get?_insert_ne hik, hs1], hs2⟩
 
 theorem disjoint_insert_right {m₁ m₂ : M V} {i : K} {x : V}
     (hi : get? m₁ i = none) (hdisj : m₁ ##ₘ m₂) : m₁ ##ₘ insert m₂ i x := by
