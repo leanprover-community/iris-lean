@@ -14,7 +14,7 @@ open Iris.HeapLang
 section test
 
 variable (v : Val) (e : Exp)
-/-- info: hl((#1 + (#1 + v(?v)))) : Exp -/
+/-- info: hl((#1 + (#1 + v(&v)))) : Exp -/
 #guard_msgs in
 #check hl(#1 + #1 + {.ofVal v})
 /--
@@ -29,17 +29,17 @@ info: Exp.binop BinOp.plus
 #guard_msgs in
 set_option pp.explicit true in
 #check hl(#1 + #1 + {.ofVal v})
-/-- info: hl((#1 + (#1 + v(?v)))) : Exp -/
+/-- info: hl((#1 + (#1 + v(&v)))) : Exp -/
 #guard_msgs in
-#check hl(#1 + (#1 + v(?v)))
+#check hl(#1 + (#1 + v(&v)))
 
-/-- info: hl(((#1 + #1) + v(?v))) : Exp -/
+/-- info: hl(((#1 + #1) + v(&v))) : Exp -/
 #guard_msgs in
-#check hl((#1 + #1) + ?v)
+#check hl((#1 + #1) + &v)
 
-/-- info: hl((#1 = (v + (v(?v) + ?e)))) : Exp -/
+/-- info: hl((#1 = (v + (v(&v) + &e)))) : Exp -/
 #guard_msgs in
-#check hl(#1 = v + ?v + ?e)
+#check hl(#1 = v + &v + &e)
 /--
 info: Exp.binop BinOp.eq
   (@ProgramLogic.ToVal.ofVal Exp Val instToVal
@@ -48,7 +48,7 @@ info: Exp.binop BinOp.eq
 -/
 #guard_msgs in
 set_option pp.explicit true in
-#check hl(#1 = v + v(?v))
+#check hl(#1 = v + v(&v))
 
 /-- info: hl((λ x y z, #1)) : Exp -/
 #guard_msgs in
@@ -101,9 +101,9 @@ set_option pp.explicit true in
 #check hl(λ x y, let z := #1; #2; x + y + z)
 
 variable (f x : Binder) in
-/-- info: hl((λ ?x y, (rec ?f ?x := y))) : Exp -/
+/-- info: hl((λ &x y, (rec &f &x := y))) : Exp -/
 #guard_msgs in
-#check hl(λ ?x y, rec ?f ?x := y)
+#check hl(λ &x y, rec &f &x := y)
 
 variable (f x : Binder) in
 /--
@@ -111,16 +111,16 @@ info: Exp.rec_ Binder.anon x (Exp.rec_ Binder.anon (Binder.named "y") (Exp.rec_ 
 -/
 #guard_msgs in
 set_option pp.explicit true in
-#check hl(λ ?x y, rec ?f ?x := y)
+#check hl(λ &x y, rec &f &x := y)
 
 
 /--
 info: hl((λ x y,
-      ((((#1 + (#2 +ₗ (#3 - (#4 * (#5 / (#6 % #7)))))) & #8) | (#9 ^ (#10 <<< (#11 >>> #12)))) ≤
+      ((((#1 + (#2 +ₗ (#3 - (#4 * (#5 / (#6 % #7)))))) &&& #8) ||| (#9 ^^^ (#10 <<< (#11 >>> #12)))) ≤
           (#13 ≤ (#14 < (#15 = (#16 + ((-#17) + (~#18))))))))) : Exp
 -/
 #guard_msgs in
-#check hl(λ x y, #1 + #2 +ₗ #3 - #4 * #5 / #6 % #7 & #8 | #9 ^ #10 <<< #11 >>> #12 <= #13 ≤ #14 < #15 = #16 + (-#17) + (~#18))
+#check hl(λ x y, #1 + #2 +ₗ #3 - #4 * #5 / #6 % #7 &&& #8 ||| #9 ^^^ #10 <<< #11 >>> #12 <= #13 ≤ #14 < #15 = #16 + (-#17) + (~#18))
 
 /--
 info: Exp.rec_ Binder.anon (Binder.named "x")
@@ -183,7 +183,7 @@ info: Exp.rec_ Binder.anon (Binder.named "x")
 -/
 #guard_msgs in
 set_option pp.explicit true in
-#check hl(λ x y, #1 + #2 +ₗ #3 - #4 * #5 / #6 % #7 & #8 | #9 ^ #10 <<< #11 >>> #12 <= #13 ≤ #14 < #15 = #16 + (-#17) + (~#18))
+#check hl(λ x y, #1 + #2 +ₗ #3 - #4 * #5 / #6 % #7 &&& #8 ||| #9 ^^^ #10 <<< #11 >>> #12 <= #13 ≤ #14 < #15 = #16 + (-#17) + (~#18))
 
 /--
 info: Exp.binop BinOp.shiftl (Exp.var "x").load

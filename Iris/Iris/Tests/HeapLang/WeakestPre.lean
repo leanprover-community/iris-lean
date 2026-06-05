@@ -54,7 +54,7 @@ GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 v : Val
 ⊢ ⏎
-  ⊢ WP hl(v(?v)) {{ v, True }}
+  ⊢ WP hl(v(&v)) {{ v, True }}
 -/
 #guard_msgs in
 example : ⊢@{IProp GF} WP (v : Exp) {{ v, WP ((v : Val) : Exp) {{ v, True }} }} := by
@@ -71,7 +71,7 @@ hlc : HasLC
 GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 ⊢ ⏎
-  ⊢ WP hl(((#0 + #1) + #2)) {{ v, WP hl((v(?v) + #3)) {{ v, True }} }}
+  ⊢ WP hl(((#0 + #1) + #2)) {{ v, WP hl((v(&v) + #3)) {{ v, True }} }}
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
@@ -96,7 +96,7 @@ hlc : HasLC
 GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 ⊢ ⏎
-  ⊢ WP hl(((#0 + #1) + #2)) {{ v, WP hl((v(?v) + #3)) {{ v, True }} }}
+  ⊢ WP hl(((#0 + #1) + #2)) {{ v, WP hl((v(&v) + #3)) {{ v, True }} }}
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
@@ -108,7 +108,7 @@ hlc : HasLC
 GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 ⊢ ⏎
-  ⊢ WP hl((#0 + #1)) {{ v, WP hl(((v(?v) + #2) + #3)) {{ v, True }} }}
+  ⊢ WP hl((#0 + #1)) {{ v, WP hl(((v(&v) + #2) + #3)) {{ v, True }} }}
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
@@ -120,7 +120,7 @@ hlc : HasLC
 GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 ⊢ ⏎
-  ⊢ WP hl((#2 + (#1 + #2))) {{ v, WP hl(v(?v)) {{ v, True }} }}
+  ⊢ WP hl((#2 + (#1 + #2))) {{ v, WP hl(v(&v)) {{ v, True }} }}
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(#2 + (#1 + #2)) {{ v, True }} := by
@@ -133,7 +133,7 @@ hlc : HasLC
 GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 ⊢ ⏎
-  ⊢ WP hl((#1 + #2)) {{ v, WP hl((#2 + v(?v))) {{ v, True }} }}
+  ⊢ WP hl((#1 + #2)) {{ v, WP hl((#2 + v(&v))) {{ v, True }} }}
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(#2 + (#1 + #2)) {{ v, True }} := by
@@ -145,7 +145,7 @@ hlc : HasLC
 GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 ⊢ ⏎
-  ⊢ WP hl(snd((#1, #0))) {{ v, WP hl((v(?v) + #1)) {{ v, True }} }}
+  ⊢ WP hl(snd((#1, #0))) {{ v, WP hl((v(&v) + #1)) {{ v, True }} }}
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(snd((#1,#0)) + #1) {{ v, True }} := by

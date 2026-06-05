@@ -84,7 +84,7 @@ open EctxLanguage
 theorem wp_rec {f x : Binder} {e : Exp} {vf v : Val}
     (h : vf = (.rec_ f x e)) :
     ▷ WP ((e.subst f vf).subst x v) @ s; E {{ Φ }}
-    ⊢ WP hl(?vf ?v) @ s; E {{ Φ }} := by
+    ⊢ WP hl(&vf &v) @ s; E {{ Φ }} := by
   iintro Hwp; subst h
   iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
@@ -93,11 +93,11 @@ theorem wp_rec {f x : Binder} {e : Exp} {vf v : Val}
 theorem wp_fork {e : Exp} :
     ▷ Φ (hl_val(#())) -∗
     ▷ WP e @ s; ⊤ {{ _v, True }} -∗
-    WP hl(fork(?e)) @ s; E {{ Φ }} := by
+    WP hl(fork(&e)) @ s; E {{ Φ }} := by
   iintro HΦ Hwp
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  have Hred : BaseStep.Reducible (hl(fork(?e)), σ₁) :=
+  have Hred : BaseStep.Reducible (hl(fork(&e)), σ₁) :=
     ⟨[], hl(#BaseLit.unit), σ₁, [e], by constructor⟩
   isplitr
   · ipureintro
@@ -116,7 +116,7 @@ theorem wp_fork {e : Exp} :
 
 theorem wp_alloc (v : Val) (Φ : Val → IProp GF ) :
     ▷ (∀ l : Loc, l ↦ some v -∗ Φ (.lit $ .loc l)) -∗
-    WP hl(ref(?v)) @ s; E {{ Φ }} := by
+    WP hl(ref(&v)) @ s; E {{ Φ }} := by
   iintro HΦ
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
@@ -187,7 +187,7 @@ theorem wp_load {l : Loc} {q} {v : Val} Φ :
 theorem wp_store {l : Loc} {v v' : Val} Φ :
     ▷ l ↦ some v' -∗
     ▷ (l ↦ some v -∗ Φ hl_val(#())) -∗
-    WP hl(v(#(.loc l)) ← ?v) @ s; E {{ Φ }} := by
+    WP hl(v(#(.loc l)) ← &v) @ s; E {{ Φ }} := by
   iintro >Hpt HΦ
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
@@ -225,7 +225,7 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
     (Heq1 : toVal e1 = .some v1) (Heq2 : toVal e2 = .some v2) (Heq3 : v'.compareSafe v1)
     (Heq4 : decide (v' = v1) = false) :
       ▷ (l ↦{q} some v')
-      ⊢ (WP hl(cmpXchg(v(#(.loc l)), ?e1, ?e2)) @ s; E
+      ⊢ (WP hl(cmpXchg(v(#(.loc l)), &e1, &e2)) @ s; E
           {{ v'', ⌜v'' = hl_val(({v'}, #(BaseLit.bool false)))⌝ ∗ l ↦{q} some v' }}) := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl

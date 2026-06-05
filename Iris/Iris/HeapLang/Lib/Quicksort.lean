@@ -20,10 +20,10 @@ def append : Val := hl_val%
     match l1 with
     | none() => l2
     | some(x) =>
-      (let p := !x;
-       let head := fst(p);
-       let tail := snd(p);
-       ?cons (head, append (tail, l2)))
+      let p := !x;
+      let head := fst(p);
+      let tail := snd(p);
+      &cons (head, append (tail, l2))
 
 def partition : Val := hl_val%
   rec partition arg :=
@@ -32,28 +32,28 @@ def partition : Val := hl_val%
     match l with
     | none() => (none(), none())
     | some(lx) =>
-      (let p := !lx;
-       let head := fst(p);
-       let tail := snd(p);
-       let part := partition (x, tail);
-       if head ≤ x then
-        (?cons (head, fst(part)), snd(part))
-       else
-        (fst(part), ?cons (head, snd(part))))
+      let p := !lx;
+      let head := fst(p);
+      let tail := snd(p);
+      let part := partition (x, tail);
+      if head ≤ x then
+        (&cons (head, fst(part)), snd(part))
+      else
+        (fst(part), &cons (head, snd(part)))
 
 def quicksort : Val := hl_val%
   rec quicksort l :=
     match l with
     | none() => l
     | some(x) =>
-      (let p := !x;
-       let head := fst(p);
-       let tail := snd(p);
-       let part := ?partition (head, tail);
-       let a := quicksort (fst(part));
-       let b := quicksort (snd(part));
-       let e := ?cons (head, b);
-       ?append (a, e))
+      let p := !x;
+      let head := fst(p);
+      let tail := snd(p);
+      let part := &partition (head, tail);
+      let a := quicksort (fst(part));
+      let b := quicksort (snd(part));
+      let e := &cons (head, b);
+      &append (a, e)
 
 section Predicates
 
@@ -62,14 +62,14 @@ variable [HeapLangGS hlc GF]
 def isList (v : Val) : List Int → IProp GF
   | [] => iprop% ⌜v = hl_val(none())⌝
   | x :: xs => iprop% ∃ l tl, ⌜v = hl_val(some(#(.loc l)))⌝ ∗
-    l ↦ some hl_val((#x, ?tl)) ∗ isList tl xs
+    l ↦ some hl_val((#x, &tl)) ∗ isList tl xs
 
 theorem isList_nil {v} :
   isList (GF:=GF) v [] ⊣⊢ iprop(⌜v = hl_val(none())⌝) := .rfl
 
 theorem isList_cons {v x xs} :
   isList (GF:=GF) v (x :: xs) ⊣⊢ iprop(∃ l tl, ⌜v = hl_val(some(#(.loc l)))⌝ ∗
-    l ↦ some hl_val((#x, ?tl)) ∗ isList tl xs) := .rfl
+    l ↦ some hl_val((#x, &tl)) ∗ isList tl xs) := .rfl
 
 end Predicates
 
@@ -80,7 +80,7 @@ variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
 theorem cons_spec x l ls Φ :
     isList (GF:=GF) l ls -∗
     (∀ v, isList v (x :: ls) -∗ Φ v) -∗
-    WP hl(?cons v((#x, ?l))) {{ Φ }} := by
+    WP hl(&cons v((#x, &l))) {{ Φ }} := by
   iintro Hl HΦ
   wp_rec
   wp_bind ref(_)
@@ -97,7 +97,7 @@ theorem append_spec l1 ls1 l2 ls2 Φ :
     isList (GF:=GF) l1 ls1 -∗
     isList l2 ls2 -∗
     (∀ v, isList v (ls1 ++ ls2) -∗ Φ v) -∗
-    WP hl(?append v((?l1, ?l2))) {{ Φ }} := by
+    WP hl(&append v((&l1, &l2))) {{ Φ }} := by
     iintro Hl1 Hl2 HΦ
     iloeb as IH generalizing %l1 %ls1 %Φ
     wp_rec; wp_pures
@@ -115,7 +115,7 @@ theorem append_spec l1 ls1 l2 ls2 Φ :
       iapply wp_load $$ [$]
       iintro !> Hl
       wp_pures
-      wp_bind ?append _
+      wp_bind &append _
       iapply IH $$ Hl1 [$]
       iintro %_ Hl
       wp_pures
@@ -130,8 +130,8 @@ theorem partition_spec x l ls Φ :
     (∀ l1 l2,
       isList l1 (ls.filter (· ≤ x)) -∗
       isList l2 (ls.filter (x < ·)) -∗
-      Φ hl_val((?l1, ?l2))) -∗
-    WP hl(?partition v((#x, ?l))) {{ Φ }} := by
+      Φ hl_val((&l1, &l2))) -∗
+    WP hl(&partition v((#x, &l))) {{ Φ }} := by
   iintro Hl HΦ
   iloeb as IH generalizing %l %ls %Φ
   wp_rec; wp_pures
@@ -150,20 +150,20 @@ theorem partition_spec x l ls Φ :
     iapply wp_load $$ [$]
     iintro !> Hpt
     wp_pures
-    wp_bind ?partition _
+    wp_bind &partition _
     iapply IH $$ Hl
     iintro %l1 %l2 Hl1 Hl2
     wp_pures
     by_cases hd ≤ x <;> simp [*]
     · wp_pures
-      wp_bind ?cons _
+      wp_bind &cons _
       iapply cons_spec $$ Hl1
       iintro %_ _
       wp_pures
       imodintro
       iapply HΦ $$ [$] [$]
     · wp_pures
-      wp_bind ?cons _
+      wp_bind &cons _
       iapply cons_spec $$ Hl2
       iintro %_ _
       wp_pures
@@ -180,7 +180,7 @@ theorem quicksort_spec l ls Φ :
       ⌜List.Pairwise LE.le ls'⌝ -∗
       ⌜List.Perm ls ls'⌝ -∗
       Φ l') -∗
-    WP hl(?quicksort ?l) {{ Φ }} := by
+    WP hl(&quicksort &l) {{ Φ }} := by
   iintro Hl HΦ
   iloeb as IH generalizing %l %ls %Φ
   wp_rec
@@ -204,19 +204,19 @@ theorem quicksort_spec l ls Φ :
     iapply wp_load $$ [$]
     iintro !> Hpt
     wp_pures
-    wp_bind ?partition _
+    wp_bind &partition _
     iapply partition_spec $$ [$]
     iintro %l1 %l2 Hl1 Hl2
     wp_pures
-    wp_bind ?quicksort _
+    wp_bind &quicksort _
     iapply IH $$ [$]
     iintro %l1' %ls1' Hl1 %_ %_
     wp_pures
-    wp_bind ?quicksort _
+    wp_bind &quicksort _
     iapply IH $$ [$]
     iintro %l2' %ls2' Hl2 %_ %_
     wp_pures
-    wp_bind ?cons _
+    wp_bind &cons _
     iapply cons_spec $$ Hl2
     iintro %_ _
     wp_pures

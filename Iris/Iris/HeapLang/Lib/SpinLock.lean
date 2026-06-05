@@ -21,7 +21,7 @@ def tryAcquire : Val := hl_val(
   λ l, snd(cmpXchg(l, #false, #true)))
 def acquire : Val := hl_val(
   rec acquire l :=
-    if (?tryAcquire l)
+    if (&tryAcquire l)
       then #()
       else acquire l)
 def release : Val := hl_val(
@@ -81,7 +81,7 @@ variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [SpinLockG GF]
 theorem newlock_spec :
   ⊢ □ ∀ (Φ : Val → IProp GF),
     (∀ (v : Val) (γ : GName), (∀ R E, R ={E}=∗ isLock γ v R) -∗ Φ v) -∗
-    WP hl(?newlock #()) {{ Φ }} := by
+    WP hl(&newlock #()) {{ Φ }} := by
   iintro !> %Φ Hcont
   wp_rec
   imod token_alloc with ⟨%γ, Hγ⟩
@@ -103,7 +103,7 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
     ⊢ □ ∀ (Φ : Val → IProp GF),
     isLock γ lk R -∗
     (∀ (b : Bool), iprop(if b then locked γ ∗ R else iprop(True)) -∗ Φ hl_val(#b)) -∗
-    WP hl(?tryAcquire ?lk) {{ Φ }} := by
+    WP hl(&tryAcquire &lk) {{ Φ }} := by
   iintro !> %Φ #Hlock Hcont
   wp_rec
   unfold isLock
@@ -158,7 +158,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   iintro !> %Φ #Hlock Hcont
   iloeb as IH
   wp_rec
-  wp_bind ?tryAcquire _
+  wp_bind &tryAcquire _
   iapply try_acquire_spec $$ Hlock
   iintro %b Hpt
   cases b
