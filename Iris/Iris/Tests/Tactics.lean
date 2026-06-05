@@ -2723,23 +2723,6 @@ section iinduction
 
   For natural numbers, `Nat.recAux` is used as the default recursor name. Hence,
   the tactic is equivalent to `iinduction n using Nat.recAux generalizing %P HQ %R`.
-
-  Hypotheses in the spatial context necessarily become premises of the
-  induction hypothesis. The intuitionistic hypothesis `T n` is reverted
-  because it depends on `n`.
-
-  With the `generalizing` syntax, `P` and `R` are universally quantified
-  in the induction hypothesis. Given they occur in `HP` and `HR`, respectively,
-  the two propositions are included as premises of the induction hypothesis.
-
-  Meanwhile, `HQ` is included as a premise of the induction hypothesis without
-  `Q` being universally quantified.
-
-  Note that the following variants of the tactic all produce equivalent subgoals:
-  - `induction n generalizing %P HP HQ %R`
-  - `induction n generalizing %P HQ %R HR`
-  - `induction n generalizing %P HP HQ %R HR`
-  - the tactics above with any permutations of `generalizing` arguments.
 -/
 example [BI PROP] {P Q R S : PROP} {T : Nat → PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T n -∗ ⌜n + 0 = n⌝ := by
