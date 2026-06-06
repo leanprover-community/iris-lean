@@ -20,12 +20,20 @@ namespace Iris.ProofMode
 public meta section
 open BI Std Lean Elab Tactic Meta Qq Lean.Parser.Tactic
 
+/--
+  Information obtained from parsing a case under the `with` syntax
+-/
 private structure Alt where
+  -- The name of the constructor
   ctor : Name
+  -- The alternative names supplied by the tactic user
   vars : Array (TSyntax `Lean.binderIdent)
+  -- User-supplied tactics for this case
   tacs : TSyntax `Lean.Parser.Tactic.tacticSeq
 
 private structure Alts where
+  -- User-supplied tactic to be applied before splitting into cases
+  tac : TSyntax `tactic
   alts : Array Alt
 
 /--
@@ -48,11 +56,13 @@ private def parseInductionAlt (alt : Syntax) :
 
 private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts) :
     TacticM Alts := do
-  return ⟨← (alts : Syntax)[2].getArgs.mapM parseInductionAlt⟩
+  let `(tactic| $tac) := (alts : Syntax)[0]
+  return ⟨tac, ← (alts : Syntax)[2].getArgs.mapM parseInductionAlt⟩
 
 /--
   Check whether a fully-qualified constructor name (e.g. `Nat.succ`) matches a
-  user-written short name (e.g. `succ`) or an already-qualified name.
+  u
+  ser-written short name (e.g. `succ`) or an already-qualified name.
 -/
 private def matchesCtorName (fullName : Name) (userShort : Name) : Bool :=
   fullName == userShort || fullName.getString! == userShort.getString!
@@ -350,7 +360,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
           -- Check whether the user has supplied tactic sequences for this induction subgoal
           let tacticSeq := parsedAlts.bind <| fun parsedAlts =>
-            (parsedAlts.alts.find? <| matcher ctor).map <| fun ⟨_, _, t⟩ => t
+            (parsedAlts.alts.find? <| matcher ctor).map (·.tacs)
 
           -- Generate the induction subgoal for the user, label the induction subgoal with `ctor`
           let pf' ← match tacticSeq with
