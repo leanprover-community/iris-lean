@@ -28,8 +28,8 @@ private structure Alt where
   ctor : Name
   -- The alternative names supplied by the tactic user
   vars : Array (TSyntax `Lean.binderIdent)
-  -- User-supplied tactics for this case
-  tacs : TSyntax `Lean.Parser.Tactic.tacticSeq
+  -- User-supplied tactics for this case, `none` if a hole (`_` or `?_`) is given
+  tacs : Option <| TSyntax `Lean.Parser.Tactic.tacticSeq
 
 private structure Alts where
   -- User-supplied tactic to be applied before splitting into cases
@@ -50,16 +50,19 @@ private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts
   let mut parsedAlts : Array Alt := #[]
 
   for alt in (alts : Syntax)[2].getArgs do
-    let `(inductionAlt| $[$lhs:inductionAltLHS]* => $tac:tacticSeq) := alt
-    | throwErrorAt alt "iinduction: invalid syntax"
+    let (lhs, tacs) ← match alt with
+      | `(inductionAlt| $[$lhs:inductionAltLHS]* => $tac:tacticSeq) => pure (lhs, some tac)
+      | `(inductionAlt| $[$lhs:inductionAltLHS]* => $_:hole) => pure (lhs, none)
+      | `(inductionAlt| $[$lhs:inductionAltLHS]* => $_:syntheticHole) => pure (lhs, none)
+      | _ => throwErrorAt alt "iinduction: invalid syntax"
 
     for l in lhs do
       match l with
       | `(Lean.Parser.Tactic.inductionAltLHS| | $ctor:ident $[$vars]*)
       | `(Lean.Parser.Tactic.inductionAltLHS| | @ $ctor:ident $[$vars]*) =>
-        parsedAlts := parsedAlts.push ⟨ctor.getId, ← parseVars vars, tac⟩
+        parsedAlts := parsedAlts.push ⟨ctor.getId, ← parseVars vars, tacs⟩
       | `(Lean.Parser.Tactic.inductionAltLHS| | $_:hole $[$vars]*) =>
-        parsedAlts := parsedAlts.push ⟨.anonymous, ← parseVars vars, tac⟩
+        parsedAlts := parsedAlts.push ⟨.anonymous, ← parseVars vars, tacs⟩
       | _ => throwErrorAt l "iinduction: invalid syntax"
 
   return ⟨tac, parsedAlts⟩
@@ -364,7 +367,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
           -- Check whether the user has supplied tactic sequences for this induction subgoal
           let tacticSeq := parsedAlts.bind <| fun parsedAlts =>
-            (parsedAlts.alts.find? <| matcher ctor).map (·.tacs)
+            (parsedAlts.alts.find? <| matcher ctor).bind (·.tacs)
 
           -- Generate the induction subgoal for the user, label the induction subgoal with `ctor`
           let pf' ← match tacticSeq with
