@@ -81,6 +81,30 @@ def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do
     m.setUserName name
   modify ({goals := ·.goals.push m})
 
+/--
+  Creates a new proof goal with the given hypotheses (`hyps`), conclusion
+  (`goal`) and run a sequence of tactics (`tacticSeq`) to the
+  newly generated goal before addition into the proof state.
+-/
+def addBIGoalRunTactic {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous)
+    (tacticSeq : TSyntax `Lean.Parser.Tactic.tacticSeq) :
+    ProofModeM Q($e ⊢ $goal) := do
+  let m ← mkBIGoal hyps goal name
+
+  -- Handle user-supplied tactics for specific constructors
+  modify <| fun s => { s with goals := s.goals.pop }
+
+  -- Run the user tactic on the newly generated goal
+  let savedGoals ← getGoals
+  setGoals [m.mvarId!]
+  evalTactic tacticSeq
+  let remaining ← getGoals
+  setGoals savedGoals
+  for r in remaining do addMVarGoal r
+
+  pure m
+
 /-- Try to synthesize a typeclass instance, adding any created metavariables as proof mode goals. -/
 def ProofModeM.trySynthInstanceQ (α : Q(Sort v)) : ProofModeM (Option Q($α)) := do
   let LOption.some (e, mvars) ← ProofMode.trySynthInstance α | return none
