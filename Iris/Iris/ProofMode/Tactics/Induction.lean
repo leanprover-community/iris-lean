@@ -321,10 +321,9 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       match parsedAlts.alts.find? (matcher ctor) <|> parsedAlts.wildcard with
       | some alt =>
         pure { explicit := true, varNames := alt.vars.toList.map <|
-          fun v =>
-            match v.raw with
-            | `(binderIdent| $id:ident) => id.getId
-            | _ => Name.mkSimple "_" }
+          (match ·.raw with
+          | `(binderIdent| $id:ident) => id.getId
+          | _ => Name.mkSimple "_") }
       | none => throwMissingAlt ctor
 
   let pf ← iRevertIntro hyps goal targets <|

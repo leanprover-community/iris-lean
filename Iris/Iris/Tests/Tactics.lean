@@ -2789,12 +2789,14 @@ example [BI PROP] {α} {t : Tree α} {P : Tree α → PROP} :
     · iexact ih1
     · iexact ih2
 
+/-- Testing `iinduction` with the same tactic sequence for two constructors -/
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
-  induction n with simp
+  iinduction n with
   | zero | succ => itrivial
 
+/-- Testing `iinduction` with the hole and synthetic hole -/
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
@@ -2804,22 +2806,26 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   itrivial
   itrivial
 
+/- Testing `iinduction` with the hole and synthetic hole -/
+/-- error: iinduction: invalid occurrence of the wildcard alternative `| _ => ...`:It must be the last alternative -/
+#guard_msgs in
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
   iinduction n with
   | zero => itrivial
-  | succ n ih => _
   | _ => _
+  | succ n ih => itrivial
 
-  itrivial
-
+/- Testing `iinduction` with the hole and synthetic hole -/
+/-- error: iinduction: wildcard alternative is not needed -/
+#guard_msgs in
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
-  iinduction n with
-  | zero  => _
-  | succ n _ => itrivial
-  itrivial
+  induction n with
+  | zero => itrivial
+  | succ n ih => itrivial
+  | _ => _
 
 end iinduction
