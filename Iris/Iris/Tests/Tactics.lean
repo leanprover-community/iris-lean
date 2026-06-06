@@ -2806,6 +2806,20 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   itrivial
   itrivial
 
+/-- Testing `iinduction` with wildcard for one case -/
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n with
+  | zero | _ => itrivial
+
+/-- Testing `iinduction` with wildcard for two cases -/
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n with
+  | _ => itrivial
+
 /- Testing `iinduction` with the hole and synthetic hole -/
 /-- error: iinduction: invalid occurrence of the wildcard alternative `| _ => ...`:It must be the last alternative -/
 #guard_msgs in
