@@ -2842,11 +2842,37 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | succ n ih => itrivial
   | _ => _
 
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+/- Testing `iinduction` with first tactic after `with` syntax -/
+example [BI PROP] {P Q R S T : PROP} {m n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜m + 0 = m⌝ -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
   iinduction n with simp
   | zero => itrivial
+  | succ n ih => itrivial
+
+/- Testing `iinduction` with first tactic after `with` syntax -/
+example [BI PROP] {P Q R S T : PROP} {m n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜m + 0 = m⌝ -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n with (cases m)
+  | zero => itrivial
+  | succ n ih => itrivial
+
+/- Testing `iinduction` with first tactic after `with` syntax, redundant alternative name -/
+/-- error: iinduction: alternative `zero` is not needed -/
+#guard_msgs in
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜0 + 0 = 0⌝ -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT #H
+  iinduction n with (try iexact H)
+  | zero => itrivial
+  | succ n ih => itrivial
+
+/- Testing `iinduction` with first tactic after `with` syntax, no redundant alternative name -/
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜0 + 0 = 0⌝ -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT #H
+  iinduction n with (try iexact H)
   | succ n ih => itrivial
 
 end iinduction
