@@ -36,24 +36,14 @@ private structure Alts where
   tac : TSyntax `tactic
   alts : Array Alt
 
-private def parseInductionAltLHS (lhs : Syntax) :
-    TacticM (Name × Array (TSyntax `Lean.binderIdent)) := do
+private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts) :
+    TacticM Alts := do
   let parseVars (vars : Array Syntax) : TacticM (Array (TSyntax `Lean.binderIdent)) := do
     vars.mapM fun v =>
       match v with
       | `(ident| $id:ident) => `(binderIdent| $id:ident)
       | _                   => `(binderIdent| _)
 
-  match lhs with
-  | `(Lean.Parser.Tactic.inductionAltLHS| | $ctor:ident $[$vars]*)
-  | `(Lean.Parser.Tactic.inductionAltLHS| | @ $ctor:ident $[$vars]*) =>
-    return (ctor.getId, ← parseVars vars)
-  | `(Lean.Parser.Tactic.inductionAltLHS| | $_:hole $[$vars]*) =>
-    return (.anonymous, ← parseVars vars)
-  | _ => throwErrorAt lhs "iinduction: invalid syntax"
-
-private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts) :
-    TacticM Alts := do
   -- The user-supplied tactic to be applied before splitting into cases
   let `(tactic| $tac) := (alts : Syntax)[0]
 
@@ -64,8 +54,13 @@ private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts
     | throwErrorAt alt "iinduction: invalid syntax"
 
     for l in lhs do
-      let ⟨ctor, vars⟩ ← parseInductionAltLHS l
-      parsedAlts := parsedAlts.push ⟨ctor, vars, tac⟩
+      match l with
+      | `(Lean.Parser.Tactic.inductionAltLHS| | $ctor:ident $[$vars]*)
+      | `(Lean.Parser.Tactic.inductionAltLHS| | @ $ctor:ident $[$vars]*) =>
+        parsedAlts := parsedAlts.push ⟨ctor.getId, ← parseVars vars, tac⟩
+      | `(Lean.Parser.Tactic.inductionAltLHS| | $_:hole $[$vars]*) =>
+        parsedAlts := parsedAlts.push ⟨.anonymous, ← parseVars vars, tac⟩
+      | _ => throwErrorAt l "iinduction: invalid syntax"
 
   return ⟨tac, parsedAlts⟩
 
