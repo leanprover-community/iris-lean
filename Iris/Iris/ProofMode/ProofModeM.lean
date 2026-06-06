@@ -92,9 +92,6 @@ def addBIGoalRunTactic {prop : Q(Type u)} {bi : Q(BI $prop)}
     ProofModeM Q($e ⊢ $goal) := do
   let m ← mkBIGoal hyps goal name
 
-  -- Handle user-supplied tactics for specific constructors
-  modify <| fun s => { s with goals := s.goals.pop }
-
   -- Run the user tactic on the newly generated goal
   let savedGoals ← getGoals
   setGoals [m.mvarId!]
