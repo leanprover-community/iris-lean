@@ -309,7 +309,10 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   -- Check that all alternative names supplied by the user are valid
   match parsedAlts with
   | none => pure ()
-  | some parsedAlts => checkCtors recCtors parsedAlts
+  | some parsedAlts =>
+    checkCtors recCtors parsedAlts
+    if recCtors.length == parsedAlts.alts.size && parsedAlts.wildcard.isSome then
+      throwError "iinduction: wildcard alternative is not needed"
 
   -- Define the names for variables and induction hypotheses if supplied by user
   let varNames : Array AltVarNames ←

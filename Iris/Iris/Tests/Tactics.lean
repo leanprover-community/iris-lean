@@ -2823,7 +2823,7 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
-  induction n with
+  iinduction n with
   | zero => itrivial
   | succ n ih => itrivial
   | _ => _
