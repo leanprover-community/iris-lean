@@ -61,8 +61,7 @@ private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts
 
 /--
   Check whether a fully-qualified constructor name (e.g. `Nat.succ`) matches a
-  u
-  ser-written short name (e.g. `succ`) or an already-qualified name.
+  user-written short name (e.g. `succ`) or an already-qualified name.
 -/
 private def matchesCtorName (fullName : Name) (userShort : Name) : Bool :=
   fullName == userShort || fullName.getString! == userShort.getString!

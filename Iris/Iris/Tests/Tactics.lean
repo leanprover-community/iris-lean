@@ -2789,4 +2789,20 @@ example [BI PROP] {α} {t : Tree α} {P : Tree α → PROP} :
     · iexact ih1
     · iexact ih2
 
+
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  induction n with simp
+  | zero | succ => itrivial
+
+  -- | invalidA  => done
+  -- | zero      => itrivial
+  -- | invalidB  => done
+  -- | succ  => itrivial
+  -- | invalidC  => done
+
+
+
+
 end iinduction
