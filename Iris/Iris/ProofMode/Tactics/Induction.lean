@@ -36,28 +36,38 @@ private structure Alts where
   tac : TSyntax `tactic
   alts : Array Alt
 
-/--
-  Parse the one branch of the tactic's `with` syntax for user-supplied alternative names.
+private def parseInductionAltLHS (lhs : Syntax) :
+    TacticM (Name × Array (TSyntax `Lean.binderIdent)) := do
+  let parseVars (vars : Array Syntax) : TacticM (Array (TSyntax `Lean.binderIdent)) := do
+    vars.mapM fun v =>
+      match v with
+      | `(ident| $id:ident) => `(binderIdent| $id:ident)
+      | _                   => `(binderIdent| _)
 
-  This function returns a triple, which includes:
-  1. the name of the constructor supplied by the user (`ctor.getId`),
-  2. the alternative names for that constructor (`vars`), and
-  3. the tactics for this induction subgoal (`tac`).
--/
-private def parseInductionAlt (alt : Syntax) :
-    TacticM Alt := do
-  let `(Lean.Parser.Tactic.inductionAlt| | $ctor:ident $[$vars]* => $tac:tacticSeq) := alt
-  | throwErrorAt alt "iinduction: invalid syntax"
-  let vars ← vars.mapM <| fun v => do
-    match v with
-    | `($id:ident) => `(binderIdent| $id:ident)
-    | _            => `(binderIdent| _)
-  return ⟨ctor.getId, vars, tac⟩
+  match lhs with
+  | `(Lean.Parser.Tactic.inductionAltLHS| | $ctor:ident $[$vars]*)
+  | `(Lean.Parser.Tactic.inductionAltLHS| | @ $ctor:ident $[$vars]*) =>
+    return (ctor.getId, ← parseVars vars)
+  | `(Lean.Parser.Tactic.inductionAltLHS| | $_:hole $[$vars]*) =>
+    return (.anonymous, ← parseVars vars)
+  | _ => throwErrorAt lhs "iinduction: invalid syntax"
 
 private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts) :
     TacticM Alts := do
+  -- The user-supplied tactic to be applied before splitting into cases
   let `(tactic| $tac) := (alts : Syntax)[0]
-  return ⟨tac, ← (alts : Syntax)[2].getArgs.mapM parseInductionAlt⟩
+
+  let mut parsedAlts : Array Alt := #[]
+
+  for alt in (alts : Syntax)[2].getArgs do
+    let `(inductionAlt| $[$lhs:inductionAltLHS]* => $tac:tacticSeq) := alt
+    | throwErrorAt alt "iinduction: invalid syntax"
+
+    for l in lhs do
+      let ⟨ctor, vars⟩ ← parseInductionAltLHS l
+      parsedAlts := parsedAlts.push ⟨ctor, vars, tac⟩
+
+  return ⟨tac, parsedAlts⟩
 
 /--
   Check whether a fully-qualified constructor name (e.g. `Nat.succ`) matches a
