@@ -11,14 +11,12 @@ public meta import Iris.ProofMode.Tactics.Cases
 public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Tactics.RevertIntro
-
 public meta import Lean.Elab.Tactic.Induction
-public meta import Lean.Parser.Tactic
 
 namespace Iris.ProofMode
 
 public meta section
-open BI Std Lean Elab Tactic Meta Qq Lean.Parser.Tactic
+open BI Std Lean Elab Tactic Meta Qq Parser.Tactic
 
 /--
   Information obtained from parsing a case under the `with` syntax
