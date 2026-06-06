@@ -33,7 +33,8 @@ private structure Alt where
 
 private structure Alts where
   -- User-supplied tactic to be applied before splitting into cases
-  tac : TSyntax `tactic
+  tac : Option <| TSyntax `tactic
+  -- The alternative cases supplied by the user
   alts : Array Alt
 
 private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts) :
@@ -44,28 +45,30 @@ private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts
       | `(ident| $id:ident) => `(binderIdent| $id:ident)
       | _                   => `(binderIdent| _)
 
-  -- The user-supplied tactic to be applied before splitting into cases
-  let `(tactic| $tac) := (alts : Syntax)[0]
-
   let mut parsedAlts : Array Alt := #[]
 
-  for alt in (alts : Syntax)[2].getArgs do
-    let (lhs, tacs) ← match alt with
-      | `(inductionAlt| $[$lhs:inductionAltLHS]* => $tac:tacticSeq) => pure (lhs, some tac)
-      | `(inductionAlt| $[$lhs:inductionAltLHS]* => $_:hole) => pure (lhs, none)
-      | `(inductionAlt| $[$lhs:inductionAltLHS]* => $_:syntheticHole) => pure (lhs, none)
-      | _ => throwErrorAt alt "iinduction: invalid syntax"
+  match alts with
+  | `(inductionAlts| with $[$cases]*) =>
+    for alt in cases do
+      let (lhs, tacs) ← match alt with
+        | `(inductionAlt| $[$lhs:inductionAltLHS]* => $tac:tacticSeq) => pure (lhs, some tac)
+        | `(inductionAlt| $[$lhs:inductionAltLHS]* => $_:hole) => pure (lhs, none)
+        | `(inductionAlt| $[$lhs:inductionAltLHS]* => $_:syntheticHole) => pure (lhs, none)
+        | _ => throwErrorAt alt "iinduction: invalid syntax"
 
-    for l in lhs do
-      match l with
-      | `(inductionAltLHS| | $ctor:ident $[$vars]*)
-      | `(inductionAltLHS| | @ $ctor:ident $[$vars]*) =>
-        parsedAlts := parsedAlts.push ⟨ctor.getId, ← parseVars vars, tacs⟩
-      | `(inductionAltLHS| | $_:hole $[$vars]*) =>
-        parsedAlts := parsedAlts.push ⟨.anonymous, ← parseVars vars, tacs⟩
-      | _ => throwErrorAt l "iinduction: invalid syntax"
+      for l in lhs do
+        match l with
+        | `(inductionAltLHS| | $ctor:ident $[$vars]*)
+        | `(inductionAltLHS| | @ $ctor:ident $[$vars]*) =>
+          parsedAlts := parsedAlts.push ⟨ctor.getId, ← parseVars vars, tacs⟩
+        | `(inductionAltLHS| | $_:hole $[$vars]*) =>
+          parsedAlts := parsedAlts.push ⟨.anonymous, ← parseVars vars, tacs⟩
+        | _ => throwErrorAt l "iinduction: invalid syntax"
+  | `(inductionAlts| with $tac $[$cases]*) =>
+    throwErrorAt tac "iinduction: unsupported syntax, to be implemented"
+  | _ => throwErrorAt alts "iinduction: invalid syntax"
 
-  return ⟨tac, parsedAlts⟩
+  return ⟨none, parsedAlts⟩
 
 /--
   Check whether a fully-qualified constructor name (e.g. `Nat.succ`) matches a
