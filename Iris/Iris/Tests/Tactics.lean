@@ -2799,7 +2799,8 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
   iinduction n with
-  | zero | succ n ih => _
+  | zero => ?_
+  | succ n ih => _
   itrivial
   itrivial
 
@@ -2807,8 +2808,10 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
   iinduction n with
-  | zero  => itrivial
+  | zero => itrivial
   | succ n ih => _
+  | _ => _
+
   itrivial
 
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :

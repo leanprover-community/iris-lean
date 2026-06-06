@@ -34,6 +34,8 @@ private structure Alts where
   tac : Option <| TSyntax `tactic
   -- The alternative cases supplied by the user
   alts : Array Alt
+  -- The wildcard case, if supplied by the user
+  wildcard : Option Alt
 
 private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts) :
     TacticM Alts := do
@@ -60,13 +62,17 @@ private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts
         | `(inductionAltLHS| | @ $ctor:ident $[$vars]*) =>
           parsedAlts := parsedAlts.push ⟨ctor.getId, ← parseVars vars, tacs⟩
         | `(inductionAltLHS| | $_:hole $[$vars]*) =>
-          parsedAlts := parsedAlts.push ⟨.anonymous, ← parseVars vars, tacs⟩
+          if parsedAlts.size < cases.size - 1 then
+            throwErrorAt alt
+              s!"iinduction: invalid occurrence of the wildcard alternative `| _ => ...`:".append
+              "It must be the last alternative"
+          return ⟨none, parsedAlts, some ⟨.anonymous, ← parseVars vars, tacs⟩⟩
         | _ => throwErrorAt l "iinduction: invalid syntax"
   | `(inductionAlts| with $tac $[$cases]*) =>
     throwErrorAt tac "iinduction: unsupported syntax, to be implemented"
   | _ => throwErrorAt alts "iinduction: invalid syntax"
 
-  return ⟨none, parsedAlts⟩
+  return ⟨none, parsedAlts, none⟩
 
 /--
   Check whether a fully-qualified constructor name (e.g. `Nat.succ`) matches a
@@ -195,12 +201,16 @@ private def throwMissingAlt {α} (ctor : Name) : ProofModeM α :=
   Checks whether an invalid, missing and/or duplicate constructor names have
   been supplied by the user. Throw an error if this is the case.
 -/
-private def checkCtors (ctors altCtors : List Name) : ProofModeM Unit := do
+private def checkCtors (ctors : List Name) (parsedAlts : Alts) : ProofModeM Unit := do
+  -- Find the list of constructor names given by the user
+  let altCtors := parsedAlts.alts.toList.map (·.ctor)
+
   let mut errors : List String := []
 
   -- Check for missing constructor names
-  let missingAltCtors :=
-    ctors.filter (not <| altCtors.any <| fun altCtor => matchesCtorName · altCtor)
+  let missingAltCtors := match parsedAlts.wildcard with
+  | none => ctors.filter (not <| altCtors.any <| fun altCtor => matchesCtorName · altCtor)
+  | _ => []
 
   -- Check for invalid constructor names
   let invalidAltCtors :=
@@ -301,7 +311,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   -- Check that all alternative names supplied by the user are valid
   match parsedAlts with
   | none => pure ()
-  | some parsedAlts => checkCtors caseNames <| parsedAlts.alts.toList.map (·.ctor)
+  | some parsedAlts => checkCtors caseNames parsedAlts
 
   -- Define the names for variables and induction hypotheses if supplied by user
   let varNames : Array AltVarNames ←
