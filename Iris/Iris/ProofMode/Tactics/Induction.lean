@@ -12,29 +12,35 @@ public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Tactics.RevertIntro
 
+public meta import Lean.Elab.Tactic.Induction
+public meta import Lean.Parser.Tactic
+
 namespace Iris.ProofMode
 
 public meta section
-open BI Std Lean Elab Tactic Meta Qq
+open BI Std Lean Elab Tactic Meta Qq Lean.Parser.Tactic
 
 /--
-  Tactic syntax for user-supplied alternative names.
--/
-syntax inductionAlt := "| " binderIdent+ " => " tacticSeq
-
-/--
-  Parse the tactic syntax for user-supplied alternative names.
+  Parse the one branch of the tactic's `with` syntax for user-supplied alternative names.
 
   This function returns a triple, which includes:
   1. the name of the constructor supplied by the user (`ctor.getId`),
   2. the alternative names for that constructor (`vars`), and
-  3. the tactics for this induction subgoal.
+  3. the tactics for this induction subgoal (`tac`).
 -/
-private def parseinductionAlt (alt : TSyntax `Iris.ProofMode.inductionAlt) :
+private def parseInductionAlt (alt : Syntax) :
     TacticM (Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq) := do
-  let `(inductionAlt| | $ctor:ident $vars:binderIdent* => $tac:tacticSeq) := alt
-  | throwError "iinduction: invalid syntax"
+  let `(Lean.Parser.Tactic.inductionAlt| | $ctor:ident $[$vars]* => $tac:tacticSeq) := alt
+  | throwErrorAt alt "iinduction: invalid syntax"
+  let vars ← vars.mapM <| fun v => do
+    match v with
+    | `($id:ident) => `(binderIdent| $id:ident)
+    | _            => `(binderIdent| _)
   return ⟨ctor.getId, vars, tac⟩
+
+private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts) :
+    TacticM (Array <| Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq) := do
+  return ← (alts : Syntax)[2].getArgs.mapM parseInductionAlt
 
 /--
   Check whether a fully-qualified constructor name (e.g. `Nat.succ`) matches a
@@ -378,7 +384,7 @@ private def generalizeTermWithFVar (x : TSyntax `term) : TacticM FVarId := do
 syntax (name := iinduction) "iinduction" colGt term
     ("using" ident)?
     ("generalizing" (colGt selPat)+)?
-    ("with" (colGe inductionAlt)*)? : tactic
+    (inductionAlts)? : tactic
 
 /--
   The `iinduction` tactic applies induction in the Iris Proof Mode in a similar
@@ -421,14 +427,16 @@ elab_rules : tactic
   | `(tactic| iinduction $x
         $[using $r]?
         $[generalizing $genSelPats*]?
-        $[with $alts*]?) => do
+        $[$alts]?) => do
     let fvar ← generalizeTermWithFVar x
 
     -- Parse the recursor name provided by the user
     let recName : Option Name := r.map (·.getId)
 
     -- Parse the list of alternative names supplied by the user
-    let parsedAlts ← alts.mapM (·.mapM parseinductionAlt)
+    let parsedAlts ← match alts with
+    | none => pure none
+    | some alts => parseInductionAlts alts
 
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
       -- Parse the user-supplied list of variables to be generalised
