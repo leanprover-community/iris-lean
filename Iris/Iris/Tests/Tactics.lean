@@ -2842,4 +2842,11 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | succ n ih => itrivial
   | _ => _
 
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n with simp
+  | zero => itrivial
+  | succ n ih => itrivial
+
 end iinduction

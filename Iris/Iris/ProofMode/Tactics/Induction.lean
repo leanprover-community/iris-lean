@@ -37,8 +37,13 @@ private structure Alts where
   -- The wildcard case, if supplied by the user
   wildcard : Option Alt
 
-private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts) :
+/--
+  Given user-supplied alternative names and tactic sequences, parse the syntax
+  and return an `Alts` instance.
+-/
+private def parseInductionAlts (altsSyntax : TSyntax `Lean.Parser.Tactic.inductionAlts) :
     TacticM Alts := do
+  -- For parsing the user-supplied names for variables and induction hypotheses
   let parseVars (vars : Array Syntax) : TacticM (Array (TSyntax `Lean.binderIdent)) := do
     vars.mapM fun v =>
       match v with
@@ -47,12 +52,12 @@ private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts
 
   let mut parsedAlts : Array Alt := #[]
 
-  match alts with
-  | `(inductionAlts| with $[$cases]*) =>
-    for alt in cases do
+  match altsSyntax with
+  | `(inductionAlts| with $[$tac]? $[$alts]*) =>
+    for alt in alts do
       let (lhs, tacs) ← match alt with
         | `(inductionAlt| $[$lhs:inductionAltLHS]* => $tac:tacticSeq) => pure (lhs, some tac)
-        | `(inductionAlt| $[$lhs:inductionAltLHS]* => $_:hole) => pure (lhs, none)
+        | `(inductionAlt| $[$lhs:inductionAltLHS]* => $_:hole)
         | `(inductionAlt| $[$lhs:inductionAltLHS]* => $_:syntheticHole) => pure (lhs, none)
         | _ => throwErrorAt alt "iinduction: invalid syntax"
 
@@ -62,17 +67,14 @@ private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts
         | `(inductionAltLHS| | @ $ctor:ident $[$vars]*) =>
           parsedAlts := parsedAlts.push ⟨ctor.getId, ← parseVars vars, tacs⟩
         | `(inductionAltLHS| | $_:hole $[$vars]*) =>
-          if parsedAlts.size < cases.size - 1 then
+          if parsedAlts.size < alts.size - 1 then
             throwErrorAt alt
               s!"iinduction: invalid occurrence of the wildcard alternative `| _ => ...`:".append
               "It must be the last alternative"
-          return ⟨none, parsedAlts, some ⟨.anonymous, ← parseVars vars, tacs⟩⟩
+          return ⟨tac, parsedAlts, some ⟨.anonymous, ← parseVars vars, tacs⟩⟩
         | _ => throwErrorAt l "iinduction: invalid syntax"
-  | `(inductionAlts| with $tac $[$cases]*) =>
-    throwErrorAt tac "iinduction: unsupported syntax, to be implemented"
-  | _ => throwErrorAt alts "iinduction: invalid syntax"
-
-  return ⟨none, parsedAlts, none⟩
+    return ⟨tac, parsedAlts, none⟩
+  | _ => throwErrorAt altsSyntax "iinduction: invalid syntax"
 
 /--
   Check whether a fully-qualified constructor name (e.g. `Nat.succ`) matches a
