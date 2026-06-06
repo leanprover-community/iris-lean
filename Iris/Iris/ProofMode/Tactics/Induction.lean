@@ -20,6 +20,14 @@ namespace Iris.ProofMode
 public meta section
 open BI Std Lean Elab Tactic Meta Qq Lean.Parser.Tactic
 
+private structure Alt where
+  ctor : Name
+  vars : Array (TSyntax `Lean.binderIdent)
+  tacs : TSyntax `Lean.Parser.Tactic.tacticSeq
+
+private structure Alts where
+  alts : Array Alt
+
 /--
   Parse the one branch of the tactic's `with` syntax for user-supplied alternative names.
 
@@ -29,7 +37,7 @@ open BI Std Lean Elab Tactic Meta Qq Lean.Parser.Tactic
   3. the tactics for this induction subgoal (`tac`).
 -/
 private def parseInductionAlt (alt : Syntax) :
-    TacticM (Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq) := do
+    TacticM Alt := do
   let `(Lean.Parser.Tactic.inductionAlt| | $ctor:ident $[$vars]* => $tac:tacticSeq) := alt
   | throwErrorAt alt "iinduction: invalid syntax"
   let vars ← vars.mapM <| fun v => do
@@ -39,8 +47,8 @@ private def parseInductionAlt (alt : Syntax) :
   return ⟨ctor.getId, vars, tac⟩
 
 private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts) :
-    TacticM (Array <| Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq) := do
-  return ← (alts : Syntax)[2].getArgs.mapM parseInductionAlt
+    TacticM Alts := do
+  return ⟨← (alts : Syntax)[2].getArgs.mapM parseInductionAlt⟩
 
 /--
   Check whether a fully-qualified constructor name (e.g. `Nat.succ`) matches a
@@ -217,8 +225,7 @@ private def checkCtors (ctors altCtors : List Name) : ProofModeM Unit := do
 -/
 private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (fvar : FVarId)
-    (parsedAlts : Option <| Array <|
-      Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq)
+    (parsedAlts : Option Alts)
     (altRecName : Option Name)
     (genSelTargets : Option <| List SelTarget) :
     ProofModeM Q($e ⊢ $goal) := do
@@ -267,7 +274,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
   let matcher :
     Name →
-    Name × Array (TSyntax `Lean.binderIdent) × TSyntax `Lean.Parser.Tactic.tacticSeq →
+    Alt →
     Bool := fun ctor ⟨altCtor, _, _⟩ => matchesCtorName ctor altCtor
 
   -- Find the constructor names
@@ -276,7 +283,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   -- Check that all alternative names supplied by the user are valid
   match parsedAlts with
   | none => pure ()
-  | some parsedAlts => checkCtors caseNames <| parsedAlts.toList.map Prod.fst
+  | some parsedAlts => checkCtors caseNames <| parsedAlts.alts.toList.map (·.ctor)
 
   -- Define the names for variables and induction hypotheses if supplied by user
   let varNames : Array AltVarNames ←
@@ -285,9 +292,9 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       pure <| caseNames.toArray.map <| fun _ => { explicit := true, varNames := [] }
     | some parsedAlts => do
       caseNames.toArray.mapM <| fun ctor =>
-      match parsedAlts.find? <| matcher ctor with
-      | some (_, vars, _) =>
-        pure { explicit := true, varNames := vars.toList.map <|
+      match parsedAlts.alts.find? <| matcher ctor with
+      | some alt =>
+        pure { explicit := true, varNames := alt.vars.toList.map <|
           fun v =>
             match v.raw with
             | `(binderIdent| $id:ident) => id.getId
@@ -311,7 +318,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
           | none => pure ()
           | some parsedAlts =>
             s.mvarId.setTag ctor
-            match parsedAlts.find? <| matcher ctor with
+            match parsedAlts.alts.find? <| matcher ctor with
             | some ⟨_, vars, _⟩ =>
               if vars.size > s.fields.size then
                 throwError
@@ -343,7 +350,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
           -- Check whether the user has supplied tactic sequences for this induction subgoal
           let tacticSeq := parsedAlts.bind <| fun parsedAlts =>
-            (parsedAlts.find? <| matcher ctor).map <| fun ⟨_, _, t⟩ => t
+            (parsedAlts.alts.find? <| matcher ctor).map <| fun ⟨_, _, t⟩ => t
 
           -- Generate the induction subgoal for the user, label the induction subgoal with `ctor`
           let pf' ← match tacticSeq with
