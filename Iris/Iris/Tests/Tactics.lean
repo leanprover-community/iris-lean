@@ -2741,9 +2741,13 @@ example [BI PROP] {P : PROP} : ⊢ P := by
   iinduction P
 
 /- Tests `iinduction` with induction on natural numbers with invalid user-supplied names -/
-/-- error: iinduction: duplicate alternative name(s): `zero`
+/-- error: iinduction: invalid alternative name `invalidA`
 ---
-error: iinduction: invalid alternative name(s): `invalidA`, `invalidB`, `invalidC`
+error: iinduction: duplicate alternative name `zero`
+---
+error: iinduction: invalid alternative name `invalidB`
+---
+error: iinduction: duplicate alternative name `Nat.zero`
 ---
 error: iinduction: alternative `succ` has not been provided -/
 #guard_msgs in
@@ -2755,7 +2759,6 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | zero      => itrivial
   | invalidB  => done
   | Nat.zero  => itrivial
-  | invalidC  => done
 
 /- Tests `iinduction` with extra arguments supplied by the user -/
 /-- error: iinduction: too many variable names provided at alternative `succ`: 4 provided, but 2 expected -/

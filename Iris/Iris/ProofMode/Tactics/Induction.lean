@@ -199,32 +199,25 @@ private def addIHs {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
 
 /--
   Throw an error if the user has supplied some but not all alternative names.
+  Also throw an error if the user has supplied multiple sets of alternative
+  names for the same constructor.
 -/
 private def throwMissingAlt {α} (ctor : Name) : ProofModeM α :=
   throwError "iinduction: alternative `{ctor.getString!}` has not been provided"
 
-/--
-  Checks whether an invalid, missing and/or duplicate constructor names have
-  been supplied by the user. Throw an error if this is the case.
--/
 private def checkCtors (ctors : List Name) (parsedAlts : Alts) : ProofModeM Unit := do
-  -- Find the list of constructor names given by the user
-  let altCtors := parsedAlts.alts.toList.map (·.ctor)
+  let alts := parsedAlts.alts.toList
 
-  -- Check for invalid constructor names
-  let invalidAltCtors :=
-    altCtors.filter (not <| ctors.any <| fun ctor => matchesCtorName ctor ·)
+  for alt in alts do
+    let isValid := ctors.any fun ctor => matchesCtorName ctor alt.ctor
+    let isDup := alts.countP (fun alt' => matchesCtorName alt.ctor alt'.ctor) > 1
 
-  -- Check for duplicate constructor names
-  let dupAltCtors := (altCtors.filter <|
-    fun alt => altCtors.countP (matchesCtorName alt ·) > 1).eraseDupsBy matchesCtorName
-
-  if !dupAltCtors.isEmpty then
-    let dups := ", ".intercalate  <| dupAltCtors.map (s!"`{·}`")
-    throwOrLogError s!"iinduction: duplicate alternative name(s): {dups}"
-  if !invalidAltCtors.isEmpty then
-    let invalids := ", ".intercalate <| invalidAltCtors.map (s!"`{·}`")
-    throwOrLogError s!"iinduction: invalid alternative name(s): {invalids}"
+    if !isValid then
+      throwOrLogErrorAt alt.stx
+        m!"iinduction: invalid alternative name `{alt.ctor}`"
+    else if isDup then
+      throwOrLogErrorAt alt.stx
+        m!"iinduction: duplicate alternative name `{alt.ctor}`"
 
 /--
   The main function handling the steps for the `iinduction` tactic.
