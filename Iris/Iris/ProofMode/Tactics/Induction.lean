@@ -58,10 +58,10 @@ private def parseInductionAlts (alts : TSyntax `Lean.Parser.Tactic.inductionAlts
 
     for l in lhs do
       match l with
-      | `(Lean.Parser.Tactic.inductionAltLHS| | $ctor:ident $[$vars]*)
-      | `(Lean.Parser.Tactic.inductionAltLHS| | @ $ctor:ident $[$vars]*) =>
+      | `(inductionAltLHS| | $ctor:ident $[$vars]*)
+      | `(inductionAltLHS| | @ $ctor:ident $[$vars]*) =>
         parsedAlts := parsedAlts.push ⟨ctor.getId, ← parseVars vars, tacs⟩
-      | `(Lean.Parser.Tactic.inductionAltLHS| | $_:hole $[$vars]*) =>
+      | `(inductionAltLHS| | $_:hole $[$vars]*) =>
         parsedAlts := parsedAlts.push ⟨.anonymous, ← parseVars vars, tacs⟩
       | _ => throwErrorAt l "iinduction: invalid syntax"
 
