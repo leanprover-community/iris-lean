@@ -2741,9 +2741,11 @@ example [BI PROP] {P : PROP} : ⊢ P := by
   iinduction P
 
 /- Tests `iinduction` with induction on natural numbers with invalid user-supplied names -/
-/-- error: iinduction: missing alternative name(s): `succ`
-iinduction: duplicate alternative name(s): `zero`
-iinduction: invalid alternative name(s): `invalidA`, `invalidB`, `invalidC` -/
+/-- error: iinduction: duplicate alternative name(s): `zero`
+---
+error: iinduction: invalid alternative name(s): `invalidA`, `invalidB`, `invalidC`
+---
+error: iinduction: alternative `succ` has not been provided -/
 #guard_msgs in
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
@@ -2865,7 +2867,7 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜0 + 0 = 0⌝ -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT #H
   iinduction n with (try iexact H)
-  | zero => itrivial
+  | zero => itrivial  -- Redundant case
   | succ n ih => itrivial
 
 /- Testing `iinduction` with first tactic after `with` syntax, no redundant alternative name -/
@@ -2873,6 +2875,7 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜0 + 0 = 0⌝ -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT #H
   iinduction n with (try iexact H)
+  -- No complaints about missing `zero` case
   | succ n ih => itrivial
 
 end iinduction
