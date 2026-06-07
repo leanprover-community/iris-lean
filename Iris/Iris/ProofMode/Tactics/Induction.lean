@@ -136,13 +136,87 @@ private structure InductionState {u} {prop : Q(Type u)} {bi} (origE : Q($prop)) 
   Lean context before applying Lean's built-in `induction` tactic.
 -/
 private def iHypsToGeneralize {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
-    (hyps : Hyps bi e) (fvars : List FVarId) : List SelTarget :=
+    (hyps : Hyps bi e) (fvar : FVarId) : List SelTarget :=
   let ivars := hyps.intuitionisticIVarIds.filter <| fun ivar =>
     match hyps.getDecl? ivar with
-    | some ⟨_, _, _, ty⟩ => fvars.any ty.containsFVar
+    | some ⟨_, _, _, ty⟩ => ty.containsFVar fvar
     | none => false
 
   (ivars ++ hyps.spatialIVarIds).map ({ kind := .ipm ·, explicit := false })
+
+/--
+  When the tactic is `iinduction e generalizing z₁ ... zₙ` applied,
+  the variables `z₁ ... zₙ`, which can be regular Lean variables or Iris
+  hypotheses, are reverted from the context.
+
+  The function `iHypsToGeneralize` is used for finding the Iris hypotheses
+  that references the induction target.
+
+  However, it is possible that `x` is amongst the Lean variables explcitly
+  reverted by the user using the `generalizing` syntax while there exists
+  another Lean variable `y` such that `y` depends on `x`. In this case, this
+  function suggests that the user includes `%y` in the `generalizing` syntax.
+
+  It is also possible that `x` is amongst the Lean variables being generalised
+  such that there exists an Iris hypothesis `HP` in the intuitionistic context
+  where:
+  1. `P` does not depend on the induction target and thus not reverted automatically,
+  2. `P` depends on `x` in the `generalizing` syntax, and
+  3. `P` itself is not included in the `generalizing` syntax.
+  In this case, this function suggests the user to include `HP` in the
+  `generalizing` syntax.
+
+  Note that Iris hypotheses in the spatial context are always reverted, so there
+  is no need for further checks by this function.
+-/
+private def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
+    (hyps : Hyps bi e) (explicitTargets : List SelTarget) :
+    ProofModeM Unit := do
+
+  let explicitIrisIVarIds := explicitTargets.filterMap
+    (match ·.kind with | .ipm ivar => some ivar | _ => none)
+  let explicitPureFVars := explicitTargets.filterMap
+    (match ·.kind with | .pure f => some f | _ => none)
+
+  -- Check Iris hypothesis that depend on hypotheses in the `generalizing` syntax
+  let missingIris : List (Name × FVarId) :=
+  hyps.intuitionisticIVarIds.filterMap fun ivar =>
+    if explicitIrisIVarIds.contains ivar then none
+    else match hyps.getDecl? ivar with
+      | some ⟨name, _, _, ty⟩ =>
+        match explicitPureFVars.find? (ty.containsFVar ·) with
+        | some x => some (name, x)
+        | none   => none
+      | none => none
+
+  -- Pairs of `FVarId` values `(f1, f2)` indicating `f1` depends on `f2`.
+  let mut missingPure : List (FVarId × FVarId) := []
+
+  -- Check forward dependency of pure hypotheses in the `generalizing` syntax
+  for fvar in (explicitPureFVars ++ (missingIris.map (·.snd))).eraseDups do
+    let fwdDeps ← collectForwardDeps #[mkFVar fvar] false
+    for dep in fwdDeps do
+      let depId := dep.fvarId!
+      -- Skip `x` itself and variables already included in `explicitPureFVars`
+      if depId != fvar && !explicitPureFVars.contains depId then
+        -- Record the missing hypothesis to be generalised, if not already included
+        if !missingPure.any (·.fst == depId) then
+          missingPure := missingPure ++ [(depId, fvar)]
+
+  -- Throw an error if there exists some pure/Lean hypotheses that should also be generalised
+  if !missingPure.isEmpty || !missingIris.isEmpty then
+    let leanLines ← missingPure.mapM fun (depId, srcId) => do
+      let depDecl ← depId.getDecl
+      let srcDecl ← srcId.getDecl
+      return s!"  - Lean hypothesis `{depDecl.userName}` depends on \
+        `{srcDecl.userName}`"
+    let irisLines ← missingIris.mapM fun (name, srcId) => do
+      let srcDecl ← srcId.getDecl
+      return s!"  - Iris hypothesis in the intuitionstic context `{name}` depends on \
+        `{srcDecl.userName}`"
+    throwError m!"iinduction: The following hypotheses depend on variables in \
+      the `generalizing` clause but are not themselves included:\
+      \n{"\n".intercalate (leanLines ++ irisLines)}"
 
 /--
   Search for hypotheses in the regular Lean context that are the in the form
@@ -242,30 +316,15 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (altRecName : Option Name)
     (genSelTargets : Option <| List SelTarget) :
     ProofModeM Q($e ⊢ $goal) := do
-  -- Iris hypotheses to be reverted as specified by the user using the `generalizing` syntax
-  let explicitIrisTargets : List SelTarget :=
-    match genSelTargets with
-    | none => []
-    | some genSelTargets => genSelTargets.filter <| fun t => match t.kind with | .ipm _ => true | _ => false
-
-  -- `FVarID` values of pure hypothesis specified by the user using the `generalizing` syntax
-  let pureFVars : List FVarId :=
-    match genSelTargets with
-    | none => []
-    | some genSelTargets =>
-      genSelTargets.filterMap <| fun t => match t.kind with | .pure f => some f | _ => none
-
-  -- Iris hypotheses in the spatial context and relevant intuitionistic context
-  let spatialAndIntuitionisticTargets := iHypsToGeneralize hyps <| pureFVars.concat fvar
-
-  let spatialAndIntuitionisticTargets :=
-    spatialAndIntuitionisticTargets.filter (not <| (explicitIrisTargets.map (·.kind)).contains ·.kind)
-
-  -- Pure hypotheses to be reverted as specified by the user using the `generalizing` syntax
-  let pureTargets : List SelTarget := pureFVars.map ({ kind := .pure ·, explicit := true })
-
-  -- Those in `explicitIrisTargets` get reverted first, so they are last in the list
-  let targets := pureTargets ++ spatialAndIntuitionisticTargets ++ explicitIrisTargets
+  -- Find the regular pure/Iris hypotheses to be reverted
+  let targets ← do match genSelTargets with
+  | none => pure <| iHypsToGeneralize hyps fvar
+  | some genSelTargets =>
+    checkDependentHyps hyps genSelTargets
+    let explicitIrisTargets := genSelTargets.filter (match ·.kind with | .ipm _ => true | _ => false)
+    let explicitPureTargets := genSelTargets.filter (match ·.kind with | .pure _ => true | _ => false)
+    let implicitIrisTargets := (iHypsToGeneralize hyps fvar).filter (not <| (explicitIrisTargets.map (·.kind)).contains ·.kind)
+    pure <| explicitPureTargets ++ implicitIrisTargets ++ explicitIrisTargets
 
   -- Find the recursor name and constructor names of the inductive datatype
   let fvarType ← whnf <| ← inferType <| mkFVar fvar

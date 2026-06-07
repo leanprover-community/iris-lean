@@ -2727,7 +2727,7 @@ section iinduction
 example [BI PROP] {P Q R S : PROP} {T : Nat → PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T n -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
-  iinduction n generalizing %P HQ %R with
+  iinduction n generalizing HQ %R HR HP %P with
   -- Using the full name of the constructor (`Nat.zero`)
   | Nat.zero  => itrivial
   /- Using the short name of the constructor (`succ`), naming the induction
@@ -2879,6 +2879,45 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   iintro HP #HQ #HR HS #HT #H
   iinduction n with (try iexact H)
   -- No complaints about missing `zero` case
+  | succ n ih => itrivial
+
+/- Testing `iinduction` on `n` generalising `m`, where *regular hypothesis* `h1 : Q m`
+   and `X : (Q m) → Prop` depend on `m`. Moreover, `h2 : X h1` depends on `h1`.
+   This dependency requires manual resolution. -/
+/-- error: irevert: Lean hypothesis Y depends on m -/
+#guard_msgs in
+example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → Prop} {h1 : Q m} {X : (Q m) → Prop} {h2 : X h1} :
+    ⊢ P -∗ ⌜n + 0 = n⌝ := by
+  iintro HP
+  iinduction n generalizing %m with
+  | zero => itrivial
+  | succ n ih => itrivial
+
+/-- Testing `iinduction` on `n` generalising `m` and `H`, which depends on `m`. -/
+example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → Prop} {H : Q m} :
+    ⊢ P -∗ ⌜n + 0 = n⌝ := by
+  iintro HP
+  iinduction n generalizing %m %H with
+  | zero => itrivial
+  | succ n ih => itrivial
+
+/- Testing `iinduction` on `n` generalising `m`, where *Iris hypothesis* `□HQ : Q m`
+   depends on `m`. This requires manual resolution. -/
+/-- error: iinduction: proofmode hypothesis HQ depends on m -/
+#guard_msgs in
+example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → PROP} :
+    ⊢ P -∗ □ Q m -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ
+  iinduction n generalizing %m with
+  | zero => itrivial
+  | succ n ih => itrivial
+
+/-- Testing `iinduction` on `n` generalising `m` and `HQ`, which depends on `m`. -/
+example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → PROP} :
+    ⊢ P -∗ □ Q m -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ
+  iinduction n generalizing %m HQ with
+  | zero => itrivial
   | succ n ih => itrivial
 
 end iinduction
