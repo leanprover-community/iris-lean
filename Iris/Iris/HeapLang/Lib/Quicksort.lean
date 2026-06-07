@@ -98,32 +98,31 @@ theorem append_spec l1 ls1 l2 ls2 Φ :
     isList l2 ls2 -∗
     (∀ v, isList v (ls1 ++ ls2) -∗ Φ v) -∗
     WP hl(&append v((&l1, &l2))) {{ Φ }} := by
-    iintro Hl1 Hl2 HΦ
-    iloeb as IH generalizing %l1 %ls1 %Φ
-    wp_rec; wp_pures
-    cases ls1 with
-    | nil =>
-      simp [isList_nil.to_eq]
-      icases Hl1 with %heq; subst heq
-      wp_pures
-      imodintro
-      iapply HΦ $$ [$]
-    | cons l1 ls1 =>
-      icases isList_cons $$ Hl1 with ⟨%l, %tl, %heq, Hpt, Hl1⟩; subst heq
-      wp_pures
-      wp_bind !_
-      iapply wp_load $$ [$]
-      iintro !> Hl
-      wp_pures
-      wp_bind &append _
-      iapply IH $$ Hl1 [$]
-      iintro %_ Hl
-      wp_pures
-      iapply cons_spec $$ Hl
-      iintro %_ Hp
-      iapply HΦ
-      simp
-      iframe
+  iintro Hl1 Hl2 HΦ
+  iloeb as IH generalizing %l1 %ls1 %Φ
+  wp_rec; wp_pures
+  cases ls1 with
+  | nil =>
+    simp [isList_nil.to_eq]
+    icases Hl1 with %heq; subst heq
+    wp_pures; imodintro
+    iapply HΦ $$ [$]
+  | cons x xs =>
+    icases isList_cons $$ Hl1 with ⟨%l, %tl, %heq, Hpt, Hl⟩
+    subst heq; wp_pures
+    wp_bind !_
+    iapply wp_load $$ Hpt
+    iintro !> Hpt
+    wp_pures
+    wp_bind &append _
+    iapply IH $$ Hl Hl2
+    iintro %_ Hl
+    wp_pures
+    iapply cons_spec $$ [$]
+    iintro %_ _
+    iapply HΦ
+    simp
+    itrivial
 
 theorem partition_spec x l ls Φ :
     isList (GF:=GF) l ls -∗
