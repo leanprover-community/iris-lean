@@ -11,11 +11,17 @@ public meta import Iris.ProofMode.Tactics.Cases
 public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Tactics.RevertIntro
+public meta import Lean.Meta.Tactic.TryThis
 
 namespace Iris.ProofMode
 
 public meta section
 open BI Std Lean Elab Tactic Meta Qq Parser.Tactic
+
+syntax (name := iinduction) "iinduction" colGt term
+    ("using" ident)?
+    ("generalizing" (colGt selPat)+)?
+    (inductionAlts)? : tactic
 
 /--
   Information obtained from parsing a case under the `with` syntax
@@ -208,15 +214,42 @@ private def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     let leanLines ← missingPure.mapM fun (depId, srcId) => do
       let depDecl ← depId.getDecl
       let srcDecl ← srcId.getDecl
-      return s!"  - Lean hypothesis `{depDecl.userName}` depends on \
-        `{srcDecl.userName}`"
+      return s!"• Lean hypothesis `{depDecl.userName}` depends on `{srcDecl.userName}`"
     let irisLines ← missingIris.mapM fun (name, srcId) => do
       let srcDecl ← srcId.getDecl
-      return s!"  - Iris hypothesis in the intuitionstic context `{name}` depends on \
-        `{srcDecl.userName}`"
-    throwError m!"iinduction: The following hypotheses depend on variables in \
+      return s!"• Iris hypothesis in the intuitionstic context `{name}` depends on `{srcDecl.userName}`"
+
+    -- Build `selPat` syntax nodes for each missing item
+    let newIrisPats : Array (TSyntax `selPat) ←
+      missingIris.toArray.mapM fun (name, _) =>
+        `(selPat| $(mkIdent name):ident)
+    let newPurePats : Array (TSyntax `selPat) ←
+      missingPure.toArray.mapM fun (depId, _) => do
+        let depDecl ← depId.getDecl
+        let id := (Name.mkSimple depDecl.userName.toString)
+        `(selPat| %$(mkIdent id):ident)
+
+    -- Reconstruct the iinduction tactic with the extended generalizing clause.
+    -- `← getRef` gives the original iinduction syntax node; we read the
+    -- other pieces (induction term, `using` clause, `with` alternatives) from it.
+    let oldTactic ← getRef
+    let `(tactic| iinduction $x $[using $r]? generalizing $genSelPats* $[$alts]?) := oldTactic
+    | throwError "iinduction: invalid syntax"
+
+    -- Extend the existing generalizing patterns with the new ones
+    -- New items go first so the user can see what was added
+    let extendedPats : TSyntaxArray `selPat :=
+      genSelPats.append <| newIrisPats ++ newPurePats
+
+    let newTactic ← `(tactic| iinduction $x $[using $r]? generalizing $extendedPats* $[$alts]?)
+
+    -- Log the error and attach the clickable suggestion
+    logError m!"iinduction: The following hypotheses depend on variables in \
       the `generalizing` clause but are not themselves included:\
       \n{"\n".intercalate (leanLines ++ irisLines)}"
+
+    -- Suggestion the fixed tactic
+    Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
 
 /--
   Search for hypotheses in the regular Lean context that are the in the form
@@ -314,12 +347,13 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (fvar : FVarId)
     (parsedAlts : Option Alts)
     (altRecName : Option Name)
-    (genSelTargets : Option <| List SelTarget) :
+    (genSelPats : Option <| List SelPat) :
     ProofModeM Q($e ⊢ $goal) := do
   -- Find the regular pure/Iris hypotheses to be reverted
-  let targets ← do match genSelTargets with
+  let targets ← do match genSelPats with
   | none => pure <| iHypsToGeneralize hyps fvar
-  | some genSelTargets =>
+  | some genSelPats =>
+    let genSelTargets ← SelPat.resolve hyps genSelPats
     checkDependentHyps hyps genSelTargets
     let explicitIrisTargets := genSelTargets.filter (match ·.kind with | .ipm _ => true | _ => false)
     let explicitPureTargets := genSelTargets.filter (match ·.kind with | .pure _ => true | _ => false)
@@ -498,11 +532,6 @@ private def generalizeTermWithFVar (x : TSyntax `term) : TacticM FVarId := do
 
   return fvars[0]!
 
-syntax (name := iinduction) "iinduction" colGt term
-    ("using" ident)?
-    ("generalizing" (colGt selPat)+)?
-    (inductionAlts)? : tactic
-
 /--
   The `iinduction` tactic applies induction in the Iris Proof Mode in a similar
   way as the `induction` tactic. Given an expression `e`, the application of
@@ -555,11 +584,10 @@ elab_rules : tactic
     | none => pure none
     | some alts => parseInductionAlts alts
 
-    ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-      -- Parse the user-supplied list of variables to be generalised
-      let genSelTargets ← genSelPats.mapM <| fun pats => do
-        let parsed ← liftMacroM <| SelPat.parse pats
-        SelPat.resolve hyps parsed
+    -- Parse the selection patterns for generalising hypotheses
+    let genSelPats ← genSelPats.mapM <| fun pats => do
+        liftMacroM <| SelPat.parse pats
 
-      let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
+    ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+      let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelPats
       mvar.assign pf
