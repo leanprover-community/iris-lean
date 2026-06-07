@@ -154,7 +154,7 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   ⊢ □ ∀ (Φ : Val → IProp GF),
     isLock γ lk R -∗
     (locked γ ∗ R -∗ Φ hl_val(#())) -∗
-    WP hl({acquire} {lk}) {{ Φ }} := by
+    WP hl(&acquire &lk) {{ Φ }} := by
   iintro !> %Φ #Hlock Hcont
   iloeb as IH
   wp_rec
@@ -175,7 +175,7 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   ⊢ □ ∀ (Φ : Val → IProp GF),
     isLock γ lk R ∗ (locked γ ∗ R) -∗
     (True -∗ Φ hl_val(#())) -∗
-    WP hl({release} {lk}) {{ Φ }} := by
+    WP hl(&release &lk) {{ Φ }} := by
   iintro !> %Φ ⟨#Hlock, ⟨Hl, HR⟩⟩ Hcont
   wp_rec
   unfold isLock

@@ -78,7 +78,7 @@ example : ⊢@{IProp GF}  WP hl(((#0 + #1) + #2) + #3) {{ v, True }} := by
   wp_bind ((#0 + _) + _)
 
 /--
-error: Tactic `wp_bind` failed: Cannot unify hl((#2 + {?_})) with any possible evaluation context
+error: Tactic `wp_bind` failed: Cannot unify hl((#2 + &?_)) with any possible evaluation context
 
 hlc : HasLC
 GF : BundledGFunctors
@@ -210,6 +210,20 @@ GF : BundledGFunctors
 #guard_msgs in
 example : ⊢@{IProp GF} WP hl(if #true then if #false then #1 else #2 else #3) {{ v, ⌜v = hl_val(#2)⌝ }} := by
   wp_pures
+
+/--
+error: unsolved goals
+hlc : HasLC
+GF : BundledGFunctors
+ι : IrisGS_gen hlc Exp GF
+n : Int
+⊢ ⏎
+  ⊢ |={⊤}=> ⌜hl_val(#(decide (1 ≤ n))) = hl_val(#(decide (1 ≤ n)))⌝
+-/
+#guard_msgs in
+example (n : Int) : ⊢@{IProp GF} WP hl(#1 ≤ #n) {{ v, ⌜v = hl_val(#(decide (1 ≤ n)))⌝ }} := by
+  wp_pure
+
 
 
 end wp_pure

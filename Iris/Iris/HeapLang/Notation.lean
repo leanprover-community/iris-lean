@@ -32,15 +32,11 @@ macro_rules
   | `(hl_val% $t) => `(hl_val($t))
 
 /-- escaping -/
-syntax:max "{" term "}" : hl_binder
-/-- escaping identifiers -/
-syntax:max "&" ident : hl_binder
+syntax:max "&" term:max : hl_binder
 syntax:max binderIdent : hl_binder
 
 /-- escaping -/
-syntax:max "{" term "}" : hl_val
-/-- escaping identifiers -/
-syntax:max "&" ident : hl_val
+syntax:max "&" term:max : hl_val
 /-- embedding literals -/
 syntax:max "#" term:max : hl_val
 /-- pairs -/
@@ -57,11 +53,8 @@ syntax:100 "some(" hl_val ")" : hl_val
 syntax:max "(" hl_exp ")" : hl_exp
 /-- embedding values -/
 syntax:max "v(" hl_val ")" : hl_exp
-syntax:max "v{" term "}" : hl_exp
 /-- escaping -/
-syntax:max "{" term "}" : hl_exp
-/-- escaping identifiers -/
-syntax:max "&" ident : hl_exp
+syntax:max "&" term:max : hl_exp
 /-- embedding literals -/
 syntax:max "#" term:max : hl_exp
 /-- variables -/
@@ -177,30 +170,26 @@ def hl_exp.parenthesizer : CategoryParenthesizer := fun prec => do
 
 partial def unpackHLExp [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `hl_exp)
   | `(hl($e)) => `(hl_exp|$e)
-  | `($i:ident) => `(hl_exp|&$i)
-  | `($t) => `(hl_exp|{$t})
+  | `($t) => `(hl_exp|&$t)
 
 partial def unpackHLVal [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `hl_val)
   | `(hl_val($e)) => `(hl_val|$e)
-  | `($i:ident) => `(hl_val|&$i)
-  | `($t) => `(hl_val|{$t})
+  | `($t) => `(hl_val|&$t)
 
 partial def unpackHLBinder [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `hl_binder)
   | `(hl_binder($e)) => `(hl_binder|$e)
-  | `($i:ident) => `(hl_binder|&$i)
-  | `($t) => `(hl_binder|{$t})
+  | `($t) => `(hl_binder|&$t)
 
 /-- elaborating binders -/
 macro_rules
   | `(hl_binder(_)) => `(Binder.anon)
   | `(hl_binder($i:ident)) => `(Binder.named $(Syntax.mkStrLit i.getId.toString))
-  | `(hl_binder(&$i)) => `($i)
-  | `(hl_binder({$t})) => `($t)
+  | `(hl_binder(&$t)) => `($t)
 
 /-- elaborating values -/
 macro_rules
-  | `(hl_val(& $i)) => pure i
-  | `(hl_val({$t})) => pure t
+  | `(hl_val(& $t)) => pure t
+  | `(hl_val(# $n:num)) => `(Val.lit (BaseLit.int $n))
   | `(hl_val(# $e)) => `(Val.lit $e)
   | `(hl_val(rec $f $x := $e)) => do `(Val.rec_ hl_binder($f) hl_binder($x) hl($e))
   | `(hl_val(rec $f $x $xs* := $e)) => do `(hl_val(rec $f $x := λ $xs*, $e))
@@ -216,10 +205,8 @@ macro_rules
 macro_rules
   | `(hl(($e))) => `(hl($e))
   | `(hl(_)) => `(_)
-  | `(hl({$t})) => pure t
-  | `(hl(&$i)) => pure i
+  | `(hl(&$t)) => pure t
   | `(hl(v($e))) => `(@ToVal.ofVal Exp Val instToVal hl_val($e))
-  | `(hl(v{$e})) => `(hl(v({$e})))
   | `(hl(# $e)) => `(hl(v(# $e)))
   | `(hl($i:ident)) => `(Exp.var $(Syntax.mkStrLit i.getId.toString))
   | `(hl($e1 + $e2)) => `(Exp.binop BinOp.plus hl($e1) hl($e2))
@@ -292,6 +279,8 @@ def unexpNamed : Unexpander
 /-- delaborating values -/
 @[app_unexpander Val.lit]
 def unexpLit : Unexpander
+  | `($_ ↑$arg) => `(hl_val(# $arg))
+  | `($_ BaseLit.unit) => `(hl_val(# ()))
   | `($_ $arg) => `(hl_val(# $arg))
   | _ => throw ()
 
@@ -333,8 +322,6 @@ def unexpInjrVal : Unexpander
 partial def unexpValLit : Term → DelabM Term
   | `(hl(v(# $l))) => do
     unexpValLit $ ← `(hl(# $l))
-  | `(hl(v({$t}))) => do
-    unexpValLit $ ← `(hl(v{$t}))
   | x => return x
 
 @[app_delab ToVal.ofVal]

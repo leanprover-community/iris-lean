@@ -172,13 +172,13 @@ instance : Coe Int BaseLit where
 instance : Coe Bool BaseLit where
   coe b := .bool b
 
+instance : Coe Loc BaseLit where
+  coe l := .loc l
+
 instance : Coe Unit BaseLit where
   coe _ := .unit
 
-/- TODO: this instance is sometimes not reduced away. What can we do about this? -/
-@[reducible]
-instance {n} : OfNat BaseLit n where
-  ofNat := .int n
+attribute [coe] BaseLit.int BaseLit.bool BaseLit.loc
 
 def Exp.substStr (x : String) (v : Val) (e : Exp) : Exp :=
   match e with
