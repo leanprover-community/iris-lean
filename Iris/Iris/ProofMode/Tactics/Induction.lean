@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Yunsong Yang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Yunsong Yang, Alvin Tang
+Authors: Yunsong Yang, Michael Sammler, Alvin Tang
 -/
 module
 
@@ -11,7 +11,6 @@ public meta import Iris.ProofMode.Tactics.Cases
 public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Tactics.RevertIntro
-public meta import Lean.Elab.Tactic.Induction
 
 namespace Iris.ProofMode
 
@@ -398,11 +397,13 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
             -- Alternative names not found, acceptable only when `firstTactic` solves it
             | none =>
               match parsedAlts.tac with
+              -- No first tactic given, the alternative name is missing
               | none => throwMissingAlt ctor
               | some firstTactic =>
                 let pf' ← k st.newHyps irisGoal.goal <| fun hyps goal => do
                   let m ← mkBIGoal hyps goal ctor
                   let subgoals ← evalTacticAt firstTactic m.mvarId!
+                  -- First tactic supplied by the user, but it does not completely solve this case
                   if !subgoals.isEmpty then
                     throwOrLogErrorAt parsedAlts.stx
                       m!"iinduction: alternative `{ctor.getString!}` has not been provided"
