@@ -2882,11 +2882,17 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | succ n ih => itrivial
 
 /- Testing `iinduction` on `n` generalising `m`, where *regular hypothesis* `h1 : Q m`
-   and `X : (Q m) → Prop` depend on `m`. Moreover, `h2 : X h1` depends on `h1`.
-   This dependency requires manual resolution. -/
-/-- error: irevert: Lean hypothesis Y depends on m -/
+   and `X : (Q m) → Prop` depend on `m`. This dependency requires manual resolution. -/
+/-- info: Try this:
+  [apply] iinduction n generalizing %m %h1 %X with
+  | zero => itrivial
+  | succ n ih => itrivial
+---
+error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h1` depends on `m`
+• Lean hypothesis `X` depends on `m` -/
 #guard_msgs in
-example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → Prop} {h1 : Q m} {X : (Q m) → Prop} {h2 : X h1} :
+example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → Prop} {h1 : Q m} {X : (Q m) → Prop} :
     ⊢ P -∗ ⌜n + 0 = n⌝ := by
   iintro HP
   iinduction n generalizing %m with
@@ -2903,11 +2909,18 @@ example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → Prop} {H : Q m} :
 
 /- Testing `iinduction` on `n` generalising `m`, where *Iris hypothesis* `□HQ : Q m`
    depends on `m`. This requires manual resolution. -/
-/-- error: iinduction: proofmode hypothesis HQ depends on m -/
+/-- info: Try this:
+  [apply] iinduction n generalizing %m HQ HR with
+  | zero => itrivial
+  | succ n ih => itrivial
+---
+error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Iris hypothesis in the intuitionstic context `HQ` depends on `m`
+• Iris hypothesis in the intuitionstic context `HR` depends on `m` -/
 #guard_msgs in
-example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → PROP} :
-    ⊢ P -∗ □ Q m -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ
+example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} :
+    ⊢ P -∗ □ Q m -∗ □ R m -∗ □ S n -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR #HS
   iinduction n generalizing %m with
   | zero => itrivial
   | succ n ih => itrivial

@@ -20,7 +20,7 @@ open BI Std Lean Elab Tactic Meta Qq Parser.Tactic
 
 syntax (name := iinduction) "iinduction" colGt term
     ("using" ident)?
-    ("generalizing" (colGt selPat)+)?
+    ("generalizing" (ppSpace colGt selPat)+)?
     (inductionAlts)? : tactic
 
 /--
@@ -226,30 +226,23 @@ private def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     let newPurePats : Array (TSyntax `selPat) ←
       missingPure.toArray.mapM fun (depId, _) => do
         let depDecl ← depId.getDecl
-        let id := (Name.mkSimple depDecl.userName.toString)
-        `(selPat| %$(mkIdent id):ident)
+        let id := mkIdent (Name.mkSimple depDecl.userName.toString)
+        `(selPat| %$id:ident)
 
-    -- Reconstruct the iinduction tactic with the extended generalizing clause.
-    -- `← getRef` gives the original iinduction syntax node; we read the
-    -- other pieces (induction term, `using` clause, `with` alternatives) from it.
+    -- Find the old tactic syntax and generate the new one with missing hypotheses added
     let oldTactic ← getRef
     let `(tactic| iinduction $x $[using $r]? generalizing $genSelPats* $[$alts]?) := oldTactic
     | throwError "iinduction: invalid syntax"
-
-    -- Extend the existing generalizing patterns with the new ones
-    -- New items go first so the user can see what was added
-    let extendedPats : TSyntaxArray `selPat :=
-      genSelPats.append <| newIrisPats ++ newPurePats
-
+    let extendedPats : TSyntaxArray `selPat := genSelPats.append <| newPurePats ++ newIrisPats
     let newTactic ← `(tactic| iinduction $x $[using $r]? generalizing $extendedPats* $[$alts]?)
-
-    -- Log the error and attach the clickable suggestion
-    logError m!"iinduction: The following hypotheses depend on variables in \
-      the `generalizing` clause but are not themselves included:\
-      \n{"\n".intercalate (leanLines ++ irisLines)}"
 
     -- Suggestion the fixed tactic
     Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
+
+    -- Log the error and attach the clickable suggestion
+    throwError m!"iinduction: The following hypotheses depend on variables in \
+      the `generalizing` clause but are not themselves included:\
+      \n{"\n".intercalate (leanLines ++ irisLines)}"
 
 /--
   Search for hypotheses in the regular Lean context that are the in the form
