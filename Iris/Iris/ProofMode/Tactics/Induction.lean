@@ -78,7 +78,7 @@ private def parseInductionAlts (altsSyntax : TSyntax `Lean.Parser.Tactic.inducti
         | `(inductionAltLHS| | $_:hole $[$vars]*) =>
           if parsedAlts.size < alts.size - 1 then
             throwErrorAt alt
-              s!"iinduction: invalid occurrence of the wildcard alternative `| _ => ...`:".append
+              s!"iinduction: invalid occurrence of the wildcard alternative `| _ => ...`: ".append
               "It must be the last alternative"
           return ⟨tac, parsedAlts, some ⟨.anonymous, ← parseVars vars, tacs, alt⟩, altsSyntax⟩
         | _ => throwErrorAt l "iinduction: invalid syntax"

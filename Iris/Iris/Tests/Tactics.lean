@@ -2826,7 +2826,7 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | _ => itrivial
 
 /- Testing `iinduction` with the hole and synthetic hole -/
-/-- error: iinduction: invalid occurrence of the wildcard alternative `| _ => ...`:It must be the last alternative -/
+/-- error: iinduction: invalid occurrence of the wildcard alternative `| _ => ...`: It must be the last alternative -/
 #guard_msgs in
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
@@ -2929,7 +2929,8 @@ example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} :
 example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → PROP} :
     ⊢ P -∗ □ Q m -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ
-  iinduction n generalizing %m HQ with
+  iinduction n generalizing %m HQ
+  with
   | zero => itrivial
   | succ n ih => itrivial
 
