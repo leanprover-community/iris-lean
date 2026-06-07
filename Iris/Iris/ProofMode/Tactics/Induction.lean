@@ -558,10 +558,15 @@ private def generalizeTermWithFVar (x : TSyntax `term) : TacticM FVarId := do
   ```
 
   By applying `iinduction n`, all spatial hypotheses (`HP` and `HS`) are
-  reverted. The hypothesis `HT` is also reverted because it involves `n`.
-  By applying `iinduction n generalizing HQ %R`, the hypotheses `HQ` and `HR`
+  reverted. The hypothesis `HT` is also reverted because it involves the
+  induction target `n`.
+  By applying `iinduction n generalizing HQ`, the hypotheses `HQ`
   are additionally reverted and thus included as premises in the induction
   hypothesis.
+  One can also generalise pure variables in the regular Lean context. However,
+  if there exists some another pure/Iris hypothesis that is forward-dependent.
+  For example, `iinduction n generalizing %R` is not valid as `HR` depends on `R`.
+  Instead, one can use `iinduction n generalizing %R HR`.
 -/
 elab_rules : tactic
   | `(tactic| iinduction $x
