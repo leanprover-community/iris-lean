@@ -319,10 +319,33 @@ theorem wp_sortAndCheck [HeapLangGS hlc GF] (l : List Int) :
     ⊢@{IProp GF} WP (sortAndCheck l) {{ fun bv => iprop% ⌜bv = hl_val(#true)⌝}} := by
   sorry
 
+-- TODO: Move (potentially after the demo? Depends on if/how Michael wants to show this)
+def HeapLangS : BundledGFunctors
+  | 0 => ⟨InvMapF, by infer_instance⟩
+  | 1 => ⟨constOF (DisjointLeibnizSet CoPset), by infer_instance⟩
+  | 2 => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
+  | 3 => ⟨Auth.AuthURF (F := PNat) (constOF Credit), by infer_instance⟩
+  | 4 => ⟨constOF (HeapView PNat Loc (Agree (LeibnizO (Option Val))) HeapF), by infer_instance⟩
+  | 5 => ⟨constOF (HeapView PNat Loc (Agree (LeibnizO GName)) HeapF), by infer_instance⟩
+  | 6 => ⟨constOF MetaUR, by infer_instance⟩
+  | _ => ⟨constOF Unit, by infer_instance⟩
 
-def HeapLangS : BundledGFunctors := sorry
-
-instance instHeapLangGS_HeapLangS : HeapLangGpreS HasLC.hasLC HeapLangS := sorry
+instance instHeapLangGS_HeapLangS : HeapLangGpreS HasLC.hasLC HeapLangS where
+  toWsatGpreS := by
+    constructor
+    · exists 0
+    · exists 1
+    · exists 2
+  toLcGpreS := by
+    constructor
+    · exists 3
+  heap_pre := by
+    constructor
+    · constructor
+      exists 4
+    · constructor
+      exists 5
+    · exists 6
 
 /-- Full application of adequacy: sortAndCheck is safe in any state and only ever return true. -/
 theorem sortAndCheckAdequate (l : List Int) (σ : State) :
