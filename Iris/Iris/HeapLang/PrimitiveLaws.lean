@@ -81,22 +81,23 @@ variable {s : Stuckness} {E : CoPset} {Φ : Val → IProp GF}
 
 open EctxLanguage
 
--- TODO use hl syntax everywhere possible
-
-theorem wp_rec {f x : Binder} {e : Exp} {v : Val} :
-    ▷ WP ((e.subst f (.rec_ f x e)).subst x v) @ s; E {{ Φ }}
-    ⊢  WP (Exp.app (.val (.rec_ f x e)) v) @ s; E {{ Φ }} := by
-  iintro Hwp
+theorem wp_rec {f x : Binder} {e : Exp} {vf v : Val}
+    (h : vf = (.rec_ f x e)) :
+    ▷ WP ((e.subst f vf).subst x v) @ s; E {{ Φ }}
+    ⊢ WP hl(&vf &v) @ s; E {{ Φ }} := by
+  iintro Hwp; subst h
   iapply wp_pure_step_fupd (Hφ := True.intro)
   dsimp only [Nat.repeat]
   iintro !> !> !> -; iframe
 
 theorem wp_fork {e : Exp} :
-    ▷ Φ (hl_val(#())) ∗ ▷ WP e @ s; ⊤ {{ _v, True }} ⊢ WP hl(fork({e})) @ s; E {{ Φ }} := by
-  iintro ⟨HΦ, Hwp⟩
+    ▷ Φ (hl_val(#())) -∗
+    ▷ WP e @ s; ⊤ {{ _v, True }} -∗
+    WP hl(fork(&e)) @ s; E {{ Φ }} := by
+  iintro HΦ Hwp
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  have Hred : BaseStep.Reducible (hl(fork({e})), σ₁) :=
+  have Hred : BaseStep.Reducible (hl(fork(&e)), σ₁) :=
     ⟨[], hl(#BaseLit.unit), σ₁, [e], by constructor⟩
   isplitr
   · ipureintro
@@ -113,8 +114,10 @@ theorem wp_fork {e : Exp} :
   · iapply BI.BigSepL.bigSepL_singleton
     iframe Hwp
 
-theorem wp_alloc (v : Val) :
-    ⊢ WP (hl(ref({v}))) @ s; E {{ l, ∃ l' : Loc, ⌜l = .lit (.loc l')⌝ ∗ (l' ↦ (some v))}} := by
+theorem wp_alloc (v : Val) (Φ : Val → IProp GF ) :
+    ▷ (∀ l : Loc, l ↦ some v -∗ Φ (.lit $ .loc l)) -∗
+    WP hl(ref(&v)) @ s; E {{ Φ }} := by
+  iintro HΦ
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   simp only [stateInterp]
@@ -122,7 +125,7 @@ theorem wp_alloc (v : Val) :
   have Hne : σ₁.get? l = .none := by
     simpa [State.get?, get?, getElem?_eq_none_iff, ←Std.ExtTreeMap.mem_keys]
       using (List.fresh σ₁.heap.keys).choose_spec
-  have Hred : BaseStep.Reducible (hl(ref({v})), σ₁) := by
+  have Hred : BaseStep.Reducible (hl(ref(&v)), σ₁) := by
     exists [], (.val (.lit (.loc l))), (σ₁.initHeap l 1 v), []
     constructor
     · trivial
@@ -147,20 +150,19 @@ theorem wp_alloc (v : Val) :
   isplit <;> try itrivial
   iexists hl_val(#(BaseLit.loc l'))
   isplit; ipureintro; rfl
-  iexists _
-  iframe Hpt
-  itrivial
+  iapply HΦ $$ [$]
 
-theorem wp_load {l : Loc} {q} {v : Val} :
-    ▷ (l ↦{q} (some v))
-    ⊢@{IProp GF} WP hl(!v({(.lit (.loc l))})) @ s; E {{ v', ⌜v = v'⌝ ∗ (l ↦{q} (some v')) }} := by
-  iintro >Hpt
+theorem wp_load {l : Loc} {q} {v : Val} Φ :
+    ▷ l ↦{q} some v -∗
+    ▷ (l ↦{q} some v -∗ Φ v) -∗
+    WP hl(!v(#l)) @ s; E {{ Φ }} := by
+  iintro >Hpt HΦ
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   ihave %Hpt : ⌜σ₁.get? l = v⌝ $$ [Hσ Hpt]
   · ihave >%_ := genHeap_valid $$ [$Hσ $Hpt]
     itrivial
-  ihave %Hred : ⌜BaseStep.Reducible (hl(!{.val (.lit (.loc l))}), σ₁)⌝ $$ []
+  ihave %Hred : ⌜BaseStep.Reducible (hl(!#l), σ₁)⌝ $$ []
   · ipureintro
     exists [], (.val v), σ₁, []
     constructor; simp [Hpt]
@@ -178,21 +180,22 @@ theorem wp_load {l : Loc} {q} {v : Val} :
   iframe Hσ
   imodintro
   isplit <;> try itrivial
-  iexists _; iframe Hpt
-  ipureintro; simp [toVal]
+  iexists _; isplit
+  · ipureintro; simp [toVal]; rfl
+  · iapply HΦ $$ [$]
 
-theorem wp_store {l : Loc} {v v' : Val} :
-    ▷ (l ↦ (some v'))
-    ⊢@{IProp GF} WP hl(v({(.lit (.loc l))}) ← {v}) @ s; E
-      {{ v'', ⌜v'' = hl_val(#())⌝ ∗ (l ↦ some v) }} := by
-  iintro >Hpt
+theorem wp_store {l : Loc} {v v' : Val} Φ :
+    ▷ l ↦ some v' -∗
+    ▷ (l ↦ some v -∗ Φ hl_val(#())) -∗
+    WP hl(v(#l) ← &v) @ s; E {{ Φ }} := by
+  iintro >Hpt HΦ
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   simp only [stateInterp]
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
-  ihave %Hred : ⌜BaseStep.Reducible (hl({.val (.lit (.loc l))} ← {v}), σ₁)⌝ $$ []
+  ihave %Hred : ⌜BaseStep.Reducible (hl(#l ← &v), σ₁)⌝ $$ []
   · ipureintro
     exists [], (.val (.lit .unit)), (σ₁.initHeap l 1 v), []
     refine BaseStep.storeS _ v' _ _ ?_; grind
@@ -214,15 +217,16 @@ theorem wp_store {l : Loc} {v v' : Val} :
   iframe Hσ
   isplit <;> try itrivial
   iexists .lit .unit
-  iframe Hpt
-  ipureintro; simp [toVal]
+  isplit
+  · ipureintro; simp [toVal]
+  · iapply HΦ $$ [$]
 
 theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val}
     (Heq1 : toVal e1 = .some v1) (Heq2 : toVal e2 = .some v2) (Heq3 : v'.compareSafe v1)
     (Heq4 : decide (v' = v1) = false) :
       ▷ (l ↦{q} some v')
-      ⊢ (WP hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})) @ s; E
-          {{ v'', ⌜v'' = hl_val(({v'}, #(BaseLit.bool false)))⌝ ∗ l ↦{q} some v' }}) := by
+      ⊢ (WP hl(cmpXchg(v(#l), &e1, &e2)) @ s; E
+          {{ v'', ⌜v'' = hl_val((&v', #false))⌝ ∗ l ↦{q} some v' }}) := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
@@ -230,9 +234,9 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
-  ihave %Hred : ⌜BaseStep.Reducible (hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})), σ₁)⌝ $$ []
+  ihave %Hred : ⌜BaseStep.Reducible (hl(cmpXchg(v(#l), &e1, &e2)), σ₁)⌝ $$ []
   · ipureintro
-    exists [], hl(v(({v'}, #(BaseLit.bool false)))), σ₁, []
+    exists [], hl(v((&v', #false))), σ₁, []
     rw [show e1 = ToVal.ofVal v1 by grind, show e2 = ToVal.ofVal v2 by grind]
     constructor <;> grind
   isplitr
@@ -252,7 +256,7 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   imodintro
   iframe Hσ
   isplit <;> try itrivial
-  iexists hl_val(({v'}, #(BaseLit.bool false)))
+  iexists hl_val((&v', #false))
   iframe Hpt
   ipureintro; simp [toVal]
 
@@ -260,8 +264,8 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
     (Heq1 : toVal e1 = .some v1) (Heq2 : toVal e2 = .some v2) (Heq3 : v'.compareSafe v1)
     (Heq4 : decide (v' = v1) = true) :
       ▷ (l ↦ some v')
-      ⊢ WP hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})) @ s; E
-        {{ v'', ⌜v'' = hl_val(({v'}, #(BaseLit.bool true)))⌝ ∗ l ↦ some v2 }} := by
+      ⊢ WP hl(cmpXchg(v(#l), &e1, &e2)) @ s; E
+        {{ v'', ⌜v'' = hl_val((&v', #true))⌝ ∗ l ↦ some v2 }} := by
   iintro >Hpt
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
@@ -269,9 +273,9 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   ihave %Hpt : ⌜σ₁.get? l = .some (.some v')⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%Heq'
     itrivial
-  ihave %Hred : ⌜BaseStep.Reducible (hl(cmpXchg(v({.lit (BaseLit.loc l)}), {e1}, {e2})), σ₁)⌝ $$ []
+  ihave %Hred : ⌜BaseStep.Reducible (hl(cmpXchg(v(#l), &e1, &e2)), σ₁)⌝ $$ []
   · ipureintro
-    exists [], hl(v(({v'}, #(BaseLit.bool true)))), (σ₁.initHeap l 1 (some v2)), []
+    exists [], hl(v((&v', #true))), (σ₁.initHeap l 1 (some v2)), []
     rw [show e1 = ToVal.ofVal v1 by grind, show e2 = ToVal.ofVal v2 by grind]
     constructor <;> grind
   isplitr
@@ -294,7 +298,7 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   imodintro
   iframe Hσ
   isplit <;> try itrivial
-  iexists hl_val(({v'}, #(BaseLit.bool true)))
+  iexists hl_val((&v', #true))
   iframe Hpt
   ipureintro; simp [toVal]
 

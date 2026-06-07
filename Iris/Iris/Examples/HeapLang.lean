@@ -124,45 +124,45 @@ def exchangeAndAssert : Exp :=
 
 /-! ## Composing functions -/
 
-def incrementBy2 : Exp := hl(λ n, {increment} ({increment} n))
+def incrementBy2 : Exp := hl(λ n, &increment (&increment n))
 
-def powerOf2 : Exp := hl(λ n, {power} #2 n)
+def powerOf2 : Exp := hl(λ n, &power #2 n)
 
-def factorialSum : Exp := hl(λ m n, {factorial} m + {factorial} n)
+def factorialSum : Exp := hl(λ m n, &factorial m + &factorial n)
 
-def incrementPair : Exp := hl(λ p, {mapPair} {increment} p)
+def incrementPair : Exp := hl(λ p, &mapPair &increment p)
 
-def absPair : Exp := hl(λ p, {mapPair} {abs} p)
+def absPair : Exp := hl(λ p, &mapPair &abs p)
 
 def sortedSum : Exp :=
   hl(λ x y,
-    let p := {minMax} x y;
+    let p := &minMax x y;
     fst(p) + snd(p))
 
-def listIsEmpty : Exp := hl(λ xs, {listLength} xs ≤ #0)
+def listIsEmpty : Exp := hl(λ xs, &listLength xs ≤ #0)
 
 def listSumIncremented : Exp :=
   hl(rec go xs :=
     match xs with
     | injl(_) => #0
-    | injr(p) => {increment} (fst(p)) + (go (snd(p))))
+    | injr(p) => &increment (fst(p)) + (go (snd(p))))
 
 def casIncrementTwice : Exp :=
   hl(λ l,
-    {casIncrement} l;
-    {casIncrement} l)
+    &casIncrement l;
+    &casIncrement l)
 
 def factorialOfCounter : Exp :=
   hl(let c := ref(#0);
      c ← !c + #1;
-     {factorial} (!c))
+     &factorial (!c))
 
 def parallelFactorials : Exp :=
   hl(λ m n,
     let rm := ref(#0);
     let rn := ref(#0);
-    fork(rm ← {factorial} m);
-    rn ← {factorial} n;
+    fork(rm ← &factorial m);
+    rn ← &factorial n;
     (!rm, !rn))
 
 /-! ## Counter -/
@@ -185,7 +185,7 @@ def spinLockTryAcquire : Exp :=
 
 def spinLockAcquire : Exp :=
   hl(rec acquire l :=
-    if {spinLockTryAcquire} l then #() else acquire l)
+    if &spinLockTryAcquire l then #() else acquire l)
 
 def spinLockRelease : Exp := hl(λ l, l ← #false)
 
@@ -202,26 +202,26 @@ def rwLockTryAcquireReader : Exp :=
 
 def rwLockAcquireReader : Exp :=
   hl(rec acquire l :=
-    if {rwLockTryAcquireReader} l then #() else acquire l)
+    if &rwLockTryAcquireReader l then #() else acquire l)
 
-def rwLockReleaseReader : Exp := hl(λ l, faa(l, #(.int (-1))); #())
+def rwLockReleaseReader : Exp := hl(λ l, faa(l, #(-1 : Int)); #())
 
 def rwLockTryAcquireWriter : Exp :=
-  hl(λ l, snd(cmpXchg(l, #0, #(.int (-1)))))
+  hl(λ l, snd(cmpXchg(l, #0, #(-1 : Int))))
 
 def rwLockAcquireWriter : Exp :=
   hl(rec acquire l :=
-    if {rwLockTryAcquireWriter} l then #() else acquire l)
+    if &rwLockTryAcquireWriter l then #() else acquire l)
 
 def rwLockReleaseWriter : Exp := hl(λ l, l ← #0)
 
 def lockedCounter : Exp :=
-  hl(let lk := {spinLockNew} #();
-     let c := {newCounter} #();
-     {spinLockAcquire} lk;
-     {counterIncr} c;
-     {spinLockRelease} lk;
-     {counterRead} c)
+  hl(let lk := &spinLockNew #();
+     let c := &newCounter #();
+     &spinLockAcquire lk;
+     &counterIncr c;
+     &spinLockRelease lk;
+     &counterRead c)
 
 /-! ## Prophecy variables -/
 
@@ -229,17 +229,17 @@ def nondetBool : Exp :=
   hl(λ _, let l := ref #true; fork (l ← #false); !l)
 
 def newCoin : Exp :=
-  hl(λ _, (ref(injl(#())), {Exp.newProph}))
+  hl(λ _, (ref(injl(#())), &Exp.newProph))
 
 def readCoin : Exp :=
   hl(λ cp,
     let c := fst(cp);
     let p := snd(cp);
     match !c with
-    | injl(_) => {hl(let r := {nondetBool} #();
+    | injl(_) => &(hl(let r := &nondetBool #();
                c ← injr(r);
-               {Exp.resolve hl(injl(#())) hl(p) hl(r)};
-               r)}
+               &(Exp.resolve hl(injl(#())) hl(p) hl(r));
+               r))
     | injr(b) => b)
 
 end Iris.Examples.HeapLang

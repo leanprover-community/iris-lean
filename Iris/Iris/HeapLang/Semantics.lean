@@ -51,34 +51,34 @@ inductive ECtxItem where
 
 def ECtxItem.fill (Ki : ECtxItem) (e : Exp) : Exp :=
   match Ki with
-  | .appL v2        => .app e (.val v2)
+  | .appL v2        => .app e (.ofVal v2)
   | .appR e1        => .app e1 e
   | .unOp op        => .unop op e
-  | .binOpL op v2   => .binop op e (.val v2)
+  | .binOpL op v2   => .binop op e (.ofVal v2)
   | .binOpR op e1   => .binop op e1 e
   | .if e1 e2       => .if e e1 e2
-  | .pairL v2       => .pair e (.val v2)
+  | .pairL v2       => .pair e (.ofVal v2)
   | .pairR e1       => .pair e1 e
   | .fst            => .fst e
   | .snd            => .snd e
   | .injL           => .injL e
   | .injR           => .injR e
   | .case e1 e2     => .case e e1 e2
-  | .allocNL v2     => .allocN e (.val v2)
+  | .allocNL v2     => .allocN e (.ofVal v2)
   | .allocNR e1     => .allocN e1 e
   | .free           => .free e
   | .load           => .load e
-  | .storeL v2      => .store e (.val v2)
+  | .storeL v2      => .store e (.ofVal v2)
   | .storeR e1      => .store e1 e
-  | .xchgL v2       => .xchg e (.val v2)
+  | .xchgL v2       => .xchg e (.ofVal v2)
   | .xchgR e1       => .xchg e1 e
-  | .cmpXchgL v1 v2 => .cmpXchg e (.val v1) (.val v2)
-  | .cmpXchgM e0 v2 => .cmpXchg e0 e (.val v2)
+  | .cmpXchgL v1 v2 => .cmpXchg e (.ofVal v1) (.ofVal v2)
+  | .cmpXchgM e0 v2 => .cmpXchg e0 e (.ofVal v2)
   | .cmpXchgR e0 e1 => .cmpXchg e0 e1 e
-  | .faaL v2        => .faa e (.val v2)
+  | .faaL v2        => .faa e (.ofVal v2)
   | .faaR e1        => .faa e1 e
-  | .resolveL K v1 v2 => .resolve (K.fill e) (.val v1) (.val v2)
-  | .resolveM e0 v2   => .resolve e0 e (.val v2)
+  | .resolveL K v1 v2 => .resolve (K.fill e) (.ofVal v1) (.ofVal v2)
+  | .resolveM e0 v2   => .resolve e0 e (.ofVal v2)
   | .resolveR e0 e1   => .resolve e0 e1 e
 
 structure State where
@@ -126,79 +126,79 @@ abbrev State.get? (σ : State) (l : Loc) : Option (Option Val) :=
 
 inductive BaseStep : Exp → State → List Observation → Exp → State → List Exp → Prop where
   | recS (f x : Binder) (e : Exp) (σ : State) :
-      BaseStep (.rec_ f x e) σ [] (.val (.rec_ f x e)) σ []
+      BaseStep (.rec_ f x e) σ [] (.ofVal (.rec_ f x e)) σ []
   | pairS (v1 v2 : Val) (σ : State) :
-      BaseStep (.pair (.val v1) (.val v2)) σ [] (.val (.pair v1 v2)) σ []
+      BaseStep (.pair (.ofVal v1) (.ofVal v2)) σ [] (.ofVal (.pair v1 v2)) σ []
   | injLS (v : Val) (σ : State) :
-      BaseStep (.injL (.val v)) σ [] (.val (.injL v)) σ []
+      BaseStep (.injL (.ofVal v)) σ [] (.ofVal (.injL v)) σ []
   | injRS (v : Val) (σ : State) :
-      BaseStep (.injR (.val v)) σ [] (.val (.injR v)) σ []
+      BaseStep (.injR (.ofVal v)) σ [] (.ofVal (.injR v)) σ []
   | betaS (f x : Binder) (e1 : Exp) (v2 : Val) (e' : Exp) (σ : State) :
       e' = (e1.subst f (.rec_ f x e1)).subst x v2 →
-      BaseStep (.app (.val (.rec_ f x e1)) (.val v2)) σ [] e' σ []
+      BaseStep (.app (.ofVal (.rec_ f x e1)) (.ofVal v2)) σ [] e' σ []
   | unOpS (op : UnOp) (v v' : Val) (σ : State) :
       op.eval v = some v' →
-      BaseStep (.unop op (.val v)) σ [] (.val v') σ []
+      BaseStep (.unop op (.ofVal v)) σ [] (.ofVal v') σ []
   | binOpS (op : BinOp) (v1 v2 v' : Val) (σ : State) :
       op.eval v1 v2 = some v' →
-      BaseStep (.binop op (.val v1) (.val v2)) σ [] (.val v') σ []
+      BaseStep (.binop op (.ofVal v1) (.ofVal v2)) σ [] (.ofVal v') σ []
   | ifTrueS (e1 e2 : Exp) (σ : State) :
-      BaseStep (.if (.val (.lit (.bool true))) e1 e2) σ [] e1 σ []
+      BaseStep (.if (.ofVal (.lit (.bool true))) e1 e2) σ [] e1 σ []
   | ifFalseS (e1 e2 : Exp) (σ : State) :
-      BaseStep (.if (.val (.lit (.bool false))) e1 e2) σ [] e2 σ []
+      BaseStep (.if (.ofVal (.lit (.bool false))) e1 e2) σ [] e2 σ []
   | fstS (v1 v2 : Val) (σ : State) :
-      BaseStep (.fst (.val (Val.pair v1 v2))) σ [] (.val v1) σ []
+      BaseStep (.fst (.ofVal (Val.pair v1 v2))) σ [] (.ofVal v1) σ []
   | sndS (v1 v2 : Val) (σ : State) :
-      BaseStep (.snd (.val (Val.pair v1 v2))) σ [] (.val v2) σ []
+      BaseStep (.snd (.ofVal (Val.pair v1 v2))) σ [] (.ofVal v2) σ []
   | caseLS (v : Val) (e1 e2 : Exp) (σ : State) :
-      BaseStep (.case (.val (.injL v)) e1 e2) σ [] (.app e1 (.val v)) σ []
+      BaseStep (.case (.ofVal (.injL v)) e1 e2) σ [] (.app e1 (.ofVal v)) σ []
   | caseRS (v : Val) (e1 e2 : Exp) (σ : State) :
-      BaseStep (.case (.val (.injR v)) e1 e2) σ [] (.app e2 (.val v)) σ []
+      BaseStep (.case (.ofVal (.injR v)) e1 e2) σ [] (.app e2 (.ofVal v)) σ []
   | allocNS (n : Int) (v : Val) (σ : State) (l : Loc) :
       0 < n →
       (∀ i : Int, 0 ≤ i → i < n → σ.get? (l + i) = none) →
-      BaseStep (.allocN (.val (.lit (.int n))) (.val v)) σ
-               [] (.val (.lit (.loc l))) (σ.initHeap l n v) []
+      BaseStep (.allocN (.ofVal (.lit (.int n))) (.ofVal v)) σ
+               [] (.ofVal (.lit (.loc l))) (σ.initHeap l n v) []
   | freeS (l : Loc) (v : Val) (σ : State) :
       σ.get? l = some v →
-      BaseStep (.free (.val (.lit (.loc l)))) σ
-               [] (.val (.lit .unit)) (σ.initHeap l 1 none) []
+      BaseStep (.free (.ofVal (.lit (.loc l)))) σ
+               [] (.ofVal (.lit .unit)) (σ.initHeap l 1 none) []
   | loadS (l : Loc) (v : Val) (σ : State) :
       σ.get? l = some v →
-      BaseStep (.load (.val (.lit (.loc l)))) σ [] (.val v) σ []
+      BaseStep (.load (.ofVal (.lit (.loc l)))) σ [] (.ofVal v) σ []
   | storeS (l : Loc) (v w : Val) (σ : State) :
       σ.get? l = some v →
-      BaseStep (.store (.val (.lit (.loc l))) (.val w)) σ
-               [] (.val (.lit .unit)) (σ.initHeap l 1 w) []
+      BaseStep (.store (.ofVal (.lit (.loc l))) (.ofVal w)) σ
+               [] (.ofVal (.lit .unit)) (σ.initHeap l 1 w) []
   | xchgS (l : Loc) (v1 v2 : Val) (σ : State) :
       σ.get? l = some v1 →
-      BaseStep (.xchg (.val (.lit (.loc l))) (.val v2)) σ
-               [] (.val v1) (σ.initHeap l 1 v2) []
+      BaseStep (.xchg (.ofVal (.lit (.loc l))) (.ofVal v2)) σ
+               [] (.ofVal v1) (σ.initHeap l 1 v2) []
   | cmpXchgS (l : Loc) (v1 v2 vl : Val) (σ : State) (b : Bool) :
       σ.get? l = some vl →
       vl.compareSafe v1 →
       decide (vl = v1) = b →
-      BaseStep (.cmpXchg (.val (.lit (.loc l))) (.val v1) (.val v2)) σ
+      BaseStep (.cmpXchg (.ofVal (.lit (.loc l))) (.ofVal v1) (.ofVal v2)) σ
                []
-               (.val (.pair vl (.lit (.bool b))))
+               (.ofVal (.pair vl (.lit (.bool b))))
                (if b then (σ.initHeap l 1 v2) else σ) []
   | faaS (l : Loc) (i1 i2 : Int) (σ : State) :
       σ.get? l = some (some (.lit (.int i1))) →
-      BaseStep (.faa (.val (.lit (.loc l))) (.val (.lit (.int i2)))) σ
-               [] (.val (.lit (.int i1)))
+      BaseStep (.faa (.ofVal (.lit (.loc l))) (.ofVal (.lit (.int i2)))) σ
+               [] (.ofVal (.lit (.int i1)))
                (σ.initHeap l 1 (some (.lit (.int (i1 + i2))))) []
   | forkS (e : Exp) (σ : State) :
-      BaseStep (.fork e) σ [] (.val (.lit .unit)) σ [e]
+      BaseStep (.fork e) σ [] (.ofVal (.lit .unit)) σ [e]
   | newProphS (σ : State) (p : ProphId) :
       ¬ σ.usedProphId.contains p →
       BaseStep .newProph σ
-               [] (.val (.lit (.prophecy p)))
+               [] (.ofVal (.lit (.prophecy p)))
                { σ with usedProphId := σ.usedProphId.insert p } []
   | resolveS (p : ProphId) (v : Val) (e : Exp) (σ : State) (w : Val) (σ' : State)
              (κs : List Observation) (ts : List Exp) :
-      BaseStep e σ κs (.val v) σ' ts →
+      BaseStep e σ κs (.ofVal v) σ' ts →
       σ.usedProphId.contains p →
-      BaseStep (.resolve e (.val (.lit (.prophecy p))) (.val w)) σ
-               (κs ++ [(p, (v, w))]) (.val v) σ' ts
+      BaseStep (.resolve e (.ofVal (.lit (.prophecy p))) (.ofVal w)) σ
+               (κs ++ [(p, (v, w))]) (.ofVal v) σ' ts
 
 end Iris.HeapLang
