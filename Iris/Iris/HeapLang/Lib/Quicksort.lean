@@ -2,6 +2,7 @@ module
 
 public import Iris.HeapLang.PrimitiveLaws
 public import Iris.HeapLang.ProofMode
+public import Iris.HeapLang.Linter
 
 namespace Iris.HeapLang
 

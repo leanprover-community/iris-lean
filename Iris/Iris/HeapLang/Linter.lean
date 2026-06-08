@@ -17,10 +17,10 @@ open Lean Lean.Elab Lean.Elab.Command Lean.Linter
 The `linter.heapLang.freeVars` linter warns about unbound variables appearing
 in a HeapLang expression written with the `hl(...)` / `hl_val(...)` notation.
 
-Default value is `false`.
+Default value is `true`.
 -/
 register_option linter.heapLang.freeVars : Bool := {
-  defValue := false
+  defValue := true
   descr := "warn about unbound variables in HeapLang `hl(...)` expressions"
 }
 

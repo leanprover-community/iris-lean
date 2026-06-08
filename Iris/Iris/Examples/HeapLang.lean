@@ -11,8 +11,6 @@ namespace Iris.Examples.HeapLang
 
 open Iris.HeapLang
 
-set_option linter.heapLang.freeVars true
-
 /-! ## Basic functions -/
 
 def identity : Exp := hl(λ x, x)
