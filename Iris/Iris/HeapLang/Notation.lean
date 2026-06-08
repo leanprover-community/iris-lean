@@ -108,13 +108,13 @@ syntax:10 "let " hl_binder " := " hl_exp:10 "; " hl_exp:1 : hl_exp
 /-- sequencing -/
 syntax:5 hl_exp:6 "; " hl_exp:5 : hl_exp
 /-- lambda -/
-syntax:10 "λ " hl_binder+ ", " hl_exp:10 : hl_exp
+syntax:10 "λ " hl_binder+ ", " hl_exp:1 : hl_exp
 /-- lambda -/
-syntax:10 "λ " hl_binder+ ", " hl_exp:10 : hl_val
+syntax:10 "λ " hl_binder+ ", " hl_exp:1 : hl_val
 /-- recursive function -/
-syntax:10 "rec " hl_binder ppSpace hl_binder+ " := " hl_exp:10 : hl_exp
+syntax:10 "rec " hl_binder ppSpace hl_binder+ " := " hl_exp:1 : hl_exp
 /-- recursive function -/
-syntax:10 "rec " hl_binder ppSpace hl_binder+ " := " hl_exp:10 : hl_val
+syntax:10 "rec " hl_binder ppSpace hl_binder+ " := " hl_exp:1 : hl_val
 
 /-- pairs -/
 syntax:max "(" hl_exp ", " hl_exp,+ ")" : hl_exp

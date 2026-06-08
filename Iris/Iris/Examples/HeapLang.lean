@@ -149,8 +149,8 @@ def listSumIncremented : Exp :=
 
 def casIncrementTwice : Exp :=
   hl(λ l,
-    (&casIncrement l;
-    &casIncrement l))
+    &casIncrement l;
+    &casIncrement l)
 
 def factorialOfCounter : Exp :=
   hl(let c := ref(#0);
