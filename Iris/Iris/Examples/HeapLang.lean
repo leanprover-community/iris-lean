@@ -11,6 +11,8 @@ namespace Iris.Examples.HeapLang
 
 open Iris.HeapLang
 
+set_option linter.heapLang.freeVars true
+
 /-! ## Basic functions -/
 
 def identity : Exp := hl(λ x, x)
@@ -149,8 +151,8 @@ def listSumIncremented : Exp :=
 
 def casIncrementTwice : Exp :=
   hl(λ l,
-    &casIncrement l;
-    &casIncrement l)
+    (&casIncrement l;
+    &casIncrement l))
 
 def factorialOfCounter : Exp :=
   hl(let c := ref(#0);
@@ -226,7 +228,7 @@ def lockedCounter : Exp :=
 /-! ## Prophecy variables -/
 
 def nondetBool : Exp :=
-  hl(λ _, let l := ref #true; fork (l ← #false); !l)
+  hl(λ _, let l := ref(#true); fork(l ← #false); !l)
 
 def newCoin : Exp :=
   hl(λ _, (ref(injl(#())), &Exp.newProph))
