@@ -102,6 +102,16 @@ section Specs
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
 
+theorem nil_spec (Φ : Val → IProp GF) :
+    (∀ v, isList v [] -∗ Φ v) -∗
+    WP hl(v(&nil)) {{ Φ }} := by
+  iintro Hl
+  unfold nil; wp_finish
+  imodintro
+  iapply Hl
+  iapply isList_nil
+  itrivial
+
 theorem cons_spec x l ls Φ :
     isList (GF:=GF) l ls -∗
     (∀ v, isList v (x :: ls) -∗ Φ v) -∗
@@ -278,12 +288,8 @@ theorem wp_makeList (l : List Int) (Φ : Val → IProp GF) :
   induction l generalizing Φ with
   | nil =>
     iintro HΦ
-    unfold makeList nil
-    wp_value_head
-    imodintro
-    iapply HΦ
-    unfold isList
-    itrivial
+    unfold makeList
+    iapply nil_spec $$ HΦ
   | cons l ls ih =>
     iintro HΦ
     rw [makeList]
@@ -292,9 +298,7 @@ theorem wp_makeList (l : List Int) (Φ : Val → IProp GF) :
     iapply ih
     iintro %v Hv
     wp_pures
-    iapply cons_spec $$ Hv
-    iintro %v Hv
-    iapply HΦ $$ Hv
+    iapply cons_spec $$ Hv HΦ
 
 /- When a HeapLang list is sorted, checkSorted returns true -/
 theorem wp_checkSorted (v vacc : Val) (l : List Int) (Φ : Val → IProp GF) :
