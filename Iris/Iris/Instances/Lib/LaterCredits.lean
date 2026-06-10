@@ -47,7 +47,7 @@ scoped instance {a : Credit} : CMRA.Cancelable a := inferInstance
 /-- Later credits inclusion typeclass (`GF` contains the necessary functors for later credits) -/
 @[rocq_alias lcGpreS]
 class LcGpreS (GF : BundledGFunctors) where
-  lc_elem : ElemG GF (AuthURF (F := PNat) (constOF Credit))
+  lc_elem : ElemG GF (AuthURF (constOF Credit))
 
 attribute [reducible, instance] LcGpreS.lc_elem
 
@@ -100,7 +100,7 @@ theorem lc_split {n m} : £ (n + m) ⊣⊢@{IProp GF} £ n ∗ £ m := by
     exact (true_sep (P := iprop(True))).symm
   | hasLC =>
     -- FIXME: Timeout on iOwn_op. Why?
-    -- Specifying (F := (AuthURF (F := PNat) (constOF Credit))) (a1 := ◯ n) (a2 := ◯ m) fixes it, but it is too verbose.
+    -- Specifying (F := (AuthURF (constOF Credit))) (a1 := ◯ n) (a2 := ◯ m) fixes it, but it is too verbose.
     simp only [lc]
     refine .trans ?_ iOwn_op
     exact .rfl

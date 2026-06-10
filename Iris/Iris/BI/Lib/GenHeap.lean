@@ -41,13 +41,11 @@ abbrev MetaResMap (x : Sort _) : Sort _ := Std.ExtTreeMap Pos x compare
 /-- The CMRA used to store the meta-data attached to a single location. -/
 abbrev MetaUR : Sort _ := ReservationMap (Agree (LeibnizO Pos)) MetaResMap
 
-variable (F : outParam (Type _)) [UFraction F]
-
 @[rocq_alias gen_heapGpreS]
 class genHeapPreS (L V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)
     [Std.LawfulFiniteMap H L] where
-  heap : GhostMapG GF F L V H
-  metaInfo : GhostMapG GF F L GName H
+  heap : GhostMapG GF L V H
+  metaInfo : GhostMapG GF L GName H
   metaData : ElemG GF (constOF MetaUR)
 
 attribute [reducible, instance] genHeapPreS.heap
@@ -58,7 +56,7 @@ attribute [instance] GhostMapG.elem
 @[rocq_alias gen_heapGS]
 class genHeapGS (L V : outParam <| Type _) (GF : outParam <| BundledGFunctors)
     (H : outParam <| Type _ → Type _) [Std.LawfulFiniteMap H L]
-    extends genHeapPreS F L V GF H where
+    extends genHeapPreS L V GF H where
   heapName : GName
   metaName : GName
 
@@ -69,8 +67,7 @@ section definitions
 
 variable {GF : BundledGFunctors} {L V : Type _}
 variable {H : outParam <| Type _ → Type _} [Std.LawfulFiniteMap H L]
-variable {F : outParam (Type _)} [UFraction F]
-variable [G : genHeapGS F L V GF H]
+variable [G : genHeapGS L V GF H]
 
 open Std.FiniteMap Std.PartialMap genHeapGS
 
@@ -83,7 +80,7 @@ def genHeapInterp (σ : H V) : IProp GF := iprop%
   ∃ m : H GName, ⌜∀ k, dom m k → dom σ k⌝ ∗ (heapName ↪●MAP σ) ∗ (metaName ↪●MAP m)
 
 @[rocq_alias pointsto]
-def pointsTo (l : L) (dq : DFrac F) (v : V) : IProp GF := heapName ↪◯MAP[l]{dq} v
+def pointsTo (l : L) (dq : DFrac) (v : V) : IProp GF := heapName ↪◯MAP[l]{dq} v
 
 notation:50 l:50 " ↦{" dq "} " v:50 => pointsTo l dq v
 notation:50 l:50 " ↦ " v:50 => pointsTo l (DFrac.own 1) v
@@ -107,9 +104,9 @@ end definitions
 
 section lemmas
 
-variable {F : outParam (Type _)} [UFraction F] {GF : BundledGFunctors}
+variable {GF : BundledGFunctors}
 variable {L V : Type _} {H : outParam <| Type _ → Type _} [Std.LawfulFiniteMap H L]
-variable [genHeapGS F L V GF H]
+variable [genHeapGS L V GF H]
 
 open genHeapGS Std.PartialMap Std.FiniteMap
 
@@ -156,28 +153,28 @@ theorem pointsTo_combine :
   iapply ghost_map_elem_combine $$ H₁ H₂
 
 @[rocq_alias pointsto_frac_ne]
-theorem pointsTo_frac_ne {l₁ l₂ : L} {dq₁ dq₂ : DFrac F} {v₁ v₂ : V}
+theorem pointsTo_frac_ne {l₁ l₂ : L} {dq₁ dq₂ : DFrac} {v₁ v₂ : V}
     (Hk : ¬ ✓ (dq₁ • dq₂)) :
     ⊢@{IProp GF} l₁ ↦{dq₁} v₁ -∗ l₂ ↦{dq₂} v₂ -∗ ⌜l₁ ≠ l₂⌝ := by
   unfold pointsTo
   iapply ghost_map_elem_frac_ne (Hk := Hk)
 
 @[rocq_alias pointsto_ne]
-theorem pointsTo_ne {l₁ l₂ : L} {dq₂ : DFrac F} {v₁ v₂ : V} :
+theorem pointsTo_ne {l₁ l₂ : L} {dq₂ : DFrac} {v₁ v₂ : V} :
     ⊢@{IProp GF} l₁ ↦ v₁ -∗ l₂ ↦{dq₂} v₂ -∗ ⌜l₁ ≠ l₂⌝ := by
   unfold pointsTo
   iapply ghost_map_elem_ne
 
 /-- Permanently turn any points-to predicate into a persistent points-to. -/
 @[rocq_alias pointsto_persist]
-theorem pointsTo_persist {l : L} {dq : DFrac F} {v : V} :
+theorem pointsTo_persist {l : L} {dq : DFrac} {v : V} :
     ⊢@{IProp GF} l ↦{dq} v ==∗ l ↦{.discard} v := by
   unfold pointsTo
   iapply ghost_map_elem_persist
 
 /-- Recover fractional ownership of a read-only element. -/
 @[rocq_alias pointsto_unpersist]
-theorem pointsTo_unpersist [IsHalfFraction F] {l : L} {v : V} :
+theorem pointsTo_unpersist {l : L} {v : V} :
     ⊢@{IProp GF} l ↦{.discard} v ==∗ ∃ q, l ↦{.own q} v := by
   unfold pointsTo
   iapply ghost_map_elem_unpersist
@@ -436,7 +433,7 @@ theorem genHeap_alloc_big [DecidableEq L] (σ' σ : H V) (Hdisj : σ' ##ₘ σ) 
     iapply (BigSepM.bigSepM_insert (Φ := fun l _ => iprop(metaToken l ⊤)) Hl) $$ [$Hl_tok $Htok]
 
 @[rocq_alias gen_heap_valid]
-theorem genHeap_valid {σ : H V} {l : L} {dq : DFrac F} {v : V} :
+theorem genHeap_valid {σ : H V} {l : L} {dq : DFrac} {v : V} :
     genHeapInterp σ ∗ l ↦{dq} v ==∗ ⌜get? σ l = .some v⌝ := by
   unfold genHeapInterp pointsTo
   iintro ⟨⟨%m, -, Hσ, -⟩, Hl⟩
@@ -466,7 +463,7 @@ These build a fresh `genHeapGS` from a `genHeapPreS` and an initial heap.
 
 section init
 
-variable {F : Type _} [UFraction F] {GF : BundledGFunctors}
+variable {GF : BundledGFunctors}
 variable {L V : Type _} {H : Type _ → Type _} [Std.LawfulFiniteMap H L]
 
 open Std.PartialMap Std.FiniteMap
@@ -474,16 +471,16 @@ open Std.PartialMap Std.FiniteMap
 /-- Initialize `genHeapGS` with explicit ghost names.  The names of the heap
 and the meta-data tables are exposed in the conclusion. -/
 @[rocq_alias gen_heap_init_names]
-theorem genHeap_init_names [DecidableEq L] [genHeapPreS F L V GF H] (σ : H V) :
+theorem genHeap_init_names [DecidableEq L] [genHeapPreS L V GF H] (σ : H V) :
     ⊢ |==> ∃ γh γm : GName,
-      genHeapInterp (G := (⟨γh, γm⟩ : genHeapGS F L V GF H)) σ ∗
+      genHeapInterp (G := (⟨γh, γm⟩ : genHeapGS L V GF H)) σ ∗
       ([∗map] l ↦ v ∈ σ,
-        pointsTo (G := (⟨γh, γm⟩ : genHeapGS F L V GF H)) l (.own 1) v) ∗
+        pointsTo (G := (⟨γh, γm⟩ : genHeapGS L V GF H)) l (.own 1) v) ∗
       ([∗map] l ↦ _v ∈ σ,
-        metaToken (G := (⟨γh, γm⟩ : genHeapGS F L V GF H)) l ⊤) := by
+        metaToken (G := (⟨γh, γm⟩ : genHeapGS L V GF H)) l ⊤) := by
   imod (ghost_map_alloc_empty (K := L) (V := V)) with ⟨%γh, Hh⟩
   imod (ghost_map_alloc_empty (K := L) (V := GName)) with ⟨%γm, Hm⟩
-  letI G : genHeapGS F L V GF H := ⟨γh, γm⟩
+  letI G : genHeapGS L V GF H := ⟨γh, γm⟩
   ihave Hinterp0 : genHeapInterp (G := G) ∅ $$ [Hh Hm]
   · unfold genHeapInterp
     iexists (∅ : H GName)
@@ -502,14 +499,14 @@ theorem genHeap_init_names [DecidableEq L] [genHeapPreS F L V GF H] (σ : H V) :
 /-- Initialize `genHeapGS` from a `genHeapPreS`, hiding the freshly allocated
 ghost names. -/
 @[rocq_alias gen_heap_init]
-theorem genHeap_init [DecidableEq L] [genHeapPreS F L V GF H] (σ : H V) :
-    ⊢ |==> ∃ G : genHeapGS F L V GF H,
+theorem genHeap_init [DecidableEq L] [genHeapPreS L V GF H] (σ : H V) :
+    ⊢ |==> ∃ G : genHeapGS L V GF H,
       genHeapInterp (G := G) σ ∗
       ([∗map] l ↦ v ∈ σ, pointsTo (G := G) l (.own 1) v) ∗
       ([∗map] l ↦ _v ∈ σ, metaToken (G := G) l ⊤) := by
   imod genHeap_init_names σ with ⟨%γh, %γm, H⟩
   imodintro
-  iexists (⟨γh, γm⟩ : genHeapGS F L V GF H)
+  iexists (⟨γh, γm⟩ : genHeapGS L V GF H)
   iexact H
 
 end init
