@@ -255,6 +255,9 @@ theorem mem_empty {p : Pos} : p ∉ (∅ : CoPset) := by
 theorem mem_full {p : Pos} : p ∈ full := by
   simp only [Membership.mem, full, CoPsetRaw.ElemOf]
 
+@[simp]
+theorem subseteq_top {X : CoPset} : X ⊆ ⊤ := λ _ _ => mem_full
+
 theorem in_singleton {p q : Pos} : p ∈ ({q} : CoPset) ↔ p = q := by
   refine ⟨fun h => ?_, fun h => ?_⟩
   · simp only [Singleton.singleton, Membership.mem] at h

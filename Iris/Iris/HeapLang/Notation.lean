@@ -11,23 +11,32 @@ public meta import Lean.PrettyPrinter.Parenthesizer
 public meta section
 namespace Iris.HeapLang
 
-open Lean Lean.PrettyPrinter Elab Parser
+open Lean Lean.PrettyPrinter Lean.PrettyPrinter.Delaborator Elab Parser ProgramLogic
 
 declare_syntax_cat hl_exp
+declare_syntax_cat hl_binder
 declare_syntax_cat hl_match_arm
 declare_syntax_cat hl_val
 
 /-- embedding heaplang expressions into terms -/
 syntax:max "hl(" hl_exp ")" : term
+syntax:min "hl% " hl_exp:min : term
+macro_rules
+  | `(hl% $t) => `(hl($t))
 /-- embedding heaplang binders into terms -/
-syntax:max "hl_binder(" binderIdent ")" : term
+syntax:max "hl_binder(" hl_binder ")" : term
 /-- embedding heaplang values into terms -/
 syntax:max "hl_val(" hl_val ")" : term
+syntax:min "hl_val% " hl_val:min : term
+macro_rules
+  | `(hl_val% $t) => `(hl_val($t))
 
 /-- escaping -/
-syntax:max "{" term "}" : hl_val
-/-- escaping identifiers -/
-syntax:max ident : hl_val
+syntax:max "&" term:max : hl_binder
+syntax:max binderIdent : hl_binder
+
+/-- escaping -/
+syntax:max "&" term:max : hl_val
 /-- embedding literals -/
 syntax:max "#" term:max : hl_val
 /-- pairs -/
@@ -45,7 +54,7 @@ syntax:max "(" hl_exp ")" : hl_exp
 /-- embedding values -/
 syntax:max "v(" hl_val ")" : hl_exp
 /-- escaping -/
-syntax:max "{" term "}" : hl_exp
+syntax:max "&" term:max : hl_exp
 /-- embedding literals -/
 syntax:max "#" term:max : hl_exp
 /-- variables -/
@@ -64,11 +73,11 @@ syntax:70 hl_exp:71 " / " hl_exp:70 : hl_exp
 /-- modulo -/
 syntax:70 hl_exp:71 " % " hl_exp:70 : hl_exp
 /-- and -/
-syntax:60 hl_exp:61 " & " hl_exp:60 : hl_exp
+syntax:60 hl_exp:61 " &&& " hl_exp:60 : hl_exp
 /-- or -/
-syntax:55 hl_exp:56 " | " hl_exp:55 : hl_exp
+syntax:55 hl_exp:56 " ||| " hl_exp:55 : hl_exp
 /-- xor -/
-syntax:58 hl_exp:59 " ^ " hl_exp:58 : hl_exp
+syntax:58 hl_exp:59 " ^^^ " hl_exp:58 : hl_exp
 /-- shiftl -/
 syntax:75 hl_exp:76 " <<< " hl_exp:75 : hl_exp
 /-- shiftr -/
@@ -95,17 +104,17 @@ syntax:10 "if " hl_exp:10 " then " hl_exp:10 " else " hl_exp:10 : hl_exp
 /-- application -/
 syntax:100 hl_exp:100 colGt ppSpace hl_exp:101 : hl_exp
 /-- let -/
-syntax:10 "let " binderIdent " := " hl_exp:10 "; " hl_exp:1 : hl_exp
+syntax:10 "let " hl_binder " := " hl_exp:10 "; " hl_exp:1 : hl_exp
 /-- sequencing -/
 syntax:5 hl_exp:6 "; " hl_exp:5 : hl_exp
 /-- lambda -/
-syntax:10 "λ " binderIdent+ ", " hl_exp:10 : hl_exp
+syntax:10 "λ " hl_binder+ ", " hl_exp:1 : hl_exp
 /-- lambda -/
-syntax:10 "λ " binderIdent+ ", " hl_exp:10 : hl_val
+syntax:10 "λ " hl_binder+ ", " hl_exp:1 : hl_val
 /-- recursive function -/
-syntax:10 "rec " binderIdent ppSpace binderIdent+ " := " hl_exp:10 : hl_exp
+syntax:10 "rec " hl_binder ppSpace hl_binder+ " := " hl_exp:1 : hl_exp
 /-- recursive function -/
-syntax:10 "rec " binderIdent ppSpace binderIdent+ " := " hl_exp:10 : hl_val
+syntax:10 "rec " hl_binder ppSpace hl_binder+ " := " hl_exp:1 : hl_val
 
 /-- pairs -/
 syntax:max "(" hl_exp ", " hl_exp,+ ")" : hl_exp
@@ -124,13 +133,13 @@ syntax:100 "none()" : hl_exp
 syntax:100 "some(" hl_exp ")" : hl_exp
 
 /-- match -/
-syntax:100 "match " hl_exp:80 " with"
-  " | " hl_match_arm " => " hl_exp:80
-  " | " hl_match_arm " => " hl_exp:80 : hl_exp
+syntax:100 "match " hl_exp:5 " with"
+  " | " hl_match_arm " => " hl_exp:5
+  " | " hl_match_arm " => " hl_exp:5 : hl_exp
 
-syntax "injl(" binderIdent ")" : hl_match_arm
-syntax "injr(" binderIdent ")" : hl_match_arm
-syntax "some(" binderIdent ")" : hl_match_arm
+syntax "injl(" hl_binder ")" : hl_match_arm
+syntax "injr(" hl_binder ")" : hl_match_arm
+syntax "some(" hl_binder ")" : hl_match_arm
 syntax "none()" : hl_match_arm
 
 /-- heap operations -/
@@ -161,25 +170,26 @@ def hl_exp.parenthesizer : CategoryParenthesizer := fun prec => do
 
 partial def unpackHLExp [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `hl_exp)
   | `(hl($e)) => `(hl_exp|$e)
-  | `($t) => `(hl_exp|{$t})
+  | `($t) => `(hl_exp|&$t)
 
 partial def unpackHLVal [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `hl_val)
   | `(hl_val($e)) => `(hl_val|$e)
-  | `($t) => `(hl_val|{$t})
+  | `($t) => `(hl_val|&$t)
 
-partial def unpackHLBinder [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `Lean.binderIdent)
-  | `(hl_binder($e)) => `(binderIdent|$e)
-  | `($_) => `(binderIdent|_)
+partial def unpackHLBinder [Monad m] [MonadRef m] [MonadQuotation m] : Term → m (TSyntax `hl_binder)
+  | `(hl_binder($e)) => `(hl_binder|$e)
+  | `($t) => `(hl_binder|&$t)
 
 /-- elaborating binders -/
 macro_rules
   | `(hl_binder(_)) => `(Binder.anon)
   | `(hl_binder($i:ident)) => `(Binder.named $(Syntax.mkStrLit i.getId.toString))
+  | `(hl_binder(&$t)) => `($t)
 
 /-- elaborating values -/
 macro_rules
-  | `(hl_val($i:ident)) => pure i
-  | `(hl_val({$t})) => pure t
+  | `(hl_val(& $t)) => pure t
+  | `(hl_val(# $n:num)) => `(Val.lit (BaseLit.int $n))
   | `(hl_val(# $e)) => `(Val.lit $e)
   | `(hl_val(rec $f $x := $e)) => do `(Val.rec_ hl_binder($f) hl_binder($x) hl($e))
   | `(hl_val(rec $f $x $xs* := $e)) => do `(hl_val(rec $f $x := λ $xs*, $e))
@@ -195,8 +205,8 @@ macro_rules
 macro_rules
   | `(hl(($e))) => `(hl($e))
   | `(hl(_)) => `(_)
-  | `(hl({$t})) => pure t
-  | `(hl(v($e))) => `(Exp.val hl_val($e))
+  | `(hl(&$t)) => pure t
+  | `(hl(v($e))) => `(@ToVal.ofVal Exp Val instToVal hl_val($e))
   | `(hl(# $e)) => `(hl(v(# $e)))
   | `(hl($i:ident)) => `(Exp.var $(Syntax.mkStrLit i.getId.toString))
   | `(hl($e1 + $e2)) => `(Exp.binop BinOp.plus hl($e1) hl($e2))
@@ -205,9 +215,9 @@ macro_rules
   | `(hl($e1 * $e2)) => `(Exp.binop BinOp.mult hl($e1) hl($e2))
   | `(hl($e1 / $e2)) => `(Exp.binop BinOp.tdiv hl($e1) hl($e2))
   | `(hl($e1 % $e2)) => `(Exp.binop BinOp.tmod hl($e1) hl($e2))
-  | `(hl($e1 & $e2)) => `(Exp.binop BinOp.and hl($e1) hl($e2))
-  | `(hl($e1 | $e2)) => `(Exp.binop BinOp.or hl($e1) hl($e2))
-  | `(hl($e1 ^ $e2)) => `(Exp.binop BinOp.xor hl($e1) hl($e2))
+  | `(hl($e1 &&& $e2)) => `(Exp.binop BinOp.and hl($e1) hl($e2))
+  | `(hl($e1 ||| $e2)) => `(Exp.binop BinOp.or hl($e1) hl($e2))
+  | `(hl($e1 ^^^ $e2)) => `(Exp.binop BinOp.xor hl($e1) hl($e2))
   | `(hl($e1 <<< $e2)) => `(Exp.binop BinOp.shiftl hl($e1) hl($e2))
   | `(hl($e1 >>> $e2)) => `(Exp.binop BinOp.shiftr hl($e1) hl($e2))
   | `(hl($e1 <= $e2)) => `(hl($e1 ≤ $e2))
@@ -269,6 +279,8 @@ def unexpNamed : Unexpander
 /-- delaborating values -/
 @[app_unexpander Val.lit]
 def unexpLit : Unexpander
+  | `($_ ↑$arg) => `(hl_val(# $arg))
+  | `($_ BaseLit.unit) => `(hl_val(# ()))
   | `($_ $arg) => `(hl_val(# $arg))
   | _ => throw ()
 
@@ -307,18 +319,19 @@ def unexpInjrVal : Unexpander
   | _ => throw ()
 
 /-- delaborating expressions -/
-partial def unexpValLit : Term → UnexpandM Term
+partial def unexpValLit : Term → DelabM Term
   | `(hl(v(# $l))) => do
     unexpValLit $ ← `(hl(# $l))
-  | `(hl(v({$i:ident}))) => do
-    unexpValLit $ ← `(hl(v($i:ident)))
   | x => return x
 
-@[app_unexpander Exp.val]
-def unexpVal : Unexpander
-  | `($_ $arg) => do unexpValLit $ ← `(hl(v($(← unpackHLVal arg))))
-  | _ => throw ()
-
+@[app_delab ToVal.ofVal]
+def unexpVal : Delab := do
+  if ← getPPOption getPPExplicit then failure
+  let e ← SubExpr.getExpr
+  let_expr ToVal.ofVal exp val _ v := e | failure
+  if !exp.isConstOf ``Exp && !val.isConstOf ``Val then failure
+  let v ← delab v
+  unexpValLit $ ← `(hl(v($(← unpackHLVal v))))
 
 @[app_unexpander Exp.var]
 def unexpVar : Unexpander
@@ -333,9 +346,9 @@ def unexpBinop : Unexpander
   | `($_ BinOp.mult $e1 $e2) => do `(hl(($(← unpackHLExp e1) * $(← unpackHLExp e2))))
   | `($_ BinOp.tdiv $e1 $e2) => do `(hl(($(← unpackHLExp e1) / $(← unpackHLExp e2))))
   | `($_ BinOp.tmod $e1 $e2) => do `(hl(($(← unpackHLExp e1) % $(← unpackHLExp e2))))
-  | `($_ BinOp.and $e1 $e2) => do `(hl(($(← unpackHLExp e1) & $(← unpackHLExp e2))))
-  | `($_ BinOp.or $e1 $e2) => do `(hl(($(← unpackHLExp e1) | $(← unpackHLExp e2))))
-  | `($_ BinOp.xor $e1 $e2) => do `(hl(($(← unpackHLExp e1) ^ $(← unpackHLExp e2))))
+  | `($_ BinOp.and $e1 $e2) => do `(hl(($(← unpackHLExp e1) &&& $(← unpackHLExp e2))))
+  | `($_ BinOp.or $e1 $e2) => do `(hl(($(← unpackHLExp e1) ||| $(← unpackHLExp e2))))
+  | `($_ BinOp.xor $e1 $e2) => do `(hl(($(← unpackHLExp e1) ^^^ $(← unpackHLExp e2))))
   | `($_ BinOp.shiftl $e1 $e2) => do `(hl(($(← unpackHLExp e1) <<< $(← unpackHLExp e2))))
   | `($_ BinOp.shiftr $e1 $e2) => do `(hl(($(← unpackHLExp e1) >>> $(← unpackHLExp e2))))
   | `($_ BinOp.le $e1 $e2) => do `(hl(($(← unpackHLExp e1) ≤ $(← unpackHLExp e2))))

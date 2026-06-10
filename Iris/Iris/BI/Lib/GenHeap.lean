@@ -85,8 +85,8 @@ def genHeapInterp (σ : H V) : IProp GF := iprop%
 @[rocq_alias pointsto]
 def pointsTo (l : L) (dq : DFrac F) (v : V) : IProp GF := heapName ↪◯MAP[l]{dq} v
 
-notation l " ↦{" dq "} " v => pointsTo l dq v
-notation l " ↦ " v => pointsTo l (DFrac.own 1) v
+notation:50 l:50 " ↦{" dq "} " v:50 => pointsTo l dq v
+notation:50 l:50 " ↦ " v:50 => pointsTo l (DFrac.own 1) v
 
 /-- The token witnessing that no meta data has been associated with the
 namespace mask `E` at location `l`. -/
@@ -129,7 +129,7 @@ instance instAsFractionalPointsTo : AsFractional (l ↦{.own q} v) (l ↦{.own �
     (AsFractional (heapName ↪◯MAP[l]{.own q} v) (heapName ↪◯MAP[l]{.own ·} v) q)
 
 @[rocq_alias pointsto_valid]
-theorem pointsTo_cmraValid : (l ↦{dq} v) ⊢@{IProp GF} ⌜✓ dq⌝ := by
+theorem pointsTo_cmraValid : l ↦{dq} v ⊢@{IProp GF} ⌜✓ dq⌝ := by
   unfold pointsTo
   iintro H
   ihave %_ := ghost_map_elem_valid $$ H
@@ -137,20 +137,20 @@ theorem pointsTo_cmraValid : (l ↦{dq} v) ⊢@{IProp GF} ⌜✓ dq⌝ := by
 
 @[rocq_alias pointsto_valid_2]
 theorem pointsTo_op_cmraValid :
-    (l ↦{dq₁} v₁) ∗ (l ↦{dq₂} v₂) ⊢@{IProp GF} ⌜✓ (dq₁ • dq₂)⌝ ∧ ⌜v₁ = v₂⌝ := by
+    l ↦{dq₁} v₁ ∗ l ↦{dq₂} v₂ ⊢@{IProp GF} ⌜✓ (dq₁ • dq₂)⌝ ∧ ⌜v₁ = v₂⌝ := by
   unfold pointsTo
   iintro H
   ihave %_ := ghost_map_elem_valid_2 $$ H
   itrivial
 
 @[rocq_alias pointsto_agree]
-theorem pointsTo_agree : (l ↦{dq₁} v₁) ∗ (l ↦{dq₂} v₂) ⊢@{IProp GF} ⌜v₁ = v₂⌝ := by
+theorem pointsTo_agree : l ↦{dq₁} v₁ ∗ l ↦{dq₂} v₂ ⊢@{IProp GF} ⌜v₁ = v₂⌝ := by
   unfold pointsTo
   iapply ghost_map_elem_agree
 
 @[rocq_alias pointsto_combine]
 theorem pointsTo_combine :
-    (l ↦{dq₁} v₁) ∗ (l ↦{dq₂} v₂) ⊢@{IProp GF} (l ↦{dq₁ • dq₂} v₁) ∗ ⌜v₁ = v₂⌝ := by
+    l ↦{dq₁} v₁ ∗ l ↦{dq₂} v₂ ⊢@{IProp GF} l ↦{dq₁ • dq₂} v₁ ∗ ⌜v₁ = v₂⌝ := by
   unfold pointsTo
   iintro ⟨H₁, H₂⟩
   iapply ghost_map_elem_combine $$ H₁ H₂
@@ -158,27 +158,27 @@ theorem pointsTo_combine :
 @[rocq_alias pointsto_frac_ne]
 theorem pointsTo_frac_ne {l₁ l₂ : L} {dq₁ dq₂ : DFrac F} {v₁ v₂ : V}
     (Hk : ¬ ✓ (dq₁ • dq₂)) :
-    ⊢@{IProp GF} (l₁ ↦{dq₁} v₁) -∗ (l₂ ↦{dq₂} v₂) -∗ ⌜l₁ ≠ l₂⌝ := by
+    ⊢@{IProp GF} l₁ ↦{dq₁} v₁ -∗ l₂ ↦{dq₂} v₂ -∗ ⌜l₁ ≠ l₂⌝ := by
   unfold pointsTo
   iapply ghost_map_elem_frac_ne (Hk := Hk)
 
 @[rocq_alias pointsto_ne]
 theorem pointsTo_ne {l₁ l₂ : L} {dq₂ : DFrac F} {v₁ v₂ : V} :
-    ⊢@{IProp GF} (l₁ ↦ v₁) -∗ (l₂ ↦{dq₂} v₂) -∗ ⌜l₁ ≠ l₂⌝ := by
+    ⊢@{IProp GF} l₁ ↦ v₁ -∗ l₂ ↦{dq₂} v₂ -∗ ⌜l₁ ≠ l₂⌝ := by
   unfold pointsTo
   iapply ghost_map_elem_ne
 
 /-- Permanently turn any points-to predicate into a persistent points-to. -/
 @[rocq_alias pointsto_persist]
 theorem pointsTo_persist {l : L} {dq : DFrac F} {v : V} :
-    ⊢@{IProp GF} (l ↦{dq} v) ==∗ (l ↦{.discard} v) := by
+    ⊢@{IProp GF} l ↦{dq} v ==∗ l ↦{.discard} v := by
   unfold pointsTo
   iapply ghost_map_elem_persist
 
 /-- Recover fractional ownership of a read-only element. -/
 @[rocq_alias pointsto_unpersist]
 theorem pointsTo_unpersist [IsHalfFraction F] {l : L} {v : V} :
-    ⊢@{IProp GF} (l ↦{.discard} v) ==∗ ∃ q, (l ↦{.own q} v) := by
+    ⊢@{IProp GF} l ↦{.discard} v ==∗ ∃ q, l ↦{.own q} v := by
   unfold pointsTo
   iapply ghost_map_elem_unpersist
 
@@ -371,7 +371,7 @@ theorem genHeapInterp_eqv {σ₁ σ₂ : H V} (h : σ₁ ≡ₘ σ₂) :
 
 @[rocq_alias gen_heap_alloc]
 theorem genHeap_alloc [DecidableEq L] {σ : H V} {l : L} {v : V} (Hσl : get? σ l = .none) :
-    genHeapInterp σ ⊢ |==> (genHeapInterp (insert σ l v) ∗ (l ↦ v) ∗ metaToken l ⊤) := by
+    genHeapInterp σ ⊢ |==> (genHeapInterp (insert σ l v) ∗ l ↦ v ∗ metaToken l ⊤) := by
   unfold genHeapInterp pointsTo metaToken
   iintro ⟨%m, %Hdom, Hσ, Hm⟩
   have Hml : get? m l = .none := by
@@ -437,14 +437,14 @@ theorem genHeap_alloc_big [DecidableEq L] (σ' σ : H V) (Hdisj : σ' ##ₘ σ) 
 
 @[rocq_alias gen_heap_valid]
 theorem genHeap_valid {σ : H V} {l : L} {dq : DFrac F} {v : V} :
-    (genHeapInterp σ ∗ l ↦{dq} v) ==∗ ⌜get? σ l = .some v⌝ := by
+    genHeapInterp σ ∗ l ↦{dq} v ==∗ ⌜get? σ l = .some v⌝ := by
   unfold genHeapInterp pointsTo
   iintro ⟨⟨%m, -, Hσ, -⟩, Hl⟩
   iapply ghost_map_lookup $$ Hσ Hl
 
 @[rocq_alias gen_heap_update]
 theorem genHeap_update [DecidableEq L] {σ : H V} {l : L} {v₁ v₂ : V} :
-    (genHeapInterp σ ∗ l ↦ v₁) ==∗ (genHeapInterp (insert σ l v₂) ∗ l ↦ v₂) := by
+    genHeapInterp σ ∗ l ↦ v₁ ==∗ genHeapInterp (insert σ l v₂) ∗ l ↦ v₂ := by
   unfold genHeapInterp pointsTo
   iintro ⟨⟨%m, %Hdom, Hσ, Hm⟩, Hl⟩
   imod ghost_map_update l v₁ v₂ $$ Hσ Hl with ⟨Hσ, Hl⟩
