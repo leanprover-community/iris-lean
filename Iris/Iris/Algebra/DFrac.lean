@@ -114,8 +114,9 @@ instance instCMRADFrac : CMRA DFrac where
 @[rocq_alias dfrac_full_exclusive]
 instance own_whole_exclusive : CMRA.Exclusive (α := DFrac) (own 1) where
   exclusive0_l := by
-    rintro (y|_|y) <;> simp only [CMRA.ValidN, valid, CMRA.op, op] <;>
-      first | (have := y.2; grind) | grind
+    rintro (y|_|y) <;>
+    simp only [CMRA.ValidN, valid, CMRA.op, op] <;>
+    grind
 
 instance one_exclusive_left [CMRA V] {v : V} : CMRA.Exclusive (own (One.one : Qp), v) where
   exclusive0_l := by
@@ -123,7 +124,7 @@ instance one_exclusive_left [CMRA V] {v : V} : CMRA.Exclusive (own (One.one : Qp
     have h1 : (One.one : Qp).val = 1 := rfl
     rcases y1 with (y|_|y) <;>
       simp only [CMRA.ValidN, CMRA.op, op, valid] at Hv1 <;>
-      first | (have := y.2; grind) | grind
+      grind
 
 instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (One.one : Qp)) where
   exclusive0_l := by
@@ -131,7 +132,7 @@ instance one_exclusive_right [CMRA V] {v : V} : CMRA.Exclusive (v, own (One.one 
     have h1 : (One.one : Qp).val = 1 := rfl
     rcases y2 with (y|_|y) <;>
       simp only [CMRA.ValidN, CMRA.op, op, valid] at Hv2 <;>
-      first | (have := y.2; grind) | grind
+      grind
 
 @[rocq_alias dfrac_cancelable]
 instance {f : Qp} : CMRA.Cancelable (own f) where
@@ -146,8 +147,11 @@ instance {f : Qp} : CMRA.Cancelable (own f) where
 @[rocq_alias dfrac_own_id_free]
 instance {f : Qp} : CMRA.IdFree (own f) where
   id_free0_r := by
-    rintro (y|_|y) <;> simp [CMRA.ValidN, CMRA.op, op] <;> intro H Hxyz
-    any_goals have Hxyz' := discrete Hxyz <;> simp at Hxyz'
+    rintro (y|_|y) <;>
+      simp [CMRA.ValidN, CMRA.op, op] <;>
+      intro H Hxyz <;>
+      any_goals have Hxyz' := discrete Hxyz <;>
+      simp at Hxyz'
     exact absurd Hxyz' (by have := y.2; grind)
 
 @[rocq_alias dfrac_valid_own_1]
@@ -155,8 +159,9 @@ theorem valid_own_one : ✓ own (1 : Qp) := by show (1 : Qp).val ≤ 1; grind
 
 @[rocq_alias dfrac_valid_own_r]
 theorem valid_op_own {dq : DFrac} {q : Qp} : ✓ dq • own q → q.val < 1 := by
-  obtain y|_|y := dq <;> intro h <;> simp only [CMRA.Valid, CMRA.op, op, valid] at h <;>
-    first | (have := y.2; grind) | grind
+  obtain y|_|y := dq <;>
+    simp only [CMRA.Valid, CMRA.op, op, valid] <;>
+    grind
 
 @[rocq_alias dfrac_valid_own_l]
 theorem valid_own_op {dq : DFrac} {q : Qp} : ✓ own q • dq → q.val < 1 :=
@@ -185,11 +190,11 @@ theorem DFrac.update_discard {dq : DFrac} : dq ~~> .discard := by
   apply (CMRA.valid_iff_validN' n).mp
   have H' := (CMRA.valid_iff_validN' n).mpr H
   simp [CMRA.op?] at H' ⊢
-  rcases q with (_|⟨q|_|q⟩) <;> simp [CMRA.Valid, valid, CMRA.op, op]
-  all_goals
+  rcases q with (_|⟨q|_|q⟩) <;>
+    simp [CMRA.Valid, valid, CMRA.op, op] <;>
     rcases dq with (f|_|f) <;>
-      simp only [CMRA.op?, CMRA.ValidN, CMRA.op, op, valid] at H <;>
-      first | (have := f.2; grind) | grind
+    simp only [CMRA.op?, CMRA.ValidN, CMRA.op, op, valid] at H <;>
+    grind
 
 @[rocq_alias dfrac_undiscard_update]
 theorem DFrac.update_acquire :
