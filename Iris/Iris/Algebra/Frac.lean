@@ -22,7 +22,7 @@ This version follows Iris Rocq in fixing the underlying type of fractions to be 
 namespace Iris
 
 /-- The type of positive rational numbers, used as fractions -/
-@[rocq_alias frac, rocq_alias fracO, rocq_alias fracR]
+@[rocq_alias fracO, rocq_alias fracR]
 abbrev Qp := { q : Rat // 0 < q }
 
 -- TODO: Should we move the positivity condition into the validity predicate? My initial guess is not,
