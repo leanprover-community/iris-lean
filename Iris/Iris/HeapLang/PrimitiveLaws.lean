@@ -42,9 +42,9 @@ def HeapLangS : BundledGFunctors
   | 0 => ⟨InvMapF, by infer_instance⟩
   | 1 => ⟨constOF (DisjointLeibnizSet CoPset), by infer_instance⟩
   | 2 => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
-  | 3 => ⟨Auth.AuthURF (F := PNat) (constOF Credit), by infer_instance⟩
-  | 4 => ⟨constOF (HeapView PNat Loc (Agree (LeibnizO (Option Val))) HeapF), by infer_instance⟩
-  | 5 => ⟨constOF (HeapView PNat Loc (Agree (LeibnizO GName)) HeapF), by infer_instance⟩
+  | 3 => ⟨Auth.AuthURF (constOF Credit), by infer_instance⟩
+  | 4 => ⟨constOF (HeapView Loc (Agree (LeibnizO (Option Val))) HeapF), by infer_instance⟩
+  | 5 => ⟨constOF (HeapView Loc (Agree (LeibnizO GName)) HeapF), by infer_instance⟩
   | 6 => ⟨constOF MetaUR, by infer_instance⟩
   | _ => ⟨constOF Unit, by infer_instance⟩
 
