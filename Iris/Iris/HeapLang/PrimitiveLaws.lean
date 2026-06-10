@@ -28,23 +28,23 @@ abbrev HeapF := fun V => Std.ExtTreeMap Loc V compare
 abbrev ProphMapF := fun V => Std.ExtTreeMap ProphId V compare
 
 class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGpreS GF where
-  heap_pre : genHeapPreS PNat Loc (Option Val) GF HeapF
-  proph_pre : prophMapPreS PNat ProphId (Val × Val) GF ProphMapF
+  heap_pre : genHeapPreS Loc (Option Val) GF HeapF
+  proph_pre : prophMapPreS ProphId (Val × Val) GF ProphMapF
 
 attribute [reducible, instance] HeapLangGpreS.heap_pre
 attribute [reducible, instance] HeapLangGpreS.proph_pre
 
 class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGS_gen hlc GF where
-  heap : genHeapGS PNat Loc (Option Val) GF HeapF
-  proph : prophMapGS (F := PNat) ProphId (Val × Val) GF ProphMapF
+  heap : genHeapGS Loc (Option Val) GF HeapF
+  proph : prophMapGS ProphId (Val × Val) GF ProphMapF
 
 attribute [reducible, instance] HeapLangGS.heap
 attribute [reducible, instance] HeapLangGS.proph
 
 instance HeapLangState [HeapLangGS hlc GF] : StateInterp State Observation GF where
   stateInterp σ _ κs _ := iprop(
-    genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap ∗
-    prophMapInterp (F := PNat) (GF := GF) (H := ProphMapF) κs σ.usedProphId)
+    genHeapInterp (GF := GF) (H := HeapF) σ.heap ∗
+    prophMapInterp (GF := GF) (H := ProphMapF) κs σ.usedProphId)
 
 /-- The state interpretation as a separating conjunction of the heap interp and
 the prophecy-map interp. Used to destruct `Hσ` into its two conjuncts after
@@ -52,8 +52,8 @@ the prophecy-map interp. Used to destruct `Hσ` into its two conjuncts after
 theorem stateInterp_split [HeapLangGS hlc GF] (σ : State) (ns : Nat)
     (κs : List Observation) (nt : Nat) :
     stateInterp (GF := GF) σ ns κs nt ⊣⊢
-      iprop(genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap ∗
-            prophMapInterp (F := PNat) (GF := GF) (H := ProphMapF) κs σ.usedProphId) :=
+      iprop(genHeapInterp (GF := GF) (H := HeapF) σ.heap ∗
+            prophMapInterp (GF := GF) (H := ProphMapF) κs σ.usedProphId) :=
   Iris.BI.BIBase.BiEntails.rfl
 
 /-- Normalize a `[] ++ κs` argument to `κs`. Used to rephrase `prophMapInterp`
@@ -61,8 +61,8 @@ hypotheses introduced before a step whose observations are `[]` get substituted
 in by `cases`. The two sides are definitionally equal. -/
 theorem prophMapInterp_nil_append [HeapLangGS hlc GF] (κs : List Observation)
     (ps : Std.ExtTreeSet ProphId) :
-    iprop(prophMapInterp (F := PNat) (GF := GF) (H := ProphMapF) ([] ++ κs) ps) ⊣⊢
-    iprop(prophMapInterp (F := PNat) (GF := GF) (H := ProphMapF) κs ps) :=
+    iprop(prophMapInterp (GF := GF) (H := ProphMapF) ([] ++ κs) ps) ⊣⊢
+    iprop(prophMapInterp (GF := GF) (H := ProphMapF) κs ps) :=
   Iris.BI.BIBase.BiEntails.rfl
 
 instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
@@ -79,6 +79,7 @@ theorem state_interp_step [HeapLangGS hlc GF] (σ : State) (ns : Nat)
   iintro H
   imodintro
   iexact H
+
 def HeapLangS : BundledGFunctors
   | 0 => ⟨InvMapF, by infer_instance⟩
   | 1 => ⟨constOF (DisjointLeibnizSet CoPset), by infer_instance⟩
@@ -87,6 +88,7 @@ def HeapLangS : BundledGFunctors
   | 4 => ⟨constOF (HeapView Loc (Agree (LeibnizO (Option Val))) HeapF), by infer_instance⟩
   | 5 => ⟨constOF (HeapView Loc (Agree (LeibnizO GName)) HeapF), by infer_instance⟩
   | 6 => ⟨constOF MetaUR, by infer_instance⟩
+  | 7 => ⟨constOF (HeapView ProphId (Agree (LeibnizO (List (Val × Val)))) ProphMapF), by infer_instance⟩
   | _ => ⟨constOF Unit, by infer_instance⟩
 
 instance instHeapLangGS_HeapLangS : HeapLangGpreS HasLC.hasLC HeapLangS where
@@ -105,6 +107,10 @@ instance instHeapLangGS_HeapLangS : HeapLangGpreS HasLC.hasLC HeapLangS where
     · constructor
       exists 5
     · exists 6
+  proph_pre := by
+    constructor
+    · constructor
+      sorry
 
 end HeapLangGS
 
@@ -124,13 +130,13 @@ theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
       (Std.PartialMap.map (fun g : GName => toAgree (LeibnizO.mk g))
         (∅ : HeapF GName)))
     HeapView.auth_one_valid with ⟨%γm, Hm⟩
-  imod (ProphMap.init (F := PNat) (V := Val × Val) (H := ProphMapF) κs σ.usedProphId)
+  imod (ProphMap.init (V := Val × Val) (H := ProphMapF) κs σ.usedProphId)
     with ⟨%Gproph, Hproph⟩
   letI _ : HeapLangGS .hasLC GF := ⟨⟨γh, γm⟩, Gproph⟩
   imodintro
   iexists (fun σ κs => iprop(
-    Iris.genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap ∗
-    Iris.prophMapInterp (F := PNat) (GF := GF) (H := ProphMapF) κs σ.usedProphId))
+    Iris.genHeapInterp (GF := GF) (H := HeapF) σ.heap ∗
+    Iris.prophMapInterp (GF := GF) (H := ProphMapF) κs σ.usedProphId))
   iexists (fun _ => iprop(True))
   isplitl [Hh Hm Hproph]
   · isplitl [Hh Hm]
@@ -172,7 +178,7 @@ theorem wp_fork {e : Exp} :
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
-  have Hred : BaseStep.Reducible (hl(fork({e})), σ₁) :=
+  have Hred : BaseStep.Reducible (hl(fork(&e)), σ₁) :=
     ⟨[], hl(#BaseLit.unit), σ₁, [e], by constructor⟩
   isplitr
   · ipureintro
@@ -196,12 +202,12 @@ theorem wp_fork {e : Exp} :
 `case_studies/heaplang/fixes.v`. -/
 theorem wp_fork_fupd {e : Exp} :
     (▷ |={E}=> (WP e @ s; ⊤ {{ _v, True }} ∗ Φ (hl_val(#())))) ⊢
-      WP hl(fork({e})) @ s; E {{ Φ }} := by
+      WP hl(fork(&e)) @ s; E {{ Φ }} := by
   iintro HeΦ
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
-  have Hred : BaseStep.Reducible (hl(fork({e})), σ₁) :=
+  have Hred : BaseStep.Reducible (hl(fork(&e)), σ₁) :=
     ⟨[], hl(#BaseLit.unit), σ₁, [e], by constructor⟩
   isplitr
   · ipureintro
@@ -686,7 +692,7 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     -- The prophMapInterp now sees `(p, (v_inner, w)) :: obs'` at σ₂. Use
     -- `ProphMap.resolve_proph` to consume the front observation.
     icombine Hpmap_e Hele as Hcomb
-    imod (ProphMap.resolve_proph (F := PNat) (V := Val × Val) (H := ProphMapF)
+    imod (ProphMap.resolve_proph (V := Val × Val) (H := ProphMapF)
             p (v_inner, w) obs' σ₂.usedProphId pvs') $$ Hcomb
       with ⟨%pvs'', %hpvs'_eq, Hpmap_e, Hele⟩
     imodintro

@@ -164,15 +164,14 @@ variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable {Expr : Type _}
 
 /-- The ghost state needed to track a thread-pool invariant -/
-public class TpinvGS (GF : BundledGFunctors) (Expr : Type _)
-    (H : outParam <| Type _ → Type _) [LawfulFiniteMap H Nat]
-    extends GhostMapG GF Qp Nat Expr H where
+public class TpinvGS (GF : BundledGFunctors) (Expr : Type _) (H : outParam <| Type _ → Type _)
+    [LawfulFiniteMap H Nat] extends GhostMapG GF Nat Expr H where
   tp_name : GName
 
 variable [TI : TpinvGS GF Expr H]
 
 /-- Thread `n` in the pool is the expression `e`. -/
-public def isThread (n : Nat) (dq : DFrac Qp) (e : Expr) : IProp GF :=
+public def isThread (n : Nat) (dq : DFrac) (e : Expr) : IProp GF :=
   TI.tp_name ↪◯MAP[n]{dq} e
 
 notation k " ↪thread{" dq "} " v => isThread k dq v
@@ -193,7 +192,7 @@ after opening (e.g. via `CancelableInvariant.acc`). -/
 public instance tpInv_timeless (tp : List Expr) : Iris.BI.Timeless (tpInv (TI := TI) tp) := by
   unfold tpInv; infer_instance
 
-public theorem tpInv_lookup (tp : List Expr) (n : Nat) (e₁ : Expr) (dq : DFrac Qp) :
+public theorem tpInv_lookup (tp : List Expr) (n : Nat) (e₁ : Expr) (dq : DFrac) :
     tpInv tp ⊢@{IProp GF} (n ↪thread{dq} e₁) -∗ ⌜tp[n]? = some e₁⌝ := by
   unfold tpInv isThread
   iintro ⟨%m, %He, Hauth⟩ Hfrag
@@ -266,13 +265,13 @@ open Iris CMRA Std
 
 variable {GF : BundledGFunctors}
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
-variable {Expr : Type _} [GhostMapG GF Qp Nat Expr H]
+variable {Expr : Type _} [GhostMapG GF Nat Expr H]
 
 open Classical in
 public theorem tpInv_alloc :
     ⊢@{IProp GF} |==> ∃ γ,
       tpInvIni (Expr := Expr) (TI := { toGhostMapG := inferInstance, tp_name := γ }) := by
-  imod @ghost_map_alloc_empty _ Qp Nat Expr H with ⟨%γ, H⟩
+  imod @ghost_map_alloc_empty _ Nat Expr H with ⟨%γ, H⟩
   imodintro
   iexists γ
   unfold tpInvIni

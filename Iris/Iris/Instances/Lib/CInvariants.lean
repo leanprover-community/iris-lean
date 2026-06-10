@@ -253,8 +253,8 @@ theorem acc (E : CoPset) (N : Namespace) (γ : GName) (p : Qp) (P : IProp GF)
   itrivial
 
 theorem inv_open_fupd {E : CoPset} {N : Namespace} {P : IProp GF} (Hsub : ↑N ⊆ E) :
-    ⊢ cinv (F := F) N γ P -∗ (▷ P ∗ Q ∗ own (F := F) γ q ={E \ N}=∗ P ∗ R) -∗
-      (Q ∗ own (F := F) γ q) ={E}=∗ R := by
+    ⊢ cinv N γ P -∗ (▷ P ∗ Q ∗ own γ q ={E \ N}=∗ P ∗ R) -∗
+      (Q ∗ own γ q) ={E}=∗ R := by
   iintro #Hinv H ⟨HQ, Hown⟩
   imod acc _ _ _ _ _ Hsub $$ Hinv Hown with ⟨HP, Hown, Hclose⟩
   imod H $$ [$] with ⟨HP, HR⟩; iframe
