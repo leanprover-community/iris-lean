@@ -431,7 +431,6 @@ theorem auth_one_op_auth_one_validN_iff : ✓{n} ((●V a1 : View R) • ●V a2
   simp only [iff_false, not_and]
   intro h
   simp only [CMRA.Valid, CMRA.op, op, valid] at h
-  have : (1 : Qp).val = 1 := rfl
   grind
 
 @[rocq_alias view_frag_validN]
@@ -470,8 +469,6 @@ theorem auth_op_auth_valid_iff : ✓ ((●V{dq1} a1 : View R) • ●V{dq2} a2) 
 theorem auth_one_op_auth_one_valid_iff : ✓ ((●V a1 : View R) • ●V a2) ↔ False := by
   refine auth_op_auth_valid_iff.trans ?_
   simp [CMRA.op, op, CMRA.Valid, op, valid]
-  intro h
-  have : (1 : Qp).val = 1 := rfl
   grind
 
 @[rocq_alias view_frag_valid]
