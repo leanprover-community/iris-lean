@@ -31,24 +31,24 @@ namespace FracAuth
 variable [CMRA A]
 
 @[rocq_alias frac_auth_auth]
-public abbrev auth (dq : DFrac) (a : A) : FracAuth (A := A) := Auth.auth dq (some (One.one, a))
+public abbrev auth (dq : DFrac) (a : A) : FracAuth (A := A) := Auth.auth dq (some (1, a))
 
 @[rocq_alias frac_auth_frag]
 public abbrev frag (q : Qp) (a : A) : FracAuth (A := A) := Auth.frag (some (q, a))
 
-public abbrev fragFull (a : A) : FracAuth (A := A) := frag One.one a
+public abbrev fragFull (a : A) : FracAuth (A := A) := frag 1 a
 
 notation "●F{" dq "} " a => auth dq a
-notation "●F " a => auth (DFrac.own One.one) a
+notation "●F " a => auth (DFrac.own 1) a
 notation "◯F{" q "} " a => frag q a
 notation "◯F " a => fragFull a
 
-abbrev fracOne : Qp := One.one
+abbrev fracOne : Qp := 1
 
 instance frac_one_exclusive (b : A) : Exclusive (fracOne, b) where
   exclusive0_l y h := by
-    have _ : (One.one : Qp).val = 1 := rfl
-    have _ : (One.one + y.1).val ≤ 1 := h.1
+    have _ : (1 : Qp).val = 1 := rfl
+    have _ : (1 + y.1).val ≤ 1 := h.1
     grind
 
 /-! ## NonExpansive instances -/

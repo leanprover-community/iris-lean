@@ -47,7 +47,7 @@ def auth (dq : DFrac) (n : MaxNat) : MonoNat := (●{dq} n) • (◯ n)
 def lb (n : MaxNat) : MonoNat := ◯ n
 
 notation "●MN{" dq "} " n => auth dq n
-notation "●MN " n => auth (DFrac.own One.one) n
+notation "●MN " n => auth (DFrac.own 1) n
 notation "●MN□ " n => auth DFrac.discard n
 notation "◯MN " n => lb n
 

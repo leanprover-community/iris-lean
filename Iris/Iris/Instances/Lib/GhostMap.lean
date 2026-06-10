@@ -50,9 +50,9 @@ public def ghost_map_elem (γ : GName) (dq : DFrac) (k : K) (v : V) : IProp GF :
 end definitions
 
 notation γ " ↪●MAP{" dq "} " m => ghost_map_auth γ dq m
-notation γ " ↪●MAP " m => ghost_map_auth γ (DFrac.own One.one) m
+notation γ " ↪●MAP " m => ghost_map_auth γ (DFrac.own 1) m
 notation γ " ↪◯MAP[" k "]{" dq "} " v => ghost_map_elem γ dq k v
-notation γ " ↪◯MAP[" k "] " v => ghost_map_elem γ (DFrac.own One.one) k v
+notation γ " ↪◯MAP[" k "] " v => ghost_map_elem γ (DFrac.own 1) k v
 
 section lemmas
 
@@ -173,7 +173,7 @@ theorem ghost_map_elem_ne γ (k1 k2 : K) (dq : DFrac) (v1 v2 : V) :
   iintro H G
   iapply ghost_map_elem_frac_ne $$ H G
   intro HContra
-  exact absurd (DFrac.valid_own_op HContra) (by have : (One.one : Qp).val = 1 := rfl; grind)
+  exact absurd (DFrac.valid_own_op HContra) (by have : (1 : Qp).val = 1 := rfl; grind)
 
 /-- Make an element read-only. -/
 @[rocq_alias ghost_map_elem_persist]

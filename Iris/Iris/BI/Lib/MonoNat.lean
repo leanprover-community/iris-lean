@@ -40,7 +40,7 @@ def lb_own (γ : GName) (n : MaxNat) : IProp GF :=
   iOwn (E := elem) γ (MonoNat.lb n)
 
 notation γ " ↪●MN{" dq "} " n => auth_own γ dq n
-notation γ " ↪●MN " n => auth_own γ (DFrac.own One.one) n
+notation γ " ↪●MN " n => auth_own γ (DFrac.own 1) n
 notation γ " ↪●MN□ " n => auth_own γ DFrac.discard n
 notation γ " ↪◯MN " n => lb_own γ n
 

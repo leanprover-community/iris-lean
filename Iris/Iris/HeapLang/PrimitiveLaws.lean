@@ -48,11 +48,11 @@ theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
   refine wp_adequacy (GF := GF) .NotStuck e σ φ ?_
   intro inst κs
   imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := Option Val) (H := HeapF))
-    (HeapView.Auth (H := HeapF) (.own One.one)
+    (HeapView.Auth (H := HeapF) (.own 1)
       (Std.PartialMap.map (fun v : Option Val => toAgree (LeibnizO.mk v)) σ.heap))
     HeapView.auth_one_valid with ⟨%γh, Hh⟩
   imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := GName) (H := HeapF))
-    (HeapView.Auth (H := HeapF) (.own One.one)
+    (HeapView.Auth (H := HeapF) (.own 1)
       (Std.PartialMap.map (fun g : GName => toAgree (LeibnizO.mk g))
         (∅ : HeapF GName)))
     HeapView.auth_one_valid with ⟨%γm, Hm⟩

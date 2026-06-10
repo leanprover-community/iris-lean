@@ -58,7 +58,7 @@ abbrev View.Auth [UCMRA B] {R : ViewRel A B} (dq : DFrac) (a : A) : View R :=
 abbrev View.Frag {R : ViewRel A B} (b : B) : View R := ⟨none, b⟩
 
 notation "●V{" dq "} " a => View.Auth dq a
-notation "●V " a => View.Auth (DFrac.own One.one) a
+notation "●V " a => View.Auth (DFrac.own 1) a
 notation "◯V " b => View.Frag b
 
 namespace View
@@ -431,7 +431,7 @@ theorem auth_one_op_auth_one_validN_iff : ✓{n} ((●V a1 : View R) • ●V a2
   simp only [iff_false, not_and]
   intro h
   simp only [CMRA.Valid, CMRA.op, op, valid] at h
-  have : (One.one : Qp).val = 1 := rfl
+  have : (1 : Qp).val = 1 := rfl
   grind
 
 @[rocq_alias view_frag_validN]
@@ -471,7 +471,7 @@ theorem auth_one_op_auth_one_valid_iff : ✓ ((●V a1 : View R) • ●V a2) �
   refine auth_op_auth_valid_iff.trans ?_
   simp [CMRA.op, op, CMRA.Valid, op, valid]
   intro h
-  have : (One.one : Qp).val = 1 := rfl
+  have : (1 : Qp).val = 1 := rfl
   grind
 
 @[rocq_alias view_frag_valid]
@@ -803,7 +803,7 @@ theorem view_local_update {a a' : A} {b0 b1 b0' b1' : B}
     refine (local_update_unital.mp Hup _ _ (IsViewRel.rel_validN _ _ _ Hv) ?_).2
     exact (unit_left_id_dist b0).symm.trans Heq.2 |>.trans (unit_left_id_dist b1).op_l
   · refine absurd (DFrac.valid_own_op (validN_ne Heq ?_).1)
-      (by have : (One.one : Qp).val = 1 := rfl; grind)
+      (by have : (1 : Qp).val = 1 := rfl; grind)
     exact auth_one_op_frag_validN_iff.mpr Hv
 
 end Updates
