@@ -19,10 +19,15 @@
   .summary td:last-child { border-right: none; }
   .summary .num { display: block; font-family: "SF Mono", "Menlo", "Consolas", monospace;
                   font-size: 1.6em; font-weight: bold; color: #222; }
+  .summary .num.ported { color: #2a6e2a; }
+  .summary .num.ignored { color: #2a5a8a; }
 
   /* Progress */
-  .progress-bar { height: 14px; background: #ddd; margin: 0 0 20px; }
-  .progress-fill { height: 100%; background: #4a4; }
+  .progress-bar { height: 14px; background: #ddd; margin: 0 0 20px;
+                  display: flex; overflow: hidden; }
+  .progress-fill { height: 100%; }
+  .progress-fill.ported { background: #4a4; }
+  .progress-fill.ignored { background: #4a8bd1; }
 
   /* Search + filters */
   .controls { margin: 16px 0; }
@@ -57,9 +62,11 @@
   .file-link:hover { color: #24a; }
   .section-stats { color: #666; font-size: 0.82em; margin-left: auto; white-space: nowrap;
                    font-family: "SF Mono", "Menlo", "Consolas", monospace; }
-  .mini-bar { display: inline-block; width: 80px; height: 4px; background: #ddd;
-              vertical-align: middle; margin-left: 8px; }
-  .mini-bar-fill { display: block; height: 100%; background: #4a4; }
+  .mini-bar { display: inline-flex; width: 80px; height: 4px; background: #ddd;
+              vertical-align: middle; margin-left: 8px; overflow: hidden; }
+  .mini-bar-fill { display: block; height: 100%; }
+  .mini-bar-fill.ported { background: #4a4; }
+  .mini-bar-fill.ignored { background: #4a8bd1; }
 
   /* Tables (definitions / subfeatures) */
   .file-table { width: 100%; border-collapse: collapse; display: none;
@@ -69,8 +76,12 @@
                    font-size: 0.8em; color: #888; border-bottom: 1px solid #eee; }
   .file-table td { padding: 3px 8px; border-bottom: 1px solid #f0f0f0;
                    font-size: 0.85em; font-family: "SF Mono", "Menlo", "Consolas", monospace;
-                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+                   vertical-align: top; }
   .file-table td:nth-child(2) { font-family: inherit; }
+  .file-table td:nth-child(3) { white-space: normal; overflow-wrap: anywhere; }
+  .file-table td:nth-child(3) > .detail-scroll {
+      display: block; max-height: 6.5em; overflow-y: auto; }
   .file-table col.col-name { width: 40%; }
   .file-table col.col-status { width: 10%; }
   .file-table col.col-detail { width: 50%; }
@@ -80,7 +91,7 @@
            letter-spacing: 0.03em; text-transform: uppercase; }
   .badge-ported { color: #2a6e2a; }
   .badge-ported::before { content: "ported"; }
-  .badge-ignored { color: #888; }
+  .badge-ignored { color: #2a5a8a; }
   .badge-ignored::before { content: "ignored"; }
   .badge-missing { color: #b33; }
   .badge-missing::before { content: "missing"; }
@@ -101,15 +112,18 @@
 <table class="summary">
   <tr>
     <td>Total<br><span class="num">{{total}}</span></td>
-    <td>Ported<br><span class="num">{{ported}}</span></td>
-    <td>Ignored<br><span class="num">{{ignored}}</span></td>
+    <td>Ported<br><span class="num ported">{{ported}}</span></td>
+    <td>Ignored<br><span class="num ignored">{{ignored}}</span></td>
     <td>Missing<br><span class="num">{{missing}}</span></td>
     <td>Stale<br><span class="num">{{stale}}</span></td>
     <td>Progress<br><span class="num">{{pct}}%</span></td>
   </tr>
 </table>
 
-<div class="progress-bar"><div class="progress-fill" style="width:{{pct}}%"></div></div>
+<div class="progress-bar">
+  <div class="progress-fill ported" style="width:{{pct_ported}}%"></div>
+  <div class="progress-fill ignored" style="width:{{pct_ignored}}%"></div>
+</div>
 
 <div class="controls">
   <input type="text" class="search" placeholder="Search definitions..." oninput="applyFilters()">

@@ -121,10 +121,12 @@ macro_rules
 macro_rules
   | `(iprop(∀ $x:ident, $Ψ)) => ``(BIBase.forall (fun $x => iprop($Ψ)))
 macro_rules
+  | `(iprop(∀ _%$tk : $t, $Ψ)) => ``(BIBase.forall (fun (_%$tk : $t) => iprop($Ψ)))
   | `(iprop(∀ (_%$tk : $t), $Ψ)) => ``(BIBase.forall (fun (_%$tk : $t) => iprop($Ψ)))
   | `(iprop(∀ (_%$tk $xs* : $t), $Ψ)) =>
     ``(BIBase.forall (fun (_%$tk : $t) => iprop(∀ ($xs* : $t), $Ψ)))
 macro_rules
+  | `(iprop(∀ $x:ident : $t, $Ψ)) => ``(BIBase.forall (fun ($x : $t) => iprop($Ψ)))
   | `(iprop(∀ ($x:ident : $t), $Ψ)) => ``(BIBase.forall (fun ($x : $t) => iprop($Ψ)))
   | `(iprop(∀ ($x:ident $xs* : $t), $Ψ)) =>
     ``(BIBase.forall (fun ($x : $t) => iprop(∀ ($xs* : $t), $Ψ)))

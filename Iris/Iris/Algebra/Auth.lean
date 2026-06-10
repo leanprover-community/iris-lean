@@ -14,7 +14,7 @@ meta import Iris.Std.RocqPorting
 
 The authoritative camera has 2 types of elements:
 - the authoritative element `●{dq} a`
--  and the fragment `◯ b`
+- the fragment `◯ b`
 -/
 
 @[expose] public section
@@ -237,6 +237,9 @@ theorem auth_op_validN {n : Nat} {a1 a2 : A} : (✓{n} ((● a1 : Auth A) • �
 @[rocq_alias auth_frag_validN]
 theorem frag_validN {n : Nat} {b : A} : (✓{n} (◯ b : Auth A)) ↔ (✓{n} b) := by
   rw [frag_validN_iff, AuthViewRel.authViewRel_exists_iff]
+
+#rocq_ignore auth_frag_validN_1 "Use frag_validN.mp"
+#rocq_ignore auth_frag_validN_2 "Use frag_validN.mpr"
 
 @[rocq_alias auth_frag_op_validN]
 theorem frag_op_validN {n : Nat} {b1 b2 : A} :

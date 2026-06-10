@@ -27,9 +27,13 @@ inductive DFrac where
 /-- Ownership of `F` plus knowledge that a fraction has been discarded. -/
 | ownDiscard (f : Qp) : DFrac
 
+#rocq_ignore DfracOwn_inj "Not needed"
+#rocq_ignore DfracBoth_inj "Not needed"
+
 @[simp] instance : COFE DFrac := COFE.ofDiscrete _ Eq_Equivalence
 instance : OFE.Leibniz DFrac := ⟨(·)⟩
 instance : OFE.Discrete DFrac := ⟨congrArg id⟩
+#rocq_ignore dfracO "Use DFrac type with typeclass inference"
 
 namespace DFrac
 
@@ -59,6 +63,12 @@ def op : DFrac → DFrac → DFrac
   | ownDiscard f, own f'
   | ownDiscard f, ownDiscard f' => ownDiscard (f + f')
 
+#rocq_ignore dfrac_op_instance "Use CMRA instance"
+#rocq_ignore dfrac_pcore_instance "Use CMRA instance"
+#rocq_ignore dfrac_valid_instance "Use CMRA instance"
+#rocq_ignore dfrac_ra_mixin "Not needed"
+
+@[rocq_alias dfracR]
 instance instCMRADFrac : CMRA DFrac where
   pcore := pcore
   op := op
@@ -207,7 +217,30 @@ theorem DFrac.update_acquire :
     grind
 
 @[rocq_alias dfrac_op_own]
-theorem op_own (f f' : Qp) : own f • own f' = own (f + f') := rfl
+theorem op_own {p q : Qp} : own p • own q = own (p + q) := rfl
+
+@[rocq_alias dfrac_op_discarded]
+theorem op_discard : (discard : DFrac) • discard = discard := rfl
+
+@[rocq_alias dfrac_valid_own]
+theorem valid_own {p : Qp} : ✓ own p ↔ p.val ≤ 1 := .rfl
+
+@[rocq_alias dfrac_valid]
+theorem valid_iff {dq : DFrac} : ✓ dq ↔
+    match dq with
+    | own f => f.val ≤ 1
+    | discard => True
+    | ownDiscard f => f.val < 1 := by
+  cases dq <;> rfl
+
+@[rocq_alias dfrac_discarded_included]
+theorem discard_included : (discard : DFrac) ≼ discard := ⟨discard, .rfl⟩
+
+@[rocq_alias dfrac_own_included]
+theorem own_included {p q : Qp} : own p ≼ own q ↔ ∃ r, q = p + r := by
+  refine ⟨fun ⟨z, hz⟩ => ?_, fun ⟨r, hr⟩ => ⟨own r, hr ▸ .rfl⟩⟩
+  rcases z with (r|_|r) <;> simp [CMRA.op, op] at hz
+  exact ⟨r, Qp.ext_iff.mpr hz⟩
 
 @[rocq_alias dfrac_is_op]
 instance isOp_dfrac_own {q q1 q2 : Qp} [h : IsOp io1 q io2 q1 io3 q2] :

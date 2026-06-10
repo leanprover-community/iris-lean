@@ -8,6 +8,7 @@ module
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.OFE
 public import Iris.Algebra.IsOp
+meta import Iris.Std.RocqPorting
 
 /-!
 # The Frac CMRA
@@ -84,7 +85,7 @@ instance instCMRAQp : CMRA Qp where
 @[simp] theorem Qp.equiv_iff {x y : Qp} : x ≡ y ↔ x.val = y.val := Subtype.ext_iff
 
 /-- The whole fraction `1` is valid. -/
-@[simp] theorem Qp.valid_one : ✓ (1 : Qp) := by grind
+@[simp, rocq_alias frac_valid_1] theorem Qp.valid_one : ✓ (1 : Qp) := by grind
 
 #rocq_ignore frac_op_instance "Use CMRA instance"
 #rocq_ignore frac_pcore_instance "Use CMRA instance"
@@ -119,6 +120,12 @@ instance instCancelableQp {a : Qp} : CMRA.Cancelable (α := Qp) a where
 instance instIdFreeQp {a : Qp} : CMRA.IdFree a where
   id_free0_r b _ H := by
     have := b.2; simp only [Qp.dist_iff, Qp.val_op] at H; grind
+
+@[rocq_alias frac_op]
+theorem Frac.op_eq (p q : Qp) : p • q = p + q := rfl
+
+@[rocq_alias frac_valid]
+theorem Frac.valid_iff {p : Qp} : ✓ p ↔ p.val ≤ 1 := .rfl
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias frac_is_op]

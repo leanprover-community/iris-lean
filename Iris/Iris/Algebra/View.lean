@@ -20,6 +20,7 @@ open Iris
 
 abbrev ViewRel (A B : Type _) := Nat → A → B → Prop
 
+@[rocq_alias view_rel]
 class IsViewRel [OFE A] [UCMRA B] (R : ViewRel A B) where
   mono : R n1 a1 b1 → a1 ≡{n2}≡ a2 → b2 ≼{n2} b1 → n2 ≤ n1 → R n2 a2 b2
   rel_validN n a b : R n a b → ✓{n} b
@@ -114,6 +115,21 @@ theorem auth_inj_frac [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A} {n} (H : (●V{q1} a
 theorem dist_of_auth_dist [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A} {n} (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) :
     a1 ≡{n}≡ a2 := toAgree.inj H.1.2
 
+@[rocq_alias view_auth_dist_inj]
+theorem auth_dist_inj [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A} {n}
+    (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) : q1 = q2 ∧ a1 ≡{n}≡ a2 :=
+  ⟨auth_inj_frac H, dist_of_auth_dist H⟩
+
+@[rocq_alias view_auth_inj]
+theorem auth_eqv_inj [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A}
+    (H : (●V{q1} a1 : View R) ≡ ●V{q2} a2) : q1 = q2 ∧ a1 ≡ a2 := by
+  refine ⟨(auth_dist_inj (n := 0) H.dist).1, OFE.equiv_dist.mpr fun n => ?_⟩
+  exact (auth_dist_inj H.dist).2
+
+@[rocq_alias view_frag_inj]
+theorem frag_eqv_inj [UCMRA B] {b1 b2 : B}
+    (H : (◯V b1 : View R) ≡ ◯V b2) : b1 ≡ b2 := H.2
+
 @[rocq_alias view_frag_dist_inj]
 theorem dist_of_frag_dist [UCMRA B] {b1 b2 : B} {n} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :
     b1 ≡{n}≡ b2 := H.2
@@ -152,6 +168,8 @@ instance auth_ne {dq : DFrac} : NonExpansive (Auth dq : A → View R) where
     simp only
     exact OFE.NonExpansive.ne H
 
+#rocq_ignore view_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
+
 instance auth_ne₂ : NonExpansive₂ (Auth : DFrac → A → View R) where
   ne _ _ _ Hq _ _ Hf := by
     unfold Auth
@@ -162,6 +180,8 @@ instance auth_ne₂ : NonExpansive₂ (Auth : DFrac → A → View R) where
 @[rocq_alias view_frag_ne]
 instance frag_ne : NonExpansive (Frag : B → View R) where
   ne _ _ _ H := mk.ne.ne .rfl H
+
+#rocq_ignore view_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
 
 @[simp]
 def Valid (v : View R) : Prop :=
@@ -299,14 +319,15 @@ instance [Discrete A] [CMRA.Discrete B] [IsViewRelDiscrete R] : CMRA.Discrete (V
       · exact IsViewRelDiscrete.discrete _ _ _ H3
     · exact fun ⟨a, H⟩ _ => ⟨a, IsViewRelDiscrete.discrete _ _ _ H⟩
 
-@[rocq_alias view_ucmra_mixin]
+@[rocq_alias viewUR]
 instance : UCMRA (View R) where
   unit := ⟨UCMRA.unit, UCMRA.unit⟩
   unit_valid := IsViewRel.rel_unit
   unit_left_id := ⟨UCMRA.unit_left_id, UCMRA.unit_left_id⟩
   pcore_unit := ⟨.rfl, CMRA.core_eqv_self UCMRA.unit⟩
 
-#rocq_ignore viewUR "Use the plain View type"
+#rocq_ignore view_empty_instance "Inlined in the UCMRA instance"
+#rocq_ignore view_ucmra_mixin "Not needed"
 
 @[rocq_alias view_auth_dfrac_op]
 theorem auth_op_auth_eqv : (●V{dq1 • dq2} a : View R) ≡ (●V{dq1} a) • ●V{dq2} a :=
@@ -372,6 +393,11 @@ theorem dist_of_validN_auth (H : ✓{n} ((●V{dq1} a1 : View R) • ●V{dq2} a
 @[rocq_alias view_auth_dfrac_op_inv]
 theorem eqv_of_valid_auth (H : ✓ ((●V{dq1} a1 : View R) • ●V{dq2} a2)) : a1 ≡ a2 :=
   equiv_dist.mpr fun _ => dist_of_validN_auth H.validN
+
+@[rocq_alias view_auth_dfrac_op_inv_L]
+theorem eq_of_valid_auth [OFE.Leibniz A]
+    (H : ✓ ((●V{dq1} a1 : View R) • ●V{dq2} a2)) : a1 = a2 :=
+  OFE.eq_of_eqv (eqv_of_valid_auth H)
 
 @[rocq_alias view_auth_dfrac_validN]
 theorem auth_validN_iff : ✓{n} (●V{dq} a : View R) ↔ ✓{n}dq ∧ R n a UCMRA.unit :=
@@ -598,6 +624,13 @@ theorem auth_one_op_frag_incN_auth_one_op_frag_iff : ((●V a1 : View R) • ◯
 @[rocq_alias view_both_included]
 theorem auth_one_op_frag_inc_auth_one_op_frag_iff : ((●V a1 : View R) • ◯V b1) ≼ ((●V a2) • ◯V b2) ↔ a1 ≡ a2 ∧ b1 ≼ b2 :=
   auth_op_frag_inc_auth_op_frag_iff.trans <| and_iff_right_iff_imp.mpr <| fun _ => .inr rfl
+
+#rocq_ignore view_core_eq "Not needed"
+#rocq_ignore view_valid_eq "Not needed"
+#rocq_ignore view_validN_eq "Not needed"
+#rocq_ignore view_pcore_eq "Not needed"
+#rocq_ignore view_core_eq "Not needed"
+#rocq_ignore view_op_eq "Not needed"
 
 end CMRA
 

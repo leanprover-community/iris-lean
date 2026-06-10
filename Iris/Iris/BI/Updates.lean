@@ -183,7 +183,8 @@ class BIUpdateFUpdate (PROP : Type _) [BI PROP] [BIUpdate PROP] [BIFUpdate PROP]
   fupd_of_bupd {P : PROP} {E : CoPset} : (|==> P) ⊢ |={E}=> P
 
 class BIFUpdatePlainly (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
-  fupd_plainly_keep_left (E E' : CoPset) (P R : PROP) : (R ={E,E'}=∗ ■ P) ∗ R ⊢ |={E}=> P ∗ R
+  fupd_keep_si_pure {E} E' Pi (R : PROP) :
+    (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R
   fupd_plainly_later (E : CoPset) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P
   fupd_plainly_sForall_2 (E : CoPset) (Φ : PROP → Prop) :
     (|={E}=> ■ sForall Φ) ⊢ |={E}=> sForall Φ
@@ -545,9 +546,9 @@ theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP}
   refine emp_sep.2.trans ?_
   refine (sep_mono (fupd_mask_intro_subseteq Eo₁_Eo₂) .rfl).trans ?_
   refine frame_right.trans ?_
-  refine BI.Entails.trans (mono ?_) (trans (E2 := Eo₁))
+  refine .trans (mono ?_) (trans (E2 := Eo₁))
   refine fupd_frame_left.trans ?_
-  refine BI.Entails.trans (mono ?_) (trans (E2 := Ei₁))
+  refine .trans (mono ?_) (trans (E2 := Ei₁))
   refine (sep_mono (fupd_mask_intro_subseteq Ei₂_Ei₁) .rfl).trans ?_
   refine frame_right.trans ?_
   refine mono ?_
@@ -555,9 +556,9 @@ theorem step_fupd_mask_mono {Eo₁ Eo₂ Ei₁ Ei₂ : CoPset} {P : PROP}
   refine later_sep.2.trans ?_
   refine later_mono ?_
   refine frame_right.trans ?_
-  refine BI.Entails.trans (mono ?_) (trans (E2 := Ei₁))
+  refine .trans (mono ?_) (trans (E2 := Ei₁))
   refine fupd_frame_left.trans ?_
-  refine BI.Entails.trans (mono ?_) (trans (E2 := Eo₁))
+  refine .trans (mono ?_) (trans (E2 := Eo₁))
   refine frame_right.trans ?_
   exact mono emp_sep.1
 
@@ -635,62 +636,55 @@ variable [Sbi PROP] [BIFUpdate PROP] [BIFUpdatePlainly PROP]
 
 open BIFUpdate BIFUpdatePlainly
 
-@[rocq_alias fupd_plainly_keep_l]
-theorem fupd_plainly_keep_left (E E' : CoPset) (P R : PROP) :
-    (R ={E,E'}=∗ ■ P) ∗ R ⊢ |={E}=> P ∗ R :=
-  BIFUpdatePlainly.fupd_plainly_keep_left E E' P R
+@[rocq_alias fupd_keep_si_pure]
+theorem fupd_keep_si_pure {E1 E2 : CoPset} E2' Pi {R : PROP} :
+  (|={E1,E2'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R :=
+  (and_mono_right (wand_mono_right fupd_intro)).trans <|
+    (BIFUpdatePlainly.fupd_keep_si_pure E2' Pi iprop(|={E1,E2}=> R)).trans trans
+
+@[rocq_alias fupd_keep_plainly]
+theorem fupd_keep_plainly [BIAffine PROP] {E1 E2 : CoPset} E2' (P : PROP) {R : PROP} :
+  (|={E1,E2'}=> ■ P) ∧ (P ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R :=
+  (and_mono_right (wand_mono_left siPure_siEmpValid_elim)).trans <|
+    fupd_keep_si_pure E2' (SiEmpValid.siEmpValid P)
 
 @[rocq_alias fupd_plainly_later]
 theorem fupd_plainly_later (E : CoPset) (P : PROP) : (▷ |={E}=> ■ P) ⊢ |={E}=> ▷ ◇ P :=
   BIFUpdatePlainly.fupd_plainly_later E P
 
-@[rocq_alias fupd_plainly_keep_r]
-theorem fupd_plainly_keep_right (E E' : CoPset) (P R : PROP) :
-    R ∗ (R ={E,E'}=∗ ■ P) ⊢ |={E}=> R ∗ P :=
-  sep_symm.trans <| (fupd_plainly_keep_left E E' P R).trans <| BIFUpdate.mono sep_symm
+@[rocq_alias fupd_keep_plain]
+theorem fupd_keep_plain [BIAffine PROP] {E1 E2 : CoPset} E2' (P R : PROP) [Plain P] :
+  (|={E1,E2'}=> P) ∧ (P ={E1,E2}=∗ R) ⊢ |={E1,E2}=> R :=
+  (and_mono_left (mono Plain.plain)).trans (fupd_keep_plainly E2' P)
 
 @[rocq_alias fupd_plainly_mask]
-theorem fupd_plainly_mask E E' {P : PROP} : (|={E,E'}=> ■ P) ⊢ |={E}=> P :=
-  (wand_intro_left emp_sep.1).trans <|
-  (sep_emp.2.trans <| (fupd_plainly_keep_left E E' P emp).trans <| mono sep_emp.1)
-
-@[rocq_alias fupd_plainly_elim]
-theorem fupd_plainly_elim {E : CoPset} {P : PROP} : ■ P ⊢ |={E}=> P :=
-  fupd_intro.trans (fupd_plainly_mask E E)
+theorem fupd_plainly_mask [BIAffine PROP] E E' {P : PROP} : (|={E,E'}=> ■ P) ⊢ |={E}=> P :=
+  (and_intro .rfl (wand_intro_left (sep_elim_left.trans fupd_intro))).trans <|
+    fupd_keep_plainly E' P
 
 @[rocq_alias fupd_plain_mask]
-theorem fupd_plain_mask {E E' : CoPset} {P : PROP} [Plain P] : (|={E,E'}=> P) ⊢ |={E}=> P :=
-  (mono Plain.plain).trans <|
-  (wand_intro_left emp_sep.1).trans <|
-  (sep_emp.2.trans <| (fupd_plainly_keep_left E E' P emp).trans <| mono sep_comm.1).trans <|
-  mono emp_sep.mp
+theorem fupd_plain_mask [BIAffine PROP] {E E' : CoPset} {P : PROP} [Plain P] :
+    (|={E,E'}=> P) ⊢ |={E}=> P :=
+  (mono Plain.plain).trans (fupd_plainly_mask E E')
 
 @[rocq_alias fupd_plain_later]
 theorem fupd_plain_later {E : CoPset} {P : PROP} [Plain P] : (▷ |={E}=> P) ⊢ |={E}=> ▷ ◇ P :=
   (later_mono (mono Plain.plain)).trans (fupd_plainly_later E P)
 
-@[rocq_alias fupd_plain_keep_l]
-theorem fupd_plain_keep_left {E E' : CoPset} {P R : PROP} [Plain P] :
-    (R ={E,E'}=∗ P) ∗ R ⊢ |={E}=> P ∗ R :=
-  (sep_mono_left <| wand_mono_right <| BIFUpdate.mono Plain.plain).trans (fupd_plainly_keep_left E E' P R)
-
-@[rocq_alias fupd_plain_keep_r]
-theorem fupd_plain_keep_right {E E' : CoPset} {P R : PROP} [Plain P] :
-    R ∗ (R ={E,E'}=∗ P) ⊢ |={E}=> R ∗ P :=
-  sep_symm.trans <| fupd_plain_keep_left.trans <| BIFUpdate.mono sep_symm
-
-@[rocq_alias fupd_plain_keep]
-theorem fupd_plain_keep {E E' : CoPset} {P R : PROP} [Plain P] :
-    ⊢ (R ={E,E'}=∗ P) -∗ R -∗ |={E}=> P ∗ R :=
-  BI.entails_wand <| wand_intro <| fupd_plain_keep_left
+@[rocq_alias fupd_keep_plain_sep]
+theorem fupd_keep_plain_sep [BIAffine PROP] {E E' : CoPset} {P R : PROP} [Plain P] :
+    (R ={E,E'}=∗ P) -∗ R -∗ |={E}=> P ∗ R :=
+  entails_wand <| wand_intro <|
+    (and_intro wand_elim_left (sep_elim_right.trans (wand_intro_left fupd_intro))).trans
+      (fupd_keep_plain (E1 := E) (E2 := E) E' P iprop(P ∗ R))
 
 @[rocq_alias step_fupd_plain]
-theorem step_fupd_plain {E1 E2 : CoPset} {P : PROP} [Plain P] :
+theorem step_fupd_plain [BIAffine PROP] {E1 E2 : CoPset} {P : PROP} [Plain P] :
     (|={E1}[E2]▷=> P) ⊢ |={E1}=> ▷ ◇ P :=
   (fupd_elim <| (later_mono fupd_plain_mask).trans fupd_plain_later).trans fupd_plain_mask
 
 @[rocq_alias step_fupdN_plain]
-theorem step_fupdN_plain {E1 E2 : CoPset} {n : Nat} {P : PROP} [Plain P] :
+theorem step_fupdN_plain [BIAffine PROP] {E1 E2 : CoPset} {n : Nat} {P : PROP} [Plain P] :
     (|={E1}[E2]▷=>^[n] P) ⊢ |={E1}=> ▷^[n] ◇ P := by
   induction n with
   | zero => exact except0_intro.trans fupd_intro

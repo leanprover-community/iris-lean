@@ -5,6 +5,7 @@ public import Iris.Instances.Lib.Token
 public import Iris.Instances.Lib.Invariants
 public import Iris.Std.Namespaces
 public import Iris.HeapLang.PrimitiveLaws
+public import Iris.HeapLang.ProofMode
 
 namespace Iris.HeapLang
 
@@ -20,7 +21,7 @@ def tryAcquire : Val := hl_val(
   λ l, snd(cmpXchg(l, #false, #true)))
 def acquire : Val := hl_val(
   rec acquire l :=
-    if ({tryAcquire} l)
+    if (&tryAcquire l)
       then #()
       else acquire l)
 def release : Val := hl_val(
@@ -80,45 +81,38 @@ variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [SpinLockG GF]
 theorem newlock_spec :
   ⊢ □ ∀ (Φ : Val → IProp GF),
     (∀ (v : Val) (γ : GName), (∀ R E, R ={E}=∗ isLock γ v R) -∗ Φ v) -∗
-    WP hl({newlock} #()) {{ Φ }} := by
-  unfold newlock
+    WP hl(&newlock #()) {{ Φ }} := by
   iintro !> %Φ Hcont
-  iapply wp_rec; simp only [Exp.subst]
-  inext
+  wp_rec
   imod token_alloc with ⟨%γ, Hγ⟩
-  iapply wp_wand; iapply wp_alloc
-  iintro %v ⟨%l, %Heq, Hpt⟩
-  iapply Hcont $$ %v %γ
+  iapply wp_alloc
+  iintro !> %l Hpt
+  iapply Hcont
   iintro %R %E HR
-  ihave HI : ▷ ∃ b, (l ↦ some hl_val(#(BaseLit.bool b))) ∗ if b = true then True else token γ ∗ R $$
-      [Hpt HR Hγ]
-  · iexists false
-    simp only [Bool.false_eq_true, ↓reduceIte]
+  imod inv_alloc spinlockN E (lockInv γ l R) $$ [Hpt HR Hγ] with H
+  · unfold lockInv locked
+    iexists false; simp only [Bool.false_eq_true, ↓reduceIte]
     iframe
-  imod inv_alloc spinlockN E _ $$ HI with H
   imodintro
   unfold isLock
   iexists l
-  subst Heq
-  isplit; itrivial
-  unfold lockInv locked
   iframe
+  itrivial
 
 theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
     ⊢ □ ∀ (Φ : Val → IProp GF),
     isLock γ lk R -∗
     (∀ (b : Bool), iprop(if b then locked γ ∗ R else iprop(True)) -∗ Φ hl_val(#b)) -∗
-    WP hl({tryAcquire} {lk}) {{ Φ }} := by
-  unfold tryAcquire
+    WP hl(&tryAcquire &lk) {{ Φ }} := by
   iintro !> %Φ #Hlock Hcont
-  iapply wp_rec; simp only [Exp.subst, Exp.substStr, BEq.rfl, ↓reduceIte]
-  inext
+  wp_rec
   unfold isLock
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
   subst Heq
-  iapply wp_bind (fun x => hl(snd({x})))
-  iapply wp_atomic (E2 := ⊤ \ nclose spinlockN)
-  imod inv_acc ⊤ _ _ (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨G1, G2⟩
+  wp_bind cmpXchg(_,_,_)
+  iapply wp_atomic
+  imod inv_acc $$ Hinv with ⟨G1, G2⟩
+  · simp
   unfold lockInv
   imodintro
   icases G1 with ⟨%b, Hpt, Hcond⟩
@@ -134,8 +128,8 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
       simp only [↓reduceIte]
       iframe
     · imodintro
-      iapply wp_snd
-      inext
+      wp_pure
+      imodintro
       iapply Hcont $$ [Hcond]
       simp only [↓reduceIte]
       iframe
@@ -150,8 +144,9 @@ theorem try_acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
       simp only [↓reduceIte]
       iframe
     · imodintro
-      iapply wp_snd
-      iapply Hcont $$ [Hcond]
+      wp_pure
+      imodintro
+      iapply Hcont
       simp only [Bool.false_eq_true, ↓reduceIte]
       itrivial
 
@@ -159,24 +154,19 @@ theorem acquire_spec (γ : GName) (lk : Val) (R : IProp GF) :
   ⊢ □ ∀ (Φ : Val → IProp GF),
     isLock γ lk R -∗
     (locked γ ∗ R -∗ Φ hl_val(#())) -∗
-    WP hl({acquire} {lk}) {{ Φ }} := by
-  unfold acquire
+    WP hl(&acquire &lk) {{ Φ }} := by
   iintro !> %Φ #Hlock Hcont
   iloeb as IH
-  iapply wp_rec
-  simp only [Exp.subst, Exp.substStr, String.reduceBEq, Bool.false_eq_true, ↓reduceIte, BEq.rfl]
-  inext
-  iapply wp_bind (fun x => hl(if {x} then {?_} else {?_})) (κ := instContextIfConditional)
+  wp_rec
+  wp_bind &tryAcquire _
   iapply try_acquire_spec $$ Hlock
   iintro %b Hpt
   cases b
-  · iapply wp_if_false
-    inext
+  · wp_pure
     iapply IH
     iapply Hcont
-  · iapply wp_if_true
-    inext
-    iapply wp_value'
+  · wp_pure
+    imodintro
     iapply Hcont
     simp only [if_pos]
     iframe
@@ -185,28 +175,25 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
   ⊢ □ ∀ (Φ : Val → IProp GF),
     isLock γ lk R ∗ (locked γ ∗ R) -∗
     (True -∗ Φ hl_val(#())) -∗
-    WP hl({release} {lk}) {{ Φ }} := by
-  unfold release
+    WP hl(&release &lk) {{ Φ }} := by
   iintro !> %Φ ⟨#Hlock, ⟨Hl, HR⟩⟩ Hcont
-  iapply wp_rec; simp only [Exp.subst, Exp.substStr, ↓reduceIte, BEq.rfl]
-  inext
+  wp_rec
   unfold isLock
   icases Hlock with ⟨%l, %Heq, #Hinv⟩
   subst Heq
-  iapply wp_atomic (E2 := ⊤ \ nclose spinlockN)
-  imod inv_acc ⊤ _ _ (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨G1, G2⟩
+  iapply wp_atomic
+  imod inv_acc $$ Hinv with ⟨G1, G2⟩
+  · simp
   unfold lockInv
   imodintro
   icases G1 with ⟨%b, Hpt, Hcond⟩
-  iapply wp_wand $$ [Hpt]
-  · iapply wp_store $$ Hpt
-  iintro %_ ⟨%Heq, Hpt'⟩
-  subst Heq
+  iapply wp_store $$ Hpt
+  iintro !> Hpt
   imod G2 $$ [- Hcont]
   · inext
     iexists false
     simp only [Bool.false_eq_true, ↓reduceIte]
-    iframe Hpt' Hl HR
+    iframe
   · imodintro
     iapply Hcont
     itrivial
