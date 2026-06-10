@@ -11,6 +11,8 @@ open BI Iris ProgramLogic List
 
 namespace Quicksort
 
+def nil : Val := hl_val% none()
+
 def cons : Val := hl_val% λ x, some(ref(x))
 
 def append : Val := hl_val%
@@ -55,6 +57,29 @@ def quicksort : Val := hl_val%
       let e := &cons (head, b);
       &append (a, e)
 
+/-- Construct a HeapLang version of a Lean list -/
+def makeList : List Int → Exp
+  | [] => nil
+  | l::ls => hl%
+    let vls := &(makeList ls);
+    &cons (#l, vls)
+
+/-- Returns a boolean witnessing the sortedness of a HeapLang list.
+`acc` is an option of the last value in the list. -/
+def checkSorted : Val := hl_val%
+  rec check acc l :=
+    match l with
+    | none() => #true
+    | some(x) =>
+      let p := !x;
+      let head := fst(p);
+      let tail := snd(p);
+      let ok :=
+        (match acc with
+         | none() => #true
+         | some(v) => v ≤ head);
+      ok && check (some(head)) tail
+
 section Predicates
 
 variable [HeapLangGS hlc GF]
@@ -76,6 +101,16 @@ end Predicates
 section Specs
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
+
+theorem nil_spec (Φ : Val → IProp GF) :
+    (∀ v, isList v [] -∗ Φ v) -∗
+    WP hl(v(&nil)) {{ Φ }} := by
+  iintro Hl
+  unfold nil; wp_finish
+  imodintro
+  iapply Hl
+  iapply isList_nil
+  itrivial
 
 theorem cons_spec x l ls Φ :
     isList (GF:=GF) l ls -∗
@@ -246,3 +281,106 @@ theorem quicksort_spec l ls Φ :
 --     intro h1 h2 h3 h4
 --     have : l2.all (x < ·) := by grind [Perm.mem_iff]
 --     grind [pairwise_cons]
+
+theorem wp_makeList (l : List Int) (Φ : Val → IProp GF) :
+    (∀ v, isList v l -∗ Φ v) -∗
+    WP hl(&(makeList l)) {{ Φ }} := by
+  induction l generalizing Φ with
+  | nil =>
+    iintro HΦ
+    unfold makeList
+    iapply nil_spec $$ HΦ
+  | cons l ls ih =>
+    iintro HΦ
+    rw [makeList]
+    wp_pures
+    wp_bind &(makeList _)
+    iapply ih
+    iintro %v Hv
+    wp_pures
+    iapply cons_spec $$ Hv HΦ
+
+/- When a HeapLang list is sorted, checkSorted returns true -/
+theorem wp_checkSorted (v vacc : Val) (l : List Int) (Φ : Val → IProp GF) :
+    isList (GF := GF) v l -∗
+    ⌜List.Pairwise (· ≤ ·) l⌝ -∗
+    ⌜vacc = hl_val(none()) ∨ ∃ va : Int, vacc = hl_val(some(#va)) ∧ ∀ lv ∈ l, va ≤ lv⌝ -∗
+    (∀ bv, isList v l -∗ ⌜bv = hl_val(#true)⌝ -∗ Φ bv) -∗
+    WP hl(&checkSorted &vacc &v) {{ Φ }} := by
+  iintro H %hsorted %hinv HΦ
+  iloeb as IH generalizing %vacc %l %v %hsorted %hinv
+  rw (occs:=[2]) [checkSorted]
+  wp_pures
+  cases l with
+  | nil =>
+    icases isList_nil $$ H with %heq; subst heq
+    wp_pures
+    imodintro
+    iapply HΦ $$ H
+    itrivial
+  | cons hd tl =>
+    icases isList_cons $$ H with ⟨%loc, %tlv, %heq, Hpt, Htl⟩
+    subst heq
+    wp_pures
+    wp_bind !_
+    iapply wp_load $$ Hpt
+    iintro !> Hpt
+    rcases hinv with rfl | ⟨va, rfl, hva⟩
+    · iterate 15 wp_pure
+      rw [← checkSorted]
+      iapply IH $$ %_ %tl %_ %((List.pairwise_cons.mp hsorted).2)
+        %(Or.inr ⟨hd, rfl, fun lv h => (List.pairwise_cons.mp hsorted).1 lv h⟩) Htl
+      iintro %bv Hl %hb
+      iapply HΦ $$ [Hpt Hl]
+      · rw [isList]
+        iexists loc, tlv
+        iframe
+        itrivial
+      itrivial
+    · wp_pures
+      rw [decide_eq_true (hva hd List.mem_cons_self)]
+      iterate 2 wp_pure
+      rw [← checkSorted]
+      iapply IH $$ %_ %tl %_ %((List.pairwise_cons.mp hsorted).2)
+        %(.inr ⟨hd, rfl, (List.pairwise_cons.mp hsorted).1⟩) Htl
+      iintro %bv Hl %hb
+      iapply HΦ $$ [Hpt Hl]
+      · rw [isList]
+        iexists loc, tlv
+        iframe
+        itrivial
+      itrivial
+
+end Specs
+
+section Closed
+
+/-- Construct a HeapLang list, quicksort it, and check that it is sorted. -/
+def sortAndCheck (l : List Int) : Exp := hl%
+  let v := &(makeList l);
+  let v' := &quicksort v;
+  &checkSorted (none()) v'
+
+theorem wp_sortAndCheck [HeapLangGS hlc GF] (l : List Int) :
+    ⊢@{IProp GF} WP (sortAndCheck l) {{ fun bv => iprop% ⌜bv = hl_val(#true)⌝}} := by
+  unfold sortAndCheck
+  wp_bind &(makeList _)
+  iapply wp_makeList
+  iintro %v Hv
+  wp_pures
+  wp_bind v(&quicksort) _
+  iapply quicksort_spec $$ Hv
+  iintro %v %l' Hv %Hsorted %Heqv
+  wp_pures
+  iapply wp_checkSorted $$ Hv %Hsorted %(Or.inl rfl)
+  iintro %bv Hv' %hbv
+  itrivial
+
+/-- Full application of adequacy: sortAndCheck is safe in any state and only ever return true. -/
+theorem sortAndCheckAdequate (l : List Int) (σ : State) :
+    adequate .NotStuck (sortAndCheck l) σ (fun v _ => v = hl_val(#true)) := by
+  apply heap_adequacy (GF := HeapLangS)
+  intro _
+  apply wp_sortAndCheck
+
+end Closed

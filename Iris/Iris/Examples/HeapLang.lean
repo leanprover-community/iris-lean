@@ -226,7 +226,7 @@ def lockedCounter : Exp :=
 /-! ## Prophecy variables -/
 
 def nondetBool : Exp :=
-  hl(λ _, let l := ref #true; fork (l ← #false); !l)
+  hl(λ _, let l := ref(#true); fork(l ← #false); !l)
 
 def newCoin : Exp :=
   hl(λ _, (ref(injl(#())), &Exp.newProph))
