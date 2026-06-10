@@ -1,4 +1,7 @@
 -- This code is temporarily being vendored from the Lean 4.31 release candidates
+module
+
+@[expose] public section
 
 open Lean.Order
 
@@ -152,6 +155,8 @@ theorem propSup_is_sup (c : Prop → Prop) : is_sup c (propSup c) := by
 instance : CompleteLattice Prop where
   has_sup c := ⟨propSup c, propSup_is_sup c⟩
 
+-/
+
 /-- The empty exception postcondition type, used when a monad has no exception layers. -/
 structure EPost.nil : Type
 
@@ -163,6 +168,8 @@ instance : PartialOrder EPost.nil where
 
 instance : CompleteLattice EPost.nil where
   has_sup _ := ⟨EPost.nil.mk, fun _ => ⟨fun _ _ _ => trivial, fun _ => trivial⟩⟩
+
+/- Example (continued):
 
 instance : WPPre Cmd Unit (State → Prop) EPost.nil where
   wpTrans cmd := PredTrans.mk fun Q _ s => wp cmd (Q ()) s
