@@ -444,13 +444,13 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
   obtain ⟨κ, e', σ', efs, Hstep⟩ := Hred
   cases Hstep with
   | recS f x e σ =>
-      iapply (wp_base_pure PureExec_rec trivial σ E (fun σ' => BaseStep.recS f x e σ')) $$ Hinv
+      iapply (wp_base_pure instPureExecRec trivial σ E (fun σ' => BaseStep.recS f x e σ')) $$ Hinv
   | pairS v1 v2 σ =>
       iapply (wp_base_pure PureExec_pair trivial σ E (fun σ' => BaseStep.pairS v1 v2 σ')) $$ Hinv
   | injLS v σ =>
-      iapply (wp_base_pure PureExec_injL trivial σ E (fun σ' => BaseStep.injLS v σ')) $$ Hinv
+      iapply (wp_base_pure PureExec_injl trivial σ E (fun σ' => BaseStep.injLS v σ')) $$ Hinv
   | injRS v σ =>
-      iapply (wp_base_pure PureExec_injR trivial σ E (fun σ' => BaseStep.injRS v σ')) $$ Hinv
+      iapply (wp_base_pure PureExec_injr trivial σ E (fun σ' => BaseStep.injRS v σ')) $$ Hinv
   | betaS f x eb v2 e' σ h =>
       subst h
       iapply (wp_base_pure instPureExecBeta trivial σ E
@@ -470,9 +470,9 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
   | sndS v1 v2 σ =>
       iapply (wp_base_pure PureExec_snd trivial σ E (fun σ' => BaseStep.sndS v1 v2 σ')) $$ Hinv
   | caseLS v et ee σ =>
-      iapply (wp_base_pure PureExec_caseL trivial σ E (fun σ' => BaseStep.caseLS v et ee σ')) $$ Hinv
+      iapply (wp_base_pure instPureExecCaseInjl trivial σ E (fun σ' => BaseStep.caseLS v et ee σ')) $$ Hinv
   | caseRS v et ee σ =>
-      iapply (wp_base_pure PureExec_caseR trivial σ E (fun σ' => BaseStep.caseRS v et ee σ')) $$ Hinv
+      iapply (wp_base_pure instPureExecCaseInjr  trivial σ E (fun σ' => BaseStep.caseRS v et ee σ')) $$ Hinv
   | loadS l v σ hl =>
       iapply (wp_base_atomic_nochange (v₂ := v) l v σ E
         (base_step_to_val_atomic Atomicity.StronglyAtomic (BaseStep.loadS l v σ hl)) hl
@@ -838,7 +838,7 @@ section Endpoint
 adequacy postcondition. Mirrors `heap_lang_sem_completeness` in
 `case_studies/heaplang/completeness_classical.v`. -/
 theorem heap_lang_sem_completeness {H : Type _ → Type _} [LawfulFiniteMap H Nat]
-    [GhostMapG GF Qp Nat Exp H] [CInvG Qp GF]
+    [GhostMapG GF Nat Exp H] [CInvG GF]
     (e : Exp) (σ : State) (φ : Val → Prop)
     (Hade : adequate Stuckness.NotStuck e σ (fun v _ => φ v)) :
     ⊢ heap_inv (GF := GF) σ -∗ WP e @ Stuckness.NotStuck; ⊤ {{ v, ⌜φ v⌝ }} := by
@@ -851,7 +851,7 @@ theorem heap_lang_sem_completeness {H : Type _ → Type _} [LawfulFiniteMap H Na
 
 /-- Nofork variant. Mirrors `heap_lang_sem_completeness_nofork`. -/
 theorem heap_lang_sem_completeness_nofork {H : Type _ → Type _} [LawfulFiniteMap H Nat]
-    [GhostMapG GF Qp Nat Exp H] [CInvG Qp GF]
+    [GhostMapG GF Nat Exp H] [CInvG GF]
     (e : Exp) (σ : State) (φ : Val → State → Prop)
     (Hade : AdequateNoFork Stuckness.NotStuck e σ (fun v σ' => φ v σ')) :
     ⊢ heap_inv (GF := GF) σ -∗

@@ -93,9 +93,9 @@ variable [TI : TpinvGS GF Expr H]
 variable {wp : AbstractWP Expr Val GF}
 variable [BindAbstractWP wp] [InvOpenAbstractWP wp]
 variable [AEC : AbstractEctxLangCompletenessGen wp]
-variable [CInvG Qp GF]
+variable [CInvG GF]
 
-omit [InvOpenAbstractWP wp] [CInvG Qp GF] in
+omit [InvOpenAbstractWP wp] [CInvG GF] in
 /-- Lift the ectx-level reduction soundness equation to a prim-level one.
 Mirrors `weakestpre_ectx_to_prim_completeness` in
 `framework/abstract/abstract_ectx_lang_completeness.v` lines 37–53. -/
