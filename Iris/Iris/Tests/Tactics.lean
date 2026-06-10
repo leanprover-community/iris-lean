@@ -2575,17 +2575,17 @@ example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
     instances for `DFrac` and `Frac`. -/
-example {GF α} [UFraction α] [ElemG GF (constOF (DFrac α))]
-    [ElemG GF (constOF (Frac α))] {γ}
-    {a1 a2 a3 b c : Frac α} [IsOpMerge b a2 a3] [IsOpMerge c a1 b] :
+example {GF} [ElemG GF (constOF DFrac)]
+    [ElemG GF (constOF Qp)] {γ}
+    {a1 a2 a3 b c : Qp} [IsOpMerge b a2 a3] [IsOpMerge c a1 b] :
     ⊢@{IProp GF}
-      iOwn (F := constOF (DFrac α)) γ (own a1.car) -∗
-      iOwn (F := constOF (DFrac α)) γ (own a2.car) -∗
-      iOwn (F := constOF (DFrac α)) γ (own a3.car) -∗
-      iOwn (F := constOF (Frac α)) γ a1 -∗
-      iOwn (F := constOF (Frac α)) γ a2 -∗
-      iOwn (F := constOF (Frac α)) γ a3 -∗
-      iOwn (F := constOF (DFrac α)) γ (own c.car) ∗ iOwn (F := constOF (Frac α)) γ c := by
+      iOwn (F := constOF DFrac) γ (own a1) -∗
+      iOwn (F := constOF DFrac) γ (own a2) -∗
+      iOwn (F := constOF DFrac) γ (own a3) -∗
+      iOwn (F := constOF Qp) γ a1 -∗
+      iOwn (F := constOF Qp) γ a2 -∗
+      iOwn (F := constOF Qp) γ a3 -∗
+      iOwn (F := constOF DFrac) γ (own c) ∗ iOwn (F := constOF Qp) γ c := by
   iintro H1 H2 H3 H4 H5 H6
   icombine H1 H2 H3 as Hnew1
   icombine H4 H5 H6 as Hnew2
@@ -2595,19 +2595,19 @@ example {GF α} [UFraction α] [ElemG GF (constOF (DFrac α))]
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
     instances for the authoritative CMRA. -/
-example {GF F A} [UFraction F] [UCMRA A] [ElemG GF (constOF (Auth F A))] {γ}
-    {a1 a2 a3 b c : A} {q1 q2 : Frac F} {dq'' dq3 dq4 : DFrac F}
+example {GF A} [UCMRA A] [ElemG GF (constOF (Auth A))] {γ}
+    {a1 a2 a3 b c : A} {q1 q2 : Qp} {dq'' dq3 dq4 : DFrac}
     [IsOpMerge b a2 a3] [IsOpMerge c a1 b]
     [IsOpMerge dq'' dq3 dq4] :
     ⊢@{IProp GF}
-      iOwn (F := constOF (Auth F A)) γ (◯ a1) -∗
-      iOwn (F := constOF (Auth F A)) γ (◯ a2) -∗
-      iOwn (F := constOF (Auth F A)) γ (◯ a3) -∗
-      iOwn (F := constOF (Auth F A)) γ (●{own q1.car} a1) -∗
-      iOwn (F := constOF (Auth F A)) γ (●{own q2.car} a1) -∗
-      iOwn (F := constOF (Auth F A)) γ (●{dq3} a1) -∗
-      iOwn (F := constOF (Auth F A)) γ (●{dq4} a1) -∗
-      iOwn (F := constOF (Auth F A)) γ ((◯ c) • ●{(own $ q1 + q2) • dq''} a1) := by
+      iOwn (F := constOF (Auth A)) γ (◯ a1) -∗
+      iOwn (F := constOF (Auth A)) γ (◯ a2) -∗
+      iOwn (F := constOF (Auth A)) γ (◯ a3) -∗
+      iOwn (F := constOF (Auth A)) γ (●{own q1} a1) -∗
+      iOwn (F := constOF (Auth A)) γ (●{own q2} a1) -∗
+      iOwn (F := constOF (Auth A)) γ (●{dq3} a1) -∗
+      iOwn (F := constOF (Auth A)) γ (●{dq4} a1) -∗
+      iOwn (F := constOF (Auth A)) γ ((◯ c) • ●{(own $ q1 + q2) • dq''} a1) := by
   iintro H1 H2 H3 H4 H5 H6 H7
   icombine H1 H2 H3 as HNew1
   icombine H4 H5 as HNew2
@@ -2618,14 +2618,14 @@ example {GF F A} [UFraction F] [UCMRA A] [ElemG GF (constOF (Auth F A))] {γ}
 /-- Tests `icombine` with the `IsOp` instances stipulating the
     merging of `a1`, `a2` and `a3` using `+` instead of `•`, as well as
     to eliminate splits (`IsHalfFraction`). -/
-example {GF α} [Fraction α] [IsHalfFraction α]
-    [ElemG GF (constOF (Frac α))] {γ} {a1 a2 a3 : Frac α} :
+example {GF}
+    [ElemG GF (constOF Qp)] {γ} {a1 a2 a3 : Qp} :
     ⊢@{IProp GF}
-      iOwn (F := constOF (Frac α)) γ a1 -∗
-      iOwn (F := constOF (Frac α)) γ a2 -∗
-      iOwn (F := constOF (Frac α)) γ (a3.half) -∗
-      iOwn (F := constOF (Frac α)) γ (a3.half) -∗
-      iOwn (F := constOF (Frac α)) γ (a1.half + (a1.half + (a2 + a3))) := by
+      iOwn (F := constOF Qp) γ a1 -∗
+      iOwn (F := constOF Qp) γ a2 -∗
+      iOwn (F := constOF Qp) γ (a3.half) -∗
+      iOwn (F := constOF Qp) γ (a3.half) -∗
+      iOwn (F := constOF Qp) γ (a1.half + (a1.half + (a2 + a3))) := by
   iintro H1 H2 H3a H3b
   icases H1 with ⟨H1a, H1b⟩
   icombine H1a H1b H2 H3a H3b as Hnew
