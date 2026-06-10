@@ -15,10 +15,10 @@ namespace Iris
 open Iris.Std BI OFE
 
 @[rocq_alias Fractional]
-class Fractional [BI PROP] [UFraction F] (Φ : F → PROP) where
+class Fractional [BI PROP] (Φ : Qp → PROP) where
   fractional p q : Φ (p + q) ⊣⊢ Φ p ∗ Φ q
 
 @[rocq_alias AsFractional]
-class AsFractional {PROP: Type u} [bi: BI PROP] [UFraction F] (P : PROP) (Φ : F → PROP) (q : F) where
+class AsFractional {PROP: Type u} [bi: BI PROP] (P : PROP) (Φ : Qp → PROP) (q : Qp) where
   as_fractional : P ⊣⊢ Φ q
   as_fractional_fractional : Fractional Φ
