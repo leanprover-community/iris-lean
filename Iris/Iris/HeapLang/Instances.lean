@@ -179,9 +179,9 @@ instance PureExec_le_int {n1 n2 : Int} : Language.PureExec True 1 hl(#(.int n1) 
       intro Ki e_inner heq
       cases Ki <;> cases heq <;> simp [toVal]
 
-instance instAtomicLoad {s} {v1 : Val} : Language.Atomic s hl(!&v1) where
+instance instAtomicLoad {s} {v : Val} : Language.Atomic s hl(!&v) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : EctxLanguage.SubredexesAreValues hl(!&v1) := by
+    have hsr : EctxLanguage.SubredexesAreValues hl(!&v) := by
       apply EctxItemLanguage.subredexes_are_values
       intro Ki e_inner heq
       cases Ki <;> try (cases heq; done)
