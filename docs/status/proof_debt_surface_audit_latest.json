@@ -1,0 +1,43 @@
+{
+  "audit": "block_comment_aware_visible_proof_debt_surface",
+  "proof_debt_findings": [],
+  "proof_debt_tokens": [
+    "sorry",
+    "admit",
+    "axiom",
+    "opaque"
+  ],
+  "repository": "leanprover-community/iris-lean",
+  "scanned_roots": [
+    "Iris",
+    "IrisMath"
+  ],
+  "status": "NO_ACTIVE_SORRY_ADMIT_AXIOM_OPAQUE_SURFACE",
+  "unsafe_findings": [
+    {
+      "file": "Iris/Iris/ProofMode/SynthInstanceAttr.lean",
+      "line": 283,
+      "text": "unsafe def SynthTacticEntrySerialized.deserialize (e : SynthTacticEntrySerialized) (compile : Bool)",
+      "token": "unsafe"
+    },
+    {
+      "file": "Iris/Iris/ProofMode/SynthInstanceAttr.lean",
+      "line": 298,
+      "text": "unsafe initialize synthTacticExt : ScopedEnvExtension (SynthTacticEntrySerialized \u00d7 Array DiscrTree.Key)",
+      "token": "unsafe"
+    },
+    {
+      "file": "Iris/Iris/ProofMode/SynthInstanceAttr.lean",
+      "line": 312,
+      "text": "unsafe initialize registerBuiltinAttribute {",
+      "token": "unsafe"
+    },
+    {
+      "file": "Iris/Iris/Std/DumpPortingData.lean",
+      "line": 81,
+      "text": "public meta unsafe def main (args : List String) : IO Unit := do",
+      "token": "unsafe"
+    }
+  ],
+  "unsafe_token": "unsafe"
+}
