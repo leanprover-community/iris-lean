@@ -11,6 +11,7 @@ public import Iris.Algebra.LeibnizSet
 public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.IProp
 public import Iris.Algebra.OFE
+public meta import Iris.Algebra.SolveNE
 public import Iris.Algebra.Updates
 public import Iris.Algebra.UPred
 public import Iris.Algebra.Heap

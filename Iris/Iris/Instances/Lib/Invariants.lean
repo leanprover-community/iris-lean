@@ -49,17 +49,7 @@ variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
   distLater_dist {n x y} H := by
     simp only [inv]
-    refine intuitionistically_ne.ne ?_
-    refine forall_ne (fun i => ?_)
-    refine imp_ne.ne .rfl ?_
-    refine wand_ne.ne .rfl ?_
-    refine (inferInstance : NonExpansive le_upd).ne ?_
-    refine sep_ne.ne .rfl ?_
-    refine sep_ne.ne .rfl ?_
-    refine sep_ne.ne ?_ ?_
-    · exact Contractive.distLater_dist H
-    · refine wand_ne.ne ?_ .rfl
-      exact Contractive.distLater_dist H
+    solve_contractive
 
 @[rocq_alias inv_ne]
 instance inv_ne (N : Namespace) : NonExpansive (inv (GF := GF) N) := ne_of_contractive _

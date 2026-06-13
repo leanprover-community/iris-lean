@@ -13,6 +13,7 @@ public import Iris.Std.Classes
 public import Iris.Std.Rewrite
 public import Iris.Std.TC
 import Iris.Std.RocqPorting
+public meta import Iris.Algebra.NeCongrAttr
 
 @[expose] public section
 
@@ -157,7 +158,7 @@ theorem imp_congr_left [BI PROP] {P P' Q : PROP} (h : P ⊣⊢ P') : (P → Q) �
 theorem imp_congr_right [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P → Q) ⊣⊢ (P → Q') :=
   imp_congr .rfl h
 
-@[rocq_alias bi.forall_ne]
+@[ne_congr, rocq_alias bi.forall_ne]
 theorem forall_ne [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ≡{n}≡ Ψ a) :
     iprop(∀ a, Φ a) ≡{n}≡ iprop(∀ a, Ψ a) := sForall_ne <| by
   constructor <;> rintro _ ⟨a, rfl⟩ <;> exact ⟨_, ⟨a, rfl⟩, h _⟩
@@ -182,7 +183,7 @@ theorem forall_mono [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ⊢ Ψ a) :
 theorem forall_congr [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ⊣⊢ Ψ a) : (∀ a, Φ a) ⊣⊢ ∀ a, Ψ a :=
   ⟨forall_mono fun a => (h a).1, forall_mono fun a => (h a).2⟩
 
-@[rocq_alias bi.exist_ne]
+@[ne_congr, rocq_alias bi.exist_ne]
 theorem exists_ne [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ≡{n}≡ Ψ a) :
     iprop(∃ a, Φ a) ≡{n}≡ iprop(∃ a, Ψ a) := sExists_ne <| by
   constructor <;> rintro _ ⟨a, rfl⟩ <;> exact ⟨_, ⟨a, rfl⟩, h _⟩

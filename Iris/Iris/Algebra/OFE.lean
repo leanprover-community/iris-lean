@@ -136,6 +136,9 @@ theorem Dist.distLater [OFE α] {n} {x y : α} (h : x ≡{n}≡ y) : DistLater n
 theorem DistLater.dist_lt [OFE α] {m n} {x y : α} (h : DistLater n x y) (hm : m < n) : x ≡{m}≡ y :=
   h _ hm
 
+/-- Introduction lemma for `DistLater`, used by the `solve_contractive` tactic. -/
+theorem DistLater.intro [OFE α] {n} {x y : α} (H : ∀ m, m < n → x ≡{m}≡ y) : DistLater n x y := H
+
 /-- `DistLater 0`-equivalence is trivial. -/
 @[simp, rocq_alias dist_later_0] theorem distLater_zero [OFE α] {x y : α} : DistLater 0 x y := nofun
 
