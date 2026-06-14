@@ -188,9 +188,8 @@ theorem wp_pure_step_fupd [Inhabited State] (E₂ : CoPset)
     (|={E}[E₂]▷=>^[n] £ n -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro Hwp
   replace Hexec := Hexec.pureExec Hφ
-  induction Hexec using Relation.Iterate.head_induction_on with
+  iinduction Hexec using Relation.Iterate.head_induction_on with simp only [Nat.repeat]
   | rfl =>
-    simp only [Nat.repeat]
     rw (occs := [2]) [fupd_wp_iff.to_eq]
     icases lc_zero with >Hz
     iapply Hwp $$ Hz
@@ -201,7 +200,6 @@ theorem wp_pure_step_fupd [Inhabited State] (E₂ : CoPset)
       intro σ
       have _ : PrimStep.Reducible (e₁, σ) := by grind only [reducible_of_reducibleNoObs]
       grind [cases Stuckness]
-    simp only [Nat.repeat]
     iapply step_fupd_wand $$ Hwp
     iintro Hwp Hone
     iapply IH
