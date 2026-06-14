@@ -179,6 +179,17 @@ def iRewriteHyp {prop : Q(Type u)} {bi : Q(BI $prop)}
     | throwError "irewrite: cannot find hyp" -- should never happen
   return r
 
+/--
+  `irewrite [rules] at loc` applies a sequence `rules` of internal equalities
+  (`≡`) to the locations (`loc`). The locations `loc` may contain hypothesis
+  names and/or the goal, represented by `⊢`.
+
+  Each rule is a proof mode term, optionally prefixed with `←` for
+  right-to-left rewriting.
+
+  Optionally, one can use `irewrite (occs := …) [rules] at H` such that the
+  configuration options for the tactic are specified.
+-/
 elab "irewrite" cfg:optConfig "[" rules:(IRewrite.irwRule),* "]" loc:(location)? : tactic => do
   let config ← IRewrite.elabIRewriteConfig cfg
   let location ← IRewrite.Location.parse loc

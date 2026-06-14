@@ -53,6 +53,10 @@ def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
         | throwError "ipure: {A} is not affine and the goal not absorbing"
       return q(pure_elim_spatial (A:=$A) $pf $f)
 
+/--
+  `ipure H` moves a pure hypothesis `H` from the Iris context into the regular
+  Lean context.
+-/
 elab "ipure" colGt hyp:ident : tactic => do
   ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do
 
@@ -63,6 +67,9 @@ elab "ipure" colGt hyp:ident : tactic => do
 
   mvar.assign pf
 
+/--
+  `iempintro` solves an `emp` goal, provided that the spatial context is affine.
+-/
 elab "iempintro" : tactic => do
   ProofModeM.runTactic λ mvar { prop, e, goal, .. } => do
 
@@ -79,6 +86,9 @@ theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
     (h : FromPure false Q .out φ) (hφ : φ) : P ⊢ Q :=
   (pure_intro hφ).trans h.1
 
+/--
+  `ipureintro` turns a goal of the form `⌜φ⌝` into the Lean goal `φ`.
+-/
 elab "ipureintro" : tactic => do
   ProofModeM.runTactic λ mvar { e, goal, .. } => do
 
@@ -103,4 +113,8 @@ elab "ipureintro" : tactic => do
 
 -- TODO: what is the best lean automation tactic to call here?
 -- `assumption` is necessary if the goal contains mvars
+/--
+  `itrivial` tries to solve the goal with simple tactics such as `iassumption`,
+  `ipureintro` followed by `simp`/`assumption`, and so on.
+-/
 macro_rules | `(tactic| itrivial) => `(tactic| (first | ipureintro | exfalso) <;> (first | simp [*] | assumption) <;> done)
