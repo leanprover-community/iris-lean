@@ -117,10 +117,10 @@ theorem revert_IH [BI PROP] {P Q R : PROP} {φ}
     P ⊢ (Q ∗ □ R) := calc
   _ ⊢ □ P         := h1
   _ ⊢ □ P ∗ □ P   := intuitionistically_sep_dup.mp
-  _ ⊢ □ P ∗ □ □ P := sep_mono_r intuitionistically_idem.mpr
-  _ ⊢ □ P ∗ □ R   := sep_mono_r <| intuitionistically_mono <| inst.into_ih ih
-  _ ⊢ □ Q ∗ □ R   := sep_mono_l <| intuitionistically_mono h2
-  _ ⊢ Q ∗ □ R     := sep_mono_l intuitionistically_elim
+  _ ⊢ □ P ∗ □ □ P := sep_mono_right intuitionistically_idem.mpr
+  _ ⊢ □ P ∗ □ R   := sep_mono_right <| intuitionistically_mono <| inst.into_ih ih
+  _ ⊢ □ Q ∗ □ R   := sep_mono_left <| intuitionistically_mono h2
+  _ ⊢ Q ∗ □ R     := sep_mono_left intuitionistically_elim
 
 /--
   Designed to be a mutable state such that `newHyps` contains induction
