@@ -78,12 +78,15 @@ def Reducible : Expr × State → Prop
 def ReducibleNoObs [PrimStep Expr State (List Obs)] : Expr × State → Prop
   | (e, σ) => ∃ e' σ' eₜ, (e, σ) -<[]>-> (e', σ', eₜ)
 
+@[rocq_alias irreducible]
 def Irreducible : Expr × State → Prop
   | (e, σ) => ∀ obs e' σ' eₜ, ¬ (e, σ) -<obs>-> (e', σ', eₜ)
 
+@[rocq_alias stuck]
 def Stuck [ToVal Expr Val] : Expr × State → Prop
   | (e, σ) => toVal e = none ∧ Irreducible (e, σ)
 
+@[rocq_alias not_stuck]
 def NotStuck [ToVal Expr Val] : Expr × State → Prop
   | (e, σ) => (toVal e).isSome ∨ Reducible (e, σ)
 
@@ -290,7 +293,7 @@ theorem reducibleNoObs_fill_inv ⦃e : Expr⦄ ⦃σ : State⦄ (toVal_none : to
     have ⟨e₂, _, red⟩ := primStep_fill_inv toVal_none K_red
     ⟨e₂, σ', eₜ, red⟩
 
--- @[rocq_alias irrreducible_fill]
+@[rocq_alias irreducible_fill]
 theorem irreducible_fill ⦃e : Expr⦄ ⦃σ : State⦄ (hv : toVal e = none) (irr : Irreducible (e, σ)) :
     Irreducible (K e, σ) :=
   not_reducible_iff_irreducible.1 fun red =>
@@ -386,8 +389,6 @@ end Notation
 
 abbrev PureSteps (t₁ t₂ : List Expr) := List.Forall₂ (· -ᵖ->* ·) t₁ t₂
 
-#rocq_concept program_logic "pure_steps_tp" ported "Implemented as an abbreviation"
-
 namespace Notation
 
 /-- `e₁ -ᵖ->ₜₚ* e₂` represents a sequence of some number of pure steps taken from `e₁` up to `e₂`. -/
@@ -396,7 +397,7 @@ scoped notation (name := PureSteps) conf:40 " -ᵖ->ₜₚ* " conf':41 => Langua
 end Notation
 
 @[rocq_alias PureExec]
-class PureExec (φ : Prop) (n : Nat) (e₁ e₂ : Expr) : Prop where
+class PureExec (φ : outParam <| Prop) (n : outParam <| Nat) (e₁ : Expr) (e₂ : outParam <| Expr) : Prop where
   pureExec : φ → e₁ -ᵖ->^[n] e₂
 
 variable (K : Expr → Expr) [Context K]
@@ -424,7 +425,6 @@ theorem ReflTransGen_pureStep_fill {e₁ e₂} (h : e₁ -ᵖ->* e₂) :  K e₁
 theorem pureExec_fill {φ n e₁ e₂} (h : PureExec φ n e₁ e₂) : PureExec φ n (K e₁) (K e₂) :=
   ⟨fun hφ => iterate_purePrimStep_fill K (h.1 hφ)⟩
 
-
 @[rocq_alias rtc_pure_step_val]
 theorem ReflTransGen_purePrimStep_val [Inhabited State] {v : Val} {e : Expr}
     (h : (v : Expr) -ᵖ->* e) : toVal e = some v := by
@@ -441,7 +441,7 @@ class IntoVal (e : Expr) (v : Val) where
   into_val : (v : Expr) = e
 
 class AsVal (e : Expr) where
-  as_val : ∃ v, (v : Expr) = e
+  as_val : ∃ v : Val, (v : Expr) = e
 
 @[rocq_alias as_val_is_Some]
 theorem as_val_isSome e : (∃ v : Val, (v : Expr) = e) → (toVal e).isSome := by

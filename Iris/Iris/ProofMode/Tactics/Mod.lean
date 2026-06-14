@@ -16,7 +16,7 @@ open BI
 
 theorem mod [BI PROP] {e} {Φ} {p p'} {A A' Q Q' : PROP} [he : ElimModal Φ p p' A A' Q Q']
   (h1 : e ∗ □?p' A' ⊢ Q') (hΦ : Φ) : e ∗ □?p A ⊢ Q :=
-    (sep_comm.1.trans (sep_mono_r (wand_intro h1))).trans (he.1 hΦ)
+    (sep_comm.1.trans (sep_mono_right (wand_intro h1))).trans (he.1 hΦ)
 
 public meta section
 open Lean Elab Tactic Meta Qq Std
@@ -43,8 +43,7 @@ def iModCore {prop : Q(Type u)} (_bi : Q(BI $prop)) (P Q : Q($prop)) (p : Q(Bool
     -- transform `Q` to `Q'` and `A` to `A'`
     let .some _ ← ProofModeM.trySynthInstanceQ q(ElimModal $Φ $p $p' $A $A' $Q $Q')
       | throwError "imod: {A} is not a modality"
-    let hΦ : Q($Φ) ← mkFreshExprMVarQ q($Φ)
-    iSolveSideconditionAt hΦ.mvarId!
+    let hΦ ← iSolveSidecondition q($Φ)
     let p'' : Q(Bool) ← instantiateMVars p'
     let A'' ← instantiateMVarsQ A'
     let Q'' ← instantiateMVarsQ Q'

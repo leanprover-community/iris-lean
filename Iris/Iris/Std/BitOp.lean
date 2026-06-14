@@ -414,16 +414,14 @@ theorem shiftRight_neg (m : Int) (n : Int) : m >>> (-n) = m <<< n := by
   simp [HShiftRight.hShiftRight, ShiftRight.shiftRight]
 
 theorem shiftLeft_natCast (m n : Nat) : (m : Int) <<< (n : Int) = ((m <<< n) : Nat) := by
-  simp [HShiftLeft.hShiftLeft, ShiftLeft.shiftLeft, shiftLeft'_false]
+  show Nat.shiftLeft' false m n = ((m <<< n : Nat) : Int)
+  rw [Nat.shiftLeft'_false]
 
-theorem natCast_lor (m n : Nat) : ((m ||| n : Nat) : Int) = (m : Int) ||| (n : Int) := by
-  simp [HOr.hOr, OrOp.or, lor]
+theorem natCast_lor (m n : Nat) : ((m ||| n : Nat) : Int) = (m : Int) ||| (n : Int) := rfl
 
-theorem natCast_land (m n : Nat) : ((m &&& n : Nat) : Int) = (m : Int) &&& (n : Int) := by
-  simp [HAnd.hAnd, AndOp.and, land]
+theorem natCast_land (m n : Nat) : ((m &&& n : Nat) : Int) = (m : Int) &&& (n : Int) := rfl
 
-theorem natCast_xor (m n : Nat) : ((m ^^^ n : Nat) : Int) = (m : Int) ^^^ (n : Int) := by
-  simp [HXor.hXor, XorOp.xor, xor]
+theorem natCast_xor (m n : Nat) : ((m ^^^ n : Nat) : Int) = (m : Int) ^^^ (n : Int) := rfl
 
 theorem lor_negSucc_negSucc (m n : Nat) : -[m+1] ||| -[n+1] = -[m &&& n+1] := rfl
 

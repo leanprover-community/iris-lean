@@ -40,7 +40,7 @@ noncomputable def GF : BundledGFunctors := fun n =>
   | 0  => ⟨InvMapF, by infer_instance⟩
   | 1  => ⟨constOF (DisjointLeibnizSet CoPset), by infer_instance⟩
   | 2  => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
-  | 3  => ⟨AuthURF (F := PNat) (constOF Credit), by infer_instance⟩
+  | 3  => ⟨AuthURF (constOF Credit), by infer_instance⟩
   | _  => ⟨constOF Unit, by infer_instance⟩
 
 instance : WsatGpreS GF where
@@ -57,11 +57,11 @@ instance : InvGpreS GF where
 
 example : True := by
   apply pure_soundness (PROP := IProp GF)
-  iapply step_fupdN_soundness_no_lc' (m := 0) (n := 1)
+  iapply step_fupdN_soundness_close (hlc := .hasNoLC) (m := 0) (n := 1)
   iintro %_ _
   simp only [Nat.repeat]
   icases inv_alloc nroot ⊤ iprop(True) $$ [] with >#Hinv
-  · inext; ipure_intro; simp
+  · itrivial
   imod inv_acc ⊤ $$ Hinv with ⟨HP, Hcl⟩
   · rw [nclose_root]; exact subset_refl
   imod Hcl $$ HP with HP

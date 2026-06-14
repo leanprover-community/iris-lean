@@ -26,10 +26,10 @@ namespace ExclAuth
 variable [OFE A]
 
 @[rocq_alias excl_authR]
-public abbrev ExclAuthR := Auth PNat (Option (Excl A))
+public abbrev ExclAuthR := Auth (Option (Excl A))
 
 @[rocq_alias excl_authUR]
-public abbrev ExclAuthUR := Auth PNat (Option (Excl A))
+public abbrev ExclAuthUR := Auth (Option (Excl A))
 
 @[rocq_alias excl_auth_auth]
 public abbrev auth (a : A) : ExclAuthR (A := A) := ● (some (excl a))
@@ -44,9 +44,12 @@ scoped notation "◯E " a => ExclAuth.frag a
 instance auth_ne : NonExpansive (auth (A := A)) where
   ne _ _ _ h := Auth.auth_ne.ne (some_dist_some.mpr h)
 
+#rocq_ignore excl_auth_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
+
 @[rocq_alias excl_auth_frag_ne]
 instance frag_ne : NonExpansive (frag (A := A)) where
   ne _ _ _ h := Auth.frag_ne.ne (some_dist_some.mpr h)
+#rocq_ignore excl_auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
 
 @[rocq_alias excl_auth_auth_discrete]
 instance auth_discrete {a : A} [DiscreteE a] : DiscreteE (●E a) :=
@@ -74,7 +77,7 @@ theorem agree {a b : A} (h : ✓ (●E a) • ◯E b) : a ≡ b :=
 
 @[rocq_alias excl_auth_agree_L]
 theorem agree_L [Leibniz A] {a b : A} (h : ✓ (●E a) • ◯E b) : a = b :=
-  eq_of_eqv (agree h)
+  (agree h).to_eq
 
 @[rocq_alias excl_auth_auth_op_validN]
 theorem auth_op_validN {a b : A} : (✓{n} (●E a) • ●E b) ↔ False :=
@@ -102,11 +105,11 @@ theorem update {a b a' : A} : ((●E a) • ◯E b) ~~> ((●E a') • ◯E a') 
 
 @[rocq_alias excl_authURF]
 abbrev ExclAuthURF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
-  AuthURF (F := PNat) (OptionOF (ExclOF T))
+  AuthURF (OptionOF (ExclOF T))
 
 @[rocq_alias excl_authRF]
 abbrev ExclAuthRF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
-  AuthRF (F := PNat) (OptionOF (ExclOF T))
+  AuthRF (OptionOF (ExclOF T))
 
 end ExclAuth
 end Iris

@@ -39,15 +39,27 @@ def pure (φ : Prop) : SiProp where
   holds _ := φ
   closed h _ := h
 
+#rocq_ignore siProp_pure_def "Not needed in Lean."
+#rocq_ignore siProp_pure_aux "Not needed in Lean."
+#rocq_ignore siProp_pure_unseal "Not needed in Lean."
+
 @[rocq_alias siProp_and]
 def and (P Q : SiProp) : SiProp where
   holds n := P.holds n ∧ Q.holds n
   closed h hle := ⟨P.closed h.1 hle, Q.closed h.2 hle⟩
 
+#rocq_ignore siProp_and_def "Not needed in Lean."
+#rocq_ignore siProp_and_aux "Not needed in Lean."
+#rocq_ignore siProp_and_unseal "Not needed in Lean."
+
 @[rocq_alias siProp_or]
 def or (P Q : SiProp) : SiProp where
   holds n := P.holds n ∨ Q.holds n
   closed h hle := h.imp (P.closed · hle) (Q.closed · hle)
+
+#rocq_ignore siProp_or_def "Not needed in Lean."
+#rocq_ignore siProp_or_aux "Not needed in Lean."
+#rocq_ignore siProp_or_unseal "Not needed in Lean."
 
 @[rocq_alias SiProp_downclose]
 def downClose (Pi : Nat → Prop) : SiProp where
@@ -58,15 +70,27 @@ def downClose (Pi : Nat → Prop) : SiProp where
 def imp (P Q : SiProp) : SiProp :=
   downClose fun n => P.holds n → Q.holds n
 
+#rocq_ignore siProp_impl_def "Not needed in Lean."
+#rocq_ignore siProp_impl_aux "Not needed in Lean."
+#rocq_ignore siProp_impl_unseal "Not needed in Lean."
+
 @[rocq_alias siProp_forall]
 def all (Φ : SiProp → Prop) : SiProp where
   holds n := ∀ P, Φ P → P.holds n
   closed h hle P hP := P.closed (h P hP) hle
 
+#rocq_ignore siProp_forall_def "Not needed in Lean."
+#rocq_ignore siProp_forall_aux "Not needed in Lean."
+#rocq_ignore siProp_forall_unseal "Not needed in Lean."
+
 @[rocq_alias siProp_exist]
 def exist (Φ : SiProp → Prop) : SiProp where
   holds n := ∃ P, Φ P ∧ P.holds n
   closed := fun ⟨P, hP, hh⟩ hle => ⟨P, hP, P.closed hh hle⟩
+
+#rocq_ignore siProp_exist_def "Not needed in Lean."
+#rocq_ignore siProp_exist_aux "Not needed in Lean."
+#rocq_ignore siProp_exist_unseal "Not needed in Lean."
 
 @[rocq_alias siProp_later]
 def later (P : SiProp) : SiProp where
@@ -75,6 +99,10 @@ def later (P : SiProp) : SiProp where
     cases n₂ with
     | zero => trivial
     | succ n₂ => cases n₁ with | zero => omega | succ n₁ => exact P.closed h (by omega)
+
+#rocq_ignore siProp_later_def "Not needed in Lean."
+#rocq_ignore siProp_later_aux "Not needed in Lean."
+#rocq_ignore siProp_later_unseal "Not needed in Lean."
 
 /-! ## OFE / COFE / BIBase instances -/
 
@@ -91,12 +119,17 @@ instance : OFE SiProp where
   equiv_dist.mpr h n := h n .refl
   dist_lt h _ _ _ := h (by omega)
 
+#rocq_ignore siProp_ofe_mixin "Not needed in Lean."
+
+@[rocq_alias siProp_cofe]
 instance : IsCOFE SiProp where
   compl c := {
     holds n := (c n).holds n
     closed {n₁ _} h hle := (c.cauchy hle .refl).mp (c n₁ |>.closed h hle)
   }
   conv_compl {_ c} _ hle := c.cauchy hle .refl |>.symm
+
+#rocq_ignore siProp_compl "Included in IsCOFE instance."
 
 instance : BIBase SiProp where
   Entails := SiProp.entails
@@ -111,6 +144,11 @@ instance : BIBase SiProp where
   wand := SiProp.imp
   persistently P := P
   later := SiProp.later
+
+#rocq_ignore siProp_emp "Included in BIBase instance."
+#rocq_ignore siProp_sep "Included in BIBase instance."
+#rocq_ignore siProp_wand "Included in BIBase instance."
+#rocq_ignore siProp_persistently "Included in BIBase instance."
 
 instance : Std.Preorder (BIBase.Entails (PROP := SiProp)) where
   refl _ h := h
@@ -201,6 +239,26 @@ instance instBI : BI SiProp where
 @[rocq_alias siProp_primitive.pure_ne]
 theorem pure_dist_of_iff {Φ Ψ : Prop} (H : Φ ↔ Ψ) : pure Φ ≡{n}≡ pure Ψ := fun _ => iff_comm.mp H.symm
 
+#rocq_ignore siProp_pure_forall "BiPureForall is not ported."
+
+#rocq_ignore siProp_bi_later_mixin "Not needed in Lean."
+#rocq_ignore siProp_bi_mixin "Not needed in Lean."
+#rocq_ignore siProp_bi_persistently_mixin "Not needed in Lean."
+
+#rocq_ignore siProp.siProp_and_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_cmra_valid_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_emp_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_exist_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_forall_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_impl_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_internal_eq_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_later_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_or_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_persistently_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_pure_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_sep_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_unseal "Not needed in Lean."
+#rocq_ignore siProp.siProp_wand_unseal "Not needed in Lean."
 
 /-! ## Extra BI instances -/
 
@@ -216,12 +274,18 @@ instance instBILaterContractive : BILaterContractive SiProp where
 instance instPersistent (P : SiProp) : Persistent P where
   persistent _ := id
 
+#rocq_ignore siProp_primitive.siProp_unseal "Not needed in Lean."
+
 /-! ## Internal equality -/
 
 @[rocq_alias siProp_internal_eq]
 def internalEq [OFE A] (a₁ a₂ : A) : SiProp where
   holds n := a₁ ≡{n}≡ a₂
   closed h hle := Dist.le h hle
+
+#rocq_ignore siProp_internal_eq_def "Not needed in Lean."
+#rocq_ignore siProp_internal_eq_aux "Not needed in Lean."
+#rocq_ignore siProp_internal_eq_unseal "Not needed in Lean."
 
 @[rocq_alias siProp_primitive.internal_eq_ne]
 instance instNonExpansive₂InternalEq [OFE A] : NonExpansive₂ (internalEq (A := A)) where
@@ -283,6 +347,10 @@ theorem later_equiv_internalEq_mpr [OFE A] (x y : A) :
 def cmraValid [CMRA A] (a : A) : SiProp where
   holds n := ✓{n} a
   closed h hle := CMRA.validN_of_le hle h
+
+#rocq_ignore siProp_cmra_valid_def "Not needed in Lean."
+#rocq_ignore siProp_cmra_valid_aux "Not needed in Lean."
+#rocq_ignore siProp_cmra_valid_unseal "Not needed in Lean."
 
 @[rocq_alias siProp_primitive.cmra_valid_ne]
 instance instNonExpansiveCmraValid [CMRA A] : NonExpansive (cmraValid (A := A)) where

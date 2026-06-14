@@ -84,8 +84,10 @@ _DEF_RE = re.compile(
 )
 
 # Module/Section tracking: Modules qualify names (e.g., Module bi -> bi.foo),
-# but Sections do not. 
-_MODULE_START_RE = re.compile(r"^\s*Module\s+(\w+)", re.MULTILINE)
+# but Sections do not.
+# `Module Export M` and `Module Import M` are valid forms where the name is M,
+# not the Export/Import keyword.
+_MODULE_START_RE = re.compile(r"^\s*Module\s+(?:Export\s+|Import\s+)?(\w+)", re.MULTILINE)
 _MODULE_TYPE_RE = re.compile(r"^\s*Module\s+Type\b")  # Module Types are skipped
 _SECTION_START_RE = re.compile(r"^\s*Section\s+(\w+)", re.MULTILINE)
 _END_RE = re.compile(r"^\s*End\s+(\w+)\s*\.", re.MULTILINE)
@@ -462,17 +464,22 @@ def _render_entry_row(e: ReportEntry) -> str:
         f'<tr class="entry {e.status}" data-name="{e.rocq_name}">'
         f"<td>{e.rocq_name}</td>"
         f'<td><span class="badge {badge}"></span></td>'
-        f"<td>{detail}</td></tr>"
+        f'<td><div class="detail-scroll">{detail}</div></td></tr>'
     )
 
 
-def _stats_html(n_done: int, n_total: int) -> str:
+def _stats_html(n_ported: int, n_ignored: int, n_total: int) -> str:
     """Render the stats + mini-bar fragment used by both folder and file headers."""
+    n_done = n_ported + n_ignored
     pct = n_done / n_total * 100 if n_total else 0
+    pct_ported = n_ported / n_total * 100 if n_total else 0
+    pct_ignored = n_ignored / n_total * 100 if n_total else 0
     return (
         f'<span class="section-stats">{n_done}/{n_total} ({pct:.0f}%)</span>'
-        f'<span class="mini-bar"><span class="mini-bar-fill"'
-        f' style="width:{pct:.1f}%"></span></span>'
+        f'<span class="mini-bar">'
+        f'<span class="mini-bar-fill ported" style="width:{pct_ported:.2f}%"></span>'
+        f'<span class="mini-bar-fill ignored" style="width:{pct_ignored:.2f}%"></span>'
+        f'</span>'
     )
 
 
@@ -482,7 +489,8 @@ def _render_file_section(
     """Render a collapsible section for one Rocq .v file (nested inside a folder)."""
     display = filepath.removeprefix(ROCQ_SRC_PREFIX)
     filename = display.split("/", 1)[1] if "/" in display else display
-    n_done = sum(1 for e in entries if e.status in ("ported", "ignored"))
+    n_ported = sum(1 for e in entries if e.status == "ported")
+    n_ignored = sum(1 for e in entries if e.status == "ignored")
     n_total = len(entries)
     link = f"{GITLAB_WEB_BASE}/-/blob/{rocq_commit}/{filepath}"
 
@@ -498,7 +506,7 @@ def _render_file_section(
         f'<code class="file-name">{filename}</code>'
         f'<a class="file-link" href="{link}" target="_blank"'
         f' onclick="event.stopPropagation()">[src]</a>'
-        f'{_stats_html(n_done, n_total)}'
+        f'{_stats_html(n_ported, n_ignored, n_total)}'
         f"</div>"
         f'<table class="file-table">{_COLGROUP}'
         f"<thead><tr><th>Rocq Name</th><th>Status</th><th>Details</th></tr></thead>"
@@ -518,7 +526,8 @@ def _render_concept_section(
     subs = [e for e in entries if e.subfeature]
 
     items = subs if subs else top
-    n_done = sum(1 for e in items if e.status == "ported")
+    n_ported = sum(1 for e in items if e.status == "ported")
+    n_ignored = sum(1 for e in items if e.status == "ignored")
     n_total = len(items)
 
     top_reason = top[0].reason if top else ""
@@ -532,7 +541,7 @@ def _render_concept_section(
                 f'<tr class="entry {e.status}" data-name="{e.subfeature}">'
                 f"<td>{e.subfeature}</td>"
                 f'<td><span class="badge {badge}"></span></td>'
-                f"<td>{e.reason}</td></tr>"
+                f'<td><div class="detail-scroll">{e.reason}</div></td></tr>'
             )
     elif top:
         badge = _BADGE_CLS.get(top_status, "")
@@ -540,7 +549,7 @@ def _render_concept_section(
             f'<tr class="entry {top_status}" data-name="{feature}">'
             f"<td>{feature}</td>"
             f'<td><span class="badge {badge}"></span></td>'
-            f"<td>{top_reason}</td></tr>"
+            f'<td><div class="detail-scroll">{top_reason}</div></td></tr>'
         )
 
     return (
@@ -548,7 +557,7 @@ def _render_concept_section(
         f'<div class="section-header" onclick="toggle(this)">'
         f'<span class="arrow">&#9654;</span>'
         f'<code class="file-name">{feature}</code>'
-        f'{_stats_html(n_done, n_total)}'
+        f'{_stats_html(n_ported, n_ignored, n_total)}'
         f"</div>"
         f'<table class="file-table">{_COLGROUP}'
         f"<thead><tr><th>Name</th><th>Status</th><th>Details</th></tr></thead>"
@@ -560,7 +569,8 @@ def _render_folder_section(
     folder: str,
     file_sections: list[tuple[str, str]],
     concept_sections: list[tuple[str, str]],
-    folder_done: int,
+    folder_ported: int,
+    folder_ignored: int,
     folder_total: int,
 ) -> str:
     """Render a top-level collapsible folder containing file and concept sections."""
@@ -573,7 +583,7 @@ def _render_folder_section(
         f'<div class="section-header" onclick="toggle(this)">'
         f'<span class="arrow">&#9654;</span>'
         f'<code class="folder-name">{folder}/</code>'
-        f'{_stats_html(folder_done, folder_total)}'
+        f'{_stats_html(folder_ported, folder_ignored, folder_total)}'
         f"</div>"
         f'<div class="folder-children">{children_html}</div>'
         f"</div>"
@@ -613,7 +623,11 @@ def output_html(report: Report, path: str) -> None:
 
     total = report.total_rocq
     ported = report.count("ported")
-    pct = ported / total * 100 if total else 0
+    ignored = report.count("ignored")
+    done = ported + ignored
+    pct = done / total * 100 if total else 0
+    pct_ported = ported / total * 100 if total else 0
+    pct_ignored = ignored / total * 100 if total else 0
 
     # Group concepts by (dir, feature)
     concept_groups: dict[tuple[str, str], list[ConceptEntry]] = defaultdict(list)
@@ -623,14 +637,18 @@ def output_html(report: Report, path: str) -> None:
     # Build folder -> children mapping
     folder_files: dict[str, list[tuple[str, str]]] = defaultdict(list)  # folder -> [(sort_key, html)]
     folder_concepts: dict[str, list[tuple[str, str]]] = defaultdict(list)
-    folder_stats: dict[str, dict[str, int]] = defaultdict(lambda: {"done": 0, "total": 0})
+    folder_stats: dict[str, dict[str, int]] = defaultdict(
+        lambda: {"ported": 0, "ignored": 0, "total": 0}
+    )
 
     for fp, entries in files_data.items():
         display = fp.removeprefix(ROCQ_SRC_PREFIX)
         folder = display.split("/")[0]
-        n_done = sum(1 for e in entries if e.status in ("ported", "ignored"))
+        n_ported = sum(1 for e in entries if e.status == "ported")
+        n_ignored = sum(1 for e in entries if e.status == "ignored")
         n_total = len(entries)
-        folder_stats[folder]["done"] += n_done
+        folder_stats[folder]["ported"] += n_ported
+        folder_stats[folder]["ignored"] += n_ignored
         folder_stats[folder]["total"] += n_total
         folder_files[folder].append((display, _render_file_section(fp, entries, report.rocq_commit)))
 
@@ -639,9 +657,11 @@ def output_html(report: Report, path: str) -> None:
         subs = [e for e in entries if e.subfeature]
         tops = [e for e in entries if not e.subfeature]
         items = subs if subs else tops
-        n_done = sum(1 for e in items if e.status == "ported")
+        n_ported = sum(1 for e in items if e.status == "ported")
+        n_ignored = sum(1 for e in items if e.status == "ignored")
         n_total = len(items)
-        folder_stats[folder]["done"] += n_done
+        folder_stats[folder]["ported"] += n_ported
+        folder_stats[folder]["ignored"] += n_ignored
         folder_stats[folder]["total"] += n_total
         sort_key = dir_path + feature
         folder_concepts[folder].append((sort_key, _render_concept_section(feature, entries)))
@@ -653,7 +673,8 @@ def output_html(report: Report, path: str) -> None:
             folder,
             folder_files.get(folder, []),
             folder_concepts.get(folder, []),
-            folder_stats[folder]["done"],
+            folder_stats[folder]["ported"],
+            folder_stats[folder]["ignored"],
             folder_stats[folder]["total"],
         )
         for folder in all_folders
@@ -672,10 +693,12 @@ def output_html(report: Report, path: str) -> None:
         ),
         "total": str(total),
         "ported": str(ported),
-        "ignored": str(report.count("ignored")),
+        "ignored": str(ignored),
         "missing": str(report.count("missing")),
         "stale": str(report.count("stale_alias")),
         "pct": f"{pct:.1f}",
+        "pct_ported": f"{pct_ported:.2f}",
+        "pct_ignored": f"{pct_ignored:.2f}",
         "folder_sections": folder_sections,
         "stale_section": _render_stale_section(stale_entries),
     }

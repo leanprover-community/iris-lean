@@ -3,6 +3,8 @@ module
 public import Mathlib.Probability.Independence.Basic
 public import Iris
 
+/-! Measure Theoretic CMRA -/
+
 @[expose] public section
 
 noncomputable section

@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Haokun Li. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Haokun Li, Sergei Stepanenko
+Authors: Haokun Li, Sergei Stepanenko, Zongyuan Liu
 -/
 module
 
@@ -19,7 +19,7 @@ open Language.Notation
 
 @[expose] public section
 
-variable {hlc : Bool} {Expr State Obs Val : Type _}
+variable {hlc : HasLC} {Expr State Obs Val : Type _}
 variable [Language Expr State Obs Val]
 variable {GF : BundledGFunctors} [iG : IrisGS_gen hlc Expr GF]
 
@@ -44,7 +44,7 @@ theorem wp_step (s : Stuckness) (e1 : Expr) (σ1 : State)
         stateInterp σ2 (ns + 1) κs (nt + efs.length) ∗
         WP e2 @ s ; ⊤ {{ Φ }} ∗
         wptp s efs (List.replicate efs.length iG.forkPost) := by
-  rw [IProp.ext wp_unfold]
+  rw [wp_unfold.to_eq]
   simp only [wp.pre, Language.val_stuck Hstep]
   iintro Hσ Hcred Hwp
   imod Hwp $$ %σ1 %ns %κ %κs %nt Hσ with ⟨%_, Hcont⟩
@@ -91,14 +91,14 @@ theorem wp_not_stuck (κs : List Obs) (nt : Nat) (e : Expr) (σ : State)
     (ns : Nat) (Φ : Val → IProp GF) :
     ⊢ stateInterp σ ns κs nt -∗
       WP e @ Stuckness.NotStuck ; ⊤ {{ Φ }} ={⊤,∅}=∗ ⌜NotStuck (e, σ)⌝ := by
-  rw [IProp.ext wp_unfold]
+  rw [wp_unfold.to_eq]
   unfold wp.pre
   match h : toVal e with
   | some v =>
     dsimp only
     iintro _ _
     iapply fupd_mask_intro_discard empty_subset
-    ipure_intro
+    ipureintro
     exact .inl (by rw [h]; rfl)
   | none =>
     dsimp only
@@ -107,7 +107,7 @@ theorem wp_not_stuck (κs : List Obs) (nt : Nat) (e : Expr) (σ : State)
     rw [List.nil_append]
     imod Hcont $$ Hst with ⟨%H, _⟩
     imodintro
-    ipure_intro
+    ipureintro
     exact .inr H
 
 @[rocq_alias wptp_preservation]
@@ -157,81 +157,17 @@ theorem wptp_preservation (s : Stuckness) (n : Nat) (es1 es2 : List Expr)
     iframe HSI' Hwptp'
 
 @[rocq_alias wptp_postconditions]
-theorem wptp_postconditions (Φs : List (Val → IProp GF)) (κs' : List Obs)
-    (s : Stuckness) (n : Nat) (es1 es2 : List Expr) (κs : List Obs)
-    (σ1 σ2 : State) (ns nt : Nat)
-    (Hsteps : (es1, σ1) -<κs>->ₜₚ^[n] (es2, σ2)) :
-    ⊢ stateInterp σ1 ns (κs ++ κs') nt -∗
-      £ (steps_sum iG.numLatersPerStep ns n) -∗
-      wptp s es1 Φs ={⊤,∅}=∗
-      |={∅}▷=>^[steps_sum iG.numLatersPerStep ns n] |={∅,⊤}=> ∃ nt',
-        stateInterp σ2 (n + ns) κs' (nt + nt') ∗
-        [∗list] e;Φ ∈ es2;Φs ++ List.replicate nt' iG.forkPost,
-          (toVal e).elim iprop(True) Φ := by
-  iintro Hσ Hcred Hwptp
-  imod wptp_preservation s n es1 es2 κs κs' σ1 σ2 ns Φs nt Hsteps
-        $$ Hσ Hcred Hwptp with Hpres
-  imodintro
-  iapply step_fupdN_wand $$ Hpres
-  iintro >⟨%nt', HSI, Hwptp_es2⟩
-  iexists nt'; iframe HSI
-  iapply BigSepL2.big_sepL2_fupd
-  iapply BigSepL2.bigSepL2_impl $$ Hwptp_es2
-  imodintro
-  iintro %k %x1 %x2 %Hin %Hlen Hwp
+theorem wptp_postconditions (Φs : List (Val → IProp GF)) (s : Stuckness) (es : List Expr):
+    wptp s es Φs ={⊤}=∗ [∗list] e;Φ ∈ es;Φs, (toVal e).elim iprop(True) Φ := by
+  iintro Ht
+  iapply BigSepL2.bigSepL2_fupd
+  iapply BigSepL2.bigSepL2_impl $$ Ht
+  iintro !> %k %x1 %x2 %Hin %Hlen Hwp
   cases hv : toVal x1
   · imodintro; apply true_intro
   · simp only [Option.elim_some]
     iapply wp_value_fupd $$ Hwp
     constructor; grind
-
-#rocq_ignore wptp_progress "Rocq version moved to a version with no progress lemmas"
-theorem wptp_progress (Φs : List (Val → IProp GF)) (κs' : List Obs) (n : Nat)
-    (es1 es2 : List Expr) (κs : List Obs) (σ1 σ2 : State) (ns nt : Nat) (e2 : Expr)
-    (Hsteps : (es1, σ1) -<κs>->ₜₚ^[n] (es2, σ2)) (Hel : e2 ∈ es2) :
-    ⊢ stateInterp σ1 ns (κs ++ κs') nt -∗
-      £ (steps_sum iG.numLatersPerStep ns n) -∗
-      wptp .NotStuck es1 Φs ={⊤,∅}=∗
-      |={∅}▷=>^[steps_sum iG.numLatersPerStep ns n] |={∅}=>
-        ⌜NotStuck (e2, σ2)⌝ := by
-  iintro Hσ Hcred Ht
-  imod wptp_preservation .NotStuck n es1 es2 κs κs' σ1 σ2 ns Φs nt Hsteps
-        $$ Hσ Hcred Ht with Hpres
-  imodintro
-  iapply step_fupdN_wand $$ Hpres
-  iintro >⟨%nt'', HSI, Hwptp⟩
-  obtain ⟨i, hi⟩ := List.getElem?_of_mem Hel
-  icases BigSepL2.bigSepL2_length $$ Hwptp with %hlen
-  have hi_lt := (List.getElem?_eq_some_iff.mp hi).1
-  have hi_Φ := List.getElem?_eq_getElem (hlen ▸ hi_lt)
-  icases BigSepL2.bigSepL2_lookup_acc hi hi_Φ $$ Hwptp with ⟨Hwp_e2, _⟩
-  iapply wp_not_stuck $$ HSI Hwp_e2
-
-#rocq_ignore wp_progress_gen "Rocq version moved to a version with no progress lemmas"
-omit iG in
-theorem wp_progress_gen [InvGpreS GF] (es : List Expr) (σ1 : State) (n : Nat) (κs : List Obs)
-    (t2 : List Expr) (σ2 : State) (e2 : Expr) (numLaters : Nat → Nat)
-    (Hwp : ∀ [InvGS_gen hlc GF],
-      ⊢ |={⊤}=>
-        ∃ (stateI : State → Nat → List Obs → Nat → IProp GF)
-          (Φs : List (Val → IProp GF)) (forkPost : Val → IProp GF)
-          (mono : ∀ σ ns obs nt, stateI σ ns obs nt ⊢ |={∅}=> stateI σ (ns + 1) obs nt),
-        let _ : IrisGS_gen hlc Expr GF := .mk (toStateInterp := ⟨stateI⟩) numLaters forkPost mono
-        iprop(stateI σ1 0 κs 0 ∗ wptp Stuckness.NotStuck es Φs))
-    (Hsteps : (es, σ1) -<κs>->ₜₚ^[n] (t2, σ2))
-    (Hel : e2 ∈ t2) :
-    NotStuck (e2, σ2) := by
-  apply pure_soundness (PROP := IProp GF)
-  refine step_fupdN_soundness_gen (steps_sum numLaters 0 n + 1) (steps_sum numLaters 0 n + 1) hlc ?_
-  iintro %Hinv ⟨Hcr_1, Hcr_k⟩
-  imod Hwp with ⟨%stateI, %Φs, %forkPost, %mono, HSI, Hwptp⟩
-  letI iG : IrisGS_gen hlc Expr GF := .mk (toStateInterp := ⟨stateI⟩) numLaters forkPost mono
-  ihave Hres := wptp_progress Φs [] n es t2 κs σ1 σ2 0 0 e2 Hsteps Hel $$ [HSI] Hcr_k Hwptp
-  · simp only [List.append_nil]; iframe
-  imod Hres; imodintro
-  iapply step_fupdN_S_fupd.2
-  simp only [Nat.repeat]
-  imodintro; imodintro; imodintro; iframe
 
 omit iG in
 @[rocq_alias wp_strong_adequacy_gen]
@@ -255,47 +191,47 @@ theorem wp_strong_adequacy_gen [InvGpreS GF] (s : Stuckness) (es : List Expr) (�
     (Hsteps : (es, σ1) -<κs>->ₜₚ^[n] (t2, σ2)) :
     φ := by
   apply pure_soundness (PROP := IProp GF)
-  refine step_fupdN_soundness_gen (steps_sum numLaters 0 n + 1) (steps_sum numLaters 0 n + 1) hlc ?_
-  iintro %Hinv ⟨Hcr_1, Hcr_k⟩
+  apply laterN_soundness (n := steps_sum numLaters 0 n + 1)
+  rw [(laterN_later _).to_eq]
+  refine Entails.trans ?_ (laterN_mono _ except0_into_later)
+  apply fupd_finally_soundness hlc (steps_sum numLaters 0 n) ⊤
+  iintro %Hinv Hf
   imod Hwp with ⟨%stateI, %Φs, %forkPost, %mono, HSI_init, Hwptp_bsl, Hφ⟩
-  letI iG : IrisGS_gen hlc Expr GF := .mk (toStateInterp := ⟨stateI⟩) numLaters forkPost mono
   ihave %hlen_es_Φs := BigSepL2.bigSepL2_length $$ Hwptp_bsl
-  imod wptp_postconditions (Hsteps := Hsteps) (κs' := []) (ns := 0) $$ [HSI_init] Hcr_k Hwptp_bsl with H
+  letI iG : IrisGS_gen hlc Expr GF := .mk (toStateInterp := ⟨stateI⟩) numLaters forkPost mono
+  imod wptp_preservation (κs' := []) (Hsteps := Hsteps) $$ [HSI_init] Hf Hwptp_bsl with H
   · simp only [List.append_nil]; iframe
-  imodintro
-  iapply step_fupdN_S_fupd.2
-  simp only [Nat.repeat]
-  imodintro; imodintro; imodintro
+  rw [Nat.add_zero]
+  iapply step_fupdN_fupd_finally
   iapply step_fupdN_wand $$ H
-  iintro >⟨%nt', Hst, Hwptp⟩
-  icases BigSepL2.bigSepL2_app_inv_right $$ Hwptp with ⟨%es', %t2', %Heq, Hes', Ht2'⟩
+  iintro >⟨%nt', Hσ, Ht⟩
+  iapply fupd_finally_keep iprop(⌜∀ e2, s = .NotStuck → e2 ∈ t2 → NotStuck (e2, σ2)⌝)
+  isplit
+  · iintro %e %Heq %Hin
+    subst s
+    obtain ⟨i, He⟩ := List.getElem?_of_mem Hin
+    icases BigSepL2.bigSepL2_lookup_left $$ Ht with ⟨%Φ', _, He⟩; exact He
+    imod wp_not_stuck $$ Hσ He with %_
+    itrivial
+  iintro %_
+  imod wptp_postconditions $$ Ht with Ht
+  icases BigSepL2.bigSepL2_app_inv_right $$ Ht with ⟨%es', %t2', %Heq, Hes', Ht2'⟩; subst Heq
+  icases BigSepL2.bigSepL2_length $$ Hes' with %_
   icases BigSepL2.bigSepL2_length $$ Ht2' with %Hlen2
   rw [List.length_replicate] at Hlen2; subst Hlen2
-  icases BigSepL2.bigSepL2_length $$ Hes' with %Hlen3
-  simp only [Nat.add_zero, Nat.zero_add]
-  iapply Hφ $$ %es' %t2' [//] [//] [] Hst Hes' [Ht2']
-  · ipure_intro
-    rintro e2 ⟨⟩ hel
-    refine wp_progress_gen (GF := GF) (hlc := hlc) es σ1 n κs t2 σ2 e2 numLaters ?_ Hsteps hel
-    iintro %_
-    imod Hwp with ⟨%stateI, %Φs, %forkPost, %mono, HSI, Hwptp_bs, _Hφ⟩
-    let iG_local : IrisGS_gen hlc Expr GF := .mk (toStateInterp := ⟨stateI⟩) numLaters forkPost mono
-    imodintro
-    iexists stateI, Φs, forkPost, mono
-    simp only [forall_const]
-    iframe HSI Hwptp_bs
-  · icases BigSepL2.bigSepL2_replicate_right $$ Ht2' with Ht2'
-    iapply BigSepL.bigSepL_filterMap
-    iapply BigSepL.bigSepL_mono $$ Ht2'
-    iintro %_ %x %_
-    cases toVal x
-    · dsimp
-      iintro H; iapply BI.true_emp $$ H
-    · dsimp
-      iintro H; iexact H
+  simp only [Nat.zero_add]
+  icases BigSepL2.bigSepL2_replicate_right $$ Ht2' with Ht2'
+  icases (equiv_iff.mp <| BigSepL.bigSepL_filterMap toVal).mpr $$ [Ht2'] with Ht2'
+  · iapply BigSepL.bigSepL_mono $$ Ht2'
+    intros; rcases (toVal _)
+    simp only [Option.elim_none]
+    itrivial
+    simp only [Option.elim_some]
+    exact .rfl
+  imod Hφ $$ [] [] [] Hσ Hes' Ht2' with %_ <;> ipureintro <;> grind
 
 @[rocq_alias wp_strong_adequacy]
-abbrev wp_strong_adequacy := @wp_strong_adequacy_gen true
+abbrev wp_strong_adequacy := @wp_strong_adequacy_gen .hasLC
 
 @[rocq_alias adequate]
 structure adequate (s : Stuckness) (e1 : Expr) (σ1 : State)
@@ -370,12 +306,12 @@ theorem wp_adequacy_gen [InvGpreS GF] (s : Stuckness) (e : Expr) (σ : State) (�
   icases BigSepL2.bigSepL2_nil_inv_right $$ H with %Heq
   subst Heq
   cases h : toVal e'
-  · ipure_intro; grind
+  · ipureintro; grind
   · dsimp only [Option.elim_some]; icases Hpost with %Hpost
-    ipure_intro; grind
+    ipureintro; grind
 
 @[rocq_alias wp_adequacy]
-abbrev wp_adequacy := @wp_adequacy_gen true
+abbrev wp_adequacy := @wp_adequacy_gen .hasLC
 
 omit iG in
 @[rocq_alias wp_invariance_gen]
@@ -413,7 +349,7 @@ theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr) (σ1 σ2 : S
   iframe Hcont
 
 @[rocq_alias wp_invariance]
-abbrev wp_invariance := @wp_invariance_gen true
+abbrev wp_invariance := @wp_invariance_gen .hasLC
 
 end
 end Iris.ProgramLogic

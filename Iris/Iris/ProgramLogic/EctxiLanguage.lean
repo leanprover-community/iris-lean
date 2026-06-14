@@ -33,6 +33,8 @@ class EctxItemLanguage (Expr : Type _) (EctxItem State Obs Val : outParam (Type 
     (fillItem Ki e, σ) -<obs>->ᵇ (e', σ', eₜ) →
     (toVal e).isSome
 
+export EctxItemLanguage (fillItem)
+
 -- attribute [rocq_alias fill_item] EctxItemLanguage.fillItem
 attribute [rocq_alias fill_item_inj] EctxItemLanguage.fillItem_inj
 attribute [rocq_alias fill_item_val] EctxItemLanguage.fillItem
@@ -50,7 +52,7 @@ variable [Λ : EctxItemLanguage Expr EctxItem State Obs Val]
 abbrev Ectx [EctxItemLanguage Expr EctxItem State Obs Val] := List EctxItem
 
 @[grind, rocq_alias ectxi_lang_ctx_item]
-instance [Λ : EctxItemLanguage Expr EctxItem State Obs Val] : EvContext Expr Λ.Ectx where
+instance instEvContext [Λ : EctxItemLanguage Expr EctxItem State Obs Val] : EvContext Expr Λ.Ectx where
   comp x y := y ++ x
   empty := []
   fill K e := K.foldl (fun x y => fillItem y x) e
@@ -86,7 +88,7 @@ theorem fill_val {K} {e : Expr} : (toVal (fill K e)).isSome = true → (toVal e)
 -- which means `toVal e = none` is not as well supported.
 
 @[rocq_alias EctxLanguageOfEctxi]
-instance : EctxLanguage Expr Λ.Ectx State Obs Val where
+instance instEctxLanguage : EctxLanguage Expr Λ.Ectx State Obs Val where
   fill_val K e := fill_val
   step_by_val {K K' e₁ e₁' σ₁ obs e₂ σ₂ eₜ} hfill hred hstep := by
     induction K using List.reverseRec generalizing K' e₁ e₂ with
@@ -107,7 +109,9 @@ instance : EctxLanguage Expr Λ.Ectx State Obs Val where
         simp [comp]
   val_stuck {e σ obs e' σ' eₜ} := val_stuck
   base_ctx_step_val {K e σ₁ obs e₂ σ₂ eₜ} := by
-    cases K using List.reverseRec <;> grind
+    cases K using List.reverseRec
+    · intro; right; rfl
+    · simp_all; grind
 
 theorem fill_not_val {K} {e : Expr} : toVal e = none → toVal (fill K e) = none := by
   grind only [=> EctxLanguage.fill_not_val]

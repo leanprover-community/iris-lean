@@ -48,7 +48,7 @@ theorem dist_eqv [OFE α] [OFE β] {n} : Equivalence (Csum.Dist (α := α) (β :
     cases x <;> cases y <;> cases z <;>
       first | trivial | exact h₁.trans h₂ | exact h₂.elim | exact h₁.elim
 
-@[rocq_alias csum_ofe_mixin]
+@[rocq_alias csumO]
 instance [OFE α] [OFE β] : OFE (Csum α β) where
   Equiv := Csum.Equiv
   Dist := Csum.Dist
@@ -60,7 +60,7 @@ instance [OFE α] [OFE β] : OFE (Csum α β) where
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> first | exact OFE.Dist.lt hn hlt | exact hn.elim | trivial
 
-#rocq_ignore csumO "Use Csum type with typeclass inference"
+#rocq_ignore csum_ofe_mixin "Not needed"
 
 @[rocq_alias Cinl_ne]
 instance [OFE α] [OFE β] : NonExpansive (inl (α := α) (β := β)) where
@@ -148,6 +148,8 @@ instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
       show IsCOFE.compl (chainR c b) ≡{n}≡ b'
       refine OFE.Dist.trans COFE.conv_compl ?_
       simp [chainR, en]
+
+#rocq_ignore csum_compl "Included in IsCOFE instance"
 
 /-! ## CMRA -/
 

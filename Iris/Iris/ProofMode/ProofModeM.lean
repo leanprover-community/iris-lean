@@ -18,6 +18,21 @@ structure ProofModeM.State where
 
 abbrev ProofModeM := StateRefT ProofModeM.State TacticM
 
+structure ProofModeM.SavedState where
+  tactic : Tactic.SavedState
+  ipmState : State
+
+def ProofModeM.SavedState.restore (b : SavedState) (restoreInfo := false) : ProofModeM Unit := do
+  b.tactic.restore restoreInfo
+  set b.ipmState
+
+protected def ProofModeM.saveState : ProofModeM SavedState :=
+  return { tactic := (← Tactic.saveState), ipmState := (← get) }
+
+instance : MonadBacktrack ProofModeM.SavedState ProofModeM where
+  saveState := ProofModeM.saveState
+  restoreState b := b.restore
+
 /-
 Make the compiler generate specialized `pure`/`bind` so we do not have to optimize through the
 whole monad stack at every use site. May eventually be covered by `deriving`.

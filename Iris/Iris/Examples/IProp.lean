@@ -51,29 +51,22 @@ section Example2
 
 open HeapView One DFrac Agree LeibnizO
 
-/- Parameterize by a type of UFractions. This example also shows how to deal with this
-   kind of polymorphism, which can be tricky. -/
-variable {F} [UFraction F]
-
-/- Define an OFunctor for the heap. -/
+/- Define an OFunctor for the heap. Fractions are concretely `Qp`. -/
 abbrev F1 : OFunctorPre :=
-  constOF <| HeapView F Nat (Agree (LeibnizO String)) Iris.Std.AssocList
+  constOF <| HeapView Nat (Agree (LeibnizO String)) Iris.Std.AssocList
 
 /- Our OFunctor is present in the global list of OFunctors. -/
-variable {GF} [ElemG GF (F1 (F := F))]
+variable {GF} [ElemG GF F1]
 
-/- Allow the types of GF and F, and the UFraction instance for F, to be inferred by γ
-   alone. Doing it this way allows us to define a notation for the points-to that does not
-   require explicit type parameters. Curiously, I don't need to instantiate this; having it
-   in the context is enough for typeclass inference to make this shortcut. I sort of doubt
-   that we would want to do this globally for ElemG, but I'm not sure about that. -/
+/- Allow the type of GF to be inferred by γ alone. Doing it this way allows us to define a
+   notation for the points-to that does not require explicit type parameters. Having it in the
+   context is enough for typeclass inference to make this shortcut. -/
 set_option synthInstance.checkSynthOrder false in
-class abbrev HasPointsToF1 (γ : GName) (GF : outParam _) (F : outParam (Type _))
-    [UFraction F] := ElemG GF (F1 (F := F))
+class abbrev HasPointsToF1 (γ : GName) (GF : outParam _) := ElemG GF F1
 
 /- Define notation for the heap. -/
-def points_to (γ : GName) [HasPointsToF1 γ GF F] (k : Nat) (v : String) : IProp GF :=
-  iOwn (GF := GF) (F := F1 (F := F)) γ (Frag k (own one) (toAgree ⟨v⟩))
+def points_to (γ : GName) [HasPointsToF1 γ GF] (k : Nat) (v : String) : IProp GF :=
+  iOwn (GF := GF) (F := F1) γ (Frag k (own one) (toAgree ⟨v⟩))
 
 notation k:50 " ↦[" γ:50 "] " v:50 => points_to γ k v
 
@@ -159,11 +152,8 @@ example (e e' : Expr) Φ (Hstep : ∀ {s : State}, @step _ _ Value _ (e, s) = (e
   iright
   iintro %s Hs
   iexists e', s
-  isplitr
-  · ipure_intro
-    exact Hstep
-  · iintro !> !>
-    iframe
+  iframe
+  itrivial
 
 /- The pattern of rules for stateful steps, for example, writing to a piece of memory.
    This style of rule applies when ownership over a resource P (eg. k ↦[γ] v) ensures that the state
@@ -182,7 +172,7 @@ example (e e' : Expr) (P P' : IProp GF) Φ
   . iframe
   iexists e', s'
   isplitr
-  · ipure_intro; exact Hstep
+  · itrivial
   iintro !>
   imod Hupd with ⟨HP', Hs⟩
   iintro !>
@@ -199,7 +189,7 @@ example (e : Expr) Φ (Hloop : ∀ σ : State, step Value (e, σ) = (e, σ)) :
   iintro %s Hs
   iexists e, s
   isplitr
-  · ipure_intro; exact Hloop s
+  · itrivial
   iintro !> !>
   iframe
   · exact true_intro
