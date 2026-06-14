@@ -2990,8 +2990,7 @@ example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} :
 example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → PROP} :
     ⊢ P -∗ □ Q m -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ
-  iinduction n generalizing %m HQ
-  with
+  iinduction n generalizing %m HQ with
   | zero => itrivial
   | succ n ih => itrivial
 

@@ -285,13 +285,12 @@ theorem quicksort_spec l ls Φ :
 theorem wp_makeList (l : List Int) (Φ : Val → IProp GF) :
     (∀ v, isList v l -∗ Φ v) -∗
     WP hl(&(makeList l)) {{ Φ }} := by
-  induction l generalizing Φ with
+  iintro HΦ
+  iinduction l generalizing %Φ with
   | nil =>
-    iintro HΦ
     unfold makeList
     iapply nil_spec $$ HΦ
   | cons l ls ih =>
-    iintro HΦ
     rw [makeList]
     wp_pures
     wp_bind &(makeList _)
