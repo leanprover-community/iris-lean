@@ -12,6 +12,9 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
+/--
+  `iexact H` solves the goal with the hypothesis `H`.
+-/
 elab "iexact" colGt hyp:ident : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
   let ivar ← hyps.findWithInfo hyp

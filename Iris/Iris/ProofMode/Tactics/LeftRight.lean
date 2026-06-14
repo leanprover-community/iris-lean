@@ -25,6 +25,10 @@ theorem from_or_r [BI PROP] {P Q A1 A2 : PROP} [inst : FromOr Q A1 A2]
 public meta section
 open Lean Elab.Tactic Meta Qq Std
 
+/--
+  `ileft` choose the left side of the disjunction in the goal.
+  Given a proof goal of the form `P ∨ Q`, the new goal is `P`.
+-/
 elab "ileft" : tactic => do
   ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do
   -- choose left side of disjunction
@@ -36,6 +40,10 @@ elab "ileft" : tactic => do
   let m : Q($e ⊢ $A1) ← addBIGoal hyps A1
   mvar.assign q(from_or_l (Q := $goal) $m)
 
+/--
+  `ileft` choose the right side of the disjunction in the goal.
+  Given a proof goal of the form `P ∨ Q`, the new goal is `Q`.
+-/
 elab "iright" : tactic => do
   ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do
   -- choose right side of disjunction

@@ -23,8 +23,17 @@ theorem ihave_assert [BI PROP] {A B C : PROP}
 public meta section
 open Lean Elab Tactic Meta Qq
 
+/--
+  `ihave pat := pmt` brings `pmt : pmTerm` into the context and destructs it
+  with the case pattern `pat` without consuming the original hypotheses.
+  This is equivalent to `icases +keep pmt with pat`.
+-/
 macro "ihave" colGt pat:icasesPat " := " pmt:pmTerm : tactic => `(tactic | icases +keep $pmt with $pat)
 
+/--
+  `ihave pat : P $$ spat` asserts `P`, proves it with a subgoal built from the
+  specification pattern `spat` and destructs it with the case pattern `pat`.
+-/
 elab "ihave" colGt pat:icasesPat " : " P:term "$$" spat:specPat : tactic => do
   let spat ← liftMacroM <| SpecPat.parse spat
   let pat ← liftMacroM <| iCasesPat.parse pat

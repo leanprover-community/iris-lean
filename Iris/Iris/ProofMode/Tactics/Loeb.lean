@@ -13,15 +13,14 @@ open Lean Meta Elab.Tactic Qq
 public meta section
 
 /--
-  Apply Löb induction in the current goal.
+  `iloeb as IH genealizing hs` applies Löb induction in the current goal
+  using the induction hypothesis `IH`, optionally with other variables can be
+  generalized over through the `generalizing selPat*` syntax.
 
   All spatial hypothesis are generalized in the induction hypothesis so that
   this one can be included in the intuitionistic context.
-
-  Optionally, other variables can be generalized over through the
-  `generalizing selPat*` syntax.
 -/
-elab  "iloeb" "as" IH:binderIdent "generalizing" hs:(colGt selPat)* : tactic => do
+elab "iloeb" "as" IH:binderIdent "generalizing" hs:(colGt selPat)* : tactic => do
   let pats ← Elab.liftMacroM <| SelPat.parse hs
   ProofModeM.runTactic fun mvid {hyps, goal, ..} => do
     let targets : List SelTarget ← SelPat.resolve hyps (pats ++ [.spatial])
@@ -38,4 +37,11 @@ elab  "iloeb" "as" IH:binderIdent "generalizing" hs:(colGt selPat)* : tactic => 
 
     mvid.assign expr
 
+/--
+  `iloeb as IH genealizing hs` applies Löb induction in the current goal
+  using the induction hypothesis `IH`.
+
+  All spatial hypothesis are generalized in the induction hypothesis so that
+  this one can be included in the intuitionistic context.
+-/
 macro "iloeb" "as" IH:binderIdent : tactic => `(tactic | iloeb as $IH generalizing)

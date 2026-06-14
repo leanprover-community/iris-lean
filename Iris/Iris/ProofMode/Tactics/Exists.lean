@@ -21,6 +21,11 @@ theorem from_exists_intro [BI PROP] {Φ : α → PROP} {P Q : PROP} [inst : From
 public meta section
 open Lean Elab Tactic Meta Qq
 
+/--
+  `iexists x₁, …, xₙ` instantiates existential quantifiers in the goal with
+  the terms `x₁, …, xₙ`. For each term, one can also use named metavariables
+  `?m` or holes (`_`) for unnamed metavariables.
+-/
 elab "iexists" xs:term,+ : tactic => do
   -- resolve existential quantifier with the given argument
   ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do
