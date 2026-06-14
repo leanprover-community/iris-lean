@@ -48,6 +48,9 @@ private def ClearState.clearProofModeHyp {u prop bi origE goal} :
       let pf' : Q(($e' ⊢ $goal) → ($origE ⊢ $goal)) := q(λ h => $pf ($step h))
       return {  e := e', hyps := hyps', pf := pf' }
 
+/--
+  `iclear pats` discards the hypotheses selected by the selection patterns `pats`.
+-/
 elab "iclear" pats:(colGt selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 

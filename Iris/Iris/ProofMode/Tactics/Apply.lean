@@ -54,6 +54,14 @@ private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps :
   let pf' ← iApplyCore hyps' pb B goal
   return q($(pf).trans $pf')
 
+/--
+  `iapply pmt` matches the conclusion of `pmt : pmTerm` against the goal and
+  generate goals for each premise.
+
+  `iapply pmt H $$ [pat1] [pat2]` uses the specialisation patterns `pat1`
+  and `pat2`, which specifies how the wand premises of `H` are discharged.
+  This is analogous to `iApply (H with "pat pat2")` in Rocq.
+-/
 elab "iapply" colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do

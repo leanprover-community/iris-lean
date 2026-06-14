@@ -20,6 +20,10 @@ theorem assumption [BI PROP] {p : Bool} {P P' A Q : PROP} [inst : FromAssumption
 public meta section
 open Lean Elab Tactic Meta Qq
 
+/--
+  `iassumption` solves the goal with a matching hypothesis from any context
+  (pure, intuitionistic or spatial).
+-/
 elab "iassumption" : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
 

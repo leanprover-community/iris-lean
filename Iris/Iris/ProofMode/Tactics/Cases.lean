@@ -255,6 +255,12 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
     iModCore bi P goal p A λ p' A goal' =>
       iCasesCore hyps goal' arg p' A @k
 
+/--
+  `icases pmt with pat` destructs `pmt : pmTerm` using the cases pattern `pat`.
+
+  Provided that `pmt` is intuitionistic or duplicable,
+  `icases +keep pmt with pat` keeps the original hypothesis upon case destruction.
+-/
 elab "icases" keep:("+keep")? colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => do
   -- parse syntax
   let pmt ← liftMacroM <| PMTerm.parse pmt
@@ -271,7 +277,15 @@ elab "icases" keep:("+keep")? colGt pmt:pmTerm "with" colGt pat:icasesPat : tact
 
   mvar.assign q(($pf).trans $pf2)
 
+/--
+  `imod pmt with pat` eliminates the modality at the top of `pmt : pmTerm` into
+  the goal and destructs the result with case pattern `pat`.
+-/
 macro "imod" colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => `(tactic | icases $pmt with >$pat)
+
+/--
+  `imod pmt` eliminates the modality at the top of `pmt : pmTerm` into the goal.
+-/
 macro "imod" colGt pmt:pmTerm : tactic =>
   match pmt with
   | `(pmTerm | $hyp:ident) => `(tactic | imod $pmt with $hyp:ident)
@@ -279,5 +293,15 @@ macro "imod" colGt pmt:pmTerm : tactic =>
   | _ => `(tactic | imod $pmt with _)
 
 -- TODO: remove these shortcuts if they are not used
+
+/--
+  `iintuitionistic H` removes hypothesis `H` into the intuitionistic context.
+  Equivalent to `icases H with #H`.
+-/
 macro "iintuitionistic" hyp:ident : tactic => `(tactic | icases $hyp:ident with #$hyp:ident)
+
+/--
+  `ispatial H` removes hypothesis `H` into the spatial context.
+  Equivalent to `icases H with ∗H`.
+-/
 macro "ispatial" hyp:ident : tactic => `(tactic | icases $hyp:ident with ∗$hyp:ident)

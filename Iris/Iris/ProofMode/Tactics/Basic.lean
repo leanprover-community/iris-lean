@@ -18,7 +18,7 @@ open Lean Elab.Tactic Meta Qq BI Std
 /-- `itrivial` collects tactics to solve trivial Iris goals. It is used by the `//` specialization
 and introduction patterns. One can add new tactics using
 ```
-macro_rules | `(tactic| itrivial) => `(tactic|mytac)
+macro_rules | `(tactic| itrivial) => `(tactic| mytac)
 ```
 -/
 syntax "itrivial" : tactic
@@ -37,10 +37,17 @@ def iSolveSidecondition (target : Q(Prop)) (failOnUnsolved := true) : ProofModeM
           for g in gs do addMVarGoal g
       return mvar
 
+/--
+  `istart` starts the Iris Proof Mode (IPM).
+-/
 elab "istart" : tactic => do
   let (mvar, _) ← startProofMode (← getMainGoal)
   replaceMainGoal [mvar]
 
+/--
+  `istop` stops the Iris Proof Mode (IPM) by turning the proof goal back
+  into plain entailment.
+-/
 elab "istop" : tactic => do
   -- parse goal
   let mvar ← getMainGoal
