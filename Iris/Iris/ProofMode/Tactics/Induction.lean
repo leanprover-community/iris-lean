@@ -297,12 +297,16 @@ private def addIHs {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
 private def throwMissingAlt {α} (ctor : Name) : ProofModeM α :=
   throwError "iinduction: alternative `{ctor.getString!}` has not been provided"
 
+/--
+  Check that all the alternative names are valid and that there are no duplicates.
+  Otherwise, throw an error on the corresponding line.
+-/
 private def checkCtors (ctors : List Name) (parsedAlts : Alts) : ProofModeM Unit := do
-  let alts := parsedAlts.alts.toList
-
-  for alt in alts do
+  let rec checkCtorsRec : List Alt → ProofModeM Unit
+  | [] => pure ()
+  | alt :: alts => do
     let isValid := ctors.any (· == alt.ctor)
-    let isDup := alts.countP (alt.ctor == ·.ctor) > 1
+    let isDup := alts.any (·.ctor == alt.ctor)
 
     if !isValid then
       throwOrLogErrorAt alt.stx
@@ -310,6 +314,10 @@ private def checkCtors (ctors : List Name) (parsedAlts : Alts) : ProofModeM Unit
     else if isDup then
       throwOrLogErrorAt alt.stx
         m!"iinduction: duplicate alternative name `{alt.ctor}`"
+
+    checkCtorsRec alts
+
+  checkCtorsRec parsedAlts.alts.toList
 
 /--
   The main function handling the steps for the `iinduction` tactic.

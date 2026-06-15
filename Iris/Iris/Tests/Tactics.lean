@@ -2789,10 +2789,9 @@ example [BI PROP] {P Q R S : PROP} {T : Nat → PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T n -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT
   iinduction n generalizing HQ %R HR HP %P with
-  -- Using the full name of the constructor (`Nat.zero`)
-  | Nat.zero  => itrivial
-  /- Using the short name of the constructor (`succ`), naming the induction
-     hypothesis as `ih`, but leaving the variable `n` inaccessible by using `_` -/
+  | zero      => itrivial
+  /- Naming the induction hypothesis as `ih`, but leaving the variable `n`
+     inaccessible by using `_` -/
   | succ _ ih => iframe; itrivial
 
 /- Tests `iinduction` with a non-inductive datatype -/
@@ -2808,8 +2807,6 @@ error: iinduction: duplicate alternative name `zero`
 ---
 error: iinduction: invalid alternative name `invalidB`
 ---
-error: iinduction: duplicate alternative name `Nat.zero`
----
 error: iinduction: alternative `succ` has not been provided -/
 #guard_msgs in
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
@@ -2819,7 +2816,7 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | invalidA  => done
   | zero      => itrivial
   | invalidB  => done
-  | Nat.zero  => itrivial
+  | zero      => itrivial
 
 /- Tests `iinduction` with extra arguments supplied by the user -/
 /-- error: iinduction: too many variable names provided at alternative `succ`: 4 provided, but 2 expected -/
