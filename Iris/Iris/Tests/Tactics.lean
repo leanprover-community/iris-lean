@@ -2877,24 +2877,6 @@ def NTree.induction_principle {α} (p : NTree α → Prop) (h_leaf : p leaf)
   @NTree.rec α p (λ ts => ∀ t ∈ ts, p t) h_leaf h_node (List.forall_mem_nil p)
     (λ _ _ h_head h_tail => List.forall_mem_cons.mpr (And.intro h_head h_tail))
 
-/-- A recursive "mirror" on `NTree` that mirrors every child subtree. -/
-def NTree.mirror : NTree α → NTree α
-  | .leaf => .leaf
-  | .node x ts => .node x (ts.map NTree.mirror)
-
-/--
-  Direct analogue of the first `Tree` example.
-  The node case uses the manual induction principle for `NTree`,
-  which gives an induction hypothesis of the form `∀ t ∈ ts, P t`.
--/
-example [BI PROP] {α} {t : NTree α} :
-  ⊢@{PROP} ⌜.mirror (.mirror t) = t⌝ := by
-  iinduction t with simp [NTree.mirror]
-  | h_leaf =>
-    itrivial
-  | h_node x ts IH =>
-    sorry
-
 def NTree.childCount : NTree α → Nat
   | .leaf => 0
   | .node _ ts => ts.length
