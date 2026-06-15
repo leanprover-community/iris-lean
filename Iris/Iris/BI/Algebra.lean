@@ -94,10 +94,10 @@ section heap_view
 open HeapView BI Std PartialMap LawfulPartialMap BIBase.BiEntails
 
 variable {F K V : Type _} {H : Type _ → Type _}
-variable [UFraction F] [LawfulPartialMap H K] [CMRA V]
+variable [LawfulPartialMap H K] [CMRA V]
 
 @[rocq_alias gmap_view_both_dfrac_validI]
-theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac F) (m : H V) k dq v :
+theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac) (m : H V) k dq v :
   internalCmraValid (Auth dp m • Frag k dq v) ⊣⊢@{PROP}
     ∃ v' dq', ⌜✓ dp⌝ ∧ ⌜get? m k = .some v'⌝ ∧ internalCmraValid (dq', v') ∧
       internalCmraIncluded (Option.some (dq, v)) (Option.some (dq', v')) := by
@@ -138,7 +138,7 @@ theorem auth_op_frag_validI [Sbi PROP] (dp : DFrac F) (m : H V) k dq v :
     exists c
 
 @[rocq_alias gmap_view_both_validI]
-theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac F) (m : H V) k v :
+theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac) (m : H V) k v :
   internalCmraValid (Auth dp m • Frag k (.own One.one) v) ⊣⊢@{PROP}
     ⌜✓ dp⌝ ∧ internalCmraValid v ∧ internalEq (get? m k) (.some v) := by
   refine .trans ?_ (and_congr_right siPure_and)
@@ -153,7 +153,7 @@ theorem auth_op_frag_one_validI [Sbi PROP] (dp : DFrac F) (m : H V) k v :
     exact id
 
 @[rocq_alias gmap_view_both_validI_total]
-theorem auth_op_frag_validI_total [Sbi PROP] [CMRA.IsTotal V] (dp : DFrac F) (m : H V) k dq v :
+theorem auth_op_frag_validI_total [Sbi PROP] [CMRA.IsTotal V] (dp : DFrac) (m : H V) k dq v :
   internalCmraValid (Auth dp m • Frag k dq v) ⊢@{PROP}
     ∃ v', ⌜✓ dp⌝ ∧ ⌜✓ dq⌝ ∧ ⌜get? m k = .some v'⌝ ∧
       internalCmraValid v' ∧ internalCmraIncluded v v' := by
@@ -177,7 +177,7 @@ theorem auth_op_frag_validI_total [Sbi PROP] [CMRA.IsTotal V] (dp : DFrac F) (m 
 
 @[rocq_alias gmap_view_frag_op_validI]
 theorem frag_op_frag_validI [Sbi PROP] k dq1 dq2 v1 v2 :
-  internalCmraValid (Frag (F := F) (H := H) (V := V) k dq1 v1 • Frag k dq2 v2) ⊣⊢@{PROP}
+  internalCmraValid (Frag (H := H) (V := V) k dq1 v1 • Frag k dq2 v2) ⊣⊢@{PROP}
     ⌜✓ (dq1 • dq2)⌝ ∧ internalCmraValid (v1 • v2) := by
   refine .trans ?_ (and_congr_left siPure_pure)
   refine .trans ?_ siPure_and
@@ -277,23 +277,23 @@ end agree_inclusion
 section auth
 open Iris BI Auth
 
-variable [Sbi PROP] [UFraction F] [UCMRA A]
+variable [Sbi PROP] [UCMRA A]
 
 @[rocq_alias auth_auth_dfrac_validI]
-theorem auth_dfrac_validI (dq : DFrac F) (a : A) :
-    internalCmraValid (●{dq} a : Auth F A) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ internalCmraValid a := by
+theorem auth_dfrac_validI (dq : DFrac) (a : A) :
+    internalCmraValid (●{dq} a : Auth A) ⊣⊢@{PROP} ⌜✓ dq⌝ ∧ internalCmraValid a := by
   refine .trans ?_ (and_congr_left siPure_pure)
   refine .trans ?_ siPure_and
   refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
   all_goals simpa only [SiProp.cmraValid, auth_dfrac_validN] using id
 
 @[rocq_alias auth_auth_validI]
-theorem auth_validI (a : A) : internalCmraValid (● a : Auth F A) ⊣⊢@{PROP} internalCmraValid a := by
+theorem auth_validI (a : A) : internalCmraValid (● a : Auth A) ⊣⊢@{PROP} internalCmraValid a := by
   refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
   all_goals simpa only [SiProp.cmraValid, auth_validN] using id
 
 @[rocq_alias auth_auth_dfrac_op_validI]
-theorem auth_dfrac_op_validI (dq1 dq2 : DFrac F) (a1 a2 : A) :
+theorem auth_dfrac_op_validI (dq1 dq2 : DFrac) (a1 a2 : A) :
     internalCmraValid ((●{dq1} a1) • (●{dq2} a2)) ⊣⊢@{PROP}
       ⌜✓ (dq1 • dq2)⌝ ∧ internalEq a1 a2 ∧ internalCmraValid a1 := by
   refine .trans ?_ (and_congr_left siPure_pure)
@@ -303,12 +303,12 @@ theorem auth_dfrac_op_validI (dq1 dq2 : DFrac F) (a1 a2 : A) :
 
 @[rocq_alias auth_frag_validI]
 theorem frag_validI (a : A) :
-    internalCmraValid (◯ a : Auth F A) ⊣⊢@{PROP} internalCmraValid a := by
+    internalCmraValid (◯ a : Auth A) ⊣⊢@{PROP} internalCmraValid a := by
   refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
   all_goals simpa only [SiProp.cmraValid, frag_validN] using id
 
 @[rocq_alias auth_both_dfrac_validI]
-theorem both_dfrac_validI (dq : DFrac F) (a b : A) :
+theorem both_dfrac_validI (dq : DFrac) (a b : A) :
     internalCmraValid ((●{dq} a) • ◯ b) ⊣⊢@{PROP}
     ⌜✓ dq⌝ ∧ internalCmraIncluded b a ∧ internalCmraValid a := by
   refine .trans ?_ <| siPure_and.trans (and_congr siPure_pure siPure_and)
@@ -326,7 +326,7 @@ theorem both_dfrac_validI (dq : DFrac F) (a b : A) :
 
 @[rocq_alias auth_both_validI]
 theorem auth_both_validI (a b : A) :
-    internalCmraValid ((● a : Auth F A) • ◯ b) ⊣⊢@{PROP}
+    internalCmraValid ((● a : Auth A) • ◯ b) ⊣⊢@{PROP}
       internalCmraIncluded b a ∧ internalCmraValid a := by
   refine .trans ?_ siPure_and
   refine siPure_mono_bi ?_

@@ -25,19 +25,17 @@ semantics. -/
 @[rocq_alias proph_val_list]
 abbrev ProphValList (P V : Type _) := List (P × V)
 
-variable (F : outParam (Type _)) [UFraction F]
-
 @[rocq_alias proph_mapGpreS]
 class prophMapPreS (P V : Type _) (GF : BundledGFunctors) (H : outParam <| Type _ → Type _)
     [LawfulFiniteMap H P] where
-  inG : GhostMapG GF F P (List V) H
+  inG : GhostMapG GF P (List V) H
 
 attribute [reducible, instance] prophMapPreS.inG
 
 @[rocq_alias proph_mapGS]
 class prophMapGS (P V : outParam <| Type _) (GF : outParam <| BundledGFunctors)
     (H : outParam <| Type _ → Type _) [LawfulFiniteMap H P]
-    extends prophMapPreS F P V GF H where
+    extends prophMapPreS P V GF H where
   prophMapName : GName
 
 #rocq_ignore «proph_mapΣ» "Subsumed by BundledGFunctors typeclass synthesis"
@@ -45,7 +43,7 @@ class prophMapGS (P V : outParam <| Type _) (GF : outParam <| BundledGFunctors)
 
 section definitions
 
-variable {F : outParam (Type _)} [UFraction F] {GF : BundledGFunctors} {P V : Type _}
+variable {GF : BundledGFunctors} {P V : Type _}
 variable {H : outParam <| Type _ → Type _} [LawfulFiniteMap H P]
 variable {S : Type _} [LawfulSet S P]
 
@@ -62,7 +60,7 @@ with the one computed from `pvs`. -/
 def prophResolvesInList [DecidableEq P] (R : H (List V)) (pvs : ProphValList P V) : Prop :=
   ∀ p vs, get? R p = some vs → vs = prophListResolves pvs p
 
-variable [G : prophMapGS F P V GF H]
+variable [G : prophMapGS P V GF H]
 
 /-- State interpretation for the prophecy map.  Owns the ghost map `R` of
 recorded resolutions, asserting that it resolves consistently with `pvs` and
@@ -105,13 +103,13 @@ end listResolves
 namespace ProphMap
 
 @[rocq_alias proph_map_init]
-theorem init {F : Type _} [UFraction F] {GF : BundledGFunctors} {P V : Type _}
+theorem init {GF : BundledGFunctors} {P V : Type _}
     {H : Type _ → Type _} [LawfulFiniteMap H P] [DecidableEq P] {S : Type _} [LawfulSet S P]
-    [prophMapPreS F P V GF H] (pvs : ProphValList P V) (ps : S) :
-    ⊢ |==> ∃ G : prophMapGS F P V GF H, prophMapInterp (G := G) pvs ps := by
+    [prophMapPreS P V GF H] (pvs : ProphValList P V) (ps : S) :
+    ⊢ |==> ∃ G : prophMapGS P V GF H, prophMapInterp (G := G) pvs ps := by
   imod (ghost_map_alloc_empty (K := P) (V := List V) (H := H)) with ⟨%γ, Hh⟩
   imodintro
-  iexists (⟨γ⟩ : prophMapGS F P V GF H)
+  iexists (⟨γ⟩ : prophMapGS P V GF H)
   unfold prophMapInterp
   iexists (∅ : H (List V))
   iframe
@@ -125,10 +123,10 @@ end ProphMap
 
 section lemmas
 
-variable {F : outParam (Type _)} [UFraction F] {GF : BundledGFunctors} {P V : Type _}
+variable {GF : BundledGFunctors} {P V : Type _}
 variable {H : outParam <| Type _ → Type _} [LawfulFiniteMap H P]
 variable {S : Type _} [LawfulSet S P]
-variable [prophMapGS F P V GF H]
+variable [prophMapGS P V GF H]
 
 /-! ### General properties of `proph` -/
 

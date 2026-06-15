@@ -21,17 +21,17 @@ section HeapLangGS
 abbrev HeapF := fun V => Std.ExtTreeMap Loc V compare
 
 class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGpreS GF where
-  heap_pre : genHeapPreS PNat Loc (Option Val) GF HeapF
+  heap_pre : genHeapPreS Loc (Option Val) GF HeapF
 
 attribute [reducible, instance] HeapLangGpreS.heap_pre
 
 class HeapLangGS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGS_gen hlc GF where
-  heap : genHeapGS PNat Loc (Option Val) GF HeapF
+  heap : genHeapGS Loc (Option Val) GF HeapF
 
 attribute [reducible, instance] HeapLangGS.heap
 
 instance HeapLangState [HeapLangGS hlc GF] : StateInterp State Observation GF where
-  stateInterp σ _ _ _ := genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap
+  stateInterp σ _ _ _ := genHeapInterp (GF := GF) (H := HeapF) σ.heap
 
 instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
   numLatersPerStep n := 0
@@ -42,9 +42,9 @@ def HeapLangS : BundledGFunctors
   | 0 => ⟨InvMapF, by infer_instance⟩
   | 1 => ⟨constOF (DisjointLeibnizSet CoPset), by infer_instance⟩
   | 2 => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
-  | 3 => ⟨Auth.AuthURF (F := PNat) (constOF Credit), by infer_instance⟩
-  | 4 => ⟨constOF (HeapView PNat Loc (Agree (LeibnizO (Option Val))) HeapF), by infer_instance⟩
-  | 5 => ⟨constOF (HeapView PNat Loc (Agree (LeibnizO GName)) HeapF), by infer_instance⟩
+  | 3 => ⟨Auth.AuthURF (constOF Credit), by infer_instance⟩
+  | 4 => ⟨constOF (HeapView Loc (Agree (LeibnizO (Option Val))) HeapF), by infer_instance⟩
+  | 5 => ⟨constOF (HeapView Loc (Agree (LeibnizO GName)) HeapF), by infer_instance⟩
   | 6 => ⟨constOF MetaUR, by infer_instance⟩
   | _ => ⟨constOF Unit, by infer_instance⟩
 
@@ -74,18 +74,18 @@ theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
     adequate .NotStuck e σ (fun v _ => φ v) := by
   refine wp_adequacy (GF := GF) .NotStuck e σ φ ?_
   intro inst κs
-  imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := Option Val) (F := PNat) (H := HeapF))
-    (HeapView.Auth (H := HeapF) (.own One.one)
+  imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := Option Val) (H := HeapF))
+    (HeapView.Auth (H := HeapF) (.own 1)
       (Std.PartialMap.map (fun v : Option Val => toAgree (LeibnizO.mk v)) σ.heap))
     HeapView.auth_one_valid with ⟨%γh, Hh⟩
-  imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := GName) (F := PNat) (H := HeapF))
-    (HeapView.Auth (H := HeapF) (.own One.one)
+  imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := GName) (H := HeapF))
+    (HeapView.Auth (H := HeapF) (.own 1)
       (Std.PartialMap.map (fun g : GName => toAgree (LeibnizO.mk g))
         (∅ : HeapF GName)))
     HeapView.auth_one_valid with ⟨%γm, Hm⟩
   letI _ : HeapLangGS .hasLC GF := ⟨⟨γh, γm⟩⟩
   imodintro
-  iexists (fun σ _ => Iris.genHeapInterp (F := PNat) (GF := GF) (H := HeapF) σ.heap)
+  iexists (fun σ _ => Iris.genHeapInterp (GF := GF) (H := HeapF) σ.heap)
   iexists (fun _ => iprop(True))
   isplitl [Hh Hm]
   · simp only [Iris.genHeapInterp]

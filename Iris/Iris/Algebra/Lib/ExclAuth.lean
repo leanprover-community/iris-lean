@@ -26,10 +26,10 @@ namespace ExclAuth
 variable [OFE A]
 
 @[rocq_alias excl_authR]
-public abbrev ExclAuthR := Auth PNat (Option (Excl A))
+public abbrev ExclAuthR := Auth (Option (Excl A))
 
 @[rocq_alias excl_authUR]
-public abbrev ExclAuthUR := Auth PNat (Option (Excl A))
+public abbrev ExclAuthUR := Auth (Option (Excl A))
 
 @[rocq_alias excl_auth_auth]
 public abbrev auth (a : A) : ExclAuthR (A := A) := ● (some (excl a))
