@@ -261,7 +261,7 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
   Provided that `pmt` is intuitionistic or duplicable,
   `icases +keep pmt with pat` keeps the original hypothesis upon case destruction.
 -/
-elab "icases" keep:("+keep")? colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => do
+elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : tactic => do
   -- parse syntax
   let pmt ← liftMacroM <| PMTerm.parse pmt
   let pat ← liftMacroM <| iCasesPat.parse pat
@@ -281,7 +281,7 @@ elab "icases" keep:("+keep")? colGt pmt:pmTerm "with" colGt pat:icasesPat : tact
   `imod pmt with pat` eliminates the modality at the top of `pmt : pmTerm` into
   the goal and destructs the result with case pattern `pat`.
 -/
-macro "imod" colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => `(tactic | icases $pmt with >$pat)
+macro "imod" colGt pmt:pmTerm " with " colGt pat:icasesPat : tactic => `(tactic | icases $pmt with >$pat)
 
 /--
   `imod pmt` eliminates the modality at the top of `pmt : pmTerm` into the goal.
@@ -298,10 +298,10 @@ macro "imod" colGt pmt:pmTerm : tactic =>
   `iintuitionistic H` removes hypothesis `H` into the intuitionistic context.
   Equivalent to `icases H with #H`.
 -/
-macro "iintuitionistic" hyp:ident : tactic => `(tactic | icases $hyp:ident with #$hyp:ident)
+macro "iintuitionistic " colGt hyp:ident : tactic => `(tactic | icases $hyp:ident with #$hyp:ident)
 
 /--
   `ispatial H` removes hypothesis `H` into the spatial context.
   Equivalent to `icases H with ∗H`.
 -/
-macro "ispatial" hyp:ident : tactic => `(tactic | icases $hyp:ident with ∗$hyp:ident)
+macro "ispatial " colGt hyp:ident : tactic => `(tactic | icases $hyp:ident with ∗$hyp:ident)

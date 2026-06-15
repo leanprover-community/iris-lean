@@ -184,7 +184,7 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop)) (sel : TSynta
   `<pers>`, `▷`, `|==>`), adjusting the context as required by the modality.
   The tactic succeeds only when the selector term `sel` matches the modality.
 -/
-elab "imodintro" colGt sel:term : tactic => do
+elab "imodintro " colGt sel:term : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
   let pf ← iModIntroCore hyps goal sel
 

@@ -133,7 +133,7 @@ def FrameResult.finishClose {u prop bi origE origGoal} (res : @FrameResult u pro
   against the matching parts of the goal. Solves the goal completely if the
   leftover is `True` or `emp` with affine context.
 -/
-elab "iframe" pats:(colGt selPat)+ : tactic => do
+elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
   ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do

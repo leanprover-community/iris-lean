@@ -183,7 +183,7 @@ def iSpecializeCore {e} (hyps : @Hyps u prop bi e) (pa : Q(Bool)) (A : Q($prop))
 /--
   `ispecialize pmt` specialises a hypothesis according to `pmt : pmTerm`.
 -/
-elab "ispecialize" colGt pmt:pmTerm : tactic => do
+elab "ispecialize " colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
   ProofModeM.runTactic λ mvar { bi, hyps, goal, .. } => do
   -- hypothesis must be in the context, otherwise use ihave

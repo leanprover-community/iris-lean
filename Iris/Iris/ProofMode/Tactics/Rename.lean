@@ -15,7 +15,7 @@ open Lean Elab Tactic Qq
 /--
   `irename H => H'` renames the hypothesis `H` as `H'`.
 -/
-elab "irename" colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do
+elab "irename " colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do
   ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
 
   -- find hypothesis index
@@ -30,7 +30,7 @@ elab "irename" colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do
 /--
   `irename: ty => H'` renames the hypothesis whose statement matches `ty` as `H`.
 -/
-elab "irename" ":" colGt ty:term " => " colGt nameTo:ident : tactic => do
+elab "irename" " : " colGt ty:term " => " colGt nameTo:ident : tactic => do
   -- parse syntax
   if nameTo.getId.isAnonymous then
     throwUnsupportedSyntax

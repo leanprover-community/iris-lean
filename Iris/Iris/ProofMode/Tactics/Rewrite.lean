@@ -190,7 +190,7 @@ def iRewriteHyp {prop : Q(Type u)} {bi : Q(BI $prop)}
   Optionally, one can use `irewrite (occs := …) [rules] at H` such that the
   configuration options for the tactic are specified.
 -/
-elab "irewrite" cfg:optConfig "[" rules:(IRewrite.irwRule),* "]" loc:(location)? : tactic => do
+elab "irewrite " cfg:optConfig " [" rules:(IRewrite.irwRule),* "] " loc:(location)? : tactic => do
   let config ← IRewrite.elabIRewriteConfig cfg
   let location ← IRewrite.Location.parse loc
   let rules ← liftMacroM <| IRewrite.Rule.parse rules.getElems

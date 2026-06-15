@@ -220,7 +220,8 @@ private def throwNoInstanceForGives : ProofModeM Unit := do
   If no other type class instance for `CombineSepAs` is found, the separating
   conjunction is used as the connective.
 -/
-elab "icombine" patSels:(colGt selPat)* "as" colGt patAs:icasesPat : tactic => do
+elab "icombine " patSels:(colGt selPat)*
+    " as " colGt patAs:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patAs
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
@@ -239,7 +240,8 @@ elab "icombine" patSels:(colGt selPat)* "as" colGt patAs:icasesPat : tactic => d
   The tactic fails if no applicable type class instance of `CombineSepGives` is
   found.
 -/
-elab "icombine" patSels:(colGt selPat)* "gives" colGt patGives:icasesPat : tactic => do
+elab "icombine " patSels:(colGt selPat)*
+    " gives " colGt patGives:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patGives
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
@@ -266,7 +268,8 @@ elab "icombine" patSels:(colGt selPat)* "gives" colGt patGives:icasesPat : tacti
   The tactic fails if no applicable type class instance of `CombineSepGives` is
   found.
 -/
-elab "icombine" patSels:(colGt selPat)* "as" colGt patAs:icasesPat "gives" colGt patGives:icasesPat : tactic => do
+elab "icombine " patSels:(colGt selPat)*
+    " as " colGt patAs:icasesPat " gives " colGt patGives:icasesPat : tactic => do
   let pat1 ← liftMacroM <| iCasesPat.parse patAs
   let pat2 ← liftMacroM <| iCasesPat.parse patGives
 

@@ -20,7 +20,7 @@ public meta section
   All spatial hypothesis are generalized in the induction hypothesis so that
   this one can be included in the intuitionistic context.
 -/
-elab "iloeb" "as" IH:binderIdent "generalizing" hs:(colGt selPat)* : tactic => do
+elab "iloeb" " as " colGt IH:binderIdent " generalizing " hs:(colGt ppSpace selPat)* : tactic => do
   let pats ← Elab.liftMacroM <| SelPat.parse hs
   ProofModeM.runTactic fun mvid {hyps, goal, ..} => do
     let targets : List SelTarget ← SelPat.resolve hyps (pats ++ [.spatial])
@@ -44,4 +44,4 @@ elab "iloeb" "as" IH:binderIdent "generalizing" hs:(colGt selPat)* : tactic => d
   All spatial hypothesis are generalized in the induction hypothesis so that
   this one can be included in the intuitionistic context.
 -/
-macro "iloeb" "as" IH:binderIdent : tactic => `(tactic | iloeb as $IH generalizing)
+macro "iloeb" " as " colGt IH:binderIdent : tactic => `(tactic | iloeb as $IH generalizing)

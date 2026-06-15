@@ -26,7 +26,7 @@ open Lean Elab Tactic Meta Qq
   the terms `x₁, …, xₙ`. For each term, one can also use named metavariables
   `?m` or holes (`_`) for unnamed metavariables.
 -/
-elab "iexists" xs:term,+ : tactic => do
+elab "iexists " xs:term,+ : tactic => do
   -- resolve existential quantifier with the given argument
   ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do
 

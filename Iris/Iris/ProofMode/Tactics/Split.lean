@@ -29,7 +29,7 @@ open Lean Elab Tactic Meta Qq
   `isplit` splits a conjunction (`∧`) into two goals, both keeping the
   entire context.
 -/
-elab "isplit" : tactic => do
+elab "isplit " : tactic => do
   ProofModeM.runTactic λ mvar { prop, hyps, goal, .. } => do
 
   let A1 ← mkFreshExprMVarQ prop
@@ -71,7 +71,7 @@ private def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : Tac
   with spatial hypotheses `H₁ … Hₙ` assigned to the left goal and all other
   spatial hypotheses assigned to the right goal.
 -/
-elab "isplitl" "[" names:(colGt ident)* "]": tactic => do
+elab "isplitl " colGt "[" names:(colGt ident)* "]": tactic => do
   isplitCore .splitLeft names
 
 /--
@@ -79,7 +79,7 @@ elab "isplitl" "[" names:(colGt ident)* "]": tactic => do
   with spatial hypotheses `H₁ … Hₙ` assigned to the right goal and all other
   spatial hypotheses assigned to the left goal.
 -/
-elab "isplitr" "[" names:(colGt ident)* "]": tactic => do
+elab "isplitr " colGt "[" names:(colGt ident)* "]": tactic => do
   isplitCore .splitRight names
 
 /--

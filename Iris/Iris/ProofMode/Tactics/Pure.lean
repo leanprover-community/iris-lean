@@ -57,7 +57,7 @@ def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
   `ipure H` moves a pure hypothesis `H` from the Iris context into the regular
   Lean context.
 -/
-elab "ipure" colGt hyp:ident : tactic => do
+elab "ipure " colGt hyp:ident : tactic => do
   ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do
 
   let ivar ← hyps.findWithInfo hyp

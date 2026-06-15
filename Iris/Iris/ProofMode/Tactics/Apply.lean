@@ -66,7 +66,7 @@ private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps :
   given hypotheses `∗HP: □ P` and `∗H : P -∗ Q`, as well as the proof goal `Q`,
   `iapply H $$ HP` solves the goal.
 -/
-elab "iapply" colGt pmt:pmTerm : tactic => do
+elab "iapply " colGt pmt:pmTerm : tactic => do
   let pmt ← liftMacroM <| PMTerm.parse pmt
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
   -- elaborate the proof mode term `pmt` to the hypothesis `out`
