@@ -51,7 +51,7 @@ private def ClearState.clearProofModeHyp {u prop bi origE goal} :
 /--
   `iclear pats` discards the hypotheses selected by the selection pattern `pats`.
 -/
-elab "iclear " pats:(colGt selPat)+ : tactic => do
+elab "iclear " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
   ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do

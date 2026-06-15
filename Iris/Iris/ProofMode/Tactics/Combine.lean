@@ -220,7 +220,7 @@ private def throwNoInstanceForGives : ProofModeM Unit := do
   If no other type class instance for `CombineSepAs` is found, the separating
   conjunction is used as the connective.
 -/
-elab "icombine " patSels:(colGt selPat)*
+elab "icombine " patSels:(colGt ppSpace selPat)*
     " as " colGt patAs:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patAs
 
@@ -240,7 +240,7 @@ elab "icombine " patSels:(colGt selPat)*
   The tactic fails if no applicable type class instance of `CombineSepGives` is
   found.
 -/
-elab "icombine " patSels:(colGt selPat)*
+elab "icombine " patSels:(colGt ppSpace selPat)*
     " gives " colGt patGives:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patGives
 
@@ -268,7 +268,7 @@ elab "icombine " patSels:(colGt selPat)*
   The tactic fails if no applicable type class instance of `CombineSepGives` is
   found.
 -/
-elab "icombine " patSels:(colGt selPat)*
+elab "icombine " patSels:(colGt ppSpace selPat)*
     " as " colGt patAs:icasesPat " gives " colGt patGives:icasesPat : tactic => do
   let pat1 ← liftMacroM <| iCasesPat.parse patAs
   let pat2 ← liftMacroM <| iCasesPat.parse patGives
