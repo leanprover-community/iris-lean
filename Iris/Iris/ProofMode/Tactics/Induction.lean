@@ -214,21 +214,28 @@ private def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       let srcDecl ← srcId.getDecl
       return s!"• Iris hypothesis in the intuitionstic context `{name}` depends on `{srcDecl.userName}`"
 
+    -- Sort the pure Lean hypothesis according to the dependency
+    let allPureFVarsSorted := (← getLCtx).sortFVarsByContextOrder allPureFVars.eraseDups.toArray
+    let sortedPurePats : Array (TSyntax `selPat) ← allPureFVarsSorted.mapM fun fvarId => do
+      let decl ← fvarId.getDecl
+      let id := mkIdent (.mkSimple decl.userName.toString)
+      `(selPat| %$id:ident)
+
     -- Build `selPat` syntax nodes for each missing item
     let newIrisPats : Array (TSyntax `selPat) ←
-      missingIris.toArray.mapM fun (name, _) =>
-        `(selPat| $(mkIdent name):ident)
-    let newPurePats : Array (TSyntax `selPat) ←
-      missingPure.toArray.mapM fun (depId, _) => do
-        let depDecl ← depId.getDecl
-        let id := mkIdent (Name.mkSimple depDecl.userName.toString)
-        `(selPat| %$id:ident)
+      missingIris.toArray.mapM fun (name, _) => `(selPat| $(mkIdent name):ident)
 
     -- Find the old tactic syntax and generate the new one with missing hypotheses added
     let oldTactic ← getRef
     let `(tactic| iinduction $x $[using $r]? generalizing $genSelPats* $[$alts]?) := oldTactic
     | throwError "iinduction: invalid syntax"
-    let extendedPats : TSyntaxArray `selPat := genSelPats.append <| newPurePats ++ newIrisPats
+
+    let existingIrisPats := genSelPats.filter fun p =>
+      match p.raw with
+      | `(selPat| %$_:ident) => false
+      | _ => true
+
+    let extendedPats : TSyntaxArray `selPat := sortedPurePats ++ existingIrisPats ++ newIrisPats
     let newTactic ← `(tactic| iinduction $x $[using $r]? generalizing $extendedPats* $[$alts]?)
 
     -- Suggestion the fixed tactic
