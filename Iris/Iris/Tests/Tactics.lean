@@ -2975,7 +2975,7 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
 
 /-
   Tests `iinduction` on `n` generalising `m`, where:
-  - *regular hypotheses* `h : T m` and `U1 : (T m) → Prop` depend on `m`;
+  - *regular hypotheses* `h1 : T m` and `U1 : (T m) → Prop` depend on `m`;
   - *regular hypotheses* `h2 : U1 h1` and `U2 : (U1 h1) → PROP` depends on `h1`,
     which in turn depends on `m`;
   - *Iris hypotheses* `□HQ : Q m` and `□HR : R m` depends on `m`;
