@@ -2898,7 +2898,7 @@ example [BI PROP] {n : Nat} :
   | succ n IH => itrivial
 
 /-
-  Testing `iinduction` with redundant use of the wildcard. The wildcard
+  Tests `iinduction` with redundant use of the wildcard. The wildcard
   is not required when all cases have already been handled.
 -/
 /-- error: iinduction: wildcard alternative is not needed -/
@@ -2911,7 +2911,7 @@ example [BI PROP] {n : Nat} :
   | _ => _
 
 /-
-  Testing `iinduction` with the tactic after `with` syntax.
+  Tests `iinduction` with the tactic after `with` syntax.
   One of the alternative names (`zero`) becomes redundant and therefore should
   be detected by the tactic.
 -/
@@ -2925,7 +2925,7 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | succ n IH => itrivial
 
 /-
-  Testing `iinduction` with a tactic after `with` syntax.
+  Tests `iinduction` with a tactic after `with` syntax.
   One of the alternative names (`zero`) is redundant and therefore not required.
   The tactic should not complain about any missing alternative names.
 -/
@@ -2937,10 +2937,10 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | succ n IH => itrivial
 
 /-
-  Testing `iinduction` on `n` generalising `m`, where:
+  Tests `iinduction` on `n` generalising `m`, where:
   - *regular hypotheses* `h : T m` and `U : (T m) → Prop` depend on `m`;
   - *regular hypothesis* `h2 : U h` depends on `h`, which indirectly depends on `m`; and
-  - *Iris hypothesis* `□HQ : Q m` depends on `m`.
+  - *Iris hypotheses* `□HQ : Q m` and `□HR : R m` depends on `m`.
   This requires manual resolution.
 -/
 /-- info: Try this:
