@@ -2801,18 +2801,35 @@ example [BI PROP] {α} {t : Tree α} {P : Tree α → PROP} :
     · iexact IH2
 
 /--
-  Tests `iinduction` with simple induction on binary trees.
+  Tests `iinduction` with simple induction on natural numbers.
   Tries `iframe` to solve induction subgoals before splitting into cases.
+  Tests the `using` clause for custom recursor name.
   Tests the use of a synthetic hole (`?_`) for delaying the induction subgoal.
 -/
 example [BI PROP] {n : Nat} {P : Nat → PROP} :
-    □ (∀ m, P m -∗ P (m + 1)) -∗ P 0 -∗ P n := by
+    □ (∀ k, P k -∗ P (k + 1)) -∗ P 0 -∗ P n := by
   iintro #H1 H2
-  iinduction n with iframe
+  iinduction n using Nat.rec with iframe
   | succ n IH => ?_
   iapply H1
   iapply IH
   iexact H2
+
+/--
+  Tests `iinduction` with induction on lists where it is necessary to
+  generalise some variables.
+-/
+example [BI PROP] {α} {xs : List α} {acc : List α} {P : List α → List α → PROP} :
+    □ (∀ acc, P [] acc) -∗
+    □ (∀ x xs acc, P xs (x :: acc) -∗ P (x :: xs) acc) -∗
+    P xs acc := by
+  iintro #Hnil #Hcons
+  iinduction xs generalizing %acc with
+  | nil =>
+    iapply Hnil
+  | cons x xs ih =>
+    iapply Hcons
+    iexact ih
 
 /--
   Tests `iinduction` with induction on natural numbers.
@@ -2828,21 +2845,6 @@ example [BI PROP] {P Q R S : PROP} {T : Nat → PROP} {n : Nat} :
   /- Naming the induction hypothesis as `ih`, but leaving the variable `n`
      inaccessible by using `_` -/
   | succ _ ih => iframe; itrivial
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /- Tests `iinduction` with a non-inductive datatype -/
 /-- error: iinduction: unable to determine inductive type -/
