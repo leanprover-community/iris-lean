@@ -484,6 +484,7 @@ structure IrisGoal where
 
 def isIrisGoal (expr : Expr) : Bool := isAppOfArity expr ``Entails' 4
 
+/-- Recursively expression traversal to check whether it contains an Iris entailment  -/
 def containsIrisGoal (e : Expr) : Bool :=
   isIrisGoal e ||
   match e with

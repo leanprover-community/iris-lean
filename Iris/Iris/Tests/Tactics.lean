@@ -2899,6 +2899,7 @@ def NTree.childCount : NTree α → Nat
   | .leaf => 0
   | .node _ ts => ts.length
 
+/-- An binary relation defined using nested induction -/
 inductive NTree.Rel {α β} (R : α → β → Prop) :
     NTree α → NTree β → Prop
   | leaf : Rel R .leaf .leaf
@@ -2925,14 +2926,18 @@ def NTree.Rel.induction_principle {α β} {R : α → β → Prop}
     .nil
     (fun _ _ ih_h ih_hs => .cons (fun _ => ih_h) ih_hs)
 
+/-- Tests `iinduction` with induction that uses the type class instance `intoIH_listForall₂`. -/
 example [BI PROP] {α β} {R : α → β → Prop}
     {t₁ : NTree α} {t₂ : NTree β} (H : NTree.Rel R t₁ t₂) :
-    ⊢@{PROP} ⌜ NTree.childCount t₁ = NTree.childCount t₂ ⌝ := by
+    ⊢@{PROP} ⌜NTree.childCount t₁ = NTree.childCount t₂⌝ := by
   iinduction H with
   | h_leaf =>
     ipureintro
     apply rfl
-  | h_node x1 ts1 x2 ts2 r IH1 IH2 => sorry
+  | h_node x1 x2 t1 t2 r IH1 IH2 =>
+    ipureintro
+    simp only [NTree.childCount]
+    induction IH1 with simp_all
 
 /--
   Tests `iinduction` with simple induction on natural numbers.
