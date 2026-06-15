@@ -42,16 +42,10 @@ theorem prod_includedI [Sbi PROP] [CMRA A] [CMRA B] (x y : A × B) :
   cases y with | mk y1 y2 =>
   simp only [CMRA.op, Prod.op]
   constructor
-  ·
-    intro n ⟨x, ⟨⟨⟨a, b⟩, H1⟩, H2⟩⟩
-    refine ⟨⟨x, ⟨⟨a, ?_⟩, H2⟩⟩, ⟨x, ⟨⟨b, ?_⟩, H2⟩⟩⟩
-    simp only [←H1]
-
-    sorry
-    simp only [←H1]
-
-    sorry
-  · sorry
+  · rintro n ⟨P, ⟨w, rfl⟩, hP⟩
+    exact ⟨⟨_, ⟨w.fst, rfl⟩, hP.1⟩, ⟨_, ⟨w.snd, rfl⟩, hP.2⟩⟩
+  · rintro n ⟨⟨P1, ⟨w1, rfl⟩, hP1⟩, ⟨P2, ⟨w2, rfl⟩, hP2⟩⟩
+    exact ⟨_, ⟨(w1, w2), rfl⟩, hP1, hP2⟩
 
 end prod
 
@@ -61,8 +55,10 @@ open BI Std BIBase.BiEntails
 
 @[rocq_alias option_validI]
 theorem option_validI [Sbi PROP] [CMRA A] {mx : Option A} :
-  internalCmraValid mx ⊣⊢@{PROP} mx.elim iprop(True) internalCmraValid := by
-  sorry
+  internalCmraValid mx ⊣⊢@{PROP} mx.elim iprop(True) internalCmraValid :=
+  match mx with
+  | none => ⟨true_intro, internalCmraValid_intro trivial⟩
+  | some _ => .rfl
 
 @[rocq_alias option_includedI]
 theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
@@ -70,8 +66,27 @@ theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
     match mx, my with
       | some x, some y => iprop((internalCmraIncluded x y) ∨ (internalEq x y))
       | none, _ => iprop(True)
-      | some x, none => iprop(False) := by
-  sorry
+      | some _, none => iprop(False) := by
+  rcases mx with _ | x <;> rcases my with _ | y
+  · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
+  · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
+  · refine ⟨?_, false_elim⟩
+    refine .trans (siPure_mono ?_) siPure_pure.mp
+    rintro n ⟨_, ⟨c, rfl⟩, hc⟩
+    rcases c with _ | c <;>
+      exact (by simpa [SiProp.internalEq, OFE.Dist, Option.Forall₂] using hc : False)
+  · simp only [internalCmraIncluded, internalEq]
+    refine .trans ?_ siPure_or
+    refine siPure_mono_bi ⟨fun n h => ?_, fun n h => ?_⟩
+    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
+      rcases Option.some_incN_some_iff.mp ⟨c, hc⟩ with heqv | ⟨c, hc⟩
+      · exact .inr heqv
+      · exact .inl ⟨_, ⟨c, rfl⟩, hc⟩
+    · have ⟨c, hc⟩ : (some x : Option A) ≼{n} some y := by
+        rcases h with ⟨_, ⟨c, rfl⟩, hc⟩ | heqv
+        · exact Option.some_incN_some_iff.mpr (.inr ⟨c, hc⟩)
+        · exact Option.some_incN_some_iff.mpr (.inl heqv)
+      exact ⟨_, ⟨c, rfl⟩, hc⟩
 
 @[rocq_alias option_included_totalI]
 theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Option A} :
@@ -79,13 +94,27 @@ theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Opt
     match mx, my with
       | some x, some y => internalCmraIncluded x y
       | none, _ => iprop(True)
-      | some x, none => iprop(False) := by
-  sorry
+      | some _, none => iprop(False) := by
+  rcases mx with _ | x <;> rcases my with _ | y
+  · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
+  · exact ⟨true_intro, internalCmraIncluded_intro (Option.inc_iff.mpr (.inl rfl))⟩
+  · refine ⟨?_, false_elim⟩
+    refine .trans (siPure_mono ?_) siPure_pure.mp
+    rintro n ⟨_, ⟨c, rfl⟩, hc⟩
+    rcases c with _ | c <;>
+      exact (by simpa [SiProp.internalEq, OFE.Dist, Option.Forall₂] using hc : False)
+  · refine siPure_mono_bi ⟨fun n h => ?_, fun n h => ?_⟩
+    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
+      obtain ⟨c, hc⟩ := Option.some_incN_some_iff_is_total.mp ⟨c, hc⟩
+      exact ⟨_, ⟨c, rfl⟩, hc⟩
+    · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
+      obtain ⟨c, hc⟩ := Option.some_incN_some_iff_is_total.mpr ⟨c, hc⟩
+      exact ⟨_, ⟨c, rfl⟩, hc⟩
 
 @[rocq_alias Some_included_totalI]
 theorem Some_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {x y : A} :
-  internalCmraIncluded (some x) (some y) ⊣⊢@{PROP} internalCmraIncluded x y := by
-  sorry
+  internalCmraIncluded (some x) (some y) ⊣⊢@{PROP} internalCmraIncluded x y :=
+  option_included_totalI
 
 end option
 
