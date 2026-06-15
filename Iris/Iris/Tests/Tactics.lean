@@ -377,14 +377,22 @@ example [BI PROP] (P : PROP) {x : Nat} : ⊢ P := by
   irevert %x
 
 /- Tests `irevert` failing with dependency -/
-/-- error: irevert: proofmode hypothesis H depends on x -/
+/-- info: Try this:
+  [apply] irevert %x %hp
+---
+error: irevert: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `hp` depends on `x` -/
 #guard_msgs in
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
   irevert %x
 
 /- Tests `irevert` failing with dependency -/
-/-- error: irevert: Lean hypothesis hp depends on x -/
+/-- info: Try this:
+  [apply] irevert %x %hp H
+---
+error: irevert: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `hp` depends on `x` -/
 #guard_msgs in
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
@@ -2774,6 +2782,23 @@ variable {PROP : Type u} [ι₁ : BI PROP] in
 example (P Q : PROP) :
     ⊢ P -∗ Q := by
   iloeb as IH
+
+-- Tests `iloeb` where the `generalizing` clause has dependency
+/--
+info: Try this:
+  [apply] iloeb as IH generalizing %n %h1 %U HT
+---
+error: iloeb: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h1` depends on `n`
+• Lean hypothesis `U` depends on `n`
+• Iris hypothesis in the intuitionstic context `HT` depends on `n`
+-/
+#guard_msgs in
+example [BI PROP] [BILoeb PROP] {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop}
+    {h1 : Q n} {U : (Q n) → Prop} :
+    ⊢ □ T n -∗ □ P n := by
+  iintro #HT
+  iloeb as IH generalizing %n
 
 end iloeb
 

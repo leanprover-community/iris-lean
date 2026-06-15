@@ -11,6 +11,7 @@ public meta import Iris.ProofMode.Tactics.Cases
 public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.ClassesMake
 public meta import Iris.ProofMode.Tactics.RevertIntro
+public meta import Iris.ProofMode.Tactics.Revert
 public meta import Lean.Meta.Tactic.TryThis
 
 namespace Iris.ProofMode
@@ -86,6 +87,22 @@ private def parseInductionAlts (altsSyntax : TSyntax `Lean.Parser.Tactic.inducti
   | _ => throwErrorAt altsSyntax "iinduction: invalid syntax"
 
 /--
+  A helper function for `checkDependentHyps` to generate the fixed tactic.
+-/
+private def checkDependentHypsMkSuggestion
+    (purePats : Array (TSyntax `selPat)) (newIrisPats : Array (TSyntax `selPat)) :
+    ProofModeM (TSyntax `tactic) := do
+  let oldTactic ← getRef
+  let `(tactic| iinduction $x $[using $r]? generalizing $genSelPats* $[$alts]?) := oldTactic
+    | throwError "iinduction: invalid syntax"
+  let existingIrisPats := genSelPats.filter fun p =>
+    match p.raw with
+    | `(selPat| %$_:ident) => false
+    | _ => true
+  let extendedPats : TSyntaxArray `selPat := purePats ++ existingIrisPats ++ newIrisPats
+  `(tactic| iinduction $x $[using $r]? generalizing $extendedPats* $[$alts]?)
+
+/--
   This theorem is used for updating the proof in `InductionState` as `addIHs`
   iterates through the list of induction hypotheses and introduces them from
   the regular Lean context into the intuitionistic context.
@@ -142,109 +159,6 @@ private def iHypsToGeneralize {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     | none => false
 
   (ivars ++ hyps.spatialIVarIds).map ({ kind := .ipm ·, explicit := false })
-
-/--
-  When the tactic is `iinduction e generalizing z₁ ... zₙ` applied,
-  the variables `z₁ ... zₙ`, which can be regular Lean variables or Iris
-  hypotheses, are reverted from the context.
-
-  The function `iHypsToGeneralize` is used for finding the Iris hypotheses
-  that references the induction target.
-
-  However, it is possible that `x` is amongst the Lean variables explcitly
-  reverted by the user using the `generalizing` syntax while there exists
-  another Lean variable `y` such that `y` depends on `x`. In this case, this
-  function suggests that the user includes `%y` in the `generalizing` syntax.
-
-  It is also possible that `x` is amongst the Lean variables being generalised
-  such that there exists an Iris hypothesis `HP` in the intuitionistic context
-  where:
-  1. `P` does not depend on the induction target and thus not reverted automatically,
-  2. `P` depends on `x` in the `generalizing` syntax, and
-  3. `P` itself is not included in the `generalizing` syntax.
-  In this case, this function suggests the user to include `HP` in the
-  `generalizing` syntax.
-
-  Note that Iris hypotheses in the spatial context are always reverted, so there
-  is no need for further checks by this function.
--/
-private def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
-    (hyps : Hyps bi e) (explicitTargets : List SelTarget) :
-    ProofModeM Unit := do
-
-  let explicitIrisIVarIds := explicitTargets.filterMap
-    (match ·.kind with | .ipm ivar => some ivar | _ => none)
-  let explicitPureFVars := explicitTargets.filterMap
-    (match ·.kind with | .pure f => some f | _ => none)
-
-  -- Pairs of `FVarId` values `(f1, f2)` indicating `f1` depends on `f2`.
-  let mut missingPure : List (FVarId × FVarId) := []
-
-  -- Check forward dependency of pure hypotheses in the `generalizing` syntax
-  for fvar in explicitPureFVars.eraseDups do
-    let fwdDeps ← collectForwardDeps #[mkFVar fvar] false
-    for dep in fwdDeps do
-      let depId := dep.fvarId!
-      -- Skip `x` itself and variables already included in `explicitPureFVars`
-      if depId != fvar && !explicitPureFVars.contains depId then
-        -- Record the missing hypothesis to be generalised, if not already included
-        if !missingPure.any (·.fst == depId) then
-          missingPure := missingPure ++ [(depId, fvar)]
-
-  let allPureFVars := explicitPureFVars ++ missingPure.map (·.fst)
-
-  -- Check Iris hypothesis that depend on hypotheses in the `generalizing` syntax
-  let missingIris : List (Name × FVarId) :=
-  hyps.intuitionisticIVarIds.filterMap fun ivar =>
-    if explicitIrisIVarIds.contains ivar then none
-    else match hyps.getDecl? ivar with
-      | some ⟨name, _, _, ty⟩ =>
-        match allPureFVars.find? (ty.containsFVar ·) with
-        | some x => some (name, x)
-        | none   => none
-      | none => none
-
-  -- Throw an error if there exists some pure/Lean hypotheses that should also be generalised
-  if !missingPure.isEmpty || !missingIris.isEmpty then
-    let leanLines ← missingPure.mapM fun (depId, srcId) => do
-      let depDecl ← depId.getDecl
-      let srcDecl ← srcId.getDecl
-      return s!"• Lean hypothesis `{depDecl.userName}` depends on `{srcDecl.userName}`"
-    let irisLines ← missingIris.mapM fun (name, srcId) => do
-      let srcDecl ← srcId.getDecl
-      return s!"• Iris hypothesis in the intuitionstic context `{name}` depends on `{srcDecl.userName}`"
-
-    -- Sort the pure Lean hypothesis according to the dependency
-    let allPureFVarsSorted := (← getLCtx).sortFVarsByContextOrder allPureFVars.eraseDups.toArray
-    let sortedPurePats : Array (TSyntax `selPat) ← allPureFVarsSorted.mapM fun fvarId => do
-      let decl ← fvarId.getDecl
-      let id := mkIdent (.mkSimple decl.userName.toString)
-      `(selPat| %$id:ident)
-
-    -- Build `selPat` syntax nodes for each missing item
-    let newIrisPats : Array (TSyntax `selPat) ←
-      missingIris.toArray.mapM fun (name, _) => `(selPat| $(mkIdent name):ident)
-
-    -- Find the old tactic syntax and generate the new one with missing hypotheses added
-    let oldTactic ← getRef
-    let `(tactic| iinduction $x $[using $r]? generalizing $genSelPats* $[$alts]?) := oldTactic
-    | throwError "iinduction: invalid syntax"
-
-    let existingIrisPats := genSelPats.filter fun p =>
-      match p.raw with
-      | `(selPat| %$_:ident) => false
-      | _ => true
-
-    let extendedPats : TSyntaxArray `selPat := sortedPurePats ++ existingIrisPats ++ newIrisPats
-    let newTactic ← `(tactic| iinduction $x $[using $r]? generalizing $extendedPats* $[$alts]?)
-
-    -- Suggestion the fixed tactic
-    Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
-
-    -- Log the error and attach the clickable suggestion
-    throwError m!"iinduction: The following hypotheses depend on variables in \
-      the `generalizing` clause but are not themselves included:\
-      \n{"\n".intercalate (leanLines ++ irisLines)}"
 
 /--
   Search for hypotheses in the regular Lean context that are the in the form
@@ -357,7 +271,8 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   | none => pure <| iHypsToGeneralize hyps fvar
   | some genSelPats =>
     let genSelTargets ← SelPat.resolve hyps genSelPats
-    checkDependentHyps hyps genSelTargets
+    checkDependentHyps "iinduction" hyps genSelTargets checkDependentHypsMkSuggestion
+
     let explicitIrisTargets := genSelTargets.filter (match ·.kind with | .ipm _ => true | _ => false)
     let explicitPureTargets := genSelTargets.filter (match ·.kind with | .pure _ => true | _ => false)
     let implicitIrisTargets := (iHypsToGeneralize hyps fvar).filter (not <| (explicitIrisTargets.map (·.kind)).contains ·.kind)
