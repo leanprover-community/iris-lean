@@ -2800,6 +2800,24 @@ example [BI PROP] {α} {t : Tree α} {P : Tree α → PROP} :
     · iexact IH1
     · iexact IH2
 
+/-- A simple function on the inductive structure `Tree` -/
+def Tree.mirror : Tree α → Tree α
+  | .leaf => .leaf
+  | .node l x r => .node (.mirror r) x (.mirror l)
+
+/--
+  Tests `iinduction` with `Tree` and `Tree.mirror`.
+-/
+example [BI PROP] {α} {t : Tree α} :
+  ⊢@{PROP} ⌜.mirror (.mirror t) = t⌝ := by
+  iinduction t with simp [Tree.mirror]
+  | leaf =>
+    itrivial
+  | node l x r ihl ihr =>
+    isplit
+    · iexact ihl
+    · iexact ihr
+
 /--
   Tests `iinduction` with simple induction on natural numbers.
   Tries `iframe` to solve induction subgoals before splitting into cases.
