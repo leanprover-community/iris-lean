@@ -120,7 +120,7 @@ hlc : HasLC
 GF : BundledGFunctors
 ι : IrisGS_gen hlc Exp GF
 ⊢ ⏎
-  ⊢ WP hl((#2 + (#1 + #2))) {{ v, WP hl(v(&v)) {{ v, True }} }}
+  ⊢ WP hl((#2 + (#1 + #2))) {{ v, True }}
 -/
 #guard_msgs in
 example : ⊢@{IProp GF}  WP hl(#2 + (#1 + #2)) {{ v, True }} := by
