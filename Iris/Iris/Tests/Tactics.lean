@@ -2818,6 +2818,7 @@ example [BI PROP] {n : Nat} {P : Nat → PROP} :
 /--
   Tests `iinduction` with induction on lists where it is necessary to
   generalise some variables.
+  Tests the use of the wildcard (`_`) for remaining cases.
 -/
 example [BI PROP] {α} {xs : List α} {acc : List α} {P : List α → List α → PROP} :
     □ (∀ acc, P [] acc) -∗
@@ -2825,11 +2826,11 @@ example [BI PROP] {α} {xs : List α} {acc : List α} {P : List α → List α �
     P xs acc := by
   iintro #Hnil #Hcons
   iinduction xs generalizing %acc with
-  | nil =>
-    iapply Hnil
   | cons x xs ih =>
     iapply Hcons
     iexact ih
+  | _ =>
+    iapply Hnil
 
 /- Tests `iinduction` with a non-inductive datatype. -/
 /-- error: iinduction: unable to determine inductive type -/
@@ -2883,37 +2884,27 @@ example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {n : Nat} :
   iinduction n + m using Nat.caseStrongRecOn generalizing %m HQ with
   | zero | ind _ _ => itrivial
 
-/-- Testing `iinduction` with wildcard for one case -/
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
-  iinduction n with
-  | zero | _ => itrivial
-
-/-- Testing `iinduction` with wildcard for two cases -/
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
-  iinduction n with
-  | _ => itrivial
-
-/- Testing `iinduction` with the hole and synthetic hole -/
+/-
+  Tests `iinduction` with invalid use of the wildcard. The wildcard
+  should always be the last case.
+-/
 /-- error: iinduction: invalid occurrence of the wildcard alternative `| _ => ...`: It must be the last alternative -/
 #guard_msgs in
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
+example [BI PROP] {n : Nat} :
+    ⊢@{PROP} ⌜n + 0 = n⌝ := by
   iinduction n with
   | zero => itrivial
   | _ => _
   | succ n ih => itrivial
 
-/- Testing `iinduction` with the hole and synthetic hole -/
+/-
+  Testing `iinduction` with redundant use of the wildcard. The wildcard
+  is not required when all cases have already been handled.
+-/
 /-- error: iinduction: wildcard alternative is not needed -/
 #guard_msgs in
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
+example [BI PROP] {n : Nat} :
+    ⊢@{PROP} ⌜n + 0 = n⌝ := by
   iinduction n with
   | zero => itrivial
   | succ n ih => itrivial
