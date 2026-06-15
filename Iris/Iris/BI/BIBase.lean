@@ -231,6 +231,19 @@ macro_rules
 delab_rule intuitionistically
   | `($_ $P) => do ``(iprop(□ $(← unpackIprop P)))
 
+/-- Iterated later modality. -/
+syntax:max "▷^[" term:45 "]" term:40 : term
+
+@[rocq_alias bi_laterN]
+def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP :=
+  match n with | .zero => P | .succ n' => later <| laterN n' P
+
+macro_rules
+  | `(iprop(▷^[$n] $P))   => ``(laterN $n iprop($P))
+
+delab_rule laterN
+  | `($_ $n $P) => do ``(iprop(▷^[$n] $(← unpackIprop P)))
+
 /-- Conditional persistency modality.
 ```
 def persistentlyIf (p : Bool) (P : PROP) := if p then <pers> P else P
@@ -270,7 +283,7 @@ def affinelyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <af
 def absorbinglyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then <absorb> P else P)
 @[rocq_alias bi_intuitionistically_if]
 def intuitionisticallyIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then □ P else P)
-def laterIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(if p then ▷ P else P)
+def laterIf [BIBase PROP] (p : Bool) (P : PROP) : PROP := iprop(▷^[p.toNat] P)
 
 macro_rules
   | `(iprop(<pers>?$p $P))   => ``(persistentlyIf $p iprop($P))
@@ -300,21 +313,6 @@ def bigSep [BIBase PROP] (Ps : List PROP) : PROP := bigOp sep iprop(emp) Ps
 notation:40 "[∧] " Ps:max => bigAnd Ps
 notation:40 "[∨] " Ps:max => bigOr Ps
 notation:40 "[∗] " Ps:max => bigSep Ps
-
-
-/-- Iterated later modality. -/
-syntax:max "▷^[" term:45 "]" term:40 : term
-
-@[rocq_alias bi_laterN]
-def laterN [BIBase PROP] (n : Nat) (P : PROP) : PROP :=
-  match n with | .zero => P | .succ n' => later <| laterN n' P
-
-macro_rules
-  | `(iprop(▷^[$n] $P))   => ``(laterN $n iprop($P))
-
-delab_rule laterN
-  | `($_ $n $P) => do ``(iprop(▷^[$n] $(← unpackIprop P)))
-
 
 /-- Except-0 modality -/
 syntax:max "◇ " term:40 : term
