@@ -2863,6 +2863,78 @@ example [BI PROP] {α} {t : Tree α} {P : α → PROP} :
     · iapply ihl $$ Hl
 
 /--
+  Definition of n-tree and its induction principle from:
+  https://leanprover.zulipchat.com/#narrow/channel/113489-new-members/topic/.E2.9C.94.20Induction.20principle.20for.20nested.20inductive.20types/near/437905021
+-/
+inductive NTree (α : Type)
+| leaf
+| node : α → List (NTree α) → NTree α
+
+@[induction_eliminator]
+def NTree.induction_principle {α} (p : NTree α → Prop) (h_leaf : p leaf)
+  (h_node : (x : α) → (ts : List (NTree α)) → (ih : ∀ t ∈ ts, p t) → p (node x ts)) :
+  ∀ t : NTree α, p t :=
+  @NTree.rec α p (λ ts => ∀ t ∈ ts, p t) h_leaf h_node (List.forall_mem_nil p)
+    (λ _ _ h_head h_tail => List.forall_mem_cons.mpr (And.intro h_head h_tail))
+
+/-- A recursive "mirror" on `NTree` that mirrors every child subtree. -/
+def NTree.mirror : NTree α → NTree α
+  | .leaf => .leaf
+  | .node x ts => .node x (ts.map NTree.mirror)
+
+/--
+  Direct analogue of the first `Tree` example.
+  The node case uses the manual induction principle for `NTree`,
+  which gives an induction hypothesis of the form `∀ t ∈ ts, P t`.
+-/
+example [BI PROP] {α} {t : NTree α} :
+  ⊢@{PROP} ⌜.mirror (.mirror t) = t⌝ := by
+  iinduction t with simp [NTree.mirror]
+  | h_leaf =>
+    itrivial
+  | h_node x ts IH =>
+    sorry
+
+def NTree.childCount : NTree α → Nat
+  | .leaf => 0
+  | .node _ ts => ts.length
+
+inductive NTree.Rel {α β} (R : α → β → Prop) :
+    NTree α → NTree β → Prop
+  | leaf : Rel R .leaf .leaf
+  | node : ∀ a b ts₁ ts₂,
+      R a b →
+      List.Forall₂ (Rel R) ts₁ ts₂ →
+      Rel R (.node a ts₁) (.node b ts₂)
+
+@[induction_eliminator]
+def NTree.Rel.induction_principle {α β} {R : α → β → Prop}
+    (p : ∀ {t1 : NTree α} {t2 : NTree β}, NTree.Rel R t1 t2 → Prop)
+    (h_leaf : p .leaf)
+    (h_node : ∀ (a : α) (b : β) (ts1 : List (NTree α)) (ts2 : List (NTree β))
+        (ra : R a b)
+        (f2 : List.Forall₂ (NTree.Rel R) ts1 ts2),
+        List.Forall₂ (fun t1 t2 => ∀ h : NTree.Rel R t1 t2, p h) ts1 ts2 →
+        p (.node a b ts1 ts2 ra f2)) :
+    ∀ {t1 : NTree α} {t2 : NTree β} (h : NTree.Rel R t1 t2), p h :=
+  @NTree.Rel.rec α β R
+    (fun _ _ h => p h)
+    (fun a b _ => List.Forall₂ (fun t1 t2 => ∀ h : NTree.Rel R t1 t2, p h) a b)
+    h_leaf
+    (fun a b ts1 ts2 ra f2 ih_ts => h_node a b ts1 ts2 ra f2 ih_ts)
+    .nil
+    (fun _ _ ih_h ih_hs => .cons (fun _ => ih_h) ih_hs)
+
+example [BI PROP] {α β} {R : α → β → Prop}
+    {t₁ : NTree α} {t₂ : NTree β} (H : NTree.Rel R t₁ t₂) :
+    ⊢@{PROP} ⌜ NTree.childCount t₁ = NTree.childCount t₂ ⌝ := by
+  iinduction H with
+  | h_leaf =>
+    ipureintro
+    apply rfl
+  | h_node x1 ts1 x2 ts2 r IH1 IH2 => sorry
+
+/--
   Tests `iinduction` with simple induction on natural numbers.
   Tries `iframe` to solve induction subgoals before splitting into cases.
   Tests the `using` clause for custom recursor name.
@@ -2940,7 +3012,7 @@ example [BI PROP] {n : Nat} :
   The proposition `Q m` is reverted manually using the `generalizing` clause.
   On the contrary, `R` is not reverted.
 -/
-example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {n : Nat} :
+example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {m n : Nat} :
     ⊢ P -∗ □ Q m -∗ □ R -∗ S -∗ □ T (n + m) -∗ ⌜n + m + 0 = n + m⌝ := by
   iintro HP #HQ #HR HS #HT
   iinduction n + m using Nat.caseStrongRecOn generalizing %m HQ with
