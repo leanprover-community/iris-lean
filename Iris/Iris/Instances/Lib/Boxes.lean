@@ -743,57 +743,27 @@ theorem slice_iff {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
       icases Hiff with ⟨-, Hiff⟩
       iapply Hiff $$ HQ
   · imod slice_delete_full E q f P Q γ N HE Hf $$ [$Hslice $Hbox] with ⟨%Pold, HQ, #HeqP, Hbox⟩
-
-    have hQ' : (iprop(▷ ((Q ↔ Q') ∗ Q)) : IProp GF) ⊢ ▷ Q' := by
-      iintro Hc
-      inext
-      icases Hc with ⟨Hqq, HQ⟩
-      ihave Hqq1 := and_elim_l (P := iprop(Q → Q')) (Q := iprop(Q' → Q)) $$ Hqq
-      iapply Hqq1 $$ HQ
-    icombine Hiff HQ as Hc
-    ihave HQ' := hQ' $$ Hc
-    imod slice_insert_full E q (delete f γ) Pold Q' N HE $$ [HQ' Hbox] with
+    ihave HQ' : ▷ Q' $$ [Hiff HQ]
+    · inext
+      icases Hiff with ⟨Hif, -⟩
+      iapply Hif $$ HQ
+    imod slice_insert_full E q (delete f γ) Pold Q' N HE $$ [$HQ' $Hbox] with
       ⟨%γ', %Hfresh, Hslice', Hbox⟩
-    · isplitl [HQ'] <;> iassumption
     imodintro
     iexists γ', iprop(Q' ∗ Pold)
+    iframe %Hfresh Hslice' Hbox
+    simp only [BIBase.laterIf]
+    inext; inext
+    imodintro
+    irewrite [HeqP]
+    · refine ⟨fun _ _ _ H => ?_⟩
+      exact (iff_ne.ne_left _ _).ne H
+    icases Hiff with ⟨#Hiff1, #Hiff2⟩
     isplit
-    · ipureintro; exact Hfresh
-    isplitl [Hiff HeqP]
-    · simp only [BIBase.laterIf]
-      inext
-      inext
-      ihave #Hpp := internalEq_iff P iprop(Q ∗ Pold) $$ HeqP
-      iclear HeqP
-      icases Hiff with ⟨#Hiff1, #Hiff2⟩
-      icases Hpp with ⟨#Hpp1, #Hpp2⟩
-      imodintro
-      isplit
-      · iintro HP
-        ihave ⟨HQ, HPold⟩ := Hpp1 $$ HP
-        ihave HQ' := Hiff1 $$ HQ
-        isplitl [HQ'] <;> iassumption
-      · iintro ⟨HQ', HPold⟩
-        ihave HQ := Hiff2 $$ HQ'
-        iapply Hpp2
-        isplitl [HQ] <;> iassumption
-    isplitl [Hslice']
-    · iexact Hslice'
-    · iexact Hbox
-
-theorem box_internalEq_rewrite {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
-    (N : Namespace) (f : M Bool) (P P' : IProp GF) :
-    ▷ internalEq P P' ∗ box N f P' ⊢ box N f P := by
-  unfold box
-  iintro ⟨#Heqpp, %Φ, #Heq, Hbig⟩
-  iexists Φ
-  isplitl [Heq]
-  · icombine Heqpp Heq as Hc
-    iapply later_mono _ $$ Hc
-    iintro ⟨Hpp, Heq⟩
-    iapply internalEq.trans
-    isplitl [Hpp] <;> iassumption
-  · iexact Hbig
+    · iintro ⟨HQ, $⟩
+      iapply Hiff1 $$ HQ
+    · iintro ⟨HQ, $⟩
+      iapply Hiff2 $$ HQ
 
 @[rocq_alias slice_split]
 theorem slice_split {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
@@ -807,14 +777,6 @@ theorem slice_split {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
       slice N γ1 Q1 ∗ slice N γ2 Q2 ∗
       (▷?q box N (insert (insert (delete f γ) γ1 b) γ2 b) P) := by
   intro HE Hf
-  have hreassoc : ∀ Pold : IProp GF,
-      (iprop((Q1 ∗ Q2) ∗ Pold) : IProp GF) ⊣⊢ iprop(Q2 ∗ (Q1 ∗ Pold)) := by
-    intro Pold
-    calc (iprop((Q1 ∗ Q2) ∗ Pold) : IProp GF)
-      _ ⊣⊢ iprop(Q1 ∗ (Q2 ∗ Pold)) := sep_assoc
-      _ ⊣⊢ iprop((Q2 ∗ Pold) ∗ Q1) := sep_comm
-      _ ⊣⊢ iprop(Q2 ∗ (Pold ∗ Q1)) := sep_assoc
-      _ ⊣⊢ iprop(Q2 ∗ (Q1 ∗ Pold)) := sep_congr_right sep_comm
   cases b
   · iintro ⟨Hslice, Hbox⟩
     imod slice_delete_empty E q f P iprop(Q1 ∗ Q2) γ N HE Hf $$ [Hslice Hbox] with
@@ -830,65 +792,49 @@ theorem slice_split {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     obtain ⟨Hfresh2, Hne⟩ := Hfresh2
     imodintro
     iexists γ1, γ2
-    isplit
-    · ipureintro; exact Hfresh1
-    isplit
-    · ipureintro; exact Hfresh2
-    isplit
-    · ipureintro; exact Hne
-    isplitl [Hslice1]
-    · iexact Hslice1
-    isplitl [Hslice2]
-    · iexact Hslice2
-    have heqPP' : (iprop(internalEq P iprop((Q1 ∗ Q2) ∗ Pold)) : IProp GF) ⊢
-        internalEq P iprop(Q2 ∗ (Q1 ∗ Pold)) :=
-      (equiv_iff.mp ((internalEq.ne_r P).eqv (equiv_iff.mpr (hreassoc Pold)))).1
-    icombine HeqP Hbox as Hc
-    have hrepair : (iprop(▷ internalEq P iprop((Q1 ∗ Q2) ∗ Pold) ∗
-        box N (insert (insert (delete f γ) γ1 false) γ2 false) iprop(Q2 ∗ (Q1 ∗ Pold)))
-          : IProp GF) ⊢
-        box N (insert (insert (delete f γ) γ1 false) γ2 false) P :=
-      (sep_mono_left (later_mono heqPP')).trans
-        (box_internalEq_rewrite N _ P iprop(Q2 ∗ (Q1 ∗ Pold)))
+    iframe %Hfresh1 %Hfresh2 %Hne Hslice1 Hslice2
     simp only [BIBase.laterIf]
-    iapply laterN_mono q.toNat hrepair $$ Hc
+    inext
+    unfold box
+    icases Hbox with ⟨%Φ, #Heq, Hbig⟩
+    iexists Φ
+    isplitl [Heq]
+    · inext
+      iapply internalEq.trans
+      iframe Heq
+      iapply internalEq.trans
+      iframe HeqP
+      iclear HeqP Heq
+      rw [←sep_assoc.to_eq, (sep_comm (P := Q1)).to_eq]
+      itrivial
+    · iexact Hbig
   · iintro ⟨Hslice, Hbox⟩
-    imod slice_delete_full E q f P iprop(Q1 ∗ Q2) γ N HE Hf $$ [Hslice Hbox] with
-      ⟨%Pold, HQ12, #HeqP, Hbox⟩
-    · isplitl [Hslice] <;> iassumption
-    icases later_sep.mp $$ HQ12 with ⟨HQ1, HQ2⟩
-    imod slice_insert_full E q (delete f γ) Pold Q1 N HE $$ [HQ1 Hbox] with
+    imod slice_delete_full E q f P iprop(Q1 ∗ Q2) γ N HE Hf $$ [$Hslice $Hbox] with
+      ⟨%Pold, ⟨HQ1, HQ2⟩, #HeqP, Hbox⟩
+    imod slice_insert_full E q (delete f γ) Pold Q1 N HE $$ [$HQ1 $Hbox] with
       ⟨%γ1, %Hfresh1, Hslice1, Hbox⟩
-    · isplitl [HQ1] <;> iassumption
     imod slice_insert_full E q (insert (delete f γ) γ1 true) iprop(Q1 ∗ Pold) Q2 N HE $$
-      [HQ2 Hbox] with ⟨%γ2, %Hfresh2, Hslice2, Hbox⟩
-    · isplitl [HQ2] <;> iassumption
+      [$HQ2 $Hbox] with ⟨%γ2, %Hfresh2, Hslice2, Hbox⟩
     rw [LawfulPartialMap.get?_insert_none_iff] at Hfresh2
     obtain ⟨Hfresh2, Hne⟩ := Hfresh2
     imodintro
     iexists γ1, γ2
-    isplit
-    · ipureintro; exact Hfresh1
-    isplit
-    · ipureintro; exact Hfresh2
-    isplit
-    · ipureintro; exact Hne
-    isplitl [Hslice1]
-    · iexact Hslice1
-    isplitl [Hslice2]
-    · iexact Hslice2
-    have heqPP' : (iprop(internalEq P iprop((Q1 ∗ Q2) ∗ Pold)) : IProp GF) ⊢
-        internalEq P iprop(Q2 ∗ (Q1 ∗ Pold)) :=
-      (equiv_iff.mp ((internalEq.ne_r P).eqv (equiv_iff.mpr (hreassoc Pold)))).1
-    icombine HeqP Hbox as Hc
-    have hrepair : (iprop(▷ internalEq P iprop((Q1 ∗ Q2) ∗ Pold) ∗
-        box N (insert (insert (delete f γ) γ1 true) γ2 true) iprop(Q2 ∗ (Q1 ∗ Pold)))
-          : IProp GF) ⊢
-        box N (insert (insert (delete f γ) γ1 true) γ2 true) P :=
-      (sep_mono_left (later_mono heqPP')).trans
-        (box_internalEq_rewrite N _ P iprop(Q2 ∗ (Q1 ∗ Pold)))
+    iframe %Hfresh1 %Hfresh2 %Hne Hslice1 Hslice2
     simp only [BIBase.laterIf]
-    iapply laterN_mono q.toNat hrepair $$ Hc
+    inext
+    unfold box
+    icases Hbox with ⟨%Φ, #Heq, Hbig⟩
+    iexists Φ
+    isplitl [Heq]
+    · inext
+      iapply internalEq.trans
+      iframe Heq
+      iapply internalEq.trans
+      iframe HeqP
+      iclear HeqP Heq
+      rw [←sep_assoc.to_eq, (sep_comm (P := Q1)).to_eq]
+      itrivial
+    · iexact Hbig
 
 @[rocq_alias slice_combine]
 theorem slice_combine {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
@@ -904,103 +850,66 @@ theorem slice_combine {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
       (▷?q box N (insert (delete (delete f γ1) γ2) γ b) P) := by
   intro HE Hne Hf1 Hf2
   have Hf2' : get? (delete f γ1) γ2 = some b := by rw [get?_delete_ne Hne]; exact Hf2
-  have hreassoc : ∀ Pold2 : IProp GF,
-      (iprop((Q1 ∗ Q2) ∗ Pold2) : IProp GF) ⊣⊢ iprop(Q1 ∗ (Q2 ∗ Pold2)) :=
-    fun _ => sep_assoc
   cases b
   · iintro ⟨Hslice1, Hslice2, Hbox⟩
-    imod slice_delete_empty E q f P Q1 γ1 N HE Hf1 $$ [Hslice1 Hbox] with
+    imod slice_delete_empty E q f P Q1 γ1 N HE Hf1 $$ [$Hslice1 $Hbox] with
       ⟨%Pold1, #HeqP1, Hbox⟩
-    · isplitl [Hslice1] <;> iassumption
-    imod slice_delete_empty E q (delete f γ1) Pold1 Q2 γ2 N HE Hf2' $$ [Hslice2 Hbox] with
+    imod slice_delete_empty E q (delete f γ1) Pold1 Q2 γ2 N HE Hf2' $$ [$Hslice2 $Hbox] with
       ⟨%Pold2, #HeqP2, Hbox⟩
-    · isplitl [Hslice2] <;> iassumption
-    imod slice_insert_empty E q (delete (delete f γ1) γ2) iprop(Q1 ∗ Q2) Pold2 N $$ [Hbox] with
+    imod slice_insert_empty E q (delete (delete f γ1) γ2) iprop(Q1 ∗ Q2) Pold2 N $$ Hbox with
       ⟨%γ, %Hfresh, Hslice, Hbox⟩
-    · iexact Hbox
     imodintro
     iexists γ
-    isplit
-    · ipureintro; exact Hfresh
-    isplitl [Hslice]
-    · iexact Hslice
-    have hchain : (iprop(internalEq P iprop(Q1 ∗ Pold1) ∗
-        internalEq Pold1 iprop(Q2 ∗ Pold2)) : IProp GF) ⊢
-        internalEq P iprop((Q1 ∗ Q2) ∗ Pold2) := by
-      letI : NonExpansive (fun B : IProp GF => iprop(Q1 ∗ B)) :=
-        NonExpansive₂.ne_right BIBase.sep Q1
-      have hcong : (iprop(internalEq Pold1 iprop(Q2 ∗ Pold2)) : IProp GF) ⊢
-          internalEq iprop(Q1 ∗ Pold1) iprop(Q1 ∗ (Q2 ∗ Pold2)) :=
-        internalEq.of_internalEquiv_ne (PROP := IProp GF) (fun B => iprop(Q1 ∗ B))
-      have hassoc : (iprop(internalEq P iprop(Q1 ∗ (Q2 ∗ Pold2))) : IProp GF) ⊢
-          internalEq P iprop((Q1 ∗ Q2) ∗ Pold2) :=
-        (equiv_iff.mp ((internalEq.ne_r P).eqv (equiv_iff.mpr (hreassoc Pold2).symm))).1
-      iintro ⟨H1, H2⟩
-      iapply hassoc
-      iapply internalEq.trans
-      isplitl [H1]
-      · iassumption
-      · iapply hcong $$ H2
-    icombine HeqP1 HeqP2 Hbox as Hc
-    have hrepair : (iprop(▷ internalEq P iprop(Q1 ∗ Pold1) ∗
-          ▷ internalEq Pold1 iprop(Q2 ∗ Pold2) ∗
-        box N (insert (delete (delete f γ1) γ2) γ false) iprop((Q1 ∗ Q2) ∗ Pold2)) : IProp GF) ⊢
-        box N (insert (delete (delete f γ1) γ2) γ false) P := by
-      iintro ⟨H1, H2, Hbox⟩
-      iapply box_internalEq_rewrite N _ P iprop((Q1 ∗ Q2) ∗ Pold2)
-      isplitl [H1 H2]
-      · icombine H1 H2 as Hc
-        iapply later_mono hchain $$ Hc
-      · iassumption
+    iframe %Hfresh Hslice
     simp only [BIBase.laterIf]
-    iapply laterN_mono q.toNat hrepair $$ Hc
+    inext
+    unfold box
+    icases Hbox with ⟨%Φ, #Heq, Hbig⟩
+    iexists Φ
+    isplitl [Heq]
+    · inext
+      iapply internalEq.trans
+      iframe Heq
+      iapply internalEq.trans
+      iframe HeqP1
+      irewrite [HeqP2]
+      · refine ⟨fun _ _ _ H => ?_⟩
+        refine (NonExpansive₂.ne_left internalEq _).ne ?_
+        exact (sep_ne.ne_right _ _).ne H
+      iclear HeqP1 HeqP2 Heq
+      rw [←sep_assoc.to_eq, (sep_comm (P := Q1)).to_eq]
+      itrivial
+    · iexact Hbig
   · iintro ⟨Hslice1, Hslice2, Hbox⟩
-    imod slice_delete_full E q f P Q1 γ1 N HE Hf1 $$ [Hslice1 Hbox] with
+    imod slice_delete_full E q f P Q1 γ1 N HE Hf1 $$ [$Hslice1 $Hbox] with
       ⟨%Pold1, HQ1, #HeqP1, Hbox⟩
-    · isplitl [Hslice1] <;> iassumption
-    imod slice_delete_full E q (delete f γ1) Pold1 Q2 γ2 N HE Hf2' $$ [Hslice2 Hbox] with
+    imod slice_delete_full E q (delete f γ1) Pold1 Q2 γ2 N HE Hf2' $$ [$Hslice2 $Hbox] with
       ⟨%Pold2, HQ2, #HeqP2, Hbox⟩
-    · isplitl [Hslice2] <;> iassumption
     icombine HQ1 HQ2 as HQ12
     imod slice_insert_full E q (delete (delete f γ1) γ2) Pold2 iprop(Q1 ∗ Q2) N HE $$
-      [HQ12 Hbox] with ⟨%γ, %Hfresh, Hslice, Hbox⟩
-    · isplitl [HQ12] <;> iassumption
+      [$HQ12 $Hbox] with ⟨%γ, %Hfresh, Hslice, Hbox⟩
     imodintro
     iexists γ
-    isplit
-    · ipureintro; exact Hfresh
-    isplitl [Hslice]
-    · iexact Hslice
-    have hchain : (iprop(internalEq P iprop(Q1 ∗ Pold1) ∗
-        internalEq Pold1 iprop(Q2 ∗ Pold2)) : IProp GF) ⊢
-        internalEq P iprop((Q1 ∗ Q2) ∗ Pold2) := by
-      letI : NonExpansive (fun B : IProp GF => iprop(Q1 ∗ B)) :=
-        NonExpansive₂.ne_right BIBase.sep Q1
-      have hcong : (iprop(internalEq Pold1 iprop(Q2 ∗ Pold2)) : IProp GF) ⊢
-          internalEq iprop(Q1 ∗ Pold1) iprop(Q1 ∗ (Q2 ∗ Pold2)) :=
-        internalEq.of_internalEquiv_ne (PROP := IProp GF) (fun B => iprop(Q1 ∗ B))
-      have hassoc : (iprop(internalEq P iprop(Q1 ∗ (Q2 ∗ Pold2))) : IProp GF) ⊢
-          internalEq P iprop((Q1 ∗ Q2) ∗ Pold2) :=
-        (equiv_iff.mp ((internalEq.ne_r P).eqv (equiv_iff.mpr (hreassoc Pold2).symm))).1
-      iintro ⟨H1, H2⟩
-      iapply hassoc
-      iapply internalEq.trans
-      isplitl [H1]
-      · iassumption
-      · iapply hcong $$ H2
-    icombine HeqP1 HeqP2 Hbox as Hc
-    have hrepair : (iprop(▷ internalEq P iprop(Q1 ∗ Pold1) ∗
-          ▷ internalEq Pold1 iprop(Q2 ∗ Pold2) ∗
-        box N (insert (delete (delete f γ1) γ2) γ true) iprop((Q1 ∗ Q2) ∗ Pold2)) : IProp GF) ⊢
-        box N (insert (delete (delete f γ1) γ2) γ true) P := by
-      iintro ⟨H1, H2, Hbox⟩
-      iapply box_internalEq_rewrite N _ P iprop((Q1 ∗ Q2) ∗ Pold2)
-      isplitl [H1 H2]
-      · icombine H1 H2 as Hc
-        iapply later_mono hchain $$ Hc
-      · iassumption
+    iframe %Hfresh Hslice
     simp only [BIBase.laterIf]
-    iapply laterN_mono q.toNat hrepair $$ Hc
+    inext
+    unfold box
+    icases Hbox with ⟨%Φ, #Heq, Hbig⟩
+    iexists Φ
+    isplitl [Heq]
+    · inext
+      iapply internalEq.trans
+      iframe Heq
+      iapply internalEq.trans
+      iframe HeqP1
+      irewrite [HeqP2]
+      · refine ⟨fun _ _ _ H => ?_⟩
+        refine (NonExpansive₂.ne_left internalEq _).ne ?_
+        exact (sep_ne.ne_right _ _).ne H
+      iclear HeqP1 HeqP2 Heq
+      rw [←sep_assoc.to_eq, (sep_comm (P := Q1)).to_eq]
+      itrivial
+    · iexact Hbig
 
 end Iris
 
