@@ -2806,7 +2806,7 @@ def Tree.mirror : Tree α → Tree α
   | .node l x r => .node (.mirror r) x (.mirror l)
 
 /--
-  Tests `iinduction` with `Tree` and `Tree.mirror`.
+  Tests `iinduction` with a pure hypothesis that involves `Tree.mirror`.
 -/
 example [BI PROP] {α} {t : Tree α} :
   ⊢@{PROP} ⌜.mirror (.mirror t) = t⌝ := by
@@ -2817,6 +2817,25 @@ example [BI PROP] {α} {t : Tree α} :
     isplit
     · iexact ihl
     · iexact ihr
+
+/-- An inductively defined predicate on `Tree` -/
+def Tree.pred [BI PROP] (P : α → PROP) : Tree α → PROP
+  | .leaf => emp
+  | .node l x r => iprop(Tree.pred P l ∗ (P x ∗ Tree.pred P r))
+
+/--
+  Tests `iinduction` with spatial hypotheses that involve `Tree.mirror` and `Tree.pred`.
+-/
+example [BI PROP] {α} {t : Tree α} {P : α → PROP} :
+    Tree.pred P t -∗ Tree.pred P (.mirror t) := by
+  iintro H
+  iinduction t with simp [Tree.mirror, Tree.pred]
+  | node l x r ihl ihr =>
+    icases H with ⟨Hl, Hx, Hr⟩
+    iframe
+    isplitl [Hr]
+    · iapply ihr $$ Hr
+    · iapply ihl $$ Hl
 
 /--
   Tests `iinduction` with simple induction on natural numbers.
