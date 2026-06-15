@@ -86,13 +86,6 @@ private def parseInductionAlts (altsSyntax : TSyntax `Lean.Parser.Tactic.inducti
   | _ => throwErrorAt altsSyntax "iinduction: invalid syntax"
 
 /--
-  Check whether a fully-qualified constructor name (e.g. `Nat.succ`) matches a
-  user-written short name (e.g. `succ`) or an already-qualified name.
--/
-private def matchesCtorName (fullName : Name) (userShort : Name) : Bool :=
-  fullName == userShort || fullName.getString! == userShort.getString!
-
-/--
   This theorem is used for updating the proof in `InductionState` as `addIHs`
   iterates through the list of induction hypotheses and introduces them from
   the regular Lean context into the intuitionistic context.
@@ -308,8 +301,8 @@ private def checkCtors (ctors : List Name) (parsedAlts : Alts) : ProofModeM Unit
   let alts := parsedAlts.alts.toList
 
   for alt in alts do
-    let isValid := ctors.any fun ctor => matchesCtorName ctor alt.ctor
-    let isDup := alts.countP (fun alt' => matchesCtorName alt.ctor alt'.ctor) > 1
+    let isValid := ctors.any (· == alt.ctor)
+    let isDup := alts.countP (alt.ctor == ·.ctor) > 1
 
     if !isValid then
       throwOrLogErrorAt alt.stx
@@ -372,7 +365,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   | _ => throwError "iinduction: unable to determine inductive type"
 
   let matcher : Name → Alt → Bool :=
-    fun ctor alt => alt.ctor != .anonymous && matchesCtorName ctor alt.ctor
+    fun ctor alt => alt.ctor != .anonymous && ctor == alt.ctor
 
   -- Find the constructor names
   let recCtors := ((← Lean.Meta.getElimInfo recName).altsInfo.map (·.name)).toList
