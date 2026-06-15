@@ -100,17 +100,18 @@ private def RevertState.revertLeanHyp
     st.revertLeanForallHyp f α
 
 /--
-  When the tactic is `iinduction e generalizing z₁ ... zₙ` applied,
-  the variables `z₁ ... zₙ`, which can be regular Lean variables or Iris
-  hypotheses, are reverted from the context.
+  When the tactic `irevert z₁ ... zₙ` is applied, `z₁ ... zₙ`, which can be
+  regular Lean variables or Iris hypotheses, are reverted from the context.
+  This function checks that hypotheses depending on any of `z₁ ... zₙ` is also
+  included for reverting.
 
-  The function `iHypsToGeneralize` is used for finding the Iris hypotheses
-  that references the induction target.
-
-  However, it is possible that `x` is amongst the Lean variables explcitly
-  reverted by the user using the `generalizing` syntax while there exists
-  another Lean variable `y` such that `y` depends on `x`. In this case, this
-  function suggests that the user includes `%y` in the `generalizing` syntax.
+  This function is also used for `iinduction e generalizing z₁ ... zₙ` and
+  `iloeb as IH generalizing z₁ ... zₙ`. When such a tactic applied,
+  the variables `z₁ ... zₙ`, it is possible that `x` is amongst the Lean
+  variables explcitly reverted by the user using the `generalizing` syntax while
+  there exists another Lean variable `y` such that `y` depends on `x`. In this
+  case, this function suggests that the user includes `%y` in the `generalizing`
+  syntax.
 
   It is also possible that `x` is amongst the Lean variables being generalised
   such that there exists an Iris hypothesis `HP` in the intuitionistic context
