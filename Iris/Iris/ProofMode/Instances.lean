@@ -950,7 +950,7 @@ instance (priority := default - 1) intoIH_imp [BI PROP] (φ ψ : Prop) (Δ P Q :
     `∀ l, Forall P l → P (Tree l)` arising from nested inductive types like
     `inductive ntree := Tree : List ntree → ntree`. -/
 @[rocq_alias into_ih_Forall]
-instance intoIH_listForall [BI PROP] (φ : α → Bool) (l : List α) (P : PROP) (Φ : α → PROP)
+instance (priority := default - 2) intoIH_listForall [BI PROP] (φ : α → Bool) (l : List α) (P : PROP) (Φ : α → PROP)
     [h : ∀ x, IntoIH (φ x) P (Φ x)] :
     IntoIH (l.all φ) P (bigSepL (fun _ a => iprop(□ Φ a)) l) where
   into_ih := by
@@ -971,7 +971,7 @@ instance intoIH_listForall [BI PROP] (φ : α → Bool) (l : List α) (P : PROP)
 /-- Support for induction principles whose IH is guarded by `List.Forall₂`, e.g.
     arising from mutual inductive types relating two lists element-wise. -/
 @[rocq_alias into_ih_Forall2]
-instance intoIH_listForall₂ [BI PROP] (φ : α → β → Prop) (l1 : List α) (l2 : List β)
+instance (priority := default - 2) intoIH_listForall₂ [BI PROP] (φ : α → β → Prop) (l1 : List α) (l2 : List β)
     (P : PROP) (Φ : α → β → PROP)
     [h : ∀ x1 x2, IntoIH (φ x1 x2) P (Φ x1 x2)] :
     IntoIH (List.Forall₂ φ l1 l2) P (bigSepL2 (fun _ x1 x2 => iprop(□ Φ x1 x2)) l1 l2) where
