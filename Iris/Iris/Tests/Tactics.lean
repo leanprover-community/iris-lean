@@ -2975,29 +2975,34 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
 
 /-
   Tests `iinduction` on `n` generalising `m`, where:
-  - *regular hypotheses* `h : T m` and `U : (T m) → Prop` depend on `m`;
-  - *regular hypothesis* `h2 : U h` depends on `h`, which indirectly depends on `m`; and
-  - *Iris hypotheses* `□HQ : Q m` and `□HR : R m` depends on `m`.
+  - *regular hypotheses* `h : T m` and `U1 : (T m) → Prop` depend on `m`;
+  - *regular hypotheses* `h2 : U1 h1` and `U2 : (U1 h1) → PROP` depends on `h1`,
+    which in turn depends on `m`;
+  - *Iris hypotheses* `□HQ : Q m` and `□HR : R m` depends on `m`;
+  - *Iris hypothesis* `□HU2 : U2 h2` depends on `h2` and `U2`, which depends
+    depend on `h1`, which in turn depends on `m`.
   This requires manual resolution.
 -/
 /-- info: Try this:
-  [apply] iinduction n generalizing %m %h %U %h2 HQ HR with
-  | zero => itrivial
+  [apply] iinduction n generalizing %m %h1 %U1 %h2 %U2 HQ HR HU2 with
+  | zero
   | succ n IH => itrivial
 ---
 error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
-• Lean hypothesis `h` depends on `m`
-• Lean hypothesis `U` depends on `m`
+• Lean hypothesis `h1` depends on `m`
+• Lean hypothesis `U1` depends on `m`
 • Lean hypothesis `h2` depends on `m`
+• Lean hypothesis `U2` depends on `m`
 • Iris hypothesis in the intuitionstic context `HQ` depends on `m`
-• Iris hypothesis in the intuitionstic context `HR` depends on `m` -/
+• Iris hypothesis in the intuitionstic context `HR` depends on `m`
+• Iris hypothesis in the intuitionstic context `HU2` depends on `h2` -/
 #guard_msgs in
 example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Prop}
-    {h : T m} {U : (T m) → Prop} {h2 : U h} :
-    ⊢ P -∗ □ Q m -∗ □ R m -∗ □ S n -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR #HS
+    {h1 : T m} {U1 : (T m) → Prop} {h2 : U1 h1} {U2 : (U1 h1) → PROP} :
+    ⊢ P -∗ □ Q m -∗ □ R m -∗ □ S n -∗ □ U2 h2 -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR #HS #HU2
   iinduction n generalizing %m with
-  | zero => itrivial
+  | zero
   | succ n IH => itrivial
 
 end iinduction

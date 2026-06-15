@@ -177,22 +177,11 @@ private def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   let explicitPureFVars := explicitTargets.filterMap
     (match ·.kind with | .pure f => some f | _ => none)
 
-  -- Check Iris hypothesis that depend on hypotheses in the `generalizing` syntax
-  let missingIris : List (Name × FVarId) :=
-  hyps.intuitionisticIVarIds.filterMap fun ivar =>
-    if explicitIrisIVarIds.contains ivar then none
-    else match hyps.getDecl? ivar with
-      | some ⟨name, _, _, ty⟩ =>
-        match explicitPureFVars.find? (ty.containsFVar ·) with
-        | some x => some (name, x)
-        | none   => none
-      | none => none
-
   -- Pairs of `FVarId` values `(f1, f2)` indicating `f1` depends on `f2`.
   let mut missingPure : List (FVarId × FVarId) := []
 
   -- Check forward dependency of pure hypotheses in the `generalizing` syntax
-  for fvar in (explicitPureFVars ++ (missingIris.map (·.snd))).eraseDups do
+  for fvar in explicitPureFVars.eraseDups do
     let fwdDeps ← collectForwardDeps #[mkFVar fvar] false
     for dep in fwdDeps do
       let depId := dep.fvarId!
@@ -201,6 +190,19 @@ private def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
         -- Record the missing hypothesis to be generalised, if not already included
         if !missingPure.any (·.fst == depId) then
           missingPure := missingPure ++ [(depId, fvar)]
+
+  let allPureFVars := explicitPureFVars ++ missingPure.map (·.fst)
+
+  -- Check Iris hypothesis that depend on hypotheses in the `generalizing` syntax
+  let missingIris : List (Name × FVarId) :=
+  hyps.intuitionisticIVarIds.filterMap fun ivar =>
+    if explicitIrisIVarIds.contains ivar then none
+    else match hyps.getDecl? ivar with
+      | some ⟨name, _, _, ty⟩ =>
+        match allPureFVars.find? (ty.containsFVar ·) with
+        | some x => some (name, x)
+        | none   => none
+      | none => none
 
   -- Throw an error if there exists some pure/Lean hypotheses that should also be generalised
   if !missingPure.isEmpty || !missingIris.isEmpty then
