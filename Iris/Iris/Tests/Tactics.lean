@@ -2826,9 +2826,9 @@ example [BI PROP] {α} {xs : List α} {acc : List α} {P : List α → List α �
     P xs acc := by
   iintro #Hnil #Hcons
   iinduction xs generalizing %acc with
-  | cons x xs ih =>
+  | cons x xs IH =>
     iapply Hcons
-    iexact ih
+    iexact IH
   | _ =>
     iapply Hnil
 
@@ -2865,7 +2865,7 @@ example [BI PROP] {n : Nat} :
     ⊢@{PROP} ⌜n + 0 = n⌝ := by
   iinduction n with
   | zero => itrivial
-  | succ n ih extra1 extra2 => itrivial
+  | succ n IH extra1 extra2 => itrivial
 
 /--
   Tests `iinduction` using a custom recursor name (strong induction).
@@ -2895,7 +2895,7 @@ example [BI PROP] {n : Nat} :
   iinduction n with
   | zero => itrivial
   | _ => _
-  | succ n ih => itrivial
+  | succ n IH => itrivial
 
 /-
   Testing `iinduction` with redundant use of the wildcard. The wildcard
@@ -2907,26 +2907,14 @@ example [BI PROP] {n : Nat} :
     ⊢@{PROP} ⌜n + 0 = n⌝ := by
   iinduction n with
   | zero => itrivial
-  | succ n ih => itrivial
+  | succ n IH => itrivial
   | _ => _
 
-/- Testing `iinduction` with first tactic after `with` syntax -/
-example [BI PROP] {P Q R S T : PROP} {m n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜m + 0 = m⌝ -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
-  iinduction n with simp
-  | zero => itrivial
-  | succ n ih => itrivial
-
-/- Testing `iinduction` with first tactic after `with` syntax -/
-example [BI PROP] {P Q R S T : PROP} {m n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜m + 0 = m⌝ -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
-  iinduction n with (cases m)
-  | zero => itrivial
-  | succ n ih => itrivial
-
-/- Testing `iinduction` with first tactic after `with` syntax, redundant alternative name -/
+/-
+  Testing `iinduction` with the tactic after `with` syntax.
+  One of the alternative names (`zero`) becomes redundant and therefore should
+  be detected by the tactic.
+-/
 /-- error: iinduction: alternative `zero` is not needed -/
 #guard_msgs in
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
@@ -2934,66 +2922,45 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   iintro HP #HQ #HR HS #HT #H
   iinduction n with (try iexact H)
   | zero => itrivial  -- Redundant case
-  | succ n ih => itrivial
+  | succ n IH => itrivial
 
-/- Testing `iinduction` with first tactic after `with` syntax, no redundant alternative name -/
+/-
+  Testing `iinduction` with a tactic after `with` syntax.
+  One of the alternative names (`zero`) is redundant and therefore not required.
+  The tactic should not complain about any missing alternative names.
+-/
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
     ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜0 + 0 = 0⌝ -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR HS #HT #H
   iinduction n with (try iexact H)
   -- No complaints about missing `zero` case
-  | succ n ih => itrivial
+  | succ n IH => itrivial
 
-/- Testing `iinduction` on `n` generalising `m`, where *regular hypothesis* `h1 : Q m`
-   and `X : (Q m) → Prop` depend on `m`. This dependency requires manual resolution. -/
+/-
+  Testing `iinduction` on `n` generalising `m`, where:
+  - *regular hypotheses* `h : T m` and `U : (T m) → Prop` depend on `m`;
+  - *regular hypothesis* `h2 : U h` depends on `h`, which indirectly depends on `m`; and
+  - *Iris hypothesis* `□HQ : Q m` depends on `m`.
+  This requires manual resolution.
+-/
 /-- info: Try this:
-  [apply] iinduction n generalizing %m %h1 %X with
+  [apply] iinduction n generalizing %m %h %U %h2 HQ HR with
   | zero => itrivial
-  | succ n ih => itrivial
+  | succ n IH => itrivial
 ---
 error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
-• Lean hypothesis `h1` depends on `m`
-• Lean hypothesis `X` depends on `m` -/
-#guard_msgs in
-example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → Prop} {h1 : Q m} {X : (Q m) → Prop} :
-    ⊢ P -∗ ⌜n + 0 = n⌝ := by
-  iintro HP
-  iinduction n generalizing %m with
-  | zero => itrivial
-  | succ n ih => itrivial
-
-/-- Testing `iinduction` on `n` generalising `m` and `H`, which depends on `m`. -/
-example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → Prop} {H : Q m} :
-    ⊢ P -∗ ⌜n + 0 = n⌝ := by
-  iintro HP
-  iinduction n generalizing %m %H with
-  | zero => itrivial
-  | succ n ih => itrivial
-
-/- Testing `iinduction` on `n` generalising `m`, where *Iris hypothesis* `□HQ : Q m`
-   depends on `m`. This requires manual resolution. -/
-/-- info: Try this:
-  [apply] iinduction n generalizing %m HQ HR with
-  | zero => itrivial
-  | succ n ih => itrivial
----
-error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h` depends on `m`
+• Lean hypothesis `U` depends on `m`
+• Lean hypothesis `h2` depends on `m`
 • Iris hypothesis in the intuitionstic context `HQ` depends on `m`
 • Iris hypothesis in the intuitionstic context `HR` depends on `m` -/
 #guard_msgs in
-example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} :
+example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Prop}
+    {h : T m} {U : (T m) → Prop} {h2 : U h} :
     ⊢ P -∗ □ Q m -∗ □ R m -∗ □ S n -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR #HS
   iinduction n generalizing %m with
   | zero => itrivial
-  | succ n ih => itrivial
-
-/-- Testing `iinduction` on `n` generalising `m` and `HQ`, which depends on `m`. -/
-example [BI PROP] {P : PROP} {m n : Nat} {Q : Nat → PROP} :
-    ⊢ P -∗ □ Q m -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ
-  iinduction n generalizing %m HQ with
-  | zero => itrivial
-  | succ n ih => itrivial
+  | succ n IH => itrivial
 
 end iinduction
