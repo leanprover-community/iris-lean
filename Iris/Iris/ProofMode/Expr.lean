@@ -484,6 +484,17 @@ structure IrisGoal where
 
 def isIrisGoal (expr : Expr) : Bool := isAppOfArity expr ``Entails' 4
 
+def containsIrisGoal (e : Expr) : Bool :=
+  isIrisGoal e ||
+  match e with
+  | .app f a          => containsIrisGoal f || containsIrisGoal a
+  | .lam _ d b _      => containsIrisGoal d || containsIrisGoal b
+  | .forallE _ d b _  => containsIrisGoal d || containsIrisGoal b
+  | .letE _ t v b _   => containsIrisGoal t || containsIrisGoal v || containsIrisGoal b
+  | .mdata _ inner    => containsIrisGoal inner
+  | .proj _ _ inner   => containsIrisGoal inner
+  | _                 => false
+
 def parseIrisGoal? (expr : Expr) : Option IrisGoal := do
   -- remove top-level metadata when matching on the goal
   let expr := expr.consumeMData
