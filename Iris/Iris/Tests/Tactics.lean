@@ -2831,28 +2831,16 @@ example [BI PROP] {α} {xs : List α} {acc : List α} {P : List α → List α �
     iapply Hcons
     iexact ih
 
-/--
-  Tests `iinduction` with induction on natural numbers.
-
-  For natural numbers, `Nat.recAux` is used as the default recursor name. Hence,
-  the tactic is equivalent to `iinduction n using Nat.recAux generalizing %P HQ %R`.
--/
-example [BI PROP] {P Q R S : PROP} {T : Nat → PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T n -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
-  iinduction n generalizing HQ %R HR HP %P with
-  | zero      => itrivial
-  /- Naming the induction hypothesis as `ih`, but leaving the variable `n`
-     inaccessible by using `_` -/
-  | succ _ ih => iframe; itrivial
-
-/- Tests `iinduction` with a non-inductive datatype -/
+/- Tests `iinduction` with a non-inductive datatype. -/
 /-- error: iinduction: unable to determine inductive type -/
 #guard_msgs in
 example [BI PROP] {P : PROP} : ⊢ P := by
   iinduction P
 
-/- Tests `iinduction` with induction on natural numbers with invalid user-supplied names -/
+/-
+  Tests `iinduction` with induction on natural numbers with invalid, duplicate
+  and missing user-supplied alternative names.
+-/
 /-- error: iinduction: invalid alternative name `invalidA`
 ---
 error: iinduction: duplicate alternative name `zero`
@@ -2861,9 +2849,8 @@ error: iinduction: invalid alternative name `invalidB`
 ---
 error: iinduction: alternative `succ` has not been provided -/
 #guard_msgs in
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
+example [BI PROP] {n : Nat} :
+    ⊢@{PROP} ⌜n + 0 = n⌝ := by
   iinduction n with
   | invalidA  => done
   | zero      => itrivial
@@ -2873,38 +2860,28 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
 /- Tests `iinduction` with extra arguments supplied by the user -/
 /-- error: iinduction: too many variable names provided at alternative `succ`: 4 provided, but 2 expected -/
 #guard_msgs in
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
+example [BI PROP] {n : Nat} :
+    ⊢@{PROP} ⌜n + 0 = n⌝ := by
   iinduction n with
   | zero => itrivial
   | succ n ih extra1 extra2 => itrivial
 
-/-- Tests `iinduction` using a custom recursor name (strong induction),
-    performing induction on an expression `n + m` -/
+/--
+  Tests `iinduction` using a custom recursor name (strong induction).
+  Tests induction on an expression `n + m`, which requires generalisation.
+  Tests the use of the same tactic sequences for multiple alternative names.
+  Note that `P` and `S` are reverted and thus included as wand premises
+  in the induction hypothesis.
+  Meanwhile, `T (n + m)` is also reverted because it involves the induction
+  target `n + m`.
+  The proposition `Q m` is reverted manually using the `generalizing` clause.
+  On the contrary, `R` is not reverted.
+-/
 example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {n : Nat} :
-    ⊢ P -∗ □ Q m -∗ □ R -∗ S -∗ □ T n -∗ ⌜n + m + 0 = n + m⌝ := by
+    ⊢ P -∗ □ Q m -∗ □ R -∗ S -∗ □ T (n + m) -∗ ⌜n + m + 0 = n + m⌝ := by
   iintro HP #HQ #HR HS #HT
-  iinduction n + m using Nat.caseStrongRecOn with
-  | zero => itrivial
-  | ind n ih => itrivial
-
-/-- Testing `iinduction` with the same tactic sequence for two constructors -/
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
-  iinduction n with
-  | zero | succ => itrivial
-
-/-- Testing `iinduction` with the hole and synthetic hole -/
-example [BI PROP] {P Q R S T : PROP} {n : Nat} :
-    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜n + 0 = n⌝ := by
-  iintro HP #HQ #HR HS #HT
-  iinduction n with
-  | zero => ?_
-  | succ n ih => _
-  itrivial
-  itrivial
+  iinduction n + m using Nat.caseStrongRecOn generalizing %m HQ with
+  | zero | ind _ _ => itrivial
 
 /-- Testing `iinduction` with wildcard for one case -/
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
