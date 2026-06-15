@@ -2779,6 +2779,41 @@ end iloeb
 
 section iinduction
 
+/-- Inductively defined binary tree data structure -/
+inductive Tree (α : Type u) where
+  | leaf : Tree α
+  | node : Tree α → α → Tree α → Tree α
+  deriving Repr
+
+/--
+  Tests `iinduction` with simple induction on binary trees.
+  All propositions involved are in the intuitionistic context in this example.
+  Tests the use of a hole (`_`) for leaving a variable unnamed.
+-/
+example [BI PROP] {α} {t : Tree α} {P : Tree α → PROP} :
+    □ P .leaf -∗ □ (∀ l x r, P l -∗ P r -∗ P (.node l x r)) -∗ P t := by
+  iintro #H1 #H2
+  iinduction t with
+  | leaf => iexact H1
+  | node l _ r IH1 IH2 =>
+    iapply H2
+    · iexact IH1
+    · iexact IH2
+
+/--
+  Tests `iinduction` with simple induction on binary trees.
+  Tries `iframe` to solve induction subgoals before splitting into cases.
+  Tests the use of a synthetic hole (`?_`) for delaying the induction subgoal.
+-/
+example [BI PROP] {n : Nat} {P : Nat → PROP} :
+    □ (∀ m, P m -∗ P (m + 1)) -∗ P 0 -∗ P n := by
+  iintro #H1 H2
+  iinduction n with iframe
+  | succ n IH => ?_
+  iapply H1
+  iapply IH
+  iexact H2
+
 /--
   Tests `iinduction` with induction on natural numbers.
 
@@ -2793,6 +2828,21 @@ example [BI PROP] {P Q R S : PROP} {T : Nat → PROP} {n : Nat} :
   /- Naming the induction hypothesis as `ih`, but leaving the variable `n`
      inaccessible by using `_` -/
   | succ _ ih => iframe; itrivial
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /- Tests `iinduction` with a non-inductive datatype -/
 /-- error: iinduction: unable to determine inductive type -/
@@ -2836,21 +2886,6 @@ example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {n : Nat} :
   iinduction n + m using Nat.caseStrongRecOn with
   | zero => itrivial
   | ind n ih => itrivial
-
-inductive Tree (α : Type u) where
-  | leaf : Tree α
-  | node : Tree α → α → Tree α → Tree α
-  deriving Repr
-
-example [BI PROP] {α} {t : Tree α} {P : Tree α → PROP} :
-    □ P .leaf -∗ □ (∀ l x r, P l -∗ P r -∗ P (.node l x r)) -∗ P t := by
-  iintro #H1 #H2
-  iinduction t with
-  | leaf => iexact H1
-  | node l y r ih1 ih2 =>
-    iapply H2
-    · iexact ih1
-    · iexact ih2
 
 /-- Testing `iinduction` with the same tactic sequence for two constructors -/
 example [BI PROP] {P Q R S T : PROP} {n : Nat} :
