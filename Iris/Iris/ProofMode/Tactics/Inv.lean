@@ -21,10 +21,19 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
     (ivar : IVarId) (selPats : Option <| List SelPat)
     (introPat : Syntax × IntroPat) (hclose : Option <| TSyntax `ident) :
     ProofModeM Q($e ⊢ $goal) := do
+  -- Find the hypothesis from the context
+  let some ⟨_, _, p, ty⟩ := hyps.getDecl? ivar
+  | throwError m!"iinv: unable to find {ivar.name}"
 
-  let ⟨_, _, _, out, p, eq, pf⟩ := hyps.remove false ivar
+  let ϕ ← mkFreshExprMVarQ q(Prop)
+  let Pin ← mkFreshExprMVarQ q($prop)
+  let X ← mkFreshExprMVarQ q(Type)
+  let Pout ← mkFreshExprMVarQ q($X → $prop)
+  let Pclose ← mkFreshExprMVarQ q($X → $prop)
+  let Q' ← mkFreshExprMVarQ q($X → $prop)
 
-  let ϕ ← mkFreshExprMVarQ q($prop)
+  let some elimInv ← ProofModeM.trySynthInstanceQ q(@ElimInv $prop $bi $ϕ $X $ty $Pin $Pout $Pclose $goal $Q')
+  | throwError "iinv: ElimInv type class synthesis error"
 
   sorry
 
