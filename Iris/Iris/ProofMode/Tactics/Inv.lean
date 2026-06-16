@@ -18,9 +18,14 @@ public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
 private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q($prop))
-    (h : TSyntax `ident) (selPats : Option <| List SelPat)
-    (introPat : Option <| Syntax × IntroPat)
-    (hclose : Option <| TSyntax `ident) : ProofModeM Q($e ⊢ $goal) :=
+    (ivar : IVarId) (selPats : Option <| List SelPat)
+    (introPat : Syntax × IntroPat) (hclose : Option <| TSyntax `ident) :
+    ProofModeM Q($e ⊢ $goal) := do
+
+  let ⟨_, _, _, out, p, eq, pf⟩ := hyps.remove false ivar
+
+  let ϕ ← mkFreshExprMVarQ q($prop)
+
   sorry
 
 /-- `iinv` opens an invariant in the proof state. -/
@@ -29,10 +34,15 @@ syntax (name := iinv) "iinv " colGt ident (" with " (colGt ppSpace selPat)*)?
 
 elab_rules : tactic
   | `(tactic| iinv $h:ident $[with $spats:selPat*]? as $ipat:introPat $[$hclose:ident]?) => do
+  -- Parse the optional selection pattern used for auxiliary assertions needed to open the invariant
   let selPats ← spats.mapM <| fun pats => do
     liftMacroM <| SelPat.parse pats
+  -- Parse the introduction pattern used for destructing the result
   let introPat ← liftMacroM <| IntroPat.parse ipat
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let pf ← iInvCore hyps goal h selPats introPat hclose
+    -- Find the hypothesis in which the invariant is opened
+    let ivar ← hyps.findWithInfo h
+
+    let pf ← iInvCore hyps goal ivar selPats introPat hclose
     mvar.assign pf

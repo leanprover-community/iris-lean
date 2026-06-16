@@ -220,6 +220,14 @@ class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
 export CombineSepGives (combine_sep_gives)
 
+/-- The type class used for the `iinv` tactic. -/
+@[ipm_class, rocq_alias ElimInv]
+class ElimInv [BI PROP] (φ : outParam Prop) {X : outParam Type}
+    (Pinv Pin : PROP) (Pout : outParam <| X → PROP)
+    (mPclose : outParam <| X → PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
+  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ mPclose x -∗ Q' x) ⊢ Q
+export ElimInv (elim_inv)
+
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore elim_modal_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore from_and_tc_opaque "No tc_opaque in Lean"
