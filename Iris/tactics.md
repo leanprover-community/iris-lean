@@ -23,13 +23,13 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `icases` [*pmTerm*](#proof-mode-terms) `with` [*casesPat*](#cases-patterns) — Destruct [*pmTerm*](#proof-mode-terms) using [*casesPat*](#cases-patterns), consuming the hypothesis.
 - `icases +keep` [*pmTerm*](#proof-mode-terms) `with` [*casesPat*](#cases-patterns) — Like `icases`, but keep the original hypothesis (requires it to be intuitionistic or duplicable).
 - `ihave` [*casesPat*](#cases-patterns) `:=` [*pmTerm*](#proof-mode-terms) — Bring [*pmTerm*](#proof-mode-terms) (e.g. a Lean lemma or specialized hypothesis) into the context and destruct it with [*casesPat*](#cases-patterns) without consuming the original. Equivalent to `icases +keep`.
-- `ihave` [*casesPat*](#cases-patterns) `:` *term* `$$` [*specPats*](#specialization-patterns) — Assert the proposition *term*, prove it in a subgoal built from [*specPats*](#specialization-patterns), and destruct it with [*casesPat*](#cases-patterns).
+- `ihave` [*casesPat*](#cases-patterns) `:` *term* `$$` [*specPat*](#specialization-patterns) — Assert the proposition *term*, prove it in a subgoal built from [*specPat*](#specialization-patterns), and destruct it with [*casesPat*](#cases-patterns).
 - `iexists` *x₁*`,` ...`,` *xₙ* — Instantiate existential quantifiers in the goal with the terms *xᵢ*. Holes (`_`) and named metavariables (`?m`) are allowed.
 - `ileft` / `iright` — Choose the left/right side of a disjunction in the goal.
 
 ## Splitting and Framing
 
-- `isplit` — Split a conjunction (`∧`) into two goals, both keeping the entire context.
+- `isplit` — Turns the goal into a conjunction (`∧`) and splits it into two goals, both keeping the entire context.
 - `isplitl [`*H₁* ... *Hₙ*`]` — Split a separating conjunction (`∗`); the hypotheses *Hᵢ* go to the left goal, all remaining spatial hypotheses to the right.
 - `isplitr [`*H₁* ... *Hₙ*`]` — Like `isplitl`, but the listed hypotheses go to the right goal.
 - `isplitl` / `isplitr` — Split a separating conjunction, giving *all* spatial hypotheses to the left (`isplitl`) or right (`isplitr`) goal.
@@ -41,10 +41,10 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 
 ## Applying and Specializing
 
-- `iapply` [*pmTerm*](#proof-mode-terms) — Match the conclusion of [*pmTerm*](#proof-mode-terms) against the goal and generate goals for each premise, moving all unused spatial hypotheses into the last premise.
+- `iapply` [*pmTerm*](#proof-mode-terms) — Apply the conclusion of [*pmTerm*](#proof-mode-terms) to the goal.
 - `ispecialize` [*pmTerm*](#proof-mode-terms) — Specialize a hypothesis according to [*pmTerm*](#proof-mode-terms).
 - `iexact` *H* — Solve the goal with the hypothesis *H*.
-- `iassumption` — Solve the goal with a matching hypothesis from any context (pure, intuitionistic or spatial).
+- `iassumption` — Solve the goal with a matching hypothesis from the intuitionistic or spatial context.
 
 ## Modalities
 
