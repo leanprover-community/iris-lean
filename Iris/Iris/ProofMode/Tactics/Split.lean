@@ -26,8 +26,7 @@ public meta section
 open Lean Elab Tactic Meta Qq
 
 /--
-  `isplit` splits a conjunction (`∧`) into two goals, both keeping the
-  entire context.
+  `isplit` turns the goal into a conjunction (`∧`) and splits it into two goals, both keeping the entire context.
 -/
 elab "isplit " : tactic => do
   ProofModeM.runTactic λ mvar { prop, hyps, goal, .. } => do
