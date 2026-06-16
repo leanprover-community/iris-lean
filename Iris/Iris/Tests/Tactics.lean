@@ -11,6 +11,7 @@ public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
 public import Iris.Algebra.CMRA
+public import Iris.Instances.Lib.Invariants
 
 @[expose] public section
 
@@ -2776,3 +2777,6 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
+
+example [BI PROP] : ⊢@{PROP} True := by
+  iinv
