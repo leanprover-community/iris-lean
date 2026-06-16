@@ -81,9 +81,6 @@ theorem fill_append (K₁ K₂ : Λ.Ectx) (e : Expr) : fill (K₁ ++ K₂) e = f
 theorem fill_val {K} {e : Expr} : (toVal (fill K e)).isSome = true → (toVal e).isSome = true := by
   induction K generalizing e <;> grind [fillItem_val]
 
-/-- A base step from `e` is impossible whenever `fill K e` equals a value: a
-filled value forces `e` itself to be a value (`fill_val`), but base steps never
-fire from values (`val_stuck`). -/
 theorem baseStep_fill_eq_val_absurd {K : Ectx} {e e' : Expr} {σ σ' : State}
     {obs : List Obs} {efs : List Expr} {v : Val}
     (hbase : (e, σ) -<obs>->ᵇ (e', σ', efs))
