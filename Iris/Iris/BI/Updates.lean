@@ -453,11 +453,11 @@ theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP}:
 @[rocq_alias fupd_mask_subseteq_emptyset_difference]
 theorem fupd_mask_subseteq_emptyset_difference {E1 E2 : CoPset} (h : E2 ⊆ E1) :
     ⊢@{PROP} |={E1,E2}=> |={∅,E1\E2}=> emp := by
-  -- simp [union_comm, subset_union_diff h]
-  -- refine .trans ?_ (fupd_mask_frame_right (P := iprop(|={∅,E1 \ E2}=> (emp : PROP))) (disjoint_symm <| disjoint_diff_right))
-  -- refine (fupd_mask_intro_subseteq empty_subset).trans ?_
-  -- fupd_mask_frame_right (P := iprop(|={∅,E1 \ E2}=> (emp : PROP))) (disjoint_symm <| disjoint_diff_right)
-  sorry
+  have H : emp ⊢@{PROP} |={E1 \ E2 ∪ E2, ∅ ∪ E2}=> |={∅, E1 \ E2}=> emp :=
+    (fupd_mask_intro_subseteq empty_subset).trans
+    (fupd_mask_frame_right (disjoint_symm disjoint_diff_right))
+  rw [union_comm, subset_union_diff h] at H
+  exact H
 
 @[rocq_alias fupd_trans_frame]
 theorem fupd_trans_frame {E1 E2 E3 : CoPset} {P Q : PROP} :

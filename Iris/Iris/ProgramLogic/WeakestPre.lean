@@ -399,25 +399,23 @@ theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E
   simp only [wp.pre]
   match h : toVal e with
   | some v =>
-    -- FIXME: Why does this simp only exit the proofmode?
-    sorry
-    -- simp only [ToVal.coe_of_toVal_eq_some h]
-    -- iapply fupd_wp $$ H
+    dsimp only
+    rw [ToVal.coe_of_toVal_eq_some h]
+    iapply fupd_wp $$ H
   | none =>
     rw [wp_unfold.to_eq]
-    -- FIXME: Why does this simp only exit the proofmode?
+    dsimp only
     simp only [wp.pre, κ.toVal_eq_none_fill h, Nat.repeat]
-    sorry
-    -- iintro %σ₁ %step %obs %obs' %n Hσ
-    -- imod H $$ [$] with ⟨%_, H⟩
-    -- imodintro
-    -- isplit
-    -- · ipureintro; grind only [cases Stuckness, Language.Context.reducible_fill]
-    -- · iintro %e₂ %σ₂ %efs %HKstep Hcred
-    --   obtain ⟨e₂', rfl, Hstep⟩ := κ.primStep_fill_inv h HKstep
-    --   icases H $$ %e₂' %σ₂ %efs %Hstep Hcred with >H; imodintro; imodintro
-    --   imod H; imodintro; iapply step_fupdN_wand $$ H; iintro H
-    --   imod H with ⟨$, H, $⟩; imodintro; iapply IH $$ H
+    iintro %σ₁ %step %obs %obs' %n Hσ
+    imod H $$ [$] with ⟨%_, H⟩
+    imodintro
+    isplit
+    · ipureintro; grind only [cases Stuckness, Language.Context.reducible_fill]
+    · iintro %e₂ %σ₂ %efs %HKstep Hcred
+      obtain ⟨e₂', rfl, Hstep⟩ := κ.primStep_fill_inv h HKstep
+      icases H $$ %e₂' %σ₂ %efs %Hstep Hcred with >H; imodintro; imodintro
+      imod H; imodintro; iapply step_fupdN_wand $$ H; iintro H
+      imod H with ⟨$, H, $⟩; imodintro; iapply IH $$ H
 
 @[rocq_alias wp_bind_inv]
 theorem wp_bind_inv (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr}

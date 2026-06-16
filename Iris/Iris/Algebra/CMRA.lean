@@ -1274,12 +1274,13 @@ instance urFunctorDiscreteFunOF {C} (F : C → COFE.OFunctorPre) [∀ c, URFunct
   map f g := {
     toHom := COFE.OFunctor.map f g
     validN hv _ := (URFunctor.map f g).validN (hv _)
-    pcore _ c := by
-      unfold CMRA.core
-      -- simp [CMRA.pcore_eq_core]
-      have X := (URFunctor.map (F := F c) f g).pcore
-      -- exact (URFunctor.map f g).pcore _
-      sorry
+    pcore x := by
+      simp only [CMRA.pcore, Option.map]
+      intro c
+      show (URFunctor.map f g).f (CMRA.core (x c)) ≡ CMRA.core ((URFunctor.map f g).f (x c))
+      have h := (URFunctor.map f g).pcore (x c)
+      rw [CMRA.pcore_eq_core (x c), CMRA.pcore_eq_core] at h
+      simpa using h
     op _ _ _ := (URFunctor.map f g).op _ _
   }
   map_ne.ne := COFE.OFunctor.map_ne.ne
