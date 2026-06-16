@@ -27,7 +27,7 @@ open Lean Elab.Tactic Meta Qq Std
 
 /--
   `ileft` choose the left side of the disjunction in the goal.
-  Given a proof goal of the form `P ∨ Q`, the new goal is `P`.
+  Given a goal of the form `P ∨ Q`, the new goal is `P`.
 -/
 elab "ileft" : tactic => do
   ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do
@@ -41,8 +41,8 @@ elab "ileft" : tactic => do
   mvar.assign q(from_or_l (Q := $goal) $m)
 
 /--
-  `ileft` choose the right side of the disjunction in the goal.
-  Given a proof goal of the form `P ∨ Q`, the new goal is `Q`.
+  `iright` choose the right side of the disjunction in the goal.
+  Given a goal of the form `P ∨ Q`, the new goal is `Q`.
 -/
 elab "iright" : tactic => do
   ProofModeM.runTactic λ mvar { prop, e, hyps, goal, .. } => do

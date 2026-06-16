@@ -113,8 +113,4 @@ elab "ipureintro" : tactic => do
 
 -- TODO: what is the best lean automation tactic to call here?
 -- `assumption` is necessary if the goal contains mvars
-/--
-  `itrivial` tries to solve the goal with simple tactics such as `iassumption`,
-  `ipureintro` followed by `simp`/`assumption`, and so on.
--/
 macro_rules | `(tactic| itrivial) => `(tactic| (first | ipureintro | exfalso) <;> (first | simp [*] | assumption) <;> done)

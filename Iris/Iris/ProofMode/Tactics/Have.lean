@@ -26,7 +26,6 @@ open Lean Elab Tactic Meta Qq
 /--
   `ihave pat := pmt` brings `pmt : pmTerm` into the context and destructs it
   with the case pattern `pat` without consuming the original hypotheses.
-  This is equivalent to `icases +keep pmt with pat`.
 -/
 macro "ihave " colGt pat:icasesPat " := " pmt:pmTerm : tactic => `(tactic | icases +keep $pmt with $pat)
 

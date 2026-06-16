@@ -187,8 +187,7 @@ def iRewriteHyp {prop : Q(Type u)} {bi : Q(BI $prop)}
   Each rule is a proof mode term, optionally prefixed with `←` for
   right-to-left rewriting.
 
-  Optionally, one can use `irewrite (occs := …) [rules] at H` such that the
-  configuration options for the tactic are specified.
+  Optionally, one can use `irewrite (occs := …) [rules] at H` to specify the occurrences.
 -/
 elab "irewrite " cfg:optConfig " [" rules:(IRewrite.irwRule),* "] " loc:(location)? : tactic => do
   let config ← IRewrite.elabIRewriteConfig cfg

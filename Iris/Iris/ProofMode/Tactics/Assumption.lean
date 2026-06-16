@@ -21,8 +21,8 @@ public meta section
 open Lean Elab Tactic Meta Qq
 
 /--
-  `iassumption` solves the goal with a matching hypothesis from any context
-  (pure, intuitionistic or spatial).
+  `iassumption` solves the goal with a matching hypothesis from the
+   intuitionistic or spatial context.
 -/
 elab "iassumption" : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do

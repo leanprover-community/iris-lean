@@ -56,14 +56,14 @@ private partial def iApplyCore {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps :
 
 /--
   `iapply pmt` matches the conclusion of `pmt : pmTerm` against the goal and
-  generate goals for each premise. For example, given a proof goal `R` and
-  a hypothesis `H : P -∗ Q -∗ R`, `iapply H` generates two new proof goals,
+  generate goals for each premise. For example, given a goal `R` and
+  a hypothesis `H : P -∗ Q -∗ R`, `iapply H` generates two new goals,
   one with the conclusion `P` and another with the conclusion `Q`.
 
-  `iapply pmt H $$ [pat1] [pat2]` uses the specialisation patterns `pat1`
+  `iapply pmt H $$ pat1 pat2` uses the specialisation patterns `pat1`
   and `pat2`, which specifies how the wand premises of `H` are discharged.
   This is analogous to `iApply (H with "pat1 pat2")` in Rocq. For example,
-  given hypotheses `∗HP: □ P` and `∗H : P -∗ Q`, as well as the proof goal `Q`,
+  given hypotheses `∗HP: □ P` and `∗H : P -∗ Q`, as well as the goal `Q`,
   `iapply H $$ HP` solves the goal.
 -/
 elab "iapply " colGt pmt:pmTerm : tactic => do

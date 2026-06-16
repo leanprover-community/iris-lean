@@ -257,9 +257,6 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
 
 /--
   `icases pmt with pat` destructs `pmt : pmTerm` using the cases pattern `pat`.
-
-  Provided that `pmt` is intuitionistic or duplicable,
-  `icases +keep pmt with pat` keeps the original hypothesis upon case destruction.
 -/
 elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : tactic => do
   -- parse syntax

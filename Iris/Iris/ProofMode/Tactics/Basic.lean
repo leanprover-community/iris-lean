@@ -38,14 +38,14 @@ def iSolveSidecondition (target : Q(Prop)) (failOnUnsolved := true) : ProofModeM
       return mvar
 
 /--
-  `istart` starts the Iris Proof Mode (IPM).
+  `istart` starts the Iris Proof Mode.
 -/
 elab "istart" : tactic => do
   let (mvar, _) ← startProofMode (← getMainGoal)
   replaceMainGoal [mvar]
 
 /--
-  `istop` stops the Iris Proof Mode (IPM) by turning the proof goal back
+  `istop` stops the Iris Proof Mode by turning the goal back
   into plain entailment.
 -/
 elab "istop" : tactic => do
