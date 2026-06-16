@@ -946,27 +946,7 @@ instance (priority := default - 1) intoIH_imp [BI PROP] (φ ψ : Prop) (Δ P Q :
     refine persistent_and_affinely_sep_right.2.trans ?_
     exact pure_elim_right (fun hφ => h2.into_ih (hImp hφ))
 
-/-- Support for induction principles whose IH is guarded by `List.Forall`, e.g.
-    `∀ l, Forall P l → P (Tree l)` arising from nested inductive types like
-    `inductive ntree := Tree : List ntree → ntree`. -/
-@[rocq_alias into_ih_Forall]
-instance (priority := default - 2) intoIH_listForall [BI PROP] (φ : α → Bool) (l : List α) (P : PROP) (Φ : α → PROP)
-    [h : ∀ x, IntoIH (φ x) P (Φ x)] :
-    IntoIH (l.all φ) P (bigSepL (fun _ a => iprop(□ Φ a)) l) where
-  into_ih := by
-    intro h1
-    induction l generalizing Φ with
-    | nil =>
-      simp [affine]
-    | cons x xs ih =>
-      simp [List.all, bigSepL] at h1 ⊢
-      rcases h1 with ⟨hx, hxs⟩
-      apply intuitionistically_sep_idem.mpr.trans
-      refine sep_mono ?_ ?_
-      · exact intuitionistically_intro_intuitionistically ((h x).into_ih hx)
-      · apply ih
-        apply (List.all_eq_true.mpr)
-        apply hxs
+#rocq_ignore into_ih_Forall "List.Forall does not exist in the core Lean libraries, and ∀ x ∈ l, p x is used instead"
 
 /-- Support for induction principles whose IH is guarded by `List.Forall₂`, e.g.
     arising from mutual inductive types relating two lists element-wise. -/
