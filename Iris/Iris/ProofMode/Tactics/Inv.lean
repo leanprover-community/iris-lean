@@ -17,6 +17,9 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
+@[rocq_alias tac_inv_elim]
+theorem tac_inv_elim [BI PROP] {e goal : PROP} : e ⊢ goal := sorry
+
 private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q($prop))
     (ivar : IVarId) (selPats : Option <| List SelPat)
     (introPat : Syntax × IntroPat) (hclose : Option <| TSyntax `ident) :
@@ -35,7 +38,17 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   let some elimInv ← ProofModeM.trySynthInstanceQ q(@ElimInv $prop $bi $ϕ $X $ty $Pin $Pout $Pclose $goal $Q')
   | throwError "iinv: ElimInv type class synthesis error"
 
-  sorry
+  let hϕ ← iSolveSidecondition q($ϕ)
+
+  let ⟨_, hyps', _, _, _, _, pf⟩ := hyps.remove false ivar
+
+  let jvar ← mkFreshIVarId false
+  let name ← mkFreshUserName .anonymous
+
+  let hyps'' := hyps'.add bi name jvar q(false) ty
+
+  let pf' ← addBIGoal hyps'' goal
+  return q(tac_inv_elim)
 
 /-- `iinv` opens an invariant in the proof state. -/
 syntax (name := iinv) "iinv " colGt ident (" with " (colGt ppSpace selPat)*)?

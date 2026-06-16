@@ -2780,5 +2780,5 @@ end iloeb
 
 example [BI PROP] {P : PROP} : ⊢ P -∗ P := by
   iintro HP
-  iinv P as ∗
+  iinv HP as ∗
   itrivial
