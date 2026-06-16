@@ -475,6 +475,11 @@ instance fupd_sep_homomorphism E :
   map_op := fupd_sep
   map_unit := fupd_intro
 
+@[rocq_alias big_sepM_fupd]
+theorem BigSepM.bigSepM_fupd [LawfulFiniteMap M' K] E (Φ : K → V → PROP) (l : M' V) :
+    ([∗map] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗map] k↦x ∈ l, Φ k x :=
+    Algebra.BigOpM.bigOpM_hom (R := flip Entails) Φ l
+
 @[rocq_alias big_sepL_fupd]
 theorem BigSepL2.bigSepL_fupd {A : Type _} E (Φ : Nat → A → PROP) l :
     ([∗list] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗list] k↦x ∈ l, Φ k x :=
