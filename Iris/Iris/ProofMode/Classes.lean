@@ -215,6 +215,7 @@ export CombineSepAs (combine_sep_as)
 
 #rocq_ignore MaybeCombineSepAs "No need for progress_indicator"
 #rocq_ignore progress_indicator "No longer required as it is only used by the type class MaybeCombineSepAs"
+#rocq_ignore maybe_combine_sep_as_combine_sep_as "No longer required along with MaybeCombineSepAs"
 
 /-- `CombineSepGives` combines two propositions `P` and `Q` for a proposition
     with the `<pers>` modality -/
