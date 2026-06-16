@@ -651,11 +651,10 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     isplitr
     · ipureintro
       cases s <;> simp only [Stuckness.MaybeReducible]
-      exact prim_step_reducible_resolve hatom hp_contains Hred_e
+      exact prim_step_reducible_resolve hp_contains Hred_e
     iintro %e₂ %σ₂ %eₜ %Hstep _Hcred
     exfalso
-    obtain ⟨κ_inner, _, hκ_eq, _, _⟩ :=
-      step_resolve_decompose hatom Hstep
+    obtain ⟨κ_inner, _, hκ_eq, _, _⟩ := step_resolve_decompose Hstep
     exact List.cons_ne_nil _ _ (List.append_eq_nil_iff.mp hκ_eq.symm).2
   | append_singleton init lastObs _ =>
     -- obs = init ++ [lastObs]. Apply inner WP with inner obs = init,
@@ -671,19 +670,13 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     isplitr
     · ipureintro
       cases s <;> simp only [Stuckness.MaybeReducible]
-      exact prim_step_reducible_resolve hatom hp_contains Hred_e
+      exact prim_step_reducible_resolve hp_contains Hred_e
     iintro %e₂ %σ₂ %eₜ %Hstep Hcred
-    obtain ⟨κ_inner, v_inner, hκ_eq, he₂_eq, Hbase_e⟩ :=
-      step_resolve_decompose hatom Hstep
-    -- Cancel the trailing observation: from `init ++ [lastObs]
-    -- = κ_inner ++ [(p, (v_inner, w))]`, reverse both sides and `simp`.
+    obtain ⟨κ_inner, v_inner, hκ_eq, he₂_eq, Hbase_e⟩ := step_resolve_decompose Hstep
     have h := congrArg List.reverse hκ_eq
     simp at h
     obtain ⟨hκ_eq_init, hlast_eq⟩ := h
     subst hκ_eq_init; subst hlast_eq; subst he₂_eq
-    -- Apply the inner WP step continuation to the inner base step, then
-    -- bridge the resulting `={∅}▷=∗^[n+1] |={∅,E}=>` modality stack into the
-    -- outer goal of the same shape via `step_fupdN_wand`.
     have Hprim_e : PrimStep.primStep (e, σ₁) init (Exp.val v_inner, σ₂, eₜ) :=
       EctxLanguage.primStep_of_baseStep Hbase_e
     ispecialize HWPe $$ %_ %_ %_ %Hprim_e Hcred
@@ -692,11 +685,8 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     imod HWPe with ⟨Hσ_post, HWPval, Hefs⟩
     icases (stateInterp_split σ₂ (ns + 1) ((p, (v_inner, w)) :: obs') (nt + eₜ.length)).mp
       $$ Hσ_post with ⟨Hheap_e, Hpmap_e⟩
-    -- HWPval : WP (Val v_inner) {{ strong-post }}; convert to `|={E}=> strong-post v_inner`.
     ihave HWPval := wp_value_fupd'.mp $$ HWPval
     imod HWPval with ⟨%pvs', Hele, HΦ⟩
-    -- The prophMapInterp now sees `(p, (v_inner, w)) :: obs'` at σ₂. Use
-    -- `ProphMap.resolve_proph` to consume the front observation.
     icombine Hpmap_e Hele as Hcomb
     imod (ProphMap.resolve_proph (V := Val × Val) (H := ProphMapF)
             p (v_inner, w) obs' σ₂.usedProphId pvs') $$ Hcomb

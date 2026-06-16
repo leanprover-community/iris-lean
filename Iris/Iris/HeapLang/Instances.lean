@@ -1,6 +1,7 @@
 /-
 Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sergei Stepanenko, Markus de Medeiros
 -/
 module
 
@@ -170,7 +171,7 @@ instance instPureExecSnd {v1 v2 : Val} : PureExec True 1 hl(snd(v((&v1, &v2)))) 
       intro Ki e_inner heq
       cases Ki <;> cases heq <;> rfl
 
-instance instPureExecPair {v1 v2 : Val} : Language.PureExec True 1 hl((&v1, &v2)) hl(v((&v1, &v2)))  where
+instance instPureExecPair {v1 v2 : Val} : PureExec True 1 hl((&v1, &v2)) hl(v((&v1, &v2)))  where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor <;> simp
@@ -181,7 +182,7 @@ instance instPureExecPair {v1 v2 : Val} : Language.PureExec True 1 hl((&v1, &v2)
 
 set_option synthInstance.checkSynthOrder false in
 instance instPureExecUnOp {op : UnOp} {v v' : Val} :
-    Language.PureExec (op.eval v = some v') 1 (Exp.unop op (.ofVal v)) (.ofVal v') where
+    PureExec (op.eval v = some v') 1 (Exp.unop op (.ofVal v)) (.ofVal v') where
   pureExec h := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor <;> simp [*]
@@ -192,7 +193,7 @@ instance instPureExecUnOp {op : UnOp} {v v' : Val} :
 
 set_option synthInstance.checkSynthOrder false in
 instance instPureExecBinOp {op : BinOp} {v1 v2 v' : Val} :
-    Language.PureExec (op.eval v1 v2 = some v') 1
+    PureExec (op.eval v1 v2 = some v') 1
       (Exp.binop op (.ofVal v1) (.ofVal v2)) (.ofVal v') where
   pureExec h := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
@@ -204,7 +205,7 @@ instance instPureExecBinOp {op : BinOp} {v1 v2 v' : Val} :
 
 -- higher priority than the generic binop instance
 instance (priority := default + 10) instPureExecEqOp {v1 v2 : Val} :
-    Language.PureExec (v1.compareSafe v2) 1
+    PureExec (v1.compareSafe v2) 1
       (Exp.binop .eq (.ofVal v1) (.ofVal v2)) (.ofVal (.lit (.bool (v1 == v2)))) where
   pureExec h := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
@@ -214,7 +215,7 @@ instance (priority := default + 10) instPureExecEqOp {v1 v2 : Val} :
       intro Ki e_inner heq
       cases Ki <;> cases heq <;> rfl
 
-instance instAtomicLoad {s} {v : Val} : Language.Atomic s hl(!&v) where
+instance instAtomicLoad {s} {v : Val} : Atomic s hl(!&v) where
   atomic {σ obs e' σ' eₜ} Hstep := by
     have hsr : SubredexesAreValues hl(!&v) := by
       apply subredexes_are_values
@@ -223,10 +224,10 @@ instance instAtomicLoad {s} {v : Val} : Language.Atomic s hl(!&v) where
       all_goals (cases heq; rfl)
     cases (baseStep_of_primStep Hstep hsr)
     cases s
-    · exact Language.val_irreducible rfl _
+    · exact val_irreducible rfl _
     · rfl
 
-instance instAtomicStore {s} {v1 v2 : Val} : Language.Atomic s hl(&v1 ← &v2) where
+instance instAtomicStore {s} {v1 v2 : Val} : Atomic s hl(&v1 ← &v2) where
   atomic {σ obs e' σ' eₜ} Hstep := by
     have hsr : SubredexesAreValues hl(&v1 ← &v2) := by
       apply subredexes_are_values
@@ -236,10 +237,22 @@ instance instAtomicStore {s} {v1 v2 : Val} : Language.Atomic s hl(&v1 ← &v2) w
     cases (baseStep_of_primStep Hstep hsr)
     rename_i l v Heq
     cases s
-    · exact Language.val_irreducible rfl _
+    · exact val_irreducible rfl _
     · rfl
 
-instance instAtomicFst {s} {v1 : Val} : Language.Atomic s hl(snd(&v1)) where
+instance instAtomicFst {s} {v1 : Val} : Atomic s hl(fst(&v1)) where
+  atomic {σ obs e' σ' eₜ} Hstep := by
+    have hsr : SubredexesAreValues hl(fst(&v1)) := by
+      apply subredexes_are_values
+      intro Ki e_inner heq
+      cases Ki <;> try (cases heq; done)
+      · cases heq; rfl
+    cases (baseStep_of_primStep Hstep hsr)
+    cases s
+    · exact val_irreducible rfl _
+    · rfl
+
+instance instAtomicSnd {s} {v1 : Val} : Atomic s hl(snd(&v1)) where
   atomic {σ obs e' σ' eₜ} Hstep := by
     have hsr : SubredexesAreValues hl(snd(&v1)) := by
       apply subredexes_are_values
@@ -248,24 +261,82 @@ instance instAtomicFst {s} {v1 : Val} : Language.Atomic s hl(snd(&v1)) where
       · cases heq; rfl
     cases (baseStep_of_primStep Hstep hsr)
     cases s
-    · exact Language.val_irreducible rfl _
+    · exact val_irreducible rfl _
     · rfl
 
-instance instAtomicSnd {s} {v1 : Val} : Language.Atomic s hl(snd(&v1)) where
+instance instAtomicAllocN {s} {v1 v2 : Val} : Atomic s hl(allocn(&v1, &v2)) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : SubredexesAreValues hl(snd(&v1)) := by
+    have hsr : SubredexesAreValues hl(allocn(&v1, &v2)) := by
       apply subredexes_are_values
       intro Ki e_inner heq
       cases Ki <;> try (cases heq; done)
-      · cases heq; rfl
+      all_goals (cases heq; rfl)
     cases (baseStep_of_primStep Hstep hsr)
     cases s
-    · exact Language.val_irreducible rfl _
+    · exact val_irreducible rfl _
     · rfl
 
--- TODO: The other atomic steps
+instance instAtomicFree {s} {v : Val} : Atomic s hl(free(&v)) where
+  atomic {σ obs e' σ' eₜ} Hstep := by
+    have hsr : SubredexesAreValues hl(free(&v)) := by
+      apply subredexes_are_values
+      intro Ki e_inner heq
+      cases Ki <;> try (cases heq; done)
+      all_goals (cases heq; rfl)
+    cases (baseStep_of_primStep Hstep hsr)
+    cases s
+    · exact val_irreducible rfl _
+    · rfl
 
-instance instAtomicCmpXChg {s} {v1 v2 v3 : Val} : Language.Atomic s hl(cmpXchg(&v1, &v2, &v3)) where
+instance instAtomicXchg {s} {v1 v2 : Val} : Atomic s hl(xchg(&v1, &v2)) where
+  atomic {σ obs e' σ' eₜ} Hstep := by
+    have hsr : SubredexesAreValues hl(xchg(&v1, &v2)) := by
+      apply subredexes_are_values
+      intro Ki e_inner heq
+      cases Ki <;> try (cases heq; done)
+      all_goals (cases heq; rfl)
+    cases (baseStep_of_primStep Hstep hsr)
+    cases s
+    · exact val_irreducible rfl _
+    · rfl
+
+instance instAtomicFaa {s} {v1 v2 : Val} : Atomic s hl(faa(&v1, &v2)) where
+  atomic {σ obs e' σ' eₜ} Hstep := by
+    have hsr : SubredexesAreValues hl(faa(&v1, &v2)) := by
+      apply subredexes_are_values
+      intro Ki e_inner heq
+      cases Ki <;> try (cases heq; done)
+      all_goals (cases heq; rfl)
+    cases (baseStep_of_primStep Hstep hsr)
+    cases s
+    · exact val_irreducible rfl _
+    · rfl
+
+instance instAtomicFork {s} {e : Exp} : Atomic s hl(fork(&e)) where
+  atomic {σ obs e' σ' eₜ} Hstep := by
+    have hsr : SubredexesAreValues hl(fork(&e)) := by
+      apply subredexes_are_values
+      intro Ki e_inner heq
+      cases Ki <;> try (cases heq; done)
+      all_goals (cases heq; rfl)
+    cases (baseStep_of_primStep Hstep hsr)
+    cases s
+    · exact val_irreducible rfl _
+    · rfl
+
+instance instAtomicNewProph {s} : Atomic s (State := State) Exp.newProph where
+  atomic {σ obs e' σ' eₜ} Hstep := by
+    have hsr : SubredexesAreValues (Exp.newProph) := by
+      apply subredexes_are_values
+      intro Ki e_inner heq
+      cases Ki <;> try (cases heq; done)
+      all_goals (cases heq; rfl)
+    cases (baseStep_of_primStep Hstep hsr)
+    cases s
+    · exact val_irreducible rfl _
+    · rfl
+
+instance instAtomicCmpXChg {s} {v1 v2 v3 : Val} : Atomic s hl(cmpXchg(&v1, &v2, &v3)) where
   atomic {σ obs e' σ' eₜ} Hstep := by
     have hsr : SubredexesAreValues hl(cmpXchg(&v1, &v2, &v3)) := by
       apply subredexes_are_values
@@ -274,7 +345,7 @@ instance instAtomicCmpXChg {s} {v1 v2 v3 : Val} : Language.Atomic s hl(cmpXchg(&
       all_goals (cases heq; rfl)
     cases (baseStep_of_primStep Hstep hsr)
     cases s
-    · exact Language.val_irreducible rfl _
+    · exact val_irreducible rfl _
     · rfl
 
 @[rocq_alias prim_step_to_val_is_base_step]
@@ -326,10 +397,8 @@ theorem base_step_to_val_atomic {e₁ : Exp} {σ₁ₐ : State} {κsₐ : List O
 /-- One cannot deallocate prophecy variables: any base step preserves
 `usedProphId` modulo extension. Mirrors Rocq's `base_step_more_proph_ids`. -/
 @[rocq_alias base_step_more_proph_ids]
-theorem base_step_more_proph_ids
-    {e : Exp} {σ : State} {κs : List Observation}
-    {e' : Exp} {σ' : State} {efs : List Exp}
-    (h : BaseStep e σ κs e' σ' efs) :
+theorem base_step_more_proph_ids {e : Exp} {σ : State} {κs : List Observation}
+    {e' : Exp} {σ' : State} {efs : List Exp} (h : BaseStep e σ κs e' σ' efs) :
     σ.usedProphId ⊆ σ'.usedProphId := by
   induction h with
   | newProphS _ p _ => intro x hx; rw [Std.ExtTreeSet.mem_insert]; right; exact hx
@@ -338,101 +407,69 @@ theorem base_step_more_proph_ids
   | _ => intro _ hx; exact hx
 
 @[rocq_alias step_resolve]
-theorem step_resolve {e : Exp} {vp vt : Val} {σ₁ σ₂ : State}
-    {κ : List Observation} {e₂ : Exp} {efs : List Exp}
-    (hatom : Language.Atomic (State := State) (Obs := Observation)
-      Language.Atomicity.StronglyAtomic e)
-    (hprim : PrimStep.primStep
-              (Exp.resolve e (.val vp) (.val vt), σ₁) κ (e₂, σ₂, efs)) :
+theorem step_resolve {e : Exp} {vp vt : Val} {σ₁ σ₂ : State} {κ : List Observation} {e₂ : Exp} {efs : List Exp}
+    [hatom : Atomic .StronglyAtomic e]
+    (hprim : PrimStep.primStep (Exp.resolve e (.val vp) (.val vt), σ₁) κ (e₂, σ₂, efs)) :
     BaseStep (Exp.resolve e (.val vp) (.val vt)) σ₁ κ e₂ σ₂ efs := by
   generalize hsrc : Exp.resolve e (.val vp) (.val vt) = src at hprim
   obtain ⟨Hbase⟩ := hprim
   rename_i e₁' e₂' K
-  -- hsrc : Exp.resolve e (Val vp) (Val vt) = fill K e₁'
-  -- goal : BaseStep (Exp.resolve e (Val vp) (Val vt)) σ₁ κ (fill K e₂') σ₂ efs
   cases K using List.reverseRec with
-  | nil =>
-    simp only [fill_nil] at hsrc ⊢
-    subst hsrc
-    exact Hbase
-  | append_singleton K' Ki _ =>
-    simp only [fill_append, fill_cons,
-        fill_nil] at hsrc ⊢
-    cases Ki with
-    | resolveL K_inner v1 v2 =>
-      simp only [fillItem, ECtxItem.fill, Exp.resolve.injEq] at hsrc
-      obtain ⟨h_e_eq, _, _⟩ := hsrc
-      have hprim_e : PrimStep.primStep (e, σ₁) κ
-         (fillItem K_inner (fill K' e₂'), σ₂, efs) := by
-        rw [h_e_eq]
-        have X :=  fill_primStep (K' ++ [K_inner]) (primStep_of_baseStep Hbase)
-        sorry
-      have hval : (toVal (fillItem K_inner (fill K' e₂'))).isSome :=
-        hatom.atomic hprim_e
-      rw [fillItem_expToVal_none] at hval
-      simp at hval
-    | resolveM e0 v2 =>
-      simp only [fillItem, ECtxItem.fill, Exp.resolve.injEq] at hsrc
-      exact (baseStep_fill_eq_val_absurd Hbase hsrc.2.1).elim
-    | resolveR e0 e1 =>
-      simp only [fillItem, ECtxItem.fill, Exp.resolve.injEq] at hsrc
-      exact (baseStep_fill_eq_val_absurd Hbase hsrc.2.2).elim
-    | _ => simp [fillItem, ECtxItem.fill] at hsrc
+  | nil => simp only [fill_nil] at hsrc ⊢; subst hsrc; exact Hbase
+  | append_singleton K' Ki ih =>
+    clear ih
+    exfalso
+    cases Ki <;>
+      simp only [fillItem, ECtxItem.fill, fill_append, fill_cons, fill_nil,
+        Exp.resolve.injEq, reduceCtorEq] at hsrc
+    case resolveL K_inner _ _ =>
+      have hp : PrimStep.primStep (e, σ₁) κ (fillItem K_inner (fill K' e₂'), σ₂, efs) := by
+        rw [hsrc.1]
+        exact fill_primStep [K_inner] (fill_primStep K' (primStep_of_baseStep Hbase))
+      exact absurd (hatom.atomic hp) (by simp [fillItem_expToVal_none])
+    case resolveM => exact baseStep_fill_eq_val_absurd Hbase hsrc.2.1
+    case resolveR => exact baseStep_fill_eq_val_absurd Hbase hsrc.2.2
 
 theorem prim_step_resolve_of_inner {e : Exp} {σ σ_e : State} {κ_e : List Observation}
-    {v_e w : Val} {efs_e : List Exp} {p : ProphId}
-    (Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e)
+    {v_e w : Val} {efs_e : List Exp} {p : ProphId} (Hbase_e : BaseStep e σ κ_e (.val v_e) σ_e efs_e)
     (hp_contains : σ.usedProphId.contains p) :
     PrimStep.primStep (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ)
         (κ_e ++ [(p, (v_e, w))]) (Exp.val v_e, σ_e, efs_e) :=
-  primStep_of_baseStep
-    (BaseStep.resolveS p v_e e σ w σ_e κ_e efs_e Hbase_e hp_contains)
+  primStep_of_baseStep (BaseStep.resolveS p v_e e σ w σ_e κ_e efs_e Hbase_e hp_contains)
 
-theorem step_resolve_decompose {e : Exp} {p : ProphId} {w : Val}
-    {σ₁ σ₂ : State} {κ : List Observation} {e₂ : Exp} {efs : List Exp}
-    (hatom : Language.Atomic (State := State) (Obs := Observation)
-      Language.Atomicity.StronglyAtomic e)
-    (hstep : PrimStep.primStep
-        (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ₁) κ (e₂, σ₂, efs)) :
+theorem step_resolve_decompose {e : Exp} {p : ProphId} {w : Val} {σ₁ σ₂ : State} {κ : List Observation}
+    {e₂ : Exp} {efs : List Exp} [hatom : Atomic .StronglyAtomic e]
+    (hstep : PrimStep.primStep (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ₁) κ (e₂, σ₂, efs)) :
     ∃ (κ_inner : List Observation) (v_inner : Val),
       κ = κ_inner ++ [(p, (v_inner, w))] ∧
       e₂ = Exp.val v_inner ∧
-      BaseStep e σ₁ κ_inner (.val v_inner) σ₂ efs := by
-  cases step_resolve hatom hstep with
-  | resolveS _ v_n _ _ _ _ κs_n _ hb _ => exact ⟨κs_n, v_n, rfl, rfl, hb⟩
+      BaseStep e σ₁ κ_inner (.val v_inner) σ₂ efs :=
+  match step_resolve hstep with
+  | .resolveS _ v_n _ _ _ _ κs_n _ hb _ => ⟨κs_n, v_n, rfl, rfl, hb⟩
 
 @[rocq_alias resolve_reducible]
-theorem resolve_reducible
-    {e : Exp} {σ : State} {p : ProphId} {v : Val}
-    (hatom : Language.Atomic (State := State) (Obs := Observation)
-      Language.Atomicity.StronglyAtomic e)
-    (hred : BaseStep.Reducible (e, σ))
+theorem resolve_reducible {e : Exp} {σ : State} {p : ProphId} {v : Val}
+    [hatom : Atomic .StronglyAtomic e] (hred : BaseStep.Reducible (e, σ))
     (hin : σ.usedProphId.contains p) :
     BaseStep.Reducible (Exp.resolve e (.val (.lit (.prophecy p))) (.val v), σ) := by
   obtain ⟨κ, e', σ', efs, hstep⟩ := hred
-  have hprim : PrimStep.primStep (e, σ) κ (e', σ', efs) :=
-    primStep_of_baseStep hstep
+  have hprim : PrimStep.primStep (e, σ) κ (e', σ', efs) := primStep_of_baseStep hstep
   have hval : (toVal e').isSome := hatom.atomic hprim
   obtain ⟨w', rfl⟩ : ∃ w', e' = Exp.val w' := by
-    cases e' with
-    | val w' => exact ⟨w', rfl⟩
-    | _ => simp [toVal] at hval
+    cases e' with | val w' => exact ⟨w', rfl⟩ | _ => simp [toVal] at hval
   refine ⟨κ ++ [(p, (w', v))], Exp.val w', σ', efs, ?_⟩
-  exact BaseStep.resolveS p w' e σ v σ' κ efs hstep hin
+  exact .resolveS p w' e σ v σ' κ efs hstep hin
 
 theorem prim_step_reducible_resolve {e : Exp} {σ : State} {p : ProphId} {w : Val}
-    (hatom : Language.Atomic (State := State) (Obs := Observation)
-      Language.Atomicity.StronglyAtomic e)
-    (hp_contains : σ.usedProphId.contains p)
+    [hatom : Atomic .StronglyAtomic e] (hp_contains : σ.usedProphId.contains p)
     (hred : PrimStep.Reducible (e, σ)) :
-    PrimStep.Reducible
-      (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ) := by
+    PrimStep.Reducible (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ) := by
   obtain ⟨κ, e', σ', efs, hprim⟩ := hred
   have hval : (toVal e').isSome := hatom.atomic hprim
   obtain ⟨v, rfl⟩ : ∃ v, e' = Exp.val v := by
     match e', hval with | .val v, _ => exact ⟨v, rfl⟩
   exact primStep_reducible_of_baseStep_reducible
-    (resolve_reducible hatom ⟨κ, _, σ', efs, primStep_val_baseStep hprim⟩ hp_contains)
+    (resolve_reducible ⟨κ, _, σ', efs, primStep_val_baseStep hprim⟩ hp_contains)
 
 @[rocq_alias prim_step_more_proph_ids]
 theorem prim_step_more_proph_ids {e : Exp} {σ : State} {κs : List Observation} {e' : Exp}
@@ -440,5 +477,17 @@ theorem prim_step_more_proph_ids {e : Exp} {σ : State} {κs : List Observation}
     σ.usedProphId ⊆ σ'.usedProphId := by
   obtain ⟨hbase⟩ := h
   exact base_step_more_proph_ids hbase
+
+/-- `resolve e &vp &vt` is atomic whenever its subexpression `e` is strongly
+atomic: any step of the whole expression is a `resolveS` base step, which runs
+`e` to a value and produces a value. Mirrors `resolve_atomic` in Rocq. -/
+instance instAtomicResolve {s} {e : Exp} {vp vt : Val} [hatom : Atomic .StronglyAtomic e] :
+    Atomic s (Exp.resolve e (.val vp) (.val vt)) where
+  atomic {σ obs e' σ' eₜ} Hstep := by
+    cases step_resolve Hstep with
+    | resolveS _ v _ _ _ _ _ _ _ _ =>
+      cases s
+      · exact val_irreducible rfl _
+      · rfl
 
 end Iris.HeapLang
