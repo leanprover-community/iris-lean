@@ -240,8 +240,8 @@ class IntoAcc [BI PROP] {X : outParam Type} (Pacc : PROP)
 /-- The type class used for the `iinv` tactic. -/
 @[ipm_class, rocq_alias ElimInv]
 class ElimInv [BI PROP] (φ : outParam Prop) (X : outParam Type)
-    (Pinv Pin : PROP) (Pout : outParam <| X → PROP)
-    (mPclose : outParam <| Option <| X → PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
+    (Pinv : PROP) (Pin : outParam PROP) (Pout : outParam <| X → PROP)
+    (mPclose : outParam <| Option <| X → PROP) (Q : outParam PROP) (Q' : outParam <| X → PROP) where
   elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ ((mPclose.map (· x)).getD emp) -∗ Q' x) ⊢ Q
 export ElimInv (elim_inv)
 
