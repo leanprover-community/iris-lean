@@ -218,18 +218,44 @@ instance PureExec_pair {v1 v2 : Val} : Language.PureExec True 1 hl((&v1, &v2)) h
       intro Ki e_inner heq
       cases Ki <;> cases heq <;> simp [toVal]
 
-instance PureExec_le_int {n1 n2 : Int} : Language.PureExec True 1 hl(#(.int n1) ≤ #(.int n2)) hl(#(.bool (n1 ≤ n2)))  where
-  pureExec _ := by
+set_option synthInstance.checkSynthOrder false in
+instance instPureExecUnOp {op : UnOp} {v v' : Val} :
+    Language.PureExec (op.eval v = some v') 1 (Exp.unop op (.ofVal v)) (.ofVal v') where
+  pureExec h := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun _ _ _ _ _ hs => ?_) ?_
-    · constructor <;> simp [BinOp.eval]
+    · constructor <;> simp [*]
+    · cases hs <;> simp_all [UnOp.eval]
+    · apply EctxItemLanguage.subredexes_are_values
+      intro Ki e_inner heq
+      cases Ki <;> cases heq <;> simp [toVal]
+
+set_option synthInstance.checkSynthOrder false in
+instance instPureExecBinOp {op : BinOp} {v1 v2 v' : Val} :
+    Language.PureExec (op.eval v1 v2 = some v') 1
+      (Exp.binop op (.ofVal v1) (.ofVal v2)) (.ofVal v') where
+  pureExec h := by
+    refine .once <| mk_pure_prim_step (fun _ => ?_) (fun _ _ _ _ _ hs => ?_) ?_
+    · constructor <;> simp [*]
     · cases hs <;> simp_all [BinOp.eval]
     · apply EctxItemLanguage.subredexes_are_values
       intro Ki e_inner heq
       cases Ki <;> cases heq <;> simp [toVal]
 
-instance instAtomicLoad {s} {v1 : Val} : Language.Atomic s hl(!&v1) where
+-- higher priority than the generic binop instance
+instance (priority := default + 10) instPureExecEqOp {v1 v2 : Val} :
+    Language.PureExec (v1.compareSafe v2) 1
+      (Exp.binop .eq (.ofVal v1) (.ofVal v2)) (.ofVal (.lit (.bool (v1 == v2)))) where
+  pureExec h := by
+    refine .once <| mk_pure_prim_step (fun _ => ?_) (fun _ _ _ _ _ hs => ?_) ?_
+    · constructor <;> simp [BinOp.eval, *]
+    · cases hs <;> simp_all [BinOp.eval]
+    · apply EctxItemLanguage.subredexes_are_values
+      intro Ki e_inner heq
+      cases Ki <;> cases heq <;> simp [toVal]
+
+instance instAtomicLoad {s} {v : Val} : Language.Atomic s hl(!&v) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : EctxLanguage.SubredexesAreValues hl(!&v1) := by
+    have hsr : EctxLanguage.SubredexesAreValues hl(!&v) := by
       apply EctxItemLanguage.subredexes_are_values
       intro Ki e_inner heq
       cases Ki <;> try (cases heq; done)
