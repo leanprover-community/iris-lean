@@ -225,6 +225,11 @@ def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
     (mγ : X → PROP) : PROP :=
   M1 iprop(∃ x, α x ∗ (β x -∗ M2 (mγ x)))
 
+@[ipm_class, rocq_alias ElimAcc]
+class ElimAcc [BI PROP] {X : Type} (ϕ : outParam Prop) (M1 M2 : PROP → PROP)
+    (α β : X → PROP) (mγ : X → PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
+  elim_acc : ϕ → ((∀ x, α x -∗ Q' x) -∗ accessor M1 M2 α β mγ -∗ Q)
+
 @[ipm_class, rocq_alias IntoAcc]
 class IntoAcc [BI PROP] (X : outParam Type) (Pacc : PROP)
     (ϕ : outParam Prop) (Pin : outParam <| PROP)
