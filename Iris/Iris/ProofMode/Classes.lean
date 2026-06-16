@@ -231,7 +231,7 @@ class ElimAcc [BI PROP] {X : Type} (ϕ : outParam Prop) (M1 M2 : PROP → PROP)
   elim_acc : ϕ → ((∀ x, α x -∗ Q' x) -∗ accessor M1 M2 α β mγ -∗ Q)
 
 @[ipm_class, rocq_alias IntoAcc]
-class IntoAcc [BI PROP] (X : outParam Type) (Pacc : PROP)
+class IntoAcc [BI PROP] {X : outParam Type} (Pacc : PROP)
     (ϕ : outParam Prop) (Pin : outParam <| PROP)
     (M1 M2 : outParam <| PROP → PROP) (α β : outParam <| X → PROP)
     (mγ : outParam <| X → Option PROP) where

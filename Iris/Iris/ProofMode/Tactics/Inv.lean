@@ -35,7 +35,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   let Pclose ← mkFreshExprMVarQ q($X → $prop)
   let Q' ← mkFreshExprMVarQ q($X → $prop)
 
-  let some elimInv ← ProofModeM.trySynthInstanceQ q(@ElimInv $prop $bi $ϕ $X $ty $Pin $Pout $Pclose $goal $Q')
+  let some elimInv ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $ty $Pin $Pout $Pclose $goal $Q')
   | throwError "iinv: ElimInv type class synthesis error"
 
   let hϕ ← iSolveSidecondition q($ϕ)
