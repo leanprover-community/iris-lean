@@ -135,15 +135,13 @@ theorem dist_of_frag_dist [UCMRA B] {b1 b2 : B} {n} (H : (◯V b1 : View R) ≡{
     b1 ≡{n}≡ b2 := H.2
 
 @[rocq_alias view_auth_discrete]
-theorem auth_discrete [UCMRA B] {dq a} (Ha : DiscreteE a) (He : DiscreteE (unit : B)) :
+instance auth_discrete [UCMRA B] {dq a} [Ha : DiscreteE a] [He : DiscreteE (unit : B)] :
     DiscreteE (●V{dq} a : View R) := by
   refine discrete ?_ He
-  refine Option.some_is_discrete ?_
-  refine prod.is_discrete DFrac.is_discrete ?_
-  exact Agree.toAgree.is_discrete Ha
+  infer_instance
 
 @[rocq_alias view_frag_discrete]
-theorem frag_discrete [UCMRA B] (Hb : DiscreteE b) : (DiscreteE (◯V b : View R)) :=
+instance frag_discrete [UCMRA B] [Hb : DiscreteE b] : DiscreteE (◯V b : View R) :=
   discrete Option.none_is_discrete Hb
 
 end OFE
@@ -865,14 +863,14 @@ instance (f : A → A') (g : B → B') [OFE.NonExpansive f] [hne : OFE.NonExpans
     exact ⟨h1.1, Agree.map f |>.ne.ne h1.2⟩
 
 @[rocq_alias viewO_map]
-instance mapO (f : A -n> A') (g : B -n> B') : View R -n> View R' where
+def mapO (f : A -n> A') (g : B -n> B') : View R -n> View R' where
   f := View.map R' f g
   ne := inferInstance
 
 end mapO
 
 @[rocq_alias view_map_cmra_morphism]
-instance mapC [OFE A] [UCMRA B] [OFE A'] [UCMRA B']
+def mapC [OFE A] [UCMRA B] [OFE A'] [UCMRA B']
     {R : ViewRel A B} [IsViewRel R] {R' : ViewRel A' B'} [IsViewRel R']
     (f : A -n> A') (g : B -C> B') (H : ∀ n a b, R n a b → R' n (f a) (g b)) :
     View R -C> View R' where

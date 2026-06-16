@@ -51,13 +51,11 @@ notation "●MN " n => auth (DFrac.own 1) n
 notation "●MN□ " n => auth DFrac.discard n
 notation "◯MN " n => lb n
 
-scoped instance : OFE.DiscreteE (◯MN n : MonoNat) :=
-  Auth.frag_discrete OrdCommMonoidLike.instDiscreteE
+scoped instance : OFE.DiscreteE (◯MN n : MonoNat) := Auth.frag_discrete
 scoped instance : OFE.DiscreteE (●MN{dq} n : MonoNat) :=
   ⟨fun h => OFE.discrete h⟩
 scoped instance : IsUnit (◯MN 0 : MonoNat) where
-  unit_valid := by
-    simpa only [lb, Auth.frag_valid] using True.intro
+  unit_valid := by simp only [lb, Auth.frag_valid]; exact True.intro
   unit_left_id {x} := .rfl
   pcore_unit := .rfl
 

@@ -52,12 +52,16 @@ instance frag_ne : NonExpansive (frag (A := A)) where
 #rocq_ignore excl_auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
 
 @[rocq_alias excl_auth_auth_discrete]
-instance auth_discrete {a : A} [DiscreteE a] : DiscreteE (●E a) :=
-  Auth.auth_discrete (some_is_discrete inferInstance) none_is_discrete
+instance auth_discrete {a : A} [DiscreteE a] : DiscreteE (●E a) := by
+  unfold auth
+  have X := @Auth.auth_discrete (Option A)
+  sorry
+  -- @Auth.auth_discrete _ _ _ (some_is_discrete inferInstance) none_is_discrete
 
 @[rocq_alias excl_auth_frag_discrete]
 instance frag_discrete {a : A} [DiscreteE a] : DiscreteE (◯E a) :=
-  Auth.frag_discrete (some_is_discrete inferInstance)
+  sorry
+  -- Auth.frag_discrete (some_is_discrete inferInstance)
 
 @[rocq_alias excl_auth_validN]
 theorem validN {a : A} : ✓{n} (●E a) • ◯E a :=

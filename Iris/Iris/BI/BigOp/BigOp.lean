@@ -472,7 +472,7 @@ end Persistently
 section Tests
 open Iris.Std OFE BIBase
 variable [BI PROP] (P : Nat → PROP) (Q : Nat → Nat → PROP) (l l1 l2 : List Nat)
-(Q' : Nat → Nat → Nat → PROP)
+  (Q' : Nat → Nat → Nat → PROP)
 
 /-! ## Delaborator round-trip tests -/
 
