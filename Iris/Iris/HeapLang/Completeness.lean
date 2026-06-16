@@ -108,7 +108,7 @@ abbrev baseCompletenessGoal (e₁ : Exp) (σ : State) (E : CoPset) : IProp GF :=
 /-- Pure-step branch of `wp_base_completeness`: a pure base step `e₁ → e₂` lands in
 the non-atomic disjunct, stepping the WP with `PureExec` and witnessing the
 trajectory with the (state-independent) base step. -/
-theorem wp_base_pure {e₁ e₂ : Exp} {φ : Prop} (hpe : Language.PureExec φ 1 e₁ e₂) (hφ : φ)
+theorem wp_base_pure {e₁ e₂ : Exp} {φ : Prop} [hpe : Language.PureExec φ 1 e₁ e₂] (hφ : φ)
     (σ : State) (E : CoPset)
     (hbase : ∀ σ' : State, BaseStep e₁ σ' [] e₂ σ' []) :
     heap_inv (GF := GF) σ ⊢ iprop(|={E}=> baseCompletenessGoal e₁ σ E) := by
@@ -444,35 +444,35 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
   obtain ⟨κ, e', σ', efs, Hstep⟩ := Hred
   cases Hstep with
   | recS f x e σ =>
-      iapply (wp_base_pure instPureExecRec trivial σ E (fun σ' => BaseStep.recS f x e σ')) $$ Hinv
+      iapply (wp_base_pure trivial σ E (fun σ' => BaseStep.recS f x e σ')) $$ Hinv
   | pairS v1 v2 σ =>
-      iapply (wp_base_pure PureExec_pair trivial σ E (fun σ' => BaseStep.pairS v1 v2 σ')) $$ Hinv
+      iapply (wp_base_pure trivial σ E (fun σ' => BaseStep.pairS v1 v2 σ')) $$ Hinv
   | injLS v σ =>
-      iapply (wp_base_pure PureExec_injl trivial σ E (fun σ' => BaseStep.injLS v σ')) $$ Hinv
+      iapply (wp_base_pure trivial σ E (fun σ' => BaseStep.injLS v σ')) $$ Hinv
   | injRS v σ =>
-      iapply (wp_base_pure PureExec_injr trivial σ E (fun σ' => BaseStep.injRS v σ')) $$ Hinv
+      iapply (wp_base_pure trivial σ E (fun σ' => BaseStep.injRS v σ')) $$ Hinv
   | betaS f x eb v2 e' σ h =>
       subst h
-      iapply (wp_base_pure instPureExecBeta trivial σ E
+      iapply (wp_base_pure trivial σ E
         (fun σ' => BaseStep.betaS f x eb v2 _ σ' rfl)) $$ Hinv
   | unOpS op v v' σ h =>
-      iapply (wp_base_pure (PureExec_unop (op := op) (v := v) (v' := v')) h σ E
+      iapply (wp_base_pure (hpe := instPureExecUnOp) h σ E
         (fun σ' => BaseStep.unOpS op v v' σ' h)) $$ Hinv
   | binOpS op v1 v2 v' σ h =>
-      iapply (wp_base_pure (PureExec_binop (op := op) (v1 := v1) (v2 := v2) (v' := v')) h σ E
+      iapply (wp_base_pure (hpe := instPureExecBinOp) h σ E
         (fun σ' => BaseStep.binOpS op v1 v2 v' σ' h)) $$ Hinv
   | ifTrueS et ee σ =>
-      iapply (wp_base_pure instPureExecIfTrue trivial σ E (fun σ' => BaseStep.ifTrueS e' ee σ')) $$ Hinv
+      iapply (wp_base_pure trivial σ E (fun σ' => BaseStep.ifTrueS e' ee σ')) $$ Hinv
   | ifFalseS et ee σ =>
-      iapply (wp_base_pure instPureExecIfFalse trivial σ E (fun σ' => BaseStep.ifFalseS et e' σ')) $$ Hinv
+      iapply (wp_base_pure trivial σ E (fun σ' => BaseStep.ifFalseS et e' σ')) $$ Hinv
   | fstS v1 v2 σ =>
-      iapply (wp_base_pure PureExec_fst trivial σ E (fun σ' => BaseStep.fstS v1 v2 σ')) $$ Hinv
+      iapply (wp_base_pure trivial σ E (fun σ' => BaseStep.fstS v1 v2 σ')) $$ Hinv
   | sndS v1 v2 σ =>
-      iapply (wp_base_pure PureExec_snd trivial σ E (fun σ' => BaseStep.sndS v1 v2 σ')) $$ Hinv
+      iapply (wp_base_pure trivial σ E (fun σ' => BaseStep.sndS v1 v2 σ')) $$ Hinv
   | caseLS v et ee σ =>
-      iapply (wp_base_pure instPureExecCaseInjl trivial σ E (fun σ' => BaseStep.caseLS v et ee σ')) $$ Hinv
+      iapply (wp_base_pure trivial σ E (fun σ' => BaseStep.caseLS v et ee σ')) $$ Hinv
   | caseRS v et ee σ =>
-      iapply (wp_base_pure instPureExecCaseInjr  trivial σ E (fun σ' => BaseStep.caseRS v et ee σ')) $$ Hinv
+      iapply (wp_base_pure trivial σ E (fun σ' => BaseStep.caseRS v et ee σ')) $$ Hinv
   | loadS l v σ hl =>
       iapply (wp_base_atomic_nochange (v₂ := v) l v σ E
         (base_step_to_val_atomic Atomicity.StronglyAtomic (BaseStep.loadS l v σ hl)) hl
