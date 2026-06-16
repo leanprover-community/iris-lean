@@ -220,9 +220,21 @@ class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
 export CombineSepGives (combine_sep_gives)
 
+@[rocq_alias accessor]
+def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
+    (mγ : X → PROP) : PROP :=
+  M1 iprop(∃ x, α x ∗ (β x -∗ M2 (mγ x)))
+
+@[ipm_class, rocq_alias IntoAcc]
+class IntoAcc [BI PROP] (X : outParam Type) (Pacc : PROP)
+    (ϕ : outParam Prop) (Pin : outParam <| PROP)
+    (M1 M2 : outParam <| PROP → PROP) (α β : outParam <| X → PROP)
+    (mγ : outParam <| X → PROP) where
+  into_acc : ϕ → Pacc -∗ Pin -∗ accessor M1 M2 α β mγ
+
 /-- The type class used for the `iinv` tactic. -/
 @[ipm_class, rocq_alias ElimInv]
-class ElimInv [BI PROP] (φ : outParam Prop) {X : outParam Type}
+class ElimInv [BI PROP] (φ : outParam Prop) (X : outParam Type)
     (Pinv Pin : PROP) (Pout : outParam <| X → PROP)
     (mPclose : outParam <| X → PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
   elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ mPclose x -∗ Q' x) ⊢ Q
