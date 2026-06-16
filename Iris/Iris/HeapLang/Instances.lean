@@ -348,7 +348,6 @@ instance instAtomicCmpXChg {s} {v1 v2 v3 : Val} : Atomic s hl(cmpXchg(&v1, &v2, 
     · exact val_irreducible rfl _
     · rfl
 
-@[rocq_alias prim_step_to_val_is_base_step]
 theorem primStep_val_baseStep {e : Exp} {σ : State} {obs : List Observation}
     {v : Val} {σ' : State} {efs : List Exp}
     (h : PrimStep.primStep (e, σ) obs (Exp.val v, σ', efs)) :
@@ -394,7 +393,6 @@ theorem base_step_to_val_atomic {e₁ : Exp} {σ₁ₐ : State} {κsₐ : List O
    No Lean equivalent — `BaseStep` is not a typeclass, so we can't make this
    a real instance. At use sites, manually apply `base_step_to_val_atomic`. -/
 
-@[rocq_alias base_step_more_proph_ids]
 theorem base_step_more_proph_ids {e : Exp} {σ : State} {κs : List Observation}
     {e' : Exp} {σ' : State} {efs : List Exp} (h : BaseStep e σ κs e' σ' efs) :
     σ.usedProphId ⊆ σ'.usedProphId := by
@@ -404,7 +402,6 @@ theorem base_step_more_proph_ids {e : Exp} {σ : State} {κs : List Observation}
   | cmpXchgS _ _ _ _ _ b _ _ _ => cases b <;> intro _ hx <;> exact hx
   | _ => intro _ hx; exact hx
 
-@[rocq_alias step_resolve]
 theorem step_resolve {e : Exp} {vp vt : Val} {σ₁ σ₂ : State} {κ : List Observation} {e₂ : Exp} {efs : List Exp}
     [hatom : Atomic .StronglyAtomic e]
     (hprim : PrimStep.primStep (Exp.resolve e (.val vp) (.val vt), σ₁) κ (e₂, σ₂, efs)) :
@@ -445,7 +442,6 @@ theorem step_resolve_decompose {e : Exp} {p : ProphId} {w : Val} {σ₁ σ₂ : 
   match step_resolve hstep with
   | .resolveS _ v_n _ _ _ _ κs_n _ hb _ => ⟨κs_n, v_n, rfl, rfl, hb⟩
 
-@[rocq_alias resolve_reducible]
 theorem resolve_reducible {e : Exp} {σ : State} {p : ProphId} {v : Val}
     [hatom : Atomic .StronglyAtomic e] (hred : BaseStep.Reducible (e, σ))
     (hin : σ.usedProphId.contains p) :
@@ -467,7 +463,6 @@ theorem prim_step_reducible_resolve {e : Exp} {σ : State} {p : ProphId} {w : Va
   exact primStep_reducible_of_baseStep_reducible
     (resolve_reducible ⟨κ, _, σ', efs, primStep_val_baseStep hprim⟩ hp_contains)
 
-@[rocq_alias prim_step_more_proph_ids]
 theorem prim_step_more_proph_ids {e : Exp} {σ : State} {κs : List Observation} {e' : Exp}
     {σ' : State} {efs : List Exp} (h : PrimStep.primStep (e, σ) κs (e', σ', efs)) :
     σ.usedProphId ⊆ σ'.usedProphId := by
