@@ -394,8 +394,6 @@ theorem base_step_to_val_atomic {e₁ : Exp} {σ₁ₐ : State} {κsₐ : List O
    No Lean equivalent — `BaseStep` is not a typeclass, so we can't make this
    a real instance. At use sites, manually apply `base_step_to_val_atomic`. -/
 
-/-- One cannot deallocate prophecy variables: any base step preserves
-`usedProphId` modulo extension. Mirrors Rocq's `base_step_more_proph_ids`. -/
 @[rocq_alias base_step_more_proph_ids]
 theorem base_step_more_proph_ids {e : Exp} {σ : State} {κs : List Observation}
     {e' : Exp} {σ' : State} {efs : List Exp} (h : BaseStep e σ κs e' σ' efs) :
@@ -423,10 +421,10 @@ theorem step_resolve {e : Exp} {vp vt : Val} {σ₁ σ₂ : State} {κ : List Ob
       simp only [fillItem, ECtxItem.fill, fill_append, fill_cons, fill_nil,
         Exp.resolve.injEq, reduceCtorEq] at hsrc
     case resolveL K_inner _ _ =>
-      have hp : PrimStep.primStep (e, σ₁) κ (fillItem K_inner (fill K' e₂'), σ₂, efs) := by
-        rw [hsrc.1]
-        exact fill_primStep [K_inner] (fill_primStep K' (primStep_of_baseStep Hbase))
-      exact absurd (hatom.atomic hp) (by simp [fillItem_expToVal_none])
+      suffices hp : PrimStep.primStep (e, σ₁) κ (fillItem K_inner (fill K' e₂'), σ₂, efs) by
+        exact absurd (hatom.atomic hp) (by simp [fillItem_expToVal_none])
+      rw [hsrc.1]
+      exact fill_primStep [K_inner] (fill_primStep K' (primStep_of_baseStep Hbase))
     case resolveM => exact baseStep_fill_eq_val_absurd Hbase hsrc.2.1
     case resolveR => exact baseStep_fill_eq_val_absurd Hbase hsrc.2.2
 
@@ -453,9 +451,8 @@ theorem resolve_reducible {e : Exp} {σ : State} {p : ProphId} {v : Val}
     (hin : σ.usedProphId.contains p) :
     BaseStep.Reducible (Exp.resolve e (.val (.lit (.prophecy p))) (.val v), σ) := by
   obtain ⟨κ, e', σ', efs, hstep⟩ := hred
-  have hprim : PrimStep.primStep (e, σ) κ (e', σ', efs) := primStep_of_baseStep hstep
-  have hval : (toVal e').isSome := hatom.atomic hprim
   obtain ⟨w', rfl⟩ : ∃ w', e' = Exp.val w' := by
+    have hval : (toVal e').isSome := hatom.atomic (primStep_of_baseStep hstep)
     cases e' with | val w' => exact ⟨w', rfl⟩ | _ => simp [toVal] at hval
   refine ⟨κ ++ [(p, (w', v))], Exp.val w', σ', efs, ?_⟩
   exact .resolveS p w' e σ v σ' κ efs hstep hin
@@ -465,9 +462,8 @@ theorem prim_step_reducible_resolve {e : Exp} {σ : State} {p : ProphId} {w : Va
     (hred : PrimStep.Reducible (e, σ)) :
     PrimStep.Reducible (Exp.resolve e (.val (.lit (.prophecy p))) (.val w), σ) := by
   obtain ⟨κ, e', σ', efs, hprim⟩ := hred
-  have hval : (toVal e').isSome := hatom.atomic hprim
   obtain ⟨v, rfl⟩ : ∃ v, e' = Exp.val v := by
-    match e', hval with | .val v, _ => exact ⟨v, rfl⟩
+    match e', (hatom.atomic hprim) with | .val v, _ => exact ⟨v, rfl⟩
   exact primStep_reducible_of_baseStep_reducible
     (resolve_reducible ⟨κ, _, σ', efs, primStep_val_baseStep hprim⟩ hp_contains)
 
