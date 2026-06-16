@@ -222,27 +222,27 @@ export CombineSepGives (combine_sep_gives)
 
 @[rocq_alias accessor]
 def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
-    (mγ : X → PROP) : PROP :=
-  M1 iprop(∃ x, α x ∗ (β x -∗ M2 (mγ x)))
+    (mγ : X → Option  PROP) : PROP :=
+  M1 iprop(∃ x, α x ∗ (β x -∗ M2 ((mγ x).getD emp)))
 
 @[ipm_class, rocq_alias ElimAcc]
 class ElimAcc [BI PROP] {X : Type} (ϕ : outParam Prop) (M1 M2 : PROP → PROP)
-    (α β : X → PROP) (mγ : X → PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
+    (α β : X → PROP) (mγ : X → Option PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
   elim_acc : ϕ → ((∀ x, α x -∗ Q' x) -∗ accessor M1 M2 α β mγ -∗ Q)
 
 @[ipm_class, rocq_alias IntoAcc]
 class IntoAcc [BI PROP] (X : outParam Type) (Pacc : PROP)
     (ϕ : outParam Prop) (Pin : outParam <| PROP)
     (M1 M2 : outParam <| PROP → PROP) (α β : outParam <| X → PROP)
-    (mγ : outParam <| X → PROP) where
+    (mγ : outParam <| X → Option PROP) where
   into_acc : ϕ → Pacc -∗ Pin -∗ accessor M1 M2 α β mγ
 
 /-- The type class used for the `iinv` tactic. -/
 @[ipm_class, rocq_alias ElimInv]
 class ElimInv [BI PROP] (φ : outParam Prop) (X : outParam Type)
     (Pinv Pin : PROP) (Pout : outParam <| X → PROP)
-    (mPclose : outParam <| X → PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
-  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ mPclose x -∗ Q' x) ⊢ Q
+    (mPclose : outParam <| Option <| X → PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
+  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ ((mPclose.map (· x)).getD emp) -∗ Q' x) ⊢ Q
 export ElimInv (elim_inv)
 
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
