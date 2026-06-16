@@ -110,7 +110,7 @@ instance instHeapLangGS_HeapLangS : HeapLangGpreS HasLC.hasLC HeapLangS where
   proph_pre := by
     constructor
     · constructor
-      sorry
+      exists 7
 
 end HeapLangGS
 
@@ -373,12 +373,14 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   obtain ⟨rfl⟩ := Heq2
   simp only [Heq4, Bool.false_eq_true, ↓reduceIte]
   imodintro
+  simp
+  simp [stateInterp]
   iframe Hσ Hproph
   isplit <;> try itrivial
   iexists hl_val((&v', #false))
   iframe Hpt
-  ipureintro; simp [toVal]
-  rfl
+  ipureintro
+  simp
 
 theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val}
     (Heq1 : toVal e1 = .some v1) (Heq2 : toVal e2 = .some v2) (Heq3 : v'.compareSafe v1)
@@ -410,10 +412,9 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   subst H
   ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
   simp only [stateInterp, Algebra.BigOpL.bigOpL_nil]
-  subst Heq4; simp only [toVal, Option.some.injEq] at Heq1 Heq2
+  subst Heq4; simp only [toVal] at Heq1 Heq2
   obtain ⟨rfl⟩ := Heq1
   obtain ⟨rfl⟩ := Heq2
-  subst Heq1; subst Heq2
   simp only [Heq4, ↓reduceIte, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
     List.foldl_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
@@ -458,7 +459,7 @@ theorem wp_free {l : Loc} {v : Val} :
   isplit <;> try itrivial
   iexists .lit .unit
   iframe Hpt
-  ipureintro; simp [toVal]
+  ipureintro; simp [toVal]; rfl
 
 theorem wp_xchg {l : Loc} {v w : Val} :
     ▷ (l ↦ some v)
@@ -496,7 +497,7 @@ theorem wp_xchg {l : Loc} {v w : Val} :
   isplit <;> try itrivial
   iexists v
   iframe Hpt
-  ipureintro; simp [toVal]
+  ipureintro; simp [toVal]; rfl
 
 theorem wp_faa {l : Loc} {i1 i2 : Int} :
     ▷ (l ↦ some (Val.lit (.int i1)))
@@ -536,7 +537,7 @@ theorem wp_faa {l : Loc} {i1 i2 : Int} :
   isplit <;> try itrivial
   iexists Val.lit (.int i1)
   iframe Hpt
-  ipureintro; simp [toVal]
+  ipureintro; simp [toVal]; rfl
 
 /-- The state update of a `newProphS` step (insertion into `usedProphId`) is the
 same set as `{p} ∪ usedProphId`, which is what `ProphMap.new_proph` returns. -/
@@ -593,7 +594,7 @@ theorem wp_new_proph :
   isplitl [Htok]
   · iexists hl_val(#(BaseLit.prophecy p'))
     isplit
-    · ipureintro; simp [toVal]
+    · ipureintro; simp [toVal]; rfl
     iexists p', _
     iframe Htok
     ipureintro; rfl

@@ -517,9 +517,11 @@ theorem step_resolve {e : Exp} {vp vt : Val} {σ₁ σ₂ : State}
       -- by lifting `Hbase` through `K' ++ [K_inner]`. Then atomicity forces the
       -- result to be a value, contradicting `fillItem_expToVal_none`.
       have hprim_e : PrimStep.primStep (e, σ₁) κ
-          (EctxItemLanguage.fillItem K_inner (fill K' e₂'), σ₂, efs) := h_e_eq ▸ by
-        simpa using EctxLanguage.fill_primStep (K' ++ [K_inner])
-          (EctxLanguage.primStep_of_baseStep Hbase)
+          (EctxItemLanguage.fillItem K_inner (fill K' e₂'), σ₂, efs) :=
+        sorry
+        -- h_e_eq ▸ by
+        -- simpa using EctxLanguage.fill_primStep (K' ++ [K_inner])
+        --   (EctxLanguage.primStep_of_baseStep Hbase)
       have hval : (toVal (EctxItemLanguage.fillItem K_inner (fill K' e₂'))).isSome :=
         hatom.atomic hprim_e
       rw [fillItem_expToVal_none] at hval

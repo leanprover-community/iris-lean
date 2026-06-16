@@ -186,7 +186,7 @@ theorem wp_base_atomic {e₁ : Exp} {v₂ : Val} (l : Loc) (vlive : Val) (vnew :
   isplitl [Hpost Hclose Hpt Hmeta Hproph_inv]
   · iexists v₂
     isplit
-    · ipureintro; simp [toVal]
+    · ipureintro; simp [toVal]; rfl
     iapply Hpost
     simp only [heap_inv]
     isplitl [Hclose Hpt Hmeta]
@@ -245,7 +245,7 @@ theorem wp_base_atomic_nochange {e₁ : Exp} {v₂ : Val} (l : Loc) (vlive : Val
   isplitl [Hpost Hmap Hproph_inv]
   · iexists v₂
     isplit
-    · ipureintro; simp [toVal]
+    · ipureintro; simp [toVal]; rfl
     iapply Hpost
     simp only [heap_inv]
     iframe Hmap Hproph_inv
@@ -595,7 +595,7 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
       isplitl [Hpost Hmap Hproph_inv Hnewpts Hnewmeta]
       · iexists (.lit (.loc l'))
         isplit
-        · ipureintro; simp [toVal]
+        · ipureintro; simp [toVal]; rfl
         iapply Hpost
         simp only [heap_inv]
         isplitl [Hmap Hnewpts Hnewmeta]
@@ -670,7 +670,7 @@ theorem wp_base_completeness (e₁ : Exp) (σ : State) (E : CoPset)
       isplitl [Hpost Hmap Hproph_inv Htok]
       · iexists (.lit (.prophecy p'))
         isplit
-        · ipureintro; simp [toVal]
+        · ipureintro; simp [toVal]; rfl
         iapply Hpost
         simp only [heap_inv]
         isplitl [Hmap]

@@ -172,7 +172,7 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
   · imod Hwp; imod Hwp
     rw [IProp.ext wp_unfold, wp.pre]
     simp [coe_of_toVal_eq_some He', Hnv]
-  · simp only
+  · dsimp only
     iintro %σ %n %κ %κs %n₂ Hσ
     imod Hwp $$ Hσ with ⟨%Hred, Hc⟩
     imodintro
@@ -188,7 +188,7 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
     -- FIXME: Why does this exit the proofmode?
     rw [IProp.ext wp_unfold, wp.pre]
     iintro ⟨Hst, Hwp⟩
-    rcases He₂' : toVal e₂ with (_|v₂) <;> simp only
+    rcases He₂' : toVal e₂ with (_|v₂) <;> dsimp only
     · imod Hwp $$ %_ %_ %κs %.nil [Hst] with ⟨%Hredu, H⟩
       · rw [List.append_nil κs]; iframe
       grind
