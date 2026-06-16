@@ -46,7 +46,7 @@ theorem toVal_eq_iff_coe (e : Expr) (v : Val) : v = e ↔ toVal e = some v :=
   ⟨(· ▸ toVal_coe v), coe_of_toVal_eq_some⟩
 
 @[rocq_alias of_val_inj]
-instance : ι.ofVal.Injective := by
+theorem TovVal.ofVal_inj : ι.ofVal.Injective := by
   intro x y h
   simpa [toVal_coe] using congrArg (toVal) h
 

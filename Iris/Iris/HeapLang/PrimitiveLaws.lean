@@ -335,7 +335,7 @@ theorem wp_store {l : Loc} {v v' : Val} Φ :
   isplit <;> try itrivial
   iexists .lit .unit
   isplit
-  · ipureintro; simp [toVal]
+  · ipureintro; rfl
   · iapply HΦ $$ [$]
 
 theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val}
@@ -367,9 +367,10 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   simp only [Option.pure_def, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at H
   subst H
   ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
-  simp only [stateInterp, Algebra.BigOpL.bigOpL_nil]
-  subst Heq4; simp only [toVal, Option.some.injEq] at Heq1 Heq2
-  subst Heq1; subst Heq2
+  simp only [Algebra.BigOpL.bigOpL_nil]
+  subst Heq4; simp only [toVal] at Heq1 Heq2
+  obtain ⟨rfl⟩ := Heq1
+  obtain ⟨rfl⟩ := Heq2
   simp only [Heq4, Bool.false_eq_true, ↓reduceIte]
   imodintro
   iframe Hσ Hproph
@@ -377,6 +378,7 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   iexists hl_val((&v', #false))
   iframe Hpt
   ipureintro; simp [toVal]
+  rfl
 
 theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v2 : Val}
     (Heq1 : toVal e1 = .some v1) (Heq2 : toVal e2 = .some v2) (Heq3 : v'.compareSafe v1)
@@ -409,17 +411,20 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
   simp only [stateInterp, Algebra.BigOpL.bigOpL_nil]
   subst Heq4; simp only [toVal, Option.some.injEq] at Heq1 Heq2
+  obtain ⟨rfl⟩ := Heq1
+  obtain ⟨rfl⟩ := Heq2
   subst Heq1; subst Heq2
   simp only [Heq4, ↓reduceIte, Int.toNat_one, List.range_one, List.foldl_cons, Int.cast_ofNat_Int,
     List.foldl_nil]
   rw [show l + (0 : Int) = l by cases l; simp only [HAdd.hAdd, Loc.mk.injEq]; grind]
-  imod genHeap_update (v₂ := .some v2') $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
+  imod genHeap_update (v₂ := .some v2) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
   imodintro
   iframe Hσ Hproph
   isplit <;> try itrivial
   iexists hl_val((&v', #true))
   iframe Hpt
   ipureintro; simp [toVal]
+  rfl
 
 theorem wp_free {l : Loc} {v : Val} :
     ▷ (l ↦ some v)
