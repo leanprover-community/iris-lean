@@ -81,7 +81,7 @@ instance instDiscreteESingleton [LawfulPartialMap M K] [DecidableEq K] [OFE V] {
   discrete {y} h k' := by
     by_cases hh : k = k'
     · simp only [LawfulPartialMap.get?_singleton, hh, ↓reduceIte]
-      refine ((Option.some_is_discrete ha).discrete (.trans ?_ (h k')))
+      refine (Option.some_is_discrete.discrete (.trans ?_ (h k')))
       simp [LawfulPartialMap.get?_singleton, hh, ↓reduceIte]
     · simp only [LawfulPartialMap.get?_singleton, hh, ↓reduceIte]
       refine (Option.none_is_discrete.discrete (.trans ?_ (h k')))

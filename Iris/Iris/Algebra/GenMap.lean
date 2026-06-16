@@ -107,7 +107,7 @@ theorem GenMap.singleton_discreteE {v : β} [OFE β] [DiscreteE v] :
     specialize H γ'
     simp only [GenMap.singleton, GenMap.alter, GenMap.empty, Iris.alter] at H ⊢
     split
-    · next heq => simp only [heq, ite_true] at H ⊢; exact (Option.some_is_discrete ‹_›).discrete H
+    · next heq => simp only [heq, ite_true] at H ⊢; exact Option.some_is_discrete.discrete H
     · next hne => simp only [hne, ite_false] at H ⊢; exact Option.none_is_discrete.discrete H
 
 theorem GenMap.empty_discreteE [OFE β] : DiscreteE (GenMap.empty (β := β)) where

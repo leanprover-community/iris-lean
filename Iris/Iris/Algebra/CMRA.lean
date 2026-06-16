@@ -761,8 +761,8 @@ theorem discrete_inc_l {x y : α} [HD : DiscreteE x] (Hv : ✓{0} y) (Hle : x �
 theorem discrete_inc_r {x y : α} [HD : DiscreteE y] : x ≼{0} y → x ≼ y
   | ⟨z, hz⟩ => ⟨z, HD.discrete hz⟩
 
-@[rocq_alias cmra_op_discrete]
-instance discrete_op {x y : α} (Hv : ✓{0} x • y) [Hx : DiscreteE x] [Hy : DiscreteE y] :
+@[reducible, rocq_alias cmra_op_discrete]
+def discrete_op {x y : α} (Hv : ✓{0} x • y) [Hx : DiscreteE x] [Hy : DiscreteE y] :
     DiscreteE (x • y) where
   discrete h :=
     let ⟨_w, _t, wt, wx, ty⟩ := extend ((Dist.validN h).mp Hv) h.symm
@@ -1274,7 +1274,13 @@ instance urFunctorDiscreteFunOF {C} (F : C → COFE.OFunctorPre) [∀ c, URFunct
   map f g := {
     toHom := COFE.OFunctor.map f g
     validN hv _ := (URFunctor.map f g).validN (hv _)
-    pcore _ _ := by simpa [CMRA.pcore_eq_core] using (URFunctor.map f g).pcore _
+    pcore x := by
+      simp only [CMRA.pcore, Option.map]
+      intro c
+      show (URFunctor.map f g).f (CMRA.core (x c)) ≡ CMRA.core ((URFunctor.map f g).f (x c))
+      have h := (URFunctor.map f g).pcore (x c)
+      rw [CMRA.pcore_eq_core (x c), CMRA.pcore_eq_core] at h
+      simpa using h
     op _ _ _ := (URFunctor.map f g).op _ _
   }
   map_ne.ne := COFE.OFunctor.map_ne.ne
@@ -1798,7 +1804,7 @@ open CMRA
 variable [CMRA A] [CMRA A'] [CMRA B] [CMRA B']
 
 @[rocq_alias prod_map_cmra_morphism]
-instance Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
+def Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
   f := Prod.map f g
   ne := inferInstance
   validN {n x} := fun ⟨h1, h2⟩ => ⟨Hom.validN _ h1, Hom.validN _ h2⟩

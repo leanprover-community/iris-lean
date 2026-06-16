@@ -68,12 +68,15 @@ instance frag_ne {q : Qp} : NonExpansive (frag q : A → FracAuth) where
 /-! ## Discrete instances -/
 
 @[rocq_alias frac_auth_auth_discrete]
-theorem auth_discrete {dq : DFrac} {a : A} (ha : DiscreteE a) : DiscreteE (●F{dq} a : FracAuth) :=
-  Auth.auth_discrete (some_is_discrete (prod.is_discrete ⟨discrete_0⟩ ha)) none_is_discrete
+instance auth_discrete {dq : DFrac} {a : A} [ha : DiscreteE a] : DiscreteE (●F{dq} a : FracAuth) :=
+  letI _ : DiscreteE (some ((1 : Qp), a)) := some_is_discrete
+  letI _ : DiscreteE (unit : Option (Qp × A)) := none_is_discrete
+  by infer_instance
 
 @[rocq_alias frac_auth_frag_discrete]
-theorem frag_discrete {q : Qp} {a : A} (ha : DiscreteE a) : DiscreteE (◯F{q} a : FracAuth) :=
-  Auth.frag_discrete (some_is_discrete (prod.is_discrete ⟨discrete_0⟩ ha))
+instance frag_discrete {q : Qp} {a : A} [ha : DiscreteE a] : DiscreteE (◯F{q} a : FracAuth) :=
+  letI _ : DiscreteE (some (q, a)) := some_is_discrete
+  by infer_instance
 
 /-! ## Validity -/
 

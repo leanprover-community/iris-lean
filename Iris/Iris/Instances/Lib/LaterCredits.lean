@@ -147,12 +147,12 @@ theorem lc_decrease_supply {n m} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -�
 
 @[rocq_alias lc_increase_supply]
 theorem lc_increase_supply n m : lc_supply m ⊢@{IProp GF} |==> (lc_supply (n + m) ∗ £ n) := by
-unfold lc lc_supply
-iintro H
-imod iOwn_update $$ H with Hown
-· exact auth_update_alloc (leftCancelAdd_local_update (y := 0) (x' := (n + m)) (y' := n) (by grind))
-icases iOwn_op $$ Hown with ⟨Hm, _⟩
-iframe
+  unfold lc lc_supply
+  iintro H
+  imod iOwn_update $$ H with Hown
+  · exact auth_update_alloc (leftCancelAdd_local_update (y := 0) (x' := (n + m)) (y' := n) (by grind))
+  icases iOwn_op $$ Hown with ⟨Hm, _⟩
+  iframe
 
 end LcSupplyRules
 
