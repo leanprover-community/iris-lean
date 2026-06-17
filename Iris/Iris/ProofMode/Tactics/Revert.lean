@@ -100,35 +100,13 @@ private def RevertState.revertLeanHyp
     st.revertLeanForallHyp f α
 
 /--
-  When the tactic `irevert z₁ ... zₙ` is applied, `z₁ ... zₙ`, which can be
-  regular Lean variables or Iris hypotheses, are reverted from the context.
-  This function checks that hypotheses depending on any of `z₁ ... zₙ` is also
-  included for reverting.
-
-  This function is also used for `iinduction e generalizing z₁ ... zₙ` and
-  `iloeb as IH generalizing z₁ ... zₙ`. When such a tactic applied,
-  the variables `z₁ ... zₙ`, it is possible that `x` is amongst the Lean
-  variables explcitly reverted by the user using the `generalizing` syntax while
-  there exists another Lean variable `y` such that `y` depends on `x`. In this
-  case, this function suggests that the user includes `%y` in the `generalizing`
-  syntax.
-
-  It is also possible that `x` is amongst the Lean variables being generalised
-  such that there exists an Iris hypothesis `HP` in the intuitionistic context
-  where:
-  1. `P` does not depend on the induction target and thus not reverted automatically,
-  2. `P` depends on `x` in the `generalizing` syntax, and
-  3. `P` itself is not included in the `generalizing` syntax.
-  In this case, this function suggests the user to include `HP` in the
-  `generalizing` syntax.
-
-  Note that Iris hypotheses in the spatial context are always reverted, so there
-  is no need for further checks by this function.
+  Throw an error if there exists hypotheses that are depend on any hypothesis
+  in `explicitTargets` but are not themselves in the list.
 -/
 def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (tacticName : String) (hyps : Hyps bi e) (explicitTargets : List SelTarget)
     (selPats : TSyntaxArray `selPat)
-    (mkTactic : TSyntaxArray `selPat →  ProofModeM (TSyntax `tactic)):
+    (mkTactic : TSyntaxArray `selPat → ProofModeM (TSyntax `tactic)):
     ProofModeM Unit := do
   let explicitIrisIVarIds := explicitTargets.filterMap
     (match ·.kind with | .ipm ivar => some ivar | _ => none)
@@ -138,7 +116,7 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   -- Pairs of `FVarId` values `(f1, f2)` indicating `f1` depends on `f2`.
   let mut missingPure : List (FVarId × FVarId) := []
 
-  -- Check forward dependency of pure hypotheses in the `generalizing` syntax
+  -- Check forward dependency of pure hypotheses
   for fvar in explicitPureFVars.eraseDups do
     let fwdDeps ← collectForwardDeps #[mkFVar fvar] false
     for dep in fwdDeps do
@@ -147,22 +125,18 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       if depId != fvar && !explicitPureFVars.contains depId then
         -- Record the missing hypothesis to be generalised, if not already included
         if !missingPure.any (·.fst == depId) then
-          missingPure := missingPure ++ [(depId, fvar)]
+          missingPure := missingPure.cons (depId, fvar)
 
   let allPureFVars := explicitPureFVars ++ missingPure.map (·.fst)
 
-  -- Check Iris hypothesis that depend on hypotheses in the `generalizing` syntax
+  -- Check forward dependency of Iris hypotheses
   let missingIris : List (Name × FVarId) :=
   hyps.intuitionisticIVarIds.filterMap fun ivar =>
     if explicitIrisIVarIds.contains ivar then none
-    else match hyps.getDecl? ivar with
-      | some ⟨name, _, _, ty⟩ =>
-        match allPureFVars.find? (ty.containsFVar ·) with
-        | some x => some (name, x)
-        | none   => none
-      | none => none
+    else hyps.getDecl? ivar >>= fun ⟨name, _, _, ty⟩ =>
+      (allPureFVars.find? (ty.containsFVar ·)).map (name, ·)
 
-  -- Throw an error if there exists some pure/Lean hypotheses that should also be generalised
+  -- Add an error message if there exists some pure/Lean hypotheses that should also be generalised
   if !missingPure.isEmpty || !missingIris.isEmpty then
     let leanLines ← missingPure.mapM fun (depId, srcId) => do
       let depDecl ← depId.getDecl
@@ -176,7 +150,7 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     let allPureFVarsSorted := (← getLCtx).sortFVarsByContextOrder allPureFVars.eraseDups.toArray
     let sortedPurePats : Array (TSyntax `selPat) ← allPureFVarsSorted.mapM fun fvarId => do
       let decl ← fvarId.getDecl
-      let id := mkIdent (.mkSimple decl.userName.toString)
+      let id := mkIdent <| .mkSimple decl.userName.toString
       `(selPat| %$id:ident)
 
     -- Build `selPat` syntax nodes for each missing item
@@ -186,9 +160,7 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     -- Find the old tactic syntax and generate the new one with missing hypotheses added
     let oldTactic ← getRef
     let existingIrisPats := selPats.filter fun p =>
-      match p.raw with
-      | `(selPat| %$_:ident) => false
-      | _ => true
+      match p.raw with | `(selPat| %$_:ident) => false | _ => true
     let extendedPats := sortedPurePats ++ existingIrisPats ++ newIrisPats
     let newTactic ← mkTactic extendedPats
 
@@ -200,8 +172,9 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       the `generalizing` clause but are not themselves included:\
       \n{"\n".intercalate (leanLines ++ irisLines)}"
 
-def iRevertCore (targets : List SelTarget) {u : Level}{prop: Q(Type $u)}{bi : Q(BI $prop)}{e : Q($prop)}(hyps : Hyps bi e)(goal: Q($prop))
-  (k : ∀ {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
+def iRevertCore (targets : List SelTarget) {u : Level} {prop: Q(Type $u)}
+    {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e) (goal: Q($prop))
+    (k : ∀ {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM Q($e ⊢ $goal) := do
   let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
   let st ← targets.reverse.foldlM (init := init) fun st target => do
@@ -209,7 +182,7 @@ def iRevertCore (targets : List SelTarget) {u : Level}{prop: Q(Type $u)}{bi : Q(
       | .ipm ivar => st.revertProofModeHyp ivar
       | .pure fvar => st.revertLeanHyp fvar
 
-  let pf' : Q($(st.e) ⊢ $(st.goal)) ← withoutFVars (u:=0) st.reverted (k st.hyps st.goal)
+  let pf' : Q($(st.e) ⊢ $(st.goal)) ← withoutFVars (u := 0) st.reverted (k st.hyps st.goal)
   return q($(st.pf) $pf')
 
 syntax (name := irevert) "irevert" (colGt ppSpace selPat)+ : tactic
