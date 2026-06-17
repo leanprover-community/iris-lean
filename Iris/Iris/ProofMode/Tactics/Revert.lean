@@ -185,7 +185,7 @@ def iRevertCore (targets : List SelTarget) {u : Level} {prop: Q(Type $u)}
   let pf' : Q($(st.e) ⊢ $(st.goal)) ← withoutFVars (u := 0) st.reverted (k st.hyps st.goal)
   return q($(st.pf) $pf')
 
-syntax (name := irevert) "irevert" (colGt ppSpace selPat)+ : tactic
+syntax (name := irevert) "irevert " (colGt ppSpace selPat)+ : tactic
 
 elab_rules : tactic | `(tactic| irevert $pats:selPat*) => do
   let parsedPats ← liftMacroM <| SelPat.parse pats
