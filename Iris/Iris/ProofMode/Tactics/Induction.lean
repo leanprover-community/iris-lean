@@ -267,17 +267,14 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (fvar : FVarId)
     (parsedAlts : Option Alts)
     (altRecName : Option Name)
-    (genSelPats : Option <| List SelPat) :
+    (genSelTargets : Option <| List SelTarget) :
     ProofModeM Q($e ⊢ $goal) := do
   -- Find the regular pure/Iris hypotheses to be reverted
   let implicitIrisTargets ← iHypsToGeneralize hyps fvar
   let targets ← do
-    match genSelPats with
+    match genSelTargets with
     | none => pure implicitIrisTargets
-    | some genSelPats =>
-      let genSelTargets ← SelPat.resolve hyps genSelPats
-      -- Check for dependencies with hypotheses in the `generalizing` clause
-      checkDependentHyps "iinduction" hyps genSelTargets checkDependentHypsMkSuggestion
+    | some genSelTargets =>
       let explicitIrisTargets := genSelTargets.filter (match ·.kind with | .ipm _ => true | _ => false)
       let explicitPureTargets := genSelTargets.filter (match ·.kind with | .pure _ => true | _ => false)
       let implicitIrisTargets := implicitIrisTargets.filter (not <| (explicitIrisTargets.map (·.kind)).contains ·.kind)
@@ -513,10 +510,18 @@ elab_rules : tactic
     | none => pure none
     | some alts => parseInductionAlts alts
 
-    -- Parse the selection patterns for generalising hypotheses
-    let genSelPats ← genSelPats.mapM <| fun pats => do
-        liftMacroM <| SelPat.parse pats
-
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-      let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelPats
+      let genSelTargets ← do
+        match genSelPats with
+        | none => pure none
+        | some genSelPats =>
+          -- Parse the selection patterns for generalising hypotheses
+          let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
+          let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
+          -- Check for dependencies with the hypotheses in the selection targets
+          checkDependentHyps "iinduction" hyps genSelTargets genSelPats
+            fun newPats => `(tactic| iinduction $x $[using $r]? generalizing $newPats* $[$alts]?)
+          pure <| some genSelTargets
+
+      let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
       mvar.assign pf

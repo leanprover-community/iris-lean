@@ -127,12 +127,9 @@ private def RevertState.revertLeanHyp
 -/
 def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (tacticName : String) (hyps : Hyps bi e) (explicitTargets : List SelTarget)
-    (mkSuggestion :
-      Array (TSyntax `selPat) →
-      Array (TSyntax `selPat) →
-      ProofModeM (TSyntax `tactic)):
+    (selPats : TSyntaxArray `selPat)
+    (mkTactic : TSyntaxArray `selPat →  ProofModeM (TSyntax `tactic)):
     ProofModeM Unit := do
-
   let explicitIrisIVarIds := explicitTargets.filterMap
     (match ·.kind with | .ipm ivar => some ivar | _ => none)
   let explicitPureFVars := explicitTargets.filterMap
@@ -188,7 +185,12 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
 
     -- Find the old tactic syntax and generate the new one with missing hypotheses added
     let oldTactic ← getRef
-    let newTactic ← mkSuggestion sortedPurePats newIrisPats
+    let existingIrisPats := selPats.filter fun p =>
+      match p.raw with
+      | `(selPat| %$_:ident) => false
+      | _ => true
+    let extendedPats := sortedPurePats ++ existingIrisPats ++ newIrisPats
+    let newTactic ← mkTactic extendedPats
 
     -- Suggestion the fixed tactic
     Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
@@ -198,29 +200,9 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       the `generalizing` clause but are not themselves included:\
       \n{"\n".intercalate (leanLines ++ irisLines)}"
 
-syntax (name := irevert) "irevert" (colGt ppSpace selPat)+ : tactic
-
-/--
-  A helper function for `checkDependentHyps` to generate the fixed tactic.
--/
-private def checkDependentHypsMkSuggestion
-    (purePats : Array (TSyntax `selPat)) (newIrisPats : Array (TSyntax `selPat)) :
-    ProofModeM (TSyntax `tactic) := do
-    let oldTactic ← getRef
-    let `(tactic| irevert $pats:selPat*) := oldTactic
-      | throwError "irevert: invalid syntax"
-    let existingIrisPats := pats.filter fun p =>
-      match p.raw with
-      | `(selPat| %$_:ident) => false
-      | _ => true
-    let extendedPats : TSyntaxArray `selPat := purePats ++ existingIrisPats ++ newIrisPats
-    `(tactic| irevert $extendedPats*)
-
 def iRevertCore (targets : List SelTarget) {u : Level}{prop: Q(Type $u)}{bi : Q(BI $prop)}{e : Q($prop)}(hyps : Hyps bi e)(goal: Q($prop))
   (k : ∀ {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM Q($e ⊢ $goal) := do
-  checkDependentHyps "irevert" hyps targets checkDependentHypsMkSuggestion
-
   let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
   let st ← targets.reverse.foldlM (init := init) fun st target => do
       match target.kind with
@@ -230,11 +212,14 @@ def iRevertCore (targets : List SelTarget) {u : Level}{prop: Q(Type $u)}{bi : Q(
   let pf' : Q($(st.e) ⊢ $(st.goal)) ← withoutFVars (u:=0) st.reverted (k st.hyps st.goal)
   return q($(st.pf) $pf')
 
-elab_rules : tactic
-  | `(tactic| irevert $pats:selPat*) => do
-  let pats ← liftMacroM <| SelPat.parse pats
+syntax (name := irevert) "irevert" (colGt ppSpace selPat)+ : tactic
 
-  ProofModeM.runTactic fun mvar {hyps, goal, ..} => do
-    let targets ← SelPat.resolve hyps pats
+elab_rules : tactic | `(tactic| irevert $pats:selPat*) => do
+  let parsedPats ← liftMacroM <| SelPat.parse pats
+
+  ProofModeM.runTactic fun mvar { hyps, goal, .. } => do
+    let targets ← SelPat.resolve hyps parsedPats
+    checkDependentHyps "irevert" hyps targets pats
+      fun newPats => `(tactic| irevert $newPats*)
     let expr ← iRevertCore targets hyps goal
     mvar.assign expr

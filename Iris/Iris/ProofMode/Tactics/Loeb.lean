@@ -17,22 +17,6 @@ public meta section
 syntax (name := iloeb) "iloeb" "as" binderIdent "generalizing" (colGt ppSpace selPat)* : tactic
 
 /--
-  A helper function for `checkDependentHyps` to generate the fixed tactic.
--/
-private def checkDependentHypsMkSuggestion
-    (purePats : Array (TSyntax `selPat)) (newIrisPats : Array (TSyntax `selPat)) :
-    ProofModeM (TSyntax `tactic) := do
-  let oldTactic ← getRef
-  let `(tactic| iloeb as $bi:binderIdent generalizing $pats:selPat*) := oldTactic
-    | throwError "iloeb: invalid syntax"
-  let existingIrisPats := pats.filter fun p =>
-    match p.raw with
-    | `(selPat| %$_:ident) => false
-    | _ => true
-  let extendedPats : TSyntaxArray `selPat := purePats ++ existingIrisPats ++ newIrisPats
-  `(tactic| iloeb as $bi generalizing $extendedPats*)
-
-/--
   Apply Löb induction in the current goal.
 
   All spatial hypothesis are generalized in the induction hypothesis so that
@@ -46,7 +30,8 @@ elab_rules : tactic
     let pats ← Elab.liftMacroM <| SelPat.parse hs
     ProofModeM.runTactic fun mvid {hyps, goal, ..} => do
       let targets : List SelTarget ← SelPat.resolve hyps (pats ++ [.spatial])
-      checkDependentHyps "iloeb" hyps targets checkDependentHypsMkSuggestion
+      checkDependentHyps "iloeb" hyps targets hs
+        (fun newPats => `(tactic| iloeb as $IH generalizing $newPats*))
       let expr ← iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do
         let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)
           | throwError m!"iloeb: no `{←ppExpr q(BI.BILoeb $prop)}` instance found"
