@@ -144,7 +144,6 @@ private def iHypsToGeneralize {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
 private def findIHs (m : MVarId) : ProofModeM (List FVarId) :=
   m.withContext do
     let lctx ← getLCtx
-    --
     let mut ihs := []
     for decl in lctx do
       let type ← instantiateMVars decl.type

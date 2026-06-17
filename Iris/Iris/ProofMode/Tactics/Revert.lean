@@ -126,6 +126,7 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
         -- Record the missing hypothesis to be generalised, if not already included
         if !missingPure.any (·.fst == depId) then
           missingPure := missingPure.cons (depId, fvar)
+  missingPure := missingPure.reverse
 
   let allPureFVars := explicitPureFVars ++ missingPure.map (·.fst)
 
