@@ -327,7 +327,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
   icombine Hm Hone as Hm
   dsimp only [Nat.repeat]
   ihave Hwp := Hwp $$ [//] [Hm]
-  · simp [lc_split.to_eq]
+  · simp [lc_split.to_eq]; itrivial
   iapply step_fupd_wand $$ Hwp; iintro Hwp
   iapply step_fupdN_le (n := ι.numLatersPerStep m) (by grind only) LawfulSet.subset_refl
   iapply step_fupdN_wand $$ Hwp; iintro >⟨SI, Hwp, $⟩
@@ -383,7 +383,9 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
         obtain ⟨n0, rfl⟩ : ∃ n0', n0 = n0' + 1 := by cases n0 <;> grind
         dsimp only [Nat.repeat]
         imod Hp; imod H; imodintro; imodintro; imod Hp; imod H; imodintro
-        iapply IH n0 (Nat.le_of_succ_le_succ Hn) $$ [$];
+        -- TODO: remove this once we have iinduction
+        unfold ProofMode.Entails' at IH
+        iapply IH n0 (Nat.le_of_succ_le_succ Hn) $$ [$]
     · icases H with ⟨interp, -⟩
       imod interp $$ Hσ₁ with %h
       grind only
@@ -530,7 +532,8 @@ theorem wp_step_fupdN {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp
   iapply fupd_mask_frame LawfulSet.empty_subset
   imod H
   imodintro
-  simp [LawfulSet.diff_empty, ←LawfulSet.diff_subset_decomp E₂E₁, fupd_intro]
+  simp [LawfulSet.diff_empty, ←LawfulSet.diff_subset_decomp E₂E₁]
+  itrivial
 
 @[rocq_alias wp_step_fupd]
 theorem wp_step_fupd {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp GF} {Φ : Val → IProp GF}
@@ -542,7 +545,7 @@ theorem wp_step_fupd {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp 
   isplit
   · iintro %σ %ns %obj %nt interp
     iapply fupd_mask_intro_discard LawfulSet.empty_subset $$ [HR]
-    simp [BI.true_intro]
+    itrivial
   · imod HR
     dsimp only [Nat.repeat]
     iframe
