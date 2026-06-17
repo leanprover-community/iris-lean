@@ -152,13 +152,16 @@ private structure InductionState {u} {prop : Q(Type u)} {bi} (origE : Q($prop)) 
   Lean context before applying Lean's built-in `induction` tactic.
 -/
 private def iHypsToGeneralize {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
-    (hyps : Hyps bi e) (fvar : FVarId) : List SelTarget :=
+    (hyps : Hyps bi e) (fvar : FVarId) : ProofModeM (List SelTarget) := do
+  let fwdDeps ← collectForwardDeps #[mkFVar fvar] false
+  let dependentFVars := fwdDeps.map (·.fvarId!)
+
   let ivars := hyps.intuitionisticIVarIds.filter <| fun ivar =>
     match hyps.getDecl? ivar with
-    | some ⟨_, _, _, ty⟩ => ty.containsFVar fvar
+    | some ⟨_, _, _, ty⟩ => dependentFVars.any (ty.containsFVar ·)
     | none => false
 
-  (ivars ++ hyps.spatialIVarIds).map ({ kind := .ipm ·, explicit := false })
+  return (ivars ++ hyps.spatialIVarIds).map ({ kind := .ipm ·, explicit := false })
 
 /--
   Search for hypotheses in the regular Lean context that are the in the form
@@ -267,16 +270,18 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (genSelPats : Option <| List SelPat) :
     ProofModeM Q($e ⊢ $goal) := do
   -- Find the regular pure/Iris hypotheses to be reverted
-  let targets ← do match genSelPats with
-  | none => pure <| iHypsToGeneralize hyps fvar
-  | some genSelPats =>
-    let genSelTargets ← SelPat.resolve hyps genSelPats
-    checkDependentHyps "iinduction" hyps genSelTargets checkDependentHypsMkSuggestion
-
-    let explicitIrisTargets := genSelTargets.filter (match ·.kind with | .ipm _ => true | _ => false)
-    let explicitPureTargets := genSelTargets.filter (match ·.kind with | .pure _ => true | _ => false)
-    let implicitIrisTargets := (iHypsToGeneralize hyps fvar).filter (not <| (explicitIrisTargets.map (·.kind)).contains ·.kind)
-    pure <| explicitPureTargets ++ implicitIrisTargets ++ explicitIrisTargets
+  let implicitIrisTargets ← iHypsToGeneralize hyps fvar
+  let targets ← do
+    match genSelPats with
+    | none => pure implicitIrisTargets
+    | some genSelPats =>
+      let genSelTargets ← SelPat.resolve hyps genSelPats
+      -- Check for dependencies with hypotheses in the `generalizing` clause
+      checkDependentHyps "iinduction" hyps genSelTargets checkDependentHypsMkSuggestion
+      let explicitIrisTargets := genSelTargets.filter (match ·.kind with | .ipm _ => true | _ => false)
+      let explicitPureTargets := genSelTargets.filter (match ·.kind with | .pure _ => true | _ => false)
+      let implicitIrisTargets := implicitIrisTargets.filter (not <| (explicitIrisTargets.map (·.kind)).contains ·.kind)
+      pure <| explicitPureTargets ++ implicitIrisTargets ++ explicitIrisTargets
 
   -- Find the recursor name and constructor names of the inductive datatype
   let fvarType ← whnf <| ← inferType <| mkFVar fvar
