@@ -366,8 +366,7 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
             let st ← addIHs pfIntHyps irisGoal.hyps ihFVars
 
             -- For pretty printing of arguments
-            match parsedAlts with
-            | some parsedAlts =>
+            parsedAlts.forM fun parsedAlts => do
               match parsedAlts.alts.find? (matcher ctor) <|> parsedAlts.wildcard with
               | some ⟨_, vars, _, stx⟩ =>
                 if vars.size > s.fields.size then
@@ -382,7 +381,6 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
                     let fieldType ← inferType fieldFVar
                     addLocalVarInfo id lctx fieldFVar (some fieldType) true
               | none => pure ()
-            | none => pure ()
 
             let k' : ProofModeContinuationIntro := fun hyps goal => do match parsedAlts with
             -- Remove the induction hypotheses from the regular Lean context
