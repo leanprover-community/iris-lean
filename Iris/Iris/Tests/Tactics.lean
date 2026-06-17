@@ -2980,9 +2980,9 @@ example [BI PROP] {P : PROP} : ⊢ P := by
 -/
 /-- error: iinduction: invalid alternative name `invalidA`
 ---
-error: iinduction: duplicate alternative name `zero`
----
 error: iinduction: invalid alternative name `invalidB`
+---
+error: iinduction: duplicate alternative name `zero`
 ---
 error: iinduction: alternative `succ` has not been provided -/
 #guard_msgs in

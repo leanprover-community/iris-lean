@@ -228,22 +228,18 @@ private def throwMissingAlt {α} (ctor : Name) : ProofModeM α :=
   Otherwise, throw an error on the corresponding line.
 -/
 private def checkCtors (ctors : List Name) (parsedAlts : Alts) : ProofModeM Unit := do
-  let rec checkCtorsRec : List Alt → ProofModeM Unit
-  | [] => pure ()
-  | alt :: alts => do
-    let isValid := ctors.any (· == alt.ctor)
-    let isDup := alts.any (·.ctor == alt.ctor)
+  let mut handledCtors : Std.HashSet Name := {}
 
-    if !isValid then
+  for alt in parsedAlts.alts do
+    if !ctors.contains alt.ctor then
       throwOrLogErrorAt alt.stx
         m!"iinduction: invalid alternative name `{alt.ctor}`"
-    else if isDup then
+
+    if handledCtors.contains alt.ctor then
       throwOrLogErrorAt alt.stx
         m!"iinduction: duplicate alternative name `{alt.ctor}`"
 
-    checkCtorsRec alts
-
-  checkCtorsRec parsedAlts.alts.toList
+    handledCtors := handledCtors.insert alt.ctor
 
 /--
   The main function handling the steps for the `iinduction` tactic.
@@ -305,15 +301,11 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   let recCtors := ((← Lean.Meta.getElimInfo recName).altsInfo.map (·.name)).toList
 
   -- Check that all alternative names supplied by the user are valid
-  match parsedAlts with
-  | none => pure ()
-  | some parsedAlts =>
+  parsedAlts.forM fun parsedAlts => do
     checkCtors recCtors parsedAlts
     if recCtors.length == parsedAlts.alts.size then
-      match parsedAlts.wildcard with
-      | some w =>
+      parsedAlts.wildcard.forM fun w =>
         throwOrLogErrorAt w.stx "iinduction: wildcard alternative is not needed"
-      | none => pure ()
 
   -- Define the names for variables and induction hypotheses if supplied by user
   let varNames : Array AltVarNames ←
@@ -367,20 +359,19 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
             -- For pretty printing of arguments
             parsedAlts.forM fun parsedAlts => do
-              match parsedAlts.alts.find? (matcher ctor) <|> parsedAlts.wildcard with
-              | some ⟨_, vars, _, stx⟩ =>
-                if vars.size > s.fields.size then
-                  throwOrLogErrorAt stx <|
-                    s!"iinduction: too many variable names provided at alternative `{ctor}`: ".append
-                    s!"{vars.size} provided, but {s.fields.size} expected"
+              (parsedAlts.alts.find? (matcher ctor) <|> parsedAlts.wildcard).forM
+                fun ⟨_, vars, _, stx⟩ => do
+                  if vars.size > s.fields.size then
+                    throwOrLogErrorAt stx <|
+                      s!"iinduction: too many variable names provided at alternative `{ctor}`: ".append
+                      s!"{vars.size} provided, but {s.fields.size} expected"
 
-                -- For pretty printing of arguments
-                for ⟨fieldFVar, varStx⟩ in s.fields.toList.zip vars.toList do
-                  if let `(binderIdent| $id:ident) := varStx then
-                    let lctx ← getLCtx
-                    let fieldType ← inferType fieldFVar
-                    addLocalVarInfo id lctx fieldFVar (some fieldType) true
-              | none => pure ()
+                  -- For pretty printing of arguments
+                  for ⟨fieldFVar, varStx⟩ in s.fields.toList.zip vars.toList do
+                    if let `(binderIdent| $id:ident) := varStx then
+                      let lctx ← getLCtx
+                      let fieldType ← inferType fieldFVar
+                      addLocalVarInfo id lctx fieldFVar (some fieldType) true
 
             let k' : ProofModeContinuationIntro := fun hyps goal => do match parsedAlts with
             -- Remove the induction hypotheses from the regular Lean context
@@ -396,11 +387,9 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
                 | some tacticSeq =>
                     let ⟨pf, newMVars, _⟩ ← addBIGoalRunTactics hyps goal ctor parsedAlts.tac tacticSeq
                     -- Throw an error if the first tactic already solves the goal
-                    match newMVars with
-                    | some [] =>
+                    if let some [] := newMVars then
                       throwOrLogErrorAt stx
                         s!"iinduction: alternative `{ctor.getString!}` is not needed"
-                    | _ => pure ()
                     pure pf
               -- Alternative names not found, acceptable only when `firstTactic` solves it
               | none =>
@@ -503,17 +492,15 @@ elab_rules : tactic
     | some alts => parseInductionAlts alts
 
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-      let genSelTargets ← do
-        match genSelPats with
-        | none => pure none
-        | some genSelPats =>
+      let genSelTargets ←
+        genSelPats.mapM fun genSelPats => do
           -- Parse the selection patterns for generalising hypotheses
           let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
           let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
           -- Check for dependencies with the hypotheses in the selection targets
           checkDependentHyps "iinduction" hyps genSelTargets genSelPats
             fun newPats => `(tactic| iinduction $x $[using $r]? generalizing $newPats* $[$alts]?)
-          pure <| some genSelTargets
+          pure genSelTargets
 
       let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
       mvar.assign pf
