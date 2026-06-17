@@ -1,5 +1,6 @@
 name = "iris"
 defaultTargets = ["Iris", "IrisTest"]
+lintDriver = "batteries/runLinter"
 
 [[require]]
 name = "Qq"
