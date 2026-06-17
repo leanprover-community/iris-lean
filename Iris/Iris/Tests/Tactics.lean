@@ -2877,35 +2877,50 @@ def NTree.induction_principle {α} (p : NTree α → Prop) (h_leaf : p leaf)
   @NTree.rec α p (λ ts => ∀ t ∈ ts, p t) h_leaf h_node (List.forall_mem_nil p)
     (λ _ _ h_head h_tail => List.forall_mem_cons.mpr (And.intro h_head h_tail))
 
+def NTree.id : NTree α → NTree α
+  | .leaf => .leaf
+  | .node x ts => .node x (ts.map .id)
+
+/-- Tests `iinduction` with the mutual induction principle -/
+example [BI PROP] {α} {t : NTree α} : ⊢@{PROP} ⌜t.id = t⌝ := by
+  iinduction t with simp [NTree.id]
+  | h_leaf => itrivial
+  | h_node x ts IH1 =>
+    iinduction ts with simp
+    | nil => itrivial
+    | cons t ts IH2 =>
+      isplit
+      · iapply IH1
+        itrivial
+      · iapply IH2
+        iintro !> %x H
+        iapply IH1
+        imodintro
+        iright
+        iexact H
+
 def NTree.childCount : NTree α → Nat
   | .leaf => 0
   | .node _ ts => ts.length
 
 /-- An binary relation defined using nested induction -/
-inductive NTree.Rel {α β} (R : α → β → Prop) :
-    NTree α → NTree β → Prop
+inductive NTree.Rel {α β} (R : α → β → Prop) : NTree α → NTree β → Prop
   | leaf : Rel R .leaf .leaf
   | node : ∀ a b ts₁ ts₂,
-      R a b →
-      List.Forall₂ (Rel R) ts₁ ts₂ →
-      Rel R (.node a ts₁) (.node b ts₂)
+      R a b → List.Forall₂ (Rel R) ts₁ ts₂ → Rel R (.node a ts₁) (.node b ts₂)
 
 @[induction_eliminator]
 def NTree.Rel.induction_principle {α β} {R : α → β → Prop}
     (p : ∀ {t1 : NTree α} {t2 : NTree β}, NTree.Rel R t1 t2 → Prop)
-    (h_leaf : p .leaf)
-    (h_node : ∀ (a : α) (b : β) (ts1 : List (NTree α)) (ts2 : List (NTree β))
-        (ra : R a b)
-        (f2 : List.Forall₂ (NTree.Rel R) ts1 ts2),
-        List.Forall₂ (fun t1 t2 => ∀ h : NTree.Rel R t1 t2, p h) ts1 ts2 →
-        p (.node a b ts1 ts2 ra f2)) :
-    ∀ {t1 : NTree α} {t2 : NTree β} (h : NTree.Rel R t1 t2), p h :=
+    (h_base : p .leaf)
+    (h_step : ∀ a b ts1 ts2 ra f2,
+      List.Forall₂ (fun t1 t2 => ∀ h : NTree.Rel R t1 t2, p h) ts1 ts2 →
+      p (.node a b ts1 ts2 ra f2)) :
+    ∀ t1 t2 (h : NTree.Rel R t1 t2), p h :=
   @NTree.Rel.rec α β R
     (fun _ _ h => p h)
     (fun a b _ => List.Forall₂ (fun t1 t2 => ∀ h : NTree.Rel R t1 t2, p h) a b)
-    h_leaf
-    (fun a b ts1 ts2 ra f2 ih_ts => h_node a b ts1 ts2 ra f2 ih_ts)
-    .nil
+    h_base h_step .nil
     (fun _ _ ih_h ih_hs => .cons (fun _ => ih_h) ih_hs)
 
 /-- Tests `iinduction` with induction that uses the type class instance `intoIH_listForall₂`. -/
@@ -2913,10 +2928,10 @@ example [BI PROP] {α β} {R : α → β → Prop}
     {t₁ : NTree α} {t₂ : NTree β} (H : NTree.Rel R t₁ t₂) :
     ⊢@{PROP} ⌜NTree.childCount t₁ = NTree.childCount t₂⌝ := by
   iinduction H with
-  | h_leaf =>
+  | h_base =>
     ipureintro
     apply rfl
-  | h_node x1 x2 t1 t2 r IH1 IH2 =>
+  | h_step x1 x2 t1 t2 r IH1 IH2 =>
     ipureintro
     simp only [NTree.childCount]
     induction IH1 with simp_all
