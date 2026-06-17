@@ -369,11 +369,10 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
             | none =>
               -- Remove the induction hypotheses from the regular Lean context
               withoutFVars (u := 0) ihFVars.toArray <| k st.newHyps irisGoal.goal (addBIGoal · · ctor)
-
             | some parsedAlts =>
               -- Check whether the alternative names for this constructor are supplied by the user
               match parsedAlts.alts.find? (matcher ctor) <|> parsedAlts.wildcard with
-              | some ⟨_, vars, _, stx⟩ =>
+              | some ⟨_, vars, tacticSeq, stx⟩ =>
                 if vars.size > s.fields.size then
                   throwOrLogErrorAt stx <|
                     s!"iinduction: too many variable names provided at alternative `{ctor}`: ".append
@@ -386,17 +385,12 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
                     let fieldType ← inferType fieldFVar
                     addLocalVarInfo id lctx fieldFVar (some fieldType) true
 
-                -- Check whether the user has supplied tactic sequences for this induction subgoal
-                let tacticSeq := (parsedAlts.alts.find? (matcher ctor) <|> parsedAlts.wildcard).bind (·.tacs)
-
-                let firstTactic := parsedAlts.tac
-
                 -- Generate the induction subgoal for the user, label the induction subgoal with `ctor`
                 withoutFVars (u := 0) ihFVars.toArray <| match tacticSeq with
                 | none => k st.newHyps irisGoal.goal (addBIGoal · · ctor)
                 -- Run the tactics supplied by the user, if available
                 | some tacticSeq => k st.newHyps irisGoal.goal <| fun hyps goal => do
-                    let ⟨pf, newMVars, _⟩ ← (addBIGoalRunTactics hyps goal ctor firstTactic tacticSeq)
+                    let ⟨pf, newMVars, _⟩ ← addBIGoalRunTactics hyps goal ctor parsedAlts.tac tacticSeq
                     -- Throw an error if the first tactic already solves the goal
                     match newMVars with
                     | some [] =>
@@ -404,7 +398,6 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
                         s!"iinduction: alternative `{ctor.getString!}` is not needed"
                     | _ => pure ()
                     pure pf
-
               -- Alternative names not found, acceptable only when `firstTactic` solves it
               | none =>
                 match parsedAlts.tac with
