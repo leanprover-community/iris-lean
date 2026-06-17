@@ -301,7 +301,8 @@ public theorem tac_wp_bind [ι : IrisGS_gen hlc Exp GF] {Δ} {s : Stuckness} {E 
     (Δ ⊢ WP (ProgramLogic.fill K e') @ s ; E {{ Φ }}) :=
   H.trans (wp_bind (ProgramLogic.fill K))
 
-elab "wp_bind" colGt ppSpace focus:hl_exp : tactic =>
+-- level of hl_exp should be above the level of ; in the heaplang notation to make `wp_bind _ _; wp_rec` work
+elab "wp_bind" colGt ppSpace focus:hl_exp:10 : tactic =>
   ProofModeM.runTacticWp fun mvar {GF, hyps, s, E, e, Φ, ..} => do
     let focus ← elabTermEnsuringTypeQ (←`(hl($focus))) q(HeapLang.Exp)
     trace[wp_bind] s!"Context to bind over: {←ppExpr focus}"
@@ -313,15 +314,20 @@ elab "wp_bind" colGt ppSpace focus:hl_exp : tactic =>
       | throwTacticEx `wp_bind mvar s!"Cannot unify {←ppExpr focus} with any possible evaluation context"
     trace[wp_bind] s!"Found context {←ppExpr K} with expression {←ppExpr e'} matching our focus"
 
-    -- construct the new postcondition
-    let Φ' : Q(Val → IProp $GF) ←
-      Qq.withLocalDeclDQ `v q(Val) fun v => do
-        mkLambdaFVars #[v] <|
-          q(Wp.wp $s $E $(← HeapLang.fill K q(.ofVal $v)) $Φ)
-    have _ : $Φ' =Q (fun v : Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $K (v : Exp)) $Φ) := ⟨⟩
+    match K with
+    | ~q([]) =>
+      -- don't do anything for empty evaluation context
+      addMVarGoal mvar
+    | _ =>
+      -- construct the new postcondition
+      let Φ' : Q(Val → IProp $GF) ←
+        Qq.withLocalDeclDQ `v q(Val) fun v => do
+          mkLambdaFVars #[v] <|
+            q(Wp.wp $s $E $(← HeapLang.fill K q(.ofVal $v)) $Φ)
+      have _ : $Φ' =Q (fun v : Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $K (v : Exp)) $Φ) := ⟨⟩
 
-    let pf ← addBIGoal hyps q(Wp.wp $s $E $e' $Φ')
-    mvar.assign q(tac_wp_bind $pf)
+      let pf ← addBIGoal hyps q(Wp.wp $s $E $e' $Φ')
+      mvar.assign q(tac_wp_bind $pf)
 
 public theorem tac_wp_pure [ι : IrisGS_gen hlc Exp GF] {Δ Δ'} {s : Stuckness} {E : CoPset} {K : List ECtxItem} {e₁ e₂ : Exp} {φ : Prop} {n : Nat} {Φ : Val → IProp GF} :
     ProgramLogic.Language.PureExec φ n e₁ e₂ →
@@ -342,7 +348,7 @@ elab "wp_pure " colGt ppSpace focus:hl_exp : tactic =>
     let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
     trace[wp_pure] m!"Focusing with {focus}"
 
-    let some {result := (φ, n, e₂, inst), K, e' := e₁} ← findECtx e fun e₁ => do
+    let some {result := (φ, n, e₂, inst), K, e' := e₁, heq := _} ← findECtx e fun e₁ => do
       guard <| ← isDefEq e₁ focus
       let φ ← mkFreshExprMVarQ q(Prop)
       let n ← mkFreshExprMVarQ q(Nat)
@@ -367,7 +373,7 @@ elab "wp_pure " colGt ppSpace focus:hl_exp : tactic =>
 macro "wp_pure" : tactic => `(tactic| wp_pure _)
 macro "wp_pures" : tactic => `(tactic| repeat wp_pure)
 
-macro "wp_rec" : tactic => `(tactic | (iapply $(mkIdent `wp_rec):ident; rfl; imodintro; wp_finish))
+macro "wp_rec" : tactic => `(tactic | (wp_bind _ _; iapply $(mkIdent `wp_rec):ident; rfl; imodintro; wp_finish))
 
 initialize registerTraceClass `wp_bind
 initialize registerTraceClass `wp_pure

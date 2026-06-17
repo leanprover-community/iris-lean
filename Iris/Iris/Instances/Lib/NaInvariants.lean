@@ -35,8 +35,7 @@ attribute [reducible, instance] NaInvG.inv
 abbrev NaInvPoolName := GName
 
 instance instNaInvF_discreteE {α β : Type _} (x : DisjointLeibnizSet α) (y : DisjointLeibnizSet β) :
-    DiscreteE (x, y) :=
-  prod.is_discrete (inst_disjointLeibnizSet_DiscreteE _) (inst_disjointLeibnizSet_DiscreteE _)
+    DiscreteE (x, y) := by infer_instance
 
 instance coreId_valid_empty_empty : CoreId ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   core_id := by rfl

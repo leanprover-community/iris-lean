@@ -286,7 +286,7 @@ theorem Agree.included {x y : Agree α} : x ≼ y ↔ y ≡ y • x :=
   ⟨fun ⟨z, h⟩ n => includedN.mp ⟨z, h n⟩, fun h => ⟨y, h.trans op_comm⟩⟩
 
 @[rocq_alias to_agree_discrete]
-theorem Agree.toAgree.is_discrete {a : α} (Ha : OFE.DiscreteE a) : OFE.DiscreteE (toAgree a) := by
+instance Agree.toAgree.is_discrete {a : α} [Ha : OFE.DiscreteE a] : OFE.DiscreteE (toAgree a) := by
   refine ⟨fun ⟨Hal, Har⟩ _ => ⟨?_, ?_⟩⟩ <;> simp_all [toAgree]
   · rcases Hal with ⟨b, Hb1, Hb2⟩
     exact ⟨b, ⟨Hb1, Ha.discrete (Har b Hb1) |>.dist⟩⟩

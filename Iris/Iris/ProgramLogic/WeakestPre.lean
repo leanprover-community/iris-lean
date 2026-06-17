@@ -158,7 +158,7 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
 #rocq_ignore wp_proper "Derivable using NonExpansive.eqv"
 
 @[rocq_alias wp_contractive]
-instance wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
+theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     OFE.Contractive (Wp.wp (PROP := IProp GF) s E e) where
   distLater_dist {n Φ₁ Φ₂} HΦ := by
     simp only [wp_unfold.to_eq]
@@ -364,7 +364,6 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
       imod Hwp $$ Hσ₁ with ⟨$, H⟩
       iintro !> %e₂ %σ₂ %efs %Hstep Hcred
       icases H $$ %_ %_ %_ %Hstep Hcred with H
-      dsimp only [Nat.repeat]
       imod H; imod Hp
       iintro !> !>
       imod H; imod Hp
@@ -400,10 +399,12 @@ theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E
   simp only [wp.pre]
   match h : toVal e with
   | some v =>
-    simp only [ToVal.coe_of_toVal_eq_some h]
+    dsimp only
+    rw [ToVal.coe_of_toVal_eq_some h]
     iapply fupd_wp $$ H
   | none =>
     rw [wp_unfold.to_eq]
+    dsimp only
     simp only [wp.pre, κ.toVal_eq_none_fill h, Nat.repeat]
     iintro %σ₁ %step %obs %obs' %n Hσ
     imod H $$ [$] with ⟨%_, H⟩

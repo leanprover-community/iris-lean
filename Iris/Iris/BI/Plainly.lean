@@ -417,12 +417,12 @@ instance wand_persistent [Plain P] [Persistent Q] [Absorbing Q] :
     _ ⊢ <pers> (P -∗ Q)   := persistently_mono (wand_mono plain .rfl)
 
 @[rocq_alias limit_preserving_Plain]
-instance limitPreserving_plain {A} [COFE A] (Φ : A → PROP) (Φne : OFE.NonExpansive Φ) :
- LimitPreserving (fun x => Plain (Φ x)) := by
-   letI _ : OFE.NonExpansive fun x => iprop(■ Φ x) := .comp inferInstance Φne
-   refine fun c h => ⟨?_⟩
-   refine LimitPreserving.entails _ (fun x => iprop(■ (Φ x))) _ ?_
-   exact (fun n => h n |>.plain)
+instance limitPreserving_plain {A} [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+  LimitPreserving (fun x => Plain (Φ x)) := by
+    letI _ : OFE.NonExpansive fun x => iprop(■ Φ x) := .comp inferInstance Φne
+    refine fun c h => ⟨?_⟩
+    refine LimitPreserving.entails _ (fun x => iprop(■ (Φ x))) _ ?_
+    exact (fun n => h n |>.plain)
 
 section BigOp
 

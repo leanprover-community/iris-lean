@@ -46,7 +46,7 @@ theorem toVal_eq_iff_coe (e : Expr) (v : Val) : v = e ↔ toVal e = some v :=
   ⟨(· ▸ toVal_coe v), coe_of_toVal_eq_some⟩
 
 @[rocq_alias of_val_inj]
-instance : ι.ofVal.Injective := by
+theorem TovVal.ofVal_inj : ι.ofVal.Injective := by
   intro x y h
   simpa [toVal_coe] using congrArg (toVal) h
 
@@ -396,7 +396,7 @@ scoped notation (name := PureSteps) conf:40 " -ᵖ->ₜₚ* " conf':41 => Langua
 
 end Notation
 
-@[rocq_alias PureExec]
+@[ipm_class, rocq_alias PureExec]
 class PureExec (φ : outParam <| Prop) (n : outParam <| Nat) (e₁ : Expr) (e₂ : outParam <| Expr) : Prop where
   pureExec : φ → e₁ -ᵖ->^[n] e₂
 

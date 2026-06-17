@@ -11,37 +11,33 @@ open BI Iris ProgramLogic List
 
 namespace Quicksort
 
-def nil : Val := hl_val% none()
+def nil : Val := hl_val% λ _, none()
 
-def cons : Val := hl_val% λ x, some(ref(x))
+def cons : Val := hl_val% λ hd tl, some(ref((hd, tl)))
 
 def append : Val := hl_val%
-  rec append x :=
-    let l1 := fst(x);
-    let l2 := snd(x);
+  rec append l1 l2 :=
     match l1 with
     | none() => l2
     | some(x) =>
       let p := !x;
       let head := fst(p);
       let tail := snd(p);
-      &cons (head, append (tail, l2))
+      &cons head (append tail l2)
 
 def partition : Val := hl_val%
-  rec partition arg :=
-    let x := fst(arg);
-    let l := snd(arg);
+  rec partition x l :=
     match l with
     | none() => (none(), none())
     | some(lx) =>
       let p := !lx;
       let head := fst(p);
       let tail := snd(p);
-      let part := partition (x, tail);
+      let part := partition x tail;
       if head ≤ x then
-        (&cons (head, fst(part)), snd(part))
+        (&cons head (fst(part)), snd(part))
       else
-        (fst(part), &cons (head, snd(part)))
+        (fst(part), &cons head (snd(part)))
 
 def quicksort : Val := hl_val%
   rec quicksort l :=
@@ -51,18 +47,18 @@ def quicksort : Val := hl_val%
       let p := !x;
       let head := fst(p);
       let tail := snd(p);
-      let part := &partition (head, tail);
+      let part := &partition head tail;
       let a := quicksort (fst(part));
       let b := quicksort (snd(part));
-      let e := &cons (head, b);
-      &append (a, e)
+      let e := &cons head b;
+      &append a e
 
 /-- Construct a HeapLang version of a Lean list -/
 def makeList : List Int → Exp
-  | [] => nil
+  | [] => hl% &nil #()
   | l::ls => hl%
     let vls := &(makeList ls);
-    &cons (#l, vls)
+    &cons #l vls
 
 /-- Returns a boolean witnessing the sortedness of a HeapLang list.
 `acc` is an option of the last value in the list. -/
@@ -104,9 +100,10 @@ variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
 
 theorem nil_spec (Φ : Val → IProp GF) :
     (∀ v, isList v [] -∗ Φ v) -∗
-    WP hl(v(&nil)) {{ Φ }} := by
+    WP hl(v(&nil) #()) {{ Φ }} := by
   iintro Hl
-  unfold nil; wp_finish
+  wp_rec
+  wp_pures
   imodintro
   iapply Hl
   iapply isList_nil
@@ -115,9 +112,9 @@ theorem nil_spec (Φ : Val → IProp GF) :
 theorem cons_spec x l ls Φ :
     isList (GF:=GF) l ls -∗
     (∀ v, isList v (x :: ls) -∗ Φ v) -∗
-    WP hl(&cons v((#x, &l))) {{ Φ }} := by
+    WP hl(&cons #x &l) {{ Φ }} := by
   iintro Hl HΦ
-  wp_rec
+  wp_rec; wp_pures
   wp_bind ref(_)
   iapply wp_alloc
   iintro !> %l Hl
@@ -132,7 +129,7 @@ theorem append_spec l1 ls1 l2 ls2 Φ :
     isList (GF:=GF) l1 ls1 -∗
     isList l2 ls2 -∗
     (∀ v, isList v (ls1 ++ ls2) -∗ Φ v) -∗
-    WP hl(&append v((&l1, &l2))) {{ Φ }} := by
+    WP hl(&append &l1 &l2) {{ Φ }} := by
   iintro Hl1 Hl2 HΦ
   iloeb as IH generalizing %l1 %ls1 %Φ
   wp_rec; wp_pures
@@ -149,7 +146,7 @@ theorem append_spec l1 ls1 l2 ls2 Φ :
     iapply wp_load $$ Hpt
     iintro !> Hpt
     wp_pures
-    wp_bind &append _
+    wp_bind &append _ _
     iapply IH $$ Hl Hl2
     iintro %_ Hl
     wp_pures
@@ -165,39 +162,39 @@ theorem partition_spec x l ls Φ :
       isList l1 (ls.filter (· ≤ x)) -∗
       isList l2 (ls.filter (x < ·)) -∗
       Φ hl_val((&l1, &l2))) -∗
-    WP hl(&partition v((#x, &l))) {{ Φ }} := by
+    WP hl(&partition #x &l) {{ Φ }} := by
   iintro Hl HΦ
   iloeb as IH generalizing %l %ls %Φ
   wp_rec; wp_pures
   rw (occs:=[2]) [isList.eq_def]
   cases ls with
   | nil =>
-    simp only
+    dsimp only
     icases Hl with %hl; subst hl
     wp_pures; imodintro; simp
     iapply HΦ <;> simp [isList] <;> itrivial
   | cons hd ls =>
-    simp only
+    dsimp only
     icases Hl with ⟨%_, %tl, %hl, Hpt, Hl⟩; subst hl
     wp_pures
     wp_bind !_
     iapply wp_load $$ [$]
     iintro !> Hpt
     wp_pures
-    wp_bind &partition _
+    wp_bind &partition _ _
     iapply IH $$ Hl
     iintro %l1 %l2 Hl1 Hl2
     wp_pures
     by_cases hd ≤ x <;> simp [*]
     · wp_pures
-      wp_bind &cons _
+      wp_bind &cons _ _
       iapply cons_spec $$ Hl1
       iintro %_ _
       wp_pures
       imodintro
       iapply HΦ $$ [$] [$]
     · wp_pures
-      wp_bind &cons _
+      wp_bind &cons _ _
       iapply cons_spec $$ Hl2
       iintro %_ _
       wp_pures
@@ -221,7 +218,7 @@ theorem quicksort_spec l ls Φ :
   rw (occs:=[2]) [isList.eq_def]
   cases ls with
   | nil =>
-    simp only
+    dsimp only
     iclear IH
     icases Hl with %heq; subst heq
     wp_pures
@@ -231,14 +228,14 @@ theorem quicksort_spec l ls Φ :
     · itrivial
     · itrivial
   | cons head tail =>
-    simp only
+    dsimp only
     icases Hl with ⟨%l, %tl, %heq, Hpt, Hl⟩; subst heq
     wp_pures
     wp_bind !_
     iapply wp_load $$ [$]
     iintro !> Hpt
     wp_pures
-    wp_bind &partition _
+    wp_bind &partition _ _
     iapply partition_spec $$ [$]
     iintro %l1 %l2 Hl1 Hl2
     wp_pures
@@ -250,7 +247,7 @@ theorem quicksort_spec l ls Φ :
     iapply IH $$ [$]
     iintro %l2' %ls2' Hl2 %_ %_
     wp_pures
-    wp_bind &cons _
+    wp_bind &cons _ _
     iapply cons_spec $$ Hl2
     iintro %_ _
     wp_pures
@@ -309,8 +306,7 @@ theorem wp_checkSorted (v vacc : Val) (l : List Int) (Φ : Val → IProp GF) :
     WP hl(&checkSorted &vacc &v) {{ Φ }} := by
   iintro H %hsorted %hinv HΦ
   iloeb as IH generalizing %vacc %l %v %hsorted %hinv
-  rw (occs:=[2]) [checkSorted]
-  wp_pures
+  wp_rec; wp_pures
   cases l with
   | nil =>
     icases isList_nil $$ H with %heq; subst heq
@@ -326,8 +322,7 @@ theorem wp_checkSorted (v vacc : Val) (l : List Int) (Φ : Val → IProp GF) :
     iapply wp_load $$ Hpt
     iintro !> Hpt
     rcases hinv with rfl | ⟨va, rfl, hva⟩
-    · iterate 15 wp_pure
-      rw [← checkSorted]
+    · wp_pures
       iapply IH $$ %_ %tl %_ %((List.pairwise_cons.mp hsorted).2)
         %(Or.inr ⟨hd, rfl, fun lv h => (List.pairwise_cons.mp hsorted).1 lv h⟩) Htl
       iintro %bv Hl %hb
@@ -339,8 +334,7 @@ theorem wp_checkSorted (v vacc : Val) (l : List Int) (Φ : Val → IProp GF) :
       itrivial
     · wp_pures
       rw [decide_eq_true (hva hd List.mem_cons_self)]
-      iterate 2 wp_pure
-      rw [← checkSorted]
+      wp_pures
       iapply IH $$ %_ %tl %_ %((List.pairwise_cons.mp hsorted).2)
         %(.inr ⟨hd, rfl, (List.pairwise_cons.mp hsorted).1⟩) Htl
       iintro %bv Hl %hb
@@ -368,7 +362,7 @@ theorem wp_sortAndCheck [HeapLangGS hlc GF] (l : List Int) :
   iapply wp_makeList
   iintro %v Hv
   wp_pures
-  wp_bind v(&quicksort) _
+  wp_bind &quicksort _
   iapply quicksort_spec $$ Hv
   iintro %v %l' Hv %Hsorted %Heqv
   wp_pures

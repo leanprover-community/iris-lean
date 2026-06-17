@@ -289,7 +289,7 @@ instance intoExcept0_later [BI PROP] (P : PROP) [Timeless P] : IntoExcept0 iprop
 @[rocq_alias into_except_0_later_if]
 instance intoExcept0_laterIf [BI PROP] p (P : PROP) [Timeless P] : IntoExcept0 iprop(▷?p P) P where
   into_except0 := match p with
-                  | true => Timeless.timeless
+                  | true => Timeless.timeless (P := P)
                   | false => except0_intro
 
 @[rocq_alias into_except_0_affinely]
