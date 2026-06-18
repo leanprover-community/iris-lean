@@ -8,6 +8,7 @@ module
 public import Iris.BI
 public meta import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Modalities
+public import Iris.Std.Namespaces
 
 @[expose] public section
 
@@ -219,6 +220,9 @@ export CombineSepAs (combine_sep_as)
 class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
 export CombineSepGives (combine_sep_gives)
+
+@[ipm_class, rocq_alias IntoInv]
+class IntoInv [BI PROP] (P : PROP) (N : Namespace)
 
 @[rocq_alias accessor]
 def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
