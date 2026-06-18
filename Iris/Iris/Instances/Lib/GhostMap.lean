@@ -375,6 +375,8 @@ theorem ghost_map_delete {γ} {m : H V} (k : K) (v : V) :
   iapply iOwn_mono $$ G
   exact auth_inc_of_pmap_eqv _ map_delete
 
+-- TODO: Make these implicit
+
 @[rocq_alias ghost_map_update]
 theorem ghost_map_update {γ} {m : H V} (k : K) (v : V) (w : V) :
     ⊢@{IProp GF} (γ ↪●MAP m) -∗ (γ ↪◯MAP[k] v) ==∗ (γ ↪●MAP insert m k w) ∗ γ ↪◯MAP[k] w := by

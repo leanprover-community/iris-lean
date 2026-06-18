@@ -249,6 +249,8 @@ theorem fupd_wp_iff {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ (|={E}=> WP e @ s ; E {{ Φ }}) :=
   ⟨fupd_mask_intro_discard LawfulSet.subset_refl, fupd_wp⟩
 
+-- FIXME: Implicits
+
 @[rocq_alias wp_fupd]
 theorem wp_fupd (s : Stuckness) E (e : Expr) (Φ : Val → IProp GF) :
     WP e @ s ; E {{v, |={E}=> Φ v }} ⊢ WP e @ s ; E {{ Φ }} := by
@@ -389,6 +391,8 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
     · icases H with ⟨interp, -⟩
       imod interp $$ Hσ₁ with %h
       grind only
+
+-- FIXME: Combine wp_bind and wp_bind_iff into a single bi-entailment
 
 @[rocq_alias wp_bind]
 theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr}

@@ -235,6 +235,8 @@ theorem acc_strong (E : CoPset) (N : Namespace) (γ : GName) (p : Qp) (P : IProp
   · iexfalso
     iapply own_one_l $$ Hown' Hown
 
+-- FIXME: Args here should be implicit
+
 @[rocq_alias cinv_acc]
 theorem acc (E : CoPset) (N : Namespace) (γ : GName) (p : Qp) (P : IProp GF)
     (Hsub : ↑N ⊆ E) :
@@ -248,6 +250,16 @@ theorem acc (E : CoPset) (N : Namespace) (γ : GName) (p : Qp) (P : IProp GF)
   · ileft; iframe
   rw [subset_union_diff Hsub]
   imodintro
+  itrivial
+
+theorem inv_open_fupd {E : CoPset} {N : Namespace} {P : IProp GF} (Hsub : ↑N ⊆ E) :
+    ⊢ cinv N γ P -∗ (▷ P ∗ Q ∗ own γ q ={E \ N}=∗ P ∗ R) -∗
+      (Q ∗ own γ q) ={E}=∗ R := by
+  iintro #Hinv H ⟨HQ, Hown⟩
+  imod acc _ _ _ _ _ Hsub $$ Hinv Hown with ⟨HP, Hown, Hclose⟩
+  imod H $$ [$] with ⟨HP, HR⟩; iframe
+  imod Hclose $$ [HP] with -
+  · inext; iframe
   itrivial
 
 @[rocq_alias cinv_acc_1]
