@@ -127,7 +127,10 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
       let pf ← iCasesCore bi hyps A2 pat q(false) A1 (iIntroCore · · pats k)
       return q(wand_intro_spatial (A1 := $A1) (Q := $Q) $pf)
 
-elab "iintro" pats:(colGt introPat)* : tactic => do
+/--
+  `iintro pats` introduces hypotheses using the introduction pattern `pats`.
+-/
+elab "iintro " pats:(colGt ppSpace introPat)* : tactic => do
   -- parse syntax
   let pats ← liftMacroM <| pats.mapM <| IntroPat.parse
 

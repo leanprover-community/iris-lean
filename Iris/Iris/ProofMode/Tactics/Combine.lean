@@ -212,10 +212,16 @@ private def iCombineParseSelPats {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
 private def throwNoInstanceForGives : ProofModeM Unit := do
   throwError "icombine: no type class instance to combine propositions"
 
-/-- The tactic `icombine` with the `as` syntax combines propositions into one
-    using the type class `CombineSepAs`. If no other type class instance is
-    found, the separating conjunction is used as the connective. -/
-elab "icombine" patSels:(colGt selPat)* "as" colGt patAs:icasesPat : tactic => do
+/--
+  `icombine patSels as patAs` combines the hypotheses specified by the selection
+  pattern `patSels` into one using the `CombineSepAs` type class. The combined
+  hypothesis is then destructed using the case pattern `patAs`
+
+  If no other type class instance for `CombineSepAs` is found, the separating
+  conjunction is used as the connective.
+-/
+elab "icombine " patSels:(colGt ppSpace selPat)*
+    " as " colGt patAs:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patAs
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
@@ -225,11 +231,17 @@ elab "icombine" patSels:(colGt selPat)* "as" colGt patAs:icasesPat : tactic => d
     let pf ← iCasesCore _ st.newHyps goal pat q($(st.p)) st.outAs addBIGoal
     mvar.assign q($(st.pfAs).trans $pf)
 
-/-- The tactic `icombine` with `gives` syntax combines propositions to derive
-    new information in the intutionisitic context using the type class
-    `CombineSepGives`. It is possible that no type class instance is
-    applicable. -/
-elab "icombine" patSels:(colGt selPat)* "gives" colGt patGives:icasesPat : tactic => do
+/--
+  `icombine patSels gives patAs` combines the hypotheses specified by the
+  selection pattern `patSels` to derive new information into the intuitionistic
+  context using the type class `CombineSepGives`. The new intuitionistic
+  hypothesis is then destructed using the case pattern `patGives`.
+
+  The tactic fails if no applicable type class instance of `CombineSepGives` is
+  found.
+-/
+elab "icombine " patSels:(colGt ppSpace selPat)*
+    " gives " colGt patGives:icasesPat : tactic => do
   let pat ← liftMacroM <| iCasesPat.parse patGives
 
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
@@ -242,8 +254,22 @@ elab "icombine" patSels:(colGt selPat)* "gives" colGt patGives:icasesPat : tacti
       mvar.assign q($(pfGives).trans $pf)
     | none, _ => throwNoInstanceForGives
 
-/-- The tactic with both `as` and `gives` -/
-elab "icombine" patSels:(colGt selPat)* "as" colGt patAs:icasesPat "gives" colGt patGives:icasesPat : tactic => do
+/--
+  `icombine patSels as patAs gives patGives` combines the hypotheses specified
+  by the selection pattern `patSels` into one using the `CombineSepAs` type
+  class. The combined hypothesis is then destructed using the case pattern
+  `patAs`. Meanwhile, it also combines the hypotheses to derive new information
+  into the intuitionistic context using the type class `CombineSepGives` and
+  destructs the new intuitionistic hypothesis using the case pattern `patGives`.
+
+  This is equivalent to using the tactic `icombine patSels gives patGives` and
+  then `icombine patSels as patAs`.
+
+  The tactic fails if no applicable type class instance of `CombineSepGives` is
+  found.
+-/
+elab "icombine " patSels:(colGt ppSpace selPat)*
+    " as " colGt patAs:icasesPat " gives " colGt patGives:icasesPat : tactic => do
   let pat1 ← liftMacroM <| iCasesPat.parse patAs
   let pat2 ← liftMacroM <| iCasesPat.parse patGives
 
