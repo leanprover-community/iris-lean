@@ -64,6 +64,12 @@ theorem fill_isSome_empty {K : List ECtxItem} {e : Exp}
     have h2 := EctxLanguage.fill_val (K := K') (e := fillItem Ki e) h
     simp [fillItem_expToVal_none] at h2
 
+macro "solve_subredex_values" : tactic =>
+  `(tactic|
+    (apply subredexes_are_values
+     intro Ki e_inner heq
+     cases Ki <;> cases heq <;> try rfl <;> try done))
+
 theorem mk_pure_prim_step {e1 e2 : Exp} (hstep : ∀ σ, BaseStep e1 σ [] e2 σ [])
     (hpure : ∀ {σ1 κs e2' σ2 efs}, BaseStep e1 σ1 κs e2' σ2 efs → κs = [] ∧ σ1 = σ2 ∧ e2 = e2' ∧ efs = [])
     (hsub : SubredexesAreValues e1) : PurePrimStep e1 e2 := by
@@ -76,20 +82,14 @@ instance instPureExecIfTrue: PureExec True 1 hl(if #true then &e1 else &e2) e1 w
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
     · cases hs <;> simp
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq
-      rfl
+    · solve_subredex_values
 
 instance instPureExecIfFalse : PureExec True 1 hl(if #false then &e1 else &e2) e2 where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
     · cases hs <;> simp
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq
-      rfl
+    · solve_subredex_values
 
 instance instPureExecCaseInjl {v e1 e2} :
     PureExec True 1 (Exp.case hl(v(injl(&v))) e1 e2) (.app e1 (.ofVal v)) where
@@ -97,10 +97,7 @@ instance instPureExecCaseInjl {v e1 e2} :
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
     · cases hs <;> simp
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq
-      rfl
+    · solve_subredex_values
 
 instance instPureExecCaseInjr {v e1 e2} :
     PureExec True 1 (Exp.case hl(v(injr(&v))) e1 e2) (.app e2 (.ofVal v)) where
@@ -108,30 +105,21 @@ instance instPureExecCaseInjr {v e1 e2} :
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
     · cases hs <;> simp
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq
-      rfl
+    · solve_subredex_values
 
 instance instPureExecInjl {v : Val} : PureExec True 1 hl(injl(&v)) hl(v(injl(&v)))  where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
     · cases hs <;> simp
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq
-      rfl
+    · solve_subredex_values
 
 instance instPureExecInjr {v : Val} : PureExec True 1 hl(injr(&v)) hl(v(injr(&v)))  where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor
     · cases hs <;> simp
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq
-      rfl
+    · solve_subredex_values
 
 instance instPureExecBeta {f x : Binder} {e : Exp} {v : Val} :
     PureExec True 1 hl(v(rec &f &x := &e) &v) ((e.subst f (.rec_ f x e)).subst x v) where
@@ -139,9 +127,7 @@ instance instPureExecBeta {f x : Binder} {e : Exp} {v : Val} :
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor <;> simp
     · cases hs <;> simp [*]
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq <;> rfl
+    · solve_subredex_values
 
 instance instPureExecRec {f x e} :
     PureExec True 1 hl(rec &f &x := &e) hl(v(rec &f &x := &e)) where
@@ -149,36 +135,28 @@ instance instPureExecRec {f x e} :
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor <;> simp
     · cases hs <;> simp [*]
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq <;> rfl
+    · solve_subredex_values
 
 instance instPureExecFst {v1 v2 : Val} : PureExec True 1 hl(fst(v((&v1, &v2)))) v1 where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor <;> simp
     · cases hs <;> simp [*]
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq <;> rfl
+    · solve_subredex_values
 
 instance instPureExecSnd {v1 v2 : Val} : PureExec True 1 hl(snd(v((&v1, &v2)))) v2 where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor <;> simp
     · cases hs <;> simp [*]
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq <;> rfl
+    · solve_subredex_values
 
 instance instPureExecPair {v1 v2 : Val} : PureExec True 1 hl((&v1, &v2)) hl(v((&v1, &v2)))  where
   pureExec _ := by
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor <;> simp
     · cases hs <;> simp [*]
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq <;> rfl
+    · solve_subredex_values
 
 set_option synthInstance.checkSynthOrder false in
 instance instPureExecUnOp {op : UnOp} {v v' : Val} :
@@ -187,9 +165,7 @@ instance instPureExecUnOp {op : UnOp} {v v' : Val} :
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor <;> simp [*]
     · cases hs <;> simp_all [UnOp.eval]
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq <;> rfl
+    · solve_subredex_values
 
 set_option synthInstance.checkSynthOrder false in
 instance instPureExecBinOp {op : BinOp} {v1 v2 v' : Val} :
@@ -199,9 +175,7 @@ instance instPureExecBinOp {op : BinOp} {v1 v2 v' : Val} :
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor <;> simp [*]
     · cases hs <;> simp_all [BinOp.eval]
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq <;> rfl
+    · solve_subredex_values
 
 -- higher priority than the generic binop instance
 instance (priority := default + 10) instPureExecEqOp {v1 v2 : Val} :
@@ -211,30 +185,18 @@ instance (priority := default + 10) instPureExecEqOp {v1 v2 : Val} :
     refine .once <| mk_pure_prim_step (fun _ => ?_) (fun hs => ?_) ?_
     · constructor <;> simp [BinOp.eval, *]
     · cases hs <;> simp_all [BinOp.eval]
-    · apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> cases heq <;> rfl
+    · solve_subredex_values
 
 instance instAtomicLoad {s} {v : Val} : Atomic s hl(!&v) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : SubredexesAreValues hl(!&v) := by
-      apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> try (cases heq; done)
-      all_goals (cases heq; rfl)
-    cases (baseStep_of_primStep Hstep hsr)
+    cases baseStep_of_primStep Hstep (by solve_subredex_values)
     cases s
     · exact val_irreducible rfl _
     · rfl
 
 instance instAtomicStore {s} {v1 v2 : Val} : Atomic s hl(&v1 ← &v2) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : SubredexesAreValues hl(&v1 ← &v2) := by
-      apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> try (cases heq; done)
-      all_goals (cases heq; rfl)
-    cases (baseStep_of_primStep Hstep hsr)
+    cases baseStep_of_primStep Hstep (by solve_subredex_values)
     rename_i l v Heq
     cases s
     · exact val_irreducible rfl _
@@ -242,108 +204,63 @@ instance instAtomicStore {s} {v1 v2 : Val} : Atomic s hl(&v1 ← &v2) where
 
 instance instAtomicFst {s} {v1 : Val} : Atomic s hl(fst(&v1)) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : SubredexesAreValues hl(fst(&v1)) := by
-      apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> try (cases heq; done)
-      · cases heq; rfl
-    cases (baseStep_of_primStep Hstep hsr)
+    cases baseStep_of_primStep Hstep (by solve_subredex_values)
     cases s
     · exact val_irreducible rfl _
     · rfl
 
 instance instAtomicSnd {s} {v1 : Val} : Atomic s hl(snd(&v1)) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : SubredexesAreValues hl(snd(&v1)) := by
-      apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> try (cases heq; done)
-      · cases heq; rfl
-    cases (baseStep_of_primStep Hstep hsr)
+    cases baseStep_of_primStep Hstep (by solve_subredex_values)
     cases s
     · exact val_irreducible rfl _
     · rfl
 
 instance instAtomicAllocN {s} {v1 v2 : Val} : Atomic s hl(allocn(&v1, &v2)) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : SubredexesAreValues hl(allocn(&v1, &v2)) := by
-      apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> try (cases heq; done)
-      all_goals (cases heq; rfl)
-    cases (baseStep_of_primStep Hstep hsr)
+    cases baseStep_of_primStep Hstep (by solve_subredex_values)
     cases s
     · exact val_irreducible rfl _
     · rfl
 
 instance instAtomicFree {s} {v : Val} : Atomic s hl(free(&v)) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : SubredexesAreValues hl(free(&v)) := by
-      apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> try (cases heq; done)
-      all_goals (cases heq; rfl)
-    cases (baseStep_of_primStep Hstep hsr)
+    cases baseStep_of_primStep Hstep (by solve_subredex_values)
     cases s
     · exact val_irreducible rfl _
     · rfl
 
 instance instAtomicXchg {s} {v1 v2 : Val} : Atomic s hl(xchg(&v1, &v2)) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : SubredexesAreValues hl(xchg(&v1, &v2)) := by
-      apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> try (cases heq; done)
-      all_goals (cases heq; rfl)
-    cases (baseStep_of_primStep Hstep hsr)
+    cases baseStep_of_primStep Hstep (by solve_subredex_values)
     cases s
     · exact val_irreducible rfl _
     · rfl
 
 instance instAtomicFaa {s} {v1 v2 : Val} : Atomic s hl(faa(&v1, &v2)) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : SubredexesAreValues hl(faa(&v1, &v2)) := by
-      apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> try (cases heq; done)
-      all_goals (cases heq; rfl)
-    cases (baseStep_of_primStep Hstep hsr)
+    cases baseStep_of_primStep Hstep (by solve_subredex_values)
     cases s
     · exact val_irreducible rfl _
     · rfl
 
 instance instAtomicFork {s} {e : Exp} : Atomic s hl(fork(&e)) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : SubredexesAreValues hl(fork(&e)) := by
-      apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> try (cases heq; done)
-      all_goals (cases heq; rfl)
-    cases (baseStep_of_primStep Hstep hsr)
+    cases baseStep_of_primStep Hstep (by solve_subredex_values)
     cases s
     · exact val_irreducible rfl _
     · rfl
 
 instance instAtomicNewProph {s} : Atomic s (State := State) Exp.newProph where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : SubredexesAreValues (Exp.newProph) := by
-      apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> try (cases heq; done)
-      all_goals (cases heq; rfl)
-    cases (baseStep_of_primStep Hstep hsr)
+    cases baseStep_of_primStep Hstep (by solve_subredex_values)
     cases s
     · exact val_irreducible rfl _
     · rfl
 
 instance instAtomicCmpXChg {s} {v1 v2 v3 : Val} : Atomic s hl(cmpXchg(&v1, &v2, &v3)) where
   atomic {σ obs e' σ' eₜ} Hstep := by
-    have hsr : SubredexesAreValues hl(cmpXchg(&v1, &v2, &v3)) := by
-      apply subredexes_are_values
-      intro Ki e_inner heq
-      cases Ki <;> try (cases heq; done)
-      all_goals (cases heq; rfl)
-    cases (baseStep_of_primStep Hstep hsr)
+    cases baseStep_of_primStep Hstep (by solve_subredex_values)
     cases s
     · exact val_irreducible rfl _
     · rfl
@@ -376,13 +293,11 @@ theorem prim_step_to_val_always_to_val
     (h₁ : PrimStep.primStep (e₁, σ₁ₐ) κsₐ (Exp.val v₂ₐ, σ₂ₐ, efsₐ))
     (h₂ : PrimStep.primStep (e₁, σ₁ᵦ) κsᵦ (e₂ᵦ, σ₂ᵦ, efsᵦ)) :
     (toVal e₂ᵦ).isSome := by
-  have Hbase₁ := primStep_val_baseStep h₁
-  have hsr : SubredexesAreValues e₁ := by
-    intro K e' heq hnv
-    rcases base_ctx_step_val (K := K) (e := e') (heq ▸ Hbase₁) with h | h
-    · rw [hnv] at h; simp at h
-    · exact h
-  exact base_step_to_val_always_to_val Hbase₁ (baseStep_of_primStep h₂ hsr)
+  refine base_step_to_val_always_to_val (primStep_val_baseStep h₁) (baseStep_of_primStep h₂ ?_)
+  intro K e' heq hnv
+  rcases base_ctx_step_val (K := K) (e := e') (heq ▸primStep_val_baseStep h₁) with h | h
+  · rw [hnv] at h; simp at h
+  · exact h
 
 theorem base_step_to_val_atomic {e₁ : Exp} {σ₁ₐ : State} {κsₐ : List Observation} {v₂ₐ : Val}
     {σ₂ₐ : State} {efsₐ : List Exp} (a : Atomicity) (h : BaseStep e₁ σ₁ₐ κsₐ (Exp.val v₂ₐ) σ₂ₐ efsₐ) :
