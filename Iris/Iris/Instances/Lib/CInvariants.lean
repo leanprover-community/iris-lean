@@ -58,10 +58,7 @@ instance instTimelessExcl (γ : GName) : Timeless (excl (GF := GF) γ) :=
 
 @[rocq_alias cinv_contractive]
 instance instContractiveCinv (N : Namespace) (γ : GName) :
-    Contractive (cinv (GF := GF) N γ) where
-  distLater_dist {n x y} H := by
-    unfold cinv
-    solve_contractive
+    Contractive (cinv (GF := GF) N γ) := by unfold cinv; solve_ne
 
 @[rocq_alias cinv_ne]
 instance instNonExpansiveCinv (N : Namespace) (γ : GName) :

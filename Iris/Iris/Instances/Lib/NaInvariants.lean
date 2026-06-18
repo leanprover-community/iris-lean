@@ -64,9 +64,7 @@ instance instTimeless_own (p : NaInvPoolName) (E : CoPset) : Timeless (own (GF :
 
 @[rocq_alias na_inv_contractive]
 instance instContractive_inv (p : NaInvPoolName) (N : Namespace) :
-    Contractive (inv (GF := GF) p N) where
-  distLater_dist {n x y} H := by
-    solve_contractive
+    Contractive (inv (GF := GF) p N) := by unfold inv; solve_ne
 
 @[rocq_alias na_inv_ne]
 instance instNonExpansive_inv (p : NaInvPoolName) (N : Namespace) : NonExpansive (inv (GF := GF) p N) :=

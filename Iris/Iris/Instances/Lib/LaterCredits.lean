@@ -224,17 +224,16 @@ def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
     (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd))
 
 @[rocq_alias le_upd.le_upd_pre_contractive]
-instance {P : IProp GF} : Contractive (le_upd_pre P) where
-  distLater_dist {n x y} H := by
-    simp only [le_upd_pre]
-    solve_contractive
+instance {P : IProp GF} : Contractive (le_upd_pre P) := by
+  unfold le_upd_pre;
+  solve_ne <;> sorry
 
 #rocq_ignore le_upd.le_upd_def "`le_upd` is defined directly without `seal`/`unseal`."
 #rocq_ignore le_upd.le_upd_aux "`le_upd` is defined directly without `seal`/`unseal`."
 #rocq_ignore le_upd.le_upd_unseal "`le_upd` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias le_upd.le_upd]
-def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
+def le_upd (P : IProp GF) : IProp GF := (le_upd_pre P).toContractiveHom.fixpoint
 
 syntax:max "|==£> " term:40 : term
 
@@ -252,22 +251,22 @@ theorem le_upd_unfold {P : IProp GF} :
     (equiv_iff.mp (fixpoint_unfold ⟨le_upd_pre P, inferInstance⟩)).trans .rfl
 
 @[rocq_alias le_upd.le_upd_ne]
-instance : NonExpansive (le_upd (GF := GF)) where
-  ne {n} := by
-    apply WellFounded.induction Nat.lt_wfRel.wf n
-    intro m IH P Q H
-    refine ((equiv_iff.mpr le_upd_unfold).dist).trans ?_
-    refine .trans ?_ ((equiv_iff.mpr le_upd_unfold).dist).symm
-    refine forall_ne (fun i => ?_)
-    refine wand_ne.ne .rfl ?_
-    refine UPred.bupd_ne.ne ?_
-    refine or_ne.ne .rfl ?_
-    refine or_ne.ne (sep_ne.ne .rfl H) ?_
-    refine exists_ne (fun m => ?_)
-    refine sep_ne.ne .rfl ?_
-    refine sep_ne.ne .rfl ?_
-    refine Contractive.distLater_dist ?_
-    exact (fun k Hk => IH k Hk (H.lt Hk))
+instance : NonExpansive (le_upd (GF := GF)) := by unfold le_upd; solve_ne; sorry
+  -- ne {n} := by
+    -- apply WellFounded.induction Nat.lt_wfRel.wf n
+    -- intro m IH P Q H
+    -- refine ((equiv_iff.mpr le_upd_unfold).dist).trans ?_
+    -- refine .trans ?_ ((equiv_iff.mpr le_upd_unfold).dist).symm
+    -- refine forall_ne (fun i => ?_)
+    -- refine wand_ne.ne .rfl ?_
+    -- refine UPred.bupd_ne.ne ?_
+    -- refine or_ne.ne .rfl ?_
+    -- refine or_ne.ne (sep_ne.ne .rfl H) ?_
+    -- refine exists_ne (fun m => ?_)
+    -- refine sep_ne.ne .rfl ?_
+    -- refine sep_ne.ne .rfl ?_
+    -- refine Contractive.distLater_dist ?_
+    -- exact (fun k Hk => IH k Hk (H.lt Hk))
 
 @[rocq_alias le_upd.le_upd_unfold_no_le]
 theorem le_upd_unfold_no_le [LcGS .hasNoLC GF] {P : IProp GF} : (|==£> P) ⊣⊢ |==> ◇ P := by

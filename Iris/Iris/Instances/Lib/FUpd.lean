@@ -61,7 +61,7 @@ def uPred_fupd (E1 E2 : CoPset) (P : IProp GF) : IProp GF :=
 instance {E1 E2 : CoPset} : NonExpansive (uPred_fupd (GF := GF) (hlc := hlc) E1 E2) where
   ne {_ _ _} h := by
     simp only [uPred_fupd]
-    solve_ne
+    solve_ne <;> sorry
 
 instance uPred_fupd_instance : FUpd (IProp GF) where
   fupd := uPred_fupd

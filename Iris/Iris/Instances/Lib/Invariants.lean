@@ -46,10 +46,7 @@ open ProofMode
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
 @[rocq_alias inv_contractive]
-instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
-  distLater_dist {n x y} H := by
-    simp only [inv]
-    solve_contractive
+instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) := by unfold inv; solve_ne
 
 @[rocq_alias inv_ne]
 instance inv_ne (N : Namespace) : NonExpansive (inv (GF := GF) N) := ne_of_contractive _

@@ -119,18 +119,7 @@ def wp_F (wp : Expr → (Value → IProp GF) → IProp GF) (e : Expr) (Φ : Valu
   ∀ s, @state_interp State _ _ s -∗
     ∃ e' s', ⌜@step _ _ Value _ (e, s) = (e', s') ⌝ ∗ ▷ |==> (@state_interp _ _ _  s' ∗ wp e' Φ))
 
-instance wp_F_contractive : Contractive (@wp_F Expr State Value _ GF _) where
-  distLater_dist {n x y HL} e Φ := by
-    refine or_ne.ne (.of_eq rfl) ?_
-    refine forall_ne (fun _ => ?_)
-    refine wand_ne.ne (.of_eq rfl) ?_
-    refine exists_ne (fun v => ?_)
-    refine exists_ne (fun _ => ?_)
-    refine sep_ne.ne (.of_eq rfl) ?_
-    refine Contractive.distLater_dist fun m Hm => ?_
-    refine BIUpdate.bupd_ne.ne ?_
-    refine sep_ne.ne (.of_eq rfl) ?_
-    exact HL m Hm v Φ
+instance wp_F_contractive : Contractive (@wp_F Expr State Value _ GF _) := by unfold wp_F; solve_ne
 
 def wp {Expr State Value : Type _} [@Ex3WP Expr State Value GF] (e : Expr) (Φ : Value → IProp GF) : IProp GF :=
   (fixpoint <| @wp_F Expr State Value _ GF _) e Φ
