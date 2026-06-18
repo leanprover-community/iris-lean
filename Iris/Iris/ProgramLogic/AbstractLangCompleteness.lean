@@ -133,7 +133,7 @@ theorem qp_div_ofPNat_succ_nil {α : Type _} (qc : Qp) {l : List α} (h : l = []
   subst h
   apply Subtype.ext
   simp
-  sorry
+  grind
 
 theorem weakestpre_completeness
     (Cini : List Expr × State) (f : Forking) (γ : GName) (q : Qp)
