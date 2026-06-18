@@ -226,7 +226,9 @@ theorem base_redex_unique K K' (e e' : Expr) σ σ' (heq : fill K e = fill K' e'
 @[rocq_alias base_prim_step]
 theorem primStep_of_baseStep {e₁ : Expr} {σ₁ obs e₂ σ₂ eₜ}
     (h : (e₁, σ₁) -<obs>->ᵇ (e₂, σ₂, eₜ)) : (e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ) := by
-  simpa only [EvContext.fill_empty] using ContextStep.ofBaseStep empty h
+  let base := ContextStep.ofBaseStep empty h
+  simp only [EvContext.fill_empty] at base
+  exact base
 
 theorem baseStep_of_primStep {e₁ : Expr} {σ₁ obs e₂ σ₂ eₜ}
     (pstep : (e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)) (hsr : SubredexesAreValues e₁) :
@@ -250,7 +252,8 @@ theorem fill_primStep (K : Ectx) {e : Expr} {σ obs e' σ' eₜ} :
     (e, σ) -<obs>-> (e', σ', eₜ) → (fill K e, σ) -<obs>-> (fill K e', σ', eₜ) := by
   rintro ⟨pstep⟩
   rename_i K₁
-  simpa only [EvContext.fill_comp] using ContextStep.ofBaseStep (comp K K₁) pstep
+  simp only [EvContext.fill_comp]
+  exact ContextStep.ofBaseStep (comp K K₁) pstep
 
 @[rocq_alias fill_reducible]
 theorem fill_reducible (K : Ectx) {e : Expr} {σ} :

@@ -48,7 +48,7 @@ end Stuckness
 class Wp (PROP Expr : Type _) (Val : outParam (Type _)) (A : Type _) where
   wp : A → CoPset → Expr → (Val → PROP) → PROP
 
-class TotalWP (PROP Expr) (Val : outParam (Type _)) (A : Type _) where
+class TotalWp (PROP Expr) (Val : outParam (Type _)) (A : Type _) where
   totalWp : A → CoPset → Expr → (Val → PROP) → PROP
 
 syntax wpExpr :=
@@ -109,7 +109,7 @@ meta def wpMacro : Lean.Macro := fun stx => do
     let (e, s, E) ← parseWpExpr expr
     let (Φ, useTotal?) ← parseWpPostcond postcond
     if useTotal? then
-      `(TotalWP.totalWp $s $E $e $Φ)
+      `(TotalWp.totalWp $s $E $e $Φ)
     else
       `(Wp.wp $s $E $e $Φ)
   | _ => Lean.Macro.throwUnsupported
@@ -137,7 +137,7 @@ meta def unexpanderWp : PrettyPrinter.Unexpander
     `(WP $wpExpr {{ $wpPostcondInner }})
   | _ => throw ()
 
-@[app_unexpander TotalWP.totalWp]
+@[app_unexpander TotalWp.totalWp]
 meta def unexpanderTotalWp : PrettyPrinter.Unexpander
   | `($_wp $s $E $e $Φ) => do
     let wpExpr ← makeWpExpr s E e

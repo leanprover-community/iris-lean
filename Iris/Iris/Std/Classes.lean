@@ -23,7 +23,6 @@ notation "⊤" => top
 class Reflexive (R : Relation α) where
   refl {x : α} : R x x
 export Reflexive (refl)
-attribute [simp] refl
 
 /-- Require that a relation `R` on `α` is transitive. -/
 class Transitive (R : Relation α) where

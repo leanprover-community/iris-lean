@@ -12,7 +12,10 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Qq
 
-elab "irename" colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do
+/--
+  `irename H => H'` renames the hypothesis `H` as `H'`.
+-/
+elab "irename " colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do
   ProofModeM.runTactic λ mvar { prop, bi, hyps, goal, .. } => do
 
   -- find hypothesis index
@@ -24,7 +27,10 @@ elab "irename" colGt nameFrom:ident " => " colGt nameTo:ident : tactic => do
   mvar.setType (IrisGoal.toExpr { prop, bi, hyps := hyps', goal, .. })
   addMVarGoal mvar
 
-elab "irename" ":" colGt ty:term " => " colGt nameTo:ident : tactic => do
+/--
+  `irename: ty => H'` renames the hypothesis whose statement matches `ty` as `H`.
+-/
+elab "irename" " : " colGt ty:term " => " colGt nameTo:ident : tactic => do
   -- parse syntax
   if nameTo.getId.isAnonymous then
     throwUnsupportedSyntax

@@ -2456,14 +2456,14 @@ example [BI PROP] {P1 P2 P3 Q : PROP} :
   iapply H
   iexact HNew
 
-/- Tests `icomine` failure: using a non-existent hypothesis as an argument -/
+/- Tests `icombine` failure: using a non-existent hypothesis as an argument -/
 /-- error: unknown hypothesis HP2 -/
 #guard_msgs in
 example [BI PROP] {P : PROP} : ⊢ P -∗ P ∗ P := by
   iintro HP1
   icombine HP1 HP2 as HNew
 
-/- Tests `icomine` failure: combining a proposition in the spatial context twice -/
+/- Tests `icombine` failure: combining a proposition in the spatial context twice -/
 /-- error: icombine: propositions in the spatial context cannot be used as arguments multiple times -/
 #guard_msgs in
 example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ R -∗ P ∗ Q ∗ R ∗ P := by

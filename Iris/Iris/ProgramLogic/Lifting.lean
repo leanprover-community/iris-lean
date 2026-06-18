@@ -186,14 +186,16 @@ theorem wp_lift_pure_det_step_no_fork [Inhabited State] (E₂ : CoPset)
 theorem wp_pure_step_fupd [Inhabited State] (E₂ : CoPset)
     [Hexec : PureExec φ n e₁ e₂] (Hφ : φ) :
     (|={E}[E₂]▷=>^[n] £ n -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
-  iintro Hwp
   replace Hexec := Hexec.pureExec Hφ
   iinduction Hexec using Relation.Iterate.head_induction_on with simp only [Nat.repeat]
   | rfl =>
+    iintro Hwp
+    simp only [Nat.repeat]
     rw (occs := [2]) [fupd_wp_iff.to_eq]
     icases lc_zero with >Hz
     iapply Hwp $$ Hz
   | @head n e₁ e₃ _ _ IH =>
+    iintro Hwp
     obtain ⟨Hsafe, Hdet⟩ := ‹e₁ -ᵖ-> e₃›
     iapply wp_lift_pure_det_step_no_fork E₂ (e₂ := e₃) ?Hred (by grind)
     case Hred =>

@@ -124,12 +124,12 @@ theorem frag_inj {b1 b2 : A} (h : (◯ b1 : Auth A) ≡ ◯ b2) : b1 ≡ b2 :=
   equiv_dist.mpr fun _ => dist_of_frag_dist h.dist
 
 @[rocq_alias auth_auth_discrete]
-nonrec theorem auth_discrete {dq : DFrac} {a : A} (ha : DiscreteE a) (hu : DiscreteE (unit : A)) :
-    DiscreteE (●{dq} a) := auth_discrete ha hu
+nonrec instance auth_discrete {dq : DFrac} {a : A} [DiscreteE a] [DiscreteE (unit : A)] :
+    DiscreteE (●{dq} a) := auth_discrete
 
 @[rocq_alias auth_frag_discrete]
-nonrec theorem frag_discrete {a : A} (hb : DiscreteE a) : DiscreteE (◯ a : Auth A) :=
-  frag_discrete hb
+nonrec instance frag_discrete {a : A} [DiscreteE a] : DiscreteE (◯ a : Auth A) :=
+  frag_discrete
 
 /-! ## Operations -/
 @[rocq_alias auth_auth_dfrac_op]
