@@ -223,12 +223,12 @@ nonrec theorem inv_acc {p : NaInvPoolName} {E F : CoPset} {N : Namespace} {P : I
     exact Hbad i ⟨mem_singleton.mpr rfl, mem_singleton.mpr rfl⟩ |>.elim
 
 @[rocq_alias into_inv_na]
-instance into_inv_na (N : Namespace) (P : IProp GF) :
+instance intoInv_na (N : Namespace) (P : IProp GF) :
     IntoInv (inv p N P) N := {}
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_acc_na]
-instance into_acc_na (p : NaInvPoolName) (E F : CoPset) (N : Namespace) (P : IProp GF) :
+instance intoAcc_na (p : NaInvPoolName) (E F : CoPset) (N : Namespace) (P : IProp GF) :
     IntoAcc (X := Unit) (inv p N P) (↑N ⊆ E ∧ ↑N ⊆ F) (own p F) (fupd E E) (fupd E E)
     (fun _ => iprop(▷ P ∗ own p (F \ ↑N))) (fun _ => iprop(▷ P ∗ own p (F \ ↑N)))
               (λ _ => some (own p F)) where

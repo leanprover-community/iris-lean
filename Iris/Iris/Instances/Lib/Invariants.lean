@@ -88,11 +88,11 @@ instance is_except_0_inv (N : Namespace) (P : IProp GF) : IsExcept0 (inv N P) wh
   is_except0 := by iintro H; iapply except_0_inv $$ H
 
 @[rocq_alias into_inv_inv]
-instance into_inv_inv (N : Namespace) (P : IProp GF) : IntoInv (inv N P) N := {}
+instance intoInv_inv (N : Namespace) (P : IProp GF) : IntoInv (inv N P) N := {}
 
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias into_acc_inv]
-instance into_acc_inv (N : Namespace) (P : IProp GF) E :
+instance intoAcc_inv (N : Namespace) (P : IProp GF) E :
     IntoAcc (X := Unit) (inv N P) (↑N ⊆ E) iprop(True) (fupd E (E \ ↑N)) (fupd (E \ ↑N) E)
       (λ _ => iprop(▷ P)) (λ _ => iprop(▷ P)) (λ _ => none) where
   into_acc := by
