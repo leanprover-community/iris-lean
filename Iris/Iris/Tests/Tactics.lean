@@ -2777,8 +2777,3 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
-
-example [BI PROP] {P : PROP} : ⊢ P -∗ P := by
-  iintro HP
-  iinv HP as ∗
-  itrivial

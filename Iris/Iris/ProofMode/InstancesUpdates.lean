@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler, Yunsong Yang
+Authors: Michael Sammler, Yunsong Yang, Alvin Tang
 -/
 module
 
@@ -199,6 +199,20 @@ instance (priority := low) elimModal_fupd_fupd_wrongMask p E0 E1 E2 E3 (P Q : PR
       Use `BIFUpdate.subset` to adjust the goal mask before using `imod`.")
       p false iprop(|={E1,E2}=> P) iprop(False) iprop(|={E0,E3}=> Q) iprop(False) where
   elim_modal h := by cases h
+
+@[rocq_alias elim_acc_bupd]
+instance elimAcc_bupd [BUpd PROP] {X} (α β : X → PROP) mγ (Q : PROP) :
+    ElimAcc True bupd bupd α β mγ
+    iprop(|==> Q)
+    (fun x => iprop(|==> β x ∗ (mγ x -∗? |==> Q))) where
+  elim_acc := sorry
+
+@[rocq_alias elim_acc_fupd]
+instance elimAcc_fupd [FUpd PROP] {X} E1 E2 (α β : X → PROP) mγ (Q : PROP) :
+    ElimAcc True (fupd E1 E2) (fupd E2 E1) α β mγ
+    iprop(|={E1,E}=> Q)
+    (fun x => iprop(|={E2}=> β x ∗ (mγ x -∗? |={E1,E}=> Q))) where
+  elim_acc := sorry
 
 end BIFancyUpdate
 
