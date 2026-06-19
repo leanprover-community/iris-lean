@@ -106,7 +106,11 @@ def iRevertCore (targets : List SelTarget) {u : Level}{prop: Q(Type $u)}{bi : Q(
   let pf' : Q($(st.e) ⊢ $(st.goal)) ← withoutFVars (u:=0) st.reverted (k st.hyps st.goal)
   return q($(st.pf) $pf')
 
-elab "irevert" pats:(colGt selPat)+ : tactic => do
+/--
+  `irevert pats` reverts the hypotheses specified by the selection pattern `pats`
+  from the Iris contexts back into the regular Lean context.
+-/
+elab "irevert " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
   ProofModeM.runTactic fun mvar {hyps, goal, ..} => do
