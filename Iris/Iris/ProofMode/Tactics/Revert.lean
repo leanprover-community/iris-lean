@@ -102,6 +102,9 @@ private def RevertState.revertLeanHyp
 /--
   Throw an error if there exists hypotheses that are depend on any hypothesis
   in `explicitTargets` but are not themselves in the list.
+
+  The value `inductionTarget` can optionally be supplied. In this case,
+  hypotheses dependent on it should also be generalised.
 -/
 def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (tacticName : String) (hyps : Hyps bi e)

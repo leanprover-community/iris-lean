@@ -332,8 +332,8 @@ private def generalizeTermWithFVar (x : TSyntax `term) : TacticM FVarId := do
   way as the `induction` tactic. Given an expression `e`, the application of
   `iinduction e` performs the following steps:
   1. Generalises the expression `e` using `Lean.Meta.Tactic.Generalize`.
-  2. Reverts all hypotheses in the spatial context, as well as those in the
-     intuitionistic context that depend on the induction target.
+  2. Reverts all hypotheses in the spatial context, as well as those specified
+     in the `generalizing` clause.
   3. Obtain the induction subgoals.
   4. Moves all induction hypotheses into the intuitionstic context.
   5. Introduce hypotheses reverted in steps 2 and 3 back into the Iris contexts.
@@ -356,19 +356,19 @@ private def generalizeTermWithFVar (x : TSyntax `term) : TacticM FVarId := do
   □HT : T n
   ```
 
-  By applying `iinduction n`, all spatial hypotheses (`HP` and `HS`) are
-  reverted. The hypothesis `HT` is also reverted because it involves the
-  induction target `n`.
+  By applying `iinduction n generalizing HT`, all spatial hypotheses
+  (`HP` and `HS`) are reverted. The hypothesis `HT` must also be reverted
+  because it involves the induction target `n`.
 
-  By applying `iinduction n generalizing HQ`, the hypotheses `HQ`
+  By applying `iinduction n generalizing HQ HT`, the hypotheses `HQ`
   are additionally reverted and thus included as a wand premise in the induction
   hypothesis.
 
   One can also generalise pure variables in the regular Lean context.
   If there exists some pure/Iris hypotheses that is forward-dependent, they
   should also be included in the `generalizing` clause. In the example above,
-  instead of `iinduction n generalizing %m`, one should use
-  `iinduction n generalizing %m HQ`.
+  instead of `iinduction n generalizing %m HT`, one should use
+  `iinduction n generalizing %m HQ HT`.
 -/
 elab_rules : tactic
   | `(tactic| iinduction $x
