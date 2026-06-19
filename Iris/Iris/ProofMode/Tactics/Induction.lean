@@ -292,21 +292,20 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
             -- Introduce the induction hypothesis back into the Iris proof state
             let st ← addIHs pfIntHyps irisGoal.hyps ihFVars
 
-            -- For pretty printing of arguments
             parsedAlts.forM fun parsedAlts => do
-              (parsedAlts.alts.find? (matcher ctor) <|> parsedAlts.wildcard).forM
+              parsedAlts.alts.find? (matcher ctor) <|> parsedAlts.wildcard |>.forM
                 fun ⟨_, vars, _, stx⟩ => do
+                  -- Check that the number of arguments matches what are needed
                   if vars.size > s.fields.size then
                     throwOrLogErrorAt stx <|
                       s!"iinduction: too many variable names provided at alternative `{ctor}`: ".append
                       s!"{vars.size} provided, but {s.fields.size} expected"
-
-                  -- For pretty printing of arguments
+                  -- Label the arguments with their types, shown when the user hovers over them
                   for ⟨fieldFVar, varStx⟩ in s.fields.toList.zip vars.toList do
                     if let `(binderIdent| $id:ident) := varStx then
                       let lctx ← getLCtx
                       let fieldType ← inferType fieldFVar
-                      addLocalVarInfo id lctx fieldFVar (some fieldType) true
+                      addLocalVarInfo id lctx fieldFVar fieldType true
 
             let pf' ← withoutFVars (u := 0) ihFVars.toArray <| kIntro st.newHyps irisGoal.goal <|
               fun hyps goal => do match parsedAlts with
