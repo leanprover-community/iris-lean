@@ -472,7 +472,8 @@ end hyps
 
 /-- This is the same as `Entails`, but it takes a `BI` instead.
 This constant is used to detect iris proof goals. -/
-abbrev Entails' [BI PROP] : PROP → PROP → Prop := Entails
+@[expose]
+def Entails' [BI PROP] : PROP → PROP → Prop := Entails
 
 structure IrisGoal where
   u : Level

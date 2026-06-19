@@ -376,7 +376,7 @@ theorem wsat_alloc [WP : WsatGpreS GF] :
       rw [invMap, H]
       iassumption
     · iapply bigSepM_empty
-      simp
+      itrivial
   · unfold ownE
     iexact He
 

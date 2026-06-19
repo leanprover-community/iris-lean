@@ -179,11 +179,26 @@ def iModIntroCore {e} (hyps : @Hyps u prop bi e) (goal : Q($prop)) (sel : TSynta
     let pf' ← k hyps' Q
     return q(modintro (sel:=$sel) $pf $pf' $hΦ)
 
-elab "imodintro" colGt sel:term : tactic => do
+/--
+  `imodintro sel` introduces the modality at the top of the goal (e.g., `□`,
+  `<pers>`, `▷`, `|==>`), adjusting the context as required by the modality.
+  The tactic succeeds only when the selector term `sel` matches the modality.
+-/
+elab "imodintro " colGt sel:term : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
   let pf ← iModIntroCore hyps goal sel
 
   mvar.assign pf
 
+
+/--
+  `imodintro sel` introduces the modality at the top of the goal (e.g., `□`,
+  `<pers>`, `▷`, `|==>`), adjusting the context as required by the modality.
+-/
 macro "imodintro" : tactic => `(tactic | imodintro _)
+
+/--
+  `inext` introduces the later modality (`▷`), adjusting the context as
+  required by the modality. The tactic is equivalent to `imodintro (▷^[_] _)`.
+-/
 macro "inext" : tactic => `(tactic | imodintro (▷^[_] _))
