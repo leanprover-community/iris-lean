@@ -349,7 +349,7 @@ theorem flatten_suffix (l k : List Pos) : l <:+ k -> ∃ q, flatten k = q ++ fla
   rintro ⟨l', rfl⟩
   exact ⟨_, flatten_app⟩
 
-instance app_inj (p : Pos) : (· ++ p).Injective :=
+def app_inj (p : Pos) : (· ++ p).Injective :=
   fun a a' Heq => by induction p <;> simp_all [HAppend.hAppend, app]
 
 theorem reverse_involutive p : reverse (reverse p) = p := by
@@ -358,7 +358,7 @@ theorem reverse_involutive p : reverse (reverse p) = p := by
   | xO p IH => rewrite [reverse_x0, reverse_app, IH]; rfl
   | xH => rfl
 
-instance rev_inj : reverse.Injective :=
+def rev_inj : reverse.Injective :=
   fun p q Heq => by
     rewrite [<- reverse_involutive p, <- reverse_involutive q]
     simp [Heq]
@@ -410,10 +410,10 @@ class Countable (A : Type) where
   decode : Pos -> Option A
   decode_encode x : decode (encode x) = some x
 
-instance some_inj {A} : (@some A).Injective :=
+def some_inj {A} : (@some A).Injective :=
   fun _ _ => by rintro ⟨⟩; rfl
 
-instance encode_inj [c : Countable A] : c.encode.Injective :=
+def encode_inj [c : Countable A] : c.encode.Injective :=
   fun x _ Hxy => by
     apply some_inj
     rewrite [<- c.decode_encode x, Hxy, c.decode_encode]

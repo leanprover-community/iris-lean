@@ -53,7 +53,7 @@ theorem Nodup.map_on {f : α → β} (H : ∀ x ∈ l, ∀ y ∈ l, f x = f y �
 
 /-- NB. Copied from Mathlib -/
 theorem Nodup.filter (p : α → Bool) {l} : List.Nodup l → List.Nodup (List.filter p l) := by
-  simpa using List.Pairwise.filter p
+  simpa using! List.Pairwise.filter p
 
 inductive Relation.ReflTransGen (r : α → α → Prop) (a : α) : α → Prop
   | refl : ReflTransGen r a a

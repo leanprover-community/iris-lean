@@ -209,7 +209,7 @@ theorem auth_dfrac_validI (dq : DFrac) (a : A) :
   refine .trans ?_ (and_congr_left siPure_pure)
   refine .trans ?_ siPure_and
   refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
-  all_goals simpa only [SiProp.cmraValid, auth_dfrac_validN] using id
+  all_goals simp only [SiProp.cmraValid, auth_dfrac_validN]; exact id
 
 @[rocq_alias auth_auth_validI]
 theorem auth_validI (a : A) : internalCmraValid (● a : Auth A) ⊣⊢@{PROP} internalCmraValid a := by
@@ -223,7 +223,7 @@ theorem auth_dfrac_op_validI (dq1 dq2 : DFrac) (a1 a2 : A) :
   refine .trans ?_ (and_congr_left siPure_pure)
   refine .trans ?_ (siPure_and.trans (and_congr_right siPure_and))
   refine ⟨siPure_mono fun n => ?_, siPure_mono fun n => ?_⟩
-  all_goals simpa only [SiProp.cmraValid, auth_dfrac_op_validN] using id
+  all_goals simp only [SiProp.cmraValid, auth_dfrac_op_validN]; exact id
 
 @[rocq_alias auth_frag_validI]
 theorem frag_validI (a : A) :

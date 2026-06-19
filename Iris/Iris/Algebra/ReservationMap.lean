@@ -261,7 +261,10 @@ instance : UCMRA (ReservationMap A H) where
   extend {n x y₁ y₂} v exy := by
     obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := CMRA.extend (validN_data_of_validN v) exy.left
     refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, ?_, ?_, ?_⟩
-    · exact ⟨by simp [op_data', xzz], by simpa [op_token'] using exy.right⟩
+    · refine ⟨?_, ?_⟩
+      · simp [op_data', xzz]
+      · simp only [op_token', leibniz]
+        exact exy.right
     · exact ⟨zy₁, rfl⟩
     · exact ⟨zy₂, rfl⟩
   unit := mk ∅ ∅
@@ -441,8 +444,8 @@ theorem valid_singleton_op_of_valid_op? {a : A} {x : H A} (vx : ✓{n} x) (h : �
   refine (validN_data).mpr fun i => ?_
   rw [Heap.get?_op]
   by_cases ki : k = i
-  · simpa only [← ki, LawfulPartialMap.get?_singleton, ↓reduceIte, Option.some_op_opM] using h
-  · simpa only [LawfulPartialMap.get?_singleton, ki, ↓reduceIte] using Heap.validN_get? vx
+  · simp only [← ki, LawfulPartialMap.get?_singleton, ↓reduceIte, Option.some_op_opM]; exact h
+  · simp only [LawfulPartialMap.get?_singleton, ki, ↓reduceIte]; exact Heap.validN_get? vx
 
 @[rocq_alias reservation_map_alloc]
 theorem alloc {e k} {a : A} (hke : k ∈ e) (va : ✓ a) : mkToken (H := H) e ~~> singleton k a := by

@@ -417,7 +417,7 @@ instance [OFE α] [Discrete α] : Discrete (Option α) where
 instance OFE.Option.some.ne [OFE α] : OFE.NonExpansive (some : α → Option α) := ⟨fun _ _ _ => id⟩
 
 @[rocq_alias Some_discrete]
-instance Option.some_is_discrete [OFE α] {e : α} (Ha : OFE.DiscreteE e) : OFE.DiscreteE (some e) where
+instance Option.some_is_discrete [OFE α] {e : α} [OFE.DiscreteE e] : OFE.DiscreteE (some e) where
   discrete {y} h :=
     match y with
     | .none => absurd h not_some_dist_none
@@ -577,10 +577,10 @@ theorem NonExpansive₂.uncurry [OFE α] [OFE β] [OFE γ] {f : α → β → γ
   ⟨fun {_ _ _} (h : _ ∧ _) => hf.ne h.1 h.2⟩
 
 @[rocq_alias prod_discrete]
-instance prod.is_discrete [OFE α] [OFE β] {a : α} {b : β} (Ha : DiscreteE a) (Hb : DiscreteE b) :
+instance prod.is_discrete [OFE α] [OFE β] {a : α} {b : β} [DiscreteE a] [DiscreteE b] :
     DiscreteE (a, b) := by
   constructor
-  intro y H; refine ⟨Ha.discrete H.1, Hb.discrete H.2⟩
+  intro y H; refine ⟨DiscreteE.discrete H.1, DiscreteE.discrete H.2⟩
 
 @[rocq_alias prod_ofe_discrete]
 instance instDiscreteProd [OFE α] [OFE β] [Discrete α] [Discrete β] : Discrete (α × β) where
@@ -1166,7 +1166,7 @@ variable [OFE α]
 @[rocq_alias option_chain]
 def optionChain (c : Chain (Option α)) (x : α) : Chain α := by
   refine ⟨fun n => (c n).getD x, fun {n i} H => ?_⟩
-  dsimp; have := c.cauchy H; revert this
+  have := c.cauchy H; revert this
   cases c.chain i <;> cases c.chain n <;> simp [Dist, Option.Forall₂]
 
 @[rocq_alias option_cofe]
@@ -1274,7 +1274,7 @@ theorem Prod.map_ne {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡{n}�
   ⟨Hf x.fst, Hg x.snd⟩
 
 @[rocq_alias prodO_map]
-instance Prod.mapO (f : A -n> A') (g : B -n> B') : A × B -n> A' × B' where
+def Prod.mapO (f : A -n> A') (g : B -n> B') : A × B -n> A' × B' where
   f := .map f g
   ne := inferInstance
 
@@ -1330,7 +1330,7 @@ theorem Sum.map_ne {f f' : A → A'} {g g' : B → B'} (Hf : ∀ a, f a ≡{n}�
     | .inr _ => dist_inr (Hg _)
 
 @[rocq_alias sumO_map]
-instance Sum.mapO (f : A -n> A') (g : B -n> B') : A ⊕ B -n> A' ⊕ B' where
+def Sum.mapO (f : A -n> A') (g : B -n> B') : A ⊕ B -n> A' ⊕ B' where
   f := .map f g
   ne := inferInstance
 

@@ -16,11 +16,11 @@ open Iris
 section TestWP
 set_option linter.unusedVariables false
 
-variable (PROP Expr : Type _) (Val : outParam (Type _)) (A : Type _)
+variable (PROP Expr : Type _) (Val : Type _) (A : Type _)
 variable [Wp PROP Expr Val A]
 variable [Wp PROP Expr Val Stuckness]
-variable [TotalWP PROP Expr Val A]
-variable [TotalWP PROP Expr Val Stuckness]
+variable [TotalWp PROP Expr Val A]
+variable [TotalWp PROP Expr Val Stuckness]
 
 variable (e : Expr) (s : A) (E : CoPset)
 

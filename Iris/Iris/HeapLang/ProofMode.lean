@@ -348,7 +348,7 @@ elab "wp_pure " colGt ppSpace focus:hl_exp : tactic =>
     let focus ← elabTermEnsuringTypeQ (← `(hl($focus))) q(HeapLang.Exp)
     trace[wp_pure] m!"Focusing with {focus}"
 
-    let some {result := (φ, n, e₂, inst), K, e' := e₁} ← findECtx e fun e₁ => do
+    let some {result := (φ, n, e₂, inst), K, e' := e₁, heq := _} ← findECtx e fun e₁ => do
       guard <| ← isDefEq e₁ focus
       let φ ← mkFreshExprMVarQ q(Prop)
       let n ← mkFreshExprMVarQ q(Nat)
