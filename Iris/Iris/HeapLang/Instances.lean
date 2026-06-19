@@ -64,11 +64,17 @@ theorem fill_isSome_empty {K : List ECtxItem} {e : Exp}
     have h2 := EctxLanguage.fill_val (K := K') (e := fillItem Ki e) h
     simp [fillItem_expToVal_none] at h2
 
-macro "solve_subredex_values" : tactic =>
+local macro "solve_subredex_values" : tactic =>
   `(tactic|
     (apply subredexes_are_values
      intro Ki e_inner heq
      cases Ki <;> cases heq <;> try rfl <;> try done))
+
+local macro "solve_atomic" hstep:ident : tactic =>
+  `(tactic| (cases baseStep_of_primStep $hstep (by solve_subredex_values)
+             split
+             · exact val_irreducible rfl _
+             · rfl))
 
 theorem mk_pure_prim_step {e1 e2 : Exp} (hstep : ∀ σ, BaseStep e1 σ [] e2 σ [])
     (hpure : ∀ {σ1 κs e2' σ2 efs}, BaseStep e1 σ1 κs e2' σ2 efs → κs = [] ∧ σ1 = σ2 ∧ e2 = e2' ∧ efs = [])
@@ -188,82 +194,37 @@ instance (priority := default + 10) instPureExecEqOp {v1 v2 : Val} :
     · solve_subredex_values
 
 instance instAtomicLoad {s} {v : Val} : Atomic s hl(!&v) where
-  atomic {σ obs e' σ' eₜ} Hstep := by
-    cases baseStep_of_primStep Hstep (by solve_subredex_values)
-    cases s
-    · exact val_irreducible rfl _
-    · rfl
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
 instance instAtomicStore {s} {v1 v2 : Val} : Atomic s hl(&v1 ← &v2) where
-  atomic {σ obs e' σ' eₜ} Hstep := by
-    cases baseStep_of_primStep Hstep (by solve_subredex_values)
-    rename_i l v Heq
-    cases s
-    · exact val_irreducible rfl _
-    · rfl
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
 instance instAtomicFst {s} {v1 : Val} : Atomic s hl(fst(&v1)) where
-  atomic {σ obs e' σ' eₜ} Hstep := by
-    cases baseStep_of_primStep Hstep (by solve_subredex_values)
-    cases s
-    · exact val_irreducible rfl _
-    · rfl
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
 instance instAtomicSnd {s} {v1 : Val} : Atomic s hl(snd(&v1)) where
-  atomic {σ obs e' σ' eₜ} Hstep := by
-    cases baseStep_of_primStep Hstep (by solve_subredex_values)
-    cases s
-    · exact val_irreducible rfl _
-    · rfl
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
 instance instAtomicAllocN {s} {v1 v2 : Val} : Atomic s hl(allocn(&v1, &v2)) where
-  atomic {σ obs e' σ' eₜ} Hstep := by
-    cases baseStep_of_primStep Hstep (by solve_subredex_values)
-    cases s
-    · exact val_irreducible rfl _
-    · rfl
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
 instance instAtomicFree {s} {v : Val} : Atomic s hl(free(&v)) where
-  atomic {σ obs e' σ' eₜ} Hstep := by
-    cases baseStep_of_primStep Hstep (by solve_subredex_values)
-    cases s
-    · exact val_irreducible rfl _
-    · rfl
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
 instance instAtomicXchg {s} {v1 v2 : Val} : Atomic s hl(xchg(&v1, &v2)) where
-  atomic {σ obs e' σ' eₜ} Hstep := by
-    cases baseStep_of_primStep Hstep (by solve_subredex_values)
-    cases s
-    · exact val_irreducible rfl _
-    · rfl
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
 instance instAtomicFaa {s} {v1 v2 : Val} : Atomic s hl(faa(&v1, &v2)) where
-  atomic {σ obs e' σ' eₜ} Hstep := by
-    cases baseStep_of_primStep Hstep (by solve_subredex_values)
-    cases s
-    · exact val_irreducible rfl _
-    · rfl
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
 instance instAtomicFork {s} {e : Exp} : Atomic s hl(fork(&e)) where
-  atomic {σ obs e' σ' eₜ} Hstep := by
-    cases baseStep_of_primStep Hstep (by solve_subredex_values)
-    cases s
-    · exact val_irreducible rfl _
-    · rfl
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
 instance instAtomicNewProph {s} : Atomic s (State := State) Exp.newProph where
-  atomic {σ obs e' σ' eₜ} Hstep := by
-    cases baseStep_of_primStep Hstep (by solve_subredex_values)
-    cases s
-    · exact val_irreducible rfl _
-    · rfl
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
 instance instAtomicCmpXChg {s} {v1 v2 v3 : Val} : Atomic s hl(cmpXchg(&v1, &v2, &v3)) where
-  atomic {σ obs e' σ' eₜ} Hstep := by
-    cases baseStep_of_primStep Hstep (by solve_subredex_values)
-    cases s
-    · exact val_irreducible rfl _
-    · rfl
+  atomic {σ obs e' σ' eₜ} Hstep := by solve_atomic Hstep
 
 theorem primStep_val_baseStep {e : Exp} {σ : State} {obs : List Observation}
     {v : Val} {σ' : State} {efs : List Exp}
@@ -284,7 +245,7 @@ theorem base_step_to_val_always_to_val
     (h₁ : BaseStep e₁ σ₁ₐ κsₐ (Exp.val v₂ₐ) σ₂ₐ efsₐ)
     (h₂ : BaseStep e₁ σ₁ᵦ κsᵦ e₂ᵦ σ₂ᵦ efsᵦ) :
     (toVal e₂ᵦ).isSome := by
-  cases h₁ <;> cases h₂ <;> simp_all [] <;> grind
+  cases h₁ <;> cases h₂ <;> simp_all <;> grind
 
 theorem prim_step_to_val_always_to_val
     {e₁ : Exp} {σ₁ₐ : State} {κsₐ : List Observation} {v₂ₐ : Val} {σ₂ₐ : State}
