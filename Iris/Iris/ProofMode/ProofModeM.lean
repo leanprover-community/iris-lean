@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler, Zongyuan Liu, Yunsong Yang
+Authors: Michael Sammler, Zongyuan Liu, Yunsong Yang, Alvin Tang
 -/
 module
 
@@ -98,43 +98,27 @@ def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do
 
 /--
   Creates a new proof goal with the given hypotheses (`hyps`), conclusion
-  (`goal`).
-
-  If `firstTactic` is not `none`, run the tactic to the new proof goal.
-  This tactic may lead to one or more new proof goals. This tactic should not
-  solve the goal, or else `tacticSeq` is known to be redundant. If so,
-  throw an error to notify the user of the redundancy.
-
-  Then, run a sequence of tactics (`tacticSeq`) before adding the resultant
-  goals into the proof state.
+  (`goal`). Run a sequence of tactics with this proof goal and push all
+  subgoals into the proof state.
 
   The function returns:
   1. the metavariable of the initial goal,
-  2. the metavariables of subgoals after running the first tactic, and
-  3. the metavariables of subgoals after running the remaining tactic sequences.
+  2. a Boolean value indicating whether the `firstTactic` solves all goals,
+     `false` if `firstTactic` is `none`.
 -/
 def addBIGoalRunTactics {prop : Q(Type u)} {bi : Q(BI $prop)}
     {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous)
     (firstTactic : Option <| TSyntax `tactic)
     (tacticSeq : TSyntax `Lean.Parser.Tactic.tacticSeq) :
-    ProofModeM (Q($e ⊢ $goal) × Option (List MVarId) × List MVarId) := do
+    ProofModeM (Q($e ⊢ $goal) × Bool) := do
   let m ← mkBIGoal hyps goal name
-
-  match firstTactic with
-  | none =>
-    -- Run the user tactics on the newly generated goal
-    let subgoals ← evalTacticAt tacticSeq m.mvarId!
-    for s in subgoals do addMVarGoal s
-    pure (m, none, subgoals)
-  | some firstTactic =>
-    let subgoals ← evalTacticAt firstTactic m.mvarId!
-    let mut subgoals' := []
-    -- Run the user tactics on each newly generated goal after running `firstTactic`
-    for s in subgoals do
-      subgoals' := subgoals'.append <| ← evalTacticAt tacticSeq s
-    -- Add the result proof subgoals into the proof state
-    for s' in subgoals' do addMVarGoal s'
-    pure (m, subgoals, subgoals')
+  -- Run `firstTactic`, if available
+  let subgoals ← firstTactic.elim (pure [m.mvarId!]) (evalTacticAt · m.mvarId!)
+  -- Run the user tactics on each newly generated goal after running `firstTactic`
+  let mut subgoals' := []
+  for s in subgoals do
+    subgoals' := subgoals'.append <| ← evalTacticAt tacticSeq s
+  pure (m, firstTactic.isSome && subgoals.isEmpty)
 
 /-- Try to synthesize a typeclass instance, adding any created metavariables as proof mode goals. -/
 def ProofModeM.trySynthInstanceQ (α : Q(Sort v)) : ProofModeM (Option Q($α)) := do

@@ -320,10 +320,10 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
                     | none => addBIGoal hyps goal ctor
                     -- Run the tactics supplied by the user, if available
                     | some tacticSeq =>
-                        let ⟨pf, newMVars, _⟩ ←
+                        let ⟨pf, allSolved⟩ ←
                           addBIGoalRunTactics hyps goal ctor parsedAlts.tac tacticSeq
                         -- Throw an error if the first tactic already solves the goal
-                        if let some [] := newMVars then
+                        if allSolved then
                           throwOrLogErrorAt stx
                             s!"iinduction: alternative `{ctor.getString!}` is not needed"
                         pure pf
