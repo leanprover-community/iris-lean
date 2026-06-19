@@ -158,7 +158,7 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       let srcName := "`" ++ srcDecl.userName.toString ++ "`"
       let srcName := inductionTarget.elim srcName
         (if · == srcId then "the induction target" else srcName)
-      return s!"• Iris hypothesis in the intuitionstic context `{name}` depends on {srcName}"
+      return s!"• Iris hypothesis in the intuitionistic context `{name}` depends on {srcName}"
 
     let allPureFVars := allPureFVars.eraseDups.filter <|
       fun fvar => inductionTarget.all (fvar != ·)

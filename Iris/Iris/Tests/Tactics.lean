@@ -2791,7 +2791,7 @@ info: Try this:
 error: iloeb: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
 • Lean hypothesis `h1` depends on `n`
 • Lean hypothesis `U` depends on `n`
-• Iris hypothesis in the intuitionstic context `HT` depends on `n`
+• Iris hypothesis in the intuitionistic context `HT` depends on `n`
 -/
 #guard_msgs in
 example [BI PROP] [BILoeb PROP] {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop}
@@ -3094,10 +3094,10 @@ error: iinduction: The following hypotheses depend on variables in the `generali
 • Lean hypothesis `U1` depends on `m`
 • Lean hypothesis `h2` depends on `m`
 • Lean hypothesis `U2` depends on `m`
-• Iris hypothesis in the intuitionstic context `HQ` depends on `m`
-• Iris hypothesis in the intuitionstic context `HR` depends on `m`
-• Iris hypothesis in the intuitionstic context `HS` depends on the induction target
-• Iris hypothesis in the intuitionstic context `HU2` depends on `h2` -/
+• Iris hypothesis in the intuitionistic context `HQ` depends on `m`
+• Iris hypothesis in the intuitionistic context `HR` depends on `m`
+• Iris hypothesis in the intuitionistic context `HS` depends on the induction target
+• Iris hypothesis in the intuitionistic context `HU2` depends on `h2` -/
 #guard_msgs in
 example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Prop}
     {h1 : T m} {U1 : (T m) → Prop} {h2 : U1 h1} {U2 : (U1 h1) → PROP} :
@@ -3115,7 +3115,7 @@ example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Pro
   [apply] iinduction ts generalizing IH1 with simp
 ---
 error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
-• Iris hypothesis in the intuitionstic context `IH1` depends on the induction target -/
+• Iris hypothesis in the intuitionistic context `IH1` depends on the induction target -/
 #guard_msgs in
 example [BI PROP] {α} {t : NTree α} : ⊢@{PROP} ⌜t.id = t⌝ := by
   iinduction t with simp [NTree.id]
