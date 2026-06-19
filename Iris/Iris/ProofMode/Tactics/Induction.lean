@@ -124,22 +124,6 @@ private structure InductionState {u} {prop : Q(Type u)} {bi} (origE : Q($prop)) 
   (newHyps : Hyps bi newE)
   (pf : Q($origE ⊢ $newE))
 
-/--
-  Finds spatial hypotheses in the spatial context as well as the intuitionistic
-  hypotheses that depend on `fvar`.
--/
-private def iHypsToGeneralize {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
-    (hyps : Hyps bi e) (fvar : FVarId) : ProofModeM (List SelTarget) := do
-  let fwdDeps ← collectForwardDeps #[mkFVar fvar] false
-  let dependentFVars := fwdDeps.map (·.fvarId!)
-
-  let ivars := hyps.intuitionisticIVarIds.filter <| fun ivar =>
-    match hyps.getDecl? ivar with
-    | some ⟨_, _, _, ty⟩ => dependentFVars.any (ty.containsFVar ·)
-    | none => false
-
-  return (ivars ++ hyps.spatialIVarIds).map ({ kind := .ipm ·, explicit := false })
-
 /-- Introduce into the intuitionistic context of the Iris proof state. -/
 private def addIHs {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
     (pfIntHyps : Q($e ⊢ □ $e)) (hyps : Hyps bi e) (ihFVars : List FVarId) :
@@ -192,13 +176,8 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (fvar : FVarId)
     (parsedAlts : Option Alts) (altRecName : Option Name) (genSelTargets : List SelTarget) :
     ProofModeM Q($e ⊢ $goal) := do
-  -- Find the regular pure/Iris hypotheses to be reverted
-  let implicitIrisTargets ← iHypsToGeneralize hyps fvar
-  let targets ← do
-    let explicitIrisTargets := genSelTargets.filter (match ·.kind with | .ipm _ => true | _ => false)
-    let explicitPureTargets := genSelTargets.filter (match ·.kind with | .pure _ => true | _ => false)
-    let implicitIrisTargets := implicitIrisTargets.filter (not <| (explicitIrisTargets.map (·.kind)).contains ·.kind)
-    pure <| explicitPureTargets ++ implicitIrisTargets ++ explicitIrisTargets
+  let targets := genSelTargets ++
+    (hyps.spatialIVarIds.map ({ kind := .ipm ·, explicit := false })).filter (not <| (genSelTargets.map (·.kind)).contains ·.kind)
 
   -- Find the recursor name and constructor names of the inductive datatype
   let fvarType ← liftM <| (inferType <| mkFVar fvar) >>= whnf
@@ -405,15 +384,18 @@ elab_rules : tactic
     let parsedAlts ← alts.mapM parseInductionAlts
 
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-      let genSelTargets ←
-        genSelPats.elim (pure []) fun genSelPats => do
-          -- Parse the selection patterns for generalising hypotheses
-          let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
-          let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
-          -- Check for dependencies with the hypotheses in the selection targets
-          checkDependentHyps "iinduction" hyps genSelTargets genSelPats
-            fun newPats => `(tactic| iinduction $x $[using $r]? generalizing $newPats* $[$alts]?)
-          pure genSelTargets
+      let mkTactic := fun newPats => `(tactic| iinduction $x $[using $r]? generalizing $newPats* $[$alts]?)
+      let genSelTargets ← do match genSelPats with
+      | none =>
+        checkDependentHyps "iinduction" hyps [] fvar #[] mkTactic
+        pure []
+      | some genSelPats =>
+        -- Parse the selection patterns for generalising hypotheses
+        let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
+        let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
+        -- Check for dependencies with the hypotheses in the selection targets
+        checkDependentHyps "iinduction" hyps genSelTargets fvar genSelPats mkTactic
+        pure genSelTargets
 
       let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
       mvar.assign pf

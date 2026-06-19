@@ -104,14 +104,18 @@ private def RevertState.revertLeanHyp
   in `explicitTargets` but are not themselves in the list.
 -/
 def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
-    (tacticName : String) (hyps : Hyps bi e) (explicitTargets : List SelTarget)
+    (tacticName : String) (hyps : Hyps bi e)
+    (explicitTargets : List SelTarget)
+    (inductionTarget : Option FVarId)
     (selPats : TSyntaxArray `selPat)
     (mkTactic : TSyntaxArray `selPat → ProofModeM (TSyntax `tactic)):
     ProofModeM Unit := do
   let explicitIrisIVarIds := explicitTargets.filterMap
     (match ·.kind with | .ipm ivar => some ivar | _ => none)
-  let explicitPureFVars := explicitTargets.filterMap
-    (match ·.kind with | .pure f => some f | _ => none)
+  let explicitPureFVars :=
+    explicitTargets.filterMap
+    (match ·.kind with | .pure f => some f | _ => none) |>.append <|
+      inductionTarget.elim [] (.singleton ·)
 
   -- Pairs of `FVarId` values `(f1, f2)` indicating `f1` depends on `f2`.
   let mut missingPure : List (FVarId × FVarId) := []
@@ -132,23 +136,32 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
 
   -- Check forward dependency of Iris hypotheses
   let missingIris : List (Name × FVarId) :=
-  hyps.intuitionisticIVarIds.filterMap fun ivar =>
-    if explicitIrisIVarIds.contains ivar then none
-    else hyps.getDecl? ivar >>= fun ⟨name, _, _, ty⟩ =>
-      (allPureFVars.find? (ty.containsFVar ·)).map (name, ·)
+    hyps.intuitionisticIVarIds.filterMap fun ivar =>
+      if explicitIrisIVarIds.contains ivar then none
+      else hyps.getDecl? ivar >>= fun ⟨name, _, _, ty⟩ =>
+        (allPureFVars.find? (ty.containsFVar ·)).map (name, ·)
 
   -- Add an error message if there exists some pure/Lean hypotheses that should also be generalised
   if !missingPure.isEmpty || !missingIris.isEmpty then
     let leanLines ← missingPure.mapM fun (depId, srcId) => do
       let depDecl ← depId.getDecl
       let srcDecl ← srcId.getDecl
-      return s!"• Lean hypothesis `{depDecl.userName}` depends on `{srcDecl.userName}`"
+      let srcName := "`" ++ srcDecl.userName.toString ++ "`"
+      let srcName := inductionTarget.elim srcName
+        (if · == srcId then "the induction target" else srcName)
+      return s!"• Lean hypothesis `{depDecl.userName}` depends on {srcName}"
     let irisLines ← missingIris.mapM fun (name, srcId) => do
       let srcDecl ← srcId.getDecl
-      return s!"• Iris hypothesis in the intuitionstic context `{name}` depends on `{srcDecl.userName}`"
+      let srcName := "`" ++ srcDecl.userName.toString ++ "`"
+      let srcName := inductionTarget.elim srcName
+        (if · == srcId then "the induction target" else srcName)
+      return s!"• Iris hypothesis in the intuitionstic context `{name}` depends on {srcName}"
+
+    let allPureFVars := allPureFVars.eraseDups.filter <|
+      fun fvar => inductionTarget.all (fvar != ·)
 
     -- Sort the pure Lean hypothesis according to the dependency
-    let allPureFVarsSorted := (← getLCtx).sortFVarsByContextOrder allPureFVars.eraseDups.toArray
+    let allPureFVarsSorted ← getLCtx <&> (·.sortFVarsByContextOrder allPureFVars.toArray)
     let sortedPurePats : Array (TSyntax `selPat) ← allPureFVarsSorted.mapM fun fvarId => do
       let decl ← fvarId.getDecl
       let id := mkIdent <| .mkSimple decl.userName.toString
@@ -197,7 +210,7 @@ elab_rules : tactic | `(tactic| irevert $pats:selPat*) => do
 
   ProofModeM.runTactic fun mvar { hyps, goal, .. } => do
     let targets ← SelPat.resolve hyps parsedPats
-    checkDependentHyps "irevert" hyps targets pats
+    checkDependentHyps "irevert" hyps targets none pats
       fun newPats => `(tactic| irevert $newPats*)
     let expr ← iRevertCore targets hyps goal
     mvar.assign expr

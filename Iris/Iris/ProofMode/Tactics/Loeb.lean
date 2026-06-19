@@ -28,7 +28,7 @@ elab_rules : tactic
     let pats ← Elab.liftMacroM <| SelPat.parse hs
     ProofModeM.runTactic fun mvid {hyps, goal, ..} => do
       let targets : List SelTarget ← SelPat.resolve hyps (pats ++ [.spatial])
-      checkDependentHyps "iloeb" hyps targets hs
+      checkDependentHyps "iloeb" hyps targets none hs
         (fun newPats => `(tactic| iloeb as $IH generalizing $newPats*))
       let expr ← iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do
         let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)

@@ -2887,7 +2887,7 @@ example [BI PROP] {α} {t : NTree α} : ⊢@{PROP} ⌜t.id = t⌝ := by
   iinduction t with simp [NTree.id]
   | h_leaf => itrivial
   | h_node x ts IH1 =>
-    iinduction ts with simp
+    iinduction ts generalizing IH1 with simp
     | nil => itrivial
     | cons t ts IH2 =>
       isplit
@@ -3018,7 +3018,7 @@ example [BI PROP] {n : Nat} :
 example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {m n : Nat} :
     ⊢ P -∗ □ Q m -∗ □ R -∗ S -∗ □ T (n + m) -∗ ⌜n + m + 0 = n + m⌝ := by
   iintro HP #HQ #HR HS #HT
-  iinduction n + m using Nat.caseStrongRecOn generalizing %m HQ with
+  iinduction n + m using Nat.caseStrongRecOn generalizing %m HQ HT with
   | zero | ind _ _ => itrivial
 
 /-
@@ -3078,13 +3078,14 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   - *regular hypotheses* `h1 : T m` and `U1 : (T m) → Prop` depend on `m`;
   - *regular hypotheses* `h2 : U1 h1` and `U2 : (U1 h1) → PROP` depends on `h1`,
     which in turn depends on `m`;
-  - *Iris hypotheses* `□HQ : Q m` and `□HR : R m` depends on `m`;
+  - *Iris hypotheses* `□HQ : Q m` and `□HR : R m` depend on `m`;
+  - *Iris hypothesis* `□HS : S n` depends on the induction target `n`;
   - *Iris hypothesis* `□HU2 : U2 h2` depends on `h2` and `U2`, which depends
     depend on `h1`, which in turn depends on `m`.
   This requires manual resolution.
 -/
 /-- info: Try this:
-  [apply] iinduction n generalizing %m %h1 %U1 %h2 %U2 HQ HR HU2 with
+  [apply] iinduction n generalizing %m %h1 %U1 %h2 %U2 HQ HR HS HU2 with
   | zero
   | succ n IH => itrivial
 ---
@@ -3095,6 +3096,7 @@ error: iinduction: The following hypotheses depend on variables in the `generali
 • Lean hypothesis `U2` depends on `m`
 • Iris hypothesis in the intuitionstic context `HQ` depends on `m`
 • Iris hypothesis in the intuitionstic context `HR` depends on `m`
+• Iris hypothesis in the intuitionstic context `HS` depends on the induction target
 • Iris hypothesis in the intuitionstic context `HU2` depends on `h2` -/
 #guard_msgs in
 example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Prop}
@@ -3104,5 +3106,21 @@ example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Pro
   iinduction n generalizing %m with
   | zero
   | succ n IH => itrivial
+
+/-
+  Tests `iinduction` for hypotheses dependent on the induction target
+  when `generalizing` is not used.
+-/
+/-- info: Try this:
+  [apply] iinduction ts generalizing IH1 with simp
+---
+error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Iris hypothesis in the intuitionstic context `IH1` depends on the induction target -/
+#guard_msgs in
+example [BI PROP] {α} {t : NTree α} : ⊢@{PROP} ⌜t.id = t⌝ := by
+  iinduction t with simp [NTree.id]
+  | h_leaf => itrivial
+  | h_node x ts IH1 =>
+    iinduction ts with simp
 
 end iinduction
