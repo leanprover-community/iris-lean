@@ -74,7 +74,7 @@ theorem option_includedI [Sbi PROP] [CMRA A] {mx my : Option A} :
     refine .trans (siPure_mono ?_) siPure_pure.mp
     rintro n ⟨_, ⟨c, rfl⟩, hc⟩
     rcases c with _ | c <;>
-      exact (by simpa [SiProp.internalEq, OFE.Dist, Option.Forall₂] using hc : False)
+      exact (hc : False)
   · simp only [internalCmraIncluded, internalEq]
     refine .trans ?_ siPure_or
     refine siPure_mono_bi ⟨fun n h => ?_, fun n h => ?_⟩
@@ -102,7 +102,7 @@ theorem option_included_totalI [Sbi PROP] [CMRA A] [CMRA.IsTotal A] {mx my : Opt
     refine .trans (siPure_mono ?_) siPure_pure.mp
     rintro n ⟨_, ⟨c, rfl⟩, hc⟩
     rcases c with _ | c <;>
-      exact (by simpa [SiProp.internalEq, OFE.Dist, Option.Forall₂] using hc : False)
+      exact (hc : False)
   · refine siPure_mono_bi ⟨fun n h => ?_, fun n h => ?_⟩
     · obtain ⟨_, ⟨c, rfl⟩, hc⟩ := h
       obtain ⟨c, hc⟩ := Option.some_incN_some_iff_is_total.mp ⟨c, hc⟩

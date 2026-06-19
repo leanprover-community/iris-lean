@@ -45,7 +45,7 @@ instance box_own_auth_timeless (γ : SliceName) (a : Auth (Option (Excl BoolO)))
     BI.Timeless (box_own_auth (GF := GF) γ a) := by
   unfold box_own_auth
   have hd : OFE.DiscreteE ((a, none) : (BoxF GF).ap (IProp GF)) :=
-    prod.is_discrete inferInstance Option.none_is_discrete
+    prod.is_discrete
   exact iOwn_timeless (F := BoxF GF) (a := ((a, none) : (BoxF GF).ap (IProp GF)))
 
 @[rocq_alias box_own_prop]
@@ -188,7 +188,7 @@ theorem box_alloc {M : Type _ → Type _} [LawfulFiniteMap M SliceName] (N : Nam
   iexists (fun _ => iprop(True))
   isplit
   · inext; simp only [Algebra.BigOpM.bigOpM_empty]; itrivial
-  · simp
+  · simp only [Algebra.BigOpM.bigOpM_empty]; itrivial
 
 @[rocq_alias slice_insert_empty]
 theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
