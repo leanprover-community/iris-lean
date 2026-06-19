@@ -143,14 +143,9 @@ private def iHypsToGeneralize {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
 /-- Search for induction hypotheses in the pure Lean context -/
 private def findIHs (m : MVarId) : ProofModeM (List FVarId) :=
   m.withContext do
-    let lctx ← getLCtx
-    let mut ihs := []
-    for decl in lctx do
-      let type ← instantiateMVars decl.type
-      -- The hypothesis is an IH when it is an Iris entailment
-      if containsIrisGoal type.getForallBody then
-        ihs := decl.fvarId :: ihs
-    return ihs.reverse
+    return (← (← getLCtx).decls.toList.reduceOption.filterMapM fun decl => do
+        pure <| if containsIrisGoal (← instantiateMVars decl.type).getForallBody then
+          some decl.fvarId else none).reverse
 
 /-- Introduce into the intuitionistic context of the Iris proof state. -/
 private def addIHs {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
