@@ -9,3 +9,4 @@ public import Iris.BI.BI
 public import Iris.BI.Notation
 public import Iris.BI.Updates
 public import Iris.BI.Cmra
+public import Iris.BI.MonPred
