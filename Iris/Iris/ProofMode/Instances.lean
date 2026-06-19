@@ -9,6 +9,7 @@ public import Iris.BI
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ClassesMake
 public import Iris.ProofMode.ModalityInstances
+public import Iris.ProofMode.Expr
 public import Iris.Std.TC
 public import Iris.Std.RocqPorting
 
@@ -921,7 +922,7 @@ instance combineSepGives_persistently [BI PROP] (Q1 Q2 P : PROP)
   combine_sep_gives := persistently_sep_mpr.trans (persistently_mono h.combine_sep_gives)
 
 @[rocq_alias into_ih_entails]
-instance intoIH_entails [BI PROP] (P Q : PROP) : IntoIH (P ⊢ Q) P Q where
+instance intoIH_entails [BI PROP] (P Q : PROP) : IntoIH (Entails' P Q) P Q where
   into_ih := λ hpq => intuitionistically_elim.trans hpq
 
 @[rocq_alias into_ih_forall]

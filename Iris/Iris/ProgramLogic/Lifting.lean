@@ -190,7 +190,6 @@ theorem wp_pure_step_fupd [Inhabited State] (E₂ : CoPset)
   iinduction Hexec using Relation.Iterate.head_induction_on with simp only [Nat.repeat]
   | rfl =>
     iintro Hwp
-    simp only [Nat.repeat]
     rw (occs := [2]) [fupd_wp_iff.to_eq]
     icases lc_zero with >Hz
     iapply Hwp $$ Hz

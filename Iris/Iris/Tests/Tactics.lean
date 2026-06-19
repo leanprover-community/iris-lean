@@ -2855,6 +2855,7 @@ example [BI PROP] {α} {t : Tree α} {P : α → PROP} :
     Tree.pred P t -∗ Tree.pred P (.mirror t) := by
   iintro H
   iinduction t with simp [Tree.mirror, Tree.pred]
+  | leaf => itrivial
   | node l x r ihl ihr =>
     icases H with ⟨Hl, Hx, Hr⟩
     iframe
