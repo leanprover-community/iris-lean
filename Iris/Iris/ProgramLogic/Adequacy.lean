@@ -344,7 +344,7 @@ theorem wp_invariance_gen [InvGpreS GF] (s : Stuckness) (e1 : Expr) (σ1 σ2 : S
   icases BigSepL2.bigSepL2_nil_inv_right $$ H with %Heq
   subst Heq
   icases Hcont $$ [Hst] with ⟨%_, >Hcont⟩
-  · simp only [List.nil_append, refl]
+  · simp only [List.nil_append]; itrivial
   iapply fupd_mask_intro_discard empty_subset
   iframe Hcont
 

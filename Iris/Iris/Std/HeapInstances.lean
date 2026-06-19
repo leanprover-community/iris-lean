@@ -203,7 +203,7 @@ instance AssocList.instPartialMapAssocList : Iris.Std.PartialMap AssocList Nat w
     construct (fun n => op_lift (op n) (t1.lookup n) (t2.lookup n)) (max t1.fresh t2.fresh)
 
 instance AssocList.instLawfulPartialMapAssocList : Iris.Std.LawfulPartialMap AssocList Nat where
-  get?_empty := by simp [get?]
+  get?_empty := by simp [get?, EmptyCollection.emptyCollection, Std.empty]
   get?_insert_eq := by simp [get?, insert]; grind
   get?_insert_ne := by simp [get?, insert]; grind
   get?_delete_eq := by simp [get?, delete]

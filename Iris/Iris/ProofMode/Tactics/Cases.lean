@@ -255,7 +255,10 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
     iModCore bi P goal p A λ p' A goal' =>
       iCasesCore hyps goal' arg p' A @k
 
-elab "icases" keep:("+keep")? colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => do
+/--
+  `icases pmt with pat` destructs `pmt : pmTerm` using the cases pattern `pat`.
+-/
+elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : tactic => do
   -- parse syntax
   let pmt ← liftMacroM <| PMTerm.parse pmt
   let pat ← liftMacroM <| iCasesPat.parse pat
@@ -271,7 +274,15 @@ elab "icases" keep:("+keep")? colGt pmt:pmTerm "with" colGt pat:icasesPat : tact
 
   mvar.assign q(($pf).trans $pf2)
 
-macro "imod" colGt pmt:pmTerm "with" colGt pat:icasesPat : tactic => `(tactic | icases $pmt with >$pat)
+/--
+  `imod pmt with pat` eliminates the modality at the top of `pmt : pmTerm` into
+  the goal and destructs the result with case pattern `pat`.
+-/
+macro "imod" colGt pmt:pmTerm " with " colGt pat:icasesPat : tactic => `(tactic | icases $pmt with >$pat)
+
+/--
+  `imod pmt` eliminates the modality at the top of `pmt : pmTerm` into the goal.
+-/
 macro "imod" colGt pmt:pmTerm : tactic =>
   match pmt with
   | `(pmTerm | $hyp:ident) => `(tactic | imod $pmt with $hyp:ident)
@@ -279,5 +290,15 @@ macro "imod" colGt pmt:pmTerm : tactic =>
   | _ => `(tactic | imod $pmt with _)
 
 -- TODO: remove these shortcuts if they are not used
-macro "iintuitionistic" hyp:ident : tactic => `(tactic | icases $hyp:ident with #$hyp:ident)
-macro "ispatial" hyp:ident : tactic => `(tactic | icases $hyp:ident with ∗$hyp:ident)
+
+/--
+  `iintuitionistic H` removes hypothesis `H` into the intuitionistic context.
+  Equivalent to `icases H with #H`.
+-/
+macro "iintuitionistic " colGt hyp:ident : tactic => `(tactic | icases $hyp:ident with #$hyp:ident)
+
+/--
+  `ispatial H` removes hypothesis `H` into the spatial context.
+  Equivalent to `icases H with ∗H`.
+-/
+macro "ispatial " colGt hyp:ident : tactic => `(tactic | icases $hyp:ident with ∗$hyp:ident)

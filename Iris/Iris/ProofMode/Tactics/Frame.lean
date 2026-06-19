@@ -128,8 +128,12 @@ def FrameResult.finishClose {u prop bi origE origGoal} (res : @FrameResult u pro
     return ⟨e, hyps, q(frame_finish_close_true $pf)⟩
   | _ => throwError "iframe: cannot solve {origGoal} by framing"
 
-
-elab "iframe" pats:(colGt selPat)+ : tactic => do
+/--
+  `iframe pats` cancels the hypotheses specified by the selection pattern `pats`
+  against the matching parts of the goal. Solves the goal completely if the
+  leftover is `True` or `emp` with affine context.
+-/
+elab "iframe " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
   ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do
@@ -138,4 +142,9 @@ elab "iframe" pats:(colGt selPat)+ : tactic => do
   let res ← iFrame bi e hyps goal pats
   mvar.assign (← res.finish (addBIGoal · ·))
 
+/--
+  `iframe` cancels the spatial hypotheses and solves the goal completely if
+  the leftover is `True` or `emp` with affine context. This is equivalent to
+  `iframe ∗`.
+-/
 macro "iframe" : tactic => `(tactic | iframe ∗)

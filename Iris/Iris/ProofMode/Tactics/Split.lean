@@ -25,7 +25,10 @@ theorem sep_split [BI PROP] {P P1 P2 Q Q1 Q2 : PROP} [inst : FromSep Q Q1 Q2]
 public meta section
 open Lean Elab Tactic Meta Qq
 
-elab "isplit" : tactic => do
+/--
+  `isplit` turns the goal into a conjunction (`∧`) and splits it into two goals, both keeping the entire context.
+-/
+elab "isplit " : tactic => do
   ProofModeM.runTactic λ mvar { prop, hyps, goal, .. } => do
 
   let A1 ← mkFreshExprMVarQ prop
@@ -62,11 +65,36 @@ private def isplitCore (side : splitSide) (names : Array (TSyntax `ident)) : Tac
   let m2 ← addBIGoal rhs Q2
   mvar.assign q(sep_split (Q := $goal) $pf $m1 $m2)
 
-elab "isplitl" "[" names:(colGt ident)* "]": tactic => do
+/--
+  `isplitl [H₁ … Hₙ]` splits a separating conjunction (`∗`) into two goals,
+  with spatial hypotheses `H₁ … Hₙ` assigned to the left goal and all other
+  spatial hypotheses assigned to the right goal.
+-/
+elab "isplitl " colGt "[" names:(colGt ident)* "]": tactic => do
   isplitCore .splitLeft names
 
-elab "isplitr" "[" names:(colGt ident)* "]": tactic => do
+/--
+  `isplitr [H₁ … Hₙ]` splits a separating conjunction (`∗`) into two goals,
+  with spatial hypotheses `H₁ … Hₙ` assigned to the right goal and all other
+  spatial hypotheses assigned to the left goal.
+-/
+elab "isplitr " colGt "[" names:(colGt ident)* "]": tactic => do
   isplitCore .splitRight names
 
+/--
+  `isplitl` splits a separating conjunction (`∗`) into two goals,
+  with all spatial hypotheses assigned to the right goal.
+
+  To assign some hypotheses `H₁ … Hₙ` to the left goal, use `isplitl [H₁ … Hₙ]`
+  instead.
+-/
 macro "isplitl" : tactic => `(tactic| isplitr [])
+
+/--
+  `isplitr` splits a separating conjunction (`∗`) into two goals,
+  with all spatial hypotheses assigned to the left goal.
+
+  To assign some hypotheses `H₁ … Hₙ` to the right goal, use `isplitr [H₁ … Hₙ]`
+  instead.
+-/
 macro "isplitr" : tactic => `(tactic| isplitl [])

@@ -21,7 +21,7 @@ namespace RealRandomVariableMax
 
 variable {μ : Measure Ω} (δ : Type _)
 
-scoped instance aeOFE : OFE (Ω → δ) where
+example : OFE (Ω → δ) where
   Equiv x y := x =ᵐ[μ] y
   Dist _ x y := x =ᵐ[μ] y
   dist_eqv := {

@@ -208,14 +208,18 @@ class IntoLaterN {PROP} [BI PROP] (only_head : Bool) (n : Nat) (P : PROP) (Q : o
 export IntoLaterN (into_laterN)
 
 /-- `CombineSepAs` combines two propositions `P` and `Q` into `R` -/
-@[ipm_class]
+@[ipm_class, rocq_alias CombineSepAs]
 class CombineSepAs [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_as : P ∗ Q ⊢ R
 export CombineSepAs (combine_sep_as)
 
+#rocq_ignore MaybeCombineSepAs "No need for progress_indicator"
+#rocq_ignore progress_indicator "No longer required as it is only used by the type class MaybeCombineSepAs"
+#rocq_ignore maybe_combine_sep_as_combine_sep_as "No longer required along with MaybeCombineSepAs"
+
 /-- `CombineSepGives` combines two propositions `P` and `Q` for a proposition
     with the `<pers>` modality -/
-@[ipm_class]
+@[ipm_class, rocq_alias CombineSepGives]
 class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
 export CombineSepGives (combine_sep_gives)
