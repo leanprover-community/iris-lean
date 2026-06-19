@@ -53,11 +53,14 @@ public instance frag_ne : NonExpansive (frag (A := A)) where
 
 @[rocq_alias excl_auth_auth_discrete]
 public instance auth_discrete {a : A} [DiscreteE a] : DiscreteE (●E a) :=
-  Auth.auth_discrete (some_is_discrete inferInstance) none_is_discrete
+  letI _ : DiscreteE (some (excl a)) := some_is_discrete
+  letI _ : DiscreteE (unit : Option (Excl A)) := none_is_discrete
+  by infer_instance
 
 @[rocq_alias excl_auth_frag_discrete]
 public instance frag_discrete {a : A} [DiscreteE a] : DiscreteE (◯E a) :=
-  Auth.frag_discrete (some_is_discrete inferInstance)
+  letI _ : DiscreteE (some (excl a)) := some_is_discrete
+  by infer_instance
 
 @[rocq_alias excl_auth_validN]
 public theorem validN {a : A} : ✓{n} (●E a) • ◯E a :=
