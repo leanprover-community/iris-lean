@@ -225,9 +225,7 @@ theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   isplitl [Heq]
   · inext
     irewrite [Heq]
-    · refine ⟨fun _ _ _ H => ?_⟩
-      refine (NonExpansive₂.ne_left internalEq _).ne ?_
-      exact (sep_ne.ne_right _ _).ne H
+    · refine ⟨fun _ _ _ H => (NonExpansive₂.ne_left internalEq _).ne ((sep_ne.ne_right _ _).ne H)⟩
     rw [(bigSepM_insert hfresh).to_eq]
     simp only [↓reduceIte]
     iclear Heq Hprop Hinv
@@ -237,24 +235,18 @@ theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     · iintro ⟨$, H⟩
       iapply bigSepM_mono $$ H
       intro k v hk
-      rw [if_neg]
-      exact .rfl
-      rintro rfl; rw [hfresh] at hk; simp at hk
+      rw [if_neg (by rintro rfl; rw [hfresh] at hk; simp at hk)]; exact .rfl
     · iintro ⟨$, H⟩
       iapply bigSepM_mono $$ H
       intro k v hk
-      rw [if_neg]
-      exact .rfl
-      rintro rfl; rw [hfresh] at hk; simp at hk
+      rw [if_neg (by rintro rfl; rw [hfresh] at hk; simp at hk)]; exact .rfl
   · iapply (bigSepM_insert hfresh).mpr
     isplitl [Hfrag Hprop Hinv]
     · simp only [box_own_auth, ↓reduceIte]
       iframe Hinv Hprop Hfrag
     · iapply bigSepM_mono $$ H
       intro k v hk
-      rw [if_neg]
-      exact .rfl
-      rintro rfl; rw [hfresh] at hk; simp at hk
+      rw [if_neg (by rintro rfl; rw [hfresh] at hk; simp at hk)]; exact .rfl
 
 @[rocq_alias slice_delete_empty]
 theorem slice_delete_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
@@ -279,12 +271,9 @@ theorem slice_delete_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   isplit
   · inext
     irewrite [Heq']
-    · refine ⟨fun _ _ _ H => ?_⟩
-      refine (NonExpansive₂.ne_right internalEq P).ne ?_
-      exact (sep_ne.ne_left _ _).ne H
+    · refine ⟨fun _ _ _ H => (NonExpansive₂.ne_right internalEq P).ne ((sep_ne.ne_left _ _).ne H)⟩
     irewrite [Heq]
-    · refine ⟨fun _ _ _ H => ?_⟩
-      exact (NonExpansive₂.ne_left internalEq _).ne H
+    · refine ⟨fun _ _ _ H => (NonExpansive₂.ne_left internalEq _).ne H⟩
     iapply prop_ext
     iclear Hprop Hinv Hprop' Hsliceinv
     imodintro
@@ -397,9 +386,7 @@ theorem slice_insert_full {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   isplitl [Heq]
   · inext
     irewrite [Heq]
-    · refine ⟨fun _ _ _ H => ?_⟩
-      refine (NonExpansive₂.ne_left internalEq _).ne ?_
-      exact (sep_ne.ne_right _ _).ne H
+    · refine ⟨fun _ _ _ H => (NonExpansive₂.ne_left internalEq _).ne ((sep_ne.ne_right _ _).ne H)⟩
     rw [(bigSepM_insert hfresh).to_eq]
     simp only [↓reduceIte]
     iclear Heq Hprop Hinv
@@ -409,15 +396,11 @@ theorem slice_insert_full {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     · iintro ⟨$, H⟩
       iapply bigSepM_mono $$ H
       intro k v hk
-      rw [if_neg]
-      exact .rfl
-      rintro rfl; rw [hfresh] at hk; simp at hk
+      rw [if_neg (by rintro rfl; rw [hfresh] at hk; simp at hk)]; exact .rfl
     · iintro ⟨$, H⟩
       iapply bigSepM_mono $$ H
       intro k v hk
-      rw [if_neg]
-      exact .rfl
-      rintro rfl; rw [hfresh] at hk; simp at hk
+      rw [if_neg (by rintro rfl; rw [hfresh] at hk; simp at hk)]; exact .rfl
   · iapply (bigSepM_insert hfresh).mpr
     isplitl [Hfrag Hprop Hinv]
     · simp only [box_own_auth, ↓reduceIte]
@@ -425,9 +408,7 @@ theorem slice_insert_full {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     · iapply bigSepM_mono $$ H
       intro k v hk
       simp only
-      rw [if_neg]
-      exact .rfl
-      rintro rfl; rw [hfresh] at hk; simp at hk
+      rw [if_neg (by rintro rfl; rw [hfresh] at hk; simp at hk)]; exact .rfl
 
 @[rocq_alias slice_delete_full]
 theorem slice_delete_full {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
@@ -470,9 +451,7 @@ theorem slice_delete_full {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     iapply internalEq.trans
     isplit; iexact Heq
     irewrite [eq]
-    · refine ⟨fun _ _ _ H => ?_⟩
-      refine (NonExpansive₂.ne_right internalEq _).ne ?_
-      exact (sep_ne.ne_left _ _).ne H
+    · refine ⟨fun _ _ _ H => (NonExpansive₂.ne_right internalEq _).ne ((sep_ne.ne_left _ _).ne H)⟩
     itrivial
   · iclear Hfrag
     iexists Φ
@@ -579,8 +558,7 @@ theorem slice_iff {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     inext; inext
     imodintro
     irewrite [HeqP]
-    · refine ⟨fun _ _ _ H => ?_⟩
-      exact (iff_ne.ne_left _ _).ne H
+    · refine ⟨fun _ _ _ H => (iff_ne.ne_left _ _).ne H⟩
     isplit
     · iintro ⟨HQ, $⟩
       icases Hiff with ⟨Hiff, -⟩
@@ -602,8 +580,7 @@ theorem slice_iff {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     inext; inext
     imodintro
     irewrite [HeqP]
-    · refine ⟨fun _ _ _ H => ?_⟩
-      exact (iff_ne.ne_left _ _).ne H
+    · refine ⟨fun _ _ _ H => (iff_ne.ne_left _ _).ne H⟩
     icases Hiff with ⟨#Hiff1, #Hiff2⟩
     isplit
     · iintro ⟨HQ, $⟩
@@ -716,9 +693,7 @@ theorem slice_combine {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
       iapply internalEq.trans
       iframe HeqP1
       irewrite [HeqP2]
-      · refine ⟨fun _ _ _ H => ?_⟩
-        refine (NonExpansive₂.ne_left internalEq _).ne ?_
-        exact (sep_ne.ne_right _ _).ne H
+      · refine ⟨fun _ _ _ H => (NonExpansive₂.ne_left internalEq _).ne ((sep_ne.ne_right _ _).ne H)⟩
       iclear HeqP1 HeqP2 Heq
       rw [←sep_assoc.to_eq, (sep_comm (P := Q1)).to_eq]
       itrivial
@@ -746,9 +721,7 @@ theorem slice_combine {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
       iapply internalEq.trans
       iframe HeqP1
       irewrite [HeqP2]
-      · refine ⟨fun _ _ _ H => ?_⟩
-        refine (NonExpansive₂.ne_left internalEq _).ne ?_
-        exact (sep_ne.ne_right _ _).ne H
+      · refine ⟨fun _ _ _ H => (NonExpansive₂.ne_left internalEq _).ne ((sep_ne.ne_right _ _).ne H)⟩
       iclear HeqP1 HeqP2 Heq
       rw [←sep_assoc.to_eq, (sep_comm (P := Q1)).to_eq]
       itrivial
