@@ -159,6 +159,9 @@ def getCompleteSelTargets (explicitTargets : List SelTarget)
     fun ⟨_, ivar, _⟩ => { kind := .ipm ivar, explicit := false}
   pureTargets ++ explicitIrisTargets ++ implicitIrisTargets
 
+private def ppHypName (name : Name) : String :=
+  if name.hasMacroScopes then s!"{name.eraseMacroScopes}✝" else name.toString
+
 /--
   Throw an error if there exists hypotheses that are depend on any hypothesis
   in `explicitTargets` but are not themselves in the list.
@@ -182,16 +185,16 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     let leanLines ← missingPureHyps.mapM fun ⟨depId, srcId⟩ => do
       let depDecl ← depId.getDecl
       let srcDecl ← srcId.getDecl
-      let srcName := "`" ++ srcDecl.userName.toString ++ "`"
+      let srcName := "`" ++ ppHypName srcDecl.userName ++ "`"
       let srcName := inductionTarget.elim srcName
         (if · == srcId then "the induction target" else srcName)
-      return s!"• Lean hypothesis `{depDecl.userName}` depends on {srcName}"
+      return s!"• Lean hypothesis `{ppHypName depDecl.userName}` depends on {srcName}"
     let irisLines ← missingIrisHyps.mapM fun ⟨name, _, srcId⟩ => do
       let srcDecl ← srcId.getDecl
       let srcName := "`" ++ srcDecl.userName.toString ++ "`"
       let srcName := inductionTarget.elim srcName
         (if · == srcId then "the induction target" else srcName)
-      return s!"• Iris hypothesis in the intuitionistic context `{name}` depends on {srcName}"
+      return s!"• Iris hypothesis in the intuitionistic context `{ppHypName name}` depends on {srcName}"
 
     let sortedPurePats : Array (TSyntax `selPat) ← allPureFVarsSorted.mapM fun fvarId => do
       let decl ← fvarId.getDecl
