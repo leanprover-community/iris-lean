@@ -166,7 +166,8 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (explicitTargets : List SelTarget)
     (inductionTarget : Option FVarId)
     (selPats : TSyntaxArray `selPat)
-    (mkTactic : TSyntaxArray `selPat → ProofModeM (TSyntax `tactic)):
+    (mkTacticExplicit : TSyntaxArray `selPat → ProofModeM (TSyntax `tactic))
+    (mkTacticImplicit : Option <| TSyntaxArray `selPat → ProofModeM (TSyntax `tactic)) :
     ProofModeM Unit := do
   let ⟨missingPureHyps, missingIrisHyps, allPureFVarsSorted⟩ ←
     getDependentHyps hyps explicitTargets inductionTarget
@@ -201,16 +202,20 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       (missingIrisHyps.all fun ⟨name, _, _⟩ => !name.hasMacroScopes) &&
       !(← allPureFVarsSorted.anyM fun fvarId => do return (← fvarId.getDecl).userName.hasMacroScopes)
 
+    -- Find the old tactic syntax and generate the new one with missing hypotheses added
+    let oldTactic ← getRef
+
     -- Suggest a fixed tactic with explicit generalisations
     if allNamesAccessible then
-      -- Find the old tactic syntax and generate the new one with missing hypotheses added
-      let oldTactic ← getRef
       let existingIrisPats := selPats.filter fun p =>
         match p.raw with | `(selPat| %$_:ident) => false | _ => true
       let extendedPats := sortedPurePats ++ existingIrisPats ++ newIrisPats
-      let newTactic ← mkTactic extendedPats
+      let newTactic ← mkTacticExplicit extendedPats
+      Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
 
-      -- Suggestion the fixed tactic
+    -- Suggest a fixed tactic with implicit generalisations
+    mkTacticImplicit.forM fun mkTacticImplicit => do
+      let newTactic ← mkTacticImplicit selPats
       Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
 
     -- Log the error and attach the clickable suggestion
@@ -243,6 +248,7 @@ elab_rules : tactic | `(tactic| irevert $pats:selPat*) => do
   ProofModeM.runTactic fun mvar { hyps, goal, .. } => do
     let targets ← SelPat.resolve hyps parsedPats
     checkDependentHyps "irevert" hyps targets none pats
-      fun newPats => `(tactic| irevert $newPats*)
+      (fun newPats => `(tactic| irevert $newPats*)) none
+
     let expr ← iRevertCore targets hyps goal
     mvar.assign expr

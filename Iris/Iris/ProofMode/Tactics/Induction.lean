@@ -384,13 +384,14 @@ elab_rules : tactic
     let parsedAlts ← alts.mapM parseInductionAlts
 
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-      let mkTactic := fun newPats => `(tactic| iinduction $x $[using $r]? generalizing $newPats* $[$alts]?)
       let genSelTargets ← do
         -- Parse the selection patterns for generalising hypotheses
         let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
         let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
         -- Check for dependencies with the hypotheses in the selection targets
-        checkDependentHyps "iinduction" hyps genSelTargets fvar genSelPats mkTactic
+        checkDependentHyps "iinduction" hyps genSelTargets fvar genSelPats
+          (fun pats => `(tactic| iinduction $x $[using $r]? generalizing $pats* $[$alts]?))
+          (some fun pats => `(tactic| iinduction $x $[using $r]? generalizing! $pats* $[$alts]?))
         pure genSelTargets
 
       let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
@@ -405,18 +406,16 @@ elab_rules : tactic
     let parsedAlts ← alts.mapM parseInductionAlts
 
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+      let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ←
+        getDependentHyps hyps [] fvar
       let genSelTargets ← do
         match genSelPats with
         | none =>
-          let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ←
-            getDependentHyps hyps [] fvar
           pure <| getCompleteSelTargets [] missingIrisHyps allPureFVarsSorted
         | some genSelPats =>
           -- Parse the selection patterns for generalising hypotheses
           let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
           let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
-          let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ←
-            getDependentHyps hyps genSelTargets fvar
           pure <| getCompleteSelTargets genSelTargets missingIrisHyps allPureFVarsSorted
 
       let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
