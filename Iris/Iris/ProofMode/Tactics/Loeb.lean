@@ -28,8 +28,10 @@ elab_rules : tactic
     let pats ← Elab.liftMacroM <| SelPat.parse hs
 
     ProofModeM.runTactic fun mvid { hyps, goal, .. } => do
+      -- Parse the selection patterns provided by the tactic user
       let targets : List SelTarget ← SelPat.resolve hyps (pats ++ [.spatial])
 
+      -- Check for dependencies with the hypotheses in the selection targets
       checkDependentHyps "iloeb" hyps targets none hs
         (fun pats => `(tactic| iloeb as $IH generalizing $pats*))
         (some fun pats => `(tactic| iloeb as $IH generalizing! $pats*))
@@ -53,9 +55,12 @@ elab_rules : tactic
       | none =>
         SelPat.resolve hyps [.spatial]
       | some hs =>
+        -- Parse the selection patterns provided by the tactic user
         let pats ← Elab.liftMacroM <| SelPat.parse hs
         let targets ← SelPat.resolve hyps (pats ++ [.spatial])
+        -- Find all dependent hypotheses
         let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps targets none
+        -- Obtain the selection targets, including dependent ones
         pure <| getCompleteSelTargets targets missingIrisHyps allPureFVarsSorted
 
       let expr ← iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do

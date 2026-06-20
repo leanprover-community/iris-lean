@@ -401,17 +401,18 @@ elab_rules : tactic
     let parsedAlts ← alts.mapM parseInductionAlts
 
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-      let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ←
-        getDependentHyps hyps [] fvar
-      let genSelTargets ← do
-        match genSelPats with
-        | none =>
-          pure <| getCompleteSelTargets [] missingIrisHyps allPureFVarsSorted
-        | some genSelPats =>
-          -- Parse the selection patterns for generalising hypotheses
-          let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
-          let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
-          pure <| getCompleteSelTargets genSelTargets missingIrisHyps allPureFVarsSorted
+      let genSelTargets ← do match genSelPats with
+      | none =>
+        let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps [] fvar
+        pure <| getCompleteSelTargets [] missingIrisHyps allPureFVarsSorted
+      | some genSelPats =>
+        -- Parse the selection patterns provided by the tactic user
+        let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
+        let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
+        -- Find all dependent hypotheses
+        let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps genSelTargets fvar
+        -- Obtain the selection targets, including dependent ones
+        pure <| getCompleteSelTargets genSelTargets missingIrisHyps allPureFVarsSorted
 
       let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
       mvar.assign pf
