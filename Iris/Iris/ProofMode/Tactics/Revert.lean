@@ -176,8 +176,7 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (explicitTargets : List SelTarget)
     (inductionTarget : Option FVarId)
     (selPats : TSyntaxArray `selPat)
-    (mkTacticExplicit : TSyntaxArray `selPat → ProofModeM (TSyntax `tactic))
-    (mkTacticImplicit : Option <| TSyntaxArray `selPat → ProofModeM (TSyntax `tactic)) :
+    (mkTacticExplicit mkTacticImplicit : TSyntaxArray `selPat → ProofModeM (TSyntax `tactic)) :
     ProofModeM Unit := do
   let ⟨missingPureHyps, missingIrisHyps, allPureFVarsSorted⟩ ←
     getDependentHyps hyps explicitTargets inductionTarget true
@@ -224,9 +223,8 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
 
     -- Suggest a fixed tactic with implicit generalisations
-    mkTacticImplicit.forM fun mkTacticImplicit => do
-      let newTactic ← mkTacticImplicit selPats
-      Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
+    let newTactic ← mkTacticImplicit selPats
+    Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
 
     -- Log the error and attach the clickable suggestion
     throwError m!"{tacticName}: The following hypotheses depend on variables in \
@@ -271,7 +269,7 @@ elab_rules : tactic | `(tactic| irevert $pats:selPat*) => do
     -- Check for dependencies with the hypotheses in the selection targets
     checkDependentHyps "irevert" hyps targets none pats
       (fun pats => `(tactic| irevert $pats*))
-      (some fun pats => `(tactic| irevert! $pats*))
+      (fun pats => `(tactic| irevert! $pats*))
 
     let expr ← iRevertCore targets hyps goal
     mvar.assign expr

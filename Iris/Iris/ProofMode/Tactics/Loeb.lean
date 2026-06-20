@@ -34,7 +34,7 @@ elab_rules : tactic
       -- Check for dependencies with the hypotheses in the selection targets
       checkDependentHyps "iloeb" hyps targets none hs
         (fun pats => `(tactic| iloeb as $IH generalizing $pats*))
-        (some fun pats => `(tactic| iloeb as $IH generalizing! $pats*))
+        (fun pats => `(tactic| iloeb as $IH generalizing! $pats*))
 
       let expr ← iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do
         let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)

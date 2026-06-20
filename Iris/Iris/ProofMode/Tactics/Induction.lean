@@ -386,7 +386,7 @@ elab_rules : tactic
         -- Check for dependencies with the hypotheses in the selection targets
         checkDependentHyps "iinduction" hyps genSelTargets fvar genSelPats
           (fun pats => `(tactic| iinduction $x $[using $r]? generalizing $pats* $[$alts]?))
-          (some fun pats => `(tactic| iinduction $x $[using $r]? generalizing! $pats* $[$alts]?))
+          (fun pats => `(tactic| iinduction $x $[using $r]? generalizing! $pats* $[$alts]?))
         pure genSelTargets
 
       let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
