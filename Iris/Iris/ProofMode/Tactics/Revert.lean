@@ -102,7 +102,7 @@ private def RevertState.revertLeanHyp
 def getDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (hyps : Hyps bi e)
     (explicitTargets : List SelTarget) (inductionTarget : Option FVarId) :
-    ProofModeM <| List (FVarId × FVarId) × List (Name × FVarId) × Array FVarId := do
+    ProofModeM <| List (FVarId × FVarId) × List (Name × IVarId × FVarId) × Array FVarId := do
   let explicitIrisIVarIds := explicitTargets.filterMap
     (match ·.kind with | .ipm ivar => some ivar | _ => none)
   let explicitPureFVars :=
@@ -111,7 +111,7 @@ def getDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       inductionTarget.elim [] (.singleton ·)
 
   -- Pairs of `FVarId` values `(f1, f2)` indicating `f1` depends on `f2`.
-  let mut missingPure : List (FVarId × FVarId) := []
+  let mut missingPureHyps : List (FVarId × FVarId) := []
 
   -- Check forward dependency of pure hypotheses
   for fvar in explicitPureFVars.eraseDups do
@@ -121,18 +121,18 @@ def getDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       -- Skip `x` itself and variables already included in `explicitPureFVars`
       if depId != fvar && !explicitPureFVars.contains depId then
         -- Record the missing hypothesis to be generalised, if not already included
-        if !missingPure.any (·.fst == depId) then
-          missingPure := missingPure.cons (depId, fvar)
-  missingPure := missingPure.reverse
+        if !missingPureHyps.any (·.fst == depId) then
+          missingPureHyps := missingPureHyps.cons (depId, fvar)
+  missingPureHyps := missingPureHyps.reverse
 
-  let allPureFVars := explicitPureFVars ++ missingPure.map (·.fst)
+  let allPureFVars := explicitPureFVars ++ missingPureHyps.map (·.fst)
 
   -- Check forward dependency of Iris hypotheses
-  let missingIris : List (Name × FVarId) :=
+  let missingIrisHyps : List (Name × IVarId × FVarId) :=
     hyps.intuitionisticIVarIds.filterMap fun ivar =>
       if explicitIrisIVarIds.contains ivar then none
       else hyps.getDecl? ivar >>= fun ⟨name, _, _, ty⟩ =>
-        (allPureFVars.find? (ty.containsFVar ·)).map (name, ·)
+        (allPureFVars.find? (ty.containsFVar ·)).map (name, ivar, ·)
 
   let allPureFVars := allPureFVars.eraseDups.filter <|
     fun fvar => inductionTarget.all (fvar != ·)
@@ -140,7 +140,18 @@ def getDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   -- Sort the pure Lean hypothesis according to the dependency
   let allPureFVarsSorted ← getLCtx <&> (·.sortFVarsByContextOrder allPureFVars.toArray)
 
-  return ⟨missingPure, missingIris, allPureFVarsSorted⟩
+  return ⟨missingPureHyps, missingIrisHyps, allPureFVarsSorted⟩
+
+def getCompleteSelTargets (explicitTargets : List SelTarget)
+    (missingIrisHyps : List (Name × IVarId × FVarId))
+    (allPureVarsSorted : Array FVarId) :
+    List SelTarget :=
+  let pureTargets := allPureVarsSorted.toList.map (⟨.pure ·, true⟩)
+  let explicitIrisTargets := explicitTargets.filter <|
+    fun t => match t.kind with | .ipm _ => true | _ => false
+  let implicitIrisTargets := missingIrisHyps.map <|
+    fun ⟨_, ivar, _⟩ => ⟨.ipm ivar, false⟩
+  pureTargets ++ explicitIrisTargets ++ implicitIrisTargets
 
 /--
   Throw an error if there exists hypotheses that are depend on any hypothesis
@@ -156,19 +167,19 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     (selPats : TSyntaxArray `selPat)
     (mkTactic : TSyntaxArray `selPat → ProofModeM (TSyntax `tactic)):
     ProofModeM Unit := do
-  let ⟨missingPure, missingIris, allPureFVarsSorted⟩ ←
+  let ⟨missingPureHyps, missingIrisHyps, allPureFVarsSorted⟩ ←
     getDependentHyps hyps explicitTargets inductionTarget
 
   -- Add an error message if there exists some pure/Lean hypotheses that should also be generalised
-  if !missingPure.isEmpty || !missingIris.isEmpty then
-    let leanLines ← missingPure.mapM fun (depId, srcId) => do
+  if !missingPureHyps.isEmpty || !missingIrisHyps.isEmpty then
+    let leanLines ← missingPureHyps.mapM fun ⟨depId, srcId⟩ => do
       let depDecl ← depId.getDecl
       let srcDecl ← srcId.getDecl
       let srcName := "`" ++ srcDecl.userName.toString ++ "`"
       let srcName := inductionTarget.elim srcName
         (if · == srcId then "the induction target" else srcName)
       return s!"• Lean hypothesis `{depDecl.userName}` depends on {srcName}"
-    let irisLines ← missingIris.mapM fun (name, srcId) => do
+    let irisLines ← missingIrisHyps.mapM fun ⟨name, _, srcId⟩ => do
       let srcDecl ← srcId.getDecl
       let srcName := "`" ++ srcDecl.userName.toString ++ "`"
       let srcName := inductionTarget.elim srcName
@@ -182,7 +193,7 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
 
     -- Build `selPat` syntax nodes for each missing item
     let newIrisPats : Array (TSyntax `selPat) ←
-      missingIris.toArray.mapM fun (name, _) => `(selPat| $(mkIdent name):ident)
+      missingIrisHyps.toArray.mapM fun ⟨name, _⟩ => `(selPat| $(mkIdent name):ident)
 
     -- Find the old tactic syntax and generate the new one with missing hypotheses added
     let oldTactic ← getRef
