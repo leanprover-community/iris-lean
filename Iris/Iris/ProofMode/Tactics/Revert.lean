@@ -99,20 +99,10 @@ private def RevertState.revertLeanHyp
   else
     st.revertLeanForallHyp f α
 
-/--
-  Throw an error if there exists hypotheses that are depend on any hypothesis
-  in `explicitTargets` but are not themselves in the list.
-
-  The value `inductionTarget` can optionally be supplied. In this case,
-  hypotheses dependent on it should also be generalised.
--/
-def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
-    (tacticName : String) (hyps : Hyps bi e)
-    (explicitTargets : List SelTarget)
-    (inductionTarget : Option FVarId)
-    (selPats : TSyntaxArray `selPat)
-    (mkTactic : TSyntaxArray `selPat → ProofModeM (TSyntax `tactic)):
-    ProofModeM Unit := do
+def getDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
+    (hyps : Hyps bi e)
+    (explicitTargets : List SelTarget) (inductionTarget : Option FVarId) :
+    ProofModeM <| List (FVarId × FVarId) × List (Name × FVarId) × Array FVarId := do
   let explicitIrisIVarIds := explicitTargets.filterMap
     (match ·.kind with | .ipm ivar => some ivar | _ => none)
   let explicitPureFVars :=
@@ -144,6 +134,31 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       else hyps.getDecl? ivar >>= fun ⟨name, _, _, ty⟩ =>
         (allPureFVars.find? (ty.containsFVar ·)).map (name, ·)
 
+  let allPureFVars := allPureFVars.eraseDups.filter <|
+    fun fvar => inductionTarget.all (fvar != ·)
+
+  -- Sort the pure Lean hypothesis according to the dependency
+  let allPureFVarsSorted ← getLCtx <&> (·.sortFVarsByContextOrder allPureFVars.toArray)
+
+  return ⟨missingPure, missingIris, allPureFVarsSorted⟩
+
+/--
+  Throw an error if there exists hypotheses that are depend on any hypothesis
+  in `explicitTargets` but are not themselves in the list.
+
+  The value `inductionTarget` can optionally be supplied. In this case,
+  hypotheses dependent on it should also be generalised.
+-/
+def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
+    (tacticName : String) (hyps : Hyps bi e)
+    (explicitTargets : List SelTarget)
+    (inductionTarget : Option FVarId)
+    (selPats : TSyntaxArray `selPat)
+    (mkTactic : TSyntaxArray `selPat → ProofModeM (TSyntax `tactic)):
+    ProofModeM Unit := do
+  let ⟨missingPure, missingIris, allPureFVarsSorted⟩ ←
+    getDependentHyps hyps explicitTargets inductionTarget
+
   -- Add an error message if there exists some pure/Lean hypotheses that should also be generalised
   if !missingPure.isEmpty || !missingIris.isEmpty then
     let leanLines ← missingPure.mapM fun (depId, srcId) => do
@@ -160,11 +175,6 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
         (if · == srcId then "the induction target" else srcName)
       return s!"• Iris hypothesis in the intuitionistic context `{name}` depends on {srcName}"
 
-    let allPureFVars := allPureFVars.eraseDups.filter <|
-      fun fvar => inductionTarget.all (fvar != ·)
-
-    -- Sort the pure Lean hypothesis according to the dependency
-    let allPureFVarsSorted ← getLCtx <&> (·.sortFVarsByContextOrder allPureFVars.toArray)
     let sortedPurePats : Array (TSyntax `selPat) ← allPureFVarsSorted.mapM fun fvarId => do
       let decl ← fvarId.getDecl
       let id := mkIdent <| .mkSimple decl.userName.toString
