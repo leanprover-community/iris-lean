@@ -19,9 +19,14 @@ syntax (name := iloeb) "iloeb" " as " binderIdent (generalizingSelPats)? : tacti
 /--
   `iloeb as IH generalizing hs` applies Löb induction in the current goal
   using the induction hypothesis `IH`, optionally with other variables can be
-  generalized over through the `generalizing selPat*` syntax.
+  generalised over through the `generalizing selPat*` syntax. All spatial
+  hypothesis are generalised in the induction hypothesis. Hypotheses dependent
+  on those included in the selection pattern `hs` must also themselves be
+  included in `hs`.
 
-  All spatial hypothesis are generalized in the induction hypothesis.
+  `iloeb as IH generalizing! hs` is the same as `iloeb as IH generalizing hs`,
+  except that all hypotheses dependent on any hypothesis in the selection
+  pattern `hs` are implicitly reverted.
 -/
 elab_rules : tactic
   | `(tactic| iloeb as $IH:binderIdent generalizing $hs:selPat*) => do

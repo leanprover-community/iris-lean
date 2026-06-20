@@ -338,11 +338,19 @@ private def generalizeTermWithFVar (x : TSyntax `term) : TacticM FVarId := do
 
   Similar to the regular `induction` tactic, the following syntax is available.
   - `iinduction e using r`: to specify the induction principle `r`.
-  - `iinduction e generalizing z₁ ... zₙ`: to generalise `z₁ ... zₙ`,
+  - `iinduction e generalizing z₁ … zₙ`: to generalise `z₁ … zₙ`,
     which is expressed as a selection pattern. Both Iris hypotheses and pure
-    Lean hypotheses can be generalised.
-  - `iinduction e with | constr₁ => tac₁ | ... | constrₙ => tacₙ`:
-    arguments are optionally given names or otherwise remain inaccessible.
+    Lean hypotheses can be generalised. Hypotheses dependent on any of
+    `z₁ … zₙ` or the induction target `e` must themselves be included in
+    the `generalizing` clause.
+  - `iinduction e generalizing! z₁ … zₙ`: similar to
+    `iinduction e generalizing z₁ … zₙ`, except that hypotheses dependent
+    on any of `z₁ … zₙ` or the induction target `e` are implicitly generalised.
+  - `iinduction e with tac | constr₁ => tac₁ | … | constrₙ => tacₙ`:
+    where `constr₁ … constrₙ` are names of the constructor, variables and
+    induction hypotheses, while `tac₁ … tacₙ` are the corresponding tactic
+    sequences. The optional first tactic `tac` is applied to all induction
+    subgoals.
 
   As an example, consider the following Iris context, where `n : Nat`.
 
@@ -354,19 +362,17 @@ private def generalizeTermWithFVar (x : TSyntax `term) : TacticM FVarId := do
   □HT : T n
   ```
 
-  By applying `iinduction n generalizing HT`, all spatial hypotheses
-  (`HP` and `HS`) are reverted. The hypothesis `HT` must also be reverted
-  because it involves the induction target `n`.
-
   By applying `iinduction n generalizing HQ HT`, the hypotheses `HQ`
   are additionally reverted and thus included as a wand premise in the induction
-  hypothesis.
+  hypothesis. The hypothesis `HT` must also be reverted
+  because it involves the induction target `n`. Alternatively, one can use
+  `iinduction n generalizing! HQ` so that `HT` is generalised implicitly.
 
   One can also generalise pure variables in the regular Lean context.
   If there exists some pure/Iris hypotheses that is forward-dependent, they
-  should also be included in the `generalizing` clause. In the example above,
-  instead of `iinduction n generalizing %m HT`, one should use
-  `iinduction n generalizing %m HQ HT`.
+  should also be included in the `generalizing` clause. For the above example,
+  `iinduction n generalizing %m HQ HT` and `iinduction n generalizing! %m`
+  are equivalent.
 -/
 elab_rules : tactic
   | `(tactic| iinduction $x $[using $r]? generalizing $genSelPats* $[$alts]?) => do

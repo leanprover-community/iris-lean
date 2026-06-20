@@ -19,8 +19,8 @@ namespace Iris.ProofMode
 public section
 open BI Std
 
+/- Syntax for `iinduction` and `iloeb` -/
 declare_syntax_cat generalizingSelPats
-
 syntax " generalizing " (ppSpace colGt selPat)* : generalizingSelPats
 syntax " generalizing! " (ppSpace colGt selPat)* : generalizingSelPats
 
@@ -244,46 +244,43 @@ def iRevertCore (targets : List SelTarget) {u : Level} {prop: Q(Type $u)}
   let pf' : Q($(st.e) ⊢ $(st.goal)) ← withoutFVars (u := 0) st.reverted (k st.hyps st.goal)
   return q($(st.pf) $pf')
 
-/--
-  `irevert pats` reverts the hypotheses specified by the selection pattern `pats`
-  from the Iris contexts back into the regular Lean context. Pure/Iris hypotheses
-  dependent on any hypothesis specified by `pats` must also themselves be
-  included in the selection pattern.
--/
 syntax (name := irevert) "irevert " (colGt ppSpace selPat)+ : tactic
-
-/--
-  `irevert! pats` reverts the hypotheses specified by the selection pattern `pats`
-  from the Iris contexts back into the regular Lean context. Pure/Iris hypotheses
-  dependent on any hypothesis specified by `pats` are also reverted.
--/
 syntax (name := irevert!) "irevert! " (colGt ppSpace selPat)+ : tactic
 
-elab_rules : tactic | `(tactic| irevert $pats:selPat*) => do
-  let parsedPats ← liftMacroM <| SelPat.parse pats
+/--
+  `irevert pats` reverts the hypotheses specified by the selection pattern `pats`
+  from context back into the proof goal. Pure/Iris hypotheses
+  dependent on any hypothesis specified by `pats` must also themselves be
+  included in the selection pattern.
 
-  ProofModeM.runTactic fun mvar { hyps, goal, .. } => do
-    -- Parse the selection patterns provided by the tactic user
-    let targets ← SelPat.resolve hyps parsedPats
+  `irevert! pats` is similar to `irevert pats`, except that pure/Iris hypotheses
+  dependent on any hypothesis specified by `pats` are automatically reverted.
+-/
+elab_rules : tactic
+  | `(tactic| irevert $pats:selPat*) => do
+    let parsedPats ← liftMacroM <| SelPat.parse pats
 
-    -- Check for dependencies with the hypotheses in the selection targets
-    checkDependentHyps "irevert" hyps targets none pats
-      (fun pats => `(tactic| irevert $pats*))
-      (fun pats => `(tactic| irevert! $pats*))
+    ProofModeM.runTactic fun mvar { hyps, goal, .. } => do
+      -- Parse the selection patterns provided by the tactic user
+      let targets ← SelPat.resolve hyps parsedPats
 
-    let expr ← iRevertCore targets hyps goal
-    mvar.assign expr
+      -- Check for dependencies with the hypotheses in the selection targets
+      checkDependentHyps "irevert" hyps targets none pats
+        (fun pats => `(tactic| irevert $pats*))
+        (fun pats => `(tactic| irevert! $pats*))
 
-elab_rules : tactic | `(tactic| irevert! $pats:selPat*) => do
-  let parsedPats ← liftMacroM <| SelPat.parse pats
+      let expr ← iRevertCore targets hyps goal
+      mvar.assign expr
+  | `(tactic| irevert! $pats:selPat*) => do
+    let parsedPats ← liftMacroM <| SelPat.parse pats
 
-  ProofModeM.runTactic fun mvar { hyps, goal, .. } => do
-    -- Parse the selection patterns provided by the tactic user
-    let explicitTargets ← SelPat.resolve hyps parsedPats
-    -- Find all dependent hypotheses
-    let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps explicitTargets none true
-    -- Obtain the selection targets, including dependent ones
-    let targets := getCompleteSelTargets explicitTargets missingIrisHyps allPureFVarsSorted
+    ProofModeM.runTactic fun mvar { hyps, goal, .. } => do
+      -- Parse the selection patterns provided by the tactic user
+      let explicitTargets ← SelPat.resolve hyps parsedPats
+      -- Find all dependent hypotheses
+      let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps explicitTargets none true
+      -- Obtain the selection targets, including dependent ones
+      let targets := getCompleteSelTargets explicitTargets missingIrisHyps allPureFVarsSorted
 
-    let expr ← iRevertCore targets hyps goal
-    mvar.assign expr
+      let expr ← iRevertCore targets hyps goal
+      mvar.assign expr
