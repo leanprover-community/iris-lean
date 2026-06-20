@@ -134,6 +134,7 @@ def getDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       else hyps.getDecl? ivar >>= fun ⟨name, _, _, ty⟩ =>
         (allPureFVars.find? (ty.containsFVar ·)).map (name, ivar, ·)
 
+  -- Missing pure hypotheses does not include the induction target itself
   let allPureFVars := allPureFVars.eraseDups.filter <|
     fun fvar => inductionTarget.all (fvar != ·)
 
@@ -146,11 +147,11 @@ def getCompleteSelTargets (explicitTargets : List SelTarget)
     (missingIrisHyps : List (Name × IVarId × FVarId))
     (allPureVarsSorted : Array FVarId) :
     List SelTarget :=
-  let pureTargets := allPureVarsSorted.toList.map (⟨.pure ·, true⟩)
+  let pureTargets := allPureVarsSorted.toList.map ({ kind := .pure ·, explicit := true})
   let explicitIrisTargets := explicitTargets.filter <|
     fun t => match t.kind with | .ipm _ => true | _ => false
   let implicitIrisTargets := missingIrisHyps.map <|
-    fun ⟨_, ivar, _⟩ => ⟨.ipm ivar, false⟩
+    fun ⟨_, ivar, _⟩ => { kind := .ipm ivar, explicit := false}
   pureTargets ++ explicitIrisTargets ++ implicitIrisTargets
 
 /--
