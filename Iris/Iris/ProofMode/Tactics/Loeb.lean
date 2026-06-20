@@ -16,6 +16,20 @@ public meta section
 
 syntax (name := iloeb) "iloeb" " as " binderIdent (generalizingSelPats)? : tactic
 
+private def iLoebCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (goal : Q($prop)) (targets : List SelTarget)
+    (IH : TSyntax `Lean.binderIdent) : ProofModeM Q($e ⊢ $goal) :=
+  iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do
+    let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)
+      | throwError m!"iloeb: no `{←ppExpr q(BI.BILoeb $prop)}` instance found"
+    let pf := q(BI.loeb_wand_intuitionistically (P := $goal))
+    let pf' ← do
+      -- We have applied `BI.loeb_wand_intuitionistically`
+      let goal := q(iprop(□ (□ ▷ $goal -∗ $goal)))
+      iModIntroCore hyps goal (← `(_)) fun hyps goal => do
+      iIntroCore hyps goal [(IH, .intro <| .intuitionistic <| .one IH)] (k · · addBIGoal)
+    return q($(pf').trans $pf)
+
 /--
   `iloeb as IH generalizing hs` applies Löb induction in the current goal
   using the induction hypothesis `IH`, optionally with other variables can be
@@ -41,18 +55,7 @@ elab_rules : tactic
         (fun pats => `(tactic| iloeb as $IH generalizing $pats*))
         (fun pats => `(tactic| iloeb as $IH generalizing! $pats*))
 
-      let expr ← iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do
-        let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)
-          | throwError m!"iloeb: no `{←ppExpr q(BI.BILoeb $prop)}` instance found"
-        let pf := q(BI.loeb_wand_intuitionistically (P := $goal))
-        let pf' ← do
-          -- We have applied `BI.loeb_wand_intuitionistically`
-          let goal := q(iprop(□ (□ ▷ $goal -∗ $goal)))
-          iModIntroCore hyps goal (← `(_)) fun hyps goal => do
-          iIntroCore hyps goal [(IH, .intro <| .intuitionistic <| .one IH)] (k · · addBIGoal)
-
-        return q($(pf').trans $pf)
-
+      let expr ← iLoebCore hyps goal targets IH
       mvid.assign expr
   | `(tactic| iloeb as $IH:binderIdent $[generalizing! $hs:selPat*]?) => do
     ProofModeM.runTactic fun mvid { hyps, goal, .. } => do
@@ -68,16 +71,5 @@ elab_rules : tactic
         -- Obtain the selection targets, including dependent ones
         pure <| getCompleteSelTargets targets missingIrisHyps allPureFVarsSorted
 
-      let expr ← iRevertIntro hyps goal targets fun {prop _ _} hyps goal k => do
-        let some _ ← ProofModeM.trySynthInstanceQ q(BI.BILoeb $prop)
-          | throwError m!"iloeb: no `{←ppExpr q(BI.BILoeb $prop)}` instance found"
-        let pf := q(BI.loeb_wand_intuitionistically (P := $goal))
-        let pf' ← do
-          -- We have applied `BI.loeb_wand_intuitionistically`
-          let goal := q(iprop(□ (□ ▷ $goal -∗ $goal)))
-          iModIntroCore hyps goal (← `(_)) fun hyps goal => do
-          iIntroCore hyps goal [(IH, .intro <| .intuitionistic <| .one IH)] (k · · addBIGoal)
-
-        return q($(pf').trans $pf)
-
+      let expr ← iLoebCore hyps goal targets IH
       mvid.assign expr
