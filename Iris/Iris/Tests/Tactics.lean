@@ -378,24 +378,30 @@ example [BI PROP] (P : PROP) {x : Nat} : ⊢ P := by
 
 /- Tests `irevert` failing with dependency -/
 /-- info: Try this:
-  [apply] irevert %x %hp
+  [apply] irevert %x %hp H
+---
+info: Try this:
+  [apply] irevert! %x
 ---
 error: irevert: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
-• Lean hypothesis `hp` depends on `x` -/
+• Lean hypothesis `hp` depends on `x`
+• Iris hypothesis `H` depends on `x` -/
 #guard_msgs in
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
   irevert %x
 
-/- Tests `irevert` failing with dependency -/
+/-
+  Tests `irevert` failing with dependency, involving an inaccessible name
+-/
 /-- info: Try this:
-  [apply] irevert %x %hp H
+  [apply] irevert! %x H
 ---
 error: irevert: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
-• Lean hypothesis `hp` depends on `x` -/
+• Lean hypothesis `x` (inaccessible name) depends on `x` -/
 #guard_msgs in
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
-  iintro %x %hp H
+  iintro %x %_ H
   irevert %x H
 
 end revert
@@ -2788,16 +2794,36 @@ example (P Q : PROP) :
 info: Try this:
   [apply] iloeb as IH generalizing %n %h1 %U HT
 ---
+info: Try this:
+  [apply] iloeb as IH generalizing! %n
+---
 error: iloeb: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
 • Lean hypothesis `h1` depends on `n`
 • Lean hypothesis `U` depends on `n`
-• Iris hypothesis in the intuitionistic context `HT` depends on `n`
+• Iris hypothesis `HT` depends on `n`
 -/
 #guard_msgs in
 example [BI PROP] [BILoeb PROP] {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop}
     {h1 : Q n} {U : (Q n) → Prop} :
     ⊢ □ T n -∗ □ P n := by
   iintro #HT
+  iloeb as IH generalizing %n
+
+-- Same test as above, involving inaccessible names
+/--
+info: Try this:
+  [apply] iloeb as IH generalizing! %n
+---
+error: iloeb: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h1` depends on `n`
+• Lean hypothesis `x` (inaccessible name) depends on `n`
+• Iris hypothesis `x` (inaccessible name) depends on `n`
+-/
+#guard_msgs in
+example [BI PROP] [BILoeb PROP] {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop}
+    {h1 : Q n} {_ : (Q n) → Prop} :
+    ⊢ □ T n -∗ □ P n := by
+  iintro #_
   iloeb as IH generalizing %n
 
 end iloeb
@@ -3089,15 +3115,20 @@ example [BI PROP] {P Q R S T : PROP} {n : Nat} :
   | zero
   | succ n IH => itrivial
 ---
+info: Try this:
+  [apply] iinduction n generalizing! %m with
+  | zero
+  | succ n IH => itrivial
+---
 error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
 • Lean hypothesis `h1` depends on `m`
 • Lean hypothesis `U1` depends on `m`
 • Lean hypothesis `h2` depends on `m`
 • Lean hypothesis `U2` depends on `m`
-• Iris hypothesis in the intuitionistic context `HQ` depends on `m`
-• Iris hypothesis in the intuitionistic context `HR` depends on `m`
-• Iris hypothesis in the intuitionistic context `HS` depends on the induction target
-• Iris hypothesis in the intuitionistic context `HU2` depends on `h2` -/
+• Iris hypothesis `HQ` depends on `m`
+• Iris hypothesis `HR` depends on `m`
+• Iris hypothesis `HS` depends on `n`
+• Iris hypothesis `HU2` depends on `h2` -/
 #guard_msgs in
 example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Prop}
     {h1 : T m} {U1 : (T m) → Prop} {h2 : U1 h1} {U2 : (U1 h1) → PROP} :
@@ -3116,6 +3147,29 @@ example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Pro
     ⊢ P -∗ □ Q m -∗ □ R m -∗ □ S n -∗ □ U2 h2 -∗ ⌜n + 0 = n⌝ := by
   iintro HP #HQ #HR #HS #HU2
   iinduction n generalizing! %m with
+  | zero
+  | succ n IH => itrivial
+
+/- Similar test as above, except that some hypotheses have inaccessible names. -/
+/-- info: Try this:
+  [apply] iinduction n generalizing! %m with
+  | zero
+  | succ n IH => itrivial
+---
+error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h1` depends on `m`
+• Lean hypothesis `U1` depends on `m`
+• Lean hypothesis `h2` depends on `m`
+• Lean hypothesis `U2` depends on `m`
+• Lean hypothesis `x` (inaccessible name) depends on `n`
+• Iris hypothesis `x` (inaccessible name) depends on `h2` -/
+#guard_msgs in
+example [BI PROP] {P : PROP} {m n : Nat} {T : Nat → Prop}
+    {h1 : T m} {_ : T n} {U1 : (T m) → Prop}
+    {h2 : U1 h1} {U2 : (U1 h1) → PROP} :
+    ⊢ P -∗ □ U2 h2 -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #_
+  iinduction n generalizing %m with
   | zero
   | succ n IH => itrivial
 
