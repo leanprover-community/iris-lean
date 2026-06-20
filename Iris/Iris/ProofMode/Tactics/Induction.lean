@@ -19,13 +19,8 @@ namespace Iris.ProofMode
 public meta section
 open BI Std Lean Elab Tactic Meta Qq Parser.Tactic
 
-declare_syntax_cat genSelPats
-
-syntax " generalizing " (ppSpace colGt selPat)+ : genSelPats
-syntax " generalizing! " (ppSpace colGt selPat)+ : genSelPats
-
 syntax (name := iinduction) "iinduction " colGt term
-  (" using " ident)? (genSelPats)? (inductionAlts)? : tactic
+  (" using " ident)? (generalizingSelPats)? (inductionAlts)? : tactic
 
 /-- Information from the tactic user for an induction subgoal -/
 private structure Alt where

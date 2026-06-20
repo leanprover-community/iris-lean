@@ -19,6 +19,11 @@ namespace Iris.ProofMode
 public section
 open BI Std
 
+declare_syntax_cat generalizingSelPats
+
+syntax " generalizing " (ppSpace colGt selPat)* : generalizingSelPats
+syntax " generalizing! " (ppSpace colGt selPat)* : generalizingSelPats
+
 theorem wand_revert [BI PROP] {Δ Δ' P Q : PROP}
     (h1 : Δ ⊣⊢ Δ' ∗ P) (h2 : Δ' ⊢ P -∗ Q) : Δ ⊢ Q :=
   h1.mp.trans (wand_elim h2)
