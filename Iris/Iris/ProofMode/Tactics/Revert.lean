@@ -161,7 +161,7 @@ def getCompleteSelTargets (explicitTargets : List SelTarget)
   let explicitIrisTargets := explicitTargets.filter <|
     fun t => match t.kind with | .ipm _ => true | _ => false
   let implicitIrisTargets := missingIrisHyps.map <|
-    fun ⟨_, ivar, _⟩ => { kind := .ipm ivar, explicit := false}
+    fun ⟨_, ivar, _⟩ => { kind := .ipm ivar, explicit := false }
   pureTargets ++ explicitIrisTargets ++ implicitIrisTargets
 
 /--

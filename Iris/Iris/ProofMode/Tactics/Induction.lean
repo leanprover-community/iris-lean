@@ -377,10 +377,8 @@ private def generalizeTermWithFVar (x : TSyntax `term) : TacticM FVarId := do
 elab_rules : tactic
   | `(tactic| iinduction $x $[using $r]? generalizing $genSelPats* $[$alts]?) => do
     let fvar ← generalizeTermWithFVar x
-
     -- Parse the recursor name provided by the user
     let recName := r.map (·.getId)
-
     -- Parse the list of alternative names supplied by the user
     let parsedAlts ← alts.mapM parseInductionAlts
 
@@ -399,26 +397,26 @@ elab_rules : tactic
       mvar.assign pf
   | `(tactic| iinduction $x $[using $r]? $[generalizing! $genSelPats*]? $[$alts]?) => do
     let fvar ← generalizeTermWithFVar x
-
     -- Parse the recursor name provided by the user
     let recName := r.map (·.getId)
-
     -- Parse the list of alternative names supplied by the user
     let parsedAlts ← alts.mapM parseInductionAlts
 
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-      let genSelTargets ← do match genSelPats with
-      | none =>
-        let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps [] fvar false
-        pure <| getCompleteSelTargets [] missingIrisHyps allPureFVarsSorted
-      | some genSelPats =>
-        -- Parse the selection patterns provided by the tactic user
-        let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
-        let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
-        -- Find all dependent hypotheses
-        let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps genSelTargets fvar false
-        -- Obtain the selection targets, including dependent ones
+      let mkGenSelTargets := fun genSelTargets => do
+        let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ←
+          getDependentHyps hyps genSelTargets fvar false
         pure <| getCompleteSelTargets genSelTargets missingIrisHyps allPureFVarsSorted
+
+      let genSelTargets ←
+        match genSelPats with
+        | none => mkGenSelTargets []
+        | some genSelPats =>
+          -- Parse the selection patterns provided by the tactic user
+          let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
+          let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
+          -- Include dependent hypotheses as well
+          mkGenSelTargets genSelTargets
 
       let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
       mvar.assign pf
