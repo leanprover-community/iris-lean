@@ -164,9 +164,6 @@ def getCompleteSelTargets (explicitTargets : List SelTarget)
     fun ⟨_, ivar, _⟩ => { kind := .ipm ivar, explicit := false}
   pureTargets ++ explicitIrisTargets ++ implicitIrisTargets
 
-private def ppHypName (name : Name) : String :=
-  if name.hasMacroScopes then s!"{name.eraseMacroScopes}✝" else name.toString
-
 /--
   Throw an error if there exists hypotheses that are depend on any hypothesis
   in `explicitTargets` but are not themselves in the list.
@@ -185,21 +182,21 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
   let ⟨missingPureHyps, missingIrisHyps, allPureFVarsSorted⟩ ←
     getDependentHyps hyps explicitTargets inductionTarget true
 
+  -- Handle the printing of inaccessible names, if necessary
+  let ppHypName := fun name =>
+    if name.hasMacroScopes then
+      s!"`{name.eraseMacroScopes}` (inaccessible name)"
+    else s!"`{name.toString}`"
+
   -- Add an error message if there exists some pure/Lean hypotheses that should also be generalised
   if !missingPureHyps.isEmpty || !missingIrisHyps.isEmpty then
     let leanLines ← missingPureHyps.mapM fun ⟨depId, srcId⟩ => do
       let depDecl ← depId.getDecl
       let srcDecl ← srcId.getDecl
-      let srcName := "`" ++ ppHypName srcDecl.userName ++ "`"
-      let srcName := inductionTarget.elim srcName
-        (if · == srcId then "the induction target" else srcName)
-      return s!"• Lean hypothesis `{ppHypName depDecl.userName}` depends on {srcName}"
-    let irisLines ← missingIrisHyps.mapM fun ⟨name, _, srcId⟩ => do
+      return s!"• Lean hypothesis {ppHypName depDecl.userName} depends on {ppHypName srcDecl.userName}"
+    let irisLines ← missingIrisHyps.mapM fun ⟨depName, _, srcId⟩ => do
       let srcDecl ← srcId.getDecl
-      let srcName := "`" ++ srcDecl.userName.toString ++ "`"
-      let srcName := inductionTarget.elim srcName
-        (if · == srcId then "the induction target" else srcName)
-      return s!"• Iris hypothesis `{ppHypName name}` depends on {srcName}"
+      return s!"• Iris hypothesis {ppHypName depName} depends on {ppHypName srcDecl.userName}"
 
     let sortedPurePats : Array (TSyntax `selPat) ← allPureFVarsSorted.mapM fun fvarId => do
       let decl ← fvarId.getDecl
