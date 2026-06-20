@@ -403,14 +403,14 @@ elab_rules : tactic
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
       let genSelTargets ← do match genSelPats with
       | none =>
-        let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps [] fvar
+        let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps [] fvar false
         pure <| getCompleteSelTargets [] missingIrisHyps allPureFVarsSorted
       | some genSelPats =>
         -- Parse the selection patterns provided by the tactic user
         let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
         let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
         -- Find all dependent hypotheses
-        let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps genSelTargets fvar
+        let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps genSelTargets fvar false
         -- Obtain the selection targets, including dependent ones
         pure <| getCompleteSelTargets genSelTargets missingIrisHyps allPureFVarsSorted
 

@@ -59,7 +59,7 @@ elab_rules : tactic
         let pats ← Elab.liftMacroM <| SelPat.parse hs
         let targets ← SelPat.resolve hyps (pats ++ [.spatial])
         -- Find all dependent hypotheses
-        let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps targets none
+        let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ← getDependentHyps hyps targets none false
         -- Obtain the selection targets, including dependent ones
         pure <| getCompleteSelTargets targets missingIrisHyps allPureFVarsSorted
 
