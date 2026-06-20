@@ -2887,7 +2887,7 @@ example [BI PROP] {α} {t : NTree α} : ⊢@{PROP} ⌜t.id = t⌝ := by
   iinduction t with simp [NTree.id]
   | h_leaf => itrivial
   | h_node x ts IH1 =>
-    iinduction ts generalizing IH1 with simp
+    iinduction ts with simp
     | nil => itrivial
     | cons t ts IH2 =>
       isplit
@@ -3106,21 +3106,5 @@ example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Pro
   iinduction n generalizing %m with
   | zero
   | succ n IH => itrivial
-
-/-
-  Tests `iinduction` for hypotheses dependent on the induction target
-  when `generalizing` is not used.
--/
-/-- info: Try this:
-  [apply] iinduction ts generalizing IH1 with simp
----
-error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
-• Iris hypothesis in the intuitionistic context `IH1` depends on the induction target -/
-#guard_msgs in
-example [BI PROP] {α} {t : NTree α} : ⊢@{PROP} ⌜t.id = t⌝ := by
-  iinduction t with simp [NTree.id]
-  | h_leaf => itrivial
-  | h_node x ts IH1 =>
-    iinduction ts with simp
 
 end iinduction

@@ -19,10 +19,13 @@ namespace Iris.ProofMode
 public meta section
 open BI Std Lean Elab Tactic Meta Qq Parser.Tactic
 
-syntax (name := iinduction) "iinduction" colGt term
-    ("using" ident)?
-    ("generalizing" (ppSpace colGt selPat)+)?
-    (inductionAlts)? : tactic
+declare_syntax_cat genSelPats
+
+syntax " generalizing " (ppSpace colGt selPat)+ : genSelPats
+syntax " generalizing! " (ppSpace colGt selPat)+ : genSelPats
+
+syntax (name := iinduction) "iinduction " colGt term
+  (" using " ident)? (genSelPats)? (inductionAlts)? : tactic
 
 /-- Information from the tactic user for an induction subgoal -/
 private structure Alt where
@@ -371,10 +374,7 @@ private def generalizeTermWithFVar (x : TSyntax `term) : TacticM FVarId := do
   `iinduction n generalizing %m HQ HT`.
 -/
 elab_rules : tactic
-  | `(tactic| iinduction $x
-        $[using $r]?
-        $[generalizing $genSelPats*]?
-        $[$alts]?) => do
+  | `(tactic| iinduction $x $[using $r]? generalizing $genSelPats* $[$alts]?) => do
     let fvar ← generalizeTermWithFVar x
 
     -- Parse the recursor name provided by the user
@@ -385,17 +385,39 @@ elab_rules : tactic
 
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
       let mkTactic := fun newPats => `(tactic| iinduction $x $[using $r]? generalizing $newPats* $[$alts]?)
-      let genSelTargets ← do match genSelPats with
-      | none =>
-        checkDependentHyps "iinduction" hyps [] fvar #[] mkTactic
-        pure []
-      | some genSelPats =>
+      let genSelTargets ← do
         -- Parse the selection patterns for generalising hypotheses
         let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
         let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
         -- Check for dependencies with the hypotheses in the selection targets
         checkDependentHyps "iinduction" hyps genSelTargets fvar genSelPats mkTactic
         pure genSelTargets
+
+      let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
+      mvar.assign pf
+  | `(tactic| iinduction $x $[using $r]? $[generalizing! $genSelPats*]? $[$alts]?) => do
+    let fvar ← generalizeTermWithFVar x
+
+    -- Parse the recursor name provided by the user
+    let recName := r.map (·.getId)
+
+    -- Parse the list of alternative names supplied by the user
+    let parsedAlts ← alts.mapM parseInductionAlts
+
+    ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+      let genSelTargets ← do
+        match genSelPats with
+        | none =>
+          let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ←
+            getDependentHyps hyps [] fvar
+          pure <| getCompleteSelTargets [] missingIrisHyps allPureFVarsSorted
+        | some genSelPats =>
+          -- Parse the selection patterns for generalising hypotheses
+          let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
+          let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
+          let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ←
+            getDependentHyps hyps genSelTargets fvar
+          pure <| getCompleteSelTargets genSelTargets missingIrisHyps allPureFVarsSorted
 
       let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
       mvar.assign pf
