@@ -3107,4 +3107,16 @@ example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Pro
   | zero
   | succ n IH => itrivial
 
+/--
+  The same example with `generalizing!` clause does not require any manual
+  resolution of dependencies.
+-/
+example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Prop}
+    {h1 : T m} {U1 : (T m) → Prop} {h2 : U1 h1} {U2 : (U1 h1) → PROP} :
+    ⊢ P -∗ □ Q m -∗ □ R m -∗ □ S n -∗ □ U2 h2 -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR #HS #HU2
+  iinduction n generalizing! %m with
+  | zero
+  | succ n IH => itrivial
+
 end iinduction
