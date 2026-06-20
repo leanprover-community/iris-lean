@@ -283,7 +283,7 @@ theorem wp_makeList (l : List Int) (Φ : Val → IProp GF) :
     (∀ v, isList v l -∗ Φ v) -∗
     WP hl(&(makeList l)) {{ Φ }} := by
   iintro HΦ
-  iinduction l generalizing %Φ with
+  iinduction l generalizing %Φ HΦ with
   | nil =>
     unfold makeList
     iapply nil_spec $$ HΦ
