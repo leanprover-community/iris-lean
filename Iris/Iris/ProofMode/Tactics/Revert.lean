@@ -196,15 +196,22 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
     let newIrisPats : Array (TSyntax `selPat) ←
       missingIrisHyps.toArray.mapM fun ⟨name, _⟩ => `(selPat| $(mkIdent name):ident)
 
-    -- Find the old tactic syntax and generate the new one with missing hypotheses added
-    let oldTactic ← getRef
-    let existingIrisPats := selPats.filter fun p =>
-      match p.raw with | `(selPat| %$_:ident) => false | _ => true
-    let extendedPats := sortedPurePats ++ existingIrisPats ++ newIrisPats
-    let newTactic ← mkTactic extendedPats
+    -- Check whether the new selecton pattern may contain any inaccessible names
+    let allNamesAccessible :=
+      (missingIrisHyps.all fun ⟨name, _, _⟩ => !name.hasMacroScopes) &&
+      !(← allPureFVarsSorted.anyM fun fvarId => do return (← fvarId.getDecl).userName.hasMacroScopes)
 
-    -- Suggestion the fixed tactic
-    Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
+    -- Suggest a fixed tactic with explicit generalisations
+    if allNamesAccessible then
+      -- Find the old tactic syntax and generate the new one with missing hypotheses added
+      let oldTactic ← getRef
+      let existingIrisPats := selPats.filter fun p =>
+        match p.raw with | `(selPat| %$_:ident) => false | _ => true
+      let extendedPats := sortedPurePats ++ existingIrisPats ++ newIrisPats
+      let newTactic ← mkTactic extendedPats
+
+      -- Suggestion the fixed tactic
+      Lean.Meta.Tactic.TryThis.addSuggestion oldTactic newTactic
 
     -- Log the error and attach the clickable suggestion
     throwError m!"{tacticName}: The following hypotheses depend on variables in \
