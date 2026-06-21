@@ -2783,9 +2783,33 @@ section iinv
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 variable [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
 
-example {N : Namespace} {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+example {N : Namespace} {P : IProp GF} :
+    inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv as #H
-  sorry
+  -- Side condition
+  · simp
+  -- Main proof goal
+  · imodintro
+    isplit
+    · iexact H
+    · simp [BIBase.wandM]
+      imodintro
+      inext
+      iexact H
+
+example {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
+    inv N iprop(<pers> P) ={E}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv as #H
+  · simp
+    sorry
+  · imodintro
+    isplit
+    · iexact H
+    · simp [BIBase.wandM]
+      imodintro
+      inext
+      iexact H
 
 end iinv
