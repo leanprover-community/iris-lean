@@ -44,11 +44,13 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   let Pout : Q($X → $prop) ← instantiateMVars Pout
   let Q'   : Q($X → $prop) ← instantiateMVars Q'
 
-  -- let hϕ ← iSolveSidecondition q($ϕ)
+  let hϕ ← iSolveSidecondition q($ϕ) false
 
   let hAcc : Q(∀ x, $e' ⊢ $Pout x -∗ $Q' x) ←
     withLocalDeclDQ (← mkFreshUserName `x) X fun x => do
-      let body ← iIntroCore hyps' q(iprop($Pout $x -∗ $Q' $x)) [introPat]
+      let poutX : Q($prop) := Expr.headBeta q($Pout $x)
+      let qX    : Q($prop) := Expr.headBeta q($Q' $x)
+      let body ← iIntroCore hyps' q(iprop($poutX -∗ $qX)) [introPat]
       mkLambdaFVars #[x] body
 
   return q(tac_inv_elim)
