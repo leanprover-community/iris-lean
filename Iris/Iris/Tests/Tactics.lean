@@ -2777,3 +2777,15 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
+
+section iinv
+
+variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
+variable [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
+
+example {N : Namespace} {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv as #H
+  sorry
+
+end iinv

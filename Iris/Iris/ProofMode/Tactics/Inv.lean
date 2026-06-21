@@ -7,6 +7,7 @@ module
 
 public meta import Iris.ProofMode.Tactics.Assumption
 public meta import Iris.ProofMode.Tactics.Cases
+public meta import Iris.ProofMode.Tactics.Intro
 public meta import Iris.ProofMode.Patterns.CasesPattern
 public meta import Iris.ProofMode.Patterns.IntroPattern
 public meta import Iris.ProofMode.Patterns.SelPattern
@@ -25,8 +26,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
     (introPat : Syntax × IntroPat) (hclose : Option <| TSyntax `ident) :
     ProofModeM Q($e ⊢ $goal) := do
   -- Find the hypothesis from the context
-  let some ⟨_, _, p, ty⟩ := hyps.getDecl? ivar
-  | throwError m!"iinv: unable to find {ivar.name}"
+  let ⟨e', hyps', _, ty, p, eq, pf⟩ := hyps.remove false ivar
 
   let ϕ ← mkFreshExprMVarQ q(Prop)
   let Pin ← mkFreshExprMVarQ q($prop)
@@ -35,19 +35,21 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   let mPclose ← mkFreshExprMVarQ q(Option ($X → $prop))
   let Q' ← mkFreshExprMVarQ q($X → $prop)
 
-  let some elimInv ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $ty $Pin $Pout $mPclose $goal $Q')
+  let some inst ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $ty $Pin $Pout $mPclose $goal $Q')
   | throwError "iinv: ElimInv type class synthesis error with goal {goal}"
 
-  let hϕ ← iSolveSidecondition q($ϕ)
+  let X    : Q(Type)       ← instantiateMVars X
+  let Pin  : Q($prop)      ← instantiateMVars Pin
+  let Pout : Q($X → $prop) ← instantiateMVars Pout
+  let Q'   : Q($X → $prop) ← instantiateMVars Q'
 
-  let ⟨_, hyps', _, _, _, _, pf⟩ := hyps.remove false ivar
+  -- let hϕ ← iSolveSidecondition q($ϕ)
 
-  let jvar ← mkFreshIVarId false
-  let name ← mkFreshUserName .anonymous
+  let hAcc : Q(∀ x, $e' ⊢ $Pout x -∗ $Q' x) ←
+    withLocalDeclDQ (← mkFreshUserName `x) X fun x => do
+      let body ← iIntroCore hyps' q(iprop($Pout $x -∗ $Q' $x)) [introPat]
+      mkLambdaFVars #[x] body
 
-  let hyps'' := hyps'.add bi name jvar q(false) ty
-
-  let pf' ← addBIGoal hyps'' goal
   return q(tac_inv_elim)
 
 /-- `iinv` opens an invariant in the proof state. -/
