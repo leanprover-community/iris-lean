@@ -210,11 +210,9 @@ theorem metaToken_union_1 {l : L} {E1 E2 : CoPset} (he : E1 ## E2) :
     metaToken (GF := GF) l (E1 ∪ E2) ⊢ metaToken l E1 ∗ metaToken l E2 := by
   unfold metaToken
   iintro ⟨%γm, #Hγm, Hm⟩
-  -- TODO: ideally, the following should work
-  -- rewrite [(iOwn_ne.eqv (ReservationMap.token_union he)).to_eq, iOwn_op.to_eq]
-  -- One way to do it
-  -- ieval (<lean tactic>) [selector]
-  icases (equiv_iff.mp (iOwn_ne.eqv (ReservationMap.token_union he))).mp $$ Hm with ⟨Hm1, Hm2⟩
+  -- TODO: why do we need to destruct in a second step?
+  icases (iOwn_ne.eqv (ReservationMap.token_union he).symm) $$ Hm with Hm
+  icases Hm with ⟨Hm1, Hm2⟩
   isplitl [Hm1]
   · iexists γm
     iframe Hγm Hm1
