@@ -40,7 +40,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
     -- (hclose : Option <| TSyntax `ident) :
     ProofModeM Q($e ⊢ $goal) := do
   -- Find the hypothesis from the context
-  let ⟨e', hyps', _, Pinv, _, _ , pf⟩ := hyps.remove false ivar
+  let ⟨e', hyps', _, Pinv, _, _ , pfEq⟩ := hyps.remove false ivar
 
   let ϕ ← mkFreshExprMVarQ q(Prop)
   let Pin ← mkFreshExprMVarQ q($prop)
@@ -48,17 +48,13 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   let Pout ← mkFreshExprMVarQ q($X → $prop)
   let mPclose ← mkFreshExprMVarQ q(Option ($X → $prop))
   let Q' ← mkFreshExprMVarQ q($X → $prop)
-
-  let X    : Q(Type)       ← instantiateMVars X
-  let Pout : Q($X → $prop) ← instantiateMVars Pout
-  let Q'   : Q($X → $prop) ← instantiateMVars Q'
-  let mPclose : Q(Option ($X → $prop)) ← instantiateMVars mPclose
-
   let some inst ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $Pinv $Pin $Pout $mPclose $goal $Q')
-  | throwError "iinv: ElimInv type class synthesis error with goal {goal}"
+  | throwError "iinv: invalid invariant {Pinv}"
 
+  -- Solve side conditions automatically if possible, otherwise add them into the proof state
   let hϕ ← iSolveSidecondition q($ϕ) false
 
+  -- Create the wand proposition and apply the introduction pattern to destruct the premise
   let hAcc : Q(∀ x, $e' ⊢ $Pout x -∗ $Q' x) ←
     withLocalDeclDQ (← mkFreshUserName `x) X fun x => do
       let poutX : Q($prop) := Expr.headBeta q($Pout $x)
@@ -66,7 +62,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
       let body ← iIntroCore hyps' q(iprop($poutX -∗ $qX)) [introPat]
       mkLambdaFVars #[x] body
 
-  return q(tac_inv_elim $inst $hϕ $hAcc $pf)
+  return q(tac_inv_elim $inst $hϕ $hAcc $pfEq)
 
 elab "iinv " h:ident " as " ipat:introPat : tactic => do
   -- Parse the introduction pattern used for destructing the result

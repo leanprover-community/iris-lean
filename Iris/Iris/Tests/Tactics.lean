@@ -2783,6 +2783,10 @@ section iinv
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 variable [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
 
+/--
+  Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
+  `intoAcc_inv` where the side condition is trivial.
+-/
 example {N : Namespace} {P : IProp GF} :
     inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
@@ -2798,18 +2802,32 @@ example {N : Namespace} {P : IProp GF} :
       inext
       iexact H
 
+/--
+  Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
+  `intoAcc_inv`, relying on the side condition `↑N ⊆ E`.
+-/
 example {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
     inv N iprop(<pers> P) ={E}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv as #H
+  -- Side condition
   · simp
     sorry
+  -- Main proof goal
   · imodintro
     isplit
     · iexact H
-    · simp [BIBase.wandM]
+    · simp
       imodintro
       inext
       iexact H
+
+/- Tests `iinv` with an invalid invariant. -/
+/-- error: iinv: invalid invariant P -/
+#guard_msgs in
+example {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
+    □ P ={E}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv as #H
 
 end iinv
