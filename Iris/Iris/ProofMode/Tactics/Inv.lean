@@ -36,8 +36,8 @@ theorem tac_inv_elim [BI PROP] {e e' goal : PROP} {ϕ : Prop} {X : Type} {p : Bo
 private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q($prop))
     (ivar : IVarId)
     -- (selPats : Option <| List SelPat)
-    (introPat : Syntax × IntroPat) :
-    -- (hclose : Option <| TSyntax `ident) :
+    (introPat : Syntax × IntroPat)
+    (hclose : Option <| TSyntax `ident) :
     ProofModeM Q($e ⊢ $goal) := do
   -- Find the hypothesis from the context
   let ⟨e', hyps', _, Pinv, _, _ , pfEq⟩ := hyps.remove false ivar
@@ -64,32 +64,18 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
 
   return q(tac_inv_elim $inst $hϕ $hAcc $pfEq)
 
-elab "iinv " h:ident " as " ipat:introPat : tactic => do
-  -- Parse the introduction pattern used for destructing the result
-  let introPat ← liftMacroM <| IntroPat.parse ipat
+/-- `iinv` opens an invariant in the proof state. -/
+syntax (name := iinv) "iinv " colGt ident (" with " (colGt ppSpace selPat)*)?
+    " as " colGt introPat (ident)? : tactic
 
-  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    -- Find the hypothesis in which the invariant is opened
-    let ivar ← hyps.findWithInfo h
+elab_rules : tactic
+  | `(tactic| iinv $h:ident as $ipat:introPat $[$hclose:ident]?) => do
+    -- Parse the introduction pattern used for destructing the result
+    let introPat ← liftMacroM <| IntroPat.parse ipat
 
-    let pf ← iInvCore hyps goal ivar introPat
-    mvar.assign pf
+    ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+      -- Find the hypothesis in which the invariant is opened
+      let ivar ← hyps.findWithInfo h
 
--- /-- `iinv` opens an invariant in the proof state. -/
--- syntax (name := iinv) "iinv " colGt ident (" with " (colGt ppSpace selPat)*)?
---     " as " colGt introPat (ident)? : tactic
-
--- elab_rules : tactic
---   | `(tactic| iinv $h:ident $[with $spats:selPat*]? as $ipat:introPat $[$hclose:ident]?) => do
---   -- Parse the optional selection pattern used for auxiliary assertions needed to open the invariant
---   let selPats ← spats.mapM <| fun pats => do
---     liftMacroM <| SelPat.parse pats
---   -- Parse the introduction pattern used for destructing the result
---   let introPat ← liftMacroM <| IntroPat.parse ipat
-
---   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
---     -- Find the hypothesis in which the invariant is opened
---     let ivar ← hyps.findWithInfo h
-
---     let pf ← iInvCore hyps goal ivar selPats introPat hclose
---     mvar.assign pf
+      let pf ← iInvCore hyps goal ivar introPat hclose
+      mvar.assign pf
