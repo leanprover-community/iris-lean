@@ -165,7 +165,7 @@ delab_rule iff
 delab_rule wandIff
   | `($_ $P $Q) => do ``(iprop($(← unpackIprop P) ∗-∗ $(← unpackIprop Q)))
 
-@[rocq_alias bi_wandM]
+@[simp, rocq_alias bi_wandM]
 def wandM [BIBase PROP] (mP : Option PROP) (Q : PROP) : PROP :=
   match mP with
   | none => Q
