@@ -575,15 +575,15 @@ theorem bigSepM_map_seq {M' : Type _ → Type _} [LawfulFiniteMap M' Nat] {V : T
     ([∗map] k ↦ v ∈ FiniteMap.map_seq (M := M') start l, Φ k v) ⊣⊢
     ([∗list] i ↦ v ∈ l, Φ (start + i) v) := by
   induction l generalizing start with
-  | nil => rw [LawfulFiniteMap.map_seq_nil]; simp
+  | nil => simp [LawfulFiniteMap.map_seq_nil]
   | cons v l ih =>
-      have hfun : (fun i (x : V) => Φ (start + 1 + i) x) = (fun i x => Φ (start + (i + 1)) x) := by
-        funext i x; congr 1; omega
-      have ih1 := ih (start := start + 1)
-      rw [hfun] at ih1
+      have Hget : get? (FiniteMap.map_seq (M := M') (start + 1) l) start = none := by
+        rw [LawfulFiniteMap.get?_map_seq, if_neg (by omega)]
       rw [LawfulFiniteMap.map_seq_cons]
-      exact (bigSepM_insert (by rw [LawfulFiniteMap.get?_map_seq, if_neg (by omega)])).trans
-        (sep_congr .rfl ih1)
+      refine (bigSepM_insert Hget).trans (sep_congr .rfl ?_)
+      refine .trans (ih (start := start + 1)) ?_
+      refine .of_eq ?_
+      grind
 
 /-! ## Map–Set Interaction -/
 
