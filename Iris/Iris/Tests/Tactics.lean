@@ -2802,6 +2802,21 @@ example {N : Namespace} {P : IProp GF} :
       inext
       iexact H
 
+example {N : Namespace} {P : IProp GF} :
+    inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv as #H Hclose
+  -- Side condition
+  · simp
+  -- Main proof goal
+  · imodintro
+    isplit
+    · iexact H
+    · simp [BIBase.wandM]
+      imodintro
+      inext
+      iexact H
+
 /--
   Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
   `intoAcc_inv`, relying on the side condition `↑N ⊆ E`.

@@ -18,12 +18,15 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
+private def optionMap {PROP : Type u} {X : Type} (mP : Option (X → PROP)) (x : X) : Option PROP :=
+  mP.map (· x)
+
 @[rocq_alias tac_inv_elim]
 theorem tac_inv_elim [BI PROP] {e e' goal : PROP} {ϕ : Prop} {X : Type} {p : Bool}
     {Pinv Pin : PROP} {mPclose : Option <| X → PROP} {Pout Q' : X → PROP}
     (inst : ElimInv ϕ X Pinv Pin Pout mPclose goal Q')
     (hϕ : ϕ)
-    (hAcc : ∀ x, e' ⊢ Pout x -∗ Q' x)
+    (hAcc : ∀ x, e' ⊢ Pout x -∗ mPclose.map (· x) -∗? Q' x)
     (pf : e ⊣⊢ e' ∗ □?p Pinv) :
     e ⊢ goal := by
   apply pf.mp.trans
@@ -54,12 +57,26 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   -- Solve side conditions automatically if possible, otherwise add them into the proof state
   let hϕ ← iSolveSidecondition q($ϕ) false
 
+  -- Create an introduction pattern for `hclose`
+  let hClosePat ← match hclose with
+  | none => pure none
+  | some hclose => pure <| some (hclose.raw, IntroPat.intro (.one (← `(binderIdent| $hclose:ident))))
+
   -- Create the wand proposition and apply the introduction pattern to destruct the premise
-  let hAcc : Q(∀ x, $e' ⊢ $Pout x -∗ $Q' x) ←
-    withLocalDeclDQ (← mkFreshUserName `x) X fun x => do
+  let hAcc : Q(∀ x : $X, $e' ⊢ $Pout x -∗ BIBase.wandM (optionMap $mPclose x) ($Q' x)) ←
+    withLocalDeclDQ (u := 0) (← mkFreshUserName `x) X fun x => do
       let poutX : Q($prop) := Expr.headBeta q($Pout $x)
       let qX : Q($prop) := Expr.headBeta q($Q' $x)
-      let body ← iIntroCore hyps' q(iprop($poutX -∗ $qX)) [introPat]
+      let body ← match mPclose with
+      | ~q(none) =>
+        iIntroCore hyps' q(iprop($poutX -∗ $qX)) [introPat]
+      | ~q(some $f) =>
+        match hClosePat with
+        | some closePat =>
+          let closeX : Q($prop) := Expr.headBeta q(optionMap $mPclose $x)
+          iIntroCore hyps' q(iprop($poutX -∗ $closeX -∗ $qX)) [introPat, closePat]
+        -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
+        | none => throwError "iinv: error"
       mkLambdaFVars #[x] body
 
   return q(tac_inv_elim $inst $hϕ $hAcc $pfEq)
