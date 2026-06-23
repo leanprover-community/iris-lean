@@ -30,12 +30,20 @@ theorem tac_inv_elim [BI PROP]
     (hAcc : ∀ x, e' ⊢ Pout x -∗ mPclose.map (· x) -∗? Q' x)
     (pf : e ⊣⊢ e' ∗ □?p Pinv) :
     e ⊢ goal := by
-  apply pf.mp.trans
   have h := inst.elim_inv hϕ
-  clear inst hϕ pf
   cases mPclose with simp_all
-  | none => sorry
-  | some mPclose => sorry
+  | none => calc
+    e ⊢ e' ∗ □?p Pinv                          := pf.mp
+    _ ⊢ □?p Pinv ∗ e'                          := sep_comm.mp
+    _ ⊢ Pinv ∗ e'                              := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ emp -∗ Q' x := sorry
+    _ ⊢ goal                                   := h
+  | some mPclose => calc
+    e ⊢ e' ∗ □?p Pinv                                := pf.mp
+    _ ⊢ □?p Pinv ∗ e'                                := sep_comm.mp
+    _ ⊢ Pinv ∗ e'                                    := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x := sorry
+    _ ⊢ goal                                         := h
 
 private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q($prop))
     (ivar : IVarId)
