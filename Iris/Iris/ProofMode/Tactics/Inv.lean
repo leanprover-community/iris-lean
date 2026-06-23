@@ -55,7 +55,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
     (ivar : IVarId)
     -- (selPats : Option <| List SelPat)
     (introPat : Syntax × IntroPat)
-    (hclose : Option <| TSyntax `ident) :
+    (closePat : Option <| Syntax × IntroPat) :
     ProofModeM Q($e ⊢ $goal) := do
   -- Find the hypothesis from the context
   let ⟨e', hyps', _, Pinv, _, _ , pfEq⟩ := hyps.remove false ivar
@@ -64,7 +64,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   let Pin ← mkFreshExprMVarQ q($prop)
   let X ← mkFreshExprMVarQ q(Type)
   let Pout ← mkFreshExprMVarQ q($X → $prop)
-  let close := if hclose.isSome then q(true) else q(false)
+  let close := if closePat.isSome then q(true) else q(false)
   let mPclose ← mkFreshExprMVarQ q(Option ($X → $prop))
   let Q' ← mkFreshExprMVarQ q($X → $prop)
   let some inst ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $Pinv $Pin $Pout $close $mPclose $goal $Q')
@@ -72,11 +72,6 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
 
   -- Solve side conditions automatically if possible, otherwise add them into the proof state
   let hϕ ← iSolveSidecondition q($ϕ) false
-
-  -- Create an introduction pattern for `hclose`
-  let hClosePat ← match hclose with
-  | none => pure none
-  | some hclose => pure <| some (hclose.raw, IntroPat.intro (.one (← `(binderIdent| $hclose:ident))))
 
   -- Create the wand proposition and apply the introduction pattern to destruct the premise
   let hAcc : Q(∀ x : $X, $e' ⊢ $Pout x -∗ optionMap $mPclose x -∗? $Q' x) ←
@@ -88,7 +83,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
         iIntroCore hyps' q(iprop($poutX -∗ $qX)) [introPat]
       | ~q(some $f) =>
         let f : Q($X → $prop) := f
-        match hClosePat with
+        match closePat with
         | some closePat =>
           let closeX : Q($prop) := Expr.headBeta q($f $x)
           iIntroCore hyps' q(iprop($poutX -∗ $closeX -∗ $qX)) [introPat, closePat]
@@ -100,16 +95,17 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
 
 /-- `iinv` opens an invariant in the proof state. -/
 syntax (name := iinv) "iinv " colGt ident (" with " (colGt ppSpace selPat)*)?
-    " as " colGt introPat (ident)? : tactic
+    " as " colGt introPat (introPat)? : tactic
 
 elab_rules : tactic
-  | `(tactic| iinv $h:ident as $ipat:introPat $[$hclose:ident]?) => do
+  | `(tactic| iinv $h:ident as $ipat:introPat $[$cpat:introPat]?) => do
     -- Parse the introduction pattern used for destructing the result
     let introPat ← liftMacroM <| IntroPat.parse ipat
+    let closePat ← liftMacroM <| cpat.mapM IntroPat.parse
 
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
       -- Find the hypothesis in which the invariant is opened
       let ivar ← hyps.findWithInfo h
 
-      let pf ← iInvCore hyps goal ivar introPat hclose
+      let pf ← iInvCore hyps goal ivar introPat closePat
       mvar.assign pf

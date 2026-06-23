@@ -12,6 +12,8 @@ public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
 public import Iris.Algebra.CMRA
 public import Iris.Instances.Lib.Invariants
+public import Iris.Instances.Lib.CInvariants
+public import Iris.Instances.Lib.NaInvariants
 
 @[expose] public section
 
@@ -2780,14 +2782,14 @@ end iloeb
 
 section iinv
 
-variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
-variable [BI PROP] [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP]
+-- variable [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF]
+-- variable
 
 /--
   Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
   `intoAcc_inv` where the side condition is trivial.
 -/
-example {N : Namespace} {P : IProp GF} :
+example [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace} {P : IProp GF} :
     inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv as #H
@@ -2805,7 +2807,7 @@ example {N : Namespace} {P : IProp GF} :
   Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and
   `intoAcc_inv` where the side condition is trivial.
 -/
-example {N : Namespace} {P : IProp GF} :
+example [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace} {P : IProp GF} :
     inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv as #H Hclose
@@ -2822,7 +2824,7 @@ example {N : Namespace} {P : IProp GF} :
   Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
   `intoAcc_inv`, relying on the side condition `↑N ⊆ E`.
 -/
-example {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
+example [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF] {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
     inv N iprop(<pers> P) ={E}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv as #H
@@ -2841,7 +2843,8 @@ example {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
 /- Tests `iinv` with an invalid invariant. -/
 /-- error: iinv: invalid invariant P -/
 #guard_msgs in
-example {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
+example [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF]
+    {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
     □ P ={E}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv as #H
