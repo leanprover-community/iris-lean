@@ -2801,7 +2801,10 @@ example {N : Namespace} {P : IProp GF} :
       imodintro
       inext
       iexact H
-
+/--
+  Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and
+  `intoAcc_inv` where the side condition is trivial.
+-/
 example {N : Namespace} {P : IProp GF} :
     inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
@@ -2809,13 +2812,11 @@ example {N : Namespace} {P : IProp GF} :
   -- Side condition
   · simp
   -- Main proof goal
-  · imodintro
-    isplit
-    · iexact H
-    · simp [BIBase.wandM]
-      imodintro
-      inext
-      iexact H
+  · simp
+    imod Hclose $$ H
+    imodintro
+    inext
+    iexact H
 
 /--
   Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and

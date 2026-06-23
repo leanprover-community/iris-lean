@@ -181,8 +181,9 @@ export FromModal (from_modal)
 
 /-- `ElimModal` turns `□?p P` into `□?p' P'` and `Q` into `Q'` under condition `φ`. -/
 @[ipm_class, rocq_alias ElimModal]
-class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (p' : outParam $ Bool) (P : PROP)
-    (P' : outParam $ PROP) (Q : PROP) (Q' : outParam $ PROP) where
+class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool)
+    (p' : outParam $ uncheckedInParam Bool) (P : PROP)
+    (P' : outParam $ uncheckedInParam PROP) (Q : PROP) (Q' : outParam $ PROP) where
   elim_modal : φ → □?p P ∗ (□?p' P' -∗ Q') ⊢ Q
 export ElimModal (elim_modal)
 

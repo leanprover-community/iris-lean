@@ -18,7 +18,7 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
-private def optionMap {PROP : Type u} {X : Type} (mP : Option (X → PROP)) (x : X) : Option PROP :=
+def optionMap {PROP : Type u} {X : Type} (mP : Option (X → PROP)) (x : X) : Option PROP :=
   mP.map (· x)
 
 @[rocq_alias tac_inv_elim]
@@ -87,9 +87,10 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
       | ~q(none) =>
         iIntroCore hyps' q(iprop($poutX -∗ $qX)) [introPat]
       | ~q(some $f) =>
+        let f : Q($X → $prop) := f
         match hClosePat with
         | some closePat =>
-          let closeX : Q($prop) := Expr.headBeta q(optionMap $mPclose $x)
+          let closeX : Q($prop) := Expr.headBeta q($f $x)
           iIntroCore hyps' q(iprop($poutX -∗ $closeX -∗ $qX)) [introPat, closePat]
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
         | none => throwError "iinv: error"
