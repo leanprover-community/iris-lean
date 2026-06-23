@@ -53,7 +53,7 @@ theorem tac_inv_elim [BI PROP]
 
 private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q($prop))
     (ivar : IVarId)
-    (selPats : Option SpecPat)
+    (specPats : List SpecPat)
     (introPat : Syntax × IntroPat)
     (closePat : Option <| Syntax × IntroPat) :
     ProofModeM Q($e ⊢ $goal) := do
@@ -98,9 +98,9 @@ syntax (name := iinv) "iinv " colGt ident (" with " (colGt ppSpace specPat)*)?
     " as " colGt introPat (introPat)? : tactic
 
 elab_rules : tactic
-  | `(tactic| iinv $h:ident $[with $spat:specPat]? as $ipat:introPat $[$cpat:introPat]?) => do
+  | `(tactic| iinv $h:ident $[with $spats:specPat*]? as $ipat:introPat $[$cpat:introPat]?) => do
     -- Parse the introduction and selection patterns
-    let selPats ← liftMacroM <| spat.mapM SpecPat.parse
+    let specPats ← spats.mapM (liftMacroM <| ·.mapM SpecPat.parse) <&> (·.getD #[] |>.toList)
     let introPat ← liftMacroM <| IntroPat.parse ipat
     let closePat ← liftMacroM <| cpat.mapM IntroPat.parse
 
@@ -108,5 +108,5 @@ elab_rules : tactic
       -- Find the hypothesis in which the invariant is opened
       let ivar ← hyps.findWithInfo h
 
-      let pf ← iInvCore hyps goal ivar selPats introPat closePat
+      let pf ← iInvCore hyps goal ivar specPats introPat closePat
       mvar.assign pf
