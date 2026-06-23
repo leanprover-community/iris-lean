@@ -14,8 +14,8 @@ python3 scripts/check_porting.py --format html -o report.html
 
 | Flag | Description | Default |
 |---|---|---|
-| `--format` | Output format: `summary`, `csv`, or `html` | `summary` |
-| `-o`, `--output` | Output file path | stdout (summary/csv) |
+| `--format` | Output format: `stale` (list of stale Rocq names — aliases/ignores pointing to names removed upstream), `csv`, or `html` | `stale` |
+| `-o`, `--output` | Output file path | stdout (stale/csv) |
 | `--rocq-commit` | Iris-Rocq commit SHA or branch to check against | Value from `scripts/ROCQ_REVISION` |
 | `--lean-rev` | Lean revision label shown in the HTML report | `Local` |
 | `--no-build` | Skip running `lake exe dumpPortingData` | off |
@@ -37,8 +37,12 @@ python3 scripts/check_porting.py --format html -o report.html
    - **ignored** -- listed via `#rocq_ignore`, `#rocq_ignore_file`, or in an ignored directory
    - **missing** -- no alias or ignore entry
 
-   Additionally, `#rocq_concept` entries appear as separate feature sections
-   alongside files in the HTML report.
+   Lean-side aliases or ignores whose Rocq target no longer exists upstream
+   are flagged as `stale_alias` / `stale_ignore`. The default `stale` format
+   prints just those names (grouped, with the checked-against revision on the
+   first line); `csv` and `html` include the full per-definition classification.
+   `#rocq_concept` entries appear as separate feature sections alongside files
+   in the HTML report.
 
 ## Configuration Files
 

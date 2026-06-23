@@ -16,32 +16,107 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v6
-      # uses lean standard action with all default input values
       - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: Iris
+          build-args: "--wfail"
+      - name: Dump porting data
+        working-directory: Iris
+        run: lake exe dumpPortingData
+      - name: Upload porting_data.json
+        uses: actions/upload-artifact@v7
+        with:
+          name: porting-data
+          path: Iris/.lake/porting_data.json
+          retention-days: 1
+
+  build-math:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: IrisMath
+          use-mathlib-cache: true
+          build-args: "--wfail"
+
+  report:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download porting_data.json
+        uses: actions/download-artifact@v8
+        with:
+          name: porting-data
+          path: Iris/.lake
       - name: Read Rocq commit from revision file
         id: rocq-commit
         run: |
           sha=$(cat scripts/ROCQ_REVISION)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - name: Cache Rocq definitions
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
-          path: .lake/iris-rocq-cache
+          path: Iris/.lake/iris-rocq-cache
           key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
       - name: Generate porting report
         run: |
           mkdir -p _site
-          python3 scripts/check_porting.py --format html --lean-rev "${{ github.sha }}" -o _site/index.html
+          python3 scripts/check_porting.py --no-build --format html --lean-rev "${{ github.sha }}" -o _site/index.html
       - name: Upload Pages artifact
-        if: github.ref == 'refs/heads/master'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
+
+  check-stale:
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download porting_data.json
+        uses: actions/download-artifact@v8
+        with:
+          name: porting-data
+          path: Iris/.lake
+      - name: Read pinned Rocq commit
+        id: rocq-commit
+        run: echo "sha=$(cat scripts/ROCQ_REVISION)" >> "$GITHUB_OUTPUT"
+      - name: Cache Rocq definitions
+        uses: actions/cache@v5
+        with:
+          path: Iris/.lake/iris-rocq-cache
+          key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
+      - name: Generate stale report
+        run: |
+          python3 scripts/check_porting.py \
+            --no-build \
+            --format stale \
+            --rocq-commit "${{ steps.rocq-commit.outputs.sha }}" \
+            --lean-rev "${{ github.event.pull_request.head.sha }}" \
+            -o stale-report.txt
+      - name: Write job summary and fail if stale
+        run: |
+          set -euo pipefail
+          {
+            echo "## Stale porting entries"
+            echo ""
+            echo '```'
+            cat stale-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if grep -q '^No stale entries\.$' stale-report.txt; then
+            echo "No stale entries."
+            exit 0
+          fi
+          echo "::error::Stale porting entries detected; see the job summary for the report."
+          exit 1
 
   deploy:
-    if: github.ref == 'refs/heads/master'
-    needs: build
+     # we disable deploy for forks to prevent spurious CI failures
+    if: github.ref == 'refs/heads/master' && github.repository == 'leanprover-community/iris-lean'
+    needs: report
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -52,4 +127,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

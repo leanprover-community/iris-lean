@@ -1,0 +1,23 @@
+name = "irismath"
+version = "0.1.0"
+keywords = ["math"]
+defaultTargets = ["IrisMath"]
+
+[leanOptions]
+pp.unicode.fun = true 
+relaxedAutoImplicit = true
+weak.linter.mathlibStandardSet = true
+maxSynthPendingDepth = 3
+linter.style.header = false
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.31.0"
+
+[[require]]
+name = "iris"
+path = "../Iris/"
+
+[[lean_lib]]
+name = "IrisMath"
