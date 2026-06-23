@@ -22,9 +22,6 @@ section HeapLangGS
 
 abbrev HeapF := fun V => Std.ExtTreeMap Loc V compare
 
-/-- The finite-map type used by the heap_lang prophecy ghost state: a map from
-`ProphId` to the prophecy's outstanding resolution list. Mirrors the Rocq
-`gmap proph_id (list val)` used in `proph_map`. -/
 abbrev ProphMapF := fun V => Std.ExtTreeMap ProphId V compare
 
 class HeapLangGpreS (hlc : outParam HasLC) (GF : BundledGFunctors) extends InvGpreS GF where
@@ -46,39 +43,23 @@ instance HeapLangState [HeapLangGS hlc GF] : StateInterp State Observation GF wh
     genHeapInterp (GF := GF) (H := HeapF) σ.heap ∗
     prophMapInterp (GF := GF) (H := ProphMapF) κs σ.usedProphId)
 
-/-- The state interpretation as a separating conjunction of the heap interp and
-the prophecy-map interp. Used to destruct `Hσ` into its two conjuncts after
-`wp_lift_atomic_step`. -/
 theorem stateInterp_split [HeapLangGS hlc GF] (σ : State) (ns : Nat)
-    (κs : List Observation) (nt : Nat) :
-    stateInterp (GF := GF) σ ns κs nt ⊣⊢
-      iprop(genHeapInterp (GF := GF) (H := HeapF) σ.heap ∗
-            prophMapInterp (GF := GF) (H := ProphMapF) κs σ.usedProphId) :=
-  Iris.BI.BIBase.BiEntails.rfl
+    (κs : List Observation) (nt : Nat) : iprop%
+    stateInterp (GF := GF) σ ns κs nt ⊣⊢ genHeapInterp σ.heap ∗ prophMapInterp κs σ.usedProphId :=
+  .rfl
 
-/-- Normalize a `[] ++ κs` argument to `κs`. Used to rephrase `prophMapInterp`
-hypotheses introduced before a step whose observations are `[]` get substituted
-in by `cases`. The two sides are definitionally equal. -/
 theorem prophMapInterp_nil_append [HeapLangGS hlc GF] (κs : List Observation)
-    (ps : Std.ExtTreeSet ProphId) :
-    iprop(prophMapInterp (GF := GF) (H := ProphMapF) ([] ++ κs) ps) ⊣⊢
-    iprop(prophMapInterp (GF := GF) (H := ProphMapF) κs ps) :=
-  Iris.BI.BIBase.BiEntails.rfl
+    (ps : Std.ExtTreeSet ProphId) : prophMapInterp ([] ++ κs) ps ⊣⊢ prophMapInterp κs ps :=
+  .rfl
 
 instance HeapLang [HeapLangGS hlc GF] : IrisGS_gen hlc Exp GF where
   numLatersPerStep n := 0
   forkPost v := iprop(True)
   stateInterp_mono σ ns obs nt := by iintro $
 
-/-- The state interpretation is closed under bumping the step counter. In
-iris-lean this is trivial, since the heap_lang `stateInterp` ignores the step
-index. Mirrors `state_interp_step` in `case_studies/heaplang/fixes.v`. -/
 theorem state_interp_step [HeapLangGS hlc GF] (σ : State) (ns : Nat)
     (κs : List Observation) (nt : Nat) :
-    stateInterp (GF := GF) σ ns κs nt ⊢ |==> stateInterp (GF := GF) σ (ns + 1) κs nt := by
-  iintro H
-  imodintro
-  iexact H
+    stateInterp (GF := GF) σ ns κs nt ⊢ |==> stateInterp σ (ns + 1) κs nt := bupd_intro
 
 def HeapLangS : BundledGFunctors
   | 0 => ⟨InvMapF, by infer_instance⟩
@@ -88,7 +69,8 @@ def HeapLangS : BundledGFunctors
   | 4 => ⟨constOF (HeapView Loc (Agree (LeibnizO (Option Val))) HeapF), by infer_instance⟩
   | 5 => ⟨constOF (HeapView Loc (Agree (LeibnizO GName)) HeapF), by infer_instance⟩
   | 6 => ⟨constOF MetaUR, by infer_instance⟩
-  | 7 => ⟨constOF (HeapView ProphId (Agree (LeibnizO (List (Val × Val)))) ProphMapF), by infer_instance⟩
+  | 7 => ⟨constOF (HeapView ProphId (Agree (LeibnizO (List (Val × Val)))) ProphMapF),
+          by infer_instance⟩
   | _ => ⟨constOF Unit, by infer_instance⟩
 
 instance instHeapLangGS_HeapLangS : HeapLangGpreS HasLC.hasLC HeapLangS where
@@ -121,35 +103,29 @@ theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
     adequate .NotStuck e σ (fun v _ => φ v) := by
   refine wp_adequacy (GF := GF) .NotStuck e σ φ ?_
   intro inst κs
-  imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := Option Val) (H := HeapF))
-    (HeapView.Auth (H := HeapF) (.own 1)
+  imod iOwn_alloc (E := GhostMapG.elem) (HeapView.Auth (H := HeapF) (.own 1)
       (Std.PartialMap.map (fun v : Option Val => toAgree (LeibnizO.mk v)) σ.heap))
     HeapView.auth_one_valid with ⟨%γh, Hh⟩
-  imod iOwn_alloc (E := GhostMapG.elem (K := Loc) (V := GName) (H := HeapF))
-    (HeapView.Auth (H := HeapF) (.own 1)
-      (Std.PartialMap.map (fun g : GName => toAgree (LeibnizO.mk g))
-        (∅ : HeapF GName)))
+  imod iOwn_alloc (E := GhostMapG.elem) (HeapView.Auth (H := HeapF) (.own 1)
+      (Std.PartialMap.map (fun g : GName => toAgree (LeibnizO.mk g)) (∅ : HeapF GName)))
     HeapView.auth_one_valid with ⟨%γm, Hm⟩
-  imod (ProphMap.init (V := Val × Val) (H := ProphMapF) κs σ.usedProphId)
-    with ⟨%Gproph, Hproph⟩
-  letI _ : HeapLangGS .hasLC GF := ⟨⟨γh, γm⟩, Gproph⟩
+  imod (ProphMap.init (H := ProphMapF) κs σ.usedProphId) with ⟨%Gproph, Hproph⟩
+  letI instHeapLangGS : HeapLangGS .hasLC GF := ⟨⟨γh, γm⟩, Gproph⟩
   imodintro
-  iexists (fun σ κs => iprop(
-    Iris.genHeapInterp (GF := GF) (H := HeapF) σ.heap ∗
-    Iris.prophMapInterp (GF := GF) (H := ProphMapF) κs σ.usedProphId))
+  iexists (fun σ κs => iprop% Iris.genHeapInterp σ.heap ∗ Iris.prophMapInterp κs σ.usedProphId)
   iexists (fun _ => iprop(True))
-  isplitl [Hh Hm Hproph]
-  · isplitl [Hh Hm]
-    · simp only [Iris.genHeapInterp]
-      iexists (∅ : HeapF GName)
-      isplitr
-      · ipureintro
-        intro k hk
-        simp [Std.PartialMap.dom, LawfulPartialMap.get?_empty] at hk
-      unfold ghost_map_auth
-      iframe Hh Hm
-    · iexact Hproph
-  · exact Hwp
+  specialize @Hwp _
+  simp only []
+  -- NOTE: iframe %Hwp does not work here
+  isplitl [Hh Hm Hproph] <;> try · exact Hwp
+  iframe
+  simp only [Iris.genHeapInterp]
+  iexists (∅ : HeapF GName)
+  unfold ghost_map_auth
+  iframe Hh Hm
+  ipureintro
+  intro k hk
+  simp [Std.PartialMap.dom, LawfulPartialMap.get?_empty] at hk
 
 end Adequacy
 
@@ -190,7 +166,7 @@ theorem wp_fork {e : Exp} :
   imodintro
   isplitl [Hσ Hproph]
   · iapply (stateInterp_split σ₁ (ns + 1) obs' (nt + [e].length)).mpr
-    iframe Hσ Hproph
+    iframe
   isplitr [Hwp]
   · iexists _
     iframe HΦ
@@ -373,8 +349,7 @@ theorem wp_cmpXchg_fail {l : Loc} {q} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp
   obtain ⟨rfl⟩ := Heq2
   simp only [Heq4, Bool.false_eq_true, ↓reduceIte]
   imodintro
-  simp
-  simp [stateInterp]
+  simp only [toVal_coe, Option.some.injEq, stateInterp]
   iframe Hσ Hproph
   isplit <;> try itrivial
   iexists hl_val((&v', #false))
@@ -426,6 +401,8 @@ theorem wp_cmpXchg_true {l : Loc} {v' : Val} {e1 : Exp} {v1 : Val} {e2 : Exp} {v
   iframe Hpt
   ipureintro; simp [toVal]
   rfl
+
+-- TODO: Here
 
 theorem wp_free {l : Loc} {v : Val} :
     ▷ (l ↦ some v)
@@ -539,23 +516,14 @@ theorem wp_faa {l : Loc} {i1 i2 : Int} :
   iframe Hpt
   ipureintro; simp [toVal]; rfl
 
-/-- The state update of a `newProphS` step (insertion into `usedProphId`) is the
-same set as `{p} ∪ usedProphId`, which is what `ProphMap.new_proph` returns. -/
 theorem usedProph_insert_eq {ps : Std.ExtTreeSet ProphId compare} {p : ProphId} :
     ps.insert p = ({p} ∪ ps : Std.ExtTreeSet ProphId compare) := by
   apply Std.ExtTreeSet.ext_mem
   intro x
   rw [Std.ExtTreeSet.mem_insert, Std.ExtTreeSet.mem_union_iff,
     Iris.Std.LawfulSet.mem_singleton, Std.LawfulEqCmp.compare_eq_iff_eq]
-  constructor
-  · rintro (rfl | h)
-    · left; rfl
-    · right; exact h
-  · rintro (rfl | h)
-    · left; rfl
-    · right; exact h
+  grind
 
-/-- Allocate a fresh prophecy variable. Mirrors `wp_new_proph` in `iris.heap_lang.lifting`. -/
 theorem wp_new_proph :
     ⊢ WP (Exp.newProph : Exp) @ s; E
         {{ v, ∃ p : ProphId, ∃ pvs : List (Val × Val),
@@ -563,7 +531,6 @@ theorem wp_new_proph :
   iapply wp_lift_atomic_step rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ !>
   icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
-  -- Pick a prophecy id fresh in the current `usedProphId`.
   obtain ⟨pf, Hpf⟩ := Iris.Std.List.fresh σ₁.usedProphId.toList
   have Hpf_contains : ¬ σ₁.usedProphId.contains pf := by
     intro hc; exact Hpf (Std.ExtTreeSet.mem_toList.mpr hc)
@@ -577,7 +544,6 @@ theorem wp_new_proph :
   cases baseStep_of_primStep_of_baseStep_reducible Hred Heq
   rename_i p' Hp'
   ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
-  -- Convert `¬ contains` to `∉` for `ProphMap.new_proph`.
   have Hp'_mem : p' ∉ σ₁.usedProphId :=
     fun hmem => Hp' (Std.ExtTreeSet.mem_iff_contains.symm.mp hmem)
   imod (ProphMap.new_proph p' σ₁.usedProphId obs' Hp'_mem) $$ Hproph
@@ -586,9 +552,7 @@ theorem wp_new_proph :
   simp only [stateInterp]
   iframe Hσ
   isplitl [Hproph']
-  · -- Bridge `{p'} ∪ σ₁.usedProphId` (from new_proph) and `σ₁.usedProphId.insert p'`
-    -- (from the newProphS constructor's output).
-    rw [show ({p'} ∪ σ₁.usedProphId : Std.ExtTreeSet ProphId compare)
+  · rw [show ({p'} ∪ σ₁.usedProphId : Std.ExtTreeSet ProphId compare)
          = σ₁.usedProphId.insert p' from usedProph_insert_eq.symm]
     iexact Hproph'
   isplitl [Htok]
@@ -614,23 +578,15 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     (proph p pvs -∗ WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
       ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }}) -∗
     WP (Exp.resolve e (.val (.lit (.prophecy p))) (.val w)) @ s; E {{ Φ }} := by
-  -- Mirrors Rocq `iris/heap_lang/primitive_laws.v:726–758`. The proof breaks
-  -- the WP abstraction by unfolding `wp_unfold` directly on the inner WP for
-  -- `e`, reverse-inducting on the outer observation list, and threading the
-  -- trailing observation through the prophecy map via `ProphMap.resolve_proph`.
   iintro Hp HWPe
   iapply wp_lift_step_fupdN rfl
   iintro %σ₁ %ns %obs %obs' %nt Hσ
   icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hheap, Hpmap⟩
-  -- Extract `p ∈ σ₁.usedProphId` (pure conclusion via `ProphMap.agree`,
-  -- preserving `Hpmap` and `Hp` via the `$` frame markers).
   icases ProphMap.agree (obs ++ obs') σ₁.usedProphId p pvs $$ [$Hpmap $Hp]
     with %Hagree
   have Hp_mem : p ∈ σ₁.usedProphId := Hagree.1
   have hp_contains : σ₁.usedProphId.contains p :=
     Std.ExtTreeSet.mem_iff_contains.mp Hp_mem
-  -- Feed the prophecy token to the inner WP wand, then open into the step
-  -- branch via `wp_unfold` + `wp.pre`-reduction (the Lean-eq bridge).
   ihave HWPe : iprop(WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
       ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }})
       $$ [Hp HWPe]
@@ -638,10 +594,8 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
   ihave HWPe := (show iprop(WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
       ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }}) ⊢ _
     by rw [wp_unfold.to_eq]; simp only [wp.pre, hne]; exact .rfl) $$ HWPe
-  -- Reverse-induct on the outer observation list `obs`.
   cases obs using List.reverseRec with
   | nil =>
-    -- obs = []. Apply inner WP with inner obs = [], inner obs' = obs'.
     ihave Hσ_e : iprop(stateInterp σ₁ ns ([] ++ obs') nt) $$ [Hheap Hpmap]
     · iapply (stateInterp_split σ₁ ns ([] ++ obs') nt).mpr
       iframe Hheap
@@ -657,8 +611,6 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
     obtain ⟨κ_inner, _, hκ_eq, _, _⟩ := step_resolve_decompose Hstep
     exact List.cons_ne_nil _ _ (List.append_eq_nil_iff.mp hκ_eq.symm).2
   | append_singleton init lastObs _ =>
-    -- obs = init ++ [lastObs]. Apply inner WP with inner obs = init,
-    -- inner obs' = lastObs :: obs'.
     have hassoc : (init ++ [lastObs]) ++ obs' = init ++ (lastObs :: obs') := by simp
     ihave Hσ_e : iprop(stateInterp σ₁ ns (init ++ (lastObs :: obs')) nt)
         $$ [Hheap Hpmap]
@@ -693,13 +645,10 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
       with ⟨%pvs'', %hpvs'_eq, Hpmap_e, Hele⟩
     imodintro
     isplitl [Hheap_e Hpmap_e]
-    · iapply (stateInterp_split σ₂ (ns + 1) obs' (nt + eₜ.length)).mpr
-      iframe Hheap_e
-      iexact Hpmap_e
-    isplitr [Hefs]
-    · iapply wp_value'
-      iapply HΦ $$ %pvs'' %hpvs'_eq Hele
-    · iexact Hefs
+    · iapply (stateInterp_split σ₂ (ns + 1) obs' (nt + eₜ.length)).mpr $$ [$]
+    iframe Hefs
+    iapply wp_value'
+    iapply HΦ $$ %pvs'' %hpvs'_eq Hele
 
 end Lifting
 
