@@ -156,6 +156,7 @@ elab "#rocq_ignore_file" folder:ident file:str reason:str : command => do
 public inductive Status where
   | Ported
   | Missing
+  | Ignored
   | DependsOn (deps: Array Name)
 
 /-- A concept entry: `(dir, feature, subfeature?, status, reason)`. -/
@@ -168,7 +169,7 @@ public meta initialize rocqConceptExt : SimplePersistentEnvExtension ConceptEntr
     addImportedFn := fun es => es.foldl (fun acc a => a.foldl Array.push acc) #[]
   }
 
-public syntax status := "ported" <|> "missing" <|> ("depends_on" "[" ident,+ "]")
+public syntax status := "ported" <|> "missing" <|> "ignored" <|> ("depends_on" "[" ident,+ "]")
 
 syntax (name := rocq_concept) "#rocq_concept" ident str (str)? status str : command
 
@@ -176,6 +177,7 @@ variable {m : Type → Type} [Monad m] [MonadError m] in
 meta def parseStatus : TSyntax `status → m Status
 | `(status| ported) =>  return .Ported
 | `(status| missing) => return .Missing
+| `(status| ignored) => return .Ignored
 | `(status| depends_on [ $[$deps:ident],* ]) => return .DependsOn (deps.map (·.raw.getId))
 | stx => throwErrorAt stx s!"unsupported status: {stx.raw.getId}"
 
@@ -193,8 +195,6 @@ under the feature in the HTML report.
 @[expose]
 elab "#rocq_concept" folder:ident feature:str sub:(str)? status:status reason:str : command => do
   checkRocqFolder folder
-  let statusName := status.getId
-  unless statusName == `ported || statusName == `missing || statusName == `ignored do
-    throwErrorAt status "status must be 'ported' or 'missing' or 'ignored', got '{statusName}'"
+  let status ← parseStatus status
   let sub := sub.map (·.getString)
   modifyEnv (rocqConceptExt.addEntry · (folder.getId.toString, feature.getString, sub, status, reason.getString))

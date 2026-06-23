@@ -44,8 +44,9 @@ meta def collectRocqAliases (env : Environment) : Array (Name × Name) :=
 private meta def nameToRocqStr (n : Name) : String :=
   n.toString (escape := false)
 
-meta def buildStatusJson : Status → Json 
+meta def buildStatusJson : Status → Json
 | .Ported => "ported"
+| .Ignored => "ignored"
 | .Missing => "missing"
 | .DependsOn ls => Json.mkObj [("depends_on", Json.arr <| ls.map (Json.str ·.toString))]
 
