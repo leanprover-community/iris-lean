@@ -36,13 +36,19 @@ theorem tac_inv_elim [BI PROP]
     e ⊢ e' ∗ □?p Pinv                          := pf.mp
     _ ⊢ □?p Pinv ∗ e'                          := sep_comm.mp
     _ ⊢ Pinv ∗ e'                              := sep_mono_left intuitionisticallyIf_elim
-    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ emp -∗ Q' x := sorry
+    _ ⊢ Pinv ∗ ∀ x, Pout x -∗ Q' x             := sep_mono_right <| forall_intro hAcc
+    _ ⊢ Pinv ∗ emp ∗ ∀ x, Pout x -∗ Q' x       := sep_mono_right emp_sep.mpr
+    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x -∗ Q' x       := sep_mono_right <| sep_mono_left sorry
+    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ emp -∗ Q' x := sep_mono_right <| sep_mono_right <| forall_mono (fun _ => wand_mono_left sep_emp.mp)
     _ ⊢ goal                                   := h
   | some mPclose => calc
     e ⊢ e' ∗ □?p Pinv                                := pf.mp
     _ ⊢ □?p Pinv ∗ e'                                := sep_comm.mp
     _ ⊢ Pinv ∗ e'                                    := sep_mono_left intuitionisticallyIf_elim
-    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x := sorry
+    _ ⊢ Pinv ∗ ∀ x, Pout x -∗ mPclose x -∗ Q' x      := sep_mono_right <| forall_intro hAcc
+    _ ⊢ Pinv ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x       := sep_mono_right <| forall_mono <| fun _ => wand_curry.mp
+    _ ⊢ Pinv ∗ emp ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x := sep_mono_right emp_sep.mpr
+    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x := sep_mono_right <| sep_mono_left sorry
     _ ⊢ goal                                         := h
 
 private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q($prop))
