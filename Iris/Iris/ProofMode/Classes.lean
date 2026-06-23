@@ -245,11 +245,12 @@ class IntoAcc [BI PROP] {X : outParam Type} (Pacc : PROP)
     (mγ : outParam <| X → Option PROP) where
   into_acc : ϕ → Pacc -∗ Pin -∗ accessor M1 M2 α β mγ
 
+set_option synthInstance.checkSynthOrder false in
 /-- The type class used for the `iinv` tactic. -/
 @[ipm_class, rocq_alias ElimInv]
 class ElimInv [BI PROP] (φ : outParam Prop) (X : outParam Type)
     (Pinv : PROP) (Pin : outParam PROP) (Pout : outParam <| X → PROP)
-    (mPclose : outParam <| Option <| X → PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
+    (close : Bool) (mPclose : outParam <| Option <| X → PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
   elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ ((mPclose.map (· x)).getD emp) -∗ Q' x) ⊢ Q
 export ElimInv (elim_inv)
 

@@ -22,9 +22,10 @@ private def optionMap {PROP : Type u} {X : Type} (mP : Option (X → PROP)) (x :
   mP.map (· x)
 
 @[rocq_alias tac_inv_elim]
-theorem tac_inv_elim [BI PROP] {e e' goal : PROP} {ϕ : Prop} {X : Type} {p : Bool}
+theorem tac_inv_elim [BI PROP]
+    {e e' goal : PROP} {ϕ : Prop} {X : Type} {p close : Bool}
     {Pinv Pin : PROP} {mPclose : Option <| X → PROP} {Pout Q' : X → PROP}
-    (inst : ElimInv ϕ X Pinv Pin Pout mPclose goal Q')
+    (inst : ElimInv ϕ X Pinv Pin Pout close mPclose goal Q')
     (hϕ : ϕ)
     (hAcc : ∀ x, e' ⊢ Pout x -∗ mPclose.map (· x) -∗? Q' x)
     (pf : e ⊣⊢ e' ∗ □?p Pinv) :
@@ -49,9 +50,10 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   let Pin ← mkFreshExprMVarQ q($prop)
   let X ← mkFreshExprMVarQ q(Type)
   let Pout ← mkFreshExprMVarQ q($X → $prop)
+  let close := if hclose.isSome then q(true) else q(false)
   let mPclose ← mkFreshExprMVarQ q(Option ($X → $prop))
   let Q' ← mkFreshExprMVarQ q($X → $prop)
-  let some inst ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $Pinv $Pin $Pout $mPclose $goal $Q')
+  let some inst ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $Pinv $Pin $Pout $close $mPclose $goal $Q')
   | throwError "iinv: invalid invariant {Pinv}"
 
   -- Solve side conditions automatically if possible, otherwise add them into the proof state
@@ -63,7 +65,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   | some hclose => pure <| some (hclose.raw, IntroPat.intro (.one (← `(binderIdent| $hclose:ident))))
 
   -- Create the wand proposition and apply the introduction pattern to destruct the premise
-  let hAcc : Q(∀ x : $X, $e' ⊢ $Pout x -∗ BIBase.wandM (optionMap $mPclose x) ($Q' x)) ←
+  let hAcc : Q(∀ x : $X, $e' ⊢ $Pout x -∗ optionMap $mPclose x -∗? $Q' x) ←
     withLocalDeclDQ (u := 0) (← mkFreshUserName `x) X fun x => do
       let poutX : Q($prop) := Expr.headBeta q($Pout $x)
       let qX : Q($prop) := Expr.headBeta q($Q' $x)
