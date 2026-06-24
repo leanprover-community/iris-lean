@@ -18,7 +18,7 @@ public import Iris.Instances.Lib.NaInvariants
 @[expose] public section
 
 namespace Iris.Tests
-open BI CMRA DFrac
+open BI CMRA DFrac CancelableInvariant NonAtomicInvariant
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -2782,15 +2782,13 @@ end iloeb
 
 section iinv
 
--- variable [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF]
--- variable
+variable {hlc : HasLC} {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
 /--
   Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
   `intoAcc_inv` where the side condition is trivial.
 -/
-example [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace} {P : IProp GF} :
-    inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+example {N : Namespace} {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv as #H
   -- Side condition
@@ -2807,8 +2805,7 @@ example [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace} {P 
   Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and
   `intoAcc_inv` where the side condition is trivial.
 -/
-example [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace} {P : IProp GF} :
-    inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+example {N : Namespace} {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv as #H Hclose
   -- Side condition
@@ -2824,7 +2821,7 @@ example [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace} {P 
   Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
   `intoAcc_inv`, relying on the side condition `↑N ⊆ E`.
 -/
-example [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF] {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
+example {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
     inv N iprop(<pers> P) ={E}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv as #H
@@ -2843,10 +2840,43 @@ example [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF] {N E : Namespace} {
 /- Tests `iinv` with an invalid invariant. -/
 /-- error: iinv: invalid invariant P -/
 #guard_msgs in
-example [BI PROP] {GF : BundledGFunctors} [InvGS_gen hlc GF]
-    {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
+example {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
     □ P ={E}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv as #H
+
+/-- Tests `iinv` with `elimInv_acc_with_close`, `elimAcc_fupd` and `intoAcc_cinv`. -/
+example [CInvG GF]  {γ : GName} {p : Qp} :
+    cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
+  iintro ⟨#Hinv, H⟩
+  iinv Hinv as ⟨#HP, Hown⟩
+  -- Side condition
+  · simp
+  -- Main proof goal
+  · simp
+    imodintro
+    isplit
+    iexact HP
+    iframe
+    imodintro
+    inext
+    iexact HP
+  · exact p
+
+/-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_cinv`. -/
+example [CInvG GF] {γ : GName} {p : Qp} :
+    cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
+  iintro ⟨#Hinv, H⟩
+  iinv Hinv as ⟨#HP, Hown⟩ Hclose
+  -- Side condition
+  · simp
+  -- Main proof goal
+  · simp
+    imod Hclose $$ HP
+    imodintro
+    iframe
+    inext
+    iexact HP
+  · exact p
 
 end iinv
