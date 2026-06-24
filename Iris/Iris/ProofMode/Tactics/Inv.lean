@@ -27,8 +27,9 @@ theorem tac_inv_elim [BI PROP]
     {Pinv Pin : PROP} {mPclose : Option <| X → PROP} {Pout Q' : X → PROP}
     (inst : ElimInv ϕ X Pinv Pin Pout close mPclose goal Q')
     (hϕ : ϕ)
-    (hAcc : ∀ x, e' ⊢ Pout x -∗ mPclose.map (· x) -∗? Q' x)
-    (pf : e ⊣⊢ e' ∗ □?p Pinv) :
+    (hAcc : ∀ x, e'' ⊢ Pout x -∗ mPclose.map (· x) -∗? Q' x)
+    (pf : e ⊣⊢ e' ∗ □?p Pinv)
+    (pfPin : e' ∗ (Pin -∗ Pin) ⊢ e'' ∗ out'') :
     e ⊢ goal := by
   have h := inst.elim_inv hϕ
   cases mPclose with simp_all
@@ -36,7 +37,7 @@ theorem tac_inv_elim [BI PROP]
     e ⊢ e' ∗ □?p Pinv                          := pf.mp
     _ ⊢ □?p Pinv ∗ e'                          := sep_comm.mp
     _ ⊢ Pinv ∗ e'                              := sep_mono_left intuitionisticallyIf_elim
-    _ ⊢ Pinv ∗ ∀ x, Pout x -∗ Q' x             := sep_mono_right <| forall_intro hAcc
+    _ ⊢ Pinv ∗ ∀ x, Pout x -∗ Q' x             := sorry
     _ ⊢ Pinv ∗ emp ∗ ∀ x, Pout x -∗ Q' x       := sep_mono_right emp_sep.mpr
     _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x -∗ Q' x       := sep_mono_right <| sep_mono_left sorry
     _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ emp -∗ Q' x := sep_mono_right <| sep_mono_right <| forall_mono (fun _ => wand_mono_left sep_emp.mp)
@@ -45,7 +46,7 @@ theorem tac_inv_elim [BI PROP]
     e ⊢ e' ∗ □?p Pinv                                := pf.mp
     _ ⊢ □?p Pinv ∗ e'                                := sep_comm.mp
     _ ⊢ Pinv ∗ e'                                    := sep_mono_left intuitionisticallyIf_elim
-    _ ⊢ Pinv ∗ ∀ x, Pout x -∗ mPclose x -∗ Q' x      := sep_mono_right <| forall_intro hAcc
+    _ ⊢ Pinv ∗ ∀ x, Pout x -∗ mPclose x -∗ Q' x      := sorry
     _ ⊢ Pinv ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x       := sep_mono_right <| forall_mono <| fun _ => wand_curry.mp
     _ ⊢ Pinv ∗ emp ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x := sep_mono_right emp_sep.mpr
     _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x := sep_mono_right <| sep_mono_left sorry
@@ -58,7 +59,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
     (closePat : Option <| Syntax × IntroPat) :
     ProofModeM Q($e ⊢ $goal) := do
   -- Find the hypothesis from the context
-  let ⟨e', hyps', _, Pinv, _, _ , pfEq⟩ := hyps.remove false ivar
+  let ⟨_, hyps', _, Pinv, _, _ , pfEq⟩ := hyps.remove false ivar
 
   let ϕ ← mkFreshExprMVarQ q(Prop)
   let Pin ← mkFreshExprMVarQ q($prop)
@@ -73,8 +74,10 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   -- Solve side conditions automatically if possible, otherwise add them into the proof state
   let hϕ ← iSolveSidecondition q($ϕ) false
 
+  let ⟨e'', _, _, _, pfPin⟩ ← iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) specPats
+
   -- Create the wand proposition and apply the introduction pattern to destruct the premise
-  let hAcc : Q(∀ x : $X, $e' ⊢ $Pout x -∗ optionMap $mPclose x -∗? $Q' x) ←
+  let hAcc : Q(∀ x : $X, $e'' ⊢ $Pout x -∗ optionMap $mPclose x -∗? $Q' x) ←
     withLocalDeclDQ (u := 0) (← mkFreshUserName `x) X fun x => do
       let poutX : Q($prop) := Expr.headBeta q($Pout $x)
       let qX : Q($prop) := Expr.headBeta q($Q' $x)
@@ -91,10 +94,10 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
         | none => throwError "iinv: error"
       mkLambdaFVars #[x] body
 
-  return q(tac_inv_elim $inst $hϕ $hAcc $pfEq)
+  return q(tac_inv_elim $inst $hϕ $hAcc $pfEq $pfPin)
 
 /-- `iinv` opens an invariant in the proof state. -/
-syntax (name := iinv) "iinv " colGt ident (" with " (colGt ppSpace specPat)*)?
+syntax (name := iinv) "iinv " colGt ident (" with " (colGt ppSpace specPat)+)?
     " as " colGt introPat (introPat)? : tactic
 
 elab_rules : tactic
