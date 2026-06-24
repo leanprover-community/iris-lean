@@ -102,7 +102,7 @@ theorem spawn_spec (Ψ : Val → IProp GF) (f : Val) :
   iintro %v HΨ
   wp_pures
   iapply wp_atomic
-  imod inv_acc ⊤ N (spawnInv γ l Ψ) (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨Hpt, Hclose⟩
+  imod inv_acc (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨Hpt, Hclose⟩
   unfold spawnInv
   icases Hpt with ⟨%_, Hl, _⟩
   imodintro
@@ -127,7 +127,7 @@ theorem join_spec (Ψ : Val → IProp GF) (l : Loc) :
   wp_rec
   wp_bind !_
   iapply wp_atomic
-  imod inv_acc ⊤ N (spawnInv γ l Ψ) (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨Hpt, Hclose⟩
+  imod inv_acc (fun _ _ => CoPset.mem_full) $$ Hinv with ⟨Hpt, Hclose⟩
   unfold spawnInv
   icases Hpt with ⟨%lv, Hl, Hcond⟩
   imodintro
