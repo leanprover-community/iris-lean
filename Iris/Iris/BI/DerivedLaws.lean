@@ -715,6 +715,11 @@ theorem pure_exists [BI PROP] {φ : α → Prop} : (∃ x, ⌜φ x⌝ : PROP) �
 
 #rocq_ignore bi.bi_pure_forall_em "Do not need BiPureForall in Lean"
 
+@[rocq_alias bi.pure_alt]
+theorem pure_alt {PROP : Type _} [BI PROP] (φ : Prop) :
+    (⌜φ⌝ : PROP) ⊣⊢ ∃ _ : φ, True :=
+  (pure_congr ⟨fun h => ⟨h, trivial⟩, fun ⟨h, _⟩ => h⟩).trans pure_exists.symm
+
 /-! # Affine -/
 
 @[rocq_alias bi.affinely_ne]
