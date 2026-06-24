@@ -33,7 +33,7 @@ stated in terms of `Φ`. This version adds more typeclass instances, but has pos
 unify against any `IProp`.  -/
 
 @[rocq_alias fractional_as_fractional]
-instance (priority := 100) fractional_as_fractional [h : Fractional Φ] (q : Qp) :
+instance (priority := low) fractional_as_fractional [h : Fractional Φ] (q : Qp) :
     AsFractional (Φ q) Φ q where
   as_fractional := .rfl
   as_fractional_fractional := h
@@ -91,10 +91,9 @@ section Divide
 variable {PROP : Type _} [BI PROP]
 open BI.BigSepL
 
-theorem fractional_bigSepL_replicate {Φ : Qp → PROP} [Fractional Φ] (r : Qp) :
-    ∀ (k : Nat) (q : Qp), q.val = ((k : Rat) + 1) * r.val →
+theorem fractional_bigSepL_replicate {Φ : Qp → PROP} [Fractional Φ] (r : Qp) (k : Nat) :
+    ∀ (q : Qp), q.val = ((k : Rat) + 1) * r.val →
       Φ q ⊢ [∗list] _x ∈ List.replicate (k + 1) r, Φ r := by
-  intro k
   induction k with
   | zero =>
     intro q hq

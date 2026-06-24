@@ -442,7 +442,7 @@ theorem genHeap_update [DecidableEq L] {σ : H V} {l : L} {v₁ v₂ : V} :
     genHeapInterp σ ∗ l ↦ v₁ ==∗ genHeapInterp (insert σ l v₂) ∗ l ↦ v₂ := by
   unfold genHeapInterp pointsTo
   iintro ⟨⟨%m, %Hdom, Hσ, Hm⟩, Hl⟩
-  imod ghost_map_update l v₁ v₂ $$ Hσ Hl with ⟨Hσ, Hl⟩
+  imod ghost_map_update v₂ $$ Hσ Hl with ⟨Hσ, Hl⟩
   imodintro
   iframe Hl
   iexists m
