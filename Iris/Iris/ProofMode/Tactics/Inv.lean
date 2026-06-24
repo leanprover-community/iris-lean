@@ -64,7 +64,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   let ⟨_, hyps', _, Pinv, _, _ , pfEq⟩ := hyps.remove false ivar
 
   let ϕ ← mkFreshExprMVarQ q(Prop)
-  let Pin ← mkFreshExprMVarQ q($prop)
+  let Pin : Q($prop) ← mkFreshExprMVarQ q($prop)
   let X ← mkFreshExprMVarQ q(Type)
   let Pout ← mkFreshExprMVarQ q($X → $prop)
   let close := if closePat.isSome then q(true) else q(false)
@@ -76,7 +76,12 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   -- Solve side conditions automatically if possible, otherwise add them into the proof state
   let hϕ ← iSolveSidecondition q($ϕ) false
 
-  let ⟨e'', hyps'', _, _, pfPin⟩ ← iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) specPat.toList
+  let defaultSpat : SpecPat :=
+  .goal { kind := .spatial, negate := true, trivial := true, frame := [], hyps := [] } .anonymous
+  let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
+    iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [specPat.getD defaultSpat]
+  have : $out'' =Q $Pin := ⟨⟩
+  have : $p'' =Q false := ⟨⟩
 
   -- Create the wand proposition and apply the introduction pattern to destruct the premise
   let hAcc : Q(∀ x : $X, $e'' ⊢ $Pout x -∗ optionMap $mPclose x -∗? $Q' x) ←
@@ -96,7 +101,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
         | none => throwError "iinv: error"
       mkLambdaFVars #[x] body
 
-  return q(tac_inv_elim $inst $hϕ $hAcc $pfEq sorry)
+  return q(tac_inv_elim $inst $hϕ $hAcc $pfEq $pfPin)
 
 /-- `iinv` opens an invariant in the proof state. -/
 syntax (name := iinv) "iinv " colGt ident " as " colGt introPat (introPat)?

@@ -2862,8 +2862,6 @@ example [CInvG GF]  {γ : GName} {p : Qp} :
     imodintro
     inext
     iexact HP
-  -- To be eliminated with a default specialisation pattern
-  · exact p
 
 /-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_cinv`. -/
 example [CInvG GF] {γ : GName} {p : Qp} :
@@ -2879,8 +2877,6 @@ example [CInvG GF] {γ : GName} {p : Qp} :
     iframe
     inext
     iexact HP
-  -- To be eliminated with a default specialisation pattern
-  · exact p
 
 /--
   Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd`,
