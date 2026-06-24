@@ -29,28 +29,30 @@ theorem tac_inv_elim [BI PROP]
     (hϕ : ϕ)
     (hAcc : ∀ x, e'' ⊢ Pout x -∗ mPclose.map (· x) -∗? Q' x)
     (pf : e ⊣⊢ e' ∗ □?p Pinv)
-    (pfPin : e' ∗ (Pin -∗ Pin) ⊢ e'' ∗ out'') :
+    (pfPin : e' ∗ (Pin -∗ Pin) ⊢ e'' ∗ Pin) :
     e ⊢ goal := by
-  have h := inst.elim_inv hϕ
-  cases mPclose with simp_all
-  | none => calc
+  have h0 := inst.elim_inv hϕ
+  have h1 : e ⊢ Pinv ∗ Pin ∗ e'' := calc
     e ⊢ e' ∗ □?p Pinv                          := pf.mp
     _ ⊢ □?p Pinv ∗ e'                          := sep_comm.mp
     _ ⊢ Pinv ∗ e'                              := sep_mono_left intuitionisticallyIf_elim
-    _ ⊢ Pinv ∗ ∀ x, Pout x -∗ Q' x             := sorry
-    _ ⊢ Pinv ∗ emp ∗ ∀ x, Pout x -∗ Q' x       := sep_mono_right emp_sep.mpr
-    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x -∗ Q' x       := sep_mono_right <| sep_mono_left sorry
+    _ ⊢ Pinv ∗ e' ∗ emp                        := sep_mono_right <| sep_emp.mpr
+    _ ⊢ Pinv ∗ e' ∗ (Pin -∗ Pin)               := sep_mono_right <| sep_mono_right <| wand_rfl
+    _ ⊢ Pinv ∗ e'' ∗ Pin                       := sep_mono_right pfPin
+    _ ⊢ Pinv ∗ Pin ∗ e''                       := sep_mono_right sep_comm.mp
+  cases mPclose with simp_all
+  | none => calc
+    e ⊢ Pinv ∗ Pin ∗ e''                       := h1
+    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x -∗ Q' x       := sep_mono_right <| sep_mono_right <| forall_intro hAcc
     _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ emp -∗ Q' x := sep_mono_right <| sep_mono_right <| forall_mono (fun _ => wand_mono_left sep_emp.mp)
-    _ ⊢ goal                                   := h
+    _ ⊢ goal                                   := h0
   | some mPclose => calc
-    e ⊢ e' ∗ □?p Pinv                                := pf.mp
-    _ ⊢ □?p Pinv ∗ e'                                := sep_comm.mp
-    _ ⊢ Pinv ∗ e'                                    := sep_mono_left intuitionisticallyIf_elim
-    _ ⊢ Pinv ∗ ∀ x, Pout x -∗ mPclose x -∗ Q' x      := sorry
-    _ ⊢ Pinv ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x       := sep_mono_right <| forall_mono <| fun _ => wand_curry.mp
-    _ ⊢ Pinv ∗ emp ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x := sep_mono_right emp_sep.mpr
-    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x := sep_mono_right <| sep_mono_left sorry
-    _ ⊢ goal                                         := h
+    e ⊢ Pinv ∗ Pin ∗ e''                       := h1
+    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x -∗ mPclose x -∗ Q' x :=
+      sep_mono_right <| sep_mono_right <| forall_intro hAcc
+    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x :=
+      sep_mono_right <| sep_mono_right <| forall_intro <| fun x => forall_elim x |>.trans wand_curry.mp
+    _ ⊢ goal                                         := h0
 
 private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q($prop))
     (ivar : IVarId)
@@ -94,7 +96,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
         | none => throwError "iinv: error"
       mkLambdaFVars #[x] body
 
-  return q(tac_inv_elim $inst $hϕ $hAcc $pfEq $pfPin)
+  return q(tac_inv_elim $inst $hϕ $hAcc $pfEq sorry)
 
 /-- `iinv` opens an invariant in the proof state. -/
 syntax (name := iinv) "iinv " colGt ident " as " colGt introPat (introPat)?
