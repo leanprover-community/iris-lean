@@ -2801,6 +2801,7 @@ example {N : Namespace} {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P 
       imodintro
       inext
       iexact H
+
 /--
   Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and
   `intoAcc_inv` where the side condition is trivial.
@@ -2861,6 +2862,7 @@ example [CInvG GF]  {γ : GName} {p : Qp} :
     imodintro
     inext
     iexact HP
+  -- To be eliminated with a default specialisation pattern
   · exact p
 
 /-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_cinv`. -/
@@ -2877,13 +2879,26 @@ example [CInvG GF] {γ : GName} {p : Qp} :
     iframe
     inext
     iexact HP
+  -- To be eliminated with a default specialisation pattern
   · exact p
 
+/--
+  Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd`,
+  `intoAcc_cinv` and a specialisation pattern. -/
 example [CInvG GF] {γ : GName} {p1 p2 : Qp} {N : Namespace} {P : IProp GF} :
     cinv N γ iprop(<pers> P) ∗ own γ p1 ∗ own γ p2
     ⊢@{IProp GF} |={⊤}=> own γ p1 ∗ own γ p2 ∗ ▷ P := by
   iintro ⟨#Hinv, Hown1, Hown2⟩
-  sorry
+  iinv Hinv as ⟨#HP, Hown2⟩ with [Hown2 //]
+  -- Side condition
+  · simp
+  -- Main proof goal
+  · imodintro
+    simp
+    iframe HP Hown1 Hown2
+    imodintro
+    inext
+    iexact HP
 
 /-- Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and `intoAcc_na`. -/
 example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
@@ -2892,8 +2907,10 @@ example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
     ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
   iintro ⟨#Hinv, Hown1, Hown2⟩
   iinv Hinv as ⟨#HP, Hown2⟩
+  -- Side condition
   · simp
     exact h
+  -- Main proof goal
   · imodintro
     isplitl [Hown2]
     · iframe HP Hown2
@@ -2911,8 +2928,16 @@ example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
     ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
   iintro ⟨#Hinv, Hown1, Hown2⟩
   iinv Hinv as ⟨#HP, Hown2⟩ Hclose
-  sorry
-  sorry
-  sorry
+  -- Side condition
+  · simp
+    exact h
+  -- Main proof goal
+  · imod Hclose $$ [HP Hown2]
+    · iframe
+      iexact HP
+    · iframe Hown1 Hown2
+      imodintro
+      inext
+      iexact HP
 
 end iinv
