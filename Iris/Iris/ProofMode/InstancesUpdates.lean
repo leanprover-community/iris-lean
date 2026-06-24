@@ -208,7 +208,7 @@ instance (priority := low) elimModal_fupd_fupd_wrongMask p E0 E1 E2 E3 (P Q : PR
 --   elim_acc := sorry
 
 @[rocq_alias elim_acc_fupd]
-instance elimAcc_fupd [FUpd PROP] {X} E1 E2 (α β : X → PROP) mγ (Q : PROP) :
+instance elimAcc_fupd [FUpd PROP] {X} E1 E2 E (α β : X → PROP) mγ (Q : PROP) :
     ElimAcc True (fupd E1 E2) (fupd E2 E1) α β mγ
     iprop(|={E1,E}=> Q)
     (fun x => iprop(|={E2}=> β x ∗ (mγ x -∗? |={E1,E}=> Q))) where
