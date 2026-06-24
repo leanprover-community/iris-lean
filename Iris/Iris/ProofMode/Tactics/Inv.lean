@@ -54,7 +54,7 @@ theorem tac_inv_elim [BI PROP]
 
 private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q($prop))
     (ivar : IVarId)
-    (specPats : List SpecPat)
+    (specPat : Option SpecPat)
     (introPat : Syntax × IntroPat)
     (closePat : Option <| Syntax × IntroPat) :
     ProofModeM Q($e ⊢ $goal) := do
@@ -74,7 +74,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   -- Solve side conditions automatically if possible, otherwise add them into the proof state
   let hϕ ← iSolveSidecondition q($ϕ) false
 
-  let ⟨e'', _, _, _, pfPin⟩ ← iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) specPats
+  let ⟨e'', hyps'', _, _, pfPin⟩ ← iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) specPat.toList
 
   -- Create the wand proposition and apply the introduction pattern to destruct the premise
   let hAcc : Q(∀ x : $X, $e'' ⊢ $Pout x -∗ optionMap $mPclose x -∗? $Q' x) ←
@@ -83,13 +83,13 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
       let qX : Q($prop) := Expr.headBeta q($Q' $x)
       let body ← match mPclose with
       | ~q(none) =>
-        iIntroCore hyps' q(iprop($poutX -∗ $qX)) [introPat]
+        iIntroCore hyps'' q(iprop($poutX -∗ $qX)) [introPat]
       | ~q(some $f) =>
         let f : Q($X → $prop) := f
         match closePat with
         | some closePat =>
           let closeX : Q($prop) := Expr.headBeta q($f $x)
-          iIntroCore hyps' q(iprop($poutX -∗ $closeX -∗ $qX)) [introPat, closePat]
+          iIntroCore hyps'' q(iprop($poutX -∗ $closeX -∗ $qX)) [introPat, closePat]
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
         | none => throwError "iinv: error"
       mkLambdaFVars #[x] body
@@ -97,13 +97,13 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   return q(tac_inv_elim $inst $hϕ $hAcc $pfEq $pfPin)
 
 /-- `iinv` opens an invariant in the proof state. -/
-syntax (name := iinv) "iinv " colGt ident (" with " (colGt ppSpace specPat)+)?
-    " as " colGt introPat (introPat)? : tactic
+syntax (name := iinv) "iinv " colGt ident " as " colGt introPat (introPat)?
+    (" with " colGt ppSpace specPat)? : tactic
 
 elab_rules : tactic
-  | `(tactic| iinv $h:ident $[with $spats:specPat*]? as $ipat:introPat $[$cpat:introPat]?) => do
+  | `(tactic| iinv $h:ident as $ipat:introPat $[$cpat:introPat]? $[with $spat:specPat]?) => do
     -- Parse the introduction and selection patterns
-    let specPats ← spats.mapM (liftMacroM <| ·.mapM SpecPat.parse) <&> (·.getD #[] |>.toList)
+    let specPat ← liftMacroM <| spat.mapM SpecPat.parse
     let introPat ← liftMacroM <| IntroPat.parse ipat
     let closePat ← liftMacroM <| cpat.mapM IntroPat.parse
 
@@ -111,5 +111,5 @@ elab_rules : tactic
       -- Find the hypothesis in which the invariant is opened
       let ivar ← hyps.findWithInfo h
 
-      let pf ← iInvCore hyps goal ivar specPats introPat closePat
+      let pf ← iInvCore hyps goal ivar specPat introPat closePat
       mvar.assign pf
