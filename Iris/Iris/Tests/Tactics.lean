@@ -2940,4 +2940,22 @@ example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
       inext
       iexact HP
 
+/-- Tests the robustness of `iinv` in presence of other invariants -/
+example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
+    {P : IProp GF} (h : ↑N3 ⊆ E1) :
+    inv N1 P ∗ NonAtomicInvariant.inv t N3 iprop(<pers> P) ∗ inv N2 P ∗ own t E1 ∗ own t E2
+    ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#_, #Hinv, #_, Hown1, Hown2⟩
+  iinv Hinv as ⟨#HP, Hown1⟩ with Hown1
+  · simp_all
+  · imodintro
+    isplitl [Hown1]
+    · iframe Hown1 HP
+    · simp
+      iintro Hown1
+      iframe
+      imodintro
+      inext
+      iexact HP
+
 end iinv
