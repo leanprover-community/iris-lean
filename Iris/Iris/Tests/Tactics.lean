@@ -2845,7 +2845,7 @@ example {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
   iintro #Hinv
   iinv Hinv as #H
 
-/-- Tests `iinv` with `elimInv_acc_with_close`, `elimAcc_fupd` and `intoAcc_cinv`. -/
+/-- Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and `intoAcc_cinv`. -/
 example [CInvG GF]  {γ : GName} {p : Qp} :
     cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
   iintro ⟨#Hinv, H⟩
@@ -2878,5 +2878,41 @@ example [CInvG GF] {γ : GName} {p : Qp} :
     inext
     iexact HP
   · exact p
+
+example [CInvG GF] {γ : GName} {p1 p2 : Qp} {N : Namespace} {P : IProp GF} :
+    cinv N γ iprop(<pers> P) ∗ own γ p1 ∗ own γ p2
+    ⊢@{IProp GF} |={⊤}=> own γ p1 ∗ own γ p2 ∗ ▷ P := by
+  iintro ⟨#Hinv, Hown1, Hown2⟩
+  sorry
+
+/-- Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and `intoAcc_na`. -/
+example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
+    {P : IProp GF} (h : ↑N ⊆ E2) :
+    NonAtomicInvariant.inv t N iprop(<pers> P) ∗ own t E1 ∗ own t E2
+    ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#Hinv, Hown1, Hown2⟩
+  iinv Hinv as ⟨#HP, Hown2⟩
+  · simp
+    exact h
+  · imodintro
+    isplitl [Hown2]
+    · iframe HP Hown2
+    · simp
+      iframe Hown1 Hown2
+      iintro -
+      imodintro
+      inext
+      iexact HP
+
+/-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_na`. -/
+example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
+    {P : IProp GF} (h : ↑N ⊆ E2) :
+    NonAtomicInvariant.inv t N iprop(<pers> P) ∗ own t E1 ∗ own t E2
+    ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#Hinv, Hown1, Hown2⟩
+  iinv Hinv as ⟨#HP, Hown2⟩ Hclose
+  sorry
+  sorry
+  sorry
 
 end iinv

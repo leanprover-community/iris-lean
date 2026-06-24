@@ -225,13 +225,13 @@ nonrec theorem inv_acc {p : NaInvPoolName} {E F : CoPset} {N : Namespace} {P : I
 instance intoInv_na (N : Namespace) (P : IProp GF) :
     IntoInv (inv p N P) N := {}
 
--- set_option synthInstance.checkSynthOrder false in
--- @[rocq_alias into_acc_na]
--- instance intoAcc_na (p : NaInvPoolName) (E F : CoPset) (N : Namespace) (P : IProp GF) :
---     IntoAcc (X := Unit) (inv p N P) (↑N ⊆ E ∧ ↑N ⊆ F) (own p F) (fupd E E) (fupd E E)
---     (fun _ => iprop(▷ P ∗ own p (F \ ↑N))) (fun _ => iprop(▷ P ∗ own p (F \ ↑N)))
---               (λ _ => some (own p F)) where
---   into_acc := sorry
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_acc_na]
+instance intoAcc_na (p : NaInvPoolName) (E F : CoPset) (N : Namespace) (P : IProp GF) :
+    IntoAcc (X := Unit) (inv p N P) (↑N ⊆ E ∧ ↑N ⊆ F) (own p F) (fupd E E) (fupd E E)
+    (fun _ => iprop(▷ P ∗ own p (F \ ↑N))) (fun _ => iprop(▷ P ∗ own p (F \ ↑N)))
+              (λ _ => some (own p F)) where
+  into_acc := sorry
 
 end NonAtomicInvariant
 end Iris
