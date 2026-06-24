@@ -19,6 +19,18 @@ This version follows Iris Rocq in fixing the underlying type of fractions to be 
 
 @[expose] public section
 
+namespace Rat
+
+/-- ## Helper lemmas for Rat -/
+
+theorem div_pos {a b : Rat} (ha : 0 < a) (hb : 0 < b) : 0 < a / b := by
+  rw [Rat.div_def]; exact Rat.mul_pos ha (Rat.inv_pos.mpr hb)
+
+theorem mul_div_cancel_left {a b : Rat} (ha : a ≠ 0) : a * (b / a) = b := by
+  rw [Rat.mul_comm, Rat.div_mul_cancel ha]
+
+end Rat
+
 namespace Iris
 
 /-- The type of positive rational numbers, used as fractions -/
@@ -41,6 +53,14 @@ def Qp.half (q : Qp) : Qp where
   property := by
     let ⟨v, P⟩ := q
     grind
+
+def Qp.div (x y : Qp) : Qp := ⟨x.val / y.val, Rat.div_pos x.2 y.2⟩
+
+instance instHDivQpQpQp : HDiv Qp Qp Qp where
+  hDiv := Qp.div
+
+def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
+  ⟨q.val / n, Rat.div_pos q.2 (by exact_mod_cast hn)⟩
 
 instance instCOFEQp : COFE Qp := COFE.ofDiscrete _ Eq_Equivalence
 
@@ -75,6 +95,9 @@ instance instCMRAQp : CMRA Qp where
 @[simp, grind =] theorem Qp.val_add (x y : Qp) : (x + y).val = x.val + y.val := rfl
 @[simp, grind =] theorem Qp.val_one : (1 : Qp).val = 1 := rfl
 @[simp, grind =] theorem Qp.val_half (q : Qp) : q.half.val = q.val / 2 := rfl
+@[simp, grind =] theorem Qp.val_div (x y : Qp) : (x / y).val = x.val / y.val := rfl
+@[simp, grind =] theorem Qp.val_divide_even (q : Qp) (n : Nat) (hn : 0 < n) :
+    (q.divide_even n hn).val = q.val / n := rfl
 @[simp, grind =] theorem Qp.val_op (x y : Qp) : (x • y).val = x.val + y.val := rfl
 @[simp, grind =] theorem Qp.validN_iff {n} {x : Qp} : ✓{n} x ↔ x.val ≤ 1 := Iff.rfl
 @[simp, grind =] theorem Qp.valid_iff {x : Qp} : ✓ x ↔ x.val ≤ 1 := Iff.rfl
@@ -83,9 +106,12 @@ instance instCMRAQp : CMRA Qp where
 @[simp] theorem Qp.ext_iff {x y : Qp} : x = y ↔ x.val = y.val := Subtype.ext_iff
 @[simp] theorem Qp.dist_iff {n} {x y : Qp} : x ≡{n}≡ y ↔ x.val = y.val := Subtype.ext_iff
 @[simp] theorem Qp.equiv_iff {x y : Qp} : x ≡ y ↔ x.val = y.val := Subtype.ext_iff
-
-/-- The whole fraction `1` is valid. -/
 @[simp, rocq_alias frac_valid_1] theorem Qp.valid_one : ✓ (1 : Qp) := by grind
+@[simp, grind =] theorem Qp.half_add_half (q : Qp) : q.half + q.half = q := Subtype.ext (by grind)
+
+theorem Qp.lt_iff_exists_add {a b : Qp} : a < b ↔ ∃ c : Qp, a + c = b := by
+  refine ⟨fun h => ⟨⟨b.val - a.val, by have := Qp.lt_iff.mp h; grind⟩, Subtype.ext (by grind)⟩, ?_⟩
+  rintro ⟨c, rfl⟩; have := c.2; grind
 
 #rocq_ignore frac_op_instance "Use CMRA instance"
 #rocq_ignore frac_pcore_instance "Use CMRA instance"
