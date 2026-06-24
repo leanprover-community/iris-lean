@@ -67,17 +67,19 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   let Pin : Q($prop) ← mkFreshExprMVarQ q($prop)
   let X ← mkFreshExprMVarQ q(Type)
   let Pout ← mkFreshExprMVarQ q($X → $prop)
+  -- Decide whether to use `elimInv_acc_with_close` or `elimInv_acc_without_close`
   let close := if closePat.isSome then q(true) else q(false)
   let mPclose ← mkFreshExprMVarQ q(Option ($X → $prop))
   let Q' ← mkFreshExprMVarQ q($X → $prop)
   let some inst ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $Pinv $Pin $Pout $close $mPclose $goal $Q')
-  | throwError "iinv: invalid invariant {Pinv}"
+  | throwError "iinv: invalid invariant {Pinv} (ElimInv type class synthesis failed)"
 
   -- Solve side conditions automatically if possible, otherwise add them into the proof state
   let hϕ ← iSolveSidecondition q($ϕ) false
 
+  -- Using this instead of `.autoframe .spatial` in order to handle `Pin = True`
   let defaultSpat : SpecPat :=
-  .goal { kind := .spatial, negate := true, trivial := true, frame := [], hyps := [] } .anonymous
+    .goal { kind := .spatial, negate := true, trivial := true, frame := [], hyps := [] } .anonymous
   let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
     iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [specPat.getD defaultSpat]
   have : $out'' =Q $Pin := ⟨⟩
@@ -86,17 +88,14 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   -- Create the wand proposition and apply the introduction pattern to destruct the premise
   let hAcc : Q(∀ x : $X, $e'' ⊢ $Pout x -∗ optionMap $mPclose x -∗? $Q' x) ←
     withLocalDeclDQ (u := 0) (← mkFreshUserName `x) X fun x => do
-      let poutX : Q($prop) := Expr.headBeta q($Pout $x)
-      let qX : Q($prop) := Expr.headBeta q($Q' $x)
       let body ← match mPclose with
       | ~q(none) =>
-        iIntroCore hyps'' q(iprop($poutX -∗ $qX)) [introPat]
+        iIntroCore hyps'' q(iprop($Pout $x -∗ $Q' $x)) [introPat]
       | ~q(some $f) =>
-        let f : Q($X → $prop) := f
         match closePat with
         | some closePat =>
-          let closeX : Q($prop) := Expr.headBeta q($f $x)
-          iIntroCore hyps'' q(iprop($poutX -∗ $closeX -∗ $qX)) [introPat, closePat]
+          let f : Q($X → $prop) := f
+          iIntroCore hyps'' q(iprop($Pout $x -∗ $f $x -∗ $Q' $x)) [introPat, closePat]
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
         | none => throwError "iinv: error"
       mkLambdaFVars #[x] body

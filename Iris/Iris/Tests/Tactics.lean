@@ -2839,7 +2839,7 @@ example {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
       iexact H
 
 /- Tests `iinv` with an invalid invariant. -/
-/-- error: iinv: invalid invariant P -/
+/-- error: iinv: invalid invariant P (ElimInv type class synthesis failed) -/
 #guard_msgs in
 example {N E : Namespace} {P : IProp GF} {h : ↑N ⊆ E} :
     □ P ={E}=∗ ▷ P := by
@@ -2891,39 +2891,18 @@ example [CInvG GF] {γ : GName} {p1 p2 : Qp} {N : Namespace} {P : IProp GF} :
   -- Main proof goal
   · imodintro
     simp
-    iframe HP Hown1 Hown2
+    iframe HP ∗
     imodintro
     inext
     iexact HP
 
-/-- Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and `intoAcc_na`. -/
-example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
-    {P : IProp GF} (h : ↑N ⊆ E2) :
-    NonAtomicInvariant.inv t N iprop(<pers> P) ∗ own t E1 ∗ own t E2
-    ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
-  iintro ⟨#Hinv, Hown1, Hown2⟩
-  iinv Hinv as ⟨#HP, Hown2⟩
-  -- Side condition
-  · simp
-    exact h
-  -- Main proof goal
-  · imodintro
-    isplitl [Hown2]
-    · iframe HP Hown2
-    · simp
-      iframe Hown1 Hown2
-      iintro -
-      imodintro
-      inext
-      iexact HP
-
 /-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_na`. -/
 example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
-    {P : IProp GF} (h : ↑N ⊆ E2) :
+    {P : IProp GF} (h : ↑N ⊆ E1) :
     NonAtomicInvariant.inv t N iprop(<pers> P) ∗ own t E1 ∗ own t E2
     ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
   iintro ⟨#Hinv, Hown1, Hown2⟩
-  iinv Hinv as ⟨#HP, Hown2⟩ Hclose
+  iinv Hinv as ⟨#HP, Hown2⟩ Hclose with Hown1
   -- Side condition
   · simp
     exact h
@@ -2931,7 +2910,52 @@ example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
   · imod Hclose $$ [HP Hown2]
     · iframe
       iexact HP
-    · iframe Hown1 Hown2
+    · simp
+      iframe
+      imodintro
+      inext
+      iexact HP
+
+/-- TODO: wrong hypothesis being chosen. -/
+example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
+    {P : IProp GF} (h : ↑N ⊆ E1) :
+    NonAtomicInvariant.inv t N iprop(<pers> P) ∗ own t E1 ∗ own t E2
+    ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#Hinv, Hown1, Hown2⟩
+  iinv Hinv as ⟨#HP, Hown2⟩ Hclose
+  -- Side condition
+  · simp
+    sorry
+  -- Main proof goal
+  · imod Hclose $$ [HP Hown2]
+    · iframe
+      iexact HP
+    · simp
+      iframe
+      imodintro
+      sorry
+
+/--
+  Same test as above, with `[Hown2]` in the specialisation pattern.
+  Unlike using `[Hown2]`,
+-/
+example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
+    {P : IProp GF} (h : ↑N ⊆ E2) :
+    NonAtomicInvariant.inv t N iprop(<pers> P) ∗ own t E1 ∗ own t E2
+    ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#Hinv, Hown1, Hown2⟩
+  iinv Hinv as ⟨#HP, Hown2⟩ Hclose with [Hown2]
+  -- Side condition
+  · simp
+    exact h
+  -- Additional goal as framing is not automatically applied
+  · iexact Hown2
+  -- Main proof goal
+  · imod Hclose $$ [HP Hown2]
+    · iframe
+      iexact HP
+    · simp
+      iframe
       imodintro
       inext
       iexact HP
@@ -2946,7 +2970,7 @@ example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
   · simp_all
   · imodintro
     isplitl [Hown1]
-    · iframe Hown1 HP
+    · iframe HP ∗
     · simp
       iintro Hown1
       iframe
