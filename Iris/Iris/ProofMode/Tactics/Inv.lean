@@ -78,10 +78,23 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   let hϕ ← iSolveSidecondition q($ϕ) false
 
   -- Using this instead of `.autoframe .spatial` in order to handle `Pin = True`
-  let defaultSpat : SpecPat :=
-    .goal { kind := .spatial, negate := true, trivial := true, frame := [], hyps := [] } .anonymous
   let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
-    iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [specPat.getD defaultSpat]
+    match specPat with
+    | some pat => iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [pat]
+    | none =>
+      -- Special case: `Pin = True`, not solved by `.autoframe .spatial`
+      -- Ideally `.autoframe .spatial` applies `iItrivial`
+      /-
+        Alternatively use:
+        `{ kind := .spatial, negate := true, trivial := true, frame := [], hyps := [] }`,
+        but it does not always choose the correct hypotheses and thus produce unprovable goals
+      -/
+      match Pin with
+      | ~q(iprop(True)) =>
+        pure ⟨_, hyps', q(false), Pin, q(sep_mono_right true_intro)⟩
+      | _=>
+        iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [.autoframe .spatial]
+
   have : $out'' =Q $Pin := ⟨⟩
   have : $p'' =Q false := ⟨⟩
 
