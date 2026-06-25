@@ -76,24 +76,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   let some inst ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $Pinv $Pin $Pout $close $mPclose $goal $Q')
   | throwError "iinv: invalid invariant {Pinv} (ElimInv type class synthesis failed)"
 
-  -- Obtain `e' ⊢ e'' ∗ Pin`
-  let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
-    match specPat with
-    | some pat => iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [pat]
-    | none =>
-      -- Special case: `Pin = True`, not solved by `.autoframe .spatial`
-      -- Ideally `.autoframe .spatial` applies `iItrivial`
-      /-
-        Alternatively use:
-        `{ kind := .spatial, negate := true, trivial := true, frame := [], hyps := [] }`,
-        but it does not always choose the correct hypotheses and thus produce unprovable goals
-      -/
-      match Pin with
-      | ~q(iprop(True)) =>
-        pure ⟨_, hyps', q(false), Pin, q(sep_mono_right true_intro)⟩
-      | _=>
-        iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [.autoframe .spatial]
-
+  let ⟨e'', hyps'', p'', out'', pfPin⟩ ← iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [specPat.getD <| .autoframe .spatial]
   have : $out'' =Q $Pin := ⟨⟩
   have : $p'' =Q false := ⟨⟩
 
