@@ -76,9 +76,6 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   let some inst ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $Pinv $Pin $Pout $close $mPclose $goal $Q')
   | throwError "iinv: invalid invariant {Pinv} (ElimInv type class synthesis failed)"
 
-  -- Solve side conditions automatically if possible, otherwise add them into the proof state
-  let hϕ ← iSolveSidecondition q($ϕ) false
-
   -- Obtain `e' ⊢ e'' ∗ Pin`
   let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
     match specPat with
@@ -114,6 +111,9 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
         | none => throwError "iinv: error"
       mkLambdaFVars #[x] body
+
+  -- Solve side conditions automatically if possible, otherwise add them into the proof state
+  let hϕ ← iSolveSidecondition q($ϕ) false
 
   return q(tac_inv_elim $inst $hϕ $hAcc $pfEq $pfPin)
 

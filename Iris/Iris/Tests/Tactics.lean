@@ -2791,16 +2791,13 @@ variable {hlc : HasLC} {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace
 example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv with #H
-  -- Side condition
-  · simp
-  -- Main proof goal
-  · imodintro
-    isplit
-    · iexact H
-    · simp [BIBase.wandM]
-      imodintro
-      inext
-      iexact H
+  imodintro
+  isplit
+  · iexact H
+  · simp [BIBase.wandM]
+    imodintro
+    inext
+    iexact H
 
 /--
   Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and
@@ -2809,14 +2806,10 @@ example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
 example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv with #H Hclose
-  -- Side condition
-  · simp
-  -- Main proof goal
-  · simp
-    imod Hclose $$ H
-    imodintro
-    inext
-    iexact H
+  imod Hclose $$ H
+  imodintro
+  inext
+  iexact H
 
 /--
   Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
@@ -2825,13 +2818,13 @@ example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
 example {E} {P : IProp GF} {h : ↑N ⊆ E} : inv N iprop(<pers> P) ={E}=∗ ▷ P := by
   iintro #Hinv
   iinv Hinv with #H
-  · imodintro
-    isplit
-    · iexact H
-    · simp
-      imodintro
-      inext
-      iexact H
+  imodintro
+  isplit
+  · iexact H
+  · simp
+    imodintro
+    inext
+    iexact H
 
 /- Tests `iinv` with an invalid invariant. -/
 /-- error: iinv: invalid invariant P (ElimInv type class synthesis failed) -/
@@ -2845,32 +2838,26 @@ example [CInvG GF]  {γ : GName} {p : Qp} :
     cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
   iintro ⟨#Hinv, H⟩
   iinv Hinv with ⟨#HP, Hown⟩
-  -- Side condition
-  · simp
-  -- Main proof goal
-  · simp
-    imodintro
-    isplit
-    iexact HP
-    iframe
-    imodintro
-    inext
-    iexact HP
+  simp
+  imodintro
+  isplit
+  iexact HP
+  iframe
+  imodintro
+  inext
+  iexact HP
 
 /-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_cinv`. -/
 example [CInvG GF] {γ : GName} {p : Qp} :
     cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
   iintro ⟨#Hinv, H⟩
   iinv Hinv with ⟨#HP, Hown⟩ Hclose
-  -- Side condition
-  · simp
-  -- Main proof goal
-  · simp
-    imod Hclose $$ HP
-    imodintro
-    iframe
-    inext
-    iexact HP
+  simp
+  imod Hclose $$ HP
+  imodintro
+  iframe
+  inext
+  iexact HP
 
 /--
   Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd`,
@@ -2880,15 +2867,12 @@ example [CInvG GF] {γ : GName} {p1 p2 : Qp} {P : IProp GF} :
     ⊢@{IProp GF} |={⊤}=> own γ p1 ∗ own γ p2 ∗ ▷ P := by
   iintro ⟨#Hinv, Hown1, Hown2⟩
   iinv Hinv $$ [Hown2 //] with ⟨#HP, Hown2⟩
-  -- Side condition
-  · simp
-  -- Main proof goal
-  · imodintro
-    simp
-    iframe HP ∗
-    imodintro
-    inext
-    iexact HP
+  imodintro
+  simp
+  iframe HP ∗
+  imodintro
+  inext
+  iexact HP
 
 /-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_na`. -/
 example {t : NaInvPoolName} [NaInvG GF] {E1 E2 : CoPset} {P : IProp GF} (h : ↑N ⊆ E1) :
@@ -2896,37 +2880,31 @@ example {t : NaInvPoolName} [NaInvG GF] {E1 E2 : CoPset} {P : IProp GF} (h : ↑
     ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
   iintro ⟨#Hinv, Hown1, Hown2⟩
   iinv Hinv $$ [Hown1 //] with ⟨#HP, Hown2⟩ Hclose
-  -- Side condition
-  · simp_all
-  -- Main proof goal
-  · imod Hclose $$ [HP Hown2]
-    · iframe
-      iexact HP
-    · simp
-      iframe
-      imodintro
-      inext
-      iexact HP
+  imod Hclose $$ [HP Hown2]
+  · iframe
+    iexact HP
+  · simp
+    iframe
+    imodintro
+    inext
+    iexact HP
 
-/-- Tests the robustness of `iinv` in presence of other invariants -/
+/-- Tests the robustness of `iinv` in presence of other invariants. -/
 example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
     {P : IProp GF} (h : ↑N3 ⊆ E1) :
     inv N1 P ∗ NonAtomicInvariant.inv t N3 iprop(<pers> P) ∗ inv N2 P ∗ own t E1 ∗ own t E2
     ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
   iintro ⟨#_, #Hinv, #_, Hown1, Hown2⟩
   iinv Hinv $$ Hown1 with ⟨#HP, Hown1⟩
-  -- Side condition
-  · simp_all
-  -- Main proof goal
-  · imodintro
-    isplitl [Hown1]
-    · iframe HP ∗
-    · simp
-      iintro Hown1
-      iframe
-      imodintro
-      inext
-      iexact HP
+  imodintro
+  isplitl [Hown1]
+  · iframe HP ∗
+  · simp
+    iintro Hown1
+    iframe
+    imodintro
+    inext
+    iexact HP
 
 /--
   Tests `iinv` with two invariant hypotheses using the same `Namespace` value.
@@ -2939,17 +2917,14 @@ example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
     own t E1 ∗ own t E2 ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
   iintro ⟨#_, #_, Hown1, Hown2⟩
   iinv N $$ Hown1 with ⟨#HP, Hown1⟩
-  -- Side condition
-  · simp_all
-  -- Main proof goal
-  · imodintro
-    isplitl [Hown1]
-    · iframe HP ∗
-    · simp
-      iintro Hown1
-      iframe
-      imodintro
-      inext
-      iexact HP
+  imodintro
+  isplitl [Hown1]
+  · iframe HP ∗
+  · simp
+    iintro Hown1
+    iframe
+    imodintro
+    inext
+    iexact HP
 
 end iinv
