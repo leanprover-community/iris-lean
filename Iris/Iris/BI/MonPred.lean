@@ -19,8 +19,6 @@ public import Iris.BI.BigOp.BigOp
 public import Iris.BI.BigOp.BigSepList
 public import Iris.BI.BigOp.BigSepMap
 public import Iris.BI.BigOp.BigSepSet
-public import Iris.Algebra.OFE
-public import Iris.Std.Classes
 
 /-! ### TODO
 
@@ -107,6 +105,8 @@ instance : OFE (MonPred I PROP) where
   equiv_dist {_ _} := by simp only [equiv_dist]; exact forall_comm
   dist_lt h1 h2 i := dist_lt (h1 i) h2
 
+#rocq_ignore monPred_ofe_mixin "Rocq mixin record; subsumed by the OFE instance."
+
 /-! `MonPred I PROP` is isomorphic, as an OFE, to the subtype of *monotone* functions
 `I.car → PROP`, packaging the `monPred_mono` field as a subtype predicate. Rocq
 `sig_monPred` / `monPred_sig`. -/
@@ -116,14 +116,16 @@ namespace MonPred
 /-- `MonPred I PROP` as the subtype of monotone families: the forward map. Rocq
 `monPred_sig`. -/
 @[rocq_alias monPred_sig]
-def toSig : MonPred I PROP -n> { f : I.car → PROP // ∀ {i j : I.car}, I.rel i j → (f i ⊢ f j) } where
+def toSig :
+    MonPred I PROP -n> { f : I.car → PROP // ∀ {i j : I.car}, I.rel i j → (f i ⊢ f j) } where
   f P := ⟨P.monPred_at, fun h => P.monPred_mono h⟩
   ne.1 _ _ _ h := h
 
 /-- The inverse of `MonPred.toSig`: rebuild a monotone predicate from a monotone family.
 Rocq `sig_monPred`. -/
 @[rocq_alias sig_monPred]
-def ofSig : { f : I.car → PROP // ∀ {i j : I.car}, I.rel i j → (f i ⊢ f j) } -n> MonPred I PROP where
+def ofSig :
+    { f : I.car → PROP // ∀ {i j : I.car}, I.rel i j → (f i ⊢ f j) } -n> MonPred I PROP where
   f P := ⟨P.val, P.property⟩
   ne.1 _ _ _ h := h
 
@@ -157,8 +159,8 @@ instance : IsCOFE (MonPred I PROP) where
       monPred_mono := fun {i j} h =>
         LimitPreserving.entails (applyHom i) (applyHom j) cf (fun n => (c n).monPred_mono h) }
   conv_compl {n c} :=
-    IsCOFE.conv_compl
-      (c := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n> (I.car → PROP)).comp MonPred.toSig)) (n := n)
+    IsCOFE.conv_compl (n := n)
+      (c := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n> (I.car → PROP)).comp MonPred.toSig))
 
 end OFE
 
@@ -169,44 +171,81 @@ variable [BI PROP]
 @[rocq_alias monPred_defs.monPred_entails]
 def Entails (P Q : MonPred I PROP) : Prop := ∀ i, P.monPred_at i ⊢ Q.monPred_at i
 
-@[rocq_alias monPred_defs.monPred_emp_def]
+@[rocq_alias monPred_defs.monPred_emp]
 def emp : MonPred I PROP where
   monPred_at _ := iprop(emp)
   monPred_mono _ := .rfl
 
-@[rocq_alias monPred_defs.monPred_pure_def]
+#rocq_ignore monPred_defs.monPred_emp_def "Rocq unsealed definition body; use MonPred.emp."
+#rocq_ignore monPred_defs.monPred_emp_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_emp_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_emp_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_emp_unfold "Rocq unfold lemma; Lean definitions are transparent."
+
+@[rocq_alias monPred_defs.monPred_pure]
 def pure (φ : Prop) : MonPred I PROP where
   monPred_at _ := iprop(⌜φ⌝)
   monPred_mono _ := .rfl
 
-@[rocq_alias monPred_defs.monPred_and_def]
+#rocq_ignore monPred_defs.monPred_pure_def "Rocq unsealed definition body; use MonPred.pure."
+#rocq_ignore monPred_defs.monPred_pure_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_pure_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_pure_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_pure_unfold "Rocq unfold lemma; Lean definitions are transparent."
+
+@[rocq_alias monPred_defs.monPred_and]
 def and (P Q : MonPred I PROP) : MonPred I PROP where
   monPred_at i := iprop(P.monPred_at i ∧ Q.monPred_at i)
   monPred_mono h := and_mono (P.monPred_mono h) (Q.monPred_mono h)
 
-@[rocq_alias monPred_defs.monPred_or_def]
+#rocq_ignore monPred_defs.monPred_and_def "Rocq unsealed definition body; use MonPred.and."
+#rocq_ignore monPred_defs.monPred_and_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_and_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_and_unseal "Rocq unsealing lemma."
+
+@[rocq_alias monPred_defs.monPred_or]
 def or (P Q : MonPred I PROP) : MonPred I PROP where
   monPred_at i := iprop(P.monPred_at i ∨ Q.monPred_at i)
   monPred_mono h := or_mono (P.monPred_mono h) (Q.monPred_mono h)
 
-@[rocq_alias monPred_defs.monPred_impl_def]
+#rocq_ignore monPred_defs.monPred_or_def "Rocq unsealed definition body; use MonPred.or."
+#rocq_ignore monPred_defs.monPred_or_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_or_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_or_unseal "Rocq unsealing lemma."
+
+@[rocq_alias monPred_defs.monPred_impl]
 def imp (P Q : MonPred I PROP) : MonPred I PROP where
   monPred_at := MonPred.upclosed (fun i => iprop(P.monPred_at i → Q.monPred_at i))
   monPred_mono h :=
     forall_intro fun k => (forall_elim k).trans
       (imp_mono_left (pure_mono fun hjk => Transitive.trans h hjk))
 
-@[rocq_alias monPred_defs.monPred_forall_def]
+#rocq_ignore monPred_defs.monPred_impl_def "Rocq unsealed definition body; use MonPred.imp."
+#rocq_ignore monPred_defs.monPred_impl_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_impl_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_impl_unseal "Rocq unsealing lemma."
+
+@[rocq_alias monPred_defs.monPred_forall]
 def sForall (Ψ : MonPred I PROP → Prop) : MonPred I PROP where
   monPred_at i := BIBase.sForall (fun p => ∃ q : MonPred I PROP, Ψ q ∧ q.monPred_at i = p)
   monPred_mono h :=
     sForall_intro fun _p ⟨q, hq, hp⟩ => (sForall_elim ⟨q, hq, rfl⟩).trans (hp ▸ q.monPred_mono h)
 
-@[rocq_alias monPred_defs.monPred_exist_def]
+#rocq_ignore monPred_defs.monPred_forall_def "Rocq unsealed definition body; use MonPred.sForall."
+#rocq_ignore monPred_defs.monPred_forall_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_forall_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_forall_unseal "Rocq unsealing lemma."
+
+@[rocq_alias monPred_defs.monPred_exist]
 def sExists (Ψ : MonPred I PROP → Prop) : MonPred I PROP where
   monPred_at i := BIBase.sExists (fun p => ∃ q : MonPred I PROP, Ψ q ∧ q.monPred_at i = p)
   monPred_mono h :=
     sExists_elim fun _p ⟨q, hq, hp⟩ => (hp ▸ q.monPred_mono h).trans (sExists_intro ⟨q, hq, rfl⟩)
+
+#rocq_ignore monPred_defs.monPred_exist_def "Rocq unsealed definition body; use MonPred.sExists."
+#rocq_ignore monPred_defs.monPred_exist_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_exist_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_exist_unseal "Rocq unsealing lemma."
 
 theorem sForall_at_elim {Ψ : MonPred I PROP → Prop} {q : MonPred I PROP} (i : I.car) (hq : Ψ q) :
     (MonPred.sForall Ψ).monPred_at i ⊢ q.monPred_at i :=
@@ -224,51 +263,93 @@ theorem sExists_at_elim {Ψ : MonPred I PROP → Prop} {R : PROP} (i : I.car)
     (h : ∀ q, Ψ q → q.monPred_at i ⊢ R) : (MonPred.sExists Ψ).monPred_at i ⊢ R :=
   sExists_elim fun _ ⟨q, hq, hp⟩ => hp ▸ h q hq
 
-@[rocq_alias monPred_defs.monPred_sep_def]
+@[rocq_alias monPred_defs.monPred_sep]
 def sep (P Q : MonPred I PROP) : MonPred I PROP where
   monPred_at i := iprop(P.monPred_at i ∗ Q.monPred_at i)
   monPred_mono h := sep_mono (P.monPred_mono h) (Q.monPred_mono h)
 
-@[rocq_alias monPred_defs.monPred_wand_def]
+#rocq_ignore monPred_defs.monPred_sep_def "Rocq unsealed definition body; use MonPred.sep."
+#rocq_ignore monPred_defs.monPred_sep_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_sep_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_sep_unseal "Rocq unsealing lemma."
+
+@[rocq_alias monPred_defs.monPred_wand]
 def wand (P Q : MonPred I PROP) : MonPred I PROP where
   monPred_at := MonPred.upclosed (fun i => iprop(P.monPred_at i -∗ Q.monPred_at i))
   monPred_mono h :=
     forall_intro fun k => (forall_elim k).trans
       (imp_mono_left (pure_mono fun hjk => Transitive.trans h hjk))
 
-@[rocq_alias monPred_defs.monPred_persistently_def]
+#rocq_ignore monPred_defs.monPred_wand_def "Rocq unsealed definition body; use MonPred.wand."
+#rocq_ignore monPred_defs.monPred_wand_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_wand_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_wand_unseal "Rocq unsealing lemma."
+
+@[rocq_alias monPred_defs.monPred_persistently]
 def persistently (P : MonPred I PROP) : MonPred I PROP where
   monPred_at i := iprop(<pers> (P.monPred_at i))
   monPred_mono h := persistently_mono (P.monPred_mono h)
 
-@[rocq_alias monPred_defs.monPred_later_def]
+#rocq_ignore monPred_defs.monPred_persistently_def
+  "Rocq unsealed definition body; use MonPred.persistently."
+#rocq_ignore monPred_defs.monPred_persistently_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_persistently_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_persistently_unseal "Rocq unsealing lemma."
+
+@[rocq_alias monPred_defs.monPred_later]
 def later (P : MonPred I PROP) : MonPred I PROP where
   monPred_at i := iprop(▷ (P.monPred_at i))
   monPred_mono h := later_mono (P.monPred_mono h)
 
-@[rocq_alias monPred_defs.monPred_in_def]
+#rocq_ignore monPred_defs.monPred_later_def "Rocq unsealed definition body; use MonPred.later."
+#rocq_ignore monPred_defs.monPred_later_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_later_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_later_unseal "Rocq unsealing lemma."
+
+@[rocq_alias monPred_defs.monPred_in]
 def monPred_in (j : I.car) : MonPred I PROP where
   monPred_at i := iprop(⌜I.rel j i⌝)
   monPred_mono h := pure_mono fun hji => Transitive.trans hji h
 
-@[rocq_alias monPred_defs.monPred_embed_def]
+#rocq_ignore monPred_defs.monPred_in_def "Rocq unsealed definition body; use MonPred.monPred_in."
+#rocq_ignore monPred_defs.monPred_in_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_in_unseal "Rocq unsealing lemma."
+
+@[rocq_alias monPred_defs.monPred_embed]
 def embed (P : PROP) : MonPred I PROP where
   monPred_at _ := P
   monPred_mono _ := .rfl
 
+#rocq_ignore monPred_defs.monPred_embed_def "Rocq unsealed definition body; use MonPred.embed."
+#rocq_ignore monPred_defs.monPred_embed_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_embed_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_embed_unseal "Rocq unsealing lemma."
+
 /-- The "objectively" modality: `<obj> P` forces `P` at *every* index, so the result
 is index-independent. -/
-@[rocq_alias monPred_defs.monPred_objectively_def]
+@[rocq_alias monPred_defs.monPred_objectively]
 def objectively (P : MonPred I PROP) : MonPred I PROP where
   monPred_at _ := iprop(∀ i, P.monPred_at i)
   monPred_mono _ := .rfl
 
+#rocq_ignore monPred_defs.monPred_objectively_def
+  "Rocq unsealed definition body; use MonPred.objectively."
+#rocq_ignore monPred_defs.monPred_objectively_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_objectively_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_objectively_unfold "Rocq unfold lemma; Lean definitions are transparent."
+
 /-- The "subjectively" modality: `<subj> P` holds if `P` holds at *some* index; the
 result is index-independent. -/
-@[rocq_alias monPred_defs.monPred_subjectively_def]
+@[rocq_alias monPred_defs.monPred_subjectively]
 def subjectively (P : MonPred I PROP) : MonPred I PROP where
   monPred_at _ := iprop(∃ i, P.monPred_at i)
   monPred_mono _ := .rfl
+
+#rocq_ignore monPred_defs.monPred_subjectively_def
+  "Rocq unsealed definition body; use MonPred.subjectively."
+#rocq_ignore monPred_defs.monPred_subjectively_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_subjectively_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_subjectively_unfold "Rocq unfold lemma; Lean definitions are transparent."
 
 end MonPred
 
@@ -301,6 +382,11 @@ theorem equiv_at {P Q : MonPred I PROP} :
 theorem dist_at {n : Nat} {P Q : MonPred I PROP} :
     (P ≡{n}≡ Q) ↔ ∀ i, P.monPred_at i ≡{n}≡ Q.monPred_at i := Iff.rfl
 
+#rocq_ignore monPred_dist "Covered by dist_at."
+#rocq_ignore monPred_dist' "Covered by dist_at."
+#rocq_ignore monPred_equiv "Covered by equiv_at."
+#rocq_ignore monPred_equiv' "Covered by equiv_at."
+
 /-- BI instance on monotone predicates (Rocq `monPred_bi_mixin` + persistently/later
 mixins, packaged into `monPredI : bi`). -/
 @[rocq_alias monPredI]
@@ -312,7 +398,8 @@ instance : BI (MonPred I PROP) where
     ⟨fun h => ⟨entails_at.mpr fun i => (equiv_iff.mp (equiv_at.mp h i)).mp,
               entails_at.mpr fun i => (equiv_iff.mp (equiv_at.mp h i)).mpr⟩,
      fun h => equiv_at.mpr fun i => equiv_iff.mpr ⟨entails_at.mp h.1 i, entails_at.mp h.2 i⟩⟩
-  and_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun i => and_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
+  and_ne := ⟨fun _ _ _ h _ _ h' =>
+    dist_at.mpr fun i => and_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
   or_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun i => or_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
   imp_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun i =>
     forall_ne fun j => imp_ne.ne Dist.rfl (imp_ne.ne (dist_at.mp h j) (dist_at.mp h' j))⟩
@@ -328,7 +415,8 @@ instance : BI (MonPred I PROP) where
           let ⟨q', hq', hr⟩ := h.1 q hq; ⟨_, ⟨q', hq', rfl⟩, hp ▸ dist_at.mp hr i⟩,
        fun _ ⟨q, hq, hp⟩ =>
           let ⟨q', hq', hr⟩ := h.2 q hq; ⟨_, ⟨q', hq', rfl⟩, hp ▸ dist_at.mp hr i⟩⟩
-  sep_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun i => sep_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
+  sep_ne := ⟨fun _ _ _ h _ _ h' =>
+    dist_at.mpr fun i => sep_ne.ne (dist_at.mp h i) (dist_at.mp h' i)⟩
   wand_ne := ⟨fun _ _ _ h _ _ h' => dist_at.mpr fun i =>
     forall_ne fun j => imp_ne.ne Dist.rfl (wand_ne.ne (dist_at.mp h j) (dist_at.mp h' j))⟩
   persistently_ne := ⟨fun _ _ _ h => dist_at.mpr fun i => persistently_ne.ne (dist_at.mp h i)⟩
@@ -396,12 +484,23 @@ instance : BI (MonPred I PROP) where
     exact (and_intro (pure_intro hΦ) BIBase.Entails.rfl).trans
       (MonPred.sExists_at_intro (q := iprop(⌜Φ q⌝ ∧ ▷ q)) i ⟨q, rfl⟩)
   later_sep := ⟨entails_at.mpr fun i => later_sep.mp, entails_at.mpr fun i => later_sep.mpr⟩
-  later_persistently := ⟨entails_at.mpr fun i => later_persistently.mp, entails_at.mpr fun i => later_persistently.mpr⟩
+  later_persistently :=
+    ⟨entails_at.mpr fun i => later_persistently.mp,
+     entails_at.mpr fun i => later_persistently.mpr⟩
   later_false_em {P} := entails_at.mpr fun i => by
     refine later_false_em.trans (or_mono_right ?_)
     refine forall_intro fun j => imp_intro ?_
     refine pure_elim_right fun (hij : I.rel i j) => ?_
     exact imp_mono BIBase.Entails.rfl (P.monPred_mono hij)
+
+#rocq_ignore monPred_unseal "Rocq unsealing command."
+#rocq_ignore monPred_unseal_bi "Rocq unsealing command."
+#rocq_ignore monPred_defs.monPred_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_bi_mixin "Rocq mixin record; subsumed by monPredI."
+#rocq_ignore monPred_bi_persistently_mixin "Rocq mixin record; subsumed by monPredI."
+#rocq_ignore monPred_bi_later_mixin "Rocq mixin record; subsumed by monPredI."
+#rocq_ignore monPred_bi_pure_forall
+  "BIPureForall is provable for all BIs classically; see pure_forall_2."
 
 end Instances
 
@@ -427,6 +526,8 @@ instance : BiEmbed PROP (MonPred I PROP) where
   wand_2 _ _ := entails_at.mpr fun i =>
     (forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))
   persistently _ := BIBase.BiEntails.of_eq rfl
+
+#rocq_ignore monPred_embedding_mixin "Rocq mixin record; subsumed by the BiEmbed instance."
 
 @[rocq_alias monPred_bi_embed_emp]
 instance : BiEmbedEmp PROP (MonPred I PROP) where
@@ -480,9 +581,14 @@ section Updates
 variable {I : BiIndex} {PROP : Type _} [BI PROP]
 
 /-- Pointwise basic update on `MonPred I PROP`. Rocq `monPred_defs.monPred_bupd_def`. -/
-@[rocq_alias monPred_defs.monPred_bupd_def]
+@[rocq_alias monPred_defs.monPred_bupd]
 def MonPred.bupd [BIUpdate PROP] (P : MonPred I PROP) : MonPred I PROP :=
   MonPred.mk (fun i => BUpd.bupd (P.monPred_at i)) fun h => BIUpdate.mono (P.monPred_mono h)
+
+#rocq_ignore monPred_defs.monPred_bupd_def "Rocq unsealed definition body; use MonPred.bupd."
+#rocq_ignore monPred_defs.monPred_bupd_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_bupd_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_bupd_unseal "Rocq unsealing lemma."
 
 @[rocq_alias monPred_bi_bupd]
 instance [BIUpdate PROP] : BIUpdate (MonPred I PROP) where
@@ -493,15 +599,22 @@ instance [BIUpdate PROP] : BIUpdate (MonPred I PROP) where
   trans := entails_at.mpr fun _ => BIUpdate.trans
   frame_right := entails_at.mpr fun _ => bupd_frame_right
 
+#rocq_ignore monPred_bupd_mixin "Rocq mixin record; subsumed by the BIUpdate instance."
+
 @[rocq_alias monPred_bi_embed_bupd]
 instance [BIUpdate PROP] : BiEmbedBUpd PROP (MonPred I PROP) where
   embed_bupd _ := BIBase.BiEntails.of_eq (MonPred.ext fun _ => rfl)
 
 /-- Pointwise fancy update on `MonPred I PROP`. Rocq `monPred_defs.monPred_fupd_def`. -/
-@[rocq_alias monPred_defs.monPred_fupd_def]
+@[rocq_alias monPred_defs.monPred_fupd]
 def MonPred.fupd [BIFUpdate PROP] (E1 E2 : CoPset) (P : MonPred I PROP) : MonPred I PROP :=
   MonPred.mk (fun i => FUpd.fupd E1 E2 (P.monPred_at i)) fun h =>
     BIFUpdate.mono (P.monPred_mono h)
+
+#rocq_ignore monPred_defs.monPred_fupd_def "Rocq unsealed definition body; use MonPred.fupd."
+#rocq_ignore monPred_defs.monPred_fupd_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_fupd_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_fupd_unseal "Rocq unsealing lemma."
 
 @[rocq_alias monPred_bi_fupd]
 instance [BIFUpdate PROP] : BIFUpdate (MonPred I PROP) where
@@ -516,6 +629,8 @@ instance [BIFUpdate PROP] : BIFUpdate (MonPred I PROP) where
       (((forall_elim i).trans (pure_imp_elim (Reflexive.refl : I.rel i i))) : _ ⊢@{PROP} _)).trans
       (BIFUpdate.mask_frame_right_strong h)
   frame_right := entails_at.mpr fun _ => fupd_frame_right
+
+#rocq_ignore monPred_fupd_mixin "Rocq mixin record; subsumed by the BIFUpdate instance."
 
 @[rocq_alias monPred_bi_bupd_fupd]
 instance [BIUpdate PROP] [BIFUpdate PROP] [BIUpdateFUpdate PROP] :
@@ -572,7 +687,8 @@ theorem monPred_at_forall {α : Sort _} (i : I.car) (Φ : α → MonPred I PROP)
 @[rocq_alias monPred_at_exist]
 theorem monPred_at_exist {α : Sort _} (i : I.car) (Φ : α → MonPred I PROP) :
     (iprop(∃ x, Φ x)).monPred_at i ⊣⊢ iprop(∃ x, (Φ x).monPred_at i) :=
-  ⟨MonPred.sExists_at_elim i fun _ ⟨x, hx⟩ => hx ▸ exists_intro (Ψ := fun y => (Φ y).monPred_at i) x,
+  ⟨MonPred.sExists_at_elim i fun _ ⟨x, hx⟩ =>
+    hx ▸ exists_intro (Ψ := fun y => (Φ y).monPred_at i) x,
    exists_elim fun x => MonPred.sExists_at_intro i ⟨x, rfl⟩⟩
 
 @[rocq_alias monPred_at_sep]
@@ -692,6 +808,8 @@ theorem monPred_at_ne (i : I.car) :
     OFE.NonExpansive (fun P : MonPred I PROP => P.monPred_at i) :=
   ⟨fun _ _ _ h => dist_at.mp h i⟩
 
+#rocq_ignore monPred_at_proper "Use monPred_at_ne / monPred_at_mono."
+
 @[rocq_alias monPred_at_persistent]
 instance monPred_at_persistent (P : MonPred I PROP) [Persistent P] (i : I.car) :
     Persistent (P.monPred_at i) where
@@ -760,6 +878,8 @@ theorem monPred_in_elim (P : MonPred I PROP) (i : I.car) :
 theorem monPred_in_mono {i j : I.car} (h : I.rel j i) :
     (MonPred.monPred_in i : MonPred I PROP) ⊢ MonPred.monPred_in j :=
   entails_at.mpr fun _ => pure_mono fun hik => Transitive.trans h hik
+
+#rocq_ignore monPred_in_proper "Use monPred_in_mono."
 
 @[rocq_alias monPred_in_flip_mono]
 theorem monPred_in_flip_mono {i j : I.car} (h : I.rel i j) :
@@ -934,7 +1054,7 @@ theorem monPred_objectively_elim (P : MonPred I PROP) : MonPred.objectively P �
 @[rocq_alias monPred_objectively_idemp]
 theorem monPred_objectively_idemp (P : MonPred I PROP) :
     MonPred.objectively (MonPred.objectively P) ⊣⊢ MonPred.objectively P :=
-  ⟨entails_at.mpr fun i => forall_elim i, entails_at.mpr fun _ => forall_intro fun _ => .rfl⟩
+  ⟨monPred_objectively_elim _, objective_objectively _⟩
 
 @[rocq_alias monPred_objectively_mono]
 theorem monPred_objectively_mono {P Q : MonPred I PROP} (h : P ⊢ Q) :
@@ -946,23 +1066,24 @@ theorem monPred_objectively_ne :
     OFE.NonExpansive (MonPred.objectively (I := I) (PROP := PROP)) :=
   ⟨fun _ _ _ h => dist_at.mpr fun _ => forall_ne fun k => dist_at.mp h k⟩
 
+#rocq_ignore monPred_objectively_mono' "Use monPred_objectively_mono."
+#rocq_ignore monPred_objectively_flip_mono' "Use monPred_objectively_mono."
+#rocq_ignore monPred_objectively_proper "Use monPred_objectively_ne."
+
 @[rocq_alias monPred_objectively_embed]
 theorem monPred_objectively_embed (P : PROP) :
     MonPred.objectively (iprop(⎡P⎤) : MonPred I PROP) ⊣⊢ iprop(⎡P⎤) :=
-  ⟨entails_at.mpr fun _ => forall_elim (default : I.car),
-   entails_at.mpr fun _ => forall_intro fun _ => .rfl⟩
+  ⟨monPred_objectively_elim _, objective_objectively _⟩
 
 @[rocq_alias monPred_objectively_emp]
 theorem monPred_objectively_emp :
     MonPred.objectively (iprop(emp) : MonPred I PROP) ⊣⊢ iprop(emp) :=
-  ⟨entails_at.mpr fun _ => forall_elim (default : I.car),
-   entails_at.mpr fun _ => forall_intro fun _ => .rfl⟩
+  ⟨monPred_objectively_elim _, objective_objectively _⟩
 
 @[rocq_alias monPred_objectively_pure]
 theorem monPred_objectively_pure (φ : Prop) :
     MonPred.objectively (iprop(⌜φ⌝) : MonPred I PROP) ⊣⊢ iprop(⌜φ⌝) :=
-  ⟨entails_at.mpr fun _ => forall_elim (default : I.car),
-   entails_at.mpr fun _ => forall_intro fun _ => .rfl⟩
+  ⟨monPred_objectively_elim _, objective_objectively _⟩
 
 @[rocq_alias monPred_objectively_and]
 theorem monPred_objectively_and (P Q : MonPred I PROP) :
@@ -1014,7 +1135,7 @@ theorem monPred_objectively_sep {bot : I.car} [BiIndexBottom I bot] (P Q : MonPr
       (forall_elim bot).trans (sep_mono
         (forall_intro fun k => P.monPred_mono (BiIndexBottom.bot_le k))
         (forall_intro fun k => Q.monPred_mono (BiIndexBottom.bot_le k))),
-   entails_at.mpr fun _ => forall_intro fun k => sep_mono (forall_elim k) (forall_elim k)⟩
+   monPred_objectively_sep_2 P Q⟩
 
 @[rocq_alias monPred_objectively_affine]
 instance monPred_objectively_affine (P : MonPred I PROP) [Affine P] :
@@ -1054,12 +1175,14 @@ theorem monPred_subjectively_ne :
     OFE.NonExpansive (MonPred.subjectively (I := I) (PROP := PROP)) :=
   ⟨fun _ _ _ h => dist_at.mpr fun _ => exists_ne fun k => dist_at.mp h k⟩
 
+#rocq_ignore monPred_subjectively_mono' "Use monPred_subjectively_mono."
+#rocq_ignore monPred_subjectively_flip_mono' "Use monPred_subjectively_mono."
+#rocq_ignore monPred_subjectively_proper "Use monPred_subjectively_ne."
+
 @[rocq_alias monPred_subjectively_idemp]
 theorem monPred_subjectively_idemp (P : MonPred I PROP) :
     MonPred.subjectively (MonPred.subjectively P) ⊣⊢ MonPred.subjectively P :=
-  ⟨entails_at.mpr fun _ => exists_elim fun _ => .rfl,
-   entails_at.mpr fun _ =>
-     exists_intro (Ψ := fun j => (MonPred.subjectively P).monPred_at j) (default : I.car)⟩
+  ⟨objective_subjectively _, monPred_subjectively_intro _⟩
 
 @[rocq_alias monPred_subjectively_and]
 theorem monPred_subjectively_and (P Q : MonPred I PROP) :
@@ -1265,7 +1388,8 @@ theorem monPred_objectively_big_sepS {bot : I.car} [BiIndexBottom I bot] {S α :
     [LawfulFiniteSet S α] (Φ : α → MonPred I PROP) (X : S) :
     MonPred.objectively (iprop([∗set] x ∈ X, Φ x)) ⊣⊢
       [∗set] x ∈ X, MonPred.objectively (Φ x) :=
-  equiv_iff.mp (Iris.Algebra.BigOpS.hom (monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ X)
+  equiv_iff.mp
+    (Iris.Algebra.BigOpS.hom (monPred_objectively_monoid_sep_homomorphism (bot := bot)) Φ X)
 
 end BigOp
 
@@ -1274,13 +1398,24 @@ end BigOp
 section Sbi
 variable {I : BiIndex} {PROP : Type _} [Sbi PROP]
 
-@[rocq_alias monPred_defs.monPred_si_pure_def]
+@[rocq_alias monPred_defs.monPred_si_pure]
 instance : SiPure (MonPred I PROP) where
   siPure Pi := MonPred.embed (SiPure.siPure Pi)
 
-@[rocq_alias monPred_defs.monPred_si_emp_valid_def]
+#rocq_ignore monPred_defs.monPred_si_pure_def "Rocq unsealed definition body; use SiPure.siPure."
+#rocq_ignore monPred_defs.monPred_si_pure_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_si_pure_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_si_pure_unseal "Rocq unsealing lemma."
+
+@[rocq_alias monPred_defs.monPred_si_emp_valid]
 instance : SiEmpValid (MonPred I PROP) where
   siEmpValid P := SiEmpValid.siEmpValid (iprop(∀ i, P.monPred_at i) : PROP)
+
+#rocq_ignore monPred_defs.monPred_si_emp_valid_def
+  "Rocq unsealed definition body; use SiEmpValid.siEmpValid."
+#rocq_ignore monPred_defs.monPred_si_emp_valid_aux "Rocq sealing auxiliary definition."
+#rocq_ignore monPred_defs.monPred_si_emp_valid_unseal "Rocq unsealing lemma."
+#rocq_ignore monPred_si_emp_valid_unseal "Rocq unsealing lemma."
 
 @[rocq_alias monPred_si_pure_unfold]
 theorem monPred_si_pure_unfold :
@@ -1303,22 +1438,26 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
     · refine (siEmpValid_mono (P := iprop(∀ _ : I.car, <si_pure> Pi)) (Q := iprop(<si_pure> Pi))
         (forall_elim (default : I.car))).trans siEmpValid_siPure.mp
     · refine siEmpValid_siPure.mpr.trans (siEmpValid_mono
-        (P := iprop(<si_pure> Pi)) (Q := iprop(∀ _ : I.car, <si_pure> Pi)) (forall_intro fun _ => .rfl))
+        (P := iprop(<si_pure> Pi)) (Q := iprop(∀ _ : I.car, <si_pure> Pi))
+        (forall_intro fun _ => .rfl))
   siPure_siEmpValid {P} := entails_at.mpr fun i =>
     siPure_siEmpValid.trans (persistently_mono (forall_elim i))
   siPure_imp_mpr {Pi Qi} := entails_at.mpr fun i =>
-    (monPred_impl_force i (SiPure.siPure Pi : MonPred I PROP) (SiPure.siPure Qi)).trans siPure_imp_mpr
+    (monPred_impl_force i (SiPure.siPure Pi : MonPred I PROP) (SiPure.siPure Qi)).trans
+      siPure_imp_mpr
   siPure_sForall_mpr {Ψi} := entails_at.mpr fun i => by
     refine .trans ?_ (siPure_sForall_mpr (PROP := PROP))
     refine (monPred_at_forall i (fun q : SiProp => iprop(⌜Ψi q⌝ → <si_pure> q))).mp.trans ?_
-    exact forall_mono fun q => monPred_impl_force i (iprop(⌜Ψi q⌝)) (SiPure.siPure q : MonPred I PROP)
+    exact forall_mono fun q =>
+      monPred_impl_force i (iprop(⌜Ψi q⌝)) (SiPure.siPure q : MonPred I PROP)
   persistently_imp_siPure {P Q} := entails_at.mpr fun i => by
     refine (forall_elim i).trans ?_
     refine (pure_imp_elim (Reflexive.refl : I.rel i i)).trans ?_
     refine persistently_imp_siPure.trans (persistently_mono ?_)
     refine forall_intro fun j => imp_intro <| pure_elim_right fun (hij : I.rel i j) => ?_
     exact imp_mono_right (Q.monPred_mono hij)
-  siPure_later {Pi} := ⟨entails_at.mpr fun _ => siPure_later.mp, entails_at.mpr fun _ => siPure_later.mpr⟩
+  siPure_later {Pi} :=
+    ⟨entails_at.mpr fun _ => siPure_later.mp, entails_at.mpr fun _ => siPure_later.mpr⟩
   siPure_absorbing Pi := ⟨entails_at.mpr fun i => (monPred_at_absorbingly i _).mp.trans
     ((Sbi.siPure_absorbing Pi).absorbing)⟩
   siEmpValid_later_mp {P} :=
@@ -1340,6 +1479,9 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
     refine (BI.discreteFun_equivI (PROP := SiProp) P.monPred_at Q.monPred_at).mpr.trans ?_
     refine (BI.sig_equivI (PROP := SiProp) _ (MonPred.toSig P) (MonPred.toSig Q)).mp.trans ?_
     exact BI.internalEq.of_internalEquiv_ne (PROP := SiProp) MonPred.ofSig
+
+#rocq_ignore monPred_sbi_mixin "Rocq mixin record; subsumed by the Sbi instance."
+#rocq_ignore monPred_sbi_prop_ext_mixin "Rocq mixin record; subsumed by the Sbi instance."
 
 /-! ### Internal equality and the plainly modality on `MonPred` -/
 
@@ -1372,7 +1514,8 @@ theorem monPred_equivI {PROP' : Type _} [Sbi PROP'] (P Q : MonPred I PROP) :
   refine ⟨?_, ?_⟩
   · refine forall_intro fun i => ?_
     letI _ := MonPred.monPred_at_ne (PROP := PROP) i
-    exact BI.internalEq.of_internalEquiv_ne (PROP := PROP') (fun R : MonPred I PROP => R.monPred_at i)
+    exact BI.internalEq.of_internalEquiv_ne (PROP := PROP')
+      (fun R : MonPred I PROP => R.monPred_at i)
   · refine (BI.discreteFun_equivI (PROP := PROP') P.monPred_at Q.monPred_at).mpr.trans ?_
     refine (BI.sig_equivI (PROP := PROP') _ (MonPred.toSig P) (MonPred.toSig Q)).mp.trans ?_
     exact BI.internalEq.of_internalEquiv_ne (PROP := PROP') MonPred.ofSig
@@ -1425,7 +1568,8 @@ def monPred_sbi_emp_valid_exist {bot : I.car} [BiIndexBottom I bot] [SbiEmpValid
     SbiEmpValidExist (MonPred I PROP) where
   siEmpValid_sExists_1 Ψ := by
     refine (siEmpValid_mono (forall_elim bot)).trans ?_
-    refine (siEmpValid_sExists_1 (fun p => ∃ q : MonPred I PROP, Ψ q ∧ q.monPred_at bot = p)).trans ?_
+    refine (siEmpValid_sExists_1
+      (fun p => ∃ q : MonPred I PROP, Ψ q ∧ q.monPred_at bot = p)).trans ?_
     refine exists_elim fun p => pure_elim_left fun ⟨q, hΨ, hq⟩ => ?_
     subst hq
     refine exists_intro_trans q (and_intro (pure_intro hΨ) ?_)
@@ -1453,127 +1597,17 @@ instance monPred_bi_fupd_sbi [BIFUpdate PROP] [BIFUpdatePlainly PROP] :
       (monPred_wand_force i (SiPure.siPure Pi : MonPred I PROP) (iprop(|={_}=> R)))).trans ?_
     exact BIFUpdatePlainly.fupd_keep_si_pure E' Pi (R.monPred_at i)
   fupd_plainly_later E P := entails_at.mpr fun i => by
-    refine (later_mono (BIFUpdate.mono ((monPred_at_plainly i P).mp.trans (forall_elim i)))).trans ?_
+    refine (later_mono
+      (BIFUpdate.mono ((monPred_at_plainly i P).mp.trans (forall_elim i)))).trans ?_
     exact BIFUpdatePlainly.fupd_plainly_later E (P.monPred_at i)
   fupd_plainly_sForall_2 E Φ := entails_at.mpr fun i => by
-    refine (BIFUpdate.mono ((monPred_at_plainly i (BIBase.sForall Φ)).mp.trans (forall_elim i))).trans
-      ?_
-    exact BIFUpdatePlainly.fupd_plainly_sForall_2 E (fun p => ∃ q : MonPred I PROP, Φ q ∧ q.monPred_at i = p)
+    refine (BIFUpdate.mono
+      ((monPred_at_plainly i (BIBase.sForall Φ)).mp.trans (forall_elim i))).trans ?_
+    exact BIFUpdatePlainly.fupd_plainly_sForall_2 E
+      (fun p => ∃ q : MonPred I PROP, Φ q ∧ q.monPred_at i = p)
 
 end Sbi
 
 end MonPred
 
 end Iris.BI
-
-#rocq_ignore monPred_unseal "Rocq unsealing command."
-#rocq_ignore monPred_unseal_bi "Rocq unsealing command."
-#rocq_ignore monPred_and_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_emp_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_pure_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_or_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_impl_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_forall_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_exist_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_sep_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_wand_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_persistently_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_later_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_embed_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_bupd_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_fupd_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_si_emp_valid_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_si_pure_unseal "Rocq unsealing lemma."
-
-#rocq_ignore monPred_defs.monPred_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_and "Rocq sealed definition alias; use MonPred.and."
-#rocq_ignore monPred_defs.monPred_and_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_and_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_emp "Rocq sealed definition alias; use MonPred.emp."
-#rocq_ignore monPred_defs.monPred_emp_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_emp_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_pure "Rocq sealed definition alias; use MonPred.pure."
-#rocq_ignore monPred_defs.monPred_pure_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_pure_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_or "Rocq sealed definition alias; use MonPred.or."
-#rocq_ignore monPred_defs.monPred_or_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_or_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_impl "Rocq sealed definition alias; use MonPred.imp."
-#rocq_ignore monPred_defs.monPred_impl_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_impl_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_forall "Rocq sealed definition alias; use MonPred.sForall."
-#rocq_ignore monPred_defs.monPred_forall_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_forall_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_exist "Rocq sealed definition alias; use MonPred.sExists."
-#rocq_ignore monPred_defs.monPred_exist_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_exist_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_sep "Rocq sealed definition alias; use MonPred.sep."
-#rocq_ignore monPred_defs.monPred_sep_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_sep_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_wand "Rocq sealed definition alias; use MonPred.wand."
-#rocq_ignore monPred_defs.monPred_wand_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_wand_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_persistently "Rocq sealed definition alias; use MonPred.persistently."
-#rocq_ignore monPred_defs.monPred_persistently_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_persistently_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_later "Rocq sealed definition alias; use MonPred.later."
-#rocq_ignore monPred_defs.monPred_later_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_later_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_in "Rocq sealed definition alias; use MonPred.monPred_in."
-#rocq_ignore monPred_defs.monPred_in_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_in_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_embed "Rocq sealed definition alias; use MonPred.embed."
-#rocq_ignore monPred_defs.monPred_embed_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_embed_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_objectively "Rocq sealed definition alias; use MonPred.objectively."
-#rocq_ignore monPred_defs.monPred_objectively_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_objectively_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_subjectively "Rocq sealed definition alias; use MonPred.subjectively."
-#rocq_ignore monPred_defs.monPred_subjectively_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_subjectively_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_bupd "Rocq sealed definition alias; use MonPred.bupd."
-#rocq_ignore monPred_defs.monPred_bupd_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_bupd_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_fupd "Rocq sealed definition alias; use MonPred.fupd."
-#rocq_ignore monPred_defs.monPred_fupd_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_fupd_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_si_emp_valid "Rocq sealed definition alias."
-#rocq_ignore monPred_defs.monPred_si_emp_valid_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_si_emp_valid_unseal "Rocq unsealing lemma."
-#rocq_ignore monPred_defs.monPred_si_pure "Rocq sealed definition alias."
-#rocq_ignore monPred_defs.monPred_si_pure_aux "Rocq sealing auxiliary definition."
-#rocq_ignore monPred_defs.monPred_si_pure_unseal "Rocq unsealing lemma."
-
-#rocq_ignore monPred_ofe_mixin "Rocq mixin record; subsumed by the OFE instance."
-#rocq_ignore monPred_bi_mixin "Rocq mixin record; subsumed by monPredI."
-#rocq_ignore monPred_bi_persistently_mixin "Rocq mixin record; subsumed by monPredI."
-#rocq_ignore monPred_bi_later_mixin "Rocq mixin record; subsumed by monPredI."
-#rocq_ignore monPred_bupd_mixin "Rocq mixin record."
-#rocq_ignore monPred_fupd_mixin "Rocq mixin record."
-#rocq_ignore monPred_sbi_mixin "Rocq mixin record."
-#rocq_ignore monPred_sbi_prop_ext_mixin "Rocq mixin record."
-#rocq_ignore monPred_embedding_mixin "Rocq mixin record; subsumed by the BiEmbed instance."
-
-#rocq_ignore monPred_emp_unfold "Rocq unfold lemma; Lean definitions are transparent."
-#rocq_ignore monPred_pure_unfold "Rocq unfold lemma; Lean definitions are transparent."
-#rocq_ignore monPred_internal_eq_unfold "Rocq unfold lemma; Lean definitions are transparent."
-#rocq_ignore monPred_si_emp_valid_unfold "Rocq unfold lemma; Lean definitions are transparent."
-#rocq_ignore monPred_si_pure_unfold "Rocq unfold lemma; Lean definitions are transparent."
-#rocq_ignore monPred_objectively_unfold "Rocq unfold lemma; Lean definitions are transparent."
-#rocq_ignore monPred_subjectively_unfold "Rocq unfold lemma; Lean definitions are transparent."
-
-#rocq_ignore monPred_dist "Covered by dist_at."
-#rocq_ignore monPred_dist' "Covered by dist_at."
-#rocq_ignore monPred_equiv "Covered by equiv_at."
-#rocq_ignore monPred_equiv' "Covered by equiv_at."
-
-#rocq_ignore monPred_at_proper "Use monPred_at_ne / monPred_at_mono."
-#rocq_ignore monPred_in_proper "Use monPred_in_mono."
-#rocq_ignore monPred_objectively_mono' "Use monPred_objectively_mono."
-#rocq_ignore monPred_objectively_flip_mono' "Use monPred_objectively_mono."
-#rocq_ignore monPred_objectively_proper "Use monPred_objectively_ne."
-#rocq_ignore monPred_subjectively_mono' "Use monPred_subjectively_mono."
-#rocq_ignore monPred_subjectively_flip_mono' "Use monPred_subjectively_mono."
-#rocq_ignore monPred_subjectively_proper "Use monPred_subjectively_ne."
-
-#rocq_ignore monPred_bi_pure_forall "BIPureForall is provable for all BIs classically; see pure_forall_2."
