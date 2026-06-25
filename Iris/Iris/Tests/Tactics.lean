@@ -14,11 +14,13 @@ public import Iris.Algebra.CMRA
 public import Iris.Instances.Lib.Invariants
 public import Iris.Instances.Lib.CInvariants
 public import Iris.Instances.Lib.NaInvariants
+public import Iris.ProgramLogic.Language
+public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
 namespace Iris.Tests
-open BI CMRA DFrac CancelableInvariant NonAtomicInvariant
+open BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -2926,5 +2928,20 @@ example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
     imodintro
     inext
     iexact HP
+
+/- Variables to test `iinv` with `WP` -/
+variable {hlc : outParam HasLC} {Expr State Obs Val : Type _} [Λ : Language Expr State Obs Val]
+variable {GF : BundledGFunctors}
+variable [IrisGS_gen hlc Expr GF]
+variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ : Val → IProp GF} {P : IProp GF}
+
+/-- Tests `iinv` with `elimInv_acc_without_close`, `intoAcc_inv` and `elimAcc_wp_atomic`. -/
+example [Language.Atomic ↑s e] (h : ↑N ⊆ E) :
+    ⊢ inv N P -∗ (▷ P -∗ WP e @ s ; (E \ ↑N) {{ v, |={E \ ↑N}=> ▷ P ∗ Φ v }}) -∗ WP e @ s ; E {{ Φ }} := by
+  iintro #Hinv Hwp
+  iinv Hinv with H
+  simp
+  iapply Hwp
+  iexact H
 
 end iinv
