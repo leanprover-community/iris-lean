@@ -40,7 +40,7 @@ theorem tac_inv_elim [BI PROP]
 
 private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (ivar : IVarId) (specPat : Option SpecPat)
-    (introPat : iCasesPat) (closePat : Option iCasesPat) :
+    (casesPat : iCasesPat) (closePat : Option iCasesPat) :
     ProofModeM Q($e ⊢ $goal) := do
   -- Find the hypothesis from the context
   let ⟨_, hyps', _, Pinv, _, _ , pfEq⟩ := hyps.remove false ivar
@@ -56,20 +56,22 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   let some inst ← ProofModeM.trySynthInstanceQ q(ElimInv $ϕ $X $Pinv $Pin $Pout $close $mPclose $goal $Q')
   | throwError "iinv: invalid invariant {Pinv} (ElimInv type class synthesis failed)"
 
-  let ⟨e'', hyps'', p'', out'', pfPin⟩ ← iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [specPat.getD <| .autoframe .spatial]
+  let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
+    iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [specPat.getD <| .autoframe .spatial]
   have : $out'' =Q $Pin := ⟨⟩
   have : $p'' =Q false := ⟨⟩
 
   -- Solve side conditions automatically if possible, otherwise add them into the proof state
   let hϕ ← iSolveSidecondition q($ϕ) false
 
+  -- Add the new goal into the proof state upon applying the case destruction patterns
   match mPclose with
   | ~q(some $f) =>
     let pf : Q(∀ x, $e'' ∗ $Pout x ∗ $f x ⊢ $Q' x) ←
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
         match closePat with
         | some closePat =>
-          iCasesCore _ hyps'' q(iprop($Q' $x)) (.conjunction [introPat, closePat])
+          iCasesCore _ hyps'' q($Q' $x) (.conjunction [casesPat, closePat])
             q(false) q(iprop($Pout $x ∗ $f $x)) >>=
           (mkLambdaFVars #[x] ·)
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
@@ -78,11 +80,11 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   | ~q(none) =>
     let pf : Q(∀ x, $e'' ∗ $Pout x ⊢ $Q' x) ←
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
-        iCasesCore _ hyps'' q(iprop($Q' $x)) introPat q(false) q($Pout $x) >>=
+        iCasesCore _ hyps'' q($Q' $x) casesPat q(false) q($Pout $x) >>=
         (mkLambdaFVars #[x] ·)
     -- Insert `emp` so that the entailment matches the argument of `tac_inv_elim`
     let pf : Q(∀ x : $X, $e'' ∗ $Pout x ∗ emp ⊢ $Q' x) :=
-      q(fun x => sep_assoc.mpr.trans <| sep_emp.mp.trans <| $pf x)
+      q((sep_assoc.mpr.trans <| sep_emp.mp.trans <| $pf ·))
     return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
 
 /-- Find an invariant hypothesis with a given `Namespace` value. -/
@@ -104,11 +106,11 @@ syntax (name := iinv) "iinv " colGt term (" $$ " colGt ppSpace specPat)?
     " with " colGt icasesPat (colGt icasesPat)? : tactic
 
 elab_rules : tactic
-  | `(tactic| iinv $t:term $[$$ $spat:specPat]? with $ipat:icasesPat $[$cpat:icasesPat]?) => do
+  | `(tactic| iinv $t:term $[$$ $spat:specPat]? with $casesPat:icasesPat $[$closePat:icasesPat]?) => do
     -- Parse the introduction and selection patterns
     let specPat ← liftMacroM <| spat.mapM SpecPat.parse
-    let introPat ← liftMacroM <| iCasesPat.parse ipat
-    let closePat ← liftMacroM <| cpat.mapM iCasesPat.parse
+    let casesPat ← liftMacroM <| iCasesPat.parse casesPat
+    let closePat ← liftMacroM <| closePat.mapM iCasesPat.parse
 
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
       -- Find the invariant hypothesis
@@ -122,5 +124,5 @@ elab_rules : tactic
         | some ivar => pure ivar
         | none => throwError m!"iinv: invariant {N} not found"
 
-      let pf ← iInvCore hyps goal ivar specPat introPat closePat
+      let pf ← iInvCore hyps goal ivar specPat casesPat closePat
       mvar.assign pf
