@@ -79,7 +79,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q(
   -- Solve side conditions automatically if possible, otherwise add them into the proof state
   let hϕ ← iSolveSidecondition q($ϕ) false
 
-  -- Using this instead of `.autoframe .spatial` in order to handle `Pin = True`
+  -- Obtain `e' ⊢ e'' ∗ Pin`
   let ⟨e'', hyps'', p'', out'', pfPin⟩ ←
     match specPat with
     | some pat => iSpecializeCore hyps' q(false) q(iprop($Pin -∗ $Pin)) [pat]
