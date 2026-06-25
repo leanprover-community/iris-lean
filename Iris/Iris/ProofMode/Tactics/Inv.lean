@@ -132,19 +132,27 @@ private def findInvariantWithNamespace {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     | none => return ← findInvariantWithNamespace N lhs
 
 /-- `iinv` opens an invariant in the proof state. -/
-syntax (name := iinv) "iinv " colGt ident " as " colGt introPat (introPat)?
+syntax (name := iinv) "iinv " colGt term " as " colGt introPat (introPat)?
     (" with " colGt ppSpace specPat)? : tactic
 
 elab_rules : tactic
-  | `(tactic| iinv $h:ident as $ipat:introPat $[$cpat:introPat]? $[with $spat:specPat]?) => do
+  | `(tactic| iinv $h:term as $ipat:introPat $[$cpat:introPat]? $[with $spat:specPat]?) => do
     -- Parse the introduction and selection patterns
     let specPat ← liftMacroM <| spat.mapM SpecPat.parse
     let introPat ← liftMacroM <| IntroPat.parse ipat
     let closePat ← liftMacroM <| cpat.mapM IntroPat.parse
 
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-      -- Find the hypothesis in which the invariant is opened
-      let ivar ← hyps.findWithInfo h
+      -- Find the invariant hypothesis
+      let ivar ← do match ← try? <| hyps.findWithInfo ⟨h⟩ with
+      -- Hypothesis supplied by the user: return the `IVarId` value of the invariant directly
+      | some ivar => pure ivar
+      -- Namespace supplied by the user: use `IntoInv` to find the corresponding hypothesis
+      | none =>
+        let N ← elabTermEnsuringTypeQ h q(Namespace)
+        match ← findInvariantWithNamespace N hyps with
+        | some ivar => pure ivar
+        | none => throwError m!"iinv: invariant {N} not found"
 
       let pf ← iInvCore hyps goal ivar specPat introPat closePat
       mvar.assign pf

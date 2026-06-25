@@ -2928,4 +2928,28 @@ example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
       inext
       iexact HP
 
+/--
+  Tests `iinv` with two invariant hypotheses using the same `Namespace` value.
+  The last hypothesis in the context with this `Namespace` value gets chosen.
+-/
+example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
+    {P Q : IProp GF} (h : ↑N ⊆ E1) :
+    NonAtomicInvariant.inv t N iprop(<pers> Q) ∗
+    NonAtomicInvariant.inv t N iprop(<pers> P) ∗
+    own t E1 ∗ own t E2 ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#_, #_, Hown1, Hown2⟩
+  iinv N as ⟨#HP, Hown1⟩ with Hown1
+  -- Side condition
+  · simp_all
+  -- Main proof goal
+  · imodintro
+    isplitl [Hown1]
+    · iframe HP ∗
+    · simp
+      iintro Hown1
+      iframe
+      imodintro
+      inext
+      iexact HP
+
 end iinv
