@@ -18,35 +18,25 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
-def optionMap {PROP : Type u} {X : Type} (mP : Option (X → PROP)) (x : X) : Option PROP :=
-  mP.map (· x)
-
+@[rocq_alias tac_inv_elim]
 theorem tac_inv_elim [BI PROP]
     {e e' e'' goal : PROP} {ϕ : Prop} {X : Type} {p close : Bool}
     {Pinv Pin : PROP} {mPclose : Option <| X → PROP} {Pout Q' : X → PROP}
     (inst : ElimInv ϕ X Pinv Pin Pout close mPclose goal Q')
     (hϕ : ϕ)
-    (hAcc : ∀ x, e'' ∗ Pout x ∗ ((mPclose.map (· x)).getD emp) ⊢ Q' x)
-    (pf : e ⊣⊢ e' ∗ □?p Pinv)
+    (pf : ∀ x, e'' ∗ Pout x ∗ ((mPclose.map (· x)).getD emp) ⊢ Q' x)
+    (pfEq : e ⊣⊢ e' ∗ □?p Pinv)
     (pfPin : e' ∗ (Pin -∗ Pin) ⊢ e'' ∗ Pin) :
-    e ⊢ goal := sorry
-
-  -- have h0 := inst.elim_inv hϕ
-  -- have h1 : e ⊢ Pinv ∗ Pin ∗ ∀ a, Pout a -∗ Option.map (fun x => x a) mPclose -∗? Q' a := calc
-  --   e ⊢ e' ∗ □?p Pinv            := pf.mp
-  --   _ ⊢ □?p Pinv ∗ e'            := sep_comm.mp
-  --   _ ⊢ Pinv ∗ e'                := sep_mono_left intuitionisticallyIf_elim
-  --   _ ⊢ Pinv ∗ e' ∗ emp          := sep_mono_right sep_emp.mpr
-  --   _ ⊢ Pinv ∗ e' ∗ (Pin -∗ Pin) := sep_mono_right <| sep_mono_right wand_rfl
-  --   _ ⊢ Pinv ∗ e'' ∗ Pin         := sep_mono_right pfPin
-  --   _ ⊢ Pinv ∗ Pin ∗ e''         := sep_mono_right sep_comm.mp
-  --   _ ⊢ _                        := sep_mono_right <| sep_mono_right <| forall_intro (wand_intro <| hAcc ·)
-  -- apply h1.trans
-  -- cases mPclose with
-  -- | none =>
-  --   apply (sep_mono_right <| sep_mono_right <| forall_mono <| fun _ => wand_mono_left sep_emp.mp).trans h0
-  -- | some _ =>
-  --   apply (sep_mono_right <| sep_mono_right <| forall_intro (forall_elim · |>.trans wand_curry.mp)).trans h0
+    e ⊢ goal := calc
+  e ⊢ e' ∗ □?p Pinv            := pfEq.mp
+  _ ⊢ □?p Pinv ∗ e'            := sep_comm.mp
+  _ ⊢ Pinv ∗ e'                := sep_mono_left intuitionisticallyIf_elim
+  _ ⊢ Pinv ∗ e' ∗ emp          := sep_mono_right sep_emp.mpr
+  _ ⊢ Pinv ∗ e' ∗ (Pin -∗ Pin) := sep_mono_right <| sep_mono_right wand_rfl
+  _ ⊢ Pinv ∗ e'' ∗ Pin         := sep_mono_right pfPin
+  _ ⊢ Pinv ∗ Pin ∗ e''         := sep_mono_right sep_comm.mp
+  _ ⊢ _                        := sep_mono_right <| sep_mono_right <| forall_intro (wand_intro <| pf ·)
+  _ ⊢ goal                     := inst.elim_inv hϕ
 
 private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (ivar : IVarId) (specPat : Option SpecPat)
@@ -75,26 +65,22 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
 
   match mPclose with
   | ~q(some $f) =>
-
-    let hAcc : Q(∀ x : $X, $e'' ∗ $Pout x ∗ $f x ⊢ $Q' x) ←
-      withLocalDeclDQ (u := 0) (← mkFreshUserName `x) X fun x => do
+    let pf : Q(∀ x, $e'' ∗ $Pout x ∗ $f x ⊢ $Q' x) ←
+      withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
         match closePat with
         | some closePat =>
           mkLambdaFVars #[x] <| ← iCasesCore _ hyps'' q(iprop($Q' $x)) (.conjunction [introPat, closePat]) q(false) q(iprop($Pout $x ∗ $f $x))
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
-        | none => throwError "iinv: error"
-
-    return q(tac_inv_elim $inst $hϕ $hAcc $pfEq $pfPin)
-
+        | none => throwError "iinv: missing cases pattern for the closing hypothesis"
+    return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
   | ~q(none) =>
-    let hAcc : Q(∀ x : $X, $e'' ∗ $Pout x ⊢ $Q' x) ←
-      withLocalDeclDQ (u := 0) (← mkFreshUserName `x) X fun x => do
+    let pf : Q(∀ x, $e'' ∗ $Pout x ⊢ $Q' x) ←
+      withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
         mkLambdaFVars #[x] <| ← iCasesCore _ hyps'' q(iprop($Q' $x)) introPat q(false) q($Pout $x)
-
-    let hAcc : Q(∀ x : $X, $e'' ∗ $Pout x ∗ emp ⊢ $Q' x) :=
-      q(fun x => sep_assoc.mpr.trans <| sep_emp.mp.trans ($hAcc x))
-
-    return q(tac_inv_elim $inst $hϕ $hAcc $pfEq $pfPin)
+    -- Insert `emp` so that the entailment matches the argument of `tac_inv_elim`
+    let pf : Q(∀ x : $X, $e'' ∗ $Pout x ∗ emp ⊢ $Q' x) :=
+      q(fun x => sep_assoc.mpr.trans <| sep_emp.mp.trans <| $pf x)
+    return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
 
 /-- Find an invariant hypothesis with a given `Namespace` value. -/
 private def findInvariantWithNamespace {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
