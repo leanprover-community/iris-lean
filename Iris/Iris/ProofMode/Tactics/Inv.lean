@@ -69,14 +69,17 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
         match closePat with
         | some closePat =>
-          mkLambdaFVars #[x] <| ← iCasesCore _ hyps'' q(iprop($Q' $x)) (.conjunction [introPat, closePat]) q(false) q(iprop($Pout $x ∗ $f $x))
+          iCasesCore _ hyps'' q(iprop($Q' $x)) (.conjunction [introPat, closePat])
+            q(false) q(iprop($Pout $x ∗ $f $x)) >>=
+          (mkLambdaFVars #[x] ·)
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
         | none => throwError "iinv: missing cases pattern for the closing hypothesis"
     return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
   | ~q(none) =>
     let pf : Q(∀ x, $e'' ∗ $Pout x ⊢ $Q' x) ←
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
-        mkLambdaFVars #[x] <| ← iCasesCore _ hyps'' q(iprop($Q' $x)) introPat q(false) q($Pout $x)
+        iCasesCore _ hyps'' q(iprop($Q' $x)) introPat q(false) q($Pout $x) >>=
+        (mkLambdaFVars #[x] ·)
     -- Insert `emp` so that the entailment matches the argument of `tac_inv_elim`
     let pf : Q(∀ x : $X, $e'' ∗ $Pout x ∗ emp ⊢ $Q' x) :=
       q(fun x => sep_assoc.mpr.trans <| sep_emp.mp.trans <| $pf x)
