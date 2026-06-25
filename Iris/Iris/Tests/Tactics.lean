@@ -2796,8 +2796,7 @@ example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
   imodintro
   isplit
   · iexact H
-  · simp [BIBase.wandM]
-    imodintro
+  · imodintro
     inext
     iexact H
 
@@ -2823,8 +2822,7 @@ example {E} {P : IProp GF} {h : ↑N ⊆ E} : inv N iprop(<pers> P) ={E}=∗ ▷
   imodintro
   isplit
   · iexact H
-  · simp
-    imodintro
+  · imodintro
     inext
     iexact H
 
@@ -2840,7 +2838,6 @@ example [CInvG GF]  {γ : GName} {p : Qp} :
     cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
   iintro ⟨#Hinv, H⟩
   iinv Hinv with ⟨#HP, Hown⟩
-  simp
   imodintro
   isplit
   iexact HP
@@ -2854,7 +2851,6 @@ example [CInvG GF] {γ : GName} {p : Qp} :
     cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
   iintro ⟨#Hinv, H⟩
   iinv Hinv with ⟨#HP, Hown⟩ Hclose
-  simp
   imod Hclose $$ HP
   imodintro
   iframe
@@ -2870,7 +2866,6 @@ example [CInvG GF] {γ : GName} {p1 p2 : Qp} {P : IProp GF} :
   iintro ⟨#Hinv, Hown1, Hown2⟩
   iinv Hinv $$ [Hown2 //] with ⟨#HP, Hown2⟩
   imodintro
-  simp
   iframe HP ∗
   imodintro
   inext
@@ -2885,8 +2880,7 @@ example {t : NaInvPoolName} [NaInvG GF] {E1 E2 : CoPset} {P : IProp GF} (h : ↑
   imod Hclose $$ [HP Hown2]
   · iframe
     iexact HP
-  · simp
-    iframe
+  · iframe
     imodintro
     inext
     iexact HP
@@ -2901,8 +2895,7 @@ example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
   imodintro
   isplitl [Hown1]
   · iframe HP ∗
-  · simp
-    iintro Hown1
+  · iintro Hown1
     iframe
     imodintro
     inext
@@ -2922,8 +2915,7 @@ example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
   imodintro
   isplitl [Hown1]
   · iframe HP ∗
-  · simp
-    iintro Hown1
+  · iintro Hown1
     iframe
     imodintro
     inext
@@ -2940,7 +2932,6 @@ example [Language.Atomic ↑s e] (h : ↑N ⊆ E) :
     ⊢ inv N P -∗ (▷ P -∗ WP e @ s ; (E \ ↑N) {{ v, |={E \ ↑N}=> ▷ P ∗ Φ v }}) -∗ WP e @ s ; E {{ Φ }} := by
   iintro #Hinv Hwp
   iinv Hinv with H
-  simp
   iapply Hwp
   iexact H
 

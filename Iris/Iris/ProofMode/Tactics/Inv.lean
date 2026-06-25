@@ -38,6 +38,14 @@ theorem tac_inv_elim [BI PROP]
   _ ⊢ _                        := sep_mono_right <| sep_mono_right <| forall_intro (wand_intro <| pf ·)
   _ ⊢ goal                     := inst.elim_inv hϕ
 
+/--
+  This is useful as `wandM` (`-∗?`) is not simplified automatically without
+  explicitly using `simp`, even when it is annotated with `@[reducible]`.
+-/
+private def addBIGoalSimpWandM {u} {prop : Q(Type u)} {bi} {e}
+    (hyps : Hyps bi e) (goal : Q($prop)) : ProofModeM Q($e ⊢ $goal) :=
+  addBIGoalRunTactic hyps goal `(tactic | simp_all only [BIBase.wandM])
+
 private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (ivar : IVarId) (specPat : Option SpecPat)
     (casesPat : iCasesPat) (closePat : Option iCasesPat) :
@@ -72,7 +80,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
         match closePat with
         | some closePat =>
           iCasesCore _ hyps'' q($Q' $x) (.conjunction [casesPat, closePat])
-            q(false) q(iprop($Pout $x ∗ $f $x)) >>=
+            q(false) q(iprop($Pout $x ∗ $f $x)) addBIGoalSimpWandM >>=
           (mkLambdaFVars #[x] ·)
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
         | none => throwError "iinv: missing cases pattern for the closing hypothesis"
@@ -80,7 +88,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   | ~q(none) =>
     let pf : Q(∀ x, $e'' ∗ $Pout x ⊢ $Q' x) ←
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
-        iCasesCore _ hyps'' q($Q' $x) casesPat q(false) q($Pout $x) >>=
+        iCasesCore _ hyps'' q($Q' $x) casesPat q(false) q($Pout $x) addBIGoalSimpWandM >>=
         (mkLambdaFVars #[x] ·)
     -- Insert `emp` so that the entailment matches the argument of `tac_inv_elim`
     let pf : Q(∀ x : $X, $e'' ∗ $Pout x ∗ emp ⊢ $Q' x) :=

@@ -934,8 +934,7 @@ instance elimInv_acc_with_close [BI PROP] {X : Type}
     ϕ1 ϕ2 Pinv Pin (M1 M2 : PROP → PROP) α β mγ Q (Q' : PROP)
     [h1 : IntoAcc Pinv ϕ1 Pin M1 M2 α β mγ]
     [h2 : ∀ R, ElimModal ϕ2 false false (M1 R) R Q Q'] :
-    ElimInv (ϕ1 ∧ ϕ2) X Pinv Pin
-            α
-            true (some (fun x => iprop(β x -∗ M2 ((mγ x).getD emp))))
+    ElimInv (ϕ1 ∧ ϕ2) X Pinv Pin α true
+            (some (fun x => iprop(β x -∗ M2 (match mγ x with | none => emp | some m => m))))
             Q (fun _ => Q') where
   elim_inv := sorry
