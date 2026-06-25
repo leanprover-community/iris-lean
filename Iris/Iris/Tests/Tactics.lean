@@ -2790,7 +2790,7 @@ variable {hlc : HasLC} {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace
 -/
 example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
-  iinv Hinv as #H
+  iinv Hinv with #H
   -- Side condition
   · simp
   -- Main proof goal
@@ -2808,7 +2808,7 @@ example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
 -/
 example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
   iintro #Hinv
-  iinv Hinv as #H Hclose
+  iinv Hinv with #H Hclose
   -- Side condition
   · simp
   -- Main proof goal
@@ -2824,7 +2824,7 @@ example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
 -/
 example {E} {P : IProp GF} {h : ↑N ⊆ E} : inv N iprop(<pers> P) ={E}=∗ ▷ P := by
   iintro #Hinv
-  iinv Hinv as #H
+  iinv Hinv with #H
   · imodintro
     isplit
     · iexact H
@@ -2838,13 +2838,13 @@ example {E} {P : IProp GF} {h : ↑N ⊆ E} : inv N iprop(<pers> P) ={E}=∗ ▷
 #guard_msgs in
 example {E : CoPset} {P : IProp GF} : □ P ={E}=∗ ▷ P := by
   iintro #HP
-  iinv HP as #H
+  iinv HP with #H
 
 /-- Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and `intoAcc_cinv`. -/
 example [CInvG GF]  {γ : GName} {p : Qp} :
     cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
   iintro ⟨#Hinv, H⟩
-  iinv Hinv as ⟨#HP, Hown⟩
+  iinv Hinv with ⟨#HP, Hown⟩
   -- Side condition
   · simp
   -- Main proof goal
@@ -2861,7 +2861,7 @@ example [CInvG GF]  {γ : GName} {p : Qp} :
 example [CInvG GF] {γ : GName} {p : Qp} :
     cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
   iintro ⟨#Hinv, H⟩
-  iinv Hinv as ⟨#HP, Hown⟩ Hclose
+  iinv Hinv with ⟨#HP, Hown⟩ Hclose
   -- Side condition
   · simp
   -- Main proof goal
@@ -2879,7 +2879,7 @@ example [CInvG GF] {γ : GName} {p1 p2 : Qp} {P : IProp GF} :
     cinv N γ iprop(<pers> P) ∗ own γ p1 ∗ own γ p2
     ⊢@{IProp GF} |={⊤}=> own γ p1 ∗ own γ p2 ∗ ▷ P := by
   iintro ⟨#Hinv, Hown1, Hown2⟩
-  iinv Hinv as ⟨#HP, Hown2⟩ with [Hown2 //]
+  iinv Hinv $$ [Hown2 //] with ⟨#HP, Hown2⟩
   -- Side condition
   · simp
   -- Main proof goal
@@ -2895,7 +2895,7 @@ example {t : NaInvPoolName} [NaInvG GF] {E1 E2 : CoPset} {P : IProp GF} (h : ↑
     NonAtomicInvariant.inv t N iprop(<pers> P) ∗ own t E1 ∗ own t E2
     ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
   iintro ⟨#Hinv, Hown1, Hown2⟩
-  iinv Hinv as ⟨#HP, Hown2⟩ Hclose with [Hown1 //]
+  iinv Hinv $$ [Hown1 //] with ⟨#HP, Hown2⟩ Hclose
   -- Side condition
   · simp_all
   -- Main proof goal
@@ -2914,7 +2914,7 @@ example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
     inv N1 P ∗ NonAtomicInvariant.inv t N3 iprop(<pers> P) ∗ inv N2 P ∗ own t E1 ∗ own t E2
     ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
   iintro ⟨#_, #Hinv, #_, Hown1, Hown2⟩
-  iinv Hinv as ⟨#HP, Hown1⟩ with Hown1
+  iinv Hinv $$ Hown1 with ⟨#HP, Hown1⟩
   -- Side condition
   · simp_all
   -- Main proof goal
@@ -2938,7 +2938,7 @@ example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
     NonAtomicInvariant.inv t N iprop(<pers> P) ∗
     own t E1 ∗ own t E2 ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
   iintro ⟨#_, #_, Hown1, Hown2⟩
-  iinv N as ⟨#HP, Hown1⟩ with Hown1
+  iinv N $$ Hown1 with ⟨#HP, Hown1⟩
   -- Side condition
   · simp_all
   -- Main proof goal

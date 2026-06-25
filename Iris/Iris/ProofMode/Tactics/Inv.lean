@@ -132,11 +132,11 @@ private def findInvariantWithNamespace {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     | none => return ← findInvariantWithNamespace N lhs
 
 /-- `iinv` opens an invariant in the proof state. -/
-syntax (name := iinv) "iinv " colGt term " as " colGt introPat (introPat)?
-    (" with " colGt ppSpace specPat)? : tactic
+syntax (name := iinv) "iinv " colGt term (" $$ " colGt ppSpace specPat)?
+    " with " colGt introPat (introPat)? : tactic
 
 elab_rules : tactic
-  | `(tactic| iinv $t:term as $ipat:introPat $[$cpat:introPat]? $[with $spat:specPat]?) => do
+  | `(tactic| iinv $t:term $[$$ $spat:specPat]? with $ipat:introPat $[$cpat:introPat]?) => do
     -- Parse the introduction and selection patterns
     let specPat ← liftMacroM <| spat.mapM SpecPat.parse
     let introPat ← liftMacroM <| IntroPat.parse ipat
