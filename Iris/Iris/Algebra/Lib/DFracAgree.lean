@@ -101,7 +101,7 @@ theorem includedN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
     exact ⟨(inc_iff_incN (α := DFrac) n).mpr ⟨zd, hd⟩, Agree.toAgree_includedN.mp ⟨za, ha⟩⟩
   · rintro ⟨hdinc, ha⟩
     obtain ⟨zd, hd⟩ := (inc_iff_incN (α := DFrac) n).mp hdinc
-    exact ⟨(zd, toAgree a₁), hd, (NonExpansive.ne ha.symm).trans (Equiv.dist Agree.idemp.symm)⟩
+    exact ⟨(zd, toAgree a₁), hd, (toAgree.ne.ne ha.symm).trans (Equiv.dist Agree.idemp.symm)⟩
 
 @[rocq_alias dfrac_agree_update_2]
 theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .own 1) :

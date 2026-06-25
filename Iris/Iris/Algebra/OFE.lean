@@ -248,6 +248,49 @@ theorem Equiv.to_eq {α} [OFE α] [Leibniz α] {x y : α} (h : x ≡ y) : x = y 
   ⟨eq_of_eqv, .of_eq⟩
 export OFE.Leibniz (leibniz)
 
+/-- The setoid on `X` identifying points that agree at every step index:
+`x ≈ y ↔ ∀ n, dist n x y`. -/
+def distSetoid {X : Type u} (dist : Nat → X → X → Prop) (heqv : ∀ n, Equivalence (dist n)) :
+    Setoid X where
+  r x y := ∀ n, dist n x y
+  iseqv :=
+    ⟨fun _ _ => (heqv _).refl _,
+     fun h n => (heqv _).symm (h n),
+     fun h₁ h₂ n => (heqv _).trans (h₁ n) (h₂ n)⟩
+
+/-- Build a `Leibniz` OFE from a step-indexed distance `dist` satisfying the OFE distance axioms
+by quotienting the carrier `X` by the OFE equivalence `fun x y => ∀ n, dist n x y`. -/
+@[reducible] def mkLeibniz {X : Type u} (dist : Nat → X → X → Prop) (heqv : ∀ n, Equivalence (dist n))
+    (hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y) :
+    OFE (Quotient (distSetoid dist heqv)) :=
+  let D : Nat → Quotient (distSetoid dist heqv) → Quotient (distSetoid dist heqv) → Prop :=
+    fun n => Quotient.lift₂ (dist n) fun _ _ _ _ hac hbd => propext
+      ⟨fun h => (heqv n).trans ((heqv n).trans ((heqv n).symm (hac n)) h) (hbd n),
+       fun h => (heqv n).trans ((heqv n).trans (hac n) h) ((heqv n).symm (hbd n))⟩
+  { Dist := D
+    Equiv x y := ∀ n, D n x y
+    dist_eqv := by
+      refine ⟨fun x => ?_, fun {x y} h => ?_, fun {x y z} h₁ h₂ => ?_⟩
+      · induction x using Quotient.ind with | _ a => exact (heqv _).refl a
+      · induction x using Quotient.ind with | _ a =>
+        induction y using Quotient.ind with | _ b => exact (heqv _).symm h
+      · induction x using Quotient.ind with | _ a =>
+        induction y using Quotient.ind with | _ b =>
+        induction z using Quotient.ind with | _ c => exact (heqv _).trans h₁ h₂
+    equiv_dist := Iff.rfl
+    dist_lt := fun {n x y m} h hlt' => by
+      induction x using Quotient.ind with | _ a =>
+      induction y using Quotient.ind with | _ b => exact hlt h hlt' }
+
+theorem mkLeibniz_leibniz {X : Type u} (dist : Nat → X → X → Prop)
+    (heqv : ∀ n, Equivalence (dist n))
+    (hlt : ∀ {n m : Nat} {x y : X}, dist n x y → m < n → dist m x y) :
+    @Leibniz _ (mkLeibniz dist heqv hlt) :=
+  letI := mkLeibniz dist heqv hlt
+  { eq_of_eqv := fun {x y} h => by
+      induction x using Quotient.ind with | _ a =>
+      induction y using Quotient.ind with | _ b => exact Quotient.sound h }
+
 /-- A morphism between OFEs, written `α -n> β`, is defined to be a function that is
 non-expansive. -/
 @[ext, rocq_alias ofe_mor] structure Hom (α β : Type _) [OFE α] [OFE β] where

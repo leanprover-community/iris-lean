@@ -46,16 +46,16 @@ theorem iff_of_equiv (Ha : a1 ≡ a2) (Hb : b1 ≡ b2) : R n a1 b1 ↔ R n a2 b2
 end ViewRel
 
 @[rocq_alias view]
-structure View {A B : Type _} (R : ViewRel A B) where
+structure View {A B : Type _} [OFE A] (R : ViewRel A B) where
   auth : Option ((DFrac) × Agree A)
   frag : B
 
 @[rocq_alias view_auth]
-abbrev View.Auth [UCMRA B] {R : ViewRel A B} (dq : DFrac) (a : A) : View R :=
+abbrev View.Auth [OFE A] [UCMRA B] {R : ViewRel A B} (dq : DFrac) (a : A) : View R :=
   ⟨some (dq, toAgree a), UCMRA.unit⟩
 
 @[rocq_alias view_frag]
-abbrev View.Frag {R : ViewRel A B} (b : B) : View R := ⟨none, b⟩
+abbrev View.Frag [OFE A] {R : ViewRel A B} (b : B) : View R := ⟨none, b⟩
 
 notation "●V{" dq "} " a => View.Auth dq a
 notation "●V " a => View.Auth (DFrac.own 1) a
@@ -806,30 +806,33 @@ end Updates
 section ViewMap
 
 @[rocq_alias view_map]
-def map {R : ViewRel A B} (R' : ViewRel A' B') (f : A → A') (g : B → B') (v : View R) : View R' where
+def map [OFE A] [OFE A'] {R : ViewRel A B} (R' : ViewRel A' B') (f : A → A') [OFE.NonExpansive f]
+    (g : B → B') (v : View R) : View R' where
   auth := match v.auth with | none => none | some (fr, a) => (fr, a.map' f)
   frag := g v.frag
 
 @[rocq_alias view_map_id]
-theorem map_id {R : ViewRel A B} (v : View R) : View.map R id id v = v := by
+theorem map_id [OFE A] {R : ViewRel A B} (v : View R) : View.map R id id v = v := by
   rcases v with ⟨a, b⟩
-  cases a <;> simp [View.map, Agree.map']
+  cases a <;> simp [View.map, Agree.map'_id]
 
 @[rocq_alias view_map_compose]
-theorem map_compose {R : ViewRel A B} {R' : ViewRel A' B'} {R'' : ViewRel A'' B''}
-    f g (f' : A' → A'') (g' : B' → B'') (v : View R) :
+theorem map_compose [OFE A] [OFE A'] [OFE A''] {R : ViewRel A B} {R' : ViewRel A' B'}
+    {R'' : ViewRel A'' B''} (f : A → A') (g : B → B') (f' : A' → A'') (g' : B' → B'')
+    [OFE.NonExpansive f] [OFE.NonExpansive f'] [OFE.NonExpansive (f' ∘ f)] (v : View R) :
     View.map R'' (f' ∘ f) (g' ∘ g) v = View.map R'' f' g' (View.map R' f g v) := by
   rcases v with ⟨a, b⟩
-  cases a <;> simp [View.map, Agree.map']
+  cases a <;> simp [View.map, Agree.map'_compose]
 
 section mapO
 
 variable [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : ViewRel A' B'}
 
 theorem map_compose' [OFE A''] [OFE B''] {R'' : ViewRel A'' B''}
-    f g (f' : A' -n> A'') (g' : B' -n> B'') (v : View R) :
-    View.map R'' (f'.comp f) (g'.comp g) v = View.map R'' f' g' (View.map R' f g v) :=
-  map_compose f.f g.f f'.f g'.f v
+    (f : A -n> A') (g : B -n> B') (f' : A' -n> A'') (g' : B' -n> B'') (v : View R) :
+    View.map R'' (f'.comp f) (g'.comp g) v = View.map R'' f' g' (View.map R' f g v) := by
+  haveI : OFE.NonExpansive (f'.f ∘ f.f) := f'.ne.comp f.ne
+  exact map_compose f.f g.f f'.f g'.f v
 
 omit [OFE B] in
 @[rocq_alias view_map_ext]
@@ -896,7 +899,7 @@ def mapC [OFE A] [UCMRA B] [OFE A'] [UCMRA B']
   op x y := by
     constructor <;> simp [CMRA.Hom.op, CMRA.op, map]
     cases x.auth <;> cases y.auth <;> simp [Prod.op]
-    exact ⟨rfl, (Agree.map _).op _ _⟩
+    exact OFE.eq_of_eqv ((Agree.map f.f).op _ _)
 
 end ViewMap
 
