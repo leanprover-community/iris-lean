@@ -23,7 +23,7 @@ def optionMap {PROP : Type u} {X : Type} (mP : Option (X → PROP)) (x : X) : Op
 
 @[rocq_alias tac_inv_elim]
 theorem tac_inv_elim [BI PROP]
-    {e e' goal : PROP} {ϕ : Prop} {X : Type} {p close : Bool}
+    {e e' e'' goal : PROP} {ϕ : Prop} {X : Type} {p close : Bool}
     {Pinv Pin : PROP} {mPclose : Option <| X → PROP} {Pout Q' : X → PROP}
     (inst : ElimInv ϕ X Pinv Pin Pout close mPclose goal Q')
     (hϕ : ϕ)
@@ -33,26 +33,28 @@ theorem tac_inv_elim [BI PROP]
     e ⊢ goal := by
   have h0 := inst.elim_inv hϕ
   have h1 : e ⊢ Pinv ∗ Pin ∗ e'' := calc
-    e ⊢ e' ∗ □?p Pinv                          := pf.mp
-    _ ⊢ □?p Pinv ∗ e'                          := sep_comm.mp
-    _ ⊢ Pinv ∗ e'                              := sep_mono_left intuitionisticallyIf_elim
-    _ ⊢ Pinv ∗ e' ∗ emp                        := sep_mono_right <| sep_emp.mpr
-    _ ⊢ Pinv ∗ e' ∗ (Pin -∗ Pin)               := sep_mono_right <| sep_mono_right <| wand_rfl
-    _ ⊢ Pinv ∗ e'' ∗ Pin                       := sep_mono_right pfPin
-    _ ⊢ Pinv ∗ Pin ∗ e''                       := sep_mono_right sep_comm.mp
+    e ⊢ e' ∗ □?p Pinv            := pf.mp
+    _ ⊢ □?p Pinv ∗ e'            := sep_comm.mp
+    _ ⊢ Pinv ∗ e'                := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ Pinv ∗ e' ∗ emp          := sep_mono_right sep_emp.mpr
+    _ ⊢ Pinv ∗ e' ∗ (Pin -∗ Pin) := sep_mono_right <| sep_mono_right wand_rfl
+    _ ⊢ Pinv ∗ e'' ∗ Pin         := sep_mono_right pfPin
+    _ ⊢ Pinv ∗ Pin ∗ e''         := sep_mono_right sep_comm.mp
   cases mPclose with simp_all
   | none => calc
     e ⊢ Pinv ∗ Pin ∗ e''                       := h1
-    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x -∗ Q' x       := sep_mono_right <| sep_mono_right <| forall_intro hAcc
-    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ emp -∗ Q' x := sep_mono_right <| sep_mono_right <| forall_mono (fun _ => wand_mono_left sep_emp.mp)
+    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x -∗ Q' x       :=
+        sep_mono_right <| sep_mono_right <| forall_intro hAcc
+    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ emp -∗ Q' x :=
+        sep_mono_right <| sep_mono_right <| forall_mono <| fun _ => wand_mono_left sep_emp.mp
     _ ⊢ goal                                   := h0
   | some mPclose => calc
-    e ⊢ Pinv ∗ Pin ∗ e''                       := h1
+    e ⊢ Pinv ∗ Pin ∗ e''                              := h1
     _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x -∗ mPclose x -∗ Q' x :=
-      sep_mono_right <| sep_mono_right <| forall_intro hAcc
-    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x :=
-      sep_mono_right <| sep_mono_right <| forall_intro <| fun x => forall_elim x |>.trans wand_curry.mp
-    _ ⊢ goal                                         := h0
+        sep_mono_right <| sep_mono_right <| forall_intro hAcc
+    _ ⊢ Pinv ∗ Pin ∗ ∀ x, Pout x ∗ mPclose x -∗ Q' x  :=
+        sep_mono_right <| sep_mono_right <| forall_intro (forall_elim · |>.trans wand_curry.mp)
+    _ ⊢ goal                                          := h0
 
 private def iInvCore {u} {prop : Q(Type u)} {bi e} (hyps : Hyps bi e) (goal : Q($prop))
     (ivar : IVarId)
