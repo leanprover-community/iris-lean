@@ -690,4 +690,17 @@ instance elimModalFupdWpAtomic_wrongMask :
     p false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
 
+@[rocq_alias elim_acc_wp_atomic]
+instance (priority := low) elimAcc_wp_atomic {X} (E₁ E₂ : CoPset) α β (γ : X → Option (IProp GF)) :
+    ElimAcc (Language.Atomic ↑s e) (fupd E₁ E₂) (fupd E₂ E₁) α β γ
+      (WP e @ s ; E₁ {{ Φ }})
+      (fun x => WP e @ s ; E₂ {{ v, |={E₂}=> β x ∗ (γ x -∗? Φ v) }}) where
+  elim_acc := sorry
+
+@[rocq_alias elim_acc_wp_nonatomic]
+instance elimAcc_wp_nonatomic {X} E (α β : X → IProp GF) (γ : X → Option (IProp GF)) :
+    ElimAcc True (fupd E E) (fupd E E) α β γ (WP e @ s ; E {{ Φ }})
+    (fun x => WP e @ s ; E {{ v, |={E}=> β x ∗ (γ x -∗? Φ v) }}) where
+  elim_acc := sorry
+
 end ProofModeClasses
