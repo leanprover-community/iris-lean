@@ -259,12 +259,8 @@ variable {α : Type u} {β : Type v} [OFE α] [OFE β]
 
 open Agree (Raw)
 
-instance Agree.Raw.instSetoid : Setoid (Raw α) where
-  r x y := ∀ n, Raw.dist n x y
-  iseqv :=
-    ⟨fun _ _ => Raw.dist_equiv.refl _,
-     fun h n => Raw.dist_equiv.symm (h n),
-     fun h₁ h₂ n => Raw.dist_equiv.trans (h₁ n) (h₂ n)⟩
+instance Agree.Raw.instSetoid : Setoid (Raw α) :=
+  OFE.distSetoid Raw.dist fun _ => Raw.dist_equiv
 
 @[rocq_alias agree]
 def Agree (α : Type u) [OFE α] : Type u := Quotient (Agree.Raw.instSetoid (α := α))
@@ -279,20 +275,21 @@ theorem ind {motive : Agree α → Prop} (mk : ∀ x : Raw α, motive (Agree.mk 
 
 theorem sound {x y : Raw α} (h : ∀ n, Raw.dist n x y) : mk x = mk y := Quotient.sound h
 
-theorem dist_resp {n} {x x' y y' : Raw α} (hx : x ≈ x') (hy : y ≈ y') :
-    Raw.dist n x y = Raw.dist n x' y' := by
-  refine propext ⟨fun h => ?_, fun h => ?_⟩
-  · exact Raw.dist_equiv.trans (Raw.dist_equiv.trans (Raw.dist_equiv.symm (hx n)) h) (hy n)
-  · exact Raw.dist_equiv.trans (Raw.dist_equiv.trans (hx n) h) (Raw.dist_equiv.symm (hy n))
-
 theorem validN_resp {n} {x y : Raw α} (h : x ≈ y) : Raw.validN n x = Raw.validN n y :=
   propext ⟨Raw.validN_ne (h n), Raw.validN_ne (Raw.dist_equiv.symm (h n))⟩
 
 theorem valid_resp {x y : Raw α} (h : x ≈ y) : Raw.valid x = Raw.valid y := by
   simp only [Raw.valid, validN_resp h]
 
-def dist (n : Nat) : Agree α → Agree α → Prop :=
-  Quotient.lift₂ (Raw.dist n) (fun _ _ _ _ hx hy => dist_resp hx hy)
+@[rocq_alias agree_ofe_mixin]
+instance instOFE : OFE (Agree α) :=
+  OFE.mkLeibniz Raw.dist (fun _ => Raw.dist_equiv) (fun h hlt => Raw.dist_lt h hlt)
+
+#rocq_ignore agreeO "Use Agree with a typeclass instance instead."
+#rocq_ignore agree_equiv "Defined in Agree OFE instance."
+
+instance instLeibniz : OFE.Leibniz (Agree α) :=
+  OFE.mkLeibniz_leibniz Raw.dist (fun _ => Raw.dist_equiv) (fun h hlt => Raw.dist_lt h hlt)
 
 def validN (n : Nat) : Agree α → Prop := Quotient.lift (Raw.validN n) (fun _ _ h => validN_resp h)
 
@@ -302,36 +299,10 @@ def op : Agree α → Agree α → Agree α :=
   Quotient.lift₂ (fun x y => mk (Raw.op x y))
     (fun _ _ _ _ hx hy => sound fun n => Raw.op_ne₂.ne (hx n) (hy n))
 
-@[simp] theorem dist_mk {n} {x y : Raw α} : dist n (mk x) (mk y) ↔ Raw.dist n x y := .rfl
+@[simp] theorem dist_mk {n} {x y : Raw α} : mk x ≡{n}≡ mk y ↔ Raw.dist n x y := .rfl
 @[simp] theorem validN_mk {n} {x : Raw α} : validN n (mk x) ↔ x.validN n := .rfl
 @[simp] theorem valid_mk {x : Raw α} : valid (mk x) ↔ x.valid := .rfl
 @[simp] theorem op_mk {x y : Raw α} : op (mk x) (mk y) = mk (Raw.op x y) := rfl
-
-theorem dist_equiv : Equivalence (dist (α := α) n) where
-  refl x := by induction x with | _ x => exact Raw.dist_equiv.refl x
-  symm {x y} h := by induction x with | _ x => induction y with | _ y => exact Raw.dist_equiv.symm h
-  trans {x y z} h₁ h₂ := by
-    induction x with | _ x => induction y with | _ y => induction z with | _ z =>
-    exact Raw.dist_equiv.trans h₁ h₂
-
-@[rocq_alias agree_ofe_mixin]
-instance instOFE : OFE (Agree α) where
-  Equiv x y := ∀ n, dist n x y
-  Dist := dist
-  dist_eqv := dist_equiv
-  equiv_dist := Iff.rfl
-  dist_lt {n x y m} h hlt := by
-    induction x with | _ x => induction y with | _ y => exact Raw.dist_lt h hlt
-
-#rocq_ignore agreeO "Use Agree with a typeclass instance instead."
-#rocq_ignore agree_equiv "Defined in Agree OFE instance."
-
-theorem equiv_def {x y : Agree α} : x ≡ y ↔ ∀ n, dist n x y := .rfl
-theorem dist_def {x y : Agree α} : x ≡{n}≡ y ↔ dist n x y := .rfl
-
-instance instLeibniz : OFE.Leibniz (Agree α) where
-  eq_of_eqv {x y} h := by
-    induction x with | _ x => induction y with | _ y => exact sound fun n => h n
 
 @[rocq_alias agree_comm]
 theorem op_comm {x y : Agree α} : op x y ≡ op y x := by
