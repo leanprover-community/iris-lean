@@ -136,7 +136,7 @@ syntax (name := iinv) "iinv " colGt term " as " colGt introPat (introPat)?
     (" with " colGt ppSpace specPat)? : tactic
 
 elab_rules : tactic
-  | `(tactic| iinv $h:term as $ipat:introPat $[$cpat:introPat]? $[with $spat:specPat]?) => do
+  | `(tactic| iinv $t:term as $ipat:introPat $[$cpat:introPat]? $[with $spat:specPat]?) => do
     -- Parse the introduction and selection patterns
     let specPat ← liftMacroM <| spat.mapM SpecPat.parse
     let introPat ← liftMacroM <| IntroPat.parse ipat
@@ -144,12 +144,12 @@ elab_rules : tactic
 
     ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
       -- Find the invariant hypothesis
-      let ivar ← do match ← try? <| hyps.findWithInfo ⟨h⟩ with
+      let ivar ← do match ← try? <| hyps.findWithInfo ⟨t⟩ with
       -- Hypothesis supplied by the user: return the `IVarId` value of the invariant directly
       | some ivar => pure ivar
       -- Namespace supplied by the user: use `IntoInv` to find the corresponding hypothesis
       | none =>
-        let N ← elabTermEnsuringTypeQ h q(Namespace)
+        let N ← elabTermEnsuringTypeQ t q(Namespace)
         match ← findInvariantWithNamespace N hyps with
         | some ivar => pure ivar
         | none => throwError m!"iinv: invariant {N} not found"

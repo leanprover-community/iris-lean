@@ -2837,8 +2837,8 @@ example {E} {P : IProp GF} {h : ↑N ⊆ E} : inv N iprop(<pers> P) ={E}=∗ ▷
 /-- error: iinv: invalid invariant P (ElimInv type class synthesis failed) -/
 #guard_msgs in
 example {E : CoPset} {P : IProp GF} : □ P ={E}=∗ ▷ P := by
-  iintro #Hinv
-  iinv Hinv as #H
+  iintro #HP
+  iinv HP as #H
 
 /-- Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and `intoAcc_cinv`. -/
 example [CInvG GF]  {γ : GName} {p : Qp} :
