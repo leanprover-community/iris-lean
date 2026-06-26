@@ -2921,8 +2921,22 @@ example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
     inext
     iexact HP
 
+/-
+  Tests `iinv` with a valid `Namespace` value that does not correspond to
+  any invariant hypothesis in the context.
+-/
+/-- error: iinv: invariant hypothesis with the namespace N3 not found -/
+#guard_msgs in
+example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
+    {P Q : IProp GF} (h : ↑N1 ⊆ E1) :
+    NonAtomicInvariant.inv t N1 iprop(<pers> Q) ∗
+    NonAtomicInvariant.inv t N2 iprop(<pers> P) ∗
+    own t E1 ∗ own t E2 ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#_, #_, Hown1, Hown2⟩
+  iinv N3 $$ Hown1 with ⟨#HP, Hown1⟩
+
 /- Variables to test `iinv` with `WP` -/
-variable {hlc : outParam HasLC} {Expr State Obs Val : Type _} [Λ : Language Expr State Obs Val]
+variable {hlc : outParam HasLC} {Expr State Obs Val} [Λ : Language Expr State Obs Val]
 variable {GF : BundledGFunctors}
 variable [IrisGS_gen hlc Expr GF]
 variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ : Val → IProp GF} {P : IProp GF}

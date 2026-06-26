@@ -145,7 +145,7 @@ elab_rules : tactic
         let N ← elabTermEnsuringTypeQ t q(Namespace)
         match ← findInvariantWithNamespace N hyps with
         | some ivar => pure ivar
-        | none => throwError m!"iinv: invariant {N} not found"
+        | none => throwError m!"iinv: invariant hypothesis with the namespace {N} not found"
 
       let pf ← iInvCore hyps goal ivar specPat casesPat closePat
       mvar.assign pf
