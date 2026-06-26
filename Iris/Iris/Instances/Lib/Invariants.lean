@@ -96,8 +96,17 @@ instance intoAcc_inv (N : Namespace) (P : IProp GF) E :
     IntoAcc (X := Unit) (inv N P) (↑N ⊆ E) iprop(True) (fupd E (E \ ↑N)) (fupd (E \ ↑N) E)
       (λ _ => iprop(▷ P)) (λ _ => iprop(▷ P)) (λ _ => none) where
   into_acc := by
-    iintro %x #Hinv #Htrue
-    sorry
+    simp only [inv, accessor]
+    iintro %x #Hinv -
+    imod Hinv $$ %E [] with ⟨HP, Hclose⟩
+    · itrivial
+    · iexists ()
+      imodintro
+      isplitl [HP]
+      · iassumption
+      · iintro HP
+        iapply (BIFUpdate.mono true_emp.mp)
+        iapply Hclose $$ HP
 
 end Instances
 
