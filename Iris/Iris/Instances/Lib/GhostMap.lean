@@ -376,7 +376,7 @@ theorem ghost_map_delete {γ} {m : H V} (k : K) (v : V) :
   exact auth_inc_of_pmap_eqv _ map_delete
 
 @[rocq_alias ghost_map_update]
-theorem ghost_map_update {γ} {m : H V} (k : K) (v : V) (w : V) :
+theorem ghost_map_update {γ} {m : H V} {k : K} {v : V} (w : V) :
     ⊢@{IProp GF} (γ ↪●MAP m) -∗ (γ ↪◯MAP[k] v) ==∗ (γ ↪●MAP insert m k w) ∗ γ ↪◯MAP[k] w := by
   iintro auth_m frag_kv
   ihave >aux := ghost_map_delete $$ auth_m frag_kv
@@ -401,8 +401,7 @@ theorem ghost_map_lookup_big {γ dq} {m : H V} {dq'} m0 :
 
 @[rocq_alias ghost_map_insert_big]
 theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ m) :
-  ⊢@{IProp GF} (γ ↪●MAP m) ==∗
-  (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k] v := by
+  ⊢@{IProp GF} (γ ↪●MAP m) ==∗ (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k] v := by
   unfold ghost_map_auth ghost_map_elem
   iintro H
   by_cases h : m' ≡ₘ ∅

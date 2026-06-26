@@ -97,6 +97,8 @@ open Iris Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
+-- FIXME: Use iframe
+
 @[rocq_alias own_inv_acc]
 theorem own_inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) :
     ⊢ own_inv N P ={E, E \ ↑N}=∗ ▷ P ∗ (▷ P ={E \ ↑N, E}=∗ True) := by
@@ -117,31 +119,16 @@ theorem own_inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆
   · rw [HNEQ]; iexact HE1
   icases ownE_op disjoint_diff_right $$ HE1 with ⟨HE1, HE3⟩
   imodintro
-  icases ownI_open $$ [Hwsat HE1 Hown] with ⟨Hwsat, HP, HD⟩
-  · isplitl [Hwsat]; iassumption
-    isplitl [Hown]; iassumption
-    iassumption
-  isplitl [Hwsat]; iassumption
-  isplitl [HE2]; iassumption
-  isplitl [HP]; iassumption
+  icases ownI_open $$ [$Hwsat $HE1 $Hown] with ⟨$, $, HD⟩
+  iframe
   iintro HP ⟨Hwsat, HE⟩
   imodintro
-  icases ownI_close $$ [HP Hwsat HD Hown] with ⟨Hwsat, HE1⟩
-  · isplitl [Hwsat]; iassumption
-    isplitl [Hown]; iassumption
-    isplitl [HP]; iassumption
-    iassumption
-  isplitl [Hwsat]; iassumption
-  icases ownE_op disjoint_diff_right $$ [HE3 HE1] with HE1
-  · isplitl [HE1]; iassumption
-    iassumption
+  icases ownI_close $$ [$HP $Hwsat $HD $Hown] with ⟨$, HE1⟩
+  icases ownE_op disjoint_diff_right $$ [$HE1 $HE3] with HE1
   rw [HNEQ]
-  icases ownE_op disjoint_diff_right $$ [HE1 HE] with HE
-  · isplitl [HE1]; iassumption
-    iassumption
+  icases ownE_op disjoint_diff_right $$ [$HE1 $HE] with HE
   rw [HEEQ]
-  isplitl [HE]; iassumption
-  apply true_intro
+  iframe
 
 @[rocq_alias own_inv_alloc]
 theorem own_inv_alloc (N : Namespace) (E : CoPset) (P : IProp GF) :
@@ -244,7 +231,7 @@ open Iris Std LawfulSet
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
 @[rocq_alias inv_acc]
-theorem inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) :
+theorem inv_acc {E : CoPset} {N : Namespace} {P : IProp GF} (Hsub : ↑N ⊆ E) :
     ⊢ inv N P ={E, E \ ↑N}=∗ ▷ P ∗ (▷ P ={E \ ↑N, E}=∗ True) := by
   simp only [inv]
   iintro #HI
@@ -252,10 +239,10 @@ theorem inv_acc (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) 
   ipureintro; assumption
 
 @[rocq_alias inv_acc_strong]
-theorem inv_acc_strong (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) :
+theorem inv_acc_strong {E : CoPset} {N : Namespace} {P : IProp GF} (Hsub : ↑N ⊆ E) :
     ⊢ inv N P ={E, E \ ↑N}=∗ ▷ P ∗ ∀ E', ▷ P ={E', ↑N ∪ E'}=∗ True := by
   iintro Hinv
-  icases inv_acc ↑N N _ subset_refl $$ Hinv with H
+  icases inv_acc subset_refl $$ Hinv with H
   rw [diff_all]
   icases fupd_mask_frame_right disjoint_diff_right (Ef := (E \ ↑N)) $$ H with H
   rw [union_empty_left, ←union_comm, ←diff_subset_decomp Hsub]
@@ -266,19 +253,26 @@ theorem inv_acc_strong (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N 
   ispecialize H $$ HP
   icases fupd_mask_frame_right disjoint_empty_left (Ef := E') $$ H with H
   rw [union_empty_left]
-  imod H; imodintro
-  iexact H
+  imod H; imodintro; itrivial
 
 @[rocq_alias inv_acc_timeless]
-theorem inv_acc_timeless (E : CoPset) (N : Namespace) (P : IProp GF) [Timeless P] (Hsub : ↑N ⊆ E) :
+theorem inv_acc_timeless {E : CoPset} {N : Namespace} {P : IProp GF} [Timeless P] (Hsub : ↑N ⊆ E) :
     ⊢ inv N P ={E, E \ ↑N}=∗ P ∗ (P ={E \ ↑N, E}=∗ True) := by
   iintro HI
-  imod inv_acc _ _ _ Hsub $$ HI with ⟨>HP, H⟩
+  imod inv_acc Hsub $$ HI with ⟨>HP, H⟩
   imodintro
   isplitl [HP]; iassumption
   iintro HP
   iapply H
   inext; iassumption
+
+theorem inv_open_fupd {E : CoPset} {N : Namespace} {P : IProp GF} (Hsub : ↑N ⊆ E) :
+    ⊢ inv N P -∗ (▷ P ∗ Q ={E \ N}=∗ P ∗ R) -∗ Q ={E}=∗ R := by
+  iintro #Hinv H HQ
+  imod inv_acc Hsub $$ Hinv with ⟨HP, Hclose⟩
+  imod H $$ [$] with ⟨HP, HR⟩; iframe
+  imod Hclose $$ [$HP] with -
+  itrivial
 
 end Access
 

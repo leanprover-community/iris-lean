@@ -116,7 +116,8 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
       -- check that all mvar inputs are also mvars in the instance
       if mvarInputs.size != 0 then
         let instType ← inferType inst.val
-        let instTypeArgs := instType.getForallBody.getAppArgs
+        -- we need to whnf the body to avoid index mismatches, see https://github.com/leanprover-community/iris-lean/issues/456
+        let instTypeArgs := (← whnf instType.getForallBody).getAppArgs
         if mvarInputs.any (λ i => !instTypeArgs[i]!.isBVar) then
           trace[Meta.synthInstance] "skipping {inst.val} since it matches on an input mvar"
           continue
