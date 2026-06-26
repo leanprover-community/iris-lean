@@ -5,7 +5,6 @@ Authors: Lars König, Mario Carneiro, Michael Sammler
 -/
 module
 
-public import Iris.ProofMode.Instances
 public meta import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
@@ -14,7 +13,7 @@ public section
 open BI Std
 
 theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
-    [hA : IntoPure A φ] [or : TCOr (Affine A) (Absorbing Q)]
+    (hA : IntoPure A φ) (or : TCOr (Affine A) (Absorbing Q))
     (h : P ⊣⊢ P' ∗ A) (h_entails : φ → P' ⊢ Q) : P ⊢ Q :=
   h.1.trans <| match or with
   | TCOr.l =>
@@ -26,8 +25,9 @@ theorem pure_elim_spatial [BI PROP] {P P' A Q : PROP} {φ : Prop}
     pure_elim_right fun hφ => (absorbingly_mono <| h_entails hφ).trans absorbing
 
 theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
-    [IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
-  pure_elim_spatial h h'
+    (instIntoPure : IntoPure A φ) (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
+  have instAffine := @TCOr.l (Affine iprop(□ A)) (Absorbing Q) ⟨(intuitionistically_affine A).affine⟩
+  pure_elim_spatial ⟨intuitionistically_elim.trans instIntoPure.into_pure⟩ instAffine h h'
 
 public meta section
 open Lean Elab Tactic Meta Qq
@@ -36,7 +36,7 @@ def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
     (P P' : Q($prop)) (p : Q(Bool)) (A Q : Q($prop)) (name : TSyntax ``binderIdent) (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))
     (k : (φ : Q(Prop)) → Q($φ) → ProofModeM (Q($P' ⊢ $Q))) : ProofModeM (Q($P ⊢ $Q)) := do
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
-  let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPure $A $φ)
+  let .some instIntoPure ← ProofModeM.trySynthInstanceQ q(IntoPure $A $φ)
     | throwError "ipure: {A} is not pure"
 
   let (name, ref) ← getFreshName name
@@ -47,11 +47,11 @@ def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
 
     match matchBool p with
     | .inl _ =>
-      return (q(pure_elim_intuitionistic $pf $f))
+      return (q(pure_elim_intuitionistic $instIntoPure $pf $f))
     | .inr _ =>
-      let .some _ ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $Q))
+      let .some instAffineAbsorbing ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $Q))
         | throwError "ipure: {A} is not affine and the goal not absorbing"
-      return q(pure_elim_spatial (A:=$A) $pf $f)
+      return q(pure_elim_spatial $instIntoPure $instAffineAbsorbing $pf $f)
 
 /--
   `ipure H` moves a pure hypothesis `H` from the Iris context into the regular

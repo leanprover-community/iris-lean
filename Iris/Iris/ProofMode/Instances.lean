@@ -10,6 +10,7 @@ public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ModalityInstances
 public import Iris.Std.TC
 public import Iris.Std.RocqPorting
+-- public import Iris.ProofMode.Tactics
 
 @[expose] public section
 

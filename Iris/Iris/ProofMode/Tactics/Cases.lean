@@ -48,11 +48,13 @@ theorem or_elim' [BI PROP] {p} {P A Q A1 A2 : PROP} [inst : IntoOr A A1 A2]
   (sep_mono_right <| (intuitionisticallyIf_mono inst.1).trans (intuitionisticallyIf_or _).1).trans <| BI.sep_or_left.1.trans <| or_elim h1 h2
 
 theorem intuitionistic_elim_spatial [BI PROP] {A A' Q : PROP}
-    [IntoPersistently false A A'] [TCOr (Affine A) (Absorbing Q)]
+    (instPers: IntoPersistently false A A') (instAffineAbsorbing: TCOr (Affine A) (Absorbing Q))
     (h : P ∗ □ A' ⊢ Q) : P ∗ A ⊢ Q := (replaces_r to_persistent_spatial).apply h
 
-theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP} [IntoPersistently true A A']
-    (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q := intuitionistic_elim_spatial h
+theorem intuitionistic_elim_intuitionistic [BI PROP] {A A' Q : PROP} (inst : IntoPersistently true A A')
+    (h : P ∗ □ A' ⊢ Q) : P ∗ □ A ⊢ Q :=
+  let instAffine := @TCOr.l (Affine iprop(□ A)) (Absorbing Q) ⟨(intuitionistically_affine A).affine⟩
+  intuitionistic_elim_spatial ⟨persistently_of_intuitionistically.trans inst.into_persistently⟩ instAffine h
 
 theorem spatial_elim [BI PROP] {p} {A A' Q : PROP} [FromAffinely A' A p]
     (h : P ∗ A' ⊢ Q) : P ∗ □?p A ⊢ Q :=
@@ -154,15 +156,15 @@ private def iCasesIntuitionistic {prop : Q(Type u)} (_bi : Q(BI $prop))
     (k : (B : Q($prop)) → ProofModeM Q($P ∗ □ $B ⊢ $goal)) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) := do
   let B ← mkFreshExprMVarQ q($prop)
-  let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently $p $A $B)
+  let .some instPers ← ProofModeM.trySynthInstanceQ q(IntoPersistently $p $A $B)
     | throwError "icases: {A} not persistent"
   match matchBool p with
   | .inl _ =>
-    return q(intuitionistic_elim_intuitionistic $(← k B))
+    return q(intuitionistic_elim_intuitionistic $instPers $(← k B))
   | .inr _ =>
-    let .some _ ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $goal))
+    let .some instAffineAbsorbing ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $goal))
       | throwError "icases: {A} not affine and the goal not absorbing"
-    return q(intuitionistic_elim_spatial (A := $A) $(← k B))
+    return q(intuitionistic_elim_spatial $instPers $instAffineAbsorbing $(← k B))
 
 /--
 Destruct an affine/spatial hypothesis [A] by removing the affinely wrapper and continuing with
