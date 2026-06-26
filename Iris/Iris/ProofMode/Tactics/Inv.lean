@@ -24,19 +24,30 @@ theorem tac_inv_elim [BI PROP]
     {Pinv Pin : PROP} {mPclose : Option <| X → PROP} {Pout Q' : X → PROP}
     (inst : ElimInv ϕ X Pinv Pin Pout close mPclose goal Q')
     (hϕ : ϕ)
-    (pf : ∀ x, e'' ∗ Pout x ∗ ((mPclose.map (· x)).getD emp) ⊢ Q' x)
+    (pf : match mPclose with
+      | none => ∀ x, e'' ∗ Pout x ⊢ Q' x
+      | some Pclose => ∀ x, e'' ∗ Pout x ∗ Pclose x ⊢ Q' x)
     (pfEq : e ⊣⊢ e' ∗ □?p Pinv)
     (pfPin : e' ∗ (Pin -∗ Pin) ⊢ e'' ∗ Pin) :
-    e ⊢ goal := calc
-  e ⊢ e' ∗ □?p Pinv            := pfEq.mp
-  _ ⊢ □?p Pinv ∗ e'            := sep_comm.mp
-  _ ⊢ Pinv ∗ e'                := sep_mono_left intuitionisticallyIf_elim
-  _ ⊢ Pinv ∗ e' ∗ emp          := sep_mono_right sep_emp.mpr
-  _ ⊢ Pinv ∗ e' ∗ (Pin -∗ Pin) := sep_mono_right <| sep_mono_right wand_rfl
-  _ ⊢ Pinv ∗ e'' ∗ Pin         := sep_mono_right pfPin
-  _ ⊢ Pinv ∗ Pin ∗ e''         := sep_mono_right sep_comm.mp
-  _ ⊢ _                        := sep_mono_right <| sep_mono_right <| forall_intro (wand_intro <| pf ·)
-  _ ⊢ goal                     := sorry -- inst.elim_inv hϕ
+    e ⊢ goal := by
+  have h0 := inst.elim_inv
+  have h1 : e ⊢ Pinv ∗ Pin ∗ e'' := calc
+    e ⊢ e' ∗ □?p Pinv            := pfEq.mp
+    _ ⊢ □?p Pinv ∗ e'            := sep_comm.mp
+    _ ⊢ Pinv ∗ e'                := sep_mono_left intuitionisticallyIf_elim
+    _ ⊢ Pinv ∗ e' ∗ emp          := sep_mono_right sep_emp.mpr
+    _ ⊢ Pinv ∗ e' ∗ (Pin -∗ Pin) := sep_mono_right <| sep_mono_right wand_rfl
+    _ ⊢ Pinv ∗ e'' ∗ Pin         := sep_mono_right pfPin
+    _ ⊢ Pinv ∗ Pin ∗ e''         := sep_mono_right sep_comm.mp
+  cases mPclose with simp_all
+  | none => calc
+    e ⊢ Pinv ∗ Pin ∗ e'' := h1
+    _ ⊢ _ := sep_mono_right <| sep_mono_right <| forall_intro (wand_intro <| pf ·)
+    _ ⊢ goal := h0
+  | some Pclose => calc
+    e ⊢ Pinv ∗ Pin ∗ e'' := h1
+    _ ⊢ _ := sep_mono_right <| sep_mono_right <| forall_intro (wand_intro <| pf ·)
+    _ ⊢ goal := h0
 
 /--
   This is useful as `wandM` (`-∗?`) is not simplified automatically without
@@ -90,9 +101,6 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
         iCasesCore _ hyps'' q($Q' $x) casesPat q(false) q($Pout $x) addBIGoalSimpWandM >>=
         (mkLambdaFVars #[x] ·)
-    -- Insert `emp` so that the entailment matches the argument of `tac_inv_elim`
-    let pf : Q(∀ x : $X, $e'' ∗ $Pout x ∗ emp ⊢ $Q' x) :=
-      q((sep_assoc.mpr.trans <| sep_emp.mp.trans <| $pf ·))
     return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
 
 /-- Given a `Namespace` value, find a corresponding invariant hypothesis. -/
