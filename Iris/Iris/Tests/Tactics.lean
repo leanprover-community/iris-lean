@@ -2671,6 +2671,7 @@ end icombine
 section iloeb
 
 variable {PROP : Type u} [ι₁ : BI PROP] [ι₂ : BILoeb PROP]
+
 -- Tests `iloeb` basic
 /--
 error: unsolved goals
@@ -2810,8 +2811,7 @@ error: iloeb: The following hypotheses depend on variables in the `generalizing`
 • Iris hypothesis `HT` depends on `n`
 -/
 #guard_msgs in
-example [BI PROP] [BILoeb PROP] {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop}
-    {h1 : Q n} {U : (Q n) → Prop} :
+example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {U : (Q n) → Prop} :
     ⊢ □ T n -∗ □ P n := by
   iintro #HT
   iloeb as IH generalizing %n
@@ -2827,11 +2827,32 @@ error: iloeb: The following hypotheses depend on variables in the `generalizing`
 • Iris hypothesis `x` (inaccessible name) depends on `n`
 -/
 #guard_msgs in
-example [BI PROP] [BILoeb PROP] {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop}
-    {h1 : Q n} {_ : (Q n) → Prop} :
+example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {_ : (Q n) → Prop} :
     ⊢ □ T n -∗ □ P n := by
   iintro #_
   iloeb as IH generalizing %n
+
+-- Same test as above, except `generalizing!` is used
+/--
+error: unsolved goals
+PROP : Type u
+ι₁ : BI PROP
+ι₂ : BILoeb PROP
+P T : Nat → PROP
+Q : Nat → Prop
+n : Nat
+h1 : Q n
+x✝ : Q n → Prop
+⊢ ⏎
+  □IH : ▷ ∀ n, <affine> ⌜Q n⌝ -∗ ∀ x, □ T n -∗ □ P n
+  □x✝ : T n
+  ⊢ □ P n
+-/
+#guard_msgs in
+example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {_ : (Q n) → Prop} :
+    ⊢ □ T n -∗ □ P n := by
+  iintro #_
+  iloeb as IH generalizing! %n
 
 end iloeb
 
