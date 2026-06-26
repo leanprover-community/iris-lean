@@ -8,13 +8,14 @@ public import Iris.Algebra
 public import Iris.Instances.Lib.FUpd
 public import Iris.BI
 public import Iris.BI.WeakestPre
+public import Iris.BI.DerivedLaws
 public import Iris.ProofMode
 public import Iris.ProgramLogic.Language
 public import Iris.Std.CoPset
 
 namespace Iris
 
-open ProgramLogic Language.Notation Std
+open ProgramLogic Language.Notation Std Iris.BI
 
 @[expose] public section
 
@@ -695,12 +696,37 @@ instance (priority := low) elimAcc_wp_atomic {X} (E₁ E₂ : CoPset) α β (γ 
     ElimAcc (Language.Atomic ↑s e) (fupd E₁ E₂) (fupd E₂ E₁) α β γ
       (WP e @ s ; E₁ {{ Φ }})
       (fun x => WP e @ s ; E₂ {{ v, |={E₂}=> β x ∗ (γ x -∗? Φ v) }}) where
-  elim_acc := sorry
+  elim_acc := by
+    simp only [accessor, BIBase.wandM]
+    iintro %atomic Hinner Hacc
+    imod Hacc with ⟨%x, Hα, Hclose⟩
+    iapply wp_wand $$ [Hinner Hα]
+    · iapply Hinner $$ Hα
+    · iintro %v >⟨H1, H2⟩
+      ispecialize Hclose $$ H1
+      imod Hclose
+      imodintro
+      cases (γ x) with
+      | none => iexact H2
+      | some P => iapply H2 $$ Hclose
 
 @[rocq_alias elim_acc_wp_nonatomic]
 instance elimAcc_wp_nonatomic {X} E (α β : X → IProp GF) (γ : X → Option (IProp GF)) :
     ElimAcc True (fupd E E) (fupd E E) α β γ (WP e @ s ; E {{ Φ }})
     (fun x => WP e @ s ; E {{ v, |={E}=> β x ∗ (γ x -∗? Φ v) }}) where
-  elim_acc := sorry
+  elim_acc := by
+    simp only [accessor, BIBase.wandM]
+    iintro %_ Hinner Hacc
+    imod Hacc with ⟨%x, Hα, Hclose⟩
+    iapply wp_fupd
+    iapply wp_wand $$ [Hinner Hα]
+    · iapply Hinner $$ Hα
+    · iintro %v >⟨H1, H2⟩
+      ispecialize Hclose $$ H1
+      imod Hclose
+      imodintro
+      cases (γ x) with
+      | none => iexact H2
+      | some P => iapply H2 $$ Hclose
 
 end ProofModeClasses
