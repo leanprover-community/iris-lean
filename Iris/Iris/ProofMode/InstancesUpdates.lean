@@ -7,7 +7,10 @@ module
 
 public import Iris.BI
 public import Iris.ProofMode.Classes
+public import Iris.ProofMode.Instances
 public import Iris.Std.TC
+public import Iris.ProofMode.Tactics
+public import Iris.ProofMode.Display
 
 @[expose] public section
 
@@ -201,18 +204,48 @@ instance (priority := low) elimModal_fupd_fupd_wrongMask p E0 E1 E2 E3 (P Q : PR
   elim_modal h := by cases h
 
 @[rocq_alias elim_acc_bupd]
-instance elimAcc_bupd [BUpd PROP] {X} (α β : X → PROP) mγ (Q : PROP) :
+instance elimAcc_bupd {X} (α β : X → PROP) mγ (Q : PROP) :
     ElimAcc True bupd bupd α β mγ
     iprop(|==> Q)
-    (fun x => iprop(|==> β x ∗ (mγ x -∗? |==> Q))) where
-  elim_acc := sorry
+    iprop(fun x => (|==> β x ∗ (mγ x -∗? |==> Q))) where
+  elim_acc := by
+    simp only [accessor, BIBase.wandM]
+    iintro %_ Hinner >⟨%x, Hα, Hclose⟩
+    ispecialize Hinner $$ %x Hα
+    cases (mγ x) with simp_all
+    | none =>
+      icases Hinner with ⟨Hβ, Hfin⟩
+      imod Hβ
+      ispecialize Hclose $$ Hβ
+      imod Hclose
+      iexact Hfin
+    | some P =>
+      icases Hinner with ⟨Hβ, Hfin⟩
+      imod Hβ
+      ispecialize Hclose $$ Hβ
+      iapply Hfin
+      sorry
 
 @[rocq_alias elim_acc_fupd]
-instance elimAcc_fupd [FUpd PROP] {X} E1 E2 E (α β : X → PROP) mγ (Q : PROP) :
+instance elimAcc_fupd {X} E1 E2 E (α β : X → PROP) mγ (Q : PROP) :
     ElimAcc True (fupd E1 E2) (fupd E2 E1) α β mγ
     iprop(|={E1,E}=> Q)
     (fun x => iprop(|={E2}=> β x ∗ (mγ x -∗? |={E1,E}=> Q))) where
-  elim_acc := sorry
+  elim_acc := by
+    simp only [accessor, BIBase.wandM]
+    iintro %_ Hinner >⟨%x, Hα, Hclose⟩
+    ispecialize Hinner $$ %x Hα
+    cases (mγ x) with simp_all
+    | none =>
+      imod Hinner with ⟨Hβ, Hfin⟩
+      ispecialize Hclose $$ Hβ
+      imod Hclose
+      iexact Hfin
+    | some p =>
+      imod Hinner with ⟨Hβ, Hfin⟩
+      ispecialize Hclose $$ Hβ
+      imod Hclose
+      iapply Hfin $$ Hclose
 
 end BIFancyUpdate
 
