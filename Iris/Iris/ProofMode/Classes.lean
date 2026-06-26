@@ -232,7 +232,7 @@ class IntoInv [BI PROP] (P : PROP) (N : Namespace)
 @[rocq_alias accessor]
 def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
     (mγ : X → Option  PROP) : PROP :=
-  M1 iprop(∃ x, α x ∗ (β x -∗ M2 ((mγ x).getD emp)))
+  M1 iprop(∃ x, α x ∗ (β x -∗ M2 (match mγ x with | none => emp | some p => p)))
 
 @[ipm_class, rocq_alias ElimAcc]
 class ElimAcc [BI PROP] {X : Type} (ϕ : outParam Prop) (M1 M2 : PROP → PROP)

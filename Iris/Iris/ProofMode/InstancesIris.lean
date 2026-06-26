@@ -24,7 +24,13 @@ instance elimInv_acc_without_close [BI PROP] {X : Type}
     [h1 : IntoAcc Pinv ϕ1 Pin M1 M2 α β mγ]
     [h2 : ElimAcc ϕ2 M1 M2 α β mγ Q Q'] :
     ElimInv (ϕ1 ∧ ϕ2) X Pinv Pin α false none Q Q' where
-  elim_inv := sorry
+  elim_inv := by
+    intro ⟨hϕ1, _⟩
+    iintro ⟨Hinv, Hin, Hcont⟩
+    iapply h2.elim_acc $$ [Hcont]
+    · assumption
+    · iassumption
+    · iapply h1.into_acc hϕ1 $$ Hinv Hin
 
 @[rocq_alias elim_inv_acc_with_close]
 instance elimInv_acc_with_close [BI PROP] {X : Type}
@@ -34,4 +40,11 @@ instance elimInv_acc_with_close [BI PROP] {X : Type}
     ElimInv (ϕ1 ∧ ϕ2) X Pinv Pin α true
             (some (fun x => iprop(β x -∗ M2 (match mγ x with | none => emp | some m => m))))
             Q (fun _ => Q') where
-  elim_inv := sorry
+  elim_inv := by
+    intro ⟨hϕ1, _⟩
+    have hAcc := h1.into_acc
+    unfold accessor at hAcc
+    iintro ⟨Hinv, Hin, Hcont⟩
+    imod hAcc hϕ1 $$ Hinv Hin with ⟨%_, Hα, Hclose⟩
+    iapply Hcont
+    isplitl [Hα] <;> iassumption
