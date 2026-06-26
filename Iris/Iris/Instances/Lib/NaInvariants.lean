@@ -231,7 +231,13 @@ instance intoAcc_na (p : NaInvPoolName) (E F : CoPset) (N : Namespace) (P : IPro
     IntoAcc (X := Unit) (inv p N P) (↑N ⊆ E ∧ ↑N ⊆ F) (own p F) (fupd E E) (fupd E E)
     (fun _ => iprop(▷ P ∗ own p (F \ ↑N))) (fun _ => iprop(▷ P ∗ own p (F \ ↑N)))
               (λ _ => some (own p F)) where
-  into_acc := sorry
+  into_acc := by
+    simp only [accessor]
+    intro ⟨hE, hF⟩
+    iintro #Hinv Hown
+    imod inv_acc hE hF $$ Hinv Hown with ⟨_, Hown, _⟩
+    iexists ()
+    iframe
 
 end NonAtomicInvariant
 end Iris
