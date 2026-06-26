@@ -105,10 +105,29 @@ private def findInvariantWithNamespace {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
   | .sep _ _ _ _ lhs rhs =>
     return (← findInvariantWithNamespace N rhs) <|> (← findInvariantWithNamespace N lhs)
 
-/-- `iinv` opens an invariant in the proof state. -/
 syntax (name := iinv) "iinv " colGt term (" $$ " colGt ppSpace specPat)?
     " with " colGt icasesPat (colGt icasesPat)? : tactic
 
+/--
+  `iinv H with casesPat` opens an invariant hypothesis `H` and uses the
+  cases pattern `casesPat` to destruct the result without any additional
+  hypothesis for closing the invariant. The type class
+  `elimInv_acc_without_close` is used with this tactic.
+
+  `iinv H with casesPat closePat` opens an invariant hypothesis `H`,
+  uses the cases pattern `casesPat` to destruct the result and generates a
+  hypothesis for closing the invariant, which is destructed by the cases
+  pattern `closePat`. The type class `elimInv_acc_with_close` is used with
+  this tactic.
+
+  Furthermore, the following syntax is available.
+  - `iinv N with casesPat`: similar to `iinv H with casesPat`, where
+    an invariant with the namespace `N` is opened.
+  - `iinv H $$ specPat with casesPat`: similar to `iinv H with casesPat`,
+    with a specialisation pattern `specPat` for resource consumption needed
+    to open the invariant. Without `specPat`, the specialisation pattern is
+    by default the auto-framing of spatial hypotheses.
+-/
 elab_rules : tactic
   | `(tactic| iinv $t:term $[$$ $spat:specPat]? with $casesPat:icasesPat $[$closePat:icasesPat]?) => do
     -- Parse the introduction and selection patterns
