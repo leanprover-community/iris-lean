@@ -95,19 +95,15 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
       q((sep_assoc.mpr.trans <| sep_emp.mp.trans <| $pf ·))
     return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
 
-/-- Find an invariant hypothesis with a given `Namespace` value. -/
+/-- Given a `Namespace` value, find a corresponding invariant hypothesis. -/
 private def findInvariantWithNamespace {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (N : Q(Namespace)) (hyps : Hyps bi e) : ProofModeM <| Option IVarId := do
   match hyps with
   | .emp _ => return none
   | .hyp _ _ ivar _ ty _ =>
-    let inst ← ProofModeM.trySynthInstanceQ q(IntoInv $ty $N)
-    return if inst.isSome then some ivar else none
+    return (← ProofModeM.trySynthInstanceQ q(IntoInv $ty $N)) <&> (fun _ => ivar)
   | .sep _ _ _ _ lhs rhs =>
-    let rhsInvariant ← findInvariantWithNamespace N rhs
-    match rhsInvariant with
-    | some ivar => return some ivar
-    | none => return ← findInvariantWithNamespace N lhs
+    return (← findInvariantWithNamespace N rhs) <|> (← findInvariantWithNamespace N lhs)
 
 /-- `iinv` opens an invariant in the proof state. -/
 syntax (name := iinv) "iinv " colGt term (" $$ " colGt ppSpace specPat)?
