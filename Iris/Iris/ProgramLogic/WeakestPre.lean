@@ -689,17 +689,16 @@ instance (priority := low) elimAcc_wp_atomic {X} (E₁ E₂ : CoPset) α β (γ 
       (fun x => WP e @ s ; E₂ {{ v, |={E₂}=> β x ∗ (γ x -∗? Φ v) }}) where
   elim_acc := by
     simp only [accessor, BIBase.wandM]
-    iintro %atomic Hinner Hacc
-    imod Hacc with ⟨%x, Hα, Hclose⟩
+    iintro %atomic Hinner >⟨%x, Hα, Hclose⟩
     iapply wp_wand $$ [Hinner Hα]
     · iapply Hinner $$ Hα
-    · iintro %v >⟨H1, H2⟩
-      ispecialize Hclose $$ H1
+    · iintro %v >⟨Hβ, HΦ⟩
+      ispecialize Hclose $$ Hβ
       imod Hclose
       imodintro
       cases (γ x) with
-      | none => iexact H2
-      | some P => iapply H2 $$ Hclose
+      | none => iexact HΦ
+      | some P => iapply HΦ $$ Hclose
 
 @[rocq_alias elim_acc_wp_nonatomic]
 instance elimAcc_wp_nonatomic {X} E (α β : X → IProp GF) (γ : X → Option (IProp GF)) :
@@ -707,17 +706,16 @@ instance elimAcc_wp_nonatomic {X} E (α β : X → IProp GF) (γ : X → Option 
     (fun x => WP e @ s ; E {{ v, |={E}=> β x ∗ (γ x -∗? Φ v) }}) where
   elim_acc := by
     simp only [accessor, BIBase.wandM]
-    iintro %_ Hinner Hacc
-    imod Hacc with ⟨%x, Hα, Hclose⟩
+    iintro %_ Hinner >⟨%x, Hα, Hclose⟩
     iapply wp_fupd
     iapply wp_wand $$ [Hinner Hα]
     · iapply Hinner $$ Hα
-    · iintro %v >⟨H1, H2⟩
-      ispecialize Hclose $$ H1
+    · iintro %v >⟨Hβ, HΦ⟩
+      ispecialize Hclose $$ Hβ
       imod Hclose
       imodintro
       cases (γ x) with
-      | none => iexact H2
-      | some P => iapply H2 $$ Hclose
+      | none => iexact HΦ
+      | some P => iapply HΦ $$ Hclose
 
 end ProofModeClasses
