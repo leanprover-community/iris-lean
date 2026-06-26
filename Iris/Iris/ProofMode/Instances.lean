@@ -51,6 +51,12 @@ instance fromImp_imp [BI PROP] (P1 P2 : PROP) : FromImp iprop(P1 → P2) P1 P2 :
 @[rocq_alias from_wand_wand]
 instance fromWand_wand [BI PROP] (P1 P2 : PROP) : FromWand iprop(P1 -∗ P2) io P1 P2 := ⟨.rfl⟩
 
+-- FromWandM
+@[rocq_alias from_wand_wandM]
+instance fromWand_wandM [BI PROP] (mP1 : Option PROP) (P2 : PROP) :
+    FromWand iprop(mP1 -∗? P2) io (mP1.getD emp) P2 where
+  from_wand := wandM_sound.mpr
+
 -- IntoWand
 #rocq_ignore into_wand_wand' "IntoWand' is not used in Lean"
 #rocq_ignore into_wand_impl' "IntoWand' is not used in Lean"
@@ -83,6 +89,13 @@ instance intoWand_and_r (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
 
 instance intoWand_wandIff (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
     [h : IntoWand p q iprop((R1 -∗ R2) ∧ (R2 -∗ R1)) ioP P' ioQ Q'] : IntoWand p q iprop(R1 ∗-∗ R2) ioP P' ioQ Q' := h
+
+@[rocq_alias into_wand_wandM]
+instance intoWand_wandM (p q : Bool) [BI PROP] (mP' : Option PROP) (P Q : PROP)
+    [h : FromAssumption q ioP P (mP'.getD emp)] :
+    IntoWand p q iprop(mP' -∗? Q) ioP P ioQ Q where
+  into_wand := (intuitionisticallyIf_mono wandM_sound.mp).trans <|
+    (intuitionisticallyIf_mono <| wand_mono_left h.1).trans intuitionisticallyIf_elim
 
 -- The set_option is ok since this is an instance for an IPM class and thus can create mvars.
 set_option synthInstance.checkSynthOrder false in
@@ -845,6 +858,14 @@ instance elimModal_wand [BI PROP] φ p p' (P P' Q Q' R : PROP) [h : ElimModal φ
      apply wand_intro ((sep_assoc.1.trans $ sep_mono_right $ wand_elim $ wand_intro_left $
        wand_intro_left $ sep_assoc.2.trans _).trans (h.1 hφ))
      apply (sep_mono_left sep_comm.1).trans (sep_assoc.1.trans $ wand_elim_swap $ wand_elim_swap .rfl)
+
+@[rocq_alias elim_modal_wandM]
+instance elimModal_wandM [BI PROP] φ p p' (P P' Q Q' : PROP) (mR : Option PROP)
+    [h : ElimModal φ p p' P P' Q Q'] :
+    ElimModal φ p p' P P' iprop(mR -∗? Q) iprop(mR -∗? Q') where
+  elim_modal hφ :=
+    (sep_mono_right <| wand_mono_right wandM_sound.mp).trans <|
+    ((elimModal_wand φ p p' P P' Q Q' (mR.getD emp)).elim_modal hφ).trans wandM_sound.mpr
 
 @[rocq_alias elim_modal_forall]
 instance elimModal_forall [BI PROP] φ p p' P P' (Φ Ψ : α → PROP) [h : ∀ x, ElimModal φ p p' P P' (Φ x) (Ψ x)] :
