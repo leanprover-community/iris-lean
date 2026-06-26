@@ -176,7 +176,7 @@ theorem resolve_proph [DecidableEq P] (p : P) (v : V) (pvs : ProphValList P V) (
   have Hvs : vs = v :: prophListResolves pvs p := by
     rw [Hres p vs HR, prophListResolves, if_pos rfl]
   subst Hvs
-  imod ghost_map_update p _ (prophListResolves pvs p) $$ Hauth Hp with ⟨Hauth, Hfrag⟩
+  imod ghost_map_update (prophListResolves pvs p) $$ Hauth Hp with ⟨Hauth, Hfrag⟩
   imodintro
   iexists (prophListResolves pvs p)
   iframe Hfrag; isplit

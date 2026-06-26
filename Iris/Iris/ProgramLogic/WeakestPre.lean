@@ -246,12 +246,14 @@ theorem fupd_wp {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
     imod H with H
     iassumption
 
-theorem fupd_wp_iff {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
+theorem fupd_wp_iff {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ (|={E}=> WP e @ s ; E {{ Φ }}) :=
   ⟨fupd_mask_intro_discard LawfulSet.subset_refl, fupd_wp⟩
 
+-- FIXME: Implicits
+
 @[rocq_alias wp_fupd]
-theorem wp_fupd (s : Stuckness) E (e : Expr) (Φ : Val → IProp GF) :
+theorem wp_fupd {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{v, |={E}=> Φ v }} ⊢ WP e @ s ; E {{ Φ }} := by
   iintro h
   iapply wp_strong_mono (Std.IsPreorder.le_refl _) LawfulSet.subset_refl $$ h
@@ -391,59 +393,48 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
       imod interp $$ Hσ₁ with %h
       grind only
 
-@[rocq_alias wp_bind]
-theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr}
+
+theorem wp_bind_iff (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr}
     {Φ : Val → IProp GF} :
     -- TODO: Have `WP` use the correct `Val` type from the `Wp` instance (it should anyways, it's an outParam, no?)
-    WP e @ s ; E {{v, WP (K (↑v : Val)) @ s ; E {{ Φ }} }} ⊢ WP (K e) @ s ; E {{ Φ }} := by
-  iintro H
+    WP e @ s ; E {{v, WP (K (↑v : Val)) @ s ; E {{ Φ }} }} ⊣⊢ WP (K e) @ s ; E {{ Φ }} := by
   iloeb as IH generalizing %E %e %Φ
-  rewrite (occs := [2]) [wp_unfold.to_eq]
+  rewrite (occs := [1]) [wp_unfold.to_eq]
   simp only [wp.pre]
   match h : toVal e with
   | some v =>
     dsimp only
     rw [ToVal.coe_of_toVal_eq_some h]
-    iapply fupd_wp $$ H
+    isplit
+    · iintro H; iapply fupd_wp $$ H
+    · iintro $
   | none =>
     rw [wp_unfold.to_eq]
     dsimp only
     simp only [wp.pre, κ.toVal_eq_none_fill h, Nat.repeat]
-    iintro %σ₁ %step %obs %obs' %n Hσ
-    imod H $$ [$] with ⟨%_, H⟩
-    imodintro
-    isplit
+    isplit <;>
+    (iintro H %σ₁ %step %obs %obs' %n Hσ; imod H $$ [$] with ⟨%_, H⟩; imodintro; isplit)
     · ipureintro; grind only [cases Stuckness, Language.Context.reducible_fill]
     · iintro %e₂ %σ₂ %efs %HKstep Hcred
       obtain ⟨e₂', rfl, Hstep⟩ := κ.primStep_fill_inv h HKstep
       icases H $$ %e₂' %σ₂ %efs %Hstep Hcred with >H; imodintro; imodintro
       imod H; imodintro; iapply step_fupdN_wand $$ H; iintro H
       imod H with ⟨$, H, $⟩; imodintro; iapply IH $$ H
-
-@[rocq_alias wp_bind_inv]
-theorem wp_bind_inv (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr}
-    {Φ : Val → IProp GF} :
-    WP (K e) @ s ; E {{ Φ }} ⊢ WP e @ s ; E {{v, WP (K (↑v : Val)) @ s ; E {{ Φ }} }} := by
-  iintro H
-  iloeb as IH generalizing %E %e %Φ
-  rewrite (occs := [3]) [wp_unfold.to_eq]
-  simp only [wp.pre]
-  match h : toVal e with
-  | some v =>
-    simp only [ToVal.coe_of_toVal_eq_some h]
-    iapply fupd_wp $$ H
-  | none =>
-    rewrite (occs := [2]) [wp_unfold.to_eq]
-    simp only [wp.pre, κ.toVal_eq_none_fill h, Nat.repeat]
-    iintro %σ₁ %step %obs %obs' %n Hσ
-    imod H $$ [$] with ⟨%_, H⟩
-    imodintro
-    isplit
     · ipureintro; grind only [cases Stuckness, Language.Context.reducible_fill_inv]
     · iintro %e₂ %σ₂ %efs %Hstep Hcred
       icases H $$ %(K e₂) %σ₂ %efs %(κ.primStep_fill Hstep) Hcred with >H; imodintro; imodintro
       imod H; imodintro; iapply step_fupdN_wand $$ H; iintro H
       imod H with ⟨$, H, $⟩; imodintro; iapply IH $$ H
+
+@[rocq_alias wp_bind]
+theorem wp_bind (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr}
+    {Φ : Val → IProp GF} :
+    WP e @ s ; E {{v, WP (K (↑v : Val)) @ s ; E {{ Φ }} }} ⊢ WP (K e) @ s ; E {{ Φ }} := (wp_bind_iff K).1
+
+@[rocq_alias wp_bind_inv]
+def wp_bind_inv (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness} {E : CoPset} {e : Expr}
+    {Φ : Val → IProp GF} :
+   WP (K e) @ s ; E {{ Φ }} ⊢ WP e @ s ; E {{v, WP (K (↑v : Val)) @ s ; E {{ Φ }} }}  := (wp_bind_iff K).2
 
 /-! ## Derived rules -/
 

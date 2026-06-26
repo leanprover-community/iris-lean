@@ -298,3 +298,32 @@ set_option pp.mvars false in
 
 
 end tactics
+
+section issue_456
+
+-- test for https://github.com/leanprover-community/iris-lean/issues/456
+
+@[ipm_class]
+class C (_ : InOut) (a : semiOutParam Nat) (_ : InOut) (b : semiOutParam Nat) : Prop where
+
+abbrev CMerge (a b : semiOutParam Nat) := C .out a .in b
+
+abbrev CSplit (a b : semiOutParam Nat) := C .in a .out b
+
+set_option synthInstance.checkSynthOrder false in
+instance instMerge (b : Nat) : CMerge (b + 1) b := ⟨⟩
+
+set_option synthInstance.checkSynthOrder false in
+instance instSplit (k : Nat) : CSplit (k + 1) k := ⟨⟩
+
+-- should not cause an index out of bounds exception
+/-- info: solution: CMerge (?m.4 + 1) ?m.4, new goals: [?m.4: Nat] -/
+#guard_msgs in
+#ipm_synth CMerge _ _
+
+-- should fail input check and thus result in None
+/-- info: None -/
+#guard_msgs in
+#ipm_synth CSplit _ _
+
+end issue_456

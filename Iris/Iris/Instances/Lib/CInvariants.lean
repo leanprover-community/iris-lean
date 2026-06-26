@@ -224,7 +224,7 @@ theorem acc_strong (E : CoPset) (N : Namespace) (γ : GName) (p : Qp) (P : IProp
       ▷ P ∗ own γ p ∗ ∀ (E' : CoPset), ▷ P ∨ own γ (1 : Qp) ={E', ↑N ∪ E'}=∗ True := by
   unfold cinv
   iintro #Hinv Hown
-  imod inv_acc_strong _ _ _ Hsub $$ Hinv with ⟨(⟨HP, >Hexcl⟩ | >Hown'), Hclose⟩
+  imod inv_acc_strong Hsub $$ Hinv with ⟨(⟨HP, >Hexcl⟩ | >Hown'), Hclose⟩
   · imodintro
     iframe
     iintro %E' HPor
@@ -236,7 +236,7 @@ theorem acc_strong (E : CoPset) (N : Namespace) (γ : GName) (p : Qp) (P : IProp
     iapply own_one_l $$ Hown' Hown
 
 @[rocq_alias cinv_acc]
-theorem acc (E : CoPset) (N : Namespace) (γ : GName) (p : Qp) (P : IProp GF)
+theorem acc {E : CoPset} {N : Namespace} {γ : GName} {p : Qp} {P : IProp GF}
     (Hsub : ↑N ⊆ E) :
     ⊢ cinv N γ P -∗ own γ p ={E, E \ ↑N}=∗ ▷ P ∗ own γ p ∗ (▷ P ={E \ ↑N, E}=∗ True) := by
   iintro #Hinv Hγ
@@ -250,19 +250,28 @@ theorem acc (E : CoPset) (N : Namespace) (γ : GName) (p : Qp) (P : IProp GF)
   imodintro
   itrivial
 
+theorem inv_open_fupd {E : CoPset} {N : Namespace} {P : IProp GF} (Hsub : ↑N ⊆ E) :
+    ⊢ cinv N γ P -∗ (▷ P ∗ Q ∗ own γ q ={E \ N}=∗ P ∗ R) -∗
+      (Q ∗ own γ q) ={E}=∗ R := by
+  iintro #Hinv H ⟨HQ, Hown⟩
+  imod acc Hsub $$ Hinv Hown with ⟨HP, Hown, Hclose⟩
+  imod H $$ [$] with ⟨HP, HR⟩; iframe
+  imod Hclose $$ [$HP] with -
+  itrivial
+
 @[rocq_alias cinv_acc_1]
 theorem acc_one (E : CoPset) (N : Namespace) (γ : GName) (P : IProp GF) (Hsub : ↑N ⊆ E) :
     ⊢ cinv N γ P -∗ own γ (1 : Qp) ={E}=∗
       ▷ P ∗ (▷ P ={E}=∗ own γ (1 : Qp)) := by
   iintro #Hinv Hγ
   unfold cinv
-  imod inv_acc _ _ _ Hsub $$ Hinv with ⟨(⟨HP, >Hexcl⟩ | >Hγ'), Hclose⟩
+  imod inv_acc Hsub $$ Hinv with ⟨(⟨HP, >Hexcl⟩ | >Hγ'), Hclose⟩
   · imod Hclose $$ [Hγ] with -
     · inext; iright; iassumption
     imodintro
     iframe
     iintro HP
-    imod inv_acc _ _ _ Hsub $$ Hinv with ⟨(⟨_HPbad, >Hexcl2⟩ | >Hγ1), Hclose2⟩
+    imod inv_acc Hsub $$ Hinv with ⟨(⟨_HPbad, >Hexcl2⟩ | >Hγ1), Hclose2⟩
     · iexfalso
       iapply excl_excl $$ Hexcl Hexcl2
     · imod Hclose2 $$ [HP Hexcl] with -

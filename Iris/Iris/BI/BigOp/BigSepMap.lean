@@ -568,8 +568,22 @@ theorem bigSepM_impl_strong [DecidableEq K] {M₂ : Type _ → Type _} {V₂ : T
       refine sep_mono_right <| sep_mono_right (equiv_iff.mp <| bigOpM_eqv_of_perm Φ fun k => ?_).2
       by_cases hki : i = k <;> simp_all [get?_filter, get?_insert, get?_delete]
 
--- TODO: `big_sepM_kmap` and `big_sepM_map_seq` require map operations
--- which are not yet available in `PartialMap`.
+-- TODO: `big_sepM_kmap` requires map operations which are not yet available in `PartialMap`.
+
+theorem bigSepM_map_seq {M' : Type _ → Type _} [LawfulFiniteMap M' Nat] {V : Type _}
+    {Φ : Nat → V → PROP} {start : Nat} {l : List V} :
+    ([∗map] k ↦ v ∈ FiniteMap.map_seq (M := M') start l, Φ k v) ⊣⊢
+    ([∗list] i ↦ v ∈ l, Φ (start + i) v) := by
+  induction l generalizing start with
+  | nil => simp [LawfulFiniteMap.map_seq_nil]
+  | cons v l ih =>
+      have Hget : get? (FiniteMap.map_seq (M := M') (start + 1) l) start = none := by
+        rw [LawfulFiniteMap.get?_map_seq, if_neg (by omega)]
+      rw [LawfulFiniteMap.map_seq_cons]
+      refine (bigSepM_insert Hget).trans (sep_congr .rfl ?_)
+      refine .trans (ih (start := start + 1)) ?_
+      refine .of_eq ?_
+      grind
 
 /-! ## Map–Set Interaction -/
 
