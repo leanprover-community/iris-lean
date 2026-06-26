@@ -301,7 +301,7 @@ instance intoAcc_cinv (E : CoPset) (N : Namespace) (γ : GName) (P : IProp GF) (
   into_acc := by
     simp only [accessor]
     iintro %x #Hinv Hown
-    imod acc E N γ p P x $$ Hinv Hown with ⟨HP, Hγ, Hcl⟩
+    imod acc x $$ Hinv Hown with ⟨HP, Hγ, Hcl⟩
     imodintro
     iexists ()
     isplitl [HP Hγ]
