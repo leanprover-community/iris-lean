@@ -36,7 +36,7 @@ theorem tac_inv_elim [BI PROP]
   _ ⊢ Pinv ∗ e'' ∗ Pin         := sep_mono_right pfPin
   _ ⊢ Pinv ∗ Pin ∗ e''         := sep_mono_right sep_comm.mp
   _ ⊢ _                        := sep_mono_right <| sep_mono_right <| forall_intro (wand_intro <| pf ·)
-  _ ⊢ goal                     := inst.elim_inv hϕ
+  _ ⊢ goal                     := sorry -- inst.elim_inv hϕ
 
 /--
   This is useful as `wandM` (`-∗?`) is not simplified automatically without

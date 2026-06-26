@@ -251,8 +251,11 @@ set_option synthInstance.checkSynthOrder false in
 @[ipm_class, rocq_alias ElimInv]
 class ElimInv [BI PROP] (φ : outParam Prop) (X : outParam Type)
     (Pinv : PROP) (Pin : outParam PROP) (Pout : outParam <| X → PROP)
-    (close : Bool) (mPclose : outParam <| Option <| X → PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
-  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, Pout x ∗ ((mPclose.map (· x)).getD emp) -∗ Q' x) ⊢ Q
+    (close : Bool) (mPclose : outParam <| Option <| X → PROP)
+    (Q : PROP) (Q' : outParam <| X → PROP) where
+  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, (match mPclose with
+    | none => iprop(Pout x -∗ Q' x)
+    | some Pclose => iprop(Pout x ∗ Pclose x -∗ Q' x))) ⊢ Q
 export ElimInv (elim_inv)
 
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
