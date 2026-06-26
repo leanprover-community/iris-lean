@@ -405,7 +405,7 @@ example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗
   irevert %x H
 
 /-- Tests `irevert!` which reverts `H2` and `H3` automatically -/
-example [BI PROP] (Φ : Bool → PROP) :
+example [BI PROP] (Φ : Bool → PROP) (x y : Bool) :
     (∀ x, (Φ x -∗ Φ y) -∗ Φ x -∗ Φ y) ∗ (Φ x -∗ Φ y) ∗ Φ x ⊢ Φ y := by
   iintro ⟨H1, H2, H3⟩
   irevert! %x
