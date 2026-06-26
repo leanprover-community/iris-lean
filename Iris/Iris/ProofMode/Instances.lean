@@ -918,23 +918,3 @@ instance combineSepGives_persistently [BI PROP] (Q1 Q2 P : PROP)
     [h : CombineSepGives Q1 Q2 P] :
     CombineSepGives iprop(<pers> Q1) iprop(<pers> Q2) iprop(<pers> P) where
   combine_sep_gives := persistently_sep_mpr.trans (persistently_mono h.combine_sep_gives)
-
-set_option synthInstance.checkSynthOrder false in
-@[rocq_alias elim_inv_acc_without_close]
-instance elimInv_acc_without_close [BI PROP] {X : Type}
-    ϕ1 ϕ2 Pinv Pin (M1 M2 : PROP → PROP) α β mγ Q (Q' : X → PROP)
-    [h1 : IntoAcc Pinv ϕ1 Pin M1 M2 α β mγ]
-    [h2 : ElimAcc ϕ2 M1 M2 α β mγ Q Q'] :
-    ElimInv (ϕ1 ∧ ϕ2) X Pinv Pin α false none Q Q' where
-  elim_inv := sorry
-
-set_option synthInstance.checkSynthOrder false in
-@[rocq_alias elim_inv_acc_with_close]
-instance elimInv_acc_with_close [BI PROP] {X : Type}
-    ϕ1 ϕ2 Pinv Pin (M1 M2 : PROP → PROP) α β mγ Q (Q' : PROP)
-    [h1 : IntoAcc Pinv ϕ1 Pin M1 M2 α β mγ]
-    [h2 : ∀ R, ElimModal ϕ2 false false (M1 R) R Q Q'] :
-    ElimInv (ϕ1 ∧ ϕ2) X Pinv Pin α true
-            (some (fun x => iprop(β x -∗ M2 (match mγ x with | none => emp | some m => m))))
-            Q (fun _ => Q') where
-  elim_inv := sorry

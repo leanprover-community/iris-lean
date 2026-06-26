@@ -8,6 +8,7 @@ public import Iris.ProofMode.Instances
 public import Iris.ProofMode.InstancesCmra
 public import Iris.ProofMode.InstancesFrame
 public import Iris.ProofMode.InstancesInternalEq
+public import Iris.ProofMode.InstancesIris
 public import Iris.ProofMode.InstancesLater
 public import Iris.ProofMode.InstancesMake
 public import Iris.ProofMode.InstancesPlainly
