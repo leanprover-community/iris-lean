@@ -222,9 +222,9 @@ instance elimAcc_bupd {X} (α β : X → PROP) mγ (Q : PROP) :
     | some P =>
       icases Hinner with ⟨Hβ, Hfin⟩
       imod Hβ
-      ispecialize Hclose $$ Hβ
+      imod Hclose $$ Hβ
       iapply Hfin
-      sorry
+      iexact Hclose
 
 @[rocq_alias elim_acc_fupd]
 instance elimAcc_fupd {X} E1 E2 E (α β : X → PROP) mγ (Q : PROP) :
