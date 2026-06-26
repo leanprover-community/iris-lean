@@ -404,6 +404,13 @@ example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗
   iintro %x %_ H
   irevert %x H
 
+/-- Tests `irevert!` which reverts `H2` and `H3` automatically -/
+example [BI PROP] (Φ : Bool → PROP) :
+    (∀ x, (Φ x -∗ Φ y) -∗ Φ x -∗ Φ y) ∗ (Φ x -∗ Φ y) ∗ Φ x ⊢ Φ y := by
+  iintro ⟨H1, H2, H3⟩
+  irevert! %x
+  iassumption
+
 end revert
 
 -- exists
@@ -2933,8 +2940,7 @@ def NTree.childCount : NTree α → Nat
 /-- An binary relation defined using nested induction -/
 inductive NTree.Rel {α β} (R : α → β → Prop) : NTree α → NTree β → Prop
   | leaf : Rel R .leaf .leaf
-  | node : ∀ a b ts₁ ts₂,
-      R a b → List.Forall₂ (Rel R) ts₁ ts₂ → Rel R (.node a ts₁) (.node b ts₂)
+  | node : ∀ a b ts₁ ts₂, R a b → List.Forall₂ (Rel R) ts₁ ts₂ → Rel R (.node a ts₁) (.node b ts₂)
 
 @[induction_eliminator]
 def NTree.Rel.induction_principle {α β} {R : α → β → Prop}
