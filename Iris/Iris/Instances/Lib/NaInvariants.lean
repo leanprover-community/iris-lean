@@ -232,7 +232,7 @@ instance intoAcc_na (p : NaInvPoolName) (E F : CoPset) (N : Namespace) (P : IPro
     (fun _ => iprop(▷ P ∗ own p (F \ ↑N))) (fun _ => iprop(▷ P ∗ own p (F \ ↑N)))
               (λ _ => some (own p F)) where
   into_acc := by
-    simp only [accessor, Option.getD]
+    dsimp only [accessor, Option.getD]
     intro ⟨hE, hF⟩
     iintro #Hinv Hown
     imod inv_acc hE hF $$ Hinv Hown with ⟨_, Hown, _⟩

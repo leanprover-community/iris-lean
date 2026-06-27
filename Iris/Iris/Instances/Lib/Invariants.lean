@@ -96,7 +96,7 @@ instance intoAcc_inv (N : Namespace) (P : IProp GF) E :
     IntoAcc (X := Unit) (inv N P) (↑N ⊆ E) iprop(True) (fupd E (E \ ↑N)) (fupd (E \ ↑N) E)
       (λ _ => iprop(▷ P)) (λ _ => iprop(▷ P)) (λ _ => none) where
   into_acc := by
-    simp only [inv, accessor, Option.getD]
+    dsimp only [inv, accessor, Option.getD]
     iintro %x #Hinv -
     imod Hinv $$ %E [] with ⟨HP, Hclose⟩
     · itrivial

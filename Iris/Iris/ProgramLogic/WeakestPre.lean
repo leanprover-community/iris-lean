@@ -688,7 +688,7 @@ instance (priority := low) elimAcc_wp_atomic {X} (E₁ E₂ : CoPset) α β (γ 
       (WP e @ s ; E₁ {{ Φ }})
       (fun x => WP e @ s ; E₂ {{ v, |={E₂}=> β x ∗ (γ x -∗? Φ v) }}) where
   elim_acc := by
-    simp only [accessor, BIBase.wandM, Option.getD]
+    dsimp only [accessor, BIBase.wandM, Option.getD]
     iintro %atomic Hinner >⟨%x, Hα, Hclose⟩
     iapply wp_wand $$ [Hinner Hα]
     · iapply Hinner $$ Hα
@@ -705,7 +705,7 @@ instance elimAcc_wp_nonatomic {X} E (α β : X → IProp GF) (γ : X → Option 
     ElimAcc True (fupd E E) (fupd E E) α β γ (WP e @ s ; E {{ Φ }})
     (fun x => WP e @ s ; E {{ v, |={E}=> β x ∗ (γ x -∗? Φ v) }}) where
   elim_acc := by
-    simp only [accessor, BIBase.wandM, Option.getD]
+    dsimp only [accessor, BIBase.wandM, Option.getD]
     iintro %_ Hinner >⟨%x, Hα, Hclose⟩
     iapply wp_fupd
     iapply wp_wand $$ [Hinner Hα]
