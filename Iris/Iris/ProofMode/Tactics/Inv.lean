@@ -50,23 +50,30 @@ theorem tac_inv_elim [BI PROP]
     _ ⊢ goal := h0
 
 /--
-  This is useful as `wandM` (`-∗?`) is not simplified automatically without
-  explicitly using `simp`, even when it is annotated with `@[reducible]`.
+  An annotation of `wandM` with `@[reducible]` is useful when `whnf` is called,
+  but `whnf` is not strong enough to simplify occurrences of `wandM` in the
+  proof goal. This funnction is similar to `pm_reduce` in the Rocq version,
+  which forces the reduction of `wandM` (`-∗?`), occurrences of `Option.getD`,
+  occurrences of `Option.map` and pattern matching (`match … with …`).
 -/
-private def addBIGoalSimpWandM {u} {prop : Q(Type u)} {bi} {e}
-    (hyps : Hyps bi e) (goal : Q($prop)) : ProofModeM Q($e ⊢ $goal) :=
-  addBIGoalRunTactic hyps goal `(tactic | simp_all only [BIBase.wandM])
+def pmReduce (e : Expr) : ProofModeM Expr := do
+  let mut thms : SimpTheorems := {}
+  for n in #[``BIBase.wandM, ``Option.getD, ``Option.map] do
+    thms ← thms.addDeclToUnfold n
+  let ctx ← Simp.mkContext { beta := true, iota := true, proj := true, zeta := false }
+    #[thms] (← getSimpCongrTheorems)
+  return (← Lean.Meta.dsimp e ctx).1
 
 private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (ivar : IVarId) (specPat : Option SpecPat)
     (casesPat : iCasesPat) (closePat : Option iCasesPat) :
     ProofModeM Q($e ⊢ $goal) := do
   -- Find the hypothesis from the context
-  let ⟨_, hyps', _, Pinv, _, _ , pfEq⟩ := hyps.remove false ivar
+  let ⟨_, hyps', _, Pinv, _, _, pfEq⟩ := hyps.remove false ivar
 
   let ϕ ← mkFreshExprMVarQ q(Prop)
   let Pin : Q($prop) ← mkFreshExprMVarQ q($prop)
-  let X ← mkFreshExprMVarQ q(Type)
+  let X : Q(Type) ← mkFreshExprMVarQ q(Type)
   let Pout ← mkFreshExprMVarQ q($X → $prop)
   -- Decide whether to use `elimInv_acc_with_close` or `elimInv_acc_without_close`
   let close := if closePat.isSome then q(true) else q(false)
@@ -83,15 +90,20 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   -- Solve side conditions automatically if possible, otherwise add them into the proof state
   let hϕ ← iSolveSidecondition q($ϕ) false
 
+  -- Simplify occurrences of `wandM`, `Option.getD`, pattern matching, etc.
+  let Pout' : Q($X → $prop) ← pmReduce Pout
+  let Q'' : Q($X → $prop) ← pmReduce Q'
+
   -- Add the new goal into the proof state upon applying the case destruction patterns
   match mPclose with
   | ~q(some $f) =>
+    let f' : Q($X → $prop) ← pmReduce f
     let pf : Q(∀ x, $e'' ∗ $Pout x ∗ $f x ⊢ $Q' x) ←
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
         match closePat with
         | some closePat =>
-          iCasesCore _ hyps'' q($Q' $x) (.conjunction [casesPat, closePat])
-            q(false) q(iprop($Pout $x ∗ $f $x)) addBIGoalSimpWandM >>=
+          iCasesCore _ hyps'' q($Q'' $x) (.conjunction [casesPat, closePat])
+            q(false) q(iprop($Pout' $x ∗ $f' $x)) >>=
           (mkLambdaFVars #[x] ·)
         -- Throw an error if `hclose` is not given, but `mPclose` is not `none`
         | none => throwError "iinv: missing cases pattern for the closing hypothesis"
@@ -99,7 +111,7 @@ private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
   | ~q(none) =>
     let pf : Q(∀ x, $e'' ∗ $Pout x ⊢ $Q' x) ←
       withLocalDeclDQ (← mkFreshUserName .anonymous) X fun x => do
-        iCasesCore _ hyps'' q($Q' $x) casesPat q(false) q($Pout $x) addBIGoalSimpWandM >>=
+        iCasesCore _ hyps'' q($Q'' $x) casesPat q(false) q($Pout' $x) >>=
         (mkLambdaFVars #[x] ·)
     return q(tac_inv_elim $inst $hϕ $pf $pfEq $pfPin)
 

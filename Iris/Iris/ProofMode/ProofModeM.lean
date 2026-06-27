@@ -97,20 +97,6 @@ def addMVarGoal (m : MVarId) (name : Name := .anonymous) : ProofModeM Unit := do
     m.setUserName name
   modify ({goals := ·.goals.push m})
 
-/--
-  Create a new proof goal with the hypotheses `hyps` and the conclusion `goal`,
-  run a tactic (`tac`) and add all resultant subgoals into the proof state.
-  If the tactic fails, add the proof goal directly.
--/
-def addBIGoalRunTactic {u} {prop : Q(Type u)} {bi} {e}
-    (hyps : Hyps bi e) (goal : Q($prop)) (tac : ProofModeM <| TSyntax `tactic) :
-    ProofModeM Q($e ⊢ $goal) := do
-  let mvar ← mkBIGoal hyps goal
-  let gs ← (observing? <| evalTacticAt (← tac) mvar.mvarId!) <&> (·.getD [mvar.mvarId!])
-  if !gs.isEmpty then
-    for g in gs do addMVarGoal g
-  return mvar
-
 /-- Try to synthesize a typeclass instance, adding any created metavariables as proof mode goals. -/
 def ProofModeM.trySynthInstanceQ (α : Q(Sort v)) : ProofModeM (Option Q($α)) := do
   let LOption.some (e, mvars) ← ProofMode.trySynthInstance α | return none
