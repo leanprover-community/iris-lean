@@ -16,6 +16,7 @@ Authoritative CMRA where the fragment is exclusively owned.
 This is effectively a single "ghost variable" with two views, the fragment `◯E a`
 and the authority `●E a`.
 -/
+@[expose] public section
 
 namespace Iris
 

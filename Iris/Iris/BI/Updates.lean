@@ -491,6 +491,11 @@ theorem BigSepL2.bigSepL2_fupd {A B : Type _} E (Φ : Nat → A → B → PROP) 
   refine .trans ?_ (mono persistent_and_affinely_sep_left.mpr)
   exact .trans (sep_mono_right (BigSepL2.bigSepL_fupd E _ _ )) fupd_frame_left
 
+@[rocq_alias big_sepM_fupd]
+theorem BigSepM.bigSepM_fupd [LawfulFiniteMap M' K] (Φ : K → V → PROP) {l : M' V} :
+  ([∗map] k↦x ∈ l, |={E}=> Φ k x) ⊢ |={E}=> [∗map] k↦x ∈ l, Φ k x :=
+  Algebra.BigOpM.bigOpM_hom (R := flip Entails) Φ l
+
 #rocq_ignore fupd_mono' "Use BIFUpdate.mono."
 #rocq_ignore fupd_flip_mono' "Use BIFUpdate.mono."
 #rocq_ignore fupd_proper "Derivable from BIFUpdate.ne with NonExpansive.eqv"
