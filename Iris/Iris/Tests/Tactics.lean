@@ -2876,8 +2876,8 @@ example {t : NaInvPoolName} [NaInvG GF] {E1 E2 : CoPset} {P : IProp GF} (h : ↑
     NonAtomicInvariant.inv t N iprop(<pers> P) ∗ own t E1 ∗ own t E2
     ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
   iintro ⟨#Hinv, Hown1, Hown2⟩
-  iinv Hinv $$ [Hown1 //] with ⟨#HP, Hown2⟩ Hclose
-  imod Hclose $$ [HP Hown2]
+  iinv Hinv $$ [Hown1 //] with ⟨#HP, Hown1⟩ Hclose
+  imod Hclose $$ [HP Hown1]
   · iframe
     iexact HP
   · iframe

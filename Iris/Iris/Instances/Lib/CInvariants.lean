@@ -299,7 +299,7 @@ instance intoAcc_cinv (E : CoPset) (N : Namespace) (γ : GName) (P : IProp GF) (
     IntoAcc (X := Unit) (cinv N γ P) (↑N ⊆ E) (own γ p) (fupd E (E \ ↑N)) (fupd (E \ ↑N) E)
       (fun _ => iprop(▷ P ∗ own γ p)) (fun _ => iprop(▷ P)) (λ _ => none) where
   into_acc := by
-    simp only [accessor]
+    simp only [accessor, Option.getD]
     iintro %x #Hinv Hown
     imod acc x $$ Hinv Hown with ⟨HP, Hγ, Hcl⟩
     imodintro

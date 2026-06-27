@@ -232,7 +232,7 @@ class IntoInv [BI PROP] (P : PROP) (N : Namespace)
 @[rocq_alias accessor]
 def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
     (mγ : X → Option  PROP) : PROP :=
-  M1 iprop(∃ x, α x ∗ (β x -∗ M2 (match mγ x with | none => emp | some p => p)))
+  M1 iprop(∃ x, α x ∗ (β x -∗ M2 (mγ x |>.getD emp)))
 
 @[ipm_class, rocq_alias ElimAcc]
 class ElimAcc [BI PROP] {X : Type} (ϕ : outParam Prop) (M1 M2 : PROP → PROP)
@@ -254,8 +254,8 @@ class ElimInv [BI PROP] (φ : outParam Prop) (X : outParam Type)
     (close : Bool) (mPclose : outParam <| Option <| X → PROP)
     (Q : PROP) (Q' : outParam <| X → PROP) where
   elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, (match mPclose with
-    | none => iprop(Pout x -∗ Q' x)
-    | some Pclose => iprop(Pout x ∗ Pclose x -∗ Q' x))) ⊢ Q
+    | some Pclose => iprop(Pout x ∗ Pclose x -∗ Q' x)
+    | none => iprop(Pout x -∗ Q' x))) ⊢ Q
 export ElimInv (elim_inv)
 
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
