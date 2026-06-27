@@ -1697,6 +1697,8 @@ end unit
 
 namespace Prod
 
+open CMRA
+
 variable {α β : Type _} [CMRA α] [CMRA β]
 
 abbrev pcore (x : α × β) : Option (α × β) :=
