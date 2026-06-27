@@ -353,16 +353,8 @@ section updateLemmas
 
 /-- The state interpretation transports along a pointwise equivalence of
 the value heap. -/
-theorem genHeapInterp_eqv {σ₁ σ₂ : H V} (h : σ₁ ≡ₘ σ₂) :
-    genHeapInterp (GF := GF) σ₁ ⊢ genHeapInterp σ₂ := by
-  unfold genHeapInterp
-  iintro ⟨%m, %Hdom, Hh, Hm⟩
-  iexists m
-  isplitr
-  · ipureintro
-    exact fun k hk => by unfold dom; rw [← h k]; exact Hdom k hk
-  iframe Hm
-  apply iOwn_mono (HeapView.auth_inc_of_pmap_eqv _ (LawfulPartialMap.map_equiv h.symm))
+theorem genHeapInterp_eqv {σ₁ σ₂ : H V} (h : σ₁ = σ₂) :
+    genHeapInterp (GF := GF) σ₁ ⊢ genHeapInterp σ₂ := h ▸ .rfl
 
 @[rocq_alias gen_heap_alloc]
 theorem genHeap_alloc [DecidableEq L] {σ : H V} {l : L} {v : V} (Hσl : get? σ l = .none) :
@@ -395,19 +387,6 @@ theorem genHeap_alloc_big [DecidableEq L] (σ' σ : H V) (Hdisj : σ' ##ₘ σ) 
         ([∗map] l↦_v ∈ σ', metaToken l ⊤)) := by
   revert σ Hdisj
   induction σ' using LawfulFiniteMap.induction_on with
-  | hequiv σ₁ σ₂ heqv IH =>
-    intro σ Hdisj
-    have Hdisj₁ : σ₁ ##ₘ σ := fun k ⟨h1, h2⟩ => Hdisj k ⟨by rw [← heqv k]; exact h1, h2⟩
-    have hUnion : (σ₁ ∪ σ) ≡ₘ (σ₂ ∪ σ) :=
-      LawfulPartialMap.union_equiv heqv Std.PartialMap.equiv.refl
-    iintro Hσ
-    imod IH σ Hdisj₁ $$ Hσ with ⟨Hint, Hpts, Htok⟩
-    imodintro
-    isplitl [Hint]
-    · iapply genHeapInterp_eqv hUnion $$ Hint
-    isplitl [Hpts]
-    · iapply (BigSepM.bigSepM_eqv_of_perm (Φ := fun l v => iprop(l ↦ v)) heqv) $$ Hpts
-    iapply (BigSepM.bigSepM_eqv_of_perm (Φ := fun l _ => iprop(metaToken l ⊤)) heqv) $$ Htok
   | hemp =>
     intro σ _
     iintro Hσ
