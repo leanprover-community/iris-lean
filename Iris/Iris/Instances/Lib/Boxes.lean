@@ -24,11 +24,11 @@ variable (GF : BundledGFunctors)
 
 abbrev BoxF : OFunctorPre :=
   ProdOF (AuthURF (OptionOF (ExclOF (constOF BoolO))))
-    (OptionOF (AgreeRF (LaterOF (constOF (IProp GF)))))
+    (OptionOF (AgreeRF (LaterOF IdOF)))
 
 @[rocq_alias boxG]
 class BoxG where
-  [elemG : ElemG GF (BoxF GF)]
+  [elemG : ElemG GF BoxF]
 
 attribute [reducible, instance] BoxG.elemG
 
@@ -39,18 +39,18 @@ abbrev SliceName := GName
 
 @[rocq_alias box_own_auth]
 def box_own_auth (γ : SliceName) (a : Auth (Option (Excl BoolO))) : IProp GF :=
-  iOwn (F := BoxF GF) γ (a, none)
+  iOwn (F := BoxF) γ (a, none)
 
 instance box_own_auth_timeless (γ : SliceName) (a : Auth (Option (Excl BoolO))) :
     BI.Timeless (box_own_auth (GF := GF) γ a) := by
   unfold box_own_auth
-  have hd : OFE.DiscreteE ((a, none) : (BoxF GF).ap (IProp GF)) :=
+  have hd : OFE.DiscreteE ((a, none) : BoxF.ap (IProp GF)) :=
     prod.is_discrete
-  exact iOwn_timeless (F := BoxF GF) (a := ((a, none) : (BoxF GF).ap (IProp GF)))
+  exact iOwn_timeless (F := BoxF) (a := ((a, none) : BoxF.ap (IProp GF)))
 
 @[rocq_alias box_own_prop]
 def box_own_prop (γ : SliceName) (P : IProp GF) : IProp GF :=
-  iOwn (F := BoxF GF) γ (UCMRA.unit, some (toAgree (Later.next P)))
+  iOwn (F := BoxF) γ (UCMRA.unit, some (toAgree (Later.next P)))
 
 instance box_own_prop_persistent (γ : SliceName) (P : IProp GF) :
     Persistent (box_own_prop γ P) := by
@@ -198,7 +198,7 @@ theorem slice_insert_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
       slice N γ Q ∗ ▷?q box N (insert f γ false) iprop(Q ∗ P) := by
   unfold box
   iintro ⟨%Φ, #Heq, H⟩
-  imod (iOwn_alloc_cofinite (F := BoxF GF)
+  imod (iOwn_alloc_cofinite (F := BoxF)
       ((((●E (⟨false⟩ : BoolO)), none) • ((◯E (⟨false⟩ : BoolO)), none)) •
         (UCMRA.unit, some (toAgree (Later.next Q))))
       ((toList f).map Prod.fst) _) with ⟨%γ, %Hγ, Hown⟩
@@ -360,7 +360,7 @@ theorem slice_insert_full {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   intro HE
   unfold box
   iintro ⟨HQ, %Φ, #Heq, H⟩
-  imod (iOwn_alloc_cofinite (F := BoxF GF)
+  imod (iOwn_alloc_cofinite (F := BoxF)
       ((((●E (⟨true⟩ : BoolO)), none) • ((◯E (⟨true⟩ : BoolO)), none)) •
         (UCMRA.unit, some (toAgree (Later.next Q)))) ((toList f).map Prod.fst) _)
         with ⟨%γ, %Hγ, Hown⟩
