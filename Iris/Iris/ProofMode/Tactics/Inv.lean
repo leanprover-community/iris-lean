@@ -53,16 +53,13 @@ theorem tac_inv_elim [BI PROP]
   An annotation of `wandM` with `@[reducible]` is useful when `whnf` is called,
   but `whnf` is not strong enough to simplify occurrences of `wandM` in the
   proof goal. This funnction is similar to `pm_reduce` in the Rocq version,
-  which forces the reduction of `wandM` (`-∗?`), occurrences of `Option.getD`,
-  occurrences of `Option.map` and pattern matching (`match … with …`).
+  which forces the reduction of `wandM` (`-∗?`), occurrences of `Option.getD`
+  and pattern matching (`match … with …`).
 -/
 def pmReduce (e : Expr) : ProofModeM Expr := do
-  let mut thms : SimpTheorems := {}
-  for n in #[``BIBase.wandM, ``Option.getD, ``Option.map] do
-    thms ← thms.addDeclToUnfold n
-  let ctx ← Simp.mkContext { beta := true, iota := true, proj := true, zeta := false }
-    #[thms] (← getSimpCongrTheorems)
-  return (← Lean.Meta.dsimp e ctx).1
+  #[``BIBase.wandM, ``Option.getD].foldlM (init := {}) (·.addDeclToUnfold ·) >>=
+  (Simp.mkContext { beta := true, iota := true, proj := true } #[·] (← getSimpCongrTheorems) >>=
+  (Lean.Meta.dsimp e · <&> Prod.fst))
 
 private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (ivar : IVarId) (specPat : Option SpecPat)
