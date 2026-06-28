@@ -2797,4 +2797,12 @@ example [BI PROP] (P Q R : PROP) :
   · iaccu
   · ipureintro <;> rfl
 
+/- Tests `iaccu` where the proof goal is not a metavariable -/
+/-- error: iaccu: R is not a metavariable -/
+#guard_msgs in
+example [BI PROP] (P Q R : PROP) :
+    □ P -∗ Q -∗ R := by
+  iintro #HP HQ
+  iaccu
+
 end iaccu
