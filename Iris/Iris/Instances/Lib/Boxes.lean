@@ -297,7 +297,7 @@ theorem slice_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   have hq : q.toNat ≤ 1 := by cases q <;> simp
   ihave Hfrag := (laterN_le (P := box_own_auth γ (◯E (⟨false⟩ : BoolO))) hq).trans
     ((laterN_later 0).trans laterN_0).1 $$ Hfrag
-  imod inv_acc E N (slice_inv γ Q) HE $$ Hinv with ⟨Hsinv, Hclose⟩
+  imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
   simp only [slice_inv]
   icases Hsinv with ⟨%b, >Hauth, Hb⟩
   icases Hfrag with >Hfrag
@@ -330,7 +330,7 @@ theorem slice_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   have hq : q.toNat ≤ 1 := by cases q <;> simp
   ihave Hfrag := (laterN_le (P := box_own_auth γ (◯E (⟨true⟩ : BoolO))) hq).trans
     ((laterN_later 0).trans laterN_0).1 $$ Hfrag
-  imod inv_acc E N (slice_inv γ Q) HE $$ Hinv with ⟨Hsinv, Hclose⟩
+  imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
   simp only [slice_inv]
   icases Hsinv with ⟨%b, >Hauth, Hb⟩
   icases Hfrag with >Hfrag
@@ -428,7 +428,7 @@ theorem slice_delete_full {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   have hq : q.toNat ≤ 1 := by cases q <;> simp
   ihave Hfrag := (laterN_le (P := box_own_auth γ (◯E (⟨true⟩ : BoolO))) hq).trans
     ((laterN_later 0).trans laterN_0).1 $$ Hfrag
-  imod inv_acc E N (slice_inv γ Q) HE $$ Hinv with ⟨Hsinv, Hclose⟩
+  imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
   simp only [slice_inv]
   icases Hsinv with ⟨%b, >Hauth, Hb⟩
   icases Hfrag with >Hfrag
@@ -482,7 +482,7 @@ theorem box_fill {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     iapply bigSepM_impl $$ Hbig
     imodintro
     iintro %k %v %Heq ⟨⟨Hγ', #HγΦ, #Hinv⟩, H⟩
-    imod inv_acc E N (slice_inv k _) HE $$ Hinv with ⟨Hsinv, Hclose⟩
+    imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
     simp only [slice_inv]
     icases Hsinv with ⟨%b, >Hauth, Hb⟩
     imod box_own_auth_update k b v true $$ [$Hauth $Hγ'] with ⟨Hauth, Hfrag⟩
@@ -510,7 +510,7 @@ theorem box_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
     iintro %k %v %Heq ⟨Hγ', #HγΦ, #Hinv⟩
     have Heq' : v = true := Hall k v Heq
     subst v
-    imod inv_acc E N (slice_inv k _) HE $$ Hinv with ⟨Hsinv, Hclose⟩
+    imod inv_acc HE $$ Hinv with ⟨Hsinv, Hclose⟩
     simp only [slice_inv]
     icases Hsinv with ⟨%b, >Hauth, Hb⟩
     ihave %hb := box_own_auth_agree k b true $$ [$Hauth $Hγ']
