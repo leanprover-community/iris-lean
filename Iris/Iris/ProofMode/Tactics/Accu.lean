@@ -16,5 +16,11 @@ elab "iaccu" : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
     if !goal.isMVar then
       throwError m!"iaccu: {goal} is not a metavariable"
-    let ⟨_, pf⟩ := hyps.buildAccuProof
+
+    let ⟨spatial, pf⟩ := hyps.buildAccuProof
+
+    let defEq ← isDefEq goal spatial
+    if !defEq then
+      throwError "iaccu: could not assign goal metavariable to {spatial}"
+
     mvar.assign pf

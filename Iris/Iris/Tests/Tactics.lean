@@ -2776,3 +2776,25 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
+
+section iaccu
+
+/-- Tests `iaccu` with spatial hypotheses `HQ`, `HR` and `HT`. -/
+example [BI PROP] (P Q R S T : PROP) :
+    (□ P -∗ Q -∗ R -∗ □ S -∗ T -∗ ∃ U, U ∧ ⌜U = iprop(Q ∗ R ∗ T)⌝) := by
+  iintro #HP HQ HR #HS HT
+  iexists ?_
+  isplit
+  · iaccu
+  · ipureintro <;> rfl
+
+/-- Tests `iaccu` where there is no spatial hypothesis in the context. -/
+example [BI PROP] (P Q R S T : PROP) :
+    (□ P -∗ □ Q -∗ □ R -∗ ∃ S, S ∧ ⌜S = iprop(emp)⌝) := by
+  iintro #HP #HQ #HR
+  iexists ?_
+  isplit
+  · iaccu
+  · ipureintro <;> rfl
+
+end iaccu
