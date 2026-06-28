@@ -190,22 +190,23 @@ partial def Hyps.intuitionisticIVarIds {u prop bi} :
   | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticIVarIds ++ rhs.intuitionisticIVarIds
 
 private def Hyps.buildAccuProofAux {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e e' : Q($prop)}
-    (hyps : Hyps bi e) (spatialProps : Q($prop))
-    (isEmp : Bool) (pf : Q($e' ⊢ $spatialProps)) :
-    (newSpatialProps : Q($prop)) × Bool × Q($e ∗ $e' ⊢ $newSpatialProps) :=
+    (hyps : Hyps bi e) (spatialProps : Q($prop)) (pf : Q($e' ⊢ $spatialProps)) :
+    (newSpatialProps : Q($prop)) × Q($e ∗ $e' ⊢ $newSpatialProps) :=
   match hyps with
-  | .emp _ => ⟨spatialProps, isEmp, q(emp_sep.mp.trans $pf)⟩
+  | .emp _ => ⟨spatialProps, q(emp_sep.mp.trans $pf)⟩
   | .hyp _ _ _ p ty _ =>
-    match matchBool p, isEmp with
-    | .inl _, _ => ⟨spatialProps, isEmp, q((sep_mono_left intuitionistically_elim_emp).trans (emp_sep.mp.trans $pf))⟩
-    | .inr _, true =>
-      let pf : Q($e' ⊢ iprop(emp)) := pf
-      ⟨ty, false, q((sep_mono_right (P := $e) $pf).trans sep_emp.mp)⟩
-    | .inr _, false => ⟨q(iprop($ty ∗ $spatialProps)), false, q(sep_mono_right $pf)⟩
+    match matchBool p with
+    | .inl _ =>
+      ⟨spatialProps, q((sep_mono_left intuitionistically_elim_emp).trans (emp_sep.mp.trans $pf))⟩
+    | .inr _ =>
+      if spatialProps == q(iprop(emp)) then
+        let pf : Q($e' ⊢ iprop(emp)) := pf
+        ⟨ty, q((sep_mono_right $pf).trans sep_emp.mp)⟩
+      else ⟨q(iprop($ty ∗ $spatialProps)), q(sep_mono_right $pf)⟩
   | .sep _ _ _ _ lhs rhs =>
-    let ⟨spatialPropsR, isEmpR, pfR⟩ := rhs.buildAccuProofAux spatialProps isEmp pf
-    let ⟨spatialPropsLR, isEmpLR, pfLR⟩ := lhs.buildAccuProofAux spatialPropsR isEmpR pfR
-    ⟨q($spatialPropsLR), isEmpLR, q(sep_assoc.mp.trans $pfLR)⟩
+    let ⟨spatialPropsR, pfR⟩ := rhs.buildAccuProofAux spatialProps pf
+    let ⟨spatialPropsLR, pfLR⟩ := lhs.buildAccuProofAux spatialPropsR pfR
+    ⟨q($spatialPropsLR), q(sep_assoc.mp.trans $pfLR)⟩
 
 /--
   Given any hypotheses `hyps` representing `e`, filter in all spatial hypotheses
@@ -213,7 +214,7 @@ private def Hyps.buildAccuProofAux {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e 
 -/
 def Hyps.buildAccuProof {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) : (spatialProps : Q($prop)) × Q($e ⊢ $spatialProps) :=
-  let ⟨spatialProps, _, pf⟩ := hyps.buildAccuProofAux (e' := q(iprop(emp))) q(iprop(emp)) true q(.rfl)
+  let ⟨spatialProps, pf⟩ := hyps.buildAccuProofAux (e' := q(iprop(emp))) q(iprop(emp)) q(.rfl)
   let pf : Q($e ⊢ $spatialProps) := q(sep_emp.mpr.trans $pf)
   ⟨spatialProps, pf⟩
 
