@@ -2789,7 +2789,7 @@ example [BI PROP] (P Q R S T : PROP) :
   · ipureintro <;> rfl
 
 /-- Tests `iaccu` where there is no spatial hypothesis in the context. -/
-example [BI PROP] (P Q R S T : PROP) :
+example [BI PROP] (P Q R : PROP) :
     (□ P -∗ □ Q -∗ □ R -∗ ∃ S, S ∧ ⌜S = iprop(emp)⌝) := by
   iintro #HP #HQ #HR
   iexists ?_

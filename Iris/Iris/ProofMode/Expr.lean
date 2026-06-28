@@ -189,22 +189,33 @@ partial def Hyps.intuitionisticIVarIds {u prop bi} :
   | _, .hyp _ _ ivar p _ _ => if isTrue p then [ivar] else []
   | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticIVarIds ++ rhs.intuitionisticIVarIds
 
+private def Hyps.buildAccuProofAux {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e e' : Q($prop)}
+    (hyps : Hyps bi e) (spatialProps : Q($prop))
+    (isEmp : Bool) (pf : Q($e' ⊢ $spatialProps)) :
+    (newSpatialProps : Q($prop)) × Bool × Q($e ∗ $e' ⊢ $newSpatialProps) :=
+  match hyps with
+  | .emp _ => ⟨spatialProps, isEmp, q(emp_sep.mp.trans $pf)⟩
+  | .hyp _ _ _ p ty _ =>
+    match matchBool p, isEmp with
+    | .inl _, _ => ⟨spatialProps, isEmp, q((sep_mono_left intuitionistically_elim_emp).trans (emp_sep.mp.trans $pf))⟩
+    | .inr _, true =>
+      let pf : Q($e' ⊢ iprop(emp)) := pf
+      ⟨ty, false, q((sep_mono_right (P := $e) $pf).trans sep_emp.mp)⟩
+    | .inr _, false => ⟨q(iprop($ty ∗ $spatialProps)), false, q(sep_mono_right $pf)⟩
+  | .sep _ _ _ _ lhs rhs =>
+    let ⟨spatialPropsR, isEmpR, pfR⟩ := rhs.buildAccuProofAux spatialProps isEmp pf
+    let ⟨spatialPropsLR, isEmpLR, pfLR⟩ := lhs.buildAccuProofAux spatialPropsR isEmpR pfR
+    ⟨q($spatialPropsLR), isEmpLR, q(sep_assoc.mp.trans $pfLR)⟩
+
 /--
   Given any hypotheses `hyps` representing `e`, filter in all spatial hypotheses
   and prove that `e` implies the set of spatial hypotheses.
 -/
-def Hyps.buildAccuProof {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e) :
-    (spatial : Q($prop)) × Q($e ⊢ $spatial) :=
-  match hyps with
-  | .emp _ => ⟨q(iprop(emp)), q(.rfl)⟩
-  | .hyp _ _ _ p ty _ =>
-    match matchBool p with
-    | .inl _ => ⟨q(iprop(emp)), q(intuitionistically_elim_emp)⟩
-    | .inr _ => ⟨ty, q(.rfl)⟩
-  | .sep _ _ _ _ lhs rhs =>
-    let ⟨tyL, pfL⟩ := lhs.buildAccuProof
-    let ⟨tyR, pfR⟩ := rhs.buildAccuProof
-    ⟨q(iprop($tyL ∗ $tyR)), q(sep_mono $pfL $pfR)⟩
+def Hyps.buildAccuProof {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) : (spatialProps : Q($prop)) × Q($e ⊢ $spatialProps) :=
+  let ⟨spatialProps, _, pf⟩ := hyps.buildAccuProofAux (e' := q(iprop(emp))) q(iprop(emp)) true q(.rfl)
+  let pf : Q($e ⊢ $spatialProps) := q(sep_emp.mpr.trans $pf)
+  ⟨spatialProps, pf⟩
 
 variable (oldIVar : IVarId) (new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
