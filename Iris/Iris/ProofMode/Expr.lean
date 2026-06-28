@@ -189,6 +189,23 @@ partial def Hyps.intuitionisticIVarIds {u prop bi} :
   | _, .hyp _ _ ivar p _ _ => if isTrue p then [ivar] else []
   | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticIVarIds ++ rhs.intuitionisticIVarIds
 
+/--
+  Given any hypotheses `hyps` representing `e`, filter in all spatial hypotheses
+  and prove that `e` implies the set of spatial hypotheses.
+-/
+def Hyps.buildAccuProof {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e) :
+    (spatial : Q($prop)) × Q($e ⊢ $spatial) :=
+  match hyps with
+  | .emp _ => ⟨q(iprop(emp)), q(.rfl)⟩
+  | .hyp _ _ _ p ty _ =>
+    match matchBool p with
+    | .inl _ => ⟨q(iprop(emp)), q(intuitionistically_elim_emp)⟩
+    | .inr _ => ⟨ty, q(.rfl)⟩
+  | .sep _ _ _ _ lhs rhs =>
+    let ⟨tyL, pfL⟩ := lhs.buildAccuProof
+    let ⟨tyR, pfR⟩ := rhs.buildAccuProof
+    ⟨q(iprop($tyL ∗ $tyR)), q(sep_mono $pfL $pfR)⟩
+
 variable (oldIVar : IVarId) (new : Name) {prop : Q(Type u)} {bi : Q(BI $prop)} in
 def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .emp _ => none
