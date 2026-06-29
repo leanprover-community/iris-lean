@@ -1789,14 +1789,14 @@ theorem incN_iff {n} (a a' : α) (b b' : β) :
     · exact ⟨y, Option.dist_of_some_dist_some hb⟩
 
 @[rocq_alias prod_cmra_discrete]
-instance [CMRA.Discrete α] [CMRA.Discrete β]: CMRA.Discrete (α × β) where
+instance instCmraDistreteProd [CMRA.Discrete α] [CMRA.Discrete β] : CMRA.Discrete (α × β) where
   discrete_valid := by
     rintro ⟨_, _⟩
     simp [CMRA.ValidN]
     exact (⟨CMRA.discrete_valid ·, CMRA.discrete_valid ·⟩)
 
 @[rocq_alias pair_core_id]
-instance {x : α} {y : β} [CMRA.CoreId x] [CMRA.CoreId y] : CMRA.CoreId (α := α × β) ⟨x, y⟩ where
+instance instCoreIdPair {x : α} {y : β} [CMRA.CoreId x] [CMRA.CoreId y] : CMRA.CoreId (α := α × β) ⟨x, y⟩ where
   core_id := by
     refine (equiv_dist.mpr (fun _ => ?_))
     simp only [CMRA.pcore, pcore]
