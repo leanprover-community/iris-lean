@@ -107,6 +107,12 @@ theorem discrete {ag : Option ((DFrac) × Agree A)} (Ha : DiscreteE ag) (Hb : Di
 instance [Discrete A] [Discrete B] : Discrete (View R) where
   discrete_0 H := ⟨discrete_0 H.1, discrete_0 H.2⟩
 
+instance instLeibniz [Leibniz B] : Leibniz (View R) where
+  eq_of_eqv {x y} h := by
+    cases x; cases y
+    simp only [View.mk.injEq]
+    exact ⟨eq_of_eqv h.1, eq_of_eqv h.2⟩
+
 -- view_auth_dist_inj
 theorem auth_inj_frac [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A} {n} (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) :
     q1 = q2 := H.1.1

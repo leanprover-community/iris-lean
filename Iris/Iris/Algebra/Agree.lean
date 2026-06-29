@@ -28,7 +28,7 @@ OFE equivalence makes `≡` coincide with `=`, so `Agree α` is `OFE.Leibniz` by
 
 /-! ## The raw representation -/
 
-section raw
+section Raw
 
 variable {α : Type u} {β : Type v}
 
@@ -249,31 +249,34 @@ theorem toAgree_discrete {a : α} [Ha : OFE.DiscreteE a] {y : Raw α}
 
 end Agree.Raw
 
-end raw
+end Raw
 
-/-! ## The quotient -/
+section Quotient
 
-section quotient
+open OFE
+open Agree (Raw)
 
 variable {α : Type u} {β : Type v} [OFE α] [OFE β]
 
-open Agree (Raw)
+instance instRawSetoid : Setoid (Raw α) :=
+  QuotientO Raw.dist fun {_} => Raw.dist_equiv
 
-instance Agree.Raw.instSetoid : Setoid (Raw α) :=
-  OFE.distSetoid Raw.dist fun _ => Raw.dist_equiv
-
+/--
+EXPERIMENT: Leibniz Agree.
+https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Evaluating.20a.20specialization.20to.20Leibnize.20OFE.27s/with/606745235
+--/
 @[rocq_alias agree]
-def Agree (α : Type u) [OFE α] : Type u := Quotient (Agree.Raw.instSetoid (α := α))
+def Agree (α : Type u) [OFE α] : Type u := Quotient (instRawSetoid (α := α))
 
 namespace Agree
 
-def mk (x : Raw α) : Agree α := Quotient.mk _ x
+def mk (x : Raw α) : Agree α := mkQuotient.mk (heqv := Raw.dist_equiv) x
 
 @[elab_as_elim, induction_eliminator]
 theorem ind {motive : Agree α → Prop} (mk : ∀ x : Raw α, motive (Agree.mk x)) (x : Agree α) :
-    motive x := Quotient.ind mk x
+    motive x := mkQuotient.ind mk x
 
-theorem sound {x y : Raw α} (h : ∀ n, Raw.dist n x y) : mk x = mk y := Quotient.sound h
+theorem sound {x y : Raw α} (h : ∀ n, Raw.dist n x y) : mk x = mk y := mkQuotient.sound h
 
 theorem validN_resp {n} {x y : Raw α} (h : x ≈ y) : Raw.validN n x = Raw.validN n y :=
   propext ⟨Raw.validN_ne (h n), Raw.validN_ne (Raw.dist_equiv.symm (h n))⟩
@@ -283,20 +286,22 @@ theorem valid_resp {x y : Raw α} (h : x ≈ y) : Raw.valid x = Raw.valid y := b
 
 @[rocq_alias agree_ofe_mixin]
 instance instOFE : OFE (Agree α) :=
-  OFE.mkLeibniz Raw.dist (fun _ => Raw.dist_equiv) (fun h hlt => Raw.dist_lt h hlt)
+  OFE.mkQuotient Raw.dist Raw.dist_equiv Raw.dist_lt
 
 #rocq_ignore agreeO "Use Agree with a typeclass instance instead."
 #rocq_ignore agree_equiv "Defined in Agree OFE instance."
 
 instance instLeibniz : OFE.Leibniz (Agree α) :=
-  OFE.mkLeibniz_leibniz Raw.dist (fun _ => Raw.dist_equiv) (fun h hlt => Raw.dist_lt h hlt)
+  OFE.mkQuotient_leibniz Raw.dist Raw.dist_equiv Raw.dist_lt
 
-def validN (n : Nat) : Agree α → Prop := Quotient.lift (Raw.validN n) (fun _ _ h => validN_resp h)
+def validN (n : Nat) : Agree α → Prop :=
+  mkQuotient.lift (heqv := Raw.dist_equiv) (Raw.validN n) (fun _ _ h => validN_resp h)
 
-def valid : Agree α → Prop := Quotient.lift Raw.valid (fun _ _ h => valid_resp h)
+def valid : Agree α → Prop :=
+  mkQuotient.lift (heqv := Raw.dist_equiv) Raw.valid (fun _ _ h => valid_resp h)
 
 def op : Agree α → Agree α → Agree α :=
-  Quotient.lift₂ (fun x y => mk (Raw.op x y))
+  mkQuotient.lift₂ (heqv := Raw.dist_equiv) (fun x y => mk (Raw.op x y))
     (fun _ _ _ _ hx hy => sound fun n => Raw.op_ne₂.ne (hx n) (hy n))
 
 @[simp] theorem dist_mk {n} {x y : Raw α} : mk x ≡{n}≡ mk y ↔ Raw.dist n x y := .rfl
@@ -558,7 +563,7 @@ theorem toAgree_op_valid_iff_eq [OFE.Leibniz α] {a : α} :
 
 #rocq_ignore to_agree_op_inv_L "Use toAgree_op_valid_iff_eq"
 
-end quotient
+end Quotient
 
 /-! ## Functoriality -/
 
@@ -570,8 +575,8 @@ open Agree (Raw)
 
 @[rocq_alias agree_map]
 def Agree.map' (f : α → β) [OFE.NonExpansive f] : Agree α → Agree β :=
-  Quotient.lift (fun a => Agree.mk (Raw.map' f a))
-    (fun _ _ h => Agree.sound fun n => Raw.instNonExpansiveMap'.ne (h n))
+  OFE.mkQuotient.map (heqv := Raw.dist_equiv) (heqv' := Raw.dist_equiv) (Raw.map' f)
+    (fun _ _ _ h => Raw.instNonExpansiveMap'.ne h)
 
 @[simp] theorem Agree.map'_mk (f : α → β) [OFE.NonExpansive f] {x : Raw α} :
     Agree.map' f (Agree.mk x) = Agree.mk (Raw.map' f x) := rfl
