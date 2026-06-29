@@ -264,6 +264,12 @@ instance instRawSetoid : Setoid (Raw α) :=
 /--
 EXPERIMENT: Leibniz Agree.
 https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Evaluating.20a.20specialization.20to.20Leibnize.20OFE.27s/with/606745235
+
+Note that the Rocq version of Agree does not require that the agreement type be an OFE. The
+typeclass addition here is trivial: if your [α] type was _not_ an OFE then you should instanstiate
+it with the trivial one. If your type already has a _different_ OFE, and you want agreement
+over the equality relation rather than your OFE equivalence, you should introduce a wrapper type
+with the trivial OFE.
 --/
 @[rocq_alias agree]
 def Agree (α : Type u) [OFE α] : Type u := Quotient (instRawSetoid (α := α))
