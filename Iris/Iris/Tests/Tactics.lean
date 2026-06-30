@@ -2779,20 +2779,34 @@ end iloeb
 
 section ieval
 
-/-- Tests `isimp` to simplify the goal and the hypothesis `H` separately. -/
-example [BI PROP] {x y : Nat} :
-    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} iprop(⌜Nat.succ (x + y) = 2⌝) := by
-  iintro #H
-  isimp in H
-  isimp
-  itrivial
+/-- Tests `ieval` and `isimp` to simplify the goal and specific Iris hypotheses. -/
+example [BI PROP] {u v w x y z : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ∗ ⌜(w + z) + 1 = Nat.succ 2⌝ ∗ ⌜(u + v) = v⌝
+    ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ ∗ ⌜w + z = 2⌝ ∗ ⌜u = 0⌝ := by
+  iintro ⟨H1, H2, H3⟩
+  -- Simplify `(x + y) + 3 = 4` as `x + y = 1`
+  isimp in H1
+  isplitl [H1]
+  -- Simplify `(x + y).succ = 2` as `x + y = 1`
+  · isimp
+    iexact H1
+  -- Simplify the goal `w + z + 1 = Nat.succ 2` as `w + z = 2` and `u + v = v` as `u = 0`
+  · ieval (simp) in H2 H3
+    iframe
 
 /- Tests `isimp` with a pure hypothesis in the selection pattern -/
 /-- error: ieval: pure hypotheses in the selection pattern is not supported -/
 #guard_msgs in
 example [BI PROP] {x y : Nat} :
-    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} iprop(⌜Nat.succ (x + y) = 2⌝) := by
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
   iintro #H
   isimp in %x H
+
+/- Tests `isimp` with the simplification failing -/
+/-- error: `simp` made no progress -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} : ⌜x = 0⌝ ⊢@{PROP} ⌜x = 0⌝ := by
+  iintro #H
+  isimp in H
 
 end ieval
