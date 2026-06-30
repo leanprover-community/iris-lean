@@ -1117,9 +1117,6 @@ section rFunctor
 
 @[rocq_alias rFunctor]
 class RFunctor (F : COFE.OFunctorPre) where
-  -- EXPERIMENT: Replacing COFE in this definition with OFE
-  -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/OFunctor.20definition
-  -- UPD.: Reverted after more discussion
   [cmra [COFE α] [COFE β] : CMRA (F α β)]
   map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
@@ -1157,9 +1154,6 @@ section urFunctor
 
 @[rocq_alias urFunctor]
 class URFunctor (F : COFE.OFunctorPre) where
-  -- EXPERIMENT: Replacing COFE in this definition with OFE
-  -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/OFunctor.20definition
-  -- cofe [COFE α] [COFE β] : UCMRA (F α β)
   [cmra [COFE α] [COFE β] : UCMRA (F α β)]
   map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂

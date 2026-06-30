@@ -1098,10 +1098,6 @@ abbrev OFunctorPre := ∀ α β [COFE α] [COFE β], Type _
 
 @[rocq_alias oFunctor]
 class OFunctor (F : OFunctorPre) where
-  -- EXPERIMENT: Replacing COFE in this definition with OFE
-  -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/OFunctor.20definition
-  -- cofe [COFE α] [COFE β] : OFE (F α β)
-  -- UPD.: Reverted after more discussion
   ofe [COFE α] [COFE β] : OFE (F α β)
   map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -n> F α₂ β₂
