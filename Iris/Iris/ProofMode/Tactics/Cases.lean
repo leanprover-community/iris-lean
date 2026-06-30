@@ -195,7 +195,8 @@ possibly an updated goal.
 ## Returns
 A proof of `hyps ∗ □?p A ⊢ goal`.
 -/
-partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat)
+partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
+    (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat)
     (p : Q(Bool)) (A : Q($prop))
     (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal') := addBIGoal) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) :=
@@ -262,7 +263,7 @@ elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : t
   -- parse syntax
   let pmt ← liftMacroM <| PMTerm.parse pmt
   let pat ← liftMacroM <| iCasesPat.parse pat
-  ProofModeM.runTactic λ mvar { bi, goal, hyps, .. } => do
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
 
   -- We keep the persistent hypothesis if it is required by the user (+keep is set by ihave)
   -- or if we perform specialization
@@ -270,7 +271,7 @@ elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : t
     (try_dup_context := pat.should_try_dup_context)
 
   -- process pattern
-  let pf2 ← iCasesCore bi hyps goal pat p A
+  let pf2 ← iCasesCore hyps goal pat p A
 
   mvar.assign q(($pf).trans $pf2)
 
