@@ -15,23 +15,27 @@ open Lean Elab Tactic Meta Qq
 
 private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
-    (selPats : Option <| List SelPat) : ProofModeM Q($e ⊢ $goal) := do
-  sorry
+    (selTargets : Option <| List SelTarget) : ProofModeM Q($e ⊢ $goal) := do
+  match selTargets with
+  | none => sorry
+  | some selTargets => sorry
 
 elab "ieval " tac:tacticSeq : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
     let pf ← iEvalCore hyps goal tac none
     mvar.assign pf
 
-elab "ieval " tacs:tacticSeq " in " spats:(colGt ppSpace selPat)* : tactic => do
+elab "ieval " tacs:tacticSeq " in " spats:(colGt ppSpace selPat)+ : tactic => do
   let selPats ← liftMacroM <| SelPat.parse spats
+
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
-    let pf ← iEvalCore hyps goal tacs selPats
+    let selTargets ← SelPat.resolve hyps selPats
+    let pf ← iEvalCore hyps goal tacs selTargets
     mvar.assign pf
 
 macro "isimp" : tactic => `(tactic| ieval simp)
 
-macro "isimp" " in " spats:(colGt ppSpace selPat)* : tactic =>
+macro "isimp" " in " spats:(colGt ppSpace selPat)+ : tactic =>
   `(tactic| ieval simp in $spats*)
 
 macro "iunfold " hs:ident,+ : tactic => `(tactic| ieval (unfold $hs*))
