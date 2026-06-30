@@ -13,8 +13,6 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI
 
-theorem eval_refl [BI PROP] (P : PROP) : P ⊢ P := .rfl
-
 private structure EvalState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (e : Q($prop)) where
   {newE : Q($prop)}
   (newHyps : Hyps bi newE)
@@ -46,7 +44,7 @@ private def iEvalHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
         let pf : Q($ty ⊢ $newTy) ← mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
         match ← evalTacticAt tac pf.mvarId! with
         | [] => pure ()
-        | [g] => g.assign q(eval_refl $newTy)
+        | [g] => g.assign (q(.rfl) : Q($newTy ⊢ $newTy))
         | _ => throwError "ieval: the supplied tactic does not produce exactly one subgoal"
 
         return ⟨newTy, pf⟩
@@ -73,7 +71,7 @@ private def iEvalGoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
   let pf : Q($newGoal ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar q($newGoal ⊢ $goal)
   match ← evalTacticAt tac pf.mvarId! with
   | [] => pure ()
-  | [g] => g.assign q(eval_refl $newGoal)
+  | [g] => g.assign (q(.rfl) : Q($newGoal ⊢ $newGoal))
   | _ => throwError "ieval: the supplied tactic does not produce exactly one subgoal"
 
   return ⟨newGoal, pf⟩
