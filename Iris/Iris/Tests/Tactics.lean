@@ -2809,4 +2809,18 @@ example [BI PROP] {x y : Nat} : ⌜x = 0⌝ ⊢@{PROP} ⌜x = 0⌝ := by
   iintro #H
   isimp in H
 
+private def def1 := 10
+private def def2 := def1
+
+/-- Tests `iunfold` to unfold definitions in an Iris hypothesis and a proof goal -/
+example [BI PROP] : ⌜def2 = 10⌝ ⊢@{PROP} ⌜10 = 10⌝ ∗ ⌜def2 = 10⌝ := by
+  iintro #H
+  -- Unfold definitions in an Iris hypothesis
+  iunfold def2, def1 in H
+  iframe H
+  -- Unfold definitions in the proof goal
+  iunfold def2, def1
+  ipureintro
+  .rfl
+
 end ieval
