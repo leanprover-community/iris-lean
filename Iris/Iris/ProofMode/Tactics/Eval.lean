@@ -13,20 +13,24 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq BI
 
+/-- For iteratively applying the tactic sequences to selection targets in the context -/
 private structure EvalState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (e : Q($prop)) where
   {newE : Q($prop)}
   (newHyps : Hyps bi newE)
   (pf : Q($e ⊢ $newE))
 
-private def iEvalOne {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+/--
+  Apply the tactic sequence `tac` to transform `ty` into `newTy`, with the
+  Boolean value `isGoal` indicating whether `ty` is the proof goal.
+-/
+private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
     (tac : TSyntax `Lean.Parser.Tactic.tacticSeq) (isGoal : Bool) (ty : Q($prop)) :
     ProofModeM <| (newTy : Q($prop)) × if isGoal then Q($newTy ⊢ $ty) else Q($ty ⊢ $newTy) := do
   -- Find the new proposition obtained upon applying the tactic sequence
   let newTy : Q($prop) ←
     withLocalDeclDQ (← mkFreshUserName .anonymous) q($prop) fun newTy => do
-      let m ← mkFreshExprSyntheticOpaqueMVar <| match isGoal with
-      | true => q($newTy ⊢ $ty)
-      | false =>  q($ty ⊢ $newTy)
+      let m ← mkFreshExprSyntheticOpaqueMVar <|
+        match isGoal with | true => q($newTy ⊢ $ty) | false => q($ty ⊢ $newTy)
       let [g] ← evalTacticAt tac m.mvarId!
       | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
       let some #[_, _, lhs, rhs] ← g.getType <&> (·.appM? ``Entails)
@@ -45,43 +49,27 @@ private def iEvalOne {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
 
   return ⟨newTy, pf⟩
 
-/-- Iteratively apply the supplied tactic sequence to the selection targets -/
-private def iEvalHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
-    (hyps : Hyps bi e)
-    (selTargets : List SelTarget) :
-    ProofModeM <| @EvalState u prop bi e := do
-  let mut evalState : EvalState e := { newHyps := hyps, pf := q(.rfl) }
-  for selTarget in selTargets do
-    evalState ← match selTarget.kind with
-    | .pure _ =>
-      throwError "ieval: pure hypotheses in the selection pattern is not supported"
-    | .ipm ivar =>
-      let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar (@iEvalOne u prop bi tac false ·)
-      | throwError m!"ieval: unable to find the hypothesis {ivar.name} in the context"
-      pure { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
-
-  return evalState
-
-/-- Apply the supplied tactic sequence to the proof goal -/
-private def iEvalGoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-    (tac : TSyntax `Lean.Parser.Tactic.tacticSeq) (goal : Q($prop)) :
-    ProofModeM <| (newGoal : Q($prop)) × Q($newGoal ⊢ $goal) := do
-  -- Find the new proof goal obtained upon applying the tactic sequence
-  return ← @iEvalOne u prop bi tac true goal
-
 private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
     (selTargets : Option <| List SelTarget) : ProofModeM Q($e ⊢ $goal) := do
   match selTargets with
   -- No selection pattern given, apply the tactics to the proof goal
   | none =>
-    let ⟨newGoal, pf⟩ ← iEvalGoal tac goal
+    let ⟨newGoal, (pf : Q($newGoal ⊢ $goal))⟩ ← iEvalOne bi tac true goal
     let pf' ← addBIGoal hyps newGoal
     return q($(pf').trans $pf)
   -- Selection patterns given, apply the tactics to the chosen hypotheses
   | some selTargets =>
-    let evalState ← iEvalHyps tac hyps selTargets
+    let mut evalState : EvalState e := { newHyps := hyps, pf := q(.rfl) }
+    -- Iteratively apply the supplied tactic sequence to the selection targets
+    for selTarget in selTargets do
+      evalState ← match selTarget.kind with
+      | .pure _ =>
+        throwError "ieval: pure hypotheses in the selection pattern is not supported"
+      | .ipm ivar =>
+        let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar (iEvalOne bi tac false ·)
+        | throwError m!"ieval: unable to find the hypothesis {ivar.name} in the context"
+        pure { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
     let pf' ← addBIGoal evalState.newHyps goal
     return q($(evalState.pf).trans $pf')
 
