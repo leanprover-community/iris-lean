@@ -131,7 +131,7 @@ def uPred_map [UCMRA α] [UCMRA β] (f : β -C> α) : UPred α -n> UPred β := b
 
 @[rocq_alias uPredOF]
 instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
-  cofe := inferInstance
+  ofe := inferInstance
   map f g := uPred_map (URFunctor.map (F := F) g f)
   map_ne.ne _ _ _ Hx _ _ Hy _ _ z2 Hn _ := by
     simp only [uPred_map]

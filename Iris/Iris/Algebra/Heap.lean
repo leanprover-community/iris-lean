@@ -637,7 +637,7 @@ abbrev PartialMapOF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
   fun A B _ _ => H (F A B)
 
 instance {F} [COFE.OFunctor F] : COFE.OFunctor (PartialMapOF H F) where
-  cofe := inferInstance
+  ofe := inferInstance
   map f g := mapO H (COFE.OFunctor.map f g)
   map_ne {_} _ _ _ _ _ _ _ := by
     constructor
