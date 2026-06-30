@@ -51,8 +51,7 @@ private def iEvalHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
 
         return ⟨newTy, pf⟩
       | throwError m!"ieval: unable to find the hypothesis {ivar.name} in the context"
-
-      return { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
+      pure { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
 
   return evalState
 
