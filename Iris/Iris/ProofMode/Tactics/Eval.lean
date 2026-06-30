@@ -15,12 +15,27 @@ open Lean Elab Tactic Meta Qq BI
 
 theorem eval_refl [BI PROP] (P : PROP) : P ⊢ P := .rfl
 
+private structure EvalState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (e : Q($prop)) where
+  {newE : Q($prop)}
+  (newHyps : Hyps bi newE)
+  (pf : Q($e ⊢ $newE))
+
+private def iEvalHypsOne {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
+    (evalState : @EvalState u prop bi e)
+    (selTarget : SelTarget) :
+    ProofModeM <| @EvalState u prop bi e := do
+  sorry
+
 private def iEvalHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
     (hyps : Hyps bi e)
     (selTargets : List SelTarget) :
-    ProofModeM <| (newE : Q($prop)) × (newHyps : Hyps bi newE) × Q($e ⊢ $newE) := do
-  throwUnsupportedSyntax
+    ProofModeM <| @EvalState u prop bi e := do
+  let mut evalState : EvalState e := { newE := e, newHyps := hyps, pf := q(.rfl) }
+  for selTarget in selTargets do
+    evalState ← iEvalHypsOne tac evalState selTarget
+  return evalState
 
 private def iEvalGoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     (tac : TSyntax `Lean.Parser.Tactic.tacticSeq) (goal : Q($prop)) :
@@ -53,9 +68,9 @@ private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     return q($(pf').trans $pf)
   -- Selection patterns given, apply the tactics to the chosen hypotheses
   | some selTargets =>
-    let ⟨_, newHyps, pf⟩ ← iEvalHyps tac hyps selTargets
-    let pf' ← addBIGoal newHyps goal
-    return q($(pf).trans $pf')
+    let evalState ← iEvalHyps tac hyps selTargets
+    let pf' ← addBIGoal evalState.newHyps goal
+    return q($(evalState.pf).trans $pf')
 
 elab "ieval " tac:tacticSeq : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
