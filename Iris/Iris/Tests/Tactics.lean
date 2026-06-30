@@ -2784,7 +2784,7 @@ example [BI PROP] {x y : Nat} :
     ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} iprop(⌜Nat.succ (x + y) = 2⌝) := by
   iintro #H
   isimp
-  simp -- isimp in H
+  isimp in H
   itrivial
 
 end ieval

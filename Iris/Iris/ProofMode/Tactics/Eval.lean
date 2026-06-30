@@ -25,14 +25,38 @@ private def iEvalHypsOne {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (evalState : @EvalState u prop bi e)
     (selTarget : SelTarget) :
     ProofModeM <| @EvalState u prop bi e := do
-  sorry
+  match selTarget.kind with
+  | .pure fvar =>
+    return evalState
+  | .ipm ivar =>
+    let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar <|
+      fun ty => do
+        let newTy : Q($prop) ←
+          withLocalDeclDQ (← mkFreshUserName .anonymous) q($prop) fun newTy => do
+            let m ← mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
+            let [g] ← evalTacticAt tac m.mvarId!
+            | throwError "ieval: error"
+            let some #[_, _, _, newTy] ← g.getType <&> (·.appM? ``Entails)
+            | throwError "ieval: error"
+            return newTy
+
+        let pf : Q($ty ⊢ $newTy) ← mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
+        match ← evalTacticAt tac pf.mvarId! with
+        | [] => pure ()
+        | [g] => g.assign q(eval_refl $newTy)
+        | _ => throwError "ieval: error"
+
+        return ⟨newTy, pf⟩
+    | throwError "ieval: error"
+
+    return { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
 
 private def iEvalHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
     (hyps : Hyps bi e)
     (selTargets : List SelTarget) :
     ProofModeM <| @EvalState u prop bi e := do
-  let mut evalState : EvalState e := { newE := e, newHyps := hyps, pf := q(.rfl) }
+  let mut evalState : EvalState e := { newHyps := hyps, pf := q(.rfl) }
   for selTarget in selTargets do
     evalState ← iEvalHypsOne tac evalState selTarget
   return evalState
