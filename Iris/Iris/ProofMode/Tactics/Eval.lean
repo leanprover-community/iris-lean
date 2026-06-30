@@ -45,7 +45,7 @@ private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
   match ← evalTacticAt tac pf.mvarId! with
   | [] => pure ()
   | [g] => g.assign (q(.rfl) : Q($newTy ⊢ $newTy))
-  | _ => throwError "ieval: the supplied tactic does not produce exactly one subgoal"
+  | _ => throwError "ieval: the supplied tactic produces more than one subgoal"
 
   return ⟨newTy, pf⟩
 
