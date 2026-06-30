@@ -1183,6 +1183,39 @@ theorem toList_dom_set_perm [LawfulFiniteSet S K] (m : M V) :
     exact ⟨(x, v), toList_get.mpr hv, rfl⟩
   · grind [toList_get]
 
+/-! ### `map_seq` -/
+
+variable {M' : Type _ → Type _} [LawfulFiniteMap M' Nat]
+
+@[simp] theorem map_seq_nil {V : Type _} {start : Nat} :
+    map_seq (M := M') start ([] : List V) = ∅ := by
+  rw [map_seq, List.mapIdx_nil]; rfl
+
+theorem map_seq_cons {V : Type _} {start : Nat} {v : V} {l : List V} :
+    map_seq (M := M') start (v :: l) = insert (map_seq (start + 1) l) start v := by
+  show ofList ((v :: l).mapIdx fun i x => (start + i, x)) = _
+  rw [List.mapIdx_cons]
+  simp only [Nat.add_zero]
+  rw [ofList_cons]
+  conv =>
+    enter [1, 1, 1, 1, i, x, 1]
+    rw [Nat.add_comm i, ← Nat.add_assoc]
+  exact ofList_cons
+
+theorem get?_map_seq {V : Type _} {start k : Nat} {l : List V} :
+    get? (map_seq (M := M') start l) k = if start ≤ k then l[k - start]? else none := by
+  induction l generalizing start with
+  | nil =>
+    rw [map_seq_nil]
+    simpa only [List.getElem?_nil, ite_self] using get?_empty _
+  | cons v l ih =>
+      rw [map_seq_cons]
+      by_cases hk : k = start
+      · subst hk
+        simp [get?_insert_eq rfl]
+      · rw [get?_insert_ne (by omega : start ≠ k), ih]
+        grind
+
 end LawfulFiniteMap
 
 end Iris.Std
