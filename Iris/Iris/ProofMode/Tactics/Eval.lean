@@ -20,37 +20,6 @@ private structure EvalState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (e : Q($pr
   (newHyps : Hyps bi newE)
   (pf : Q($e ⊢ $newE))
 
-private def iEvalHypsOne {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
-    (evalState : @EvalState u prop bi e)
-    (selTarget : SelTarget) :
-    ProofModeM <| @EvalState u prop bi e := do
-  match selTarget.kind with
-  | .pure _ =>
-    throwError "ieval: pure hypotheses in the selection pattern is not supported"
-  | .ipm ivar =>
-    let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar <|
-      fun ty => do
-        let newTy : Q($prop) ←
-          withLocalDeclDQ (← mkFreshUserName .anonymous) q($prop) fun newTy => do
-            let m ← mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
-            let [g] ← evalTacticAt tac m.mvarId!
-            | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
-            let some #[_, _, newTy, _] ← g.getType <&> (·.appM? ``Entails)
-            | throwError m!"ieval: the goal is not Iris entailment upon applying the supplied tactic"
-            return newTy
-
-        let pf : Q($ty ⊢ $newTy) ← mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
-        match ← evalTacticAt tac pf.mvarId! with
-        | [] => pure ()
-        | [g] => g.assign q(eval_refl $newTy)
-        | _ => throwError "ieval: the supplied tactic does not produce exactly one subgoal"
-
-        return ⟨newTy, pf⟩
-    | throwError m!"ieval: unable to find the hypothesis {ivar.name} in the context"
-
-    return { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
-
 private def iEvalHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
     (hyps : Hyps bi e)
@@ -58,7 +27,32 @@ private def iEvalHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     ProofModeM <| @EvalState u prop bi e := do
   let mut evalState : EvalState e := { newHyps := hyps, pf := q(.rfl) }
   for selTarget in selTargets do
-    evalState ← iEvalHypsOne tac evalState selTarget
+    evalState ← match selTarget.kind with
+    | .pure _ =>
+      throwError "ieval: pure hypotheses in the selection pattern is not supported"
+    | .ipm ivar =>
+      let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar <|
+        fun ty => do
+          let newTy : Q($prop) ←
+            withLocalDeclDQ (← mkFreshUserName .anonymous) q($prop) fun newTy => do
+              let m ← mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
+              let [g] ← evalTacticAt tac m.mvarId!
+              | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
+              let some #[_, _, newTy, _] ← g.getType <&> (·.appM? ``Entails)
+              | throwError m!"ieval: the goal is not Iris entailment upon applying the supplied tactic"
+              return newTy
+
+          let pf : Q($ty ⊢ $newTy) ← mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
+          match ← evalTacticAt tac pf.mvarId! with
+          | [] => pure ()
+          | [g] => g.assign q(eval_refl $newTy)
+          | _ => throwError "ieval: the supplied tactic does not produce exactly one subgoal"
+
+          return ⟨newTy, pf⟩
+      | throwError m!"ieval: unable to find the hypothesis {ivar.name} in the context"
+
+      return { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
+
   return evalState
 
 private def iEvalGoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
