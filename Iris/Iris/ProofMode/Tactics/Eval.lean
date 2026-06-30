@@ -49,6 +49,10 @@ private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
 
   return ⟨newTy, pf⟩
 
+/--
+  Apply the tactic sequence `tac` to either the proof goal (when `selTargets`
+  is `none`) or the hypotheses in the context specified by the selection targets.
+-/
 private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
     (selTargets : Option <| List SelTarget) : ProofModeM Q($e ⊢ $goal) := do
@@ -73,11 +77,19 @@ private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     let pf' ← addBIGoal evalState.newHyps goal
     return q($(evalState.pf).trans $pf')
 
+/--
+  `ieval (tac)` applies the tactic sequence `tac` to the proof goal.
+-/
 elab "ieval " "(" tac:tacticSeq ")" : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
     let pf ← iEvalCore hyps goal tac none
     mvar.assign pf
 
+/--
+  `ieval (tac) in spats` applies the tactic sequence `tac` to the Iris
+  hypotheses chosen by the selection pattern `spats`. Pure hypotheses are not
+  supported by this tactic.
+-/
 elab "ieval " "(" tacs:tacticSeq ")" " in " spats:(colGt ppSpace selPat)+ : tactic => do
   let selPats ← liftMacroM <| SelPat.parse spats
 
@@ -86,12 +98,24 @@ elab "ieval " "(" tacs:tacticSeq ")" " in " spats:(colGt ppSpace selPat)+ : tact
     let pf ← iEvalCore hyps goal tacs selTargets
     mvar.assign pf
 
+/-- `isimp` applies `simp` to the proof goal. This is shorthand for `ieval (simp)`. -/
 macro "isimp" : tactic => `(tactic| ieval (simp))
 
+/--
+  `isimp in spats` applies `simp` to the Iris hypotheses chosen by the
+  selection pattern `spats`. Pure hypotheses are not supported by this tactic.
+  This is shorthand for `ieval (simp) in spats`.
+-/
 macro "isimp" " in " spats:(colGt ppSpace selPat)+ : tactic =>
   `(tactic| ieval (simp) in $spats*)
 
+/-- `iunfold hs` applies `unfold hs` to the proof goal. This is shorthand for `ieval (unfold)`. -/
 macro "iunfold " hs:ident,+ : tactic => `(tactic| ieval (unfold $hs*))
 
+/--
+  `iunfold hs in spats` applies `unfold hs` to the Iris hypotheses chosen by
+  the selection pattern `spats`. Pure hypotheses are not supported by this tactic.
+  This is shorthand for `ieval (unfold hs) in spats`.
+-/
 macro "iunfold " hs:ident,+ " in " spats:(colGt ppSpace selPat)* : tactic =>
   `(tactic| ieval (unfold $hs*) in $spats*)
