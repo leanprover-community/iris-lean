@@ -2783,8 +2783,16 @@ section ieval
 example [BI PROP] {x y : Nat} :
     ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} iprop(⌜Nat.succ (x + y) = 2⌝) := by
   iintro #H
-  isimp
   isimp in H
+  isimp
   itrivial
+
+/- Tests `isimp` with a pure hypothesis in the selection pattern -/
+/-- error: ieval: pure hypotheses in the selection pattern is not supported -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} iprop(⌜Nat.succ (x + y) = 2⌝) := by
+  iintro #H
+  isimp in %x H
 
 end ieval

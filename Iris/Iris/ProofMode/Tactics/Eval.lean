@@ -26,8 +26,8 @@ private def iEvalHypsOne {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (selTarget : SelTarget) :
     ProofModeM <| @EvalState u prop bi e := do
   match selTarget.kind with
-  | .pure fvar =>
-    return evalState
+  | .pure _ =>
+    throwError "ieval: pure hypotheses in the selection pattern is not supported"
   | .ipm ivar =>
     let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar <|
       fun ty => do
@@ -36,7 +36,7 @@ private def iEvalHypsOne {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
             let m ← mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
             let [g] ← evalTacticAt tac m.mvarId!
             | throwError "ieval: error"
-            let some #[_, _, _, newTy] ← g.getType <&> (·.appM? ``Entails)
+            let some #[_, _, newTy, _] ← g.getType <&> (·.appM? ``Entails)
             | throwError "ieval: error"
             return newTy
 
