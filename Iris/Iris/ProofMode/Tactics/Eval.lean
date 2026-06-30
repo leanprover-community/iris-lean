@@ -13,12 +13,32 @@ namespace Iris.ProofMode
 public meta section
 open Lean Elab Tactic Meta Qq
 
+private def iEvalHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
+    (hyps : Hyps bi e)
+    (selTargets : List SelTarget) :
+    ProofModeM <| (newE : Q($prop)) × (newHyps : Hyps bi newE) × Q($e ⊢ $newE) := do
+  sorry
+
+private def iEvalGoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (tac : TSyntax `Lean.Parser.Tactic.tacticSeq) (goal : Q($prop)) :
+    ProofModeM <| (newGoal : Q($prop)) × Q($newGoal ⊢ $goal) := do
+  sorry
+
 private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
     (selTargets : Option <| List SelTarget) : ProofModeM Q($e ⊢ $goal) := do
   match selTargets with
-  | none => sorry
-  | some selTargets => sorry
+  -- No selection pattern given, apply the tactics to the proof goal
+  | none =>
+    let ⟨newGoal, pf⟩ ← iEvalGoal tac goal
+    let pf' ← addBIGoal hyps newGoal
+    return q($(pf').trans $pf)
+  -- Selection patterns given, apply the tactics to the chosen hypotheses
+  | some selTargets =>
+    let ⟨_, newHyps, pf⟩ ← iEvalHyps tac hyps selTargets
+    let pf' ← addBIGoal newHyps goal
+    return q($(pf).trans $pf')
 
 elab "ieval " tac:tacticSeq : tactic => do
   ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
