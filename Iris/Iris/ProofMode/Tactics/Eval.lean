@@ -18,6 +18,33 @@ private structure EvalState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (e : Q($pr
   (newHyps : Hyps bi newE)
   (pf : Q($e ⊢ $newE))
 
+private def iEvalOne {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (tac : TSyntax `Lean.Parser.Tactic.tacticSeq) (isGoal : Bool) (ty : Q($prop)) :
+    ProofModeM <| (newTy : Q($prop)) × if isGoal then Q($newTy ⊢ $ty) else Q($ty ⊢ $newTy) := do
+  -- Find the new proposition obtained upon applying the tactic sequence
+  let newTy : Q($prop) ←
+    withLocalDeclDQ (← mkFreshUserName .anonymous) q($prop) fun newTy => do
+      let m ← mkFreshExprSyntheticOpaqueMVar <| match isGoal with
+      | true => q($newTy ⊢ $ty)
+      | false =>  q($ty ⊢ $newTy)
+      let [g] ← evalTacticAt tac m.mvarId!
+      | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
+      let some #[_, _, lhs, rhs] ← g.getType <&> (·.appM? ``Entails)
+      | throwError m!"ieval: the goal is not Iris entailment upon applying the supplied tactic"
+      return if isGoal then rhs else lhs
+
+  let pf ← match isGoal with
+  -- The tactic sequence results in the proof goal being *strengthened*
+  | true => mkFreshExprSyntheticOpaqueMVar q($newTy ⊢ $ty)
+  -- The tactic sequence results in the hypothesis being *weakened*
+  | false => mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
+  match ← evalTacticAt tac pf.mvarId! with
+  | [] => pure ()
+  | [g] => g.assign (q(.rfl) : Q($newTy ⊢ $newTy))
+  | _ => throwError "ieval: the supplied tactic does not produce exactly one subgoal"
+
+  return ⟨newTy, pf⟩
+
 /-- Iteratively apply the supplied tactic sequence to the selection targets -/
 private def iEvalHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
@@ -30,24 +57,7 @@ private def iEvalHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     | .pure _ =>
       throwError "ieval: pure hypotheses in the selection pattern is not supported"
     | .ipm ivar =>
-      let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar <| fun ty => do
-        -- Find the new hypothesis obtained upon applying the tactic sequence
-        let newTy : Q($prop) ←
-          withLocalDeclDQ (← mkFreshUserName .anonymous) q($prop) fun newTy => do
-            let [g] ← mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy) >>= (evalTacticAt tac ·.mvarId!)
-            | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
-            let some #[_, _, newTy, _] ← g.getType <&> (·.appM? ``Entails)
-            | throwError m!"ieval: the goal is not Iris entailment upon applying the supplied tactic"
-            return newTy
-
-        -- The tactic sequence results in the proof goal being *weakened*
-        let pf : Q($ty ⊢ $newTy) ← mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
-        match ← evalTacticAt tac pf.mvarId! with
-        | [] => pure ()
-        | [g] => g.assign (q(.rfl) : Q($newTy ⊢ $newTy))
-        | _ => throwError "ieval: the supplied tactic does not produce exactly one subgoal"
-
-        return ⟨newTy, pf⟩
+      let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar (@iEvalOne u prop bi tac false ·)
       | throwError m!"ieval: unable to find the hypothesis {ivar.name} in the context"
       pure { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
 
@@ -58,23 +68,7 @@ private def iEvalGoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     (tac : TSyntax `Lean.Parser.Tactic.tacticSeq) (goal : Q($prop)) :
     ProofModeM <| (newGoal : Q($prop)) × Q($newGoal ⊢ $goal) := do
   -- Find the new proof goal obtained upon applying the tactic sequence
-  let newGoal : Q($prop) ←
-    withLocalDeclDQ (← mkFreshUserName .anonymous) q($prop) fun newGoal => do
-      let m ← mkFreshExprSyntheticOpaqueMVar q($newGoal ⊢ $goal)
-      let [g] ← evalTacticAt tac m.mvarId!
-      | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
-      let some #[_, _, _, newGoal] ← g.getType <&> (·.appM? ``Entails)
-      | throwError m!"ieval: the goal is not Iris entailment upon applying the supplied tactic"
-      return newGoal
-
-  -- The tactic sequence results in the proof goal being *strengthened*
-  let pf : Q($newGoal ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar q($newGoal ⊢ $goal)
-  match ← evalTacticAt tac pf.mvarId! with
-  | [] => pure ()
-  | [g] => g.assign (q(.rfl) : Q($newGoal ⊢ $newGoal))
-  | _ => throwError "ieval: the supplied tactic does not produce exactly one subgoal"
-
-  return ⟨newGoal, pf⟩
+  return ← @iEvalOne u prop bi tac true goal
 
 private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
