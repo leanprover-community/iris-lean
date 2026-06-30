@@ -11,19 +11,36 @@ public meta import Iris.ProofMode.ProofModeM
 namespace Iris.ProofMode
 
 public meta section
-open Lean Elab Tactic Meta Qq
+open Lean Elab Tactic Meta Qq BI
+
+theorem eval_refl [BI PROP] (P : PROP) : P ⊢ P := .rfl
 
 private def iEvalHyps {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
     (hyps : Hyps bi e)
     (selTargets : List SelTarget) :
     ProofModeM <| (newE : Q($prop)) × (newHyps : Hyps bi newE) × Q($e ⊢ $newE) := do
-  sorry
+  throwUnsupportedSyntax
 
 private def iEvalGoal {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     (tac : TSyntax `Lean.Parser.Tactic.tacticSeq) (goal : Q($prop)) :
     ProofModeM <| (newGoal : Q($prop)) × Q($newGoal ⊢ $goal) := do
-  sorry
+  let newGoal : Q($prop) ←
+    withLocalDeclDQ (← mkFreshUserName .anonymous) q($prop) fun newGoal => do
+      let m ← mkFreshExprSyntheticOpaqueMVar q($newGoal ⊢ $goal)
+      let [g] ← evalTacticAt tac m.mvarId!
+      | throwError "ieval: error"
+      let some #[_, _, _, newGoal] ← g.getType <&> (·.appM? ``Entails)
+      | throwError "ieval: error"
+      return newGoal
+
+  let pf : Q($newGoal ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar q($newGoal ⊢ $goal)
+  match ← evalTacticAt tac pf.mvarId! with
+  | [] => pure ()
+  | [g] => g.assign q(eval_refl $newGoal)
+  | _ => throwError "ieval: error"
+
+  return ⟨newGoal, pf⟩
 
 private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)

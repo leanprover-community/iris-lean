@@ -2776,3 +2776,15 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
+
+section ieval
+
+/-- Tests `isimp` to simplify the goal and the hypothesis `H` separately. -/
+example [BI PROP] {x y : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} iprop(⌜Nat.succ (x + y) = 2⌝) := by
+  iintro #H
+  isimp
+  simp -- isimp in H
+  itrivial
+
+end ieval
