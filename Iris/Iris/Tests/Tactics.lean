@@ -2823,4 +2823,28 @@ example [BI PROP] : ⌜def2 = 10⌝ ⊢@{PROP} ⌜10 = 10⌝ ∗ ⌜def2 = 10⌝
   ipureintro
   .rfl
 
+/- Tests `ieval` where the supplied tactic solves the goal completely -/
+/-- error: ieval: the supplied tactic does not produce exactly one subgoal -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} (_ : False) :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro H
+  ieval (contradiction) in H
+
+/- Tests `ieval` where the supplied tactic produces more than one subgoal -/
+/-- error: ieval: the supplied tactic does not produce exactly one subgoal -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} (h : False) :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro H
+  ieval (cases x) in H
+
+/- Tests `ieval` where the given tactic breaks the Iris entailment -/
+/-- error: ieval: the goal is not Iris entailment upon applying the supplied tactic -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro H
+  ieval (exfalso) in H
+
 end ieval
