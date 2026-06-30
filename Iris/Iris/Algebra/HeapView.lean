@@ -496,7 +496,7 @@ section heapViewFunctor
 
 open Iris.Std PartialMap
 
-theorem heapR_map_eq [OFE A] [OFE B] [OFE A'] [OFE B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
+theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
     (n : Nat) (m : H (T A B)) (mv : H (DFrac × T A B)) :
     HeapR K (T A B) H n m mv →
     HeapR K (T A' B') H n

@@ -1119,20 +1119,20 @@ section rFunctor
 class RFunctor (F : COFE.OFunctorPre) where
   -- EXPERIMENT: Replacing COFE in this definition with OFE
   -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/OFunctor.20definition
-  -- cofe [COFE α] [COFE β] : CMRA (F α β)
-  [cmra [OFE α] [OFE β] : CMRA (F α β)]
-  map [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
+  -- UPD.: Reverted after more discussion
+  [cmra [COFE α] [COFE β] : CMRA (F α β)]
+  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
-  map_ne [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
+  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [OFE α] [OFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
-  map_comp [OFE α₁] [OFE α₂] [OFE α₃] [OFE β₁] [OFE β₂] [OFE β₃]
+  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
+  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
 
 @[rocq_alias rFunctorContractive]
 class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
-  map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
+  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
 attribute [reducible, instance] RFunctor.cmra
@@ -1140,7 +1140,7 @@ attribute [reducible, instance] RFunctor.cmra
 
 @[rocq_alias rFunctor_to_oFunctor]
 instance RFunctor.toOFunctor [R : RFunctor F] : COFE.OFunctor F where
-  cofe       := RFunctor.cmra.toOFE
+  ofe        := RFunctor.cmra.toOFE
   map a b    := (RFunctor.map a b).toHom
   map_ne.ne  := RFunctor.map_ne.ne
   map_id     := RFunctor.map_id
@@ -1160,19 +1160,19 @@ class URFunctor (F : COFE.OFunctorPre) where
   -- EXPERIMENT: Replacing COFE in this definition with OFE
   -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/OFunctor.20definition
   -- cofe [COFE α] [COFE β] : UCMRA (F α β)
-  [cmra [OFE α] [OFE β] : UCMRA (F α β)]
-  map [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
+  [cmra [COFE α] [COFE β] : UCMRA (F α β)]
+  map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
-  map_ne [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
+  map_ne [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     NonExpansive₂ (@map α₁ α₂ β₁ β₂ _ _ _ _)
-  map_id [OFE α] [OFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
-  map_comp [OFE α₁] [OFE α₂] [OFE α₃] [OFE β₁] [OFE β₂] [OFE β₃]
+  map_id [COFE α] [COFE β] (x : F α β) : map (@Hom.id α _) (@Hom.id β _) x ≡ x
+  map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x ≡ map g g' (map f f' x)
 
 @[rocq_alias urFunctorContractive]
 class URFunctorContractive (F : COFE.OFunctorPre) extends URFunctor F where
-  map_contractive [OFE α₁] [OFE α₂] [OFE β₁] [OFE β₂] :
+  map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
 attribute [reducible, instance] URFunctor.cmra
@@ -1196,25 +1196,27 @@ section Id
 
 @[rocq_alias constRF]
 instance COFE.OFunctor.constOF_RFunctor [CMRA B] : RFunctor (constOF B) where
-  map f g := ⟨map f g, by simp [map], by simp [map], by simp [map]⟩
-  map_ne.ne := map_ne.ne
-  map_id := map_id
-  map_comp := map_comp
+  cmra := inferInstance
+  map _ _ := (CMRA.Hom.id : B -C> B)
+  map_ne.ne _ _ _ _ _ _ _ := .rfl
+  map_id _ := .rfl
+  map_comp _ _ _ _ _ := .rfl
 
 @[rocq_alias constRF_contractive]
 instance OFunctor.constOF_RFunctorContractive [CMRA B] :
     RFunctorContractive (constOF B) where
-  map_contractive.1 := by simp [Function.uncurry, RFunctor.map, COFE.OFunctor.map]
+  map_contractive.1 := fun _ => .rfl
 
 instance COFE.OFunctor.constOF_URFunctor [UCMRA B] : URFunctor (constOF B) where
-  map f g := ⟨map f g, by simp [map], by simp [map], by simp [map]⟩
-  map_ne.ne := map_ne.ne
-  map_id := map_id
-  map_comp := map_comp
+  cmra := inferInstance
+  map _ _ := (CMRA.Hom.id : B -C> B)
+  map_ne.ne _ _ _ _ _ _ _ := .rfl
+  map_id _ := .rfl
+  map_comp _ _ _ _ _ := .rfl
 
 instance OFunctor.constOF_URFunctorContractive [UCMRA B] :
     URFunctorContractive (constOF B) where
-  map_contractive.1 := by simp [Function.uncurry, URFunctor.map, COFE.OFunctor.map]
+  map_contractive.1 _ := .rfl
 
 end Id
 
