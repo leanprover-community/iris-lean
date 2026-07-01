@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Mario Carneiro, Michael Sammler
+Authors: Lars König, Mario Carneiro, Michael Sammler, Alvin Tang
 -/
 module
 
@@ -75,6 +75,11 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
       return r
     else
       iIntroCore hyps Q pats k
+  | (ref, .simpl) :: pats =>
+    withRef ref do
+    let simpCtx ← Simp.mkContext (simpTheorems := #[← getSimpTheorems])
+    let ⟨Q', _⟩ ← Lean.Meta.dsimp Q simpCtx #[← Simp.getSimprocs]
+    iIntroCore hyps Q' pats k
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar

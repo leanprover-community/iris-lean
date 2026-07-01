@@ -277,6 +277,20 @@ example [BI PROP] (P : PROP) : P -∗ P → P := by
 example [BI PROP] (P : PROP) : False ∗ □ P ⊢@{PROP} P := by
   iintro ⟨⟨⟩, #_⟩
 
+@[simp]
+private def def1 := 3
+
+/- Tests `iintro` using the introduction pattern for simplification (`/=`) -/
+example [BI PROP] (P Q : PROP) : ⊢@{PROP} if def1 = 3 then P -∗ P else Q := by
+  iintro /= HP
+  iexact HP
+
+/- Tests `iintro` where the lack of simplification (`/=`) causes a failure -/
+/-- error: iintro: if def1 = 3 then iprop(P -∗ P) else Q not a wand -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : ⊢@{PROP} if def1 = 3 then P -∗ P else Q := by
+  iintro HP
+
 end intro
 
 -- revert

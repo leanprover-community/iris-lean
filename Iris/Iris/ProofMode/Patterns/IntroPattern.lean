@@ -31,6 +31,7 @@ inductive IntroPat
   | intro (case : iCasesPat)
   | trivial
   | modintro
+  | simpl
   deriving Repr, Inhabited
 
 partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
@@ -38,6 +39,7 @@ partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
   | `(introPat| $case:icasesPat) => return (term, .intro (← iCasesPat.parse case))
   | `(introPat| //) => return (term, .trivial)
   | `(introPat| !>) => return (term, .modintro)
+  | `(introPat| /=) => return (term, .simpl)
   | _ => Macro.throwUnsupported
 
 #rocq_ignore gallina_ident "Not necessary in Lean"
