@@ -15,7 +15,7 @@ Currently, Iris-Lean has support for
 - `IProp`, the standard model of Iris
 - A selection of the Iris resources, including invariants, later credits, and many more.
 
-MoSeL (in contrast to the older IPM) supports different separation logics as well. For more details on the proofmode, see [proofmode.md](proofmode.md).
+MoSeL (in contrast to the older IPM) supports different separation logics as well. For more details on the proofmode, see [proofmode.md](Iris/proofmode.md).
 
 More details about the status of our port can be found on our [tracking site](https://leanprover-community.github.io/iris-lean/). 
 
