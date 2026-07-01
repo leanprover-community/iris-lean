@@ -30,7 +30,7 @@ def mk [OFE A] (d : DFrac) (a : A) : DFracAgreeR A := (d, toAgree a)
 
 variable {A : Type _} [OFE A]
 
-instance instLeibniz : Leibniz (DFracAgreeR A) := inferInstance
+instance instLeibniz [Leibniz A] : Leibniz (DFracAgreeR A) := inferInstance
 
 @[rocq_alias to_dfrac_agree_ne]
 instance mk_ne {d : DFrac} : NonExpansive (mk d : A → DFracAgreeR A) where

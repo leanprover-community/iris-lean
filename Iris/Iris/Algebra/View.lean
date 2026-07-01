@@ -46,16 +46,16 @@ theorem iff_of_equiv (Ha : a1 ≡ a2) (Hb : b1 ≡ b2) : R n a1 b1 ↔ R n a2 b2
 end ViewRel
 
 @[rocq_alias view]
-structure View {A B : Type _} [OFE A] (R : ViewRel A B) where
+structure View {A B : Type _} (R : ViewRel A B) where
   auth : Option ((DFrac) × Agree A)
   frag : B
 
 @[rocq_alias view_auth]
-abbrev View.Auth [OFE A] [UCMRA B] {R : ViewRel A B} (dq : DFrac) (a : A) : View R :=
+abbrev View.Auth [UCMRA B] {R : ViewRel A B} (dq : DFrac) (a : A) : View R :=
   ⟨some (dq, toAgree a), UCMRA.unit⟩
 
 @[rocq_alias view_frag]
-abbrev View.Frag [OFE A] {R : ViewRel A B} (b : B) : View R := ⟨none, b⟩
+abbrev View.Frag {R : ViewRel A B} (b : B) : View R := ⟨none, b⟩
 
 notation "●V{" dq "} " a => View.Auth dq a
 notation "●V " a => View.Auth (DFrac.own 1) a
@@ -107,7 +107,7 @@ theorem discrete {ag : Option ((DFrac) × Agree A)} (Ha : DiscreteE ag) (Hb : Di
 instance [Discrete A] [Discrete B] : Discrete (View R) where
   discrete_0 H := ⟨discrete_0 H.1, discrete_0 H.2⟩
 
-instance instLeibniz [Leibniz B] : Leibniz (View R) where
+instance instLeibniz [Leibniz A] [Leibniz B] : Leibniz (View R) where
   eq_of_eqv {x y} h := by
     cases x; cases y
     simp only [View.mk.injEq]
@@ -493,7 +493,7 @@ theorem auth_incN_auth_op_frag_iff : (●V{dq1} a1 : View R) ≼{n} ((●V{dq2} 
   · simp only [Auth, Frag, CMRA.IncludedN, CMRA.op]
     rintro ⟨(_|⟨dqf, af⟩),⟨⟨x1, x2⟩, y⟩⟩
     · exact ⟨.inr x1.symm, toAgree.inj x2.symm⟩
-    · exact ⟨.inl ⟨dqf, x1⟩, toAgree.incN.mp ⟨af, x2⟩⟩
+    · exact ⟨.inl ⟨dqf, x1⟩, Agree.toAgree_includedN.mp ⟨af, x2⟩⟩
   · rcases H with ⟨(⟨z, HRz⟩| HRa2), HRb⟩
     · calc (●V{dq1} a1 : View R)
              ≼{n} ((●V{dq1} a1) • ((◯V b) • ●V{z} a1)) := by exists ((◯V b) • ●V{z} a1)
@@ -783,7 +783,7 @@ theorem auth_alloc (Hup : ∀ n bf, R n a bf → R n a (b • bf)) :
     refine ⟨Hv, ?_⟩
     exists a0
     refine ⟨Hag, ?_⟩
-    have Heq  := toAgree.incN.mp ⟨ag, Hag.symm⟩
+    have Heq  := Agree.toAgree_includedN.mp ⟨ag, Hag.symm⟩
     have HR' := IsViewRel.mono Hrel Heq.symm (CMRA.incN_op_right n UCMRA.unit bf) n.le_refl
     apply IsViewRel.mono (Hup _ _ HR') Heq ?_ n.le_refl
     apply Iris.OFE.Dist.to_incN
@@ -812,20 +812,19 @@ end Updates
 section ViewMap
 
 @[rocq_alias view_map]
-def map [OFE A] [OFE A'] {R : ViewRel A B} (R' : ViewRel A' B') (f : A → A') [OFE.NonExpansive f]
+def map {R : ViewRel A B} (R' : ViewRel A' B') (f : A → A')
     (g : B → B') (v : View R) : View R' where
   auth := match v.auth with | none => none | some (fr, a) => (fr, a.map' f)
   frag := g v.frag
 
 @[rocq_alias view_map_id]
-theorem map_id [OFE A] {R : ViewRel A B} (v : View R) : View.map R id id v = v := by
+theorem map_id {R : ViewRel A B} (v : View R) : View.map R id id v = v := by
   rcases v with ⟨a, b⟩
   cases a <;> simp [View.map, Agree.map'_id]
 
 @[rocq_alias view_map_compose]
-theorem map_compose [OFE A] [OFE A'] [OFE A''] {R : ViewRel A B} {R' : ViewRel A' B'}
-    {R'' : ViewRel A'' B''} (f : A → A') (g : B → B') (f' : A' → A'') (g' : B' → B'')
-    [OFE.NonExpansive f] [OFE.NonExpansive f'] [OFE.NonExpansive (f' ∘ f)] (v : View R) :
+theorem map_compose {R : ViewRel A B} {R' : ViewRel A' B'} {R'' : ViewRel A'' B''}
+    f g (f' : A' → A'') (g' : B' → B'') (v : View R) :
     View.map R'' (f' ∘ f) (g' ∘ g) v = View.map R'' f' g' (View.map R' f g v) := by
   rcases v with ⟨a, b⟩
   cases a <;> simp [View.map, Agree.map'_compose]
@@ -835,7 +834,7 @@ section mapO
 variable [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : ViewRel A' B'}
 
 theorem map_compose' [OFE A''] [OFE B''] {R'' : ViewRel A'' B''}
-    (f : A -n> A') (g : B -n> B') (f' : A' -n> A'') (g' : B' -n> B'') (v : View R) :
+    f g (f' : A' -n> A'') (g' : B' -n> B'') (v : View R) :
     View.map R'' (f'.comp f) (g'.comp g) v = View.map R'' f' g' (View.map R' f g v) := by
   haveI : OFE.NonExpansive (f'.f ∘ f.f) := f'.ne.comp f.ne
   exact map_compose f.f g.f f'.f g'.f v
@@ -905,7 +904,7 @@ def mapC [OFE A] [UCMRA B] [OFE A'] [UCMRA B']
   op x y := by
     constructor <;> simp [CMRA.Hom.op, CMRA.op, map]
     cases x.auth <;> cases y.auth <;> simp [Prod.op]
-    exact OFE.eq_of_eqv ((Agree.map f.f).op _ _)
+    exact ⟨.rfl, (Agree.map f.f).op _ _⟩
 
 end ViewMap
 
