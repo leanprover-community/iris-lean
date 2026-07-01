@@ -273,6 +273,10 @@ example [BI PROP] (P Q : PROP) : ⊢ P → Q := by
 example [BI PROP] (P : PROP) : P -∗ P → P := by
   iintro HP1 HP2
 
+/- Tests `iintro` using the introduction pattern `⟨⟩` to solve the goal -/
+example [BI PROP] (P : PROP) : False ∗ □ P ⊢@{PROP} P := by
+  iintro ⟨⟨⟩, #_⟩
+
 end intro
 
 -- revert
