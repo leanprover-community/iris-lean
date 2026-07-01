@@ -230,8 +230,6 @@ open Iris Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
--- FIXME: Arguments E, N and P in this section should be made implicit
-
 @[rocq_alias inv_acc]
 theorem inv_acc {E : CoPset} {N : Namespace} {P : IProp GF} (Hsub : ↑N ⊆ E) :
     ⊢ inv N P ={E, E \ ↑N}=∗ ▷ P ∗ (▷ P ={E \ ↑N, E}=∗ True) := by

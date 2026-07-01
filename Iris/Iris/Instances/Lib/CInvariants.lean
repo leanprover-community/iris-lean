@@ -235,8 +235,6 @@ theorem acc_strong (E : CoPset) (N : Namespace) (γ : GName) (p : Qp) (P : IProp
   · iexfalso
     iapply own_one_l $$ Hown' Hown
 
--- FIXME: Args here should be implicit
-
 @[rocq_alias cinv_acc]
 theorem acc {E : CoPset} {N : Namespace} {γ : GName} {p : Qp} {P : IProp GF}
     (Hsub : ↑N ⊆ E) :
