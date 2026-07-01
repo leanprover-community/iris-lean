@@ -314,7 +314,15 @@ example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ □ Q -∗ ⌜n = n⌝ := by
   iintro - - !%
   rfl
 
+example [BI PROP] : ⊢@{PROP} ⌜⌜ϕ⌝ ⊢@{PROP} ⌜ϕ⌝⌝ := by
+  iintro !%
+  iintro %_
+  iintro !%
+  assumption
+
 end intro
+
+/-
 
 -- revert
 namespace revert
@@ -2817,3 +2825,5 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
+
+-/
