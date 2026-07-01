@@ -70,6 +70,16 @@ syntax " 〖 " wpPostcondInner " 〗 "  : wpPostcond
 
 syntax (name := wp) "WP " wpExpr wpPostcond : term
 
+syntax texanPostcondInner := (ident+ ", ")? " RET " term:min "; " term:min
+declare_syntax_cat texanPostcond
+syntax " {" "{ " texanPostcondInner " }" "} " : texanPostcond
+syntax " ⦃ " texanPostcondInner " ⦄ " : texanPostcond
+declare_syntax_cat texanPrecond
+syntax " {" "{ " term:min " }" "} " : texanPrecond
+syntax " ⦃ " term:min " ⦄ " : texanPrecond
+
+syntax (name := texanTriple) texanPrecond wpExpr texanPostcond : term
+
 open Lean in
 meta def parseWpExpr : Lean.TSyntax ``wpExpr → Lean.MacroM (TSyntax `term × TSyntax `term × TSyntax `term) := fun
   | `(wpExpr| $e @ $s ; $E) =>
@@ -114,6 +124,16 @@ meta def wpMacro : Lean.Macro := fun stx => do
       `(Wp.wp $s $E $e $Φ)
   | _ => Lean.Macro.throwUnsupported
 
+@[macro texanTriple]
+meta def wpTexanTriple : Lean.Macro
+  | `(⦃ $P:term ⦄ $wpExpr ⦃ $[$[$xs:ident]* ,]? RET $pat ; $Q:term ⦄)
+  | `({{ $P:term }} $wpExpr {{ $[$[$xs:ident]* ,]? RET $pat ; $Q:term }}) => do
+    let k ← match xs with
+            | some xs => `(∀ $xs*, $Q:term → Φ $pat)
+            | none => `($Q:term → Φ $pat)
+    `(iprop(∀ Φ, $P -∗ ▷ $k -∗ (WP $wpExpr {{ Φ }})))
+  | _ => Lean.Macro.throwUnsupported
+
 meta def unexpandWpPostcondInner : TSyntax `term → PrettyPrinter.UnexpandM (TSyntax `wpPostcondInner)
   | `(fun $v:ident => iprop($Φ:term)) => `(wpPostcondInner|$v:ident, $Φ:term)
   | `(iprop($Φ:term)) => `(wpPostcondInner| $Φ:term)
@@ -144,3 +164,5 @@ meta def unexpanderTotalWp : PrettyPrinter.Unexpander
     let wpPostcondInner ← unexpandWpPostcondInner Φ
     `(WP $wpExpr [{ $wpPostcondInner }])
   | _ => throw ()
+
+-- TODO: Consider adding unexpanders for texan triples
