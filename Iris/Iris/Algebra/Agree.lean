@@ -88,11 +88,11 @@ def dist (n : Nat) (x y : Raw α) : Prop :=
 
 theorem dist_equiv : Equivalence (dist (α := α) n) where
   refl := fun ⟨x, h⟩ => by
-    constructor
+    refine ⟨?_, ?_⟩
     · intro a ha; exists a
     · intro b hb; exists b
   symm := fun ⟨h₁, h₂⟩ => by
-    constructor
+    refine ⟨?_, ?_⟩
     · intro a ha
       obtain ⟨b, hb, hd⟩ := h₂ a ha
       exact ⟨b, hb, hd.symm⟩
@@ -100,7 +100,7 @@ theorem dist_equiv : Equivalence (dist (α := α) n) where
       obtain ⟨a, ha, hd⟩ := h₁ b hb
       exact ⟨a, ha, hd.symm⟩
   trans := fun ⟨h₁, h₁'⟩ ⟨h₂, h₂'⟩ => by
-    constructor
+    refine ⟨?_, ?_⟩
     · intro a ha
       obtain ⟨b, hb, hd₁⟩ := h₁ a ha
       obtain ⟨c, hc, hd₂⟩ := h₂ b hb
@@ -116,7 +116,7 @@ instance instOFE : OFE (Raw α) where
   dist_eqv := dist_equiv
   equiv_dist := by simp
   dist_lt {n x y m} := fun ⟨h₁, h₂⟩ hlt => by
-    constructor
+    refine ⟨?_, ?_⟩
     · intro a ha
       obtain ⟨b, hb, hd⟩ := h₁ a ha
       exact ⟨b, hb, OFE.Dist.lt hd hlt⟩
@@ -155,16 +155,16 @@ def valid (x : Raw α) : Prop := ∀ n, x.validN n
 
 theorem op_comm {x y : Raw α} : op x y ≡ op y x := by
   intro n; simp_all only [dist, op, List.mem_append]
-  constructor <;> exact fun _ ha => ⟨_, ha.symm, .rfl⟩
+  refine ⟨?_, ?_⟩ <;> exact fun _ ha => ⟨_, ha.symm, .rfl⟩
 
 theorem op_commN {x y : Raw α} : op x y ≡{n}≡ op y x := op_comm n
 
 theorem op_assoc {x y z : Raw α} : op x (op y z) ≡ op (op x y) z := by
   intro n; simp_all only [dist, op, List.mem_append, List.append_assoc]
-  constructor <;> (intro a ha; exists a)
+  refine ⟨?_, ?_⟩ <;> (intro a ha; exists a)
 
 theorem idemp {x : Raw α} : op x x ≡ x := by
-  intro n; constructor <;> (intro a ha; exists a; simp_all [op])
+  intro n; refine ⟨?_, ?_⟩ <;> (intro a ha; exists a; simp_all [op])
 
 theorem validN_ne {x y : Raw α} : x ≡{n}≡ y → x.validN n → y.validN n := by
   simp only [OFE.Dist, dist, validN_iff, and_imp]
@@ -183,8 +183,9 @@ theorem validN_op_left {x y : Raw α} : (op x y).validN n → x.validN n := by
   exact fun h a ha b hb => h _ (.inl ha) _ (.inl hb)
 
 theorem op_ne {x : Raw α} : OFE.NonExpansive (op x) := by
-  constructor; simp only [OFE.Dist, dist, op, List.mem_append, and_imp]
-  intro n y₁ y₂ heq₁ heq₂; constructor
+  refine ⟨?_⟩
+  simp only [OFE.Dist, dist, op, List.mem_append, and_imp]
+  intro n y₁ y₂ heq₁ heq₂; refine ⟨?_, ?_⟩
   · rintro a (hx | hy)
     · exists a; simp [hx]
     · obtain ⟨b, hb, heq⟩ := heq₁ _ hy
@@ -195,13 +196,12 @@ theorem op_ne {x : Raw α} : OFE.NonExpansive (op x) := by
       exists b; simp_all
 
 theorem op_ne₂ : OFE.NonExpansive₂ (op (α := α)) := by
-  constructor
-  intro n x₁ x₂ hx y₁ y₂ hy
+  refine ⟨fun n x₁ x₂ hx y₁ y₂ hy => ?_⟩
   exact op_ne.ne hy |>.trans (op_comm n) |>.trans (op_ne.ne hx) |>.trans (op_comm n)
 
 theorem op_invN {x y : Raw α} : (op x y).validN n → x ≡{n}≡ y := by
   simp only [op, validN_iff, List.mem_append, OFE.Dist, dist]
-  intro h; constructor
+  intro h; refine ⟨?_, ?_⟩
   · intro a ha
     obtain ⟨b, hb⟩ := mem y
     exists b; simp_all
@@ -224,7 +224,7 @@ theorem toAgree_uninjN {x : Raw α} : x.validN n → ∃ a, dist n (toAgree a) x
   rw [validN_iff]
   obtain ⟨a, ha⟩ := mem x
   intro h; exists a
-  constructor <;> intros
+  refine ⟨?_, ?_⟩ <;> intros
   · exists a; simp_all [toAgree]
   · simp_all [toAgree]
 
@@ -232,7 +232,7 @@ theorem toAgree_uninj {x : Raw α} : x.valid → ∃ a, ∀ n, dist n (toAgree a
   simp only [valid, validN_iff]
   obtain ⟨a, ha⟩ := mem x
   intro h; exists a; intro n
-  constructor <;> intros
+  refine ⟨?_, ?_⟩ <;> intros
   · exists a; simp_all [toAgree]
   · simp_all [toAgree]
 
@@ -539,7 +539,7 @@ variable [OFE α]
 
 @[rocq_alias to_agree_ne]
 instance instNonExpansive_toAgree : OFE.NonExpansive (@toAgree α) where
-  ne n x₁ x₂ heq := by constructor <;> simp_all [Agree.Raw.toAgree]
+  ne n x₁ x₂ heq := by refine ⟨?_, ?_⟩ <;> simp_all [Agree.Raw.toAgree]
 
 #rocq_ignore to_agree_proper "Derivable from instNonExpansive_toAgree with NonExpansive.eqv"
 
@@ -583,7 +583,7 @@ instance (a : α) : CMRA.CoreId (toAgree a) where
 
 @[simp, rocq_alias to_agree_includedN]
 theorem toAgree_includedN {a b : α} : toAgree a ≼{n} toAgree b ↔ a ≡{n}≡ b := by
-  constructor <;> intro h
+  refine ⟨?_, ?_⟩ <;> intro h
   · exact toAgree_injN (valid_includedN trivial h)
   · exists toAgree a
     calc
@@ -592,7 +592,7 @@ theorem toAgree_includedN {a b : α} : toAgree a ≼{n} toAgree b ↔ a ≡{n}�
 
 @[simp, rocq_alias to_agree_included]
 theorem toAgree_included {a b : α} : toAgree a ≼ toAgree b ↔ a ≡ b := by
-  constructor <;> intro h
+  refine ⟨?_, ?_⟩ <;> intro h
   · exact toAgree_inj (valid_included (fun _ => trivial) h)
   · exists toAgree a
     calc
@@ -606,7 +606,7 @@ theorem toAgree_included_L [OFE.Leibniz α] {a b : α} :
 @[rocq_alias to_agree_op_validN]
 theorem toAgree_op_validN_iff_dist {a b : α} :
     ✓{n} (toAgree a • toAgree b) ↔ a ≡{n}≡ b := by
-  constructor <;> intro h
+  refine ⟨?_, ?_⟩ <;> intro h
   · exact toAgree_injN (op_invN h)
   · have heqv : toAgree a • toAgree b ≡{n}≡ toAgree a := calc
       toAgree a • toAgree b ≡{n}≡ toAgree a • toAgree a := (OFE.NonExpansive.ne h).symm.op_r
@@ -679,12 +679,11 @@ abbrev Agree.map_hom : (Agree α) -n> (Agree β) := CMRA.Hom.toHom (Agree.map f)
 
 @[rocq_alias agreeO_map_ne]
 theorem Agree.map_ne {f g : α → β} [OFE.NonExpansive f] [OFE.NonExpansive g] {x : Agree α}
-    (heq : ∀ a, f a ≡{n}≡ g a) : map f x ≡{n}≡ map g x := by
-  induction x with | _ x =>
-  rw [map_mk, map_mk]
-  refine dist_mk.mpr ⟨?_, ?_⟩ <;> simp only [Raw.map'_car, List.mem_map] <;> rintro _ ⟨a, ha, rfl⟩
-  · exact ⟨g a, ⟨a, ha, rfl⟩, heq a⟩
-  · exact ⟨f a, ⟨a, ha, rfl⟩, heq a⟩
+    (heq : ∀ a, f a ≡{n}≡ g a) : map f x ≡{n}≡ map g x :=
+  x.ind fun _ => by
+    refine dist_mk.mpr ⟨?_, ?_⟩ <;> simp only [Raw.map'_car, List.mem_map] <;> rintro _ ⟨a, ha, rfl⟩
+    · exact ⟨g a, ⟨a, ha, rfl⟩, heq a⟩
+    · exact ⟨f a, ⟨a, ha, rfl⟩, heq a⟩
 
 @[rocq_alias agree_map_ext]
 theorem Agree.agree_map_ext {f g : α → β} [OFE.NonExpansive f] [OFE.NonExpansive g] {x : Agree α}
