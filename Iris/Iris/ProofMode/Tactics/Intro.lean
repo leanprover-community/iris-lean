@@ -54,6 +54,7 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
+set_option maxHeartbeats 205000 in
 /--
 Introduce the hypothesis specified by `pats` into the context given by `P` (structured  as `hyps`).
 The type of the current goal is given by `Q`.
@@ -63,7 +64,7 @@ This function returns the proof of `P ⊢ Q` to be assigned. The new context is 
 -/
 partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
   {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat))
-  (k : ∀ {prop : Q(Type $u)} {bi : Q(BI $prop)} {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
+  (k : ∀ {u} {prop : Q(Type $u)} {bi : Q(BI $prop)} {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM (Q($P ⊢ $Q)) := do
   match pats with
   | [] => k hyps Q
@@ -132,7 +133,7 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     let ϕ ← mkFreshExprMVarQ q(Prop)
     let some inst ← ProofModeM.trySynthInstanceQ q(FromPure $b $Q .out $ϕ)
     | throwError "iintro: {Q} is not a pure"
-    let m : Q($ϕ) ← mkFreshExprMVar (← instantiateMVars ϕ)
+    let m : Q($ϕ) ← mkFreshExprSyntheticOpaqueMVar (← instantiateMVars ϕ)
 
     let pf ← do match ← whnf b with
     | .const ``true _ =>
@@ -145,7 +146,13 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
       pure q(pure_intro_spatial (Q := $Q) $inst $m)
     | _ => throwError "iintro: bug in typeclass instances, cannot reduce {b} to true or false"
 
-    addMVarGoal m.mvarId!
+    if pats.isEmpty then
+      addMVarGoal m.mvarId!
+    else
+      let ⟨newM, g⟩ ← startProofMode m.mvarId!
+      let pf' ← newM.withContext <| iIntroCore g.hyps g.goal pats k
+      newM.assign pf'
+
     return pf
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
