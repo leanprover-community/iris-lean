@@ -57,9 +57,8 @@ theorem tac_inv_elim [BI PROP]
   and pattern matching (`match … with …`).
 -/
 def pmReduce (e : Expr) : ProofModeM Expr := do
-  #[``BIBase.wandM, ``Option.getD].foldlM (init := {}) (·.addDeclToUnfold ·) >>=
-  (Simp.mkContext { beta := true, iota := true, proj := true } #[·] (← getSimpCongrTheorems) >>=
-  (Lean.Meta.dsimp e · <&> Prod.fst))
+  #[``BIBase.wandM, ``Option.getD].foldlM (·.addDeclToUnfold ·) {} >>=
+  (Simp.mkContext {} #[·] (← getSimpCongrTheorems) >>= (Lean.Meta.dsimp e · <&> Prod.fst))
 
 private def iInvCore {u} {prop : Q(Type u)} {bi} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (ivar : IVarId) (specPat : Option SpecPat)
