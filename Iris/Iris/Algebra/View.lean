@@ -835,9 +835,8 @@ variable [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : ViewRel A' B'
 
 theorem map_compose' [OFE A''] [OFE B''] {R'' : ViewRel A'' B''}
     f g (f' : A' -n> A'') (g' : B' -n> B'') (v : View R) :
-    View.map R'' (f'.comp f) (g'.comp g) v = View.map R'' f' g' (View.map R' f g v) := by
-  haveI : OFE.NonExpansive (f'.f ∘ f.f) := f'.ne.comp f.ne
-  exact map_compose f.f g.f f'.f g'.f v
+    View.map R'' (f'.comp f) (g'.comp g) v = View.map R'' f' g' (View.map R' f g v) :=
+    map_compose f.f g.f f'.f g'.f v
 
 omit [OFE B] in
 @[rocq_alias view_map_ext]
