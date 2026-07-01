@@ -328,7 +328,7 @@ abbrev GenMap.lift [OFE α] [OFE β] (f : α -n> β) : GenMap α -n> GenMap β w
 
 instance instOFunctor_GenMapOF (F : OFunctorPre) [OFunctor F] :
     OFunctor (GenMapOF F) where
-  cofe {A B _ _} := instOFE_GenMap (F A B)
+  ofe {A B _ _} := instOFE_GenMap (F A B)
   map f₁ f₂ := GenMap.lift <| OFunctor.map (F := F) f₁ f₂
   map_ne.ne {n x1 x2} Hx {y1 y2} Hy k γ := by
     simp only [OFE.Dist, Option.Forall₂, Option.map]
