@@ -75,11 +75,13 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
       return r
     else
       iIntroCore hyps Q pats k
-  | (ref, .simpl) :: pats =>
+  | (ref, .simp) :: pats =>
     withRef ref do
     let simpCtx ← Simp.mkContext (simpTheorems := #[← getSimpTheorems])
     let ⟨Q', _⟩ ← Lean.Meta.dsimp Q simpCtx #[← Simp.getSimprocs]
     iIntroCore hyps Q' pats k
+  | (ref, .simptrivial) :: pats =>
+    iIntroCore hyps Q ((ref, .simp) :: (ref, .trivial) :: pats) k
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar

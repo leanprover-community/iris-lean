@@ -291,6 +291,10 @@ example [BI PROP] (P Q : PROP) : ⊢@{PROP} if def1 = 3 then P -∗ P else Q := 
 example [BI PROP] (P Q : PROP) : ⊢@{PROP} if def1 = 3 then P -∗ P else Q := by
   iintro HP
 
+/- Tests `iintro` with simplification and trivial (`//=`) -/
+example [BI PROP] : ⊢@{PROP} if def1 = 3 then True else False := by
+  iintro //=
+
 end intro
 
 -- revert
