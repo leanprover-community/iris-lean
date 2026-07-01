@@ -309,6 +309,11 @@ example {Val : Type} {ϕ : Prop} [BI PROP] (P : Val → Val → PROP) (Q : Val �
   ipureintro
   assumption
 
+/-- Tests `iintro` with the pattern for introducing a pure goal and exiting the proof mode (`!%`) -/
+example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ □ Q -∗ ⌜n = n⌝ := by
+  iintro - - !%
+  rfl
+
 end intro
 
 -- revert

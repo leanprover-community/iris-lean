@@ -7,6 +7,7 @@ module
 
 public meta import Iris.ProofMode.Patterns.IntroPattern
 public meta import Iris.ProofMode.Tactics.Cases
+public meta import Iris.ProofMode.Tactics.Pure
 public meta import Iris.ProofMode.Tactics.ModIntro
 public meta import Iris.ProofMode.Tactics.Trivial
 
@@ -125,6 +126,24 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
         iIntroCore hyps Q ((ref, .intro (.one (← `(binderIdent| _)))) :: (ref, .allwand) :: pats) k
       | _, _, _ =>
         iIntroCore hyps Q pats k
+  | (ref, .pureintro) :: _ =>
+    withRef ref do
+    let b ← mkFreshExprMVarQ q(Bool)
+    let ϕ ← mkFreshExprMVarQ q(Prop)
+    let some inst ← ProofModeM.trySynthInstanceQ q(FromPure $b $Q .out $ϕ)
+    | throwError "iintro: {Q} is not a pure"
+    let m : Q($ϕ) ← mkFreshExprMVar (← instantiateMVars ϕ)
+    addMVarGoal m.mvarId!
+    match ← whnf b with
+    | .const ``true _ =>
+      have : $b =Q true := ⟨⟩
+      let .some _ ← trySynthInstanceQ q(Affine $P)
+      | throwError "iintro: unable to introduce a pure goal as the context is not affine"
+      return q(pure_intro_affine (Q := $Q) $inst $m)
+    | .const ``false _ =>
+      have : $b =Q false := ⟨⟩
+      return q(pure_intro_spatial (Q := $Q) $inst $m)
+    | _ => throwError "iintro: bug in typeclass instances, cannot reduce {b} to true or false"
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar
