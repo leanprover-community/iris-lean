@@ -17,10 +17,13 @@ open Iris.BI Qq
 open Lean Lean.Expr Lean.Meta Lean.PrettyPrinter.Delaborator Lean.PrettyPrinter.Delaborator.SubExpr
 
 /- This file generates the state display for the Iris Proof Mode. It is implemented as a
-delaborator for the function `EnvsEntails`. An application of this function contains a separation
-logic context as an object of `Envs` and a separation logic goal. The resulting display contains
-the two separation logic contexts (intuitionistic and spatial), as well as the separation
-logic goal. -/
+delaborator for the function `Entails'`. This function is definitionally equal to the `Entails`
+predicate defined in `BI.BIBase`, its purpose is merely to serve as a marker for the delaboration
+function. The hypothesis of the entailment are diplayed with a leading `□` or `∗` depending on
+whether they are persistent or not.
+
+NOTE: Hypothesis are assumed to have a specific shape so they can be displayed correctly.
+In particular, hypothesis must have name annotations so they may be displayed appropiately. -/
 
 syntax irisHyp := ("□" <|> "∗") ident " : " term
 
