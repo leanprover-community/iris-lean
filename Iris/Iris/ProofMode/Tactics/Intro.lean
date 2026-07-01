@@ -82,6 +82,22 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     iIntroCore hyps Q' pats k
   | (ref, .simptrivial) :: pats =>
     iIntroCore hyps Q ((ref, .simp) :: (ref, .trivial) :: pats) k
+  | (ref, .all) :: pats =>
+    withRef ref do
+    let v ← mkFreshLevelMVar
+    let α ← mkFreshExprMVarQ q(Sort v)
+    let Φ ← mkFreshExprMVarQ q($α → $prop)
+    match ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ) with
+    | none =>
+      iIntroCore hyps Q pats k
+    | some _ =>
+      let (n, ref') ← getFreshName (← `(binderIdent| _))
+      withLocalDeclDQ n α fun x => do
+        addLocalVarInfo ref' (← getLCtx) x α
+        have B : Q($prop) := Expr.headBeta q($Φ $x)
+        have : $B =Q $Φ $x := ⟨⟩
+        let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <| ← iIntroCore hyps q($Φ $x) ((ref, .all) :: pats) k
+        return q(from_forall_intro (Q := $Q) $pf)
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar

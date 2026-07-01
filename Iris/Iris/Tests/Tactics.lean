@@ -291,9 +291,19 @@ example [BI PROP] (P Q : PROP) : ⊢@{PROP} if def1 = 3 then P -∗ P else Q := 
 example [BI PROP] (P Q : PROP) : ⊢@{PROP} if def1 = 3 then P -∗ P else Q := by
   iintro HP
 
-/- Tests `iintro` with simplification and trivial (`//=`) -/
+/- Tests `iintro` with the pattern for simplification and solving trivial goals (`//=`) -/
 example [BI PROP] : ⊢@{PROP} if def1 = 3 then True else False := by
   iintro //=
+
+/- Tests `iintro` with the pattern for ∀-introduction (`*`) -/
+example {Val} [BI PROP] (P Q : Val → PROP) : ⊢@{PROP} ∀ x y, P x -∗ Q y -∗ P x ∗ Q y := by
+  iintro * _ _
+  iframe
+
+example {Val} [BI PROP] (P : Val → Val → PROP) (Q : Val → PROP) :
+    ⊢@{PROP} ∀ x y, P x y -∗ ∀ z, (Q z -∗ P x y ∗ Q z) := by
+  iintro * _ * _
+  iframe
 
 end intro
 
