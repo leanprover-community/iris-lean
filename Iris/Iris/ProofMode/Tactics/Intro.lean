@@ -98,6 +98,33 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
         have : $B =Q $Φ $x := ⟨⟩
         let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <| ← iIntroCore hyps q($Φ $x) ((ref, .all) :: pats) k
         return q(from_forall_intro (Q := $Q) $pf)
+  | (ref, .allwand) :: pats =>
+    withRef ref do
+    let v ← mkFreshLevelMVar
+    let α ← mkFreshExprMVarQ q(Sort v)
+    let Φ ← mkFreshExprMVarQ q($α → $prop)
+    match ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ) with
+    -- Introduction of a universally quantified variable
+    | some _ =>
+      let (n, ref') ← getFreshName (← `(binderIdent| _))
+      withLocalDeclDQ n α fun x => do
+        addLocalVarInfo ref' (← getLCtx) x α
+        have B : Q($prop) := Expr.headBeta q($Φ $x)
+        have : $B =Q $Φ $x := ⟨⟩
+        let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <| ← iIntroCore hyps B ((ref, .allwand) :: pats) k
+          return q(from_forall_intro (Q := $Q) $pf)
+    -- Introduction of a wand premise or an implication premise, if possible
+    | none =>
+      let A1 ← mkFreshExprMVarQ q($prop)
+      let A2 ← mkFreshExprMVarQ q($prop)
+      let instFromImp ← ProofModeM.trySynthInstanceQ q(FromImp $Q $A1 $A2)
+      let instFromWand ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
+      let instPersistent ← ProofModeM.trySynthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
+      match instFromWand, instFromImp, instPersistent with
+      | some _, _, _ | _, some _, some _ =>
+        iIntroCore hyps Q ((ref, .intro (.one (← `(binderIdent| _)))) :: (ref, .allwand) :: pats) k
+      | _, _, _ =>
+        iIntroCore hyps Q pats k
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar

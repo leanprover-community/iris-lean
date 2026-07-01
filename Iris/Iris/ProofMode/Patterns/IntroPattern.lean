@@ -34,6 +34,7 @@ inductive IntroPat
   | simp
   | simptrivial
   | all
+  | allwand
   deriving Repr, Inhabited
 
 partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
@@ -44,6 +45,7 @@ partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
   | `(introPat| /=) => return (term, .simp)
   | `(introPat| //=) => return (term, .simptrivial)
   | `(introPat| *) => return (term, .all)
+  | `(introPat| **) => return (term, .allwand)
   | _ => Macro.throwUnsupported
 
 #rocq_ignore gallina_ident "Not necessary in Lean"

@@ -296,14 +296,18 @@ example [BI PROP] : ⊢@{PROP} if def1 = 3 then True else False := by
   iintro //=
 
 /- Tests `iintro` with the pattern for ∀-introduction (`*`) -/
-example {Val} [BI PROP] (P Q : Val → PROP) : ⊢@{PROP} ∀ x y, P x -∗ Q y -∗ P x ∗ Q y := by
+example {Val : Type} [BI PROP] (P Q : Val → PROP) :
+    ⊢@{PROP} ∀ x y, P x -∗ Q y -∗ P x ∗ Q y := by
   iintro * _ _
   iframe
 
-example {Val} [BI PROP] (P : Val → Val → PROP) (Q : Val → PROP) :
-    ⊢@{PROP} ∀ x y, P x y -∗ ∀ z, (Q z -∗ P x y ∗ Q z) := by
-  iintro * _ * _
+/-- Tests `iintro` with the pattern for repeating ∀-introduction and premise introduction (`**`) -/
+example {Val : Type} {ϕ : Prop} [BI PROP] (P : Val → Val → PROP) (Q : Val → PROP) :
+    ⊢@{PROP} ∀ x y, P x y -∗ ∀ z, (⌜ϕ⌝ → Q z -∗ P x y ∗ Q z ∗ ⌜ϕ⌝) := by
+  iintro **
   iframe
+  ipureintro
+  assumption
 
 end intro
 
