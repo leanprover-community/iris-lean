@@ -6,6 +6,7 @@ Authors: Michael Sammler
 module
 
 public import Iris.ProofMode.Patterns.CasesPattern
+public import Iris.ProofMode.Patterns.SelPattern
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
@@ -18,6 +19,12 @@ declare_syntax_cat introPat
 syntax icasesPat : introPat
 syntax "!>" : introPat
 syntax "//" : introPat
+syntax "/=" : introPat
+syntax "//=" : introPat
+syntax "*" : introPat
+syntax "**" : introPat
+syntax "!%" : introPat
+syntax "{" selPat* "}" : introPat
 
 @[rocq_alias intro_pat]
 inductive IntroPat
