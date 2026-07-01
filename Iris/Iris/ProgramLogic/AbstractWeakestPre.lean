@@ -76,7 +76,7 @@ theorem inv_open_maybe_ectxlang {e : Expr} {E₁ E₂ : CoPset} {Φ : Val → IP
     · imodintro
       obtain ⟨σ'', Hred⟩ := Hred
       have Hred' : BaseStep.Reducible (e₁', σ) := ⟨_, _, _, _, Hbase⟩
-      obtain ⟨rfl, rfl⟩ := EctxLanguage.base_redex_unique _ _ _ _ σ _ Hf Hred' Hred
+      obtain ⟨rfl, rfl⟩ := EctxLanguage.base_redex_unique Hf Hred' Hred
       simp only [← EvContext.fill_comp, EvContext.fill_empty]
       iapply IWP.toLawfulAbstractWP.wp_wand $$ Hwp
       iintro %v >Hwp2
@@ -94,7 +94,7 @@ theorem inv_open_maybe_ectxlang {e : Expr} {E₁ E₂ : CoPset} {Φ : Val → IP
     imod H with (⟨%K₁, %e', %Hf, %Hat, %Hred, Hwp⟩| H')
     · obtain ⟨σ'', Hred⟩ := Hred
       have Hred' : BaseStep.Reducible (e₁', σ) := ⟨_, _, _, _, Hbase⟩
-      obtain ⟨_, rfl⟩ := EctxLanguage.base_redex_unique _ _ _ _ σ _ Hf Hred' Hred
+      obtain ⟨_, rfl⟩ := EctxLanguage.base_redex_unique Hf Hred' Hred
       exact Hnonatomic Hat |>.elim
     · imod H'
       ihave H' := (IWP.wp_bind (K := fill K)).mpr $$ H'
@@ -112,7 +112,7 @@ theorem inv_open_maybe_ectxlang_inv (e : Expr) (E : CoPset) (N : Namespace)
     ⊢ wp E e Φ := by
   iintro ⟨#Hinv, H⟩
   iapply inv_open_maybe_ectxlang (E₂ := E \ nclose N) LawfulSet.diff_subset_left Hred
-  imod inv_acc _ _ _ Hsub $$ Hinv with ⟨HP, Hclose⟩
+  imod inv_acc Hsub $$ Hinv with ⟨HP, Hclose⟩
   imod H $$ HP with (⟨%K, %e', %He, %Hat, %Hred, H⟩|⟨HP, H⟩)
   · imodintro
     ileft
@@ -141,17 +141,19 @@ instance WP_lawful_abstract :
     LawfulAbstractWP (Expr := Expr) (Val := Val)
       (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
   fupd_wp := fupd_wp
-  wp_fupd := wp_fupd _ _ _ _
+  wp_fupd := wp_fupd
   wp_value := wp_value_fupd'
   wp_wand := wp_wand
   wp_atomic _ := wp_atomic
 
 /-- iris-lean's standard `WP` also satisfies the bind class for ectx
 languages. -/
-instance WP_bind_abstract :
-    BindAbstractWP (Expr := Expr) (Val := Val)
+instance WP_bind_abstract : BindAbstractWP (Expr := Expr) (Val := Val)
       (Wp.wp (PROP := IProp GF) Stuckness.NotStuck) where
   wp_bind := ⟨wp_bind _, wp_bind_inv _⟩
+
+
+-- TODO: Any idea how to get rid of the istops?
 
 theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val → IProp GF}
     (Hnv : ToVal.toVal e = none) :
@@ -167,10 +169,14 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
   imod H with (⟨%K, %e', %Hctx, %Haux, %hato, Hwp⟩| >$)
   subst Haux
   -- FIXME: Why does this exit the proofmode?
-  rw [IProp.ext wp_unfold, wp.pre]; iintro Hwp
+  refine .trans wp_unfold.mp ?_
+  rw (occs := [1]) [wp.pre]
+  iintro Hwp
   rcases He' : toVal e' with (_|v'); rotate_left
   · imod Hwp; imod Hwp
-    rw [IProp.ext wp_unfold, wp.pre]
+    istop
+    refine .trans wp_unfold.mp ?_
+    rw (occs := [1]) [wp.pre]
     simp [coe_of_toVal_eq_some He', Hnv]
   · dsimp only
     iintro %σ %n %κ %κs %n₂ Hσ
@@ -186,7 +192,9 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
     imod Hc with ⟨Hst, Hwp, $⟩
     replace Hprim : PrimStep.Irreducible (e₂, σ₂) := hato.atomic Hprim
     -- FIXME: Why does this exit the proofmode?
-    rw [IProp.ext wp_unfold, wp.pre]
+    istop
+    refine .trans (BI.sep_mono .rfl wp_unfold.mp) ?_
+    rw (occs := [1]) [wp.pre]
     iintro ⟨Hst, Hwp⟩
     rcases He₂' : toVal e₂ with (_|v₂) <;> dsimp only
     · imod Hwp $$ %_ %_ %κs %.nil [Hst] with ⟨%Hredu, H⟩
