@@ -74,6 +74,7 @@ variable [UCMRA A]
 instance : OFE (Auth A) := View.instOFE
 instance : CMRA (Auth A) := View.instCMRA
 instance : UCMRA (Auth A) := View.instUCMRA
+instance instLeibniz [Leibniz A] : Leibniz (Auth A) := View.instLeibniz
 
 #rocq_ignore authO "Use the Auth type and View.instOFE typeclass"
 #rocq_ignore authR "Use the Auth type and View.instCMRA typeclass"

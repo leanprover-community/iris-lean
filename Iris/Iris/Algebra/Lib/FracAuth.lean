@@ -30,6 +30,8 @@ namespace FracAuth
 
 variable [CMRA A]
 
+instance instLeibniz [Leibniz A] : Leibniz (FracAuth (A := A)) := inferInstance
+
 @[rocq_alias frac_auth_auth]
 public abbrev auth (dq : DFrac) (a : A) : FracAuth (A := A) := Auth.auth dq (some (1, a))
 

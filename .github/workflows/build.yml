@@ -17,7 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: leanprover/lean-action@v1
         with:
           lake-package-directory: Iris
@@ -35,7 +35,7 @@ jobs:
   build-math:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: leanprover/lean-action@v1
         with:
           lake-package-directory: IrisMath
@@ -46,7 +46,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Download porting_data.json
         uses: actions/download-artifact@v8
         with:
@@ -58,7 +58,7 @@ jobs:
           sha=$(cat scripts/ROCQ_REVISION)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - name: Cache Rocq definitions
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: Iris/.lake/iris-rocq-cache
           key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
@@ -74,7 +74,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Download porting_data.json
         uses: actions/download-artifact@v8
         with:
@@ -84,7 +84,7 @@ jobs:
         id: rocq-commit
         run: echo "sha=$(cat scripts/ROCQ_REVISION)" >> "$GITHUB_OUTPUT"
       - name: Cache Rocq definitions
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: Iris/.lake/iris-rocq-cache
           key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}
