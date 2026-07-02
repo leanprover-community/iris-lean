@@ -86,6 +86,12 @@ instance fromAnd_later [BI PROP] (P Q1 Q2 : PROP)
     [h : FromAnd P Q1 Q2] : FromAnd iprop(▷ P) iprop(▷ Q1) iprop(▷ Q2) where
   from_and := later_and.2.trans (later_mono h.1)
 
+instance fromAnd_laterIf [BI PROP] (P Q1 Q2 : PROP) (q : Bool)
+    [h : FromAnd P Q1 Q2] : FromAnd iprop(▷?q P) iprop(▷?q Q1) iprop(▷?q Q2) where
+  from_and := match q with
+    | true => later_and.2.trans (later_mono h.1)
+    | false => h.from_and
+
 @[rocq_alias from_and_laterN]
 instance fromAnd_laterN [BI PROP] (n : Nat) (P Q1 Q2 : PROP)
     [h : FromAnd P Q1 Q2] : FromAnd iprop(▷^[n] P) iprop(▷^[n] Q1) iprop(▷^[n] Q2) where
@@ -102,6 +108,12 @@ instance fromAnd_except0 [BI PROP] (P Q1 Q2 : PROP)
 instance fromSep_later [BI PROP] (P Q1 Q2 : PROP)
     [h : FromSep P Q1 Q2] : FromSep iprop(▷ P) iprop(▷ Q1) iprop(▷ Q2) where
   from_sep := later_sep.2.trans (later_mono h.1)
+
+instance fromSep_laterIf [BI PROP] (P Q1 Q2 : PROP) (q : Bool)
+    [h : FromSep P Q1 Q2] : FromSep iprop(▷?q P) iprop(▷?q Q1) iprop(▷?q Q2) where
+  from_sep := match q with
+    | true => later_sep.2.trans (later_mono h.1)
+    | false => h.from_sep
 
 @[rocq_alias from_sep_laterN]
 instance fromSep_laterN [BI PROP] (n : Nat) (P Q1 Q2 : PROP)
@@ -142,6 +154,12 @@ instance intoSep_later [BI PROP] (P Q1 Q2 : PROP)
     [h : IntoSep P Q1 Q2] : IntoSep iprop(▷ P) iprop(▷ Q1) iprop(▷ Q2) where
   into_sep := (later_mono h.1).trans later_sep.1
 
+instance intoSep_laterIf [BI PROP] (P Q1 Q2 : PROP) (q : Bool)
+    [h : IntoSep P Q1 Q2] : IntoSep iprop(▷?q P) iprop(▷?q Q1) iprop(▷?q Q2) where
+  into_sep := match q with
+    | true => (later_mono h.1).trans later_sep.1
+    | false => h.into_sep
+
 @[rocq_alias into_sep_laterN]
 instance intoSep_laterN [BI PROP] (n : Nat) (P Q1 Q2 : PROP)
     [h : IntoSep P Q1 Q2] : IntoSep iprop(▷^[n] P) iprop(▷^[n] Q1) iprop(▷^[n] Q2) where
@@ -158,6 +176,12 @@ instance intoSep_except0 [BI PROP] (P Q1 Q2 : PROP)
 instance fromOr_later [BI PROP] (P Q1 Q2 : PROP)
     [h : FromOr P Q1 Q2] : FromOr iprop(▷ P) iprop(▷ Q1) iprop(▷ Q2) where
   from_or := later_or.2.trans (later_mono h.1)
+
+instance fromOr_laterIf [BI PROP] (P Q1 Q2 : PROP) (q : Bool)
+    [h : FromOr P Q1 Q2] : FromOr iprop(▷?q P) iprop(▷?q Q1) iprop(▷?q Q2) where
+  from_or := match q with
+    | true => later_or.2.trans (later_mono h.1)
+    | false => h.from_or
 
 @[rocq_alias from_or_laterN]
 instance fromOr_laterN [BI PROP] (n : Nat) (P Q1 Q2 : PROP)
@@ -176,6 +200,12 @@ instance intoOr_later [BI PROP] (P Q1 Q2 : PROP)
     [h : IntoOr P Q1 Q2] : IntoOr iprop(▷ P) iprop(▷ Q1) iprop(▷ Q2) where
   into_or := (later_mono h.1).trans later_or.1
 
+instance intoOr_laterIf [BI PROP] (P Q1 Q2 : PROP) (q : Bool)
+    [h : IntoOr P Q1 Q2] : IntoOr iprop(▷?q P) iprop(▷?q Q1) iprop(▷?q Q2) where
+  into_or := match q with
+    | true => (later_mono h.1).trans later_or.1
+    | false => h.into_or
+
 @[rocq_alias into_or_laterN]
 instance intoOr_laterN [BI PROP] (n : Nat) (P Q1 Q2 : PROP)
     [h : IntoOr P Q1 Q2] : IntoOr iprop(▷^[n] P) iprop(▷^[n] Q1) iprop(▷^[n] Q2) where
@@ -193,6 +223,12 @@ instance fromExists_later [BI PROP] (P : PROP) (Φ : α → PROP)
     [h : FromExists P Φ] : FromExists iprop(▷ P) (fun a => iprop(▷ Φ a)) where
   from_exists := (exists_elim fun x => (later_mono (exists_intro x))).trans (later_mono h.1)
 
+instance fromExists_laterIf [BI PROP] (P : PROP) (Φ : α → PROP) (q : Bool)
+    [h : FromExists P Φ] : FromExists iprop(▷?q P) (fun a => iprop(▷?q Φ a)) where
+  from_exists := match q with
+    | true => (exists_elim fun x => (later_mono (exists_intro x))).trans (later_mono h.1)
+    | false => h.from_exists
+
 @[rocq_alias from_exist_laterN]
 instance fromExists_laterN [BI PROP] (n : Nat) (P : PROP) (Φ : α → PROP)
     [h : FromExists P Φ] : FromExists iprop(▷^[n] P) (fun a => iprop(▷^[n] Φ a)) where
@@ -208,6 +244,12 @@ instance fromExists_except0 [BI PROP] (P : PROP) (Φ : α → PROP)
 instance intoExists_later [BI PROP] [Inhabited α] (P : PROP) (Φ : α → PROP)
     [h : IntoExists P Φ] : IntoExists iprop(▷ P) (fun a => iprop(▷ Φ a)) where
   into_exists := (later_mono h.1).trans later_exists.2
+
+instance intoExists_laterIf [BI PROP] [Inhabited α] (P : PROP) (Φ : α → PROP) (q : Bool)
+    [h : IntoExists P Φ] : IntoExists iprop(▷?q P) (fun a => iprop(▷?q Φ a)) where
+  into_exists := match q with
+    | true => (later_mono h.1).trans later_exists.2
+    | false => h.into_exists
 
 @[rocq_alias into_exist_laterN]
 instance intoExists_laterN [BI PROP] [Inhabited α] (n : Nat) (P : PROP) (Φ : α → PROP)
@@ -226,6 +268,12 @@ instance intoForall_later [BI PROP] (P : PROP) (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(▷ P) (fun a => iprop(▷ Φ a)) where
   into_forall := (later_mono h.1).trans later_forall.1
 
+instance intoForall_laterIf [BI PROP] (P : PROP) (Φ : α → PROP) (q : Bool)
+    [h : IntoForall P Φ] : IntoForall iprop(▷?q P) (fun a => iprop(▷?q Φ a)) where
+  into_forall := match q with
+    | true => (later_mono h.1).trans later_forall.1
+    | false => h.into_forall
+
 @[rocq_alias into_forall_laterN]
 instance intoForall_laterN [BI PROP] (n : Nat) (P : PROP) (Φ : α → PROP)
     [h : IntoForall P Φ] : IntoForall iprop(▷^[n] P) (fun a => iprop(▷^[n] Φ a)) where
@@ -241,6 +289,12 @@ instance intoForall_except0 [BI PROP] (P : PROP) (Φ : α → PROP)
 instance fromForall_later [BI PROP] (P : PROP) (Φ : α → PROP)
     [h : FromForall P Φ] : FromForall iprop(▷ P) (fun a => iprop(▷ Φ a)) where
   from_forall := later_forall.2.trans (later_mono h.1)
+
+instance fromForall_laterIf [BI PROP] (P : PROP) (Φ : α → PROP) (q : Bool)
+    [h : FromForall P Φ] : FromForall iprop(▷?q P) (fun a => iprop(▷?q Φ a)) where
+  from_forall := match q with
+    | true => later_forall.2.trans (later_mono h.1)
+    | false => h.from_forall
 
 @[rocq_alias from_forall_laterN]
 instance fromForall_laterN [BI PROP] (n : Nat) (P : PROP) (Φ : α → PROP)
@@ -370,7 +424,6 @@ instance intoLaterN_or [BI PROP] n (P1 P2 Q1 Q2 : PROP)
     IntoLaterN false n iprop(P1 ∨ P2) iprop(Q1 ∨ Q2) where
   into_laterN := (or_mono h1.1 h2.1).trans (laterN_or n).2
 
-
 @[rocq_alias into_later_affinely]
 instance intoLaterN_affinely [BI PROP] n (P Q : PROP)
     [h : IntoLaterN false n P Q] : IntoLaterN false n iprop(<affine> P) iprop(<affine> Q) where
@@ -403,6 +456,13 @@ instance combineSepAs_later [BI PROP] (Q1 Q2 P : PROP)
   CombineSepAs iprop(▷ Q1) iprop(▷ Q2) iprop(▷ P) where
   combine_sep_as := later_sep.mpr.trans (later_mono h.combine_sep_as)
 
+instance combineSepAs_laterIf [BI PROP] (Q1 Q2 P : PROP) (q : Bool)
+  [h : CombineSepAs Q1 Q2 P] :
+  CombineSepAs iprop(▷?q Q1) iprop(▷?q Q2) iprop(▷?q P) where
+  combine_sep_as := match q with
+    | true => later_sep.mpr.trans (later_mono h.combine_sep_as)
+    | false => h.combine_sep_as
+
 @[rocq_alias maybe_combine_sep_as_laterN]
 instance combineSepAs_laterN [BI PROP] (Q1 Q2 P : PROP)
   [h : CombineSepAs Q1 Q2 P] :
@@ -423,6 +483,16 @@ instance combineSepGives_later [BI PROP] (Q1 Q2 P : PROP)
     ▷ Q1 ∗ ▷ Q2 ⊢ ▷ (Q1 ∗ Q2) := later_sep.mpr
     _             ⊢ ▷ <pers> P  := later_mono h.combine_sep_gives
     _             ⊢ <pers> ▷ P  := later_persistently.mp
+
+instance combineSepGives_laterIf [BI PROP] (Q1 Q2 P : PROP) (q : Bool)
+  [h : CombineSepGives Q1 Q2 P] :
+  CombineSepGives iprop(▷?q Q1) iprop(▷?q Q2) iprop(▷?q P) where
+  combine_sep_gives := match q with
+    | true => by calc
+        ▷ Q1 ∗ ▷ Q2 ⊢ ▷ (Q1 ∗ Q2) := later_sep.mpr
+        _             ⊢ ▷ <pers> P  := later_mono h.combine_sep_gives
+        _             ⊢ <pers> ▷ P  := later_persistently.mp
+    | false => h.combine_sep_gives
 
 @[rocq_alias maybe_combine_sep_gives_laterN]
 instance combineSepGives_laterN [BI PROP] (Q1 Q2 P : PROP)
