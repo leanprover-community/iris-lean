@@ -177,7 +177,10 @@ private def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop))
   let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B $A $p)
   return q(spatial_elim $(← k B))
 
-/-- Rewrite pure Lean equalities -/
+/--
+  Rewrite an Iris entailment using the pure Lean equality `h`,
+  removing `h` from the context afterwards.
+-/
 def iCasesPureRewrite {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (h : Expr) (direction : Bool)
     (k : ∀ {e'}, Hyps bi e' → (goal' : Q($prop)) → ProofModeM Q($e' ⊢ $goal')) :
@@ -191,7 +194,7 @@ def iCasesPureRewrite {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   let some ⟨_, hyps'⟩ := parseHyps? bi tm'
   | throwError "icases: unable to parse the Iris context {tm'}"
   let gNew ← g.replaceTargetEq eNew eqPf
-  gNew.assign (← k hyps' goal')
+  gNew.assign (← withoutFVars (u := 0) #[h.fvarId!] <| k hyps' goal')
   instantiateMVars (.mvar g)
 
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
