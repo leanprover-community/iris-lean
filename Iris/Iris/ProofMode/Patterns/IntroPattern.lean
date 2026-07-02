@@ -15,7 +15,7 @@ namespace Iris.ProofMode
 open Lean
 
 declare_syntax_cat selPatFrame
-syntax ("$" noWs)? selPat : selPatFrame
+syntax ("!" noWs)? selPat : selPatFrame
 
 declare_syntax_cat introPat
 
@@ -27,7 +27,7 @@ syntax "//=" : introPat
 syntax "*" : introPat
 syntax "**" : introPat
 syntax "!%" : introPat
-syntax "{" (colGt ppSpace selPatFrame)* "}" : introPat
+syntax "{" (colGt selPatFrame)* "}" : introPat
 
 @[rocq_alias intro_pat]
 inductive IntroPat

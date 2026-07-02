@@ -156,10 +156,12 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     match selPats with
     | [] => iIntroCore hyps Q pats k
     | ⟨false, s⟩ :: selPats =>
-        iClearCore hyps Q [s]
-          fun hyps' goal' fvars => withoutFVars (u := 0) fvars
-            <| iIntroCore hyps' goal' ((ref, .clear selPats) :: pats) k
-    | ⟨true, s⟩ :: selPats => throwUnsupportedSyntax
+      iClearCore hyps Q [s]
+        fun hyps' goal' fvars => withoutFVars (u := 0) fvars
+          <| iIntroCore hyps' goal' ((ref, .clear selPats) :: pats) k
+    | ⟨true, s⟩ :: selPats =>
+      let res ← s.resolveOne hyps >>= iFrame _ _ hyps Q
+      res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) k)
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar
