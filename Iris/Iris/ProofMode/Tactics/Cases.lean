@@ -185,16 +185,16 @@ def iCasesPureRewrite {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (hyps : Hyps bi e) (goal : Q($prop)) (h : Expr) (direction : Bool)
     (k : ∀ {e'}, Hyps bi e' → (goal' : Q($prop)) → ProofModeM Q($e' ⊢ $goal')) :
     ProofModeM Q($e ⊢ $goal) := do
-  let target : Q(Prop) := q($(hyps.tm) ⊢ $goal)
-  let g := (← mkFreshExprSyntheticOpaqueMVar target).mvarId!
-  let ⟨eNew, eqPf, []⟩ ← g.rewrite target h (symm := !direction)
+  let target := q($(hyps.tm) ⊢ $goal)
+  let g ← mkFreshExprSyntheticOpaqueMVar target <&> (·.mvarId!)
+  let ⟨newE, eq, []⟩ ← g.rewrite target h (symm := !direction)
   | throwError "icases: rewriting should not give additional subgoals"
-  let some #[_, _, tm', goal'] := eNew.consumeMData.appM? ``BIBase.Entails
-  | throwError "icases: unable to parse the Iris entailment {eNew}"
-  let some ⟨_, hyps'⟩ := parseHyps? bi tm'
-  | throwError "icases: unable to parse the Iris context {tm'}"
-  let gNew ← g.replaceTargetEq eNew eqPf
-  gNew.assign (← withoutFVars (u := 0) #[h.fvarId!] <| k hyps' goal')
+  let some #[_, _, newTm, newGoal] := newE.consumeMData.appM? ``BIBase.Entails
+  | throwError "icases: unable to parse the Iris entailment {newE}"
+  let some ⟨_, hyps'⟩ := parseHyps? bi newTm
+  | throwError "icases: unable to parse the Iris context {newTm}"
+  let gNew ← g.replaceTargetEq newE eq
+  (withoutFVars (u := 0) #[h.fvarId!] <| k hyps' newGoal) >>= (gNew.assign ·)
   instantiateMVars (.mvar g)
 
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in

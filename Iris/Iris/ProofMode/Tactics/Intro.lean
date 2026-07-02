@@ -98,7 +98,8 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         addLocalVarInfo ref' (← getLCtx) x α
         have B : Q($prop) := Expr.headBeta q($Φ $x)
         have : $B =Q $Φ $x := ⟨⟩
-        let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <| ← iIntroCore hyps q($Φ $x) ((ref, .all) :: pats) k
+        let pf : Q(∀ x, $P ⊢ $Φ x) ←
+          mkLambdaFVars #[x] <|← iIntroCore hyps q($Φ $x) ((ref, .all) :: pats) k
         return q(from_forall_intro (Q := $Q) $pf)
   | (ref, .allwand) :: pats =>
     withRef ref do
@@ -113,8 +114,9 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         addLocalVarInfo ref' (← getLCtx) x α
         have B : Q($prop) := Expr.headBeta q($Φ $x)
         have : $B =Q $Φ $x := ⟨⟩
-        let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <| ← iIntroCore hyps B ((ref, .allwand) :: pats) k
-          return q(from_forall_intro (Q := $Q) $pf)
+        let pf : Q(∀ x, $P ⊢ $Φ x) ←
+          mkLambdaFVars #[x] <|← iIntroCore hyps B ((ref, .allwand) :: pats) k
+        return q(from_forall_intro (Q := $Q) $pf)
     -- Introduction of a wand premise or an implication premise, if possible
     | none =>
       let A1 ← mkFreshExprMVarQ q($prop)
@@ -174,8 +176,8 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       addLocalVarInfo ref (← getLCtx) x α
       have B : Q($prop) := Expr.headBeta q($Φ $x)
       have : $B =Q $Φ $x := ⟨⟩
-      let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|←
-        iCasesPureRewrite hyps B x direction (iIntroCore · · pats k)
+      let pf : Q(∀ x, $P ⊢ $Φ x) ←
+        mkLambdaFVars #[x] <|← iCasesPureRewrite hyps B x direction (iIntroCore · · pats k)
       return q(from_forall_intro (Q := $Q) $pf)
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
