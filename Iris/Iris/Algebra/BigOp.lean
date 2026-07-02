@@ -10,6 +10,7 @@ import Batteries.Data.List.Perm
 public import Iris.Std.List
 public import Iris.Std.PartialMap
 public import Iris.Std.GenSets
+public import Iris.Std.GenMultiSets
 public import Iris.Std.Positives
 meta import Iris.Std.RocqPorting
 
@@ -45,6 +46,14 @@ open OFE Iris.Std
 #rocq_ignore big_opS_def "Not needed"
 #rocq_ignore big_opS_unseal "Not needed"
 
+@[rocq_alias big_opMS, expose] public def bigOpMS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+    {A : Type _} {MS : Type _} [FiniteMultiSet MS A] (Φ : A → M) (X : MS) : M :=
+  bigOpL op (fun _ x => Φ x) (FiniteMultiSet.toList X)
+
+#rocq_ignore big_opMS_aux "Not needed"
+#rocq_ignore big_opMS_def "Not needed"
+#rocq_ignore big_opMS_unseal "Not needed"
+
 /-- Big op over list with index: `[^ op list] k ↦ x ∈ l, P` -/
 scoped syntax atomic("[^") term " list]" ident " ↦ " ident " ∈ " term ", " term : term
 /-- Big op over list without index: `[^ op list] x ∈ l, P` -/
@@ -58,10 +67,14 @@ scoped syntax atomic("[^") term " map]" ident " ∈ " term ", " term : term
 /-- Big op over set without index: `[^ op set] x ∈ l, P` -/
 scoped syntax atomic("[^") term " set]" ident " ∈ " term ", " term : term
 
+/-- Big op over multiset without index: `[^ op mset] x ∈ X, P` -/
+scoped syntax atomic("[^") term " mset]" ident " ∈ " term ", " term : term
+
 scoped macro_rules
   | `([^ $o list] $k ↦ $x ∈ $l, $P) => `(bigOpL $o (fun $k $x => $P) $l)
   | `([^ $o list] $x ∈ $l, $P) => `(bigOpL $o (fun _ $x => $P) $l)
   | `([^ $o set] $x ∈ $l, $P) => `(bigOpS $o (fun $x => $P) $l)
+  | `([^ $o mset] $x ∈ $X, $P) => `(bigOpMS $o (fun $x => $P) $X)
   | `([^ $o map] $k ↦ $x ∈ $m, $P) => `(bigOpM $o (fun $k $x => $P) $m)
   | `([^ $o map] $x ∈ $m, $P) => `(bigOpM $o (fun _ $x => $P) $m)
 
@@ -697,5 +710,152 @@ theorem hom_weak {B : Type w} {S' : Type _} [LawfulFiniteSet S' B] {R : M₂ →
 
 end Homomorphism
 end BigOpS
+
+namespace BigOpMS
+
+variable {M : Type _} {A : Type _} {MS : Type _} [OFE M] {op : M → M → M} {unit : M}
+  [MonoidOps op unit] [LawfulFiniteMultiSet MS A]
+
+open BigOpL MonoidOps
+
+@[rocq_alias big_opMS_empty, simp]
+theorem bigOpMS_empty {Φ : A → M} :
+    ([^ op mset] x ∈ (∅ : MS), Φ x) = unit := by
+  show bigOpL op (fun _ x => Φ x) (FiniteMultiSet.toList (∅ : MS)) = unit
+  rw [LawfulFiniteMultiSet.toList_empty]; rfl
+
+@[rocq_alias big_opMS_elements]
+theorem bigOpMS_bigOpL {Φ : A → M} {X : MS} :
+    ([^ op mset] x ∈ X, Φ x) ≡ ([^ op list] x ∈ FiniteMultiSet.toList X, Φ x) := by
+  unfold bigOpMS
+  cases FiniteMultiSet.toList X with
+  | nil => simp
+  | cons x xs => rw [bigOpL_cons]
+
+@[rocq_alias big_opMS_singleton]
+theorem bigOpMS_singleton {Φ : A → M} {a : A} : ([^ op mset] x ∈ ({a} : MS), Φ x) ≡ Φ a := by
+  show bigOpL op (fun _ x => Φ x) (FiniteMultiSet.toList ({a} : MS)) ≡ Φ a
+  rw [LawfulFiniteMultiSet.toList_singleton]
+  exact bigOpL_singleton_eqv (fun _ x => Φ x) a
+
+@[rocq_alias big_opMS_disj_union]
+theorem bigOpMS_disjUnion {Φ : A → M} {X Y : MS} :
+    ([^ op mset] x ∈ (X ⊎ Y), Φ x) ≡ op ([^ op mset] x ∈ X, Φ x) ([^ op mset] x ∈ Y, Φ x) := by
+  simp only [bigOpMS]
+  refine (bigOpL_eqv_of_perm (fun x => Φ x) LawfulFiniteMultiSet.toList_disjUnion).trans ?_
+  exact bigOpL_append_eqv (fun _ x => Φ x) (FiniteMultiSet.toList X) (FiniteMultiSet.toList Y)
+
+@[rocq_alias big_opMS_insert]
+theorem bigOpMS_insert {Φ : A → M} {X : MS} {a : A} :
+    ([^ op mset] x ∈ ({a} ⊎ X), Φ x) ≡ op (Φ a) ([^ op mset] x ∈ X, Φ x) :=
+  bigOpMS_disjUnion.trans (op_congr_left bigOpMS_singleton)
+
+@[rocq_alias big_opMS_delete]
+theorem bigOpMS_delete {Φ : A → M} {X : MS} {x : A} (h : x ∈ X) :
+    ([^ op mset] y ∈ X, Φ y) ≡ op (Φ x) ([^ op mset] y ∈ X \ {x}, Φ y) := by
+  conv => lhs; rw [disjUnion_singleton_difference h]
+  exact bigOpMS_insert
+
+theorem bigOpMS_eqv_of_forall_eqv {Φ Ψ : A → M} {X : MS} (h : ∀ {x}, Φ x ≡ Ψ x) :
+    ([^ op mset] x ∈ X, Φ x) ≡ ([^ op mset] x ∈ X, Ψ x) :=
+  bigOpL_eqv_of_forall_eqv h
+
+@[rocq_alias big_opMS_ne]
+theorem bigOpMS_dist {Φ Ψ : A → M} {X : MS} {n : Nat} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
+    ([^ op mset] x ∈ X, Φ x) ≡{n}≡ ([^ op mset] x ∈ X, Ψ x) := by
+  refine bigOpL_dist (fun {i _} hi => h ?_)
+  rw [← LawfulFiniteMultiSet.mem_toList, List.mem_iff_getElem?]
+  exact ⟨i, hi⟩
+
+@[rocq_alias big_opMS_proper]
+theorem bigOpMS_eqv {Φ Ψ : A → M} {X : MS} (h : ∀ {x}, x ∈ X → Φ x ≡ Ψ x) :
+    ([^ op mset] x ∈ X, Φ x) ≡ ([^ op mset] x ∈ X, Ψ x) := by
+  refine bigOpL_eqv (fun {i _} hi => h ?_)
+  rw [← LawfulFiniteMultiSet.mem_toList, List.mem_iff_getElem?]
+  exact ⟨i, hi⟩
+
+@[rocq_alias big_opMS_op]
+theorem bigOpMS_op_eqv {Φ Ψ : A → M} {X : MS} :
+    ([^ op mset] x ∈ X, op (Φ x) (Ψ x)) ≡ op ([^ op mset] x ∈ X, Φ x) ([^ op mset] x ∈ X, Ψ x) :=
+  (bigOpMS_bigOpL ..).trans (bigOpL_op_eqv ..)
+
+@[rocq_alias big_opMS_unit]
+theorem bigOpMS_const_unit (X : MS) : ([^ op mset] _x ∈ X, unit) ≡ unit :=
+  (bigOpMS_bigOpL ..).trans bigOpL_const_unit_eqv
+
+@[rocq_alias big_opMS_closed]
+theorem bigOpMS_closed (P : M → Prop) (Φ : A → M) (X : MS)
+    (hunit : P unit)
+    (hop : ∀ {x y}, P x → P y → P (op x y))
+    (hf : ∀ {x}, x ∈ X → P (Φ x)) :
+    P ([^ op mset] x ∈ X, Φ x) := by
+  unfold bigOpMS
+  generalize hg : FiniteMultiSet.toList X = l
+  have htoList {x} : x ∈ l → P (Φ x) := by
+    refine fun hx => hf ?_
+    rw [← LawfulFiniteMultiSet.mem_toList, hg]; exact hx
+  clear hf hg
+  induction l with
+  | nil => exact hunit
+  | cons _ _ ih => exact hop (htoList List.mem_cons_self) (ih (htoList <| List.mem_cons_of_mem _ ·))
+
+@[rocq_alias big_opMS_gen_proper]
+theorem bigOpMS_gen_eqv (R : M → M → Prop) {Φ Ψ : A → M} {X : MS}
+    (hR_refl : ∀ {x}, R x x) (hR_op : ∀ {a a' b b'}, R a a' → R b b' → R (op a b) (op a' b'))
+    (hf : ∀ {y}, y ∈ X → R (Φ y) (Ψ y)) :
+    R ([^ op mset] x ∈ X, Φ x) ([^ op mset] x ∈ X, Ψ x) := by
+  refine bigOpL_gen_proper _ hR_refl hR_op (fun hy => hf ?_)
+  rw [← LawfulFiniteMultiSet.mem_toList]
+  exact List.mem_of_getElem? hy
+
+@[rocq_alias big_opMS_ext]
+theorem bigOpMS_ext {Φ Ψ : A → M} {X : MS} (h : ∀ {x}, x ∈ X → Φ x = Ψ x) :
+    ([^ op mset] x ∈ X, Φ x) = ([^ op mset] x ∈ X, Ψ x) :=
+  bigOpMS_gen_eqv (· = ·) rfl (· ▸ · ▸ rfl) h
+
+section Homomorphism
+
+variable {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
+variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
+variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
+
+@[rocq_alias big_opMS_commute]
+theorem hom {B : Type w} {MS' : Type _} [LawfulFiniteMultiSet MS' B] {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
+    (hom : MonoidHomomorphism op₁ op₂ unit₁ unit₂ R f) (Φ : B → M₁) (X : MS') :
+    R (f ([^ op₁ mset] x ∈ X, Φ x)) ([^ op₂ mset] x ∈ X, f (Φ x)) := by
+  rw [hom.rel_proper (hom.map_ne.eqv bigOpMS_bigOpL) .rfl]
+  refine hom.rel_trans (bigOpL_hom (H := hom) _ (FiniteMultiSet.toList X)) ?_
+  rw [hom.rel_proper bigOpMS_bigOpL.symm .rfl]
+  exact hom.rel_refl
+
+@[rocq_alias big_opMS_commute1]
+theorem hom_weak {B : Type w} {MS' : Type _} [LawfulFiniteMultiSet MS' B] {R : M₂ → M₂ → Prop}
+    {f : M₁ → M₂} (hom : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ R f) (Φ : B → M₁) (X : MS')
+    (hne : X ≠ ∅) :
+    R (f ([^ op₁ mset] x ∈ X, Φ x)) ([^ op₂ mset] x ∈ X, f (Φ x)) := by
+  rw [hom.rel_proper (hom.map_ne.eqv bigOpMS_bigOpL) .rfl]
+  refine (hom.rel_trans (bigOpL_hom_weak (H := hom) _ (fun heq => ?_))) ?_
+  · refine hne (LawfulMultiSet.ext fun a => ?_)
+    rw [multiplicity_empty]
+    have hnotin : ¬ (0 < MultiSet.multiplicity a X) := fun hp => by
+      have hmem : a ∈ X := hp
+      rw [← LawfulFiniteMultiSet.mem_toList, heq] at hmem
+      simp at hmem
+    omega
+  · rw [hom.rel_proper bigOpMS_bigOpL.symm .rfl]
+    exact hom.rel_refl
+
+end Homomorphism
+
+#rocq_ignore big_opMS_ne' "Use bigOpMS_dist"
+#rocq_ignore big_opMS_proper' "Use bigOpMS_eqv"
+#rocq_ignore big_opMS_opL "Commute with big_opL proven at BI level (bigSepMS_comm_list); matches big_opS"
+#rocq_ignore big_opMS_opM "Commute with big_opM proven at BI level (bigSepMS_comm_map); matches big_opS"
+#rocq_ignore big_opMS_opS "Commute with big_opS proven at BI level (bigSepMS_comm_set); matches big_opS"
+#rocq_ignore big_opMS_opMS "Commute with big_opMS proven at BI level (bigSepMS_comm_mset); matches big_opS"
+#rocq_ignore big_opMS_commute_L "Leibniz (=) variant; use bigOpMS.hom"
+#rocq_ignore big_opMS_commute1_L "Leibniz (=) variant; use bigOpMS.hom_weak"
+
+end BigOpMS
 end
 end Iris.Algebra
