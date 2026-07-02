@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König
+Authors: Lars König, Alvin Tang
 -/
 module
 
@@ -23,6 +23,8 @@ syntax "%" binderIdent : icasesPat
 syntax "#" icasesPat : icasesPat
 syntax "∗" icasesPat : icasesPat
 syntax ">" icasesPat : icasesPat
+syntax "←" : icasesPat
+syntax "→" : icasesPat
 
 -- TODO: attach syntax to iCasesPat such that one can use withRef to
 -- associate the errors with the right part of the syntax
@@ -36,6 +38,7 @@ inductive iCasesPat
   | intuitionistic (pat : iCasesPat)
   | spatial        (pat : iCasesPat)
   | mod            (pat : iCasesPat)
+  | rewrite (forward : Bool)
   deriving Repr, Inhabited
 
 partial def iCasesPat.parse (pat : TSyntax `icasesPat) : MacroM iCasesPat := do
@@ -53,6 +56,8 @@ where
   | `(icasesPat| ∗$pat) => go pat |>.map .spatial
   | `(icasesPat| >$pat) => go pat |>.map .mod
   | `(icasesPat| ($pat)) => goAlts pat
+  | `(icasesPat| ←) => some <| .rewrite false
+  | `(icasesPat| →) => some <| .rewrite true
   | _ => none
   goAlts : TSyntax ``icasesPatAlts → Option iCasesPat
   | `(icasesPatAlts| $args|*) =>
