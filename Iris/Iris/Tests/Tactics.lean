@@ -325,18 +325,23 @@ example [BI PROP] (P Q R S T : PROP) (ϕ : Prop) :
   iintro %hϕ HP HQ {!HP} HR #HS #HT {HR %hϕ %ϕ !# #}
   iexact HQ
 
-example (m n : Nat) : m = 2 → n = 3 → m.succ = n := by
-  intro hm hn
-  rewrite [hm, hn]
-  rfl
-
-example [BI PROP] (m n : Nat) :
-    ⊢@{PROP} ⌜m = 2⌝ -∗ ⌜n = 3⌝ -∗ ⌜m.succ = n⌝ := by
-  iintro #H1 #H2
-  icases H1 with →
-  icases H2 with →
+/-- Tests `iintro` with introduction patterns for rewriting pure equalities -/
+example [BI PROP] (m n : Nat) (a b c : Prop) :
+    ⊢@{PROP} ⌜m = 2⌝ -∗ ⌜3 = n⌝ -∗ ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
+  iintro → ← ← →
   ipureintro
-  rfl
+  and_intros <;> rfl
+
+/-
+  Tests `iintro` with an introduction pattern for rewriting but the
+  hypothesis is not a pure equality
+-/
+/-- error: Invalid rewrite argument: Expected an equality or iff proof or
+definition name, but `x✝` is a proof of
+  P -/
+#guard_msgs in
+example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
+  iintro →
 
 end intro
 
@@ -1767,6 +1772,29 @@ example [BI PROP] (Q : PROP) : Q ⊢ Q := by
 example [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
   iintro H
   icases H with ⟨HA, HB⟩
+
+/-- Tests `icases` with a case destruction pattern for rewriting pure equalities -/
+example [BI PROP] (m n : Nat) (a b c : Prop) :
+    ⊢@{PROP} ⌜m = 2⌝ -∗ ⌜3 = n⌝ -∗ ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
+  iintro #H1 H2 #H3 H4
+  icases H1 with →
+  icases H2 with ←
+  icases H3 with ←
+  icases H4 with →
+  ipureintro
+  and_intros <;> rfl
+
+/-
+  Tests `icases` with a case destruction pattern for rewriting but the
+  hypothesis is not a pure equality
+-/
+/-- error: Invalid rewrite argument: Expected an equality or iff proof or
+definition name, but `x✝` is a proof of
+  P -/
+#guard_msgs in
+example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
+  iintro HP
+  icases HP with →
 
 end cases
 
