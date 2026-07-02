@@ -54,7 +54,7 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
-set_option maxHeartbeats 210000 in
+set_option maxHeartbeats 220000 in
 /--
 Introduce the hypothesis specified by `pats` into the context given by `P` (structured  as `hyps`).
 The type of the current goal is given by `Q`.
@@ -155,13 +155,11 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     withRef ref do
     match selPats with
     | [] => iIntroCore hyps Q pats k
-    | s :: selPats =>
-      match s.fst, s.snd with
-      | false, s =>
+    | ⟨false, s⟩ :: selPats =>
         iClearCore hyps Q [s]
           fun hyps' goal' fvars => withoutFVars (u := 0) fvars
             <| iIntroCore hyps' goal' ((ref, .clear selPats) :: pats) k
-      | true, s => throwUnsupportedSyntax
+    | ⟨true, s⟩ :: selPats => throwUnsupportedSyntax
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar

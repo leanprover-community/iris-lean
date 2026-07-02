@@ -14,6 +14,9 @@ meta import Iris.Std.RocqPorting
 namespace Iris.ProofMode
 open Lean
 
+declare_syntax_cat selPatFrame
+syntax ("$" noWs)? selPat : selPatFrame
+
 declare_syntax_cat introPat
 
 syntax icasesPat : introPat
@@ -24,7 +27,7 @@ syntax "//=" : introPat
 syntax "*" : introPat
 syntax "**" : introPat
 syntax "!%" : introPat
-syntax "{" selPat* "}" : introPat
+syntax "{" (colGt ppSpace selPatFrame)* "}" : introPat
 
 @[rocq_alias intro_pat]
 inductive IntroPat
@@ -49,11 +52,10 @@ partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
   | `(introPat| *) => return (term, .all)
   | `(introPat| **) => return (term, .allwand)
   | `(introPat| !%) => return (term, .pureintro)
-  | `(introPat| { $spats:selPat* }) => return (term, .clear (← spats.toList.mapM parseSelPats))
+  | `(introPat| { $spats:selPatFrame* }) => return (term, .clear (← spats.toList.mapM parseSelPats))
   | _ => Macro.throwUnsupported
-  where parseSelPats (spat : TSyntax `selPat) : MacroM <| Bool × SelPat := do
-    let spat ← SelPat.parseOne spat
-    return ⟨false, spat⟩
+  where parseSelPats (spat : TSyntax `selPatFrame) : MacroM <| Bool × SelPat := do
+    return ⟨!spat.raw[0].getArgs.isEmpty, ← SelPat.parseOne ⟨spat.raw[1]⟩⟩
 
 #rocq_ignore gallina_ident "Not necessary in Lean"
 #rocq_ignore intro_pat.big_conj "Not necessary in Lean"
