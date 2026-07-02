@@ -353,8 +353,8 @@ section updateLemmas
 
 /-- The state interpretation transports along a pointwise equivalence of
 the value heap. -/
-theorem genHeapInterp_eqv {σ₁ σ₂ : H V} (h : σ₁ = σ₂) :
-    genHeapInterp (GF := GF) σ₁ ⊢ genHeapInterp σ₂ := h ▸ .rfl
+theorem genHeapInterp_eqv {σ₁ σ₂ : H V} (h : σ₁ ≡ₘ σ₂) :
+    genHeapInterp (GF := GF) σ₁ ⊢ genHeapInterp σ₂ := equiv_iff_eq.mp h ▸ .rfl
 
 @[rocq_alias gen_heap_alloc]
 theorem genHeap_alloc [DecidableEq L] {σ : H V} {l : L} {v : V} (Hσl : get? σ l = .none) :
@@ -392,7 +392,7 @@ theorem genHeap_alloc_big [DecidableEq L] (σ' σ : H V) (Hdisj : σ' ##ₘ σ) 
     iintro Hσ
     imodintro
     isplitl [Hσ]
-    · iapply genHeapInterp_eqv LawfulPartialMap.union_empty_left.symm $$ Hσ
+    · iapply genHeapInterp_eqv (equiv_iff_eq.mpr LawfulPartialMap.union_empty_left.symm) $$ Hσ
     isplit <;> (iapply BigSepM.bigSepM_empty; itrivial)
   | hins l v σ'' Hl IH =>
     intro σ Hdisj
@@ -404,7 +404,7 @@ theorem genHeap_alloc_big [DecidableEq L] (σ' σ : H V) (Hdisj : σ' ##ₘ σ) 
     imod genHeap_alloc Hunion_l $$ Hint with ⟨Hint', Hl_pts, Hl_tok⟩
     imodintro
     isplitl [Hint']
-    · iapply genHeapInterp_eqv LawfulPartialMap.union_insert_left $$ Hint'
+    · iapply genHeapInterp_eqv (equiv_iff_eq.mpr LawfulPartialMap.union_insert_left) $$ Hint'
     isplitl [Hl_pts Hpts]
     · iapply (BigSepM.bigSepM_insert Hl) $$ [$Hpts $Hl_pts]
     iapply (BigSepM.bigSepM_insert (Φ := fun l _ => iprop(metaToken l ⊤)) Hl) $$ [$Hl_tok $Htok]
@@ -471,7 +471,7 @@ theorem genHeap_init_names [DecidableEq L] [genHeapPreS L V GF H] (σ : H V) :
   imodintro
   iexists γh, γm
   iframe Hpts Htok
-  iapply genHeapInterp_eqv LawfulPartialMap.union_empty_right $$ Hinterp
+  iapply genHeapInterp_eqv (equiv_iff_eq.mpr LawfulPartialMap.union_empty_right) $$ Hinterp
 
 /-- Initialize `genHeapGS` from a `genHeapPreS`, hiding the freshly allocated
 ghost names. -/
