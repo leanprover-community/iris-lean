@@ -319,6 +319,11 @@ example {ϕ : Prop} [BI PROP] : ⊢@{PROP} ⌜⌜ϕ⌝ ⊢@{PROP} ⌜ϕ⌝⌝ :=
   iintro !% %_ !%
   assumption
 
+/-- Tests `iintro` with an introduction pattern for clearing hypotheses (`{ selPats* }`) -/
+example [BI PROP] (P Q R : PROP) : ⊢ P -∗ Q -∗ <affine> R -∗ □ S -∗ P ∗ Q := by
+  iintro HP HQ HR #HS {HR #}
+  iframe HP HQ
+
 end intro
 
 -- revert

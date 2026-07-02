@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 Michael Sammler. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Michael Sammler
+Authors: Michael Sammler, Alvin Tang
 -/
 module
 
@@ -36,6 +36,7 @@ inductive IntroPat
   | all
   | allwand
   | pureintro
+  | clear (selPats : List SelPat)
   deriving Repr, Inhabited
 
 partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
@@ -48,6 +49,7 @@ partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
   | `(introPat| *) => return (term, .all)
   | `(introPat| **) => return (term, .allwand)
   | `(introPat| !%) => return (term, .pureintro)
+  | `(introPat| { $spats:selPat* }) => return (term, .clear (← SelPat.parse spats))
   | _ => Macro.throwUnsupported
 
 #rocq_ignore gallina_ident "Not necessary in Lean"

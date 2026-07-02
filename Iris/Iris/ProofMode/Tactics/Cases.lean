@@ -211,7 +211,7 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     else k (.mkSep hyps hyp) goal
 
   | .clear => do
-    let pf ← iClearCore bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl)
+    let pf ← iClearCoreOne bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl)
     pure q($pf $(← k hyps goal))
 
   | .frame => do

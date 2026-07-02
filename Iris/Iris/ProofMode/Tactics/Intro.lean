@@ -54,7 +54,7 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
-set_option maxHeartbeats 205000 in
+set_option maxHeartbeats 210000 in
 /--
 Introduce the hypothesis specified by `pats` into the context given by `P` (structured  as `hyps`).
 The type of the current goal is given by `Q`.
@@ -62,7 +62,7 @@ The type of the current goal is given by `Q`.
 This function returns the proof of `P ⊢ Q` to be assigned. The new context is included in the
 `goals` directly by the tactic.
 -/
-partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
+partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
   {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat))
   (k : ∀ {u} {prop : Q(Type $u)} {bi : Q(BI $prop)} {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM (Q($P ⊢ $Q)) := do
@@ -134,7 +134,6 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     let some inst ← ProofModeM.trySynthInstanceQ q(FromPure $b $Q .out $ϕ)
     | throwError "iintro: {Q} is not a pure"
     let m : Q($ϕ) ← mkFreshExprSyntheticOpaqueMVar (← instantiateMVars ϕ)
-
     let pf ← do match ← whnf b with
     | .const ``true _ =>
       have : $b =Q true := ⟨⟩
@@ -145,15 +144,21 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
       have : $b =Q false := ⟨⟩
       pure q(pure_intro_spatial (Q := $Q) $inst $m)
     | _ => throwError "iintro: bug in typeclass instances, cannot reduce {b} to true or false"
-
     if pats.isEmpty then
       addMVarGoal m.mvarId!
     else
       let ⟨newM, g⟩ ← startProofMode m.mvarId!
       let pf' ← newM.withContext <| iIntroCore g.hyps g.goal pats k
       newM.assign pf'
-
     return pf
+  | (ref, .clear selPats) :: pats =>
+    withRef ref do
+    match selPats with
+    | [] => iIntroCore hyps Q pats k
+    | s :: selPats =>
+        iClearCore hyps Q [s]
+          fun hyps' goal' fvars => withoutFVars (u := 0) fvars
+            <| iIntroCore hyps' goal' ((ref, .clear selPats) :: pats) k
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar

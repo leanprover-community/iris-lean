@@ -25,7 +25,7 @@ theorem clear_intuitionistic [BI PROP] {P P' A Q : PROP}
 public meta section
 open Lean Elab Tactic Meta Qq
 
-def iClearCore {prop : Q(Type u)} (_bi : Q(BI $prop)) (e e' : Q($prop))
+def iClearCoreOne {prop : Q(Type u)} (_bi : Q(BI $prop)) (e e' : Q($prop))
     (p : Q(Bool)) (out goal : Q($prop))
     (pf : Q($e ⊣⊢ $e' ∗ □?$p $out)) : ProofModeM Q(($e' ⊢ $goal) → $e ⊢ $goal) := do
     match matchBool p with
@@ -44,9 +44,29 @@ private def ClearState.clearProofModeHyp {u prop bi origE goal} :
     ProofModeM (@ClearState u prop bi origE goal)
   | { e, hyps, pf }, ivar => do
       let ⟨e', hyps', _, out', p, _, hrem⟩ := hyps.remove true ivar
-      let step ← iClearCore bi e e' p out' goal hrem
+      let step ← iClearCoreOne bi e e' p out' goal hrem
       let pf' : Q(($e' ⊢ $goal) → ($origE ⊢ $goal)) := q(λ h => $pf ($step h))
       return {  e := e', hyps := hyps', pf := pf' }
+
+def iClearCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (goal : Q($prop)) (pats : List SelPat)
+    (k : ∀ {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
+      (_ : Hyps bi e) (goal : Q($prop)) (_ : Array FVarId), ProofModeM Q($e ⊢ $goal)) :
+    ProofModeM Q($e ⊢ $goal) := do
+  let (ivars, fvars) := (← SelPat.resolve hyps pats).partitionMap fun
+  | {kind := .ipm ivar, ..} => .inl ivar
+  | {kind := .pure id,  ..} => .inr id
+
+  -- Clear the selected Iris hypotheses first, updating the proof-mode context and proof term.
+  let mut st : ClearState e goal := { e, hyps, pf := q(id) }
+  for ivar in ivars do st ← st.clearProofModeHyp ivar
+
+  -- Lean locals are cleared afterwards; first ensure no remaining hypothesis or goal depends on them.
+  for fvar in fvars do
+    let _ ← st.hyps.checkRemovableFVar "iclear" fvar (some goal) fvars.contains
+
+  let pf' ← k st.hyps goal fvars.reverse.toArray
+  return q($(st.pf) $pf')
 
 /--
   `iclear pats` discards the hypotheses selected by the selection pattern `pats`.
@@ -54,18 +74,6 @@ private def ClearState.clearProofModeHyp {u prop bi origE goal} :
 elab "iclear " pats:(colGt ppSpace selPat)+ : tactic => do
   let pats ← liftMacroM <| SelPat.parse pats
 
-  ProofModeM.runTactic λ mvar { e, hyps, goal, .. } => do
-  let (ivars, fvars) := (← SelPat.resolve hyps pats).partitionMap fun
-    | {kind := .ipm ivar, ..} => .inl ivar
-    | {kind := .pure id,  ..} => .inr id
-
-  -- Clear the selected Iris hypotheses first, updating the proof-mode context and proof term.
-  let mut st : ClearState e goal := { e, hyps, pf := q(fun h => h) }
-  for ivar in ivars do st ← st.clearProofModeHyp ivar
-
-  -- Lean locals are cleared afterwards; first ensure no remaining hypothesis or goal depends on them.
-  for fvar in fvars do
-    let _ ← st.hyps.checkRemovableFVar "iclear" fvar (some goal) fvars.contains
-
-  let pf' ← addBIGoalWithoutFVars st.hyps goal fvars.reverse.toArray
-  mvar.assign q($(st.pf) $pf')
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+    let pf ← iClearCore hyps goal pats (addBIGoalWithoutFVars · ·)
+    mvar.assign pf
