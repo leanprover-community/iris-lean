@@ -81,9 +81,8 @@ private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         have B : Q($prop) := Expr.headBeta q($Φ $x)
         have : $B =Q $Φ $x := ⟨⟩
         let pf : Q(∀ x, $P ⊢ $Φ x) ← k x B
-        return q(from_forall_intro (Q := $Q) $pf)
+        return q(from_forall_intro $pf)
 
-set_option maxHeartbeats 250000 in
 /--
 Introduce the hypothesis specified by `pats` into the context given by `P` (structured  as `hyps`).
 The type of the current goal is given by `Q`.
@@ -115,23 +114,28 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     iIntroCore hyps Q ((ref, .simp) :: (ref, .trivial) :: pats) k
   | (ref, .all) :: pats =>
     let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
-    iIntroCoreForallIntro ref n Q (iIntroCore hyps Q pats k) <|
+    iIntroCoreForallIntro ref n Q
+      -- No more universally quantified variable to be introduced
+      (iIntroCore hyps Q pats k)
+      -- Introduction of a universally quantified variable
       (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .all) :: pats) k)
   | (ref, .allwand) :: pats =>
     let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
-    -- Introduction of a wand premise or an implication premise, if possible
-    let kPremiseIntro : ProofModeM Q($P ⊢ $Q) := do
+    let k' : ProofModeM Q($P ⊢ $Q) := do
       let A1 ← mkFreshExprMVarQ q($prop)
       let A2 ← mkFreshExprMVarQ q($prop)
       let instFromImp ← ProofModeM.trySynthInstanceQ q(FromImp $Q $A1 $A2)
       let instFromWand ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
       let instPersistent ← ProofModeM.trySynthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
       match instFromWand, instFromImp, instPersistent with
+      -- Introduction of a wand premise or a pure premise, if possible
       | some _, _, _ | _, some _, some _ =>
         iIntroCore hyps Q ((ref, .intro (.one (← `(binderIdent| _)))) :: (ref, .allwand) :: pats) k
       | _, _, _ =>
+        -- No more universally quantified variable or premise to be introduced
         iIntroCore hyps Q pats k
-    iIntroCoreForallIntro ref n Q kPremiseIntro <|
+    iIntroCoreForallIntro ref n Q k'
+      -- Introduction of a universally quantified variable
       (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .allwand) :: pats) k)
   | (ref, .pureintro) :: pats =>
     withRef ref do
