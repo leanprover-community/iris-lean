@@ -69,6 +69,7 @@ def SelPat.resolveOne (hyps : Hyps bi e) : SelPat → ProofModeM (List SelTarget
       return [⟨.ipm ivar, true⟩]
   | .leanIdent name => do
       let ldecl ← getLocalDeclFromUserName name.getId
+      addLocalVarInfo name (← getLCtx) ldecl.toExpr ldecl.type
       return [⟨.pure ldecl.fvarId, true⟩]
   | .intuitionistic =>
       return hyps.intuitionisticIVarIds.map (⟨.ipm ·, false⟩)
