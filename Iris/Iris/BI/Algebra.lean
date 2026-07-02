@@ -263,4 +263,37 @@ theorem auth_both_validI (a b : A) :
   · exact exists_elim fun c n ⟨hi, hvn⟩ => ⟨DFrac.valid_own_one, ⟨⟨c, hi⟩, hvn⟩⟩
 
 end auth
+
+section prod
+
+open Prod
+
+variable [Sbi PROP] [CMRA A] [CMRA B]
+
+@[rocq_alias prod_validI]
+theorem prod_validI (x : A × B) :
+  internalCmraValid x ⊣⊢@{PROP} internalCmraValid x.1 ∧ internalCmraValid x.2 := by
+  refine .trans ?_ siPure_and
+  exact ⟨siPure_mono fun _ => id, siPure_mono fun _ => id⟩
+
+end prod
+
+section option
+
+open Option
+
+variable [Sbi PROP] [CMRA A]
+
+@[rocq_alias option_validI]
+theorem option_validI (mx : Option A) :
+  internalCmraValid mx ⊣⊢@{PROP}
+  match mx with | some x => internalCmraValid x | none => iprop(True) := by
+  cases mx
+  · constructor
+    · iintro _; itrivial
+    · refine true_siPure.trans ?_
+      exact siPure_mono fun _ _ => .intro
+  · constructor <;> exact siPure_mono fun _ => id
+
+end option
 end Iris

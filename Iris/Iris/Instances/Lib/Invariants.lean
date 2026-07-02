@@ -274,6 +274,15 @@ theorem inv_open_fupd {E : CoPset} {N : Namespace} {P : IProp GF} (Hsub : ↑N �
   imod Hclose $$ [$HP] with -
   itrivial
 
+theorem inv_open_fupd_strong {E} {N} {P : IProp GF} (Hsub : ↑N ⊆ E) :
+  ⊢ inv N P -∗ (▷ P ={E \ N}=∗ ▷ P ∗ |={E}=> R) ={E}=∗ R := by
+  iintro #Hinv Hk
+  imod inv_acc Hsub $$ Hinv with ⟨Hγ, Hupd⟩
+  iapply BIFUpdate.trans (E2 := E)
+  iapply BIFUpdate.trans (E2 := E \ ↑N)
+  imod Hk $$ [$] with ⟨HP, HR⟩; iframe
+  imodintro; iapply Hupd; iassumption
+
 end Access
 
 section Modification

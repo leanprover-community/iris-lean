@@ -1693,6 +1693,8 @@ end unit
 
 namespace Prod
 
+open CMRA
+
 variable {α β : Type _} [CMRA α] [CMRA β]
 
 abbrev pcore (x : α × β) : Option (α × β) :=
@@ -1791,6 +1793,37 @@ instance [CMRA.Discrete α] [CMRA.Discrete β]: CMRA.Discrete (α × β) where
     simp [CMRA.ValidN]
     exact (⟨CMRA.discrete_valid ·, CMRA.discrete_valid ·⟩)
 
+@[rocq_alias pair_core_id]
+instance prod_core_id (a : α) (b : β) [CoreId a] [CoreId b] : CoreId (a, b) where
+  core_id := by
+    simp only [CMRA.pcore, pcore];
+    let ⟨a, pa, ea⟩ := equiv_some (core_id (x := a))
+    let ⟨b, pb, eb⟩ := equiv_some (core_id (x := b))
+    rw [pa, pb]; exact ⟨ea, eb⟩
+
+section ProdUCMRA
+
+open UCMRA
+
+variable [UCMRA A] [UCMRA B]
+
+@[rocq_alias prodUR]
+instance ucmraProd : UCMRA (A × B) where
+  unit := (unit, unit)
+  unit_valid := ⟨unit_valid, unit_valid⟩
+  unit_left_id := by intro x; exact ⟨unit_left_id, unit_left_id⟩
+  pcore_unit := by
+    simp only [CMRA.pcore, pcore];
+    let ⟨a, pa, ea⟩ := equiv_some (α := A) pcore_unit
+    let ⟨b, pb, eb⟩ := equiv_some (α := B) pcore_unit
+    rw [pa, pb]
+    exact ⟨ea, eb⟩
+
+@[rocq_alias pair_split]
+theorem prod_split (a : A) (b : B) : (a, b) ≡ (a, unit) • (unit, b) :=
+  ⟨unit_left_id.symm.trans CMRA.comm, unit_left_id.symm⟩
+
+end ProdUCMRA
 end Prod
 
 section ProdMor
