@@ -11,11 +11,16 @@ public import Iris.Instances.IProp
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.Instances.Lib.Token
 public import Iris.Algebra.CMRA
+public import Iris.Instances.Lib.Invariants
+public import Iris.Instances.Lib.CInvariants
+public import Iris.Instances.Lib.NaInvariants
+public import Iris.ProgramLogic.Language
+public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
 namespace Iris.Tests
-open BI CMRA DFrac
+open BI CMRA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
 
 /- This file contains tests with various scenarios for all available tactics. -/
 
@@ -2776,3 +2781,172 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
+
+section iinv
+
+variable {hlc : HasLC} {GF : BundledGFunctors} [InvGS_gen hlc GF] {N : Namespace}
+
+/--
+  Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
+  `intoAcc_inv` where the side condition is trivial.
+-/
+example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H
+  imodintro
+  isplit
+  · iexact H
+  · imodintro
+    inext
+    iexact H
+
+/--
+  Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and
+  `intoAcc_inv` where the side condition is trivial.
+-/
+example {P : IProp GF} : inv N iprop(<pers> P) ={⊤}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H Hclose
+  imod Hclose $$ H
+  imodintro
+  inext
+  iexact H
+
+/--
+  Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and
+  `intoAcc_inv`, relying on the side condition `↑N ⊆ E`.
+-/
+example {E} {P : IProp GF} {h : ↑N ⊆ E} : inv N iprop(<pers> P) ={E}=∗ ▷ P := by
+  iintro #Hinv
+  iinv Hinv with #H
+  imodintro
+  isplit
+  · iexact H
+  · imodintro
+    inext
+    iexact H
+
+/- Tests `iinv` with an invalid invariant. -/
+/-- error: iinv: invalid invariant P (ElimInv type class synthesis failed) -/
+#guard_msgs in
+example {E : CoPset} {P : IProp GF} : □ P ={E}=∗ ▷ P := by
+  iintro #HP
+  iinv HP with #H
+
+/-- Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd` and `intoAcc_cinv`. -/
+example [CInvG GF]  {γ : GName} {p : Qp} :
+    cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
+  iintro ⟨#Hinv, H⟩
+  iinv Hinv with ⟨#HP, Hown⟩
+  imodintro
+  isplit
+  iexact HP
+  iframe
+  imodintro
+  inext
+  iexact HP
+
+/-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_cinv`. -/
+example [CInvG GF] {γ : GName} {p : Qp} :
+    cinv N γ iprop(<pers> P) ∗ own γ p ⊢@{IProp GF} |={⊤}=> own γ p ∗ ▷ P := by
+  iintro ⟨#Hinv, H⟩
+  iinv Hinv with ⟨#HP, Hown⟩ Hclose
+  imod Hclose $$ HP
+  imodintro
+  iframe
+  inext
+  iexact HP
+
+/--
+  Tests `iinv` with `elimInv_acc_without_close`, `elimAcc_fupd`,
+  `intoAcc_cinv` and a specialisation pattern. -/
+example [CInvG GF] {γ : GName} {p1 p2 : Qp} {P : IProp GF} :
+    cinv N γ iprop(<pers> P) ∗ own γ p1 ∗ own γ p2
+    ⊢@{IProp GF} |={⊤}=> own γ p1 ∗ own γ p2 ∗ ▷ P := by
+  iintro ⟨#Hinv, Hown1, Hown2⟩
+  iinv Hinv $$ [Hown2 //] with ⟨#HP, Hown2⟩
+  imodintro
+  iframe HP ∗
+  imodintro
+  inext
+  iexact HP
+
+/-- Tests `iinv` with `elimInv_acc_with_close`, `elimModal_fupd_fupd` and `intoAcc_na`. -/
+example {t : NaInvPoolName} [NaInvG GF] {E1 E2 : CoPset} {P : IProp GF} (h : ↑N ⊆ E1) :
+    NonAtomicInvariant.inv t N iprop(<pers> P) ∗ own t E1 ∗ own t E2
+    ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#Hinv, Hown1, Hown2⟩
+  iinv Hinv $$ [Hown1 //] with ⟨#HP, Hown1⟩ Hclose
+  imod Hclose $$ [HP Hown1]
+  · iframe
+    iexact HP
+  · iframe
+    imodintro
+    inext
+    iexact HP
+
+/-- Tests the robustness of `iinv` in presence of other invariants. -/
+example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
+    {P : IProp GF} (h : ↑N3 ⊆ E1) :
+    inv N1 P ∗ NonAtomicInvariant.inv t N3 iprop(<pers> P) ∗ inv N2 P ∗ own t E1 ∗ own t E2
+    ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#_, #Hinv, #_, Hown1, Hown2⟩
+  iinv Hinv $$ Hown1 with ⟨#HP, Hown1⟩
+  imodintro
+  isplitl [Hown1]
+  · iframe HP ∗
+  · iintro Hown1
+    iframe
+    imodintro
+    inext
+    iexact HP
+
+/--
+  Tests `iinv` with two invariant hypotheses using the same `Namespace` value.
+  The last hypothesis in the context with this `Namespace` value gets chosen.
+-/
+example {t : NaInvPoolName} [NaInvG GF] {N : Namespace} {E1 E2 : CoPset}
+    {P Q : IProp GF} (h : ↑N ⊆ E1) :
+    NonAtomicInvariant.inv t N iprop(<pers> Q) ∗
+    NonAtomicInvariant.inv t N iprop(<pers> P) ∗
+    own t E1 ∗ own t E2 ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#_, #_, Hown1, Hown2⟩
+  iinv N $$ Hown1 with ⟨#HP, Hown1⟩
+  imodintro
+  isplitl [Hown1]
+  · iframe HP ∗
+  · iintro Hown1
+    iframe
+    imodintro
+    inext
+    iexact HP
+
+/-
+  Tests `iinv` with a valid `Namespace` value that does not correspond to
+  any invariant hypothesis in the context.
+-/
+/-- error: iinv: invariant hypothesis with the namespace N3 not found -/
+#guard_msgs in
+example {t : NaInvPoolName} [NaInvG GF] {N1 N2 N3 : Namespace} {E1 E2 : CoPset}
+    {P Q : IProp GF} (h : ↑N1 ⊆ E1) :
+    NonAtomicInvariant.inv t N1 iprop(<pers> Q) ∗
+    NonAtomicInvariant.inv t N2 iprop(<pers> P) ∗
+    own t E1 ∗ own t E2 ={⊤}=∗ own t E1 ∗ own t E2 ∗ ▷ P := by
+  iintro ⟨#_, #_, Hown1, Hown2⟩
+  iinv N3 $$ Hown1 with ⟨#HP, Hown1⟩
+
+/- Variables to test `iinv` with `WP` -/
+variable {hlc : outParam HasLC} {Expr State Obs Val} [Λ : Language Expr State Obs Val]
+variable {GF : BundledGFunctors}
+variable [IrisGS_gen hlc Expr GF]
+variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ : Val → IProp GF} {P : IProp GF}
+
+/-- Tests `iinv` with `elimInv_acc_without_close`, `intoAcc_inv` and `elimAcc_wp_atomic`. -/
+example [Language.Atomic ↑s e] (h : ↑N ⊆ E) :
+    ⊢ inv N P -∗ (▷ P -∗ WP e @ s ; (E \ ↑N) {{ v, |={E \ ↑N}=> ▷ P ∗ Φ v }}) -∗ WP e @ s ; E {{ Φ }} := by
+  iintro #Hinv Hwp
+  iinv Hinv with H
+  iapply Hwp
+  iexact H
+
+end iinv

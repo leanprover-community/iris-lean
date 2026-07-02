@@ -8,6 +8,7 @@ module
 public import Iris.BI
 public meta import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Modalities
+public import Iris.Std.Namespaces
 
 @[expose] public section
 
@@ -180,8 +181,9 @@ export FromModal (from_modal)
 
 /-- `ElimModal` turns `□?p P` into `□?p' P'` and `Q` into `Q'` under condition `φ`. -/
 @[ipm_class, rocq_alias ElimModal]
-class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool) (p' : outParam $ Bool) (P : PROP)
-    (P' : outParam $ PROP) (Q : PROP) (Q' : outParam $ PROP) where
+class ElimModal {PROP} [BI PROP] (φ : outParam $ Prop) (p : Bool)
+    (p' : outParam $ uncheckedInParam Bool) (P : PROP)
+    (P' : outParam $ uncheckedInParam PROP) (Q : PROP) (Q' : outParam $ PROP) where
   elim_modal : φ → □?p P ∗ (□?p' P' -∗ Q') ⊢ Q
 export ElimModal (elim_modal)
 
@@ -223,6 +225,38 @@ export CombineSepAs (combine_sep_as)
 class CombineSepGives [BI PROP] (P Q : PROP) (R : outParam PROP) where
   combine_sep_gives : P ∗ Q ⊢ <pers> R
 export CombineSepGives (combine_sep_gives)
+
+@[ipm_class, rocq_alias IntoInv]
+class IntoInv [BI PROP] (P : PROP) (N : Namespace)
+
+@[rocq_alias accessor]
+def accessor [BI PROP] {X : Type} (M1 M2 : PROP → PROP) (α β : X → PROP)
+    (mγ : X → Option  PROP) : PROP :=
+  M1 iprop(∃ x, α x ∗ (β x -∗ M2 (mγ x |>.getD emp)))
+
+@[ipm_class, rocq_alias ElimAcc]
+class ElimAcc [BI PROP] {X : Type} (ϕ : outParam Prop) (M1 M2 : PROP → PROP)
+    (α β : X → PROP) (mγ : X → Option PROP) (Q : PROP) (Q' : outParam <| X → PROP) where
+  elim_acc : ϕ → ((∀ x, α x -∗ Q' x) -∗ accessor M1 M2 α β mγ -∗ Q)
+
+@[ipm_class, rocq_alias IntoAcc]
+class IntoAcc [BI PROP] {X : outParam Type} (Pacc : PROP)
+    (ϕ : outParam Prop) (Pin : outParam <| PROP)
+    (M1 M2 : outParam <| PROP → PROP) (α β : outParam <| X → PROP)
+    (mγ : outParam <| X → Option PROP) where
+  into_acc : ϕ → Pacc -∗ Pin -∗ accessor M1 M2 α β mγ
+
+set_option synthInstance.checkSynthOrder false in
+/-- The type class used for the `iinv` tactic. -/
+@[ipm_class, rocq_alias ElimInv]
+class ElimInv [BI PROP] (φ : outParam Prop) (X : outParam Type)
+    (Pinv : PROP) (Pin : outParam PROP) (Pout : outParam <| X → PROP)
+    (close : Bool) (mPclose : outParam <| Option <| X → PROP)
+    (Q : PROP) (Q' : outParam <| X → PROP) where
+  elim_inv : φ → Pinv ∗ Pin ∗ (∀ x, (match mPclose with
+    | some Pclose => iprop(Pout x ∗ Pclose x -∗ Q' x)
+    | none => iprop(Pout x -∗ Q' x))) ⊢ Q
+export ElimInv (elim_inv)
 
 #rocq_ignore elim_inv_tc_opaque "No tc_opaque in Lean"
 #rocq_ignore elim_modal_tc_opaque "No tc_opaque in Lean"

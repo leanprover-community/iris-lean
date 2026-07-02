@@ -7,6 +7,7 @@ public meta import Iris.ProofMode.Expr
 public import Iris.ProofMode.Instances
 public import Iris.ProofMode.InstancesCmra
 public import Iris.ProofMode.InstancesFrame
+public import Iris.ProofMode.InstancesInit
 public import Iris.ProofMode.InstancesInternalEq
 public import Iris.ProofMode.InstancesLater
 public import Iris.ProofMode.InstancesMake

@@ -8,13 +8,14 @@ public import Iris.Algebra
 public import Iris.Instances.Lib.FUpd
 public import Iris.BI
 public import Iris.BI.WeakestPre
+public import Iris.BI.DerivedLaws
 public import Iris.ProofMode
 public import Iris.ProgramLogic.Language
 public import Iris.Std.CoPset
 
 namespace Iris
 
-open ProgramLogic Language.Notation Std
+open ProgramLogic Language.Notation Std Iris.BI
 
 @[expose] public section
 
@@ -680,5 +681,41 @@ instance elimModalFupdWpAtomic_wrongMask :
     Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
     p false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
+
+@[rocq_alias elim_acc_wp_atomic]
+instance (priority := low) elimAcc_wp_atomic {X} (E₁ E₂ : CoPset) α β (γ : X → Option (IProp GF)) :
+    ElimAcc (Language.Atomic ↑s e) (fupd E₁ E₂) (fupd E₂ E₁) α β γ
+      (WP e @ s ; E₁ {{ Φ }})
+      (fun x => WP e @ s ; E₂ {{ v, |={E₂}=> β x ∗ (γ x -∗? Φ v) }}) where
+  elim_acc := by
+    dsimp only [accessor, BIBase.wandM, Option.getD]
+    iintro %atomic Hinner >⟨%x, Hα, Hclose⟩
+    iapply wp_wand $$ [Hinner Hα]
+    · iapply Hinner $$ Hα
+    · iintro %v >⟨Hβ, HΦ⟩
+      ispecialize Hclose $$ Hβ
+      imod Hclose
+      imodintro
+      cases (γ x) with
+      | none => iexact HΦ
+      | some P => iapply HΦ $$ Hclose
+
+@[rocq_alias elim_acc_wp_nonatomic]
+instance elimAcc_wp_nonatomic {X} E (α β : X → IProp GF) (γ : X → Option (IProp GF)) :
+    ElimAcc True (fupd E E) (fupd E E) α β γ (WP e @ s ; E {{ Φ }})
+    (fun x => WP e @ s ; E {{ v, |={E}=> β x ∗ (γ x -∗? Φ v) }}) where
+  elim_acc := by
+    dsimp only [accessor, BIBase.wandM, Option.getD]
+    iintro %_ Hinner >⟨%x, Hα, Hclose⟩
+    iapply wp_fupd
+    iapply wp_wand $$ [Hinner Hα]
+    · iapply Hinner $$ Hα
+    · iintro %v >⟨Hβ, HΦ⟩
+      ispecialize Hclose $$ Hβ
+      imod Hclose
+      imodintro
+      cases (γ x) with
+      | none => iexact HΦ
+      | some P => iapply HΦ $$ Hclose
 
 end ProofModeClasses
