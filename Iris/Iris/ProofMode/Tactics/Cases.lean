@@ -189,7 +189,7 @@ def iCasesPureRewrite {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
   let some #[_, _, tm', goal'] := eNew.consumeMData.appM? ``BIBase.Entails
   | throwError "icases: unable to parse the Iris entailment {eNew}"
   let some ⟨_, hyps'⟩ := parseHyps? bi tm'
-  | throwError "icases: unable to parse the Iris entailment {tm'}"
+  | throwError "icases: unable to parse the Iris context {tm'}"
   let gNew ← g.replaceTargetEq eNew eqPf
   gNew.assign (← k hyps' goal')
   instantiateMVars (.mvar g)
