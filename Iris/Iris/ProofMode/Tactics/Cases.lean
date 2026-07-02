@@ -216,7 +216,7 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
 
   | .frame => do
     let ⟨ivar, hyps'⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
-    let res ← iFrame bi _ hyps' goal [⟨.ipm ivar, true⟩]
+    let res ← iFrame hyps' goal [⟨.ipm ivar, true⟩]
     res.finish @k
 
   | .conjunction [arg] | .disjunction [arg] => iCasesCore hyps goal arg p A @k
