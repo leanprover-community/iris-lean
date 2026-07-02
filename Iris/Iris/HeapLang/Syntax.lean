@@ -69,6 +69,10 @@ instance : Std.LawfulEqOrd ProphId where
     intros l₁ l₂; unfold compare; unfold instOrdProphId; simp;
     intros h; ext; assumption
 
+instance : InfiniteType ProphId where
+  enum n := .mk n
+  enum_inj n m := by grind
+
 inductive Binder where
   | anon
   | named (name : String)
@@ -175,10 +179,13 @@ instance : Coe Bool BaseLit where
 instance : Coe Loc BaseLit where
   coe l := .loc l
 
+instance : Coe ProphId BaseLit where
+  coe p := .prophecy p
+
 instance : Coe Unit BaseLit where
   coe _ := .unit
 
-attribute [coe] BaseLit.int BaseLit.bool BaseLit.loc
+attribute [coe] BaseLit.int BaseLit.bool BaseLit.loc BaseLit.prophecy
 
 def Exp.substStr (x : String) (v : Val) (e : Exp) : Exp :=
   match e with

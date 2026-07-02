@@ -310,6 +310,25 @@ info: (Exp.rec_ Binder.anon (Binder.named "x")
 set_option pp.explicit true in
 #check hl(let x := ref(#0); let y := allocn(!x, #0); x ← !x + #1; fork(cmpXchg(x, #1, #2); xchg(x, #2); faa(x, #4)); assert(!x = #0); free(x))
 
+-- prophecy notation
+variable (p : ProphId) (w : Val)
+
+/-- info: hl(newProph()) : Exp -/
+#guard_msgs in
+#check hl(newProph())
+
+/-- info: hl(resolve(newProph(), #p, v(&w))) : Exp -/
+#guard_msgs in
+#check hl(resolve(newProph(), v(#p), v(&w)))
+
+/-- info: hl(resolveProph(#p, v(&w))) : Exp -/
+#guard_msgs in
+#check hl(resolveProph(v(#p), v(&w)))
+
+/-- info: hl_val(#p) : Val -/
+#guard_msgs in
+#check hl_val(#p)
+
 end test
 
 end Iris.Tests.HeapLang
