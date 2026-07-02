@@ -54,6 +54,23 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
+private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {P} (hyps : Hyps bi P) (ref : Syntax) (n : Name) (Q : Q($prop))
+    (k : Expr → Q($prop) → ProofModeM Expr):
+    ProofModeM Q($P ⊢ $Q) := do
+  withRef ref do
+    let v ← mkFreshLevelMVar
+    let α ← mkFreshExprMVarQ q(Sort v)
+    let Φ ← mkFreshExprMVarQ q($α → $prop)
+    let .some _ ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ)
+      | throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
+    withLocalDeclDQ n α fun x => do
+      addLocalVarInfo ref (← getLCtx) x α
+      have B : Q($prop) := Expr.headBeta q($Φ $x)
+      have : $B =Q $Φ $x := ⟨⟩
+      let pf : Q(∀ x, $P ⊢ $Φ x) ← k x B
+      return q(from_forall_intro (Q := $Q) $pf)
+
 set_option maxHeartbeats 250000 in
 /--
 Introduce the hypothesis specified by `pats` into the context given by `P` (structured  as `hyps`).
@@ -165,34 +182,13 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       let res ← s.resolveOne hyps >>= iFrame hyps Q
       res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) k)
   | (ref, .intro (.rewrite direction)) :: pats =>
-    withRef ref do
-    let v ← mkFreshLevelMVar
-    let α ← mkFreshExprMVarQ q(Sort v)
-    let Φ ← mkFreshExprMVarQ q($α → $prop)
-    let .some _ ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ)
-      | throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
     let (n, ref) ← getFreshName (← `(binderIdent| _))
-    withLocalDeclDQ n α fun x => do
-      addLocalVarInfo ref (← getLCtx) x α
-      have B : Q($prop) := Expr.headBeta q($Φ $x)
-      have : $B =Q $Φ $x := ⟨⟩
-      let pf : Q(∀ x, $P ⊢ $Φ x) ←
-        mkLambdaFVars #[x] <|← iCasesPureRewrite hyps B x direction (iIntroCore · · pats k)
-      return q(from_forall_intro (Q := $Q) $pf)
+    iIntroCoreForallIntro hyps ref n Q <|
+      fun x B => do mkLambdaFVars #[x] <|← iCasesPureRewrite hyps B x direction (iIntroCore · · pats k)
   | (ref, .intro (.pure n)) :: pats =>
-    withRef ref do
-    let v ← mkFreshLevelMVar
-    let α ← mkFreshExprMVarQ q(Sort v)
-    let Φ ← mkFreshExprMVarQ q($α → $prop)
-    let .some _ ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ)
-      | throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
     let (n, ref) ← getFreshName n
-    withLocalDeclDQ n α fun x => do
-      addLocalVarInfo ref (← getLCtx) x α
-      have B : Q($prop) := Expr.headBeta q($Φ $x)
-      have : $B =Q $Φ $x := ⟨⟩
-      let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← iIntroCore hyps B pats k
-      return q(from_forall_intro (Q := $Q) $pf)
+    iIntroCoreForallIntro hyps ref n Q <|
+      fun x B => do mkLambdaFVars #[x] <|← iIntroCore hyps B pats k
   | (ref, .intro pat) :: pats =>
     withRef ref do
     let A1 ← mkFreshExprMVarQ q($prop)
