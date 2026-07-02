@@ -138,7 +138,7 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     let b ← mkFreshExprMVarQ q(Bool)
     let ϕ ← mkFreshExprMVarQ q(Prop)
     let some inst ← ProofModeM.trySynthInstanceQ q(FromPure $b $Q .out $ϕ)
-    | throwError "iintro: {Q} is not a pure"
+    | throwError "iintro: {Q} is not pure"
     let m : Q($ϕ) ← mkFreshExprSyntheticOpaqueMVar (← instantiateMVars ϕ)
     let pf ← do match ← whnf b with
     | .const ``true _ =>
