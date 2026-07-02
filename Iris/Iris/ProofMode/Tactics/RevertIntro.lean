@@ -13,8 +13,8 @@ open Lean Meta Elab.Tactic Qq
 
 public meta section
 
-abbrev ProofModeContinuation (u : Level) :=
-  ∀ {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
+abbrev ProofModeContinuation :=
+  ∀ {u : Level} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
     (_hyps : Hyps bi e)(goal: Q($prop)),
     ProofModeM Q($e ⊢ $goal)
 
@@ -22,7 +22,7 @@ def iRevertIntro
   {prop: Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e) (goal: Q($prop))
   (hs : List SelTarget)
   (k : ∀ {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
-    (_hyps : Hyps bi e) (goal: Q($prop)), ProofModeContinuation u →
+    (_hyps : Hyps bi e) (goal: Q($prop)), ProofModeContinuation →
     ProofModeM Q($e ⊢ $goal))
    : ProofModeM Q($e ⊢ $goal) := do
   let names : List (Syntax × IntroPat) ← hs.mapM fun

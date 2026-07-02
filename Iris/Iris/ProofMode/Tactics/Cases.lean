@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
+Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang, Alvin Tang
 -/
 module
 
@@ -177,6 +177,26 @@ private def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop))
   let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B $A $p)
   return q(spatial_elim $(← k B))
 
+/--
+  Rewrite an Iris entailment using the pure Lean equality `h`,
+  removing `h` from the context afterwards.
+-/
+def iCasesPureRewrite {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (goal : Q($prop)) (h : Expr) (direction : Bool)
+    (k : ∀ {e'}, Hyps bi e' → (goal' : Q($prop)) → ProofModeM Q($e' ⊢ $goal')) :
+    ProofModeM Q($e ⊢ $goal) := do
+  let target := q($(hyps.tm) ⊢ $goal)
+  let g ← mkFreshExprSyntheticOpaqueMVar target <&> (·.mvarId!)
+  let ⟨newE, eq, []⟩ ← g.rewrite target h (symm := !direction)
+  | throwError "icases: rewriting should not give additional subgoals"
+  let some #[_, _, newTm, newGoal] := newE.consumeMData.appM? ``BIBase.Entails
+  | throwError "icases: unable to parse the Iris entailment {newE}"
+  let some ⟨_, hyps'⟩ := parseHyps? bi newTm
+  | throwError "icases: unable to parse the Iris context {newTm}"
+  let gNew ← g.replaceTargetEq newE eq
+  (withoutFVars (u := 0) #[h.fvarId!] <| k hyps' newGoal) >>= (gNew.assign ·)
+  instantiateMVars (.mvar g)
+
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 /--
 Recursively destruct the current hypothesis `□?p A` in the proof-mode context `hyps`
@@ -195,7 +215,8 @@ possibly an updated goal.
 ## Returns
 A proof of `hyps ∗ □?p A ⊢ goal`.
 -/
-partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat)
+partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
+    (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat)
     (p : Q(Bool)) (A : Q($prop))
     (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal') := addBIGoal) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) :=
@@ -210,12 +231,12 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
     else k (.mkSep hyps hyp) goal
 
   | .clear => do
-    let pf ← iClearCore bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl)
+    let pf ← iClearCoreOne bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl)
     pure q($pf $(← k hyps goal))
 
   | .frame => do
     let ⟨ivar, hyps'⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
-    let res ← iFrame bi _ hyps' goal [⟨.ipm ivar, true⟩]
+    let res ← iFrame hyps' goal [⟨.ipm ivar, true⟩]
     res.finish @k
 
   | .conjunction [arg] | .disjunction [arg] => iCasesCore hyps goal arg p A @k
@@ -255,6 +276,10 @@ partial def iCasesCore {P} (hyps : Hyps bi P) (goal : Q($prop)) (pat : iCasesPat
     iModCore bi P goal p A λ p' A goal' =>
       iCasesCore hyps goal' arg p' A @k
 
+  | .rewrite direction => do
+    iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal (← `(binderIdent| _)) q(.rfl)
+      <| fun _ h => iCasesPureRewrite hyps goal h direction k
+
 /--
   `icases pmt with pat` destructs `pmt : pmTerm` using the cases pattern `pat`.
 -/
@@ -262,7 +287,7 @@ elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : t
   -- parse syntax
   let pmt ← liftMacroM <| PMTerm.parse pmt
   let pat ← liftMacroM <| iCasesPat.parse pat
-  ProofModeM.runTactic λ mvar { bi, goal, hyps, .. } => do
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
 
   -- We keep the persistent hypothesis if it is required by the user (+keep is set by ihave)
   -- or if we perform specialization
@@ -270,7 +295,7 @@ elab "icases" keep:("+keep ")? colGt pmt:pmTerm " with " colGt pat:icasesPat : t
     (try_dup_context := pat.should_try_dup_context)
 
   -- process pattern
-  let pf2 ← iCasesCore bi hyps goal pat p A
+  let pf2 ← iCasesCore hyps goal pat p A
 
   mvar.assign q(($pf).trans $pf2)
 

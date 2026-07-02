@@ -108,7 +108,7 @@ private def processWand :
     let out₂ ← mkFreshExprMVarQ prop
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
       | throwError m!"ispecialize: {out} is not a wand"
-    let res ← iFrame bi _ hypsr' out₁ (frameIVars.map (⟨.ipm ·, true⟩))
+    let res ← iFrame hypsr' out₁ (frameIVars.map (⟨.ipm ·, true⟩))
     let pf'' ← res.finish λ hyps goal => do
       if trivial then
         let some r ← iTrivial hyps goal
@@ -127,7 +127,7 @@ private def processWand :
     let out₂ ← mkFreshExprMVarQ prop
     let some _ ← ProofModeM.trySynthInstanceQ q(IntoWand $p false $out .out $out₁ .out $out₂)
       | throwError m!"ispecialize: {out} is not a wand"
-    let res ← iFrame bi _ hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
+    let res ← iFrame hyps out₁ (← SelPat.resolve hyps [.spatial, .intuitionistic])
     let ⟨_, hyps', pf'⟩ ← res.finishClose
     return { e := _, hyps := hyps', p := q(false), out := out₂, pf := q(specialize_wand_autoframe $out₂ $pf $pf') }
 
@@ -141,8 +141,7 @@ TODO: This also needs to check that there are no modality addition patterns in `
 @[rocq_alias intro_pat_intuitionistic, rocq_alias use_tac_specialize_intuitionistic_helper]
 def iCasesPat.should_try_dup_context (pat : iCasesPat) : Bool :=
   match pat with
-  | .intuitionistic _ => true
-  | .pure _ => true
+  | .intuitionistic _ | .pure _ | .rewrite _ => true
   | _ => false
 
 /-- Specialize a proposition `A` by applying a sequence of specialization patterns.

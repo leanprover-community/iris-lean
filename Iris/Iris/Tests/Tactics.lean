@@ -273,6 +273,76 @@ example [BI PROP] (P Q : PROP) : ⊢ P → Q := by
 example [BI PROP] (P : PROP) : P -∗ P → P := by
   iintro HP1 HP2
 
+/- Tests `iintro` using the introduction pattern `⟨⟩` to solve the goal -/
+example [BI PROP] (P : PROP) : False ∗ □ P ⊢@{PROP} P := by
+  iintro ⟨⟨⟩, #_⟩
+
+@[simp]
+private def def1 := 3
+
+/- Tests `iintro` using the introduction pattern for simplification (`/=`) -/
+example [BI PROP] (P Q : PROP) : ⊢@{PROP} if def1 = 3 then P -∗ P else Q := by
+  iintro /= HP
+  iexact HP
+
+/- Tests `iintro` where the lack of simplification (`/=`) causes a failure -/
+/-- error: iintro: if def1 = 3 then iprop(P -∗ P) else Q not a wand -/
+#guard_msgs in
+example [BI PROP] (P Q : PROP) : ⊢@{PROP} if def1 = 3 then P -∗ P else Q := by
+  iintro HP
+
+/- Tests `iintro` with the pattern for simplification and solving trivial goals (`//=`) -/
+example [BI PROP] : ⊢@{PROP} if def1 = 3 then True else False := by
+  iintro //=
+
+/- Tests `iintro` with the pattern for ∀-introduction (`*`) -/
+example {Val : Type} [BI PROP] (P Q : Val → PROP) :
+    ⊢@{PROP} ∀ x y, P x -∗ Q y -∗ P x ∗ Q y := by
+  iintro * _ _
+  iframe
+
+/-- Tests `iintro` with the pattern for repeating ∀-introduction and premise introduction (`**`) -/
+example {Val : Type} {ϕ : Prop} [BI PROP] (P : Val → Val → PROP) (Q : Val → PROP) :
+    ⊢@{PROP} ∀ x y, P x y -∗ ∀ z, (⌜ϕ⌝ → Q z -∗ P x y ∗ Q z ∗ ⌜ϕ⌝) := by
+  iintro **
+  iframe
+  ipureintro
+  assumption
+
+/-- Tests `iintro` with the pattern for introducing a pure goal and exiting the proof mode (`!%`) -/
+example [BI PROP] (P Q : PROP) : ⊢ □ P -∗ □ Q -∗ ⌜n = n⌝ := by
+  iintro - - !%
+  rfl
+
+/-- Tests `iintro` with introduction patterns coming after `!%` -/
+example {ϕ : Prop} [BI PROP] : ⊢@{PROP} ⌜⌜ϕ⌝ ⊢@{PROP} ⌜ϕ⌝⌝ := by
+  iintro !% %_ !%
+  assumption
+
+/-- Tests `iintro` with an introduction pattern for clearing and framing hypotheses (`{ selPats* }`) -/
+example [BI PROP] (P Q R S T : PROP) (ϕ : Prop) :
+    ⊢ □ ⌜ϕ⌝ -∗ P -∗ Q -∗ <affine> R -∗ □ S -∗ □ T -∗ P ∗ Q ∗ T := by
+  iintro %hϕ HP HQ {!HP} HR #HS #HT {HR %hϕ %ϕ !# #}
+  iexact HQ
+
+/-- Tests `iintro` with introduction patterns for rewriting pure equalities -/
+example [BI PROP] (m n : Nat) (a b c : Prop) :
+    m = 2 → 3 = n → ⊢@{PROP} ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
+  iintro → ← ← →
+  ipureintro
+  and_intros <;> rfl
+
+/-
+  Tests `iintro` with an introduction pattern for rewriting but the
+  hypothesis is not a pure equality
+-/
+/-- error: Invalid rewrite argument: Expected an equality or iff proof or
+definition name, but `x✝` is a proof of
+  P -/
+#guard_msgs in
+example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
+  iintro →
+
 end intro
 
 -- revert
@@ -1702,6 +1772,29 @@ example [BI PROP] (Q : PROP) : Q ⊢ Q := by
 example [BI PROP] (Q : PROP) : □ Q ⊢ Q := by
   iintro H
   icases H with ⟨HA, HB⟩
+
+/-- Tests `icases` with a case destruction pattern for rewriting pure equalities -/
+example [BI PROP] (m n : Nat) (a b c : Prop) :
+    ⊢@{PROP} ⌜m = 2⌝ -∗ ⌜3 = n⌝ -∗ ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
+  iintro #H1 H2 #H3 H4
+  icases H1 with →
+  icases H2 with ←
+  icases H3 with ←
+  icases H4 with →
+  ipureintro
+  and_intros <;> rfl
+
+/-
+  Tests `icases` with a case destruction pattern for rewriting but the
+  hypothesis is not a pure equality
+-/
+/-- error: Invalid rewrite argument: Expected an equality or iff proof or
+definition name, but `x✝` is a proof of
+  P -/
+#guard_msgs in
+example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
+  iintro HP
+  icases HP with →
 
 end cases
 

@@ -1,12 +1,13 @@
 /-
 Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Lars König, Mario Carneiro, Michael Sammler
+Authors: Lars König, Mario Carneiro, Michael Sammler, Alvin Tang
 -/
 module
 
 public meta import Iris.ProofMode.Patterns.IntroPattern
 public meta import Iris.ProofMode.Tactics.Cases
+public meta import Iris.ProofMode.Tactics.Pure
 public meta import Iris.ProofMode.Tactics.ModIntro
 public meta import Iris.ProofMode.Tactics.Trivial
 
@@ -54,15 +55,44 @@ public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
 /--
+  Used by `iIntroCore` for the cases `.intro (.pure …)`, `.intro (.rewrite …)`,
+  `.all` and `.allwand`.
+
+  The function `k'` is the fallback option when type class synthesis with `Q`
+  using `FromForall` fails. The fallback option is applicable only for
+  `.all` and `.allwand`.
+-/
+private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
+    {P : Q($prop)} (ref : Syntax) (n : Name) (Q : Q($prop))
+    (k' : Option <| ProofModeM Q($P ⊢ $Q))
+    (k : Expr → Q($prop) → ProofModeM Expr) :
+    ProofModeM Q($P ⊢ $Q) := do
+  withRef ref do
+    let v ← mkFreshLevelMVar
+    let α ← mkFreshExprMVarQ q(Sort v)
+    let Φ ← mkFreshExprMVarQ q($α → $prop)
+    match ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ), k' with
+    | none, none =>
+      throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
+    | none, some k' => k'
+    | some _, _ =>
+      withLocalDeclDQ n α fun x => do
+        addLocalVarInfo ref (← getLCtx) x α
+        have B : Q($prop) := Expr.headBeta q($Φ $x)
+        have : $B =Q $Φ $x := ⟨⟩
+        let pf : Q(∀ x, $P ⊢ $Φ x) ← k x B
+        return q(from_forall_intro $pf)
+
+/--
 Introduce the hypothesis specified by `pats` into the context given by `P` (structured  as `hyps`).
 The type of the current goal is given by `Q`.
 
 This function returns the proof of `P ⊢ Q` to be assigned. The new context is included in the
 `goals` directly by the tactic.
 -/
-partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
+partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
   {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat))
-  (k : ∀ {prop : Q(Type $u)} {bi : Q(BI $prop)} {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
+  (k : ∀ {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM (Q($P ⊢ $Q)) := do
   match pats with
   | [] => k hyps Q
@@ -75,20 +105,81 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
       return r
     else
       iIntroCore hyps Q pats k
-  | (ref, .intro (.pure n)) :: pats =>
+  | (ref, .simp) :: pats =>
     withRef ref do
-    let v ← mkFreshLevelMVar
-    let α ← mkFreshExprMVarQ q(Sort v)
-    let Φ ← mkFreshExprMVarQ q($α → $prop)
-    let .some _ ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ)
-      | throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
-    let (n, ref) ← getFreshName n
-    withLocalDeclDQ n α fun x => do
-      addLocalVarInfo ref (← getLCtx) x α
-      have B : Q($prop) := Expr.headBeta q($Φ $x)
-      have : $B =Q $Φ $x := ⟨⟩
-      let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|← iIntroCore hyps B pats k
-      return q(from_forall_intro (Q := $Q) $pf)
+    let simpCtx ← Simp.mkContext (simpTheorems := #[← getSimpTheorems])
+    let ⟨Q', _⟩ ← Lean.Meta.dsimp Q simpCtx #[← Simp.getSimprocs]
+    iIntroCore hyps Q' pats k
+  | (ref, .simptrivial) :: pats =>
+    iIntroCore hyps Q ((ref, .simp) :: (ref, .trivial) :: pats) k
+  | (ref, .all) :: pats =>
+    let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
+    iIntroCoreForallIntro ref n Q
+      -- No more universally quantified variable to be introduced
+      (iIntroCore hyps Q pats k)
+      -- Introduction of a universally quantified variable
+      (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .all) :: pats) k)
+  | (ref, .allwand) :: pats =>
+    let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
+    let k' : ProofModeM Q($P ⊢ $Q) := do
+      let A1 ← mkFreshExprMVarQ q($prop)
+      let A2 ← mkFreshExprMVarQ q($prop)
+      let instFromImp ← ProofModeM.trySynthInstanceQ q(FromImp $Q $A1 $A2)
+      let instFromWand ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
+      let instPersistent ← ProofModeM.trySynthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
+      match instFromWand, instFromImp, instPersistent with
+      -- Introduction of a wand premise or a pure premise, if possible
+      | some _, _, _ | _, some _, some _ =>
+        iIntroCore hyps Q ((ref, .intro (.one (← `(binderIdent| _)))) :: (ref, .allwand) :: pats) k
+      | _, _, _ =>
+        -- No more universally quantified variable or premise to be introduced
+        iIntroCore hyps Q pats k
+    iIntroCoreForallIntro ref n Q k'
+      -- Introduction of a universally quantified variable
+      (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .allwand) :: pats) k)
+  | (ref, .pureintro) :: pats =>
+    withRef ref do
+    let b ← mkFreshExprMVarQ q(Bool)
+    let ϕ ← mkFreshExprMVarQ q(Prop)
+    let some inst ← ProofModeM.trySynthInstanceQ q(FromPure $b $Q .out $ϕ)
+    | throwError "iintro: {Q} is not pure"
+    let m : Q($ϕ) ← mkFreshExprSyntheticOpaqueMVar (← instantiateMVars ϕ)
+    let pf ← do match ← whnf b with
+    | .const ``true _ =>
+      have : $b =Q true := ⟨⟩
+      let .some _ ← trySynthInstanceQ q(Affine $P)
+      | throwError "iintro: unable to introduce a pure goal as the context is not affine"
+      pure q(pure_intro_affine (Q := $Q) $inst $m)
+    | .const ``false _ =>
+      have : $b =Q false := ⟨⟩
+      pure q(pure_intro_spatial (Q := $Q) $inst $m)
+    | _ => throwError "iintro: bug in typeclass instances, cannot reduce {b} to true or false"
+    if pats.isEmpty then
+      addMVarGoal m.mvarId!
+    else
+      let ⟨newM, g⟩ ← startProofMode m.mvarId!
+      let pf' ← newM.withContext <| iIntroCore g.hyps g.goal pats k
+      newM.assign pf'
+    return pf
+  | (ref, .clear selPats) :: pats =>
+    withRef ref do
+    match selPats with
+    | [] => iIntroCore hyps Q pats k
+    | ⟨false, s⟩ :: selPats =>
+      iClearCore hyps Q [s]
+        fun hyps' goal' fvars => withoutFVars (u := 0) fvars
+          <| iIntroCore hyps' goal' ((ref, .clear selPats) :: pats) k
+    | ⟨true, s⟩ :: selPats =>
+      let res ← s.resolveOne hyps >>= iFrame hyps Q
+      res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) k)
+  | (ref, .intro (.rewrite direction)) :: pats =>
+    let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
+    iIntroCoreForallIntro ref n Q none <|
+      fun x B => do mkLambdaFVars #[x] <|← iCasesPureRewrite hyps B x direction (iIntroCore · · pats k)
+  | (ref, .intro (.pure n)) :: pats =>
+    let ⟨n, _⟩ ← getFreshName n
+    iIntroCoreForallIntro ref n Q none <|
+      (do mkLambdaFVars #[·] <|← iIntroCore hyps · pats k)
   | (ref, .intro pat) :: pats =>
     withRef ref do
     let A1 ← mkFreshExprMVarQ q($prop)
@@ -103,7 +194,7 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
     | .intuitionistic pat, some _ =>
       let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPersistently false $A1 $B)
         | throwError "iintro: {A1} not persistent"
-      let pf ← iCasesCore bi hyps A2 pat q(true) B (iIntroCore · · pats k)
+      let pf ← iCasesCore hyps A2 pat q(true) B (iIntroCore · · pats k)
       return q(imp_intro_intuitionistic (Q := $Q) $pf)
     | .intuitionistic pat, none =>
       let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
@@ -112,19 +203,19 @@ partial def iIntroCore {prop : Q(Type u)} {bi : Q(BI $prop)}
         | throwError "iintro: {A1} not persistent"
       let .some _ ← trySynthInstanceQ q(TCOr (Affine $A1) (Absorbing $A2))
         | throwError "iintro: {A1} not affine and the goal not absorbing"
-      let pf ← iCasesCore bi hyps A2 pat q(true) B (iIntroCore · · pats k)
+      let pf ← iCasesCore hyps A2 pat q(true) B (iIntroCore · · pats k)
       return q(wand_intro_intuitionistic (A1 := $A1) (Q := $Q) $pf)
     | _, some _ =>
       -- should always succeed
       let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B $A1)
       let .some _ ← trySynthInstanceQ q(TCOr (Persistent $A1) (Intuitionistic $P))
         | throwError "iintro: {A1} is not persistent and spatial context is non-empty"
-      let pf ← iCasesCore bi hyps A2 pat q(false) B (iIntroCore · · pats k)
+      let pf ← iCasesCore hyps A2 pat q(false) B (iIntroCore · · pats k)
       return q(imp_intro_spatial (Q := $Q) $pf)
     | _, none =>
       let .some _ ← ProofModeM.trySynthInstanceQ q(FromWand $Q .out $A1 $A2)
         | throwError "iintro: {Q} not a wand"
-      let pf ← iCasesCore bi hyps A2 pat q(false) A1 (iIntroCore · · pats k)
+      let pf ← iCasesCore hyps A2 pat q(false) A1 (iIntroCore · · pats k)
       return q(wand_intro_spatial (A1 := $A1) (Q := $Q) $pf)
 
 /--
