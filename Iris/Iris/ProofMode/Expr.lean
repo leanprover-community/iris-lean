@@ -539,3 +539,21 @@ def Hyps.addWithInfo {prop : Q(Type u)} (bi : Q(BI $prop))
   addHypInfo nameRef nameTo ivar' prop ty (isBinder := true)
   let hyps := Hyps.add bi nameTo ivar' p ty h
   return ⟨ivar', hyps⟩
+
+/--
+  Given hypothesis `hyps` representing `e` where every hypothesis exist in the
+  intuitionistic context, return the proof of `e ⊢ □ e`. Return `none` if
+  `hyps` contains hypotheses in the spatial context.
+-/
+def Hyps.buildIntuitionisticProof {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) : Option Q($e ⊢ □ $e) :=
+  match hyps with
+  | .emp _ => some q(intuitionistically_emp.mpr)
+  | .hyp _ _ _ p _ _ =>
+    match matchBool p with
+    | .inl _ => some q(intuitionistically_idem.mpr)
+    | .inr _ => none
+  | .sep _ _ _ _ lhs rhs => do
+    let pfL ← buildIntuitionisticProof lhs
+    let pfR ← buildIntuitionisticProof rhs
+    some q((sep_mono $pfL $pfR).trans intuitionistically_sep_mpr)

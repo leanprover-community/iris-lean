@@ -377,18 +377,39 @@ example [BI PROP] (P : PROP) {x : Nat} : ⊢ P := by
   irevert %x
 
 /- Tests `irevert` failing with dependency -/
-/-- error: irevert: proofmode hypothesis H depends on x -/
+/-- info: Try this:
+  [apply] irevert %x %hp H
+---
+info: Try this:
+  [apply] irevert! %x
+---
+error: irevert: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `hp` depends on `x`
+• Iris hypothesis `H` depends on `x` -/
 #guard_msgs in
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
   iintro %x %hp H
   irevert %x
 
-/- Tests `irevert` failing with dependency -/
-/-- error: irevert: Lean hypothesis hp depends on x -/
+/-
+  Tests `irevert` failing with dependency, involving an inaccessible name
+-/
+/-- info: Try this:
+  [apply] irevert! %x H
+---
+error: irevert: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `x` (inaccessible name) depends on `x` -/
 #guard_msgs in
 example [BI PROP] (Φ : Bool → PROP) : ⊢ ∀ x, <affine> ⌜x = true⌝ -∗ Φ x -∗ Φ x := by
-  iintro %x %hp H
+  iintro %x %_ H
   irevert %x H
+
+/-- Tests `irevert!` which reverts `H2` and `H3` automatically -/
+example [BI PROP] (Φ : Bool → PROP) (x y : Bool) :
+    (∀ x, (Φ x -∗ Φ y) -∗ Φ x -∗ Φ y) ∗ (Φ x -∗ Φ y) ∗ Φ x ⊢ Φ y := by
+  iintro ⟨H1, H2, H3⟩
+  irevert! %x
+  iassumption
 
 end revert
 
@@ -2650,6 +2671,7 @@ end icombine
 section iloeb
 
 variable {PROP : Type u} [ι₁ : BI PROP] [ι₂ : BILoeb PROP]
+
 -- Tests `iloeb` basic
 /--
 error: unsolved goals
@@ -2775,4 +2797,407 @@ example (P Q : PROP) :
     ⊢ P -∗ Q := by
   iloeb as IH
 
+-- Tests `iloeb` where the `generalizing` clause has dependency
+/--
+info: Try this:
+  [apply] iloeb as IH generalizing %n %h1 %U HT
+---
+info: Try this:
+  [apply] iloeb as IH generalizing! %n
+---
+error: iloeb: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h1` depends on `n`
+• Lean hypothesis `U` depends on `n`
+• Iris hypothesis `HT` depends on `n`
+-/
+#guard_msgs in
+example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {U : (Q n) → Prop} :
+    ⊢ □ T n -∗ □ P n := by
+  iintro #HT
+  iloeb as IH generalizing %n
+
+-- Same test as above, involving inaccessible names
+/--
+info: Try this:
+  [apply] iloeb as IH generalizing! %n
+---
+error: iloeb: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h1` depends on `n`
+• Lean hypothesis `x` (inaccessible name) depends on `n`
+• Iris hypothesis `x` (inaccessible name) depends on `n`
+-/
+#guard_msgs in
+example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {_ : (Q n) → Prop} :
+    ⊢ □ T n -∗ □ P n := by
+  iintro #_
+  iloeb as IH generalizing %n
+
+-- Same test as above, except `generalizing!` is used
+/--
+error: unsolved goals
+PROP : Type u
+ι₁ : BI PROP
+ι₂ : BILoeb PROP
+P T : Nat → PROP
+Q : Nat → Prop
+n : Nat
+h1 : Q n
+x✝ : Q n → Prop
+⊢ ⏎
+  □IH : ▷ ∀ n, <affine> ⌜Q n⌝ -∗ ∀ x, □ T n -∗ □ P n
+  □x✝ : T n
+  ⊢ □ P n
+-/
+#guard_msgs in
+example {n : Nat} {P T : Nat → PROP} {Q : Nat → Prop} {h1 : Q n} {_ : (Q n) → Prop} :
+    ⊢ □ T n -∗ □ P n := by
+  iintro #_
+  iloeb as IH generalizing! %n
+
 end iloeb
+
+section iinduction
+
+/-- Inductively defined binary tree data structure -/
+inductive Tree (α : Type u) where
+  | leaf : Tree α
+  | node : Tree α → α → Tree α → Tree α
+  deriving Repr
+
+/--
+  Tests `iinduction` with simple induction on binary trees.
+  All propositions involved are in the intuitionistic context in this example.
+  Tests the use of a hole (`_`) for leaving a variable unnamed.
+-/
+example [BI PROP] {α} {t : Tree α} {P : Tree α → PROP} :
+    □ P .leaf -∗ □ (∀ l x r, P l -∗ P r -∗ P (.node l x r)) -∗ P t := by
+  iintro #H1 #H2
+  iinduction t with
+  | leaf => iexact H1
+  | node l _ r IH1 IH2 =>
+    iapply H2
+    · iexact IH1
+    · iexact IH2
+
+/-- A simple function on the inductive structure `Tree` -/
+def Tree.mirror : Tree α → Tree α
+  | .leaf => .leaf
+  | .node l x r => .node (.mirror r) x (.mirror l)
+
+/--
+  Tests `iinduction` with a pure hypothesis that involves `Tree.mirror`.
+-/
+example [BI PROP] {α} {t : Tree α} :
+  ⊢@{PROP} ⌜.mirror (.mirror t) = t⌝ := by
+  iinduction t with simp [Tree.mirror]
+  | leaf =>
+    itrivial
+  | node l x r ihl ihr =>
+    isplit
+    · iexact ihl
+    · iexact ihr
+
+/-- An inductively defined predicate on `Tree` -/
+def Tree.pred [BI PROP] (P : α → PROP) : Tree α → PROP
+  | .leaf => emp
+  | .node l x r => iprop(Tree.pred P l ∗ (P x ∗ Tree.pred P r))
+
+/--
+  Tests `iinduction` with spatial hypotheses that involve `Tree.mirror` and `Tree.pred`.
+-/
+example [BI PROP] {α} {t : Tree α} {P : α → PROP} :
+    Tree.pred P t -∗ Tree.pred P (.mirror t) := by
+  iintro H
+  iinduction t with simp [Tree.mirror, Tree.pred]
+  | leaf => itrivial
+  | node l x r ihl ihr =>
+    icases H with ⟨Hl, Hx, Hr⟩
+    iframe
+    isplitl [Hr]
+    · iapply ihr $$ Hr
+    · iapply ihl $$ Hl
+
+/--
+  Definition of n-tree and its induction principle from:
+  https://leanprover.zulipchat.com/#narrow/channel/113489-new-members/topic/.E2.9C.94.20Induction.20principle.20for.20nested.20inductive.20types/near/437905021
+-/
+inductive NTree (α : Type)
+| leaf
+| node : α → List (NTree α) → NTree α
+
+@[induction_eliminator]
+def NTree.induction_principle {α} (p : NTree α → Prop) (h_leaf : p leaf)
+  (h_node : (x : α) → (ts : List (NTree α)) → (ih : ∀ t ∈ ts, p t) → p (node x ts)) :
+  ∀ t : NTree α, p t :=
+  @NTree.rec α p (λ ts => ∀ t ∈ ts, p t) h_leaf h_node (List.forall_mem_nil p)
+    (λ _ _ h_head h_tail => List.forall_mem_cons.mpr (And.intro h_head h_tail))
+
+def NTree.id : NTree α → NTree α
+  | .leaf => .leaf
+  | .node x ts => .node x (ts.map .id)
+
+/-- Tests `iinduction` with the mutual induction principle -/
+example [BI PROP] {α} {t : NTree α} : ⊢@{PROP} ⌜t.id = t⌝ := by
+  iinduction t with simp [NTree.id]
+  | h_leaf => itrivial
+  | h_node x ts IH1 =>
+    iinduction ts with simp
+    | nil => itrivial
+    | cons t ts IH2 =>
+      isplit
+      · iapply IH1
+        itrivial
+      · iapply IH2
+        iintro !> %x H
+        iapply IH1
+        imodintro
+        iright
+        iexact H
+
+def NTree.childCount : NTree α → Nat
+  | .leaf => 0
+  | .node _ ts => ts.length
+
+/-- An binary relation defined using nested induction -/
+inductive NTree.Rel {α β} (R : α → β → Prop) : NTree α → NTree β → Prop
+  | leaf : Rel R .leaf .leaf
+  | node : ∀ a b ts₁ ts₂, R a b → List.Forall₂ (Rel R) ts₁ ts₂ → Rel R (.node a ts₁) (.node b ts₂)
+
+@[induction_eliminator]
+def NTree.Rel.induction_principle {α β} {R : α → β → Prop}
+    (p : ∀ {t1 : NTree α} {t2 : NTree β}, NTree.Rel R t1 t2 → Prop)
+    (h_base : p .leaf)
+    (h_step : ∀ a b ts1 ts2 ra f2,
+      List.Forall₂ (fun t1 t2 => ∀ h : NTree.Rel R t1 t2, p h) ts1 ts2 →
+      p (.node a b ts1 ts2 ra f2)) :
+    ∀ t1 t2 (h : NTree.Rel R t1 t2), p h :=
+  @NTree.Rel.rec α β R
+    (fun _ _ h => p h)
+    (fun a b _ => List.Forall₂ (fun t1 t2 => ∀ h : NTree.Rel R t1 t2, p h) a b)
+    h_base h_step .nil
+    (fun _ _ ih_h ih_hs => .cons (fun _ => ih_h) ih_hs)
+
+/-- Tests `iinduction` with induction that uses the type class instance `intoIH_listForall₂`. -/
+example [BI PROP] {α β} {R : α → β → Prop}
+    {t₁ : NTree α} {t₂ : NTree β} (H : NTree.Rel R t₁ t₂) :
+    ⊢@{PROP} ⌜NTree.childCount t₁ = NTree.childCount t₂⌝ := by
+  iinduction H with
+  | h_base =>
+    ipureintro
+    apply rfl
+  | h_step x1 x2 t1 t2 r IH1 IH2 =>
+    ipureintro
+    simp only [NTree.childCount]
+    induction IH1 with simp_all
+
+/--
+  Tests `iinduction` with simple induction on natural numbers.
+  Tries `iframe` to solve induction subgoals before splitting into cases.
+  Tests the `using` clause for custom recursor name.
+  Tests the use of a synthetic hole (`?_`) for delaying the induction subgoal.
+-/
+example [BI PROP] {n : Nat} {P : Nat → PROP} :
+    □ (∀ k, P k -∗ P (k + 1)) -∗ P 0 -∗ P n := by
+  iintro #H1 H2
+  iinduction n using Nat.rec with iframe
+  | succ n IH => ?_
+  iapply H1
+  iapply IH
+  iexact H2
+
+/--
+  Tests `iinduction` with induction on lists where it is necessary to
+  generalise some variables.
+  Tests the use of the wildcard (`_`) for remaining cases.
+-/
+example [BI PROP] {α} {xs : List α} {acc : List α} {P : List α → List α → PROP} :
+    □ (∀ acc, P [] acc) -∗
+    □ (∀ x xs acc, P xs (x :: acc) -∗ P (x :: xs) acc) -∗
+    P xs acc := by
+  iintro #Hnil #Hcons
+  iinduction xs generalizing %acc with
+  | cons x xs IH =>
+    iapply Hcons
+    iexact IH
+  | _ =>
+    iapply Hnil
+
+/- Tests `iinduction` with a non-inductive datatype. -/
+/-- error: iinduction: unable to determine inductive type -/
+#guard_msgs in
+example [BI PROP] {P : PROP} : ⊢ P := by
+  iinduction P
+
+/-
+  Tests `iinduction` with induction on natural numbers with invalid, duplicate
+  and missing user-supplied alternative names.
+-/
+/-- error: iinduction: invalid alternative name `invalidA`
+---
+error: iinduction: invalid alternative name `invalidB`
+---
+error: iinduction: duplicate alternative name `zero`
+---
+error: iinduction: alternative `succ` has not been provided -/
+#guard_msgs in
+example [BI PROP] {n : Nat} :
+    ⊢@{PROP} ⌜n + 0 = n⌝ := by
+  iinduction n with
+  | invalidA  => done
+  | zero      => itrivial
+  | invalidB  => done
+  | zero      => itrivial
+
+/- Tests `iinduction` with extra arguments supplied by the user -/
+/-- error: iinduction: too many variable names provided at alternative `succ`: 4 provided, but 2 expected -/
+#guard_msgs in
+example [BI PROP] {n : Nat} :
+    ⊢@{PROP} ⌜n + 0 = n⌝ := by
+  iinduction n with
+  | zero => itrivial
+  | succ n IH extra1 extra2 => itrivial
+
+/--
+  Tests `iinduction` using a custom recursor name (strong induction).
+  Tests induction on an expression `n + m`, which requires generalisation.
+  Tests the use of the same tactic sequences for multiple alternative names.
+  Note that `P` and `S` are reverted and thus included as wand premises
+  in the induction hypothesis.
+  Meanwhile, `T (n + m)` is also reverted because it involves the induction
+  target `n + m`.
+  The proposition `Q m` is reverted manually using the `generalizing` clause.
+  On the contrary, `R` is not reverted.
+-/
+example [BI PROP] {P R S : PROP} {Q T : Nat → PROP} {m n : Nat} :
+    ⊢ P -∗ □ Q m -∗ □ R -∗ S -∗ □ T (n + m) -∗ ⌜n + m + 0 = n + m⌝ := by
+  iintro HP #HQ #HR HS #HT
+  iinduction n + m using Nat.caseStrongRecOn generalizing %m HQ HT with
+  | zero | ind _ _ => itrivial
+
+/-
+  Tests `iinduction` with invalid use of the wildcard. The wildcard
+  should always be the last case.
+-/
+/-- error: iinduction: invalid occurrence of the wildcard alternative `| _ => ...`: It must be the last alternative -/
+#guard_msgs in
+example [BI PROP] {n : Nat} :
+    ⊢@{PROP} ⌜n + 0 = n⌝ := by
+  iinduction n with
+  | zero => itrivial
+  | _ => _
+  | succ n IH => itrivial
+
+/-
+  Tests `iinduction` with redundant use of the wildcard. The wildcard
+  is not required when all cases have already been handled.
+-/
+/-- error: iinduction: wildcard alternative is not needed -/
+#guard_msgs in
+example [BI PROP] {n : Nat} :
+    ⊢@{PROP} ⌜n + 0 = n⌝ := by
+  iinduction n with
+  | zero => itrivial
+  | succ n IH => itrivial
+  | _ => _
+
+/-
+  Tests `iinduction` with the tactic after `with` syntax.
+  One of the alternative names (`zero`) becomes redundant and therefore should
+  be detected by the tactic.
+-/
+/-- error: iinduction: alternative `zero` is not needed -/
+#guard_msgs in
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜0 + 0 = 0⌝ -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT #H
+  iinduction n with (try iexact H)
+  | zero => itrivial  -- Redundant case
+  | succ n IH => itrivial
+
+/-
+  Tests `iinduction` with a tactic after `with` syntax.
+  One of the alternative names (`zero`) is redundant and therefore not required.
+  The tactic should not complain about any missing alternative names.
+-/
+example [BI PROP] {P Q R S T : PROP} {n : Nat} :
+    ⊢ P -∗ □ Q -∗ □ R -∗ S -∗ □ T -∗ ⌜0 + 0 = 0⌝ -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR HS #HT #H
+  iinduction n with (try iexact H)
+  -- No complaints about missing `zero` case
+  | succ n IH => itrivial
+
+/-
+  Tests `iinduction` on `n` generalising `m`, where:
+  - *regular hypotheses* `h1 : T m` and `U1 : (T m) → Prop` depend on `m`;
+  - *regular hypotheses* `h2 : U1 h1` and `U2 : (U1 h1) → PROP` depends on `h1`,
+    which in turn depends on `m`;
+  - *Iris hypotheses* `□HQ : Q m` and `□HR : R m` depend on `m`;
+  - *Iris hypothesis* `□HS : S n` depends on the induction target `n`;
+  - *Iris hypothesis* `□HU2 : U2 h2` depends on `h2` and `U2`, which depends
+    depend on `h1`, which in turn depends on `m`.
+  This requires manual resolution.
+-/
+/-- info: Try this:
+  [apply] iinduction n generalizing %m %h1 %U1 %h2 %U2 HQ HR HS HU2 with
+  | zero
+  | succ n IH => itrivial
+---
+info: Try this:
+  [apply] iinduction n generalizing! %m with
+  | zero
+  | succ n IH => itrivial
+---
+error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h1` depends on `m`
+• Lean hypothesis `U1` depends on `m`
+• Lean hypothesis `h2` depends on `m`
+• Lean hypothesis `U2` depends on `m`
+• Iris hypothesis `HQ` depends on `m`
+• Iris hypothesis `HR` depends on `m`
+• Iris hypothesis `HS` depends on `n`
+• Iris hypothesis `HU2` depends on `h2` -/
+#guard_msgs in
+example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Prop}
+    {h1 : T m} {U1 : (T m) → Prop} {h2 : U1 h1} {U2 : (U1 h1) → PROP} :
+    ⊢ P -∗ □ Q m -∗ □ R m -∗ □ S n -∗ □ U2 h2 -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR #HS #HU2
+  iinduction n generalizing %m with
+  | zero
+  | succ n IH => itrivial
+
+/--
+  The same example with `generalizing!` clause does not require any manual
+  resolution of dependencies.
+-/
+example [BI PROP] {P : PROP} {m n : Nat} {Q R S : Nat → PROP} {T : Nat → Prop}
+    {h1 : T m} {U1 : (T m) → Prop} {h2 : U1 h1} {U2 : (U1 h1) → PROP} :
+    ⊢ P -∗ □ Q m -∗ □ R m -∗ □ S n -∗ □ U2 h2 -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #HQ #HR #HS #HU2
+  iinduction n generalizing! %m with
+  | zero
+  | succ n IH => itrivial
+
+/- Similar test as above, except that some hypotheses have inaccessible names. -/
+/-- info: Try this:
+  [apply] iinduction n generalizing! %m with
+  | zero
+  | succ n IH => itrivial
+---
+error: iinduction: The following hypotheses depend on variables in the `generalizing` clause but are not themselves included:
+• Lean hypothesis `h1` depends on `m`
+• Lean hypothesis `U1` depends on `m`
+• Lean hypothesis `h2` depends on `m`
+• Lean hypothesis `U2` depends on `m`
+• Lean hypothesis `x` (inaccessible name) depends on `n`
+• Iris hypothesis `x` (inaccessible name) depends on `h2` -/
+#guard_msgs in
+example [BI PROP] {P : PROP} {m n : Nat} {T : Nat → Prop}
+    {h1 : T m} {_ : T n} {U1 : (T m) → Prop}
+    {h2 : U1 h1} {U2 : (U1 h1) → PROP} :
+    ⊢ P -∗ □ U2 h2 -∗ ⌜n + 0 = n⌝ := by
+  iintro HP #_
+  iinduction n generalizing %m with
+  | zero
+  | succ n IH => itrivial
+
+end iinduction
