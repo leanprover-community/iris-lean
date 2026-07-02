@@ -327,7 +327,7 @@ example [BI PROP] (P Q R S T : PROP) (ϕ : Prop) :
 
 /-- Tests `iintro` with introduction patterns for rewriting pure equalities -/
 example [BI PROP] (m n : Nat) (a b c : Prop) :
-    ⊢@{PROP} ⌜m = 2⌝ -∗ ⌜3 = n⌝ -∗ ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
+    m = 2 → 3 = n → ⊢@{PROP} ⌜a = b⌝ -∗ ⌜b = c⌝ -∗ ⌜m.succ = n ∧ a = c⌝ := by
   iintro → ← ← →
   ipureintro
   and_intros <;> rfl

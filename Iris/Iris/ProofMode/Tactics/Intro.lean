@@ -54,7 +54,7 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
-set_option maxHeartbeats 220000 in
+set_option maxHeartbeats 250000 in
 /--
 Introduce the hypothesis specified by `pats` into the context given by `P` (structured  as `hyps`).
 The type of the current goal is given by `Q`.
@@ -162,7 +162,21 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     | ⟨true, s⟩ :: selPats =>
       let res ← s.resolveOne hyps >>= iFrame hyps Q
       res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) k)
-  -- | (ref, .intro (.rewrite _)) :: pats => throwUnsupportedSyntax
+  | (ref, .intro (.rewrite direction)) :: pats =>
+    withRef ref do
+    let v ← mkFreshLevelMVar
+    let α ← mkFreshExprMVarQ q(Sort v)
+    let Φ ← mkFreshExprMVarQ q($α → $prop)
+    let .some _ ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ)
+      | throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
+    let (n, ref) ← getFreshName (← `(binderIdent| _))
+    withLocalDeclDQ n α fun x => do
+      addLocalVarInfo ref (← getLCtx) x α
+      have B : Q($prop) := Expr.headBeta q($Φ $x)
+      have : $B =Q $Φ $x := ⟨⟩
+      let pf : Q(∀ x, $P ⊢ $Φ x) ← mkLambdaFVars #[x] <|←
+        iCasesPureRewrite hyps B x direction (iIntroCore · · pats k)
+      return q(from_forall_intro (Q := $Q) $pf)
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar

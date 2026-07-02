@@ -177,6 +177,23 @@ private def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop))
   let _ ← ProofModeM.synthInstanceQ q(FromAffinely $B $A $p)
   return q(spatial_elim $(← k B))
 
+/-- Rewrite pure Lean equalities -/
+def iCasesPureRewrite {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (goal : Q($prop)) (h : Expr) (direction : Bool)
+    (k : ∀ {e'}, Hyps bi e' → (goal' : Q($prop)) → ProofModeM Q($e' ⊢ $goal')) :
+    ProofModeM Q($e ⊢ $goal) := do
+  let target : Q(Prop) := q($(hyps.tm) ⊢ $goal)
+  let g := (← mkFreshExprSyntheticOpaqueMVar target).mvarId!
+  let ⟨eNew, eqPf, []⟩ ← g.rewrite target h (symm := !direction)
+  | throwError "icases: rewriting should not give additional subgoals"
+  let some #[_, _, tm', goal'] := eNew.consumeMData.appM? ``BIBase.Entails
+  | throwError "icases: unable to parse the Iris entailment {eNew}"
+  let some ⟨_, hyps'⟩ := parseHyps? bi tm'
+  | throwError "icases: unable to parse the Iris entailment {tm'}"
+  let gNew ← g.replaceTargetEq eNew eqPf
+  gNew.assign (← k hyps' goal')
+  instantiateMVars (.mvar g)
+
 variable {prop : Q(Type u)} (bi : Q(BI $prop)) in
 /--
 Recursively destruct the current hypothesis `□?p A` in the proof-mode context `hyps`
@@ -258,18 +275,7 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
 
   | .rewrite direction => do
     iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal (← `(binderIdent| _)) q(.rfl)
-      fun _ h => do
-        let target : Q(Prop) := q($(hyps.tm) ⊢ $goal)
-        let g := (← mkFreshExprSyntheticOpaqueMVar target).mvarId!
-        let ⟨eNew, eqPf, []⟩ ← g.rewrite target h (symm := !direction)
-        | throwError "icases: rewriting should not give additional subgoals"
-        let some #[_, _, tm', goal'] := eNew.consumeMData.appM? ``BIBase.Entails
-        | throwError "icases: unable to parse the Iris entailment {eNew}"
-        let some ⟨_, hyps'⟩ := parseHyps? bi tm'
-        | throwError "icases: unable to parse the Iris entailment {tm'}"
-        let gNew ← g.replaceTargetEq eNew eqPf
-        gNew.assign (← k hyps' goal')
-        instantiateMVars (.mvar g)
+      <| fun _ h => iCasesPureRewrite hyps goal h direction k
 
 /--
   `icases pmt with pat` destructs `pmt : pmTerm` using the cases pattern `pat`.
