@@ -210,6 +210,8 @@ variable {e e' e₁ e₂ : Expr} {σ σ' σ₁ σ₂ : State}
 variable {K K' K₁ K₂ : Ectx} {obs obs' : List Obs}
 variable {eₜ : List Expr}
 
+-- FIXME: Implicits
+
 open EvContext in
 @[rocq_alias base_redex_unique]
 theorem base_redex_unique (heq : fill K e = fill K' e') :
