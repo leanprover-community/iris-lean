@@ -64,7 +64,7 @@ This function returns the proof of `P ⊢ Q` to be assigned. The new context is 
 -/
 partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
   {P} (hyps : Hyps bi P) (Q : Q($prop)) (pats : List (Syntax × IntroPat))
-  (k : ∀ {u} {prop : Q(Type $u)} {bi : Q(BI $prop)} {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
+  (k : ∀ {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM (Q($P ⊢ $Q)) := do
   match pats with
   | [] => k hyps Q
@@ -99,7 +99,7 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         have B : Q($prop) := Expr.headBeta q($Φ $x)
         have : $B =Q $Φ $x := ⟨⟩
         let pf : Q(∀ x, $P ⊢ $Φ x) ←
-          mkLambdaFVars #[x] <|← iIntroCore hyps q($Φ $x) ((ref, .all) :: pats) k
+          mkLambdaFVars #[x] <|← iIntroCore hyps B ((ref, .all) :: pats) k
         return q(from_forall_intro (Q := $Q) $pf)
   | (ref, .allwand) :: pats =>
     withRef ref do
