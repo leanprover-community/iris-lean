@@ -156,9 +156,12 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     match selPats with
     | [] => iIntroCore hyps Q pats k
     | s :: selPats =>
+      match s.fst, s.snd with
+      | false, s =>
         iClearCore hyps Q [s]
           fun hyps' goal' fvars => withoutFVars (u := 0) fvars
             <| iIntroCore hyps' goal' ((ref, .clear selPats) :: pats) k
+      | true, s => throwUnsupportedSyntax
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar

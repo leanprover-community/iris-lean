@@ -36,7 +36,7 @@ inductive IntroPat
   | all
   | allwand
   | pureintro
-  | clear (selPats : List SelPat)
+  | clear (selPats : List <| Bool × SelPat)
   deriving Repr, Inhabited
 
 partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
@@ -49,8 +49,11 @@ partial def IntroPat.parse (term : Syntax) : MacroM (Syntax × IntroPat) := do
   | `(introPat| *) => return (term, .all)
   | `(introPat| **) => return (term, .allwand)
   | `(introPat| !%) => return (term, .pureintro)
-  | `(introPat| { $spats:selPat* }) => return (term, .clear (← SelPat.parse spats))
+  | `(introPat| { $spats:selPat* }) => return (term, .clear (← spats.toList.mapM parseSelPats))
   | _ => Macro.throwUnsupported
+  where parseSelPats (spat : TSyntax `selPat) : MacroM <| Bool × SelPat := do
+    let spat ← SelPat.parseOne spat
+    return ⟨false, spat⟩
 
 #rocq_ignore gallina_ident "Not necessary in Lean"
 #rocq_ignore intro_pat.big_conj "Not necessary in Lean"
