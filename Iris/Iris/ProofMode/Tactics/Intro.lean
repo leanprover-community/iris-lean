@@ -54,22 +54,34 @@ theorem wand_intro_spatial [BI PROP] {P Q A1 A2 : PROP}
 public meta section
 open Lean Elab Tactic Meta Qq BI Std
 
+/--
+  Used by `iIntroCore` for the cases `.intro (.pure …)`, `.intro (.rewrite …)`,
+  `.all` and `.allwand`.
+
+  The function `k'` is the fallback option when type class synthesis with `Q`
+  using `FromForall` fails. The fallback option is applicable only for
+  `.all` and `.allwand`.
+-/
 private def iIntroCoreForallIntro {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {P} (hyps : Hyps bi P) (ref : Syntax) (n : Name) (Q : Q($prop))
-    (k : Expr → Q($prop) → ProofModeM Expr):
+    {P : Q($prop)} (ref : Syntax) (n : Name) (Q : Q($prop))
+    (k' : Option <| ProofModeM Q($P ⊢ $Q))
+    (k : Expr → Q($prop) → ProofModeM Expr) :
     ProofModeM Q($P ⊢ $Q) := do
   withRef ref do
     let v ← mkFreshLevelMVar
     let α ← mkFreshExprMVarQ q(Sort v)
     let Φ ← mkFreshExprMVarQ q($α → $prop)
-    let .some _ ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ)
-      | throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
-    withLocalDeclDQ n α fun x => do
-      addLocalVarInfo ref (← getLCtx) x α
-      have B : Q($prop) := Expr.headBeta q($Φ $x)
-      have : $B =Q $Φ $x := ⟨⟩
-      let pf : Q(∀ x, $P ⊢ $Φ x) ← k x B
-      return q(from_forall_intro (Q := $Q) $pf)
+    match ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ), k' with
+    | none, none =>
+      throwError "iintro: {Q} cannot be turned into a universal quantifier or pure hypothesis"
+    | none, some k' => k'
+    | some _, _ =>
+      withLocalDeclDQ n α fun x => do
+        addLocalVarInfo ref (← getLCtx) x α
+        have B : Q($prop) := Expr.headBeta q($Φ $x)
+        have : $B =Q $Φ $x := ⟨⟩
+        let pf : Q(∀ x, $P ⊢ $Φ x) ← k x B
+        return q(from_forall_intro (Q := $Q) $pf)
 
 set_option maxHeartbeats 250000 in
 /--
@@ -102,40 +114,13 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
   | (ref, .simptrivial) :: pats =>
     iIntroCore hyps Q ((ref, .simp) :: (ref, .trivial) :: pats) k
   | (ref, .all) :: pats =>
-    withRef ref do
-    let v ← mkFreshLevelMVar
-    let α ← mkFreshExprMVarQ q(Sort v)
-    let Φ ← mkFreshExprMVarQ q($α → $prop)
-    match ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ) with
-    | none =>
-      iIntroCore hyps Q pats k
-    | some _ =>
-      let (n, ref') ← getFreshName (← `(binderIdent| _))
-      withLocalDeclDQ n α fun x => do
-        addLocalVarInfo ref' (← getLCtx) x α
-        have B : Q($prop) := Expr.headBeta q($Φ $x)
-        have : $B =Q $Φ $x := ⟨⟩
-        let pf : Q(∀ x, $P ⊢ $Φ x) ←
-          mkLambdaFVars #[x] <|← iIntroCore hyps B ((ref, .all) :: pats) k
-        return q(from_forall_intro (Q := $Q) $pf)
+    let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
+    iIntroCoreForallIntro ref n Q (iIntroCore hyps Q pats k) <|
+      (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .all) :: pats) k)
   | (ref, .allwand) :: pats =>
-    withRef ref do
-    let v ← mkFreshLevelMVar
-    let α ← mkFreshExprMVarQ q(Sort v)
-    let Φ ← mkFreshExprMVarQ q($α → $prop)
-    match ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ) with
-    -- Introduction of a universally quantified variable
-    | some _ =>
-      let (n, ref') ← getFreshName (← `(binderIdent| _))
-      withLocalDeclDQ n α fun x => do
-        addLocalVarInfo ref' (← getLCtx) x α
-        have B : Q($prop) := Expr.headBeta q($Φ $x)
-        have : $B =Q $Φ $x := ⟨⟩
-        let pf : Q(∀ x, $P ⊢ $Φ x) ←
-          mkLambdaFVars #[x] <|← iIntroCore hyps B ((ref, .allwand) :: pats) k
-        return q(from_forall_intro (Q := $Q) $pf)
+    let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
     -- Introduction of a wand premise or an implication premise, if possible
-    | none =>
+    let kPremiseIntro : ProofModeM Q($P ⊢ $Q) := do
       let A1 ← mkFreshExprMVarQ q($prop)
       let A2 ← mkFreshExprMVarQ q($prop)
       let instFromImp ← ProofModeM.trySynthInstanceQ q(FromImp $Q $A1 $A2)
@@ -146,6 +131,8 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
         iIntroCore hyps Q ((ref, .intro (.one (← `(binderIdent| _)))) :: (ref, .allwand) :: pats) k
       | _, _, _ =>
         iIntroCore hyps Q pats k
+    iIntroCoreForallIntro ref n Q kPremiseIntro <|
+      (do mkLambdaFVars #[·] <|← iIntroCore hyps · ((ref, .allwand) :: pats) k)
   | (ref, .pureintro) :: pats =>
     withRef ref do
     let b ← mkFreshExprMVarQ q(Bool)
@@ -182,13 +169,13 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       let res ← s.resolveOne hyps >>= iFrame hyps Q
       res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) k)
   | (ref, .intro (.rewrite direction)) :: pats =>
-    let (n, ref) ← getFreshName (← `(binderIdent| _))
-    iIntroCoreForallIntro hyps ref n Q <|
+    let ⟨n, _⟩ ← getFreshName (← `(binderIdent| _))
+    iIntroCoreForallIntro ref n Q none <|
       fun x B => do mkLambdaFVars #[x] <|← iCasesPureRewrite hyps B x direction (iIntroCore · · pats k)
   | (ref, .intro (.pure n)) :: pats =>
-    let (n, ref) ← getFreshName n
-    iIntroCoreForallIntro hyps ref n Q <|
-      fun x B => do mkLambdaFVars #[x] <|← iIntroCore hyps B pats k
+    let ⟨n, _⟩ ← getFreshName n
+    iIntroCoreForallIntro ref n Q none <|
+      (do mkLambdaFVars #[·] <|← iIntroCore hyps · pats k)
   | (ref, .intro pat) :: pats =>
     withRef ref do
     let A1 ← mkFreshExprMVarQ q($prop)
