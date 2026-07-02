@@ -162,6 +162,7 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
     | ⟨true, s⟩ :: selPats =>
       let res ← s.resolveOne hyps >>= iFrame hyps Q
       res.finish (iIntroCore · · ((ref, .clear selPats) :: pats) k)
+  -- | (ref, .intro (.rewrite _)) :: pats => throwUnsupportedSyntax
   | (ref, .intro (.pure n)) :: pats =>
     withRef ref do
     let v ← mkFreshLevelMVar

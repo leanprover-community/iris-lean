@@ -320,9 +320,23 @@ example {ϕ : Prop} [BI PROP] : ⊢@{PROP} ⌜⌜ϕ⌝ ⊢@{PROP} ⌜ϕ⌝⌝ :=
   assumption
 
 /-- Tests `iintro` with an introduction pattern for clearing and framing hypotheses (`{ selPats* }`) -/
-example [BI PROP] (P Q R : PROP) (ϕ : Prop) : ⊢ □ ⌜ϕ⌝ -∗ P -∗ Q -∗ <affine> R -∗ □ S -∗ □ T -∗ P ∗ Q ∗ T := by
-  iintro %hϕ HP HQ HR #HS #HT {HR %hϕ %ϕ !HP !# #}
+example [BI PROP] (P Q R S T : PROP) (ϕ : Prop) :
+    ⊢ □ ⌜ϕ⌝ -∗ P -∗ Q -∗ <affine> R -∗ □ S -∗ □ T -∗ P ∗ Q ∗ T := by
+  iintro %hϕ HP HQ {!HP} HR #HS #HT {HR %hϕ %ϕ !# #}
   iexact HQ
+
+example (m n : Nat) : m = 2 → n = 3 → m.succ = n := by
+  intro hm hn
+  rewrite [hm, hn]
+  rfl
+
+example [BI PROP] (m n : Nat) :
+    ⊢@{PROP} ⌜m = 2⌝ -∗ ⌜n = 3⌝ -∗ ⌜m.succ = n⌝ := by
+  iintro #H1 #H2
+  icases H1 with →
+  icases H2 with →
+  ipureintro
+  rfl
 
 end intro
 

@@ -256,7 +256,29 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     iModCore bi P goal p A λ p' A goal' =>
       iCasesCore hyps goal' arg p' A @k
 
-  | .rewrite _ => throwUnsupportedSyntax
+  | .rewrite direction => do
+    iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal (← `(binderIdent| _)) q(.rfl)
+      fun _ h => do
+        let some _ ← inferType h <&> (pure <| Expr.eq? ·)
+        | throwError "not a pure equality"
+
+        let target : Q(Prop) := q($(hyps.tm) ⊢ $goal)
+        let g := (← mkFreshExprSyntheticOpaqueMVar target).mvarId!
+        let ⟨eNew, eqPf, []⟩ ← g.rewrite target h (symm := !direction)
+        | throwError "rewriting should not give additional subgoals"
+
+        let some #[_, _, tm', goal'] := eNew.consumeMData.appM? ``BIBase.Entails
+        | throwError "error"
+
+        let some ⟨_, hyps'⟩ := parseHyps? bi tm'
+        | throwError "unable to parse"
+
+        let gNew ← g.replaceTargetEq eNew eqPf
+
+        gNew.assign (← k hyps' goal')
+
+        instantiateMVars (.mvar g)
+
 
 /--
   `icases pmt with pat` destructs `pmt : pmTerm` using the cases pattern `pat`.
