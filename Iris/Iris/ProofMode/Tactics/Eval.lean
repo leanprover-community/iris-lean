@@ -1,0 +1,121 @@
+/-
+Copyright (c) 2026 Alvin Tang. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Michael Sammler, Alvin Tang
+-/
+module
+
+public meta import Iris.ProofMode.Patterns.SelPattern
+public meta import Iris.ProofMode.ProofModeM
+
+namespace Iris.ProofMode
+
+public meta section
+open Lean Elab Tactic Meta Qq BI
+
+/-- For iteratively applying the tactic sequences to selection targets in the context -/
+private structure EvalState {u} {prop : Q(Type u)} {bi : Q(BI $prop)} (e : Q($prop)) where
+  {newE : Q($prop)}
+  (newHyps : Hyps bi newE)
+  (pf : Q($e ⊢ $newE))
+
+/--
+  Apply the tactic sequence `tac` to transform `ty` into `newTy`, with the
+  Boolean value `isGoal` indicating whether `ty` is the proof goal.
+-/
+private def iEvalOne {u} {prop : Q(Type u)} (bi : Q(BI $prop))
+    (tac : TSyntax `Lean.Parser.Tactic.tacticSeq) (isGoal : Bool) (ty : Q($prop)) :
+    ProofModeM <| (newTy : Q($prop)) × if isGoal then Q($newTy ⊢ $ty) else Q($ty ⊢ $newTy) := do
+  -- Find the new proposition obtained upon applying the tactic sequence
+  let newTy : Q($prop) ←
+    withLocalDeclDQ (← mkFreshUserName .anonymous) q($prop) fun newTy => do
+      let m ← mkFreshExprSyntheticOpaqueMVar <|
+        match isGoal with | true => q($newTy ⊢ $ty) | false => q($ty ⊢ $newTy)
+      let [g] ← evalTacticAt tac m.mvarId!
+      | throwError "ieval: the supplied tactic does not produce exactly one subgoal"
+      let some #[_, _, lhs, rhs] ← g.getType <&> (·.appM? ``Entails)
+      | throwError m!"ieval: the goal is not Iris entailment upon applying the supplied tactic"
+      return if isGoal then rhs else lhs
+
+  let pf ← match isGoal with
+  -- The tactic sequence results in the proof goal being *strengthened*
+  | true => mkFreshExprSyntheticOpaqueMVar q($newTy ⊢ $ty)
+  -- The tactic sequence results in the hypothesis being *weakened*
+  | false => mkFreshExprSyntheticOpaqueMVar q($ty ⊢ $newTy)
+  match ← evalTacticAt tac pf.mvarId! with
+  | [] => pure ()
+  | [g] => g.assign (q(.rfl) : Q($newTy ⊢ $newTy))
+  | _ => throwError "ieval: the supplied tactic produces more than one subgoal"
+
+  return ⟨newTy, pf⟩
+
+/--
+  Apply the tactic sequence `tac` to either the proof goal (when `selTargets`
+  is `none`) or the hypotheses in the context specified by the selection targets.
+-/
+private def iEvalCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
+    (hyps : Hyps bi e) (goal : Q($prop)) (tac : TSyntax `Lean.Parser.Tactic.tacticSeq)
+    (selTargets : Option <| List SelTarget) : ProofModeM Q($e ⊢ $goal) := do
+  match selTargets with
+  -- No selection pattern given, apply the tactics to the proof goal
+  | none =>
+    let ⟨newGoal, (pf : Q($newGoal ⊢ $goal))⟩ ← iEvalOne bi tac true goal
+    let pf' ← addBIGoal hyps newGoal
+    return q($(pf').trans $pf)
+  -- Selection patterns given, apply the tactics to the chosen hypotheses
+  | some selTargets =>
+    let mut evalState : EvalState e := { newHyps := hyps, pf := q(.rfl) }
+    -- Iteratively apply the supplied tactic sequence to the selection targets
+    for selTarget in selTargets do
+      evalState ← match selTarget.kind with
+      | .pure _ =>
+        throwError "ieval: pure hypotheses in the selection pattern is not supported"
+      | .ipm ivar =>
+        let some ⟨newE, newHyps, pf⟩ ← evalState.newHyps.evalReplace ivar (iEvalOne bi tac false ·)
+        | throwError m!"ieval: unable to find the hypothesis {ivar.name} in the context"
+        pure { newE, newHyps, pf := q($(evalState.pf).trans $pf) }
+    let pf' ← addBIGoal evalState.newHyps goal
+    return q($(evalState.pf).trans $pf')
+
+/--
+  `ieval (tac)` applies the tactic sequence `tac` to the proof goal.
+-/
+elab "ieval " "(" tac:tacticSeq ")" : tactic => do
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+    let pf ← iEvalCore hyps goal tac none
+    mvar.assign pf
+
+/--
+  `ieval (tac) in spats` applies the tactic sequence `tac` to the Iris
+  hypotheses chosen by the selection pattern `spats`. Pure hypotheses are not
+  supported by this tactic.
+-/
+elab "ieval " "(" tacs:tacticSeq ")" " in " spats:(colGt ppSpace selPat)+ : tactic => do
+  let selPats ← liftMacroM <| SelPat.parse spats
+
+  ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+    let selTargets ← SelPat.resolve hyps selPats
+    let pf ← iEvalCore hyps goal tacs selTargets
+    mvar.assign pf
+
+/-- `isimp` applies `simp` to the proof goal. This is shorthand for `ieval (simp)`. -/
+macro "isimp" : tactic => `(tactic| ieval (simp))
+
+/--
+  `isimp in spats` applies `simp` to the Iris hypotheses chosen by the
+  selection pattern `spats`. Pure hypotheses are not supported by this tactic.
+  This is shorthand for `ieval (simp) in spats`.
+-/
+macro "isimp" " in " spats:(colGt ppSpace selPat)+ : tactic =>
+  `(tactic| ieval (simp) in $spats*)
+
+/-- `iunfold hs` applies `unfold hs` to the proof goal. This is shorthand for `ieval (unfold)`. -/
+macro "iunfold " hs:ident,+ : tactic => `(tactic| ieval (unfold $hs*))
+
+/--
+  `iunfold hs in spats` applies `unfold hs` to the Iris hypotheses chosen by
+  the selection pattern `spats`. Pure hypotheses are not supported by this tactic.
+  This is shorthand for `ieval (unfold hs) in spats`.
+-/
+macro "iunfold " hs:ident,+ " in " spats:(colGt ppSpace selPat)* : tactic =>
+  `(tactic| ieval (unfold $hs*) in $spats*)

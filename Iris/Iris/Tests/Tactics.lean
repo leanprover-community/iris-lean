@@ -2776,3 +2776,75 @@ example (P Q : PROP) :
   iloeb as IH
 
 end iloeb
+
+section ieval
+
+/-- Tests `ieval` and `isimp` to simplify the goal and specific Iris hypotheses. -/
+example [BI PROP] {u v w x y z : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ∗ ⌜(w + z) + 1 = Nat.succ 2⌝ ∗ ⌜(u + v) = v⌝
+    ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ ∗ ⌜w + z = 2⌝ ∗ ⌜u = 0⌝ := by
+  iintro ⟨H1, H2, H3⟩
+  -- Simplify `(x + y) + 3 = 4` as `x + y = 1`
+  isimp in H1
+  isplitl [H1]
+  -- Simplify `(x + y).succ = 2` as `x + y = 1`
+  · isimp
+    iexact H1
+  -- Simplify the goal `w + z + 1 = Nat.succ 2` as `w + z = 2` and `u + v = v` as `u = 0`
+  · ieval (simp) in H2 H3
+    iframe
+
+/- Tests `isimp` with a pure hypothesis in the selection pattern -/
+/-- error: ieval: pure hypotheses in the selection pattern is not supported -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro #H
+  isimp in %x H
+
+/- Tests `isimp` with the simplification failing -/
+/-- error: `simp` made no progress -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} : ⌜x = 0⌝ ⊢@{PROP} ⌜x = 0⌝ := by
+  iintro #H
+  isimp in H
+
+private def def1 := 10
+private def def2 := def1
+
+/-- Tests `iunfold` to unfold definitions in an Iris hypothesis and a proof goal -/
+example [BI PROP] : ⌜def2 = 10⌝ ⊢@{PROP} ⌜10 = 10⌝ ∗ ⌜def2 = 10⌝ := by
+  iintro #H
+  -- Unfold definitions in an Iris hypothesis
+  iunfold def2, def1 in H
+  iframe H
+  -- Unfold definitions in the proof goal
+  iunfold def2, def1
+  ipureintro
+  .rfl
+
+/- Tests `ieval` where the supplied tactic solves the goal completely -/
+/-- error: ieval: the supplied tactic does not produce exactly one subgoal -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} (_ : False) :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro H
+  ieval (contradiction) in H
+
+/- Tests `ieval` where the supplied tactic produces more than one subgoal -/
+/-- error: ieval: the supplied tactic does not produce exactly one subgoal -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} (h : False) :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro H
+  ieval (cases x) in H
+
+/- Tests `ieval` where the given tactic breaks the Iris entailment -/
+/-- error: ieval: the goal is not Iris entailment upon applying the supplied tactic -/
+#guard_msgs in
+example [BI PROP] {x y : Nat} :
+    ⌜(x + y) + 3 = 4⌝ ⊢@{PROP} ⌜Nat.succ (x + y) = 2⌝ := by
+  iintro H
+  ieval (exfalso) in H
+
+end ieval

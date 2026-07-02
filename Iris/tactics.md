@@ -57,6 +57,9 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 ## Rewriting and Induction
 
 - `irewrite [`*rules*`]` (`at` *H* | `at ⊢`)? — Rewrite with internal equalities (`≡`). Each rule is a [*pmTerm*](#proof-mode-terms), optionally prefixed with `←` for right-to-left rewriting. Rewrites in the goal by default or in hypothesis *H*. Supports `(occs := ...)` config. Example: `irewrite [← Heq $$ %b] at H`.
+- `ieval (`*tac*`)` (`in` [*selPats*](#selection-patterns))? — applies the tactic *tac* to the Iris hypotheses chosen by the selection pattern, if given, or otherwise to proof goal. The tactic *tac* should be a reduction or rewriting tactic such as `simp`, `dsimp` or `unfold`. Note that this tactic does not support pure hypotheses in the selection pattern, in which case *tac* should be used directly.
+- `isimp` (`in` [*selPats*](#selection-patterns))? — applies `simp` to the Iris hypotheses chosen by the selection pattern, if given, or otherwise to proof goal. This is a shorthand for `ieval (simp)`.
+- `iunfold` *x₁*`,` ...`,` *xₙ* (`in` [*selPats*](#selection-patterns))? — applies `unfold` with the arguments *x₁*`,` ...`,` *xₙ* to the Iris hypotheses chosen by the selection pattern, if given, or otherwise to proof goal. This is a shorthand for `ieval (unfold` *x₁*`,` ...`,` *xₙ*`)`.
 - `iloeb as` *IH* (`generalizing` [*selPats*](#selection-patterns))? — Löb induction: adds the induction hypothesis *IH* (guarded by `▷`) to the intuitionistic context. All spatial hypotheses — plus anything selected by [*selPats*](#selection-patterns), including pure variables via `%x` — are generalized into the induction hypothesis.
 
 ## Solving Simple Goals
