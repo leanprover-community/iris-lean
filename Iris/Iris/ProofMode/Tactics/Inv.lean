@@ -15,8 +15,8 @@ public meta import Iris.ProofMode.ClassesMake
 
 namespace Iris.ProofMode
 
-public meta section
-open Lean Elab Tactic Meta Qq BI Std
+public section
+open BI
 
 @[rocq_alias tac_inv_elim]
 theorem tac_inv_elim [BI PROP]
@@ -48,6 +48,9 @@ theorem tac_inv_elim [BI PROP]
     e ⊢ Pinv ∗ Pin ∗ e'' := h1
     _ ⊢ _ := sep_mono_right <| sep_mono_right <| forall_intro (wand_intro <| pf ·)
     _ ⊢ goal := h0
+
+public meta section
+open Lean Elab Tactic Meta Qq BI Std
 
 /--
   An annotation of `wandM` with `@[reducible]` is useful when `whnf` is called,
