@@ -28,8 +28,8 @@ def iRevertIntro
   let names : List (Syntax × IntroPat) ← hs.mapM fun
     | {kind := .pure id, ..} => do
       let name ← Lean.mkIdent <$> id.getUserName
-      let ident ← `(binderIdent| $name:ident)
-      return (name, .intro <| .pure ident ident)
+      let purePat ← `(rcasesPat| $name:ident)
+      return (name, .intro <| .pure purePat purePat)
     | {kind := .ipm ivar, ..} =>  do
       let name ← Lean.mkIdent <$> (hyps.getUserName? ivar).getM
       let ident ← `(binderIdent| $name:ident)

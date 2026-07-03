@@ -27,7 +27,7 @@ syntax "⟨" icasesPatAlts,* "⟩" : icasesPat
 /-- Destruct a disjunction, one goal per disjunct. -/
 syntax "(" icasesPatAlts ")" : icasesPat
 /-- Move the hypothesis to the pure Lean context and give it a name. -/
-syntax "%" noWs binderIdent : icasesPat
+syntax "%" noWs rcasesPat : icasesPat
 /-- Move the hypothesis to the intuitionistic context and destruct the proposition. -/
 syntax "#" noWs icasesPat : icasesPat
 /-- Move the hypothesis to the spatial context and destruct the proposition. -/
@@ -45,7 +45,7 @@ inductive iCasesPat
   | frame (ref : Syntax)
   | conjunction (ref : Syntax) (args : List iCasesPat)
   | disjunction (ref : Syntax) (args : List iCasesPat)
-  | pure (ref : Syntax) (pat : TSyntax ``binderIdent)
+  | pure (ref : Syntax) (pat : TSyntax `rcasesPat)
   | intuitionistic (ref : Syntax) (pat : iCasesPat)
   | spatial (ref : Syntax) (pat : iCasesPat)
   | mod (ref : Syntax) (pat : iCasesPat)
@@ -68,7 +68,7 @@ where
     | `(icasesPat| -) => some <| .clear ref
     | `(icasesPat| $) => some <| .frame ref
     | `(icasesPat| ⟨$[$args],*⟩) => args.mapM goAlts |>.map (.conjunction ref ·.toList)
-    | `(icasesPat| %$pat:binderIdent) => some <| .pure ref pat
+    | `(icasesPat| %$pat:rcasesPat) => some <| .pure ref pat
     | `(icasesPat| #$pat) => go pat |>.map <| .intuitionistic ref
     | `(icasesPat| ∗$pat) => go pat |>.map <| .spatial ref
     | `(icasesPat| >$pat) => go pat |>.map <| .mod ref

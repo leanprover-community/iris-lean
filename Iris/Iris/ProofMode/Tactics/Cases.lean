@@ -72,8 +72,7 @@ private def iCasesEmptyConj {prop : Q(Type u)} (bi : Q(BI $prop))
     throwError "{tacName}: cannot destruct {A} as an empty conjunct"
 
 /-- Destruct an existential hypothesis [A] by introducing its witness and continuing with the body [B]. -/
-private def iCasesExists {prop : Q(Type u)} (bi : Q(BI $prop))
-    (name : TSyntax ``binderIdent)
+private def iCasesExists {prop : Q(Type u)} (bi : Q(BI $prop)) (pat : TSyntax `rcasesPat)
     (p : Q(Bool)) (P A goal : Q($prop)) (tacName : String)
     (k : (B : Q($prop)) → ProofModeM Q($P ∗ □?$p $B ⊢ $goal)) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) := do
@@ -82,12 +81,13 @@ private def iCasesExists {prop : Q(Type u)} (bi : Q(BI $prop))
   let Φ : Q($α → $prop) ← mkFreshExprMVarQ q($α → $prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoExists $A $Φ)
     | throwError "{tacName}: {A} is not an existential quantifier"
-  let (name, ref) ← getFreshName name
-  withLocalDeclDQ name α fun x => do
-    addLocalVarInfo ref (← getLCtx) x α
-    have B : Q($prop) := Expr.headBeta q($Φ $x)
-    let pf : Q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) ← mkLambdaFVars #[x] <|← k B
-    return q(exists_elim' $pf)
+  let pf : Q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) ←
+    introWithRcasesPat q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
+      let B : Q($prop) ← mkFreshExprMVarQ q($prop)
+      let .true ← isDefEq (← g.getType) q($P ∗ □?$p $B ⊢ $goal)
+        | throwError "{tacName}: unexpected goal {goal} after intro pattern"
+      k (Expr.headBeta (← instantiateMVars B))
+  return q(exists_elim' $pf)
 
 /-- Destruct a conjunction hypothesis [A] and continue with only its left or right component. -/
 private def iCasesAndLR {prop : Q(Type u)} (bi : Q(BI $prop))
@@ -267,7 +267,7 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
       (iCasesCore hyps goal (.disjunction ref args) p · tacName k)
 
   | .pure _ arg =>
-    iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal arg q(.rfl) λ _ _ => k hyps goal
+    iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal arg q(.rfl) <| k hyps goal
 
   | .intuitionistic _ arg =>
     iCasesIntuitionistic bi p P A goal tacName (iCasesCore hyps goal arg q(true) · tacName k)
@@ -279,9 +279,13 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     iModCore bi P goal p A λ p' A goal' =>
       iCasesCore hyps goal' arg p' A tacName k
 
-  | .rewrite _ forward =>
-    iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal (← `(binderIdent| _)) q(.rfl)
-      <| fun _ h => iCasesPureRewrite hyps goal h forward tacName k
+  | .rewrite _ forward => do
+      let name ← mkFreshUserName .anonymous
+      let ident := mkIdent name
+      iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal (← `(rcasesPat| $ident:ident)) q(.rfl) do
+        let some ldecl := (← getLCtx).findFromUserName? name
+        | throwError "{tacName}: unable to find the introduced pure hypothesis"
+        iCasesPureRewrite hyps goal ldecl.toExpr forward tacName k
 
 /--
   `icases pmt with pat` destructs `pmt : pmTerm` using the cases pattern `pat`.

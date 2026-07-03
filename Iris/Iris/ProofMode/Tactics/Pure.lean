@@ -40,26 +40,31 @@ theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
 public meta section
 open Lean Elab Tactic Meta Qq
 
+def introWithRcasesPat (ty : Q(Prop)) (pat : TSyntax `rcasesPat)
+    (k : MVarId → ProofModeM Expr) : ProofModeM Q($ty) := do
+  let m : Q($ty) ← mkFreshExprSyntheticOpaqueMVar ty
+  let tac ← withRef pat `(tactic| rintro $pat:rcasesPat)
+  for g in (← evalTacticAt tac m.mvarId!) do
+    g.withContext do g.assign (← k g)
+  instantiateMVars m
+
 def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
-    (P P' : Q($prop)) (p : Q(Bool)) (A Q : Q($prop)) (name : TSyntax ``binderIdent) (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))
-    (k : (φ : Q(Prop)) → Q($φ) → ProofModeM (Q($P' ⊢ $Q))) : ProofModeM (Q($P ⊢ $Q)) := do
+    (P P' : Q($prop)) (p : Q(Bool)) (A Q : Q($prop))
+    (purePat : TSyntax `rcasesPat) (pf : Q($P ⊣⊢ $P' ∗ □?$p $A))
+    (k : ProofModeM Q($P' ⊢ $Q)) : ProofModeM Q($P ⊢ $Q) := do
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPure $A $φ)
     | throwError "ipure: {A} is not pure"
 
-  let (name, ref) ← getFreshName name
-  withLocalDeclDQ name φ fun h => do
-    addLocalVarInfo ref (← getLCtx) h φ
-    let m ← k φ h
-    let f : Q($φ → $P' ⊢ $Q) ← mkLambdaFVars #[h] m
+  let f ← introWithRcasesPat q($φ → ($P' ⊢ $Q)) purePat <| fun _ => k
 
-    match matchBool p with
-    | .inl _ =>
-      return (q(pure_elim_intuitionistic $pf $f))
-    | .inr _ =>
-      let .some _ ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $Q))
-        | throwError "ipure: {A} is not affine and the goal not absorbing"
-      return q(pure_elim_spatial (A:=$A) $pf $f)
+  match matchBool p with
+  | .inl _ =>
+    return (q(pure_elim_intuitionistic $pf $f))
+  | .inr _ =>
+    let .some _ ← trySynthInstanceQ q(TCOr (Affine $A) (Absorbing $Q))
+      | throwError "ipure: {A} is not affine and the goal not absorbing"
+    return q(pure_elim_spatial (A := $A) $pf $f)
 
 def iPureIntroCore {u} {prop : Q(Type u)} (_bi : Q(BI $prop))
     (e goal : Q($prop)) (tacName : String) :
@@ -95,7 +100,7 @@ elab "ipure " colGt hyp:ident : tactic => do
   let ivar ← hyps.findWithInfo hyp
   let ⟨e', hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
 
-  let pf ← iPureCore bi e e' p out' goal (← `(binderIdent| $hyp:ident)) pf fun _ _ => addBIGoal hyps' goal
+  let pf ← iPureCore bi e e' p out' goal (← `(rcasesPat| $hyp:ident)) pf <| addBIGoal hyps' goal
 
   mvar.assign pf
 

@@ -349,6 +349,13 @@ definition name, but `x✝` is a proof of
 example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
   iintro →
 
+/-- Tests `iintro` with non-trivial `rcases` destruction patterns -/
+example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
+    ⊢@{PROP} □ ⌜((a = b ∧ (b ∨ (c1 ∧ c2 ∧ c3))) ∧ ∃ x, P x)⌝ -∗ ⌜a ∨ c1⌝ ∗ ⌜∃ x, P x⌝ := by
+  iintro %⟨⟨rfl, ((hb : a) | ⟨hc, _, -⟩)⟩, @⟨d : Prop, hd⟩⟩ !%
+  · grind
+  · grind
+
 end intro
 
 -- revert
@@ -1795,12 +1802,20 @@ example [BI PROP] (m n : Nat) (a b c : Prop) :
   hypothesis is not a pure equality
 -/
 /-- error: Invalid rewrite argument: Expected an equality or iff proof or
-definition name, but `x✝` is a proof of
+definition name, but `✝` is a proof of
   P -/
 #guard_msgs in
 example [BI PROP] (P : Prop) : ⊢@{PROP} ⌜P⌝ -∗ True := by
   iintro HP
   icases HP with →
+
+/-- Tests `icases` with non-trivial `rcases` destruction patterns -/
+example [BI PROP] (a b c1 c2 c3 : Prop) (P : Prop → Prop) :
+    ⊢@{PROP} □ ⌜((a = b ∧ (b ∨ (c1 ∧ c2 ∧ c3))) ∧ ∃ x, P x)⌝ -∗ ⌜a ∨ c1⌝ ∗ ⌜∃ x, P x⌝ := by
+  iintro Hpure
+  icases Hpure with %⟨⟨rfl, ((hb : a) | ⟨hc, _, -⟩)⟩, @⟨d : Prop, hd⟩⟩
+  · ipureintro <;> grind
+  · ipureintro <;> grind
 
 end cases
 
