@@ -107,6 +107,12 @@ theorem discrete {ag : Option ((DFrac) × Agree A)} (Ha : DiscreteE ag) (Hb : Di
 instance [Discrete A] [Discrete B] : Discrete (View R) where
   discrete_0 H := ⟨discrete_0 H.1, discrete_0 H.2⟩
 
+instance instLeibniz [Leibniz A] [Leibniz B] : Leibniz (View R) where
+  eq_of_eqv {x y} h := by
+    cases x; cases y
+    simp only [View.mk.injEq]
+    exact ⟨eq_of_eqv h.1, eq_of_eqv h.2⟩
+
 -- view_auth_dist_inj
 theorem auth_inj_frac [UCMRA B] {q1 q2 : DFrac} {a1 a2 : A} {n} (H : (●V{q1} a1 : View R) ≡{n}≡ ●V{q2} a2) :
     q1 = q2 := H.1.1
@@ -487,7 +493,7 @@ theorem auth_incN_auth_op_frag_iff : (●V{dq1} a1 : View R) ≼{n} ((●V{dq2} 
   · simp only [Auth, Frag, CMRA.IncludedN, CMRA.op]
     rintro ⟨(_|⟨dqf, af⟩),⟨⟨x1, x2⟩, y⟩⟩
     · exact ⟨.inr x1.symm, toAgree.inj x2.symm⟩
-    · exact ⟨.inl ⟨dqf, x1⟩, toAgree.incN.mp ⟨af, x2⟩⟩
+    · exact ⟨.inl ⟨dqf, x1⟩, Agree.toAgree_includedN.mp ⟨af, x2⟩⟩
   · rcases H with ⟨(⟨z, HRz⟩| HRa2), HRb⟩
     · calc (●V{dq1} a1 : View R)
              ≼{n} ((●V{dq1} a1) • ((◯V b) • ●V{z} a1)) := by exists ((◯V b) • ●V{z} a1)
@@ -777,7 +783,7 @@ theorem auth_alloc (Hup : ∀ n bf, R n a bf → R n a (b • bf)) :
     refine ⟨Hv, ?_⟩
     exists a0
     refine ⟨Hag, ?_⟩
-    have Heq  := toAgree.incN.mp ⟨ag, Hag.symm⟩
+    have Heq  := Agree.toAgree_includedN.mp ⟨ag, Hag.symm⟩
     have HR' := IsViewRel.mono Hrel Heq.symm (CMRA.incN_op_right n UCMRA.unit bf) n.le_refl
     apply IsViewRel.mono (Hup _ _ HR') Heq ?_ n.le_refl
     apply Iris.OFE.Dist.to_incN
@@ -806,21 +812,22 @@ end Updates
 section ViewMap
 
 @[rocq_alias view_map]
-def map {R : ViewRel A B} (R' : ViewRel A' B') (f : A → A') (g : B → B') (v : View R) : View R' where
+def map {R : ViewRel A B} (R' : ViewRel A' B') (f : A → A')
+    (g : B → B') (v : View R) : View R' where
   auth := match v.auth with | none => none | some (fr, a) => (fr, a.map' f)
   frag := g v.frag
 
 @[rocq_alias view_map_id]
 theorem map_id {R : ViewRel A B} (v : View R) : View.map R id id v = v := by
   rcases v with ⟨a, b⟩
-  cases a <;> simp [View.map, Agree.map']
+  cases a <;> simp [View.map, Agree.map'_id]
 
 @[rocq_alias view_map_compose]
 theorem map_compose {R : ViewRel A B} {R' : ViewRel A' B'} {R'' : ViewRel A'' B''}
     f g (f' : A' → A'') (g' : B' → B'') (v : View R) :
     View.map R'' (f' ∘ f) (g' ∘ g) v = View.map R'' f' g' (View.map R' f g v) := by
   rcases v with ⟨a, b⟩
-  cases a <;> simp [View.map, Agree.map']
+  cases a <;> simp [View.map, Agree.map'_compose]
 
 section mapO
 
@@ -829,7 +836,7 @@ variable [OFE A] [OFE B] [OFE A'] [OFE B'] {R : ViewRel A B} {R' : ViewRel A' B'
 theorem map_compose' [OFE A''] [OFE B''] {R'' : ViewRel A'' B''}
     f g (f' : A' -n> A'') (g' : B' -n> B'') (v : View R) :
     View.map R'' (f'.comp f) (g'.comp g) v = View.map R'' f' g' (View.map R' f g v) :=
-  map_compose f.f g.f f'.f g'.f v
+    map_compose f.f g.f f'.f g'.f v
 
 omit [OFE B] in
 @[rocq_alias view_map_ext]
@@ -896,7 +903,7 @@ def mapC [OFE A] [UCMRA B] [OFE A'] [UCMRA B']
   op x y := by
     constructor <;> simp [CMRA.Hom.op, CMRA.op, map]
     cases x.auth <;> cases y.auth <;> simp [Prod.op]
-    exact ⟨rfl, (Agree.map _).op _ _⟩
+    exact ⟨.rfl, (Agree.map f.f).op _ _⟩
 
 end ViewMap
 

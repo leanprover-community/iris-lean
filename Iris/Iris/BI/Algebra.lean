@@ -135,7 +135,7 @@ theorem agree_op_invI (x y : Agree A) : internalCmraValid (x • y) ⊢@{PROP} i
 theorem toAgree_validI (a : A) :
     ⊢@{PROP} internalCmraValid (toAgree a) := by
   refine internalCmraValid_intro fun n => ?_
-  simp [validN, toAgree]
+  simp
 
 @[rocq_alias to_agree_op_validI]
 theorem toAgree_op_validI (a b : A) :

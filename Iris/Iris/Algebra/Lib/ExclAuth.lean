@@ -31,6 +31,8 @@ public abbrev ExclAuthR := Auth (Option (Excl A))
 @[rocq_alias excl_authUR]
 public abbrev ExclAuthUR := Auth (Option (Excl A))
 
+instance instLeibniz [Leibniz A] : Leibniz (ExclAuthR (A := A)) := inferInstance
+
 @[rocq_alias excl_auth_auth]
 public abbrev auth (a : A) : ExclAuthR (A := A) := ● (some (excl a))
 
