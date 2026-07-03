@@ -27,7 +27,7 @@ syntax "//=" : introPat
 syntax "*" : introPat
 syntax "**" : introPat
 syntax "!%" : introPat
-syntax "{" (colGt selPatFrame)* "}" : introPat
+syntax "{" (colGt ppSpace selPatFrame)* ppSpace "}" : introPat
 
 @[rocq_alias intro_pat]
 inductive IntroPat
