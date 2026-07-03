@@ -14,6 +14,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `iclear` [*selPats*](#selection-patterns) — Discard the hypotheses selected by [*selPats*](#selection-patterns).
 - `irevert` [*selPats*](#selection-patterns) — Revert the selected hypotheses (proof mode or pure Lean hypotheses) into the goal.
 - `ipure` *H* — Move the pure hypothesis *H* into the Lean context.
+- `ipure` *H* `as` *rcasesPat* — Move the pure hypothesis *H* into the Lean context and destruct it with the `rcases` pattern.
 - `iintuitionistic` *H* — Move *H* to the intuitionistic context. Equivalent to `icases H with #H`.
 - `ispatial` *H* — Move *H* to the spatial context. Equivalent to `icases H with ∗H`.
 
@@ -73,7 +74,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `$` — Frame the hypothesis: immediately cancel it against the goal (like `iframe`).
 - `⟨`*pat₁*`,` ... `,` *patₙ*`⟩` — Destruct a (separating) conjunction or existential; an existential variable is bound with `%`*x*, e.g. `⟨%x, H⟩`.
 - `(`*pat₁* `|` ... `|` *patₙ*`)` — Destruct a disjunction, one goal per disjunct. Parentheses can be omitted when nested inside `⟨⟩`.
-- `%`*name* — Move the (pure) hypothesis into the Lean context as *name*.
+- `%`*rcasesPat* — Move the (pure) hypothesis into the Lean context and destruct it with the `rcases` pattern *rcasesPat*.
 - `#`*pat* — Move the hypothesis to the intuitionistic context, then destruct with *pat*.
 - `∗`*pat* — Move the hypothesis to the spatial context, then destruct with *pat*.
 - `>`*pat* — Eliminate the modality at the top of the hypothesis, then destruct with *pat*.
