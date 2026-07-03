@@ -107,6 +107,20 @@ elab "ipure " colGt hyp:ident : tactic => do
   mvar.assign pf
 
 /--
+  `ipure H as pat` moves a pure hypothesis `H` from the Iris context into the
+  regular Lean context and destructs it using the `rcases` destruction pattern.
+-/
+elab "ipure " colGt hyp:ident " as " pat:rcasesPat : tactic => do
+  ProofModeM.runTactic λ mvar { bi, e, hyps, goal, .. } => do
+
+  let ivar ← hyps.findWithInfo hyp
+  let ⟨e', hyps', _, out', p, _, pf⟩ := hyps.remove true ivar
+
+  let pf ← iPureCore bi e e' p out' goal pat pf <| addBIGoal hyps' goal
+
+  mvar.assign pf
+
+/--
   `iempintro` solves an `emp` goal, provided that the spatial context is affine.
 -/
 elab "iempintro" : tactic => do

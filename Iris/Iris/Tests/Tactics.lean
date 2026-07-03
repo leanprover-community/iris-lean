@@ -988,6 +988,13 @@ example [BI PROP] (Q : PROP) : (⌜φ1⌝ ∧ <affine> ⌜φ2⌝) ⊢ Q -∗ Q :
   ipure Hφ
   iexact HQ
 
+/-- Tests `ipure` with an `rcases` destruction pattern -/
+example [BI PROP] (Q : PROP) : (⌜φ1⌝ ∧ <affine> ⌜φ2⌝) ⊢ Q -∗ Q := by
+  iintro Hφ
+  iintro HQ
+  ipure Hφ as ⟨hφ1, -⟩
+  iexact HQ
+
 /-- Tests `ipure` with implication containing pure -/
 example [BI PROP] (Q : PROP) : <affine> (⌜φ1⌝ ∧ ⌜φ2⌝ → ⌜φ3⌝)  ⊢ Q -∗ Q := by
   iintro Hφ
