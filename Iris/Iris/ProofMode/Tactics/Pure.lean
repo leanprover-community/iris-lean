@@ -29,6 +29,14 @@ theorem pure_elim_intuitionistic [BI PROP] {P P' A Q : PROP} {φ : Prop}
     [IntoPure A φ] (h : P ⊣⊢ P' ∗ □ A) (h' : φ → P' ⊢ Q) : P ⊢ Q :=
   pure_elim_spatial h h'
 
+theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
+    (h : FromPure true Q .out φ) [Affine P] (hφ : φ) : P ⊢ Q :=
+  (affine.trans (eq_true hφ ▸ affinely_true.2)).trans h.1
+
+theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
+    (h : FromPure false Q .out φ) (hφ : φ) : P ⊢ Q :=
+  (pure_intro hφ).trans h.1
+
 public meta section
 open Lean Elab Tactic Meta Qq
 
@@ -77,14 +85,6 @@ elab "iempintro" : tactic => do
   let .some _ ← trySynthInstanceQ q(Affine $e)
     | throwError "iempintro: context is not affine"
   mvar.assign q(affine (P := $e))
-
-theorem pure_intro_affine [BI PROP] {Q : PROP} {φ : Prop}
-    (h : FromPure true Q .out φ) [Affine P] (hφ : φ) : P ⊢ Q :=
-  (affine.trans (eq_true hφ ▸ affinely_true.2)).trans h.1
-
-theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
-    (h : FromPure false Q .out φ) (hφ : φ) : P ⊢ Q :=
-  (pure_intro hφ).trans h.1
 
 /--
   `ipureintro` turns a goal of the form `⌜φ⌝` into the Lean goal `φ`.
