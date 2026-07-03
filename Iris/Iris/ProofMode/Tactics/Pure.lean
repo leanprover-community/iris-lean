@@ -40,11 +40,11 @@ theorem pure_intro_spatial [BI PROP] {Q : PROP} {φ : Prop}
 public meta section
 open Lean Elab Tactic Meta Qq
 
-def introWithRcasesPat (ty : Q(Prop)) (pat : TSyntax `rcasesPat)
+def iPureDestruct (ty : Q(Prop)) (pat : TSyntax `rcasesPat)
     (k : MVarId → ProofModeM Expr) : ProofModeM Q($ty) := do
   let m : Q($ty) ← mkFreshExprSyntheticOpaqueMVar ty
-  let tac ← withRef pat `(tactic| rintro $pat:rcasesPat)
-  for g in (← evalTacticAt tac m.mvarId!) do
+  let gs ← withRef pat <| Lean.Elab.Tactic.RCases.rintro #[pat] none m.mvarId!
+  for g in gs do
     g.withContext do g.assign (← k g)
   instantiateMVars m
 
@@ -55,9 +55,7 @@ def iPureCore {prop : Q(Type u)} (_bi : Q(BI $prop))
   let φ : Q(Prop) ← mkFreshExprMVarQ q(Prop)
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoPure $A $φ)
     | throwError "ipure: {A} is not pure"
-
-  let f ← introWithRcasesPat q($φ → ($P' ⊢ $Q)) purePat <| fun _ => k
-
+  let f ← iPureDestruct q($φ → ($P' ⊢ $Q)) purePat <| fun _ => k
   match matchBool p with
   | .inl _ =>
     return (q(pure_elim_intuitionistic $pf $f))

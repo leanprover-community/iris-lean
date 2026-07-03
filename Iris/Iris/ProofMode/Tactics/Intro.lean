@@ -160,11 +160,11 @@ partial def iIntroCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)}
       let α ← mkFreshExprMVarQ q(Sort v)
       let Φ ← mkFreshExprMVarQ q($α → $prop)
       let .some _ ← ProofModeM.trySynthInstanceQ q(FromForall $Q $Φ)
-        | throwError "{tacName}: {Q} cannot be turned into a universal quantifier or pure hypothesis"
-      let pf : Q(∀ x, $P ⊢ $Φ x) ← introWithRcasesPat q(∀ x, $P ⊢ $Φ x) pat fun g => do
+      | throwError "{tacName}: {Q} cannot be turned into a universal quantifier or pure hypothesis"
+      let pf : Q(∀ x, $P ⊢ $Φ x) ← iPureDestruct q(∀ x, $P ⊢ $Φ x) pat fun g => do
         let B : Q($prop) ← mkFreshExprMVarQ q($prop)
-        let .true ← isDefEq (← g.getType) q($P ⊢ $B)
-          | throwError "{tacName}: internal error: unexpected goal after intro pattern"
+        let eq ← isDefEq (← g.getType) q($P ⊢ $B)
+        if !eq then throwError "{tacName}: internal error: unexpected goal after intro pattern"
         iIntroCore hyps (Expr.headBeta (← instantiateMVars B)) pats tacName k
       return q(from_forall_intro (Q := $Q) $pf)
     | .intro pat =>

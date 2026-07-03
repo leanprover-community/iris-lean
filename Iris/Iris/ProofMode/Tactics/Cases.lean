@@ -82,7 +82,7 @@ private def iCasesExists {prop : Q(Type u)} (bi : Q(BI $prop)) (pat : TSyntax `r
   let .some _ ← ProofModeM.trySynthInstanceQ q(IntoExists $A $Φ)
     | throwError "{tacName}: {A} is not an existential quantifier"
   let pf : Q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) ←
-    introWithRcasesPat q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
+    iPureDestruct q(∀ x, $P ∗ □?$p $Φ x ⊢ $goal) pat fun g => do
       let B : Q($prop) ← mkFreshExprMVarQ q($prop)
       let .true ← isDefEq (← g.getType) q($P ∗ □?$p $B ⊢ $goal)
         | throwError "{tacName}: unexpected goal {goal} after intro pattern"
