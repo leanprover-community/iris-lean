@@ -77,6 +77,7 @@ The proof mode maintains three contexts: the *pure* (Lean) context, the *intuiti
 - `#`*pat* — Move the hypothesis to the intuitionistic context, then destruct with *pat*.
 - `∗`*pat* — Move the hypothesis to the spatial context, then destruct with *pat*.
 - `>`*pat* — Eliminate the modality at the top of the hypothesis, then destruct with *pat*.
+- `←`/`→` — Rewrite using a pure Lean equality and then remove the equality from the context.
 
 Example:
 ```lean
@@ -91,8 +92,14 @@ Example:
 - [*casesPat*](#cases-patterns) — Introduce a hypothesis and destruct it with [*casesPat*](#cases-patterns). In particular, `%x` introduces a universally quantified variable or pure premise into the Lean context.
 - `!>` — Introduce the modality at the top of the goal (like `imodintro`).
 - `//` — Try to close the goal with `itrivial` (and continue with the remaining patterns if it fails).
+- `*` — Introduce all universal quantifiers.
+- `**` — Introduce all universal quantifiers, pure arrows, and wands.
+- `!%` — Introduce a pure proof goal and exit the proof mode.
+- `/=` — Apply simplification.
+- `//=` — Apply simplification and try solving the goal using `itrivial`. This is a shorthand for `/=` and `//`.
+- `{` [*selPats*](#selection-patterns) `}` — Clear the selection hypotheses chosen by the selection patterns *selPats*. Each element in *selPats* can be prefixed with `!` so that the chosen hypotheses are framed instead.
 
-Example: `iintro %x ⟨HP, #HQ⟩ !> //`.
+Example: `iintro %x ⟨HP, #HQ⟩ !> {HR !HS #} → //`.
 
 ## Selection Patterns
 
