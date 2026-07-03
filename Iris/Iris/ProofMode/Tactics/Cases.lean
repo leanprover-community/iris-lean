@@ -183,12 +183,12 @@ private def iCasesSpatial {prop : Q(Type u)} (_bi : Q(BI $prop))
   removing `h` from the context afterwards.
 -/
 def iCasesPureRewrite {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
-    (hyps : Hyps bi e) (goal : Q($prop)) (h : Expr) (direction : Bool) (tacName : String)
+    (hyps : Hyps bi e) (goal : Q($prop)) (h : Expr) (forward : Bool) (tacName : String)
     (k : ∀ {e'}, Hyps bi e' → (goal' : Q($prop)) → ProofModeM Q($e' ⊢ $goal')) :
     ProofModeM Q($e ⊢ $goal) := do
   let target := q($(hyps.tm) ⊢ $goal)
   let g ← mkFreshExprSyntheticOpaqueMVar target <&> (·.mvarId!)
-  let ⟨newE, eq, []⟩ ← g.rewrite target h (symm := !direction)
+  let ⟨newE, eq, []⟩ ← g.rewrite target h !forward
   | throwError "{tacName}: rewriting should not give additional subgoals"
   let some #[_, _, newTm, newGoal] := newE.consumeMData.appM? ``BIBase.Entails
   | throwError "{tacName}: unable to parse the Iris entailment {newE}"
@@ -221,8 +221,9 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     (p : Q(Bool)) (A : Q($prop)) (tacName : String)
     (k : ∀ {P}, Hyps bi P → (goal' : Q($prop)) → ProofModeM Q($P ⊢ $goal') := addBIGoal) :
     ProofModeM (Q($P ∗ □?$p $A ⊢ $goal)) :=
+  withRef pat.ref do
   match pat with
-  | .one ref name => withRef ref do
+  | .one _ name => do
     -- TODO: use Hyps.addWithInfo here?
     let (name, ref) ← getFreshName name
     let ivar ← mkFreshIVarId (isTrue p)
@@ -231,29 +232,27 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     if let .emp _ := hyps then pure q(of_emp_sep $(← k hyp goal))
     else k (.mkSep hyps hyp) goal
 
-  | .clear ref => withRef ref do
+  | .clear _ =>
     let pf ← iClearCoreOne bi q(iprop($P ∗ □?$p $A)) P p A goal q(.rfl) tacName
     pure q($pf $(← k hyps goal))
 
-  | .frame ref => do
-    withRef ref do
+  | .frame _ =>
     let ⟨ivar, hyps'⟩ ← Hyps.addWithInfo bi (← `(binderIdent | _)) p A hyps
     let res ← iFrame hyps' goal [⟨.ipm ivar, true⟩]
     res.finish k
 
-  | .conjunction ref [arg] | .disjunction ref [arg] =>
-    withRef ref do
+  | .conjunction _ [arg] | .disjunction _ [arg] =>
     iCasesCore hyps goal arg p A tacName k
 
-  | .disjunction ref [] => withRef ref do throwUnsupportedSyntax
+  | .disjunction _ [] => throwUnsupportedSyntax
 
-  | .conjunction ref [] => withRef ref do iCasesEmptyConj bi hyps p A goal tacName
+  | .conjunction _ [] => iCasesEmptyConj bi hyps p A goal tacName
 
   -- pure conjunctions are always handled as existentials. There is `intoExist_and_pure` and
   -- `intoExist_sep_pure` to make this work as expected for pure assertions that are not explicit existentials.
-  | .conjunction ref (.pure _ arg :: args) => do
+  | .conjunction ref (.pure _ arg :: args) =>
     iCasesExists bi arg p P A goal tacName (iCasesCore hyps goal (.conjunction ref args) p · tacName k)
-  | .conjunction ref (arg :: args) => withRef ref do
+  | .conjunction ref (arg :: args) =>
     if arg matches .clear _ then
       if let some pf ← iCasesAndLR bi p P A goal true λ B =>
         iCasesCore hyps goal (.conjunction ref args) p B tacName  k then return pf
@@ -263,26 +262,26 @@ partial def iCasesCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {P}
     iCasesSep bi hyps p A goal tacName k (iCasesCore · · arg p · tacName ·)
       (iCasesCore · · (.conjunction ref args) p · tacName ·)
 
-  | .disjunction ref (arg :: args) => withRef ref do
+  | .disjunction ref (arg :: args) =>
     iCasesOr bi p P A goal tacName (iCasesCore hyps goal arg p · tacName k)
       (iCasesCore hyps goal (.disjunction ref args) p · tacName k)
 
-  | .pure ref arg => withRef ref do
+  | .pure _ arg =>
     iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal arg q(.rfl) λ _ _ => k hyps goal
 
-  | .intuitionistic ref arg => withRef ref do
+  | .intuitionistic _ arg =>
     iCasesIntuitionistic bi p P A goal tacName (iCasesCore hyps goal arg q(true) · tacName k)
 
-  | .spatial ref arg => withRef ref do
+  | .spatial _ arg =>
     iCasesSpatial bi p P A goal (iCasesCore hyps goal arg q(false) · tacName k)
 
-  | .mod ref arg => withRef ref do
+  | .mod _ arg =>
     iModCore bi P goal p A λ p' A goal' =>
       iCasesCore hyps goal' arg p' A tacName k
 
-  | .rewrite ref direction => withRef ref do
+  | .rewrite _ forward =>
     iPureCore bi q(iprop($P ∗ □?$p $A)) P p A goal (← `(binderIdent| _)) q(.rfl)
-      <| fun _ h => iCasesPureRewrite hyps goal h direction tacName k
+      <| fun _ h => iCasesPureRewrite hyps goal h forward tacName k
 
 /--
   `icases pmt with pat` destructs `pmt : pmTerm` using the cases pattern `pat`.
