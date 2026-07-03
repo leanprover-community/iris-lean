@@ -222,7 +222,7 @@ theorem bigSepMS_forall [BIAffine PROP] {Φ : A → PROP} {X : MS} [hPers : ∀ 
   · refine pure_elim_left fun hmem => (bigSepMS_elem_of_acc hmem).trans ?_
     refine (sep_mono_left Persistent.persistent).trans ?_
     exact sep_comm.1.trans <| persistently_absorb_right.trans persistently_elim
-  · induction X using LawfulFiniteMultiSet.ind with
+  · induction X using multiset_ind with
     | empty => exact bigSepMS_empty_intro
     | disjUnion_singleton a s ih =>
       refine .trans ?_ bigSepMS_insert.2

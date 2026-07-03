@@ -67,9 +67,6 @@ class LawfulFiniteMultiSet (MS : Type _) (A : outParam (Type _))
   toList_singleton : ∀ {a : A}, toList ({a} : MS) = [a]
   /-- `toList` distributes over `⊎` up to permutation (order unspecified). -/
   toList_disjUnion : ∀ {X Y : MS}, (toList (X ⊎ Y)).Perm (toList X ++ toList Y)
-  /-- Multiset induction (Coq `gmultiset_ind`): every finite multiset is `∅` extended by singletons. -/
-  ind {motive : MS → Prop} (empty : motive ∅)
-    (disjUnion_singleton : ∀ a X, motive X → motive ({a} ⊎ X)) (X : MS) : motive X
 export LawfulFiniteMultiSet (mem_toList toList_empty toList_singleton toList_disjUnion)
 
 section Lemmas
@@ -116,5 +113,51 @@ theorem disjUnion_singleton_difference {x : A} {X : MS} (h : x ∈ X) : X = {x} 
   · rw [multiplicity_singleton_ne hax]; omega
 
 end Lemmas
+
+section FiniteLemmas
+
+variable {MS : Type _} {A : Type _} [LawfulFiniteMultiSet MS A]
+
+/-- An empty `toList` forces the empty multiset. -/
+theorem eq_empty_of_toList_nil {X : MS} (h : toList X = []) : X = ∅ := by
+  refine LawfulMultiSet.ext fun a => ?_
+  rw [multiplicity_empty]
+  have hni : ¬ (0 < MultiSet.multiplicity a X) := by
+    rw [← mem_iff_multiplicity_pos, ← mem_toList, h]; simp
+  omega
+
+/-- Multiset induction (Coq `gmultiset_ind`), derived from `toList` — like `set_ind`. -/
+theorem multiset_ind {motive : MS → Prop}
+    (empty : motive ∅)
+    (disjUnion_singleton : ∀ a X, motive X → motive ({a} ⊎ X)) (X : MS) : motive X := by
+  suffices h : ∀ n (Y : MS), (toList Y).length ≤ n → motive Y from h (toList X).length X (Nat.le_refl _)
+  intro n
+  induction n with
+  | zero =>
+    intro Y hle
+    have hnil : toList Y = [] := List.length_eq_zero_iff.mp (Nat.le_zero.mp hle)
+    exact eq_empty_of_toList_nil hnil ▸ empty
+  | succ n IH =>
+    intro Y hle
+    by_cases hempty : toList Y = []
+    · exact eq_empty_of_toList_nil hempty ▸ empty
+    · obtain ⟨a, ha⟩ : ∃ a, a ∈ toList Y := by
+        cases hl : toList Y with
+        | nil => exact absurd hl hempty
+        | cons x xs => exact ⟨x, List.mem_cons_self⟩
+      have haY : a ∈ Y := mem_toList.mp ha
+      have hdecomp : Y = {a} ⊎ (Y \ {a}) := disjUnion_singleton_difference haY
+      have hperm : (toList Y).Perm ([a] ++ toList (Y \ {a})) := by
+        have e : toList Y = toList ({a} ⊎ (Y \ {a})) := congrArg (fun z : MS => toList z) hdecomp
+        have ts : toList ({a} : MS) = [a] := toList_singleton
+        rw [e, ← ts]
+        exact toList_disjUnion
+      have hlen' : (toList (Y \ {a})).length ≤ n := by
+        have hpe := hperm.length_eq
+        simp only [List.length_append, List.length_cons, List.length_nil] at hpe
+        omega
+      exact hdecomp ▸ disjUnion_singleton a (Y \ {a}) (IH (Y \ {a}) hlen')
+
+end FiniteLemmas
 
 end Iris.Std
